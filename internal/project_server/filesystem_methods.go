@@ -17,6 +17,17 @@ import (
 	fsutil "github.com/go-git/go-billy/v5/util"
 )
 
+const (
+	FILE_STAT_METHOD   = "fs/fileStat"
+	READ_FILE_METHOD   = "fs/readFile"
+	WRITE_FILE_METHOD  = "fs/writeFile"
+	RENAME_FILE_METHOD = "fs/renameFile"
+	DELETE_FILE_METHOD = "fs/deleteFile"
+
+	CREATE_DIR_METHOD = "fs/createDir"
+	READ_DIR_METHOD   = "fs/readDir"
+)
+
 //get file stat operation
 
 type FsFileStatParams struct {
@@ -127,7 +138,7 @@ const (
 
 func registerFilesystemMethodHandlers(server *lsp.Server) {
 	server.OnCustom(jsonrpc.MethodInfo{
-		Name: "fs/fileStat",
+		Name: FILE_STAT_METHOD,
 		NewRequest: func() interface{} {
 			return &FsFileStatParams{}
 		},
@@ -167,7 +178,7 @@ func registerFilesystemMethodHandlers(server *lsp.Server) {
 	})
 
 	server.OnCustom(jsonrpc.MethodInfo{
-		Name: "fs/readFile",
+		Name: READ_FILE_METHOD,
 		NewRequest: func() interface{} {
 			return &FsReadFileParams{}
 		},
@@ -197,7 +208,7 @@ func registerFilesystemMethodHandlers(server *lsp.Server) {
 	})
 
 	server.OnCustom(jsonrpc.MethodInfo{
-		Name: "fs/writeFile",
+		Name: WRITE_FILE_METHOD,
 		NewRequest: func() interface{} {
 			return &FsWriteFileParams{}
 		},
@@ -280,7 +291,7 @@ func registerFilesystemMethodHandlers(server *lsp.Server) {
 	})
 
 	server.OnCustom(jsonrpc.MethodInfo{
-		Name: "fs/renameFile",
+		Name: RENAME_FILE_METHOD,
 		NewRequest: func() interface{} {
 			return &FsRenameFileParams{}
 		},
@@ -333,7 +344,7 @@ func registerFilesystemMethodHandlers(server *lsp.Server) {
 	})
 
 	server.OnCustom(jsonrpc.MethodInfo{
-		Name: "fs/deleteFile",
+		Name: DELETE_FILE_METHOD,
 		NewRequest: func() interface{} {
 			return &FsDeleteFileParams{}
 		},
@@ -374,7 +385,7 @@ func registerFilesystemMethodHandlers(server *lsp.Server) {
 	})
 
 	server.OnCustom(jsonrpc.MethodInfo{
-		Name: "fs/readDir",
+		Name: READ_DIR_METHOD,
 		NewRequest: func() interface{} {
 			return &FsReadirParams{}
 		},
@@ -412,7 +423,7 @@ func registerFilesystemMethodHandlers(server *lsp.Server) {
 	})
 
 	server.OnCustom(jsonrpc.MethodInfo{
-		Name: "fs/createDir",
+		Name: CREATE_DIR_METHOD,
 		NewRequest: func() interface{} {
 			return &FsCreateDirParams{}
 		},
