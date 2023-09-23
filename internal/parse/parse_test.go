@@ -8627,27 +8627,66 @@ func testParse(
 								nil,
 								[]Token{
 									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{0, 1}},
+									{Type: NEWLINE, Span: NodeSpan{5, 6}},
 									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{8, 9}},
 								},
 							},
 							Properties: []*ObjectProperty{
 								{
 									NodeBase: NodeBase{
-										NodeSpan{2, 7},
+										NodeSpan{2, 5},
 										&ParsingError{UnspecifiedParsingError, UNEXPECTED_NEWLINE_AFTER_COLON},
 										[]Token{
 											{Type: COLON, Span: NodeSpan{4, 5}},
-											{Type: NEWLINE, Span: NodeSpan{5, 6}},
 										},
 									},
 									Key: &IdentifierLiteral{
 										NodeBase: NodeBase{NodeSpan{2, 3}, nil, nil},
 										Name:     "a",
 									},
+								},
+								{
+									NodeBase: NodeBase{NodeSpan{6, 8}, nil, nil},
+									Key:      nil,
 									Value: &IntLiteral{
 										NodeBase: NodeBase{NodeSpan{6, 7}, nil, nil},
 										Raw:      "1",
 										Value:    1,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			{
+				input:    "{ a:\n}",
+				hasError: true,
+				result: &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 6}, nil, nil},
+					Statements: []Node{
+						&ObjectLiteral{
+							NodeBase: NodeBase{
+								NodeSpan{0, 6},
+								nil,
+								[]Token{
+									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{0, 1}},
+									{Type: NEWLINE, Span: NodeSpan{4, 5}},
+									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{5, 6}},
+								},
+							},
+							Properties: []*ObjectProperty{
+								{
+									NodeBase: NodeBase{
+										NodeSpan{2, 4},
+										&ParsingError{UnspecifiedParsingError, UNEXPECTED_NEWLINE_AFTER_COLON},
+										[]Token{
+											{Type: COLON, Span: NodeSpan{3, 4}},
+										},
+									},
+									Key: &IdentifierLiteral{
+										NodeBase: NodeBase{NodeSpan{2, 3}, nil, nil},
+										Name:     "a",
 									},
 								},
 							},
@@ -10074,23 +10113,25 @@ func testParse(
 								nil,
 								[]Token{
 									{Type: OPENING_RECORD_BRACKET, Span: NodeSpan{0, 2}},
+									{Type: NEWLINE, Span: NodeSpan{6, 7}},
 									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{9, 10}},
 								},
 							},
 							Properties: []*ObjectProperty{
 								{
 									NodeBase: NodeBase{
-										NodeSpan{3, 8},
+										NodeSpan{3, 6},
 										&ParsingError{UnspecifiedParsingError, UNEXPECTED_NEWLINE_AFTER_COLON},
-										[]Token{
-											{Type: COLON, Span: NodeSpan{5, 6}},
-											{Type: NEWLINE, Span: NodeSpan{6, 7}},
-										},
+										[]Token{{Type: COLON, Span: NodeSpan{5, 6}}},
 									},
 									Key: &IdentifierLiteral{
 										NodeBase: NodeBase{NodeSpan{3, 4}, nil, nil},
 										Name:     "a",
 									},
+								},
+								{
+									NodeBase: NodeBase{NodeSpan{7, 9}, nil, nil},
+									Key:      nil,
 									Value: &IntLiteral{
 										NodeBase: NodeBase{NodeSpan{7, 8}, nil, nil},
 										Raw:      "1",
@@ -19516,6 +19557,43 @@ func testParse(
 					},
 				},
 			}, n)
+		})
+
+		t.Run("newline after colon", func(t *testing.T) {
+			n, err := parseChunk(t, "%{ a:\n}", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 7}, nil, nil},
+				Statements: []Node{
+					&ObjectPatternLiteral{
+						NodeBase: NodeBase{
+							NodeSpan{0, 7},
+							nil,
+							[]Token{
+								{Type: OPENING_OBJECT_PATTERN_BRACKET, Span: NodeSpan{0, 2}},
+								{Type: NEWLINE, Span: NodeSpan{5, 6}},
+								{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{6, 7}},
+							},
+						},
+						Properties: []*ObjectPatternProperty{
+							{
+								NodeBase: NodeBase{
+									NodeSpan{3, 5},
+									&ParsingError{UnspecifiedParsingError, UNEXPECTED_NEWLINE_AFTER_COLON},
+									[]Token{
+										{Type: COLON, Span: NodeSpan{4, 5}},
+									},
+								},
+								Key: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{3, 4}, nil, nil},
+									Name:     "a",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+
 		})
 	})
 

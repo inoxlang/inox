@@ -3105,7 +3105,16 @@ object_pattern_top_loop:
 
 				if p.s[p.i] == '\n' {
 					propParsingErr = &ParsingError{UnspecifiedParsingError, UNEXPECTED_NEWLINE_AFTER_COLON}
-					p.eatSpaceNewline(&entryTokens)
+					properties = append(properties, &ObjectPatternProperty{
+						NodeBase: NodeBase{
+							Span:   NodeSpan{propSpanStart, p.i},
+							Err:    propParsingErr,
+							Tokens: entryTokens,
+						},
+						Key:  key,
+						Type: type_,
+					})
+					goto step_end
 				}
 
 				v, isMissingExpr = p.parseExpression()
@@ -3584,7 +3593,16 @@ object_literal_top_loop:
 
 			if p.s[p.i] == '\n' {
 				propParsingErr = &ParsingError{UnspecifiedParsingError, UNEXPECTED_NEWLINE_AFTER_COLON}
-				p.eatSpaceNewline(&entryTokens)
+				properties = append(properties, &ObjectProperty{
+					NodeBase: NodeBase{
+						Span:   NodeSpan{propSpanStart, p.i},
+						Err:    propParsingErr,
+						Tokens: entryTokens,
+					},
+					Key:  key,
+					Type: type_,
+				})
+				goto step_end
 			}
 
 			v, isMissingExpr = p.parseExpression()
