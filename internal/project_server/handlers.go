@@ -517,6 +517,25 @@ func registerHandlers(server *lsp.Server, opts LSPServerOptions) {
 		return notifyDiagnostics(session, req.TextDocument.Uri, projectMode, fls)
 	})
 
+	server.OnDidCloseTextDocument(func(ctx context.Context, req *defines.DidCloseTextDocumentParams) (err error) {
+		fpath, err := getFilePath(req.TextDocument.Uri, projectMode)
+		if err != nil {
+			return err
+		}
+
+		session := jsonrpc.GetSession(ctx)
+		fls, ok := getLspFilesystem(session)
+		if !ok {
+			return errors.New(FsNoFilesystem)
+		}
+
+		docsFs := fls.docsFS()
+		if docsFs != fls {
+			docsFs.Remove(fpath)
+		}
+		return nil
+	})
+
 	server.OnDefinition(func(ctx context.Context, req *defines.DefinitionParams) (result *[]defines.LocationLink, err error) {
 		fpath, err := getFilePath(req.TextDocument.Uri, projectMode)
 		if err != nil {
