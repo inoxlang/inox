@@ -199,10 +199,6 @@ func (p *Project) getCreateSecretsBucket(ctx *core.Context, createIfDoesNotExist
 
 	bucketName := p.getSecretsBucketName()
 	{
-		if cf.highPermsTokens.R2Token == nil {
-			return nil, ErrNoR2Token
-		}
-
 		exists, err := cf.CheckBucketExists(ctx, bucketName)
 		if err != nil {
 			return nil, err
