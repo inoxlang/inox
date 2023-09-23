@@ -381,7 +381,7 @@ func handleIdentifierAndKeywordCompletions(
 
 	var completions []Completion
 
-	if deepestCall != nil { //subcommand completions
+	if deepestCall != nil && deepestCall.CommandLikeSyntax { //subcommand completions
 		argIndex := -1
 
 		for i, arg := range deepestCall.Arguments {
@@ -419,6 +419,7 @@ func handleIdentifierAndKeywordCompletions(
 				}
 
 				subcommandName := cmdPerm.SubcommandNameChain[argIndex]
+
 				completion := Completion{
 					ShownString: subcommandName,
 					Value:       subcommandName,
@@ -589,12 +590,20 @@ after_subcommand_completions:
 		return completions
 	}
 
-	//suggest local variables
+	callExpr, ok := parent.(*parse.CallExpression)
+	isCommandLikeCallArgument := ok && callExpr.CommandLikeSyntax && utils.Some(callExpr.Arguments, func(e parse.Node) bool {
+		return ident == e
+	})
 
+	//suggest local variables
 	if mode == ShellCompletions {
 		for name, varVal := range state.CurrentLocalScope() {
 			if hasPrefixCaseInsensitive(name, ident.Name) {
 				detail, _ := core.GetStringifiedSymbolicValue(state.Global.Ctx, varVal, false)
+
+				if isCommandLikeCallArgument {
+					name = "$" + name
+				}
 
 				completions = append(completions, Completion{
 					ShownString: name,
@@ -608,9 +617,15 @@ after_subcommand_completions:
 		scopeData, _ := state.Global.SymbolicData.GetLocalScopeData(ident, ancestors)
 		for _, varData := range scopeData.Variables {
 			if hasPrefixCaseInsensitive(varData.Name, ident.Name) {
+
+				name := varData.Name
+				if isCommandLikeCallArgument {
+					name = "$" + name
+				}
+
 				completions = append(completions, Completion{
-					ShownString: varData.Name,
-					Value:       varData.Name,
+					ShownString: name,
+					Value:       name,
 					Kind:        defines.CompletionItemKindVariable,
 					LabelDetail: symbolic.Stringify(varData.Value),
 				})
@@ -626,6 +641,10 @@ after_subcommand_completions:
 			if hasPrefixCaseInsensitive(name, ident.Name) {
 				detail, _ := core.GetStringifiedSymbolicValue(state.Global.Ctx, varVal, false)
 
+				if isCommandLikeCallArgument {
+					name = "$$" + name
+				}
+
 				completions = append(completions, Completion{
 					ShownString: name,
 					Value:       name,
@@ -640,9 +659,15 @@ after_subcommand_completions:
 
 		for _, varData := range scopeData.Variables {
 			if hasPrefixCaseInsensitive(varData.Name, ident.Name) {
+
+				name := varData.Name
+				if isCommandLikeCallArgument {
+					name = "$$" + name
+				}
+
 				completions = append(completions, Completion{
-					ShownString: varData.Name,
-					Value:       varData.Name,
+					ShownString: name,
+					Value:       name,
 					Kind:        defines.CompletionItemKindVariable,
 					LabelDetail: symbolic.Stringify(varData.Value),
 				})

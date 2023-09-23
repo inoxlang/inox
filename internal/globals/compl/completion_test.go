@@ -154,6 +154,20 @@ func TestFindCompletions(t *testing.T) {
 					}, completions)
 				})
 
+				t.Run("local variable in a command-liked function call", func(t *testing.T) {
+					state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
+					chunk, _ := parseChunkSource("val = 1; print v", "")
+
+					doSymbolicCheck(chunk, state.Global)
+					completions := findCompletions(state, chunk, 16)
+					assert.EqualValues(t, []Completion{
+						{
+							ShownString:   "$val",
+							Value:         "$val",
+							ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 15, End: 16}}},
+					}, completions)
+				})
+
 				t.Run("local variable in a method call", func(t *testing.T) {
 					state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
 					chunk, _ := parseChunkSource("o = {print: fn(arg){}}; val = 1; o.print(v)", "")
@@ -222,6 +236,20 @@ func TestFindCompletions(t *testing.T) {
 					completions := findCompletions(state, chunk, int(globalVarIdent.Span.End))
 					assert.EqualValues(t, []Completion{
 						{ShownString: "test", Value: "$$test", ReplacedRange: parse.SourcePositionRange{Span: span}},
+					}, completions)
+				})
+
+				t.Run("global variable in a command-liked function call", func(t *testing.T) {
+					state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
+					chunk, _ := parseChunkSource("$$val = 1; print v", "")
+
+					doSymbolicCheck(chunk, state.Global)
+					completions := findCompletions(state, chunk, 18)
+					assert.EqualValues(t, []Completion{
+						{
+							ShownString:   "$$val",
+							Value:         "$$val",
+							ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 17, End: 18}}},
 					}, completions)
 				})
 			})
