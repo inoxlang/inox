@@ -124,7 +124,9 @@ func deleteTestRelatedTokens(t *testing.T, ctx context.Context, api *cloudflare.
 	for _, token := range apiTokens {
 		if strings.Contains(token.Name, string(projectId)) {
 			err := api.DeleteAPIToken(ctx, token.ID)
-			_ = err
+			if err != nil {
+				t.Log(err)
+			}
 		}
 	}
 }

@@ -2,7 +2,6 @@ package project
 
 import (
 	"os"
-	"strings"
 	"testing"
 
 	cloudflare "github.com/cloudflare/cloudflare-go"
@@ -58,20 +57,12 @@ func TestUpsertListSecrets(t *testing.T) {
 			err := project.DeleteSecretsBucket(ctx)
 			assert.NoError(t, err)
 
-			api := project.cloudflare.apiTokensApi
-			apiTokens, err := api.APITokens(ctx)
+			api, err := cloudflare.NewWithAPIToken(CLOUDFLARE_ADDITIONAL_TOKENS_API_TOKEN)
 			if err != nil {
 				return
 			}
 
-			for _, token := range apiTokens {
-				if strings.Contains(token.Name, projectName) {
-					err := api.DeleteAPIToken(ctx, token.ID)
-					if err != nil {
-						t.Log(err)
-					}
-				}
-			}
+			deleteTestRelatedTokens(t, ctx, api, project.id)
 		}()
 
 		secrets, err := project.ListSecrets(ctx)
@@ -90,7 +81,7 @@ func TestUpsertListSecrets(t *testing.T) {
 		assert.Empty(t, secrets2)
 	})
 
-	t.Run("", func(t *testing.T) {
+	t.Run("list secrets after creation and after deletion", func(t *testing.T) {
 		projectName := "test-upsert-secret"
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 
@@ -123,7 +114,6 @@ func TestUpsertListSecrets(t *testing.T) {
 
 		defer func() {
 			//delete tokens & bucket
-
 			err := project.DeleteSecretsBucket(ctx)
 			assert.NoError(t, err)
 
@@ -132,19 +122,7 @@ func TestUpsertListSecrets(t *testing.T) {
 				return
 			}
 
-			apiTokens, err := api.APITokens(ctx)
-			if err != nil {
-				return
-			}
-
-			for _, token := range apiTokens {
-				if strings.Contains(token.Name, projectName) {
-					err := api.DeleteAPIToken(ctx, token.ID)
-					if err != nil {
-						t.Log(err)
-					}
-				}
-			}
+			deleteTestRelatedTokens(t, ctx, api, project.id)
 		}()
 
 		err = project.UpsertSecret(ctx, "my-secret", "secret")
