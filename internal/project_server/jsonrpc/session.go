@@ -6,11 +6,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"reflect"
 	"runtime/debug"
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
@@ -48,6 +50,8 @@ type Session struct {
 	executorLock sync.Mutex
 	writeLock    sync.Mutex
 	cancel       chan struct{}
+
+	closed atomic.Bool
 }
 
 func newSessionWithConn(id int, server *Server, conn ReaderWriter) *Session {
@@ -65,8 +69,12 @@ func newSessionWithMessageConn(id int, server *Server, conn MessageReaderWriter)
 }
 
 func (s *Session) Start() {
+	defer s.Close()
+
 	for {
-		s.handle()
+		if continueLoop := s.handle(); !continueLoop {
+			return
+		}
 		select {
 		case <-s.cancel:
 			return
@@ -76,24 +84,24 @@ func (s *Session) Start() {
 	}
 }
 
-func (s *Session) handle() {
+func (s *Session) handle() (continueLoop bool) {
 	req, err := s.readRequest()
 	if err != nil {
 		err := s.handlerResponse(nil, nil, err, false)
 		if err != nil {
-			s.handlerError(err)
+			return s.handlerError(err)
 		}
-		return
+		return true
 	}
 
 	err = s.handlerRequest(req)
 	if err != nil {
 		err := s.handlerResponse(req.ID, nil, err, false)
 		if err != nil {
-			s.handlerError(err)
+			return s.handlerError(err)
 		}
-		return
 	}
+	return true
 }
 
 func (s *Session) registerExecutor(executor *executor) {
@@ -400,43 +408,18 @@ func (s *Session) handlerResponse(id interface{}, result interface{}, err error,
 	return s.write(resp, sensitiveDataMethod)
 }
 
-func (s *Session) handlerError(err error) {
+func (s *Session) handlerError(err error) (continueLoop bool) {
+	continueLoop = true
 	isEof := errors.Is(err, io.EOF)
 	isWebsocketUnexpectedClose := websocket.IsUnexpectedCloseError(err)
 	isClosedWebsocket := errors.Is(err, net_ns.ErrClosedWebsocketConnection)
+	isNetReaderr := utils.Implements[*net.OpError](err) && err.(*net.OpError).Op == "read"
 
-	if isEof || isWebsocketUnexpectedClose || isClosedWebsocket {
-		// conn done, close conn and remove session
-
-		if s.conn != nil {
-			err := s.conn.Close()
-			if err != nil {
-				logs.Println("close error: ", err)
-			}
-		} else {
-			err := s.msgConn.Close()
-			if err != nil {
-				logs.Println("message connection: close error: ", err)
-			}
-		}
-
-		func() {
-			s.executorLock.Lock()
-			defer s.executorLock.Unlock()
-			for _, v := range s.executors {
-				if v != nil {
-					v.cancel()
-				}
-			}
-		}()
-
-		select {
-		case s.cancel <- struct{}{}:
-		default:
-		}
-		s.server.removeSession(s.id)
+	if isEof || isWebsocketUnexpectedClose || isClosedWebsocket || isNetReaderr {
+		continueLoop = false
 	}
 	logs.Println("error: ", err)
+	return
 }
 
 func (s *Session) Context() *core.Context {
@@ -444,13 +427,37 @@ func (s *Session) Context() *core.Context {
 }
 
 func (s *Session) Close() error {
+	if !s.closed.CompareAndSwap(false, true) {
+		return errors.New("already closed")
+	}
 	defer s.ctx.CancelGracefully()
 
 	if s.conn != nil {
-		return s.conn.Close()
+		err := s.conn.Close()
+		if err != nil {
+			logs.Println("close error: ", err)
+		}
 	} else {
-		return s.msgConn.Close()
+		err := s.msgConn.Close()
+		if err != nil {
+			logs.Println("message connection: close error: ", err)
+		}
 	}
+
+	func() {
+		defer utils.Recover()
+		s.executorLock.Lock()
+		defer s.executorLock.Unlock()
+
+		for _, v := range s.executors {
+			if v != nil {
+				v.cancel()
+			}
+		}
+	}()
+
+	s.server.removeSession(s.id)
+	return nil
 }
 
 func (s *Session) SetContextOnce(ctx *core.Context) error {
