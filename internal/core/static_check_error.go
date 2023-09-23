@@ -23,6 +23,14 @@ const (
 	PARAMS_SECTION_SHOULD_BE_AN_OBJECT                        = "the '" + MANIFEST_PARAMS_SECTION_NAME + "' section of the manifest should be an object literal"
 	PARAMS_SECTION_NOT_AVAILABLE_IN_EMBEDDED_MODULE_MANIFESTS = "the '" + MANIFEST_PARAMS_SECTION_NAME + "' section is not available in embedded module manifests"
 
+	//permissions
+	NO_PERM_DESCRIBED_BY_THIS_TYPE_OF_VALUE         = "there is no permission described by this type of value"
+	NO_PERM_DESCRIBED_BY_STRINGS                    = "there is no permission described by strings"
+	MAYBE_YOU_MEANT_TO_WRITE_A_PATH_LITERAL         = "maybe you meant to write a path literal such as /dir/ or /data.json (always unquoted)"
+	MAYBE_YOU_MEANT_TO_WRITE_A_PATH_PATTERN_LITERAL = "maybe you meant to write a path pattern literal such as %/... or %/*.json (always unquoted)"
+	MAYBE_YOU_MEANT_TO_WRITE_A_URL_LITERAL          = "maybe you meant to write a url literal such as https://example.com/ (always unquoted)"
+	MAYBE_YOU_MEANT_TO_WRITE_A_URL_PATTERN_LITERAL  = "maybe you meant to write a url pattern literal such as %https://example.com/... (always unquoted)"
+
 	//preinit-files section
 	PREINIT_FILES_SECTION_SHOULD_BE_AN_OBJECT                        = "the '" + MANIFEST_PREINIT_FILES_SECTION_NAME + "' section of the manifest should be an object literal"
 	PREINIT_FILES__FILE_CONFIG_SHOULD_BE_AN_OBJECT                   = "the description of each file in the '" + MANIFEST_PREINIT_FILES_SECTION_NAME + "' section of the manifest should be an object literal"
@@ -286,4 +294,16 @@ func fmtPatternNamespaceIsNotDeclared(name string) string {
 
 func fmtObjectDoesNotHaveProp(name string) string {
 	return fmt.Sprintf("object dos not have a .%s property", name)
+}
+
+func fmtOnlyAbsPathsAreAcceptedInPerms(v string) string {
+	return fmt.Sprintf("only absolute paths are accepted in permissions: %s", v)
+}
+
+func fmtOnlyAbsPathPatternsAreAcceptedInPerms(v string) string {
+	return fmt.Sprintf("only absolute path patterns are accepted in permissions: %s", v)
+}
+
+func fmtCannotInferPermission(kind string, name string) string {
+	return fmt.Sprintf("cannot infer '%s' permission '%s", kind, name)
 }

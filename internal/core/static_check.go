@@ -2055,10 +2055,106 @@ func checkPermissionListingObject(objLit *parse.ObjectLiteral, onError func(n pa
 			continue
 		}
 
-		if !permkind.IsPermissionKindName(p.Name()) {
+		propName := p.Name()
+		permKind, ok := permkind.PermissionKindFromString(propName)
+		if !ok {
 			onError(p.Key, fmtNotValidPermissionKindName(p.Name()))
+			continue
+		}
+		checkSingleKindPermissions(permKind, p.Value, onError)
+	}
+}
+
+func checkSingleKindPermissions(permKind PermissionKind, desc parse.Node, onError func(n parse.Node, msg string)) {
+	checkSingleItem := func(node parse.Node) {
+		switch n := node.(type) {
+		case *parse.AbsolutePathExpression:
+		case *parse.AbsolutePathLiteral:
+		case *parse.RelativePathLiteral:
+			onError(n, fmtOnlyAbsPathsAreAcceptedInPerms(n.Raw))
+		case *parse.AbsolutePathPatternLiteral:
+		case *parse.RelativePathPatternLiteral:
+			onError(n, fmtOnlyAbsPathPatternsAreAcceptedInPerms(n.Raw))
+		case *parse.URLExpression:
+		case *parse.URLLiteral:
+		case *parse.URLPatternLiteral:
+		case *parse.HostLiteral:
+		case *parse.HostPatternLiteral:
+		case *parse.PatternIdentifierLiteral, *parse.PatternNamespaceIdentifierLiteral:
+		case *parse.GlobalVariable, *parse.Variable, *parse.IdentifierLiteral:
+
+		case *parse.QuotedStringLiteral, *parse.MultilineStringLiteral, *parse.UnquotedStringLiteral:
+			s := n.(parse.SimpleValueLiteral).ValueString()
+
+			if len(s) <= 1 {
+				onError(n, NO_PERM_DESCRIBED_BY_STRINGS)
+				break
+			}
+
+			msg := NO_PERM_DESCRIBED_BY_STRINGS + ", "
+			startsWithPercent := s[0] == '%'
+			stringNoPercent := s[1:]
+
+			for _, prefix := range []string{"/", "./", "../"} {
+				if strings.HasPrefix(stringNoPercent, prefix) {
+					if startsWithPercent {
+						msg += MAYBE_YOU_MEANT_TO_WRITE_A_PATH_PATTERN_LITERAL
+					} else {
+						msg += MAYBE_YOU_MEANT_TO_WRITE_A_PATH_LITERAL
+					}
+					break
+				}
+			}
+
+			for _, prefix := range []string{"https://", "http://"} {
+				if strings.HasPrefix(stringNoPercent, prefix) {
+					if startsWithPercent {
+						msg += MAYBE_YOU_MEANT_TO_WRITE_A_URL_PATTERN_LITERAL
+					} else {
+						msg += MAYBE_YOU_MEANT_TO_WRITE_A_URL_LITERAL
+					}
+					break
+				}
+			}
+
+			onError(n, msg)
+		default:
+			onError(n, NO_PERM_DESCRIBED_BY_THIS_TYPE_OF_VALUE)
 		}
 	}
+
+	switch v := desc.(type) {
+	case *parse.ListLiteral:
+		for _, elem := range v.Elements {
+			checkSingleItem(elem)
+		}
+	case *parse.ObjectLiteral:
+		for _, prop := range v.Properties {
+			if prop.HasImplicitKey() {
+				checkSingleItem(prop.Value)
+			} else {
+				typeName := prop.Name()
+
+				//TODO: finish
+				switch typeName {
+				case "dns":
+				case "tcp":
+				case "globals":
+				case "env":
+				case "threads":
+				case "system-graph":
+				case "commands":
+				case "values":
+				case "custom":
+				default:
+					onError(prop.Value, fmtCannotInferPermission(permKind.String(), typeName))
+				}
+			}
+		}
+	default:
+		checkSingleItem(v)
+	}
+
 }
 
 func checkPreinitFilesObject(obj *parse.ObjectLiteral, onError func(n parse.Node, msg string)) {

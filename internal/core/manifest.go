@@ -1091,19 +1091,20 @@ func getSingleKindNamedPermPermissions(
 			return nil, err
 		}
 		p = newPerms
-	default:
+	case "custom":
 		if handleCustomType != nil {
 			customPerms, handled, err := handleCustomType(permKind, typeName, propVal)
 			if handled {
 				if err != nil {
-					return nil, fmt.Errorf("cannot infer '%s' permission '%s': %s", permKind.String(), typeName, err.Error())
+					return nil, fmt.Errorf(fmtCannotInferPermission(permKind.String(), typeName)+": %w", err)
 				}
 				p = append(p, customPerms...)
 				break
 			}
 		}
-
-		return nil, fmt.Errorf("cannot infer '%s' permission '%s'", permKind.String(), typeName)
+		fallthrough
+	default:
+		return nil, errors.New(fmtCannotInferPermission(permKind.String(), typeName))
 	}
 
 	if err != nil {
@@ -1181,7 +1182,7 @@ func getPermissionFromSingleKindPermissionItem(e Value, permKind PermissionKind)
 		}
 	case Path:
 		if !v.IsAbsolute() {
-			return nil, fmt.Errorf("only absolute paths are accepted: %s", v)
+			return nil, errors.New(fmtOnlyAbsPathsAreAcceptedInPerms(v.UnderlyingString()))
 		}
 		return FilesystemPermission{
 			Kind_:  permKind,
@@ -1190,7 +1191,7 @@ func getPermissionFromSingleKindPermissionItem(e Value, permKind PermissionKind)
 
 	case PathPattern:
 		if !v.IsAbsolute() {
-			return nil, fmt.Errorf("only absolute path patterns are accepted: %s", v)
+			return nil, errors.New(fmtOnlyAbsPathPatternsAreAcceptedInPerms(v.UnderlyingString()))
 		}
 		return FilesystemPermission{
 			Kind_:  permKind,
