@@ -100,6 +100,10 @@ func NewDummyProject(name string, fls afs.Filesystem) *Project {
 
 // OpenProject
 func (r *Registry) OpenProject(ctx *core.Context, params OpenProjectParams) (*Project, error) {
+	if project, ok := r.openProjects[params.Id]; ok {
+		return project, nil
+	}
+
 	_, found, err := r.kv.Get(ctx, getProjectKvKey(params.Id), r)
 
 	if err != nil {
@@ -133,6 +137,8 @@ func (r *Registry) OpenProject(ctx *core.Context, params OpenProjectParams) (*Pr
 		}
 		project.cloudflare = cf
 	}
+
+	r.openProjects[project.id] = project
 
 	return project, nil
 }

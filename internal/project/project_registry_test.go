@@ -12,17 +12,22 @@ func TestOpenRegistry(t *testing.T) {
 
 	t.Run("once", func(t *testing.T) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
 
 		fls := fs_ns.NewMemFilesystem(1_000)
 
 		r, err := OpenRegistry("/projects", fls)
-		assert.NoError(t, err)
+		if !assert.NoError(t, err) {
+			return
+		}
 
 		r.Close(ctx)
 	})
 
 	t.Run("twice", func(t *testing.T) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		fls := fs_ns.NewMemFilesystem(1_000)
 
 		r, err := OpenRegistry("/projects", fls)
@@ -31,7 +36,9 @@ func TestOpenRegistry(t *testing.T) {
 		r.Close(ctx)
 
 		r, err = OpenRegistry("/projects", fls)
-		assert.NoError(t, err)
+		if !assert.NoError(t, err) {
+			return
+		}
 
 		r.Close(ctx)
 	})

@@ -13,9 +13,10 @@ const (
 )
 
 type Registry struct {
-	projectsDir string
-	filesystem  afs.Filesystem
-	kv          *filekv.SingleFileKV
+	projectsDir  string
+	filesystem   afs.Filesystem
+	kv           *filekv.SingleFileKV
+	openProjects map[core.ProjectID]*Project
 }
 
 func OpenRegistry(projectsDir string, fls afs.Filesystem) (*Registry, error) {
@@ -31,9 +32,10 @@ func OpenRegistry(projectsDir string, fls afs.Filesystem) (*Registry, error) {
 	}
 
 	return &Registry{
-		projectsDir: projectsDir,
-		filesystem:  fls,
-		kv:          kv,
+		projectsDir:  projectsDir,
+		openProjects: map[core.ProjectID]*Project{},
+		filesystem:   fls,
+		kv:           kv,
 	}, nil
 }
 
