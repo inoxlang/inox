@@ -8,8 +8,8 @@ import (
 
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
-	"github.com/inoxlang/inox/internal/globals/help_ns"
 	"github.com/inoxlang/inox/internal/globals/html_ns"
+	"github.com/inoxlang/inox/internal/help"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/project_server/jsonrpc"
 	"github.com/inoxlang/inox/internal/project_server/logs"
@@ -43,13 +43,13 @@ func getHoverContent(fpath string, line, column int32, handlingCtx *core.Context
 		return &defines.Hover{}, nil
 	}
 
-	//help about manifest sections & lthread meta sections
-	help, ok := getSectionHelp(hoveredNode, ancestors)
+	//sectionHelp about manifest sections & lthread meta sections
+	sectionHelp, ok := getSectionHelp(hoveredNode, ancestors)
 	if ok {
 		return &defines.Hover{
 			Contents: defines.MarkupContent{
 				Kind:  defines.MarkupKindMarkdown,
-				Value: help,
+				Value: sectionHelp,
 			},
 		}, nil
 	}
@@ -98,7 +98,7 @@ func getHoverContent(fpath string, line, column int32, handlingCtx *core.Context
 		for {
 			switch val := val.(type) {
 			case *symbolic.GoFunction:
-				text, ok := help_ns.HelpForSymbolicGoFunc(val, help_ns.HelpMessageConfig{Format: help_ns.MarkdownFormat})
+				text, ok := help.HelpForSymbolicGoFunc(val, help.HelpMessageConfig{Format: help.MarkdownFormat})
 				if ok {
 					helpMessage = "\n-----\n" + strings.ReplaceAll(text, "\n\r", "\n")
 				}
@@ -230,8 +230,8 @@ func getSectionHelp(n parse.Node, ancestors []parse.Node) (string, bool) {
 	case *parse.Manifest:
 		sectionName := propName
 		//hovered node is a manifest section's name
-		help, ok := help_ns.HelpFor(fmt.Sprintf("manifest/%s-section", sectionName), help_ns.HelpMessageConfig{
-			Format: help_ns.MarkdownFormat,
+		help, ok := help.HelpFor(fmt.Sprintf("manifest/%s-section", sectionName), help.HelpMessageConfig{
+			Format: help.MarkdownFormat,
 		})
 
 		if ok {
@@ -241,8 +241,8 @@ func getSectionHelp(n parse.Node, ancestors []parse.Node) (string, bool) {
 		sectionName := propName
 		if object == gp.Meta {
 			//hovered node is a lthread meta section's name
-			help, ok := help_ns.HelpFor(fmt.Sprintf("lthreads/%s-section", sectionName), help_ns.HelpMessageConfig{
-				Format: help_ns.MarkdownFormat,
+			help, ok := help.HelpFor(fmt.Sprintf("lthreads/%s-section", sectionName), help.HelpMessageConfig{
+				Format: help.MarkdownFormat,
 			})
 			if ok {
 				return help, true

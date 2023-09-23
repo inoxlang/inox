@@ -3,8 +3,8 @@ package net_ns
 import (
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
-	help_ns "github.com/inoxlang/inox/internal/globals/help_ns"
 	net_symbolic "github.com/inoxlang/inox/internal/globals/net_ns/symbolic"
+	"github.com/inoxlang/inox/internal/help"
 )
 
 func init() {
@@ -28,7 +28,7 @@ func init() {
 		},
 	})
 
-	help_ns.RegisterHelpValues(map[string]any{
+	help.RegisterHelpValues(map[string]any{
 		"dns.resolve": dnsResolve,
 		"tcp.connect": tcpConnect,
 	})

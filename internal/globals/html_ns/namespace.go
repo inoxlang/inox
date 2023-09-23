@@ -2,7 +2,7 @@ package html_ns
 
 import (
 	core "github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/globals/help_ns"
+	"github.com/inoxlang/inox/internal/help"
 
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	_html_symbolic "github.com/inoxlang/inox/internal/globals/html_ns/symbolic"
@@ -47,7 +47,7 @@ func init() {
 		core.RegisterSymbolicGoFunction(fn, specifcTagFactory)
 	}
 
-	help_ns.RegisterHelpValues(map[string]any{
+	help.RegisterHelpValues(map[string]any{
 		"html.h1": _h1,
 		"html.h2": _h2,
 		"html.h3": _h3,

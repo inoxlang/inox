@@ -1,4 +1,4 @@
-package help_ns
+package help
 
 import (
 	"bytes"

@@ -10,7 +10,7 @@ import (
 	coll_symbolic "github.com/inoxlang/inox/internal/globals/containers/symbolic"
 	"github.com/inoxlang/inox/internal/utils"
 
-	"github.com/inoxlang/inox/internal/globals/help_ns"
+	"github.com/inoxlang/inox/internal/help"
 )
 
 var (
@@ -95,7 +95,7 @@ func init() {
 		},
 	})
 
-	help_ns.RegisterHelpValues(map[string]any{
+	help.RegisterHelpValues(map[string]any{
 		"Tree":    NewTree,
 		"Graph":   NewGraph,
 		"Map":     NewMap,

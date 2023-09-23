@@ -16,7 +16,7 @@ import (
 	"github.com/alexedwards/argon2id"
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
-	"github.com/inoxlang/inox/internal/globals/help_ns"
+	"github.com/inoxlang/inox/internal/help"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
@@ -75,7 +75,7 @@ func init() {
 		},
 	})
 
-	help_ns.RegisterHelpValues(map[string]any{
+	help.RegisterHelpValues(map[string]any{
 		"hash_password":  _hashPassword,
 		"check_password": _checkPassword,
 		"sha256":         _sha256,

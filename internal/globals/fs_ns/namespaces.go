@@ -4,7 +4,7 @@ import (
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	fs_symbolic "github.com/inoxlang/inox/internal/globals/fs_ns/symbolic"
-	"github.com/inoxlang/inox/internal/globals/help_ns"
+	"github.com/inoxlang/inox/internal/help"
 )
 
 func init() {
@@ -75,7 +75,7 @@ func init() {
 		},
 	})
 
-	help_ns.RegisterHelpValues(map[string]any{
+	help.RegisterHelpValues(map[string]any{
 		"fs.mkfile":        Mkfile,
 		"fs.mkdir":         Mkdir,
 		"fs.read":          Read,

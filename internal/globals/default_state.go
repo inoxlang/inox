@@ -16,11 +16,11 @@ import (
 	"github.com/inoxlang/inox/internal/globals/containers"
 	"github.com/inoxlang/inox/internal/globals/env_ns"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
-	"github.com/inoxlang/inox/internal/globals/help_ns"
 	"github.com/inoxlang/inox/internal/globals/html_ns"
 	"github.com/inoxlang/inox/internal/globals/http_ns"
 	"github.com/inoxlang/inox/internal/globals/inoxlsp_ns"
 	"github.com/inoxlang/inox/internal/globals/strmanip_ns"
+	"github.com/inoxlang/inox/internal/help"
 
 	"github.com/inoxlang/inox/internal/globals/inox_ns"
 	"github.com/inoxlang/inox/internal/globals/inoxsh_ns"
@@ -262,7 +262,7 @@ func NewDefaultGlobalState(ctx *core.Context, conf default_state.DefaultGlobalSt
 		globalnames.COLOR_FN:    core.WrapGoFunction(_Color),
 		globalnames.FILEMODE_FN: core.WrapGoFunction(core.FileModeFrom),
 
-		globalnames.HELP_FN: core.ValOf(help_ns.Help),
+		globalnames.HELP_FN: core.ValOf(help.Help),
 	}
 
 	for k, v := range containers.NewContainersNamespace() {

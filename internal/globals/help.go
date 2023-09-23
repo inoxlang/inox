@@ -2,11 +2,11 @@ package internal
 
 import (
 	core "github.com/inoxlang/inox/internal/core"
-	help_ns "github.com/inoxlang/inox/internal/globals/help_ns"
+	"github.com/inoxlang/inox/internal/help"
 )
 
 func registerHelp() {
-	help_ns.RegisterHelpValues(map[string]any{
+	help.RegisterHelpValues(map[string]any{
 		//functional
 		"map":    core.Map,
 		"filter": core.Filter,

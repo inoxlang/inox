@@ -3,7 +3,7 @@ package compl
 import (
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
-	"github.com/inoxlang/inox/internal/globals/help_ns"
+	"github.com/inoxlang/inox/internal/help"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
@@ -24,10 +24,10 @@ var (
 	}
 
 	MANIFEST_SECTION_DOC = map[string]string{
-		core.MANIFEST_PARAMS_SECTION_NAME:    utils.MustGet(help_ns.HelpFor("manifest/parameters-section", helpMessageConfig)),
-		core.MANIFEST_ENV_SECTION_NAME:       utils.MustGet(help_ns.HelpFor("manifest/env-section", helpMessageConfig)),
-		core.MANIFEST_PERMS_SECTION_NAME:     utils.MustGet(help_ns.HelpFor("manifest/permissions-section", helpMessageConfig)),
-		core.MANIFEST_DATABASES_SECTION_NAME: utils.MustGet(help_ns.HelpFor("manifest/databases-section", helpMessageConfig)),
+		core.MANIFEST_PARAMS_SECTION_NAME:    utils.MustGet(help.HelpFor("manifest/parameters-section", helpMessageConfig)),
+		core.MANIFEST_ENV_SECTION_NAME:       utils.MustGet(help.HelpFor("manifest/env-section", helpMessageConfig)),
+		core.MANIFEST_PERMS_SECTION_NAME:     utils.MustGet(help.HelpFor("manifest/permissions-section", helpMessageConfig)),
+		core.MANIFEST_DATABASES_SECTION_NAME: utils.MustGet(help.HelpFor("manifest/databases-section", helpMessageConfig)),
 	}
 
 	LTHREAD_META_SECTION_LABEL_DETAILS = map[string]string{
@@ -37,8 +37,8 @@ var (
 	}
 
 	LTHREAD_META_SECTION_DOC = map[string]string{
-		symbolic.LTHREAD_META_ALLOW_SECTION:   utils.MustGet(help_ns.HelpFor("lthreads/allow-section", helpMessageConfig)),
-		symbolic.LTHREAD_META_GLOBALS_SECTION: utils.MustGet(help_ns.HelpFor("lthreads/globals-section", helpMessageConfig)),
+		symbolic.LTHREAD_META_ALLOW_SECTION:   utils.MustGet(help.HelpFor("lthreads/allow-section", helpMessageConfig)),
+		symbolic.LTHREAD_META_GLOBALS_SECTION: utils.MustGet(help.HelpFor("lthreads/globals-section", helpMessageConfig)),
 	}
 
 	LTHREAD_META_SECTION_DEFAULT_VALUE_COMPLETIONS = map[string]string{
@@ -46,7 +46,7 @@ var (
 		symbolic.LTHREAD_META_GLOBALS_SECTION: "{}",
 	}
 
-	helpMessageConfig = help_ns.HelpMessageConfig{
-		Format: help_ns.MarkdownFormat,
+	helpMessageConfig = help.HelpMessageConfig{
+		Format: help.MarkdownFormat,
 	}
 )

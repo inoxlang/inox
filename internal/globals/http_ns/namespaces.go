@@ -5,8 +5,8 @@ import (
 
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
-	"github.com/inoxlang/inox/internal/globals/help_ns"
 	http_symbolic "github.com/inoxlang/inox/internal/globals/http_ns/symbolic"
+	"github.com/inoxlang/inox/internal/help"
 	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
 )
@@ -133,7 +133,7 @@ func init() {
 		},
 	})
 
-	help_ns.RegisterHelpValues(map[string]any{
+	help.RegisterHelpValues(map[string]any{
 		"http.exists":     httpExists,
 		"http.get":        HttpGet,
 		"http.read":       HttpRead,
