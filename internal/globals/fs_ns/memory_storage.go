@@ -248,6 +248,9 @@ func (s *inMemStorage) getNoLock(path string) (*InMemfile, bool) {
 	}
 
 	file, ok := s.files[path]
+	if ok {
+		file.isClosed.Store(false)
+	}
 	return file, ok
 }
 

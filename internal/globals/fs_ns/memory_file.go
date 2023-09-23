@@ -4,6 +4,8 @@ import (
 	"errors"
 	"io"
 	"os"
+	"sync"
+	"sync/atomic"
 
 	"github.com/go-git/go-billy/v5"
 	"github.com/inoxlang/inox/internal/core"
@@ -14,11 +16,13 @@ type InMemfile struct {
 	originalPath string
 	absPath      core.Path
 	content      *InMemFileContent
-	position     int64
 	flag         int
 	mode         os.FileMode
 
-	isClosed bool
+	isClosed atomic.Bool
+
+	position     int64
+	positionLock sync.Mutex
 }
 
 func (f *InMemfile) Name() string {
@@ -26,6 +30,9 @@ func (f *InMemfile) Name() string {
 }
 
 func (f *InMemfile) Read(b []byte) (int, error) {
+	f.positionLock.Lock()
+	defer f.positionLock.Unlock()
+
 	n, err := f.ReadAt(b, f.position)
 	f.position += int64(n)
 
@@ -37,7 +44,7 @@ func (f *InMemfile) Read(b []byte) (int, error) {
 }
 
 func (f *InMemfile) ReadAt(b []byte, off int64) (int, error) {
-	if f.isClosed {
+	if f.isClosed.Load() {
 		return 0, os.ErrClosed
 	}
 
@@ -51,9 +58,12 @@ func (f *InMemfile) ReadAt(b []byte, off int64) (int, error) {
 }
 
 func (f *InMemfile) Seek(offset int64, whence int) (int64, error) {
-	if f.isClosed {
+	if f.isClosed.Load() {
 		return 0, os.ErrClosed
 	}
+
+	f.positionLock.Lock()
+	defer f.positionLock.Unlock()
 
 	switch whence {
 	case io.SeekCurrent:
@@ -68,13 +78,16 @@ func (f *InMemfile) Seek(offset int64, whence int) (int64, error) {
 }
 
 func (f *InMemfile) Write(p []byte) (int, error) {
-	if f.isClosed {
+	if f.isClosed.Load() {
 		return 0, os.ErrClosed
 	}
 
 	if !IsReadAndWrite(f.flag) && !isWriteOnly(f.flag) {
 		return 0, errors.New("write not supported")
 	}
+
+	f.positionLock.Lock()
+	defer f.positionLock.Unlock()
 
 	n, err := f.content.WriteAt(p, f.position)
 	f.position += int64(n)
@@ -83,11 +96,10 @@ func (f *InMemfile) Write(p []byte) (int, error) {
 }
 
 func (f *InMemfile) Close() error {
-	if f.isClosed {
+	if !f.isClosed.CompareAndSwap(false, true) {
 		return os.ErrClosed
 	}
 
-	f.isClosed = true
 	return nil
 }
 

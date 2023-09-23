@@ -162,18 +162,32 @@ func TestMemoryStorage(t *testing.T) {
 		file.Close()
 
 		wg := new(sync.WaitGroup)
-		goroutineCount := 100
+		goroutineCount := 1000
 
 		wg.Add(goroutineCount)
+
+		var panicErr error
 
 		for i := 0; i < goroutineCount; i++ {
 			go func() {
 				defer wg.Done()
+				defer func() {
+					e := recover()
+					if e != nil {
+						panicErr = e.(error)
+					}
+				}()
 				time.Sleep(time.Microsecond)
 
 				for i := 0; i < 10; i++ {
 					file, _ := storage.Get("file")
-					file.Write([]byte{'a'})
+					_, err := file.Write([]byte{'a'})
+
+					for errors.Is(err, os.ErrClosed) {
+						file, _ = storage.Get("file")
+						_, err = file.Write([]byte{'a'})
+					}
+
 					file.Close()
 				}
 			}()
@@ -181,6 +195,13 @@ func TestMemoryStorage(t *testing.T) {
 
 		//TODO: add assertions
 		wg.Wait()
+
+		if !assert.NoError(t, panicErr) {
+			return
+		}
+
+		file, _ = storage.Get("file")
+		assert.Equal(t, 10*goroutineCount, file.content.Len())
 	})
 
 	t.Run("truncating the same file should be thread safe", func(t *testing.T) {
