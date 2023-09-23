@@ -2093,7 +2093,10 @@ func checkSingleKindPermissions(permKind PermissionKind, desc parse.Node, onErro
 
 			msg := NO_PERM_DESCRIBED_BY_STRINGS + ", "
 			startsWithPercent := s[0] == '%'
-			stringNoPercent := s[1:]
+			stringNoPercent := s
+			if startsWithPercent {
+				stringNoPercent = s[1:]
+			}
 
 			for _, prefix := range []string{"/", "./", "../"} {
 				if strings.HasPrefix(stringNoPercent, prefix) {
