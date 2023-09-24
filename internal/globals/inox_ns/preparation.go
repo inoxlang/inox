@@ -1,6 +1,7 @@
 package inox_ns
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -39,6 +40,7 @@ type ScriptPreparationArgs struct {
 	ParentContext             *core.Context
 	ParentContextRequired     bool
 	UseParentStateAsMainState bool
+	StdlibCtx                 context.Context //should not be set if ParentContext is set
 
 	AllowMissingEnvVars   bool
 	FullAccessToDatabases bool
@@ -139,12 +141,13 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 	var ctxErr error
 
 	ctx, ctxErr = default_state.NewDefaultContext(default_state.DefaultContextConfig{
-		Permissions:     manifest.RequiredPermissions,
-		Limits:          manifest.Limits,
-		HostResolutions: manifest.HostResolutions,
-		ParentContext:   parentContext,
-		Filesystem:      args.ScriptContextFileSystem,
-		OwnedDatabases:  manifest.OwnedDatabases(),
+		Permissions:         manifest.RequiredPermissions,
+		Limits:              manifest.Limits,
+		HostResolutions:     manifest.HostResolutions,
+		ParentContext:       parentContext,
+		ParentStdLibContext: args.StdlibCtx,
+		Filesystem:          args.ScriptContextFileSystem,
+		OwnedDatabases:      manifest.OwnedDatabases(),
 	})
 
 	if ctxErr != nil {
@@ -474,6 +477,7 @@ type IncludableChunkfilePreparationArgs struct {
 	Fpath string //path of the file in the .ParsingCompilationContext's filesystem.
 
 	ParsingContext *core.Context
+	StdlibCtx      context.Context //used as default_state.DefaultContextConfig.ParentStdLibContext
 
 	Out    io.Writer //defaults to os.Stdout
 	LogOut io.Writer //defaults to Out
@@ -527,10 +531,11 @@ func PrepareExtractionModeIncludableChunkfile(args IncludableChunkfilePreparatio
 	//create context and state
 
 	ctx, ctxErr := default_state.NewDefaultContext(default_state.DefaultContextConfig{
-		Permissions:     nil,
-		Limits:          nil,
-		HostResolutions: nil,
-		Filesystem:      args.IncludedChunkContextFileSystem,
+		Permissions:         nil,
+		Limits:              nil,
+		HostResolutions:     nil,
+		Filesystem:          args.IncludedChunkContextFileSystem,
+		ParentStdLibContext: args.StdlibCtx,
 	})
 
 	if ctxErr != nil {

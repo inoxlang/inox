@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"math/rand"
@@ -38,11 +39,48 @@ var (
 
 func TestPrepareLocalScript(t *testing.T) {
 
-	t.Run("recoverable parsing error", func(t *testing.T) {
-
+	t.Run(".ParentContext & .StdlibCtx should not be both set", func(t *testing.T) {
 		dir := t.TempDir()
 		file := filepath.Join(dir, "script.ix")
 		compilationCtx := createCompilationCtx(dir)
+		defer compilationCtx.CancelGracefully()
+
+		os.WriteFile(file, []byte(`
+			manifest {
+				permissions: {
+					read: %/...
+				}
+			}
+		`), 0o600)
+
+		ctx := core.NewContext(core.ContextConfig{
+			Permissions: append(core.GetDefaultGlobalVarPermissions(), core.CreateFsReadPerm(core.PathPattern("/..."))),
+			Filesystem:  fs_ns.GetOsFilesystem(),
+		})
+		core.NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
+
+		stdlibCtx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
+		assert.PanicsWithError(t, core.ErrBothParentCtxArgsProvided.Error(), func() {
+			inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
+				Fpath:                     file,
+				ParsingCompilationContext: compilationCtx,
+				ParentContext:             ctx,
+				StdlibCtx:                 stdlibCtx,
+				ParentContextRequired:     true,
+				Out:                       io.Discard,
+			})
+		})
+
+	})
+
+	t.Run("recoverable parsing error", func(t *testing.T) {
+		dir := t.TempDir()
+		file := filepath.Join(dir, "script.ix")
+		compilationCtx := createCompilationCtx(dir)
+		defer compilationCtx.CancelGracefully()
 
 		os.WriteFile(file, []byte(`
 			manifest {
@@ -62,6 +100,8 @@ func TestPrepareLocalScript(t *testing.T) {
 			Filesystem:  fs_ns.GetOsFilesystem(),
 		})
 		core.NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
+		defer ctx.CancelGracefully()
 
 		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
 			Fpath:                     file,
@@ -102,6 +142,9 @@ func TestPrepareLocalScript(t *testing.T) {
 		dir := t.TempDir()
 		file := filepath.Join(dir, "script.ix")
 		compilationCtx := createCompilationCtx(dir)
+		defer compilationCtx.CancelGracefully()
+
+		defer compilationCtx.CancelGracefully()
 
 		os.WriteFile(file, []byte(`
 			preinit {
@@ -119,6 +162,8 @@ func TestPrepareLocalScript(t *testing.T) {
 			Filesystem:  fs_ns.GetOsFilesystem(),
 		})
 		core.NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
+		defer ctx.CancelGracefully()
 
 		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
 			Fpath:                     file,
@@ -158,6 +203,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		dir := t.TempDir()
 		file := filepath.Join(dir, "script.ix")
 		compilationCtx := createCompilationCtx(dir)
+		defer compilationCtx.CancelGracefully()
 
 		os.WriteFile(file, []byte(`
 			preinit {
@@ -178,6 +224,7 @@ func TestPrepareLocalScript(t *testing.T) {
 			Filesystem: fs_ns.GetOsFilesystem(),
 		})
 		core.NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
 			Fpath:                     file,
@@ -218,6 +265,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		dir := t.TempDir()
 		file := filepath.Join(dir, "script.ix")
 		compilationCtx := createCompilationCtx(dir)
+		defer compilationCtx.CancelGracefully()
 
 		os.WriteFile(file, []byte(`
 			manifest {
@@ -238,6 +286,7 @@ func TestPrepareLocalScript(t *testing.T) {
 			Filesystem: fs_ns.GetOsFilesystem(),
 		})
 		core.NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		preinitFs := fs_ns.NewMemFilesystem(100)
 		util.WriteFile(preinitFs, "/file.txt", nil, 0o600)
@@ -297,6 +346,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		dir := t.TempDir()
 		file := filepath.Join(dir, "script.ix")
 		compilationCtx := createCompilationCtx(dir)
+		defer compilationCtx.CancelGracefully()
 
 		os.WriteFile(file, []byte(`
 			manifest {
@@ -324,6 +374,7 @@ func TestPrepareLocalScript(t *testing.T) {
 			Filesystem: fs,
 		})
 		core.NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
 			Fpath:                     file,
@@ -372,6 +423,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		dir := t.TempDir()
 		file := filepath.Join(dir, "script.ix")
 		compilationCtx := createCompilationCtx(dir)
+		defer compilationCtx.CancelGracefully()
 
 		os.WriteFile(file, []byte(`
 			manifest {
@@ -402,6 +454,7 @@ func TestPrepareLocalScript(t *testing.T) {
 			Filesystem: fs,
 		})
 		core.NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
 			Fpath:                     file,
@@ -481,6 +534,7 @@ func TestPrepareLocalScript(t *testing.T) {
 			Filesystem: fls,
 		})
 		core.NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		mainState, _, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
 			Fpath:                     "/main.ix",
@@ -544,6 +598,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		dir := t.TempDir()
 		file := filepath.Join(dir, "script.ix")
 		compilationCtx := createCompilationCtx(dir)
+		defer compilationCtx.CancelGracefully()
 
 		os.WriteFile(file, []byte(`
 			preinit {
@@ -564,6 +619,7 @@ func TestPrepareLocalScript(t *testing.T) {
 			Filesystem: fs_ns.GetOsFilesystem(),
 		})
 		core.NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
 			Fpath:                     file,
@@ -612,6 +668,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		dir := t.TempDir()
 		file := filepath.Join(dir, "script.ix")
 		compilationCtx := createCompilationCtx(dir)
+		defer compilationCtx.CancelGracefully()
 
 		os.WriteFile(file, []byte(`
 			manifest {
@@ -644,6 +701,7 @@ func TestPrepareLocalScript(t *testing.T) {
 			Filesystem: fs,
 		})
 		core.NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
 			Fpath:                     file,
@@ -706,6 +764,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		dir := t.TempDir()
 		file := filepath.Join(dir, "script.ix")
 		compilationCtx := createCompilationCtx(dir)
+		defer compilationCtx.CancelGracefully()
 
 		os.WriteFile(file, []byte(`
 			manifest {
@@ -741,6 +800,7 @@ func TestPrepareLocalScript(t *testing.T) {
 			Filesystem: fs,
 		})
 		core.NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
 			Fpath:                     file,
@@ -1062,6 +1122,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		dir := t.TempDir()
 		file := filepath.Join(dir, "script.ix")
 		compilationCtx := createCompilationCtx(dir)
+		defer compilationCtx.CancelGracefully()
 
 		os.WriteFile(file, []byte(`
 			preinit {
@@ -1082,6 +1143,7 @@ func TestPrepareLocalScript(t *testing.T) {
 			Filesystem: fs_ns.GetOsFilesystem(),
 		})
 		core.NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
 			Fpath:                     file,
@@ -1109,6 +1171,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		dir := t.TempDir()
 		file := filepath.Join(dir, "script.ix")
 		compilationCtx := createCompilationCtx(dir)
+		defer compilationCtx.CancelGracefully()
 
 		os.WriteFile(file, []byte(`
 			manifest {
@@ -1127,6 +1190,7 @@ func TestPrepareLocalScript(t *testing.T) {
 			Filesystem: fs_ns.GetOsFilesystem(),
 		})
 		core.NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
 			Fpath:                     file,
@@ -1180,6 +1244,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		dir := t.TempDir()
 		file := filepath.Join(dir, "script.ix")
 		compilationCtx := createCompilationCtx(dir)
+		defer compilationCtx.CancelGracefully()
 
 		os.WriteFile(file, []byte(`
 			manifest {
@@ -1198,6 +1263,7 @@ func TestPrepareLocalScript(t *testing.T) {
 			Filesystem: fs_ns.GetOsFilesystem(),
 		})
 		core.NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
 			Fpath:                     file,
@@ -1226,6 +1292,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		dir := t.TempDir()
 		file := filepath.Join(dir, "script.ix")
 		compilationCtx := createCompilationCtx(dir)
+		defer compilationCtx.CancelGracefully()
 
 		os.WriteFile(file, []byte(`
 			manifest {
@@ -1240,6 +1307,7 @@ func TestPrepareLocalScript(t *testing.T) {
 			Permissions: core.GetDefaultGlobalVarPermissions(),
 		})
 		core.NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
 			Fpath:                     file,
@@ -1270,6 +1338,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		dir := t.TempDir()
 		file := filepath.Join(dir, "script.ix")
 		compilationCtx := createCompilationCtx(dir)
+		defer compilationCtx.CancelGracefully()
 
 		os.WriteFile(file, []byte(`
 			manifest {
@@ -1282,6 +1351,7 @@ func TestPrepareLocalScript(t *testing.T) {
 			Permissions: core.GetDefaultGlobalVarPermissions(),
 		})
 		core.NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
 			Fpath:                     file,
@@ -1312,6 +1382,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		dir := t.TempDir()
 		file := filepath.Join(dir, "script.ix")
 		compilationCtx := createCompilationCtx(dir)
+		defer compilationCtx.CancelGracefully()
 
 		os.WriteFile(file, []byte(`
 			manifest {
@@ -1324,6 +1395,7 @@ func TestPrepareLocalScript(t *testing.T) {
 			Permissions: core.GetDefaultGlobalVarPermissions(),
 		})
 		core.NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
 			Fpath:                     file,
@@ -1354,6 +1426,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		dir := t.TempDir()
 		file := filepath.Join(dir, "script.ix")
 		compilationCtx := createCompilationCtx(dir)
+		defer compilationCtx.CancelGracefully()
 
 		os.WriteFile(file, []byte(`
 			manifest {
@@ -1368,6 +1441,7 @@ func TestPrepareLocalScript(t *testing.T) {
 			Permissions: core.GetDefaultGlobalVarPermissions(),
 		})
 		core.NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
 			Fpath:                     file,
@@ -1398,6 +1472,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		dir := t.TempDir()
 		file := filepath.Join(dir, "script.ix")
 		compilationCtx := createCompilationCtx(dir)
+		defer compilationCtx.CancelGracefully()
 
 		os.WriteFile(file, []byte(`
 			manifest {
@@ -1445,6 +1520,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		dir := t.TempDir()
 		file := filepath.Join(dir, "script.ix")
 		compilationCtx := createCompilationCtx(dir)
+		defer compilationCtx.CancelGracefully()
 
 		os.WriteFile(file, []byte(`
 			manifest {
@@ -1459,6 +1535,7 @@ func TestPrepareLocalScript(t *testing.T) {
 			Permissions: core.GetDefaultGlobalVarPermissions(),
 		})
 		core.NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
 			Fpath: file,
@@ -1491,6 +1568,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		dir := t.TempDir()
 		file := filepath.Join(dir, "script.ix")
 		compilationCtx := createCompilationCtx(dir)
+		defer compilationCtx.CancelGracefully()
 
 		os.WriteFile(file, []byte(`
 			manifest {
@@ -1503,6 +1581,7 @@ func TestPrepareLocalScript(t *testing.T) {
 			Permissions: core.GetDefaultGlobalVarPermissions(),
 		})
 		core.NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
 			Fpath: file,
@@ -1535,6 +1614,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		dir := t.TempDir()
 		file := filepath.Join(dir, "script.ix")
 		compilationCtx := createCompilationCtx(dir)
+		defer compilationCtx.CancelGracefully()
 
 		os.WriteFile(file, []byte(`
 			manifest {
@@ -1550,6 +1630,7 @@ func TestPrepareLocalScript(t *testing.T) {
 			Permissions: core.GetDefaultGlobalVarPermissions(),
 		})
 		core.NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
 			Fpath: file,
@@ -1583,6 +1664,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		dir := t.TempDir()
 		file := filepath.Join(dir, "script.ix")
 		compilationCtx := createCompilationCtx(dir)
+		defer compilationCtx.CancelGracefully()
 
 		os.WriteFile(file, []byte(`
 			manifest {
@@ -1597,6 +1679,7 @@ func TestPrepareLocalScript(t *testing.T) {
 			Permissions: core.GetDefaultGlobalVarPermissions(),
 		})
 		core.NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
 			Fpath: file,
@@ -1629,6 +1712,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		dir := t.TempDir()
 		file := filepath.Join(dir, "script.ix")
 		compilationCtx := createCompilationCtx(dir)
+		defer compilationCtx.CancelGracefully()
 
 		os.WriteFile(file, []byte(`
 			manifest {
@@ -1641,6 +1725,7 @@ func TestPrepareLocalScript(t *testing.T) {
 			Permissions: core.GetDefaultGlobalVarPermissions(),
 		})
 		core.NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
 			Fpath: file,
@@ -1778,6 +1863,7 @@ func TestRunLocalScript(t *testing.T) {
 			Filesystem:  fs_ns.GetOsFilesystem(),
 		})
 		core.NewGlobalState(ctx)
+
 		return ctx
 	}
 
@@ -1790,11 +1876,17 @@ func TestRunLocalScript(t *testing.T) {
 
 		os.WriteFile(file, []byte("fn(){self}; return 1"), 0o600)
 
+		compilationCtx := createCompilationCtx(dir)
+		defer compilationCtx.CancelGracefully()
+
+		ctx := createEvaluationCtx(dir)
+		defer ctx.CancelGracefully()
+
 		state, _, _, _, err := inox_ns.RunLocalScript(inox_ns.RunScriptArgs{
 			Fpath:                     file,
-			ParsingCompilationContext: createCompilationCtx(dir),
+			ParsingCompilationContext: compilationCtx,
 			ParentContextRequired:     true,
-			ParentContext:             createEvaluationCtx(dir),
+			ParentContext:             ctx,
 			Out:                       io.Discard,
 			IgnoreHighRiskScore:       true,
 		})
@@ -1817,11 +1909,17 @@ func TestRunLocalScript(t *testing.T) {
 			}
 		`), 0o600)
 
+		compilationCtx := createCompilationCtx(dir)
+		defer compilationCtx.CancelGracefully()
+
+		ctx := createEvaluationCtx(dir)
+		defer ctx.CancelGracefully()
+
 		state, _, _, _, err := inox_ns.RunLocalScript(inox_ns.RunScriptArgs{
 			Fpath:                     file,
-			ParsingCompilationContext: createCompilationCtx(dir),
+			ParsingCompilationContext: compilationCtx,
 			ParentContextRequired:     true,
-			ParentContext:             createEvaluationCtx(dir),
+			ParentContext:             ctx,
 			Out:                       io.Discard,
 			IgnoreHighRiskScore:       true,
 		})
@@ -1838,11 +1936,17 @@ func TestRunLocalScript(t *testing.T) {
 
 		os.WriteFile(file, []byte("manifest {}\n"+manySpawnExprs), 0o600)
 
+		compilationCtx := createCompilationCtx(dir)
+		defer compilationCtx.CancelGracefully()
+
+		ctx := createEvaluationCtx(dir)
+		defer ctx.CancelGracefully()
+
 		state, _, _, _, err := inox_ns.RunLocalScript(inox_ns.RunScriptArgs{
 			Fpath:                     file,
-			ParsingCompilationContext: createCompilationCtx(dir),
+			ParsingCompilationContext: compilationCtx,
 			ParentContextRequired:     true,
-			ParentContext:             createEvaluationCtx(dir),
+			ParentContext:             ctx,
 			Out:                       io.Discard,
 			IgnoreHighRiskScore:       true,
 		})
@@ -1857,6 +1961,12 @@ func TestRunLocalScript(t *testing.T) {
 	t.Run("too wide preinit permissions", func(t *testing.T) {
 		dir := t.TempDir()
 		file := filepath.Join(dir, "script.ix")
+
+		compilationCtx := createCompilationCtx(dir)
+		defer compilationCtx.CancelGracefully()
+
+		ctx := createEvaluationCtx(dir)
+		defer ctx.CancelGracefully()
 
 		os.WriteFile(file, []byte(`
 			manifest {
@@ -1908,9 +2018,9 @@ func TestRunLocalScript(t *testing.T) {
 
 		state, _, _, _, err := inox_ns.RunLocalScript(inox_ns.RunScriptArgs{
 			Fpath:                     file,
-			ParsingCompilationContext: createCompilationCtx(dir),
+			ParsingCompilationContext: compilationCtx,
 			ParentContextRequired:     true,
-			ParentContext:             createEvaluationCtx(dir),
+			ParentContext:             ctx,
 			Out:                       io.Discard,
 			IgnoreHighRiskScore:       false, //<---
 			PreinitFilesystem:         preinitFs,

@@ -2,6 +2,7 @@ package inox_ns
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -27,8 +28,11 @@ type RunScriptArgs struct {
 	PassedCLIArgs             []string
 	PassedArgs                *core.Struct
 	ParsingCompilationContext *core.Context
-	ParentContext             *core.Context
-	ParentContextRequired     bool
+
+	ParentContext         *core.Context
+	ParentContextRequired bool            //make .ParentContext required
+	StdlibCtx             context.Context //should not be set if ParentContext is set
+
 	//used during the preinit
 	PreinitFilesystem afs.Filesystem
 
@@ -74,12 +78,14 @@ func RunLocalScript(args RunScriptArgs) (
 		ParsingCompilationContext: args.ParsingCompilationContext,
 		ParentContext:             args.ParentContext,
 		ParentContextRequired:     args.ParentContextRequired,
-		Out:                       args.Out,
-		LogOut:                    args.LogOut,
-		AllowMissingEnvVars:       args.AllowMissingEnvVars,
-		PreinitFilesystem:         args.PreinitFilesystem,
-		FullAccessToDatabases:     args.FullAccessToDatabases,
-		Project:                   args.Project,
+		StdlibCtx:                 args.StdlibCtx,
+
+		Out:                   args.Out,
+		LogOut:                args.LogOut,
+		AllowMissingEnvVars:   args.AllowMissingEnvVars,
+		PreinitFilesystem:     args.PreinitFilesystem,
+		FullAccessToDatabases: args.FullAccessToDatabases,
+		Project:               args.Project,
 	})
 
 	if args.PreparedChan != nil {

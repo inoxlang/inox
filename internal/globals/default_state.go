@@ -321,6 +321,7 @@ func NewDefaultContext(config default_state.DefaultContextConfig) (*core.Context
 		Limits:               config.Limits,
 		HostResolutions:      config.HostResolutions,
 		ParentContext:        config.ParentContext,
+		ParentStdLibContext:  config.ParentStdLibContext,
 		Filesystem:           config.Filesystem,
 		OwnedDatabases:       config.OwnedDatabases,
 	}

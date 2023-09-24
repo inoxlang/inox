@@ -1,6 +1,7 @@
 package default_state
 
 import (
+	"context"
 	"errors"
 
 	"github.com/inoxlang/inox/internal/afs"
@@ -69,14 +70,19 @@ func IsDefaultScriptLimitsSet() bool {
 	return defaultScriptLimits != nil
 }
 
+func UnsetDefaultScriptLimits() {
+	defaultScriptLimits = nil
+}
+
 type DefaultContextConfig struct {
 	Permissions          []core.Permission
 	ForbiddenPermissions []core.Permission
 	Limits               []core.Limit
 	HostResolutions      map[core.Host]core.Value
 	OwnedDatabases       []core.DatabaseConfig
-	ParentContext        *core.Context  //optional
-	Filesystem           afs.Filesystem //if nil the OS filesystem is used
+	ParentContext        *core.Context   //optional
+	ParentStdLibContext  context.Context //optional, should not be set if ParentContext is set
+	Filesystem           afs.Filesystem  //if nil the OS filesystem is used
 }
 
 type NewDefaultContextFn func(config DefaultContextConfig) (*core.Context, error)
