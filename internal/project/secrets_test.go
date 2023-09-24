@@ -28,7 +28,7 @@ func TestUpsertListSecrets(t *testing.T) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
-		registry, err := OpenRegistry("/", fs_ns.NewMemFilesystem(100_000_000))
+		registry, err := OpenRegistry("/", fs_ns.NewMemFilesystem(100_000_000), ctx)
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -89,7 +89,7 @@ func TestUpsertListSecrets(t *testing.T) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
-		registry, err := OpenRegistry("/", fs_ns.NewMemFilesystem(100_000_000))
+		registry, err := OpenRegistry("/", fs_ns.NewMemFilesystem(100_000_000), ctx)
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -155,7 +155,7 @@ func TestUpsertListSecrets(t *testing.T) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
-		registry, err := OpenRegistry("/", fs_ns.NewMemFilesystem(100_000_000))
+		registry, err := OpenRegistry("/", fs_ns.NewMemFilesystem(100_000_000), ctx)
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -232,7 +232,7 @@ func TestUpsertListSecrets(t *testing.T) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
-		registry, err := OpenRegistry("/", fs_ns.NewMemFilesystem(100_000_000))
+		registry, err := OpenRegistry("/", fs_ns.NewMemFilesystem(100_000_000), ctx)
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -322,7 +322,7 @@ func TestUpsertListSecrets(t *testing.T) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
-		registry, err := OpenRegistry("/", fs_ns.NewMemFilesystem(100_000_000))
+		registry, err := OpenRegistry("/", fs_ns.NewMemFilesystem(100_000_000), ctx)
 		if !assert.NoError(t, err) {
 			return
 		}

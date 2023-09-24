@@ -16,7 +16,7 @@ func TestOpenRegistry(t *testing.T) {
 
 		fls := fs_ns.NewMemFilesystem(1_000)
 
-		r, err := OpenRegistry("/projects", fls)
+		r, err := OpenRegistry("/projects", fls, ctx)
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -30,12 +30,12 @@ func TestOpenRegistry(t *testing.T) {
 
 		fls := fs_ns.NewMemFilesystem(1_000)
 
-		r, err := OpenRegistry("/projects", fls)
+		r, err := OpenRegistry("/projects", fls, ctx)
 		assert.NoError(t, err)
 
 		r.Close(ctx)
 
-		r, err = OpenRegistry("/projects", fls)
+		r, err = OpenRegistry("/projects", fls, ctx)
 		if !assert.NoError(t, err) {
 			return
 		}

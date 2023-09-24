@@ -116,7 +116,7 @@ func (r *Registry) OpenProject(ctx *core.Context, params OpenProjectParams) (*Pr
 
 	projectDir := r.filesystem.Join(r.projectsDir, string(params.Id))
 
-	projectFS, err := fs_ns.OpenMetaFilesystem(ctx, r.filesystem, fs_ns.MetaFilesystemOptions{
+	projectFS, err := fs_ns.OpenMetaFilesystem(r.openProjectsContext, r.filesystem, fs_ns.MetaFilesystemOptions{
 		Dir: projectDir,
 	})
 

@@ -13,13 +13,16 @@ const (
 )
 
 type Registry struct {
-	projectsDir  string
-	filesystem   afs.Filesystem
-	kv           *filekv.SingleFileKV
-	openProjects map[core.ProjectID]*Project
+	projectsDir         string
+	filesystem          afs.Filesystem
+	kv                  *filekv.SingleFileKV
+	openProjects        map[core.ProjectID]*Project
+	openProjectsContext *core.Context
+
+	//TODO: close idle projects (no FS access AND no provider-related accesses AND no production program running)
 }
 
-func OpenRegistry(projectsDir string, fls afs.Filesystem) (*Registry, error) {
+func OpenRegistry(projectsDir string, fls afs.Filesystem, openProjectsContext *core.Context) (*Registry, error) {
 	kvPath := fls.Join(projectsDir, KV_FILENAME)
 
 	kv, err := filekv.OpenSingleFileKV(filekv.KvStoreConfig{
@@ -32,10 +35,11 @@ func OpenRegistry(projectsDir string, fls afs.Filesystem) (*Registry, error) {
 	}
 
 	return &Registry{
-		projectsDir:  projectsDir,
-		openProjects: map[core.ProjectID]*Project{},
-		filesystem:   fls,
-		kv:           kv,
+		projectsDir:         projectsDir,
+		filesystem:          fls,
+		kv:                  kv,
+		openProjects:        map[core.ProjectID]*Project{},
+		openProjectsContext: openProjectsContext,
 	}, nil
 }
 

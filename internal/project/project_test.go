@@ -2,6 +2,7 @@ package project
 
 import (
 	"testing"
+	"time"
 
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
@@ -13,10 +14,11 @@ func TestCreateProject(t *testing.T) {
 
 	t.Run("create", func(t *testing.T) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
 
 		fls := fs_ns.NewMemFilesystem(1_000)
 
-		r := utils.Must(OpenRegistry("/projects", fls))
+		r := utils.Must(OpenRegistry("/projects", fls, ctx))
 		defer r.Close(ctx)
 
 		id, err := r.CreateProject(ctx, CreateProjectParams{
@@ -32,10 +34,11 @@ func TestCreateProject(t *testing.T) {
 		t.SkipNow()
 
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
 
 		fls := fs_ns.NewMemFilesystem(1_000)
 
-		r := utils.Must(OpenRegistry("/projects", fls))
+		r := utils.Must(OpenRegistry("/projects", fls, ctx))
 		defer r.Close(ctx)
 
 		r.CreateProject(ctx, CreateProjectParams{
@@ -56,10 +59,11 @@ func TestOpenProject(t *testing.T) {
 
 	t.Run("just after creation", func(t *testing.T) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
 
 		fls := fs_ns.NewMemFilesystem(1_000)
 
-		r := utils.Must(OpenRegistry("/projects", fls))
+		r := utils.Must(OpenRegistry("/projects", fls, ctx))
 		defer r.Close(ctx)
 
 		id := utils.Must(r.CreateProject(ctx, CreateProjectParams{
@@ -83,10 +87,11 @@ func TestOpenProject(t *testing.T) {
 
 	t.Run("re opening a project should not change the returned value", func(t *testing.T) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
 
 		fls := fs_ns.NewMemFilesystem(1_000)
 
-		r := utils.Must(OpenRegistry("/projects", fls))
+		r := utils.Must(OpenRegistry("/projects", fls, ctx))
 		defer r.Close(ctx)
 
 		id := utils.Must(r.CreateProject(ctx, CreateProjectParams{
@@ -119,12 +124,78 @@ func TestOpenProject(t *testing.T) {
 		assert.Same(t, project1, project2)
 	})
 
+	t.Run("after closing the ctx that opened the project, re-opening with another ctx should be okay and the FS should be working", func(t *testing.T) {
+		ctx1 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		defer ctx1.CancelGracefully()
+
+		projectRegistryCtx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		defer projectRegistryCtx.CancelGracefully()
+
+		r := utils.Must(OpenRegistry("/projects", fs_ns.NewMemFilesystem(1_000), projectRegistryCtx))
+		defer r.Close(ctx1)
+
+		id := utils.Must(r.CreateProject(ctx1, CreateProjectParams{
+			Name: "myproject",
+		}))
+
+		assert.NotEmpty(t, id)
+
+		//first open
+		project1, err := r.OpenProject(ctx1, OpenProjectParams{
+			Id: id,
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		file, err := project1.Filesystem().Create("/file.txt")
+		if !assert.NoError(t, err) {
+			return
+		}
+		file.Close()
+
+		assert.NotNil(t, project1)
+		assert.Equal(t, id, project1.id)
+
+		ctx1.CancelGracefully()
+		time.Sleep(100 * time.Millisecond) //make sure everything is teared down
+
+		//second open
+
+		ctx2 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		defer ctx2.CancelGracefully()
+
+		project2, err := r.OpenProject(ctx2, OpenProjectParams{
+			Id: id,
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		assert.Same(t, project1, project2)
+
+		fls := project1.Filesystem()
+		entries, err := fls.ReadDir("/")
+		if !assert.NoError(t, err) {
+			return
+
+		}
+
+		if !assert.Len(t, entries, 1) {
+			return
+		}
+		assert.Equal(t, "file.txt", entries[0].Name())
+	})
+
 	t.Run("re-open registry", func(t *testing.T) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
 
 		fls := fs_ns.NewMemFilesystem(1_000)
 
-		r := utils.Must(OpenRegistry("/projects", fls))
+		r := utils.Must(OpenRegistry("/projects", fls, ctx))
 
 		id := utils.Must(r.CreateProject(ctx, CreateProjectParams{
 			Name: "myproject",
@@ -133,7 +204,7 @@ func TestOpenProject(t *testing.T) {
 		assert.NotEmpty(t, id)
 		//re-open registry
 		r.Close(ctx)
-		r = utils.Must(OpenRegistry("/projects", fls))
+		r = utils.Must(OpenRegistry("/projects", fls, ctx))
 
 		//open
 		project, err := r.OpenProject(ctx, OpenProjectParams{

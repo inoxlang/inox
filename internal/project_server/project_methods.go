@@ -30,7 +30,8 @@ type OpenProjectResponse struct {
 }
 
 func registerProjectMethodHandlers(server *lsp.Server, opts LSPServerOptions) {
-	projectRegistry, err := project.OpenRegistry(string(opts.ProjectsDir), opts.ProjectsDirFilesystem)
+	projDir := string(opts.ProjectsDir)
+	projectRegistry, err := project.OpenRegistry(projDir, opts.ProjectsDirFilesystem, server.Context())
 
 	if err != nil {
 		panic(err)

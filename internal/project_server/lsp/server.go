@@ -36,6 +36,10 @@ func NewServer(ctx *core.Context, opt *Options) *Server {
 	return s
 }
 
+func (s *Server) Context() *core.Context {
+	return s.ctx
+}
+
 func (s *Server) Run() error {
 	mtds := s.GetMethods()
 	for _, m := range mtds {
