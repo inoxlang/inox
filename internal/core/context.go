@@ -513,7 +513,7 @@ func (ctx *Context) getClosestStateNoDoneCheck() *GlobalState {
 }
 
 func (ctx *Context) Logger() *zerolog.Logger {
-	return &ctx.GetClosestState().Logger
+	return &ctx.getClosestStateNoDoneCheck().Logger
 }
 
 func (ctx *Context) SetClosestState(state *GlobalState) {

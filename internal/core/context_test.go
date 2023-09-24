@@ -1,6 +1,7 @@
 package core
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"runtime"
@@ -10,6 +11,7 @@ import (
 
 	permkind "github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
+	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -798,5 +800,27 @@ func TestContextDone(t *testing.T) {
 		wg.Add(1)
 		ctx.CancelGracefully()
 		wg.Wait()
+	})
+
+	t.Run("calling .Logger() after the context is done should not panic", func(t *testing.T) {
+		ctx := NewContext(ContextConfig{})
+		state := NewGlobalState(ctx)
+
+		buf := bytes.NewBuffer(nil)
+		state.Logger = zerolog.New(buf)
+
+		ctx.CancelGracefully()
+
+		if !utils.InefficientlyWaitUntilTrue(&ctx.done, time.Second) {
+			assert.Fail(t, "not done")
+			return
+		}
+
+		assert.NotPanics(t, func() {
+			logger := ctx.Logger()
+			logger.Print("hello")
+		})
+
+		assert.Contains(t, buf.String(), "hello")
 	})
 }
