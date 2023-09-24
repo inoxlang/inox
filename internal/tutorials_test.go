@@ -27,10 +27,10 @@ func TestTutorials(t *testing.T) {
 			useBytecode := bytecodeEval == "BytecodeEval"
 			fpath := "/main.tut.ix"
 
-			for seriesName, series := range learn.TUTORIAL_SERIES {
+			for _, series := range learn.TUTORIAL_SERIES {
 				for _, tut := range series.Tutorials {
 
-					t.Run(seriesName+"--"+tut.Name, func(t *testing.T) {
+					t.Run(series.Name+"--"+tut.Name, func(t *testing.T) {
 
 						stdlibCtx, cancel := context.WithCancel(context.Background())
 						defer cancel()
