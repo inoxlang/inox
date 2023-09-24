@@ -28,6 +28,9 @@ const (
 )
 
 var (
+	ErrBothCtxFilesystemArgsProvided = errors.New("invalid arguments: both .CreateFilesystem & .Filesystem provided")
+	ErrBothParentCtxArgsProvided     = errors.New("invalid arguments: both .ParentContext & .ParentStdLibContext provided")
+
 	ErrNonExistingNamedPattern                 = errors.New("non existing named pattern")
 	ErrNotUniqueAliasDefinition                = errors.New("cannot register a host alias more than once")
 	ErrNotUniquePatternDefinition              = errors.New("cannot register a pattern more than once")
@@ -117,10 +120,11 @@ type ContextConfig struct {
 	//The decrementation of total limit's tokens for the created context starts when the associated state is set.
 	Limits []Limit
 
-	HostResolutions map[Host]Value
-	OwnedDatabases  []DatabaseConfig
-	ParentContext   *Context
-	LimitTokens     map[string]int64
+	HostResolutions     map[Host]Value
+	OwnedDatabases      []DatabaseConfig
+	ParentContext       *Context
+	ParentStdLibContext context.Context //should not be set if ParentContext is set
+	LimitTokens         map[string]int64
 
 	Filesystem       afs.Filesystem
 	CreateFilesystem func(ctx *Context) (afs.Filesystem, error)
@@ -209,7 +213,7 @@ func NewContext(config ContextConfig) *Context {
 
 	if config.CreateFilesystem != nil {
 		if filesystem != nil {
-			panic(fmt.Errorf("invalid arguments: both .CreateFilesystem & .Filesystem provided"))
+			panic(ErrBothCtxFilesystemArgsProvided)
 		}
 
 		fs, err := config.CreateFilesystem(ctx)
@@ -224,6 +228,9 @@ func NewContext(config ContextConfig) *Context {
 	var parentContextLimiters map[string]*limiter
 
 	if config.ParentContext != nil {
+		if config.ParentStdLibContext != nil {
+			panic(ErrBothParentCtxArgsProvided)
+		}
 		parentContextLimiters = config.ParentContext.limiters
 	}
 
@@ -271,7 +278,12 @@ func NewContext(config ContextConfig) *Context {
 	parentCtx := config.ParentContext
 
 	if parentCtx == nil {
-		stdlibCtx, cancel = context.WithCancel(context.Background())
+		parentStdLibContext := config.ParentStdLibContext
+		if parentStdLibContext == nil {
+			parentStdLibContext = context.Background()
+		}
+
+		stdlibCtx, cancel = context.WithCancel(parentStdLibContext)
 	} else {
 		//if a parent context is passed we check that the parent has all the required permissions
 		if err, ok := config.Check(); !ok {

@@ -27,6 +27,52 @@ func TestNewContext(t *testing.T) {
 		})
 	}
 
+	t.Run(".ParentContext & .ParentStdLibContext should not be both set", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
+		func() {
+			defer func() {
+				e := recover()
+				if !assert.NotNil(t, e) {
+					return
+				}
+
+				assert.ErrorIs(t, e.(error), ErrBothParentCtxArgsProvided)
+			}()
+
+			NewContext(ContextConfig{
+				ParentContext:       ctx,
+				ParentStdLibContext: context.Background(),
+			})
+		}()
+	})
+
+	t.Run("cancelling .ParentStdLibContext should cancel the context", func(t *testing.T) {
+		stdlibCtx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
+		childCtx := NewContext(ContextConfig{
+			ParentStdLibContext: stdlibCtx,
+		})
+		defer childCtx.CancelGracefully()
+
+		select {
+		case <-childCtx.Done():
+			assert.Fail(t, childCtx.Err().Error())
+			return
+		default:
+		}
+
+		cancel()
+
+		select {
+		case <-childCtx.Done():
+		default:
+			assert.Fail(t, "child context should be cancelled")
+		}
+	})
+
 	t.Run("child context should inherit all limits of its parent", func(t *testing.T) {
 
 		ctx := NewContexWithEmptyState(ContextConfig{
