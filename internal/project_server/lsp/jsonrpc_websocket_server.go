@@ -7,6 +7,7 @@ import (
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/net_ns"
 	"github.com/inoxlang/inox/internal/project_server/jsonrpc"
+	"github.com/inoxlang/inox/internal/project_server/logs"
 	"github.com/rs/zerolog"
 )
 
@@ -57,6 +58,7 @@ func (server *JsonRpcWebsocketServer) handleNew(httpRespWriter http.ResponseWrit
 
 	socket := NewJsonRpcWebsocket(conn, *server.logger)
 	server.rpcServer.MsgConnComeIn(socket, func(session *jsonrpc.Session) {
+		logs.Printf("new session at %s (remote)\n", socket.conn.RemoteAddrWithPort())
 		socket.sessionContext = session.Context()
 	})
 }

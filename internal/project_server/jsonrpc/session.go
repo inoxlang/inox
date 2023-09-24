@@ -55,14 +55,19 @@ type Session struct {
 }
 
 func newSessionWithConn(id int, server *Server, conn ReaderWriter) *Session {
-	s := &Session{id: id, server: server, conn: conn}
-	s.executors = make(map[interface{}]*executor)
-	s.cancel = make(chan struct{}, 1)
+	s := newSession(id, server)
+	s.conn = conn
 	return s
 }
 
 func newSessionWithMessageConn(id int, server *Server, conn MessageReaderWriter) *Session {
-	s := &Session{id: id, server: server, msgConn: conn}
+	s := newSession(id, server)
+	s.msgConn = conn
+	return s
+}
+
+func newSession(id int, server *Server) *Session {
+	s := &Session{id: id, server: server}
 	s.executors = make(map[interface{}]*executor)
 	s.cancel = make(chan struct{}, 1)
 	return s

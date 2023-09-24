@@ -93,6 +93,7 @@ func registerHandlers(server *lsp.Server, opts LSPServerOptions) {
 		registerProjectMethodHandlers(server, opts)
 		registerSecretsMethodHandlers(server, opts)
 		registerDebugMethodHandlers(server, opts)
+		registerLearningMethodHandlers(server)
 	}
 
 	server.OnInitialize(func(ctx context.Context, req *defines.InitializeParams) (result *defines.InitializeResult, err *defines.InitializeError) {

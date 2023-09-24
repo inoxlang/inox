@@ -40,6 +40,10 @@ type WebsocketConnection struct {
 	serverContext *core.Context
 }
 
+func (conn *WebsocketConnection) RemoteAddrWithPort() http_ns.RemoteAddrWithPort {
+	return conn.remoteAddrWithPort
+}
+
 func (conn *WebsocketConnection) GetGoMethod(name string) (*core.GoFunction, bool) {
 	switch name {
 	case "sendJSON":
