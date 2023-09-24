@@ -1,0 +1,11 @@
+hello-world:
+  name: Hello World
+  program: |
+    manifest {
+
+    }
+    
+    print("Hello World!")
+  output: 
+  - Hello World!
+
