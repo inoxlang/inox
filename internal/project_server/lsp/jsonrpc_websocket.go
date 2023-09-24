@@ -56,3 +56,7 @@ func (s *JsonRpcWebsocket) WriteMessage(msg []byte) error {
 func (s *JsonRpcWebsocket) Close() error {
 	return s.conn.Close()
 }
+
+func (s *JsonRpcWebsocket) Client() string {
+	return s.conn.RemoteAddrWithPort().String() + " (remote)"
+}

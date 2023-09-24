@@ -23,12 +23,15 @@ type MessageReaderWriter interface {
 	WriteMessage(msg []byte) error
 
 	io.Closer
+
+	Client() string
 }
 
 type FnMessageReaderWriter struct {
 	ReadMessageFn  func() (msg []byte, err error)
 	WriteMessageFn func(msg []byte) error
 	CloseFn        func() error
+	ClientFn       func() string
 }
 
 func (rw FnMessageReaderWriter) ReadMessage() (msg []byte, err error) {
@@ -40,6 +43,13 @@ func (rw FnMessageReaderWriter) WriteMessage(msg []byte) error {
 
 func (rw FnMessageReaderWriter) Close() error {
 	return rw.CloseFn()
+}
+
+func (rw FnMessageReaderWriter) Client() string {
+	if rw.ClientFn == nil {
+		return "(client)"
+	}
+	return rw.ClientFn()
 }
 
 type CloserReader interface {

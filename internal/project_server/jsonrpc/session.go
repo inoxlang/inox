@@ -423,7 +423,13 @@ func (s *Session) handlerError(err error) (continueLoop bool) {
 	if isEof || isWebsocketUnexpectedClose || isClosedWebsocket || isNetReaderr {
 		continueLoop = false
 	}
-	logs.Println("error: ", err)
+
+	if s.msgConn != nil {
+		logs.Printf("error: for client <%s>: %s\n", s.msgConn.Client(), err)
+	} else {
+		logs.Println("error: ", err)
+	}
+
 	return
 }
 
