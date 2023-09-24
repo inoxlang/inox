@@ -12,18 +12,31 @@ var (
 	//go:embed tutorials.yaml
 	TUTORIALS_YAML string
 
-	tutorials map[string]Tutorial
+	TUTORIAL_SERIES map[string]TutorialSeries
 )
 
 func init() {
-	if err := yaml.Unmarshal(utils.StringAsBytes(TUTORIALS_YAML), &tutorials); err != nil {
+	if err := yaml.Unmarshal(utils.StringAsBytes(TUTORIALS_YAML), &TUTORIAL_SERIES); err != nil {
 		log.Panicf("error while parsing tutorials.yaml: %s", err)
 	}
 }
 
+type TutorialSeries struct {
+	Tutorials []Tutorial `yaml:"tutorials"`
+}
+
 type Tutorial struct {
-	Name              string   `yaml:"name"`
-	Program           string   `yaml:"program"`
-	ExpectedOutput    []string `yaml:"output"`
-	ExpectedLogOutput []string `yaml:"log-output"`
+	Id                string   `yaml:"id" json:"id"`
+	Name              string   `yaml:"name" json:"name"`
+	Program           string   `yaml:"program" json:"program"`
+	ExpectedOutput    []string `yaml:"output" json:"output"`
+	ExpectedLogOutput []string `yaml:"log-output" json:"logOutput"`
+}
+
+func ListTutorials() (tutorials []Tutorial) {
+	for _, series := range TUTORIAL_SERIES {
+		tutorials = append(tutorials, series.Tutorials...)
+	}
+
+	return tutorials
 }
