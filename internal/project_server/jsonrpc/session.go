@@ -49,7 +49,6 @@ type Session struct {
 	executors    map[interface{}]*executor
 	executorLock sync.Mutex
 	writeLock    sync.Mutex
-	cancel       chan struct{}
 
 	closed atomic.Bool
 }
@@ -69,7 +68,6 @@ func newSessionWithMessageConn(id int, server *Server, conn MessageReaderWriter)
 func newSession(id int, server *Server) *Session {
 	s := &Session{id: id, server: server}
 	s.executors = make(map[interface{}]*executor)
-	s.cancel = make(chan struct{}, 1)
 	return s
 }
 
@@ -80,11 +78,9 @@ func (s *Session) Start() {
 		if continueLoop := s.handle(); !continueLoop {
 			return
 		}
-		select {
-		case <-s.cancel:
-			return
-		default:
 
+		if s.closed.Load() {
+			return
 		}
 	}
 }
