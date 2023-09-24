@@ -12,7 +12,7 @@ var (
 	//go:embed tutorials.yaml
 	TUTORIALS_YAML string
 
-	TUTORIAL_SERIES map[string]TutorialSeries
+	TUTORIAL_SERIES []TutorialSeries
 )
 
 func init() {
@@ -22,7 +22,10 @@ func init() {
 }
 
 type TutorialSeries struct {
-	Tutorials []Tutorial `yaml:"tutorials"`
+	Id         string     `yaml:"id" json:"id"`
+	Name       string     `yaml:"name" json:"name"`
+	Tutorials  []Tutorial `yaml:"tutorials" json:"tutorials"`
+	Descriptio string     `yaml:"description" json:"description"`
 }
 
 type Tutorial struct {

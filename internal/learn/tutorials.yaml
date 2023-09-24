@@ -1,6 +1,10 @@
 # tutorial series
 
-basics:
+- name: Basics  
+  id: basics
+  description: >
+    Learn the basics of Inox in a few tutorials !
+  
   tutorials:
   - name: Hello World
     id: hello-world
