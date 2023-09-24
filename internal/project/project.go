@@ -138,6 +138,7 @@ func (r *Registry) OpenProject(ctx *core.Context, params OpenProjectParams) (*Pr
 		project.cloudflare = cf
 	}
 
+	project.Share(nil)
 	r.openProjects[project.id] = project
 
 	return project, nil
