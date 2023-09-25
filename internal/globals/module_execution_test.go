@@ -867,7 +867,8 @@ func TestPrepareLocalScript(t *testing.T) {
 		projectName := "test-mod-prep"
 		{
 			tempCtx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
-			registry, err := project.OpenRegistry("/", fs_ns.NewMemFilesystem(100_000_000))
+			defer tempCtx.CancelGracefully()
+			registry, err := project.OpenRegistry("/", fs_ns.NewMemFilesystem(100_000_000), tempCtx)
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -994,7 +995,8 @@ func TestPrepareLocalScript(t *testing.T) {
 		projectName := "test-mod-prep-creds-from-project"
 		{
 			tempCtx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
-			registry, err := project.OpenRegistry("/", fs_ns.NewMemFilesystem(100_000_000))
+			defer tempCtx.CancelGracefully()
+			registry, err := project.OpenRegistry("/", fs_ns.NewMemFilesystem(100_000_000), tempCtx)
 			if !assert.NoError(t, err) {
 				return
 			}
