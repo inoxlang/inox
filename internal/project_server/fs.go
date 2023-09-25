@@ -1,6 +1,8 @@
 package project_server
 
 import (
+	"errors"
+
 	afs "github.com/inoxlang/inox/internal/afs"
 )
 
@@ -14,9 +16,18 @@ type Filesystem struct {
 	unsavedDocuments afs.Filesystem
 }
 
+// NewFilesystem creates a new Filesystem with a persistsed filesystem and a filesystem
+// for storing the state of unsave documents. unsavedDocumentFs should be fast.
 func NewFilesystem(base afs.Filesystem, unsavedDocumentFs afs.Filesystem) *Filesystem {
+	if unsavedDocumentFs == nil {
+		panic(errors.New("unsavedDocumentFs is nil"))
+	}
 	return &Filesystem{
 		Filesystem:       base,
 		unsavedDocuments: unsavedDocumentFs,
 	}
+}
+
+func (fs *Filesystem) unsavedDocumentsFS() afs.Filesystem {
+	return fs.unsavedDocuments
 }

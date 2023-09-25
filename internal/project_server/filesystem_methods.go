@@ -5,11 +5,15 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
+	"sync"
+	"time"
 
 	fs_ns "github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/project_server/jsonrpc"
+	"github.com/inoxlang/inox/internal/project_server/logs"
 	"github.com/inoxlang/inox/internal/project_server/lsp"
 	"github.com/inoxlang/inox/internal/project_server/lsp/defines"
 
@@ -26,6 +30,9 @@ const (
 
 	CREATE_DIR_METHOD = "fs/createDir"
 	READ_DIR_METHOD   = "fs/readDir"
+
+	MIN_LAST_CHANGE_AGE_FOR_UNSAVED_DOC_SYNC               = time.Second / 2
+	MIN_LAST_FILE_WRITE_AGE_FOR_UNSAVED_DOC_SYNC_REVERSING = time.Second / 2
 )
 
 //get file stat operation
@@ -230,6 +237,69 @@ func registerFilesystemMethodHandlers(server *lsp.Server) {
 				return nil, fmt.Errorf("failed to decode received content for file %s: %w", fpath, err)
 			}
 
+			unsavedDocumentsFS := fls.unsavedDocumentsFS()
+
+			// attempt to synchronize the unsaved document with the new content,
+			// we only do that if the unsaved document filesystem is a separate filesystem.
+			if fls != unsavedDocumentsFS && false {
+				func() {
+					//get & read the synchronization data
+					sessionData := getLockedSessionData(session)
+					syncData := sessionData.unsavedDocumentSyncData[fpath]
+					if syncData == nil {
+						syncData = &unsavedDocumentSyncData{path: fpath}
+						sessionData.unsavedDocumentSyncData[fpath] = syncData
+					}
+					sessionData.lock.Unlock()
+
+					updated := false
+					defer func() {
+						if updated {
+							//we log after to reduce the time spent locked
+							logs.Printf("'unsaved' document %q was updated with the content of the persisted file\n", fpath)
+						}
+					}()
+
+					syncData.lock.Lock()
+					defer syncData.lock.Unlock()
+
+					if time.Since(syncData.lastDidChange) < MIN_LAST_CHANGE_AGE_FOR_UNSAVED_DOC_SYNC {
+						return
+					}
+
+					// read the file & save the previous content
+					doc, err := unsavedDocumentsFS.OpenFile(fpath, os.O_RDWR, 0)
+					if err != nil {
+						return
+					}
+
+					closed := false
+
+					defer func() {
+						if !closed {
+							doc.Close()
+						}
+					}()
+
+					prevContent, err := io.ReadAll(doc)
+					if err != nil {
+						return
+					}
+
+					syncData.prevContent = prevContent
+					syncData.lastFileWrite = time.Now()
+
+					//write the new content
+					doc.Truncate(0)
+					doc.Seek(0, 0)
+					doc.Write(content)
+
+					closed = true
+					updated = true
+					doc.Close()
+				}()
+			}
+
 			if params.Create {
 				f, err := fls.OpenFile(fpath, os.O_CREATE|os.O_WRONLY, fs_ns.DEFAULT_FILE_FMODE)
 
@@ -244,7 +314,6 @@ func registerFilesystemMethodHandlers(server *lsp.Server) {
 				}
 
 				alreadyExists := err == nil
-
 				if alreadyExists {
 					if !params.Overwrite {
 						return nil, fmtInternalError("failed to create file %s: already exists and overwrite option is false", fpath)
@@ -455,4 +524,45 @@ func getLspFilesystem(session *jsonrpc.Session) (*Filesystem, bool) {
 	defer sessionData.lock.Unlock()
 
 	return sessionData.filesystem, sessionData.filesystem != nil
+}
+
+// unsavedDocumentSyncData contains data about the synchronization of an unsaved document.
+// The handler of WRITE_FILE_METHOD alaways attempts to update the unsaved document with the new content of the file.
+type unsavedDocumentSyncData struct {
+	lock sync.Mutex
+
+	path          string
+	prevContent   []byte
+	reversed      bool
+	lastFileWrite time.Time
+	lastDidChange time.Time
+}
+
+// reactToDidChange updates the unsavedDocumentSyncData & reverse the last synchronization
+// if it happened too recently (likely during a sequence of LSP changes close).
+func (d *unsavedDocumentSyncData) reactToDidChange(fls *Filesystem) {
+	d.lock.Lock()
+	defer d.lock.Unlock()
+	defer func() {
+		d.lastDidChange = time.Now()
+	}()
+
+	unsavedDocFS := fls.unsavedDocumentsFS()
+	if unsavedDocFS == fls {
+		return
+	}
+
+	if time.Since(d.lastFileWrite) < MIN_LAST_FILE_WRITE_AGE_FOR_UNSAVED_DOC_SYNC_REVERSING && !d.reversed {
+		d.reversed = true
+		logs.Println("reverse 'unsaved' doc synchronization")
+
+		f, err := unsavedDocFS.Open(d.path)
+		if err != nil {
+			return
+		}
+		defer f.Close()
+		f.Truncate(0)
+		f.Seek(0, 0)
+		f.Write(d.prevContent)
+	}
 }

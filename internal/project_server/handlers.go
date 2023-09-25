@@ -48,11 +48,13 @@ type additionalSessionData struct {
 	lock sync.RWMutex
 
 	didSaveCapabilityRegistrationIds map[defines.DocumentUri]uuid.UUID
-	filesystem                       *Filesystem
-	clientCapabilities               defines.ClientCapabilities
-	serverCapabilities               defines.ServerCapabilities
-	projectMode                      bool
-	project                          *project.Project
+	unsavedDocumentSyncData          map[string]*unsavedDocumentSyncData
+
+	filesystem         *Filesystem
+	clientCapabilities defines.ClientCapabilities
+	serverCapabilities defines.ServerCapabilities
+	projectMode        bool
+	project            *project.Project
 
 	//debug adapter protocol
 	debugSessions *DebugSessions
@@ -66,17 +68,23 @@ func (d *additionalSessionData) Scheme() string {
 }
 
 func getLockedSessionData(session *jsonrpc.Session) *additionalSessionData {
+	sessionData := getSessionData(session)
+	sessionData.lock.Lock()
+	return sessionData
+}
+
+func getSessionData(session *jsonrpc.Session) *additionalSessionData {
 	sessionToAdditionalDataLock.Lock()
 	sessionData := sessionToAdditionalData[session]
 	if sessionData == nil {
 		sessionData = &additionalSessionData{
 			didSaveCapabilityRegistrationIds: make(map[defines.DocumentUri]uuid.UUID, 0),
+			unsavedDocumentSyncData:          make(map[string]*unsavedDocumentSyncData, 0),
 		}
 		sessionToAdditionalData[session] = sessionData
 	}
 
 	sessionToAdditionalDataLock.Unlock()
-	sessionData.lock.Lock()
 	return sessionData
 }
 
@@ -301,13 +309,21 @@ func registerHandlers(server *lsp.Server, opts LSPServerOptions) {
 			return errors.New(FsNoFilesystem)
 		}
 
-		fsErr := fsutil.WriteFile(fls.docsFS(), fpath, []byte(fullDocumentText), 0700)
+		fsErr := fsutil.WriteFile(fls.unsavedDocumentsFS(), fpath, []byte(fullDocumentText), 0700)
 		if fsErr != nil {
 			logs.Println("failed to update state of document", fpath+":", fsErr)
 		}
 
 		registrationId := uuid.New()
 		sessionData := getLockedSessionData(session)
+
+		//create synchronization data if it does not exists
+		_, hasSyncData := sessionData.unsavedDocumentSyncData[fpath]
+		if !hasSyncData {
+			sessionData.unsavedDocumentSyncData[fpath] = &unsavedDocumentSyncData{
+				path: fpath,
+			}
+		}
 
 		if _, ok := sessionData.didSaveCapabilityRegistrationIds[req.TextDocument.Uri]; !ok {
 			sessionData.didSaveCapabilityRegistrationIds[req.TextDocument.Uri] = registrationId
@@ -351,13 +367,21 @@ func registerHandlers(server *lsp.Server, opts LSPServerOptions) {
 			return errors.New(FsNoFilesystem)
 		}
 
+		sessionData := getLockedSessionData(session)
+		syncData, hasSyncData := sessionData.unsavedDocumentSyncData[fpath]
+		sessionData.lock.Unlock()
+
+		if hasSyncData {
+			syncData.reactToDidChange(fls)
+		}
+
 		// The document's text should be included because we asked for it:
 		// a client/registerCapability request was sent for the textDocument/didSave method.
 		// After the document is saved we immediately unregister the capability. The only purpose is
 		// to get the initial content for a newly created file as no textDocument/didChange request
 		// is sent for the first modification.
 		if req.Text != nil {
-			fsErr := fsutil.WriteFile(fls.docsFS(), fpath, []byte(*req.Text), 0700)
+			fsErr := fsutil.WriteFile(fls.unsavedDocumentsFS(), fpath, []byte(*req.Text), 0700)
 			if fsErr != nil {
 				logs.Println("failed to update state of document", fpath+":", fsErr)
 			}
@@ -420,8 +444,8 @@ func registerHandlers(server *lsp.Server, opts LSPServerOptions) {
 		}
 
 		session := jsonrpc.GetSession(ctx)
-		fls, ok := getLspFilesystem(session)
-		if !ok {
+		fls, hasSyncData := getLspFilesystem(session)
+		if !hasSyncData {
 			return errors.New(FsNoFilesystem)
 		}
 
@@ -429,12 +453,17 @@ func registerHandlers(server *lsp.Server, opts LSPServerOptions) {
 
 		sessionData := getLockedSessionData(session)
 		syncFull := sessionData.serverCapabilities.TextDocumentSync == defines.TextDocumentSyncKindFull
+		syncData, hasSyncData := sessionData.unsavedDocumentSyncData[fpath]
 		sessionData.lock.Unlock()
+
+		if hasSyncData {
+			syncData.reactToDidChange(fls)
+		}
 
 		if syncFull {
 			fullDocumentText = req.ContentChanges[0].Text.(string)
 		} else {
-			currentContent, err := fsutil.ReadFile(fls.docsFS(), fpath)
+			currentContent, err := fsutil.ReadFile(fls.unsavedDocumentsFS(), fpath)
 			if err != nil {
 				return jsonrpc.ResponseError{
 					Code:    jsonrpc.InternalError.Code,
@@ -507,7 +536,7 @@ func registerHandlers(server *lsp.Server, opts LSPServerOptions) {
 			}
 		}
 
-		fsErr := fsutil.WriteFile(fls.docsFS(), fpath, []byte(fullDocumentText), 0700)
+		fsErr := fsutil.WriteFile(fls.unsavedDocumentsFS(), fpath, []byte(fullDocumentText), 0700)
 		if fsErr != nil {
 			return jsonrpc.ResponseError{
 				Code:    jsonrpc.InternalError.Code,
@@ -530,7 +559,11 @@ func registerHandlers(server *lsp.Server, opts LSPServerOptions) {
 			return errors.New(FsNoFilesystem)
 		}
 
-		docsFs := fls.docsFS()
+		sessionData := getLockedSessionData(session)
+		delete(sessionData.unsavedDocumentSyncData, fpath)
+		sessionData.lock.Unlock()
+
+		docsFs := fls.unsavedDocumentsFS()
 		if docsFs != fls {
 			docsFs.Remove(fpath)
 		}

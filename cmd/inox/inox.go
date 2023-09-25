@@ -299,7 +299,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 		perms = append(perms, core.GetDefaultGlobalVarPermissions()...)
 
 		out := os.Stdout
-		filesystem := lsp.NewDefaultFilesystem()
+		filesystem := fs_ns.GetOsFilesystem()
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: perms,
 			Filesystem:  filesystem,
