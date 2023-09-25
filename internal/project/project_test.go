@@ -153,12 +153,6 @@ func TestOpenProject(t *testing.T) {
 			return
 		}
 
-		file, err := project1.Filesystem().Create("/file.txt")
-		if !assert.NoError(t, err) {
-			return
-		}
-		file.Close()
-
 		assert.NotNil(t, project1)
 		assert.Equal(t, id, project1.id)
 
@@ -184,13 +178,12 @@ func TestOpenProject(t *testing.T) {
 		entries, err := fls.ReadDir("/")
 		if !assert.NoError(t, err) {
 			return
-
 		}
 
 		if !assert.Len(t, entries, 1) {
 			return
 		}
-		assert.Equal(t, "file.txt", entries[0].Name())
+		assert.Equal(t, DEFAULT_MAIN_FILENAME, entries[0].Name())
 	})
 
 	t.Run("re-open registry", func(t *testing.T) {

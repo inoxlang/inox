@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/go-git/go-billy/v5/util"
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
@@ -15,6 +16,9 @@ import (
 
 const (
 	PROJECTS_KV_PREFIX = "/projects"
+
+	DEFAULT_MAIN_FILENAME = "main.ix"
+	DEFAULT_TUT_FILENAME  = "learn.tut.ix"
 
 	CREATION_PARAMS_METADATA_KEY              = "creation-params"
 	CREATION_PARAMS_NAME_METADATA_KEY         = "name"
@@ -86,10 +90,28 @@ func (r *Registry) CreateProject(ctx *core.Context, params CreateProjectParams) 
 
 	// create the project's directory
 	projectDir := r.filesystem.Join(r.projectsDir, string(id))
-
 	err = r.filesystem.MkdirAll(projectDir, fs_ns.DEFAULT_DIR_FMODE)
+
 	if err != nil {
 		return "", fmt.Errorf("failed to create directory for project %s: %w", id, err)
+	}
+
+	// create initial files
+	projectFS, err := fs_ns.OpenMetaFilesystem(ctx, r.filesystem, fs_ns.MetaFilesystemOptions{
+		Dir: projectDir,
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to open the project filesystem to write initial files %s: %w", id, err)
+	}
+
+	defer projectFS.Close(ctx)
+
+	// we don't check errors returned by the following writes because this is not critical
+
+	util.WriteFile(projectFS, DEFAULT_MAIN_FILENAME, []byte("manifest {\n\n}"), fs_ns.DEFAULT_FILE_FMODE)
+
+	if params.AddTutFile {
+		util.WriteFile(projectFS, DEFAULT_TUT_FILENAME, []byte(nil), fs_ns.DEFAULT_DIR_FMODE)
 	}
 
 	return id, nil
