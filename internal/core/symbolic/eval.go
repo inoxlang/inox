@@ -578,8 +578,14 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 				if err != nil {
 					return nil, err
 				}
-				static = type_.(Pattern)
-				staticMatching = static.SymbolicValue()
+
+				pattern, isPattern := type_.(Pattern)
+				if isPattern {
+					static = pattern
+					staticMatching = static.SymbolicValue()
+				} else {
+					state.addError(makeSymbolicEvalError(decl.Type, state, LOCAL_VARIABLE_ANNOTATION_MUST_BE_A_PATTERN))
+				}
 			}
 
 			var (

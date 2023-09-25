@@ -89,6 +89,7 @@ const (
 	MISPLACED_DOUBLE_COLON_EXPR           = "misplaced double-colon expression"
 
 	OPERANDS_OF_BINARY_RANGE_EXPRS_SHOULD_BE_SERIALIZABLE = "operands of binary range expressions should be serializable"
+	LOCAL_VARIABLE_ANNOTATION_MUST_BE_A_PATTERN           = "local variable annotation must be a pattern"
 )
 
 var (

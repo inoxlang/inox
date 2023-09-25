@@ -666,6 +666,7 @@ func TestSymbolicEval(t *testing.T) {
 			`, nil)
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
+			assert.Empty(t, state.errors()) //there is already a parsing error
 			assert.Equal(t, ANY, res)
 		})
 
@@ -676,7 +677,27 @@ func TestSymbolicEval(t *testing.T) {
 			`, nil)
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
+			assert.Empty(t, state.errors()) //there is already a parsing error
 			assert.Equal(t, ANY_INT, res)
+		})
+
+		t.Run("annotation should be a pattern", func(t *testing.T) {
+			n, state, _ := _makeStateAndChunk(`
+				myint = 1
+				var a ($myint) = 1
+				return a
+			`, nil)
+
+			typeAnnotation := parse.FindNode(n, (*parse.LocalVariableDeclaration)(nil), nil).Type
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.NotEmpty(t, state.errors())
+			assert.Equal(t, NewInt(1), res)
+
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(typeAnnotation, state, LOCAL_VARIABLE_ANNOTATION_MUST_BE_A_PATTERN),
+			}, state.errors())
 		})
 
 		t.Run("value not assignable to type (deep mismatch: object property)", func(t *testing.T) {
