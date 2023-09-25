@@ -16,7 +16,8 @@ const (
 )
 
 type CreateProjectParams struct {
-	Name string `json:"name"`
+	Name       string `json:"name"`
+	AddTutFile bool   `json:"addTutFile"`
 }
 
 type OpenProjectParams struct {
@@ -49,7 +50,8 @@ func registerProjectMethodHandlers(server *lsp.Server, opts LSPServerOptions) {
 			params := req.(*CreateProjectParams)
 
 			projectId, err := projectRegistry.CreateProject(sessionCtx, project.CreateProjectParams{
-				Name: params.Name,
+				Name:       params.Name,
+				AddTutFile: params.AddTutFile,
 			})
 
 			if err != nil {
