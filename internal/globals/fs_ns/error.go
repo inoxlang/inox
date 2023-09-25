@@ -6,7 +6,8 @@ import (
 )
 
 var (
-	ErrCannotOpenDir = errors.New("cannot open directory")
+	ErrCannotOpenDir    = errors.New("cannot open directory")
+	ErrClosedFilesystem = errors.New("closed filesystem")
 )
 
 func fmtDirContainFiles(path string) string {

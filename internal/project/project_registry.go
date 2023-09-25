@@ -15,7 +15,7 @@ const (
 type Registry struct {
 	projectsDir         string
 	filesystem          afs.Filesystem
-	kv                  *filekv.SingleFileKV
+	metadata            *filekv.SingleFileKV
 	openProjects        map[core.ProjectID]*Project
 	openProjectsContext *core.Context
 
@@ -37,12 +37,12 @@ func OpenRegistry(projectsDir string, fls afs.Filesystem, openProjectsContext *c
 	return &Registry{
 		projectsDir:         projectsDir,
 		filesystem:          fls,
-		kv:                  kv,
+		metadata:            kv,
 		openProjects:        map[core.ProjectID]*Project{},
 		openProjectsContext: openProjectsContext,
 	}, nil
 }
 
 func (r *Registry) Close(ctx *core.Context) {
-	r.kv.Close(ctx)
+	r.metadata.Close(ctx)
 }

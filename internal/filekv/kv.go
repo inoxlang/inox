@@ -63,7 +63,11 @@ func OpenSingleFileKV(config KvStoreConfig) (_ *SingleFileKV, finalErr error) {
 	}, nil
 }
 
-func (kv *SingleFileKV) Close(ctx *core.Context) {
+func (kv *SingleFileKV) Close(ctx *core.Context) (buntDBError error) {
+	defer func() {
+		buntDBError = kv.db.Close()
+	}()
+
 	logger := ctx.Logger().With().Str(core.SOURCE_LOG_FIELD_NAME, KV_STORE_SRC_NAME).Logger()
 	//before closing the buntdb database all the transactions must be closed or a deadlock will occur.
 
@@ -91,7 +95,8 @@ func (kv *SingleFileKV) Close(ctx *core.Context) {
 	}
 
 	logger.Print("close bluntDB")
-	kv.db.Close()
+	//see the deferred call at the top
+	return
 }
 
 func (kv *SingleFileKV) isClosed() bool {

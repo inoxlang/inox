@@ -4,6 +4,7 @@ package fs_ns
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -105,6 +106,10 @@ func (s *BasicTestSuite) TestOpenNotExists(c *check.C) {
 	f, err := s.FS.Open("not-exists")
 	c.Assert(err, check.NotNil)
 	c.Assert(f, check.IsNil)
+
+	if errors.Is(err, ErrClosedFilesystem) {
+		c.Fail()
+	}
 }
 
 func (s *BasicTestSuite) TestOpenFile(c *check.C) {

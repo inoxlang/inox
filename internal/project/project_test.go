@@ -66,9 +66,10 @@ func TestOpenProject(t *testing.T) {
 		r := utils.Must(OpenRegistry("/projects", fls, ctx))
 		defer r.Close(ctx)
 
-		id := utils.Must(r.CreateProject(ctx, CreateProjectParams{
+		params := CreateProjectParams{
 			Name: "myproject",
-		}))
+		}
+		id := utils.Must(r.CreateProject(ctx, params))
 
 		assert.NotEmpty(t, id)
 
@@ -83,6 +84,7 @@ func TestOpenProject(t *testing.T) {
 
 		assert.NotNil(t, project)
 		assert.Equal(t, id, project.id)
+		assert.Equal(t, params, project.creationParams)
 	})
 
 	t.Run("re opening a project should not change the returned value", func(t *testing.T) {
@@ -94,9 +96,10 @@ func TestOpenProject(t *testing.T) {
 		r := utils.Must(OpenRegistry("/projects", fls, ctx))
 		defer r.Close(ctx)
 
-		id := utils.Must(r.CreateProject(ctx, CreateProjectParams{
+		params := CreateProjectParams{
 			Name: "myproject",
-		}))
+		}
+		id := utils.Must(r.CreateProject(ctx, params))
 
 		assert.NotEmpty(t, id)
 
@@ -122,6 +125,7 @@ func TestOpenProject(t *testing.T) {
 		}
 
 		assert.Same(t, project1, project2)
+		assert.Equal(t, params, project1.creationParams)
 	})
 
 	t.Run("after closing the ctx that opened the project, re-opening with another ctx should be okay and the FS should be working", func(t *testing.T) {

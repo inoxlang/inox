@@ -15,6 +15,10 @@ import (
 
 const (
 	PROJECTS_KV_PREFIX = "/projects"
+
+	CREATION_PARAMS_METADATA_KEY              = "creation-params"
+	CREATION_PARAMS_NAME_METADATA_KEY         = "name"
+	CREATION_PARAMS_ADD_TUT_FILE_METADATA_KEY = "add-tut-file"
 )
 
 var (
@@ -35,10 +39,16 @@ type Project struct {
 
 	//providers
 	cloudflare *Cloudflare //can be nil
+
+	creationParams CreateProjectParams
 }
 
 func (p *Project) Id() core.ProjectID {
 	return p.id
+}
+
+func (p *Project) CreationParams() CreateProjectParams {
+	return p.creationParams
 }
 
 func (p *Project) HasProviders() bool {
@@ -50,20 +60,31 @@ func getProjectKvKey(id core.ProjectID) core.Path {
 }
 
 type CreateProjectParams struct {
-	Name string
+	Name       string
+	AddTutFile bool
 }
 
 // CreateProject
 func (r *Registry) CreateProject(ctx *core.Context, params CreateProjectParams) (core.ProjectID, error) {
 	id := core.RandomProjectID(params.Name)
 
+	// create the directory for storing projects if necessary
 	err := r.filesystem.MkdirAll(r.projectsDir, fs_ns.DEFAULT_DIR_FMODE)
 	if err != nil {
 		return "", fmt.Errorf("failed to create directory to store projects: %w", err)
 	}
 
-	r.kv.Insert(ctx, getProjectKvKey(id), core.Nil, r)
+	// persist metadata
+	projectMetadata := core.NewRecordFromMap(core.ValMap{
+		CREATION_PARAMS_METADATA_KEY: core.NewRecordFromMap(core.ValMap{
+			CREATION_PARAMS_NAME_METADATA_KEY:         core.Str(params.Name),
+			CREATION_PARAMS_ADD_TUT_FILE_METADATA_KEY: core.Bool(params.AddTutFile),
+		}),
+	})
 
+	r.metadata.Insert(ctx, getProjectKvKey(id), projectMetadata, r)
+
+	// create the project's directory
 	projectDir := r.filesystem.Join(r.projectsDir, string(id))
 
 	err = r.filesystem.MkdirAll(projectDir, fs_ns.DEFAULT_DIR_FMODE)
@@ -104,7 +125,7 @@ func (r *Registry) OpenProject(ctx *core.Context, params OpenProjectParams) (*Pr
 		return project, nil
 	}
 
-	_, found, err := r.kv.Get(ctx, getProjectKvKey(params.Id), r)
+	metadata, found, err := r.metadata.Get(ctx, getProjectKvKey(params.Id), r)
 
 	if err != nil {
 		return nil, fmt.Errorf("error while reading KV: %w", err)
@@ -114,8 +135,11 @@ func (r *Registry) OpenProject(ctx *core.Context, params OpenProjectParams) (*Pr
 		return nil, ErrProjectNotFound
 	}
 
-	projectDir := r.filesystem.Join(r.projectsDir, string(params.Id))
+	creationParams := metadata.(*core.Record).Prop(ctx, CREATION_PARAMS_METADATA_KEY).(*core.Record)
+	name := creationParams.Prop(ctx, CREATION_PARAMS_NAME_METADATA_KEY).(core.Str)
+	addTutFile := creationParams.Prop(ctx, CREATION_PARAMS_ADD_TUT_FILE_METADATA_KEY).(core.Bool)
 
+	projectDir := r.filesystem.Join(r.projectsDir, string(params.Id))
 	projectFS, err := fs_ns.OpenMetaFilesystem(r.openProjectsContext, r.filesystem, fs_ns.MetaFilesystemOptions{
 		Dir: projectDir,
 	})
@@ -128,6 +152,11 @@ func (r *Registry) OpenProject(ctx *core.Context, params OpenProjectParams) (*Pr
 		id:                params.Id,
 		projectFilesystem: projectFS,
 		tempTokens:        params.TempTokens,
+
+		creationParams: CreateProjectParams{
+			Name:       name.GetOrBuildString(),
+			AddTutFile: bool(addTutFile),
+		},
 	}
 
 	if params.DevSideConfig.Cloudflare != nil {

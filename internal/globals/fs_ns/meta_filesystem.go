@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/go-git/go-billy/v5"
@@ -50,6 +51,8 @@ type MetaFilesystem struct {
 	ctx      *core.Context
 
 	lock sync.RWMutex
+
+	closed atomic.Bool
 }
 
 type MetaFilesystemOptions struct {
@@ -118,6 +121,13 @@ func OpenMetaFilesystem(ctx *core.Context, underlying billy.Basic, opts MetaFile
 	return fls, nil
 }
 
+func (fls *MetaFilesystem) Close(ctx *core.Context) error {
+	if fls.closed.CompareAndSwap(false, true) {
+		return fls.metadata.Close(ctx)
+	}
+	return nil
+}
+
 func (fls *MetaFilesystem) Chroot(path string) (billy.Filesystem, error) {
 	return nil, core.ErrNotImplemented
 }
@@ -128,6 +138,9 @@ func (fls *MetaFilesystem) Root() string {
 
 // DoWithContext implements core.IDoWithContext.
 func (fls *MetaFilesystem) DoWithContext(ctx *core.Context, fn func() error) error {
+	if fls.closed.Load() {
+		return ErrClosedFilesystem
+	}
 	return fn()
 }
 
@@ -141,6 +154,10 @@ func (fls *MetaFilesystem) Absolute(path string) (string, error) {
 func (fls *MetaFilesystem) getFileMetadata(pth core.Path, usedTx *filekv.DatabaseTx) (*metaFsFileMetadata, bool, error) {
 	if !pth.IsAbsolute() {
 		return nil, false, errors.New("file's path should be absolute")
+	}
+
+	if fls.closed.Load() {
+		return nil, false, ErrClosedFilesystem
 	}
 
 	key := getKvKeyFromPath(pth)
@@ -287,6 +304,10 @@ func (fls *MetaFilesystem) Open(filename string) (billy.File, error) {
 }
 
 func (fls *MetaFilesystem) OpenFile(filename string, flag int, perm os.FileMode) (billy.File, error) {
+	if fls.closed.Load() {
+		return nil, ErrClosedFilesystem
+	}
+
 	fls.lock.Lock()
 	defer fls.lock.Unlock()
 
@@ -388,6 +409,10 @@ func (fls *MetaFilesystem) OpenFile(filename string, flag int, perm os.FileMode)
 }
 
 func (fls *MetaFilesystem) Stat(filename string) (os.FileInfo, error) {
+	if fls.closed.Load() {
+		return nil, ErrClosedFilesystem
+	}
+
 	fls.lock.RLock()
 	defer fls.lock.RUnlock()
 
@@ -395,6 +420,10 @@ func (fls *MetaFilesystem) Stat(filename string) (os.FileInfo, error) {
 }
 
 func (fls *MetaFilesystem) statNoLock(filename string) (os.FileInfo, error) {
+	if fls.closed.Load() {
+		return nil, ErrClosedFilesystem
+	}
+
 	filename = NormalizeAsAbsolute(filename)
 
 	metadata, exists, err := fls.getFileMetadata(core.PathFrom(filename), nil)
@@ -430,6 +459,10 @@ func (fls *MetaFilesystem) statNoLock(filename string) (os.FileInfo, error) {
 }
 
 func (fls *MetaFilesystem) Lstat(filename string) (os.FileInfo, error) {
+	if fls.closed.Load() {
+		return nil, ErrClosedFilesystem
+	}
+
 	fls.lock.RLock()
 	defer fls.lock.RUnlock()
 
@@ -451,6 +484,10 @@ func (fls *MetaFilesystem) Lstat(filename string) (os.FileInfo, error) {
 }
 
 func (fls *MetaFilesystem) ReadDir(path string) ([]os.FileInfo, error) {
+	if fls.closed.Load() {
+		return nil, ErrClosedFilesystem
+	}
+
 	fls.lock.RLock()
 	defer fls.lock.RUnlock()
 
@@ -485,6 +522,10 @@ func (fls *MetaFilesystem) ReadDir(path string) ([]os.FileInfo, error) {
 }
 
 func (fls *MetaFilesystem) MkdirAll(path string, perm os.FileMode) error {
+	if fls.closed.Load() {
+		return ErrClosedFilesystem
+	}
+
 	fls.lock.Lock()
 	defer fls.lock.Unlock()
 
@@ -496,6 +537,10 @@ func (fls *MetaFilesystem) MkdirAllNoLock(path string, perm os.FileMode) error {
 }
 
 func (fls *MetaFilesystem) MkdirAllNoLock_(path string, perm os.FileMode, tx *filekv.DatabaseTx) error {
+	if fls.closed.Load() {
+		return ErrClosedFilesystem
+	}
+
 	if path == "/" {
 		return nil
 	}
@@ -568,6 +613,10 @@ func (fls *MetaFilesystem) TempFile(dir, prefix string) (billy.File, error) {
 }
 
 func (fls *MetaFilesystem) Rename(from, to string) error {
+	if fls.closed.Load() {
+		return ErrClosedFilesystem
+	}
+
 	fls.lock.Lock()
 	defer fls.lock.Unlock()
 
@@ -726,6 +775,10 @@ func (fls *MetaFilesystem) Rename(from, to string) error {
 }
 
 func (fls *MetaFilesystem) Remove(filename string) error {
+	if fls.closed.Load() {
+		return ErrClosedFilesystem
+	}
+
 	fls.lock.Lock()
 	defer fls.lock.Unlock()
 
