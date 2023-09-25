@@ -18,7 +18,7 @@
     output: 
     - Hello World!
   - name: Variables
-    id: vars-basics
+    id: var-basics
     program: |
       manifest {
 
@@ -38,7 +38,6 @@
       $$myglobal = 1
 
       # global variables cannot be shadowed by local variables ! 
-      # The following line is an error.
       var myglobal = 3
     output: 
     - Hello World!

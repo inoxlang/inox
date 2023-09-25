@@ -22,18 +22,18 @@ func init() {
 }
 
 type TutorialSeries struct {
-	Id         string     `yaml:"id" json:"id"`
-	Name       string     `yaml:"name" json:"name"`
-	Tutorials  []Tutorial `yaml:"tutorials" json:"tutorials"`
-	Descriptio string     `yaml:"description" json:"description"`
+	Id          string     `yaml:"id" json:"id"`
+	Name        string     `yaml:"name" json:"name"`
+	Tutorials   []Tutorial `yaml:"tutorials" json:"tutorials"`
+	Description string     `yaml:"description" json:"description"`
 }
 
 type Tutorial struct {
 	Id                string   `yaml:"id" json:"id"`
 	Name              string   `yaml:"name" json:"name"`
 	Program           string   `yaml:"program" json:"program"`
-	ExpectedOutput    []string `yaml:"output" json:"output"`
-	ExpectedLogOutput []string `yaml:"log-output" json:"logOutput"`
+	ExpectedOutput    []string `yaml:"output" json:"output,omitempty"`
+	ExpectedLogOutput []string `yaml:"log-output" json:"logOutput,omitempty"`
 }
 
 func ListTutorials() (tutorials []Tutorial) {
