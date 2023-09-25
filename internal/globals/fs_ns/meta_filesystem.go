@@ -828,8 +828,12 @@ func (fls *MetaFilesystem) Remove(filename string) error {
 			return err
 		}
 
-		//delete metadata
+		//remove concrete file (error is ignored for now)
+		if metadata.concreteFile != nil {
+			fls.underlying.Remove((*metadata.concreteFile).UnderlyingString())
+		}
 
+		//delete metadata
 		if err := fls.deleteFileMetadata(metadata.path, dbTx); err != nil {
 			return err
 		}
@@ -870,6 +874,11 @@ func (fls *MetaFilesystem) Remove(filename string) error {
 			//delete current descendant & add its own descendants to the queue
 			if currentMetadata.mode.IsDir() {
 				queue = append(queue, currentMetadata.ChildrenPaths()...)
+			}
+
+			//remove concrete file (error is ignored for now)
+			if metadata.concreteFile != nil {
+				fls.underlying.Remove((*metadata.concreteFile).UnderlyingString())
 			}
 
 			if err := fls.deleteFileMetadata(current, dbTx); err != nil {

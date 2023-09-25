@@ -129,3 +129,52 @@ func (s *MetaFsTestSuite) TearDownTest(c *check.C) {
 		ctx.CancelGracefully()
 	}
 }
+
+func TestMetaFilesystemRemoveShouldRemoveConcreteFile(t *testing.T) {
+	ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+	defer ctx.CancelGracefully()
+	underlyingFS := NewMemFilesystem(100_000_000)
+
+	//no dir provided
+	fls, err := OpenMetaFilesystem(ctx, underlyingFS, MetaFilesystemOptions{})
+	if err != nil {
+		panic(err)
+	}
+
+	defer fls.Close(ctx)
+
+	entries, err := underlyingFS.ReadDir("/")
+	if !assert.NoError(t, err) {
+		return
+	}
+	if !assert.Len(t, entries, 1) { //metadata file
+		return
+	}
+
+	f, err := fls.Create("file.txt")
+	if !assert.NoError(t, err) {
+		return
+	}
+	f.Close()
+
+	entries, err = underlyingFS.ReadDir("/")
+	if !assert.NoError(t, err) {
+		return
+	}
+	if !assert.Len(t, entries, 2) {
+		return
+	}
+
+	err = fls.Remove("file.txt")
+	if !assert.NoError(t, err) {
+		return
+	}
+
+	entries, err = underlyingFS.ReadDir("/")
+	if !assert.NoError(t, err) {
+		return
+	}
+	if !assert.Len(t, entries, 1) { //metadata file
+		return
+	}
+}
