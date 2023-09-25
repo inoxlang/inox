@@ -7,6 +7,10 @@ import (
 	"github.com/inoxlang/inox/internal/core"
 )
 
+const (
+	MAX_SMALL_CHANGE_SIZE = 1000 //byte count
+)
+
 var (
 	_ billy.File = (*metaFsFile)(nil)
 )
@@ -23,7 +27,22 @@ func (f *metaFsFile) Name() string {
 	return f.originalPath
 }
 
+func (f *metaFsFile) checkUsableSpace(addedBytes int) error {
+	// TODO: take position into account
+	if yes, err := f.fs.checkAddedByteCount(core.ByteCount(addedBytes)); err != nil {
+		return err
+	} else if !yes {
+		return ErrNoRemainingSpaceToApplyChange
+	}
+
+	return nil
+}
+
 func (f *metaFsFile) Write(p []byte) (n int, err error) {
+	if err := f.checkUsableSpace(len(p)); err != nil {
+		return 0, err
+	}
+
 	//TODO: prevent leaks about underlying file
 	return f.underlying.Write(p)
 }
@@ -61,6 +80,20 @@ func (f *metaFsFile) Unlock() error {
 }
 
 func (f *metaFsFile) Truncate(size int64) error {
+	if f.metadata.concreteFile != nil {
+		stat, err := core.FileStat(f.underlying, f.fs)
+		if err != nil {
+			return err
+		}
+
+		// obviously this is not robust code
+		if size > stat.Size() {
+			if err := f.checkUsableSpace(int(stat.Size())); err != nil {
+				return err
+			}
+		}
+	}
+
 	err := f.underlying.Truncate(size)
 	if err != nil {
 		f.fs.ctx.Logger().Err(err).Msg("failed to close metafs file " + string(f.metadata.path))

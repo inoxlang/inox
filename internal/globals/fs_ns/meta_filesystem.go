@@ -33,6 +33,10 @@ const (
 
 	METAFS_FILES_KEY   = "/files"
 	METAFS_KV_FILENAME = "metadata.kv"
+
+	METAFS_MIN_USABLE_SPACE                             = 10_000_000
+	METAFS_USED_SPACE_CHECK_INTERVAL                    = time.Second / 2
+	METAFS_ALWAYS_CHECK_USED_SPACE_BYTE_COUNT_THRESHOLD = 100_000
 )
 
 var (
@@ -43,23 +47,38 @@ var (
 // in regular files.
 type MetaFilesystem struct {
 	//underlying afs.Filesystem
-	underlying billy.Basic
-	dir        *string //optional
+	underlying     billy.Basic
+	dir            *string        //optional, if set underlying is an afs.Filesytem
+	maxUsableSpace core.ByteCount //maximum space usable in the underyling filesystem
 
 	//all the metadata about files is stored in this Key value store.
 	metadata *filekv.SingleFileKV
 	ctx      *core.Context
 
-	lock sync.RWMutex
-
+	lock   sync.RWMutex
 	closed atomic.Bool
+
+	usedSpaceCache     core.ByteCount
+	usedSpaceCacheLock sync.RWMutex
+	lastSpaceCheckTime atomic.Int64 //unix milli (the millisecond precision is required)
 }
 
 type MetaFilesystemOptions struct {
-	Dir string //used if underlying is a  filesystem
+	//used if underlying is a filesystem
+	Dir string
+
+	//maximum space usable in the underlying filesystem, ignored if dir is false.
+	//The value should be greater or equal to METAFS_MIN_USABLE_SPACE, it defaults to METAFS_MIN_USABLE_SPACE.
+	MaxUsableSpace core.ByteCount
 }
 
 func OpenMetaFilesystem(ctx *core.Context, underlying billy.Basic, opts MetaFilesystemOptions) (*MetaFilesystem, error) {
+	if opts.MaxUsableSpace > 0 && opts.MaxUsableSpace < METAFS_MIN_USABLE_SPACE {
+		return nil, ErrMaxUsableSpaceTooSmall
+	}
+
+	maxUsableSpace := max(opts.MaxUsableSpace, METAFS_MIN_USABLE_SPACE)
+
 	kvConfig := filekv.KvStoreConfig{
 		Filesystem: underlying,
 	}
@@ -68,7 +87,7 @@ func OpenMetaFilesystem(ctx *core.Context, underlying billy.Basic, opts MetaFile
 		fls, ok := underlying.(afs.Filesystem)
 		if !ok {
 			return nil,
-				fmt.Errorf("impossble to create directory for meta filesystem since the underlying storage is not a full-fledge filesystem")
+				fmt.Errorf("impossible to create directory for meta filesystem since the underlying storage is not a full-fledge filesystem")
 		}
 
 		if err := fls.MkdirAll(opts.Dir, 0700); err != nil {
@@ -86,9 +105,10 @@ func OpenMetaFilesystem(ctx *core.Context, underlying billy.Basic, opts MetaFile
 	}
 
 	fls := &MetaFilesystem{
-		ctx:        ctx,
-		underlying: underlying,
-		metadata:   kv,
+		ctx:            ctx,
+		underlying:     underlying,
+		metadata:       kv,
+		maxUsableSpace: maxUsableSpace,
 	}
 
 	dir := opts.Dir
@@ -116,6 +136,15 @@ func OpenMetaFilesystem(ctx *core.Context, underlying billy.Basic, opts MetaFile
 		if err := fls.setFileMetadata(metadata, nil); err != nil {
 			return nil, err
 		}
+	}
+
+	// make sure the used space is not greater than allowed
+	used, err := fls.computeUsedSpace(false)
+
+	if err == nil && used > fls.maxUsableSpace {
+		return nil, ErrNoRemainingSpaceUsableByFS
+	} else if err != nil {
+		return nil, fmt.Errorf("failed to check used space: %w", err)
 	}
 
 	return fls, nil
@@ -293,6 +322,102 @@ func (fls *MetaFilesystem) deleteFileMetadata(pth core.Path, usedTx *filekv.Data
 	}
 
 	return nil
+}
+
+func (fls *MetaFilesystem) computeUsedSpace(useCache bool, add ...core.ByteCount) (core.ByteCount, error) {
+	// WIP
+
+	lastUsedSpaceCheckTime := fls.lastSpaceCheckTime.Load()
+
+	if !useCache && time.Since(time.UnixMilli(lastUsedSpaceCheckTime)) < METAFS_USED_SPACE_CHECK_INTERVAL {
+		fls.usedSpaceCacheLock.Lock()
+		defer fls.usedSpaceCacheLock.Unlock()
+
+		for n := range add {
+			if n > 0 {
+				fls.usedSpaceCache += core.ByteCount(n)
+			}
+		}
+		return core.ByteCount(fls.usedSpaceCache), nil
+	}
+
+	fls.usedSpaceCacheLock.Lock()
+	defer fls.usedSpaceCacheLock.Unlock()
+
+	// we read again lastUsedSpaceCheckTime because during the time to acquire the lock another thread
+	// may have updated the value.
+	{
+		lastUsedSpaceCheckTime = fls.lastSpaceCheckTime.Load()
+		if time.Since(time.UnixMilli(lastUsedSpaceCheckTime)) < METAFS_USED_SPACE_CHECK_INTERVAL {
+			return core.ByteCount(fls.usedSpaceCache), nil
+		}
+	}
+
+	fls.lastSpaceCheckTime.Store(time.Now().UnixMilli())
+
+	if fls.dir == nil {
+		//TODO: iterate over files and call Stat()
+		// this should not necessitate a global locking
+		return 0, nil
+	}
+	dir := *fls.dir
+	underlying := fls.underlying.(afs.Filesystem)
+
+	entries, err := underlying.ReadDir(dir)
+	if err != nil {
+		return 0, fmt.Errorf("impossible to read concrete directory")
+	}
+
+	usedSpace := int64(0)
+	for _, e := range entries {
+		usedSpace += e.Size()
+	}
+
+	fls.usedSpaceCache = core.ByteCount(usedSpace)
+
+	for n := range add {
+		if n > 0 {
+			fls.usedSpaceCache += core.ByteCount(n)
+		}
+	}
+
+	return fls.usedSpaceCache, nil
+}
+
+func (fls *MetaFilesystem) computeFreeSpace(useCache bool, add ...core.ByteCount) (core.ByteCount, error) {
+	// WIP
+
+	usedSpace, err := fls.computeUsedSpace(useCache, add...)
+
+	if err != nil {
+		return 0, err
+	}
+
+	if usedSpace > fls.maxUsableSpace {
+		return 0, nil
+	}
+
+	return fls.maxUsableSpace - usedSpace, nil
+}
+
+func (fls *MetaFilesystem) checkAddedByteCount(size core.ByteCount) (bool, error) {
+	// WIP
+
+	freeSpace, err := fls.computeFreeSpace(size < METAFS_ALWAYS_CHECK_USED_SPACE_BYTE_COUNT_THRESHOLD, size)
+
+	fls.usedSpaceCacheLock.Lock()
+	fls.usedSpaceCache += size
+	defer fls.usedSpaceCacheLock.Unlock()
+
+	if err != nil {
+		return true, err
+	}
+
+	if freeSpace < 0 {
+		return false, nil
+	}
+
+	return freeSpace >= size, nil
 }
 
 func (fls *MetaFilesystem) Create(filename string) (billy.File, error) {
