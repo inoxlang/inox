@@ -74,6 +74,7 @@ func (m *Methods) %sMethodInfo() *jsonrpc.MethodInfo {
 			return %s
 		},
 		Handler: m.%s,
+		RateLimits: []int{%s},
 	}
 }
 `

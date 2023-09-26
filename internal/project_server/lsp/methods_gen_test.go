@@ -4,10 +4,12 @@ import (
 	"fmt"
 	"io/ioutil"
 	"reflect"
+	"strconv"
 	"strings"
 	"testing"
 
 	defines "github.com/inoxlang/inox/internal/project_server/lsp/defines"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 type typ_ struct {
@@ -71,7 +73,7 @@ func firstUp(s string) string {
 	return strings.ToUpper(s[0:1]) + s[1:]
 }
 
-func generateOne(name, regName, args, result, error, code string, withBuiltin bool) (string, string, string) {
+func generateOne(name, regName, args, result, error, code string, withBuiltin bool, rateLimits string) (string, string, string) {
 	name = firstUp(name)
 	nameFirstLow := firstLow(name)
 	structField := fmt.Sprintf(structItemTemp, name, args, result, error)
@@ -89,12 +91,12 @@ func generateOne(name, regName, args, result, error, code string, withBuiltin bo
 	if !withBuiltin {
 		defaultRet = fmt.Sprintf(methodInfoDefaultTemp, name)
 	}
-	methodsInfo := fmt.Sprintf(methodsInfoTemp, nameFirstLow, defaultRet, regName, retArgs, nameFirstLow)
+	methodsInfo := fmt.Sprintf(methodsInfoTemp, nameFirstLow, defaultRet, regName, retArgs, nameFirstLow, rateLimits)
 	getInfo := fmt.Sprintf(getInfoItemTemp, nameFirstLow)
 	return structField, fmt.Sprintf("%s\n%s\n%s", method, rpcHandler, methodsInfo), getInfo
 }
 
-func generateOneNoResp(name, regName, args, error, code string, withBuiltin bool) (string, string, string) {
+func generateOneNoResp(name, regName, args, error, code string, withBuiltin bool, rateLimits string) (string, string, string) {
 	name = firstUp(name)
 	nameFirstLow := firstLow(name)
 	structField := fmt.Sprintf(noRespStructItemTemp, name, args, error)
@@ -112,13 +114,14 @@ func generateOneNoResp(name, regName, args, error, code string, withBuiltin bool
 	if !withBuiltin {
 		defaultRet = fmt.Sprintf(methodInfoDefaultTemp, name)
 	}
-	methodsInfo := fmt.Sprintf(methodsInfoTemp, nameFirstLow, defaultRet, regName, retArgs, nameFirstLow)
+	methodsInfo := fmt.Sprintf(methodsInfoTemp, nameFirstLow, defaultRet, regName, retArgs, nameFirstLow, rateLimits)
 	getInfo := fmt.Sprintf(getInfoItemTemp, nameFirstLow)
 	return structField, fmt.Sprintf("%s\n%s\n%s", method, rpcHandler, methodsInfo), getInfo
 }
 
 func TestMethodsGen(t *testing.T) {
-	t.Skip()
+	t.SkipNow()
+
 	//todo: fix
 	res := generate(methods)
 
@@ -143,6 +146,7 @@ func generate(items []method) string {
 		result := getType(item.Result)
 		error := getType(item.Error)
 		code := fmt.Sprintf("%d", item.Code)
+		rateLimits := strings.Join(utils.MapSlice(item.RateLimits, strconv.Itoa), ", ")
 		if isNil(item.Code) {
 			code = "0"
 		}
@@ -162,14 +166,14 @@ func generate(items []method) string {
 				panic(fmt.Sprintf("not supported %v", item))
 			}
 			if len(args) == 1 {
-				a, b, c := generateOneNoResp(name, regName, args[0].typ, errorT, code, builtin)
+				a, b, c := generateOneNoResp(name, regName, args[0].typ, errorT, code, builtin, rateLimits)
 				codeBlock1 = append(codeBlock1, a)
 				codeBlock2 = append(codeBlock2, b)
 				codeBlock3 = append(codeBlock3, c)
 			} else {
 				for _, n := range args {
 					newName := name + "With" + n.typName
-					a, b, c := generateOneNoResp(newName, regName, n.typ, errorT, code, builtin)
+					a, b, c := generateOneNoResp(newName, regName, n.typ, errorT, code, builtin, rateLimits)
 					codeBlock1 = append(codeBlock1, a)
 					codeBlock2 = append(codeBlock2, b)
 					codeBlock3 = append(codeBlock3, c)
@@ -182,14 +186,14 @@ func generate(items []method) string {
 				panic(fmt.Sprintf("not supported %v", item))
 			}
 			if len(args) == 1 {
-				a, b, c := generateOne(name, regName, args[0].typ, result[0].typ, errorT, code, builtin)
+				a, b, c := generateOne(name, regName, args[0].typ, result[0].typ, errorT, code, builtin, rateLimits)
 				codeBlock1 = append(codeBlock1, a)
 				codeBlock2 = append(codeBlock2, b)
 				codeBlock3 = append(codeBlock3, c)
 			} else {
 				for _, n := range args {
 					newName := name + "With" + n.typName
-					a, b, c := generateOne(newName, regName, n.typ, result[0].typ, errorT, code, builtin)
+					a, b, c := generateOne(newName, regName, n.typ, result[0].typ, errorT, code, builtin, rateLimits)
 					codeBlock1 = append(codeBlock1, a)
 					codeBlock2 = append(codeBlock2, b)
 					codeBlock3 = append(codeBlock3, c)
@@ -204,7 +208,7 @@ func generate(items []method) string {
 			if len(args) == 1 {
 				for _, n := range result {
 					newName := name + "With" + n.typName
-					a, b, c := generateOne(newName, regName, args[0].typ, n.typ, errorT, code, builtin)
+					a, b, c := generateOne(newName, regName, args[0].typ, n.typ, errorT, code, builtin, rateLimits)
 					codeBlock1 = append(codeBlock1, a)
 					codeBlock2 = append(codeBlock2, b)
 					codeBlock3 = append(codeBlock3, c)
@@ -213,7 +217,7 @@ func generate(items []method) string {
 				for _, r := range result {
 					for _, n := range args {
 						newName := name + "With" + n.typName + "With" + r.typName
-						a, b, c := generateOne(newName, regName, r.typ, n.typ, errorT, code, builtin)
+						a, b, c := generateOne(newName, regName, r.typ, n.typ, errorT, code, builtin, rateLimits)
 						codeBlock1 = append(codeBlock1, a)
 						codeBlock2 = append(codeBlock2, b)
 						codeBlock3 = append(codeBlock3, c)

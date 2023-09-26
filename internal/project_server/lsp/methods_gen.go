@@ -78,7 +78,8 @@ func (m *Methods) initializeMethodInfo() *jsonrpc.MethodInfo {
 		NewRequest: func() interface{} {
 			return &defines.InitializeParams{}
 		},
-		Handler: m.initialize,
+		Handler:    m.initialize,
+		RateLimits: []int{},
 	}
 }
 
@@ -106,7 +107,8 @@ func (m *Methods) initializedMethodInfo() *jsonrpc.MethodInfo {
 		NewRequest: func() interface{} {
 			return &defines.InitializeParams{}
 		},
-		Handler: m.initialized,
+		Handler:    m.initialized,
+		RateLimits: []int{},
 	}
 }
 
@@ -134,7 +136,8 @@ func (m *Methods) shutdownMethodInfo() *jsonrpc.MethodInfo {
 		NewRequest: func() interface{} {
 			return &defines.NoParams{}
 		},
-		Handler: m.shutdown,
+		Handler:    m.shutdown,
+		RateLimits: []int{},
 	}
 }
 
@@ -162,7 +165,8 @@ func (m *Methods) exitMethodInfo() *jsonrpc.MethodInfo {
 		NewRequest: func() interface{} {
 			return &defines.NoParams{}
 		},
-		Handler: m.exit,
+		Handler:    m.exit,
+		RateLimits: []int{},
 	}
 }
 
@@ -190,7 +194,8 @@ func (m *Methods) didChangeConfigurationMethodInfo() *jsonrpc.MethodInfo {
 		NewRequest: func() interface{} {
 			return &defines.DidChangeConfigurationParams{}
 		},
-		Handler: m.didChangeConfiguration,
+		Handler:    m.didChangeConfiguration,
+		RateLimits: []int{},
 	}
 }
 
@@ -218,7 +223,8 @@ func (m *Methods) didChangeWatchedFilesMethodInfo() *jsonrpc.MethodInfo {
 		NewRequest: func() interface{} {
 			return &defines.DidChangeWatchedFilesParams{}
 		},
-		Handler: m.didChangeWatchedFiles,
+		Handler:    m.didChangeWatchedFiles,
+		RateLimits: []int{},
 	}
 }
 
@@ -246,7 +252,8 @@ func (m *Methods) didOpenTextDocumentMethodInfo() *jsonrpc.MethodInfo {
 		NewRequest: func() interface{} {
 			return &defines.DidOpenTextDocumentParams{}
 		},
-		Handler: m.didOpenTextDocument,
+		Handler:    m.didOpenTextDocument,
+		RateLimits: []int{},
 	}
 }
 
@@ -274,7 +281,8 @@ func (m *Methods) didChangeTextDocumentMethodInfo() *jsonrpc.MethodInfo {
 		NewRequest: func() interface{} {
 			return &defines.DidChangeTextDocumentParams{}
 		},
-		Handler: m.didChangeTextDocument,
+		Handler:    m.didChangeTextDocument,
+		RateLimits: []int{10, 50, 300},
 	}
 }
 
@@ -302,7 +310,8 @@ func (m *Methods) didCloseTextDocumentMethodInfo() *jsonrpc.MethodInfo {
 		NewRequest: func() interface{} {
 			return &defines.DidCloseTextDocumentParams{}
 		},
-		Handler: m.didCloseTextDocument,
+		Handler:    m.didCloseTextDocument,
+		RateLimits: []int{},
 	}
 }
 
@@ -330,7 +339,8 @@ func (m *Methods) willSaveTextDocumentMethodInfo() *jsonrpc.MethodInfo {
 		NewRequest: func() interface{} {
 			return &defines.WillSaveTextDocumentParams{}
 		},
-		Handler: m.willSaveTextDocument,
+		Handler:    m.willSaveTextDocument,
+		RateLimits: []int{},
 	}
 }
 
@@ -358,7 +368,8 @@ func (m *Methods) didSaveTextDocumentMethodInfo() *jsonrpc.MethodInfo {
 		NewRequest: func() interface{} {
 			return &defines.DidSaveTextDocumentParams{}
 		},
-		Handler: m.didSaveTextDocument,
+		Handler:    m.didSaveTextDocument,
+		RateLimits: []int{},
 	}
 }
 
@@ -386,7 +397,8 @@ func (m *Methods) executeCommandMethodInfo() *jsonrpc.MethodInfo {
 		NewRequest: func() interface{} {
 			return &defines.ExecuteCommandParams{}
 		},
-		Handler: m.executeCommand,
+		Handler:    m.executeCommand,
+		RateLimits: []int{},
 	}
 }
 
@@ -414,7 +426,8 @@ func (m *Methods) hoverMethodInfo() *jsonrpc.MethodInfo {
 		NewRequest: func() interface{} {
 			return &defines.HoverParams{}
 		},
-		Handler: m.hover,
+		Handler:    m.hover,
+		RateLimits: []int{},
 	}
 }
 
@@ -442,7 +455,8 @@ func (m *Methods) completionMethodInfo() *jsonrpc.MethodInfo {
 		NewRequest: func() interface{} {
 			return &defines.CompletionParams{}
 		},
-		Handler: m.completion,
+		Handler:    m.completion,
+		RateLimits: []int{},
 	}
 }
 
@@ -470,7 +484,8 @@ func (m *Methods) completionResolveMethodInfo() *jsonrpc.MethodInfo {
 		NewRequest: func() interface{} {
 			return &defines.CompletionItem{}
 		},
-		Handler: m.completionResolve,
+		Handler:    m.completionResolve,
+		RateLimits: []int{},
 	}
 }
 
@@ -498,7 +513,8 @@ func (m *Methods) signatureHelpMethodInfo() *jsonrpc.MethodInfo {
 		NewRequest: func() interface{} {
 			return &defines.SignatureHelpParams{}
 		},
-		Handler: m.signatureHelp,
+		Handler:    m.signatureHelp,
+		RateLimits: []int{},
 	}
 }
 
@@ -526,7 +542,8 @@ func (m *Methods) declarationMethodInfo() *jsonrpc.MethodInfo {
 		NewRequest: func() interface{} {
 			return &defines.DeclarationParams{}
 		},
-		Handler: m.declaration,
+		Handler:    m.declaration,
+		RateLimits: []int{},
 	}
 }
 
@@ -554,7 +571,8 @@ func (m *Methods) definitionMethodInfo() *jsonrpc.MethodInfo {
 		NewRequest: func() interface{} {
 			return &defines.DefinitionParams{}
 		},
-		Handler: m.definition,
+		Handler:    m.definition,
+		RateLimits: []int{},
 	}
 }
 
@@ -582,7 +600,8 @@ func (m *Methods) typeDefinitionMethodInfo() *jsonrpc.MethodInfo {
 		NewRequest: func() interface{} {
 			return &defines.TypeDefinitionParams{}
 		},
-		Handler: m.typeDefinition,
+		Handler:    m.typeDefinition,
+		RateLimits: []int{},
 	}
 }
 
@@ -610,7 +629,8 @@ func (m *Methods) implementationMethodInfo() *jsonrpc.MethodInfo {
 		NewRequest: func() interface{} {
 			return &defines.ImplementationParams{}
 		},
-		Handler: m.implementation,
+		Handler:    m.implementation,
+		RateLimits: []int{},
 	}
 }
 
@@ -638,7 +658,8 @@ func (m *Methods) referencesMethodInfo() *jsonrpc.MethodInfo {
 		NewRequest: func() interface{} {
 			return &defines.ReferenceParams{}
 		},
-		Handler: m.references,
+		Handler:    m.references,
+		RateLimits: []int{},
 	}
 }
 
@@ -666,7 +687,8 @@ func (m *Methods) documentHighlightMethodInfo() *jsonrpc.MethodInfo {
 		NewRequest: func() interface{} {
 			return &defines.DocumentHighlightParams{}
 		},
-		Handler: m.documentHighlight,
+		Handler:    m.documentHighlight,
+		RateLimits: []int{},
 	}
 }
 
@@ -694,7 +716,8 @@ func (m *Methods) documentSymbolWithSliceDocumentSymbolMethodInfo() *jsonrpc.Met
 		NewRequest: func() interface{} {
 			return &defines.DocumentSymbolParams{}
 		},
-		Handler: m.documentSymbolWithSliceDocumentSymbol,
+		Handler:    m.documentSymbolWithSliceDocumentSymbol,
+		RateLimits: []int{},
 	}
 }
 
@@ -722,7 +745,8 @@ func (m *Methods) documentSymbolWithSliceSymbolInformationMethodInfo() *jsonrpc.
 		NewRequest: func() interface{} {
 			return &defines.DocumentSymbolParams{}
 		},
-		Handler: m.documentSymbolWithSliceSymbolInformation,
+		Handler:    m.documentSymbolWithSliceSymbolInformation,
+		RateLimits: []int{},
 	}
 }
 
@@ -750,7 +774,8 @@ func (m *Methods) workspaceSymbolMethodInfo() *jsonrpc.MethodInfo {
 		NewRequest: func() interface{} {
 			return &defines.WorkspaceSymbolParams{}
 		},
-		Handler: m.workspaceSymbol,
+		Handler:    m.workspaceSymbol,
+		RateLimits: []int{},
 	}
 }
 
@@ -778,7 +803,8 @@ func (m *Methods) codeActionWithSliceCommandMethodInfo() *jsonrpc.MethodInfo {
 		NewRequest: func() interface{} {
 			return &defines.CodeActionParams{}
 		},
-		Handler: m.codeActionWithSliceCommand,
+		Handler:    m.codeActionWithSliceCommand,
+		RateLimits: []int{},
 	}
 }
 
@@ -806,7 +832,8 @@ func (m *Methods) codeActionWithSliceCodeActionMethodInfo() *jsonrpc.MethodInfo 
 		NewRequest: func() interface{} {
 			return &defines.CodeActionParams{}
 		},
-		Handler: m.codeActionWithSliceCodeAction,
+		Handler:    m.codeActionWithSliceCodeAction,
+		RateLimits: []int{},
 	}
 }
 
@@ -834,7 +861,8 @@ func (m *Methods) codeActionResolveMethodInfo() *jsonrpc.MethodInfo {
 		NewRequest: func() interface{} {
 			return &defines.CodeAction{}
 		},
-		Handler: m.codeActionResolve,
+		Handler:    m.codeActionResolve,
+		RateLimits: []int{},
 	}
 }
 
@@ -862,7 +890,8 @@ func (m *Methods) codeLensMethodInfo() *jsonrpc.MethodInfo {
 		NewRequest: func() interface{} {
 			return &defines.CodeLensParams{}
 		},
-		Handler: m.codeLens,
+		Handler:    m.codeLens,
+		RateLimits: []int{},
 	}
 }
 
@@ -890,7 +919,8 @@ func (m *Methods) codeLensResolveMethodInfo() *jsonrpc.MethodInfo {
 		NewRequest: func() interface{} {
 			return &defines.CodeLens{}
 		},
-		Handler: m.codeLensResolve,
+		Handler:    m.codeLensResolve,
+		RateLimits: []int{},
 	}
 }
 
@@ -918,7 +948,8 @@ func (m *Methods) documentFormattingMethodInfo() *jsonrpc.MethodInfo {
 		NewRequest: func() interface{} {
 			return &defines.DocumentFormattingParams{}
 		},
-		Handler: m.documentFormatting,
+		Handler:    m.documentFormatting,
+		RateLimits: []int{},
 	}
 }
 
@@ -946,7 +977,8 @@ func (m *Methods) documentRangeFormattingMethodInfo() *jsonrpc.MethodInfo {
 		NewRequest: func() interface{} {
 			return &defines.DocumentRangeFormattingParams{}
 		},
-		Handler: m.documentRangeFormatting,
+		Handler:    m.documentRangeFormatting,
+		RateLimits: []int{},
 	}
 }
 
@@ -974,7 +1006,8 @@ func (m *Methods) documentOnTypeFormattingMethodInfo() *jsonrpc.MethodInfo {
 		NewRequest: func() interface{} {
 			return &defines.DocumentOnTypeFormattingParams{}
 		},
-		Handler: m.documentOnTypeFormatting,
+		Handler:    m.documentOnTypeFormatting,
+		RateLimits: []int{},
 	}
 }
 
@@ -1002,7 +1035,8 @@ func (m *Methods) renameRequestMethodInfo() *jsonrpc.MethodInfo {
 		NewRequest: func() interface{} {
 			return &defines.RenameParams{}
 		},
-		Handler: m.renameRequest,
+		Handler:    m.renameRequest,
+		RateLimits: []int{},
 	}
 }
 
@@ -1030,7 +1064,8 @@ func (m *Methods) prepareRenameMethodInfo() *jsonrpc.MethodInfo {
 		NewRequest: func() interface{} {
 			return &defines.PrepareRenameParams{}
 		},
-		Handler: m.prepareRename,
+		Handler:    m.prepareRename,
+		RateLimits: []int{},
 	}
 }
 
@@ -1058,7 +1093,8 @@ func (m *Methods) documentLinksMethodInfo() *jsonrpc.MethodInfo {
 		NewRequest: func() interface{} {
 			return &defines.DocumentLinkParams{}
 		},
-		Handler: m.documentLinks,
+		Handler:    m.documentLinks,
+		RateLimits: []int{},
 	}
 }
 
@@ -1086,7 +1122,8 @@ func (m *Methods) documentLinkResolveMethodInfo() *jsonrpc.MethodInfo {
 		NewRequest: func() interface{} {
 			return &defines.DocumentLink{}
 		},
-		Handler: m.documentLinkResolve,
+		Handler:    m.documentLinkResolve,
+		RateLimits: []int{},
 	}
 }
 
@@ -1114,7 +1151,8 @@ func (m *Methods) documentColorMethodInfo() *jsonrpc.MethodInfo {
 		NewRequest: func() interface{} {
 			return &defines.DocumentColorParams{}
 		},
-		Handler: m.documentColor,
+		Handler:    m.documentColor,
+		RateLimits: []int{},
 	}
 }
 
@@ -1142,7 +1180,8 @@ func (m *Methods) colorPresentationMethodInfo() *jsonrpc.MethodInfo {
 		NewRequest: func() interface{} {
 			return &defines.ColorPresentationParams{}
 		},
-		Handler: m.colorPresentation,
+		Handler:    m.colorPresentation,
+		RateLimits: []int{},
 	}
 }
 
@@ -1170,7 +1209,8 @@ func (m *Methods) foldingRangesMethodInfo() *jsonrpc.MethodInfo {
 		NewRequest: func() interface{} {
 			return &defines.FoldingRangeParams{}
 		},
-		Handler: m.foldingRanges,
+		Handler:    m.foldingRanges,
+		RateLimits: []int{},
 	}
 }
 
@@ -1198,7 +1238,8 @@ func (m *Methods) selectionRangesMethodInfo() *jsonrpc.MethodInfo {
 		NewRequest: func() interface{} {
 			return &defines.SelectionRangeParams{}
 		},
-		Handler: m.selectionRanges,
+		Handler:    m.selectionRanges,
+		RateLimits: []int{},
 	}
 }
 

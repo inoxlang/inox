@@ -11,6 +11,10 @@ type method struct {
 	Code          interface{}
 	ProgressToken interface{}
 	WithBuiltin   bool
+
+	// List of the maximum number of calls allowed during sliding windows with increasing durations (1s, 10s, and 100s).
+	// Example: [10, 50, 200] means at most 10 calls in 1s, 50 calls in 50s and 200 calls in 100s.
+	RateLimits []int
 }
 
 type or []interface{}
@@ -53,6 +57,7 @@ var methods = []method{
 		Name:         "DidChangeTextDocument",
 		RegisterName: "textDocument/didChange",
 		Args:         defines.DidChangeTextDocumentParams{},
+		RateLimits:   []int{10, 50, 300},
 	},
 	{
 		Name: "DidCloseTextDocument",
