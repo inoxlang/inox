@@ -273,7 +273,8 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 	case *parse.QuantityLiteral:
 		v, err := extData.GetQuantity(n.Values, n.Units)
 		if err != nil {
-			return nil, err
+			state.addError(makeSymbolicEvalError(node, state, err.Error()))
+			return ANY, nil
 		}
 		return extData.ToSymbolicValue(v, false)
 	case *parse.DateLiteral:
@@ -281,7 +282,8 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 	case *parse.RateLiteral:
 		v, err := extData.GetRate(n.Values, n.Units, n.DivUnit)
 		if err != nil {
-			return nil, err
+			state.addError(makeSymbolicEvalError(node, state, err.Error()))
+			return ANY, nil
 		}
 		return extData.ToSymbolicValue(v, false)
 	case *parse.QuotedStringLiteral:
