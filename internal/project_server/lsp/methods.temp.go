@@ -57,7 +57,7 @@ var methods = []method{
 		Name:         "DidChangeTextDocument",
 		RegisterName: "textDocument/didChange",
 		Args:         defines.DidChangeTextDocumentParams{},
-		RateLimits:   []int{10, 50, 300},
+		RateLimits:   []int{20, 50, 300},
 	},
 	{
 		Name: "DidCloseTextDocument",
@@ -91,6 +91,7 @@ var methods = []method{
 		Args:          defines.CompletionParams{},
 		Result:        []defines.CompletionItem{},
 		ProgressToken: []defines.CompletionItem{},
+		RateLimits:    []int{10, 30, 100},
 	},
 	{
 		Name:         "CompletionResolve",

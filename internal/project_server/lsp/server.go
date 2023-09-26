@@ -133,10 +133,10 @@ func (s *Server) startWebsocketServer(addr string) error {
 		addr = "127.0.0.1:7998"
 	}
 
-	wsServer, err := NewJsonRpcWebsocketServer(s.ctx, JsonRpcWebsocketServerConfig{
-		addr:              addr,
-		rpcServer:         s.rpcServer,
-		maxWebsocketPerIp: s.Opt.MaxWebsocketPerIp,
+	wsServer, err := jsonrpc.NewJsonRpcWebsocketServer(s.ctx, jsonrpc.JsonRpcWebsocketServerConfig{
+		Addr:              addr,
+		RpcServer:         s.rpcServer,
+		MaxWebsocketPerIp: s.Opt.MaxWebsocketPerIp,
 	})
 	if err != nil {
 		return err
@@ -146,7 +146,7 @@ func (s *Server) startWebsocketServer(addr string) error {
 		Addr: addr,
 		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if r.URL.Path == "/" {
-				wsServer.handleNew(w, r)
+				wsServer.HandleNew(w, r)
 				return
 			}
 			if s.ServerHttpHandler != nil {
@@ -161,7 +161,7 @@ func (s *Server) startWebsocketServer(addr string) error {
 		return err
 	}
 
-	wsServer.logger.Info().Msg("start HTTPS server")
+	wsServer.Logger().Info().Msg("start HTTPS server")
 	err = httpServer.ListenAndServeTLS("", "")
 	if err != nil {
 		return fmt.Errorf("failed to create HTTPS server: %w", err)

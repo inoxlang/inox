@@ -44,6 +44,7 @@ func registerProjectMethodHandlers(server *lsp.Server, opts LSPServerConfigurati
 		NewRequest: func() interface{} {
 			return &CreateProjectParams{}
 		},
+		RateLimits: []int{0, 0, 2},
 		Handler: func(ctx context.Context, req interface{}) (interface{}, error) {
 			session := jsonrpc.GetSession(ctx)
 			sessionCtx := session.Context()
@@ -71,6 +72,7 @@ func registerProjectMethodHandlers(server *lsp.Server, opts LSPServerConfigurati
 		NewRequest: func() interface{} {
 			return &OpenProjectParams{}
 		},
+		RateLimits: []int{0, 2, 5},
 		Handler: func(ctx context.Context, req interface{}) (interface{}, error) {
 			session := jsonrpc.GetSession(ctx)
 			sessionCtx := session.Context()

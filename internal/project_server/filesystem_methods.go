@@ -149,6 +149,7 @@ func registerFilesystemMethodHandlers(server *lsp.Server) {
 		NewRequest: func() interface{} {
 			return &FsFileStatParams{}
 		},
+		RateLimits: []int{20, 100, 300},
 		Handler: func(ctx context.Context, req interface{}) (interface{}, error) {
 			session := jsonrpc.GetSession(ctx)
 			params := req.(*FsFileStatParams)

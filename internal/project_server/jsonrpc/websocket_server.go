@@ -1,4 +1,4 @@
-package lsp
+package jsonrpc
 
 import (
 	"fmt"
@@ -7,7 +7,6 @@ import (
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/net_ns"
 	nettypes "github.com/inoxlang/inox/internal/net_types"
-	"github.com/inoxlang/inox/internal/project_server/jsonrpc"
 	"github.com/inoxlang/inox/internal/project_server/logs"
 	"github.com/rs/zerolog"
 )
@@ -19,18 +18,18 @@ const (
 
 type JsonRpcWebsocketServer struct {
 	wsServer  *net_ns.WebsocketServer
-	rpcServer *jsonrpc.Server
+	rpcServer *Server
 	logger    *zerolog.Logger
 
 	config JsonRpcWebsocketServerConfig
 }
 
 type JsonRpcWebsocketServerConfig struct {
-	addr      string
-	rpcServer *jsonrpc.Server
+	Addr      string
+	RpcServer *Server
 
 	//defaults to DEFAULT_MAX_IP_WS_CONNS
-	maxWebsocketPerIp int
+	MaxWebsocketPerIp int
 }
 
 func NewJsonRpcWebsocketServer(ctx *core.Context, config JsonRpcWebsocketServerConfig) (*JsonRpcWebsocketServer, error) {
@@ -43,14 +42,14 @@ func NewJsonRpcWebsocketServer(ctx *core.Context, config JsonRpcWebsocketServerC
 		return nil, fmt.Errorf("failed to create websocket server: %w", err)
 	}
 
-	if config.maxWebsocketPerIp <= 0 {
-		config.maxWebsocketPerIp = DEFAULT_MAX_IP_WS_CONNS
+	if config.MaxWebsocketPerIp <= 0 {
+		config.MaxWebsocketPerIp = DEFAULT_MAX_IP_WS_CONNS
 	}
 
 	server := &JsonRpcWebsocketServer{
 		wsServer:  wsServer,
 		logger:    &logger,
-		rpcServer: config.rpcServer,
+		rpcServer: config.RpcServer,
 		config:    config,
 	}
 
@@ -61,7 +60,11 @@ func NewJsonRpcWebsocketServer(ctx *core.Context, config JsonRpcWebsocketServerC
 	return server, nil
 }
 
-func (server *JsonRpcWebsocketServer) handleNew(httpRespWriter http.ResponseWriter, httpReq *http.Request) {
+func (server *JsonRpcWebsocketServer) Logger() *zerolog.Logger {
+	return server.logger
+}
+
+func (server *JsonRpcWebsocketServer) HandleNew(httpRespWriter http.ResponseWriter, httpReq *http.Request) {
 	conn, err := server.wsServer.UpgradeGoValues(httpRespWriter, httpReq, server.allowNewConnection)
 	if err != nil {
 		server.logger.Debug().Err(err).Send()
@@ -69,7 +72,7 @@ func (server *JsonRpcWebsocketServer) handleNew(httpRespWriter http.ResponseWrit
 	}
 
 	socket := NewJsonRpcWebsocket(conn, *server.logger)
-	server.rpcServer.MsgConnComeIn(socket, func(session *jsonrpc.Session) {
+	server.rpcServer.MsgConnComeIn(socket, func(session *Session) {
 		logs.Printf("new session at %s (remote)\n", socket.conn.RemoteAddrWithPort())
 		socket.sessionContext = session.Context()
 	})
@@ -80,7 +83,7 @@ func (server *JsonRpcWebsocketServer) allowNewConnection(
 	remoteAddr nettypes.RemoteIpAddr,
 	currentConns []*net_ns.WebsocketConnection) error {
 
-	if len(currentConns)+1 <= server.config.maxWebsocketPerIp {
+	if len(currentConns)+1 <= server.config.MaxWebsocketPerIp {
 		return nil
 	}
 	return net_ns.ErrTooManyWsConnectionsOnIp

@@ -282,7 +282,7 @@ func (m *Methods) didChangeTextDocumentMethodInfo() *jsonrpc.MethodInfo {
 			return &defines.DidChangeTextDocumentParams{}
 		},
 		Handler:    m.didChangeTextDocument,
-		RateLimits: []int{10, 50, 300},
+		RateLimits: []int{20, 50, 300},
 	}
 }
 
@@ -456,7 +456,7 @@ func (m *Methods) completionMethodInfo() *jsonrpc.MethodInfo {
 			return &defines.CompletionParams{}
 		},
 		Handler:    m.completion,
-		RateLimits: []int{},
+		RateLimits: []int{10, 30, 100},
 	}
 }
 

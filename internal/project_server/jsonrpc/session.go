@@ -28,14 +28,12 @@ const (
 	JSONRPC_VERSION = "2.0"
 )
 
-type sessionKeyType struct{}
+var (
+	ErrRateLimitedMethod = errors.New("rate limited method")
+	ErrRateLimited       = errors.New("rate limited")
 
-var sessionKey = sessionKeyType{}
-
-type executor struct {
-	id     interface{}
-	cancel context.CancelFunc
-}
+	sessionKey struct{}
+)
 
 type Session struct {
 	id     int
@@ -43,14 +41,21 @@ type Session struct {
 	ctx    *core.Context
 
 	// Only one connection is non-nil
-	conn    ReaderWriter
-	msgConn MessageReaderWriter
+	conn      ReaderWriter
+	msgConn   MessageReaderWriter
+	writeLock sync.Mutex
+
+	rateLimiter *rateLimiter
 
 	executors    map[interface{}]*executor
 	executorLock sync.Mutex
-	writeLock    sync.Mutex
 
 	closed atomic.Bool
+}
+
+type executor struct {
+	id     interface{}
+	cancel context.CancelFunc
 }
 
 func newSessionWithConn(id int, server *Server, conn ReaderWriter) *Session {
@@ -66,7 +71,11 @@ func newSessionWithMessageConn(id int, server *Server, conn MessageReaderWriter)
 }
 
 func newSession(id int, server *Server) *Session {
-	s := &Session{id: id, server: server}
+	s := &Session{
+		id:          id,
+		server:      server,
+		rateLimiter: newRateLimiter(*server.ctx.Logger()),
+	}
 	s.executors = make(map[interface{}]*executor)
 	return s
 }
@@ -278,16 +287,29 @@ func (s *Session) execute(mtdInfo MethodInfo, req RequestMessage, args interface
 func (s *Session) handlerRequest(req RequestMessage) error {
 	mtd := req.Method
 	mtdInfo, ok := s.server.methods[mtd]
+	stringifiedID := fmt.Sprintf("%d", req.ID)
 
 	if !ok {
-		logs.Printf("Request: [%v] [%s], content: [%v]\n", req.ID, req.Method, string(req.Params))
+		logs.Printf("Request: [%v] [%s], content: [%v]\n", stringifiedID, req.Method, string(req.Params))
 		return MethodNotFound
 	}
 
 	if mtdInfo.SensitiveData {
-		logs.Printf("Request: [%v] [%s], content: ...\n", req.ID, req.Method)
+		logs.Printf("Request: [%v] [%s], content: ...\n", stringifiedID, req.Method)
 	} else {
-		logs.Printf("Request: [%v] [%s], content: [%v]\n", req.ID, req.Method, string(req.Params))
+		logs.Printf("Request: [%v] [%s], content: [%v]\n", stringifiedID, req.Method, string(req.Params))
+	}
+
+	//rate limit
+	if webSocket, ok := s.msgConn.(*JsonRpcWebsocket); ok {
+		addrPort := webSocket.conn.RemoteAddrWithPort()
+
+		if rateLimited, methodRateLimited := s.rateLimiter.limit(mtdInfo, stringifiedID, addrPort); rateLimited {
+			if methodRateLimited {
+				return fmt.Errorf("%w: %s", ErrRateLimitedMethod, mtdInfo.Name)
+			}
+			return ErrRateLimited
+		}
 	}
 
 	reqArgs := mtdInfo.NewRequest()
@@ -324,7 +346,7 @@ func (s *Session) write(resp ResponseMessage, sensitiveMethod bool) error {
 	return s.mustWriteWithContentLengthHeader(res)
 }
 
-// SendRequest sends a notification to the client NotificationMessage.BaseMessage
+// SendRequest sends a notification to the client, NotificationMessage.BaseMessage
 // is set by the callee.
 func (s *Session) Notify(notif NotificationMessage) error {
 	notif.BaseMessage = BaseMessage{Jsonrpc: JSONRPC_VERSION}
