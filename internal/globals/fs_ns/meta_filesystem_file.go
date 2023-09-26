@@ -87,8 +87,8 @@ func (f *metaFsFile) Truncate(size int64) error {
 		}
 
 		// obviously this is not robust code
-		if size > stat.Size() {
-			if err := f.checkUsableSpace(int(stat.Size())); err != nil {
+		if currSize := stat.Size(); size > stat.Size() {
+			if err := f.checkUsableSpace(int(size - currSize)); err != nil {
 				return err
 			}
 		}

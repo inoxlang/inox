@@ -407,7 +407,7 @@ func TestMetaFilesystemUsedSpaceValidation(t *testing.T) {
 			return
 		}
 
-		err = f.Truncate(int64(maxUsableSpace / 2))
+		err = f.Truncate(int64(maxUsableSpace))
 		if !assert.ErrorIs(t, err, ErrNoRemainingSpaceToApplyChange) {
 			return
 		}
