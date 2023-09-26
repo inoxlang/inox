@@ -2,8 +2,11 @@ package project_server
 
 import (
 	"errors"
+	"os"
 
+	"github.com/go-git/go-billy/v5"
 	afs "github.com/inoxlang/inox/internal/afs"
+	"github.com/inoxlang/inox/internal/globals/fs_ns"
 )
 
 const (
@@ -26,6 +29,18 @@ func NewFilesystem(base afs.Filesystem, unsavedDocumentFs afs.Filesystem) *Files
 		Filesystem:       base,
 		unsavedDocuments: unsavedDocumentFs,
 	}
+}
+
+// OpenFile opens the unsaved document if flag is os.O_RDONLY, otherwise the persisted file is open.
+func (fs *Filesystem) OpenFile(filename string, flag int, perm os.FileMode) (billy.File, error) {
+	if fs_ns.IsReadOnly(flag) {
+		f, err := fs.unsavedDocuments.OpenFile(filename, flag, 0)
+		if os.IsNotExist(err) {
+			return fs.Filesystem.OpenFile(filename, flag, 0)
+		}
+		return f, nil
+	}
+	return fs.Filesystem.OpenFile(filename, flag, perm)
 }
 
 func (fs *Filesystem) unsavedDocumentsFS() afs.Filesystem {

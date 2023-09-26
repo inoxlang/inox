@@ -17,7 +17,11 @@ func getCompletions(fpath string, line, column int32, session *jsonrpc.Session) 
 		Filesystem: fls,
 	})
 
-	state, _, chunk, ok := prepareSourceFileInDevMode(fpath, handlingCtx, session, true)
+	state, _, chunk, ok := prepareSourceFileInExtractionMode(handlingCtx, filePreparationParams{
+		fpath:         fpath,
+		session:       session,
+		requiresState: true,
+	})
 	if !ok {
 		return nil
 	}

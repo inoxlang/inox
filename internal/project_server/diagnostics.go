@@ -26,7 +26,11 @@ func notifyDiagnostics(session *jsonrpc.Session, docURI defines.DocumentUri, usi
 	errSeverity := defines.DiagnosticSeverityError
 	warningSeverity := defines.DiagnosticSeverityWarning
 
-	state, mod, _, ok := prepareSourceFileInDevMode(fpath, ctx, session, false)
+	state, mod, _, ok := prepareSourceFileInExtractionMode(ctx, filePreparationParams{
+		fpath:         fpath,
+		session:       session,
+		requiresState: false,
+	})
 
 	//teardown in separate goroutine to return quickly
 	defer func() {

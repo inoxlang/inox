@@ -48,7 +48,9 @@ type additionalSessionData struct {
 	lock sync.RWMutex
 
 	didSaveCapabilityRegistrationIds map[defines.DocumentUri]uuid.UUID
-	unsavedDocumentSyncData          map[string]*unsavedDocumentSyncData
+
+	unsavedDocumentSyncData  map[string] /* fpath */ *unsavedDocumentSyncData
+	preparedSourceFilesCache map[string] /* fpath */ *preparedSourceFileCache
 
 	filesystem         *Filesystem
 	clientCapabilities defines.ClientCapabilities
@@ -454,10 +456,15 @@ func registerHandlers(server *lsp.Server, opts LSPServerOptions) {
 		sessionData := getLockedSessionData(session)
 		syncFull := sessionData.serverCapabilities.TextDocumentSync == defines.TextDocumentSyncKindFull
 		syncData, hasSyncData := sessionData.unsavedDocumentSyncData[fpath]
+		prepareFileCache, hasCache := sessionData.preparedSourceFilesCache[fpath]
 		sessionData.lock.Unlock()
 
 		if hasSyncData {
 			syncData.reactToDidChange(fls)
+		}
+		if hasCache {
+			logs.Println("clear cache for file", fpath)
+			prepareFileCache.clearBeforeNextAccess.Store(true)
 		}
 
 		if syncFull {
@@ -537,6 +544,7 @@ func registerHandlers(server *lsp.Server, opts LSPServerOptions) {
 		}
 
 		fsErr := fsutil.WriteFile(fls.unsavedDocumentsFS(), fpath, []byte(fullDocumentText), 0700)
+
 		if fsErr != nil {
 			return jsonrpc.ResponseError{
 				Code:    jsonrpc.InternalError.Code,
@@ -561,6 +569,7 @@ func registerHandlers(server *lsp.Server, opts LSPServerOptions) {
 
 		sessionData := getLockedSessionData(session)
 		delete(sessionData.unsavedDocumentSyncData, fpath)
+		delete(sessionData.preparedSourceFilesCache, fpath)
 		sessionData.lock.Unlock()
 
 		docsFs := fls.unsavedDocumentsFS()
@@ -590,7 +599,11 @@ func registerHandlers(server *lsp.Server, opts LSPServerOptions) {
 			Filesystem: fls,
 		})
 
-		state, _, chunk, ok := prepareSourceFileInDevMode(fpath, handlingCtx, session, true)
+		state, _, chunk, ok := prepareSourceFileInExtractionMode(handlingCtx, filePreparationParams{
+			fpath:         fpath,
+			session:       session,
+			requiresState: true,
+		})
 
 		if !ok || state == nil || state.SymbolicData == nil {
 			logs.Println("failed to prepare source file", err)
