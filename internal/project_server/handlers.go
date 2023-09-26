@@ -108,7 +108,6 @@ func registerHandlers(server *lsp.Server, opts LSPServerOptions) {
 
 	server.OnInitialize(func(ctx context.Context, req *defines.InitializeParams) (result *defines.InitializeResult, err *defines.InitializeError) {
 		session := jsonrpc.GetSession(ctx)
-
 		s := &defines.InitializeResult{}
 
 		s.Capabilities.HoverProvider = true
@@ -134,6 +133,17 @@ func registerHandlers(server *lsp.Server, opts LSPServerOptions) {
 		sessionData.serverCapabilities = s.Capabilities
 		sessionData.projectMode = projectMode
 		sessionData.lock.Unlock()
+
+		//remove closed sessions from sessionToAdditionalData
+		sessionToAdditionalDataLock.Lock()
+		for session := range sessionToAdditionalData {
+			if session.Closed() {
+				delete(sessionToAdditionalData, session)
+			}
+		}
+		newCount := len(sessionToAdditionalData)
+		sessionToAdditionalDataLock.Unlock()
+		logs.Println("current session count:", newCount)
 
 		return s, nil
 	})

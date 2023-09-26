@@ -433,6 +433,10 @@ func (s *Session) Context() *core.Context {
 	return s.ctx
 }
 
+func (s *Session) Closed() bool {
+	return s.closed.Load()
+}
+
 func (s *Session) Close() error {
 	if !s.closed.CompareAndSwap(false, true) {
 		return errors.New("already closed")
