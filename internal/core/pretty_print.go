@@ -201,6 +201,16 @@ func GetNodeColorizations(chunk *parse.Chunk, lightMode bool) []ColorizationInfo
 				Span:          n.Base().Span,
 				ColorSequence: colors.InvalidNode,
 			})
+		case *parse.ComplexStringPatternPiece:
+			for _, token := range n.Tokens {
+				switch token.Type {
+				case parse.PERCENT_STR:
+					colorizations = append(colorizations, ColorizationInfo{
+						Span:          token.Span,
+						ColorSequence: colors.PatternIdentifier,
+					})
+				}
+			}
 		case *parse.IfStatement, *parse.IfExpression, *parse.SwitchStatement, *parse.MatchStatement, *parse.DefaultCase,
 			*parse.ForStatement, *parse.WalkStatement, *parse.ReturnStatement, *parse.BreakStatement, *parse.ContinueStatement,
 			*parse.PruneStatement, *parse.YieldStatement, *parse.AssertionStatement, *parse.ComputeExpression:
@@ -213,6 +223,17 @@ func GetNodeColorizations(chunk *parse.Chunk, lightMode bool) []ColorizationInfo
 				colorizations = append(colorizations, ColorizationInfo{
 					Span:          tok.Span,
 					ColorSequence: colors.ControlKeyword,
+				})
+			}
+		case *parse.BinaryExpression:
+			for _, token := range n.Tokens {
+				if token.Type == parse.OPENING_PARENTHESIS || token.Type == parse.CLOSING_PARENTHESIS {
+					continue
+				}
+
+				colorizations = append(colorizations, ColorizationInfo{
+					Span:          token.Span,
+					ColorSequence: colors.OtherKeyword,
 				})
 			}
 		case *parse.SpawnExpression:
