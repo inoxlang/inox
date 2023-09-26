@@ -3,6 +3,8 @@ package fs_ns
 import (
 	"bytes"
 	"strconv"
+	"sync"
+	"sync/atomic"
 	"testing"
 
 	"github.com/inoxlang/inox/internal/core"
@@ -179,6 +181,85 @@ func TestMetaFilesystemRemoveShouldRemoveConcreteFile(t *testing.T) {
 	if !assert.Len(t, entries, 1) { //metadata file
 		return
 	}
+}
+
+func TestMetaFilesystemFileCountValidation(t *testing.T) {
+	t.Run("exceeding the limit by creating files one by one should be an error", func(t *testing.T) {
+		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+		underlyingFS := NewMemFilesystem(100_000_000)
+
+		fls, err := OpenMetaFilesystem(ctx, underlyingFS, MetaFilesystemOptions{
+			MaxFileCount: 10 + 1, //add one for the metadata file
+			Dir:          "/fs",
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		for i := 0; i < 10; i++ {
+			f, err := fls.Create("f" + strconv.Itoa(i))
+			if !assert.NoError(t, err) {
+				return
+			}
+			f.Close()
+		}
+		//at this point the file count has reached the maxiumum
+
+		f, err := fls.Create("f10")
+		if f != nil {
+			f.Close()
+		}
+
+		if !assert.ErrorIs(t, err, ErrMaxFileNumberAlreadyReached) {
+			return
+		}
+	})
+
+	t.Run("exceeding the limit by creating files in parallel should be an error", func(t *testing.T) {
+		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+		underlyingFS := NewMemFilesystem(100_000_000)
+
+		//the value is high to make sure some goroutines run at the same time
+		const fileCount = 1000
+
+		fls, err := OpenMetaFilesystem(ctx, underlyingFS, MetaFilesystemOptions{
+			MaxFileCount: fileCount + 1, //add one for the metadata file
+			Dir:          "/fs",
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		var errCount atomic.Int32 //error count should be fileCount
+		wg := new(sync.WaitGroup)
+		goroutineCount := 2 * fileCount
+		wg.Add(goroutineCount)
+
+		for i := 0; i < goroutineCount; i++ {
+			go func(i int) {
+				defer wg.Done()
+				f, err := fls.Create("f" + strconv.Itoa(i))
+				if err != nil {
+					errCount.Add(1)
+					return
+				}
+				f.Close()
+			}(i)
+		}
+
+		wg.Wait()
+
+		assert.Zero(t, fls.pendingFileCreations.Load())
+
+		if !assert.Equal(t, int32(fileCount), errCount.Load()) {
+			return
+		}
+	})
+
 }
 
 func TestMetaFilesystemUsedSpaceValidation(t *testing.T) {

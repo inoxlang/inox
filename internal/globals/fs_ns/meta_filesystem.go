@@ -37,6 +37,7 @@ const (
 	METAFS_MIN_USABLE_SPACE                             = 10_000_000
 	METAFS_USED_SPACE_CHECK_INTERVAL                    = time.Second / 2
 	METAFS_ALWAYS_CHECK_USED_SPACE_BYTE_COUNT_THRESHOLD = 100_000
+	METAFS_DEFAULT_MAX_FILE_COUNT                       = 1000
 )
 
 var (
@@ -50,6 +51,7 @@ type MetaFilesystem struct {
 	underlying     billy.Basic
 	dir            *string        //optional, if set underlying is an afs.Filesytem
 	maxUsableSpace core.ByteCount //maximum space usable in the underyling filesystem
+	maxFileCount   int32          //maximum number of files stored by MetaFilesystem in the underyling filesystem
 
 	//all the metadata about files is stored in this Key value store.
 	metadata *filekv.SingleFileKV
@@ -57,6 +59,8 @@ type MetaFilesystem struct {
 
 	lock   sync.RWMutex
 	closed atomic.Bool
+
+	pendingFileCreations atomic.Int32
 
 	usedSpaceCache     core.ByteCount
 	usedSpaceCacheLock sync.RWMutex
@@ -70,6 +74,9 @@ type MetaFilesystemOptions struct {
 	//maximum space usable in the underlying filesystem, ignored if dir is false.
 	//The value should be greater or equal to METAFS_MIN_USABLE_SPACE, it defaults to METAFS_MIN_USABLE_SPACE.
 	MaxUsableSpace core.ByteCount
+
+	//The value defaults to METAFS_DEFAULT_MAX_FILE_COUNT, ignored if dir is false.
+	MaxFileCount int32
 }
 
 func OpenMetaFilesystem(ctx *core.Context, underlying billy.Basic, opts MetaFilesystemOptions) (*MetaFilesystem, error) {
@@ -78,6 +85,11 @@ func OpenMetaFilesystem(ctx *core.Context, underlying billy.Basic, opts MetaFile
 	}
 
 	maxUsableSpace := max(opts.MaxUsableSpace, METAFS_MIN_USABLE_SPACE)
+
+	maxFileCount := opts.MaxFileCount
+	if maxFileCount <= 0 {
+		maxFileCount = METAFS_DEFAULT_MAX_FILE_COUNT
+	}
 
 	kvConfig := filekv.KvStoreConfig{
 		Filesystem: underlying,
@@ -109,6 +121,7 @@ func OpenMetaFilesystem(ctx *core.Context, underlying billy.Basic, opts MetaFile
 		underlying:     underlying,
 		metadata:       kv,
 		maxUsableSpace: maxUsableSpace,
+		maxFileCount:   maxFileCount,
 	}
 
 	dir := opts.Dir
@@ -324,6 +337,25 @@ func (fls *MetaFilesystem) deleteFileMetadata(pth core.Path, usedTx *filekv.Data
 	return nil
 }
 
+func (fls *MetaFilesystem) getUnderlyingFileCount() (int32, error) {
+	if fls.dir == nil {
+		//TODO: iterate over files and call Stat()
+		// this should not necessitate a global locking
+		return 0, nil
+	}
+
+	dir := *fls.dir
+	underlying := fls.underlying.(afs.Filesystem)
+
+	//we assume that the underlying directory only contain files created by the meta filesystem.
+	entries, err := underlying.ReadDir(dir)
+	if err != nil {
+		return 0, fmt.Errorf("impossible to read concrete directory")
+	}
+
+	return int32(len(entries)), nil
+}
+
 func (fls *MetaFilesystem) computeUsedSpace(useCache bool, add ...core.ByteCount) (core.ByteCount, error) {
 	// WIP
 
@@ -421,6 +453,21 @@ func (fls *MetaFilesystem) checkAddedByteCount(size core.ByteCount) (bool, error
 }
 
 func (fls *MetaFilesystem) Create(filename string) (billy.File, error) {
+	fls.pendingFileCreations.Add(1)
+	defer fls.pendingFileCreations.Add(-1)
+
+	//properly taking into account files been deleted is not trivial,
+	//especially since we know nothing about the underyling file system.
+
+	count, err := fls.getUnderlyingFileCount()
+	if err != nil {
+		return nil, err
+	}
+
+	if count+fls.pendingFileCreations.Load() > int32(fls.maxFileCount) {
+		return nil, ErrMaxFileNumberAlreadyReached
+	}
+
 	return fls.OpenFile(filename, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
 }
 
