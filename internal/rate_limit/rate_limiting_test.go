@@ -24,7 +24,7 @@ func TestSlidingWindow(t *testing.T) {
 
 		assert.True(t, window.AllowRequest(SlidingWindowRequestInfo{
 			CreationTime: time.Unix(0, 1),
-			ULID:         ulid.Make(),
+			Id:           ulid.Make().String(),
 		}, logger))
 	})
 
@@ -33,22 +33,22 @@ func TestSlidingWindow(t *testing.T) {
 
 		window.AllowRequest(SlidingWindowRequestInfo{
 			CreationTime: time.Unix(0, 1),
-			ULID:         ulid.Make(),
+			Id:           ulid.Make().String(),
 		}, logger)
 
 		window.AllowRequest(SlidingWindowRequestInfo{
 			CreationTime: time.Unix(1, 0),
-			ULID:         ulid.Make(),
+			Id:           ulid.Make().String(),
 		}, logger)
 
 		window.AllowRequest(SlidingWindowRequestInfo{
 			CreationTime: time.Unix(2, 0),
-			ULID:         ulid.Make(),
+			Id:           ulid.Make().String(),
 		}, logger)
 
 		assert.False(t, window.AllowRequest(SlidingWindowRequestInfo{
 			CreationTime: time.Unix(2, 0),
-			ULID:         ulid.Make(),
+			Id:           ulid.Make().String(),
 		}, logger))
 	})
 
@@ -63,22 +63,22 @@ func TestSlidingWindow(t *testing.T) {
 
 		window.AllowRequest(SlidingWindowRequestInfo{
 			CreationTime: time.Unix(0, 1),
-			ULID:         ulid.Make(),
+			Id:           ulid.Make().String(),
 		}, logger)
 
 		window.AllowRequest(SlidingWindowRequestInfo{
 			CreationTime: time.Unix(1, 0),
-			ULID:         ulid.Make(),
+			Id:           ulid.Make().String(),
 		}, logger)
 
 		window.AllowRequest(SlidingWindowRequestInfo{
 			CreationTime: time.Unix(2, 0),
-			ULID:         ulid.Make(),
+			Id:           ulid.Make().String(),
 		}, logger)
 
 		assert.True(t, window.AllowRequest(SlidingWindowRequestInfo{
 			CreationTime: time.Unix(2, 0),
-			ULID:         ulid.Make(),
+			Id:           ulid.Make().String(),
 		}, logger))
 	})
 
@@ -87,22 +87,22 @@ func TestSlidingWindow(t *testing.T) {
 
 		window.AllowRequest(SlidingWindowRequestInfo{
 			CreationTime: time.Unix(0, 1),
-			ULID:         ulid.Make(),
+			Id:           ulid.Make().String(),
 		}, logger)
 
 		window.AllowRequest(SlidingWindowRequestInfo{
 			CreationTime: time.Unix(2, 0),
-			ULID:         ulid.Make(),
+			Id:           ulid.Make().String(),
 		}, logger)
 
 		window.AllowRequest(SlidingWindowRequestInfo{
 			CreationTime: time.Unix(3, 0),
-			ULID:         ulid.Make(),
+			Id:           ulid.Make().String(),
 		}, logger)
 
 		assert.True(t, window.AllowRequest(SlidingWindowRequestInfo{
 			CreationTime: time.Unix(4, 0),
-			ULID:         ulid.Make(),
+			Id:           ulid.Make().String(),
 		}, logger))
 	})
 }
@@ -121,7 +121,7 @@ func TestSharedSlidingWindow(t *testing.T) {
 
 		assert.True(t, window.AllowRequest(SlidingWindowRequestInfo{
 			CreationTime:      time.Unix(0, 1),
-			ULID:              ulid.Make(),
+			Id:                ulid.Make().String(),
 			RemoteAddrAndPort: "37.00.00.01:3000",
 		}, logger))
 	})
@@ -131,13 +131,13 @@ func TestSharedSlidingWindow(t *testing.T) {
 
 		window.AllowRequest(SlidingWindowRequestInfo{
 			CreationTime:      time.Unix(1000, 1),
-			ULID:              ulid.Make(),
+			Id:                ulid.Make().String(),
 			RemoteAddrAndPort: "37.00.00.01:3000",
 		}, logger)
 
 		assert.False(t, window.AllowRequest(SlidingWindowRequestInfo{
 			CreationTime:      time.Unix(1001, 0),
-			ULID:              ulid.Make(),
+			Id:                ulid.Make().String(),
 			RemoteAddrAndPort: "37.00.00.01:3000",
 		}, logger))
 
@@ -148,25 +148,25 @@ func TestSharedSlidingWindow(t *testing.T) {
 
 		window.AllowRequest(SlidingWindowRequestInfo{
 			CreationTime:      time.Unix(1000, 1),
-			ULID:              ulid.Make(),
+			Id:                ulid.Make().String(),
 			RemoteAddrAndPort: "37.00.00.01:3000",
 		}, logger)
 
 		window.AllowRequest(SlidingWindowRequestInfo{
 			CreationTime:      time.Unix(1001, 0),
-			ULID:              ulid.Make(),
+			Id:                ulid.Make().String(),
 			RemoteAddrAndPort: "37.00.00.01:3000",
 		}, logger)
 
 		window.AllowRequest(SlidingWindowRequestInfo{
 			CreationTime:      time.Unix(1002, 0),
-			ULID:              ulid.Make(),
+			Id:                ulid.Make().String(),
 			RemoteAddrAndPort: "37.00.00.01:3000",
 		}, logger)
 
 		assert.False(t, window.AllowRequest(SlidingWindowRequestInfo{
 			CreationTime:      time.Unix(1002, 10),
-			ULID:              ulid.Make(),
+			Id:                ulid.Make().String(),
 			RemoteAddrAndPort: "37.00.00.01:3001",
 		}, logger))
 	})
@@ -176,26 +176,26 @@ func TestSharedSlidingWindow(t *testing.T) {
 
 		window.AllowRequest(SlidingWindowRequestInfo{
 			CreationTime:      time.Unix(1000, 0),
-			ULID:              ulid.Make(),
+			Id:                ulid.Make().String(),
 			RemoteAddrAndPort: "37.00.00.01:3000",
 		}, logger)
 
 		window.AllowRequest(SlidingWindowRequestInfo{
 			CreationTime:      time.Unix(1002, 0),
-			ULID:              ulid.Make(),
+			Id:                ulid.Make().String(),
 			RemoteAddrAndPort: "37.00.00.01:3000",
 		}, logger)
 
 		window.AllowRequest(SlidingWindowRequestInfo{
 			CreationTime:      time.Unix(1003, 0),
-			ULID:              ulid.Make(),
+			Id:                ulid.Make().String(),
 			RemoteAddrAndPort: "37.00.00.01:3000",
 		}, logger)
 
 		//request from other IP
 		assert.True(t, window.AllowRequest(SlidingWindowRequestInfo{
 			CreationTime:      time.Unix(1004, 0),
-			ULID:              ulid.Make(),
+			Id:                ulid.Make().String(),
 			RemoteAddrAndPort: "37.00.00.02:3001",
 		}, logger))
 	})

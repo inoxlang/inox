@@ -7,7 +7,6 @@ import (
 
 	nettypes "github.com/inoxlang/inox/internal/net_types"
 	"github.com/inoxlang/inox/internal/utils"
-	"github.com/oklog/ulid/v2"
 	"github.com/rs/zerolog"
 )
 
@@ -45,10 +44,6 @@ func NewSlidingWindow(params WindowParameters) *SlidingWindow {
 		ipLevelWindow: nil,
 	}
 
-	for i := range window.requests {
-		window.requests[i].ULID = ulid.ULID{}
-	}
-
 	return window
 }
 
@@ -66,9 +61,9 @@ func (window *SlidingWindow) AllowRequest(rInfo SlidingWindowRequestInfo, logger
 	//otherwise we search for slots that contain "old" requests.
 	for i, req := range window.requests {
 
-		if req.ULID == (ulid.ULID{}) { //empty slot
+		if req.Id == "" { //empty slot
 			window.requests[i] = rInfo
-			logger.Debug().Msg("found empty slot for request" + req.ULIDString)
+			logger.Debug().Msg("found empty slot for request" + req.Id)
 			return true
 		}
 
@@ -77,7 +72,7 @@ func (window *SlidingWindow) AllowRequest(rInfo SlidingWindowRequestInfo, logger
 		}
 	}
 
-	logger.Log().Str(REQUEST_ID_LOG_FIELD_NAME, rInfo.ULIDString).Int("candidateSlots", len(candidateSlotIndexes))
+	logger.Log().Str(REQUEST_ID_LOG_FIELD_NAME, rInfo.Id).Int("candidateSlots", len(candidateSlotIndexes))
 
 	switch len(candidateSlotIndexes) {
 	case 0:

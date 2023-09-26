@@ -63,8 +63,7 @@ func (engine *securityEngine) rateLimitRequest(req *HttpRequest, rw *HttpRespons
 
 func (engine *securityEngine) getSocketMitigationData(req *HttpRequest) (*ratelimit.SlidingWindow, ratelimit.SlidingWindowRequestInfo) {
 	slidingWindowReqInfo := ratelimit.SlidingWindowRequestInfo{
-		ULID:              req.ULID,
-		ULIDString:        req.ULIDString,
+		Id:                req.ULIDString,
 		Method:            string(req.Method),
 		CreationTime:      req.CreationTime,
 		RemoteAddrAndPort: req.RemoteAddrAndPort,
