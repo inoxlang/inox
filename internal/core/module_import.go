@@ -10,6 +10,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"os"
 	"sync"
 
 	"path/filepath"
@@ -444,7 +445,7 @@ func fetchParseImportedModule(ctx *Context, importSrc WrappedString, config sour
 				return nil, err
 			}
 			absScriptDir = filepath.Dir(absSrc)
-			file, err := ctx.fs.Open(string(srcVal))
+			file, err := ctx.fs.OpenFile(string(srcVal), os.O_RDONLY, 0)
 			if err != nil {
 				return nil, err
 			}

@@ -580,7 +580,7 @@ func ParseLocalModule(fpath string, config ModuleParsingConfig) (*Module, error)
 		}
 	}
 
-	file, err := ctx.fs.Open(fpath)
+	file, err := ctx.fs.OpenFile(fpath, os.O_RDONLY, 0)
 
 	if os.IsNotExist(err) {
 		return nil, err
@@ -793,7 +793,7 @@ func ParseLocalSecondaryChunk(config LocalSecondaryChunkParsingConfig) (*Include
 
 	var existenceError error
 
-	file, err := ctx.fs.Open(fpath)
+	file, err := ctx.fs.OpenFile(fpath, os.O_RDONLY, 0)
 
 	var info fs.FileInfo
 	if err == nil {
@@ -945,7 +945,7 @@ var (
 // ReadFileInFS reads up to maxSize bytes from a file in the given filesystem.
 // if maxSize is <=0 the max size is set to 100MB.
 func ReadFileInFS(fls billy.Basic, name string, maxSize int32) ([]byte, error) {
-	f, err := fls.Open(name)
+	f, err := fls.OpenFile(name, os.O_RDONLY, 0)
 	if err != nil {
 		return nil, err
 	}
