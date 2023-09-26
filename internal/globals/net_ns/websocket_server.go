@@ -36,7 +36,7 @@ var (
 	ErrTooManyWsConnectionsOnIp = errors.New("too many websocket connections on same ip")
 )
 
-// WebsocketServer is a LSP server that uses Websocket to exchange messages with the client.
+// WebsocketServer upgrades an HTTP connection to a Websocket connection, it implements Value.
 type WebsocketServer struct {
 	upgrader        *websocket.Upgrader
 	closingOrClosed atomic.Bool
