@@ -8,6 +8,9 @@ import (
 )
 
 var (
+	ANY_WALKABLE = &AnyWalkable{}
+	ANY_WALKER   = &Walker{}
+
 	_ = []Walkable{(*Path)(nil), (*UData)(nil)}
 )
 
@@ -31,11 +34,10 @@ func (r *AnyWalkable) Test(v SymbolicValue) bool {
 
 func (r *AnyWalkable) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%walkable")))
-	return
 }
 
 func (r *AnyWalkable) WidestOfType() SymbolicValue {
-	return &AnyWalkable{}
+	return ANY_WALKABLE
 }
 
 func (r *AnyWalkable) WalkerElement() SymbolicValue {
@@ -44,6 +46,8 @@ func (r *AnyWalkable) WalkerElement() SymbolicValue {
 
 // A Walker represents a symbolic Walker.
 type Walker struct {
+	//after any update make sure ANY_WALKER is still valid
+
 	_ int
 }
 
@@ -55,9 +59,8 @@ func (r *Walker) Test(v SymbolicValue) bool {
 
 func (r *Walker) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%walker")))
-	return
 }
 
 func (r *Walker) WidestOfType() SymbolicValue {
-	return &Walker{}
+	return ANY_WALKER
 }

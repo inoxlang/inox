@@ -9,6 +9,7 @@ import (
 
 var (
 	ANY_WATCHABLE = &AnyWatchable{}
+	ANY_WATCHER   = &Watcher{}
 
 	_ = []Watchable{
 		(*Object)(nil), (*Dictionary)(nil), (*List)(nil), (*RuneSlice)(nil), (*ByteSlice)(nil), (*DynamicValue)(nil),
@@ -38,11 +39,10 @@ func (r *AnyWatchable) Test(v SymbolicValue) bool {
 
 func (r *AnyWatchable) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%watchable")))
-	return
 }
 
 func (r *AnyWatchable) WidestOfType() SymbolicValue {
-	return &AnyWatchable{}
+	return ANY_WATCHABLE
 }
 
 func (r *AnyWatchable) WatcherElement() SymbolicValue {
@@ -52,7 +52,9 @@ func (r *AnyWatchable) WatcherElement() SymbolicValue {
 // An Watcher represents a symbolic Watcher.
 type Watcher struct {
 	filter Pattern //if nil matches any
-	_      int
+	//after any update make sure ANY_WATCHER is still valid
+
+	_ int
 }
 
 func NewWatcher(filter Pattern) *Watcher {
@@ -72,7 +74,6 @@ func (r *Watcher) Test(v SymbolicValue) bool {
 
 func (r *Watcher) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%watcher")))
-	return
 }
 
 func (r *Watcher) WatcherElement() SymbolicValue {
@@ -97,5 +98,5 @@ func (r *Watcher) ChunkedStreamElement() SymbolicValue {
 }
 
 func (r *Watcher) WidestOfType() SymbolicValue {
-	return &Watcher{}
+	return ANY_WATCHER
 }
