@@ -226,8 +226,9 @@ func TestMetaFilesystemFileCountValidation(t *testing.T) {
 		const fileCount = 1000
 
 		fls, err := OpenMetaFilesystem(ctx, underlyingFS, MetaFilesystemParams{
-			MaxFileCount: fileCount + 1, //add one for the metadata file
-			Dir:          "/fs",
+			MaxFileCount:             fileCount + 1,  //add one for the metadata file
+			MaxParallelCreationCount: 10 * fileCount, //we set a high value to not have errors
+			Dir:                      "/fs",
 		})
 
 		if !assert.NoError(t, err) {
