@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/globals/http_ns"
 	"github.com/inoxlang/inox/internal/globals/net_ns"
 	"github.com/inoxlang/inox/internal/project_server/jsonrpc"
 	"github.com/inoxlang/inox/internal/project_server/logs"
@@ -13,17 +14,23 @@ import (
 
 const (
 	JSON_RPC_SERVER_LOGC_SRC = "/json-rpc"
+	DEFAULT_MAX_IP_WS_CONNS  = 3
 )
 
 type JsonRpcWebsocketServer struct {
 	wsServer  *net_ns.WebsocketServer
 	rpcServer *jsonrpc.Server
 	logger    *zerolog.Logger
+
+	config JsonRpcWebsocketServerConfig
 }
 
 type JsonRpcWebsocketServerConfig struct {
 	addr      string
 	rpcServer *jsonrpc.Server
+
+	//defaults to DEFAULT_MAX_IP_WS_CONNS
+	maxWebsocketPerIp int
 }
 
 func NewJsonRpcWebsocketServer(ctx *core.Context, config JsonRpcWebsocketServerConfig) (*JsonRpcWebsocketServer, error) {
@@ -36,10 +43,15 @@ func NewJsonRpcWebsocketServer(ctx *core.Context, config JsonRpcWebsocketServerC
 		return nil, fmt.Errorf("failed to create websocket server: %w", err)
 	}
 
+	if config.maxWebsocketPerIp <= 0 {
+		config.maxWebsocketPerIp = DEFAULT_MAX_IP_WS_CONNS
+	}
+
 	server := &JsonRpcWebsocketServer{
 		wsServer:  wsServer,
 		logger:    &logger,
 		rpcServer: config.rpcServer,
+		config:    config,
 	}
 
 	if err != nil {
@@ -50,7 +62,7 @@ func NewJsonRpcWebsocketServer(ctx *core.Context, config JsonRpcWebsocketServerC
 }
 
 func (server *JsonRpcWebsocketServer) handleNew(httpRespWriter http.ResponseWriter, httpReq *http.Request) {
-	conn, err := server.wsServer.UpgradeGoValues(httpRespWriter, httpReq)
+	conn, err := server.wsServer.UpgradeGoValues(httpRespWriter, httpReq, server.allowNewConnection)
 	if err != nil {
 		server.logger.Debug().Err(err).Send()
 		return
@@ -61,4 +73,15 @@ func (server *JsonRpcWebsocketServer) handleNew(httpRespWriter http.ResponseWrit
 		logs.Printf("new session at %s (remote)\n", socket.conn.RemoteAddrWithPort())
 		socket.sessionContext = session.Context()
 	})
+}
+
+func (server *JsonRpcWebsocketServer) allowNewConnection(
+	remoteAddrPort http_ns.RemoteAddrWithPort,
+	remoteAddr http_ns.RemoteIpAddr,
+	currentConns []*net_ns.WebsocketConnection) error {
+
+	if len(currentConns)+1 <= server.config.maxWebsocketPerIp {
+		return nil
+	}
+	return net_ns.ErrTooManyWsConnectionsOnIp
 }

@@ -24,7 +24,7 @@ type DeleteSecretParams struct {
 	Name string
 }
 
-func registerSecretsMethodHandlers(server *lsp.Server, opts LSPServerOptions) {
+func registerSecretsMethodHandlers(server *lsp.Server, opts LSPServerConfiguration) {
 	server.OnCustom(jsonrpc.MethodInfo{
 		Name: "secrets/upsertSecret",
 		NewRequest: func() interface{} {

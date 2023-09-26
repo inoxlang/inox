@@ -134,8 +134,9 @@ func (s *Server) startWebsocketServer(addr string) error {
 	}
 
 	wsServer, err := NewJsonRpcWebsocketServer(s.ctx, JsonRpcWebsocketServerConfig{
-		addr:      addr,
-		rpcServer: s.rpcServer,
+		addr:              addr,
+		rpcServer:         s.rpcServer,
+		maxWebsocketPerIp: s.Opt.MaxWebsocketPerIp,
 	})
 	if err != nil {
 		return err

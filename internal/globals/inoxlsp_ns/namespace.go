@@ -87,8 +87,8 @@ func StartLspServer(ctx *core.Context, config *core.Object) error {
 		return commonfmt.FmtMissingArgument("missing on-session handler function")
 	}
 
-	return project_server.StartLSPServer(childCtx, project_server.LSPServerOptions{
-		Websocket: &project_server.WebsocketOptions{
+	return project_server.StartLSPServer(childCtx, project_server.LSPServerConfiguration{
+		Websocket: &project_server.WebsocketServerConfiguration{
 			Addr:                  host.WithoutScheme(),
 			Certificate:           cert,
 			CertificatePrivateKey: certKey,

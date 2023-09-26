@@ -90,19 +90,19 @@ func getSessionData(session *jsonrpc.Session) *additionalSessionData {
 	return sessionData
 }
 
-func registerHandlers(server *lsp.Server, opts LSPServerOptions) {
+func registerHandlers(server *lsp.Server, serverConfig LSPServerConfiguration) {
 	var (
 		shuttingDownSessionsLock sync.Mutex
 		shuttingDownSessions     = make(map[*jsonrpc.Session]struct{})
 	)
 
-	projectMode := opts.ProjectMode
+	projectMode := serverConfig.ProjectMode
 
 	if projectMode {
 		registerFilesystemMethodHandlers(server)
-		registerProjectMethodHandlers(server, opts)
-		registerSecretsMethodHandlers(server, opts)
-		registerDebugMethodHandlers(server, opts)
+		registerProjectMethodHandlers(server, serverConfig)
+		registerSecretsMethodHandlers(server, serverConfig)
+		registerDebugMethodHandlers(server, serverConfig)
 		registerLearningMethodHandlers(server)
 	}
 

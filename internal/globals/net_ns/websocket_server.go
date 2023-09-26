@@ -129,7 +129,7 @@ func (*WebsocketServer) PropertyNames(ctx *core.Context) []string {
 }
 
 func (s *WebsocketServer) Upgrade(rw *http_ns.HttpResponseWriter, r *http_ns.HttpRequest) (*WebsocketConnection, error) {
-	conn, err := s.UpgradeGoValues(rw.RespWriter(), r.Request())
+	conn, err := s.UpgradeGoValues(rw.RespWriter(), r.Request(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -137,7 +137,16 @@ func (s *WebsocketServer) Upgrade(rw *http_ns.HttpResponseWriter, r *http_ns.Htt
 	return conn, nil
 }
 
-func (s *WebsocketServer) UpgradeGoValues(rw http.ResponseWriter, r *http.Request) (*WebsocketConnection, error) {
+// UpgradeGoValues first determines if the connection is allowed by calling allowConnectionFn,
+// and then upgrades the HTTP server connection to the WebSocket protocol.
+// If allowConnectionFn is nil the connection is accepted if the number
+// of connections on the IP is less or equal DEFAULT_MAX_IP_WS_CONNS.
+func (s *WebsocketServer) UpgradeGoValues(
+	rw http.ResponseWriter,
+	r *http.Request,
+	allowConnectionFn func(remoteAddrPort http_ns.RemoteAddrWithPort, remoteAddr http_ns.RemoteIpAddr, currentConns []*WebsocketConnection) error,
+) (*WebsocketConnection, error) {
+
 	if s.closingOrClosed.Load() {
 		return nil, ErrClosedWebsocketServer
 	}
@@ -154,6 +163,13 @@ func (s *WebsocketServer) UpgradeGoValues(rw http.ResponseWriter, r *http.Reques
 	if conns == nil {
 		conns = &[]*WebsocketConnection{}
 		s.connections[ip] = conns
+	}
+
+	if allowConnectionFn != nil {
+		err := allowConnectionFn(remoteAddrAndPort, ip, *conns)
+		if err != nil {
+			return nil, err
+		}
 	} else if len(*conns) >= DEFAULT_MAX_IP_WS_CONNS {
 		return nil, ErrTooManyWsConnectionsOnIp
 	}

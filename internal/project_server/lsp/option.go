@@ -10,11 +10,12 @@ import (
 
 type Options struct {
 	// if Network is null, will use stdio
-	Network        string
-	Address        string
-	Certificate    string
-	CertificateKey string
-	HttpHandler    http.Handler
+	Network           string
+	Address           string
+	Certificate       string
+	CertificateKey    string
+	MaxWebsocketPerIp int
+	HttpHandler       http.Handler
 
 	OnSession jsonrpc.SessionCreationCallbackFn
 

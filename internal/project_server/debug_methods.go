@@ -195,7 +195,7 @@ func (s *DebugSession) getThreadOfVariablesReference(varsRef int) (core.StateId,
 }
 
 func registerDebugMethodHandlers(
-	server *lsp.Server, opts LSPServerOptions,
+	server *lsp.Server, opts LSPServerConfiguration,
 ) {
 
 	getDebugSession := func(session *jsonrpc.Session, sessionId string) *DebugSession {

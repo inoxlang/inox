@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	LSP_LOG_SRC     = "/lsp"
+	LSP_LOG_SRC = "/lsp"
 )
 
 var HOVER_PRETTY_PRINT_CONFIG = &pprint.PrettyPrintConfig{
@@ -27,9 +27,9 @@ var HOVER_PRETTY_PRINT_CONFIG = &pprint.PrettyPrintConfig{
 	Compact:  false,
 }
 
-type LSPServerOptions struct {
+type LSPServerConfiguration struct {
 	InternalStdio       *InternalStdio
-	Websocket           *WebsocketOptions
+	Websocket           *WebsocketServerConfiguration
 	MessageReaderWriter jsonrpc.MessageReaderWriter
 	UseContextLogger    bool
 
@@ -45,13 +45,14 @@ type InternalStdio struct {
 	StdioOutput io.Writer
 }
 
-type WebsocketOptions struct {
+type WebsocketServerConfiguration struct {
 	Addr                  string
 	Certificate           string
 	CertificatePrivateKey string
+	MaxWebsocketPerIp     int
 }
 
-func StartLSPServer(ctx *core.Context, opts LSPServerOptions) (finalErr error) {
+func StartLSPServer(ctx *core.Context, serverConfig LSPServerConfiguration) (finalErr error) {
 	//setup logs
 
 	logOut := ctx.Logger().With().Str(core.SOURCE_LOG_FIELD_NAME, LSP_LOG_SRC).Logger()
@@ -70,43 +71,44 @@ func StartLSPServer(ctx *core.Context, opts LSPServerOptions) (finalErr error) {
 	}()
 
 	options := &lsp.Options{
-		OnSession: opts.OnSession,
+		OnSession: serverConfig.OnSession,
 	}
 
-	if opts.InternalStdio != nil {
+	if serverConfig.InternalStdio != nil {
 
-		if opts.Websocket != nil {
+		if serverConfig.Websocket != nil {
 			panic(errors.New("invalid LSP options: options for internal STDIO AND Websocket are both provided"))
 		}
 
-		options.StdioInput = opts.InternalStdio.StdioInput
-		options.StdioOutput = opts.InternalStdio.StdioOutput
+		options.StdioInput = serverConfig.InternalStdio.StdioInput
+		options.StdioOutput = serverConfig.InternalStdio.StdioOutput
 	}
 
-	if opts.Websocket != nil {
-		if opts.InternalStdio != nil {
+	if serverConfig.Websocket != nil {
+		if serverConfig.InternalStdio != nil {
 			panic(errors.New("invalid LSP options: options for internal STDIO AND Websocket are both provided"))
 		}
 
 		options.Network = "wss"
-		options.Address = opts.Websocket.Addr
-		options.Certificate = opts.Websocket.Certificate
-		options.CertificateKey = opts.Websocket.CertificatePrivateKey
+		options.Address = serverConfig.Websocket.Addr
+		options.Certificate = serverConfig.Websocket.Certificate
+		options.CertificateKey = serverConfig.Websocket.CertificatePrivateKey
+		options.MaxWebsocketPerIp = serverConfig.Websocket.MaxWebsocketPerIp
 	}
 
-	if opts.MessageReaderWriter != nil {
-		if opts.InternalStdio != nil {
+	if serverConfig.MessageReaderWriter != nil {
+		if serverConfig.InternalStdio != nil {
 			panic(errors.New("invalid LSP options: MessageReaderWriter AND STDIO both set"))
 		}
-		if opts.Websocket != nil {
+		if serverConfig.Websocket != nil {
 			panic(errors.New("invalid LSP options: MessageReaderWriter AND Websocket both set"))
 		}
 
-		options.MessageReaderWriter = opts.MessageReaderWriter
+		options.MessageReaderWriter = serverConfig.MessageReaderWriter
 	}
 
 	server := lsp.NewServer(ctx, options)
-	registerHandlers(server, opts)
+	registerHandlers(server, serverConfig)
 
 	logs.Println("LSP server configured, start listening")
 	return server.Run()

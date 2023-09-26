@@ -30,7 +30,7 @@ type OpenProjectResponse struct {
 	project.TempProjectTokens `json:"tempTokens"`
 }
 
-func registerProjectMethodHandlers(server *lsp.Server, opts LSPServerOptions) {
+func registerProjectMethodHandlers(server *lsp.Server, opts LSPServerConfiguration) {
 	projDir := string(opts.ProjectsDir)
 	projectRegistry, err := project.OpenRegistry(projDir, opts.ProjectsDirFilesystem, server.Context())
 

@@ -64,6 +64,10 @@ func main() {
 	_main(os.Args, os.Stdout, os.Stderr)
 }
 
+type userProjectServerConfiguration struct {
+	MaxWebSocketPerIp int `json:"maxWebsocketPerIp"`
+}
+
 func _main(args []string, outW io.Writer, errW io.Writer) {
 	mainSubCommand := ""
 	var mainSubCommandArgs []string
@@ -206,7 +210,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 		var host string
 		lspFlags.StringVar(&host, "h", "", "host")
 
-		opts := lsp.LSPServerOptions{}
+		opts := lsp.LSPServerConfiguration{}
 
 		err := lspFlags.Parse(mainSubCommandArgs)
 		if err != nil {
@@ -222,7 +226,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 				return
 			}
 
-			opts.Websocket = &lsp.WebsocketOptions{Addr: u.Host}
+			opts.Websocket = &lsp.WebsocketServerConfiguration{Addr: u.Host}
 
 			out = os.Stdout //we can log to stdout since we will not be in Stdio mode
 		} else { //stdio
@@ -260,10 +264,14 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 	case "project-server":
 		lspFlags := flag.NewFlagSet("project-server", flag.ExitOnError)
 		var host string
+		var configOrConfigFile string
+
 		lspFlags.StringVar(&host, "h", "", "host")
+		lspFlags.StringVar(&configOrConfigFile, "config", "", "JSON configuration or JSON file")
 
 		var projectsDir = filepath.Join(config.USER_HOME, "inox-projects") + "/"
 
+		//parse & check arguments
 		err := lspFlags.Parse(mainSubCommandArgs)
 		if err != nil {
 			fmt.Fprintln(errW, "project-server:", err)
@@ -277,6 +285,27 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 		u := checkLspHost(host, errW)
 		if u == nil {
 			return
+		}
+
+		var projectServerConfig userProjectServerConfiguration
+
+		configOrConfigFile = strings.TrimSpace(configOrConfigFile)
+		if configOrConfigFile != "" {
+			if configOrConfigFile[0] == '{' {
+				err := json.Unmarshal([]byte(configOrConfigFile), &projectServerConfig)
+				if err != nil {
+					fmt.Fprintln(errW, "project-server: failed to unmarshal configuration argument", err)
+				}
+			} else {
+				content, err := os.ReadFile(configOrConfigFile)
+				if err != nil {
+					fmt.Fprintln(errW, "project-server: failed to read configuration file", err)
+				}
+				err = json.Unmarshal(content, &projectServerConfig)
+				if err != nil {
+					fmt.Fprintln(errW, "project-server: failed to unmarshal configuration file", err)
+				}
+			}
 		}
 
 		//create context & state
@@ -312,9 +341,10 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 
 		//configure server
 
-		opts := lsp.LSPServerOptions{
-			Websocket: &lsp.WebsocketOptions{
-				Addr: u.Host,
+		opts := lsp.LSPServerConfiguration{
+			Websocket: &lsp.WebsocketServerConfiguration{
+				Addr:              u.Host,
+				MaxWebsocketPerIp: projectServerConfig.MaxWebSocketPerIp,
 			},
 			UseContextLogger:      true,
 			ProjectMode:           true,
