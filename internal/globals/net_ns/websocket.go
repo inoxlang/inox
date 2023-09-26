@@ -9,7 +9,7 @@ import (
 	"github.com/gorilla/websocket"
 
 	core "github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/globals/http_ns"
+	nettypes "github.com/inoxlang/inox/internal/net_types"
 	"github.com/inoxlang/inox/internal/permkind"
 )
 
@@ -27,7 +27,7 @@ const (
 
 type WebsocketConnection struct {
 	conn               *websocket.Conn
-	remoteAddrWithPort http_ns.RemoteAddrWithPort
+	remoteAddrWithPort nettypes.RemoteAddrWithPort
 	endpoint           core.URL //HTTP endpoint
 
 	messageTimeout time.Duration
@@ -40,7 +40,7 @@ type WebsocketConnection struct {
 	serverContext *core.Context
 }
 
-func (conn *WebsocketConnection) RemoteAddrWithPort() http_ns.RemoteAddrWithPort {
+func (conn *WebsocketConnection) RemoteAddrWithPort() nettypes.RemoteAddrWithPort {
 	return conn.remoteAddrWithPort
 }
 

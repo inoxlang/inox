@@ -1,6 +1,11 @@
 package http_ns
 
-import "sync"
+import (
+	"sync"
+
+	nettypes "github.com/inoxlang/inox/internal/net_types"
+	ratelimit "github.com/inoxlang/inox/internal/rate_limit"
+)
 
 type remoteIpData struct {
 	persistedRemoteIpData
@@ -8,12 +13,12 @@ type remoteIpData struct {
 	mutex sync.Mutex
 	//resourceDataMap                         concmap.ConcurrentMap
 	currentCaptchProtectedPostResourcePaths []string
-	sharedReadBurstWindow                   irateLimitingWindow
-	sharedWriteBurstWindow                  irateLimitingWindow
+	sharedReadBurstWindow                   ratelimit.IWindow
+	sharedWriteBurstWindow                  ratelimit.IWindow
 	isBlackListed                           bool
 }
 
 type persistedRemoteIpData struct {
-	ip                   RemoteIpAddr
+	ip                   nettypes.RemoteIpAddr
 	respStatusCodeCounts map[int]int
 }

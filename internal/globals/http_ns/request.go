@@ -11,6 +11,7 @@ import (
 
 	"github.com/aohorodnyk/mimeheader"
 	jsoniter "github.com/inoxlang/inox/internal/jsoniter"
+	nettypes "github.com/inoxlang/inox/internal/net_types"
 
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/utils"
@@ -56,29 +57,9 @@ type HttpRequest struct {
 	HeaderNames       []string
 	UserAgent         string
 	Hostname          string
-	RemoteAddrAndPort RemoteAddrWithPort //empty for client side requests
-	RemoteIpAddr      RemoteIpAddr       //empty for client side requests
+	RemoteAddrAndPort nettypes.RemoteAddrWithPort //empty for client side requests
+	RemoteIpAddr      nettypes.RemoteIpAddr       //empty for client side requests
 	request           *http.Request
-}
-
-type RemoteAddrWithPort string
-
-func (s RemoteAddrWithPort) String() string {
-	return string(s)
-}
-
-func (s RemoteAddrWithPort) RemoteIp() RemoteIpAddr {
-	ip, _, err := net.SplitHostPort(string(s))
-	if err != nil {
-		panic(err)
-	}
-	return RemoteIpAddr(ip)
-}
-
-type RemoteIpAddr string
-
-func (s RemoteIpAddr) String() string {
-	return string(s)
 }
 
 func NewClientSideRequest(r *http.Request) (*HttpRequest, error) {
@@ -99,7 +80,7 @@ func NewServerSideRequest(r *http.Request, logger zerolog.Logger, server *HttpSe
 	id := ulid.Make()
 	now := time.Now()
 
-	addrAndPort := RemoteAddrWithPort(r.RemoteAddr)
+	addrAndPort := nettypes.RemoteAddrWithPort(r.RemoteAddr)
 	ip, _, _ := net.SplitHostPort(r.RemoteAddr)
 
 	// method
@@ -166,7 +147,7 @@ func NewServerSideRequest(r *http.Request, logger zerolog.Logger, server *HttpSe
 		URL:                core.URL(url),
 		Path:               core.Path(r.URL.Path),
 		RemoteAddrAndPort:  addrAndPort,
-		RemoteIpAddr:       RemoteIpAddr(ip),
+		RemoteIpAddr:       nettypes.RemoteIpAddr(ip),
 		Body:               core.WrapReader(r.Body, &sync.Mutex{}),
 		Cookies:            r.Cookies(),
 		request:            r,

@@ -5,6 +5,8 @@ import (
 	"time"
 
 	core "github.com/inoxlang/inox/internal/core"
+	nettypes "github.com/inoxlang/inox/internal/net_types"
+	ratelimit "github.com/inoxlang/inox/internal/rate_limit"
 	cmap "github.com/orcaman/concurrent-map/v2"
 	"github.com/rs/zerolog"
 )
@@ -28,10 +30,10 @@ type securityEngine struct {
 	mutex                  sync.Mutex
 	logger                 zerolog.Logger
 	debugLogger            zerolog.Logger
-	readSlidingWindows     cmap.ConcurrentMap[RemoteAddrWithPort, *rateLimitingSlidingWindow]
-	mutationSlidingWindows cmap.ConcurrentMap[RemoteAddrWithPort, *rateLimitingSlidingWindow]
+	readSlidingWindows     cmap.ConcurrentMap[nettypes.RemoteAddrWithPort, *ratelimit.SlidingWindow]
+	mutationSlidingWindows cmap.ConcurrentMap[nettypes.RemoteAddrWithPort, *ratelimit.SlidingWindow]
 
-	ipMitigationData cmap.ConcurrentMap[RemoteIpAddr, *remoteIpData]
+	ipMitigationData cmap.ConcurrentMap[nettypes.RemoteIpAddr, *remoteIpData]
 	//hcaptchaSecret          string
 	//captchaValidationClient *http.Client
 }
@@ -42,16 +44,16 @@ func newSecurityEngine(baseLogger zerolog.Logger, serverLogSrc string) *security
 	return &securityEngine{
 		logger:                 logger,
 		debugLogger:            logger,
-		readSlidingWindows:     cmap.NewStringer[RemoteAddrWithPort, *rateLimitingSlidingWindow](),
-		mutationSlidingWindows: cmap.NewStringer[RemoteAddrWithPort, *rateLimitingSlidingWindow](),
-		ipMitigationData:       cmap.NewStringer[RemoteIpAddr, *remoteIpData](),
+		readSlidingWindows:     cmap.NewStringer[nettypes.RemoteAddrWithPort, *ratelimit.SlidingWindow](),
+		mutationSlidingWindows: cmap.NewStringer[nettypes.RemoteAddrWithPort, *ratelimit.SlidingWindow](),
+		ipMitigationData:       cmap.NewStringer[nettypes.RemoteIpAddr, *remoteIpData](),
 	}
 }
 
 func (engine *securityEngine) rateLimitRequest(req *HttpRequest, rw *HttpResponseWriter) bool {
 	slidingWindow, windowReqInfo := engine.getSocketMitigationData(req)
 
-	if !slidingWindow.allowRequest(windowReqInfo, engine.debugLogger) {
+	if !slidingWindow.AllowRequest(windowReqInfo, engine.debugLogger) {
 		engine.logger.Log().Str("rateLimit", req.ULIDString)
 		return true
 	}
@@ -59,17 +61,17 @@ func (engine *securityEngine) rateLimitRequest(req *HttpRequest, rw *HttpRespons
 	return false
 }
 
-func (engine *securityEngine) getSocketMitigationData(req *HttpRequest) (*rateLimitingSlidingWindow, slidingWindowRequestInfo) {
-	slidingWindowReqInfo := slidingWindowRequestInfo{
-		ulid:              req.ULID,
-		ulidString:        req.ULIDString,
-		method:            string(req.Method),
-		creationTime:      req.CreationTime,
-		remoteAddrAndPort: req.RemoteAddrAndPort,
-		remoteIpAddr:      req.RemoteIpAddr,
+func (engine *securityEngine) getSocketMitigationData(req *HttpRequest) (*ratelimit.SlidingWindow, ratelimit.SlidingWindowRequestInfo) {
+	slidingWindowReqInfo := ratelimit.SlidingWindowRequestInfo{
+		ULID:              req.ULID,
+		ULIDString:        req.ULIDString,
+		Method:            string(req.Method),
+		CreationTime:      req.CreationTime,
+		RemoteAddrAndPort: req.RemoteAddrAndPort,
+		RemoteIpAddr:      req.RemoteIpAddr,
 	}
 
-	var slidingWindowMap cmap.ConcurrentMap[RemoteAddrWithPort, *rateLimitingSlidingWindow]
+	var slidingWindowMap cmap.ConcurrentMap[nettypes.RemoteAddrWithPort, *ratelimit.SlidingWindow]
 	var maxReqCount int
 
 	if slidingWindowReqInfo.IsMutation() {
@@ -85,14 +87,14 @@ func (engine *securityEngine) getSocketMitigationData(req *HttpRequest) (*rateLi
 	slidingWindow, present := slidingWindowMap.Get(req.RemoteAddrAndPort)
 	if !present {
 		engine.debugLogger.Debug().Str("newSlidingWindowFor", string(req.RemoteAddrAndPort)).Send()
-		slidingWindow = newRateLimitingSlidingWindow(rateLimitingWindowParameters{
-			duration:     SOCKET_WINDOW,
-			requestCount: maxReqCount,
+		slidingWindow = ratelimit.NewSlidingWindow(ratelimit.WindowParameters{
+			Duration:     SOCKET_WINDOW,
+			RequestCount: maxReqCount,
 		})
 		if slidingWindowReqInfo.IsMutation() {
-			slidingWindow.ipLevelWindow = ipLevelMigitigationData.sharedWriteBurstWindow
+			slidingWindow.SetIpLevelWindow(ipLevelMigitigationData.sharedWriteBurstWindow)
 		} else {
-			slidingWindow.ipLevelWindow = ipLevelMigitigationData.sharedReadBurstWindow
+			slidingWindow.SetIpLevelWindow(ipLevelMigitigationData.sharedReadBurstWindow)
 		}
 		slidingWindowMap.Set(req.RemoteAddrAndPort, slidingWindow)
 	} else {
@@ -119,13 +121,13 @@ func (engine *securityEngine) getIpLevelMitigationData(req *HttpRequest) *remote
 		},
 	}
 
-	mitigationData.sharedReadBurstWindow = newSharedRateLimitingWindow(rateLimitingWindowParameters{
-		duration:     SHARED_READ_BUST_WINDOW,
-		requestCount: SHARED_READ_BURST_WINDOW_REQ,
+	mitigationData.sharedReadBurstWindow = ratelimit.NewSharedRateLimitingWindow(ratelimit.WindowParameters{
+		Duration:     SHARED_READ_BUST_WINDOW,
+		RequestCount: SHARED_READ_BURST_WINDOW_REQ,
 	})
-	mitigationData.sharedWriteBurstWindow = newSharedRateLimitingWindow(rateLimitingWindowParameters{
-		duration:     SHARED_WRITE_BURST_WINDOW,
-		requestCount: SHARED_WRITE_BURST_WINDOW_REQ,
+	mitigationData.sharedWriteBurstWindow = ratelimit.NewSharedRateLimitingWindow(ratelimit.WindowParameters{
+		Duration:     SHARED_WRITE_BURST_WINDOW,
+		RequestCount: SHARED_WRITE_BURST_WINDOW_REQ,
 	})
 
 	engine.ipMitigationData.Set(req.RemoteIpAddr, mitigationData)

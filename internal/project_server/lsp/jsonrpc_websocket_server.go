@@ -5,8 +5,8 @@ import (
 	"net/http"
 
 	core "github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/globals/http_ns"
 	"github.com/inoxlang/inox/internal/globals/net_ns"
+	nettypes "github.com/inoxlang/inox/internal/net_types"
 	"github.com/inoxlang/inox/internal/project_server/jsonrpc"
 	"github.com/inoxlang/inox/internal/project_server/logs"
 	"github.com/rs/zerolog"
@@ -76,8 +76,8 @@ func (server *JsonRpcWebsocketServer) handleNew(httpRespWriter http.ResponseWrit
 }
 
 func (server *JsonRpcWebsocketServer) allowNewConnection(
-	remoteAddrPort http_ns.RemoteAddrWithPort,
-	remoteAddr http_ns.RemoteIpAddr,
+	remoteAddrPort nettypes.RemoteAddrWithPort,
+	remoteAddr nettypes.RemoteIpAddr,
 	currentConns []*net_ns.WebsocketConnection) error {
 
 	if len(currentConns)+1 <= server.config.maxWebsocketPerIp {

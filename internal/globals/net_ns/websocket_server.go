@@ -12,6 +12,7 @@ import (
 
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/http_ns"
+	nettypes "github.com/inoxlang/inox/internal/net_types"
 	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
 )
@@ -44,7 +45,7 @@ type WebsocketServer struct {
 	messageTimeout time.Duration
 
 	connectionMapLock         sync.Mutex
-	connections               map[http_ns.RemoteIpAddr]*[]*WebsocketConnection
+	connections               map[nettypes.RemoteIpAddr]*[]*WebsocketConnection
 	connectionsToClose        chan (*WebsocketConnection)
 	closeMainClosingGoroutine chan (struct{})
 
@@ -64,7 +65,7 @@ func newWebsocketServer(ctx *core.Context, messageTimeout time.Duration) (*Webso
 	}
 
 	server := &WebsocketServer{
-		connections:               map[http_ns.RemoteIpAddr]*[]*WebsocketConnection{},
+		connections:               map[nettypes.RemoteIpAddr]*[]*WebsocketConnection{},
 		messageTimeout:            messageTimeout,
 		connectionsToClose:        make(chan *WebsocketConnection, 100),
 		closeMainClosingGoroutine: make(chan struct{}, 1),
@@ -146,7 +147,7 @@ func (s *WebsocketServer) Upgrade(rw *http_ns.HttpResponseWriter, r *http_ns.Htt
 func (s *WebsocketServer) UpgradeGoValues(
 	rw http.ResponseWriter,
 	r *http.Request,
-	allowConnectionFn func(remoteAddrPort http_ns.RemoteAddrWithPort, remoteAddr http_ns.RemoteIpAddr, currentConns []*WebsocketConnection) error,
+	allowConnectionFn func(remoteAddrPort nettypes.RemoteAddrWithPort, remoteAddr nettypes.RemoteIpAddr, currentConns []*WebsocketConnection) error,
 ) (*WebsocketConnection, error) {
 
 	if s.closingOrClosed.Load() {
@@ -158,7 +159,7 @@ func (s *WebsocketServer) UpgradeGoValues(
 	s.connectionMapLock.Lock()
 	defer s.connectionMapLock.Unlock()
 
-	remoteAddrAndPort := http_ns.RemoteAddrWithPort(r.RemoteAddr)
+	remoteAddrAndPort := nettypes.RemoteAddrWithPort(r.RemoteAddr)
 	ip := remoteAddrAndPort.RemoteIp()
 
 	conns := s.connections[ip]
