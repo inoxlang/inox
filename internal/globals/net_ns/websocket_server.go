@@ -139,8 +139,10 @@ func (s *WebsocketServer) Upgrade(rw *http_ns.HttpResponseWriter, r *http_ns.Htt
 
 // UpgradeGoValues first determines if the connection is allowed by calling allowConnectionFn,
 // and then upgrades the HTTP server connection to the WebSocket protocol.
-// If allowConnectionFn is nil the connection is accepted if the number
-// of connections on the IP is less or equal DEFAULT_MAX_IP_WS_CONNS.
+// If allowConnectionFn is nil the connection is accepted if the number of connections on the IP
+// is less or equal DEFAULT_MAX_IP_WS_CONNS.
+// The execution of allowConnectionFn should be very quick because the server is locked during
+// the UpgradeGoValues call.
 func (s *WebsocketServer) UpgradeGoValues(
 	rw http.ResponseWriter,
 	r *http.Request,
