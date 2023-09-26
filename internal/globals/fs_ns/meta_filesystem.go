@@ -38,6 +38,7 @@ const (
 	METAFS_USED_SPACE_CHECK_INTERVAL                    = time.Second / 2
 	METAFS_ALWAYS_CHECK_USED_SPACE_BYTE_COUNT_THRESHOLD = 100_000
 	METAFS_DEFAULT_MAX_FILE_COUNT                       = 1000
+	METAFS_DEFAULT_MAX_PARALLEL_FILE_CREATION_COUNT     = 10
 )
 
 var (
@@ -48,10 +49,11 @@ var (
 // in regular files.
 type MetaFilesystem struct {
 	//underlying afs.Filesystem
-	underlying     billy.Basic
-	dir            *string        //optional, if set underlying is an afs.Filesytem
-	maxUsableSpace core.ByteCount //maximum space usable in the underyling filesystem
-	maxFileCount   int32          //maximum number of files stored by MetaFilesystem in the underyling filesystem
+	underlying               billy.Basic
+	dir                      *string        //optional, if set underlying is an afs.Filesytem
+	maxUsableSpace           core.ByteCount //maximum space usable in the underyling filesystem
+	maxFileCount             int32          //maximum number of files stored by MetaFilesystem in the underyling filesystem
+	maxParallelCreationCount int32
 
 	//all the metadata about files is stored in this Key value store.
 	metadata *filekv.SingleFileKV
@@ -67,7 +69,7 @@ type MetaFilesystem struct {
 	lastSpaceCheckTime atomic.Int64 //unix milli (the millisecond precision is required)
 }
 
-type MetaFilesystemOptions struct {
+type MetaFilesystemParams struct {
 	//used if underlying is a filesystem
 	Dir string
 
@@ -77,9 +79,12 @@ type MetaFilesystemOptions struct {
 
 	//The value defaults to METAFS_DEFAULT_MAX_FILE_COUNT, ignored if dir is false.
 	MaxFileCount int32
+
+	//The value defaults to METAFS_DEFAULT_MAX_PARALLEL_FILE_CREATION_COUNT, ignored if dir is false.
+	MaxParallelCreationCount int16
 }
 
-func OpenMetaFilesystem(ctx *core.Context, underlying billy.Basic, opts MetaFilesystemOptions) (*MetaFilesystem, error) {
+func OpenMetaFilesystem(ctx *core.Context, underlying billy.Basic, opts MetaFilesystemParams) (*MetaFilesystem, error) {
 	if opts.MaxUsableSpace > 0 && opts.MaxUsableSpace < METAFS_MIN_USABLE_SPACE {
 		return nil, ErrMaxUsableSpaceTooSmall
 	}
@@ -89,6 +94,11 @@ func OpenMetaFilesystem(ctx *core.Context, underlying billy.Basic, opts MetaFile
 	maxFileCount := opts.MaxFileCount
 	if maxFileCount <= 0 {
 		maxFileCount = METAFS_DEFAULT_MAX_FILE_COUNT
+	}
+
+	maxParallelCreationCount := opts.MaxParallelCreationCount
+	if maxParallelCreationCount <= 0 {
+		maxParallelCreationCount = METAFS_DEFAULT_MAX_PARALLEL_FILE_CREATION_COUNT
 	}
 
 	kvConfig := filekv.KvStoreConfig{
@@ -117,11 +127,12 @@ func OpenMetaFilesystem(ctx *core.Context, underlying billy.Basic, opts MetaFile
 	}
 
 	fls := &MetaFilesystem{
-		ctx:            ctx,
-		underlying:     underlying,
-		metadata:       kv,
-		maxUsableSpace: maxUsableSpace,
-		maxFileCount:   maxFileCount,
+		ctx:                      ctx,
+		underlying:               underlying,
+		metadata:                 kv,
+		maxUsableSpace:           maxUsableSpace,
+		maxFileCount:             maxFileCount,
+		maxParallelCreationCount: int32(maxParallelCreationCount),
 	}
 
 	dir := opts.Dir
@@ -453,10 +464,13 @@ func (fls *MetaFilesystem) checkAddedByteCount(size core.ByteCount) (bool, error
 }
 
 func (fls *MetaFilesystem) Create(filename string) (billy.File, error) {
-	fls.pendingFileCreations.Add(1)
 	defer fls.pendingFileCreations.Add(-1)
 
-	//properly taking into account files been deleted is not trivial,
+	if fls.pendingFileCreations.Add(1) > fls.maxParallelCreationCount {
+		return nil, ErrTooManyParallelFileCreation
+	}
+
+	//properly taking into account files being deleted is not trivial,
 	//especially since we know nothing about the underyling file system.
 
 	count, err := fls.getUnderlyingFileCount()

@@ -68,7 +68,7 @@ func (s *MetaFsWithUnderlyingFsTestSuite) SetUpTest(c *check.C) {
 		s.contexts = append(s.contexts, ctx)
 		underlyingFS := NewMemFilesystem(100_000_000)
 
-		fls, err := OpenMetaFilesystem(ctx, underlyingFS, MetaFilesystemOptions{
+		fls, err := OpenMetaFilesystem(ctx, underlyingFS, MetaFilesystemParams{
 			Dir: "/metafs/",
 		})
 		if err != nil {
@@ -110,7 +110,7 @@ func (s *MetaFsTestSuite) SetUpTest(c *check.C) {
 		underlyingFS := NewMemFilesystem(100_000_000)
 
 		//no dir provided
-		fls, err := OpenMetaFilesystem(ctx, underlyingFS, MetaFilesystemOptions{})
+		fls, err := OpenMetaFilesystem(ctx, underlyingFS, MetaFilesystemParams{})
 		if err != nil {
 			panic(err)
 		}
@@ -140,7 +140,7 @@ func TestMetaFilesystemRemoveShouldRemoveConcreteFile(t *testing.T) {
 	underlyingFS := NewMemFilesystem(100_000_000)
 
 	//no dir provided
-	fls, err := OpenMetaFilesystem(ctx, underlyingFS, MetaFilesystemOptions{})
+	fls, err := OpenMetaFilesystem(ctx, underlyingFS, MetaFilesystemParams{})
 	if err != nil {
 		panic(err)
 	}
@@ -189,7 +189,7 @@ func TestMetaFilesystemFileCountValidation(t *testing.T) {
 		defer ctx.CancelGracefully()
 		underlyingFS := NewMemFilesystem(100_000_000)
 
-		fls, err := OpenMetaFilesystem(ctx, underlyingFS, MetaFilesystemOptions{
+		fls, err := OpenMetaFilesystem(ctx, underlyingFS, MetaFilesystemParams{
 			MaxFileCount: 10 + 1, //add one for the metadata file
 			Dir:          "/fs",
 		})
@@ -225,7 +225,7 @@ func TestMetaFilesystemFileCountValidation(t *testing.T) {
 		//the value is high to make sure some goroutines run at the same time
 		const fileCount = 1000
 
-		fls, err := OpenMetaFilesystem(ctx, underlyingFS, MetaFilesystemOptions{
+		fls, err := OpenMetaFilesystem(ctx, underlyingFS, MetaFilesystemParams{
 			MaxFileCount: fileCount + 1, //add one for the metadata file
 			Dir:          "/fs",
 		})
@@ -262,6 +262,51 @@ func TestMetaFilesystemFileCountValidation(t *testing.T) {
 
 }
 
+func TestMetaFilesystemParallelFileCreationValidation(t *testing.T) {
+
+	ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+	defer ctx.CancelGracefully()
+	underlyingFS := NewMemFilesystem(100_000_000)
+
+	maxParallelCreationCount := int16(100)
+
+	fls, err := OpenMetaFilesystem(ctx, underlyingFS, MetaFilesystemParams{
+		MaxFileCount:             10_000,
+		MaxParallelCreationCount: maxParallelCreationCount,
+		Dir:                      "/fs",
+	})
+
+	if !assert.NoError(t, err) {
+		return
+	}
+
+	var errCount atomic.Int32 //error count should be fileCount
+
+	wg := new(sync.WaitGroup)
+	goroutineCount := int(maxParallelCreationCount + maxParallelCreationCount/10)
+	wg.Add(goroutineCount)
+
+	for i := 0; i < goroutineCount; i++ {
+		go func(i int) {
+			defer wg.Done()
+			f, err := fls.Create("f" + strconv.Itoa(i))
+			if err != nil {
+				errCount.Add(1)
+				return
+			}
+			f.Close()
+		}(i)
+	}
+
+	wg.Wait()
+
+	successCount := int16(goroutineCount) - int16(errCount.Load())
+	if !assert.Less(t, successCount, maxParallelCreationCount+10) {
+		return
+	}
+	assert.Zero(t, fls.pendingFileCreations.Load())
+}
+
 func TestMetaFilesystemUsedSpaceValidation(t *testing.T) {
 
 	//TODO: do the tests without Dir: "/fs"
@@ -271,7 +316,7 @@ func TestMetaFilesystemUsedSpaceValidation(t *testing.T) {
 		defer ctx.CancelGracefully()
 		underlyingFS := NewMemFilesystem(100_000_000)
 
-		fls, err := OpenMetaFilesystem(ctx, underlyingFS, MetaFilesystemOptions{
+		fls, err := OpenMetaFilesystem(ctx, underlyingFS, MetaFilesystemParams{
 			MaxUsableSpace: 100,
 			Dir:            "/fs",
 		})
@@ -289,7 +334,7 @@ func TestMetaFilesystemUsedSpaceValidation(t *testing.T) {
 		underlyingFS := NewMemFilesystem(10 * METAFS_MIN_USABLE_SPACE)
 
 		maxUsableSpace := core.ByteCount(METAFS_MIN_USABLE_SPACE)
-		fls, err := OpenMetaFilesystem(ctx, underlyingFS, MetaFilesystemOptions{
+		fls, err := OpenMetaFilesystem(ctx, underlyingFS, MetaFilesystemParams{
 			MaxUsableSpace: maxUsableSpace,
 			Dir:            "/fs",
 		})
@@ -320,7 +365,7 @@ func TestMetaFilesystemUsedSpaceValidation(t *testing.T) {
 		underlyingFS := NewMemFilesystem(10 * METAFS_MIN_USABLE_SPACE)
 
 		maxUsableSpace := core.ByteCount(METAFS_MIN_USABLE_SPACE)
-		fls, err := OpenMetaFilesystem(ctx, underlyingFS, MetaFilesystemOptions{
+		fls, err := OpenMetaFilesystem(ctx, underlyingFS, MetaFilesystemParams{
 			MaxUsableSpace: maxUsableSpace,
 			Dir:            "/fs",
 		})
@@ -360,7 +405,7 @@ func TestMetaFilesystemUsedSpaceValidation(t *testing.T) {
 		underlyingFS := NewMemFilesystem(10 * METAFS_MIN_USABLE_SPACE)
 
 		maxUsableSpace := core.ByteCount(METAFS_MIN_USABLE_SPACE)
-		fls, err := OpenMetaFilesystem(ctx, underlyingFS, MetaFilesystemOptions{
+		fls, err := OpenMetaFilesystem(ctx, underlyingFS, MetaFilesystemParams{
 			MaxUsableSpace: maxUsableSpace,
 			Dir:            "/fs",
 		})
@@ -387,7 +432,7 @@ func TestMetaFilesystemUsedSpaceValidation(t *testing.T) {
 		underlyingFS := NewMemFilesystem(10 * METAFS_MIN_USABLE_SPACE)
 
 		maxUsableSpace := core.ByteCount(METAFS_MIN_USABLE_SPACE)
-		fls, err := OpenMetaFilesystem(ctx, underlyingFS, MetaFilesystemOptions{
+		fls, err := OpenMetaFilesystem(ctx, underlyingFS, MetaFilesystemParams{
 			MaxUsableSpace: maxUsableSpace,
 			Dir:            "/fs",
 		})

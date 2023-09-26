@@ -97,7 +97,7 @@ func (r *Registry) CreateProject(ctx *core.Context, params CreateProjectParams) 
 	}
 
 	// create initial files
-	projectFS, err := fs_ns.OpenMetaFilesystem(ctx, r.filesystem, fs_ns.MetaFilesystemOptions{
+	projectFS, err := fs_ns.OpenMetaFilesystem(ctx, r.filesystem, fs_ns.MetaFilesystemParams{
 		Dir: projectDir,
 	})
 	if err != nil {
@@ -162,7 +162,7 @@ func (r *Registry) OpenProject(ctx *core.Context, params OpenProjectParams) (*Pr
 	addTutFile := creationParams.Prop(ctx, CREATION_PARAMS_ADD_TUT_FILE_METADATA_KEY).(core.Bool)
 
 	projectDir := r.filesystem.Join(r.projectsDir, string(params.Id))
-	projectFS, err := fs_ns.OpenMetaFilesystem(r.openProjectsContext, r.filesystem, fs_ns.MetaFilesystemOptions{
+	projectFS, err := fs_ns.OpenMetaFilesystem(r.openProjectsContext, r.filesystem, fs_ns.MetaFilesystemParams{
 		Dir: projectDir,
 	})
 
