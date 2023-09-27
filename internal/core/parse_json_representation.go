@@ -32,11 +32,17 @@ func ParseNextJSONRepresentation(ctx *Context, it *jsoniter.Iterator, pattern Pa
 	switch p := pattern.(type) {
 	case nil:
 		if it.WhatIsNext() == jsoniter.ObjectValue {
+			//first we check if the object has the shape {"typename__value": <value>},
+			//if it's not the case we call parseObjectJSONrepresentation.
+
 			var value Serializable
 
-			it.ReadObjectCB(func(i *jsoniter.Iterator, s string) bool {
+			p := it.SkipAndReturnBytes()
+			tempIterator := jsoniter.NewIterator(jsoniter.ConfigDefault)
+			tempIterator.ResetBytes(slices.Clone(p))
+
+			tempIterator.ReadObjectCB(func(i *jsoniter.Iterator, s string) bool {
 				if value != nil || !strings.HasSuffix(s, JSON_UNTYPED_VALUE_SUFFIX) {
-					finalErr = ErrJSONImpossibleToDetermineType
 					return false
 				}
 
@@ -48,25 +54,35 @@ func ParseNextJSONRepresentation(ctx *Context, it *jsoniter.Iterator, pattern Pa
 					return false
 				}
 
-				value, finalErr = ParseNextJSONRepresentation(ctx, it, pattern, false)
+				value, finalErr = ParseNextJSONRepresentation(ctx, tempIterator, pattern, false)
 				return finalErr == nil
 			})
 
-			if value == nil {
-				finalErr = ErrJSONImpossibleToDetermineType
-			}
-
-			if finalErr != nil {
+			if finalErr != nil && finalErr != ErrTriedToParseJSONRepr {
 				return nil, finalErr
 			}
-			return value, nil
+
+			finalErr = nil
+
+			if value != nil {
+				return value, nil
+			}
+
+			tempIterator.ResetBytes(p)
+			tempIterator.Error = nil
+
+			return parseObjectJSONrepresentation(ctx, tempIterator, nil, false)
 		}
 
 		switch it.WhatIsNext() {
+		case jsoniter.ArrayValue:
+			return parseListJSONrepresentation(ctx, it, nil, false)
 		case jsoniter.BoolValue:
 			return Bool(it.ReadBool()), nil
 		case jsoniter.StringValue:
 			return Str(it.ReadString()), nil
+		case jsoniter.NilValue:
+			return Nil, nil
 		case jsoniter.NumberValue:
 			number := it.ReadNumber()
 			if strings.Contains(number.String(), ".") {
@@ -81,8 +97,6 @@ func ParseNextJSONRepresentation(ctx *Context, it *jsoniter.Iterator, pattern Pa
 				return nil, err
 			}
 			return Int(integer), nil
-		case jsoniter.NilValue:
-			return Nil, nil
 		}
 
 	case *IntRangePattern:
@@ -101,11 +115,42 @@ func ParseNextJSONRepresentation(ctx *Context, it *jsoniter.Iterator, pattern Pa
 		return parseUnionJSONrepresentation(ctx, it, p, try)
 	case *IntersectionPattern:
 		return parseIntersectionJSONrepresentation(ctx, it, p, try)
+	case *ExactValuePattern:
+		var pattern Pattern
+
+		switch p.value.(type) {
+		case Int:
+			pattern = INT_PATTERN
+		case Float:
+			pattern = FLOAT_PATTERN
+		case Bool:
+			pattern = BOOL_PATTERN
+		case NilT:
+			pattern = NIL_PATTERN
+		case StringLike:
+			pattern = STR_PATTERN
+		default:
+			return nil, errors.New("exact value patterns with a complex value are not supported yet")
+		}
+
+		v, err := ParseNextJSONRepresentation(ctx, it, pattern, false)
+		if err != nil {
+			return nil, err
+		}
+		if !v.Equal(ctx, p.value, nil, 0) {
+			return nil, ErrJsonNotMatchingSchema
+		}
+		return v, nil
 	case *TypePattern:
 		switch p {
 		case SERIALIZABLE_PATTERN:
 			return ParseNextJSONRepresentation(ctx, it, nil, try)
-		case STR_PATTERN:
+		case NIL_PATTERN:
+			if it.WhatIsNext() != jsoniter.NilValue {
+				return nil, ErrJsonNotMatchingSchema
+			}
+			return Nil, nil
+		case STR_PATTERN, STRLIKE_PATTERN:
 			if it.WhatIsNext() != jsoniter.StringValue {
 				return nil, ErrJsonNotMatchingSchema
 			}
@@ -121,21 +166,21 @@ func ParseNextJSONRepresentation(ctx *Context, it *jsoniter.Iterator, pattern Pa
 			}
 			return Float(it.ReadFloat64()), nil
 		case OBJECT_PATTERN:
-			return parseObjectJSONrepresentation(ctx, it, EMPTY_INEXACT_OBJECT_PATTERN, false)
+			return parseObjectJSONrepresentation(ctx, it, EMPTY_INEXACT_OBJECT_PATTERN, try)
 		case RECORD_PATTERN:
-			return parseRecordJSONrepresentation(ctx, it, EMPTY_INEXACT_RECORD_PATTERN, false)
+			return parseRecordJSONrepresentation(ctx, it, EMPTY_INEXACT_RECORD_PATTERN, try)
 		case LIST_PATTERN:
-			return parseListJSONrepresentation(ctx, it, ANY_ELEM_LIST_PATTERN, false)
+			return parseListJSONrepresentation(ctx, it, ANY_ELEM_LIST_PATTERN, try)
 		case TUPLE_PATTERN:
-			return parseTupleJSONrepresentation(ctx, it, ANY_ELEM_TUPLE_PATTERN, false)
+			return parseTupleJSONrepresentation(ctx, it, ANY_ELEM_TUPLE_PATTERN, try)
 		case INT_PATTERN:
-			return parseIntegerJSONRepresentation(ctx, it, p, false)
+			return parseIntegerJSONRepresentation(ctx, it, p, try)
 		case LINECOUNT_PATTERN:
-			return parseLineCountJSONRepresentation(ctx, it, nil, false)
+			return parseLineCountJSONRepresentation(ctx, it, nil, try)
 		case BYTECOUNT_PATTERN:
-			return parseByteCountJSONRepresentation(ctx, it, nil, false)
+			return parseByteCountJSONRepresentation(ctx, it, nil, try)
 		case RUNECOUNT_PATTERN:
-			return parseRuneCountJSONRepresentation(ctx, it, nil, false)
+			return parseRuneCountJSONRepresentation(ctx, it, nil, try)
 		case SIMPLERATE_PATTERN:
 			//TODO
 		case BYTERATE_PATTERN:
@@ -154,6 +199,8 @@ func ParseNextJSONRepresentation(ctx *Context, it *jsoniter.Iterator, pattern Pa
 			return parseHostPatternJSONRepresentation(ctx, it, try)
 		case URLPATTERN_PATTERN:
 			return parseURLPatternJSONRepresentation(ctx, it, try)
+		case ANYVAL_PATTERN, SERIALIZABLE_PATTERN:
+			return ParseNextJSONRepresentation(ctx, it, nil, try)
 		default:
 			return nil, fmt.Errorf("%q type pattern is not a core pattern", p.Name)
 		}
@@ -205,26 +252,29 @@ func parseObjectJSONrepresentation(ctx *Context, it *jsoniter.Iterator, pattern 
 
 	var missingRequiredProperties []string
 
-	pattern.ForEachEntry(func(propName string, propPattern Pattern, isOptional bool) error {
-		if !isOptional && !slices.Contains(obj.keys, propName) {
+	//auto fix & see what properties are missing
+	if pattern != nil {
+		pattern.ForEachEntry(func(propName string, propPattern Pattern, isOptional bool) error {
+			if !isOptional && !slices.Contains(obj.keys, propName) {
 
-			//try auto fix
-			defaultValPattern, ok := propPattern.(DefaultValuePattern)
-			if ok {
-				defaultValue, err := defaultValPattern.DefaultValue(ctx)
-				if err != nil {
-					goto missing
+				//try auto fix
+				defaultValPattern, ok := propPattern.(DefaultValuePattern)
+				if ok {
+					defaultValue, err := defaultValPattern.DefaultValue(ctx)
+					if err != nil {
+						goto missing
+					}
+					obj.keys = append(obj.keys, propName)
+					obj.values = append(obj.values, defaultValue.(Serializable))
+					return nil
 				}
-				obj.keys = append(obj.keys, propName)
-				obj.values = append(obj.values, defaultValue.(Serializable))
-				return nil
-			}
 
-		missing:
-			missingRequiredProperties = append(missingRequiredProperties, propName)
-		}
-		return nil
-	})
+			missing:
+				missingRequiredProperties = append(missingRequiredProperties, propName)
+			}
+			return nil
+		})
+	}
 
 	if len(missingRequiredProperties) > 0 {
 		if try {
@@ -321,6 +371,9 @@ func parseIntegerJSONRepresentation(ctx *Context, it *jsoniter.Iterator, pattern
 	case jsoniter.NumberValue:
 		n := it.ReadInt64()
 		if it.Error != nil && it.Error != io.EOF {
+			if try {
+				return 0, ErrTriedToParseJSONRepr
+			}
 			return 0, fmt.Errorf("failed to parse integer: %w", it.Error)
 		}
 		integer = Int(n)
@@ -329,9 +382,9 @@ func parseIntegerJSONRepresentation(ctx *Context, it *jsoniter.Iterator, pattern
 		if pattern != nil {
 			s := it.ReadString()
 			n, err := strconv.ParseInt(s, 10, 64)
-			if it.Error != nil && it.Error != io.EOF {
+			if err != nil {
 				if try {
-					return 0, ErrJsonNotMatchingSchema
+					return 0, ErrTriedToParseJSONRepr
 				}
 				return 0, fmt.Errorf("failed to parse integer: %w", err)
 			}
@@ -557,6 +610,27 @@ func parseListJSONrepresentation(ctx *Context, it *jsoniter.Iterator, pattern *L
 
 	index := 0
 
+	if pattern == nil {
+		var elements []Serializable
+
+		it.ReadArrayCB(func(i *jsoniter.Iterator) bool {
+			val, err := ParseNextJSONRepresentation(ctx, it, nil, try)
+			if err != nil {
+				if try {
+					finalErr = ErrTriedToParseJSONRepr
+					return false
+				}
+				finalErr = fmt.Errorf("failed to parse element %d of array: %w", index, err)
+				return false
+			}
+			elements = append(elements, val)
+			index++
+			return true
+		})
+
+		return NewWrappedValueList(elements...), nil
+	}
+
 	if pattern.elementPatterns != nil {
 		var elements []Serializable
 
@@ -670,8 +744,9 @@ func parseUnionJSONrepresentation(ctx *Context, it *jsoniter.Iterator, pattern *
 		firstMatchingCaseIndex int = -1
 		err                    error
 	)
+
 	for i, unionCase := range pattern.cases {
-		tempIterator.ResetBytes(p)
+		tempIterator.ResetBytes(slices.Clone(p))
 		tempIterator.Error = nil
 
 		value, err = ParseNextJSONRepresentation(ctx, tempIterator, unionCase, true)

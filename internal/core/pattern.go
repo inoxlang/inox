@@ -106,7 +106,7 @@ func NewExactValuePattern(value Serializable) *ExactValuePattern {
 	return &ExactValuePattern{
 		value: value,
 		CallBasedPatternReprMixin: CallBasedPatternReprMixin{
-			Callee: getDefaultNamedPattern("__val"),
+			Callee: getDefaultNamedPattern(__VAL_PATTERN_NAME),
 			Params: []Serializable{value},
 		},
 	}

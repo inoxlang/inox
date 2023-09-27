@@ -11,6 +11,10 @@ import (
 	"github.com/inoxlang/inox/internal/utils"
 )
 
+const (
+	__VAL_PATTERN_NAME = "__val"
+)
+
 var (
 	ANYVAL_PATTERN = &TypePattern{
 		Type:          VALUE_TYPE,
@@ -32,7 +36,7 @@ var (
 	//TODO: improve (using a type pattern can create issues)
 	VAL_PATTERN = &TypePattern{
 		Type:          VALUE_TYPE,
-		Name:          "__val",
+		Name:          __VAL_PATTERN_NAME,
 		SymbolicValue: symbolic.NEVER,
 		CallImpl: func(typePattern *TypePattern, values []Serializable) (Pattern, error) {
 			if len(values) != 1 {

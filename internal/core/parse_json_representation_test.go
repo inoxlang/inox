@@ -812,12 +812,18 @@ func TestParseJSONRepresentation(t *testing.T) {
 		})
 
 		t.Run("objects", func(t *testing.T) {
+			//no pattern
+			val, err := ParseJSONRepresentation(ctx, `{"a":1,"b":1}`, nil)
+			if !assert.NoError(t, err) {
+				assert.Equal(t, NewObjectFromMapNoInit(ValMap{"a": Int(1), "b": Int(1)}), val)
+			}
+
 			pattern := NewDisjointUnionPattern([]Pattern{
 				NewInexactObjectPattern(map[string]Pattern{"a": INT_PATTERN}),
 				NewInexactObjectPattern(map[string]Pattern{"b": INT_PATTERN}),
 			}, nil)
 
-			val, err := ParseJSONRepresentation(ctx, `{"a":1}`, pattern)
+			val, err = ParseJSONRepresentation(ctx, `{"a":1}`, pattern)
 			if !assert.NoError(t, err) {
 				assert.Equal(t, NewObjectFromMapNoInit(ValMap{"a": Int(1)}), val)
 			}
@@ -832,15 +838,21 @@ func TestParseJSONRepresentation(t *testing.T) {
 		})
 
 		t.Run("lists", func(t *testing.T) {
+			//no pattern
+			val, err := ParseJSONRepresentation(ctx, `[1, 2]`, nil)
+			if !assert.NoError(t, err) {
+				assert.Equal(t, NewWrappedValueList(Int(1), Int(2)), val)
+			}
+
 			pattern := NewDisjointUnionPattern([]Pattern{
 				NewListPatternOf(INT_PATTERN),
 				NewListPatternOf(BOOL_PATTERN),
 			}, nil)
 
-			_, err := ParseJSONRepresentation(ctx, `[]`, pattern)
+			_, err = ParseJSONRepresentation(ctx, `[]`, pattern)
 			assert.ErrorIs(t, err, ErrJsonNotMatchingSchema)
 
-			val, err := ParseJSONRepresentation(ctx, `[1]`, pattern)
+			val, err = ParseJSONRepresentation(ctx, `[1]`, pattern)
 			if !assert.NoError(t, err) {
 				assert.Equal(t, NewWrappedIntList(1), val)
 			}
@@ -850,5 +862,9 @@ func TestParseJSONRepresentation(t *testing.T) {
 				assert.Equal(t, NewWrappedBoolList(True), val)
 			}
 		})
+	})
+
+	t.Run("exact values", func(t *testing.T) {
+
 	})
 }

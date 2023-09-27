@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"strings"
 
 	jsoniter "github.com/inoxlang/inox/internal/jsoniter"
 	"github.com/inoxlang/inox/internal/utils"
@@ -79,6 +80,19 @@ func ConvertJSONValToInoxVal(v any, immutable bool) Serializable {
 		return Int(val)
 	case float64:
 		return Float(val)
+	case json.Number:
+		if strings.Contains(val.String(), ".") {
+			float, err := val.Float64()
+			if err != nil {
+				panic(fmt.Errorf("failed to parse float `%s`: %w", val.String(), err))
+			}
+			return Float(float)
+		}
+		integer, err := val.Int64()
+		if err != nil {
+			panic(fmt.Errorf("failed to parse integer `%s`: %w", val.String(), err))
+		}
+		return Int(integer)
 	case bool:
 		return Bool(val)
 	case string:
