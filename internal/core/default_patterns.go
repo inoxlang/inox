@@ -139,6 +139,11 @@ var (
 		Name:          "str",
 		SymbolicValue: symbolic.ANY_STR_LIKE,
 	}
+	STRLIKE_PATTERN = &TypePattern{
+		Type:          STRLIKE_INTERFACE_TYPE,
+		Name:          "strlike",
+		SymbolicValue: symbolic.ANY_STR_LIKE,
+	}
 	URL_PATTERN = &TypePattern{
 		Type:          URL_TYPE,
 		Name:          "url",
@@ -520,11 +525,7 @@ var (
 		Name:          "value-receiver",
 		SymbolicValue: symbolic.ANY_MSG_RECEIVER,
 	}
-	STRLIKE_PATTERN = &TypePattern{
-		Type:          STRLIKE_INTERFACE_TYPE,
-		Name:          "strlike",
-		SymbolicValue: symbolic.ANY_STR_LIKE,
-	}
+
 	EVENT_PATTERN = &TypePattern{
 		Type: EVENT_TYPE,
 		Name: "event",
@@ -757,13 +758,14 @@ var (
 	SECRET_PEM_STRING_PATTERN = NewSecretPattern(NewPEMRegexPattern(".*"), true)
 
 	DEFAULT_NAMED_PATTERNS = map[string]Pattern{
-		NEVER_PATTERN.Name:                 NEVER_PATTERN,
-		NIL_PATTERN.Name:                   NIL_PATTERN,
-		IDENT_PATTERN.Name:                 IDENT_PATTERN,
-		PROPNAME_PATTERN.Name:              PROPNAME_PATTERN,
-		RUNE_PATTERN.Name:                  RUNE_PATTERN,
-		BYTE_PATTERN.Name:                  BYTE_PATTERN,
-		STR_PATTERN.Name:                   STR_PATTERN,
+		NEVER_PATTERN.Name:    NEVER_PATTERN,
+		NIL_PATTERN.Name:      NIL_PATTERN,
+		IDENT_PATTERN.Name:    IDENT_PATTERN,
+		PROPNAME_PATTERN.Name: PROPNAME_PATTERN,
+		RUNE_PATTERN.Name:     RUNE_PATTERN,
+		BYTE_PATTERN.Name:     BYTE_PATTERN,
+		STR_PATTERN.Name:      STR_PATTERN,
+		//STRLIKE_PATTERN.Name:               STRLIKE_PATTERN,
 		PATH_PATTERN.Name:                  PATH_PATTERN,
 		URL_PATTERN.Name:                   URL_PATTERN,
 		SCHEME_PATTERN.Name:                SCHEME_PATTERN,
@@ -794,7 +796,6 @@ var (
 		SERIALIZABLE_ITERABLE_PATTERN.Name: SERIALIZABLE_ITERABLE_PATTERN,
 		INDEXABLE_PATTERN.Name:             INDEXABLE_PATTERN,
 		VALUE_RECEIVER_PATTERN.Name:        VALUE_RECEIVER_PATTERN,
-		STRLIKE_PATTERN.Name:               STRLIKE_PATTERN,
 		HOSTPATTERN_PATTERN.Name:           HOSTPATTERN_PATTERN,
 		PATHPATTERN_PATTERN.Name:           PATHPATTERN_PATTERN,
 		URLPATTERN_PATTERN.Name:            URLPATTERN_PATTERN,
