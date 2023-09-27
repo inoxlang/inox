@@ -310,7 +310,7 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("two lines with one statement per line, followed by newline character", func(t *testing.T) {
+		t.Run("two lines with one statement per line, followed by line feed character", func(t *testing.T) {
 			n := mustparseChunk(t, "1\n2\n")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{
@@ -385,7 +385,7 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("empty preinit after newline", func(t *testing.T) {
+		t.Run("empty preinit after line feed", func(t *testing.T) {
 			n := mustparseChunk(t, "\npreinit {}")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{
@@ -460,7 +460,7 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("empty manifest after newline", func(t *testing.T) {
+		t.Run("empty manifest after line feed", func(t *testing.T) {
 			n := mustparseChunk(t, "\nmanifest {}")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{
@@ -619,7 +619,7 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("includable-chunk after newline", func(t *testing.T) {
+		t.Run("includable-chunk after line feed", func(t *testing.T) {
 			n := mustparseChunk(t, "\nincludable-chunk")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{
@@ -1377,7 +1377,7 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("var keyword followed by newline", func(t *testing.T) {
+		t.Run("var keyword followed by line feed", func(t *testing.T) {
 			n, err := parseChunk(t, "var\n", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
@@ -1398,7 +1398,7 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("var keyword followed by newline + expression", func(t *testing.T) {
+		t.Run("var keyword followed by line feed + expression", func(t *testing.T) {
 			n, err := parseChunk(t, "var\n1", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
@@ -1506,7 +1506,7 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("followed by newline", func(t *testing.T) {
+		t.Run("followed by line feed", func(t *testing.T) {
 			n := mustparseChunk(t, "a\n")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{
@@ -14251,7 +14251,7 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("opening parenthesis followed by newline", func(t *testing.T) {
+		t.Run("opening parenthesis followed by line feed", func(t *testing.T) {
 			n, err := parseChunk(t, "(\n", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
@@ -15436,7 +15436,7 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("unterminated parameter list: followed by newline", func(t *testing.T) {
+		t.Run("unterminated parameter list: followed by line feed", func(t *testing.T) {
 			n, err := parseChunk(t, "fn(\n", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
@@ -18444,7 +18444,7 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("no value, followed by newline", func(t *testing.T) {
+		t.Run("no value, followed by line feed", func(t *testing.T) {
 			n := mustparseChunk(t, "return\n")
 
 			assert.EqualValues(t, &Chunk{
@@ -18509,7 +18509,7 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("no value, followed by newline", func(t *testing.T) {
+		t.Run("no value, followed by line feed", func(t *testing.T) {
 			n := mustparseChunk(t, "yield\n")
 
 			assert.EqualValues(t, &Chunk{
@@ -18689,7 +18689,7 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("missing elements: newline", func(t *testing.T) {
+		t.Run("missing elements: line feed", func(t *testing.T) {
 			n, err := parseChunk(t, "concat\n", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
@@ -18867,7 +18867,7 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("percent followed by newline", func(t *testing.T) {
+		t.Run("percent followed by line feed", func(t *testing.T) {
 			n, err := parseChunk(t, "%\n", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
@@ -19559,7 +19559,7 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("newline after colon", func(t *testing.T) {
+		t.Run("line feed after colon", func(t *testing.T) {
 			n, err := parseChunk(t, "%{ a:\n}", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
@@ -21373,7 +21373,7 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("selector followed by newline", func(t *testing.T) {
+		t.Run("selector followed by line feed", func(t *testing.T) {
 
 			n := mustparseChunk(t, "s!div\n")
 			assert.EqualValues(t, &Chunk{
@@ -23853,200 +23853,397 @@ func testParse(
 				},
 			}, n)
 		})
-	})
 
-	t.Run("leading child element", func(t *testing.T) {
-		n := mustparseChunk(t, "h<div><span>1</span>2</div>")
-		assert.EqualValues(t, &Chunk{
-			NodeBase: NodeBase{NodeSpan{0, 27}, nil, nil},
-			Statements: []Node{
-				&XMLExpression{
-					NodeBase: NodeBase{NodeSpan{0, 27}, nil, nil},
-					Namespace: &IdentifierLiteral{
-						NodeBase: NodeBase{NodeSpan{0, 1}, nil, nil},
-						Name:     "h",
-					},
-					Element: &XMLElement{
-						NodeBase: NodeBase{NodeSpan{1, 27}, nil, nil},
-						Opening: &XMLOpeningElement{
-							NodeBase: NodeBase{
-								NodeSpan{1, 6},
-								nil,
-								[]Token{
-									{Type: LESS_THAN, Span: NodeSpan{1, 2}},
-									{Type: GREATER_THAN, Span: NodeSpan{5, 6}},
+		t.Run("leading child element", func(t *testing.T) {
+			n := mustparseChunk(t, "h<div><span>1</span>2</div>")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 27}, nil, nil},
+				Statements: []Node{
+					&XMLExpression{
+						NodeBase: NodeBase{NodeSpan{0, 27}, nil, nil},
+						Namespace: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 1}, nil, nil},
+							Name:     "h",
+						},
+						Element: &XMLElement{
+							NodeBase: NodeBase{NodeSpan{1, 27}, nil, nil},
+							Opening: &XMLOpeningElement{
+								NodeBase: NodeBase{
+									NodeSpan{1, 6},
+									nil,
+									[]Token{
+										{Type: LESS_THAN, Span: NodeSpan{1, 2}},
+										{Type: GREATER_THAN, Span: NodeSpan{5, 6}},
+									},
+								},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{2, 5}, nil, nil},
+									Name:     "div",
 								},
 							},
-							Name: &IdentifierLiteral{
-								NodeBase: NodeBase{NodeSpan{2, 5}, nil, nil},
-								Name:     "div",
-							},
-						},
-						Children: []Node{
-							&XMLText{
-								NodeBase: NodeBase{NodeSpan{6, 6}, nil, nil},
-								Raw:      "",
-								Value:    "",
-							},
-							&XMLElement{
-								NodeBase: NodeBase{NodeSpan{6, 20}, nil, nil},
-								Opening: &XMLOpeningElement{
-									NodeBase: NodeBase{
-										NodeSpan{6, 12},
-										nil,
-										[]Token{
-											{Type: LESS_THAN, Span: NodeSpan{6, 7}},
-											{Type: GREATER_THAN, Span: NodeSpan{11, 12}},
+							Children: []Node{
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{6, 6}, nil, nil},
+									Raw:      "",
+									Value:    "",
+								},
+								&XMLElement{
+									NodeBase: NodeBase{NodeSpan{6, 20}, nil, nil},
+									Opening: &XMLOpeningElement{
+										NodeBase: NodeBase{
+											NodeSpan{6, 12},
+											nil,
+											[]Token{
+												{Type: LESS_THAN, Span: NodeSpan{6, 7}},
+												{Type: GREATER_THAN, Span: NodeSpan{11, 12}},
+											},
+										},
+										Name: &IdentifierLiteral{
+											NodeBase: NodeBase{NodeSpan{7, 11}, nil, nil},
+											Name:     "span",
 										},
 									},
-									Name: &IdentifierLiteral{
-										NodeBase: NodeBase{NodeSpan{7, 11}, nil, nil},
-										Name:     "span",
-									},
-								},
-								Children: []Node{
-									&XMLText{
-										NodeBase: NodeBase{NodeSpan{12, 13}, nil, nil},
-										Raw:      "1",
-										Value:    "1",
-									},
-								},
-								Closing: &XMLClosingElement{
-									NodeBase: NodeBase{
-										NodeSpan{13, 20},
-										nil,
-										[]Token{
-											{Type: END_TAG_OPEN_DELIMITER, Span: NodeSpan{13, 15}},
-											{Type: GREATER_THAN, Span: NodeSpan{19, 20}},
+									Children: []Node{
+										&XMLText{
+											NodeBase: NodeBase{NodeSpan{12, 13}, nil, nil},
+											Raw:      "1",
+											Value:    "1",
 										},
 									},
-									Name: &IdentifierLiteral{
-										NodeBase: NodeBase{NodeSpan{15, 19}, nil, nil},
-										Name:     "span",
+									Closing: &XMLClosingElement{
+										NodeBase: NodeBase{
+											NodeSpan{13, 20},
+											nil,
+											[]Token{
+												{Type: END_TAG_OPEN_DELIMITER, Span: NodeSpan{13, 15}},
+												{Type: GREATER_THAN, Span: NodeSpan{19, 20}},
+											},
+										},
+										Name: &IdentifierLiteral{
+											NodeBase: NodeBase{NodeSpan{15, 19}, nil, nil},
+											Name:     "span",
+										},
 									},
 								},
-							},
-							&XMLText{
-								NodeBase: NodeBase{NodeSpan{20, 21}, nil, nil},
-								Raw:      "2",
-								Value:    "2",
-							},
-						},
-						Closing: &XMLClosingElement{
-							NodeBase: NodeBase{
-								NodeSpan{21, 27},
-								nil,
-								[]Token{
-									{Type: END_TAG_OPEN_DELIMITER, Span: NodeSpan{21, 23}},
-									{Type: GREATER_THAN, Span: NodeSpan{26, 27}},
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{20, 21}, nil, nil},
+									Raw:      "2",
+									Value:    "2",
 								},
 							},
-							Name: &IdentifierLiteral{
-								NodeBase: NodeBase{NodeSpan{23, 26}, nil, nil},
-								Name:     "div",
+							Closing: &XMLClosingElement{
+								NodeBase: NodeBase{
+									NodeSpan{21, 27},
+									nil,
+									[]Token{
+										{Type: END_TAG_OPEN_DELIMITER, Span: NodeSpan{21, 23}},
+										{Type: GREATER_THAN, Span: NodeSpan{26, 27}},
+									},
+								},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{23, 26}, nil, nil},
+									Name:     "div",
+								},
 							},
 						},
 					},
 				},
-			},
-		}, n)
-	})
+			}, n)
+		})
 
-	t.Run("linefeed followed by child element", func(t *testing.T) {
-		n := mustparseChunk(t, "h<div>\n<span>1</span>2</div>")
-		assert.EqualValues(t, &Chunk{
-			NodeBase: NodeBase{NodeSpan{0, 28}, nil, nil},
-			Statements: []Node{
-				&XMLExpression{
-					NodeBase: NodeBase{NodeSpan{0, 28}, nil, nil},
-					Namespace: &IdentifierLiteral{
-						NodeBase: NodeBase{NodeSpan{0, 1}, nil, nil},
-						Name:     "h",
-					},
-					Element: &XMLElement{
-						NodeBase: NodeBase{NodeSpan{1, 28}, nil, nil},
-						Opening: &XMLOpeningElement{
-							NodeBase: NodeBase{
-								NodeSpan{1, 6},
-								nil,
-								[]Token{
-									{Type: LESS_THAN, Span: NodeSpan{1, 2}},
-									{Type: GREATER_THAN, Span: NodeSpan{5, 6}},
+		t.Run("linefeed followed by child element", func(t *testing.T) {
+			n := mustparseChunk(t, "h<div>\n<span>1</span>2</div>")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 28}, nil, nil},
+				Statements: []Node{
+					&XMLExpression{
+						NodeBase: NodeBase{NodeSpan{0, 28}, nil, nil},
+						Namespace: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 1}, nil, nil},
+							Name:     "h",
+						},
+						Element: &XMLElement{
+							NodeBase: NodeBase{NodeSpan{1, 28}, nil, nil},
+							Opening: &XMLOpeningElement{
+								NodeBase: NodeBase{
+									NodeSpan{1, 6},
+									nil,
+									[]Token{
+										{Type: LESS_THAN, Span: NodeSpan{1, 2}},
+										{Type: GREATER_THAN, Span: NodeSpan{5, 6}},
+									},
+								},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{2, 5}, nil, nil},
+									Name:     "div",
 								},
 							},
-							Name: &IdentifierLiteral{
-								NodeBase: NodeBase{NodeSpan{2, 5}, nil, nil},
-								Name:     "div",
-							},
-						},
-						Children: []Node{
-							&XMLText{
-								NodeBase: NodeBase{NodeSpan{6, 7}, nil, nil},
-								Raw:      "\n",
-								Value:    "\n",
-							},
-							&XMLElement{
-								NodeBase: NodeBase{NodeSpan{7, 21}, nil, nil},
-								Opening: &XMLOpeningElement{
-									NodeBase: NodeBase{
-										NodeSpan{7, 13},
-										nil,
-										[]Token{
-											{Type: LESS_THAN, Span: NodeSpan{7, 8}},
-											{Type: GREATER_THAN, Span: NodeSpan{12, 13}},
+							Children: []Node{
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{6, 7}, nil, nil},
+									Raw:      "\n",
+									Value:    "\n",
+								},
+								&XMLElement{
+									NodeBase: NodeBase{NodeSpan{7, 21}, nil, nil},
+									Opening: &XMLOpeningElement{
+										NodeBase: NodeBase{
+											NodeSpan{7, 13},
+											nil,
+											[]Token{
+												{Type: LESS_THAN, Span: NodeSpan{7, 8}},
+												{Type: GREATER_THAN, Span: NodeSpan{12, 13}},
+											},
+										},
+										Name: &IdentifierLiteral{
+											NodeBase: NodeBase{NodeSpan{8, 12}, nil, nil},
+											Name:     "span",
 										},
 									},
-									Name: &IdentifierLiteral{
-										NodeBase: NodeBase{NodeSpan{8, 12}, nil, nil},
-										Name:     "span",
-									},
-								},
-								Children: []Node{
-									&XMLText{
-										NodeBase: NodeBase{NodeSpan{13, 14}, nil, nil},
-										Raw:      "1",
-										Value:    "1",
-									},
-								},
-								Closing: &XMLClosingElement{
-									NodeBase: NodeBase{
-										NodeSpan{14, 21},
-										nil,
-										[]Token{
-											{Type: END_TAG_OPEN_DELIMITER, Span: NodeSpan{14, 16}},
-											{Type: GREATER_THAN, Span: NodeSpan{20, 21}},
+									Children: []Node{
+										&XMLText{
+											NodeBase: NodeBase{NodeSpan{13, 14}, nil, nil},
+											Raw:      "1",
+											Value:    "1",
 										},
 									},
-									Name: &IdentifierLiteral{
-										NodeBase: NodeBase{NodeSpan{16, 20}, nil, nil},
-										Name:     "span",
+									Closing: &XMLClosingElement{
+										NodeBase: NodeBase{
+											NodeSpan{14, 21},
+											nil,
+											[]Token{
+												{Type: END_TAG_OPEN_DELIMITER, Span: NodeSpan{14, 16}},
+												{Type: GREATER_THAN, Span: NodeSpan{20, 21}},
+											},
+										},
+										Name: &IdentifierLiteral{
+											NodeBase: NodeBase{NodeSpan{16, 20}, nil, nil},
+											Name:     "span",
+										},
 									},
 								},
-							},
-							&XMLText{
-								NodeBase: NodeBase{NodeSpan{21, 22}, nil, nil},
-								Raw:      "2",
-								Value:    "2",
-							},
-						},
-						Closing: &XMLClosingElement{
-							NodeBase: NodeBase{
-								NodeSpan{22, 28},
-								nil,
-								[]Token{
-									{Type: END_TAG_OPEN_DELIMITER, Span: NodeSpan{22, 24}},
-									{Type: GREATER_THAN, Span: NodeSpan{27, 28}},
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{21, 22}, nil, nil},
+									Raw:      "2",
+									Value:    "2",
 								},
 							},
-							Name: &IdentifierLiteral{
-								NodeBase: NodeBase{NodeSpan{24, 27}, nil, nil},
-								Name:     "div",
+							Closing: &XMLClosingElement{
+								NodeBase: NodeBase{
+									NodeSpan{22, 28},
+									nil,
+									[]Token{
+										{Type: END_TAG_OPEN_DELIMITER, Span: NodeSpan{22, 24}},
+										{Type: GREATER_THAN, Span: NodeSpan{27, 28}},
+									},
+								},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{24, 27}, nil, nil},
+									Name:     "div",
+								},
 							},
 						},
 					},
 				},
-			},
-		}, n)
+			}, n)
+		})
+	})
+
+	t.Run("extend statement", func(t *testing.T) {
+		t.Run("unprefixed named pattern", func(t *testing.T) {
+			n := mustparseChunk(t, "extend user {}")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 14}, nil, nil},
+				Statements: []Node{
+					&ExtendStatement{
+						NodeBase: NodeBase{
+							NodeSpan{0, 14},
+							nil,
+							[]Token{{Type: EXTEND_KEYWORD, Span: NodeSpan{0, 6}}},
+						},
+						ExtendedPattern: &PatternIdentifierLiteral{
+							NodeBase:   NodeBase{NodeSpan{7, 11}, nil, nil},
+							Unprefixed: true,
+							Name:       "user",
+						},
+						Extension: &ObjectLiteral{
+							NodeBase: NodeBase{
+								NodeSpan{12, 14},
+								nil,
+								[]Token{
+									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{12, 13}},
+									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{13, 14}},
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("extension should be an object literal", func(t *testing.T) {
+			n, err := parseChunk(t, "extend user 1", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 13}, nil, nil},
+				Statements: []Node{
+					&ExtendStatement{
+						NodeBase: NodeBase{
+							NodeSpan{0, 13},
+							nil,
+							[]Token{{Type: EXTEND_KEYWORD, Span: NodeSpan{0, 6}}},
+						},
+						ExtendedPattern: &PatternIdentifierLiteral{
+							NodeBase:   NodeBase{NodeSpan{7, 11}, nil, nil},
+							Unprefixed: true,
+							Name:       "user",
+						},
+						Extension: &IntLiteral{
+							NodeBase: NodeBase{
+								NodeSpan{12, 13},
+								&ParsingError{UnspecifiedParsingError, INVALID_EXTENSION_VALUE_AN_OBJECT_LITERAL_WAS_EXPECTED},
+								nil,
+							},
+							Raw:   "1",
+							Value: 1,
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("missing extended pattern: 'extend' at end of file", func(t *testing.T) {
+			n, err := parseChunk(t, "extend", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 6}, nil, nil},
+				Statements: []Node{
+					&ExtendStatement{
+						NodeBase: NodeBase{
+							NodeSpan{0, 6},
+							&ParsingError{UnterminatedExtendStmt, UNTERMINATED_EXTEND_STMT_MISSING_PATTERN_TO_EXTEND_AFTER_KEYWORD},
+							[]Token{{Type: EXTEND_KEYWORD, Span: NodeSpan{0, 6}}},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("missing extended pattern: 'extend' followed by line feed", func(t *testing.T) {
+			n, err := parseChunk(t, "extend\n", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{
+					NodeSpan{0, 7},
+					nil,
+					[]Token{{Type: NEWLINE, Span: NodeSpan{6, 7}}},
+				},
+				Statements: []Node{
+					&ExtendStatement{
+						NodeBase: NodeBase{
+							NodeSpan{0, 6},
+							&ParsingError{UnterminatedExtendStmt, UNTERMINATED_EXTEND_STMT_MISSING_PATTERN_TO_EXTEND_AFTER_KEYWORD},
+							[]Token{{Type: EXTEND_KEYWORD, Span: NodeSpan{0, 6}}},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("missing extended pattern: 'extend' followed by carriage return + line feed", func(t *testing.T) {
+			n, err := parseChunk(t, "extend\r\n", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{
+					NodeSpan{0, 8},
+					nil,
+					[]Token{{Type: NEWLINE, Span: NodeSpan{7, 8}}},
+				},
+				Statements: []Node{
+					&ExtendStatement{
+						NodeBase: NodeBase{
+							NodeSpan{0, 7},
+							&ParsingError{UnterminatedExtendStmt, UNTERMINATED_EXTEND_STMT_MISSING_PATTERN_TO_EXTEND_AFTER_KEYWORD},
+							[]Token{{Type: EXTEND_KEYWORD, Span: NodeSpan{0, 6}}},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("missing extension: pattern at end of file", func(t *testing.T) {
+			n, err := parseChunk(t, "extend user", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 11}, nil, nil},
+				Statements: []Node{
+					&ExtendStatement{
+						NodeBase: NodeBase{
+							NodeSpan{0, 11},
+							&ParsingError{UnterminatedExtendStmt, UNTERMINATED_EXTEND_STMT_MISSING_OBJECT_LITERAL_AFTER_EXTENDED_PATTERN},
+							[]Token{{Type: EXTEND_KEYWORD, Span: NodeSpan{0, 6}}},
+						},
+						ExtendedPattern: &PatternIdentifierLiteral{
+							NodeBase:   NodeBase{NodeSpan{7, 11}, nil, nil},
+							Unprefixed: true,
+							Name:       "user",
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("missing extension: pattern followed by line feed", func(t *testing.T) {
+			n, err := parseChunk(t, "extend user\n", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{
+					NodeSpan{0, 12},
+					nil,
+					[]Token{{Type: NEWLINE, Span: NodeSpan{11, 12}}},
+				},
+				Statements: []Node{
+					&ExtendStatement{
+						NodeBase: NodeBase{
+							NodeSpan{0, 11},
+							&ParsingError{UnterminatedExtendStmt, UNTERMINATED_EXTEND_STMT_MISSING_OBJECT_LITERAL_AFTER_EXTENDED_PATTERN},
+							[]Token{{Type: EXTEND_KEYWORD, Span: NodeSpan{0, 6}}},
+						},
+						ExtendedPattern: &PatternIdentifierLiteral{
+							NodeBase:   NodeBase{NodeSpan{7, 11}, nil, nil},
+							Unprefixed: true,
+							Name:       "user",
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("missing extension: pattern followed by carriage return + line feed", func(t *testing.T) {
+			n, err := parseChunk(t, "extend user\r\n", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{
+					NodeSpan{0, 13},
+					nil,
+					[]Token{{Type: NEWLINE, Span: NodeSpan{12, 13}}},
+				},
+				Statements: []Node{
+					&ExtendStatement{
+						NodeBase: NodeBase{
+							NodeSpan{0, 11},
+							&ParsingError{UnterminatedExtendStmt, UNTERMINATED_EXTEND_STMT_MISSING_OBJECT_LITERAL_AFTER_EXTENDED_PATTERN},
+							[]Token{{Type: EXTEND_KEYWORD, Span: NodeSpan{0, 6}}},
+						},
+						ExtendedPattern: &PatternIdentifierLiteral{
+							NodeBase:   NodeBase{NodeSpan{7, 11}, nil, nil},
+							Unprefixed: true,
+							Name:       "user",
+						},
+					},
+				},
+			}, n)
+		})
 	})
 }
 

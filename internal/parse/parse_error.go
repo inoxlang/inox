@@ -10,6 +10,7 @@ const (
 	UnspecifiedParsingError ParsingErrorKind = iota
 	UnterminatedMemberExpr
 	UnterminatedDoubleColonExpr
+	UnterminatedExtendStmt
 	MissingBlock
 	MissingFnBody
 	MissingEqualsSignInDeclaration
@@ -258,11 +259,10 @@ const (
 	MISSING_RECEIVED_KEYWORD                              = "missing 'received' keyword after 'on' keyword"
 
 	//watch expression
-	INVALID_WATCH_EXPR                                                 = "invalid watch expression"
-	UNTERMINATED_WATCH_EXPR_MISSING_MODULE                             = "unterminated watch expression: missing module"
-	INVALID_WATCH_EXP_ONLY_SIMPLE_CALLS_ARE_SUPPORTED                  = "invalid watch expression: only simple calls are supported for now"
-	INVALID_WATCH_EXP_MODULE_SHOULD_BE_FOLLOWED_BY_WITHCONF_KEYWORD    = "invalid watch expression: module should be followed by 'with-config' keyword"
-	INVALID_WATCH_EXPR_WITH_CONF_KEYWORD_SHOULD_BE_FOLLOWED_BY_OBJ_LIT = "invalid watch expression: 'with-config' keyword should be followed by an object literal"
+	INVALID_WATCH_EXPR                                              = "invalid watch expression"
+	UNTERMINATED_WATCH_EXPR_MISSING_MODULE                          = "unterminated watch expression: missing module"
+	INVALID_WATCH_EXP_ONLY_SIMPLE_CALLS_ARE_SUPPORTED               = "invalid watch expression: only simple calls are supported for now"
+	INVALID_WATCH_EXP_MODULE_SHOULD_BE_FOLLOWED_BY_WITHCONF_KEYWORD = "invalid watch expression: module should be followed by 'with-config' keyword"
 
 	FN_KEYWORD_OR_FUNC_NAME_SHOULD_BE_FOLLOWED_BY_PARAMS       = "function: fn keyword (or function name) should be followed by parameters"
 	CAPTURE_LIST_SHOULD_BE_FOLLOWED_BY_PARAMS                  = "capture list should be followed by parameters"
@@ -388,6 +388,11 @@ const (
 	INVALID_XML_INTERP                                 = "invalid xml interpolation"
 	XML_ATTRIBUTE_NAME_SHOULD_BE_IDENT                 = "xml attribute's name should be an identifier"
 	INVALID_TAG_NAME                                   = "invalid tag name"
+
+	//extend statement
+	UNTERMINATED_EXTEND_STMT_MISSING_PATTERN_TO_EXTEND_AFTER_KEYWORD       = "unterminated extend statement: missing pattern after keyword 'extend'"
+	UNTERMINATED_EXTEND_STMT_MISSING_OBJECT_LITERAL_AFTER_EXTENDED_PATTERN = "unterminated extend statement: missing object literal (extension) after pattern"
+	INVALID_EXTENSION_VALUE_AN_OBJECT_LITERAL_WAS_EXPECTED                 = "invalid extension value: an object literal was expected"
 )
 
 func fmtInvalidRegexLiteral(err string) string {

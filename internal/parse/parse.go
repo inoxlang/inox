@@ -19,6 +19,7 @@ import (
 	"unicode"
 
 	"github.com/inoxlang/inox/internal/utils"
+	"golang.org/x/exp/slices"
 )
 
 const (
@@ -6253,9 +6254,9 @@ func (p *parser) parseExpression(precededByOpeningParen ...bool) (expr Node, isM
 		case *IdentifierLiteral:
 			name = v.Name
 			switch name {
-			case "go":
+			case tokenStrings[GO_KEYWORD]:
 				return p.parseSpawnExpression(identStartingExpr), false
-			case "fn":
+			case tokenStrings[FN_KEYWORD]:
 				if p.inPattern {
 					return p.parseFunctionPattern(identStartingExpr.Base().Span.Start, false), false
 				}
@@ -6265,25 +6266,25 @@ func (p *parser) parseExpression(precededByOpeningParen ...bool) (expr Node, isM
 					p.i++
 					return p.parseTopCssSelector(p.i - 2), false
 				}
-			case "Mapping":
+			case tokenStrings[MAPPING_KEYWORD]:
 				return p.parseMappingExpression(v), false
-			case "comp":
+			case tokenStrings[COMP_KEYWORD]:
 				return p.parseComputeExpression(v), false
-			case "udata":
+			case tokenStrings[UDATA_KEYWORD]:
 				return p.parseUdataLiteral(v), false
-			case "concat":
+			case tokenStrings[CONCAT_KEYWORD]:
 				return p.parseConcatenationExpression(v, len(precededByOpeningParen) > 0 && precededByOpeningParen[0]), false
-			case "testsuite":
+			case tokenStrings[TESTSUITE_KEYWORD]:
 				return p.parseTestSuiteExpression(v), false
-			case "testcase":
+			case tokenStrings[TESTCASE_KEYWORD]:
 				return p.parseTestCaseExpression(v), false
-			case "lifetimejob":
+			case tokenStrings[LIFETIMEJOB_KEYWORD]:
 				return p.parseLifetimeJobExpression(v), false
-			case "on":
+			case tokenStrings[ON_KEYWORD]:
 				return p.parseReceptionHandlerExpression(v), false
-			case "sendval":
+			case tokenStrings[SENDVAL_KEYWORD]:
 				return p.parseSendValueExpression(v), false
-			case "readonly":
+			case tokenStrings[READONLY_KEYWORD]:
 				if p.inPattern {
 					return p.parseReadonlyPatternExpression(v), false
 				}
@@ -10395,6 +10396,51 @@ func (p *parser) parseCommandLikeStatement(expr Node) Node {
 	return stmt
 }
 
+func (p *parser) parseExtendStatement(extendIdent *IdentifierLiteral) *ExtendStatement {
+	p.panicIfContextDone()
+
+	tokens := []Token{{Type: EXTEND_KEYWORD, Span: extendIdent.Span}}
+
+	p.eatSpace()
+
+	extendStmt := &ExtendStatement{
+		NodeBase: NodeBase{
+			Span:   NodeSpan{extendIdent.Span.Start, p.i},
+			Tokens: tokens,
+		},
+	}
+
+	if p.i >= p.len || p.s[p.i] == '\n' {
+		extendStmt.Err = &ParsingError{UnterminatedExtendStmt, UNTERMINATED_EXTEND_STMT_MISSING_PATTERN_TO_EXTEND_AFTER_KEYWORD}
+	} else {
+		func() {
+			prev := p.inPattern
+			p.inPattern = true
+			defer func() {
+				p.inPattern = prev
+			}()
+
+			extendStmt.ExtendedPattern, _ = p.parseExpression()
+			extendStmt.Span.End = p.i
+		}()
+
+		p.eatSpace()
+
+		if p.i >= p.len || p.s[p.i] == '\n' {
+			extendStmt.Err = &ParsingError{UnterminatedExtendStmt, UNTERMINATED_EXTEND_STMT_MISSING_OBJECT_LITERAL_AFTER_EXTENDED_PATTERN}
+		} else {
+			extendStmt.Extension, _ = p.parseExpression()
+			extendStmt.Span.End = p.i
+
+			if _, ok := extendStmt.Extension.(*ObjectLiteral); !ok && extendStmt.Extension.Base().Err == nil {
+				extendStmt.Extension.BasePtr().Err = &ParsingError{UnspecifiedParsingError, INVALID_EXTENSION_VALUE_AN_OBJECT_LITERAL_WAS_EXPECTED}
+			}
+		}
+	}
+
+	return extendStmt
+}
+
 func (p *parser) parseStatement() Node {
 	// no p.panicIfContextDone() call because there is one in the following statement.
 
@@ -10479,7 +10525,7 @@ func (p *parser) parseStatement() Node {
 		return ev
 	case *IdentifierLiteral:
 		switch ev.Name {
-		case "assert":
+		case tokenStrings[ASSERT_KEYWORD]:
 			p.eatSpace()
 
 			expr, _ := p.parseExpression()
@@ -10492,26 +10538,26 @@ func (p *parser) parseStatement() Node {
 				},
 				Expr: expr,
 			}
-		case "if":
+		case tokenStrings[IF_KEYWORD]:
 			return p.parseIfStatement(ev)
-		case "for":
+		case tokenStrings[FOR_KEYWORD]:
 			return p.parseForStatement(ev)
-		case "walk":
+		case tokenStrings[WALK_KEYWORD]:
 			return p.parseWalkStatement(ev)
-		case "switch", "match":
+		case tokenStrings[SWITCH_KEYWORD], "match":
 			return p.parseSwitchMatchStatement(ev)
-		case "fn":
+		case tokenStrings[FN_KEYWORD]:
 			log.Panic("invalid state: function parsing should be hanlded by p.parseExpression")
 			return nil
-		case "drop-perms":
+		case tokenStrings[DROP_PERMS_KEYWORD]:
 			return p.parsePermissionDroppingStatement(ev)
-		case "import":
+		case tokenStrings[IMPORT_KEYWORD]:
 			return p.parseImportStatement(ev)
-		case "return":
+		case tokenStrings[RETURN_KEYWORD]:
 			return p.parseReturnStatement(ev)
-		case "yield":
+		case tokenStrings[YIELD_KEYWORD]:
 			return p.parseYieldStatement(ev)
-		case "break":
+		case tokenStrings[BREAK_KEYWORD]:
 			return &BreakStatement{
 				NodeBase: NodeBase{
 					Span:   ev.Span,
@@ -10519,7 +10565,7 @@ func (p *parser) parseStatement() Node {
 				},
 				Label: nil,
 			}
-		case "continue":
+		case tokenStrings[CONTINUE_KEYWORD]:
 			return &ContinueStatement{
 				NodeBase: NodeBase{
 					Span:   ev.Span,
@@ -10527,19 +10573,21 @@ func (p *parser) parseStatement() Node {
 				},
 				Label: nil,
 			}
-		case "prune":
+		case tokenStrings[PRUNE_KEYWORD]:
 			return &PruneStatement{
 				NodeBase: NodeBase{
 					Span:   ev.Span,
 					Tokens: []Token{{Type: PRUNE_KEYWORD, Span: ev.Span}},
 				},
 			}
-		case "assign":
+		case tokenStrings[ASSIGN_KEYWORD]:
 			return p.parseMultiAssignmentStatement(ev)
-		case "var":
+		case tokenStrings[VAR_KEYWORD]:
 			return p.parseLocalVariableDeclarations(ev.Base())
-		case "synchronized":
+		case tokenStrings[SYNCHRONIZED_KEYWORD]:
 			return p.parseSynchronizedBlock(ev)
+		case tokenStrings[EXTEND_KEYWORD]:
+			return p.parseExtendStatement(ev)
 		}
 
 	}
@@ -10750,7 +10798,7 @@ func ParseURL(u string) (path string, ok bool) {
 }
 
 func isKeyword(str string) bool {
-	return utils.SliceContains(KEYWORDS, str)
+	return slices.Contains(KEYWORDS, str)
 }
 
 func IsMetadataKey(key string) bool {
@@ -10807,6 +10855,19 @@ func isValidUnquotedStringChar(runes []rune, i int32) bool {
 
 func isSpaceNotLF(r rune) bool {
 	return r == ' ' || r == '\t' || r == '\r'
+}
+
+func isEndOfLine(runes []rune, i int32) bool {
+	if runes[i] == '\n' {
+		return true
+	}
+
+	//eat carriage returns
+	for ; i < len32(runes) && runes[i] == '\r'; i++ {
+
+	}
+
+	return i < len32(runes) && runes[i] == '\n'
 }
 
 func IsCommentFirstSpace(r rune) bool {

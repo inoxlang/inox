@@ -2151,6 +2151,16 @@ type XMLInterpolation struct {
 	Expr Node
 }
 
+type ExtendStatement struct {
+	NodeBase
+	ExtendedPattern Node
+	Extension       Node //*ObjectLiteral if coorecy
+}
+
+func (ExtendStatement) Kind() NodeKind {
+	return Stmt
+}
+
 // NodeIsStringLiteral returns true if and only if node is of one of the following types:
 // *QuotedStringLiteral, *UnquotedStringLiteral, *StringTemplateLiteral, *MultilineStringLiteral
 func NodeIsStringLiteral(node Node) bool {
@@ -2725,6 +2735,9 @@ func walk(node, parent Node, ancestorChain *[]Node, fn, afterFn NodeHandler) {
 		walk(n.Name, node, ancestorChain, fn, afterFn)
 	case *XMLInterpolation:
 		walk(n.Expr, node, ancestorChain, fn, afterFn)
+	case *ExtendStatement:
+		walk(n.ExtendedPattern, node, ancestorChain, fn, afterFn)
+		walk(n.Extension, node, ancestorChain, fn, afterFn)
 	}
 
 	if afterFn != nil {
