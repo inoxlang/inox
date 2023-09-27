@@ -3259,6 +3259,44 @@ func TestCheck(t *testing.T) {
 			assert.Equal(t, expectedErr, err)
 		})
 	})
+
+	t.Run("extend statement", func(t *testing.T) {
+		t.Run("should be located at the top level: in function declaration", func(t *testing.T) {
+			n, src := parseCode(`
+				%p = {a: 1}
+				fn f(){
+					extend p {}
+				}
+			`)
+
+			globals := GlobalVariablesFromMap(map[string]Value{"html": Nil}, nil)
+			extendStmt := parse.FindNode(n, (*parse.ExtendStatement)(nil), nil)
+
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src, Globals: globals})
+			expectedErr := utils.CombineErrors(
+				makeError(extendStmt, src, MISPLACED_EXTEND_STATEMENT_TOP_LEVEL_STMT),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("should be located at the top level: in if statement's block", func(t *testing.T) {
+			n, src := parseCode(`
+				%p = {a: 1}
+				if true {
+					extend p {}
+				}
+			`)
+
+			globals := GlobalVariablesFromMap(map[string]Value{"html": Nil}, nil)
+			extendStmt := parse.FindNode(n, (*parse.ExtendStatement)(nil), nil)
+
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src, Globals: globals})
+			expectedErr := utils.CombineErrors(
+				makeError(extendStmt, src, MISPLACED_EXTEND_STATEMENT_TOP_LEVEL_STMT),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+	})
 }
 
 //TODO: add tests for static checking of remaining manifest sections.

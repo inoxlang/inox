@@ -1775,6 +1775,11 @@ switch_:
 		if node.Optional {
 			c.addError(node, OPTIONAL_DYN_MEMB_EXPR_NOT_SUPPORTED_YET)
 		}
+	case *parse.ExtendStatement:
+		if _, ok := parent.(*parse.Chunk); !ok {
+			c.addError(node, MISPLACED_EXTEND_STATEMENT_TOP_LEVEL_STMT)
+			return parse.Continue
+		}
 	}
 
 	return parse.Continue
