@@ -3,6 +3,7 @@ package symbolic
 import (
 	"bufio"
 	"errors"
+	"fmt"
 
 	"github.com/inoxlang/inox/internal/commonfmt"
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
@@ -27,6 +28,8 @@ var (
 	ANY_RUNE_SLICE  = &RuneSlice{}
 
 	EMPTY_STRING = NewString("")
+
+	_ANY_STR_TYPE_PATTERN = &TypePattern{val: ANY_STR}
 
 	STRING_LIKE_PSEUDOPROPS = []string{"replace", "trim_space", "has_prefix", "has_suffix"}
 	RUNE_SLICE_PROPNAMES    = []string{"insert", "remove_position", "remove_position_range"}
@@ -54,6 +57,11 @@ type String struct {
 	hasValue bool
 	value    string
 
+	// should not be set if value or pattern are set
+	minLengthPlusOne int64
+	// should not be set if value or pattern are set
+	maxLength int64
+
 	pattern StringPattern
 
 	UnassignablePropsMixin
@@ -67,10 +75,32 @@ func NewString(v string) *String {
 	}
 }
 
+func NewStringWithLengthRange(minLength, maxLength int64) *String {
+	if minLength > maxLength {
+		panic(errors.New("minLength should be <= maxLength"))
+	}
+
+	if minLength < 0 || maxLength < 0 {
+		panic(errors.New("minLength and maxLength should be less or equal to zero"))
+	}
+
+	return &String{
+		minLengthPlusOne: minLength + 1,
+		maxLength:        maxLength,
+	}
+}
+
 func NewStringMatchingPattern(p StringPattern) *String {
 	return &String{
 		pattern: p,
 	}
+}
+
+func (s *String) minLength() int64 {
+	if s.minLengthPlusOne <= 0 {
+		panic(errors.New("minimum length is not set"))
+	}
+	return s.minLengthPlusOne - 1
 }
 
 func (s *String) Test(v SymbolicValue) bool {
@@ -85,8 +115,24 @@ func (s *String) Test(v SymbolicValue) bool {
 		return otherString.hasValue && s.pattern.TestValue(otherString)
 	}
 	if !s.hasValue {
-		return true
+		if s.minLengthPlusOne <= 0 {
+			//s is the any string
+			return true
+		}
+		//else s has a min & max length
+
+		if otherString.hasValue {
+			return int64(len(otherString.value)) >= s.minLength() && int64(len(otherString.value)) <= s.maxLength
+		} else if otherString.minLengthPlusOne > 0 {
+			return otherString.minLength() >= s.minLength() && otherString.maxLength <= s.maxLength
+		} //else otherString has a pattern, we can't know the length in most cases.
+
+		if lengthCheckingPattern, ok := otherString.pattern.(*LengthCheckingStringPattern); ok {
+			return s.Test(lengthCheckingPattern.SymbolicValue())
+		}
+		return false
 	}
+	//if s has a value
 	return otherString.hasValue && s.value == otherString.value
 }
 
@@ -102,7 +148,7 @@ func (s *String) Concretize(ctx ConcreteContext) any {
 }
 
 func (s *String) Static() Pattern {
-	return &TypePattern{val: ANY_STR}
+	return _ANY_STR_TYPE_PATTERN
 }
 
 func (s *String) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
@@ -123,6 +169,8 @@ func (s *String) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, 
 				s.pattern.PrettyPrint(w, config, depth, 0)
 				utils.Must(w.Write(utils.StringAsBytes(")")))
 			}
+		} else if s.minLengthPlusOne > 0 {
+			utils.Must(w.Write(utils.StringAsBytes(fmt.Sprintf("(length in %d..%d)", s.minLength(), s.maxLength))))
 		}
 	}
 }

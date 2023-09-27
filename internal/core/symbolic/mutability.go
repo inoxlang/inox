@@ -312,6 +312,10 @@ func (patt *IntersectionPattern) IsMutable() bool {
 	return false
 }
 
+func (patt *LengthCheckingStringPattern) IsMutable() bool {
+	return false
+}
+
 func (patt *SequenceStringPattern) IsMutable() bool {
 	return false
 }
