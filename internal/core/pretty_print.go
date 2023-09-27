@@ -406,6 +406,15 @@ func GetNodeColorizations(chunk *parse.Chunk, lightMode bool) []ColorizationInfo
 					ColorSequence: colors.DiscreteColor,
 				})
 			}
+		case *parse.ExtendStatement:
+			for _, token := range n.Base().Tokens {
+				if token.Type == parse.EXTEND_KEYWORD {
+					colorizations = append(colorizations, ColorizationInfo{
+						Span:          token.Span,
+						ColorSequence: colors.OtherKeyword,
+					})
+				}
+			}
 		}
 		return parse.Continue, nil
 	}, nil)
