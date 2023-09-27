@@ -147,6 +147,7 @@ func IsScopeContainerNode(node Node) bool {
 	switch node.(type) {
 	case *Chunk, *EmbeddedModule, *FunctionExpression, *FunctionPatternExpression, *LazyExpression,
 		*InitializationBlock, *MappingExpression, *StaticMappingEntry, *DynamicMappingEntry, *TestSuiteExpression, *TestCaseExpression,
+		*ExtendStatement,       //ExtendStatement being a scope container is not 100% incorrect
 		*LifetimejobExpression: // <-- remove ?
 		return true
 	default:

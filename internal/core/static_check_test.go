@@ -567,6 +567,20 @@ func TestCheck(t *testing.T) {
 			)
 			assert.Equal(t, expectedErr, err)
 		})
+
+		t.Run("in the expression of an extension object's property", func(t *testing.T) {
+			n, src := parseCode(`
+				%p = {
+					a: 1
+				}
+			
+				extend p {
+					self_: (1 + self.a)
+				}
+			`)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
 	})
 
 	t.Run("sendval expression", func(t *testing.T) {
@@ -3293,6 +3307,94 @@ func TestCheck(t *testing.T) {
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src, Globals: globals})
 			expectedErr := utils.CombineErrors(
 				makeError(extendStmt, src, MISPLACED_EXTEND_STATEMENT_TOP_LEVEL_STMT),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("should not have variables in property expressions: identifier referring to a global variable", func(t *testing.T) {
+			n, src := parseCode(`
+				%p = {a: 1}
+				$$a = 1
+				extend p {
+					b: a
+				}
+			`)
+
+			globals := GlobalVariablesFromMap(map[string]Value{"html": Nil}, nil)
+			extendStmt := parse.FindNode(n, (*parse.ExtendStatement)(nil), nil)
+			ident := parse.FindNode(extendStmt, (*parse.IdentifierLiteral)(nil), func(n *parse.IdentifierLiteral, isUnique bool) bool {
+				return n.Name == "a"
+			})
+
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src, Globals: globals})
+			expectedErr := utils.CombineErrors(
+				makeError(ident, src, VARS_NOT_ALLOWED_IN_EXTENDED_PATTERN_AND_EXTENSION_OBJECT_PROPERTIES),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("should not have variables in property expressions: identifier referring to a local variable", func(t *testing.T) {
+			n, src := parseCode(`
+				%p = {a: 1}
+				a = 1
+				extend p {
+					b: a
+				}
+			`)
+
+			globals := GlobalVariablesFromMap(map[string]Value{"html": Nil}, nil)
+			extendStmt := parse.FindNode(n, (*parse.ExtendStatement)(nil), nil)
+			ident := parse.FindNode(extendStmt, (*parse.IdentifierLiteral)(nil), func(n *parse.IdentifierLiteral, isUnique bool) bool {
+				return n.Name == "a"
+			})
+
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src, Globals: globals})
+			expectedErr := utils.CombineErrors(
+				makeError(ident, src, VARS_NOT_ALLOWED_IN_EXTENDED_PATTERN_AND_EXTENSION_OBJECT_PROPERTIES),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("should not have variables in property expressions: global variable", func(t *testing.T) {
+			n, src := parseCode(`
+				%p = {a: 1}
+				$$a = 1
+				extend p {
+					b: $$a
+				}
+			`)
+
+			globals := GlobalVariablesFromMap(map[string]Value{"html": Nil}, nil)
+			extendStmt := parse.FindNode(n, (*parse.ExtendStatement)(nil), nil)
+			globalVar := parse.FindNode(extendStmt, (*parse.GlobalVariable)(nil), func(n *parse.GlobalVariable, isUnique bool) bool {
+				return n.Name == "a"
+			})
+
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src, Globals: globals})
+			expectedErr := utils.CombineErrors(
+				makeError(globalVar, src, VARS_NOT_ALLOWED_IN_EXTENDED_PATTERN_AND_EXTENSION_OBJECT_PROPERTIES),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("should not have variables in property expressions: local variable", func(t *testing.T) {
+			n, src := parseCode(`
+				%p = {a: 1}
+				a = 1
+				extend p {
+					b: $a
+				}
+			`)
+
+			globals := GlobalVariablesFromMap(map[string]Value{"html": Nil}, nil)
+			extendStmt := parse.FindNode(n, (*parse.ExtendStatement)(nil), nil)
+			variable := parse.FindNode(extendStmt, (*parse.Variable)(nil), func(n *parse.Variable, isUnique bool) bool {
+				return n.Name == "a"
+			})
+
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src, Globals: globals})
+			expectedErr := utils.CombineErrors(
+				makeError(variable, src, VARS_NOT_ALLOWED_IN_EXTENDED_PATTERN_AND_EXTENSION_OBJECT_PROPERTIES),
 			)
 			assert.Equal(t, expectedErr, err)
 		})

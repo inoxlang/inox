@@ -62,11 +62,12 @@ const (
 	INVALID_FN_DECL_SHOULD_BE_TOP_LEVEL_STMT                       = "invalid function declaration: a function declaration should be a top level statement in a module (embedded or not)"
 	INVALID_BREAK_OR_CONTINUE_STMT_SHOULD_BE_IN_A_FOR_OR_WALK_STMT = "invalid break/continue statement: should be in a for or walk statement"
 	INVALID_PRUNE_STMT_SHOULD_BE_IN_WALK_STMT                      = "invalid prune statement: should be in a walk statement"
-	SELF_ACCESSIBILITY_EXPLANATION                                 = "'self' is only accessible within functions that are object properties, metaproperty initialization blocks and in lifetime jobs"
-	CANNOT_CHECK_OBJECT_PROP_WITHOUT_PARENT                        = "checking an ObjectProperty node requires the parent ObjectLiteral node"
-	CANNOT_CHECK_OBJECT_METAPROP_WITHOUT_PARENT                    = "checking an ObjectMetaProperty node requires the parent ObjectLiteral node"
-	OBJ_REC_LIT_CANNOT_HAVE_METAPROP_KEYS                          = "(object | object pattern | record) literals cannot have metaproperty keys, metaproperty keys have a starting & a trailing underscore '_'"
-	CANNOT_CHECK_MANIFEST_WITHOUT_PARENT                           = "checking a Manifest node requires the parent node"
+	SELF_ACCESSIBILITY_EXPLANATION                                 = "'self' is only accessible within" +
+		"functions that are object properties, metaproperty initialization blocks, lifetime jobs and object extension properties"
+	CANNOT_CHECK_OBJECT_PROP_WITHOUT_PARENT     = "checking an ObjectProperty node requires the parent ObjectLiteral node"
+	CANNOT_CHECK_OBJECT_METAPROP_WITHOUT_PARENT = "checking an ObjectMetaProperty node requires the parent ObjectLiteral node"
+	OBJ_REC_LIT_CANNOT_HAVE_METAPROP_KEYS       = "(object | object pattern | record) literals cannot have metaproperty keys, metaproperty keys have a starting & a trailing underscore '_'"
+	CANNOT_CHECK_MANIFEST_WITHOUT_PARENT        = "checking a Manifest node requires the parent node"
 
 	MISPLACED_SENDVAL_EXPR                 = "sendval expressions are only usable within functions that are object properties, metaproperty initialization blocks and in lifetime jobs"
 	MISPLACED_RECEPTION_HANDLER_EXPRESSION = "misplaced reception handler expression is misplaced, it should be an implicit key property of an object literal"
@@ -101,6 +102,9 @@ const (
 	INVALID_VISIBILITY_DESC_KEY                    = "invalid key for visibility description"
 
 	OPTIONAL_DYN_MEMB_EXPR_NOT_SUPPORTED_YET = "optional dynamic member expression are not supported yet"
+
+	VARS_NOT_ALLOWED_IN_EXTENDED_PATTERN_AND_EXTENSION_OBJECT_PROPERTIES = "variables are not allowed in the extended pattern and " +
+		"in the extension object's properties"
 )
 
 func fmtNotValidPermissionKindName(name string) string {

@@ -1428,6 +1428,11 @@ switch_:
 			break
 		}
 
+		if _, ok := scopeNode.(*parse.ExtendStatement); ok {
+			c.addError(node, VARS_NOT_ALLOWED_IN_EXTENDED_PATTERN_AND_EXTENSION_OBJECT_PROPERTIES)
+			return parse.Continue
+		}
+
 		variables := c.getLocalVarsInScope(scopeNode)
 		_, exist := variables[node.Name]
 
@@ -1454,6 +1459,11 @@ switch_:
 		}
 		globalVars := c.getModGlobalVars(closestModule)
 		globalVarInfo, exist := globalVars[node.Name]
+
+		if _, ok := scopeNode.(*parse.ExtendStatement); ok {
+			c.addError(node, VARS_NOT_ALLOWED_IN_EXTENDED_PATTERN_AND_EXTENSION_OBJECT_PROPERTIES)
+			return parse.Continue
+		}
 
 		if !exist {
 			c.addError(node, fmtGlobalVarIsNotDeclared(node.Name))
@@ -1556,6 +1566,11 @@ switch_:
 			}
 		}
 
+		if _, ok := scopeNode.(*parse.ExtendStatement); ok {
+			c.addError(node, VARS_NOT_ALLOWED_IN_EXTENDED_PATTERN_AND_EXTENSION_OBJECT_PROPERTIES)
+			return parse.Continue
+		}
+
 		if !c.varExists(node.Name, ancestorChain) {
 			c.addError(node, fmtVarIsNotDeclared(node.Name))
 			return parse.Continue
@@ -1599,12 +1614,14 @@ switch_:
 		}
 
 	case *parse.SelfExpression, *parse.SendValueExpression:
+		isSelfExpr := true
 
 		var objectLiteral *parse.ObjectLiteral
-
 		var misplacementErr = SELF_ACCESSIBILITY_EXPLANATION
+
 		switch node.(type) {
 		case *parse.SendValueExpression:
+			isSelfExpr = false
 			misplacementErr = MISPLACED_SENDVAL_EXPR
 		}
 
@@ -1614,7 +1631,7 @@ switch_:
 				continue
 			}
 
-			switch ancestorChain[i].(type) {
+			switch a := ancestorChain[i].(type) {
 			case *parse.InitializationBlock:
 				switch i {
 				case 0:
@@ -1667,6 +1684,10 @@ switch_:
 				return parse.Continue
 			case *parse.Chunk:
 				if c.currentModule != nil && c.currentModule.ModuleKind == LifetimeJobModule { // ok
+					return parse.Continue
+				}
+			case *parse.ExtendStatement:
+				if isSelfExpr && node.Base().IncludedIn(a.Extension) { //ok
 					return parse.Continue
 				}
 			}
