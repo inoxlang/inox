@@ -1063,6 +1063,10 @@ func (patt IntersectionPattern) WriteRepresentation(ctx *Context, w io.Writer, c
 	return ErrNotImplementedYet
 }
 
+func (patt LengthCheckingStringPattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
+	return ErrNotImplementedYet
+}
+
 func (patt SequenceStringPattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	return ErrNotImplementedYet
 }

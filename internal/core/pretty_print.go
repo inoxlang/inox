@@ -1330,6 +1330,10 @@ func (patt *IntersectionPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrin
 	InspectPrint(w, patt)
 }
 
+func (patt *LengthCheckingStringPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	InspectPrint(w, patt)
+}
+
 func (patt *SequenceStringPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, patt)
 }

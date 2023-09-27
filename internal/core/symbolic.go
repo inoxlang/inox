@@ -684,8 +684,15 @@ func (p *RepeatedPatternElement) ToSymbolicValue(ctx *Context, encountered map[u
 	return &symbolic.AnyStringPattern{}, nil
 }
 
+func (p *LengthCheckingStringPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+	return symbolic.NewLengthCheckingStringPattern(p.lengthRange.Start, p.lengthRange.End), nil
+}
+
 func (p *SequenceStringPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
-	return &symbolic.SequenceStringPattern{}, nil
+	if p.node == nil {
+		return symbolic.NewSequenceStringPattern(&parse.ComplexStringPatternPiece{}), nil
+	}
+	return symbolic.NewSequenceStringPattern(p.node), nil
 }
 
 func (p *ExactValuePattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {

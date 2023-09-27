@@ -314,6 +314,10 @@ func (patt *RepeatedPatternElement) Random(ctx *Context, options ...Option) Valu
 	return Str(buff.String())
 }
 
+func (patt LengthCheckingStringPattern) Random(ctx *Context, options ...Option) Value {
+	panic(ErrNotImplementedYet)
+}
+
 func (patt SequenceStringPattern) Random(ctx *Context, options ...Option) Value {
 	s := bytes.NewBufferString("")
 	for _, e := range patt.elements {

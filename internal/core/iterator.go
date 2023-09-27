@@ -930,6 +930,10 @@ func (patt *IntersectionPattern) Iterator(ctx *Context, config IteratorConfigura
 	})
 }
 
+func (patt LengthCheckingStringPattern) Iterator(ctx *Context, config IteratorConfiguration) Iterator {
+	return NewEmptyPatternIterator()
+}
+
 func (patt SequenceStringPattern) Iterator(ctx *Context, config IteratorConfiguration) Iterator {
 	return createStringSequenceIterator(ctx, patt.elements, config)
 }

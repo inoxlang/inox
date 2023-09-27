@@ -3118,7 +3118,7 @@ func evalStringPatternNode(node parse.Node, state *TreeWalkState, lazy bool) (St
 			}
 		}
 
-		return NewSequenceStringPattern(node, subpatterns, groupNames)
+		return NewSequenceStringPattern(v, subpatterns, groupNames)
 	case *parse.RegularExpressionLiteral:
 		return NewRegexPattern(v.Value), nil
 	default:

@@ -417,6 +417,53 @@ func TestComplexPatternParsing(t *testing.T) {
 	})
 }
 
+func TestLengthCheckingStringPattern(t *testing.T) {
+	{
+		runtime.GC()
+		startMemStats := new(runtime.MemStats)
+		runtime.ReadMemStats(startMemStats)
+
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
+	}
+
+	t.Run(".LengthRange()", func(t *testing.T) {
+		pattern := NewLengthCheckingStringPattern(0, 1)
+
+		assert.Equal(t, IntRange{
+			inclusiveEnd: true,
+			Start:        0,
+			End:          1,
+			Step:         1,
+		}, pattern.LengthRange())
+
+	})
+
+	t.Run("Test()", func(t *testing.T) {
+		maxLen1 := NewLengthCheckingStringPattern(0, 1)
+
+		assert.True(t, maxLen1.Test(nil, Str("")))
+		assert.True(t, maxLen1.Test(nil, Str("a")))
+		assert.False(t, maxLen1.Test(nil, Str("ab")))
+		assert.False(t, maxLen1.Test(nil, Str("abc")))
+
+		maxLen2 := NewLengthCheckingStringPattern(0, 2)
+
+		assert.True(t, maxLen2.Test(nil, Str("")))
+		assert.True(t, maxLen2.Test(nil, Str("a")))
+		assert.True(t, maxLen2.Test(nil, Str("ab")))
+		assert.False(t, maxLen2.Test(nil, Str("abc")))
+		assert.False(t, maxLen2.Test(nil, Str("abcd")))
+
+		minLen1MaxLen2 := NewLengthCheckingStringPattern(1, 2)
+
+		assert.True(t, minLen1MaxLen2.Test(nil, Str("a")))
+		assert.True(t, minLen1MaxLen2.Test(nil, Str("ab")))
+		assert.False(t, minLen1MaxLen2.Test(nil, Str("")))
+		assert.False(t, minLen1MaxLen2.Test(nil, Str("abc")))
+		assert.False(t, minLen1MaxLen2.Test(nil, Str("abcd")))
+	})
+}
+
 func TestSequenceStringPattern(t *testing.T) {
 	{
 		runtime.GC()

@@ -994,6 +994,15 @@ func (patt *IntersectionPattern) Equal(ctx *Context, other Value, alreadyCompare
 	return true
 }
 
+func (patt *LengthCheckingStringPattern) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	otherPatt, ok := other.(*LengthCheckingStringPattern)
+	if !ok {
+		return false
+	}
+
+	return *patt == *otherPatt
+}
+
 func (patt *SequenceStringPattern) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
 	otherPatt, ok := other.(*SequenceStringPattern)
 	if !ok {

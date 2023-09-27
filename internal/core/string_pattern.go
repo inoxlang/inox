@@ -149,13 +149,84 @@ func (patt *ExactStringPattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
 
+// LengthCheckingStringPattern matches any StringLikes with a length in a given range.
+type LengthCheckingStringPattern struct {
+	lengthRange IntRange
+	NotCallablePatternMixin
+}
+
+func NewLengthCheckingStringPattern(minLength, maxLength int64) *LengthCheckingStringPattern {
+	return &LengthCheckingStringPattern{
+		lengthRange: IntRange{
+			unknownStart: false,
+			Start:        minLength,
+			inclusiveEnd: true,
+			End:          maxLength,
+			Step:         1,
+		},
+	}
+}
+
+func (pattern *LengthCheckingStringPattern) Test(ctx *Context, v Value) bool {
+	str, ok := v.(StringLike)
+	return ok && checkMatchedStringLen(str, pattern)
+}
+
+func (pattern *LengthCheckingStringPattern) Regex() string {
+	panic(errors.New("no regex"))
+}
+
+func (patt *LengthCheckingStringPattern) CompiledRegex() *regexp.Regexp {
+	panic(errors.New("no regex"))
+}
+
+func (pattern *LengthCheckingStringPattern) HasRegex() bool {
+	return false
+}
+
+func (patt *LengthCheckingStringPattern) validate(s string, i *int) bool {
+	panic(".validate() not implemented yet for regex patterns")
+}
+
+func (patt *LengthCheckingStringPattern) Parse(ctx *Context, s string) (Serializable, error) {
+	if !patt.Test(ctx, Str(s)) {
+		return nil, ErrInvalidInputString
+	}
+	return Str(s), nil
+}
+
+func (patt *LengthCheckingStringPattern) FindMatches(ctx *Context, val Serializable, config MatchesFindConfig) (groups []Serializable, err error) {
+	return FindMatchesForStringPattern(ctx, patt, val, config)
+}
+
+func (patt *LengthCheckingStringPattern) MatchGroups(ctx *Context, v Serializable) (map[string]Serializable, bool, error) {
+	_, ok := v.(StringLike)
+	if !ok || !patt.Test(ctx, v) {
+		return nil, false, nil
+	}
+
+	return map[string]Serializable{"0": v}, true, nil
+}
+
+func (patt *LengthCheckingStringPattern) LengthRange() IntRange {
+	return patt.lengthRange
+}
+
+func (patt *LengthCheckingStringPattern) EffectiveLengthRange() IntRange {
+	return patt.lengthRange
+}
+
+func (patt *LengthCheckingStringPattern) StringPattern() (StringPattern, bool) {
+	return nil, false
+}
+
 // SequenceStringPattern represents a string pattern with sub elements
 type SequenceStringPattern struct {
 	regexp             *regexp.Regexp
 	entireStringRegexp *regexp.Regexp
 	syntaxRegexp       *syntax.Regexp
 
-	node       parse.Node
+	node       *parse.ComplexStringPatternPiece //optional
 	elements   []StringPattern
 	groupNames []string
 
@@ -164,7 +235,7 @@ type SequenceStringPattern struct {
 	effectiveLengthRange    IntRange
 }
 
-func NewSequenceStringPattern(node parse.Node, subpatterns []StringPattern, groupNames KeyList) (*SequenceStringPattern, error) {
+func NewSequenceStringPattern(node *parse.ComplexStringPatternPiece, subpatterns []StringPattern, groupNames KeyList) (*SequenceStringPattern, error) {
 	allElemsHaveRegex := true
 
 	if len(groupNames) != 0 && len(groupNames) != len(subpatterns) {
@@ -1414,13 +1485,17 @@ func (patt *RegexPattern) Call(values []Serializable) (Pattern, error) {
 	}
 
 	if found {
-		newPattern := *patt
-		newPattern.effectiveLengthRange = lenRange
-		newPattern.hasEffectiveLengthRange = true
-		return &newPattern, nil
+		return patt.WithLengthRange(lenRange), nil
 	}
 
 	return patt, nil
+}
+
+func (patt *RegexPattern) WithLengthRange(lenRange IntRange) *RegexPattern {
+	newPattern := *patt
+	newPattern.effectiveLengthRange = lenRange
+	newPattern.hasEffectiveLengthRange = true
+	return &newPattern
 }
 
 func (patt *RegexPattern) StringPattern() (StringPattern, bool) {
