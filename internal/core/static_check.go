@@ -1618,6 +1618,7 @@ switch_:
 
 		var objectLiteral *parse.ObjectLiteral
 		var misplacementErr = SELF_ACCESSIBILITY_EXPLANATION
+		isSelfInExtensionObjectMethod := false
 
 		switch node.(type) {
 		case *parse.SendValueExpression:
@@ -1671,6 +1672,11 @@ switch_:
 						switch ancestor := ancestorChain[j].(type) {
 						case *parse.ObjectLiteral:
 							objectLiteral = ancestor
+							if j-1 >= 0 {
+								isSelfInExtensionObjectMethod =
+									utils.Implements[*parse.ExtendStatement](ancestorChain[j-1]) &&
+										ancestorChain[j-1].(*parse.ExtendStatement).Extension == objectLiteral
+							}
 						default:
 						}
 					}
@@ -1702,7 +1708,7 @@ switch_:
 
 		switch p := parent.(type) {
 		case *parse.MemberExpression:
-			if !propInfo.known[p.PropertyName.Name] {
+			if !propInfo.known[p.PropertyName.Name] && !isSelfInExtensionObjectMethod {
 				c.addError(p, fmtObjectDoesNotHaveProp(p.PropertyName.Name))
 			}
 		}

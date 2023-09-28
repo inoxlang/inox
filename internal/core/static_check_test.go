@@ -528,6 +528,18 @@ func TestCheck(t *testing.T) {
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 
+		t.Run("in a member expression in an extension' object method", func(t *testing.T) {
+			n, src := parseCode(`
+				%o = {
+					a: 1
+				}
+				extend o {
+					f: fn() => self.a
+				}
+			`)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
 		t.Run("in a function that is a value of an object pattern", func(t *testing.T) {
 			n, src := parseCode(`%{f: fn() => self}`)
 
