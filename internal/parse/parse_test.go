@@ -5930,6 +5930,34 @@ func testParse(
 				},
 			}, n)
 		})
+
+		t.Run("negative", func(t *testing.T) {
+			n := mustparseChunk(t, "-0")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 2}, nil, nil},
+				Statements: []Node{
+					&IntLiteral{
+						NodeBase: NodeBase{NodeSpan{0, 2}, nil, nil},
+						Raw:      "-0",
+						Value:    -0,
+					},
+				},
+			}, n)
+		})
+
+		t.Run("minimum", func(t *testing.T) {
+			n := mustparseChunk(t, "-9223372036854775808")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 20}, nil, nil},
+				Statements: []Node{
+					&IntLiteral{
+						NodeBase: NodeBase{NodeSpan{0, 20}, nil, nil},
+						Raw:      "-9223372036854775808",
+						Value:    -9223372036854775808,
+					},
+				},
+			}, n)
+		})
 	})
 
 	t.Run("float literal", func(t *testing.T) {

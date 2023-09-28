@@ -1186,6 +1186,11 @@ func (p *parser) parseDashStartingExpression(precededByOpeningParen bool) Node {
 		}
 	}
 
+	if isDecDigit(p.s[p.i]) {
+		p.i--
+		return p.parseNumberAndRangeAndRateLiterals()
+	}
+
 	if p.s[p.i] != '-' && (isSpaceNotLF(p.s[p.i]) || precededByOpeningParen || p.s[p.i] == '$' || p.s[p.i] == '(') {
 		p.eatSpace()
 
@@ -1209,11 +1214,6 @@ func (p *parser) parseDashStartingExpression(precededByOpeningParen bool) Node {
 			Operator: NumberNegate,
 			Operand:  operand,
 		}
-	}
-
-	if isDecDigit(p.s[p.i]) {
-		p.i--
-		return p.parseNumberAndRangeAndRateLiterals()
 	}
 
 	singleDash := true
