@@ -24,6 +24,7 @@ type SymbolicData struct {
 	allowedNonPresentProperties map[parse.Node][]string
 	allowedNonPresentKeys       map[parse.Node][]string
 	runtimeTypeCheckPatterns    map[parse.Node]any //concrete Pattern or nil (nil means the check is disabled)
+	typeExtensions              map[*parse.DoubleColonExpression]*TypeExtension
 
 	errorMessageSet map[string]bool
 	errors          []SymbolicEvaluationError
@@ -42,6 +43,7 @@ func NewSymbolicData() *SymbolicData {
 		allowedNonPresentKeys:       make(map[parse.Node][]string),
 		contextData:                 make(map[parse.Node]ContextData),
 		runtimeTypeCheckPatterns:    make(map[parse.Node]any, 0),
+		typeExtensions:              make(map[*parse.DoubleColonExpression]*TypeExtension, 0),
 
 		errorMessageSet:   make(map[string]bool, 0),
 		warningMessageSet: make(map[string]bool, 0),
@@ -355,6 +357,24 @@ func (d *SymbolicData) SetContextData(n parse.Node, contextData ContextData) {
 	d.contextData[n] = contextData
 }
 
+func (d *SymbolicData) GetUsedTypeExtension(n *parse.DoubleColonExpression) (*TypeExtension, bool) {
+	e, ok := d.typeExtensions[n]
+	return e, ok
+}
+
+func (d *SymbolicData) SetUsedTypeExtension(n *parse.DoubleColonExpression, ext *TypeExtension) {
+	if d == nil {
+		return
+	}
+
+	_, ok := d.typeExtensions[n]
+	if ok {
+		panic(errors.New("type extension is already set for this node"))
+	}
+
+	d.typeExtensions[n] = ext
+}
+
 func (d *SymbolicData) GetVariableDefinitionPosition(node parse.Node, ancestors []parse.Node) (pos parse.SourcePositionRange, found bool) {
 
 	var data ScopeData
@@ -482,7 +502,7 @@ type VarData struct {
 type ContextData struct {
 	Patterns          []NamedPatternData     //the slice is potentially shared between several ContextData
 	PatternNamespaces []PatternNamespaceData //the slice is potentially shared between several ContextData
-	Extensions        []TypeExtension
+	Extensions        []*TypeExtension
 }
 
 type NamedPatternData struct {

@@ -3691,14 +3691,17 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			}
 			return memb, nil
 		} else { //use extensions
+
 			extensions := state.ctx.GetExtensions(left)
+			var extension *TypeExtension
 			var expr propertyExpression
 
 		loop_over_extensions:
 			for _, ext := range extensions {
-				for _, propExpr := range ext.propertyExpressions {
-					if propExpr.name == elementName {
+				for _, propExpr := range ext.PropertyExpressions {
+					if propExpr.Name == elementName {
 						expr = propExpr
+						extension = ext
 						break loop_over_extensions
 					}
 				}
@@ -3708,8 +3711,26 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			if expr != (propertyExpression{}) {
 				var result SymbolicValue
 
-				if expr.method != nil {
-					result = expr.method
+				if expr.Method != nil {
+					if len(options.doubleColonExprAncestorChain) == 0 {
+						state.addError(makeSymbolicEvalError(node, state, MISPLACED_DOUBLE_COLON_EXPR_EXT_METHOD_CAN_ONLY_BE_CALLED))
+						return ANY, nil
+					}
+
+					//check not misplaced
+					misplaced := true
+					ancestors := options.doubleColonExprAncestorChain
+					rootAncestor := ancestors[0]
+					switch rootAncestor.(type) {
+					case *parse.CallExpression:
+						misplaced = false
+					default:
+					}
+					if misplaced {
+						state.addError(makeSymbolicEvalError(node, state, MISPLACED_DOUBLE_COLON_EXPR_EXT_METHOD_CAN_ONLY_BE_CALLED))
+					}
+
+					result = expr.Method
 				} else { //evaluate the property's expression
 					prevSelf, restoreSelf := state.getSelf()
 					if restoreSelf {
@@ -3724,21 +3745,22 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 						}
 					}()
 
-					result, err = symbolicEval(expr.expression, state)
+					result, err = symbolicEval(expr.Expression, state)
 					if err != nil {
 						return nil, err
 					}
 				}
 				state.symbolicData.SetMostSpecificNodeValue(n.Element, result)
+				state.symbolicData.SetUsedTypeExtension(n, extension)
 				return result, nil
 			}
-			//not found
+			//not found (error)
 
 			var suggestion string
 			var names []string
 			for _, ext := range extensions {
-				for _, propExpr := range ext.propertyExpressions {
-					names = append(names, propExpr.name)
+				for _, propExpr := range ext.PropertyExpressions {
+					names = append(names, propExpr.Name)
 				}
 			}
 
@@ -4692,7 +4714,11 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 
 		extendedValueIprops, _ := extendedValue.(IProps)
 
-		extension := TypeExtension{extendedPattern: pattern}
+		extension := &TypeExtension{
+			Id:              state.currentChunk().GetFormattedNodeLocation(n),
+			Statement:       n,
+			ExtendedPattern: pattern,
+		}
 
 		for _, prop := range objLit.Properties {
 			if prop.HasImplicitKey() {
@@ -4733,9 +4759,9 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 					return nil, err
 				}
 
-				extension.propertyExpressions = append(extension.propertyExpressions, propertyExpression{
-					name:   key,
-					method: inoxFn.(*InoxFunction),
+				extension.PropertyExpressions = append(extension.PropertyExpressions, propertyExpression{
+					Name:   key,
+					Method: inoxFn.(*InoxFunction),
 				})
 
 				state.unsetNextSelf()
@@ -4743,9 +4769,9 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 					state.setNextSelf(prevNextSelf)
 				}
 			default:
-				extension.propertyExpressions = append(extension.propertyExpressions, propertyExpression{
-					name:       key,
-					expression: v,
+				extension.PropertyExpressions = append(extension.PropertyExpressions, propertyExpression{
+					Name:       key,
+					Expression: v,
 				})
 			}
 		}

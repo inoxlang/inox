@@ -25,7 +25,7 @@ type Context struct {
 	namedPatternPositionDefinitions     map[string]parse.SourcePositionRange
 	patternNamespaces                   map[string]*PatternNamespace
 	patternNamespacePositionDefinitions map[string]parse.SourcePositionRange
-	typeExtensions                      []TypeExtension
+	typeExtensions                      []*TypeExtension
 }
 
 func NewSymbolicContext(startingConcreteContext, concreteContext ConcreteContext, parentContext *Context) *Context {
@@ -137,19 +137,19 @@ func (ctx *Context) ForEachPatternNamespace(fn func(name string, namespace *Patt
 	}
 }
 
-func (ctx *Context) AddTypeExtension(extension TypeExtension) {
+func (ctx *Context) AddTypeExtension(extension *TypeExtension) {
 	ctx.typeExtensions = append(ctx.typeExtensions, extension)
 }
 
-func (ctx *Context) GetExtensions(v SymbolicValue) (extensions []TypeExtension) {
+func (ctx *Context) GetExtensions(v SymbolicValue) (extensions []*TypeExtension) {
 	for _, extension := range ctx.typeExtensions {
-		if extension.extendedPattern.TestValue(v) {
+		if extension.ExtendedPattern.TestValue(v) {
 			extensions = append(extensions, extension)
 		}
 	}
 
-	slices.SortFunc(extensions, func(a, b TypeExtension) int {
-		if a.extendedPattern.Test(b.extendedPattern) {
+	slices.SortFunc(extensions, func(a, b *TypeExtension) int {
+		if a.ExtendedPattern.Test(b.ExtendedPattern) {
 			return 0
 		}
 		return 0

@@ -9233,13 +9233,13 @@ func TestSymbolicEval(t *testing.T) {
 				return
 			}
 			extension := data.Extensions[0]
-			if !assert.Len(t, extension.propertyExpressions, 1) {
+			if !assert.Len(t, extension.PropertyExpressions, 1) {
 				return
 			}
 
-			propExpr := extension.propertyExpressions[0]
-			assert.NotNil(t, propExpr.expression)
-			assert.Nil(t, propExpr.method)
+			propExpr := extension.PropertyExpressions[0]
+			assert.NotNil(t, propExpr.Expression)
+			assert.Nil(t, propExpr.Method)
 		})
 
 		t.Run("one method", func(t *testing.T) {
@@ -9268,13 +9268,13 @@ func TestSymbolicEval(t *testing.T) {
 				return
 			}
 			extension := data.Extensions[0]
-			if !assert.Len(t, extension.propertyExpressions, 1) {
+			if !assert.Len(t, extension.PropertyExpressions, 1) {
 				return
 			}
 
-			propExpr := extension.propertyExpressions[0]
-			assert.Nil(t, propExpr.expression)
-			assert.NotNil(t, propExpr.method)
+			propExpr := extension.PropertyExpressions[0]
+			assert.Nil(t, propExpr.Expression)
+			assert.NotNil(t, propExpr.Method)
 		})
 
 		t.Run("properties of the extension object should not have the same name as an existing property", func(t *testing.T) {
@@ -9568,7 +9568,127 @@ func TestSymbolicEval(t *testing.T) {
 				}
 				assert.Empty(t, state.errors())
 				assert.Equal(t, ANY_INT, res)
+
+				extension, ok := state.symbolicData.GetUsedTypeExtension(parse.FindNode(n, (*parse.DoubleColonExpression)(nil), nil))
+				if !assert.True(t, ok) {
+					return
+				}
+
+				assert.Len(t, extension.PropertyExpressions, 1)
 			})
+		})
+
+		t.Run("extension's method", func(t *testing.T) {
+
+			base := `
+				%o = {
+					# we do not use "int" because it is not concretizable (concrete type pattern is not available)
+					a: 1
+				}
+
+				extend o {
+					f: fn(){
+						return 1
+					}
+				}
+
+				var o o = {
+					a: 1
+				}
+			`
+			t.Run("accessed methods should never be stored", func(t *testing.T) {
+				testCases := []struct {
+					input string
+				}{
+					{
+						input: base + `
+							o::f
+						`,
+					},
+					{
+						input: base + `
+							a = o::f
+						`,
+					},
+					{
+						input: base + `
+							return o::f
+						`,
+					},
+					{
+						input: base + `
+							fn print(arg){}
+							print(o::f)
+						`,
+					},
+					//index expression
+					{
+						input: base + `
+							o::f[0]
+						`,
+					},
+					{
+						input: base + `
+							a = o::f[0]
+						`,
+					},
+					{
+						input: base + `
+							return o::f[0]
+						`,
+					},
+					{
+						input: base + `
+							fn print(arg){}
+							print(o::f[0])
+						`,
+					},
+					//slice expression
+					{
+						input: base + `
+							o::f[0:1]
+						`,
+					},
+					{
+						input: base + `
+							a = o::f[0:1]
+						`,
+					},
+					{
+						input: base + `
+							return o::f[0:1]
+						`,
+					},
+					{
+						input: base + `
+							fn print(arg){}
+							print(o::f[0:1])
+						`,
+					},
+				}
+
+				for _, testCase := range testCases {
+					n, state := MakeTestStateAndChunk(testCase.input)
+					_, err := symbolicEval(n, state)
+
+					if !assert.NoError(t, err) {
+						return
+					}
+
+					errs := state.errors()
+					if !assert.Greater(t, len(errs), 0) {
+						return
+					}
+					if !assert.LessOrEqual(t, len(errs), 3) {
+						return
+					}
+
+					evalErr := errs[0]
+					assert.ErrorContains(t, evalErr, MISPLACED_DOUBLE_COLON_EXPR_EXT_METHOD_CAN_ONLY_BE_CALLED)
+				}
+
+			})
+
 		})
 	})
 
@@ -9583,6 +9703,7 @@ func TestSymbolicEval(t *testing.T) {
 		_, err := symbolicEval(n, state)
 		assert.ErrorContains(t, err, "stopped symbolic evaluation because context is done")
 	})
+
 	t.Run("the evaluation should not stop if the context context is done but there is remaining no-check fuel", func(t *testing.T) {
 		nodeCount := parse.CountNodes(parse.MustParseChunk("[]"))
 

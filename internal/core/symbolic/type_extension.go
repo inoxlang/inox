@@ -3,14 +3,19 @@ package symbolic
 import parse "github.com/inoxlang/inox/internal/parse"
 
 type TypeExtension struct {
-	extendedPattern Pattern
+	//formatted location of the extend statement that defines the extension.
+	//TODO: maje sure it's a truly unique id
+	Id        string
+	Statement *parse.ExtendStatement
 
-	propertyExpressions []propertyExpression
+	ExtendedPattern Pattern
+
+	PropertyExpressions []propertyExpression
 }
 
 type propertyExpression struct {
-	name string
+	Name string
 
-	expression parse.Node
-	method     *InoxFunction
+	Expression parse.Node
+	Method     *InoxFunction
 }
