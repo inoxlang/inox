@@ -313,12 +313,12 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 	case *parse.PropertyNameLiteral:
 		return &PropertyName{name: n.Name}, nil
 	case *parse.AbsolutePathLiteral:
-		if strings.HasSuffix(n.Value, "/...") {
+		if strings.HasSuffix(n.Value, "/...") || strings.Contains(n.Value, "*") {
 			state.addWarning(makeSymbolicEvalWarning(node, state, fmtDidYouForgetLeadingPercent(n.Value)))
 		}
 		return NewPath(n.Value), nil
 	case *parse.RelativePathLiteral:
-		if strings.HasSuffix(n.Value, "/...") {
+		if strings.HasSuffix(n.Value, "/...") || strings.Contains(n.Value, "*") {
 			state.addWarning(makeSymbolicEvalWarning(node, state, fmtDidYouForgetLeadingPercent(n.Value)))
 		}
 		return NewPath(n.Value), nil
