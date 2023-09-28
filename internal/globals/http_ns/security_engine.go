@@ -73,7 +73,7 @@ func (engine *securityEngine) getSocketMitigationData(req *HttpRequest) (*rateli
 	var slidingWindowMap cmap.ConcurrentMap[nettypes.RemoteAddrWithPort, *ratelimit.SlidingWindow]
 	var maxReqCount int
 
-	if slidingWindowReqInfo.IsMutation() {
+	if IsMutationMethod(slidingWindowReqInfo.Method) {
 		maxReqCount = SOCKET_MAX_WRITE_REQ_COUNT
 		slidingWindowMap = engine.mutationSlidingWindows
 	} else {
@@ -90,7 +90,7 @@ func (engine *securityEngine) getSocketMitigationData(req *HttpRequest) (*rateli
 			Duration:     SOCKET_WINDOW,
 			RequestCount: maxReqCount,
 		})
-		if slidingWindowReqInfo.IsMutation() {
+		if IsMutationMethod(slidingWindowReqInfo.Method) {
 			slidingWindow.SetIpLevelWindow(ipLevelMigitigationData.sharedWriteBurstWindow)
 		} else {
 			slidingWindow.SetIpLevelWindow(ipLevelMigitigationData.sharedReadBurstWindow)

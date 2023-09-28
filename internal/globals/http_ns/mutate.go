@@ -10,6 +10,14 @@ import (
 	core "github.com/inoxlang/inox/internal/core"
 )
 
+func IsMutationMethod(method string) bool {
+	switch strings.ToLower(method) {
+	case "POST", "PATCH", "PUT", "DELETE":
+		return true
+	}
+	return false
+}
+
 func HttpPost(ctx *core.Context, args ...core.Value) (*HttpResponse, error) {
 	return _httpPostPatch(ctx, false, args...)
 }

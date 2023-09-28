@@ -14,7 +14,3 @@ type SlidingWindowRequestInfo struct {
 	RemoteIpAddr      nettypes.RemoteIpAddr
 	SentBytes         int
 }
-
-func (info SlidingWindowRequestInfo) IsMutation() bool {
-	return info.Method == "POST" || info.Method == "PATCH" || info.Method == "DELETE"
-}
