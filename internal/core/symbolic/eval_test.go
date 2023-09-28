@@ -1703,7 +1703,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(memberExpr, state, fmtPropOfSymbolicDoesNotExist("name", NewEmptyObject(), "")),
+				makeSymbolicEvalError(memberExpr, state, fmtPropOfDoesNotExist("name", NewEmptyObject(), "")),
 			}, state.errors())
 			assert.Equal(t, ANY, res)
 		})
@@ -1747,7 +1747,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(memberExpr, state, fmtPropOfSymbolicDoesNotExist("XYZ", goVal, "")),
+				makeSymbolicEvalError(memberExpr, state, fmtPropOfDoesNotExist("XYZ", goVal, "")),
 			}, state.errors())
 			assert.Equal(t, ANY, res)
 		})
@@ -1777,7 +1777,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(memberExpr, state, fmtPropOfSymbolicDoesNotExist("XYZ", goVal, "")),
+				makeSymbolicEvalError(memberExpr, state, fmtPropOfDoesNotExist("XYZ", goVal, "")),
 			}, state.errors())
 			assert.Equal(t, ANY, res)
 		})
@@ -1885,7 +1885,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(memberExpr, state, fmtPropOfSymbolicDoesNotExist("XYZ", goVal, "")),
+				makeSymbolicEvalError(memberExpr, state, fmtPropOfDoesNotExist("XYZ", goVal, "")),
 			}, state.errors())
 			assert.Equal(t, NewAnyDynamicValue(), res)
 		})
@@ -1915,7 +1915,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(memberExpr, state, fmtPropOfSymbolicDoesNotExist("XYZ", goVal, "")),
+				makeSymbolicEvalError(memberExpr, state, fmtPropOfDoesNotExist("XYZ", goVal, "")),
 			}, state.errors())
 			assert.Equal(t, NewAnyDynamicValue(), res)
 		})
@@ -3752,6 +3752,29 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, ANY_INT, res)
 		})
 
+		t.Run("extension's method returning a property (double colon expression)", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				%o = {
+					a: 1
+				}
+				extend o {
+					f: fn() => self.a
+				}
+
+				var o o = {
+					a: 1
+				}
+
+				return o::f()
+			`)
+
+			res, err := symbolicEval(n, state)
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.Empty(t, state.errors())
+			assert.Equal(t, NewInt(1), res)
+		})
 	})
 
 	t.Run("call Go function", func(t *testing.T) {
@@ -4747,7 +4770,7 @@ func TestSymbolicEval(t *testing.T) {
 
 				membExpr := parse.FindNode(n, (*parse.IdentifierMemberExpression)(nil), nil)
 				assert.Equal(t, []SymbolicEvaluationError{
-					makeSymbolicEvalError(membExpr, state, fmtPropOfSymbolicDoesNotExist("prop", NewEmptyObject(), "")),
+					makeSymbolicEvalError(membExpr, state, fmtPropOfDoesNotExist("prop", NewEmptyObject(), "")),
 				}, state.errors())
 			})
 
@@ -8087,7 +8110,7 @@ func TestSymbolicEval(t *testing.T) {
 			membExpr := parse.FindNode(n, &parse.MemberExpression{}, nil)
 			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(membExpr, state, fmtPropOfSymbolicDoesNotExist("a", NewEmptyObject(), "")),
+				makeSymbolicEvalError(membExpr, state, fmtPropOfDoesNotExist("a", NewEmptyObject(), "")),
 			}, state.errors())
 		})
 
@@ -9518,6 +9541,34 @@ func TestSymbolicEval(t *testing.T) {
 				assert.ErrorContains(t, evalErr, MISPLACED_DOUBLE_COLON_EXPR)
 			}
 
+		})
+
+		t.Run("extension's property", func(t *testing.T) {
+			t.Run("object", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					%o = {
+						# we do not use "int" because it is not concretizable (concrete type pattern is not available)
+						a: 1
+					}
+
+					extend o {
+						b: - self.a
+					}
+
+					var o o = {
+						a: 1
+					}
+
+					return o::b
+				`)
+
+				res, err := symbolicEval(n, state)
+				if !assert.NoError(t, err) {
+					return
+				}
+				assert.Empty(t, state.errors())
+				assert.Equal(t, ANY_INT, res)
+			})
 		})
 	})
 

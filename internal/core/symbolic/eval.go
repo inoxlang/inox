@@ -3641,58 +3641,116 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			return nil, err
 		}
 
-		obj, ok := left.(*Object)
-		if !ok {
-			state.addError(makeSymbolicEvalError(node, state, DOUBLE_COLON_EXPRS_ONLY_SUPPORT_OBJ_LHS_FOR_NOW))
-			return ANY, nil
-		}
-
 		if n.Element == nil {
 			return ANY, nil
 		}
 
-		memb := symbolicMemb(obj, n.Element.Name, false, n, state)
-		state.symbolicData.SetMostSpecificNodeValue(n.Element, memb)
+		elementName := n.Element.Name
 
-		if IsAnyOrAnySerializable(memb) || utils.Ret0(IsSharable(memb)) {
-			state.addError(makeSymbolicEvalError(node, state, RHS_OF_DOUBLE_COLON_EXPRS_WITH_OBJ_LHS_SHOULD_BE_THE_NAME_OF_A_MUTABLE_NON_SHARABLE_VALUE_PROPERTY))
-		} else if len(options.doubleColonExprAncestorChain) == 0 {
-			state.addError(makeSymbolicEvalError(node, state, MISPLACED_DOUBLE_COLON_EXPR))
-		} else {
-			ancestors := options.doubleColonExprAncestorChain
-			rootAncestor := ancestors[0]
-			misplaced := true
-			switch rootAncestor.(type) {
-			case *parse.Assignment:
-				if len(ancestors) == 1 {
-					break
-				}
-				misplaced = false
-				for i, ancestor := range ancestors[1 : len(ancestors)-1] {
-					if !isAllowedAfterMutationDoubleColonExprAncestor(ancestor, ancestors[i+1]) {
-						misplaced = true
-						break
-					}
-				}
-			case *parse.CallExpression:
-				if len(ancestors) == 1 {
-					break
-				}
-				misplaced = false
-				for i, ancestor := range ancestors[1 : len(ancestors)-1] {
-					if !isAllowedAfterMutationDoubleColonExprAncestor(ancestor, ancestors[i+1]) {
-						misplaced = true
-						break
-					}
-				}
-			default:
-			}
-			if misplaced {
+		obj, ok := left.(*Object)
+		if ok && HasRequiredOrOptionalProperty(obj, elementName) {
+			memb := symbolicMemb(obj, elementName, false, n, state)
+			state.symbolicData.SetMostSpecificNodeValue(n.Element, memb)
+
+			if IsAnyOrAnySerializable(memb) || utils.Ret0(IsSharable(memb)) {
+				state.addError(makeSymbolicEvalError(node, state, RHS_OF_DOUBLE_COLON_EXPRS_WITH_OBJ_LHS_SHOULD_BE_THE_NAME_OF_A_MUTABLE_NON_SHARABLE_VALUE_PROPERTY))
+			} else if len(options.doubleColonExprAncestorChain) == 0 {
 				state.addError(makeSymbolicEvalError(node, state, MISPLACED_DOUBLE_COLON_EXPR))
+			} else {
+				ancestors := options.doubleColonExprAncestorChain
+				rootAncestor := ancestors[0]
+				misplaced := true
+				switch rootAncestor.(type) {
+				case *parse.Assignment:
+					if len(ancestors) == 1 {
+						break
+					}
+					misplaced = false
+					for i, ancestor := range ancestors[1 : len(ancestors)-1] {
+						if !isAllowedAfterMutationDoubleColonExprAncestor(ancestor, ancestors[i+1]) {
+							misplaced = true
+							break
+						}
+					}
+				case *parse.CallExpression:
+					if len(ancestors) == 1 {
+						break
+					}
+					misplaced = false
+					for i, ancestor := range ancestors[1 : len(ancestors)-1] {
+						if !isAllowedAfterMutationDoubleColonExprAncestor(ancestor, ancestors[i+1]) {
+							misplaced = true
+							break
+						}
+					}
+				default:
+				}
+				if misplaced {
+					state.addError(makeSymbolicEvalError(node, state, MISPLACED_DOUBLE_COLON_EXPR))
+				}
 			}
+			return memb, nil
+		} else { //use extensions
+			extensions := state.ctx.GetExtensions(left)
+			var expr propertyExpression
+
+		loop_over_extensions:
+			for _, ext := range extensions {
+				for _, propExpr := range ext.propertyExpressions {
+					if propExpr.name == elementName {
+						expr = propExpr
+						break loop_over_extensions
+					}
+				}
+			}
+
+			//if found
+			if expr != (propertyExpression{}) {
+				var result SymbolicValue
+
+				if expr.method != nil {
+					result = expr.method
+				} else { //evaluate the property's expression
+					prevSelf, restoreSelf := state.getSelf()
+					if restoreSelf {
+						state.unsetSelf()
+					}
+					state.setSelf(left)
+
+					defer func() {
+						state.unsetSelf()
+						if restoreSelf {
+							state.setSelf(prevSelf)
+						}
+					}()
+
+					result, err = symbolicEval(expr.expression, state)
+					if err != nil {
+						return nil, err
+					}
+				}
+				state.symbolicData.SetMostSpecificNodeValue(n.Element, result)
+				return result, nil
+			}
+			//not found
+
+			var suggestion string
+			var names []string
+			for _, ext := range extensions {
+				for _, propExpr := range ext.propertyExpressions {
+					names = append(names, propExpr.name)
+				}
+			}
+
+			closest, _, ok := utils.FindClosestString(state.ctx.startingConcreteContext, names, elementName, 2)
+			if ok {
+				suggestion = closest
+			}
+
+			state.addError(makeSymbolicEvalError(node, state, fmtExtensionsDoNotProvideTheXProp(elementName, suggestion)))
+			return ANY_SERIALIZABLE, nil
 		}
 
-		return memb, nil
 	case *parse.IndexExpression:
 		val, err := _symbolicEval(n.Indexed, state, evalOptions{
 			doubleColonExprAncestorChain: append(slices.Clone(options.doubleColonExprAncestorChain), node),
@@ -4608,6 +4666,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 		if n.Err != nil && n.Err.Kind() == parse.UnterminatedExtendStmt {
 			return nil, nil
 		}
+
 		pattern, err := symbolicallyEvalPatternNode(n.ExtendedPattern, state)
 		if err != nil {
 			return nil, err
@@ -4615,6 +4674,14 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 
 		if !IsConcretizable(pattern) {
 			state.addError(makeSymbolicEvalError(n.ExtendedPattern, state, EXTENDED_PATTERN_MUST_BE_CONCRETIZABLE_AT_CHECK_TIME))
+			return nil, nil
+		}
+
+		extendedValue := pattern.SymbolicValue()
+
+		if _, ok := extendedValue.(Serializable); !ok {
+			state.addError(makeSymbolicEvalError(n.ExtendedPattern, state, ONLY_SERIALIZABLE_VALUE_PATTERNS_ARE_ALLOWED))
+			return nil, nil
 		}
 
 		objLit, ok := n.Extension.(*parse.ObjectLiteral)
@@ -4623,7 +4690,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			return nil, nil
 		}
 
-		extendedValueIprops, _ := pattern.SymbolicValue().(IProps)
+		extendedValueIprops, _ := extendedValue.(IProps)
 
 		extension := TypeExtension{extendedPattern: pattern}
 
@@ -4655,10 +4722,26 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 
 			switch v := prop.Value.(type) {
 			case *parse.FunctionExpression:
+				prevNextSelf, restoreNextSelf := state.getNextSelf()
+				if restoreNextSelf {
+					state.unsetNextSelf()
+				}
+				state.setNextSelf(extendedValue)
+
+				inoxFn, err := symbolicEval(v, state)
+				if err != nil {
+					return nil, err
+				}
+
 				extension.propertyExpressions = append(extension.propertyExpressions, propertyExpression{
 					name:   key,
-					method: v,
+					method: inoxFn.(*InoxFunction),
 				})
+
+				state.unsetNextSelf()
+				if restoreNextSelf {
+					state.setNextSelf(prevNextSelf)
+				}
 			default:
 				extension.propertyExpressions = append(extension.propertyExpressions, propertyExpression{
 					name:       key,
@@ -4705,7 +4788,7 @@ func symbolicMemb(value SymbolicValue, name string, optionalMembExpr bool, node 
 			}
 
 			if !optionalMembExpr {
-				state.addError(makeSymbolicEvalError(node, state, fmtPropOfSymbolicDoesNotExist(name, value, closest)))
+				state.addError(makeSymbolicEvalError(node, state, fmtPropOfDoesNotExist(name, value, closest)))
 			}
 			result = ANY
 		} else {

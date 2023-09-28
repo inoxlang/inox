@@ -9,8 +9,8 @@ type TypeExtension struct {
 }
 
 type propertyExpression struct {
-	name       string
-	
+	name string
+
 	expression parse.Node
-	method     *parse.FunctionExpression
+	method     *InoxFunction
 }

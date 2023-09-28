@@ -18,7 +18,8 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 
 	//we first get the callee
 	switch c := calleeNode.(type) {
-	case *parse.IdentifierLiteral, *parse.IdentifierMemberExpression, *parse.Variable, *parse.MemberExpression:
+	case *parse.IdentifierLiteral, *parse.IdentifierMemberExpression,
+		*parse.Variable, *parse.MemberExpression, *parse.DoubleColonExpression:
 		callee, err = _symbolicEval(callNode.Callee, state, evalOptions{
 			doubleColonExprAncestorChain: []parse.Node{callNode},
 		})
