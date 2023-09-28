@@ -1824,7 +1824,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		switch n.Operator {
 		case parse.NumberNegate:
 			if i, ok := operand.(Int); ok {
-				if i == -i {
+				if i == -i && i != 0 {
 					return nil, ErrNegationWithOverflow
 				}
 				return -i, nil

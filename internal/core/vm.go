@@ -518,7 +518,7 @@ func (v *VM) run() {
 
 			switch x := operand.(type) {
 			case Int:
-				if x == -x {
+				if x == -x && x != 0 {
 					v.err = ErrNegationWithOverflow
 					return
 				}

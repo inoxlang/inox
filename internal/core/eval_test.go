@@ -851,14 +851,22 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		}{
 			//addition
 			{"(1 + 2)", Int(3), nil},
+			{"(-0 + 2)", Int(2), nil},
+			{"(0 + 2)", Int(2), nil},
 			{"(1 + -2)", Int(-1), nil},
+			{"(1 + -0)", Int(1), nil},
+			{"(1 + 0)", Int(1), nil},
 			{"(9223372036854775807 + -1)", Int(9223372036854775806), nil},
 			{"(-9223372036854775808 + 1)", Int(-9223372036854775807), nil},
 			{"(9223372036854775807 + 1)", nil, ErrIntOverflow},
 			{"(-9223372036854775808 + -1)", nil, ErrIntUnderflow},
 			//substraction
 			{"(1 - 2)", Int(-1), nil},
+			{"(-0 - 2)", Int(-2), nil},
+			{"(0 - 2)", Int(-2), nil},
 			{"(1 - -2)", Int(3), nil},
+			{"(1 - -0)", Int(1), nil},
+			{"(1 - 0)", Int(1), nil},
 			{"(9223372036854775807 - 1)", Int(9223372036854775806), nil},
 			{"(-9223372036854775808 - -1)", Int(-9223372036854775807), nil},
 			{"(9223372036854775807 - -1)", nil, ErrIntOverflow},
@@ -1058,6 +1066,24 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			res, err := Eval("(- -9223372036854775808)", NewGlobalState(ctx, nil), false)
 			assert.ErrorIs(t, err, ErrNegationWithOverflow)
 			assert.Nil(t, res)
+		})
+
+		t.Run("negating zero should return zero", func(t *testing.T) {
+			ctx := NewDefaultTestContext()
+			defer ctx.CancelGracefully()
+
+			res, err := Eval("(- 0)", NewGlobalState(ctx, nil), false)
+			assert.NoError(t, err)
+			assert.Equal(t, Int(0), res)
+		})
+
+		t.Run("negating negative zero should return zero", func(t *testing.T) {
+			ctx := NewDefaultTestContext()
+			defer ctx.CancelGracefully()
+
+			res, err := Eval("(- -0)", NewGlobalState(ctx, nil), false)
+			assert.NoError(t, err)
+			assert.Equal(t, Int(0), res)
 		})
 	})
 
