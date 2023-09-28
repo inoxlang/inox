@@ -1404,7 +1404,6 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("object in object", func(t *testing.T) {
-
 			n, state := MakeTestStateAndChunk(`{v: {}}`)
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
@@ -1417,6 +1416,26 @@ func TestSymbolicEval(t *testing.T) {
 				},
 				static: map[string]Pattern{
 					"v": NewEmptyObject().Static(),
+				},
+			}, res)
+		})
+
+		t.Run("missing value of property", func(t *testing.T) {
+			n, state, err := _makeStateAndChunk(`{v:}`, nil)
+
+			if !assert.Error(t, err) {
+				return
+			}
+
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Equal(t, &Object{
+				entries: map[string]Serializable{
+					"v": ANY_SERIALIZABLE,
+				},
+				static: map[string]Pattern{
+					"v": getStatic(ANY_SERIALIZABLE),
 				},
 			}, res)
 		})
@@ -1609,6 +1628,23 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, &Record{
 				entries: map[string]Serializable{
 					"name": NewString("foo"),
+				},
+			}, res)
+		})
+
+		t.Run("missing value of property", func(t *testing.T) {
+			n, state, err := _makeStateAndChunk(`#{v:}`, nil)
+
+			if !assert.Error(t, err) {
+				return
+			}
+
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Equal(t, &Record{
+				entries: map[string]Serializable{
+					"v": ANY_SERIALIZABLE,
 				},
 			}, res)
 		})
@@ -9337,6 +9373,36 @@ func TestSymbolicEval(t *testing.T) {
 			}, evalErr.Location[1])
 
 			assert.Equal(t, ANY, res)
+		})
+	})
+
+	t.Run("extend statement", func(t *testing.T) {
+		t.Run("ok", func(t *testing.T) {
+			n, state := MakeTestStateAndChunks(`
+				manifest {}
+				import ./lib.ix
+				return a
+			`, map[string]string{"./lib.ix": "a = int"})
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, ANY_INT, res)
+
+			//check context data
+			stmt, ancestors := parse.FindNodeAndChain(n, (*parse.ReturnStatement)(nil), nil)
+			data, ok := state.symbolicData.GetLocalScopeData(stmt, ancestors)
+			if !assert.True(t, ok) {
+				return
+			}
+
+			for _, varData := range data.Variables {
+				if varData.Name == "a" {
+					return
+				}
+			}
+
+			assert.Fail(t, "variable not found in scope data")
 		})
 	})
 

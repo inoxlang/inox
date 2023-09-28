@@ -74,6 +74,7 @@ var (
 		parse.UnterminatedMemberExpr, parse.UnterminatedDoubleColonExpr,
 		parse.MissingBlock, parse.MissingFnBody,
 		parse.MissingEqualsSignInDeclaration,
+		parse.MissingObjectPropertyValue,
 		parse.ExtractionExpressionExpected,
 	}
 )
@@ -2112,42 +2113,53 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 				state.addError(makeSymbolicEvalError(p.Key, state, msg))
 			}
 
-			propVal, err := _symbolicEval(p.Value, state, evalOptions{expectedValue: expectedPropVal, actualValueMismatch: &deeperMismatch})
-			if err != nil {
-				return nil, err
-			}
+			var (
+				propVal      SymbolicValue
+				err          error
+				serializable Serializable
+			)
 
-			if p.Type != nil {
-				_propType, err := symbolicEval(p.Type, state)
+			if p.Value == nil {
+				propVal = ANY_SERIALIZABLE
+				serializable = ANY_SERIALIZABLE
+			} else {
+				propVal, err = _symbolicEval(p.Value, state, evalOptions{expectedValue: expectedPropVal, actualValueMismatch: &deeperMismatch})
 				if err != nil {
 					return nil, err
 				}
-				static = _propType.(Pattern)
-				if !static.TestValue(propVal) {
-					state.addError(makeSymbolicEvalError(p.Value, state, fmtNotAssignableToPropOfType(propVal, static)))
-					propVal = static.SymbolicValue()
+
+				if p.Type != nil {
+					_propType, err := symbolicEval(p.Type, state)
+					if err != nil {
+						return nil, err
+					}
+					static = _propType.(Pattern)
+					if !static.TestValue(propVal) {
+						state.addError(makeSymbolicEvalError(p.Value, state, fmtNotAssignableToPropOfType(propVal, static)))
+						propVal = static.SymbolicValue()
+					}
+				} else if deeperMismatch {
+					options.setActualValueMismatchIfNotNil()
+				} else if expectedPropVal != nil && !deeperMismatch && !expectedPropVal.Test(propVal) {
+					options.setActualValueMismatchIfNotNil()
+					state.addError(makeSymbolicEvalError(p.Value, state, fmtNotAssignableToPropOfExpectedValue(propVal, expectedPropVal)))
 				}
-			} else if deeperMismatch {
-				options.setActualValueMismatchIfNotNil()
-			} else if expectedPropVal != nil && !deeperMismatch && !expectedPropVal.Test(propVal) {
-				options.setActualValueMismatchIfNotNil()
-				state.addError(makeSymbolicEvalError(p.Value, state, fmtNotAssignableToPropOfExpectedValue(propVal, expectedPropVal)))
-			}
 
-			serializable, ok := propVal.(Serializable)
-			if !ok {
-				state.addError(makeSymbolicEvalError(p, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_INITIAL_VALUES_OF_SERIALIZABLE))
-				serializable = ANY_SERIALIZABLE
-			} else if _, ok := asWatchable(propVal).(Watchable); !ok && propVal.IsMutable() {
-				state.addError(makeSymbolicEvalError(p, state, MUTABLE_NON_WATCHABLE_VALUES_NOT_ALLOWED_AS_INITIAL_VALUES_OF_WATCHABLE))
-			}
+				serializable, ok = propVal.(Serializable)
+				if !ok {
+					state.addError(makeSymbolicEvalError(p, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_INITIAL_VALUES_OF_SERIALIZABLE))
+					serializable = ANY_SERIALIZABLE
+				} else if _, ok := asWatchable(propVal).(Watchable); !ok && propVal.IsMutable() {
+					state.addError(makeSymbolicEvalError(p, state, MUTABLE_NON_WATCHABLE_VALUES_NOT_ALLOWED_AS_INITIAL_VALUES_OF_WATCHABLE))
+				}
 
-			//additional checks if expected object is readonly
-			if expectedObj.readonly {
-				if _, ok := propVal.(*LifetimeJob); ok {
-					state.addError(makeSymbolicEvalError(p, state, LIFETIME_JOBS_NOT_ALLOWED_IN_READONLY_OBJECTS))
-				} else if !IsReadonlyOrImmutable(propVal) {
-					state.addError(makeSymbolicEvalError(p.Key, state, PROPERTY_VALUES_OF_READONLY_OBJECTS_SHOULD_BE_READONLY_OR_IMMUTABLE))
+				//additional checks if expected object is readonly
+				if expectedObj.readonly {
+					if _, ok := propVal.(*LifetimeJob); ok {
+						state.addError(makeSymbolicEvalError(p, state, LIFETIME_JOBS_NOT_ALLOWED_IN_READONLY_OBJECTS))
+					} else if !IsReadonlyOrImmutable(propVal) {
+						state.addError(makeSymbolicEvalError(p.Key, state, PROPERTY_VALUES_OF_READONLY_OBJECTS_SHOULD_BE_READONLY_OR_IMMUTABLE))
+					}
 				}
 			}
 
@@ -2230,23 +2242,27 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			expectedPropVal := expectedRecord.entries[key]
 			deeperMismatch := false
 
-			v, err := _symbolicEval(p.Value, state, evalOptions{expectedValue: expectedPropVal, actualValueMismatch: &deeperMismatch})
-			if err != nil {
-				return nil, err
-			}
-
-			if deeperMismatch {
-				options.setActualValueMismatchIfNotNil()
-			} else if expectedPropVal != nil && !deeperMismatch && !expectedPropVal.Test(v) {
-				options.setActualValueMismatchIfNotNil()
-				state.addError(makeSymbolicEvalError(p.Value, state, fmtNotAssignableToPropOfExpectedValue(v, expectedPropVal)))
-			}
-
-			if v.IsMutable() {
-				state.addError(makeSymbolicEvalError(p.Value, state, fmtValuesOfRecordShouldBeImmutablePropHasMutable(key)))
+			if p.Value == nil {
 				entries[key] = ANY_SERIALIZABLE
 			} else {
-				entries[key] = v.(Serializable)
+				v, err := _symbolicEval(p.Value, state, evalOptions{expectedValue: expectedPropVal, actualValueMismatch: &deeperMismatch})
+				if err != nil {
+					return nil, err
+				}
+
+				if deeperMismatch {
+					options.setActualValueMismatchIfNotNil()
+				} else if expectedPropVal != nil && !deeperMismatch && !expectedPropVal.Test(v) {
+					options.setActualValueMismatchIfNotNil()
+					state.addError(makeSymbolicEvalError(p.Value, state, fmtNotAssignableToPropOfExpectedValue(v, expectedPropVal)))
+				}
+
+				if v.IsMutable() {
+					state.addError(makeSymbolicEvalError(p.Value, state, fmtValuesOfRecordShouldBeImmutablePropHasMutable(key)))
+					entries[key] = ANY_SERIALIZABLE
+				} else {
+					entries[key] = v.(Serializable)
+				}
 			}
 		}
 
