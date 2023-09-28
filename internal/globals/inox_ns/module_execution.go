@@ -147,9 +147,9 @@ func RunPreparedScript(args RunPreparedScriptArgs) (
 		fmt.Fprintln(out, warning.LocatedMessage)
 	}
 
-	if len(warnings) > DEFAULT_MAX_ALLOWED_WARNINGS { //TODO: make the max configurable
-		return nil, nil, nil, true, ErrExecutionAbortedTooManyWarnings
-	}
+	// if len(warnings) > DEFAULT_MAX_ALLOWED_WARNINGS { //TODO: make the max configurable
+	// 	return nil, nil, nil, true, ErrExecutionAbortedTooManyWarnings
+	// }
 
 	riskScore, requiredPerms := core.ComputeProgramRiskScore(mod, manifest)
 
