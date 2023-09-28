@@ -8,6 +8,8 @@ import (
 	"maps"
 	"reflect"
 	"runtime/debug"
+	"slices"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -42,6 +44,7 @@ var (
 	ErrAlreadyAssociatedState                  = errors.New("context already has an associated state")
 	ErrNotSharableUserDataValue                = errors.New("attempt to set a user data entry with a non sharable value ")
 	ErrDoubleUserDataDefinition                = errors.New("cannot define a user data entry more than once")
+	ErrTypeExtensionAlreadyRegistered          = errors.New("type extension is already registered")
 )
 
 type Context struct {
@@ -81,6 +84,7 @@ type Context struct {
 	hostProtocolClients map[Host]ProtocolClient
 	hostResolutionData  map[Host]Value
 	userData            map[Identifier]Value
+	typeExtensions      []*TypeExtension
 
 	executionStartTime time.Time
 
@@ -121,6 +125,7 @@ type ContextConfig struct {
 	Limits []Limit
 
 	HostResolutions     map[Host]Value
+	TypeExtensions      []*TypeExtension
 	OwnedDatabases      []DatabaseConfig
 	ParentContext       *Context
 	ParentStdLibContext context.Context //should not be set if ParentContext is set
@@ -346,6 +351,7 @@ func NewContext(config ContextConfig) *Context {
 		hostProtocolClients:  map[Host]ProtocolClient{},
 		hostResolutionData:   hostResolutions,
 		userData:             map[Identifier]Value{},
+		typeExtensions:       slices.Clone(config.TypeExtensions),
 
 		waitConfirmPrompt: config.WaitConfirmPrompt,
 	}
@@ -686,6 +692,7 @@ func (ctx *Context) boundChild(opts BoundChildContextOptions) *Context {
 	child.hostProtocolClients = ctx.hostProtocolClients
 	child.urlProtocolClients = ctx.urlProtocolClients
 	child.userData = ctx.userData
+	child.typeExtensions = slices.Clone(child.typeExtensions)
 
 	return child
 }
@@ -711,6 +718,7 @@ func (ctx *Context) New() *Context {
 		ForbiddenPermissions: ctx.forbiddenPermissions,
 		Limits:               ctx.limits,
 		HostResolutions:      ctx.hostResolutionData,
+		TypeExtensions:       ctx.typeExtensions,
 		ParentContext:        ctx.parentCtx,
 		Filesystem:           ctx.fs,
 
@@ -1150,6 +1158,34 @@ func (ctx *Context) AddUserData(name Identifier, value Value) {
 		panic(fmt.Errorf("%w: %s", ErrNotSharableUserDataValue, expl))
 	}
 	ctx.userData[name] = value
+}
+
+func (ctx *Context) GetTypeExtension(id string) *TypeExtension {
+	for _, ext := range ctx.typeExtensions {
+		if ext.Id() == id {
+			return ext
+		}
+	}
+	return nil
+}
+
+func (ctx *Context) AddTypeExtension(extension *TypeExtension) {
+	ctx.lock.Lock()
+	defer ctx.lock.Unlock()
+	ctx.assertNotDone()
+
+	for _, ext := range ctx.typeExtensions {
+		if extension.Id() == ext.Id() {
+			propertyNames := utils.MapSlice(extension.propertyExpressions, func(e propertyExpression) string {
+				return e.name
+			})
+
+			propertyList := strings.Join(propertyNames, ", ")
+			panic(fmt.Errorf("%w, the properties of the extension are: %s", ErrTypeExtensionAlreadyRegistered, propertyList))
+		}
+	}
+
+	ctx.typeExtensions = append(ctx.typeExtensions, extension)
 }
 
 func (ctx *Context) IsValueVisible(v Value) bool {

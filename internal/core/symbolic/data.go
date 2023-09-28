@@ -213,6 +213,10 @@ func (data *SymbolicData) AddData(newData *SymbolicData) {
 		data.SetRuntimeTypecheckPattern(k, v)
 	}
 
+	for k, v := range newData.typeExtensions {
+		data.SetUsedTypeExtension(k, v)
+	}
+
 	data.errors = append(data.errors, newData.errors...)
 	data.warnings = append(data.warnings, newData.warnings...)
 }

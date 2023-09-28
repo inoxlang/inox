@@ -4049,6 +4049,140 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		})
 	})
 
+	allExtendStmtTestsPassed := t.Run("extend statement", func(t *testing.T) {
+		t.Run("computed property", func(t *testing.T) {
+			code := `
+				%p = {
+					a: 1
+				}
+
+				extend p {
+					b: 2
+				}
+			`
+
+			state := NewGlobalState(NewDefaultTestContext())
+
+			defer state.Ctx.CancelGracefully()
+
+			_, err := Eval(code, state, true)
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			if !assert.Len(t, state.Ctx.typeExtensions, 1) {
+				return
+			}
+
+			extension := state.Ctx.typeExtensions[0]
+			extendStmt, ancestors := parse.FindNodeAndChain(state.Module.MainChunk.Node, (*parse.ExtendStatement)(nil), nil)
+
+			ctxData, ok := state.SymbolicData.GetContextData(extendStmt, ancestors)
+			if !assert.True(t, ok) {
+				return
+			}
+
+			symbolicExt := ctxData.Extensions[0]
+			assert.Equal(t, symbolicExt, extension.symbolicExtension)
+		})
+
+		t.Run("method", func(t *testing.T) {
+			code := `
+				%p = {
+					a: 1
+				}
+
+				extend p {
+					f: fn() => self.a
+				}
+			`
+
+			state := NewGlobalState(NewDefaultTestContext())
+
+			defer state.Ctx.CancelGracefully()
+
+			_, err := Eval(code, state, true)
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			if !assert.Len(t, state.Ctx.typeExtensions, 1) {
+				return
+			}
+
+			extension := state.Ctx.typeExtensions[0]
+			extendStmt, ancestors := parse.FindNodeAndChain(state.Module.MainChunk.Node, (*parse.ExtendStatement)(nil), nil)
+
+			ctxData, ok := state.SymbolicData.GetContextData(extendStmt, ancestors)
+			if !assert.True(t, ok) {
+				return
+			}
+
+			symbolicExt := ctxData.Extensions[0]
+			assert.Equal(t, symbolicExt, extension.symbolicExtension)
+		})
+	})
+
+	if allExtendStmtTestsPassed {
+		t.Run("extension properties & methods", func(t *testing.T) {
+			t.Run("computed property", func(t *testing.T) {
+				code := `
+					%p = {
+						a: 1
+					}
+	
+					extend p {
+						b: 2
+					}
+	
+					var object p = {
+						a: 1
+					}
+	
+					return object::b
+				`
+
+				state := NewGlobalState(NewDefaultTestContext())
+
+				defer state.Ctx.CancelGracefully()
+
+				res, err := Eval(code, state, true)
+				if !assert.NoError(t, err) {
+					return
+				}
+				assert.Equal(t, Int(2), res)
+			})
+
+			t.Run("method call", func(t *testing.T) {
+				code := `
+					%p = {
+						a: 1
+					}
+	
+					extend p {
+						f: fn() => (1 + self.a)
+					}
+	
+					var object p = {
+						a: 1
+					}
+	
+					return object::f()
+				`
+
+				state := NewGlobalState(NewDefaultTestContext())
+
+				defer state.Ctx.CancelGracefully()
+
+				res, err := Eval(code, state, true)
+				if !assert.NoError(t, err) {
+					return
+				}
+				assert.Equal(t, Int(2), res)
+			})
+		})
+	}
+
 	t.Run("pattern call", func(t *testing.T) {
 		code := `%mypattern(1..10)`
 

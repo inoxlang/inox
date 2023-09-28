@@ -421,7 +421,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 
 		var (
 			callee Value
-			object *Object
+			self   Value
 		)
 
 		//we first get the callee
@@ -450,9 +450,9 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 
 			for _, idents := range c.PropertyNames {
 				if obj, ok := v.(*Object); ok {
-					object = obj
+					self = obj
 				} else {
-					object = nil
+					self = nil
 				}
 				v = v.(IProps).Prop(state.Global.Ctx, idents.Name)
 			}
@@ -483,12 +483,46 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			}
 
 			if obj, ok := left.(*Object); ok {
-				object = obj
+				self = obj
 			} else {
-				object = nil
+				self = nil
 			}
 
 			callee = left.(IProps).Prop(state.Global.Ctx, c.PropertyName.Name)
+		case *parse.DoubleColonExpression:
+			elementName := c.Element.Name
+			extendedValue, err := TreeWalkEval(c.Left, state)
+			if err != nil {
+				return nil, err
+			}
+			self = extendedValue
+
+			symbolicExtension, ok := state.Global.SymbolicData.GetUsedTypeExtension(c)
+			if !ok {
+				panic(ErrUnreachable)
+			}
+
+			extension := state.Global.Ctx.GetTypeExtension(symbolicExtension.Id)
+			if extension == nil {
+				panic(ErrUnreachable)
+			}
+
+			for _, propExpr := range extension.propertyExpressions {
+				if propExpr.name != elementName {
+					continue
+				}
+				//extension methods should never be accessible
+				if propExpr.method != nil {
+					callee = propExpr.method
+				} else {
+					panic(parse.ErrUnreachable)
+				}
+
+			}
+
+			if callee == nil {
+				panic(parse.ErrUnreachable)
+			}
 		default:
 			return nil, fmt.Errorf("cannot call a(n) %T", c)
 		}
@@ -498,7 +532,12 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		}
 
 		return TreeWalkCallFunc(TreeWalkCall{
-			callee: callee, self: object, state: state, arguments: n.Arguments, must: n.Must, cmdLineSyntax: n.CommandLikeSyntax,
+			callee:        callee,
+			self:          self,
+			state:         state,
+			arguments:     n.Arguments,
+			must:          n.Must,
+			cmdLineSyntax: n.CommandLikeSyntax,
 		})
 	case *parse.PatternCallExpression:
 		callee, err := TreeWalkEval(n.Callee, state)
@@ -2118,10 +2157,49 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			return nil, err
 		}
 
-		obj := left.(*Object)
-		propName := n.Element.Name
+		elementName := n.Element.Name
+		symbolicExtension, ok := state.Global.SymbolicData.GetUsedTypeExtension(n)
 
-		return obj.PropNotStored(state.Global.Ctx, propName), nil
+		if ok {
+			extension := state.Global.Ctx.GetTypeExtension(symbolicExtension.Id)
+			if extension == nil {
+				panic(ErrUnreachable)
+			}
+
+			for _, propExpr := range extension.propertyExpressions {
+				if propExpr.name != elementName {
+					continue
+				}
+				//extension methods should never be accessible
+				if propExpr.method != nil {
+					panic(parse.ErrUnreachable)
+				}
+				state.PushScope()
+				prevSelf := state.self
+				state.self = left
+
+				defer func() {
+					state.PopScope()
+					state.self = prevSelf
+				}()
+
+				computedPropValue, err := TreeWalkEval(propExpr.expression, state)
+				if err != nil {
+					return nil, fmt.Errorf("failed to compute property value: %w", err)
+				}
+
+				return computedPropValue, nil
+			}
+
+			panic(ErrUnreachable)
+		} else {
+			obj, ok := left.(*Object)
+			if !ok {
+				panic(ErrUnreachable)
+			}
+			return obj.PropNotStored(state.Global.Ctx, elementName), nil
+		}
+
 	case *parse.ComputedMemberExpression:
 		left, err := TreeWalkEval(n.Left, state)
 		if err != nil {
@@ -2766,6 +2844,57 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		}
 
 		return val, nil
+
+	case *parse.ExtendStatement:
+		pattern, err := evalPatternNode(n.ExtendedPattern, state)
+		if err != nil {
+			return nil, err
+		}
+
+		lastCtxData, ok := state.Global.SymbolicData.GetContextData(n, nil)
+		if !ok {
+			panic(ErrUnreachable)
+		}
+		symbolicExtension := lastCtxData.Extensions[len(lastCtxData.Extensions)-1]
+
+		if symbolicExtension.Statement != n {
+			panic(ErrUnreachable)
+		}
+
+		extension := &TypeExtension{
+			extendedPattern:   pattern,
+			symbolicExtension: symbolicExtension,
+		}
+
+		for _, symbolicPropExpr := range symbolicExtension.PropertyExpressions {
+			if symbolicPropExpr.Expression != nil {
+				extension.propertyExpressions = append(extension.propertyExpressions, propertyExpression{
+					name:       symbolicPropExpr.Name,
+					expression: symbolicPropExpr.Expression,
+				})
+			}
+		}
+
+		objLit := n.Extension.(*parse.ObjectLiteral)
+
+		for _, prop := range objLit.Properties {
+			fnExpr, ok := prop.Value.(*parse.FunctionExpression)
+
+			if !ok {
+				continue
+			}
+			inoxFn, err := TreeWalkEval(fnExpr, state)
+			if err != nil {
+				return nil, err
+			}
+			extension.propertyExpressions = append(extension.propertyExpressions, propertyExpression{
+				name:   prop.Name(),
+				method: inoxFn.(*InoxFunction),
+			})
+		}
+
+		state.Global.Ctx.AddTypeExtension(extension)
+		return nil, nil
 	default:
 		return nil, fmt.Errorf("cannot evaluate %#v (%T)\n%s", node, node, debug.Stack())
 	}
