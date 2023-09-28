@@ -1971,197 +1971,6 @@ func TestSymbolicEval(t *testing.T) {
 		})
 	})
 
-	t.Run("double-colon expression", func(t *testing.T) {
-
-		t.Run("unterminated", func(t *testing.T) {
-			n, state, _ := _makeStateAndChunk(`
-				obj = {
-					list: []
-				}
-				obj::
-				return obj
-			`, nil)
-
-			res, err := symbolicEval(n, state)
-			assert.NoError(t, err)
-			assert.Empty(t, state.errors())
-			assert.Equal(t, NewInexactObject(map[string]Serializable{
-				"list": NewList(),
-			}, nil, map[string]Pattern{
-				"list": NewListPatternOf(&TypePattern{val: ANY_SERIALIZABLE}),
-			}), res)
-		})
-
-		t.Run("mutation of an object property", func(t *testing.T) {
-			t.Run("call of a property's method", func(t *testing.T) {
-				n, state := MakeTestStateAndChunk(`
-					obj = {
-						list: []
-					}
-					obj::list.append(1)
-					return obj
-				`)
-				res, err := symbolicEval(n, state)
-				assert.NoError(t, err)
-				assert.Empty(t, state.errors())
-				assert.Equal(t, NewInexactObject(map[string]Serializable{
-					"list": NewList(NewInt(1)),
-				}, nil, map[string]Pattern{
-					"list": NewListPatternOf(&TypePattern{val: ANY_SERIALIZABLE}),
-				}), res)
-			})
-
-			t.Run("assignment of an index expression", func(t *testing.T) {
-				n, state := MakeTestStateAndChunk(`
-					obj = {
-						list: [0]
-					}
-					obj::list[0] = 1
-					return obj
-				`)
-				res, err := symbolicEval(n, state)
-				assert.NoError(t, err)
-				assert.Empty(t, state.errors())
-				assert.Equal(t, NewInexactObject(map[string]Serializable{
-					"list": NewListOf(ANY_INT),
-				}, nil, map[string]Pattern{
-					"list": NewListPatternOf(&TypePattern{val: ANY_INT}),
-				}), res)
-			})
-
-			t.Run("assignment of the member of an index expression", func(t *testing.T) {
-				n, state := MakeTestStateAndChunk(`
-					obj = {
-						list: [{a: 0}]
-					}
-					obj::list[0].a = 1
-					return obj
-				`)
-				res, err := symbolicEval(n, state)
-				assert.NoError(t, err)
-				assert.Empty(t, state.errors())
-
-				_ = res
-				//TODO
-
-				// assert.Equal(t, NewInexactObject(map[string]Serializable{
-				// 	"list": NewList(NewInexactObject(map[string]Serializable{
-				// 		"a": NewInt(1),
-				// 	}, nil, map[string]Pattern{
-				// 		"a": &TypePattern{val: ANY_INT},
-				// 	})),
-				// }, nil, map[string]Pattern{
-				// 	"list": NewListPatternOf(NewInexactObjectPattern(map[string]Pattern{
-				// 		"a": &TypePattern{val: ANY_INT},
-				// 	}, nil)),
-				// }), res)
-			})
-			//TODO: support deeper accesses
-		})
-
-		t.Run("accessed object properties should never be stored", func(t *testing.T) {
-			testCases := []struct {
-				input string
-			}{
-				{
-					input: `
-						obj = {list: []}
-						obj::list
-					`,
-				},
-				{
-					input: `
-						obj = {list: []}
-						a = obj::list
-					`,
-				},
-				{
-					input: `
-						obj = {list: []}
-						return obj::list
-					`,
-				},
-				{
-					input: `
-						fn print(arg){}
-						obj = {list: []}
-						print(obj::list)
-					`,
-				},
-				//index expression
-				{
-					input: `
-						obj = {list: [0]}
-						obj::list[0]
-					`,
-				},
-				{
-					input: `
-						obj = {list: [0]}
-						a = obj::list[0]
-					`,
-				},
-				{
-					input: `
-						obj = {list: [0]}
-						return obj::list[0]
-					`,
-				},
-				{
-					input: `
-						fn print(arg){}
-						obj = {list: [0]}
-						print(obj::list[0])
-					`,
-				},
-				//slice expression
-				{
-					input: `
-						obj = {list: [0]}
-						obj::list[0:1]
-					`,
-				},
-				{
-					input: `
-						obj = {list: [0]}
-						a = obj::list[0:1]
-					`,
-				},
-				{
-					input: `
-						obj = {list: [0]}
-						return obj::list[0:1]
-					`,
-				},
-				{
-					input: `
-						fn print(arg){}
-						obj = {list: [0]}
-						print(obj::list[0:1])
-					`,
-				},
-			}
-
-			for _, testCase := range testCases {
-				n, state := MakeTestStateAndChunk(testCase.input)
-				_, err := symbolicEval(n, state)
-
-				if !assert.NoError(t, err) {
-					return
-				}
-
-				errs := state.errors()
-				if !assert.Len(t, errs, 1) {
-					return
-				}
-
-				evalErr := errs[0]
-				assert.ErrorContains(t, evalErr, MISPLACED_DOUBLE_COLON_EXPR)
-			}
-
-		})
-	})
-
 	t.Run("index expression", func(t *testing.T) {
 		t.Run("index is not an integer", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
@@ -9377,32 +9186,338 @@ func TestSymbolicEval(t *testing.T) {
 	})
 
 	t.Run("extend statement", func(t *testing.T) {
-		t.Run("ok", func(t *testing.T) {
+		t.Run("one property", func(t *testing.T) {
 			n, state := MakeTestStateAndChunks(`
-				manifest {}
-				import ./lib.ix
-				return a
-			`, map[string]string{"./lib.ix": "a = int"})
-			res, err := symbolicEval(n, state)
+				%p = {a: 1}
+
+				extend p {
+					b: - self.a
+				}
+			`, nil)
+			_, err := symbolicEval(n, state)
 
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
-			assert.Equal(t, ANY_INT, res)
 
 			//check context data
-			stmt, ancestors := parse.FindNodeAndChain(n, (*parse.ReturnStatement)(nil), nil)
-			data, ok := state.symbolicData.GetLocalScopeData(stmt, ancestors)
+			stmt, ancestors := parse.FindNodeAndChain(n, (*parse.ExtendStatement)(nil), nil)
+			data, ok := state.symbolicData.GetContextData(stmt, ancestors)
 			if !assert.True(t, ok) {
 				return
 			}
 
-			for _, varData := range data.Variables {
-				if varData.Name == "a" {
-					return
-				}
+			if !assert.Len(t, data.Extensions, 1) {
+				return
+			}
+			extension := data.Extensions[0]
+			if !assert.Len(t, extension.propertyExpressions, 1) {
+				return
 			}
 
-			assert.Fail(t, "variable not found in scope data")
+			propExpr := extension.propertyExpressions[0]
+			assert.NotNil(t, propExpr.expression)
+			assert.Nil(t, propExpr.method)
+		})
+
+		t.Run("one method", func(t *testing.T) {
+			n, state := MakeTestStateAndChunks(`
+				%p = {a: 1}
+
+				extend p {
+					b: fn(){
+
+					}
+				}
+			`, nil)
+			_, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+
+			//check context data
+			stmt, ancestors := parse.FindNodeAndChain(n, (*parse.ExtendStatement)(nil), nil)
+			data, ok := state.symbolicData.GetContextData(stmt, ancestors)
+			if !assert.True(t, ok) {
+				return
+			}
+
+			if !assert.Len(t, data.Extensions, 1) {
+				return
+			}
+			extension := data.Extensions[0]
+			if !assert.Len(t, extension.propertyExpressions, 1) {
+				return
+			}
+
+			propExpr := extension.propertyExpressions[0]
+			assert.Nil(t, propExpr.expression)
+			assert.NotNil(t, propExpr.method)
+		})
+
+		t.Run("properties of the extension object should not have the same name as an existing property", func(t *testing.T) {
+			n, state := MakeTestStateAndChunks(`
+				%p = {a: 1}
+
+				extend p {
+					a: - self.a
+				}
+			`, nil)
+
+			objProp := parse.FindNode(n.Statements[1], (*parse.ObjectProperty)(nil), nil)
+
+			_, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(objProp.Key, state, fmtExtendedValueAlreadyHasAnXProperty("a")),
+			}, state.errors())
+		})
+
+		t.Run("properties of the extension object should not be implicit or index-like", func(t *testing.T) {
+			n, state := MakeTestStateAndChunks(`
+				%p = {a: 1}
+
+				extend p {
+					- self.a
+					"2": self.a
+				}
+			`, nil)
+
+			objProps := parse.FindNodes(n.Statements[1], (*parse.ObjectProperty)(nil), nil)
+			if !assert.Len(t, objProps, 2) {
+				return
+			}
+
+			_, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(objProps[0], state, KEYS_OF_EXT_OBJ_MUST_BE_VALID_INOX_IDENTS),
+				makeSymbolicEvalError(objProps[1].Key, state, KEYS_OF_EXT_OBJ_MUST_BE_VALID_INOX_IDENTS),
+			}, state.errors())
+		})
+
+		t.Run("properties of the extension object should be valid inox identifiers", func(t *testing.T) {
+			n, state := MakeTestStateAndChunks(`
+				%p = {a: 1}
+
+				extend p {
+					" b": - self.a
+					"b ": - self.a
+					"b-": - self.a
+					"?": - self.a
+					"": - self.a
+
+					"ok": - self.a
+				}
+			`, nil)
+
+			objProps := parse.FindNodes(n.Statements[1], (*parse.ObjectProperty)(nil), nil)
+			if !assert.Len(t, objProps, 6) {
+				return
+			}
+
+			_, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(objProps[0].Key, state, KEYS_OF_EXT_OBJ_MUST_BE_VALID_INOX_IDENTS),
+				makeSymbolicEvalError(objProps[1].Key, state, KEYS_OF_EXT_OBJ_MUST_BE_VALID_INOX_IDENTS),
+				makeSymbolicEvalError(objProps[2].Key, state, KEYS_OF_EXT_OBJ_MUST_BE_VALID_INOX_IDENTS),
+				makeSymbolicEvalError(objProps[3].Key, state, KEYS_OF_EXT_OBJ_MUST_BE_VALID_INOX_IDENTS),
+				makeSymbolicEvalError(objProps[4].Key, state, KEYS_OF_EXT_OBJ_MUST_BE_VALID_INOX_IDENTS),
+			}, state.errors())
+		})
+	})
+
+	t.Run("double-colon expression", func(t *testing.T) {
+
+		t.Run("unterminated", func(t *testing.T) {
+			n, state, _ := _makeStateAndChunk(`
+				obj = {
+					list: []
+				}
+				obj::
+				return obj
+			`, nil)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, NewInexactObject(map[string]Serializable{
+				"list": NewList(),
+			}, nil, map[string]Pattern{
+				"list": NewListPatternOf(&TypePattern{val: ANY_SERIALIZABLE}),
+			}), res)
+		})
+
+		t.Run("mutation of an object property", func(t *testing.T) {
+			t.Run("call of a property's method", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					obj = {
+						list: []
+					}
+					obj::list.append(1)
+					return obj
+				`)
+				res, err := symbolicEval(n, state)
+				assert.NoError(t, err)
+				assert.Empty(t, state.errors())
+				assert.Equal(t, NewInexactObject(map[string]Serializable{
+					"list": NewList(NewInt(1)),
+				}, nil, map[string]Pattern{
+					"list": NewListPatternOf(&TypePattern{val: ANY_SERIALIZABLE}),
+				}), res)
+			})
+
+			t.Run("assignment of an index expression", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					obj = {
+						list: [0]
+					}
+					obj::list[0] = 1
+					return obj
+				`)
+				res, err := symbolicEval(n, state)
+				assert.NoError(t, err)
+				assert.Empty(t, state.errors())
+				assert.Equal(t, NewInexactObject(map[string]Serializable{
+					"list": NewListOf(ANY_INT),
+				}, nil, map[string]Pattern{
+					"list": NewListPatternOf(&TypePattern{val: ANY_INT}),
+				}), res)
+			})
+
+			t.Run("assignment of the member of an index expression", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					obj = {
+						list: [{a: 0}]
+					}
+					obj::list[0].a = 1
+					return obj
+				`)
+				res, err := symbolicEval(n, state)
+				assert.NoError(t, err)
+				assert.Empty(t, state.errors())
+
+				_ = res
+				//TODO
+
+				// assert.Equal(t, NewInexactObject(map[string]Serializable{
+				// 	"list": NewList(NewInexactObject(map[string]Serializable{
+				// 		"a": NewInt(1),
+				// 	}, nil, map[string]Pattern{
+				// 		"a": &TypePattern{val: ANY_INT},
+				// 	})),
+				// }, nil, map[string]Pattern{
+				// 	"list": NewListPatternOf(NewInexactObjectPattern(map[string]Pattern{
+				// 		"a": &TypePattern{val: ANY_INT},
+				// 	}, nil)),
+				// }), res)
+			})
+			//TODO: support deeper accesses
+		})
+
+		t.Run("accessed object properties should never be stored", func(t *testing.T) {
+			testCases := []struct {
+				input string
+			}{
+				{
+					input: `
+						obj = {list: []}
+						obj::list
+					`,
+				},
+				{
+					input: `
+						obj = {list: []}
+						a = obj::list
+					`,
+				},
+				{
+					input: `
+						obj = {list: []}
+						return obj::list
+					`,
+				},
+				{
+					input: `
+						fn print(arg){}
+						obj = {list: []}
+						print(obj::list)
+					`,
+				},
+				//index expression
+				{
+					input: `
+						obj = {list: [0]}
+						obj::list[0]
+					`,
+				},
+				{
+					input: `
+						obj = {list: [0]}
+						a = obj::list[0]
+					`,
+				},
+				{
+					input: `
+						obj = {list: [0]}
+						return obj::list[0]
+					`,
+				},
+				{
+					input: `
+						fn print(arg){}
+						obj = {list: [0]}
+						print(obj::list[0])
+					`,
+				},
+				//slice expression
+				{
+					input: `
+						obj = {list: [0]}
+						obj::list[0:1]
+					`,
+				},
+				{
+					input: `
+						obj = {list: [0]}
+						a = obj::list[0:1]
+					`,
+				},
+				{
+					input: `
+						obj = {list: [0]}
+						return obj::list[0:1]
+					`,
+				},
+				{
+					input: `
+						fn print(arg){}
+						obj = {list: [0]}
+						print(obj::list[0:1])
+					`,
+				},
+			}
+
+			for _, testCase := range testCases {
+				n, state := MakeTestStateAndChunk(testCase.input)
+				_, err := symbolicEval(n, state)
+
+				if !assert.NoError(t, err) {
+					return
+				}
+
+				errs := state.errors()
+				if !assert.Len(t, errs, 1) {
+					return
+				}
+
+				evalErr := errs[0]
+				assert.ErrorContains(t, evalErr, MISPLACED_DOUBLE_COLON_EXPR)
+			}
+
 		})
 	})
 

@@ -72,6 +72,7 @@ var (
 
 	SUPPORTED_PARSING_ERRORS = []parse.ParsingErrorKind{
 		parse.UnterminatedMemberExpr, parse.UnterminatedDoubleColonExpr,
+		parse.UnterminatedExtendStmt,
 		parse.MissingBlock, parse.MissingFnBody,
 		parse.MissingEqualsSignInDeclaration,
 		parse.MissingObjectPropertyValue,
@@ -4603,6 +4604,77 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 		return val, err
 	case *parse.XMLText:
 		return ANY_STR, nil
+	case *parse.ExtendStatement:
+		if n.Err != nil && n.Err.Kind() == parse.UnterminatedExtendStmt {
+			return nil, nil
+		}
+		pattern, err := symbolicallyEvalPatternNode(n.ExtendedPattern, state)
+		if err != nil {
+			return nil, err
+		}
+
+		if !IsConcretizable(pattern) {
+			state.addError(makeSymbolicEvalError(n.ExtendedPattern, state, EXTENDED_PATTERN_MUST_BE_CONCRETIZABLE_AT_CHECK_TIME))
+		}
+
+		objLit, ok := n.Extension.(*parse.ObjectLiteral)
+		if !ok {
+			// there is already a parsing error
+			return nil, nil
+		}
+
+		extendedValueIprops, _ := pattern.SymbolicValue().(IProps)
+
+		extension := TypeExtension{extendedPattern: pattern}
+
+		for _, prop := range objLit.Properties {
+			if prop.HasImplicitKey() {
+				state.addError(makeSymbolicEvalError(prop, state, KEYS_OF_EXT_OBJ_MUST_BE_VALID_INOX_IDENTS))
+				continue
+			}
+
+			key := prop.Name()
+			if extData.IsIndexKey(key) {
+				state.addError(makeSymbolicEvalError(prop.Key, state, KEYS_OF_EXT_OBJ_MUST_BE_VALID_INOX_IDENTS))
+				continue
+			}
+
+			expr, ok := parse.ParseExpression(key)
+			_, isIdent := expr.(*parse.IdentifierLiteral)
+			if !ok || !isIdent {
+				state.addError(makeSymbolicEvalError(prop.Key, state, KEYS_OF_EXT_OBJ_MUST_BE_VALID_INOX_IDENTS))
+				continue
+			}
+
+			if extendedValueIprops != nil {
+				if HasRequiredOrOptionalProperty(extendedValueIprops, key) {
+					state.addError(makeSymbolicEvalError(prop.Key, state, fmtExtendedValueAlreadyHasAnXProperty(key)))
+					continue
+				}
+			}
+
+			switch v := prop.Value.(type) {
+			case *parse.FunctionExpression:
+				extension.propertyExpressions = append(extension.propertyExpressions, propertyExpression{
+					name:   key,
+					method: v,
+				})
+			default:
+				extension.propertyExpressions = append(extension.propertyExpressions, propertyExpression{
+					name:       key,
+					expression: v,
+				})
+			}
+		}
+
+		for _, metaProp := range objLit.MetaProperties {
+			state.addError(makeSymbolicEvalError(metaProp, state, META_PROPERTIES_NOT_ALLOWED_IN_EXTENSION_OBJECT))
+		}
+
+		state.ctx.AddTypeExtension(extension)
+		state.symbolicData.SetContextData(n, state.ctx.currentData())
+
+		return nil, nil
 	case *parse.UnknownNode:
 		return ANY, nil
 	default:

@@ -6,6 +6,7 @@ import (
 
 	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/permkind"
+	"golang.org/x/exp/slices"
 )
 
 const INITIAL_NO_CHECK_FUEL = 10
@@ -24,6 +25,7 @@ type Context struct {
 	namedPatternPositionDefinitions     map[string]parse.SourcePositionRange
 	patternNamespaces                   map[string]*PatternNamespace
 	patternNamespacePositionDefinitions map[string]parse.SourcePositionRange
+	typeExtensions                      []TypeExtension
 }
 
 func NewSymbolicContext(startingConcreteContext, concreteContext ConcreteContext, parentContext *Context) *Context {
@@ -135,6 +137,28 @@ func (ctx *Context) ForEachPatternNamespace(fn func(name string, namespace *Patt
 	}
 }
 
+func (ctx *Context) AddTypeExtension(extension TypeExtension) {
+	ctx.typeExtensions = append(ctx.typeExtensions, extension)
+}
+
+func (ctx *Context) GetExtensions(v SymbolicValue) (extensions []TypeExtension) {
+	for _, extension := range ctx.typeExtensions {
+		if extension.extendedPattern.TestValue(v) {
+			extensions = append(extensions, extension)
+		}
+	}
+
+	slices.SortFunc(extensions, func(a, b TypeExtension) int {
+		if a.extendedPattern.Test(b.extendedPattern) {
+			return 0
+		}
+		return 0
+	})
+	//
+
+	return
+}
+
 func (ctx *Context) AddSymbolicGoFunctionError(msg string) {
 	ctx.associatedState.addSymbolicGoFunctionError(msg)
 }
@@ -188,6 +212,8 @@ func (ctx *Context) currentData() (data ContextData) {
 			ctx.patternNamespacePositionDefinitions[name], //ok if zero value
 		})
 	}
+
+	data.Extensions = slices.Clone(ctx.typeExtensions)
 
 	return data
 }

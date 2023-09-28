@@ -482,6 +482,7 @@ type VarData struct {
 type ContextData struct {
 	Patterns          []NamedPatternData     //the slice is potentially shared between several ContextData
 	PatternNamespaces []PatternNamespaceData //the slice is potentially shared between several ContextData
+	Extensions        []TypeExtension
 }
 
 type NamedPatternData struct {

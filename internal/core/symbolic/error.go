@@ -90,6 +90,12 @@ const (
 
 	OPERANDS_OF_BINARY_RANGE_EXPRS_SHOULD_BE_SERIALIZABLE = "operands of binary range expressions should be serializable"
 	LOCAL_VARIABLE_ANNOTATION_MUST_BE_A_PATTERN           = "local variable annotation must be a pattern"
+
+	//extend statement
+	EXTENDED_PATTERN_MUST_BE_CONCRETIZABLE_AT_CHECK_TIME = "extended pattern must be concretizable at check time (example of non concretizable pattern: %{a: $runtime-value})"
+	KEYS_OF_EXT_OBJ_MUST_BE_VALID_INOX_IDENTS            = "keys of the extension object must be valid Inox identifiers (e.g. total, first-name, total_count). Implicit and index-like keys are not allowed"
+	META_PROPERTIES_NOT_ALLOWED_IN_EXTENSION_OBJECT      = "metaproperties are not allowed in the extension object"
+
 	THIS_VAL_IS_AN_OPT_LIT_DID_YOU_FORGET_A_SPACE = "this value is an option literal, did you forget a space between '-' and the variable name ?"
 )
 
@@ -466,6 +472,10 @@ func fmtStringConcatInvalidElementOfType(v SymbolicValue) string {
 
 func fmtDidYouForgetLeadingPercent(path string) string {
 	return fmt.Sprintf("did you forget a leading `%%` symbol ? `%s` is a path, you probably meant the following path pattern: %%%s", path, path)
+}
+
+func fmtExtendedValueAlreadyHasAnXProperty(name string) string {
+	return fmt.Sprintf("extended value already has a(n) %q property", name)
 }
 
 func FmtPropertyPatternError(name string, err error) error {
