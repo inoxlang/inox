@@ -3588,8 +3588,21 @@ object_literal_top_loop:
 
 			p.eatSpace()
 
-			if p.i >= p.len || p.s[p.i] == '}' {
-				break object_literal_top_loop
+			if p.i >= p.len || p.s[p.i] == '}' || p.s[p.i] == ',' { //missing value
+				if propParsingErr == nil {
+					propParsingErr = &ParsingError{MissingObjectPropertyValue, MISSING_PROPERTY_VALUE}
+				}
+				properties = append(properties, &ObjectProperty{
+					NodeBase: NodeBase{
+						Span:   NodeSpan{propSpanStart, p.i},
+						Err:    propParsingErr,
+						Tokens: entryTokens,
+					},
+					Key:  key,
+					Type: type_,
+				})
+
+				goto step_end
 			}
 
 			if p.s[p.i] == '\n' {

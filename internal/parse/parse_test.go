@@ -8695,6 +8695,40 @@ func testParse(
 				},
 			},
 			{
+				input:    "{ a:}",
+				hasError: true,
+				result: &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 5}, nil, nil},
+					Statements: []Node{
+						&ObjectLiteral{
+							NodeBase: NodeBase{
+								NodeSpan{0, 5},
+								nil,
+								[]Token{
+									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{0, 1}},
+									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{4, 5}},
+								},
+							},
+							Properties: []*ObjectProperty{
+								{
+									NodeBase: NodeBase{
+										NodeSpan{2, 4},
+										&ParsingError{MissingObjectPropertyValue, MISSING_PROPERTY_VALUE},
+										[]Token{
+											{Type: COLON, Span: NodeSpan{3, 4}},
+										},
+									},
+									Key: &IdentifierLiteral{
+										NodeBase: NodeBase{NodeSpan{2, 3}, nil, nil},
+										Name:     "a",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			{
 				input:    "{ a %int: 1 }",
 				hasError: false,
 				result: &Chunk{
@@ -10136,6 +10170,40 @@ func testParse(
 										NodeBase: NodeBase{NodeSpan{7, 8}, nil, nil},
 										Raw:      "1",
 										Value:    1,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			{
+				input:    "#{ a:}",
+				hasError: true,
+				result: &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 6}, nil, nil},
+					Statements: []Node{
+						&RecordLiteral{
+							NodeBase: NodeBase{
+								NodeSpan{0, 6},
+								nil,
+								[]Token{
+									{Type: OPENING_RECORD_BRACKET, Span: NodeSpan{0, 2}},
+									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{5, 6}},
+								},
+							},
+							Properties: []*ObjectProperty{
+								{
+									NodeBase: NodeBase{
+										NodeSpan{3, 5},
+										&ParsingError{MissingObjectPropertyValue, MISSING_PROPERTY_VALUE},
+										[]Token{
+											{Type: COLON, Span: NodeSpan{4, 5}},
+										},
+									},
+									Key: &IdentifierLiteral{
+										NodeBase: NodeBase{NodeSpan{3, 4}, nil, nil},
+										Name:     "a",
 									},
 								},
 							},

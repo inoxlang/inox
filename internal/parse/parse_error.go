@@ -14,6 +14,7 @@ const (
 	MissingBlock
 	MissingFnBody
 	MissingEqualsSignInDeclaration
+	MissingObjectPropertyValue
 	ExtractionExpressionExpected
 	InvalidNext
 	//TODO: add more kinds
@@ -355,6 +356,7 @@ const (
 	//object literals
 	INVALID_OBJ_REC_LIT_ENTRY_SEPARATION       = "invalid object/record literal, each entry should be followed by '}', newline, or ','."
 	INVALID_OBJ_REC_LIT_SPREAD_SEPARATION      = "invalid object/record literal, a spread should be followed by '}', newline or ','."
+	MISSING_PROPERTY_VALUE                     = "missing property value"
 	UNEXPECTED_NEWLINE_AFTER_COLON             = "unexpected newline after colon"
 	ONLY_EXPLICIT_KEY_CAN_HAVE_A_TYPE_ANNOT    = "only explicit keys can have a type annotation"
 	METAPROP_KEY_CANNOT_HAVE_A_TYPE_ANNOT      = "metaproperty keys cannot have a type annotation"
