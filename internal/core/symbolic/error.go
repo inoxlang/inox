@@ -90,6 +90,7 @@ const (
 
 	OPERANDS_OF_BINARY_RANGE_EXPRS_SHOULD_BE_SERIALIZABLE = "operands of binary range expressions should be serializable"
 	LOCAL_VARIABLE_ANNOTATION_MUST_BE_A_PATTERN           = "local variable annotation must be a pattern"
+	THIS_VAL_IS_AN_OPT_LIT_DID_YOU_FORGET_A_SPACE = "this value is an option literal, did you forget a space between '-' and the variable name ?"
 )
 
 var (

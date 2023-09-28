@@ -335,6 +335,10 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 	case *parse.URLQueryParameterValueSlice:
 		return ANY_STR, nil
 	case *parse.FlagLiteral:
+		if _, hasVar := state.get(n.Name); hasVar {
+			state.addWarning(makeSymbolicEvalWarning(node, state, THIS_VAL_IS_AN_OPT_LIT_DID_YOU_FORGET_A_SPACE))
+		}
+
 		return NewOption(n.Name, TRUE), nil
 	case *parse.OptionExpression:
 		v, err := symbolicEval(n.Value, state)

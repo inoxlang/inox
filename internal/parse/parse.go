@@ -3292,7 +3292,7 @@ func (p *parser) parseListTuplePatternLiteral(percentPrefixed, isTuplePattern bo
 	}
 
 	var generalElement Node
-	if p.i < p.len && (p.s[p.i] == '%' || isFirstIdentChar(p.s[p.i]) || isOpeningDelim(p.s[p.i]) || p.s[p.i] == '#') {
+	if p.i < p.len && (p.s[p.i] == '%' || IsFirstIdentChar(p.s[p.i]) || isOpeningDelim(p.s[p.i]) || p.s[p.i] == '#') {
 		if len32(elements) > 0 {
 			parsingErr = &ParsingError{UnspecifiedParsingError, INVALID_LIST_TUPLE_PATT_GENERAL_ELEMENT_IF_ELEMENTS}
 		} else {
@@ -7124,7 +7124,7 @@ func (p *parser) parseSingleLocalVarDeclaration(declarations *[]*LocalVariableDe
 	p.eatSpace()
 
 	isAcceptedFirstTypeChar := func(r rune) bool {
-		return r == '%' || r == '#' || isFirstIdentChar(r) || isOpeningDelim(r)
+		return r == '%' || r == '#' || IsFirstIdentChar(r) || isOpeningDelim(r)
 	}
 
 	if p.i >= p.len || (p.s[p.i] != '=' && !isAcceptedFirstTypeChar(p.s[p.i])) {
@@ -10875,7 +10875,7 @@ func IsIdentChar(r rune) bool {
 	return isAlpha(r) || isDecDigit(r) || r == '-' || r == '_'
 }
 
-func isFirstIdentChar(r rune) bool {
+func IsFirstIdentChar(r rune) bool {
 	return isAlpha(r) || r == '_'
 }
 
@@ -11053,7 +11053,7 @@ func isAcceptedReturnTypeStart(runes []rune, i int32) bool {
 	case '#':
 		return i < len32(runes)-1 && (runes[i+1] == '{' || runes[i+1] == '[')
 	default:
-		return isFirstIdentChar(runes[i])
+		return IsFirstIdentChar(runes[i])
 	}
 }
 
