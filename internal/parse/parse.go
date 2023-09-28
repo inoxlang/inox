@@ -1170,19 +1170,44 @@ func (p *parser) parseDotStartingExpression() Node {
 }
 
 // parseDashStartingExpression parses all expressions that start with a dash: numbers, numbers ranges, options and unquoted strings
-func (p *parser) parseDashStartingExpression() Node {
+func (p *parser) parseDashStartingExpression(precededByOpeningParen bool) Node {
 	p.panicIfContextDone()
 
 	__start := p.i
 
 	p.i++
-	if p.i >= p.len || unicode.IsSpace(p.s[p.i]) {
+	if p.i >= p.len || isEndOfLine(p.s, p.i) {
 		return &UnquotedStringLiteral{
 			NodeBase: NodeBase{
 				Span: NodeSpan{__start, p.i},
 			},
 			Raw:   "-",
 			Value: "-",
+		}
+	}
+
+	if isSpaceNotLF(p.s[p.i]) || (precededByOpeningParen && p.s[p.i+1] != '-') {
+		p.eatSpace()
+
+		if precededByOpeningParen || p.i >= p.len || isUnpairedOrIsClosingDelim(p.s[p.i]) {
+			return &UnquotedStringLiteral{
+				NodeBase: NodeBase{
+					Span: NodeSpan{__start, __start + 1},
+				},
+				Raw:   "-",
+				Value: "-",
+			}
+		}
+
+		operand, _ := p.parseExpression()
+
+		return &UnaryExpression{
+			NodeBase: NodeBase{
+				Span:   NodeSpan{__start, p.i},
+				Tokens: []Token{{Type: MINUS, Span: NodeSpan{__start, __start + 1}}},
+			},
+			Operator: NumberNegate,
+			Operand:  operand,
 		}
 	}
 
@@ -4671,7 +4696,7 @@ func (p *parser) parseUnaryBinaryAndParenthesizedExpression(openingParenIndex in
 		}
 	}
 
-	if stringLiteral, ok := left.(*UnquotedStringLiteral); ok && stringLiteral.Value == "-" && p.i > left.Base().Span.End {
+	if stringLiteral, ok := left.(*UnquotedStringLiteral); ok && stringLiteral.Value == "-" {
 
 		operand, _ := p.parseExpression()
 		p.eatSpace()
@@ -6418,7 +6443,7 @@ func (p *parser) parseExpression(precededByOpeningParen ...bool) (expr Node, isM
 	case '.':
 		return p.parseDotStartingExpression(), false
 	case '-':
-		return p.parseDashStartingExpression(), false
+		return p.parseDashStartingExpression(len(precededByOpeningParen) > 0 && precededByOpeningParen[0]), false
 	case '#':
 		if p.i < p.len-1 {
 			switch p.s[p.i+1] {
@@ -11090,6 +11115,7 @@ func hasStaticallyKnownValue(node Node) (result bool) {
 
 	return
 }
+
 func len32[T any](arg []T) int32 {
 	return int32(len(arg))
 }

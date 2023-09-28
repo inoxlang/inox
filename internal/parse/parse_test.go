@@ -6496,24 +6496,6 @@ func testParse(
 				},
 			},
 
-			`- 2`: {
-				result: &Chunk{
-					NodeBase: NodeBase{NodeSpan{0, 3}, nil, nil},
-					Statements: []Node{
-						&UnquotedStringLiteral{
-							NodeBase: NodeBase{NodeSpan{0, 1}, nil, nil},
-							Raw:      `-`,
-							Value:    `-`,
-						},
-						&IntLiteral{
-							NodeBase: NodeBase{NodeSpan{2, 3}, nil, nil},
-							Raw:      "2",
-							Value:    2,
-						},
-					},
-				},
-			},
-
 			`-- 2`: {
 				result: &Chunk{
 					NodeBase: NodeBase{NodeSpan{0, 4}, nil, nil},
@@ -13350,7 +13332,50 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("unary expression : number negate", func(t *testing.T) {
+		t.Run("unary expression: number negation", func(t *testing.T) {
+			n := mustparseChunk(t, "- 2")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 3}, nil, nil},
+				Statements: []Node{
+					&UnaryExpression{
+						NodeBase: NodeBase{
+							NodeSpan{0, 3},
+							nil,
+							[]Token{{Type: MINUS, Span: NodeSpan{0, 1}}},
+						},
+						Operator: NumberNegate,
+						Operand: &IntLiteral{
+							NodeBase: NodeBase{NodeSpan{2, 3}, nil, nil},
+							Raw:      "2",
+							Value:    2,
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("unary expression: variable negation", func(t *testing.T) {
+			n := mustparseChunk(t, "- a")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 3}, nil, nil},
+				Statements: []Node{
+					&UnaryExpression{
+						NodeBase: NodeBase{
+							NodeSpan{0, 3},
+							nil,
+							[]Token{{Type: MINUS, Span: NodeSpan{0, 1}}},
+						},
+						Operator: NumberNegate,
+						Operand: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{2, 3}, nil, nil},
+							Name:     "a",
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("unary expression: parenthesized number negation", func(t *testing.T) {
 			n := mustparseChunk(t, "(- 2)")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 5}, nil, nil},
