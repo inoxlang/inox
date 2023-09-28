@@ -14048,6 +14048,80 @@ func testParse(
 			}, n)
 		})
 
+		t.Run("addition with first operand being an unparenthesized number negation", func(t *testing.T) {
+			n := mustparseChunk(t, "(-$a + $b)")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 10}, nil, nil},
+				Statements: []Node{
+					&BinaryExpression{
+						NodeBase: NodeBase{
+							NodeSpan{0, 10},
+							nil,
+							[]Token{
+								{Type: OPENING_PARENTHESIS, Span: NodeSpan{0, 1}},
+								{Type: PLUS, Span: NodeSpan{5, 6}},
+								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{9, 10}},
+							},
+						},
+						Operator: Add,
+						Left: &UnaryExpression{
+							NodeBase: NodeBase{
+								NodeSpan{1, 4},
+								nil,
+								[]Token{{Type: MINUS, Span: NodeSpan{1, 2}}},
+							},
+							Operator: NumberNegate,
+							Operand: &Variable{
+								NodeBase: NodeBase{NodeSpan{2, 4}, nil, nil},
+								Name:     "a",
+							},
+						},
+						Right: &Variable{
+							NodeBase: NodeBase{NodeSpan{7, 9}, nil, nil},
+							Name:     "b",
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("addition with second operand being an unparenthesized number negation", func(t *testing.T) {
+			n := mustparseChunk(t, "($a + -$b)")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 10}, nil, nil},
+				Statements: []Node{
+					&BinaryExpression{
+						NodeBase: NodeBase{
+							NodeSpan{0, 10},
+							nil,
+							[]Token{
+								{Type: OPENING_PARENTHESIS, Span: NodeSpan{0, 1}},
+								{Type: PLUS, Span: NodeSpan{4, 5}},
+								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{9, 10}},
+							},
+						},
+						Operator: Add,
+						Left: &Variable{
+							NodeBase: NodeBase{NodeSpan{1, 3}, nil, nil},
+							Name:     "a",
+						},
+						Right: &UnaryExpression{
+							NodeBase: NodeBase{
+								NodeSpan{6, 9},
+								nil,
+								[]Token{{Type: MINUS, Span: NodeSpan{6, 7}}},
+							},
+							Operator: NumberNegate,
+							Operand: &Variable{
+								NodeBase: NodeBase{NodeSpan{7, 9}, nil, nil},
+								Name:     "b",
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
 		t.Run("match with unprefixed pattern", func(t *testing.T) {
 			n := mustparseChunk(t, "(o match {})")
 			assert.EqualValues(t, &Chunk{

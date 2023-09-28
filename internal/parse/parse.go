@@ -1186,7 +1186,7 @@ func (p *parser) parseDashStartingExpression(precededByOpeningParen bool) Node {
 		}
 	}
 
-	if isSpaceNotLF(p.s[p.i]) || (precededByOpeningParen && p.s[p.i+1] != '-') {
+	if p.s[p.i] != '-' && (isSpaceNotLF(p.s[p.i]) || precededByOpeningParen || p.s[p.i] == '$' || p.s[p.i] == '(') {
 		p.eatSpace()
 
 		if precededByOpeningParen || p.i >= p.len || isUnpairedOrIsClosingDelim(p.s[p.i]) {
@@ -4697,28 +4697,30 @@ func (p *parser) parseUnaryBinaryAndParenthesizedExpression(openingParenIndex in
 	}
 
 	if stringLiteral, ok := left.(*UnquotedStringLiteral); ok && stringLiteral.Value == "-" {
-
 		operand, _ := p.parseExpression()
-		p.eatSpace()
 
-		var parsingErr *ParsingError
-		if p.i >= p.len || p.s[p.i] != ')' {
-			if !hasPreviousOperator {
-				parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_UNARY_EXPR_MISSING_OPERAND}
-			}
-		} else if !hasPreviousOperator {
-			tokens = append(tokens, Token{Type: MINUS, Span: left.Base().Span}, Token{Type: CLOSING_PARENTHESIS, Span: NodeSpan{p.i, p.i + 1}})
-			p.i++
-		}
-		return &UnaryExpression{
+		var minusToken = Token{Type: MINUS, Span: left.Base().Span}
+
+		unaryExpr := &UnaryExpression{
 			NodeBase: NodeBase{
-				Span:   NodeSpan{startIndex, p.i},
-				Err:    parsingErr,
-				Tokens: tokens,
+				Span:   NodeSpan{stringLiteral.Span.Start, p.i},
+				Tokens: []Token{minusToken},
 			},
 			Operator: NumberNegate,
 			Operand:  operand,
 		}
+
+		p.eatSpace()
+
+		if !hasPreviousOperator && p.s[p.i] == ')' {
+			unaryExpr.Tokens[0] = tokens[0] //opening parenthesis
+			unaryExpr.Tokens = append(unaryExpr.Tokens, minusToken, Token{Type: CLOSING_PARENTHESIS, Span: NodeSpan{p.i, p.i + 1}})
+			unaryExpr.Span = NodeSpan{startIndex, p.i + 1}
+			p.i++
+			return unaryExpr
+		}
+
+		left = unaryExpr
 	}
 
 	if p.i < p.len && p.s[p.i] == ')' { //parenthesized
