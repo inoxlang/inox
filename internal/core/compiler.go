@@ -1106,11 +1106,36 @@ func (c *compiler) Compile(node parse.Node) error {
 
 		c.emit(node, op, c.addConstant(Str(node.PropertyName.Name)))
 	case *parse.DoubleColonExpression:
-		if err := c.Compile(node.Left); err != nil {
-			return err
-		}
+		symbolicExtension, ok := c.symbolicData.GetUsedTypeExtension(node)
+		if ok {
+			c.emit(node, OpGetSelf) //push current self on the stack
+			if err := c.Compile(node.Left); err != nil {
+				return err
+			}
+			c.emit(node, OpSetSelf)
 
-		c.emit(node, OpDoubleColonResolve, c.addConstant(Str(node.Element.Name)))
+			for _, prop := range symbolicExtension.Statement.Extension.(*parse.ObjectLiteral).Properties {
+				if prop.Name() != node.Element.Name {
+					continue
+				}
+
+				_, ok := prop.Value.(*parse.FunctionExpression)
+				if ok {
+					panic(ErrUnreachable)
+				}
+				if err := c.Compile(prop.Value); err != nil {
+					return err
+				}
+			}
+			c.emit(node, OpSwap)    //move saved self at the top of the stack
+			c.emit(node, OpSetSelf) //restore self
+		} else {
+			if err := c.Compile(node.Left); err != nil {
+				return err
+			}
+
+			c.emit(node, OpObjPropNotStored, c.addConstant(Str(node.Element.Name)))
+		}
 	case *parse.ComputedMemberExpression:
 		if err := c.Compile(node.Left); err != nil {
 			return err
@@ -1538,11 +1563,22 @@ func (c *compiler) Compile(node parse.Node) error {
 			c.emit(callee, OpCopyTop)
 			c.emit(callee, OpMemb, c.addConstant(Str(callee.PropertyName.Name)))
 		case *parse.DoubleColonExpression:
-			if err := c.Compile(callee.Left); err != nil {
-				return err
+			symbolicExtension, ok := c.symbolicData.GetUsedTypeExtension(callee)
+			if ok {
+				c.emit(callee, OpGetSelf) //push current self on the stack
+				if err := c.Compile(callee.Left); err != nil {
+					return err
+				}
+				c.emit(callee, OpExtensionMethod, c.addConstant(Str(symbolicExtension.Id)), c.addConstant(Str(callee.Element.Name)))
+				c.emit(callee, OpMoveThirdTop) //move saved self at the top of the stack
+				c.emit(callee, OpSetSelf)      //restore self
+			} else {
+				if err := c.Compile(callee.Left); err != nil {
+					return err
+				}
+				c.emit(callee, OpCopyTop)
+				c.emit(callee, OpObjPropNotStored, c.addConstant(Str(callee.Element.Name)))
 			}
-			c.emit(callee, OpCopyTop)
-			c.emit(callee, OpDoubleColonResolve, c.addConstant(Str(callee.Element.Name)))
 		default:
 			c.emit(callee, OpPushNil) //no self
 			if err := c.Compile(callee); err != nil {
@@ -1989,6 +2025,40 @@ func (c *compiler) Compile(node parse.Node) error {
 	case *parse.XMLText:
 		str := Str(html.EscapeString(node.Value))
 		c.emit(node, OpPushConstant, c.addConstant(str))
+	case *parse.ExtendStatement:
+		if err := c.Compile(node.ExtendedPattern); err != nil {
+			return err
+		}
+
+		extendStmtConstIndex := c.addConstant(AstNode{Node: node})
+
+		lastCtxData, ok := c.symbolicData.GetContextData(node, nil)
+		if !ok {
+			panic(ErrUnreachable)
+		}
+		symbolicExtension := lastCtxData.Extensions[len(lastCtxData.Extensions)-1]
+
+		if symbolicExtension.Statement != node {
+			panic(ErrUnreachable)
+		}
+
+		objLit := node.Extension.(*parse.ObjectLiteral)
+		methodCount := 0
+
+		for _, prop := range objLit.Properties {
+			fnExpr, ok := prop.Value.(*parse.FunctionExpression)
+
+			if !ok {
+				continue
+			}
+
+			if err := c.Compile(fnExpr); err != nil {
+				return err
+			}
+			methodCount++
+		}
+		c.emit(node, OpCreateList, methodCount)
+		c.emit(node, OpCreateAddTypeExtension, extendStmtConstIndex)
 	default:
 		return fmt.Errorf("cannot compile %T", node)
 	}

@@ -511,7 +511,6 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 				if propExpr.name != elementName {
 					continue
 				}
-				//extension methods should never be accessible
 				if propExpr.method != nil {
 					callee = propExpr.method
 				} else {

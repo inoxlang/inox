@@ -489,6 +489,14 @@ func (v *VM) run() {
 			temp := v.stack[v.sp-1]
 			v.stack[v.sp-1] = v.stack[v.sp-2]
 			v.stack[v.sp-2] = temp
+		case OpMoveThirdTop:
+			third := v.stack[v.sp-3]
+			second := v.stack[v.sp-2]
+			top := v.stack[v.sp-1]
+
+			v.stack[v.sp-1] = third
+			v.stack[v.sp-2] = top
+			v.stack[v.sp-3] = second
 		case OpPushTrue:
 			v.stack[v.sp] = True
 			v.sp++
@@ -1529,17 +1537,40 @@ func (v *VM) run() {
 
 			memb := object.(IProps).Prop(v.global.Ctx, memberName)
 			v.stack[v.sp-1] = memb
-		case OpDoubleColonResolve:
+		case OpObjPropNotStored:
 			val := v.stack[v.sp-1]
 			v.ip += 2
 			memberNameIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
 			memberName := string(v.constants[memberNameIndex].(Str))
 
-			var memb Value
 			object := val.(*Object)
-			memb = object.PropNotStored(v.global.Ctx, memberName)
-
+			memb := object.PropNotStored(v.global.Ctx, memberName)
 			v.stack[v.sp-1] = memb
+		case OpExtensionMethod:
+			v.ip += 4
+			extensionIdIndex := int(v.curInsts[v.ip-2]) | int(v.curInsts[v.ip-3])<<8
+			extensionId := v.constants[extensionIdIndex].(Str).GetOrBuildString()
+
+			memberNameIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
+			memberName := string(v.constants[memberNameIndex].(Str))
+
+			extension := v.global.Ctx.GetTypeExtension(extensionId)
+			var method *InoxFunction
+
+			for _, propExpr := range extension.propertyExpressions {
+				if propExpr.name == memberName {
+					method = propExpr.method
+					break
+				}
+			}
+
+			if method == nil {
+				v.err = fmt.Errorf("%w: extension method should have been found", ErrUnreachable)
+				return
+			}
+
+			v.stack[v.sp] = method
+			v.sp++
 		case OpOptionalMemb:
 			object := v.stack[v.sp-1]
 			v.ip += 2
@@ -1705,6 +1736,9 @@ func (v *VM) run() {
 		case OpGetSelf:
 			v.stack[v.sp] = v.curFrame.self
 			v.sp++
+		case OpSetSelf:
+			v.curFrame.self = v.stack[v.sp-1]
+			v.sp--
 		case OpIterInit:
 			v.ip++
 			hasConfig := v.curInsts[v.ip]
@@ -2094,6 +2128,55 @@ func (v *VM) run() {
 
 			v.stack[v.sp] = NewXmlElement(tagName, attributes, children)
 			v.sp++
+		case OpCreateAddTypeExtension:
+			v.ip += 2
+			extendStmtIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
+			extendStmt := v.constants[extendStmtIndex].(AstNode).Node.(*parse.ExtendStatement)
+
+			extendedPattern := v.stack[v.sp-2].(Pattern)
+			methodList := v.stack[v.sp-1].(*List)
+
+			lastCtxData, ok := v.global.SymbolicData.GetContextData(extendStmt, nil)
+			if !ok {
+				panic(ErrUnreachable)
+			}
+			symbolicExtension := lastCtxData.Extensions[len(lastCtxData.Extensions)-1]
+
+			if symbolicExtension.Statement != extendStmt {
+				panic(ErrUnreachable)
+			}
+
+			extension := &TypeExtension{
+				extendedPattern:   extendedPattern,
+				symbolicExtension: symbolicExtension,
+			}
+
+			for _, symbolicPropExpr := range symbolicExtension.PropertyExpressions {
+				if symbolicPropExpr.Expression != nil {
+					extension.propertyExpressions = append(extension.propertyExpressions, propertyExpression{
+						name:       symbolicPropExpr.Name,
+						expression: symbolicPropExpr.Expression,
+					})
+				}
+			}
+
+			methodIndex := 0
+			for _, prop := range extendStmt.Extension.(*parse.ObjectLiteral).Properties {
+				_, ok := prop.Value.(*parse.FunctionExpression)
+
+				if !ok {
+					continue
+				}
+
+				extension.propertyExpressions = append(extension.propertyExpressions, propertyExpression{
+					name:   prop.Name(),
+					method: methodList.At(v.global.Ctx, methodIndex).(*InoxFunction),
+				})
+				methodIndex++
+			}
+
+			v.global.Ctx.AddTypeExtension(extension)
+			v.sp -= 2
 		case OpSendValue:
 			value := v.stack[v.sp-2]
 			receiver, ok := v.stack[v.sp-1].(MessageReceiver)

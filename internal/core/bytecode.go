@@ -128,6 +128,7 @@ const (
 	OpPop
 	OpCopyTop
 	OpSwap
+	OpMoveThirdTop //move third element at the top of the stack & shift the two others
 	OpPushTrue
 	OpPushFalse
 	OpEqual
@@ -191,6 +192,7 @@ const (
 	OpCreateLifetimeJob
 	OpCreateReceptionHandler
 	OpCreateXMLelem
+	OpCreateAddTypeExtension
 	OpSendValue
 	OpSpreadObjectPattern
 	OpSpreadRecordPattern
@@ -208,6 +210,7 @@ const (
 	OpGetLocal
 	OpSetLocal
 	OpGetSelf
+	OpSetSelf
 	OpResolveHost
 	OpAddHostAlias
 	OpResolvePattern
@@ -233,7 +236,8 @@ const (
 	OpConcat
 	OpRange
 	OpMemb
-	OpDoubleColonResolve
+	OpObjPropNotStored
+	OpExtensionMethod
 	OpOptionalMemb
 	OpComputedMemb
 	OpDynMemb
@@ -253,6 +257,7 @@ var OpcodeNames = [...]string{
 	OpPop:                          "POP",
 	OpCopyTop:                      "COPY_TOP",
 	OpSwap:                         "SWAP",
+	OpMoveThirdTop:                 "SWAP_THIRD",
 	OpPushTrue:                     "PUSH_TRUE",
 	OpPushFalse:                    "PUSH_FALSE",
 	OpEqual:                        "EQUAL",
@@ -316,6 +321,7 @@ var OpcodeNames = [...]string{
 	OpCreateLifetimeJob:            "CRT_LFJOB",
 	OpCreateReceptionHandler:       "CRT_RHANDLER",
 	OpCreateXMLelem:                "CRT_XML_ELEM",
+	OpCreateAddTypeExtension:       "CRT_ADD_TYPE_EXT",
 	OpSendValue:                    "SEND_VAL",
 	OpSpreadObjectPattern:          "SPRD_OBJP",
 	OpSpreadRecordPattern:          "SPRD_RECP",
@@ -336,6 +342,7 @@ var OpcodeNames = [...]string{
 	OpGetLocal:                     "GET_LOCAL",
 	OpSetLocal:                     "SET_LOCAL",
 	OpGetSelf:                      "GET_SELF",
+	OpSetSelf:                      "SET_SELF",
 	OpResolveHost:                  "RSLV_HOST",
 	OpAddHostAlias:                 "ADD_HALIAS",
 	OpResolvePattern:               "RSLV_PATT",
@@ -358,7 +365,8 @@ var OpcodeNames = [...]string{
 	OpConcat:                       "CONCAT",
 	OpRange:                        "RANGE",
 	OpMemb:                         "MEMB",
-	OpDoubleColonResolve:           "DBLC_COLON_RESOLVE",
+	OpObjPropNotStored:             "OBJ_PROP_NOT_STORED",
+	OpExtensionMethod:              "EXT_METHOD",
 	OpOptionalMemb:                 "OPT_MEMB",
 	OpComputedMemb:                 "COMPUTED_MEMB",
 	OpDynMemb:                      "DYN_MEMB",
@@ -378,6 +386,7 @@ var OpcodeOperands = [...][]int{
 	OpPop:                          {},
 	OpCopyTop:                      {},
 	OpSwap:                         {},
+	OpMoveThirdTop:                 {},
 	OpPushTrue:                     {},
 	OpPushFalse:                    {},
 	OpEqual:                        {},
@@ -443,6 +452,7 @@ var OpcodeOperands = [...][]int{
 	OpCreateLifetimeJob:            {2},
 	OpCreateReceptionHandler:       {},
 	OpCreateXMLelem:                {2, 1, 1},
+	OpCreateAddTypeExtension:       {2},
 	OpSendValue:                    {},
 	OpSpreadObjectPattern:          {},
 	OpSpreadRecordPattern:          {},
@@ -457,6 +467,7 @@ var OpcodeOperands = [...][]int{
 	OpGetLocal:                     {1},
 	OpSetLocal:                     {1},
 	OpGetSelf:                      {},
+	OpSetSelf:                      {},
 	OpResolveHost:                  {2},
 	OpAddHostAlias:                 {2},
 	OpResolvePattern:               {2},
@@ -482,7 +493,8 @@ var OpcodeOperands = [...][]int{
 	OpConcat:                       {1, 2},
 	OpRange:                        {1},
 	OpMemb:                         {2},
-	OpDoubleColonResolve:           {2},
+	OpObjPropNotStored:             {2},
+	OpExtensionMethod:              {2, 2},
 	OpOptionalMemb:                 {2},
 	OpComputedMemb:                 {},
 	OpDynMemb:                      {2},
@@ -501,6 +513,7 @@ var OpcodeConstantIndexes = [...][]bool{
 	OpPop:                          {},
 	OpCopyTop:                      {},
 	OpSwap:                         {},
+	OpMoveThirdTop:                 {},
 	OpPushTrue:                     {},
 	OpPushFalse:                    {},
 	OpEqual:                        {},
@@ -566,6 +579,7 @@ var OpcodeConstantIndexes = [...][]bool{
 	OpCreateLifetimeJob:            {true},
 	OpCreateReceptionHandler:       {},
 	OpCreateXMLelem:                {true, false, false},
+	OpCreateAddTypeExtension:       {true},
 	OpSendValue:                    {},
 	OpSpreadObjectPattern:          {},
 	OpSpreadRecordPattern:          {},
@@ -581,6 +595,7 @@ var OpcodeConstantIndexes = [...][]bool{
 	OpGetLocal:                     {false},
 	OpSetLocal:                     {false},
 	OpGetSelf:                      {},
+	OpSetSelf:                      {},
 	OpResolveHost:                  {true},
 	OpAddHostAlias:                 {true},
 	OpResolvePattern:               {true},
@@ -606,7 +621,8 @@ var OpcodeConstantIndexes = [...][]bool{
 	OpConcat:                       {false, true},
 	OpRange:                        {false},
 	OpMemb:                         {true},
-	OpDoubleColonResolve:           {true},
+	OpObjPropNotStored:             {true},
+	OpExtensionMethod:              {true, true},
 	OpOptionalMemb:                 {true},
 	OpComputedMemb:                 {},
 	OpDynMemb:                      {true},
