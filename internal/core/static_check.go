@@ -2050,6 +2050,18 @@ func checkManifestObject(args manifestStaticCheckArguments) {
 			default:
 				onError(p, DATABASES_SECTION_SHOULD_BE_AN_OBJECT_OR_ABS_PATH)
 			}
+		case MANIFEST_INVOCATION_SECTION_NAME:
+			if args.embeddedModule {
+				onError(p, INVOCATION_SECTION_NOT_AVAILABLE_IN_EMBEDDED_MODULE_MANIFESTS)
+				continue
+			}
+
+			switch propVal := p.Value.(type) {
+			case *parse.ObjectLiteral:
+				checkInvocationObject(propVal, objLit, onError, args.project)
+			default:
+				onError(p, INVOCATION_SECTION_SHOULD_BE_AN_OBJECT)
+			}
 		case MANIFEST_PARAMS_SECTION_NAME:
 			if args.embeddedModule {
 				onError(p, PARAMS_SECTION_NOT_AVAILABLE_IN_EMBEDDED_MODULE_MANIFESTS)
@@ -2342,6 +2354,47 @@ func checkDatabasesObject(obj *parse.ObjectLiteral, onError func(n parse.Node, m
 
 		if !resolutionDataFound {
 			onError(p, fmtMissingPropInDatabaseDescription(MANIFEST_DATABASE__RESOLUTION_DATA_PROP_NAME, dbName))
+		}
+	}
+}
+
+func checkInvocationObject(obj *parse.ObjectLiteral, manifestObj *parse.ObjectLiteral, onError func(n parse.Node, msg string), project Project) {
+
+	for _, p := range obj.Properties {
+		if p.Value == nil {
+			continue
+		}
+
+		if p.HasImplicitKey() {
+			continue
+		}
+
+		switch p.Name() {
+		case MANIFEST_INVOCATION__ON_ADDED_ELEM_PROP_NAME:
+			if urlLit, ok := p.Value.(*parse.URLLiteral); ok {
+				scheme, err := urlLit.Scheme()
+
+				if err == nil {
+					if !IsStaticallyCheckDBFunctionRegistered(Scheme(scheme)) {
+						onError(manifestObj, SCHEME_NOT_DB_SCHEME_OR_IS_NOT_SUPPORTED)
+					} else {
+						//if the scheme corresponds to a database and the manifest does not
+						//contain the databases section, we add an error
+						if !manifestObj.HasNamedProp(MANIFEST_DATABASES_SECTION_NAME) {
+							onError(manifestObj, THE_DATABASES_SECTION_SHOULD_BE_PRESENT)
+						}
+					}
+				}
+
+			} else {
+				onError(p.Value, ONLY_URL_LITS_ARE_SUPPORTED_FOR_NOW)
+			}
+		case MANIFEST_INVOCATION__ASYNC_PROP_NAME:
+			if _, ok := p.Value.(*parse.BooleanLiteral); !ok {
+				onError(p.Value, A_BOOL_LIT_IS_EXPECTED)
+			}
+		default:
+			onError(p, fmtUnexpectedPropOfInvocationDescription(p.Name()))
 		}
 	}
 }

@@ -19,22 +19,32 @@ import (
 )
 
 const (
+	// -------- sections --------
+
+	//section names
 	MANIFEST_ENV_SECTION_NAME             = "env"
 	MANIFEST_PARAMS_SECTION_NAME          = "parameters"
 	MANIFEST_PERMS_SECTION_NAME           = "permissions"
 	MANIFEST_LIMITS_SECTION_NAME          = "limits"
 	MANIFEST_HOST_RESOLUTION_SECTION_NAME = "host-resolution"
+	MANIFEST_PREINIT_FILES_SECTION_NAME   = "preinit-files"
+	MANIFEST_INVOCATION_SECTION_NAME      = "invocation"
 
 	//preinit-files section
-	MANIFEST_PREINIT_FILES_SECTION_NAME      = "preinit-files"
 	MANIFEST_PREINIT_FILE__PATTERN_PROP_NAME = "pattern"
 	MANIFEST_PREINIT_FILE__PATH_PROP_NAME    = "path"
 
+	//preinit-files section
 	MANIFEST_DATABASES_SECTION_NAME                     = "databases"
 	MANIFEST_DATABASE__RESOURCE_PROP_NAME               = "resource"
 	MANIFEST_DATABASE__RESOLUTION_DATA_PROP_NAME        = "resolution-data"
 	MANIFEST_DATABASE__EXPECTED_SCHEMA_UPDATE_PROP_NAME = "expected-schema-update"
 
+	//invocation section
+	MANIFEST_INVOCATION__ON_ADDED_ELEM_PROP_NAME = "on-added-element"
+	MANIFEST_INVOCATION__ASYNC_PROP_NAME         = "async"
+
+	// --------------------------------
 	INITIAL_WORKING_DIR_VARNAME        = "IWD"
 	INITIAL_WORKING_DIR_PREFIX_VARNAME = "IWD_PREFIX"
 )
@@ -77,6 +87,7 @@ type Manifest struct {
 	Parameters      ModuleParameters
 	PreinitFiles    PreinitFiles
 	Databases       DatabaseConfigs
+	AutoInvocation  *AutoInvocationConfig //can be nil
 }
 
 func NewEmptyManifest() *Manifest {
@@ -745,6 +756,8 @@ func (m *Module) createManifest(ctx *Context, object *Object, config manifestObj
 				return nil, err
 			}
 			dbConfigs = configs
+		case MANIFEST_INVOCATION_SECTION_NAME:
+			//TODO
 		default:
 			if config.ignoreUnkownSections {
 				continue

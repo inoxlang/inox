@@ -36,7 +36,7 @@ func TestPreInit(t *testing.T) {
 
 	}
 
-	//register loading functions
+	//register host resolution checking functions
 	{
 		resetStaticallyCheckHostResolutionDataFnRegistry()
 		defer resetStaticallyCheckHostResolutionDataFnRegistry()
@@ -65,7 +65,9 @@ func TestPreInit(t *testing.T) {
 		//input
 		name                string
 		module              string
-		setupFilesystem     func(fls afs.Filesystem)
+		setup               func() error
+		teardown            func()
+		setupFilesystem     func(fls afs.Filesystem) //called after setup
 		parentModule        string
 		parentModuleAbsPath string
 
@@ -729,6 +731,69 @@ func TestPreInit(t *testing.T) {
 			expectedResolutions: nil,
 			error:               false,
 		},
+		{
+			name: "invocation_section_with_added_elem_and_missing_dbs_section",
+			module: `manifest {
+					invocation: {
+						on-added-element: ldb://main/users
+					}
+				}`,
+
+			setup: func() error {
+				resetStaticallyCheckDbResolutionDataFnRegistry()
+
+				RegisterStaticallyCheckDbResolutionDataFn("ldb", func(node parse.Node, p Project) (errorMsg string) {
+					return ""
+				})
+
+				return nil
+			},
+			teardown: func() {
+				resetStaticallyCheckDbResolutionDataFnRegistry()
+			},
+			error:                     true,
+			expectedStaticCheckErrors: []string{THE_DATABASES_SECTION_SHOULD_BE_PRESENT},
+		},
+		{
+			name: "invocation_section_with_added_elem_and_dbs_section",
+			parentModule: `manifest {
+				databases: {
+					main: {
+						resource: ldb://main
+						resolution-data: /tmp/mydb/
+					}
+				}
+			}`,
+			parentModuleAbsPath: "/main.ix",
+			module: `manifest {
+					databases: /main.ix
+					invocation: {
+						on-added-element: ldb://main/users
+					}
+				}`,
+			expectedPermissions: []Permission{},
+			expectedLimits:      []Limit{},
+			expectedDatabaseConfigs: DatabaseConfigs{
+				{
+					Name:           "main",
+					Resource:       Host("ldb://main"),
+					ResolutionData: Path("/tmp/mydb/"),
+				},
+			},
+			expectedResolutions: nil,
+			setup: func() error {
+				resetStaticallyCheckDbResolutionDataFnRegistry()
+
+				RegisterStaticallyCheckDbResolutionDataFn("ldb", func(node parse.Node, p Project) (errorMsg string) {
+					return ""
+				})
+
+				return nil
+			},
+			teardown: func() {
+				resetStaticallyCheckDbResolutionDataFnRegistry()
+			},
+		},
 
 		//TODO: improve tests.
 	}
@@ -744,6 +809,17 @@ func TestPreInit(t *testing.T) {
 
 			if testCase.expectedResolutions == nil {
 				testCase.expectedResolutions = map[Host]Value{}
+			}
+
+			if testCase.setup != nil {
+				err := testCase.setup()
+				if !assert.NoError(t, err) {
+					return
+				}
+			}
+
+			if testCase.teardown != nil {
+				defer testCase.teardown()
 			}
 
 			fls := newMemFilesystem()
@@ -825,7 +901,7 @@ func TestPreInit(t *testing.T) {
 							continue outer
 						}
 					}
-					assert.Fail(t, fmt.Sprintf("expected static check errors to contain the error: %s", expected))
+					assert.Fail(t, fmt.Sprintf("expected static check errors to contain an error with the substring: %s", expected))
 				}
 
 				for _, err := range remainingErrors {

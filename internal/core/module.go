@@ -53,8 +53,9 @@ type Module struct {
 	DirectlyImportedModules            map[string]*Module
 	DirectlyImportedModulesByStatement map[*parse.ImportStatement]*Module
 
-	ManifestTemplate      *parse.Manifest
-	Bytecode              *Bytecode
+	ManifestTemplate *parse.Manifest
+	Bytecode         *Bytecode //can be nil
+
 	ParsingErrors         []Error
 	ParsingErrorPositions []parse.SourcePositionRange
 	OriginalErrors        []*parse.ParsingError //len(.OriginalErrors) <= len(.ParsingErrors)

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"net/url"
 	"reflect"
 	"runtime/debug"
 	"strings"
@@ -542,6 +543,15 @@ func (ByteSliceLiteral) Kind() NodeKind {
 type URLLiteral struct {
 	NodeBase
 	Value string
+}
+
+func (l URLLiteral) Scheme() (string, error) {
+	u, err := url.Parse(l.Value)
+	if err != nil {
+		return "", err
+	}
+
+	return u.Scheme, nil
 }
 
 func (l URLLiteral) ValueString() string {

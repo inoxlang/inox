@@ -207,6 +207,14 @@ func GetOpenDbFn(scheme Scheme) (OpenDBFn, bool) {
 	return fn, ok
 }
 
+func IsStaticallyCheckDBFunctionRegistered(scheme Scheme) bool {
+	staticallyCheckDbResolutionDataFnRegistryLock.Lock()
+	defer staticallyCheckDbResolutionDataFnRegistryLock.Unlock()
+
+	_, ok := staticallyCheckDbResolutionDataFnRegistry[scheme]
+	return ok
+}
+
 func resetStaticallyCheckDbResolutionDataFnRegistry() {
 	staticallyCheckDbResolutionDataFnRegistryLock.Lock()
 	defer staticallyCheckDbResolutionDataFnRegistryLock.Unlock()

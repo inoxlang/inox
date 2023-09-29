@@ -45,6 +45,14 @@ const (
 	DATABASES_SECTION_NOT_AVAILABLE_IN_EMBEDDED_MODULE_MANIFESTS = "the '" + MANIFEST_DATABASES_SECTION_NAME + "' section is not available in embedded module manifests"
 	DATABASES__DB_RESOLUTION_DATA_ONLY_PATHS_SUPPORTED           = "paths are the only supported values for ." + MANIFEST_DATABASE__RESOLUTION_DATA_PROP_NAME + " in a database description"
 
+	//invocation section
+	INVOCATION_SECTION_SHOULD_BE_AN_OBJECT                        = "the '" + MANIFEST_INVOCATION_SECTION_NAME + "' section of the manifest should be an object literal"
+	INVOCATION_SECTION_NOT_AVAILABLE_IN_EMBEDDED_MODULE_MANIFESTS = "the '" + MANIFEST_INVOCATION_SECTION_NAME + "' section is not available in embedded module manifests"
+	ONLY_URL_LITS_ARE_SUPPORTED_FOR_NOW                           = "only URL literals are supported for now"
+	A_BOOL_LIT_IS_EXPECTED                                        = "a boolean literal is expected"
+	SCHEME_NOT_DB_SCHEME_OR_IS_NOT_SUPPORTED                      = "this scheme is not a database scheme or is not supported"
+	THE_DATABASES_SECTION_SHOULD_BE_PRESENT                       = "the databases section should be present because the auto invocation of the module depends on one or more database(s)"
+
 	HOST_RESOL_SECTION_SHOULD_BE_A_DICT = "the '" + MANIFEST_HOST_RESOLUTION_SECTION_NAME + "' section of the manifest should be a dictionary with host keys"
 	HOST_SCHEME_NOT_SUPPORTED           = "the host's scheme is not supported"
 
@@ -163,6 +171,10 @@ func fmtMissingPropInDatabaseDescription(propName, name string) string {
 
 func fmtUnexpectedPropOfDatabaseDescription(name string) string {
 	return fmt.Sprintf("unexpected property '%s' of database description", name)
+}
+
+func fmtUnexpectedPropOfInvocationDescription(name string) string {
+	return fmt.Sprintf("unexpected property '%s' of invocation description", name)
 }
 
 func fmtFollowingNodeTypeNotAllowedInAssertions(n parse.Node) string {
