@@ -60,6 +60,8 @@ var (
 		MANIFEST_HOST_RESOLUTION_SECTION_NAME, MANIFEST_PREINIT_FILES_SECTION_NAME,
 		MANIFEST_DATABASES_SECTION_NAME,
 	}
+
+	ErrURLNotCorrespondingToDefinedDB = errors.New("URL does not correspond to a defined database")
 )
 
 func SetInitialWorkingDir(getWd func() (string, error)) {
@@ -806,12 +808,44 @@ func (m *Module) createManifest(ctx *Context, object *Object, config manifestObj
 		}
 	}
 
+	//finalize the permission list
 	perms, err := getPermissionsFromListing(ctx, permListing, specifiedGlobalPermKinds, config.handleCustomType, config.addDefaultPermissions)
 	if err != nil {
 		return nil, fmt.Errorf("invalid manifest: %w", err)
 	}
 
 	perms = append(ownerDBPermissions, perms...)
+
+	//make sure the invocation events are valid
+	if autoInvocation != nil {
+		if autoInvocation.OnAddedElement != "" {
+			dbFound := false
+
+		search_watched_db:
+			for _, db := range dbConfigs {
+				switch r := db.Resource.(type) {
+				case URL:
+					if strings.HasPrefix(autoInvocation.OnAddedElement.UnderlyingString(), r.UnderlyingString()) {
+						dbFound = true
+						break search_watched_db
+					}
+				case Host:
+					if strings.HasPrefix(autoInvocation.OnAddedElement.UnderlyingString(), r.UnderlyingString()) {
+						dbFound = true
+						break search_watched_db
+					}
+				default:
+					return nil, fmt.Errorf(
+						"invalid manifest: failed to check invocation events: resource of database %q is not supported", db.Name)
+				}
+			}
+
+			if !dbFound {
+				return nil, fmt.Errorf(
+					"invalid manifest: errors in invocation events: %w: %q", ErrURLNotCorrespondingToDefinedDB, autoInvocation.OnAddedElement)
+			}
+		}
+	}
 
 	return &Manifest{
 		RequiredPermissions: perms,

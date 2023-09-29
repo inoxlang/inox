@@ -836,6 +836,42 @@ func TestPreInit(t *testing.T) {
 		},
 
 		{
+			name: "invalid_invocation_section_not_defined_db",
+			parentModule: `manifest {
+				databases: {
+					main: {
+						resource: ldb://main
+						resolution-data: /tmp/mydb/
+					}
+				}
+			}`,
+			parentModuleAbsPath: "/main.ix",
+			module: `manifest {
+					databases: /main.ix
+					invocation: {
+						on-added-element: ldb://notdefined/users
+					}
+				}`,
+			expectedPermissions: []Permission{},
+			expectedLimits:      []Limit{},
+			error:               true,
+			errorIs:             ErrURLNotCorrespondingToDefinedDB,
+
+			setup: func() error {
+				resetStaticallyCheckDbResolutionDataFnRegistry()
+
+				RegisterStaticallyCheckDbResolutionDataFn("ldb", func(node parse.Node, p Project) (errorMsg string) {
+					return ""
+				})
+
+				return nil
+			},
+			teardown: func() {
+				resetStaticallyCheckDbResolutionDataFnRegistry()
+			},
+		},
+
+		{
 			name: "invocation_section_with_added_elem_and_async",
 			parentModule: `manifest {
 				databases: {
