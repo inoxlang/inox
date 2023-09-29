@@ -780,7 +780,7 @@ func (sh *shell) handleAction(action termAction) (stop bool) {
 			moveCursorUp(sh.preOut, diff)
 		}
 
-		sh.input = []rune(sh.history.current())
+		sh.input = []rune(sh.history.currentNoDuplicate())
 
 		if action == Up {
 			sh.history.scroll(-1)
@@ -1107,13 +1107,7 @@ func (sh *shell) handleAction(action termAction) (stop bool) {
 			break
 		}
 
-		//we add the input to the history
-		sh.history.Commands = append(sh.history.Commands, string(sh.input))
-		if sh.history.Commands[0] == "" {
-			sh.history.Commands = sh.history.Commands[1:]
-		} else {
-			sh.history.scroll(+1)
-		}
+		sh.history.addCommand(string(sh.input))
 
 		inputString := string(sh.input)
 		splitted := strings.Split(inputString, " ")
