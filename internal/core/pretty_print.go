@@ -415,6 +415,24 @@ func GetNodeColorizations(chunk *parse.Chunk, lightMode bool) []ColorizationInfo
 					})
 				}
 			}
+		case *parse.PatternDefinition:
+			for _, token := range n.Base().Tokens {
+				if token.Type == parse.PATTERN_KEYWORD {
+					colorizations = append(colorizations, ColorizationInfo{
+						Span:          token.Span,
+						ColorSequence: colors.OtherKeyword,
+					})
+				}
+			}
+		case *parse.PatternNamespaceDefinition:
+			for _, token := range n.Base().Tokens {
+				if token.Type == parse.PNAMESPACE_KEYWORD {
+					colorizations = append(colorizations, ColorizationInfo{
+						Span:          token.Span,
+						ColorSequence: colors.OtherKeyword,
+					})
+				}
+			}
 		}
 		return parse.Continue, nil
 	}, nil)
