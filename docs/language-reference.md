@@ -420,6 +420,8 @@ object = {
 object.print()
 ```
 
+ℹ️ It is recommended to define methods in [extensions](#extensions), not in the objects.
+
 ### Computed Member Expressions
 
 Computed member expressions are member expressions where the property name is computed at runtime:
@@ -1031,6 +1033,9 @@ namespace = %ints.
 
 # Extensions
 
+An **extension** consists of a set of computed properties and methods that can be accessed/called on
+values matching a given pattern.
+
 ```
 pattern todo = {
     title: str
@@ -1039,13 +1044,33 @@ pattern todo = {
 
 pattern user = {
     name: str
-    todos: []
+    todos: []todo
 }
 
 extend user {
+    # computed properties (lazy)
     pending-todos: filter(self.todos, @(!$.done))
+
+    # extension method
+    remove_done_todos: fn(){
+        self.todos = filter(self.todos, .done)
+    }
 }
 
+var user = {
+    todos: [
+        {title: "Todo 1", done: false}
+        {title: "Todo 2", done: false}
+    ]
+}
+
+# [{title: "Todo 1", done: false}]
+pending-todos = user::pending-todos
+
+user::remove_done_todos()
+
+# [{title: "Todo 2", done: true}]
+done-todos = user.todos
 ```
 
 # XML Expressions
