@@ -174,8 +174,7 @@ list = [
 ]
 ```
 
-(Work in progress)
-The transient equivalents of objects are structs:
+The transient equivalents of objects are [structs](./docs/language-reference.md#structs) (not implemented yet).
 
 ```
 struct Task {

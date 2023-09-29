@@ -53,6 +53,7 @@
     - [Schema](#database-schema)
     - [Serialization](#serialization)
     - [Access From Other Modules](#access-from-other-modules)
+- [Structures (not implemented yet)](#structs)
 
 # Literals
 
@@ -1534,3 +1535,30 @@ for user in dbs.main.users {
 ℹ️ The module defining the databases is automatically granted access to the database.
 
 ⚠️ Permissions still need to be granted in the import statement.
+
+# Structs
+
+⚠️ This feature is not implemented yet and is subject to change.
+
+Structs are transient values that only exist in the stack on in a temporary storage managed by a module.\
+Unlike most core Inox types such as objects & lists, structs are not necessarily serializable but will be more memory efficient.\
+Accessing the field of a struct will be faster than accessing a property/element of other Inox types.
+
+The main usage of structs will be storing and representing temporary state.
+
+```
+struct Position2D {
+    x int
+    y int
+}
+
+struct LexerState {
+    index int
+    tokens Array(Token)
+}
+
+struct Token {
+    type TokenType
+    value string
+}
+```
