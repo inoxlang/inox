@@ -130,17 +130,16 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 			nonSpreadArgCount++
 
 			if ident, ok := argNode.(*parse.IdentifierLiteral); ok && cmdLineSyntax {
+				args = append(args, &Identifier{name: ident.Name})
 
 				//add warning if the identifier has the same name as a variable
-				if calleeIdent, ok := calleeNode.(*parse.IdentifierLiteral); (!ok ||
-					calleeIdent.Name != globalnames.EXEC_FN) &&
-					(state.hasLocal(ident.Name) || state.hasGlobal(ident.Name)) {
+				isDefinedVar := state.hasLocal(ident.Name) || state.hasGlobal(ident.Name)
 
+				calleeIdent, ok := calleeNode.(*parse.IdentifierLiteral)
+				if isDefinedVar && (!ok || (calleeIdent.Name != globalnames.EXEC_FN && calleeIdent.Name != globalnames.HELP_FN)) {
 					isGlobal := state.hasGlobal(ident.Name)
 					state.addWarning(makeSymbolicEvalWarning(argNode, state, fmtDidYouMeanDollarName(ident.Name, isGlobal)))
 				}
-
-				args = append(args, &Identifier{name: ident.Name})
 			} else {
 				options := evalOptions{}
 				if len(nonGoParameters) > 0 && argIndex < len(nonGoParameters) {
