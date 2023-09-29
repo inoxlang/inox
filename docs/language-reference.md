@@ -1057,7 +1057,9 @@ extend user {
     }
 }
 
+# user's value matches the user pattern
 var user = {
+    name: "Tom"
     todos: [
         {title: "Todo 1", done: false}
         {title: "Todo 2", done: false}
