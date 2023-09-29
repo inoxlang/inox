@@ -1107,10 +1107,11 @@ func (sh *shell) handleAction(action termAction) (stop bool) {
 			break
 		}
 
-		sh.history.addCommand(string(sh.input))
-
 		inputString := string(sh.input)
 		splitted := strings.Split(inputString, " ")
+
+		sh.history.addCommand(inputString)
+		sameCmd := sh.history.isLastCommandSameAsPrevious()
 
 		switch splitted[0] {
 		case "clear":
@@ -1138,6 +1139,12 @@ func (sh *shell) handleAction(action termAction) (stop bool) {
 			if err != nil {
 				//print parsing or checking error and print a new prompt
 				fmt.Fprint(sh.preOut, err, "\n")
+				sh.promptLen = printPrompt(sh.preOut, sh.state, sh.config)
+			} else if warnings := symbolicData.Warnings(); len(warnings) > 0 && !sameCmd {
+				//print warnings
+				for _, warning := range symbolicData.Warnings() {
+					fmt.Fprint(sh.preOut, warning.LocatedMessage, "\n")
+				}
 				sh.promptLen = printPrompt(sh.preOut, sh.state, sh.config)
 			} else {
 				//TODO: delete useless data in order to reduce memory usage

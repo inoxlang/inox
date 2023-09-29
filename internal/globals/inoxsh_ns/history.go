@@ -15,7 +15,7 @@ func (history commandHistory) currentNoDuplicate() string {
 	i := history.index
 	cmd := history.commandsEmptySubsequentDuplicates[i]
 	for cmd == "" && i > 0 {
-		i++
+		i--
 		cmd = history.commandsEmptySubsequentDuplicates[i]
 	}
 	return cmd
@@ -65,4 +65,10 @@ func (history *commandHistory) addCommand(cmd string) {
 	} else {
 		history.scroll(+1)
 	}
+}
+
+func (history *commandHistory) isLastCommandSameAsPrevious() bool {
+	cmds := history.commandsEmptySubsequentDuplicates
+
+	return len(cmds) > 1 && cmds[len(cmds)-1] == ""
 }
