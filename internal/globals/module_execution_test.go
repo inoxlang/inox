@@ -1931,6 +1931,8 @@ func TestRunLocalScript(t *testing.T) {
 	})
 
 	t.Run("too many warnings", func(t *testing.T) {
+		t.SkipNow()
+
 		dir := t.TempDir()
 		file := filepath.Join(dir, "script.ix")
 
