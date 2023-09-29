@@ -2309,7 +2309,8 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			}
 		}
 
-		state.Global.Ctx.AddNamedPattern(n.Left.Name, right)
+		name := utils.MustGet(n.PatternName())
+		state.Global.Ctx.AddNamedPattern(name, right)
 		return Nil, nil
 	case *parse.PatternNamespaceDefinition:
 		right, err := TreeWalkEval(n.Right, state)
@@ -2321,8 +2322,8 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		if err != nil {
 			return nil, err
 		}
-
-		state.Global.Ctx.AddPatternNamespace(n.Left.Name, ns)
+		name := utils.MustGet(n.NamespaceName())
+		state.Global.Ctx.AddPatternNamespace(name, ns)
 		return Nil, nil
 	case *parse.PatternIdentifierLiteral:
 		return resolvePattern(n, state.Global)

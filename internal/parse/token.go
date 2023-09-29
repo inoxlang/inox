@@ -84,6 +84,8 @@ const (
 	DO_KEYWORD
 	CHUNKED_KEYWORD
 	SENDVAL_KEYWORD
+	PATTERN_KEYWORD
+	PNAMESPACE_KEYWORD
 	EXTEND_KEYWORD
 	TO_KEYWORD
 	AND_KEYWORD
@@ -292,6 +294,8 @@ var tokenStrings = [...]string{
 	DO_KEYWORD:                     "do",
 	CHUNKED_KEYWORD:                "chunked",
 	SENDVAL_KEYWORD:                "sendval",
+	PATTERN_KEYWORD:                "pattern",
+	PNAMESPACE_KEYWORD:             "pnamespace",
 	EXTEND_KEYWORD:                 "extend",
 	TO_KEYWORD:                     "to",
 	AND_KEYWORD:                    "and",
@@ -452,6 +456,8 @@ var tokenTypenames = [...]string{
 	DO_KEYWORD:                     "DO_KEYWORD",
 	CHUNKED_KEYWORD:                "CHUNKED_KEYWORD",
 	SENDVAL_KEYWORD:                "SENDVAL_KEYWORD",
+	PATTERN_KEYWORD:                "PATTERN_KEYWORD",
+	PNAMESPACE_KEYWORD:             "PNAMESPACE_KEYWORD",
 	EXTEND_KEYWORD:                 "EXTEND_KEYWORD",
 	TO_KEYWORD:                     "TO_KEYWORD",
 	AND_KEYWORD:                    "AND_KEYWORD",

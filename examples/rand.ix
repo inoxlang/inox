@@ -1,8 +1,8 @@
 manifest {}
 
 
-%hex = %str( (| '0'..'9' | 'a'..'f' | 'A'..'F') )
-%uuidv4 = %str(%hex=8  '-'  %hex=4  '-'  '4' %hex=3  '-'  (| '8' | '9' | 'A' | 'B')=3  '-'  %hex=12)
+pattern hex = %str( (| '0'..'9' | 'a'..'f' | 'A'..'F') )
+pattern uuidv4 = %str(%hex=8  '-'  %hex=4  '-'  '4' %hex=3  '-'  (| '8' | '9' | 'A' | 'B')=3  '-'  %hex=12)
 
 for (1 .. 5) {
     print rand(%uuidv4)

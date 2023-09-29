@@ -1741,13 +1741,15 @@ switch_:
 			}
 		}
 
-		patternName := node.Left.Name
-		patterns := c.getModPatterns(closestModule)
+		patternName, ok := node.PatternName()
+		if ok {
+			patterns := c.getModPatterns(closestModule)
 
-		if _, alreadyDefined := patterns[patternName]; alreadyDefined && !inPreinitBlock {
-			c.addError(node, fmtPatternAlreadyDeclared(patternName))
-		} else {
-			patterns[patternName] = 0
+			if _, alreadyDefined := patterns[patternName]; alreadyDefined && !inPreinitBlock {
+				c.addError(node, fmtPatternAlreadyDeclared(patternName))
+			} else {
+				patterns[patternName] = 0
+			}
 		}
 	case *parse.PatternNamespaceDefinition:
 		switch parent.(type) {
@@ -1759,12 +1761,14 @@ switch_:
 			}
 		}
 
-		namespaceName := node.Left.Name
-		namespaces := c.getModPatternNamespaces(closestModule)
-		if _, alreadyDefined := namespaces[namespaceName]; alreadyDefined && !inPreinitBlock {
-			c.addError(node, fmtPatternNamespaceAlreadyDeclared(namespaceName))
-		} else {
-			namespaces[namespaceName] = 0
+		namespaceName, ok := node.NamespaceName()
+		if ok {
+			namespaces := c.getModPatternNamespaces(closestModule)
+			if _, alreadyDefined := namespaces[namespaceName]; alreadyDefined && !inPreinitBlock {
+				c.addError(node, fmtPatternNamespaceAlreadyDeclared(namespaceName))
+			} else {
+				namespaces[namespaceName] = 0
+			}
 		}
 	case *parse.PatternNamespaceIdentifierLiteral:
 		namespaceName := node.Name

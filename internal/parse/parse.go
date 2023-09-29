@@ -476,7 +476,7 @@ func (p *parser) parseCssSelectorElement(ignoreNextSpace bool) (node Node, isSpa
 			return makeNode(CSS_ATTRIBUTE_NAME_SHOULD_START_WITH_ALPHA_CHAR), false
 		}
 
-		name := p.parseIdentStartingExpression()
+		name := p.parseIdentStartingExpression(false)
 
 		if p.i >= p.len {
 			return makeNode(UNTERMINATED_CSS_ATTR_SELECTOR_PATTERN_EXPECTED_AFTER_NAME), false
@@ -2133,7 +2133,7 @@ func (p *parser) parseURLLikePattern(start int32) Node {
 }
 
 // parseIdentStartingExpression parses identifiers, identifier member expressions, true, false, nil and URL-like expressions
-func (p *parser) parseIdentStartingExpression() Node {
+func (p *parser) parseIdentStartingExpression(allowUnprefixedPatternNamespaceIdent bool) Node {
 	p.panicIfContextDone()
 
 	start := p.i
@@ -2171,6 +2171,14 @@ func (p *parser) parseIdentStartingExpression() Node {
 		lastDotIndex = p.i
 		p.i++
 
+		if allowUnprefixedPatternNamespaceIdent && (p.i >= p.len || isSpaceNotLF(p.s[p.i]) || isUnpairedOrIsClosingDelim(p.s[p.i])) {
+			return &PatternNamespaceIdentifierLiteral{
+				NodeBase:   NodeBase{Span: NodeSpan{start, p.i}},
+				Name:       name,
+				Unprefixed: true,
+			}
+		}
+
 		var memberExpr Node = &IdentifierMemberExpression{
 			NodeBase: NodeBase{
 				Span: NodeSpan{Start: firstIdent.Span.Start},
@@ -2191,7 +2199,7 @@ func (p *parser) parseIdentStartingExpression() Node {
 				nameStart = p.i
 			}
 
-			if p.i >= p.len || isUnpairedOrIsClosingDelim(p.s[p.i]) {
+			if p.i >= p.len {
 				base := memberExpr.BasePtr()
 				base.Span.End = p.i
 
@@ -6287,7 +6295,7 @@ func (p *parser) parseExpression(precededByOpeningParen ...bool) (expr Node, isM
 	//TODO: refactor ?
 	case '_', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
 		'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z':
-		identStartingExpr := p.parseIdentStartingExpression()
+		identStartingExpr := p.parseIdentStartingExpression(p.inPattern)
 		var name string
 
 		switch v := identStartingExpr.(type) {
@@ -7527,7 +7535,7 @@ func (p *parser) parseMappingExpression(mappingIdent Node) *MappingExpression {
 			p.eatSpace()
 
 			if p.i < p.len && (isAlpha(p.s[p.i]) || p.s[p.i] == '_') {
-				groupMatchingVariable = p.parseIdentStartingExpression()
+				groupMatchingVariable = p.parseIdentStartingExpression(false)
 				ident, ok := groupMatchingVariable.(*IdentifierLiteral)
 
 				if !ok && groupMatchingVariable.Base().Err == nil {
@@ -7940,7 +7948,7 @@ func (p *parser) parseLifetimeJobExpression(ident *IdentifierLiteral) *Lifetimej
 	var subject Node
 
 	if p.i < p.len && p.s[p.i] == 'f' { //TODO: rework
-		e := p.parseIdentStartingExpression()
+		e := p.parseIdentStartingExpression(false)
 		if ident, ok := e.(*IdentifierLiteral); ok && ident.Name == "for" {
 			valuelessTokens = append(valuelessTokens, Token{Type: FOR_KEYWORD, Span: ident.Span})
 
@@ -8664,7 +8672,7 @@ func (p *parser) parseFunction(start int32) Node {
 	}
 
 	if p.i < p.len && isAlpha(p.s[p.i]) {
-		identLike := p.parseIdentStartingExpression()
+		identLike := p.parseIdentStartingExpression(false)
 		var ok bool
 		if ident, ok = identLike.(*IdentifierLiteral); !ok {
 			return &FunctionDeclaration{
@@ -10093,7 +10101,7 @@ func (p *parser) parseMultiAssignmentStatement(assignIdent *IdentifierLiteral) *
 	}
 }
 
-func (p *parser) parseAssignmentAndPatternDefinition(left Node) (result Node) {
+func (p *parser) parseAssignment(left Node) (result Node) {
 	p.panicIfContextDone()
 
 	// terminator
@@ -10153,102 +10161,6 @@ func (p *parser) parseAssignmentAndPatternDefinition(left Node) (result Node) {
 	var keywordLHSError *ParsingError
 
 	switch l := left.(type) {
-	case *PatternIdentifierLiteral:
-		{
-			start := left.Base().Span.Start
-			var right Node
-			var parsingErr *ParsingError
-
-			if p.i >= p.len {
-				return &PatternDefinition{
-					NodeBase: NodeBase{
-						NodeSpan{start, p.i},
-						&ParsingError{UnspecifiedParsingError, UNTERMINATED_PATT_DEF_MISSING_RHS},
-						tokens,
-					},
-					Left: l,
-				}
-			} else if assignmentTokenType != EQUAL {
-				return &PatternDefinition{
-					NodeBase: NodeBase{
-						NodeSpan{start, p.i},
-						&ParsingError{UnspecifiedParsingError, INVALID_PATT_DEF_MISSING_OPERATOR_SHOULD_BE_EQUAL},
-						tokens,
-					},
-					Left: l,
-				}
-			}
-
-			isLazy := false
-			if p.s[p.i] == '@' && p.i < p.len-1 && unicode.IsSpace(p.s[p.i+1]) {
-				isLazy = true
-				p.i++
-			}
-
-			p.eatSpace()
-
-			{
-				prev := p.inPattern
-				defer func() {
-					p.inPattern = prev
-				}()
-			}
-
-			p.inPattern = true
-			right, _ = p.parseExpression()
-
-			return &PatternDefinition{
-				NodeBase: NodeBase{
-					NodeSpan{start, p.i},
-					parsingErr,
-					tokens,
-				},
-				Left:   left.(*PatternIdentifierLiteral),
-				Right:  right,
-				IsLazy: isLazy,
-			}
-
-		}
-	case *PatternNamespaceIdentifierLiteral:
-		{
-			start := left.Base().Span.Start
-			var right Node
-			var parsingErr *ParsingError
-
-			if p.i >= p.len {
-				return &PatternNamespaceDefinition{
-					NodeBase: NodeBase{
-						NodeSpan{start, p.i},
-						&ParsingError{UnspecifiedParsingError, UNTERMINATED_PATT_NS_DEF_MISSING_RHS},
-						tokens,
-					},
-					Left: l,
-				}
-			} else if assignmentTokenType != EQUAL {
-				return &PatternNamespaceDefinition{
-					NodeBase: NodeBase{
-						NodeSpan{start, p.i},
-						&ParsingError{UnspecifiedParsingError, INVALID_PATT_NS_DEF_MISSING_OPERATOR_SHOULD_BE_EQUAL},
-						tokens,
-					},
-					Left: l,
-				}
-			}
-
-			p.eatSpace()
-			right, _ = p.parseExpression()
-
-			return &PatternNamespaceDefinition{
-				NodeBase: NodeBase{
-					NodeSpan{start, p.i},
-					parsingErr,
-					tokens,
-				},
-				Left:  l,
-				Right: right,
-			}
-		}
-
 	case *GlobalVariable, *Variable, *MemberExpression, *IndexExpression, *SliceExpression, *IdentifierMemberExpression:
 	case *IdentifierLiteral:
 		if isKeyword(l.Name) {
@@ -10436,6 +10348,131 @@ func (p *parser) parseCommandLikeStatement(expr Node) Node {
 	return stmt
 }
 
+func (p *parser) parsePatternDefinition(patternIdent *IdentifierLiteral) *PatternDefinition {
+	p.panicIfContextDone()
+
+	tokens := []Token{{Type: PATTERN_KEYWORD, Span: patternIdent.Span}}
+	patternDef := &PatternDefinition{
+		NodeBase: NodeBase{
+			Span:   NodeSpan{patternIdent.Span.Start, p.i},
+			Tokens: tokens,
+		},
+	}
+
+	p.eatSpace()
+
+	if p.i >= p.len || p.s[p.i] == '\n' {
+		patternDef.Err = &ParsingError{UnterminatedPatternDefinition, UNTERMINATED_PATT_DEF_MISSING_NAME_AFTER_PATTERN_KEYWORD}
+	} else {
+		func() {
+			prev := p.inPattern
+			p.inPattern = true
+			defer func() {
+				p.inPattern = prev
+			}()
+
+			patternDef.Left, _ = p.parseExpression()
+			patternDef.Span.End = p.i
+
+			if _, ok := patternDef.Left.(*PatternIdentifierLiteral); !ok {
+				patternDef.Err = &ParsingError{UnspecifiedParsingError, A_PATTERN_NAME_WAS_EXPECTED}
+			}
+		}()
+
+		p.eatSpace()
+
+		if p.i >= p.len || p.s[p.i] != '=' {
+			patternDef.Err = &ParsingError{UnterminatedPatternDefinition, UNTERMINATED_PATT_DEF_MISSING_EQUAL_SYMBOL_AFTER_PATTERN_NAME}
+		} else {
+			patternDef.Tokens = append(patternDef.Tokens, Token{Type: EQUAL, Span: NodeSpan{p.i, p.i + 1}})
+			p.i++
+			patternDef.Span.End = p.i
+
+			p.eatSpace()
+
+			if p.i < p.len && p.s[p.i] == '@' && p.i < p.len-1 && unicode.IsSpace(p.s[p.i+1]) {
+				patternDef.IsLazy = true
+				p.i++
+				patternDef.Span.End = p.i
+				p.eatSpace()
+			}
+
+			//parse RHS
+
+			if p.i >= p.len || p.s[p.i] == '\n' {
+				patternDef.Err = &ParsingError{UnterminatedPatternDefinition, UNTERMINATED_PATT_DEF_MISSING_RHS}
+			} else {
+				prev := p.inPattern
+				p.inPattern = true
+				defer func() {
+					p.inPattern = prev
+				}()
+
+				patternDef.Right, _ = p.parseExpression()
+				patternDef.Span.End = p.i
+			}
+		}
+	}
+
+	return patternDef
+}
+
+func (p *parser) parsePatternNamespaceDefinition(patternIdent *IdentifierLiteral) *PatternNamespaceDefinition {
+	p.panicIfContextDone()
+
+	tokens := []Token{{Type: PNAMESPACE_KEYWORD, Span: patternIdent.Span}}
+	namespaceDef := &PatternNamespaceDefinition{
+		NodeBase: NodeBase{
+			Span:   NodeSpan{patternIdent.Span.Start, p.i},
+			Tokens: tokens,
+		},
+	}
+
+	p.eatSpace()
+
+	if p.i >= p.len || p.s[p.i] == '\n' {
+		namespaceDef.Err = &ParsingError{UnterminatedPatternNamespaceDefinition, UNTERMINATED_PATT_NS_DEF_MISSING_NAME_AFTER_PATTERN_KEYWORD}
+	} else {
+		func() {
+			prev := p.inPattern
+			p.inPattern = true
+			defer func() {
+				p.inPattern = prev
+			}()
+
+			namespaceDef.Left, _ = p.parseExpression()
+			namespaceDef.Span.End = p.i
+
+			if _, ok := namespaceDef.Left.(*PatternNamespaceIdentifierLiteral); !ok {
+				namespaceDef.Err = &ParsingError{UnspecifiedParsingError, A_PATTERN_NAMESPACE_NAME_WAS_EXPECTED}
+			}
+		}()
+
+		p.eatSpace()
+
+		if p.i >= p.len || p.s[p.i] != '=' {
+			namespaceDef.Err = &ParsingError{UnterminatedPatternNamespaceDefinition, UNTERMINATED_PATT_NS_DEF_MISSING_EQUAL_SYMBOL_AFTER_PATTERN_NAME}
+		} else {
+			namespaceDef.Tokens = append(namespaceDef.Tokens, Token{Type: EQUAL, Span: NodeSpan{p.i, p.i + 1}})
+			p.i++
+			namespaceDef.Span.End = p.i
+
+			p.eatSpace()
+
+			//parse RHS
+
+			if p.i >= p.len || p.s[p.i] == '\n' {
+				namespaceDef.Err = &ParsingError{UnterminatedPatternNamespaceDefinition, UNTERMINATED_PATT_NS_DEF_MISSING_RHS}
+			} else {
+				namespaceDef.Right, _ = p.parseExpression()
+				namespaceDef.Span.End = p.i
+			}
+		}
+	}
+
+	return namespaceDef
+}
+
 func (p *parser) parseExtendStatement(extendIdent *IdentifierLiteral) *ExtendStatement {
 	p.panicIfContextDone()
 
@@ -10462,6 +10499,10 @@ func (p *parser) parseExtendStatement(extendIdent *IdentifierLiteral) *ExtendSta
 
 			extendStmt.ExtendedPattern, _ = p.parseExpression()
 			extendStmt.Span.End = p.i
+
+			if _, ok := extendStmt.ExtendedPattern.(*PatternIdentifierLiteral); !ok {
+				extendStmt.Err = &ParsingError{UnspecifiedParsingError, A_PATTERN_NAME_WAS_EXPECTED}
+			}
 		}()
 
 		p.eatSpace()
@@ -10626,6 +10667,10 @@ func (p *parser) parseStatement() Node {
 			return p.parseLocalVariableDeclarations(ev.Base())
 		case tokenStrings[SYNCHRONIZED_KEYWORD]:
 			return p.parseSynchronizedBlock(ev)
+		case tokenStrings[PATTERN_KEYWORD]:
+			return p.parsePatternDefinition(ev)
+		case tokenStrings[PNAMESPACE_KEYWORD]:
+			return p.parsePatternNamespaceDefinition(ev)
 		case tokenStrings[EXTEND_KEYWORD]:
 			return p.parseExtendStatement(ev)
 		}
@@ -10640,12 +10685,12 @@ func (p *parser) parseStatement() Node {
 
 	switch p.s[p.i] {
 	case '=': //assignment
-		return p.parseAssignmentAndPatternDefinition(expr)
+		return p.parseAssignment(expr)
 	case ';':
 		return expr
 	case '+', '-', '*', '/':
 		if p.i < p.len-1 && p.s[p.i+1] == '=' {
-			return p.parseAssignmentAndPatternDefinition(expr)
+			return p.parseAssignment(expr)
 		}
 
 		if followedBySpace && !expr.Base().IsParenthesized() {

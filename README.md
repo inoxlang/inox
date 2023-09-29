@@ -135,7 +135,7 @@ manifest {
 }
 
 # define the pattern for user data
-%user = {
+pattern user = {
   name: str
 }
 

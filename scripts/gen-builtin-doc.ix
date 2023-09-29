@@ -13,25 +13,25 @@ manifest {
 }
 
 
-%example = {
+pattern example = {
     code?: str
     explanation?: str
     output?: str
 }
 
-%leaf-topic-data = {
+pattern leaf-topic-data = {
     topic: str
     text?: str
     examples?: []example
 }
 
-%topic-data = {
+pattern topic-data = {
     ...leaf-topic-data
     subtopics?: []leaf-topic-data
 }
 
 
-%group-data = {
+pattern group-data = {
     namespace?: bool
     elements: []topic-data
     title?: str

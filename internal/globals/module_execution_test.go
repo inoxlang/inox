@@ -148,7 +148,7 @@ func TestPrepareLocalScript(t *testing.T) {
 
 		os.WriteFile(file, []byte(`
 			preinit {
-				%patt = %/...
+				pattern patt = %/...
 			}
 			manifest {
 				permissions: {

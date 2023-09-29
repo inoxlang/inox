@@ -36,6 +36,7 @@
     - [String patterns](#string-patterns)
     - [Union Patterns](#union-patterns)
     - [Pattern namespaces](#pattern-namespaces)
+- [Extensions](#extensions)
 - [XML Expressions](#xml-expressions)
 - [Modules](#modules)
     - [Module Parameters](#module-parameters)
@@ -273,9 +274,9 @@ I am {{name}}`
 In Inox checked strings are strings that are validated against a pattern. When you dynamically
 create a checked string all the interpolations must be explicitly typed:
 ```
-%integer = %`(0|[1-9]+[0-9]*)`
+pattern integer = %`(0|[1-9]+[0-9]*)`
 
-%math. = {
+pnamespace math. = {
     expr: %str( %integer (| "+" | "-") %integer)
     int: %integer
 }
@@ -862,12 +863,12 @@ Named patterns are equivalent to variables but for patterns, there are many buil
 Pattern definitions allow you to declare a pattern.
 
 ```
-%int_list = []int
+pattern int_list = []int
 
 # true
 ([1, 2, 3] match int_list) 
 
-%user = {
+pattern user = {
     name: str
     friends: []str
 }
@@ -882,7 +883,7 @@ pattern = %int(0..10)
 
 Creating a named pattern `%user` does not prevent you to name a variable `user`:
 ```
-%user = {
+pattern user = {
     name: str
 }
 
@@ -909,14 +910,14 @@ my_pattern = %user
 }
 
 # same pattern stored in a named pattern ('%' not required)
-%object_pattern = {
+pattern object_pattern = {
     name: str
 }
 
 # true
 ({name: "John"} match object_pattern) 
 
-%other_pattern = {
+pattern other_pattern = {
     name: str
     account: {  # '%' not required here 
         creation-date: date
@@ -930,7 +931,7 @@ my_pattern = %user
 # true
 ({name: "John"} match {}) 
 
-%user = {
+pattern user = {
     name: str
 }
 
@@ -942,7 +943,7 @@ my_pattern = %user
 
 The syntax for patterns that match a list with **elements of the same type** (only integers, only strings, etc.) is as follows:
 ```
-%int_list = []int
+pattern int_list = []int
 
 ([] match pattern) # true
 ([1] match pattern) # true
@@ -953,20 +954,20 @@ The syntax for patterns that match a list with **elements of the same type** (on
 
 **<summary>Alternative syntax with leading '%' symbol</summary>**
 ```
-%int_list = %[]int
+pattern int_list = %[]int
 ```
 </details>
 
 You can also create list patterns that match a list of known length:
 
 ```
-%pair = [int, str]
+pattern pair = [int, str]
 
 # true
 ([1, "a"] match pair)
 
 
-%two_pairs = [ [int, str], [int, str] ]
+pattern two_pairs = [ [int, str], [int, str] ]
 
 # true
 ([ [1, "a"], [2, "b"] ] match two_pairs)
@@ -989,14 +990,14 @@ Inox allows you to describe string patterns that are easier to read than regex e
 
 String patterns can be composed thanks to named patterns:
 ```
-%domain = "@mail.com"
-%email-address = (("user1" | "user2") %domain)
+pattern domain = "@mail.com"
+pattern email-address = (("user1" | "user2") %domain)
 ```
 
 ## Union Patterns
 
 ```
-%int_or_str = | int | str
+pattern int_or_str = | int | str
 
 # true
 (1 match %int_or_str)
@@ -1012,7 +1013,7 @@ String patterns can be composed thanks to named patterns:
 Pattern namespaces are containers for storing a group of related patterns.
 
 ```
-%ints. = {
+pnamespace ints. = {
     tiny_int: %int(0..10)
     small_int: %int(0..50)
 }
@@ -1027,6 +1028,24 @@ Pattern namespaces are containers for storing a group of related patterns.
 namespace = %ints.
 ```
 
+# Extensions
+
+```
+pattern todo = {
+    title: str
+    done: bool
+}
+
+pattern user = {
+    name: str
+    todos: []
+}
+
+extend user {
+    pending-todos: filter(self.todos, @(!$.done))
+}
+
+```
 
 # XML Expressions
 
@@ -1167,7 +1186,7 @@ import ./patterns.ix
 # patterns.ix
 includable-chunk
 
-%user = {
+pattern user = {
     name: str
     profile-picture: url
 }
@@ -1419,7 +1438,7 @@ manifest {
 The schema of an Inox Database is an [object pattern](#object-patterns), it can be
 set by calling the **update_schema** method on the database:
 ```
-%user = {
+pattern user = {
   name: str
 }
 
@@ -1436,7 +1455,7 @@ Updating the schema often requires data updates, when this is the case .updated_
 second argument that describes the updates.
 
 ```
-%new_user = {
+pattern new_user = {
     ...user
     new-property: int
 }

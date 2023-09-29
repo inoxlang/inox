@@ -29,7 +29,7 @@ const (
 	RETURN_1_MODULE_HASH               = "gtY+/Y/VOxkFgAmefByH5GU8j+b7xtpLu1QLY39BqkE="
 	RETURN_NON_POS_ARG_A_MODULE_HASH   = "15Njs+OhmiW9843cgnlMib7AiUzZbGx6gn3GAebWMOA="
 	RETURN_POS_ARG_A_MODULE_HASH       = "QNJpkgQeB5MA23yXpJ8L5XWLzUQIi6eDwi2HOnPTO3w="
-	RETURN_PATTERN_INT_TWO_MODULE_HASH = "D9SSw63q6VesJ6tTYZZ1EJzyAW5L3FCTPxQjWfOi8F4="
+	RETURN_PATTERN_INT_TWO_MODULE_HASH = "HyCSyqI5UdPFc6c8IuSBw6huA6Iwv0TES0mHLx1DaIY="
 	RETURN_INT_PATTERN_MODULE_HASH     = "Ub9ua2QldCOc6MvxIPVpUYOQQfQoZpYEoDJitOdKFPA="
 )
 
@@ -37,7 +37,7 @@ func init() {
 	moduleCache[RETURN_1_MODULE_HASH] = "manifest{}; return 1"
 	moduleCache[RETURN_NON_POS_ARG_A_MODULE_HASH] = "manifest {parameters: {a: %int}}\nreturn mod-args.a"
 	moduleCache[RETURN_POS_ARG_A_MODULE_HASH] = "manifest {parameters: {{name: #a, pattern: %int}}}\nreturn mod-args.a"
-	moduleCache[RETURN_PATTERN_INT_TWO_MODULE_HASH] = "manifest {}\n%two = 2; return %two"
+	moduleCache[RETURN_PATTERN_INT_TWO_MODULE_HASH] = "manifest {}\npattern two = 2; return %two"
 	moduleCache[RETURN_INT_PATTERN_MODULE_HASH] = "manifest {}; return %int"
 }
 
@@ -1845,7 +1845,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		t.Run("lifetime job accessing patterns defined in parent state", func(t *testing.T) {
 			code := `
-				%p = 1
+				pattern p = 1
 				return { 
 					a: []
 					lifetimejob #job { self.a = [%p, %int] } 
@@ -2284,7 +2284,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			{
 				input: `
 				c = 0
-				%p = %| 1 | 3
+				pattern p = %| 1 | 3
 				for %p n in [0 1 2 3] {
 					c = ($c + $n)
 				}
@@ -2297,8 +2297,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				c = 0
 				indexSum = 0
 
-				%i = 3
-				%p = %| 1 | 3
+				pattern i = 3
+				pattern p = %| 1 | 3
 				for %i i, %p n in [0 1 2 3] {
 					c = (c + n)
 					indexSum = (indexSum + i)
@@ -3131,7 +3131,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		t.Run("single element", func(t *testing.T) {
 			code := `
-				%s = %str( 'a'..'z' )
+				pattern s = %str( 'a'..'z' )
 				return %s
 			`
 
@@ -3147,7 +3147,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		t.Run("single element: integer range with no upper bound", func(t *testing.T) {
 			code := `
-				%s = %str( 1.. )
+				pattern s = %str( 1.. )
 				return %s
 			`
 
@@ -4078,7 +4078,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	allExtendStmtTestsPassed := t.Run("extend statement", func(t *testing.T) {
 		t.Run("computed property", func(t *testing.T) {
 			code := `
-				%p = {
+				pattern p = {
 					a: 1
 				}
 
@@ -4114,7 +4114,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		t.Run("method", func(t *testing.T) {
 			code := `
-				%p = {
+				pattern p = {
 					a: 1
 				}
 
@@ -4153,7 +4153,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("extension properties & methods", func(t *testing.T) {
 			t.Run("computed property", func(t *testing.T) {
 				code := `
-					%p = {
+					pattern p = {
 						a: 1
 					}
 	
@@ -4181,7 +4181,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			t.Run("method call", func(t *testing.T) {
 				code := `
-					%p = {
+					pattern p = {
 						a: 1
 					}
 	
@@ -4233,7 +4233,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 	t.Run("function pattern definition,", func(t *testing.T) {
 		code := `
-			%intfn = %fn() %int
+			pattern intfn = %fn() %int
 			return %intfn
 		`
 
@@ -4253,7 +4253,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			fn f() %int { 
 				return 1
 			}
-			%intfn = %fn() %int
+			pattern intfn = %fn() %int
 			return (f match %intfn)
 		`
 
@@ -4775,7 +4775,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return %p
 			`, map[string]string{"./dep.ix": `
 				includable-chunk
-				%p = %str
+				pattern p = %str
 			`})
 
 			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
@@ -4889,9 +4889,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("imported module returns the %two pattern (same pattern is defined in module)", func(t *testing.T) {
 			mod, err := getModule(strings.ReplaceAll(`
 				manifest {}
-				%two = 1
+				pattern two = 1
 
-				import two_patt https://modules.com/return_global_a.ix {
+				import two_patt https://modules.com/return_patt_two.ix {
 					validation: "<hash>"
 					arguments: {}
 				}
@@ -4915,7 +4915,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("imported module returns the %two pattern", func(t *testing.T) {
 			mod, err := getModule(strings.ReplaceAll(`
 				manifest {}
-				import two_patt https://modules.com/return_global_a.ix {
+				import two_patt https://modules.com/return_patt_two.ix {
 					validation: "<hash>"
 					arguments: {}
 				}
@@ -4939,7 +4939,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("imported module returns the %int pattern (base pattern)", func(t *testing.T) {
 			mod, err := getModule(strings.ReplaceAll(`
 				manifest {}
-				import int_pattern https://modules.com/return_global_a.ix {
+				import int_pattern https://modules.com/return_patt_int.ix {
 					validation: "<hash>"
 					arguments: {}
 				}
@@ -5472,9 +5472,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		t.Run("patterns declared by an embedded module should not be declared in top level module's context", func(t *testing.T) {
 			code := `
-				%p1 = 1
+				pattern p1 = 1
 				rt = go {} do {
-					%p2 = 2
+					pattern p2 = 2
 				}
 	
 				rt.wait_result!()
@@ -6026,7 +6026,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	t.Run("pattern definition", func(t *testing.T) {
 
 		t.Run("identifier : RHS is a string literal", func(t *testing.T) {
-			code := `%s = "s"; return %s`
+			code := `pattern s = "s"; return %s`
 
 			state := NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
@@ -6037,7 +6037,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		})
 
 		t.Run("RHS is an unprefixed object pattern", func(t *testing.T) {
-			code := `%o = {}; return %o`
+			code := `pattern o = {}; return %o`
 
 			state := NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
@@ -6048,7 +6048,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		})
 
 		t.Run("RHS is a prefixed object pattern", func(t *testing.T) {
-			code := `%o = %{}; return %o`
+			code := `pattern o = %{}; return %o`
 
 			state := NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
@@ -6059,7 +6059,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		})
 
 		t.Run("RHS is an unprefixed object pattern with a unprefixed property pattern", func(t *testing.T) {
-			code := `%o = {a: int}; return %o`
+			code := `pattern o = {a: int}; return %o`
 
 			state := NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
@@ -6073,8 +6073,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		})
 
 		t.Run("pattern definition & identifiers : RHS is another pattern identifier", func(t *testing.T) {
-			code := `%p = "p"; 
-			%s = %p; 
+			code := `pattern p = "p"; 
+			pattern s = %p; 
 			return %s`
 
 			state := NewGlobalState(NewDefaultTestContext())
@@ -6087,9 +6087,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		t.Run("pattern definition & identifiers : minimal lazy", func(t *testing.T) {
 			code := `
-				%s = @ %p
+				pattern s = @ %p
 				prev = %s
-				%p = "p"
+				pattern p = "p"
 				return [$prev, %s]
 			`
 
@@ -6106,9 +6106,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		t.Run("pattern definition & identifiers : lazy", func(t *testing.T) {
 			code := `
-				%s = @ %str( %p "a" )
+				pattern s = @ %str( %p "a" )
 				prev = %s
-				%p = "p"
+				pattern p = "p"
 				return [$prev, %s]
 			`
 
@@ -6125,7 +6125,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		t.Run("pattern definition: sequence string pattern: single element", func(t *testing.T) {
 			code := `
-				%s = %str( 'a'..'z' )
+				pattern s = %str( 'a'..'z' )
 				return %s
 			`
 
@@ -6144,7 +6144,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	t.Run("pattern namespace definition", func(t *testing.T) {
 
 		t.Run("RHS is an empty object literal", func(t *testing.T) {
-			code := `%namespace. = {}`
+			code := `pnamespace namespace. = {}`
 
 			state := NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
@@ -6161,7 +6161,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		})
 
 		t.Run("RHS is an object literal with patterns & non-pattern values", func(t *testing.T) {
-			code := `%namespace. = {one: 1, empty_obj: %{}}`
+			code := `pnamespace namespace. = {one: 1, empty_obj: %{}}`
 
 			state := NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
@@ -6192,7 +6192,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 	t.Run("pattern namespace member", func(t *testing.T) {
 		code := `
-			%namespace. = {one: 1}
+			pnamespace namespace. = {one: 1}
 			return %namespace.one
 		`
 		state := NewGlobalState(NewDefaultTestContext())
@@ -6225,7 +6225,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		})
 
 		t.Run("not empty", func(t *testing.T) {
-			code := `%s = "s"; return %{name: %s, count: 2}`
+			code := `pattern s = "s"; return %{name: %s, count: 2}`
 
 			state := NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
@@ -6248,7 +6248,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		})
 
 		t.Run("unprefixed named pattern", func(t *testing.T) {
-			code := `%s = "s"; return %{name: s}`
+			code := `pattern s = "s"; return %{name: s}`
 
 			state := NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
@@ -6267,8 +6267,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			t.Run("single-property object pattern before properties", func(t *testing.T) {
 				code := `
-					%s = "s"
-					%user = %{name: "foo"}
+					pattern s = "s"
+					pattern user = %{name: "foo"}
 					return %{...%user, s: %s}
 				`
 
@@ -6288,8 +6288,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			t.Run("single-property object pattern before same property with different type", func(t *testing.T) {
 				code := `
-					%s = "s"
-					%user = %{name: "foo"}
+					pattern s = "s"
+					pattern user = %{name: "foo"}
 					return %{...%user, name: "bar"}
 				`
 
@@ -6308,8 +6308,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			t.Run("two-property object pattern before properties", func(t *testing.T) {
 				code := `
-					%s = "s"
-					%user = %{name: "foo", age: 30}
+					pattern s = "s"
+					pattern user = %{name: "foo", age: 30}
 					return %{...%user, s: %s}
 				`
 
@@ -6336,7 +6336,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			t.Run("complex", func(t *testing.T) {
 				code := `
-					%user = %{name: "foo"}
+					pattern user = %{name: "foo"}
 					return %{...%user, friends: %[]%user}
 				`
 
@@ -6360,7 +6360,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			})
 
 			t.Run("spread element is not an object pattern", func(t *testing.T) {
-				code := `%s = "s"; return %{...%s}`
+				code := `pattern s = "s"; return %{...%s}`
 
 				state := NewGlobalState(NewDefaultTestContext())
 				defer state.Ctx.CancelGracefully()
@@ -6375,7 +6375,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 	t.Run("record pattern literal", func(t *testing.T) {
 		t.Run("empty", func(t *testing.T) {
-			code := `%p = #{}; return %p`
+			code := `pattern p = #{}; return %p`
 
 			state := NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
@@ -6389,7 +6389,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		})
 
 		t.Run("not empty", func(t *testing.T) {
-			code := `%s = "s"; %p = #{name: %s, count: 2}; return %p`
+			code := `pattern s = "s"; pattern p = #{name: %s, count: 2}; return %p`
 
 			state := NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
@@ -6412,7 +6412,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		})
 
 		t.Run("unprefixed named pattern", func(t *testing.T) {
-			code := `%s = "s"; %p = #{name: s}; return %p`
+			code := `pattern s = "s"; pattern p = #{name: s}; return %p`
 
 			state := NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
@@ -6431,9 +6431,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			t.Run("single-property object pattern before properties", func(t *testing.T) {
 				code := `
-					%s = "s"
-					%user = #{name: "foo"}
-					%p = #{...%user, s: %s}
+					pattern s = "s"
+					pattern user = #{name: "foo"}
+					pattern p = #{...%user, s: %s}
 					return %p
 				`
 
@@ -6453,8 +6453,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			t.Run("single-property record pattern before same property with different type", func(t *testing.T) {
 				code := `
-					%user = #{name: "foo"}
-					%p = #{...%user, name: "bar"}
+					pattern user = #{name: "foo"}
+					pattern p = #{...%user, name: "bar"}
 					return %p
 				`
 
@@ -6473,9 +6473,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			t.Run("two-property object pattern before properties", func(t *testing.T) {
 				code := `
-					%s = "s"
-					%user = #{name: "foo", age: 30}
-					%p = #{...%user, s: %s}
+					pattern s = "s"
+					pattern user = #{name: "foo", age: 30}
+					pattern p = #{...%user, s: %s}
 					return %p
 				`
 
@@ -6502,9 +6502,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			t.Run("complex", func(t *testing.T) {
 				code := `
-					%s = "s"
-					%user = #{name: "foo"}
-					%p = #{...%user, friends: %[]%user}
+					pattern s = "s"
+					pattern user = #{name: "foo"}
+					pattern p = #{...%user, friends: %[]%user}
 					return %p
 				`
 
@@ -6528,7 +6528,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			})
 
 			t.Run("spread element is not an record pattern", func(t *testing.T) {
-				code := `%s = "s"; %p = #{...%s}; return %p`
+				code := `pattern s = "s"; pattern p = #{...%s}; return %p`
 
 				state := NewGlobalState(NewDefaultTestContext())
 				defer state.Ctx.CancelGracefully()
@@ -6676,7 +6676,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 	t.Run("tuple pattern literal", func(t *testing.T) {
 		t.Run("empty", func(t *testing.T) {
-			code := `%p = #[]; return %p`
+			code := `pattern p = #[]; return %p`
 
 			state := NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
@@ -6689,7 +6689,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		})
 
 		t.Run("single element: integer literal", func(t *testing.T) {
-			code := `%p = #[ 2 ]; return %p`
+			code := `pattern p = #[ 2 ]; return %p`
 
 			state := NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
@@ -6710,7 +6710,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		})
 
 		t.Run("single element: empty record pattern", func(t *testing.T) {
-			code := `%p = #[ #{} ]; return %p`
+			code := `pattern p = #[ #{} ]; return %p`
 
 			state := NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
@@ -6725,7 +6725,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		})
 
 		t.Run("single element: empty record", func(t *testing.T) {
-			code := `%p = #[ %(#{}) ]; return %p`
+			code := `pattern p = #[ %(#{}) ]; return %p`
 
 			state := NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
@@ -6740,7 +6740,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		})
 
 		t.Run("single element: an object pattern literal", func(t *testing.T) {
-			code := `%p = #[ #{} ]; return %p`
+			code := `pattern p = #[ #{} ]; return %p`
 
 			state := NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
@@ -6758,7 +6758,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		})
 
 		t.Run("general element is an record pattern literal", func(t *testing.T) {
-			code := `%p = #[]#{}; return %p`
+			code := `pattern p = #[]#{}; return %p`
 
 			state := NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
@@ -6775,7 +6775,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		})
 
 		t.Run("general element is an unprefixed object pattern literal", func(t *testing.T) {
-			code := `%p = #[]#{}; return %p`
+			code := `pattern p = #[]#{}; return %p`
 
 			state := NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
@@ -6792,7 +6792,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		})
 
 		t.Run("general element is an unprefixed named pattern", func(t *testing.T) {
-			code := `%p = #[]int; return %p`
+			code := `pattern p = #[]int; return %p`
 
 			state := NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
@@ -7056,7 +7056,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		t.Run("no interpolation", func(t *testing.T) {
 			code := replace(`
-				%digit = %str('0'..'9')
+				pattern digit = %str('0'..'9')
 				return %digit|3|
 			`)
 
@@ -7085,7 +7085,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		t.Run("valid interpolations", func(t *testing.T) {
 			code := replace(`
-				%sql. = {
+				pnamespace sql. = {
 					stmt: %str( %|.*| )
 					int: %str( '0'..'9'+ )
 				}
@@ -7130,7 +7130,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		t.Run("invalid interpolation", func(t *testing.T) {
 			code := replace(`
-				%sql. = {
+				pnamespace sql. = {
 					stmt: %str( %|.*| )
 					int: %str( '0'..'9'+ )
 				}
@@ -7148,7 +7148,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		t.Run("final string does not match pattern", func(t *testing.T) {
 			code := replace(`
-				%sql. = {
+				pnamespace sql. = {
 					stmt: %str( %|x.*| )
 					int: %str( '0'..'9'+ )
 				}

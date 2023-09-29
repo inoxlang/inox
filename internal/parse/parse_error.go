@@ -11,6 +11,8 @@ const (
 	UnterminatedMemberExpr
 	UnterminatedDoubleColonExpr
 	UnterminatedExtendStmt
+	UnterminatedPatternDefinition
+	UnterminatedPatternNamespaceDefinition
 	MissingBlock
 	MissingFnBody
 	MissingEqualsSignInDeclaration
@@ -89,11 +91,6 @@ const (
 	UNTERMINATED_URL_OR_HOST_PATT_MISSING_HOST                              = "unterminated URL or Host pattern: missing host part after ://"
 	INVALID_URL_PATT                                                        = "invalid URL pattern"
 	UNTERMINATED_PATT                                                       = "unterminated pattern: '%'"
-	UNTERMINATED_PATT_DEF_MISSING_RHS                                       = "unterminated pattern definition: missing pattern after '='"
-	INVALID_PATT_DEF_MISSING_OPERATOR_SHOULD_BE_EQUAL                       = "invalid pattern definition: assignment operator should be '='"
-
-	UNTERMINATED_PATT_NS_DEF_MISSING_RHS                 = "unterminated pattern namespace definition: missing pattern after '='"
-	INVALID_PATT_NS_DEF_MISSING_OPERATOR_SHOULD_BE_EQUAL = "invalid pattern namespace definition: assignment operator should be '='"
 
 	INVALID_COMPLEX_PATTERN_ELEMENT                                      = "invalid complex pattern element"
 	UNTERMINATED_OBJ_PATT_MISSING_CLOSING_BRACE                          = "unterminated object pattern literal, missing closing brace '}'"
@@ -391,9 +388,21 @@ const (
 	XML_ATTRIBUTE_NAME_SHOULD_BE_IDENT                 = "xml attribute's name should be an identifier"
 	INVALID_TAG_NAME                                   = "invalid tag name"
 
+	//pattern definition
+	UNTERMINATED_PATT_DEF_MISSING_NAME_AFTER_PATTERN_KEYWORD      = "unterminated pattern definition: missing name after 'pattern' keyword"
+	UNTERMINATED_PATT_DEF_MISSING_EQUAL_SYMBOL_AFTER_PATTERN_NAME = "unterminated pattern definition: missing '=' symbol after the pattern's name"
+	UNTERMINATED_PATT_DEF_MISSING_RHS                             = "unterminated pattern definition: missing pattern after '='"
+
+	//pattern namespace definition
+	UNTERMINATED_PATT_NS_DEF_MISSING_NAME_AFTER_PATTERN_KEYWORD      = "unterminated pattern namespace definition: missing name after 'pnamss' keyword"
+	UNTERMINATED_PATT_NS_DEF_MISSING_EQUAL_SYMBOL_AFTER_PATTERN_NAME = "unterminated pattern namespace definition: missing '=' symbol after the namespace's name"
+	UNTERMINATED_PATT_NS_DEF_MISSING_RHS                             = "unterminated pattern namespace definition: missing definition after '='"
+	A_PATTERN_NAMESPACE_NAME_WAS_EXPECTED                            = "a pattern namespace name was expected (e.g. http. , models.), make sure to add a trailing point after the name."
+
 	//extend statement
 	UNTERMINATED_EXTEND_STMT_MISSING_PATTERN_TO_EXTEND_AFTER_KEYWORD       = "unterminated extend statement: missing pattern after keyword 'extend'"
 	UNTERMINATED_EXTEND_STMT_MISSING_OBJECT_LITERAL_AFTER_EXTENDED_PATTERN = "unterminated extend statement: missing object literal (extension) after pattern"
+	A_PATTERN_NAME_WAS_EXPECTED                                            = "a pattern name was expected"
 	INVALID_EXTENSION_VALUE_AN_OBJECT_LITERAL_WAS_EXPECTED                 = "invalid extension value: an object literal was expected"
 )
 

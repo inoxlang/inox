@@ -456,37 +456,37 @@ func TestFindCompletions(t *testing.T) {
 
 				t.Run("suggest pattern from first letter", func(t *testing.T) {
 					state := newState()
-					chunk, _ := parseChunkSource("%patt = 1; %p", "")
+					chunk, _ := parseChunkSource("pattern patt = 1; %p", "")
 					doSymbolicCheck(chunk, state.Global)
 
-					completions := findCompletions(state, chunk, 13)
+					completions := findCompletions(state, chunk, 20)
 					assert.EqualValues(t, []Completion{
 						{
 							ShownString:   "%patt",
 							Value:         "%patt",
-							ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 11, End: 13}},
+							ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 18, End: 20}},
 						},
 					}, completions)
 				})
 
 				t.Run("suggest pattern namespace from first letter", func(t *testing.T) {
 					state := newState()
-					chunk, _ := parseChunkSource("%namespace. = 1; %n", "")
+					chunk, _ := parseChunkSource("pnamespace namespace. = 1; %n", "")
 					doSymbolicCheck(chunk, state.Global)
 
-					completions := findCompletions(state, chunk, 19)
+					completions := findCompletions(state, chunk, 29)
 					assert.EqualValues(t, []Completion{
 						{
 							ShownString:   "%namespace.",
 							Value:         "%namespace.",
-							ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 17, End: 19}},
+							ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 27, End: 29}},
 						},
 					}, completions)
 				})
 
 				t.Run("suggest pattern namespace member from first letter", func(t *testing.T) {
 					state := newState()
-					chunk, _ := parseChunkSource("%namespace. = {patt: 1}; %namespace.p", "")
+					chunk, _ := parseChunkSource("pnamespace namespace. = {patt: 1}; %namespace.p", "")
 					doSymbolicCheck(chunk, state.Global)
 
 					completions := findCompletions(state, chunk, 37)
@@ -494,7 +494,7 @@ func TestFindCompletions(t *testing.T) {
 						{
 							ShownString:   "%namespace.patt",
 							Value:         "%namespace.patt",
-							ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 25, End: 37}},
+							ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 35, End: 47}},
 						},
 					}, completions)
 				})

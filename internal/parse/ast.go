@@ -1902,9 +1902,16 @@ type PipelineStage struct {
 
 type PatternDefinition struct {
 	NodeBase
-	Left   *PatternIdentifierLiteral
+	Left   Node //*PatternIdentifierLiteral if valid
 	Right  Node
 	IsLazy bool
+}
+
+func (d PatternDefinition) PatternName() (string, bool) {
+	if ident, ok := d.Left.(*PatternIdentifierLiteral); ok {
+		return ident.Name, true
+	}
+	return "", false
 }
 
 func (PatternDefinition) Kind() NodeKind {
@@ -1913,9 +1920,16 @@ func (PatternDefinition) Kind() NodeKind {
 
 type PatternNamespaceDefinition struct {
 	NodeBase
-	Left   *PatternNamespaceIdentifierLiteral
+	Left   Node //*PatternNamespaceIdentifierLiteral if valid
 	Right  Node
 	IsLazy bool
+}
+
+func (d PatternNamespaceDefinition) NamespaceName() (string, bool) {
+	if ident, ok := d.Left.(*PatternNamespaceIdentifierLiteral); ok {
+		return ident.Name, true
+	}
+	return "", false
 }
 
 func (PatternNamespaceDefinition) Kind() NodeKind {

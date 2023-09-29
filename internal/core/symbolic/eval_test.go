@@ -939,8 +939,8 @@ func TestSymbolicEval(t *testing.T) {
 
 		t.Run("RHS has type incompatible with explicit static type of the variable", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
-				%p = %| %int | %str
-				var v %p = int
+				pattern p = %| %int | %str
+				var v p = int
 				v = true
 				return v
 			`)
@@ -2738,7 +2738,7 @@ func TestSymbolicEval(t *testing.T) {
 
 		t.Run("patterns should be accessible from the body", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
-				%p = int
+				pattern p = int
 				fn f(){
 					[%p, %int]
 				}
@@ -2780,7 +2780,7 @@ func TestSymbolicEval(t *testing.T) {
 
 		t.Run("patterns should be accessible from the body of a function expression within a function declaration", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
-				%p = int
+				pattern p = int
 				fn f(){
 					return fn(){
 						[%p, %int]
@@ -3754,7 +3754,7 @@ func TestSymbolicEval(t *testing.T) {
 
 		t.Run("extension's method returning a property (double colon expression)", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
-				%o = {
+				pattern o = {
 					a: 1
 				}
 				extend o {
@@ -4430,7 +4430,7 @@ func TestSymbolicEval(t *testing.T) {
 
 	t.Run("readonly pattern", func(t *testing.T) {
 		t.Run("pattern convertible to readonly", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`%p = readonly {}; return %p`)
+			n, state := MakeTestStateAndChunk(`pattern p = readonly {}; return %p`)
 
 			res, err := symbolicEval(n, state)
 			if !assert.NoError(t, err) {
@@ -4445,7 +4445,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("pattern of immutable value", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`%p = readonly #{}; return %p`)
+			n, state := MakeTestStateAndChunk(`pattern p = readonly #{}; return %p`)
 
 			res, err := symbolicEval(n, state)
 			if !assert.NoError(t, err) {
@@ -4458,7 +4458,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("pattern not convertible to readonly", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`%p = readonly {x: not-convertible}; return %p`)
+			n, state := MakeTestStateAndChunk(`pattern p = readonly {x: not-convertible}; return %p`)
 			state.ctx.AddNamedPattern("not-convertible", ANY_SERIALIZABLE_PATTERN, true)
 
 			pattern := parse.FindNode(n, (*parse.ObjectPatternLiteral)(nil), nil)
@@ -7483,7 +7483,7 @@ func TestSymbolicEval(t *testing.T) {
 	t.Run("tuple pattern literal", func(t *testing.T) {
 		t.Run("ok", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
-			%p = #[ #[] ]
+			pattern p = #[ #[] ]
 			return %p
 		`)
 
@@ -7501,7 +7501,7 @@ func TestSymbolicEval(t *testing.T) {
 
 		t.Run("element patterns should match only immutable values", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
-				%p = #[ %{} ]
+				pattern p = #[ %{} ]
 				return %p
 			`)
 
@@ -7519,7 +7519,7 @@ func TestSymbolicEval(t *testing.T) {
 
 		t.Run("general element pattern should match only immutable values", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
-				%p = #[]%{}
+				pattern p = #[]%{}
 				return %p
 			`)
 
@@ -7595,7 +7595,7 @@ func TestSymbolicEval(t *testing.T) {
 
 		t.Run("object pattern literal", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
-				%p = %{list: %[1]}
+				pattern p = %{list: %[1]}
 				return %p
 			`)
 
@@ -7636,7 +7636,7 @@ func TestSymbolicEval(t *testing.T) {
 
 		t.Run("unprefixed object pattern literal", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
-				%p = {list: [1]}
+				pattern p = {list: [1]}
 				return %p
 			`)
 
@@ -7677,7 +7677,7 @@ func TestSymbolicEval(t *testing.T) {
 
 		t.Run("exact value", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
-				%p = 1
+				pattern p = 1
 				return %p
 			`)
 
@@ -7689,7 +7689,7 @@ func TestSymbolicEval(t *testing.T) {
 
 		t.Run("exact value: multivalue", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
-				%p = $$val
+				pattern p = $$val
 				return %p
 			`)
 			state.setGlobal("val", NewMultivalue(NewInt(1), NewInt(2)), GlobalConst)
@@ -7706,7 +7706,7 @@ func TestSymbolicEval(t *testing.T) {
 		t.Run("in preinit block", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				preinit {
-					%p = %{}
+					pattern p = %{}
 				}
 				return %p
 			`)
@@ -7744,7 +7744,7 @@ func TestSymbolicEval(t *testing.T) {
 	t.Run("pattern namespace definition", func(t *testing.T) {
 		t.Run("RHS is an object literal", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
-				%namespace. = {patt: %str}
+				pnamespace namespace. = {patt: %str}
 				return %namespace.
 			`)
 
@@ -7780,7 +7780,7 @@ func TestSymbolicEval(t *testing.T) {
 
 		t.Run("RHS is an object literal with an exact value", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
-				%namespace. = {patt: #a}
+				pnamespace namespace. = {patt: #a}
 				return %namespace.
 			`)
 
@@ -7816,7 +7816,7 @@ func TestSymbolicEval(t *testing.T) {
 
 		t.Run("RHS is invalid", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
-				%namespace. = int
+				pnamespace namespace. = int
 				return %namespace.
 			`)
 
@@ -7867,7 +7867,7 @@ func TestSymbolicEval(t *testing.T) {
 
 		t.Run("pattern already matches nil", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
-				%p = nil
+				pattern p = nil
 				return %p?
 			`)
 
@@ -8174,7 +8174,7 @@ func TestSymbolicEval(t *testing.T) {
 
 		t.Run("lifetime job within an object literal should have access to patterns defined in parent state", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
-				%p = int
+				pattern p = int
 				{ 
 					a: int
 					lifetimejob "name" { [%p, %int]  } 
@@ -8188,7 +8188,7 @@ func TestSymbolicEval(t *testing.T) {
 
 		t.Run("lifetime job within a function should have access to patterns defined in top level state", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
-				%p = int
+				pattern p = int
 				fn createJob(){
 					return lifetimejob "name" for %object { [%p, %int]  } 
 				}
@@ -8608,7 +8608,7 @@ func TestSymbolicEval(t *testing.T) {
 
 		t.Run("no interpolation", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(replace(`
-				%digit = %str('0'..'9')
+				pattern digit = %str('0'..'9')
 				return %digit|3|
 			`))
 
@@ -8631,7 +8631,7 @@ func TestSymbolicEval(t *testing.T) {
 
 		t.Run("interpolation & non-namespaced pattern", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(replace(`
-				%sql = %str( %|.*| )
+				pattern sql = %str( %|.*| )
 				unsanitized_id = "5"
 				return %sql|SELECT * FROM users WHERE id = {{int:$unsanitized_id}}|
 			`))
@@ -8648,7 +8648,7 @@ func TestSymbolicEval(t *testing.T) {
 
 		t.Run("interpolation pattern does not exist", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(replace(`
-				%sql. = {stmt: %str( %|.*| )}
+				pnamespace sql. = {stmt: %str( %|.*| )}
 				unsanitized_id = "5"
 				return %sql.stmt|SELECT * FROM users WHERE id = {{int:$unsanitized_id}}|
 			`))
@@ -8665,7 +8665,7 @@ func TestSymbolicEval(t *testing.T) {
 
 		t.Run("interpolation expression is not a string", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(replace(`
-				%sql. = {
+				pnamespace sql. = {
 					stmt: %str( %|.*| ),
 					int: %str( '0'..'9'+ )
 				}
@@ -9211,7 +9211,7 @@ func TestSymbolicEval(t *testing.T) {
 	t.Run("extend statement", func(t *testing.T) {
 		t.Run("one property", func(t *testing.T) {
 			n, state := MakeTestStateAndChunks(`
-				%p = {a: 1}
+				pattern p = {a: 1}
 
 				extend p {
 					b: - self.a
@@ -9244,7 +9244,7 @@ func TestSymbolicEval(t *testing.T) {
 
 		t.Run("one method", func(t *testing.T) {
 			n, state := MakeTestStateAndChunks(`
-				%p = {a: 1}
+				pattern p = {a: 1}
 
 				extend p {
 					b: fn(){
@@ -9279,7 +9279,7 @@ func TestSymbolicEval(t *testing.T) {
 
 		t.Run("properties of the extension object should not have the same name as an existing property", func(t *testing.T) {
 			n, state := MakeTestStateAndChunks(`
-				%p = {a: 1}
+				pattern p = {a: 1}
 
 				extend p {
 					a: - self.a
@@ -9298,7 +9298,7 @@ func TestSymbolicEval(t *testing.T) {
 
 		t.Run("properties of the extension object should not be implicit or index-like", func(t *testing.T) {
 			n, state := MakeTestStateAndChunks(`
-				%p = {a: 1}
+				pattern p = {a: 1}
 
 				extend p {
 					- self.a
@@ -9322,7 +9322,7 @@ func TestSymbolicEval(t *testing.T) {
 
 		t.Run("properties of the extension object should be valid inox identifiers", func(t *testing.T) {
 			n, state := MakeTestStateAndChunks(`
-				%p = {a: 1}
+				pattern p = {a: 1}
 
 				extend p {
 					" b": - self.a
@@ -9546,7 +9546,7 @@ func TestSymbolicEval(t *testing.T) {
 		t.Run("extension's property", func(t *testing.T) {
 			t.Run("object", func(t *testing.T) {
 				n, state := MakeTestStateAndChunk(`
-					%o = {
+					pattern o = {
 						# we do not use "int" because it is not concretizable (concrete type pattern is not available)
 						a: 1
 					}
@@ -9581,7 +9581,7 @@ func TestSymbolicEval(t *testing.T) {
 		t.Run("extension's method", func(t *testing.T) {
 
 			base := `
-				%o = {
+				pattern o = {
 					# we do not use "int" because it is not concretizable (concrete type pattern is not available)
 					a: 1
 				}

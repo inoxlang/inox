@@ -394,7 +394,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("duplicate keys", func(t *testing.T) {
-			n, src := parseCode(`%p = %{a: 1}; %{...(%p).{a}, a:1}`)
+			n, src := parseCode(`pattern p = %{a: 1}; %{...(%p).{a}, a:1}`)
 
 			keyNodes := parse.FindNodes(n, (*parse.IdentifierLiteral)(nil), func(l *parse.IdentifierLiteral) bool {
 				return l.Name == "a"
@@ -432,12 +432,12 @@ func TestCheck(t *testing.T) {
 
 	t.Run("record pattern literal", func(t *testing.T) {
 		t.Run("identifier keys", func(t *testing.T) {
-			n, src := parseCode(`%p = #{keyOne:1, keyTwo:2}`)
+			n, src := parseCode(`pattern p = #{keyOne:1, keyTwo:2}`)
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 
 		t.Run("duplicate keys", func(t *testing.T) {
-			n, src := parseCode(`%p = #{"0":1, "0": 1}`)
+			n, src := parseCode(`pattern p = #{"0":1, "0": 1}`)
 
 			keyNode := parse.FindNode(n, (*parse.QuotedStringLiteral)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
@@ -448,7 +448,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("duplicate keys", func(t *testing.T) {
-			n, src := parseCode(`%p = %{a: 1}; %e = #{...(%p).{a}, a:1}`)
+			n, src := parseCode(`pattern p = %{a: 1}; %e = #{...(%p).{a}, a:1}`)
 
 			keyNodes := parse.FindNodes(n, (*parse.IdentifierLiteral)(nil), func(l *parse.IdentifierLiteral) bool {
 				return l.Name == "a"
@@ -462,7 +462,7 @@ func TestCheck(t *testing.T) {
 
 		t.Run("key is too long", func(t *testing.T) {
 			name := strings.Repeat("a", MAX_NAME_BYTE_LEN+1)
-			code := strings.Replace(`%p = #{"a":1}`, "a", name, 1)
+			code := strings.Replace(`pattern p = #{"a":1}`, "a", name, 1)
 			n, src := parseCode(code)
 
 			keyNode := parse.FindNode(n, (*parse.QuotedStringLiteral)(nil), nil)
@@ -474,7 +474,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("metaproperty key", func(t *testing.T) {
-			n, src := parseCode(`%p = #{_url_: https://example.com/}`)
+			n, src := parseCode(`pattern p = #{_url_: https://example.com/}`)
 			keyNode := parse.FindNode(n, (*parse.IdentifierLiteral)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
@@ -530,7 +530,7 @@ func TestCheck(t *testing.T) {
 
 		t.Run("in a member expression in an extension' object method", func(t *testing.T) {
 			n, src := parseCode(`
-				%o = {
+				pattern o = {
 					a: 1
 				}
 				extend o {
@@ -582,7 +582,7 @@ func TestCheck(t *testing.T) {
 
 		t.Run("in the expression of an extension object's property", func(t *testing.T) {
 			n, src := parseCode(`
-				%p = {
+				pattern p = {
 					a: 1
 				}
 			
@@ -2830,7 +2830,7 @@ func TestCheck(t *testing.T) {
 		t.Run("lifetimejob expression has its own local scope", func(t *testing.T) {
 			n, src := parseCode(`
 				a = 1
-				%p = %{}
+				pattern p = %{}
 				lifetimejob #job for %p { a }
 			`)
 
@@ -2871,7 +2871,7 @@ func TestCheck(t *testing.T) {
 
 		t.Run("lifetime job should have access to parent module's patterns ", func(t *testing.T) {
 			n, src := parseCode(`
-				%p = 1
+				pattern p = 1
 				lifetimejob #job for %object {
 					[%p, %int, %dom.]
 				}
@@ -2951,8 +2951,8 @@ func TestCheck(t *testing.T) {
 	t.Run("pattern definition", func(t *testing.T) {
 		t.Run("redeclaration", func(t *testing.T) {
 			n, src := parseCode(`
-				%p = 0
-				%p = 1
+				pattern p = 0
+				pattern p = 1
 			`)
 			def := parse.FindNodes(n, (*parse.PatternDefinition)(nil), nil)[1]
 
@@ -2966,7 +2966,7 @@ func TestCheck(t *testing.T) {
 		t.Run("misplaced", func(t *testing.T) {
 			n, src := parseCode(`
 				fn f(){
-					%p = 0
+					pattern p = 0
 				}
 			`)
 			def := parse.FindNode(n, (*parse.PatternDefinition)(nil), nil)
@@ -2982,8 +2982,8 @@ func TestCheck(t *testing.T) {
 	t.Run("pattern namespace definition", func(t *testing.T) {
 		t.Run("redeclaration", func(t *testing.T) {
 			n, src := parseCode(`
-				%p. = {}
-				%p. = {}
+				pnamespace p. = {}
+				pnamespace p. = {}
 			`)
 			def := parse.FindNodes(n, (*parse.PatternNamespaceDefinition)(nil), nil)[1]
 
@@ -2997,7 +2997,7 @@ func TestCheck(t *testing.T) {
 		t.Run("misplaced", func(t *testing.T) {
 			n, src := parseCode(`
 				fn f(){
-					%p. = {}
+					pnamespace p. = {}
 				}
 			`)
 			def := parse.FindNode(n, (*parse.PatternNamespaceDefinition)(nil), nil)
@@ -3026,7 +3026,7 @@ func TestCheck(t *testing.T) {
 
 		t.Run("not declared pattern in lazy pattern definition", func(t *testing.T) {
 			n, src := parseCode(`
-				%p = @ %str( %s )
+				pattern p = @ %str( %s )
 			`)
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
@@ -3053,7 +3053,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("should be the type of a function parameter", func(t *testing.T) {
-			n, src := parseCode(`%p = readonly {}`)
+			n, src := parseCode(`pattern p = readonly {}`)
 
 			expr := parse.FindNode(n, (*parse.ReadonlyPatternExpression)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
@@ -3289,7 +3289,7 @@ func TestCheck(t *testing.T) {
 	t.Run("extend statement", func(t *testing.T) {
 		t.Run("should be located at the top level: in function declaration", func(t *testing.T) {
 			n, src := parseCode(`
-				%p = {a: 1}
+				pattern p = {a: 1}
 				fn f(){
 					extend p {}
 				}
@@ -3307,7 +3307,7 @@ func TestCheck(t *testing.T) {
 
 		t.Run("should be located at the top level: in if statement's block", func(t *testing.T) {
 			n, src := parseCode(`
-				%p = {a: 1}
+				pattern p = {a: 1}
 				if true {
 					extend p {}
 				}
@@ -3325,7 +3325,7 @@ func TestCheck(t *testing.T) {
 
 		t.Run("should not have variables in property expressions: identifier referring to a global variable", func(t *testing.T) {
 			n, src := parseCode(`
-				%p = {a: 1}
+				pattern p = {a: 1}
 				$$a = 1
 				extend p {
 					b: a
@@ -3347,7 +3347,7 @@ func TestCheck(t *testing.T) {
 
 		t.Run("should not have variables in property expressions: identifier referring to a local variable", func(t *testing.T) {
 			n, src := parseCode(`
-				%p = {a: 1}
+				pattern p = {a: 1}
 				a = 1
 				extend p {
 					b: a
@@ -3369,7 +3369,7 @@ func TestCheck(t *testing.T) {
 
 		t.Run("should not have variables in property expressions: global variable", func(t *testing.T) {
 			n, src := parseCode(`
-				%p = {a: 1}
+				pattern p = {a: 1}
 				$$a = 1
 				extend p {
 					b: $$a
@@ -3391,7 +3391,7 @@ func TestCheck(t *testing.T) {
 
 		t.Run("should not have variables in property expressions: local variable", func(t *testing.T) {
 			n, src := parseCode(`
-				%p = {a: 1}
+				pattern p = {a: 1}
 				a = 1
 				extend p {
 					b: $a

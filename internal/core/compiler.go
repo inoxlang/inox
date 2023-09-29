@@ -1327,16 +1327,20 @@ func (c *compiler) Compile(node parse.Node) error {
 				return err
 			}
 		}
+		name := utils.MustGet(node.PatternName())
+
 		c.emit(node, OpToPattern)
-		c.emit(node, OpAddPattern, c.addConstant(Str(node.Left.Name)))
+		c.emit(node, OpAddPattern, c.addConstant(Str(name)))
 	case *parse.PatternNamespaceIdentifierLiteral:
 		c.emit(node, OpResolvePatternNamespace, c.addConstant(Str(node.Name)))
 	case *parse.PatternNamespaceDefinition:
 		if err := c.Compile(node.Right); err != nil {
 			return err
 		}
+		name := utils.MustGet(node.NamespaceName())
+
 		c.emit(node, OpCreatePatternNamespace)
-		c.emit(node, OpAddPatternNamespace, c.addConstant(Str(node.Left.Name)))
+		c.emit(node, OpAddPatternNamespace, c.addConstant(Str(name)))
 	case *parse.PatternNamespaceMemberExpression:
 		c.emit(node, OpPatternNamespaceMemb, c.addConstant(Str(node.Namespace.Name)), c.addConstant(Str(node.MemberName.Name)))
 	case *parse.FunctionDeclaration:

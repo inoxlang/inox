@@ -3,8 +3,8 @@ manifest {}
 # string patterns can be recursive, using '@' in front of a pattern will cause the interpreter
 # to defer the evaluation of the right side until all sub patterns are defined.
 # recursive patterns are pretty limited and slow: don't use them to check/parse complex strings, use real parsers instead.
-%json_list = @ %str( '[' (%json_val ",")* ']')
-%json_val = @ %str( (| %json_list | '1' ))
+pattern json_list = @ %str( '[' (%json_val ",")* ']')
+pattern json_val = @ %str( (| %json_list | '1' ))
 
 print "[] match %json_val:" ("[]" match %json_val)
 print "[1,] match %json_val:" ("[1,]" match %json_val)

@@ -3884,8 +3884,12 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 		}
 		//TODO: add checks
 		state.symbolicData.SetMostSpecificNodeValue(n.Left, pattern)
-		state.ctx.AddNamedPattern(n.Left.Name, pattern, state.inPreinit, state.getCurrentChunkNodePositionOrZero(n.Left))
-		state.symbolicData.SetContextData(n, state.ctx.currentData())
+
+		name, ok := n.PatternName()
+		if ok {
+			state.ctx.AddNamedPattern(name, pattern, state.inPreinit, state.getCurrentChunkNodePositionOrZero(n.Left))
+			state.symbolicData.SetContextData(n, state.ctx.currentData())
+		}
 		return nil, nil
 	case *parse.PatternNamespaceDefinition:
 		right, err := symbolicEval(n.Right, state)
@@ -3913,7 +3917,10 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 				}
 				namespace.entries[k] = v.(Pattern)
 			}
-			state.ctx.AddPatternNamespace(n.Left.Name, namespace, state.inPreinit, pos)
+			name, ok := n.NamespaceName()
+			if ok {
+				state.ctx.AddPatternNamespace(name, namespace, state.inPreinit, pos)
+			}
 		case *Record:
 			if len(r.entries) > 0 {
 				namespace.entries = make(map[string]Pattern)
@@ -3930,10 +3937,16 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 				}
 				namespace.entries[k] = v.(Pattern)
 			}
-			state.ctx.AddPatternNamespace(n.Left.Name, namespace, state.inPreinit, pos)
+			name, ok := n.NamespaceName()
+			if ok {
+				state.ctx.AddPatternNamespace(name, namespace, state.inPreinit, pos)
+			}
 		default:
 			state.addError(makeSymbolicEvalError(node, state, fmtPatternNamespaceShouldBeInitWithNot(right)))
-			state.ctx.AddPatternNamespace(n.Left.Name, namespace, state.inPreinit, pos)
+			name, ok := n.NamespaceName()
+			if ok {
+				state.ctx.AddPatternNamespace(name, namespace, state.inPreinit, pos)
+			}
 		}
 		state.symbolicData.SetMostSpecificNodeValue(n.Left, namespace)
 		state.symbolicData.SetContextData(n, state.ctx.currentData())
