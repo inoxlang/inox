@@ -881,7 +881,7 @@ pattern user = {
 
 Some named patterns are callable, for example if you want a pattern that matches all integers in the range 0..10 you can do the following:
 ```
-pattern = %int(0..10)
+pattern zero-to-ten = %int(0..10)
 ```
 
 Creating a named pattern `%user` does not prevent you to name a variable `user`:
