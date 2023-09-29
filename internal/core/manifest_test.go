@@ -72,11 +72,12 @@ func TestPreInit(t *testing.T) {
 		parentModuleAbsPath string
 
 		//output
-		expectedPermissions        []Permission
-		expectedLimits             []Limit
-		expectedResolutions        map[Host]Value
-		expectedPreinitFileConfigs PreinitFiles
-		expectedDatabaseConfigs    DatabaseConfigs
+		expectedPermissions          []Permission
+		expectedLimits               []Limit
+		expectedResolutions          map[Host]Value
+		expectedPreinitFileConfigs   PreinitFiles
+		expectedDatabaseConfigs      DatabaseConfigs
+		expectedAutoInvocationConfig *AutoInvocationConfig
 
 		//errors
 		error                     bool
@@ -732,7 +733,7 @@ func TestPreInit(t *testing.T) {
 			error:               false,
 		},
 		{
-			name: "invocation_section_with_added_elem_and_missing_dbs_section",
+			name: "invalid_invocation_section_missing_dbs_section",
 			module: `manifest {
 					invocation: {
 						on-added-element: ldb://main/users
@@ -780,7 +781,91 @@ func TestPreInit(t *testing.T) {
 					ResolutionData: Path("/tmp/mydb/"),
 				},
 			},
-			expectedResolutions: nil,
+			expectedAutoInvocationConfig: &AutoInvocationConfig{
+				OnAddedElement: "ldb://main/users",
+			},
+			setup: func() error {
+				resetStaticallyCheckDbResolutionDataFnRegistry()
+
+				RegisterStaticallyCheckDbResolutionDataFn("ldb", func(node parse.Node, p Project) (errorMsg string) {
+					return ""
+				})
+
+				return nil
+			},
+			teardown: func() {
+				resetStaticallyCheckDbResolutionDataFnRegistry()
+			},
+		},
+
+		{
+			name: "invalid_invocation_section_non_bool_async",
+			parentModule: `manifest {
+				databases: {
+					main: {
+						resource: ldb://main
+						resolution-data: /tmp/mydb/
+					}
+				}
+			}`,
+			parentModuleAbsPath: "/main.ix",
+			module: `manifest {
+					databases: /main.ix
+					invocation: {
+						on-added-element: ldb://main/users
+						async: 1
+					}
+				}`,
+			expectedPermissions:       []Permission{},
+			expectedLimits:            []Limit{},
+			error:                     true,
+			expectedStaticCheckErrors: []string{A_BOOL_LIT_IS_EXPECTED},
+
+			setup: func() error {
+				resetStaticallyCheckDbResolutionDataFnRegistry()
+
+				RegisterStaticallyCheckDbResolutionDataFn("ldb", func(node parse.Node, p Project) (errorMsg string) {
+					return ""
+				})
+
+				return nil
+			},
+			teardown: func() {
+				resetStaticallyCheckDbResolutionDataFnRegistry()
+			},
+		},
+
+		{
+			name: "invocation_section_with_added_elem_and_async",
+			parentModule: `manifest {
+				databases: {
+					main: {
+						resource: ldb://main
+						resolution-data: /tmp/mydb/
+					}
+				}
+			}`,
+			parentModuleAbsPath: "/main.ix",
+			module: `manifest {
+					databases: /main.ix
+					invocation: {
+						on-added-element: ldb://main/users
+						async: true
+					}
+				}`,
+			expectedPermissions: []Permission{},
+			expectedLimits:      []Limit{},
+			expectedDatabaseConfigs: DatabaseConfigs{
+				{
+					Name:           "main",
+					Resource:       Host("ldb://main"),
+					ResolutionData: Path("/tmp/mydb/"),
+				},
+			},
+			expectedAutoInvocationConfig: &AutoInvocationConfig{
+				OnAddedElement: "ldb://main/users",
+				Async:          true,
+			},
 			setup: func() error {
 				resetStaticallyCheckDbResolutionDataFnRegistry()
 
@@ -928,6 +1013,7 @@ func TestPreInit(t *testing.T) {
 				assert.EqualValues(t, testCase.expectedPermissions, manifest.RequiredPermissions)
 				assert.EqualValues(t, testCase.expectedLimits, manifest.Limits)
 				assert.EqualValues(t, testCase.expectedResolutions, manifest.HostResolutions)
+				assert.EqualValues(t, testCase.expectedAutoInvocationConfig, manifest.AutoInvocation)
 
 				if testCase.expectedPreinitFileErrors == nil {
 					for _, preinitFile := range manifest.PreinitFiles {

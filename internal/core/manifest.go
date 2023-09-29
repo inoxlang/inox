@@ -706,7 +706,8 @@ func (m *Module) createManifest(ctx *Context, object *Object, config manifestObj
 		moduleParams = ModuleParameters{
 			structType: ANON_EMPTY_STRUCT_TYPE,
 		}
-		dbConfigs DatabaseConfigs
+		dbConfigs      DatabaseConfigs
+		autoInvocation *AutoInvocationConfig
 	)
 	permListing := NewObject()
 	limits := make([]Limit, 0)
@@ -757,7 +758,22 @@ func (m *Module) createManifest(ctx *Context, object *Object, config manifestObj
 			}
 			dbConfigs = configs
 		case MANIFEST_INVOCATION_SECTION_NAME:
-			//TODO
+			description, ok := v.(*Object)
+			if !ok {
+				return nil, fmt.Errorf("invalid manifest, the '%s' section should have a value of type object", MANIFEST_INVOCATION_SECTION_NAME)
+			}
+			autoInvocation = &AutoInvocationConfig{}
+
+			description.ForEachEntry(func(k string, v Serializable) error {
+				switch k {
+				case MANIFEST_INVOCATION__ASYNC_PROP_NAME:
+					autoInvocation.Async = bool(v.(Bool))
+				case MANIFEST_INVOCATION__ON_ADDED_ELEM_PROP_NAME:
+					autoInvocation.OnAddedElement = v.(URL)
+				}
+				return nil
+			})
+
 		default:
 			if config.ignoreUnkownSections {
 				continue
@@ -805,6 +821,7 @@ func (m *Module) createManifest(ctx *Context, object *Object, config manifestObj
 		Parameters:          moduleParams,
 		PreinitFiles:        config.preinitFileConfigs,
 		Databases:           dbConfigs,
+		AutoInvocation:      autoInvocation,
 	}, nil
 }
 
