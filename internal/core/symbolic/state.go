@@ -40,8 +40,9 @@ type State struct {
 	tempSymbolicGoFunctionParameterNames []string
 	tempUpdatedSelf                      SymbolicValue
 
-	lastErrorNode parse.Node
-	symbolicData  *SymbolicData
+	lastErrorNode        parse.Node
+	symbolicData         *SymbolicData
+	shellTrustedCommands []string
 }
 
 type scopeInfo struct {
@@ -540,6 +541,7 @@ func (state *State) fork() *State {
 	child.Module = state.Module
 	child.chunkStack = utils.CopySlice(state.chunkStack)
 	child.symbolicData = state.symbolicData
+	child.shellTrustedCommands = state.shellTrustedCommands
 	child.returnType = state.returnType
 	child.baseGlobals = state.baseGlobals
 	child.basePatterns = state.basePatterns

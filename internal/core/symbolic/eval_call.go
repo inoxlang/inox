@@ -6,6 +6,7 @@ import (
 	"github.com/inoxlang/inox/internal/globalnames"
 	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
+	"golang.org/x/exp/slices"
 )
 
 func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, state *State, argNodes []parse.Node, must bool, cmdLineSyntax bool) (SymbolicValue, error) {
@@ -133,13 +134,23 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 				args = append(args, &Identifier{name: ident.Name})
 
 				//add warning if the identifier has the same name as a variable
-				isDefinedVar := state.hasLocal(ident.Name) || state.hasGlobal(ident.Name)
+				if state.hasLocal(ident.Name) || state.hasGlobal(ident.Name) {
+					addWarning := false
 
-				calleeIdent, ok := calleeNode.(*parse.IdentifierLiteral)
-				if isDefinedVar && (!ok || (calleeIdent.Name != globalnames.EXEC_FN && calleeIdent.Name != globalnames.HELP_FN)) {
-					isGlobal := state.hasGlobal(ident.Name)
-					state.addWarning(makeSymbolicEvalWarning(argNode, state, fmtDidYouMeanDollarName(ident.Name, isGlobal)))
+					if calleeIdent, ok := calleeNode.(*parse.IdentifierLiteral); !ok {
+						addWarning = true
+					} else if calleeIdent.Name != globalnames.EXEC_FN &&
+						calleeIdent.Name != globalnames.HELP_FN &&
+						!slices.Contains(state.shellTrustedCommands, calleeIdent.Name) {
+						addWarning = true
+					}
+
+					if addWarning {
+						isGlobal := state.hasGlobal(ident.Name)
+						state.addWarning(makeSymbolicEvalWarning(argNode, state, fmtDidYouMeanDollarName(ident.Name, isGlobal)))
+					}
 				}
+
 			} else {
 				options := evalOptions{}
 				if len(nonGoParameters) > 0 && argIndex < len(nonGoParameters) {

@@ -1235,9 +1235,10 @@ func (sh *shell) checkModule(mod *core.Module) (*core.StaticCheckData, *symbolic
 		Module:  symbolic.NewModule(mod.MainChunk, nil, nil),
 		Globals: globals,
 
-		IsShellChunk:   true,
-		ShellLocalVars: shellLocalVars,
-		Context:        symbolicContext,
+		IsShellChunk:         true,
+		ShellLocalVars:       shellLocalVars,
+		ShellTrustedCommands: sh.config.trustedCommands,
+		Context:              symbolicContext,
 	})
 
 	if err != nil {

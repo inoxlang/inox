@@ -105,9 +105,10 @@ type SymbolicEvalCheckInput struct {
 	SymbolicBasePatterns          map[string]Pattern
 	SymbolicBasePatternNamespaces map[string]*PatternNamespace
 
-	IsShellChunk   bool
-	ShellLocalVars map[string]any
-	Context        *Context
+	IsShellChunk         bool
+	ShellLocalVars       map[string]any
+	ShellTrustedCommands []string
+	Context              *Context
 
 	importPositions     []parse.SourcePositionRange
 	initialSymbolicData *SymbolicData
@@ -126,6 +127,7 @@ func SymbolicEvalCheck(input SymbolicEvalCheckInput) (*SymbolicData, error) {
 	state.basePatterns = input.SymbolicBasePatterns
 	state.basePatternNamespaces = input.SymbolicBasePatternNamespaces
 	state.importPositions = utils.CopySlice(input.importPositions)
+	state.shellTrustedCommands = input.ShellTrustedCommands
 
 	if input.UseBaseGlobals {
 		if input.Globals != nil {
