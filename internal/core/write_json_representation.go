@@ -264,6 +264,13 @@ func (list *List) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, conf
 }
 
 func (list *ValueList) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+	//TODO: bypass check if done at pattern level
+	for _, v := range list.elements {
+		if !config.IsValueVisible(v) {
+			return ErrNoRepresentation
+		}
+	}
+
 	listPattern, _ := config.Pattern.(*ListPattern)
 
 	write := func(w *jsoniter.Stream) error {
@@ -387,6 +394,13 @@ func (list *StringList) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream
 func (tuple *Tuple) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	if depth > MAX_JSON_REPR_WRITING_DEPTH {
 		return ErrMaximumJSONReprWritingDepthReached
+	}
+
+	//TODO: bypass check if done at pattern level
+	for _, v := range tuple.elements {
+		if !config.IsValueVisible(v) {
+			return ErrNoRepresentation
+		}
 	}
 
 	write := func(w *jsoniter.Stream) error {

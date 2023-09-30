@@ -70,6 +70,10 @@ type ReprConfig struct {
 }
 
 func (r *ReprConfig) IsValueVisible(v Value) bool {
+	if _, ok := v.(*Secret); ok {
+		return false
+	}
+
 	if r == nil || r.AllVisible {
 		return true
 	}
@@ -433,6 +437,13 @@ func (list *List) WriteRepresentation(ctx *Context, w io.Writer, config *ReprCon
 }
 
 func (list *ValueList) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
+	//TODO: bypass check if done at pattern level
+	for _, v := range list.elements {
+		if !config.IsValueVisible(v) {
+			return ErrNoRepresentation
+		}
+	}
+
 	_, err := w.Write([]byte{'['})
 	if err != nil {
 		return err
@@ -483,7 +494,6 @@ func (list *IntList) WriteRepresentation(ctx *Context, w io.Writer, config *Repr
 }
 
 func (list *BoolList) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
-
 	_, err := w.Write(OPENING_BRACKET)
 	if err != nil {
 		return err
@@ -568,6 +578,13 @@ func (list *StringList) WriteRepresentation(ctx *Context, w io.Writer, config *R
 func (tuple *Tuple) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	if depth > MAX_REPR_WRITING_DEPTH {
 		return ErrMaximumReprWritingDepthReached
+	}
+
+	//TODO: bypass check if done at pattern level
+	for _, v := range tuple.elements {
+		if !config.IsValueVisible(v) {
+			return ErrNoRepresentation
+		}
 	}
 
 	_, err := w.Write([]byte{'#', '['})
