@@ -82,8 +82,7 @@ output: [1, #a]
 
 ### Pipe Statements
 
-Pipe statements are analogous to pipes in Unix but they act on the values returned by functions, not 
-file descriptors.
+Pipe statements are analogous to pipes in Unix but they operate on the values returned by functions rather than on file descriptors.
 
 Here is an example:
 
@@ -97,7 +96,7 @@ map [{value: "a"}, {value: 1}] .value | filter $ %int
   - `%int` is a pattern matching integers
 
 
-Pipe expressions allow you to store the final result in a variable:
+Pipe expressions enable you to save the final result into a variable:
 ```
 ints = | map [{value: "a"}, {value: 1}] .value | filter $ %int
 ```
@@ -107,7 +106,7 @@ ints = | map [{value: "a"}, {value: 1}] .value | filter $ %int
 ### Help
 
 ```
-help <name of function>
+help <name of the function>
 
 example:
 help find
@@ -182,7 +181,7 @@ Reading the entries of a directory ``read ./dir/`` returns a list of %file-info:
 By default the `read` function parses the content of the read file, the extension
 is used to determinate the type of content.
 
-- Reading a text file returns a string: ``read ./file.txt` ->``"hello"`
+- Reading a text file returns a string: ``read ./file.txt` -> "hello"``
 - Reading a JSON file returns Inox values (objects, lists, ...) resulting from the parsing : 
     ``read ./file.json``
     ```json
@@ -192,7 +191,7 @@ is used to determinate the type of content.
 #### **HTTP Resource**
 
 By default the `read` function parses the content of the read resource, the Content-Type header 
-is used to determinated the type of content.
+is used to determinate the type of content.
 
 Reading an JSON HTTP resource: 
 ``read https://jsonplaceholder.typicode.com/posts/1``
@@ -241,7 +240,7 @@ find %./**/*.json ./
 ## Configuration
 
 The startup script `~/.config/inox/startup.ix` (or $XDG_CONFIG_HOME/inox/startup.ix) is executed before the shell is started,
-it returns the configuration for the shell. You can modify this file if you need more permissions.
+it returns the shell's configuration. You can modify this file if you need more permissions.
 
 The startup script can be specificied using the `-c` flag:
 ```
@@ -308,7 +307,7 @@ There are only a few builtin commands availabe:
 
 ### Trusted Commands
 
-Trusted commands are commands that are fully trusted, when you execute a trusted command the standard input is redirected
+Trusted commands are fully trusted, when you execute a trusted command the standard input is redirected
 to the spawned process.
 
 You can try that with the following command 
@@ -332,11 +331,11 @@ Here is an example of prompt configuration:
 ]
 ```
 
-- each part is described by a value or a list, allowed values are:
+- each part is described by a value or a list; allowed values include:
   - strings & values similar to strings (paths, urls, ...) 
   - lazy expressions
 - lists describe the part followed by 2 colors
-  - the first color is used when the terminal's background is darkish
+  - the first color is used when the terminal's background is dark
   - the second color is used when the terminal's background is light
 - lazy expressions such as @(whoami()) are evaluated each time the prompt is printed
   - they must be calls
