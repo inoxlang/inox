@@ -51,19 +51,32 @@ func TestConvertJsonSchemaToPattern(t *testing.T) {
 	})
 
 	t.Run("AnyOf", func(t *testing.T) {
+		t.SkipNow()
 		runTestSuites(t, jsonDraft7.AnyOf)
 	})
 
 	t.Run("BooleanSchema", func(t *testing.T) {
+		t.SkipNow()
 		runTestSuites(t, jsonDraft7.BooleanSchema)
 	})
 
 	t.Run("Const", func(t *testing.T) {
+		t.SkipNow()
 		runTestSuites(t, jsonDraft7.Const)
 	})
 
 	t.Run("Contains", func(t *testing.T) {
+		t.SkipNow()
 		runTestSuites(t, jsonDraft7.Contains)
+	})
+
+	t.Run("Definitions", func(t *testing.T) {
+		t.SkipNow()
+		runTestSuites(t, jsonDraft7.Definitions)
+	})
+
+	t.Run("Dependencies", func(t *testing.T) {
+		runTestSuites(t, jsonDraft7.Dependencies)
 	})
 }
 

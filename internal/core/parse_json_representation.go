@@ -289,6 +289,47 @@ func parseObjectJSONrepresentation(ctx *Context, it *jsoniter.Iterator, pattern 
 	}
 
 	obj.sortProps()
+
+	//check dependencies
+	if pattern != nil && len(pattern.dependencies) > 0 {
+		for _, propName := range obj.keys {
+			deps := pattern.dependencies[propName]
+
+			//check required keys
+			for _, requiredKey := range deps.requiredKeys {
+				ok := false
+				for _, name := range obj.keys {
+					if name == requiredKey {
+						ok = true
+						break
+					}
+				}
+
+				if !ok {
+					return nil, fmt.Errorf("due to dependencies the following property is missing: %q", requiredKey)
+				}
+			}
+
+			//check forbidden keys
+			for _, forbiddenKey := range deps.forbiddenKeys {
+				ok := false
+				for _, name := range obj.keys {
+					if name == forbiddenKey {
+						ok = true
+						break
+					}
+				}
+				if ok {
+					return nil, fmt.Errorf("due to dependencies the following property is forbidden: %q", forbiddenKey)
+				}
+			}
+
+			if deps.pattern != nil && !deps.pattern.Test(ctx, obj) {
+				return nil, fmt.Errorf("dependencies of property %q are not fulfilled", propName)
+			}
+		}
+	}
+
 	// add handlers before because jobs can mutate the object
 	if err := obj.addMessageHandlers(ctx); err != nil {
 		return nil, err

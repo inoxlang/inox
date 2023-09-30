@@ -280,8 +280,15 @@ type ObjectPattern struct {
 	NotCallablePatternMixin
 	entryPatterns           map[string]Pattern
 	optionalEntries         map[string]struct{}
+	dependencies            map[string]propertyDependencies
 	inexact                 bool //if true the matched object can have additional properties
 	complexPropertyPatterns []*ComplexPropertyConstraint
+}
+
+type propertyDependencies struct {
+	requiredKeys  []string
+	forbiddenKeys []string
+	pattern       Pattern
 }
 
 func NewExactObjectPattern(entries map[string]Pattern) *ObjectPattern {
@@ -304,6 +311,12 @@ func NewObjectPatternWithOptionalProps(inexact bool, entries map[string]Pattern,
 	return &ObjectPattern{entryPatterns: entries, optionalEntries: optionalProperties, inexact: inexact}
 }
 
+func (patt *ObjectPattern) WithDependencies(deps map[string]propertyDependencies) *ObjectPattern {
+	newPatt := *patt
+	newPatt.dependencies = deps
+	return &newPatt
+}
+
 func (patt *ObjectPattern) Test(ctx *Context, v Value) bool {
 	obj, ok := v.(*Object)
 	if !ok {
@@ -311,6 +324,26 @@ func (patt *ObjectPattern) Test(ctx *Context, v Value) bool {
 	}
 	if !patt.inexact && len(patt.optionalEntries) == 0 && len(obj.keys) != len(patt.entryPatterns) {
 		return false
+	}
+
+	propNames := obj.PropertyNames(ctx)
+
+	//check dependencies
+	for _, propName := range propNames {
+		deps := patt.dependencies[propName]
+		for _, dep := range deps.requiredKeys {
+			if !slices.Contains(propNames, dep) {
+				return false
+			}
+		}
+		for _, dep := range deps.forbiddenKeys {
+			if slices.Contains(propNames, dep) {
+				return false
+			}
+		}
+		if deps.pattern != nil && deps.pattern.Test(ctx, v) {
+			return false
+		}
 	}
 
 	for key, valuePattern := range patt.entryPatterns {

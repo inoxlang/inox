@@ -208,10 +208,21 @@ func convertJsonSchemaToPattern(schema *jsonschema.Schema, baseSchema *jsonschem
 			allowArray = true
 		}
 
+		if schema.Dependencies != nil {
+			allowNumber = true
+			allowInteger = true
+			allowNull = true
+			allowBoolean = true
+			allowString = true
+			allowObject = true
+			allowArray = true
+			break
+		}
+
 		if schema.MinProperties >= 0 || schema.MaxProperties >= 0 || schema.Required != nil ||
 			schema.Properties != nil || schema.PropertyNames != nil || schema.RegexProperties ||
 			schema.PatternProperties != nil || schema.AdditionalProperties != nil ||
-			schema.Dependencies != nil || schema.DependentRequired != nil {
+			schema.DependentRequired != nil {
 			allowObject = true
 		}
 	default:
@@ -417,11 +428,6 @@ func convertJsonSchemaToPattern(schema *jsonschema.Schema, baseSchema *jsonschem
 			return nil, errors.New("'dependentRequired' & 'dependentSchemas' are not supported yet")
 		}
 
-		if len(schema.Dependencies) > 0 {
-			anyObject = false
-			return nil, errors.New("'dependencies' is not supported yet")
-		}
-
 		exact := !schema.RegexProperties && len(schema.PatternProperties) == 0
 
 		switch v := schema.AdditionalProperties.(type) {
@@ -465,10 +471,46 @@ func convertJsonSchemaToPattern(schema *jsonschema.Schema, baseSchema *jsonschem
 			}
 		}
 
+		var dependencies map[string]propertyDependencies
+
+		if len(schema.Dependencies) > 0 {
+			anyObject = false
+
+			dependencies = map[string]propertyDependencies{}
+
+			for key, deps := range schema.Dependencies {
+				switch d := deps.(type) {
+				case []string:
+					dependencies[key] = propertyDependencies{requiredKeys: d}
+				case *jsonschema.Schema:
+					if d.Properties == nil || d.AdditionalProperties != nil ||
+						d.RegexProperties || d.UnevaluatedProperties != nil ||
+						d.PatternProperties != nil || d.MaxProperties != -1 ||
+						d.MinProperties != -1 || d.DependentRequired != nil {
+						return nil, errors.New("'dependencies' with schemas are not fully supported")
+					}
+
+					var propDependencies propertyDependencies
+
+					dependenciesPattern, err := convertJsonSchemaToPattern(d, nil, false)
+					if err != nil {
+						return nil, fmt.Errorf("failed to convert dependency pattern for property %q", key)
+					}
+
+					propDependencies.pattern = dependenciesPattern
+					dependencies[key] = propDependencies
+				default:
+				}
+			}
+		}
+
 		if anyObject {
 			unionCases = append(unionCases, OBJECT_PATTERN)
 		} else {
 			objectPattern := NewObjectPatternWithOptionalProps(!exact, entries, optionalProperties)
+			if len(dependencies) > 0 {
+				objectPattern = objectPattern.WithDependencies(dependencies)
+			}
 			unionCases = append(unionCases, objectPattern)
 		}
 	}
