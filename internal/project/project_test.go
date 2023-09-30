@@ -12,7 +12,24 @@ import (
 
 func TestCreateProject(t *testing.T) {
 
-	t.Run("create", func(t *testing.T) {
+	t.Run("invalid projec's name", func(t *testing.T) {
+		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
+		fls := fs_ns.NewMemFilesystem(1_000)
+
+		r := utils.Must(OpenRegistry("/projects", fls, ctx))
+		defer r.Close(ctx)
+
+		id, err := r.CreateProject(ctx, CreateProjectParams{
+			Name: " myproject",
+		})
+
+		assert.ErrorIs(t, err, ErrInvalidProjectName)
+		assert.Empty(t, id)
+	})
+
+	t.Run("once", func(t *testing.T) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 

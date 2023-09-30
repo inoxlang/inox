@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"regexp"
 
 	"github.com/go-git/go-billy/v5/util"
 	"github.com/inoxlang/inox/internal/afs"
@@ -23,9 +24,12 @@ const (
 	CREATION_PARAMS_METADATA_KEY              = "creation-params"
 	CREATION_PARAMS_NAME_METADATA_KEY         = "name"
 	CREATION_PARAMS_ADD_TUT_FILE_METADATA_KEY = "add-tut-file"
+
+	PROJECT_NAME_REGEX = "^[a-zA-Z][a-zA-Z0-9_-]+$"
 )
 
 var (
+	ErrInvalidProjectName   = errors.New("invalid project name")
 	ErrProjectNotFound      = errors.New("project not found")
 	ErrNoCloudflareProvider = errors.New("cloudflare provider not present")
 
@@ -70,6 +74,9 @@ type CreateProjectParams struct {
 
 // CreateProject
 func (r *Registry) CreateProject(ctx *core.Context, params CreateProjectParams) (core.ProjectID, error) {
+	if matched, err := regexp.MatchString(PROJECT_NAME_REGEX, params.Name); !matched || err != nil {
+		return "", ErrInvalidProjectName
+	}
 	id := core.RandomProjectID(params.Name)
 
 	// create the directory for storing projects if necessary
