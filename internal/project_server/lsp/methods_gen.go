@@ -190,7 +190,7 @@ func (m *Methods) didChangeConfigurationMethodInfo() *jsonrpc.MethodInfo {
 		return nil
 	}
 	return &jsonrpc.MethodInfo{
-		Name: "didChangeConfiguration",
+		Name: "workspace/didChangeConfiguration",
 		NewRequest: func() interface{} {
 			return &defines.DidChangeConfigurationParams{}
 		},
@@ -219,7 +219,7 @@ func (m *Methods) didChangeWatchedFilesMethodInfo() *jsonrpc.MethodInfo {
 		return nil
 	}
 	return &jsonrpc.MethodInfo{
-		Name: "didChangeWatchedFiles",
+		Name: "workspace/didChangeWatchedFiles",
 		NewRequest: func() interface{} {
 			return &defines.DidChangeWatchedFilesParams{}
 		},
@@ -306,7 +306,7 @@ func (m *Methods) didCloseTextDocumentMethodInfo() *jsonrpc.MethodInfo {
 		return nil
 	}
 	return &jsonrpc.MethodInfo{
-		Name: "didCloseTextDocument",
+		Name: "textDocument/didClose",
 		NewRequest: func() interface{} {
 			return &defines.DidCloseTextDocumentParams{}
 		},
@@ -335,7 +335,7 @@ func (m *Methods) willSaveTextDocumentMethodInfo() *jsonrpc.MethodInfo {
 		return nil
 	}
 	return &jsonrpc.MethodInfo{
-		Name: "willSaveTextDocument",
+		Name: "textDocument/willSave",
 		NewRequest: func() interface{} {
 			return &defines.WillSaveTextDocumentParams{}
 		},

@@ -41,12 +41,14 @@ var methods = []method{
 		Args: defines.NoParams{},
 	},
 	{
-		Name: "DidChangeConfiguration",
-		Args: defines.DidChangeConfigurationParams{},
+		Name:         "DidChangeConfiguration",
+		RegisterName: "workspace/didChangeConfiguration",
+		Args:         defines.DidChangeConfigurationParams{},
 	},
 	{
-		Name: "DidChangeWatchedFiles",
-		Args: defines.DidChangeWatchedFilesParams{},
+		Name:         "DidChangeWatchedFiles",
+		RegisterName: "workspace/didChangeWatchedFiles",
+		Args:         defines.DidChangeWatchedFilesParams{},
 	},
 	{
 		Name:         "DidOpenTextDocument",
@@ -60,12 +62,14 @@ var methods = []method{
 		RateLimits:   []int{20, 50, 300},
 	},
 	{
-		Name: "DidCloseTextDocument",
-		Args: defines.DidCloseTextDocumentParams{},
+		Name:         "DidCloseTextDocument",
+		RegisterName: "textDocument/didClose",
+		Args:         defines.DidCloseTextDocumentParams{},
 	},
 	{
-		Name: "WillSaveTextDocument",
-		Args: defines.WillSaveTextDocumentParams{},
+		Name:         "WillSaveTextDocument",
+		RegisterName: "textDocument/willSave",
+		Args:         defines.WillSaveTextDocumentParams{},
 	},
 	{
 		Name:         "DidSaveTextDocument",
