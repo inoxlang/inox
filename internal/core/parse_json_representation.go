@@ -85,18 +85,11 @@ func ParseNextJSONRepresentation(ctx *Context, it *jsoniter.Iterator, pattern Pa
 			return Nil, nil
 		case jsoniter.NumberValue:
 			number := it.ReadNumber()
-			if strings.Contains(number.String(), ".") {
-				float, err := number.Float64()
-				if err != nil {
-					return nil, err
-				}
-				return Float(float), nil
-			}
-			integer, err := number.Int64()
+			float, err := number.Float64()
 			if err != nil {
 				return nil, err
 			}
-			return Int(integer), nil
+			return Float(float), nil
 		}
 
 	case *IntRangePattern:
@@ -147,21 +140,33 @@ func ParseNextJSONRepresentation(ctx *Context, it *jsoniter.Iterator, pattern Pa
 			return ParseNextJSONRepresentation(ctx, it, nil, try)
 		case NIL_PATTERN:
 			if it.WhatIsNext() != jsoniter.NilValue {
+				if try {
+					return nil, ErrTriedToParseJSONRepr
+				}
 				return nil, ErrJsonNotMatchingSchema
 			}
 			return Nil, nil
 		case STR_PATTERN, STRLIKE_PATTERN:
 			if it.WhatIsNext() != jsoniter.StringValue {
+				if try {
+					return nil, ErrTriedToParseJSONRepr
+				}
 				return nil, ErrJsonNotMatchingSchema
 			}
 			return Str(it.ReadString()), nil
 		case BOOL_PATTERN:
 			if it.WhatIsNext() != jsoniter.BoolValue {
+				if try {
+					return nil, ErrTriedToParseJSONRepr
+				}
 				return nil, ErrJsonNotMatchingSchema
 			}
 			return Bool(it.ReadBool()), nil
 		case FLOAT_PATTERN:
 			if it.WhatIsNext() != jsoniter.NumberValue {
+				if try {
+					return nil, ErrTriedToParseJSONRepr
+				}
 				return nil, ErrJsonNotMatchingSchema
 			}
 			return Float(it.ReadFloat64()), nil
@@ -418,10 +423,16 @@ func parseFloatJSONRepresentation(ctx *Context, it *jsoniter.Iterator, pattern P
 	float := Float(it.ReadFloat64())
 
 	if it.Error != nil && it.Error != io.EOF {
+		if try {
+			return 0, ErrTriedToParseJSONRepr
+		}
 		return 0, fmt.Errorf("failed to parse float: %w", it.Error)
 	}
 
 	if patt, ok := pattern.(*FloatRangePattern); ok && !patt.Test(ctx, float) {
+		if try {
+			return 0, ErrTriedToParseJSONRepr
+		}
 		return 0, ErrNotMatchingSchemaFloatFound
 	}
 	return float, nil
@@ -580,10 +591,18 @@ func parseURLPatternJSONRepresentation(ctx *Context, it *jsoniter.Iterator, try 
 	return URLPattern(it.ReadString()), nil
 }
 
-func parseSameTypeListJSONRepr[T any](ctx *Context, it *jsoniter.Iterator, elementPattern Pattern, try bool, finalErr *error) (elements []T) {
+func parseSameTypeListJSONRepr[T any](
+	ctx *Context,
+	it *jsoniter.Iterator,
+	listPattern *ListPattern,
+	try bool,
+	finalErr *error,
+) (elements []T) {
 	index := 0
+	containedElementFound := listPattern.containedElement == nil
+
 	it.ReadArrayCB(func(i *jsoniter.Iterator) bool {
-		val, err := ParseNextJSONRepresentation(ctx, it, elementPattern, try)
+		val, err := ParseNextJSONRepresentation(ctx, it, listPattern.generalElementPattern, try)
 		if err != nil {
 			if try {
 				*finalErr = ErrTriedToParseJSONRepr
@@ -595,17 +614,41 @@ func parseSameTypeListJSONRepr[T any](ctx *Context, it *jsoniter.Iterator, eleme
 		}
 		elements = append(elements, val.(T))
 		index++
+
+		if !containedElementFound && listPattern.containedElement.Test(ctx, val) {
+			containedElementFound = true
+		}
+
 		return true
 	})
+
+	if !containedElementFound {
+		*finalErr = errors.New("JSON array has no element matching the contained element pattern")
+	}
 	return
 }
 
-func parseListJSONrepresentation(ctx *Context, it *jsoniter.Iterator, pattern *ListPattern, try bool) (_ *List, finalErr error) {
+func parseListJSONrepresentation(ctx *Context, it *jsoniter.Iterator, pattern *ListPattern, try bool) (in *List, finalErr error) {
 	if it.WhatIsNext() != jsoniter.ArrayValue {
 		if try {
 			return nil, ErrTriedToParseJSONRepr
 		}
 		return nil, ErrJsonNotMatchingSchema
+	}
+
+	checkLength := func(length int) bool {
+		if pattern == nil {
+			return true
+		}
+		if minCount := pattern.MinElementCount(); length < minCount {
+			finalErr = fmt.Errorf("JSON array has not enough elements (%d), at least %d elements were expected", length, minCount)
+			return false
+		} else if maxCount := pattern.MaxElementCount(); length > maxCount {
+			finalErr = fmt.Errorf("JSON array too many elements (%d), at most %d elements were expected", length, maxCount)
+			return false
+		}
+
+		return true
 	}
 
 	index := 0
@@ -628,10 +671,15 @@ func parseListJSONrepresentation(ctx *Context, it *jsoniter.Iterator, pattern *L
 			return true
 		})
 
+		if !checkLength(len(elements)) {
+			return
+		}
+
 		return NewWrappedValueList(elements...), nil
 	}
 
 	if pattern.elementPatterns != nil {
+		containedElementFound := pattern.containedElement == nil
 		var elements []Serializable
 
 		it.ReadArrayCB(func(i *jsoniter.Iterator) bool {
@@ -652,6 +700,11 @@ func parseListJSONrepresentation(ctx *Context, it *jsoniter.Iterator, pattern *L
 			}
 			elements = append(elements, val)
 			index++
+
+			if !containedElementFound && pattern.containedElement.Test(ctx, val) {
+				containedElementFound = true
+			}
+
 			return true
 		})
 
@@ -663,34 +716,54 @@ func parseListJSONrepresentation(ctx *Context, it *jsoniter.Iterator, pattern *L
 			return nil, fmt.Errorf("JSON array has not enough elements, %d elements were expected", len(pattern.elementPatterns))
 		}
 
+		if !containedElementFound {
+			return nil, errors.New("JSON array has no element matching the contained element pattern")
+		}
+
+		if !checkLength(len(elements)) {
+			return
+		}
+
 		return NewWrappedValueList(elements...), nil
 	} else {
 		generalElementPattern := pattern.generalElementPattern
 		if _, isIntRangePattern := generalElementPattern.(*IntRangePattern); isIntRangePattern || generalElementPattern == INT_PATTERN {
-			elements := parseSameTypeListJSONRepr[Int](ctx, it, generalElementPattern, try, &finalErr)
+			elements := parseSameTypeListJSONRepr[Int](ctx, it, pattern, try, &finalErr)
 			if finalErr != nil {
 				return nil, finalErr
 			}
+			if !checkLength(len(elements)) {
+				return
+			}
+
 			return NewWrappedIntListFrom(elements), nil
 		} else if generalElementPattern == BOOL_PATTERN {
-			elements := parseSameTypeListJSONRepr[Bool](ctx, it, generalElementPattern, try, &finalErr)
+			elements := parseSameTypeListJSONRepr[Bool](ctx, it, pattern, try, &finalErr)
 			if finalErr != nil {
 				return nil, finalErr
+			}
+			if !checkLength(len(elements)) {
+				return
 			}
 			return NewWrappedBoolList(elements...), nil
 		} else if _, ok := generalElementPattern.(StringPattern); ok || generalElementPattern == STRLIKE_PATTERN || generalElementPattern == STR_PATTERN {
-			elements := parseSameTypeListJSONRepr[StringLike](ctx, it, generalElementPattern, try, &finalErr)
+			elements := parseSameTypeListJSONRepr[StringLike](ctx, it, pattern, try, &finalErr)
 			if finalErr != nil {
 				return nil, finalErr
 			}
-
+			if !checkLength(len(elements)) {
+				return
+			}
 			return NewWrappedStringListFrom(elements), nil
 		} //else
-		elements := parseSameTypeListJSONRepr[Serializable](ctx, it, generalElementPattern, try, &finalErr)
+		elements := parseSameTypeListJSONRepr[Serializable](ctx, it, pattern, try, &finalErr)
 		if finalErr != nil {
 			return nil, finalErr
 		}
 
+		if !checkLength(len(elements)) {
+			return
+		}
 		return NewWrappedValueListFrom(elements), nil
 	}
 }

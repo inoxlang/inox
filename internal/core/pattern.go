@@ -461,6 +461,10 @@ type ListPattern struct {
 	NotCallablePatternMixin
 	elementPatterns       []Pattern
 	generalElementPattern Pattern
+
+	containedElement    Pattern
+	minElemCountPlusOne int //zero if not set
+	maxElemCount        int //ignored if minElemCountPlusOne <= 0
 }
 
 func NewListPatternOf(generalElementPattern Pattern) *ListPattern {
@@ -481,30 +485,113 @@ func NewListPatternVariadic(elementPatterns ...Pattern) *ListPattern {
 	return &ListPattern{elementPatterns: elementPatterns}
 }
 
+// WithMinMaxElements return a new version of the pattern with the given minimum count constraints.
+func (patt *ListPattern) WithMinElements(minCount int) *ListPattern {
+	if minCount < 0 {
+		panic(errors.New("minCount should not be negative"))
+	}
+
+	newPattern := *patt
+	newPattern.minElemCountPlusOne = minCount + 1
+
+	return &newPattern
+}
+
+// WithMinMaxElements return a new version of the pattern with the given minimum & maximum element count constraints.
+func (patt *ListPattern) WithMinMaxElements(minCount, maxCount int) *ListPattern {
+	if minCount > maxCount {
+		panic(errors.New("minCount should be less or equal to maxCount"))
+	}
+
+	newPattern := *patt
+	newPattern.minElemCountPlusOne = minCount + 1
+	newPattern.maxElemCount = maxCount
+
+	return &newPattern
+}
+
+// WithMinMaxElements return a new version of the pattern that expects at least one occurrence of element.
+func (patt *ListPattern) WithElement(element Pattern) *ListPattern {
+	if element == nil {
+		panic(errors.New("element should not be nil"))
+	}
+	newPattern := *patt
+	newPattern.containedElement = element
+	return &newPattern
+}
+
 func (patt ListPattern) Test(ctx *Context, v Value) bool {
 	list, ok := v.(*List)
 	if !ok {
 		return false
 	}
+
+	length := list.Len()
+
+	if length < patt.MinElementCount() || length > patt.MaxElementCount() {
+		return false
+	}
+
+	// if patt.containedElement is nil we assume that we already found the contained element
+	containedElementFound := patt.containedElement == nil
+
 	if patt.generalElementPattern != nil {
-		length := list.Len()
 		for i := 0; i < length; i++ {
 			e := list.At(ctx, i)
+
 			if !patt.generalElementPattern.Test(ctx, e) {
 				return false
 			}
+
+			if !containedElementFound && patt.containedElement.Test(ctx, e) {
+				containedElementFound = true
+			}
 		}
-		return true
+		return containedElementFound
 	}
-	if list.Len() != len(patt.elementPatterns) {
+
+	if length != len(patt.elementPatterns) {
 		return false
 	}
+
 	for i, elementPattern := range patt.elementPatterns {
+		e := list.At(ctx, i)
+
 		if !ok || !elementPattern.Test(ctx, list.At(ctx, i)) {
 			return false
 		}
+
+		if !containedElementFound && patt.containedElement.Test(ctx, e) {
+			containedElementFound = true
+		}
 	}
-	return true
+	return containedElementFound
+}
+
+func (patt *ListPattern) MinElementCount() int {
+	if patt.minElemCountPlusOne > 0 {
+		if patt.elementPatterns != nil {
+			panic(ErrUnreachable)
+		}
+		return patt.minElemCountPlusOne - 1
+	}
+	if patt.elementPatterns == nil {
+		return 0
+	}
+	return len(patt.elementPatterns)
+}
+
+func (patt *ListPattern) MaxElementCount() int {
+	if patt.minElemCountPlusOne > 0 {
+		if patt.elementPatterns != nil {
+			panic(ErrUnreachable)
+		}
+		return patt.maxElemCount
+	}
+	if patt.elementPatterns == nil {
+		return math.MaxInt64
+	}
+	return len(patt.elementPatterns)
 }
 
 func (patt *ListPattern) StringPattern() (StringPattern, bool) {

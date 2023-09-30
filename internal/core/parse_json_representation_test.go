@@ -68,9 +68,10 @@ func TestParseJSONRepresentation(t *testing.T) {
 			assert.Equal(t, Int(1), v)
 		}
 
+		//if no schema is specified a float is expected
 		v, err = ParseJSONRepresentation(ctx, `1`, nil)
 		if assert.NoError(t, err) {
-			assert.Equal(t, Int(1), v)
+			assert.Equal(t, Float(1), v)
 		}
 
 		intPattern := NewIntRangePattern(IntRange{Start: 0, End: 2, inclusiveEnd: true, Step: 1}, -1)

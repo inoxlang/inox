@@ -178,6 +178,17 @@ func convertJsonSchemaToPattern(schema *jsonschema.Schema, baseSchema *jsonschem
 
 	switch len(schema.Types) {
 	case 0:
+		if schema.Contains != nil {
+			allowNumber = true
+			allowInteger = true
+			allowNull = true
+			allowBoolean = true
+			allowString = true
+			allowObject = true
+			allowArray = schema.Contains.Always == nil || *schema.Contains.Always
+			break
+		}
+
 		if schema.Maximum != nil || schema.Minimum != nil || schema.MultipleOf != nil {
 			allowNumber = true
 		}
@@ -228,24 +239,29 @@ func convertJsonSchemaToPattern(schema *jsonschema.Schema, baseSchema *jsonschem
 	}
 
 	if allowNumber {
+		hasSpecifiedRange := false
 		floatRange := FloatRange{
 			Start: math.Inf(-1),
 			End:   math.Inf(1),
 		}
 
 		if schema.Minimum != nil {
+			hasSpecifiedRange = true
 			min, _ := schema.Minimum.Float64()
 			floatRange.Start = min
 		} else if schema.ExclusiveMinimum != nil {
+			hasSpecifiedRange = true
 			exclusiveMinimum, _ := schema.Minimum.Float64()
 			floatRange.Start = math.Nextafter(exclusiveMinimum, math.Inf(1))
 		}
 
 		if schema.Maximum != nil {
+			hasSpecifiedRange = true
 			max, _ := schema.Maximum.Float64()
 			floatRange.End = max
 			floatRange.inclusiveEnd = true
 		} else if schema.ExclusiveMaximum != nil {
+			hasSpecifiedRange = true
 			exclusiveMaximum, _ := schema.Maximum.Float64()
 			floatRange.End = exclusiveMaximum
 		}
@@ -255,8 +271,12 @@ func convertJsonSchemaToPattern(schema *jsonschema.Schema, baseSchema *jsonschem
 			multipleOf, _ = schema.MultipleOf.Float64()
 		}
 
-		pattern := NewFloatRangePattern(floatRange, multipleOf)
-		unionCases = append(unionCases, pattern)
+		if multipleOf == -1 && !hasSpecifiedRange {
+			unionCases = append(unionCases, FLOAT_PATTERN)
+		} else {
+			pattern := NewFloatRangePattern(floatRange, multipleOf)
+			unionCases = append(unionCases, pattern)
+		}
 	} else if allowInteger {
 		var intRange IntRange
 
@@ -369,27 +389,35 @@ func convertJsonSchemaToPattern(schema *jsonschema.Schema, baseSchema *jsonschem
 	}
 
 	if allowObject {
+		anyObject := true
+
 		if schema.MinProperties >= 0 || schema.MaxProperties >= 0 {
+			anyObject = false
 			return nil, errors.New("'minProperties' & 'maxProperties' are not supported")
 		}
 
 		if schema.RegexProperties {
+			anyObject = false
 			return nil, errors.New("'regexProperties' is not supported")
 		}
 
 		if len(schema.PatternProperties) > 0 {
+			anyObject = false
 			return nil, errors.New("'patternProperties' is not supported yet")
 		}
 
 		if schema.UnevaluatedProperties != nil {
+			anyObject = false
 			return nil, errors.New("'unevaluatedProperties' is not supported yet")
 		}
 
 		if len(schema.DependentRequired) > 0 || len(schema.DependentSchemas) > 0 {
+			anyObject = false
 			return nil, errors.New("'dependentRequired' & 'dependentSchemas' are not supported yet")
 		}
 
 		if len(schema.Dependencies) > 0 {
+			anyObject = false
 			return nil, errors.New("'dependencies' is not supported yet")
 		}
 
@@ -397,8 +425,10 @@ func convertJsonSchemaToPattern(schema *jsonschema.Schema, baseSchema *jsonschem
 
 		switch v := schema.AdditionalProperties.(type) {
 		case *jsonschema.Schema:
+			anyObject = false
 			return nil, errors.New("'additionalProperties' is not fully supported yet, only 'additionalProperties': <bool> is allowed")
 		case bool:
+			anyObject = false
 			if v {
 				exact = false
 			}
@@ -410,6 +440,8 @@ func convertJsonSchemaToPattern(schema *jsonschema.Schema, baseSchema *jsonschem
 		var optionalProperties map[string]struct{}
 
 		for name, propSchema := range schema.Properties {
+			anyObject = false
+
 			propPattern, err := convertJsonSchemaToPattern(propSchema, nil, false)
 			if err != nil {
 				return nil, err
@@ -432,16 +464,15 @@ func convertJsonSchemaToPattern(schema *jsonschema.Schema, baseSchema *jsonschem
 			}
 		}
 
-		objectPattern := NewObjectPatternWithOptionalProps(!exact, entries, optionalProperties)
-		unionCases = append(unionCases, objectPattern)
+		if anyObject {
+			unionCases = append(unionCases, OBJECT_PATTERN)
+		} else {
+			objectPattern := NewObjectPatternWithOptionalProps(!exact, entries, optionalProperties)
+			unionCases = append(unionCases, objectPattern)
+		}
 	}
 
 	if allowArray {
-		if (schema.MinItems > 0 && schema.MinItems != schema.MaxItems) ||
-			(schema.MaxItems == 0 && schema.MaxItems != -1) {
-			return nil, errors.New("'minItems' & 'maxItems' are not full supported yet")
-		}
-
 		//TODO: support schema.Items2020
 
 		if schema.UniqueItems {
@@ -479,23 +510,40 @@ func convertJsonSchemaToPattern(schema *jsonschema.Schema, baseSchema *jsonschem
 				elementPatterns = append(elementPatterns, elementPattern)
 			}
 		case nil:
-			if schema.Contains != nil {
-				var err error
-				generalElementPattern, err = convertJsonSchemaToPattern(schema.Contains, nil, false)
-				if err != nil {
-					return nil, err
-				}
-			}
+			generalElementPattern = SERIALIZABLE_PATTERN
 		}
 
-		var listPattern Pattern
+		var listPattern *ListPattern
 		if elementPatterns != nil {
 			listPattern = NewListPattern(elementPatterns)
 		} else {
 			listPattern = NewListPatternOf(generalElementPattern)
 		}
 
-		unionCases = append(unionCases, listPattern)
+		if schema.MinItems != -1 {
+			maxItems := schema.MaxItems
+			if maxItems < 0 {
+				maxItems = math.MaxInt64
+			}
+			listPattern = listPattern.WithMinMaxElements(schema.MinItems, maxItems)
+		}
+
+		if schema.Contains == nil {
+			unionCases = append(unionCases, listPattern)
+		} else if schema.Contains.Always == nil {
+			containedElementPattern, err := convertJsonSchemaToPattern(schema.Contains, nil, false)
+			if err != nil {
+				return nil, err
+			}
+			listPattern = listPattern.WithElement(containedElementPattern)
+			unionCases = append(unionCases, listPattern)
+		} else if *schema.Contains.Always {
+			if listPattern.MinElementCount() == 0 {
+				unionCases = append(unionCases, listPattern.WithMinElements(1))
+			}
+		} else {
+			panic(ErrUnreachable)
+		}
 	}
 
 	if len(unionCases) == 1 {
