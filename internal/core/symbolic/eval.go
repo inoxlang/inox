@@ -3644,6 +3644,9 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			return nil, err
 		}
 
+		extensions := state.ctx.GetExtensions(left)
+		state.symbolicData.SetAllTypeExtensions(n, extensions)
+
 		if n.Element == nil {
 			return ANY, nil
 		}
@@ -3695,7 +3698,6 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			return memb, nil
 		} else { //use extensions
 
-			extensions := state.ctx.GetExtensions(left)
 			var extension *TypeExtension
 			var expr propertyExpression
 

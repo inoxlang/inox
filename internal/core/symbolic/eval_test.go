@@ -9595,6 +9595,13 @@ func TestSymbolicEval(t *testing.T) {
 				}
 
 				assert.Len(t, extension.PropertyExpressions, 1)
+
+				extensions, ok := state.symbolicData.GetAllTypeExtensions(parse.FindNode(n, (*parse.DoubleColonExpression)(nil), nil))
+				if !assert.True(t, ok) {
+					return
+				}
+
+				assert.Len(t, extensions, 1)
 			})
 		})
 

@@ -1,7 +1,9 @@
 package core
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
 	"math"
 	"strings"
 
@@ -151,8 +153,8 @@ func convertJsonSchemaToPattern(schema *jsonschema.Schema, baseSchema *jsonschem
 
 	if len(schema.Constant) > 0 {
 		constant := schema.Constant[0]
-		value := ConvertJSONValToInoxVal(constant, true)
-		return NewExactValuePattern(value), nil
+
+		return convertConstSchemaValueToPattern(constant), nil
 	}
 
 	if len(schema.Enum) > 0 {
@@ -509,4 +511,38 @@ func convertJsonSchemaTypeToPattern(typename string) (Pattern, error) {
 		return pattern, nil
 	}
 	return nil, ErrInvalidOrUnsupportedJsonSchema
+}
+
+func convertConstSchemaValueToPattern(jsonValue any) Pattern {
+	switch c := jsonValue.(type) {
+	case map[string]any:
+		entries := map[string]Pattern{}
+
+		for k, v := range c {
+			entries[k] = convertConstSchemaValueToPattern(v)
+		}
+
+		return NewExactObjectPattern(entries)
+	case []any:
+		var elements []Pattern
+
+		for _, e := range c {
+			elements = append(elements, convertConstSchemaValueToPattern(e))
+		}
+
+		return NewListPattern(elements)
+	case json.Number:
+		float, _ := c.Float64()
+		return NewExactValuePattern(Float(float))
+	case float64:
+		return NewExactValuePattern(Float(c))
+	case nil:
+		return NIL_PATTERN
+	case bool:
+		return NewExactValuePattern(Bool(c))
+	case string:
+		return NewExactValuePattern(Str(c))
+	default:
+		panic(fmt.Errorf("cannot convert value of type %T to Inox Value", c))
+	}
 }

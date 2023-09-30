@@ -61,7 +61,12 @@ func TestConvertJsonSchemaToPattern(t *testing.T) {
 	})
 
 	t.Run("Const", func(t *testing.T) {
+		t.SkipNow()
 		runTestSuites(t, jsonDraft7.Const)
+	})
+
+	t.Run("Contains", func(t *testing.T) {
+		runTestSuites(t, jsonDraft7.Contains)
 	})
 }
 

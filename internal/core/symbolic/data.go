@@ -24,7 +24,8 @@ type SymbolicData struct {
 	allowedNonPresentProperties map[parse.Node][]string
 	allowedNonPresentKeys       map[parse.Node][]string
 	runtimeTypeCheckPatterns    map[parse.Node]any //concrete Pattern or nil (nil means the check is disabled)
-	typeExtensions              map[*parse.DoubleColonExpression]*TypeExtension
+	usedTypeExtensions          map[*parse.DoubleColonExpression]*TypeExtension
+	typeExtensions              map[*parse.DoubleColonExpression][]*TypeExtension
 
 	errorMessageSet map[string]bool
 	errors          []SymbolicEvaluationError
@@ -43,7 +44,8 @@ func NewSymbolicData() *SymbolicData {
 		allowedNonPresentKeys:       make(map[parse.Node][]string),
 		contextData:                 make(map[parse.Node]ContextData),
 		runtimeTypeCheckPatterns:    make(map[parse.Node]any, 0),
-		typeExtensions:              make(map[*parse.DoubleColonExpression]*TypeExtension, 0),
+		usedTypeExtensions:          make(map[*parse.DoubleColonExpression]*TypeExtension, 0),
+		typeExtensions:              make(map[*parse.DoubleColonExpression][]*TypeExtension, 0),
 
 		errorMessageSet:   make(map[string]bool, 0),
 		warningMessageSet: make(map[string]bool, 0),
@@ -213,8 +215,12 @@ func (data *SymbolicData) AddData(newData *SymbolicData) {
 		data.SetRuntimeTypecheckPattern(k, v)
 	}
 
-	for k, v := range newData.typeExtensions {
+	for k, v := range newData.usedTypeExtensions {
 		data.SetUsedTypeExtension(k, v)
+	}
+
+	for k, v := range newData.typeExtensions {
+		data.SetAllTypeExtensions(k, v)
 	}
 
 	data.errors = append(data.errors, newData.errors...)
@@ -362,7 +368,7 @@ func (d *SymbolicData) SetContextData(n parse.Node, contextData ContextData) {
 }
 
 func (d *SymbolicData) GetUsedTypeExtension(n *parse.DoubleColonExpression) (*TypeExtension, bool) {
-	e, ok := d.typeExtensions[n]
+	e, ok := d.usedTypeExtensions[n]
 	return e, ok
 }
 
@@ -371,12 +377,30 @@ func (d *SymbolicData) SetUsedTypeExtension(n *parse.DoubleColonExpression, ext 
 		return
 	}
 
-	_, ok := d.typeExtensions[n]
+	_, ok := d.usedTypeExtensions[n]
 	if ok {
 		panic(errors.New("type extension is already set for this node"))
 	}
 
-	d.typeExtensions[n] = ext
+	d.usedTypeExtensions[n] = ext
+}
+
+func (d *SymbolicData) GetAllTypeExtensions(n *parse.DoubleColonExpression) ([]*TypeExtension, bool) {
+	extensions, ok := d.typeExtensions[n]
+	return extensions, ok
+}
+
+func (d *SymbolicData) SetAllTypeExtensions(n *parse.DoubleColonExpression, extensions []*TypeExtension) {
+	if d == nil {
+		return
+	}
+
+	_, ok := d.typeExtensions[n]
+	if ok {
+		panic(errors.New("type extensions are already set for this node"))
+	}
+
+	d.typeExtensions[n] = extensions
 }
 
 func (d *SymbolicData) GetVariableDefinitionPosition(node parse.Node, ancestors []parse.Node) (pos parse.SourcePositionRange, found bool) {
