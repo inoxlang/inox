@@ -448,7 +448,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("duplicate keys", func(t *testing.T) {
-			n, src := parseCode(`pattern p = %{a: 1}; %e = #{...(%p).{a}, a:1}`)
+			n, src := parseCode(`pattern p = %{a: 1}; pattern e = #{...(%p).{a}, a:1}`)
 
 			keyNodes := parse.FindNodes(n, (*parse.IdentifierLiteral)(nil), func(l *parse.IdentifierLiteral) bool {
 				return l.Name == "a"
@@ -462,7 +462,7 @@ func TestCheck(t *testing.T) {
 
 		t.Run("key is too long", func(t *testing.T) {
 			name := strings.Repeat("a", MAX_NAME_BYTE_LEN+1)
-			code := strings.Replace(`pattern p = #{"a":1}`, "a", name, 1)
+			code := `pattern p = ` + strings.Replace(`#{"a":1}`, "a", name, 1)
 			n, src := parseCode(code)
 
 			keyNode := parse.FindNode(n, (*parse.QuotedStringLiteral)(nil), nil)
@@ -2303,7 +2303,7 @@ func TestCheck(t *testing.T) {
 			`, map[string]string{"./dep.ix": `
 				manifest {}
 				a = 1
-				pattern = %x
+				$pattern = %x
 				namespace = %ix.
 			`})
 
