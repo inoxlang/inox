@@ -224,7 +224,18 @@ URLs & paths are first-class values and must be used to perform network or files
 
 #### **URL Interpolations**
 
-When you dynamically create URLs the interpolations are restricted based on their location (path, query).\
+When you dynamically create URLs the interpolations are restricted based on their location (path, query).
+
+```
+https://example.com/{path}?a={param}
+```
+In short, most malicious `path` and `param` values provided by a malevolent user will cause an error at runtime.
+
+<details>
+<summary>
+ Click for more explanations.
+</summary>
+
 
 Let's say that you are writing a piece of code that fetches **public** data from a private/internal service and returns the result 
 to a user. You are using the query parameter `?admin=false` in the URL because only public data should be returned.
@@ -245,16 +256,20 @@ In Inox the URL interpolations are special, based on the location of the interpo
 https://example.com/api/{path}/?x={x}
 ```
 
-- interpolations before the **'?'** are **path** interpolations
-  - the strings/characters **..** | **\*** | **\\** | **?** | **#** are forbidden
-  - **':'** is forbidden at the start of the finalized path (after all interpolations have been evaluated)
-- interpolations after the **'?'** are **query** interpolations 
-  - the characters **'&'** and **'#'** are forbidden
+- interpolations before the `'?'` are **path** interpolations
+  - the strings/characters `'..'`, `'\\'`, `'?'` and `'#'` are forbidden
+  - the URL encoded versions of `'..'` and `'\\'` are forbidden
+  - `':'` is forbidden at the start of the finalized path (after all interpolations have been evaluated)
+- interpolations after the `'?'` are **query** interpolations 
+  - the characters `'&'` and `'#'` are forbidden
 
 In the example if the path `/data?admin=true` is received the Inox runtime will throw an error:
 ```
 URL expression: result of a path interpolation should not contain any of the following substrings: "..", "\" , "*", "?"
 ```
+
+
+</details>
 
 ### Permission System
 
@@ -365,9 +380,9 @@ manifest {
 
 Secrets are special Inox values, they can only be created by defining an **environment variable** with a pattern like %secret-string or 
 by storing a [project secret](./docs/project.md#project-secrets).
-- The content of the secret is **hidden** when printed or logged
-- The serialization of any secret returns "secret(...)", so you **cannot** send secrets in clear over the network
-- A comparison involving a secret always returns **false**
+- The content of the secret is **hidden** when printed or logged.
+- The serialization of any secret returns "secret(...)", hence the true value is never included in HTTP responses.
+- A comparison involving a secret always returns **false**.
 
 ```
 manifest {
