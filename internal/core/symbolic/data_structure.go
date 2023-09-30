@@ -1640,7 +1640,7 @@ func (obj *Object) GetProperty(name string) (SymbolicValue, Pattern, bool) {
 	return v, obj.static[name], ok
 }
 
-func (obj *Object) AddStatic(pattern Pattern) {
+func (obj *Object) AddStatic(pattern Pattern) (StaticDataHolder, error) {
 	if objPatt, ok := pattern.(*ObjectPattern); ok {
 		if obj.static == nil {
 			obj.static = make(map[string]Pattern, len(objPatt.entries))
@@ -1658,9 +1658,10 @@ func (obj *Object) AddStatic(pattern Pattern) {
 		}
 	} else if _, ok := pattern.(*TypePattern); ok {
 		//TODO
-	} else {
-		panic(errors.New("cannot add static information of non object pattern"))
+	} else if !pattern.TestValue(obj) {
+		return nil, errors.New("cannot add static information of non object pattern")
 	}
+	return obj, nil
 }
 
 func (o *Object) HasKnownLen() bool {

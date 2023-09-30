@@ -616,9 +616,10 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 							state.addError(makeSymbolicEvalError(decl.Right, state, fmtNotAssignableToVarOftype(right, static)))
 						}
 						right = ANY
-					} else {
-						if holder, ok := right.(StaticDataHolder); ok {
-							holder.AddStatic(static) //TODO: use path narowing, values should never be modified directly
+					} else if holder, ok := right.(StaticDataHolder); ok {
+						right, err = holder.AddStatic(static) //TODO: use path narowing, values should never be modified directly
+						if err != nil {
+							state.addError(makeSymbolicEvalError(decl.Right, state, err.Error()))
 						}
 					}
 				}

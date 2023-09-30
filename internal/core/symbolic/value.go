@@ -93,7 +93,9 @@ type PseudoPropsValue interface {
 
 type StaticDataHolder interface {
 	SymbolicValue
-	AddStatic(Pattern)
+
+	//AddStatic returns a new StaticDataHolder with the added static data.
+	AddStatic(Pattern) (StaticDataHolder, error)
 }
 
 var _ = []PseudoPropsValue{

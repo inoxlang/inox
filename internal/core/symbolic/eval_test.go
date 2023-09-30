@@ -844,6 +844,26 @@ func TestSymbolicEval(t *testing.T) {
 			}, res)
 		})
 
+		t.Run("object assignable to wide type", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				var obj object = {name: str}; 
+				return obj
+			`)
+			state.setGlobal("str", ANY_STR_LIKE, GlobalConst)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+
+			assert.Empty(t, state.errors())
+			assert.Equal(t, &Object{
+				entries: map[string]Serializable{
+					"name": ANY_STR_LIKE,
+				},
+				static: map[string]Pattern{
+					"name": state.ctx.ResolveNamedPattern("str"),
+				},
+			}, res)
+		})
+
 		t.Run("multivalue LHS", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				return fn(v %| %[]%int | %[]%str){

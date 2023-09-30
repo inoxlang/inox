@@ -611,11 +611,11 @@ func (s *AnyStringLike) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintC
 }
 
 func (s *AnyStringLike) element() SymbolicValue {
-	return &Byte{}
+	return ANY_BYTE
 }
 
 func (s *AnyStringLike) elementAt(i int) SymbolicValue {
-	return &Byte{}
+	return ANY_BYTE
 }
 
 func (s *AnyStringLike) IteratorElementKey() SymbolicValue {
