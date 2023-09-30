@@ -381,7 +381,7 @@ manifest {
 Secrets are special Inox values, they can only be created by defining an **environment variable** with a pattern like %secret-string or 
 by storing a [project secret](./docs/project.md#project-secrets).
 - The content of the secret is **hidden** when printed or logged.
-- The serialization of any secret returns "secret(...)", hence the true value is never included in HTTP responses.
+- Secrets are not serializable so they cannot be included in HTTP responses.
 - A comparison involving a secret always returns **false**.
 
 ```
@@ -397,7 +397,44 @@ API_KEY = env.initial.API_KEY
 ```
 #### **Visibility (WIP)**
 
-TODO: explain
+*This feature is **very much** work in progress.*
+
+The serialization of Inox values involves the concepts of **value visibility** and 
+**property visibility**.
+
+Let's take an example, here is an Inox object:
+```
+{
+  non_sensitive: 1, 
+  x: example@mail.com,  # email address type
+  age: 30, 
+  passwordHash: "x"
+}
+```
+
+The serialization of the object will not include properties having a **sensitive name**
+or a **sensitive value**:
+
+```
+{
+  "non_sensitive": 1
+}
+```
+
+The visibility of properties can be configured using the `_visibility_` metaproperty.
+
+```
+{
+  _visibility_ {
+    {
+      public: .{x}
+    }
+  }
+  passwordHash: "x"
+}
+```
+
+ℹ️ In the near future the visibility will be configurable directly in patterns & database schemas.
 
 ### Concurrency
 
