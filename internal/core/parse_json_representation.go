@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"strconv"
 	"strings"
 
@@ -224,27 +225,89 @@ func parseObjectJSONrepresentation(ctx *Context, it *jsoniter.Iterator, pattern 
 		return nil, ErrJsonNotMatchingSchema
 	}
 
-	it.ReadObjectCB(func(i *jsoniter.Iterator, key string) bool {
+	var entryPatterns map[string]Pattern
+
+	if pattern != nil {
+		entryPatterns = pattern.entryPatterns
+	}
+
+	var parseInTwoIterations = false
+
+	if pattern != nil {
+		for _, deps := range pattern.dependencies {
+			if deps.pattern != nil {
+				parseInTwoIterations = true
+				break
+			}
+		}
+	}
+
+	var currentIt = it
+
+	if parseInTwoIterations {
+		entryPatterns = maps.Clone(entryPatterns)
+
+		objectBytes := it.SkipAndReturnBytes()
+		tempIt := jsoniter.NewIterator(jsoniter.ConfigDefault)
+		tempIt.ResetBytes(objectBytes)
+
+		//first iteration to know the keys
+		tempIt.ReadObjectCB(func(i *jsoniter.Iterator, key string) bool {
+			if parse.IsMetadataKey(key) && key != URL_METADATA_KEY {
+				finalErr = fmt.Errorf("%w: %s", ErrNonSupportedMetaProperty, key)
+				return false
+			}
+
+			tempIt.Skip()
+			if key == URL_METADATA_KEY {
+				return true
+			}
+
+			deps := pattern.dependencies[key]
+			//we set the entry pattern based on the dependencies
+			if objPatt, ok := deps.pattern.(*ObjectPattern); ok {
+				for name, conditionalEntryPatt := range objPatt.entryPatterns {
+					p, ok := entryPatterns[name]
+					if ok {
+						entryPatterns[name] = NewIntersectionPattern([]Pattern{p, conditionalEntryPatt}, nil)
+					} else {
+						entryPatterns[name] = conditionalEntryPatt
+					}
+				}
+			}
+			return true
+		})
+
+		if finalErr != nil {
+			return nil, finalErr
+		}
+
+		if it.Error != nil && it.Error != io.EOF {
+			return nil, it.Error
+		}
+
+		tempIt.Error = nil
+		tempIt.ResetBytes(objectBytes)
+		currentIt = tempIt
+	}
+
+	currentIt.ReadObjectCB(func(i *jsoniter.Iterator, key string) bool {
 		if parse.IsMetadataKey(key) && key != URL_METADATA_KEY {
 			finalErr = fmt.Errorf("%w: %s", ErrNonSupportedMetaProperty, key)
 			return false
 		}
 
 		if key == URL_METADATA_KEY {
-			obj.url = URL(it.ReadString())
+			obj.url = URL(currentIt.ReadString())
 			return true
 		}
 
 		obj.keys = append(obj.keys, key)
+		entryPattern := entryPatterns[key] //no issue if nil
 
-		var entryPattern Pattern
-		if pattern != nil {
-			entryPattern = pattern.entryPatterns[key]
-		}
-
-		val, err := ParseNextJSONRepresentation(ctx, it, entryPattern, try)
+		val, err := ParseNextJSONRepresentation(ctx, currentIt, entryPattern, try)
 		if err != nil {
-			finalErr = fmt.Errorf("failed to parse value of object property %s: %w", key, err)
+			finalErr = fmt.Errorf("failed to parse value of object property %q: %w", key, err)
 			return false
 		}
 		obj.values = append(obj.values, val)

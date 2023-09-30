@@ -478,11 +478,17 @@ func convertJsonSchemaToPattern(schema *jsonschema.Schema, baseSchema *jsonschem
 
 			dependencies = map[string]propertyDependencies{}
 
-			for key, deps := range schema.Dependencies {
+			for dependentKey, deps := range schema.Dependencies {
 				switch d := deps.(type) {
 				case []string:
-					dependencies[key] = propertyDependencies{requiredKeys: d}
+					dependencies[dependentKey] = propertyDependencies{requiredKeys: d}
 				case *jsonschema.Schema:
+					if d.Always != nil {
+						return nil, errors.New("'dependencies' with boolean schemas are not supported")
+					}
+
+					var propDependencies propertyDependencies
+
 					if d.Properties == nil || d.AdditionalProperties != nil ||
 						d.RegexProperties || d.UnevaluatedProperties != nil ||
 						d.PatternProperties != nil || d.MaxProperties != -1 ||
@@ -490,15 +496,13 @@ func convertJsonSchemaToPattern(schema *jsonschema.Schema, baseSchema *jsonschem
 						return nil, errors.New("'dependencies' with schemas are not fully supported")
 					}
 
-					var propDependencies propertyDependencies
-
 					dependenciesPattern, err := convertJsonSchemaToPattern(d, nil, false)
 					if err != nil {
-						return nil, fmt.Errorf("failed to convert dependency pattern for property %q", key)
+						return nil, fmt.Errorf("failed to convert dependency pattern for property %q", dependentKey)
 					}
 
 					propDependencies.pattern = dependenciesPattern
-					dependencies[key] = propDependencies
+					dependencies[dependentKey] = propDependencies
 				default:
 				}
 			}
