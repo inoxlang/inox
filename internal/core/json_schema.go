@@ -37,6 +37,7 @@ func ConvertJsonSchemaToPattern(schemaBytes string) (Pattern, error) {
 	if err := compiler.AddResource(url, strings.NewReader(schemaBytes)); err != nil {
 		return nil, err
 	}
+	compiler.Draft = jsonschema.Draft7
 
 	schema, err := compiler.Compile(url)
 	if err != nil {
@@ -485,7 +486,7 @@ func convertJsonSchemaToPattern(schema *jsonschema.Schema, baseSchema *jsonschem
 
 		//TODO: schema.ContainsEval ?
 
-		switch schema.Items.(type) {
+		switch schema.AdditionalItems.(type) {
 		case nil:
 		default:
 			return nil, errors.New("'additionalItems' is not supported yet")
@@ -540,6 +541,8 @@ func convertJsonSchemaToPattern(schema *jsonschema.Schema, baseSchema *jsonschem
 		} else if *schema.Contains.Always {
 			if listPattern.MinElementCount() == 0 {
 				unionCases = append(unionCases, listPattern.WithMinElements(1))
+			} else {
+				unionCases = append(unionCases, listPattern)
 			}
 		} else {
 			panic(ErrUnreachable)

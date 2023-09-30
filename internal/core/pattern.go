@@ -493,6 +493,9 @@ func (patt *ListPattern) WithMinElements(minCount int) *ListPattern {
 
 	newPattern := *patt
 	newPattern.minElemCountPlusOne = minCount + 1
+	if patt.minElemCountPlusOne == 0 {
+		newPattern.maxElemCount = math.MaxInt64
+	}
 
 	return &newPattern
 }

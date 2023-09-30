@@ -521,7 +521,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 		}
 
 		list, err = ParseJSONRepresentation(ctx, `["1"]`, pattern)
-		if assert.ErrorContains(t, err, "JSON array has too many elements, 0 elements were expected") {
+		if assert.ErrorContains(t, err, "JSON array too many elements (1), at most 0 element(s) were expected") {
 			assert.Nil(t, list)
 		}
 
@@ -529,7 +529,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 		pattern = NewListPattern([]Pattern{INT_PATTERN})
 
 		list, err = ParseJSONRepresentation(ctx, `[]`, pattern)
-		if assert.ErrorContains(t, err, "JSON array has not enough elements, 1 elements were expected") {
+		if assert.ErrorContains(t, err, "JSON array has too many or not enough elements (0), 1 element(s) were expected") {
 			assert.Nil(t, list)
 		}
 
@@ -539,7 +539,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 		}
 
 		list, err = ParseJSONRepresentation(ctx, `[1,2]`, pattern)
-		if assert.ErrorContains(t, err, "JSON array has too many elements, 1 elements were expected") {
+		if assert.ErrorContains(t, err, "JSON array too many elements (2), at most 1 element(s) were expected") {
 			assert.Nil(t, list)
 		}
 
@@ -547,12 +547,12 @@ func TestParseJSONRepresentation(t *testing.T) {
 		pattern = NewListPattern([]Pattern{INT_PATTERN, INT_PATTERN})
 
 		list, err = ParseJSONRepresentation(ctx, `[]`, pattern)
-		if assert.ErrorContains(t, err, "JSON array has not enough elements, 2 elements were expected") {
+		if assert.ErrorContains(t, err, "JSON array has too many or not enough elements (0), 2 element(s) were expected") {
 			assert.Nil(t, list)
 		}
 
 		list, err = ParseJSONRepresentation(ctx, `[1]`, pattern)
-		if assert.ErrorContains(t, err, "JSON array has not enough elements, 2 elements were expected") {
+		if assert.ErrorContains(t, err, "JSON array has too many or not enough elements (1), 2 element(s) were expected") {
 			assert.Nil(t, list)
 		}
 
@@ -565,7 +565,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 		pattern = NewListPattern([]Pattern{NewListPattern([]Pattern{INT_PATTERN})})
 
 		list, err = ParseJSONRepresentation(ctx, `[]`, pattern)
-		if assert.ErrorContains(t, err, "JSON array has not enough elements, 1 elements were expected") {
+		if assert.ErrorContains(t, err, "JSON array has too many or not enough elements (0), 1 element(s) were expected") {
 			assert.Nil(t, list)
 		}
 
@@ -623,7 +623,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 		}
 
 		tuple, err = ParseJSONRepresentation(ctx, `[1]`, pattern)
-		if assert.ErrorContains(t, err, "JSON array has too many elements, 0 elements were expected") {
+		if assert.ErrorContains(t, err, "JSON array has too many elements (1), 0 element(s) were expected") {
 			assert.Nil(t, tuple)
 		}
 
@@ -631,7 +631,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 		pattern = NewTuplePattern([]Pattern{INT_PATTERN})
 
 		tuple, err = ParseJSONRepresentation(ctx, `[]`, pattern)
-		if assert.ErrorContains(t, err, "JSON array has not enough elements, 1 elements were expected") {
+		if assert.ErrorContains(t, err, "JSON array has not enough elements (0), 1 element(s) were expected") {
 			assert.Nil(t, tuple)
 		}
 
@@ -641,7 +641,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 		}
 
 		tuple, err = ParseJSONRepresentation(ctx, `[1,2]`, pattern)
-		if assert.ErrorContains(t, err, "JSON array has too many elements, 1 elements were expected") {
+		if assert.ErrorContains(t, err, "JSON array has too many elements (2), 1 element(s) were expected") {
 			assert.Nil(t, tuple)
 		}
 
@@ -649,12 +649,12 @@ func TestParseJSONRepresentation(t *testing.T) {
 		pattern = NewTuplePattern([]Pattern{INT_PATTERN, INT_PATTERN})
 
 		tuple, err = ParseJSONRepresentation(ctx, `[]`, pattern)
-		if assert.ErrorContains(t, err, "JSON array has not enough elements, 2 elements were expected") {
+		if assert.ErrorContains(t, err, "JSON array has not enough elements (0), 2 element(s) were expected") {
 			assert.Nil(t, tuple)
 		}
 
 		tuple, err = ParseJSONRepresentation(ctx, `[1]`, pattern)
-		if assert.ErrorContains(t, err, "JSON array has not enough elements, 2 elements were expected") {
+		if assert.ErrorContains(t, err, "JSON array has not enough elements (1), 2 element(s) were expected") {
 			assert.Nil(t, tuple)
 		}
 
@@ -667,7 +667,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 		pattern = NewTuplePattern([]Pattern{NewTuplePattern([]Pattern{INT_PATTERN})})
 
 		tuple, err = ParseJSONRepresentation(ctx, `[]`, pattern)
-		if assert.ErrorContains(t, err, "JSON array has not enough elements, 1 elements were expected") {
+		if assert.ErrorContains(t, err, "JSON array has not enough elements (0), 1 element(s) were expected") {
 			assert.Nil(t, tuple)
 		}
 

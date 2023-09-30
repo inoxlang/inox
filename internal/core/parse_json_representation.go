@@ -641,10 +641,18 @@ func parseListJSONrepresentation(ctx *Context, it *jsoniter.Iterator, pattern *L
 			return true
 		}
 		if minCount := pattern.MinElementCount(); length < minCount {
-			finalErr = fmt.Errorf("JSON array has not enough elements (%d), at least %d elements were expected", length, minCount)
+			if try {
+				finalErr = ErrTriedToParseJSONRepr
+				return false
+			}
+			finalErr = fmt.Errorf("JSON array has not enough elements (%d), at least %d element(s) were expected", length, minCount)
 			return false
 		} else if maxCount := pattern.MaxElementCount(); length > maxCount {
-			finalErr = fmt.Errorf("JSON array too many elements (%d), at most %d elements were expected", length, maxCount)
+			if try {
+				finalErr = ErrTriedToParseJSONRepr
+				return false
+			}
+			finalErr = fmt.Errorf("JSON array too many elements (%d), at most %d element(s) were expected", length, maxCount)
 			return false
 		}
 
@@ -683,9 +691,15 @@ func parseListJSONrepresentation(ctx *Context, it *jsoniter.Iterator, pattern *L
 		var elements []Serializable
 
 		it.ReadArrayCB(func(i *jsoniter.Iterator) bool {
+			if index >= len(pattern.elementPatterns) {
+				elements = append(elements, nil)
+				index++
+				return true
+			}
+
 			elementPattern, ok := pattern.ElementPatternAt(index)
 			if !ok {
-				finalErr = fmt.Errorf("JSON array has too many elements, %d elements were expected", len(pattern.elementPatterns))
+				finalErr = fmt.Errorf("JSON array has unexpected element at index %d", index)
 				return false
 			}
 
@@ -713,10 +727,19 @@ func parseListJSONrepresentation(ctx *Context, it *jsoniter.Iterator, pattern *L
 		}
 
 		if pattern.elementPatterns != nil && len(elements) < len(pattern.elementPatterns) {
-			return nil, fmt.Errorf("JSON array has not enough elements, %d elements were expected", len(pattern.elementPatterns))
+			if try {
+				finalErr = ErrTriedToParseJSONRepr
+				return
+			}
+			return nil, fmt.Errorf(
+				"JSON array has too many or not enough elements (%d), %d element(s) were expected", len(elements), len(pattern.elementPatterns))
 		}
 
 		if !containedElementFound {
+			if try {
+				finalErr = ErrTriedToParseJSONRepr
+				return
+			}
 			return nil, errors.New("JSON array has no element matching the contained element pattern")
 		}
 
@@ -779,9 +802,15 @@ func parseTupleJSONrepresentation(ctx *Context, it *jsoniter.Iterator, pattern *
 	var elements []Serializable
 	index := 0
 	it.ReadArrayCB(func(i *jsoniter.Iterator) bool {
+		if pattern.elementPatterns != nil && index >= len(pattern.elementPatterns) {
+			elements = append(elements, nil)
+			index++
+			return true
+		}
+
 		elementPattern, ok := pattern.ElementPatternAt(index)
 		if !ok {
-			finalErr = fmt.Errorf("JSON array has too many elements, %d elements were expected", len(pattern.elementPatterns))
+			finalErr = fmt.Errorf("JSON array has unexpected element at index %d", index)
 			return false
 		}
 
@@ -799,8 +828,13 @@ func parseTupleJSONrepresentation(ctx *Context, it *jsoniter.Iterator, pattern *
 		return nil, finalErr
 	}
 
-	if pattern.elementPatterns != nil && len(elements) < len(pattern.elementPatterns) {
-		return nil, fmt.Errorf("JSON array has not enough elements, %d elements were expected", len(pattern.elementPatterns))
+	if pattern.elementPatterns != nil && len(elements) != len(pattern.elementPatterns) {
+		elemCount := len(elements)
+		if elemCount < len(pattern.elementPatterns) {
+			return nil, fmt.Errorf("JSON array has not enough elements (%d), %d element(s) were expected", elemCount, len(pattern.elementPatterns))
+		} else {
+			return nil, fmt.Errorf("JSON array has too many elements (%d), %d element(s) were expected", elemCount, len(pattern.elementPatterns))
+		}
 	}
 
 	return NewTuple(elements), nil
