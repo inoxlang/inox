@@ -725,7 +725,15 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				S_URL_EXPR_PATH_LIMITATION,
 			},
 			{
+				`path = "."; return https://example.com/%2e{path}`,
+				S_URL_EXPR_PATH_LIMITATION,
+			},
+			{
 				`path = "%2E"; return https://example.com/.{path}`,
+				S_URL_EXPR_PATH_LIMITATION,
+			},
+			{
+				`path = "%2e"; return https://example.com/.{path}`,
 				S_URL_EXPR_PATH_LIMITATION,
 			},
 			{
@@ -737,7 +745,15 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				S_URL_EXPR_PATH_LIMITATION,
 			},
 			{
+				`path = "e"; return https://example.com/.%2{path}`,
+				S_URL_EXPR_PATH_LIMITATION,
+			},
+			{
 				`path = "%2E"; return https://example.com/%2E{path}`,
+				S_URL_EXPR_PATH_LIMITATION,
+			},
+			{
+				`path = "%2e"; return https://example.com/%2e{path}`,
 				S_URL_EXPR_PATH_LIMITATION,
 			},
 			{
@@ -745,7 +761,15 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				S_URL_EXPR_PATH_LIMITATION,
 			},
 			{
+				`path = "2e"; return https://example.com/%2e%{path}`,
+				S_URL_EXPR_PATH_LIMITATION,
+			},
+			{
 				`path = "E"; return https://example.com/%2E%2{path}`,
+				S_URL_EXPR_PATH_LIMITATION,
+			},
+			{
+				`path = "e"; return https://example.com/%2e%2{path}`,
 				S_URL_EXPR_PATH_LIMITATION,
 			},
 			{
@@ -757,11 +781,23 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				S_URL_EXPR_PATH_LIMITATION,
 			},
 			{
+				`path = ""; return https://example.com/%2e{path}.`,
+				S_URL_EXPR_PATH_LIMITATION,
+			},
+			{
 				`path = ""; return https://example.com/.{path}%2E`,
 				S_URL_EXPR_PATH_LIMITATION,
 			},
 			{
+				`path = ""; return https://example.com/.{path}%2e`,
+				S_URL_EXPR_PATH_LIMITATION,
+			},
+			{
 				`path = ""; return https://example.com/%2E{path}%2E`,
+				S_URL_EXPR_PATH_LIMITATION,
+			},
+			{
+				`path = ""; return https://example.com/%2e{path}%2e`,
 				S_URL_EXPR_PATH_LIMITATION,
 			},
 			{
@@ -773,12 +809,47 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				S_URL_EXPR_PATH_LIMITATION,
 			},
 			{
+				`path = /.; return https://example.com{path}%2e`,
+				S_URL_EXPR_PATH_LIMITATION,
+			},
+			{
 				`path = /%2E; return https://example.com{path}.`,
+				S_URL_EXPR_PATH_LIMITATION,
+			},
+			{
+				`path = /%2e; return https://example.com{path}.`,
 				S_URL_EXPR_PATH_LIMITATION,
 			},
 			{
 				`path = /%2E; return https://example.com{path}%2E`,
 				S_URL_EXPR_PATH_LIMITATION,
+			},
+			{
+				`path = /%2e; return https://example.com{path}%2e`,
+				S_URL_EXPR_PATH_LIMITATION,
+			},
+
+			//'\' injection in path
+			//note: %5C is the URL encoding for '\'
+			{
+				`path = "/\\"; return https://example.com{path}`,
+				S_URL_PATH_INTERP_RESULT_LIMITATION,
+			},
+			{
+				`path = "/%5C"; return https://example.com{path}`,
+				S_URL_PATH_INTERP_RESULT_LIMITATION,
+			},
+			{
+				`path = "/\\.\\."; return https://example.com{path}`,
+				S_URL_PATH_INTERP_RESULT_LIMITATION,
+			},
+			{
+				`path = "/%5C.%5C."; return https://example.com{path}`,
+				S_URL_PATH_INTERP_RESULT_LIMITATION,
+			},
+			{
+				`path = "/%5C%2E%5C%2E"; return https://example.com{path}`,
+				S_URL_PATH_INTERP_RESULT_LIMITATION,
 			},
 
 			//'?' injection in path
@@ -798,6 +869,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			},
 
 			//'*' injection in path
+			//note: %2A is the URL encoding for '*'
 			{
 				`path = "*"; return https://example.com{path}`,
 				S_URL_PATH_INTERP_RESULT_LIMITATION,
@@ -812,6 +884,14 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			},
 			{
 				`path = "/%2A"; return https://example.com{path}`,
+				S_URL_PATH_INTERP_RESULT_LIMITATION,
+			},
+			{
+				`path = "%2a"; return https://example.com{path}`,
+				S_URL_PATH_INTERP_RESULT_LIMITATION,
+			},
+			{
+				`path = "/%2a"; return https://example.com{path}`,
 				S_URL_PATH_INTERP_RESULT_LIMITATION,
 			},
 			//TODO: add more tests
