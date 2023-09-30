@@ -125,7 +125,7 @@ func registerHandlers(server *lsp.Server, serverConfig LSPServerConfiguration) {
 		}
 
 		s.Capabilities.CompletionProvider = &defines.CompletionOptions{
-			TriggerCharacters: &[]string{"."},
+			TriggerCharacters: &[]string{".", ":"},
 		}
 
 		sessionData := getLockedSessionData(session)

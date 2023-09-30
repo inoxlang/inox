@@ -995,6 +995,34 @@ func handleDoubleColonExpressionCompletions(n *parse.DoubleColonExpression, stat
 			return nil
 		})
 	}
+
+	extensions, _ := state.Global.SymbolicData.GetAllTypeExtensions(n)
+
+	for _, ext := range extensions {
+		for _, propExpr := range ext.PropertyExpressions {
+			if n.Element == nil || hasPrefixCaseInsensitive(propExpr.Name, n.Element.Name) {
+
+				labelDetail := ""
+				var kind defines.CompletionItemKind
+				if propExpr.Method == nil {
+					kind = defines.CompletionItemKindProperty
+					labelDetail = "computed property(" + parse.SPrint(propExpr.Expression, parse.PrintConfig{TrimStart: true, TrimEnd: true}) + ")"
+				} else {
+					kind = defines.CompletionItemKindMethod
+					labelDetail = "(extension method) " + symbolic.Stringify(propExpr.Method)
+				}
+
+				completions = append(completions, Completion{
+					ShownString:   propExpr.Name,
+					Value:         propExpr.Name,
+					Kind:          kind,
+					ReplacedRange: replacedRange,
+					LabelDetail:   labelDetail,
+				})
+			}
+		}
+	}
+
 	return
 }
 

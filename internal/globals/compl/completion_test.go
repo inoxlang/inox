@@ -420,6 +420,25 @@ func TestFindCompletions(t *testing.T) {
 				})
 			})
 
+			t.Run("double-colon expression with patternm-matching object LHS", func(t *testing.T) {
+				if mode == ShellCompletions {
+					t.Skip()
+				}
+
+				t.Run("empty property name", func(t *testing.T) {
+					state := newState()
+					state.Global.Ctx.AddNamedPattern("int", core.INT_PATTERN)
+					chunk, _ := parseChunkSource("pattern o = {a: []int, b: 2}; extend o {c: 3}; var obj = {a: [1], b: 2}; obj::", "")
+
+					doSymbolicCheck(chunk, state.Global)
+					completions := findCompletions(state, chunk, 78)
+					assert.EqualValues(t, []Completion{
+						{ShownString: "a", Value: "a", ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 78, End: 78}}},
+						{ShownString: "c", Value: "c", ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 78, End: 78}}},
+					}, completions)
+				})
+			})
+
 			t.Run("named patterns", func(t *testing.T) {
 				if mode == ShellCompletions {
 					t.Run("suggest pre-declared pattern from first letter", func(t *testing.T) {
