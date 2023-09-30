@@ -80,6 +80,10 @@ func (r *ReprConfig) IsValueVisible(v Value) bool {
 }
 
 func (r *ReprConfig) IsPropertyVisible(name string, v Value, info *ValueVisibility, ctx *Context) bool {
+	if _, ok := v.(*Secret); ok {
+		return false
+	}
+
 	if r == nil || r.AllVisible || (info != nil && utils.SliceContains(info.publicKeys, name)) {
 		return true
 	}
