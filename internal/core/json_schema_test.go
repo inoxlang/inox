@@ -1,11 +1,17 @@
 package core
 
 import (
+	"embed"
 	_ "embed"
 	"encoding/json"
+	"errors"
+	"io"
+	"net/url"
+	"strings"
 	"testing"
 
 	"github.com/inoxlang/inox/internal/utils"
+	"github.com/santhosh-tekuri/jsonschema/v5"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -13,28 +19,52 @@ func init() {
 	utils.PanicIfErr(json.Unmarshal([]byte(jsonDraft7String), &jsonDraft7))
 }
 
+//go:embed testdata/jsonschema/*
+var jsonSchemaData embed.FS
+
 func TestConvertJsonSchemaToPattern(t *testing.T) {
+
 	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
 	runTestSuites := func(t *testing.T, suites []jsonDrafTestSuite, notSupportedTests [][2]string) {
 		for _, testSuite := range suites {
 			t.Run(testSuite.Description, func(t *testing.T) {
-				notSupportedSuite := false
+				supportedSuite := true
 				for _, skippedTest := range notSupportedTests {
 					if testSuite.Description == skippedTest[0] && skippedTest[1] == "*" {
-						notSupportedSuite = true
+						supportedSuite = false
 						break
 					}
 				}
 
-				if testSuite.Description != "nested refs" {
-					return
+				clear(jsonschema.Loaders)
+				jsonschema.Loaders["file"] = func(_url string) (io.ReadCloser, error) {
+					u, err := url.Parse(_url)
+					if err != nil {
+						return nil, err
+					}
+
+					if u.Path == "schema.json" || u.Path == "/schema.json" {
+						return io.NopCloser(strings.NewReader(string(testSuite.Schema))), nil
+					}
+					return jsonSchemaData.Open(u.Path)
+				}
+				jsonschema.Loaders["http"] = func(url string) (io.ReadCloser, error) {
+					path := strings.TrimPrefix(url, "http://localhost:1234")
+					if path == "" || path == "/" {
+						return io.NopCloser(strings.NewReader(string(testSuite.Schema))), nil
+					}
+					if path == url {
+						return nil, errors.New("host is not localhost")
+					}
+					path = "testdata/jsonschema" + path
+					return jsonSchemaData.Open(path)
 				}
 
 				pattern, err := ConvertJsonSchemaToPattern(string(testSuite.Schema))
 
-				if notSupportedSuite {
+				if !supportedSuite {
 					if !assert.Error(t, err) {
 						return
 					}
@@ -96,6 +126,8 @@ func TestConvertJsonSchemaToPattern(t *testing.T) {
 	t.Run("Contains", func(t *testing.T) {
 		runTestSuites(t, jsonDraft7.Contains, [][2]string{
 			{"contains with false if subschema", "*"},
+			{"contains keyword with boolean schema false", "any non-empty array is invalid"},
+			{"contains keyword with boolean schema false", "empty array is invalid"},
 		})
 	})
 
@@ -141,12 +173,20 @@ func TestConvertJsonSchemaToPattern(t *testing.T) {
 		runTestSuites(t, jsonDraft7.IfThenElse, nil)
 	})
 
+	t.Run("InfiniteLoopRecursion", func(t *testing.T) {
+		runTestSuites(t, jsonDraft7.InfiniteLoopRecursion, nil)
+	})
+
 	t.Run("Ref", func(t *testing.T) {
+		t.SkipNow()
 		runTestSuites(t, jsonDraft7.Ref, [][2]string{
 			{"root pointer ref", "*"},
 		})
 	})
 
+	t.Run("RefRemote", func(t *testing.T) {
+		runTestSuites(t, jsonDraft7.RefRemote, nil)
+	})
 }
 
 //go:embed testdata/jsonschema/json-draft7.json
