@@ -2,7 +2,7 @@
 
 <img src="https://avatars.githubusercontent.com/u/122291844?s=200&v=4" alt="a shield"></img>
 
-🛡️ Inox is a [secure](#injection-prevention) programming language for [Web Application Development](#xml-expressions) and [scripting](#declaration-of-cli-parameters--environment-variables). It features a powerful [shell](./docs/shell-basics.md) with colorization & completions.
+🛡️ Inox is a [secure](#injection-prevention-wip) programming language for [Web Application Development](#xml-expressions) and [scripting](#declaration-of-cli-parameters--environment-variables).
 
 🔍 [Main Features](#features)
 
@@ -10,32 +10,40 @@
 
 🔧 [Runtime Architecture](#inox-runtime-architecture)
 
+📖 [Language Reference](./docs/language-reference.md)
+
+⚠️ The language is not production ready yet.
+
 ## Installation
 
-An archive with a Linux binary and some examples is available in [release assets](https://github.com/inoxlang/inox/releases), if you want to compile the language yourself go [here](#compile-from-source).
+**Inox can be used on any operating system by installing the [VSCode extension](https://marketplace.visualstudio.com/items?itemName=graphr00t.inox).**
 
+If you are on Linux an archive with a binary and some examples is available in [release assets](https://github.com/inoxlang/inox/releases)
 - uncompress the archive
 - install the `inox` binary to `/usr/local/bin`
   ```
   sudo install inox -o root -m 0755 /usr/local/bin/inox
   ```
+If you want to compile the language yourself go [here](#compile-from-source).
+
 ### Editor Support
 
-- [VSCode](https://marketplace.visualstudio.com/items?itemName=graphr00t.inox) : LSP, colorization, snippets
+- [VSCode](https://marketplace.visualstudio.com/items?itemName=graphr00t.inox) : LSP, Debug, colorization, snippets
 
 ## Learning Inox
 
-The basics of the language are explained [here](./docs/language-reference.md).\
-You can also explore the `examples/` folder and start with scripts in `examples/basic`.\
-To learn scripting specifically go [here](./docs/scripting-basics.md).\
-View [Shell Basics](./docs/shell-basics.md) to learn how to use Inox interactively.
+**You can learn Inox directly in VSCode: download the [extension](https://marketplace.visualstudio.com/items?itemName=graphr00t.inox) and follow the explanations.**
 
-⚠️ The language is not production ready yet.
+Inox can be used for scripting & provides a shell. The development of the language in those domains is not very active
+because Inox is focused on Web Application Development.
+
+To learn scripting go [here](./docs/scripting-basics.md).
+View [Shell Basics](./docs/shell-basics.md) to learn how to use Inox interactively.
 
 ## Features
 
 Web Dev:
-- [XML Expressions](#xml-expressions)
+- [XML Expressions (HTML)](#xml-expressions)
 - [HTTP Server - Filesystem Routing](#http-server---filesystem-routing)
 - [Built-in Database](#built-in-database)
 - [Project & Virtual Filesystem](#project--virtual-filesystem)
@@ -592,8 +600,8 @@ Learn more [here](./docs/shell-basics.md#resource-manipulation)
 ### Transactions & Effects (WIP)
 
 Inox allows you to attach a **transaction** to the current execution context (think SQL transactions).
-When a **side effect** happens it is recorded in the transaction. If the execution is cancelled for whatever reason the transaction is automatically **rollbacked** and reversible effects are reversed. (A mode that causes side effects to only be committed if the transaction succeed is also planned).
-
+When a **side effect** happens it is recorded in the transaction. If the execution is cancelled for whatever reason the transaction is automatically **rollbacked** and reversible effects are reversed.
+Some effects such as database changes are only applied when the transaction is committed.
 ```
 tx = start_tx()
 
@@ -688,10 +696,10 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     Module->>Context: I am about to establish a Websocket Connection
-    Context->>CPU Time Limiter: Pause the auto decrementation
+    Context->>CPU Time Limiter: Pause the decrementation
     Context->>Websocket Conn. Limiter: Remove 1 token
     Note right of Websocket Conn. Limiter: ✅ There is one token left.<br/>I take it and I return immediately.
-    Context->>CPU Time Limiter: Resume the auto decrementation
+    Context->>CPU Time Limiter: Resume the decrementation
 
     Module->>Context: (After a few minutes) The connection is closed.
     Context->>Websocket Conn. Limiter: Give back 1 token
@@ -700,7 +708,7 @@ sequenceDiagram
     Note right of Context: Same as previously
     Module->>Context: I am about to establish another Websocket Connection
 
-    Context->>CPU Time Limiter: Pause the auto decrementation
+    Context->>CPU Time Limiter: Pause the decrementation
     Context->>Websocket Conn. Limiter: Remove 1 token
     Note right of Websocket Conn. Limiter: ❌ There are no tokens left ! Panic !
     Websocket Conn. Limiter-->>Context: ❌ raising panic
