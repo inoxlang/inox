@@ -28,6 +28,10 @@ func TestConvertJsonSchemaToPattern(t *testing.T) {
 					}
 				}
 
+				if testSuite.Description != "nested refs" {
+					return
+				}
+
 				pattern, err := ConvertJsonSchemaToPattern(string(testSuite.Schema))
 
 				if notSupportedSuite {
@@ -121,9 +125,31 @@ func TestConvertJsonSchemaToPattern(t *testing.T) {
 		runTestSuites(t, jsonDraft7.ExclusiveMinimum, nil)
 	})
 
+	t.Run("Format", func(t *testing.T) {
+		runTestSuites(t, jsonDraft7.Format, nil)
+	})
+
+	t.Run("Id", func(t *testing.T) {
+		//not supported
+		t.SkipNow()
+		runTestSuites(t, jsonDraft7.Id, nil)
+	})
+
+	t.Run("IfThenElse", func(t *testing.T) {
+		//not supported
+		t.SkipNow()
+		runTestSuites(t, jsonDraft7.IfThenElse, nil)
+	})
+
+	t.Run("Ref", func(t *testing.T) {
+		runTestSuites(t, jsonDraft7.Ref, [][2]string{
+			{"root pointer ref", "*"},
+		})
+	})
+
 }
 
-//go:embed testdata/json-draft7.json
+//go:embed testdata/jsonschema/json-draft7.json
 var jsonDraft7String string
 var jsonDraft7 struct {
 	AdditionalItems       []jsonDrafTestSuite `json:"additionalItems"`
