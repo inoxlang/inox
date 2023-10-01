@@ -8,6 +8,8 @@
 
 👥 [Join the Discord Server](https://discord.gg/53YGx8GzgE)
 
+🔧 [Runtime Architecture](#inox-runtime-architecture)
+
 ## Installation
 
 An archive with a Linux binary and some examples is available in [release assets](https://github.com/inoxlang/inox/releases), if you want to compile the language yourself go [here](#compile-from-source).
@@ -32,7 +34,7 @@ View [Shell Basics](./docs/shell-basics.md) to learn how to use Inox interactive
 
 ## Features
 
-Web Application:
+Web Dev:
 - [XML Expressions](#xml-expressions)
 - [HTTP Server - Filesystem Routing](#http-server---filesystem-routing)
 - [Built-in Database](#built-in-database)
@@ -116,7 +118,7 @@ username = mod-args.name
 
 ### Built-in Database
 
-Inox includes an embedded database backed by a Key-Value store.
+Inox includes an embedded database engine.
 Databases are described in the manifest at the top of the module:
 
 ```
@@ -162,7 +164,7 @@ You can learn more [here](./docs/language-reference.md#databases).
 Most Inox types (objects, lists, Sets) are serializable so they cannot contain transient values.
 ```
 object = {
-  # error: non-serializable values are not allowed as initial values for properties of serializables
+  # error: non-serializable values are not allowed as initial values of properties
   lthread: go do {
     return 1
   }
@@ -194,14 +196,19 @@ it will soon provide automatic infrastructure management.
 
 ```mermaid
 graph TD
-    A[Project Server] 
-    A ---|Development| B[VsCode]
-    A -->|Manages| C[Infrastructure]
+    A(Project Server) <-->|Development| B(VsCode)
+    A -->|Manages| C(Infrastructure)
+
+subgraph A[Project Server]
+  A1(LSP Server) -->|Invocation & Debug| A2(Inox Runtime)
+  A1 --> A3(Project)
+end
 ```
- 
+
+*[Link to the Inox Runtime Architecture](#inox-runtime-architecture)*
+
 An Inox project lives in a **virtual filesystem** (container) for better security & reproducibility.
 Note that this virtual filesystem only exists in-process, there is no FUSE filesystem and Docker is not involved.
-
 
 ### Built-in Browser Automation
 
@@ -427,7 +434,7 @@ The visibility of properties can be configured using the `_visibility_` metaprop
 {
   _visibility_ {
     {
-      public: .{x}
+      public: .{passwordHash}
     }
   }
   passwordHash: "x"
@@ -596,6 +603,140 @@ fs.mkfile ./file.txt
 # rollback transaction --> delete ./file.txt
 cancel_exec() 
 ```
+
+## Inox Runtime Architecture
+
+## High Level View
+
+Each Inox module is runned by a dedicated [interpreter](./docs/language-reference.md#evaluation).
+
+```mermaid
+graph TD
+    Interpreter0[[Interpreter 0]]
+    Interpreter0 --> |runs| Mod
+
+    Interpreter1[[Interpreter 1]] --> |runs| ChildMod
+
+ChildMod(Child Module)
+DBs[(Databases)]
+VFs[(Filesystem)]
+
+subgraph Mod[Module]
+  Context(Context)
+  IncludesFiles(Included Chunks)
+end
+
+subgraph ChildMod[Child Module]
+  ChildContext(Child Context)
+end
+
+
+Mod(Module)
+Mod --- ChildMod; 
+Mod --- DBs
+ChildMod --- DBs
+Mod --- VFs
+ChildMod --- VFs
+Context -.->|Controls| ChildContext
+```
+
+### Context
+
+**Permission Check**
+
+```mermaid
+sequenceDiagram
+    Module->>Context: Do I have the [ read /file.txt ] permission ?
+    Context-->>Module: ✅ Yes, you can continue execution
+
+    Module->>Context: Do I have the [ write /file.txt ] permission ?
+    Context-->>Module: ❌ No, raise an error ! (stop execution)  
+```
+
+**Rate Limit**
+
+```mermaid
+sequenceDiagram
+    Module->>Context: I am about to do an HTTP Request (IO operation)
+    Context->>CPU Time Limiter: Pause the auto decrementation
+    Context->>HTTP Request Limiter: Remove 1 token
+    Note right of HTTP Request Limiter: ✅ There is one token left.<br/>I take it and I return immediately
+    Context->>CPU Time Limiter: Resume the auto decrementation
+
+    Module->>Context: I am starting an IO operation
+    Context->>CPU Time Limiter: Pause the auto decrementation
+
+    Module->>Context: The IO operation is finished
+    Context->>CPU Time Limiter: Resume the auto decrementation
+
+    Module->>Context: I am about to do an HTTP Request
+    Context->>CPU Time Limiter: Pause the auto decrementation
+    Context->>HTTP Request Limiter: Remove 1 token
+    Note right of HTTP Request Limiter: ⏲️ There are no tokens left.<br/>I wait for the bucket to refill a bit and I take 1 token
+    Context->>CPU Time Limiter: Resume the auto decrementation
+
+    Module->>Context: I am starting an IO operation
+    Context->>CPU Time Limiter: Pause the auto decrementation
+
+    Module->>Context: The IO operation is finished
+    Context->>CPU Time Limiter: Resume the auto decrementation
+```
+
+
+**Total Limits**
+
+```mermaid
+sequenceDiagram
+    Module->>Context: I am about to establish a Websocket Connection
+    Context->>CPU Time Limiter: Pause the auto decrementation
+    Context->>Websocket Connection Limiter: Remove 1 token
+    Note right of Websocket Connection Limiter: ✅ There is one token left.<br/>I can return immediately
+    Context->>CPU Time Limiter: Resume the auto decrementation
+
+    Module->>Context: (After a few minutes) The connection is closed.
+    Context->>Websocket Connection Limiter: Give back 1 token
+  
+    Module->>Context: I am about to establish a Websocket Connection [Same as previously]
+    Note right of Context: Same as previously
+    Module->>Context: I am about to establish another Websocket Connection
+
+    Context->>CPU Time Limiter: Pause the auto decrementation
+    Context->>Websocket Connection Limiter: Remove 1 token
+    Note right of Websocket Connection Limiter: ❌ There are no tokens left ! Panic !
+    Websocket Connection Limiter-->>Context: ❌ raising panic
+    Context-->>Module: ❌ raising panic
+```
+
+<details>
+<summary>Note</summary>
+Obviously the context knowns nothing about HTTP requests, Websocket Connections and all other IO operations.
+
+The module informs the context with a simple call:
+```
+context.Take("<simultaneous websocket connection limit>", 1)
+```
+</details>
+
+**Limiters**
+
+```mermaid
+graph TD
+    Limiters("Limiters (one per limit)") --> OwnTokenBuckets(Own Token Buckets) & SharedTokenBuckets(Shared Token Buckets)
+    Ctx -.->|Stops when Done| ChildCtx
+    Ctx(Context itself)
+  
+    ChildCtx --> ChildLimiters(Child's Limiters) --> SharedTokenBuckets
+    ChildLimiters --> ChildOwnTokenBuckets(Child's Token Buckets)
+
+    SharedTokenBuckets & OwnTokenBuckets -.->|Can Stop| Ctx
+
+subgraph ChildCtx["Child Context(s)"]
+  ChildLimiters
+  ChildOwnTokenBuckets
+end
+```
+
+
 
 ## Compile from Source
 
