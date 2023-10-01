@@ -214,6 +214,8 @@ func TestPrint(t *testing.T) {
 		"%{,}",
 		"%{a:1}",
 		"%{a:b}",
+		"%{otherprops int}",
+		"%{otherprops}",
 		"%[]",
 		"%[]{}",
 		"%[]%{}",

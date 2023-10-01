@@ -15,6 +15,8 @@ import (
 
 const (
 	MIN_TOKEN_CACHING_COUNT = 2
+
+	OTHERPROPS_KEYWORD_STRING = "otherprops"
 )
 
 var (
@@ -88,6 +90,7 @@ const (
 	PNAMESPACE_KEYWORD
 	EXTEND_KEYWORD
 	TO_KEYWORD
+	OTHERPROPS_KEYWORD
 	AND_KEYWORD
 	OR_KEYWORD
 	PERCENT_STR
@@ -298,6 +301,7 @@ var tokenStrings = [...]string{
 	PNAMESPACE_KEYWORD:             "pnamespace",
 	EXTEND_KEYWORD:                 "extend",
 	TO_KEYWORD:                     "to",
+	OTHERPROPS_KEYWORD:             OTHERPROPS_KEYWORD_STRING,
 	AND_KEYWORD:                    "and",
 	OR_KEYWORD:                     "or",
 	PERCENT_FN:                     "%fn",
@@ -460,6 +464,7 @@ var tokenTypenames = [...]string{
 	PNAMESPACE_KEYWORD:             "PNAMESPACE_KEYWORD",
 	EXTEND_KEYWORD:                 "EXTEND_KEYWORD",
 	TO_KEYWORD:                     "TO_KEYWORD",
+	OTHERPROPS_KEYWORD:             "OTHERPROPS_KEYWORD",
 	AND_KEYWORD:                    "AND_KEYWORD",
 	OR_KEYWORD:                     "OR_KEYWORD",
 	PERCENT_STR:                    "PERCENT_STR",

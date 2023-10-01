@@ -2861,10 +2861,10 @@ func (p *parser) parseObjectRecordPatternLiteral(percentPrefixed, isRecordPatter
 	var (
 		unamedPropCount    = 0
 		properties         []*ObjectPatternProperty
+		otherPropsExprs    []*OtherPropsExpr
 		spreadElements     []*PatternPropertySpreadElement
 		parsingErr         *ParsingError
 		tokens             []Token
-		exact              = false
 		objectPatternStart int32
 	)
 
@@ -3005,6 +3005,12 @@ object_pattern_top_loop:
 				switch k := key.(type) {
 				case *IdentifierLiteral:
 					keyName = k.Name
+
+					if keyName == OTHERPROPS_KEYWORD_STRING {
+						expr := p.parseOtherProps(k)
+						otherPropsExprs = append(otherPropsExprs, expr)
+						goto step_end
+					}
 				case *QuotedStringLiteral:
 					keyName = k.Value
 				default:
@@ -3227,19 +3233,38 @@ object_pattern_top_loop:
 
 	if isRecordPattern {
 		return &RecordPatternLiteral{
-			NodeBase:       base,
-			Properties:     properties,
-			SpreadElements: spreadElements,
-			Exact:          exact,
+			NodeBase:        base,
+			Properties:      properties,
+			OtherProperties: otherPropsExprs,
+			SpreadElements:  spreadElements,
 		}
 	}
 
 	return &ObjectPatternLiteral{
-		NodeBase:       base,
-		Properties:     properties,
-		SpreadElements: spreadElements,
-		Exact:          exact,
+		NodeBase:        base,
+		Properties:      properties,
+		OtherProperties: otherPropsExprs,
+		SpreadElements:  spreadElements,
 	}
+}
+
+func (p *parser) parseOtherProps(key *IdentifierLiteral) *OtherPropsExpr {
+	expr := &OtherPropsExpr{
+		NodeBase: NodeBase{
+			Span:   key.Span,
+			Tokens: []Token{{Type: OTHERPROPS_KEYWORD, Span: key.Span}},
+		},
+	}
+
+	p.eatSpace()
+	expr.Pattern, _ = p.parseExpression()
+
+	if ident, ok := expr.Pattern.(*IdentifierLiteral); ok && ident.Name == "no" {
+		expr.No = true
+	}
+
+	expr.NodeBase.Span.End = expr.Pattern.Base().Span.End
+	return expr
 }
 
 func (p *parser) parseListTuplePatternLiteral(percentPrefixed, isTuplePattern bool) Node {

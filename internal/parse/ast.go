@@ -1136,13 +1136,29 @@ func (OptionalPatternExpression) Kind() NodeKind {
 
 type ObjectPatternLiteral struct {
 	NodeBase
-	Properties     []*ObjectPatternProperty
-	SpreadElements []*PatternPropertySpreadElement
-	Exact          bool
+	Properties      []*ObjectPatternProperty
+	OtherProperties []*OtherPropsExpr
+	SpreadElements  []*PatternPropertySpreadElement
 }
 
 func (ObjectPatternLiteral) Kind() NodeKind {
 	return Expr
+}
+
+func (l ObjectPatternLiteral) Exact() bool {
+	for _, p := range l.OtherProperties {
+		if p.No {
+			return true
+		}
+	}
+
+	return false
+}
+
+type OtherPropsExpr struct {
+	NodeBase
+	No      bool
+	Pattern Node
 }
 
 type ListPatternLiteral struct {
@@ -1157,13 +1173,23 @@ func (ListPatternLiteral) Kind() NodeKind {
 
 type RecordPatternLiteral struct {
 	NodeBase
-	Properties     []*ObjectPatternProperty
-	SpreadElements []*PatternPropertySpreadElement
-	Exact          bool
+	Properties      []*ObjectPatternProperty
+	OtherProperties []*OtherPropsExpr
+	SpreadElements  []*PatternPropertySpreadElement
 }
 
 func (RecordPatternLiteral) Kind() NodeKind {
 	return Expr
+}
+
+func (l RecordPatternLiteral) Exact() bool {
+	for _, p := range l.OtherProperties {
+		if p.No {
+			return true
+		}
+	}
+
+	return false
 }
 
 type TuplePatternLiteral struct {
@@ -2483,6 +2509,11 @@ func walk(node, parent Node, ancestorChain *[]Node, fn, afterFn NodeHandler) {
 		for _, el := range n.SpreadElements {
 			walk(el, node, ancestorChain, fn, afterFn)
 		}
+		for _, otherProps := range n.OtherProperties {
+			walk(otherProps, node, ancestorChain, fn, afterFn)
+		}
+	case *OtherPropsExpr:
+		walk(n.Pattern, node, ancestorChain, fn, afterFn)
 	case *ListPatternLiteral:
 		for _, elem := range n.Elements {
 			walk(elem, node, ancestorChain, fn, afterFn)
@@ -2494,6 +2525,9 @@ func walk(node, parent Node, ancestorChain *[]Node, fn, afterFn NodeHandler) {
 		}
 		for _, el := range n.SpreadElements {
 			walk(el, node, ancestorChain, fn, afterFn)
+		}
+		for _, otherProps := range n.OtherProperties {
+			walk(otherProps, node, ancestorChain, fn, afterFn)
 		}
 	case *TuplePatternLiteral:
 		for _, elem := range n.Elements {

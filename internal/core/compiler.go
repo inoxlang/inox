@@ -1229,7 +1229,7 @@ func (c *compiler) Compile(node parse.Node) error {
 	case *parse.ObjectPatternLiteral:
 		isInexact := 1
 
-		if node.Exact {
+		if node.Exact() {
 			isInexact = 0
 		}
 
@@ -1262,7 +1262,7 @@ func (c *compiler) Compile(node parse.Node) error {
 	case *parse.RecordPatternLiteral:
 		isInexact := 1
 
-		if node.Exact {
+		if node.Exact() {
 			isInexact = 0
 		}
 

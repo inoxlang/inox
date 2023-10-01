@@ -4023,7 +4023,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 	case *parse.ObjectPatternLiteral:
 		pattern := &ObjectPattern{
 			entries: make(map[string]Pattern),
-			inexact: !n.Exact,
+			inexact: !n.Exact(),
 		}
 
 		for _, el := range n.SpreadElements {
@@ -4078,7 +4078,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 	case *parse.RecordPatternLiteral:
 		pattern := &RecordPattern{
 			entries: make(map[string]Pattern),
-			inexact: !n.Exact,
+			inexact: !n.Exact(),
 		}
 		for _, el := range n.SpreadElements {
 			compiledElement, err := symbolicallyEvalPatternNode(el.Expr, state)

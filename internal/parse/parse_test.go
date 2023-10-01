@@ -19118,7 +19118,7 @@ func testParse(
 		// 						{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{7, 8}},
 		// 					},
 		// 				},
-		// 				Exact: false,
+		//
 		// 			},
 		// 		},
 		// 	}, n)
@@ -19140,7 +19140,7 @@ func testParse(
 		// 						{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{20, 21}},
 		// 					},
 		// 				},
-		// 				Exact: false,
+		//
 		// 				Properties: []*ObjectPatternProperty{
 		// 					{
 		// 						NodeBase: NodeBase{
@@ -19179,7 +19179,7 @@ func testParse(
 		// 						{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{9, 10}},
 		// 					},
 		// 				},
-		// 				Exact: false,
+		//
 		// 			},
 		// 		},
 		// 	}, n)
@@ -19199,7 +19199,7 @@ func testParse(
 								{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{12, 13}},
 							},
 						},
-						Exact: false,
+
 						SpreadElements: []*PatternPropertySpreadElement{
 							{
 								NodeBase: NodeBase{
@@ -19232,7 +19232,7 @@ func testParse(
 								{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{11, 12}},
 							},
 						},
-						Exact: false,
+
 						SpreadElements: []*PatternPropertySpreadElement{
 							{
 								NodeBase: NodeBase{
@@ -19268,7 +19268,7 @@ func testParse(
 								{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{25, 26}},
 							},
 						},
-						Exact: false,
+
 						Properties: []*ObjectPatternProperty{
 							{
 								NodeBase: NodeBase{
@@ -19320,7 +19320,7 @@ func testParse(
 								{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{24, 25}},
 							},
 						},
-						Exact: false,
+
 						Properties: []*ObjectPatternProperty{
 							{
 								NodeBase: NodeBase{
@@ -19372,7 +19372,7 @@ func testParse(
 								{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{23, 24}},
 							},
 						},
-						Exact: false,
+
 						Properties: []*ObjectPatternProperty{
 							{
 								NodeBase: NodeBase{
@@ -19423,7 +19423,7 @@ func testParse(
 								{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{12, 13}},
 							},
 						},
-						Exact: false,
+
 						Properties: []*ObjectPatternProperty{
 							{
 								NodeBase: NodeBase{
@@ -19472,7 +19472,7 @@ func testParse(
 								{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{15, 16}},
 							},
 						},
-						Exact: false,
+
 						Properties: []*ObjectPatternProperty{
 							{
 								NodeBase: NodeBase{
@@ -19661,6 +19661,72 @@ func testParse(
 			}, n)
 		})
 
+		t.Run("otherprops", func(t *testing.T) {
+			n := mustparseChunk(t, "%{otherprops int}")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 17}, nil, nil},
+				Statements: []Node{
+					&ObjectPatternLiteral{
+						NodeBase: NodeBase{
+							NodeSpan{0, 17},
+							nil,
+							[]Token{
+								{Type: OPENING_OBJECT_PATTERN_BRACKET, Span: NodeSpan{0, 2}},
+								{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{16, 17}},
+							},
+						},
+						OtherProperties: []*OtherPropsExpr{
+							{
+								NodeBase: NodeBase{
+									Span:   NodeSpan{2, 16},
+									Tokens: []Token{{Type: OTHERPROPS_KEYWORD, Span: NodeSpan{2, 12}}},
+								},
+								Pattern: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{Span: NodeSpan{13, 16}},
+									Unprefixed: true,
+									Name:       "int",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("unterminated otherprops", func(t *testing.T) {
+			n := mustparseChunk(t, "%{otherprops}")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 13}, nil, nil},
+				Statements: []Node{
+					&ObjectPatternLiteral{
+						NodeBase: NodeBase{
+							NodeSpan{0, 13},
+							nil,
+							[]Token{
+								{Type: OPENING_OBJECT_PATTERN_BRACKET, Span: NodeSpan{0, 2}},
+								{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{12, 13}},
+							},
+						},
+						OtherProperties: []*OtherPropsExpr{
+							{
+								NodeBase: NodeBase{
+									Span:   NodeSpan{2, 13},
+									Tokens: []Token{{Type: OTHERPROPS_KEYWORD, Span: NodeSpan{2, 12}}},
+								},
+								Pattern: &MissingExpression{
+									NodeBase: NodeBase{
+										NodeSpan{12, 13},
+										&ParsingError{UnspecifiedParsingError, fmtExprExpectedHere([]rune("%{otherprops}"), 12, true)},
+										nil,
+									},
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
 		t.Run("duplicate key", func(t *testing.T) {
 			n, err := parseChunk(t, "%{ a: 1, a: 2}", "")
 			assert.NoError(t, err)
@@ -19732,7 +19798,6 @@ func testParse(
 								{Type: COMMA, Span: NodeSpan{2, 3}},
 							},
 						},
-						Exact: false,
 					},
 				},
 			}, n)
@@ -19752,7 +19817,6 @@ func testParse(
 								{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{3, 4}},
 							},
 						},
-						Exact: false,
 					},
 				},
 			}, n)
@@ -19873,7 +19937,7 @@ func testParse(
 										{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{16, 17}},
 									},
 								},
-								Exact: false,
+
 								Properties: []*ObjectPatternProperty{
 									{
 										NodeBase: NodeBase{
@@ -20007,7 +20071,7 @@ func testParse(
 									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{17, 18}},
 								},
 							},
-							Exact: false,
+
 							Properties: []*ObjectPatternProperty{
 								{
 									NodeBase: NodeBase{
@@ -20451,7 +20515,7 @@ func testParse(
 									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{24, 25}},
 								},
 							},
-							Exact: false,
+
 							SpreadElements: []*PatternPropertySpreadElement{
 								{
 									NodeBase: NodeBase{

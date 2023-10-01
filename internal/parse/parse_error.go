@@ -92,10 +92,13 @@ const (
 	INVALID_URL_PATT                                                        = "invalid URL pattern"
 	UNTERMINATED_PATT                                                       = "unterminated pattern: '%'"
 
-	INVALID_COMPLEX_PATTERN_ELEMENT                                      = "invalid complex pattern element"
-	UNTERMINATED_OBJ_PATT_MISSING_CLOSING_BRACE                          = "unterminated object pattern literal, missing closing brace '}'"
-	IMPLICIT_KEY_PROPS_ARE_NOT_SUPPORTED_IN_OBJ_PATT                     = "implicit-key properties are not supported in object patterns"
-	ONLY_IDENTS_AND_STRINGS_VALID_OBJ_PATT_KEYS                          = "Only identifiers and strings are valid object pattern keys"
+	INVALID_COMPLEX_PATTERN_ELEMENT = "invalid complex pattern element"
+
+	//object pattern literal
+	UNTERMINATED_OBJ_PATT_MISSING_CLOSING_BRACE      = "unterminated object pattern literal, missing closing brace '}'"
+	IMPLICIT_KEY_PROPS_ARE_NOT_SUPPORTED_IN_OBJ_PATT = "implicit-key properties are not supported in object patterns"
+	ONLY_IDENTS_AND_STRINGS_VALID_OBJ_PATT_KEYS      = "Only identifiers and strings are valid object pattern keys"
+
 	INVALID_PATT_UNION_ELEMENT_SEPARATOR_EXPLANATION                     = "invalid pattern union: elements should be separated by '|'"
 	INVALID_PATTERN_INVALID_OCCURENCE_COUNT                              = "invalid pattern: invalid exact ocurrence count"
 	UNTERMINATED_DICT_MISSING_CLOSING_BRACE                              = "unterminated dictionary literal, missing closing brace '}'"
