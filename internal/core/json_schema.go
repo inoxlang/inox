@@ -160,8 +160,8 @@ func convertJsonSchemaToPattern(schema *jsonschema.Schema, baseSchema *jsonschem
 
 	if len(schema.Enum) > 0 {
 		unionCases := make([]Pattern, len(schema.Enum))
-		for i, jsonVal := range schema.Enum {
-			unionCases[i] = NewExactValuePattern(ConvertJSONValToInoxVal(jsonVal, false))
+		for i, constant := range schema.Enum {
+			unionCases[i] = convertConstSchemaValueToPattern(constant)
 		}
 
 		return NewUnionPattern(unionCases, nil), nil
@@ -175,22 +175,22 @@ func convertJsonSchemaToPattern(schema *jsonschema.Schema, baseSchema *jsonschem
 	allowObject := false
 	allowArray := false
 
+	ignoreNonArray := false
+	ignoreNonNumber := false
+
 	var unionCases []Pattern
 
 	switch len(schema.Types) {
 	case 0:
 		if schema.Contains != nil {
-			allowNumber = true
-			allowInteger = true
-			allowNull = true
-			allowBoolean = true
-			allowString = true
-			allowObject = true
+			ignoreNonArray = true
 			allowArray = schema.Contains.Always == nil || *schema.Contains.Always
 			break
 		}
 
-		if schema.Maximum != nil || schema.Minimum != nil || schema.MultipleOf != nil {
+		if schema.Maximum != nil || schema.ExclusiveMaximum != nil || schema.Minimum != nil ||
+			schema.ExclusiveMinimum != nil || schema.MultipleOf != nil {
+			ignoreNonNumber = true
 			allowNumber = true
 		}
 
@@ -263,7 +263,7 @@ func convertJsonSchemaToPattern(schema *jsonschema.Schema, baseSchema *jsonschem
 			floatRange.Start = min
 		} else if schema.ExclusiveMinimum != nil {
 			hasSpecifiedRange = true
-			exclusiveMinimum, _ := schema.Minimum.Float64()
+			exclusiveMinimum, _ := schema.ExclusiveMinimum.Float64()
 			floatRange.Start = math.Nextafter(exclusiveMinimum, math.Inf(1))
 		}
 
@@ -274,8 +274,13 @@ func convertJsonSchemaToPattern(schema *jsonschema.Schema, baseSchema *jsonschem
 			floatRange.inclusiveEnd = true
 		} else if schema.ExclusiveMaximum != nil {
 			hasSpecifiedRange = true
-			exclusiveMaximum, _ := schema.Maximum.Float64()
-			floatRange.End = exclusiveMaximum
+			exclusiveMaximum, _ := schema.ExclusiveMaximum.Float64()
+
+			if math.IsInf(exclusiveMaximum, 1) {
+				floatRange.End = exclusiveMaximum
+			} else {
+				floatRange.End = math.Nextafter(exclusiveMaximum, math.Inf(-1))
+			}
 		}
 
 		var multipleOf float64 = -1
@@ -596,6 +601,16 @@ func convertJsonSchemaToPattern(schema *jsonschema.Schema, baseSchema *jsonschem
 	}
 
 	if len(unionCases) == 1 {
+		if ignoreNonArray {
+			if !allowArray {
+				return NewDifferencePattern(ANYVAL_PATTERN, LIST_PATTERN), nil
+			}
+			unionCases = append(unionCases, NewDifferencePattern(ANYVAL_PATTERN, LIST_PATTERN))
+			return NewDisjointUnionPattern(unionCases, nil), nil
+		} else if ignoreNonNumber {
+			unionCases = append(unionCases, NewDifferencePattern(ANYVAL_PATTERN, FLOAT_PATTERN))
+			return NewDisjointUnionPattern(unionCases, nil), nil
+		}
 		return unionCases[0], nil
 	}
 

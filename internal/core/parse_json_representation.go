@@ -127,14 +127,45 @@ func ParseNextJSONRepresentation(ctx *Context, it *jsoniter.Iterator, pattern Pa
 			return nil, errors.New("exact value patterns with a complex value are not supported yet")
 		}
 
-		v, err := ParseNextJSONRepresentation(ctx, it, pattern, false)
+		v, err := ParseNextJSONRepresentation(ctx, it, pattern, try)
 		if err != nil {
 			return nil, err
 		}
 		if !v.Equal(ctx, p.value, nil, 0) {
+			if try {
+				return nil, ErrTriedToParseJSONRepr
+			}
 			return nil, ErrJsonNotMatchingSchema
 		}
 		return v, nil
+	case *DifferencePattern:
+		//TODO: optimize by not copying the bytes
+		bytes := it.SkipAndReturnBytes()
+		tempIterator := jsoniter.NewIterator(jsoniter.ConfigDefault)
+		defer tempIterator.ResetBytes(nil)
+
+		tempIterator.ResetBytes(bytes)
+
+		value, err := ParseNextJSONRepresentation(ctx, tempIterator, p.base, true)
+		if err != nil {
+			if try {
+				return nil, ErrTriedToParseJSONRepr
+			}
+			return nil, err
+		}
+
+		tempIterator.Error = nil
+		tempIterator.ResetBytes(bytes)
+
+		_, err = ParseNextJSONRepresentation(ctx, tempIterator, p.removed, true)
+		if err == nil {
+			if try {
+				return nil, ErrTriedToParseJSONRepr
+			}
+			return nil, ErrJsonNotMatchingSchema
+		}
+
+		return value, nil
 	case *TypePattern:
 		switch p {
 		case SERIALIZABLE_PATTERN:
@@ -320,6 +351,20 @@ func parseObjectJSONrepresentation(ctx *Context, it *jsoniter.Iterator, pattern 
 
 	var missingRequiredProperties []string
 
+	//if exact check that there are no additional properties
+	if pattern != nil && !pattern.inexact {
+		for _, key := range obj.keys {
+			if _, ok := pattern.entryPatterns[key]; !ok {
+				if try {
+					if try {
+						return nil, ErrTriedToParseJSONRepr
+					}
+					return nil, fmt.Errorf("unexpected property %q (exact object pattern)", key)
+				}
+			}
+		}
+	}
+
 	//auto fix & see what properties are missing
 	if pattern != nil {
 		pattern.ForEachEntry(func(propName string, propPattern Pattern, isOptional bool) error {
@@ -369,6 +414,9 @@ func parseObjectJSONrepresentation(ctx *Context, it *jsoniter.Iterator, pattern 
 				}
 
 				if !ok {
+					if try {
+						return nil, ErrTriedToParseJSONRepr
+					}
 					return nil, fmt.Errorf("due to dependencies the following property is missing: %q", requiredKey)
 				}
 			}
@@ -383,11 +431,17 @@ func parseObjectJSONrepresentation(ctx *Context, it *jsoniter.Iterator, pattern 
 					}
 				}
 				if ok {
+					if try {
+						return nil, ErrTriedToParseJSONRepr
+					}
 					return nil, fmt.Errorf("due to dependencies the following property is forbidden: %q", forbiddenKey)
 				}
 			}
 
 			if deps.pattern != nil && !deps.pattern.Test(ctx, obj) {
+				if try {
+					return nil, ErrTriedToParseJSONRepr
+				}
 				return nil, fmt.Errorf("dependencies of property %q are not fulfilled", propName)
 			}
 		}
@@ -577,16 +631,25 @@ func parseByteCountJSONRepresentation(ctx *Context, it *jsoniter.Iterator, patte
 	s := it.ReadString()
 
 	if !strings.HasSuffix(s, BYTE_COUNT_UNIT) {
+		if try {
+			return 0, ErrTriedToParseJSONRepr
+		}
 		return 0, fmt.Errorf("invalid unit")
 	}
 
 	s = strings.TrimSuffix(s, BYTE_COUNT_UNIT)
 
 	if it.Error != nil && it.Error != io.EOF {
+		if try {
+			return 0, ErrTriedToParseJSONRepr
+		}
 		return 0, fmt.Errorf("failed to parse byte count: %w", it.Error)
 	}
 	i, err := strconv.ParseInt(s, 10, 64)
 	if err != nil {
+		if try {
+			return 0, ErrTriedToParseJSONRepr
+		}
 		return 0, fmt.Errorf("failed to parse byte count: %w", err)
 	}
 	return ByteCount(i), nil
@@ -603,16 +666,25 @@ func parseRuneCountJSONRepresentation(ctx *Context, it *jsoniter.Iterator, patte
 	s := it.ReadString()
 
 	if !strings.HasSuffix(s, RUNE_COUNT_UNIT) {
+		if try {
+			return 0, ErrTriedToParseJSONRepr
+		}
 		return 0, fmt.Errorf("invalid unit")
 	}
 
 	s = strings.TrimSuffix(s, RUNE_COUNT_UNIT)
 
 	if it.Error != nil && it.Error != io.EOF {
+		if try {
+			return 0, ErrTriedToParseJSONRepr
+		}
 		return 0, fmt.Errorf("failed to parse rune count: %w", it.Error)
 	}
 	i, err := strconv.ParseInt(s, 10, 64)
 	if err != nil {
+		if try {
+			return 0, ErrTriedToParseJSONRepr
+		}
 		return 0, fmt.Errorf("failed to parse rune count: %w", err)
 	}
 	return RuneCount(i), nil
@@ -933,6 +1005,10 @@ func parseTupleJSONrepresentation(ctx *Context, it *jsoniter.Iterator, pattern *
 	}
 
 	if pattern.elementPatterns != nil && len(elements) != len(pattern.elementPatterns) {
+		if try {
+			return nil, ErrTriedToParseJSONRepr
+		}
+
 		elemCount := len(elements)
 		if elemCount < len(pattern.elementPatterns) {
 			return nil, fmt.Errorf("JSON array has not enough elements (%d), %d element(s) were expected", elemCount, len(pattern.elementPatterns))
@@ -999,6 +1075,9 @@ func parseIntersectionJSONrepresentation(ctx *Context, it *jsoniter.Iterator, pa
 	value, err := ParseNextJSONRepresentation(ctx, it, firstCase, try)
 
 	if try && errors.Is(err, ErrJsonNotMatchingSchema) {
+		if try {
+			return nil, ErrTriedToParseJSONRepr
+		}
 		return nil, ErrJsonNotMatchingSchema
 	}
 
@@ -1008,6 +1087,9 @@ func parseIntersectionJSONrepresentation(ctx *Context, it *jsoniter.Iterator, pa
 
 	for _, otherCases := range pattern.cases[1:] {
 		if !otherCases.Test(ctx, value) {
+			if try {
+				return nil, ErrTriedToParseJSONRepr
+			}
 			return nil, ErrJsonNotMatchingSchema
 		}
 	}

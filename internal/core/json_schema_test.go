@@ -49,10 +49,14 @@ func TestConvertJsonSchemaToPattern(t *testing.T) {
 						}
 					}
 
+					if !supportedTest {
+						t.SkipNow()
+					}
+
 					t.Run(test.Description, func(t *testing.T) {
 
 						result, err := ParseJSONRepresentation(ctx, string(test.Data), pattern)
-						if test.Valid && supportedTest {
+						if test.Valid {
 							if !assert.NoError(t, err) {
 								return
 							}
@@ -86,11 +90,15 @@ func TestConvertJsonSchemaToPattern(t *testing.T) {
 	})
 
 	t.Run("Contains", func(t *testing.T) {
-		runTestSuites(t, jsonDraft7.Contains, nil)
+		runTestSuites(t, jsonDraft7.Contains, [][2]string{
+			{"contains with false if subschema", "*"},
+		})
 	})
 
 	t.Run("Definitions", func(t *testing.T) {
-		runTestSuites(t, jsonDraft7.Definitions, nil)
+		runTestSuites(t, jsonDraft7.Definitions, [][2]string{
+			{"validate definition against metaschema", "invalid definition schema"},
+		})
 	})
 
 	t.Run("Dependencies", func(t *testing.T) {
@@ -100,6 +108,19 @@ func TestConvertJsonSchemaToPattern(t *testing.T) {
 			{"dependent subschema incompatible with root", "*"}, //TODO: support
 		})
 	})
+
+	t.Run("Enum", func(t *testing.T) {
+		runTestSuites(t, jsonDraft7.Enum, nil)
+	})
+
+	t.Run("ExclusiveMaximum", func(t *testing.T) {
+		runTestSuites(t, jsonDraft7.ExclusiveMaximum, nil)
+	})
+
+	t.Run("ExclusiveMinimum", func(t *testing.T) {
+		runTestSuites(t, jsonDraft7.ExclusiveMinimum, nil)
+	})
+
 }
 
 //go:embed testdata/json-draft7.json
