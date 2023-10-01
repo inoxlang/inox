@@ -642,7 +642,7 @@ Context -.->|Controls| ChildContext
 
 ### Context
 
-**Permission Check**
+**Sequence Diagram for Permission Checks**
 
 ```mermaid
 sequenceDiagram
@@ -653,57 +653,57 @@ sequenceDiagram
     Context-->>Module: ❌ No, raise an error ! (stop execution)  
 ```
 
-**Rate Limit**
+**Sequence Diagram for Rate Limiting**
 
 ```mermaid
 sequenceDiagram
-    Module->>Context: I am about to do an HTTP Request (IO operation)
+    Module->>Context: I am about to do an HTTP Request (IO)
     Context->>CPU Time Limiter: Pause the auto decrementation
-    Context->>HTTP Request Limiter: Remove 1 token
-    Note right of HTTP Request Limiter: ✅ There is one token left.<br/>I take it and I return immediately
-    Context->>CPU Time Limiter: Resume the auto decrementation
+    Context->>HTTP Req. Limiter: Remove 1 token
+    Note right of HTTP Req. Limiter: ✅ There is one token left.<br/>I take it and I return immediately.
+    Context->>CPU Time Limiter: Resume the decrementation
 
     Module->>Context: I am starting an IO operation
-    Context->>CPU Time Limiter: Pause the auto decrementation
+    Context->>CPU Time Limiter: Pause the decrementation
 
     Module->>Context: The IO operation is finished
-    Context->>CPU Time Limiter: Resume the auto decrementation
+    Context->>CPU Time Limiter: Resume the decrementation
 
     Module->>Context: I am about to do an HTTP Request
-    Context->>CPU Time Limiter: Pause the auto decrementation
-    Context->>HTTP Request Limiter: Remove 1 token
-    Note right of HTTP Request Limiter: ⏲️ There are no tokens left.<br/>I wait for the bucket to refill a bit and I take 1 token
-    Context->>CPU Time Limiter: Resume the auto decrementation
+    Context->>CPU Time Limiter: Pause the decrementation
+    Context->>HTTP Req. Limiter: Remove 1 token
+    Note right of HTTP Req. Limiter: ⏲️ There are no tokens left.<br/>I wait for the bucket to refill a bit<br/>and I take 1 token.
+    Context->>CPU Time Limiter: Resume the decrementation
 
     Module->>Context: I am starting an IO operation
-    Context->>CPU Time Limiter: Pause the auto decrementation
+    Context->>CPU Time Limiter: Pause the decrementation
 
     Module->>Context: The IO operation is finished
-    Context->>CPU Time Limiter: Resume the auto decrementation
+    Context->>CPU Time Limiter: Resume the decrementation
 ```
 
 
-**Total Limits**
+**Sequence Diagram for Total Limiting**
 
 ```mermaid
 sequenceDiagram
     Module->>Context: I am about to establish a Websocket Connection
     Context->>CPU Time Limiter: Pause the auto decrementation
-    Context->>Websocket Connection Limiter: Remove 1 token
-    Note right of Websocket Connection Limiter: ✅ There is one token left.<br/>I can return immediately
+    Context->>Websocket Conn. Limiter: Remove 1 token
+    Note right of Websocket Conn. Limiter: ✅ There is one token left.<br/>I take it and I return immediately.
     Context->>CPU Time Limiter: Resume the auto decrementation
 
     Module->>Context: (After a few minutes) The connection is closed.
-    Context->>Websocket Connection Limiter: Give back 1 token
+    Context->>Websocket Conn. Limiter: Give back 1 token
   
     Module->>Context: I am about to establish a Websocket Connection [Same as previously]
     Note right of Context: Same as previously
     Module->>Context: I am about to establish another Websocket Connection
 
     Context->>CPU Time Limiter: Pause the auto decrementation
-    Context->>Websocket Connection Limiter: Remove 1 token
-    Note right of Websocket Connection Limiter: ❌ There are no tokens left ! Panic !
-    Websocket Connection Limiter-->>Context: ❌ raising panic
+    Context->>Websocket Conn. Limiter: Remove 1 token
+    Note right of Websocket Conn. Limiter: ❌ There are no tokens left ! Panic !
+    Websocket Conn. Limiter-->>Context: ❌ raising panic
     Context-->>Module: ❌ raising panic
 ```
 
@@ -723,7 +723,7 @@ context.Take("<simultaneous websocket connection limit>", 1)
 graph TD
     Limiters("Limiters (one per limit)") --> OwnTokenBuckets(Own Token Buckets) & SharedTokenBuckets(Shared Token Buckets)
     Ctx -.->|Stops when Done| ChildCtx
-    Ctx(Context itself)
+    Ctx(Context)
   
     ChildCtx --> ChildLimiters(Child's Limiters) --> SharedTokenBuckets
     ChildLimiters --> ChildOwnTokenBuckets(Child's Token Buckets)
