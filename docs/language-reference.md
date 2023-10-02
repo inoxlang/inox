@@ -45,6 +45,7 @@
     - [Inclusion Imports](#inclusion-imports)
     - [Module Imports](#module-imports)
     - [Limits](#limits)
+    - [Main Module](#main-module)
 - [Static check](#static-check)
 - [Symbolic evaluation](#symbolic-evaluation)
 - [Concurrency](#concurrency)
@@ -1423,6 +1424,13 @@ Examples:
 - `ws/simul-connection` - simultaneous number of WebSocket connections, the counter can go up & down since connections can be closed.
 - `execution/cpu-time` - the counter decrements on its own, it pauses when an IO operation is being performed.
 - `execution/total-time` - the counter decrements on its own.
+
+
+## Main Module
+
+In Inoxlang "a" **main module** does not always refer to the first module being
+executed because in some cases modules can invoke other "main" modules.
+In general the main module is the "main" module of "a" project.
 
 # Static Check
 
