@@ -2,6 +2,10 @@
 
 This package contains most the code for the Inox Runtime, the type checking logic is in the **symbolic/** package.
 
+
+<details>
+<summary>Code organization</summary>
+
 - Tree Walk Interpreter
     - **tree_walk.go**
 - Bytecode Interpreter (inspired from https://github.com/d5/tengo.)
@@ -26,7 +30,6 @@ This package contains most the code for the Inox Runtime, the type checking logi
     - **permissions.go**
     - **limit.go**
     - **token_bucket.go**
-- Permissions
 - Secrets
     - **secrets.go**
 - Database
@@ -40,6 +43,7 @@ This package contains most the code for the Inox Runtime, the type checking logi
     - **parse_representation.go**
     - **parse_json_representation.go**
     - **json_schema.go**
+</details>
 
 ## Inox Runtime Architecture
 
@@ -113,7 +117,7 @@ when a context has a parent additional checks are performed:
 - no host definition should override a host defined by the parent's context.
 
 Hosts defined by the parent context and limits are inherited.
-If no filesystem is present in the creation arguments the child context gets it from its parent.
+If no filesystem is present in the creation arguments the child context gets its parent's filesystem.
 
 #### Sequence Diagram for Permission Checks
 
@@ -208,3 +212,40 @@ subgraph ChildCtx["Child Context(s)"]
   ChildOwnTokenBuckets
 end
 ```
+
+## Database
+
+**Database State diagram**
+
+In database definitions the property `expected-schema-update` should be set to true
+to indicate that a schema update is expected and **must** happen.
+If a schema update happens an error is thrown.
+
+```
+manifest {
+    ...
+    databases: {
+        main: {
+            resource: ldb://main
+            resolution-data: /databases/main/
+            expected-schema-update: true
+        }
+    }
+    ...
+}
+```
+
+```mermaid
+stateDiagram-v2
+    sexpecting: Expecting a Schema Update
+    sdefault: Default
+
+    [*] --> sdefault
+    [*] --> sexpecting: expected-schema-update
+
+    sdefault --> ✅Loaded: load
+    ✅Loaded --> ❌Error: schema update
+    sexpecting --> ✅Loaded: update schema + load
+    ✅Loaded --> ✅Closed: close
+```
+
