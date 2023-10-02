@@ -19719,9 +19719,9 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("unterminated otherprops", func(t *testing.T) {
-			t.SkipNow()
-			n := mustparseChunk(t, "%{otherprops}")
+		t.Run("unterminated otherprops followed by '}'", func(t *testing.T) {
+			n, err := parseChunk(t, "%{otherprops}", "")
+			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 13}, nil, nil},
 				Statements: []Node{
@@ -19744,6 +19744,40 @@ func testParse(
 									NodeBase: NodeBase{
 										NodeSpan{12, 13},
 										&ParsingError{UnspecifiedParsingError, fmtExprExpectedHere([]rune("%{otherprops}"), 12, true)},
+										nil,
+									},
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("unterminated otherprops at end of file", func(t *testing.T) {
+			n, err := parseChunk(t, "%{otherprops", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 12}, nil, nil},
+				Statements: []Node{
+					&ObjectPatternLiteral{
+						NodeBase: NodeBase{
+							NodeSpan{0, 12},
+							&ParsingError{UnspecifiedParsingError, UNTERMINATED_OBJ_PATTERN_MISSING_CLOSING_BRACE},
+							[]Token{
+								{Type: OPENING_OBJECT_PATTERN_BRACKET, Span: NodeSpan{0, 2}},
+							},
+						},
+						OtherProperties: []*OtherPropsExpr{
+							{
+								NodeBase: NodeBase{
+									Span:   NodeSpan{2, 12},
+									Tokens: []Token{{Type: OTHERPROPS_KEYWORD, Span: NodeSpan{2, 12}}},
+								},
+								Pattern: &MissingExpression{
+									NodeBase: NodeBase{
+										NodeSpan{11, 12},
+										&ParsingError{UnspecifiedParsingError, fmtExprExpectedHere([]rune("%{otherprops"), 12, true)},
 										nil,
 									},
 								},
