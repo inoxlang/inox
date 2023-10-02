@@ -2,15 +2,42 @@
 
 <img src="https://avatars.githubusercontent.com/u/122291844?s=200&v=4" alt="a shield"></img>
 
-🛡️ Inox is a [secure](#injection-prevention-wip) programming language for [Web Application Development](#xml-expressions) and [scripting](#declaration-of-cli-parameters--environment-variables).
+🛡️ Inox is a secure programming language for **Web Application Development**.
 
-🔍 [Main Features](#features)
 
-👥 [Join the Discord Server](https://discord.gg/53YGx8GzgE)
+**Web Dev Features**
+- [XML Expressions (HTML)](#xml-expressions)
+- [HTTP Server - Filesystem Routing](#http-server---filesystem-routing)
+- [Built-in Database](#built-in-database)
+- [Project & Virtual Filesystem](#project--virtual-filesystem)
+- [Built-in Browser Automation](#built-in-browser-automation)
 
-🔧 [Runtime Architecture](#inox-runtime-architecture)
+**Security Features**
+- [Injection Prevention](#injection-prevention-wip)
+- [Permission system](#permission-system)
+  - [Required permissions](#required-permissions)
+  - [Isolation of dependencies](#isolation-of-dependencies)
+  - [Dropping permissions](#dropping-permissions)
+- [DoS Mitigation (WIP)](#dos-mitigation)
+- [Sensitive Data Protection](#sensitive-data-protection)
+  - [Secrets](#secrets)
+  - [Visibility](#visibility-wip)
 
-📖 [Language Reference](./docs/language-reference.md)
+**Other Features**
+- [Concurrency](#concurrency)
+  - [Lightweight Threads](#lighweight-threads)
+  - [LThread Groups](#lthread-groups)
+  - [Lifetime jobs](#lifetime-jobs)
+- [Many Built-in Functions](#built-in-functions)
+- [Easy declaration of CLI Parameters](#declaration-of-cli-parameters--environment-variables)
+- [Simplified resource manipulation](#simplified-resource-manipulation)
+- [Transactions & Effects (WIP)](#transactions--effects-wip)
+
+_____
+
+👥 Discord Server: https://discord.gg/53YGx8GzgE
+
+📖 Language Reference: **docs/language-reference.md**
 
 ⚠️ The language is not production ready yet.
 
@@ -41,34 +68,6 @@ To learn scripting go [here](./docs/scripting-basics.md).
 View [Shell Basics](./docs/shell-basics.md) to learn how to use Inox interactively.
 
 ## Features
-
-Web Dev:
-- [XML Expressions (HTML)](#xml-expressions)
-- [HTTP Server - Filesystem Routing](#http-server---filesystem-routing)
-- [Built-in Database](#built-in-database)
-- [Project & Virtual Filesystem](#project--virtual-filesystem)
-- [Built-in Browser Automation](#built-in-browser-automation)
-
-Security:
-- [Injection Prevention](#injection-prevention-wip)
-- [Permission system](#permission-system)
-  - [Required permissions](#required-permissions)
-  - [Isolation of dependencies](#isolation-of-dependencies)
-  - [Dropping permissions](#dropping-permissions)
-- [DoS Mitigation (WIP)](#dos-mitigation)
-- [Sensitive Data Protection](#sensitive-data-protection)
-  - [Secrets](#secrets)
-  - [Visibility](#visibility-wip)
-
-Other:
-- [Concurrency](#concurrency)
-  - [Lightweight Threads](#lighweight-threads)
-  - [LThread Groups](#lthread-groups)
-  - [Lifetime jobs](#lifetime-jobs)
-- [Many Built-in Functions](#built-in-functions)
-- [Easy declaration of CLI Parameters](#declaration-of-cli-parameters--environment-variables)
-- [Simplified resource manipulation](#simplified-resource-manipulation)
-- [Transactions & Effects (WIP)](#transactions--effects-wip)
 
 ### XML expressions
 
