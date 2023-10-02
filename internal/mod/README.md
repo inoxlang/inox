@@ -2,8 +2,6 @@
 
 The tests for this package are located in [../globals/module_execution_test.go](../globals/module_execution_test.go).
 
-
-
 ## Module Preparation
 
 Module preparation is implemented in preparation.go, it consists of several steps:
@@ -16,13 +14,15 @@ Module preparation is implemented in preparation.go, it consists of several step
 - Static Checks
 - Symbolic Evaluation (typechecking)
 
+*Note that module preparation is not used by [module imports](../../docs/language-reference.md#module-imports).*
+
 ### Parsing
 
-Recursive parsing of the main module and its imports.
+Recursive parsing of the module and its imports.
 
 ### Pre-initialization
 
-The pre-initialization is the checking and creation of the main module's manifest.
+The pre-initialization is the checking and creation of the module's manifest.
 
 1.  the pre-init block is statically checked (if present).
 2.  the manifest's object literal is statically checked.
@@ -47,7 +47,7 @@ The most relevant inputs are:
 
 [implementation](../globals/default_state.go)
 
-The global state of the main module is created it is initialized
+The global state of the module is created it is initialized
 with the default globals (variables, functions & namespaces).
 
 ### Database Openings
@@ -73,3 +73,11 @@ The symbolic evaluation of a module is a "virtual" evaluation, it performs check
 Throughout the Inox documentation you may encounter the terms "type checker"/ "type checking", they correspond to the 
 symbolic evaluation phase.
 
+
+## Module Execution
+
+First the risk score is computed, if it's too high a prompt is shown to the user to confirm the execution.
+
+If the bytecode interpretration is chosen the module is compiled & executed in the bytecode interpreter (VM).
+Otherwise the tree walk interpreter executes the module. If debugging is enabled the debugger is attached 
+to the global state just before the execution starts.
