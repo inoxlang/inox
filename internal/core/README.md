@@ -49,10 +49,10 @@ Each Inox module is executed by a dedicated [interpreter](./docs/language-refere
 
 ```mermaid
 graph TD
-    Interpreter0[[Interpreter 0]]
+    Interpreter0[[Interpreter N]]
     Interpreter0 --> |runs| Mod
 
-    Interpreter1[[Interpreter 1]] --> |runs| ChildMod
+    Interpreter1[[Interpreter N+1]] --> |runs| ChildMod
 
 ChildMod(Child Module)
 DBs[(Databases)]
@@ -77,9 +77,40 @@ ChildMod --- VFs
 Context -.->|Controls| ChildContext
 ```
 
+### Global State
+
+Each module instance has itw own **global state**.
+The global state holds the state of the module instance:
+- global variables.
+- the module instance's manifest (immutable).
+- the module instances's [context](./#context).
+- databases accessible by the module instance.
+- a reference to the project the module is part of.
+- a reference to the module definition (immutable).
+
 ### Context
 
-**Sequence Diagram for Permission Checks**
+Each module instance has its own context.\
+A context is analogous to a `context.Context` in Golang's stdlib: 
+when the context is cancelled all ancestor contexts are cancelled as well.
+
+#### Creation
+
+Most relevant inputs come from the module's manifest:
+- list of permissions required by the module.
+- list of limits specified by the module.
+- list of database configurations specified by the module (owned databases).
+- host definitions (resolution data) specified by the module.
+
+Another relevant input is the parent context. In most cases a context have a parent context; 
+when a context has a parent additional checks are performed:
+- all permissions required by the module should be also granted to the parent.
+- limits specified by the module must be as or more restrictive than the parent context's limits.
+- no host definition should override a host defined by the parent's context.
+
+Hosts defined by the parent context and limits are inherited.
+
+#### Sequence Diagram for Permission Checks
 
 ```mermaid
 sequenceDiagram
@@ -90,7 +121,7 @@ sequenceDiagram
     Context-->>Module: ❌ No, raise an error ! (stop execution)  
 ```
 
-**Sequence Diagram for Rate Limiting**
+#### Sequence Diagram for Rate Limiting
 
 ```mermaid
 sequenceDiagram
@@ -120,7 +151,7 @@ sequenceDiagram
 ```
 
 
-**Sequence Diagram for Total Limiting**
+#### Sequence Diagram for Total Limiting
 
 ```mermaid
 sequenceDiagram
