@@ -14,7 +14,7 @@ import (
 
 	"github.com/google/go-dap"
 	core "github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/globals/inox_ns"
+	"github.com/inoxlang/inox/internal/mod"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/project_server/jsonrpc"
 	"github.com/inoxlang/inox/internal/project_server/logs"
@@ -1438,7 +1438,7 @@ func launchDebuggedProgram(programPath string, session *jsonrpc.Session, debugSe
 		}
 	}()
 
-	_, _, _, failedToPrepare, err := inox_ns.RunLocalScript(inox_ns.RunScriptArgs{
+	_, _, _, failedToPrepare, err := mod.RunLocalScript(mod.RunScriptArgs{
 		Fpath:                     programPath,
 		ParsingCompilationContext: ctx,
 		ParentContext:             ctx,

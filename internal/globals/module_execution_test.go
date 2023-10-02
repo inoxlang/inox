@@ -15,6 +15,7 @@ import (
 	"github.com/go-git/go-billy/v5/util"
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/default_state"
+	"github.com/inoxlang/inox/internal/mod"
 	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/project"
 	"github.com/inoxlang/inox/internal/utils"
@@ -22,7 +23,6 @@ import (
 	_ "github.com/inoxlang/inox/internal/obs_db"
 
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
-	"github.com/inoxlang/inox/internal/globals/inox_ns"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -64,7 +64,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		defer cancel()
 
 		assert.PanicsWithError(t, core.ErrBothParentCtxArgsProvided.Error(), func() {
-			inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
+			mod.PrepareLocalScript(mod.ScriptPreparationArgs{
 				Fpath:                     file,
 				ParsingCompilationContext: compilationCtx,
 				ParentContext:             ctx,
@@ -103,7 +103,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		defer ctx.CancelGracefully()
 		defer ctx.CancelGracefully()
 
-		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
+		state, mod, _, err := mod.PrepareLocalScript(mod.ScriptPreparationArgs{
 			Fpath:                     file,
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             ctx,
@@ -165,7 +165,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		defer ctx.CancelGracefully()
 		defer ctx.CancelGracefully()
 
-		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
+		state, mod, _, err := mod.PrepareLocalScript(mod.ScriptPreparationArgs{
 			Fpath:                     file,
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             ctx,
@@ -226,7 +226,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		core.NewGlobalState(ctx)
 		defer ctx.CancelGracefully()
 
-		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
+		state, mod, _, err := mod.PrepareLocalScript(mod.ScriptPreparationArgs{
 			Fpath:                     file,
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             ctx,
@@ -291,7 +291,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		preinitFs := fs_ns.NewMemFilesystem(100)
 		util.WriteFile(preinitFs, "/file.txt", nil, 0o600)
 
-		state, mod, manifest, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
+		state, mod, manifest, err := mod.PrepareLocalScript(mod.ScriptPreparationArgs{
 			Fpath:                     file,
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             ctx,
@@ -376,7 +376,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		core.NewGlobalState(ctx)
 		defer ctx.CancelGracefully()
 
-		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
+		state, mod, _, err := mod.PrepareLocalScript(mod.ScriptPreparationArgs{
 			Fpath:                     file,
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             ctx,
@@ -456,7 +456,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		core.NewGlobalState(ctx)
 		defer ctx.CancelGracefully()
 
-		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
+		state, mod, _, err := mod.PrepareLocalScript(mod.ScriptPreparationArgs{
 			Fpath:                     file,
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             ctx,
@@ -536,7 +536,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		core.NewGlobalState(ctx)
 		defer ctx.CancelGracefully()
 
-		mainState, _, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
+		mainState, _, _, err := mod.PrepareLocalScript(mod.ScriptPreparationArgs{
 			Fpath:                     "/main.ix",
 			ParsingCompilationContext: ctx,
 			ParentContext:             ctx,
@@ -551,7 +551,7 @@ func TestPrepareLocalScript(t *testing.T) {
 			return
 		}
 
-		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
+		state, mod, _, err := mod.PrepareLocalScript(mod.ScriptPreparationArgs{
 			Fpath:                     "/executed.ix",
 			ParsingCompilationContext: mainState.Ctx,
 			ParentContext:             mainState.Ctx,
@@ -621,7 +621,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		core.NewGlobalState(ctx)
 		defer ctx.CancelGracefully()
 
-		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
+		state, mod, _, err := mod.PrepareLocalScript(mod.ScriptPreparationArgs{
 			Fpath:                     file,
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             ctx,
@@ -703,7 +703,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		core.NewGlobalState(ctx)
 		defer ctx.CancelGracefully()
 
-		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
+		state, mod, _, err := mod.PrepareLocalScript(mod.ScriptPreparationArgs{
 			Fpath:                     file,
 			Project:                   project.NewDummyProject("test", fs),
 			ParsingCompilationContext: compilationCtx,
@@ -802,7 +802,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		core.NewGlobalState(ctx)
 		defer ctx.CancelGracefully()
 
-		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
+		state, mod, _, err := mod.PrepareLocalScript(mod.ScriptPreparationArgs{
 			Fpath:                     file,
 			Project:                   project.NewDummyProject("test", fs),
 			ParsingCompilationContext: compilationCtx,
@@ -944,7 +944,7 @@ func TestPrepareLocalScript(t *testing.T) {
 			Filesystem:  fs,
 		}, nil)
 
-		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
+		state, mod, _, err := mod.PrepareLocalScript(mod.ScriptPreparationArgs{
 			Fpath:                     "/script.ix",
 			ParsingCompilationContext: ctx,
 			ParentContext:             ctx,
@@ -1075,7 +1075,7 @@ func TestPrepareLocalScript(t *testing.T) {
 			Filesystem:  fs,
 		}, nil)
 
-		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
+		state, mod, _, err := mod.PrepareLocalScript(mod.ScriptPreparationArgs{
 			Fpath:                     "/script.ix",
 			ParsingCompilationContext: ctx,
 			ParentContext:             ctx,
@@ -1147,7 +1147,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		core.NewGlobalState(ctx)
 		defer ctx.CancelGracefully()
 
-		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
+		state, mod, _, err := mod.PrepareLocalScript(mod.ScriptPreparationArgs{
 			Fpath:                     file,
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             ctx,
@@ -1194,7 +1194,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		core.NewGlobalState(ctx)
 		defer ctx.CancelGracefully()
 
-		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
+		state, mod, _, err := mod.PrepareLocalScript(mod.ScriptPreparationArgs{
 			Fpath:                     file,
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             ctx,
@@ -1267,7 +1267,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		core.NewGlobalState(ctx)
 		defer ctx.CancelGracefully()
 
-		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
+		state, mod, _, err := mod.PrepareLocalScript(mod.ScriptPreparationArgs{
 			Fpath:                     file,
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             ctx,
@@ -1311,7 +1311,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		core.NewGlobalState(ctx)
 		defer ctx.CancelGracefully()
 
-		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
+		state, mod, _, err := mod.PrepareLocalScript(mod.ScriptPreparationArgs{
 			Fpath:                     file,
 			CliArgs:                   []string{}, //missing file argument
 			ParsingCompilationContext: compilationCtx,
@@ -1355,7 +1355,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		core.NewGlobalState(ctx)
 		defer ctx.CancelGracefully()
 
-		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
+		state, mod, _, err := mod.PrepareLocalScript(mod.ScriptPreparationArgs{
 			Fpath:                     file,
 			CliArgs:                   []string{"true"}, //too many arguments
 			ParsingCompilationContext: compilationCtx,
@@ -1399,7 +1399,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		core.NewGlobalState(ctx)
 		defer ctx.CancelGracefully()
 
-		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
+		state, mod, _, err := mod.PrepareLocalScript(mod.ScriptPreparationArgs{
 			Fpath:                     file,
 			CliArgs:                   []string{"-x"}, //unknown argument
 			ParsingCompilationContext: compilationCtx,
@@ -1445,7 +1445,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		core.NewGlobalState(ctx)
 		defer ctx.CancelGracefully()
 
-		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
+		state, mod, _, err := mod.PrepareLocalScript(mod.ScriptPreparationArgs{
 			Fpath:                     file,
 			Args:                      core.NewStructFromMap(map[string]core.Value{}),
 			ParsingCompilationContext: compilationCtx,
@@ -1491,7 +1491,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		})
 		core.NewGlobalState(state)
 
-		res, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
+		res, mod, _, err := mod.PrepareLocalScript(mod.ScriptPreparationArgs{
 			Fpath: file,
 			Args: core.NewStructFromMap(map[string]core.Value{
 				"0": core.Path("./a.txt"),
@@ -1539,7 +1539,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		core.NewGlobalState(ctx)
 		defer ctx.CancelGracefully()
 
-		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
+		state, mod, _, err := mod.PrepareLocalScript(mod.ScriptPreparationArgs{
 			Fpath: file,
 			Args: core.NewStructFromMap(map[string]core.Value{
 				"0": core.True,
@@ -1585,7 +1585,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		core.NewGlobalState(ctx)
 		defer ctx.CancelGracefully()
 
-		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
+		state, mod, _, err := mod.PrepareLocalScript(mod.ScriptPreparationArgs{
 			Fpath: file,
 			Args: core.NewStructFromMap(map[string]core.Value{
 				"0": core.True,
@@ -1634,7 +1634,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		core.NewGlobalState(ctx)
 		defer ctx.CancelGracefully()
 
-		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
+		state, mod, _, err := mod.PrepareLocalScript(mod.ScriptPreparationArgs{
 			Fpath: file,
 			Args: core.NewStructFromMap(map[string]core.Value{
 				"0":      core.Path("./a.txt"),
@@ -1683,7 +1683,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		core.NewGlobalState(ctx)
 		defer ctx.CancelGracefully()
 
-		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
+		state, mod, _, err := mod.PrepareLocalScript(mod.ScriptPreparationArgs{
 			Fpath: file,
 			Args: core.NewStructFromMap(map[string]core.Value{
 				"outpu": core.True, //unknown argument
@@ -1729,7 +1729,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		core.NewGlobalState(ctx)
 		defer ctx.CancelGracefully()
 
-		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
+		state, mod, _, err := mod.PrepareLocalScript(mod.ScriptPreparationArgs{
 			Fpath: file,
 			Args: core.NewStructFromMap(map[string]core.Value{
 				"x": core.True, //unknown argument
@@ -1777,7 +1777,7 @@ func TestPrepareDevModeIncludableChunkFile(t *testing.T) {
 			Filesystem:  fs,
 		}, nil)
 
-		state, _, _, err := inox_ns.PrepareExtractionModeIncludableChunkfile(inox_ns.IncludableChunkfilePreparationArgs{
+		state, _, _, err := mod.PrepareExtractionModeIncludableChunkfile(mod.IncludableChunkfilePreparationArgs{
 			Fpath:                          "/included.ix",
 			ParsingContext:                 ctx,
 			LogOut:                         io.Discard,
@@ -1823,7 +1823,7 @@ func TestPrepareDevModeIncludableChunkFile(t *testing.T) {
 			Filesystem:  fs,
 		}, nil)
 
-		state, _, _, err := inox_ns.PrepareExtractionModeIncludableChunkfile(inox_ns.IncludableChunkfilePreparationArgs{
+		state, _, _, err := mod.PrepareExtractionModeIncludableChunkfile(mod.IncludableChunkfilePreparationArgs{
 			Fpath:                          "/included.ix",
 			ParsingContext:                 ctx,
 			LogOut:                         io.Discard,
@@ -1884,7 +1884,7 @@ func TestRunLocalScript(t *testing.T) {
 		ctx := createEvaluationCtx(dir)
 		defer ctx.CancelGracefully()
 
-		state, _, _, _, err := inox_ns.RunLocalScript(inox_ns.RunScriptArgs{
+		state, _, _, _, err := mod.RunLocalScript(mod.RunScriptArgs{
 			Fpath:                     file,
 			ParsingCompilationContext: compilationCtx,
 			ParentContextRequired:     true,
@@ -1917,7 +1917,7 @@ func TestRunLocalScript(t *testing.T) {
 		ctx := createEvaluationCtx(dir)
 		defer ctx.CancelGracefully()
 
-		state, _, _, _, err := inox_ns.RunLocalScript(inox_ns.RunScriptArgs{
+		state, _, _, _, err := mod.RunLocalScript(mod.RunScriptArgs{
 			Fpath:                     file,
 			ParsingCompilationContext: compilationCtx,
 			ParentContextRequired:     true,
@@ -1936,7 +1936,7 @@ func TestRunLocalScript(t *testing.T) {
 		dir := t.TempDir()
 		file := filepath.Join(dir, "script.ix")
 
-		manySpawnExprs := strings.Repeat("go do idt(1)\n", inox_ns.DEFAULT_MAX_ALLOWED_WARNINGS+1)
+		manySpawnExprs := strings.Repeat("go do idt(1)\n", mod.DEFAULT_MAX_ALLOWED_WARNINGS+1)
 
 		os.WriteFile(file, []byte("manifest {}\n"+manySpawnExprs), 0o600)
 
@@ -1946,7 +1946,7 @@ func TestRunLocalScript(t *testing.T) {
 		ctx := createEvaluationCtx(dir)
 		defer ctx.CancelGracefully()
 
-		state, _, _, _, err := inox_ns.RunLocalScript(inox_ns.RunScriptArgs{
+		state, _, _, _, err := mod.RunLocalScript(mod.RunScriptArgs{
 			Fpath:                     file,
 			ParsingCompilationContext: compilationCtx,
 			ParentContextRequired:     true,
@@ -1955,7 +1955,7 @@ func TestRunLocalScript(t *testing.T) {
 			IgnoreHighRiskScore:       true,
 		})
 
-		if !assert.ErrorIs(t, err, inox_ns.ErrExecutionAbortedTooManyWarnings) {
+		if !assert.ErrorIs(t, err, mod.ErrExecutionAbortedTooManyWarnings) {
 			return
 		}
 
@@ -2020,7 +2020,7 @@ func TestRunLocalScript(t *testing.T) {
 			util.WriteFile(preinitFs, fmt.Sprintf("/file%d.txt", i), nil, 0o600)
 		}
 
-		state, _, _, _, err := inox_ns.RunLocalScript(inox_ns.RunScriptArgs{
+		state, _, _, _, err := mod.RunLocalScript(mod.RunScriptArgs{
 			Fpath:                     file,
 			ParsingCompilationContext: compilationCtx,
 			ParentContextRequired:     true,
@@ -2030,7 +2030,7 @@ func TestRunLocalScript(t *testing.T) {
 			PreinitFilesystem:         preinitFs,
 		})
 
-		if !assert.ErrorIs(t, err, inox_ns.ErrNoProvidedConfirmExecPrompt) {
+		if !assert.ErrorIs(t, err, mod.ErrNoProvidedConfirmExecPrompt) {
 			return
 		}
 

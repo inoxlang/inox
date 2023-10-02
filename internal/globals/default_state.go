@@ -18,11 +18,11 @@ import (
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/globals/html_ns"
 	"github.com/inoxlang/inox/internal/globals/http_ns"
+	"github.com/inoxlang/inox/internal/globals/inox_ns"
 	"github.com/inoxlang/inox/internal/globals/inoxlsp_ns"
 	"github.com/inoxlang/inox/internal/globals/strmanip_ns"
 	"github.com/inoxlang/inox/internal/help"
 
-	"github.com/inoxlang/inox/internal/globals/inox_ns"
 	"github.com/inoxlang/inox/internal/globals/inoxsh_ns"
 	"github.com/inoxlang/inox/internal/globals/net_ns"
 	"github.com/inoxlang/inox/internal/globals/s3_ns"

@@ -17,6 +17,7 @@ import (
 	"github.com/inoxlang/inox/internal/core"
 	_ "github.com/inoxlang/inox/internal/globals"
 	metricsperf "github.com/inoxlang/inox/internal/metrics-perf"
+	"github.com/inoxlang/inox/internal/mod"
 	"github.com/inoxlang/inox/internal/project_server/jsonrpc"
 	"github.com/rs/zerolog"
 
@@ -157,7 +158,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 			return utils.SliceContains(accepted, input), nil
 		})
 
-		res, _, _, _, err := inox_ns.RunLocalScript(inox_ns.RunScriptArgs{
+		res, _, _, _, err := mod.RunLocalScript(mod.RunScriptArgs{
 			Fpath:                     fpath,
 			PassedCLIArgs:             moduleArgs,
 			PreinitFilesystem:         compilationCtx.GetFileSystem(),

@@ -6,7 +6,7 @@ import (
 	"sync/atomic"
 
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/globals/inox_ns"
+	"github.com/inoxlang/inox/internal/mod"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/project_server/jsonrpc"
 	"github.com/inoxlang/inox/internal/project_server/logs"
@@ -96,7 +96,7 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 	}
 
 	if chunk.Node.IncludableChunkDesc != nil {
-		state, mod, includedChunk, err := inox_ns.PrepareExtractionModeIncludableChunkfile(inox_ns.IncludableChunkfilePreparationArgs{
+		state, mod, includedChunk, err := mod.PrepareExtractionModeIncludableChunkfile(mod.IncludableChunkfilePreparationArgs{
 			Fpath:                          fpath,
 			ParsingContext:                 ctx,
 			Out:                            io.Discard,
@@ -157,7 +157,7 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 			}
 		}
 
-		state, mod, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
+		state, mod, _, err := mod.PrepareLocalScript(mod.ScriptPreparationArgs{
 			Fpath:                     fpath,
 			ParsingCompilationContext: ctx,
 

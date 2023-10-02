@@ -13,6 +13,8 @@ import (
 
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	parse "github.com/inoxlang/inox/internal/parse"
+
+	mod "github.com/inoxlang/inox/internal/mod"
 )
 
 const (
@@ -119,7 +121,7 @@ func _parse_in_memory_module(ctx *core.Context, name core.Str, code core.Str) (*
 }
 
 func _prepare_local_script(ctx *core.Context, src core.Path) (*core.Module, *core.GlobalState, *core.Record, error) {
-	state, mod, _, err := PrepareLocalScript(ScriptPreparationArgs{
+	state, mod, _, err := mod.PrepareLocalScript(mod.ScriptPreparationArgs{
 		Fpath:                     string(src),
 		ParsingCompilationContext: ctx,
 		ParentContext:             ctx,
@@ -174,7 +176,7 @@ func _run_local_script(ctx *core.Context, src core.Path, config *core.Object) (c
 		return nil, nil, nil, err
 	}
 
-	runResult, state, mod, _, err := RunLocalScript(RunScriptArgs{
+	runResult, state, mod, _, err := mod.RunLocalScript(mod.RunScriptArgs{
 		Fpath:                     string(src),
 		ParsingCompilationContext: ctx,
 		ParentContext:             ctx,
@@ -226,7 +228,7 @@ func _run_local_script(ctx *core.Context, src core.Path, config *core.Object) (c
 //		symbolicCheckErrors: [ ..., {text: <string>, location: <parse.SourcePosition>}, ... ]
 //	}
 func GetCheckData(fpath string, compilationCtx *core.Context, out io.Writer) map[string]any {
-	state, mod, _, err := PrepareLocalScript(ScriptPreparationArgs{
+	state, mod, _, err := mod.PrepareLocalScript(mod.ScriptPreparationArgs{
 		Fpath:                     fpath,
 		Args:                      nil,
 		ParsingCompilationContext: compilationCtx,

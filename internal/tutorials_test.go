@@ -11,8 +11,8 @@ import (
 	"github.com/go-git/go-billy/v5/util"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
-	"github.com/inoxlang/inox/internal/globals/inox_ns"
 	"github.com/inoxlang/inox/internal/learn"
+	"github.com/inoxlang/inox/internal/mod"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 
@@ -61,7 +61,7 @@ func TestTutorials(t *testing.T) {
 							outputBuff := bytes.NewBuffer(nil)
 							logOutputBuff := bytes.NewBuffer(nil)
 
-							_, _, _, _, err := inox_ns.RunLocalScript(inox_ns.RunScriptArgs{
+							_, _, _, _, err := mod.RunLocalScript(mod.RunScriptArgs{
 								Fpath:                     fpath,
 								PassedArgs:                core.NewEmptyStruct(),
 								ParsingCompilationContext: parsingCompilationContext,

@@ -10,8 +10,8 @@ import (
 	"slices"
 
 	core "github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/globals/inox_ns"
 	"github.com/inoxlang/inox/internal/mimeconsts"
+	"github.com/inoxlang/inox/internal/mod"
 )
 
 func createHandleDynamic(server *HttpServer, routingDirPath core.Path) handlerFn {
@@ -78,7 +78,7 @@ func createHandleDynamic(server *HttpServer, routingDirPath core.Path) handlerFn
 
 		//TODO: check the file is not writable
 
-		state, _, _, err := inox_ns.PrepareLocalScript(inox_ns.ScriptPreparationArgs{
+		state, _, _, err := mod.PrepareLocalScript(mod.ScriptPreparationArgs{
 			Fpath:                 modulePath,
 			ParentContext:         handlerCtx,
 			ParentContextRequired: true,
@@ -110,7 +110,7 @@ func createHandleDynamic(server *HttpServer, routingDirPath core.Path) handlerFn
 			debugger = parentDebugger.NewChild()
 		}
 
-		result, _, _, _, err := inox_ns.RunPreparedScript(inox_ns.RunPreparedScriptArgs{
+		result, _, _, _, err := mod.RunPreparedScript(mod.RunPreparedScriptArgs{
 			State: state,
 
 			ParentContext:             handlerCtx,

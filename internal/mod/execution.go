@@ -1,4 +1,4 @@
-package inox_ns
+package mod
 
 import (
 	"bytes"

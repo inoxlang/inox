@@ -14,8 +14,8 @@ import (
 	"github.com/inoxlang/inox/internal/commonfmt"
 	"github.com/inoxlang/inox/internal/config"
 	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/mod"
 
-	"github.com/inoxlang/inox/internal/globals/inox_ns"
 	"github.com/inoxlang/inox/internal/globals/inoxsh_ns"
 
 	parse "github.com/inoxlang/inox/internal/parse"
@@ -333,7 +333,7 @@ func _dynimport(ctx *core.Context, src core.Value, argObj *core.Object, manifest
 func _run(ctx *core.Context, src core.Path, args ...core.Value) error {
 	closestState := ctx.GetClosestState()
 
-	_, _, _, _, err := inox_ns.RunLocalScript(inox_ns.RunScriptArgs{
+	_, _, _, _, err := mod.RunLocalScript(mod.RunScriptArgs{
 		Fpath:                     string(src),
 		ParsingCompilationContext: ctx,
 		ParentContext:             ctx,

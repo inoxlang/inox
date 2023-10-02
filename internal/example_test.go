@@ -16,9 +16,9 @@ import (
 
 	"github.com/inoxlang/inox/internal/core"
 	_ "github.com/inoxlang/inox/internal/globals"
+	"github.com/inoxlang/inox/internal/mod"
 
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
-	"github.com/inoxlang/inox/internal/globals/inox_ns"
 
 	"github.com/inoxlang/inox/internal/permkind"
 
@@ -176,7 +176,7 @@ func testExample(t *testing.T, config exampleTestConfig) {
 		})
 		core.NewGlobalState(parsingCompilationContext)
 
-		_, _, _, _, err := inox_ns.RunLocalScript(inox_ns.RunScriptArgs{
+		_, _, _, _, err := mod.RunLocalScript(mod.RunScriptArgs{
 			Fpath:                     fpath,
 			PassedArgs:                core.NewEmptyStruct(),
 			UseBytecode:               useBytecode,
