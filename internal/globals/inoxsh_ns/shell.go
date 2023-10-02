@@ -28,7 +28,7 @@ import (
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	symbolic_shell "github.com/inoxlang/inox/internal/globals/inoxsh_ns/symbolic"
 
-	"github.com/inoxlang/inox/internal/globals/compl"
+	"github.com/inoxlang/inox/internal/compl"
 	"github.com/inoxlang/inox/internal/utils"
 
 	parse "github.com/inoxlang/inox/internal/parse"

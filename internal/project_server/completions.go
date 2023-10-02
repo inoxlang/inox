@@ -1,8 +1,8 @@
 package project_server
 
 import (
+	"github.com/inoxlang/inox/internal/compl"
 	core "github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/globals/compl"
 	"github.com/inoxlang/inox/internal/project_server/jsonrpc"
 	"github.com/inoxlang/inox/internal/utils"
 )

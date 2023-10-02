@@ -22,7 +22,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/utils"
 
-	"github.com/inoxlang/inox/internal/globals/compl"
+	"github.com/inoxlang/inox/internal/compl"
 	parse "github.com/inoxlang/inox/internal/parse"
 
 	_ "net/http/pprof"
