@@ -373,9 +373,8 @@ drop-perms {
 
 #### **Limits (WIP)**
 
-Limits limit the **speed** at which some actions are performed, the minimum required values/rates are specified in the manifest.
-This feature is still in development and will be fully implemented soon.\
-Limits will for example allow the developer to **restrict** the share of disk/network bandwidth allocated to a http request handler.
+Limits limit intensive operations, there are three kinds of limits: **byte rate**, **simple rate** & **total**.
+They are defined in the manifest and are [shared](./docs/language-reference.md#limits) with the children of the module.
 
 ```
 manifest {
@@ -388,6 +387,31 @@ manifest {
     }
 }
 ```
+
+**Byte Rate Limits**
+
+This kind of limit represents a number of bytes per second.\
+Examples:
+- `fs/read`
+- `fs/write`
+
+**Simple Rate Limits**
+
+This kind of limit represents a number of operations per second.\
+Examples:
+- `fs/new-file`
+- `http/request`
+- `object-storage/request`
+
+**Total Limits**
+
+This kind of limit represents a total number of operations or resources.
+Attempting to make an operation while the counter associated with the limit is at zero will cause a panic.\
+Examples: 
+- `fs/total-new-file` - the counter can only go down.
+- `ws/simul-connection` - simultaneous number of WebSocket connections, the counter can go up & down since connections can be closed.
+- `execution/cpu-time` - the counter decrements on its own, it pauses when an IO operation is being performed.
+- `execution/total-time` - the counter decrements on its own.
 
 ### Sensitive Data Protection 
 
