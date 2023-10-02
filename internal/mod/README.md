@@ -2,6 +2,8 @@
 
 The tests for this package are located in [../globals/module_execution_test.go](../globals/module_execution_test.go).
 
+
+
 ## Module Preparation
 
 Module preparation is implemented in preparation.go, it consists of several steps:
@@ -9,6 +11,8 @@ Module preparation is implemented in preparation.go, it consists of several step
 - Pre-initialization
 - Context Creation
 - Global State Creation
+- Database Openings
+- Retrieval of Project Secrets
 - Static Checks
 - Symbolic Evaluation (typechecking)
 
@@ -46,8 +50,15 @@ The most relevant inputs are:
 The global state of the main module is created it is initialized
 with the default globals (variables, functions & namespaces).
 
+### Database Openings
 
-### Static Checks
+Databases described in the manifest or created if necessary and opened.
+
+### Retrieval of Project Secrets
+
+If a project has been passed its secrets are retrieved and the global `project-secrets` is added to the state.
+
+### Static Checks
 
 During this phase the code is analyzed in order to find the following issues:
 - misplaced statements
@@ -56,8 +67,9 @@ During this phase the code is analyzed in order to find the following issues:
 
 *(and a few others)*
 
-# Symbolic Evaluation
+### Symbolic Evaluation
 
 The symbolic evaluation of a module is a "virtual" evaluation, it performs checks similar to those of a type checker.
 Throughout the Inox documentation you may encounter the terms "type checker"/ "type checking", they correspond to the 
 symbolic evaluation phase.
+
