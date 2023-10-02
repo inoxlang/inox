@@ -59,22 +59,25 @@ DBs[(Databases)]
 VFs[(Filesystem)]
 
 subgraph Mod[Module]
-  Context(Context)
-  IncludesFiles(Included Chunks)
+    Context(Context)
+    State0(State)
 end
 
 subgraph ChildMod[Child Module]
-  ChildContext(Child Context)
+    ChildContext(Child Context)
+    State1(State)
 end
 
 
 Mod(Module)
 Mod --- ChildMod; 
-Mod --- DBs
-ChildMod --- DBs
-Mod --- VFs
-ChildMod --- VFs
-Context -.->|Controls| ChildContext
+Mod -.- DBs
+ChildMod -.- DBs
+Mod -.- VFs
+ChildMod -.- VFs
+Context -.->|controls| ChildContext
+Context -.->|can stop| Interpreter0
+ChildContext -.->|can stop| Interpreter1
 ```
 
 ### Global State
@@ -93,6 +96,7 @@ The global state holds the state of the module instance:
 Each module instance has its own context.\
 A context is analogous to a `context.Context` in Golang's stdlib: 
 when the context is cancelled all ancestor contexts are cancelled as well.
+The cancellation of a module instance's context causes the interpreter to stop.
 
 #### Creation
 
@@ -109,6 +113,7 @@ when a context has a parent additional checks are performed:
 - no host definition should override a host defined by the parent's context.
 
 Hosts defined by the parent context and limits are inherited.
+If no filesystem is present in the creation arguments the child context gets it from its parent.
 
 #### Sequence Diagram for Permission Checks
 
