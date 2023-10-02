@@ -10,12 +10,11 @@ Module preparation is implemented in preparation.go, it consists of several step
 - Context Creation
 - Global State Creation
 - Static Checks
-- Symbolic Evaluation (Typechecing)
-
+- Symbolic Evaluation (typechecking)
 
 ### Parsing
 
-Recursively parse the main module and its imports
+Recursive parsing of the main module and its imports.
 
 ### Pre-initialization
 
@@ -40,3 +39,25 @@ The most relevant inputs are:
 - the host resolution data specified in the manifest
 - the **parent context** (host resolution data and limits are inherited)
 
+### Global State Creation
+
+[implementation](../globals/default_state.go)
+
+The global state of the main module is created it is initialized
+with the default globals (variables, functions & namespaces).
+
+
+### Static Checks
+
+During this phase the code is analyzed in order to find the following issues:
+- misplaced statements
+- undeclared variables or patterns
+- duplicate declarations
+
+*(and a few others)*
+
+# Symbolic Evaluation
+
+The symbolic evaluation of a module is a "virtual" evaluation, it performs checks similar to those of a type checker.
+Throughout the Inox documentation you may encounter the terms "type checker"/ "type checking", they correspond to the 
+symbolic evaluation phase.
