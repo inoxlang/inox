@@ -1005,10 +1005,10 @@ pattern email-address = (("user1" | "user2") %domain)
 pattern int_or_str = | int | str
 
 # true
-(1 match %int_or_str)
+(1 match int_or_str)
 
 # true
-("a" match %int_or_str)
+("a" match int_or_str)
 ```
 
 ℹ️ A value is matched by an union pattern if it matches **at least one** of the union's cases.
@@ -1059,12 +1059,12 @@ extend user {
     }
 }
 
-# user's value matches the user pattern
+# the following value matches the user pattern
 var user = {
     name: "Tom"
     todos: [
         {title: "Todo 1", done: false}
-        {title: "Todo 2", done: false}
+        {title: "Todo 2", done: true}
     ]
 }
 
@@ -1073,8 +1073,8 @@ pending-todos = user::pending-todos
 
 user::remove_done_todos()
 
-# [{title: "Todo 2", done: true}]
-done-todos = user.todos
+# [{title: "Todo 1", done: false}]
+user.todos
 ```
 
 # XML Expressions
