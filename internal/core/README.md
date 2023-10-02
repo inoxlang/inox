@@ -215,11 +215,11 @@ end
 
 ## Database
 
-**Database State diagram**
+**Database State Diagram**
 
 In database definitions the property `expected-schema-update` should be set to true
 to indicate that a schema update is expected and **must** happen.
-If a schema update happens an error is thrown.
+If an unexpected schema update happens an error is thrown.
 
 ```
 manifest {
@@ -249,3 +249,21 @@ stateDiagram-v2
     ✅Loaded --> ✅Closed: close
 ```
 
+## Transactions
+
+**Simplified State Diagram**
+
+```mermaid
+stateDiagram-v2
+    [*] --> Running
+    DoingRollback: Doing Rollback
+    DoingCommit: Doing Commit
+
+
+    Running --> DoingRollback: context is cancelled
+    Running --> DoingRollback: timeout
+    Running --> DoingRollback: rollback
+    Running --> DoingCommit: commit
+    DoingRollback --> Finished
+    DoingCommit --> Finished
+```
