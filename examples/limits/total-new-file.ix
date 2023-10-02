@@ -1,0 +1,13 @@
+manifest {
+    permissions: {
+        create: %/...
+    }
+    limits: {
+        "fs/total-new-file": 2
+    }   
+}
+
+create ./f1.txt
+
+# the following line would cause an error
+# create ./f2.txt
