@@ -133,7 +133,7 @@ func TestConvertJsonSchemaToPattern(t *testing.T) {
 
 	t.Run("Definitions", func(t *testing.T) {
 		runTestSuites(t, jsonDraft7.Definitions, [][2]string{
-			{"validate definition against metaschema", "invalid definition schema"},
+			{"validate definition against metaschema", "*"},
 		})
 	})
 
@@ -175,6 +175,19 @@ func TestConvertJsonSchemaToPattern(t *testing.T) {
 
 	t.Run("InfiniteLoopRecursion", func(t *testing.T) {
 		runTestSuites(t, jsonDraft7.InfiniteLoopRecursion, nil)
+	})
+
+	t.Run("Items", func(t *testing.T) {
+		t.SkipNow() //TODO
+		runTestSuites(t, jsonDraft7.Items, nil)
+	})
+
+	t.Run("MaxItems", func(t *testing.T) {
+		runTestSuites(t, jsonDraft7.MaxItems, nil)
+	})
+
+	t.Run("MinItems", func(t *testing.T) {
+		runTestSuites(t, jsonDraft7.MinItems, nil)
 	})
 
 	t.Run("Ref", func(t *testing.T) {

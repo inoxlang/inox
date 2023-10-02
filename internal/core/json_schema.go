@@ -215,6 +215,11 @@ func convertJsonSchemaToPattern(schema *jsonschema.Schema, baseSchema *jsonschem
 			break
 		}
 
+		if schema.MinItems >= 0 || schema.MaxItems >= 0 {
+			ignoreNonArray = true
+			allowArray = true
+		}
+
 		if schema.Maximum != nil || schema.ExclusiveMaximum != nil || schema.Minimum != nil ||
 			schema.ExclusiveMinimum != nil || schema.MultipleOf != nil {
 			ignoreNonNumber = true
@@ -231,7 +236,7 @@ func convertJsonSchemaToPattern(schema *jsonschema.Schema, baseSchema *jsonschem
 
 		//note: schema.ContainsEval true for objects, why ?
 
-		if schema.AdditionalItems != nil || schema.Items != nil || schema.MinItems >= 0 ||
+		if schema.AdditionalItems != nil || schema.Items != nil ||
 			schema.MaxItems >= 0 || schema.PrefixItems != nil || schema.Contains != nil ||
 			schema.MinContains != 1 || schema.MaxContains >= 0 ||
 			schema.UnevaluatedItems != nil {
@@ -602,12 +607,16 @@ func convertJsonSchemaToPattern(schema *jsonschema.Schema, baseSchema *jsonschem
 			listPattern = NewListPatternOf(generalElementPattern)
 		}
 
-		if schema.MinItems != -1 {
+		if schema.MinItems != -1 || schema.MaxItems != -1 {
+			minItems := schema.MinItems
+			if minItems < 0 {
+				minItems = 0
+			}
 			maxItems := schema.MaxItems
 			if maxItems < 0 {
 				maxItems = math.MaxInt64
 			}
-			listPattern = listPattern.WithMinMaxElements(schema.MinItems, maxItems)
+			listPattern = listPattern.WithMinMaxElements(minItems, maxItems)
 		}
 
 		if schema.Contains == nil {
