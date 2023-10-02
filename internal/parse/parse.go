@@ -27,6 +27,9 @@ const (
 	MAX_OBJECT_KEY_BYTE_LEN = 64
 	MAX_SCHEME_NAME_LEN     = 5
 
+	DEFAULT_TIMEOUT       = 20 * time.Millisecond
+	DEFAULT_NO_CHECK_FUEL = 2
+
 	LOOSE_URL_EXPR_PATTERN            = "^(@[a-zA-Z0-9_-]+|https?:\\/\\/([-\\w]+|(www\\.)?[-a-zA-Z0-9@:%._+~#=]{1,64}\\.[a-zA-Z0-9]{1,6}\\b|\\{[$]{0,2}[-\\w]+\\}))([{?#/][-a-zA-Z0-9@:%_+.~#?&//=${}]*)$"
 	LOOSE_HOST_PATTERN_PATTERN        = "^([a-z0-9+]+)?:\\/\\/([-\\w]+|[*]+|(www\\.)?[-a-zA-Z0-9.*]{1,64}\\.[a-zA-Z0-9*]{1,6})(:[0-9]{1,5})?$"
 	LOOSE_HOST_PATTERN                = "^([a-z0-9+]+)?:\\/\\/([-\\w]+|(www\\.)?[-a-zA-Z0-9.]{1,64}\\.[a-zA-Z0-9]{1,6})(:[0-9]{1,5})?$"
@@ -61,12 +64,12 @@ var (
 
 // parses a file module, resultErr is either a non-syntax error or an aggregation of syntax errors (*ParsingErrorAggregation).
 // result and resultErr can be both non-nil at the same time because syntax errors are also stored in nodes.
-func ParseChunk(str string, fpath string, opts ...parserOptions) (result *Chunk, resultErr error) {
+func ParseChunk(str string, fpath string, opts ...ParserOptions) (result *Chunk, resultErr error) {
 	_, result, resultErr = ParseChunk2(str, fpath, opts...)
 	return
 }
 
-func ParseChunk2(str string, fpath string, opts ...parserOptions) (runes []rune, result *Chunk, resultErr error) {
+func ParseChunk2(str string, fpath string, opts ...ParserOptions) (runes []rune, result *Chunk, resultErr error) {
 
 	if int32(len(str)) > MAX_MODULE_BYTE_LEN {
 		return nil, nil, &ParsingError{UnspecifiedParsingError, fmt.Sprintf("module'p.s code is too long (%d bytes)", len(str))}
@@ -74,6 +77,7 @@ func ParseChunk2(str string, fpath string, opts ...parserOptions) (runes []rune,
 
 	runes = []rune(str)
 	p := newParser(runes, opts...)
+	defer p.cancel()
 
 	defer func() {
 		v := recover()
@@ -168,18 +172,22 @@ type parser struct {
 	remainingNoCheckFuel int //refueled after each context check.
 
 	context context.Context
+	cancel  context.CancelFunc
 }
 
-type parserOptions struct {
+type ParserOptions struct {
 	//the context is checked each time the no check fuel is empty.
 	//this option is ignored if <= 0 or context is nil.
-	noCheckFuel int
+	NoCheckFuel int
 
 	//this option is ignored if noCheckFuel is <= 0/
-	context context.Context
+	Context context.Context
+
+	//defaults to DEFAULT_TIMEOUT
+	Timeout time.Duration
 }
 
-func newParser(s []rune, opts ...parserOptions) *parser {
+func newParser(s []rune, opts ...ParserOptions) *parser {
 	p := &parser{
 		s:                    s,
 		i:                    0,
@@ -188,14 +196,26 @@ func newParser(s []rune, opts ...parserOptions) *parser {
 		remainingNoCheckFuel: -1,
 	}
 
+	var (
+		timeout     time.Duration   = DEFAULT_TIMEOUT
+		noCheckFuel                 = DEFAULT_NO_CHECK_FUEL
+		ctx         context.Context = context.Background()
+	)
+
 	if len(opts) > 0 {
 		opt := opts[0]
-		if opt.context != nil && opt.noCheckFuel > 0 {
-			p.context = opt.context
-			p.noCheckFuel = opt.noCheckFuel
-			p.remainingNoCheckFuel = opt.noCheckFuel
+		if opt.Context != nil && opt.NoCheckFuel > 0 {
+			if opt.Timeout > 0 {
+				timeout = opt.Timeout
+			}
+			ctx = opt.Context
 		}
 	}
+
+	p.context, p.cancel = context.WithTimeout(ctx, timeout)
+	p.noCheckFuel = noCheckFuel
+	p.remainingNoCheckFuel = noCheckFuel
+
 	return p
 }
 
@@ -10850,6 +10870,8 @@ func ParseExpression(u string) (n Node, ok bool) {
 
 func parseExpression(runes []rune, firstOnly bool) (n Node, ok bool) {
 	p := newParser(runes)
+	defer p.cancel()
+
 	expr, isMissingExpr := p.parseExpression()
 
 	noError := true
@@ -10870,6 +10892,7 @@ func ParsePath(pth string) (path string, ok bool) {
 	}
 
 	p := newParser([]rune(pth))
+	defer p.cancel()
 
 	switch path := p.parsePathLikeExpression(false).(type) {
 	case *AbsolutePathLiteral:
@@ -10887,6 +10910,7 @@ func ParsePathPattern(pth string) (ok bool) {
 	}
 
 	p := newParser([]rune(pth))
+	defer p.cancel()
 
 	switch p.parsePathLikeExpression(false).(type) {
 	case *AbsolutePathPatternLiteral, *RelativePathPatternLiteral:
@@ -10902,6 +10926,8 @@ func ParseURL(u string) (path string, ok bool) {
 	}
 
 	p := newParser([]rune(u))
+	defer p.cancel()
+
 	url, ok := p.parseURLLike(0).(*URLLiteral)
 
 	return url.Value, ok && p.i >= p.len
@@ -11192,7 +11218,7 @@ func len32[T any](arg []T) int32 {
 	return int32(len(arg))
 }
 
-func MustParseChunk(str string, opts ...parserOptions) (result *Chunk) {
+func MustParseChunk(str string, opts ...ParserOptions) (result *Chunk) {
 	n, err := ParseChunk(str, "<chunk>", opts...)
 	if err != nil {
 		panic(err)
@@ -11200,7 +11226,7 @@ func MustParseChunk(str string, opts ...parserOptions) (result *Chunk) {
 	return n
 }
 
-func MustParseExpression(str string, opts ...parserOptions) Node {
+func MustParseExpression(str string, opts ...ParserOptions) Node {
 	n, ok := ParseExpression(str)
 	if !ok {
 		panic(errors.New("invalid expression"))
