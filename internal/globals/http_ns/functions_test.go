@@ -43,6 +43,7 @@ func TestHttpClient(t *testing.T) {
 			Limits: []core.Limit{},
 		})
 		core.NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 		defer server.Close()
 
 		client, err := NewClient(ctx, core.NewObjectFromMap(core.ValMap{"save-cookies": core.False}, ctx))
@@ -67,6 +68,7 @@ func TestHttpClient(t *testing.T) {
 			Limits: []core.Limit{},
 		})
 		core.NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 		defer server.Close()
 
 		client, err := NewClient(ctx, core.NewObjectFromMap(core.ValMap{"save-cookies": core.True}, ctx))
@@ -91,6 +93,7 @@ func TestHttpClient(t *testing.T) {
 			Limits: []core.Limit{},
 		})
 		core.NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 		defer server.Close()
 
 		client, err := NewClient(ctx, core.NewObjectFromMap(core.ValMap{"save-cookies": core.True}, ctx))
@@ -136,6 +139,7 @@ func TestHttpGet(t *testing.T) {
 			Limits: []core.Limit{},
 		})
 		core.NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		resp, err := HttpGet(ctx, URL)
 		assert.Error(t, err)
@@ -162,6 +166,7 @@ func TestHttpGet(t *testing.T) {
 			},
 		})
 		core.NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		_, err := HttpGet(ctx, URL)
 		if !assert.NoError(t, err) {
@@ -204,6 +209,7 @@ func TestHttpPost(t *testing.T) {
 			},
 		})
 		core.NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		resp, err := HttpPost(ctx, core.NewObject())
 		assert.Error(t, err)
@@ -217,6 +223,7 @@ func TestHttpPost(t *testing.T) {
 			},
 		})
 		core.NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		resp, err := HttpPost(ctx, core.Str(URL), core.NewObject())
 		assert.Error(t, err)
@@ -230,6 +237,7 @@ func TestHttpPost(t *testing.T) {
 			},
 		})
 		core.NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		resp, err := HttpPost(ctx, URL)
 		assert.Error(t, err)
@@ -247,6 +255,7 @@ func TestHttpPost(t *testing.T) {
 			Limits: []core.Limit{},
 		})
 		core.NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		resp, err := HttpPost(ctx, URL)
 		assert.Error(t, err)
@@ -285,6 +294,7 @@ func TestHttpDelete(t *testing.T) {
 			Limits: []core.Limit{},
 		})
 		core.NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		resp, err := HttpDelete(ctx, URL)
 		assert.Error(t, err)
@@ -298,6 +308,7 @@ func TestServeFile(t *testing.T) {
 	t.Run("missing read permission", func(t *testing.T) {
 		ctx := core.NewContext(core.ContextConfig{})
 		core.NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		recorder := httptest.NewRecorder()
 		resp := &HttpResponseWriter{rw: recorder}

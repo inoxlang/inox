@@ -13,7 +13,7 @@ import (
 func TestFilesystemRouting(t *testing.T) {
 
 	t.Run("GET /x should return the result of /routes/x.ix", func(t *testing.T) {
-		runMappingTestCase(t,
+		runServerTest(t,
 			serverTestCase{
 				input: `return {
 						routing: /routes/
@@ -42,7 +42,7 @@ func TestFilesystemRouting(t *testing.T) {
 	})
 
 	t.Run("GET /x should return the result of /routes/x/index.ix", func(t *testing.T) {
-		runMappingTestCase(t,
+		runServerTest(t,
 			serverTestCase{
 				input: `return {
 						routing: /routes/
@@ -71,7 +71,7 @@ func TestFilesystemRouting(t *testing.T) {
 	})
 
 	t.Run("GET /x should return the result of /routes/GET-x.ix even if /routes/x.ix is present", func(t *testing.T) {
-		runMappingTestCase(t,
+		runServerTest(t,
 			serverTestCase{
 				input: `return {
 						routing: /routes/
@@ -105,7 +105,7 @@ func TestFilesystemRouting(t *testing.T) {
 	})
 
 	t.Run("GET /x should return the result of /routes/x/GET.ix even if /routes/x/index.ix is present", func(t *testing.T) {
-		runMappingTestCase(t,
+		runServerTest(t,
 			serverTestCase{
 				input: `return {
 						routing: /routes/
@@ -139,7 +139,7 @@ func TestFilesystemRouting(t *testing.T) {
 	})
 
 	t.Run("method-aspecific handler /routes/x.ix with no _method parameter, no _body parameter and no JSON body parameters should only accept GET/HEAD requests", func(t *testing.T) {
-		runMappingTestCase(t,
+		runServerTest(t,
 			serverTestCase{
 				input: `return {
 						routing: /routes/
@@ -186,7 +186,7 @@ func TestFilesystemRouting(t *testing.T) {
 	})
 
 	t.Run("method-aspecific handler module with %reader _body parameter should accept all methods", func(t *testing.T) {
-		runMappingTestCase(t,
+		runServerTest(t,
 			serverTestCase{
 				input: `return {
 						routing: /routes/
@@ -234,7 +234,7 @@ func TestFilesystemRouting(t *testing.T) {
 	})
 
 	t.Run("an error should be returned if a method-aspecific handler module has a JSON body parameter", func(t *testing.T) {
-		runMappingTestCase(t,
+		runServerTest(t,
 			serverTestCase{
 				input: `return {
 						routing: /routes/
@@ -269,7 +269,7 @@ func TestFilesystemRouting(t *testing.T) {
 	})
 
 	t.Run("method-specific handler module with parameters describing the body", func(t *testing.T) {
-		runMappingTestCase(t,
+		runServerTest(t,
 			serverTestCase{
 				input: `return {
 						routing: /routes/
@@ -304,7 +304,7 @@ func TestFilesystemRouting(t *testing.T) {
 	})
 
 	t.Run("method-aspecific handler module with %(#POST) _method parameter should only accept POST requests", func(t *testing.T) {
-		runMappingTestCase(t,
+		runServerTest(t,
 			serverTestCase{
 				input: `return {
 						routing: /routes/

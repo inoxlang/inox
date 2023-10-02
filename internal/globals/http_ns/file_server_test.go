@@ -18,6 +18,8 @@ func TestFileServer(t *testing.T) {
 				core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},
 			},
 		})
+		defer ctx.CancelGracefully()
+
 		server, err := NewFileServer(ctx, core.Host("https://localhost:9090"), core.Path("./"))
 		if !assert.Error(t, err) {
 			return
@@ -39,6 +41,8 @@ func TestFileServer(t *testing.T) {
 			},
 			Filesystem: fs_ns.GetOsFilesystem(),
 		})
+		defer ctx.CancelGracefully()
+
 		server, err := NewFileServer(ctx, core.Host("https://localhost:9090"), core.Path("./"))
 		if !assert.Error(t, err) {
 			return

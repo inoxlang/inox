@@ -19,6 +19,27 @@ import (
 
 func TestHttpServerHandlingDescription(t *testing.T) {
 
+	runHandlingDescTestCase := func(t *testing.T, testCase serverTestCase, defaultCreateClientFn func() *http.Client) {
+		state, ctx, chunk, host, err := setupTestCase(t, testCase)
+		if !assert.NoError(t, err) {
+			return
+		}
+		defer ctx.CancelGracefully()
+
+		// get description
+		treeWalkState := core.NewTreeWalkStateWithGlobal(state)
+		desc, err := core.TreeWalkEval(chunk, treeWalkState)
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		runAdvancedServerTest(t, testCase, defaultCreateClientFn, func() (*HttpServer, *core.Context, core.Host, error) {
+			server, err := NewHttpServer(ctx, host, desc)
+
+			return server, ctx, host, err
+		})
+	}
+
 	t.Run("handling description", func(t *testing.T) {
 
 		t.Run("routing only", func(t *testing.T) {
@@ -107,7 +128,7 @@ func TestHttpServerHandlingDescription(t *testing.T) {
 
 		//create state & context
 
-		state, ctx, chunk, host, err := setupAdvancedTestCase(t, testCase)
+		state, ctx, chunk, host, err := setupTestCase(t, testCase)
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -130,7 +151,7 @@ func TestHttpServerHandlingDescription(t *testing.T) {
 
 		//run the test
 
-		runAdvancedServerTestCase(t, testCase, createClient, func() (*HttpServer, *core.Context, core.Host, error) {
+		runAdvancedServerTest(t, testCase, createClient, func() (*HttpServer, *core.Context, core.Host, error) {
 			server, err := NewHttpServer(ctx, host, desc)
 
 			return server, ctx, host, err

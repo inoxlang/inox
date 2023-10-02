@@ -21,6 +21,7 @@ func TestHttpResponseWriter(t *testing.T) {
 	t.Run("WriteJSON()", func(t *testing.T) {
 		ctx := core.NewContext(core.ContextConfig{})
 		core.NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		testCases := []struct {
 			value      core.Serializable
@@ -62,6 +63,7 @@ func TestHttpResponseWriter(t *testing.T) {
 			t.Run(fmt.Sprint(testCase.value), func(t *testing.T) {
 				ctx := core.NewContext(core.ContextConfig{})
 				core.NewGlobalState(ctx)
+				defer ctx.CancelGracefully()
 
 				recorder := httptest.NewRecorder()
 				resp := HttpResponseWriter{rw: recorder, acceptHeader: mimeheader.ParseAcceptHeader(mimeconsts.JSON_CTYPE)}
@@ -86,6 +88,7 @@ func TestHttpResponseWriter(t *testing.T) {
 	t.Run("SetCookie()", func(t *testing.T) {
 		ctx := core.NewContext(core.ContextConfig{})
 		core.NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		testCases := []struct {
 			obj    *core.Object
@@ -124,6 +127,7 @@ func TestHttpResponseWriter(t *testing.T) {
 			t.Run(fmt.Sprint(testCase.obj), func(t *testing.T) {
 				ctx := core.NewContext(core.ContextConfig{})
 				core.NewGlobalState(ctx)
+				defer ctx.CancelGracefully()
 
 				recorder := httptest.NewRecorder()
 				resp := HttpResponseWriter{rw: recorder}

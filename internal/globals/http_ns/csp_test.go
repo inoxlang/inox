@@ -31,6 +31,7 @@ func TestNewCSP(t *testing.T) {
 		if !assert.NoError(t, err) {
 			return
 		}
+		defer ctx.CancelGracefully()
 
 		assert.Contains(t, csp.String(), "default-src https://example.com")
 	})
@@ -44,6 +45,7 @@ func TestNewCSP(t *testing.T) {
 		if !assert.NoError(t, err) {
 			return
 		}
+		defer ctx.CancelGracefully()
 
 		assert.Contains(t, csp.String(), "default-src https://example.com")
 	})

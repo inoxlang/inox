@@ -183,7 +183,7 @@ func TestHttpServerUserHandler(t *testing.T) {
 func TestHttpServerMapping(t *testing.T) {
 
 	t.Run("CUSTOMMETHOD /x", func(t *testing.T) {
-		runMappingTestCase(t,
+		runServerTest(t,
 			serverTestCase{
 				input: `return Mapping {
 							%/... => "hello"
@@ -202,7 +202,7 @@ func TestHttpServerMapping(t *testing.T) {
 	})
 
 	t.Run("GET /x: string result", func(t *testing.T) {
-		runMappingTestCase(t,
+		runServerTest(t,
 			serverTestCase{
 				input: `return Mapping {
 							%/... => "hello"
@@ -218,7 +218,7 @@ func TestHttpServerMapping(t *testing.T) {
 
 	t.Run("GET /x */* is accepted: string result", func(t *testing.T) {
 
-		runMappingTestCase(t,
+		runServerTest(t,
 			serverTestCase{
 				input: `return Mapping {
 					%/... => "hello"
@@ -233,7 +233,7 @@ func TestHttpServerMapping(t *testing.T) {
 	})
 
 	t.Run("POST /x: string result", func(t *testing.T) {
-		runMappingTestCase(t,
+		runServerTest(t,
 			serverTestCase{
 				input: `return Mapping {
 							%/... => "hello"
@@ -254,7 +254,7 @@ func TestHttpServerMapping(t *testing.T) {
 
 	t.Run("GET /x: bytes result", func(t *testing.T) {
 
-		runMappingTestCase(t,
+		runServerTest(t,
 			serverTestCase{
 				input: `return Mapping {
 					%/... => 0d[65] # 'A'
@@ -268,7 +268,7 @@ func TestHttpServerMapping(t *testing.T) {
 
 	t.Run("GET /x: html node", func(t *testing.T) {
 
-		runMappingTestCase(t,
+		runServerTest(t,
 			serverTestCase{
 				input: `return Mapping {
 					%/... => html.div{}
@@ -283,7 +283,7 @@ func TestHttpServerMapping(t *testing.T) {
 
 	t.Run("GET /x */* is accepted: html node", func(t *testing.T) {
 
-		runMappingTestCase(t,
+		runServerTest(t,
 			serverTestCase{
 				input: `return Mapping {
 					%/... => html.div{}
@@ -298,7 +298,7 @@ func TestHttpServerMapping(t *testing.T) {
 
 	t.Run("POST /x: html node", func(t *testing.T) {
 
-		runMappingTestCase(t,
+		runServerTest(t,
 			serverTestCase{
 				input: `return Mapping {
 					%/... => html.div{}
@@ -318,7 +318,7 @@ func TestHttpServerMapping(t *testing.T) {
 
 	t.Run("GET /x: handler", func(t *testing.T) {
 
-		runMappingTestCase(t,
+		runServerTest(t,
 			serverTestCase{
 				input: `
 					fn handle(rw %http.resp-writer, r %http.req){
@@ -337,7 +337,7 @@ func TestHttpServerMapping(t *testing.T) {
 
 	t.Run("GET /x JSON is accepted: nil", func(t *testing.T) {
 
-		runMappingTestCase(t,
+		runServerTest(t,
 			serverTestCase{
 				input: `return Mapping {
 				%/... => nil
@@ -352,7 +352,7 @@ func TestHttpServerMapping(t *testing.T) {
 	})
 
 	t.Run("GET /x */* is accepted: nil", func(t *testing.T) {
-		runMappingTestCase(t,
+		runServerTest(t,
 			serverTestCase{
 				input: `return Mapping {
 				%/... => nil
@@ -368,7 +368,7 @@ func TestHttpServerMapping(t *testing.T) {
 
 	t.Run("GET /x JSON is accepted: notfound identifier", func(t *testing.T) {
 
-		runMappingTestCase(t,
+		runServerTest(t,
 			serverTestCase{
 				input: `return Mapping {
 			%/... => #notfound
@@ -384,7 +384,7 @@ func TestHttpServerMapping(t *testing.T) {
 
 	t.Run("GET /x */* is accepted: notfound identifier", func(t *testing.T) {
 
-		runMappingTestCase(t,
+		runServerTest(t,
 			serverTestCase{
 				input: `return Mapping {
 			%/... => #notfound
@@ -400,7 +400,7 @@ func TestHttpServerMapping(t *testing.T) {
 
 	t.Run("handler accessing a global function", func(t *testing.T) {
 
-		runMappingTestCase(t,
+		runServerTest(t,
 			serverTestCase{
 				input: `
 					fn helper(rw %http.resp-writer, r %http.req){
@@ -423,7 +423,7 @@ func TestHttpServerMapping(t *testing.T) {
 
 	t.Run("JSON of model", func(t *testing.T) {
 
-		runMappingTestCase(t,
+		runServerTest(t,
 			serverTestCase{
 				input: `$$model = {a: 1}
 
@@ -440,7 +440,7 @@ func TestHttpServerMapping(t *testing.T) {
 
 	t.Run("JSON of model with sensitive data, no defined visibility", func(t *testing.T) {
 
-		runMappingTestCase(t,
+		runServerTest(t,
 			serverTestCase{
 				input: `
 				$$model = {
@@ -462,7 +462,7 @@ func TestHttpServerMapping(t *testing.T) {
 
 	t.Run("JSON of model with all fields set as public", func(t *testing.T) {
 
-		runMappingTestCase(t,
+		runServerTest(t,
 			serverTestCase{
 				input: `$$model = {
 					a: 1
@@ -492,7 +492,7 @@ func TestHttpServerMapping(t *testing.T) {
 
 	t.Run("IXON of model with no defined visibility", func(t *testing.T) {
 
-		runMappingTestCase(t,
+		runServerTest(t,
 			serverTestCase{
 				input: ` $$model = {
 					a: 1
@@ -512,7 +512,7 @@ func TestHttpServerMapping(t *testing.T) {
 	})
 
 	t.Run("IXON of model with all fields set as public", func(t *testing.T) {
-		runMappingTestCase(t,
+		runServerTest(t,
 			serverTestCase{
 				input: `$$model = {
 					a: 1
@@ -539,7 +539,7 @@ func TestHttpServerMapping(t *testing.T) {
 
 	t.Run("large binary stream: event stream request", func(t *testing.T) {
 
-		runMappingTestCase(t,
+		runServerTest(t,
 
 			serverTestCase{
 				input: strings.Replace(`
@@ -578,7 +578,7 @@ func TestHttpServerMapping(t *testing.T) {
 
 }
 
-func setupAdvancedTestCase(t *testing.T, testCase serverTestCase) (*core.GlobalState, *core.Context, *parse.Chunk, core.Host, error) {
+func setupTestCase(t *testing.T, testCase serverTestCase) (*core.GlobalState, *core.Context, *parse.Chunk, core.Host, error) {
 	host := core.Host("https://localhost:" + strconv.Itoa(int(port.Add(1))))
 
 	var fls afs.Filesystem = fs_ns.GetOsFilesystem()
@@ -653,48 +653,27 @@ func setupAdvancedTestCase(t *testing.T, testCase serverTestCase) (*core.GlobalS
 	return state, ctx, chunk, host, nil
 }
 
-func runMappingTestCase(t *testing.T, testCase serverTestCase, defaultCreateClient func() *http.Client) {
-
-	state, ctx, chunk, host, err := setupAdvancedTestCase(t, testCase)
+func runServerTest(t *testing.T, testCase serverTestCase, defaultCreateClient func() *http.Client) {
+	state, ctx, chunk, host, err := setupTestCase(t, testCase)
 	if !assert.NoError(t, err) {
 		return
 	}
+	defer ctx.CancelGracefully()
 
-	// get mapping
 	treeWalkState := core.NewTreeWalkStateWithGlobal(state)
-	mapping, err := core.TreeWalkEval(chunk, treeWalkState)
+	handler, err := core.TreeWalkEval(chunk, treeWalkState)
 	if !assert.NoError(t, err) {
 		return
 	}
 
-	runAdvancedServerTestCase(t, testCase, defaultCreateClient, func() (*HttpServer, *core.Context, core.Host, error) {
-		server, err := NewHttpServer(ctx, host, mapping)
+	runAdvancedServerTest(t, testCase, defaultCreateClient, func() (*HttpServer, *core.Context, core.Host, error) {
+		server, err := NewHttpServer(ctx, host, handler)
 
 		return server, ctx, host, err
 	})
 }
 
-func runHandlingDescTestCase(t *testing.T, testCase serverTestCase, defaultCreateClientFn func() *http.Client) {
-	state, ctx, chunk, host, err := setupAdvancedTestCase(t, testCase)
-	if !assert.NoError(t, err) {
-		return
-	}
-
-	// get description
-	treeWalkState := core.NewTreeWalkStateWithGlobal(state)
-	desc, err := core.TreeWalkEval(chunk, treeWalkState)
-	if !assert.NoError(t, err) {
-		return
-	}
-
-	runAdvancedServerTestCase(t, testCase, defaultCreateClientFn, func() (*HttpServer, *core.Context, core.Host, error) {
-		server, err := NewHttpServer(ctx, host, desc)
-
-		return server, ctx, host, err
-	})
-}
-
-func runAdvancedServerTestCase(
+func runAdvancedServerTest(
 	t *testing.T, testCase serverTestCase,
 	defaultCreateClient func() *http.Client, setup func() (*HttpServer, *core.Context, core.Host, error),
 ) {
