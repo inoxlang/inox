@@ -45,7 +45,7 @@ type ScriptPreparationArgs struct {
 	AllowMissingEnvVars   bool
 	FullAccessToDatabases bool
 
-	Project *project.Project
+	Project *project.Project //should only be set if the module is a main module
 
 	Out    io.Writer //defaults to os.Stdout
 	LogOut io.Writer //defaults to Out
@@ -65,6 +65,10 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 
 	if args.ParentContextRequired && args.ParentContext == nil {
 		return nil, nil, nil, errors.New(".ParentContextRequired is set to true but passed .ParentContext is nil")
+	}
+
+	if args.UseParentStateAsMainState && args.Project != nil {
+		return nil, nil, nil, errors.New(".UseParentStateAsMainState is true but .Project was set")
 	}
 
 	absPath, err := args.ParsingCompilationContext.GetFileSystem().Absolute(args.Fpath)
@@ -105,7 +109,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 		parentState = parentContext.GetClosestState()
 	}
 
-	if project == nil || reflect.ValueOf(project).IsNil() && args.UseParentStateAsMainState && parentState != nil {
+	if (project == nil || reflect.ValueOf(project).IsNil()) && args.UseParentStateAsMainState && parentState != nil {
 		project = parentState.Project
 	}
 
