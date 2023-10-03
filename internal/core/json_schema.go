@@ -376,24 +376,34 @@ func convertJsonSchemaToPattern(schema *jsonschema.Schema, baseSchema *jsonschem
 			unionCases = append(unionCases, pattern)
 		}
 	} else if allowInteger {
-		var intRange IntRange
+		hasRange := false
+		intRange := IntRange{
+			Start:        math.MinInt64,
+			End:          math.MaxInt64,
+			inclusiveEnd: true,
+			Step:         1,
+		}
 
 		if schema.Minimum != nil {
 			min, _ := schema.Minimum.Float64()
 			intRange.Start = int64(math.Floor(min))
+			hasRange = true
 		} else if schema.ExclusiveMinimum != nil {
 			exclusiveMinimum, _ := schema.Minimum.Float64()
 			min := math.Nextafter(exclusiveMinimum, math.Inf(1))
 			intRange.Start = int64(math.Floor(min))
+			hasRange = true
 		}
 
 		if schema.Maximum != nil {
 			exclusiveMax, _ := schema.Maximum.Float64()
 			intRange.inclusiveEnd = true
 			intRange.End = int64(math.Ceil(exclusiveMax))
+			hasRange = true
 		} else if schema.ExclusiveMaximum != nil {
 			max, _ := schema.Maximum.Float64()
 			intRange.End = int64(math.Ceil(max))
+			hasRange = true
 		}
 
 		var multipleOf int64 = -1
@@ -409,7 +419,7 @@ func convertJsonSchemaToPattern(schema *jsonschema.Schema, baseSchema *jsonschem
 		}
 
 		var pattern Pattern
-		if intRange == (IntRange{}) {
+		if !hasRange {
 			pattern = INT_PATTERN
 		} else if multipleOfFloat != -1 {
 			pattern = NewIntRangePatternFloatMultiple(intRange, multipleOfFloat)

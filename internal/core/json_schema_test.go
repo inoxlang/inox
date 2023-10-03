@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"math"
 	"net/url"
 	"strings"
 	"testing"
@@ -292,6 +293,30 @@ func TestConvertJsonSchemaToPattern(t *testing.T) {
 
 	t.Run("UnknownKeywords", func(t *testing.T) {
 		runTestSuites(t, jsonDraft7.UnknownKeywords, nil)
+	})
+
+	t.Run("other", func(t *testing.T) {
+		t.Run("integers", func(t *testing.T) {
+			pattern, err := ConvertJsonSchemaToPattern(`{"type":"integer","minimum": 0}`)
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.Equal(t, NewIntRangePattern(NewIncludedEndIntRange(0, math.MaxInt64), 0), pattern)
+
+			pattern, err = ConvertJsonSchemaToPattern(`{"type":"integer","maximum": 0}`)
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.Equal(t, NewIntRangePattern(NewIncludedEndIntRange(math.MinInt64, 0), 0), pattern)
+
+			pattern, err = ConvertJsonSchemaToPattern(`{"type":"integer","minimum": 0, "maximum": 1}`)
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.Equal(t, NewIntRangePattern(NewIncludedEndIntRange(0, 1), 0), pattern)
+
+		})
+
 	})
 }
 
