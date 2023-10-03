@@ -74,7 +74,7 @@ const (
 		"functions that are object properties, metaproperty initialization blocks, lifetime jobs and object extension properties"
 	CANNOT_CHECK_OBJECT_PROP_WITHOUT_PARENT     = "checking an ObjectProperty node requires the parent ObjectLiteral node"
 	CANNOT_CHECK_OBJECT_METAPROP_WITHOUT_PARENT = "checking an ObjectMetaProperty node requires the parent ObjectLiteral node"
-	OBJ_REC_LIT_CANNOT_HAVE_METAPROP_KEYS       = "(object | object pattern | record) literals cannot have metaproperty keys, metaproperty keys have a starting & a trailing underscore '_'"
+	OBJ_REC_LIT_CANNOT_HAVE_METAPROP_KEYS       = "object-like literals cannot have metaproperty keys, metaproperty keys have a (single) starting underscore '_' and a (single) trailing underscore"
 	CANNOT_CHECK_MANIFEST_WITHOUT_PARENT        = "checking a Manifest node requires the parent node"
 
 	MISPLACED_SENDVAL_EXPR                 = "sendval expressions are only usable within functions that are object properties, metaproperty initialization blocks and in lifetime jobs"

@@ -10938,7 +10938,7 @@ func isKeyword(str string) bool {
 }
 
 func IsMetadataKey(key string) bool {
-	return len(key) > 2 && key[0] == '_' && key[len(key)-1] == '_'
+	return len(key) >= 3 && key[0] == '_' && key[1] != '_' && key[len(key)-2] != '_' && key[len(key)-1] == '_'
 }
 
 func isAlpha(r rune) bool {
