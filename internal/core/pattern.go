@@ -328,9 +328,8 @@ type ObjectPattern struct {
 }
 
 type propertyDependencies struct {
-	requiredKeys  []string
-	forbiddenKeys []string
-	pattern       Pattern
+	requiredKeys []string
+	pattern      Pattern
 }
 
 func NewExactObjectPattern(entries map[string]Pattern) *ObjectPattern {
@@ -375,11 +374,6 @@ func (patt *ObjectPattern) Test(ctx *Context, v Value) bool {
 		deps := patt.dependencies[propName]
 		for _, dep := range deps.requiredKeys {
 			if !slices.Contains(propNames, dep) {
-				return false
-			}
-		}
-		for _, dep := range deps.forbiddenKeys {
-			if slices.Contains(propNames, dep) {
 				return false
 			}
 		}

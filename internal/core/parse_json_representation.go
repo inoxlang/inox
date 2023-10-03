@@ -436,23 +436,6 @@ func parseObjectJSONrepresentation(ctx *Context, it *jsoniter.Iterator, pattern 
 				}
 			}
 
-			//check forbidden keys
-			for _, forbiddenKey := range deps.forbiddenKeys {
-				ok := false
-				for _, name := range obj.keys {
-					if name == forbiddenKey {
-						ok = true
-						break
-					}
-				}
-				if ok {
-					if try {
-						return nil, ErrTriedToParseJSONRepr
-					}
-					return nil, fmt.Errorf("due to dependencies the following property is forbidden: %q", forbiddenKey)
-				}
-			}
-
 			if deps.pattern != nil && !deps.pattern.Test(ctx, obj) {
 				if try {
 					return nil, ErrTriedToParseJSONRepr
