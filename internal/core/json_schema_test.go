@@ -15,6 +15,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const (
+	SCHEMA_NOT_SUPPORTED = "schema not supported"
+)
+
 func init() {
 	utils.PanicIfErr(json.Unmarshal([]byte(jsonDraft7String), &jsonDraft7))
 }
@@ -30,10 +34,12 @@ func TestConvertJsonSchemaToPattern(t *testing.T) {
 	runTestSuites := func(t *testing.T, suites []jsonDrafTestSuite, notSupportedTests [][2]string) {
 		for _, testSuite := range suites {
 			t.Run(testSuite.Description, func(t *testing.T) {
+				supportedSchema := true
 				supportedSuite := true
 				for _, skippedTest := range notSupportedTests {
-					if testSuite.Description == skippedTest[0] && skippedTest[1] == "*" {
-						supportedSuite = false
+					if testSuite.Description == skippedTest[0] && (skippedTest[1] == "*" || skippedTest[1] == SCHEMA_NOT_SUPPORTED) {
+						supportedSchema = skippedTest[1] == "*"
+						supportedSuite = !supportedSchema
 						break
 					}
 				}
@@ -64,9 +70,17 @@ func TestConvertJsonSchemaToPattern(t *testing.T) {
 
 				pattern, err := ConvertJsonSchemaToPattern(string(testSuite.Schema))
 
+				if !supportedSchema {
+					if !assert.Error(t, err) {
+						return
+					}
+					return
+				}
+
 				if !supportedSuite {
 					return
 				}
+
 				if !assert.NoError(t, err) {
 					return
 				}
@@ -109,7 +123,9 @@ func TestConvertJsonSchemaToPattern(t *testing.T) {
 	})
 
 	t.Run("AnyOf", func(t *testing.T) {
-		runTestSuites(t, jsonDraft7.AnyOf, nil)
+		runTestSuites(t, jsonDraft7.AnyOf, [][2]string{
+			{"anyOf", SCHEMA_NOT_SUPPORTED}, //either a number is an int or is a float
+		})
 	})
 
 	t.Run("BooleanSchema", func(t *testing.T) {
@@ -224,7 +240,22 @@ func TestConvertJsonSchemaToPattern(t *testing.T) {
 
 	t.Run("OneOf", func(t *testing.T) {
 		runTestSuites(t, jsonDraft7.OneOf, [][2]string{
-			{"oneOf", "*"}, //either a number is an int or is a float
+			{"oneOf", SCHEMA_NOT_SUPPORTED}, //either a number is an int or is a float
+		})
+	})
+
+	t.Run("Pattern", func(t *testing.T) {
+		runTestSuites(t, jsonDraft7.Pattern, nil)
+	})
+
+	t.Run("PatternProperties", func(t *testing.T) {
+		t.SkipNow()
+		runTestSuites(t, jsonDraft7.PatternProperties, nil)
+	})
+
+	t.Run("Properties", func(t *testing.T) {
+		runTestSuites(t, jsonDraft7.Properties, [][2]string{
+			{"properties, patternProperties, additionalProperties interaction", SCHEMA_NOT_SUPPORTED},
 		})
 	})
 

@@ -12,8 +12,9 @@ import (
 )
 
 var (
-	ErrInvalidOrUnsupportedJsonSchema = errors.New("invalid or unsupported JSON Schema")
-	ErrRecursiveJSONSchema            = errors.New("recursive JSON schema are not supported")
+	ErrInvalidOrUnsupportedJsonSchema       = errors.New("invalid or unsupported JSON Schema")
+	ErrRecursiveJSONSchemaNotSupported      = errors.New("recursive JSON schema are not supported")
+	ErrJSONSchemaMixingIntFloatNotSupported = errors.New("JSON schemas mixing integers and floats are not supported")
 
 	JSON_SCHEMA_TYPE_TO_PATTERN = map[string]Pattern{
 		"string":  STRLIKE_PATTERN,
@@ -31,6 +32,8 @@ func init() {
 	clear(jsonschema.Loaders)
 }
 
+// ConvertJsonSchemaToPattern converts a JSON schema definition to an Inox pattern,
+// all schemas are not supported and the resulting pattern might be stricter.
 func ConvertJsonSchemaToPattern(schemaBytes string) (Pattern, error) {
 	compiler := jsonschema.NewCompiler()
 	url := "schema.json"
@@ -53,7 +56,7 @@ func convertJsonSchemaToPattern(schema *jsonschema.Schema, baseSchema *jsonschem
 	//We choose to ignore
 
 	if depth > 10 {
-		return nil, ErrRecursiveJSONSchema
+		return nil, ErrRecursiveJSONSchemaNotSupported
 	}
 
 	if len(schema.PatternProperties) > 0 {
@@ -99,11 +102,26 @@ func convertJsonSchemaToPattern(schema *jsonschema.Schema, baseSchema *jsonschem
 				intersectionCases = append(intersectionCases, basePattern)
 			}
 
+			hasIntPattern := false
+			hasFloatPattern := false
+
 			for _, t := range schema.AllOf {
 				case_, err := convertJsonSchemaToPattern(t, schema, false, true, depth+1)
 				if err != nil {
 					return nil, err
 				}
+
+				isFloatPattern := isFloatPattern(case_)
+				isIntPattern := isIntPattern(case_)
+
+				if hasIntPattern && isFloatPattern {
+					return nil, ErrJSONSchemaMixingIntFloatNotSupported
+				} else if hasFloatPattern && isIntPattern {
+					return nil, ErrJSONSchemaMixingIntFloatNotSupported
+				}
+
+				hasIntPattern = isIntPattern
+				hasFloatPattern = isFloatPattern
 
 				intersectionCases = append(intersectionCases, case_)
 			}
@@ -122,12 +140,26 @@ func convertJsonSchemaToPattern(schema *jsonschema.Schema, baseSchema *jsonschem
 			}
 
 			var unionCases []Pattern
+			hasIntPattern := false
+			hasFloatPattern := false
 
 			for _, t := range schema.AnyOf {
 				case_, err := convertJsonSchemaToPattern(t, schema, false, true, depth+1)
 				if err != nil {
 					return nil, err
 				}
+
+				isFloatPattern := isFloatPattern(case_)
+				isIntPattern := isIntPattern(case_)
+
+				if hasIntPattern && isFloatPattern {
+					return nil, ErrJSONSchemaMixingIntFloatNotSupported
+				} else if hasFloatPattern && isIntPattern {
+					return nil, ErrJSONSchemaMixingIntFloatNotSupported
+				}
+
+				hasIntPattern = isIntPattern
+				hasFloatPattern = isFloatPattern
 
 				unionCases = append(unionCases, case_)
 			}
@@ -150,11 +182,26 @@ func convertJsonSchemaToPattern(schema *jsonschema.Schema, baseSchema *jsonschem
 			}
 
 			var disjointUnionCases []Pattern
+			hasIntPattern := false
+			hasFloatPattern := false
+
 			for _, t := range schema.OneOf {
 				case_, err := convertJsonSchemaToPattern(t, schema, false, true, depth+1)
 				if err != nil {
 					return nil, err
 				}
+
+				isFloatPattern := isFloatPattern(case_)
+				isIntPattern := isIntPattern(case_)
+
+				if hasIntPattern && isFloatPattern {
+					return nil, ErrJSONSchemaMixingIntFloatNotSupported
+				} else if hasFloatPattern && isIntPattern {
+					return nil, ErrJSONSchemaMixingIntFloatNotSupported
+				}
+
+				hasIntPattern = isIntPattern
+				hasFloatPattern = isFloatPattern
 
 				disjointUnionCases = append(disjointUnionCases, case_)
 			}
@@ -204,6 +251,7 @@ func convertJsonSchemaToPattern(schema *jsonschema.Schema, baseSchema *jsonschem
 	ignoreNonArray := false
 	ignoreNonNumber := false
 	ignoreNonString := false
+	ignoreNonObject := true
 
 	var unionCases []Pattern
 
@@ -227,9 +275,7 @@ func convertJsonSchemaToPattern(schema *jsonschema.Schema, baseSchema *jsonschem
 		}
 
 		if schema.Pattern != nil || schema.Format != "" || schema.MinLength != -1 || schema.MaxLength != -1 {
-			if schema.Format != "" || schema.MinLength != -1 || schema.MaxLength != -1 {
-				ignoreNonString = true
-			}
+			ignoreNonString = true
 			allowString = true
 		}
 
@@ -257,6 +303,7 @@ func convertJsonSchemaToPattern(schema *jsonschema.Schema, baseSchema *jsonschem
 			schema.Properties != nil || schema.PropertyNames != nil || schema.RegexProperties ||
 			schema.PatternProperties != nil || schema.AdditionalProperties != nil ||
 			schema.DependentRequired != nil {
+			ignoreNonObject = true
 			allowObject = true
 		}
 	default:
@@ -658,6 +705,9 @@ func convertJsonSchemaToPattern(schema *jsonschema.Schema, baseSchema *jsonschem
 					return NewDifferencePattern(ANYVAL_PATTERN, LIST_PATTERN), nil
 				}
 				unionCases = append(unionCases, NewDifferencePattern(ANYVAL_PATTERN, LIST_PATTERN))
+				return NewDisjointUnionPattern(unionCases, nil), nil
+			} else if ignoreNonObject {
+				unionCases = append(unionCases, NewDifferencePattern(ANYVAL_PATTERN, OBJECT_PATTERN))
 				return NewDisjointUnionPattern(unionCases, nil), nil
 			} else if ignoreNonNumber {
 				unionCases = append(unionCases, NewDifferencePattern(ANYVAL_PATTERN, FLOAT_PATTERN))

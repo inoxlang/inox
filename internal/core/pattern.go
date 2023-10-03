@@ -1082,3 +1082,27 @@ func (patt *MutationPattern) Test(ctx *Context, v Value) bool {
 func (patt *MutationPattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
+
+func isFloatPattern(p Pattern) bool {
+	switch pattern := p.(type) {
+	case *TypePattern:
+		if pattern.Type == FLOAT64_TYPE {
+			return true
+		}
+	case *FloatRangePattern:
+		return true
+	}
+	return false
+}
+
+func isIntPattern(p Pattern) bool {
+	switch pattern := p.(type) {
+	case *TypePattern:
+		if pattern.Type == INT_TYPE {
+			return true
+		}
+	case *IntRangePattern:
+		return true
+	}
+	return false
+}
