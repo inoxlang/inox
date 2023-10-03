@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/exp/maps"
 )
 
 const (
@@ -25,7 +26,7 @@ func TestGetAPIFromOpenAPISpec(t *testing.T) {
 		return
 	}
 
-	api, err := GetAPIFromOpenAPISpec(spec, OPEN_AI_API_SPEC_BASE_URL)
+	api, err := createAPIFromOpenAPISpec(spec, OPEN_AI_API_SPEC_BASE_URL)
 	if !assert.NoError(t, err) {
 		return
 	}
@@ -34,5 +35,5 @@ func TestGetAPIFromOpenAPISpec(t *testing.T) {
 		return
 	}
 
-	assert.NotEmpty(t, api.endpoints)
+	assert.Contains(t, maps.Keys(api.endpoints), "/answers")
 }

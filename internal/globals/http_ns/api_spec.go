@@ -18,10 +18,10 @@ import (
 var (
 	ErrFailedCreateApiFromOApenpiSpec = errors.New("failed to create API from Open API/Swagger specification")
 	ErrUnsupportedMediaTypeinSpec     = errors.New("unsupported media type (in spec)")
-	ErrOpenAPIV2SpecNotSupported      = errors.New("Specification in the Open Api 2.0 & Swagger formats are not supported, see https://converter.swagger.io/#/Converter/convertByContent to convert to OpenAPI 3+ format")
+	ErrOpenAPIV2SpecNotSupported      = errors.New("specification in the Open Api 2.0 & Swagger formats are not supported, see https://converter.swagger.io/#/Converter/convertByContent to convert to OpenAPI 3+ format")
 )
 
-func GetAPIFromOpenAPISpec(spec []byte, baseURL core.URL) (*API, error) {
+func createAPIFromOpenAPISpec(spec []byte, baseURL core.URL) (*API, error) {
 	config := datamodel.DocumentConfiguration{
 		AllowFileReferences:   true,
 		AllowRemoteReferences: true,
@@ -137,7 +137,7 @@ func getApiOperation(method string, op *v3high.Operation, endpoint *ApiEndpoint)
 				}
 				pattern, err := getPatternFromLibopenapiSchema(schema)
 				if err != nil {
-					return ApiOperation{}, err
+					return ApiOperation{}, fmt.Errorf("failed to create pattern for requests to the endpoint %q: %w", endpoint.path, err)
 				}
 				apiOp.jsonRequestBody = pattern
 			case mimeconsts.MULTIPART_FORM_DATA:
@@ -152,5 +152,14 @@ func getApiOperation(method string, op *v3high.Operation, endpoint *ApiEndpoint)
 }
 
 func getPatternFromLibopenapiSchema(schema *base.Schema) (core.Pattern, error) {
-	return nil, nil
+	schemaBytes, err := schema.RenderInline()
+	if err != nil {
+		return nil, err
+	}
+
+	schemaBytes, err = openapiutils.ConvertYAMLtoJSON(schemaBytes)
+	if err != nil {
+		return nil, err
+	}
+	return core.ConvertJsonSchemaToPattern(string(schemaBytes))
 }
