@@ -251,7 +251,7 @@ func convertJsonSchemaToPattern(schema *jsonschema.Schema, baseSchema *jsonschem
 	ignoreNonArray := false
 	ignoreNonNumber := false
 	ignoreNonString := false
-	ignoreNonObject := true
+	ignoreNonObject := false
 
 	var unionCases []Pattern
 
@@ -327,7 +327,7 @@ func convertJsonSchemaToPattern(schema *jsonschema.Schema, baseSchema *jsonschem
 		}
 	}
 
-	if !(allowNumber || allowInteger || allowNull || allowString || allowArray || allowObject) {
+	if !(allowBoolean || allowNumber || allowInteger || allowNull || allowString || allowArray || allowObject) {
 		return ANYVAL_PATTERN, nil
 	}
 

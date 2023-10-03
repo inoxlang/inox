@@ -259,6 +259,11 @@ func TestConvertJsonSchemaToPattern(t *testing.T) {
 		})
 	})
 
+	t.Run("PropertyNames", func(t *testing.T) {
+		t.SkipNow()
+		runTestSuites(t, jsonDraft7.PropertyNames, nil)
+	})
+
 	t.Run("Ref", func(t *testing.T) {
 		t.SkipNow()
 		runTestSuites(t, jsonDraft7.Ref, [][2]string{
@@ -268,6 +273,25 @@ func TestConvertJsonSchemaToPattern(t *testing.T) {
 
 	t.Run("RefRemote", func(t *testing.T) {
 		runTestSuites(t, jsonDraft7.RefRemote, nil)
+	})
+
+	t.Run("Required", func(t *testing.T) {
+		runTestSuites(t, jsonDraft7.Required, nil)
+	})
+
+	t.Run("Type", func(t *testing.T) {
+		runTestSuites(t, jsonDraft7.Type, [][2]string{
+			{"integer type matches integers", "a string is still not an integer, even if it looks like one"},
+		})
+	})
+
+	t.Run("UniqueItems", func(t *testing.T) {
+		t.SkipNow()
+		runTestSuites(t, jsonDraft7.UniqueItems, nil)
+	})
+
+	t.Run("UnknownKeywords", func(t *testing.T) {
+		runTestSuites(t, jsonDraft7.UnknownKeywords, nil)
 	})
 }
 

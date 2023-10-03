@@ -548,6 +548,9 @@ func parseIntegerJSONRepresentation(ctx *Context, it *jsoniter.Iterator, pattern
 	switch it.WhatIsNext() {
 	case jsoniter.NumberValue:
 		s := it.ReadNumber()
+		if strings.HasSuffix(string(s), ".0") {
+			s = s[:len(s)-2]
+		}
 		n, err := strconv.ParseInt(string(s), 10, 64)
 
 		if err != nil {
