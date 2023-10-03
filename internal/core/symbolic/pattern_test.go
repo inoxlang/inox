@@ -379,94 +379,238 @@ func TestSymbolicRegexPattern(t *testing.T) {
 func TestSymbolicObjectPattern(t *testing.T) {
 
 	t.Run("Test()", func(t *testing.T) {
-		cases := []struct {
-			pattern *ObjectPattern
-			value   SymbolicValue
-			ok      bool
-		}{
-			//symbolic object
-			{&ObjectPattern{entries: nil}, &Object{entries: nil}, false},
-			{&ObjectPattern{entries: nil}, &Object{entries: map[string]Serializable{}}, false},
 
-			//symbolic object pattern
-			{&ObjectPattern{entries: nil}, &ObjectPattern{entries: nil}, true},
-			{&ObjectPattern{entries: map[string]Pattern{}}, &ObjectPattern{entries: nil}, false},
-			{&ObjectPattern{entries: nil}, &ObjectPattern{entries: map[string]Pattern{}, inexact: true}, true},
-			{&ObjectPattern{entries: nil}, &ObjectPattern{entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}}}, true},
+		t.Run("objects should never be matched", func(t *testing.T) {
+			pattern := &ObjectPattern{entries: nil}
 
-			{&ObjectPattern{entries: map[string]Pattern{}}, &ObjectPattern{entries: map[string]Pattern{}}, true},
-			{
-				&ObjectPattern{
-					entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
-				},
-				&ObjectPattern{
-					entries: map[string]Pattern{},
-				},
-				false,
-			},
-			{
-				&ObjectPattern{
-					entries: map[string]Pattern{},
-				},
-				&ObjectPattern{
-					entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
-				},
-				false,
-			},
-			{
-				&ObjectPattern{
-					entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
-				},
-				&ObjectPattern{
-					entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
-				},
-				true,
-			},
-			{
-				&ObjectPattern{
-					entries:  map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
-					readonly: true,
-				},
-				&ObjectPattern{
-					entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
-				},
-				false,
-			},
-			{
-				&ObjectPattern{
-					entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
-				},
-				&ObjectPattern{
-					entries:  map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
-					readonly: true,
-				},
-				false,
-			},
-			{
-				&ObjectPattern{
-					entries: map[string]Pattern{"a": ANY_PATTERN},
-				},
-				&ObjectPattern{
-					entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
-				},
-				true,
-			},
-			{
-				&ObjectPattern{
-					entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
-				},
-				&ObjectPattern{
-					entries: map[string]Pattern{"a": ANY_PATTERN},
-				},
-				false,
-			},
-		}
+			assert.False(t, pattern.Test(&Object{entries: nil}))
+			assert.False(t, pattern.Test(&Object{entries: map[string]Serializable{}}))
+		})
 
-		for _, testCase := range cases {
-			t.Run(t.Name()+"_"+fmt.Sprint(testCase.pattern, "_", testCase.value), func(t *testing.T) {
-				assert.Equal(t, testCase.ok, testCase.pattern.Test(testCase.value))
-			})
-		}
+		t.Run("if entries is nil any other object pattern of the same 'readonlyness' should be matched", func(t *testing.T) {
+			pattern := &ObjectPattern{entries: nil}
+			assert.True(t, pattern.Test(&ObjectPattern{entries: nil}))
+			assert.True(t, pattern.Test(&ObjectPattern{inexact: true, entries: map[string]Pattern{}}))
+			assert.True(t, pattern.Test(&ObjectPattern{entries: map[string]Pattern{}}))
+			assert.True(t, pattern.Test(&ObjectPattern{inexact: true, entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}}}))
+			assert.True(t, pattern.Test(&ObjectPattern{entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}}}))
+
+			assert.False(t, pattern.Test(&ObjectPattern{readonly: true, entries: nil}))
+			assert.False(t, pattern.Test(&ObjectPattern{readonly: true, entries: map[string]Pattern{}, inexact: true}))
+			assert.False(t, pattern.Test(&ObjectPattern{readonly: true, entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}}}))
+		})
+
+		t.Run("exact empty object pattern should match any other exact object pattern of the same 'readonlyness'", func(t *testing.T) {
+			pattern := &ObjectPattern{entries: map[string]Pattern{}}
+			assert.True(t, pattern.Test(&ObjectPattern{entries: map[string]Pattern{}}))
+
+			assert.False(t, pattern.Test(&ObjectPattern{readonly: true, entries: map[string]Pattern{}}))
+			assert.False(t, pattern.Test(&ObjectPattern{entries: nil}))
+			assert.False(t, pattern.Test(&ObjectPattern{entries: map[string]Pattern{}, inexact: true}))
+			assert.False(t, pattern.Test(&ObjectPattern{entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}}}))
+		})
+
+		t.Run("inexact empty object pattern should match any other non-any object pattern of the same 'readonlyness'", func(t *testing.T) {
+			pattern := &ObjectPattern{
+				entries: map[string]Pattern{},
+				inexact: true,
+			}
+			assert.True(t, pattern.Test(&ObjectPattern{
+				entries: map[string]Pattern{},
+				inexact: true,
+			}))
+			assert.True(t, pattern.Test(&ObjectPattern{
+				entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
+			}))
+
+			assert.False(t, pattern.Test(&ObjectPattern{readonly: true, entries: nil}))
+			assert.False(t, pattern.Test(&ObjectPattern{readonly: true, entries: map[string]Pattern{}, inexact: true}))
+			assert.False(t, pattern.Test(&ObjectPattern{readonly: true, entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}}}))
+		})
+
+		t.Run("exact object pattern with a single prop should match any other exact object pattern "+
+			"with the same single prop (same readonlyness)", func(t *testing.T) {
+			singleIntPropPattern := &ObjectPattern{
+				entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
+			}
+			assert.True(t, singleIntPropPattern.Test(&ObjectPattern{
+				entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
+			}))
+
+			assert.False(t, singleIntPropPattern.Test(&ObjectPattern{
+				entries: map[string]Pattern{},
+			}))
+
+			assert.False(t, singleIntPropPattern.Test(&ObjectPattern{
+				entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
+				inexact: true,
+			}))
+
+			assert.False(t, singleIntPropPattern.Test(&ObjectPattern{
+				entries:  map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
+				readonly: true,
+			}))
+
+			singleAnyPropPattern := &ObjectPattern{
+				entries: map[string]Pattern{"a": &TypePattern{val: ANY}},
+			}
+
+			assert.True(t, singleAnyPropPattern.Test(&ObjectPattern{
+				entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
+			}))
+
+			assert.False(t, singleIntPropPattern.Test(singleAnyPropPattern))
+		})
+
+		t.Run("inexact object pattern with a single prop should match any other exact object pattern", func(t *testing.T) {
+			singleIntPropPattern := &ObjectPattern{
+				entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
+				inexact: true,
+			}
+			assert.True(t, singleIntPropPattern.Test(&ObjectPattern{
+				entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
+			}))
+			assert.True(t, singleIntPropPattern.Test(&ObjectPattern{
+				entries: map[string]Pattern{
+					"a": &TypePattern{val: ANY_INT},
+					"b": &TypePattern{val: ANY_INT},
+				},
+			}))
+
+			assert.False(t, singleIntPropPattern.Test(&ObjectPattern{
+				entries: map[string]Pattern{},
+			}))
+
+			assert.False(t, singleIntPropPattern.Test(&ObjectPattern{
+				entries:  map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
+				readonly: true,
+			}))
+
+			singleAnyPropPattern := &ObjectPattern{
+				entries: map[string]Pattern{"a": &TypePattern{val: ANY}},
+				inexact: true,
+			}
+
+			assert.True(t, singleAnyPropPattern.Test(&ObjectPattern{
+				entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
+			}))
+
+			assert.True(t, singleAnyPropPattern.Test(&ObjectPattern{
+				entries: map[string]Pattern{
+					"a": &TypePattern{val: ANY_INT},
+					"b": &TypePattern{val: ANY_INT},
+				},
+			}))
+
+			assert.False(t, singleIntPropPattern.Test(singleAnyPropPattern))
+		})
+
+		t.Run("inexact object pattern with a dependency should match any other inexact object"+
+			"with the same dependency and readonlyness", func(t *testing.T) {
+			propAwithBdep := &ObjectPattern{
+				entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
+				dependencies: map[string]propertyDependencies{
+					"a": {requiredKeys: []string{"b"}},
+				},
+			}
+
+			//matches itself
+			assert.True(t, propAwithBdep.Test(&ObjectPattern{
+				entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
+				dependencies: map[string]propertyDependencies{
+					"a": {requiredKeys: []string{"b"}},
+				},
+			}))
+
+			//same as propAwithBdep but with a pattern in the dependency
+			assert.True(t, propAwithBdep.Test(&ObjectPattern{
+				entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
+				dependencies: map[string]propertyDependencies{
+					"a": {
+						requiredKeys: []string{"b"},
+						pattern:      ANY_OBJECT_PATTERN,
+					},
+				},
+			}))
+
+			assert.False(t, propAwithBdep.Test(&ObjectPattern{
+				entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
+				dependencies: map[string]propertyDependencies{
+					"a": {requiredKeys: []string{"b"}},
+				},
+				inexact: true,
+			}))
+
+			assert.False(t, propAwithBdep.Test(&ObjectPattern{
+				entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
+				dependencies: map[string]propertyDependencies{
+					"a": {requiredKeys: []string{"b"}},
+				},
+				readonly: true,
+			}))
+
+			//same
+			propAwithBdepAndPattern := &ObjectPattern{
+				entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
+				dependencies: map[string]propertyDependencies{
+					"a": {
+						requiredKeys: []string{"b"},
+						pattern: NewInexactObjectPattern(map[string]Pattern{
+							"b": &TypePattern{val: ANY_INT},
+						}, nil),
+					},
+				},
+			}
+			//matches itself
+			assert.True(t, propAwithBdepAndPattern.Test(&ObjectPattern{
+				entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
+				dependencies: map[string]propertyDependencies{
+					"a": {
+						requiredKeys: []string{"b"},
+						pattern: NewInexactObjectPattern(map[string]Pattern{
+							"b": &TypePattern{val: ANY_INT},
+						}, nil),
+					},
+				},
+			}))
+
+			//pattern is missing
+			assert.False(t, propAwithBdepAndPattern.Test(&ObjectPattern{
+				entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
+				dependencies: map[string]propertyDependencies{
+					"a": {
+						requiredKeys: []string{"b"},
+					},
+				},
+			}))
+
+			//same
+			propAwithBCdep := &ObjectPattern{
+				entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
+				dependencies: map[string]propertyDependencies{
+					"a": {
+						requiredKeys: []string{"b", "c"},
+					},
+				},
+			}
+			//matches itself
+			assert.True(t, propAwithBCdep.Test(&ObjectPattern{
+				entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
+				dependencies: map[string]propertyDependencies{
+					"a": {
+						requiredKeys: []string{"b", "c"},
+					},
+				},
+			}))
+
+			//one of the required key is missing
+			assert.False(t, propAwithBdepAndPattern.Test(&ObjectPattern{
+				entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
+				dependencies: map[string]propertyDependencies{
+					"a": {requiredKeys: []string{"b"}},
+				},
+			}))
+		})
 	})
 
 	t.Run("TestValue() & SymbolicValue()", func(t *testing.T) {

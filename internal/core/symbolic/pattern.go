@@ -957,12 +957,19 @@ func (p *RegexPattern) WidestOfType() SymbolicValue {
 type ObjectPattern struct {
 	entries                    map[string]Pattern //if nil any object is matched
 	optionalEntries            map[string]struct{}
+	dependencies               map[string]propertyDependencies
 	inexact                    bool
 	readonly                   bool //should not be true if some property patterns are not readonly patterns
 	complexPropertyConstraints []*ComplexPropertyConstraint
 
 	NotCallablePatternMixin
 	SerializableMixin
+}
+
+// dependencies for a property
+type propertyDependencies struct {
+	requiredKeys []string
+	pattern      Pattern //pattern that the object should match if the property is present
 }
 
 func NewAnyObjectPattern() *ObjectPattern {
@@ -1019,8 +1026,24 @@ func (p *ObjectPattern) Test(v SymbolicValue) bool {
 		return true
 	}
 
-	if p.inexact != other.inexact || other.entries == nil || len(p.entries) != len(other.entries) {
+	if (!p.inexact && other.inexact) || other.entries == nil || (!p.inexact && len(p.entries) != len(other.entries)) {
 		return false
+	}
+
+	//check other has stricter version of the dependencies
+	for propName, deps := range p.dependencies {
+		counterPartDeps, ok := other.dependencies[propName]
+		if !ok {
+			return false
+		}
+		for _, dep := range deps.requiredKeys {
+			if !slices.Contains(counterPartDeps.requiredKeys, dep) {
+				return false
+			}
+		}
+		if deps.pattern != nil && (counterPartDeps.pattern == nil || !deps.pattern.Test(counterPartDeps.pattern)) {
+			return false
+		}
 	}
 
 	for k, v := range p.entries {

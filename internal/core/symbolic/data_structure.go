@@ -12,6 +12,7 @@ import (
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
 	"github.com/inoxlang/inox/internal/utils"
 	"golang.org/x/exp/maps"
+	"golang.org/x/exp/slices"
 )
 
 var (
@@ -1139,6 +1140,7 @@ func (d *Dictionary) WidestOfType() SymbolicValue {
 type Object struct {
 	entries                    map[string]Serializable //if nil, matches any object
 	optionalEntries            map[string]struct{}
+	dependencies               map[string]propertyDependencies
 	static                     map[string]Pattern //key in .Static => key in .Entries, not reciprocal
 	complexPropertyConstraints []*ComplexPropertyConstraint
 	shared                     bool
@@ -1240,24 +1242,53 @@ func (obj *Object) test(v SymbolicValue, exact bool) bool {
 		return false
 	}
 
-	for k, e := range obj.entries {
-		_, isOptional := obj.optionalEntries[k]
-		_, isOptionalInOther := otherObj.optionalEntries[k]
+	//check dependencies
+	for propName, deps := range obj.dependencies {
+		counterPartDeps, ok := otherObj.dependencies[propName]
+		if ok {
+			for _, dep := range deps.requiredKeys {
+				if !slices.Contains(counterPartDeps.requiredKeys, dep) {
+					return false
+				}
+			}
+			if deps.pattern != nil && (counterPartDeps.pattern == nil || !deps.pattern.Test(counterPartDeps.pattern)) {
+				return false
+			}
+		}
+	}
 
-		other, ok := otherObj.entries[k]
+	for propName, propPattern := range obj.entries {
+		_, isOptional := obj.optionalEntries[propName]
+		_, isOptionalInOther := otherObj.optionalEntries[propName]
 
-		if ok && !isOptional && isOptionalInOther {
+		other, isPresentInOther := otherObj.entries[propName]
+
+		if isPresentInOther && !isOptional && isOptionalInOther {
 			return false
 		}
 
-		if !ok {
+		if !isPresentInOther {
 			if isOptional {
 				continue
 			}
 			return false
 		}
-		if !e.Test(other) {
+
+		if !propPattern.Test(other) {
 			return false
+		}
+
+		if !isOptional {
+			//check dependencies
+			deps := obj.dependencies[propName]
+			for _, requiredKey := range deps.requiredKeys {
+				if !otherObj.hasRequiredProperty(requiredKey) {
+					return false
+				}
+			}
+			if deps.pattern != nil && !deps.pattern.TestValue(otherObj) {
+				return false
+			}
 		}
 	}
 
@@ -1629,6 +1660,11 @@ func (obj *Object) hasProperty(name string) bool {
 	}
 	_, ok := obj.entries[name]
 	return ok
+}
+
+func (obj *Object) hasRequiredProperty(name string) bool {
+	_, ok := obj.optionalEntries[name]
+	return !ok && obj.hasProperty(name)
 }
 
 // result should not be modfied
