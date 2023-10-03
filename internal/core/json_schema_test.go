@@ -186,8 +186,38 @@ func TestConvertJsonSchemaToPattern(t *testing.T) {
 		runTestSuites(t, jsonDraft7.MaxItems, nil)
 	})
 
+	t.Run("MaxLength", func(t *testing.T) {
+		runTestSuites(t, jsonDraft7.MaxLength, nil)
+	})
+
+	t.Run("MaxProperties", func(t *testing.T) {
+		t.SkipNow()
+		runTestSuites(t, jsonDraft7.MaxProperties, nil)
+	})
+
+	t.Run("Maximum", func(t *testing.T) {
+		runTestSuites(t, jsonDraft7.Maximum, nil)
+	})
+
 	t.Run("MinItems", func(t *testing.T) {
 		runTestSuites(t, jsonDraft7.MinItems, nil)
+	})
+
+	t.Run("MinLength", func(t *testing.T) {
+		runTestSuites(t, jsonDraft7.MinLength, nil)
+	})
+
+	t.Run("MinProperties", func(t *testing.T) {
+		t.SkipNow()
+		runTestSuites(t, jsonDraft7.MinProperties, nil)
+	})
+
+	t.Run("Minimum", func(t *testing.T) {
+		runTestSuites(t, jsonDraft7.Minimum, nil)
+	})
+
+	t.Run("MultipleOf", func(t *testing.T) {
+		runTestSuites(t, jsonDraft7.MultipleOf, nil)
 	})
 
 	t.Run("Ref", func(t *testing.T) {

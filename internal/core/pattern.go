@@ -10,6 +10,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	parse "github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 const (
@@ -842,8 +843,9 @@ func (patt *FunctionPattern) StringPattern() (StringPattern, bool) {
 
 // An IntRangePattern represents a pattern matching integers in a given range.
 type IntRangePattern struct {
-	intRange   IntRange
-	multipleOf Int
+	intRange        IntRange
+	multipleOf      Int
+	multipleOfFloat *Float
 
 	CallBasedPatternReprMixin
 	NotCallablePatternMixin
@@ -890,6 +892,26 @@ func NewIntRangePattern(intRange IntRange, multipleOf int64) *IntRangePattern {
 	}
 }
 
+func NewIntRangePatternFloatMultiple(intRange IntRange, multipleOf Float) *IntRangePattern {
+	if intRange.End < intRange.Start {
+		panic(fmt.Errorf("failed to create int range pattern, end < start"))
+	}
+
+	pattern := &IntRangePattern{
+		intRange: intRange,
+		CallBasedPatternReprMixin: CallBasedPatternReprMixin{
+			Callee: INT_PATTERN,
+			Params: []Serializable{intRange},
+		},
+	}
+
+	if multipleOf <= 0 {
+		pattern.multipleOfFloat = &multipleOf
+	}
+
+	return pattern
+}
+
 func NewSingleElementIntRangePattern(n int64) *IntRangePattern {
 	range_ := IntRange{inclusiveEnd: true, Start: n, End: n, Step: 1}
 	return &IntRangePattern{
@@ -910,9 +932,19 @@ func (patt *IntRangePattern) Test(ctx *Context, v Value) bool {
 }
 
 func (patt *IntRangePattern) Includes(ctx *Context, n Int) bool {
-	return n >= Int(patt.intRange.Start) &&
-		n <= Int(patt.intRange.InclusiveEnd()) &&
-		(patt.multipleOf <= 0 || (n%patt.multipleOf) == 0)
+	if n < Int(patt.intRange.Start) ||
+		n > Int(patt.intRange.InclusiveEnd()) {
+		return false
+	}
+
+	if patt.multipleOfFloat != nil {
+		float := *patt.multipleOfFloat
+		res := Float(n) / float
+
+		return utils.IsWholeInt64(res)
+	} else {
+		return patt.multipleOf <= 0 || (n%patt.multipleOf) == 0
+	}
 }
 
 func (patt *IntRangePattern) StringPattern() (StringPattern, bool) {
@@ -968,9 +1000,17 @@ func (patt *FloatRangePattern) Test(ctx *Context, v Value) bool {
 		return false
 	}
 
-	return n >= Float(patt.floatRange.Start) &&
-		n <= Float(patt.floatRange.InclusiveEnd()) &&
-		(patt.multipleOf <= 0 || math.Mod(float64(n), float64(patt.multipleOf)) == 0)
+	if n < Float(patt.floatRange.Start) ||
+		n > Float(patt.floatRange.InclusiveEnd()) {
+		return false
+	}
+
+	if patt.multipleOf <= 0 {
+		return true
+	}
+
+	res := n / patt.multipleOf
+	return utils.IsWholeInt64(res)
 }
 
 func (patt *FloatRangePattern) StringPattern() (StringPattern, bool) {

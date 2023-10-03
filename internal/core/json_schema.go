@@ -227,10 +227,9 @@ func convertJsonSchemaToPattern(schema *jsonschema.Schema, baseSchema *jsonschem
 		}
 
 		if schema.Pattern != nil || schema.Format != "" || schema.MinLength != -1 || schema.MaxLength != -1 {
-			if schema.Format != "" {
+			if schema.Format != "" || schema.MinLength != -1 || schema.MaxLength != -1 {
 				ignoreNonString = true
 			}
-			//TODO: .Format is a type agnostic keyword
 			allowString = true
 		}
 
@@ -351,17 +350,22 @@ func convertJsonSchemaToPattern(schema *jsonschema.Schema, baseSchema *jsonschem
 		}
 
 		var multipleOf int64 = -1
+		var multipleOfFloat Float = -1
+
 		if schema.MultipleOf != nil {
 			n, _ := schema.MultipleOf.Float64()
-			if !utils.IsWholeInt64(n) {
-				return nil, errors.New("'multipleOf' should have an integer value")
+			if utils.IsWholeInt64(n) {
+				multipleOf = int64(n)
+			} else {
+				multipleOfFloat = Float(n)
 			}
-			multipleOf = int64(n)
 		}
 
 		var pattern Pattern
 		if intRange == (IntRange{}) {
 			pattern = INT_PATTERN
+		} else if multipleOfFloat != -1 {
+			pattern = NewIntRangePatternFloatMultiple(intRange, multipleOfFloat)
 		} else {
 			pattern = NewIntRangePattern(intRange, multipleOf)
 		}

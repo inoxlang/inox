@@ -105,6 +105,21 @@ func ParseNextJSONRepresentation(ctx *Context, it *jsoniter.Iterator, pattern Pa
 		return parseListJSONrepresentation(ctx, it, p, try)
 	case *TuplePattern:
 		return parseTupleJSONrepresentation(ctx, it, p, try)
+	case StringPattern:
+		if it.WhatIsNext() != jsoniter.StringValue {
+			if try {
+				return nil, ErrTriedToParseJSONRepr
+			}
+			return nil, ErrJsonNotMatchingSchema
+		}
+		s := Str(it.ReadString())
+		if !p.Test(ctx, s) {
+			if try {
+				return nil, ErrTriedToParseJSONRepr
+			}
+			return nil, ErrJsonNotMatchingSchema
+		}
+		return s, nil
 	case *UnionPattern:
 		return parseUnionJSONrepresentation(ctx, it, p, try)
 	case *IntersectionPattern:
@@ -532,8 +547,10 @@ func parseIntegerJSONRepresentation(ctx *Context, it *jsoniter.Iterator, pattern
 	var integer Int
 	switch it.WhatIsNext() {
 	case jsoniter.NumberValue:
-		n := it.ReadInt64()
-		if it.Error != nil && it.Error != io.EOF {
+		s := it.ReadNumber()
+		n, err := strconv.ParseInt(string(s), 10, 64)
+
+		if err != nil {
 			if try {
 				return 0, ErrTriedToParseJSONRepr
 			}
@@ -562,7 +579,7 @@ func parseIntegerJSONRepresentation(ctx *Context, it *jsoniter.Iterator, pattern
 		return 0, ErrJsonNotMatchingSchema
 	}
 
-	if patt, ok := pattern.(*IntRangePattern); ok && !patt.Test(ctx, integer) {
+	if pattern != nil && !pattern.Test(ctx, integer) {
 		if try {
 			return 0, ErrTriedToParseJSONRepr
 		}
