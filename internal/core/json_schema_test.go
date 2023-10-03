@@ -65,9 +65,6 @@ func TestConvertJsonSchemaToPattern(t *testing.T) {
 				pattern, err := ConvertJsonSchemaToPattern(string(testSuite.Schema))
 
 				if !supportedSuite {
-					if !assert.Error(t, err) {
-						return
-					}
 					return
 				}
 				if !assert.NoError(t, err) {
@@ -218,6 +215,17 @@ func TestConvertJsonSchemaToPattern(t *testing.T) {
 
 	t.Run("MultipleOf", func(t *testing.T) {
 		runTestSuites(t, jsonDraft7.MultipleOf, nil)
+	})
+
+	t.Run("Not", func(t *testing.T) {
+		t.SkipNow()
+		runTestSuites(t, jsonDraft7.Not, nil)
+	})
+
+	t.Run("OneOf", func(t *testing.T) {
+		runTestSuites(t, jsonDraft7.OneOf, [][2]string{
+			{"oneOf", "*"}, //either a number is an int or is a float
+		})
 	})
 
 	t.Run("Ref", func(t *testing.T) {

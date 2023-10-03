@@ -45,10 +45,10 @@ func ConvertJsonSchemaToPattern(schemaBytes string) (Pattern, error) {
 		return nil, err
 	}
 
-	return convertJsonSchemaToPattern(schema, nil, false, 0)
+	return convertJsonSchemaToPattern(schema, nil, false, false, 0)
 }
 
-func convertJsonSchemaToPattern(schema *jsonschema.Schema, baseSchema *jsonschema.Schema, ignoreSpecial bool, depth int) (Pattern, error) {
+func convertJsonSchemaToPattern(schema *jsonschema.Schema, baseSchema *jsonschema.Schema, ignoreSpecial bool, removeIgnore bool, depth int) (Pattern, error) {
 	//baseSchema is the parent schema of children of not, allOf, anyOf, oneOf, it is nil in other cases.
 	//We choose to ignore
 
@@ -69,17 +69,17 @@ func convertJsonSchemaToPattern(schema *jsonschema.Schema, baseSchema *jsonschem
 	}
 
 	if schema.Ref != nil {
-		return convertJsonSchemaToPattern(schema.Ref, nil, false, depth+1)
+		return convertJsonSchemaToPattern(schema.Ref, nil, false, removeIgnore, depth+1)
 	}
 
 	if !ignoreSpecial {
 		if schema.Not != nil {
-			basePattern, err := convertJsonSchemaToPattern(schema, nil, true, depth+1)
+			basePattern, err := convertJsonSchemaToPattern(schema, nil, true, false, depth+1)
 			if err != nil {
 				return nil, err
 			}
 
-			negation, err := convertJsonSchemaToPattern(schema.Not, schema, false, depth+1)
+			negation, err := convertJsonSchemaToPattern(schema.Not, schema, false, false, depth+1)
 			if err != nil {
 				return nil, err
 			}
@@ -88,7 +88,7 @@ func convertJsonSchemaToPattern(schema *jsonschema.Schema, baseSchema *jsonschem
 		}
 
 		if len(schema.AllOf) > 0 {
-			basePattern, err := convertJsonSchemaToPattern(schema, nil, true, depth+1)
+			basePattern, err := convertJsonSchemaToPattern(schema, nil, true, false, depth+1)
 			if err != nil {
 				return nil, err
 			}
@@ -100,7 +100,7 @@ func convertJsonSchemaToPattern(schema *jsonschema.Schema, baseSchema *jsonschem
 			}
 
 			for _, t := range schema.AllOf {
-				case_, err := convertJsonSchemaToPattern(t, schema, false, depth+1)
+				case_, err := convertJsonSchemaToPattern(t, schema, false, true, depth+1)
 				if err != nil {
 					return nil, err
 				}
@@ -116,7 +116,7 @@ func convertJsonSchemaToPattern(schema *jsonschema.Schema, baseSchema *jsonschem
 		}
 
 		if len(schema.AnyOf) > 0 {
-			basePattern, err := convertJsonSchemaToPattern(schema, nil, true, depth+1)
+			basePattern, err := convertJsonSchemaToPattern(schema, nil, true, false, depth+1)
 			if err != nil {
 				return nil, err
 			}
@@ -124,7 +124,7 @@ func convertJsonSchemaToPattern(schema *jsonschema.Schema, baseSchema *jsonschem
 			var unionCases []Pattern
 
 			for _, t := range schema.AnyOf {
-				case_, err := convertJsonSchemaToPattern(t, schema, false, depth+1)
+				case_, err := convertJsonSchemaToPattern(t, schema, false, true, depth+1)
 				if err != nil {
 					return nil, err
 				}
@@ -144,14 +144,14 @@ func convertJsonSchemaToPattern(schema *jsonschema.Schema, baseSchema *jsonschem
 		}
 
 		if len(schema.OneOf) > 0 {
-			basePattern, err := convertJsonSchemaToPattern(schema, nil, true, depth+1)
+			basePattern, err := convertJsonSchemaToPattern(schema, nil, true, false, depth+1)
 			if err != nil {
 				return nil, err
 			}
 
 			var disjointUnionCases []Pattern
 			for _, t := range schema.OneOf {
-				case_, err := convertJsonSchemaToPattern(t, schema, false, depth+1)
+				case_, err := convertJsonSchemaToPattern(t, schema, false, true, depth+1)
 				if err != nil {
 					return nil, err
 				}
@@ -493,7 +493,7 @@ func convertJsonSchemaToPattern(schema *jsonschema.Schema, baseSchema *jsonschem
 		for name, propSchema := range schema.Properties {
 			anyObject = false
 
-			propPattern, err := convertJsonSchemaToPattern(propSchema, nil, false, depth+1)
+			propPattern, err := convertJsonSchemaToPattern(propSchema, nil, false, false, depth+1)
 			if err != nil {
 				return nil, err
 			}
@@ -512,6 +512,14 @@ func convertJsonSchemaToPattern(schema *jsonschema.Schema, baseSchema *jsonschem
 					optionalProperties = map[string]struct{}{}
 				}
 				optionalProperties[name] = struct{}{}
+			}
+		}
+
+		for _, requiredPropName := range schema.Required {
+			anyObject = false
+
+			if _, ok := entries[requiredPropName]; !ok {
+				entries[requiredPropName] = ANYVAL_PATTERN
 			}
 		}
 
@@ -540,7 +548,7 @@ func convertJsonSchemaToPattern(schema *jsonschema.Schema, baseSchema *jsonschem
 						return nil, errors.New("'dependencies' with schemas are not fully supported")
 					}
 
-					dependenciesPattern, err := convertJsonSchemaToPattern(d, nil, false, depth+1)
+					dependenciesPattern, err := convertJsonSchemaToPattern(d, nil, false, false, depth+1)
 					if err != nil {
 						return nil, fmt.Errorf("failed to convert dependency pattern for property %q", dependentKey)
 					}
@@ -588,13 +596,13 @@ func convertJsonSchemaToPattern(schema *jsonschema.Schema, baseSchema *jsonschem
 		switch items := schema.Items.(type) {
 		case *jsonschema.Schema:
 			var err error
-			generalElementPattern, err = convertJsonSchemaToPattern(items, nil, false, depth+1)
+			generalElementPattern, err = convertJsonSchemaToPattern(items, nil, false, false, depth+1)
 			if err != nil {
 				return nil, err
 			}
 		case []*jsonschema.Schema:
 			for _, item := range items {
-				elementPattern, err := convertJsonSchemaToPattern(item, nil, false, depth+1)
+				elementPattern, err := convertJsonSchemaToPattern(item, nil, false, false, depth+1)
 				if err != nil {
 					return nil, err
 				}
@@ -626,7 +634,7 @@ func convertJsonSchemaToPattern(schema *jsonschema.Schema, baseSchema *jsonschem
 		if schema.Contains == nil {
 			unionCases = append(unionCases, listPattern)
 		} else if schema.Contains.Always == nil {
-			containedElementPattern, err := convertJsonSchemaToPattern(schema.Contains, nil, false, depth+1)
+			containedElementPattern, err := convertJsonSchemaToPattern(schema.Contains, nil, false, false, depth+1)
 			if err != nil {
 				return nil, err
 			}
@@ -644,19 +652,22 @@ func convertJsonSchemaToPattern(schema *jsonschema.Schema, baseSchema *jsonschem
 	}
 
 	if len(unionCases) == 1 {
-		if ignoreNonArray {
-			if !allowArray {
-				return NewDifferencePattern(ANYVAL_PATTERN, LIST_PATTERN), nil
+		if !removeIgnore {
+			if ignoreNonArray {
+				if !allowArray {
+					return NewDifferencePattern(ANYVAL_PATTERN, LIST_PATTERN), nil
+				}
+				unionCases = append(unionCases, NewDifferencePattern(ANYVAL_PATTERN, LIST_PATTERN))
+				return NewDisjointUnionPattern(unionCases, nil), nil
+			} else if ignoreNonNumber {
+				unionCases = append(unionCases, NewDifferencePattern(ANYVAL_PATTERN, FLOAT_PATTERN))
+				return NewDisjointUnionPattern(unionCases, nil), nil
+			} else if ignoreNonString {
+				unionCases = append(unionCases, NewDifferencePattern(ANYVAL_PATTERN, STRLIKE_PATTERN))
+				return NewDisjointUnionPattern(unionCases, nil), nil
 			}
-			unionCases = append(unionCases, NewDifferencePattern(ANYVAL_PATTERN, LIST_PATTERN))
-			return NewDisjointUnionPattern(unionCases, nil), nil
-		} else if ignoreNonNumber {
-			unionCases = append(unionCases, NewDifferencePattern(ANYVAL_PATTERN, FLOAT_PATTERN))
-			return NewDisjointUnionPattern(unionCases, nil), nil
-		} else if ignoreNonString {
-			unionCases = append(unionCases, NewDifferencePattern(ANYVAL_PATTERN, STRLIKE_PATTERN))
-			return NewDisjointUnionPattern(unionCases, nil), nil
 		}
+
 		return unionCases[0], nil
 	}
 
