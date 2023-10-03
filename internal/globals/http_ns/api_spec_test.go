@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/inoxlang/inox/internal/core"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/exp/maps"
 )
@@ -35,5 +36,38 @@ func TestGetAPIFromOpenAPISpec(t *testing.T) {
 		return
 	}
 
-	assert.Contains(t, maps.Keys(api.endpoints), "/answers")
+	if !assert.Contains(t, maps.Keys(api.endpoints), "/answers") {
+		return
+	}
+
+	endpt := api.endpoints["/answers"]
+
+	if !assert.NotEmpty(t, endpt.operations) {
+		return
+	}
+
+	op := endpt.operations[0]
+	if !assert.Equal(t, "POST", op.httpMethod) {
+		return
+	}
+
+	if !assert.Contains(t, maps.Keys(op.jsonResponseBodies), uint16(200)) {
+		return
+	}
+	pattern := op.jsonResponseBodies[200]
+
+	if !assert.IsType(t, pattern, (*core.ObjectPattern)(nil)) {
+		return
+	}
+
+	found := false
+
+	pattern.(*core.ObjectPattern).ForEachEntry(func(propName string, propPattern core.Pattern, isOptional bool) error {
+		if propName == "answers" {
+			found = true
+		}
+		return nil
+	})
+
+	assert.True(t, found)
 }

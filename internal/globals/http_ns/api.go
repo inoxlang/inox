@@ -19,5 +19,6 @@ type ApiOperation struct {
 	endpoint   *ApiEndpoint
 	httpMethod string
 
-	jsonRequestBody core.Pattern
+	jsonRequestBody    core.Pattern
+	jsonResponseBodies map[uint16]core.Pattern
 }

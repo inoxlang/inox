@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"strconv"
 
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/mimeconsts"
@@ -137,13 +138,50 @@ func getApiOperation(method string, op *v3high.Operation, endpoint *ApiEndpoint)
 				}
 				pattern, err := getPatternFromLibopenapiSchema(schema)
 				if err != nil {
-					return ApiOperation{}, fmt.Errorf("failed to create pattern for requests to the endpoint %q: %w", endpoint.path, err)
+					return ApiOperation{}, fmt.Errorf("failed to create pattern for requests of the endpoint %q: %w", endpoint.path, err)
 				}
 				apiOp.jsonRequestBody = pattern
 			case mimeconsts.MULTIPART_FORM_DATA:
 				//TODO
 			default:
 				return ApiOperation{}, fmt.Errorf("%w: %s", ErrUnsupportedMediaTypeinSpec, name)
+			}
+		}
+	}
+
+	if op.Responses != nil {
+		for codeString, resp := range op.Responses.Codes {
+
+			for name, mediaType := range resp.Content {
+				switch name {
+				//JSON
+				case mimeconsts.JSON_CTYPE:
+					if apiOp.jsonResponseBodies == nil {
+						apiOp.jsonResponseBodies = map[uint16]core.Pattern{}
+					}
+
+					code, err := strconv.Atoi(codeString)
+					if err != nil || code < 100 || code >= 600 {
+						return ApiOperation{}, fmt.Errorf(
+							"invalid HTTP status code encountered for one of the responses of %q: %s", endpoint.path, codeString)
+					}
+
+					schema, err := mediaType.Schema.BuildSchema()
+					if err != nil {
+						return ApiOperation{}, err
+					}
+					pattern, err := getPatternFromLibopenapiSchema(schema)
+					if err != nil {
+						return ApiOperation{}, fmt.Errorf(
+							"failed to create pattern for one of responses (status %d) of the endpoint %q: %w", code, endpoint.path, err)
+					}
+
+					apiOp.jsonResponseBodies[uint16(code)] = pattern
+				case mimeconsts.MULTIPART_FORM_DATA:
+					//TODO
+				default:
+					return ApiOperation{}, fmt.Errorf("%w: %s", ErrUnsupportedMediaTypeinSpec, name)
+				}
 			}
 		}
 	}
