@@ -212,7 +212,7 @@ func convertJsonSchemaToPattern(schema *jsonschema.Schema, baseSchema *jsonschem
 				return disjointUnionPattern, nil
 			}
 
-			return NewIntersectionPattern([]Pattern{basePattern, disjointUnionPattern}, nil), nil
+			return simplifyIntersection([]Pattern{basePattern, disjointUnionPattern}), nil
 		}
 
 		if schema.If != nil || schema.Then != nil || schema.Else != nil {

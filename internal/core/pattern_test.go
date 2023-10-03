@@ -299,3 +299,33 @@ func TestFloatRangePattern(t *testing.T) {
 		assert.False(t, patt.Test(ctx, Float(102)))
 	})
 }
+
+func TestSimplifyIntersection(t *testing.T) {
+
+	t.Run("object patterns", func(t *testing.T) {
+		emptyExactObject := NewExactObjectPattern(map[string]Pattern{})
+		emptyInexactObject := NewInexactObjectPattern(map[string]Pattern{})
+
+		result := simplifyIntersection([]Pattern{OBJECT_PATTERN, emptyExactObject})
+		assert.Same(t, emptyExactObject, result)
+
+		result = simplifyIntersection([]Pattern{emptyExactObject, OBJECT_PATTERN})
+		assert.Same(t, emptyExactObject, result)
+
+		result = simplifyIntersection([]Pattern{OBJECT_PATTERN, emptyInexactObject})
+		assert.Same(t, emptyInexactObject, result)
+
+		result = simplifyIntersection([]Pattern{emptyInexactObject, OBJECT_PATTERN})
+		assert.Same(t, emptyInexactObject, result)
+
+		result = simplifyIntersection([]Pattern{OBJECT_PATTERN, emptyExactObject, emptyInexactObject})
+		assert.Equal(t, NewIntersectionPattern([]Pattern{emptyExactObject, emptyInexactObject}, nil), result)
+
+		result = simplifyIntersection([]Pattern{emptyExactObject, OBJECT_PATTERN, emptyInexactObject})
+		assert.Equal(t, NewIntersectionPattern([]Pattern{emptyExactObject, emptyInexactObject}, nil), result)
+
+		result = simplifyIntersection([]Pattern{emptyExactObject, emptyInexactObject, OBJECT_PATTERN})
+		assert.Equal(t, NewIntersectionPattern([]Pattern{emptyExactObject, emptyInexactObject}, nil), result)
+	})
+
+}

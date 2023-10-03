@@ -260,6 +260,47 @@ type IntersectionPattern struct {
 	cases []Pattern
 }
 
+func simplifyIntersection(cases []Pattern) Pattern {
+	if len(cases) == 1 {
+		return cases[1]
+	}
+
+	casesToKeep := []int{}
+	for i, case_ := range cases {
+		isSuperTypeOfAllOtherCases := true
+
+		for j, otherCase := range cases {
+			if i == j {
+				continue
+			}
+			if !isObviousSubType(otherCase, case_) {
+				isSuperTypeOfAllOtherCases = false
+				break
+			}
+		}
+
+		if !isSuperTypeOfAllOtherCases {
+			casesToKeep = append(casesToKeep, i)
+		}
+	}
+
+	var remainingCases []Pattern
+
+	for _, remainingCaseIndex := range casesToKeep {
+		remainingCases = append(remainingCases, cases[remainingCaseIndex])
+	}
+
+	if len(remainingCases) == 1 {
+		return remainingCases[0]
+	}
+
+	if len(remainingCases) == 0 {
+		panic(ErrUnreachable)
+	}
+
+	return NewIntersectionPattern(remainingCases, nil)
+}
+
 func NewIntersectionPattern(cases []Pattern, node parse.Node) *IntersectionPattern {
 	return &IntersectionPattern{node: node, cases: cases}
 }
@@ -1103,6 +1144,41 @@ func isIntPattern(p Pattern) bool {
 		}
 	case *IntRangePattern:
 		return true
+	}
+	return false
+}
+
+func isTypePattern(p Pattern, typ reflect.Type) bool {
+	switch pattern := p.(type) {
+	case *TypePattern:
+		return pattern.Type == typ
+	}
+	return false
+}
+
+func isObviousSubType(p Pattern, superType Pattern) bool {
+	switch pattern := p.(type) {
+	case *TypePattern:
+		otherTypePattern, ok := superType.(*TypePattern)
+		if !ok {
+			return false
+		}
+
+		return pattern.Type.AssignableTo(otherTypePattern.Type)
+	case *IntRangePattern:
+		return isTypePattern(superType, INT_TYPE)
+	case *FloatRangePattern:
+		return isTypePattern(superType, FLOAT64_TYPE)
+	case StringPattern:
+		return isTypePattern(superType, STR_TYPE) || isTypePattern(superType, STR_LIKE_INTERFACE_TYPE)
+	case *ObjectPattern:
+		return isTypePattern(superType, OBJECT_TYPE)
+	case *RecordPattern:
+		return isTypePattern(superType, RECORD_TYPE)
+	case *ListPattern:
+		return isTypePattern(superType, LIST_PTR_TYPE)
+	case *TuplePattern:
+		return isTypePattern(superType, TUPLE_TYPE)
 	}
 	return false
 }
