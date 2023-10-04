@@ -335,6 +335,10 @@ func fmtPatternIsNotDeclared(name string) string {
 	return fmt.Sprintf("pattern %%%s is not declared", name)
 }
 
+func fmtPatternIsNotDeclaredYouProbablyMeant(name string, suggestion string) string {
+	return fmt.Sprintf("pattern %%%s is not declared; you probably meant `%%%s`", name, suggestion)
+}
+
 func fmtPatternNamespaceIsNotDeclared(name string) string {
 	return fmt.Sprintf("pattern namespace %%%s. is not declared", name)
 }

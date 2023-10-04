@@ -6,6 +6,7 @@ import (
 
 	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/permkind"
+	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
 )
 
@@ -79,6 +80,10 @@ func (ctx *Context) ResolveNamedPattern(name string) Pattern {
 	}
 
 	return pattern
+}
+
+func (ctx *Context) AllNamedPatternNames() []string {
+	return maps.Keys(ctx.namedPatterns)
 }
 
 func (ctx *Context) AddNamedPattern(name string, pattern Pattern, ignoreError bool, optDefinitionPosition ...parse.SourcePositionRange) {

@@ -3878,7 +3878,18 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 	case *parse.PatternIdentifierLiteral:
 		patt := state.ctx.ResolveNamedPattern(n.Name)
 		if patt == nil {
-			state.addError(makeSymbolicEvalError(node, state, fmtPatternIsNotDeclared(n.Name)))
+			names := state.ctx.AllNamedPatternNames()
+
+			var msg = ""
+			closestString, _, ok := utils.FindClosestString(state.ctx.startingConcreteContext, names, n.Name, 2)
+
+			if ok {
+				msg = fmtPatternIsNotDeclaredYouProbablyMeant(n.Name, closestString)
+			} else {
+				msg = fmtPatternIsNotDeclared(n.Name)
+			}
+
+			state.addError(makeSymbolicEvalError(node, state, msg))
 			return &AnyPattern{}, nil
 		} else {
 			return patt, nil

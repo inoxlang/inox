@@ -8017,6 +8017,37 @@ func TestSymbolicEval(t *testing.T) {
 
 	})
 
+	t.Run("pattern identifier", func(t *testing.T) {
+		t.Run("ok", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`%int`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, state.ctx.ResolveNamedPattern("int"), res)
+		})
+
+		t.Run("non existing", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`%nonexisting`)
+
+			_, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(n.Statements[0], state, fmtPatternIsNotDeclared("nonexisting")),
+			}, state.errors())
+		})
+
+		t.Run("non existing: name close to an existing patern", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`%in`)
+
+			_, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(n.Statements[0], state, fmtPatternIsNotDeclaredYouProbablyMeant("in", "int")),
+			}, state.errors())
+		})
+	})
+
 	t.Run("optional pattern", func(t *testing.T) {
 
 		t.Run("ok", func(t *testing.T) {
