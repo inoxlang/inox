@@ -1721,7 +1721,7 @@ func launchDebuggedProgram(programPath string, session *jsonrpc.Session, debugSe
 		}
 	}()
 
-	_, _, _, failedToPrepare, err := mod.RunLocalScript(mod.RunScriptArgs{
+	_, _, _, preparationOk, err := mod.RunLocalScript(mod.RunScriptArgs{
 		Fpath:                     programPath,
 		ParsingCompilationContext: ctx,
 		ParentContext:             ctx,
@@ -1737,7 +1737,7 @@ func launchDebuggedProgram(programPath string, session *jsonrpc.Session, debugSe
 		PreparedChan: debugSession.programPreparedOrFailedToChan,
 	})
 
-	if !failedToPrepare {
+	if preparationOk {
 		debugSession.programDoneChan <- err
 	}
 }
