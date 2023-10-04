@@ -726,7 +726,7 @@ func getFilePath(uri defines.DocumentUri, usingInoxFs bool) (string, error) {
 	if !usingInoxFs && u.Scheme != "file" {
 		return "", fmt.Errorf("%w, URI is: %s", ErrFileURIExpected, string(uri))
 	}
-	return u.Path, nil
+	return filepath.Clean(u.Path), nil
 }
 
 func getPath(uri defines.URI, usingInoxFS bool) (string, error) {
@@ -740,5 +740,5 @@ func getPath(uri defines.URI, usingInoxFS bool) (string, error) {
 	if !usingInoxFS && u.Scheme != "file" {
 		return "", fmt.Errorf("%w, actual is: %s", ErrFileURIExpected, string(uri))
 	}
-	return u.Path, nil
+	return filepath.Clean(u.Path), nil
 }

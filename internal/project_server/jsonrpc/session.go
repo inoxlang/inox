@@ -26,6 +26,8 @@ import (
 
 const (
 	JSONRPC_VERSION = "2.0"
+
+	MAX_PARAMS_LOGGING_SIZE = 3000
 )
 
 var (
@@ -290,14 +292,26 @@ func (s *Session) handlerRequest(req RequestMessage) error {
 	stringifiedID := fmt.Sprintf("%d", req.ID)
 
 	if !ok {
-		logs.Printf("Request: [%v] [%s], content: [%v]\n", stringifiedID, req.Method, string(req.Params))
+		params := req.Params
+		suffix := ""
+		if len(params) > MAX_PARAMS_LOGGING_SIZE {
+			params = params[:min(MAX_PARAMS_LOGGING_SIZE, len(req.Params))]
+			suffix = "..." + string(params[len(params)-1])
+		}
+		logs.Printf("Request: [%v] [%s], content: [%v]%s\n", stringifiedID, req.Method, params, suffix)
 		return MethodNotFound
 	}
 
 	if mtdInfo.SensitiveData {
 		logs.Printf("Request: [%v] [%s], content: ...\n", stringifiedID, req.Method)
 	} else {
-		logs.Printf("Request: [%v] [%s], content: [%v]\n", stringifiedID, req.Method, string(req.Params))
+		params := req.Params
+		suffix := ""
+		if len(params) > MAX_PARAMS_LOGGING_SIZE {
+			params = params[:min(MAX_PARAMS_LOGGING_SIZE, len(req.Params))]
+			suffix = "..." + string(params[len(params)-1])
+		}
+		logs.Printf("Request: [%v] [%s], content: [%s]%s\n", stringifiedID, req.Method, params, suffix)
 	}
 
 	//rate limit

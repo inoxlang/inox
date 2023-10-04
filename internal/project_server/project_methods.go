@@ -114,6 +114,7 @@ func registerProjectMethodHandlers(server *lsp.Server, opts LSPServerConfigurati
 			sessionData := getLockedSessionData(session)
 			defer sessionData.lock.Unlock()
 			sessionData.filesystem = lspFilesystem
+			sessionData.project = project
 
 			return OpenProjectResponse{TempProjectTokens: tokens}, nil
 		},

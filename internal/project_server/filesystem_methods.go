@@ -11,28 +11,35 @@ import (
 	"sync"
 	"time"
 
+	"github.com/inoxlang/inox/internal/core"
 	fs_ns "github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/project_server/jsonrpc"
 	"github.com/inoxlang/inox/internal/project_server/logs"
 	"github.com/inoxlang/inox/internal/project_server/lsp"
 	"github.com/inoxlang/inox/internal/project_server/lsp/defines"
 
-	"github.com/go-git/go-billy/v5/util"
 	fsutil "github.com/go-git/go-billy/v5/util"
 )
 
 const (
-	FILE_STAT_METHOD   = "fs/fileStat"
-	READ_FILE_METHOD   = "fs/readFile"
-	WRITE_FILE_METHOD  = "fs/writeFile"
-	RENAME_FILE_METHOD = "fs/renameFile"
-	DELETE_FILE_METHOD = "fs/deleteFile"
+	FILE_STAT_METHOD         = "fs/fileStat"
+	READ_FILE_METHOD         = "fs/readFile"
+	WRITE_FILE_METHOD        = "fs/writeFile"
+	START_UPLOAD_METHOD      = "fs/startUpload"
+	WRITE_UPLOAD_PART_METHOD = "fs/writeUploadPart"
+	RENAME_FILE_METHOD       = "fs/renameFile"
+	DELETE_FILE_METHOD       = "fs/deleteFile"
 
 	CREATE_DIR_METHOD = "fs/createDir"
 	READ_DIR_METHOD   = "fs/readDir"
 
 	MIN_LAST_CHANGE_AGE_FOR_UNSAVED_DOC_SYNC               = time.Second / 2
 	MIN_LAST_FILE_WRITE_AGE_FOR_UNSAVED_DOC_SYNC_REVERSING = time.Second / 2
+)
+
+var (
+	ErrFileBeingCreatedOrModifiedByAnotherSession = errors.New("file is being created or edited by another session")
+	ErrFileBeingCreatedBySameSession              = errors.New("file is being created by the same session")
 )
 
 //get file stat operation
@@ -110,6 +117,30 @@ type FsWriteFileParams struct {
 	Overwrite     bool        `json:"overwrite"`
 }
 
+//write upload part operation
+//there is no separate method to start an upload in order to start the upload immediately.
+
+type FsStartUploadParams struct {
+	Create            bool        `json:"create"`
+	Overwrite         bool        `json:"overwrite"`
+	FileURI           defines.URI `json:"uri"`
+	PartContentBase64 string      `json:"content,omitempty"`
+	Last              bool        `json:"last"`
+}
+
+type FsStartUploadResponse struct {
+	UploadId uploadId `json:"uploadId,omitempty"`
+	Done     bool     `json:"done"`
+}
+
+type FsWriteUploadPartParams struct {
+	UploadId uploadId    `json:"uploadId,omitempty"`
+	FileURI  defines.URI `json:"uri"`
+
+	PartContentBase64 string `json:"content,omitempty"`
+	Last              bool   `son:"content,last"`
+}
+
 //rename file operation
 
 type FsRenameFileParams struct {
@@ -136,11 +167,11 @@ type FsCreateDirParams struct {
 type FsNonCriticalError string
 
 const (
-	FsFileNotFound = "not-found"
-	FsFileExists   = "exists"
-	FsFileIsDir    = "is-dir"
-	FsFileIsNotDir = "is-not-dir"
-	FsNoFilesystem = "no-filesystem"
+	FsFileNotFound FsNonCriticalError = "not-found"
+	FsFileExists                      = "exists"
+	FsFileIsDir                       = "is-dir"
+	FsFileIsNotDir                    = "is-not-dir"
+	FsNoFilesystem                    = "no-filesystem"
 )
 
 func registerFilesystemMethodHandlers(server *lsp.Server) {
@@ -239,121 +270,154 @@ func registerFilesystemMethodHandlers(server *lsp.Server) {
 				return nil, fmt.Errorf("failed to decode received content for file %s: %w", fpath, err)
 			}
 
-			unsavedDocumentsFS := fls.unsavedDocumentsFS()
+			return updateFile(fpath, [][]byte{content}, params.Create, params.Overwrite, fls, session)
+		},
+	})
 
-			// attempt to synchronize the unsaved document with the new content,
-			// we only do that if the unsaved document filesystem is a separate filesystem.
-			if fls != unsavedDocumentsFS && false {
-				func() {
-					//get & read the synchronization data
-					sessionData := getLockedSessionData(session)
-					syncData := sessionData.unsavedDocumentSyncData[fpath]
-					if syncData == nil {
-						syncData = &unsavedDocumentSyncData{path: fpath}
-						sessionData.unsavedDocumentSyncData[fpath] = syncData
-					}
-					sessionData.lock.Unlock()
-
-					updated := false
-					defer func() {
-						if updated {
-							//we log after to reduce the time spent locked
-							logs.Printf("'unsaved' document %q was updated with the content of the persisted file\n", fpath)
-						}
-					}()
-
-					syncData.lock.Lock()
-					defer syncData.lock.Unlock()
-
-					if time.Since(syncData.lastDidChange) < MIN_LAST_CHANGE_AGE_FOR_UNSAVED_DOC_SYNC {
-						return
-					}
-
-					// read the file & save the previous content
-					doc, err := unsavedDocumentsFS.OpenFile(fpath, os.O_RDWR, 0)
-					if err != nil {
-						return
-					}
-
-					closed := false
-
-					defer func() {
-						if !closed {
-							doc.Close()
-						}
-					}()
-
-					prevContent, err := io.ReadAll(doc)
-					if err != nil {
-						return
-					}
-
-					syncData.prevContent = prevContent
-					syncData.lastFileWrite = time.Now()
-
-					//write the new content
-					doc.Truncate(0)
-					doc.Seek(0, 0)
-					doc.Write(content)
-
-					closed = true
-					updated = true
-					doc.Close()
-				}()
+	server.OnCustom(jsonrpc.MethodInfo{
+		Name:       START_UPLOAD_METHOD,
+		RateLimits: []int{5, 20, 50},
+		NewRequest: func() interface{} {
+			return &FsStartUploadParams{}
+		},
+		Handler: func(ctx context.Context, req interface{}) (interface{}, error) {
+			session := jsonrpc.GetSession(ctx)
+			params := req.(*FsStartUploadParams)
+			fls, ok := getLspFilesystem(session)
+			if !ok {
+				return nil, errors.New(FsNoFilesystem)
 			}
 
-			if params.Create {
-				f, err := fls.OpenFile(fpath, os.O_CREATE|os.O_WRONLY, fs_ns.DEFAULT_FILE_FMODE)
+			data := getLockedSessionData(session)
+			var projectId core.ProjectID
+			if data.project != nil {
+				projectId = data.project.Id()
+			}
+			data.lock.Unlock()
 
-				defer func() {
-					if f != nil {
-						f.Close()
-					}
-				}()
-
-				if err != nil && !os.IsNotExist(err) {
-					return nil, fmtInternalError("failed to create file %s: %s", fpath, err)
+			if projectId == "" {
+				return nil, jsonrpc.ResponseError{
+					Code:    jsonrpc.InternalError.Code,
+					Message: "the method " + WRITE_UPLOAD_PART_METHOD + " is only supported in project mode for now",
 				}
+			}
 
-				alreadyExists := err == nil
-				if alreadyExists {
-					if !params.Overwrite {
-						return nil, fmtInternalError("failed to create file %s: already exists and overwrite option is false", fpath)
-					}
+			fpath, err := getPath(params.FileURI, true)
+			if err != nil {
+				return nil, err
+			}
 
-					if err := f.Truncate(int64(len(content))); err != nil {
-						return nil, fmtInternalError("failed to truncate file before write %s: %s", fpath, err)
-					}
+			editionState := getCreateProjectEditionState(projectId)
+
+			firstPart, err := base64.StdEncoding.DecodeString(string(params.PartContentBase64))
+			if err != nil {
+				return nil, fmt.Errorf("failed to decode received content for the first part of the file %s: %w", fpath, err)
+			}
+
+			info := uploadInfo{create: params.Create, overwrite: params.Overwrite}
+			uploadId, err := editionState.startFileUpload(fpath, firstPart, info, session)
+
+			if err != nil {
+				return nil, jsonrpc.ResponseError{
+					Code:    jsonrpc.InternalError.Code,
+					Message: err.Error(),
 				}
+			}
 
-				_, err = f.Write(content)
+			if params.Last {
+				parts, info, err := editionState.finishFileUpload(fpath, nil, uploadId, session)
 
 				if err != nil {
-					return nil, fmt.Errorf("failed to create file %s: failed to write: %w", fpath, err)
+					return nil, jsonrpc.ResponseError{
+						Code:    jsonrpc.InternalError.Code,
+						Message: err.Error(),
+					}
 				}
+
+				nonCritialErr, err := updateFile(fpath, parts, info.create, info.overwrite, fls, session)
+
+				if err != nil {
+					return nil, jsonrpc.ResponseError{
+						Code:    jsonrpc.InternalError.Code,
+						Message: err.Error(),
+					}
+				}
+
+				if nonCritialErr == "" {
+					return FsStartUploadResponse{
+						UploadId: uploadId,
+						Done:     true,
+					}, nil
+				}
+
+				return nonCritialErr, nil
+			}
+
+			return FsStartUploadResponse{
+				UploadId: uploadId,
+			}, nil
+		},
+	})
+
+	server.OnCustom(jsonrpc.MethodInfo{
+		Name:       WRITE_UPLOAD_PART_METHOD,
+		RateLimits: []int{15, 30, 100},
+		NewRequest: func() interface{} {
+			return &FsWriteUploadPartParams{}
+		},
+		Handler: func(ctx context.Context, req interface{}) (interface{}, error) {
+			session := jsonrpc.GetSession(ctx)
+			params := req.(*FsWriteUploadPartParams)
+			fls, ok := getLspFilesystem(session)
+			if !ok {
+				return nil, errors.New(FsNoFilesystem)
+			}
+
+			data := getLockedSessionData(session)
+			var projectId core.ProjectID
+			if data.project != nil {
+				projectId = data.project.Id()
+			}
+			data.lock.Unlock()
+
+			if projectId == "" {
+				return nil, jsonrpc.ResponseError{
+					Code:    jsonrpc.InternalError.Code,
+					Message: "the method " + WRITE_UPLOAD_PART_METHOD + " is only supported in project mode for now",
+				}
+			}
+
+			fpath, err := getPath(params.FileURI, true)
+			if err != nil {
+				return nil, err
+			}
+
+			editionState := getCreateProjectEditionState(projectId)
+
+			part, err := base64.StdEncoding.DecodeString(string(params.PartContentBase64))
+			if err != nil {
+				return nil, fmt.Errorf("failed to decode received content for a part of the file %s: %w", fpath, err)
+			}
+
+			if params.Last {
+				parts, info, err := editionState.finishFileUpload(fpath, part, params.UploadId, session)
+
+				if err != nil {
+					return nil, jsonrpc.ResponseError{
+						Code:    jsonrpc.InternalError.Code,
+						Message: err.Error(),
+					}
+				}
+
+				return updateFile(fpath, parts, info.create, info.overwrite, fls, session)
 			} else {
-				f, err := fls.OpenFile(fpath, os.O_WRONLY, 0)
-
-				defer func() {
-					if f != nil {
-						f.Close()
-					}
-				}()
-
-				if os.IsNotExist(err) {
-					return FsFileNotFound, nil
-				} else if err != nil {
-					return nil, fmtInternalError("failed to write file %s: failed to open: %s", fpath, err)
-				}
-
-				if err := f.Truncate(int64(len(content))); err != nil {
-					return nil, fmtInternalError("failed to truncate file before write: %s: %s", fpath, err)
-				}
-
-				_, err = f.Write(content)
+				_, err := editionState.continueFileUpload(fpath, part, params.UploadId, session)
 
 				if err != nil {
-					return nil, fmtInternalError("failed to create file %s: failed to write: %s", fpath, err)
+					return nil, jsonrpc.ResponseError{
+						Code:    jsonrpc.InternalError.Code,
+						Message: err.Error(),
+					}
 				}
 			}
 
@@ -434,7 +498,7 @@ func registerFilesystemMethodHandlers(server *lsp.Server) {
 
 			if params.Recursive {
 				//TODO: add implementation of the { RemoveAll(string) error } interface to MetaFilesystem & MemoryFilesystem.
-				err = util.RemoveAll(fls, path)
+				err = fsutil.RemoveAll(fls, path)
 
 				if os.IsNotExist(err) {
 					return FsFileNotFound, nil
@@ -567,4 +631,133 @@ func (d *unsavedDocumentSyncData) reactToDidChange(fls *Filesystem) {
 		f.Seek(0, 0)
 		f.Write(d.prevContent)
 	}
+}
+
+func updateFile(fpath string, contentParts [][]byte, create, overwrite bool, fls *Filesystem, session *jsonrpc.Session) (FsNonCriticalError, error) {
+	unsavedDocumentsFS := fls.unsavedDocumentsFS()
+
+	// attempt to synchronize the unsaved document with the new content,
+	// we only do that if the unsaved document filesystem is a separate filesystem.
+	if fls != unsavedDocumentsFS && false {
+		func() {
+			//get & read the synchronization data
+			sessionData := getLockedSessionData(session)
+			syncData := sessionData.unsavedDocumentSyncData[fpath]
+			if syncData == nil {
+				syncData = &unsavedDocumentSyncData{path: fpath}
+				sessionData.unsavedDocumentSyncData[fpath] = syncData
+			}
+			sessionData.lock.Unlock()
+
+			updated := false
+			defer func() {
+				if updated {
+					//we log after to reduce the time spent locked
+					logs.Printf("'unsaved' document %q was updated with the content of the persisted file\n", fpath)
+				}
+			}()
+
+			syncData.lock.Lock()
+			defer syncData.lock.Unlock()
+
+			if time.Since(syncData.lastDidChange) < MIN_LAST_CHANGE_AGE_FOR_UNSAVED_DOC_SYNC {
+				return
+			}
+
+			// read the file & save the previous content
+			doc, err := unsavedDocumentsFS.OpenFile(fpath, os.O_RDWR, 0)
+			if err != nil {
+				return
+			}
+
+			closed := false
+
+			defer func() {
+				if !closed {
+					doc.Close()
+				}
+			}()
+
+			prevContent, err := io.ReadAll(doc)
+			if err != nil {
+				return
+			}
+
+			syncData.prevContent = prevContent
+			syncData.lastFileWrite = time.Now()
+
+			//write the new content
+			doc.Truncate(0)
+			doc.Seek(0, 0)
+
+			for _, part := range contentParts {
+				_, _ = doc.Write(part)
+			}
+
+			closed = true
+			updated = true
+			doc.Close()
+		}()
+	}
+
+	if create {
+		f, err := fls.OpenFile(fpath, os.O_CREATE|os.O_WRONLY, fs_ns.DEFAULT_FILE_FMODE)
+
+		defer func() {
+			if f != nil {
+				f.Close()
+			}
+		}()
+
+		if err != nil && !os.IsNotExist(err) {
+			return "", fmtInternalError("failed to create file %s: %s", fpath, err)
+		}
+
+		alreadyExists := err == nil
+		if alreadyExists {
+			if !overwrite {
+				return "", fmtInternalError("failed to create file %s: already exists and overwrite option is false", fpath)
+			}
+
+			if err := f.Truncate(int64(len(contentParts))); err != nil {
+				return "", fmtInternalError("failed to truncate file before write %s: %s", fpath, err)
+			}
+		}
+
+		for _, part := range contentParts {
+			_, err = f.Write(part)
+		}
+
+		if err != nil {
+			return "", fmt.Errorf("failed to create file %s: failed to write: %w", fpath, err)
+		}
+	} else {
+		f, err := fls.OpenFile(fpath, os.O_WRONLY, 0)
+
+		defer func() {
+			if f != nil {
+				f.Close()
+			}
+		}()
+
+		if os.IsNotExist(err) {
+			return FsFileNotFound, nil
+		} else if err != nil {
+			return "", fmtInternalError("failed to write file %s: failed to open: %s", fpath, err)
+		}
+
+		if err := f.Truncate(int64(len(contentParts))); err != nil {
+			return "nil", fmtInternalError("failed to truncate file before write: %s: %s", fpath, err)
+		}
+
+		for _, part := range contentParts {
+			_, err = f.Write(part)
+		}
+
+		if err != nil {
+			return "", fmtInternalError("failed to create file %s: failed to write: %s", fpath, err)
+		}
+	}
+
+	return "", nil
 }

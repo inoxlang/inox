@@ -1,6 +1,8 @@
 package logs
 
-import "log"
+import (
+	"log"
+)
 
 var logger *log.Logger
 
