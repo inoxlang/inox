@@ -7483,21 +7483,94 @@ func TestSymbolicEval(t *testing.T) {
 	})
 
 	t.Run("list pattern literal", func(t *testing.T) {
-		n, state := MakeTestStateAndChunk(`
-			return %[ %{} ]
-		`)
 
-		res, err := symbolicEval(n, state)
-		assert.NoError(t, err)
-		assert.Empty(t, state.errors())
-		assert.Equal(t, &ListPattern{
-			elements: []Pattern{
-				&ObjectPattern{
-					entries: map[string]Pattern{},
-					inexact: true,
+		t.Run("ok", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				return %[ %{} ]
+			`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, &ListPattern{
+				elements: []Pattern{
+					&ObjectPattern{
+						entries: map[string]Pattern{},
+						inexact: true,
+					},
 				},
-			},
-		}, res)
+			}, res)
+		})
+
+		t.Run("undefined general element pattern", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				return %[]mytype
+			`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.NotEmpty(t, state.errors())
+			assert.NotPanics(t, func() {
+				res.(*ListPattern).SymbolicValue()
+			})
+
+			assert.Equal(t, &ListPattern{
+				generalElement: &TypePattern{val: ANY_SERIALIZABLE},
+			}, res)
+		})
+
+		t.Run("general element pattern matching non-serializable values", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				return %[]lthread
+			`)
+			state.ctx.AddNamedPattern("lthread", &TypePattern{val: ANY_LTHREAD}, false)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.NotEmpty(t, state.errors())
+			assert.NotPanics(t, func() {
+				res.(*ListPattern).SymbolicValue()
+			})
+
+			assert.Equal(t, &ListPattern{
+				generalElement: &TypePattern{val: ANY_SERIALIZABLE},
+			}, res)
+		})
+
+		t.Run("undefined element pattern", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				return %[mytype]
+			`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.NotEmpty(t, state.errors())
+			assert.NotPanics(t, func() {
+				res.(*ListPattern).SymbolicValue()
+			})
+
+			assert.Equal(t, &ListPattern{
+				elements: []Pattern{&TypePattern{val: ANY_SERIALIZABLE}},
+			}, res)
+		})
+
+		t.Run("element pattern matching non-serializable values", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				return %[lthread]
+			`)
+			state.ctx.AddNamedPattern("lthread", &TypePattern{val: ANY_LTHREAD}, false)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.NotEmpty(t, state.errors())
+			assert.NotPanics(t, func() {
+				res.(*ListPattern).SymbolicValue()
+			})
+
+			assert.Equal(t, &ListPattern{
+				elements: []Pattern{&TypePattern{val: ANY_SERIALIZABLE}},
+			}, res)
+		})
 	})
 
 	t.Run("tuple pattern literal", func(t *testing.T) {
@@ -7554,6 +7627,78 @@ func TestSymbolicEval(t *testing.T) {
 				generalElement: &TypePattern{val: ANY_SERIALIZABLE},
 			}, res)
 		})
+
+		t.Run("general element pattern matching non-serializable values", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				pattern p = #[]ns
+				return %p
+			`)
+
+			_, ok := any(ANY_NAMESPACE).(Serializable)
+			if !assert.False(t, ok) {
+				return
+			}
+			if !assert.False(t, ANY_NAMESPACE.IsMutable()) {
+				return
+			}
+			state.ctx.AddNamedPattern("ns", &TypePattern{val: ANY_NAMESPACE}, false)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.NotEmpty(t, state.errors())
+			assert.NotPanics(t, func() {
+				res.(*TuplePattern).SymbolicValue()
+			})
+
+			assert.Equal(t, &TuplePattern{
+				generalElement: &TypePattern{val: ANY_SERIALIZABLE},
+			}, res)
+		})
+
+		t.Run("undefined element pattern", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				pattern p = #[mytype]
+				return %p
+			`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.NotEmpty(t, state.errors())
+			assert.NotPanics(t, func() {
+				res.(*TuplePattern).SymbolicValue()
+			})
+
+			assert.Equal(t, &TuplePattern{
+				elements: []Pattern{&TypePattern{val: ANY_SERIALIZABLE}},
+			}, res)
+		})
+
+		t.Run("element pattern matchin non-serializable values", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				pattern p = #[ns]
+				return %p
+			`)
+			_, ok := any(ANY_NAMESPACE).(Serializable)
+			if !assert.False(t, ok) {
+				return
+			}
+			if !assert.False(t, ANY_NAMESPACE.IsMutable()) {
+				return
+			}
+			state.ctx.AddNamedPattern("ns", &TypePattern{val: ANY_NAMESPACE}, false)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.NotEmpty(t, state.errors())
+			assert.NotPanics(t, func() {
+				res.(*TuplePattern).SymbolicValue()
+			})
+
+			assert.Equal(t, &TuplePattern{
+				elements: []Pattern{&TypePattern{val: ANY_SERIALIZABLE}},
+			}, res)
+		})
+
 	})
 
 	t.Run("union pattern", func(t *testing.T) {

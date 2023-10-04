@@ -31,6 +31,7 @@ var (
 		(*IntRangePattern)(nil), (*FloatRangePattern)(nil), (*EventPattern)(nil), (*MutationPattern)(nil), (*OptionalPattern)(nil),
 		(*FunctionPattern)(nil),
 		(*DifferencePattern)(nil),
+		(*IntersectionPattern)(nil),
 	}
 	_ = []GroupPattern{
 		(*NamedSegmentPathPattern)(nil),
@@ -2400,6 +2401,8 @@ type IntersectionPattern struct {
 	NotCallablePatternMixin
 	cases []Pattern //if nil, any union pattern is matched
 	value SymbolicValue
+
+	SerializableMixin
 }
 
 func NewIntersectionPattern(cases []Pattern) (*IntersectionPattern, error) {

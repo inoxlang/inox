@@ -4151,15 +4151,26 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 				return nil, err
 			}
 
+			//TODO: cache .SymbolicValue() for big patterns
+			if _, ok := AsSerializable(pattern.generalElement.SymbolicValue()).(Serializable); !ok {
+				pattern.generalElement = &TypePattern{val: ANY_SERIALIZABLE}
+				state.addError(makeSymbolicEvalError(n.GeneralElement, state, ONLY_SERIALIZABLE_VALUE_PATTERNS_ARE_ALLOWED))
+			}
 		} else {
 			pattern.elements = make([]Pattern, 0)
 
 			for _, e := range n.Elements {
-				symbolicVal, err := symbolicallyEvalPatternNode(e, state)
+				elemPattern, err := symbolicallyEvalPatternNode(e, state)
 				if err != nil {
 					return nil, err
 				}
-				pattern.elements = append(pattern.elements, symbolicVal)
+
+				if _, ok := AsSerializable(elemPattern.SymbolicValue()).(Serializable); !ok {
+					elemPattern = &TypePattern{val: ANY_SERIALIZABLE}
+					state.addError(makeSymbolicEvalError(e, state, ONLY_SERIALIZABLE_VALUE_PATTERNS_ARE_ALLOWED))
+				}
+
+				pattern.elements = append(pattern.elements, elemPattern)
 			}
 		}
 
@@ -4174,9 +4185,14 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 				return nil, err
 			}
 
-			if pattern.generalElement.SymbolicValue().IsMutable() {
+			generalElement := pattern.generalElement.SymbolicValue()
+
+			if generalElement.IsMutable() {
 				state.addError(makeSymbolicEvalError(n.GeneralElement, state, ELEM_PATTERNS_OF_TUPLE_SHOUD_MATCH_ONLY_IMMUTABLES))
 				pattern.generalElement = &TypePattern{val: ANY_SERIALIZABLE}
+			} else if _, ok := AsSerializable(generalElement).(Serializable); !ok {
+				pattern.generalElement = &TypePattern{val: ANY_SERIALIZABLE}
+				state.addError(makeSymbolicEvalError(n.GeneralElement, state, ONLY_SERIALIZABLE_VALUE_PATTERNS_ARE_ALLOWED))
 			}
 
 		} else {
@@ -4188,9 +4204,14 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 					return nil, err
 				}
 
-				if elemPattern.SymbolicValue().IsMutable() {
+				element := elemPattern.SymbolicValue()
+
+				if element.IsMutable() {
 					state.addError(makeSymbolicEvalError(e, state, ELEM_PATTERNS_OF_TUPLE_SHOUD_MATCH_ONLY_IMMUTABLES))
 					elemPattern = &TypePattern{val: ANY_SERIALIZABLE}
+				} else if _, ok := AsSerializable(element).(Serializable); !ok {
+					elemPattern = &TypePattern{val: ANY_SERIALIZABLE}
+					state.addError(makeSymbolicEvalError(e, state, ONLY_SERIALIZABLE_VALUE_PATTERNS_ARE_ALLOWED))
 				}
 
 				pattern.elements = append(pattern.elements, elemPattern)
