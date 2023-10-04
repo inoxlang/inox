@@ -2,6 +2,7 @@ package utils
 
 import (
 	"context"
+	"fmt"
 	"math"
 	"strings"
 	"time"
@@ -75,7 +76,7 @@ func FindClosest[T any](search ClosestSearch[T]) (sourceIndex int, minDistance i
 		matrix := search.ComputeLevenshteinMatrix(src, search.Target)
 		distance := levenshtein.DistanceForMatrix(matrix)
 
-		if distance < minDistance {
+		if distance < minDistance && distance <= search.MaxDifferences {
 			minDistance = distance
 			sourceIndex = i
 		}
@@ -96,6 +97,11 @@ func FindClosest[T any](search ClosestSearch[T]) (sourceIndex int, minDistance i
 }
 
 func FindClosestString(ctx context.Context, candidates []string, v string, maxDifferences int) (string, int, bool) {
+
+	if maxDifferences <= 0 {
+		panic(fmt.Errorf("invalid maxDifferences argument: %#v", maxDifferences))
+	}
+
 	index, distance := FindClosest(ClosestSearch[[]rune]{
 		Context:        ctx,
 		MaxDifferences: maxDifferences,
