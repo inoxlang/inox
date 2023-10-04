@@ -361,7 +361,7 @@ func registerFilesystemMethodHandlers(server *lsp.Server) {
 
 	server.OnCustom(jsonrpc.MethodInfo{
 		Name:       WRITE_UPLOAD_PART_METHOD,
-		RateLimits: []int{15, 30, 100},
+		RateLimits: []int{10, 100, 300},
 		NewRequest: func() interface{} {
 			return &FsWriteUploadPartParams{}
 		},
