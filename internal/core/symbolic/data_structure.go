@@ -1216,6 +1216,12 @@ func (obj *Object) initNewProp(key string, value Serializable, static Pattern) {
 	obj.static[key] = static
 }
 
+func (o *Object) ReadonlyObject() *Object {
+	readonly := *o
+	readonly.readonly = true
+	return &readonly
+}
+
 func (obj *Object) TestExact(v SymbolicValue) bool {
 	return obj.test(v, true)
 }

@@ -2143,14 +2143,15 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 					}
 					static = _propType.(Pattern)
 					if !static.TestValue(propVal) {
-						state.addError(makeSymbolicEvalError(p.Value, state, fmtNotAssignableToPropOfType(propVal, static)))
-						propVal = static.SymbolicValue()
+						expected := static.SymbolicValue()
+						state.addError(makeSymbolicEvalError(p.Value, state, fmtNotAssignableToPropOfType(propVal, expected)))
+						propVal = expected
 					}
 				} else if deeperMismatch {
 					options.setActualValueMismatchIfNotNil()
 				} else if expectedPropVal != nil && !deeperMismatch && !expectedPropVal.Test(propVal) {
 					options.setActualValueMismatchIfNotNil()
-					state.addError(makeSymbolicEvalError(p.Value, state, fmtNotAssignableToPropOfExpectedValue(propVal, expectedPropVal)))
+					state.addError(makeSymbolicEvalError(p.Value, state, fmtNotAssignableToPropOfType(propVal, expectedPropVal)))
 				}
 
 				serializable, ok = propVal.(Serializable)
@@ -2262,7 +2263,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 					options.setActualValueMismatchIfNotNil()
 				} else if expectedPropVal != nil && !deeperMismatch && !expectedPropVal.Test(v) {
 					options.setActualValueMismatchIfNotNil()
-					state.addError(makeSymbolicEvalError(p.Value, state, fmtNotAssignableToPropOfExpectedValue(v, expectedPropVal)))
+					state.addError(makeSymbolicEvalError(p.Value, state, fmtNotAssignableToPropOfType(v, expectedPropVal)))
 				}
 
 				if v.IsMutable() {

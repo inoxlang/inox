@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	parse "github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 const (
@@ -186,12 +187,14 @@ func fmtVarOfTypeCannotBeNarrowedToAn(variable SymbolicValue, val SymbolicValue)
 	return fmt.Sprintf("variable of type %s cannot be narrowed to a(n) %s", Stringify(variable), Stringify(val))
 }
 
-func fmtNotAssignableToPropOfType(a SymbolicValue, b Pattern) string {
-	return fmt.Sprintf("a(n) %s is not assignable to a property of type %s", Stringify(a), Stringify(b.SymbolicValue()))
-}
+func fmtNotAssignableToPropOfType(a SymbolicValue, b SymbolicValue) string {
+	examples := GetExamples(b, ExampleComputationContext{NonMatchingValue: a})
+	examplesString := ""
+	if len(examples) > 0 {
+		examplesString = fmtExpectedValueExamples(examples)
+	}
 
-func fmtNotAssignableToPropOfExpectedValue(a SymbolicValue, b SymbolicValue) string {
-	return fmt.Sprintf("a(n) %s is not assignable to a property of expected value %s", Stringify(a), Stringify(b))
+	return fmt.Sprintf("a(n) %s is not assignable to a property of type %s%s", Stringify(a), Stringify(b), examplesString)
 }
 
 func fmtNotAssignableToEntryOfExpectedValue(a SymbolicValue, b SymbolicValue) string {
@@ -199,7 +202,13 @@ func fmtNotAssignableToEntryOfExpectedValue(a SymbolicValue, b SymbolicValue) st
 }
 
 func fmtNotAssignableToElementOfValue(a SymbolicValue, b SymbolicValue) string {
-	return fmt.Sprintf("a(n) %s is not assignable to an element of value %s", Stringify(a), Stringify(b))
+	examples := GetExamples(b, ExampleComputationContext{NonMatchingValue: a})
+	examplesString := ""
+	if len(examples) > 0 {
+		examplesString = fmtExpectedValueExamples(examples)
+	}
+
+	return fmt.Sprintf("a(n) %s is not assignable to an element of value %s%s", Stringify(a), Stringify(b), examplesString)
 }
 
 func fmtSeqOfXNotAssignableToSliceOfTheValue(a SymbolicValue, b SymbolicValue) string {
@@ -219,15 +228,35 @@ func fmtUnexpectedPropertyDidYouMeanElse(name string, suggestion string) string 
 }
 
 func fmtUnexpectedElemInListAnnotated(e SymbolicValue, elemType Pattern) string {
-	return fmt.Sprintf("unexpected element of type %s in a list of %s (annotated)", Stringify(e), Stringify(elemType.SymbolicValue()))
+	expectedElem := elemType.SymbolicValue()
+	examples := GetExamples(expectedElem, ExampleComputationContext{NonMatchingValue: e})
+	examplesString := ""
+	if len(examples) > 0 {
+		examplesString = fmtExpectedValueExamples(examples)
+	}
+
+	return fmt.Sprintf("unexpected element of type %s in a list of %s (annotated)%s", Stringify(e), Stringify(expectedElem), examplesString)
 }
 
 func fmtUnexpectedElemInListofValues(e SymbolicValue, elemType SymbolicValue) string {
-	return fmt.Sprintf("unexpected element of type %s in a list of %s", Stringify(e), Stringify(elemType))
+	examples := GetExamples(elemType, ExampleComputationContext{NonMatchingValue: e})
+	examplesString := ""
+	if len(examples) > 0 {
+		examplesString = fmtExpectedValueExamples(examples)
+	}
+
+	return fmt.Sprintf("unexpected element of type %s in a list of %s%s", Stringify(e), Stringify(elemType), examplesString)
 }
 
 func fmtUnexpectedElemInTupleAnnotated(e SymbolicValue, elemType Pattern) string {
-	return fmt.Sprintf("unexpected element of type %s in a tuple of %s (annotated)", Stringify(e), Stringify(elemType.SymbolicValue()))
+	expectedElem := elemType.SymbolicValue()
+	examples := GetExamples(expectedElem, ExampleComputationContext{NonMatchingValue: e})
+	examplesString := ""
+	if len(examples) > 0 {
+		examplesString = fmtExpectedValueExamples(examples)
+	}
+
+	return fmt.Sprintf("unexpected element of type %s in a tuple of %s (annotated)%s", Stringify(e), Stringify(expectedElem), examplesString)
 }
 
 func FmtCannotAssignPropertyOf(v SymbolicValue) string {
@@ -501,4 +530,10 @@ func FmtElementError(index int, err error) error {
 
 func FmtGeneralElementError(err error) error {
 	return fmt.Errorf("general element: %w", err)
+}
+
+func fmtExpectedValueExamples(examples []MatchingValueExample) string {
+	return "; expected value examples: \n" + strings.Join(utils.MapSlice(examples, func(e MatchingValueExample) string {
+		return "• " + Stringify(e.Value)
+	}), "\n")
 }

@@ -712,7 +712,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				makeSymbolicEvalError(objectProp.Value, state,
-					fmtNotAssignableToPropOfExpectedValue(NewInt(1), ANY_STR_LIKE)),
+					fmtNotAssignableToPropOfType(NewInt(1), ANY_STR_LIKE)),
 			}, state.errors())
 			assert.Equal(t, ANY, res)
 		})
@@ -729,7 +729,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				makeSymbolicEvalError(objectProp.Value, state,
-					fmtNotAssignableToPropOfExpectedValue(NewInt(1), ANY_STR_LIKE)),
+					fmtNotAssignableToPropOfType(NewInt(1), ANY_STR_LIKE)),
 			}, state.errors())
 			assert.Equal(t, ANY, res)
 		})
@@ -1411,7 +1411,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(valueNode, state, fmtNotAssignableToPropOfType(ANY_INT, state.ctx.ResolveNamedPattern("str"))),
+				makeSymbolicEvalError(valueNode, state, fmtNotAssignableToPropOfType(ANY_INT, state.ctx.ResolveNamedPattern("str").SymbolicValue())),
 			}, state.errors())
 			assert.Equal(t, &Object{
 				entries: map[string]Serializable{
@@ -2691,7 +2691,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(objectProp.Value, state, fmtNotAssignableToPropOfExpectedValue(NewString("a"), ANY_INT)),
+				makeSymbolicEvalError(objectProp.Value, state, fmtNotAssignableToPropOfType(NewString("a"), ANY_INT)),
 			}, state.errors())
 			assert.Nil(t, res)
 		})
@@ -3540,7 +3540,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(propertyValue, state, fmtNotAssignableToPropOfExpectedValue(NewString("a"), ANY_INT)),
+				makeSymbolicEvalError(propertyValue, state, fmtNotAssignableToPropOfType(NewString("a"), ANY_INT)),
 			}, state.errors())
 
 			assert.Equal(t, ANY_INT, res)
@@ -4266,7 +4266,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(propertyValue, state, fmtNotAssignableToPropOfExpectedValue(NewString("a"), ANY_INT)),
+				makeSymbolicEvalError(propertyValue, state, fmtNotAssignableToPropOfType(NewString("a"), ANY_INT)),
 			}, state.errors())
 
 			assert.Equal(t, ANY_INT, res)
@@ -5337,7 +5337,7 @@ func TestSymbolicEval(t *testing.T) {
 
 				assert.Equal(t, []SymbolicEvaluationError{
 					makeSymbolicEvalError(objectProp.Value, state,
-						fmtNotAssignableToPropOfExpectedValue(NewInt(1), ANY_STR_LIKE)),
+						fmtNotAssignableToPropOfType(NewInt(1), ANY_STR_LIKE)),
 				}, state.errors())
 			})
 
@@ -5385,7 +5385,7 @@ func TestSymbolicEval(t *testing.T) {
 
 				assert.Equal(t, []SymbolicEvaluationError{
 					makeSymbolicEvalError(objectProp.Value, state,
-						fmtNotAssignableToPropOfExpectedValue(NewInt(1), ANY_STR)),
+						fmtNotAssignableToPropOfType(NewInt(1), ANY_STR)),
 				}, state.errors())
 			})
 
@@ -5433,7 +5433,7 @@ func TestSymbolicEval(t *testing.T) {
 
 				assert.Equal(t, []SymbolicEvaluationError{
 					makeSymbolicEvalError(objectProp.Value, state,
-						fmtNotAssignableToPropOfExpectedValue(NewInt(1), ANY_STR_LIKE)),
+						fmtNotAssignableToPropOfType(NewInt(1), ANY_STR_LIKE)),
 				}, state.errors())
 			})
 
@@ -5480,7 +5480,7 @@ func TestSymbolicEval(t *testing.T) {
 
 				assert.Equal(t, []SymbolicEvaluationError{
 					makeSymbolicEvalError(objectProp.Value, state,
-						fmtNotAssignableToPropOfExpectedValue(NewInt(1), ANY_STR_LIKE)),
+						fmtNotAssignableToPropOfType(NewInt(1), ANY_STR_LIKE)),
 				}, state.errors())
 			})
 
@@ -5544,7 +5544,7 @@ func TestSymbolicEval(t *testing.T) {
 
 				assert.Equal(t, []SymbolicEvaluationError{
 					makeSymbolicEvalError(objectProp.Value, state,
-						fmtNotAssignableToPropOfExpectedValue(NewInt(1), ANY_STR_LIKE)),
+						fmtNotAssignableToPropOfType(NewInt(1), ANY_STR_LIKE)),
 				}, state.errors())
 			})
 
@@ -5748,7 +5748,7 @@ func TestSymbolicEval(t *testing.T) {
 
 				assert.Equal(t, []SymbolicEvaluationError{
 					makeSymbolicEvalError(objectProp.Value, state,
-						fmtNotAssignableToPropOfExpectedValue(NewInt(1), NewString("x"))),
+						fmtNotAssignableToPropOfType(NewInt(1), NewString("x"))),
 				}, state.errors())
 			})
 
@@ -6023,7 +6023,7 @@ func TestSymbolicEval(t *testing.T) {
 
 				assert.Equal(t, []SymbolicEvaluationError{
 					makeSymbolicEvalError(objectProp.Value, state,
-						fmtNotAssignableToPropOfExpectedValue(NewInt(1), NewString("x"))),
+						fmtNotAssignableToPropOfType(NewInt(1), NewString("x"))),
 				}, state.errors())
 			})
 
@@ -6197,7 +6197,7 @@ func TestSymbolicEval(t *testing.T) {
 
 				assert.Equal(t, []SymbolicEvaluationError{
 					makeSymbolicEvalError(objectProp.Value, state,
-						fmtNotAssignableToPropOfExpectedValue(NewInt(1), ANY_STR)),
+						fmtNotAssignableToPropOfType(NewInt(1), ANY_STR)),
 				}, state.errors())
 			})
 
