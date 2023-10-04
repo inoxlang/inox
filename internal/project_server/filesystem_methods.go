@@ -593,7 +593,7 @@ func getLspFilesystem(session *jsonrpc.Session) (*Filesystem, bool) {
 }
 
 // unsavedDocumentSyncData contains data about the synchronization of an unsaved document.
-// The handler of WRITE_FILE_METHOD alaways attempts to update the unsaved document with the new content of the file.
+// The handler of WRITE_FILE_METHOD always attempts to update the unsaved document with the new content of the file.
 type unsavedDocumentSyncData struct {
 	lock sync.Mutex
 
@@ -605,7 +605,7 @@ type unsavedDocumentSyncData struct {
 }
 
 // reactToDidChange updates the unsavedDocumentSyncData & reverse the last synchronization
-// if it happened too recently (likely during a sequence of LSP changes close).
+// if it happened too recently (likely during a sequence of LSP changes).
 func (d *unsavedDocumentSyncData) reactToDidChange(fls *Filesystem) {
 	d.lock.Lock()
 	defer d.lock.Unlock()

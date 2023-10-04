@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"runtime/debug"
+	"slices"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -26,6 +27,14 @@ import (
 const (
 	DEFAULT_DEBUG_COMMAND_TIMEOUT = 2 * time.Second
 	EXCEPTION_ERROR_FILTER        = "exception"
+
+	DEFAULT_MAX_SESSION_COUNT = 2
+)
+
+var (
+	ErrUnknowSessionId                = errors.New("unknown session id")
+	ErrSessionAlreadyExists           = errors.New("session already exists")
+	ErrMaxParallelDebugSessionReached = errors.New("the maximum number of parallel debug sessions is already reached")
 )
 
 type DebugInitializeParams struct {
@@ -124,6 +133,14 @@ func (sessions *DebugSessions) AddSession(s *DebugSession) {
 	sessions.sessions = append(sessions.sessions, s)
 }
 
+func (sessions *DebugSessions) RemoveSession(s *DebugSession) {
+	sessions.sessionListLock.Lock()
+	defer sessions.sessionListLock.Unlock()
+	sessions.sessions = slices.DeleteFunc(sessions.sessions, func(ds *DebugSession) bool {
+		return ds == s
+	})
+}
+
 type DebugSession struct {
 	id                             string
 	programPath                    string
@@ -198,7 +215,7 @@ func registerDebugMethodHandlers(
 	server *lsp.Server, opts LSPServerConfiguration,
 ) {
 
-	getDebugSession := func(session *jsonrpc.Session, sessionId string) *DebugSession {
+	getDebugSession := func(session *jsonrpc.Session, sessionId string) (*DebugSession, error) {
 		sessionData := getLockedSessionData(session)
 
 		debugSessions := sessionData.debugSessions
@@ -208,26 +225,47 @@ func registerDebugMethodHandlers(
 		}
 		sessionData.lock.Unlock()
 
+		for _, s := range debugSessions.sessions {
+			if s.id == sessionId {
+				return s, nil
+			}
+		}
+
+		return nil, ErrUnknowSessionId
+	}
+
+	createDebugSession := func(session *jsonrpc.Session, sessionId string) (*DebugSession, error) {
+		sessionData := getLockedSessionData(session)
+
+		debugSessions := sessionData.debugSessions
+		if debugSessions == nil {
+			debugSessions = &DebugSessions{}
+			sessionData.debugSessions = debugSessions
+		}
+		sessionData.lock.Unlock()
+
+		if len(debugSessions.sessions) >= DEFAULT_MAX_SESSION_COUNT {
+			return nil, ErrMaxParallelDebugSessionReached
+		}
+
 		var debugSession *DebugSession
 		for _, s := range debugSessions.sessions {
 			if s.id == sessionId {
-				debugSession = s
+				return nil, ErrSessionAlreadyExists
 			}
 		}
 
-		if debugSession == nil {
-			debugSession = &DebugSession{
-				id:                             sessionId,
-				sourcePathToInitialBreakpoints: make(map[string][]core.BreakpointInfo),
-				nextInitialBreakpointId:        core.INITIAL_BREAKPOINT_ID,
+		debugSession = &DebugSession{
+			id:                             sessionId,
+			sourcePathToInitialBreakpoints: make(map[string][]core.BreakpointInfo),
+			nextInitialBreakpointId:        core.INITIAL_BREAKPOINT_ID,
 
-				variablesReferences: make(map[core.StateId]*variablesReferences, 0),
-			}
-			debugSession.nextSeq.Store(1)
-			debugSessions.AddSession(debugSession)
+			variablesReferences: make(map[core.StateId]*variablesReferences, 0),
 		}
+		debugSession.nextSeq.Store(1)
+		debugSessions.AddSession(debugSession)
 
-		return debugSession
+		return debugSession, nil
 	}
 
 	server.OnCustom(jsonrpc.MethodInfo{
@@ -240,7 +278,21 @@ func registerDebugMethodHandlers(
 			params := req.(*DebugInitializeParams)
 			dapRequest := params.Request
 
-			debugSession := getDebugSession(session, params.SessionId)
+			debugSession, err := createDebugSession(session, params.SessionId)
+			if err != nil {
+				return dap.InitializeResponse{
+					Response: dap.Response{
+						RequestSeq: dapRequest.Seq,
+						Success:    false,
+						ProtocolMessage: dap.ProtocolMessage{
+							Seq:  0,
+							Type: "response",
+						},
+						Command: dapRequest.Command,
+						Message: err.Error(),
+					},
+				}, nil
+			}
 
 			debugSession.columnsStartAt1 = dapRequest.Arguments.ColumnsStartAt1
 			debugSession.lineStartsAt1 = dapRequest.Arguments.LinesStartAt1
@@ -279,7 +331,22 @@ func registerDebugMethodHandlers(
 			params := req.(*DebugConfigurationDoneParams)
 			dapRequest := params.Request
 
-			debugSession := getDebugSession(session, params.SessionId)
+			debugSession, err := getDebugSession(session, params.SessionId)
+
+			if err != nil {
+				return dap.ConfigurationDoneResponse{
+					Response: dap.Response{
+						RequestSeq: dapRequest.Seq,
+						Success:    false,
+						ProtocolMessage: dap.ProtocolMessage{
+							Seq:  0,
+							Type: "response",
+						},
+						Command: dapRequest.Command,
+						Message: err.Error(),
+					},
+				}, nil
+			}
 
 			if !debugSession.configurationDone.CompareAndSwap(false, true) {
 				return dap.ConfigurationDoneResponse{
@@ -320,7 +387,22 @@ func registerDebugMethodHandlers(
 			params := req.(*DebugLaunchRequestParams)
 			dapRequest := params.Request
 
-			debugSession := getDebugSession(session, params.SessionId)
+			debugSession, err := getDebugSession(session, params.SessionId)
+
+			if err != nil {
+				return dap.LaunchResponse{
+					Response: dap.Response{
+						RequestSeq: dapRequest.Seq,
+						Success:    false,
+						ProtocolMessage: dap.ProtocolMessage{
+							Seq:  0,
+							Type: "response",
+						},
+						Command: dapRequest.Command,
+						Message: err.Error(),
+					},
+				}, nil
+			}
 
 			fls, ok := getLspFilesystem(session)
 			if !ok {
@@ -343,7 +425,7 @@ func registerDebugMethodHandlers(
 			}
 
 			var launchArgs DebugLaunchArgs
-			err := json.Unmarshal(utils.Must(dapRequest.Arguments.MarshalJSON()), &launchArgs)
+			err = json.Unmarshal(utils.Must(dapRequest.Arguments.MarshalJSON()), &launchArgs)
 			if err != nil {
 				return nil, jsonrpc.ResponseError{
 					Code:    jsonrpc.InternalError.Code,
@@ -395,6 +477,17 @@ func registerDebugMethodHandlers(
 					if e := recover(); e != nil {
 						err := utils.ConvertPanicValueToError(e)
 						logs.Println(fmt.Errorf("%w: %s", err, string(debug.Stack())))
+					}
+				}()
+
+				defer func() {
+					//remove the debug session
+
+					sessionData := getLockedSessionData(session)
+					debugSessions := sessionData.debugSessions
+					sessionData.lock.Unlock()
+					if debugSessions != nil {
+						debugSessions.RemoveSession(debugSession)
 					}
 				}()
 
@@ -450,7 +543,22 @@ func registerDebugMethodHandlers(
 			params := req.(*DebugThreadsParams)
 			dapRequest := params.Request
 
-			debugSession := getDebugSession(session, params.SessionId)
+			debugSession, err := getDebugSession(session, params.SessionId)
+
+			if err != nil {
+				return dap.ThreadsResponse{
+					Response: dap.Response{
+						RequestSeq: dapRequest.Seq,
+						Success:    false,
+						ProtocolMessage: dap.ProtocolMessage{
+							Seq:  0,
+							Type: "response",
+						},
+						Command: dapRequest.Command,
+						Message: err.Error(),
+					},
+				}, nil
+			}
 
 			var threads []dap.Thread
 
@@ -488,7 +596,22 @@ func registerDebugMethodHandlers(
 			params := req.(*DebugStackTraceParams)
 			dapRequest := params.Request
 
-			debugSession := getDebugSession(session, params.SessionId)
+			debugSession, err := getDebugSession(session, params.SessionId)
+
+			if err != nil {
+				return dap.StackTraceResponse{
+					Response: dap.Response{
+						RequestSeq: dapRequest.Seq,
+						Success:    false,
+						ProtocolMessage: dap.ProtocolMessage{
+							Seq:  0,
+							Type: "response",
+						},
+						Command: dapRequest.Command,
+						Message: err.Error(),
+					},
+				}, nil
+			}
 
 			var stackFrames []dap.StackFrame
 			framesChan := make(chan []dap.StackFrame)
@@ -573,7 +696,22 @@ func registerDebugMethodHandlers(
 			params := req.(*DebugScopesParams)
 			dapRequest := params.Request
 
-			debugSession := getDebugSession(session, params.SessionId)
+			debugSession, err := getDebugSession(session, params.SessionId)
+
+			if err != nil {
+				return dap.ScopesResponse{
+					Response: dap.Response{
+						RequestSeq: dapRequest.Seq,
+						Success:    false,
+						ProtocolMessage: dap.ProtocolMessage{
+							Seq:  0,
+							Type: "response",
+						},
+						Command: dapRequest.Command,
+						Message: err.Error(),
+					},
+				}, nil
+			}
 
 			var scopes []dap.Scope
 			scopesChan := make(chan []dap.Scope)
@@ -661,7 +799,22 @@ func registerDebugMethodHandlers(
 			params := req.(*DebugVariablesParams)
 			dapRequest := params.Request
 
-			debugSession := getDebugSession(session, params.SessionId)
+			debugSession, err := getDebugSession(session, params.SessionId)
+
+			if err != nil {
+				return dap.VariablesResponse{
+					Response: dap.Response{
+						RequestSeq: dapRequest.Seq,
+						Success:    false,
+						ProtocolMessage: dap.ProtocolMessage{
+							Seq:  0,
+							Type: "response",
+						},
+						Command: dapRequest.Command,
+						Message: err.Error(),
+					},
+				}, nil
+			}
 
 			var variables []dap.Variable
 			varsChan := make(chan []dap.Variable)
@@ -756,7 +909,22 @@ func registerDebugMethodHandlers(
 			params := req.(*DebugSetBreakpointsParams)
 			dapRequest := params.Request
 
-			debugSession := getDebugSession(session, params.SessionId)
+			debugSession, err := getDebugSession(session, params.SessionId)
+
+			if err != nil {
+				return dap.SetBreakpointsResponse{
+					Response: dap.Response{
+						RequestSeq: dapRequest.Seq,
+						Success:    false,
+						ProtocolMessage: dap.ProtocolMessage{
+							Seq:  0,
+							Type: "response",
+						},
+						Command: dapRequest.Command,
+						Message: err.Error(),
+					},
+				}, nil
+			}
 
 			pathWithScheme := dapRequest.Arguments.Source.Path
 			path := strings.TrimPrefix(pathWithScheme, INOX_FS_SCHEME+":")
@@ -928,7 +1096,22 @@ func registerDebugMethodHandlers(
 			params := req.(*DebugSetExceptionBreakpointsParams)
 			dapRequest := params.Request
 
-			debugSession := getDebugSession(session, params.SessionId)
+			debugSession, err := getDebugSession(session, params.SessionId)
+
+			if err != nil {
+				return dap.SetExceptionBreakpointsResponse{
+					Response: dap.Response{
+						RequestSeq: dapRequest.Seq,
+						Success:    false,
+						ProtocolMessage: dap.ProtocolMessage{
+							Seq:  0,
+							Type: "response",
+						},
+						Command: dapRequest.Command,
+						Message: err.Error(),
+					},
+				}, nil
+			}
 
 			//initial exception breakpoints
 			if !debugSession.configurationDone.Load() {
@@ -939,7 +1122,7 @@ func registerDebugMethodHandlers(
 				debugSession.initialExceptionBreakpointsId = id
 				debugSession.initialBreakpointsLock.Unlock()
 
-				return dap.SetBreakpointsResponse{
+				return dap.SetExceptionBreakpointsResponse{
 					Response: dap.Response{
 						RequestSeq: dapRequest.Seq,
 						Success:    true,
@@ -949,7 +1132,7 @@ func registerDebugMethodHandlers(
 						},
 						Command: dapRequest.Command,
 					},
-					Body: dap.SetBreakpointsResponseBody{
+					Body: dap.SetExceptionBreakpointsResponseBody{
 						Breakpoints: []dap.Breakpoint{
 							{
 								Id: int(id),
@@ -1031,7 +1214,22 @@ func registerDebugMethodHandlers(
 			params := req.(*DebugPauseParams)
 			dapRequest := params.Request
 
-			debugSession := getDebugSession(session, params.SessionId)
+			debugSession, err := getDebugSession(session, params.SessionId)
+
+			if err != nil {
+				return dap.PauseResponse{
+					Response: dap.Response{
+						RequestSeq: dapRequest.Seq,
+						Success:    false,
+						ProtocolMessage: dap.ProtocolMessage{
+							Seq:  0,
+							Type: "response",
+						},
+						Command: dapRequest.Command,
+						Message: err.Error(),
+					},
+				}, nil
+			}
 
 			debugger := debugSession.debugger
 			if !debugger.Closed() {
@@ -1064,7 +1262,22 @@ func registerDebugMethodHandlers(
 			params := req.(*DebugContinueParams)
 			dapRequest := params.Request
 
-			debugSession := getDebugSession(session, params.SessionId)
+			debugSession, err := getDebugSession(session, params.SessionId)
+
+			if err != nil {
+				return dap.ContinueResponse{
+					Response: dap.Response{
+						RequestSeq: dapRequest.Seq,
+						Success:    false,
+						ProtocolMessage: dap.ProtocolMessage{
+							Seq:  0,
+							Type: "response",
+						},
+						Command: dapRequest.Command,
+						Message: err.Error(),
+					},
+				}, nil
+			}
 
 			debugger := debugSession.debugger
 			if !debugger.Closed() {
@@ -1102,7 +1315,22 @@ func registerDebugMethodHandlers(
 			params := req.(*DebugNextParams)
 			dapRequest := params.Request
 
-			debugSession := getDebugSession(session, params.SessionId)
+			debugSession, err := getDebugSession(session, params.SessionId)
+
+			if err != nil {
+				return dap.NextResponse{
+					Response: dap.Response{
+						RequestSeq: dapRequest.Seq,
+						Success:    false,
+						ProtocolMessage: dap.ProtocolMessage{
+							Seq:  0,
+							Type: "response",
+						},
+						Command: dapRequest.Command,
+						Message: err.Error(),
+					},
+				}, nil
+			}
 
 			debugger := debugSession.debugger
 			if !debugger.Closed() {
@@ -1136,7 +1364,22 @@ func registerDebugMethodHandlers(
 			params := req.(*DebugStepInParams)
 			dapRequest := params.Request
 
-			debugSession := getDebugSession(session, params.SessionId)
+			debugSession, err := getDebugSession(session, params.SessionId)
+
+			if err != nil {
+				return dap.StepInResponse{
+					Response: dap.Response{
+						RequestSeq: dapRequest.Seq,
+						Success:    false,
+						ProtocolMessage: dap.ProtocolMessage{
+							Seq:  0,
+							Type: "response",
+						},
+						Command: dapRequest.Command,
+						Message: err.Error(),
+					},
+				}, nil
+			}
 
 			debugger := debugSession.debugger
 			if !debugger.Closed() {
@@ -1170,7 +1413,22 @@ func registerDebugMethodHandlers(
 			params := req.(*DebugStepOutParams)
 			dapRequest := params.Request
 
-			debugSession := getDebugSession(session, params.SessionId)
+			debugSession, err := getDebugSession(session, params.SessionId)
+
+			if err != nil {
+				return dap.StepOutResponse{
+					Response: dap.Response{
+						RequestSeq: dapRequest.Seq,
+						Success:    false,
+						ProtocolMessage: dap.ProtocolMessage{
+							Seq:  0,
+							Type: "response",
+						},
+						Command: dapRequest.Command,
+						Message: err.Error(),
+					},
+				}, nil
+			}
 
 			debugger := debugSession.debugger
 			if !debugger.Closed() {
@@ -1204,7 +1462,22 @@ func registerDebugMethodHandlers(
 			params := req.(*DebugDisconnectParams)
 			dapRequest := params.Request
 
-			debugSession := getDebugSession(session, params.SessionId)
+			debugSession, err := getDebugSession(session, params.SessionId)
+			if err != nil {
+				return dap.DisconnectResponse{
+					Response: dap.Response{
+						RequestSeq: dapRequest.Seq,
+						Success:    false,
+						ProtocolMessage: dap.ProtocolMessage{
+							Seq:  0,
+							Type: "response",
+						},
+						Command: dapRequest.Command,
+						Message: err.Error(),
+					},
+				}, nil
+			}
+
 			debugger := debugSession.debugger
 
 			doneChan := make(chan struct{})
@@ -1216,6 +1489,16 @@ func registerDebugMethodHandlers(
 						doneChan <- struct{}{}
 					},
 				}
+
+				defer func() {
+					//remove session
+					sessionData := getLockedSessionData(session)
+					debugSessions := sessionData.debugSessions
+					sessionData.lock.Unlock()
+					if debugSessions != nil {
+						debugSessions.RemoveSession(debugSession)
+					}
+				}()
 
 				select {
 				case <-doneChan:
