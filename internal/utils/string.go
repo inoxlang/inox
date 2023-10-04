@@ -56,6 +56,7 @@ type ClosestSearch[T any] struct {
 	GetSourceI               func(i int) (source T, ok bool)
 	OptionalFilter           func(source T, target T) bool
 	ComputeLevenshteinMatrix func(source T, target T) [][]int
+	IsRelevant               func(candidate T, distance int) bool //can be nil
 	Context                  context.Context
 }
 
@@ -76,7 +77,9 @@ func FindClosest[T any](search ClosestSearch[T]) (sourceIndex int, minDistance i
 		matrix := search.ComputeLevenshteinMatrix(src, search.Target)
 		distance := levenshtein.DistanceForMatrix(matrix)
 
-		if distance < minDistance && distance <= search.MaxDifferences {
+		if distance < minDistance &&
+			distance <= search.MaxDifferences &&
+			(search.IsRelevant == nil || search.IsRelevant(src, distance)) {
 			minDistance = distance
 			sourceIndex = i
 		}
@@ -120,8 +123,18 @@ func FindClosestString(ctx context.Context, candidates []string, v string, maxDi
 				Matches: levenshtein.IdenticalRunes,
 			})
 		},
+		IsRelevant: func(candidate []rune, distance int) bool {
+			shortestLength := min(len(candidate), len(v))
+
+			if shortestLength <= 2 && distance >= 2 {
+				return false
+			}
+
+			return true
+		},
 	})
 	if index >= 0 {
+
 		return candidates[index], distance, true
 	}
 	return "", -1, false
