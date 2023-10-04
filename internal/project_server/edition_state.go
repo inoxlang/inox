@@ -143,7 +143,7 @@ func (s *projectFileState) startFileUpload(session *jsonrpc.Session, firstPart [
 		s.modifyingSession = session
 	} else if s.modifyingSession != session {
 		return "", ErrFileBeingCreatedOrModifiedByAnotherSession
-	} else if info != s.uploadInfo {
+	} else {
 		return "", ErrFileBeingCreatedBySameSession
 	}
 
@@ -153,6 +153,7 @@ func (s *projectFileState) startFileUpload(session *jsonrpc.Session, firstPart [
 		overwrite: info.overwrite,
 	}
 	s.uploadParts = append(s.uploadParts, slices.Clone(firstPart))
+	s.modifyingSession = session
 	return s.uploadInfo.id, nil
 }
 
