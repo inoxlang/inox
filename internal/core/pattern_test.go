@@ -1,8 +1,11 @@
 package core
 
 import (
+	"runtime"
 	"testing"
 
+	"github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -141,15 +144,14 @@ func TestObjectPattern(t *testing.T) {
 	NewGlobalState(ctx)
 	defer ctx.CancelGracefully()
 
-	noProps := &ObjectPattern{entryPatterns: map[string]Pattern{}, inexact: false}
-	inexactNoProps := &ObjectPattern{entryPatterns: map[string]Pattern{}, inexact: true}
-	singleProp := &ObjectPattern{entryPatterns: map[string]Pattern{"a": INT_PATTERN}, inexact: false}
-	inexactSingleProp := &ObjectPattern{entryPatterns: map[string]Pattern{"a": INT_PATTERN}, inexact: true}
-	singleOptionalProp := &ObjectPattern{
-		entryPatterns:   map[string]Pattern{"a": INT_PATTERN},
-		optionalEntries: map[string]struct{}{"a": {}},
-		inexact:         false,
-	}
+	noProps := NewExactObjectPattern(map[string]Pattern{})
+	inexactNoProps := NewInexactObjectPattern(map[string]Pattern{})
+	singleProp := NewExactObjectPattern(map[string]Pattern{"a": INT_PATTERN})
+	inexactSingleProp := NewInexactObjectPattern(map[string]Pattern{"a": INT_PATTERN})
+	singleOptionalProp := NewExactObjectPatternWithOptionalProps(
+		map[string]Pattern{"a": INT_PATTERN},
+		map[string]struct{}{"a": {}},
+	)
 
 	assert.True(t, noProps.Test(ctx, objFrom(ValMap{})))
 	assert.False(t, noProps.Test(ctx, objFrom(ValMap{"a": Int(1)})))
@@ -170,6 +172,50 @@ func TestObjectPattern(t *testing.T) {
 	assert.True(t, singleOptionalProp.Test(ctx, objFrom(ValMap{"a": Int(1)})))
 	assert.False(t, singleOptionalProp.Test(ctx, objFrom(ValMap{"a": Str("")})))
 	assert.False(t, singleOptionalProp.Test(ctx, objFrom(ValMap{"a": Int(1), "b": Int(2)})))
+
+	t.Run("constraint validations", func(t *testing.T) {
+		{
+			runtime.GC()
+			startMemStats := new(runtime.MemStats)
+			runtime.ReadMemStats(startMemStats)
+
+			defer utils.AssertNoMemoryLeak(t, startMemStats, 10, utils.AssertNoMemoryLeakOptions{
+				PreSleepDurationMillis: 100,
+				CheckGoroutines:        true,
+				GoroutineCount:         runtime.NumGoroutine(),
+				MaxGoroutineCountDelta: 0,
+			})
+		}
+
+		patternWithPropALessThan5 := NewInexactObjectPattern(map[string]Pattern{"a": INT_PATTERN}).WithConstraints(
+			[]*ComplexPropertyConstraint{
+				{
+					Expr: parse.MustParseExpression("(self.a < 5)"),
+				},
+			},
+		)
+
+		ctx := NewContexWithEmptyState(ContextConfig{
+			DoNotSpawnDoneGoroutine: true,
+		}, nil)
+		defer ctx.CancelGracefully()
+
+		ok := patternWithPropALessThan5.Test(ctx, NewObjectFromMapNoInit(ValMap{
+			"a": Int(1),
+		}))
+
+		if !assert.True(t, ok) {
+			return
+		}
+
+		ok = patternWithPropALessThan5.Test(ctx, NewObjectFromMapNoInit(ValMap{
+			"a": Int(5),
+		}))
+
+		if !assert.False(t, ok) {
+			return
+		}
+	})
 }
 
 func TestRecordPattern(t *testing.T) {

@@ -1,12 +1,14 @@
 package core
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"maps"
 	"math"
 	"reflect"
 	"slices"
+	"time"
 
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	parse "github.com/inoxlang/inox/internal/parse"
@@ -14,7 +16,8 @@ import (
 )
 
 const (
-	MAX_UNION_PATTERN_FLATTENING_DEPTH = 5
+	MAX_UNION_PATTERN_FLATTENING_DEPTH      = 5
+	OBJECT_CONSTRAINTS_VERIFICATION_TIMEOUT = 10 * time.Millisecond
 )
 
 var (
@@ -385,6 +388,12 @@ func (patt *ObjectPattern) WithDependencies(deps map[string]propertyDependencies
 	return &newPatt
 }
 
+func (patt *ObjectPattern) WithConstraints(constraints []*ComplexPropertyConstraint) *ObjectPattern {
+	newPatt := *patt
+	newPatt.complexPropertyPatterns = constraints
+	return &newPatt
+}
+
 func (patt *ObjectPattern) Test(ctx *Context, v Value) bool {
 	obj, ok := v.(*Object)
 	if !ok {
@@ -431,7 +440,21 @@ func (patt *ObjectPattern) Test(ctx *Context, v Value) bool {
 		}
 	}
 
-	state := NewTreeWalkState(NewContext(ContextConfig{}))
+	if len(patt.complexPropertyPatterns) == 0 {
+		return true
+	}
+
+	parentCtx, cancel := context.WithTimeout(ctx, OBJECT_CONSTRAINTS_VERIFICATION_TIMEOUT)
+	defer cancel()
+
+	//TODO: optimize based on what operations are performed during the check
+	//TODO: set max CPU time to 1ms and timeout to 200ms
+
+	state := NewTreeWalkState(NewContext(ContextConfig{
+		DoNotSpawnDoneGoroutine: true,
+		ParentStdLibContext:     parentCtx,
+	}))
+	defer state.Global.Ctx.CancelGracefully()
 	state.self = obj
 
 	for _, constraint := range patt.complexPropertyPatterns {
@@ -449,6 +472,7 @@ func (patt *ObjectPattern) Test(ctx *Context, v Value) bool {
 			return false
 		}
 	}
+
 	return true
 }
 
