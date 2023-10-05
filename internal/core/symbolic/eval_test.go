@@ -7253,6 +7253,20 @@ func TestSymbolicEval(t *testing.T) {
 			}, res)
 		})
 
+		t.Run("no other props", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				return %{otherprops(no)}
+			`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, &ObjectPattern{
+				entries: map[string]Pattern{},
+				inexact: false,
+			}, res)
+		})
+
 	})
 
 	t.Run("record pattern literal", func(t *testing.T) {

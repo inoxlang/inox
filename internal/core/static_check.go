@@ -573,14 +573,20 @@ switch_:
 
 		var propertyNodes []*parse.ObjectPatternProperty
 		var spreadElementsNodes []*parse.PatternPropertySpreadElement
+		var otherPropsNodes []*parse.OtherPropsExpr
+		var isExact bool
 
 		switch node := node.(type) {
 		case *parse.ObjectPatternLiteral:
 			propertyNodes = node.Properties
 			spreadElementsNodes = node.SpreadElements
+			otherPropsNodes = node.OtherProperties
+			isExact = node.Exact()
 		case *parse.RecordPatternLiteral:
 			propertyNodes = node.Properties
 			spreadElementsNodes = node.SpreadElements
+			otherPropsNodes = node.OtherProperties
+			isExact = node.Exact()
 		}
 
 		// look for duplicate keys
@@ -626,6 +632,17 @@ switch_:
 					return parse.Continue
 				}
 				keys[name] = struct{}{}
+			}
+		}
+
+		//check that if the pattern is exact there are no other otherprops nodes other than otherprops(no)
+		if isExact {
+			for _, prop := range otherPropsNodes {
+				patternIdent, ok := prop.Pattern.(*parse.PatternIdentifierLiteral)
+
+				if !ok || patternIdent.Name != parse.NO_OTHERPROPS_PATTERN_NAME {
+					c.addError(prop, UNEXPECTED_OTHER_PROPS_EXPR_OTHERPROPS_NO_IS_PRESENT)
+				}
 			}
 		}
 
@@ -1778,6 +1795,10 @@ switch_:
 			c.addError(node, fmtPatternNamespaceIsNotDeclared(namespaceName))
 		}
 	case *parse.PatternIdentifierLiteral:
+
+		if _, ok := parent.(*parse.OtherPropsExpr); ok && node.Name == parse.NO_OTHERPROPS_PATTERN_NAME {
+			break switch_
+		}
 
 		for _, a := range ancestorChain {
 			if def, ok := a.(*parse.PatternDefinition); ok && def.IsLazy {

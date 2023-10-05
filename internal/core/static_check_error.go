@@ -77,6 +77,9 @@ const (
 	OBJ_REC_LIT_CANNOT_HAVE_METAPROP_KEYS       = "object-like literals cannot have metaproperty keys, metaproperty keys have a (single) starting underscore '_' and a (single) trailing underscore"
 	CANNOT_CHECK_MANIFEST_WITHOUT_PARENT        = "checking a Manifest node requires the parent node"
 
+	//object pattern literals
+	UNEXPECTED_OTHER_PROPS_EXPR_OTHERPROPS_NO_IS_PRESENT = "unexpected otherprops expression: no other properties are allowed since otherprops(no) is present"
+
 	MISPLACED_SENDVAL_EXPR                 = "sendval expressions are only usable within functions that are object properties, metaproperty initialization blocks and in lifetime jobs"
 	MISPLACED_RECEPTION_HANDLER_EXPRESSION = "misplaced reception handler expression is misplaced, it should be an implicit key property of an object literal"
 

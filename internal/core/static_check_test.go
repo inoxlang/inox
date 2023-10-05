@@ -428,6 +428,23 @@ func TestCheck(t *testing.T) {
 			)
 			assert.Equal(t, expectedErr, err)
 		})
+
+		t.Run("unexpected otherprops expression", func(t *testing.T) {
+			n, src := parseCode(`
+				pattern one = 1
+				%{
+					otherprops(no) 
+					otherprops(one)
+				}
+			`)
+
+			secondOtherPropsExpr := parse.FindNodes(n, (*parse.OtherPropsExpr)(nil), nil)[1]
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(secondOtherPropsExpr, src, UNEXPECTED_OTHER_PROPS_EXPR_OTHERPROPS_NO_IS_PRESENT),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
 	})
 
 	t.Run("record pattern literal", func(t *testing.T) {
@@ -3027,6 +3044,15 @@ func TestCheck(t *testing.T) {
 		t.Run("not declared pattern in lazy pattern definition", func(t *testing.T) {
 			n, src := parseCode(`
 				pattern p = @ %str( %s )
+			`)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
+		t.Run("otherprops(no)", func(t *testing.T) {
+			n, src := parseCode(`
+				%{
+					otherprops(no)
+				}
 			`)
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
