@@ -2,30 +2,20 @@ package http_ns
 
 import (
 	"context"
-	"encoding/pem"
 	"errors"
-	"fmt"
 	"net/http"
-	"net/url"
-	"os"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/inoxlang/inox/internal/commonfmt"
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/mimeconsts"
-
-	"slices"
+	"github.com/rs/zerolog"
 
 	http_ns_symb "github.com/inoxlang/inox/internal/globals/http_ns/symbolic"
 
 	"github.com/inoxlang/inox/internal/permkind"
-	"github.com/inoxlang/inox/internal/utils"
-	"github.com/rs/zerolog"
-
-	fsutil "github.com/go-git/go-billy/v5/util"
 )
 
 const (
@@ -81,6 +71,20 @@ var (
 
 	NEW_SERVER_TWO_PARAM_NAMES = []string{"host", "handling"}
 )
+
+// HttpServer implements the GoValue interface.
+type HttpServer struct {
+	host           core.Host
+	wrappedServer  *http.Server
+	lock           sync.RWMutex
+	endChan        chan struct{}
+	state          *core.GlobalState
+	defaultCSP     *ContentSecurityPolicy
+	securityEngine *securityEngine
+	serverLogger   zerolog.Logger
+
+	sseServer *SseServer
+}
 
 // NewHttpServer returns an HttpServer with unitialized .state & .logger
 func NewHttpServer(ctx *core.Context, host core.Host, args ...core.Value) (*HttpServer, error) {
@@ -262,108 +266,6 @@ func NewHttpServer(ctx *core.Context, host core.Host, args ...core.Value) (*Http
 	return _server, nil
 }
 
-type GolangHttpServerConfig struct {
-	Addr           string
-	Handler        http.Handler
-	PemEncodedCert string
-	PemEncodedKey  string
-}
-
-func NewGolangHttpServer(ctx *core.Context, config GolangHttpServerConfig) (*http.Server, error) {
-	fls := ctx.GetFileSystem()
-
-	pemEncodedCert := config.PemEncodedCert
-	pemEncodedKey := config.PemEncodedKey
-
-	if config.PemEncodedCert == "" { //if no certificate provided by the user we create one
-		//we generate a self signed certificate that we write to disk so that
-		//we can reuse it
-		CERT_FILEPATH := "localhost.cert"
-		CERT_KEY_FILEPATH := "localhost.key"
-
-		_, err1 := fls.Stat(CERT_FILEPATH)
-		_, err2 := fls.Stat(CERT_KEY_FILEPATH)
-
-		if errors.Is(err1, os.ErrNotExist) || errors.Is(err2, os.ErrNotExist) {
-
-			if err1 == nil {
-				fls.Remove(CERT_FILEPATH)
-			}
-
-			if err2 == nil {
-				fls.Remove(CERT_KEY_FILEPATH)
-			}
-
-			cert, key, err := generateSelfSignedCertAndKey()
-			if err != nil {
-				return nil, err
-			}
-
-			certFile, err := fls.Create(CERT_FILEPATH)
-			if err != nil {
-				return nil, err
-			}
-			pem.Encode(certFile, cert)
-			pemEncodedCert = string(pem.EncodeToMemory(cert))
-
-			certFile.Close()
-			keyFile, err := fls.Create(CERT_KEY_FILEPATH)
-			if err != nil {
-				return nil, err
-			}
-			pem.Encode(keyFile, key)
-			keyFile.Close()
-			pemEncodedKey = string(pem.EncodeToMemory(key))
-		} else if err1 == nil && err2 == nil {
-			certFile, err := fsutil.ReadFile(fls, CERT_FILEPATH)
-			if err != nil {
-				return nil, err
-			}
-			keyFile, err := fsutil.ReadFile(fls, CERT_KEY_FILEPATH)
-			if err != nil {
-				return nil, err
-			}
-
-			pemEncodedCert = string(certFile)
-			pemEncodedKey = string(keyFile)
-		} else {
-			return nil, fmt.Errorf("%w %w", err1, err2)
-		}
-	}
-
-	tlsConfig, err := GetTLSConfig(ctx, pemEncodedCert, pemEncodedKey)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get TLS config: %w", err)
-	}
-
-	server := &http.Server{
-		Addr:              config.Addr,
-		Handler:           config.Handler,
-		ReadHeaderTimeout: DEFAULT_HTTP_SERVER_READ_HEADER_TIMEOUT,
-		ReadTimeout:       DEFAULT_HTTP_SERVER_READ_TIMEOUT,
-		WriteTimeout:      DEFAULT_HTTP_SERVER_WRITE_TIMEOUT,
-		MaxHeaderBytes:    DEFAULT_HTTP_SERVER_MAX_HEADER_BYTES,
-		TLSConfig:         tlsConfig,
-		//TODO: set logger
-	}
-
-	return server, nil
-}
-
-// HttpServer implements the GoValue interface.
-type HttpServer struct {
-	host           core.Host
-	wrappedServer  *http.Server
-	lock           sync.RWMutex
-	endChan        chan struct{}
-	state          *core.GlobalState
-	defaultCSP     *ContentSecurityPolicy
-	securityEngine *securityEngine
-	serverLogger   zerolog.Logger
-
-	sseServer *SseServer
-}
-
 func (serv *HttpServer) Host(name string) core.Host {
 	return serv.host
 }
@@ -424,192 +326,6 @@ func (serv *HttpServer) ImmediatelyClose(ctx *core.Context) {
 	if sse != nil {
 		sse.Close()
 	}
-}
-
-func readHttpServerArgs(ctx *core.Context, server *HttpServer, host core.Host, args ...core.Value) (
-	addr string,
-	certificate string,
-	certKey *core.Secret,
-	userProvidedHandler core.Value,
-	handlerValProvided bool,
-	middlewares []core.Value,
-	argErr error,
-) {
-
-	const HANDLING_ARG_NAME = "handler/handling"
-
-	//check host
-	{
-		parsed, _ := url.Parse(string(host))
-		if host.Scheme() != "https" {
-			argErr = fmt.Errorf("invalid scheme '%s'", host)
-			return
-		}
-		server.host = host
-		addr = parsed.Host
-
-		perm := core.HttpPermission{Kind_: permkind.Provide, Entity: host}
-		if err := ctx.CheckHasPermission(perm); err != nil {
-			argErr = err
-			return
-		}
-	}
-
-	for _, arg := range args {
-		switch v := arg.(type) {
-		case core.Host:
-			argErr = errors.New("address already provided")
-			return
-		case *core.InoxFunction:
-			if handlerValProvided {
-				argErr = commonfmt.FmtErrArgumentProvidedAtLeastTwice(HANDLING_ARG_NAME)
-				return
-			}
-
-			if ok, expl := v.IsSharable(server.state); !ok {
-				argErr = fmt.Errorf("%w: %s", ErrHandlerNotSharable, expl)
-				return
-			}
-			v.Share(server.state)
-			userProvidedHandler = v
-			handlerValProvided = true
-		case *core.GoFunction:
-			if handlerValProvided {
-				argErr = commonfmt.FmtErrArgumentProvidedAtLeastTwice(HANDLING_ARG_NAME)
-				return
-			}
-			if ok, expl := v.IsSharable(server.state); !ok {
-				argErr = fmt.Errorf("%w: %s", ErrHandlerNotSharable, expl)
-				return
-			}
-			v.Share(server.state)
-			userProvidedHandler = v
-			handlerValProvided = true
-		case *core.Mapping:
-			if handlerValProvided {
-				argErr = commonfmt.FmtErrArgumentProvidedAtLeastTwice(HANDLING_ARG_NAME)
-				return
-			}
-			if ok, expl := v.IsSharable(server.state); !ok {
-				argErr = fmt.Errorf("%w: %s", ErrHandlerNotSharable, expl)
-			}
-			v.Share(server.state)
-
-			userProvidedHandler = v
-			handlerValProvided = true
-		case *core.Object:
-			if handlerValProvided {
-				argErr = commonfmt.FmtErrArgumentProvidedAtLeastTwice(HANDLING_ARG_NAME)
-				return
-			}
-			handlerValProvided = true
-
-			// extract routing handler, middlewares, ... from description
-			for propKey, propVal := range v.EntryMap(ctx) {
-				switch propKey {
-				case HANDLING_DESC_MIDDLEWARES_PROPNAME:
-					iterable, ok := propVal.(core.Iterable)
-					if !ok {
-						argErr = core.FmtPropOfArgXShouldBeOfTypeY(propKey, HANDLING_ARG_NAME, "iterable", propVal)
-						return
-					}
-
-					it := iterable.Iterator(ctx, core.IteratorConfiguration{})
-					for it.Next(ctx) {
-						e := it.Value(ctx)
-						if !isValidHandlerValue(e) {
-							s := fmt.Sprintf("%s is not a middleware", core.Stringify(e, ctx))
-							argErr = commonfmt.FmtUnexpectedElementInPropIterableOfArgX(propKey, HANDLING_ARG_NAME, s)
-							return
-						}
-
-						if psharable, ok := e.(core.PotentiallySharable); ok && utils.Ret0(psharable.IsSharable(server.state)) {
-							psharable.Share(server.state)
-						} else {
-							s := fmt.Sprintf("%s is not sharable", core.Stringify(e, ctx))
-							argErr = commonfmt.FmtUnexpectedElementInPropIterableOfArgX(propKey, HANDLING_ARG_NAME, s)
-							return
-						}
-						middlewares = append(middlewares, e)
-					}
-				case HANDLING_DESC_ROUTING_PROPNAME:
-					if !isValidHandlerValue(propVal) {
-						argErr = core.FmtUnexpectedValueAtKeyofArgShowVal(propVal, propKey, HANDLING_ARG_NAME)
-					}
-
-					if path, ok := propVal.(core.Path); ok {
-						if !path.IsDirPath() {
-							argErr = commonfmt.FmtPropOfArgXShouldBeY(propKey, HANDLING_ARG_NAME, "absolute if it's a path")
-							return
-						}
-						var err error
-						propVal, err = path.ToAbs(ctx.GetFileSystem())
-						if err != nil {
-							argErr = err
-							return
-						}
-					} else if obj, ok := propVal.(*core.Object); ok {
-						properties := obj.PropertyNames(ctx)
-						if slices.Contains(properties, "static") {
-							static, ok := obj.Prop(ctx, "static").(core.Path)
-							if !ok || !static.IsDirPath() {
-								argErr = commonfmt.FmtPropOfArgXShouldBeY(propKey, HANDLING_ARG_NAME, symbolic.Stringify(HTTP_ROUTING_SYMB_OBJ))
-							}
-						}
-						if slices.Contains(properties, "dynamic") {
-							static, ok := obj.Prop(ctx, "dynamic").(core.Path)
-							if !ok || !static.IsDirPath() {
-								argErr = commonfmt.FmtPropOfArgXShouldBeY(propKey, HANDLING_ARG_NAME, symbolic.Stringify(HTTP_ROUTING_SYMB_OBJ))
-							}
-						}
-					} else if psharable, ok := propVal.(core.PotentiallySharable); ok && utils.Ret0(psharable.IsSharable(server.state)) {
-						psharable.Share(server.state)
-					} else {
-						argErr = commonfmt.FmtPropOfArgXShouldBeY(propKey, HANDLING_ARG_NAME, "sharable")
-						return
-					}
-
-					userProvidedHandler = propVal
-				case HANDLING_DESC_DEFAULT_CSP_PROPNAME:
-					csp, ok := propVal.(*ContentSecurityPolicy)
-					if !ok {
-						argErr = core.FmtUnexpectedValueAtKeyofArgShowVal(propVal, propKey, HANDLING_ARG_NAME)
-						return
-					}
-					server.defaultCSP = csp
-				case HANDLING_DESC_CERTIFICATE_PROPNAME:
-					certVal, ok := propVal.(core.StringLike)
-					if !ok {
-						argErr = core.FmtUnexpectedValueAtKeyofArgShowVal(propVal, propKey, HANDLING_ARG_NAME)
-						return
-					}
-					certificate = certVal.GetOrBuildString()
-				case HANDLING_DESC_KEY_PROPNAME:
-					secret, ok := propVal.(*core.Secret)
-					if !ok {
-						argErr = core.FmtUnexpectedValueAtKeyofArgShowVal(propVal, propKey, HANDLING_ARG_NAME)
-						return
-					}
-					certKey = secret
-				default:
-					argErr = commonfmt.FmtUnexpectedPropInArgX(propKey, HANDLING_ARG_NAME)
-				}
-			}
-
-			if userProvidedHandler == nil {
-				argErr = commonfmt.FmtMissingPropInArgX(HANDLING_DESC_ROUTING_PROPNAME, HANDLING_ARG_NAME)
-			}
-		default:
-			argErr = fmt.Errorf("http.server: invalid argument of type %T", v)
-		}
-	}
-
-	if addr == "" {
-		argErr = errors.New("no address provided")
-		return
-	}
-
-	return
 }
 
 func (serv *HttpServer) Close(ctx *core.Context) {
