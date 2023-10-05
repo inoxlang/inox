@@ -133,6 +133,18 @@ func (sessions *DebugSessions) AddSession(s *DebugSession) {
 	sessions.sessions = append(sessions.sessions, s)
 }
 
+func (sessions *DebugSessions) GetSession(sessionId string) (*DebugSession, bool) {
+	sessions.sessionListLock.Lock()
+	defer sessions.sessionListLock.Unlock()
+
+	for _, s := range sessions.sessions {
+		if s.id == sessionId {
+			return s, true
+		}
+	}
+	return nil, false
+}
+
 func (sessions *DebugSessions) RemoveSession(s *DebugSession) {
 	sessions.sessionListLock.Lock()
 	defer sessions.sessionListLock.Unlock()
@@ -225,13 +237,12 @@ func registerDebugMethodHandlers(
 		}
 		sessionData.lock.Unlock()
 
-		for _, s := range debugSessions.sessions {
-			if s.id == sessionId {
-				return s, nil
-			}
+		debugSession, ok := debugSessions.GetSession(sessionId)
+		if !ok {
+			return nil, ErrUnknowSessionId
 		}
 
-		return nil, ErrUnknowSessionId
+		return debugSession, nil
 	}
 
 	createDebugSession := func(session *jsonrpc.Session, sessionId string) (*DebugSession, error) {
