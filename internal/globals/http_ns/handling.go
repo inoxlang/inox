@@ -1,7 +1,6 @@
 package http_ns
 
 import (
-	"fmt"
 	"html"
 	"net/http"
 
@@ -56,16 +55,9 @@ func createHandlerFunction(handlerValue core.Value, isMiddleware bool, server *H
 				handlerGlobalState.Logger.Print(err)
 			}
 		}
-	case core.Path:
+	case *core.Object:
 		//filesystem routing
 
-		routingDirPath := userHandler
-
-		if !routingDirPath.IsAbsolute() || !routingDirPath.IsDirPath() {
-			panic(fmt.Errorf("path of routing directory should be an absolute directory path"))
-		}
-		handler = createHandleDynamic(server, routingDirPath)
-	case *core.Object:
 		var staticDir core.Path
 		var dynamicDir core.Path
 		var handleDynamic handlerFn

@@ -16,7 +16,7 @@ func TestFilesystemRouting(t *testing.T) {
 		runServerTest(t,
 			serverTestCase{
 				input: `return {
-						routing: /routes/
+						routing: {dynamic: /routes/}
 					}`,
 				makeFilesystem: func() afs.Filesystem {
 					fls := fs_ns.NewMemFilesystem(10_000)
@@ -45,7 +45,7 @@ func TestFilesystemRouting(t *testing.T) {
 		runServerTest(t,
 			serverTestCase{
 				input: `return {
-						routing: /routes/
+						routing: {dynamic: /routes/}
 					}`,
 				makeFilesystem: func() afs.Filesystem {
 					fls := fs_ns.NewMemFilesystem(10_000)
@@ -74,7 +74,7 @@ func TestFilesystemRouting(t *testing.T) {
 		runServerTest(t,
 			serverTestCase{
 				input: `return {
-						routing: /routes/
+						routing: {dynamic: /routes/}
 					}`,
 				makeFilesystem: func() afs.Filesystem {
 					fls := fs_ns.NewMemFilesystem(10_000)
@@ -108,7 +108,7 @@ func TestFilesystemRouting(t *testing.T) {
 		runServerTest(t,
 			serverTestCase{
 				input: `return {
-						routing: /routes/
+						routing: {dynamic: /routes/}
 					}`,
 				makeFilesystem: func() afs.Filesystem {
 					fls := fs_ns.NewMemFilesystem(10_000)
@@ -142,7 +142,7 @@ func TestFilesystemRouting(t *testing.T) {
 		runServerTest(t,
 			serverTestCase{
 				input: `return {
-						routing: /routes/
+						routing: {dynamic: /routes/}
 					}`,
 				makeFilesystem: func() afs.Filesystem {
 					fls := fs_ns.NewMemFilesystem(10_000)
@@ -189,7 +189,7 @@ func TestFilesystemRouting(t *testing.T) {
 		runServerTest(t,
 			serverTestCase{
 				input: `return {
-						routing: /routes/
+						routing: {dynamic: /routes/}
 					}`,
 				makeFilesystem: func() afs.Filesystem {
 					fls := fs_ns.NewMemFilesystem(10_000)
@@ -237,7 +237,7 @@ func TestFilesystemRouting(t *testing.T) {
 		runServerTest(t,
 			serverTestCase{
 				input: `return {
-						routing: /routes/
+						routing: {dynamic: /routes/}
 					}`,
 				makeFilesystem: func() afs.Filesystem {
 					fls := fs_ns.NewMemFilesystem(10_000)
@@ -272,7 +272,7 @@ func TestFilesystemRouting(t *testing.T) {
 		runServerTest(t,
 			serverTestCase{
 				input: `return {
-						routing: /routes/
+						routing: {dynamic: /routes/}
 					}`,
 				makeFilesystem: func() afs.Filesystem {
 					fls := fs_ns.NewMemFilesystem(10_000)
@@ -307,7 +307,7 @@ func TestFilesystemRouting(t *testing.T) {
 		runServerTest(t,
 			serverTestCase{
 				input: `return {
-						routing: /routes/
+						routing: {dynamic: /routes/}
 					}`,
 				makeFilesystem: func() afs.Filesystem {
 					fls := fs_ns.NewMemFilesystem(10_000)

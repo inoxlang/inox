@@ -53,7 +53,6 @@ var (
 	SYMBOLIC_HANDLING_DESC = symbolic.NewInexactObject(map[string]symbolic.Serializable{
 		HANDLING_DESC_ROUTING_PROPNAME: symbolic.AsSerializableChecked(symbolic.NewMultivalue(
 			symbolic.ANY_INOX_FUNC,
-			symbolic.ANY_DIR_PATH,
 			symbolic.NewMapping(),
 			HTTP_ROUTING_SYMB_OBJ,
 		)),
@@ -256,6 +255,7 @@ func NewHttpServer(ctx *core.Context, host core.Host, args ...core.Value) (*Http
 			recover()
 			endChan <- struct{}{}
 		}()
+		defer _server.serverLogger.Info().Msg("server (" + addr + ") is now closed")
 
 		<-ctx.Done()
 		_server.ImmediatelyClose(ctx)

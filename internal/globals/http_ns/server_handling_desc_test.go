@@ -93,7 +93,7 @@ func TestHttpServerHandlingDescription(t *testing.T) {
 		t.Run("filesystem routing", func(t *testing.T) {
 			runHandlingDescTestCase(t, serverTestCase{
 				input: `return {
-					routing: /routes/
+					routing: {dynamic: /routes/}
 				}`,
 				makeFilesystem: func() afs.Filesystem {
 					fls := fs_ns.NewMemFilesystem(10_000)
