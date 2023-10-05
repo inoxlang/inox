@@ -10,6 +10,7 @@ import (
 	"github.com/adrg/xdg"
 
 	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/inoxconsts"
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
 	"github.com/inoxlang/inox/internal/utils"
 
@@ -19,7 +20,7 @@ import (
 const (
 	INOX_APP_NAME = "inox"
 
-	SHELL_STARTUP_SCRIPT_NAME = "startup.ix"
+	SHELL_STARTUP_SCRIPT_NAME = "startup" + inoxconsts.INOXLANG_FILE_EXTENSION
 	STARTUP_SCRIPT_RELPATH    = INOX_APP_NAME + "/" + SHELL_STARTUP_SCRIPT_NAME
 	STARTUP_SCRIPT_PERM       = 0o700
 

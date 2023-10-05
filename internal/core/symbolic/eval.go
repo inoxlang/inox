@@ -12,6 +12,7 @@ import (
 
 	"slices"
 
+	"github.com/inoxlang/inox/internal/inoxconsts"
 	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
@@ -1609,7 +1610,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			panic(ErrUnreachable)
 		}
 
-		if !strings.HasSuffix(pathOrURL, ".ix") {
+		if !strings.HasSuffix(pathOrURL, inoxconsts.INOXLANG_FILE_EXTENSION) {
 			state.addError(makeSymbolicEvalError(n.Source, state, IMPORTED_MOD_PATH_MUST_END_WITH_IX))
 			return nil, nil
 		}

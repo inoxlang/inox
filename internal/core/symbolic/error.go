@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/inoxlang/inox/internal/inoxconsts"
 	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
 )
@@ -70,7 +71,7 @@ const (
 	FROM_XML_FACTORY_SHOULD_NOT_BE_A_SHARED_FUNCTION             = "factory ." + FROM_XML_FACTORY_NAME + " should not be a shared function"
 	FROM_XML_FACTORY_SHOULD_HAVE_AT_LEAST_ONE_NON_VARIADIC_PARAM = "factory ." + FROM_XML_FACTORY_NAME + " should have at least one non variadic parameter"
 
-	IMPORTED_MOD_PATH_MUST_END_WITH_IX = "imported module's path must end with '.ix'"
+	IMPORTED_MOD_PATH_MUST_END_WITH_IX = "imported module's path must end with '" + inoxconsts.INOXLANG_FILE_EXTENSION + "'"
 
 	INVALID_MUTATION                               = "invalid mutation"
 	PATTERN_IS_NOT_CONVERTIBLE_TO_READONLY_VERSION = "pattern is not convertible to a readonly version"

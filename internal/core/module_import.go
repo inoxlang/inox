@@ -19,6 +19,7 @@ import (
 
 	afs "github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/inoxconsts"
 	parse "github.com/inoxlang/inox/internal/parse"
 	permkind "github.com/inoxlang/inox/internal/permkind"
 
@@ -391,7 +392,7 @@ func fetchParseImportedModule(ctx *Context, importSrc WrappedString, config sour
 		return nil, err
 	}
 
-	if !strings.HasSuffix(src.UnderlyingString(), ".ix") {
+	if !strings.HasSuffix(src.UnderlyingString(), inoxconsts.INOXLANG_FILE_EXTENSION) {
 		return nil, errors.New(symbolic.IMPORTED_MOD_PATH_MUST_END_WITH_IX)
 	}
 

@@ -10,6 +10,7 @@ import (
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/inoxconsts"
 
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/globals/s3_ns"
@@ -18,8 +19,8 @@ import (
 const (
 	PROJECTS_KV_PREFIX = "/projects"
 
-	DEFAULT_MAIN_FILENAME = "main.ix"
-	DEFAULT_TUT_FILENAME  = "learn.tut.ix"
+	DEFAULT_MAIN_FILENAME = "main" + inoxconsts.INOXLANG_FILE_EXTENSION
+	DEFAULT_TUT_FILENAME  = "learn.tut" + inoxconsts.INOXLANG_FILE_EXTENSION
 
 	CREATION_PARAMS_METADATA_KEY              = "creation-params"
 	CREATION_PARAMS_NAME_METADATA_KEY         = "name"

@@ -10,8 +10,18 @@ import (
 	"slices"
 
 	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/mimeconsts"
 	"github.com/inoxlang/inox/internal/mod"
+)
+
+const (
+	INOX_FILE_EXTENSION     = inoxconsts.INOXLANG_FILE_EXTENSION
+	FS_ROUTING_INDEX_MODULE = "index" + INOX_FILE_EXTENSION
+)
+
+var (
+	FS_ROUTING_METHODS = []string{"GET", "POST", "PATCH", "PUT", "DELETE"}
 )
 
 func createHandleDynamic(server *HttpServer, routingDirPath core.Path) handlerFn {
@@ -43,20 +53,20 @@ func createHandleDynamic(server *HttpServer, routingDirPath core.Path) handlerFn
 
 		pathDir, pathBasename := filepath.Split(string(path))
 		//example: /about -> /GET-about.ix
-		modulePath := fls.Join(string(routingDirPath), pathDir, "/"+string(req.Method)+"-"+pathBasename+".ix")
+		modulePath := fls.Join(string(routingDirPath), pathDir, "/"+string(req.Method)+"-"+pathBasename+INOX_FILE_EXTENSION)
 		methodSpecificModule := true
 
 		_, err := fls.Stat(modulePath)
 		if err != nil {
 			//example: /about -> /about/GET.ix
-			modulePath = fls.Join(string(routingDirPath), string(path), string(req.Method)+".ix")
+			modulePath = fls.Join(string(routingDirPath), string(path), string(req.Method)+INOX_FILE_EXTENSION)
 			_, err = fls.Stat(modulePath)
 			if err == nil {
 				goto module_path_resolved
 			}
 
 			//example: /about -> /about.ix
-			modulePath = fls.Join(string(routingDirPath), string(path)+".ix")
+			modulePath = fls.Join(string(routingDirPath), string(path)+INOX_FILE_EXTENSION)
 			methodSpecificModule = false
 
 			_, err = fls.Stat(modulePath)
@@ -65,7 +75,7 @@ func createHandleDynamic(server *HttpServer, routingDirPath core.Path) handlerFn
 			}
 
 			//example: /about -> /about/index.ix
-			modulePath = fls.Join(string(routingDirPath), string(path), "index.ix")
+			modulePath = fls.Join(string(routingDirPath), string(path), FS_ROUTING_INDEX_MODULE)
 			_, err = fls.Stat(modulePath)
 			if err != nil {
 				rw.writeStatus(http.StatusNotFound)

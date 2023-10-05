@@ -15,6 +15,7 @@ import (
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/default_state"
+	"github.com/inoxlang/inox/internal/inoxconsts"
 	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/project"
 	"github.com/inoxlang/inox/internal/utils"
@@ -504,7 +505,7 @@ func PrepareExtractionModeIncludableChunkfile(args IncludableChunkfilePreparatio
 	includedChunkBaseName := filepath.Base(absPath)
 	includedChunkDir := filepath.Dir(absPath)
 
-	fakeModPath := filepath.Join(includedChunkDir, strconv.FormatInt(rand.Int63(), 16)+"-mod.ix")
+	fakeModPath := filepath.Join(includedChunkDir, strconv.FormatInt(rand.Int63(), 16)+"-mod"+inoxconsts.INOXLANG_FILE_EXTENSION)
 
 	modSource := parse.SourceFile{
 		NameString:  fakeModPath,

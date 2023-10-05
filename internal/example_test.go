@@ -16,6 +16,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/core"
 	_ "github.com/inoxlang/inox/internal/globals"
+	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/mod"
 
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
@@ -80,7 +81,7 @@ func testExamples(t *testing.T, useBytecode, optimizeBytecode bool) {
 	var exampleFilePaths []string
 
 	filepath.Walk(exampleFolder, func(path string, info fs.FileInfo, err error) error {
-		if info.Mode().IsRegular() && strings.HasSuffix(path, ".ix") {
+		if info.Mode().IsRegular() && strings.HasSuffix(path, inoxconsts.INOXLANG_FILE_EXTENSION) {
 			exampleFilePaths = append(exampleFilePaths, path)
 		}
 		return nil
