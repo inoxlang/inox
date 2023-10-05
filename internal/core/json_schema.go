@@ -605,7 +605,7 @@ func convertJsonSchemaToPattern(schema *jsonschema.Schema, baseSchema *jsonschem
 						return nil, errors.New("'dependencies' with schemas are not fully supported")
 					}
 
-					dependenciesPattern, err := convertJsonSchemaToPattern(d, nil, false, false, depth+1)
+					dependenciesPattern, err := convertJsonSchemaToPattern(d, nil, false, true, depth+1)
 					if err != nil {
 						return nil, fmt.Errorf("failed to convert dependency pattern for property %q", dependentKey)
 					}

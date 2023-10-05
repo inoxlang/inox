@@ -315,7 +315,11 @@ func parseObjectJSONrepresentation(ctx *Context, it *jsoniter.Iterator, pattern 
 				for name, conditionalEntryPatt := range objPatt.entryPatterns {
 					p, ok := entryPatterns[name]
 					if ok {
-						entryPatterns[name] = NewIntersectionPattern([]Pattern{p, conditionalEntryPatt}, nil)
+						if p == SERIALIZABLE_PATTERN {
+							entryPatterns[name] = conditionalEntryPatt
+						} else {
+							entryPatterns[name] = NewIntersectionPattern([]Pattern{p, conditionalEntryPatt}, nil)
+						}
 					} else {
 						entryPatterns[name] = conditionalEntryPatt
 					}
