@@ -38,6 +38,8 @@ const (
 	_NO_LOCATION_DATE_LITERAL_PATTERN = NO_LOCATION_DATE_LITERAL_PATTERN + "$"
 	DATE_LITERAL_PATTERN              = NO_LOCATION_DATE_LITERAL_PATTERN + "(-[a-zA-Z_/]+[a-zA-Z_])$"
 	STRICT_EMAIL_ADDRESS_PATTERN      = "(?i)(^[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,24}$)"
+
+	NO_OTHERPROPS_PATTERN_NAME = "no"
 )
 
 var (
@@ -3279,7 +3281,7 @@ func (p *parser) parseOtherProps(key *IdentifierLiteral) *OtherPropsExpr {
 	p.eatSpace()
 	expr.Pattern, _ = p.parseExpression()
 
-	if ident, ok := expr.Pattern.(*IdentifierLiteral); ok && ident.Name == "no" {
+	if ident, ok := expr.Pattern.(*PatternIdentifierLiteral); ok && ident.Name == NO_OTHERPROPS_PATTERN_NAME {
 		expr.No = true
 	}
 

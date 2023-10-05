@@ -19719,6 +19719,77 @@ func testParse(
 			}, n)
 		})
 
+		t.Run("otherprops no", func(t *testing.T) {
+			n := mustparseChunk(t, "%{otherprops no}")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 16}, nil, nil},
+				Statements: []Node{
+					&ObjectPatternLiteral{
+						NodeBase: NodeBase{
+							NodeSpan{0, 16},
+							nil,
+							[]Token{
+								{Type: OPENING_OBJECT_PATTERN_BRACKET, Span: NodeSpan{0, 2}},
+								{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{15, 16}},
+							},
+						},
+						OtherProperties: []*OtherPropsExpr{
+							{
+								NodeBase: NodeBase{
+									Span:   NodeSpan{2, 15},
+									Tokens: []Token{{Type: OTHERPROPS_KEYWORD, Span: NodeSpan{2, 12}}},
+								},
+								No: true,
+								Pattern: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{Span: NodeSpan{13, 15}},
+									Unprefixed: true,
+									Name:       "no",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+		t.Run("otherprops no: parenthesized", func(t *testing.T) {
+			n := mustparseChunk(t, "%{otherprops(no)}")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 17}, nil, nil},
+				Statements: []Node{
+					&ObjectPatternLiteral{
+						NodeBase: NodeBase{
+							NodeSpan{0, 17},
+							nil,
+							[]Token{
+								{Type: OPENING_OBJECT_PATTERN_BRACKET, Span: NodeSpan{0, 2}},
+								{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{16, 17}},
+							},
+						},
+						OtherProperties: []*OtherPropsExpr{
+							{
+								NodeBase: NodeBase{
+									Span:   NodeSpan{2, 15},
+									Tokens: []Token{{Type: OTHERPROPS_KEYWORD, Span: NodeSpan{2, 12}}},
+								},
+								No: true,
+								Pattern: &PatternIdentifierLiteral{
+									NodeBase: NodeBase{
+										Span: NodeSpan{13, 15},
+										Tokens: []Token{
+											{Type: OPENING_PARENTHESIS, Span: NodeSpan{12, 13}},
+											{Type: CLOSING_PARENTHESIS, Span: NodeSpan{15, 16}},
+										},
+									},
+									Unprefixed: true,
+									Name:       "no",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
 		t.Run("unterminated otherprops followed by '}'", func(t *testing.T) {
 			n, err := parseChunk(t, "%{otherprops}", "")
 			assert.Error(t, err)
