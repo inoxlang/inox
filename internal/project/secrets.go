@@ -73,12 +73,6 @@ func (p *Project) ListSecrets2(ctx *core.Context) (secrets []ProjectSecret, _ er
 		return nil, fmt.Errorf("%w: %w", ErrFailedToListSecrets, err)
 	}
 
-	wg := new(sync.WaitGroup)
-	wg.Add(len(objects))
-
-	secrets = make([]ProjectSecret, len(objects))
-	errs := make([]error, len(objects))
-
 	//TODO: investigate why this fix is needed
 	objects = utils.FilterMapSlice(objects, func(s *s3_ns.ObjectInfo) (*s3_ns.ObjectInfo, bool) {
 		if s.Key == "" {
@@ -86,6 +80,12 @@ func (p *Project) ListSecrets2(ctx *core.Context) (secrets []ProjectSecret, _ er
 		}
 		return s, true
 	})
+
+	wg := new(sync.WaitGroup)
+	wg.Add(len(objects))
+
+	secrets = make([]ProjectSecret, len(objects))
+	errs := make([]error, len(objects))
 
 	var lock sync.Mutex
 
