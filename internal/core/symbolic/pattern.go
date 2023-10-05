@@ -1239,13 +1239,45 @@ func (p *ObjectPattern) TestValue(v SymbolicValue) bool {
 		return false
 	}
 
+	//check dependencies
+	for propName, deps := range p.dependencies {
+		counterPartDeps, ok := obj.dependencies[propName]
+		if ok {
+			for _, dep := range deps.requiredKeys {
+				if !slices.Contains(counterPartDeps.requiredKeys, dep) {
+					return false
+				}
+			}
+			if deps.pattern != nil && (counterPartDeps.pattern == nil || !deps.pattern.Test(counterPartDeps.pattern)) {
+				return false
+			}
+		}
+	}
+
 	for key, valuePattern := range p.entries {
 		_, isOptional := p.optionalEntries[key]
+		_, isOptionalInObject := obj.optionalEntries[key]
 		value, _, ok := obj.GetProperty(key)
+
+		if !isOptional && isOptionalInObject {
+			return false
+		}
 
 		if ok {
 			if !valuePattern.TestValue(value) {
 				return false
+			}
+			if !isOptional || !isOptionalInObject {
+				//check dependencies
+				deps := p.dependencies[key]
+				for _, requiredKey := range deps.requiredKeys {
+					if !obj.hasRequiredProperty(requiredKey) {
+						return false
+					}
+				}
+				if deps.pattern != nil && !deps.pattern.TestValue(obj) {
+					return false
+				}
 			}
 		} else if !isOptional {
 			return false
@@ -1282,6 +1314,7 @@ func (p *ObjectPattern) SymbolicValue() SymbolicValue {
 	}
 
 	obj := NewObject(!p.inexact, entries, p.optionalEntries, static)
+	obj.dependencies = p.dependencies
 	if p.readonly {
 		obj.readonly = true
 	}

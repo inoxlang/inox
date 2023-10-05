@@ -1284,7 +1284,7 @@ func (obj *Object) test(v SymbolicValue, exact bool) bool {
 			return false
 		}
 
-		if !isOptional {
+		if !isOptional || !isOptionalInOther {
 			//check dependencies
 			deps := obj.dependencies[propName]
 			for _, requiredKey := range deps.requiredKeys {
@@ -1298,6 +1298,7 @@ func (obj *Object) test(v SymbolicValue, exact bool) bool {
 		}
 	}
 
+	//check there are no additional properties
 	if exact {
 		for k := range otherObj.entries {
 			_, ok := obj.entries[k]

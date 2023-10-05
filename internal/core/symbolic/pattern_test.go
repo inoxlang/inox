@@ -614,6 +614,9 @@ func TestSymbolicObjectPattern(t *testing.T) {
 	})
 
 	t.Run("TestValue() & SymbolicValue()", func(t *testing.T) {
+
+		//SymbolicValue() only tests
+
 		t.Run("empty exact", func(t *testing.T) {
 			patt := NewExactObjectPattern(map[string]Pattern{}, nil)
 
@@ -648,177 +651,1061 @@ func TestSymbolicObjectPattern(t *testing.T) {
 			assert.Equal(t, expected, val)
 		})
 
-		cases := []struct {
-			pattern     *ObjectPattern
-			testedValue SymbolicValue
-			ok          bool
-		}{
-			{&ObjectPattern{entries: nil}, &ObjectPattern{entries: nil}, false},
-			{&ObjectPattern{entries: nil}, &ObjectPattern{entries: map[string]Pattern{}}, false},
+		//TestValue() + SymbolicValue() tests
 
-			{&ObjectPattern{entries: nil}, &Object{entries: nil}, true},
-			{&ObjectPattern{entries: nil}, &Object{entries: nil, exact: true}, true},
+		t.Run("object pattern 'any'", func(t *testing.T) {
+			patt := &ObjectPattern{entries: nil}
 
-			{&ObjectPattern{entries: nil}, &Object{entries: map[string]Serializable{}}, true},
-			{&ObjectPattern{entries: nil}, &Object{entries: map[string]Serializable{}, exact: true}, true},
+			//should never match another object pattern (any)
+			if !assert.False(t, patt.TestValue(&ObjectPattern{entries: nil})) {
+				return
+			}
+			val := patt.SymbolicValue()
+			if !assert.False(t, val.Test(&ObjectPattern{entries: nil})) {
+				return
+			}
 
-			//empty exact object pattern should not match an any object
-			{
-				&ObjectPattern{entries: map[string]Pattern{}},
-				&Object{entries: nil},
-				false,
-			},
+			//should never match another object pattern (empty)
+			if !assert.False(t, patt.TestValue(&ObjectPattern{entries: map[string]Pattern{}})) {
+				return
+			}
+			val = patt.SymbolicValue()
+			if !assert.False(t, val.Test(&ObjectPattern{entries: map[string]Pattern{}})) {
+				return
+			}
 
-			//empty inexact object pattern should not match an any object
-			{
-				&ObjectPattern{
-					entries: map[string]Pattern{},
-					inexact: true,
-				},
-				&Object{entries: nil},
-				false,
-			},
+			//should match object 'any'
+			if !assert.True(t, patt.TestValue(&Object{entries: nil})) {
+				return
+			}
+			val = patt.SymbolicValue()
+			if !assert.True(t, val.Test(&Object{entries: nil})) {
+				return
+			}
 
-			//empty exact object pattern should not match an empty inexact object
-			{
-				&ObjectPattern{
-					entries: map[string]Pattern{},
-					inexact: false,
-				},
-				&Object{
-					entries: map[string]Serializable{},
-					exact:   false,
-				},
-				false,
-			},
+			//should not match readonly object 'any'
+			if !assert.False(t, patt.TestValue(&Object{entries: nil, readonly: true})) {
+				return
+			}
+			val = patt.SymbolicValue()
+			if !assert.False(t, val.Test(&Object{entries: nil, readonly: true})) {
+				return
+			}
 
-			//empty inexact object pattern should match an empty exact object
-			{
-				&ObjectPattern{
-					entries: map[string]Pattern{},
-					inexact: false,
-				},
-				&Object{entries: map[string]Serializable{}, exact: true},
-				true,
-			},
+			//should match empty objects (inexact)
+			if !assert.True(t, patt.TestValue(&Object{entries: map[string]Serializable{}})) {
+				return
+			}
+			val = patt.SymbolicValue()
+			if !assert.True(t, val.Test(&Object{entries: map[string]Serializable{}})) {
+				return
+			}
 
-			//empty inexact object pattern should match an empty inexact object
-			{
-				&ObjectPattern{entries: map[string]Pattern{}, inexact: true},
-				&Object{entries: map[string]Serializable{}},
-				true,
-			},
+			//should match empty objects (exact)
+			if !assert.True(t, patt.TestValue(&Object{entries: map[string]Serializable{}, exact: true})) {
+				return
+			}
+			val = patt.SymbolicValue()
+			if !assert.True(t, val.Test(&Object{entries: map[string]Serializable{}, exact: true})) {
+				return
+			}
+		})
 
-			//empty inexact object pattern should match an empty exact object
-			{
-				&ObjectPattern{entries: map[string]Pattern{}, inexact: true},
-				&Object{entries: map[string]Serializable{}, exact: true},
-				true,
-			},
+		t.Run("empty exact object pattern", func(t *testing.T) {
+			patt := &ObjectPattern{entries: map[string]Pattern{}}
 
-			{
-				&ObjectPattern{
-					entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
-					inexact: true,
-				},
-				&Object{
-					entries: map[string]Serializable{},
-				},
-				false,
-			},
-			{
-				&ObjectPattern{
-					entries:         map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
-					optionalEntries: map[string]struct{}{"a": {}},
-					inexact:         true,
-				},
-				&Object{
-					entries: map[string]Serializable{},
-				},
-				true,
-			},
-			{
-				&ObjectPattern{
-					entries: map[string]Pattern{},
-					inexact: true,
-				},
-				&Object{
-					entries: map[string]Serializable{"a": ANY_INT},
-				},
-				true,
-			},
-			{
-				&ObjectPattern{
-					entries: map[string]Pattern{},
-					inexact: false,
-				},
-				&Object{
-					entries: map[string]Serializable{"a": ANY_INT},
-				},
-				false,
-			},
-			{
-				&ObjectPattern{
-					entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
-					inexact: true,
-				},
-				&Object{
-					entries: map[string]Serializable{"a": ANY_INT},
-				},
-				true,
-			},
-			{
-				&ObjectPattern{
-					entries: map[string]Pattern{"a": ANY_SERIALIZABLE_PATTERN},
-					inexact: true,
-				},
-				&Object{
-					entries: map[string]Serializable{"a": ANY_INT},
-				},
-				true,
-			},
-			{
-				&ObjectPattern{
-					entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
-					inexact: true,
-				},
-				&Object{
-					entries: map[string]Serializable{"a": ANY_SERIALIZABLE},
-				},
-				false,
-			},
-			{
-				&ObjectPattern{
-					entries: map[string]Pattern{"a": ANY_SERIALIZABLE_PATTERN},
-					inexact: true,
-				},
-				&Object{
-					entries: map[string]Serializable{"a": ANY_INT, "b": ANY_INT},
-				},
-				true,
-			},
-			{
-				&ObjectPattern{
-					entries: map[string]Pattern{"a": ANY_SERIALIZABLE_PATTERN},
-					inexact: true,
-				},
-				&Object{
-					entries: map[string]Serializable{"a": ANY_INT, "b": ANY_INT},
-					exact:   true,
-				},
-				true,
-			},
-		}
+			//should not match object 'any'
+			if !assert.False(t, patt.TestValue(&Object{entries: nil})) {
+				return
+			}
+			val := patt.SymbolicValue()
+			if !assert.False(t, val.Test(&Object{entries: nil})) {
+				return
+			}
 
-		for _, testCase := range cases {
-			t.Run(t.Name()+"_"+Stringify(testCase.pattern)+"_"+Stringify(testCase.testedValue), func(t *testing.T) {
-				if !assert.Equal(t, testCase.ok, testCase.pattern.TestValue(testCase.testedValue)) {
-					return
-				}
-				val := testCase.pattern.SymbolicValue()
-				assert.Equal(t, testCase.ok, val.Test(testCase.testedValue))
-			})
-		}
+			//should not match an empty inexact object
+			if !assert.False(t, patt.TestValue(&Object{
+				entries: map[string]Serializable{},
+				exact:   false,
+			})) {
+				return
+			}
+			val = patt.SymbolicValue()
+			if !assert.False(t, val.Test(&Object{
+				entries: map[string]Serializable{},
+				exact:   false,
+			})) {
+				return
+			}
+
+			//should not match an exact object with a property
+			if !assert.False(t, patt.TestValue(&Object{
+				entries: map[string]Serializable{"a": ANY_INT},
+				exact:   false,
+			})) {
+				return
+			}
+			val = patt.SymbolicValue()
+			if !assert.False(t, val.Test(&Object{
+				entries: map[string]Serializable{"a": ANY_INT},
+				exact:   false,
+			})) {
+				return
+			}
+		})
+
+		t.Run("empty inexact object pattern", func(t *testing.T) {
+			patt := &ObjectPattern{
+				entries: map[string]Pattern{},
+				inexact: true,
+			}
+
+			//should not match object 'any'
+			if !assert.False(t, patt.TestValue(&Object{entries: nil})) {
+				return
+			}
+			val := patt.SymbolicValue()
+			if !assert.False(t, val.Test(&Object{entries: nil})) {
+				return
+			}
+
+			//should match an empty inexact object
+			if !assert.True(t, patt.TestValue(&Object{
+				entries: map[string]Serializable{},
+				exact:   false,
+			})) {
+				return
+			}
+			val = patt.SymbolicValue()
+			if !assert.True(t, val.Test(&Object{
+				entries: map[string]Serializable{},
+				exact:   false,
+			})) {
+				return
+			}
+
+			//should match an inexact object with a property
+			if !assert.True(t, patt.TestValue(&Object{
+				entries: map[string]Serializable{"a": ANY_INT},
+				exact:   false,
+			})) {
+				return
+			}
+			val = patt.SymbolicValue()
+			if !assert.True(t, val.Test(&Object{
+				entries: map[string]Serializable{"a": ANY_INT},
+				exact:   false,
+			})) {
+				return
+			}
+
+			//should match an empty exact object
+			if !assert.True(t, patt.TestValue(&Object{
+				entries: map[string]Serializable{},
+				exact:   true,
+			})) {
+				return
+			}
+			val = patt.SymbolicValue()
+			if !assert.True(t, val.Test(&Object{
+				entries: map[string]Serializable{},
+				exact:   true,
+			})) {
+				return
+			}
+
+			//should match an exact object with a property
+			if !assert.True(t, patt.TestValue(&Object{
+				entries: map[string]Serializable{"a": ANY_INT},
+				exact:   true,
+			})) {
+				return
+			}
+			val = patt.SymbolicValue()
+			if !assert.True(t, val.Test(&Object{
+				entries: map[string]Serializable{"a": ANY_INT},
+				exact:   true,
+			})) {
+				return
+			}
+		})
+
+		t.Run("inexact object pattern with a single prop", func(t *testing.T) {
+			patt := &ObjectPattern{
+				entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
+				inexact: true,
+			}
+
+			//should not match object 'any'
+			if !assert.False(t, patt.TestValue(&Object{entries: nil})) {
+				return
+			}
+			val := patt.SymbolicValue()
+			if !assert.False(t, val.Test(&Object{entries: nil})) {
+				return
+			}
+
+			//should match an empty inexact object
+			if !assert.False(t, patt.TestValue(&Object{
+				entries: map[string]Serializable{},
+				exact:   false,
+			})) {
+				return
+			}
+			val = patt.SymbolicValue()
+			if !assert.False(t, val.Test(&Object{
+				entries: map[string]Serializable{},
+				exact:   false,
+			})) {
+				return
+			}
+
+			//should not match an empty exact object
+			if !assert.False(t, patt.TestValue(&Object{
+				entries: map[string]Serializable{},
+				exact:   true,
+			})) {
+				return
+			}
+			val = patt.SymbolicValue()
+			if !assert.False(t, val.Test(&Object{
+				entries: map[string]Serializable{},
+				exact:   true,
+			})) {
+				return
+			}
+
+			//should match an inexact object with the same property
+			if !assert.True(t, patt.TestValue(&Object{
+				entries: map[string]Serializable{"a": ANY_INT},
+			})) {
+				return
+			}
+			val = patt.SymbolicValue()
+			if !assert.True(t, val.Test(&Object{
+				entries: map[string]Serializable{"a": ANY_INT},
+			})) {
+				return
+			}
+
+			//should not match an exact object with the same property but optional
+			if !assert.False(t, patt.TestValue(&Object{
+				exact:           true,
+				entries:         map[string]Serializable{"a": ANY_INT},
+				optionalEntries: map[string]struct{}{"a": {}},
+			})) {
+				return
+			}
+			val = patt.SymbolicValue()
+			if !assert.False(t, val.Test(&Object{
+				exact:           true,
+				entries:         map[string]Serializable{"a": ANY_INT},
+				optionalEntries: map[string]struct{}{"a": {}},
+			})) {
+				return
+			}
+
+			//should not match an exact object with the same property but super type
+			if !assert.False(t, patt.TestValue(&Object{
+				exact:   true,
+				entries: map[string]Serializable{"a": ANY_SERIALIZABLE},
+			})) {
+				return
+			}
+			val = patt.SymbolicValue()
+			if !assert.False(t, val.Test(&Object{
+				exact:   true,
+				entries: map[string]Serializable{"a": ANY_SERIALIZABLE},
+			})) {
+				return
+			}
+
+			//should not match an exact object with the same property but different type
+			if !assert.False(t, patt.TestValue(&Object{
+				exact:   true,
+				entries: map[string]Serializable{"a": ANY_BOOL},
+			})) {
+				return
+			}
+			val = patt.SymbolicValue()
+			if !assert.False(t, val.Test(&Object{
+				exact:   true,
+				entries: map[string]Serializable{"a": ANY_BOOL},
+			})) {
+				return
+			}
+
+			//should match an exact object with the same property + an additional property
+			if !assert.True(t, patt.TestValue(&Object{
+				exact: true,
+				entries: map[string]Serializable{
+					"a": ANY_INT,
+					"b": ANY_INT,
+				},
+			})) {
+				return
+			}
+			val = patt.SymbolicValue()
+			if !assert.True(t, val.Test(&Object{
+				exact: true,
+				entries: map[string]Serializable{
+					"a": ANY_INT,
+					"b": ANY_INT,
+				},
+			})) {
+				return
+			}
+
+			//should match an inexact object with the same property + an additional property
+			if !assert.True(t, patt.TestValue(&Object{
+				entries: map[string]Serializable{
+					"a": ANY_INT,
+					"b": ANY_INT,
+				},
+			})) {
+				return
+			}
+			val = patt.SymbolicValue()
+			if !assert.True(t, val.Test(&Object{
+				entries: map[string]Serializable{
+					"a": ANY_INT,
+					"b": ANY_INT,
+				},
+			})) {
+				return
+			}
+
+			//should match an exact object with the same property
+			if !assert.True(t, patt.TestValue(&Object{
+				exact:   true,
+				entries: map[string]Serializable{"a": ANY_INT},
+			})) {
+				return
+			}
+			val = patt.SymbolicValue()
+			if !assert.True(t, val.Test(&Object{
+				exact:   true,
+				entries: map[string]Serializable{"a": ANY_INT},
+			})) {
+				return
+			}
+
+			//should not match an exact object with the same property if optional
+			if !assert.False(t, patt.TestValue(&Object{
+				exact:           true,
+				entries:         map[string]Serializable{"a": ANY_INT},
+				optionalEntries: map[string]struct{}{"a": {}},
+			})) {
+				return
+			}
+			val = patt.SymbolicValue()
+			if !assert.False(t, val.Test(&Object{
+				exact:           true,
+				entries:         map[string]Serializable{"a": ANY_INT},
+				optionalEntries: map[string]struct{}{"a": {}},
+			})) {
+				return
+			}
+		})
+
+		t.Run("exact object pattern with a single prop", func(t *testing.T) {
+			patt := &ObjectPattern{
+				entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
+				inexact: false,
+			}
+
+			//should not match object 'any'
+			if !assert.False(t, patt.TestValue(&Object{entries: nil})) {
+				return
+			}
+			val := patt.SymbolicValue()
+			if !assert.False(t, val.Test(&Object{entries: nil})) {
+				return
+			}
+
+			//should not match an empty inexact object
+			if !assert.False(t, patt.TestValue(&Object{
+				entries: map[string]Serializable{},
+				exact:   false,
+			})) {
+				return
+			}
+			val = patt.SymbolicValue()
+			if !assert.False(t, val.Test(&Object{
+				entries: map[string]Serializable{},
+				exact:   false,
+			})) {
+				return
+			}
+
+			//should not match an empty exact object
+			if !assert.False(t, patt.TestValue(&Object{
+				entries: map[string]Serializable{},
+				exact:   true,
+			})) {
+				return
+			}
+			val = patt.SymbolicValue()
+			if !assert.False(t, val.Test(&Object{
+				entries: map[string]Serializable{},
+				exact:   true,
+			})) {
+				return
+			}
+
+			//should not match an inexact object with the same property
+			if !assert.False(t, patt.TestValue(&Object{
+				entries: map[string]Serializable{"a": ANY_INT},
+			})) {
+				return
+			}
+			val = patt.SymbolicValue()
+			if !assert.False(t, val.Test(&Object{
+				entries: map[string]Serializable{"a": ANY_INT},
+			})) {
+				return
+			}
+
+			//should not match an inexact object with the same property but optional
+			if !assert.False(t, patt.TestValue(&Object{
+				entries:         map[string]Serializable{"a": ANY_INT},
+				optionalEntries: map[string]struct{}{"a": {}},
+			})) {
+				return
+			}
+			val = patt.SymbolicValue()
+			if !assert.False(t, val.Test(&Object{
+				entries:         map[string]Serializable{"a": ANY_INT},
+				optionalEntries: map[string]struct{}{"a": {}},
+			})) {
+				return
+			}
+
+			//should not match an inexact object with the same property if super type
+			if !assert.False(t, patt.TestValue(&Object{
+				entries: map[string]Serializable{"a": ANY_INT},
+			})) {
+				return
+			}
+			val = patt.SymbolicValue()
+			if !assert.False(t, val.Test(&Object{
+				entries: map[string]Serializable{"a": ANY_SERIALIZABLE},
+			})) {
+				return
+			}
+
+			//should not match an inexact object with the same property if different type
+			if !assert.False(t, patt.TestValue(&Object{
+				entries: map[string]Serializable{"a": ANY_INT},
+			})) {
+				return
+			}
+			val = patt.SymbolicValue()
+			if !assert.False(t, val.Test(&Object{
+				entries: map[string]Serializable{"a": ANY_BOOL},
+			})) {
+				return
+			}
+
+			//should match an inexact object with the same property + an additional property
+			if !assert.False(t, patt.TestValue(&Object{
+				entries: map[string]Serializable{
+					"a": ANY_INT,
+					"b": ANY_INT,
+				},
+			})) {
+				return
+			}
+			val = patt.SymbolicValue()
+			if !assert.False(t, val.Test(&Object{
+				entries: map[string]Serializable{
+					"a": ANY_INT,
+					"b": ANY_INT,
+				},
+			})) {
+				return
+			}
+
+			//should match an exact object with the same property
+			if !assert.True(t, patt.TestValue(&Object{
+				exact:   true,
+				entries: map[string]Serializable{"a": ANY_INT},
+			})) {
+				return
+			}
+			val = patt.SymbolicValue()
+			if !assert.True(t, val.Test(&Object{
+				exact:   true,
+				entries: map[string]Serializable{"a": ANY_INT},
+			})) {
+				return
+			}
+
+			//should not match an exact object with the same property if optional
+			if !assert.False(t, patt.TestValue(&Object{
+				exact:           true,
+				entries:         map[string]Serializable{"a": ANY_INT},
+				optionalEntries: map[string]struct{}{"a": {}},
+			})) {
+				return
+			}
+			val = patt.SymbolicValue()
+			if !assert.False(t, val.Test(&Object{
+				exact:           true,
+				entries:         map[string]Serializable{"a": ANY_INT},
+				optionalEntries: map[string]struct{}{"a": {}},
+			})) {
+				return
+			}
+		})
+
+		t.Run("inexact object pattern with a single prop + a dependency with a required key", func(t *testing.T) {
+			patt := &ObjectPattern{
+				inexact: true,
+				entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
+				dependencies: map[string]propertyDependencies{
+					"a": {requiredKeys: []string{"b"}},
+				},
+			}
+
+			//should not match object 'any'
+			if !assert.False(t, patt.TestValue(&Object{entries: nil})) {
+				return
+			}
+			val := patt.SymbolicValue()
+			if !assert.False(t, val.Test(&Object{entries: nil})) {
+				return
+			}
+
+			//should not match an empty inexact object
+			if !assert.False(t, patt.TestValue(&Object{
+				entries: map[string]Serializable{},
+				exact:   false,
+			})) {
+				return
+			}
+			val = patt.SymbolicValue()
+			if !assert.False(t, val.Test(&Object{
+				entries: map[string]Serializable{},
+				exact:   false,
+			})) {
+				return
+			}
+
+			//should not match an empty inexact object with the same dependency
+			if !assert.False(t, patt.TestValue(&Object{
+				exact:   false,
+				entries: map[string]Serializable{},
+				dependencies: map[string]propertyDependencies{
+					"a": {requiredKeys: []string{"b"}},
+				},
+			})) {
+				return
+			}
+			val = patt.SymbolicValue()
+			if !assert.False(t, val.Test(&Object{
+				exact:   false,
+				entries: map[string]Serializable{},
+				dependencies: map[string]propertyDependencies{
+					"a": {requiredKeys: []string{"b"}},
+				},
+			})) {
+				return
+			}
+
+			//should not match an empty exact object
+			if !assert.False(t, patt.TestValue(&Object{
+				entries: map[string]Serializable{},
+				exact:   true,
+			})) {
+				return
+			}
+			val = patt.SymbolicValue()
+			if !assert.False(t, val.Test(&Object{
+				entries: map[string]Serializable{},
+				exact:   true,
+			})) {
+				return
+			}
+
+			//TODO: empty exact object with the same dependency
+			//does that even make sense ? should some dependencies be forbidden for exact objects & exact object patterns ?
+
+			//should not match an inexact object with the same property
+			if !assert.False(t, patt.TestValue(&Object{
+				entries: map[string]Serializable{"a": ANY_INT},
+			})) {
+				return
+			}
+			val = patt.SymbolicValue()
+			if !assert.False(t, val.Test(&Object{
+				entries: map[string]Serializable{"a": ANY_INT},
+			})) {
+				return
+			}
+
+			//should not match an inexact object having the same property (but optional) and dependency
+			if !assert.False(t, patt.TestValue(&Object{
+				entries: map[string]Serializable{"a": ANY_INT},
+				dependencies: map[string]propertyDependencies{
+					"a": {requiredKeys: []string{"b"}},
+				},
+				optionalEntries: map[string]struct{}{"a": {}},
+			})) {
+				return
+			}
+			val = patt.SymbolicValue()
+			if !assert.False(t, val.Test(&Object{
+				entries: map[string]Serializable{"a": ANY_INT},
+				dependencies: map[string]propertyDependencies{
+					"a": {requiredKeys: []string{"b"}},
+				},
+				optionalEntries: map[string]struct{}{"a": {}},
+			})) {
+				return
+			}
+
+			//should not match an inexact object with the same property if optional
+			if !assert.False(t, patt.TestValue(&Object{
+				entries:         map[string]Serializable{"a": ANY_INT},
+				optionalEntries: map[string]struct{}{"a": {}},
+			})) {
+				return
+			}
+			val = patt.SymbolicValue()
+			if !assert.False(t, val.Test(&Object{
+				entries:         map[string]Serializable{"a": ANY_INT},
+				optionalEntries: map[string]struct{}{"a": {}},
+			})) {
+				return
+			}
+
+			//should not match an inexact object having the same property but optional and the same dependency
+			if !assert.False(t, patt.TestValue(&Object{
+				entries:         map[string]Serializable{"a": ANY_INT},
+				optionalEntries: map[string]struct{}{"a": {}},
+				dependencies: map[string]propertyDependencies{
+					"a": {requiredKeys: []string{"b"}},
+				},
+			})) {
+				return
+			}
+			val = patt.SymbolicValue()
+			if !assert.False(t, val.Test(&Object{
+				entries:         map[string]Serializable{"a": ANY_INT},
+				optionalEntries: map[string]struct{}{"a": {}},
+				dependencies: map[string]propertyDependencies{
+					"a": {requiredKeys: []string{"b"}},
+				},
+			})) {
+				return
+			}
+
+			//should not match an inexact object with the same property if super type
+			if !assert.False(t, patt.TestValue(&Object{
+				entries: map[string]Serializable{"a": ANY_INT},
+			})) {
+				return
+			}
+			val = patt.SymbolicValue()
+			if !assert.False(t, val.Test(&Object{
+				entries: map[string]Serializable{"a": ANY_SERIALIZABLE},
+			})) {
+				return
+			}
+
+			//should not match an inexact object having the same dependency and the same property but super type
+			if !assert.False(t, patt.TestValue(&Object{
+				entries: map[string]Serializable{"a": ANY_INT},
+				dependencies: map[string]propertyDependencies{
+					"a": {requiredKeys: []string{"b"}},
+				},
+			})) {
+				return
+			}
+			val = patt.SymbolicValue()
+			if !assert.False(t, val.Test(&Object{
+				entries: map[string]Serializable{"a": ANY_SERIALIZABLE},
+				dependencies: map[string]propertyDependencies{
+					"a": {requiredKeys: []string{"b"}},
+				},
+			})) {
+				return
+			}
+
+			//should not match an inexact object with the same property if different type
+			if !assert.False(t, patt.TestValue(&Object{
+				entries: map[string]Serializable{"a": ANY_INT},
+			})) {
+				return
+			}
+			val = patt.SymbolicValue()
+			if !assert.False(t, val.Test(&Object{
+				entries: map[string]Serializable{"a": ANY_BOOL},
+			})) {
+				return
+			}
+
+			//should not match an inexact object having the same dependency and the same property but different type
+			if !assert.False(t, patt.TestValue(&Object{
+				entries: map[string]Serializable{"a": ANY_INT},
+				dependencies: map[string]propertyDependencies{
+					"a": {requiredKeys: []string{"b"}},
+				},
+			})) {
+				return
+			}
+			val = patt.SymbolicValue()
+			if !assert.False(t, val.Test(&Object{
+				entries: map[string]Serializable{"a": ANY_BOOL},
+				dependencies: map[string]propertyDependencies{
+					"a": {requiredKeys: []string{"b"}},
+				},
+			})) {
+				return
+			}
+
+			//should not match an inexact object with the same property + validating the dependency
+			if !assert.True(t, patt.TestValue(&Object{
+				entries: map[string]Serializable{
+					"a": ANY_INT,
+					"b": ANY_INT,
+				},
+			})) {
+				return
+			}
+			val = patt.SymbolicValue()
+			if !assert.True(t, val.Test(&Object{
+				entries: map[string]Serializable{
+					"a": ANY_INT,
+					"b": ANY_INT,
+				},
+			})) {
+				return
+			}
+
+			//should not match an inexact object with the same property + an additional property unrelated to the dependency
+			if !assert.False(t, patt.TestValue(&Object{
+				entries: map[string]Serializable{
+					"a": ANY_INT,
+					"c": ANY_INT,
+				},
+			})) {
+				return
+			}
+			val = patt.SymbolicValue()
+			if !assert.False(t, val.Test(&Object{
+				entries: map[string]Serializable{
+					"a": ANY_INT,
+					"c": ANY_INT,
+				},
+			})) {
+				return
+			}
+
+			//should not match an exact object with the same property
+			if !assert.False(t, patt.TestValue(&Object{
+				entries: map[string]Serializable{"a": ANY_INT},
+				exact:   true,
+			})) {
+				return
+			}
+			val = patt.SymbolicValue()
+			if !assert.False(t, val.Test(&Object{
+				entries: map[string]Serializable{"a": ANY_INT},
+				exact:   true,
+			})) {
+				return
+			}
+
+			//should not match an exact object with the same property if optional
+			if !assert.False(t, patt.TestValue(&Object{
+				entries: map[string]Serializable{"a": ANY_INT},
+				exact:   true,
+			})) {
+				return
+			}
+			val = patt.SymbolicValue()
+			if !assert.False(t, val.Test(&Object{
+				entries: map[string]Serializable{"a": ANY_INT},
+				exact:   true,
+			})) {
+				return
+			}
+		})
+
+		t.Run("inexact object pattern with a single optional prop + a dependency with a required key", func(t *testing.T) {
+			patt := &ObjectPattern{
+				inexact:         true,
+				entries:         map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
+				optionalEntries: map[string]struct{}{"a": {}},
+				dependencies: map[string]propertyDependencies{
+					"a": {requiredKeys: []string{"b"}},
+				},
+			}
+
+			//should not match object 'any'
+			if !assert.False(t, patt.TestValue(&Object{entries: nil})) {
+				return
+			}
+			val := patt.SymbolicValue()
+			if !assert.False(t, val.Test(&Object{entries: nil})) {
+				return
+			}
+
+			//should match an empty inexact object
+			if !assert.True(t, patt.TestValue(&Object{
+				entries: map[string]Serializable{},
+				exact:   false,
+			})) {
+				return
+			}
+			val = patt.SymbolicValue()
+			if !assert.True(t, val.Test(&Object{
+				entries: map[string]Serializable{},
+				exact:   false,
+			})) {
+				return
+			}
+
+			//should match an empty inexact object with the same dependency
+			if !assert.True(t, patt.TestValue(&Object{
+				exact:   false,
+				entries: map[string]Serializable{},
+				dependencies: map[string]propertyDependencies{
+					"a": {requiredKeys: []string{"b"}},
+				},
+			})) {
+				return
+			}
+			val = patt.SymbolicValue()
+			if !assert.True(t, val.Test(&Object{
+				exact:   false,
+				entries: map[string]Serializable{},
+				dependencies: map[string]propertyDependencies{
+					"a": {requiredKeys: []string{"b"}},
+				},
+			})) {
+				return
+			}
+
+			//should match an empty exact object
+			if !assert.True(t, patt.TestValue(&Object{
+				entries: map[string]Serializable{},
+				exact:   true,
+			})) {
+				return
+			}
+			val = patt.SymbolicValue()
+			if !assert.True(t, val.Test(&Object{
+				entries: map[string]Serializable{},
+				exact:   true,
+			})) {
+				return
+			}
+
+			//should not match an inexact object with the same property but not validating the dependency
+			if !assert.False(t, patt.TestValue(&Object{
+				entries: map[string]Serializable{"a": ANY_INT},
+			})) {
+				return
+			}
+			val = patt.SymbolicValue()
+			if !assert.False(t, val.Test(&Object{
+				entries: map[string]Serializable{"a": ANY_INT},
+			})) {
+				return
+			}
+
+			//should match an inexact object having the same property (but optional) and dependency
+			if !assert.True(t, patt.TestValue(&Object{
+				entries: map[string]Serializable{"a": ANY_INT},
+				dependencies: map[string]propertyDependencies{
+					"a": {requiredKeys: []string{"b"}},
+				},
+				optionalEntries: map[string]struct{}{"a": {}},
+			})) {
+				return
+			}
+			val = patt.SymbolicValue()
+			if !assert.True(t, val.Test(&Object{
+				entries: map[string]Serializable{"a": ANY_INT},
+				dependencies: map[string]propertyDependencies{
+					"a": {requiredKeys: []string{"b"}},
+				},
+				optionalEntries: map[string]struct{}{"a": {}},
+			})) {
+				return
+			}
+
+			//should not match an inexact object with the same property but optional
+			if !assert.False(t, patt.TestValue(&Object{
+				entries:         map[string]Serializable{"a": ANY_INT},
+				optionalEntries: map[string]struct{}{"a": {}},
+			})) {
+				return
+			}
+			val = patt.SymbolicValue()
+			if !assert.False(t, val.Test(&Object{
+				entries:         map[string]Serializable{"a": ANY_INT},
+				optionalEntries: map[string]struct{}{"a": {}},
+			})) {
+				return
+			}
+
+			//should match an inexact object having the same property but optional and the same dependency
+			if !assert.True(t, patt.TestValue(&Object{
+				entries:         map[string]Serializable{"a": ANY_INT},
+				optionalEntries: map[string]struct{}{"a": {}},
+				dependencies: map[string]propertyDependencies{
+					"a": {requiredKeys: []string{"b"}},
+				},
+			})) {
+				return
+			}
+			val = patt.SymbolicValue()
+			if !assert.True(t, val.Test(&Object{
+				entries:         map[string]Serializable{"a": ANY_INT},
+				optionalEntries: map[string]struct{}{"a": {}},
+				dependencies: map[string]propertyDependencies{
+					"a": {requiredKeys: []string{"b"}},
+				},
+			})) {
+				return
+			}
+
+			//should not match an inexact object with the same property but super type
+			if !assert.False(t, patt.TestValue(&Object{
+				entries: map[string]Serializable{"a": ANY_INT},
+			})) {
+				return
+			}
+			val = patt.SymbolicValue()
+			if !assert.False(t, val.Test(&Object{
+				entries: map[string]Serializable{"a": ANY_SERIALIZABLE},
+			})) {
+				return
+			}
+
+			//should not match an inexact object having the same dependency and the same property but super type
+			if !assert.False(t, patt.TestValue(&Object{
+				entries: map[string]Serializable{"a": ANY_INT},
+				dependencies: map[string]propertyDependencies{
+					"a": {requiredKeys: []string{"b"}},
+				},
+			})) {
+				return
+			}
+			val = patt.SymbolicValue()
+			if !assert.False(t, val.Test(&Object{
+				entries: map[string]Serializable{"a": ANY_SERIALIZABLE},
+				dependencies: map[string]propertyDependencies{
+					"a": {requiredKeys: []string{"b"}},
+				},
+			})) {
+				return
+			}
+
+			//should not match an inexact object with the same property if different type
+			if !assert.False(t, patt.TestValue(&Object{
+				entries: map[string]Serializable{"a": ANY_INT},
+			})) {
+				return
+			}
+			val = patt.SymbolicValue()
+			if !assert.False(t, val.Test(&Object{
+				entries: map[string]Serializable{"a": ANY_BOOL},
+			})) {
+				return
+			}
+
+			//should not match an inexact object having the same dependency and the same property but different type
+			if !assert.False(t, patt.TestValue(&Object{
+				entries: map[string]Serializable{"a": ANY_INT},
+				dependencies: map[string]propertyDependencies{
+					"a": {requiredKeys: []string{"b"}},
+				},
+			})) {
+				return
+			}
+			val = patt.SymbolicValue()
+			if !assert.False(t, val.Test(&Object{
+				entries: map[string]Serializable{"a": ANY_BOOL},
+				dependencies: map[string]propertyDependencies{
+					"a": {requiredKeys: []string{"b"}},
+				},
+			})) {
+				return
+			}
+
+			//should not match an inexact object with the same property + validating the dependency
+			if !assert.True(t, patt.TestValue(&Object{
+				entries: map[string]Serializable{
+					"a": ANY_INT,
+					"b": ANY_INT,
+				},
+			})) {
+				return
+			}
+			val = patt.SymbolicValue()
+			if !assert.True(t, val.Test(&Object{
+				entries: map[string]Serializable{
+					"a": ANY_INT,
+					"b": ANY_INT,
+				},
+			})) {
+				return
+			}
+
+			//should not match an inexact object with the same property + an additional property unrelated to the dependency
+			if !assert.False(t, patt.TestValue(&Object{
+				entries: map[string]Serializable{
+					"a": ANY_INT,
+					"c": ANY_INT,
+				},
+			})) {
+				return
+			}
+			val = patt.SymbolicValue()
+			if !assert.False(t, val.Test(&Object{
+				entries: map[string]Serializable{
+					"a": ANY_INT,
+					"c": ANY_INT,
+				},
+			})) {
+				return
+			}
+
+			//should not match an exact object with the same property
+			if !assert.False(t, patt.TestValue(&Object{
+				entries: map[string]Serializable{"a": ANY_INT},
+				exact:   true,
+			})) {
+				return
+			}
+			val = patt.SymbolicValue()
+			if !assert.False(t, val.Test(&Object{
+				entries: map[string]Serializable{"a": ANY_INT},
+				exact:   true,
+			})) {
+				return
+			}
+
+			//should not match an exact object with the same property if optional
+			if !assert.False(t, patt.TestValue(&Object{
+				entries: map[string]Serializable{"a": ANY_INT},
+				exact:   true,
+			})) {
+				return
+			}
+			val = patt.SymbolicValue()
+			if !assert.False(t, val.Test(&Object{
+				entries: map[string]Serializable{"a": ANY_INT},
+				exact:   true,
+			})) {
+				return
+			}
+		})
 	})
 
 	t.Run("MigrationInitialValue()", func(t *testing.T) {
