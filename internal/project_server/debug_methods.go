@@ -166,7 +166,8 @@ type DebugSession struct {
 	nextInitialBreakpointId        int32
 	initialBreakpointsLock         sync.Mutex
 
-	debugger                *core.Debugger
+	debugger                *core.Debugger //set during or shorty after the 'debug/launch' call
+	debuggerSet             atomic.Bool
 	nextSeq                 atomic.Int32
 	variablesReferences     map[core.StateId]*variablesReferences
 	variablesReference      atomic.Int32
@@ -483,6 +484,7 @@ func registerDebugMethodHandlers(
 			debugSession.programDoneChan = make(chan error, 1)
 			debugSession.programPreparedOrFailedToChan = make(chan error)
 
+			//teardown goroutine
 			go func() {
 				defer func() {
 					if e := recover(); e != nil {
@@ -530,6 +532,8 @@ func registerDebugMethodHandlers(
 				}, nil
 			}
 
+			startDebugEventSenders(debugSession, session)
+
 			return dap.LaunchResponse{
 				Response: dap.Response{
 					RequestSeq: dapRequest.Seq,
@@ -572,6 +576,21 @@ func registerDebugMethodHandlers(
 			}
 
 			var threads []dap.Thread
+
+			if !utils.InefficientlyWaitUntilTrue(&debugSession.debuggerSet, 10*time.Millisecond) {
+				return dap.ThreadsResponse{
+					Response: dap.Response{
+						RequestSeq: dapRequest.Seq,
+						Success:    false,
+						ProtocolMessage: dap.ProtocolMessage{
+							Seq:  0,
+							Type: "response",
+						},
+						Command: dapRequest.Command,
+						Message: "debuggee",
+					},
+				}, nil
+			}
 
 			for _, thread := range debugSession.debugger.Threads() {
 				threads = append(threads, dap.Thread{
@@ -1614,8 +1633,33 @@ func launchDebuggedProgram(programPath string, session *jsonrpc.Session, debugSe
 		InitialBreakpoints:    initialBreakpoints,
 		ExceptionBreakpointId: exceptionBreakpointsId,
 	})
+	debugSession.debuggerSet.Store(true)
 
-	//send a "stopped" event each time the program stops.
+	_, _, _, preparationOk, err := mod.RunLocalScript(mod.RunScriptArgs{
+		Fpath:                     programPath,
+		ParsingCompilationContext: ctx,
+		ParentContext:             ctx,
+		ParentContextRequired:     true,
+		PreinitFilesystem:         fls,
+		AllowMissingEnvVars:       false,
+		IgnoreHighRiskScore:       true,
+		FullAccessToDatabases:     true,
+		Project:                   project,
+		Out:                       programOut,
+
+		Debugger:     debugSession.debugger,
+		PreparedChan: debugSession.programPreparedOrFailedToChan,
+	})
+
+	if preparationOk {
+		debugSession.programDoneChan <- err
+	} else {
+		debugSession.debugger.Closed()
+	}
+}
+
+func startDebugEventSenders(debugSession *DebugSession, session *jsonrpc.Session) {
+	//goroutine sending a "stopped" event each time the program stops.
 	go func() {
 		defer func() {
 			if e := recover(); e != nil {
@@ -1670,7 +1714,7 @@ func launchDebuggedProgram(programPath string, session *jsonrpc.Session, debugSe
 		}
 	}()
 
-	//send secondary events
+	//goroutine sending secondary events
 	go func() {
 		defer func() {
 			if e := recover(); e != nil {
@@ -1732,25 +1776,6 @@ func launchDebuggedProgram(programPath string, session *jsonrpc.Session, debugSe
 		}
 	}()
 
-	_, _, _, preparationOk, err := mod.RunLocalScript(mod.RunScriptArgs{
-		Fpath:                     programPath,
-		ParsingCompilationContext: ctx,
-		ParentContext:             ctx,
-		ParentContextRequired:     true,
-		PreinitFilesystem:         fls,
-		AllowMissingEnvVars:       false,
-		IgnoreHighRiskScore:       true,
-		FullAccessToDatabases:     true,
-		Project:                   project,
-		Out:                       programOut,
-
-		Debugger:     debugSession.debugger,
-		PreparedChan: debugSession.programPreparedOrFailedToChan,
-	})
-
-	if preparationOk {
-		debugSession.programDoneChan <- err
-	}
 }
 
 func stopReasonToDapStopReason(reason core.ProgramStopReason) string {
