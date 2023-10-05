@@ -845,7 +845,7 @@ func TestSymbolicObjectPattern(t *testing.T) {
 				return
 			}
 
-			//should match an empty inexact object
+			//should not match an empty inexact object
 			if !assert.False(t, patt.TestValue(&Object{
 				entries: map[string]Serializable{},
 				exact:   false,
@@ -1453,15 +1453,15 @@ func TestSymbolicObjectPattern(t *testing.T) {
 				return
 			}
 
-			//should match an empty inexact object
-			if !assert.True(t, patt.TestValue(&Object{
+			//should not match an empty inexact object
+			if !assert.False(t, patt.TestValue(&Object{
 				entries: map[string]Serializable{},
 				exact:   false,
 			})) {
 				return
 			}
 			val = patt.SymbolicValue()
-			if !assert.True(t, val.Test(&Object{
+			if !assert.False(t, val.Test(&Object{
 				entries: map[string]Serializable{},
 				exact:   false,
 			})) {
@@ -1489,15 +1489,15 @@ func TestSymbolicObjectPattern(t *testing.T) {
 				return
 			}
 
-			//should match an empty exact object
-			if !assert.True(t, patt.TestValue(&Object{
+			//should not match an empty exact object
+			if !assert.False(t, patt.TestValue(&Object{
 				entries: map[string]Serializable{},
 				exact:   true,
 			})) {
 				return
 			}
 			val = patt.SymbolicValue()
-			if !assert.True(t, val.Test(&Object{
+			if !assert.False(t, val.Test(&Object{
 				entries: map[string]Serializable{},
 				exact:   true,
 			})) {

@@ -1057,6 +1057,96 @@ func (p *ObjectPattern) Test(v SymbolicValue) bool {
 	return true
 }
 
+func (p *ObjectPattern) TestValue(v SymbolicValue) bool {
+	obj, ok := v.(*Object)
+	if !ok || p.readonly != obj.readonly {
+		return false
+	}
+
+	if p.entries == nil {
+		return true
+	}
+
+	if !p.inexact && obj.IsInexact() {
+		return false
+	}
+
+	if p.inexact {
+		if obj.entries == nil {
+			return false
+		}
+	} else if obj.entries == nil || (len(p.optionalEntries) == 0 && len(p.entries) != len(obj.entries)) {
+		return false
+	}
+
+	//check dependencies
+	for propName, deps := range p.dependencies {
+		counterPartDeps, ok := obj.dependencies[propName]
+		if ok {
+			for _, dep := range deps.requiredKeys {
+				if !slices.Contains(counterPartDeps.requiredKeys, dep) {
+					return false
+				}
+			}
+			if deps.pattern != nil && (counterPartDeps.pattern == nil || !deps.pattern.Test(counterPartDeps.pattern)) {
+				return false
+			}
+		} else if !obj.hasRequiredProperty(propName) {
+			//if the property does not exist or is optional in obj it's impossible
+			//to known if the dependency constraint is fulfilled.
+			return false
+		}
+	}
+
+	for key, valuePattern := range p.entries {
+		_, isOptional := p.optionalEntries[key]
+		_, isOptionalInObject := obj.optionalEntries[key]
+		value, _, ok := obj.GetProperty(key)
+
+		if !isOptional && isOptionalInObject {
+			return false
+		}
+
+		if !ok {
+			if !isOptional || (p.hasDeps(key) && !obj.hasDeps(key)) {
+				return false
+			}
+		} else {
+			if !valuePattern.TestValue(value) {
+				return false
+			}
+			if !isOptional || !isOptionalInObject {
+				//check dependencies
+				deps := p.dependencies[key]
+				for _, requiredKey := range deps.requiredKeys {
+					if !obj.hasRequiredProperty(requiredKey) {
+						return false
+					}
+				}
+				if deps.pattern != nil && !deps.pattern.TestValue(obj) {
+					return false
+				}
+			}
+		}
+	}
+
+	// if pattern is exact check that there are no additional properties
+	if !p.inexact {
+		for _, propName := range obj.PropertyNames() {
+			if _, ok := p.entries[propName]; !ok {
+				return false
+			}
+		}
+	}
+
+	return true
+}
+
+func (p *ObjectPattern) hasDeps(name string) bool {
+	_, ok := p.dependencies[name]
+	return ok
+}
+
 func (p *ObjectPattern) Concretize(ctx ConcreteContext) any {
 	if !p.IsConcretizable() {
 		panic(ErrNotConcretizable)
@@ -1214,85 +1304,6 @@ func (p *ObjectPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintC
 }
 
 func (p *ObjectPattern) HasUnderlyingPattern() bool {
-	return true
-}
-
-func (p *ObjectPattern) TestValue(v SymbolicValue) bool {
-	obj, ok := v.(*Object)
-	if !ok || p.readonly != obj.readonly {
-		return false
-	}
-
-	if p.entries == nil {
-		return true
-	}
-
-	if !p.inexact && obj.IsInexact() {
-		return false
-	}
-
-	if p.inexact {
-		if obj.entries == nil {
-			return false
-		}
-	} else if obj.entries == nil || (len(p.optionalEntries) == 0 && len(p.entries) != len(obj.entries)) {
-		return false
-	}
-
-	//check dependencies
-	for propName, deps := range p.dependencies {
-		counterPartDeps, ok := obj.dependencies[propName]
-		if ok {
-			for _, dep := range deps.requiredKeys {
-				if !slices.Contains(counterPartDeps.requiredKeys, dep) {
-					return false
-				}
-			}
-			if deps.pattern != nil && (counterPartDeps.pattern == nil || !deps.pattern.Test(counterPartDeps.pattern)) {
-				return false
-			}
-		}
-	}
-
-	for key, valuePattern := range p.entries {
-		_, isOptional := p.optionalEntries[key]
-		_, isOptionalInObject := obj.optionalEntries[key]
-		value, _, ok := obj.GetProperty(key)
-
-		if !isOptional && isOptionalInObject {
-			return false
-		}
-
-		if ok {
-			if !valuePattern.TestValue(value) {
-				return false
-			}
-			if !isOptional || !isOptionalInObject {
-				//check dependencies
-				deps := p.dependencies[key]
-				for _, requiredKey := range deps.requiredKeys {
-					if !obj.hasRequiredProperty(requiredKey) {
-						return false
-					}
-				}
-				if deps.pattern != nil && !deps.pattern.TestValue(obj) {
-					return false
-				}
-			}
-		} else if !isOptional {
-			return false
-		}
-	}
-
-	// if pattern is exact check that there are no additional properties
-	if !p.inexact {
-		for _, propName := range obj.PropertyNames() {
-			if _, ok := p.entries[propName]; !ok {
-				return false
-			}
-		}
-	}
-
 	return true
 }
 

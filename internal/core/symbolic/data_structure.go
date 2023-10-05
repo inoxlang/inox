@@ -1260,6 +1260,10 @@ func (obj *Object) test(v SymbolicValue, exact bool) bool {
 			if deps.pattern != nil && (counterPartDeps.pattern == nil || !deps.pattern.Test(counterPartDeps.pattern)) {
 				return false
 			}
+		} else if !otherObj.hasRequiredProperty(propName) {
+			//if the property does not exist or is optional in otherObj it's impossible
+			//to known if the dependency constraint is fulfilled.
+			return false
 		}
 	}
 
@@ -1672,6 +1676,11 @@ func (obj *Object) hasProperty(name string) bool {
 func (obj *Object) hasRequiredProperty(name string) bool {
 	_, ok := obj.optionalEntries[name]
 	return !ok && obj.hasProperty(name)
+}
+
+func (obj *Object) hasDeps(name string) bool {
+	_, ok := obj.dependencies[name]
+	return ok
 }
 
 // result should not be modfied
