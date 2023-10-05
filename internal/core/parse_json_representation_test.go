@@ -351,7 +351,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 		}
 
 		obj, err = ParseJSONRepresentation(ctx, `{"a":{}}`, pattern)
-		if assert.ErrorContains(t, err, "failed to parse value of object property a: the following properties are missing: b") {
+		if assert.ErrorContains(t, err, "failed to parse value of object property \"a\": the following properties are missing: b") {
 			assert.Nil(t, obj)
 		}
 
