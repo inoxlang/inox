@@ -21,7 +21,8 @@ const (
 )
 
 var (
-	FS_ROUTING_METHODS = []string{"GET", "POST", "PATCH", "PUT", "DELETE"}
+	//methods allowed in handler module filenames.
+	FS_ROUTING_METHODS = []string{"GET", "OPTIONS", "POST", "PATCH", "PUT", "DELETE"}
 )
 
 func createHandleDynamic(server *HttpServer, routingDirPath core.Path) handlerFn {
@@ -49,17 +50,23 @@ func createHandleDynamic(server *HttpServer, routingDirPath core.Path) handlerFn
 			return
 		}
 
+		searchedMethod := method
+		switch method {
+		case "HEAD":
+			searchedMethod = "GET"
+		}
+
 		//test different paths for the module
 
 		pathDir, pathBasename := filepath.Split(string(path))
 		//example: /about -> /GET-about.ix
-		modulePath := fls.Join(string(routingDirPath), pathDir, "/"+string(req.Method)+"-"+pathBasename+INOX_FILE_EXTENSION)
+		modulePath := fls.Join(string(routingDirPath), pathDir, "/"+searchedMethod+"-"+pathBasename+INOX_FILE_EXTENSION)
 		methodSpecificModule := true
 
 		_, err := fls.Stat(modulePath)
 		if err != nil {
 			//example: /about -> /about/GET.ix
-			modulePath = fls.Join(string(routingDirPath), string(path), string(req.Method)+INOX_FILE_EXTENSION)
+			modulePath = fls.Join(string(routingDirPath), string(path), searchedMethod+INOX_FILE_EXTENSION)
 			_, err = fls.Stat(modulePath)
 			if err == nil {
 				goto module_path_resolved

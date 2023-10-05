@@ -44,8 +44,8 @@ var (
 	ErrHandlerNotSharable = errors.New("handler is not sharable")
 
 	HTTP_ROUTING_SYMB_OBJ = symbolic.NewInexactObject(map[string]symbolic.Serializable{
-		"static":  symbolic.ANY_DIR_PATH,
-		"dynamic": symbolic.ANY_DIR_PATH,
+		"static":  symbolic.ANY_ABS_DIR_PATH,
+		"dynamic": symbolic.ANY_ABS_DIR_PATH,
 	}, map[string]struct{}{
 		"static": {}, "dynamic": {},
 	}, nil)
@@ -85,7 +85,6 @@ type HttpServer struct {
 	sseServer *SseServer
 }
 
-// NewHttpServer returns an HttpServer with unitialized .state & .logger
 func NewHttpServer(ctx *core.Context, host core.Host, args ...core.Value) (*HttpServer, error) {
 	ctxLogger := *ctx.Logger()
 	_server := &HttpServer{
