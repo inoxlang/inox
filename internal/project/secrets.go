@@ -79,6 +79,14 @@ func (p *Project) ListSecrets2(ctx *core.Context) (secrets []ProjectSecret, _ er
 	secrets = make([]ProjectSecret, len(objects))
 	errs := make([]error, len(objects))
 
+	//TODO: investigate why this fix is needed
+	objects = utils.FilterMapSlice(objects, func(s *s3_ns.ObjectInfo) (*s3_ns.ObjectInfo, bool) {
+		if s.Key == "" {
+			return nil, false
+		}
+		return s, true
+	})
+
 	var lock sync.Mutex
 
 	for i, obj := range objects {
