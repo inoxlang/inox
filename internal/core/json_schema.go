@@ -612,6 +612,15 @@ func convertJsonSchemaToPattern(schema *jsonschema.Schema, baseSchema *jsonschem
 
 					propDependencies.pattern = dependenciesPattern
 					dependencies[dependentKey] = propDependencies
+
+					//make sure the dependent key is present in the entries
+					if _, ok := entries[dependentKey]; !ok {
+						entries[dependentKey] = SERIALIZABLE_PATTERN
+						if optionalProperties == nil {
+							optionalProperties = map[string]struct{}{}
+						}
+						optionalProperties[dependentKey] = struct{}{}
+					}
 				default:
 				}
 			}

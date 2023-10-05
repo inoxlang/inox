@@ -21,6 +21,7 @@ var (
 	ErrPatternNotCallable            = errors.New("pattern is not callable")
 	ErrNoDefaultValue                = errors.New("no default value")
 	ErrTooDeepUnionPatternFlattening = errors.New("union pattern flattening is too deep")
+	ErrInconsistentObjectPattern     = errors.New("inconsistent object pattern")
 
 	_ = []GroupPattern{(*NamedSegmentPathPattern)(nil)}
 	_ = []DefaultValuePattern{
@@ -333,23 +334,49 @@ type propertyDependencies struct {
 }
 
 func NewExactObjectPattern(entries map[string]Pattern) *ObjectPattern {
-	return &ObjectPattern{entryPatterns: entries}
+	p := &ObjectPattern{entryPatterns: entries}
+	p.assertIsConsistent()
+	return p
 }
 
 func NewExactObjectPatternWithOptionalProps(entries map[string]Pattern, optionalProperties map[string]struct{}) *ObjectPattern {
-	return &ObjectPattern{entryPatterns: entries, optionalEntries: optionalProperties, inexact: false}
+	p := &ObjectPattern{entryPatterns: entries, optionalEntries: optionalProperties, inexact: false}
+	p.assertIsConsistent()
+	return p
 }
 
 func NewInexactObjectPattern(entries map[string]Pattern) *ObjectPattern {
-	return &ObjectPattern{entryPatterns: entries, inexact: true}
+	p := &ObjectPattern{entryPatterns: entries, inexact: true}
+	p.assertIsConsistent()
+	return p
 }
 
 func NewInexactObjectPatternWithOptionalProps(entries map[string]Pattern, optionalProperties map[string]struct{}) *ObjectPattern {
-	return &ObjectPattern{entryPatterns: entries, optionalEntries: optionalProperties, inexact: true}
+	p := &ObjectPattern{entryPatterns: entries, optionalEntries: optionalProperties, inexact: true}
+	p.assertIsConsistent()
+	return p
 }
 
 func NewObjectPatternWithOptionalProps(inexact bool, entries map[string]Pattern, optionalProperties map[string]struct{}) *ObjectPattern {
-	return &ObjectPattern{entryPatterns: entries, optionalEntries: optionalProperties, inexact: inexact}
+	p := &ObjectPattern{entryPatterns: entries, optionalEntries: optionalProperties, inexact: inexact}
+	p.assertIsConsistent()
+	return p
+}
+
+func (patt *ObjectPattern) isConsistent() bool {
+	//check that all dependent keys are present in the entries
+	for dependentKey := range patt.dependencies {
+		if _, ok := patt.entryPatterns[dependentKey]; !ok {
+			return false
+		}
+	}
+	return true
+}
+
+func (patt *ObjectPattern) assertIsConsistent() {
+	if !patt.isConsistent() {
+		panic(ErrInconsistentObjectPattern)
+	}
 }
 
 func (patt *ObjectPattern) WithDependencies(deps map[string]propertyDependencies) *ObjectPattern {
