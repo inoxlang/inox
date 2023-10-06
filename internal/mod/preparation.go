@@ -161,7 +161,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 	}
 
 	defer func() {
-		if finalErr != nil {
+		if finalErr != nil && ctx != nil && !args.DataExtractionMode {
 			ctx.CancelGracefully()
 		}
 	}()
@@ -288,6 +288,9 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 					return nil, nil, nil, err
 				}
 				dbOpeningError = err
+				if state.FirstDatabaseOpeningError == nil {
+					state.FirstDatabaseOpeningError = err
+				}
 			}
 		}
 	}
