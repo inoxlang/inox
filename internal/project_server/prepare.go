@@ -1,6 +1,7 @@
 package project_server
 
 import (
+	"fmt"
 	"io"
 	"sync"
 	"sync/atomic"
@@ -14,20 +15,13 @@ import (
 	"github.com/inoxlang/inox/internal/utils"
 )
 
-type preparedSourceFileCache struct {
-	state  *core.GlobalState
-	module *core.Module
-	chunk  *parse.ParsedChunk
-	lock   sync.Mutex
-
-	clearBeforeNextAccess atomic.Bool
-}
-
 type filePreparationParams struct {
 	fpath         string
 	session       *jsonrpc.Session
 	requiresState bool
 	ignoreCache   bool //if true the cache is not read but the resulting prepared file is cached
+
+	notifyUserAboutDbError bool
 }
 
 // prepareSourceFileInExtractionMode prepares a module or includable-chunk file:
@@ -67,9 +61,7 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 		defer fileCache.lock.Unlock()
 
 		if fileCache.clearBeforeNextAccess.CompareAndSwap(true, false) {
-			fileCache.chunk = nil
-			fileCache.module = nil
-			fileCache.state = nil
+			fileCache.clear()
 		}
 	}
 
@@ -127,9 +119,7 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 		//cache the results if the file was not modified during the preparation
 		if fileCache != nil {
 			if fileCache.clearBeforeNextAccess.CompareAndSwap(true, false) {
-				fileCache.state = nil
-				fileCache.module = nil
-				fileCache.chunk = nil
+				fileCache.clear()
 			} else {
 				fileCache.state = state
 				fileCache.module = mod
@@ -146,9 +136,10 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 				node, _ := obj.PropValue(core.MANIFEST_DATABASES_SECTION_NAME)
 				if pathLiteral, ok := node.(*parse.AbsolutePathLiteral); ok {
 					state, _, _, ok := prepareSourceFileInExtractionMode(ctx, filePreparationParams{
-						fpath:         pathLiteral.Value,
-						session:       session,
-						requiresState: true,
+						fpath:                  pathLiteral.Value,
+						session:                session,
+						requiresState:          true,
+						notifyUserAboutDbError: true,
 					})
 					if ok {
 						parentCtx = state.Ctx
@@ -193,12 +184,15 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 			return nil, nil, nil, false
 		}
 
+		if params.notifyUserAboutDbError && state != nil && state.FirstDatabaseOpeningError != nil {
+			msg := fmt.Sprintf("failed to open at least one database in module %q: %s", params.fpath, state.FirstDatabaseOpeningError.Error())
+			session.Notify(NewShowMessage(defines.MessageTypeWarning, msg))
+		}
+
 		//cache the results if the file was not modified during the preparation
 		if fileCache != nil {
 			if fileCache.clearBeforeNextAccess.CompareAndSwap(true, false) {
-				fileCache.state = nil
-				fileCache.module = nil
-				fileCache.chunk = nil
+				fileCache.clear()
 			} else {
 				logs.Println("update cache for file", fpath, "new length", len(mod.MainChunk.Source.Code()))
 				fileCache.state = state
@@ -210,4 +204,30 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 		return state, mod, mod.MainChunk, true
 	}
 
+}
+
+type preparedSourceFileCache struct {
+	state  *core.GlobalState
+	module *core.Module
+	chunk  *parse.ParsedChunk
+	lock   sync.Mutex
+
+	clearBeforeNextAccess atomic.Bool
+}
+
+func (c *preparedSourceFileCache) clear() {
+	if c.state != nil {
+		func() {
+			defer func() {
+				err := recover()
+				if err != nil {
+					logs.Printf("failed to cancel cached context: %#v", err)
+				}
+			}()
+			c.state.Ctx.CancelGracefully()
+		}()
+	}
+	c.chunk = nil
+	c.module = nil
+	c.state = nil
 }
