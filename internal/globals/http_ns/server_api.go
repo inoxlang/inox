@@ -1,6 +1,7 @@
 package http_ns
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"path/filepath"
@@ -10,6 +11,12 @@ import (
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/mod"
 	"github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/utils"
+)
+
+var (
+	ErrUnexpectedBodyParamsInGETHandler     = errors.New("unexpected request body parmameters in GET handler")
+	ErrUnexpectedBodyParamsInOPTIONSHandler = errors.New("unexpected request body parmameters in OPTIONS handler")
 )
 
 func getServerAPI(ctx *core.Context, server *HttpServer) {
@@ -195,22 +202,30 @@ func addFilesysteDirEndpoints(ctx *core.Context, api *API, dir, urlDirPath strin
 
 		operation.handlerModule = mod
 
-		paramPatterns := make(map[string]core.Pattern)
-		optionalParams := make(map[string]struct{})
+		bodyParams := utils.FilterSlice(state.Manifest.Parameters.NonPositionalParameters(), func(p core.ModuleParameter) bool {
+			return !strings.HasPrefix(p.Name(), "_")
+		})
 
-		for _, param := range state.Manifest.Parameters.NonPositionalParameters() {
-			name := param.Name()
-			if strings.HasPrefix(name, "_") { //injected parameter
-				continue
+		if len(bodyParams) > 0 {
+			if method == "GET" {
+				return fmt.Errorf("%w: module %q", ErrUnexpectedBodyParamsInGETHandler, absEntryPath)
+			} else if method == "OPTIONS" {
+				return fmt.Errorf("%w: module %q", ErrUnexpectedBodyParamsInOPTIONSHandler, absEntryPath)
 			}
 
-			if !param.Required(ctx) {
-				optionalParams[name] = struct{}{}
+			paramPatterns := make(map[string]core.Pattern)
+			optionalParams := make(map[string]struct{})
+
+			for _, param := range bodyParams {
+				name := param.Name()
+				if !param.Required(ctx) {
+					optionalParams[name] = struct{}{}
+				}
+				paramPatterns[name] = param.Pattern()
 			}
-			paramPatterns[name] = param.Pattern()
+
+			operation.jsonRequestBody = core.NewInexactObjectPatternWithOptionalProps(paramPatterns, optionalParams)
 		}
-
-		operation.jsonRequestBody = core.NewInexactObjectPatternWithOptionalProps(paramPatterns, optionalParams)
 	}
 
 	return nil
