@@ -18,6 +18,9 @@ import (
 const (
 	INOX_FILE_EXTENSION     = inoxconsts.INOXLANG_FILE_EXTENSION
 	FS_ROUTING_INDEX_MODULE = "index" + INOX_FILE_EXTENSION
+
+	FS_ROUTING_BODY_PARAM   = "_body"
+	FS_ROUTING_METHOD_PARAM = "_method"
 )
 
 var (
@@ -176,11 +179,11 @@ func getHandlerModuleArguments(req *HttpRequest, manifest *core.Manifest, handle
 		if !handlerModuleParams.methodPattern.Test(handlerCtx, method) {
 			return nil, http.StatusBadRequest, errors.New("method is not accepted")
 		}
-		moduleArguments["_method"] = method
+		moduleArguments[FS_ROUTING_METHOD_PARAM] = method
 	}
 
 	if handlerModuleParams.bodyReader {
-		moduleArguments["_body"] = req.Body
+		moduleArguments[FS_ROUTING_BODY_PARAM] = req.Body
 	} else if handlerModuleParams.jsonBodyPattern != nil {
 		if !req.ContentType.MatchText(mimeconsts.JSON_CTYPE) {
 			return nil, http.StatusBadRequest, errors.New("unsupported content type")
@@ -230,9 +233,9 @@ func getHandlerModuleParameters(ctx *core.Context, manifest *core.Manifest, meth
 
 		if paramName[0] == '_' {
 			switch paramName {
-			case "_method":
+			case FS_ROUTING_METHOD_PARAM:
 				handlerModuleParams.methodPattern = param.Pattern()
-			case "_body":
+			case FS_ROUTING_BODY_PARAM:
 				if param.Pattern() != core.READER_PATTERN {
 					return handlerModuleParameters{}, fmt.Errorf("parameter '%s' should have %%reader as pattern", paramName)
 				}

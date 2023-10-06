@@ -21,4 +21,6 @@ type ApiOperation struct {
 
 	jsonRequestBody    core.Pattern
 	jsonResponseBodies map[uint16]core.Pattern
+
+	handlerModule *core.Module //only set if filesystem routing is used
 }
