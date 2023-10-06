@@ -4364,7 +4364,7 @@ func TestSymbolicEval(t *testing.T) {
 			})
 
 			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(propIdent, state, USELESS_MUTATION_IN_CLONED_PROP_VALUE),
+				makeSymbolicEvalError(propIdent, state, fmtUselessMutationInClonedPropValue("list")),
 			}, state.errors())
 		})
 
@@ -4388,7 +4388,7 @@ func TestSymbolicEval(t *testing.T) {
 			})
 
 			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(propIdent, state, USELESS_MUTATION_IN_CLONED_PROP_VALUE),
+				makeSymbolicEvalError(propIdent, state, fmtUselessMutationInClonedPropValue("list")),
 			}, state.errors())
 		})
 	})
@@ -5525,7 +5525,7 @@ func TestSymbolicEval(t *testing.T) {
 				})
 
 				assert.Equal(t, []SymbolicEvaluationError{
-					makeSymbolicEvalError(propIdent, state, USELESS_MUTATION_IN_CLONED_PROP_VALUE),
+					makeSymbolicEvalError(propIdent, state, fmtUselessMutationInClonedPropValue("list")),
 				}, state.errors())
 			})
 
@@ -5891,7 +5891,7 @@ func TestSymbolicEval(t *testing.T) {
 				})
 
 				assert.Equal(t, []SymbolicEvaluationError{
-					makeSymbolicEvalError(propIdent, state, USELESS_MUTATION_IN_CLONED_PROP_VALUE),
+					makeSymbolicEvalError(propIdent, state, fmtUselessMutationInClonedPropValue("list")),
 				}, state.errors())
 			})
 
@@ -5915,7 +5915,7 @@ func TestSymbolicEval(t *testing.T) {
 				})
 
 				assert.Equal(t, []SymbolicEvaluationError{
-					makeSymbolicEvalError(propIdent, state, USELESS_MUTATION_IN_CLONED_PROP_VALUE),
+					makeSymbolicEvalError(propIdent, state, fmtUselessMutationInClonedPropValue("list")),
 				}, state.errors())
 			})
 		})
@@ -6117,7 +6117,7 @@ func TestSymbolicEval(t *testing.T) {
 				})
 
 				assert.Equal(t, []SymbolicEvaluationError{
-					makeSymbolicEvalError(propIdent, state, USELESS_MUTATION_IN_CLONED_PROP_VALUE),
+					makeSymbolicEvalError(propIdent, state, fmtUselessMutationInClonedPropValue("list")),
 				}, state.errors())
 			})
 		})

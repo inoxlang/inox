@@ -83,11 +83,14 @@ const (
 	LIFETIME_JOBS_NOT_ALLOWED_IN_READONLY_OBJECTS                       = "lifetime jobs are not allowed in readonly objects"
 	PROPERTY_VALUES_OF_READONLY_OBJECTS_SHOULD_BE_READONLY_OR_IMMUTABLE = "property values of readonly objects should be readonly or immutable"
 
-	DOUBLE_COLON_EXPRS_ONLY_SUPPORT_OBJ_LHS_FOR_NOW                                                    = "double-colon expressions only support object LHS for now"
-	RHS_OF_DOUBLE_COLON_EXPRS_WITH_OBJ_LHS_SHOULD_BE_THE_NAME_OF_A_MUTABLE_NON_SHARABLE_VALUE_PROPERTY = //
-	"the right hand side of double-colon expressions with object LHS should be the name of a property with a mutable, non-sharable value"
+	DOUBLE_COLON_EXPRS_ONLY_SUPPORT_OBJ_LHS_FOR_NOW = //
+	"double-colon expressions only support object LHS for now"
 
-	USELESS_MUTATION_IN_CLONED_PROP_VALUE                     = "useless mutation in a cloned property's value, you should use a double-colon expression (<object>::<prop name>) to retrieve the actual property's value"
+	RHS_OF_DOUBLE_COLON_EXPRS_WITH_OBJ_LHS_SHOULD_BE_THE_NAME_OF_A_MUTABLE_NON_SHARABLE_VALUE_PROPERTY = //
+	"the right hand side of double-colon expressions with object LHS should be the name of a property with a mutable, non-sharable value."
+
+	USELESS_MUTATION_IN_CLONED_PROP_VALUE = "useless mutation in a cloned property's value"
+
 	MISPLACED_DOUBLE_COLON_EXPR                               = "misplaced double-colon expression"
 	MISPLACED_DOUBLE_COLON_EXPR_EXT_METHOD_CAN_ONLY_BE_CALLED = "misplaced double-colon expression: extension methods can only be called"
 
@@ -541,4 +544,9 @@ func fmtExpectedValueExamples(examples []MatchingValueExample) string {
 	return "; expected value examples: \n" + strings.Join(utils.MapSlice(examples, func(e MatchingValueExample) string {
 		return "• " + Stringify(e.Value)
 	}), "\n")
+}
+
+func fmtUselessMutationInClonedPropValue(elementName string) string {
+	return fmt.Sprintf("%s, you should use a double-colon expression (<object>::%s) to retrieve the actual property's value",
+		USELESS_MUTATION_IN_CLONED_PROP_VALUE, elementName)
 }
