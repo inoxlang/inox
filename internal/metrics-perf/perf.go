@@ -3,6 +3,7 @@ package metricsperf
 import (
 	"bytes"
 	"errors"
+	"runtime"
 	"runtime/pprof"
 	"time"
 
@@ -22,7 +23,7 @@ type PerfDataCollectionConfig struct {
 	Bucket s3_ns.OpenBucketWithCredentialsInput
 }
 
-// StartPeriodicPerfProfilesCollection starts a goroutine that collect several profiles: CPU, MEM, Mutex.
+// StartPeriodicPerfProfilesCollection starts a goroutine that collect several profiles: CPU, MEM, Mutex, goroutine stack trace.
 // Every conf.Period the profiles are saved, stopChan should be written to & stopped by the caller.
 func StartPeriodicPerfProfilesCollection(ctx *core.Context, conf PerfDataCollectionConfig) (stopChan chan struct{}, _ error) {
 
@@ -42,9 +43,11 @@ func StartPeriodicPerfProfilesCollection(ctx *core.Context, conf PerfDataCollect
 	stopChan = make(chan struct{})
 	stopMemProfilingChan := make(chan struct{})
 	stopMutexProfilingChan := make(chan struct{})
+	stopGoutineStackTraceProfilingChan := make(chan struct{})
 	lastCpuProfileSaveAck := make(chan struct{}, 1)
 	lastMemProfileSaveAck := make(chan struct{}, 1)
 	lastMutexProfileSaveAck := make(chan struct{}, 1)
+	lastGoroutineStackProfileSaveAck := make(chan struct{}, 1)
 
 	childCtx := ctx.BoundChild()
 	state := ctx.GetClosestState()
@@ -72,10 +75,12 @@ func StartPeriodicPerfProfilesCollection(ctx *core.Context, conf PerfDataCollect
 			case <-stopChan:
 				stopMemProfilingChan <- struct{}{}
 				stopMutexProfilingChan <- struct{}{}
+				stopGoutineStackTraceProfilingChan <- struct{}{}
 				close(cpuProfiles)
 				<-lastCpuProfileSaveAck
 				<-lastMemProfileSaveAck
 				<-lastMutexProfileSaveAck
+				<-lastGoroutineStackProfileSaveAck
 				return
 			default:
 			}
@@ -135,9 +140,10 @@ func StartPeriodicPerfProfilesCollection(ctx *core.Context, conf PerfDataCollect
 			profile := pprof.Lookup("mutex")
 			profile.WriteTo(buff, 0)
 
+			runtime.SetMutexProfileFraction(1)
 			key := "mutex-" + date + ".pprof"
 
-			_, err = s3Client.PutObject(childCtx, key, buff)
+			_, err := s3Client.PutObject(childCtx, key, buff)
 			if err != nil {
 				logger.Err(err)
 				continue
@@ -146,6 +152,38 @@ func StartPeriodicPerfProfilesCollection(ctx *core.Context, conf PerfDataCollect
 			select {
 			case <-stopMutexProfilingChan:
 				<-lastMutexProfileSaveAck
+				return
+			default:
+			}
+		}
+	}()
+
+	//create a goroutine recording a goroutine stack trace profile every conf.Period & saving it to a S3 bucket
+
+	go func() {
+		defer utils.Recover()
+		defer close(lastGoroutineStackProfileSaveAck)
+
+		ticker := time.NewTicker(period)
+		defer ticker.Stop()
+
+		for t := range ticker.C {
+			buff := bytes.NewBuffer(nil)
+			date := t.UTC().Format(time.RFC3339)
+			profile := pprof.Lookup("goroutine")
+			profile.WriteTo(buff, 2)
+
+			key := "goroutine-trace-" + date + ".pprof"
+
+			_, err := s3Client.PutObject(childCtx, key, buff)
+			if err != nil {
+				logger.Err(err)
+				continue
+			}
+
+			select {
+			case <-stopGoutineStackTraceProfilingChan:
+				<-lastGoroutineStackProfileSaveAck
 				return
 			default:
 			}
