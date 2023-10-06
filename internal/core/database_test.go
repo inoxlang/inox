@@ -254,6 +254,84 @@ func TestDatabaseIL(t *testing.T) {
 		assert.Nil(t, dbIL.topLevelEntities)
 	})
 
+	t.Run("if dev mode is enabled top level entities should not be loaded after call to SetOwnerStateOnceAndLoadIfNecessary", func(t *testing.T) {
+		resetLoadInstanceFnRegistry()
+		defer resetLoadInstanceFnRegistry()
+
+		RegisterLoadInstanceFn(reflect.TypeOf(LOADABLE_TEST_VALUE_PATTERN), func(ctx *Context, args InstanceLoadArgs) (UrlHolder, error) {
+			assert.Fail(t, "should never be called")
+			return nil, nil
+		})
+
+		ctx := NewContexWithEmptyState(ContextConfig{
+			Permissions: []Permission{
+				DatabasePermission{
+					Kind_:  permkind.Read,
+					Entity: Host("ldb://main"),
+				},
+			},
+		}, nil)
+		defer ctx.CancelGracefully()
+
+		db := &dummyDatabase{
+			resource: Host("ldb://main"),
+			topLevelEntities: map[string]Serializable{"a": &loadableTestValue{
+				value: 1,
+			}},
+		}
+
+		dbIL := utils.Must(WrapDatabase(ctx, DatabaseWrappingArgs{
+			Inner:                db,
+			ExpectedSchemaUpdate: true,
+			Name:                 "main",
+			DevMode:              true,
+		}))
+
+		assert.Nil(t, dbIL.topLevelEntities)
+
+		dbIL.SetOwnerStateOnceAndLoadIfNecessary(ctx, ctx.state)
+
+		assert.Nil(t, dbIL.topLevelEntities)
+	})
+
+	t.Run("top level entities should not be loaded after call to SetOwnerStateOnceAndLoadIfNecessary if no settings are set", func(t *testing.T) {
+		resetLoadInstanceFnRegistry()
+		defer resetLoadInstanceFnRegistry()
+
+		RegisterLoadInstanceFn(reflect.TypeOf(LOADABLE_TEST_VALUE_PATTERN), func(ctx *Context, args InstanceLoadArgs) (UrlHolder, error) {
+			assert.Fail(t, "should never be called")
+			return nil, nil
+		})
+
+		ctx := NewContexWithEmptyState(ContextConfig{
+			Permissions: []Permission{
+				DatabasePermission{
+					Kind_:  permkind.Read,
+					Entity: Host("ldb://main"),
+				},
+			},
+		}, nil)
+		defer ctx.CancelGracefully()
+
+		db := &dummyDatabase{
+			resource: Host("ldb://main"),
+			topLevelEntities: map[string]Serializable{"a": &loadableTestValue{
+				value: 1,
+			}},
+		}
+
+		dbIL := utils.Must(WrapDatabase(ctx, DatabaseWrappingArgs{
+			Inner: db,
+			Name:  "main",
+		}))
+
+		assert.Nil(t, dbIL.topLevelEntities)
+
+		dbIL.SetOwnerStateOnceAndLoadIfNecessary(ctx, ctx.state)
+
+		assert.NotNil(t, dbIL.topLevelEntities)
+	})
+
 	t.Run("only the owner state should be able to update the schema", func(t *testing.T) {
 		ctx1 := NewContexWithEmptyState(ContextConfig{
 			Permissions: []Permission{

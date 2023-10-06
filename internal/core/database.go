@@ -51,6 +51,7 @@ var (
 type DatabaseIL struct {
 	inner                Database
 	initialSchema        *ObjectPattern
+	devMode              bool
 	schemaUpdateExpected bool
 	schemaUpdated        atomic.Bool
 	schemaUpdateLock     sync.Mutex
@@ -145,6 +146,7 @@ type DatabaseWrappingArgs struct {
 
 	//force the loading top level entities if there is not expected schema update
 	ForceLoadBeforeOwnerStateSet bool
+	DevMode                      bool
 }
 
 func WrapDatabase(ctx *Context, args DatabaseWrappingArgs) (*DatabaseIL, error) {
@@ -166,6 +168,8 @@ func WrapDatabase(ctx *Context, args DatabaseWrappingArgs) (*DatabaseIL, error) 
 		schemaUpdateExpected: args.ExpectedSchemaUpdate,
 		ownerState:           args.OwnerState,
 		name:                 args.Name,
+
+		devMode: args.DevMode,
 	}
 
 	if !args.ExpectedSchemaUpdate && args.ForceLoadBeforeOwnerStateSet {
@@ -263,7 +267,7 @@ func (db *DatabaseIL) SetOwnerStateOnceAndLoadIfNecessary(ctx *Context, state *G
 		panic(ErrOwnerStateAlreadySet)
 	}
 
-	if db.topLevelEntities == nil && !db.schemaUpdateExpected {
+	if db.topLevelEntities == nil && !db.schemaUpdateExpected && !db.devMode {
 		topLevelEntities, err := db.inner.LoadTopLevelEntities(ctx)
 		if err != nil {
 			return err
