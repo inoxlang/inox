@@ -50,7 +50,7 @@ type additionalSessionData struct {
 	didSaveCapabilityRegistrationIds map[defines.DocumentUri]uuid.UUID
 
 	unsavedDocumentSyncData  map[string] /* fpath */ *unsavedDocumentSyncData
-	preparedSourceFilesCache map[string] /* fpath */ *preparedSourceFileCache
+	preparedSourceFilesCache *preparedFileCache
 
 	filesystem         *Filesystem
 	clientCapabilities defines.ClientCapabilities
@@ -161,17 +161,27 @@ func registerHandlers(server *lsp.Server, serverConfig LSPServerConfiguration) {
 	server.OnExit(func(ctx context.Context, req *defines.NoParams) (err error) {
 		session := jsonrpc.GetSession(ctx)
 
-		shuttingDownSessionsLock.Lock()
+		sessionToAdditionalDataLock.Lock()
+		sessionData, ok := sessionToAdditionalData[session]
+		delete(sessionToAdditionalData, session)
+		sessionToAdditionalDataLock.Unlock()
+
+		if ok {
+			func() {
+				sessionData.lock.Lock()
+				defer sessionData.lock.Unlock()
+				sessionData.preparedSourceFilesCache.acknowledgeSessionEnd()
+				sessionData.preparedSourceFilesCache = nil
+			}()
+
+		}
+
+		session.Close()
 
 		if _, ok := shuttingDownSessions[session]; ok {
+			shuttingDownSessionsLock.Lock()
 			delete(shuttingDownSessions, session)
 			shuttingDownSessionsLock.Unlock()
-
-			sessionToAdditionalDataLock.Lock()
-			delete(sessionToAdditionalData, session)
-			sessionToAdditionalDataLock.Unlock()
-
-			session.Close()
 		} else {
 			shuttingDownSessionsLock.Unlock()
 			return errors.New("the client should make shutdown request before sending an exit notification")
@@ -466,16 +476,13 @@ func registerHandlers(server *lsp.Server, serverConfig LSPServerConfiguration) {
 		sessionData := getLockedSessionData(session)
 		syncFull := sessionData.serverCapabilities.TextDocumentSync == defines.TextDocumentSyncKindFull
 		syncData, hasSyncData := sessionData.unsavedDocumentSyncData[fpath]
-		prepareFileCache, hasCache := sessionData.preparedSourceFilesCache[fpath]
 		sessionData.lock.Unlock()
 
 		if hasSyncData {
 			syncData.reactToDidChange(fls)
 		}
-		if hasCache {
-			logs.Println("clear cache for file", fpath)
-			prepareFileCache.clearBeforeNextAccess.Store(true)
-		}
+
+		sessionData.preparedSourceFilesCache.acknowledgeSourceFileChange(fpath)
 
 		if syncFull {
 			fullDocumentText = req.ContentChanges[0].Text.(string)
@@ -579,7 +586,8 @@ func registerHandlers(server *lsp.Server, serverConfig LSPServerConfiguration) {
 
 		sessionData := getLockedSessionData(session)
 		delete(sessionData.unsavedDocumentSyncData, fpath)
-		delete(sessionData.preparedSourceFilesCache, fpath)
+
+		//NOTE: the file cache is not removed because other modules may still need it
 		sessionData.lock.Unlock()
 
 		docsFs := fls.unsavedDocumentsFS()
@@ -609,24 +617,26 @@ func registerHandlers(server *lsp.Server, serverConfig LSPServerConfiguration) {
 			Filesystem: fls,
 		})
 
-		state, _, chunk, ok := prepareSourceFileInExtractionMode(handlingCtx, filePreparationParams{
+		state, _, chunk, cachedOrGotCache, ok := prepareSourceFileInExtractionMode(handlingCtx, filePreparationParams{
 			fpath:         fpath,
 			session:       session,
 			requiresState: true,
 		})
 
+		if !cachedOrGotCache && state != nil {
+			//teardown in separate goroutine to return quickly
+			defer func() {
+				go func() {
+					defer utils.Recover()
+					state.Ctx.CancelGracefully()
+				}()
+			}()
+		}
+
 		if !ok || state == nil || state.SymbolicData == nil {
 			logs.Println("failed to prepare source file", err)
 			return nil, nil
 		}
-
-		//teardown
-		defer func() {
-			go func() {
-				defer utils.Recover()
-				state.Ctx.CancelGracefully()
-			}()
-		}()
 
 		span := chunk.GetLineColumnSingeCharSpan(line, column)
 		foundNode, ancestors, ok := chunk.GetNodeAndChainAtSpan(span)

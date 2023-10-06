@@ -3,8 +3,6 @@ package project_server
 import (
 	"fmt"
 	"io"
-	"sync"
-	"sync/atomic"
 
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/mod"
@@ -28,41 +26,43 @@ type filePreparationParams struct {
 // - if requiresState is true & state failed to be created ok is false
 // - if the file at fpath is an includable-chunk the returned module is a fake module
 // The returned values SHOULD NOT BE MODIFIED.
-func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparationParams) (*core.GlobalState, *core.Module, *parse.ParsedChunk, bool) {
+func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparationParams) (
+	_ *core.GlobalState,
+	_ *core.Module,
+	_ *parse.ParsedChunk,
+	cachedOrGotCache bool,
+	_ bool,
+) {
 	fpath := params.fpath
 	session := params.session
 	requiresState := params.requiresState
 	project, _ := getProject(session)
 
-	fls, ok := getLspFilesystem(session)
-	if !ok {
+	fls, new := getLspFilesystem(session)
+	if !new {
 		logs.Println("failed to get LSP filesystem")
-		return nil, nil, nil, false
+		return nil, nil, nil, false, false
 	}
 
 	sessionData := getSessionData(params.session)
-	var fileCache *preparedSourceFileCache
+	var fileCache *preparedFileCacheEntry
 
 	//we avoid locking the session data
 	if sessionData.lock.TryLock() || sessionData.lock.TryLock() {
-		fileCache, ok = sessionData.preparedSourceFilesCache[fpath]
-		if !ok {
-			if sessionData.preparedSourceFilesCache == nil {
-				sessionData.preparedSourceFilesCache = map[string]*preparedSourceFileCache{}
-			}
-
-			fileCache = &preparedSourceFileCache{}
-			sessionData.preparedSourceFilesCache[fpath] = fileCache
+		if sessionData.preparedSourceFilesCache == nil {
+			sessionData.preparedSourceFilesCache = NewPreparedFileCache()
 		}
+		cache := sessionData.preparedSourceFilesCache
 		sessionData.lock.Unlock()
+		func() {
+			fileCache, _ = cache.getOrCreate(fpath)
+		}()
 
 		//we lock the cache to pause parallel preparation of the same file
-		fileCache.lock.Lock()
-		defer fileCache.lock.Unlock()
+		fileCache.Lock()
+		defer fileCache.Unlock()
 
-		if fileCache.clearBeforeNextAccess.CompareAndSwap(true, false) {
-			fileCache.clear()
-		}
+		fileCache.acknowledgeAccess()
 	}
 
 	//check the cache
@@ -74,9 +74,9 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 		cachedState := fileCache.state
 
 		if requiresState && (cachedState == nil || cachedState.SymbolicData == nil) {
-			return nil, nil, nil, false
+			return nil, nil, nil, false, false
 		}
-		return cachedState, cachedModule, cachedChunk, true
+		return cachedState, cachedModule, cachedChunk, true, true
 	}
 
 	chunk, err := core.ParseFileChunk(fpath, fls)
@@ -84,7 +84,7 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 	if chunk == nil { //unrecoverable parsing error
 		logs.Println("unrecoverable parsing error", err.Error())
 		session.Notify(NewShowMessage(defines.MessageTypeError, err.Error()))
-		return nil, nil, nil, false
+		return nil, nil, nil, false, false
 	}
 
 	if chunk.Node.IncludableChunkDesc != nil {
@@ -99,7 +99,7 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 		if includedChunk == nil {
 			logs.Println("unrecoverable parsing error", err.Error())
 			session.Notify(NewShowMessage(defines.MessageTypeError, err.Error()))
-			return nil, nil, nil, false
+			return nil, nil, nil, false, false
 		}
 
 		if requiresState && (state == nil || state.SymbolicData == nil) {
@@ -113,29 +113,27 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 				}()
 			}
 
-			return nil, nil, nil, false
+			return nil, nil, nil, false, false
 		}
 
 		//cache the results if the file was not modified during the preparation
-		if fileCache != nil {
-			if fileCache.clearBeforeNextAccess.CompareAndSwap(true, false) {
-				fileCache.clear()
-			} else {
-				fileCache.state = state
-				fileCache.module = mod
-				fileCache.chunk = includedChunk.ParsedChunk
-			}
+		cached := false
+		if fileCache != nil && !fileCache.clearIfSourceChanged() {
+			cached = true
+			fileCache.update(state, mod, includedChunk.ParsedChunk)
 		}
 
-		return state, mod, includedChunk.ParsedChunk, true
+		return state, mod, includedChunk.ParsedChunk, cached, true
 	} else {
 		var parentCtx *core.Context
 
 		if chunk.Node.Manifest != nil {
+			//additional logic if the manifest refers to databases in another module
 			if obj, ok := chunk.Node.Manifest.Object.(*parse.ObjectLiteral); ok {
 				node, _ := obj.PropValue(core.MANIFEST_DATABASES_SECTION_NAME)
+
 				if pathLiteral, ok := node.(*parse.AbsolutePathLiteral); ok {
-					state, _, _, ok := prepareSourceFileInExtractionMode(ctx, filePreparationParams{
+					state, _, _, _, ok := prepareSourceFileInExtractionMode(ctx, filePreparationParams{
 						fpath:                  pathLiteral.Value,
 						session:                session,
 						requiresState:          true,
@@ -167,7 +165,7 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 		if mod == nil {
 			logs.Println("unrecoverable parsing error", err.Error())
 			session.Notify(NewShowMessage(defines.MessageTypeError, err.Error()))
-			return nil, nil, nil, false
+			return nil, nil, nil, false, false
 		}
 
 		if requiresState && (state == nil || state.SymbolicData == nil) {
@@ -181,7 +179,7 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 				}()
 			}
 
-			return nil, nil, nil, false
+			return nil, nil, nil, false, false
 		}
 
 		if params.notifyUserAboutDbError && state != nil && state.FirstDatabaseOpeningError != nil {
@@ -189,45 +187,14 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 			session.Notify(NewShowMessage(defines.MessageTypeWarning, msg))
 		}
 
+		cached := false
 		//cache the results if the file was not modified during the preparation
-		if fileCache != nil {
-			if fileCache.clearBeforeNextAccess.CompareAndSwap(true, false) {
-				fileCache.clear()
-			} else {
-				logs.Println("update cache for file", fpath, "new length", len(mod.MainChunk.Source.Code()))
-				fileCache.state = state
-				fileCache.module = mod
-				fileCache.chunk = mod.MainChunk
-			}
+		if fileCache != nil && !fileCache.clearIfSourceChanged() {
+			cached = true
+			fileCache.update(state, mod, nil)
 		}
 
-		return state, mod, mod.MainChunk, true
+		return state, mod, mod.MainChunk, cached, true
 	}
 
-}
-
-type preparedSourceFileCache struct {
-	state  *core.GlobalState
-	module *core.Module
-	chunk  *parse.ParsedChunk
-	lock   sync.Mutex
-
-	clearBeforeNextAccess atomic.Bool
-}
-
-func (c *preparedSourceFileCache) clear() {
-	if c.state != nil {
-		func() {
-			defer func() {
-				err := recover()
-				if err != nil {
-					logs.Printf("failed to cancel cached context: %#v", err)
-				}
-			}()
-			c.state.Ctx.CancelGracefully()
-		}()
-	}
-	c.chunk = nil
-	c.module = nil
-	c.state = nil
 }

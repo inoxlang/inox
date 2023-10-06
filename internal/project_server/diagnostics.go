@@ -26,21 +26,23 @@ func notifyDiagnostics(session *jsonrpc.Session, docURI defines.DocumentUri, usi
 	errSeverity := defines.DiagnosticSeverityError
 	warningSeverity := defines.DiagnosticSeverityWarning
 
-	state, mod, _, ok := prepareSourceFileInExtractionMode(ctx, filePreparationParams{
+	state, mod, _, cachedOrGotCache, ok := prepareSourceFileInExtractionMode(ctx, filePreparationParams{
 		fpath:         fpath,
 		session:       session,
 		requiresState: false,
 	})
-
-	//teardown in separate goroutine to return quickly
-	defer func() {
-		if state != nil {
-			go func() {
-				defer utils.Recover()
-				state.Ctx.CancelGracefully()
-			}()
-		}
-	}()
+	if !cachedOrGotCache && state != nil {
+		//teardown in separate goroutine to return quickly
+		defer func() {
+			if state != nil {
+				go func() {
+					defer utils.Recover()
+					state.Ctx.CancelGracefully()
+				}()
+			}
+		}()
+	}
+	//a context cancellations is not deferred because
 
 	//we need the diagnostics list to be present in the notification so diagnostics should not be nil
 	diagnostics := make([]defines.Diagnostic, 0)

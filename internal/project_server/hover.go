@@ -18,7 +18,7 @@ import (
 )
 
 func getHoverContent(fpath string, line, column int32, handlingCtx *core.Context, session *jsonrpc.Session) (*defines.Hover, error) {
-	state, _, chunk, ok := prepareSourceFileInExtractionMode(handlingCtx, filePreparationParams{
+	state, _, chunk, cachedOrGotCache, ok := prepareSourceFileInExtractionMode(handlingCtx, filePreparationParams{
 		fpath:         fpath,
 		session:       session,
 		requiresState: true,
@@ -27,12 +27,15 @@ func getHoverContent(fpath string, line, column int32, handlingCtx *core.Context
 		return &defines.Hover{}, nil
 	}
 
-	defer func() {
-		go func() {
-			defer utils.Recover()
-			state.Ctx.CancelGracefully()
+	if !cachedOrGotCache && state != nil {
+		//teardown in separate goroutine to return quickly
+		defer func() {
+			go func() {
+				defer utils.Recover()
+				state.Ctx.CancelGracefully()
+			}()
 		}()
-	}()
+	}
 
 	if state == nil || state.SymbolicData == nil {
 		logs.Println("no data")
