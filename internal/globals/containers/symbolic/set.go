@@ -31,8 +31,10 @@ var (
 
 type Set struct {
 	elementPattern symbolic.Pattern
-	uniqueness     *containers_common.UniquenessConstraint
-	shared         bool
+	element        symbolic.SymbolicValue //cache
+
+	uniqueness *containers_common.UniquenessConstraint
+	shared     bool
 
 	symbolic.UnassignablePropsMixin
 	symbolic.SerializableMixin
@@ -75,7 +77,9 @@ func NewSet(ctx *symbolic.Context, elements symbolic.Iterable, config ...*symbol
 }
 
 func NewSetWithPattern(elementPattern symbolic.Pattern, uniqueness *containers_common.UniquenessConstraint) *Set {
-	return &Set{elementPattern: elementPattern, uniqueness: uniqueness}
+	set := &Set{elementPattern: elementPattern, uniqueness: uniqueness}
+	set.element = elementPattern.SymbolicValue()
+	return set
 }
 
 func (s *Set) Test(v symbolic.SymbolicValue) bool {
@@ -94,6 +98,9 @@ func (s *Set) IsSharable() (bool, string) {
 func (s *Set) Share(originState *symbolic.State) symbolic.PotentiallySharable {
 	shared := *s
 	shared.shared = true
+	if psharablbe, ok := shared.element.(symbolic.PotentiallySharable); ok {
+		shared.element = psharablbe.Share(originState)
+	}
 	return &shared
 }
 
@@ -127,29 +134,29 @@ func (*Set) PropertyNames() []string {
 
 func (s *Set) Has(ctx *symbolic.Context, v symbolic.Serializable) {
 	ctx.SetSymbolicGoFunctionParameters(&[]symbolic.SymbolicValue{
-		s.elementPattern.SymbolicValue(),
+		s.element,
 	}, SET_ADD_METHOD_PARAM_NAMES)
 }
 
 func (s *Set) Add(ctx *symbolic.Context, v symbolic.Serializable) {
 	ctx.SetSymbolicGoFunctionParameters(&[]symbolic.SymbolicValue{
-		s.elementPattern.SymbolicValue(),
+		s.element,
 	}, SET_ADD_METHOD_PARAM_NAMES)
 }
 
 func (s *Set) Remove(ctx *symbolic.Context, v symbolic.Serializable) {
 	ctx.SetSymbolicGoFunctionParameters(&[]symbolic.SymbolicValue{
-		s.elementPattern.SymbolicValue(),
+		s.element,
 	}, SET_ADD_METHOD_PARAM_NAMES)
 }
 
 func (s *Set) Get(ctx *symbolic.Context, k symbolic.StringLike) (symbolic.SymbolicValue, *symbolic.Bool) {
-	return s.elementPattern.SymbolicValue(), symbolic.ANY_BOOL
+	return s.element, symbolic.ANY_BOOL
 }
 
 func (s *Set) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%Set(")))
-	s.elementPattern.SymbolicValue().PrettyPrint(w, config, depth, parentIndentCount)
+	s.element.PrettyPrint(w, config, depth, parentIndentCount)
 	if s.uniqueness != nil {
 		utils.PanicIfErr(w.WriteByte(','))
 		s.uniqueness.ToSymbolicValue().PrettyPrint(w, config, depth, 0)
@@ -162,7 +169,7 @@ func (*Set) IteratorElementKey() symbolic.SymbolicValue {
 }
 
 func (s *Set) IteratorElementValue() symbolic.SymbolicValue {
-	return s.elementPattern.SymbolicValue()
+	return s.element
 }
 
 func (*Set) WidestOfType() symbolic.SymbolicValue {
