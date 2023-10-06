@@ -2436,7 +2436,7 @@ func checkParametersObject(objLit *parse.ObjectLiteral, onError func(n parse.Nod
 			*parse.PatternCallExpression,
 			*parse.ListPatternLiteral, *parse.TuplePatternLiteral,
 			*parse.ObjectPatternLiteral, *parse.ObjectPatternProperty, *parse.RecordPatternLiteral,
-			*parse.PatternIdentifierLiteral, *parse.PatternNamespaceMemberExpression,
+			*parse.PatternIdentifierLiteral, *parse.PatternNamespaceMemberExpression, *parse.PatternNamespaceIdentifierLiteral,
 			*parse.PatternConversionExpression,
 			*parse.PatternUnion,
 			*parse.PathPatternExpression, *parse.AbsolutePathPatternLiteral, *parse.RelativePathPatternLiteral,

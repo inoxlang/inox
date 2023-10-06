@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -74,6 +75,7 @@ func TestPreInit(t *testing.T) {
 		//output
 		expectedPermissions          []Permission
 		expectedLimits               []Limit
+		expectedParameters           []ModuleParameter
 		expectedResolutions          map[Host]Value
 		expectedPreinitFileConfigs   PreinitFiles
 		expectedDatabaseConfigs      DatabaseConfigs
@@ -101,6 +103,44 @@ func TestPreInit(t *testing.T) {
 			error:                true,
 			expectedParsingError: true,
 			errorIs:              ErrParsingErrorInManifestOrPreinit,
+		},
+		{
+			name: "parameters: non positional with named pattern",
+			module: `
+				manifest {
+					parameters: {
+						name: %str
+					}
+				}`,
+			expectedLimits: []Limit{},
+			expectedParameters: []ModuleParameter{
+				{
+					positional: false,
+					pattern:    STR_PATTERN,
+					name:       "name",
+					cliArgName: "name",
+				},
+			},
+			error: false,
+		},
+		{
+			name: "parameters: non positional with pattern namespace member",
+			module: `
+				manifest {
+					parameters: {
+						node: %inox.node
+					}
+				}`,
+			expectedLimits: []Limit{},
+			expectedParameters: []ModuleParameter{
+				{
+					positional: false,
+					pattern:    ASTNODE_PATTERN,
+					name:       "node",
+					cliArgName: "node",
+				},
+			},
+			error: false,
 		},
 		{
 			name: "host resolution",
@@ -1046,6 +1086,12 @@ func TestPreInit(t *testing.T) {
 			}
 
 			if manifest != nil {
+				if testCase.expectedParameters != nil {
+					params := slices.Clone(manifest.Parameters.positional)
+					params = append(params, manifest.Parameters.others...)
+					assert.EqualValues(t, testCase.expectedParameters, params)
+				}
+
 				assert.EqualValues(t, testCase.expectedPermissions, manifest.RequiredPermissions)
 				assert.EqualValues(t, testCase.expectedLimits, manifest.Limits)
 				assert.EqualValues(t, testCase.expectedResolutions, manifest.HostResolutions)
