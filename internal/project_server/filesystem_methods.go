@@ -483,6 +483,7 @@ func registerFilesystemMethodHandlers(server *lsp.Server) {
 		NewRequest: func() interface{} {
 			return &FsDeleteFileParams{}
 		},
+		RateLimits: []int{20, 100, 500},
 		Handler: func(ctx context.Context, req interface{}) (interface{}, error) {
 			session := jsonrpc.GetSession(ctx)
 			params := req.(*FsDeleteFileParams)
@@ -524,6 +525,7 @@ func registerFilesystemMethodHandlers(server *lsp.Server) {
 		NewRequest: func() interface{} {
 			return &FsReadirParams{}
 		},
+		RateLimits: []int{20, 100, 500},
 		Handler: func(ctx context.Context, req interface{}) (interface{}, error) {
 			session := jsonrpc.GetSession(ctx)
 			params := req.(*FsReadirParams)
