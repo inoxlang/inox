@@ -415,5 +415,106 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			assert.Nil(t, operation.jsonRequestBody)
 		})
 
+		t.Run("POST with a request body parameter and an injected parameter", func(t *testing.T) {
+			ctx := setup(map[string]string{
+				"/routes/POST-users.ix": `
+					manifest {
+						parameters: {
+							name: %str
+							_method: %http.method
+						}
+					}
+				`,
+			})
+			defer ctx.CancelGracefully()
+
+			api, err := getFilesystemRoutingServerAPI(ctx, "/routes/")
+
+			if !assert.NoError(t, err, ErrUnexpectedBodyParamsInGETHandler) {
+				return
+			}
+
+			usersEndpt := api.endpoints["/users"]
+			if !assert.Len(t, usersEndpt.operations, 1) {
+				return
+			}
+
+			operation := usersEndpt.operations[0]
+			if !assert.Equal(t, operation.httpMethod, "POST") {
+				return
+			}
+
+			if !assert.IsType(t, (*core.ObjectPattern)(nil), operation.jsonRequestBody) {
+				return
+			}
+
+			pattern := operation.jsonRequestBody.(*core.ObjectPattern)
+			if !assert.Equal(t, 1, pattern.EntryCount()) {
+				return
+			}
+
+			namePattern, optional, ok := pattern.Entry("name")
+			if !assert.True(t, ok) {
+				return
+			}
+
+			assert.Equal(t, namePattern, core.STR_PATTERN)
+			assert.False(t, optional)
+		})
+
+		t.Run("POST with two request body parameters", func(t *testing.T) {
+			ctx := setup(map[string]string{
+				"/routes/POST-users.ix": `
+					manifest {
+						parameters: {
+							name: %str
+							age: %int
+						}
+					}
+				`,
+			})
+			defer ctx.CancelGracefully()
+
+			api, err := getFilesystemRoutingServerAPI(ctx, "/routes/")
+
+			if !assert.NoError(t, err, ErrUnexpectedBodyParamsInGETHandler) {
+				return
+			}
+
+			usersEndpt := api.endpoints["/users"]
+			if !assert.Len(t, usersEndpt.operations, 1) {
+				return
+			}
+
+			operation := usersEndpt.operations[0]
+			if !assert.Equal(t, operation.httpMethod, "POST") {
+				return
+			}
+
+			if !assert.IsType(t, (*core.ObjectPattern)(nil), operation.jsonRequestBody) {
+				return
+			}
+
+			pattern := operation.jsonRequestBody.(*core.ObjectPattern)
+			if !assert.Equal(t, 2, pattern.EntryCount()) {
+				return
+			}
+
+			namePattern, optional, ok := pattern.Entry("name")
+			if !assert.True(t, ok) {
+				return
+			}
+
+			assert.Equal(t, namePattern, core.STR_PATTERN)
+			assert.False(t, optional)
+
+			agePattern, optional, ok := pattern.Entry("age")
+			if !assert.True(t, ok) {
+				return
+			}
+
+			assert.Equal(t, agePattern, core.INT_PATTERN)
+			assert.False(t, optional)
+		})
 	})
 }
