@@ -2,7 +2,22 @@ package html_ns
 
 import (
 	"github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/parse"
 )
+
+func init() {
+	symbolic.RegisterXMLInterpolationCheckingFunction(
+		CreateHTMLNodeFromXMLElement,
+		func(n parse.Node, value symbolic.SymbolicValue) (errorMsg string) {
+			switch value.(type) {
+			case *symbolic.XMLElement, symbolic.StringLike, *symbolic.Int:
+				return ""
+			default:
+				return "only XML elements, string-like and integer values are allowed"
+			}
+		},
+	)
+}
 
 func CreateHTMLNodeFromXMLElement(ctx *symbolic.Context, elem *symbolic.XMLElement) *HTMLNode {
 

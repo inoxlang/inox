@@ -21,7 +21,7 @@ var (
 
 type XMLInterpolationCheckingFunction func(n parse.Node, value SymbolicValue) (errorMsg string)
 
-func RegisterXMLCheckingFunction(factory any, fn XMLInterpolationCheckingFunction) {
+func RegisterXMLInterpolationCheckingFunction(factory any, fn XMLInterpolationCheckingFunction) {
 	xmlInterpolationCheckingFunctions[reflect.ValueOf(factory).Pointer()] = fn
 }
 

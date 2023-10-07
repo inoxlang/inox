@@ -9079,7 +9079,7 @@ func TestSymbolicEval(t *testing.T) {
 				FROM_XML_FACTORY_NAME: WrapGoFunction(goFn),
 			}), GlobalConst)
 
-			RegisterXMLCheckingFunction(goFn, func(n parse.Node, value SymbolicValue) (errorMsg string) {
+			RegisterXMLInterpolationCheckingFunction(goFn, func(n parse.Node, value SymbolicValue) (errorMsg string) {
 				//no error
 				return ""
 			})
@@ -9105,7 +9105,7 @@ func TestSymbolicEval(t *testing.T) {
 				FROM_XML_FACTORY_NAME: WrapGoFunction(goFn),
 			}), GlobalConst)
 
-			RegisterXMLCheckingFunction(goFn, func(n parse.Node, value SymbolicValue) (errorMsg string) {
+			RegisterXMLInterpolationCheckingFunction(goFn, func(n parse.Node, value SymbolicValue) (errorMsg string) {
 				return "integers not allowed"
 			})
 			defer UnregisterXMLCheckingFunction(goFn)
