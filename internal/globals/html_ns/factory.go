@@ -2,6 +2,7 @@ package html_ns
 
 import (
 	"fmt"
+	"strconv"
 
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/utils"
@@ -9,9 +10,7 @@ import (
 )
 
 func CreateHTMLNodeFromXMLElement(ctx *core.Context, arg *core.XMLElement) *HTMLNode {
-
 	children := arg.Children()
-
 	childNodes := make([]*HTMLNode, len(children))
 
 	for i, child := range children {
@@ -20,6 +19,8 @@ func CreateHTMLNodeFromXMLElement(ctx *core.Context, arg *core.XMLElement) *HTML
 			childNodes[i] = CreateHTMLNodeFromXMLElement(ctx, c)
 		case core.StringLike:
 			childNodes[i] = CreateTextNode(c)
+		case core.Int:
+			childNodes[i] = CreateTextNode(core.Str(strconv.FormatInt(int64(c), 10)))
 		default:
 			panic(core.ErrUnreachable)
 		}
