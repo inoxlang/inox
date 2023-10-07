@@ -11,19 +11,10 @@ import (
 
 func CreateHTMLNodeFromXMLElement(ctx *core.Context, arg *core.XMLElement) *HTMLNode {
 	children := arg.Children()
-	childNodes := make([]*HTMLNode, len(children))
+	childNodes := make([]*HTMLNode, 0, len(children))
 
-	for i, child := range children {
-		switch c := child.(type) {
-		case *core.XMLElement:
-			childNodes[i] = CreateHTMLNodeFromXMLElement(ctx, c)
-		case core.StringLike:
-			childNodes[i] = CreateTextNode(c)
-		case core.Int:
-			childNodes[i] = CreateTextNode(core.Str(strconv.FormatInt(int64(c), 10)))
-		default:
-			panic(core.ErrUnreachable)
-		}
+	for _, child := range children {
+		createChildNodesFromValue(ctx, child, &childNodes)
 	}
 
 	attributes := make([]html.Attribute, len(arg.Attributes()))
@@ -53,4 +44,28 @@ func CreateHTMLNodeFromXMLElement(ctx *core.Context, arg *core.XMLElement) *HTML
 		})
 	}
 	return node
+}
+
+func createChildNodesFromValue(ctx *core.Context, child core.Value, childNodes *[]*HTMLNode) {
+	switch c := child.(type) {
+	case *core.XMLElement:
+		*childNodes = append(*childNodes, CreateHTMLNodeFromXMLElement(ctx, c))
+	case *HTMLNode:
+		if c.HasParent() {
+			panic(core.ErrUnreachable)
+		}
+		*childNodes = append(*childNodes, c)
+	case core.StringLike:
+		*childNodes = append(*childNodes, CreateTextNode(c))
+	case core.Int:
+		*childNodes = append(*childNodes, CreateTextNode(core.Str(strconv.FormatInt(int64(c), 10))))
+	case *core.List:
+		length := c.Len()
+		for i := 0; i < length; i++ {
+			elem := c.At(ctx, i)
+			createChildNodesFromValue(ctx, elem, childNodes)
+		}
+	default:
+		panic(core.ErrUnreachable)
+	}
 }
