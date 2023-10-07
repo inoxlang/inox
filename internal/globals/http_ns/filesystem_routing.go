@@ -121,6 +121,13 @@ func createHandleDynamic(server *HttpServer, routingDirPath core.Path) handlerFn
 
 		if err != nil {
 			handlerGlobalState.Logger.Err(err).Str("handler-module", modulePath).Send()
+			if !rw.isStatusSet() {
+				rw.writeStatus(http.StatusInternalServerError)
+			}
+			tx := handlerCtx.GetTx()
+			if tx != nil {
+				tx.Rollback(handlerCtx)
+			}
 			return
 		}
 
@@ -142,6 +149,10 @@ func createHandleDynamic(server *HttpServer, routingDirPath core.Path) handlerFn
 		if err != nil {
 			handlerGlobalState.Logger.Err(err).Send()
 			rw.writeStatus(http.StatusNotFound)
+			tx := handlerCtx.GetTx()
+			if tx != nil {
+				tx.Rollback(handlerCtx)
+			}
 			return
 		}
 

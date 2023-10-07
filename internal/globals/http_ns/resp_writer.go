@@ -341,9 +341,13 @@ func (rw *HttpResponseWriter) Finish(ctx *core.Context) {
 }
 
 func (rw *HttpResponseWriter) assertStatusNotSet() {
-	if rw.status >= 0 {
+	if rw.isStatusSet() {
 		panic(ErrStatusAlreadySet)
 	}
+}
+
+func (rw *HttpResponseWriter) isStatusSet() bool {
+	return rw.status >= 0
 }
 
 func (rw *HttpResponseWriter) assertIsNotFinished() {

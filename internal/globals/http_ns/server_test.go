@@ -44,8 +44,6 @@ var (
 	anyErr = errors.New("any")
 
 	port = atomic.Int32{}
-
-	toStr func(ctx *core.Context, arg core.Value) core.StringLike
 )
 
 func init() {
@@ -90,36 +88,36 @@ func init() {
 		})
 
 		default_state.SetNewDefaultGlobalStateFn(func(ctx *core.Context, conf default_state.DefaultGlobalStateConfig) (*core.GlobalState, error) {
-			return core.NewGlobalState(ctx), nil
-		})
-	}
+			state := core.NewGlobalState(ctx, map[string]core.Value{
+				"html":        core.ValOf(html_ns.NewHTMLNamespace()),
+				"sleep":       core.WrapGoFunction(core.Sleep),
+				"torstream":   core.WrapGoFunction(toRstream),
+				"mkbytes":     core.WrapGoFunction(mkBytes),
+				"tostr":       core.WrapGoFunction(toStr),
+				"cancel_exec": core.WrapGoFunction(cancelExec),
+			})
 
-	toStr := func(ctx *core.Context, arg core.Value) core.StringLike {
-		switch a := arg.(type) {
-		case core.Bool:
-			if a {
-				return core.Str("true")
-			}
-			return core.Str("false")
-		case core.Integral:
-			return core.Str(core.Stringify(a, ctx))
-		case core.StringLike:
-			return a
-		case *core.ByteSlice:
-			return core.Str(a.Bytes) //TODO: panic if invalid characters ?
-		case *core.RuneSlice:
-			return core.Str(a.ElementsDoNotModify())
-		case core.ResourceName:
-			return core.Str(a.ResourceName())
-		default:
-			panic(fmt.Errorf("cannot convert value of type %T to string", a))
-		}
+			return state, nil
+		})
 	}
 
 	core.RegisterSymbolicGoFunction(toStr, func(ctx *symbolic.Context, arg symbolic.SymbolicValue) symbolic.StringLike {
 		return symbolic.ANY_STR_LIKE
 	})
 
+	core.RegisterSymbolicGoFunction(cancelExec, func() {})
+	core.RegisterSymbolicGoFunction(mkBytes, func(ctx *symbolic.Context, i *symbolic.Int) *symbolic.ByteSlice {
+		return symbolic.ANY_BYTE_SLICE
+	})
+
+	core.RegisterSymbolicGoFunction(toRstream, func(ctx *symbolic.Context, v symbolic.SymbolicValue) *symbolic.ReadableStream {
+		return symbolic.NewReadableStream(symbolic.ANY)
+	})
+	if !core.IsSymbolicEquivalentOfGoFunctionRegistered(core.Sleep) {
+		core.RegisterSymbolicGoFunction(core.Sleep, func(ctx *symbolic.Context, _ *symbolic.Duration) {
+
+		})
+	}
 }
 
 func TestHttpServerMissingProvidePermission(t *testing.T) {
@@ -644,15 +642,12 @@ func setupTestCase(t *testing.T, testCase serverTestCase) (*core.GlobalState, *c
 	}
 
 	state := core.NewGlobalState(ctx, map[string]core.Value{
-		"html":  core.ValOf(html_ns.NewHTMLNamespace()),
-		"sleep": core.WrapGoFunction(core.Sleep),
-		"torstream": core.WrapGoFunction(func(ctx *core.Context, v core.Value) core.ReadableStream {
-			return core.ToReadableStream(ctx, v, core.ANYVAL_PATTERN)
-		}),
-		"mkbytes": core.WrapGoFunction(func(ctx *core.Context, size core.Int) *core.ByteSlice {
-			return &core.ByteSlice{Bytes: make([]byte, size), IsDataMutable: true}
-		}),
-		"tostr": core.WrapGoFunction(toStr),
+		"html":        core.ValOf(html_ns.NewHTMLNamespace()),
+		"sleep":       core.WrapGoFunction(core.Sleep),
+		"torstream":   core.WrapGoFunction(toRstream),
+		"mkbytes":     core.WrapGoFunction(mkBytes),
+		"tostr":       core.WrapGoFunction(toStr),
+		"cancel_exec": core.WrapGoFunction(cancelExec),
 	})
 
 	state.Module = module
@@ -867,6 +862,8 @@ func runAdvancedServerTest(
 
 			//check response
 
+			reqInfo := "request" + strconv.Itoa(i) + " " + info.method + " " + info.path
+
 			if info.status == 0 {
 				if info.okayIf429 && resp.StatusCode == 429 {
 					goto check_body
@@ -875,7 +872,11 @@ func runAdvancedServerTest(
 					return
 				}
 			} else {
-				if !assert.Equal(t, info.status, resp.StatusCode, "request"+strconv.Itoa(i)) {
+				if !assert.Equal(t, info.status, resp.StatusCode, reqInfo) {
+					body, err := io.ReadAll(resp.Body)
+					if err != nil {
+						t.Log("body content is ", body)
+					}
 					return
 				}
 			}
@@ -885,11 +886,11 @@ func runAdvancedServerTest(
 
 			switch {
 			case info.result != "":
-				if !assert.Equal(t, info.result, body) {
+				if !assert.Equal(t, info.result, body, reqInfo) {
 					return
 				}
 			case info.resultRegex != "":
-				if !assert.Regexp(t, info.resultRegex, body) {
+				if !assert.Regexp(t, info.resultRegex, body, reqInfo) {
 					return
 				}
 			default:
@@ -981,5 +982,39 @@ func createClient() *http.Client {
 		},
 		Timeout: REQ_TIMEOUT,
 		Jar:     utils.Must(_cookiejar.New(&_cookiejar.Options{PublicSuffixList: publicsuffix.List})),
+	}
+}
+
+func cancelExec(ctx *core.Context) {
+	ctx.CancelGracefully()
+}
+
+func mkBytes(ctx *core.Context, size core.Int) *core.ByteSlice {
+	return &core.ByteSlice{Bytes: make([]byte, size), IsDataMutable: true}
+}
+
+func toRstream(ctx *core.Context, v core.Value) core.ReadableStream {
+	return core.ToReadableStream(ctx, v, core.ANYVAL_PATTERN)
+}
+
+func toStr(ctx *core.Context, arg core.Value) core.StringLike {
+	switch a := arg.(type) {
+	case core.Bool:
+		if a {
+			return core.Str("true")
+		}
+		return core.Str("false")
+	case core.Integral:
+		return core.Str(core.Stringify(a, ctx))
+	case core.StringLike:
+		return a
+	case *core.ByteSlice:
+		return core.Str(a.Bytes) //TODO: panic if invalid characters ?
+	case *core.RuneSlice:
+		return core.Str(a.ElementsDoNotModify())
+	case core.ResourceName:
+		return core.Str(a.ResourceName())
+	default:
+		panic(fmt.Errorf("cannot convert value of type %T to string", a))
 	}
 }

@@ -2,6 +2,7 @@ package http_ns
 
 import (
 	"net/http"
+	"os"
 	"reflect"
 	"testing"
 	"time"
@@ -192,7 +193,7 @@ func TestFilesystemRouting(t *testing.T) {
 		)
 	})
 
-	t.Run("method-aspecific handler module with %reader _body parameter should accept all methods", func(t *testing.T) {
+	t.Run("method-agnostic handler module with %reader _body parameter should accept all methods", func(t *testing.T) {
 		runServerTest(t,
 			serverTestCase{
 				input: `return {
@@ -240,7 +241,7 @@ func TestFilesystemRouting(t *testing.T) {
 		)
 	})
 
-	t.Run("an error should be returned if a method-aspecific handler module has a JSON body parameter", func(t *testing.T) {
+	t.Run("an error should be returned if a method-agnostic handler module has a JSON body parameter", func(t *testing.T) {
 		runServerTest(t,
 			serverTestCase{
 				input: `return {
@@ -310,7 +311,7 @@ func TestFilesystemRouting(t *testing.T) {
 		)
 	})
 
-	t.Run("method-aspecific handler module with %(#POST) _method parameter should only accept POST requests", func(t *testing.T) {
+	t.Run("method-agnostic handler module with %(#POST) _method parameter should only accept POST requests", func(t *testing.T) {
 		runServerTest(t,
 			serverTestCase{
 				input: `return {
@@ -346,6 +347,37 @@ func TestFilesystemRouting(t *testing.T) {
 
 						acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
 						status:              http.StatusBadRequest,
+					},
+				},
+			},
+			createClient,
+		)
+	})
+
+	t.Run("a status of 500 (internal error) should be returned if there a checking error in the handler module", func(t *testing.T) {
+		runServerTest(t,
+			serverTestCase{
+				input: `return {
+						routing: {dynamic: /routes/}
+					}`,
+				makeFilesystem: func() afs.Filesystem {
+					fls := fs_ns.NewMemFilesystem(10_000)
+					fls.MkdirAll("/routes", fs_ns.DEFAULT_DIR_FMODE)
+					util.WriteFile(fls, "/routes/x.ix", []byte(`
+							manifest {}
+	
+							call_non_existing()
+
+							return "hello"
+						`), fs_ns.DEFAULT_FILE_FMODE)
+
+					return fls
+				},
+				requests: []requestTestInfo{
+					{
+						path:                "/x",
+						acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
+						status:              http.StatusInternalServerError,
 					},
 				},
 			},
@@ -392,7 +424,7 @@ func TestFilesystemRouting(t *testing.T) {
 				}
 
 				setPattern, err := containers.SET_PATTERN.CallImpl(containers.SET_PATTERN, []core.Serializable{
-					core.INT_PATTERN,
+					core.SERIALIZABLE_PATTERN,
 					containers_common.REPR_UNIQUENESS_IDENT,
 				})
 
@@ -428,7 +460,7 @@ func TestFilesystemRouting(t *testing.T) {
 			assert.Fail(t, "")
 		}
 
-		t.Run("GET /x with content-type: text/plain", func(t *testing.T) {
+		t.Run("GET /x text/plain", func(t *testing.T) {
 			test := baseTest
 			test.makeFilesystem = func() afs.Filesystem {
 				fls := fs_ns.NewMemFilesystem(10_000)
@@ -470,7 +502,7 @@ func TestFilesystemRouting(t *testing.T) {
 			runServerTest(t, test, createClient)
 		})
 
-		t.Run("GET /x with content-type: */*", func(t *testing.T) {
+		t.Run("GET /x */*", func(t *testing.T) {
 			test := baseTest
 			test.makeFilesystem = func() afs.Filesystem {
 				fls := fs_ns.NewMemFilesystem(10_000)
@@ -511,6 +543,111 @@ func TestFilesystemRouting(t *testing.T) {
 
 			runServerTest(t, test, createClient)
 		})
+
+		t.Run("manually cancelled transaction: should not be commited", func(t *testing.T) {
+			//TODO: make the test work with shorter pauses between requests
+
+			test := baseTest
+			test.makeFilesystem = func() afs.Filesystem {
+				fls := fs_ns.NewMemFilesystem(10_000)
+				fls.MkdirAll("/routes", fs_ns.DEFAULT_DIR_FMODE)
+				fls.MkdirAll("/db", fs_ns.DEFAULT_DIR_FMODE)
+				util.WriteFile(fls, "/routes/set.ix", []byte(`
+						manifest {
+							databases: /main.ix
+							permissions: {
+								read: ldb://main
+								write: ldb://main
+							}
+						}
+
+						if dbs.main.set.has(2) {
+							return "persisted"
+						}
+
+						dbs.main.set.add(2)
+						sleep 0.1s
+
+						if dbs.main.set.has("do not cancel") {
+							return "tx not cancelled"
+						}
+
+						cancel_exec()
+					`), fs_ns.DEFAULT_FILE_FMODE)
+
+				util.WriteFile(fls, "/routes/read.ix", []byte(`
+						manifest {
+							databases: /main.ix
+							permissions: {
+								read: ldb://main
+								write: ldb://main
+							}
+						}
+
+						if dbs.main.set.has(2) {
+							return "persisted"
+						}
+						return "not persisted"
+					`), fs_ns.DEFAULT_FILE_FMODE)
+				util.WriteFile(fls, "/routes/do-not-cancel.ix", []byte(`
+					manifest {
+						databases: /main.ix
+						permissions: {
+							read: ldb://main
+							write: ldb://main
+						}
+					}
+
+					dbs.main.set.add("do not cancel")
+					return ""
+				`), fs_ns.DEFAULT_FILE_FMODE)
+				return fls
+			}
+			test.outWriter = os.Stdout
+			test.requests = []requestTestInfo{
+				{
+					path:                "/set",
+					acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
+					status:              404,
+				},
+				{
+					pause:               100 * time.Millisecond,
+					path:                "/read",
+					acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
+					status:              200,
+					result:              "not persisted",
+				},
+				{
+					pause:               100 * time.Millisecond,
+					path:                "/do-not-cancel",
+					acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
+					status:              200,
+				},
+				{
+					pause:               100 * time.Millisecond,
+					path:                "/read",
+					acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
+					status:              200,
+					result:              "not persisted",
+				},
+				{
+					pause:               100 * time.Millisecond,
+					path:                "/set",
+					acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
+					status:              200,
+					result:              "tx not cancelled",
+				},
+				{
+					pause:               200 * time.Millisecond,
+					path:                "/read",
+					acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
+					status:              200,
+					result:              "persisted",
+				},
+			}
+			runServerTest(t, test, createClient)
+		})
+
 	})
 
 }
