@@ -50,3 +50,7 @@ func asStreamable(v SymbolicValue) SymbolicValue {
 func asWatchable(v SymbolicValue) SymbolicValue {
 	return as(v, WATCHABLE_INTERFACE_TYPE)
 }
+
+func asStringLike(v SymbolicValue) SymbolicValue {
+	return as(v, STRLIKE_INTERFACE_TYPE)
+}

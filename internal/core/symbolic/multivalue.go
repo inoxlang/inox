@@ -10,9 +10,15 @@ import (
 )
 
 var (
-	_ = []asInterface{(*Multivalue)(nil), (*indexableMultivalue)(nil), (*iterableMultivalue)(nil), (*ipropsMultivalue)(nil)}
+	_ = []asInterface{
+		(*Multivalue)(nil), (*indexableMultivalue)(nil), (*iterableMultivalue)(nil), (*ipropsMultivalue)(nil),
+		(*strLikeMultivalue)(nil),
+	}
 
-	_ = []IMultivalue{(*indexableMultivalue)(nil), (*iterableMultivalue)(nil), (*ipropsMultivalue)(nil)}
+	_ = []IMultivalue{
+		(*indexableMultivalue)(nil), (*iterableMultivalue)(nil), (*ipropsMultivalue)(nil),
+		(*strLikeMultivalue)(nil),
+	}
 
 	enableMultivalueCaching = true
 )
@@ -123,6 +129,17 @@ top_switch:
 		if iprops {
 			result = &ipropsMultivalue{mv}
 		}
+	case STRLIKE_INTERFACE_TYPE:
+		strLike := true
+		for _, val := range mv.values {
+			if _, ok := val.(StringLike); !ok {
+				strLike = false
+				break
+			}
+		}
+		if strLike {
+			result = &strLikeMultivalue{Multivalue: mv}
+		}
 	default:
 		for _, val := range mv.values {
 			if !reflect.ValueOf(val).Type().Implements(itf) {
@@ -152,6 +169,15 @@ top_switch:
 
 func (mv *Multivalue) getValues() []SymbolicValue {
 	return mv.values
+}
+
+func (mv *Multivalue) AllValues(callbackFn func(v SymbolicValue) bool) bool {
+	for _, val := range mv.values {
+		if !callbackFn(val) {
+			return false
+		}
+	}
+	return true
 }
 
 func (mv *Multivalue) WidenSimpleValues() SymbolicValue {
@@ -326,5 +352,93 @@ func (mv *ipropsMultivalue) PropertyNames() []string {
 }
 
 func (mv *ipropsMultivalue) as(itf reflect.Type) SymbolicValue {
+	return mv.Multivalue.as(itf)
+}
+
+type strLikeMultivalue struct {
+	*Multivalue
+	SerializableMixin
+}
+
+func (c *strLikeMultivalue) IteratorElementKey() SymbolicValue {
+	return ANY_STR.IteratorElementKey()
+}
+
+func (c *strLikeMultivalue) IteratorElementValue() SymbolicValue {
+	return ANY_STR.IteratorElementKey()
+}
+
+func (c *strLikeMultivalue) HasKnownLen() bool {
+	return false
+}
+
+func (c *strLikeMultivalue) KnownLen() int {
+	return -1
+}
+
+func (c *strLikeMultivalue) element() SymbolicValue {
+	return ANY_STR.element()
+}
+
+func (c *strLikeMultivalue) elementAt(i int) SymbolicValue {
+	return ANY_STR.elementAt(i)
+}
+
+func (c *strLikeMultivalue) slice(start, end *Int) Sequence {
+	return ANY_STR.slice(start, end)
+}
+
+func (c *strLikeMultivalue) GetOrBuildString() *String {
+	return ANY_STR
+}
+
+func (c *strLikeMultivalue) WidestOfType() SymbolicValue {
+	return joinValues(c.values)
+}
+
+func (c *strLikeMultivalue) Reader() *Reader {
+	return ANY_READER
+}
+
+func (c *strLikeMultivalue) PropertyNames() []string {
+	return STRING_LIKE_PSEUDOPROPS
+}
+
+func (c *strLikeMultivalue) Prop(name string) SymbolicValue {
+	switch name {
+	case "replace":
+		return &GoFunction{
+			fn: func(ctx *Context, old, new *AnyStringLike) *String {
+				return ANY_STR
+			},
+		}
+	case "trim_space":
+		return &GoFunction{
+			fn: func(ctx *Context) *AnyStringLike {
+				return ANY_STR_LIKE
+			},
+		}
+	case "has_prefix":
+		return &GoFunction{
+			fn: func(ctx *Context, s *AnyStringLike) *Bool {
+				return ANY_BOOL
+			},
+		}
+	case "has_suffix":
+		return &GoFunction{
+			fn: func(ctx *Context, s *AnyStringLike) *Bool {
+				return ANY_BOOL
+			},
+		}
+	default:
+		panic(FormatErrPropertyDoesNotExist(name, c))
+	}
+}
+
+func (mv *strLikeMultivalue) WithExistingPropReplaced(name string, value SymbolicValue) (StringLike, error) {
+	return nil, errors.New(FmtCannotAssignPropertyOf(mv))
+}
+
+func (mv *strLikeMultivalue) as(itf reflect.Type) SymbolicValue {
 	return mv.Multivalue.as(itf)
 }

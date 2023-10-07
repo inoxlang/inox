@@ -18,6 +18,7 @@ var (
 
 	_ = []StringLike{
 		(*String)(nil), (*StringConcatenation)(nil), (*AnyStringLike)(nil),
+		(*strLikeMultivalue)(nil),
 	}
 
 	ANY_STR         = &String{}
