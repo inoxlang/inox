@@ -56,6 +56,8 @@ func CreateHTMLNodeFromXMLElement(ctx *symbolic.Context, elem *symbolic.XMLEleme
 			case *symbolic.XMLElement:
 				checkElem(c)
 			case symbolic.StringLike, *symbolic.Int, *HTMLNode:
+			case *symbolic.List:
+				//already checked during interpolation checks
 			default:
 				ctx.AddFormattedSymbolicGoFunctionError("value of interpolation is not accepted for now (%s), use a string or an integer", symbolic.Stringify(c))
 			}
