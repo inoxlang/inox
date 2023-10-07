@@ -94,6 +94,9 @@ type FsReadirParams struct {
 type FsDirEntry struct {
 	Name     string     `json:"name"`
 	FileType FsFileType `json:"type"`
+
+	//The modification timestamp in milliseconds elapsed since January 1, 1970 00:00:00 UTC.
+	ModificationTime int64 `json:"mtime"`
 }
 
 type FsDirEntries []FsDirEntry
@@ -550,8 +553,9 @@ func registerFilesystemMethodHandlers(server *lsp.Server) {
 			fsDirEntries := FsDirEntries{}
 			for _, e := range entries {
 				fsDirEntries = append(fsDirEntries, FsDirEntry{
-					Name:     e.Name(),
-					FileType: FileTypeFromInfo(e),
+					Name:             e.Name(),
+					FileType:         FileTypeFromInfo(e),
+					ModificationTime: e.ModTime().UnixMilli(),
 				})
 			}
 
