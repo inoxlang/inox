@@ -223,7 +223,12 @@ func TestPersistLoadSet(t *testing.T) {
 			return
 		}
 
-		assert.NotNil(t, loadedSet)
+		if !assert.NotNil(t, loadedSet) {
+			return
+		}
+
+		//set should be shared
+		assert.True(t, loadedSet.(*Set).IsShared())
 	})
 
 	t.Run("unique repr: single element", func(t *testing.T) {
@@ -253,6 +258,11 @@ func TestPersistLoadSet(t *testing.T) {
 			Key: "/set", Storage: storage, Pattern: pattern,
 		})
 		if !assert.NoError(t, err) {
+			return
+		}
+
+		//set should be shared
+		if !assert.True(t, loadedSet.(*Set).IsShared()) {
 			return
 		}
 
@@ -287,6 +297,11 @@ func TestPersistLoadSet(t *testing.T) {
 			Key: "/set", Storage: storage, Pattern: pattern,
 		})
 		if !assert.NoError(t, err) {
+			return
+		}
+
+		//set should be shared
+		if !assert.True(t, loadedSet.(*Set).IsShared()) {
 			return
 		}
 
@@ -368,7 +383,12 @@ func TestPersistLoadSet(t *testing.T) {
 			return
 		}
 
-		assert.NotNil(t, loadedSet)
+		if !assert.NotNil(t, loadedSet) {
+			return
+		}
+
+		//set should be shared
+		assert.True(t, loadedSet.(*Set).IsShared())
 	})
 
 	t.Run("unique property value: two elements", func(t *testing.T) {
@@ -407,7 +427,12 @@ func TestPersistLoadSet(t *testing.T) {
 			return
 		}
 
-		assert.NotNil(t, loadedSet)
+		if !assert.NotNil(t, loadedSet) {
+			return
+		}
+
+		//set should be shared
+		assert.True(t, loadedSet.(*Set).IsShared())
 	})
 
 	t.Run("unique property value: two elements with same unique prop", func(t *testing.T) {

@@ -132,10 +132,11 @@ func (*Set) PropertyNames() []string {
 	return SET_PROPNAMES
 }
 
-func (s *Set) Has(ctx *symbolic.Context, v symbolic.Serializable) {
+func (s *Set) Has(ctx *symbolic.Context, v symbolic.Serializable) *symbolic.Bool {
 	ctx.SetSymbolicGoFunctionParameters(&[]symbolic.SymbolicValue{
 		s.element,
 	}, SET_ADD_METHOD_PARAM_NAMES)
+	return symbolic.ANY_BOOL
 }
 
 func (s *Set) Add(ctx *symbolic.Context, v symbolic.Serializable) {

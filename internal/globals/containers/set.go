@@ -209,6 +209,8 @@ func loadSet(ctx *core.Context, args core.InstanceLoadArgs) (core.UrlHolder, err
 		}
 	}
 
+	set.Share(ctx.GetClosestState())
+
 	return set, nil
 }
 
