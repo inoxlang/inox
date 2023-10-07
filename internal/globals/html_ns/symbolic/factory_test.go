@@ -42,6 +42,22 @@ func TestSymbolicCreateHTMLNodeFromXMLElement(t *testing.T) {
 		assert.Empty(t, state.Errors())
 	})
 
+	t.Run("shallow: list of string-like values", func(t *testing.T) {
+		chunk, state := symbolic.MakeTestStateAndChunk(`html<div>{ [ "a", (concat "b" "c")  ] }</div>`, globals())
+
+		_, err := symbolic.SymbolicEval(chunk, state)
+		assert.NoError(t, err)
+		assert.Empty(t, state.Errors())
+	})
+
+	t.Run("shallow: list of invalid values", func(t *testing.T) {
+		chunk, state := symbolic.MakeTestStateAndChunk(`html<div>{ [ 1.0 ] }</div>`, globals())
+
+		_, err := symbolic.SymbolicEval(chunk, state)
+		assert.NoError(t, err)
+		assert.NotEmpty(t, state.Errors())
+	})
+
 	t.Run("deep: invalid interpolation value", func(t *testing.T) {
 		chunk, state := symbolic.MakeTestStateAndChunk("html<div><span>{1.0}</span></div>", globals())
 

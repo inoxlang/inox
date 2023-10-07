@@ -9,32 +9,25 @@ func init() {
 	symbolic.RegisterXMLInterpolationCheckingFunction(
 		CreateHTMLNodeFromXMLElement,
 		func(n parse.Node, value symbolic.SymbolicValue) (errorMsg string) {
-			switch value.(type) {
-			case symbolic.StringLike, *symbolic.Int, *HTMLNode:
+			const ERROR_MSG = "only HTML nodes, string-like and integer values are allowed"
+
+			switch {
+			case symbolic.ImplementsOrIsMultivalueWithAllValuesImplementing[symbolic.StringLike](value),
+				symbolic.ImplementsOrIsMultivalueWithAllValuesImplementing[*HTMLNode](value),
+				symbolic.ImplementsOrIsMultivalueWithAllValuesImplementing[*symbolic.Int](value):
 				return ""
-			default:
-				const ERROR_MSG = "only HTML nodes, string-like and integer values are allowed"
-
-				if list, ok := value.(*symbolic.List); ok {
-					elem := list.IteratorElementValue()
-
-					switch e := elem.(type) {
-					case *HTMLNode:
-						return ""
-					case *symbolic.Multivalue:
-						ok := e.AllValues(func(v symbolic.SymbolicValue) bool {
-							_, ok := elem.(*HTMLNode)
-							return ok
-						})
-
-						if ok {
-							return ""
-						}
-					}
-				}
-
-				return ERROR_MSG
 			}
+
+			if list, ok := value.(*symbolic.List); ok {
+				elem := list.IteratorElementValue()
+				switch {
+				case symbolic.ImplementsOrIsMultivalueWithAllValuesImplementing[symbolic.StringLike](elem),
+					symbolic.ImplementsOrIsMultivalueWithAllValuesImplementing[*HTMLNode](elem),
+					symbolic.ImplementsOrIsMultivalueWithAllValuesImplementing[*symbolic.Int](elem):
+					return ""
+				}
+			}
+			return ERROR_MSG
 		},
 	)
 }
@@ -56,7 +49,7 @@ func CreateHTMLNodeFromXMLElement(ctx *symbolic.Context, elem *symbolic.XMLEleme
 			case *symbolic.XMLElement:
 				checkElem(c)
 			case symbolic.StringLike, *symbolic.Int, *HTMLNode:
-			case *symbolic.List:
+			case *symbolic.List, *symbolic.Multivalue:
 				//already checked during interpolation checks
 			default:
 				ctx.AddFormattedSymbolicGoFunctionError("value of interpolation is not accepted for now (%s), use a string or an integer", symbolic.Stringify(c))

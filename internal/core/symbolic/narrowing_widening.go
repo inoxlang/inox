@@ -264,3 +264,17 @@ func findInMultivalue[T SymbolicValue](v SymbolicValue) (result T, found bool) {
 	found = false
 	return
 }
+
+func ImplementsOrIsMultivalueWithAllValuesImplementing[T SymbolicValue](v SymbolicValue) bool {
+	_, ok := v.(T)
+	if ok {
+		return true
+	}
+
+	if mv, ok := v.(IMultivalue); ok {
+		return mv.OriginalMultivalue().AllValues(func(v SymbolicValue) bool {
+			return ImplementsOrIsMultivalueWithAllValuesImplementing[T](v)
+		})
+	}
+	return false
+}
