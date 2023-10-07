@@ -4646,21 +4646,21 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			return nil, err
 		}
 
-		elem, err := symbolicEval(n.Element, state)
-		if err != nil {
-			return nil, err
-		}
-
 		ns, ok := namespace.(*Namespace)
 		if !ok {
+			_, err := symbolicEval(n.Element, state)
+			if err != nil {
+				return nil, err
+			}
+
 			state.addError(makeSymbolicEvalError(n.Namespace, state, NAMESPACE_APPLIED_TO_XML_ELEMENT_SHOUD_BE_A_RECORD))
 			return ANY, nil
 		} else {
-			if _, ok := ns.entries[FROM_XML_FACTORY_NAME]; !ok {
+			factory, ok := ns.entries[FROM_XML_FACTORY_NAME]
+			if !ok {
 				state.addError(makeSymbolicEvalError(n.Namespace, state, MISSING_FACTORY_IN_NAMESPACE_APPLIED_TO_XML_ELEMENT))
 				return ANY, nil
 			}
-			factory := ns.Prop(FROM_XML_FACTORY_NAME)
 			goFn, ok := factory.(*GoFunction)
 			if !ok {
 				state.addError(makeSymbolicEvalError(n.Namespace, state, FROM_XML_FACTORY_IS_NOT_A_GO_FUNCTION))
@@ -4677,6 +4677,19 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			if len(goFn.NonVariadicParametersExceptCtx()) == 0 {
 				state.addError(makeSymbolicEvalError(n.Namespace, state, FROM_XML_FACTORY_SHOULD_HAVE_AT_LEAST_ONE_NON_VARIADIC_PARAM))
 				return ANY, nil
+			}
+
+			if goFn.fn != nil {
+				checkXMLInterpolation := state.checkXMLInterpolation
+				defer func() {
+					state.checkXMLInterpolation = checkXMLInterpolation
+				}()
+				state.checkXMLInterpolation = xmlInterpolationCheckingFunctions[reflect.ValueOf(goFn.fn).Pointer()]
+			}
+
+			elem, err := symbolicEval(n.Element, state)
+			if err != nil {
+				return nil, err
 			}
 
 			result, _, _, err := goFn.Call(goFunctionCallInput{
@@ -4712,12 +4725,12 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			}
 		}
 
-		for _, child := range n.Children {
-			val, err := symbolicEval(child, state)
+		for _, childNode := range n.Children {
+			child, err := symbolicEval(childNode, state)
 			if err != nil {
 				return nil, err
 			}
-			children = append(children, val)
+			children = append(children, child)
 		}
 
 		xmlElem := NewXmlElement(name, attrs, children)
@@ -4729,10 +4742,19 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 
 		return xmlElem, nil
 	case *parse.XMLInterpolation:
+
 		val, err := symbolicEval(n.Expr, state)
 		if err != nil {
 			return nil, err
 		}
+
+		if state.checkXMLInterpolation != nil {
+			msg := state.checkXMLInterpolation(n.Expr, val)
+			if msg != "" {
+				state.addError(makeSymbolicEvalError(n.Expr, state, msg))
+			}
+		}
+
 		return val, err
 	case *parse.XMLText:
 		return ANY_STR, nil

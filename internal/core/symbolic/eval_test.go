@@ -9069,6 +9069,64 @@ func TestSymbolicEval(t *testing.T) {
 			}, res)
 		})
 
+		t.Run("interpolation with checking", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`html<div>{int}</div>`)
+			goFn := func(ctx *Context, elem *XMLElement) *XMLElement {
+				return elem
+			}
+
+			state.setGlobal("html", NewNamespace(map[string]SymbolicValue{
+				FROM_XML_FACTORY_NAME: WrapGoFunction(goFn),
+			}), GlobalConst)
+
+			RegisterXMLCheckingFunction(goFn, func(n parse.Node, value SymbolicValue) (errorMsg string) {
+				//no error
+				return ""
+			})
+			defer UnregisterXMLCheckingFunction(goFn)
+
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, &XMLElement{
+				name:     "div",
+				children: []SymbolicValue{ANY_STR, ANY_INT, ANY_STR},
+			}, res)
+		})
+
+		t.Run("interpolation with checking: unexpected value", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`html<div>{int}</div>`)
+			goFn := func(ctx *Context, elem *XMLElement) *XMLElement {
+				return elem
+			}
+
+			state.setGlobal("html", NewNamespace(map[string]SymbolicValue{
+				FROM_XML_FACTORY_NAME: WrapGoFunction(goFn),
+			}), GlobalConst)
+
+			RegisterXMLCheckingFunction(goFn, func(n parse.Node, value SymbolicValue) (errorMsg string) {
+				return "integers not allowed"
+			})
+			defer UnregisterXMLCheckingFunction(goFn)
+
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Equal(t, &XMLElement{
+				name:     "div",
+				children: []SymbolicValue{ANY_STR, ANY_INT, ANY_STR},
+			}, res)
+
+			intIdent := parse.FindNode(n, (*parse.IdentifierLiteral)(nil), func(n *parse.IdentifierLiteral, isUnique bool) bool {
+				return n.Name == "int"
+			})
+
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(intIdent, state, "integers not allowed"),
+			}, state.errors())
+		})
+
 		t.Run("attribute with value", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`a = "a"; return html<div a=a></div>`)
 			state.setGlobal("html", NewNamespace(map[string]SymbolicValue{

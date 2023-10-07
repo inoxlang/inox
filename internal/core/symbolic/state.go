@@ -22,13 +22,14 @@ type State struct {
 	inPreinit             bool
 	recursiveFunctionName string
 
-	calleeStack       []*parse.FunctionExpression
-	topLevelSelf      SymbolicValue // can be nil
-	returnType        SymbolicValue
-	returnValue       SymbolicValue
-	conditionalReturn bool
-	iterationChange   IterationChange
-	Module            *Module
+	calleeStack           []*parse.FunctionExpression
+	topLevelSelf          SymbolicValue // can be nil
+	returnType            SymbolicValue
+	returnValue           SymbolicValue
+	conditionalReturn     bool
+	iterationChange       IterationChange
+	checkXMLInterpolation XMLInterpolationCheckingFunction
+	Module                *Module
 
 	baseGlobals           map[string]SymbolicValue
 	basePatterns          map[string]Pattern
@@ -546,6 +547,7 @@ func (state *State) fork() *State {
 	child.baseGlobals = state.baseGlobals
 	child.basePatterns = state.basePatterns
 	child.basePatternNamespaces = state.basePatternNamespaces
+	child.checkXMLInterpolation = state.checkXMLInterpolation
 
 	globalScopeCopy := &scopeInfo{
 		variables: make(map[string]varSymbolicInfo, 0),

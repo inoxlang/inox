@@ -2,7 +2,9 @@ package symbolic
 
 import (
 	"bufio"
+	"reflect"
 
+	parse "github.com/inoxlang/inox/internal/parse"
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
 	"github.com/inoxlang/inox/internal/utils"
 )
@@ -13,7 +15,19 @@ const (
 
 var (
 	ANY_XML_ELEM = &XMLElement{}
+
+	xmlInterpolationCheckingFunctions = map[uintptr] /* go symbolic function pointer*/ XMLInterpolationCheckingFunction{}
 )
+
+type XMLInterpolationCheckingFunction func(n parse.Node, value SymbolicValue) (errorMsg string)
+
+func RegisterXMLCheckingFunction(factory any, fn XMLInterpolationCheckingFunction) {
+	xmlInterpolationCheckingFunctions[reflect.ValueOf(factory).Pointer()] = fn
+}
+
+func UnregisterXMLCheckingFunction(factory any) {
+	delete(xmlInterpolationCheckingFunctions, reflect.ValueOf(factory).Pointer())
+}
 
 // A XMLElement represents a symbolic XMLElement.
 type XMLElement struct {
