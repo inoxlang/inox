@@ -56,15 +56,26 @@ func init() {
 
 	if default_state.NewDefaultContext == nil {
 		default_state.SetNewDefaultContext(func(config default_state.DefaultContextConfig) (*core.Context, error) {
+
+			if len(config.OwnedDatabases) != 0 {
+				panic(errors.New("not supported"))
+			}
+
+			permissions := []core.Permission{
+				core.GlobalVarPermission{Kind_: permkind.Use, Name: "*"},
+				core.GlobalVarPermission{Kind_: permkind.Create, Name: "*"},
+				core.GlobalVarPermission{Kind_: permkind.Read, Name: "*"},
+				core.LThreadPermission{Kind_: permkind.Create},
+				core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},
+			}
+
+			permissions = append(permissions, config.Permissions...)
+
 			ctx := core.NewContext(core.ContextConfig{
-				Permissions: []core.Permission{
-					core.GlobalVarPermission{Kind_: permkind.Use, Name: "*"},
-					core.GlobalVarPermission{Kind_: permkind.Create, Name: "*"},
-					core.GlobalVarPermission{Kind_: permkind.Read, Name: "*"},
-					core.LThreadPermission{Kind_: permkind.Create},
-					core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},
-				},
-				ParentContext: config.ParentContext,
+				Permissions:          permissions,
+				ForbiddenPermissions: config.ForbiddenPermissions,
+				HostResolutions:      config.HostResolutions,
+				ParentContext:        config.ParentContext,
 			})
 
 			for k, v := range core.DEFAULT_NAMED_PATTERNS {
@@ -581,23 +592,47 @@ func TestHttpServerMapping(t *testing.T) {
 func setupTestCase(t *testing.T, testCase serverTestCase) (*core.GlobalState, *core.Context, *parse.Chunk, core.Host, error) {
 	host := core.Host("https://localhost:" + strconv.Itoa(int(port.Add(1))))
 
-	var fls afs.Filesystem = fs_ns.GetOsFilesystem()
+	var fls afs.Filesystem = fs_ns.NewMemFilesystem(1_000_000)
 
 	if testCase.makeFilesystem != nil {
 		fls = testCase.makeFilesystem()
 	}
 
+	perms := []core.Permission{
+		core.HttpPermission{Kind_: permkind.Provide, Entity: host},
+		core.GlobalVarPermission{Kind_: permkind.Use, Name: "*"},
+		core.GlobalVarPermission{Kind_: permkind.Create, Name: "*"},
+		core.GlobalVarPermission{Kind_: permkind.Read, Name: "*"},
+		core.LThreadPermission{Kind_: permkind.Create},
+		core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},
+		core.FilesystemPermission{Kind_: permkind.Write, Entity: core.PathPattern("/...")},
+	}
+
+	// create module
+	chunk := parse.MustParseChunk(testCase.input)
+	module := &core.Module{
+		MainChunk: parse.NewParsedChunk(chunk, parse.SourceFile{
+			NameString:  "/main.ix",
+			Resource:    "/main.ix",
+			ResourceDir: "/",
+			CodeString:  testCase.input,
+		}),
+		ManifestTemplate: chunk.Manifest,
+	}
+
+	manifest, _, _, err := module.PreInit(core.PreinitArgs{
+		AddDefaultPermissions: true,
+	})
+
+	if err != nil {
+		return nil, nil, nil, "", fmt.Errorf("preinit error: %w", err)
+	}
+
 	// create state & context
 	ctx := core.NewContext(core.ContextConfig{
-		Permissions: []core.Permission{
-			core.HttpPermission{Kind_: permkind.Provide, Entity: host},
-			core.GlobalVarPermission{Kind_: permkind.Use, Name: "*"},
-			core.GlobalVarPermission{Kind_: permkind.Create, Name: "*"},
-			core.GlobalVarPermission{Kind_: permkind.Read, Name: "*"},
-			core.LThreadPermission{Kind_: permkind.Create},
-			core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},
-		},
-		Filesystem: fls,
+		Permissions:     append(perms, manifest.RequiredPermissions...),
+		HostResolutions: manifest.HostResolutions,
+		Filesystem:      fls,
 	})
 
 	for k, v := range core.DEFAULT_NAMED_PATTERNS {
@@ -620,6 +655,8 @@ func setupTestCase(t *testing.T, testCase serverTestCase) (*core.GlobalState, *c
 		"tostr": core.WrapGoFunction(toStr),
 	})
 
+	state.Module = module
+
 	// create logger
 	out := testCase.outWriter
 	if out == nil {
@@ -627,15 +664,6 @@ func setupTestCase(t *testing.T, testCase serverTestCase) (*core.GlobalState, *c
 	}
 	state.Logger = zerolog.New(out)
 	state.Out = out
-
-	// create module
-	chunk := parse.MustParseChunk(testCase.input)
-	state.Module = &core.Module{
-		MainChunk: parse.NewParsedChunk(chunk, parse.InMemorySource{
-			NameString: "code",
-			CodeString: testCase.input,
-		}),
-	}
 
 	staticData, err := core.StaticCheck(core.StaticCheckInput{
 		State:             state,
@@ -650,6 +678,15 @@ func setupTestCase(t *testing.T, testCase serverTestCase) (*core.GlobalState, *c
 		return nil, nil, nil, "", err
 	}
 	state.StaticCheckData = staticData
+
+	if testCase.finalizeState != nil {
+		err := testCase.finalizeState(state)
+		if err != nil {
+			ctx.CancelGracefully()
+			return nil, nil, nil, "", err
+		}
+	}
+
 	return state, ctx, chunk, host, nil
 }
 
@@ -875,7 +912,7 @@ func runAdvancedServerTest(
 }
 
 type requestTestInfo struct {
-	pause               time.Duration //like predelay but does not send next requests
+	pause               time.Duration //like predelay but does not send current & next requests
 	preDelay            time.Duration
 	acceptedContentType core.Mimetype
 	path                string
@@ -898,6 +935,7 @@ type serverTestCase struct {
 	requests       []requestTestInfo
 	outWriter      io.Writer
 	makeFilesystem func() afs.Filesystem
+	finalizeState  func(*core.GlobalState) error
 	createClientFn func() func() *http.Client
 }
 

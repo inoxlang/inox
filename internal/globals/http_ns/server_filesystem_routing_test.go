@@ -2,12 +2,19 @@ package http_ns
 
 import (
 	"net/http"
+	"reflect"
 	"testing"
+	"time"
 
 	"github.com/go-git/go-billy/v5/util"
 	"github.com/inoxlang/inox/internal/afs"
+	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/globals/containers"
+	containers_common "github.com/inoxlang/inox/internal/globals/containers/common"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
+	"github.com/inoxlang/inox/internal/local_db"
 	"github.com/inoxlang/inox/internal/mimeconsts"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestFilesystemRouting(t *testing.T) {
@@ -344,6 +351,166 @@ func TestFilesystemRouting(t *testing.T) {
 			},
 			createClient,
 		)
+	})
+
+	t.Run("request transaction should be commited or rollbacked after request", func(t *testing.T) {
+
+		baseTest := serverTestCase{
+			input: `
+				manifest {
+					permissions: {
+						read: ldb://main
+						write: ldb://main
+					}
+					host-resolution: :{
+						ldb://main : /db/
+					}
+				}
+				return {
+					routing: {dynamic: /routes/}
+				}
+			`,
+			finalizeState: func(gs *core.GlobalState) error {
+				host := core.Host("ldb://main")
+				dbDir := core.Path("/db/")
+
+				localDb, err := local_db.OpenDatabase(gs.Ctx, host, false)
+				if err != nil {
+					return err
+				}
+				db, err := core.WrapDatabase(gs.Ctx, core.DatabaseWrappingArgs{
+					Inner:                localDb,
+					OwnerState:           gs,
+					Name:                 "main",
+					ExpectedSchemaUpdate: true,
+				})
+				if err != nil {
+					return err
+				}
+				gs.Databases = map[string]*core.DatabaseIL{
+					"main": db,
+				}
+
+				setPattern, err := containers.SET_PATTERN.CallImpl(containers.SET_PATTERN, []core.Serializable{
+					core.INT_PATTERN,
+					containers_common.REPR_UNIQUENESS_IDENT,
+				})
+
+				if err != nil {
+					return err
+				}
+				db.UpdateSchema(gs.Ctx, core.NewExactObjectPattern(map[string]core.Pattern{
+					"set": setPattern,
+				}), core.NewObjectFromMapNoInit(core.ValMap{
+					"inclusions": core.NewDictionary(core.ValMap{
+						"%/set": core.NewWrappedValueList(),
+					}),
+				}))
+
+				gs.Manifest = &core.Manifest{
+					Databases: core.DatabaseConfigs{
+						{
+							Name:                 "main",
+							Resource:             host,
+							ResolutionData:       dbDir,
+							ExpectedSchemaUpdate: false,
+							Owned:                true,
+							Provided:             db,
+						},
+					},
+				}
+
+				return nil
+			},
+		}
+
+		if reflect.TypeOf(baseTest).Kind() != reflect.Struct {
+			assert.Fail(t, "")
+		}
+
+		t.Run("GET /x with content-type: text/plain", func(t *testing.T) {
+			test := baseTest
+			test.makeFilesystem = func() afs.Filesystem {
+				fls := fs_ns.NewMemFilesystem(10_000)
+				fls.MkdirAll("/routes", fs_ns.DEFAULT_DIR_FMODE)
+				fls.MkdirAll("/db", fs_ns.DEFAULT_DIR_FMODE)
+				util.WriteFile(fls, "/routes/x.ix", []byte(`
+						manifest {
+							databases: /main.ix
+							permissions: {
+								read: ldb://main
+								write: ldb://main
+							}
+						}
+
+						if dbs.main.set.has(2) {
+							return "persisted"
+						}
+						dbs.main.set.add(2)
+
+						return "added"
+					`), fs_ns.DEFAULT_FILE_FMODE)
+
+				return fls
+			}
+			test.requests = []requestTestInfo{
+				{
+					path:                "/x",
+					acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
+					result:              `added`,
+				},
+				{
+					pause:               10 * time.Millisecond,
+					path:                "/x",
+					acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
+					result:              `persisted`,
+				},
+			}
+
+			runServerTest(t, test, createClient)
+		})
+
+		t.Run("GET /x with content-type: */*", func(t *testing.T) {
+			test := baseTest
+			test.makeFilesystem = func() afs.Filesystem {
+				fls := fs_ns.NewMemFilesystem(10_000)
+				fls.MkdirAll("/routes", fs_ns.DEFAULT_DIR_FMODE)
+				fls.MkdirAll("/db", fs_ns.DEFAULT_DIR_FMODE)
+				util.WriteFile(fls, "/routes/x.ix", []byte(`
+						manifest {
+							databases: /main.ix
+							permissions: {
+								read: ldb://main
+								write: ldb://main
+							}
+						}
+
+						if dbs.main.set.has(2) {
+							return "persisted"
+						}
+						dbs.main.set.add(2)
+
+						return "added"
+					`), fs_ns.DEFAULT_FILE_FMODE)
+
+				return fls
+			}
+			test.requests = []requestTestInfo{
+				{
+					path:                "/x",
+					acceptedContentType: mimeconsts.ANY_CTYPE,
+					result:              `added`,
+				},
+				{
+					pause:               10 * time.Millisecond,
+					path:                "/x",
+					acceptedContentType: mimeconsts.ANY_CTYPE,
+					result:              `persisted`,
+				},
+			}
+
+			runServerTest(t, test, createClient)
+		})
 	})
 
 }

@@ -41,7 +41,7 @@ func TestOpenDatabase(t *testing.T) {
 
 		ctx1 := core.NewContexWithEmptyState(ctxConfig, nil)
 
-		_db, err := openDatabase(ctx1, core.Path(dir), false)
+		_db, err := OpenDatabase(ctx1, core.Path(dir), false)
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -49,7 +49,7 @@ func TestOpenDatabase(t *testing.T) {
 
 		ctx2 := core.NewContexWithEmptyState(ctxConfig, nil)
 
-		db, err := openDatabase(ctx2, core.Path(dir), false)
+		db, err := OpenDatabase(ctx2, core.Path(dir), false)
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -76,7 +76,7 @@ func TestOpenDatabase(t *testing.T) {
 
 		ctx1 := core.NewContexWithEmptyState(ctxConfig, nil)
 
-		_db, err := openDatabase(ctx1, core.Path(dir), false)
+		_db, err := OpenDatabase(ctx1, core.Path(dir), false)
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -84,7 +84,7 @@ func TestOpenDatabase(t *testing.T) {
 
 		ctx2 := core.NewContexWithEmptyState(ctxConfig, nil)
 
-		db, err := openDatabase(ctx2, core.Path(dir), false)
+		db, err := OpenDatabase(ctx2, core.Path(dir), false)
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -136,7 +136,7 @@ func TestOpenDatabase(t *testing.T) {
 			//open database in first context
 			ctx1 = core.NewContexWithEmptyState(ctxConfig, nil)
 
-			_db1, err := openDatabase(ctx1, core.Path(dir), false)
+			_db1, err := OpenDatabase(ctx1, core.Path(dir), false)
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -148,7 +148,7 @@ func TestOpenDatabase(t *testing.T) {
 			//open same database in second context
 			ctx2 = core.NewContexWithEmptyState(ctxConfig, nil)
 
-			_db2, err := openDatabase(ctx2, core.Path(dir), false)
+			_db2, err := OpenDatabase(ctx2, core.Path(dir), false)
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -183,7 +183,7 @@ func TestOpenDatabase(t *testing.T) {
 			ctx.AddNamedPattern("Set", containers.SET_PATTERN)
 			ctx.AddNamedPattern("str", containers.SET_PATTERN)
 
-			db, err := openDatabase(ctx, core.Path(dir), false)
+			db, err := OpenDatabase(ctx, core.Path(dir), false)
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -209,7 +209,7 @@ func TestOpenDatabase(t *testing.T) {
 
 			//re-open
 
-			db, err = openDatabase(ctx, core.Path(dir), false)
+			db, err = OpenDatabase(ctx, core.Path(dir), false)
 			if !assert.NoError(t, err) {
 				return
 			}

@@ -29,7 +29,7 @@ var (
 
 func init() {
 	core.RegisterOpenDbFn(LDB_SCHEME, func(ctx *core.Context, config core.DbOpenConfiguration) (core.Database, error) {
-		return openDatabase(ctx, config.Resource, !config.FullAccess)
+		return OpenDatabase(ctx, config.Resource, !config.FullAccess)
 	})
 
 	checkResolutionData := func(node parse.Node, _ core.Project) (errMsg string) {
@@ -66,8 +66,8 @@ type LocalDatabaseConfig struct {
 	Restricted bool
 }
 
-// openDatabase opens a local database, read, create & write permissions are required.
-func openDatabase(ctx *core.Context, r core.ResourceName, restrictedAccess bool) (*LocalDatabase, error) {
+// OpenDatabase opens a local database, read, create & write permissions are required.
+func OpenDatabase(ctx *core.Context, r core.ResourceName, restrictedAccess bool) (*LocalDatabase, error) {
 
 	var pth core.Path
 
