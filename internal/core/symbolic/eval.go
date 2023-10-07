@@ -4702,6 +4702,13 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 				callLikeNode:      n,
 			})
 
+			state.consumeSymbolicGoFunctionErrors(func(msg string) {
+				state.addError(makeSymbolicEvalError(n, state, msg))
+			})
+			state.consumeSymbolicGoFunctionWarnings(func(msg string) {
+				state.addWarning(makeSymbolicEvalWarning(n, state, msg))
+			})
+
 			return result, err
 		}
 	case *parse.XMLElement:

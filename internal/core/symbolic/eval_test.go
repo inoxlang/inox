@@ -9162,6 +9162,29 @@ func TestSymbolicEval(t *testing.T) {
 				children:   []SymbolicValue{ANY_STR},
 			}, res)
 		})
+
+		t.Run("error during factory call", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`return html<div></div>`)
+			state.setGlobal("html", NewNamespace(map[string]SymbolicValue{
+				FROM_XML_FACTORY_NAME: WrapGoFunction(func(ctx *Context, elem *XMLElement) *XMLElement {
+					ctx.AddSymbolicGoFunctionError("factory error")
+					return elem
+				}),
+			}), GlobalConst)
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Equal(t, &XMLElement{
+				name:     "div",
+				children: []SymbolicValue{ANY_STR},
+			}, res)
+
+			xmlExpr := parse.FindNode(n, (*parse.XMLExpression)(nil), nil)
+
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(xmlExpr, state, "factory error"),
+			}, state.errors())
+		})
 	})
 
 	t.Run("module parameters ", func(t *testing.T) {

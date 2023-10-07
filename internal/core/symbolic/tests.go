@@ -44,7 +44,7 @@ func _makeStateAndChunk(code string, includedFiles map[string]string, globals ..
 		mainChunk: chunk,
 	}
 
-	if len(globals) > 1 {
+	if len(globals) >= 1 {
 		for k, v := range globals[0] {
 			state.setGlobal(k, v, GlobalConst)
 		}
