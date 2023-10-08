@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	fsutil "github.com/go-git/go-billy/v5/util"
@@ -91,11 +92,6 @@ func getSessionData(session *jsonrpc.Session) *additionalSessionData {
 }
 
 func registerHandlers(server *lsp.Server, serverConfig LSPServerConfiguration) {
-	var (
-		shuttingDownSessionsLock sync.Mutex
-		shuttingDownSessions     = make(map[*jsonrpc.Session]struct{})
-	)
-
 	projectMode := serverConfig.ProjectMode
 
 	if projectMode {
@@ -128,63 +124,74 @@ func registerHandlers(server *lsp.Server, serverConfig LSPServerConfiguration) {
 			TriggerCharacters: &[]string{".", ":"},
 		}
 
-		sessionData := getLockedSessionData(session)
-		sessionData.clientCapabilities = req.Capabilities
-		sessionData.serverCapabilities = s.Capabilities
-		sessionData.projectMode = projectMode
-		sessionData.lock.Unlock()
+		//create session data
+		{
+			sessionData := getLockedSessionData(session)
+			sessionData.clientCapabilities = req.Capabilities
+			sessionData.serverCapabilities = s.Capabilities
+			sessionData.projectMode = projectMode
+			sessionData.lock.Unlock()
+		}
 
-		//remove closed sessions from sessionToAdditionalData
+		//remove closed sessions
 		sessionToAdditionalDataLock.Lock()
-		for session := range sessionToAdditionalData {
-			if session.Closed() {
-				delete(sessionToAdditionalData, session)
+		for s, data := range sessionToAdditionalData {
+			sessionToRemove := s
+			if sessionToRemove.Closed() {
+				logs.Println("remove one closed session: " + s.Client())
+				delete(sessionToAdditionalData, sessionToRemove)
+				func() {
+					data.lock.Lock()
+					defer data.lock.Unlock()
+					data.preparedSourceFilesCache.acknowledgeSessionEnd()
+					data.preparedSourceFilesCache = nil
+				}()
 			}
 		}
 		newCount := len(sessionToAdditionalData)
 		sessionToAdditionalDataLock.Unlock()
 		logs.Println("current session count:", newCount)
 
+		// remove session and data on shutdown or when closed
+		var removed atomic.Bool
+		removeSession := func(s *jsonrpc.Session) {
+			if !removed.CompareAndSwap(false, true) {
+				return
+			}
+			logs.Println("remove one session that has just finished: " + s.Client())
+			sessionToAdditionalDataLock.Lock()
+			sessionData, ok := sessionToAdditionalData[s]
+			delete(sessionToAdditionalData, s)
+			sessionToAdditionalDataLock.Unlock()
+
+			if ok {
+				func() {
+					sessionData.lock.Lock()
+					defer sessionData.lock.Unlock()
+					sessionData.preparedSourceFilesCache.acknowledgeSessionEnd()
+					sessionData.preparedSourceFilesCache = nil
+				}()
+			}
+		}
+
+		session.SetShutdownCallbackFn(removeSession)
+		session.SetClosedCallbackFn(removeSession)
+
 		return s, nil
 	})
 
 	server.OnShutdown(func(ctx context.Context, req *defines.NoParams) (err error) {
 		session := jsonrpc.GetSession(ctx)
-
-		shuttingDownSessionsLock.Lock()
-		defer shuttingDownSessionsLock.Unlock()
-
-		shuttingDownSessions[session] = struct{}{}
+		session.Close()
 		return nil
 	})
 
 	server.OnExit(func(ctx context.Context, req *defines.NoParams) (err error) {
 		session := jsonrpc.GetSession(ctx)
+		defer session.Close()
 
-		sessionToAdditionalDataLock.Lock()
-		sessionData, ok := sessionToAdditionalData[session]
-		delete(sessionToAdditionalData, session)
-		sessionToAdditionalDataLock.Unlock()
-
-		if ok {
-			func() {
-				sessionData.lock.Lock()
-				defer sessionData.lock.Unlock()
-				sessionData.preparedSourceFilesCache.acknowledgeSessionEnd()
-				sessionData.preparedSourceFilesCache = nil
-			}()
-
-		}
-
-		session.Close()
-
-		if _, ok := shuttingDownSessions[session]; ok {
-			shuttingDownSessionsLock.Lock()
-			delete(shuttingDownSessions, session)
-			shuttingDownSessionsLock.Unlock()
-		} else {
-			shuttingDownSessionsLock.Unlock()
-			return errors.New("the client should make shutdown request before sending an exit notification")
+		if !session.IsShuttingDown() {
+			return errors.New("the client should make a shutdown request before sending an exit notification")
 		}
 
 		return nil

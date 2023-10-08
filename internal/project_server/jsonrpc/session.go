@@ -31,8 +31,9 @@ const (
 )
 
 var (
-	ErrRateLimitedMethod = errors.New("rate limited method")
-	ErrRateLimited       = errors.New("rate limited")
+	ErrRateLimitedMethod   = errors.New("rate limited method")
+	ErrRateLimited         = errors.New("rate limited")
+	ErrAlreadyShuttingDown = errors.New("session is already shutting down")
 
 	sessionKey struct{}
 )
@@ -52,7 +53,11 @@ type Session struct {
 	executors    map[interface{}]*executor
 	executorLock sync.Mutex
 
-	closed atomic.Bool
+	closed       atomic.Bool
+	shuttingDown atomic.Bool
+
+	closedCallback   func(*Session)
+	shutdownCallback func(*Session)
 }
 
 type executor struct {
@@ -107,6 +112,8 @@ func (s *Session) handle() (continueLoop bool) {
 	}
 
 	err = s.handlerRequest(req)
+	//if error is nil the request is still being processed in another goroutine
+
 	if err != nil {
 		err := s.handlerResponse(req.ID, nil, err, false)
 		if err != nil {
@@ -314,6 +321,13 @@ func (s *Session) handlerRequest(req RequestMessage) error {
 		logs.Printf("Request: [%v] [%s], content: [%s]%s\n", stringifiedID, req.Method, params, suffix)
 	}
 
+	if s.IsShuttingDown() && mtdInfo.Name != "exit" {
+		return ResponseError{
+			Code:    InvalidRequest.Code,
+			Message: "session is shutting down",
+		}
+	}
+
 	//rate limit
 	if webSocket, ok := s.msgConn.(*JsonRpcWebsocket); ok {
 		addrPort := webSocket.conn.RemoteAddrWithPort()
@@ -469,16 +483,75 @@ func (s *Session) Context() *core.Context {
 	return s.ctx
 }
 
+func (s *Session) Client() string {
+	if s.msgConn == nil {
+		return "(unknown)"
+	}
+	return s.msgConn.Client()
+}
+
+func (s *Session) SetClosedCallbackFn(fn func(session *Session)) {
+	if s.closedCallback != nil {
+		panic(errors.New("closed callback function already set"))
+	}
+	s.closedCallback = fn
+}
+
+func (s *Session) SetShutdownCallbackFn(fn func(session *Session)) {
+	if s.shutdownCallback != nil {
+		panic(errors.New("shutdown callback function already set"))
+	}
+	s.shutdownCallback = fn
+}
+
+func (s *Session) IsShuttingDown() bool {
+	return s.shuttingDown.Load()
+}
+
 func (s *Session) Closed() bool {
 	return s.closed.Load()
 }
 
+// Close shutdowns the session & closes the connection.
 func (s *Session) Close() error {
-	if !s.closed.CompareAndSwap(false, true) {
+	if s.closed.Load() {
 		return errors.New("already closed")
+	}
+
+	defer func() {
+		s.closed.Store(true)
+		s.shuttingDown.Store(false)
+	}()
+
+	//shutdown: call the callback function in another goroutine
+	if s.shuttingDown.CompareAndSwap(false, true) {
+		if s.shutdownCallback != nil {
+			callbackFn := s.shutdownCallback
+			s.shutdownCallback = nil
+
+			go func(session *Session) {
+				defer utils.Recover()
+				callbackFn(session)
+			}(s)
+		}
+	} else {
+		return ErrAlreadyShuttingDown
+	}
+
+	//defer closed callback
+	if s.closedCallback != nil {
+		callbackFn := s.closedCallback
+		s.closedCallback = nil
+		defer func() {
+			go func(session *Session) {
+				defer utils.Recover()
+				callbackFn(session)
+			}(s)
+		}()
 	}
 	defer s.ctx.CancelGracefully()
 
+	//close
 	if s.conn != nil {
 		err := s.conn.Close()
 		if err != nil {
@@ -491,6 +564,7 @@ func (s *Session) Close() error {
 		}
 	}
 
+	//cancel all executors
 	func() {
 		defer utils.Recover()
 		s.executorLock.Lock()
