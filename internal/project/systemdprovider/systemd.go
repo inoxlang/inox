@@ -9,7 +9,6 @@ import (
 	"os"
 
 	"github.com/coreos/go-systemd/v22/unit"
-	"github.com/inoxlang/inox/internal/project_server/inoxd"
 )
 
 const (
@@ -23,7 +22,7 @@ var (
 	ErrUnitFileExists = errors.New("unit file already exists")
 )
 
-func WriteInoxUnitFile() error {
+func WriteInoxUnitFile(username, homedir string, uid int) error {
 	path := INOX_SERVICE_UNIT_PATH
 
 	if _, err := os.Stat(SYSTEMD_DIR_PATH); os.IsNotExist(err) {
@@ -43,11 +42,7 @@ func WriteInoxUnitFile() error {
 		Entries: []*unit.UnitEntry{
 			{
 				Name:  "Description",
-				Value: "Inox service",
-			},
-			{
-				Name:  "User",
-				Value: inoxd.INOXD_USERNAME,
+				Value: "Inox service (Inoxd)",
 			},
 			{
 				Name:  "Requires",
@@ -64,12 +59,20 @@ func WriteInoxUnitFile() error {
 		Section: "Service",
 		Entries: []*unit.UnitEntry{
 			{
-				Name:  "Typle",
+				Name:  "Type",
 				Value: "simple",
 			},
 			{
+				Name:  "User",
+				Value: username,
+			},
+			{
+				Name:  "WorkingDirectory",
+				Value: homedir,
+			},
+			{
 				Name:  "ExecStart",
-				Value: DEFAULT_INOX_PATH,
+				Value: fmt.Sprintf(`%s project-server '-config={"maxWebsocketPerIp":2}'`, DEFAULT_INOX_PATH),
 			},
 		},
 	}

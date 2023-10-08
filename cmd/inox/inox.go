@@ -1,6 +1,14 @@
 package main
 
 import (
+	// -------------------------------------------------------------
+	// the following imports have important side effects
+	"github.com/inoxlang/inox/internal/config"
+	_ "github.com/inoxlang/inox/internal/globals"
+	metricsperf "github.com/inoxlang/inox/internal/metrics-perf"
+
+	// -------------------------------------------------------------
+
 	"encoding/json"
 	"errors"
 	"flag"
@@ -15,15 +23,11 @@ import (
 	"time"
 
 	"github.com/inoxlang/inox/internal/core"
-	_ "github.com/inoxlang/inox/internal/globals"
-	metricsperf "github.com/inoxlang/inox/internal/metrics-perf"
 	"github.com/inoxlang/inox/internal/mod"
 	"github.com/inoxlang/inox/internal/project/systemdprovider"
 	"github.com/inoxlang/inox/internal/project_server/inoxd"
 	"github.com/inoxlang/inox/internal/project_server/jsonrpc"
 	"github.com/rs/zerolog"
-
-	"github.com/inoxlang/inox/internal/config"
 
 	"github.com/inoxlang/inox/internal/default_state"
 	"github.com/inoxlang/inox/internal/permkind"
@@ -38,7 +42,6 @@ import (
 	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
 
-	_ "net/http/pprof"
 	"net/url"
 )
 
@@ -210,20 +213,16 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 		fmt.Fprintf(outW, "%s\n\r", utils.Must(json.Marshal(data)))
 
 	case "add-service":
-		err := systemdprovider.WriteInoxUnitFile()
+		username, uid, homedir, err := inoxd.CreateInoxdUserIfNotExists(outW, errW)
 		if err != nil {
 			fmt.Fprintln(errW, err)
+		}
 
-			//if the unit file already exists we continue the execution
-			if !errors.Is(err, systemdprovider.ErrUnitFileExists) {
-				return
-			}
+		err = systemdprovider.WriteInoxUnitFile(username, homedir, uid)
+		if err != nil {
+			fmt.Fprintln(errW, err)
 		} else {
 			fmt.Fprintln(outW, "unit file created")
-		}
-		err = inoxd.CreateInoxdUserIfNotExists(outW, errW)
-		if err != nil {
-			fmt.Fprintln(errW, err)
 		}
 	case "lsp":
 		lspFlags := flag.NewFlagSet("lsp", flag.ExitOnError)
@@ -388,24 +387,23 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 		}
 
 		if config.METRICS_PERF_BUCKET_NAME == "" {
-			fmt.Fprintln(errW, "credentials of metrics-perf bucket are missing")
-			return
-		}
+			fmt.Fprintln(errW, "credentials of metrics-perf bucket are missing; no metrics will be collected.")
+		} else {
+			_, err = metricsperf.StartPeriodicPerfProfilesCollection(ctx, metricsperf.PerfDataCollectionConfig{
+				ProfileSavePeriod: PERF_PROFILES_COLLECTION_SAVE_PERIOD,
+				Bucket: s3_ns.OpenBucketWithCredentialsInput{
+					Provider:   config.METRICS_PERF_BUCKET_PROVIDER,
+					HttpsHost:  config.METRICS_PERF_BUCKET_ENDPOINT,
+					AccessKey:  config.METRICS_PERF_BUCKET_ACCESS_KEY,
+					SecretKey:  config.METRICS_PERF_BUCKET_SECRET_KEY.StringValue().GetOrBuildString(),
+					BucketName: config.METRICS_PERF_BUCKET_NAME,
+				},
+			})
 
-		_, err = metricsperf.StartPeriodicPerfProfilesCollection(ctx, metricsperf.PerfDataCollectionConfig{
-			ProfileSavePeriod: PERF_PROFILES_COLLECTION_SAVE_PERIOD,
-			Bucket: s3_ns.OpenBucketWithCredentialsInput{
-				Provider:   config.METRICS_PERF_BUCKET_PROVIDER,
-				HttpsHost:  config.METRICS_PERF_BUCKET_ENDPOINT,
-				AccessKey:  config.METRICS_PERF_BUCKET_ACCESS_KEY,
-				SecretKey:  config.METRICS_PERF_BUCKET_SECRET_KEY.StringValue().GetOrBuildString(),
-				BucketName: config.METRICS_PERF_BUCKET_NAME,
-			},
-		})
-
-		if err != nil {
-			fmt.Fprintln(errW, "failed to start collection of perfomance profiles:", err)
-			return
+			if err != nil {
+				fmt.Fprintln(errW, "failed to start collection of perfomance profiles:", err)
+				return
+			}
 		}
 
 		if err := lsp.StartLSPServer(ctx, opts); err != nil {
