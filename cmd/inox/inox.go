@@ -17,6 +17,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"os/user"
 	"path/filepath"
 	"strings"
 	"syscall"
@@ -92,6 +93,11 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 		fmt.Fprint(outW, HELP)
 		return
 	case "run":
+		if !checkNotRunningAsRoot(errW) {
+			os.Exit(INVALID_INPUT_STATUS)
+			return
+		}
+
 		//read and check arguments
 
 		if len(mainSubCommandArgs) == 0 {
@@ -198,6 +204,11 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 			}
 		}
 	case "check":
+		if !checkNotRunningAsRoot(errW) {
+			os.Exit(INVALID_INPUT_STATUS)
+			return
+		}
+
 		if len(mainSubCommandArgs) == 0 {
 			fmt.Fprintf(errW, "missing script path\n")
 			os.Exit(INVALID_INPUT_STATUS)
@@ -225,6 +236,11 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 			fmt.Fprintln(outW, "unit file created")
 		}
 	case "lsp":
+		if !checkNotRunningAsRoot(errW) {
+			os.Exit(INVALID_INPUT_STATUS)
+			return
+		}
+
 		lspFlags := flag.NewFlagSet("lsp", flag.ExitOnError)
 		var host string
 		lspFlags.StringVar(&host, "h", "", "host")
@@ -281,6 +297,11 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 			fmt.Fprintln(errW, "failed to start LSP server:", err)
 		}
 	case "project-server":
+		if !checkNotRunningAsRoot(errW) {
+			os.Exit(INVALID_INPUT_STATUS)
+			return
+		}
+
 		lspFlags := flag.NewFlagSet("project-server", flag.ExitOnError)
 		var host string
 		var configOrConfigFile string
@@ -410,6 +431,11 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 			fmt.Fprintln(errW, "failed to start LSP server:", err)
 		}
 	case "shell":
+		if !checkNotRunningAsRoot(errW) {
+			os.Exit(INVALID_INPUT_STATUS)
+			return
+		}
+
 		shellFlags := flag.NewFlagSet("shell", flag.ExitOnError)
 		startupScriptPath, err := config.GetStartupScriptPath()
 		if err != nil {
@@ -438,6 +464,11 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 
 		inoxsh_ns.StartShell(state, config)
 	case "eval", "e":
+		if !checkNotRunningAsRoot(errW) {
+			os.Exit(INVALID_INPUT_STATUS)
+			return
+		}
+
 		if len(mainSubCommandArgs) == 0 {
 			fmt.Fprintf(errW, "missing code string")
 			os.Exit(INVALID_INPUT_STATUS)
@@ -636,4 +667,19 @@ func checkLspHost(host string, errW io.Writer) *url.URL {
 	}
 
 	return u
+}
+
+func checkNotRunningAsRoot(errW io.Writer) bool {
+	currentUser, err := user.Current()
+	if err != nil {
+		fmt.Fprintln(errW, err)
+		return false
+	}
+
+	if currentUser.Uid == "0" {
+		fmt.Fprintln(errW, "most commands are not available when the inox binary is executed by the root user")
+		return false
+	}
+
+	return true
 }
