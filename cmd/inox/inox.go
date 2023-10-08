@@ -18,6 +18,7 @@ import (
 	_ "github.com/inoxlang/inox/internal/globals"
 	metricsperf "github.com/inoxlang/inox/internal/metrics-perf"
 	"github.com/inoxlang/inox/internal/mod"
+	"github.com/inoxlang/inox/internal/project/systemdprovider"
 	"github.com/inoxlang/inox/internal/project_server/jsonrpc"
 	"github.com/rs/zerolog"
 
@@ -42,12 +43,13 @@ import (
 
 const (
 	HELP = "Usage:\n\t<command> [arguments]\n\nThe commands are:\n" +
+		"\tadd-service - [root] add the Inox service unit (systemd)\n" +
 		"\trun - run a script\n" +
 		"\tcheck - check a script\n" +
 		"\tshell - start the shell\n" +
 		"\teval - evaluate a single statement\n" +
 		"\te - alias for eval\n" +
-		"\tlsp - start the language server (LSP)\n\n" +
+		"\tlsp - start the language server (LSP)\n" +
 		"\tproject-server - start the project server\n\n" +
 		"The run command:\n" +
 		"\trun <script path> [passed arguments]\n"
@@ -206,6 +208,11 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 		data := inox_ns.GetCheckData(fpath, compilationCtx, outW)
 		fmt.Fprintf(outW, "%s\n\r", utils.Must(json.Marshal(data)))
 
+	case "add-service":
+		err := systemdprovider.WriteInoxUnitFile()
+		if err != nil {
+			fmt.Fprintln(errW, "add-service:", err)
+		}
 	case "lsp":
 		lspFlags := flag.NewFlagSet("lsp", flag.ExitOnError)
 		var host string

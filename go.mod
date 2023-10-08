@@ -13,6 +13,7 @@ require (
 	github.com/caddyserver/certmagic v0.17.2
 	github.com/chromedp/chromedp v0.8.6
 	github.com/cloudflare/cloudflare-go v0.75.0
+	github.com/coreos/go-systemd/v22 v22.5.0
 	github.com/djherbis/times v1.5.0
 	github.com/emirpasic/gods v1.18.1
 	github.com/fsnotify/fsnotify v1.6.0
