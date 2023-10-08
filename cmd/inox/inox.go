@@ -47,6 +47,16 @@ import (
 )
 
 const (
+	INVALID_INPUT_STATUS = 1
+
+	DEFAULT_ALLOWED_DEV_HOST    = core.Host("https://localhost:8080")
+	DEFAULT_PROJECT_SERVER_PORT = "8305"
+	DEFAULT_PROJECT_SERVER_HOST = core.Host("wss://localhost:" + DEFAULT_PROJECT_SERVER_PORT)
+
+	PERF_PROFILES_COLLECTION_SAVE_PERIOD = 30 * time.Second
+
+	//text
+
 	HELP = "Usage:\n\t<command> [arguments]\n\nThe commands are:\n" +
 		"\tadd-service - [root] add the Inox service unit (systemd) and create the " + inoxd.INOXD_USERNAME + " user\n" +
 		"\trun - run a script\n" +
@@ -59,18 +69,15 @@ const (
 		"The run command:\n" +
 		"\trun <script path> [passed arguments]\n"
 
-	INVALID_INPUT_STATUS = 1
-
-	DEFAULT_ALLOWED_DEV_HOST    = core.Host("https://localhost:8080")
-	DEFAULT_PROJECT_SERVER_PORT = "8305"
-	DEFAULT_PROJECT_SERVER_HOST = core.Host("wss://localhost:" + DEFAULT_PROJECT_SERVER_PORT)
-
-	PERF_PROFILES_COLLECTION_SAVE_PERIOD = 30 * time.Second
-
-	ADD_SERVICE_END_MESSAGE = "\n---------------------" +
+	LINE_SEP                = "\n-----------------------------------------"
+	ADD_SERVICE_END_MESSAGE = LINE_SEP +
 		"\nyou can now enable then start the inox service by running the following commands as root:" +
-		"\nsystemctl enable inox\n" +
-		"systemctl start inox\n"
+		"\nsystemctl enable inox" +
+		"\nsystemctl start inox" +
+		LINE_SEP +
+		"\nThis will start a project server listening on the port " + DEFAULT_PROJECT_SERVER_PORT + "." +
+		"\nYou can see the status of the service by running the following command:" +
+		"\nsystemctl status inox\n"
 )
 
 func main() {
