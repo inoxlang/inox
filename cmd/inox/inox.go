@@ -19,6 +19,7 @@ import (
 	metricsperf "github.com/inoxlang/inox/internal/metrics-perf"
 	"github.com/inoxlang/inox/internal/mod"
 	"github.com/inoxlang/inox/internal/project/systemdprovider"
+	"github.com/inoxlang/inox/internal/project_server/inoxd"
 	"github.com/inoxlang/inox/internal/project_server/jsonrpc"
 	"github.com/rs/zerolog"
 
@@ -43,7 +44,7 @@ import (
 
 const (
 	HELP = "Usage:\n\t<command> [arguments]\n\nThe commands are:\n" +
-		"\tadd-service - [root] add the Inox service unit (systemd)\n" +
+		"\tadd-service - [root] add the Inox service unit (systemd) and create the " + inoxd.INOXD_USERNAME + " user\n" +
 		"\trun - run a script\n" +
 		"\tcheck - check a script\n" +
 		"\tshell - start the shell\n" +
@@ -75,7 +76,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 	mainSubCommand := ""
 	var mainSubCommandArgs []string
 
-	if len(args) == 1 {
+	if len(args) == 1 { //no subcommand specified
 		mainSubCommand = "shell"
 		mainSubCommandArgs = args[1:]
 	} else {
@@ -84,7 +85,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 	}
 
 	switch mainSubCommand {
-	case "help":
+	case "help", "--help", "-h":
 		fmt.Fprint(outW, HELP)
 		return
 	case "run":
@@ -211,7 +212,18 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 	case "add-service":
 		err := systemdprovider.WriteInoxUnitFile()
 		if err != nil {
-			fmt.Fprintln(errW, "add-service:", err)
+			fmt.Fprintln(errW, err)
+
+			//if the unit file already exists we continue the execution
+			if !errors.Is(err, systemdprovider.ErrUnitFileExists) {
+				return
+			}
+		} else {
+			fmt.Fprintln(outW, "unit file created")
+		}
+		err = inoxd.CreateInoxdUserIfNotExists(outW, errW)
+		if err != nil {
+			fmt.Fprintln(errW, err)
 		}
 	case "lsp":
 		lspFlags := flag.NewFlagSet("lsp", flag.ExitOnError)

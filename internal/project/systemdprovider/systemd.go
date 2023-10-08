@@ -3,11 +3,13 @@
 package systemdprovider
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
 
 	"github.com/coreos/go-systemd/v22/unit"
+	"github.com/inoxlang/inox/internal/project_server/inoxd"
 )
 
 const (
@@ -15,6 +17,10 @@ const (
 	SYSTEMD_DIR_PATH         = "/etc/systemd"
 	INOX_SERVICE_UNIT_PATH   = SYSTEMD_DIR_PATH + "/system/inox.service"
 	INOX_SERVICE_UNIT_FPERMS = 0o644
+)
+
+var (
+	ErrUnitFileExists = errors.New("unit file already exists")
 )
 
 func WriteInoxUnitFile() error {
@@ -27,7 +33,7 @@ func WriteInoxUnitFile() error {
 	}
 
 	if _, err := os.Stat(path); err == nil {
-		return fmt.Errorf("unit file %s already exists", path)
+		return fmt.Errorf("%w: %s", ErrUnitFileExists, path)
 	} else if !os.IsNotExist(err) {
 		return err
 	}
@@ -41,7 +47,7 @@ func WriteInoxUnitFile() error {
 			},
 			{
 				Name:  "User",
-				Value: "user",
+				Value: inoxd.INOXD_USERNAME,
 			},
 			{
 				Name:  "Requires",
