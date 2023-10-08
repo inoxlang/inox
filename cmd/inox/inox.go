@@ -66,6 +66,11 @@ const (
 	DEFAULT_PROJECT_SERVER_HOST = core.Host("wss://localhost:" + DEFAULT_PROJECT_SERVER_PORT)
 
 	PERF_PROFILES_COLLECTION_SAVE_PERIOD = 30 * time.Second
+
+	ADD_SERVICE_END_MESSAGE = "\n---------------------" +
+		"\nyou can now enable then start the inox service by running the following commands as root:" +
+		"\nsystemctl enable inox\n" +
+		"systemctl start inox\n"
 )
 
 func main() {
@@ -234,6 +239,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 			fmt.Fprintln(errW, err)
 		} else {
 			fmt.Fprintln(outW, "unit file created")
+			fmt.Fprintln(outW, ADD_SERVICE_END_MESSAGE)
 		}
 	case "lsp":
 		if !checkNotRunningAsRoot(errW) {
