@@ -96,6 +96,7 @@ func dnsResolve(ctx *core.Context, domain core.Str, recordTypeName core.Str) ([]
 		recordType = dns.TypeAAAA
 	case "CNAME":
 		recordType = dns.TypeCNAME
+	case "MX":
 		recordType = dns.TypeMX
 	default:
 		return nil, fmt.Errorf("invalid DNS record type: '%s'", recordTypeName)
