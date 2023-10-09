@@ -403,7 +403,23 @@ func (perm WebsocketPermission) Includes(otherPerm Permission) bool {
 		return false
 	}
 
-	return perm.Kind_ == permkind.Provide || perm.Endpoint == otherWsPerm.Endpoint
+	if perm.Kind_ == permkind.Provide {
+		return true
+	}
+
+	if perm.Endpoint == otherWsPerm.Endpoint {
+		return true
+	}
+
+	switch endpoint := perm.Endpoint.(type) {
+	case Host:
+		switch otherEndpoint := otherWsPerm.Endpoint.(type) {
+		case URL:
+			return otherEndpoint.Host() == endpoint
+		}
+	}
+
+	return false
 }
 
 type DNSPermission struct {

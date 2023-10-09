@@ -67,6 +67,25 @@ func TestHttpPermission(t *testing.T) {
 	})
 }
 
+func TestWebsocketPermission(t *testing.T) {
+
+	t.Run("host includes host and URL but URL does not include host", func(t *testing.T) {
+		permWithHost := WebsocketPermission{Kind_: permkind.Write, Endpoint: Host("wss://localhost")}
+		permWithURL := WebsocketPermission{Kind_: permkind.Write, Endpoint: URL("wss://localhost/")}
+
+		assert.True(t, permWithHost.Includes(permWithHost))
+		assert.True(t, permWithHost.Includes(permWithURL))
+
+		assert.False(t, permWithURL.Includes(permWithHost))
+	})
+
+	t.Run("write includes write-stream", func(t *testing.T) {
+		perm := WebsocketPermission{Kind_: permkind.Write, Endpoint: URL("wss://localhost/")}
+		assert.True(t, perm.Includes(WebsocketPermission{Kind_: permkind.WriteStream, Endpoint: URL("wss://localhost/")}))
+	})
+
+}
+
 func TestDNSPermission(t *testing.T) {
 	testCases := []struct {
 		domain1        WrappedString
