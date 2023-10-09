@@ -241,7 +241,7 @@ func TestWebsocketServer(t *testing.T) {
 		}
 
 		for _, conn := range conns {
-			assert.False(t, conn.closed.Load())
+			assert.False(t, conn.closingOrClosed.Load())
 		}
 
 		go func() {
@@ -257,7 +257,7 @@ func TestWebsocketServer(t *testing.T) {
 		//check that connections are closed.
 		for _, conn := range conns {
 			conn.ReadMessage(clientCtx) //read to trigger close
-			assert.True(t, conn.closed.Load())
+			assert.True(t, conn.closingOrClosed.Load())
 		}
 	})
 }

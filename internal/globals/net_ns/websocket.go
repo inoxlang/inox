@@ -13,7 +13,9 @@ import (
 	"github.com/inoxlang/inox/internal/permkind"
 )
 
-var ErrClosedWebsocketConnection = errors.New("closed websocket connection")
+var (
+	ErrClosingOrClosedWebsocketConn = errors.New("closed or closing websocket connection")
+)
 
 type WebsocketMessageType int
 
@@ -30,10 +32,9 @@ type WebsocketConnection struct {
 	remoteAddrWithPort nettypes.RemoteAddrWithPort
 	endpoint           core.URL //HTTP endpoint
 
-	messageTimeout time.Duration
-
-	//prevent giving back tokens, this value should NOT be used to check if the connection is closed.
-	closed atomic.Bool
+	messageTimeout  time.Duration
+	closingOrClosed atomic.Bool
+	tokenGivenBack  atomic.Bool
 
 	server *WebsocketServer //nil on client side
 
@@ -127,8 +128,8 @@ func (conn *WebsocketConnection) WriteMessage(ctx *core.Context, messageType Web
 }
 
 func (conn *WebsocketConnection) checkReadAndConfig(ctx *core.Context) error {
-	if conn.closed.Load() {
-		return ErrClosedWebsocketConnection
+	if conn.closingOrClosed.Load() {
+		return ErrClosingOrClosedWebsocketConn
 	}
 
 	//if on client side
@@ -148,8 +149,8 @@ func (conn *WebsocketConnection) checkReadAndConfig(ctx *core.Context) error {
 }
 
 func (conn *WebsocketConnection) checkWriteAndConfig(ctx *core.Context) error {
-	if conn.closed.Load() {
-		return ErrClosedWebsocketConnection
+	if conn.closingOrClosed.Load() {
+		return ErrClosingOrClosedWebsocketConn
 	}
 
 	//if on client side
@@ -184,9 +185,13 @@ func (conn *WebsocketConnection) closeIfNecessary(err error) {
 	}
 }
 
+func (conn *WebsocketConnection) IsClosedOrClosing() bool {
+	return conn.closingOrClosed.Load()
+}
+
 func (conn *WebsocketConnection) Close() error {
-	if !conn.closed.CompareAndSwap(false, true) {
-		return ErrClosedWebsocketConnection
+	if !conn.closingOrClosed.CompareAndSwap(false, true) {
+		return ErrClosingOrClosedWebsocketConn
 	}
 
 	//server side websockets are managed by the server.
@@ -201,6 +206,9 @@ func (conn *WebsocketConnection) Close() error {
 func (conn *WebsocketConnection) closeNoCheck() error {
 	conn.conn.WriteControl(WebsocketCloseMessage, nil, time.Now().Add(SERVER_SIDE_WEBSOCKET_CLOSE_TIMEOUT))
 
-	conn.serverContext.GiveBack(WS_SIMUL_CONN_TOTAL_LIMIT_NAME, 1)
+	if conn.tokenGivenBack.CompareAndSwap(false, true) {
+		conn.serverContext.GiveBack(WS_SIMUL_CONN_TOTAL_LIMIT_NAME, 1)
+	}
+
 	return conn.conn.Close()
 }
