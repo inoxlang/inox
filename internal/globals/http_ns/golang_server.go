@@ -6,9 +6,12 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
+	"time"
 
 	fsutil "github.com/go-git/go-billy/v5/util"
 	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 type GolangHttpServerConfig struct {
@@ -16,6 +19,11 @@ type GolangHttpServerConfig struct {
 	Handler        http.Handler
 	PemEncodedCert string
 	PemEncodedKey  string
+
+	ReadHeaderTimeout time.Duration // defaults to DEFAULT_HTTP_SERVER_READ_HEADER_TIMEOUT
+	ReadTimeout       time.Duration // defaults to DEFAULT_HTTP_SERVER_READ_TIMEOUT
+	WriteTimeout      time.Duration // defaults to DEFAULT_HTTP_SERVER_WRITE_TIMEOUT
+	MaxHeaderBytes    int           // defaults to DEFAULT_HTTP_SERVER_MAX_HEADER_BYTES
 }
 
 func NewGolangHttpServer(ctx *core.Context, config GolangHttpServerConfig) (*http.Server, error) {
@@ -24,7 +32,8 @@ func NewGolangHttpServer(ctx *core.Context, config GolangHttpServerConfig) (*htt
 	pemEncodedCert := config.PemEncodedCert
 	pemEncodedKey := config.PemEncodedKey
 
-	if config.PemEncodedCert == "" { //if no certificate provided by the user we create one
+	//if no certificate is provided by the user we create one
+	if isLocalhostOr127001Addr(config.Addr) && config.PemEncodedCert == "" {
 		//we generate a self signed certificate that we write to disk so that
 		//we can reuse it
 		CERT_FILEPATH := "localhost.cert"
@@ -88,13 +97,20 @@ func NewGolangHttpServer(ctx *core.Context, config GolangHttpServerConfig) (*htt
 	server := &http.Server{
 		Addr:              config.Addr,
 		Handler:           config.Handler,
-		ReadHeaderTimeout: DEFAULT_HTTP_SERVER_READ_HEADER_TIMEOUT,
-		ReadTimeout:       DEFAULT_HTTP_SERVER_READ_TIMEOUT,
-		WriteTimeout:      DEFAULT_HTTP_SERVER_WRITE_TIMEOUT,
-		MaxHeaderBytes:    DEFAULT_HTTP_SERVER_MAX_HEADER_BYTES,
+		ReadHeaderTimeout: utils.DefaultIfZero(config.ReadHeaderTimeout, DEFAULT_HTTP_SERVER_READ_HEADER_TIMEOUT),
+		ReadTimeout:       utils.DefaultIfZero(config.ReadTimeout, DEFAULT_HTTP_SERVER_READ_TIMEOUT),
+		WriteTimeout:      utils.DefaultIfZero(config.WriteTimeout, DEFAULT_HTTP_SERVER_WRITE_TIMEOUT),
+		MaxHeaderBytes:    utils.DefaultIfZero(config.MaxHeaderBytes, DEFAULT_HTTP_SERVER_MAX_HEADER_BYTES),
 		TLSConfig:         tlsConfig,
 		//TODO: set logger
 	}
 
 	return server, nil
+}
+
+func isLocalhostOr127001Addr(addr string) bool {
+	if addr == "localhost" || addr == "127.0.0.1" {
+		return true
+	}
+	return strings.HasPrefix(addr, "localhost:") || strings.HasPrefix(addr, "127.0.0.1:")
 }

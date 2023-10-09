@@ -15,6 +15,13 @@ func Max[T constraints.Ordered](a, b T) T {
 	return max(a, b)
 }
 
+func DefaultIfZero[T constraints.Integer](v, defaultValue T) T {
+	if v == 0 {
+		return defaultValue
+	}
+	return v
+}
+
 func Abs[T constraints.Integer](a T) T {
 	if a < 0 {
 		if a == -a {
