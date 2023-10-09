@@ -6,6 +6,7 @@ import (
 	pseudorand "math/rand"
 
 	"encoding/binary"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -53,6 +54,11 @@ type RandomnessSource struct {
 
 func (s *RandomnessSource) Read(bytes []byte) (int, error) {
 	return s.source.Read(bytes)
+}
+
+func (s *RandomnessSource) ReadNBytesAsHex(n int) string {
+	bytes := make([]byte, n)
+	return hex.EncodeToString(bytes)
 }
 
 func (r *RandomnessSource) Uint64() uint64 {

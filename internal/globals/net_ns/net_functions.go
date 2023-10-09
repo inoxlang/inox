@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net"
+	"net/http"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -41,6 +42,10 @@ func websocketConnect(ctx *core.Context, u core.URL, options ...core.Option) (*W
 		}
 	}
 
+	return WebsocketConnect(ctx, u, insecure, nil)
+}
+
+func WebsocketConnect(ctx *core.Context, u core.URL, insecure bool, requestHeader http.Header) (*WebsocketConnection, error) {
 	//check that a websocket read or write-stream permission is granted
 	perm := core.WebsocketPermission{
 		Kind_:    permkind.WriteStream,
@@ -62,7 +67,7 @@ func websocketConnect(ctx *core.Context, u core.URL, options ...core.Option) (*W
 		InsecureSkipVerify: insecure,
 	}
 
-	c, _, err := dialer.Dial(string(u), nil)
+	c, _, err := dialer.Dial(string(u), requestHeader)
 	if err != nil {
 		ctx.GiveBack(WS_SIMUL_CONN_TOTAL_LIMIT_NAME, 1)
 		return nil, fmt.Errorf("dial: %s", err.Error())

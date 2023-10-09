@@ -188,18 +188,20 @@ top:
 }
 
 // NewContexWithEmptyState creates a context & an empty state,
-// out is used as the state's output (or io.Discord if nil),
+// out is used as the state's output (or io.Discard if nil),
 // OutputFieldsInitialized is set to true.
 func NewContexWithEmptyState(config ContextConfig, out io.Writer) *Context {
 	ctx := NewContext(config)
 	state := NewGlobalState(ctx)
 
 	if out == nil {
-		out = io.Discard
+		state.Out = io.Discard
+		state.Logger = zerolog.Nop()
+	} else {
+		state.Out = out
+		state.Logger = zerolog.New(out)
 	}
 
-	state.Out = out
-	state.Logger = zerolog.New(out)
 	state.OutputFieldsInitialized.Store(true)
 	return ctx
 }

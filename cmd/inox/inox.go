@@ -1,34 +1,18 @@
 package main
 
 import (
-	// -------------------------------------------------------------
-	// the following imports have important side effects
+	// ====================== IMPORTANT SIDE EFFECTS ============================
 	"github.com/inoxlang/inox/internal/config"
+	"github.com/inoxlang/inox/internal/core"
 	_ "github.com/inoxlang/inox/internal/globals"
 	metricsperf "github.com/inoxlang/inox/internal/metrics-perf"
 
-	// -------------------------------------------------------------
+	// ====================== INOX IMPORTS ============================
 
-	"encoding/json"
-	"errors"
-	"flag"
-	"fmt"
-	"io"
-	"log"
-	"os"
-	"os/signal"
-	"os/user"
-	"path/filepath"
-	"strings"
-	"syscall"
-	"time"
-
-	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/mod"
 	"github.com/inoxlang/inox/internal/project/systemdprovider"
 	"github.com/inoxlang/inox/internal/project_server/inoxd"
 	"github.com/inoxlang/inox/internal/project_server/jsonrpc"
-	"github.com/rs/zerolog"
 
 	"github.com/inoxlang/inox/internal/default_state"
 	"github.com/inoxlang/inox/internal/permkind"
@@ -38,12 +22,33 @@ import (
 	"github.com/inoxlang/inox/internal/globals/inox_ns"
 	"github.com/inoxlang/inox/internal/globals/inoxsh_ns"
 	"github.com/inoxlang/inox/internal/globals/s3_ns"
-	lsp "github.com/inoxlang/inox/internal/project_server"
 
-	parse "github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/inoxprocess"
+	"github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/project_server"
 	"github.com/inoxlang/inox/internal/utils"
 
+	// ====================== STDLIB ============================
+
+	"encoding/gob"
+	"encoding/hex"
+	"encoding/json"
+	"errors"
+	"flag"
+	"fmt"
+	"io"
+	"log"
 	"net/url"
+	"os"
+	"os/signal"
+	"os/user"
+	"path/filepath"
+	"strings"
+	"syscall"
+	"time"
+
+	// ====================== THIRD PARTY ============================
+	"github.com/rs/zerolog"
 )
 
 const (
@@ -258,7 +263,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 		var host string
 		lspFlags.StringVar(&host, "h", "", "host")
 
-		opts := lsp.LSPServerConfiguration{}
+		opts := project_server.LSPServerConfiguration{}
 
 		err := lspFlags.Parse(mainSubCommandArgs)
 		if err != nil {
@@ -274,7 +279,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 				return
 			}
 
-			opts.Websocket = &lsp.WebsocketServerConfiguration{Addr: u.Host}
+			opts.Websocket = &project_server.WebsocketServerConfiguration{Addr: u.Host}
 
 			out = os.Stdout //we can log to stdout since we will not be in Stdio mode
 		} else { //stdio
@@ -295,7 +300,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 			perms = append(perms, core.WebsocketPermission{Kind_: permkind.Provide})
 		}
 
-		filesystem := lsp.NewDefaultFilesystem()
+		filesystem := project_server.NewDefaultFilesystem()
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: perms,
 			Filesystem:  filesystem,
@@ -306,7 +311,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 		state.Logger = zerolog.New(out)
 		state.OutputFieldsInitialized.Store(true)
 
-		if err := lsp.StartLSPServer(ctx, opts); err != nil {
+		if err := project_server.StartLSPServer(ctx, opts); err != nil {
 			fmt.Fprintln(errW, "failed to start LSP server:", err)
 		}
 	case "project-server":
@@ -394,8 +399,8 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 
 		//configure server
 
-		opts := lsp.LSPServerConfiguration{
-			Websocket: &lsp.WebsocketServerConfiguration{
+		opts := project_server.LSPServerConfiguration{
+			Websocket: &project_server.WebsocketServerConfiguration{
 				Addr:              u.Host,
 				MaxWebsocketPerIp: projectServerConfig.MaxWebSocketPerIp,
 			},
@@ -440,9 +445,68 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 			}
 		}
 
-		if err := lsp.StartLSPServer(ctx, opts); err != nil {
+		if err := project_server.StartLSPServer(ctx, opts); err != nil {
 			fmt.Fprintln(errW, "failed to start LSP server:", err)
 		}
+	case inoxprocess.CONTROLLED_SUBCMD: //the current process is controlled by a control server
+		//read & parse arguments
+
+		if len(mainSubCommandArgs) != 4 {
+			fmt.Fprintln(errW, "4 arguments are expected after the subcommand name")
+			return
+		}
+
+		u, err := url.Parse(mainSubCommandArgs[0])
+		if err != nil {
+			fmt.Fprintln(errW, "first argument is not a valid URL: %w", err)
+			return
+		}
+
+		token, ok := inoxprocess.ControlledProcessTokenFrom(mainSubCommandArgs[1])
+		if !ok {
+			fmt.Fprintln(errW, "second argument is not a valid process token: %w", err)
+			return
+		}
+
+		core.RegisterPermissionTypesInGob()
+		core.RegisterSimpleValueTypesInGob()
+
+		decoder := gob.NewDecoder(hex.NewDecoder(strings.NewReader(mainSubCommandArgs[2])))
+		var grantedPerms []core.Permission
+
+		err = decoder.Decode(&grantedPerms)
+		if err != nil {
+			fmt.Fprintf(errW, "third argument is not a valid encoding of permissions: %s\n", err.Error())
+			return
+		}
+
+		decoder = gob.NewDecoder(hex.NewDecoder(strings.NewReader(mainSubCommandArgs[3])))
+		var forbiddenPerms []core.Permission
+
+		err = decoder.Decode(&forbiddenPerms)
+		if err != nil {
+			fmt.Fprintf(errW, "fourth argument is not a valid encoding of permissions: %s\n", err.Error())
+			return
+		}
+
+		//connect to the control server
+
+		ctx := core.NewContext(core.ContextConfig{
+			Permissions:          grantedPerms,
+			ForbiddenPermissions: forbiddenPerms,
+		})
+		state := core.NewGlobalState(ctx)
+		state.Out = os.Stdout
+		state.Logger = zerolog.New(state.Out)
+		state.OutputFieldsInitialized.Store(true)
+
+		client, err := inoxprocess.ConnectToProcessControlServer(ctx, u, token)
+		if err != nil {
+			fmt.Fprintln(errW, err)
+			return
+		}
+
+		client.StartControl()
 	case "shell":
 		if !checkNotRunningAsRoot(errW) {
 			os.Exit(INVALID_INPUT_STATUS)
