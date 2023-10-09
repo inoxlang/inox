@@ -463,7 +463,7 @@ func (s *Session) handlerError(err error) (continueLoop bool) {
 	continueLoop = true
 	isEof := errors.Is(err, io.EOF)
 	isWebsocketUnexpectedClose := websocket.IsUnexpectedCloseError(err)
-	isClosedWebsocket := errors.Is(err, net_ns.ErrClosedWebsocketConnection)
+	isClosedWebsocket := errors.Is(err, net_ns.ErrClosingOrClosedWebsocketConn)
 	isNetReaderr := utils.Implements[*net.OpError](err) && err.(*net.OpError).Op == "read"
 
 	if isEof || isWebsocketUnexpectedClose || isClosedWebsocket || isNetReaderr {
