@@ -216,6 +216,24 @@ func TestObjectPattern(t *testing.T) {
 			return
 		}
 	})
+
+	t.Run("Entry", func(t *testing.T) {
+		pattern, optional, yes := singleProp.Entry("a")
+
+		if !assert.True(t, yes) {
+			return
+		}
+		assert.Same(t, INT_PATTERN, pattern)
+		assert.False(t, optional)
+
+		pattern, optional, yes = singleOptionalProp.Entry("a")
+
+		if !assert.True(t, yes) {
+			return
+		}
+		assert.Same(t, INT_PATTERN, pattern)
+		assert.True(t, optional)
+	})
 }
 
 func TestRecordPattern(t *testing.T) {

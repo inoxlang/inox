@@ -495,11 +495,9 @@ func (patt *ObjectPattern) EntryCount() int {
 }
 
 func (patt *ObjectPattern) Entry(name string) (pattern Pattern, optional bool, yes bool) {
-	for propName, propPattern := range patt.entryPatterns {
-		_, isOptional := patt.optionalEntries[propName]
-		return propPattern, isOptional, true
-	}
-	return nil, false, false
+	propPattern := patt.entryPatterns[name]
+	_, isOptional := patt.optionalEntries[name]
+	return propPattern, isOptional, true
 }
 
 type RecordPattern struct {
