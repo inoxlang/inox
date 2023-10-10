@@ -30,12 +30,14 @@ func isValidHandlerValue(val core.Value) bool {
 // a handlerFn is a middleware or the final handler
 type handlerFn func(*HttpRequest, *HttpResponseWriter, *core.GlobalState)
 
-func createHandlerFunction(handlerValue core.Value, isMiddleware bool, server *HttpServer) (handler handlerFn) {
+// addHandlerFunction creates a function of type handlerFn from handlerValue and updates the server.lastHandlerFn or server.middlewares.
+// addHandlerFunction also sets server.api & server.preparedModules.
+func addHandlerFunction(handlerValue core.Value, isMiddleware bool, server *HttpServer) error {
 
 	//set value for handler based on provided arguments
 	switch userHandler := handlerValue.(type) {
 	case *core.InoxFunction:
-		handler = func(req *HttpRequest, rw *HttpResponseWriter, handlerGlobalState *core.GlobalState) {
+		handler := func(req *HttpRequest, rw *HttpResponseWriter, handlerGlobalState *core.GlobalState) {
 			//add parent context's patterns
 			serverCtx := server.state.Ctx
 			for k, v := range serverCtx.GetNamedPatterns() {
@@ -57,8 +59,15 @@ func createHandlerFunction(handlerValue core.Value, isMiddleware bool, server *H
 				handlerGlobalState.Logger.Print(err)
 			}
 		}
+
+		if isMiddleware {
+			server.middlewares = append(server.middlewares, handler)
+		} else {
+			server.lastHandlerFn = handler
+			server.api = newEmptyAPI()
+		}
 	case *core.GoFunction:
-		handler = func(req *HttpRequest, rw *HttpResponseWriter, handlerGlobalState *core.GlobalState) {
+		handler := func(req *HttpRequest, rw *HttpResponseWriter, handlerGlobalState *core.GlobalState) {
 			//call the Golang handler
 			args := []any{rw, req}
 
@@ -67,6 +76,12 @@ func createHandlerFunction(handlerValue core.Value, isMiddleware bool, server *H
 			if err != nil {
 				handlerGlobalState.Logger.Print(err)
 			}
+		}
+		if isMiddleware {
+			server.middlewares = append(server.middlewares, handler)
+		} else {
+			server.lastHandlerFn = handler
+			server.api = newEmptyAPI()
 		}
 	case *core.Object:
 		//filesystem routing
@@ -84,7 +99,7 @@ func createHandlerFunction(handlerValue core.Value, isMiddleware bool, server *H
 			handleDynamic = createHandleDynamic(server, dynamicDir)
 		}
 
-		handler = func(req *HttpRequest, rw *HttpResponseWriter, handlerGlobalState *core.GlobalState) {
+		handler := func(req *HttpRequest, rw *HttpResponseWriter, handlerGlobalState *core.GlobalState) {
 
 			if staticDir != "" {
 				staticResourcePath := staticDir.JoinAbsolute(req.Path, handlerGlobalState.Ctx.GetFileSystem())
@@ -112,10 +127,27 @@ func createHandlerFunction(handlerValue core.Value, isMiddleware bool, server *H
 				rw.rw.Write([]byte(NO_HANDLER_PLACEHOLDER_MESSAGE))
 			}
 		}
+
+		if isMiddleware {
+			server.middlewares = append(server.middlewares, handler)
+		} else {
+			api, err := getFSRoutingServerAPI(server.state.Ctx, dynamicDir.UnderlyingString())
+			if err != nil {
+				return err
+			}
+			server.lastHandlerFn = handler
+			server.api = api
+
+			// preparedModules := newPreparedModules(server.state.Ctx)
+			// err = preparedModules.prepareFrom(api)
+			// if err != nil {
+			// 	return err
+			// }
+		}
 	case *core.Mapping:
 		routing := userHandler
 		//if a routing Mapping is provided we compute a value by passing the request's path to the Mapping.
-		handler = func(req *HttpRequest, rw *HttpResponseWriter, handlerGlobalState *core.GlobalState) {
+		handler := func(req *HttpRequest, rw *HttpResponseWriter, handlerGlobalState *core.GlobalState) {
 			path := req.Path
 
 			//add parent context's patterns
@@ -141,12 +173,17 @@ func createHandlerFunction(handlerValue core.Value, isMiddleware bool, server *H
 
 			respondWithMappingResult(handlingArguments{value, req, rw, handlerGlobalState, server, handlerGlobalState.Logger, isMiddleware})
 		}
+		if isMiddleware {
+			server.middlewares = append(server.middlewares, handler)
+		} else {
+			server.lastHandlerFn = handler
+			server.api = newEmptyAPI()
+		}
 	default:
 		panic(core.ErrUnreachable)
-
 	}
 
-	return handler
+	return nil
 }
 
 type handlingArguments struct {

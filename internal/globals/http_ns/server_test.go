@@ -986,14 +986,13 @@ func createHandlers(t *testing.T, code string) (*core.InoxFunction, *core.InoxFu
 
 	nodeFunction := &core.InoxFunction{Node: parse.FindNode(chunk.Node, (*parse.FunctionExpression)(nil), nil)}
 
-	core.Compile(core.CompilationInput{
+	bytecode, _ := core.Compile(core.CompilationInput{
 		Mod: module,
 		Context: core.NewContext(core.ContextConfig{
 			Filesystem: fs_ns.GetOsFilesystem(),
 		}),
 		StaticCheckData: staticCheckData,
 	})
-	bytecode := module.Bytecode
 	consts := bytecode.Constants()
 	compiledFunction := consts[len(consts)-1].(*core.InoxFunction)
 	return nodeFunction, compiledFunction, module

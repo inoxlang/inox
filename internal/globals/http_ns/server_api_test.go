@@ -50,7 +50,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			api, err := getFilesystemRoutingServerAPI(ctx, "/routes/")
+			api, err := getFSRoutingServerAPI(ctx, "/routes/")
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -58,6 +58,15 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			if !assert.Contains(t, api.endpoints, "/") {
 				return
 			}
+			if !assert.NotNil(t, api.tree) {
+				return
+			}
+
+			assert.NotNil(t, api.tree.endpoint)
+			assert.Equal(t, "/", api.tree.path)
+			assert.Equal(t, "", api.tree.segment)
+			assert.Nil(t, api.tree.namedChildren)
+			assert.Nil(t, api.tree.parametrizedChild)
 		})
 
 		t.Run("non root index.ix", func(t *testing.T) {
@@ -72,7 +81,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			api, err := getFilesystemRoutingServerAPI(ctx, "/routes/")
+			api, err := getFSRoutingServerAPI(ctx, "/routes/")
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -80,6 +89,18 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			if !assert.Contains(t, api.endpoints, "/users") {
 				return
 			}
+			assert.Nil(t, api.tree.endpoint)
+			assert.Equal(t, "/", api.tree.path)
+			assert.Equal(t, "", api.tree.segment)
+
+			if !assert.Contains(t, api.tree.namedChildren, "users") {
+				return
+			}
+
+			childNode := api.tree.namedChildren["users"]
+			assert.Same(t, api.endpoints["/users"], childNode.endpoint)
+			assert.Equal(t, "/users", childNode.path)
+			assert.Equal(t, "users", childNode.segment)
 		})
 
 		t.Run("root GET.ix", func(t *testing.T) {
@@ -94,7 +115,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			api, err := getFilesystemRoutingServerAPI(ctx, "/routes/")
+			api, err := getFSRoutingServerAPI(ctx, "/routes/")
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -116,7 +137,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			api, err := getFilesystemRoutingServerAPI(ctx, "/routes/")
+			api, err := getFSRoutingServerAPI(ctx, "/routes/")
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -138,7 +159,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			api, err := getFilesystemRoutingServerAPI(ctx, "/routes/")
+			api, err := getFSRoutingServerAPI(ctx, "/routes/")
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -160,7 +181,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			api, err := getFilesystemRoutingServerAPI(ctx, "/routes/")
+			api, err := getFSRoutingServerAPI(ctx, "/routes/")
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -168,6 +189,50 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			if !assert.Contains(t, api.endpoints, "/users") {
 				return
 			}
+		})
+
+		t.Run("deep GET.ix", func(t *testing.T) {
+			ctx := setup(map[string]string{
+				"/routes/x/users.ix": `
+					manifest {
+						parameters: {
+	
+						}
+					}
+				`,
+			})
+			defer ctx.CancelGracefully()
+
+			api, err := getFSRoutingServerAPI(ctx, "/routes/")
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			if !assert.Contains(t, api.endpoints, "/x/users") {
+				return
+			}
+
+			assert.Nil(t, api.tree.endpoint)
+			assert.Equal(t, "/", api.tree.path)
+			assert.Equal(t, "", api.tree.segment)
+
+			if !assert.Contains(t, api.tree.namedChildren, "x") {
+				return
+			}
+
+			childNode := api.tree.namedChildren["x"]
+			assert.Nil(t, childNode.endpoint)
+			assert.Equal(t, "/x", childNode.path)
+			assert.Equal(t, "x", childNode.segment)
+
+			if !assert.Contains(t, childNode.namedChildren, "users") {
+				return
+			}
+
+			childNode = childNode.namedChildren["users"]
+			assert.Same(t, api.endpoints["/x/users"], childNode.endpoint)
+			assert.Equal(t, "/x/users", childNode.path)
+			assert.Equal(t, "users", childNode.segment)
 		})
 	})
 
@@ -192,7 +257,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			_, err := getFilesystemRoutingServerAPI(ctx, "/routes/")
+			_, err := getFSRoutingServerAPI(ctx, "/routes/")
 			assert.ErrorContains(t, err, "already implemented")
 		})
 
@@ -215,7 +280,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			_, err := getFilesystemRoutingServerAPI(ctx, "/routes/")
+			_, err := getFSRoutingServerAPI(ctx, "/routes/")
 			assert.ErrorContains(t, err, "already implemented")
 		})
 
@@ -238,7 +303,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			_, err := getFilesystemRoutingServerAPI(ctx, "/routes/")
+			_, err := getFSRoutingServerAPI(ctx, "/routes/")
 			assert.ErrorContains(t, err, "already implemented")
 		})
 
@@ -261,7 +326,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			_, err := getFilesystemRoutingServerAPI(ctx, "/routes/")
+			_, err := getFSRoutingServerAPI(ctx, "/routes/")
 			assert.ErrorContains(t, err, "already implemented")
 		})
 
@@ -280,7 +345,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			_, err := getFilesystemRoutingServerAPI(ctx, "/routes/")
+			_, err := getFSRoutingServerAPI(ctx, "/routes/")
 
 			assert.ErrorIs(t, err, ErrUnexpectedBodyParamsInGETHandler)
 		})
@@ -297,7 +362,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			_, err := getFilesystemRoutingServerAPI(ctx, "/routes/")
+			_, err := getFSRoutingServerAPI(ctx, "/routes/")
 
 			assert.ErrorIs(t, err, ErrUnexpectedBodyParamsInGETHandler)
 		})
@@ -314,7 +379,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			_, err := getFilesystemRoutingServerAPI(ctx, "/routes/")
+			_, err := getFSRoutingServerAPI(ctx, "/routes/")
 
 			assert.ErrorIs(t, err, ErrUnexpectedBodyParamsInOPTIONSHandler)
 		})
@@ -331,7 +396,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			_, err := getFilesystemRoutingServerAPI(ctx, "/routes/")
+			_, err := getFSRoutingServerAPI(ctx, "/routes/")
 
 			assert.ErrorIs(t, err, ErrUnexpectedBodyParamsInOPTIONSHandler)
 		})
@@ -350,7 +415,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			api, err := getFilesystemRoutingServerAPI(ctx, "/routes/")
+			api, err := getFSRoutingServerAPI(ctx, "/routes/")
 
 			if !assert.NoError(t, err, ErrUnexpectedBodyParamsInGETHandler) {
 				return
@@ -396,7 +461,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			api, err := getFilesystemRoutingServerAPI(ctx, "/routes/")
+			api, err := getFSRoutingServerAPI(ctx, "/routes/")
 
 			if !assert.NoError(t, err, ErrUnexpectedBodyParamsInGETHandler) {
 				return
@@ -428,7 +493,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			api, err := getFilesystemRoutingServerAPI(ctx, "/routes/")
+			api, err := getFSRoutingServerAPI(ctx, "/routes/")
 
 			if !assert.NoError(t, err, ErrUnexpectedBodyParamsInGETHandler) {
 				return
@@ -475,7 +540,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			api, err := getFilesystemRoutingServerAPI(ctx, "/routes/")
+			api, err := getFSRoutingServerAPI(ctx, "/routes/")
 
 			if !assert.NoError(t, err, ErrUnexpectedBodyParamsInGETHandler) {
 				return
@@ -505,7 +570,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 				return
 			}
 
-			assert.Equal(t, namePattern, core.STR_PATTERN)
+			assert.Equal(t, core.STR_PATTERN, namePattern)
 			assert.False(t, optional)
 
 			agePattern, optional, ok := pattern.Entry("age")

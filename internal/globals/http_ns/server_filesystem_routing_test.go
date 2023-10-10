@@ -96,74 +96,6 @@ func TestFilesystemRouting(t *testing.T) {
 		)
 	})
 
-	t.Run("GET /x should return the result of /routes/GET-x.ix even if /routes/x.ix is present", func(t *testing.T) {
-		runServerTest(t,
-			serverTestCase{
-				input: `return {
-						routing: {dynamic: /routes/}
-					}`,
-				makeFilesystem: func() afs.Filesystem {
-					fls := fs_ns.NewMemFilesystem(10_000)
-					fls.MkdirAll("/routes", fs_ns.DEFAULT_DIR_FMODE)
-					util.WriteFile(fls, "/routes/GET-x.ix", []byte(`
-							manifest {}
-	
-							return "hello"
-						`), fs_ns.DEFAULT_FILE_FMODE)
-
-					util.WriteFile(fls, "/routes/x.ix", []byte(`
-						manifest {}
-
-						return "default"
-					`), fs_ns.DEFAULT_FILE_FMODE)
-					return fls
-				},
-				requests: []requestTestInfo{
-					{
-						method:              "GET",
-						acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
-						result:              `hello`,
-					},
-				},
-			},
-			createClient,
-		)
-	})
-
-	t.Run("GET /x should return the result of /routes/x/GET.ix even if /routes/x/index.ix is present", func(t *testing.T) {
-		runServerTest(t,
-			serverTestCase{
-				input: `return {
-						routing: {dynamic: /routes/}
-					}`,
-				makeFilesystem: func() afs.Filesystem {
-					fls := fs_ns.NewMemFilesystem(10_000)
-					fls.MkdirAll("/routes/x", fs_ns.DEFAULT_DIR_FMODE)
-					util.WriteFile(fls, "/routes/x/GET.ix", []byte(`
-							manifest {}
-	
-							return "hello"
-						`), fs_ns.DEFAULT_FILE_FMODE)
-
-					util.WriteFile(fls, "/routes/x/index.ix", []byte(`
-						manifest {}
-
-						return "default"
-					`), fs_ns.DEFAULT_FILE_FMODE)
-					return fls
-				},
-				requests: []requestTestInfo{
-					{
-						method:              "GET",
-						acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
-						result:              `hello`,
-					},
-				},
-			},
-			createClient,
-		)
-	})
-
 	t.Run("method-aspecific handler /routes/x.ix with no _method parameter, no _body parameter and no JSON body parameters should only accept GET/HEAD requests", func(t *testing.T) {
 		runServerTest(t,
 			serverTestCase{
@@ -372,35 +304,38 @@ func TestFilesystemRouting(t *testing.T) {
 		)
 	})
 
-	t.Run("a status of 500 (internal error) should be returned if there a checking error in the handler module", func(t *testing.T) {
-		runServerTest(t,
-			serverTestCase{
-				input: `return {
-						routing: {dynamic: /routes/}
-					}`,
-				makeFilesystem: func() afs.Filesystem {
-					fls := fs_ns.NewMemFilesystem(10_000)
-					fls.MkdirAll("/routes", fs_ns.DEFAULT_DIR_FMODE)
-					util.WriteFile(fls, "/routes/x.ix", []byte(`
-							manifest {}
-	
-							call_non_existing()
+	t.Run("an error should be returned during sevrer creation if there a checking error in the handler module", func(t *testing.T) {
+		_, ctx, _, host, err := setupTestCase(t, serverTestCase{
+			input: `return {
+					routing: {dynamic: /routes/}
+				}`,
+			makeFilesystem: func() afs.Filesystem {
+				fls := fs_ns.NewMemFilesystem(10_000)
+				fls.MkdirAll("/routes", fs_ns.DEFAULT_DIR_FMODE)
+				util.WriteFile(fls, "/routes/x.ix", []byte(`
+						manifest {}
 
-							return "hello"
-						`), fs_ns.DEFAULT_FILE_FMODE)
+						call_non_existing()
 
-					return fls
-				},
-				requests: []requestTestInfo{
-					{
-						path:                "/x",
-						acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
-						status:              http.StatusInternalServerError,
-					},
-				},
+						return "hello"
+					`), fs_ns.DEFAULT_FILE_FMODE)
+
+				return fls
 			},
-			createClient,
-		)
+		})
+		if ctx != nil {
+			defer ctx.CancelGracefully()
+		}
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		_, err = NewHttpServer(ctx, host, core.NewObjectFromMapNoInit(core.ValMap{
+			HANDLING_DESC_ROUTING_PROPNAME: core.NewObjectFromMapNoInit(core.ValMap{
+				"dynamic": core.Path("/routes/"),
+			}),
+		}))
+		assert.ErrorContains(t, err, "not declared")
 	})
 
 	t.Run("a status of 500 (internal error) should be returned if the handler defines a limit greater than the corresponding maximum limit", func(t *testing.T) {
@@ -420,8 +355,6 @@ func TestFilesystemRouting(t *testing.T) {
 								}
 							}
 	
-							call_non_existing()
-
 							return "hello"
 						`), fs_ns.DEFAULT_FILE_FMODE)
 

@@ -81,19 +81,25 @@ var (
 
 // HttpServer implements the GoValue interface.
 type HttpServer struct {
-	host           core.Host
-	wrappedServer  *http.Server
-	lock           sync.RWMutex
-	endChan        chan struct{}
-	state          *core.GlobalState
+	host          core.Host
+	wrappedServer *http.Server
+	lock          sync.RWMutex
+
+	endChan      chan struct{}
+	state        *core.GlobalState
+	serverLogger zerolog.Logger
+
+	lastHandlerFn handlerFn
+	middlewares   []handlerFn
+
+	sseServer      *SseServer
 	defaultCSP     *ContentSecurityPolicy
 	securityEngine *securityEngine
-	serverLogger   zerolog.Logger
+	api            *API
+	//preparedModules *preparedModule //mostly used during invocation of handler modules
 
-	sseServer *SseServer
-
-	defaultLimits          map[string]core.Limit
-	maxHandlerModuleLimits map[string]core.Limit
+	defaultLimits          map[string]core.Limit //readonly
+	maxHandlerModuleLimits map[string]core.Limit //readonly
 }
 
 func NewHttpServer(ctx *core.Context, host core.Host, args ...core.Value) (*HttpServer, error) {
@@ -124,21 +130,24 @@ func NewHttpServer(ctx *core.Context, host core.Host, args ...core.Value) (*Http
 		_server.securityEngine = newSecurityEngine(ctxLogger, logSrc)
 	}
 
-	var lastHandlerFn handlerFn
-
+	//create middleware functions + last handler function
 	if handlerValProvided {
-		lastHandlerFn = createHandlerFunction(userProvidedHandler, false, _server)
+		err := addHandlerFunction(userProvidedHandler, false, _server)
+		if err != nil {
+			return nil, err
+		}
 	} else {
 		//we set a default handler that writes NO_HANDLER_PLACEHOLDER_MESSAGE
-		lastHandlerFn = func(r *HttpRequest, rw *HttpResponseWriter, state *core.GlobalState) {
+		_server.lastHandlerFn = func(r *HttpRequest, rw *HttpResponseWriter, state *core.GlobalState) {
 			rw.rw.Write([]byte(NO_HANDLER_PLACEHOLDER_MESSAGE))
 		}
 	}
 
-	middlewareFns := make([]handlerFn, len(middlewares))
-
-	for i, val := range middlewares {
-		middlewareFns[i] = createHandlerFunction(val, true, _server)
+	for _, val := range middlewares {
+		err := addHandlerFunction(val, true, _server)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// create the http.HandlerFunc that will call lastHandlerFn & middlewares
@@ -225,7 +234,7 @@ func NewHttpServer(ctx *core.Context, host core.Host, args ...core.Value) (*Http
 
 		//call middlewares & handler
 
-		for _, fn := range middlewareFns {
+		for _, fn := range _server.middlewares {
 			fn(req, rw, handlerGlobalState)
 			if rw.finished {
 				return
@@ -234,7 +243,7 @@ func NewHttpServer(ctx *core.Context, host core.Host, args ...core.Value) (*Http
 
 		//TODO: make sure memory allocated by + resources acquired by middlewares are released
 
-		lastHandlerFn(req, rw, handlerGlobalState)
+		_server.lastHandlerFn(req, rw, handlerGlobalState)
 	})
 
 	//create a stdlib http Server
@@ -255,16 +264,14 @@ func NewHttpServer(ctx *core.Context, host core.Host, args ...core.Value) (*Http
 		return nil, err
 	}
 
-	endChan := make(chan struct{}, 1)
-
 	_server.wrappedServer = server
-	_server.endChan = endChan
+	_server.endChan = make(chan struct{}, 1)
 
 	//listen and serve in a goroutine
 	go func() {
 		defer func() {
 			recover()
-			endChan <- struct{}{}
+			_server.endChan <- struct{}{}
 		}()
 		_server.serverLogger.Info().Msg("serve " + addr)
 
@@ -278,7 +285,7 @@ func NewHttpServer(ctx *core.Context, host core.Host, args ...core.Value) (*Http
 	go func() {
 		defer func() {
 			recover()
-			endChan <- struct{}{}
+			_server.endChan <- struct{}{}
 		}()
 		defer _server.serverLogger.Info().Msg("server (" + addr + ") is now closed")
 

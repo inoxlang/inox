@@ -19,13 +19,10 @@ var (
 	ErrUnexpectedBodyParamsInOPTIONSHandler = errors.New("unexpected request body parmameters in OPTIONS handler")
 )
 
-func getServerAPI(ctx *core.Context, server *HttpServer) {
-
-}
-
-func getFilesystemRoutingServerAPI(ctx *core.Context, dir string) (*API, error) {
+func getFSRoutingServerAPI(ctx *core.Context, dir string) (*API, error) {
 	api := &API{
 		endpoints: map[string]*ApiEndpoint{},
+		tree:      &EndpointTreeNode{path: "/"},
 	}
 
 	preparedModuleCache := map[string]*core.GlobalState{}
@@ -111,6 +108,11 @@ func addFilesysteDirEndpoints(ctx *core.Context, api *API, dir, urlDirPath strin
 			}
 		}
 
+		//remove trailing slash
+		if endpointPath != "/" {
+			endpointPath = strings.TrimSuffix(endpointPath, "/")
+		}
+
 		chunk, err := core.ParseFileChunk(absEntryPath, fls)
 		if err != nil {
 			return fmt.Errorf("failed to parse %q: %w", absEntryPath, err)
@@ -125,9 +127,59 @@ func addFilesysteDirEndpoints(ctx *core.Context, api *API, dir, urlDirPath strin
 
 		//add operation
 		endpt := api.endpoints[endpointPath]
-		if endpt == nil {
-			endpt = &ApiEndpoint{}
+		if endpt == nil && endpointPath == "/" {
+			endpt = &ApiEndpoint{
+				path: "/",
+			}
 			api.endpoints[endpointPath] = endpt
+		} else if endpt == nil {
+			//add endpoint into the API
+			endpt = &ApiEndpoint{
+				path: endpointPath,
+			}
+			api.endpoints[endpointPath] = endpt
+			if endpointPath == "" || endpointPath[0] != '/' {
+				return fmt.Errorf("invalid endpoint path %q", endpointPath)
+			}
+
+			segments := strings.Split(endpointPath[1:], "/")
+			currentNode := api.tree
+
+			//update the endpoint tree
+			for i, segment := range segments {
+				path := "/" + strings.Join(segments[:i+1], "/")
+
+				if len(segment) == 0 {
+					return fmt.Errorf("invalid endpoint path %q: one of the segment is empty", endpointPath)
+				}
+				if segment[0] == '{' { //parametrized
+					if segment[len(segment)-1] != '}' {
+						return fmt.Errorf("invalid endpoint path %q: invalid parametrized segment %s", endpointPath, segment)
+					}
+					child := currentNode.parametrizedChild
+					if child == nil {
+						child = &EndpointTreeNode{
+							path:    path,
+							segment: segment,
+						}
+						currentNode.parametrizedChild = child
+					}
+					currentNode = child
+				} else {
+					child, ok := currentNode.namedChildren[segment]
+					if !ok {
+						if currentNode.namedChildren == nil {
+							currentNode.namedChildren = map[string]*EndpointTreeNode{}
+						}
+						child = &EndpointTreeNode{
+							path:    path,
+							segment: segment,
+						}
+						currentNode.namedChildren[segment] = child
+					}
+					currentNode = child
+				}
+			}
 		}
 
 		//check the same operation is not already defined
@@ -228,5 +280,8 @@ func addFilesysteDirEndpoints(ctx *core.Context, api *API, dir, urlDirPath strin
 		}
 	}
 
-	return nil
+	return api.walkEndpointTree(func(node *EndpointTreeNode) error {
+		node.endpoint = api.endpoints[node.path] //ok if nil
+		return nil
+	})
 }
