@@ -5,6 +5,7 @@ import (
 	"time"
 
 	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/default_state"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/stretchr/testify/assert"
@@ -13,6 +14,11 @@ import (
 func TestWebsocketConnection(t *testing.T) {
 	const HTTPS_HOST = core.Host("https://localhost:8080")
 	const ENDPOINT = core.URL("wss://localhost:8080/")
+
+	if !default_state.AreDefaultRequestHandlingLimitsSet() {
+		default_state.SetDefaultRequestHandlingLimits([]core.Limit{})
+		defer default_state.UnsetDefaultRequestHandlingLimits()
+	}
 
 	t.Run("connection should be allowed even if the client's context has only a write permission", func(t *testing.T) {
 		closeChan := createWebsocketServer(testWebsocketServerConfig{
