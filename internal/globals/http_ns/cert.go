@@ -70,7 +70,7 @@ func makePemBlockForKey(privKey interface{}) (*pem.Block, error) {
 	}
 }
 
-func generateSelfSignedCertAndKey() (cert *pem.Block, key *pem.Block, err error) {
+func GenerateSelfSignedCertAndKey() (cert *pem.Block, key *pem.Block, err error) {
 	priv, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
 		return nil, nil, err
@@ -105,7 +105,7 @@ func generateSelfSignedCertAndKey() (cert *pem.Block, key *pem.Block, err error)
 }
 
 func generateSelfSignedCertAndKeyValues(ctx *core.Context) (core.Str, *core.Secret, error) {
-	cert, key, err := generateSelfSignedCertAndKey()
+	cert, key, err := GenerateSelfSignedCertAndKey()
 	if err != nil {
 		return "", nil, err
 	}

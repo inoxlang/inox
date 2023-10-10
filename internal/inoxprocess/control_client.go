@@ -124,8 +124,12 @@ func (c *ControlClient) StartControl() {
 				continue
 			}
 
-			c.ctx.Logger().Print("send hearbeat to control server ", t)
-			conn.WriteMessage(ctx, websocket.PingMessage, data)
+			logger := ctx.Logger()
+			logger.Print("send hearbeat to control server ", t)
+			err = conn.WriteMessage(ctx, websocket.PingMessage, data)
+			if err != nil {
+				logger.Err(err).Send()
+			}
 		}
 	}()
 

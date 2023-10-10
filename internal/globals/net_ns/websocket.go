@@ -21,10 +21,10 @@ type WebsocketMessageType int
 
 const (
 	WebsocketBinaryMessage WebsocketMessageType = websocket.BinaryMessage
-	WebsocketTextMessage                        = websocket.TextMessage
-	WebsocketPingMessage                        = websocket.PingMessage
-	WebsocketPongMessage                        = websocket.PongMessage
-	WebsocketCloseMessage                       = websocket.CloseMessage
+	WebsocketTextMessage   WebsocketMessageType = websocket.TextMessage
+	WebsocketPingMessage   WebsocketMessageType = websocket.PingMessage
+	WebsocketPongMessage   WebsocketMessageType = websocket.PongMessage
+	WebsocketCloseMessage  WebsocketMessageType = websocket.CloseMessage
 )
 
 type WebsocketConnection struct {
@@ -71,6 +71,10 @@ func (*WebsocketConnection) SetProp(ctx *core.Context, name string, value core.V
 
 func (*WebsocketConnection) PropertyNames(ctx *core.Context) []string {
 	return []string{"sendJSON", "readJSON", "close"}
+}
+
+func (conn *WebsocketConnection) SetPingHandler(ctx *core.Context, handler func(data string) error) {
+	conn.conn.SetPingHandler(handler)
 }
 
 func (conn *WebsocketConnection) sendJSON(ctx *core.Context, msg core.Value) error {
@@ -204,7 +208,7 @@ func (conn *WebsocketConnection) Close() error {
 }
 
 func (conn *WebsocketConnection) closeNoCheck() error {
-	conn.conn.WriteControl(WebsocketCloseMessage, nil, time.Now().Add(SERVER_SIDE_WEBSOCKET_CLOSE_TIMEOUT))
+	conn.conn.WriteControl(int(WebsocketCloseMessage), nil, time.Now().Add(SERVER_SIDE_WEBSOCKET_CLOSE_TIMEOUT))
 
 	if conn.tokenGivenBack.CompareAndSwap(false, true) {
 		conn.serverContext.GiveBack(WS_SIMUL_CONN_TOTAL_LIMIT_NAME, 1)

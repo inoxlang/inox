@@ -183,7 +183,7 @@ func (s *ControlServer) CreateControlledProcess(grantedPerms, forbiddenPerms []c
 		core.WebsocketPermission{Kind_: permkind.Write, Endpoint: core.Host(s.host())},
 	)
 
-	token := ControlledProcessToken(core.CryptoRandSource.ReadNBytesAsHex(PROCESS_TOKEN_BYTE_LENGTH))
+	token := MakeControlledProcessToken()
 	var grantedPermsArg string   //gob+base64
 	var forbiddenPermsArg string //gob+base64
 	{
@@ -339,4 +339,8 @@ func ControlledProcessTokenFrom(s string) (ControlledProcessToken, bool) {
 		return "", false
 	}
 	return ControlledProcessToken(s), true
+}
+
+func MakeControlledProcessToken() ControlledProcessToken {
+	return ControlledProcessToken(core.CryptoRandSource.ReadNBytesAsHex(PROCESS_TOKEN_BYTE_LENGTH))
 }

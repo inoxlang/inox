@@ -52,7 +52,7 @@ func NewGolangHttpServer(ctx *core.Context, config GolangHttpServerConfig) (*htt
 				fls.Remove(CERT_KEY_FILEPATH)
 			}
 
-			cert, key, err := generateSelfSignedCertAndKey()
+			cert, key, err := GenerateSelfSignedCertAndKey()
 			if err != nil {
 				return nil, err
 			}
