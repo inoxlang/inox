@@ -220,7 +220,7 @@ func (l *limiter) ResumeDecrementation() {
 	l.pausedDecrementation = false
 }
 
-func getLimit(ctx *Context, limitName string, limitValue Serializable) (_ Limit, resultErr error) {
+func GetLimit(ctx *Context, limitName string, limitValue Serializable) (_ Limit, resultErr error) {
 	var limit Limit
 
 	switch v := limitValue.(type) {

@@ -1022,7 +1022,7 @@ func getLimits(desc Value, defaultLimitsToNotSet map[string]bool) ([]Limit, erro
 		var limit Limit
 		defaultLimitsToNotSet[limitName] = true
 
-		limit, err := getLimit(ctx, limitName, limitPropValue)
+		limit, err := GetLimit(ctx, limitName, limitPropValue)
 
 		if err != nil {
 			return nil, err

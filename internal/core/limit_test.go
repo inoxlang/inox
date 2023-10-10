@@ -18,7 +18,7 @@ import (
 func TestExecutionTimeLimitIntegration(t *testing.T) {
 
 	t.Run("context should not be cancelled faster in the presence of child threads", func(t *testing.T) {
-		execLimit, err := getLimit(nil, EXECUTION_TOTAL_LIMIT_NAME, Duration(100*time.Millisecond))
+		execLimit, err := GetLimit(nil, EXECUTION_TOTAL_LIMIT_NAME, Duration(100*time.Millisecond))
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -72,7 +72,7 @@ func TestExecutionTimeLimitIntegration(t *testing.T) {
 func TestCPUTimeLimitIntegration(t *testing.T) {
 
 	t.Run("context should be cancelled if all CPU time is spent", func(t *testing.T) {
-		cpuLimit, err := getLimit(nil, EXECUTION_CPU_TIME_LIMIT_NAME, Duration(50*time.Millisecond))
+		cpuLimit, err := GetLimit(nil, EXECUTION_CPU_TIME_LIMIT_NAME, Duration(50*time.Millisecond))
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -103,7 +103,7 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 	})
 
 	t.Run("time spent waiting the locking of a shared object's should not count as CPU time", func(t *testing.T) {
-		cpuLimit, err := getLimit(nil, EXECUTION_CPU_TIME_LIMIT_NAME, Duration(50*time.Millisecond))
+		cpuLimit, err := GetLimit(nil, EXECUTION_CPU_TIME_LIMIT_NAME, Duration(50*time.Millisecond))
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -155,7 +155,7 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 	})
 
 	t.Run("time spent sleeping should not count as CPU time", func(t *testing.T) {
-		cpuLimit, err := getLimit(nil, EXECUTION_CPU_TIME_LIMIT_NAME, Duration(50*time.Millisecond))
+		cpuLimit, err := GetLimit(nil, EXECUTION_CPU_TIME_LIMIT_NAME, Duration(50*time.Millisecond))
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -178,7 +178,7 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 
 	t.Run("time spent waiting to continue after yielding should not count as CPU time", func(t *testing.T) {
 		CPU_TIME := 50 * time.Millisecond
-		cpuLimit, err := getLimit(nil, EXECUTION_CPU_TIME_LIMIT_NAME, Duration(CPU_TIME))
+		cpuLimit, err := GetLimit(nil, EXECUTION_CPU_TIME_LIMIT_NAME, Duration(CPU_TIME))
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -245,12 +245,12 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 		LimRegistry.RegisterLimit("my-limit", SimpleRateLimit, 0)
 
 		CPU_TIME := 50 * time.Millisecond
-		cpuLimit, err := getLimit(nil, EXECUTION_CPU_TIME_LIMIT_NAME, Duration(CPU_TIME))
+		cpuLimit, err := GetLimit(nil, EXECUTION_CPU_TIME_LIMIT_NAME, Duration(CPU_TIME))
 		if !assert.NoError(t, err) {
 			return
 		}
 
-		myLimit, err := getLimit(nil, "my-limit", SimpleRate(1))
+		myLimit, err := GetLimit(nil, "my-limit", SimpleRate(1))
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -291,7 +291,7 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 	})
 
 	t.Run("context should be cancelled if all CPU time is spent by child thread that we do not wait for", func(t *testing.T) {
-		cpuLimit, err := getLimit(nil, EXECUTION_CPU_TIME_LIMIT_NAME, Duration(100*time.Millisecond))
+		cpuLimit, err := GetLimit(nil, EXECUTION_CPU_TIME_LIMIT_NAME, Duration(100*time.Millisecond))
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -351,7 +351,7 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 	})
 
 	t.Run("context should be cancelled if all CPU time is spent by child thread that we wait for", func(t *testing.T) {
-		cpuLimit, err := getLimit(nil, EXECUTION_CPU_TIME_LIMIT_NAME, Duration(100*time.Millisecond))
+		cpuLimit, err := GetLimit(nil, EXECUTION_CPU_TIME_LIMIT_NAME, Duration(100*time.Millisecond))
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -390,7 +390,7 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 	})
 
 	t.Run("context should be cancelled twice as fast if all CPU time is spent equally by parent thread & child thread", func(t *testing.T) {
-		cpuLimit, err := getLimit(nil, EXECUTION_CPU_TIME_LIMIT_NAME, Duration(100*time.Millisecond))
+		cpuLimit, err := GetLimit(nil, EXECUTION_CPU_TIME_LIMIT_NAME, Duration(100*time.Millisecond))
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -433,7 +433,7 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 	})
 
 	t.Run("context should not be cancelled faster if child thread does nothing", func(t *testing.T) {
-		cpuLimit, err := getLimit(nil, EXECUTION_CPU_TIME_LIMIT_NAME, Duration(100*time.Millisecond))
+		cpuLimit, err := GetLimit(nil, EXECUTION_CPU_TIME_LIMIT_NAME, Duration(100*time.Millisecond))
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -470,7 +470,7 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 	})
 
 	t.Run("context should not be cancelled faster if child thread is cancelled", func(t *testing.T) {
-		cpuLimit, err := getLimit(nil, EXECUTION_CPU_TIME_LIMIT_NAME, Duration(100*time.Millisecond))
+		cpuLimit, err := GetLimit(nil, EXECUTION_CPU_TIME_LIMIT_NAME, Duration(100*time.Millisecond))
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -517,7 +517,7 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 func TestThreadSimultaneousInstancesLimitIntegration(t *testing.T) {
 	t.Run("spawn expression should panic if there is no thread count token left", func(t *testing.T) {
 		//allow a single thread
-		threadCountLimit, err := getLimit(nil, THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME, Int(1))
+		threadCountLimit, err := GetLimit(nil, THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME, Int(1))
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -577,7 +577,7 @@ func TestThreadSimultaneousInstancesLimitIntegration(t *testing.T) {
 
 	t.Run("thread count token should be given back after lthread is done", func(t *testing.T) {
 		//allow a single thread
-		threadCountLimit, err := getLimit(nil, THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME, Int(1))
+		threadCountLimit, err := GetLimit(nil, THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME, Int(1))
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -635,7 +635,7 @@ func TestThreadSimultaneousInstancesLimitIntegration(t *testing.T) {
 
 	t.Run("module import should panic if there is no thread count token left", func(t *testing.T) {
 		//allow a single thread
-		threadCountLimit, err := getLimit(nil, THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME, Int(1))
+		threadCountLimit, err := GetLimit(nil, THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME, Int(1))
 		if !assert.NoError(t, err) {
 			return
 		}

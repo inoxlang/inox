@@ -931,6 +931,13 @@ func (ctx *Context) GetForbiddenPermissions() []Permission {
 	return utils.CopySlice(ctx.forbiddenPermissions)
 }
 
+func (ctx *Context) Limits() []Limit {
+	ctx.lock.RLock()
+	defer ctx.lock.RUnlock()
+
+	return utils.CopySlice(ctx.limits)
+}
+
 // ResolveHostAlias returns the Host associated with the passed alias name, if the alias does not exist nil is returned.
 func (ctx *Context) ResolveHostAlias(alias string) Host {
 	ctx.lock.RLock()
