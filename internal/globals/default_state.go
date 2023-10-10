@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
+	"time"
 
 	"github.com/inoxlang/inox/internal/config"
 	core "github.com/inoxlang/inox/internal/core"
@@ -51,6 +52,24 @@ var (
 		{Name: core.THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME, Kind: core.TotalLimit, Value: 5},
 	}
 
+	DEFAULT_REQUEST_HANDLING_LIMITS = []core.Limit{
+		{Name: core.THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME, Kind: core.TotalLimit, Value: 2},
+		{Name: core.EXECUTION_CPU_TIME_LIMIT_NAME, Kind: core.TotalLimit, Value: int64(25 * time.Millisecond)},
+		{Name: core.EXECUTION_TOTAL_LIMIT_NAME, Kind: core.TotalLimit, Value: int64(5 * time.Second)},
+
+		{Name: fs_ns.FS_READ_LIMIT_NAME, Kind: core.ByteRateLimit, Value: 100_000},
+		{Name: fs_ns.FS_WRITE_LIMIT_NAME, Kind: core.ByteRateLimit, Value: 100_000},
+
+		{Name: fs_ns.FS_NEW_FILE_RATE_LIMIT_NAME, Kind: core.SimpleRateLimit, Value: 10},
+		{Name: fs_ns.FS_TOTAL_NEW_FILE_LIMIT_NAME, Kind: core.TotalLimit, Value: 100},
+
+		{Name: net_ns.HTTP_REQUEST_RATE_LIMIT_NAME, Kind: core.SimpleRateLimit, Value: 1},
+		{Name: net_ns.WS_SIMUL_CONN_TOTAL_LIMIT_NAME, Kind: core.TotalLimit, Value: 0},
+		{Name: net_ns.TCP_SIMUL_CONN_TOTAL_LIMIT_NAME, Kind: core.TotalLimit, Value: 0},
+
+		{Name: s3_ns.OBJECT_STORAGE_REQUEST_RATE_LIMIT_NAME, Kind: core.SimpleRateLimit, Value: 0},
+	}
+
 	_ = []core.GoValue{
 		(*html_ns.HTMLNode)(nil), (*core.GoFunction)(nil), (*http_ns.HttpServer)(nil), (*net_ns.TcpConn)(nil),
 		(*net_ns.WebsocketConnection)(nil), (*http_ns.HttpRequest)(nil), (*http_ns.HttpResponseWriter)(nil),
@@ -73,6 +92,7 @@ func init() {
 	default_state.SetNewDefaultGlobalStateFn(NewDefaultGlobalState)
 	default_state.SetNewDefaultContext(NewDefaultContext)
 	default_state.SetDefaultScriptLimits(DEFAULT_SCRIPT_LIMITS)
+	default_state.SetDefaultRequestHandlingLimits(DEFAULT_REQUEST_HANDLING_LIMITS)
 }
 
 // NewDefaultGlobalState creates a new GlobalState with the default globals.

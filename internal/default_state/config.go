@@ -19,9 +19,10 @@ const (
 )
 
 var (
-	NewDefaultGlobalState NewDefaultGlobalStateFn
-	NewDefaultContext     NewDefaultContextFn
-	defaultScriptLimits   []core.Limit
+	NewDefaultGlobalState        NewDefaultGlobalStateFn
+	NewDefaultContext            NewDefaultContextFn
+	defaultScriptLimits          []core.Limit
+	defaultRequestHandlingLimits []core.Limit
 )
 
 type DefaultGlobalStateConfig struct {
@@ -66,12 +67,34 @@ func GetDefaultScriptLimits() []core.Limit {
 	return defaultScriptLimits
 }
 
-func IsDefaultScriptLimitsSet() bool {
+func AreDefaultScriptLimitsSet() bool {
 	return defaultScriptLimits != nil
 }
 
 func UnsetDefaultScriptLimits() {
 	defaultScriptLimits = nil
+}
+
+func SetDefaultRequestHandlingLimits(limits []core.Limit) {
+	if defaultRequestHandlingLimits != nil {
+		panic(errors.New("default request handling limits already set"))
+	}
+	defaultRequestHandlingLimits = limits
+}
+
+func GetDefaultRequestHandlingLimits() []core.Limit {
+	if defaultRequestHandlingLimits == nil {
+		panic(errors.New("default request handling limits are not set"))
+	}
+	return defaultRequestHandlingLimits
+}
+
+func AreDefaultRequestHandlingLimitsSet() bool {
+	return defaultRequestHandlingLimits != nil
+}
+
+func UnsetDefaultRequestHandlingLimits() {
+	defaultRequestHandlingLimits = nil
 }
 
 type DefaultContextConfig struct {
