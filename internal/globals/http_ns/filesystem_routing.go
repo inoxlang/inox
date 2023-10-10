@@ -3,9 +3,11 @@ package http_ns
 import (
 	"errors"
 	"fmt"
+	"maps"
 	"net/http"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"slices"
 
@@ -34,6 +36,7 @@ func createHandleDynamic(server *HttpServer, routingDirPath core.Path) handlerFn
 		path := req.Path
 		method := req.Method.UnderlyingString()
 
+		//check path
 		if !path.IsAbsolute() {
 			panic(core.ErrUnreachable)
 		}
@@ -48,6 +51,7 @@ func createHandleDynamic(server *HttpServer, routingDirPath core.Path) handlerFn
 			return
 		}
 
+		// -----
 		if strings.Contains(method, "/") {
 			rw.writeStatus(http.StatusNotFound)
 			return
@@ -98,6 +102,9 @@ func createHandleDynamic(server *HttpServer, routingDirPath core.Path) handlerFn
 
 		//TODO: check the file is not writable
 
+		preparationStart := time.Now()
+		logger := handlerGlobalState.Logger.With().Str("handler-module", modulePath).Logger()
+
 		state, _, _, err := mod.PrepareLocalScript(mod.ScriptPreparationArgs{
 			Fpath:                 modulePath,
 			ParentContext:         handlerCtx,
@@ -105,37 +112,67 @@ func createHandleDynamic(server *HttpServer, routingDirPath core.Path) handlerFn
 
 			ParsingCompilationContext: handlerCtx,
 			Out:                       handlerGlobalState.Out,
-			LogOut:                    handlerGlobalState.Logger,
+			LogOut:                    logger,
 
 			FullAccessToDatabases: false, //databases should be passed by parent state
 			PreinitFilesystem:     handlerCtx.GetFileSystem(),
 			GetArguments: func(manifest *core.Manifest) (*core.Struct, error) {
-
 				args, errStatusCode, err := getHandlerModuleArguments(req, manifest, handlerCtx, methodSpecificModule)
 				if err != nil {
 					rw.writeStatus(core.Int(errStatusCode))
 				}
 				return args, err
 			},
+			BeforeContextCreation: func(m *core.Manifest) ([]core.Limit, error) {
+				var defaultLimits map[string]core.Limit = maps.Clone(server.defaultLimits)
+
+				for _, limit := range m.Limits {
+					maxLimit, ok := server.maxHandlerModuleLimits[limit.Name]
+					if ok && maxLimit.MoreRestrictiveThan(limit) {
+						return nil, fmt.Errorf(
+							"limit %q of handler module %q is higher than the maximum limit allowed, "+
+								"note that you can configure the %s argument of the HTTP server",
+							limit.Name, modulePath, HANDLING_DESC_MAX_LIMITS_PROPNAME)
+					}
+
+					delete(defaultLimits, limit.Name)
+				}
+
+				limits := slices.Clone(m.Limits)
+
+				for _, limit := range defaultLimits {
+					limits = append(limits, limit)
+				}
+				return limits, nil
+			},
 		})
 
 		if err != nil {
-			handlerGlobalState.Logger.Err(err).Str("handler-module", modulePath).Send()
+			logger.Err(err).Send()
 			if !rw.isStatusSet() {
 				rw.writeStatus(http.StatusInternalServerError)
 			}
-			tx := handlerCtx.GetTx()
-			if tx != nil {
-				tx.Rollback(handlerCtx)
+			if !handlerCtx.IsDoneSlowCheck() {
+				tx := handlerCtx.GetTx()
+				if tx != nil {
+					tx.Rollback(handlerCtx)
+				}
 			}
 			return
 		}
+
+		logger.Debug().Dur("preparation-time", time.Since(preparationStart)).Send()
 
 		var debugger *core.Debugger
 
 		if parentDebugger, _ := server.state.Debugger.Load().(*core.Debugger); parentDebugger != nil {
 			debugger = parentDebugger.NewChild()
 		}
+
+		//run the handler module in the current goroutine.
+		//CPU time decrementation is paused because the module will start decrementing its CPU time.
+
+		handlerCtx.PauseCPUTimeDecrementation()
 
 		result, _, _, _, err := mod.RunPreparedScript(mod.RunPreparedScriptArgs{
 			State: state,
@@ -146,12 +183,22 @@ func createHandleDynamic(server *HttpServer, routingDirPath core.Path) handlerFn
 			Debugger:                  debugger,
 		})
 
+		handlerCtx.ResumeCPUTimeDecrementation()
+
 		if err != nil {
 			handlerGlobalState.Logger.Err(err).Send()
-			rw.writeStatus(http.StatusNotFound)
-			tx := handlerCtx.GetTx()
-			if tx != nil {
-				tx.Rollback(handlerCtx)
+
+			if !handlerCtx.IsDoneSlowCheck() {
+				if !rw.isStatusSet() {
+					rw.writeStatus(http.StatusNotFound)
+				}
+
+				tx := handlerCtx.GetTx()
+				if tx != nil {
+					tx.Rollback(handlerCtx)
+				}
+			} else if !rw.isStatusSet() { //context is done
+				rw.writeStatus(http.StatusInternalServerError)
 			}
 			return
 		}

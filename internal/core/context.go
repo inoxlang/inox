@@ -458,6 +458,15 @@ func (ctx *Context) IsDone() bool {
 	return ctx.done.Load()
 }
 
+func (ctx *Context) IsDoneSlowCheck() bool {
+	select {
+	case <-ctx.Done():
+		return true
+	default:
+		return false
+	}
+}
+
 func (ctx *Context) OnDone(microtask ContextDoneMicrotaskFn) {
 	ctx.lock.Lock()
 	defer ctx.lock.Unlock()

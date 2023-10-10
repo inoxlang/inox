@@ -12,6 +12,7 @@ import (
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/mimeconsts"
 	"github.com/rs/zerolog"
+	"golang.org/x/exp/maps"
 
 	http_ns_symb "github.com/inoxlang/inox/internal/globals/http_ns/symbolic"
 
@@ -37,6 +38,9 @@ const (
 	HANDLING_DESC_CERTIFICATE_PROPNAME = "certificate"
 	HANDLING_DESC_KEY_PROPNAME         = "key"
 
+	HANDLING_DESC_DEFAULT_LIMITS_PROPNAME = "default-limits"
+	HANDLING_DESC_MAX_LIMITS_PROPNAME     = "max-limits"
+
 	HTTP_SERVER_SRC_PATH = "/http/server"
 )
 
@@ -56,16 +60,20 @@ var (
 			symbolic.NewMapping(),
 			HTTP_ROUTING_SYMB_OBJ,
 		)),
-		HANDLING_DESC_MIDDLEWARES_PROPNAME: symbolic.ANY_SERIALIZABLE_ITERABLE,
-		HANDLING_DESC_DEFAULT_CSP_PROPNAME: http_ns_symb.ANY_CSP,
-		HANDLING_DESC_CERTIFICATE_PROPNAME: symbolic.ANY_STR_LIKE,
-		HANDLING_DESC_KEY_PROPNAME:         symbolic.ANY_SECRET,
+		HANDLING_DESC_MIDDLEWARES_PROPNAME:    symbolic.ANY_SERIALIZABLE_ITERABLE,
+		HANDLING_DESC_DEFAULT_CSP_PROPNAME:    http_ns_symb.ANY_CSP,
+		HANDLING_DESC_CERTIFICATE_PROPNAME:    symbolic.ANY_STR_LIKE,
+		HANDLING_DESC_KEY_PROPNAME:            symbolic.ANY_SECRET,
+		HANDLING_DESC_DEFAULT_LIMITS_PROPNAME: symbolic.ANY_OBJ,
+		HANDLING_DESC_MAX_LIMITS_PROPNAME:     symbolic.ANY_OBJ,
 	}, map[string]struct{}{
 		//optional entries
-		HANDLING_DESC_MIDDLEWARES_PROPNAME: {},
-		HANDLING_DESC_DEFAULT_CSP_PROPNAME: {},
-		HANDLING_DESC_CERTIFICATE_PROPNAME: {},
-		HANDLING_DESC_KEY_PROPNAME:         {},
+		HANDLING_DESC_MIDDLEWARES_PROPNAME:    {},
+		HANDLING_DESC_DEFAULT_CSP_PROPNAME:    {},
+		HANDLING_DESC_CERTIFICATE_PROPNAME:    {},
+		HANDLING_DESC_KEY_PROPNAME:            {},
+		HANDLING_DESC_DEFAULT_LIMITS_PROPNAME: {},
+		HANDLING_DESC_MAX_LIMITS_PROPNAME:     {},
 	}, nil)
 
 	NEW_SERVER_TWO_PARAM_NAMES = []string{"host", "handling"}
@@ -83,6 +91,9 @@ type HttpServer struct {
 	serverLogger   zerolog.Logger
 
 	sseServer *SseServer
+
+	defaultLimits          map[string]core.Limit
+	maxHandlerModuleLimits map[string]core.Limit
 }
 
 func NewHttpServer(ctx *core.Context, host core.Host, args ...core.Value) (*HttpServer, error) {
@@ -96,12 +107,17 @@ func NewHttpServer(ctx *core.Context, host core.Host, args ...core.Value) (*Http
 		return nil, errors.New("cannot create server: context's associated state is nil")
 	}
 
-	addr, userProvidedCert, userProvidedKey, userProvidedHandler, handlerValProvided, middlewares, argErr :=
-		readHttpServerArgs(ctx, _server, host, args...)
+	addr, userProvidedCert, userProvidedKey, userProvidedHandler, handlerValProvided, middlewares,
+		defaultLimits, maxLimits, argErr := readHttpServerArgs(ctx, _server, host, args...)
+
 	if argErr != nil {
 		return nil, argErr
 	}
 
+	_server.maxHandlerModuleLimits = maxLimits
+	_server.defaultLimits = defaultLimits
+
+	//create logger and security engine
 	{
 		logSrc := HTTP_SERVER_SRC_PATH + "/" + addr
 		_server.serverLogger = ctxLogger.With().Str(core.SOURCE_LOG_FIELD_NAME, logSrc).Logger()
@@ -169,7 +185,14 @@ func NewHttpServer(ctx *core.Context, host core.Host, args ...core.Value) (*Http
 		}
 
 		//create a global state for handling the request
-		handlerCtx := ctx.BoundChild()
+		handlerCtx := core.NewContext(core.ContextConfig{
+			Permissions:          ctx.GetGrantedPermissions(),
+			ForbiddenPermissions: ctx.GetForbiddenPermissions(),
+			Limits:               maps.Values(defaultLimits),
+			ParentContext:        ctx,
+			Filesystem:           ctx.GetFileSystem(),
+		})
+
 		defer handlerCtx.CancelIfShortLived()
 
 		if !req.ParsedAcceptHeader.Match(mimeconsts.EVENT_STREAM_CTYPE) {
@@ -208,6 +231,8 @@ func NewHttpServer(ctx *core.Context, host core.Host, args ...core.Value) (*Http
 				return
 			}
 		}
+
+		//TODO: make sure memory allocated by + resources acquired by middlewares are released
 
 		lastHandlerFn(req, rw, handlerGlobalState)
 	})

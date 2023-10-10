@@ -37,7 +37,7 @@ import (
 
 const (
 	IDENTIDAL_SECONDARY_REQ_COUNT = 4
-	REQ_TIMEOUT                   = 1 * time.Second
+	REQ_TIMEOUT                   = 2 * time.Second
 )
 
 var (
@@ -48,7 +48,7 @@ var (
 
 func init() {
 	port.Store(8080)
-	if !default_state.IsDefaultScriptLimitsSet() {
+	if !default_state.AreDefaultScriptLimitsSet() {
 		default_state.SetDefaultScriptLimits([]core.Limit{})
 	}
 
@@ -89,12 +89,13 @@ func init() {
 
 		default_state.SetNewDefaultGlobalStateFn(func(ctx *core.Context, conf default_state.DefaultGlobalStateConfig) (*core.GlobalState, error) {
 			state := core.NewGlobalState(ctx, map[string]core.Value{
-				"html":        core.ValOf(html_ns.NewHTMLNamespace()),
-				"sleep":       core.WrapGoFunction(core.Sleep),
-				"torstream":   core.WrapGoFunction(toRstream),
-				"mkbytes":     core.WrapGoFunction(mkBytes),
-				"tostr":       core.WrapGoFunction(toStr),
-				"cancel_exec": core.WrapGoFunction(cancelExec),
+				"html":              core.ValOf(html_ns.NewHTMLNamespace()),
+				"sleep":             core.WrapGoFunction(core.Sleep),
+				"torstream":         core.WrapGoFunction(toRstream),
+				"mkbytes":           core.WrapGoFunction(mkBytes),
+				"tostr":             core.WrapGoFunction(toStr),
+				"cancel_exec":       core.WrapGoFunction(cancelExec),
+				"do_cpu_bound_work": core.WrapGoFunction(doCpuBoundWork),
 			})
 
 			return state, nil
@@ -105,7 +106,8 @@ func init() {
 		return symbolic.ANY_STR_LIKE
 	})
 
-	core.RegisterSymbolicGoFunction(cancelExec, func() {})
+	core.RegisterSymbolicGoFunction(cancelExec, func(ctx *symbolic.Context) {})
+	core.RegisterSymbolicGoFunction(doCpuBoundWork, func(ctx *symbolic.Context, _ *symbolic.Duration) {})
 	core.RegisterSymbolicGoFunction(mkBytes, func(ctx *symbolic.Context, i *symbolic.Int) *symbolic.ByteSlice {
 		return symbolic.ANY_BYTE_SLICE
 	})
@@ -122,6 +124,11 @@ func init() {
 
 func TestHttpServerMissingProvidePermission(t *testing.T) {
 
+	if !default_state.AreDefaultRequestHandlingLimitsSet() {
+		default_state.SetDefaultRequestHandlingLimits([]core.Limit{})
+		defer default_state.UnsetDefaultRequestHandlingLimits()
+	}
+
 	host := core.Host("https://localhost:8080")
 	ctx := core.NewContext(core.ContextConfig{
 		Filesystem: fs_ns.GetOsFilesystem(),
@@ -135,6 +142,10 @@ func TestHttpServerMissingProvidePermission(t *testing.T) {
 }
 
 func TestHttpServerUserHandler(t *testing.T) {
+	if !default_state.AreDefaultRequestHandlingLimitsSet() {
+		default_state.SetDefaultRequestHandlingLimits([]core.Limit{})
+		defer default_state.UnsetDefaultRequestHandlingLimits()
+	}
 
 	//TODO: rework test & add case where handler access a global
 
@@ -190,6 +201,11 @@ func TestHttpServerUserHandler(t *testing.T) {
 }
 
 func TestHttpServerMapping(t *testing.T) {
+
+	if !default_state.AreDefaultRequestHandlingLimitsSet() {
+		default_state.SetDefaultRequestHandlingLimits([]core.Limit{})
+		defer default_state.UnsetDefaultRequestHandlingLimits()
+	}
 
 	t.Run("CUSTOMMETHOD /x", func(t *testing.T) {
 		runServerTest(t,
@@ -780,8 +796,13 @@ func runAdvancedServerTest(
 					req.Header.Add(k, val)
 				}
 			}
-
+			if info.onStartSending != nil {
+				info.onStartSending()
+			}
 			resp, err := client.Do(req)
+			if info.onStatusReceived != nil {
+				info.onStatusReceived()
+			}
 
 			responseLock.Lock()
 			if isPrimary {
@@ -929,6 +950,9 @@ type requestTestInfo struct {
 	err                           error
 	status                        int //defaults to 200
 	okayIf429                     bool
+
+	onStartSending   func()
+	onStatusReceived func()
 }
 
 type serverTestCase struct {
@@ -987,6 +1011,16 @@ func createClient() *http.Client {
 
 func cancelExec(ctx *core.Context) {
 	ctx.CancelGracefully()
+}
+
+func doCpuBoundWork(ctx *core.Context, duration core.Duration) {
+	deadline := time.Now().Add(time.Duration(duration))
+
+	for {
+		if time.Since(deadline) >= time.Microsecond {
+			break
+		}
+	}
 }
 
 func mkBytes(ctx *core.Context, size core.Int) *core.ByteSlice {

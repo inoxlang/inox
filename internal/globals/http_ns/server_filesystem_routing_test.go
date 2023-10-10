@@ -4,12 +4,14 @@ import (
 	"net/http"
 	"os"
 	"reflect"
+	"strconv"
 	"testing"
 	"time"
 
 	"github.com/go-git/go-billy/v5/util"
 	"github.com/inoxlang/inox/internal/afs"
 	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/default_state"
 	"github.com/inoxlang/inox/internal/globals/containers"
 	containers_common "github.com/inoxlang/inox/internal/globals/containers/common"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
@@ -19,6 +21,22 @@ import (
 )
 
 func TestFilesystemRouting(t *testing.T) {
+	maxCpuTime := 25 * time.Millisecond
+	cpuTimeLimit, err := core.GetLimit(nil, core.EXECUTION_CPU_TIME_LIMIT_NAME, core.Duration(maxCpuTime))
+	if !assert.NoError(t, err) {
+		return
+	}
+
+	if default_state.AreDefaultRequestHandlingLimitsSet() {
+		save := default_state.GetDefaultRequestHandlingLimits()
+		default_state.UnsetDefaultRequestHandlingLimits()
+		default_state.SetDefaultRequestHandlingLimits([]core.Limit{cpuTimeLimit})
+		defer default_state.SetDefaultRequestHandlingLimits(save)
+		defer default_state.UnsetDefaultRequestHandlingLimits()
+	} else {
+		default_state.SetDefaultRequestHandlingLimits([]core.Limit{cpuTimeLimit})
+		defer default_state.UnsetDefaultRequestHandlingLimits()
+	}
 
 	t.Run("GET /x should return the result of /routes/x.ix", func(t *testing.T) {
 		runServerTest(t,
@@ -383,6 +401,223 @@ func TestFilesystemRouting(t *testing.T) {
 			},
 			createClient,
 		)
+	})
+
+	t.Run("a status of 500 (internal error) should be returned if the handler defines a limit greater than the corresponding maximum limit", func(t *testing.T) {
+
+		runServerTest(t,
+			serverTestCase{
+				input: `return {
+						routing: {dynamic: /routes/}
+					}`,
+				makeFilesystem: func() afs.Filesystem {
+					fls := fs_ns.NewMemFilesystem(10_000)
+					fls.MkdirAll("/routes", fs_ns.DEFAULT_DIR_FMODE)
+					util.WriteFile(fls, "/routes/x.ix", []byte(`
+							manifest {
+								limits: {
+									"`+core.EXECUTION_CPU_TIME_LIMIT_NAME+`": 1s
+								}
+							}
+	
+							call_non_existing()
+
+							return "hello"
+						`), fs_ns.DEFAULT_FILE_FMODE)
+
+					return fls
+				},
+				requests: []requestTestInfo{
+					{
+						path:                "/x",
+						acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
+						status:              http.StatusInternalServerError,
+					},
+				},
+			},
+			createClient,
+		)
+	})
+
+	t.Run("a status of 500 (internal error) should be returned if the handler uses all its CPU time", func(t *testing.T) {
+		var start time.Time
+		var end time.Time
+
+		runServerTest(t,
+			serverTestCase{
+				input: `return {
+						routing: {dynamic: /routes/}
+					}`,
+				makeFilesystem: func() afs.Filesystem {
+					fls := fs_ns.NewMemFilesystem(10_000)
+					fls.MkdirAll("/routes", fs_ns.DEFAULT_DIR_FMODE)
+					util.WriteFile(fls, "/routes/x.ix", []byte(`
+							manifest {}
+
+							a = 1
+							for i in 1..1_000_000_000 {
+								a += 1
+							}
+	
+							return "end"
+						`), fs_ns.DEFAULT_FILE_FMODE)
+
+					return fls
+				},
+				requests: []requestTestInfo{
+					{
+						onStartSending: func() {
+							start = time.Now()
+						},
+						onStatusReceived: func() {
+							end = time.Now()
+						},
+						path:                "/x",
+						acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
+						status:              http.StatusInternalServerError,
+					},
+				},
+			},
+			createClient,
+		)
+
+		assert.WithinDuration(t, start.Add(maxCpuTime), end, 10*time.Millisecond)
+	})
+
+	t.Run("a status of 200 should be returned if the handler has sleept for a duration greater than its CPU time", func(t *testing.T) {
+
+		runServerTest(t,
+			serverTestCase{
+				input: `return {
+						routing: {dynamic: /routes/}
+					}`,
+				makeFilesystem: func() afs.Filesystem {
+					fls := fs_ns.NewMemFilesystem(10_000)
+					fls.MkdirAll("/routes", fs_ns.DEFAULT_DIR_FMODE)
+					util.WriteFile(fls, "/routes/x.ix", []byte(`
+							manifest {}
+							sleep 1s
+							return "end"
+						`), fs_ns.DEFAULT_FILE_FMODE)
+
+					return fls
+				},
+				requests: []requestTestInfo{
+					{
+						path:                "/x",
+						acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
+						status:              http.StatusOK,
+					},
+				},
+			},
+			createClient,
+		)
+	})
+
+	t.Run("a status of 200 should be returned if the handler has worked for a duration slightly shorter than its CPU time", func(t *testing.T) {
+		var start time.Time
+		var end time.Time
+
+		workDuration := maxCpuTime - maxCpuTime/4
+		workDurationString := strconv.Itoa(int(workDuration/time.Millisecond)) + "ms"
+
+		runServerTest(t,
+			serverTestCase{
+				input: `return {
+						routing: {dynamic: /routes/}
+					}`,
+				makeFilesystem: func() afs.Filesystem {
+					fls := fs_ns.NewMemFilesystem(10_000)
+					fls.MkdirAll("/routes", fs_ns.DEFAULT_DIR_FMODE)
+					util.WriteFile(fls, "/routes/x.ix", []byte(`
+							manifest {}
+							do_cpu_bound_work(`+workDurationString+`)
+							return "end"
+						`), fs_ns.DEFAULT_FILE_FMODE)
+
+					return fls
+				},
+				requests: []requestTestInfo{
+					{
+						onStartSending: func() {
+							start = time.Now()
+						},
+						onStatusReceived: func() {
+							end = time.Now()
+						},
+						path:                "/x",
+						acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
+						status:              http.StatusOK,
+					},
+				},
+			},
+			createClient,
+		)
+
+		assert.WithinDuration(t, start.Add(workDuration), end, maxCpuTime/10)
+	})
+
+	t.Run("a status of 200 should be returned if a few parallel handlers have each worked for a duration slightly shorter than their CPU time", func(t *testing.T) {
+		var start time.Time
+		var end time.Time
+
+		workDuration := maxCpuTime - maxCpuTime/4
+		workDurationString := strconv.Itoa(int(workDuration/time.Millisecond)) + "ms"
+
+		runServerTest(t,
+			serverTestCase{
+				input: `return {
+						routing: {dynamic: /routes/}
+					}`,
+				makeFilesystem: func() afs.Filesystem {
+					fls := fs_ns.NewMemFilesystem(10_000)
+					fls.MkdirAll("/routes", fs_ns.DEFAULT_DIR_FMODE)
+					util.WriteFile(fls, "/routes/x.ix", []byte(`
+							manifest {}
+							do_cpu_bound_work(`+workDurationString+`)
+							return "end"
+						`), fs_ns.DEFAULT_FILE_FMODE)
+
+					return fls
+				},
+				requests: []requestTestInfo{
+					{
+						onStartSending: func() {
+							start = time.Now()
+						},
+						onStatusReceived: func() {
+							end = time.Now()
+						},
+						path:                "/x",
+						acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
+						status:              http.StatusOK,
+					},
+					{
+						path:                "/x",
+						acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
+						status:              http.StatusOK,
+					},
+					{
+						path:                "/x",
+						acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
+						status:              http.StatusOK,
+					},
+					{
+						path:                "/x",
+						acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
+						status:              http.StatusOK,
+					},
+					{
+						path:                "/x",
+						acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
+						status:              http.StatusOK,
+					},
+				},
+			},
+			createClient,
+		)
+
+		assert.WithinDuration(t, start.Add(workDuration), end, maxCpuTime/10)
 	})
 
 	t.Run("request transaction should be commited or rollbacked after request", func(t *testing.T) {

@@ -36,6 +36,19 @@ func createHandlerFunction(handlerValue core.Value, isMiddleware bool, server *H
 	switch userHandler := handlerValue.(type) {
 	case *core.InoxFunction:
 		handler = func(req *HttpRequest, rw *HttpResponseWriter, handlerGlobalState *core.GlobalState) {
+			//add parent context's patterns
+			serverCtx := server.state.Ctx
+			for k, v := range serverCtx.GetNamedPatterns() {
+				if handlerGlobalState.Ctx.ResolveNamedPattern(k) == nil {
+					handlerGlobalState.Ctx.AddNamedPattern(k, v)
+				}
+			}
+			for k, v := range serverCtx.GetPatternNamespaces() {
+				if handlerGlobalState.Ctx.ResolvePatternNamespace(k) == nil {
+					handlerGlobalState.Ctx.AddPatternNamespace(k, v)
+				}
+			}
+
 			//call the Inox handler
 			args := []core.Value{core.ValOf(rw), core.ValOf(req)}
 			_, err := userHandler.Call(handlerGlobalState, nil, args, HANDLER_DISABLED_ARGS)
@@ -105,6 +118,20 @@ func createHandlerFunction(handlerValue core.Value, isMiddleware bool, server *H
 		handler = func(req *HttpRequest, rw *HttpResponseWriter, handlerGlobalState *core.GlobalState) {
 			path := req.Path
 
+			//add parent context's patterns
+			serverCtx := server.state.Ctx
+			for k, v := range serverCtx.GetNamedPatterns() {
+				if handlerGlobalState.Ctx.ResolveNamedPattern(k) == nil {
+					handlerGlobalState.Ctx.AddNamedPattern(k, v)
+				}
+			}
+			for k, v := range serverCtx.GetPatternNamespaces() {
+				if handlerGlobalState.Ctx.ResolvePatternNamespace(k) == nil {
+					handlerGlobalState.Ctx.AddPatternNamespace(k, v)
+				}
+			}
+
+			//compute the result
 			value := routing.Compute(handlerGlobalState.Ctx, path)
 			if value == nil {
 				handlerGlobalState.Logger.Print("routing mapping returned Go nil")

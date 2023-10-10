@@ -9,6 +9,7 @@ import (
 	"github.com/inoxlang/inox/internal/commonfmt"
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/default_state"
 	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
 )
@@ -20,8 +21,15 @@ func readHttpServerArgs(ctx *core.Context, server *HttpServer, host core.Host, a
 	userProvidedHandler core.Value,
 	handlerValProvided bool,
 	middlewares []core.Value,
+	defaultLimits map[string]core.Limit,
+	maxLimits map[string]core.Limit,
 	argErr error,
 ) {
+
+	defaultLimits = map[string]core.Limit{}
+	for _, limit := range default_state.GetDefaultRequestHandlingLimits() {
+		defaultLimits[limit.Name] = limit
+	}
 
 	const HANDLING_ARG_NAME = "handler/handling"
 
@@ -178,6 +186,36 @@ func readHttpServerArgs(ctx *core.Context, server *HttpServer, host core.Host, a
 						return
 					}
 					certKey = secret
+				case HANDLING_DESC_DEFAULT_LIMITS_PROPNAME, HANDLING_DESC_MAX_LIMITS_PROPNAME:
+					val, ok := propVal.(*core.Object)
+					if !ok {
+						argErr = core.FmtUnexpectedValueAtKeyofArgShowVal(propVal, propKey, HANDLING_ARG_NAME)
+						return
+					}
+
+					var limits map[string]core.Limit
+					if propKey == HANDLING_DESC_DEFAULT_LIMITS_PROPNAME {
+						limits = defaultLimits
+					} else {
+						maxLimits = map[string]core.Limit{}
+						limits = maxLimits
+					}
+
+					err := val.ForEachEntry(func(k string, v core.Serializable) error {
+						limit, err := core.GetLimit(ctx, k, v)
+						if err != nil {
+							s := fmt.Sprintf("unknown limit %q", k)
+							return commonfmt.FmtInvalidValueForPropXOfArgY(propKey, HANDLING_ARG_NAME, s)
+						}
+						limits[k] = limit
+						return nil
+					})
+					if err != nil {
+						defaultLimits = nil
+						maxLimits = nil
+						argErr = err
+						return
+					}
 				default:
 					argErr = commonfmt.FmtUnexpectedPropInArgX(propKey, HANDLING_ARG_NAME)
 				}
