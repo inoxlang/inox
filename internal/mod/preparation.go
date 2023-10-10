@@ -32,9 +32,14 @@ type ScriptPreparationArgs struct {
 	// this mode is intended to be used by the LSP server.
 	DataExtractionMode bool
 
+	// If set this function is called just before the context creation,
+	// the preparation is aborted if an error is returned.
+	// The returned limits are used instead of the manifest limits.
+	BeforeContextCreation func(*core.Manifest) ([]core.Limit, error)
+
 	CliArgs []string
 	Args    *core.Struct
-	//if set the result of the function is used instead of .Args
+	// if set the result of the function is used instead of .Args
 	GetArguments func(*core.Manifest) (*core.Struct, error)
 
 	ParsingCompilationContext *core.Context
@@ -142,12 +147,21 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 		manifest = core.NewEmptyManifest()
 	}
 
+	var limits []core.Limit = manifest.Limits
+	if args.BeforeContextCreation != nil {
+		limitList, err := args.BeforeContextCreation(manifest)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+		limits = limitList
+	}
+
 	//create the script's context
 	var ctxErr error
 
 	ctx, ctxErr = default_state.NewDefaultContext(default_state.DefaultContextConfig{
 		Permissions:         manifest.RequiredPermissions,
-		Limits:              manifest.Limits,
+		Limits:              limits,
 		HostResolutions:     manifest.HostResolutions,
 		ParentContext:       parentContext,
 		ParentStdLibContext: args.StdlibCtx,

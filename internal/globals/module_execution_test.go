@@ -2,6 +2,7 @@ package internal
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"math/rand"
@@ -340,6 +341,60 @@ func TestPrepareLocalScript(t *testing.T) {
 
 		// symbolic check should have been performed
 		assert.False(t, state.SymbolicData.IsEmpty())
+	})
+
+	t.Run("manifest checks", func(t *testing.T) {
+
+		dir := t.TempDir()
+		file := filepath.Join(dir, "script.ix")
+		compilationCtx := createCompilationCtx(dir)
+		defer compilationCtx.CancelGracefully()
+
+		defer compilationCtx.CancelGracefully()
+
+		os.WriteFile(file, []byte(`
+			preinit {
+				pattern patt = %/...
+			}
+			manifest {
+				permissions: {
+					read: %patt
+				}
+			}
+		`), 0o600)
+
+		ctx := core.NewContext(core.ContextConfig{
+			Permissions: append(core.GetDefaultGlobalVarPermissions(), core.CreateFsReadPerm(core.PathPattern("/..."))),
+			Filesystem:  fs_ns.GetOsFilesystem(),
+		})
+		core.NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
+
+		var errInvalidManifest = errors.New("invalid manifest")
+
+		state, mod, _, err := mod.PrepareLocalScript(mod.ScriptPreparationArgs{
+			Fpath:                     file,
+			ParsingCompilationContext: compilationCtx,
+			ParentContext:             ctx,
+			ParentContextRequired:     true,
+			Out:                       io.Discard,
+
+			BeforeContextCreation: func(m *core.Manifest) ([]core.Limit, error) {
+				return nil, errInvalidManifest
+			},
+		})
+
+		if !assert.ErrorIs(t, err, errInvalidManifest) {
+			return
+		}
+
+		// the module should not be present
+		if !assert.Nil(t, mod) {
+			return
+		}
+
+		// the state should not be present
+		assert.Nil(t, state)
 	})
 
 	t.Run("local database", func(t *testing.T) {
