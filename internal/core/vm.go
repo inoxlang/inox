@@ -1957,13 +1957,16 @@ func (v *VM) run() {
 			v.sp -= 2
 			v.global.Globals.Set(string(globalName), result)
 		case OpSpawnLThread:
-			v.ip += 5
-			isSingleExpr := v.curInsts[v.ip-4]
-			calleeNameindex := int(v.curInsts[v.ip-2]) | int(v.curInsts[v.ip-3])<<8
+			v.ip += 7
+			isSingleExpr := v.curInsts[v.ip-6]
+			calleeNameindex := int(v.curInsts[v.ip-4]) | int(v.curInsts[v.ip-5])<<8
 			caleeName := v.constants[calleeNameindex].(Str)
 
-			routimeModConstantIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
-			routineMod := v.constants[routimeModConstantIndex].(*Module)
+			lthreadModConstantIndex := int(v.curInsts[v.ip-2]) | int(v.curInsts[v.ip-3])<<8
+			lthreadMod := v.constants[lthreadModConstantIndex].(*Module)
+
+			lthreadBytecodeConstantIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
+			lthreadBytecode := v.constants[lthreadBytecodeConstantIndex].(*Bytecode)
 
 			meta := v.stack[v.sp-2]
 			singleExprCallee := v.stack[v.sp-1]
@@ -2054,7 +2057,8 @@ func (v *VM) run() {
 			lthread, err := SpawnLThread(LthreadSpawnArgs{
 				SpawnerState: v.global,
 				Globals:      GlobalVariablesFromMap(actualGlobals, startConstants),
-				Module:       routineMod,
+				Module:       lthreadMod,
+				Bytecode:     lthreadBytecode,
 				LthreadCtx:   ctx,
 				UseBytecode:  true,
 			})
@@ -2077,14 +2081,17 @@ func (v *VM) run() {
 
 			// upper := v.stack[v.sp-1].(Rune)
 		case OpCreateLifetimeJob:
-			v.ip += 2
-			nodeIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
-			mod := v.constants[nodeIndex].(*Module)
+			v.ip += 4
+			modIndex := int(v.curInsts[v.ip-2]) | int(v.curInsts[v.ip-3])<<8
+			mod := v.constants[modIndex].(*Module)
+
+			bytecodeIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
+			bytecode := v.constants[bytecodeIndex].(*Bytecode)
 
 			meta := v.stack[v.sp-2]
 			subject, _ := v.stack[v.sp-1].(Pattern)
 
-			job, err := NewLifetimeJob(meta, subject, mod, v.global)
+			job, err := NewLifetimeJob(meta, subject, mod, bytecode, v.global)
 			if err != nil {
 				v.err = err
 				return
@@ -2349,7 +2356,7 @@ func (v *VM) fnCall(numArgs int, spread, must bool) bool {
 
 		if isSharedFunction {
 			extState = inoxFn.originState
-			extBytecode = extState.Module.Bytecode
+			extBytecode = extState.Bytecode
 		}
 
 	} else {
@@ -2357,7 +2364,7 @@ func (v *VM) fnCall(numArgs int, spread, must bool) bool {
 		isSharedFunction = goFn.IsShared()
 		if isSharedFunction {
 			extState = goFn.originState
-			extBytecode = extState.Module.Bytecode
+			extBytecode = extState.Bytecode
 		}
 	}
 

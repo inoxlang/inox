@@ -133,7 +133,7 @@ func EvalVM(mod *Module, state *GlobalState, config BytecodeEvaluationConfig) (V
 		compilationTracer = config.Tracer
 	}
 
-	err := Compile(CompilationInput{
+	bytecode, err := Compile(CompilationInput{
 		Mod:             mod,
 		Globals:         state.Globals.permanent,
 		SymbolicData:    state.SymbolicData.SymbolicData,
@@ -144,7 +144,7 @@ func EvalVM(mod *Module, state *GlobalState, config BytecodeEvaluationConfig) (V
 	if err != nil {
 		return nil, err
 	}
-	bytecode := mod.Bytecode
+	state.Bytecode = bytecode
 
 	if config.OptimizeBytecode {
 		optimizeBytecode(bytecode, compilationTracer)

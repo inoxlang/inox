@@ -42,7 +42,8 @@ type GlobalState struct {
 	id       StateId
 
 	Ctx          *Context
-	Module       *Module //nil in some cases (shell, mapping entry's state), TODO: check for usage
+	Module       *Module   //nil in some cases (shell, mapping entry's state), TODO: check for usage
+	Bytecode     *Bytecode //can be nil
 	Manifest     *Manifest
 	Globals      GlobalVariables        //global variables
 	LThread      *LThread               //not nil if running in a dedicated LThread

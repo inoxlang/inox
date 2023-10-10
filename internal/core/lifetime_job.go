@@ -28,8 +28,9 @@ var (
 // A LifetimeJob represents a job associated with a value that runs while the value exists, this struct does not
 // hold any state, see LifetimeJobInstance. LifetimeJob implements Value.
 type LifetimeJob struct {
-	meta                         Value   //immutable
-	module                       *Module // module executed when running the job
+	meta                         Value     //immutable
+	module                       *Module   // module executed when running the job
+	bytecode                     *Bytecode //can be nil
 	parentModule                 *Module
 	subjectPattern               Pattern //nil if symbolicSubjectObjectPattern is set
 	symbolicSubjectObjectPattern symbolic.Pattern
@@ -40,7 +41,7 @@ type LifetimeJobInstance struct {
 	thread *LThread
 }
 
-func NewLifetimeJob(meta Value, subjectPattern Pattern, mod *Module, parentState *GlobalState) (*LifetimeJob, error) {
+func NewLifetimeJob(meta Value, subjectPattern Pattern, mod *Module, bytecode *Bytecode, parentState *GlobalState) (*LifetimeJob, error) {
 	if meta.IsMutable() {
 		panic(ErrLifetimeJobMetaValueShouldBeImmutable)
 	}
@@ -49,6 +50,7 @@ func NewLifetimeJob(meta Value, subjectPattern Pattern, mod *Module, parentState
 		module:         mod,
 		subjectPattern: subjectPattern,
 		parentModule:   parentState.Module,
+		bytecode:       bytecode,
 	}, nil
 }
 
@@ -137,7 +139,8 @@ func (j *LifetimeJob) Instantiate(ctx *Context, self Value) (*LifetimeJobInstanc
 		Globals:      spawnerState.Globals,
 		Module:       j.module,
 		Manifest:     manifest,
-		UseBytecode:  j.module.Bytecode != nil,
+		UseBytecode:  j.bytecode != nil,
+		Bytecode:     j.bytecode,
 
 		StartPaused: true,
 		Self:        self,

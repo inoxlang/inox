@@ -203,8 +203,8 @@ func ImportModule(config ImportConfig) (*LThread, error) {
 		Module:       importedMod,
 		Manifest:     manifest,
 		LthreadCtx:   routineCtx,
+		//Bytecode: //TODO
 		//AbsScriptDir: absScriptDir,
-		//bytecode: //TODO
 		Timeout:                      deadline.Sub(time.Now()),
 		IgnoreCreateLThreadPermCheck: true,
 	})

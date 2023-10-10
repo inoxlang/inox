@@ -916,7 +916,7 @@ func TestCompileModule(t *testing.T) {
 				//
 				inst(OpPushNil),
 				inst(OpGetGlobal, 3),
-				inst(OpSpawnLThread, 1, 4, 5),
+				inst(OpSpawnLThread, 1, 4, 5, 6),
 				inst(OpPop),
 				inst(OpSuspendVM),
 			),
@@ -936,6 +936,7 @@ func TestCompileModule(t *testing.T) {
 				Str("f"),
 				Str("f"),
 				Str("f"),
+				nil,
 				nil,
 			},
 			bytecodeConstantAssertionData{
@@ -1863,7 +1864,6 @@ func _expectBytecode(t *testing.T, actualBytecode *Bytecode, localCount int, exp
 			bytecodeList = append(bytecodeList, constant)
 			actualBytecode.constants[i] = nil
 		case *Module:
-			bytecodeList = append(bytecodeList, constant.Bytecode)
 			actualBytecode.constants[i] = nil
 		case AstNode:
 			actualBytecode.constants[i] = nil
@@ -1930,13 +1930,13 @@ func traceCompile(
 	ctx := NewContext(ContextConfig{})
 	NewGlobalState(ctx)
 
-	err = Compile(CompilationInput{
+	bytecode, err := Compile(CompilationInput{
 		Mod:         module,
 		Globals:     globals,
 		TraceWriter: tr,
 		Context:     ctx,
 	})
-	res = module.Bytecode
+	res = bytecode
 
 	trace = append(trace, fmt.Sprintf("compiler trace:\n%s", strings.Join(tr.Out, "")))
 	trace = append(trace, fmt.Sprintf("compiled constants:\n%s", strings.Join(res.FormatConstants(ctx, ""), "\n")))

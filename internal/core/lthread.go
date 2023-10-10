@@ -35,7 +35,6 @@ type LThread struct {
 	useBytecode bool
 	module      *Module
 	state       *GlobalState
-	bytecode    *Bytecode //nil if tree walking evaluation
 	lock        sync.Mutex
 
 	//steps
@@ -60,6 +59,7 @@ type LthreadSpawnArgs struct {
 	PreinitState *GlobalState
 
 	//AbsScriptDir string
+	Bytecode    *Bytecode
 	UseBytecode bool
 	StartPaused bool
 	Self        Value
@@ -127,6 +127,7 @@ func SpawnLThread(args LthreadSpawnArgs) (*LThread, error) {
 	modState.Module = args.Module
 	modState.Manifest = args.Manifest
 	modState.MainState = args.SpawnerState.MainState
+	modState.Bytecode = args.Bytecode
 	modState.Logger = args.SpawnerState.Logger
 	modState.Out = args.SpawnerState.Out
 	modState.StaticCheckData = staticCheckData
@@ -140,7 +141,6 @@ func SpawnLThread(args LthreadSpawnArgs) (*LThread, error) {
 		state:            modState,
 		wait_result:      make(chan struct{}, 1),
 		continueExecChan: make(chan struct{}, 1),
-		bytecode:         args.Module.Bytecode,
 		useBytecode:      args.UseBytecode,
 		executedStepCallbackFn: func(step ExecutedStep, lthread *LThread) (continueExec bool) {
 			return !args.PauseAfterYield
@@ -219,7 +219,7 @@ func SpawnLThread(args LthreadSpawnArgs) (*LThread, error) {
 		defer modState.Ctx.DefinitelyStopCPUDecrementation()
 
 		if args.UseBytecode {
-			res, err = EvalBytecode(lthread.bytecode, modState, args.Self)
+			res, err = EvalBytecode(lthread.state.Bytecode, modState, args.Self)
 		} else {
 			state := NewTreeWalkStateWithGlobal(modState)
 			state.self = args.Self

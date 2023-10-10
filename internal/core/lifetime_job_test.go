@@ -16,7 +16,7 @@ func createTestLifetimeJob(t *testing.T, state *GlobalState, code string) *Lifet
 		}),
 	}
 
-	job, err := NewLifetimeJob(Identifier("job"), nil, jobMod, state)
+	job, err := NewLifetimeJob(Identifier("job"), nil, jobMod, nil, state)
 	if !assert.NoError(t, err) {
 		return nil
 	}

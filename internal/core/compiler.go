@@ -26,13 +26,9 @@ type CompilationInput struct {
 }
 
 // Compile compiles a module to bytecode.
-func Compile(input CompilationInput) error {
+func Compile(input CompilationInput) (*Bytecode, error) {
 	c := NewCompiler(input.Mod, input.Globals, input.SymbolicData, input.StaticCheckData, input.Context, input.TraceWriter)
-	_, err := c.compileMainChunk(input.Mod.MainChunk)
-	if err != nil {
-		return err
-	}
-	return nil
+	return c.compileMainChunk(input.Mod.MainChunk)
 }
 
 // compiler compiles the AST into a bytecode.
@@ -1792,12 +1788,12 @@ func (c *compiler) Compile(node parse.Node) error {
 			}
 		}
 
-		_, err := embeddedModCompiler.compileMainChunk(routineMod.MainChunk)
+		bytecode, err := embeddedModCompiler.compileMainChunk(routineMod.MainChunk)
 		if err != nil {
 			return err
 		}
 
-		c.emit(node, OpSpawnLThread, isSingleExpr, c.addConstant(Str(calleeName)), c.addConstant(routineMod))
+		c.emit(node, OpSpawnLThread, isSingleExpr, c.addConstant(Str(calleeName)), c.addConstant(routineMod), c.addConstant(bytecode))
 	case *parse.LifetimejobExpression:
 		if err := c.Compile(node.Meta); err != nil {
 			return err
@@ -1824,12 +1820,12 @@ func (c *compiler) Compile(node parse.Node) error {
 			embeddedModCompiler.globalSymbols.Define(name)
 		}
 
-		_, err := embeddedModCompiler.compileMainChunk(jobMod.MainChunk)
+		bytecode, err := embeddedModCompiler.compileMainChunk(jobMod.MainChunk)
 		if err != nil {
 			return err
 		}
 
-		c.emit(node, OpCreateLifetimeJob, c.addConstant(jobMod))
+		c.emit(node, OpCreateLifetimeJob, c.addConstant(jobMod), c.addConstant(bytecode))
 	case *parse.ReceptionHandlerExpression:
 		if err := c.Compile(node.Pattern); err != nil {
 			return err
@@ -2442,7 +2438,6 @@ func (c *compiler) compileMainChunk(chunk *parse.ParsedChunk) (*Bytecode, error)
 	}
 
 	main.Bytecode = b
-	c.module.Bytecode = b
 
 	return b, err
 }

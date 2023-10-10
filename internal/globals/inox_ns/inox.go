@@ -182,7 +182,7 @@ func _run_local_script(ctx *core.Context, src core.Path, config *core.Object) (c
 		ParentContext:             ctx,
 		ParentContextRequired:     true,
 
-		UseBytecode:      ctx.GetClosestState().Module.IsCompiled(),
+		UseBytecode:      ctx.GetClosestState().Bytecode != nil,
 		OptimizeBytecode: true,
 
 		Out: out,

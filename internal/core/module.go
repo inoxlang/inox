@@ -54,7 +54,6 @@ type Module struct {
 	DirectlyImportedModulesByStatement map[*parse.ImportStatement]*Module
 
 	ManifestTemplate *parse.Manifest
-	Bytecode         *Bytecode //can be nil
 
 	ParsingErrors         []Error
 	ParsingErrorPositions []parse.SourcePositionRange
@@ -95,10 +94,6 @@ func (mod *Module) ResourceDir() string {
 
 func (mod *Module) Name() string {
 	return mod.MainChunk.Name()
-}
-
-func (mod *Module) IsCompiled() bool {
-	return mod.Bytecode != nil
 }
 
 // ImportStatements returns the top-level import statements.
