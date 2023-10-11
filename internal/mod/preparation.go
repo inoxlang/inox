@@ -23,14 +23,22 @@ import (
 
 var (
 	ErrDatabaseOpenFunctionNotFound = errors.New("function to open database not found")
+	ErrNonMatchingCachedModulePath  = errors.New("the cached module's path is not the same as the absolute version of the provided path")
 )
 
 type ScriptPreparationArgs struct {
-	Fpath string //path of the script in the .ParsingCompilationContext's filesystem.
+	//path of the script in the .ParsingCompilationContext's filesystem.
+	Fpath string
+
+	//if not nil the module is not parsed and this value is used.
+	CachedModule *core.Module
 
 	// enable data extraction mode, this mode allows some errors.
 	// this mode is intended to be used by the LSP server.
 	DataExtractionMode bool
+
+	AllowMissingEnvVars   bool
+	FullAccessToDatabases bool
 
 	// If set this function is called just before the context creation,
 	// the preparation is aborted if an error is returned.
@@ -46,15 +54,18 @@ type ScriptPreparationArgs struct {
 	ParentContext             *core.Context
 	ParentContextRequired     bool
 	UseParentStateAsMainState bool
-	StdlibCtx                 context.Context //should not be set if ParentContext is set
 
-	AllowMissingEnvVars   bool
-	FullAccessToDatabases bool
+	//should not be set if ParentContext is set
+	StdlibCtx context.Context
 
-	Project *project.Project //should only be set if the module is a main module
+	//should only be set if the module is a main module
+	Project *project.Project
 
-	Out    io.Writer //defaults to os.Stdout
-	LogOut io.Writer //defaults to Out
+	//defaults to os.Stdout
+	Out io.Writer
+
+	//defaults to Out
+	LogOut io.Writer
 
 	//used during the preinit
 	PreinitFilesystem afs.Filesystem
@@ -67,7 +78,8 @@ type ScriptPreparationArgs struct {
 
 // PrepareLocalScript parses & checks a script located in the filesystem and initializes its state.
 func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mod *core.Module, manif *core.Manifest, finalErr error) {
-	// parse module
+
+	//check arguments
 
 	if args.ParentContextRequired && args.ParentContext == nil {
 		return nil, nil, nil, errors.New(".ParentContextRequired is set to true but passed .ParentContext is nil")
@@ -84,16 +96,31 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 	}
 	args.Fpath = absPath
 
-	module, parsingErr := core.ParseLocalModule(args.Fpath, core.ModuleParsingConfig{
-		Context:                             args.ParsingCompilationContext,
-		RecoverFromNonExistingIncludedFiles: args.DataExtractionMode,
-	})
-
-	mod = module
-
-	if parsingErr != nil && mod == nil {
-		finalErr = parsingErr
+	if args.CachedModule != nil && args.CachedModule.Name() != absPath {
+		finalErr = fmt.Errorf("%w: (%q != %q)", ErrNonMatchingCachedModulePath, args.CachedModule.Name(), absPath)
 		return
+	}
+
+	// parse module or use cache
+
+	var parsingErr error
+
+	if args.CachedModule != nil {
+		mod = args.CachedModule
+	} else {
+		var module *core.Module
+		module, parsingErr = core.ParseLocalModule(args.Fpath, core.ModuleParsingConfig{
+			Context:                             args.ParsingCompilationContext,
+			RecoverFromNonExistingIncludedFiles: args.DataExtractionMode,
+		})
+
+		mod = module
+
+		if parsingErr != nil && mod == nil {
+			//unrecoverable parsing error
+			finalErr = parsingErr
+			return
+		}
 	}
 
 	//create context and state
@@ -115,7 +142,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 		parentState = parentContext.GetClosestState()
 	}
 
-	if (project == nil || reflect.ValueOf(project).IsNil()) && args.UseParentStateAsMainState && parentState != nil {
+	if reflect.ValueOf(project).IsNil() && args.UseParentStateAsMainState && parentState != nil {
 		project = parentState.Project
 	}
 
