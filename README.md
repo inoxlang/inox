@@ -1,9 +1,12 @@
-# Inox
+# Inoxlang
 
 <img src="https://avatars.githubusercontent.com/u/122291844?s=200&v=4" alt="a shield"></img>
 
-🛡️ Inox is a secure programming language for **Web Application Development**.
+🛡️ Your **shield** against complexity in Web Development.
 
+Inoxlang is released as a **single binary** that contains all you need to do fullstack development.
+Zero config.
+Zero bloat.
 
 **Web Dev Features**
 - [XML Expressions (HTML)](#xml-expressions)
@@ -13,7 +16,6 @@
 - [Built-in Browser Automation](#built-in-browser-automation)
 
 **Security Features**
-- [Injection Prevention](#injection-prevention-wip)
 - [Permission system](#permission-system)
   - [Required permissions](#required-permissions)
   - [Isolation of dependencies](#isolation-of-dependencies)
@@ -22,6 +24,8 @@
 - [Sensitive Data Protection](#sensitive-data-protection)
   - [Secrets](#secrets)
   - [Visibility](#visibility-wip)
+- [Rate Limiting](#rate-limiting-wip)
+- [Injection Prevention](#injection-prevention-wip)
 
 **Other Features**
 - [Concurrency](#concurrency)
@@ -30,7 +34,6 @@
   - [Lifetime jobs](#lifetime-jobs)
 - [Many Built-in Functions](#built-in-functions)
 - [Easy declaration of CLI Parameters](#declaration-of-cli-parameters--environment-variables)
-- [Simplified resource manipulation](#simplified-resource-manipulation)
 - [Transactions & Effects (WIP)](#transactions--effects-wip)
 
 _____
@@ -49,7 +52,7 @@ If you are on Linux an archive with a binary and some examples is available in [
 - uncompress the archive
 - install the `inox` binary to `/usr/local/bin`
   ```
-  sudo install inox -o root -m 0755 /usr/local/bin/inox
+  sudo install ./inox -o root -m 0755 /usr/local/bin/inox
   ```
 If you want to compile the language yourself go [here](#compile-from-source).
 
@@ -198,8 +201,9 @@ array = Array(task1, task2)
 
 ### Project & Virtual Filesystem
 
-The Inox binary provides a **project server** that is used for development, 
-it will soon provide automatic infrastructure management.
+The Inox binary provides a **project server** that the developer connects to with VsCode.\
+It enables the developer to develop, test, deploy & manage secrets, all from VsCode.\
+The project server will also provide automatic infrastructure management in the near future.
 
 ```mermaid
 graph TD
@@ -215,7 +219,7 @@ end
 *[Link to the Inox Runtime Architecture](./internal/core/README.md#inox-runtime-architecture)*
 
 An Inox project lives in a **virtual filesystem** (container) for better security & reproducibility.
-Note that this virtual filesystem only exists in-process, there is no FUSE filesystem and Docker is not involved.
+Note that this virtual filesystem only exists in-process, there is no FUSE filesystem and Docker is not used.
 
 ### Built-in Browser Automation
 
@@ -230,60 +234,6 @@ h.close()
 [Documentation](https://github.com/inoxlang/inox/blob/master/docs/builtin.md#browser-automation)
 
 [Examples](https://github.com/inoxlang/inox/tree/master/examples/chrome)
-
-### Injection Prevention (WIP)
-
-In Inox interpolations are always restricted in order to prevent **injections** and regular strings are **never trusted**.
-URLs & paths are first-class values and must be used to perform network or filesystem operations. 
-
-#### **URL Interpolations**
-
-When you dynamically create URLs the interpolations are restricted based on their location (path, query).
-
-```
-https://example.com/{path}?a={param}
-```
-In short, most malicious `path` and `param` values provided by a malevolent user will cause an error at runtime.
-
-<details>
-<summary>
- Click for more explanations.
-</summary>
-
-
-Let's say that you are writing a piece of code that fetches **public** data from a private/internal service and returns the result 
-to a user. You are using the query parameter `?admin=false` in the URL because only public data should be returned.
-```
-public_data = http.read!(https://private-service{path}?admin=false)
-```
-
-The way in which the user interacts with your code is not important here, let's assume that the user can send any value for `path`.
-Obviously this is a very bad idea from a security standpoint.
-A malicious path could be used to:
-- perform a directory traversal if the private service has a vulnerable endpoint
-- inject a query parameter `?admin=true` to retrieve private data
-- inject a port number
-
-In Inox the URL interpolations are special, based on the location of the interpolation specific checks are performed:
-
-```
-https://example.com/api/{path}/?x={x}
-```
-
-- interpolations before the `'?'` are **path** interpolations
-  - the strings/characters `'..'`, `'\\'`, `'?'` and `'#'` are forbidden
-  - the URL encoded versions of `'..'` and `'\\'` are forbidden
-  - `':'` is forbidden at the start of the finalized path (after all interpolations have been evaluated)
-- interpolations after the `'?'` are **query** interpolations 
-  - the characters `'&'` and `'#'` are forbidden
-
-In the example if the path `/data?admin=true` is received the Inox runtime will throw an error:
-```
-URL expression: result of a path interpolation should not contain any of the following substrings: "..", "\" , "*", "?"
-```
-
-
-</details>
 
 ### Permission System
 
@@ -317,7 +267,7 @@ print(fs.ls!(malicious_user_input))
 
 -->
 
-When a forbidden operation is performed the module panics with an error:\
+Attempting to perform a forbidden operation raises an error:\
 `core: error: not allowed, missing permission: [read path(s) /home/]`
 
 #### **Isolation of Dependencies**
@@ -387,30 +337,9 @@ manifest {
 }
 ```
 
-**Byte Rate Limits**
+By default strict limits are applied on HTTP request handlers in order to mitigate some types of DoS.
 
-This kind of limit represents a number of bytes per second.\
-Examples:
-- `fs/read`
-- `fs/write`
-
-**Simple Rate Limits**
-
-This kind of limit represents a number of operations per second.\
-Examples:
-- `fs/new-file`
-- `http/request`
-- `object-storage/request`
-
-**Total Limits**
-
-This kind of limit represents a total number of operations or resources.
-Attempting to make an operation while the counter associated with the limit is at zero will cause a panic.\
-Examples: 
-- `fs/total-new-file` - the counter can only go down.
-- `ws/simul-connection` - simultaneous number of WebSocket connections, the counter can go up & down since connections can be closed.
-- `execution/cpu-time` - the counter decrements on its own, it pauses when an IO operation is being performed.
-- `execution/total-time` - the counter decrements on its own.
+[Learn More](./docs/language-reference.md#limits)
 
 ### Sensitive Data Protection 
 
@@ -437,7 +366,9 @@ API_KEY = env.initial.API_KEY
 
 *This feature is **very much** work in progress.*
 
-The serialization of Inox values involves the concepts of **value visibility** and 
+[**Excessive Data Exposure**](https://apisecurity.io/encyclopedia/content/owasp/api3-excessive-data-exposure.htm) occurs
+when an HTTP API returns more data than needed, potentially exposing sensitive information.\
+In order to mitigate this type of vunerability the serialization of Inox values involves the concepts of **value visibility** and 
 **property visibility**.
 
 Let's take an example, here is an Inox object:
@@ -473,6 +404,65 @@ The visibility of properties can be configured using the `_visibility_` metaprop
 ```
 
 ℹ️ In the near future the visibility will be configurable directly in patterns & database schemas.
+
+
+### Rate Limiting (WIP)
+
+Inox's HTTP Server has an embedded rate limiting engine. It is pretty basic at the moment, but it 
+will make decisions based on logs & access patterns in the near future.
+
+### Injection Prevention (WIP)
+
+In Inox interpolations are always restricted in order to prevent **injections** and regular strings are **never trusted**.
+URLs & paths are first-class values and must be used to perform network or filesystem operations. 
+
+#### **URL Interpolations**
+
+When you dynamically create URLs the interpolations are restricted based on their location (path, query).
+
+```
+https://example.com/{path}?a={param}
+```
+In short, most malicious `path` and `param` values provided by a malevolent user will cause an error at runtime.
+
+<details>
+<summary>
+ Click for more explanations.
+</summary>
+
+
+Let's say that you are writing a piece of code that fetches **public** data from a private/internal service and returns the result 
+to a user. You are using the query parameter `?admin=false` in the URL because only public data should be returned.
+```
+public_data = http.read!(https://private-service{path}?admin=false)
+```
+
+The way in which the user interacts with your code is not important here, let's assume that the user can send any value for `path`.
+Obviously this is a very bad idea from a security standpoint.
+A malicious path could be used to:
+- perform a directory traversal if the private service has a vulnerable endpoint
+- inject a query parameter `?admin=true` to retrieve private data
+- inject a port number
+
+In Inox the URL interpolations are special, based on the location of the interpolation specific checks are performed:
+
+```
+https://example.com/api/{path}/?x={x}
+```
+
+- interpolations before the `'?'` are **path** interpolations
+  - the strings/characters `'..'`, `'\\'`, `'?'` and `'#'` are forbidden
+  - the URL encoded versions of `'..'` and `'\\'` are forbidden
+  - `':'` is forbidden at the start of the finalized path (after all interpolations have been evaluated)
+- interpolations after the `'?'` are **query** interpolations 
+  - the characters `'&'` and `'#'` are forbidden
+
+In the example if the path `/data?admin=true` is received the Inox runtime will throw an error:
+```
+URL expression: result of a path interpolation should not contain any of the following substrings: "..", "\" , "*", "?"
+```
+</details>
+
 
 ### Concurrency
 
@@ -511,7 +501,6 @@ object = {
   }
 }
 ```
-
 
 ### Built-in Functions
 
@@ -581,45 +570,6 @@ options:
       if true delete <dir> if it already exists
 ```
 
-#### **Simplified Resource Manipulation**
-
-- The builtin [**read**](./docs/shell-basics.md#read) function can read directories / files / HTTP resources and parse their content.
-```
-read ./
-# output: 
-[
-  dir/
-  file.txt 1kB 
-]
-
-read ./file.txt
-# output: 
-hello
-
-read ./file.json
-# output: 
-{"key": "value"}
-
-read https://jsonplaceholder.typicode.com/posts/1
-# output: 
-{
-  "body": "quia et suscipit\nsuscipit recusandae consequuntur expedita....", 
-  "id": 1.0, 
-  "title": "sunt aut facere repellat provident occaecati excepturi optio reprehenderit", 
-  "userId": 1.0
-}
-```
-
-- The builtin [**create**](./docs/shell-basics.md#create) function can create directories / files / HTTP resources.
-```
-create ./dir/
-create ./file.txt "hello world !"
-create https://example.com/posts tojson({title: "hello"})
-```
-
-Learn more [here](./docs/shell-basics.md#resource-manipulation)
-
-
 ### Transactions & Effects (WIP)
 
 Inox allows you to attach a **transaction** to the current execution context (think SQL transactions).
@@ -634,6 +584,8 @@ fs.mkfile ./file.txt
 # rollback transaction --> delete ./file.txt
 cancel_exec() 
 ```
+
+ℹ️ A transaction is created for each [HTTP request](#http-server---filesystem-routing).
 
 ## Compile from Source
 
@@ -650,4 +602,3 @@ cancel_exec()
    width="120" alt="Datamix.io"/><br />Datamix.io</a></td>
   </tr>
 </table>
-
