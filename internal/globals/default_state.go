@@ -64,10 +64,10 @@ var (
 		{Name: fs_ns.FS_TOTAL_NEW_FILE_LIMIT_NAME, Kind: core.TotalLimit, Value: 100},
 
 		{Name: net_ns.HTTP_REQUEST_RATE_LIMIT_NAME, Kind: core.SimpleRateLimit, Value: 1},
-		{Name: net_ns.WS_SIMUL_CONN_TOTAL_LIMIT_NAME, Kind: core.TotalLimit, Value: 0},
-		{Name: net_ns.TCP_SIMUL_CONN_TOTAL_LIMIT_NAME, Kind: core.TotalLimit, Value: 0},
+		{Name: net_ns.WS_SIMUL_CONN_TOTAL_LIMIT_NAME, Kind: core.TotalLimit, Value: 1},
+		{Name: net_ns.TCP_SIMUL_CONN_TOTAL_LIMIT_NAME, Kind: core.TotalLimit, Value: 1},
 
-		{Name: s3_ns.OBJECT_STORAGE_REQUEST_RATE_LIMIT_NAME, Kind: core.SimpleRateLimit, Value: 0},
+		{Name: s3_ns.OBJECT_STORAGE_REQUEST_RATE_LIMIT_NAME, Kind: core.SimpleRateLimit, Value: 1},
 	}
 
 	DEFAULT_MAX_REQUEST_HANDLER_LIMITS = []core.Limit{
