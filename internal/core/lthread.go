@@ -403,9 +403,9 @@ func NewLThreadGroup(ctx *Context) *LThreadGroup {
 func (g *LThreadGroup) GetGoMethod(name string) (*GoFunction, bool) {
 	switch name {
 	case "wait_results":
-		return &GoFunction{fn: g.WaitAllResults}, true
+		return WrapGoMethod(g.WaitAllResults), true
 	case "cancel_all":
-		return &GoFunction{fn: g.CancelAll}, true
+		return WrapGoMethod(g.CancelAll), true
 	}
 	return nil, false
 }

@@ -113,7 +113,7 @@ func (*Writer) SetProp(ctx *Context, name string, value Value) error {
 func (w *Writer) GetGoMethod(name string) (*GoFunction, bool) {
 	switch name {
 	case "write":
-		return &GoFunction{fn: w.writeCtx}, true
+		return WrapGoMethod(w.writeCtx), true
 	}
 	return nil, false
 }

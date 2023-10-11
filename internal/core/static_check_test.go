@@ -3714,9 +3714,9 @@ func (v testMutableGoValue) ToSymbolicValue(ctx *Context, encountered map[uintpt
 func (v testMutableGoValue) GetGoMethod(name string) (*GoFunction, bool) {
 	switch name {
 	case "getName":
-		return &GoFunction{fn: v.GetName}, true
+		return WrapGoMethod(v.GetName), true
 	case "getNameNoCtx":
-		return &GoFunction{fn: v.GetNameNoCtx}, true
+		return WrapGoMethod(v.GetNameNoCtx), true
 	default:
 		return nil, false
 	}

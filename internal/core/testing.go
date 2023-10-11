@@ -112,7 +112,7 @@ func (s *TestSuite) Run(ctx *Context, options ...Option) (*LThread, error) {
 func (s *TestSuite) GetGoMethod(name string) (*GoFunction, bool) {
 	switch name {
 	case "run":
-		return &GoFunction{fn: s.Run}, true
+		return WrapGoMethod(s.Run), true
 	}
 	return nil, false
 }
@@ -274,7 +274,7 @@ func (s *TestCase) Run(ctx *Context, options ...Option) (*LThread, error) {
 func (s *TestCase) GetGoMethod(name string) (*GoFunction, bool) {
 	switch name {
 	case "run":
-		return &GoFunction{fn: s.Run}, true
+		return WrapGoMethod(s.Run), true
 	}
 	return nil, false
 }
