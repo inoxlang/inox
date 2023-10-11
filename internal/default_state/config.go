@@ -19,10 +19,11 @@ const (
 )
 
 var (
-	NewDefaultGlobalState        NewDefaultGlobalStateFn
-	NewDefaultContext            NewDefaultContextFn
-	defaultScriptLimits          []core.Limit
-	defaultRequestHandlingLimits []core.Limit
+	NewDefaultGlobalState          NewDefaultGlobalStateFn
+	NewDefaultContext              NewDefaultContextFn
+	defaultScriptLimits            []core.Limit
+	defaultRequestHandlingLimits   []core.Limit
+	defaultMaxRequestHandlerLimits []core.Limit
 )
 
 type DefaultGlobalStateConfig struct {
@@ -95,6 +96,28 @@ func AreDefaultRequestHandlingLimitsSet() bool {
 
 func UnsetDefaultRequestHandlingLimits() {
 	defaultRequestHandlingLimits = nil
+}
+
+func SetDefaultMaxRequestHandlerLimits(limits []core.Limit) {
+	if defaultMaxRequestHandlerLimits != nil {
+		panic(errors.New("default max request handler limits already set"))
+	}
+	defaultMaxRequestHandlerLimits = limits
+}
+
+func GetDefaultMaxRequestHandlerLimits() []core.Limit {
+	if defaultMaxRequestHandlerLimits == nil {
+		panic(errors.New("default max request handler limits are not set"))
+	}
+	return defaultMaxRequestHandlerLimits
+}
+
+func AreDefaultMaxRequestHandlerLimitsSet() bool {
+	return defaultMaxRequestHandlerLimits != nil
+}
+
+func UnsetDefaultMaxRequestHandlerLimits() {
+	defaultMaxRequestHandlerLimits = nil
 }
 
 type DefaultContextConfig struct {
