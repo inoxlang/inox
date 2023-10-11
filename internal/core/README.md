@@ -86,8 +86,7 @@ ChildContext -.->|can stop| Interpreter1
 
 ### Global State
 
-Each module instance has itw own **global state**.
-The global state holds the state of the module instance:
+Each module instance has itw own **global state** that contains.
 - global variables.
 - the module instance's manifest (immutable).
 - the module instances's [context](./#context).
@@ -99,7 +98,7 @@ The global state holds the state of the module instance:
 
 Each module instance has its own context.\
 A context is analogous to a `context.Context` in Golang's stdlib: 
-when the context is cancelled all ancestor contexts are cancelled as well.
+when the context is cancelled all descendant contexts are cancelled as well.
 The cancellation of a module instance's context causes the interpreter to stop.
 
 #### Creation
@@ -186,11 +185,11 @@ sequenceDiagram
 
 <details>
 <summary>Note</summary>
-Obviously the context knowns nothing about HTTP requests, Websocket Connections and all other IO operations.
+Obviously the context knowns nothing about HTTP requests, Websocket Connections and all other types of IO operations.
 
 The module informs the context with a simple call:
 ```
-context.Take("<simultaneous websocket connection limit>", 1)
+context.Take(<simultaneous websocket connection limit>, 1 token)
 ```
 </details>
 
