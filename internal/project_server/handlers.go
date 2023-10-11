@@ -23,11 +23,10 @@ import (
 
 	"github.com/inoxlang/inox/internal/utils"
 
+	"net/url"
+
 	"github.com/inoxlang/inox/internal/compl"
 	parse "github.com/inoxlang/inox/internal/parse"
-
-	_ "net/http/pprof"
-	"net/url"
 )
 
 const (

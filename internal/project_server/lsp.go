@@ -12,8 +12,6 @@ import (
 	"github.com/inoxlang/inox/internal/project_server/jsonrpc"
 	"github.com/inoxlang/inox/internal/project_server/logs"
 	"github.com/inoxlang/inox/internal/project_server/lsp"
-
-	_ "net/http/pprof"
 )
 
 const (
