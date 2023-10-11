@@ -153,7 +153,7 @@ func TestParseModuleFromSource(t *testing.T) {
 func TestParseLocalModule(t *testing.T) {
 	moduleName := "mymod.ix"
 
-	t.Run("no dependencies", func(t *testing.T) {
+	t.Run("base case", func(t *testing.T) {
 		modpath := writeModuleAndIncludedFiles(t, moduleName, `manifest {}`, nil)
 
 		mod, err := ParseLocalModule(modpath, ModuleParsingConfig{
@@ -167,6 +167,35 @@ func TestParseLocalModule(t *testing.T) {
 		assert.NotNil(t, mod.MainChunk)
 		assert.Empty(t, mod.IncludedChunkForest)
 		assert.NotNil(t, mod.ManifestTemplate)
+	})
+
+	t.Run("relative path", func(t *testing.T) {
+		modpath := "/main.ix"
+		fls := newMemFilesystemRootWD()
+		util.WriteFile(fls, modpath, []byte(`manifest {}`), 0o400)
+		relpath := "./main.ix"
+
+		mod, err := ParseLocalModule(relpath, ModuleParsingConfig{
+			Context: NewContexWithEmptyState(ContextConfig{
+				Permissions: []Permission{CreateFsReadPerm(Path(modpath))},
+				Filesystem:  fls,
+			}, nil),
+		})
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		assert.NotNil(t, mod.MainChunk)
+		assert.Empty(t, mod.IncludedChunkForest)
+		assert.NotNil(t, mod.ManifestTemplate)
+
+		assert.Equal(t, parse.SourceFile{
+			NameString:             modpath,
+			UserFriendlyNameString: relpath,
+			Resource:               modpath,
+			ResourceDir:            filepath.Dir(modpath),
+			CodeString:             "manifest {}",
+		}, mod.MainChunk.Source)
 	})
 
 	t.Run("missing manifest", func(t *testing.T) {
@@ -250,10 +279,13 @@ func TestParseLocalModule(t *testing.T) {
 	})
 
 	t.Run("single included file with no dependecies", func(t *testing.T) {
-		modpath := writeModuleAndIncludedFiles(t, moduleName, `
+		fls := newMemFilesystemRootWD()
+		modpath := "/main.ix"
+		util.WriteFile(fls, modpath, []byte(`
 			manifest {}
 			import ./dep.ix
-		`, map[string]string{"./dep.ix": "includable-chunk"})
+		`), 0o400)
+		util.WriteFile(fls, "/dep.ix", []byte(`includable-chunk`), 0o400)
 
 		importedModPath := filepath.Join(filepath.Dir(modpath), "/dep.ix")
 
@@ -263,7 +295,7 @@ func TestParseLocalModule(t *testing.T) {
 					CreateFsReadPerm(Path(modpath)),
 					CreateFsReadPerm(Path(importedModPath)),
 				},
-				Filesystem: newOsFilesystem(),
+				Filesystem: fls,
 			}, nil),
 		})
 		assert.NoError(t, err)
@@ -277,6 +309,14 @@ func TestParseLocalModule(t *testing.T) {
 		assert.Empty(t, includedChunk1.IncludedChunkForest)
 
 		assert.Equal(t, []*IncludedChunk{includedChunk1}, mod.FlattenedIncludedChunkList)
+
+		assert.Equal(t, parse.SourceFile{
+			NameString:             "/dep.ix",
+			UserFriendlyNameString: "/dep.ix",
+			Resource:               "/dep.ix",
+			ResourceDir:            filepath.Dir(modpath),
+			CodeString:             "includable-chunk",
+		}, includedChunk1.Source)
 	})
 
 	t.Run("single included file + parsing error in included file", func(t *testing.T) {
@@ -847,6 +887,20 @@ func newMemFilesystem() afs.Filesystem {
 	return afs.AddAbsoluteFeature(fs, func(path string) (string, error) {
 		if path[0] == '/' {
 			return path, nil
+		}
+		return "", ErrNotImplemented
+	})
+}
+
+func newMemFilesystemRootWD() afs.Filesystem {
+	fs := memfs.New()
+
+	return afs.AddAbsoluteFeature(fs, func(path string) (string, error) {
+		if path[0] == '/' {
+			return path, nil
+		}
+		if len(path) > 1 && path[0] == '.' && path[1] == '/' {
+			return path[1:], nil
 		}
 		return "", ErrNotImplemented
 	})

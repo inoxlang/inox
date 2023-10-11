@@ -607,11 +607,12 @@ func ParseLocalModule(fpath string, config ModuleParsingConfig) (*Module, error)
 	//parse
 
 	src := parse.SourceFile{
-		NameString:    fpath,
-		Resource:      fpath,
-		CodeString:    string(b),
-		ResourceDir:   filepath.Dir(absPath),
-		IsResourceURL: false,
+		NameString:             absPath,
+		UserFriendlyNameString: fpath,
+		Resource:               absPath,
+		CodeString:             string(b),
+		ResourceDir:            filepath.Dir(absPath),
+		IsResourceURL:          false,
 	}
 
 	return ParseModuleFromSource(src, Path(fpath), config)
@@ -781,10 +782,11 @@ func ParseLocalSecondaryChunk(config LocalSecondaryChunkParsingConfig) (*Include
 	}
 
 	src := parse.SourceFile{
-		NameString:    fpath,
-		Resource:      fpath,
-		ResourceDir:   filepath.Dir(absPath),
-		IsResourceURL: false,
+		NameString:             absPath,
+		UserFriendlyNameString: fpath, //fpath is probably equal to absPath since config.ChunkFilepath is absolute (?).
+		Resource:               absPath,
+		ResourceDir:            filepath.Dir(absPath),
+		IsResourceURL:          false,
 	}
 
 	var existenceError error
