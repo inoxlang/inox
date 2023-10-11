@@ -77,6 +77,7 @@ func TestNewContext(t *testing.T) {
 
 	t.Run("child context should inherit all limits of its parent", func(t *testing.T) {
 
+		ctxCreationStart := time.Now()
 		ctx := NewContexWithEmptyState(ContextConfig{
 			Limits: []Limit{
 				{
@@ -99,8 +100,21 @@ func TestNewContext(t *testing.T) {
 				},
 			},
 		}, nil)
-		defer ctx.CancelGracefully()
+		defer func() {
+			cancellationStart := time.Now()
+			ctx.CancelGracefully()
+			//cancellation should be fast
+			if !assert.Less(t, time.Since(cancellationStart), time.Millisecond) {
+				return
+			}
+		}()
 
+		//creation should be fast
+		if !assert.Less(t, time.Since(ctxCreationStart), time.Millisecond) {
+			return
+		}
+
+		ctxCreationStart = time.Now()
 		childCtx := NewContext(ContextConfig{
 			Limits: []Limit{
 				{
@@ -112,6 +126,11 @@ func TestNewContext(t *testing.T) {
 			ParentContext: ctx,
 		})
 
+		//creation should be fast
+		if !assert.Less(t, time.Since(ctxCreationStart), time.Millisecond) {
+			return
+		}
+
 		if !assert.Len(t, childCtx.limiters, 4) {
 			return
 		}
@@ -119,7 +138,6 @@ func TestNewContext(t *testing.T) {
 		assert.Contains(t, childCtx.limiters, "my-simple-rate-limit")
 		assert.Contains(t, childCtx.limiters, "my-byterate-limit")
 		assert.Contains(t, childCtx.limiters, "my-simple-rate-limit-2")
-
 	})
 
 	t.Run("limits of child context should not be less restrictive than its parent's limits", func(t *testing.T) {
@@ -160,19 +178,37 @@ func TestNewContext(t *testing.T) {
 
 	t.Run("child context should inherit all host resolutions of its parent", func(t *testing.T) {
 
+		ctxCreationStart := time.Now()
 		ctx := NewContexWithEmptyState(ContextConfig{
 			HostResolutions: map[Host]Value{
 				"ldb://db1": Path("/tmp/db1/"),
 			},
 		}, nil)
-		defer ctx.CancelGracefully()
+		defer func() {
+			cancellationStart := time.Now()
+			ctx.CancelGracefully()
+			//cancellation should be fast
+			if !assert.Less(t, time.Since(cancellationStart), time.Millisecond) {
+				return
+			}
+		}()
 
+		//creation should be fast
+		if !assert.Less(t, time.Since(ctxCreationStart), time.Millisecond) {
+			return
+		}
+
+		ctxCreationStart = time.Now()
 		childCtx := NewContext(ContextConfig{
 			HostResolutions: map[Host]Value{
 				"ldb://db2": Path("/tmp/db2/"),
 			},
 			ParentContext: ctx,
 		})
+		// creation should be fast
+		if !assert.Less(t, time.Since(ctxCreationStart), time.Millisecond) {
+			return
+		}
 
 		hostResolutions := childCtx.GetAllHostResolutionData()
 		if !assert.Len(t, hostResolutions, 2) {
@@ -619,7 +655,12 @@ func TestContextGracefulTearDownTasks(t *testing.T) {
 			return nil
 		})
 
+		cancellationStart := time.Now()
 		ctx.CancelGracefully()
+		// cancellation should be fast
+		if !assert.Less(t, time.Since(cancellationStart), time.Millisecond) {
+			return
+		}
 
 		if !assert.Equal(t, GracefullyTearedDown, ctx.GracefulTearDownStatus()) {
 			return
@@ -647,7 +688,12 @@ func TestContextGracefulTearDownTasks(t *testing.T) {
 			return nil
 		})
 
+		cancellationStart := time.Now()
 		ctx.CancelGracefully()
+		// cancellation should be fast
+		if !assert.Less(t, time.Since(cancellationStart), time.Millisecond) {
+			return
+		}
 
 		if !assert.Equal(t, GracefullyTearedDown, ctx.GracefulTearDownStatus()) {
 			return
@@ -675,7 +721,12 @@ func TestContextGracefulTearDownTasks(t *testing.T) {
 			return nil
 		})
 
+		cancellationStart := time.Now()
 		ctx.CancelGracefully()
+		// cancellation should be fast
+		if !assert.Less(t, time.Since(cancellationStart), time.Millisecond) {
+			return
+		}
 
 		if !assert.Equal(t, GracefullyTearedDown, ctx.GracefulTearDownStatus()) {
 			return
@@ -686,6 +737,27 @@ func TestContextGracefulTearDownTasks(t *testing.T) {
 		}
 		assert.True(t, secondCall)
 	})
+
+	t.Run("cancellation should be fast even if the state's output fields have not been set", func(t *testing.T) {
+		ctx := NewContext(ContextConfig{})
+		NewGlobalState(ctx)
+
+		ctx.OnGracefulTearDown(func(ctx *Context) error {
+			return nil
+		})
+
+		ctx.OnGracefulTearDown(func(ctx *Context) error {
+			return nil
+		})
+
+		cancellationStart := time.Now()
+		ctx.CancelGracefully()
+		// cancellation should be fast
+		if !assert.Less(t, time.Since(cancellationStart), time.Millisecond) {
+			return
+		}
+	})
+
 }
 
 func TestContextDone(t *testing.T) {

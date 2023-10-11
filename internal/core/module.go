@@ -277,6 +277,7 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (_ *Manifest, usedRunningState
 		}
 
 		global := NewGlobalState(ctx, getGlobalsAccessibleFromManifest().ValueEntryMap(nil))
+		global.OutputFieldsInitialized.Store(true)
 		global.Module = m
 		state = NewTreeWalkStateWithGlobal(global)
 

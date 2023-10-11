@@ -1005,11 +1005,14 @@ func TestPreInit(t *testing.T) {
 					ManifestTemplate: chunk.Manifest,
 				}
 
-				parentState = NewGlobalState(NewContext(ContextConfig{}))
+				parentState = NewGlobalState(NewContext(ContextConfig{
+					DoNotSpawnDoneGoroutine: true,
+				}))
 				defer parentState.Ctx.CancelGracefully()
 				parentState.Module = mod
 				parentState.MainState = parentState
 
+				start := time.Now()
 				manifest, _, _, err := mod.PreInit(PreinitArgs{
 					PreinitFilesystem:     fls,
 					GlobalConsts:          chunk.GlobalConstantDeclarations,
@@ -1019,6 +1022,11 @@ func TestPreInit(t *testing.T) {
 				})
 
 				if !assert.NoError(t, err) {
+					return
+				}
+
+				//PreInit should be fast
+				if !assert.Less(t, time.Since(start), time.Millisecond) {
 					return
 				}
 
@@ -1039,6 +1047,7 @@ func TestPreInit(t *testing.T) {
 				ManifestTemplate: chunk.Manifest,
 			}
 
+			start := time.Now()
 			manifest, _, staticCheckErrors, err := mod.PreInit(PreinitArgs{
 				PreinitFilesystem:     fls,
 				GlobalConsts:          chunk.GlobalConstantDeclarations,
@@ -1047,6 +1056,11 @@ func TestPreInit(t *testing.T) {
 				ParentState:           parentState,
 				AddDefaultPermissions: true,
 			})
+
+			//PreInit should be fast
+			if !assert.Less(t, time.Since(start), time.Millisecond) {
+				return
+			}
 
 			if len(testCase.expectedStaticCheckErrors) > 0 {
 				remainingErrors := map[string]error{}

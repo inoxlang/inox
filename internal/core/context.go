@@ -24,9 +24,6 @@ import (
 
 const (
 	CTX_DONE_MICROTASK_CALLS_TIMEOUT = 5 * time.Millisecond
-
-	//maximum time the context will wait its associated state to have its output fields initialized.
-	CTX_STATE_OUTPUT_INIT_WAITING_TIMEOUT = 10 * time.Millisecond
 )
 
 var (
@@ -380,9 +377,12 @@ func NewContext(config ContextConfig) *Context {
 		var logger zerolog.Logger
 		{
 			if ctx.state != nil {
-				if utils.InefficientlyWaitUntilTrue(&ctx.state.OutputFieldsInitialized, CTX_STATE_OUTPUT_INIT_WAITING_TIMEOUT) {
+				if ctx.state.OutputFieldsInitialized.Load() {
 					logger = ctx.state.Logger
+				} else if ctx.parentCtx != nil {
+					logger = ctx.parentCtx.getClosestStateNoDoneCheck().Logger
 				}
+				//see explanation in the gracefullyTearDown method.
 			} else if ctx.parentCtx != nil {
 				logger = ctx.parentCtx.getClosestStateNoDoneCheck().Logger
 			}
@@ -1252,16 +1252,18 @@ func (ctx *Context) gracefullyTearDown() {
 
 	defer ctx.gracefulTearDownStatus.Store(int64(GracefullyTearedDown))
 
-	var logger zerolog.Logger
+	var logger zerolog.Logger = zerolog.Nop()
 	{
 		ctx.lock.RLock()
 		state := ctx.state
 		ctx.lock.RUnlock()
 
-		if state != nil {
-			if utils.InefficientlyWaitUntilTrue(&ctx.state.OutputFieldsInitialized, CTX_STATE_OUTPUT_INIT_WAITING_TIMEOUT) {
-				logger = ctx.state.Logger
-			}
+		if state != nil && state.OutputFieldsInitialized.Load() {
+			logger = ctx.state.Logger
+
+			//originally we waited up to 10 ms for the output fields to be initialized,
+			//but that was causing 10ms pauses in Module.Preinit. The Preinit method has been updated
+			//but since it could happen in other places, the waiting code has been removed preventively.
 		} else if ctx.parentCtx != nil {
 			logger = ctx.parentCtx.getClosestStateNoDoneCheck().Logger
 		}
