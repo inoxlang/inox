@@ -8,7 +8,7 @@ Inoxlang is released as a **single binary** that contains all you need to do ful
 Zero config.\
 Zero boilerplate.
 
-> Inox is NOT a language + a packaging of popular technologies such as a SQL database or Docker.\
+> Inox is NOT a language + a packaging of a SQL database and Docker.\
 > The language deeply integrates with the Web features and the database engine.
 
 **Web Dev Features**
@@ -52,7 +52,7 @@ I am working full-time on Inox, please consider donating. Thanks !
 
 **Inox can be used on any operating system by installing the [VSCode extension](https://marketplace.visualstudio.com/items?itemName=graphr00t.inox).**
 
-If you are on Linux an archive with a binary and some examples is available in [release assets](https://github.com/inoxlang/inox/releases)
+If you are using Linux, an archive with a binary and some examples is available in the [release assets](https://github.com/inoxlang/inox/releases)
 - uncompress the archive
 - install the `inox` binary to `/usr/local/bin`
   ```
@@ -69,7 +69,7 @@ If you want to compile the language yourself go [here](#compile-from-source).
 **You can learn Inox directly in VSCode: download the [extension](https://marketplace.visualstudio.com/items?itemName=graphr00t.inox) and follow the explanations.**
 
 Inox can be used for scripting & provides a shell. The development of the language in those domains is not very active
-because Inox is focused on Web Application Development.
+because Inox primarily focuses on Web Application Development.
 
 To learn scripting go [here](./docs/scripting-basics.md).
 View [Shell Basics](./docs/shell-basics.md) to learn how to use Inox interactively.
@@ -110,7 +110,7 @@ server = http.Server!(HOST, {
 })
 ```
 
-Each request is processed in an isolated module for maximum security:
+For maximum security, each request is processed in an isolated module:
 ```
 # /routes/api/POST-users.ix
 
@@ -194,7 +194,7 @@ list = [
 ]
 ```
 
-The transient equivalents of objects are [structs](./docs/language-reference.md#structs) (not implemented yet).
+The transient counterparts of objects are [structs](./docs/language-reference.md#structs) (not implemented yet).
 
 ```
 struct Task {
@@ -312,7 +312,7 @@ manifest {
 data = fs.read!(/etc/passwd)
 ```
 
-If the imported module ask more permissions than granted an error is thrown:\
+If the imported module asks more permissions than granted an error is thrown:\
 `import: some permissions in the imported module's manifest are not granted: [read path(s) /...] `
 
 #### **Dropping Permissions**
