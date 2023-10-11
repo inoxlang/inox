@@ -4,9 +4,12 @@
 
 🛡️ Your **shield** against complexity in Web Development.
 
-Inoxlang is released as a **single binary** that contains all you need to do fullstack development.
-Zero config.
-Zero bloat.
+Inoxlang is released as a **single binary** that contains all you need to do fullstack development.\
+Zero config.\
+Zero boilerplate.
+
+> Inox is NOT a language + a packaging of popular technologies such as a SQL database or Docker.\
+> The language deeply integrates with the Web features and the database engine.
 
 **Web Dev Features**
 - [XML Expressions (HTML)](#xml-expressions)
@@ -42,7 +45,8 @@ _____
 
 📖 Language Reference: **docs/language-reference.md**
 
-⚠️ The language is not production ready yet.
+⚠️ The language is not production ready yet.\
+I am working full-time on Inox, please consider donating. Thanks !
 
 ## Installation
 
@@ -168,6 +172,10 @@ dbs.main.users.has(new_user)
 ```
 
 You can learn more [here](./docs/language-reference.md#databases).
+
+> The database currently uses a single-file key-value store, it obviously cannot handle hundreds of Gigabytes.\
+> The improvement of the database engine is a main focus point. The goal is to have a DB engine 
+> that is aware of the code accessing it (HTTP request handlers) in order to smartly pre-fetch and cache data.
 
 ### Serializability
 
