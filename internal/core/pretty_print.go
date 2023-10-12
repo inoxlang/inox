@@ -23,7 +23,10 @@ const (
 )
 
 var (
-	ANSI_RESET_SEQUENCE = []byte(termenv.CSI + termenv.ResetSeq + "m")
+	ANSI_RESET_SEQUENCE             = []byte(termenv.CSI + termenv.ResetSeq + "m")
+	ANSI_RESET_SEQUENCE_STRING      = string(ANSI_RESET_SEQUENCE)
+	DEFAULT_DARKMODE_DISCRETE_COLOR = pprint.DEFAULT_DARKMODE_PRINT_COLORS.DiscreteColor
+	DEFAULT_LIGHMODE_DISCRETE_COLOR = pprint.DEFAULT_LIGHTMODE_PRINT_COLORS.DiscreteColor
 
 	COMMA                               = []byte{','}
 	LF_CR                               = []byte{'\n', '\r'}

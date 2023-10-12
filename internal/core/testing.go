@@ -2,6 +2,7 @@ package core
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/inoxlang/inox/internal/commonfmt"
@@ -13,6 +14,8 @@ import (
 // A TestSuite represents a test suite, TestSuite implements Value.
 type TestSuite struct {
 	meta         Value
+	nameFromMeta string
+
 	module       *Module // module executed when running the test suite
 	parentModule *Module
 }
@@ -23,6 +26,8 @@ func NewTestSuite(meta Value, embeddedModChunk *parse.Chunk, parentState *Global
 		Node:   embeddedModChunk,
 		Source: parentState.Module.MainChunk.Source,
 	}
+
+	parsedChunk.GetFormattedNodeLocation(embeddedModChunk)
 
 	// manifest, err := evaluateTestingManifest(parsedChunk, parentState)
 	// if err != nil {
@@ -36,10 +41,33 @@ func NewTestSuite(meta Value, embeddedModChunk *parse.Chunk, parentState *Global
 		//TODO: bytecode ?
 	}
 
+	//get name of test suite
+	nameFromMeta := ""
+
+	switch m := meta.(type) {
+	case StringLike:
+		nameFromMeta = m.GetOrBuildString()
+	case *Record:
+		m.ForEachEntry(func(k string, v Value) error {
+			switch k {
+			case "name":
+				strLike, ok := v.(StringLike)
+				if ok {
+					nameFromMeta = strLike.GetOrBuildString()
+				}
+			}
+			return nil
+		})
+	case NilT:
+	default:
+		panic(ErrUnreachable)
+	}
+
 	return &TestSuite{
 		meta:         meta,
 		module:       routineMod,
 		parentModule: parentState.Module,
+		nameFromMeta: nameFromMeta,
 	}, nil
 }
 
@@ -136,6 +164,8 @@ func (*TestSuite) PropertyNames(ctx *Context) []string {
 // A TestCase represents a test case, TestCase implements Value.
 type TestCase struct {
 	meta         Value
+	nameFromMeta string //can be empty
+
 	module       *Module // module executed when running the test case
 	parentModule *Module
 
@@ -169,8 +199,35 @@ func NewTestCase(
 		//TODO: bytecode ?
 	}
 
+	//get name of test case
+	nameFromMeta := ""
+
+	switch m := meta.(type) {
+	case StringLike:
+		nameFromMeta = m.GetOrBuildString()
+	case *Record:
+		m.ForEachEntry(func(k string, v Value) error {
+			switch k {
+			case "name":
+				strLike, ok := v.(StringLike)
+				if ok {
+					nameFromMeta = strLike.GetOrBuildString()
+				}
+			}
+			return nil
+		})
+	case NilT:
+	default:
+		panic(ErrUnreachable)
+	}
+
+	//clean formattedPosition
+	formattedPosition = strings.TrimSpace(formattedPosition)
+	formattedPosition = strings.TrimSuffix(formattedPosition, ":")
+
 	return &TestCase{
 		meta:         meta,
+		nameFromMeta: nameFromMeta,
 		module:       routineMod,
 		parentModule: parentState.Module,
 

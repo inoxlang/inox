@@ -158,9 +158,11 @@ func (state *TreeWalkState) formatLocation(node parse.Node) (parse.SourcePositio
 		}
 
 		chunk.FormatNodeLocation(locationPartBuff, node) //TODO: fix
-		locationPartBuff.WriteRune(' ')
+
+		if i != len(state.chunkStack)-1 {
+			locationPartBuff.WriteRune(' ')
+		}
 	}
-	positionStack.String()
 	return positionStack, locationPartBuff.String()
 }
 

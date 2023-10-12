@@ -5,6 +5,7 @@ import (
 
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
 	"github.com/inoxlang/inox/internal/utils"
+	"github.com/muesli/termenv"
 )
 
 var (
@@ -53,24 +54,70 @@ func NewTestCaseResult(ctx *Context, executionResult Value, executionError error
 		testCase:       testCase,
 	}
 
+	red := string(GetFullColorSequence(termenv.ANSIBrightRed, false))
 	if executionError != nil {
 		if isAssertionError && assertionError.isTestAssertion {
-			result.DarkModePrettyMessage = assertionError.PrettySPrint(TEST_CASE_RESULT_DARK_MODE_PRETTY_PRINT_CONFIG)
-			result.LightModePrettyMessage = assertionError.PrettySPrint(TEST_CASE_RESULT_LIGTH_MODE_PRETTY_PRINT_CONFIG)
+			prefix := red + "FAIL" + string(ANSI_RESET_SEQUENCE) + " "
+
+			result.DarkModePrettyMessage = prefix + assertionError.PrettySPrint(TEST_CASE_RESULT_DARK_MODE_PRETTY_PRINT_CONFIG)
+			result.LightModePrettyMessage = prefix + assertionError.PrettySPrint(TEST_CASE_RESULT_LIGTH_MODE_PRETTY_PRINT_CONFIG)
 			result.Message = utils.StripANSISequences(result.DarkModePrettyMessage)
 		} else {
-			result.Message = utils.StripANSISequences(executionError.Error())
+			result.Message = "FAIL: unexpected error: " + utils.StripANSISequences(executionError.Error())
 		}
-		result.Message = "FAIL " + result.Message
 	} else { //set success message
 		if testCase.formattedPosition != "" {
-			result.Message = "OK " + testCase.formattedPosition
-		} else {
-			result.Message = "OK "
+			result.Message = testCase.formattedPosition
+		}
+
+		result.DarkModePrettyMessage = string(GetFullColorSequence(termenv.ANSIBrightGreen, false)) +
+			"PASS" + string(ANSI_RESET_SEQUENCE) + " "
+		result.LightModePrettyMessage = string(GetFullColorSequence(termenv.ANSIGreen, false)) +
+			"PASS" + string(ANSI_RESET_SEQUENCE) + " "
+		result.Message = "PASS "
+	}
+
+	name := testCase.nameFromMeta
+	if name == "" {
+		name = testCase.formattedPosition
+		if name == "" {
+			name = "?"
 		}
 	}
 
+	result.forEachNotEmptyMessage(func(s string, isDarkMode, isLightMode bool) string {
+		header := "TEST " + name
+
+		if isDarkMode {
+			color := string(DEFAULT_DARKMODE_DISCRETE_COLOR)
+			if !result.Success {
+				color = red
+			}
+			header = color + header + ANSI_RESET_SEQUENCE_STRING
+		} else if isLightMode {
+			color := string(DEFAULT_LIGHMODE_DISCRETE_COLOR)
+			if !result.Success {
+				color = red
+			}
+			header = color + header + ANSI_RESET_SEQUENCE_STRING
+		}
+
+		return header + "\n" + s
+	})
+
 	return result, nil
+}
+
+func (r *TestCaseResult) forEachNotEmptyMessage(fn func(s string, isDarkMode, isLightMode bool) string) {
+	if r.DarkModePrettyMessage != "" {
+		r.DarkModePrettyMessage = fn(r.DarkModePrettyMessage, true, false)
+	}
+	if r.LightModePrettyMessage != "" {
+		r.LightModePrettyMessage = fn(r.LightModePrettyMessage, true, false)
+	}
+	if r.Message != "" {
+		r.Message = fn(r.Message, false, false)
+	}
 }
 
 type TestSuiteResult struct {
@@ -127,7 +174,7 @@ func NewTestSuiteResult(ctx *Context, testCaseResults []*TestCaseResult, subSuit
 		}
 
 		for _, subSuiteResult := range subSuiteResults {
-			suiteResult.DarkModePrettyMessage += subSuiteResult.DarkModePrettyMessage + "\n\n"
+			suiteResult.DarkModePrettyMessage += subSuiteResult.DarkModePrettyMessage
 		}
 	}
 
@@ -138,7 +185,7 @@ func NewTestSuiteResult(ctx *Context, testCaseResults []*TestCaseResult, subSuit
 		}
 
 		for _, subSuiteResult := range subSuiteResults {
-			suiteResult.LightModePrettyMessage += subSuiteResult.LightModePrettyMessage + "\n\n"
+			suiteResult.LightModePrettyMessage += subSuiteResult.LightModePrettyMessage
 		}
 	}
 
@@ -150,6 +197,25 @@ func NewTestSuiteResult(ctx *Context, testCaseResults []*TestCaseResult, subSuit
 	for _, subSuiteResult := range subSuiteResults {
 		suiteResult.Message += subSuiteResult.Message + "\n\n"
 	}
+
+	name := suiteResult.testSuite.nameFromMeta
+	if name == "" {
+		if testSuite.module != nil {
+			name = "(no name) " + testSuite.module.MainChunk.GetFormattedNodeLocation(testSuite.module.MainChunk.Node)
+		} else {
+			name = "(anonymous)"
+		}
+	}
+	suiteResult.forEachNotEmptyMessage(func(s string, darkMode, lightMode bool) string {
+		header := "TEST SUITE " + name
+		if darkMode {
+			header = string(DEFAULT_DARKMODE_DISCRETE_COLOR) + header + ANSI_RESET_SEQUENCE_STRING
+		} else if lightMode {
+			header = string(DEFAULT_DARKMODE_DISCRETE_COLOR) + header + ANSI_RESET_SEQUENCE_STRING
+		}
+
+		return header + "\n\n" + utils.IndentLines(s, "   ")
+	})
 
 	return suiteResult, nil
 }
@@ -166,4 +232,16 @@ func (r *TestSuiteResult) MostAdaptedMessage(colorized bool, darkBackground bool
 		return r.LightModePrettyMessage
 	}
 	return r.Message
+}
+
+func (r *TestSuiteResult) forEachNotEmptyMessage(fn func(s string, isDarkMode, isLightMode bool) string) {
+	if r.DarkModePrettyMessage != "" {
+		r.DarkModePrettyMessage = fn(r.DarkModePrettyMessage, true, false)
+	}
+	if r.LightModePrettyMessage != "" {
+		r.LightModePrettyMessage = fn(r.LightModePrettyMessage, true, false)
+	}
+	if r.Message != "" {
+		r.Message = fn(r.Message, false, false)
+	}
 }

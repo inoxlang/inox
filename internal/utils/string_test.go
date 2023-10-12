@@ -48,3 +48,14 @@ func TestFindClosestString(t *testing.T) {
 
 	})
 }
+
+func TestIdentLines(t *testing.T) {
+	assert.Equal(t, "", IndentLines("", "ab"))
+	assert.Equal(t, "abx", IndentLines("x", "ab"))
+	assert.Equal(t, "abx\nabx", IndentLines("x\nx", "ab"))
+	assert.Equal(t, "abx\r\nabx", IndentLines("x\r\nx", "ab"))
+	assert.Equal(t, "abx\n\rabx", IndentLines("x\n\rx", "ab"))
+
+	//empty line in the middle
+	assert.Equal(t, "abx\n\nabx", IndentLines("x\n\nx", "ab"))
+}
