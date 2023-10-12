@@ -14,6 +14,31 @@ func AddCarriageReturnAfterNewlines(s string) string {
 	return strings.ReplaceAll(s, "\n", "\n\r")
 }
 
+func IndentLines(s string, indent string) string {
+	lines := strings.Split(s, "\n")
+
+	for lineIndex, line := range lines {
+		if strings.TrimSpace(line) == "" {
+			continue
+		}
+
+		//ignore carriage returns
+		injectionIndex := 0
+		for i := 0; i < len(line); i++ {
+			b := line[i]
+			if b == '\r' {
+				continue
+			}
+			injectionIndex = i
+			break
+		}
+
+		lines[lineIndex] = line[:injectionIndex] + indent + line[injectionIndex:]
+	}
+
+	return strings.Join(lines, "\n")
+}
+
 func MinMaxPossibleRuneCount(byteCount int) (int, int) {
 	minPossibleRuneCount := byteCount / 4 //4 is the maximum number of bytes for a single character in UTF-8
 	maxPossibleRuneCount := byteCount
