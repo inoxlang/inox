@@ -55,6 +55,9 @@ type GlobalState struct {
 	GetBasePatternsForImportedModule     func() (map[string]Pattern, map[string]*PatternNamespace)       // return nil maps by default
 	SymbolicBaseGlobalsForImportedModule map[string]symbolic.SymbolicValue                               // ok if nil, should not be modified
 
+	TestCaseResults  []*TestCaseResult
+	TestSuiteResults []*TestSuiteResult
+
 	//errors & check data
 	PrenitStaticCheckErrors   []*StaticCheckError
 	MainPreinitError          error

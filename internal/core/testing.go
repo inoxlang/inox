@@ -138,9 +138,20 @@ type TestCase struct {
 	meta         Value
 	module       *Module // module executed when running the test case
 	parentModule *Module
+
+	positionStack     parse.SourcePositionStack //can be nil
+	formattedPosition string                    //can be empty
 }
 
-func NewTestCase(meta Value, modChunk *parse.Chunk, parentState *GlobalState) (*TestCase, error) {
+func NewTestCase(
+	meta Value,
+	modChunk *parse.Chunk,
+	parentState *GlobalState,
+
+	//optional
+	positionStack parse.SourcePositionStack,
+	formattedPosition string,
+) (*TestCase, error) {
 	parsedChunk := &parse.ParsedChunk{
 		Node:   modChunk,
 		Source: parentState.Module.MainChunk.Source,
@@ -162,6 +173,9 @@ func NewTestCase(meta Value, modChunk *parse.Chunk, parentState *GlobalState) (*
 		meta:         meta,
 		module:       routineMod,
 		parentModule: parentState.Module,
+
+		positionStack:     positionStack,
+		formattedPosition: formattedPosition,
 	}, nil
 }
 

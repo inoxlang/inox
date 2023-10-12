@@ -1244,6 +1244,11 @@ func (c *TestCase) ToSymbolicValue(ctx *Context, encountered map[uintptr]symboli
 	return &symbolic.TestCase{}, nil
 }
 
+func (r *TestCaseResult) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+	//TODO
+	return symbolic.ANY, nil
+}
+
 func (d *DynamicValue) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
 	symbVal, err := d.Resolve(ctx).ToSymbolicValue(ctx, encountered)
 	if err != nil {

@@ -476,6 +476,10 @@ func (c *TestCase) IsMutable() bool {
 	return false
 }
 
+func (c *TestCaseResult) IsMutable() bool {
+	return false
+}
+
 func (c *DynamicValue) IsMutable() bool {
 	return true
 }

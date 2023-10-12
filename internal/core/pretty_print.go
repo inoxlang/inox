@@ -1931,6 +1931,14 @@ func (c *TestCase) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth
 	InspectPrint(w, c)
 }
 
+func (r *TestCaseResult) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	if r.Success {
+		w.Write(utils.StringAsBytes(r.Message))
+	} else {
+		w.Write(utils.StringAsBytes(r.Message))
+	}
+}
+
 func (d *DynamicValue) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write([]byte{'d', 'y', 'n', '('}))
 

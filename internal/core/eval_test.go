@@ -2,7 +2,6 @@ package core
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"io"
 	"math"
@@ -7091,17 +7090,276 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state.Logger = zerolog.New(state.Out)
 			res, err := Eval(code, state, false)
 
-			e := errors.Unwrap(err)
-			for {
-				unwrapped := errors.Unwrap(e)
-				if unwrapped == nil {
-					break
-				}
-				e = unwrapped
+			if !assert.NoError(t, err) {
+				return
 			}
 
-			assert.IsType(t, &AssertionError{}, e)
-			assert.Nil(t, res)
+			assert.Equal(t, Nil, res)
+
+			if !assert.Len(t, state.TestSuiteResults, 1) {
+				return
+			}
+
+			testSuitResult := state.TestSuiteResults[0]
+			if !assert.Len(t, testSuitResult.caseResults, 1) {
+				return
+			}
+
+			caseResult := testSuitResult.caseResults[0]
+			if !assert.False(t, caseResult.Success) {
+				return
+			}
+
+			if !assert.NotNil(t, caseResult.assertionError) {
+				return
+			}
+
+			if !assert.True(t, caseResult.assertionError.IsTestAssertion()) {
+				return
+			}
+		})
+
+		t.Run("test case failing because of an unexpected error", func(t *testing.T) {
+			code := `testsuite "name" {
+				testcase {
+					(1 / 0)
+				}
+			}`
+
+			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
+			state.Out = os.Stdout
+			state.Logger = zerolog.New(state.Out)
+			res, err := Eval(code, state, false)
+
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			assert.Equal(t, Nil, res)
+
+			if !assert.Len(t, state.TestSuiteResults, 1) {
+				return
+			}
+
+			testSuitResult := state.TestSuiteResults[0]
+			if !assert.Len(t, testSuitResult.caseResults, 1) {
+				return
+			}
+
+			caseResult := testSuitResult.caseResults[0]
+			if !assert.False(t, caseResult.Success) {
+				return
+			}
+
+			if !assert.Nil(t, caseResult.assertionError) {
+				return
+			}
+
+			if !assert.NotNil(t, caseResult.error) {
+				return
+			}
+		})
+
+		t.Run("test case with failing assertion followed by a passing test case", func(t *testing.T) {
+			code := `testsuite "name" {
+				testcase {
+					assert false
+				}
+				testcase {
+					
+				}
+			}`
+
+			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
+			state.Out = os.Stdout
+			state.Logger = zerolog.New(state.Out)
+			res, err := Eval(code, state, false)
+
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			assert.Equal(t, Nil, res)
+
+			if !assert.Len(t, state.TestSuiteResults, 1) {
+				return
+			}
+
+			testSuitResult := state.TestSuiteResults[0]
+			if !assert.Len(t, testSuitResult.caseResults, 2) {
+				return
+			}
+
+			caseResult1 := testSuitResult.caseResults[0]
+			if !assert.False(t, caseResult1.Success) {
+				return
+			}
+
+			if !assert.NotNil(t, caseResult1.assertionError) {
+				return
+			}
+
+			if !assert.True(t, caseResult1.assertionError.IsTestAssertion()) {
+				return
+			}
+
+			caseResult2 := testSuitResult.caseResults[1]
+			if !assert.True(t, caseResult2.Success) {
+				return
+			}
+		})
+
+		t.Run("test case because of an unexpected error followed by a passing test case", func(t *testing.T) {
+			code := `testsuite "name" {
+				testcase {
+					(1 / 0)
+				}
+				testcase {
+					
+				}
+			}`
+
+			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
+			state.Out = os.Stdout
+			state.Logger = zerolog.New(state.Out)
+			res, err := Eval(code, state, false)
+
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			assert.Equal(t, Nil, res)
+
+			if !assert.Len(t, state.TestSuiteResults, 1) {
+				return
+			}
+
+			testSuitResult := state.TestSuiteResults[0]
+			if !assert.Len(t, testSuitResult.caseResults, 2) {
+				return
+			}
+
+			caseResult1 := testSuitResult.caseResults[0]
+			if !assert.False(t, caseResult1.Success) {
+				return
+			}
+
+			if !assert.Nil(t, caseResult1.assertionError) {
+				return
+			}
+
+			if !assert.NotNil(t, caseResult1.error) {
+				return
+			}
+
+			caseResult2 := testSuitResult.caseResults[1]
+			if !assert.True(t, caseResult2.Success) {
+				return
+			}
+		})
+
+		t.Run("test case with failing assertion followed by a failing test case", func(t *testing.T) {
+			code := `testsuite "name" {
+				testcase {
+					assert false
+				}
+				testcase {
+					assert false
+				}
+			}`
+
+			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
+			state.Out = os.Stdout
+			state.Logger = zerolog.New(state.Out)
+			res, err := Eval(code, state, false)
+
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			assert.Equal(t, Nil, res)
+
+			if !assert.Len(t, state.TestSuiteResults, 1) {
+				return
+			}
+
+			testSuitResult := state.TestSuiteResults[0]
+			if !assert.Len(t, testSuitResult.caseResults, 2) {
+				return
+			}
+
+			caseResult1 := testSuitResult.caseResults[0]
+			if !assert.False(t, caseResult1.Success) {
+				return
+			}
+
+			if !assert.NotNil(t, caseResult1.assertionError) {
+				return
+			}
+
+			if !assert.True(t, caseResult1.assertionError.IsTestAssertion()) {
+				return
+			}
+
+			caseResult2 := testSuitResult.caseResults[1]
+			if !assert.False(t, caseResult2.Success) {
+				return
+			}
+
+			if !assert.NotNil(t, caseResult2.assertionError) {
+				return
+			}
+
+			if !assert.True(t, caseResult2.assertionError.IsTestAssertion()) {
+				return
+			}
+		})
+
+		t.Run("sub test suite case with failing assertion", func(t *testing.T) {
+			code := `testsuite "name" {
+				testsuite "" {
+					testcase {
+						assert false
+					}
+				}
+			}`
+
+			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
+			state.Out = os.Stdout
+			state.Logger = zerolog.New(state.Out)
+			res, err := Eval(code, state, false)
+
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			assert.Equal(t, Nil, res)
+
+			if !assert.Len(t, state.TestSuiteResults, 1) {
+				return
+			}
+
+			testSuitResult := state.TestSuiteResults[0]
+			if !assert.Len(t, testSuitResult.subSuiteResults, 1) {
+				return
+			}
+			assert.Empty(t, testSuitResult.caseResults)
+
+			subSuiteResult := testSuitResult.subSuiteResults[0]
+
+			if !assert.Len(t, subSuiteResult.caseResults, 1) {
+				return
+			}
+
+			caseResult := subSuiteResult.caseResults[0]
+			if !assert.False(t, caseResult.Success) {
+				return
+			}
 		})
 	})
 

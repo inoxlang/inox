@@ -1498,7 +1498,7 @@ func (c *compiler) Compile(node parse.Node) error {
 			c.emit(node, OpYield, 1)
 		}
 	case *parse.CallExpression:
-		c.emit(node, OpPushNil)
+		c.emit(node, OpPushNil) //slot for the result
 
 		spread := 0
 		for _, arg := range node.Arguments {
@@ -1905,10 +1905,6 @@ func (c *compiler) Compile(node parse.Node) error {
 		constantVal := AstNode{Node: node, chunk: c.currentChunk()}
 		c.emit(node, OpRuntimeTypecheck, c.addConstant(constantVal))
 	case *parse.TestSuiteExpression:
-		if node.IsStatement {
-			c.emit(node, OpPushNil)
-		}
-
 		if node.Meta != nil {
 			if err := c.Compile(node.Meta); err != nil {
 				return err
@@ -1923,20 +1919,22 @@ func (c *compiler) Compile(node parse.Node) error {
 		}))
 
 		if node.IsStatement {
-			c.emit(node, OpCopyTop) //self
+			c.emit(node, OpCopyTop)
+			c.emit(node, OpCopyTop) //copy test suite ref for next OpMemb
+			c.emit(node, OpPushNil) //slot for the next call's result
+			c.emit(node, OpSwap)    //move the test suite ref at the right place
 			c.emit(node, OpMemb, c.addConstant(Str("run")))
-			c.emit(node, OpCall, 0, 0, 1)
+			c.emit(node, OpCall, 0, 0, 1) //must call
+			c.emit(node, OpCopyTop)       //copy lthread ref (result call) for next OpAddTestSuiteResult
 			c.emit(node, OpPushNil)
 			c.emit(node, OpSwap)
-			c.emit(node, OpCopyTop) //self
+			c.emit(node, OpCopyTop) //copy lthread ref for next OpMemb
 			c.emit(node, OpMemb, c.addConstant(Str("wait_result")))
-			c.emit(node, OpCall, 0, 0, 1)
-		}
-	case *parse.TestCaseExpression:
-		if node.IsStatement {
-			c.emit(node, OpPushNil)
-		}
+			c.emit(node, OpCall, 0, 0, 1) //must call
+			c.emit(node, OpAddTestSuiteResult)
+		} //else the test suite is on the top of the stack
 
+	case *parse.TestCaseExpression:
 		if node.Meta != nil {
 			if err := c.Compile(node.Meta); err != nil {
 				return err
@@ -1951,15 +1949,21 @@ func (c *compiler) Compile(node parse.Node) error {
 		}))
 
 		if node.IsStatement {
-			c.emit(node, OpCopyTop) //self
+			//the emitted bytecode may be wrong because test suites are not compiled at the moment.
+
+			c.emit(node, OpCopyTop)
+			c.emit(node, OpCopyTop) //copy test case ref for next OpMemb
+			c.emit(node, OpPushNil) //slot for the next call's result
+			c.emit(node, OpSwap)    //move the test suite ref at the right place
 			c.emit(node, OpMemb, c.addConstant(Str("run")))
 			c.emit(node, OpCall, 0, 0, 1)
 			c.emit(node, OpPushNil)
 			c.emit(node, OpSwap)
-			c.emit(node, OpCopyTop) //self
+			c.emit(node, OpCopyTop) //copy lthread ref for next OpMemb
 			c.emit(node, OpMemb, c.addConstant(Str("wait_result")))
 			c.emit(node, OpCall, 0, 0, 1)
-		}
+			c.emit(node, OpAddTestCaseResult)
+		} //else the test case is on the top of the stack
 
 	case *parse.StringTemplateLiteral:
 		for _, slice := range node.Slices {

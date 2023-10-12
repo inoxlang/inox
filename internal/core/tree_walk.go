@@ -147,6 +147,23 @@ func (state *TreeWalkState) updateStackTrace(currentStmt parse.Node) {
 	state.frameInfo[len(state.frameInfo)-1] = currentFrame
 }
 
+func (state *TreeWalkState) formatLocation(node parse.Node) (parse.SourcePositionStack, string) {
+	locationPartBuff := bytes.NewBuffer(nil)
+	var positionStack parse.SourcePositionStack
+
+	//TODO: get whole position stack
+	for i, chunk := range state.chunkStack {
+		if i == 0 {
+			positionStack = append(positionStack, chunk.GetSourcePosition(node.Base().Span))
+		}
+
+		chunk.FormatNodeLocation(locationPartBuff, node) //TODO: fix
+		locationPartBuff.WriteRune(' ')
+	}
+	positionStack.String()
+	return positionStack, locationPartBuff.String()
+}
+
 type IterationChange int
 
 const (
@@ -182,33 +199,21 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			}
 		}
 
-		if err != nil && state.Global.Module != nil && state.Global.Module.Name() != "" {
-			if !strings.HasPrefix(err.Error(), state.Global.Module.Name()) {
-				locationPartBuff := bytes.NewBuffer(nil)
-				var positionStack parse.SourcePositionStack
+		if err != nil && state.Global.Module != nil && state.Global.Module.Name() != "" &&
+			!strings.HasPrefix(err.Error(), state.Global.Module.Name()) {
 
-				//TODO: get whole position stack
-				for i, chunk := range state.chunkStack {
-					if i == 0 {
-						positionStack = append(positionStack, chunk.GetSourcePosition(node.Base().Span))
-					}
+			positionStack, location := state.formatLocation(node)
+			if assertionErr != nil {
+				assertionErr.msg = location + " " + assertionErr.msg
+			}
 
-					chunk.FormatNodeLocation(locationPartBuff, node) //TODO: fix
-					locationPartBuff.WriteRune(' ')
-				}
-				location := locationPartBuff.String()
-				if assertionErr != nil {
-					assertionErr.msg = location + " " + assertionErr.msg
-				}
+			err = fmt.Errorf("%s %w", location, err)
 
-				err = fmt.Errorf("%s %w", location, err)
-
-				if len(positionStack) > 0 {
-					err = LocatedEvalError{
-						error:    err,
-						Message:  err.Error(),
-						Location: positionStack,
-					}
+			if len(positionStack) > 0 {
+				err = LocatedEvalError{
+					error:    err,
+					Message:  err.Error(),
+					Location: positionStack,
 				}
 			}
 		}
@@ -2623,12 +2628,26 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			return nil, err
 		}
 
+		//execute the suite if the node is a statement
 		if n.IsStatement {
 			lthread, err := suite.Run(state.Global.Ctx)
 			if err != nil {
 				return nil, err
 			}
-			return lthread.WaitResult(state.Global.Ctx)
+			_, err = lthread.WaitResult(state.Global.Ctx)
+			if err != nil {
+				return nil, err
+			}
+
+			testCaseResults := lthread.state.TestCaseResults
+			testSuiteResults := lthread.state.TestSuiteResults
+
+			result, err := NewTestSuiteResult(state.Global.Ctx, testCaseResults, testSuiteResults, suite)
+			if err != nil {
+				return nil, err
+			}
+			state.Global.TestSuiteResults = append(state.Global.TestSuiteResults, result)
+			return Nil, nil
 		} else {
 			return suite, nil
 		}
@@ -2649,17 +2668,29 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 
 		chunk := expr.(AstNode).Node.(*parse.Chunk)
 
-		testCase, err := NewTestCase(meta, chunk, state.Global)
+		positionStack, location := state.formatLocation(node)
+
+		testCase, err := NewTestCase(meta, chunk, state.Global, positionStack, location)
 		if err != nil {
 			return nil, err
 		}
 
+		//execute the test case if the node is a statement
 		if n.IsStatement {
 			lthread, err := testCase.Run(state.Global.Ctx)
 			if err != nil {
 				return nil, err
 			}
-			return lthread.WaitResult(state.Global.Ctx)
+			result, err := lthread.WaitResult(state.Global.Ctx)
+
+			if state.Global.Module.ModuleKind == TestSuiteModule {
+				testCaseResult, err := NewTestCaseResult(state.Global.Ctx, result, err, testCase)
+				if err != nil {
+					return nil, err
+				}
+				state.Global.TestCaseResults = append(state.Global.TestCaseResults, testCaseResult)
+			}
+			return Nil, nil
 		} else {
 			return testCase, nil
 		}

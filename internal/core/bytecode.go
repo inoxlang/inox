@@ -189,6 +189,8 @@ const (
 	OpCreateUpperBoundRange
 	OpCreateTestSuite
 	OpCreateTestCase
+	OpAddTestSuiteResult
+	OpAddTestCaseResult //add test case result if in test suite
 	OpCreateLifetimeJob
 	OpCreateReceptionHandler
 	OpCreateXMLelem
@@ -318,6 +320,8 @@ var OpcodeNames = [...]string{
 	OpCreateUpperBoundRange:        "CRT_UBRG",
 	OpCreateTestSuite:              "CRT_TSTS",
 	OpCreateTestCase:               "CRT_TSTC",
+	OpAddTestSuiteResult:           "ADD_TST_RES",
+	OpAddTestCaseResult:            "ADD_TSTC_RES",
 	OpCreateLifetimeJob:            "CRT_LFJOB",
 	OpCreateReceptionHandler:       "CRT_RHANDLER",
 	OpCreateXMLelem:                "CRT_XML_ELEM",
@@ -449,6 +453,8 @@ var OpcodeOperands = [...][]int{
 	OpCreateUpperBoundRange:        {},
 	OpCreateTestSuite:              {2},
 	OpCreateTestCase:               {2},
+	OpAddTestSuiteResult:           {},
+	OpAddTestCaseResult:            {},
 	OpCreateLifetimeJob:            {2, 2},
 	OpCreateReceptionHandler:       {},
 	OpCreateXMLelem:                {2, 1, 1},
@@ -576,6 +582,8 @@ var OpcodeConstantIndexes = [...][]bool{
 	OpCreateUpperBoundRange:        {},
 	OpCreateTestSuite:              {true},
 	OpCreateTestCase:               {true},
+	OpAddTestSuiteResult:           {},
+	OpAddTestCaseResult:            {},
 	OpCreateLifetimeJob:            {true, true},
 	OpCreateReceptionHandler:       {},
 	OpCreateXMLelem:                {true, false, false},

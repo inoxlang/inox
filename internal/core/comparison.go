@@ -1782,6 +1782,15 @@ func (c *TestCase) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]
 	return Same(c, otherCase)
 }
 
+func (r *TestCaseResult) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	otherResult, ok := other.(*TestCaseResult)
+	if !ok {
+		return false
+	}
+	//TODO: update
+	return Same(r, otherResult)
+}
+
 func (c *DynamicValue) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
 	return c.Resolve(ctx).Equal(ctx, other, alreadyCompared, depth)
 }

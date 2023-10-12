@@ -1406,12 +1406,49 @@ func (v *VM) run() {
 			chunk := v.constants[nodeIndex].(AstNode).Node.(*parse.Chunk)
 			meta := v.stack[v.sp-1]
 
-			suite, err := NewTestCase(meta, chunk, v.global)
+			//TODO: add location to test case
+			suite, err := NewTestCase(meta, chunk, v.global, nil, "")
 			if err != nil {
 				v.err = err
 				return
 			}
 			v.stack[v.sp-1] = suite
+		case OpAddTestSuiteResult:
+			lthread := v.stack[v.sp-2].(*LThread)
+			testSuite := v.stack[v.sp-3].(*TestSuite)
+			//v.stack[v.sp-1] : result (unused)
+
+			testCaseResults := lthread.state.TestCaseResults
+			testSuiteResults := lthread.state.TestSuiteResults
+
+			result, err := NewTestSuiteResult(v.global.Ctx, testCaseResults, testSuiteResults, testSuite)
+			if err != nil {
+				v.err = err
+				return
+			}
+			v.global.TestSuiteResults = append(v.global.TestSuiteResults, result)
+			v.stack[v.sp-1] = Nil
+			v.stack[v.sp-2] = Nil
+			v.stack[v.sp-3] = Nil
+			v.sp -= 3
+		case OpAddTestCaseResult:
+			lthread := v.stack[v.sp-2].(*LThread)
+			testSuite := v.stack[v.sp-3].(*TestSuite)
+			//v.stack[v.sp-1] : result (unused)
+
+			testCaseResults := lthread.state.TestCaseResults
+			testSuiteResults := lthread.state.TestSuiteResults
+
+			if v.global.Module.ModuleKind == TestSuiteModule {
+				result, err := NewTestSuiteResult(v.global.Ctx, testCaseResults, testSuiteResults, testSuite)
+				if err != nil {
+					v.err = err
+					return
+				}
+				v.global.TestSuiteResults = append(v.global.TestSuiteResults, result)
+			}
+
+			v.sp -= 3
 		case OpResolvePattern:
 			v.ip += 2
 			nameIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
@@ -2381,6 +2418,8 @@ func (v *VM) fnCall(numArgs int, spread, must bool) bool {
 	}
 
 	//get rid of callee & object
+	v.stack[v.sp-1] = Nil
+	v.stack[v.sp-2] = Nil
 	v.sp -= 2
 
 	var spreadArg *Array
