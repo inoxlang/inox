@@ -8255,6 +8255,37 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, &TestSuite{}, res)
 		})
 
+		t.Run("meta value should either be a string or a record: string", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`testsuite "my test case" {}`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, &TestSuite{}, res)
+		})
+
+		t.Run("meta value should either be a string or a record: record", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`testsuite #{} {}`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, &TestSuite{}, res)
+		})
+
+		t.Run("meta value should either be a string or a record: invalid value", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`testsuite 0 {}`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			intLit := parse.FindNode(n, (*parse.IntLiteral)(nil), nil)
+
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(intLit, state, META_VAL_OF_TEST_SUITES_SHOULD_EITHER_BE_A_STRING_OR_A_RECORD),
+			}, state.errors())
+			assert.Equal(t, &TestSuite{}, res)
+		})
+
 		t.Run("error in module", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`testsuite "name" {
 				(1 + true)
@@ -8278,6 +8309,37 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
+			assert.Equal(t, &TestCase{}, res)
+		})
+
+		t.Run("meta value should either be a string or a record: string", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`testcase "my test case" {}`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, &TestCase{}, res)
+		})
+
+		t.Run("meta value should either be a string or a record: record", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`testcase #{} {}`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, &TestCase{}, res)
+		})
+
+		t.Run("meta value should either be a string or a record: invalid value", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`testcase 0 {}`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			intLit := parse.FindNode(n, (*parse.IntLiteral)(nil), nil)
+
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(intLit, state, META_VAL_OF_TEST_CASES_SHOULD_EITHER_BE_A_STRING_OR_A_RECORD),
+			}, state.errors())
 			assert.Equal(t, &TestCase{}, res)
 		})
 

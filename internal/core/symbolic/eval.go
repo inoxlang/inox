@@ -4392,9 +4392,14 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 		return val, nil
 	case *parse.TestSuiteExpression:
 		if n.Meta != nil {
-			_, err := symbolicEval(n.Meta, state)
+			meta, err := symbolicEval(n.Meta, state)
 			if err != nil {
 				return nil, err
+			}
+			switch meta.(type) {
+			case *Record, StringLike:
+			default:
+				state.addError(makeSymbolicEvalError(n.Meta, state, META_VAL_OF_TEST_SUITES_SHOULD_EITHER_BE_A_STRING_OR_A_RECORD))
 			}
 		}
 
@@ -4430,9 +4435,15 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 		return &TestSuite{}, nil
 	case *parse.TestCaseExpression:
 		if n.Meta != nil {
-			_, err := symbolicEval(n.Meta, state)
+			meta, err := symbolicEval(n.Meta, state)
 			if err != nil {
 				return nil, err
+			}
+
+			switch meta.(type) {
+			case *Record, StringLike:
+			default:
+				state.addError(makeSymbolicEvalError(n.Meta, state, META_VAL_OF_TEST_CASES_SHOULD_EITHER_BE_A_STRING_OR_A_RECORD))
 			}
 		}
 

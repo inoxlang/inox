@@ -104,6 +104,10 @@ const (
 	META_PROPERTIES_NOT_ALLOWED_IN_EXTENSION_OBJECT      = "metaproperties are not allowed in the extension object"
 
 	THIS_VAL_IS_AN_OPT_LIT_DID_YOU_FORGET_A_SPACE = "this value is an option literal, did you forget a space between '-' and the variable name ?"
+
+	//test suites & cases
+	META_VAL_OF_TEST_SUITES_SHOULD_EITHER_BE_A_STRING_OR_A_RECORD = "meta value of test suites should either be a string or a record (e.g. #{ name: \"my test suite\"})"
+	META_VAL_OF_TEST_CASES_SHOULD_EITHER_BE_A_STRING_OR_A_RECORD  = "meta value of test cases should either be a string or a record (e.g. #{ name: \"my test suite\"})"
 )
 
 var (
