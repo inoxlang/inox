@@ -65,7 +65,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			assert.NotNil(t, api.tree.endpoint)
 			assert.Equal(t, "/", api.tree.path)
 			assert.Equal(t, "", api.tree.segment)
-			assert.Nil(t, api.tree.namedChildren)
+			assert.Empty(t, api.tree.namedChildren)
 			assert.Nil(t, api.tree.parametrizedChild)
 		})
 

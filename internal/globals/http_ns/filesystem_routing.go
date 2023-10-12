@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"maps"
 	"net/http"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -32,7 +31,6 @@ var (
 
 func createHandleDynamic(server *HttpServer, routingDirPath core.Path) handlerFn {
 	return func(req *HttpRequest, rw *HttpResponseWriter, handlerGlobalState *core.GlobalState) {
-		fls := server.state.Ctx.GetFileSystem()
 		path := req.Path
 		method := req.Method.UnderlyingString()
 
@@ -63,41 +61,36 @@ func createHandleDynamic(server *HttpServer, routingDirPath core.Path) handlerFn
 			searchedMethod = "GET"
 		}
 
-		//test different paths for the module
+		endpt, err := server.api.GetEndpoint(string(path))
+		if errors.Is(err, ErrEndpointNotFound) {
+			rw.writeStatus(http.StatusNotFound)
+			return
+		}
 
-		pathDir, pathBasename := filepath.Split(string(path))
-		//example: /about -> /GET-about.ix
-		modulePath := fls.Join(string(routingDirPath), pathDir, "/"+searchedMethod+"-"+pathBasename+INOX_FILE_EXTENSION)
-		methodSpecificModule := true
-
-		_, err := fls.Stat(modulePath)
 		if err != nil {
-			//example: /about -> /about/GET.ix
-			modulePath = fls.Join(string(routingDirPath), string(path), searchedMethod+INOX_FILE_EXTENSION)
-			_, err = fls.Stat(modulePath)
-			if err == nil {
-				goto module_path_resolved
-			}
+			handlerGlobalState.Logger.Err(err).Send()
+		}
 
-			//example: /about -> /about.ix
-			modulePath = fls.Join(string(routingDirPath), string(path)+INOX_FILE_EXTENSION)
+		methodSpecificModule := true
+		var module *core.Module
+
+		if endpt.catchAll {
 			methodSpecificModule = false
-
-			_, err = fls.Stat(modulePath)
-			if err == nil {
-				goto module_path_resolved
-			}
-
-			//example: /about -> /about/index.ix
-			modulePath = fls.Join(string(routingDirPath), string(path), FS_ROUTING_INDEX_MODULE)
-			_, err = fls.Stat(modulePath)
-			if err != nil {
-				rw.writeStatus(http.StatusNotFound)
-				return
+			module = endpt.catchAllHandler
+		} else {
+			for _, operation := range endpt.operations {
+				if operation.httpMethod == searchedMethod {
+					module = operation.handlerModule
+					break
+				}
 			}
 		}
-	module_path_resolved:
 
+		if module == nil {
+			rw.writeStatus(http.StatusNotFound)
+			return
+		}
+		modulePath := module.Name()
 		handlerCtx := handlerGlobalState.Ctx
 
 		//TODO: check the file is not writable
@@ -107,6 +100,7 @@ func createHandleDynamic(server *HttpServer, routingDirPath core.Path) handlerFn
 
 		state, _, _, err := mod.PrepareLocalScript(mod.ScriptPreparationArgs{
 			Fpath:                 modulePath,
+			CachedModule:          module,
 			ParentContext:         handlerCtx,
 			ParentContextRequired: true,
 

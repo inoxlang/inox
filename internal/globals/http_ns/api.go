@@ -1,20 +1,126 @@
 package http_ns
 
 import (
+	"errors"
+	"fmt"
+	"path/filepath"
+	"strings"
+
 	core "github.com/inoxlang/inox/internal/core"
 )
 
+var (
+	ErrEndpointNotFound    = errors.New("endpoint not found")
+	ErrAPINotFinalized     = errors.New("API value is not finalized")
+	ErrAPIAlreadyFinalized = errors.New("API value is already finalized")
+	ErrAPIBeingFinalized   = errors.New("API value is being finalized")
+)
+
+// API is a high level type that contains several endpoints, it is immutable.
 type API struct {
-	endpoints map[string]*ApiEndpoint
-	tree      *EndpointTreeNode
+	endpoints             map[string]*ApiEndpoint
+	patternToEndpointPath map[string]string //example: /users/* -> /users/{id}
+	tree                  *EndpointTreeNode
 }
 
 func newEmptyAPI() *API {
 	return &API{}
 }
 
+func NewAPI(endpoints map[string]*ApiEndpoint) (*API, error) {
+	api := &API{
+		endpoints: endpoints,
+	}
+
+	// clean paths
+	for endpointPath, endpt := range api.endpoints {
+		cleanPath := filepath.Clean(endpointPath)
+
+		if cleanPath != "/" {
+			cleanPath = strings.TrimSuffix(cleanPath, "/")
+		}
+
+		if endpointPath != cleanPath {
+			delete(api.endpoints, endpointPath)
+			api.endpoints[cleanPath] = endpt
+			endpt.path = cleanPath
+		}
+	}
+
+	//build the endpoint tree
+
+	api.tree = &EndpointTreeNode{path: "/", namedChildren: map[string]*EndpointTreeNode{}}
+
+	for endpointPath := range api.endpoints {
+		if endpointPath == "" || endpointPath[0] != '/' {
+			return nil, fmt.Errorf("invalid endpoint path %q", endpointPath)
+		}
+
+		if endpointPath == "/" {
+			continue
+		}
+
+		segments := strings.Split(endpointPath[1:], "/")
+		currentNode := api.tree
+
+		//update the endpoint tree
+		for i, segment := range segments {
+			path := "/" + strings.Join(segments[:i+1], "/")
+
+			if len(segment) == 0 {
+				return nil, fmt.Errorf("invalid endpoint path %q: one of the segment is empty", endpointPath)
+			}
+			if segment[0] == '{' { //parametrized
+				if segment[len(segment)-1] != '}' {
+					return nil, fmt.Errorf("invalid endpoint path %q: invalid parametrized segment %s", endpointPath, segment)
+				}
+				child := currentNode.parametrizedChild
+				if child == nil {
+					child = &EndpointTreeNode{
+						path:    path,
+						segment: segment,
+					}
+					currentNode.parametrizedChild = child
+				}
+				currentNode = child
+			} else {
+				child, ok := currentNode.namedChildren[segment]
+				if !ok {
+					if currentNode.namedChildren == nil {
+						currentNode.namedChildren = map[string]*EndpointTreeNode{}
+					}
+					child = &EndpointTreeNode{
+						path:    path,
+						segment: segment,
+					}
+					currentNode.namedChildren[segment] = child
+				}
+				currentNode = child
+			}
+		}
+	}
+
+	// set the endpoint of all nodes in the tree
+	err := api._walkEndpointTree(api.tree, func(node *EndpointTreeNode) error {
+		node.endpoint = api.endpoints[node.path] //ok if nil
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return api, nil
+}
+
+// APIEndpoint represents an endpoint and its supported operations (GET, POST, ...).
+// APIEndpoint is immutable.
 type ApiEndpoint struct {
-	path string //may have parameters
+	path     string //may have parameters
+	catchAll bool
+
+	//only set if filesystem routing is used.
+	//if set .operations is nil.
+	catchAllHandler *core.Module
 
 	operations []ApiOperation
 }
@@ -36,6 +142,47 @@ type EndpointTreeNode struct {
 	namedChildren     map[string]*EndpointTreeNode // examples if EndpointTree is /data: /data/name, /data/group
 	parametrizedChild *EndpointTreeNode            // example if EndpointTree is /users: /users/{id}
 	endpoint          *ApiEndpoint                 //can be nil
+}
+
+func (api *API) GetEndpoint(path string) (*ApiEndpoint, error) {
+	path = filepath.Clean(path)
+
+	if path == "/" {
+		endpoint, ok := api.endpoints["/"]
+		if !ok {
+			return nil, ErrEndpointNotFound
+		}
+		return endpoint, nil
+	}
+
+	path = strings.TrimSuffix(path, "/")
+	segments := strings.Split(path, "/")[1:]
+
+	node := api.tree.namedChildren[segments[0]]
+	if node == nil {
+		return nil, ErrEndpointNotFound
+	}
+
+	for i, segment := range segments {
+		if i == 0 {
+			continue
+		}
+
+		if node.parametrizedChild != nil {
+			//TODO: check
+			node = node.parametrizedChild
+		} else if child, ok := node.namedChildren[segment]; ok {
+			node = child
+		} else {
+			return nil, ErrEndpointNotFound
+		}
+	}
+
+	if node.endpoint == nil {
+		return nil, ErrEndpointNotFound
+	}
+
+	return node.endpoint, nil
 }
 
 func (api *API) forEachHandlerModule(visit func(mod *core.Module) error) error {

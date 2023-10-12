@@ -502,6 +502,21 @@ func (ctx *Context) GetClosestState() *GlobalState {
 	return ctx.getClosestStateNoLock()
 }
 
+// GetState returns the state associated with the context, the boolean is false if the state is not set.
+// To get the closest state GetClosestState() should be used.
+func (ctx *Context) GetState() (*GlobalState, bool) {
+	ctx.lock.RLock()
+	defer ctx.lock.RUnlock()
+
+	ctx.assertNotDone()
+
+	if ctx.state == nil {
+		return nil, false
+	}
+
+	return ctx.state, true
+}
+
 func (ctx *Context) getClosestStateNoLock() *GlobalState {
 	if ctx.state != nil {
 		return ctx.state

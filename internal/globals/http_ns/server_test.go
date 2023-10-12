@@ -18,6 +18,7 @@ import (
 
 	"slices"
 
+	"github.com/go-git/go-billy/v5/util"
 	"github.com/inoxlang/inox/internal/afs"
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
@@ -129,6 +130,11 @@ func TestHttpServerMissingProvidePermission(t *testing.T) {
 		defer default_state.UnsetDefaultRequestHandlingLimits()
 	}
 
+	if !default_state.AreDefaultMaxRequestHandlerLimitsSet() {
+		default_state.SetDefaultMaxRequestHandlerLimits([]core.Limit{})
+		defer default_state.UnsetDefaultMaxRequestHandlerLimits()
+	}
+
 	host := core.Host("https://localhost:8080")
 	ctx := core.NewContext(core.ContextConfig{
 		Filesystem: fs_ns.GetOsFilesystem(),
@@ -145,6 +151,11 @@ func TestHttpServerUserHandler(t *testing.T) {
 	if !default_state.AreDefaultRequestHandlingLimitsSet() {
 		default_state.SetDefaultRequestHandlingLimits([]core.Limit{})
 		defer default_state.UnsetDefaultRequestHandlingLimits()
+	}
+
+	if !default_state.AreDefaultMaxRequestHandlerLimitsSet() {
+		default_state.SetDefaultMaxRequestHandlerLimits([]core.Limit{})
+		defer default_state.UnsetDefaultMaxRequestHandlerLimits()
 	}
 
 	//TODO: rework test & add case where handler access a global
@@ -205,6 +216,11 @@ func TestHttpServerMapping(t *testing.T) {
 	if !default_state.AreDefaultRequestHandlingLimitsSet() {
 		default_state.SetDefaultRequestHandlingLimits([]core.Limit{})
 		defer default_state.UnsetDefaultRequestHandlingLimits()
+	}
+
+	if !default_state.AreDefaultMaxRequestHandlerLimitsSet() {
+		default_state.SetDefaultMaxRequestHandlerLimits([]core.Limit{})
+		defer default_state.UnsetDefaultMaxRequestHandlerLimits()
 	}
 
 	t.Run("CUSTOMMETHOD /x", func(t *testing.T) {
@@ -622,6 +638,8 @@ func setupTestCase(t *testing.T, testCase serverTestCase) (*core.GlobalState, *c
 		core.FilesystemPermission{Kind_: permkind.Write, Entity: core.PathPattern("/...")},
 	}
 
+	utils.PanicIfErr(util.WriteFile(fls, "/main.ix", []byte(testCase.input), 0700))
+
 	// create module
 	chunk := parse.MustParseChunk(testCase.input)
 	module := &core.Module{
@@ -895,7 +913,7 @@ func runAdvancedServerTest(
 			} else {
 				if !assert.Equal(t, info.status, resp.StatusCode, reqInfo) {
 					body, err := io.ReadAll(resp.Body)
-					if err != nil {
+					if err == nil {
 						t.Log("body content is ", body)
 					}
 					return

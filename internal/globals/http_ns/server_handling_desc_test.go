@@ -25,6 +25,11 @@ func TestHttpServerHandlingDescription(t *testing.T) {
 		defer default_state.UnsetDefaultRequestHandlingLimits()
 	}
 
+	if !default_state.AreDefaultMaxRequestHandlerLimitsSet() {
+		default_state.SetDefaultMaxRequestHandlerLimits([]core.Limit{})
+		defer default_state.UnsetDefaultMaxRequestHandlerLimits()
+	}
+
 	runHandlingDescTestCase := func(t *testing.T, testCase serverTestCase, defaultCreateClientFn func() *http.Client) {
 		state, ctx, chunk, host, err := setupTestCase(t, testCase)
 		if !assert.NoError(t, err) {

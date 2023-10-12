@@ -30,6 +30,10 @@ func readHttpServerArgs(ctx *core.Context, server *HttpServer, host core.Host, a
 	for _, limit := range default_state.GetDefaultRequestHandlingLimits() {
 		defaultLimits[limit.Name] = limit
 	}
+	maxLimits = map[string]core.Limit{}
+	for _, limit := range default_state.GetDefaultMaxRequestHandlerLimits() {
+		maxLimits[limit.Name] = limit
+	}
 
 	const HANDLING_ARG_NAME = "handler/handling"
 
