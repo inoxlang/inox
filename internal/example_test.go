@@ -2,7 +2,6 @@ package internal
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -34,7 +33,6 @@ const (
 var (
 	TIMING_OUT_EXAMPLES        = []string{"events.ix"}
 	CANCELLED_TOP_CTX_EXAMPLES = []string{"execution-time.ix", "rollback-on-cancellation.ix"}
-	FALSE_ASSERTION_EXAMPLES   = []string{"simple-testsuite.ix"}
 	SKIPPED_EXAMPLES           = []string{"get-resource.ix", "websocket.ix", "shared-patterns.ix", "add.ix"}
 
 	RUN_BROWSER_AUTOMATION_EXAMPLES = os.Getenv("RUN_BROWSER_AUTOMATION_EXAMPLES") == "true"
@@ -192,19 +190,6 @@ func testExample(t *testing.T, config exampleTestConfig) {
 		if utils.SliceContains(CANCELLED_TOP_CTX_EXAMPLES, filename) {
 			assert.Error(t, err)
 			assert.ErrorIs(t, err, context.Canceled)
-		} else if utils.SliceContains(FALSE_ASSERTION_EXAMPLES, filename) {
-			assert.Error(t, err)
-
-			e := errors.Unwrap(err)
-			for {
-				unwrapped := errors.Unwrap(e)
-				if unwrapped == nil {
-					break
-				}
-				e = unwrapped
-			}
-
-			assert.IsType(t, &core.AssertionError{}, e)
 		} else {
 			assert.NoError(t, err)
 		}

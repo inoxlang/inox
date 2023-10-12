@@ -1,0 +1,19 @@
+manifest {
+    permissions: {
+        create: {
+            threads: {}
+        }
+    }
+}
+
+testsuite {
+   testsuite {
+        testcase {
+            assert (1 == 2)
+        }
+        testcase {
+            assert (2 == 3)
+        }
+    }
+}
+
