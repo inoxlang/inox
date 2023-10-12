@@ -7,7 +7,7 @@ import (
 )
 
 func init() {
-	zerolog.DurationFieldInteger = true
+	zerolog.DurationFieldInteger = false
 	zerolog.DurationFieldUnit = time.Millisecond
 	zerolog.MessageFieldName = "msg"
 	zerolog.LevelFieldName = "lvl"
