@@ -179,7 +179,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 			return utils.SliceContains(accepted, input), nil
 		})
 
-		res, _, _, _, err := mod.RunLocalScript(mod.RunScriptArgs{
+		res, scriptState, _, _, err := mod.RunLocalScript(mod.RunScriptArgs{
 			Fpath:                     fpath,
 			PassedCLIArgs:             moduleArgs,
 			PreinitFilesystem:         compilationCtx.GetFileSystem(),
@@ -219,6 +219,22 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 				core.PrettyPrint(res, outW, prettyPrintConfig, 0, 0)
 				outW.Write([]byte("\n\r"))
 			}
+		}
+
+		//print test suite results
+
+		if scriptState == nil || len(scriptState.TestSuiteResults) == 0 {
+			return
+		}
+
+		outW.Write(utils.StringAsBytes("TEST RESULTS\n\r\n\r"))
+
+		colorized := config.DEFAULT_PRETTY_PRINT_CONFIG.Colorize
+		backgroundIsDark := config.INITIAL_BG_COLOR.IsDarkBackgroundColor()
+
+		for _, suiteResult := range scriptState.TestSuiteResults {
+			msg := utils.AddCarriageReturnAfterNewlines(suiteResult.MostAdaptedMessage(colorized, backgroundIsDark))
+			fmt.Fprint(outW, msg)
 		}
 	case "check":
 		if !checkNotRunningAsRoot(errW) {
