@@ -7,16 +7,18 @@ This package implements the functions provided by the ``fs`` namespace (availabl
     - ``cp`` (Copy)
 
 - [update.go](./update.go)
-    - ``rename``
-    - ``rm``
+    - ``rename`` (**mv** is an alias)
+    - ``rm`` (**remove** is an alias)
     - ...
 
 - [read.go](./read.go)
     - ``read``
     - ``read_file``
-    - ``find``
+    - ``ls``
     - ``isdir``
-    - ...
+    - ``isfile``
+    - ``exists``
+    - ``get_tree_data``
 
 - [find.go](./find.go)
     - ``find``
@@ -24,7 +26,7 @@ This package implements the functions provided by the ``fs`` namespace (availabl
 - [globbing.go](./globbing.go)
     - ``glob``
 
-- [open.go](./open.go)
+- [open.go](./file.go)
     - ``open``
 
 This package also contains several implementations of [afs.Filesystem](../../afs/abstract_fs.go):
