@@ -35,7 +35,7 @@ type File struct {
 	path core.Path
 }
 
-// OpenExisting is the implementation of fs.open, it's a wrapper around openExistingFile.
+// OpenExisting is the implementation of fs.open, it calls the internal openExistingFile function.
 func OpenExisting(ctx *core.Context, args ...core.Value) (*File, error) {
 	var pth core.Path
 	var write bool

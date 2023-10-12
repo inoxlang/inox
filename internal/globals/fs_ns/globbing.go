@@ -7,7 +7,42 @@ import (
 
 	fsutil "github.com/go-git/go-billy/v5/util"
 	afs "github.com/inoxlang/inox/internal/afs"
+	"github.com/inoxlang/inox/internal/core"
 )
+
+// Glob is the implementation of the fs.glob function, it calls the internal glob function.
+func Glob(ctx *core.Context, patt core.PathPattern) []core.Path {
+
+	if !patt.IsGlobbingPattern() {
+		panic(errors.New("cannot call glob function on non-globbing pattern"))
+	}
+
+	fls := ctx.GetFileSystem()
+	absPtt := patt.ToAbs(fls)
+
+	res, err := glob(fls, string(absPtt))
+	if err != nil {
+		panic(err)
+	}
+
+	list := make([]core.Path, len(res))
+	for i, e := range res {
+		stat, err := fls.Stat(e)
+		if err != nil {
+			panic(err)
+		}
+
+		if e[0] != '/' {
+			e = "./" + e
+		}
+
+		if stat.IsDir() {
+			e += "/"
+		}
+		list[i] = core.Path(e)
+	}
+	return list
+}
 
 func glob(fls afs.Filesystem, absPattern string) (matches []string, e error) {
 	if absPattern[0] != '/' {

@@ -57,36 +57,3 @@ func Find(ctx *core.Context, dir core.Path, filters ...core.Pattern) (*core.List
 
 	return core.NewWrappedValueList(found...), nil
 }
-
-func Glob(ctx *core.Context, patt core.PathPattern) []core.Path {
-
-	if !patt.IsGlobbingPattern() {
-		panic(errors.New("cannot call glob function on non-globbing pattern"))
-	}
-
-	fls := ctx.GetFileSystem()
-	absPtt := patt.ToAbs(fls)
-
-	res, err := glob(fls, string(absPtt))
-	if err != nil {
-		panic(err)
-	}
-
-	list := make([]core.Path, len(res))
-	for i, e := range res {
-		stat, err := fls.Stat(e)
-		if err != nil {
-			panic(err)
-		}
-
-		if e[0] != '/' {
-			e = "./" + e
-		}
-
-		if stat.IsDir() {
-			e += "/"
-		}
-		list[i] = core.Path(e)
-	}
-	return list
-}

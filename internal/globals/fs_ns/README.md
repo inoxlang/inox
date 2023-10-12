@@ -1,6 +1,6 @@
 # Filesystem Namespace
 
-This package implements the methods of the ``fs`` namespace, it is available by default in the global scope.
+This package implements the functions provided by the ``fs`` namespace (available by default in the global scope).
 - [make.go](./make.go)
     - ``mkdir``
     - ``mkfile``
@@ -18,8 +18,10 @@ This package implements the methods of the ``fs`` namespace, it is available by 
     - ``isdir``
     - ...
 
-- [find.go](./rfindead.go)
+- [find.go](./find.go)
     - ``find``
+
+- [globbing.go](./globbing.go)
     - ``glob``
 
 - [open.go](./open.go)
@@ -30,3 +32,4 @@ This package also contains several implementations of [afs.Filesystem](../../afs
 - [MetaFilesystem](./meta_filesystem.go)
 - [OsFilesystem](./os_filesystem_unix.go)
 
+File watching is implemented in [watcher_unix.go](./watcher_unix.go).
