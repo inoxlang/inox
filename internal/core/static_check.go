@@ -1832,6 +1832,78 @@ switch_:
 			c.addError(node, MISPLACED_EXTEND_STATEMENT_TOP_LEVEL_STMT)
 			return parse.Continue
 		}
+	case *parse.TestSuiteExpression:
+		hasSubsuiteStmt := false
+		hasTestCaseStmt := false
+
+		for _, stmt := range node.Module.Statements {
+			switch stmt := stmt.(type) {
+			case *parse.TestCaseExpression:
+				if stmt.IsStatement {
+					hasTestCaseStmt = true
+				}
+			case *parse.TestSuiteExpression:
+				if stmt.IsStatement {
+					hasSubsuiteStmt = true
+				}
+			}
+		}
+
+		if hasSubsuiteStmt && hasTestCaseStmt {
+			for _, stmt := range node.Module.Statements {
+				switch stmt := stmt.(type) {
+				case *parse.TestCaseExpression:
+					if stmt.IsStatement {
+						c.addError(stmt, TEST_CASES_NOT_ALLOWED_IF_SUBSUITES_ARE_PRESENT)
+					}
+				case *parse.TestSuiteExpression:
+					if stmt.IsStatement {
+						hasSubsuiteStmt = true
+					}
+				}
+			}
+		}
+
+		//check the statement is not in a testcase
+		if node.IsStatement {
+
+		search_test_case:
+			for i := len(ancestorChain) - 1; i >= 0; i-- {
+				switch ancestorChain[i].(type) {
+				case *parse.EmbeddedModule:
+					if i-1 <= 0 {
+						break search_test_case
+					}
+					testCaseExpr, ok := ancestorChain[i-1].(*parse.TestCaseExpression)
+					if ok && testCaseExpr.IsStatement {
+						c.addError(n, TEST_SUITE_STMTS_NOT_ALLOWED_INSIDE_TEST_CASE_STMTS)
+						break search_test_case
+					}
+				}
+			}
+		}
+	case *parse.TestCaseExpression:
+
+		inTestSuite := false
+
+	search_test_suite:
+		for i := len(ancestorChain) - 1; i >= 0; i-- {
+			switch ancestorChain[i].(type) {
+			case *parse.EmbeddedModule:
+				if i-1 <= 0 {
+					break search_test_suite
+				}
+				testSuiteExpr, ok := ancestorChain[i-1].(*parse.TestSuiteExpression)
+				if ok {
+					inTestSuite = testSuiteExpr.Module == ancestorChain[i]
+					break search_test_suite
+				}
+			}
+		}
+
+		if !inTestSuite && node.IsStatement && (c.currentModule == nil || c.currentModule.ModuleKind != TestSuiteModule) {
+			c.addError(n, TEST_CASE_STMTS_NOT_ALLOWED_OUTSIDE_OF_TEST_SUITES)
+		}
 	}
 
 	return parse.Continue

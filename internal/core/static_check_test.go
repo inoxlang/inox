@@ -2015,6 +2015,205 @@ func TestCheck(t *testing.T) {
 		})
 	})
 
+	t.Run("test suite statements", func(t *testing.T) {
+		t.Run("empty", func(t *testing.T) {
+			n, src := parseCode(`
+				manifest {}
+
+				testsuite {
+				}
+			`)
+
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
+		t.Run("testcase", func(t *testing.T) {
+			n, src := parseCode(`
+				manifest {}
+
+				testsuite {
+					testcase {
+
+					}
+				}
+			`)
+
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
+		t.Run("sub testsuite", func(t *testing.T) {
+			n, src := parseCode(`
+				manifest {}
+
+				testsuite {
+					testsuite {
+						
+					}
+				}
+			`)
+
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
+		t.Run(TEST_CASES_NOT_ALLOWED_IF_SUBSUITES_ARE_PRESENT, func(t *testing.T) {
+			n, src := parseCode(`
+				manifest {}
+
+				testsuite {
+					testcase {
+
+					}
+					testsuite {
+
+					}
+				}
+			`)
+
+			testCaseStmt := parse.FindNode(n, (*parse.TestCaseExpression)(nil), nil)
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(testCaseStmt, src, TEST_CASES_NOT_ALLOWED_IF_SUBSUITES_ARE_PRESENT),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run(TEST_CASES_NOT_ALLOWED_IF_SUBSUITES_ARE_PRESENT, func(t *testing.T) {
+			n, src := parseCode(`
+				manifest {}
+
+				testsuite {
+					testsuite {
+
+					}
+					testcase {
+
+					}
+				}
+			`)
+
+			testCaseStmt := parse.FindNode(n, (*parse.TestCaseExpression)(nil), nil)
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(testCaseStmt, src, TEST_CASES_NOT_ALLOWED_IF_SUBSUITES_ARE_PRESENT),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run(TEST_SUITE_STMTS_NOT_ALLOWED_INSIDE_TEST_CASE_STMTS, func(t *testing.T) {
+			n, src := parseCode(`
+				manifest {}
+
+				testsuite {
+					testcase {
+						testsuite {
+
+						}
+					}
+				}
+			`)
+
+			testCaseStmt := parse.FindNode(n, (*parse.TestCaseExpression)(nil), nil)
+			testSuiteStmt := parse.FindNode(testCaseStmt, (*parse.TestSuiteExpression)(nil), nil)
+
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(testSuiteStmt, src, TEST_SUITE_STMTS_NOT_ALLOWED_INSIDE_TEST_CASE_STMTS),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+	})
+
+	t.Run("test case statements", func(t *testing.T) {
+		t.Run("allowed in test suite modules", func(t *testing.T) {
+			n, src := parseCode(`
+				manifest {}
+
+				testcase {}
+			`)
+
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{
+				Node:  n,
+				Chunk: src,
+				//test suite module
+				Module: &Module{
+					MainChunk:  src,
+					ModuleKind: TestSuiteModule,
+				},
+			}))
+		})
+
+		t.Run(TEST_CASE_STMTS_NOT_ALLOWED_OUTSIDE_OF_TEST_SUITES, func(t *testing.T) {
+			n, src := parseCode(`
+				manifest {}
+
+				testcase {}
+			`)
+
+			testCaseStmt := parse.FindNode(n, (*parse.TestCaseExpression)(nil), nil)
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(testCaseStmt, src, TEST_CASE_STMTS_NOT_ALLOWED_OUTSIDE_OF_TEST_SUITES),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run(TEST_CASE_STMTS_NOT_ALLOWED_OUTSIDE_OF_TEST_SUITES, func(t *testing.T) {
+			n, src := parseCode(`
+				manifest {}
+
+				fn f(){
+					testcase {}
+				}
+			`)
+
+			testCaseStmt := parse.FindNode(n, (*parse.TestCaseExpression)(nil), nil)
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(testCaseStmt, src, TEST_CASE_STMTS_NOT_ALLOWED_OUTSIDE_OF_TEST_SUITES),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+	})
+
+	t.Run("testsuite expression", func(t *testing.T) {
+
+		t.Run("testsuite expression has its own local scope", func(t *testing.T) {
+			n, src := parseCode(`
+				a = 1
+				testsuite { a }
+			`)
+
+			identLiteral := parse.FindNodes(n, (*parse.IdentifierLiteral)(nil), nil)[1]
+
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(identLiteral, src, fmtVarIsNotDeclared("a")),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+	})
+
+	t.Run("testcase expression", func(t *testing.T) {
+
+		t.Run("testsuite expression has its own local scope", func(t *testing.T) {
+			n, src := parseCode(`
+				a = 1
+				return testcase { a }
+			`)
+
+			identLiteral := parse.FindNodes(n, (*parse.IdentifierLiteral)(nil), nil)[1]
+
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(identLiteral, src, fmtVarIsNotDeclared("a")),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+	})
+
 	t.Run("inclusion import statement", func(t *testing.T) {
 		t.Run("not allowed in functions", func(t *testing.T) {
 			moduleName := "mymod.ix"
@@ -2798,44 +2997,6 @@ func TestCheck(t *testing.T) {
 			expectedErr := utils.CombineErrors(
 				makeError(callNode, src, fmtFollowingNodeTypeNotAllowedInAssertions(callNode)),
 				makeError(callNode, src, fmtVarIsNotDeclared("sideEffect")),
-			)
-			assert.Equal(t, expectedErr, err)
-		})
-
-	})
-
-	t.Run("testsuite expression", func(t *testing.T) {
-
-		t.Run("testsuite expression has its own local scope", func(t *testing.T) {
-			n, src := parseCode(`
-				a = 1
-				testsuite { a }
-			`)
-
-			identLiteral := parse.FindNodes(n, (*parse.IdentifierLiteral)(nil), nil)[1]
-
-			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
-			expectedErr := utils.CombineErrors(
-				makeError(identLiteral, src, fmtVarIsNotDeclared("a")),
-			)
-			assert.Equal(t, expectedErr, err)
-		})
-
-	})
-
-	t.Run("testcase expression", func(t *testing.T) {
-
-		t.Run("testsuite expression has its own local scope", func(t *testing.T) {
-			n, src := parseCode(`
-				a = 1
-				testcase { a }
-			`)
-
-			identLiteral := parse.FindNodes(n, (*parse.IdentifierLiteral)(nil), nil)[1]
-
-			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
-			expectedErr := utils.CombineErrors(
-				makeError(identLiteral, src, fmtVarIsNotDeclared("a")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})

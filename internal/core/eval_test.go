@@ -7366,11 +7366,15 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	t.Run("testcase statement", func(t *testing.T) {
 
 		t.Run("manifest with ungranted permissions", func(t *testing.T) {
-			code := `testcase "name" {
-				manifest {    
-					permissions: { read: https://example.com/index.html }
+			code := `
+				testsuite {
+					testcase "name" {
+						manifest {    
+							permissions: { read: https://example.com/index.html }
+						}
+					}
 				}
-			}`
+			`
 
 			state := NewGlobalState(NewContext(ContextConfig{
 				Permissions: []Permission{LThreadPermission{Kind_: permkind.Create}},

@@ -116,6 +116,11 @@ const (
 
 	VARS_NOT_ALLOWED_IN_EXTENDED_PATTERN_AND_EXTENSION_OBJECT_PROPERTIES = "variables are not allowed in the extended pattern and " +
 		"in the extension object's properties"
+
+	//test suites & cases
+	TEST_CASES_NOT_ALLOWED_IF_SUBSUITES_ARE_PRESENT     = "test cases are not allowed if sub suites are presents"
+	TEST_CASE_STMTS_NOT_ALLOWED_OUTSIDE_OF_TEST_SUITES  = "test case statements are not allowed outside of test suites"
+	TEST_SUITE_STMTS_NOT_ALLOWED_INSIDE_TEST_CASE_STMTS = "test suite statements are not allowed in test case statements"
 )
 
 func fmtNotValidPermissionKindName(name string) string {
