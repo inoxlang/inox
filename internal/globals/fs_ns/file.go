@@ -1,12 +1,15 @@
 package fs_ns
 
 import (
+	"errors"
+	"fmt"
 	"io"
 	"io/fs"
 	"math"
 	"os"
 
 	"github.com/inoxlang/inox/internal/afs"
+	"github.com/inoxlang/inox/internal/commonfmt"
 	core "github.com/inoxlang/inox/internal/core"
 
 	"github.com/inoxlang/inox/internal/permkind"
@@ -30,6 +33,36 @@ const (
 type File struct {
 	f    afs.File
 	path core.Path
+}
+
+// OpenExisting is the implementation of fs.open, it's a wrapper around openExistingFile.
+func OpenExisting(ctx *core.Context, args ...core.Value) (*File, error) {
+	var pth core.Path
+	var write bool
+
+	for _, arg := range args {
+
+		switch a := arg.(type) {
+		case core.Path:
+			if pth != "" {
+				return nil, commonfmt.FmtErrArgumentProvidedAtLeastTwice("path")
+			}
+			pth = a
+		case core.Option:
+			switch a.Name {
+			case "w":
+				if boolean, ok := a.Value.(core.Bool); ok {
+					write = bool(boolean)
+				} else {
+					return nil, errors.New("-w should have a boolean value")
+				}
+			}
+		default:
+			return nil, fmt.Errorf("invalid argument %v", a)
+		}
+	}
+
+	return openExistingFile(ctx, pth, write)
 }
 
 func openExistingFile(ctx *core.Context, pth core.Path, write bool) (*File, error) {
