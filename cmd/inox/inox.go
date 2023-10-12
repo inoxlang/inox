@@ -74,15 +74,7 @@ const (
 		"The run command:\n" +
 		"\trun <script path> [passed arguments]\n"
 
-	LINE_SEP                = "\n-----------------------------------------"
-	ADD_SERVICE_END_MESSAGE = LINE_SEP +
-		"\nyou can now enable then start the inox service by running the following commands as root:" +
-		"\nsystemctl enable inox" +
-		"\nsystemctl start inox" +
-		LINE_SEP +
-		"\nThis will start a project server listening on the port " + DEFAULT_PROJECT_SERVER_PORT + "." +
-		"\nYou can see the status of the service by running the following command:" +
-		"\nsystemctl status inox\n"
+	LINE_SEP = "\n-----------------------------------------"
 )
 
 func main() {
@@ -246,13 +238,34 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 			fmt.Fprintln(errW, err)
 		}
 
-		err = systemdprovider.WriteInoxUnitFile(username, homedir, uid)
+		unitName, err := systemdprovider.WriteInoxUnitFile(username, homedir, uid, outW)
+		alreadyExists := errors.Is(err, systemdprovider.ErrUnitFileExists)
 		if err != nil {
-			fmt.Fprintln(errW, err)
+			fmt.Fprintln(outW, err)
+			if !alreadyExists {
+				return
+			}
 		} else {
 			fmt.Fprintln(outW, "unit file created")
-			fmt.Fprintln(outW, ADD_SERVICE_END_MESSAGE)
 		}
+
+		//enable & start inox
+		if !alreadyExists {
+			err = systemdprovider.EnableInoxd(unitName, outW, errW)
+			if err != nil {
+				fmt.Fprintln(errW, err)
+				return
+			}
+		}
+
+		restart := alreadyExists
+
+		err = systemdprovider.StartInoxd(unitName, restart, outW, errW)
+		if err != nil {
+			fmt.Fprintln(errW, err)
+			return
+		}
+		fmt.Fprintln(outW, "")
 	case "lsp":
 		if !checkNotRunningAsRoot(errW) {
 			os.Exit(INVALID_INPUT_STATUS)

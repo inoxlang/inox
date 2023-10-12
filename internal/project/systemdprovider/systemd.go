@@ -7,6 +7,11 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
+	"path/filepath"
+	"slices"
+	"strings"
+	"time"
 
 	"github.com/coreos/go-systemd/v22/unit"
 )
@@ -14,27 +19,42 @@ import (
 const (
 	DEFAULT_INOX_PATH        = "/usr/local/bin/inox"
 	SYSTEMD_DIR_PATH         = "/etc/systemd"
-	INOX_SERVICE_UNIT_PATH   = SYSTEMD_DIR_PATH + "/system/inox.service"
+	INOX_SERVICE_UNIT_NAME   = "inox"
+	INOX_SERVICE_UNIT_PATH   = SYSTEMD_DIR_PATH + "/system/" + INOX_SERVICE_UNIT_NAME + ".service"
 	INOX_SERVICE_UNIT_FPERMS = 0o644
+
+	SYSTEMCTL_CMD_NAME = "systemctl"
 )
 
 var (
 	ErrUnitFileExists = errors.New("unit file already exists")
+	ErrNoSystemd      = errors.New("systemd does not seem to be the init system on this machine")
+
+	SYSTEMCTL_ALLOWED_LOCATIONS = []string{"/usr/bin/systemctl"}
 )
 
-func WriteInoxUnitFile(username, homedir string, uid int) error {
+// WriteInoxUnitFile writes the unit file for the inox service at INOX_SERVICE_UNIT_PATH, if the file already exists
+// ErrUnitFileExists is returned and unitName is set.
+func WriteInoxUnitFile(username, homedir string, uid int, out io.Writer) (unitName string, _ error) {
 	path := INOX_SERVICE_UNIT_PATH
+	unitName = strings.TrimSuffix(filepath.Base(path), ".service")
 
 	if _, err := os.Stat(SYSTEMD_DIR_PATH); os.IsNotExist(err) {
-		return fmt.Errorf("systemd does not seem to be the init system on this machine")
+		return "", fmt.Errorf("%w: dir %s does not exist", ErrNoSystemd, SYSTEMD_DIR_PATH)
 	} else if err != nil {
-		return err
+		return "", err
+	}
+
+	if _, err := exec.LookPath(SYSTEMCTL_CMD_NAME); err != nil {
+		return "", fmt.Errorf("%w: the %s command is not present", ErrNoSystemd, SYSTEMCTL_CMD_NAME)
+	} else if err != nil {
+		return "", err
 	}
 
 	if _, err := os.Stat(path); err == nil {
-		return fmt.Errorf("%w: %s", ErrUnitFileExists, path)
+		return unitName, fmt.Errorf("%w: %s", ErrUnitFileExists, path)
 	} else if !os.IsNotExist(err) {
-		return err
+		return "", err
 	}
 
 	unitSection := unit.UnitSection{
@@ -94,8 +114,76 @@ func WriteInoxUnitFile(username, homedir string, uid int) error {
 	}))
 
 	if err != nil {
+		return "", err
+	}
+
+	fmt.Fprintln(out, "\nwrite "+path+":")
+
+	return unitName, os.WriteFile(path, serialized, INOX_SERVICE_UNIT_FPERMS)
+}
+
+func EnableInoxd(unitName string, out io.Writer, errOut io.Writer) error {
+	systemctlPath, err := exec.LookPath(SYSTEMCTL_CMD_NAME)
+	if err != nil {
 		return err
 	}
 
-	return os.WriteFile(path, serialized, INOX_SERVICE_UNIT_FPERMS)
+	if !slices.Contains(SYSTEMCTL_ALLOWED_LOCATIONS, systemctlPath) {
+		return fmt.Errorf("the binary for the %s command has an unexpected location: %q", SYSTEMCTL_CMD_NAME, systemctlPath)
+	}
+
+	cmd := exec.Command(systemctlPath, "enable", unitName)
+	cmd.Stderr = errOut
+	cmd.Stdout = out
+
+	fmt.Fprintln(out, "\nenable inoxd service:")
+	fmt.Fprintln(out, cmd.String())
+
+	return cmd.Run()
+}
+
+func StartInoxd(unitName string, restart bool, out io.Writer, errOut io.Writer) error {
+	systemctlPath, err := exec.LookPath(SYSTEMCTL_CMD_NAME)
+	if err != nil {
+		return err
+	}
+
+	if !slices.Contains(SYSTEMCTL_ALLOWED_LOCATIONS, systemctlPath) {
+		return fmt.Errorf("the binary for the %s command has an unexpected location: %q", SYSTEMCTL_CMD_NAME, systemctlPath)
+	}
+
+	subcmd := "start"
+	if restart {
+		subcmd = "restart"
+	}
+
+	startCmd := exec.Command(systemctlPath, subcmd, unitName)
+	startCmd.Stderr = errOut
+	startCmd.Stdout = out
+
+	fmt.Fprintln(out, "\nstart inoxd service:")
+	fmt.Fprintln(out, startCmd.String())
+
+	err = startCmd.Run()
+	if err != nil {
+		return err
+	}
+
+	//wait a bit before getting the status
+	time.Sleep(time.Second)
+
+	//get and print status
+
+	statusCmd := exec.Command(systemctlPath, "status", unitName)
+
+	//wrap out & errOut to disable interactivity.
+	//TODO: force systemctl to use colors, setting SYSTEMD_COLORS=1 and SYSTEMD_URLIFY=0 does not seem to work (?).
+	statusCmd.Stdout = io.MultiWriter(out)
+	statusCmd.Stderr = io.MultiWriter(errOut)
+
+	fmt.Fprintln(out, "\nget status:")
+	fmt.Fprintln(out, statusCmd.String())
+
+	err = statusCmd.Run()
+	return err
 }
