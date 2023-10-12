@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"strconv"
+	"time"
 
 	"github.com/inoxlang/inox/internal/afs"
 	core "github.com/inoxlang/inox/internal/core"
@@ -19,6 +20,10 @@ import (
 	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/project"
 	"github.com/inoxlang/inox/internal/utils"
+)
+
+const (
+	MOD_PREP_LOG_SRC = "mod-prep"
 )
 
 var (
@@ -101,6 +106,9 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 		return
 	}
 
+	//the src field is not added to the logger because it is very likely present.
+	logger := args.ParsingCompilationContext.Logger()
+
 	// parse module or use cache
 
 	var parsingErr error
@@ -108,11 +116,14 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 	if args.CachedModule != nil {
 		mod = args.CachedModule
 	} else {
+		start := time.Now()
+
 		var module *core.Module
 		module, parsingErr = core.ParseLocalModule(args.Fpath, core.ModuleParsingConfig{
 			Context:                             args.ParsingCompilationContext,
 			RecoverFromNonExistingIncludedFiles: args.DataExtractionMode,
 		})
+		logger.Debug().Dur("parsing", time.Since(start)).Send()
 
 		mod = module
 
@@ -147,6 +158,8 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 	}
 
 	if mod != nil {
+		preinitStart := time.Now()
+
 		manifest, preinitState, preinitStaticCheckErrors, preinitErr = mod.PreInit(core.PreinitArgs{
 			GlobalConsts:          mod.MainChunk.Node.GlobalConstantDeclarations,
 			ParentState:           parentState,
@@ -160,6 +173,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 			AdditionalGlobalsTestOnly: args.AdditionalGlobalsTestOnly,
 			Project:                   args.Project,
 		})
+		logger.Debug().Dur("preinit-dur", time.Since(preinitStart)).Send()
 
 		if (!args.DataExtractionMode && preinitErr != nil) || errors.Is(preinitErr, core.ErrParsingErrorInManifestOrPreinit) {
 			finalErr = preinitErr
@@ -256,6 +270,8 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 	dbs := map[string]*core.DatabaseIL{}
 	ownedDatabases := map[string]struct{}{}
 
+	dbOpeningStart := time.Now()
+
 	for _, config := range manifest.Databases {
 		if config.Provided != nil {
 			dbs[config.Name] = config.Provided
@@ -336,6 +352,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 			}
 		}
 	}
+	logger.Debug().Dur("db-openings-dur", time.Since(dbOpeningStart)).Send()
 
 	//add project-secrets global
 	if args.Project != nil {
@@ -410,6 +427,8 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 
 	// static check
 
+	staticCheckStart := time.Now()
+
 	staticCheckData, staticCheckErr := core.StaticCheck(core.StaticCheckInput{
 		State:   state,
 		Module:  mod,
@@ -425,6 +444,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 		Patterns:          state.Ctx.GetNamedPatterns(),
 		PatternNamespaces: state.Ctx.GetPatternNamespaces(),
 	})
+	logger.Debug().Dur("static-check-dur", time.Since(staticCheckStart)).Send()
 
 	state.StaticCheckData = staticCheckData
 
@@ -481,6 +501,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 		symbolicBasePatternNamespaces[k] = utils.Must(v.ToSymbolicValue(ctx, encountered)).(*symbolic.PatternNamespace)
 	}
 
+	symbolicCheckStart := time.Now()
 	symbolicData, symbolicCheckError := symbolic.SymbolicEvalCheck(symbolic.SymbolicEvalCheckInput{
 		Node:                           mod.MainChunk.Node,
 		Module:                         state.Module.ToSymbolic(),
@@ -493,6 +514,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 
 		Context: symbolicCtx,
 	})
+	logger.Debug().Dur("symb-check-dur", time.Since(symbolicCheckStart)).Send()
 
 	isCriticalSymbolicCheckError := symbolicCheckError != nil && symbolicData == nil
 
