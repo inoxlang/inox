@@ -14,13 +14,22 @@ const ASSERTION_BUFF_WRITER_SIZE = 100
 type AssertionError struct {
 	msg  string
 	data *AssertionData
+
+	isTestAssertion bool
+	testModule      *Module //set if isTestAssertion
 }
 
 func (err *AssertionError) ShallowCopy() *AssertionError {
 	return &AssertionError{
-		msg:  err.msg,
-		data: err.data,
+		msg:             err.msg,
+		data:            err.data,
+		isTestAssertion: err.isTestAssertion,
+		testModule:      err.testModule,
 	}
+}
+
+func (err AssertionError) IsTestAssertion() bool {
+	return err.isTestAssertion
 }
 
 func (err AssertionError) Error() string {

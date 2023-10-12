@@ -2567,7 +2567,19 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		}
 
 		if !ok.(Bool) {
-			panic(&AssertionError{msg: "assertion is false", data: data})
+			modKind := state.Global.Module.ModuleKind
+			isTestAssertion := modKind == TestSuiteModule || modKind == TestCaseModule
+			var testModule *Module
+			if isTestAssertion {
+				testModule = state.Global.Module
+			}
+
+			panic(&AssertionError{
+				msg:             "assertion is false",
+				data:            data,
+				isTestAssertion: isTestAssertion,
+				testModule:      testModule,
+			})
 		}
 
 		return Nil, nil

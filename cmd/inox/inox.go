@@ -199,11 +199,19 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 			var assertionErr *core.AssertionError
 			var errString string
 
+			isTestAssertionError := false
+
 			if errors.As(err, &assertionErr) {
+				isTestAssertionError = assertionErr.IsTestAssertion()
 				errString = assertionErr.PrettySPrint(prettyPrintConfig)
 			}
-			errString += "\n" + utils.StripANSISequences(err.Error())
 
+			//if the error is about a test assertion we only print the pretty version.
+			if !isTestAssertionError {
+				errString += "\n" + utils.StripANSISequences(err.Error())
+			}
+
+			//print
 			errString = utils.AddCarriageReturnAfterNewlines(errString)
 			fmt.Fprint(errW, errString, "\n\r")
 		} else {

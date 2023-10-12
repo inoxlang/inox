@@ -2209,12 +2209,24 @@ func (v *VM) run() {
 			ok := v.stack[v.sp-1].(Bool)
 			v.sp--
 
+			modKind := v.global.Module.ModuleKind
+			isTestAssertion := modKind == TestSuiteModule || modKind == TestCaseModule
+			var testModule *Module
+			if isTestAssertion {
+				testModule = v.global.Module
+			}
+
 			if !ok {
 				data := &AssertionData{
 					assertionStatement: stmt,
 					intermediaryValues: map[parse.Node]Value{},
 				}
-				v.err = &AssertionError{msg: "assertion is false", data: data}
+				v.err = &AssertionError{
+					msg:             "assertion is false",
+					data:            data,
+					isTestAssertion: isTestAssertion,
+					testModule:      testModule,
+				}
 				return
 			}
 		case OpConcat:
