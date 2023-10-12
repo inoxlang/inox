@@ -59,11 +59,13 @@ func newInMemoryStorage(maxStorageSize core.ByteCount) *inMemStorage {
 	return storage
 }
 
-func newInMemoryStorageFromSnapshot(snapshot FilesystemSnapshot, maxStorageSize core.ByteCount) *inMemStorage {
+func newInMemoryStorageFromSnapshot(snapshot core.FilesystemSnapshot, maxStorageSize core.ByteCount) *inMemStorage {
 	storage := newInMemoryStorage(maxStorageSize)
 
 	//create all files & directories
-	for path, metadata := range snapshot.Metadata {
+	snapshot.ForEachEntry(func(metadata core.EntrySnapshotMetadata) error {
+		path := string(metadata.AbsolutePath)
+
 		file := &InMemfile{
 			basename:     filepath.Base(path),
 			originalPath: path,
@@ -72,7 +74,6 @@ func newInMemoryStorageFromSnapshot(snapshot FilesystemSnapshot, maxStorageSize 
 			mode:         fs.FileMode(metadata.Mode),
 		}
 		storage.files[path] = file
-		content, ok := snapshot.FileContents[path]
 
 		file.content = &InMemFileContent{
 			name:                     file.basename,
@@ -83,28 +84,35 @@ func newInMemoryStorageFromSnapshot(snapshot FilesystemSnapshot, maxStorageSize 
 
 		file.content.modificationTime.Store(time.Time(metadata.ModificationTime))
 
-		if ok {
-			file.content.bytes = utils.Must(io.ReadAll(content.Reader()))
-
-			if len(file.content.bytes) != int(metadata.Size) {
-				panic(fmt.Errorf("failed to create filesystem from snapshot, inconsistency: size of file %s is %d but size of content is %d",
-					path, metadata.Size, len(file.content.bytes)))
-			}
-		} else {
-
+		if !metadata.IsRegularFile() {
+			return nil
 		}
-	}
+
+		content, err := snapshot.Content(path)
+		if err != nil {
+			return err
+		}
+
+		file.content.bytes = utils.Must(io.ReadAll(content.Reader()))
+
+		if len(file.content.bytes) != int(metadata.Size) {
+			return fmt.Errorf("failed to create filesystem from snapshot, inconsistency: size of file %s is %d but size of content is %d",
+				path, metadata.Size, len(file.content.bytes))
+		}
+
+		return nil
+	})
 
 	//create structure
-
 	children := map[string]*InMemfile{}
 	storage.children["/"] = children
 
-	for path, metadata := range snapshot.Metadata {
+	snapshot.ForEachEntry(func(metadata core.EntrySnapshotMetadata) error {
+		path := string(metadata.AbsolutePath)
 		file := storage.files[path]
 
 		if !file.mode.IsDir() {
-			continue
+			return nil
 		}
 
 		children := map[string]*InMemfile{}
@@ -114,7 +122,9 @@ func newInMemoryStorageFromSnapshot(snapshot FilesystemSnapshot, maxStorageSize 
 			childPath := filepath.Join(path, child)
 			children[child] = storage.files[childPath]
 		}
-	}
+		return nil
+	})
+
 	return storage
 }
 

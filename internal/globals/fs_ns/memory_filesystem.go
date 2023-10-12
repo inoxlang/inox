@@ -17,7 +17,7 @@ import (
 )
 
 var (
-	_ SnapshotableFilesystem = (*MemFilesystem)(nil)
+	_ core.SnapshotableFilesystem = (*MemFilesystem)(nil)
 )
 
 type MemFilesystem struct {
@@ -29,7 +29,7 @@ func NewMemFilesystem(maxTotalStorageSize core.ByteCount) *MemFilesystem {
 	return &MemFilesystem{s: newInMemoryStorage(maxTotalStorageSize)}
 }
 
-func NewMemFilesystemFromSnapshot(snapshot FilesystemSnapshot, maxTotalStorageSize core.ByteCount) *MemFilesystem {
+func NewMemFilesystemFromSnapshot(snapshot core.FilesystemSnapshot, maxTotalStorageSize core.ByteCount) *MemFilesystem {
 	storage := newInMemoryStorageFromSnapshot(snapshot, maxTotalStorageSize)
 
 	return &MemFilesystem{
@@ -224,14 +224,14 @@ func (fs *MemFilesystem) Capabilities() billy.Capability {
 		billy.TruncateCapability
 }
 
-func (fs *MemFilesystem) TakeFilesystemSnapshot(getContent func(ChecksumSHA256 [32]byte) AddressableContent) FilesystemSnapshot {
+func (fs *MemFilesystem) TakeFilesystemSnapshot(getContent func(ChecksumSHA256 [32]byte) core.AddressableContent) core.FilesystemSnapshot {
 	storage := fs.s
 	storage.lock.RLock()
 	defer storage.lock.RUnlock()
 
-	snapshot := FilesystemSnapshot{
-		Metadata:     make(map[string]*FileMetadata, len(storage.files)),
-		FileContents: make(map[string]AddressableContent, len(storage.files)),
+	snapshot := &InMemorySnapshot{
+		MetadataMap:  make(map[string]*core.EntrySnapshotMetadata, len(storage.files)),
+		FileContents: make(map[string]core.AddressableContent, len(storage.files)),
 	}
 
 	for normalizedPath, f := range storage.files {
@@ -247,7 +247,7 @@ func (fs *MemFilesystem) TakeFilesystemSnapshot(getContent func(ChecksumSHA256 [
 			childNames = append(childNames, filepath.Base(child))
 		}
 
-		metadata := &FileMetadata{
+		metadata := &core.EntrySnapshotMetadata{
 			Size:             info.Size_,
 			AbsolutePath:     f.absPath,
 			CreationTime:     info.CreationTime_,
@@ -256,7 +256,7 @@ func (fs *MemFilesystem) TakeFilesystemSnapshot(getContent func(ChecksumSHA256 [
 			ChildNames:       childNames,
 		}
 
-		snapshot.Metadata[normalizedPath] = metadata
+		snapshot.MetadataMap[normalizedPath] = metadata
 
 		if !info.IsDir() {
 			metadata.ChecksumSHA256 = sha256.Sum256(f.content.bytes)
