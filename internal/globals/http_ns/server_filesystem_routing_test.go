@@ -390,7 +390,7 @@ func TestFilesystemRouting(t *testing.T) {
 		)
 	})
 
-	t.Run("a status of 500 (internal error) should be returned if the handler uses all its CPU time", func(t *testing.T) {
+	t.Run("a status of 500 should be returned if the handler uses all its CPU time, subsequent requests should be ok", func(t *testing.T) {
 		var start time.Time
 		var end time.Time
 
@@ -402,7 +402,7 @@ func TestFilesystemRouting(t *testing.T) {
 				makeFilesystem: func() afs.Filesystem {
 					fls := fs_ns.NewMemFilesystem(10_000)
 					fls.MkdirAll("/routes", fs_ns.DEFAULT_DIR_FMODE)
-					util.WriteFile(fls, "/routes/x.ix", []byte(`
+					util.WriteFile(fls, "/routes/compute.ix", []byte(`
 							manifest {}
 
 							a = 1
@@ -412,6 +412,10 @@ func TestFilesystemRouting(t *testing.T) {
 	
 							return "end"
 						`), fs_ns.DEFAULT_FILE_FMODE)
+					util.WriteFile(fls, "/routes/no-compute.ix", []byte(`
+						manifest {}
+						return "end"
+					`), fs_ns.DEFAULT_FILE_FMODE)
 
 					return fls
 				},
@@ -423,9 +427,29 @@ func TestFilesystemRouting(t *testing.T) {
 						onStatusReceived: func() {
 							end = time.Now()
 						},
-						path:                "/x",
+						path:                "/compute",
 						acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
 						status:              http.StatusInternalServerError,
+					},
+					//subsequent requests should be ok
+					{
+						pause:               cpuTime,
+						path:                "/no-compute",
+						acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
+						status:              http.StatusOK,
+						result:              "end",
+					},
+					{
+						path:                "/no-compute",
+						acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
+						status:              http.StatusOK,
+						result:              "end",
+					},
+					{
+						path:                "/no-compute",
+						acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
+						status:              http.StatusOK,
+						result:              "end",
 					},
 				},
 			},
