@@ -1345,6 +1345,7 @@ func (p *Port) WidestOfType() SymbolicValue {
 // A Udata represents a symbolic UData.
 type UData struct {
 	_ int
+	SerializableMixin
 }
 
 func (i *UData) Test(v SymbolicValue) bool {

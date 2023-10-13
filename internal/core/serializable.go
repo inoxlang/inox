@@ -36,6 +36,8 @@ var (
 		FileInfo{},
 
 		(*Option)(nil),
+
+		(*UData)(nil),
 	}
 )
 

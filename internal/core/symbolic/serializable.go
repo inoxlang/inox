@@ -41,6 +41,8 @@ var (
 		(*Option)(nil),
 
 		(*AnySerializable)(nil),
+
+		(*UData)(nil),
 	}
 )
 
