@@ -67,6 +67,7 @@ var (
 	STR_PATTERN_ELEMENT_INTERFACE_TYPE = reflect.TypeOf((*StringPattern)(nil)).Elem()
 	FORMAT_INTERFACE_TYPE              = reflect.TypeOf((*Format)(nil)).Elem()
 	IN_MEM_SNAPSHOTABLE                = reflect.TypeOf((*InMemorySnapshotable)(nil)).Elem()
+	FS_SNAPSHOT_TYPE                   = reflect.TypeOf((*FilesystemSnapshot)(nil)).Elem()
 
 	ANY_READABLE = &AnyReadable{}
 	ANY_READER   = &Reader{}
@@ -5281,6 +5282,8 @@ func converTypeToSymbolicValue(t reflect.Type) (SymbolicValue, error) {
 		return ANY_IN_MEM_SNAPSHOTABLE, nil
 	case STRLIKE_INTERFACE_TYPE:
 		return ANY_STR_LIKE, nil
+	case FS_SNAPSHOT_TYPE:
+		return ANY_FS_SNAPSHOT, nil
 	}
 
 	return nil, err
