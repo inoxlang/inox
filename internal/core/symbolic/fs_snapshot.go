@@ -8,35 +8,30 @@ import (
 )
 
 var (
-	ANY_FS_SNAPSHOT = &AnyFilesystemSnapshot{}
-	_               = FilesystemSnapshot(ANY_FS_SNAPSHOT)
+	ANY_FS_SNAPSHOT_IL = &FilesystemSnapshotIL{}
 )
 
-type FilesystemSnapshot interface {
-	_fssnapshot()
+// A FilesystemSnapshotIL represents a symbolic FilesystemSnapshotIL we don't the concrete type.
+type FilesystemSnapshotIL struct {
 }
 
-// A AnyFilesystemSnapshot represents a symbolic AnyFilesystemSnapshot we don't the concrete type.
-type AnyFilesystemSnapshot struct {
-}
-
-func (*AnyFilesystemSnapshot) _fssnapshot() {
+func (*FilesystemSnapshotIL) _fssnapshot() {
 
 }
 
-func (t *AnyFilesystemSnapshot) Test(v SymbolicValue) bool {
+func (t *FilesystemSnapshotIL) Test(v SymbolicValue) bool {
 	switch v.(type) {
-	case *AnyFilesystemSnapshot:
+	case *FilesystemSnapshotIL:
 		return true
 	default:
 		return false
 	}
 }
 
-func (t *AnyFilesystemSnapshot) WidestOfType() SymbolicValue {
-	return ANY_LTHREAD
+func (t *FilesystemSnapshotIL) WidestOfType() SymbolicValue {
+	return ANY_FS_SNAPSHOT_IL
 }
 
-func (t *AnyFilesystemSnapshot) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+func (t *FilesystemSnapshotIL) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%fs-snapshot")))
 }

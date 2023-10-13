@@ -615,6 +615,6 @@ func (*StructPattern) IsMutable() bool {
 	return false
 }
 
-func (*AnyFilesystemSnapshot) IsMutable() bool {
+func (*FilesystemSnapshotIL) IsMutable() bool {
 	return false
 }
