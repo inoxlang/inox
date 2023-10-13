@@ -49,6 +49,7 @@ type VM struct {
 // frame represents a call frame.
 type frame struct {
 	fn           *CompiledFunction
+	mustCall     bool
 	bytecode     *Bytecode
 	ip           int
 	basePointer  int
@@ -1659,6 +1660,11 @@ func (v *VM) run() {
 			isValOnStack := int(v.curInsts[v.ip]) == 1
 			if isValOnStack {
 				retVal = v.stack[v.sp-1]
+
+				if yes, err := IsResultWithError(retVal); yes {
+					v.err = err
+					return
+				}
 			} else {
 				retVal = Nil
 			}
@@ -2534,6 +2540,7 @@ func (v *VM) fnCall(numArgs int, spread, must bool) bool {
 		v.curFrame.fn = compiled
 		v.curFrame.basePointer = v.sp - numArgs
 		v.curFrame.lockedValues = nil
+		v.curFrame.mustCall = must
 		v.curInsts = compiled.Instructions
 
 		if capturedGlobals != nil {

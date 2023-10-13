@@ -2,6 +2,7 @@ package core
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"math"
@@ -3330,6 +3331,16 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			doSymbolicCheck       bool
 		}{
 			{
+				name:  "must call with an error",
+				error: true,
+				input: `
+					fn f(){
+						return Array(1, an-error)
+					}
+					return f!()
+				`,
+			},
+			{
 				name: "declared void function",
 				input: `
 					fn f(){  }
@@ -3758,6 +3769,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				defer state.Ctx.CancelGracefully()
 
 				state.Globals.Set("Array", WrapGoFunction(NewArray))
+				state.Globals.Set("an-error", NewError(errors.New("an error"), Nil))
 
 				res, err := Eval(testCase.input, state, testCase.doSymbolicCheck)
 				if testCase.error {
@@ -3958,7 +3970,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			// 	result: Nil,
 			// },
 			{
-				name:  "(must) call with two results",
+				name:  "(must) call with two results, error is nil",
 				input: "return gofunc!()",
 				globalVariables: map[string]Value{
 					"gofunc": WrapGoFunction(func(ctx *Context) (Int, error) {
@@ -3966,6 +3978,15 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					}),
 				},
 				result: Int(3),
+			}, {
+				name:  "(must) call with two results, error is not nil",
+				input: "return gofunc!()",
+				globalVariables: map[string]Value{
+					"gofunc": WrapGoFunction(func(ctx *Context) (Int, error) {
+						return -1, errors.New("error !")
+					}),
+				},
+				error: true,
 			},
 			{
 				name:  "GoValue returned",

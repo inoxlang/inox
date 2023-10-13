@@ -4,6 +4,8 @@ import "fmt"
 
 var (
 	ERR_PROPNAMES = []string{"text", "data"}
+
+	_ = error(Error{})
 )
 
 // An Error represents an error with some immutable data, Error implements Value.
@@ -24,6 +26,10 @@ func NewError(err error, data Serializable) Error {
 
 func (e Error) Text() string {
 	return e.goError.Error()
+}
+
+func (e Error) Error() string {
+	return e.Text()
 }
 
 func (e Error) Data() Value {

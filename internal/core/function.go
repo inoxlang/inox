@@ -306,7 +306,7 @@ func (goFunc *GoFunction) Call(args []any, globalState, extState *GlobalState, i
 
 func IsResultWithError(result Value) (bool, error) {
 	if array, isArray := result.(*Array); isArray && array.Len() != 0 {
-		lastElem := reflect.ValueOf(array.Len() - 1)
+		lastElem := reflect.ValueOf((*array)[array.Len()-1])
 		if lastElem.Type().Implements(ERROR_INTERFACE_TYPE) && !lastElem.IsNil() {
 			return true, lastElem.Interface().(error)
 		}
