@@ -24,7 +24,10 @@ type AnyStreamSink struct {
 	_ int
 }
 
-func (r *AnyStreamSink) Test(v SymbolicValue) bool {
+func (r *AnyStreamSink) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(StreamSink)
 
 	return ok
@@ -57,7 +60,10 @@ func NewWritableStream(element SymbolicValue) *WritableStream {
 	return &WritableStream{element: element}
 }
 
-func (r *WritableStream) Test(v SymbolicValue) bool {
+func (r *WritableStream) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	it, ok := v.(*WritableStream)
 	if !ok {
 		return false
@@ -65,7 +71,7 @@ func (r *WritableStream) Test(v SymbolicValue) bool {
 	if r.element == nil {
 		return true
 	}
-	return r.element.Test(it.element)
+	return r.element.Test(it.element, state)
 }
 
 func (r *WritableStream) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {

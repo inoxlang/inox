@@ -17,7 +17,10 @@ var (
 	RING_BUFFER_PROPNAMES = []string{"write", "read"}
 )
 
-func (r *RingBuffer) Test(v SymbolicValue) bool {
+func (r *RingBuffer) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	switch v.(type) {
 	case *RingBuffer:
 		return true

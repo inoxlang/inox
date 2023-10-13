@@ -22,10 +22,13 @@ func NewError(data SymbolicValue) *Error {
 	return &Error{data: data}
 }
 
-func (e *Error) Test(v SymbolicValue) bool {
+func (e *Error) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	otherError, ok := v.(*Error)
 
-	return ok && e.data.Test(otherError.data)
+	return ok && e.data.Test(otherError.data, state)
 }
 
 func (e *Error) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {

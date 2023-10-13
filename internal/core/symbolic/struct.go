@@ -27,7 +27,10 @@ func NewStruct(structType *StructPattern, fieldValues map[string]SymbolicValue) 
 	return &Struct{structType: structType, fieldValues: fieldValues}
 }
 
-func (s *Struct) Test(v SymbolicValue) bool {
+func (s *Struct) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	otherStruct, ok := v.(*Struct)
 	if !ok {
 		return false
@@ -70,7 +73,7 @@ func (s *Struct) SetProp(name string, value SymbolicValue) (IProps, error) {
 	if !ok {
 		return nil, FormatErrPropertyDoesNotExist(name, s)
 	}
-	if !fieldType.TestValue(value) {
+	if !fieldType.TestValue(value, RecTestCallState{}) {
 		return nil, errors.New(fmtNotAssignableToPropOfType(value, fieldType))
 	}
 
@@ -178,7 +181,10 @@ func CreateStructPattern(name string, id ulid.ULID, keys []string, types []Patte
 	}
 }
 
-func (p *StructPattern) Test(v SymbolicValue) bool {
+func (p *StructPattern) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	otherStructPattern, ok := v.(*StructPattern)
 	if !ok {
 		return false

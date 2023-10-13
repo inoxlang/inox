@@ -16,7 +16,10 @@ type Graph struct {
 	_ int
 }
 
-func (r *Graph) Test(v symbolic.SymbolicValue) bool {
+func (r *Graph) Test(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(*Graph)
 	return ok
 }
@@ -86,7 +89,10 @@ type GraphNode struct {
 	_ int
 }
 
-func (r *GraphNode) Test(v symbolic.SymbolicValue) bool {
+func (r *GraphNode) Test(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(*GraphNode)
 	return ok
 }

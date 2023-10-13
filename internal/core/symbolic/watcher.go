@@ -31,7 +31,10 @@ type AnyWatchable struct {
 	_ int
 }
 
-func (r *AnyWatchable) Test(v SymbolicValue) bool {
+func (r *AnyWatchable) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(Watchable)
 
 	return ok
@@ -61,7 +64,10 @@ func NewWatcher(filter Pattern) *Watcher {
 	return &Watcher{filter: filter}
 }
 
-func (r *Watcher) Test(v SymbolicValue) bool {
+func (r *Watcher) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	it, ok := v.(*Watcher)
 	if !ok {
 		return false
@@ -69,7 +75,7 @@ func (r *Watcher) Test(v SymbolicValue) bool {
 	if r.filter == nil {
 		return true
 	}
-	return r.filter.Test(it.filter)
+	return r.filter.Test(it.filter, state)
 }
 
 func (r *Watcher) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {

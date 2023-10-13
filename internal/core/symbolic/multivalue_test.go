@@ -11,21 +11,21 @@ func TestMultiValue(t *testing.T) {
 	t.Run("Test()", func(t *testing.T) {
 		intOrNil := NewMultivalue(ANY_INT, Nil)
 
-		assert.True(t, intOrNil.Test(intOrNil))
-		assert.True(t, intOrNil.Test(ANY_INT))
-		assert.True(t, intOrNil.Test(Nil))
-		assert.False(t, intOrNil.Test(&String{}))
+		assertTest(t, intOrNil, intOrNil)
+		assertTest(t, intOrNil, ANY_INT)
+		assertTest(t, intOrNil, Nil)
+		assertTestFalse(t, intOrNil, &String{})
 
 		intOrStringOrNil := NewMultivalue(ANY_INT, &String{}, Nil)
 
-		assert.True(t, intOrStringOrNil.Test(intOrNil))
-		assert.False(t, intOrNil.Test(intOrStringOrNil))
+		assertTest(t, intOrStringOrNil, intOrNil)
+		assertTestFalse(t, intOrNil, intOrStringOrNil)
 
 		intListOrStringList := NewMultivalue(NewListOf(ANY_INT), NewListOf(&String{}))
 		anyList := NewListOf(ANY_SERIALIZABLE)
 
-		assert.True(t, intListOrStringList.Test(intListOrStringList))
-		assert.False(t, intListOrStringList.Test(anyList))
+		assertTest(t, intListOrStringList, intListOrStringList)
+		assertTestFalse(t, intListOrStringList, anyList)
 	})
 
 	t.Run("as Indexable", func(t *testing.T) {

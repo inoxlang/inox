@@ -12,10 +12,10 @@ func TestSymbolicByteSlice(t *testing.T) {
 	t.Run("Test()", func(t *testing.T) {
 		slice := &ByteSlice{}
 
-		assert.True(t, slice.Test(slice))
-		assert.True(t, slice.Test(&ByteSlice{}))
-		assert.False(t, slice.Test(&String{}))
-		assert.False(t, slice.Test(&Int{}))
+		assertTest(t, slice, slice)
+		assertTest(t, slice, &ByteSlice{})
+		assertTestFalse(t, slice, &String{})
+		assertTestFalse(t, slice, &Int{})
 	})
 
 	t.Run("insertSequence()", func(t *testing.T) {
@@ -131,9 +131,9 @@ func TestSymbolicByte(t *testing.T) {
 	t.Run("Test()", func(t *testing.T) {
 		byte := &Byte{}
 
-		assert.True(t, byte.Test(byte))
-		assert.True(t, byte.Test(&Byte{}))
-		assert.False(t, byte.Test(&Int{}))
+		assertTest(t, byte, byte)
+		assertTest(t, byte, &Byte{})
+		assertTestFalse(t, byte, &Int{})
 	})
 
 }
@@ -143,11 +143,11 @@ func TestSymbolicAnyByteLike(t *testing.T) {
 	t.Run("Test()", func(t *testing.T) {
 		bytesLike := &AnyBytesLike{}
 
-		assert.True(t, bytesLike.Test(bytesLike))
-		assert.True(t, bytesLike.Test(&ByteSlice{}))
-		assert.True(t, bytesLike.Test(&BytesConcatenation{}))
-		assert.False(t, bytesLike.Test(&String{}))
-		assert.False(t, bytesLike.Test(&Int{}))
+		assertTest(t, bytesLike, bytesLike)
+		assertTest(t, bytesLike, &ByteSlice{})
+		assertTest(t, bytesLike, &BytesConcatenation{})
+		assertTestFalse(t, bytesLike, &String{})
+		assertTestFalse(t, bytesLike, &Int{})
 	})
 
 }

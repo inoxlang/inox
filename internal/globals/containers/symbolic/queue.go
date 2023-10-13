@@ -16,7 +16,10 @@ type Queue struct {
 	_ int
 }
 
-func (*Queue) Test(v symbolic.SymbolicValue) bool {
+func (*Queue) Test(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(*Queue)
 	return ok
 }

@@ -13,7 +13,10 @@ type WebsocketConnection struct {
 	_ int
 }
 
-func (r *WebsocketConnection) Test(v symbolic.SymbolicValue) bool {
+func (r *WebsocketConnection) Test(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(*WebsocketConnection)
 	return ok
 }

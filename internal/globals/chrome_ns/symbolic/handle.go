@@ -20,7 +20,10 @@ type Handle struct {
 	_ int
 }
 
-func (r *Handle) Test(v symbolic.SymbolicValue) bool {
+func (r *Handle) Test(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(*Handle)
 	return ok
 }

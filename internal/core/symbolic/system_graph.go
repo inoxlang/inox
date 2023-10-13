@@ -38,7 +38,10 @@ func NewSystemGraph() *SystemGraph {
 	return &SystemGraph{}
 }
 
-func (g *SystemGraph) Test(v SymbolicValue) bool {
+func (g *SystemGraph) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	other, ok := v.(*SystemGraph)
 	if ok {
 		return true
@@ -108,7 +111,10 @@ func NewSystemGraphNodes() *SystemGraphNodes {
 	return &SystemGraphNodes{}
 }
 
-func (g *SystemGraphNodes) Test(v SymbolicValue) bool {
+func (g *SystemGraphNodes) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	other, ok := v.(*SystemGraphNodes)
 	if ok {
 		return true
@@ -154,7 +160,10 @@ func NewSystemGraphNode() *SystemGraphNode {
 	return &SystemGraphNode{}
 }
 
-func (n *SystemGraphNode) Test(v SymbolicValue) bool {
+func (n *SystemGraphNode) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	other, ok := v.(*SystemGraphNode)
 	if ok {
 		return true
@@ -218,7 +227,10 @@ func NewSystemGraphEvent() *SystemGraphEvent {
 	return &SystemGraphEvent{}
 }
 
-func (n *SystemGraphEvent) Test(v SymbolicValue) bool {
+func (n *SystemGraphEvent) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	other, ok := v.(*SystemGraphEvent)
 	if ok {
 		return true
@@ -280,7 +292,10 @@ func NewSystemGraphEdge() *SystemGraphEdge {
 	return &SystemGraphEdge{}
 }
 
-func (e *SystemGraphEdge) Test(v SymbolicValue) bool {
+func (e *SystemGraphEdge) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	other, ok := v.(*SystemGraphEdge)
 	if ok {
 		return true

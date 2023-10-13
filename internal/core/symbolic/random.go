@@ -13,7 +13,10 @@ type RandomnessSource struct {
 	_ int
 }
 
-func (r *RandomnessSource) Test(v SymbolicValue) bool {
+func (r *RandomnessSource) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	switch v.(type) {
 	case *RandomnessSource:
 		return true

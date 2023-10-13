@@ -30,7 +30,10 @@ type Snapshot struct {
 	_ int
 }
 
-func (m *Snapshot) Test(v SymbolicValue) bool {
+func (m *Snapshot) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(*Snapshot)
 
 	return ok
@@ -64,7 +67,10 @@ type AnyInMemorySnapshotable struct {
 	_ int
 }
 
-func (s *AnyInMemorySnapshotable) Test(v SymbolicValue) bool {
+func (s *AnyInMemorySnapshotable) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(InMemorySnapshotable)
 
 	return ok

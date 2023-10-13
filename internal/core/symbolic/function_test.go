@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/inoxlang/inox/internal/parse"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestSymbolicInoxFunction(t *testing.T) {
@@ -17,7 +16,7 @@ func TestSymbolicInoxFunction(t *testing.T) {
 			result:         ANY,
 		}
 
-		fnWithOnlyIntLitral := &InoxFunction{
+		fnWithOnlyIntLiteral := &InoxFunction{
 			parameters:     []SymbolicValue{},
 			parameterNames: []string{},
 			node:           parse.MustParseExpression(`fn(){1}`),
@@ -34,7 +33,7 @@ func TestSymbolicInoxFunction(t *testing.T) {
 			},
 		}
 
-		assert.False(t, fnOnlyAllowingIntLiteralsInBody.Test(fnWithAssignment))
-		assert.True(t, fnOnlyAllowingIntLiteralsInBody.Test(fnWithOnlyIntLitral))
+		assertTestFalse(t, fnOnlyAllowingIntLiteralsInBody, fnWithAssignment)
+		assertTest(t, fnOnlyAllowingIntLiteralsInBody, fnWithOnlyIntLiteral)
 	})
 }

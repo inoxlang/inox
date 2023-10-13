@@ -60,10 +60,13 @@ func NewDatabaseIL(schema *ObjectPattern, schemaUpdateExpected bool) *DatabaseIL
 	return db
 }
 
-func (db *DatabaseIL) Test(v SymbolicValue) bool {
+func (db *DatabaseIL) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	switch other := v.(type) {
 	case *DatabaseIL:
-		return db.schema.Test(other.schema)
+		return db.schema.Test(other.schema, state)
 	default:
 		return false
 	}

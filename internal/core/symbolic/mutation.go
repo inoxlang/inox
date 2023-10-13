@@ -16,7 +16,10 @@ type Mutation struct {
 	_ int
 }
 
-func (r *Mutation) Test(v SymbolicValue) bool {
+func (r *Mutation) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(Iterable)
 
 	return ok

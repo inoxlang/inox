@@ -133,9 +133,19 @@ func TestSymbolicObject(t *testing.T) {
 
 	for _, testCase := range cases {
 		t.Run(t.Name()+"_"+Stringify(testCase.object1)+"_"+Stringify(testCase.object2), func(t *testing.T) {
-			assert.Equal(t, testCase.ok, testCase.object1.Test(testCase.object2))
+			assert.Equal(t, testCase.ok, testCase.object1.Test(testCase.object2, RecTestCallState{}))
 		})
 	}
+
+	t.Run("an infinite recursion should cause raise the error "+ErrMaximumSymbolicTestCallDepthReached.Error(), func(t *testing.T) {
+		obj := &Object{}
+		obj.entries = map[string]Serializable{
+			"self": obj,
+		}
+		assert.PanicsWithError(t, ErrMaximumSymbolicTestCallDepthReached.Error(), func() {
+			obj.Test(obj, RecTestCallState{})
+		})
+	})
 
 	t.Run("SetProp", func(t *testing.T) {
 		t.Run("should return an error if a new property is set in an  exact object", func(t *testing.T) {
@@ -223,126 +233,140 @@ func TestSymbolicObject(t *testing.T) {
 }
 
 func TestSymbolicRecord(t *testing.T) {
-	cases := []struct {
-		record1 *Record
-		record2 *Record
-		ok      bool
-	}{
-		//an any record should match an any record
-		{&Record{entries: nil}, &Record{entries: nil}, true},
 
-		//an empty record should not match an any record
-		{&Record{entries: map[string]Serializable{}}, &Record{entries: nil}, false},
+	t.Run("Test()", func(t *testing.T) {
 
-		//an any record should match an empty record
-		{&Record{entries: nil}, &Record{entries: map[string]Serializable{}}, true},
+		cases := []struct {
+			record1 *Record
+			record2 *Record
+			ok      bool
+		}{
+			//an any record should match an any record
+			{&Record{entries: nil}, &Record{entries: nil}, true},
 
-		//an empty record should match an empty record
-		{&Record{entries: map[string]Serializable{}}, &Record{entries: map[string]Serializable{}}, true},
+			//an empty record should not match an any record
+			{&Record{entries: map[string]Serializable{}}, &Record{entries: nil}, false},
 
-		{
-			&Record{
-				entries: map[string]Serializable{"a": ANY_INT},
-			},
-			&Record{
-				entries: map[string]Serializable{},
-			},
-			false,
-		},
-		{
-			&Record{
-				entries: map[string]Serializable{},
-			},
-			&Record{
-				entries: map[string]Serializable{"a": ANY_INT},
-			},
-			true,
-		},
-		{
-			&Record{
-				entries: map[string]Serializable{},
-				exact:   true,
-			},
-			&Record{
-				entries: map[string]Serializable{"a": ANY_INT},
-			},
-			false,
-		},
-		{
-			&Record{
-				entries:         map[string]Serializable{"a": ANY_INT},
-				optionalEntries: map[string]struct{}{"a": {}},
-			},
-			&Record{
-				entries: map[string]Serializable{},
-			},
-			true,
-		},
-		{
-			&Record{
-				entries: map[string]Serializable{"a": ANY_INT},
-			},
-			&Record{
-				entries: map[string]Serializable{"a": ANY_INT},
-			},
-			true,
-		},
-		{
-			&Record{
-				entries: map[string]Serializable{"a": ANY_INT},
-				exact:   true,
-			},
-			&Record{
-				entries: map[string]Serializable{"a": ANY_INT},
-			},
-			true,
-		},
-		{
-			&Record{
-				entries: map[string]Serializable{"a": ANY_INT},
-			},
-			&Record{
-				entries:         map[string]Serializable{"a": ANY_INT},
-				optionalEntries: map[string]struct{}{"a": {}},
-			},
-			false,
-		},
-		{
-			&Record{
-				entries: map[string]Serializable{"a": ANY_INT},
-				exact:   true,
-			},
-			&Record{
-				entries:         map[string]Serializable{"a": ANY_INT},
-				optionalEntries: map[string]struct{}{"a": {}},
-			},
-			false,
-		},
-		{
-			&Record{
-				entries: map[string]Serializable{"a": ANY_SERIALIZABLE},
-			},
-			&Record{
-				entries: map[string]Serializable{"a": ANY_INT},
-			},
-			true,
-		},
-		{
-			&Record{
-				entries: map[string]Serializable{"a": ANY_INT},
-			},
-			&Record{
-				entries: map[string]Serializable{"a": ANY_SERIALIZABLE},
-			},
-			false,
-		},
-	}
+			//an any record should match an empty record
+			{&Record{entries: nil}, &Record{entries: map[string]Serializable{}}, true},
 
-	for _, testCase := range cases {
-		t.Run(t.Name()+"_"+Stringify(testCase.record1)+"_"+Stringify(testCase.record2), func(t *testing.T) {
-			assert.Equal(t, testCase.ok, testCase.record1.Test(testCase.record2))
+			//an empty record should match an empty record
+			{&Record{entries: map[string]Serializable{}}, &Record{entries: map[string]Serializable{}}, true},
+
+			{
+				&Record{
+					entries: map[string]Serializable{"a": ANY_INT},
+				},
+				&Record{
+					entries: map[string]Serializable{},
+				},
+				false,
+			},
+			{
+				&Record{
+					entries: map[string]Serializable{},
+				},
+				&Record{
+					entries: map[string]Serializable{"a": ANY_INT},
+				},
+				true,
+			},
+			{
+				&Record{
+					entries: map[string]Serializable{},
+					exact:   true,
+				},
+				&Record{
+					entries: map[string]Serializable{"a": ANY_INT},
+				},
+				false,
+			},
+			{
+				&Record{
+					entries:         map[string]Serializable{"a": ANY_INT},
+					optionalEntries: map[string]struct{}{"a": {}},
+				},
+				&Record{
+					entries: map[string]Serializable{},
+				},
+				true,
+			},
+			{
+				&Record{
+					entries: map[string]Serializable{"a": ANY_INT},
+				},
+				&Record{
+					entries: map[string]Serializable{"a": ANY_INT},
+				},
+				true,
+			},
+			{
+				&Record{
+					entries: map[string]Serializable{"a": ANY_INT},
+					exact:   true,
+				},
+				&Record{
+					entries: map[string]Serializable{"a": ANY_INT},
+				},
+				true,
+			},
+			{
+				&Record{
+					entries: map[string]Serializable{"a": ANY_INT},
+				},
+				&Record{
+					entries:         map[string]Serializable{"a": ANY_INT},
+					optionalEntries: map[string]struct{}{"a": {}},
+				},
+				false,
+			},
+			{
+				&Record{
+					entries: map[string]Serializable{"a": ANY_INT},
+					exact:   true,
+				},
+				&Record{
+					entries:         map[string]Serializable{"a": ANY_INT},
+					optionalEntries: map[string]struct{}{"a": {}},
+				},
+				false,
+			},
+			{
+				&Record{
+					entries: map[string]Serializable{"a": ANY_SERIALIZABLE},
+				},
+				&Record{
+					entries: map[string]Serializable{"a": ANY_INT},
+				},
+				true,
+			},
+			{
+				&Record{
+					entries: map[string]Serializable{"a": ANY_INT},
+				},
+				&Record{
+					entries: map[string]Serializable{"a": ANY_SERIALIZABLE},
+				},
+				false,
+			},
+		}
+
+		for _, testCase := range cases {
+			t.Run(t.Name()+"_"+Stringify(testCase.record1)+"_"+Stringify(testCase.record2), func(t *testing.T) {
+				assert.Equal(t, testCase.ok, testCase.record1.Test(testCase.record2, RecTestCallState{}))
+			})
+		}
+
+		t.Run("an infinite recursion should cause raise the error "+ErrMaximumSymbolicTestCallDepthReached.Error(), func(t *testing.T) {
+			rec := &Record{}
+			rec.entries = map[string]Serializable{
+				"self": rec,
+			}
+			assert.PanicsWithError(t, ErrMaximumSymbolicTestCallDepthReached.Error(), func() {
+				rec.Test(rec, RecTestCallState{})
+			})
 		})
-	}
+	})
 
 }
 
@@ -428,9 +452,23 @@ func TestSymbolicList(t *testing.T) {
 
 		for _, testCase := range cases {
 			t.Run(fmt.Sprint(testCase.list1, "_", testCase.list2), func(t *testing.T) {
-				assert.Equal(t, testCase.ok, testCase.list1.Test(testCase.list2))
+				assert.Equal(t, testCase.ok, testCase.list1.Test(testCase.list2, RecTestCallState{}))
 			})
 		}
+
+		t.Run("an infinite recursion should cause raise the error "+ErrMaximumSymbolicTestCallDepthReached.Error(), func(t *testing.T) {
+			list1 := &List{}
+			list1.elements = []Serializable{list1}
+			assert.PanicsWithError(t, ErrMaximumSymbolicTestCallDepthReached.Error(), func() {
+				list1.Test(list1, RecTestCallState{})
+			})
+
+			list2 := &List{}
+			list2.generalElement = list2
+			assert.PanicsWithError(t, ErrMaximumSymbolicTestCallDepthReached.Error(), func() {
+				list2.Test(list2, RecTestCallState{})
+			})
+		})
 	})
 
 	t.Run("Append()", func(t *testing.T) {
@@ -603,9 +641,23 @@ func TestSymbolicTuple(t *testing.T) {
 
 		for _, testCase := range cases {
 			t.Run(fmt.Sprint(testCase.tuple1, "_", testCase.tuple2), func(t *testing.T) {
-				assert.Equal(t, testCase.ok, testCase.tuple1.Test(testCase.tuple2))
+				assert.Equal(t, testCase.ok, testCase.tuple1.Test(testCase.tuple2, RecTestCallState{}))
 			})
 		}
+
+		t.Run("an infinite recursion should cause raise the error "+ErrMaximumSymbolicTestCallDepthReached.Error(), func(t *testing.T) {
+			tuple1 := &Tuple{}
+			tuple1.elements = []Serializable{tuple1}
+			assert.PanicsWithError(t, ErrMaximumSymbolicTestCallDepthReached.Error(), func() {
+				tuple1.Test(tuple1, RecTestCallState{})
+			})
+
+			tuple2 := &Tuple{}
+			tuple2.generalElement = tuple2
+			assert.PanicsWithError(t, ErrMaximumSymbolicTestCallDepthReached.Error(), func() {
+				tuple2.Test(tuple2, RecTestCallState{})
+			})
+		})
 	})
 
 }
@@ -647,7 +699,7 @@ func TestSymbolicKeyList(t *testing.T) {
 
 		for _, testCase := range cases {
 			t.Run(fmt.Sprint(testCase.list1, "_", testCase.list2), func(t *testing.T) {
-				assert.Equal(t, testCase.ok, testCase.list1.Test(testCase.list2))
+				assert.Equal(t, testCase.ok, testCase.list1.Test(testCase.list2, RecTestCallState{}))
 			})
 		}
 	})
@@ -655,90 +707,109 @@ func TestSymbolicKeyList(t *testing.T) {
 }
 
 func TestSymbolicDictionary(t *testing.T) {
-	cases := []struct {
-		dict1            *Dictionary
-		dict2            *Dictionary
-		oneTestTwoResult bool
-	}{
-		{
-			&Dictionary{entries: nil},
-			&Dictionary{entries: nil},
-			true,
-		},
-		{
-			&Dictionary{entries: map[string]Serializable{}},
-			&Dictionary{entries: nil},
-			false,
-		},
-		{
-			&Dictionary{entries: nil},
-			&Dictionary{entries: map[string]Serializable{}},
-			true,
-		},
-		{
-			&Dictionary{entries: map[string]Serializable{}, keys: map[string]Serializable{}},
-			&Dictionary{entries: map[string]Serializable{}, keys: map[string]Serializable{}},
-			true,
-		},
-		{
-			&Dictionary{
-				entries: map[string]Serializable{"./a": ANY_INT},
-				keys:    map[string]Serializable{"./a": &Path{}},
-			},
-			&Dictionary{
-				entries: map[string]Serializable{},
-			},
-			false,
-		},
-		{
-			&Dictionary{
-				entries: map[string]Serializable{},
-			},
-			&Dictionary{
-				entries: map[string]Serializable{"./a": ANY_INT},
-				keys:    map[string]Serializable{"./a": &Path{}},
-			},
-			false,
-		},
-		{
-			&Dictionary{
-				entries: map[string]Serializable{"./a": ANY_INT},
-				keys:    map[string]Serializable{"./a": &Path{}},
-			},
-			&Dictionary{
-				entries: map[string]Serializable{"./a": ANY_INT},
-				keys:    map[string]Serializable{"./a": &Path{}},
-			},
-			true,
-		},
-		{
-			&Dictionary{
-				entries: map[string]Serializable{"./a": ANY_SERIALIZABLE},
-				keys:    map[string]Serializable{"./a": &Path{}},
-			},
-			&Dictionary{
-				entries: map[string]Serializable{"./a": ANY_INT},
-				keys:    map[string]Serializable{"./a": &Path{}},
-			},
-			true,
-		},
-		{
-			&Dictionary{
-				entries: map[string]Serializable{"./a": ANY_INT},
-				keys:    map[string]Serializable{"./a": &Path{}},
-			},
-			&Dictionary{
-				entries: map[string]Serializable{"./a": ANY_SERIALIZABLE},
-				keys:    map[string]Serializable{"./a": &Path{}},
-			},
-			false,
-		},
-	}
 
-	for _, testCase := range cases {
-		t.Run(t.Name()+"_"+fmt.Sprint(testCase.dict1, "_", testCase.dict2), func(t *testing.T) {
-			assert.Equal(t, testCase.oneTestTwoResult, testCase.dict1.Test(testCase.dict2))
+	t.Run("Test()", func(t *testing.T) {
+
+		cases := []struct {
+			dict1            *Dictionary
+			dict2            *Dictionary
+			oneTestTwoResult bool
+		}{
+			{
+				&Dictionary{entries: nil},
+				&Dictionary{entries: nil},
+				true,
+			},
+			{
+				&Dictionary{entries: map[string]Serializable{}},
+				&Dictionary{entries: nil},
+				false,
+			},
+			{
+				&Dictionary{entries: nil},
+				&Dictionary{entries: map[string]Serializable{}},
+				true,
+			},
+			{
+				&Dictionary{entries: map[string]Serializable{}, keys: map[string]Serializable{}},
+				&Dictionary{entries: map[string]Serializable{}, keys: map[string]Serializable{}},
+				true,
+			},
+			{
+				&Dictionary{
+					entries: map[string]Serializable{"./a": ANY_INT},
+					keys:    map[string]Serializable{"./a": &Path{}},
+				},
+				&Dictionary{
+					entries: map[string]Serializable{},
+				},
+				false,
+			},
+			{
+				&Dictionary{
+					entries: map[string]Serializable{},
+				},
+				&Dictionary{
+					entries: map[string]Serializable{"./a": ANY_INT},
+					keys:    map[string]Serializable{"./a": &Path{}},
+				},
+				false,
+			},
+			{
+				&Dictionary{
+					entries: map[string]Serializable{"./a": ANY_INT},
+					keys:    map[string]Serializable{"./a": &Path{}},
+				},
+				&Dictionary{
+					entries: map[string]Serializable{"./a": ANY_INT},
+					keys:    map[string]Serializable{"./a": &Path{}},
+				},
+				true,
+			},
+			{
+				&Dictionary{
+					entries: map[string]Serializable{"./a": ANY_SERIALIZABLE},
+					keys:    map[string]Serializable{"./a": &Path{}},
+				},
+				&Dictionary{
+					entries: map[string]Serializable{"./a": ANY_INT},
+					keys:    map[string]Serializable{"./a": &Path{}},
+				},
+				true,
+			},
+			{
+				&Dictionary{
+					entries: map[string]Serializable{"./a": ANY_INT},
+					keys:    map[string]Serializable{"./a": &Path{}},
+				},
+				&Dictionary{
+					entries: map[string]Serializable{"./a": ANY_SERIALIZABLE},
+					keys:    map[string]Serializable{"./a": &Path{}},
+				},
+				false,
+			},
+		}
+
+		for _, testCase := range cases {
+			t.Run(t.Name()+"_"+fmt.Sprint(testCase.dict1, "_", testCase.dict2), func(t *testing.T) {
+				assert.Equal(t, testCase.oneTestTwoResult, testCase.dict1.Test(testCase.dict2, RecTestCallState{}))
+			})
+		}
+
+		t.Run("an infinite recursion should cause raise the error "+ErrMaximumSymbolicTestCallDepthReached.Error(), func(t *testing.T) {
+			dict := &Dictionary{}
+
+			dict.entries = map[string]Serializable{
+				"./a": dict,
+			}
+			dict.keys = map[string]Serializable{
+				"./a": NewPath("./a"),
+			}
+
+			assert.PanicsWithError(t, ErrMaximumSymbolicTestCallDepthReached.Error(), func() {
+				dict.Test(dict, RecTestCallState{})
+			})
 		})
-	}
+	})
 
 }

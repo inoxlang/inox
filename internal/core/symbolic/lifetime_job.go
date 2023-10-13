@@ -19,12 +19,15 @@ func NewLifetimeJob(subjectPattern Pattern) *LifetimeJob {
 	return &LifetimeJob{subjectPattern: subjectPattern}
 }
 
-func (j *LifetimeJob) Test(v SymbolicValue) bool {
+func (j *LifetimeJob) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	other, ok := v.(*LifetimeJob)
 	if ok {
 		return true
 	}
-	return j.subjectPattern.Test(other.subjectPattern)
+	return j.subjectPattern.Test(other.subjectPattern, state)
 }
 
 func (j *LifetimeJob) WidestOfType() SymbolicValue {

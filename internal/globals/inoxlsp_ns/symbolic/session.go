@@ -28,7 +28,10 @@ type LSPSession struct {
 	_      int
 }
 
-func (s *LSPSession) Test(v symbolic.SymbolicValue) bool {
+func (s *LSPSession) Test(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	other, ok := v.(*LSPSession)
 	if !ok {
 		return false

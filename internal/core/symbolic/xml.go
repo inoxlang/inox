@@ -54,7 +54,10 @@ func (e *XMLElement) Children() []SymbolicValue {
 	return e.children
 }
 
-func (r *XMLElement) Test(v SymbolicValue) bool {
+func (r *XMLElement) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	switch val := v.(type) {
 	case Writable:
 		return true

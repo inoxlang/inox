@@ -20,7 +20,10 @@ func NewMapping() *Mapping {
 	return &Mapping{}
 }
 
-func (m *Mapping) Test(v SymbolicValue) bool {
+func (m *Mapping) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(*Mapping)
 
 	return ok

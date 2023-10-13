@@ -18,7 +18,10 @@ type HttpServer struct {
 	_ int
 }
 
-func (r *HttpServer) Test(v symbolic.SymbolicValue) bool {
+func (r *HttpServer) Test(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(*HttpServer)
 	return ok
 }

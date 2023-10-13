@@ -341,7 +341,7 @@ func (state *State) updateLocal2(
 		info.value = value
 
 		if !isNever(value) {
-			if !deeperMismatch && !info.static.TestValue(value) {
+			if !deeperMismatch && !info.static.TestValue(value, RecTestCallState{}) {
 				msg := ""
 				if narrowing {
 					msg = fmtVarOfTypeCannotBeNarrowedToAn(info.static.SymbolicValue(), value)
@@ -387,7 +387,7 @@ func (state *State) updateGlobal2(
 		info.value = value
 
 		if !isNever(value) {
-			if !deeperMismatch && !info.static.TestValue(value) {
+			if !deeperMismatch && !info.static.TestValue(value, RecTestCallState{}) {
 				msg := ""
 				if narrowing {
 					msg = fmtVarOfTypeCannotBeNarrowedToAn(info.static.SymbolicValue(), value)

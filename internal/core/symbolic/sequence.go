@@ -42,9 +42,12 @@ func NewAnySequenceOf(elem SymbolicValue) *AnySequenceOf {
 	return &AnySequenceOf{elem: elem}
 }
 
-func (s *AnySequenceOf) Test(v SymbolicValue) bool {
+func (s *AnySequenceOf) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	seq, ok := v.(Sequence)
-	return ok && s.elem.Test(widenToSameStaticTypeInMultivalue(seq.element()))
+	return ok && s.elem.Test(widenToSameStaticTypeInMultivalue(seq.element()), state)
 }
 
 func (*AnySequenceOf) IteratorElementKey() SymbolicValue {

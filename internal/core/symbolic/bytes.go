@@ -45,7 +45,10 @@ func NewByteSlice() *ByteSlice {
 	return &ByteSlice{}
 }
 
-func (s *ByteSlice) Test(v SymbolicValue) bool {
+func (s *ByteSlice) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(*ByteSlice)
 	return ok
 }
@@ -146,7 +149,10 @@ type Byte struct {
 	SerializableMixin
 }
 
-func (b *Byte) Test(v SymbolicValue) bool {
+func (b *Byte) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(*Byte)
 
 	return ok
@@ -173,7 +179,10 @@ type AnyBytesLike struct {
 	_ int
 }
 
-func (b *AnyBytesLike) Test(v SymbolicValue) bool {
+func (b *AnyBytesLike) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(BytesLike)
 	return ok
 }
@@ -239,7 +248,10 @@ type BytesConcatenation struct {
 	_ int
 }
 
-func (c *BytesConcatenation) Test(v SymbolicValue) bool {
+func (c *BytesConcatenation) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(*BytesConcatenation)
 	return ok
 }

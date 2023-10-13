@@ -48,7 +48,10 @@ func (mod *Module) GetLineColumn(node parse.Node) (int32, int32) {
 	return mod.mainChunk.GetLineColumn(node)
 }
 
-func (m *Module) Test(v SymbolicValue) bool {
+func (m *Module) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	otherMod, ok := v.(*Module)
 
 	if !ok {

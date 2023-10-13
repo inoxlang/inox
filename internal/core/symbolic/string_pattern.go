@@ -32,7 +32,10 @@ type AnyStringPattern struct {
 	SerializableMixin
 }
 
-func (p *AnyStringPattern) Test(v SymbolicValue) bool {
+func (p *AnyStringPattern) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(StringPattern)
 	return ok
 }
@@ -45,7 +48,9 @@ func (p *AnyStringPattern) HasUnderlyingPattern() bool {
 	return true
 }
 
-func (p *AnyStringPattern) TestValue(v SymbolicValue) bool {
+func (p *AnyStringPattern) TestValue(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
 	_, ok := v.(StringLike)
 	return ok
 }
@@ -94,7 +99,10 @@ func NewExactStringPattern(value *String) *ExactStringPattern {
 	return &ExactStringPattern{value: value}
 }
 
-func (p *ExactStringPattern) Test(v SymbolicValue) bool {
+func (p *ExactStringPattern) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	otherPattern, ok := v.(*ExactStringPattern)
 	return ok && (p.value == nil || (otherPattern.value != nil && p.value.value == otherPattern.value.value))
 }
@@ -125,7 +133,9 @@ func (p *ExactStringPattern) HasUnderlyingPattern() bool {
 	return true
 }
 
-func (p *ExactStringPattern) TestValue(v SymbolicValue) bool {
+func (p *ExactStringPattern) TestValue(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
 	stringLike, ok := v.(StringLike)
 	if !ok || !stringLike.GetOrBuildString().hasValue || p.value == nil {
 		return false
@@ -188,7 +198,10 @@ func NewLengthCheckingStringPattern(minLength, maxLength int64) *LengthCheckingS
 	}
 }
 
-func (p *LengthCheckingStringPattern) Test(v SymbolicValue) bool {
+func (p *LengthCheckingStringPattern) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	otherPattern, ok := v.(*LengthCheckingStringPattern)
 	if !ok {
 		return false
@@ -209,7 +222,9 @@ func (p *LengthCheckingStringPattern) HasUnderlyingPattern() bool {
 	return true
 }
 
-func (p *LengthCheckingStringPattern) TestValue(v SymbolicValue) bool {
+func (p *LengthCheckingStringPattern) TestValue(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
 	strLike, ok := v.(StringLike)
 	if !ok {
 		return false
@@ -288,7 +303,10 @@ func NewSequenceStringPattern(node *parse.ComplexStringPatternPiece) *SequenceSt
 	}
 }
 
-func (p *SequenceStringPattern) Test(v SymbolicValue) bool {
+func (p *SequenceStringPattern) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	otherPatt, ok := v.(*SequenceStringPattern)
 	if !ok {
 		return false
@@ -312,7 +330,9 @@ func (p *SequenceStringPattern) HasUnderlyingPattern() bool {
 	return true
 }
 
-func (p *SequenceStringPattern) TestValue(v SymbolicValue) bool {
+func (p *SequenceStringPattern) TestValue(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
 	strLike, ok := v.(StringLike)
 	return ok && strLike.GetOrBuildString().pattern == p
 }
@@ -358,7 +378,10 @@ func NewParserBasedPattern() *ParserBasedPattern {
 	return &ParserBasedPattern{}
 }
 
-func (p *ParserBasedPattern) Test(v SymbolicValue) bool {
+func (p *ParserBasedPattern) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(StringPattern)
 	return ok
 }
@@ -371,7 +394,9 @@ func (p *ParserBasedPattern) HasUnderlyingPattern() bool {
 	return true
 }
 
-func (p *ParserBasedPattern) TestValue(v SymbolicValue) bool {
+func (p *ParserBasedPattern) TestValue(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
 	_, ok := v.(StringLike)
 	return ok
 }

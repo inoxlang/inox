@@ -20,7 +20,10 @@ type HttpResponse struct {
 	_ int
 }
 
-func (r *HttpResponse) Test(v symbolic.SymbolicValue) bool {
+func (r *HttpResponse) Test(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(*HttpResponse)
 	return ok
 }

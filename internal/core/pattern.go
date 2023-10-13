@@ -915,7 +915,7 @@ func (patt *FunctionPattern) Test(ctx *Context, v Value) bool {
 			panic(errors.New("cannot Test() function against function pattern, Inox function has nil .SymbolicValue"))
 		}
 
-		return patt.symbolicValue.TestValue(symbolicFn)
+		return patt.symbolicValue.TestValue(symbolicFn, symbolic.RecTestCallState{})
 	default:
 		return false
 	}

@@ -21,10 +21,13 @@ func NewChunk(data SymbolicValue) *DataChunk {
 	return &DataChunk{data: data}
 }
 
-func (c *DataChunk) Test(v SymbolicValue) bool {
+func (c *DataChunk) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	switch other := v.(type) {
 	case *DataChunk:
-		return c.data.Test(other.data)
+		return c.data.Test(other.data, state)
 	default:
 		return false
 	}

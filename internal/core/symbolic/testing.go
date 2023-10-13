@@ -13,7 +13,10 @@ type TestSuite struct {
 	_ int
 }
 
-func (s *TestSuite) Test(v SymbolicValue) bool {
+func (s *TestSuite) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	switch v.(type) {
 	case *TestSuite:
 		return true
@@ -61,7 +64,10 @@ type TestCase struct {
 	_ int
 }
 
-func (s *TestCase) Test(v SymbolicValue) bool {
+func (s *TestCase) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	switch v.(type) {
 	case *TestCase:
 		return true

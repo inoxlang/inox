@@ -13,35 +13,35 @@ func TestSymbolicExactStringValuePattern(t *testing.T) {
 	t.Run("Test()", func(t *testing.T) {
 		anyStr := ANY_EXACT_STR_PATTERN
 
-		assert.True(t, anyStr.Test(ANY_EXACT_STR_PATTERN))
-		assert.True(t, anyStr.Test(NewExactStringPattern(NewString(""))))
-		assert.True(t, anyStr.Test(NewExactStringPattern(NewString("1"))))
-		assert.False(t, anyStr.Test(ANY_INT))
-		assert.False(t, anyStr.Test(ANY_PATTERN))
+		assertTest(t, anyStr, ANY_EXACT_STR_PATTERN)
+		assertTest(t, anyStr, NewExactStringPattern(NewString("")))
+		assertTest(t, anyStr, NewExactStringPattern(NewString("1")))
+		assertTestFalse(t, anyStr, ANY_INT)
+		assertTestFalse(t, anyStr, ANY_PATTERN)
 
 		emptyStr := NewExactStringPattern(NewString(""))
 
-		assert.True(t, emptyStr.Test(NewExactStringPattern(NewString(""))))
-		assert.False(t, emptyStr.Test(NewExactStringPattern(NewString("1"))))
-		assert.False(t, emptyStr.Test(ANY_EXACT_STR_PATTERN))
-		assert.False(t, emptyStr.Test(ANY_INT))
-		assert.False(t, emptyStr.Test(ANY_PATTERN))
+		assertTest(t, emptyStr, NewExactStringPattern(NewString("")))
+		assertTestFalse(t, emptyStr, NewExactStringPattern(NewString("1")))
+		assertTestFalse(t, emptyStr, ANY_EXACT_STR_PATTERN)
+		assertTestFalse(t, emptyStr, ANY_INT)
+		assertTestFalse(t, emptyStr, ANY_PATTERN)
 	})
 
 	t.Run("TestValue()", func(t *testing.T) {
 		anyStr := ANY_EXACT_STR_PATTERN
 
-		assert.False(t, anyStr.TestValue(NewString("")))
-		assert.False(t, anyStr.TestValue(NewString("1")))
-		assert.False(t, anyStr.TestValue(ANY_SERIALIZABLE))
-		assert.False(t, anyStr.TestValue(anyStr))
+		assertTestValueFalse(t, anyStr, NewString(""))
+		assertTestValueFalse(t, anyStr, NewString("1"))
+		assertTestValueFalse(t, anyStr, ANY_SERIALIZABLE)
+		assertTestValueFalse(t, anyStr, anyStr)
 
 		emptyStr := NewExactStringPattern(NewString(""))
 
-		assert.True(t, emptyStr.TestValue(NewString("")))
-		assert.False(t, emptyStr.TestValue(NewString("1")))
-		assert.False(t, emptyStr.TestValue(ANY_SERIALIZABLE))
-		assert.False(t, emptyStr.TestValue(emptyStr))
+		assertTestValue(t, emptyStr, NewString(""))
+		assertTestValueFalse(t, emptyStr, NewString("1"))
+		assertTestValueFalse(t, emptyStr, ANY_SERIALIZABLE)
+		assertTestValueFalse(t, emptyStr, emptyStr)
 	})
 
 }
@@ -51,47 +51,47 @@ func TestLengthCheckingStringPattern(t *testing.T) {
 	t.Run("Test()", func(t *testing.T) {
 		any := ANY_LENGTH_CHECKING_STRING_PATTERN
 
-		assert.True(t, any.Test(any))
-		assert.True(t, any.Test(NewLengthCheckingStringPattern(0, 2)))
-		assert.True(t, any.Test(NewLengthCheckingStringPattern(1, 2)))
-		assert.True(t, any.Test(NewLengthCheckingStringPattern(0, math.MaxInt64)))
-		assert.True(t, any.Test(NewLengthCheckingStringPattern(1, math.MaxInt64)))
-		assert.False(t, any.Test(ANY_STR_PATTERN))
-		assert.False(t, any.Test(ANY_INT))
-		assert.False(t, any.Test(ANY_PATTERN))
+		assertTest(t, any, any)
+		assertTest(t, any, NewLengthCheckingStringPattern(0, 2))
+		assertTest(t, any, NewLengthCheckingStringPattern(1, 2))
+		assertTest(t, any, NewLengthCheckingStringPattern(0, math.MaxInt64))
+		assertTest(t, any, NewLengthCheckingStringPattern(1, math.MaxInt64))
+		assertTestFalse(t, any, ANY_STR_PATTERN)
+		assertTestFalse(t, any, ANY_INT)
+		assertTestFalse(t, any, ANY_PATTERN)
 
 		maxLen1 := NewLengthCheckingStringPattern(0, 1)
 
-		assert.True(t, maxLen1.Test(maxLen1))
-		assert.False(t, maxLen1.Test(NewLengthCheckingStringPattern(0, 2)))
-		assert.False(t, maxLen1.Test(NewLengthCheckingStringPattern(1, 2)))
-		assert.False(t, maxLen1.Test(NewLengthCheckingStringPattern(1, 3)))
-		assert.False(t, maxLen1.Test(ANY_STR_PATTERN))
-		assert.False(t, maxLen1.Test(ANY_INT))
-		assert.False(t, maxLen1.Test(ANY_PATTERN))
+		assertTest(t, maxLen1, maxLen1)
+		assertTestFalse(t, maxLen1, NewLengthCheckingStringPattern(0, 2))
+		assertTestFalse(t, maxLen1, NewLengthCheckingStringPattern(1, 2))
+		assertTestFalse(t, maxLen1, NewLengthCheckingStringPattern(1, 3))
+		assertTestFalse(t, maxLen1, ANY_STR_PATTERN)
+		assertTestFalse(t, maxLen1, ANY_INT)
+		assertTestFalse(t, maxLen1, ANY_PATTERN)
 
 		maxLen2 := NewLengthCheckingStringPattern(0, 2)
 
-		assert.True(t, maxLen2.Test(maxLen2))
-		assert.True(t, maxLen2.Test(NewLengthCheckingStringPattern(0, 1)))
-		assert.True(t, maxLen2.Test(NewLengthCheckingStringPattern(1, 2)))
-		assert.False(t, maxLen2.Test(ANY_STR_PATTERN))
-		assert.False(t, maxLen2.Test(NewLengthCheckingStringPattern(2, 3)))
-		assert.False(t, maxLen2.Test(NewLengthCheckingStringPattern(1, 3)))
-		assert.False(t, maxLen2.Test(ANY_INT))
-		assert.False(t, maxLen2.Test(ANY_PATTERN))
+		assertTest(t, maxLen2, maxLen2)
+		assertTest(t, maxLen2, NewLengthCheckingStringPattern(0, 1))
+		assertTest(t, maxLen2, NewLengthCheckingStringPattern(1, 2))
+		assertTestFalse(t, maxLen2, ANY_STR_PATTERN)
+		assertTestFalse(t, maxLen2, NewLengthCheckingStringPattern(2, 3))
+		assertTestFalse(t, maxLen2, NewLengthCheckingStringPattern(1, 3))
+		assertTestFalse(t, maxLen2, ANY_INT)
+		assertTestFalse(t, maxLen2, ANY_PATTERN)
 
 		minLen1MaxLen3 := NewLengthCheckingStringPattern(1, 3)
 
-		assert.True(t, minLen1MaxLen3.Test(minLen1MaxLen3))
-		assert.True(t, minLen1MaxLen3.Test(NewLengthCheckingStringPattern(1, 2)))
-		assert.True(t, minLen1MaxLen3.Test(NewLengthCheckingStringPattern(1, 3)))
-		assert.True(t, minLen1MaxLen3.Test(NewLengthCheckingStringPattern(2, 3)))
-		assert.False(t, minLen1MaxLen3.Test(ANY_STR_PATTERN))
-		assert.False(t, minLen1MaxLen3.Test(NewLengthCheckingStringPattern(0, 3)))
-		assert.False(t, minLen1MaxLen3.Test(NewLengthCheckingStringPattern(1, 4)))
-		assert.False(t, minLen1MaxLen3.Test(ANY_INT))
-		assert.False(t, minLen1MaxLen3.Test(ANY_PATTERN))
+		assertTest(t, minLen1MaxLen3, minLen1MaxLen3)
+		assertTest(t, minLen1MaxLen3, NewLengthCheckingStringPattern(1, 2))
+		assertTest(t, minLen1MaxLen3, NewLengthCheckingStringPattern(1, 3))
+		assertTest(t, minLen1MaxLen3, NewLengthCheckingStringPattern(2, 3))
+		assertTestFalse(t, minLen1MaxLen3, ANY_STR_PATTERN)
+		assertTestFalse(t, minLen1MaxLen3, NewLengthCheckingStringPattern(0, 3))
+		assertTestFalse(t, minLen1MaxLen3, NewLengthCheckingStringPattern(1, 4))
+		assertTestFalse(t, minLen1MaxLen3, ANY_INT)
+		assertTestFalse(t, minLen1MaxLen3, ANY_PATTERN)
 	})
 
 	t.Run("TestValue()", func(t *testing.T) {
@@ -291,10 +291,10 @@ func TestLengthCheckingStringPattern(t *testing.T) {
 				s = " should not match"
 			}
 			t.Run(t.Name()+"_"+fmt.Sprint(Stringify(testCase.pattern), s, Stringify(testCase.value)), func(t *testing.T) {
-				assert.Equal(t, testCase.ok, testCase.pattern.TestValue(testCase.value))
+				assert.Equal(t, testCase.ok, testCase.pattern.TestValue(testCase.value, RecTestCallState{}))
 
 				val := testCase.pattern.SymbolicValue()
-				assert.Equal(t, testCase.ok, val.Test(testCase.value))
+				assert.Equal(t, testCase.ok, val.Test(testCase.value, RecTestCallState{}))
 			})
 		}
 	})
@@ -306,19 +306,19 @@ func TestSequenceStringPattern(t *testing.T) {
 	t.Run("Test()", func(t *testing.T) {
 		anySeqStr := ANY_SEQ_STRING_PATTERN
 
-		assert.True(t, anySeqStr.Test(ANY_SEQ_STRING_PATTERN))
-		assert.False(t, anySeqStr.Test(ANY_STR_PATTERN))
-		assert.False(t, anySeqStr.Test(ANY_INT))
-		assert.False(t, anySeqStr.Test(ANY_PATTERN))
+		assertTest(t, anySeqStr, ANY_SEQ_STRING_PATTERN)
+		assertTestFalse(t, anySeqStr, ANY_STR_PATTERN)
+		assertTestFalse(t, anySeqStr, ANY_INT)
+		assertTestFalse(t, anySeqStr, ANY_PATTERN)
 	})
 
 	t.Run("TestValue()", func(t *testing.T) {
 		anySeqStr := ANY_SEQ_STRING_PATTERN
 
-		assert.False(t, anySeqStr.TestValue(NewString("")))
-		assert.False(t, anySeqStr.TestValue(NewString("1")))
-		assert.False(t, anySeqStr.TestValue(ANY_SERIALIZABLE))
-		assert.False(t, anySeqStr.TestValue(anySeqStr))
+		assertTestValueFalse(t, anySeqStr, NewString(""))
+		assertTestValueFalse(t, anySeqStr, NewString("1"))
+		assertTestValueFalse(t, anySeqStr, ANY_SERIALIZABLE)
+		assertTestValueFalse(t, anySeqStr, anySeqStr)
 	})
 
 }

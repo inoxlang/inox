@@ -83,7 +83,10 @@ func (fn *InoxFunction) FuncExpr() *parse.FunctionExpression {
 	}
 }
 
-func (fn *InoxFunction) Test(v SymbolicValue) bool {
+func (fn *InoxFunction) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	other, ok := v.(*InoxFunction)
 	if !ok {
 		return false
@@ -150,7 +153,7 @@ func (fn *InoxFunction) Test(v SymbolicValue) bool {
 		}
 	}
 
-	return fn.result.Test(other.result)
+	return fn.result.Test(other.result, state)
 }
 
 func (fn *InoxFunction) IsConcretizable() bool {
@@ -276,7 +279,10 @@ func (fn *GoFunction) GoFunc() any {
 	return fn.fn
 }
 
-func (fn *GoFunction) Test(v SymbolicValue) bool {
+func (fn *GoFunction) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	other, ok := v.(*GoFunction)
 	if !ok {
 		return false
@@ -594,7 +600,7 @@ func (goFunc *GoFunction) Call(input goFunctionCallInput) (finalResult SymbolicV
 			// 	arg = extVal.value
 			// }
 
-			if !param.Test(arg) {
+			if !param.Test(arg, RecTestCallState{}) {
 				if _, ok := argNode.(*parse.RuntimeTypeCheckExpression); ok {
 					args[paramIndex] = param
 					pattern, ok := extData.SymbolicToPattern(param)
@@ -625,7 +631,7 @@ func (goFunc *GoFunction) Call(input goFunctionCallInput) (finalResult SymbolicV
 		variadicArgs := args[nonVariadicParamCount:]
 
 		for i, arg := range variadicArgs {
-			if !goFunc.variadicElem.Test(arg.(SymbolicValue)) {
+			if !goFunc.variadicElem.Test(arg.(SymbolicValue), RecTestCallState{}) {
 				position := i + nonVariadicParamCount
 				if goFunc.isfirstArgCtx {
 					position -= 1
@@ -758,11 +764,14 @@ func (fn *Function) VariadicParamElem() SymbolicValue {
 	return param.(*List).IteratorElementValue()
 }
 
-func (f *Function) Test(v SymbolicValue) bool {
+func (f *Function) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	if f.pattern != nil {
 		switch v.(type) {
 		case *Function, *GoFunction, *InoxFunction:
-			return f.pattern.TestValue(v)
+			return f.pattern.TestValue(v, state)
 		default:
 			return false
 		}
@@ -775,13 +784,13 @@ func (f *Function) Test(v SymbolicValue) bool {
 		}
 
 		for i, param := range f.parameters {
-			if !param.Test(fn.parameters[i]) || !fn.parameters[i].Test(param) {
+			if !param.Test(fn.parameters[i], state) || !fn.parameters[i].Test(param, state) {
 				return false
 			}
 		}
 
 		for i, result := range f.results {
-			if !result.Test(fn.results[i]) || !fn.results[i].Test(result) {
+			if !result.Test(fn.results[i], state) || !fn.results[i].Test(result, state) {
 				return false
 			}
 		}

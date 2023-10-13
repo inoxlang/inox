@@ -1025,7 +1025,7 @@ func isSubType(sub, super Pattern, ctx *Context, encountered map[uintptr]symboli
 		panic(ErrUnreachable)
 	}
 
-	return symbolicSuper.Test(symbolicSub)
+	return symbolicSuper.Test(symbolicSub, symbolic.RecTestCallState{})
 }
 
 func isSuperType(super, sub Pattern, ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) bool {

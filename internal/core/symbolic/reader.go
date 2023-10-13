@@ -22,7 +22,10 @@ type AnyReadable struct {
 	_ int
 }
 
-func (r *AnyReadable) Test(v SymbolicValue) bool {
+func (r *AnyReadable) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	switch val := v.(type) {
 	case Readable:
 		return true
@@ -51,7 +54,10 @@ type Reader struct {
 	_ int
 }
 
-func (r *Reader) Test(v SymbolicValue) bool {
+func (r *Reader) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	switch v.(type) {
 	case *Reader:
 		return true

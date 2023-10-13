@@ -24,7 +24,10 @@ type AstNode struct {
 	UnassignablePropsMixin
 }
 
-func (n *AstNode) Test(v SymbolicValue) bool {
+func (n *AstNode) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	otherNode, ok := v.(*AstNode)
 	if !ok {
 		return false
@@ -74,7 +77,10 @@ type Token struct {
 	UnassignablePropsMixin
 }
 
-func (n *Token) Test(v SymbolicValue) bool {
+func (n *Token) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(*Token)
 	if !ok {
 		return false

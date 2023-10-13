@@ -230,8 +230,8 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 		if ok && self != nil {
 			static, _ := state.getStaticOfNode(selfPartialNode)
 
-			if (static != nil && !static.TestValue(updatedSelf)) ||
-				(static == nil && !self.Test(updatedSelf)) {
+			if (static != nil && !static.TestValue(updatedSelf, RecTestCallState{})) ||
+				(static == nil && !self.Test(updatedSelf, RecTestCallState{})) {
 				state.addError(makeSymbolicEvalError(callNode, state, INVALID_MUTATION))
 			} else { //ok
 				narrowPath(selfPartialNode, setExactValue, updatedSelf, state, 0)
@@ -295,7 +295,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 				// 	widenedArg = widenOrAny(widenedArg)
 				// }
 
-				if !paramType.Test(arg) {
+				if !paramType.Test(arg, RecTestCallState{}) {
 					if argNode != nil {
 						//if the argument node is a runtime check expression we store
 						//the pattern that will be used at runtime to perform the check
@@ -452,7 +452,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 		// 	widenedArg = widenOrAny(widenedArg)
 		// }
 
-		if !paramType.Test(arg) {
+		if !paramType.Test(arg, RecTestCallState{}) {
 			if argNode != nil {
 				if _, ok := argNode.(*parse.RuntimeTypeCheckExpression); ok {
 					args[i] = paramType

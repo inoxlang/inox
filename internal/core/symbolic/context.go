@@ -148,13 +148,13 @@ func (ctx *Context) AddTypeExtension(extension *TypeExtension) {
 
 func (ctx *Context) GetExtensions(v SymbolicValue) (extensions []*TypeExtension) {
 	for _, extension := range ctx.typeExtensions {
-		if extension.ExtendedPattern.TestValue(v) {
+		if extension.ExtendedPattern.TestValue(v, RecTestCallState{}) {
 			extensions = append(extensions, extension)
 		}
 	}
 
 	slices.SortFunc(extensions, func(a, b *TypeExtension) int {
-		if a.ExtendedPattern.Test(b.ExtendedPattern) {
+		if a.ExtendedPattern.Test(b.ExtendedPattern, RecTestCallState{}) {
 			return 0
 		}
 		return 0

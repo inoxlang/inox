@@ -22,7 +22,10 @@ func NewCSP() *ContentSecurityPolicy {
 	return &ContentSecurityPolicy{}
 }
 
-func (n *ContentSecurityPolicy) Test(v symbolic.SymbolicValue) bool {
+func (n *ContentSecurityPolicy) Test(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(*ContentSecurityPolicy)
 	if !ok {
 		return false

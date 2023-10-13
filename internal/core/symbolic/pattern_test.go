@@ -14,15 +14,15 @@ func TestSymbolicAnyPattern(t *testing.T) {
 	t.Run("Test()", func(t *testing.T) {
 		pattern := ANY_PATTERN
 
-		assert.True(t, pattern.Test(&RegexPattern{}))
-		assert.False(t, pattern.Test(ANY_INT))
+		assertTest(t, pattern, &RegexPattern{})
+		assertTestFalse(t, pattern, ANY_INT)
 	})
 
 	t.Run("TestValue() should return true for any symbolic value", func(t *testing.T) {
 		pattern := ANY_PATTERN
 
-		assert.True(t, pattern.TestValue(&RegexPattern{}))
-		assert.True(t, pattern.TestValue(ANY_INT))
+		assertTestValue(t, pattern, &RegexPattern{})
+		assertTestValue(t, pattern, ANY_INT)
 	})
 
 }
@@ -32,83 +32,83 @@ func TestSymbolicPathPattern(t *testing.T) {
 	t.Run("Test()", func(t *testing.T) {
 		anyPathPattern := &PathPattern{}
 
-		assert.True(t, anyPathPattern.Test(&PathPattern{}))
-		assert.False(t, anyPathPattern.Test(ANY_INT))
-		assert.False(t, anyPathPattern.Test(ANY_PATTERN))
+		assertTest(t, anyPathPattern, &PathPattern{})
+		assertTestFalse(t, anyPathPattern, ANY_INT)
+		assertTestFalse(t, anyPathPattern, ANY_PATTERN)
 
 		pathPatternWithValue := NewPathPattern("/...")
-		assert.True(t, pathPatternWithValue.Test(pathPatternWithValue))
-		assert.False(t, pathPatternWithValue.Test(anyPathPattern))
-		assert.False(t, pathPatternWithValue.Test(ANY_INT))
-		assert.False(t, pathPatternWithValue.Test(ANY_PATTERN))
+		assertTest(t, pathPatternWithValue, pathPatternWithValue)
+		assertTestFalse(t, pathPatternWithValue, anyPathPattern)
+		assertTestFalse(t, pathPatternWithValue, ANY_INT)
+		assertTestFalse(t, pathPatternWithValue, ANY_PATTERN)
 
 		pathPatternWithNode := &PathPattern{node: &parse.PathPatternExpression{}}
-		assert.True(t, pathPatternWithNode.Test(pathPatternWithNode))
-		assert.False(t, pathPatternWithNode.Test(&PathPattern{node: &parse.PathPatternExpression{}}))
-		assert.False(t, pathPatternWithNode.Test(anyPathPattern))
-		assert.False(t, pathPatternWithNode.Test(pathPatternWithValue))
-		assert.False(t, pathPatternWithNode.Test(ANY_INT))
-		assert.False(t, pathPatternWithNode.Test(ANY_PATTERN))
+		assertTest(t, pathPatternWithNode, pathPatternWithNode)
+		assertTestFalse(t, pathPatternWithNode, &PathPattern{node: &parse.PathPatternExpression{}})
+		assertTestFalse(t, pathPatternWithNode, anyPathPattern)
+		assertTestFalse(t, pathPatternWithNode, pathPatternWithValue)
+		assertTestFalse(t, pathPatternWithNode, ANY_INT)
+		assertTestFalse(t, pathPatternWithNode, ANY_PATTERN)
 	})
 
 	t.Run("TestValue()", func(t *testing.T) {
 		anyPathPattern := ANY_PATH_PATTERN
 
-		assert.True(t, anyPathPattern.TestValue(&Path{}))
-		assert.True(t, anyPathPattern.TestValue(NewPath("/")))
-		assert.True(t, anyPathPattern.TestValue(NewPath("./")))
-		assert.True(t, anyPathPattern.TestValue(NewPathMatchingPattern(&PathPattern{node: &parse.PathPatternExpression{}})))
-		assert.False(t, anyPathPattern.TestValue(ANY_INT))
-		assert.False(t, anyPathPattern.TestValue(ANY_PATH_PATTERN))
+		assertTestValue(t, anyPathPattern, &Path{})
+		assertTestValue(t, anyPathPattern, NewPath("/"))
+		assertTestValue(t, anyPathPattern, NewPath("./"))
+		assertTestValue(t, anyPathPattern, NewPathMatchingPattern(&PathPattern{node: &parse.PathPatternExpression{}}))
+		assertTestValueFalse(t, anyPathPattern, ANY_INT)
+		assertTestValueFalse(t, anyPathPattern, ANY_PATH_PATTERN)
 
 		//same tests but with result of .SymbolicValue()
 		anyPathPattern_val := anyPathPattern.SymbolicValue()
-		assert.True(t, anyPathPattern_val.Test(&Path{}))
-		assert.True(t, anyPathPattern_val.Test(NewPath("/")))
-		assert.True(t, anyPathPattern_val.Test(NewPath("./")))
-		assert.True(t, anyPathPattern_val.Test(NewPathMatchingPattern(&PathPattern{node: &parse.PathPatternExpression{}})))
-		assert.False(t, anyPathPattern_val.Test(ANY_INT))
-		assert.False(t, anyPathPattern_val.Test(ANY_PATH_PATTERN))
+		assertTest(t, anyPathPattern_val, &Path{})
+		assertTest(t, anyPathPattern_val, NewPath("/"))
+		assertTest(t, anyPathPattern_val, NewPath("./"))
+		assertTest(t, anyPathPattern_val, NewPathMatchingPattern(&PathPattern{node: &parse.PathPatternExpression{}}))
+		assertTestFalse(t, anyPathPattern_val, ANY_INT)
+		assertTestFalse(t, anyPathPattern_val, ANY_PATH_PATTERN)
 
 		pathPatternWithValue := NewPathPattern("/...")
-		assert.True(t, pathPatternWithValue.TestValue(NewPath("/")))
-		assert.True(t, pathPatternWithValue.TestValue(NewPath("/1")))
-		assert.True(t, pathPatternWithValue.TestValue(NewPath("/1/")))
-		assert.False(t, pathPatternWithValue.TestValue(NewPath("./")))
-		assert.False(t, pathPatternWithValue.TestValue(NewPathMatchingPattern(&PathPattern{node: &parse.PathPatternExpression{}})))
-		assert.False(t, pathPatternWithValue.TestValue(&Path{}))
-		assert.False(t, pathPatternWithValue.TestValue(ANY_INT))
-		assert.False(t, pathPatternWithValue.TestValue(ANY_PATH_PATTERN))
+		assertTestValue(t, pathPatternWithValue, NewPath("/"))
+		assertTestValue(t, pathPatternWithValue, NewPath("/1"))
+		assertTestValue(t, pathPatternWithValue, NewPath("/1/"))
+		assertTestValueFalse(t, pathPatternWithValue, NewPath("./"))
+		assertTestValueFalse(t, pathPatternWithValue, NewPathMatchingPattern(&PathPattern{node: &parse.PathPatternExpression{}}))
+		assertTestValueFalse(t, pathPatternWithValue, &Path{})
+		assertTestValueFalse(t, pathPatternWithValue, ANY_INT)
+		assertTestValueFalse(t, pathPatternWithValue, ANY_PATH_PATTERN)
 
 		//same tests but with result of .SymbolicValue()
 		pathPatternWithValue_val := pathPatternWithValue.SymbolicValue()
-		assert.True(t, pathPatternWithValue_val.Test(NewPath("/")))
-		assert.True(t, pathPatternWithValue_val.Test(NewPath("/1")))
-		assert.True(t, pathPatternWithValue_val.Test(NewPath("/1/")))
-		assert.False(t, pathPatternWithValue_val.Test(NewPath("./")))
-		assert.False(t, pathPatternWithValue_val.Test(NewPathMatchingPattern(&PathPattern{node: &parse.PathPatternExpression{}})))
-		assert.False(t, pathPatternWithValue_val.Test(&Path{}))
-		assert.False(t, pathPatternWithValue_val.Test(ANY_INT))
-		assert.False(t, pathPatternWithValue_val.Test(ANY_PATH_PATTERN))
+		assertTest(t, pathPatternWithValue_val, NewPath("/"))
+		assertTest(t, pathPatternWithValue_val, NewPath("/1"))
+		assertTest(t, pathPatternWithValue_val, NewPath("/1/"))
+		assertTestFalse(t, pathPatternWithValue_val, NewPath("./"))
+		assertTestFalse(t, pathPatternWithValue_val, NewPathMatchingPattern(&PathPattern{node: &parse.PathPatternExpression{}}))
+		assertTestFalse(t, pathPatternWithValue_val, &Path{})
+		assertTestFalse(t, pathPatternWithValue_val, ANY_INT)
+		assertTestFalse(t, pathPatternWithValue_val, ANY_PATH_PATTERN)
 
 		pathPatternWithNode := &PathPattern{node: &parse.PathPatternExpression{}}
-		assert.True(t, pathPatternWithNode.TestValue(NewPathMatchingPattern(pathPatternWithNode)))
-		assert.False(t, pathPatternWithNode.TestValue(NewPathMatchingPattern(&PathPattern{node: &parse.PathPatternExpression{}})))
-		assert.False(t, pathPatternWithNode.TestValue(NewPath("/")))
-		assert.False(t, pathPatternWithNode.TestValue(NewPath("./")))
-		assert.False(t, pathPatternWithNode.TestValue(&Path{}))
-		assert.False(t, pathPatternWithNode.TestValue(ANY_INT))
-		assert.False(t, pathPatternWithNode.TestValue(ANY_PATH_PATTERN))
+		assertTestValue(t, pathPatternWithNode, NewPathMatchingPattern(pathPatternWithNode))
+		assertTestValueFalse(t, pathPatternWithNode, NewPathMatchingPattern(&PathPattern{node: &parse.PathPatternExpression{}}))
+		assertTestValueFalse(t, pathPatternWithNode, NewPath("/"))
+		assertTestValueFalse(t, pathPatternWithNode, NewPath("./"))
+		assertTestValueFalse(t, pathPatternWithNode, &Path{})
+		assertTestValueFalse(t, pathPatternWithNode, ANY_INT)
+		assertTestValueFalse(t, pathPatternWithNode, ANY_PATH_PATTERN)
 
 		//same tests but with result of .SymbolicValue()
 		pathPatternWithNode_val := pathPatternWithNode.SymbolicValue()
-		assert.True(t, pathPatternWithNode_val.Test(NewPathMatchingPattern(pathPatternWithNode)))
-		assert.False(t, pathPatternWithNode_val.Test(NewPathMatchingPattern(&PathPattern{node: &parse.PathPatternExpression{}})))
-		assert.False(t, pathPatternWithNode_val.Test(NewPath("/")))
-		assert.False(t, pathPatternWithNode_val.Test(NewPath("./")))
-		assert.False(t, pathPatternWithNode_val.Test(&Path{}))
-		assert.False(t, pathPatternWithNode_val.Test(ANY_INT))
-		assert.False(t, pathPatternWithNode_val.Test(ANY_PATH_PATTERN))
+		assertTest(t, pathPatternWithNode_val, NewPathMatchingPattern(pathPatternWithNode))
+		assertTestFalse(t, pathPatternWithNode_val, NewPathMatchingPattern(&PathPattern{node: &parse.PathPatternExpression{}}))
+		assertTestFalse(t, pathPatternWithNode_val, NewPath("/"))
+		assertTestFalse(t, pathPatternWithNode_val, NewPath("./"))
+		assertTestFalse(t, pathPatternWithNode_val, &Path{})
+		assertTestFalse(t, pathPatternWithNode_val, ANY_INT)
+		assertTestFalse(t, pathPatternWithNode_val, ANY_PATH_PATTERN)
 	})
 
 }
@@ -118,79 +118,79 @@ func TestSymbolicUrlPattern(t *testing.T) {
 	t.Run("Test()", func(t *testing.T) {
 		anyUrlPattern := &URLPattern{}
 
-		assert.True(t, anyUrlPattern.Test(&URLPattern{}))
-		assert.False(t, anyUrlPattern.Test(ANY_INT))
-		assert.False(t, anyUrlPattern.Test(ANY_PATTERN))
+		assertTest(t, anyUrlPattern, &URLPattern{})
+		assertTestFalse(t, anyUrlPattern, ANY_INT)
+		assertTestFalse(t, anyUrlPattern, ANY_PATTERN)
 
 		urlPatternWithValue := NewUrlPattern("https://example.com/...")
-		assert.True(t, urlPatternWithValue.Test(urlPatternWithValue))
-		assert.False(t, urlPatternWithValue.Test(anyUrlPattern))
-		assert.False(t, urlPatternWithValue.Test(ANY_INT))
-		assert.False(t, urlPatternWithValue.Test(ANY_PATTERN))
+		assertTest(t, urlPatternWithValue, urlPatternWithValue)
+		assertTestFalse(t, urlPatternWithValue, anyUrlPattern)
+		assertTestFalse(t, urlPatternWithValue, ANY_INT)
+		assertTestFalse(t, urlPatternWithValue, ANY_PATTERN)
 
 		urlPatternWithNode := NewUrlPatternFromNode(&parse.PathPatternExpression{})
-		assert.True(t, urlPatternWithNode.Test(urlPatternWithNode))
-		assert.False(t, urlPatternWithNode.Test(NewUrlPatternFromNode(&parse.PathPatternExpression{})))
-		assert.False(t, urlPatternWithNode.Test(anyUrlPattern))
-		assert.False(t, urlPatternWithNode.Test(urlPatternWithValue))
-		assert.False(t, urlPatternWithNode.Test(ANY_INT))
-		assert.False(t, urlPatternWithNode.Test(ANY_PATTERN))
+		assertTest(t, urlPatternWithNode, urlPatternWithNode)
+		assertTestFalse(t, urlPatternWithNode, NewUrlPatternFromNode(&parse.PathPatternExpression{}))
+		assertTestFalse(t, urlPatternWithNode, anyUrlPattern)
+		assertTestFalse(t, urlPatternWithNode, urlPatternWithValue)
+		assertTestFalse(t, urlPatternWithNode, ANY_INT)
+		assertTestFalse(t, urlPatternWithNode, ANY_PATTERN)
 	})
 
 	t.Run("TestValue()", func(t *testing.T) {
 		anyUrlPattern := ANY_URL_PATTERN
 
-		assert.True(t, anyUrlPattern.TestValue(&URL{}))
-		assert.True(t, anyUrlPattern.TestValue(NewUrl("https://example.com/")))
-		assert.True(t, anyUrlPattern.TestValue(NewUrlMatchingPattern(NewUrlPatternFromNode(&parse.URLPatternLiteral{}))))
-		assert.False(t, anyUrlPattern.TestValue(ANY_INT))
-		assert.False(t, anyUrlPattern.TestValue(ANY_URL_PATTERN))
+		assertTestValue(t, anyUrlPattern, &URL{})
+		assertTestValue(t, anyUrlPattern, NewUrl("https://example.com/"))
+		assertTestValue(t, anyUrlPattern, NewUrlMatchingPattern(NewUrlPatternFromNode(&parse.URLPatternLiteral{})))
+		assertTestValueFalse(t, anyUrlPattern, ANY_INT)
+		assertTestValueFalse(t, anyUrlPattern, ANY_URL_PATTERN)
 
 		//same tests but with result of .SymbolicValue()
 		anyUrlPattern_val := anyUrlPattern.SymbolicValue()
-		assert.True(t, anyUrlPattern_val.Test(&URL{}))
-		assert.True(t, anyUrlPattern_val.Test(NewUrl("https://example.com/")))
-		assert.True(t, anyUrlPattern_val.Test(NewUrlMatchingPattern(NewUrlPatternFromNode(&parse.URLPatternLiteral{}))))
-		assert.False(t, anyUrlPattern_val.Test(ANY_INT))
-		assert.False(t, anyUrlPattern_val.Test(ANY_URL_PATTERN))
+		assertTest(t, anyUrlPattern_val, &URL{})
+		assertTest(t, anyUrlPattern_val, NewUrl("https://example.com/"))
+		assertTest(t, anyUrlPattern_val, NewUrlMatchingPattern(NewUrlPatternFromNode(&parse.URLPatternLiteral{})))
+		assertTestFalse(t, anyUrlPattern_val, ANY_INT)
+		assertTestFalse(t, anyUrlPattern_val, ANY_URL_PATTERN)
 
 		urlPatternWithValue := NewUrlPattern("https://example.com/...")
-		assert.True(t, urlPatternWithValue.TestValue(NewUrl("https://example.com/")))
-		assert.True(t, urlPatternWithValue.TestValue(NewUrl("https://example.com/1")))
-		assert.True(t, urlPatternWithValue.TestValue(NewUrl("https://example.com/1/")))
-		assert.False(t, urlPatternWithValue.TestValue(NewUrl("https://localhost/")))
-		assert.False(t, urlPatternWithValue.TestValue(NewUrlMatchingPattern(NewUrlPatternFromNode(&parse.URLPatternLiteral{}))))
-		assert.False(t, urlPatternWithValue.TestValue(&URL{}))
-		assert.False(t, urlPatternWithValue.TestValue(ANY_INT))
-		assert.False(t, urlPatternWithValue.TestValue(ANY_URL_PATTERN))
+		assertTestValue(t, urlPatternWithValue, NewUrl("https://example.com/"))
+		assertTestValue(t, urlPatternWithValue, NewUrl("https://example.com/1"))
+		assertTestValue(t, urlPatternWithValue, NewUrl("https://example.com/1/"))
+		assertTestValueFalse(t, urlPatternWithValue, NewUrl("https://localhost/"))
+		assertTestValueFalse(t, urlPatternWithValue, NewUrlMatchingPattern(NewUrlPatternFromNode(&parse.URLPatternLiteral{})))
+		assertTestValueFalse(t, urlPatternWithValue, &URL{})
+		assertTestValueFalse(t, urlPatternWithValue, ANY_INT)
+		assertTestValueFalse(t, urlPatternWithValue, ANY_URL_PATTERN)
 
 		//same tests but with result of .SymbolicValue()
 		urlPatternWithValue_val := urlPatternWithValue.SymbolicValue()
-		assert.True(t, urlPatternWithValue_val.Test(NewUrl("https://example.com/")))
-		assert.True(t, urlPatternWithValue_val.Test(NewUrl("https://example.com/1")))
-		assert.True(t, urlPatternWithValue_val.Test(NewUrl("https://example.com/1/")))
-		assert.False(t, urlPatternWithValue_val.Test(NewUrl("https://localhost/")))
-		assert.False(t, urlPatternWithValue_val.Test(NewUrlMatchingPattern(NewUrlPatternFromNode(&parse.URLPatternLiteral{}))))
-		assert.False(t, urlPatternWithValue_val.Test(&URL{}))
-		assert.False(t, urlPatternWithValue_val.Test(ANY_INT))
-		assert.False(t, urlPatternWithValue_val.Test(ANY_URL_PATTERN))
+		assertTest(t, urlPatternWithValue_val, NewUrl("https://example.com/"))
+		assertTest(t, urlPatternWithValue_val, NewUrl("https://example.com/1"))
+		assertTest(t, urlPatternWithValue_val, NewUrl("https://example.com/1/"))
+		assertTestFalse(t, urlPatternWithValue_val, NewUrl("https://localhost/"))
+		assertTestFalse(t, urlPatternWithValue_val, NewUrlMatchingPattern(NewUrlPatternFromNode(&parse.URLPatternLiteral{})))
+		assertTestFalse(t, urlPatternWithValue_val, &URL{})
+		assertTestFalse(t, urlPatternWithValue_val, ANY_INT)
+		assertTestFalse(t, urlPatternWithValue_val, ANY_URL_PATTERN)
 
 		urlPatternWithNode := NewUrlPatternFromNode(&parse.URLPatternLiteral{}) //the node will never be a parse.URLPatternLiteral
-		assert.True(t, urlPatternWithNode.TestValue(NewUrlMatchingPattern(urlPatternWithNode)))
-		assert.False(t, urlPatternWithNode.TestValue(NewUrlMatchingPattern(NewUrlPatternFromNode(&parse.URLPatternLiteral{}))))
-		assert.False(t, urlPatternWithNode.TestValue(NewUrl("https://example.com/")))
-		assert.False(t, urlPatternWithNode.TestValue(&URL{}))
-		assert.False(t, urlPatternWithNode.TestValue(ANY_INT))
-		assert.False(t, urlPatternWithNode.TestValue(ANY_URL_PATTERN))
+		assertTestValue(t, urlPatternWithNode, NewUrlMatchingPattern(urlPatternWithNode))
+		assertTestValueFalse(t, urlPatternWithNode, NewUrlMatchingPattern(NewUrlPatternFromNode(&parse.URLPatternLiteral{})))
+		assertTestValueFalse(t, urlPatternWithNode, NewUrl("https://example.com/"))
+		assertTestValueFalse(t, urlPatternWithNode, &URL{})
+		assertTestValueFalse(t, urlPatternWithNode, ANY_INT)
+		assertTestValueFalse(t, urlPatternWithNode, ANY_URL_PATTERN)
 
 		//same tests but with result of .SymbolicValue()
 		urlPatternWithNode_val := urlPatternWithNode.SymbolicValue()
-		assert.True(t, urlPatternWithNode_val.Test(NewUrlMatchingPattern(urlPatternWithNode)))
-		assert.False(t, urlPatternWithNode_val.Test(NewUrlMatchingPattern(NewUrlPatternFromNode(&parse.URLPatternLiteral{}))))
-		assert.False(t, urlPatternWithNode_val.Test(NewUrl("https://example.com/")))
-		assert.False(t, urlPatternWithNode_val.Test(&URL{}))
-		assert.False(t, urlPatternWithNode_val.Test(ANY_INT))
-		assert.False(t, urlPatternWithNode_val.Test(ANY_URL_PATTERN))
+		assertTest(t, urlPatternWithNode_val, NewUrlMatchingPattern(urlPatternWithNode))
+		assertTestFalse(t, urlPatternWithNode_val, NewUrlMatchingPattern(NewUrlPatternFromNode(&parse.URLPatternLiteral{})))
+		assertTestFalse(t, urlPatternWithNode_val, NewUrl("https://example.com/"))
+		assertTestFalse(t, urlPatternWithNode_val, &URL{})
+		assertTestFalse(t, urlPatternWithNode_val, ANY_INT)
+		assertTestFalse(t, urlPatternWithNode_val, ANY_URL_PATTERN)
 	})
 
 }
@@ -200,75 +200,75 @@ func TestSymbolicHostPattern(t *testing.T) {
 	t.Run("Test()", func(t *testing.T) {
 		anyHostPattern := &HostPattern{}
 
-		assert.True(t, anyHostPattern.Test(&HostPattern{}))
-		assert.False(t, anyHostPattern.Test(ANY_INT))
-		assert.False(t, anyHostPattern.Test(ANY_PATTERN))
+		assertTest(t, anyHostPattern, &HostPattern{})
+		assertTestFalse(t, anyHostPattern, ANY_INT)
+		assertTestFalse(t, anyHostPattern, ANY_PATTERN)
 
 		hostPatternWithValue := NewHostPattern("https://example.com")
-		assert.True(t, hostPatternWithValue.Test(hostPatternWithValue))
-		assert.False(t, hostPatternWithValue.Test(anyHostPattern))
-		assert.False(t, hostPatternWithValue.Test(ANY_INT))
-		assert.False(t, hostPatternWithValue.Test(ANY_PATTERN))
+		assertTest(t, hostPatternWithValue, hostPatternWithValue)
+		assertTestFalse(t, hostPatternWithValue, anyHostPattern)
+		assertTestFalse(t, hostPatternWithValue, ANY_INT)
+		assertTestFalse(t, hostPatternWithValue, ANY_PATTERN)
 
 		hostPatternWithNode := NewHostPatternFromNode(&parse.PathPatternExpression{})
-		assert.True(t, hostPatternWithNode.Test(hostPatternWithNode))
-		assert.False(t, hostPatternWithNode.Test(NewHostPatternFromNode(&parse.PathPatternExpression{})))
-		assert.False(t, hostPatternWithNode.Test(anyHostPattern))
-		assert.False(t, hostPatternWithNode.Test(hostPatternWithValue))
-		assert.False(t, hostPatternWithNode.Test(ANY_INT))
-		assert.False(t, hostPatternWithNode.Test(ANY_PATTERN))
+		assertTest(t, hostPatternWithNode, hostPatternWithNode)
+		assertTestFalse(t, hostPatternWithNode, NewHostPatternFromNode(&parse.PathPatternExpression{}))
+		assertTestFalse(t, hostPatternWithNode, anyHostPattern)
+		assertTestFalse(t, hostPatternWithNode, hostPatternWithValue)
+		assertTestFalse(t, hostPatternWithNode, ANY_INT)
+		assertTestFalse(t, hostPatternWithNode, ANY_PATTERN)
 	})
 
 	t.Run("TestValue()", func(t *testing.T) {
 		anyHostPattern := ANY_HOST_PATTERN
 
-		assert.True(t, anyHostPattern.TestValue(&Host{}))
-		assert.True(t, anyHostPattern.TestValue(NewHost("https://example.com")))
-		assert.True(t, anyHostPattern.TestValue(NewHostMatchingPattern(NewHostPatternFromNode(&parse.HostPatternLiteral{}))))
-		assert.False(t, anyHostPattern.TestValue(ANY_INT))
-		assert.False(t, anyHostPattern.TestValue(ANY_HOST_PATTERN))
+		assertTestValue(t, anyHostPattern, &Host{})
+		assertTestValue(t, anyHostPattern, NewHost("https://example.com"))
+		assertTestValue(t, anyHostPattern, NewHostMatchingPattern(NewHostPatternFromNode(&parse.HostPatternLiteral{})))
+		assertTestValueFalse(t, anyHostPattern, ANY_INT)
+		assertTestValueFalse(t, anyHostPattern, ANY_HOST_PATTERN)
 
 		//same tests but with result of .SymbolicValue()
 		anyHostPattern_val := anyHostPattern.SymbolicValue()
-		assert.True(t, anyHostPattern_val.Test(&Host{}))
-		assert.True(t, anyHostPattern_val.Test(NewHost("https://example.com")))
-		assert.True(t, anyHostPattern_val.Test(NewHostMatchingPattern(NewHostPatternFromNode(&parse.HostPatternLiteral{}))))
-		assert.False(t, anyHostPattern_val.Test(ANY_INT))
-		assert.False(t, anyHostPattern_val.Test(ANY_HOST_PATTERN))
+		assertTest(t, anyHostPattern_val, &Host{})
+		assertTest(t, anyHostPattern_val, NewHost("https://example.com"))
+		assertTest(t, anyHostPattern_val, NewHostMatchingPattern(NewHostPatternFromNode(&parse.HostPatternLiteral{})))
+		assertTestFalse(t, anyHostPattern_val, ANY_INT)
+		assertTestFalse(t, anyHostPattern_val, ANY_HOST_PATTERN)
 
 		hostPatternWithValue := NewHostPattern("https://example.com")
-		assert.True(t, hostPatternWithValue.TestValue(NewHost("https://example.com")))
-		assert.False(t, hostPatternWithValue.TestValue(NewHost("https://localhost")))
-		assert.False(t, hostPatternWithValue.TestValue(NewHostMatchingPattern(NewHostPatternFromNode(&parse.HostPatternLiteral{}))))
-		assert.False(t, hostPatternWithValue.TestValue(&Host{}))
-		assert.False(t, hostPatternWithValue.TestValue(ANY_INT))
-		assert.False(t, hostPatternWithValue.TestValue(ANY_HOST_PATTERN))
+		assertTestValue(t, hostPatternWithValue, NewHost("https://example.com"))
+		assertTestValueFalse(t, hostPatternWithValue, NewHost("https://localhost"))
+		assertTestValueFalse(t, hostPatternWithValue, NewHostMatchingPattern(NewHostPatternFromNode(&parse.HostPatternLiteral{})))
+		assertTestValueFalse(t, hostPatternWithValue, &Host{})
+		assertTestValueFalse(t, hostPatternWithValue, ANY_INT)
+		assertTestValueFalse(t, hostPatternWithValue, ANY_HOST_PATTERN)
 
 		//same tests but with result of .SymbolicValue()
 		hostPatternWithValue_val := hostPatternWithValue.SymbolicValue()
-		assert.True(t, hostPatternWithValue_val.Test(NewHost("https://example.com")))
-		assert.False(t, hostPatternWithValue_val.Test(NewHost("https://localhost")))
-		assert.False(t, hostPatternWithValue_val.Test(NewHostMatchingPattern(NewHostPatternFromNode(&parse.HostPatternLiteral{}))))
-		assert.False(t, hostPatternWithValue_val.Test(&Host{}))
-		assert.False(t, hostPatternWithValue_val.Test(ANY_INT))
-		assert.False(t, hostPatternWithValue_val.Test(ANY_HOST_PATTERN))
+		assertTest(t, hostPatternWithValue_val, NewHost("https://example.com"))
+		assertTestFalse(t, hostPatternWithValue_val, NewHost("https://localhost"))
+		assertTestFalse(t, hostPatternWithValue_val, NewHostMatchingPattern(NewHostPatternFromNode(&parse.HostPatternLiteral{})))
+		assertTestFalse(t, hostPatternWithValue_val, &Host{})
+		assertTestFalse(t, hostPatternWithValue_val, ANY_INT)
+		assertTestFalse(t, hostPatternWithValue_val, ANY_HOST_PATTERN)
 
 		hostPatternWithNode := NewHostPatternFromNode(&parse.HostPatternLiteral{}) //the node will never be a parse.HostPatternLiteral
-		assert.True(t, hostPatternWithNode.TestValue(NewHostMatchingPattern(hostPatternWithNode)))
-		assert.False(t, hostPatternWithNode.TestValue(NewHostMatchingPattern(NewHostPatternFromNode(&parse.HostPatternLiteral{}))))
-		assert.False(t, hostPatternWithNode.TestValue(NewHost("https://example.com")))
-		assert.False(t, hostPatternWithNode.TestValue(&Host{}))
-		assert.False(t, hostPatternWithNode.TestValue(ANY_INT))
-		assert.False(t, hostPatternWithNode.TestValue(ANY_HOST_PATTERN))
+		assertTestValue(t, hostPatternWithNode, NewHostMatchingPattern(hostPatternWithNode))
+		assertTestValueFalse(t, hostPatternWithNode, NewHostMatchingPattern(NewHostPatternFromNode(&parse.HostPatternLiteral{})))
+		assertTestValueFalse(t, hostPatternWithNode, NewHost("https://example.com"))
+		assertTestValueFalse(t, hostPatternWithNode, &Host{})
+		assertTestValueFalse(t, hostPatternWithNode, ANY_INT)
+		assertTestValueFalse(t, hostPatternWithNode, ANY_HOST_PATTERN)
 
 		//same tests but with result of .SymbolicValue()
 		hostPatternWithNode_val := hostPatternWithNode.SymbolicValue()
-		assert.True(t, hostPatternWithNode_val.Test(NewHostMatchingPattern(hostPatternWithNode)))
-		assert.False(t, hostPatternWithNode_val.Test(NewHostMatchingPattern(NewHostPatternFromNode(&parse.HostPatternLiteral{}))))
-		assert.False(t, hostPatternWithNode_val.Test(NewHost("https://example.com")))
-		assert.False(t, hostPatternWithNode_val.Test(&Host{}))
-		assert.False(t, hostPatternWithNode_val.Test(ANY_INT))
-		assert.False(t, hostPatternWithNode_val.Test(ANY_HOST_PATTERN))
+		assertTest(t, hostPatternWithNode_val, NewHostMatchingPattern(hostPatternWithNode))
+		assertTestFalse(t, hostPatternWithNode_val, NewHostMatchingPattern(NewHostPatternFromNode(&parse.HostPatternLiteral{})))
+		assertTestFalse(t, hostPatternWithNode_val, NewHost("https://example.com"))
+		assertTestFalse(t, hostPatternWithNode_val, &Host{})
+		assertTestFalse(t, hostPatternWithNode_val, ANY_INT)
+		assertTestFalse(t, hostPatternWithNode_val, ANY_HOST_PATTERN)
 	})
 
 }
@@ -279,31 +279,31 @@ func TestSymbolicNamedSegmentPathPattern(t *testing.T) {
 		namedPathPattern := &NamedSegmentPathPattern{}
 		specificNamedPathPattern := &NamedSegmentPathPattern{node: &parse.NamedSegmentPathPatternLiteral{}}
 
-		assert.True(t, namedPathPattern.Test(&NamedSegmentPathPattern{}))
-		assert.True(t, namedPathPattern.Test(specificNamedPathPattern))
-		assert.False(t, namedPathPattern.Test(&Path{}))
-		assert.False(t, namedPathPattern.Test(ANY_INT))
-		assert.False(t, namedPathPattern.Test(ANY_PATTERN))
+		assertTest(t, namedPathPattern, &NamedSegmentPathPattern{})
+		assertTest(t, namedPathPattern, specificNamedPathPattern)
+		assertTestFalse(t, namedPathPattern, &Path{})
+		assertTestFalse(t, namedPathPattern, ANY_INT)
+		assertTestFalse(t, namedPathPattern, ANY_PATTERN)
 
-		assert.False(t, specificNamedPathPattern.Test(&NamedSegmentPathPattern{}))
-		assert.True(t, specificNamedPathPattern.Test(specificNamedPathPattern))
-		assert.False(t, specificNamedPathPattern.Test(&Path{}))
-		assert.False(t, specificNamedPathPattern.Test(ANY_INT))
-		assert.False(t, specificNamedPathPattern.Test(ANY_PATTERN))
+		assertTestFalse(t, specificNamedPathPattern, &NamedSegmentPathPattern{})
+		assertTest(t, specificNamedPathPattern, specificNamedPathPattern)
+		assertTestFalse(t, specificNamedPathPattern, &Path{})
+		assertTestFalse(t, specificNamedPathPattern, ANY_INT)
+		assertTestFalse(t, specificNamedPathPattern, ANY_PATTERN)
 	})
 
 	t.Run("TestValue() should return true for any symbolic path", func(t *testing.T) {
 		namedPathPattern := &NamedSegmentPathPattern{}
-		assert.True(t, namedPathPattern.TestValue(&Path{}))
-		assert.False(t, namedPathPattern.TestValue(ANY_INT))
-		assert.False(t, namedPathPattern.TestValue(&NamedSegmentPathPattern{}))
-		assert.False(t, namedPathPattern.TestValue(&NamedSegmentPathPattern{node: &parse.NamedSegmentPathPatternLiteral{}}))
+		assertTestValue(t, namedPathPattern, &Path{})
+		assertTestValueFalse(t, namedPathPattern, ANY_INT)
+		assertTestValueFalse(t, namedPathPattern, &NamedSegmentPathPattern{})
+		assertTestValueFalse(t, namedPathPattern, &NamedSegmentPathPattern{node: &parse.NamedSegmentPathPatternLiteral{}})
 
 		specificNamedPathPattern := &NamedSegmentPathPattern{node: &parse.NamedSegmentPathPatternLiteral{}}
-		assert.True(t, specificNamedPathPattern.TestValue(&Path{}))
-		assert.False(t, specificNamedPathPattern.TestValue(ANY_INT))
-		assert.False(t, specificNamedPathPattern.TestValue(&NamedSegmentPathPattern{}))
-		assert.False(t, specificNamedPathPattern.TestValue(&NamedSegmentPathPattern{node: &parse.NamedSegmentPathPatternLiteral{}}))
+		assertTestValue(t, specificNamedPathPattern, &Path{})
+		assertTestValueFalse(t, specificNamedPathPattern, ANY_INT)
+		assertTestValueFalse(t, specificNamedPathPattern, &NamedSegmentPathPattern{})
+		assertTestValueFalse(t, specificNamedPathPattern, &NamedSegmentPathPattern{node: &parse.NamedSegmentPathPatternLiteral{}})
 	})
 
 }
@@ -312,17 +312,17 @@ func TestSymbolicExactValuePattern(t *testing.T) {
 	t.Run("Test()", func(t *testing.T) {
 		pattern := &ExactValuePattern{value: ANY_INT}
 
-		assert.True(t, pattern.Test(pattern))
-		assert.False(t, pattern.Test(ANY_INT))
-		assert.False(t, pattern.Test(ANY_PATTERN))
+		assertTest(t, pattern, pattern)
+		assertTestFalse(t, pattern, ANY_INT)
+		assertTestFalse(t, pattern, ANY_PATTERN)
 	})
 
 	t.Run("TestValue()", func(t *testing.T) {
 		pattern := &ExactValuePattern{value: ANY_INT}
 
-		assert.True(t, pattern.TestValue(ANY_INT))
-		assert.False(t, pattern.TestValue(ANY_SERIALIZABLE))
-		assert.False(t, pattern.TestValue(pattern))
+		assertTestValue(t, pattern, ANY_INT)
+		assertTestValueFalse(t, pattern, ANY_SERIALIZABLE)
+		assertTestValueFalse(t, pattern, pattern)
 	})
 
 }
@@ -332,46 +332,46 @@ func TestSymbolicRegexPattern(t *testing.T) {
 	t.Run("Test()", func(t *testing.T) {
 		pattern := &RegexPattern{}
 
-		assert.True(t, pattern.Test(&RegexPattern{}))
-		assert.False(t, pattern.Test(ANY_INT))
-		assert.False(t, pattern.Test(ANY_PATTERN))
+		assertTest(t, pattern, &RegexPattern{})
+		assertTestFalse(t, pattern, ANY_INT)
+		assertTestFalse(t, pattern, ANY_PATTERN)
 
 		patternWithRegex := NewRegexPattern("(a|b)")
-		assert.True(t, patternWithRegex.Test(patternWithRegex))
-		assert.True(t, patternWithRegex.Test(NewRegexPattern("(a|b)")))
-		assert.True(t, patternWithRegex.Test(NewRegexPattern("[ab]")))
-		assert.False(t, patternWithRegex.Test(&RegexPattern{}))
-		assert.False(t, patternWithRegex.Test(ANY_INT))
-		assert.False(t, patternWithRegex.Test(ANY_PATTERN))
+		assertTest(t, patternWithRegex, patternWithRegex)
+		assertTest(t, patternWithRegex, NewRegexPattern("(a|b)"))
+		assertTest(t, patternWithRegex, NewRegexPattern("[ab]"))
+		assertTestFalse(t, patternWithRegex, &RegexPattern{})
+		assertTestFalse(t, patternWithRegex, ANY_INT)
+		assertTestFalse(t, patternWithRegex, ANY_PATTERN)
 	})
 
 	t.Run("TestValue() & SymbolicValue()", func(t *testing.T) {
 		pattern := &RegexPattern{}
 
-		assert.True(t, pattern.TestValue(ANY_STR))
-		assert.False(t, pattern.TestValue(ANY_INT))
-		assert.False(t, pattern.TestValue(&RegexPattern{}))
+		assertTestValue(t, pattern, ANY_STR)
+		assertTestValueFalse(t, pattern, ANY_INT)
+		assertTestValueFalse(t, pattern, &RegexPattern{})
 
 		patternWithRegex := NewRegexPattern("(a|b)")
 		val := patternWithRegex.SymbolicValue()
 
-		assert.True(t, patternWithRegex.TestValue(NewString("a")))
-		assert.True(t, val.Test(NewString("a")))
+		assertTestValue(t, patternWithRegex, NewString("a"))
+		assertTest(t, val, NewString("a"))
 
-		assert.True(t, patternWithRegex.TestValue(NewString("b")))
-		assert.True(t, val.Test(NewString("b")))
+		assertTestValue(t, patternWithRegex, NewString("b"))
+		assertTest(t, val, NewString("b"))
 
-		assert.False(t, patternWithRegex.TestValue(NewString("c")))
-		assert.False(t, val.Test(NewString("c")))
+		assertTestValueFalse(t, patternWithRegex, NewString("c"))
+		assertTestFalse(t, val, NewString("c"))
 
-		assert.False(t, patternWithRegex.TestValue(&RegexPattern{}))
-		assert.False(t, val.Test(&RegexPattern{}))
+		assertTestValueFalse(t, patternWithRegex, &RegexPattern{})
+		assertTestFalse(t, val, &RegexPattern{})
 
-		assert.False(t, patternWithRegex.TestValue(ANY_INT))
-		assert.False(t, val.Test(ANY_INT))
+		assertTestValueFalse(t, patternWithRegex, ANY_INT)
+		assertTestFalse(t, val, ANY_INT)
 
-		assert.False(t, patternWithRegex.TestValue(ANY_PATTERN))
-		assert.False(t, val.Test(ANY_PATTERN))
+		assertTestValueFalse(t, patternWithRegex, ANY_PATTERN)
+		assertTestFalse(t, val, ANY_PATTERN)
 	})
 
 }
@@ -383,31 +383,31 @@ func TestSymbolicObjectPattern(t *testing.T) {
 		t.Run("objects should never be matched", func(t *testing.T) {
 			pattern := &ObjectPattern{entries: nil}
 
-			assert.False(t, pattern.Test(&Object{entries: nil}))
-			assert.False(t, pattern.Test(&Object{entries: map[string]Serializable{}}))
+			assertTestFalse(t, pattern, &Object{entries: nil})
+			assertTestFalse(t, pattern, &Object{entries: map[string]Serializable{}})
 		})
 
 		t.Run("if entries is nil any other object pattern of the same 'readonlyness' should be matched", func(t *testing.T) {
 			pattern := &ObjectPattern{entries: nil}
-			assert.True(t, pattern.Test(&ObjectPattern{entries: nil}))
-			assert.True(t, pattern.Test(&ObjectPattern{inexact: true, entries: map[string]Pattern{}}))
-			assert.True(t, pattern.Test(&ObjectPattern{entries: map[string]Pattern{}}))
-			assert.True(t, pattern.Test(&ObjectPattern{inexact: true, entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}}}))
-			assert.True(t, pattern.Test(&ObjectPattern{entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}}}))
+			assertTest(t, pattern, &ObjectPattern{entries: nil})
+			assertTest(t, pattern, &ObjectPattern{inexact: true, entries: map[string]Pattern{}})
+			assertTest(t, pattern, &ObjectPattern{entries: map[string]Pattern{}})
+			assertTest(t, pattern, &ObjectPattern{inexact: true, entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}}})
+			assertTest(t, pattern, &ObjectPattern{entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}}})
 
-			assert.False(t, pattern.Test(&ObjectPattern{readonly: true, entries: nil}))
-			assert.False(t, pattern.Test(&ObjectPattern{readonly: true, entries: map[string]Pattern{}, inexact: true}))
-			assert.False(t, pattern.Test(&ObjectPattern{readonly: true, entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}}}))
+			assertTestFalse(t, pattern, &ObjectPattern{readonly: true, entries: nil})
+			assertTestFalse(t, pattern, &ObjectPattern{readonly: true, entries: map[string]Pattern{}, inexact: true})
+			assertTestFalse(t, pattern, &ObjectPattern{readonly: true, entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}}})
 		})
 
 		t.Run("exact empty object pattern should match any other exact object pattern of the same 'readonlyness'", func(t *testing.T) {
 			pattern := &ObjectPattern{entries: map[string]Pattern{}}
-			assert.True(t, pattern.Test(&ObjectPattern{entries: map[string]Pattern{}}))
+			assertTest(t, pattern, &ObjectPattern{entries: map[string]Pattern{}})
 
-			assert.False(t, pattern.Test(&ObjectPattern{readonly: true, entries: map[string]Pattern{}}))
-			assert.False(t, pattern.Test(&ObjectPattern{entries: nil}))
-			assert.False(t, pattern.Test(&ObjectPattern{entries: map[string]Pattern{}, inexact: true}))
-			assert.False(t, pattern.Test(&ObjectPattern{entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}}}))
+			assertTestFalse(t, pattern, &ObjectPattern{readonly: true, entries: map[string]Pattern{}})
+			assertTestFalse(t, pattern, &ObjectPattern{entries: nil})
+			assertTestFalse(t, pattern, &ObjectPattern{entries: map[string]Pattern{}, inexact: true})
+			assertTestFalse(t, pattern, &ObjectPattern{entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}}})
 		})
 
 		t.Run("inexact empty object pattern should match any other non-any object pattern of the same 'readonlyness'", func(t *testing.T) {
@@ -418,14 +418,14 @@ func TestSymbolicObjectPattern(t *testing.T) {
 			assert.True(t, pattern.Test(&ObjectPattern{
 				entries: map[string]Pattern{},
 				inexact: true,
-			}))
+			}, RecTestCallState{}))
 			assert.True(t, pattern.Test(&ObjectPattern{
 				entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
-			}))
+			}, RecTestCallState{}))
 
-			assert.False(t, pattern.Test(&ObjectPattern{readonly: true, entries: nil}))
-			assert.False(t, pattern.Test(&ObjectPattern{readonly: true, entries: map[string]Pattern{}, inexact: true}))
-			assert.False(t, pattern.Test(&ObjectPattern{readonly: true, entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}}}))
+			assertTestFalse(t, pattern, &ObjectPattern{readonly: true, entries: nil})
+			assertTestFalse(t, pattern, &ObjectPattern{readonly: true, entries: map[string]Pattern{}, inexact: true})
+			assertTestFalse(t, pattern, &ObjectPattern{readonly: true, entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}}})
 		})
 
 		t.Run("exact object pattern with a single prop should match any other exact object pattern "+
@@ -435,21 +435,21 @@ func TestSymbolicObjectPattern(t *testing.T) {
 			}
 			assert.True(t, singleIntPropPattern.Test(&ObjectPattern{
 				entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
-			}))
+			}, RecTestCallState{}))
 
 			assert.False(t, singleIntPropPattern.Test(&ObjectPattern{
 				entries: map[string]Pattern{},
-			}))
+			}, RecTestCallState{}))
 
 			assert.False(t, singleIntPropPattern.Test(&ObjectPattern{
 				entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
 				inexact: true,
-			}))
+			}, RecTestCallState{}))
 
 			assert.False(t, singleIntPropPattern.Test(&ObjectPattern{
 				entries:  map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
 				readonly: true,
-			}))
+			}, RecTestCallState{}))
 
 			singleAnyPropPattern := &ObjectPattern{
 				entries: map[string]Pattern{"a": &TypePattern{val: ANY}},
@@ -457,9 +457,9 @@ func TestSymbolicObjectPattern(t *testing.T) {
 
 			assert.True(t, singleAnyPropPattern.Test(&ObjectPattern{
 				entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
-			}))
+			}, RecTestCallState{}))
 
-			assert.False(t, singleIntPropPattern.Test(singleAnyPropPattern))
+			assertTestFalse(t, singleIntPropPattern, singleAnyPropPattern)
 		})
 
 		t.Run("inexact object pattern with a single prop should match any other exact object pattern", func(t *testing.T) {
@@ -469,22 +469,22 @@ func TestSymbolicObjectPattern(t *testing.T) {
 			}
 			assert.True(t, singleIntPropPattern.Test(&ObjectPattern{
 				entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
-			}))
+			}, RecTestCallState{}))
 			assert.True(t, singleIntPropPattern.Test(&ObjectPattern{
 				entries: map[string]Pattern{
 					"a": &TypePattern{val: ANY_INT},
 					"b": &TypePattern{val: ANY_INT},
 				},
-			}))
+			}, RecTestCallState{}))
 
 			assert.False(t, singleIntPropPattern.Test(&ObjectPattern{
 				entries: map[string]Pattern{},
-			}))
+			}, RecTestCallState{}))
 
 			assert.False(t, singleIntPropPattern.Test(&ObjectPattern{
 				entries:  map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
 				readonly: true,
-			}))
+			}, RecTestCallState{}))
 
 			singleAnyPropPattern := &ObjectPattern{
 				entries: map[string]Pattern{"a": &TypePattern{val: ANY}},
@@ -493,16 +493,16 @@ func TestSymbolicObjectPattern(t *testing.T) {
 
 			assert.True(t, singleAnyPropPattern.Test(&ObjectPattern{
 				entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
-			}))
+			}, RecTestCallState{}))
 
 			assert.True(t, singleAnyPropPattern.Test(&ObjectPattern{
 				entries: map[string]Pattern{
 					"a": &TypePattern{val: ANY_INT},
 					"b": &TypePattern{val: ANY_INT},
 				},
-			}))
+			}, RecTestCallState{}))
 
-			assert.False(t, singleIntPropPattern.Test(singleAnyPropPattern))
+			assertTestFalse(t, singleIntPropPattern, singleAnyPropPattern)
 		})
 
 		t.Run("inexact object pattern with a dependency should match any other inexact object"+
@@ -520,7 +520,7 @@ func TestSymbolicObjectPattern(t *testing.T) {
 				dependencies: map[string]propertyDependencies{
 					"a": {requiredKeys: []string{"b"}},
 				},
-			}))
+			}, RecTestCallState{}))
 
 			//same as propAwithBdep but with a pattern in the dependency
 			assert.True(t, propAwithBdep.Test(&ObjectPattern{
@@ -531,7 +531,7 @@ func TestSymbolicObjectPattern(t *testing.T) {
 						pattern:      ANY_OBJECT_PATTERN,
 					},
 				},
-			}))
+			}, RecTestCallState{}))
 
 			assert.False(t, propAwithBdep.Test(&ObjectPattern{
 				entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
@@ -539,7 +539,7 @@ func TestSymbolicObjectPattern(t *testing.T) {
 					"a": {requiredKeys: []string{"b"}},
 				},
 				inexact: true,
-			}))
+			}, RecTestCallState{}))
 
 			assert.False(t, propAwithBdep.Test(&ObjectPattern{
 				entries: map[string]Pattern{"a": &TypePattern{val: ANY_INT}},
@@ -547,7 +547,7 @@ func TestSymbolicObjectPattern(t *testing.T) {
 					"a": {requiredKeys: []string{"b"}},
 				},
 				readonly: true,
-			}))
+			}, RecTestCallState{}))
 
 			//same
 			propAwithBdepAndPattern := &ObjectPattern{
@@ -572,7 +572,7 @@ func TestSymbolicObjectPattern(t *testing.T) {
 						}, nil),
 					},
 				},
-			}))
+			}, RecTestCallState{}))
 
 			//pattern is missing
 			assert.False(t, propAwithBdepAndPattern.Test(&ObjectPattern{
@@ -582,7 +582,7 @@ func TestSymbolicObjectPattern(t *testing.T) {
 						requiredKeys: []string{"b"},
 					},
 				},
-			}))
+			}, RecTestCallState{}))
 
 			//same
 			propAwithBCdep := &ObjectPattern{
@@ -601,7 +601,7 @@ func TestSymbolicObjectPattern(t *testing.T) {
 						requiredKeys: []string{"b", "c"},
 					},
 				},
-			}))
+			}, RecTestCallState{}))
 
 			//one of the required key is missing
 			assert.False(t, propAwithBdepAndPattern.Test(&ObjectPattern{
@@ -609,7 +609,17 @@ func TestSymbolicObjectPattern(t *testing.T) {
 				dependencies: map[string]propertyDependencies{
 					"a": {requiredKeys: []string{"b"}},
 				},
-			}))
+			}, RecTestCallState{}))
+		})
+
+		t.Run("an infinite recursion should cause raise the error "+ErrMaximumSymbolicTestCallDepthReached.Error(), func(t *testing.T) {
+			pattern := &ObjectPattern{}
+			pattern.entries = map[string]Pattern{
+				"self": pattern,
+			}
+			assert.PanicsWithError(t, ErrMaximumSymbolicTestCallDepthReached.Error(), func() {
+				pattern.Test(pattern, RecTestCallState{})
+			})
 		})
 	})
 
@@ -657,56 +667,56 @@ func TestSymbolicObjectPattern(t *testing.T) {
 			patt := &ObjectPattern{entries: nil}
 
 			//should never match another object pattern (any)
-			if !assert.False(t, patt.TestValue(&ObjectPattern{entries: nil})) {
+			if !assertTestValueFalse(t, patt, &ObjectPattern{entries: nil}) {
 				return
 			}
 			val := patt.SymbolicValue()
-			if !assert.False(t, val.Test(&ObjectPattern{entries: nil})) {
+			if !assert.False(t, val.Test(&ObjectPattern{entries: nil}, RecTestCallState{})) {
 				return
 			}
 
 			//should never match another object pattern (empty)
-			if !assert.False(t, patt.TestValue(&ObjectPattern{entries: map[string]Pattern{}})) {
+			if !assertTestValueFalse(t, patt, &ObjectPattern{entries: map[string]Pattern{}}) {
 				return
 			}
 			val = patt.SymbolicValue()
-			if !assert.False(t, val.Test(&ObjectPattern{entries: map[string]Pattern{}})) {
+			if !assert.False(t, val.Test(&ObjectPattern{entries: map[string]Pattern{}}, RecTestCallState{})) {
 				return
 			}
 
 			//should match object 'any'
-			if !assert.True(t, patt.TestValue(&Object{entries: nil})) {
+			if !assertTestValue(t, patt, &Object{entries: nil}) {
 				return
 			}
 			val = patt.SymbolicValue()
-			if !assert.True(t, val.Test(&Object{entries: nil})) {
+			if !assert.True(t, val.Test(&Object{entries: nil}, RecTestCallState{})) {
 				return
 			}
 
 			//should not match readonly object 'any'
-			if !assert.False(t, patt.TestValue(&Object{entries: nil, readonly: true})) {
+			if !assertTestValueFalse(t, patt, &Object{entries: nil, readonly: true}) {
 				return
 			}
 			val = patt.SymbolicValue()
-			if !assert.False(t, val.Test(&Object{entries: nil, readonly: true})) {
+			if !assert.False(t, val.Test(&Object{entries: nil, readonly: true}, RecTestCallState{})) {
 				return
 			}
 
 			//should match empty objects (inexact)
-			if !assert.True(t, patt.TestValue(&Object{entries: map[string]Serializable{}})) {
+			if !assertTestValue(t, patt, &Object{entries: map[string]Serializable{}}) {
 				return
 			}
 			val = patt.SymbolicValue()
-			if !assert.True(t, val.Test(&Object{entries: map[string]Serializable{}})) {
+			if !assert.True(t, val.Test(&Object{entries: map[string]Serializable{}}, RecTestCallState{})) {
 				return
 			}
 
 			//should match empty objects (exact)
-			if !assert.True(t, patt.TestValue(&Object{entries: map[string]Serializable{}, exact: true})) {
+			if !assertTestValue(t, patt, &Object{entries: map[string]Serializable{}, exact: true}) {
 				return
 			}
 			val = patt.SymbolicValue()
-			if !assert.True(t, val.Test(&Object{entries: map[string]Serializable{}, exact: true})) {
+			if !assert.True(t, val.Test(&Object{entries: map[string]Serializable{}, exact: true}, RecTestCallState{})) {
 				return
 			}
 		})
@@ -715,11 +725,11 @@ func TestSymbolicObjectPattern(t *testing.T) {
 			patt := &ObjectPattern{entries: map[string]Pattern{}}
 
 			//should not match object 'any'
-			if !assert.False(t, patt.TestValue(&Object{entries: nil})) {
+			if !assertTestValueFalse(t, patt, &Object{entries: nil}) {
 				return
 			}
 			val := patt.SymbolicValue()
-			if !assert.False(t, val.Test(&Object{entries: nil})) {
+			if !assert.False(t, val.Test(&Object{entries: nil}, RecTestCallState{})) {
 				return
 			}
 
@@ -727,14 +737,14 @@ func TestSymbolicObjectPattern(t *testing.T) {
 			if !assert.False(t, patt.TestValue(&Object{
 				entries: map[string]Serializable{},
 				exact:   false,
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 			val = patt.SymbolicValue()
 			if !assert.False(t, val.Test(&Object{
 				entries: map[string]Serializable{},
 				exact:   false,
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 
@@ -742,14 +752,14 @@ func TestSymbolicObjectPattern(t *testing.T) {
 			if !assert.False(t, patt.TestValue(&Object{
 				entries: map[string]Serializable{"a": ANY_INT},
 				exact:   false,
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 			val = patt.SymbolicValue()
 			if !assert.False(t, val.Test(&Object{
 				entries: map[string]Serializable{"a": ANY_INT},
 				exact:   false,
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 		})
@@ -761,11 +771,11 @@ func TestSymbolicObjectPattern(t *testing.T) {
 			}
 
 			//should not match object 'any'
-			if !assert.False(t, patt.TestValue(&Object{entries: nil})) {
+			if !assertTestValueFalse(t, patt, &Object{entries: nil}) {
 				return
 			}
 			val := patt.SymbolicValue()
-			if !assert.False(t, val.Test(&Object{entries: nil})) {
+			if !assert.False(t, val.Test(&Object{entries: nil}, RecTestCallState{})) {
 				return
 			}
 
@@ -773,14 +783,14 @@ func TestSymbolicObjectPattern(t *testing.T) {
 			if !assert.True(t, patt.TestValue(&Object{
 				entries: map[string]Serializable{},
 				exact:   false,
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 			val = patt.SymbolicValue()
 			if !assert.True(t, val.Test(&Object{
 				entries: map[string]Serializable{},
 				exact:   false,
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 
@@ -788,14 +798,14 @@ func TestSymbolicObjectPattern(t *testing.T) {
 			if !assert.True(t, patt.TestValue(&Object{
 				entries: map[string]Serializable{"a": ANY_INT},
 				exact:   false,
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 			val = patt.SymbolicValue()
 			if !assert.True(t, val.Test(&Object{
 				entries: map[string]Serializable{"a": ANY_INT},
 				exact:   false,
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 
@@ -803,14 +813,14 @@ func TestSymbolicObjectPattern(t *testing.T) {
 			if !assert.True(t, patt.TestValue(&Object{
 				entries: map[string]Serializable{},
 				exact:   true,
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 			val = patt.SymbolicValue()
 			if !assert.True(t, val.Test(&Object{
 				entries: map[string]Serializable{},
 				exact:   true,
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 
@@ -818,14 +828,14 @@ func TestSymbolicObjectPattern(t *testing.T) {
 			if !assert.True(t, patt.TestValue(&Object{
 				entries: map[string]Serializable{"a": ANY_INT},
 				exact:   true,
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 			val = patt.SymbolicValue()
 			if !assert.True(t, val.Test(&Object{
 				entries: map[string]Serializable{"a": ANY_INT},
 				exact:   true,
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 		})
@@ -837,11 +847,11 @@ func TestSymbolicObjectPattern(t *testing.T) {
 			}
 
 			//should not match object 'any'
-			if !assert.False(t, patt.TestValue(&Object{entries: nil})) {
+			if !assertTestValueFalse(t, patt, &Object{entries: nil}) {
 				return
 			}
 			val := patt.SymbolicValue()
-			if !assert.False(t, val.Test(&Object{entries: nil})) {
+			if !assert.False(t, val.Test(&Object{entries: nil}, RecTestCallState{})) {
 				return
 			}
 
@@ -849,14 +859,14 @@ func TestSymbolicObjectPattern(t *testing.T) {
 			if !assert.False(t, patt.TestValue(&Object{
 				entries: map[string]Serializable{},
 				exact:   false,
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 			val = patt.SymbolicValue()
 			if !assert.False(t, val.Test(&Object{
 				entries: map[string]Serializable{},
 				exact:   false,
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 
@@ -864,27 +874,27 @@ func TestSymbolicObjectPattern(t *testing.T) {
 			if !assert.False(t, patt.TestValue(&Object{
 				entries: map[string]Serializable{},
 				exact:   true,
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 			val = patt.SymbolicValue()
 			if !assert.False(t, val.Test(&Object{
 				entries: map[string]Serializable{},
 				exact:   true,
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 
 			//should match an inexact object with the same property
 			if !assert.True(t, patt.TestValue(&Object{
 				entries: map[string]Serializable{"a": ANY_INT},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 			val = patt.SymbolicValue()
 			if !assert.True(t, val.Test(&Object{
 				entries: map[string]Serializable{"a": ANY_INT},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 
@@ -893,7 +903,7 @@ func TestSymbolicObjectPattern(t *testing.T) {
 				exact:           true,
 				entries:         map[string]Serializable{"a": ANY_INT},
 				optionalEntries: map[string]struct{}{"a": {}},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 			val = patt.SymbolicValue()
@@ -901,7 +911,7 @@ func TestSymbolicObjectPattern(t *testing.T) {
 				exact:           true,
 				entries:         map[string]Serializable{"a": ANY_INT},
 				optionalEntries: map[string]struct{}{"a": {}},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 
@@ -909,14 +919,14 @@ func TestSymbolicObjectPattern(t *testing.T) {
 			if !assert.False(t, patt.TestValue(&Object{
 				exact:   true,
 				entries: map[string]Serializable{"a": ANY_SERIALIZABLE},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 			val = patt.SymbolicValue()
 			if !assert.False(t, val.Test(&Object{
 				exact:   true,
 				entries: map[string]Serializable{"a": ANY_SERIALIZABLE},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 
@@ -924,14 +934,14 @@ func TestSymbolicObjectPattern(t *testing.T) {
 			if !assert.False(t, patt.TestValue(&Object{
 				exact:   true,
 				entries: map[string]Serializable{"a": ANY_BOOL},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 			val = patt.SymbolicValue()
 			if !assert.False(t, val.Test(&Object{
 				exact:   true,
 				entries: map[string]Serializable{"a": ANY_BOOL},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 
@@ -942,7 +952,7 @@ func TestSymbolicObjectPattern(t *testing.T) {
 					"a": ANY_INT,
 					"b": ANY_INT,
 				},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 			val = patt.SymbolicValue()
@@ -952,7 +962,7 @@ func TestSymbolicObjectPattern(t *testing.T) {
 					"a": ANY_INT,
 					"b": ANY_INT,
 				},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 
@@ -962,7 +972,7 @@ func TestSymbolicObjectPattern(t *testing.T) {
 					"a": ANY_INT,
 					"b": ANY_INT,
 				},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 			val = patt.SymbolicValue()
@@ -971,7 +981,7 @@ func TestSymbolicObjectPattern(t *testing.T) {
 					"a": ANY_INT,
 					"b": ANY_INT,
 				},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 
@@ -979,14 +989,14 @@ func TestSymbolicObjectPattern(t *testing.T) {
 			if !assert.True(t, patt.TestValue(&Object{
 				exact:   true,
 				entries: map[string]Serializable{"a": ANY_INT},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 			val = patt.SymbolicValue()
 			if !assert.True(t, val.Test(&Object{
 				exact:   true,
 				entries: map[string]Serializable{"a": ANY_INT},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 
@@ -995,7 +1005,7 @@ func TestSymbolicObjectPattern(t *testing.T) {
 				exact:           true,
 				entries:         map[string]Serializable{"a": ANY_INT},
 				optionalEntries: map[string]struct{}{"a": {}},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 			val = patt.SymbolicValue()
@@ -1003,7 +1013,7 @@ func TestSymbolicObjectPattern(t *testing.T) {
 				exact:           true,
 				entries:         map[string]Serializable{"a": ANY_INT},
 				optionalEntries: map[string]struct{}{"a": {}},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 		})
@@ -1015,11 +1025,11 @@ func TestSymbolicObjectPattern(t *testing.T) {
 			}
 
 			//should not match object 'any'
-			if !assert.False(t, patt.TestValue(&Object{entries: nil})) {
+			if !assertTestValueFalse(t, patt, &Object{entries: nil}) {
 				return
 			}
 			val := patt.SymbolicValue()
-			if !assert.False(t, val.Test(&Object{entries: nil})) {
+			if !assert.False(t, val.Test(&Object{entries: nil}, RecTestCallState{})) {
 				return
 			}
 
@@ -1027,14 +1037,14 @@ func TestSymbolicObjectPattern(t *testing.T) {
 			if !assert.False(t, patt.TestValue(&Object{
 				entries: map[string]Serializable{},
 				exact:   false,
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 			val = patt.SymbolicValue()
 			if !assert.False(t, val.Test(&Object{
 				entries: map[string]Serializable{},
 				exact:   false,
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 
@@ -1042,27 +1052,27 @@ func TestSymbolicObjectPattern(t *testing.T) {
 			if !assert.False(t, patt.TestValue(&Object{
 				entries: map[string]Serializable{},
 				exact:   true,
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 			val = patt.SymbolicValue()
 			if !assert.False(t, val.Test(&Object{
 				entries: map[string]Serializable{},
 				exact:   true,
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 
 			//should not match an inexact object with the same property
 			if !assert.False(t, patt.TestValue(&Object{
 				entries: map[string]Serializable{"a": ANY_INT},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 			val = patt.SymbolicValue()
 			if !assert.False(t, val.Test(&Object{
 				entries: map[string]Serializable{"a": ANY_INT},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 
@@ -1070,40 +1080,40 @@ func TestSymbolicObjectPattern(t *testing.T) {
 			if !assert.False(t, patt.TestValue(&Object{
 				entries:         map[string]Serializable{"a": ANY_INT},
 				optionalEntries: map[string]struct{}{"a": {}},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 			val = patt.SymbolicValue()
 			if !assert.False(t, val.Test(&Object{
 				entries:         map[string]Serializable{"a": ANY_INT},
 				optionalEntries: map[string]struct{}{"a": {}},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 
 			//should not match an inexact object with the same property if super type
 			if !assert.False(t, patt.TestValue(&Object{
 				entries: map[string]Serializable{"a": ANY_INT},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 			val = patt.SymbolicValue()
 			if !assert.False(t, val.Test(&Object{
 				entries: map[string]Serializable{"a": ANY_SERIALIZABLE},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 
 			//should not match an inexact object with the same property if different type
 			if !assert.False(t, patt.TestValue(&Object{
 				entries: map[string]Serializable{"a": ANY_INT},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 			val = patt.SymbolicValue()
 			if !assert.False(t, val.Test(&Object{
 				entries: map[string]Serializable{"a": ANY_BOOL},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 
@@ -1113,7 +1123,7 @@ func TestSymbolicObjectPattern(t *testing.T) {
 					"a": ANY_INT,
 					"b": ANY_INT,
 				},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 			val = patt.SymbolicValue()
@@ -1122,7 +1132,7 @@ func TestSymbolicObjectPattern(t *testing.T) {
 					"a": ANY_INT,
 					"b": ANY_INT,
 				},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 
@@ -1130,14 +1140,14 @@ func TestSymbolicObjectPattern(t *testing.T) {
 			if !assert.True(t, patt.TestValue(&Object{
 				exact:   true,
 				entries: map[string]Serializable{"a": ANY_INT},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 			val = patt.SymbolicValue()
 			if !assert.True(t, val.Test(&Object{
 				exact:   true,
 				entries: map[string]Serializable{"a": ANY_INT},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 
@@ -1146,7 +1156,7 @@ func TestSymbolicObjectPattern(t *testing.T) {
 				exact:           true,
 				entries:         map[string]Serializable{"a": ANY_INT},
 				optionalEntries: map[string]struct{}{"a": {}},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 			val = patt.SymbolicValue()
@@ -1154,7 +1164,7 @@ func TestSymbolicObjectPattern(t *testing.T) {
 				exact:           true,
 				entries:         map[string]Serializable{"a": ANY_INT},
 				optionalEntries: map[string]struct{}{"a": {}},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 		})
@@ -1169,11 +1179,11 @@ func TestSymbolicObjectPattern(t *testing.T) {
 			}
 
 			//should not match object 'any'
-			if !assert.False(t, patt.TestValue(&Object{entries: nil})) {
+			if !assertTestValueFalse(t, patt, &Object{entries: nil}) {
 				return
 			}
 			val := patt.SymbolicValue()
-			if !assert.False(t, val.Test(&Object{entries: nil})) {
+			if !assert.False(t, val.Test(&Object{entries: nil}, RecTestCallState{})) {
 				return
 			}
 
@@ -1181,14 +1191,14 @@ func TestSymbolicObjectPattern(t *testing.T) {
 			if !assert.False(t, patt.TestValue(&Object{
 				entries: map[string]Serializable{},
 				exact:   false,
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 			val = patt.SymbolicValue()
 			if !assert.False(t, val.Test(&Object{
 				entries: map[string]Serializable{},
 				exact:   false,
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 
@@ -1199,7 +1209,7 @@ func TestSymbolicObjectPattern(t *testing.T) {
 				dependencies: map[string]propertyDependencies{
 					"a": {requiredKeys: []string{"b"}},
 				},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 			val = patt.SymbolicValue()
@@ -1209,7 +1219,7 @@ func TestSymbolicObjectPattern(t *testing.T) {
 				dependencies: map[string]propertyDependencies{
 					"a": {requiredKeys: []string{"b"}},
 				},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 
@@ -1217,14 +1227,14 @@ func TestSymbolicObjectPattern(t *testing.T) {
 			if !assert.False(t, patt.TestValue(&Object{
 				entries: map[string]Serializable{},
 				exact:   true,
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 			val = patt.SymbolicValue()
 			if !assert.False(t, val.Test(&Object{
 				entries: map[string]Serializable{},
 				exact:   true,
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 
@@ -1234,13 +1244,13 @@ func TestSymbolicObjectPattern(t *testing.T) {
 			//should not match an inexact object with the same property
 			if !assert.False(t, patt.TestValue(&Object{
 				entries: map[string]Serializable{"a": ANY_INT},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 			val = patt.SymbolicValue()
 			if !assert.False(t, val.Test(&Object{
 				entries: map[string]Serializable{"a": ANY_INT},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 
@@ -1251,7 +1261,7 @@ func TestSymbolicObjectPattern(t *testing.T) {
 					"a": {requiredKeys: []string{"b"}},
 				},
 				optionalEntries: map[string]struct{}{"a": {}},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 			val = patt.SymbolicValue()
@@ -1261,7 +1271,7 @@ func TestSymbolicObjectPattern(t *testing.T) {
 					"a": {requiredKeys: []string{"b"}},
 				},
 				optionalEntries: map[string]struct{}{"a": {}},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 
@@ -1269,14 +1279,14 @@ func TestSymbolicObjectPattern(t *testing.T) {
 			if !assert.False(t, patt.TestValue(&Object{
 				entries:         map[string]Serializable{"a": ANY_INT},
 				optionalEntries: map[string]struct{}{"a": {}},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 			val = patt.SymbolicValue()
 			if !assert.False(t, val.Test(&Object{
 				entries:         map[string]Serializable{"a": ANY_INT},
 				optionalEntries: map[string]struct{}{"a": {}},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 
@@ -1287,7 +1297,7 @@ func TestSymbolicObjectPattern(t *testing.T) {
 				dependencies: map[string]propertyDependencies{
 					"a": {requiredKeys: []string{"b"}},
 				},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 			val = patt.SymbolicValue()
@@ -1297,20 +1307,20 @@ func TestSymbolicObjectPattern(t *testing.T) {
 				dependencies: map[string]propertyDependencies{
 					"a": {requiredKeys: []string{"b"}},
 				},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 
 			//should not match an inexact object with the same property if super type
 			if !assert.False(t, patt.TestValue(&Object{
 				entries: map[string]Serializable{"a": ANY_INT},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 			val = patt.SymbolicValue()
 			if !assert.False(t, val.Test(&Object{
 				entries: map[string]Serializable{"a": ANY_SERIALIZABLE},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 
@@ -1320,7 +1330,7 @@ func TestSymbolicObjectPattern(t *testing.T) {
 				dependencies: map[string]propertyDependencies{
 					"a": {requiredKeys: []string{"b"}},
 				},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 			val = patt.SymbolicValue()
@@ -1329,20 +1339,20 @@ func TestSymbolicObjectPattern(t *testing.T) {
 				dependencies: map[string]propertyDependencies{
 					"a": {requiredKeys: []string{"b"}},
 				},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 
 			//should not match an inexact object with the same property if different type
 			if !assert.False(t, patt.TestValue(&Object{
 				entries: map[string]Serializable{"a": ANY_INT},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 			val = patt.SymbolicValue()
 			if !assert.False(t, val.Test(&Object{
 				entries: map[string]Serializable{"a": ANY_BOOL},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 
@@ -1352,7 +1362,7 @@ func TestSymbolicObjectPattern(t *testing.T) {
 				dependencies: map[string]propertyDependencies{
 					"a": {requiredKeys: []string{"b"}},
 				},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 			val = patt.SymbolicValue()
@@ -1361,7 +1371,7 @@ func TestSymbolicObjectPattern(t *testing.T) {
 				dependencies: map[string]propertyDependencies{
 					"a": {requiredKeys: []string{"b"}},
 				},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 
@@ -1371,7 +1381,7 @@ func TestSymbolicObjectPattern(t *testing.T) {
 					"a": ANY_INT,
 					"b": ANY_INT,
 				},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 			val = patt.SymbolicValue()
@@ -1380,7 +1390,7 @@ func TestSymbolicObjectPattern(t *testing.T) {
 					"a": ANY_INT,
 					"b": ANY_INT,
 				},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 
@@ -1390,7 +1400,7 @@ func TestSymbolicObjectPattern(t *testing.T) {
 					"a": ANY_INT,
 					"c": ANY_INT,
 				},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 			val = patt.SymbolicValue()
@@ -1399,7 +1409,7 @@ func TestSymbolicObjectPattern(t *testing.T) {
 					"a": ANY_INT,
 					"c": ANY_INT,
 				},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 
@@ -1407,14 +1417,14 @@ func TestSymbolicObjectPattern(t *testing.T) {
 			if !assert.False(t, patt.TestValue(&Object{
 				entries: map[string]Serializable{"a": ANY_INT},
 				exact:   true,
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 			val = patt.SymbolicValue()
 			if !assert.False(t, val.Test(&Object{
 				entries: map[string]Serializable{"a": ANY_INT},
 				exact:   true,
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 
@@ -1422,14 +1432,14 @@ func TestSymbolicObjectPattern(t *testing.T) {
 			if !assert.False(t, patt.TestValue(&Object{
 				entries: map[string]Serializable{"a": ANY_INT},
 				exact:   true,
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 			val = patt.SymbolicValue()
 			if !assert.False(t, val.Test(&Object{
 				entries: map[string]Serializable{"a": ANY_INT},
 				exact:   true,
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 		})
@@ -1445,11 +1455,11 @@ func TestSymbolicObjectPattern(t *testing.T) {
 			}
 
 			//should not match object 'any'
-			if !assert.False(t, patt.TestValue(&Object{entries: nil})) {
+			if !assertTestValueFalse(t, patt, &Object{entries: nil}) {
 				return
 			}
 			val := patt.SymbolicValue()
-			if !assert.False(t, val.Test(&Object{entries: nil})) {
+			if !assert.False(t, val.Test(&Object{entries: nil}, RecTestCallState{})) {
 				return
 			}
 
@@ -1457,14 +1467,14 @@ func TestSymbolicObjectPattern(t *testing.T) {
 			if !assert.False(t, patt.TestValue(&Object{
 				entries: map[string]Serializable{},
 				exact:   false,
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 			val = patt.SymbolicValue()
 			if !assert.False(t, val.Test(&Object{
 				entries: map[string]Serializable{},
 				exact:   false,
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 
@@ -1475,7 +1485,7 @@ func TestSymbolicObjectPattern(t *testing.T) {
 				dependencies: map[string]propertyDependencies{
 					"a": {requiredKeys: []string{"b"}},
 				},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 			val = patt.SymbolicValue()
@@ -1485,7 +1495,7 @@ func TestSymbolicObjectPattern(t *testing.T) {
 				dependencies: map[string]propertyDependencies{
 					"a": {requiredKeys: []string{"b"}},
 				},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 
@@ -1493,27 +1503,27 @@ func TestSymbolicObjectPattern(t *testing.T) {
 			if !assert.False(t, patt.TestValue(&Object{
 				entries: map[string]Serializable{},
 				exact:   true,
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 			val = patt.SymbolicValue()
 			if !assert.False(t, val.Test(&Object{
 				entries: map[string]Serializable{},
 				exact:   true,
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 
 			//should not match an inexact object with the same property but not validating the dependency
 			if !assert.False(t, patt.TestValue(&Object{
 				entries: map[string]Serializable{"a": ANY_INT},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 			val = patt.SymbolicValue()
 			if !assert.False(t, val.Test(&Object{
 				entries: map[string]Serializable{"a": ANY_INT},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 
@@ -1524,7 +1534,7 @@ func TestSymbolicObjectPattern(t *testing.T) {
 					"a": {requiredKeys: []string{"b"}},
 				},
 				optionalEntries: map[string]struct{}{"a": {}},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 			val = patt.SymbolicValue()
@@ -1534,7 +1544,7 @@ func TestSymbolicObjectPattern(t *testing.T) {
 					"a": {requiredKeys: []string{"b"}},
 				},
 				optionalEntries: map[string]struct{}{"a": {}},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 
@@ -1542,14 +1552,14 @@ func TestSymbolicObjectPattern(t *testing.T) {
 			if !assert.False(t, patt.TestValue(&Object{
 				entries:         map[string]Serializable{"a": ANY_INT},
 				optionalEntries: map[string]struct{}{"a": {}},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 			val = patt.SymbolicValue()
 			if !assert.False(t, val.Test(&Object{
 				entries:         map[string]Serializable{"a": ANY_INT},
 				optionalEntries: map[string]struct{}{"a": {}},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 
@@ -1560,7 +1570,7 @@ func TestSymbolicObjectPattern(t *testing.T) {
 				dependencies: map[string]propertyDependencies{
 					"a": {requiredKeys: []string{"b"}},
 				},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 			val = patt.SymbolicValue()
@@ -1570,20 +1580,20 @@ func TestSymbolicObjectPattern(t *testing.T) {
 				dependencies: map[string]propertyDependencies{
 					"a": {requiredKeys: []string{"b"}},
 				},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 
 			//should not match an inexact object with the same property but super type
 			if !assert.False(t, patt.TestValue(&Object{
 				entries: map[string]Serializable{"a": ANY_INT},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 			val = patt.SymbolicValue()
 			if !assert.False(t, val.Test(&Object{
 				entries: map[string]Serializable{"a": ANY_SERIALIZABLE},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 
@@ -1593,7 +1603,7 @@ func TestSymbolicObjectPattern(t *testing.T) {
 				dependencies: map[string]propertyDependencies{
 					"a": {requiredKeys: []string{"b"}},
 				},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 			val = patt.SymbolicValue()
@@ -1602,20 +1612,20 @@ func TestSymbolicObjectPattern(t *testing.T) {
 				dependencies: map[string]propertyDependencies{
 					"a": {requiredKeys: []string{"b"}},
 				},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 
 			//should not match an inexact object with the same property if different type
 			if !assert.False(t, patt.TestValue(&Object{
 				entries: map[string]Serializable{"a": ANY_INT},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 			val = patt.SymbolicValue()
 			if !assert.False(t, val.Test(&Object{
 				entries: map[string]Serializable{"a": ANY_BOOL},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 
@@ -1625,7 +1635,7 @@ func TestSymbolicObjectPattern(t *testing.T) {
 				dependencies: map[string]propertyDependencies{
 					"a": {requiredKeys: []string{"b"}},
 				},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 			val = patt.SymbolicValue()
@@ -1634,7 +1644,7 @@ func TestSymbolicObjectPattern(t *testing.T) {
 				dependencies: map[string]propertyDependencies{
 					"a": {requiredKeys: []string{"b"}},
 				},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 
@@ -1644,7 +1654,7 @@ func TestSymbolicObjectPattern(t *testing.T) {
 					"a": ANY_INT,
 					"b": ANY_INT,
 				},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 			val = patt.SymbolicValue()
@@ -1653,7 +1663,7 @@ func TestSymbolicObjectPattern(t *testing.T) {
 					"a": ANY_INT,
 					"b": ANY_INT,
 				},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 
@@ -1663,7 +1673,7 @@ func TestSymbolicObjectPattern(t *testing.T) {
 					"a": ANY_INT,
 					"c": ANY_INT,
 				},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 			val = patt.SymbolicValue()
@@ -1672,7 +1682,7 @@ func TestSymbolicObjectPattern(t *testing.T) {
 					"a": ANY_INT,
 					"c": ANY_INT,
 				},
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 
@@ -1680,14 +1690,14 @@ func TestSymbolicObjectPattern(t *testing.T) {
 			if !assert.False(t, patt.TestValue(&Object{
 				entries: map[string]Serializable{"a": ANY_INT},
 				exact:   true,
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 			val = patt.SymbolicValue()
 			if !assert.False(t, val.Test(&Object{
 				entries: map[string]Serializable{"a": ANY_INT},
 				exact:   true,
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 
@@ -1695,16 +1705,20 @@ func TestSymbolicObjectPattern(t *testing.T) {
 			if !assert.False(t, patt.TestValue(&Object{
 				entries: map[string]Serializable{"a": ANY_INT},
 				exact:   true,
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
 			val = patt.SymbolicValue()
 			if !assert.False(t, val.Test(&Object{
 				entries: map[string]Serializable{"a": ANY_INT},
 				exact:   true,
-			})) {
+			}, RecTestCallState{})) {
 				return
 			}
+		})
+
+		t.Run("an infinite recursion should cause raise the error "+ErrMaximumSymbolicTestCallDepthReached.Error(), func(t *testing.T) {
+			//TODO
 		})
 	})
 
@@ -1886,7 +1900,7 @@ func TestSymbolicRecordPattern(t *testing.T) {
 
 		for _, testCase := range cases {
 			t.Run(t.Name()+"_"+fmt.Sprint(testCase.pattern, "_", testCase.value), func(t *testing.T) {
-				assert.Equal(t, testCase.ok, testCase.pattern.Test(testCase.value))
+				assert.Equal(t, testCase.ok, testCase.pattern.Test(testCase.value, RecTestCallState{}))
 			})
 		}
 	})
@@ -1983,11 +1997,11 @@ func TestSymbolicRecordPattern(t *testing.T) {
 
 		for _, testCase := range cases {
 			t.Run(t.Name()+"_"+Stringify(testCase.pattern)+"_"+Stringify(testCase.testedValue), func(t *testing.T) {
-				if !assert.Equal(t, testCase.ok, testCase.pattern.TestValue(testCase.testedValue)) {
+				if !assert.Equal(t, testCase.ok, testCase.pattern.TestValue(testCase.testedValue, RecTestCallState{})) {
 					return
 				}
 				val := testCase.pattern.SymbolicValue()
-				assert.Equal(t, testCase.ok, val.Test(testCase.testedValue))
+				assert.Equal(t, testCase.ok, val.Test(testCase.testedValue, RecTestCallState{}))
 			})
 		}
 	})
@@ -2105,7 +2119,7 @@ func TestSymbolicListPattern(t *testing.T) {
 
 		for _, testCase := range cases {
 			t.Run(t.Name()+"_"+fmt.Sprint(testCase.pattern, "_", testCase.value), func(t *testing.T) {
-				assert.Equal(t, testCase.ok, testCase.pattern.Test(testCase.value))
+				assert.Equal(t, testCase.ok, testCase.pattern.Test(testCase.value, RecTestCallState{}))
 			})
 		}
 	})
@@ -2238,13 +2252,13 @@ func TestSymbolicListPattern(t *testing.T) {
 
 		for _, testCase := range cases {
 			t.Run(t.Name()+"_"+Stringify(testCase.pattern)+"_"+Stringify(testCase.testedValue), func(t *testing.T) {
-				if !assert.Equal(t, testCase.ok, testCase.pattern.TestValue(testCase.testedValue)) {
+				if !assert.Equal(t, testCase.ok, testCase.pattern.TestValue(testCase.testedValue, RecTestCallState{})) {
 					return
 				}
 				val := testCase.pattern.SymbolicValue()
-				assert.Equal(t, testCase.ok, val.Test(testCase.testedValue))
+				assert.Equal(t, testCase.ok, val.Test(testCase.testedValue, RecTestCallState{}))
 
-				assert.Equal(t, testCase.ok, testCase.pattern.TestValue(testCase.testedValue))
+				assert.Equal(t, testCase.ok, testCase.pattern.TestValue(testCase.testedValue, RecTestCallState{}))
 			})
 		}
 	})
@@ -2424,7 +2438,7 @@ func TestSymbolicTuplePattern(t *testing.T) {
 
 		for _, testCase := range cases {
 			t.Run(t.Name()+"_"+fmt.Sprint(testCase.pattern, "_", testCase.value), func(t *testing.T) {
-				assert.Equal(t, testCase.ok, testCase.pattern.Test(testCase.value))
+				assert.Equal(t, testCase.ok, testCase.pattern.Test(testCase.value, RecTestCallState{}))
 			})
 		}
 	})
@@ -2527,11 +2541,11 @@ func TestSymbolicTuplePattern(t *testing.T) {
 
 		for _, testCase := range cases {
 			t.Run(t.Name()+"_"+Stringify(testCase.pattern)+"_"+Stringify(testCase.testedValue), func(t *testing.T) {
-				if !assert.Equal(t, testCase.ok, testCase.pattern.TestValue(testCase.testedValue)) {
+				if !assert.Equal(t, testCase.ok, testCase.pattern.TestValue(testCase.testedValue, RecTestCallState{})) {
 					return
 				}
 				val := testCase.pattern.SymbolicValue()
-				assert.Equal(t, testCase.ok, val.Test(testCase.testedValue))
+				assert.Equal(t, testCase.ok, val.Test(testCase.testedValue, RecTestCallState{}))
 			})
 		}
 	})
@@ -2736,7 +2750,7 @@ func TestSymbolicUnionPattern(t *testing.T) {
 
 		for _, testCase := range cases {
 			t.Run(t.Name()+"_"+fmt.Sprint(testCase.pattern, "_", testCase.value), func(t *testing.T) {
-				assert.Equal(t, testCase.ok, testCase.pattern.Test(testCase.value))
+				assert.Equal(t, testCase.ok, testCase.pattern.Test(testCase.value, RecTestCallState{}))
 			})
 		}
 	})
@@ -2845,10 +2859,10 @@ func TestSymbolicUnionPattern(t *testing.T) {
 				s = " should not match"
 			}
 			t.Run(t.Name()+"_"+fmt.Sprint(Stringify(testCase.pattern), s, Stringify(testCase.value)), func(t *testing.T) {
-				assert.Equal(t, testCase.ok, testCase.pattern.TestValue(testCase.value))
+				assert.Equal(t, testCase.ok, testCase.pattern.TestValue(testCase.value, RecTestCallState{}))
 
 				val := testCase.pattern.SymbolicValue()
-				assert.Equal(t, testCase.ok, val.Test(testCase.value))
+				assert.Equal(t, testCase.ok, val.Test(testCase.value, RecTestCallState{}))
 			})
 		}
 	})
@@ -2917,7 +2931,7 @@ func TestSymbolicIntersectionPattern(t *testing.T) {
 
 		for _, testCase := range cases {
 			t.Run(testCase.name, func(t *testing.T) {
-				assert.Equal(t, testCase.ok, testCase.pattern.Test(testCase.value))
+				assert.Equal(t, testCase.ok, testCase.pattern.Test(testCase.value, RecTestCallState{}))
 			})
 		}
 	})
@@ -2973,10 +2987,10 @@ func TestSymbolicIntersectionPattern(t *testing.T) {
 
 		for _, testCase := range cases {
 			t.Run(testCase.name, func(t *testing.T) {
-				assert.Equal(t, testCase.ok, testCase.pattern.TestValue(testCase.value))
+				assert.Equal(t, testCase.ok, testCase.pattern.TestValue(testCase.value, RecTestCallState{}))
 
 				val := testCase.pattern.SymbolicValue()
-				assert.Equal(t, testCase.ok, val.Test(testCase.value))
+				assert.Equal(t, testCase.ok, val.Test(testCase.value, RecTestCallState{}))
 			})
 		}
 	})
@@ -2988,37 +3002,37 @@ func TestSymbolicOptionPattern(t *testing.T) {
 	t.Run("Test()", func(t *testing.T) {
 		pattern := NewOptionPattern("a", ANY_STR_PATTERN)
 
-		assert.True(t, pattern.Test(NewOptionPattern("a", ANY_STR_PATTERN)))
-		assert.False(t, pattern.Test(NewOptionPattern("b", ANY_PATTERN)))
-		assert.False(t, pattern.Test(ANY_OPTION_PATTERN))
-		assert.False(t, pattern.Test(ANY_INT))
-		assert.False(t, pattern.Test(NewOption("x", EMPTY_STRING)))
+		assertTest(t, pattern, NewOptionPattern("a", ANY_STR_PATTERN))
+		assertTestFalse(t, pattern, NewOptionPattern("b", ANY_PATTERN))
+		assertTestFalse(t, pattern, ANY_OPTION_PATTERN)
+		assertTestFalse(t, pattern, ANY_INT)
+		assertTestFalse(t, pattern, NewOption("x", EMPTY_STRING))
 
 		anyOptionPattern := ANY_OPTION_PATTERN
-		assert.True(t, anyOptionPattern.Test(NewOptionPattern("a", ANY_STR_PATTERN)))
-		assert.True(t, anyOptionPattern.Test(NewOptionPattern("b", ANY_PATTERN)))
-		assert.True(t, anyOptionPattern.Test(ANY_OPTION_PATTERN))
-		assert.False(t, anyOptionPattern.Test(ANY_INT))
-		assert.False(t, anyOptionPattern.Test(NewOption("x", EMPTY_STRING)))
+		assertTest(t, anyOptionPattern, NewOptionPattern("a", ANY_STR_PATTERN))
+		assertTest(t, anyOptionPattern, NewOptionPattern("b", ANY_PATTERN))
+		assertTest(t, anyOptionPattern, ANY_OPTION_PATTERN)
+		assertTestFalse(t, anyOptionPattern, ANY_INT)
+		assertTestFalse(t, anyOptionPattern, NewOption("x", EMPTY_STRING))
 	})
 
 	t.Run("TestValue()", func(t *testing.T) {
 		pattern := NewOptionPattern("a", ANY_STR_PATTERN)
 
-		assert.True(t, pattern.TestValue(NewOption("a", EMPTY_STRING)))
-		assert.False(t, pattern.TestValue(NewOption("a", NewInt(1))))
-		assert.False(t, pattern.TestValue(NewOption("b", EMPTY_STRING)))
-		assert.False(t, pattern.TestValue(ANY_INT))
-		assert.False(t, pattern.TestValue(ANY_OPTION_PATTERN))
+		assertTestValue(t, pattern, NewOption("a", EMPTY_STRING))
+		assertTestValueFalse(t, pattern, NewOption("a", NewInt(1)))
+		assertTestValueFalse(t, pattern, NewOption("b", EMPTY_STRING))
+		assertTestValueFalse(t, pattern, ANY_INT)
+		assertTestValueFalse(t, pattern, ANY_OPTION_PATTERN)
 
 		anyOptionPattern := ANY_OPTION_PATTERN
 
-		assert.True(t, anyOptionPattern.TestValue(ANY_OPTION))
-		assert.True(t, anyOptionPattern.TestValue(NewOption("a", EMPTY_STRING)))
-		assert.True(t, anyOptionPattern.TestValue(NewOption("a", NewInt(1))))
-		assert.True(t, anyOptionPattern.TestValue(NewOption("b", EMPTY_STRING)))
-		assert.False(t, anyOptionPattern.TestValue(ANY_INT))
-		assert.False(t, anyOptionPattern.TestValue(ANY_OPTION_PATTERN))
+		assertTestValue(t, anyOptionPattern, ANY_OPTION)
+		assertTestValue(t, anyOptionPattern, NewOption("a", EMPTY_STRING))
+		assertTestValue(t, anyOptionPattern, NewOption("a", NewInt(1)))
+		assertTestValue(t, anyOptionPattern, NewOption("b", EMPTY_STRING))
+		assertTestValueFalse(t, anyOptionPattern, ANY_INT)
+		assertTestValueFalse(t, anyOptionPattern, ANY_OPTION_PATTERN)
 
 	})
 
@@ -3029,17 +3043,17 @@ func TestSymbolicAnyStringPatternElement(t *testing.T) {
 	t.Run("Test()", func(t *testing.T) {
 		pattern := &AnyStringPattern{}
 
-		assert.True(t, pattern.Test(&AnyStringPattern{}))
-		assert.False(t, pattern.Test(ANY_INT))
-		assert.False(t, pattern.Test(ANY_STR))
+		assertTest(t, pattern, &AnyStringPattern{})
+		assertTestFalse(t, pattern, ANY_INT)
+		assertTestFalse(t, pattern, ANY_STR)
 	})
 
 	t.Run("TestValue()", func(t *testing.T) {
 		pattern := &AnyStringPattern{}
 
-		assert.True(t, pattern.TestValue(ANY_STR))
-		assert.False(t, pattern.TestValue(ANY_INT))
-		assert.False(t, pattern.TestValue(&AnyStringPattern{}))
+		assertTestValue(t, pattern, ANY_STR)
+		assertTestValueFalse(t, pattern, ANY_INT)
+		assertTestValueFalse(t, pattern, &AnyStringPattern{})
 	})
 
 }
@@ -3050,20 +3064,20 @@ func TestTypePattern(t *testing.T) {
 		{
 			_any := &TypePattern{val: ANY}
 
-			assert.True(t, _any.Test(_any))
-			assert.True(t, _any.Test(&TypePattern{val: ANY_INT}))
-			assert.False(t, _any.Test(ANY_INT))
-			assert.False(t, _any.Test(ANY_STR))
+			assertTest(t, _any, _any)
+			assertTest(t, _any, &TypePattern{val: ANY_INT})
+			assertTestFalse(t, _any, ANY_INT)
+			assertTestFalse(t, _any, ANY_STR)
 		}
 
 		{
 			specific := &TypePattern{val: ANY_STR}
 
-			assert.True(t, specific.Test(specific))
-			assert.True(t, specific.Test(&TypePattern{val: ANY_STR}))
-			assert.False(t, specific.Test(&TypePattern{val: ANY_INT}))
-			assert.False(t, specific.Test(ANY_INT))
-			assert.False(t, specific.Test(ANY_STR))
+			assertTest(t, specific, specific)
+			assertTest(t, specific, &TypePattern{val: ANY_STR})
+			assertTestFalse(t, specific, &TypePattern{val: ANY_INT})
+			assertTestFalse(t, specific, ANY_INT)
+			assertTestFalse(t, specific, ANY_STR)
 		}
 
 	})
@@ -3072,11 +3086,11 @@ func TestTypePattern(t *testing.T) {
 		_any := &TypePattern{val: ANY}
 		specific := &TypePattern{val: ANY_STR}
 
-		assert.True(t, _any.TestValue(ANY_STR))
-		assert.True(t, _any.TestValue(ANY_INT))
+		assertTestValue(t, _any, ANY_STR)
+		assertTestValue(t, _any, ANY_INT)
 
-		assert.True(t, specific.TestValue(ANY_STR))
-		assert.False(t, specific.TestValue(ANY_INT))
+		assertTestValue(t, specific, ANY_STR)
+		assertTestValueFalse(t, specific, ANY_INT)
 	})
 
 }
@@ -3087,23 +3101,23 @@ func TestFunctionPattern(t *testing.T) {
 		t.Run("Test()", func(t *testing.T) {
 			anyFnPatt := &FunctionPattern{}
 
-			assert.True(t, anyFnPatt.Test(anyFnPatt))
+			assertTest(t, anyFnPatt, anyFnPatt)
 			assert.True(t, anyFnPatt.Test(&FunctionPattern{
 				node: &parse.FunctionPatternExpression{},
-			}))
-			assert.False(t, anyFnPatt.Test(ANY_INT))
-			assert.False(t, anyFnPatt.Test(ANY_STR))
+			}, RecTestCallState{}))
+			assertTestFalse(t, anyFnPatt, ANY_INT)
+			assertTestFalse(t, anyFnPatt, ANY_STR)
 		})
 
 		t.Run("TestValue()", func(t *testing.T) {
 			anyFnPatt := &FunctionPattern{}
 
-			assert.True(t, anyFnPatt.TestValue(&Function{pattern: anyFnPatt}))
+			assertTestValue(t, anyFnPatt, &Function{pattern: anyFnPatt})
 			assert.True(t, anyFnPatt.TestValue(&InoxFunction{
 				node: &parse.FunctionPatternExpression{},
-			}))
-			assert.False(t, anyFnPatt.TestValue(ANY_STR))
-			assert.False(t, anyFnPatt.TestValue(anyFnPatt))
+			}, RecTestCallState{}))
+			assertTestValueFalse(t, anyFnPatt, ANY_STR)
+			assertTestValueFalse(t, anyFnPatt, anyFnPatt)
 		})
 	})
 
@@ -3143,16 +3157,16 @@ func TestFunctionPattern(t *testing.T) {
 				node, _ := parse.ParseExpression(pattCode)
 				fnPatt := utils.Must(symbolicEval(node, makeState())).(*FunctionPattern)
 
-				assert.True(t, fnPatt.Test(fnPatt))
+				assertTest(t, fnPatt, fnPatt)
 				assert.True(t, fnPatt.Test(&FunctionPattern{
 					node: node.(*parse.FunctionPatternExpression),
-				}))
+				}, RecTestCallState{}))
 				assert.False(t, fnPatt.Test(&FunctionPattern{
 					node: &parse.FunctionPatternExpression{},
-				}))
-				assert.False(t, fnPatt.Test(anyFnPatt))
-				assert.False(t, fnPatt.Test(ANY_INT))
-				assert.False(t, fnPatt.Test(ANY_STR))
+				}, RecTestCallState{}))
+				assertTestFalse(t, fnPatt, anyFnPatt)
+				assertTestFalse(t, fnPatt, ANY_INT)
+				assertTestFalse(t, fnPatt, ANY_STR)
 			})
 
 			t.Run("TestValue()", func(t *testing.T) {
@@ -3163,21 +3177,41 @@ func TestFunctionPattern(t *testing.T) {
 					node, _ := parse.ParseExpression(s)
 					matchingFn := utils.Must(symbolicEval(node, makeState())).(*InoxFunction)
 
-					assert.True(t, fnPatt.TestValue(matchingFn), "should match "+s)
+					assertTestValue(t, fnPatt, matchingFn, "should match "+s)
 				}
 
 				for _, s := range testCase.notMatchingFnExprs {
 					node, _ := parse.ParseExpression(s)
 					notMatchingFn := utils.Must(symbolicEval(node, makeState())).(*InoxFunction)
 
-					assert.False(t, fnPatt.TestValue(notMatchingFn), "should not match "+s)
+					assertTestValueFalse(t, fnPatt, notMatchingFn, "should not match "+s)
 				}
 
-				assert.False(t, fnPatt.TestValue(fnPatt))
-				assert.False(t, fnPatt.TestValue(ANY_STR))
+				assertTestValueFalse(t, fnPatt, fnPatt)
+				assertTestValueFalse(t, fnPatt, ANY_STR)
 			})
 
 		})
 	}
 
+}
+
+func assertTestValue(t *testing.T, a Pattern, b SymbolicValue, msg ...any) bool {
+	t.Helper()
+	return assert.True(t, a.TestValue(b, RecTestCallState{}), msg...)
+}
+
+func assertTestValueFalse(t *testing.T, a Pattern, b SymbolicValue, msg ...any) bool {
+	t.Helper()
+	return assert.False(t, a.TestValue(b, RecTestCallState{}), msg...)
+}
+
+func assertTest(t *testing.T, a, b SymbolicValue) bool {
+	t.Helper()
+	return assert.True(t, a.Test(b, RecTestCallState{}))
+}
+
+func assertTestFalse(t *testing.T, a, b SymbolicValue) bool {
+	t.Helper()
+	return assert.False(t, a.Test(b, RecTestCallState{}))
 }

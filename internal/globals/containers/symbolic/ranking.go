@@ -16,7 +16,10 @@ type Ranking struct {
 	_ int
 }
 
-func (r *Ranking) Test(v symbolic.SymbolicValue) bool {
+func (r *Ranking) Test(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(*Ranking)
 	return ok
 }
@@ -68,7 +71,10 @@ type Rank struct {
 	_ int
 }
 
-func (r *Rank) Test(v symbolic.SymbolicValue) bool {
+func (r *Rank) Test(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(*Rank)
 	return ok
 }

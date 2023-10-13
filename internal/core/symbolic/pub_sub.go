@@ -30,7 +30,10 @@ func NewPublication() *Publication {
 	return &Publication{}
 }
 
-func (r *Publication) Test(v SymbolicValue) bool {
+func (r *Publication) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(Subscriber)
 
 	return ok
@@ -59,7 +62,10 @@ func NewSubscription() *Subscription {
 	return &Subscription{}
 }
 
-func (r *Subscription) Test(v SymbolicValue) bool {
+func (r *Subscription) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(Subscriber)
 
 	return ok
@@ -79,7 +85,10 @@ type AnySubscriber struct {
 	_ int
 }
 
-func (r *AnySubscriber) Test(v SymbolicValue) bool {
+func (r *AnySubscriber) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(Subscriber)
 
 	return ok

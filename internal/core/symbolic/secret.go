@@ -30,7 +30,10 @@ func NewSecret(value SymbolicValue, pattern *SecretPattern) (*Secret, error) {
 	return &Secret{value: value}, nil
 }
 
-func (r *Secret) Test(v SymbolicValue) bool {
+func (r *Secret) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(*Secret)
 	return ok
 }
@@ -57,15 +60,20 @@ func NewSecretPattern(patt StringPattern) *SecretPattern {
 	}
 }
 
-func (pattern *SecretPattern) Test(v SymbolicValue) bool {
+func (pattern *SecretPattern) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	otherPattern, ok := v.(*SecretPattern)
 	if !ok {
 		return false
 	}
-	return pattern.stringPattern.Test(otherPattern.stringPattern)
+	return pattern.stringPattern.Test(otherPattern.stringPattern, state)
 }
 
-func (pattern *SecretPattern) TestValue(v SymbolicValue) bool {
+func (pattern *SecretPattern) TestValue(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
 	secret, ok := v.(*Secret)
 	if !ok {
 		return false

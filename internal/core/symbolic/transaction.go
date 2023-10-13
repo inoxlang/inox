@@ -13,7 +13,10 @@ type Transaction struct {
 	_ int
 }
 
-func (tx *Transaction) Test(v SymbolicValue) bool {
+func (tx *Transaction) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	switch v.(type) {
 	case *Transaction:
 		return true

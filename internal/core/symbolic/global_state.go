@@ -19,7 +19,10 @@ type GlobalState struct {
 	_ int
 }
 
-func (r *GlobalState) Test(v SymbolicValue) bool {
+func (r *GlobalState) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	switch v.(type) {
 	case *GlobalState:
 		return true

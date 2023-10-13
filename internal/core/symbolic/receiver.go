@@ -29,7 +29,10 @@ type Message struct {
 	_ int
 }
 
-func (m *Message) Test(v SymbolicValue) bool {
+func (m *Message) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(MessageReceiver)
 
 	return ok
@@ -65,7 +68,10 @@ type AnyMessageReceiver struct {
 	_ int
 }
 
-func (r *AnyMessageReceiver) Test(v SymbolicValue) bool {
+func (r *AnyMessageReceiver) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(MessageReceiver)
 
 	return ok
@@ -94,7 +100,10 @@ func NewMessageHandler() *SynchronousMessageHandler {
 	return &SynchronousMessageHandler{}
 }
 
-func (l *SynchronousMessageHandler) Test(v SymbolicValue) bool {
+func (l *SynchronousMessageHandler) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(*SynchronousMessageHandler)
 
 	return ok

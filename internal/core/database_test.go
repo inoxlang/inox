@@ -687,7 +687,10 @@ func (*symbolicLoadableTestValue) StringPattern() (symbolic.StringPattern, bool)
 	return nil, false
 }
 
-func (*symbolicLoadableTestValue) Test(v symbolic.SymbolicValue) bool {
+func (*symbolicLoadableTestValue) Test(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	panic(ErrNotImplementedYet)
 }
 
@@ -735,11 +738,16 @@ func (*symbolicLoadableTestValuePattern) SymbolicValue() symbolic.SymbolicValue 
 	panic(ErrNotImplementedYet)
 }
 
-func (*symbolicLoadableTestValuePattern) Test(v symbolic.SymbolicValue) bool {
+func (*symbolicLoadableTestValuePattern) Test(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	panic(ErrNotImplementedYet)
 }
 
-func (*symbolicLoadableTestValuePattern) TestValue(v symbolic.SymbolicValue) bool {
+func (*symbolicLoadableTestValuePattern) TestValue(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
 	panic(ErrNotImplementedYet)
 }
 

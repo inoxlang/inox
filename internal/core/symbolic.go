@@ -1323,7 +1323,7 @@ func symbolicToPattern(v symbolic.SymbolicValue) (Pattern, bool) {
 			continue
 		}
 		matchedSymbolicVal := symbolicPattern.(symbolic.Pattern).SymbolicValue()
-		if v.Test(matchedSymbolicVal) && matchedSymbolicVal.Test(v) {
+		if v.Test(matchedSymbolicVal, symbolic.RecTestCallState{}) && matchedSymbolicVal.Test(v, symbolic.RecTestCallState{}) {
 			return pattern, true
 		}
 	}

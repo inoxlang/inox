@@ -23,7 +23,10 @@ func NewEventSource() *EventSource {
 	return &EventSource{}
 }
 
-func (s *EventSource) Test(v SymbolicValue) bool {
+func (s *EventSource) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(*EventSource)
 	return ok
 }
@@ -88,7 +91,10 @@ func NewEvent(value SymbolicValue) (*Event, error) {
 	return &Event{value: value}, nil
 }
 
-func (r *Event) Test(v SymbolicValue) bool {
+func (r *Event) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(*Event)
 	return ok
 }

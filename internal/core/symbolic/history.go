@@ -26,7 +26,10 @@ func NewValueHistory() *ValueHistory {
 	return &ValueHistory{}
 }
 
-func (h *ValueHistory) Test(v SymbolicValue) bool {
+func (h *ValueHistory) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	switch v.(type) {
 	case *ValueHistory:
 		return true

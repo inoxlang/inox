@@ -13,7 +13,10 @@ type TcpConn struct {
 	_ int
 }
 
-func (r *TcpConn) Test(v symbolic.SymbolicValue) bool {
+func (r *TcpConn) Test(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(*TcpConn)
 	return ok
 }

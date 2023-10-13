@@ -19,7 +19,10 @@ func (*FilesystemSnapshotIL) _fssnapshot() {
 
 }
 
-func (t *FilesystemSnapshotIL) Test(v SymbolicValue) bool {
+func (t *FilesystemSnapshotIL) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	switch v.(type) {
 	case *FilesystemSnapshotIL:
 		return true

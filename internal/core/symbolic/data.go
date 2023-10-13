@@ -227,7 +227,10 @@ func (data *SymbolicData) AddData(newData *SymbolicData) {
 	data.warnings = append(data.warnings, newData.warnings...)
 }
 
-func (d *SymbolicData) Test(v SymbolicValue) bool {
+func (d *SymbolicData) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(*SymbolicData)
 
 	return ok

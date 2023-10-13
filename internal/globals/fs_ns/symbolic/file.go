@@ -14,7 +14,10 @@ type File struct {
 	_ int
 }
 
-func (r *File) Test(v symbolic.SymbolicValue) bool {
+func (r *File) Test(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(*File)
 	return ok
 }

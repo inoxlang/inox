@@ -17,7 +17,10 @@ type Color struct {
 	_ int
 }
 
-func (c *Color) Test(v SymbolicValue) bool {
+func (c *Color) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	switch v.(type) {
 	case *Color:
 		return true

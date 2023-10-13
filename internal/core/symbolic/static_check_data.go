@@ -17,7 +17,10 @@ type StaticCheckData struct {
 	_ int
 }
 
-func (d *StaticCheckData) Test(v SymbolicValue) bool {
+func (d *StaticCheckData) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(*StaticCheckData)
 
 	return ok

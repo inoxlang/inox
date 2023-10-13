@@ -82,7 +82,10 @@ func NewArrayOf(generalElement SymbolicValue) *Array {
 	return &Array{generalElement: generalElement}
 }
 
-func (a *Array) Test(v SymbolicValue) bool {
+func (a *Array) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	otherArray, ok := v.(*Array)
 	if !ok {
 		return false
@@ -90,11 +93,11 @@ func (a *Array) Test(v SymbolicValue) bool {
 
 	if a.elements == nil {
 		if otherArray.elements == nil {
-			return a.generalElement.Test(otherArray.generalElement)
+			return a.generalElement.Test(otherArray.generalElement, state)
 		}
 
 		for _, elem := range otherArray.elements {
-			if !a.generalElement.Test(elem) {
+			if !a.generalElement.Test(elem, state) {
 				return false
 			}
 		}
@@ -106,7 +109,7 @@ func (a *Array) Test(v SymbolicValue) bool {
 	}
 
 	for i, e := range a.elements {
-		if !e.Test(otherArray.elements[i]) {
+		if !e.Test(otherArray.elements[i], state) {
 			return false
 		}
 	}
@@ -255,7 +258,10 @@ func NewListOf(generalElement Serializable) *List {
 	return &List{generalElement: generalElement}
 }
 
-func (list *List) Test(v SymbolicValue) bool {
+func (list *List) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	otherList, ok := v.(*List)
 	if !ok || list.readonly != otherList.readonly {
 		return false
@@ -263,11 +269,11 @@ func (list *List) Test(v SymbolicValue) bool {
 
 	if list.elements == nil {
 		if otherList.elements == nil {
-			return list.generalElement.Test(otherList.generalElement)
+			return list.generalElement.Test(otherList.generalElement, state)
 		}
 
 		for _, elem := range otherList.elements {
-			if !list.generalElement.Test(elem) {
+			if !list.generalElement.Test(elem, state) {
 				return false
 			}
 		}
@@ -279,7 +285,7 @@ func (list *List) Test(v SymbolicValue) bool {
 	}
 
 	for i, e := range list.elements {
-		if !e.Test(otherList.elements[i]) {
+		if !e.Test(otherList.elements[i], state) {
 			return false
 		}
 	}
@@ -484,7 +490,7 @@ func (l *List) elementAt(i int) SymbolicValue {
 
 func (l *List) Contains(value SymbolicValue) (bool, bool) {
 	if l.elements == nil {
-		if l.generalElement.Test(value) {
+		if l.generalElement.Test(value, RecTestCallState{}) {
 			return false, true
 		}
 		return false, false
@@ -493,9 +499,9 @@ func (l *List) Contains(value SymbolicValue) (bool, bool) {
 	possible := false
 
 	for _, e := range l.elements {
-		if e.Test(value) {
+		if e.Test(value, RecTestCallState{}) {
 			possible = true
-			if value.Test(e) {
+			if value.Test(e, RecTestCallState{}) {
 				return true, true
 			}
 		}
@@ -629,7 +635,10 @@ func NewTupleOf(generalElement Serializable) *Tuple {
 	return &Tuple{generalElement: generalElement}
 }
 
-func (t *Tuple) Test(v SymbolicValue) bool {
+func (t *Tuple) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	otherList, ok := v.(*Tuple)
 	if !ok {
 		return false
@@ -637,11 +646,11 @@ func (t *Tuple) Test(v SymbolicValue) bool {
 
 	if t.elements == nil {
 		if otherList.elements == nil {
-			return t.generalElement.Test(otherList.generalElement)
+			return t.generalElement.Test(otherList.generalElement, state)
 		}
 
 		for _, elem := range otherList.elements {
-			if !t.generalElement.Test(elem) {
+			if !t.generalElement.Test(elem, state) {
 				return false
 			}
 		}
@@ -653,7 +662,7 @@ func (t *Tuple) Test(v SymbolicValue) bool {
 	}
 
 	for i, e := range t.elements {
-		if !e.Test(otherList.elements[i]) {
+		if !e.Test(otherList.elements[i], state) {
 			return false
 		}
 	}
@@ -759,7 +768,7 @@ func (t *Tuple) elementAt(i int) SymbolicValue {
 
 func (t *Tuple) Contains(value SymbolicValue) (bool, bool) {
 	if t.elements == nil {
-		if t.generalElement.Test(value) {
+		if t.generalElement.Test(value, RecTestCallState{}) {
 			return false, true
 		}
 		return false, false
@@ -768,9 +777,9 @@ func (t *Tuple) Contains(value SymbolicValue) (bool, bool) {
 	possible := false
 
 	for _, e := range t.elements {
-		if e.Test(value) {
+		if e.Test(value, RecTestCallState{}) {
 			possible = true
-			if value.Test(e) {
+			if value.Test(e, RecTestCallState{}) {
 				return true, true
 			}
 		}
@@ -809,7 +818,10 @@ func NewAnyKeyList() *KeyList {
 	return &KeyList{}
 }
 
-func (list *KeyList) Test(v SymbolicValue) bool {
+func (list *KeyList) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	otherList, ok := v.(*KeyList)
 	if !ok {
 		return false
@@ -921,7 +933,10 @@ func InitializeDictionary(d *Dictionary, entries map[string]Serializable, keys m
 	d.keys = keys
 }
 
-func (dict *Dictionary) Test(v SymbolicValue) bool {
+func (dict *Dictionary) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	otherDict, ok := v.(*Dictionary)
 	if !ok {
 		return false
@@ -936,7 +951,7 @@ func (dict *Dictionary) Test(v SymbolicValue) bool {
 	}
 
 	for i, e := range dict.entries {
-		if !e.Test(otherDict.entries[i]) {
+		if !e.Test(otherDict.entries[i], state) {
 			return false
 		}
 	}
@@ -1223,14 +1238,17 @@ func (o *Object) ReadonlyObject() *Object {
 }
 
 func (obj *Object) TestExact(v SymbolicValue) bool {
-	return obj.test(v, true)
+	return obj.test(v, true, RecTestCallState{})
 }
 
-func (obj *Object) Test(v SymbolicValue) bool {
-	return obj.test(v, obj.exact)
+func (obj *Object) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
+	return obj.test(v, obj.exact, state)
 }
 
-func (obj *Object) test(v SymbolicValue, exact bool) bool {
+func (obj *Object) test(v SymbolicValue, exact bool, state RecTestCallState) bool {
 	otherObj, ok := v.(*Object)
 	if !ok || obj.readonly != otherObj.readonly {
 		return false
@@ -1257,7 +1275,7 @@ func (obj *Object) test(v SymbolicValue, exact bool) bool {
 					return false
 				}
 			}
-			if deps.pattern != nil && (counterPartDeps.pattern == nil || !deps.pattern.Test(counterPartDeps.pattern)) {
+			if deps.pattern != nil && (counterPartDeps.pattern == nil || !deps.pattern.Test(counterPartDeps.pattern, RecTestCallState{})) {
 				return false
 			}
 		} else if !otherObj.hasRequiredProperty(propName) {
@@ -1284,7 +1302,7 @@ func (obj *Object) test(v SymbolicValue, exact bool) bool {
 			return false
 		}
 
-		if !propPattern.Test(other) {
+		if !propPattern.Test(other, state) {
 			return false
 		}
 
@@ -1296,7 +1314,7 @@ func (obj *Object) test(v SymbolicValue, exact bool) bool {
 					return false
 				}
 			}
-			if deps.pattern != nil && !deps.pattern.TestValue(otherObj) {
+			if deps.pattern != nil && !deps.pattern.TestValue(otherObj, state) {
 				return false
 			}
 		}
@@ -1379,15 +1397,15 @@ func (o *Object) SpecificIntersection(v SymbolicValue, depth int) (SymbolicValue
 			}
 
 			//add narrowest
-			if staticInSelf.Test(staticInOther) {
+			if staticInSelf.Test(staticInOther, RecTestCallState{}) {
 				static[propName] = staticInOther
-			} else if staticInOther.Test(staticInSelf) {
+			} else if staticInOther.Test(staticInSelf, RecTestCallState{}) {
 				static[propName] = staticInSelf
 			} else {
 				return NEVER, nil
 			}
 		} else if haveStatic {
-			if !staticInSelf.TestValue(propInResult) {
+			if !staticInSelf.TestValue(propInResult, RecTestCallState{}) {
 				return NEVER, nil
 			}
 			if static == nil {
@@ -1395,7 +1413,7 @@ func (o *Object) SpecificIntersection(v SymbolicValue, depth int) (SymbolicValue
 			}
 			static[propName] = staticInSelf
 		} else if haveStaticInOther {
-			if !staticInOther.TestValue(propInResult) {
+			if !staticInOther.TestValue(propInResult, RecTestCallState{}) {
 				return NEVER, nil
 			}
 			if static == nil {
@@ -1579,11 +1597,11 @@ func (obj *Object) SetProp(name string, value SymbolicValue) (IProps, error) {
 	if _, ok := obj.entries[name]; ok { // update property
 
 		if static, ok := obj.static[name]; ok {
-			if !static.TestValue(value) {
+			if !static.TestValue(value, RecTestCallState{}) {
 				return nil, errors.New(fmtNotAssignableToPropOfType(value, static))
 			}
 		} else if prevValue, ok := obj.entries[name]; ok {
-			if !prevValue.Test(value) {
+			if !prevValue.Test(value, RecTestCallState{}) {
 				return nil, errors.New(fmtNotAssignableToPropOfType(value, &TypePattern{val: prevValue}))
 			}
 		}
@@ -1710,7 +1728,7 @@ func (obj *Object) AddStatic(pattern Pattern) (StaticDataHolder, error) {
 		}
 	} else if _, ok := pattern.(*TypePattern); ok {
 		//TODO
-	} else if !pattern.TestValue(obj) {
+	} else if !pattern.TestValue(obj, RecTestCallState{}) {
 		return nil, errors.New("cannot add static information of non object pattern")
 	}
 	return obj, nil
@@ -1740,9 +1758,9 @@ func (o *Object) Contains(value SymbolicValue) (bool, bool) {
 	possible := false
 
 	for _, e := range o.entries {
-		if e.Test(value) {
+		if e.Test(value, RecTestCallState{}) {
 			possible = true
-			if value.Test(e) {
+			if value.Test(e, RecTestCallState{}) {
 				return true, true
 			}
 		}
@@ -1890,14 +1908,17 @@ func NewBoundEntriesRecord(entries map[string]Serializable) *Record {
 }
 
 func (rec *Record) TestExact(v SymbolicValue) bool {
-	return rec.test(v, true)
+	return rec.test(v, true, RecTestCallState{})
 }
 
-func (rec *Record) Test(v SymbolicValue) bool {
-	return rec.test(v, rec.exact)
+func (rec *Record) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
+	return rec.test(v, rec.exact, state)
 }
 
-func (rec *Record) test(v SymbolicValue, exact bool) bool {
+func (rec *Record) test(v SymbolicValue, exact bool, state RecTestCallState) bool {
 	otherRec, ok := v.(*Record)
 	if !ok {
 		return false
@@ -1912,7 +1933,7 @@ func (rec *Record) test(v SymbolicValue, exact bool) bool {
 		if otherRec.valueOnly == nil {
 			return false
 		}
-		return value.Test(otherRec.valueOnly)
+		return value.Test(otherRec.valueOnly, RecTestCallState{})
 	}
 
 	if (exact && len(rec.optionalEntries) == 0 && len(rec.entries) != len(otherRec.entries)) || otherRec.entries == nil {
@@ -1935,7 +1956,7 @@ func (rec *Record) test(v SymbolicValue, exact bool) bool {
 			}
 			return false
 		}
-		if !e.Test(other) {
+		if !e.Test(other, state) {
 			return false
 		}
 	}
@@ -2061,9 +2082,9 @@ func (r *Record) Contains(value SymbolicValue) (bool, bool) {
 	possible := false
 
 	for _, e := range r.entries {
-		if e.Test(value) {
+		if e.Test(value, RecTestCallState{}) {
 			possible = true
-			if value.Test(e) {
+			if value.Test(e, RecTestCallState{}) {
 				return true, true
 			}
 		}
@@ -2165,7 +2186,10 @@ type AnyIndexable struct {
 	_ int
 }
 
-func (r *AnyIndexable) Test(v SymbolicValue) bool {
+func (r *AnyIndexable) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(Indexable)
 
 	return ok

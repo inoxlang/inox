@@ -82,9 +82,12 @@ func NewSetWithPattern(elementPattern symbolic.Pattern, uniqueness *containers_c
 	return set
 }
 
-func (s *Set) Test(v symbolic.SymbolicValue) bool {
+func (s *Set) Test(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	otherSet, ok := v.(*Set)
-	if !ok || !s.elementPattern.Test(otherSet.elementPattern) {
+	if !ok || !s.elementPattern.Test(otherSet.elementPattern, state) {
 		return false
 	}
 
@@ -194,9 +197,12 @@ func (p *SetPattern) MigrationInitialValue() (symbolic.Serializable, bool) {
 	return symbolic.EMPTY_LIST, true
 }
 
-func (p *SetPattern) Test(v symbolic.SymbolicValue) bool {
+func (p *SetPattern) Test(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	otherPattern, ok := v.(*SetPattern)
-	if !ok || !p.elementPattern.Test(otherPattern.elementPattern) {
+	if !ok || !p.elementPattern.Test(otherPattern.elementPattern, state) {
 		return false
 	}
 
@@ -220,9 +226,11 @@ func (p *SetPattern) Concretize(ctx symbolic.ConcreteContext) any {
 	return externalData.CreateConcreteSetPattern(*p.uniqueness, concreteElementPattern)
 }
 
-func (p *SetPattern) TestValue(v symbolic.SymbolicValue) bool {
+func (p *SetPattern) TestValue(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
 	if otherPatt, ok := v.(*SetPattern); ok {
-		return p.elementPattern.TestValue(otherPatt.elementPattern)
+		return p.elementPattern.TestValue(otherPatt.elementPattern, state)
 	}
 	return false
 	//TODO: test nodes's value

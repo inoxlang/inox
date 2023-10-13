@@ -84,7 +84,7 @@ func (p *Path) Examples(cctx ExampleComputationContext) []MatchingValueExample {
 	}
 
 	return utils.FilterMapSlice(PATH_EXAMPLES, func(path *Path) (MatchingValueExample, bool) {
-		if p.Test(path) {
+		if p.Test(path, RecTestCallState{}) {
 			return MatchingValueExample{Value: path}, true
 		}
 

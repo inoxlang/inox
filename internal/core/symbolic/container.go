@@ -32,7 +32,10 @@ type AnyContainer struct {
 	SerializableMixin
 }
 
-func (*AnyContainer) Test(v SymbolicValue) bool {
+func (*AnyContainer) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(Container)
 
 	return ok

@@ -14,7 +14,10 @@ type Bucket struct {
 	_ int
 }
 
-func (r *Bucket) Test(v symbolic.SymbolicValue) bool {
+func (r *Bucket) Test(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(*Bucket)
 	return ok
 }

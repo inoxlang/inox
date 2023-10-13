@@ -77,14 +77,17 @@ func NewPathMatchingPattern(p *PathPattern) *Path {
 	}
 }
 
-func (p *Path) Test(v SymbolicValue) bool {
+func (p *Path) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	otherPath, ok := v.(*Path)
 	if !ok {
 		return false
 	}
 
 	if p.pattern != nil {
-		return p.pattern.TestValue(v)
+		return p.pattern.TestValue(v, state)
 	}
 
 	if !p.hasValue {
@@ -220,14 +223,17 @@ func NewUrlMatchingPattern(p *URLPattern) *URL {
 	}
 }
 
-func (u *URL) Test(v SymbolicValue) bool {
+func (u *URL) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	otherURL, ok := v.(*URL)
 	if !ok {
 		return false
 	}
 
 	if u.pattern != nil {
-		return u.pattern.TestValue(v)
+		return u.pattern.TestValue(v, state)
 	}
 
 	if !u.hasValue {
@@ -321,7 +327,10 @@ func NewScheme(v string) *Scheme {
 	}
 }
 
-func (s *Scheme) Test(v SymbolicValue) bool {
+func (s *Scheme) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	otherScheme, ok := v.(*Scheme)
 	if !ok {
 		return false
@@ -390,14 +399,17 @@ func NewHostMatchingPattern(p *HostPattern) *Host {
 	}
 }
 
-func (h *Host) Test(v SymbolicValue) bool {
+func (h *Host) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	otherHost, ok := v.(*Host)
 	if !ok {
 		return false
 	}
 
 	if h.pattern != nil {
-		return h.pattern.TestValue(v)
+		return h.pattern.TestValue(v, state)
 	}
 
 	if !h.hasValue {

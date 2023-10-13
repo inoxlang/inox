@@ -26,7 +26,10 @@ type AnyWalkable struct {
 	_ int
 }
 
-func (r *AnyWalkable) Test(v SymbolicValue) bool {
+func (r *AnyWalkable) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(*AnyWalkable)
 
 	return ok
@@ -51,7 +54,10 @@ type Walker struct {
 	_ int
 }
 
-func (r *Walker) Test(v SymbolicValue) bool {
+func (r *Walker) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(*Walker)
 
 	return ok

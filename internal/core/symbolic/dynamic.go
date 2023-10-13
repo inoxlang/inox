@@ -21,8 +21,11 @@ func NewDynamicValue(val SymbolicValue) *DynamicValue {
 	return &DynamicValue{val: val}
 }
 
-func (d *DynamicValue) Test(v SymbolicValue) bool {
-	return d.val.Test(v)
+func (d *DynamicValue) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
+	return d.val.Test(v, state)
 }
 
 func (d *DynamicValue) Prop(memberName string) SymbolicValue {

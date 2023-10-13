@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	parse "github.com/inoxlang/inox/internal/parse"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestSymbolicAny(t *testing.T) {
@@ -12,8 +11,8 @@ func TestSymbolicAny(t *testing.T) {
 	t.Run("Test()", func(t *testing.T) {
 		any := ANY
 
-		assert.True(t, any.Test(any))
-		assert.True(t, any.Test(&Int{}))
+		assertTest(t, any, any)
+		assertTest(t, any, &Int{})
 	})
 
 }
@@ -23,8 +22,8 @@ func TestSymbolicNil(t *testing.T) {
 	t.Run("Test()", func(t *testing.T) {
 		_nil := &NilT{}
 
-		assert.True(t, _nil.Test(_nil))
-		assert.False(t, _nil.Test(&Int{}))
+		assertTest(t, _nil, _nil)
+		assertTestFalse(t, _nil, &Int{})
 	})
 
 }
@@ -34,9 +33,9 @@ func TestSymbolicBool(t *testing.T) {
 	t.Run("Test()", func(t *testing.T) {
 		bool := ANY_BOOL
 
-		assert.True(t, bool.Test(bool))
-		assert.True(t, bool.Test(ANY_BOOL))
-		assert.False(t, bool.Test(&Int{}))
+		assertTest(t, bool, bool)
+		assertTest(t, bool, ANY_BOOL)
+		assertTestFalse(t, bool, &Int{})
 	})
 
 }
@@ -46,9 +45,9 @@ func TestSymbolicFloat(t *testing.T) {
 	t.Run("Test()", func(t *testing.T) {
 		float := &Float{}
 
-		assert.True(t, float.Test(float))
-		assert.True(t, float.Test(&Float{}))
-		assert.False(t, float.Test(&Int{}))
+		assertTest(t, float, float)
+		assertTest(t, float, &Float{})
+		assertTestFalse(t, float, &Int{})
 	})
 
 }
@@ -58,9 +57,9 @@ func TestSymbolicInt(t *testing.T) {
 	t.Run("Test()", func(t *testing.T) {
 		int := &Int{}
 
-		assert.True(t, int.Test(int))
-		assert.True(t, int.Test(&Int{}))
-		assert.False(t, int.Test(&Float{}))
+		assertTest(t, int, int)
+		assertTest(t, int, &Int{})
+		assertTestFalse(t, int, &Float{})
 	})
 
 }
@@ -70,9 +69,9 @@ func TestSymbolicRune(t *testing.T) {
 	t.Run("Test()", func(t *testing.T) {
 		rune := &Rune{}
 
-		assert.True(t, rune.Test(rune))
-		assert.True(t, rune.Test(&Rune{}))
-		assert.False(t, rune.Test(&Int{}))
+		assertTest(t, rune, rune)
+		assertTest(t, rune, &Rune{})
+		assertTestFalse(t, rune, &Int{})
 	})
 
 }
@@ -81,58 +80,58 @@ func TestSymbolicPath(t *testing.T) {
 
 	t.Run("Test()", func(t *testing.T) {
 		anyPath := &Path{}
-		assert.True(t, anyPath.Test(anyPath))
-		assert.True(t, anyPath.Test(&Path{}))
-		assert.False(t, anyPath.Test(&String{}))
-		assert.False(t, anyPath.Test(&Int{}))
+		assertTest(t, anyPath, anyPath)
+		assertTest(t, anyPath, &Path{})
+		assertTestFalse(t, anyPath, &String{})
+		assertTestFalse(t, anyPath, &Int{})
 
 		anyAbsPath := ANY_ABS_PATH
-		assert.True(t, anyAbsPath.Test(anyAbsPath))
-		assert.True(t, anyAbsPath.Test(NewPath("/")))
-		assert.True(t, anyAbsPath.Test(NewPath("/1")))
-		assert.False(t, anyAbsPath.Test(NewPath("./1")))
-		assert.False(t, anyAbsPath.Test(anyPath))
-		assert.False(t, anyAbsPath.Test(&String{}))
+		assertTest(t, anyAbsPath, anyAbsPath)
+		assertTest(t, anyAbsPath, NewPath("/"))
+		assertTest(t, anyAbsPath, NewPath("/1"))
+		assertTestFalse(t, anyAbsPath, NewPath("./1"))
+		assertTestFalse(t, anyAbsPath, anyPath)
+		assertTestFalse(t, anyAbsPath, &String{})
 
 		anyDirPath := ANY_DIR_PATH
-		assert.True(t, anyDirPath.Test(anyDirPath))
-		assert.True(t, anyDirPath.Test(NewPath("/")))
-		assert.True(t, anyDirPath.Test(NewPath("./")))
-		assert.True(t, anyDirPath.Test(NewPath("./dir/")))
-		assert.False(t, anyDirPath.Test(NewPath("/1")))
-		assert.False(t, anyDirPath.Test(NewPath("./1")))
-		assert.False(t, anyDirPath.Test(anyPath))
-		assert.False(t, anyDirPath.Test(anyAbsPath))
+		assertTest(t, anyDirPath, anyDirPath)
+		assertTest(t, anyDirPath, NewPath("/"))
+		assertTest(t, anyDirPath, NewPath("./"))
+		assertTest(t, anyDirPath, NewPath("./dir/"))
+		assertTestFalse(t, anyDirPath, NewPath("/1"))
+		assertTestFalse(t, anyDirPath, NewPath("./1"))
+		assertTestFalse(t, anyDirPath, anyPath)
+		assertTestFalse(t, anyDirPath, anyAbsPath)
 
 		pathWithValue := NewPath("/")
-		assert.True(t, pathWithValue.Test(pathWithValue))
-		assert.True(t, pathWithValue.Test(NewPath("/")))
-		assert.False(t, pathWithValue.Test(NewPath("/1")))
-		assert.False(t, pathWithValue.Test(NewPath("./")))
-		assert.False(t, pathWithValue.Test(NewPathMatchingPattern(NewPathPattern("/..."))))
-		assert.False(t, pathWithValue.Test(anyDirPath))
-		assert.False(t, pathWithValue.Test(anyPath))
-		assert.False(t, pathWithValue.Test(anyAbsPath))
+		assertTest(t, pathWithValue, pathWithValue)
+		assertTest(t, pathWithValue, NewPath("/"))
+		assertTestFalse(t, pathWithValue, NewPath("/1"))
+		assertTestFalse(t, pathWithValue, NewPath("./"))
+		assertTestFalse(t, pathWithValue, NewPathMatchingPattern(NewPathPattern("/...")))
+		assertTestFalse(t, pathWithValue, anyDirPath)
+		assertTestFalse(t, pathWithValue, anyPath)
+		assertTestFalse(t, pathWithValue, anyAbsPath)
 
 		pathMatchingPatternWithValue := NewPathMatchingPattern(NewPathPattern("/..."))
-		assert.True(t, pathMatchingPatternWithValue.Test(pathMatchingPatternWithValue))
-		assert.True(t, pathMatchingPatternWithValue.Test(NewPath("/")))
-		assert.True(t, pathMatchingPatternWithValue.Test(NewPath("/1")))
-		assert.True(t, pathMatchingPatternWithValue.Test(NewPath("/1/")))
-		assert.False(t, pathMatchingPatternWithValue.Test(NewPath("./")))
-		assert.False(t, pathMatchingPatternWithValue.Test(anyDirPath))
-		assert.False(t, pathMatchingPatternWithValue.Test(anyPath))
-		assert.False(t, pathMatchingPatternWithValue.Test(anyAbsPath))
+		assertTest(t, pathMatchingPatternWithValue, pathMatchingPatternWithValue)
+		assertTest(t, pathMatchingPatternWithValue, NewPath("/"))
+		assertTest(t, pathMatchingPatternWithValue, NewPath("/1"))
+		assertTest(t, pathMatchingPatternWithValue, NewPath("/1/"))
+		assertTestFalse(t, pathMatchingPatternWithValue, NewPath("./"))
+		assertTestFalse(t, pathMatchingPatternWithValue, anyDirPath)
+		assertTestFalse(t, pathMatchingPatternWithValue, anyPath)
+		assertTestFalse(t, pathMatchingPatternWithValue, anyAbsPath)
 
 		pathMatchingPatternWithNode := NewPathMatchingPattern(&PathPattern{node: &parse.PathPatternExpression{}})
-		assert.True(t, pathMatchingPatternWithNode.Test(pathMatchingPatternWithNode))
-		assert.False(t, pathMatchingPatternWithNode.Test(NewPath("/")))
-		assert.False(t, pathMatchingPatternWithNode.Test(NewPath("/1")))
-		assert.False(t, pathMatchingPatternWithNode.Test(NewPath("/1/")))
-		assert.False(t, pathMatchingPatternWithValue.Test(NewPath("./")))
-		assert.False(t, pathMatchingPatternWithNode.Test(anyPath))
-		assert.False(t, pathMatchingPatternWithNode.Test(anyAbsPath))
-		assert.False(t, pathMatchingPatternWithNode.Test(anyDirPath))
+		assertTest(t, pathMatchingPatternWithNode, pathMatchingPatternWithNode)
+		assertTestFalse(t, pathMatchingPatternWithNode, NewPath("/"))
+		assertTestFalse(t, pathMatchingPatternWithNode, NewPath("/1"))
+		assertTestFalse(t, pathMatchingPatternWithNode, NewPath("/1/"))
+		assertTestFalse(t, pathMatchingPatternWithValue, NewPath("./"))
+		assertTestFalse(t, pathMatchingPatternWithNode, anyPath)
+		assertTestFalse(t, pathMatchingPatternWithNode, anyAbsPath)
+		assertTestFalse(t, pathMatchingPatternWithNode, anyDirPath)
 	})
 
 }
@@ -141,24 +140,24 @@ func TestSymbolicURL(t *testing.T) {
 
 	t.Run("Test()", func(t *testing.T) {
 		anyURL := &URL{}
-		assert.True(t, anyURL.Test(anyURL))
-		assert.True(t, anyURL.Test(&URL{}))
-		assert.False(t, anyURL.Test(&String{}))
-		assert.False(t, anyURL.Test(&Int{}))
+		assertTest(t, anyURL, anyURL)
+		assertTest(t, anyURL, &URL{})
+		assertTestFalse(t, anyURL, &String{})
+		assertTestFalse(t, anyURL, &Int{})
 
 		urlWithValue := NewUrl("https://example.com/")
-		assert.True(t, urlWithValue.Test(urlWithValue))
-		assert.True(t, urlWithValue.Test(NewUrl("https://example.com/")))
-		assert.False(t, urlWithValue.Test(NewUrl("https://example.com/1")))
-		assert.False(t, urlWithValue.Test(NewUrl("https://localhost/")))
-		assert.False(t, urlWithValue.Test(NewUrlMatchingPattern(NewUrlPattern("https://example.com/"))))
+		assertTest(t, urlWithValue, urlWithValue)
+		assertTest(t, urlWithValue, NewUrl("https://example.com/"))
+		assertTestFalse(t, urlWithValue, NewUrl("https://example.com/1"))
+		assertTestFalse(t, urlWithValue, NewUrl("https://localhost/"))
+		assertTestFalse(t, urlWithValue, NewUrlMatchingPattern(NewUrlPattern("https://example.com/")))
 
 		urlMatchingPatternWithValue := NewUrlMatchingPattern(NewUrlPattern("https://example.com/..."))
-		assert.True(t, urlMatchingPatternWithValue.Test(urlMatchingPatternWithValue))
-		assert.True(t, urlMatchingPatternWithValue.Test(NewUrl("https://example.com/")))
-		assert.True(t, urlMatchingPatternWithValue.Test(NewUrl("https://example.com/1")))
-		assert.False(t, urlMatchingPatternWithValue.Test(NewUrl("https://localhost/")))
-		assert.False(t, urlMatchingPatternWithValue.Test(anyURL))
+		assertTest(t, urlMatchingPatternWithValue, urlMatchingPatternWithValue)
+		assertTest(t, urlMatchingPatternWithValue, NewUrl("https://example.com/"))
+		assertTest(t, urlMatchingPatternWithValue, NewUrl("https://example.com/1"))
+		assertTestFalse(t, urlMatchingPatternWithValue, NewUrl("https://localhost/"))
+		assertTestFalse(t, urlMatchingPatternWithValue, anyURL)
 	})
 
 }
@@ -167,23 +166,23 @@ func TestSymbolicHost(t *testing.T) {
 
 	t.Run("Test()", func(t *testing.T) {
 		anyHost := &Host{}
-		assert.True(t, anyHost.Test(anyHost))
-		assert.True(t, anyHost.Test(&Host{}))
-		assert.False(t, anyHost.Test(&String{}))
-		assert.False(t, anyHost.Test(&Int{}))
+		assertTest(t, anyHost, anyHost)
+		assertTest(t, anyHost, &Host{})
+		assertTestFalse(t, anyHost, &String{})
+		assertTestFalse(t, anyHost, &Int{})
 
 		hostWithValue := NewHost("https://example.com")
-		assert.True(t, hostWithValue.Test(hostWithValue))
-		assert.True(t, hostWithValue.Test(NewHost("https://example.com")))
-		assert.False(t, hostWithValue.Test(NewHost("https://localhost")))
-		assert.False(t, hostWithValue.Test(NewHostMatchingPattern(NewHostPattern("https://example.com"))))
+		assertTest(t, hostWithValue, hostWithValue)
+		assertTest(t, hostWithValue, NewHost("https://example.com"))
+		assertTestFalse(t, hostWithValue, NewHost("https://localhost"))
+		assertTestFalse(t, hostWithValue, NewHostMatchingPattern(NewHostPattern("https://example.com")))
 
 		hostMatchingPatternWithValue := NewHostMatchingPattern(NewHostPattern("https://example.com"))
-		assert.True(t, hostMatchingPatternWithValue.Test(hostMatchingPatternWithValue))
-		assert.True(t, hostMatchingPatternWithValue.Test(NewHost("https://example.com")))
-		assert.False(t, hostMatchingPatternWithValue.Test(NewHost("https://exemple.com")))
-		assert.False(t, hostMatchingPatternWithValue.Test(NewHost("https://localhost/")))
-		assert.False(t, hostMatchingPatternWithValue.Test(anyHost))
+		assertTest(t, hostMatchingPatternWithValue, hostMatchingPatternWithValue)
+		assertTest(t, hostMatchingPatternWithValue, NewHost("https://example.com"))
+		assertTestFalse(t, hostMatchingPatternWithValue, NewHost("https://exemple.com"))
+		assertTestFalse(t, hostMatchingPatternWithValue, NewHost("https://localhost/"))
+		assertTestFalse(t, hostMatchingPatternWithValue, anyHost)
 	})
 
 }
@@ -193,11 +192,11 @@ func TestSymbolicIdentifier(t *testing.T) {
 		specificIdent := &Identifier{name: "foo"}
 		ident := &Identifier{}
 
-		assert.True(t, specificIdent.Test(specificIdent))
-		assert.False(t, specificIdent.Test(ident))
+		assertTest(t, specificIdent, specificIdent)
+		assertTestFalse(t, specificIdent, ident)
 
-		assert.True(t, ident.Test(ident))
-		assert.True(t, ident.Test(specificIdent))
+		assertTest(t, ident, ident)
+		assertTest(t, ident, specificIdent)
 	})
 
 }
@@ -207,18 +206,18 @@ func TestSymbolicOption(t *testing.T) {
 	t.Run("Test()", func(t *testing.T) {
 		option := NewOption("a", NewInt(1))
 
-		assert.True(t, option.Test(NewOption("a", NewInt(1))))
-		assert.False(t, option.Test(NewOption("a", NewInt(2))))
-		assert.False(t, option.Test(NewOption("b", NewInt(1))))
-		assert.False(t, option.Test(&String{}))
-		assert.False(t, option.Test(&Int{}))
+		assertTest(t, option, NewOption("a", NewInt(1)))
+		assertTestFalse(t, option, NewOption("a", NewInt(2)))
+		assertTestFalse(t, option, NewOption("b", NewInt(1)))
+		assertTestFalse(t, option, &String{})
+		assertTestFalse(t, option, &Int{})
 
-		assert.True(t, ANY_OPTION.Test(ANY_OPTION))
-		assert.True(t, ANY_OPTION.Test(NewOption("a", NewInt(1))))
-		assert.True(t, ANY_OPTION.Test(NewOption("a", NewInt(2))))
-		assert.True(t, ANY_OPTION.Test(NewOption("b", NewInt(1))))
-		assert.False(t, ANY_OPTION.Test(&String{}))
-		assert.False(t, ANY_OPTION.Test(&Int{}))
+		assertTest(t, ANY_OPTION, ANY_OPTION)
+		assertTest(t, ANY_OPTION, NewOption("a", NewInt(1)))
+		assertTest(t, ANY_OPTION, NewOption("a", NewInt(2)))
+		assertTest(t, ANY_OPTION, NewOption("b", NewInt(1)))
+		assertTestFalse(t, ANY_OPTION, &String{})
+		assertTestFalse(t, ANY_OPTION, &Int{})
 	})
 
 }
@@ -229,11 +228,11 @@ func TestSymbolicNode(t *testing.T) {
 		specificNode := &AstNode{Node: &parse.ContinueStatement{}}
 		node := &AstNode{}
 
-		assert.True(t, specificNode.Test(specificNode))
-		assert.False(t, specificNode.Test(node))
+		assertTest(t, specificNode, specificNode)
+		assertTestFalse(t, specificNode, node)
 
-		assert.True(t, node.Test(node))
-		assert.True(t, node.Test(specificNode))
+		assertTest(t, node, node)
+		assertTest(t, node, specificNode)
 	})
 
 }
@@ -243,9 +242,9 @@ func TestSymbolicError(t *testing.T) {
 	t.Run("Test()", func(t *testing.T) {
 		err := &Error{data: &Int{}}
 
-		assert.True(t, err.Test(err))
-		assert.True(t, err.Test(&Error{data: &Int{}}))
-		assert.False(t, err.Test(&Int{}))
+		assertTest(t, err, err)
+		assertTest(t, err, &Error{data: &Int{}})
+		assertTestFalse(t, err, &Int{})
 	})
 
 }
@@ -255,16 +254,16 @@ func TestSymbolicGoFunction(t *testing.T) {
 	t.Run("Test()", func(t *testing.T) {
 		{
 			anyFunc := &GoFunction{}
-			assert.True(t, anyFunc.Test(anyFunc))
-			assert.True(t, anyFunc.Test(&GoFunction{}))
-			assert.False(t, anyFunc.Test(&Int{}))
+			assertTest(t, anyFunc, anyFunc)
+			assertTest(t, anyFunc, &GoFunction{})
+			assertTestFalse(t, anyFunc, &Int{})
 		}
 
 		{
 			specificFunc := &GoFunction{fn: symbolicGoFn}
-			assert.True(t, specificFunc.Test(specificFunc))
-			assert.False(t, specificFunc.Test(&GoFunction{}))
-			assert.False(t, specificFunc.Test(&Int{}))
+			assertTest(t, specificFunc, specificFunc)
+			assertTestFalse(t, specificFunc, &GoFunction{})
+			assertTestFalse(t, specificFunc, &Int{})
 		}
 	})
 
@@ -275,10 +274,10 @@ func TestSymbolicRuneSlice(t *testing.T) {
 	t.Run("Test()", func(t *testing.T) {
 		slice := &RuneSlice{}
 
-		assert.True(t, slice.Test(slice))
-		assert.True(t, slice.Test(&RuneSlice{}))
-		assert.False(t, slice.Test(&String{}))
-		assert.False(t, slice.Test(&Int{}))
+		assertTest(t, slice, slice)
+		assertTest(t, slice, &RuneSlice{})
+		assertTestFalse(t, slice, &String{})
+		assertTestFalse(t, slice, &Int{})
 	})
 
 }
@@ -288,19 +287,19 @@ func TestSymbolicQuantityRange(t *testing.T) {
 	t.Run("Test()", func(t *testing.T) {
 		anyQtyRange := &QuantityRange{element: ANY_SERIALIZABLE}
 
-		assert.True(t, anyQtyRange.Test(anyQtyRange))
-		assert.True(t, anyQtyRange.Test(&QuantityRange{element: ANY_SERIALIZABLE}))
-		assert.True(t, anyQtyRange.Test(NewQuantityRange(ANY_BYTECOUNT)))
-		assert.False(t, anyQtyRange.Test(ANY_STR))
-		assert.False(t, anyQtyRange.Test(ANY_INT))
+		assertTest(t, anyQtyRange, anyQtyRange)
+		assertTest(t, anyQtyRange, &QuantityRange{element: ANY_SERIALIZABLE})
+		assertTest(t, anyQtyRange, NewQuantityRange(ANY_BYTECOUNT))
+		assertTestFalse(t, anyQtyRange, ANY_STR)
+		assertTestFalse(t, anyQtyRange, ANY_INT)
 
 		qtyRange := NewQuantityRange(ANY_BYTECOUNT)
 
-		assert.True(t, qtyRange.Test(qtyRange))
-		assert.True(t, qtyRange.Test(NewQuantityRange(ANY_BYTECOUNT)))
-		assert.False(t, qtyRange.Test(&QuantityRange{element: ANY_SERIALIZABLE}))
-		assert.False(t, qtyRange.Test(ANY_STR))
-		assert.False(t, qtyRange.Test(ANY_INT))
+		assertTest(t, qtyRange, qtyRange)
+		assertTest(t, qtyRange, NewQuantityRange(ANY_BYTECOUNT))
+		assertTestFalse(t, qtyRange, &QuantityRange{element: ANY_SERIALIZABLE})
+		assertTestFalse(t, qtyRange, ANY_STR)
+		assertTestFalse(t, qtyRange, ANY_INT)
 	})
 
 }
@@ -310,10 +309,10 @@ func TestSymbolicIntRange(t *testing.T) {
 	t.Run("Test()", func(t *testing.T) {
 		intRange := &IntRange{}
 
-		assert.True(t, intRange.Test(intRange))
-		assert.True(t, intRange.Test(&IntRange{}))
-		assert.False(t, intRange.Test(&String{}))
-		assert.False(t, intRange.Test(&Int{}))
+		assertTest(t, intRange, intRange)
+		assertTest(t, intRange, &IntRange{})
+		assertTestFalse(t, intRange, &String{})
+		assertTestFalse(t, intRange, &Int{})
 	})
 
 }
@@ -323,10 +322,10 @@ func TestSymbolicRuneRange(t *testing.T) {
 	t.Run("Test()", func(t *testing.T) {
 		runeRange := &RuneRange{}
 
-		assert.True(t, runeRange.Test(runeRange))
-		assert.True(t, runeRange.Test(&RuneRange{}))
-		assert.False(t, runeRange.Test(&String{}))
-		assert.False(t, runeRange.Test(&Int{}))
+		assertTest(t, runeRange, runeRange)
+		assertTest(t, runeRange, &RuneRange{})
+		assertTestFalse(t, runeRange, &String{})
+		assertTestFalse(t, runeRange, &Int{})
 	})
 
 }
@@ -336,11 +335,11 @@ func TestSymbolicAnyIterable(t *testing.T) {
 	t.Run("Test()", func(t *testing.T) {
 		anyIterable := &AnyIterable{}
 
-		assert.True(t, anyIterable.Test(anyIterable))
-		assert.True(t, anyIterable.Test(NewList()))
-		assert.True(t, anyIterable.Test(NewListOf(ANY_SERIALIZABLE)))
-		assert.True(t, anyIterable.Test(NewListOf(&Int{})))
-		assert.False(t, anyIterable.Test(&Int{}))
+		assertTest(t, anyIterable, anyIterable)
+		assertTest(t, anyIterable, NewList())
+		assertTest(t, anyIterable, NewListOf(ANY_SERIALIZABLE))
+		assertTest(t, anyIterable, NewListOf(&Int{}))
+		assertTestFalse(t, anyIterable, &Int{})
 	})
 
 }

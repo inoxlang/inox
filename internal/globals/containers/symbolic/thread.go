@@ -16,7 +16,10 @@ type Thread struct {
 	_ int
 }
 
-func (*Thread) Test(v symbolic.SymbolicValue) bool {
+func (*Thread) Test(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(*Thread)
 	return ok
 }

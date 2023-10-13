@@ -22,12 +22,17 @@ type HttpRequestPattern struct {
 	symbolic.NotCallablePatternMixin
 }
 
-func (r *HttpRequestPattern) Test(v symbolic.SymbolicValue) bool {
+func (r *HttpRequestPattern) Test(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(*HttpRequestPattern)
 	return ok
 }
 
-func (r *HttpRequestPattern) TestValue(v symbolic.SymbolicValue) bool {
+func (r *HttpRequestPattern) TestValue(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
 	_, ok := v.(*HttpRequest)
 	return ok
 }

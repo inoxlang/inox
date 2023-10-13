@@ -69,9 +69,9 @@ func getIntersection(depth int, values ...SymbolicValue) (SymbolicValue, error) 
 				return NEVER, nil
 			}
 			currentIntersection = nextIntersection
-		} else if currentIntersection.Test(value) {
+		} else if currentIntersection.Test(value, RecTestCallState{}) {
 			currentIntersection = value
-		} else if value.Test(currentIntersection) {
+		} else if value.Test(currentIntersection, RecTestCallState{}) {
 			//current intersection is more narrow
 		} else {
 			return NEVER, nil

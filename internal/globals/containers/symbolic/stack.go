@@ -16,7 +16,10 @@ type Stack struct {
 	_ int
 }
 
-func (*Stack) Test(v symbolic.SymbolicValue) bool {
+func (*Stack) Test(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(*Stack)
 	return ok
 }

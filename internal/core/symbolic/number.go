@@ -33,7 +33,10 @@ func NewFloat(v float64) *Float {
 	}
 }
 
-func (f *Float) Test(v SymbolicValue) bool {
+func (f *Float) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	otherFloat, ok := v.(*Float)
 	if !ok {
 		return false
@@ -86,7 +89,10 @@ func NewInt(v int64) *Int {
 	}
 }
 
-func (i *Int) Test(v SymbolicValue) bool {
+func (i *Int) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	otherInt, ok := v.(*Int)
 	if !ok {
 		return false
@@ -134,7 +140,10 @@ type AnyIntegral struct {
 	_ int
 }
 
-func (*AnyIntegral) Test(v SymbolicValue) bool {
+func (*AnyIntegral) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(Integral)
 
 	return ok

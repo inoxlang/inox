@@ -104,16 +104,19 @@ func (s *String) minLength() int64 {
 	return s.minLengthPlusOne - 1
 }
 
-func (s *String) Test(v SymbolicValue) bool {
+func (s *String) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	otherString, ok := v.(*String)
 	if !ok {
 		return false
 	}
 	if s.pattern != nil {
 		if otherString.pattern != nil {
-			return otherString.pattern.Test(s.pattern) && s.pattern.Test(otherString.pattern)
+			return otherString.pattern.Test(s.pattern, state) && s.pattern.Test(otherString.pattern, state)
 		}
-		return otherString.hasValue && s.pattern.TestValue(otherString)
+		return otherString.hasValue && s.pattern.TestValue(otherString, state)
 	}
 	if !s.hasValue {
 		if s.minLengthPlusOne <= 0 {
@@ -129,7 +132,7 @@ func (s *String) Test(v SymbolicValue) bool {
 		} //else otherString has a pattern, we can't know the length in most cases.
 
 		if lengthCheckingPattern, ok := otherString.pattern.(*LengthCheckingStringPattern); ok {
-			return s.Test(lengthCheckingPattern.SymbolicValue())
+			return s.Test(lengthCheckingPattern.SymbolicValue(), state)
 		}
 		return false
 	}
@@ -270,7 +273,10 @@ func NewRune(r rune) *Rune {
 	}
 }
 
-func (r *Rune) Test(v SymbolicValue) bool {
+func (r *Rune) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	otherRune, ok := v.(*Rune)
 	if !ok {
 		return false
@@ -330,7 +336,10 @@ type CheckedString struct {
 	_ int
 }
 
-func (s *CheckedString) Test(v SymbolicValue) bool {
+func (s *CheckedString) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(*CheckedString)
 	return ok
 }
@@ -371,7 +380,10 @@ func NewRuneSlice() *RuneSlice {
 	return &RuneSlice{}
 }
 
-func (s *RuneSlice) Test(v SymbolicValue) bool {
+func (s *RuneSlice) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(*RuneSlice)
 	return ok
 }
@@ -499,7 +511,10 @@ type StringConcatenation struct {
 	SerializableMixin
 }
 
-func (c *StringConcatenation) Test(v SymbolicValue) bool {
+func (c *StringConcatenation) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(*StringConcatenation)
 	return ok
 }
@@ -602,7 +617,10 @@ type AnyStringLike struct {
 	Serializable
 }
 
-func (s *AnyStringLike) Test(v SymbolicValue) bool {
+func (s *AnyStringLike) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(StringLike)
 	return ok
 }

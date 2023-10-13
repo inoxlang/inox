@@ -24,7 +24,10 @@ type AnyStreamSource struct {
 	_ int
 }
 
-func (r *AnyStreamSource) Test(v SymbolicValue) bool {
+func (r *AnyStreamSource) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(StreamSource)
 
 	return ok
@@ -58,7 +61,10 @@ func NewReadableStream(element SymbolicValue) *ReadableStream {
 	return &ReadableStream{element: element}
 }
 
-func (r *ReadableStream) Test(v SymbolicValue) bool {
+func (r *ReadableStream) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	it, ok := v.(*ReadableStream)
 	if !ok {
 		return false
@@ -66,7 +72,7 @@ func (r *ReadableStream) Test(v SymbolicValue) bool {
 	if r.element == nil {
 		return true
 	}
-	return r.element.Test(it.element)
+	return r.element.Test(it.element, state)
 }
 
 func (r *ReadableStream) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {

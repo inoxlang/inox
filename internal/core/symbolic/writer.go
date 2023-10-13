@@ -22,7 +22,10 @@ type AnyWritable struct {
 	_ int
 }
 
-func (r *AnyWritable) Test(v SymbolicValue) bool {
+func (r *AnyWritable) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	switch val := v.(type) {
 	case Writable:
 		return true
@@ -51,7 +54,10 @@ type Writer struct {
 	_ int
 }
 
-func (w *Writer) Test(v SymbolicValue) bool {
+func (w *Writer) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	switch v.(type) {
 	case *Writer:
 		return true

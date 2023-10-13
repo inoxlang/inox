@@ -14,7 +14,10 @@ type ObjectInfo struct {
 	symbolic.SerializableMixin
 }
 
-func (r *ObjectInfo) Test(v symbolic.SymbolicValue) bool {
+func (r *ObjectInfo) Test(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(*ObjectInfo)
 	return ok
 }

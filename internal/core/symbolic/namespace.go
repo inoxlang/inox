@@ -29,7 +29,10 @@ func NewNamespace(entries map[string]SymbolicValue) *Namespace {
 	return &Namespace{entries: entries}
 }
 
-func (ns *Namespace) Test(v SymbolicValue) bool {
+func (ns *Namespace) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	otherNs, ok := v.(*Namespace)
 	if !ok {
 		return false
@@ -42,7 +45,7 @@ func (ns *Namespace) Test(v SymbolicValue) bool {
 	for k, e := range ns.entries {
 		other, ok := otherNs.entries[k]
 
-		if !ok || !e.Test(other) {
+		if !ok || !e.Test(other, state) {
 			return false
 		}
 	}

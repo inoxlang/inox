@@ -103,7 +103,7 @@ type Pattern interface {
 	HasUnderlyingPattern() bool
 
 	//equivalent of Test() for concrete patterns
-	TestValue(v SymbolicValue) bool
+	TestValue(v SymbolicValue, state RecTestCallState) bool
 
 	Call(ctx *Context, values []SymbolicValue) (Pattern, error)
 
@@ -146,7 +146,10 @@ type AnyPattern struct {
 	SerializableMixin
 }
 
-func (p *AnyPattern) Test(v SymbolicValue) bool {
+func (p *AnyPattern) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(Pattern)
 	return ok
 }
@@ -159,7 +162,7 @@ func (p *AnyPattern) HasUnderlyingPattern() bool {
 	return false
 }
 
-func (p *AnyPattern) TestValue(SymbolicValue) bool {
+func (p *AnyPattern) TestValue(SymbolicValue, RecTestCallState) bool {
 	return true
 }
 
@@ -190,7 +193,10 @@ type AnySerializablePattern struct {
 	SerializableMixin
 }
 
-func (p *AnySerializablePattern) Test(v SymbolicValue) bool {
+func (p *AnySerializablePattern) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	patt, ok := v.(Pattern)
 	if ok {
 		return false
@@ -208,7 +214,7 @@ func (p *AnySerializablePattern) HasUnderlyingPattern() bool {
 	return false
 }
 
-func (p *AnySerializablePattern) TestValue(SymbolicValue) bool {
+func (p *AnySerializablePattern) TestValue(SymbolicValue, RecTestCallState) bool {
 	return true
 }
 
@@ -267,7 +273,10 @@ func NewPathPatternFromNode(n parse.Node) *PathPattern {
 	}
 }
 
-func (p *PathPattern) Test(v SymbolicValue) bool {
+func (p *PathPattern) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	otherPattern, ok := v.(*PathPattern)
 
 	if !ok {
@@ -301,7 +310,10 @@ func (p *PathPattern) Static() Pattern {
 	return &TypePattern{val: p.WidestOfType()}
 }
 
-func (p *PathPattern) TestValue(v SymbolicValue) bool {
+func (p *PathPattern) TestValue(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	path, ok := v.(*Path)
 	if !ok {
 		return false
@@ -452,7 +464,10 @@ func NewUrlPatternFromNode(n parse.Node) *URLPattern {
 	}
 }
 
-func (p *URLPattern) Test(v SymbolicValue) bool {
+func (p *URLPattern) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	otherPattern, ok := v.(*URLPattern)
 
 	if !ok {
@@ -499,7 +514,10 @@ func (p *URLPattern) HasUnderlyingPattern() bool {
 	return true
 }
 
-func (p *URLPattern) TestValue(v SymbolicValue) bool {
+func (p *URLPattern) TestValue(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	u, ok := v.(*URL)
 	if !ok {
 		return false
@@ -588,7 +606,10 @@ func NewHostPatternFromNode(n parse.Node) *HostPattern {
 	}
 }
 
-func (p *HostPattern) Test(v SymbolicValue) bool {
+func (p *HostPattern) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	otherPattern, ok := v.(*HostPattern)
 
 	if !ok {
@@ -635,7 +656,10 @@ func (p *HostPattern) HasUnderlyingPattern() bool {
 	return true
 }
 
-func (p *HostPattern) TestValue(v SymbolicValue) bool {
+func (p *HostPattern) TestValue(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	h, ok := v.(*Host)
 	if !ok {
 		return false
@@ -707,7 +731,10 @@ func NewNamedSegmentPathPattern(node *parse.NamedSegmentPathPatternLiteral) *Nam
 	return &NamedSegmentPathPattern{node: node}
 }
 
-func (p *NamedSegmentPathPattern) Test(v SymbolicValue) bool {
+func (p *NamedSegmentPathPattern) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	otherPattern, ok := v.(*NamedSegmentPathPattern)
 	if !ok {
 		return false
@@ -728,7 +755,10 @@ func (p NamedSegmentPathPattern) HasUnderlyingPattern() bool {
 	return true
 }
 
-func (p *NamedSegmentPathPattern) TestValue(v SymbolicValue) bool {
+func (p *NamedSegmentPathPattern) TestValue(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(*Path)
 	return ok
 }
@@ -810,13 +840,16 @@ func (p *ExactValuePattern) GetVal() SymbolicValue {
 	return p.value
 }
 
-func (p *ExactValuePattern) Test(v SymbolicValue) bool {
+func (p *ExactValuePattern) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	other, ok := v.(*ExactValuePattern)
 	if !ok {
 		return false
 	}
 
-	return p.value.Test(other.value)
+	return p.value.Test(other.value, state)
 }
 
 func (p *ExactValuePattern) Concretize(ctx ConcreteContext) any {
@@ -850,8 +883,11 @@ func (p *ExactValuePattern) HasUnderlyingPattern() bool {
 	return true
 }
 
-func (p *ExactValuePattern) TestValue(v SymbolicValue) bool {
-	return p.value.Test(v) && v.Test(p.value)
+func (p *ExactValuePattern) TestValue(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
+	return p.value.Test(v, state) && v.Test(p.value, state)
 }
 
 func (p *ExactValuePattern) SymbolicValue() SymbolicValue {
@@ -897,7 +933,10 @@ func NewRegexPattern(s string) *RegexPattern {
 	}
 }
 
-func (p *RegexPattern) Test(v SymbolicValue) bool {
+func (p *RegexPattern) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	otherPatt, ok := v.(*RegexPattern)
 	if !ok {
 		return false
@@ -917,7 +956,10 @@ func (p *RegexPattern) HasUnderlyingPattern() bool {
 	return true
 }
 
-func (p *RegexPattern) TestValue(v SymbolicValue) bool {
+func (p *RegexPattern) TestValue(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	s, ok := v.(StringLike)
 	if !ok {
 		return false
@@ -1016,7 +1058,10 @@ func (p *ObjectPattern) ToRecordPattern() *RecordPattern {
 	return patt
 }
 
-func (p *ObjectPattern) Test(v SymbolicValue) bool {
+func (p *ObjectPattern) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	other, ok := v.(*ObjectPattern)
 
 	if !ok || len(p.complexPropertyConstraints) > 0 || p.readonly != other.readonly {
@@ -1042,14 +1087,14 @@ func (p *ObjectPattern) Test(v SymbolicValue) bool {
 				return false
 			}
 		}
-		if deps.pattern != nil && (counterPartDeps.pattern == nil || !deps.pattern.Test(counterPartDeps.pattern)) {
+		if deps.pattern != nil && (counterPartDeps.pattern == nil || !deps.pattern.Test(counterPartDeps.pattern, state)) {
 			return false
 		}
 	}
 
 	for k, v := range p.entries {
 		otherV, ok := other.entries[k]
-		if !ok || !v.Test(otherV) {
+		if !ok || !v.Test(otherV, state) {
 			return false
 		}
 	}
@@ -1057,7 +1102,10 @@ func (p *ObjectPattern) Test(v SymbolicValue) bool {
 	return true
 }
 
-func (p *ObjectPattern) TestValue(v SymbolicValue) bool {
+func (p *ObjectPattern) TestValue(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	obj, ok := v.(*Object)
 	if !ok || p.readonly != obj.readonly {
 		return false
@@ -1088,7 +1136,7 @@ func (p *ObjectPattern) TestValue(v SymbolicValue) bool {
 					return false
 				}
 			}
-			if deps.pattern != nil && (counterPartDeps.pattern == nil || !deps.pattern.Test(counterPartDeps.pattern)) {
+			if deps.pattern != nil && (counterPartDeps.pattern == nil || !deps.pattern.Test(counterPartDeps.pattern, state)) {
 				return false
 			}
 		} else if !obj.hasRequiredProperty(propName) {
@@ -1112,7 +1160,7 @@ func (p *ObjectPattern) TestValue(v SymbolicValue) bool {
 				return false
 			}
 		} else {
-			if !valuePattern.TestValue(value) {
+			if !valuePattern.TestValue(value, state) {
 				return false
 			}
 			if !isOptional || !isOptionalInObject {
@@ -1123,7 +1171,7 @@ func (p *ObjectPattern) TestValue(v SymbolicValue) bool {
 						return false
 					}
 				}
-				if deps.pattern != nil && !deps.pattern.TestValue(obj) {
+				if deps.pattern != nil && !deps.pattern.TestValue(obj, state) {
 					return false
 				}
 			}
@@ -1431,7 +1479,10 @@ func NewInexactRecordPattern(entries map[string]Pattern, optionalEntries map[str
 	}
 }
 
-func (p *RecordPattern) Test(v SymbolicValue) bool {
+func (p *RecordPattern) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	other, ok := v.(*RecordPattern)
 
 	if !ok || len(p.complexPropertyConstraints) > 0 {
@@ -1448,7 +1499,7 @@ func (p *RecordPattern) Test(v SymbolicValue) bool {
 
 	for k, v := range p.entries {
 		otherV, ok := other.entries[k]
-		if !ok || !v.Test(otherV) {
+		if !ok || !v.Test(otherV, state) {
 			return false
 		}
 	}
@@ -1565,7 +1616,10 @@ func (p *RecordPattern) HasUnderlyingPattern() bool {
 	return true
 }
 
-func (p *RecordPattern) TestValue(v SymbolicValue) bool {
+func (p *RecordPattern) TestValue(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	rec, ok := v.(*Record)
 	if !ok {
 		return false
@@ -1588,7 +1642,7 @@ func (p *RecordPattern) TestValue(v SymbolicValue) bool {
 		value, ok := rec.entries[key]
 
 		if ok {
-			if !valuePattern.TestValue(value) {
+			if !valuePattern.TestValue(value, state) {
 				return false
 			}
 		} else if !isOptional {
@@ -1722,7 +1776,10 @@ func InitializeListPatternGeneralElement(patt *ListPattern, element Pattern) {
 	patt.generalElement = element
 }
 
-func (p *ListPattern) Test(v SymbolicValue) bool {
+func (p *ListPattern) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	other, ok := v.(*ListPattern)
 
 	if !ok || p.readonly != other.readonly {
@@ -1735,7 +1792,7 @@ func (p *ListPattern) Test(v SymbolicValue) bool {
 		}
 
 		for i, e := range p.elements {
-			if !e.Test(other.elements[i]) {
+			if !e.Test(other.elements[i], RecTestCallState{}) {
 				return false
 			}
 		}
@@ -1743,11 +1800,11 @@ func (p *ListPattern) Test(v SymbolicValue) bool {
 		return true
 	} else {
 		if other.elements == nil {
-			return p.generalElement.Test(other.generalElement)
+			return p.generalElement.Test(other.generalElement, RecTestCallState{})
 		}
 
 		for _, elem := range other.elements {
-			if !p.generalElement.Test(elem) {
+			if !p.generalElement.Test(elem, RecTestCallState{}) {
 				return false
 			}
 		}
@@ -1954,7 +2011,10 @@ func (p *ListPattern) HasUnderlyingPattern() bool {
 	return true
 }
 
-func (p *ListPattern) TestValue(v SymbolicValue) bool {
+func (p *ListPattern) TestValue(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	list, ok := v.(*List)
 	if !ok || p.readonly != list.readonly {
 		return false
@@ -1965,7 +2025,7 @@ func (p *ListPattern) TestValue(v SymbolicValue) bool {
 			return false
 		}
 		for i, e := range p.elements {
-			if !e.TestValue(list.elements[i]) {
+			if !e.TestValue(list.elements[i], state) {
 				return false
 			}
 		}
@@ -1973,13 +2033,13 @@ func (p *ListPattern) TestValue(v SymbolicValue) bool {
 	} else {
 		if list.HasKnownLen() {
 			for _, e := range list.elements {
-				if !p.generalElement.TestValue(e) {
+				if !p.generalElement.TestValue(e, state) {
 					return false
 				}
 			}
 
 			return true
-		} else if p.generalElement.TestValue(list.generalElement) {
+		} else if p.generalElement.TestValue(list.generalElement, state) {
 			return true
 		}
 
@@ -2083,7 +2143,10 @@ func InitializeTuplePatternGeneralElement(patt *TuplePattern, element Pattern) {
 	patt.generalElement = element
 }
 
-func (p *TuplePattern) Test(v SymbolicValue) bool {
+func (p *TuplePattern) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	other, ok := v.(*TuplePattern)
 
 	if !ok {
@@ -2096,7 +2159,7 @@ func (p *TuplePattern) Test(v SymbolicValue) bool {
 		}
 
 		for i, e := range p.elements {
-			if !e.Test(other.elements[i]) {
+			if !e.Test(other.elements[i], state) {
 				return false
 			}
 		}
@@ -2104,11 +2167,11 @@ func (p *TuplePattern) Test(v SymbolicValue) bool {
 		return true
 	} else {
 		if other.elements == nil {
-			return p.generalElement.Test(other.generalElement)
+			return p.generalElement.Test(other.generalElement, state)
 		}
 
 		for _, elem := range other.elements {
-			if !p.generalElement.Test(elem) {
+			if !p.generalElement.Test(elem, state) {
 				return false
 			}
 		}
@@ -2164,7 +2227,10 @@ func (p *TuplePattern) HasUnderlyingPattern() bool {
 	return true
 }
 
-func (p *TuplePattern) TestValue(v SymbolicValue) bool {
+func (p *TuplePattern) TestValue(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	tuple, ok := v.(*Tuple)
 	if !ok {
 		return false
@@ -2175,7 +2241,7 @@ func (p *TuplePattern) TestValue(v SymbolicValue) bool {
 			return false
 		}
 		for i, e := range p.elements {
-			if !e.TestValue(tuple.elements[i]) {
+			if !e.TestValue(tuple.elements[i], state) {
 				return false
 			}
 		}
@@ -2183,13 +2249,13 @@ func (p *TuplePattern) TestValue(v SymbolicValue) bool {
 	} else {
 		if tuple.HasKnownLen() {
 			for _, e := range tuple.elements {
-				if !p.generalElement.TestValue(e) {
+				if !p.generalElement.TestValue(e, state) {
 					return false
 				}
 			}
 
 			return true
-		} else if p.generalElement.TestValue(tuple.generalElement) {
+		} else if p.generalElement.TestValue(tuple.generalElement, state) {
 			return true
 		}
 
@@ -2274,7 +2340,7 @@ func NewUnionPattern(cases []Pattern, disjoint bool) (*UnionPattern, error) {
 	if disjoint {
 		for i, case1 := range cases {
 			for j, case2 := range cases {
-				if i != j && (case1.Test(case2) || case2.Test(case1)) {
+				if i != j && (case1.Test(case2, RecTestCallState{}) || case2.Test(case1, RecTestCallState{})) {
 					return nil, errors.New("impossible to create symbolic disjoint union pattern: some cases intersect")
 				}
 			}
@@ -2324,7 +2390,10 @@ func (p *UnionPattern) Cases() []Pattern {
 	return p.cases
 }
 
-func (p *UnionPattern) Test(v SymbolicValue) bool {
+func (p *UnionPattern) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	other, ok := v.(*UnionPattern)
 
 	if !ok || p.disjoint != other.disjoint {
@@ -2340,7 +2409,7 @@ func (p *UnionPattern) Test(v SymbolicValue) bool {
 	}
 
 	for i, case_ := range p.cases {
-		if !case_.Test(other.cases[i]) {
+		if !case_.Test(other.cases[i], state) {
 			return false
 		}
 	}
@@ -2373,7 +2442,10 @@ func (p *UnionPattern) HasUnderlyingPattern() bool {
 	return true
 }
 
-func (p *UnionPattern) TestValue(v SymbolicValue) bool {
+func (p *UnionPattern) TestValue(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	var values []SymbolicValue
 	if multi, ok := v.(*Multivalue); ok {
 		values = multi.values
@@ -2385,7 +2457,7 @@ func (p *UnionPattern) TestValue(v SymbolicValue) bool {
 		for _, val := range values {
 			matchingCases := 0
 			for _, case_ := range p.cases {
-				if case_.TestValue(val) {
+				if case_.TestValue(val, state) {
 					matchingCases++
 					if matchingCases > 1 {
 						return false
@@ -2400,7 +2472,7 @@ func (p *UnionPattern) TestValue(v SymbolicValue) bool {
 		for _, val := range values {
 			ok := false
 			for _, case_ := range p.cases {
-				if case_.TestValue(val) {
+				if case_.TestValue(val, state) {
 					ok = true
 					break
 				}
@@ -2467,7 +2539,10 @@ func NewIntersectionPattern(cases []Pattern) (*IntersectionPattern, error) {
 	}, nil
 }
 
-func (p *IntersectionPattern) Test(v SymbolicValue) bool {
+func (p *IntersectionPattern) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	other, ok := v.(*IntersectionPattern)
 
 	if !ok {
@@ -2486,7 +2561,7 @@ func (p *IntersectionPattern) Test(v SymbolicValue) bool {
 	for _, case_ := range p.cases {
 		ok := false
 		for _, otherCase := range other.cases {
-			if case_.Test(otherCase) {
+			if case_.Test(otherCase, state) {
 				ok = true
 			}
 		}
@@ -2498,15 +2573,18 @@ func (p *IntersectionPattern) Test(v SymbolicValue) bool {
 	return true
 }
 
-func (p *IntersectionPattern) TestValue(v SymbolicValue) bool {
+func (p *IntersectionPattern) TestValue(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	for _, case_ := range p.cases {
 		if mv, ok := v.(IMultivalue); ok {
 			for _, value := range mv.OriginalMultivalue().values {
-				if !case_.TestValue(value) {
+				if !case_.TestValue(value, state) {
 					return false
 				}
 			}
-		} else if !case_.TestValue(v) {
+		} else if !case_.TestValue(v, state) {
 			return false
 		}
 	}
@@ -2569,12 +2647,15 @@ func NewOptionPattern(name string, pattern Pattern) *OptionPattern {
 	return &OptionPattern{name: name, pattern: pattern}
 }
 
-func (p *OptionPattern) Test(v SymbolicValue) bool {
+func (p *OptionPattern) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	other, ok := v.(*OptionPattern)
 	if !ok || (p.name != "" && other.name != p.name) {
 		return false
 	}
-	return p.pattern.Test(other.pattern)
+	return p.pattern.Test(other.pattern, state)
 }
 
 func (p *OptionPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
@@ -2591,12 +2672,15 @@ func (p *OptionPattern) HasUnderlyingPattern() bool {
 	return true
 }
 
-func (p *OptionPattern) TestValue(v SymbolicValue) bool {
+func (p *OptionPattern) TestValue(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	opt, ok := v.(*Option)
 	if !ok || (p.name != "" && opt.name != p.name) {
 		return false
 	}
-	return p.pattern.TestValue(opt.value)
+	return p.pattern.TestValue(opt.value, state)
 }
 
 func (p *OptionPattern) SymbolicValue() SymbolicValue {
@@ -2685,9 +2769,12 @@ func NewTypePattern(
 	}
 }
 
-func (p *TypePattern) Test(v SymbolicValue) bool {
+func (p *TypePattern) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	other, ok := v.(*TypePattern)
-	return ok && p.val.Test(other.val)
+	return ok && p.val.Test(other.val, state)
 }
 
 func (patt *TypePattern) IsConcretizable() bool {
@@ -2712,8 +2799,11 @@ func (p *TypePattern) HasUnderlyingPattern() bool {
 	return true
 }
 
-func (p *TypePattern) TestValue(v SymbolicValue) bool {
-	return p.val.Test(v)
+func (p *TypePattern) TestValue(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
+	return p.val.Test(v, state)
 }
 
 func (p *TypePattern) Call(ctx *Context, values []SymbolicValue) (Pattern, error) {
@@ -2760,9 +2850,12 @@ type DifferencePattern struct {
 	SerializableMixin
 }
 
-func (p *DifferencePattern) Test(v SymbolicValue) bool {
+func (p *DifferencePattern) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	other, ok := v.(*DifferencePattern)
-	return ok && p.Base.Test(other.Base) && other.Removed.Test(other.Removed)
+	return ok && p.Base.Test(other.Base, state) && other.Removed.Test(other.Removed, state)
 }
 
 func (p *DifferencePattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
@@ -2777,8 +2870,11 @@ func (p *DifferencePattern) HasUnderlyingPattern() bool {
 	return true
 }
 
-func (p *DifferencePattern) TestValue(v SymbolicValue) bool {
-	return p.Base.Test(v) && !p.Removed.TestValue(v)
+func (p *DifferencePattern) TestValue(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
+	return p.Base.Test(v, state) && !p.Removed.TestValue(v, state)
 }
 
 func (p *DifferencePattern) SymbolicValue() SymbolicValue {
@@ -2814,9 +2910,12 @@ func NewOptionalPattern(p Pattern) *OptionalPattern {
 	return &OptionalPattern{pattern: p}
 }
 
-func (p *OptionalPattern) Test(v SymbolicValue) bool {
+func (p *OptionalPattern) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	other, ok := v.(*OptionalPattern)
-	return ok && p.pattern.Test(other.pattern)
+	return ok && p.pattern.Test(other.pattern, state)
 }
 
 func (p *OptionalPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
@@ -2828,11 +2927,14 @@ func (p *OptionalPattern) HasUnderlyingPattern() bool {
 	return true
 }
 
-func (p *OptionalPattern) TestValue(v SymbolicValue) bool {
+func (p *OptionalPattern) TestValue(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	if _, ok := v.(*NilT); ok {
 		return true
 	}
-	return p.pattern.TestValue(v)
+	return p.pattern.TestValue(v, state)
 }
 
 func (p *OptionalPattern) SymbolicValue() SymbolicValue {
@@ -2869,7 +2971,10 @@ type FunctionPattern struct {
 	SerializableMixin
 }
 
-func (fn *FunctionPattern) Test(v SymbolicValue) bool {
+func (fn *FunctionPattern) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	other, ok := v.(*FunctionPattern)
 	if !ok {
 		return false
@@ -2885,13 +2990,16 @@ func (fn *FunctionPattern) Test(v SymbolicValue) bool {
 	return utils.SamePointer(fn.node, other.node)
 }
 
-func (pattern *FunctionPattern) TestValue(v SymbolicValue) bool {
+func (pattern *FunctionPattern) TestValue(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	switch fn := v.(type) {
 	case *Function:
 		if pattern.node == nil {
 			return true
 		}
-		return pattern.Test(fn.pattern)
+		return pattern.Test(fn.pattern, state)
 	case *GoFunction:
 		if pattern.node == nil {
 			return true
@@ -2929,7 +3037,7 @@ func (pattern *FunctionPattern) TestValue(v SymbolicValue) bool {
 			}
 		}
 
-		return pattern.returnType.Test(fn.result)
+		return pattern.returnType.Test(fn.result, state)
 	default:
 		return false
 	}
@@ -2975,7 +3083,10 @@ type IntRangePattern struct {
 	SerializableMixin
 }
 
-func (p *IntRangePattern) Test(v SymbolicValue) bool {
+func (p *IntRangePattern) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(*IntRangePattern)
 	return ok
 }
@@ -2988,7 +3099,10 @@ func (p *IntRangePattern) HasUnderlyingPattern() bool {
 	return true
 }
 
-func (p *IntRangePattern) TestValue(v SymbolicValue) bool {
+func (p *IntRangePattern) TestValue(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(*Int)
 	return ok
 }
@@ -3031,7 +3145,10 @@ type FloatRangePattern struct {
 	SerializableMixin
 }
 
-func (p *FloatRangePattern) Test(v SymbolicValue) bool {
+func (p *FloatRangePattern) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(*FloatRangePattern)
 	return ok
 }
@@ -3044,7 +3161,10 @@ func (p *FloatRangePattern) HasUnderlyingPattern() bool {
 	return true
 }
 
-func (p *FloatRangePattern) TestValue(v SymbolicValue) bool {
+func (p *FloatRangePattern) TestValue(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(*Float)
 	return ok
 }
@@ -3098,9 +3218,12 @@ func NewEventPattern(valuePattern Pattern) (*EventPattern, error) {
 	}, nil
 }
 
-func (p *EventPattern) Test(v SymbolicValue) bool {
+func (p *EventPattern) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	other, ok := v.(*EventPattern)
-	return ok && p.ValuePattern.Test(other.ValuePattern)
+	return ok && p.ValuePattern.Test(other.ValuePattern, state)
 }
 
 func (p *EventPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
@@ -3113,12 +3236,15 @@ func (p *EventPattern) HasUnderlyingPattern() bool {
 	return true
 }
 
-func (p *EventPattern) TestValue(v SymbolicValue) bool {
+func (p *EventPattern) TestValue(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	event, ok := v.(*Event)
 	if !ok {
 		return false
 	}
-	return p.ValuePattern.TestValue(event)
+	return p.ValuePattern.TestValue(event, state)
 }
 
 func (p *EventPattern) SymbolicValue() SymbolicValue {
@@ -3158,9 +3284,12 @@ func NewMutationPattern(kind *Int, data0Pattern Pattern) *MutationPattern {
 	}
 }
 
-func (p *MutationPattern) Test(v SymbolicValue) bool {
+func (p *MutationPattern) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	other, ok := v.(*MutationPattern)
-	return ok && p.kind.Test(other.kind) && p.data0Pattern.Test(other.data0Pattern)
+	return ok && p.kind.Test(other.kind, state) && p.data0Pattern.Test(other.data0Pattern, state)
 }
 
 func (p *MutationPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
@@ -3173,12 +3302,15 @@ func (p *MutationPattern) HasUnderlyingPattern() bool {
 	return true
 }
 
-func (p *MutationPattern) TestValue(v SymbolicValue) bool {
+func (p *MutationPattern) TestValue(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	event, ok := v.(*Event)
 	if !ok {
 		return false
 	}
-	return p.data0Pattern.TestValue(event)
+	return p.data0Pattern.TestValue(event, state)
 }
 
 func (p *MutationPattern) SymbolicValue() SymbolicValue {
@@ -3223,7 +3355,10 @@ func (ns *PatternNamespace) ForEachPattern(fn func(name string, patt Pattern) er
 	return nil
 }
 
-func (ns *PatternNamespace) Test(v SymbolicValue) bool {
+func (ns *PatternNamespace) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	otherNS, ok := v.(*PatternNamespace)
 	if !ok {
 		return false
@@ -3238,7 +3373,7 @@ func (ns *PatternNamespace) Test(v SymbolicValue) bool {
 	}
 
 	for i, e := range ns.entries {
-		if !e.Test(otherNS.entries[i]) {
+		if !e.Test(otherNS.entries[i], state) {
 			return false
 		}
 	}

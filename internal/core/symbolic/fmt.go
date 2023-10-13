@@ -26,7 +26,10 @@ type AnyFormat struct {
 	SerializableMixin
 }
 
-func (p *AnyFormat) Test(v SymbolicValue) bool {
+func (p *AnyFormat) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(Format)
 	return ok
 }
@@ -40,7 +43,7 @@ func (p *AnyFormat) HasUnderlyingPattern() bool {
 	return false
 }
 
-func (p *AnyFormat) TestValue(SymbolicValue) bool {
+func (p *AnyFormat) TestValue(SymbolicValue, RecTestCallState) bool {
 	return true
 }
 

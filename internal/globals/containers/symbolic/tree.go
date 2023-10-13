@@ -30,7 +30,10 @@ func NewTree(shared bool) *Tree {
 	return t
 }
 
-func (t *Tree) Test(v symbolic.SymbolicValue) bool {
+func (t *Tree) Test(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	otherTree, ok := v.(*Tree)
 	return ok && t.shared == otherTree.shared
 }
@@ -124,7 +127,10 @@ func NewTreeNode(t *Tree) *TreeNode {
 	return &TreeNode{tree: t}
 }
 
-func (r *TreeNode) Test(v symbolic.SymbolicValue) bool {
+func (r *TreeNode) Test(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(*TreeNode)
 	return ok
 }
@@ -188,15 +194,20 @@ func NewTreeNodePattern(valuePattern symbolic.Pattern) (*TreeNodePattern, error)
 	}, nil
 }
 
-func (patt *TreeNodePattern) Test(v symbolic.SymbolicValue) bool {
+func (patt *TreeNodePattern) Test(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	otherPatt, ok := v.(*TreeNodePattern)
 	if !ok {
 		return false
 	}
-	return patt.valuePattern.Test(otherPatt.valuePattern)
+	return patt.valuePattern.Test(otherPatt.valuePattern, state)
 }
 
-func (p *TreeNodePattern) TestValue(v symbolic.SymbolicValue) bool {
+func (p *TreeNodePattern) TestValue(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
 	if _, ok := v.(*TreeNode); ok {
 		return true
 	}

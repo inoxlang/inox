@@ -22,7 +22,10 @@ type AnyProtocolClient struct {
 	_ int
 }
 
-func (r *AnyProtocolClient) Test(v SymbolicValue) bool {
+func (r *AnyProtocolClient) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(ProtocolClient)
 
 	return ok

@@ -14,7 +14,10 @@ type GetObjectResponse struct {
 	_ int
 }
 
-func (r *GetObjectResponse) Test(v symbolic.SymbolicValue) bool {
+func (r *GetObjectResponse) Test(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(*GetObjectResponse)
 	return ok
 }
@@ -50,7 +53,10 @@ type PutObjectResponse struct {
 	_ int
 }
 
-func (r *PutObjectResponse) Test(v symbolic.SymbolicValue) bool {
+func (r *PutObjectResponse) Test(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(*PutObjectResponse)
 	return ok
 }
@@ -86,7 +92,10 @@ type GetBucketPolicyResponse struct {
 	_ int
 }
 
-func (r *GetBucketPolicyResponse) Test(v symbolic.SymbolicValue) bool {
+func (r *GetBucketPolicyResponse) Test(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(*GetBucketPolicyResponse)
 	return ok
 }

@@ -13,10 +13,15 @@ import (
 	"github.com/inoxlang/inox/internal/utils"
 )
 
+const (
+	MAX_RECURSIVE_TEST_CALL_DEPTH = 20
+)
+
 var (
-	ErrWideSymbolicValue      = errors.New("cannot create wide symbolic value")
-	ErrNoSymbolicValue        = errors.New("no symbolic value")
-	ErrUnassignablePropsMixin = errors.New("UnassignablePropsMixin")
+	ErrWideSymbolicValue                   = errors.New("cannot create wide symbolic value")
+	ErrNoSymbolicValue                     = errors.New("no symbolic value")
+	ErrUnassignablePropsMixin              = errors.New("UnassignablePropsMixin")
+	ErrMaximumSymbolicTestCallDepthReached = errors.New("maximum recursive Test() call depth reached, there is probably a cycle")
 
 	ANY                = &Any{}
 	NEVER              = &Never{}
@@ -48,7 +53,7 @@ var (
 
 // A SymbolicValue represents a Value during symbolic evaluation, its underlying data should be immutable.
 type SymbolicValue interface {
-	Test(v SymbolicValue) bool
+	Test(v SymbolicValue, state RecTestCallState) bool
 
 	IsMutable() bool
 
@@ -82,7 +87,7 @@ func isNever(val SymbolicValue) bool {
 }
 
 func deeplyEqual(v1, v2 SymbolicValue) bool {
-	return v1.Test(v2) && v2.Test(v1)
+	return v1.Test(v2, RecTestCallState{}) && v2.Test(v1, RecTestCallState{})
 }
 
 type PseudoPropsValue interface {
@@ -109,7 +114,10 @@ type Any struct {
 	_ int
 }
 
-func (a *Any) Test(v SymbolicValue) bool {
+func (a *Any) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	return true
 }
 
@@ -127,7 +135,10 @@ type Never struct {
 	_ int
 }
 
-func (*Never) Test(v SymbolicValue) bool {
+func (*Never) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(*Never)
 	return ok
 }
@@ -147,7 +158,10 @@ type NilT struct {
 	SerializableMixin
 }
 
-func (n *NilT) Test(v SymbolicValue) bool {
+func (n *NilT) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(*NilT)
 	return ok
 }
@@ -182,7 +196,10 @@ func NewBool(v bool) *Bool {
 	}
 }
 
-func (b *Bool) Test(v SymbolicValue) bool {
+func (b *Bool) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	other, ok := v.(*Bool)
 	if !ok {
 		return false
@@ -238,7 +255,10 @@ func NewEmailAddress(v string) *EmailAddress {
 	}
 }
 
-func (e *EmailAddress) Test(v SymbolicValue) bool {
+func (e *EmailAddress) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	other, ok := v.(*EmailAddress)
 	if !ok {
 		return false
@@ -291,7 +311,10 @@ func NewIdentifier(name string) *Identifier {
 	return &Identifier{name: name}
 }
 
-func (i *Identifier) Test(v SymbolicValue) bool {
+func (i *Identifier) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	other, ok := v.(*Identifier)
 	if !ok {
 		return false
@@ -352,7 +375,10 @@ func (n *PropertyName) Name() string {
 	return n.name
 }
 
-func (p *PropertyName) Test(v SymbolicValue) bool {
+func (p *PropertyName) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	other, ok := v.(*PropertyName)
 	if !ok {
 		return false
@@ -406,7 +432,10 @@ func NewMimetype(v string) *Mimetype {
 	}
 }
 
-func (m *Mimetype) Test(v SymbolicValue) bool {
+func (m *Mimetype) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	other, ok := v.(*Mimetype)
 	if !ok {
 		return false
@@ -460,13 +489,16 @@ func (o *Option) Name() (string, bool) {
 	return o.name, true
 }
 
-func (o *Option) Test(v SymbolicValue) bool {
+func (o *Option) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	otherOpt, ok := v.(*Option)
 	if !ok || (o.name != "" && o.name != otherOpt.name) {
 		return false
 	}
 
-	return o.value.Test(otherOpt.value)
+	return o.value.Test(otherOpt.value, RecTestCallState{})
 }
 
 func (o *Option) IsConcretizable() bool {
@@ -515,7 +547,10 @@ func NewDate(v time.Time) *Date {
 	}
 }
 
-func (d *Date) Test(v SymbolicValue) bool {
+func (d *Date) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	other, ok := v.(*Date)
 	if !ok {
 		return false
@@ -564,7 +599,10 @@ func NewDuration(v time.Duration) *Duration {
 	}
 }
 
-func (d *Duration) Test(v SymbolicValue) bool {
+func (d *Duration) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	other, ok := v.(*Duration)
 	if !ok {
 		return false
@@ -608,7 +646,10 @@ type FileMode struct {
 	_ int
 }
 
-func (m *FileMode) Test(v SymbolicValue) bool {
+func (m *FileMode) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(*FileMode)
 	return ok
 }
@@ -631,7 +672,10 @@ type FileInfo struct {
 	SerializableMixin
 }
 
-func (f *FileInfo) Test(v SymbolicValue) bool {
+func (f *FileInfo) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(*FileInfo)
 	return ok
 }
@@ -691,7 +735,10 @@ type Type struct {
 	Type reflect.Type //if nil, any type is matched
 }
 
-func (t *Type) Test(v SymbolicValue) bool {
+func (t *Type) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	other, ok := v.(*Type)
 	if !ok {
 		return false
@@ -810,7 +857,10 @@ type Bytecode struct {
 	Bytecode any //if nil, any function is matched
 }
 
-func (b *Bytecode) Test(v SymbolicValue) bool {
+func (b *Bytecode) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	other, ok := v.(*Bytecode)
 	if !ok {
 		return false
@@ -848,9 +898,12 @@ func NewQuantityRange(element Serializable) *QuantityRange {
 	return &QuantityRange{element: element}
 }
 
-func (r *QuantityRange) Test(v SymbolicValue) bool {
+func (r *QuantityRange) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	other, ok := v.(*QuantityRange)
-	return ok && r.element.Test(other.element)
+	return ok && r.element.Test(other.element, RecTestCallState{})
 }
 
 func (r *QuantityRange) IteratorElementKey() SymbolicValue {
@@ -862,7 +915,7 @@ func (r *QuantityRange) IteratorElementValue() SymbolicValue {
 }
 
 func (r QuantityRange) Contains(value SymbolicValue) (yes bool, possible bool) {
-	if !r.element.Test(value) {
+	if !r.element.Test(value, RecTestCallState{}) {
 		return false, false
 	}
 
@@ -883,7 +936,10 @@ type IntRange struct {
 	SerializableMixin
 }
 
-func (r *IntRange) Test(v SymbolicValue) bool {
+func (r *IntRange) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(*IntRange)
 	return ok
 }
@@ -938,7 +994,10 @@ type FloatRange struct {
 	SerializableMixin
 }
 
-func (r *FloatRange) Test(v SymbolicValue) bool {
+func (r *FloatRange) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(*FloatRange)
 	return ok
 }
@@ -969,7 +1028,10 @@ type RuneRange struct {
 	SerializableMixin
 }
 
-func (r *RuneRange) Test(v SymbolicValue) bool {
+func (r *RuneRange) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(*RuneRange)
 	return ok
 }
@@ -1028,7 +1090,10 @@ func NewByteCount(v int64) *ByteCount {
 	}
 }
 
-func (c *ByteCount) Test(v SymbolicValue) bool {
+func (c *ByteCount) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	otherCount, ok := v.(*ByteCount)
 	if !ok {
 		return false
@@ -1083,7 +1148,10 @@ func NewByteRate(v int64) *ByteRate {
 	}
 }
 
-func (c *ByteRate) Test(v SymbolicValue) bool {
+func (c *ByteRate) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	otherRate, ok := v.(*ByteRate)
 	if !ok {
 		return false
@@ -1138,7 +1206,10 @@ func NewLineCount(v int64) *LineCount {
 	}
 }
 
-func (c *LineCount) Test(v SymbolicValue) bool {
+func (c *LineCount) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	otherCount, ok := v.(*LineCount)
 	if !ok {
 		return false
@@ -1193,7 +1264,10 @@ func NewRuneCount(v int64) *RuneCount {
 	}
 }
 
-func (c *RuneCount) Test(v SymbolicValue) bool {
+func (c *RuneCount) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	otherCount, ok := v.(*RuneCount)
 	if !ok {
 		return false
@@ -1241,7 +1315,10 @@ func NewSimpleRate(v int64) *SimpleRate {
 	}
 }
 
-func (c *SimpleRate) Test(v SymbolicValue) bool {
+func (c *SimpleRate) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	otherRate, ok := v.(*SimpleRate)
 	if !ok {
 		return false
@@ -1292,7 +1369,10 @@ type AnyResourceName struct {
 	_ int
 }
 
-func (r *AnyResourceName) Test(v SymbolicValue) bool {
+func (r *AnyResourceName) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	switch v.(type) {
 	case ResourceName:
 		return true
@@ -1325,7 +1405,10 @@ type Port struct {
 	_ int
 }
 
-func (p *Port) Test(v SymbolicValue) bool {
+func (p *Port) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(*Port)
 	return ok
 }
@@ -1348,7 +1431,10 @@ type UData struct {
 	SerializableMixin
 }
 
-func (i *UData) Test(v SymbolicValue) bool {
+func (i *UData) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(*UData)
 	return ok
 }
@@ -1374,7 +1460,10 @@ type UDataHiearchyEntry struct {
 	_ int
 }
 
-func (i *UDataHiearchyEntry) Test(v SymbolicValue) bool {
+func (i *UDataHiearchyEntry) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(*UDataHiearchyEntry)
 	return ok
 }
@@ -1418,3 +1507,21 @@ func IsSimpleSymbolicInoxVal(v SymbolicValue) bool {
 // 		}
 // 	}
 // }
+
+type RecTestCallState struct {
+	depth int64
+}
+
+func (s *RecTestCallState) StartCall() {
+	s.depth++
+	s.check()
+}
+func (s *RecTestCallState) FinishCall() {
+	s.depth--
+}
+
+func (s RecTestCallState) check() {
+	if s.depth > MAX_RECURSIVE_TEST_CALL_DEPTH {
+		panic(ErrMaximumSymbolicTestCallDepthReached)
+	}
+}

@@ -16,7 +16,10 @@ type Map struct {
 	_ int
 }
 
-func (*Map) Test(v symbolic.SymbolicValue) bool {
+func (*Map) Test(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(*Map)
 	return ok
 }

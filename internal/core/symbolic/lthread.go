@@ -30,7 +30,10 @@ type LThread struct {
 	_ int
 }
 
-func (t *LThread) Test(v SymbolicValue) bool {
+func (t *LThread) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	switch v.(type) {
 	case *LThread:
 		return true
@@ -87,7 +90,10 @@ type LThreadGroup struct {
 	_ int
 }
 
-func (g *LThreadGroup) Test(v SymbolicValue) bool {
+func (g *LThreadGroup) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	switch v.(type) {
 	case *LThreadGroup:
 		return true
@@ -144,7 +150,10 @@ type ExecutedStep struct {
 	_ int
 }
 
-func (s *ExecutedStep) Test(v SymbolicValue) bool {
+func (s *ExecutedStep) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	switch v.(type) {
 	case *ExecutedStep:
 		return true

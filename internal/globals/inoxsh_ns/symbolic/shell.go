@@ -22,7 +22,10 @@ type Shell struct {
 	_ int
 }
 
-func (r *Shell) Test(v symbolic.SymbolicValue) bool {
+func (r *Shell) Test(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	switch v.(type) {
 	case *Shell:
 		return true

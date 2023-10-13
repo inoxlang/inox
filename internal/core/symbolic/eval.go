@@ -482,7 +482,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 		}
 		v := value
 
-		if state.returnType != nil && !state.returnType.Test(v) {
+		if state.returnType != nil && !state.returnType.Test(v, RecTestCallState{}) {
 			if !*deeperMismatch {
 				state.addError(makeSymbolicEvalError(n, state, fmtInvalidReturnValue(v, state.returnType)))
 			}
@@ -612,7 +612,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 				}
 
 				if static != nil {
-					if !static.TestValue(right) {
+					if !static.TestValue(right, RecTestCallState{}) {
 						if !deeperMismatch {
 							state.addError(makeSymbolicEvalError(decl.Right, state, fmtNotAssignableToVarOftype(right, static)))
 						}
@@ -1118,19 +1118,19 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 
 				if n.Operator.Int() {
 					if seqElementAtIndex != nil {
-						if !ANY_INT.Test(seqElementAtIndex) {
+						if !ANY_INT.Test(seqElementAtIndex, RecTestCallState{}) {
 							state.addError(makeSymbolicEvalError(lhs, state, INVALID_ASSIGN_INT_OPER_ASSIGN_LHS_NOT_INT))
 							ignoreNextAssignabilityError = true
 						}
 						//note: the element is widened in order to support multivalues such as (1 | 2)
-					} else if !ANY_INT.Test(widenToSameStaticTypeInMultivalue(seq.element())) {
+					} else if !ANY_INT.Test(widenToSameStaticTypeInMultivalue(seq.element()), RecTestCallState{}) {
 
 						state.addError(makeSymbolicEvalError(lhs, state, INVALID_ASSIGN_INT_OPER_ASSIGN_LHS_NOT_INT))
 						ignoreNextAssignabilityError = true
 					}
 				}
 
-				if seqElementAtIndex == nil || !seqElementAtIndex.Test(__rhs) {
+				if seqElementAtIndex == nil || !seqElementAtIndex.Test(__rhs, RecTestCallState{}) {
 					assignable := false
 					var staticSeq MutableLengthSequence
 					var staticSeqElement SymbolicValue
@@ -1149,7 +1149,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 							if intIndex != nil && intIndex.hasValue && staticSeq.KnownLen() > int(intIndex.value) {
 								//known index
 								staticSeqElement = staticSeq.elementAt(int(intIndex.value)).(Serializable)
-								if staticSeqElement.Test(__rhs) {
+								if staticSeqElement.Test(__rhs, RecTestCallState{}) {
 									assignable = true
 									narrowPath(lhs.Indexed, setExactValue, staticSeq, state, 0)
 								}
@@ -1160,7 +1160,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 							}
 						} else {
 							staticSeqElement = staticSeq.element()
-							if staticSeqElement.Test(widenToSameStaticTypeInMultivalue(__rhs)) {
+							if staticSeqElement.Test(widenToSameStaticTypeInMultivalue(__rhs), RecTestCallState{}) {
 								assignable = true
 								narrowPath(lhs.Indexed, setExactValue, staticSeq, state, 0)
 							}
@@ -1328,7 +1328,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 					}
 				} else {
 					staticSeqElement := staticSeq.element()
-					if staticSeqElement.Test(widenToSameStaticTypeInMultivalue(rightSeqElement)) {
+					if staticSeqElement.Test(widenToSameStaticTypeInMultivalue(rightSeqElement), RecTestCallState{}) {
 						assignable = true
 						narrowPath(lhs.Indexed, setExactValue, staticSeq, state, 0)
 					}
@@ -2143,14 +2143,14 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 						return nil, err
 					}
 					static = _propType.(Pattern)
-					if !static.TestValue(propVal) {
+					if !static.TestValue(propVal, RecTestCallState{}) {
 						expected := static.SymbolicValue()
 						state.addError(makeSymbolicEvalError(p.Value, state, fmtNotAssignableToPropOfType(propVal, expected)))
 						propVal = expected
 					}
 				} else if deeperMismatch {
 					options.setActualValueMismatchIfNotNil()
-				} else if expectedPropVal != nil && !deeperMismatch && !expectedPropVal.Test(propVal) {
+				} else if expectedPropVal != nil && !deeperMismatch && !expectedPropVal.Test(propVal, RecTestCallState{}) {
 					options.setActualValueMismatchIfNotNil()
 					state.addError(makeSymbolicEvalError(p.Value, state, fmtNotAssignableToPropOfType(propVal, expectedPropVal)))
 				}
@@ -2262,7 +2262,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 
 				if deeperMismatch {
 					options.setActualValueMismatchIfNotNil()
-				} else if expectedPropVal != nil && !deeperMismatch && !expectedPropVal.Test(v) {
+				} else if expectedPropVal != nil && !deeperMismatch && !expectedPropVal.Test(v, RecTestCallState{}) {
 					options.setActualValueMismatchIfNotNil()
 					state.addError(makeSymbolicEvalError(p.Value, state, fmtNotAssignableToPropOfType(v, expectedPropVal)))
 				}
@@ -2335,7 +2335,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 					}
 				}
 
-				if !generalElem.Test(e) && !deeperMismatch {
+				if !generalElem.Test(e, RecTestCallState{}) && !deeperMismatch {
 					state.addError(makeSymbolicEvalError(elemNode, state, fmtUnexpectedElemInListAnnotated(e, generalElemPattern.(Pattern))))
 				}
 
@@ -2402,7 +2402,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 
 			if deeperMismatch {
 				options.setActualValueMismatchIfNotNil()
-			} else if expectedElement != nil && !expectedElement.Test(e) && !deeperMismatch {
+			} else if expectedElement != nil && !expectedElement.Test(e, RecTestCallState{}) && !deeperMismatch {
 				options.setActualValueMismatchIfNotNil()
 				state.addError(makeSymbolicEvalError(elemNode, state, fmtUnexpectedElemInListofValues(e, expectedElement)))
 			}
@@ -2471,7 +2471,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 					e = ANY_SERIALIZABLE
 				}
 
-				if !generalElem.Test(e) {
+				if !generalElem.Test(e, RecTestCallState{}) {
 					state.addError(makeSymbolicEvalError(elemNode, state, fmtUnexpectedElemInTupleAnnotated(e, generalElemPattern.(Pattern))))
 				}
 			}
@@ -2527,7 +2527,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 
 			if deeperMismatch {
 				options.setActualValueMismatchIfNotNil()
-			} else if expectedElement != nil && !expectedElement.Test(e) && !deeperMismatch {
+			} else if expectedElement != nil && !expectedElement.Test(e, RecTestCallState{}) && !deeperMismatch {
 				options.setActualValueMismatchIfNotNil()
 				state.addError(makeSymbolicEvalError(elemNode, state, fmtUnexpectedElemInListofValues(e, expectedElement)))
 			}
@@ -2579,7 +2579,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			}
 			if deeperMismatch {
 				options.setActualValueMismatchIfNotNil()
-			} else if expectedEntryValue != nil && !deeperMismatch && !expectedEntryValue.Test(v) {
+			} else if expectedEntryValue != nil && !deeperMismatch && !expectedEntryValue.Test(v, RecTestCallState{}) {
 				options.setActualValueMismatchIfNotNil()
 				state.addError(makeSymbolicEvalError(entry.Value, state, fmtNotAssignableToEntryOfExpectedValue(v, expectedEntryValue)))
 			}
@@ -3077,13 +3077,13 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 		case parse.Range, parse.ExclEndRange:
 			switch left.(type) {
 			case *Int:
-				if !ANY_INT.Test(right) {
+				if !ANY_INT.Test(right, RecTestCallState{}) {
 					msg := fmtRightOperandOfBinaryShouldBeLikeLeftOperand(n.Operator, Stringify(left), Stringify(ANY_INT))
 					state.addError(makeSymbolicEvalError(n.Right, state, msg))
 				}
 				return ANY_INT_RANGE, nil
 			case *Float:
-				if !ANY_FLOAT.Test(right) {
+				if !ANY_FLOAT.Test(right, RecTestCallState{}) {
 					msg := fmtRightOperandOfBinaryShouldBeLikeLeftOperand(n.Operator, Stringify(left), Stringify(ANY_FLOAT))
 					state.addError(makeSymbolicEvalError(n.Right, state, msg))
 				}
@@ -3094,7 +3094,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 					return ANY_QUANTITY_RANGE, nil
 				}
 
-				if !left.WidestOfType().Test(right) {
+				if !left.WidestOfType().Test(right, RecTestCallState{}) {
 					msg := fmtRightOperandOfBinaryShouldBeLikeLeftOperand(n.Operator, Stringify(left.WidestOfType()), Stringify(right))
 					state.addError(makeSymbolicEvalError(n.Right, state, msg))
 				}
@@ -3184,7 +3184,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 				return nil, err
 			}
 
-			if !element.Test(upperBound) {
+			if !element.Test(upperBound, RecTestCallState{}) {
 				state.addError(makeSymbolicEvalError(n.UpperBound, state, UPPER_BOUND_OF_QTY_RANGE_LIT_SHOULD_OF_SAME_TYPE_AS_LOWER_BOUND))
 			}
 		}
@@ -3304,7 +3304,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 
 			if signatureReturnType != nil {
 				storedReturnType = signatureReturnType
-				if !signatureReturnType.Test(storedReturnType) {
+				if !signatureReturnType.Test(storedReturnType, RecTestCallState{}) {
 					state.addError(makeSymbolicEvalError(n, state, fmtInvalidReturnValue(storedReturnType, signatureReturnType)))
 				}
 			}
@@ -3480,7 +3480,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 
 			if signatureReturnType != nil {
 				storedReturnType = signatureReturnType
-				if !signatureReturnType.Test(storedReturnType) {
+				if !signatureReturnType.Test(storedReturnType, RecTestCallState{}) {
 					state.addError(makeSymbolicEvalError(n, state, fmtInvalidReturnValue(storedReturnType, signatureReturnType)))
 				}
 			}
@@ -4012,7 +4012,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 		}
 
 		patt := v.(Pattern)
-		if patt.TestValue(Nil) {
+		if patt.TestValue(Nil, RecTestCallState{}) {
 			state.addError(makeSymbolicEvalError(node, state, CANNOT_CREATE_OPTIONAL_PATTERN_WITH_PATT_MATCHING_NIL))
 			return &AnyPattern{}, nil
 		}
@@ -4542,7 +4542,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			}
 			modState.topLevelSelf = nextSelf
 		} else {
-			if ok && !subject.Test(nextSelf) {
+			if ok && !subject.Test(nextSelf, RecTestCallState{}) {
 				state.addError(makeSymbolicEvalError(node, state, fmtSelfShouldMatchLifetimeJobSubjectPattern(subjectPattern)))
 			}
 			modState.topLevelSelf = subject

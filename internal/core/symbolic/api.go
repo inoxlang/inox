@@ -38,10 +38,13 @@ func NewApiIL(schema *ObjectPattern) *ApiIL {
 	}
 }
 
-func (api *ApiIL) Test(v SymbolicValue) bool {
+func (api *ApiIL) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	switch other := v.(type) {
 	case *ApiIL:
-		return api.schema.Test(other.schema)
+		return api.schema.Test(other.schema, state)
 	default:
 		return false
 	}

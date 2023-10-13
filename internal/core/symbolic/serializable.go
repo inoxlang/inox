@@ -72,7 +72,10 @@ type AnySerializable struct {
 	SerializableMixin
 }
 
-func (*AnySerializable) Test(v SymbolicValue) bool {
+func (*AnySerializable) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(Serializable)
 	return ok
 }

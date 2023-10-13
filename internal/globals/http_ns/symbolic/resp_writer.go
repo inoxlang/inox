@@ -21,7 +21,10 @@ type HttpResponseWriter struct {
 	_ int
 }
 
-func (r *HttpResponseWriter) Test(v symbolic.SymbolicValue) bool {
+func (r *HttpResponseWriter) Test(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(*HttpResponseWriter)
 	return ok
 }

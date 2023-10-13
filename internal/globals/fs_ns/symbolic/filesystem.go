@@ -18,7 +18,10 @@ type Filesystem struct {
 	_ int
 }
 
-func (fls *Filesystem) Test(v symbolic.SymbolicValue) bool {
+func (fls *Filesystem) Test(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(*Filesystem)
 	return ok
 }

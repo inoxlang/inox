@@ -79,7 +79,7 @@ func joinValues(values []SymbolicValue) SymbolicValue {
 
 					inexactCapable, ok := val1.(InexactCapable)
 					if (ok && inexactCapable.TestExact(val2)) ||
-						(!ok && val1.Test(val2)) {
+						(!ok && val1.Test(val2, RecTestCallState{})) {
 						removed = append(removed, j)
 					}
 				}
@@ -164,7 +164,7 @@ func narrowOut(narrowedOut SymbolicValue, toNarrow SymbolicValue) SymbolicValue 
 		var remainingValues []SymbolicValue
 
 		for _, val := range n.values {
-			if narrowedOut.Test(val) {
+			if narrowedOut.Test(val, RecTestCallState{}) {
 				continue
 			}
 			remainingValues = append(remainingValues, val)
@@ -183,7 +183,7 @@ func narrowOut(narrowedOut SymbolicValue, toNarrow SymbolicValue) SymbolicValue 
 		return narrowOut(narrowedOut, n.OriginalMultivalue())
 	}
 
-	if narrowedOut.Test(toNarrow) {
+	if narrowedOut.Test(toNarrow, RecTestCallState{}) {
 		return NEVER
 	}
 
@@ -224,9 +224,9 @@ func narrow(positive bool, n parse.Node, state *State, targetState *State) {
 
 			left, _ := state.symbolicData.GetMostSpecificNodeValue(binExpr.Left)
 			right, _ := state.symbolicData.GetMostSpecificNodeValue(binExpr.Right)
-			if left.Test(right) {
+			if left.Test(right, RecTestCallState{}) {
 				narrowPath(binExpr.Left, setExactValue, right, targetState, 0)
-			} else if right.Test(left) {
+			} else if right.Test(left, RecTestCallState{}) {
 				narrowPath(binExpr.Right, setExactValue, left, targetState, 0)
 			} else {
 				state.addError(makeSymbolicEvalError(binExpr, state, fmtVal1Val2HaveNoOverlap(left, right)))

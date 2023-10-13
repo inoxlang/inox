@@ -34,7 +34,10 @@ type AnyIterable struct {
 	_ int
 }
 
-func (*AnyIterable) Test(v SymbolicValue) bool {
+func (*AnyIterable) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, ok := v.(Iterable)
 
 	return ok
@@ -62,7 +65,10 @@ type AnySerializableIterable struct {
 	SerializableMixin
 }
 
-func (r *AnySerializableIterable) Test(v SymbolicValue) bool {
+func (r *AnySerializableIterable) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	_, isIterable := v.(Iterable)
 	_, isSerializable := v.(Serializable)
 
@@ -91,7 +97,10 @@ type Iterator struct {
 	_            int
 }
 
-func (r *Iterator) Test(v SymbolicValue) bool {
+func (r *Iterator) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	it, ok := v.(*Iterator)
 	if !ok {
 		return false
@@ -99,7 +108,7 @@ func (r *Iterator) Test(v SymbolicValue) bool {
 	if r.ElementValue == nil {
 		return true
 	}
-	return r.ElementValue.Test(it.ElementValue)
+	return r.ElementValue.Test(it.ElementValue, state)
 }
 
 func (r *Iterator) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {

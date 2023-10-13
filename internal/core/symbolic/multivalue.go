@@ -37,9 +37,12 @@ func NewMultivalue(values ...SymbolicValue) *Multivalue {
 	return &Multivalue{values: values}
 }
 
-func (mv *Multivalue) Test(v SymbolicValue) bool {
+func (mv *Multivalue) Test(v SymbolicValue, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
 	for _, val := range mv.values {
-		if val.Test(v) {
+		if val.Test(v, state) {
 			return true
 		}
 	}
@@ -53,7 +56,7 @@ func (mv *Multivalue) Test(v SymbolicValue) bool {
 		ok := false
 
 		for _, val := range mv.values {
-			if val.Test(otherVal) {
+			if val.Test(otherVal, state) {
 				ok = true
 				break
 			}
@@ -186,7 +189,7 @@ func (mv *Multivalue) WidenSimpleValues() SymbolicValue {
 		widened := first.WidestOfType()
 
 		for _, other := range mv.values[1:] {
-			if !widened.Test(other) {
+			if !widened.Test(other, RecTestCallState{}) {
 				return mv
 			}
 		}
