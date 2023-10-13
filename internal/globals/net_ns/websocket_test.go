@@ -20,6 +20,11 @@ func TestWebsocketConnection(t *testing.T) {
 		defer default_state.UnsetDefaultRequestHandlingLimits()
 	}
 
+	if !default_state.AreDefaultMaxRequestHandlerLimitsSet() {
+		default_state.SetDefaultMaxRequestHandlerLimits([]core.Limit{})
+		defer default_state.UnsetDefaultMaxRequestHandlerLimits()
+	}
+
 	t.Run("connection should be allowed even if the client's context has only a write permission", func(t *testing.T) {
 		closeChan := createWebsocketServer(testWebsocketServerConfig{
 			host:           HTTPS_HOST,

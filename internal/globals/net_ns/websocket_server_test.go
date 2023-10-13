@@ -23,6 +23,11 @@ func TestWebsocketServer(t *testing.T) {
 		defer default_state.UnsetDefaultRequestHandlingLimits()
 	}
 
+	if !default_state.AreDefaultMaxRequestHandlerLimitsSet() {
+		default_state.SetDefaultMaxRequestHandlerLimits([]core.Limit{})
+		defer default_state.UnsetDefaultMaxRequestHandlerLimits()
+	}
+
 	t.Run("create with required permission", func(t *testing.T) {
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
