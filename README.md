@@ -13,7 +13,7 @@ Inox deeply integrates with its built-in database engine, testing engine and HTT
 - [XML Expressions (HTML)](#xml-expressions)
 - [HTTP Server - Filesystem Routing](#http-server---filesystem-routing)
 - [Built-in Database](#built-in-database)
-- [Project & Virtual Filesystem](#project--virtual-filesystem)
+- [Project and Virtual Filesystem](#project-and-virtual-filesystem)
 - [Built-in Browser Automation](#built-in-browser-automation)
 
 **Security Features**
@@ -158,8 +158,8 @@ dbs.main.update_schema(%{
 })
 ```
 
-Since most Inox types are constrained to be [serializable](#serializability) no translation layer is
-needed to add/retrieve objects to/from the database.
+Objects can be directly added to and retrieved from the database.\
+This is made possible by the fact that most Inox types are constrained to be [serializable](#serializability).
 
 ```
 new_user = {name: "John"}
@@ -205,7 +205,7 @@ task2 = Task{name: "1"}
 array = Array(task1, task2)
 ```
 
-### Project & Virtual Filesystem
+### Project and Virtual Filesystem
 
 The Inox binary provides a **project server** that the developer connects to with VsCode.\
 It enables the developer to develop, test, deploy & manage secrets, all from VsCode.\
