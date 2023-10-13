@@ -1,0 +1,25 @@
+manifest {
+    permissions: {
+        read: {
+            %https://**
+        }
+        create: {
+            threads: {}    
+        }
+        
+    }
+}
+
+pattern o = {
+    a: int
+}
+
+extend user {
+    e: fn(){
+
+    } 
+}
+
+struct x {
+    a: int
+}

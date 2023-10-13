@@ -1,15 +1,13 @@
-# Inoxlang
+# Inox
 
 <img src="https://avatars.githubusercontent.com/u/122291844?s=200&v=4" alt="a shield"></img>
 
-🛡️ Your **shield** against complexity in Web Development.
+🛡️ The Inox programming language is your **shield** against complexity.
 
-Inoxlang is released as a **single binary** that contains all you need to do fullstack development.\
-Zero config.\
-Zero boilerplate.
+Inox is released as a **single binary** that contains all you need to do full-stack development.\
+Inox deeply integrates with its built-in database engine, testing engine and HTTP server.
 
-> Inox is NOT a language + a packaging of a SQL database and Docker.\
-> The language deeply integrates with the Web features and the database engine.
+*Zero config. Zero boilerplate. Secure by Default.*
 
 **Web Dev Features**
 - [XML Expressions (HTML)](#xml-expressions)
@@ -26,7 +24,7 @@ Zero boilerplate.
 - [DoS Mitigation (WIP)](#dos-mitigation)
 - [Sensitive Data Protection](#sensitive-data-protection)
   - [Secrets](#secrets)
-  - [Visibility](#visibility-wip)
+  - [Visibility during Serialization](#visibility-wip)
 - [Rate Limiting](#rate-limiting-wip)
 - [Injection Prevention](#injection-prevention-wip)
 
