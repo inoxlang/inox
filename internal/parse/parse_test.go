@@ -15426,6 +15426,46 @@ func testParse(
 			}, n)
 		})
 
+		t.Run("return type, body is an expression", func(t *testing.T) {
+			n := mustparseChunk(t, "fn(x) int => x")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 14}, nil, nil},
+				Statements: []Node{
+					&FunctionExpression{
+						NodeBase: NodeBase{
+							NodeSpan{0, 14},
+							nil,
+							[]Token{
+								{Type: FN_KEYWORD, Span: NodeSpan{0, 2}},
+								{Type: OPENING_PARENTHESIS, Span: NodeSpan{2, 3}},
+								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{4, 5}},
+								{Type: ARROW, Span: NodeSpan{10, 12}},
+							},
+						},
+						Parameters: []*FunctionParameter{
+							{
+								NodeBase: NodeBase{NodeSpan{3, 4}, nil, nil},
+								Var: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{3, 4}, nil, nil},
+									Name:     "x",
+								},
+							},
+						},
+						ReturnType: &PatternIdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{6, 9}, nil, nil},
+							Name:     "int",
+							Unprefixed: true,
+						},
+						IsBodyExpression: true,
+						Body: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{13, 14}, nil, nil},
+							Name:     "x",
+						},
+					},
+				},
+			}, n)
+		})
+
 		t.Run("only fn keyword", func(t *testing.T) {
 			n, err := parseChunk(t, "fn", "")
 			assert.Error(t, err)

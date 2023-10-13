@@ -355,6 +355,9 @@ func TestPrint(t *testing.T) {
 		"fn(arg %int){}",
 		"fn(arg readonly %int){}",
 		"fn(arg readonly){}",
+		"fn() =>",
+		"fn() => 0",
+		"fn() int => 0",
 		//xml
 		"h<div></div>",
 		"h<div",
