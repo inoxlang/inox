@@ -8,6 +8,8 @@ import (
 var (
 	ErrSnapshotEntryPathMustBeAbsolute = errors.New("snapshot file path must be absolute")
 	ErrSnapshotEntryNotAFile           = errors.New("filesystem entry is not a file")
+
+	_ = Value(&FilesystemSnapshotIL{})
 )
 
 type SnapshotableFilesystem interface {
@@ -57,4 +59,19 @@ func (m EntrySnapshotMetadata) IsDir() bool {
 
 func (m EntrySnapshotMetadata) IsRegularFile() bool {
 	return m.Mode.FileMode().Type().IsRegular()
+}
+
+// FilesystemSnapshotIL wraps a FilesystemSnapshot and implements Value.
+type FilesystemSnapshotIL struct {
+	underlying FilesystemSnapshot
+}
+
+func WrapFsSnapshot(snapshot FilesystemSnapshot) *FilesystemSnapshotIL {
+	return &FilesystemSnapshotIL{
+		underlying: snapshot,
+	}
+}
+
+func (s *FilesystemSnapshotIL) Underlying() FilesystemSnapshot {
+	return s.underlying
 }

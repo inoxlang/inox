@@ -633,3 +633,7 @@ func (*Namespace) IsMutable() bool {
 func (*StructPattern) IsMutable() bool {
 	return false
 }
+
+func (*FilesystemSnapshotIL) IsMutable() bool {
+	return false
+}

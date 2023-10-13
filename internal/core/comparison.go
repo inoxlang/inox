@@ -2079,3 +2079,12 @@ func (p *StructPattern) Equal(ctx *Context, other Value, alreadyCompared map[uin
 	otherPatt, ok := other.(*StructPattern)
 	return ok && p == otherPatt
 }
+
+func (s *FilesystemSnapshotIL) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	if depth > MAX_COMPARISON_DEPTH {
+		return false
+	}
+
+	otherPatt, ok := other.(*FilesystemSnapshotIL)
+	return ok && s == otherPatt
+}

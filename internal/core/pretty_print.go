@@ -2152,6 +2152,10 @@ func (p *StructPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, 
 	utils.PanicIfErr(w.WriteByte('}'))
 }
 
+func (s *FilesystemSnapshotIL) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("fs-snapshot")))
+}
+
 func InspectPrint[T any](w *bufio.Writer, v T) {
 	utils.Must(fmt.Fprintf(w, "%#v", v))
 }

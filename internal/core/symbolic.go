@@ -1576,3 +1576,7 @@ func (s *StructPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]sy
 	*symbolicStructPattern = symbolic.CreateStructPattern(s.name, s.tempId, keys, types)
 	return symbolicStructPattern, nil
 }
+
+func (s *FilesystemSnapshotIL) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+	return symbolic.ANY_FS_SNAPSHOT_IL, nil
+}
