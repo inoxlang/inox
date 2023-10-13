@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/commonfmt"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/parse"
@@ -24,83 +25,6 @@ const (
 var (
 	ErrTooDeepFileHierarchy = errors.New("file hierarchy is too deep")
 )
-
-// makeFileHierarchy recursively creates folders and files.
-// Key represents the filename (or dirname) and content described how to make the file.
-// The content of a directory  is described by a List or a Dictionary.
-// The content of a regular file is described by a string (Str) or bytes (IBytes).
-func makeFileHierarchy(ctx *core.Context, key core.Path, content core.Value, depth int) error {
-	if depth > MAX_FILE_HIERARCHY_DEPTH {
-		return ErrTooDeepFileHierarchy
-	}
-
-	if key.IsDirPath() {
-		absKey, err := key.ToAbs(ctx.GetFileSystem())
-		if err != nil {
-			return err
-		}
-
-		effect := &CreateDir{path: absKey, fmode: core.FileMode(DEFAULT_DIR_FMODE)}
-
-		if err := effect.CheckPermissions(ctx); err != nil {
-			return err
-		}
-
-		if tx := ctx.GetTx(); tx != nil {
-			if err := tx.AddEffect(ctx, effect); err != nil {
-				return err
-			}
-		} else if err := effect.Apply(ctx); err != nil {
-			return err
-		}
-	}
-
-	fls := ctx.GetFileSystem()
-
-	switch v := content.(type) {
-	case *core.List:
-		length := v.Len()
-		for i := 0; i < length; i++ {
-			pth := v.At(ctx, i).(core.Path)
-			s := fls.Join(string(key), string(pth))
-			if pth.IsDirPath() {
-				s += "/"
-			}
-
-			if err := makeFileHierarchy(ctx, core.Path(s), nil, depth+1); err != nil {
-				return err
-			}
-		}
-	case *core.Dictionary:
-		if v == nil {
-			return nil
-		}
-		if !key.IsDirPath() {
-			return fmt.Errorf("value for file keys (key %s) should not be a dictionary", key)
-		}
-		err := v.ForEachEntry(ctx, func(keyRepr string, k, v core.Serializable) error {
-			pth := fls.Join(string(key), keyRepr)
-			if k.(core.Path).IsDirPath() {
-				pth += "/"
-			}
-			if err := makeFileHierarchy(ctx, core.Path(pth), v, depth+1); err != nil {
-				return err
-			}
-			return nil
-		})
-		if err != nil {
-			return err
-		}
-	case nil: //file with not specified content
-		return Mkfile(ctx, key)
-	case core.Readable:
-		return Mkfile(ctx, key, v)
-	default:
-		return fmt.Errorf("invalid value of type %T for key %s", v, key)
-	}
-
-	return nil
-}
 
 // Mkdir expects a core.Path argument and creates a directory.
 // If an additional argument of type Dictionnary is passed a file hiearchy will also be created.
@@ -151,7 +75,160 @@ func Mkdir(ctx *core.Context, args ...core.Value) error {
 		return commonfmt.FmtMissingArgument("path")
 	}
 
-	return makeFileHierarchy(ctx, dirpath, contentDesc, 0)
+	return makeFileHierarchy(ctx, makeFileHieararchyParams{
+		key:     dirpath,
+		content: contentDesc,
+		depth:   0,
+	})
+}
+
+type makeFileHieararchyParams struct {
+	//The filesystem where to create the hierarchy, if not nil permissions are not checked and the current transaction is ignored.
+	//If nil the context's filesystem will be used and perlission will be checked.
+	fls *MemFilesystem
+
+	// key represents the filename (or dirname) and content described how to make the file.
+	key core.Path
+
+	// The content of a directory is described by a List or a Dictionary.
+	// The content of a regular file is described by a string (Str) or bytes (IBytes).
+	content core.Value
+
+	depth int
+}
+
+// makeFileHierarchy recursively creates folders and files.
+func makeFileHierarchy(ctx *core.Context, args makeFileHieararchyParams) error {
+	if args.depth > MAX_FILE_HIERARCHY_DEPTH {
+		return ErrTooDeepFileHierarchy
+	}
+
+	key := args.key
+	content := args.content
+	var fls afs.Filesystem = args.fls
+	if args.fls == nil {
+		fls = ctx.GetFileSystem()
+	}
+
+	if key.IsDirPath() {
+		absKey, err := key.ToAbs(fls)
+		if err != nil {
+			return err
+		}
+
+		if args.fls == nil {
+			effect := &CreateDir{path: absKey, fmode: core.FileMode(DEFAULT_DIR_FMODE)}
+
+			if err := effect.CheckPermissions(ctx); err != nil {
+				return err
+			}
+
+			if tx := ctx.GetTx(); tx != nil {
+				if err := tx.AddEffect(ctx, effect); err != nil {
+					return err
+				}
+			} else if err := effect.Apply(ctx); err != nil {
+				return err
+			}
+		} else {
+			err := fls.MkdirAll(string(absKey), DEFAULT_DIR_FMODE)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	switch v := content.(type) {
+	case *core.List:
+		if !key.IsDirPath() {
+			return fmt.Errorf("value for file keys (key %s) should not be a dictionary, dir keys must end with '/'", key)
+		}
+
+		length := v.Len()
+		for i := 0; i < length; i++ {
+			pth := v.At(ctx, i).(core.Path)
+			s := fls.Join(string(key), string(pth))
+			if pth.IsDirPath() {
+				s += "/"
+			}
+
+			if err := makeFileHierarchy(ctx, makeFileHieararchyParams{
+				fls:     args.fls,
+				key:     core.Path(s),
+				content: nil,
+				depth:   args.depth + 1,
+			}); err != nil {
+				return err
+			}
+		}
+	case *core.Dictionary:
+		if v == nil {
+			return nil
+		}
+		if !key.IsDirPath() {
+			return fmt.Errorf("value for file keys (key %s) should not be a dictionary, dir keys must end with '/'", key)
+		}
+		err := v.ForEachEntry(ctx, func(keyRepr string, k, v core.Serializable) error {
+			pth := fls.Join(string(key), keyRepr)
+			if k.(core.Path).IsDirPath() {
+				pth += "/"
+			}
+			if err := makeFileHierarchy(ctx, makeFileHieararchyParams{
+				fls:     args.fls,
+				key:     core.Path(pth),
+				content: v,
+				depth:   args.depth + 1,
+			}); err != nil {
+				return err
+			}
+			return nil
+		})
+		if err != nil {
+			return err
+		}
+	case nil: //file with no specified content
+		if args.fls == nil {
+			return Mkfile(ctx, key)
+		} else {
+			absKey, err := key.ToAbs(fls)
+			if err != nil {
+				return err
+			}
+
+			f, err := args.fls.Create(absKey.UnderlyingString())
+			if err != nil {
+				return err
+			}
+			f.Close()
+		}
+	case core.Readable:
+		if args.fls == nil {
+			return Mkfile(ctx, key, v)
+		} else {
+			absKey, err := key.ToAbs(fls)
+			if err != nil {
+				return err
+			}
+
+			f, err := args.fls.Create(absKey.UnderlyingString())
+			if err != nil {
+				return err
+			}
+			bytes, err := v.Reader().ReadAll()
+			if err != nil {
+				return fmt.Errorf("failed to read content of file")
+			}
+			_, err = f.Write(bytes.Bytes)
+			if err != nil {
+				return fmt.Errorf("failed to write content of file %q", absKey)
+			}
+			f.Close()
+		}
+	default:
+		return fmt.Errorf("invalid value of type %T for key %s", v, key)
+	}
+
+	return nil
 }
 
 // Mkfile creates a regular file, if an additional argument is passed it will be used as the content of the file.
@@ -191,7 +268,9 @@ func Mkfile(ctx *core.Context, fpath core.Path, args ...core.Value) error {
 		return commonfmt.FmtMissingArgument("path")
 	}
 
-	absFpath, err := fpath.ToAbs(ctx.GetFileSystem())
+	fls := ctx.GetFileSystem()
+
+	absFpath, err := fpath.ToAbs(fls)
 	if err != nil {
 		return err
 	}
@@ -205,7 +284,6 @@ func Mkfile(ctx *core.Context, fpath core.Path, args ...core.Value) error {
 	if err := effect.CheckPermissions(ctx); err != nil {
 		return err
 	}
-
 	if tx := ctx.GetTx(); tx != nil {
 		return tx.AddEffect(ctx, effect)
 	} else {

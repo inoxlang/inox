@@ -73,6 +73,10 @@ func init() {
 		NewMemFilesystemIL, func(ctx *symbolic.Context, maxTotalStorageSize *symbolic.ByteCount) *fs_symbolic.Filesystem {
 			return fs_symbolic.ANY_FILESYSTEM
 		},
+		NewFilesystemSnapshot, func(ctx *symbolic.Context, args *symbolic.Object) *symbolic.FilesystemSnapshotIL {
+			ctx.SetSymbolicGoFunctionParameters(NEW_FS_SNAPSHOT_SYMB_ARGS, NEW_FS_SNAPSHOT_SYMB_ARG_NAMES)
+			return symbolic.ANY_FS_SNAPSHOT_IL
+		},
 	})
 
 	help.RegisterHelpValues(map[string]any{
@@ -113,5 +117,6 @@ func NewFsNamespace() *core.Namespace {
 		"glob":               core.WrapGoFunction(Glob),
 		"get_tree_data":      core.WrapGoFunction(GetTreeData),
 		"new_mem_filesystem": core.WrapGoFunction(NewMemFilesystemIL),
+		"FsSnapshot":         core.WrapGoFunction(NewFilesystemSnapshot),
 	})
 }

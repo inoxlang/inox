@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/go-git/go-billy/v5"
@@ -247,9 +248,14 @@ func (fs *MemFilesystem) TakeFilesystemSnapshot(getContent func(ChecksumSHA256 [
 			childNames = append(childNames, filepath.Base(child))
 		}
 
+		absPath := f.absPath
+		if info.Mode_.FileMode().IsDir() {
+			absPath = core.AppendTrailingSlashIfNotPresent(absPath)
+		}
+
 		metadata := &core.EntrySnapshotMetadata{
 			Size:             info.Size_,
-			AbsolutePath:     f.absPath,
+			AbsolutePath:     absPath,
 			CreationTime:     info.CreationTime_,
 			ModificationTime: info.ModTime_,
 			Mode:             info.Mode_,
@@ -257,6 +263,9 @@ func (fs *MemFilesystem) TakeFilesystemSnapshot(getContent func(ChecksumSHA256 [
 		}
 
 		snapshot.MetadataMap[normalizedPath] = metadata
+		if normalizedPath != "/" && strings.Count(normalizedPath, "/") == 1 {
+			snapshot.RootDirEntryList = append(snapshot.RootDirEntryList, metadata)
+		}
 
 		if !info.IsDir() {
 			metadata.ChecksumSHA256 = sha256.Sum256(f.content.bytes)
