@@ -250,8 +250,23 @@ func GetNodeColorizations(chunk *parse.Chunk, lightMode bool) []ColorizationInfo
 					ColorSequence: colors.ControlKeyword,
 				})
 			}
-		case *parse.MappingExpression, *parse.UDataLiteral:
+		case *parse.MappingExpression:
 			for _, tok := range n.Base().Tokens {
+				if tok.Type != parse.MAPPING_KEYWORD {
+					continue
+				}
+
+				colorizations = append(colorizations, ColorizationInfo{
+					Span:          tok.Span,
+					ColorSequence: colors.OtherKeyword,
+				})
+			}
+		case *parse.UDataLiteral:
+			for _, tok := range n.Base().Tokens {
+				if tok.Type != parse.UDATA_KEYWORD {
+					continue
+				}
+
 				colorizations = append(colorizations, ColorizationInfo{
 					Span:          tok.Span,
 					ColorSequence: colors.OtherKeyword,
