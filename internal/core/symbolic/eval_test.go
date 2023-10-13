@@ -2627,7 +2627,7 @@ func TestSymbolicEval(t *testing.T) {
 			}, res)
 		})
 
-		t.Run("missing return", func(t *testing.T) {
+		t.Run("return type specified but missing return", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				fn f() %int {
 					
@@ -2660,7 +2660,22 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Nil(t, res)
 		})
 
-		t.Run("invalid return value (annotation is a unprefixed named pattern)", func(t *testing.T) {
+		t.Run("invalid return value: arrow syntax", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				fn f() %int => "a"
+			`)
+
+			strLit := parse.FindNode(n, (*parse.QuotedStringLiteral)(nil), nil)
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(strLit, state, fmtInvalidReturnValue(NewString("a"), ANY_INT)),
+			}, state.errors())
+			assert.Nil(t, res)
+		})
+
+		t.Run("invalid return value (annotation is an unprefixed named pattern)", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				fn f() int {
 					return "a"
@@ -3407,6 +3422,17 @@ func TestSymbolicEval(t *testing.T) {
 				fn f() %int {
 					return int
 				}
+				return f()
+			`)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, ANY_INT, res)
+		})
+
+		t.Run("function declaration with the arrow syntax + call: %int return type", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				fn f() %int => int
 				return f()
 			`)
 			res, err := symbolicEval(n, state)

@@ -3303,10 +3303,10 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			}
 
 			if signatureReturnType != nil {
-				storedReturnType = signatureReturnType
 				if !signatureReturnType.Test(storedReturnType, RecTestCallState{}) {
-					state.addError(makeSymbolicEvalError(n, state, fmtInvalidReturnValue(storedReturnType, signatureReturnType)))
+					state.addError(makeSymbolicEvalError(n.Body, state, fmtInvalidReturnValue(storedReturnType, signatureReturnType)))
 				}
+				storedReturnType = signatureReturnType
 			}
 		} else {
 			stateFork.returnType = signatureReturnType
