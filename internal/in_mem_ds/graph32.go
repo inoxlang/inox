@@ -90,7 +90,39 @@ func (g Graph32[T]) isValidNodeId(nodeId NodeId) bool {
 	return nodeId >= 0 && nodeId <= g.maxAllowedId()
 }
 
+// IteratorDirectlyReachableNodes returns an iterator that iterates over all nodes directly and indirectly reachable
+// from the node of id fromNodeId. The iteration start at this node.
 func (g Graph32[T]) IteratorFrom(fromNodeId NodeId) Graph32Iterator[T] {
+	if !g.isValidNodeId(fromNodeId) {
+		panic(ErrInvalidOrOutOfBoundsNodeId)
+	}
+
+	if !g.HasNodeOfId(fromNodeId) {
+		visited := BitSet32(0)
+		visited.SetAll()
+
+		return Graph32Iterator[T]{
+			visited: visited,
+		}
+	}
+
+	nodes := g.edges[fromNodeId]
+
+	it := Graph32Iterator[T]{
+		copy:    g,
+		visited: BitSet32(0),
+	}
+
+	nodes.ForEachSet(func(index Bit32Index) error {
+		it.currentNodes.Set(index)
+		return nil
+	})
+
+	return it
+}
+
+// IteratorDirectlyReachableNodes returns an iterator that iterates over the nodes directly reachable from the node of id fromNodeId.
+func (g Graph32[T]) IteratorDirectlyReachableNodes(fromNodeId NodeId) Graph32Iterator[T] {
 	if !g.isValidNodeId(fromNodeId) {
 		panic(ErrInvalidOrOutOfBoundsNodeId)
 	}
@@ -102,14 +134,16 @@ func (g Graph32[T]) IteratorFrom(fromNodeId NodeId) Graph32Iterator[T] {
 	}
 
 	nodes := g.edges[fromNodeId]
-	visited := BitSet32(0)
 
 	it := Graph32Iterator[T]{
 		copy:    g,
-		visited: visited,
+		visited: BitSet32(0),
 	}
 
+	it.visited.SetAll()
+
 	nodes.ForEachSet(func(index Bit32Index) error {
+		it.visited.Unset(index)
 		it.currentNodes.Set(index)
 		return nil
 	})
@@ -142,10 +176,6 @@ func (it *Graph32Iterator[T]) Node() Graph32Node[T] {
 }
 
 func (it *Graph32Iterator[T]) Next() bool {
-	if it.finished {
-		return false
-	}
-
 	ok := false
 
 	it.currentNodes.ForEachSet(func(index Bit32Index) error {

@@ -121,6 +121,14 @@ func TestGraph32(t *testing.T) {
 			}
 			assert.Equal(t, node0, it.Node())
 			assert.False(t, it.Next())
+
+			//test iteration: directly reachable nodes
+			it2 := g.IteratorDirectlyReachableNodes(node0.Id())
+			if !assert.True(t, it2.Next()) {
+				return
+			}
+			assert.Equal(t, node0, it2.Node())
+			assert.False(t, it2.Next())
 		})
 
 		t.Run("A -> B -> C", func(t *testing.T) {
@@ -151,6 +159,15 @@ func TestGraph32(t *testing.T) {
 			}
 			assert.Equal(t, node2, it.Node())
 			assert.False(t, it.Next())
+
+			//test iteration: directly reachable nodes
+			it2 := g.IteratorDirectlyReachableNodes(node0.Id())
+
+			if !assert.True(t, it2.Next()) {
+				return
+			}
+			assert.Equal(t, node1, it2.Node())
+			assert.False(t, it2.Next())
 		})
 
 		t.Run("A -> B -> C -> A", func(t *testing.T) {
@@ -194,6 +211,15 @@ func TestGraph32(t *testing.T) {
 			}
 			assert.Equal(t, node2, it.Node())
 			assert.False(t, it.Next())
+
+			//test iteration: directly reachable nodes
+			it2 := g.IteratorDirectlyReachableNodes(node0.Id())
+
+			if !assert.True(t, it2.Next()) {
+				return
+			}
+			assert.Equal(t, node1, it2.Node())
+			assert.False(t, it2.Next())
 		})
 	})
 }

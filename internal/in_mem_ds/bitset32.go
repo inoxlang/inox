@@ -27,9 +27,13 @@ func (s *BitSet32) Set(index Bit32Index) {
 	*s |= (1 << index)
 }
 
+func (s *BitSet32) SetAll() {
+	*s = 0xff_ff_ff_ff
+}
+
 func (s *BitSet32) Unset(index Bit32Index) {
 	index.checkInBounds()
-	*s &= (0xff_ff_ff_ff & (0 << index))
+	*s &= (0xff_ff_ff_ff ^ (1 << index))
 }
 
 func (s *BitSet32) CountSet() int {

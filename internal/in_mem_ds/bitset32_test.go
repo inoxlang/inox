@@ -51,30 +51,33 @@ func TestBitSet32(t *testing.T) {
 		t.Run("0", func(t *testing.T) {
 			bitSet := BitSet32(0)
 			bitSet.Set(Bit32Index(0))
+			bitSet.Set(Bit32Index(1))
 			bitSet.Unset(Bit32Index(0))
 
 			assert.False(t, bitSet.IsSet(Bit32Index(0)))
-			assert.False(t, bitSet.IsSet(Bit32Index(1)))
+			assert.True(t, bitSet.IsSet(Bit32Index(1)))
 			assert.False(t, bitSet.IsSet(Bit32Index(2)))
 		})
 
 		t.Run("1", func(t *testing.T) {
 			bitSet := BitSet32(0)
+			bitSet.Set(Bit32Index(0))
 			bitSet.Set(Bit32Index(1))
 			bitSet.Unset(Bit32Index(1))
 
+			assert.True(t, bitSet.IsSet(Bit32Index(0)))
 			assert.False(t, bitSet.IsSet(Bit32Index(1)))
-			assert.False(t, bitSet.IsSet(Bit32Index(0)))
 			assert.False(t, bitSet.IsSet(Bit32Index(2)))
 		})
 
 		t.Run("31", func(t *testing.T) {
 			bitSet := BitSet32(0)
 			bitSet.Set(Bit32Index(31))
+			bitSet.Set(Bit32Index(0))
 			bitSet.Unset(Bit32Index(31))
 
 			assert.False(t, bitSet.IsSet(Bit32Index(31)))
-			assert.False(t, bitSet.IsSet(Bit32Index(0)))
+			assert.True(t, bitSet.IsSet(Bit32Index(0)))
 			assert.False(t, bitSet.IsSet(Bit32Index(1)))
 			assert.False(t, bitSet.IsSet(Bit32Index(2)))
 		})
