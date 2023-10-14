@@ -4,29 +4,31 @@ import (
 	"errors"
 	"fmt"
 
-	"gonum.org/v1/gonum/graph"
-	"gonum.org/v1/gonum/graph/simple"
+	"github.com/inoxlang/inox/internal/in_mem_ds"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 const (
 	INOX_MODULE_RES_KIND         = "inox/module"
 	INOX_INCLUDED_CHUNK_RES_KIND = "inox/included-chunk"
 
-	CHUNK_IMPORT_MOD_REL = "inox/import-module"
-	CHUNK_INCLUDE_REL    = "inox/include-chunk"
+	CHUNK_IMPORT_MOD_REL = ResourceRelationKind("inox/import-module")
+	CHUNK_INCLUDE_REL    = ResourceRelationKind("inox/include-chunk")
 )
 
 type ResourceGraph struct {
-	directed     *simple.DirectedGraph
-	resourceToId map[string]int64
-	roots        map[int64]struct{}
+	directed     *in_mem_ds.DirectedGraph[*ResourceNode, ResourceRelationKind]
+	resourceToId map[string]in_mem_ds.NodeId
+	roots        map[in_mem_ds.NodeId]struct{}
 }
+
+type ResourceRelationKind string
 
 func NewResourceGraph() *ResourceGraph {
 	return &ResourceGraph{
-		directed:     simple.NewDirectedGraph(),
-		resourceToId: make(map[string]int64, 0),
-		roots:        make(map[int64]struct{}, 0),
+		directed:     in_mem_ds.NewDirectedGraph[*ResourceNode, ResourceRelationKind](in_mem_ds.ThreadUnsafe),
+		resourceToId: make(map[string]in_mem_ds.NodeId, 0),
+		roots:        make(map[in_mem_ds.NodeId]struct{}, 0),
 	}
 }
 
@@ -103,41 +105,13 @@ func AddModuleTreeToResourceGraph(m *Module, g *ResourceGraph, ctx *Context, ign
 }
 
 type ResourceNode struct {
-	graph.Node
 	kind string
 	r    ResourceName
+	id   in_mem_ds.NodeId
 }
 
 func (r ResourceNode) Kind() string {
 	return r.kind
-}
-
-type ResourceGraphEdge struct {
-	from, to *ResourceNode
-	kind     string
-}
-
-func (r ResourceGraphEdge) Kind() string {
-	return r.kind
-}
-
-func (e ResourceGraphEdge) From() graph.Node {
-	return e.from
-}
-
-func (e ResourceGraphEdge) To() graph.Node {
-	return e.to
-}
-
-func (e ResourceGraphEdge) ReversedEdge() graph.Edge {
-	//graph.Edge:
-	// ReversedEdge returns the edge reversal of the receiver
-	// if a reversal is valid for the data type.
-	// When a reversal is valid an edge of the same type as
-	// the receiver with nodes of the receiver swapped should
-	// be returned, otherwise the receiver should be returned
-	// unaltered.
-	return e
 }
 
 func (g *ResourceGraph) getResourceNode(r ResourceName) *ResourceNode {
@@ -145,12 +119,12 @@ func (g *ResourceGraph) getResourceNode(r ResourceName) *ResourceNode {
 	if !ok {
 		panic(fmtResourceNotInGraph(r))
 	}
-	node := g.directed.Node(id)
-	if node == nil {
+	node, ok := g.directed.Node(id)
+	if !ok {
 		panic(ErrUnreachable)
 	}
 
-	return node.(*ResourceNode)
+	return node.Data
 }
 
 func (g *ResourceGraph) AddResource(r ResourceName, kind string) {
@@ -167,25 +141,25 @@ func (g *ResourceGraph) AddResource(r ResourceName, kind string) {
 	node := &ResourceNode{
 		r:    r,
 		kind: kind,
-		Node: g.directed.NewNode(),
 	}
 
-	g.directed.AddNode(node)
-	g.resourceToId[name] = node.ID()
-	g.roots[node.ID()] = struct{}{}
+	id := g.directed.AddNode(node)
+	node.id = id
+
+	g.resourceToId[name] = id
+	g.roots[id] = struct{}{}
 }
 
-func (g *ResourceGraph) AddEdge(from, to ResourceName, rel string) {
+func (g *ResourceGraph) AddEdge(from, to ResourceName, rel ResourceRelationKind) {
 	fromNode := g.getResourceNode(from)
 	toNode := g.getResourceNode(to)
 
-	if g.directed.HasEdgeFromTo(fromNode.ID(), toNode.ID()) {
+	if g.directed.HasEdgeFromTo(fromNode.id, toNode.id) {
 		return
 	}
 
-	edge := ResourceGraphEdge{from: fromNode, to: toNode, kind: rel}
-	g.directed.SetEdge(edge)
-	delete(g.roots, toNode.ID())
+	g.directed.SetEdge(fromNode.id, toNode.id, ResourceRelationKind(rel))
+	delete(g.roots, toNode.id)
 }
 
 func (g *ResourceGraph) GetNode(r ResourceName) (*ResourceNode, bool) {
@@ -194,26 +168,22 @@ func (g *ResourceGraph) GetNode(r ResourceName) (*ResourceNode, bool) {
 		return nil, false
 	}
 
-	return g.directed.Node(id).(*ResourceNode), true
+	return g.directed.NodeData(id)
 }
 
 func (g *ResourceGraph) Roots() (roots []*ResourceNode) {
 	for id := range g.roots {
-		roots = append(roots, g.directed.Node(id).(*ResourceNode))
+		roots = append(roots, utils.MustGet(g.directed.NodeData(id)))
 	}
 
 	return
 }
 
-func (g *ResourceGraph) GetEdge(from, to ResourceName) (ResourceGraphEdge, bool) {
+func (g *ResourceGraph) GetEdge(from, to ResourceName) (in_mem_ds.GraphEdge[ResourceRelationKind], bool) {
 	fromNode := g.getResourceNode(from)
 	toNode := g.getResourceNode(to)
 
-	if !g.directed.HasEdgeFromTo(fromNode.ID(), toNode.ID()) {
-		return ResourceGraphEdge{}, false
-	}
-
-	return g.directed.Edge(fromNode.ID(), toNode.ID()).(ResourceGraphEdge), true
+	return g.directed.Edge(fromNode.id, toNode.id)
 }
 
 func fmtResourceNotInGraph(r ResourceName) error {

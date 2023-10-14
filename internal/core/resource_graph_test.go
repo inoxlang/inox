@@ -76,7 +76,7 @@ func TestAddModuleTreeToResourceGraph(t *testing.T) {
 		if !assert.True(t, ok) {
 			return
 		}
-		assert.Equal(t, CHUNK_INCLUDE_REL, edge.Kind())
+		assert.Equal(t, CHUNK_INCLUDE_REL, edge.Data)
 
 		//reversed edge should not exist
 		_, ok = g.GetEdge(ResourceNameFrom("/chunk.ix"), ResourceNameFrom("/main.ix"))
@@ -133,7 +133,7 @@ func TestAddModuleTreeToResourceGraph(t *testing.T) {
 		if !assert.True(t, ok) {
 			return
 		}
-		assert.Equal(t, CHUNK_INCLUDE_REL, edge1.Kind())
+		assert.Equal(t, CHUNK_INCLUDE_REL, edge1.Data)
 
 		//reversed edge should not exist
 		_, ok = g.GetEdge(ResourceNameFrom("/chunk1.ix"), ResourceNameFrom("/main.ix"))
@@ -143,7 +143,7 @@ func TestAddModuleTreeToResourceGraph(t *testing.T) {
 		if !assert.True(t, ok) {
 			return
 		}
-		assert.Equal(t, CHUNK_INCLUDE_REL, edge2.Kind())
+		assert.Equal(t, CHUNK_INCLUDE_REL, edge2.Data)
 
 		//reversed edge should not exist
 		_, ok = g.GetEdge(ResourceNameFrom("/chunk2.ix"), ResourceNameFrom("/main.ix"))
@@ -200,7 +200,7 @@ func TestAddModuleTreeToResourceGraph(t *testing.T) {
 		if !assert.True(t, ok) {
 			return
 		}
-		assert.Equal(t, CHUNK_INCLUDE_REL, edge1.Kind())
+		assert.Equal(t, CHUNK_INCLUDE_REL, edge1.Data)
 
 		//reversed edge should not exist
 		_, ok = g.GetEdge(ResourceNameFrom("/chunk1.ix"), ResourceNameFrom("/main.ix"))
@@ -210,7 +210,7 @@ func TestAddModuleTreeToResourceGraph(t *testing.T) {
 		if !assert.True(t, ok) {
 			return
 		}
-		assert.Equal(t, CHUNK_INCLUDE_REL, edge2.Kind())
+		assert.Equal(t, CHUNK_INCLUDE_REL, edge2.Data)
 
 		//reversed edge should not exist
 		_, ok = g.GetEdge(ResourceNameFrom("/chunk2.ix"), ResourceNameFrom("/chunk1.ix"))
@@ -260,7 +260,7 @@ func TestAddModuleTreeToResourceGraph(t *testing.T) {
 		if !assert.True(t, ok) {
 			return
 		}
-		assert.Equal(t, CHUNK_IMPORT_MOD_REL, edge.Kind())
+		assert.Equal(t, CHUNK_IMPORT_MOD_REL, edge.Data)
 
 		//reversed edge should not exist
 		_, ok = g.GetEdge(ResourceNameFrom("/lib.ix"), ResourceNameFrom("/main.ix"))
