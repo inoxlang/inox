@@ -15,7 +15,6 @@ require (
 	github.com/cloudflare/cloudflare-go v0.75.0
 	github.com/coreos/go-systemd/v22 v22.5.0
 	github.com/djherbis/times v1.5.0
-	github.com/emirpasic/gods v1.18.1
 	github.com/fsnotify/fsnotify v1.6.0
 	github.com/go-git/go-billy/v5 v5.4.1
 	github.com/goccy/go-yaml v1.11.0
