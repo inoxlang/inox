@@ -82,7 +82,7 @@ func (s *Queue) Iterator(ctx *core.Context, config core.IteratorConfiguration) c
 				if !it.Next() {
 					return false
 				}
-				next = it.Value().(core.Value)
+				next = it.Value()
 			}
 			return true
 		},

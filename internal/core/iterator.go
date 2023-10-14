@@ -10,7 +10,7 @@ import (
 	"sync"
 
 	"github.com/bits-and-blooms/bitset"
-	aq "github.com/emirpasic/gods/queues/arrayqueue"
+	"github.com/inoxlang/inox/internal/in_mem_ds"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
@@ -1509,7 +1509,7 @@ type EventSourceIterator struct {
 	i        int
 	source   EventSource
 	lock     sync.Mutex
-	queue    *aq.Queue
+	queue    *in_mem_ds.ArrayQueue[*Event]
 	waitNext chan (struct{})
 	current  *Event
 }
@@ -1517,7 +1517,7 @@ type EventSourceIterator struct {
 func NewEventSourceIterator(source EventSource, config IteratorConfiguration) Iterator {
 	it := &EventSourceIterator{
 		source:   source,
-		queue:    aq.New(),
+		queue:    in_mem_ds.NewArrayQueue[*Event](),
 		waitNext: make(chan struct{}, 1),
 	}
 	source.OnEvent(func(event *Event) {
@@ -1551,7 +1551,7 @@ func (it *EventSourceIterator) Next(ctx *Context) bool {
 	curr, ok := it.queue.Dequeue()
 	if ok {
 		defer it.lock.Unlock()
-		it.current = curr.(*Event)
+		it.current = curr
 		it.i++
 		if len(it.waitNext) == 1 {
 			<-it.waitNext
@@ -1570,7 +1570,7 @@ func (it *EventSourceIterator) Next(ctx *Context) bool {
 
 		curr, ok := it.queue.Dequeue()
 		if ok {
-			it.current = curr.(*Event)
+			it.current = curr
 			it.i++
 			return true
 		}

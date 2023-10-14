@@ -1,13 +1,13 @@
 package containers
 
 import (
-	"github.com/emirpasic/gods/queues/arrayqueue"
 	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/in_mem_ds"
 )
 
 func NewQueue(ctx *core.Context, elements core.Iterable) *Queue {
 	queue := &Queue{
-		elements: arrayqueue.New(),
+		elements: in_mem_ds.NewTSArrayQueue[core.Value](),
 	}
 
 	it := elements.Iterator(ctx, core.IteratorConfiguration{})
@@ -20,7 +20,7 @@ func NewQueue(ctx *core.Context, elements core.Iterable) *Queue {
 }
 
 type Queue struct {
-	elements *arrayqueue.Queue
+	elements *in_mem_ds.TSArrayQueue[core.Value]
 }
 
 func (s *Queue) Enqueue(ctx *core.Context, elem core.Value) {
