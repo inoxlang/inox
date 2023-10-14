@@ -15452,8 +15452,8 @@ func testParse(
 							},
 						},
 						ReturnType: &PatternIdentifierLiteral{
-							NodeBase: NodeBase{NodeSpan{6, 9}, nil, nil},
-							Name:     "int",
+							NodeBase:   NodeBase{NodeSpan{6, 9}, nil, nil},
+							Name:       "int",
 							Unprefixed: true,
 						},
 						IsBodyExpression: true,
@@ -23903,6 +23903,114 @@ func testParse(
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{12, 15}, nil, nil},
 									Name:     "div",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("single curly bracket interpolations should not be parsed in script tags", func(t *testing.T) {
+			n := mustparseChunk(t, "h<script>{1}2</script>")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 22}, nil, nil},
+				Statements: []Node{
+					&XMLExpression{
+						NodeBase: NodeBase{NodeSpan{0, 22}, nil, nil},
+						Namespace: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 1}, nil, nil},
+							Name:     "h",
+						},
+						Element: &XMLElement{
+							NodeBase: NodeBase{NodeSpan{1, 22}, nil, nil},
+							Opening: &XMLOpeningElement{
+								NodeBase: NodeBase{
+									NodeSpan{1, 9},
+									nil,
+									[]Token{
+										{Type: LESS_THAN, Span: NodeSpan{1, 2}},
+										{Type: GREATER_THAN, Span: NodeSpan{8, 9}},
+									},
+								},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{2, 8}, nil, nil},
+									Name:     "script",
+								},
+							},
+							Children: []Node{
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{9, 13}, nil, nil},
+									Raw:      "{1}2",
+									Value:    "{1}2",
+								},
+							},
+							Closing: &XMLClosingElement{
+								NodeBase: NodeBase{
+									NodeSpan{13, 22},
+									nil,
+									[]Token{
+										{Type: END_TAG_OPEN_DELIMITER, Span: NodeSpan{13, 15}},
+										{Type: GREATER_THAN, Span: NodeSpan{21, 22}},
+									},
+								},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{15, 21}, nil, nil},
+									Name:     "script",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("single curly bracket interpolations should not be parsed in style tags", func(t *testing.T) {
+			n := mustparseChunk(t, "h<style>{1}2</style>")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 20}, nil, nil},
+				Statements: []Node{
+					&XMLExpression{
+						NodeBase: NodeBase{NodeSpan{0, 20}, nil, nil},
+						Namespace: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 1}, nil, nil},
+							Name:     "h",
+						},
+						Element: &XMLElement{
+							NodeBase: NodeBase{NodeSpan{1, 20}, nil, nil},
+							Opening: &XMLOpeningElement{
+								NodeBase: NodeBase{
+									NodeSpan{1, 8},
+									nil,
+									[]Token{
+										{Type: LESS_THAN, Span: NodeSpan{1, 2}},
+										{Type: GREATER_THAN, Span: NodeSpan{7, 8}},
+									},
+								},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{2, 7}, nil, nil},
+									Name:     "style",
+								},
+							},
+							Children: []Node{
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{8, 12}, nil, nil},
+									Raw:      "{1}2",
+									Value:    "{1}2",
+								},
+							},
+							Closing: &XMLClosingElement{
+								NodeBase: NodeBase{
+									NodeSpan{12, 20},
+									nil,
+									[]Token{
+										{Type: END_TAG_OPEN_DELIMITER, Span: NodeSpan{12, 14}},
+										{Type: GREATER_THAN, Span: NodeSpan{19, 20}},
+									},
+								},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{14, 19}, nil, nil},
+									Name:     "style",
 								},
 							},
 						},

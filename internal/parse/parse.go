@@ -40,6 +40,9 @@ const (
 	STRICT_EMAIL_ADDRESS_PATTERN      = "(?i)(^[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,24}$)"
 
 	NO_OTHERPROPS_PATTERN_NAME = "no"
+
+	SCRIPT_TAG_NAME = "script"
+	STYLE_TAG_NAME  = "style"
 )
 
 var (
@@ -8229,6 +8232,11 @@ func (p *parser) parseXMLElement(start int32) *XMLElement {
 		Name: openingIdent,
 	}
 
+	singleBracketInterpolations := true
+	if openingIdent != nil && (openingIdent.Name == SCRIPT_TAG_NAME || openingIdent.Name == STYLE_TAG_NAME) {
+		singleBracketInterpolations = false
+	}
+
 	//attributes
 	for p.i < p.len && p.s[p.i] != '>' && p.s[p.i] != '/' {
 		name, isMissingExpr := p.parseExpression()
@@ -8343,7 +8351,7 @@ func (p *parser) parseXMLElement(start int32) *XMLElement {
 	//children
 	var valuelessTokens []Token
 
-	children, err := p.parseXMLChildren(&valuelessTokens)
+	children, err := p.parseXMLChildren(&valuelessTokens, singleBracketInterpolations)
 	parsingErr = err
 
 	if p.i >= p.len || p.s[p.i] != '<' {
@@ -8413,7 +8421,7 @@ func (p *parser) parseXMLElement(start int32) *XMLElement {
 	}
 }
 
-func (p *parser) parseXMLChildren(valuelessTokens *[]Token) ([]Node, *ParsingError) {
+func (p *parser) parseXMLChildren(valuelessTokens *[]Token, singleBracketInterpolations bool) ([]Node, *ParsingError) {
 	p.panicIfContextDone()
 
 	inInterpolation := false
@@ -8427,7 +8435,7 @@ func (p *parser) parseXMLChildren(valuelessTokens *[]Token) ([]Node, *ParsingErr
 
 		//interpolation
 		switch {
-		case p.s[p.i] == '{':
+		case p.s[p.i] == '{' && singleBracketInterpolations:
 			*valuelessTokens = append(*valuelessTokens, Token{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{p.i, p.i + 1}})
 
 			// add previous slice

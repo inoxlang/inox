@@ -364,6 +364,8 @@ func TestPrint(t *testing.T) {
 		"h<div/>",
 		"h<div/",
 		"h<div>{1}2</div>",
+		"h<script>{1}2</script>",
+		"h<style>{1}2</style>",
 		"h<div>1{2}</div>",
 		"h<div>1{2}3</div>",
 		"h<div>{\n1}2</div>",
