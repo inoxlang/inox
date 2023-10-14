@@ -2,6 +2,8 @@ package main
 
 import (
 	// ====================== IMPORTANT SIDE EFFECTS ============================
+	"runtime/debug"
+
 	"github.com/inoxlang/inox/internal/config"
 	"github.com/inoxlang/inox/internal/core"
 	_ "github.com/inoxlang/inox/internal/globals"
@@ -59,6 +61,7 @@ const (
 	DEFAULT_PROJECT_SERVER_HOST = core.Host("wss://localhost:" + DEFAULT_PROJECT_SERVER_PORT)
 
 	PERF_PROFILES_COLLECTION_SAVE_PERIOD = 30 * time.Second
+	MAX_STACK_SIZE                       = 200_000_000
 
 	//text
 
@@ -78,6 +81,7 @@ const (
 )
 
 func main() {
+	debug.SetMaxStack(MAX_STACK_SIZE)
 	_main(os.Args, os.Stdout, os.Stderr)
 }
 
