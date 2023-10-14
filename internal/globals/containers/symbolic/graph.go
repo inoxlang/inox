@@ -9,7 +9,13 @@ import (
 	"github.com/inoxlang/inox/internal/utils"
 )
 
-var _ = []symbolic.Iterable{&Graph{}}
+var (
+	_         = []symbolic.Iterable{(*Graph)(nil)}
+	ANY_GRAPH = &Graph{}
+
+	_ = symbolic.IProps((*Graph)(nil))
+	_ = symbolic.IProps((*GraphNode)(nil))
+)
 
 type Graph struct {
 	symbolic.UnassignablePropsMixin
@@ -57,20 +63,19 @@ func (f *Graph) Connect(ctx *symbolic.Context, n1, n2 *GraphNode) {
 }
 
 func (f *Graph) Get(ctx *symbolic.Context, k symbolic.SymbolicValue) symbolic.SymbolicValue {
-	return &symbolic.Any{}
+	return symbolic.ANY
 }
 
 func (r *Graph) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%graph")))
-	return
 }
 
 func (g *Graph) IteratorElementKey() symbolic.SymbolicValue {
-	return &symbolic.Any{}
+	return symbolic.ANY
 }
 
 func (r *Graph) IteratorElementValue() symbolic.SymbolicValue {
-	return &symbolic.Any{}
+	return symbolic.ANY
 }
 
 func (r *Graph) WalkerElement() symbolic.SymbolicValue {
@@ -82,10 +87,11 @@ func (r *Graph) WalkerNodeMeta() symbolic.SymbolicValue {
 }
 
 func (r *Graph) WidestOfType() symbolic.SymbolicValue {
-	return &Graph{}
+	return ANY_GRAPH
 }
 
 type GraphNode struct {
+	symbolic.UnassignablePropsMixin
 	_ int
 }
 
@@ -106,7 +112,7 @@ func (f *GraphNode) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 func (n *GraphNode) Prop(name string) symbolic.SymbolicValue {
 	switch name {
 	case "data":
-		return &symbolic.Any{}
+		return symbolic.ANY
 	case "children":
 		return &symbolic.Iterator{ElementValue: &GraphNode{}}
 	case "parents":
@@ -121,7 +127,6 @@ func (*GraphNode) PropertyNames() []string {
 
 func (r *GraphNode) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("%graph-node")))
-	return
 }
 
 func (r *GraphNode) WidestOfType() symbolic.SymbolicValue {

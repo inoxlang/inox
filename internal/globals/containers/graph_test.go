@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/in_mem_ds"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -14,10 +15,9 @@ func TestCreateGraph(t *testing.T) {
 	t.Run("empty", func(t *testing.T) {
 		ctx := core.NewContext(core.ContextConfig{})
 		graph := NewGraph(ctx, core.NewWrappedValueList(), core.NewWrappedValueList())
-		assert.Empty(t, graph.values)
 		assert.Empty(t, graph.roots)
-		assert.Zero(t, graph.graph.Nodes().Len())
-		assert.Zero(t, graph.graph.Edges().Len())
+		assert.Zero(t, graph.graph.NodeCount())
+		assert.Zero(t, graph.graph.EdgeCount())
 	})
 
 	t.Run("single node", func(t *testing.T) {
@@ -25,16 +25,15 @@ func TestCreateGraph(t *testing.T) {
 
 		graph := NewGraph(ctx, core.NewWrappedValueList(core.Int(2)), core.NewWrappedValueList())
 
-		assert.Equal(t, map[int64]core.Value{
-			0: core.Int(2),
-		}, graph.values)
+		data, _ := graph.graph.NodeData(0)
+		assert.Equal(t, core.Int(2), data)
 
-		assert.Equal(t, map[int64]bool{
+		assert.Equal(t, map[in_mem_ds.NodeId]bool{
 			0: true,
 		}, graph.roots)
 
-		assert.Equal(t, 1, graph.graph.Nodes().Len())
-		assert.Zero(t, graph.graph.Edges().Len())
+		assert.Equal(t, 1, graph.graph.NodeCount())
+		assert.Zero(t, graph.graph.EdgeCount())
 	})
 
 	t.Run("two disconnected nodes", func(t *testing.T) {
@@ -42,18 +41,18 @@ func TestCreateGraph(t *testing.T) {
 
 		graph := NewGraph(ctx, core.NewWrappedValueList(core.Int(2), core.Int(3)), core.NewWrappedValueList())
 
-		assert.Equal(t, map[int64]core.Value{
-			0: core.Int(2),
-			1: core.Int(3),
-		}, graph.values)
+		data, _ := graph.graph.NodeData(0)
+		assert.Equal(t, core.Int(2), data)
+		data, _ = graph.graph.NodeData(1)
+		assert.Equal(t, core.Int(3), data)
 
-		assert.Equal(t, map[int64]bool{
+		assert.Equal(t, map[in_mem_ds.NodeId]bool{
 			0: true,
 			1: true,
 		}, graph.roots)
 
-		assert.Equal(t, 2, graph.graph.Nodes().Len())
-		assert.Zero(t, graph.graph.Edges().Len())
+		assert.Equal(t, 2, graph.graph.NodeCount())
+		assert.Zero(t, graph.graph.EdgeCount())
 	})
 
 	t.Run("two connected nodes", func(t *testing.T) {
@@ -64,16 +63,16 @@ func TestCreateGraph(t *testing.T) {
 			core.NewWrappedValueList(core.Int(0), core.Int(1)),
 		)
 
-		assert.Equal(t, map[int64]core.Value{
-			0: core.Int(2),
-			1: core.Int(3),
-		}, graph.values)
+		data, _ := graph.graph.NodeData(0)
+		assert.Equal(t, core.Int(2), data)
+		data, _ = graph.graph.NodeData(1)
+		assert.Equal(t, core.Int(3), data)
 
-		assert.Equal(t, map[int64]bool{
+		assert.Equal(t, map[in_mem_ds.NodeId]bool{
 			0: true,
 		}, graph.roots)
 
-		assert.Equal(t, 2, graph.graph.Nodes().Len())
-		assert.Equal(t, 1, graph.graph.Edges().Len())
+		assert.Equal(t, 2, graph.graph.NodeCount())
+		assert.Equal(t, int64(1), graph.graph.EdgeCount())
 	})
 }

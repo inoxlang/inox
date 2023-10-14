@@ -32,9 +32,9 @@ func (g *Graph) Equal(ctx *core.Context, other core.Value, alreadyCompared map[u
 	return ok && g == otherGraph
 }
 
-func (n GraphNode) Equal(ctx *core.Context, other core.Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
-	otherNode, ok := other.(GraphNode)
-	return ok && n.node_.ID() == otherNode.node_.ID()
+func (n *GraphNode) Equal(ctx *core.Context, other core.Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	otherNode, ok := other.(*GraphNode)
+	return ok && n.id == otherNode.id && n.removed.Load() != otherNode.removed.Load()
 }
 
 func (r *Ranking) Equal(ctx *core.Context, other core.Value, alreadyCompared map[uintptr]uintptr, depth int) bool {

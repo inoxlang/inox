@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestTreestructIteration(t *testing.T) {
+func TestTreeIteration(t *testing.T) {
 
 	t.Run("only root: nil children", func(t *testing.T) {
 		tree := &Tree{}
@@ -21,6 +21,7 @@ func TestTreestructIteration(t *testing.T) {
 
 		ctx := core.NewContext(core.ContextConfig{})
 		core.NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		it := tree.Iterator(ctx, core.IteratorConfiguration{}).(*TreeIterator)
 
@@ -43,6 +44,7 @@ func TestTreestructIteration(t *testing.T) {
 
 		ctx := core.NewContext(core.ContextConfig{})
 		core.NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		it := tree.Iterator(ctx, core.IteratorConfiguration{}).(*TreeIterator)
 
@@ -70,6 +72,7 @@ func TestTreestructIteration(t *testing.T) {
 
 		ctx := core.NewContext(core.ContextConfig{})
 		core.NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		it := tree.Iterator(ctx, core.IteratorConfiguration{}).(*TreeIterator)
 
@@ -112,6 +115,7 @@ func TestTreestructIteration(t *testing.T) {
 
 		ctx := core.NewContext(core.ContextConfig{})
 		core.NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		it := tree.Iterator(ctx, core.IteratorConfiguration{}).(*TreeIterator)
 
@@ -145,6 +149,8 @@ func TestSetIteration(t *testing.T) {
 
 	t.Run("empty", func(t *testing.T) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		set := NewSetWithConfig(ctx, nil, SetConfig{
 			Element: core.ANYVAL_PATTERN,
 			Uniqueness: containers_common.UniquenessConstraint{
@@ -162,6 +168,8 @@ func TestSetIteration(t *testing.T) {
 
 	t.Run("single element", func(t *testing.T) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		set := NewSetWithConfig(ctx, core.NewWrappedValueList(core.Int(1)), SetConfig{
 			Element: core.ANYVAL_PATTERN,
 			Uniqueness: containers_common.UniquenessConstraint{
@@ -184,6 +192,8 @@ func TestSetIteration(t *testing.T) {
 
 	t.Run("two elements", func(t *testing.T) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		set := NewSetWithConfig(ctx, core.NewWrappedValueList(core.Int(1), core.Int(2)), SetConfig{
 			Element: core.ANYVAL_PATTERN,
 			Uniqueness: containers_common.UniquenessConstraint{
@@ -227,6 +237,8 @@ func TestSetIteration(t *testing.T) {
 
 		go func() {
 			ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+			defer ctx.CancelGracefully()
+
 			set := NewSetWithConfig(ctx, tuple, SetConfig{
 				Element: core.ANYVAL_PATTERN,
 				Uniqueness: containers_common.UniquenessConstraint{
@@ -245,6 +257,8 @@ func TestSetIteration(t *testing.T) {
 		time.Sleep(time.Microsecond)
 
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		set := NewSetWithConfig(ctx, tuple, SetConfig{
 			Element: core.ANYVAL_PATTERN,
 			Uniqueness: containers_common.UniquenessConstraint{
@@ -273,6 +287,8 @@ func TestSetIteration(t *testing.T) {
 
 		go func() {
 			ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+			defer ctx.CancelGracefully()
+
 			set := NewSetWithConfig(ctx, tuple, SetConfig{
 				Element: core.ANYVAL_PATTERN,
 				Uniqueness: containers_common.UniquenessConstraint{
@@ -290,6 +306,8 @@ func TestSetIteration(t *testing.T) {
 		for index := 0; index < 5; index++ {
 
 			ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+			defer ctx.CancelGracefully()
+
 			set := NewSetWithConfig(ctx, tuple, SetConfig{
 				Element: core.ANYVAL_PATTERN,
 				Uniqueness: containers_common.UniquenessConstraint{
@@ -314,6 +332,110 @@ func TestSetIteration(t *testing.T) {
 				return
 			}
 		}
+	})
+
+}
+
+func TestGraphIteration(t *testing.T) {
+
+	t.Run("empty", func(t *testing.T) {
+		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
+		graph := NewGraph(ctx, core.NewWrappedValueList(), core.NewWrappedValueList())
+
+		it := graph.Iterator(ctx, core.IteratorConfiguration{})
+		if !assert.False(t, it.HasNext(ctx)) {
+			return
+		}
+
+		assert.False(t, it.Next(ctx))
+	})
+
+	t.Run("single element", func(t *testing.T) {
+		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
+		graph := NewGraph(ctx, core.NewWrappedValueList(core.Str("1")), core.NewWrappedValueList())
+
+		it := graph.Iterator(ctx, core.IteratorConfiguration{})
+		if !assert.True(t, it.HasNext(ctx)) {
+			return
+		}
+
+		assert.True(t, it.Next(ctx))
+		assert.Equal(t, core.Int(0), it.Key(ctx))
+
+		v := it.Value(ctx)
+		if !assert.IsType(t, (*GraphNode)(nil), v) {
+			return
+		}
+		node := v.(*GraphNode)
+		assert.Equal(t, &GraphNode{id: 0, graph: graph}, node)
+		assert.Equal(t, core.Str("1"), node.Prop(ctx, "data"))
+
+		assert.False(t, it.HasNext(ctx))
+		assert.False(t, it.Next(ctx))
+	})
+
+	t.Run("two elements", func(t *testing.T) {
+		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
+		graph := NewGraph(ctx, core.NewWrappedValueList(core.Str("1"), core.Str("2")), core.NewWrappedValueList())
+
+		it := graph.Iterator(ctx, core.IteratorConfiguration{})
+		if !assert.True(t, it.HasNext(ctx)) {
+			return
+		}
+
+		assert.True(t, it.Next(ctx))
+		assert.Equal(t, core.Int(0), it.Key(ctx))
+
+		v := it.Value(ctx)
+		if !assert.IsType(t, (*GraphNode)(nil), v) {
+			return
+		}
+		node := v.(*GraphNode)
+
+		if node.id == 0 {
+			assert.Equal(t, core.Str("1"), node.Prop(ctx, "data"))
+
+			assert.True(t, it.Next(ctx))
+			assert.Equal(t, core.Int(1), it.Key(ctx))
+
+			v := it.Value(ctx)
+			if !assert.IsType(t, (*GraphNode)(nil), v) {
+				return
+			}
+			secondNode := v.(*GraphNode)
+			assert.Equal(t, &GraphNode{id: 1, graph: graph}, secondNode)
+			assert.Equal(t, core.Str("2"), secondNode.Prop(ctx, "data"))
+		} else {
+			assert.Equal(t, core.Str("2"), node.Prop(ctx, "data"))
+
+			assert.True(t, it.Next(ctx))
+			assert.Equal(t, core.Int(1), it.Key(ctx))
+
+			v := it.Value(ctx)
+			if !assert.IsType(t, (*GraphNode)(nil), v) {
+				return
+			}
+			secondNode := v.(*GraphNode)
+			assert.Equal(t, &GraphNode{id: 0, graph: graph}, secondNode)
+			assert.Equal(t, core.Str("1"), secondNode.Prop(ctx, "data"))
+		}
+
+		assert.False(t, it.HasNext(ctx))
+		assert.False(t, it.Next(ctx))
+	})
+
+	t.Run("iteration in two goroutines", func(t *testing.T) {
+		//TODO
+	})
+
+	t.Run("iteration as another goroutine modifies the Graph", func(t *testing.T) {
+		//TODO
 	})
 
 }

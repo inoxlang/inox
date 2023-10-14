@@ -60,7 +60,7 @@ func (g *Graph) ToSymbolicValue(ctx *core.Context, encountered map[uintptr]symbo
 	return &coll_symbolic.Graph{}, nil
 }
 
-func (n GraphNode) ToSymbolicValue(ctx *core.Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (n *GraphNode) ToSymbolicValue(ctx *core.Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
 	return &coll_symbolic.GraphNode{}, nil
 }
 

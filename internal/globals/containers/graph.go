@@ -2,10 +2,12 @@ package containers
 
 import (
 	"errors"
+	"fmt"
+	"sync"
+	"sync/atomic"
 
 	core "github.com/inoxlang/inox/internal/core"
-	"gonum.org/v1/gonum/graph"
-	"gonum.org/v1/gonum/graph/simple"
+	"github.com/inoxlang/inox/internal/in_mem_ds"
 )
 
 const (
@@ -17,24 +19,29 @@ var (
 	ErrEdgeListShouldHaveEvenLength = errors.New(`flat edge list should have an even length: [0, 1, 2, 3]`)
 	ErrNodeAlreadyInGraph           = errors.New("node is already in the graph")
 	ErrNodeNotInGraph               = errors.New("node is not in the graph")
+
+	_ = core.Value((*Graph)(nil))
+	_ = core.IProps((*Graph)(nil))
+
+	_ = core.Value((*GraphNode)(nil))
+	_ = core.IProps((*GraphNode)(nil))
 )
 
-func NewGraph(ctx *core.Context, nodes *core.List, edges *core.List) *Graph {
+func NewGraph(ctx *core.Context, nodeData *core.List, edges *core.List) *Graph {
 
 	g := &Graph{
-		graph:  simple.NewDirectedGraph(),
-		values: map[int64]core.Value{},
-		roots:  make(map[int64]bool),
+		graph: in_mem_ds.NewDirectedGraph[core.Value, struct{}](in_mem_ds.ThreadSafe),
+		roots: make(map[in_mem_ds.NodeId]bool),
 	}
 
-	_nodes := make([]graph.Node, nodes.Len())
+	nodeIds := make([]in_mem_ds.NodeId, nodeData.Len())
 
-	nodeCount := nodes.Len()
+	nodeCount := nodeData.Len()
 	for i := 0; i < nodeCount; i++ {
-		node := nodes.At(ctx, i)
-		actualNode, _ := g.graph.NodeWithID(int64(i))
-		g._insertNode(actualNode, node)
-		_nodes[i] = actualNode
+		nodeData := nodeData.At(ctx, i)
+		id := g.graph.AddNode(nodeData)
+		g.roots[id] = true
+		nodeIds[i] = id
 	}
 
 	if edges.Len()%2 != 0 {
@@ -48,64 +55,77 @@ func NewGraph(ctx *core.Context, nodes *core.List, edges *core.List) *Graph {
 
 		from := fromId.(core.Int)
 		to := toId.(core.Int)
-		g._connect(_nodes[from], _nodes[to])
+		g._connect(nodeIds[from], nodeIds[to])
 	}
 
 	return g
 }
 
 type Graph struct {
-	graph  *simple.DirectedGraph
-	values map[int64]core.Value
-	roots  map[int64]bool
+	graph     *in_mem_ds.DirectedGraph[core.Value, struct{}]
+	roots     map[in_mem_ds.NodeId]bool
+	rootsLock sync.Mutex
 }
 
-func (g *Graph) InsertNode(ctx *core.Context, v core.Value) GraphNode {
-	node := g.graph.NewNode()
-	g._insertNode(node, v)
-	return GraphNode{node_: node, graph: g}
-}
+func (g *Graph) InsertNode(ctx *core.Context, v core.Value) *GraphNode {
+	id := g.graph.AddNode(v)
 
-func (g *Graph) _insertNode(node graph.Node, value core.Value) {
-	id := node.ID()
-	if g.graph.Node(id) != nil {
-		panic(ErrNodeAlreadyInGraph)
-	}
+	g.rootsLock.Lock()
 	g.roots[id] = true
-	g.values[id] = value
-	g.graph.AddNode(node)
+	g.rootsLock.Unlock()
+
+	return &GraphNode{id: id, graph: g}
 }
 
-func (g *Graph) RemoveNode(ctx *core.Context, node GraphNode) {
-	if g.roots[node.node_.ID()] {
-		it := g.graph.From(node.node_.ID())
-		//we set as roots all children of the removed node that have no inbound edges.
-		for it.Next() {
-			to := it.Node()
-			if g.graph.To(to.ID()).Len() == 0 {
-				g.roots[to.ID()] = true
+func (g *Graph) RemoveNode(ctx *core.Context, node *GraphNode) {
+	if !node.removed.CompareAndSwap(false, true) {
+		return
+	}
+
+	if _, ok := g.graph.Node(node.id); !ok {
+		panic(ErrNodeNotInGraph)
+	}
+	g.graph.RemoveNode(node.id)
+	g.rootsLock.Lock()
+
+	if g.roots[node.id] {
+		g.rootsLock.Unlock()
+
+		//we set as roots all children of the removed node that have no other inbound edges.
+		for _, destinationId := range g.graph.DestinationIds(node.id) {
+			if g.graph.CountSourceNodes(destinationId) == 0 {
+				g.rootsLock.Lock()
+				g.roots[destinationId] = true
+				g.rootsLock.Unlock()
 			}
 		}
+	} else {
+		g.rootsLock.Unlock()
 	}
-	if g.graph.Node(node.node_.ID()) == nil {
-		panic(ErrNodeAlreadyInGraph)
-	}
-	g.graph.RemoveNode(node.node_.ID())
 }
 
-func (g *Graph) Connect(ctx *core.Context, from, to GraphNode) {
-	g._connect(from.node_, to.node_)
+func (g *Graph) Connect(ctx *core.Context, from, to *GraphNode) {
+	if from.removed.Load() {
+		panic(fmt.Errorf("source node: %w", ErrNodeNotInGraph))
+	}
+	if to.removed.Load() {
+		panic(fmt.Errorf("source node: %w", ErrNodeNotInGraph))
+	}
+
+	g._connect(from.id, to.id)
 }
 
-func (g *Graph) _connect(from, to graph.Node) {
-	if g.roots[to.ID()] {
-		delete(g.roots, to.ID())
-		if g.graph.To(from.ID()).Len() == 0 {
-			g.roots[from.ID()] = true
+func (g *Graph) _connect(fromId, toId in_mem_ds.NodeId) {
+	if g.roots[toId] {
+		delete(g.roots, toId)
+
+		//we set as root the source node if .
+		if g.graph.CountSourceNodes(fromId) == 0 {
+			g.roots[fromId] = true
 		}
 	}
-	edge := g.graph.NewEdge(from, to)
-	g.graph.SetEdge(edge)
+
+	g.graph.SetEdge(fromId, toId, struct{}{})
 }
 
 func (f *Graph) GetGoMethod(name string) (*core.GoFunction, bool) {
@@ -137,22 +157,23 @@ func (*Graph) PropertyNames(ctx *core.Context) []string {
 }
 
 func (g *Graph) Walker(*core.Context) (core.Walker, error) {
-	length := g.graph.Nodes().Len()
+	length := g.graph.NodeCount()
 	if length == 0 {
 		return newEmptyGraphWalker(), nil
 	}
 
-	visited := make(map[int64]bool, length)
-	stack := make([]int64, len(g.roots))
-	current := int64(-1)
+	visited := make(map[in_mem_ds.NodeId]bool, length)
+	stack := make([]in_mem_ds.NodeId, len(g.roots))
+	current := in_mem_ds.NodeId(-1)
 	firstChildStackIndex := -1 //used for pruning
 
 	if len(g.roots) == 0 { //no roots
 		//we start with a random node
-		for nodeId := range g.values {
-			stack = append(stack, nodeId)
-			break
+		nodeId, ok := g.graph.RandomNode()
+		if !ok {
+			return newEmptyGraphWalker(), nil
 		}
+		stack = append(stack, nodeId)
 	} else {
 		i := 0
 		for rootId := range g.roots {
@@ -173,29 +194,28 @@ func (g *Graph) Walker(*core.Context) (core.Walker, error) {
 			current = e
 			visited[e] = true
 
-			//loop through all chidren
-			to := g.graph.From(e)
+			//loop through all destination nodes ("children")
+			destinationNodes := g.graph.DestinationNodes(e)
 
-			if to.Len() == 0 {
+			if len(destinationNodes) == 0 {
 				firstChildStackIndex = -1
 			} else {
 				firstChildStackIndex = ind
 			}
 
-			for to.Next() {
-				child := to.Node()
-				childId := child.ID()
-				if visited[childId] {
+			for _, destNode := range destinationNodes {
+				destId := destNode.Id
+				if visited[destId] {
 					continue
 				}
 
-				visited[childId] = true
-				stack = append(stack, childId)
+				visited[destId] = true
+				stack = append(stack, destId)
 			}
 
 			//if the number of nodes is too small compared to the capacity of the stack we shrink the stack
 			if len(stack) >= minNodeShrinkableStackLength && len(stack) <= cap(stack)/nodeStackShrinkDivider {
-				newStack := make([]int64, len(stack))
+				newStack := make([]in_mem_ds.NodeId, len(stack))
 				copy(newStack, stack)
 				stack = newStack
 			}
@@ -211,48 +231,59 @@ func (g *Graph) Walker(*core.Context) (core.Walker, error) {
 			return core.Int(current)
 		},
 		value: func(wk *GraphWalker, ctx *core.Context) core.Value {
-			node, _ := g.graph.NodeWithID(current)
-			return GraphNode{node_: node, graph: g}
+			node, ok := g.graph.NodeWithID(current)
+			if !ok {
+				panic(ErrNodeNotInGraph)
+			}
+			return &GraphNode{id: node.Id, graph: g}
 		},
 	}, nil
 }
 
 type GraphNode struct {
-	node_ graph.Node
-	graph *Graph
+	id      in_mem_ds.NodeId
+	graph   *Graph
+	removed atomic.Bool
 }
 
-func (n GraphNode) GetGoMethod(name string) (*core.GoFunction, bool) {
+func (n *GraphNode) GetGoMethod(name string) (*core.GoFunction, bool) {
 	return nil, false
 }
 
-func (n GraphNode) Prop(ctx *core.Context, name string) core.Value {
+func (n *GraphNode) Prop(ctx *core.Context, name string) core.Value {
+	if n.removed.Load() {
+		panic(ErrNodeNotInGraph)
+	}
 	switch name {
 	case "data":
-		return n.graph.values[n.node_.ID()]
+		data, ok := n.graph.graph.NodeData(n.id)
+		if !ok {
+			panic(ErrNodeNotInGraph)
+		}
+		return data
 	case "children", "parents":
-		var it graph.Nodes
+		var nodes []in_mem_ds.GraphNode[core.Value]
 		if name == "children" {
-			it = n.graph.graph.From(n.node_.ID())
+			nodes = n.graph.graph.DestinationNodes(n.id)
 		} else {
-			it = n.graph.graph.To(n.node_.ID())
+			nodes = n.graph.graph.SourceNodes(n.id)
 		}
 
-		var next bool
 		i := -1
 
 		return &CollectionIterator{
 			hasNext: func(ci *CollectionIterator, ctx *core.Context) bool {
-				if !next {
-					if !it.Next() {
-						return false
-					}
-					next = true
+				if i < len(nodes)-1 {
+					return true
 				}
-				return true
+				nodes = nil
+				return false
 			},
 			next: func(ci *CollectionIterator, ctx *core.Context) bool {
-				next = false
+				if i >= len(nodes)-1 {
+					nodes = nil
+					return false
+				}
 				i++
 				return true
 			},
@@ -260,8 +291,7 @@ func (n GraphNode) Prop(ctx *core.Context, name string) core.Value {
 				return core.Int(i)
 			},
 			value: func(ci *CollectionIterator, ctx *core.Context) core.Value {
-				node := GraphNode{node_: it.Node(), graph: n.graph}
-				return node
+				return &GraphNode{id: nodes[i].Id, graph: n.graph}
 			},
 		}
 	}
@@ -272,10 +302,10 @@ func (n GraphNode) Prop(ctx *core.Context, name string) core.Value {
 	return method
 }
 
-func (GraphNode) SetProp(ctx *core.Context, name string, value core.Value) error {
+func (*GraphNode) SetProp(ctx *core.Context, name string, value core.Value) error {
 	return core.ErrCannotSetProp
 }
 
-func (GraphNode) PropertyNames(ctx *core.Context) []string {
+func (*GraphNode) PropertyNames(ctx *core.Context) []string {
 	return []string{"data"}
 }

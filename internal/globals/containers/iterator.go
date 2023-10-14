@@ -42,23 +42,22 @@ func (it *CollectionIterator) Iterator(ctx *core.Context, config core.IteratorCo
 }
 
 func (g *Graph) Iterator(ctx *core.Context, config core.IteratorConfiguration) core.Iterator {
-	it := g.graph.Nodes()
-	var next bool
-
+	nodeIds := g.graph.NodeIds()
 	i := -1
 
 	return config.CreateIterator(&CollectionIterator{
 		hasNext: func(ci *CollectionIterator, ctx *core.Context) bool {
-			if !next {
-				if !it.Next() {
-					return false
-				}
-				next = true
+			if i < len(nodeIds)-1 {
+				return true
 			}
-			return true
+			nodeIds = nil
+			return false
 		},
 		next: func(ci *CollectionIterator, ctx *core.Context) bool {
-			next = false
+			if i >= len(nodeIds)-1 {
+				nodeIds = nil
+				return false
+			}
 			i++
 			return true
 		},
@@ -66,7 +65,7 @@ func (g *Graph) Iterator(ctx *core.Context, config core.IteratorConfiguration) c
 			return core.Int(i)
 		},
 		value: func(ci *CollectionIterator, ctx *core.Context) core.Value {
-			node := GraphNode{node_: it.Node(), graph: g}
+			node := &GraphNode{id: nodeIds[i], graph: g}
 			return node
 		},
 	})

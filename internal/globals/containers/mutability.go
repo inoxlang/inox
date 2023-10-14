@@ -24,7 +24,7 @@ func (g *Graph) IsMutable() bool {
 	return true
 }
 
-func (n GraphNode) IsMutable() bool {
+func (n *GraphNode) IsMutable() bool {
 	return true
 }
 
