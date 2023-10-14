@@ -43,7 +43,6 @@ require (
 	golang.org/x/exp v0.0.0-20230811145659-89c5cff77bcb
 	golang.org/x/net v0.15.0
 	golang.org/x/term v0.12.0
-	gonum.org/v1/gonum v0.13.0
 	gopkg.in/cenkalti/backoff.v1 v1.1.0
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
 	gopkg.in/yaml.v3 v3.0.1
