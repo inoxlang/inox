@@ -6,7 +6,9 @@ var (
 	ErrOutOfBoundsBit32Index = errors.New("out of bounds Bit32Index")
 )
 
+// A BitSet32 is a bit set that performs no allocations and can store up to 32 bits.
 type BitSet32 uint32
+
 type Bit32Index uint8
 
 func (i Bit32Index) checkInBounds() {

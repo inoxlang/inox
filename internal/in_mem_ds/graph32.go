@@ -11,6 +11,7 @@ var (
 	ErrFullGraph32 = errors.New("Graph32 is full")
 )
 
+// A Map32 is a Graph that performs no allocations and has a capacity of 32 nodes.
 type Graph32[T constraints.Ordered] struct {
 	size     int
 	edges    [32]BitSet32
