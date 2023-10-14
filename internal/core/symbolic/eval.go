@@ -12,13 +12,13 @@ import (
 
 	"slices"
 
+	"github.com/inoxlang/inox/internal/in_mem_ds"
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/oklog/ulid/v2"
 	"golang.org/x/exp/maps"
-	"gonum.org/v1/gonum/graph/simple"
 )
 
 type IterationChange int
@@ -1874,15 +1874,13 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 		indexKey := 0
 
 		var keys []string
-		keyToProp := map[string]*parse.ObjectProperty{}
-		keyIds := map[string]int{}
-		idToKey := map[int64]string{}
+		var keyToProp in_mem_ds.Map32[string, *parse.ObjectProperty]
+		var dependencyGraph in_mem_ds.Graph32[string]
 
-		graph := simple.NewDirectedGraph()
 		var selfDependent []string
 
 		//first iteration of the properties: we get all keys
-		for i, p := range n.Properties {
+		for _, p := range n.Properties {
 			var key string
 
 			//add the key
@@ -1902,12 +1900,10 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			default:
 				return nil, fmt.Errorf("invalid key type %T", n)
 			}
-			keys = append(keys, key)
-			keyIds[key] = i
-			keyToProp[key] = p
-			idToKey[int64(i)] = key
-			//
 
+			dependencyGraph.AddNode(key)
+			keys = append(keys, key)
+			keyToProp.Set(key, p)
 		}
 
 		for _, el := range n.SpreadElements {
@@ -1949,19 +1945,14 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 
 		//second iteration of the properties: we build a graph of dependencies
 		for i, p := range n.Properties {
-			propKey := keys[i]
-			propKeyId := int64(i)
+			dependentKey := keys[i]
+			dependentKeyId, _ := dependencyGraph.IdOfNode(dependentKey)
 
 			if _, ok := p.Value.(*parse.FunctionExpression); !ok {
 				continue
 			}
 
 			// find method's dependencies
-			propNode, new := graph.NodeWithID(propKeyId)
-			if new {
-				graph.AddNode(propNode)
-			}
-
 			parse.Walk(p.Value, func(node, parent, scopeNode parse.Node, ancestorChain []parse.Node, after bool) (parse.TraversalAction, error) {
 
 				if parse.IsScopeContainerNode(node) && node != p.Value {
@@ -1970,36 +1961,30 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 
 				switch node.(type) {
 				case *parse.SelfExpression:
-					propName := ""
+					dependencyName := ""
 
 					switch p := parent.(type) {
 					case *parse.MemberExpression:
-						propName = p.PropertyName.Name
+						dependencyName = p.PropertyName.Name
 					case *parse.DynamicMemberExpression:
-						propName = p.PropertyName.Name
+						dependencyName = p.PropertyName.Name
 					}
 
-					if propName != "" {
+					if dependencyName == "" {
+						break
+					}
 
-						keyId, ok := keyIds[propName]
-						if !ok {
-							//?
-							return parse.Continue, nil
-						}
+					depId, ok := dependencyGraph.IdOfNode(dependencyName)
+					if !ok {
+						//?
+						return parse.Continue, nil
+					}
 
-						otherNode, new := graph.NodeWithID(int64(keyId))
-
-						if new {
-							graph.AddNode(otherNode)
-						}
-
-						if keyId == int(propKeyId) {
-							selfDependent = append(selfDependent, propKey)
-						} else if !graph.HasEdgeFromTo(propKeyId, otherNode.ID()) {
-							// otherNode -<- propNode (propNode depends on otherNode)
-							edge := graph.NewEdge(propNode, otherNode)
-							graph.SetEdge(edge)
-						}
+					if dependentKeyId == depId {
+						selfDependent = append(selfDependent, dependentKey)
+					} else if !dependencyGraph.HasEdgeFromTo(dependentKeyId, depId) {
+						// dependentKey ->- depKey
+						dependencyGraph.AddEdge(dependentKeyId, depId)
 					}
 				}
 				return parse.Continue, nil
@@ -2008,11 +1993,11 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 
 		// we sort the keys based on the dependency graph
 
-		var dependencyChainCountsCache = make(map[int64]int, len(keys))
-		var getDependencyChainDepth func(int64, []int64) int
+		var dependencyChainCountsCache = make(map[in_mem_ds.NodeId]int, len(keys))
+		var getDependencyChainDepth func(in_mem_ds.NodeId, []in_mem_ds.NodeId) int
 		var cycles [][]string
 
-		getDependencyChainDepth = func(nodeId int64, chain []int64) int {
+		getDependencyChainDepth = func(nodeId in_mem_ds.NodeId, chain []in_mem_ds.NodeId) int {
 			for _, id := range chain {
 				if nodeId == id && len(chain) >= 1 {
 					cycle := make([]string, 0, len(chain))
@@ -2032,11 +2017,11 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			}
 
 			depth_ := 0
-			directDependencies := graph.From(nodeId)
+			directDependencies := dependencyGraph.IteratorDirectlyReachableNodes(nodeId)
 
 			for directDependencies.Next() {
 				dep := directDependencies.Node()
-				count := 1 + getDependencyChainDepth(dep.(simple.Node).ID(), chain)
+				count := 1 + getDependencyChainDepth(dep.Id(), chain)
 				if count > depth_ {
 					depth_ = count
 				}
@@ -2054,18 +2039,19 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 		sort.Slice(keys, func(i, j int) bool {
 			keyA := keys[i]
 			keyB := keys[j]
-			idA := int64(keyIds[keyA])
-			idB := int64(keyIds[keyB])
 
 			// we move all implicit lifetime jobs at the end
-			p1 := keyToProp[keyA]
+			p1 := keyToProp.MustGet(keyA)
 			if _, ok := p1.Value.(*parse.LifetimejobExpression); ok && p1.HasImplicitKey() {
 				return false
 			}
-			p2 := keyToProp[keyB]
+			p2 := keyToProp.MustGet(keyB)
 			if _, ok := p2.Value.(*parse.LifetimejobExpression); ok && p2.HasImplicitKey() {
 				return true
 			}
+
+			idA := dependencyGraph.MustGetIdOfNode(keyA)
+			idB := dependencyGraph.MustGetIdOfNode(keyB)
 
 			return getDependencyChainDepth(idA, nil) < getDependencyChainDepth(idB, nil)
 		})
@@ -2101,7 +2087,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 
 		//evaluate properties
 		for _, key := range keys {
-			p := keyToProp[key]
+			p := keyToProp.MustGet(key)
 
 			var static Pattern
 
