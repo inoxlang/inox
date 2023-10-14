@@ -418,7 +418,7 @@ func registerDebugMethodHandlers(
 
 			fls, ok := getLspFilesystem(session)
 			if !ok {
-				return nil, errors.New(FsNoFilesystem)
+				return nil, errors.New(string(FsNoFilesystem))
 			}
 
 			if !debugSession.configurationDone.Load() {
@@ -983,7 +983,7 @@ func registerDebugMethodHandlers(
 			//read & parse file
 			fls, ok := getLspFilesystem(session)
 			if !ok {
-				return nil, errors.New(FsNoFilesystem)
+				return nil, errors.New(string(FsNoFilesystem))
 			}
 
 			chunk, err := core.ParseFileChunk(path, fls)

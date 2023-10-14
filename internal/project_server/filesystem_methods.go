@@ -171,10 +171,10 @@ type FsNonCriticalError string
 
 const (
 	FsFileNotFound FsNonCriticalError = "not-found"
-	FsFileExists                      = "exists"
-	FsFileIsDir                       = "is-dir"
-	FsFileIsNotDir                    = "is-not-dir"
-	FsNoFilesystem                    = "no-filesystem"
+	FsFileExists   FsNonCriticalError = "exists"
+	FsFileIsDir    FsNonCriticalError = "is-dir"
+	FsFileIsNotDir FsNonCriticalError = "is-not-dir"
+	FsNoFilesystem FsNonCriticalError = "no-filesystem"
 )
 
 func registerFilesystemMethodHandlers(server *lsp.Server) {
@@ -189,7 +189,7 @@ func registerFilesystemMethodHandlers(server *lsp.Server) {
 			params := req.(*FsFileStatParams)
 			fls, ok := getLspFilesystem(session)
 			if !ok {
-				return nil, errors.New(FsNoFilesystem)
+				return nil, errors.New(string(FsNoFilesystem))
 			}
 
 			fpath, err := getPath(params.FileURI, true)
@@ -230,7 +230,7 @@ func registerFilesystemMethodHandlers(server *lsp.Server) {
 			params := req.(*FsReadFileParams)
 			fls, ok := getLspFilesystem(session)
 			if !ok {
-				return nil, errors.New(FsNoFilesystem)
+				return nil, errors.New(string(FsNoFilesystem))
 			}
 
 			fpath, err := getPath(params.FileURI, true)
@@ -260,7 +260,7 @@ func registerFilesystemMethodHandlers(server *lsp.Server) {
 			params := req.(*FsWriteFileParams)
 			fls, ok := getLspFilesystem(session)
 			if !ok {
-				return nil, errors.New(FsNoFilesystem)
+				return nil, errors.New(string(FsNoFilesystem))
 			}
 
 			fpath, err := getPath(params.FileURI, true)
@@ -288,7 +288,7 @@ func registerFilesystemMethodHandlers(server *lsp.Server) {
 			params := req.(*FsStartUploadParams)
 			fls, ok := getLspFilesystem(session)
 			if !ok {
-				return nil, errors.New(FsNoFilesystem)
+				return nil, errors.New(string(FsNoFilesystem))
 			}
 
 			data := getLockedSessionData(session)
@@ -373,7 +373,7 @@ func registerFilesystemMethodHandlers(server *lsp.Server) {
 			params := req.(*FsWriteUploadPartParams)
 			fls, ok := getLspFilesystem(session)
 			if !ok {
-				return nil, errors.New(FsNoFilesystem)
+				return nil, errors.New(string(FsNoFilesystem))
 			}
 
 			data := getLockedSessionData(session)
@@ -438,7 +438,7 @@ func registerFilesystemMethodHandlers(server *lsp.Server) {
 			params := req.(*FsRenameFileParams)
 			fls, ok := getLspFilesystem(session)
 			if !ok {
-				return nil, errors.New(FsNoFilesystem)
+				return nil, errors.New(string(FsNoFilesystem))
 			}
 
 			path, err := getPath(params.FileURI, true)
@@ -492,7 +492,7 @@ func registerFilesystemMethodHandlers(server *lsp.Server) {
 			params := req.(*FsDeleteFileParams)
 			fls, ok := getLspFilesystem(session)
 			if !ok {
-				return nil, errors.New(FsNoFilesystem)
+				return nil, errors.New(string(FsNoFilesystem))
 			}
 
 			path, err := getPath(params.FileURI, true)
@@ -534,7 +534,7 @@ func registerFilesystemMethodHandlers(server *lsp.Server) {
 			params := req.(*FsReadirParams)
 			fls, ok := getLspFilesystem(session)
 			if !ok {
-				return nil, errors.New(FsNoFilesystem)
+				return nil, errors.New(string(FsNoFilesystem))
 			}
 
 			dpath, err := getPath(params.DirURI, true)
@@ -573,7 +573,7 @@ func registerFilesystemMethodHandlers(server *lsp.Server) {
 			params := req.(*FsCreateDirParams)
 			fls, ok := getLspFilesystem(session)
 			if !ok {
-				return nil, errors.New(FsNoFilesystem)
+				return nil, errors.New(string(FsNoFilesystem))
 			}
 
 			path, err := getPath(params.DirURI, true)

@@ -207,7 +207,7 @@ func registerHandlers(server *lsp.Server, serverConfig LSPServerConfiguration) {
 
 		fls, ok := getLspFilesystem(session)
 		if !ok {
-			return nil, errors.New(FsNoFilesystem)
+			return nil, errors.New(string(FsNoFilesystem))
 		}
 
 		handlingCtx := sessionCtx.BoundChildWithOptions(core.BoundChildContextOptions{
@@ -334,7 +334,7 @@ func registerHandlers(server *lsp.Server, serverConfig LSPServerConfiguration) {
 		session := jsonrpc.GetSession(ctx)
 		fls, ok := getLspFilesystem(session)
 		if !ok {
-			return errors.New(FsNoFilesystem)
+			return errors.New(string(FsNoFilesystem))
 		}
 
 		fsErr := fsutil.WriteFile(fls.unsavedDocumentsFS(), fpath, []byte(fullDocumentText), 0700)
@@ -392,7 +392,7 @@ func registerHandlers(server *lsp.Server, serverConfig LSPServerConfiguration) {
 		session := jsonrpc.GetSession(ctx)
 		fls, ok := getLspFilesystem(session)
 		if !ok {
-			return errors.New(FsNoFilesystem)
+			return errors.New(string(FsNoFilesystem))
 		}
 
 		sessionData := getLockedSessionData(session)
@@ -474,7 +474,7 @@ func registerHandlers(server *lsp.Server, serverConfig LSPServerConfiguration) {
 		session := jsonrpc.GetSession(ctx)
 		fls, hasSyncData := getLspFilesystem(session)
 		if !hasSyncData {
-			return errors.New(FsNoFilesystem)
+			return errors.New(string(FsNoFilesystem))
 		}
 
 		var fullDocumentText string
@@ -587,7 +587,7 @@ func registerHandlers(server *lsp.Server, serverConfig LSPServerConfiguration) {
 		session := jsonrpc.GetSession(ctx)
 		fls, ok := getLspFilesystem(session)
 		if !ok {
-			return errors.New(FsNoFilesystem)
+			return errors.New(string(FsNoFilesystem))
 		}
 
 		sessionData := getLockedSessionData(session)
@@ -616,7 +616,7 @@ func registerHandlers(server *lsp.Server, serverConfig LSPServerConfiguration) {
 
 		fls, ok := getLspFilesystem(session)
 		if !ok {
-			return nil, errors.New(FsNoFilesystem)
+			return nil, errors.New(string(FsNoFilesystem))
 		}
 
 		handlingCtx := sessionCtx.BoundChildWithOptions(core.BoundChildContextOptions{
