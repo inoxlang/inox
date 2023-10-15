@@ -68,6 +68,8 @@ var (
 	FORMAT_INTERFACE_TYPE              = reflect.TypeOf((*Format)(nil)).Elem()
 	IN_MEM_SNAPSHOTABLE                = reflect.TypeOf((*InMemorySnapshotable)(nil)).Elem()
 
+	OPTIONAL_PARAM_TYPE = reflect.TypeOf((*optionalParam)(nil)).Elem()
+
 	ANY_READABLE = &AnyReadable{}
 	ANY_READER   = &Reader{}
 
@@ -5216,60 +5218,82 @@ func makeSymbolicEvalWarning(node parse.Node, state *State, msg string) Symbolic
 	return SymbolicEvaluationWarning{msg, locatedMsg, location}
 }
 
-func converTypeToSymbolicValue(t reflect.Type) (SymbolicValue, error) {
-	err := fmt.Errorf("cannot convert type to symbolic value : %v", t)
+func converTypeToSymbolicValue(t reflect.Type, allowOptionalParam bool) (result SymbolicValue, optionalParam bool, _ error) {
+	err := fmt.Errorf("cannot convert type to symbolic value : %#v", t)
+
+	if t.Implements(OPTIONAL_PARAM_TYPE) {
+		if !allowOptionalParam {
+			return nil, true, errors.New("optionalParam implementations are not allowed")
+		}
+
+		if t.Kind() != reflect.Pointer || t.Elem().Kind() != reflect.Struct {
+			return nil, true, errors.New("unexpected optionalParam implementation")
+		}
+
+		field, ok := t.Elem().FieldByName("Value")
+		if !ok {
+			return nil, true, errors.New("unexpected optionalParam implementation")
+		}
+		typ, _, err := converTypeToSymbolicValue(field.Type.Elem(), false)
+		if err != nil {
+			return nil, true, err
+		}
+		return typ, true, nil
+	}
 
 	if t.Kind() == reflect.Pointer && t.Elem().Kind() == reflect.Struct {
 		v := reflect.New(t.Elem())
 		symbolicVal, ok := v.Interface().(SymbolicValue)
 		if !ok {
-			return nil, err
+			return nil, false, err
 		}
-		return symbolicVal.WidestOfType(), nil
+		return symbolicVal.WidestOfType(), false, nil
 	}
 
 	switch t {
 	case SYMBOLIC_VALUE_INTERFACE_TYPE:
-		return ANY, nil
+		result = ANY
 	case SERIALIZABLE_INTERFACE_TYPE:
-		return ANY_SERIALIZABLE, nil
+		result = ANY_SERIALIZABLE
 	case SERIALIZABLE_ITERABLE_INTERFACE_TYPE:
-		return ANY_SERIALIZABLE_ITERABLE, nil
+		result = ANY_SERIALIZABLE_ITERABLE
 	case ITERABLE_INTERFACE_TYPE:
-		return ANY_ITERABLE, nil
+		result = ANY_ITERABLE
 	case INDEXABLE_INTERFACE_TYPE:
-		return ANY_INDEXABLE, nil
+		result = ANY_INDEXABLE
 	case SEQUENCE_INTERFACE_TYPE:
-		return ANY_SEQ_OF_ANY, nil
+		result = ANY_SEQ_OF_ANY
 	case RESOURCE_NAME_INTERFACE_TYPE:
-		return ANY_RES_NAME, nil
+		result = ANY_RES_NAME
 	case READABLE_INTERFACE_TYPE:
-		return ANY_READABLE, nil
+		result = ANY_READABLE
 	case PATTERN_INTERFACE_TYPE:
-		return ANY_PATTERN, nil
+		result = ANY_PATTERN
 	case PROTOCOL_CLIENT_INTERFACE_TYPE:
-		return &AnyProtocolClient{}, nil
+		result = &AnyProtocolClient{}
 	case VALUE_RECEIVER_INTERFACE_TYPE:
-		return ANY_MSG_RECEIVER, nil
+		result = ANY_MSG_RECEIVER
 	case STREAMABLE_INTERFACE_TYPE:
-		return ANY_STREAM_SOURCE, nil
+		result = ANY_STREAM_SOURCE
 	case WATCHABLE_INTERFACE_TYPE:
-		return ANY_WATCHABLE, nil
+		result = ANY_WATCHABLE
 	case WRITABLE_INTERFACE_TYPE:
-		return ANY_WRITABLE, nil
+		result = ANY_WRITABLE
 	case STR_PATTERN_ELEMENT_INTERFACE_TYPE:
-		return ANY_STR_PATTERN, nil
+		result = ANY_STR_PATTERN
 	case INTEGRAL_INTERFACE_TYPE:
-		return ANY_INTEGRAL, nil
+		result = ANY_INTEGRAL
 	case FORMAT_INTERFACE_TYPE:
-		return ANY_FORMAT, nil
+		result = ANY_FORMAT
 	case IN_MEM_SNAPSHOTABLE:
-		return ANY_IN_MEM_SNAPSHOTABLE, nil
+		result = ANY_IN_MEM_SNAPSHOTABLE
 	case STRLIKE_INTERFACE_TYPE:
-		return ANY_STR_LIKE, nil
+		result = ANY_STR_LIKE
+	default:
+		return nil, false, err
 	}
 
-	return nil, err
+	return
 }
 
 func isAllowedAfterMutationDoubleColonExprAncestor(ancestor, deeper parse.Node) bool {

@@ -3944,6 +3944,132 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, ANY_INT, res)
 		})
 
+		t.Run("signature is func(*Context, OptionalParam[*Int]) *Int: no provided argument", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				return f()
+			`)
+
+			goFunc := &GoFunction{
+				fn: func(ctx *Context, i *OptionalParam[*Int]) *Int {
+					if i.Value != nil {
+						ctx.AddSymbolicGoFunctionError("argument should not have been provided")
+					}
+					return ANY_INT
+				},
+			}
+
+			state.setGlobal("f", goFunc, GlobalConst)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, ANY_INT, res)
+		})
+
+		t.Run("signature is func(*Context, OptionalParam[*Int]) *Int: provided argument", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				return f(1)
+			`)
+
+			goFunc := &GoFunction{
+				fn: func(_ *Context, i *OptionalParam[*Int]) *Int {
+					return *i.Value
+				},
+			}
+
+			state.setGlobal("f", goFunc, GlobalConst)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, NewInt(1), res)
+		})
+
+		t.Run("signature is func(*Context, OptionalParam[*Int]) *Int: bad argument", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				return f("a")
+			`)
+			argNode := n.Statements[0].(*parse.ReturnStatement).Expr.(*parse.CallExpression).Arguments[0]
+
+			goFunc := &GoFunction{
+				fn: func(_ *Context, i *OptionalParam[*Int]) *Int {
+					if i.Value == nil {
+						return ANY_INT
+					}
+					return *i.Value
+				},
+			}
+
+			state.setGlobal("f", goFunc, GlobalConst)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(argNode, state, FmtInvalidArg(0, NewString("a"), ANY_INT)),
+			}, state.errors())
+			assert.Equal(t, ANY_INT, res)
+		})
+
+		t.Run("signature is func(*Context, *Int, OptionalParam[*Int]) *Int: no provided argument", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				return f(1)
+			`)
+
+			goFunc := &GoFunction{
+				fn: func(ctx *Context, _ *Int, i *OptionalParam[*Int]) *Int {
+					if i.Value != nil {
+						ctx.AddSymbolicGoFunctionError("argument should not have been provided")
+					}
+					return ANY_INT
+				},
+			}
+
+			state.setGlobal("f", goFunc, GlobalConst)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, ANY_INT, res)
+		})
+
+		t.Run("signature is func(*Context, *Int, OptionalParam[*Int]) *Int: provided argument", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				return f(1, 2)
+			`)
+
+			goFunc := &GoFunction{
+				fn: func(_ *Context, a *Int, b *OptionalParam[*Int]) *Int {
+					return NewInt(a.value + (*b.Value).value)
+				},
+			}
+
+			state.setGlobal("f", goFunc, GlobalConst)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, NewInt(1+2), res)
+		})
+
+		t.Run("signature is func(*Context, *Int, OptionalParam[*Int]) *Int: bad argument", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				return f(1, "a")
+			`)
+			argNode := n.Statements[0].(*parse.ReturnStatement).Expr.(*parse.CallExpression).Arguments[1]
+
+			goFunc := &GoFunction{
+				fn: func(ctx *Context, a *Int, b *OptionalParam[*Int]) *Int {
+					if b.Value != nil {
+						ctx.AddSymbolicGoFunctionError("argument should not have been provided")
+					}
+					return a
+				},
+			}
+
+			state.setGlobal("f", goFunc, GlobalConst)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(argNode, state, FmtInvalidArg(1, NewString("a"), ANY_INT)),
+			}, state.errors())
+			assert.Equal(t, NewInt(1), res)
+		})
+
 		t.Run("signature is func(*Context, *List) *Int: passing multivalue of 2 lists should be an error", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				return fn(list %| %[]%str | %[]%int){

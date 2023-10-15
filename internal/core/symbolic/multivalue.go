@@ -149,7 +149,7 @@ top_switch:
 				break top_switch
 			}
 		}
-		val, err := converTypeToSymbolicValue(itf)
+		val, _, err := converTypeToSymbolicValue(itf, false)
 		if err == nil {
 			return val
 		}

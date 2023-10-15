@@ -225,16 +225,27 @@ type GoFunction struct {
 	kind        GoFunctionKind
 	originState *State
 
-	//signature
-	signatureDataLoaded   bool
-	isVariadic            bool
-	isfirstArgCtx         bool
+	//signature fields:
+
+	signatureDataLoaded bool
+	isVariadic          bool
+	isfirstArgCtx       bool
+
+	//the next parameter is either optional or variadic,
+	//lastMandatoryParamIndex can be -1.
+	lastMandatoryParamIndex int
+
+	//true if the function has at least one OptionalParam[T] in its parameters.
+	hasOptionalParams bool
+	optionalParams    []optionalParam
+
 	nonVariadicParameters []SymbolicValue
 	parameters            []SymbolicValue
-	variadicElem          SymbolicValue
-	results               []SymbolicValue
-	resultList            *Array
-	result                SymbolicValue
+
+	variadicElem SymbolicValue
+	results      []SymbolicValue
+	resultList   *Array
+	result       SymbolicValue
 }
 
 // the result should not be modified
@@ -347,7 +358,7 @@ func (fn *GoFunction) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintCon
 		if i == fnValType.NumIn()-1 && isVariadic {
 			w.WriteString("...%[]")
 
-			param, err := converTypeToSymbolicValue(reflectParamType.Elem())
+			param, _, err := converTypeToSymbolicValue(reflectParamType.Elem(), false)
 			if err != nil {
 				w.WriteString("???" + err.Error())
 			} else {
@@ -355,10 +366,15 @@ func (fn *GoFunction) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintCon
 			}
 
 		} else {
-			param, err := converTypeToSymbolicValue(reflectParamType)
+			allowOptionalParams := i > fn.lastMandatoryParamIndex
+
+			param, isOptionalParam, err := converTypeToSymbolicValue(reflectParamType, allowOptionalParams)
 			if err != nil {
 				w.WriteString("???" + err.Error())
 			} else {
+				if isOptionalParam {
+					w.WriteString("optional ")
+				}
 				param.PrettyPrint(w, config, 0, 0)
 			}
 		}
@@ -378,7 +394,7 @@ func (fn *GoFunction) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintCon
 
 		reflectReturnType := fnValType.Out(i)
 
-		ret, err := converTypeToSymbolicValue(reflectReturnType)
+		ret, _, err := converTypeToSymbolicValue(reflectReturnType, false)
 		if err != nil {
 			w.WriteString("???" + err.Error())
 		} else {
@@ -400,6 +416,7 @@ func (goFunc *GoFunction) Result() SymbolicValue {
 	return goFunc.result
 }
 
+// LoadSignatureData populates the signature fields if they are not already set.
 func (goFunc *GoFunction) LoadSignatureData() (finalErr error) {
 	if goFunc.signatureDataLoaded {
 		return nil
@@ -441,7 +458,7 @@ func (goFunc *GoFunction) LoadSignatureData() (finalErr error) {
 		}
 
 		reflectParamType := fnValType.In(paramIndex)
-		param, err := converTypeToSymbolicValue(reflectParamType)
+		param, isOptionalParam, err := converTypeToSymbolicValue(reflectParamType, true)
 		if err != nil {
 			s := fmt.Sprintf("cannot convert one of a Go function parameter (type %s.%s) (function name: %s): %s",
 				reflectParamType.PkgPath(), reflectParamType.Name(),
@@ -450,12 +467,25 @@ func (goFunc *GoFunction) LoadSignatureData() (finalErr error) {
 			)
 			return errors.New(s)
 		}
+
+		if isOptionalParam {
+			if !goFunc.hasOptionalParams {
+				goFunc.lastMandatoryParamIndex = paramIndex - 1
+				goFunc.hasOptionalParams = true
+			}
+			//reflectParamType should be an *OptionalParam[T] type.
+			param := reflect.New(reflectParamType.Elem()).Interface()
+			goFunc.optionalParams = append(goFunc.optionalParams, param.(optionalParam))
+		} else if goFunc.hasOptionalParams {
+			return fmt.Errorf("go function has an unexpected non optional parameter after an optional parameter, index (%d)", paramIndex)
+		}
+
 		goFunc.nonVariadicParameters[paramIndex] = param
 	}
 
 	if fnValType.IsVariadic() {
 		goVariadicElemType := fnValType.In(fnValType.NumIn() - 1).Elem()
-		variadicElemType, err := converTypeToSymbolicValue(goVariadicElemType)
+		variadicElemType, _, err := converTypeToSymbolicValue(goVariadicElemType, false)
 		if err != nil {
 			s := fmt.Sprintf("cannot convert a Go function variadic parameter type %s.%s (function name: %s): %s",
 				goVariadicElemType.PkgPath(), goVariadicElemType.Name(),
@@ -472,7 +502,7 @@ func (goFunc *GoFunction) LoadSignatureData() (finalErr error) {
 
 	for i := 0; i < fnValType.NumOut(); i++ {
 		goResultType := fnValType.Out(i)
-		symbolicResultValue, err := converTypeToSymbolicValue(goResultType)
+		symbolicResultValue, _, err := converTypeToSymbolicValue(goResultType, false)
 		if err != nil {
 			return fmt.Errorf(
 				"cannot convert one of a Go function result %s.%s (function name: %s): %s",
@@ -549,13 +579,16 @@ func (goFunc *GoFunction) Call(input goFunctionCallInput) (finalResult SymbolicV
 		inoxLandNonVariadicParamCount -= 1
 	}
 
+	//only check if goFunc.hasOptionalParams
+	inoxLandMandatoryParamCount := inoxLandNonVariadicParamCount - len(goFunc.optionalParams)
+
 	if goFunc.isVariadic {
-		if nonSpreadArgCount < inoxLandNonVariadicParamCount {
+		if nonSpreadArgCount < inoxLandNonVariadicParamCount && (!goFunc.hasOptionalParams || nonSpreadArgCount < inoxLandMandatoryParamCount) {
 			state.addError(makeSymbolicEvalError(callLikeNode, state, fmtInvalidNumberOfNonSpreadArgs(nonSpreadArgCount, inoxLandNonVariadicParamCount)))
 		}
 	} else if hasSpreadArg {
 		state.addError(makeSymbolicEvalError(callLikeNode, state, SPREAD_ARGS_NOT_SUPPORTED_FOR_NON_VARIADIC_FUNCS))
-	} else if len(args) != inoxLandNonVariadicParamCount {
+	} else if len(args) != inoxLandNonVariadicParamCount && (!goFunc.hasOptionalParams || len(args) < inoxLandMandatoryParamCount) {
 		state.addError(makeSymbolicEvalError(callLikeNode, state, fmtInvalidNumberOfArgs(nonSpreadArgCount, inoxLandNonVariadicParamCount)))
 		// remove additional arguments
 
@@ -587,7 +620,17 @@ func (goFunc *GoFunction) Call(input goFunctionCallInput) (finalResult SymbolicV
 		}
 
 		var arg SymbolicValue
-		if paramIndex < len(args) {
+		if paramIndex >= len(args) {
+			if !goFunc.hasOptionalParams || paramIndex <= goFunc.lastMandatoryParamIndex {
+				enoughArgs = false
+				args = append(args, param)
+			} else { //optional parameter
+				//wrap the argument in its corresponding OptionalParam[T].
+				index := paramIndex - goFunc.lastMandatoryParamIndex - 1
+				optionalParam := goFunc.optionalParams[index].new()
+				args = append(args, optionalParam)
+			}
+		} else {
 			position := paramIndex
 			if goFunc.isfirstArgCtx {
 				position -= 1
@@ -595,6 +638,7 @@ func (goFunc *GoFunction) Call(input goFunctionCallInput) (finalResult SymbolicV
 
 			arg = args[paramIndex].(SymbolicValue)
 			argNode := argumentNodes[position]
+			setOptionalParamValue := false
 
 			// if extVal, ok := arg.(*SharedValue); ok {
 			// 	arg = extVal.value
@@ -610,20 +654,33 @@ func (goFunc *GoFunction) Call(input goFunctionCallInput) (finalResult SymbolicV
 						state.addError(makeSymbolicEvalError(argNode, state, UNSUPPORTED_PARAM_TYPE_FOR_RUNTIME_TYPECHECK))
 					}
 				} else {
-					state.addError(makeSymbolicEvalError(argNode, state, FmtInvalidArg(position, arg, param)))
-				}
+					// if the parameter is optional and the value is nil
+					// } else if goFunc.hasOptionalParams && paramIndex > goFunc.lastMandatoryParamIndex && Nil.Test(arg, RecTestCallState{}) {
+					//}
 
-				args[paramIndex] = param //if argument does not match we use the symbolic parameter value as argument
+					state.addError(makeSymbolicEvalError(argNode, state, FmtInvalidArg(position, arg, param)))
+					args[paramIndex] = param //if argument does not match we use the symbolic parameter value as argument
+				}
 			} else {
 				//disable runtime type check
 				if _, ok := argNode.(*parse.RuntimeTypeCheckExpression); ok {
 					state.symbolicData.SetRuntimeTypecheckPattern(argNode, nil)
 				}
 				args[paramIndex] = arg
+				setOptionalParamValue = true
 			}
-		} else { //if not enough arguments
-			enoughArgs = false
-			args = append(args, param)
+
+			//if the parameter is optional wrap it in its corresponding OptionalParam[T].
+			if goFunc.hasOptionalParams && paramIndex > goFunc.lastMandatoryParamIndex {
+				index := paramIndex - goFunc.lastMandatoryParamIndex - 1
+				optionalParam := goFunc.optionalParams[index].new()
+
+				if setOptionalParamValue {
+					optionalParam.setValue(args[paramIndex].(SymbolicValue))
+				}
+
+				args[paramIndex] = optionalParam
+			}
 		}
 	}
 
@@ -652,6 +709,7 @@ func (goFunc *GoFunction) Call(input goFunctionCallInput) (finalResult SymbolicV
 		// if extVal, ok := arg.(*SharedValue); ok {
 		// 	arg = extVal.value
 		// }
+
 		argValue := reflect.ValueOf(arg)
 		argValues[i] = argValue
 	}

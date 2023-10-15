@@ -288,7 +288,7 @@ func fmtMissingProperty(name string) string {
 }
 
 func fmtInvalidNumberOfArgs(actual, expected int) string {
-	return fmt.Sprintf("invalid number of arguments : %v, %v was expected", actual, expected)
+	return fmt.Sprintf("invalid number of arguments : %v, %v were expected", actual, expected)
 }
 
 func fmtInvalidNumberOfNonSpreadArgs(nonVariadicArgCount, nonVariadicParamCount int) string {
