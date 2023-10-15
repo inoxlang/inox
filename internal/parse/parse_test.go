@@ -3,6 +3,7 @@ package parse
 import (
 	"context"
 	"errors"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -12,6 +13,15 @@ import (
 )
 
 func TestParseNoContext(t *testing.T) {
+
+	{
+		runtime.GC()
+		startMemStats := new(runtime.MemStats)
+		runtime.ReadMemStats(startMemStats)
+
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 120_000)
+	}
+
 	testParse(t, func(t *testing.T, str string) (result *Chunk) {
 		return MustParseChunk(str)
 	}, func(t *testing.T, str, name string) (result *Chunk, err error) {

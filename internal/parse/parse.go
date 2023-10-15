@@ -28,7 +28,7 @@ const (
 	MAX_SCHEME_NAME_LEN     = 5
 
 	DEFAULT_TIMEOUT       = 20 * time.Millisecond
-	DEFAULT_NO_CHECK_FUEL = 2
+	DEFAULT_NO_CHECK_FUEL = 10
 
 	LOOSE_URL_EXPR_PATTERN            = "^(@[a-zA-Z0-9_-]+|https?:\\/\\/([-\\w]+|(www\\.)?[-a-zA-Z0-9@:%._+~#=]{1,64}\\.[a-zA-Z0-9]{1,6}\\b|\\{[$]{0,2}[-\\w]+\\}))([{?#/][-a-zA-Z0-9@:%_+.~#?&//=${}]*)$"
 	LOOSE_HOST_PATTERN_PATTERN        = "^([a-z0-9+]+)?:\\/\\/([-\\w]+|[*]+|(www\\.)?[-a-zA-Z0-9.*]{1,64}\\.[a-zA-Z0-9*]{1,6})(:[0-9]{1,5})?$"
@@ -78,6 +78,18 @@ func ParseChunk2(str string, fpath string, opts ...ParserOptions) (runes []rune,
 
 	if int32(len(str)) > MAX_MODULE_BYTE_LEN {
 		return nil, nil, &ParsingError{UnspecifiedParsingError, fmt.Sprintf("module'p.s code is too long (%d bytes)", len(str))}
+	}
+
+	//check that the passed context is not done.
+	if len(opts) > 0 {
+		ctx := opts[0].Context
+		if ctx != nil {
+			select {
+			case <-ctx.Done():
+				return nil, nil, ctx.Err()
+			default:
+			}
+		}
 	}
 
 	runes = []rune(str)
@@ -6241,19 +6253,6 @@ loop:
 func (p *parser) parseExpression(precededByOpeningParen ...bool) (expr Node, isMissingExpr bool) {
 	p.panicIfContextDone()
 
-	if p.remainingNoCheckFuel <= 0 {
-		p.remainingNoCheckFuel = 0
-		if p.context != nil {
-			select {
-			case <-p.context.Done():
-				panic(context.Canceled)
-			default:
-				p.remainingNoCheckFuel = 100
-			}
-		}
-	} else {
-		p.remainingNoCheckFuel--
-	}
 	__start := p.i
 	// these variables are only used for expressions that can be on the left side of a member/slice/index/call expression,
 	// other expressions are directly returned.
