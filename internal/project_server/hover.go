@@ -19,10 +19,11 @@ import (
 
 func getHoverContent(fpath string, line, column int32, handlingCtx *core.Context, session *jsonrpc.Session) (*defines.Hover, error) {
 	state, _, chunk, cachedOrGotCache, ok := prepareSourceFileInExtractionMode(handlingCtx, filePreparationParams{
-		fpath:         fpath,
-		session:       session,
-		requiresState: true,
-		requiresCache: true,
+		fpath:                              fpath,
+		session:                            session,
+		requiresState:                      true,
+		requiresCache:                      true,
+		forcePrepareIfNoVeryRecentActivity: true,
 	})
 	if !ok {
 		return &defines.Hover{}, nil

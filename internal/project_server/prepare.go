@@ -3,6 +3,7 @@ package project_server
 import (
 	"fmt"
 	"io"
+	"time"
 
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/mod"
@@ -13,6 +14,10 @@ import (
 	"github.com/inoxlang/inox/internal/utils"
 )
 
+const (
+	VERY_RECENT_ACTIVITY_DELTA = time.Second
+)
+
 type filePreparationParams struct {
 	fpath   string
 	session *jsonrpc.Session
@@ -21,7 +26,12 @@ type filePreparationParams struct {
 	requiresState bool
 
 	//if true and the file is not cached then ok is false and results are nil.
+	//This setting has lower priority than forcePrepareIfNoVeryRecentActivity.
 	requiresCache bool
+
+	//preparation is attempted if true and the file is not cached
+	//or the cache has not been updated/accessed very recently (VERY_RECENT_ACTIVITY_DELTA).
+	forcePrepareIfNoVeryRecentActivity bool
 
 	//if true the cache is not read but the resulting prepared file is cached.
 	ignoreCache bool
@@ -76,17 +86,21 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 	}
 
 	//check the cache
-	if !params.ignoreCache && fileCache != nil && fileCache.chunk != nil {
-		logs.Println("cache hit for file", fpath)
+	if !params.ignoreCache && fileCache != nil {
+		if fileCache.chunk != nil {
+			logs.Println("cache hit for file", fpath)
 
-		cachedChunk := fileCache.chunk
-		cachedModule := fileCache.module
-		cachedState := fileCache.state
+			cachedChunk := fileCache.chunk
+			cachedModule := fileCache.module
+			cachedState := fileCache.state
 
-		if requiresState && (cachedState == nil || cachedState.SymbolicData == nil) {
+			return cachedState, cachedModule, cachedChunk, true, true
+		} else if params.requiresCache && (!params.forcePrepareIfNoVeryRecentActivity ||
+			time.Since(fileCache.LastUpdateOrInvalidation()) < VERY_RECENT_ACTIVITY_DELTA) {
 			return nil, nil, nil, false, false
+		} else {
+			_ = 1
 		}
-		return cachedState, cachedModule, cachedChunk, true, true
 	} else if params.requiresCache {
 		return nil, nil, nil, false, false
 	}

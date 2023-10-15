@@ -86,11 +86,12 @@ func (c *preparedFileCache) acknowledgeSessionEnd() {
 
 // a preparedFileCacheEntry holds the data about a single prepared source file.
 type preparedFileCacheEntry struct {
-	fpath  string
-	state  *core.GlobalState
-	module *core.Module
-	chunk  *parse.ParsedChunk
-	lock   sync.Mutex
+	lock                     sync.Mutex
+	fpath                    string
+	state                    *core.GlobalState
+	module                   *core.Module
+	chunk                    *parse.ParsedChunk
+	lastUpdateOrInvalidation time.Time
 
 	sourceChanged atomic.Bool
 	lastAccess    atomic.Value //time.Time
@@ -122,6 +123,8 @@ func (c *preparedFileCacheEntry) acknowledgeSessionEnd() {
 	c.lastAccess.Store(time.Time{})
 }
 
+// clearIfSourceChanged clears the cache if the source file changed,
+// it is assumed that the cache entry has been locked by the caller.
 func (c *preparedFileCacheEntry) clearIfSourceChanged() (changed bool) {
 	if c.sourceChanged.CompareAndSwap(true, false) {
 		c.clear()
@@ -134,7 +137,15 @@ func (c *preparedFileCacheEntry) LastUse() time.Time {
 	return c.lastAccess.Load().(time.Time)
 }
 
+func (c *preparedFileCacheEntry) LastUpdateOrInvalidation() time.Time {
+	return c.lastUpdateOrInvalidation
+}
+
+// preparedFileCacheEntry clears the cache,
+// it is assumed that the cache entry has been locked by the caller.
 func (c *preparedFileCacheEntry) clear() {
+	c.lastUpdateOrInvalidation = time.Now()
+
 	if c.chunk == nil {
 		return
 	}
@@ -156,9 +167,12 @@ func (c *preparedFileCacheEntry) clear() {
 	c.state = nil
 }
 
+// update updates the cache, it is assumed that the cache entry has been locked by the caller.
 func (c *preparedFileCacheEntry) update(state *core.GlobalState, mod *core.Module, chunk *parse.ParsedChunk) {
 	logs.Println("update cache for file", c.fpath, "new length", len(mod.MainChunk.Source.Code()))
 
+	now := time.Now()
+	c.lastUpdateOrInvalidation = now
 	c.lastAccess.Store(time.Now())
 
 	c.state = state
