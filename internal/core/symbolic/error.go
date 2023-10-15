@@ -288,11 +288,27 @@ func fmtMissingProperty(name string) string {
 }
 
 func fmtInvalidNumberOfArgs(actual, expected int) string {
-	return fmt.Sprintf("invalid number of arguments : %v, %v were expected", actual, expected)
+	return fmt.Sprintf("invalid number of arguments: %v, %v were expected", actual, expected)
+}
+
+func fmtTooManyArgs(actual, expected int) string {
+	return fmt.Sprintf("too many arguments: %v, %v were expected", actual, expected)
+}
+
+func fmtNotEnoughArgs(actual, expected int) string {
+	return fmt.Sprintf("not enough arguments: %v, %v were expected", actual, expected)
+}
+
+func fmtNotEnoughArgsAtLeastMandatoryMax(actual, mandatory int, max int) string {
+	return fmt.Sprintf("not enough arguments: %v, at least %v were expected (max %v)", actual, mandatory, max)
 }
 
 func fmtInvalidNumberOfNonSpreadArgs(nonVariadicArgCount, nonVariadicParamCount int) string {
-	return fmt.Sprintf("invalid number of non-spread arguments : %v, at least %v were expected", nonVariadicArgCount, nonVariadicParamCount)
+	return fmt.Sprintf("invalid number of non-spread arguments: %v, at least %v were expected", nonVariadicArgCount, nonVariadicParamCount)
+}
+
+func fmtInvalidNumberOfNonArgsAtLeastMandatoryMax(actual, mandatory int, max int) string {
+	return fmt.Sprintf("invalid number of non-spread arguments: %v, at least %v were expected (max %v)", actual, mandatory, max)
 }
 
 func FmtInvalidArg(position int, actual, expected SymbolicValue) string {

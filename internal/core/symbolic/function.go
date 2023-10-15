@@ -583,18 +583,33 @@ func (goFunc *GoFunction) Call(input goFunctionCallInput) (finalResult SymbolicV
 	inoxLandMandatoryParamCount := inoxLandNonVariadicParamCount - len(goFunc.optionalParams)
 
 	if goFunc.isVariadic {
-		if nonSpreadArgCount < inoxLandNonVariadicParamCount && (!goFunc.hasOptionalParams || nonSpreadArgCount < inoxLandMandatoryParamCount) {
-			state.addError(makeSymbolicEvalError(callLikeNode, state, fmtInvalidNumberOfNonSpreadArgs(nonSpreadArgCount, inoxLandNonVariadicParamCount)))
+		var errMsg string
+		if nonSpreadArgCount < inoxLandNonVariadicParamCount && !goFunc.hasOptionalParams {
+			errMsg = fmtInvalidNumberOfNonSpreadArgs(nonSpreadArgCount, inoxLandNonVariadicParamCount)
+		} else if goFunc.hasOptionalParams && nonSpreadArgCount < inoxLandMandatoryParamCount {
+			errMsg = fmtInvalidNumberOfNonArgsAtLeastMandatoryMax(nonSpreadArgCount, inoxLandMandatoryParamCount, inoxLandNonVariadicParamCount)
 		}
+
+		if errMsg != "" {
+			state.addError(makeSymbolicEvalError(callLikeNode, state, errMsg))
+		}
+
 	} else if hasSpreadArg {
 		state.addError(makeSymbolicEvalError(callLikeNode, state, SPREAD_ARGS_NOT_SUPPORTED_FOR_NON_VARIADIC_FUNCS))
-	} else if len(args) != inoxLandNonVariadicParamCount && (!goFunc.hasOptionalParams || len(args) < inoxLandMandatoryParamCount) {
-		state.addError(makeSymbolicEvalError(callLikeNode, state, fmtInvalidNumberOfArgs(nonSpreadArgCount, inoxLandNonVariadicParamCount)))
-		// remove additional arguments
 
-		if len(args) > inoxLandNonVariadicParamCount {
-			args = args[:inoxLandNonVariadicParamCount]
-		}
+	} else if len(args) > inoxLandNonVariadicParamCount { //too many arguments
+		state.addError(makeSymbolicEvalError(callLikeNode, state, fmtTooManyArgs(nonSpreadArgCount, inoxLandNonVariadicParamCount)))
+		// remove additional arguments
+		args = args[:inoxLandNonVariadicParamCount]
+
+	} else if !goFunc.hasOptionalParams && len(args) < inoxLandNonVariadicParamCount { //not enough arguments
+		errMsg := fmtNotEnoughArgs(nonSpreadArgCount, inoxLandNonVariadicParamCount)
+		state.addError(makeSymbolicEvalError(callLikeNode, state, errMsg))
+
+	} else if goFunc.hasOptionalParams && len(args) < inoxLandMandatoryParamCount { //not enough arguments
+
+		errMsg := fmtNotEnoughArgsAtLeastMandatoryMax(nonSpreadArgCount, inoxLandMandatoryParamCount, inoxLandNonVariadicParamCount)
+		state.addError(makeSymbolicEvalError(callLikeNode, state, errMsg))
 	}
 
 	if goFunc.isfirstArgCtx {

@@ -3895,7 +3895,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(call, state, fmtInvalidNumberOfArgs(0, 1)),
+				makeSymbolicEvalError(call, state, fmtNotEnoughArgs(0, 1)),
 			}, state.errors())
 			assert.Equal(t, ANY_INT, res)
 		})
@@ -3939,7 +3939,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(call, state, fmtInvalidNumberOfArgs(2, 1)),
+				makeSymbolicEvalError(call, state, fmtTooManyArgs(2, 1)),
 			}, state.errors())
 			assert.Equal(t, ANY_INT, res)
 		})
@@ -4007,7 +4007,32 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, ANY_INT, res)
 		})
 
-		t.Run("signature is func(*Context, *Int, OptionalParam[*Int]) *Int: no provided argument", func(t *testing.T) {
+		t.Run("signature is func(*Context, *Int, OptionalParam[*Int]) *Int: no provided arguments", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				return f()
+			`)
+
+			call := n.Statements[0].(*parse.ReturnStatement).Expr
+
+			goFunc := &GoFunction{
+				fn: func(ctx *Context, _ *Int, i *OptionalParam[*Int]) *Int {
+					if i.Value != nil {
+						ctx.AddSymbolicGoFunctionError("argument should not have been provided")
+					}
+					return ANY_INT
+				},
+			}
+
+			state.setGlobal("f", goFunc, GlobalConst)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(call, state, fmtNotEnoughArgsAtLeastMandatoryMax(0, 1, 2)),
+			}, state.errors())
+			assert.Equal(t, ANY_INT, res)
+		})
+
+		t.Run("signature is func(*Context, *Int, OptionalParam[*Int]) *Int: second argument not provided", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				return f(1)
 			`)
@@ -4028,7 +4053,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, ANY_INT, res)
 		})
 
-		t.Run("signature is func(*Context, *Int, OptionalParam[*Int]) *Int: provided argument", func(t *testing.T) {
+		t.Run("signature is func(*Context, *Int, OptionalParam[*Int]) *Int: second argument provided", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				return f(1, 2)
 			`)
@@ -4046,7 +4071,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, NewInt(1+2), res)
 		})
 
-		t.Run("signature is func(*Context, *Int, OptionalParam[*Int]) *Int: bad argument", func(t *testing.T) {
+		t.Run("signature is func(*Context, *Int, OptionalParam[*Int]) *Int: bad second argument", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				return f(1, "a")
 			`)
