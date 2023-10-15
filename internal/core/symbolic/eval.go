@@ -3499,11 +3499,13 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 		}
 
 		return &FunctionPattern{
-			node:           n,
-			returnType:     storedReturnType,
-			parameters:     parameterTypes,
-			parameterNames: parameterNames,
-			isVariadic:     isVariadic,
+			node: n,
+			//TODO: update firstOptionalParamIndex when inox functions support optional paramters
+			firstOptionalParamIndex: -1,
+			returnType:              storedReturnType,
+			parameters:              parameterTypes,
+			parameterNames:          parameterNames,
+			isVariadic:              isVariadic,
 		}, nil
 	case *parse.PatternConversionExpression:
 		v, err := symbolicEval(n.Value, state)

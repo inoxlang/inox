@@ -245,6 +245,7 @@ func (goFunc *GoFunction) Call(args []any, globalState, extState *GlobalState, i
 
 	argValues := make([]reflect.Value, len(args))
 
+	//get the reflect.Value of every argument
 	for i, arg := range args {
 		argValue := reflect.ValueOf(arg)
 		argValues[i] = argValue

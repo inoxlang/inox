@@ -248,18 +248,26 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 				params = f.ParametersExceptCtx()
 			}
 
-			function := &Function{
-				parameters:     params,
-				parameterNames: paramNames,
-				variadic:       f.isVariadic,
-			}
+			//create a *Function with the provided parameters
+			var results []SymbolicValue
 
 			if list, ok := result.(*List); ok && multipleResults {
-				function.results = SerializablesToValues(list.elements)
+				results = SerializablesToValues(list.elements)
 			} else {
-				function.results = []SymbolicValue{result}
+				results = []SymbolicValue{result}
 			}
 
+			firstOptionalParamIndex := -1
+			if f.lastMandatoryParamIndex >= 0 {
+				firstOptionalParamIndex = f.lastMandatoryParamIndex + 1
+				if f.isfirstArgCtx {
+					firstOptionalParamIndex--
+				}
+			}
+
+			function := NewFunction(params, paramNames, firstOptionalParamIndex, f.isVariadic, results)
+
+			//update the symbolic data about the callee
 			state.symbolicData.PushNodeValue(calleeNode, function)
 			switch c := calleeNode.(type) {
 			case *parse.IdentifierMemberExpression:

@@ -2960,9 +2960,10 @@ func (p *OptionalPattern) WidestOfType() SymbolicValue {
 }
 
 type FunctionPattern struct {
-	parameters     []SymbolicValue
-	parameterNames []string
-	isVariadic     bool
+	parameters              []SymbolicValue
+	parameterNames          []string
+	firstOptionalParamIndex int //-1 if no optional parameters
+	isVariadic              bool
 
 	node       *parse.FunctionPatternExpression //if nil, any function is matched
 	returnType SymbolicValue
@@ -3057,7 +3058,7 @@ func (fn *FunctionPattern) IteratorElementValue() SymbolicValue {
 }
 
 func (fn *FunctionPattern) SymbolicValue() SymbolicValue {
-	return &Function{fn.parameters, fn.parameterNames, nil, fn.isVariadic, fn}
+	return &Function{fn.parameters, fn.firstOptionalParamIndex, fn.parameterNames, nil, fn.isVariadic, fn}
 }
 
 func (p *FunctionPattern) StringPattern() (StringPattern, bool) {
@@ -3073,7 +3074,7 @@ func (fn *FunctionPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPri
 }
 
 func (fn *FunctionPattern) WidestOfType() SymbolicValue {
-	return &FunctionPattern{}
+	return &FunctionPattern{firstOptionalParamIndex: -1}
 }
 
 // A IntRangePattern represents a symbolic IntRangePattern.

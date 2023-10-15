@@ -22,7 +22,10 @@ func TestSymbolicEval(t *testing.T) {
 
 		makeParams := func(result SymbolicValue) *[]SymbolicValue {
 			return &[]SymbolicValue{iterable, NewFunction(
-				[]SymbolicValue{iterable.IteratorElementValue()}, nil, false,
+				[]SymbolicValue{iterable.IteratorElementValue()},
+				nil,
+				-1,
+				false,
 				[]SymbolicValue{result},
 			)}
 		}
@@ -2837,10 +2840,11 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Equal(t, &FunctionPattern{
-				node:           fnPatt,
-				returnType:     Nil,
-				parameters:     []SymbolicValue{},
-				parameterNames: []string{},
+				node:                    fnPatt,
+				returnType:              Nil,
+				parameters:              []SymbolicValue{},
+				parameterNames:          []string{},
+				firstOptionalParamIndex: -1,
 			}, res)
 		})
 
@@ -2852,10 +2856,11 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Equal(t, &FunctionPattern{
-				node:           fnPatt,
-				returnType:     Nil,
-				parameters:     []SymbolicValue{ANY},
-				parameterNames: []string{"a"},
+				node:                    fnPatt,
+				returnType:              Nil,
+				parameters:              []SymbolicValue{ANY},
+				parameterNames:          []string{"a"},
+				firstOptionalParamIndex: -1,
 			}, res)
 		})
 
@@ -2873,10 +2878,11 @@ func TestSymbolicEval(t *testing.T) {
 				makeSymbolicEvalError(fnPatt, state, MISSING_RETURN_IN_FUNCTION_PATT),
 			}, state.errors())
 			assert.Equal(t, &FunctionPattern{
-				node:           fnPatt,
-				returnType:     ANY_INT,
-				parameters:     []SymbolicValue{},
-				parameterNames: []string{},
+				node:                    fnPatt,
+				returnType:              ANY_INT,
+				parameters:              []SymbolicValue{},
+				parameterNames:          []string{},
+				firstOptionalParamIndex: -1,
 			}, res)
 		})
 
@@ -2896,10 +2902,11 @@ func TestSymbolicEval(t *testing.T) {
 				makeSymbolicEvalError(innerReturnStmt, state, fmtInvalidReturnValue(NewString("a"), ANY_INT)),
 			}, state.errors())
 			assert.Equal(t, &FunctionPattern{
-				node:           fnPatt,
-				returnType:     ANY_INT,
-				parameters:     []SymbolicValue{},
-				parameterNames: []string{},
+				node:                    fnPatt,
+				returnType:              ANY_INT,
+				parameters:              []SymbolicValue{},
+				parameterNames:          []string{},
+				firstOptionalParamIndex: -1,
 			}, res)
 		})
 
@@ -4356,6 +4363,52 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, ANY_INT, res)
 		})
 
+		t.Run("specific Go function with optional parameter", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				return f(#b)
+			`)
+
+			callExprNode := n.Statements[0].(*parse.ReturnStatement).Expr.(*parse.CallExpression)
+			argNode := callExprNode.Arguments[0]
+
+			goFunc := &GoFunction{
+				fn: func(ctx *Context, arg *OptionalParam[SymbolicValue]) *Int {
+					if _, ok := (*arg.Value).(*Identifier); ok {
+						ctx.SetSymbolicGoFunctionParameters(&[]SymbolicValue{NewIdentifier("a")}, []string{"arg"})
+					}
+					return ANY_INT
+				},
+			}
+
+			state.setGlobal("f", goFunc, GlobalConst)
+			res, err := symbolicEval(n, state)
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(argNode, state, FmtInvalidArg(0, NewIdentifier("b"), NewIdentifier("a"))),
+			}, state.errors())
+			assert.Equal(t, ANY_INT, res)
+
+			calleeData, ok := state.symbolicData.GetMostSpecificNodeValue(callExprNode.Callee)
+			if !assert.True(t, ok) {
+				return
+			}
+
+			if !assert.Equal(t, &Function{
+				firstOptionalParamIndex: 0,
+				parameters:              []SymbolicValue{NewIdentifier("a")},
+				parameterNames:          []string{"arg"},
+				results:                 []SymbolicValue{ANY_INT},
+			}, calleeData) {
+				return
+			}
+
+			fn := calleeData.(*Function)
+			assert.True(t, fn.HasOptionalParams())
+		})
+
 		t.Run("specific Go function with non-empty object parameter, missing property in argument", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				return f({})
@@ -4592,13 +4645,15 @@ func TestSymbolicEval(t *testing.T) {
 				parameters: []SymbolicValue{
 					&Function{
 						pattern: &FunctionPattern{
-							node:           fnPatt.(*parse.FunctionPatternExpression),
-							returnType:     ANY_INT,
-							parameters:     []SymbolicValue{},
-							parameterNames: []string{},
+							node:                    fnPatt.(*parse.FunctionPatternExpression),
+							returnType:              ANY_INT,
+							parameters:              []SymbolicValue{},
+							parameterNames:          []string{},
+							firstOptionalParamIndex: -1,
 						},
-						parameters:     []SymbolicValue{},
-						parameterNames: []string{},
+						parameters:              []SymbolicValue{},
+						parameterNames:          []string{},
+						firstOptionalParamIndex: -1,
 					},
 				},
 				parameterNames: []string{"func"},

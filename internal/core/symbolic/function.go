@@ -12,6 +12,10 @@ import (
 	"github.com/inoxlang/inox/internal/utils"
 )
 
+const (
+	PRETTY_PRINT_OPTIONAL_PARAM_PREFIX = "optional "
+)
+
 var (
 	ANY_INOX_FUNC = &InoxFunction{}
 )
@@ -231,8 +235,8 @@ type GoFunction struct {
 	isVariadic          bool
 	isfirstArgCtx       bool
 
-	//the next parameter is either optional or variadic,
-	//lastMandatoryParamIndex can be -1.
+	//if >= 0 the next parameter is either optional or variadic,
+	//the ctx param is taken into account.
 	lastMandatoryParamIndex int
 
 	//true if the function has at least one OptionalParam[T] in its parameters.
@@ -373,7 +377,7 @@ func (fn *GoFunction) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintCon
 				w.WriteString("???" + err.Error())
 			} else {
 				if isOptionalParam {
-					w.WriteString("optional ")
+					utils.Must(w.Write(utils.StringAsBytes(PRETTY_PRINT_OPTIONAL_PARAM_PREFIX)))
 				}
 				param.PrettyPrint(w, config, 0, 0)
 			}
@@ -469,6 +473,12 @@ func (goFunc *GoFunction) LoadSignatureData() (finalErr error) {
 		}
 
 		if isOptionalParam {
+			//the ctx param is required because otherwise lastMandatoryParamIndex
+			// would have a value of -1 if the param after the ctx was optional.
+			if !goFunc.isfirstArgCtx {
+				return errors.New("symbolic Go function with at least one optional parameter must have *Context as the first parameter")
+			}
+
 			if !goFunc.hasOptionalParams {
 				goFunc.lastMandatoryParamIndex = paramIndex - 1
 				goFunc.hasOptionalParams = true
@@ -802,23 +812,31 @@ func (goFunc *GoFunction) Call(input goFunctionCallInput) (finalResult SymbolicV
 // An Function represents a symbolic function we do not know the concrete type.
 type Function struct {
 	//if pattern is nil this function matches any function with the following parameters & results
-	parameters     []SymbolicValue
-	parameterNames []string
-	results        []SymbolicValue
-	variadic       bool
+	parameters              []SymbolicValue
+	firstOptionalParamIndex int //-1 if no optional parameters
+	parameterNames          []string
+	results                 []SymbolicValue
+	variadic                bool
 
 	pattern *FunctionPattern
 }
 
-func NewFunction(parameters []SymbolicValue, parameterNames []string, variadic bool, results []SymbolicValue) *Function {
+func NewFunction(params []SymbolicValue, paramNames []string, firstOptionalParamIndex int, variadic bool, results []SymbolicValue) *Function {
 	//TODO: check that variadic parameter is a list
 
-	return &Function{
-		parameters:     parameters,
-		parameterNames: parameterNames,
-		results:        results,
-		variadic:       variadic,
+	if firstOptionalParamIndex < 0 {
+		firstOptionalParamIndex = -1
 	}
+
+	fn := &Function{
+		parameters:              params,
+		firstOptionalParamIndex: firstOptionalParamIndex,
+		parameterNames:          paramNames,
+		results:                 results,
+		variadic:                variadic,
+	}
+
+	return fn
 }
 
 // returned slice should not be modified.
@@ -827,6 +845,14 @@ func (fn *Function) NonVariadicParameters() []SymbolicValue {
 		return fn.parameters[:len(fn.parameters)-1]
 	}
 	return fn.parameters
+}
+
+func (fn *Function) IsVariadic() bool {
+	return fn.variadic
+}
+
+func (fn *Function) HasOptionalParams() bool {
+	return fn.firstOptionalParamIndex >= 0
 }
 
 func (fn *Function) VariadicParamElem() SymbolicValue {
@@ -938,11 +964,16 @@ func (f *Function) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig
 			utils.Must(w.Write(utils.StringAsBytes(", ")))
 		}
 
-		if f.variadic && i == len(f.parameters)-1 {
+		isVariadicParam := f.variadic && i == len(f.parameters)-1
+		if isVariadicParam {
 			utils.Must(w.Write(utils.StringAsBytes("...")))
 		}
 
 		if len(f.parameterNames) > i {
+			if !isVariadicParam && f.HasOptionalParams() && i >= f.firstOptionalParamIndex {
+				utils.Must(w.Write(utils.StringAsBytes(PRETTY_PRINT_OPTIONAL_PARAM_PREFIX)))
+			}
+
 			utils.Must(w.Write(utils.StringAsBytes(f.parameterNames[i])))
 			utils.PanicIfErr(w.WriteByte(' '))
 		}
