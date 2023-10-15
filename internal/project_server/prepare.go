@@ -14,17 +14,25 @@ import (
 )
 
 type filePreparationParams struct {
-	fpath         string
-	session       *jsonrpc.Session
+	fpath   string
+	session *jsonrpc.Session
+
+	//if true and the state preparation failed then ok is false and results are nil.
 	requiresState bool
-	ignoreCache   bool //if true the cache is not read but the resulting prepared file is cached
+
+	//if true and the file is not cached then ok is false and results are nil.
+	requiresCache bool
+
+	//if true the cache is not read but the resulting prepared file is cached.
+	ignoreCache bool
 
 	notifyUserAboutDbError bool
 }
 
 // prepareSourceFileInExtractionMode prepares a module or includable-chunk file:
-// - if requiresState is true & state failed to be created ok is false
-// - if the file at fpath is an includable-chunk the returned module is a fake module
+// - if requiresState is true & state failed to be created ok is false.
+// - if the file at fpath is an includable-chunk the returned module is a fake module.
+// - ok is false if params.requiresCache is true and the file is not cached.
 // The returned values SHOULD NOT BE MODIFIED.
 func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparationParams) (
 	_ *core.GlobalState,
@@ -63,6 +71,8 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 		defer fileCache.Unlock()
 
 		fileCache.acknowledgeAccess()
+	} else if params.requiresCache {
+		return nil, nil, nil, false, false
 	}
 
 	//check the cache
@@ -77,6 +87,8 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 			return nil, nil, nil, false, false
 		}
 		return cachedState, cachedModule, cachedChunk, true, true
+	} else if params.requiresCache {
+		return nil, nil, nil, false, false
 	}
 
 	chunk, err := core.ParseFileChunk(fpath, fls)

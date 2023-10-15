@@ -22,6 +22,7 @@ func getHoverContent(fpath string, line, column int32, handlingCtx *core.Context
 		fpath:         fpath,
 		session:       session,
 		requiresState: true,
+		requiresCache: true,
 	})
 	if !ok {
 		return &defines.Hover{}, nil
@@ -105,9 +106,9 @@ func getHoverContent(fpath string, line, column int32, handlingCtx *core.Context
 		for {
 			switch val := val.(type) {
 			case *symbolic.GoFunction:
-				text, ok := help.HelpForSymbolicGoFunc(val, help.HelpMessageConfig{Format: help.MarkdownFormat})
+				markdown, ok := help.HelpForSymbolicGoFunc(val, help.HelpMessageConfig{Format: help.MarkdownFormat})
 				if ok {
-					helpMessage = "\n-----\n" + strings.ReplaceAll(text, "\n\r", "\n")
+					helpMessage = "\n-----\n" + strings.ReplaceAll(markdown, "\n\r", "\n")
 				}
 			}
 			if helpMessage == "" && val == mostSpecificVal && lessSpecificVal != nil {

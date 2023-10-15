@@ -26,7 +26,7 @@ import (
 	"net/url"
 
 	"github.com/inoxlang/inox/internal/compl"
-	parse "github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/parse"
 )
 
 const (
@@ -106,6 +106,10 @@ func registerHandlers(server *lsp.Server, serverConfig LSPServerConfiguration) {
 		s := &defines.InitializeResult{}
 
 		s.Capabilities.HoverProvider = true
+		s.Capabilities.SignatureHelpProvider = &defines.SignatureHelpOptions{
+			TriggerCharacters:   &[]string{"(", ","},
+			RetriggerCharacters: &[]string{","},
+		}
 		s.Capabilities.WorkspaceSymbolProvider = true
 		s.Capabilities.DefinitionProvider = true
 		s.Capabilities.CodeActionProvider = &defines.CodeActionOptions{
@@ -215,8 +219,31 @@ func registerHandlers(server *lsp.Server, serverConfig LSPServerConfiguration) {
 		handlingCtx := sessionCtx.BoundChildWithOptions(core.BoundChildContextOptions{
 			Filesystem: fls,
 		})
+		defer handlingCtx.CancelGracefully()
 
 		return getHoverContent(fpath, line, column, handlingCtx, session)
+	})
+
+	server.OnSignatureHelp(func(ctx context.Context, req *defines.SignatureHelpParams) (result *defines.SignatureHelp, err error) {
+		fpath, err := getFilePath(req.TextDocument.Uri, projectMode)
+		if err != nil {
+			return nil, err
+		}
+		line, column := getLineColumn(req.Position)
+		session := jsonrpc.GetSession(ctx)
+		sessionCtx := session.Context()
+
+		fls, ok := getLspFilesystem(session)
+		if !ok {
+			return nil, errors.New(string(FsNoFilesystem))
+		}
+
+		handlingCtx := sessionCtx.BoundChildWithOptions(core.BoundChildContextOptions{
+			Filesystem: fls,
+		})
+		defer handlingCtx.CancelGracefully()
+
+		return getSignatureHelp(fpath, line, column, handlingCtx, session)
 	})
 
 	server.OnCompletion(func(ctx context.Context, req *defines.CompletionParams) (result *[]defines.CompletionItem, err error) {
@@ -624,6 +651,7 @@ func registerHandlers(server *lsp.Server, serverConfig LSPServerConfiguration) {
 		handlingCtx := sessionCtx.BoundChildWithOptions(core.BoundChildContextOptions{
 			Filesystem: fls,
 		})
+		defer handlingCtx.CancelGracefully()
 
 		state, _, chunk, cachedOrGotCache, ok := prepareSourceFileInExtractionMode(handlingCtx, filePreparationParams{
 			fpath:         fpath,

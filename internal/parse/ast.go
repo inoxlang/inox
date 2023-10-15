@@ -2871,10 +2871,22 @@ func FindNodeAndChain[T Node](root Node, typ T, handle func(n T, isUnique bool) 
 	return found, _ancestorChain
 }
 
+// FindClosest searches for an ancestor node of type typ starting from the parent node (last ancestor).
 func FindClosest[T Node](ancestorChain []Node, typ T) (node T, index int, ok bool) {
+	return FindClosestMaxDistance[T](ancestorChain, typ, -1)
+}
+
+// FindClosestMaxDistance searches for an ancestor node of type typ starting from the parent node (last ancestor),
+// maxDistance is the maximum distance from the parent node. A negative or zero maxDistance is ignored.
+func FindClosestMaxDistance[T Node](ancestorChain []Node, typ T, maxDistance int) (node T, index int, ok bool) {
 	searchedType := reflect.TypeOf(typ)
 
-	for i := len(ancestorChain) - 1; i >= 0; i-- {
+	lastI := 0
+	if maxDistance > 0 {
+		lastI = max(0, len(ancestorChain)-lastI)
+	}
+
+	for i := len(ancestorChain) - 1; i >= lastI; i-- {
 		n := ancestorChain[i]
 		if reflect.TypeOf(n) == searchedType {
 			return n.(T), i, true
