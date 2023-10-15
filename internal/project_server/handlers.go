@@ -142,8 +142,10 @@ func registerHandlers(server *lsp.Server, serverConfig LSPServerConfiguration) {
 				func() {
 					data.lock.Lock()
 					defer data.lock.Unlock()
-					data.preparedSourceFilesCache.acknowledgeSessionEnd()
-					data.preparedSourceFilesCache = nil
+					if data.preparedSourceFilesCache != nil {
+						data.preparedSourceFilesCache.acknowledgeSessionEnd()
+						data.preparedSourceFilesCache = nil
+					}
 				}()
 			}
 		}
