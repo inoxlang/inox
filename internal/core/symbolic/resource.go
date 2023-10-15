@@ -117,10 +117,36 @@ func (p *Path) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, de
 		return
 	}
 
-	utils.Must(w.Write(utils.StringAsBytes("%path")))
-
 	if p.pattern != nil {
-		utils.Must(w.Write(utils.StringAsBytes("(matching ")))
+
+		s := ""
+		switch {
+		case p.pattern.absoluteness == UnspecifiedPathAbsoluteness && p.pattern.dirConstraint == UnspecifiedDirOrFilePath:
+			s = "%path"
+		case p.pattern.absoluteness == UnspecifiedPathAbsoluteness && p.pattern.dirConstraint == DirPath:
+			s = "%dir-path"
+		case p.pattern.absoluteness == UnspecifiedPathAbsoluteness && p.pattern.dirConstraint == NonDirPath:
+			s = "%non-dir-path"
+		case p.pattern.absoluteness == AbsolutePath && p.pattern.dirConstraint == UnspecifiedDirOrFilePath:
+			s = "%absolute-path"
+		case p.pattern.absoluteness == AbsolutePath && p.pattern.dirConstraint == DirPath:
+			s = "%absolute-dir-path"
+		case p.pattern.absoluteness == AbsolutePath && p.pattern.dirConstraint == NonDirPath:
+			s = "%absolute-non-dir-path"
+		case p.pattern.absoluteness == RelativePath && p.pattern.dirConstraint == UnspecifiedDirOrFilePath:
+			s = "%relative-path"
+		case p.pattern.absoluteness == RelativePath && p.pattern.dirConstraint == DirPath:
+			s = "%relative-dir-path"
+		case p.pattern.absoluteness == RelativePath && p.pattern.dirConstraint == NonDirPath:
+			s = "%relative-non-dir-path"
+		}
+
+		if s != "" {
+			utils.Must(w.Write(utils.StringAsBytes(s)))
+			return
+		}
+
+		utils.Must(w.Write(utils.StringAsBytes("%patch(matching ")))
 
 		if p.pattern.node != nil {
 			utils.Must(w.Write(utils.StringAsBytes(p.pattern.stringifiedNode)))
@@ -129,6 +155,8 @@ func (p *Path) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, de
 		}
 
 		utils.PanicIfErr(w.WriteByte(')'))
+	} else {
+		utils.Must(w.Write(utils.StringAsBytes("%path")))
 	}
 }
 
