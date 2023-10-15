@@ -290,7 +290,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 		paramTypes := function.parameters
 		currentArgs := args
 		if !f.isVariadic {
-			currentArgs = args[:len(params)]
+			currentArgs = args[:min(len(params), len(args))]
 		}
 
 		for i, arg := range currentArgs {

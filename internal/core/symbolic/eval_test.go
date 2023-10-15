@@ -4060,6 +4060,28 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, ANY_INT, res)
 		})
 
+		t.Run("signature is func(*Context, *Int, OptionalParam[*Int]) *Int: second argument not provided and function is specific", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				return f(1)
+			`)
+
+			goFunc := &GoFunction{
+				fn: func(ctx *Context, _ *Int, i *OptionalParam[*Int]) *Int {
+					if i.Value != nil {
+						ctx.AddSymbolicGoFunctionError("argument should not have been provided")
+					}
+					ctx.SetSymbolicGoFunctionParameters(&[]SymbolicValue{ANY_INT, NewInt(2)}, []string{"a", "b"})
+					return ANY_INT
+				},
+			}
+
+			state.setGlobal("f", goFunc, GlobalConst)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, ANY_INT, res)
+		})
+
 		t.Run("signature is func(*Context, *Int, OptionalParam[*Int]) *Int: second argument provided", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				return f(1, 2)
