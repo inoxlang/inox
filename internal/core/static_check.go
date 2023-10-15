@@ -653,7 +653,13 @@ switch_:
 		// look for duplicate keys
 		for _, entry := range node.Entries {
 
-			keyRepr := entry.Key.(parse.SimpleValueLiteral).ValueString()
+			keyNode, ok := entry.Key.(parse.SimpleValueLiteral)
+			if !ok {
+				//there is a parsing error
+				continue
+			}
+
+			keyRepr := keyNode.ValueString()
 
 			if keys[keyRepr] {
 				c.addError(entry.Key, fmtDuplicateDictKey(keyRepr))

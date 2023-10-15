@@ -27,13 +27,25 @@ func TestCheck(t *testing.T) {
 		defer utils.AssertNoMemoryLeak(t, startMemStats, 100_000)
 	}
 
-	parseCode := func(code string) (*parse.Chunk, *parse.ParsedChunk) {
+	mustParseCode := func(code string) (*parse.Chunk, *parse.ParsedChunk) {
 		chunk := utils.Must(parse.ParseChunkSource(parse.InMemorySource{
 			NameString: "test",
 			CodeString: code,
 		}))
 
 		return chunk.Node, chunk
+	}
+
+	parseCode := func(code string) (*parse.Chunk, *parse.ParsedChunk, error) {
+		chunk, err := parse.ParseChunkSource(parse.InMemorySource{
+			NameString: "test",
+			CodeString: code,
+		})
+
+		if chunk == nil {
+			return nil, nil, err
+		}
+		return chunk.Node, chunk, err
 	}
 
 	makeError := func(node parse.Node, chunk *parse.ParsedChunk, s string) *StaticCheckError {
@@ -53,17 +65,17 @@ func TestCheck(t *testing.T) {
 
 	t.Run("object literal", func(t *testing.T) {
 		t.Run("two implict keys", func(t *testing.T) {
-			n, src := parseCode(`{1, 2}`)
+			n, src := mustParseCode(`{1, 2}`)
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 
 		t.Run("explicit identifier keys", func(t *testing.T) {
-			n, src := parseCode(`{keyOne:1, keyTwo:2}`)
+			n, src := mustParseCode(`{keyOne:1, keyTwo:2}`)
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 
 		t.Run("duplicate keys (one implicit, one explicit)", func(t *testing.T) {
-			n, src := parseCode(`{1, "0": 1}`)
+			n, src := mustParseCode(`{1, "0": 1}`)
 
 			keyNode := parse.FindNode(n, (*parse.QuotedStringLiteral)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
@@ -72,7 +84,7 @@ func TestCheck(t *testing.T) {
 			)
 			assert.Equal(t, expectedErr, err)
 
-			n, src = parseCode(`{"0": 1, 1}`)
+			n, src = mustParseCode(`{"0": 1, 1}`)
 			err = staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr = utils.CombineErrors(
 				makeError(n, src, fmtObjLitExplicityDeclaresPropWithImplicitKey("0")),
@@ -81,7 +93,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("duplicate explicit keys (two string literals)", func(t *testing.T) {
-			n, src := parseCode(`{"0":1, "0": 1}`)
+			n, src := mustParseCode(`{"0":1, "0": 1}`)
 
 			keyNode := parse.FindNode(n, (*parse.QuotedStringLiteral)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
@@ -92,7 +104,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("duplicate explicit keys (one identifier & one string)", func(t *testing.T) {
-			n, src := parseCode(`{a:1, "a": 1}`)
+			n, src := mustParseCode(`{a:1, "a": 1}`)
 
 			keyNode := parse.FindNode(n, (*parse.QuotedStringLiteral)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
@@ -103,7 +115,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("duplicate explicit keys (one string & one identifier)", func(t *testing.T) {
-			n, src := parseCode(`{a:1, "a": 1}`)
+			n, src := mustParseCode(`{a:1, "a": 1}`)
 
 			keyNode := parse.FindNode(n, (*parse.QuotedStringLiteral)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
@@ -114,7 +126,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("duplicate explicit keys (two identifiers)", func(t *testing.T) {
-			n, src := parseCode(`{a:1, "a": 1}`)
+			n, src := mustParseCode(`{a:1, "a": 1}`)
 
 			keyNode := parse.FindNode(n, (*parse.QuotedStringLiteral)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
@@ -125,7 +137,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("duplicate explicit keys : one of the key is in an expanded object", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				e = {a: 1}
 				{"a": 1, ... $e.{a}}
 			`)
@@ -157,7 +169,7 @@ func TestCheck(t *testing.T) {
 		t.Run("key is too long", func(t *testing.T) {
 			name := strings.Repeat("a", MAX_NAME_BYTE_LEN+1)
 			code := strings.Replace(`{"a":1}`, "a", name, 1)
-			n, src := parseCode(code)
+			n, src := mustParseCode(code)
 
 			keyNode := parse.FindNode(n, (*parse.QuotedStringLiteral)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
@@ -168,7 +180,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("regular property having a metaproperty key", func(t *testing.T) {
-			n, src := parseCode(`{_url_: https://example.com/}`)
+			n, src := mustParseCode(`{_url_: https://example.com/}`)
 			keyNode := parse.FindNode(n, (*parse.IdentifierLiteral)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
@@ -178,7 +190,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("metaproperty initialization : undefined variable in block", func(t *testing.T) {
-			n, src := parseCode(`{ _url_ {a} }`)
+			n, src := mustParseCode(`{ _url_ {a} }`)
 			varNode := parse.FindNodes(n, (*parse.IdentifierLiteral)(nil), nil)[1]
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
@@ -188,7 +200,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("metaproperty initialization : local variables in the scope surrounding the object are not accessible from the block", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				a = 1 
 				{ _url_ {a} }
 			`)
@@ -201,7 +213,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("visibility metaproperty initialization: missing description", func(t *testing.T) {
-			n, src := parseCode(`{ _visibility_ {} }`)
+			n, src := mustParseCode(`{ _visibility_ {} }`)
 			init := parse.FindNode(n, (*parse.InitializationBlock)(nil), nil)
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
@@ -212,7 +224,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("visibility metaproperty initialization: description should not have metaproperties", func(t *testing.T) {
-			n, src := parseCode(`{ _visibility_ { { _url_ {} } } }`)
+			n, src := mustParseCode(`{ _visibility_ { { _url_ {} } } }`)
 			innerObj := parse.FindNodes(n, (*parse.ObjectLiteral)(nil), nil)[1]
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
@@ -223,7 +235,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("visibility metaproperty initialization: description should not have implicit keys", func(t *testing.T) {
-			n, src := parseCode(`{ _visibility_ { {1} } }`)
+			n, src := mustParseCode(`{ _visibility_ { {1} } }`)
 			innerObj := parse.FindNodes(n, (*parse.ObjectLiteral)(nil), nil)[1]
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
@@ -234,7 +246,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("visibility metaproperty initialization: description should not have have invalid keys", func(t *testing.T) {
-			n, src := parseCode(`{ _visibility_ { {a: 1} } }`)
+			n, src := mustParseCode(`{ _visibility_ { {a: 1} } }`)
 			prop := parse.FindNode(n, (*parse.ObjectProperty)(nil), nil)
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
@@ -245,7 +257,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("visibility metaproperty initialization: .public should have a key list literal as value", func(t *testing.T) {
-			n, src := parseCode(`{ _visibility_ { {public: 1} } }`)
+			n, src := mustParseCode(`{ _visibility_ { {public: 1} } }`)
 			publicProp := parse.FindNode(n, (*parse.ObjectProperty)(nil), nil)
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
@@ -256,7 +268,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("visibility metaproperty initialization: .visible_by should have a dict literal as value", func(t *testing.T) {
-			n, src := parseCode(`{ _visibility_ { {visible_by: 1} } }`)
+			n, src := mustParseCode(`{ _visibility_ { {visible_by: 1} } }`)
 			publicProp := parse.FindNode(n, (*parse.ObjectProperty)(nil), nil)
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
@@ -267,7 +279,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("visibility metaproperty initialization: .visible_by[#self] should have a ket list literal as value", func(t *testing.T) {
-			n, src := parseCode(`{ 
+			n, src := mustParseCode(`{ 
 				_visibility_ { 
 					{visible_by: :{#self: 1} } 
 				} 
@@ -284,17 +296,17 @@ func TestCheck(t *testing.T) {
 
 	t.Run("record literal", func(t *testing.T) {
 		t.Run("two implict keys", func(t *testing.T) {
-			n, src := parseCode(`#{1, 2}`)
+			n, src := mustParseCode(`#{1, 2}`)
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 
 		t.Run("explicit identifier keys", func(t *testing.T) {
-			n, src := parseCode(`#{keyOne:1, keyTwo:2}`)
+			n, src := mustParseCode(`#{keyOne:1, keyTwo:2}`)
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 
 		t.Run("duplicate keys (one implicit, one explicit)", func(t *testing.T) {
-			n, src := parseCode(`#{1, "0": 1}`)
+			n, src := mustParseCode(`#{1, "0": 1}`)
 
 			keyNode := parse.FindNode(n, (*parse.QuotedStringLiteral)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
@@ -303,7 +315,7 @@ func TestCheck(t *testing.T) {
 			)
 			assert.Equal(t, expectedErr, err)
 
-			n, src = parseCode(`#{"0": 1, 1}`)
+			n, src = mustParseCode(`#{"0": 1, 1}`)
 			err = staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr = utils.CombineErrors(
 				makeError(n, src, fmtRecLitExplicityDeclaresPropWithImplicitKey("0")),
@@ -312,7 +324,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("duplicate explicit keys", func(t *testing.T) {
-			n, src := parseCode(`#{"0":1, "0": 1}`)
+			n, src := mustParseCode(`#{"0":1, "0": 1}`)
 
 			keyNode := parse.FindNode(n, (*parse.QuotedStringLiteral)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
@@ -323,7 +335,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("duplicate explicit keys : one of the key is in an expanded object", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				e = {a: 1}
 				#{"a": 1, ... $e.{a}}
 			`)
@@ -355,7 +367,7 @@ func TestCheck(t *testing.T) {
 		t.Run("key is too long", func(t *testing.T) {
 			name := strings.Repeat("a", MAX_NAME_BYTE_LEN+1)
 			code := strings.Replace(`#{"a":1}`, "a", name, 1)
-			n, src := parseCode(code)
+			n, src := mustParseCode(code)
 
 			keyNode := parse.FindNode(n, (*parse.QuotedStringLiteral)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
@@ -366,7 +378,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("metaproperty key", func(t *testing.T) {
-			n, src := parseCode(`#{_url_: https://example.com/}`)
+			n, src := mustParseCode(`#{_url_: https://example.com/}`)
 			keyNode := parse.FindNode(n, (*parse.IdentifierLiteral)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
@@ -378,12 +390,12 @@ func TestCheck(t *testing.T) {
 
 	t.Run("object pattern literal", func(t *testing.T) {
 		t.Run("identifier keys", func(t *testing.T) {
-			n, src := parseCode(`%{keyOne:1, keyTwo:2}`)
+			n, src := mustParseCode(`%{keyOne:1, keyTwo:2}`)
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 
 		t.Run("duplicate keys", func(t *testing.T) {
-			n, src := parseCode(`%{"0":1, "0": 1}`)
+			n, src := mustParseCode(`%{"0":1, "0": 1}`)
 
 			keyNode := parse.FindNode(n, (*parse.QuotedStringLiteral)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
@@ -394,7 +406,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("duplicate keys", func(t *testing.T) {
-			n, src := parseCode(`pattern p = %{a: 1}; %{...(%p).{a}, a:1}`)
+			n, src := mustParseCode(`pattern p = %{a: 1}; %{...(%p).{a}, a:1}`)
 
 			keyNodes := parse.FindNodes(n, (*parse.IdentifierLiteral)(nil), func(l *parse.IdentifierLiteral) bool {
 				return l.Name == "a"
@@ -409,7 +421,7 @@ func TestCheck(t *testing.T) {
 		t.Run("key is too long", func(t *testing.T) {
 			name := strings.Repeat("a", MAX_NAME_BYTE_LEN+1)
 			code := strings.Replace(`%{"a":1}`, "a", name, 1)
-			n, src := parseCode(code)
+			n, src := mustParseCode(code)
 
 			keyNode := parse.FindNode(n, (*parse.QuotedStringLiteral)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
@@ -420,7 +432,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("metaproperty key", func(t *testing.T) {
-			n, src := parseCode(`%{_url_: https://example.com/}`)
+			n, src := mustParseCode(`%{_url_: https://example.com/}`)
 			keyNode := parse.FindNode(n, (*parse.IdentifierLiteral)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
@@ -430,7 +442,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("unexpected otherprops expression", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				pattern one = 1
 				%{
 					otherprops(no) 
@@ -449,12 +461,12 @@ func TestCheck(t *testing.T) {
 
 	t.Run("record pattern literal", func(t *testing.T) {
 		t.Run("identifier keys", func(t *testing.T) {
-			n, src := parseCode(`pattern p = #{keyOne:1, keyTwo:2}`)
+			n, src := mustParseCode(`pattern p = #{keyOne:1, keyTwo:2}`)
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 
 		t.Run("duplicate keys", func(t *testing.T) {
-			n, src := parseCode(`pattern p = #{"0":1, "0": 1}`)
+			n, src := mustParseCode(`pattern p = #{"0":1, "0": 1}`)
 
 			keyNode := parse.FindNode(n, (*parse.QuotedStringLiteral)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
@@ -465,7 +477,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("duplicate keys", func(t *testing.T) {
-			n, src := parseCode(`pattern p = %{a: 1}; pattern e = #{...(%p).{a}, a:1}`)
+			n, src := mustParseCode(`pattern p = %{a: 1}; pattern e = #{...(%p).{a}, a:1}`)
 
 			keyNodes := parse.FindNodes(n, (*parse.IdentifierLiteral)(nil), func(l *parse.IdentifierLiteral) bool {
 				return l.Name == "a"
@@ -480,7 +492,7 @@ func TestCheck(t *testing.T) {
 		t.Run("key is too long", func(t *testing.T) {
 			name := strings.Repeat("a", MAX_NAME_BYTE_LEN+1)
 			code := `pattern p = ` + strings.Replace(`#{"a":1}`, "a", name, 1)
-			n, src := parseCode(code)
+			n, src := mustParseCode(code)
 
 			keyNode := parse.FindNode(n, (*parse.QuotedStringLiteral)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
@@ -491,7 +503,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("metaproperty key", func(t *testing.T) {
-			n, src := parseCode(`pattern p = #{_url_: https://example.com/}`)
+			n, src := mustParseCode(`pattern p = #{_url_: https://example.com/}`)
 			keyNode := parse.FindNode(n, (*parse.IdentifierLiteral)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
@@ -503,7 +515,7 @@ func TestCheck(t *testing.T) {
 
 	t.Run("self expression", func(t *testing.T) {
 		t.Run("in top level", func(t *testing.T) {
-			n, src := parseCode(`self`)
+			n, src := mustParseCode(`self`)
 
 			selfExpr := parse.FindNode(n, (*parse.SelfExpression)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
@@ -514,7 +526,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("value of an object property", func(t *testing.T) {
-			n, src := parseCode(`{a: self}`)
+			n, src := mustParseCode(`{a: self}`)
 
 			selfExpr := parse.FindNode(n, (*parse.SelfExpression)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
@@ -525,7 +537,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("in a function", func(t *testing.T) {
-			n, src := parseCode(`fn() => self`)
+			n, src := mustParseCode(`fn() => self`)
 
 			selfExpr := parse.FindNode(n, (*parse.SelfExpression)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
@@ -536,17 +548,17 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("in a method", func(t *testing.T) {
-			n, src := parseCode(`{f: fn() => self}`)
+			n, src := mustParseCode(`{f: fn() => self}`)
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 
 		t.Run("in a metaproperty's initialization block", func(t *testing.T) {
-			n, src := parseCode(`{ _url_ { self } }`)
+			n, src := mustParseCode(`{ _url_ { self } }`)
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 
 		t.Run("in a member expression in an extension' object method", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				pattern o = {
 					a: 1
 				}
@@ -558,7 +570,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("in a function that is a value of an object pattern", func(t *testing.T) {
-			n, src := parseCode(`%{f: fn() => self}`)
+			n, src := mustParseCode(`%{f: fn() => self}`)
 
 			selfExpr := parse.FindNode(n, (*parse.SelfExpression)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
@@ -569,14 +581,14 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("at top level of a lifetime job", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				lifetimejob #job for %{} { self }
 			`)
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 
 		t.Run("in a function expression in a reception handler expression", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				{
 					on received %{} fn(event){
 						self
@@ -587,7 +599,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("at top level of an embedded module", func(t *testing.T) {
-			n, src := parseCode(`go do { self }`)
+			n, src := mustParseCode(`go do { self }`)
 
 			selfExpr := parse.FindNode(n, (*parse.SelfExpression)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
@@ -598,7 +610,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("in the expression of an extension object's property", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				pattern p = {
 					a: 1
 				}
@@ -614,7 +626,7 @@ func TestCheck(t *testing.T) {
 
 	t.Run("sendval expression", func(t *testing.T) {
 		t.Run("in top level", func(t *testing.T) {
-			n, src := parseCode(`sendval 1 to {}`)
+			n, src := mustParseCode(`sendval 1 to {}`)
 
 			sendValExpr := parse.FindNode(n, (*parse.SendValueExpression)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
@@ -625,7 +637,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("value of an object property", func(t *testing.T) {
-			n, src := parseCode(`{a: sendval 1 to {}}`)
+			n, src := mustParseCode(`{a: sendval 1 to {}}`)
 
 			sendValExpr := parse.FindNode(n, (*parse.SendValueExpression)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
@@ -636,7 +648,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("in a function", func(t *testing.T) {
-			n, src := parseCode(`fn() => sendval 1 to {}`)
+			n, src := mustParseCode(`fn() => sendval 1 to {}`)
 
 			sendValExpr := parse.FindNode(n, (*parse.SendValueExpression)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
@@ -647,17 +659,17 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("in a method", func(t *testing.T) {
-			n, src := parseCode(`{f: fn() => sendval 1 to {}}`)
+			n, src := mustParseCode(`{f: fn() => sendval 1 to {}}`)
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 
 		t.Run("in a metaproperty's initialization block", func(t *testing.T) {
-			n, src := parseCode(`{ _url_ { sendval 1 to {} } }`)
+			n, src := mustParseCode(`{ _url_ { sendval 1 to {} } }`)
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 
 		t.Run("in a function that is a value of an object pattern", func(t *testing.T) {
-			n, src := parseCode(`%{f: fn() => sendval 1 to {}}`)
+			n, src := mustParseCode(`%{f: fn() => sendval 1 to {}}`)
 
 			sendValExpr := parse.FindNode(n, (*parse.SendValueExpression)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
@@ -668,14 +680,14 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("at top level of a lifetime job", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				lifetimejob #job for %{} { sendval 1 to {} }
 			`)
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 
 		t.Run("at top level of an embedded module", func(t *testing.T) {
-			n, src := parseCode(`go do { sendval 1 to {} }`)
+			n, src := mustParseCode(`go do { sendval 1 to {} }`)
 
 			sendValExpr := parse.FindNode(n, (*parse.SendValueExpression)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
@@ -688,12 +700,12 @@ func TestCheck(t *testing.T) {
 
 	t.Run("member expression", func(t *testing.T) {
 		t.Run("existing property of self", func(t *testing.T) {
-			n, src := parseCode(`{f: fn() => self.f}`)
+			n, src := mustParseCode(`{f: fn() => self.f}`)
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 
 		t.Run("existing property of self due to a spread object", func(t *testing.T) {
-			n, src := parseCode(`{
+			n, src := mustParseCode(`{
 				f: fn() => self.name, 
 				...({name: "foo"}).{name}
 			}`)
@@ -701,7 +713,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("non existing property of self", func(t *testing.T) {
-			n, src := parseCode(`{f: fn() => self.b}`)
+			n, src := mustParseCode(`{f: fn() => self.b}`)
 
 			membExpr := parse.FindNode(n, (*parse.MemberExpression)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
@@ -714,7 +726,7 @@ func TestCheck(t *testing.T) {
 
 	t.Run("computed member expression", func(t *testing.T) {
 		t.Run("property name node is an undefined variable", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				a = {}
 				a.(b)
 			`)
@@ -730,7 +742,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("property name node is a defined variable", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				a = {}
 				b = "a"
 				a.(b)
@@ -741,18 +753,18 @@ func TestCheck(t *testing.T) {
 
 	t.Run("double-colon expression", func(t *testing.T) {
 		t.Run("", func(t *testing.T) {
-			n, src := parseCode(`a = 1; a::b`)
+			n, src := mustParseCode(`a = 1; a::b`)
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 	})
 
 	t.Run("tuple literal", func(t *testing.T) {
 		t.Run("empty", func(t *testing.T) {
-			n, src := parseCode(`#[]`)
+			n, src := mustParseCode(`#[]`)
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 		t.Run("single & valid element", func(t *testing.T) {
-			n, src := parseCode(`#[1]`)
+			n, src := mustParseCode(`#[1]`)
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 
@@ -760,7 +772,7 @@ func TestCheck(t *testing.T) {
 
 	t.Run("dictionary literal", func(t *testing.T) {
 		t.Run("duplicate keys", func(t *testing.T) {
-			n, src := parseCode(`:{./a:0, ./a:1}`)
+			n, src := mustParseCode(`:{./a:0, ./a:1}`)
 
 			keyNode := parse.FindNodes(n, (*parse.RelativePathLiteral)(nil), nil)[1]
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
@@ -769,11 +781,36 @@ func TestCheck(t *testing.T) {
 			)
 			assert.Equal(t, expectedErr, err)
 		})
+
+		t.Run("parsing error in key: key is a simple value literal", func(t *testing.T) {
+			n, src, err := parseCode(`:{'a`)
+			if !assert.Error(t, err) {
+				return
+			}
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
+		t.Run("parsing error in key: key is not a simple value literal", func(t *testing.T) {
+			n, src, err := parseCode(`:{.`)
+			if !assert.Error(t, err) {
+				return
+			}
+
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+
+			n, src, err = parseCode(`:{.}`)
+			if !assert.Error(t, err) {
+				return
+			}
+
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
 	})
 
 	t.Run("spawn expression", func(t *testing.T) {
 		t.Run("single call expression", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				fn f(){}
 				go {} do f()
 			`)
@@ -781,7 +818,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("no additional provided globals (single call expression)", func(t *testing.T) {
-			n, src := parseCode(`go {} do idt(a)`)
+			n, src := mustParseCode(`go {} do idt(a)`)
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{
 				Node:  n,
 				Chunk: src,
@@ -795,7 +832,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("meta should be an object", func(t *testing.T) {
-			n, src := parseCode(`go true do {
+			n, src := mustParseCode(`go true do {
 				return 1
 			}`)
 
@@ -808,7 +845,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("meta should be an object with no spread elements", func(t *testing.T) {
-			n, src := parseCode(`obj = {a: 1}; go {...$obj.{a}} do {
+			n, src := mustParseCode(`obj = {a: 1}; go {...$obj.{a}} do {
 				return 1
 			}`)
 
@@ -821,7 +858,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("meta should be an object with no implicit-key properties", func(t *testing.T) {
-			n, src := parseCode(`go {1} do {
+			n, src := mustParseCode(`go {1} do {
 				return 1
 			}`)
 
@@ -834,7 +871,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("no additional provided globals", func(t *testing.T) {
-			n, src := parseCode(`go {} do {
+			n, src := mustParseCode(`go {} do {
 				return a
 			}`)
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{
@@ -847,7 +884,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("additional globals provided with an object literal", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				$$global = 0
 				go {globals: {global: global}} do {
 					return global
@@ -857,7 +894,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("description of globals should not contain spread elements", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				obj = {a: 1}
 				$$global = 0
 				go {globals: {global: global, ...$obj.{a}}} do {
@@ -875,7 +912,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("description of globals should not contain implicit-key properties", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				$$global = 0
 				go {globals: {global: global, 1}} do {
 					return global
@@ -890,7 +927,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("global key list contains the name of a undefined global", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				go {globals: .{global}} do {
 					return global
 				}
@@ -907,12 +944,12 @@ func TestCheck(t *testing.T) {
 
 	t.Run("mapping expression", func(t *testing.T) {
 		t.Run("valid static entry", func(t *testing.T) {
-			n, src := parseCode(`Mapping { 0 => 1 }`)
+			n, src := mustParseCode(`Mapping { 0 => 1 }`)
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 
 		t.Run("static entry with invalid key", func(t *testing.T) {
-			n, src := parseCode(`Mapping { ({}) => 1 }`)
+			n, src := mustParseCode(`Mapping { ({}) => 1 }`)
 
 			obj := parse.FindNode(n, (*parse.ObjectLiteral)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
@@ -923,7 +960,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("static entry with pattern identifier key ", func(t *testing.T) {
-			n, src := parseCode(`Mapping { %int => 1 }`)
+			n, src := mustParseCode(`Mapping { %int => 1 }`)
 
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{
 				Node:     n,
@@ -933,7 +970,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("static entry with pattern namespace member key ", func(t *testing.T) {
-			n, src := parseCode(`Mapping { %ns.int => 1 }`)
+			n, src := mustParseCode(`Mapping { %ns.int => 1 }`)
 
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{
 				Node:  n,
@@ -952,7 +989,7 @@ func TestCheck(t *testing.T) {
 			ctx := NewContext(ContextConfig{})
 			defer ctx.CancelGracefully()
 
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				$$g = 1
 				Mapping { %int => g }
 			`)
@@ -972,7 +1009,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("static key entries don't have access to locals", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				loc = 1
 				Mapping { 0 => loc }
 			`)
@@ -986,17 +1023,17 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("dynamic entry returning its key", func(t *testing.T) {
-			n, src := parseCode(`Mapping { n 0 => n }`)
+			n, src := mustParseCode(`Mapping { n 0 => n }`)
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 
 		t.Run("dynamic entry returning its key and group matching result", func(t *testing.T) {
-			n, src := parseCode(`Mapping { p %/{:name} m => [p, m] }`)
+			n, src := mustParseCode(`Mapping { p %/{:name} m => [p, m] }`)
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 
 		t.Run("dynamic entry with pattern identifier key ", func(t *testing.T) {
-			n, src := parseCode(`Mapping { n %int => 1 }`)
+			n, src := mustParseCode(`Mapping { n %int => 1 }`)
 
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{
 				Node:     n,
@@ -1006,7 +1043,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("dynamic entry with pattern namespace member key ", func(t *testing.T) {
-			n, src := parseCode(`Mapping { n %ns.int => 1 }`)
+			n, src := mustParseCode(`Mapping { n %ns.int => 1 }`)
 
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{
 				Node:  n,
@@ -1025,7 +1062,7 @@ func TestCheck(t *testing.T) {
 			ctx := NewContext(ContextConfig{})
 			defer ctx.CancelGracefully()
 
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				$$g = 1
 				Mapping { n %int => g }
 			`)
@@ -1046,12 +1083,12 @@ func TestCheck(t *testing.T) {
 	})
 	t.Run("compute expression", func(t *testing.T) {
 		t.Run("in right side of dynamic mapping entry", func(t *testing.T) {
-			n, src := parseCode(`Mapping { n 0 => comp 1 }`)
+			n, src := mustParseCode(`Mapping { n 0 => comp 1 }`)
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 
 		t.Run("in right side of static mapping entry", func(t *testing.T) {
-			n, src := parseCode(`Mapping { 0 => comp 1 }`)
+			n, src := mustParseCode(`Mapping { 0 => comp 1 }`)
 
 			computeExpr := parse.FindNode(n, (*parse.ComputeExpression)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
@@ -1062,7 +1099,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("top level", func(t *testing.T) {
-			n, src := parseCode(`comp 1`)
+			n, src := mustParseCode(`comp 1`)
 
 			computeExpr := parse.FindNode(n, (*parse.ComputeExpression)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
@@ -1076,7 +1113,7 @@ func TestCheck(t *testing.T) {
 
 	t.Run("function expression", func(t *testing.T) {
 		t.Run("captured variable does not exist", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				fn[a](){
 
 				}
@@ -1090,7 +1127,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("captured variable is not a local", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				$$a = 1
 				fn[a](){}
 			`)
@@ -1103,7 +1140,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("captured variable should be accessible in body", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				a = 1
 				fn[a](){ return a }
 			`)
@@ -1114,7 +1151,7 @@ func TestCheck(t *testing.T) {
 			ctx := NewContext(ContextConfig{})
 			defer ctx.CancelGracefully()
 
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				$$a = 1
 				fn(){ return a }
 			`)
@@ -1137,7 +1174,7 @@ func TestCheck(t *testing.T) {
 			ctx := NewContext(ContextConfig{})
 			defer ctx.CancelGracefully()
 
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				$$a = 1
 				fn(){ 
 					{
@@ -1166,7 +1203,7 @@ func TestCheck(t *testing.T) {
 			ctx := NewContext(ContextConfig{})
 			defer ctx.CancelGracefully()
 
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				$$a = 1
 				fn f(){
 					return a
@@ -1192,7 +1229,7 @@ func TestCheck(t *testing.T) {
 			ctx := NewContext(ContextConfig{})
 			defer ctx.CancelGracefully()
 
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				$$a = 1
 				fn g(){
 					return a
@@ -1221,7 +1258,7 @@ func TestCheck(t *testing.T) {
 			ctx := NewContext(ContextConfig{})
 			defer ctx.CancelGracefully()
 
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				$$a = 1
 				fn f(){
 					return a
@@ -1249,7 +1286,7 @@ func TestCheck(t *testing.T) {
 			ctx := NewContext(ContextConfig{})
 			defer ctx.CancelGracefully()
 
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				$$a = 1
 				fn g(){
 					return a
@@ -1280,7 +1317,7 @@ func TestCheck(t *testing.T) {
 			ctx := NewContext(ContextConfig{})
 			defer ctx.CancelGracefully()
 
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				$$a = 1
 				fn(){ $$a = 2 }
 			`)
@@ -1303,7 +1340,7 @@ func TestCheck(t *testing.T) {
 			ctx := NewContext(ContextConfig{})
 			defer ctx.CancelGracefully()
 
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				$$a = 1
 
 				go do {
@@ -1331,7 +1368,7 @@ func TestCheck(t *testing.T) {
 	t.Run("function declaration", func(t *testing.T) {
 
 		t.Run("captured local variable does not exist", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				fn[a] f(){}
 			`)
 			fnDecl := parse.FindNode(n, (*parse.FunctionExpression)(nil), nil)
@@ -1343,7 +1380,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("captured local variable is not a local", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				$$a = 1
 				fn[a] f(){}
 			`)
@@ -1356,7 +1393,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("parameter shadows a global", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				$$a = 1
 				fn f(a){return a}
 			`)
@@ -1369,7 +1406,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("captured variable should be accessible in body", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				a = 1
 				fn[a] f(){ return a }
 			`)
@@ -1377,7 +1414,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("declaration in another function declaration", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				fn f(){
 					fn g(){
 	
@@ -1393,7 +1430,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("function declared twice", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				fn f(){}
 				fn f(){}
 			`)
@@ -1406,7 +1443,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("function with same name in an embedded module", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				fn f(){}
 	
 				go do {
@@ -1417,7 +1454,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("function declaration with the same name as a global variable assignment", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				$$f = 0
 	
 				fn f(){}
@@ -1433,7 +1470,7 @@ func TestCheck(t *testing.T) {
 
 	t.Run("function expression", func(t *testing.T) {
 		t.Run("captured variable does not exist", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				fn[a](){
 
 				}
@@ -1447,7 +1484,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("captured variable is not a local", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				$$a = 1
 				fn[a](){}
 			`)
@@ -1460,7 +1497,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("captured variable should be accessible in body", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				a = 1
 				fn[a](){ return a }
 			`)
@@ -1471,7 +1508,7 @@ func TestCheck(t *testing.T) {
 	t.Run("function pattern expression", func(t *testing.T) {
 
 		t.Run("parameter shadows a global", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				$$a = 1
 				%fn(a){return a}
 			`)
@@ -1487,7 +1524,7 @@ func TestCheck(t *testing.T) {
 
 	t.Run("local variable declaration", func(t *testing.T) {
 		t.Run("declaration after assignment", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				a = 0
 				var a = 0
 			`)
@@ -1500,7 +1537,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("shadowing of global variable", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				$$a = 0
 				var a = 0
 			`)
@@ -1513,7 +1550,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("duplicate declarations", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				var a = 0
 				var a = 1
 			`)
@@ -1528,7 +1565,7 @@ func TestCheck(t *testing.T) {
 
 	t.Run("assignment", func(t *testing.T) {
 		t.Run("assignment with a function's name", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				fn f(){}
 	
 				$$f = 0
@@ -1542,7 +1579,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("assignment of a constant in top level", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				const (
 					a = 1
 				)
@@ -1558,7 +1595,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("assignment of a constant in a function", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				const (
 					a = 1
 				)
@@ -1577,7 +1614,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("assignment of a global variable in embedded module: name of a global constant in parent module", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				const (
 					a = 1
 				)
@@ -1590,7 +1627,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("global variable shadowing", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				$$a = 1
 				a = 1
 			`)
@@ -1604,7 +1641,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("undefined global variable += assignment", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				$$a += 1
 			`)
 
@@ -1617,7 +1654,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("local variable shadowing", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				a = 1
 				$$a = 1
 			`)
@@ -1631,7 +1668,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("undefined local variable += assignment", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				a += 1
 			`)
 
@@ -1644,7 +1681,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("slice expression LHS: += assignment", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				var s = [1, 2]
 				s[0:1] += 2
 			`)
@@ -1660,7 +1697,7 @@ func TestCheck(t *testing.T) {
 
 	t.Run("multi assignment", func(t *testing.T) {
 		t.Run("global variable shadowing", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				$$a = 1
 				assign a b = [1, 2]
 			`)
@@ -1676,7 +1713,7 @@ func TestCheck(t *testing.T) {
 
 	t.Run("global variable", func(t *testing.T) {
 		t.Run("global is accessible in manifest", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				const (
 					a = 1
 				)
@@ -1691,7 +1728,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("global is accessible in module", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				const (
 					a = 1
 				)
@@ -1702,7 +1739,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("global is accessible in function", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				const (
 					a = 1
 				)
@@ -1752,7 +1789,7 @@ func TestCheck(t *testing.T) {
 
 	t.Run("local variable", func(t *testing.T) {
 		t.Run("local variable in a module : undefined", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				$a
 			`)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
@@ -1763,7 +1800,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("local variable in a module : defined", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				a = 1
 				$a
 			`)
@@ -1771,7 +1808,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("local variable in an embedded module : undefined", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				a = 1
 				go do {
 					$a
@@ -1786,7 +1823,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("local variable in a function : undefined", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				a = 1
 				fn f(){
 					$a
@@ -1801,7 +1838,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("local variable in a function : defined", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				fn f(){
 					a = 1
 					$a
@@ -1811,14 +1848,14 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("local variable in a lazy expression", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				@($a)
 			`)
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 
 		t.Run("argument variable in a function", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				fn f(a){
 					$a
 				}
@@ -1829,7 +1866,7 @@ func TestCheck(t *testing.T) {
 
 	t.Run("manifest", func(t *testing.T) {
 		t.Run("parameters section not allowed in embedded module manifest", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				manifest {
 				}
 
@@ -1841,7 +1878,7 @@ func TestCheck(t *testing.T) {
 			`)
 			assert.Error(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 
-			n, src = parseCode(`
+			n, src = mustParseCode(`
 				manifest {}
 
 				{
@@ -1854,7 +1891,7 @@ func TestCheck(t *testing.T) {
 			`)
 			assert.Error(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 
-			n, src = parseCode(`
+			n, src = mustParseCode(`
 				manifest {}
 
 				lifetimejob #job for %{} {
@@ -1865,7 +1902,7 @@ func TestCheck(t *testing.T) {
 			`)
 			assert.Error(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 
-			n, src = parseCode(`
+			n, src = mustParseCode(`
 				manifest {}
 
 				testsuite "" {
@@ -1876,7 +1913,7 @@ func TestCheck(t *testing.T) {
 			`)
 			assert.Error(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 
-			n, src = parseCode(`
+			n, src = mustParseCode(`
 				manifest {}
 
 				testsuite "" {
@@ -1891,7 +1928,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("env section not allowed in embedded module manifest", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				manifest {
 				}
 
@@ -1903,7 +1940,7 @@ func TestCheck(t *testing.T) {
 			`)
 			assert.Error(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 
-			n, src = parseCode(`
+			n, src = mustParseCode(`
 				manifest {}
 
 				{
@@ -1916,7 +1953,7 @@ func TestCheck(t *testing.T) {
 			`)
 			assert.Error(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 
-			n, src = parseCode(`
+			n, src = mustParseCode(`
 				manifest {}
 
 				lifetimejob #job for %{} {
@@ -1927,7 +1964,7 @@ func TestCheck(t *testing.T) {
 			`)
 			assert.Error(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 
-			n, src = parseCode(`
+			n, src = mustParseCode(`
 				manifest {}
 
 				testsuite "" {
@@ -1938,7 +1975,7 @@ func TestCheck(t *testing.T) {
 			`)
 			assert.Error(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 
-			n, src = parseCode(`
+			n, src = mustParseCode(`
 				manifest {}
 
 				testsuite "" {
@@ -1953,7 +1990,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("databases section not allowed in embedded module manifest", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				manifest {
 				}
 
@@ -1965,7 +2002,7 @@ func TestCheck(t *testing.T) {
 			`)
 			assert.Error(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 
-			n, src = parseCode(`
+			n, src = mustParseCode(`
 				manifest {}
 
 				{
@@ -1978,7 +2015,7 @@ func TestCheck(t *testing.T) {
 			`)
 			assert.Error(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 
-			n, src = parseCode(`
+			n, src = mustParseCode(`
 				manifest {}
 
 				lifetimejob #job for %{} {
@@ -1989,7 +2026,7 @@ func TestCheck(t *testing.T) {
 			`)
 			assert.Error(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 
-			n, src = parseCode(`
+			n, src = mustParseCode(`
 				manifest {}
 
 				testsuite "" {
@@ -2000,7 +2037,7 @@ func TestCheck(t *testing.T) {
 			`)
 			assert.Error(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 
-			n, src = parseCode(`
+			n, src = mustParseCode(`
 				manifest {}
 
 				testsuite "" {
@@ -2017,7 +2054,7 @@ func TestCheck(t *testing.T) {
 
 	t.Run("test suite statements", func(t *testing.T) {
 		t.Run("empty", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				manifest {}
 
 				testsuite {
@@ -2028,7 +2065,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("testcase", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				manifest {}
 
 				testsuite {
@@ -2042,7 +2079,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("sub testsuite", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				manifest {}
 
 				testsuite {
@@ -2056,7 +2093,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run(TEST_CASES_NOT_ALLOWED_IF_SUBSUITES_ARE_PRESENT, func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				manifest {}
 
 				testsuite {
@@ -2078,7 +2115,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run(TEST_CASES_NOT_ALLOWED_IF_SUBSUITES_ARE_PRESENT, func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				manifest {}
 
 				testsuite {
@@ -2100,7 +2137,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run(TEST_SUITE_STMTS_NOT_ALLOWED_INSIDE_TEST_CASE_STMTS, func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				manifest {}
 
 				testsuite {
@@ -2126,7 +2163,7 @@ func TestCheck(t *testing.T) {
 
 	t.Run("test case statements", func(t *testing.T) {
 		t.Run("allowed in test suite modules", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				manifest {}
 
 				testcase {}
@@ -2144,7 +2181,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run(TEST_CASE_STMTS_NOT_ALLOWED_OUTSIDE_OF_TEST_SUITES, func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				manifest {}
 
 				testcase {}
@@ -2159,7 +2196,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run(TEST_CASE_STMTS_NOT_ALLOWED_OUTSIDE_OF_TEST_SUITES, func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				manifest {}
 
 				fn f(){
@@ -2179,7 +2216,7 @@ func TestCheck(t *testing.T) {
 	t.Run("testsuite expression", func(t *testing.T) {
 
 		t.Run("testsuite expression has its own local scope", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				a = 1
 				testsuite { a }
 			`)
@@ -2198,7 +2235,7 @@ func TestCheck(t *testing.T) {
 	t.Run("testcase expression", func(t *testing.T) {
 
 		t.Run("testsuite expression has its own local scope", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				a = 1
 				return testcase { a }
 			`)
@@ -2784,14 +2821,14 @@ func TestCheck(t *testing.T) {
 
 	t.Run("yield statement", func(t *testing.T) {
 		t.Run("in embedded module", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				go do { yield }
 			`)
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 
 		t.Run("in function in embedded modue", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				go do { fn f(){ yield } }
 			`)
 
@@ -2806,7 +2843,7 @@ func TestCheck(t *testing.T) {
 
 	t.Run("break statement", func(t *testing.T) {
 		t.Run("direct child of a for statement", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				for i, e in [] {
 					break
 				}
@@ -2815,7 +2852,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("in an if statement in a for statement", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				for i, e in [] {
 					if true {
 						break
@@ -2826,7 +2863,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("in an switch statement in a for statement", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				for i, e in [] {
 					switch i {
 						1 {
@@ -2839,7 +2876,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("in an match statement in a for statement", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				for i, e in [] {
 					match i {
 						1 {
@@ -2852,7 +2889,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("direct child of a module", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				break
 			`)
 			breakStmt := parse.FindNode(n, (*parse.BreakStatement)(nil), nil)
@@ -2864,7 +2901,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("direct child of an embedded module", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				go do {
 					break
 				}
@@ -2881,7 +2918,7 @@ func TestCheck(t *testing.T) {
 
 	t.Run("call", func(t *testing.T) {
 		t.Run("undefined callee", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				a 1
 			`)
 			varNode := parse.FindNode(n, (*parse.IdentifierLiteral)(nil), nil)
@@ -2895,7 +2932,7 @@ func TestCheck(t *testing.T) {
 
 	t.Run("for statement", func(t *testing.T) {
 		t.Run("variables defined in for statement's head are not accessible after the statement", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				for file in files {
 					
 				}
@@ -2910,7 +2947,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("variables defined in for statement's body are not accessible after the statement", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				for file in files {
 					x = 3
 				}
@@ -2927,7 +2964,7 @@ func TestCheck(t *testing.T) {
 
 	t.Run("walk statement", func(t *testing.T) {
 		t.Run("variables defined in walk statement's head are not accessible after the statement", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				walk ./ entry {
 					
 				}
@@ -2942,7 +2979,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("variables defined in walk statement's body are not accessible after the statement", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				walk ./ entry {
 					x = 3
 				}
@@ -2962,13 +2999,13 @@ func TestCheck(t *testing.T) {
 	t.Run("runtime typecheck", func(t *testing.T) {
 
 		t.Run("as argument", func(t *testing.T) {
-			n, src := parseCode(`map ~$ .title`)
+			n, src := mustParseCode(`map ~$ .title`)
 			globals := GlobalVariablesFromMap(map[string]Value{"map": ValOf(Map)}, nil)
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src, Globals: globals}))
 		})
 
 		t.Run("misplaced", func(t *testing.T) {
-			n, src := parseCode(`~$`)
+			n, src := mustParseCode(`~$`)
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
@@ -2980,7 +3017,7 @@ func TestCheck(t *testing.T) {
 	t.Run("assert statement", func(t *testing.T) {
 
 		t.Run("no forbidden node in expression", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				x = 0
 				assert (x > 0)
 			`)
@@ -2988,7 +3025,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("forbidden node in expression", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				assert (1 + sideEffect())
 			`)
 			callNode := parse.FindNode(n, (*parse.CallExpression)(nil), nil)
@@ -3006,7 +3043,7 @@ func TestCheck(t *testing.T) {
 	t.Run("lifetimejob expression", func(t *testing.T) {
 
 		t.Run("lifetimejob expression has its own local scope", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				a = 1
 				pattern p = %{}
 				lifetimejob #job for %p { a }
@@ -3022,7 +3059,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("missing subject lifetime job as value of explicit object property", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				{
 					job: lifetimejob #job { }
 				}
@@ -3038,7 +3075,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("subject lifetime job wih no subject as value of explicit object property", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				{
 					lifetimejob #job { }
 				}
@@ -3048,7 +3085,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("lifetime job should have access to parent module's patterns ", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				pattern p = 1
 				lifetimejob #job for %object {
 					[%p, %int, %dom.]
@@ -3072,7 +3109,7 @@ func TestCheck(t *testing.T) {
 	t.Run("reception handler expression", func(t *testing.T) {
 
 		t.Run("misplaced", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				on received %{} fn(){}
 			`)
 
@@ -3084,7 +3121,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("implicit key property of an object literam", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				{
 					on received %{} fn(){}
 				}
@@ -3097,7 +3134,7 @@ func TestCheck(t *testing.T) {
 
 	t.Run("host alias definition", func(t *testing.T) {
 		t.Run("redeclaration", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				@host = https://localhost
 				@host = https://localhost
 			`)
@@ -3111,7 +3148,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("misplaced", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				fn f(){
 					@host = https://localhost
 				}
@@ -3128,7 +3165,7 @@ func TestCheck(t *testing.T) {
 
 	t.Run("pattern definition", func(t *testing.T) {
 		t.Run("redeclaration", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				pattern p = 0
 				pattern p = 1
 			`)
@@ -3142,7 +3179,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("misplaced", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				fn f(){
 					pattern p = 0
 				}
@@ -3159,7 +3196,7 @@ func TestCheck(t *testing.T) {
 
 	t.Run("pattern namespace definition", func(t *testing.T) {
 		t.Run("redeclaration", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				pnamespace p. = {}
 				pnamespace p. = {}
 			`)
@@ -3173,7 +3210,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("misplaced", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				fn f(){
 					pnamespace p. = {}
 				}
@@ -3191,7 +3228,7 @@ func TestCheck(t *testing.T) {
 	t.Run("pattern identifier", func(t *testing.T) {
 
 		t.Run("not declared", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				%p
 			`)
 			pattern := parse.FindNode(n, (*parse.PatternIdentifierLiteral)(nil), nil)
@@ -3203,14 +3240,14 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("not declared pattern in lazy pattern definition", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				pattern p = @ %str( %s )
 			`)
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 
 		t.Run("otherprops(no)", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				%{
 					otherprops(no)
 				}
@@ -3222,7 +3259,7 @@ func TestCheck(t *testing.T) {
 	t.Run("readonly pattern", func(t *testing.T) {
 
 		t.Run("as type of function parameter", func(t *testing.T) {
-			n, src := parseCode(`fn f(arg readonly int){}`)
+			n, src := mustParseCode(`fn f(arg readonly int){}`)
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{
 				Node:     n,
 				Chunk:    src,
@@ -3231,7 +3268,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("as type of function pattern parameter", func(t *testing.T) {
-			n, src := parseCode(`%fn(arg readonly int){}`)
+			n, src := mustParseCode(`%fn(arg readonly int){}`)
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{
 				Node:     n,
 				Chunk:    src,
@@ -3240,7 +3277,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("should be the type of a function parameter", func(t *testing.T) {
-			n, src := parseCode(`pattern p = readonly {}`)
+			n, src := mustParseCode(`pattern p = readonly {}`)
 
 			expr := parse.FindNode(n, (*parse.ReadonlyPatternExpression)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
@@ -3272,7 +3309,7 @@ func TestCheck(t *testing.T) {
 
 		for _, testCase := range testCases {
 			t.Run(testCase.input, func(t *testing.T) {
-				n, src := parseCode(testCase.input)
+				n, src := mustParseCode(testCase.input)
 				lit := parse.FindNode(n, (*parse.QuantityLiteral)(nil), nil)
 				err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 
@@ -3313,7 +3350,7 @@ func TestCheck(t *testing.T) {
 
 		for _, testCase := range testCases {
 			t.Run(testCase.input, func(t *testing.T) {
-				n, src := parseCode(testCase.input)
+				n, src := mustParseCode(testCase.input)
 				lit := parse.FindNode(n, (*parse.RateLiteral)(nil), nil)
 
 				err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
@@ -3338,17 +3375,17 @@ func TestCheck(t *testing.T) {
 
 	t.Run("integer range literal", func(t *testing.T) {
 		t.Run("ok", func(t *testing.T) {
-			n, src := parseCode(`1..2`)
+			n, src := mustParseCode(`1..2`)
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 
 		t.Run("no upper bound", func(t *testing.T) {
-			n, src := parseCode(`1..`)
+			n, src := mustParseCode(`1..`)
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 
 		t.Run("upper bound should be smaller than lower bound", func(t *testing.T) {
-			n, src := parseCode(`1..0`)
+			n, src := mustParseCode(`1..0`)
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
@@ -3360,17 +3397,17 @@ func TestCheck(t *testing.T) {
 
 	t.Run("float range literal", func(t *testing.T) {
 		t.Run("ok", func(t *testing.T) {
-			n, src := parseCode(`1.0..2.0`)
+			n, src := mustParseCode(`1.0..2.0`)
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 
 		t.Run("no upper bound", func(t *testing.T) {
-			n, src := parseCode(`1.0..`)
+			n, src := mustParseCode(`1.0..`)
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 
 		t.Run("upper bound should be smaller than lower bound", func(t *testing.T) {
-			n, src := parseCode(`1.0..0.0`)
+			n, src := mustParseCode(`1.0..0.0`)
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
@@ -3382,19 +3419,19 @@ func TestCheck(t *testing.T) {
 
 	t.Run("quantity range literal", func(t *testing.T) {
 		t.Run("ok", func(t *testing.T) {
-			n, src := parseCode(`1x..2x`)
+			n, src := mustParseCode(`1x..2x`)
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 
 		t.Run("no upper bound", func(t *testing.T) {
-			n, src := parseCode(`1x..`)
+			n, src := mustParseCode(`1x..`)
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 	})
 
 	t.Run("match statement", func(t *testing.T) {
 		t.Run("group matching variable shadows a global", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				$$m = 1
 				match 1 {
 					%/{:a} m { }
@@ -3409,7 +3446,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("group matching variable shadows a local variable", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				m = 1
 				match 1 {
 					%/{:a} m { }
@@ -3424,7 +3461,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("group matching variables with same name", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				match 1 {
 					%/{:a} m { }
 					%/a/{:a} m { }
@@ -3434,7 +3471,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("group matching variable is not accessible after match statement", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				match 1 {
 					%/{:a} m { }
 				}
@@ -3453,14 +3490,14 @@ func TestCheck(t *testing.T) {
 	t.Run("xml element", func(t *testing.T) {
 
 		t.Run("no variable used in elements", func(t *testing.T) {
-			n, src := parseCode(`html<div a=1></div>`)
+			n, src := mustParseCode(`html<div a=1></div>`)
 
 			globals := GlobalVariablesFromMap(map[string]Value{"html": Nil}, nil)
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src, Globals: globals}))
 		})
 
 		t.Run("variable used in elements", func(t *testing.T) {
-			n, src := parseCode(`html<div a=b></div>`)
+			n, src := mustParseCode(`html<div a=b></div>`)
 
 			globals := GlobalVariablesFromMap(map[string]Value{"html": Nil}, nil)
 			variable := parse.FindNodes(n, (*parse.IdentifierLiteral)(nil), nil)[3]
@@ -3475,7 +3512,7 @@ func TestCheck(t *testing.T) {
 
 	t.Run("extend statement", func(t *testing.T) {
 		t.Run("should be located at the top level: in function declaration", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				pattern p = {a: 1}
 				fn f(){
 					extend p {}
@@ -3493,7 +3530,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("should be located at the top level: in if statement's block", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				pattern p = {a: 1}
 				if true {
 					extend p {}
@@ -3511,7 +3548,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("should not have variables in property expressions: identifier referring to a global variable", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				pattern p = {a: 1}
 				$$a = 1
 				extend p {
@@ -3533,7 +3570,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("should not have variables in property expressions: identifier referring to a local variable", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				pattern p = {a: 1}
 				a = 1
 				extend p {
@@ -3555,7 +3592,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("should not have variables in property expressions: global variable", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				pattern p = {a: 1}
 				$$a = 1
 				extend p {
@@ -3577,7 +3614,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("should not have variables in property expressions: local variable", func(t *testing.T) {
-			n, src := parseCode(`
+			n, src := mustParseCode(`
 				pattern p = {a: 1}
 				a = 1
 				extend p {
