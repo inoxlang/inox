@@ -28,22 +28,17 @@ var (
 
 // Mkdir expects a core.Path argument and creates a directory.
 // If an additional argument of type Dictionnary is passed a file hiearchy will also be created.
-func Mkdir(ctx *core.Context, args ...core.Value) error {
-
-	var dirpath core.Path
+func Mkdir(ctx *core.Context, dirpath core.Path, args ...core.Value) error {
 	var contentDesc *core.Dictionary
 
-	for _, arg := range args {
+	if !dirpath.IsDirPath() {
+		return fmt.Errorf("path argument is a file path : %s, the path should end with '/'", string(dirpath))
+	}
 
+	for _, arg := range args {
 		switch v := arg.(type) {
 		case core.Path:
-			if dirpath != "" {
-				return commonfmt.FmtErrArgumentProvidedAtLeastTwice("path")
-			}
-			dirpath = v
-			if !dirpath.IsDirPath() {
-				return fmt.Errorf("path argument is a file path : %s, the path should end with '/'", string(dirpath))
-			}
+			return commonfmt.FmtErrArgumentProvidedAtLeastTwice("path")
 		case *core.Dictionary:
 			if contentDesc != nil {
 				return commonfmt.FmtErrArgumentProvidedAtLeastTwice("content")

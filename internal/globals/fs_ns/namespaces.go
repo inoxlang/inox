@@ -28,7 +28,7 @@ func init() {
 		Mkfile, func(ctx *symbolic.Context, path *symbolic.Path, args ...symbolic.SymbolicValue) *symbolic.Error {
 			return nil
 		},
-		Mkdir, func(ctx *symbolic.Context, args ...symbolic.SymbolicValue) *symbolic.Error {
+		Mkdir, func(ctx *symbolic.Context, dirpath *symbolic.Path, args ...symbolic.SymbolicValue) *symbolic.Error {
 			return nil
 		},
 		ReadFile, func(ctx *symbolic.Context, args ...symbolic.SymbolicValue) (*symbolic.ByteSlice, *symbolic.Error) {
