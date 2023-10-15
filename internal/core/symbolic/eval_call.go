@@ -241,119 +241,119 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 			}
 		}
 
-		if f.fn != nil {
-			utils.PanicIfErr(f.LoadSignatureData())
-			params, paramNames, hasMoreSpecificParams := state.consumeSymbolicGoFunctionParameters()
-			if !hasMoreSpecificParams {
-				params = f.ParametersExceptCtx()
-			}
-
-			//create a *Function with the provided parameters
-			var results []SymbolicValue
-
-			if list, ok := result.(*List); ok && multipleResults {
-				results = SerializablesToValues(list.elements)
-			} else {
-				results = []SymbolicValue{result}
-			}
-
-			firstOptionalParamIndex := -1
-			if f.lastMandatoryParamIndex >= 0 {
-				firstOptionalParamIndex = f.lastMandatoryParamIndex + 1
-				if f.isfirstArgCtx {
-					firstOptionalParamIndex--
-				}
-			}
-
-			function := NewFunction(params, paramNames, firstOptionalParamIndex, f.isVariadic, results)
-
-			//update the symbolic data about the callee
-			state.symbolicData.PushNodeValue(calleeNode, function)
-			switch c := calleeNode.(type) {
-			case *parse.IdentifierMemberExpression:
-				state.symbolicData.PushNodeValue(c.PropertyNames[len(c.PropertyNames)-1], function)
-			case *parse.MemberExpression:
-				state.symbolicData.PushNodeValue(c.PropertyName, function)
-			}
-
-			setAllowedNonPresentProperties(argNodes, nonSpreadArgCount, params, state)
-
-			if !hasMoreSpecificParams || !enoughArgs {
-				goto go_func_result
-			}
-
-			//recheck arguments but with most specific function
-
-			paramTypes := function.parameters
-			currentArgs := args
-			if !f.isVariadic {
-				currentArgs = args[:len(params)]
-			}
-
-			for i, arg := range currentArgs {
-
-				var argNode parse.Node
-				if i < nonSpreadArgCount {
-					argNode = argNodes[i]
-				}
-
-				paramType := paramTypes[i]
-
-				// for !IsAnyOrAnySerializable(widenedArg) && !paramType.Test(widenedArg) {
-				// 	widenedArg = widenOrAny(widenedArg)
-				// }
-
-				if !paramType.Test(arg, RecTestCallState{}) {
-					if argNode != nil {
-						//if the argument node is a runtime check expression we store
-						//the pattern that will be used at runtime to perform the check
-						if _, ok := argNode.(*parse.RuntimeTypeCheckExpression); ok {
-							args[i] = paramType
-							pattern, ok := extData.SymbolicToPattern(paramType)
-							if ok {
-								state.symbolicData.SetRuntimeTypecheckPattern(argNode, pattern)
-							} else {
-								state.addError(makeSymbolicEvalError(argNode, state, UNSUPPORTED_PARAM_TYPE_FOR_RUNTIME_TYPECHECK))
-							}
-						} else {
-							deeperMismatch := false
-							_symbolicEval(argNode, state, evalOptions{
-								reEval:              true,
-								expectedValue:       paramType,
-								actualValueMismatch: &deeperMismatch,
-							})
-
-							if !deeperMismatch {
-								state.addError(makeSymbolicEvalError(argNode, state, FmtInvalidArg(i, arg, paramType)))
-							}
-						}
-					} else {
-						//TODO: support runtime typecheck for spread arg
-						node := spreadArgNode
-						if node == nil {
-							node = callNode
-						}
-						state.addError(makeSymbolicEvalError(node, state, FmtInvalidArg(i, arg, paramType)))
-					}
-
-					args[i] = paramType
-				} else {
-					//disable runtime type check
-					if _, ok := argNode.(*parse.RuntimeTypeCheckExpression); ok {
-						state.symbolicData.SetRuntimeTypecheckPattern(argNode, nil)
-					} else {
-						_symbolicEval(argNode, state, evalOptions{
-							reEval:        true,
-							expectedValue: paramType,
-						})
-					}
-					args[i] = arg
-				}
-			}
-
+		if f.fn == nil {
+			return result, err
 		}
 
-	go_func_result:
+		//create a more specific *Function with the result and the provided parameters.
+		utils.PanicIfErr(f.LoadSignatureData())
+		params, paramNames, hasMoreSpecificParams := state.consumeSymbolicGoFunctionParameters()
+		if !hasMoreSpecificParams {
+			params = f.ParametersExceptCtx()
+		}
+
+		var results []SymbolicValue
+
+		if list, ok := result.(*List); ok && multipleResults {
+			results = SerializablesToValues(list.elements)
+		} else {
+			results = []SymbolicValue{result}
+		}
+
+		firstOptionalParamIndex := -1
+		if f.lastMandatoryParamIndex >= 0 {
+			firstOptionalParamIndex = f.lastMandatoryParamIndex + 1
+			if f.isfirstArgCtx {
+				firstOptionalParamIndex--
+			}
+		}
+
+		function := NewFunction(params, paramNames, firstOptionalParamIndex, f.isVariadic, results)
+
+		//update the symbolic data of the callee with the *Function.
+		state.symbolicData.PushNodeValue(calleeNode, function)
+		switch c := calleeNode.(type) {
+		case *parse.IdentifierMemberExpression:
+			state.symbolicData.PushNodeValue(c.PropertyNames[len(c.PropertyNames)-1], function)
+		case *parse.MemberExpression:
+			state.symbolicData.PushNodeValue(c.PropertyName, function)
+		}
+
+		setAllowedNonPresentProperties(argNodes, nonSpreadArgCount, params, state)
+
+		if !hasMoreSpecificParams || !enoughArgs {
+			return result, err
+		}
+
+		//recheck arguments but with most specific function
+
+		paramTypes := function.parameters
+		currentArgs := args
+		if !f.isVariadic {
+			currentArgs = args[:len(params)]
+		}
+
+		for i, arg := range currentArgs {
+
+			var argNode parse.Node
+			if i < nonSpreadArgCount {
+				argNode = argNodes[i]
+			}
+
+			paramType := paramTypes[i]
+
+			// for !IsAnyOrAnySerializable(widenedArg) && !paramType.Test(widenedArg) {
+			// 	widenedArg = widenOrAny(widenedArg)
+			// }
+
+			if !paramType.Test(arg, RecTestCallState{}) {
+				if argNode != nil {
+					//if the argument node is a runtime check expression we store
+					//the pattern that will be used at runtime to perform the check
+					if _, ok := argNode.(*parse.RuntimeTypeCheckExpression); ok {
+						args[i] = paramType
+						pattern, ok := extData.SymbolicToPattern(paramType)
+						if ok {
+							state.symbolicData.SetRuntimeTypecheckPattern(argNode, pattern)
+						} else {
+							state.addError(makeSymbolicEvalError(argNode, state, UNSUPPORTED_PARAM_TYPE_FOR_RUNTIME_TYPECHECK))
+						}
+					} else {
+						deeperMismatch := false
+						_symbolicEval(argNode, state, evalOptions{
+							reEval:              true,
+							expectedValue:       paramType,
+							actualValueMismatch: &deeperMismatch,
+						})
+
+						if !deeperMismatch {
+							state.addError(makeSymbolicEvalError(argNode, state, FmtInvalidArg(i, arg, paramType)))
+						}
+					}
+				} else {
+					//TODO: support runtime typecheck for spread arg
+					node := spreadArgNode
+					if node == nil {
+						node = callNode
+					}
+					state.addError(makeSymbolicEvalError(node, state, FmtInvalidArg(i, arg, paramType)))
+				}
+
+				args[i] = paramType
+			} else {
+				//disable runtime type check
+				if _, ok := argNode.(*parse.RuntimeTypeCheckExpression); ok {
+					state.symbolicData.SetRuntimeTypecheckPattern(argNode, nil)
+				} else {
+					_symbolicEval(argNode, state, evalOptions{
+						reEval:        true,
+						expectedValue: paramType,
+					})
+				}
+				args[i] = arg
+			}
+		}
+
 		return result, err
 	}
 

@@ -821,7 +821,14 @@ type Function struct {
 	pattern *FunctionPattern
 }
 
-func NewFunction(params []SymbolicValue, paramNames []string, firstOptionalParamIndex int, variadic bool, results []SymbolicValue) *Function {
+func NewFunction(
+	params []SymbolicValue,
+	paramNames []string,
+	//should have a value of -1 if there are no optional parameters
+	firstOptionalParamIndex int,
+	variadic bool,
+	results []SymbolicValue,
+) *Function {
 	//TODO: check that variadic parameter is a list
 
 	if firstOptionalParamIndex < 0 {
@@ -970,12 +977,12 @@ func (f *Function) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig
 		}
 
 		if len(f.parameterNames) > i {
-			if !isVariadicParam && f.HasOptionalParams() && i >= f.firstOptionalParamIndex {
-				utils.Must(w.Write(utils.StringAsBytes(PRETTY_PRINT_OPTIONAL_PARAM_PREFIX)))
-			}
-
 			utils.Must(w.Write(utils.StringAsBytes(f.parameterNames[i])))
 			utils.PanicIfErr(w.WriteByte(' '))
+		}
+
+		if !isVariadicParam && f.HasOptionalParams() && i >= f.firstOptionalParamIndex {
+			utils.Must(w.Write(utils.StringAsBytes(PRETTY_PRINT_OPTIONAL_PARAM_PREFIX)))
 		}
 
 		param.PrettyPrint(w, config, 0, 0)
