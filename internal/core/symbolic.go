@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"reflect"
 	"runtime"
 	"slices"
@@ -18,11 +19,24 @@ import (
 // this file contains the implementation of Value.ToSymbolicValue for core types and does some initialization.
 
 var (
+	// mapping Go function address -> symbolic Go function
+	// The "address" is obtained by doing reflect.ValueOf(goFunc).Pointer().
+	// Note that two closures of the same function have the same "address".
 	symbolicGoFunctionMap = map[uintptr]*symbolic.GoFunction{}
-	goFunctionMap         = map[*symbolic.GoFunction]reflect.Value{}
+
+	// mapping Go function address -> last mandatory param index.
+	functionOptionalParamInfo = map[uintptr]optionalParamInfo{}
+
+	// mapping symbolic Go function -> reflect.Value of the concrete Go Function.
+	goFunctionMap = map[*symbolic.GoFunction]reflect.Value{}
 
 	SYMBOLIC_DATA_PROP_NAMES = []string{"errors"}
 )
+
+type optionalParamInfo struct {
+	lastMandatoryParamIndex int8
+	optionalParams          []optionalParam
+}
 
 func init() {
 
@@ -305,8 +319,11 @@ func init() {
 
 // RegisterSymbolicGoFunction registers the symbolic equivalent of fn, fn should not be a method or a closure.
 // example: RegisterSymbolicGoFunction(func(ctx *Context){ }, func(ctx *symbolic.Context))
+// This function also registers information about the concrete Go function.
 func RegisterSymbolicGoFunction(fn any, symbolicFn any) {
 	reflectVal := reflect.ValueOf(fn)
+	reflectValType := reflectVal.Type()
+
 	ptr := reflectVal.Pointer()
 	_, ok := symbolicGoFunctionMap[ptr]
 	if ok {
@@ -324,6 +341,36 @@ func RegisterSymbolicGoFunction(fn any, symbolicFn any) {
 
 	symbolicGoFunctionMap[ptr] = goFunc
 	goFunctionMap[goFunc] = reflectVal
+
+	//register the index of the last mandatory parameter if the concrete Go function has optional parameters.
+	{
+		numIn := reflectValType.NumIn()
+		if numIn > math.MaxInt8 {
+			panic(errors.New("go function has too many parameters"))
+		}
+		if reflectValType.IsVariadic() {
+			numIn--
+		}
+
+		var optionalParamInfo = optionalParamInfo{
+			lastMandatoryParamIndex: -1,
+		}
+
+		for i := 0; i < numIn; i++ {
+			paramType := reflectValType.In(i)
+			if paramType.Implements(OPTIONAL_PARAM_TYPE) {
+				if optionalParamInfo.lastMandatoryParamIndex == -1 {
+					optionalParamInfo.lastMandatoryParamIndex = int8(i - 1)
+				}
+				optionalParam := reflect.New(paramType.Elem()).Interface().(optionalParam)
+				optionalParamInfo.optionalParams = append(optionalParamInfo.optionalParams, optionalParam)
+			}
+		}
+
+		if optionalParamInfo.lastMandatoryParamIndex != -1 {
+			functionOptionalParamInfo[ptr] = optionalParamInfo
+		}
+	}
 }
 
 // [<fn1>, <symbolic fn1>, <fn2>, <symbolic fn2>, ...]., See RegisterSymbolicGoFunction.

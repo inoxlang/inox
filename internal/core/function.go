@@ -11,6 +11,10 @@ import (
 	parse "github.com/inoxlang/inox/internal/parse"
 )
 
+var (
+	OPTIONAL_PARAM_TYPE = reflect.TypeOf((*optionalParam)(nil)).Elem()
+)
+
 type InoxFunction struct {
 	Node                   parse.Node
 	originState            *GlobalState
@@ -135,7 +139,6 @@ type GoFunction struct {
 	kind        GoFunctionKind
 	shared      atomic.Bool
 	originState *GlobalState // used for methods & closures, nil otherwise
-
 }
 
 type GoFunctionKind int
@@ -233,14 +236,43 @@ func (goFunc *GoFunction) Call(args []any, globalState, extState *GlobalState, i
 		ctx = extState.Ctx
 	}
 
-	if fnValType.NumIn() == 0 || !CTX_PTR_TYPE.AssignableTo(fnValType.In(0)) {
+	numIn := fnValType.NumIn()
+	isVariadic := fnValType.IsVariadic()
+
+	if numIn == 0 || !CTX_PTR_TYPE.AssignableTo(fnValType.In(0)) {
 		//ok
 	} else {
 		args = append([]any{ctx}, args...)
 	}
 
-	if len(args) != fnValType.NumIn() && (!fnValType.IsVariadic() || len(args) < fnValType.NumIn()-1) {
-		return nil, fmt.Errorf("invalid number of arguments : %v, %v was expected", len(args), fnValType.NumIn())
+	optionalParamInfo, ok := functionOptionalParamInfo[fnVal.Pointer()]
+	if ok {
+		lastMandatoryParamIndex := optionalParamInfo.lastMandatoryParamIndex
+		if len(args) < int(lastMandatoryParamIndex)+1 {
+			return nil, fmt.Errorf("invalid number of arguments : %v, at least %v were expected", len(args), lastMandatoryParamIndex+1)
+		}
+		lastOptionalParamIndex := numIn - 1
+		if isVariadic {
+			lastOptionalParamIndex--
+		}
+
+		optionalParamInfoIndex := 0
+		for paramIndex := int(lastMandatoryParamIndex) + 1; paramIndex <= lastOptionalParamIndex; paramIndex++ {
+			optionalParam := optionalParamInfo.optionalParams[optionalParamInfoIndex]
+
+			if paramIndex < len(args) {
+				optionalParam = optionalParam.new()
+				optionalParam.setValue(args[paramIndex].(Value))
+				args[paramIndex] = optionalParam
+			} else {
+				args = append(args, optionalParam.newNil())
+			}
+			optionalParamInfoIndex++
+		}
+	} else {
+		if len(args) != numIn && (!isVariadic || len(args) < numIn-1) {
+			return nil, fmt.Errorf("invalid number of arguments : %v, %v was expected", len(args), numIn)
+		}
 	}
 
 	argValues := make([]reflect.Value, len(args))
@@ -353,4 +385,33 @@ func ConvertReturnValue(rval reflect.Value) Value {
 		return Nil
 	}
 	panic(fmt.Errorf("cannot convert return value of type %v, value is %#v", rval.Type(), rval))
+}
+
+// optional parameter in symbolic Go function parameters
+type OptionalParam[T Value] struct {
+	Value T
+}
+
+func (p *OptionalParam[T]) _optionalParamType() {
+	//type assertion
+	_ = optionalParam(p)
+}
+
+func (p *OptionalParam[T]) setValue(v Value) {
+	p.Value = v.(T)
+}
+
+func (p *OptionalParam[T]) new() optionalParam {
+	return &OptionalParam[T]{}
+}
+
+func (p *OptionalParam[T]) newNil() optionalParam {
+	return (*OptionalParam[T])(nil)
+}
+
+type optionalParam interface {
+	_optionalParamType()
+	setValue(v Value)
+	new() optionalParam
+	newNil() optionalParam
 }

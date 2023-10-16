@@ -4016,6 +4016,186 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				},
 				result: Str("Foo"),
 			},
+			{
+				name: "optional parameter: no arguments",
+				input: `
+					return gofunc()
+				`,
+				makeGlobals: func(t *testing.T) map[string]Value {
+					goFunc := func(ctx *Context, i *OptionalParam[Int]) Int {
+						if !assert.Nil(t, i) {
+							//assertion failed
+							return -1
+						}
+						return 1
+					}
+
+					RegisterSymbolicGoFunction(goFunc, func(*symbolic.Context, *symbolic.OptionalParam[*symbolic.Int]) *symbolic.Int {
+						return symbolic.ANY_INT
+					})
+
+					return map[string]Value{
+						"gofunc": WrapGoFunction(goFunc),
+					}
+				},
+				result: Int(1),
+			},
+			{
+				name: "optional parameter: argument provided",
+				input: `
+					return gofunc(2)
+				`,
+				makeGlobals: func(t *testing.T) map[string]Value {
+					goFunc := func(ctx *Context, i *OptionalParam[Int]) Int {
+						if !assert.NotNil(t, i) {
+							//assertion failed
+							return -1
+						}
+						return i.Value
+					}
+
+					RegisterSymbolicGoFunction(goFunc, func(*symbolic.Context, *symbolic.OptionalParam[*symbolic.Int]) *symbolic.Int {
+						return symbolic.ANY_INT
+					})
+
+					return map[string]Value{
+						"gofunc": WrapGoFunction(goFunc),
+					}
+				},
+				result: Int(2),
+			},
+			{
+				name: "two optional parameters: no arguments",
+				input: `
+					return gofunc()
+				`,
+				makeGlobals: func(t *testing.T) map[string]Value {
+					goFunc := func(ctx *Context, a, b *OptionalParam[Int]) Int {
+						if !assert.Nil(t, a) {
+							//assertion failed
+							return -1
+						}
+						if !assert.Nil(t, b) {
+							//assertion failed
+							return -1
+						}
+						return 1
+					}
+
+					RegisterSymbolicGoFunction(goFunc, func(_ *symbolic.Context, a, b *symbolic.OptionalParam[*symbolic.Int]) *symbolic.Int {
+						return symbolic.ANY_INT
+					})
+
+					return map[string]Value{
+						"gofunc": WrapGoFunction(goFunc),
+					}
+				},
+				result: Int(1),
+			},
+			{
+				name: "two optional parameters: single argument",
+				input: `
+					return gofunc(2)
+				`,
+				makeGlobals: func(t *testing.T) map[string]Value {
+					goFunc := func(ctx *Context, a, b *OptionalParam[Int]) Int {
+						if !assert.NotNil(t, a) {
+							//assertion failed
+							return -1
+						}
+						if !assert.Nil(t, b) {
+							//assertion failed
+							return -1
+						}
+						return a.Value
+					}
+
+					RegisterSymbolicGoFunction(goFunc, func(_ *symbolic.Context, a, b *symbolic.OptionalParam[*symbolic.Int]) *symbolic.Int {
+						return symbolic.ANY_INT
+					})
+
+					return map[string]Value{
+						"gofunc": WrapGoFunction(goFunc),
+					}
+				},
+				result: Int(2),
+			},
+			{
+				name: "two optional parameters: two arguments are provided",
+				input: `
+					return gofunc(2, 3)
+				`,
+				makeGlobals: func(t *testing.T) map[string]Value {
+					goFunc := func(ctx *Context, a, b *OptionalParam[Int]) Int {
+						if !assert.NotNil(t, a) {
+							//assertion failed
+							return -1
+						}
+						if !assert.NotNil(t, b) {
+							//assertion failed
+							return -1
+						}
+						return a.Value + b.Value
+					}
+
+					RegisterSymbolicGoFunction(goFunc, func(_ *symbolic.Context, a, b *symbolic.OptionalParam[*symbolic.Int]) *symbolic.Int {
+						return symbolic.ANY_INT
+					})
+
+					return map[string]Value{
+						"gofunc": WrapGoFunction(goFunc),
+					}
+				},
+				result: Int(5),
+			},
+			{
+				name: "mandatory + optional parameter: single argument",
+				input: `
+					return gofunc(2)
+				`,
+				makeGlobals: func(t *testing.T) map[string]Value {
+					goFunc := func(ctx *Context, a Int, b *OptionalParam[Int]) Int {
+						if !assert.Nil(t, b) {
+							return -1
+						}
+						return a
+					}
+
+					symbolicGoFunc := func(*symbolic.Context, *symbolic.Int, *symbolic.OptionalParam[*symbolic.Int]) *symbolic.Int {
+						return symbolic.ANY_INT
+					}
+					RegisterSymbolicGoFunction(goFunc, symbolicGoFunc)
+
+					return map[string]Value{
+						"gofunc": WrapGoFunction(goFunc),
+					}
+				},
+				result: Int(2),
+			},
+			{
+				name: "mandatory + optional parameter: all arguments are provided",
+				input: `
+					return gofunc(2, 3)
+				`,
+				makeGlobals: func(t *testing.T) map[string]Value {
+					goFunc := func(ctx *Context, a Int, b *OptionalParam[Int]) Int {
+						if !assert.NotNil(t, b) {
+							return -1
+						}
+						return a + b.Value
+					}
+
+					symbolicGoFunc := func(*symbolic.Context, *symbolic.Int, *symbolic.OptionalParam[*symbolic.Int]) *symbolic.Int {
+						return symbolic.ANY_INT
+					}
+					RegisterSymbolicGoFunction(goFunc, symbolicGoFunc)
+
+					return map[string]Value{
+						"gofunc": WrapGoFunction(goFunc),
+					}
+				},
+				result: Int(5),
+			},
 		}
 
 		for _, testCase := range testCases {

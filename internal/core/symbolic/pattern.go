@@ -43,12 +43,15 @@ var (
 
 	ANY_PATTERN              = &AnyPattern{}
 	ANY_SERIALIZABLE_PATTERN = &AnySerializablePattern{}
-	ANY_PATH_PATTERN         = &PathPattern{}
-	ANY_URL_PATTERN          = &URLPattern{}
-	ANY_HOST_PATTERN         = &HostPattern{}
-	ANY_STR_PATTERN          = &AnyStringPattern{}
-	ANY_LIST_PATTERN         = &ListPattern{generalElement: ANY_SERIALIZABLE_PATTERN}
-	ANY_TUPLE_PATTERN        = &TuplePattern{generalElement: ANY_SERIALIZABLE_PATTERN}
+	ANY_PATH_PATTERN         = &PathPattern{
+		dirConstraint: UnspecifiedDirOrFilePath,
+		absoluteness:  UnspecifiedPathAbsoluteness,
+	}
+	ANY_URL_PATTERN   = &URLPattern{}
+	ANY_HOST_PATTERN  = &HostPattern{}
+	ANY_STR_PATTERN   = &AnyStringPattern{}
+	ANY_LIST_PATTERN  = &ListPattern{generalElement: ANY_SERIALIZABLE_PATTERN}
+	ANY_TUPLE_PATTERN = &TuplePattern{generalElement: ANY_SERIALIZABLE_PATTERN}
 
 	ANY_OBJECT_PATTERN = &ObjectPattern{}
 	ANY_RECORD_PATTERN = &RecordPattern{}
