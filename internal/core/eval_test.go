@@ -4030,9 +4030,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 						return 1
 					}
 
-					RegisterSymbolicGoFunction(goFunc, func(*symbolic.Context, *symbolic.OptionalParam[*symbolic.Int]) *symbolic.Int {
-						return symbolic.ANY_INT
-					})
+					if !IsSymbolicEquivalentOfGoFunctionRegistered(goFunc) {
+						RegisterSymbolicGoFunction(goFunc, func(*symbolic.Context, *symbolic.OptionalParam[*symbolic.Int]) *symbolic.Int {
+							return symbolic.ANY_INT
+						})
+					}
 
 					return map[string]Value{
 						"gofunc": WrapGoFunction(goFunc),
@@ -4054,9 +4056,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 						return i.Value
 					}
 
-					RegisterSymbolicGoFunction(goFunc, func(*symbolic.Context, *symbolic.OptionalParam[*symbolic.Int]) *symbolic.Int {
-						return symbolic.ANY_INT
-					})
+					if !IsSymbolicEquivalentOfGoFunctionRegistered(goFunc) {
+						RegisterSymbolicGoFunction(goFunc, func(*symbolic.Context, *symbolic.OptionalParam[*symbolic.Int]) *symbolic.Int {
+							return symbolic.ANY_INT
+						})
+					}
 
 					return map[string]Value{
 						"gofunc": WrapGoFunction(goFunc),
@@ -4082,9 +4086,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 						return 1
 					}
 
-					RegisterSymbolicGoFunction(goFunc, func(_ *symbolic.Context, a, b *symbolic.OptionalParam[*symbolic.Int]) *symbolic.Int {
-						return symbolic.ANY_INT
-					})
+					if !IsSymbolicEquivalentOfGoFunctionRegistered(goFunc) {
+						RegisterSymbolicGoFunction(goFunc, func(_ *symbolic.Context, a, b *symbolic.OptionalParam[*symbolic.Int]) *symbolic.Int {
+							return symbolic.ANY_INT
+						})
+					}
 
 					return map[string]Value{
 						"gofunc": WrapGoFunction(goFunc),
@@ -4110,9 +4116,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 						return a.Value
 					}
 
-					RegisterSymbolicGoFunction(goFunc, func(_ *symbolic.Context, a, b *symbolic.OptionalParam[*symbolic.Int]) *symbolic.Int {
-						return symbolic.ANY_INT
-					})
+					if !IsSymbolicEquivalentOfGoFunctionRegistered(goFunc) {
+						RegisterSymbolicGoFunction(goFunc, func(_ *symbolic.Context, a, b *symbolic.OptionalParam[*symbolic.Int]) *symbolic.Int {
+							return symbolic.ANY_INT
+						})
+					}
 
 					return map[string]Value{
 						"gofunc": WrapGoFunction(goFunc),
@@ -4137,10 +4145,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 						}
 						return a.Value + b.Value
 					}
-
-					RegisterSymbolicGoFunction(goFunc, func(_ *symbolic.Context, a, b *symbolic.OptionalParam[*symbolic.Int]) *symbolic.Int {
-						return symbolic.ANY_INT
-					})
+					if !IsSymbolicEquivalentOfGoFunctionRegistered(goFunc) {
+						RegisterSymbolicGoFunction(goFunc, func(_ *symbolic.Context, a, b *symbolic.OptionalParam[*symbolic.Int]) *symbolic.Int {
+							return symbolic.ANY_INT
+						})
+					}
 
 					return map[string]Value{
 						"gofunc": WrapGoFunction(goFunc),
@@ -4164,7 +4173,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					symbolicGoFunc := func(*symbolic.Context, *symbolic.Int, *symbolic.OptionalParam[*symbolic.Int]) *symbolic.Int {
 						return symbolic.ANY_INT
 					}
-					RegisterSymbolicGoFunction(goFunc, symbolicGoFunc)
+					if !IsSymbolicEquivalentOfGoFunctionRegistered(goFunc) {
+						RegisterSymbolicGoFunction(goFunc, symbolicGoFunc)
+					}
 
 					return map[string]Value{
 						"gofunc": WrapGoFunction(goFunc),
@@ -4188,7 +4199,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					symbolicGoFunc := func(*symbolic.Context, *symbolic.Int, *symbolic.OptionalParam[*symbolic.Int]) *symbolic.Int {
 						return symbolic.ANY_INT
 					}
-					RegisterSymbolicGoFunction(goFunc, symbolicGoFunc)
+					if !IsSymbolicEquivalentOfGoFunctionRegistered(goFunc) {
+						RegisterSymbolicGoFunction(goFunc, symbolicGoFunc)
+					}
 
 					return map[string]Value{
 						"gofunc": WrapGoFunction(goFunc),
