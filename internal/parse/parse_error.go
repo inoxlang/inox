@@ -24,7 +24,7 @@ const (
 
 type ParsingError struct {
 	Kind    ParsingErrorKind `json:"kind"`
-	Message string
+	Message string           `json:"message"`
 }
 
 func (err ParsingError) Error() string {
@@ -34,9 +34,9 @@ func (err ParsingError) Error() string {
 type ParsingErrorKind int
 
 type ParsingErrorAggregation struct {
-	Message        string
-	Errors         []*ParsingError
-	ErrorPositions []SourcePositionRange
+	Message        string                `json:"completeMessage"`
+	Errors         []*ParsingError       `json:"errors"`
+	ErrorPositions []SourcePositionRange `json:"errorPositions"`
 }
 
 func (err ParsingErrorAggregation) Error() string {

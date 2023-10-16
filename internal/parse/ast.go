@@ -35,8 +35,8 @@ func (s NodeSpan) HasPositionEndIncluded(i int32) bool {
 
 // NodeBase implements Node interface
 type NodeBase struct {
-	Span   NodeSpan
-	Err    *ParsingError
+	Span   NodeSpan      `json:"span"`
+	Err    *ParsingError `json:"error,omitempty"`
 	Tokens []Token
 }
 
@@ -94,54 +94,54 @@ var _ = []SimpleValueLiteral{
 var _ = []IIdentifierLiteral{UnambiguousIdentifierLiteral{}, IdentifierLiteral{}}
 
 type InvalidURLPattern struct {
-	NodeBase
-	Value string
+	NodeBase `json:"base:invalid-url-pattern"`
+	Value    string
 }
 
 type InvalidURL struct {
-	NodeBase
-	Value string
+	NodeBase `json:"base:invalid-url"`
+	Value    string `json:"value"`
 }
 
 type InvalidAliasRelatedNode struct {
-	NodeBase
-	Raw string
+	NodeBase `json:"base:invalid-alias-related-pattern"`
+	Raw      string `json:"raw"`
 }
 
 type InvalidPathPattern struct {
-	NodeBase
-	Value string
+	NodeBase `json:"base:invalid-path-pattern"`
+	Value    string `json:"value"`
 }
 
 type InvalidComplexStringPatternElement struct {
-	NodeBase
+	NodeBase `json:"base:invalid-complex-string-pattern-elem"`
 }
 
 type InvalidObjectElement struct {
-	NodeBase
+	NodeBase `json:"base:invalid-object-elem"`
 }
 
 type InvalidMemberLike struct {
-	NodeBase
-	Left  Node
-	Right Node //can be nil
+	NodeBase `json:"base:invalid-member-like"`
+	Left     Node `json:"left"`
+	Right    Node `json:"right"` //can be nil
 }
 
 type MissingExpression struct {
-	NodeBase
+	NodeBase `json:"base:missing-expr"`
 }
 
 type InvalidCSSselectorNode struct {
-	NodeBase
+	NodeBase `json:"base:invalid-css-selector-node"`
 }
 
 type UnknownNode struct {
-	NodeBase
+	NodeBase `json:"base:unknown-node"`
 }
 
 type Comment struct {
-	NodeBase
-	Raw string
+	NodeBase `json:"base:comment"`
+	Raw      string
 }
 
 func IsScopeContainerNode(node Node) bool {
@@ -157,20 +157,20 @@ func IsScopeContainerNode(node Node) bool {
 }
 
 type Chunk struct {
-	NodeBase
+	NodeBase                   `json:"base:chunk"`
 	GlobalConstantDeclarations *GlobalConstantDeclarations //nil if no const declarations at the top of the module
 	Preinit                    *PreinitStatement           //nil if no preinit block at the top of the module
 	Manifest                   *Manifest                   //nil if no manifest at the top of the module
-	IncludableChunkDesc        *IncludableChunkDescription //nil if no manifest at the top of the module
-	Statements                 []Node
+	IncludableChunkDesc        *IncludableChunkDescription `json:"includableChunkDesc"` //nil if no manifest at the top of the module
+	Statements                 []Node                      `json:"statements"`
 	IsShellChunk               bool
 }
 
 type EmbeddedModule struct {
-	NodeBase
-	Manifest       *Manifest //can be nil
-	Statements     []Node
-	SingleCallExpr bool
+	NodeBase       `json:"base:embedded-module"`
+	Manifest       *Manifest `json:"manifest"` //can be nil
+	Statements     []Node    `json:"statements"`
+	SingleCallExpr bool      `json:"isSingleCallExpr"`
 }
 
 func (emod *EmbeddedModule) ToChunk() *Chunk {
@@ -182,8 +182,8 @@ func (emod *EmbeddedModule) ToChunk() *Chunk {
 }
 
 type Variable struct {
-	NodeBase
-	Name string
+	NodeBase `json:"base:variable"`
+	Name     string
 }
 
 func (v Variable) Str() string {
@@ -195,8 +195,8 @@ func (Variable) Kind() NodeKind {
 }
 
 type GlobalVariable struct {
-	NodeBase
-	Name string
+	NodeBase `json:"base:global-variable"`
+	Name     string
 }
 
 func (v GlobalVariable) Str() string {
@@ -208,7 +208,7 @@ func (GlobalVariable) Kind() NodeKind {
 }
 
 type MemberExpression struct {
-	NodeBase
+	NodeBase     `json:"base:member-expr"`
 	Left         Node
 	PropertyName *IdentifierLiteral
 	Optional     bool
@@ -219,7 +219,7 @@ func (MemberExpression) Kind() NodeKind {
 }
 
 type ComputedMemberExpression struct {
-	NodeBase
+	NodeBase     `json:"base:invalid"`
 	Left         Node
 	PropertyName Node
 	Optional     bool
@@ -230,7 +230,7 @@ func (ComputedMemberExpression) Kind() NodeKind {
 }
 
 type IdentifierMemberExpression struct {
-	NodeBase
+	NodeBase      `json:"base:invalid-member-expr"`
 	Left          *IdentifierLiteral
 	PropertyNames []*IdentifierLiteral
 }
@@ -240,9 +240,9 @@ func (IdentifierMemberExpression) Kind() NodeKind {
 }
 
 type IndexExpression struct {
-	NodeBase
-	Indexed Node
-	Index   Node
+	NodeBase `json:"base:index-expr"`
+	Indexed  Node
+	Index    Node
 }
 
 func (IndexExpression) Kind() NodeKind {
@@ -250,7 +250,7 @@ func (IndexExpression) Kind() NodeKind {
 }
 
 type SliceExpression struct {
-	NodeBase
+	NodeBase   `json:"base:slice-expr"`
 	Indexed    Node
 	StartIndex Node //can be nil
 	EndIndex   Node //can be nil
@@ -261,9 +261,9 @@ func (SliceExpression) Kind() NodeKind {
 }
 
 type DoubleColonExpression struct {
-	NodeBase
-	Left    Node
-	Element *IdentifierLiteral
+	NodeBase `json:"base:double-colon-exor"`
+	Left     Node
+	Element  *IdentifierLiteral
 }
 
 func (DoubleColonExpression) Kind() NodeKind {
@@ -271,8 +271,8 @@ func (DoubleColonExpression) Kind() NodeKind {
 }
 
 type KeyListExpression struct {
-	NodeBase
-	Keys []Node //slice of *IdentifierLiteral if ok
+	NodeBase `json:"base:key-list-expr"`
+	Keys     []Node //slice of *IdentifierLiteral if ok
 }
 
 func (expr KeyListExpression) Names() []*IdentifierLiteral {
@@ -294,8 +294,8 @@ func (KeyListExpression) Kind() NodeKind {
 }
 
 type BooleanConversionExpression struct {
-	NodeBase
-	Expr Node
+	NodeBase `json:"base:bool-conv-expr"`
+	Expr     Node
 }
 
 func (BooleanConversionExpression) Kind() NodeKind {
@@ -303,8 +303,8 @@ func (BooleanConversionExpression) Kind() NodeKind {
 }
 
 type BooleanLiteral struct {
-	NodeBase
-	Value bool
+	NodeBase `json:"base:bool-lit"`
+	Value    bool
 }
 
 func (BooleanLiteral) Kind() NodeKind {
@@ -319,7 +319,7 @@ func (l BooleanLiteral) ValueString() string {
 }
 
 type FlagLiteral struct {
-	NodeBase
+	NodeBase   `json:"base:flag-lit"`
 	SingleDash bool
 	Name       string
 	Raw        string
@@ -334,7 +334,7 @@ func (l FlagLiteral) ValueString() string {
 }
 
 type OptionExpression struct {
-	NodeBase
+	NodeBase   `json:"base:option-expr"`
 	SingleDash bool
 	Name       string
 	Value      Node
@@ -345,9 +345,9 @@ func (OptionExpression) Kind() NodeKind {
 }
 
 type IntLiteral struct {
-	NodeBase
-	Raw   string
-	Value int64
+	NodeBase `json:"base:int-lit"`
+	Raw      string
+	Value    int64
 }
 
 func (l IntLiteral) IsHex() bool {
@@ -367,9 +367,9 @@ func (IntLiteral) Kind() NodeKind {
 }
 
 type FloatLiteral struct {
-	NodeBase
-	Raw   string
-	Value float64
+	NodeBase `json:"base:float-lit"`
+	Raw      string
+	Value    float64
 }
 
 func (l FloatLiteral) ValueString() string {
@@ -381,7 +381,7 @@ func (FloatLiteral) Kind() NodeKind {
 }
 
 type PortLiteral struct {
-	NodeBase
+	NodeBase   `json:"base:port-lit"`
 	Raw        string
 	PortNumber uint16
 	SchemeName string
@@ -396,10 +396,10 @@ func (PortLiteral) Kind() NodeKind {
 }
 
 type QuantityLiteral struct {
-	NodeBase
-	Raw    string
-	Values []float64
-	Units  []string
+	NodeBase `json:"base:quantity-lit"`
+	Raw      string
+	Values   []float64
+	Units    []string
 }
 
 func (l QuantityLiteral) ValueString() string {
@@ -411,9 +411,9 @@ func (QuantityLiteral) Kind() NodeKind {
 }
 
 type DateLiteral struct {
-	NodeBase
-	Raw   string
-	Value time.Time
+	NodeBase `json:"base:date-lit"`
+	Raw      string
+	Value    time.Time
 }
 
 func (l DateLiteral) ValueString() string {
@@ -425,11 +425,11 @@ func (DateLiteral) Kind() NodeKind {
 }
 
 type RateLiteral struct {
-	NodeBase
-	Values  []float64
-	Units   []string
-	DivUnit string
-	Raw     string
+	NodeBase `json:"base:rate-lit"`
+	Values   []float64
+	Units    []string
+	DivUnit  string
+	Raw      string
 }
 
 func (l RateLiteral) ValueString() string {
@@ -441,8 +441,8 @@ func (RateLiteral) Kind() NodeKind {
 }
 
 type RuneLiteral struct {
-	NodeBase
-	Value rune
+	NodeBase `json:"base:rune-lit"`
+	Value    rune
 }
 
 func (l RuneLiteral) ValueString() string {
@@ -454,9 +454,9 @@ func (RuneLiteral) Kind() NodeKind {
 }
 
 type QuotedStringLiteral struct {
-	NodeBase
-	Raw   string
-	Value string
+	NodeBase `json:"base:quoted-str-lit"`
+	Raw      string
+	Value    string
 }
 
 func (l QuotedStringLiteral) ValueString() string {
@@ -468,9 +468,9 @@ func (QuotedStringLiteral) Kind() NodeKind {
 }
 
 type UnquotedStringLiteral struct {
-	NodeBase
-	Raw   string
-	Value string
+	NodeBase `json:"base:unquoted-str-lit"`
+	Raw      string
+	Value    string
 }
 
 func (l UnquotedStringLiteral) ValueString() string {
@@ -1765,12 +1765,12 @@ type PreinitStatement struct {
 }
 
 type Manifest struct {
-	NodeBase
-	Object Node
+	NodeBase `json:"base-manifest"`
+	Object   Node `json:"object"`
 }
 
 type IncludableChunkDescription struct {
-	NodeBase
+	NodeBase `json:"includable-chunk-desc"`
 }
 
 type PermissionDroppingStatement struct {
@@ -2057,10 +2057,10 @@ func (RuntimeTypeCheckExpression) Kind() NodeKind {
 }
 
 type TestSuiteExpression struct {
-	NodeBase
-	Meta        Node
-	Module      *EmbeddedModule
-	IsStatement bool
+	NodeBase    `json:"base:test-suite-expr"`
+	Meta        Node            `json:"meta"`
+	Module      *EmbeddedModule `json:"embeddedModule"`
+	IsStatement bool            `json:"isStatement"`
 }
 
 func (TestSuiteExpression) Kind() NodeKind {
@@ -2068,10 +2068,10 @@ func (TestSuiteExpression) Kind() NodeKind {
 }
 
 type TestCaseExpression struct {
-	NodeBase
-	Meta        Node
-	Module      *EmbeddedModule
-	IsStatement bool
+	NodeBase    `json:"base:test-case-expr"`
+	Meta        Node            `json:"meta"`
+	Module      *EmbeddedModule `json:"embeddedModule"`
+	IsStatement bool            `json:"isStatement"`
 }
 
 func (TestCaseExpression) Kind() NodeKind {
