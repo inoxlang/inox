@@ -136,6 +136,14 @@ func DirPathFrom(pth string) Path {
 	return path
 }
 
+func NonDirPathFrom(pth string) Path {
+	path := PathFrom(pth)
+	if path.IsDirPath() {
+		path = path[:len(path)-1]
+	}
+	return path
+}
+
 func checkPathInterpolationResult(s string) bool {
 	for i, b := range utils.StringAsBytes(s) {
 		switch b {

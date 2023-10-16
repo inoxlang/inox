@@ -252,7 +252,7 @@ func TestMemoryFilesystemTakeFilesystemSnapshot(t *testing.T) {
 
 		metadata := snapshot.MetadataMap["/dir"]
 		assert.Equal(t, &core.EntrySnapshotMetadata{
-			AbsolutePath:     "/dir",
+			AbsolutePath:     "/dir/",
 			CreationTime:     dirInfo.CreationTime_,
 			ModificationTime: dirInfo.ModTime_,
 			Mode:             dirInfo.Mode_,
@@ -295,7 +295,7 @@ func TestMemoryFilesystemTakeFilesystemSnapshot(t *testing.T) {
 
 		metadata := snapshot.MetadataMap["/dir"]
 		assert.Equal(t, &core.EntrySnapshotMetadata{
-			AbsolutePath:     "/dir",
+			AbsolutePath:     "/dir/",
 			CreationTime:     dirInfo.CreationTime_,
 			ModificationTime: dirInfo.ModTime_,
 			Mode:             dirInfo.Mode_,

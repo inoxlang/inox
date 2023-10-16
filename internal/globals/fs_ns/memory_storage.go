@@ -64,7 +64,7 @@ func newInMemoryStorageFromSnapshot(snapshot core.FilesystemSnapshot, maxStorage
 
 	//create all files & directories
 	snapshot.ForEachEntry(func(metadata core.EntrySnapshotMetadata) error {
-		path := string(metadata.AbsolutePath)
+		path := NormalizeAsAbsolute(string(metadata.AbsolutePath))
 
 		file := &InMemfile{
 			basename:     filepath.Base(path),
@@ -108,7 +108,7 @@ func newInMemoryStorageFromSnapshot(snapshot core.FilesystemSnapshot, maxStorage
 	storage.children["/"] = children
 
 	snapshot.ForEachEntry(func(metadata core.EntrySnapshotMetadata) error {
-		path := string(metadata.AbsolutePath)
+		path := NormalizeAsAbsolute(string(metadata.AbsolutePath))
 		file := storage.files[path]
 
 		if !file.mode.IsDir() {
@@ -165,13 +165,18 @@ func (s *inMemStorage) newNoLock(path string, mode os.FileMode, flag int) (*InMe
 	f := &InMemfile{
 		basename:     name,
 		originalPath: originalPath,
-		absPath:      core.PathFrom(path),
 		content: &InMemFileContent{
 			name:         name,
 			creationTime: now,
 		},
 		mode: mode,
 		flag: flag,
+	}
+
+	if f.mode.IsDir() {
+		f.absPath = core.DirPathFrom(path)
+	} else {
+		f.absPath = core.NonDirPathFrom(path)
 	}
 
 	f.content.modificationTime.Store(now)
