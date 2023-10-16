@@ -26,19 +26,23 @@ func init() {
 	//register symbolic version of go functions
 	core.RegisterSymbolicGoFunctions([]any{
 		Mkfile, func(ctx *symbolic.Context, path *symbolic.Path, args ...symbolic.SymbolicValue) *symbolic.Error {
+			//ctx.SetSymbolicGoFunctionParameters(MKFILE_SYMB_PARAMS, MKFILE_ARG_NAMES)
 			return nil
 		},
-		Mkdir, func(ctx *symbolic.Context, dirpath *symbolic.Path, conrent *symbolic.OptionalParam[*symbolic.Dictionary]) *symbolic.Error {
+		Mkdir, func(ctx *symbolic.Context, dirpath *symbolic.Path, content *symbolic.OptionalParam[*symbolic.Dictionary]) *symbolic.Error {
+			ctx.SetSymbolicGoFunctionParameters(MKDIR_SYMB_PARAMS, MKDIR_ARG_NAMES)
 			return nil
 		},
-		ReadFile, func(ctx *symbolic.Context, args ...symbolic.SymbolicValue) (*symbolic.ByteSlice, *symbolic.Error) {
-			return &symbolic.ByteSlice{}, nil
+		ReadFile, func(ctx *symbolic.Context, fpath *core.Path) (*symbolic.ByteSlice, *symbolic.Error) {
+			ctx.SetSymbolicGoFunctionParameters(READFILE_SYMB_PARAMS, READFILE_ARG_NAMES)
+			return symbolic.ANY_BYTE_SLICE, nil
 		},
 		Read, func(ctx *symbolic.Context, pth *symbolic.Path, args ...symbolic.SymbolicValue) (symbolic.SymbolicValue, *symbolic.Error) {
 			return symbolic.ANY, nil
 		},
-		ListFiles, func(ctx *symbolic.Context, args ...symbolic.SymbolicValue) (*symbolic.List, *symbolic.Error) {
-			return symbolic.NewListOf(&symbolic.FileInfo{}), nil
+		ListFiles, func(ctx *symbolic.Context, pathOrPattern *symbolic.OptionalParam[symbolic.SymbolicValue]) (*symbolic.List, *symbolic.Error) {
+			ctx.SetSymbolicGoFunctionParameters(LISTFILES_SYMB_PARAMS, LISTFILES_ARG_NAMES)
+			return symbolic.NewListOf(symbolic.ANY_FILEINFO), nil
 		},
 		Remove, func(ctx *symbolic.Context, args ...symbolic.SymbolicValue) *symbolic.Error {
 			return nil

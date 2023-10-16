@@ -102,7 +102,7 @@ func TestMkdir(t *testing.T) {
 
 		pth := filepath.Join(tmpDir, "dir") + "/"
 
-		err := Mkdir(ctx, core.Path(pth))
+		err := Mkdir(ctx, core.Path(pth), nil)
 		assert.IsType(t, &core.NotAllowedError{}, err)
 		assert.Equal(t, core.FilesystemPermission{
 			Kind_:  permkind.Create,
@@ -125,14 +125,16 @@ func TestMkdir(t *testing.T) {
 
 		pth := filepath.Join(tmpDir, "dir") + "/"
 
-		err := Mkdir(ctx, core.Path(pth), core.NewDictionary(map[string]core.Serializable{
+		content := core.NewDictionary(map[string]core.Serializable{
 			`./subdir_1/`: core.NewWrappedValueList(core.Path("./file_a")),
 			`./subdir_2/`: core.NewDictionary(map[string]core.Serializable{
 				`./subdir_3/`: core.NewWrappedValueList(core.Path("./file_b")),
 				`./file_c`:    core.Str("c"),
 			}),
 			`./file_d`: core.Str("d"),
-		}))
+		})
+
+		err := Mkdir(ctx, core.Path(pth), core.ToOptionalParam(content))
 		assert.NoError(t, err)
 		assert.DirExists(t, pth)
 		assert.NoFileExists(t, pth)

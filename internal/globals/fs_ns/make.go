@@ -12,6 +12,7 @@ import (
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/commonfmt"
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/permkind"
 )
@@ -24,50 +25,40 @@ const (
 
 var (
 	ErrTooDeepFileHierarchy = errors.New("file hierarchy is too deep")
+
+	MKDIR_ARG_NAMES   = []string{"dirpath", "content"}
+	MKDIR_SYMB_PARAMS = &[]symbolic.SymbolicValue{symbolic.ANY_DIR_PATH, symbolic.ANY_DICT}
+
+	MKFILE_ARG_NAMES   = []string{"filepath", "content"}
+	MKFILE_SYMB_PARAMS = &[]symbolic.SymbolicValue{symbolic.ANY_NON_DIR_PATH, symbolic.ANY_READABLE}
 )
 
 // Mkdir expects a core.Path argument and creates a directory.
-// If an additional argument of type Dictionnary is passed a file hiearchy will also be created.
-func Mkdir(ctx *core.Context, dirpath core.Path, args ...core.Value) error {
+// If a dictionary is passed a file hiearchy will also be created.
+func Mkdir(ctx *core.Context, dirpath core.Path, content *core.OptionalParam[*core.Dictionary]) error {
 	var contentDesc *core.Dictionary
 
 	if !dirpath.IsDirPath() {
 		return fmt.Errorf("path argument is a file path : %s, the path should end with '/'", string(dirpath))
 	}
 
-	for _, arg := range args {
-		switch v := arg.(type) {
-		case core.Path:
-			return commonfmt.FmtErrArgumentProvidedAtLeastTwice("path")
-		case *core.Dictionary:
-			if contentDesc != nil {
-				return commonfmt.FmtErrArgumentProvidedAtLeastTwice("content")
+	if content != nil && content.Value != nil {
+		contentDesc = content.Value
+		visit := func(val core.Value) (parse.TraversalAction, error) {
+			switch val.(type) {
+			case *core.List, core.Path, *core.Dictionary, core.StringLike, core.BytesLike:
+			default:
+				return parse.Continue, fmt.Errorf("invalid content description: it contains a value of type %T", val)
 			}
-			contentDesc = v
-
-			visit := func(val core.Value) (parse.TraversalAction, error) {
-				switch val.(type) {
-				case *core.List, core.Path, *core.Dictionary, core.StringLike, core.BytesLike:
-				default:
-					return parse.Continue, fmt.Errorf("invalid content description: it contains a value of type %T", val)
-				}
-				return parse.Continue, nil
-			}
-
-			err := contentDesc.ForEachEntry(ctx, func(keyRepr string, key, v core.Serializable) error {
-				return core.Traverse(v, visit, core.TraversalConfiguration{MaxDepth: MAX_FILE_HIERARCHY_DEPTH})
-			})
-			if err != nil {
-				return err
-			}
-			//TODO: check that the hiearchy is not too deep
-		default:
-			return core.FmtErrInvalidArgument(v)
+			return parse.Continue, nil
 		}
-	}
 
-	if dirpath == "" {
-		return commonfmt.FmtMissingArgument("path")
+		err := contentDesc.ForEachEntry(ctx, func(keyRepr string, key, v core.Serializable) error {
+			return core.Traverse(v, visit, core.TraversalConfiguration{MaxDepth: MAX_FILE_HIERARCHY_DEPTH})
+		})
+		if err != nil {
+			return err
+		}
 	}
 
 	return makeFileHierarchy(ctx, makeFileHieararchyParams{

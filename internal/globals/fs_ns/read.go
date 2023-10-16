@@ -12,6 +12,7 @@ import (
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/commonfmt"
 	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core/symbolic"
 
 	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
@@ -19,22 +20,16 @@ import (
 
 // this file contains functions to read & search files and directories.
 
+var (
+	READFILE_ARG_NAMES   = []string{"filepath"}
+	READFILE_SYMB_PARAMS = &[]symbolic.SymbolicValue{symbolic.ANY_DIR_PATH}
+
+	LISTFILES_ARG_NAMES   = []string{"path-or-pattern"}
+	LISTFILES_SYMB_PARAMS = &[]symbolic.SymbolicValue{symbolic.NewMultivalue(symbolic.ANY_PATH, symbolic.ANY_PATH_PATTERN)}
+)
+
 // ReadFile expects a core.Path argument, it reads the whole content of a file.
-func ReadFile(ctx *core.Context, args ...core.Value) (*core.ByteSlice, error) {
-	var fpath core.Path
-
-	for _, arg := range args {
-		switch v := arg.(type) {
-		case core.Path:
-			if fpath != "" {
-				return nil, commonfmt.FmtErrArgumentProvidedAtLeastTwice("path")
-			}
-			fpath = v
-		default:
-			return &core.ByteSlice{}, errors.New("invalid argument " + fmt.Sprintf("%#v", v))
-		}
-	}
-
+func ReadFile(ctx *core.Context, fpath core.Path) (*core.ByteSlice, error) {
 	if fpath == "" {
 		return &core.ByteSlice{}, commonfmt.FmtMissingArgument("path")
 	}
@@ -136,7 +131,7 @@ func Read(ctx *core.Context, path core.Path, args ...core.Value) (result core.Va
 	}
 
 	if path.IsDirPath() {
-		_res, lsErr := ListFiles(ctx, path)
+		_res, lsErr := ListFiles(ctx, &core.OptionalParam[core.Value]{Value: path})
 		if lsErr != nil {
 			finalErr = lsErr
 			return
@@ -161,26 +156,18 @@ func Read(ctx *core.Context, path core.Path, args ...core.Value) (result core.Va
 	}
 }
 
-func ListFiles(ctx *core.Context, args ...core.Value) ([]core.FileInfo, error) {
-	var pth core.Path
-	var patt core.PathPattern
-	ERR := "a single path (or path pattern) argument is expected"
+func ListFiles(ctx *core.Context, pathOrPatt *core.OptionalParam[core.Value]) ([]core.FileInfo, error) {
 	fls := ctx.GetFileSystem()
 
-	for _, arg := range args {
-		switch v := arg.(type) {
-		case core.Path:
-			if pth != "" {
-				return nil, errors.New(ERR)
-			}
-			pth = v
-		case core.PathPattern:
-			if patt != "" {
-				return nil, errors.New(ERR)
-			}
-			patt = v
-		default:
-			return nil, errors.New("invalid argument " + fmt.Sprintf("%#v", v))
+	var pth core.Path
+	var patt core.PathPattern
+
+	if pathOrPatt != nil {
+		path, ok := pathOrPatt.Value.(core.Path)
+		if ok {
+			pth = path
+		} else {
+			patt = pathOrPatt.Value.(core.PathPattern)
 		}
 	}
 
@@ -198,10 +185,6 @@ func ListFiles(ctx *core.Context, args ...core.Value) ([]core.FileInfo, error) {
 		if !pth.IsDirPath() {
 			return nil, errors.New("only directory paths are supported : " + string(pth))
 		}
-	}
-
-	if pth != "" && patt != "" {
-		return nil, errors.New(ERR)
 	}
 
 	resultFileInfo := make([]core.FileInfo, 0)

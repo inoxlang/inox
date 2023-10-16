@@ -27,7 +27,7 @@ func findPathCompletions(ctx *core.Context, pth string) []Completion {
 		base = ""
 	}
 
-	entries, err := fs_ns.ListFiles(ctx, core.Path(dir+"/"))
+	entries, err := fs_ns.ListFiles(ctx, core.ToValueOptionalParam(core.Path(dir+"/")))
 	if err != nil {
 		return nil
 	}

@@ -415,3 +415,15 @@ type optionalParam interface {
 	new() optionalParam
 	newNil() optionalParam
 }
+
+func ToOptionalParam[T Value](v T) *OptionalParam[T] {
+	return &OptionalParam[T]{
+		Value: v,
+	}
+}
+
+func ToValueOptionalParam(v Value) *OptionalParam[Value] {
+	return &OptionalParam[Value]{
+		Value: v,
+	}
+}

@@ -121,7 +121,7 @@ func _createResource(ctx *core.Context, resource core.ResourceName, args ...core
 		}
 
 		if res.IsDirPath() {
-			return nil, fs_ns.Mkdir(ctx, res)
+			return nil, fs_ns.Mkdir(ctx, res, nil)
 		} else {
 			if content != nil {
 				return nil, fs_ns.Mkfile(ctx, res, content)
