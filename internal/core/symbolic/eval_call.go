@@ -261,7 +261,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 		}
 
 		firstOptionalParamIndex := -1
-		if f.lastMandatoryParamIndex >= 0 {
+		if f.hasOptionalParams && f.lastMandatoryParamIndex >= 0 {
 			firstOptionalParamIndex = f.lastMandatoryParamIndex + 1
 			if f.isfirstArgCtx {
 				firstOptionalParamIndex--

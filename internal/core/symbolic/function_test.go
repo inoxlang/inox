@@ -4,9 +4,10 @@ import (
 	"testing"
 
 	"github.com/inoxlang/inox/internal/parse"
+	"github.com/stretchr/testify/assert"
 )
 
-func TestSymbolicInoxFunction(t *testing.T) {
+func TestInoxFunction(t *testing.T) {
 	t.Run("Test()", func(t *testing.T) {
 
 		fnWithAssignment := &InoxFunction{
@@ -35,5 +36,17 @@ func TestSymbolicInoxFunction(t *testing.T) {
 
 		assertTestFalse(t, fnOnlyAllowingIntLiteralsInBody, fnWithAssignment)
 		assertTest(t, fnOnlyAllowingIntLiteralsInBody, fnWithOnlyIntLiteral)
+	})
+}
+
+func TestGoFunction(t *testing.T) {
+
+	t.Run("only ctx param", func(t *testing.T) {
+		goFunc := WrapGoFunction(func(ctx *Context) {})
+		if !assert.NoError(t, goFunc.LoadSignatureData()) {
+			return
+		}
+
+		assert.False(t, goFunc.hasOptionalParams)
 	})
 }

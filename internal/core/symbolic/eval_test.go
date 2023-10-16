@@ -4362,6 +4362,46 @@ func TestSymbolicEval(t *testing.T) {
 
 		t.Run("simple specific Go function", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
+				return f(#a)
+			`)
+
+			callExprNode := n.Statements[0].(*parse.ReturnStatement).Expr.(*parse.CallExpression)
+
+			goFunc := &GoFunction{
+				fn: func(ctx *Context, arg SymbolicValue) *Int {
+					if _, ok := arg.(*Identifier); ok {
+						ctx.SetSymbolicGoFunctionParameters(&[]SymbolicValue{&Identifier{name: "a"}}, []string{"arg"})
+					}
+					return ANY_INT
+				},
+			}
+
+			state.setGlobal("f", goFunc, GlobalConst)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, ANY_INT, res)
+
+			calleeData, ok := state.symbolicData.GetMostSpecificNodeValue(callExprNode.Callee)
+			if !assert.True(t, ok) {
+				return
+			}
+
+			if !assert.Equal(t, &Function{
+				firstOptionalParamIndex: -1,
+				parameters:              []SymbolicValue{NewIdentifier("a")},
+				parameterNames:          []string{"arg"},
+				results:                 []SymbolicValue{ANY_INT},
+			}, calleeData) {
+				return
+			}
+
+			fn := calleeData.(*Function)
+			assert.False(t, fn.HasOptionalParams())
+		})
+
+		t.Run("simple specific Go function: invalid argument", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
 				return f(#b)
 			`)
 
