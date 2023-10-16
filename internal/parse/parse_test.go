@@ -6833,7 +6833,7 @@ func testParse(
 					assert.NoError(t, err)
 					assert.Equal(t, testCase.value, literal.Value)
 				} else {
-					assert.Contains(t, literal.Err.message, testCase.err)
+					assert.Contains(t, literal.Err.Message, testCase.err)
 				}
 			})
 		}

@@ -455,7 +455,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 
 	if parsingErr != nil {
 		if len(mod.OriginalErrors) > 1 ||
-			(len(mod.OriginalErrors) == 1 && !utils.SliceContains(symbolic.SUPPORTED_PARSING_ERRORS, mod.OriginalErrors[0].Kind())) {
+			(len(mod.OriginalErrors) == 1 && !utils.SliceContains(symbolic.SUPPORTED_PARSING_ERRORS, mod.OriginalErrors[0].Kind)) {
 			finalErr = parsingErr
 			return
 		}
@@ -663,7 +663,7 @@ func PrepareExtractionModeIncludableChunkfile(args IncludableChunkfilePreparatio
 
 	if parsingErr != nil {
 		if len(mod.OriginalErrors) > 1 ||
-			(len(mod.OriginalErrors) == 1 && !utils.SliceContains(symbolic.SUPPORTED_PARSING_ERRORS, mod.OriginalErrors[0].Kind())) {
+			(len(mod.OriginalErrors) == 1 && !utils.SliceContains(symbolic.SUPPORTED_PARSING_ERRORS, mod.OriginalErrors[0].Kind)) {
 			finalErr = parsingErr
 			return state, mod, includedChunk, finalErr
 		}

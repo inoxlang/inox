@@ -4767,7 +4767,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 	case *parse.XMLText:
 		return ANY_STR, nil
 	case *parse.ExtendStatement:
-		if n.Err != nil && n.Err.Kind() == parse.UnterminatedExtendStmt {
+		if n.Err != nil && n.Err.Kind == parse.UnterminatedExtendStmt {
 			return nil, nil
 		}
 

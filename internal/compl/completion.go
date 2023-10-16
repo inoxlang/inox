@@ -759,7 +759,7 @@ func handleIdentifierMemberCompletions(
 		return nil
 	}
 
-	isLastPropPresent := len(n.PropertyNames) > 0 && (n.Err == nil || n.Err.Kind() != parse.UnterminatedMemberExpr)
+	isLastPropPresent := len(n.PropertyNames) > 0 && (n.Err == nil || n.Err.Kind != parse.UnterminatedMemberExpr)
 
 	var replacedRange parse.SourcePositionRange
 	if isLastPropPresent {
@@ -797,7 +797,7 @@ func handleIdentifierMemberCompletions(
 		found := false
 		for _, name := range propertyNames {
 			if name == propName.Name { //property's name is valid
-				if i == len(n.PropertyNames)-1 && (n.Err == nil || n.Err.Kind() != parse.UnterminatedMemberExpr) { //if last
+				if i == len(n.PropertyNames)-1 && (n.Err == nil || n.Err.Kind != parse.UnterminatedMemberExpr) { //if last
 					return nil
 				}
 

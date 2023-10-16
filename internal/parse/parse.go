@@ -166,7 +166,7 @@ func ParseChunk2(str string, fpath string, opts ...ParserOptions) (runes []rune,
 					Span:        nodeBase.Span,
 				})
 
-				aggregation.message = fmt.Sprintf("%s\n%s:%d:%d: %s", aggregation.message, fpath, line, col, parsingErr.message)
+				aggregation.Message = fmt.Sprintf("%s\n%s:%d:%d: %s", aggregation.Message, fpath, line, col, parsingErr.Message)
 				resultErr = aggregation
 				return Continue, nil
 			}, nil)
@@ -783,10 +783,10 @@ func (p *parser) parseBlock() *Block {
 
 		prevStmtEndIndex = p.i
 		if stmt.Base().Err != nil {
-			prevStmtErrKind = stmt.Base().Err.kind
+			prevStmtErrKind = stmt.Base().Err.Kind
 		}
 
-		if stmtErr != nil && (stmt.Base().Err == nil || stmt.Base().Err.kind != InvalidNext) {
+		if stmtErr != nil && (stmt.Base().Err == nil || stmt.Base().Err.Kind != InvalidNext) {
 			stmt.BasePtr().Err = stmtErr
 		}
 
@@ -886,7 +886,7 @@ func (p *parser) parsePathExpressionSlices(start int32, exclEnd int32, tokens *[
 						err := &ParsingError{UnspecifiedParsingError, INVALID_PATH_INTERP}
 
 						if len(interpolation) == 0 {
-							err.message = EMPTY_PATH_INTERP
+							err.Message = EMPTY_PATH_INTERP
 						}
 
 						slices = append(slices, &UnknownNode{
@@ -1035,7 +1035,7 @@ func (p *parser) parseQueryParameterValueSlices(start int32, exclEnd int32, toke
 					err := &ParsingError{UnspecifiedParsingError, INVALID_QUERY_PARAM_INTERP}
 
 					if len(interpolation) == 0 {
-						err.message = EMPTY_QUERY_PARAM_INTERP
+						err.Message = EMPTY_QUERY_PARAM_INTERP
 					}
 
 					slices = append(slices, &UnknownNode{
@@ -5899,7 +5899,7 @@ func (p *parser) parseByteSlices() Node {
 				if parsingError == nil {
 					parsingError = &ParsingError{UnspecifiedParsingError, fmtUnexpectedCharInHexadecimalByteSliceLiteral(r)}
 				} else {
-					parsingError.message += "\n" + fmtUnexpectedCharInHexadecimalByteSliceLiteral(r)
+					parsingError.Message += "\n" + fmtUnexpectedCharInHexadecimalByteSliceLiteral(r)
 				}
 			}
 			p.i++
@@ -5961,7 +5961,7 @@ func (p *parser) parseByteSlices() Node {
 				if parsingError == nil {
 					parsingError = &ParsingError{UnspecifiedParsingError, fmtUnexpectedCharInBinByteSliceLiteral(r)}
 				} else {
-					parsingError.message += "\n" + fmtUnexpectedCharInBinByteSliceLiteral(r)
+					parsingError.Message += "\n" + fmtUnexpectedCharInBinByteSliceLiteral(r)
 				}
 			}
 			p.i++
@@ -6001,7 +6001,7 @@ func (p *parser) parseByteSlices() Node {
 				if parsingError == nil {
 					parsingError = &ParsingError{UnspecifiedParsingError, fmtUnexpectedCharInDecimalByteSliceLiteral(r)}
 				} else {
-					parsingError.message += "\n" + fmtUnexpectedCharInDecimalByteSliceLiteral(r)
+					parsingError.Message += "\n" + fmtUnexpectedCharInDecimalByteSliceLiteral(r)
 				}
 			}
 			p.i++
@@ -6028,7 +6028,7 @@ func (p *parser) parseByteSlices() Node {
 						if parsingError == nil {
 							parsingError = &ParsingError{UnspecifiedParsingError, message}
 						} else {
-							parsingError.message += "\n" + message
+							parsingError.Message += "\n" + message
 						}
 
 						value = nil
@@ -6056,7 +6056,7 @@ func (p *parser) parseByteSlices() Node {
 		if parsingError == nil {
 			parsingError = &ParsingError{UnspecifiedParsingError, UNTERMINATED_BYTE_SICE_LIT_MISSING_CLOSING_BRACKET}
 		} else {
-			parsingError.message += "\n" + UNTERMINATED_BYTE_SICE_LIT_MISSING_CLOSING_BRACKET
+			parsingError.Message += "\n" + UNTERMINATED_BYTE_SICE_LIT_MISSING_CLOSING_BRACKET
 		}
 	} else {
 		p.i++
@@ -7360,7 +7360,7 @@ func (p *parser) parseEmbeddedModule() *EmbeddedModule {
 		stmt := p.parseStatement()
 		prevStmtEndIndex = p.i
 		if stmt.Base().Err != nil {
-			prevStmtErrKind = stmt.Base().Err.kind
+			prevStmtErrKind = stmt.Base().Err.Kind
 		}
 
 		if _, isMissingExpr := stmt.(*MissingExpression); isMissingExpr {
@@ -8876,7 +8876,7 @@ func (p *parser) parseFunction(start int32) Node {
 		}
 
 		if p.i >= p.len || p.s[p.i] == '\n' {
-			error.kind = MissingFnBody
+			error.Kind = MissingFnBody
 			parsingErr = error
 			end = p.i
 		} else {
@@ -8886,7 +8886,7 @@ func (p *parser) parseFunction(start int32) Node {
 				end = body.Base().Span.End
 			case '=':
 				if p.i >= p.len+1 || p.s[p.i+1] != '>' {
-					error.kind = MissingFnBody
+					error.Kind = MissingFnBody
 					parsingErr = error
 					end = p.i
 				} else {
@@ -10842,7 +10842,7 @@ func (p *parser) parseChunk() (*Chunk, error) {
 		}
 
 		if stmt.Base().Err != nil {
-			prevStmtErrKind = stmt.Base().Err.kind
+			prevStmtErrKind = stmt.Base().Err.Kind
 		} else if stmtErr != nil {
 			stmt.BasePtr().Err = stmtErr
 		}
