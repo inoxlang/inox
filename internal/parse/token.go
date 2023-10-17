@@ -20,7 +20,7 @@ const (
 )
 
 var (
-	tokenCache     = map[uintptr][]Token{}
+	tokenCache     = map[uintptr][]Token{} //Node address -> tokens
 	tokenCacheLock sync.Mutex
 )
 
@@ -45,6 +45,8 @@ func (t Token) Str() string {
 type TokenType uint16
 
 const (
+	LAST_TOKEN_TYPE_WITHOUT_VALUE = NEWLINE
+
 	//WITH NO ASSOCIATED VALUE
 	IF_KEYWORD TokenType = iota + 1
 	ELSE_KEYWORD
@@ -608,8 +610,9 @@ func (t Token) String() string {
 	return fmt.Sprintf("\"%s\"(%d-%d)", t.Token(), t.Span.Start, t.Span.End)
 }
 
-// GetTokens reconstructs a sequence of tokens from a Node, the returned slice should NOT be modified.
-func GetTokens(node Node, addMeta bool) []Token {
+// GetTokens retrieves the tokens located in a node' span, the returned slice should NOT be modified.
+// Note that this function is not efficient.
+func GetTokens(node Node, chunk *Chunk, addMeta bool) []Token {
 	if node == nil {
 		return nil
 	}
@@ -625,15 +628,30 @@ func GetTokens(node Node, addMeta bool) []Token {
 		return utils.CopySlice(tokens)
 	}
 
+	chunkTokens := chunk.Tokens
+
 	//we unlock when the function is finished because we modify the tokenCache at the end
 	defer tokenCacheLock.Unlock()
 
-	// some tokens can be missing if parent if GetTokens() is called on a leaf node (parents could hold the tokens)
-
 	tokens := make([]Token, 0)
-	Walk(node, func(node, parentNode, _ Node, ancestorChain []Node, _ bool) (TraversalAction, error) {
-		tokens = append(tokens, node.Base().Tokens...)
 
+	//first we add the valueless tokens
+
+	nodeBase := node.Base()
+	startTokenIndex, _ := slices.BinarySearchFunc(chunkTokens, nodeBase.Span, func(t Token, ns NodeSpan) int {
+		return int(t.Span.Start) - int(ns.Start)
+	})
+
+	for _, token := range chunkTokens[startTokenIndex:] {
+		if token.Span.Start >= nodeBase.Span.End {
+			break
+		}
+		tokens = append(tokens, token)
+	}
+
+	//get tokens of all nodes
+
+	Walk(node, func(node, parentNode, _ Node, ancestorChain []Node, _ bool) (TraversalAction, error) {
 		//TODO: avoid allocating strings if original code string is available
 
 		switch n := node.(type) {
@@ -973,13 +991,19 @@ func GetTokens(node Node, addMeta bool) []Token {
 	var uniqueTokens []Token
 
 	for i := 0; i < len(tokens); i++ {
-		if tokens[i].Span.End == tokens[i].Span.Start { //ignore empty tokens
+		token := tokens[i]
+		if token.Span.End == token.Span.Start { //ignore empty tokens
 			continue
 		}
-		if i != 0 && tokens[i].Span == tokens[i-1].Span {
+
+		if token.Type <= LAST_TOKEN_TYPE_WITHOUT_VALUE {
+			token.Raw = tokenStrings[token.Type]
+		}
+
+		if i != 0 && token.Span == tokens[i-1].Span {
 			continue
 		}
-		uniqueTokens = append(uniqueTokens, tokens[i])
+		uniqueTokens = append(uniqueTokens, token)
 	}
 
 	if len(tokens) >= MIN_TOKEN_CACHING_COUNT {
@@ -996,18 +1020,18 @@ func GetTokens(node Node, addMeta bool) []Token {
 	return uniqueTokens
 }
 
-func GetFirstToken(node Node) Token {
-	tokens := GetTokens(node, false)
+func GetFirstToken(node Node, chunk *Chunk) Token {
+	tokens := GetTokens(node, chunk, false)
 	return tokens[0]
 }
 
-func GetFirstTokenString(node Node) string {
-	tokens := GetTokens(node, false)
+func GetFirstTokenString(node Node, chunk *Chunk) string {
+	tokens := GetTokens(node, chunk, false)
 	return tokens[0].Raw
 }
 
-func GetTokenAtPosition(pos int, node Node) (Token, bool) {
-	tokens := GetTokens(node, false)
+func GetTokenAtPosition(pos int, node Node, chunk *Chunk) (Token, bool) {
+	tokens := GetTokens(node, chunk, false)
 	index, ok := slices.BinarySearchFunc(tokens, Token{Type: 0, Span: NodeSpan{int32(pos), int32(pos + 1)}}, func(a, b Token) int {
 		if a.Type > 0 && b.Type > 0 {
 			return int(a.Span.Start - b.Span.Start)

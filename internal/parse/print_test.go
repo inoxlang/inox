@@ -132,6 +132,7 @@ func TestPrint(t *testing.T) {
 		`#{"a": 1}`,
 		//dictionary
 		":{}",
+		":{./a:1}",
 		":{./a: 1}",
 		":{./a: 1",
 		":{./a: }",
@@ -389,13 +390,14 @@ func TestPrint(t *testing.T) {
 		"@(1)",
 	}
 
-	n, _ := ParseChunk("%/", "")
-	_ = SPrint(n, PrintConfig{})
+	n, _ := ParseChunk("https://example.com/?x={1}&", "")
+	s := SPrint(n, n, PrintConfig{})
+	assert.Equal(t, "https://example.com/?x={1}&", s)
 
 	for _, testCase := range testCases {
 		t.Run(testCase, func(t *testing.T) {
 			n, _ := ParseChunk(testCase, "")
-			s := SPrint(n, PrintConfig{})
+			s := SPrint(n, n, PrintConfig{})
 			assert.Equal(t, testCase, s)
 		})
 	}

@@ -39,20 +39,20 @@ func TestWalk(t *testing.T) {
 func TestShiftNodeSpans(t *testing.T) {
 
 	node := &Chunk{
-		NodeBase: NodeBase{NodeSpan{0, 2}, nil, nil},
+		NodeBase: NodeBase{NodeSpan{0, 2}, nil, false},
 		Statements: []Node{
 			&IntLiteral{
-				NodeBase: NodeBase{NodeSpan{0, 1}, nil, nil},
+				NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
 			},
 		},
 	}
 
 	shiftNodeSpans(node, +2)
 	assert.EqualValues(t, &Chunk{
-		NodeBase: NodeBase{NodeSpan{2, 4}, nil, nil},
+		NodeBase: NodeBase{NodeSpan{2, 4}, nil, false},
 		Statements: []Node{
 			&IntLiteral{
-				NodeBase: NodeBase{NodeSpan{2, 3}, nil, nil},
+				NodeBase: NodeBase{NodeSpan{2, 3}, nil, false},
 			},
 		},
 	}, node)

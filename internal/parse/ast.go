@@ -35,9 +35,9 @@ func (s NodeSpan) HasPositionEndIncluded(i int32) bool {
 
 // NodeBase implements Node interface
 type NodeBase struct {
-	Span   NodeSpan      `json:"span"`
-	Err    *ParsingError `json:"error,omitempty"`
-	Tokens []Token
+	Span            NodeSpan      `json:"span"`
+	Err             *ParsingError `json:"error,omitempty"`
+	IsParenthesized bool          //true even if the closing parenthesis is missing
 }
 
 func (base NodeBase) Base() NodeBase {
@@ -54,12 +54,6 @@ func (base *NodeBase) Kind() NodeKind {
 
 func (base NodeBase) IncludedIn(node Node) bool {
 	return base.Span.Start >= node.Base().Span.Start && base.Span.End <= node.Base().Span.End
-}
-
-func (base NodeBase) IsParenthesized() bool {
-	return len(base.Tokens) >= 2 &&
-		base.Tokens[0].Type == OPENING_PARENTHESIS &&
-		base.Tokens[len(base.Tokens)-1].Type == CLOSING_PARENTHESIS
 }
 
 type NodeKind uint8
@@ -164,6 +158,8 @@ type Chunk struct {
 	IncludableChunkDesc        *IncludableChunkDescription `json:"includableChunkDesc"` //nil if no manifest at the top of the module
 	Statements                 []Node                      `json:"statements"`
 	IsShellChunk               bool
+
+	Tokens []Token //mostly valueless tokens, sorted by position (ascending)
 }
 
 type EmbeddedModule struct {
@@ -2256,12 +2252,12 @@ func shiftNodeSpans(node Node, offset int32) {
 		node.BasePtr().Span.Start += offset
 		node.BasePtr().Span.End += offset
 
-		tokens := node.BasePtr().Tokens
-		for i, token := range tokens {
-			token.Span.Start += offset
-			token.Span.End += offset
-			tokens[i] = token
-		}
+		// tokens := node.BasePtr().Tokens
+		// for i, token := range tokens {
+		// 	token.Span.Start += offset
+		// 	token.Span.End += offset
+		// 	tokens[i] = token
+		// }
 		return Continue, nil
 	}, nil)
 }
@@ -2822,6 +2818,25 @@ func CountNodes(n Node) (count int) {
 	return
 }
 
+func FindNodeWithSpan(root Node, searchedNodeSpan NodeSpan) (n Node, found bool) {
+	Walk(root, func(node, _, _ Node, _ []Node, _ bool) (TraversalAction, error) {
+
+		nodeSpan := node.Base().Span
+		if searchedNodeSpan.End < nodeSpan.Start || searchedNodeSpan.Start >= nodeSpan.End {
+			return Prune, nil
+		}
+
+		if searchedNodeSpan == nodeSpan {
+			n = node
+			found = true
+			return StopTraversal, nil
+		}
+		return Continue, nil
+	}, nil)
+
+	return
+}
+
 func FindNodes[T Node](root Node, typ T, handle func(n T) bool) []T {
 	n, _ := FindNodesAndChains(root, typ, handle)
 	return n
@@ -2958,7 +2973,7 @@ func HasErrorAtAnyDepth(n Node) bool {
 	return err
 }
 
-func GetTreeView(n Node) string {
+func GetTreeView(n Node, chunk *Chunk) string {
 	var buf = bytes.NewBuffer(nil)
 
 	Walk(n, func(node, parent, scopeNode Node, ancestorChain []Node, after bool) (TraversalAction, error) {
@@ -2969,7 +2984,7 @@ func GetTreeView(n Node) string {
 
 		if !NodeIsSimpleValueLiteral(node) {
 			buf.WriteString("{ ")
-			for _, tok := range GetTokens(node, false) {
+			for _, tok := range GetTokens(node, chunk, false) {
 
 				switch tok.Type {
 				case UNEXPECTED_CHAR:
@@ -3006,14 +3021,14 @@ func GetTreeView(n Node) string {
 	return buf.String()
 }
 
-func GetInteriorSpan(node Node) (interiorSpan NodeSpan, err error) {
+func GetInteriorSpan(node Node, chunk *Chunk) (interiorSpan NodeSpan, err error) {
 	switch node.(type) {
 	case *ObjectLiteral:
-		return getInteriorSpan(node, OPENING_CURLY_BRACKET, CLOSING_CURLY_BRACKET)
+		return getInteriorSpan(node, chunk, OPENING_CURLY_BRACKET, CLOSING_CURLY_BRACKET)
 	case *RecordLiteral:
-		return getInteriorSpan(node, OPENING_RECORD_BRACKET, CLOSING_CURLY_BRACKET)
+		return getInteriorSpan(node, chunk, OPENING_RECORD_BRACKET, CLOSING_CURLY_BRACKET)
 	case *DictionaryLiteral:
-		return getInteriorSpan(node, OPENING_DICTIONARY_BRACKET, CLOSING_CURLY_BRACKET)
+		return getInteriorSpan(node, chunk, OPENING_DICTIONARY_BRACKET, CLOSING_CURLY_BRACKET)
 	}
 	err = errors.New("not supported yet")
 	return
@@ -3022,8 +3037,8 @@ func GetInteriorSpan(node Node) (interiorSpan NodeSpan, err error) {
 // GetInteriorSpan returns the span of the "interior" of nodes such as blocks, objects or lists.
 // the fist token matching the opening token is taken as the starting token (the span starts just after the token),
 // the last token matching the closingToken is as taken as the ending token (the span ends just before this token).
-func getInteriorSpan(node Node, openingToken, closingToken TokenType) (interiorSpan NodeSpan, err error) {
-	tokens := node.Base().Tokens
+func getInteriorSpan(node Node, chunk *Chunk, openingToken, closingToken TokenType) (interiorSpan NodeSpan, err error) {
+	tokens := GetTokens(node, chunk, false)
 	if len(tokens) == 0 {
 		err = ErrMissingTokens
 		return

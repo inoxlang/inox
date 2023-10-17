@@ -1,6 +1,6 @@
 package parse
 
-func EstimateIndentationUnit(code []rune, node Node) string {
+func EstimateIndentationUnit(code []rune, chunk *Chunk) string {
 	var indents = map[string]int{}
 
 	update := func(index int32) {
@@ -16,18 +16,18 @@ func EstimateIndentationUnit(code []rune, node Node) string {
 		}
 	}
 
-	Walk(node, func(node, parent, scopeNode Node, ancestorChain []Node, after bool) (TraversalAction, error) {
+	Walk(chunk, func(node, parent, scopeNode Node, ancestorChain []Node, after bool) (TraversalAction, error) {
 		switch n := node.(type) {
 		case *ObjectLiteral:
 			if _, ok := parent.(*Manifest); !ok {
 				break
 			}
 			for _, prop := range n.Properties {
-				update(GetFirstToken(prop).Span.Start)
+				update(GetFirstToken(prop, chunk).Span.Start)
 			}
 		case *Block:
 			for _, stmt := range n.Statements {
-				update(GetFirstToken(stmt).Span.Start)
+				update(GetFirstToken(stmt, chunk).Span.Start)
 			}
 		case *GlobalConstantDeclaration:
 			update(n.Span.Start)

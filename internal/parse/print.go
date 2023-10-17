@@ -10,12 +10,13 @@ import (
 
 type PrintConfig struct {
 	//Compact   bool
-	TrimStart bool
-	TrimEnd   bool
+	TrimStart   bool
+	TrimEnd     bool
+	CacheResult bool
 }
 
-func Print(node Node, w io.Writer, config PrintConfig) (int, error) {
-	tokens := GetTokens(node, false)
+func Print(node Node, chunk *Chunk, w io.Writer, config PrintConfig) (int, error) {
+	tokens := GetTokens(node, chunk, false)
 
 	totalN := 0
 	if len(tokens) == 0 {
@@ -64,9 +65,9 @@ func Print(node Node, w io.Writer, config PrintConfig) (int, error) {
 	return totalN, nil
 }
 
-func SPrint(node Node, config PrintConfig) string {
+func SPrint(node Node, chunk *Chunk, config PrintConfig) string {
 	buff := bytes.Buffer{}
 
-	Print(node, &buff, config)
+	Print(node, chunk, &buff, config)
 	return buff.String()
 }
