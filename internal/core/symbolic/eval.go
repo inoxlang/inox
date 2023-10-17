@@ -1875,11 +1875,15 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 		entries := map[string]Serializable{}
 		indexKey := 0
 
-		var keys []string
-		var keyToProp in_mem_ds.Map32[string, *parse.ObjectProperty]
-		var dependencyGraph in_mem_ds.Graph32[string]
+		var (
+			keyArray        [32]string
+			keys            = keyArray[:0]
+			keyToProp       in_mem_ds.Map32[string, *parse.ObjectProperty]
+			dependencyGraph in_mem_ds.Graph32[string]
 
-		var selfDependent []string
+			selfDependentArray [32]string
+			selfDependent      = selfDependentArray[:0]
+		)
 
 		//first iteration of the properties: we get all keys
 		for _, p := range n.Properties {
