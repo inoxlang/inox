@@ -28,6 +28,8 @@ var (
 // A GlobalState represents the global state for the evaluation of a single module or the shell's loop,
 // most exported fields should be set once.
 type GlobalState struct {
+	id StateId
+
 	//should be set to true by the state's creator, even if the default values are kept.
 	OutputFieldsInitialized atomic.Bool
 
@@ -37,9 +39,6 @@ type GlobalState struct {
 
 	MainState *GlobalState //never nil (should be set by user of GlobalState)
 	Project   Project      //can be nil
-
-	Debugger atomic.Value //nil or (nillable) *Debugger
-	id       StateId
 
 	Ctx          *Context
 	Module       *Module   //nil in some cases (shell, mapping entry's state), TODO: check for usage
@@ -55,10 +54,16 @@ type GlobalState struct {
 	GetBasePatternsForImportedModule     func() (map[string]Pattern, map[string]*PatternNamespace)       // return nil maps by default
 	SymbolicBaseGlobalsForImportedModule map[string]symbolic.SymbolicValue                               // ok if nil, should not be modified
 
+	// debugging and testing
+
+	Debugger         atomic.Value //nil or (nillable) *Debugger
+	IsTestingEnabled bool         //if true the test suites encountered during executions are run
+	TestFilters      TestFilters
 	TestCaseResults  []*TestCaseResult
 	TestSuiteResults []*TestSuiteResult
 
 	//errors & check data
+
 	PrenitStaticCheckErrors   []*StaticCheckError
 	MainPreinitError          error
 	FirstDatabaseOpeningError error

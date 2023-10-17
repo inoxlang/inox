@@ -287,19 +287,22 @@ type SequenceStringPattern struct {
 	SerializableMixin
 	NotCallablePatternMixin
 	node            *parse.ComplexStringPatternPiece //if nil any sequence string pattern is matched
-	stringifiedNode string
+	stringifiedNode string                           //empty if node is nil
 }
 
-func NewSequenceStringPattern(node *parse.ComplexStringPatternPiece) *SequenceStringPattern {
-	var elements []string
-
-	for _, e := range node.Elements {
-		elements = append(elements, parse.SPrint(e, parse.PrintConfig{TrimStart: true, TrimEnd: true}))
+func NewSequenceStringPattern(node *parse.ComplexStringPatternPiece, chunk *parse.Chunk) *SequenceStringPattern {
+	var stringifiedNode string
+	if node != nil {
+		var elements []string
+		for _, e := range node.Elements {
+			elements = append(elements, parse.SPrint(e, chunk, parse.PrintConfig{TrimStart: true, TrimEnd: true}))
+		}
+		stringifiedNode = strings.Join(elements, " ")
 	}
 
 	return &SequenceStringPattern{
 		node:            node,
-		stringifiedNode: strings.Join(elements, " "),
+		stringifiedNode: stringifiedNode,
 	}
 }
 

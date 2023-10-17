@@ -227,6 +227,7 @@ type SequenceStringPattern struct {
 	syntaxRegexp       *syntax.Regexp
 
 	node       *parse.ComplexStringPatternPiece //optional
+	nodeChunk  *parse.Chunk                     //should be set if node is set
 	elements   []StringPattern
 	groupNames []string
 
@@ -235,7 +236,12 @@ type SequenceStringPattern struct {
 	effectiveLengthRange    IntRange
 }
 
-func NewSequenceStringPattern(node *parse.ComplexStringPatternPiece, subpatterns []StringPattern, groupNames KeyList) (*SequenceStringPattern, error) {
+func NewSequenceStringPattern(
+	node *parse.ComplexStringPatternPiece,
+	nodeChunk *parse.Chunk,
+	subpatterns []StringPattern,
+	groupNames KeyList,
+) (*SequenceStringPattern, error) {
 	allElemsHaveRegex := true
 
 	if len(groupNames) != 0 && len(groupNames) != len(subpatterns) {

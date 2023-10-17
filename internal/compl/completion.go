@@ -126,7 +126,7 @@ func FindCompletions(args CompletionSearchArgs) []Completion {
 				}
 				detail, _ := core.GetStringifiedSymbolicValue(ctx, patt, false)
 
-				hasPercent := parse.GetFirstTokenString(n)[0] == '%'
+				hasPercent := parse.GetFirstTokenString(n, chunk.Node)[0] == '%'
 				s := name
 				if hasPercent {
 					s = "%" + s
@@ -146,7 +146,7 @@ func FindCompletions(args CompletionSearchArgs) []Completion {
 					continue
 				}
 
-				hasPercent := parse.GetFirstTokenString(n)[0] == '%'
+				hasPercent := parse.GetFirstTokenString(n, chunk.Node)[0] == '%'
 				s := name
 				if hasPercent {
 					s = "%" + s
@@ -1006,7 +1006,8 @@ func handleDoubleColonExpressionCompletions(n *parse.DoubleColonExpression, stat
 				var kind defines.CompletionItemKind
 				if propExpr.Method == nil {
 					kind = defines.CompletionItemKindProperty
-					labelDetail = "computed property(" + parse.SPrint(propExpr.Expression, parse.PrintConfig{TrimStart: true, TrimEnd: true}) + ")"
+					printConfig := parse.PrintConfig{TrimStart: true, TrimEnd: true}
+					labelDetail = "computed property(" + parse.SPrint(propExpr.Expression, chunk.Node, printConfig) + ")"
 				} else {
 					kind = defines.CompletionItemKindMethod
 					labelDetail = "(extension method) " + symbolic.Stringify(propExpr.Method)
@@ -1185,7 +1186,7 @@ func findObjectInteriorCompletions(
 	n *parse.ObjectLiteral, ancestors []parse.Node, parent parse.Node, cursorIndex int32,
 	chunk *parse.ParsedChunk, state *core.GlobalState,
 ) (completions []Completion) {
-	interiorSpan, err := parse.GetInteriorSpan(n)
+	interiorSpan, err := parse.GetInteriorSpan(n, chunk.Node)
 	if err != nil {
 		return nil
 	}
@@ -1300,7 +1301,7 @@ func findRecordInteriorCompletions(
 	n *parse.RecordLiteral, ancestors []parse.Node, parent parse.Node, cursorIndex int32,
 	chunk *parse.ParsedChunk, state *core.GlobalState,
 ) (completions []Completion) {
-	interiorSpan, err := parse.GetInteriorSpan(n)
+	interiorSpan, err := parse.GetInteriorSpan(n, chunk.Node)
 	if err != nil {
 		return nil
 	}
@@ -1329,7 +1330,7 @@ func findDictionaryInteriorCompletions(
 	n *parse.DictionaryLiteral, ancestors []parse.Node, parent parse.Node, cursorIndex int32,
 	chunk *parse.ParsedChunk, state *core.GlobalState,
 ) (completions []Completion) {
-	interiorSpan, err := parse.GetInteriorSpan(n)
+	interiorSpan, err := parse.GetInteriorSpan(n, chunk.Node)
 	if err != nil {
 		return nil
 	}

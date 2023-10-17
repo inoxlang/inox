@@ -25,6 +25,7 @@ func TestEvalStringPatternNode(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		state := NewTreeWalkState(ctx)
+		state.pushChunk(&parse.ParsedChunk{Node: &parse.Chunk{}})
 
 		patt, err := evalStringPatternNode(&parse.ComplexStringPatternPiece{
 			Elements: []*parse.PatternPieceElement{
@@ -49,6 +50,7 @@ func TestEvalStringPatternNode(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		state := NewTreeWalkState(ctx)
+		state.pushChunk(&parse.ParsedChunk{Node: &parse.Chunk{}})
 
 		patt, err := evalStringPatternNode(&parse.ComplexStringPatternPiece{
 			Elements: []*parse.PatternPieceElement{
@@ -73,6 +75,7 @@ func TestEvalStringPatternNode(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		state := NewTreeWalkState(ctx)
+		state.pushChunk(&parse.ParsedChunk{Node: &parse.Chunk{}})
 
 		patt, err := evalStringPatternNode(&parse.ComplexStringPatternPiece{
 			Elements: []*parse.PatternPieceElement{
@@ -96,6 +99,7 @@ func TestEvalStringPatternNode(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		state := NewTreeWalkState(ctx)
+		state.pushChunk(&parse.ParsedChunk{Node: &parse.Chunk{}})
 
 		patt, err := evalStringPatternNode(&parse.ComplexStringPatternPiece{
 			Elements: []*parse.PatternPieceElement{
@@ -120,6 +124,8 @@ func TestEvalStringPatternNode(t *testing.T) {
 
 		ctx.AddNamedPattern("b", NewExactStringPattern(Str("c")))
 		state := NewTreeWalkState(ctx)
+		state.pushChunk(&parse.ParsedChunk{Node: &parse.Chunk{}})
+
 		patt, err := evalStringPatternNode(&parse.ComplexStringPatternPiece{
 			Elements: []*parse.PatternPieceElement{
 				{
@@ -145,6 +151,7 @@ func TestEvalStringPatternNode(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		state := NewTreeWalkState(ctx)
+		state.pushChunk(&parse.ParsedChunk{Node: &parse.Chunk{}})
 
 		patt, err := evalStringPatternNode(&parse.PatternUnion{
 			Cases: []parse.Node{
@@ -166,6 +173,7 @@ func TestEvalStringPatternNode(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		state := NewTreeWalkState(ctx)
+		state.pushChunk(&parse.ParsedChunk{Node: &parse.Chunk{}})
 
 		patt, err := evalStringPatternNode(&parse.PatternUnion{
 			Cases: []parse.Node{
@@ -476,7 +484,7 @@ func TestSequenceStringPattern(t *testing.T) {
 	t.Run(".LengthRange()", func(t *testing.T) {
 
 		t.Run("single element", func(t *testing.T) {
-			patt, err := NewSequenceStringPattern(nil, []StringPattern{
+			patt, err := NewSequenceStringPattern(nil, nil, []StringPattern{
 				&RepeatedPatternElement{
 					ocurrenceModifier: parse.AtLeastOneOcurrence,
 					element:           NewExactStringPattern(Str("12")),
@@ -494,7 +502,7 @@ func TestSequenceStringPattern(t *testing.T) {
 		})
 
 		t.Run("two elements, first one has no maximum length", func(t *testing.T) {
-			patt, err := NewSequenceStringPattern(nil, []StringPattern{
+			patt, err := NewSequenceStringPattern(nil, nil, []StringPattern{
 				&RepeatedPatternElement{
 					ocurrenceModifier: parse.AtLeastOneOcurrence,
 					element:           NewExactStringPattern(Str("12")),
@@ -513,7 +521,7 @@ func TestSequenceStringPattern(t *testing.T) {
 		})
 
 		t.Run("two elements, both have no maximum length", func(t *testing.T) {
-			patt, err := NewSequenceStringPattern(nil, []StringPattern{
+			patt, err := NewSequenceStringPattern(nil, nil, []StringPattern{
 				&RepeatedPatternElement{
 					ocurrenceModifier: parse.AtLeastOneOcurrence,
 					element:           NewExactStringPattern(Str("12")),
@@ -538,7 +546,7 @@ func TestSequenceStringPattern(t *testing.T) {
 
 	t.Run(".MatchGroups()", func(t *testing.T) {
 		t.Run("single element", func(t *testing.T) {
-			patt, err := NewSequenceStringPattern(nil, []StringPattern{
+			patt, err := NewSequenceStringPattern(nil, nil, []StringPattern{
 				NewExactStringPattern(Str("12")),
 			}, []string{"number"})
 			if !assert.NoError(t, err) {
@@ -555,7 +563,7 @@ func TestSequenceStringPattern(t *testing.T) {
 		})
 
 		t.Run("single repeated element", func(t *testing.T) {
-			patt, err := NewSequenceStringPattern(nil, []StringPattern{
+			patt, err := NewSequenceStringPattern(nil, nil, []StringPattern{
 				&RepeatedPatternElement{
 					ocurrenceModifier: parse.AtLeastOneOcurrence,
 					element:           NewExactStringPattern(Str("12")),
@@ -576,7 +584,7 @@ func TestSequenceStringPattern(t *testing.T) {
 		})
 
 		t.Run("two named elements", func(t *testing.T) {
-			patt, err := NewSequenceStringPattern(nil, []StringPattern{
+			patt, err := NewSequenceStringPattern(nil, nil, []StringPattern{
 				NewExactStringPattern(Str("12")),
 				NewExactStringPattern(Str("AB")),
 			}, []string{"digits", "letters"})
@@ -595,7 +603,7 @@ func TestSequenceStringPattern(t *testing.T) {
 		})
 
 		t.Run("two elements, first is named", func(t *testing.T) {
-			patt, err := NewSequenceStringPattern(nil, []StringPattern{
+			patt, err := NewSequenceStringPattern(nil, nil, []StringPattern{
 				NewExactStringPattern(Str("12")),
 				NewExactStringPattern(Str("AB")),
 			}, []string{"digits", ""})
@@ -862,11 +870,11 @@ func TestUnionStringPattern(t *testing.T) {
 
 	t.Run(".MatchGroups()", func(t *testing.T) {
 		patt, _ := NewUnionStringPattern(nil, []StringPattern{
-			utils.Must(NewSequenceStringPattern(nil, []StringPattern{
+			utils.Must(NewSequenceStringPattern(nil, nil, []StringPattern{
 				NewExactStringPattern(Str("12")),
 			}, []string{"number"})),
 
-			utils.Must(NewSequenceStringPattern(nil, []StringPattern{
+			utils.Must(NewSequenceStringPattern(nil, nil, []StringPattern{
 				NewExactStringPattern(Str("ab")),
 			}, []string{"string"})),
 		})

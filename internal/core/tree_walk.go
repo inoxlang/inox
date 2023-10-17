@@ -2090,6 +2090,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 
 		return &InoxFunction{
 			Node:                   n,
+			Chunk:                  state.currentChunk().Node,
 			treeWalkCapturedLocals: capturedLocals,
 			symbolicValue:          symbolicInoxFunc,
 			staticData:             staticData,
@@ -2125,6 +2126,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 
 		return &FunctionPattern{
 			node:          n,
+			nodeChunk:     state.currentChunk().Node,
 			symbolicValue: symbFnPattern,
 		}, nil
 	case *parse.PatternConversionExpression:
@@ -2625,13 +2627,21 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 
 		chunk := expr.(AstNode).Node.(*parse.Chunk)
 
-		suite, err := NewTestSuite(meta, chunk, state.Global)
+		suite, err := NewTestSuite(meta, chunk, state.currentChunk(), state.Global)
 		if err != nil {
 			return nil, err
 		}
 
 		//execute the suite if the node is a statement
 		if n.IsStatement {
+			if !state.Global.IsTestingEnabled {
+				return Nil, nil
+			}
+
+			if ok, _ := state.Global.TestFilters.IsTestEnabled(suite); !ok {
+				return Nil, nil
+			}
+
 			lthread, err := suite.Run(state.Global.Ctx)
 			if err != nil {
 				return nil, err
@@ -2672,7 +2682,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 
 		positionStack, location := state.formatLocation(node)
 
-		testCase, err := NewTestCase(meta, chunk, state.Global, positionStack, location)
+		testCase, err := NewTestCase(meta, chunk, state.Global, state.currentChunk(), positionStack, location)
 		if err != nil {
 			return nil, err
 		}
@@ -3292,7 +3302,7 @@ func evalStringPatternNode(node parse.Node, state *TreeWalkState, lazy bool) (St
 			}
 		}
 
-		return NewSequenceStringPattern(v, subpatterns, groupNames)
+		return NewSequenceStringPattern(v, state.currentChunk().Node, subpatterns, groupNames)
 	case *parse.RegularExpressionLiteral:
 		return NewRegexPattern(v.Value), nil
 	default:

@@ -737,9 +737,9 @@ func (p *LengthCheckingStringPattern) ToSymbolicValue(ctx *Context, encountered 
 
 func (p *SequenceStringPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
 	if p.node == nil {
-		return symbolic.NewSequenceStringPattern(&parse.ComplexStringPatternPiece{}), nil
+		return symbolic.NewSequenceStringPattern(nil, nil), nil
 	}
-	return symbolic.NewSequenceStringPattern(p.node), nil
+	return symbolic.NewSequenceStringPattern(p.node, p.nodeChunk), nil
 }
 
 func (p *ExactValuePattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {

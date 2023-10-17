@@ -975,6 +975,7 @@ func (v *VM) run() {
 			fn := v.stack[v.sp-numCaptured-1].(*InoxFunction)
 			newFn := &InoxFunction{
 				Node:             fn.Node,
+				Chunk:            fn.Chunk,
 				compiledFunction: fn.compiledFunction,
 			}
 
@@ -1148,10 +1149,12 @@ func (v *VM) run() {
 				element:           patternElement,
 			}
 		case OpCreateSequenceStringPattern:
-			v.ip += 3
-			numElements := int(v.curInsts[v.ip-2])
-			nameListIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
+			v.ip += 5
+			numElements := int(v.curInsts[v.ip-4])
+			nameListIndex := int(v.curInsts[v.ip-2]) | int(v.curInsts[v.ip-3])<<8
 			nameList := v.constants[nameListIndex].(KeyList)
+			nodeIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
+			node := v.constants[nodeIndex].(AstNode)
 
 			var subpatterns []StringPattern
 
@@ -1160,7 +1163,7 @@ func (v *VM) run() {
 			}
 			v.sp -= numElements
 
-			val, err := NewSequenceStringPattern(nil, subpatterns, nameList)
+			val, err := NewSequenceStringPattern(node.Node.(*parse.ComplexStringPatternPiece), node.chunk.Node, subpatterns, nameList)
 			if err != nil {
 				v.err = err
 				return
@@ -1392,10 +1395,12 @@ func (v *VM) run() {
 		case OpCreateTestSuite:
 			v.ip += 2
 			nodeIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
-			chunk := v.constants[nodeIndex].(AstNode).Node.(*parse.Chunk)
+			node := v.constants[nodeIndex].(AstNode)
+			embeddedModChunk := node.Node.(*parse.Chunk)
+			parentChunk := node.chunk
 			meta := v.stack[v.sp-1]
 
-			suite, err := NewTestSuite(meta, chunk, v.global)
+			suite, err := NewTestSuite(meta, embeddedModChunk, parentChunk, v.global)
 			if err != nil {
 				v.err = err
 				return
@@ -1404,11 +1409,13 @@ func (v *VM) run() {
 		case OpCreateTestCase:
 			v.ip += 2
 			nodeIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
-			chunk := v.constants[nodeIndex].(AstNode).Node.(*parse.Chunk)
+			node := v.constants[nodeIndex].(AstNode)
+			embeddedModChunk := node.Node.(*parse.Chunk)
+			parentChunk := node.chunk
 			meta := v.stack[v.sp-1]
 
 			//TODO: add location to test case
-			suite, err := NewTestCase(meta, chunk, v.global, nil, "")
+			suite, err := NewTestCase(meta, embeddedModChunk, v.global, parentChunk, nil, "")
 			if err != nil {
 				v.err = err
 				return

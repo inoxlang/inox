@@ -358,7 +358,7 @@ func (node AstNode) Render(ctx *Context, w io.Writer, config RenderingInput) (n 
 
 	//
 
-	tokens := parse.GetTokens(node.Node, true)
+	tokens := parse.GetTokens(node.Node, node.chunk.Node, true)
 
 	//we iterate over the tokens a first time to known the line spans
 	bw := WrapWriter(w, true, nil)

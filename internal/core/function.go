@@ -16,7 +16,9 @@ var (
 )
 
 type InoxFunction struct {
-	Node                   parse.Node
+	Node  parse.Node
+	Chunk *parse.Chunk
+
 	originState            *GlobalState
 	shared                 atomic.Bool
 	treeWalkCapturedLocals map[string]Value

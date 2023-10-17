@@ -239,7 +239,7 @@ func TestSymbolicEval(t *testing.T) {
 
 		assert.NoError(t, err)
 		assert.Empty(t, state.errors())
-		assert.Equal(t, NewPathPatternFromNode(pathPatternExpr), res)
+		assert.Equal(t, NewPathPatternFromNode(pathPatternExpr, &parse.Chunk{}), res)
 	})
 
 	t.Run("scheme literal", func(t *testing.T) {
@@ -887,6 +887,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			expectedFn := &InoxFunction{
 				node:           fnExpr,
+				nodeChunk:      n,
 				parameters:     []SymbolicValue{argType},
 				parameterNames: []string{"v"},
 				result:         argType,
@@ -2511,7 +2512,11 @@ func TestSymbolicEval(t *testing.T) {
 			fnExpr := n.Statements[0].(*parse.FunctionDeclaration).Function
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
-			assert.Equal(t, &InoxFunction{node: fnExpr, result: nil}, res)
+			assert.Equal(t, &InoxFunction{
+				node:      fnExpr,
+				nodeChunk: n,
+				result:    nil,
+			}, res)
 
 			//check definition position data
 			idents, ancestorChains := parse.FindNodesAndChains(n, (*parse.IdentifierLiteral)(nil), nil)
@@ -2537,7 +2542,11 @@ func TestSymbolicEval(t *testing.T) {
 			fnExpr := n.Statements[0].(*parse.FunctionDeclaration).Function
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
-			assert.Equal(t, &InoxFunction{node: fnExpr, result: Nil}, res)
+			assert.Equal(t, &InoxFunction{
+				node:      fnExpr,
+				nodeChunk: n,
+				result:    Nil,
+			}, res)
 
 			//check definition position data
 			idents, ancestorChains := parse.FindNodesAndChains(n, (*parse.IdentifierLiteral)(nil), nil)
@@ -2565,6 +2574,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Equal(t, &InoxFunction{
 				node:           fnExpr,
+				nodeChunk:      n,
 				parameters:     []SymbolicValue{ANY},
 				parameterNames: []string{"a"},
 				result:         ANY,
@@ -2583,6 +2593,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Equal(t, &InoxFunction{
 				node:           fnExpr,
+				nodeChunk:      n,
 				parameters:     []SymbolicValue{NewListOf(ANY_SERIALIZABLE)},
 				parameterNames: []string{"a"},
 				result:         NewListOf(ANY_SERIALIZABLE),
@@ -2603,6 +2614,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Equal(t, &InoxFunction{
 				node:           fnExpr,
+				nodeChunk:      n,
 				result:         ANY_INT,
 				capturedLocals: map[string]SymbolicValue{"a": ANY_INT},
 			}, res)
@@ -2621,8 +2633,9 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Equal(t, &InoxFunction{
-				node:   fnExpr,
-				result: NewList(ANY_INT, NewString("1")),
+				node:      fnExpr,
+				nodeChunk: n,
+				result:    NewList(ANY_INT, NewString("1")),
 				capturedLocals: map[string]SymbolicValue{
 					"a": ANY_INT,
 					"b": NewString("1"),
@@ -2785,7 +2798,11 @@ func TestSymbolicEval(t *testing.T) {
 			fnExpr := n.Statements[1].(*parse.FunctionDeclaration).Function
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
-			assert.Equal(t, &InoxFunction{node: fnExpr, result: Nil}, res)
+			assert.Equal(t, &InoxFunction{
+				node:      fnExpr,
+				result:    Nil,
+				nodeChunk: n,
+			}, res)
 		})
 
 	})
@@ -2800,7 +2817,11 @@ func TestSymbolicEval(t *testing.T) {
 			fnExpr := parse.FindNode(n, (*parse.FunctionExpression)(nil), nil)
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
-			assert.Equal(t, &InoxFunction{node: fnExpr, result: nil}, res)
+			assert.Equal(t, &InoxFunction{
+				node:      fnExpr,
+				nodeChunk: n,
+				result:    nil,
+			}, res)
 
 			//check definition position data
 			idents, ancestorChains := parse.FindNodesAndChains(n, (*parse.IdentifierLiteral)(nil), nil)
@@ -2841,6 +2862,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Equal(t, &FunctionPattern{
 				node:                    fnPatt,
+				nodeChunk:               n,
 				returnType:              Nil,
 				parameters:              []SymbolicValue{},
 				parameterNames:          []string{},
@@ -2857,6 +2879,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Equal(t, &FunctionPattern{
 				node:                    fnPatt,
+				nodeChunk:               n,
 				returnType:              Nil,
 				parameters:              []SymbolicValue{ANY},
 				parameterNames:          []string{"a"},
@@ -2879,6 +2902,7 @@ func TestSymbolicEval(t *testing.T) {
 			}, state.errors())
 			assert.Equal(t, &FunctionPattern{
 				node:                    fnPatt,
+				nodeChunk:               n,
 				returnType:              ANY_INT,
 				parameters:              []SymbolicValue{},
 				parameterNames:          []string{},
@@ -2903,6 +2927,7 @@ func TestSymbolicEval(t *testing.T) {
 			}, state.errors())
 			assert.Equal(t, &FunctionPattern{
 				node:                    fnPatt,
+				nodeChunk:               n,
 				returnType:              ANY_INT,
 				parameters:              []SymbolicValue{},
 				parameterNames:          []string{},
@@ -2928,8 +2953,9 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Empty(t, state.errors())
 
 			expectedFunc := &InoxFunction{
-				node:   fnExpr,
-				result: ANY_INT,
+				node:      fnExpr,
+				nodeChunk: n,
+				result:    ANY_INT,
 			}
 
 			assert.Equal(t, &Object{
@@ -2960,8 +2986,9 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Empty(t, state.errors())
 
 			expectedFunction := &InoxFunction{
-				node:   fnExpr,
-				result: NewDynamicValue(ANY_INT),
+				node:      fnExpr,
+				nodeChunk: n,
+				result:    NewDynamicValue(ANY_INT),
 			}
 
 			assert.Equal(t, &Object{
@@ -2996,13 +3023,15 @@ func TestSymbolicEval(t *testing.T) {
 			g, _, _ := obj.GetProperty("g")
 
 			expectedF := &InoxFunction{
-				node:   fFnExpr,
-				result: g,
+				node:      fFnExpr,
+				nodeChunk: n,
+				result:    g,
 			}
 
 			expectedG := &InoxFunction{
-				node:   gFnExpr,
-				result: ANY_INT,
+				node:      gFnExpr,
+				nodeChunk: n,
+				result:    ANY_INT,
 			}
 
 			assert.Equal(t, &Object{
@@ -3039,13 +3068,15 @@ func TestSymbolicEval(t *testing.T) {
 			g, _, _ := obj.GetProperty("g")
 
 			expectedF := &InoxFunction{
-				node:   fFnExpr,
-				result: g,
+				node:      fFnExpr,
+				nodeChunk: n,
+				result:    g,
 			}
 
 			expectedG := &InoxFunction{
-				node:   gFnExpr,
-				result: ANY_INT,
+				node:      gFnExpr,
+				nodeChunk: n,
+				result:    ANY_INT,
 			}
 
 			assert.Equal(t, &Object{
@@ -3626,6 +3657,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Empty(t, state.errors())
 			assert.Equal(t, &InoxFunction{
 				node:           fnExpr,
+				nodeChunk:      n,
 				parameters:     []SymbolicValue{NewMultivalue(NewListOf(ANY_INT), NewListOf(ANY_STR_LIKE))},
 				parameterNames: []string{"list"},
 				result:         Nil,
@@ -4156,6 +4188,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			assert.Equal(t, &InoxFunction{
 				node:           fnExpr,
+				nodeChunk:      n,
 				parameters:     []SymbolicValue{NewMultivalue(NewListOf(ANY_STR_LIKE), NewListOf(ANY_INT))},
 				parameterNames: []string{"list"},
 				result:         NewListOf(ANY_SERIALIZABLE),
@@ -4193,6 +4226,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			assert.Equal(t, &InoxFunction{
 				node:           fnExpr,
+				nodeChunk:      n,
 				parameters:     []SymbolicValue{NewMultivalue(NewListOf(ANY_STR_LIKE), NewListOf(ANY_INT))},
 				parameterNames: []string{"list"},
 				result:         NewListOf(ANY_SERIALIZABLE),
@@ -4703,11 +4737,13 @@ func TestSymbolicEval(t *testing.T) {
 			fnPatt := n.Statements[0].(*parse.FunctionDeclaration).Function.Parameters[0].Type
 
 			expectedFn := &InoxFunction{
-				node: fnExpr,
+				node:      fnExpr,
+				nodeChunk: n,
 				parameters: []SymbolicValue{
 					&Function{
 						pattern: &FunctionPattern{
 							node:                    fnPatt.(*parse.FunctionPatternExpression),
+							nodeChunk:               n,
 							returnType:              ANY_INT,
 							parameters:              []SymbolicValue{},
 							parameterNames:          []string{},
@@ -5558,6 +5594,7 @@ func TestSymbolicEval(t *testing.T) {
 				fnExpr := n.Statements[0].(*parse.ReturnStatement).Expr
 				expectedFn := &InoxFunction{
 					node:           fnExpr,
+					nodeChunk:      n,
 					parameters:     []SymbolicValue{NewMultivalue(ANY_INT, Nil)},
 					parameterNames: []string{"v"},
 					result:         NewMultivalue(ANY_INT, FALSE),
@@ -8061,7 +8098,7 @@ func TestSymbolicEval(t *testing.T) {
 		res, err := symbolicEval(n, state)
 		assert.NoError(t, err)
 		assert.Empty(t, state.errors())
-		assert.Equal(t, NewSequenceStringPattern(complexStringPatternPiece), res)
+		assert.Equal(t, NewSequenceStringPattern(complexStringPatternPiece, &parse.Chunk{}), res)
 	})
 
 	t.Run("pattern definition", func(t *testing.T) {
@@ -9083,6 +9120,7 @@ func TestSymbolicEval(t *testing.T) {
 			fnExpr := n.Statements[0].(*parse.ReturnStatement).Expr
 			expectedFn := &InoxFunction{
 				node:           fnExpr,
+				nodeChunk:      n,
 				parameters:     []SymbolicValue{NewTupleOf(ANY_INT), NewTupleOf(&String{})},
 				parameterNames: []string{"a", "b"},
 				result:         NewTupleOf(AsSerializableChecked(NewMultivalue(ANY_INT, ANY_STR))),
@@ -9105,6 +9143,7 @@ func TestSymbolicEval(t *testing.T) {
 			fnExpr := n.Statements[0].(*parse.ReturnStatement).Expr
 			expectedFn := &InoxFunction{
 				node:           fnExpr,
+				nodeChunk:      n,
 				parameters:     []SymbolicValue{NewTupleOf(ANY_INT), NewTupleOf(ANY_INT)},
 				parameterNames: []string{"a", "b"},
 				result:         NewTupleOf(ANY_INT),

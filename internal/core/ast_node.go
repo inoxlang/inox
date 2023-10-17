@@ -17,6 +17,10 @@ type AstNode struct {
 	chunk *parse.ParsedChunk
 }
 
+func (n AstNode) Chunk() *parse.ParsedChunk {
+	return n.chunk
+}
+
 func (AstNode) PropertyNames(ctx *Context) []string {
 	return AST_NODE_PROPNAMES
 }
@@ -28,7 +32,7 @@ func (n AstNode) Prop(ctx *Context, name string) Value {
 		return createRecordFromSourcePosition(pos)
 	case "token_at_position":
 		return WrapGoClosure(func(ctx *Context, pos Int) Value {
-			token, ok := parse.GetTokenAtPosition(int(pos), n.Node)
+			token, ok := parse.GetTokenAtPosition(int(pos), n.Node, n.chunk.Node)
 			if !ok {
 				return Nil
 			}

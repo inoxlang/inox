@@ -24,6 +24,7 @@ var (
 // TODO: keep in sync with concrete InoxFunction
 type InoxFunction struct {
 	node           parse.Node //optional but required for call evaluation
+	nodeChunk      *parse.Chunk
 	parameters     []SymbolicValue
 	parameterNames []string
 	noNodeVariadic bool

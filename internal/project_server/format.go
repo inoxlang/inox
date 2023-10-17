@@ -96,6 +96,9 @@ func format(chunk *parse.ParsedChunk, options defines.FormattingOptions) (result
 
 	}
 
+	//compute replacements
+	var seenTokens = map[parse.Token]struct{}{}
+
 	parse.Walk(chunk.Node, func(node, parent, scopeNode parse.Node, ancestorChain []parse.Node, after bool) (parse.TraversalAction, error) {
 		if needsIndentation(node, parent, ancestorChain) {
 			replaceIfLeadingSpace(node.Base().Span)
@@ -130,7 +133,15 @@ func format(chunk *parse.ParsedChunk, options defines.FormattingOptions) (result
 		if doesNodeIncreaseDepth(node) {
 			depth--
 		}
-		for _, token := range node.Base().Tokens {
+		tokens := parse.GetTokens(node, chunk.Node, false)
+		for _, token := range tokens {
+
+			_, ok := seenTokens[token]
+			if ok {
+				continue
+			}
+			seenTokens[token] = struct{}{}
+
 			switch token.Type {
 			case parse.CLOSING_BRACKET, parse.CLOSING_PARENTHESIS, parse.CLOSING_CURLY_BRACKET:
 				replaceIfLeadingSpace(token.Span)

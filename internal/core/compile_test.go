@@ -1796,14 +1796,15 @@ func TestCompileModule(t *testing.T) {
 			0,
 			instrs(
 				inst(OpPushConstant, 0),
-				inst(OpCreateSequenceStringPattern, 1, 1),
+				inst(OpCreateSequenceStringPattern, 1, 1, 2),
 				inst(OpToPattern),
-				inst(OpAddPattern, 2),
+				inst(OpAddPattern, 3),
 				inst(OpSuspendVM),
 			),
 			[]Value{
 				NewExactStringPattern("a"),
 				KeyList{""},
+				nil,
 				Str("p"),
 			},
 		)
@@ -1856,6 +1857,7 @@ func _expectBytecode(t *testing.T, actualBytecode *Bytecode, localCount int, exp
 		switch constant := c.(type) {
 		case *InoxFunction:
 			constant.Node = nil
+			constant.Chunk = nil
 			if constant.compiledFunction != nil {
 				constant.compiledFunction.SourceMap = nil
 				constant.compiledFunction.Bytecode = nil

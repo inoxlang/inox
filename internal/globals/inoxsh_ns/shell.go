@@ -843,7 +843,7 @@ func (sh *shell) handleAction(action termAction) (stop bool) {
 		}
 
 		chunk, _ := parse.ParseChunk(string(sh.input), "")
-		tokens := parse.GetTokens(chunk, false)
+		tokens := parse.GetTokens(chunk, chunk, false)
 
 		switch len(tokens) {
 		case 0:
@@ -876,7 +876,7 @@ func (sh *shell) handleAction(action termAction) (stop bool) {
 		}
 
 		chunk, _ := parse.ParseChunk(string(sh.input), "")
-		tokens := parse.GetTokens(chunk, false)
+		tokens := parse.GetTokens(chunk, chunk, false)
 
 		switch len(tokens) {
 		case 0:
@@ -906,7 +906,7 @@ func (sh *shell) handleAction(action termAction) (stop bool) {
 		sh.printPromptAndInput(false, nil)
 	case BackwardWord:
 		chunk, _ := parse.ParseChunk(string(sh.input), "")
-		tokens := parse.GetTokens(chunk, false)
+		tokens := parse.GetTokens(chunk, chunk, false)
 
 		switch len(tokens) {
 		case 0:
@@ -952,7 +952,7 @@ func (sh *shell) handleAction(action termAction) (stop bool) {
 	case ForwardWord:
 		chunk, _ := parse.ParseChunk(string(sh.input), "")
 
-		tokens := parse.GetTokens(chunk, false)
+		tokens := parse.GetTokens(chunk, chunk, false)
 
 		switch len(tokens) {
 		case 0:

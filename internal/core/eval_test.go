@@ -4888,11 +4888,12 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		assert.EqualValues(t, AstNode{
 			Node: &parse.IntLiteral{
 				NodeBase: parse.NodeBase{
-					Span: parse.NodeSpan{Start: 2, End: 3},
-					Tokens: []parse.Token{
-						{Type: parse.OPENING_PARENTHESIS, Span: parse.NodeSpan{Start: 1, End: 2}},
-						{Type: parse.CLOSING_PARENTHESIS, Span: parse.NodeSpan{Start: 3, End: 4}},
-					},
+					Span:            parse.NodeSpan{Start: 2, End: 3},
+					IsParenthesized: true,
+					// Tokens: []parse.Token{
+					// 	{Type: parse.OPENING_PARENTHESIS, Span: parse.NodeSpan{Start: 1, End: 2}},
+					// 	{Type: parse.CLOSING_PARENTHESIS, Span: parse.NodeSpan{Start: 3, End: 4}},
+					// },
 				},
 				Raw:   "1",
 				Value: 1,

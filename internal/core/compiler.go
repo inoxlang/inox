@@ -17,17 +17,19 @@ import (
 )
 
 type CompilationInput struct {
-	Mod             *Module
-	Globals         map[string]Value
-	SymbolicData    *symbolic.SymbolicData
-	StaticCheckData *StaticCheckData
-	TraceWriter     io.Writer
-	Context         *Context
+	Mod              *Module
+	Globals          map[string]Value
+	SymbolicData     *symbolic.SymbolicData
+	StaticCheckData  *StaticCheckData
+	TraceWriter      io.Writer
+	Context          *Context
+	IsTestingEnabled bool
 }
 
 // Compile compiles a module to bytecode.
 func Compile(input CompilationInput) (*Bytecode, error) {
 	c := NewCompiler(input.Mod, input.Globals, input.SymbolicData, input.StaticCheckData, input.Context, input.TraceWriter)
+	c.isTestingEnabled = input.IsTestingEnabled
 	return c.compileMainChunk(input.Mod.MainChunk)
 }
 
@@ -50,6 +52,8 @@ type compiler struct {
 	lastOp                Opcode
 
 	context *Context
+
+	isTestingEnabled bool
 }
 
 // compilationScope contains the instructions for a scope.
@@ -1434,6 +1438,7 @@ func (c *compiler) Compile(node parse.Node) error {
 
 		c.emit(node, OpPushConstant, c.addConstant(&InoxFunction{
 			Node:             node,
+			Chunk:            c.currentChunk().Node,
 			compiledFunction: compiledFunction,
 			symbolicValue:    symbolicInoxFunc,
 			staticData:       staticData,
@@ -1467,6 +1472,7 @@ func (c *compiler) Compile(node parse.Node) error {
 
 		c.emit(node, OpPushConstant, c.addConstant(&FunctionPattern{
 			node:          node,
+			nodeChunk:     c.currentChunk().Node,
 			symbolicValue: symbFnPattern,
 		}))
 	case *parse.PatternConversionExpression:
@@ -1647,7 +1653,7 @@ func (c *compiler) Compile(node parse.Node) error {
 		c.emit(node, OpDropPerms)
 	case *parse.InclusionImportStatement:
 		if c.module == nil {
-			panic(fmt.Errorf("cannot compiule inclusion import statement: provided module is nil"))
+			panic(fmt.Errorf("cannot compile inclusion import statement: provided module is nil"))
 		}
 		chunk := c.module.InclusionStatementMap[node]
 		c.chunkStack = append(c.chunkStack, chunk.ParsedChunk)
@@ -1905,6 +1911,10 @@ func (c *compiler) Compile(node parse.Node) error {
 		constantVal := AstNode{Node: node, chunk: c.currentChunk()}
 		c.emit(node, OpRuntimeTypecheck, c.addConstant(constantVal))
 	case *parse.TestSuiteExpression:
+		if !c.isTestingEnabled {
+			break
+		}
+
 		if node.Meta != nil {
 			if err := c.Compile(node.Meta); err != nil {
 				return err
@@ -2345,7 +2355,12 @@ func (c *compiler) CompileStringPatternNode(node parse.Node) error {
 				groupNames[i] = element.GroupName.Name
 			}
 		}
-		c.emit(node, OpCreateSequenceStringPattern, len(v.Elements), c.addConstant(groupNames))
+		astNode := AstNode{
+			chunk: c.currentChunk(),
+			Node:  node,
+		}
+
+		c.emit(node, OpCreateSequenceStringPattern, len(v.Elements), c.addConstant(groupNames), c.addConstant(astNode))
 	case *parse.RegularExpressionLiteral:
 		patt := NewRegexPattern(v.Value)
 		c.emit(node, OpPushConstant, c.addConstant(patt))

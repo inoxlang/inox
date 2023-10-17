@@ -178,7 +178,7 @@ func getSignatureHelp(fpath string, line, column int32, handlingCtx *core.Contex
 				argNodeIndex = i
 
 				// increment argNodeIndex if the cursor is after a comma located after the current argument.
-				for _, token := range closestCallExpr.Tokens {
+				for _, token := range parse.GetTokens(closestCallExpr, chunk.Node, false) {
 					if cursorSpan.End >= token.Span.End && token.Type == parse.COMMA {
 						argNodeIndex++
 						break

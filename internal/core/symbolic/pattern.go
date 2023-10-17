@@ -269,10 +269,12 @@ func NewPathPattern(v string) *PathPattern {
 	}
 }
 
-func NewPathPatternFromNode(n parse.Node) *PathPattern {
+func NewPathPatternFromNode(n parse.Node, chunk *parse.Chunk) *PathPattern {
+	printConfig := parse.PrintConfig{TrimStart: true, TrimEnd: true}
+
 	return &PathPattern{
 		node:            n,
-		stringifiedNode: parse.SPrint(n, parse.PrintConfig{TrimStart: true, TrimEnd: true}),
+		stringifiedNode: parse.SPrint(n, chunk, printConfig),
 	}
 }
 
@@ -460,10 +462,11 @@ func NewUrlPattern(v string) *URLPattern {
 	}
 }
 
-func NewUrlPatternFromNode(n parse.Node) *URLPattern {
+func NewUrlPatternFromNode(n parse.Node, chunk *parse.Chunk) *URLPattern {
+	printConfig := parse.PrintConfig{TrimStart: true, TrimEnd: true}
 	return &URLPattern{
 		node:            n,
-		stringifiedNode: parse.SPrint(n, parse.PrintConfig{TrimStart: true, TrimEnd: true}),
+		stringifiedNode: parse.SPrint(n, chunk, printConfig),
 	}
 }
 
@@ -602,10 +605,11 @@ func NewHostPattern(v string) *HostPattern {
 	}
 }
 
-func NewHostPatternFromNode(n parse.Node) *HostPattern {
+func NewHostPatternFromNode(n parse.Node, chunk *parse.Chunk) *HostPattern {
+	printConfig := parse.PrintConfig{TrimStart: true, TrimEnd: true}
 	return &HostPattern{
 		node:            n,
-		stringifiedNode: parse.SPrint(n, parse.PrintConfig{TrimStart: true, TrimEnd: true}),
+		stringifiedNode: parse.SPrint(n, chunk, printConfig),
 	}
 }
 
@@ -2736,7 +2740,7 @@ func symbolicallyEvalPatternNode(n parse.Node, state *State) (Pattern, error) {
 
 		return pattern.(Pattern), nil
 	case *parse.ComplexStringPatternPiece:
-		return NewSequenceStringPattern(node), nil
+		return NewSequenceStringPattern(node, state.currentChunk().Node), nil
 	default:
 		v, err := symbolicEval(n, state)
 		if err != nil {
@@ -2969,6 +2973,7 @@ type FunctionPattern struct {
 	isVariadic              bool
 
 	node       *parse.FunctionPatternExpression //if nil, any function is matched
+	nodeChunk  *parse.Chunk
 	returnType SymbolicValue
 
 	NotCallablePatternMixin
@@ -3036,7 +3041,8 @@ func (pattern *FunctionPattern) TestValue(v SymbolicValue, state RecTestCallStat
 				return false
 			}
 
-			if parse.SPrint(param.Type, parse.PrintConfig{TrimStart: true}) != parse.SPrint(actualParam.Type, parse.PrintConfig{TrimStart: true}) {
+			printConfig := parse.PrintConfig{TrimStart: true}
+			if parse.SPrint(param.Type, pattern.nodeChunk, printConfig) != parse.SPrint(actualParam.Type, fn.nodeChunk, printConfig) {
 				return false
 			}
 		}

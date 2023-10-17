@@ -103,7 +103,7 @@ func _printvals(ctx *core.Context, args ...core.Value) {
 
 func _stringify_ast(ctx *core.Context, arg core.AstNode) core.Str {
 	buf := bytes.Buffer{}
-	_, err := parse.Print(arg.Node, &buf, parse.PrintConfig{TrimStart: true})
+	_, err := parse.Print(arg.Node, arg.Chunk().Node, &buf, parse.PrintConfig{TrimStart: true})
 	if err != nil {
 		panic(err)
 	}

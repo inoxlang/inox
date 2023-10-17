@@ -377,7 +377,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 
 		return ANY_PATH, nil
 	case *parse.PathPatternExpression:
-		return NewPathPatternFromNode(n), nil
+		return NewPathPatternFromNode(n, state.currentChunk().Node), nil
 	case *parse.URLLiteral:
 		return NewUrl(n.Value), nil
 	case *parse.SchemeLiteral:
@@ -2560,7 +2560,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 		}
 
 		for _, entry := range n.Entries {
-			keyRepr := parse.SPrint(entry.Key, parse.PrintConfig{TrimStart: true})
+			keyRepr := parse.SPrint(entry.Key, state.currentChunk().Node, parse.PrintConfig{TrimStart: true})
 
 			expectedEntryValue, _ := expectedDictionary.get(keyRepr)
 			deeperMismatch := false
@@ -3229,6 +3229,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 		if state.recursiveFunctionName != "" {
 			tempFn := &InoxFunction{
 				node:           n,
+				nodeChunk:      state.currentChunk().Node,
 				parameters:     params,
 				parameterNames: paramNames,
 				result:         ANY_SERIALIZABLE,
@@ -3355,6 +3356,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 	return_function:
 		return &InoxFunction{
 			node:           n,
+			nodeChunk:      state.currentChunk().Node,
 			parameters:     params,
 			parameterNames: paramNames,
 			result:         storedReturnType,
@@ -3503,7 +3505,8 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 		}
 
 		return &FunctionPattern{
-			node: n,
+			node:      n,
+			nodeChunk: state.currentChunk().Node,
 			//TODO: update firstOptionalParamIndex when inox functions support optional paramters
 			firstOptionalParamIndex: -1,
 			returnType:              storedReturnType,
@@ -4013,7 +4016,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 
 		return &OptionalPattern{pattern: patt}, nil
 	case *parse.ComplexStringPatternPiece:
-		return NewSequenceStringPattern(n), nil
+		return NewSequenceStringPattern(n, state.currentChunk().Node), nil
 	case *parse.PatternUnion:
 		patt := &UnionPattern{}
 

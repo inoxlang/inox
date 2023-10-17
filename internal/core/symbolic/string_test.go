@@ -78,7 +78,7 @@ func TestSymbolicString(t *testing.T) {
 		assertTestFalse(t, strMatchingSeq1, &String{})
 		assertTestFalse(t, strMatchingSeq1, &Int{})
 
-		strMatchingSeq2 := NewStringMatchingPattern(NewSequenceStringPattern(&parse.ComplexStringPatternPiece{}))
+		strMatchingSeq2 := NewStringMatchingPattern(NewSequenceStringPattern(&parse.ComplexStringPatternPiece{}, &parse.Chunk{}))
 
 		assertTest(t, strMatchingSeq2, strMatchingSeq2)
 		assertTest(t, strMatchingSeq2, NewStringMatchingPattern(strMatchingSeq2.pattern))

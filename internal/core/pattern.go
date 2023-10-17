@@ -863,8 +863,10 @@ func (patt *OptionalPattern) StringPattern() (StringPattern, bool) {
 }
 
 type FunctionPattern struct {
-	node          *parse.FunctionPatternExpression //if nil, matches any function
-	symbolicValue *symbolic.FunctionPattern        //used for checking functions
+	node      *parse.FunctionPatternExpression //if nil, matches any function
+	nodeChunk *parse.Chunk
+
+	symbolicValue *symbolic.FunctionPattern //used for checking functions
 
 	NotCallablePatternMixin
 }
@@ -905,7 +907,9 @@ func (patt *FunctionPattern) Test(ctx *Context, v Value) bool {
 				return false
 			}
 
-			if param.Type != nil && parse.SPrint(param.Type, parse.PrintConfig{TrimStart: true}) != parse.SPrint(actualParam.Type, parse.PrintConfig{TrimStart: true}) {
+			printConfig := parse.PrintConfig{TrimStart: true}
+			if param.Type != nil && parse.SPrint(param.Type, patt.nodeChunk, printConfig) !=
+				parse.SPrint(actualParam.Type, fn.Chunk, printConfig) {
 				return false
 			}
 		}
