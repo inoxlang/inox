@@ -1911,7 +1911,7 @@ func (c *compiler) Compile(node parse.Node) error {
 		constantVal := AstNode{Node: node, chunk: c.currentChunk()}
 		c.emit(node, OpRuntimeTypecheck, c.addConstant(constantVal))
 	case *parse.TestSuiteExpression:
-		if !c.isTestingEnabled {
+		if !c.isTestingEnabled && node.IsStatement {
 			break
 		}
 
@@ -1923,10 +1923,16 @@ func (c *compiler) Compile(node parse.Node) error {
 			c.emit(node, OpPushNil)
 		}
 
-		c.emit(node, OpCreateTestSuite, c.addConstant(AstNode{
+		parentChunk := AstNode{
 			Node:  node.Module.ToChunk(),
 			chunk: c.currentChunk(),
-		}))
+		}
+		testSuiteNode := AstNode{
+			Node:  node,
+			chunk: c.currentChunk(),
+		}
+
+		c.emit(node, OpCreateTestSuite, c.addConstant(testSuiteNode), c.addConstant(parentChunk))
 
 		if node.IsStatement {
 			c.emit(node, OpCopyTop)
@@ -1945,6 +1951,11 @@ func (c *compiler) Compile(node parse.Node) error {
 		} //else the test suite is on the top of the stack
 
 	case *parse.TestCaseExpression:
+		if !c.isTestingEnabled && node.IsStatement {
+			c.emit(node, OpPushNil)
+			break
+		}
+
 		if node.Meta != nil {
 			if err := c.Compile(node.Meta); err != nil {
 				return err
@@ -1953,10 +1964,16 @@ func (c *compiler) Compile(node parse.Node) error {
 			c.emit(node, OpPushNil)
 		}
 
-		c.emit(node, OpCreateTestCase, c.addConstant(AstNode{
+		parentChunk := AstNode{
 			Node:  node.Module.ToChunk(),
 			chunk: c.currentChunk(),
-		}))
+		}
+		testSuiteNode := AstNode{
+			Node:  node,
+			chunk: c.currentChunk(),
+		}
+
+		c.emit(node, OpCreateTestCase, c.addConstant(testSuiteNode), c.addConstant(parentChunk))
 
 		if node.IsStatement {
 			//the emitted bytecode may be wrong because test suites are not compiled at the moment.

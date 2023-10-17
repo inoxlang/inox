@@ -58,6 +58,9 @@ type LthreadSpawnArgs struct {
 	LthreadCtx   *Context
 	PreinitState *GlobalState
 
+	IsTestingEnabled bool
+	TestFilters      TestFilters
+
 	//AbsScriptDir string
 	Bytecode    *Bytecode
 	UseBytecode bool
@@ -134,6 +137,10 @@ func SpawnLThread(args LthreadSpawnArgs) (*LThread, error) {
 	modState.GetBaseGlobalsForImportedModule = args.SpawnerState.GetBaseGlobalsForImportedModule
 	modState.GetBasePatternsForImportedModule = args.SpawnerState.GetBasePatternsForImportedModule
 	// TODO: set SymbolicData
+	if args.IsTestingEnabled {
+		modState.IsTestingEnabled = true
+		modState.TestFilters = args.TestFilters
+	}
 	modState.OutputFieldsInitialized.Store(true)
 
 	lthread := &LThread{

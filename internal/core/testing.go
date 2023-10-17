@@ -18,6 +18,7 @@ type TestItem interface {
 	ItemName() (string, bool)
 	ParentChunk() *parse.ParsedChunk
 	ParentModule() *Module
+	Statement() parse.Node
 }
 
 // A TestSuite represents a test suite, TestSuite implements Value.
@@ -25,12 +26,25 @@ type TestSuite struct {
 	meta         Value
 	nameFromMeta string
 
+	node         *parse.TestSuiteExpression
 	module       *Module // module executed when running the test suite
 	parentModule *Module
 	parentChunk  *parse.ParsedChunk
 }
 
-func NewTestSuite(meta Value, embeddedModChunk *parse.Chunk, parentChunk *parse.ParsedChunk, parentState *GlobalState) (*TestSuite, error) {
+type TestSuiteCreationInput struct {
+	Meta             Value
+	Node             *parse.TestSuiteExpression
+	EmbeddedModChunk *parse.Chunk
+	ParentChunk      *parse.ParsedChunk
+	ParentState      *GlobalState
+}
+
+func NewTestSuite(input TestSuiteCreationInput) (*TestSuite, error) {
+	meta := input.Meta
+	embeddedModChunk := input.EmbeddedModChunk
+	parentChunk := input.ParentChunk
+	parentState := input.ParentState
 
 	parsedChunk := &parse.ParsedChunk{
 		Node:   embeddedModChunk,
@@ -75,6 +89,7 @@ func NewTestSuite(meta Value, embeddedModChunk *parse.Chunk, parentChunk *parse.
 
 	return &TestSuite{
 		meta:         meta,
+		node:         input.Node,
 		module:       routineMod,
 		parentModule: parentState.Module,
 		parentChunk:  parentChunk,
@@ -97,6 +112,10 @@ func (s *TestSuite) ItemName() (string, bool) {
 		return "", false
 	}
 	return s.nameFromMeta, true
+}
+
+func (s *TestSuite) Statement() parse.Node {
+	return s.node
 }
 
 func (s *TestSuite) Run(ctx *Context, options ...Option) (*LThread, error) {
@@ -157,6 +176,9 @@ func (s *TestSuite) Run(ctx *Context, options ...Option) (*LThread, error) {
 		Module:       s.module,
 		Manifest:     manifest,
 		Timeout:      timeout,
+
+		IsTestingEnabled: spawnerState.IsTestingEnabled,
+		TestFilters:      spawnerState.TestFilters,
 	})
 
 	if err != nil {
@@ -193,6 +215,7 @@ func (*TestSuite) PropertyNames(ctx *Context) []string {
 type TestCase struct {
 	meta         Value
 	nameFromMeta string //can be empty
+	node         *parse.TestCaseExpression
 
 	module       *Module // module executed when running the test case
 	parentModule *Module
@@ -202,16 +225,29 @@ type TestCase struct {
 	formattedPosition string                    //can be empty
 }
 
-func NewTestCase(
-	meta Value,
-	modChunk *parse.Chunk,
-	parentState *GlobalState,
-	parentChunk *parse.ParsedChunk,
+type TestCaseCreationInput struct {
+	Meta Value
+	Node *parse.TestCaseExpression
+
+	ModChunk    *parse.Chunk
+	ParentState *GlobalState
+	ParentChunk *parse.ParsedChunk
 
 	//optional
-	positionStack parse.SourcePositionStack,
-	formattedPosition string,
-) (*TestCase, error) {
+	PositionStack     parse.SourcePositionStack
+	FormattedLocation string
+}
+
+func NewTestCase(input TestCaseCreationInput) (*TestCase, error) {
+	meta := input.Meta
+	modChunk := input.ModChunk
+	parentState := input.ParentState
+	parentChunk := input.ParentChunk
+
+	//optional
+	positionStack := input.PositionStack
+	formattedPosition := input.FormattedLocation
+
 	parsedChunk := &parse.ParsedChunk{
 		Node:   modChunk,
 		Source: parentState.Module.MainChunk.Source,
@@ -258,6 +294,8 @@ func NewTestCase(
 	return &TestCase{
 		meta:         meta,
 		nameFromMeta: nameFromMeta,
+		node:         input.Node,
+
 		module:       routineMod,
 		parentModule: parentState.Module,
 		parentChunk:  parentChunk,
@@ -333,6 +371,10 @@ func (c *TestCase) ItemName() (string, bool) {
 	return c.nameFromMeta, true
 }
 
+func (c *TestCase) Statement() parse.Node {
+	return c.node
+}
+
 func (s *TestCase) Run(ctx *Context, options ...Option) (*LThread, error) {
 	var timeout time.Duration
 
@@ -382,6 +424,9 @@ func (s *TestCase) Run(ctx *Context, options ...Option) (*LThread, error) {
 		Module:       s.module,
 		Manifest:     manifest,
 		Timeout:      timeout,
+
+		IsTestingEnabled: spawnerState.IsTestingEnabled,
+		TestFilters:      spawnerState.TestFilters,
 	})
 
 	if err != nil {
@@ -422,28 +467,26 @@ type TestFilters struct {
 func (filters TestFilters) IsTestEnabled(item TestItem) (enabled bool, reason string) {
 	itemName, _ := item.ItemName()
 	srcName := item.ParentChunk().Source.Name()
+	stmtSpan := item.Statement().Base().Span
 
-	if !strings.HasSuffix(srcName, "/") {
+	if !strings.HasPrefix(srcName, "/") {
 		return false, "the test is disabled because it is not located in a local file or the file's path is not absolute"
 	}
+	absoluteFilePath := srcName
 
-	_ = itemName
+	for _, negativeFilter := range filters.NegativeTestFilters {
+		if disabled, _ := negativeFilter.IsTestEnabled(absoluteFilePath, itemName, stmtSpan); disabled {
+			return false, fmt.Sprintf(
+				"the test is disabled because it matches the negative filter %q", negativeFilter.String())
+		}
+	}
 
-	//absoluteFilePath := srcName
-
-	// for _, negativeFilter := range filters.NegativeTestFilters {
-	// 	if disabled, reason := negativeFilter.IsTestEnabled(absoluteFilePath, itemName, statementSpan); disabled {
-	// 		return false, fmt.Sprintf(
-	// 			"the test is disabled because its path (%q) does not match the filter's path pattern (%q)", absoluteFilePath, f.AbsolutePath)
-	// 	}
-	// }
-
-	// for _, positiveFilter := range filters.PositiveTestFilters {
-	// 	if positiveFilter.Test(absoluteFilePath, itemName, statementSpan) {
-
-	// 		return true
-	// 	}
-	// }
+	for _, positiveFilter := range filters.PositiveTestFilters {
+		if enabled, _ := positiveFilter.IsTestEnabled(absoluteFilePath, itemName, stmtSpan); enabled {
+			return true, fmt.Sprintf(
+				"the test is enabled because it matches the positive filter %q", positiveFilter.String())
+		}
+	}
 
 	return false, ""
 }
@@ -451,6 +494,7 @@ func (filters TestFilters) IsTestEnabled(item TestItem) (enabled bool, reason st
 // A TestFilter filter tests by checking several values.
 type TestFilter struct {
 	//if path ends with '/...' all tests found in subdirectories are also enabled.
+	//this field is ignore if it is empty.
 	AbsolutePath string
 
 	//never nil
@@ -461,21 +505,29 @@ type TestFilter struct {
 }
 
 func (f TestFilter) String() string {
-	if reflect.ValueOf(f.NodeSpan).IsZero() {
-		return fmt.Sprintf("[path(s):%s name:%s]", f.AbsolutePath, f.NameRegex.String())
+	absolutePath := f.AbsolutePath
+	if absolutePath == "" {
+		absolutePath = "<any>"
 	}
-	return fmt.Sprintf("[path(s):%s span:%d,%d name:%s]", f.AbsolutePath, f.NodeSpan.Start, f.NodeSpan.End, f.NameRegex.String())
+
+	if reflect.ValueOf(f.NodeSpan).IsZero() {
+		return fmt.Sprintf("[path(s):%s name:%s]", absolutePath, f.NameRegex.String())
+	}
+	return fmt.Sprintf("[path(s):%s span:%d,%d name:%s]", absolutePath, f.NodeSpan.Start, f.NodeSpan.End, f.NameRegex.String())
 }
 
 func (f TestFilter) IsTestEnabled(absoluteFilePath string, name string, statementSpan parse.NodeSpan) (enabled bool, reason string) {
-	if strings.HasSuffix(f.AbsolutePath, "/...") {
-		if !PathPattern(f.AbsolutePath).Test(nil, Str(absoluteFilePath)) {
+	if f.AbsolutePath != "" {
+
+		if strings.HasSuffix(f.AbsolutePath, "/...") {
+			if !PathPattern(f.AbsolutePath).Test(nil, Str(absoluteFilePath)) {
+				return false, fmt.Sprintf(
+					"the test is disabled because its path (%q) does not match the filter's path pattern (%q)", absoluteFilePath, f.AbsolutePath)
+			}
+		} else if absoluteFilePath != f.AbsolutePath {
 			return false, fmt.Sprintf(
-				"the test is disabled because its path (%q) does not match the filter's path pattern (%q)", absoluteFilePath, f.AbsolutePath)
+				"the test is disabled because its path (%q) does not match the filter's path (%q)", absoluteFilePath, f.AbsolutePath)
 		}
-	} else if absoluteFilePath != f.AbsolutePath {
-		return false, fmt.Sprintf(
-			"the test is disabled because its path (%q) does not match the filter's path (%q)", absoluteFilePath, f.AbsolutePath)
 	}
 
 	if !f.NameRegex.MatchString(name) {

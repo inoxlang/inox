@@ -8,6 +8,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
@@ -64,6 +65,19 @@ func bytecodeTest(t *testing.T, optimize bool) {
 		case *Module:
 			mod = val
 			s.Module = mod
+		case parse.SourceFile:
+			chunk := utils.Must(parse.ParseChunkSource(val))
+
+			mod = &Module{MainChunk: chunk}
+
+			//if the test case provide a module we reuse the source
+			if s.Module != nil {
+				chunk.Source = s.Module.MainChunk.Source
+				s.Module.MainChunk = chunk
+				mod = s.Module
+			} else {
+				s.Module = mod
+			}
 		case string:
 			chunk := utils.Must(parse.ParseChunkSource(parse.InMemorySource{
 				NameString: "core-test",
@@ -7194,6 +7208,27 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			assert.Equal(t, Nil, res.(*TestSuite).meta)
 		})
 
+		t.Run("meta", func(t *testing.T) {
+			code := `
+				fn f(){
+					return "my test suite"
+				}
+				return testsuite #{name: f()} {}
+			`
+
+			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
+			res, err := Eval(code, state, false)
+
+			assert.NoError(t, err)
+			if !assert.IsType(t, &TestSuite{}, res) {
+				return
+			}
+			if !assert.NotNil(t, Nil, res.(*TestSuite).meta) {
+				return
+			}
+			assert.Equal(t, "my test suite", res.(*TestSuite).nameFromMeta)
+		})
 	})
 
 	t.Run("testcase expression", func(t *testing.T) {
@@ -7248,41 +7283,131 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 	t.Run("testsuite statement", func(t *testing.T) {
 
-		t.Run("empty", func(t *testing.T) {
-			code := `testsuite "name" {}`
+		allTestsFilter := TestFilters{
+			PositiveTestFilters: []TestFilter{
+				{
+					NameRegex: regexp.MustCompile(".*"),
+				},
+			},
+		}
+
+		makeSourceFile := func(code string) parse.SourceFile {
+			return parse.SourceFile{
+				NameString:             "/mod.ix",
+				CodeString:             code,
+				UserFriendlyNameString: "/mod.ix",
+				Resource:               "/mod.ix",
+				ResourceDir:            "/",
+				IsResourceURL:          false,
+			}
+		}
+
+		t.Run("empty: testing disabled", func(t *testing.T) {
+			src := makeSourceFile(`testsuite "name" {}`)
 
 			state := NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
-			res, err := Eval(code, state, false)
+
+			res, err := Eval(src, state, false)
 
 			assert.NoError(t, err)
 			assert.Equal(t, Nil, res)
+			assert.Empty(t, state.TestCaseResults)
+			assert.Empty(t, state.TestSuiteResults)
 		})
 
-		t.Run("empty test case", func(t *testing.T) {
-			code := `testsuite "name" {
-				testcase {}
-			}`
+		t.Run("empty: testing disabled: meta should not be evaluted", func(t *testing.T) {
+			src := makeSourceFile(`
+				$$a = 0
+				fn f(){
+					$$a = 1
+					return "my test suite"
+				}
+
+				testsuite #{name: f()} {
+					
+				}
+
+				return $$a
+			`)
 
 			state := NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
-			res, err := Eval(code, state, false)
+
+			res, err := Eval(src, state, false)
+
+			assert.NoError(t, err)
+			assert.Equal(t, Int(0), res)
+			assert.Empty(t, state.TestCaseResults)
+			assert.Empty(t, state.TestSuiteResults)
+		})
+
+		t.Run("empty", func(t *testing.T) {
+			src := makeSourceFile(`testsuite "name" {}`)
+
+			state := NewGlobalState(NewDefaultTestContext())
+			state.IsTestingEnabled = true
+			state.TestFilters = allTestsFilter
+			defer state.Ctx.CancelGracefully()
+
+			res, err := Eval(src, state, false)
+
+			assert.NoError(t, err)
+			assert.Equal(t, Nil, res)
+			assert.Empty(t, state.TestCaseResults)
+			assert.Len(t, state.TestSuiteResults, 1)
+		})
+
+		t.Run("empty: return statement after test suite", func(t *testing.T) {
+			src := makeSourceFile(`
+				testsuite "name" {}
+				return 0
+			`)
+
+			state := NewGlobalState(NewDefaultTestContext())
+			state.IsTestingEnabled = true
+			state.TestFilters = allTestsFilter
+			defer state.Ctx.CancelGracefully()
+
+			res, err := Eval(src, state, false)
+
+			assert.NoError(t, err)
+			assert.Equal(t, Int(0), res)
+			assert.Empty(t, state.TestCaseResults)
+			assert.Len(t, state.TestSuiteResults, 1)
+		})
+
+		t.Run("empty test case", func(t *testing.T) {
+			src := makeSourceFile(`testsuite "name" {
+				testcase {}
+			}`)
+
+			state := NewGlobalState(NewDefaultTestContext())
+			state.IsTestingEnabled = true
+			state.TestFilters = allTestsFilter
+			defer state.Ctx.CancelGracefully()
+
+			res, err := Eval(src, state, false)
 
 			assert.NoError(t, err)
 			assert.Equal(t, Nil, res)
 		})
 
 		t.Run("manifest with ungranted permissions", func(t *testing.T) {
-			code := `testsuite "name" {
+			src := makeSourceFile(`testsuite "name" {
 				manifest {    
 					permissions: { read: https://example.com/index.html }
 				}
-			}`
+			}`)
 
 			state := NewGlobalState(NewContext(ContextConfig{
 				Permissions: []Permission{LThreadPermission{Kind_: permkind.Create}},
 			}))
-			res, err := Eval(code, state, false)
+			state.IsTestingEnabled = true
+			state.TestFilters = allTestsFilter
+			defer state.Ctx.CancelGracefully()
+
+			res, err := Eval(src, state, false)
 
 			assert.Error(t, err)
 			assert.ErrorIs(t, err, NewNotAllowedError(HttpPermission{
@@ -7293,17 +7418,20 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		})
 
 		t.Run("test case with failing assertion", func(t *testing.T) {
-			code := `testsuite "name" {
+			src := makeSourceFile(`testsuite "name" {
 				testcase {
 					assert false
 				}
-			}`
+			}`)
 
 			state := NewGlobalState(NewDefaultTestContext())
+			state.IsTestingEnabled = true
+			state.TestFilters = allTestsFilter
 			defer state.Ctx.CancelGracefully()
+
 			state.Out = os.Stdout
 			state.Logger = zerolog.New(state.Out)
-			res, err := Eval(code, state, false)
+			res, err := Eval(src, state, false)
 
 			if !assert.NoError(t, err) {
 				return
@@ -7335,17 +7463,20 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		})
 
 		t.Run("test case failing because of an unexpected error", func(t *testing.T) {
-			code := `testsuite "name" {
+			src := makeSourceFile(`testsuite "name" {
 				testcase {
 					(1 / 0)
 				}
-			}`
+			}`)
 
 			state := NewGlobalState(NewDefaultTestContext())
+			state.IsTestingEnabled = true
+			state.TestFilters = allTestsFilter
 			defer state.Ctx.CancelGracefully()
+
 			state.Out = os.Stdout
 			state.Logger = zerolog.New(state.Out)
-			res, err := Eval(code, state, false)
+			res, err := Eval(src, state, false)
 
 			if !assert.NoError(t, err) {
 				return
@@ -7376,21 +7507,48 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			}
 		})
 
+		t.Run("test case with failing assertion: testing disabled", func(t *testing.T) {
+			src := makeSourceFile(`testsuite "name" {
+				testcase {
+					assert false
+				}
+			}`)
+
+			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
+
+			state.Out = os.Stdout
+			state.Logger = zerolog.New(state.Out)
+			res, err := Eval(src, state, false)
+
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			assert.Equal(t, Nil, res)
+			assert.Empty(t, state.TestSuiteResults)
+			assert.Empty(t, state.TestCaseResults)
+		})
+
 		t.Run("test case with failing assertion followed by a passing test case", func(t *testing.T) {
-			code := `testsuite "name" {
+			src := makeSourceFile(`testsuite "name" {
 				testcase {
 					assert false
 				}
 				testcase {
 					
 				}
-			}`
+			}`)
 
 			state := NewGlobalState(NewDefaultTestContext())
-			defer state.Ctx.CancelGracefully()
+			state.IsTestingEnabled = true
+			state.TestFilters = allTestsFilter
+
 			state.Out = os.Stdout
 			state.Logger = zerolog.New(state.Out)
-			res, err := Eval(code, state, false)
+			defer state.Ctx.CancelGracefully()
+
+			res, err := Eval(src, state, false)
 
 			if !assert.NoError(t, err) {
 				return
@@ -7427,20 +7585,23 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		})
 
 		t.Run("test case because of an unexpected error followed by a passing test case", func(t *testing.T) {
-			code := `testsuite "name" {
+			src := makeSourceFile(`testsuite "name" {
 				testcase {
 					(1 / 0)
 				}
 				testcase {
 					
 				}
-			}`
+			}`)
 
 			state := NewGlobalState(NewDefaultTestContext())
-			defer state.Ctx.CancelGracefully()
+			state.IsTestingEnabled = true
+			state.TestFilters = allTestsFilter
 			state.Out = os.Stdout
 			state.Logger = zerolog.New(state.Out)
-			res, err := Eval(code, state, false)
+			defer state.Ctx.CancelGracefully()
+
+			res, err := Eval(src, state, false)
 
 			if !assert.NoError(t, err) {
 				return
@@ -7477,20 +7638,24 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		})
 
 		t.Run("test case with failing assertion followed by a failing test case", func(t *testing.T) {
-			code := `testsuite "name" {
+			src := makeSourceFile(`testsuite "name" {
 				testcase {
 					assert false
 				}
 				testcase {
 					assert false
 				}
-			}`
+			}`)
 
 			state := NewGlobalState(NewDefaultTestContext())
-			defer state.Ctx.CancelGracefully()
+			state.IsTestingEnabled = true
+			state.TestFilters = allTestsFilter
+
 			state.Out = os.Stdout
 			state.Logger = zerolog.New(state.Out)
-			res, err := Eval(code, state, false)
+			defer state.Ctx.CancelGracefully()
+
+			res, err := Eval(src, state, false)
 
 			if !assert.NoError(t, err) {
 				return
@@ -7535,19 +7700,23 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		})
 
 		t.Run("sub test suite case with failing assertion", func(t *testing.T) {
-			code := `testsuite "name" {
+			src := makeSourceFile(`testsuite "name" {
 				testsuite "" {
 					testcase {
 						assert false
 					}
 				}
-			}`
+			}`)
 
 			state := NewGlobalState(NewDefaultTestContext())
-			defer state.Ctx.CancelGracefully()
+			state.IsTestingEnabled = true
+			state.TestFilters = allTestsFilter
+
 			state.Out = os.Stdout
 			state.Logger = zerolog.New(state.Out)
-			res, err := Eval(code, state, false)
+			defer state.Ctx.CancelGracefully()
+
+			res, err := Eval(src, state, false)
 
 			if !assert.NoError(t, err) {
 				return
@@ -7579,9 +7748,27 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	})
 
 	t.Run("testcase statement", func(t *testing.T) {
+		allTestsFilter := TestFilters{
+			PositiveTestFilters: []TestFilter{
+				{
+					NameRegex: regexp.MustCompile(".*"),
+				},
+			},
+		}
+
+		makeSourceFile := func(code string) parse.SourceFile {
+			return parse.SourceFile{
+				NameString:             "/mod.ix",
+				CodeString:             code,
+				UserFriendlyNameString: "/mod.ix",
+				Resource:               "/mod.ix",
+				ResourceDir:            "/",
+				IsResourceURL:          false,
+			}
+		}
 
 		t.Run("manifest with ungranted permissions", func(t *testing.T) {
-			code := `
+			src := makeSourceFile(`
 				testsuite {
 					testcase "name" {
 						manifest {    
@@ -7589,12 +7776,16 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 						}
 					}
 				}
-			`
+			`)
 
 			state := NewGlobalState(NewContext(ContextConfig{
 				Permissions: []Permission{LThreadPermission{Kind_: permkind.Create}},
 			}))
-			res, err := Eval(code, state, false)
+			state.IsTestingEnabled = true
+			state.TestFilters = allTestsFilter
+			defer state.Ctx.CancelGracefully()
+
+			res, err := Eval(src, state, false)
 
 			assert.Error(t, err)
 			assert.ErrorIs(t, err, NewNotAllowedError(HttpPermission{
@@ -8415,6 +8606,19 @@ func makeTreeWalkEvalFunc(t *testing.T) func(c any, s *GlobalState, doSymbolicCh
 		case *Module:
 			mod = val
 			s.Module = mod
+		case parse.SourceFile:
+			chunk := utils.Must(parse.ParseChunkSource(val))
+
+			mod = &Module{MainChunk: chunk}
+
+			//if the test case provide a module we reuse the source
+			if s.Module != nil {
+				chunk.Source = s.Module.MainChunk.Source
+				s.Module.MainChunk = chunk
+				mod = s.Module
+			} else {
+				s.Module = mod
+			}
 		case string:
 			chunk := utils.Must(parse.ParseChunkSource(parse.InMemorySource{
 				NameString: "core-test",

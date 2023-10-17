@@ -254,6 +254,7 @@ const (
 )
 
 // OpcodeNames are string representation of opcodes.
+// TODO: improve names
 var OpcodeNames = [...]string{
 	OpPushConstant:                 "PUSH_CONST",
 	OpPop:                          "POP",
@@ -451,8 +452,8 @@ var OpcodeOperands = [...][]int{
 	OpCreateIntRange:               {},
 	OpCreateFloatRange:             {},
 	OpCreateUpperBoundRange:        {},
-	OpCreateTestSuite:              {2},
-	OpCreateTestCase:               {2},
+	OpCreateTestSuite:              {2, 2},
+	OpCreateTestCase:               {2, 2},
 	OpAddTestSuiteResult:           {},
 	OpAddTestCaseResult:            {},
 	OpCreateLifetimeJob:            {2, 2},
@@ -580,8 +581,8 @@ var OpcodeConstantIndexes = [...][]bool{
 	OpCreateIntRange:               {},
 	OpCreateFloatRange:             {},
 	OpCreateUpperBoundRange:        {},
-	OpCreateTestSuite:              {true},
-	OpCreateTestCase:               {true},
+	OpCreateTestSuite:              {true, true},
+	OpCreateTestCase:               {true, true},
 	OpAddTestSuiteResult:           {},
 	OpAddTestCaseResult:            {},
 	OpCreateLifetimeJob:            {true, true},

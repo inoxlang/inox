@@ -1393,29 +1393,52 @@ func (v *VM) run() {
 				}
 			}
 		case OpCreateTestSuite:
-			v.ip += 2
-			nodeIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
+			v.ip += 4
+			nodeIndex := int(v.curInsts[v.ip-2]) | int(v.curInsts[v.ip-3])<<8
 			node := v.constants[nodeIndex].(AstNode)
-			embeddedModChunk := node.Node.(*parse.Chunk)
 			parentChunk := node.chunk
+
+			embeddedChunkNodeIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
+			embeddedChunkNode := v.constants[embeddedChunkNodeIndex].(AstNode)
+
+			embeddedModChunk := embeddedChunkNode.Node.(*parse.Chunk)
 			meta := v.stack[v.sp-1]
 
-			suite, err := NewTestSuite(meta, embeddedModChunk, parentChunk, v.global)
+			suite, err := NewTestSuite(TestSuiteCreationInput{
+				Meta:             meta,
+				Node:             node.Node.(*parse.TestSuiteExpression),
+				EmbeddedModChunk: embeddedModChunk,
+				ParentChunk:      parentChunk,
+				ParentState:      v.global,
+			})
 			if err != nil {
 				v.err = err
 				return
 			}
 			v.stack[v.sp-1] = suite
 		case OpCreateTestCase:
-			v.ip += 2
-			nodeIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
+			v.ip += 4
+			nodeIndex := int(v.curInsts[v.ip-2]) | int(v.curInsts[v.ip-3])<<8
 			node := v.constants[nodeIndex].(AstNode)
-			embeddedModChunk := node.Node.(*parse.Chunk)
+
+			modNodeIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
+			modNode := v.constants[modNodeIndex].(AstNode)
+
+			embeddedModChunk := modNode.Node.(*parse.Chunk)
 			parentChunk := node.chunk
 			meta := v.stack[v.sp-1]
 
 			//TODO: add location to test case
-			suite, err := NewTestCase(meta, embeddedModChunk, v.global, parentChunk, nil, "")
+			suite, err := NewTestCase(TestCaseCreationInput{
+				Meta: meta,
+				Node: node.Node.(*parse.TestCaseExpression),
+
+				ModChunk:          embeddedModChunk,
+				ParentState:       v.global,
+				ParentChunk:       parentChunk,
+				PositionStack:     nil,
+				FormattedLocation: "",
+			})
 			if err != nil {
 				v.err = err
 				return

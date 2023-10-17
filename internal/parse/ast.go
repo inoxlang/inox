@@ -2059,7 +2059,10 @@ type TestSuiteExpression struct {
 	IsStatement bool            `json:"isStatement"`
 }
 
-func (TestSuiteExpression) Kind() NodeKind {
+func (e TestSuiteExpression) Kind() NodeKind {
+	if e.IsStatement {
+		return Stmt
+	}
 	return Expr
 }
 
@@ -2070,7 +2073,10 @@ type TestCaseExpression struct {
 	IsStatement bool            `json:"isStatement"`
 }
 
-func (TestCaseExpression) Kind() NodeKind {
+func (e TestCaseExpression) Kind() NodeKind {
+	if e.IsStatement {
+		return Stmt
+	}
 	return Expr
 }
 

@@ -2611,6 +2611,10 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 
 		return val, nil
 	case *parse.TestSuiteExpression:
+		if !state.Global.IsTestingEnabled && n.IsStatement {
+			return Nil, nil
+		}
+
 		var meta Value = Nil
 		if n.Meta != nil {
 			var err error
@@ -2627,7 +2631,13 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 
 		chunk := expr.(AstNode).Node.(*parse.Chunk)
 
-		suite, err := NewTestSuite(meta, chunk, state.currentChunk(), state.Global)
+		suite, err := NewTestSuite(TestSuiteCreationInput{
+			Meta:             meta,
+			Node:             n,
+			EmbeddedModChunk: chunk,
+			ParentChunk:      state.currentChunk(),
+			ParentState:      state.Global,
+		})
 		if err != nil {
 			return nil, err
 		}
@@ -2664,6 +2674,10 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			return suite, nil
 		}
 	case *parse.TestCaseExpression:
+		if !state.Global.IsTestingEnabled && n.IsStatement {
+			return Nil, nil
+		}
+
 		var meta Value = Nil
 		if n.Meta != nil {
 			var err error
@@ -2680,9 +2694,17 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 
 		chunk := expr.(AstNode).Node.(*parse.Chunk)
 
-		positionStack, location := state.formatLocation(node)
+		positionStack, formattedLocation := state.formatLocation(node)
 
-		testCase, err := NewTestCase(meta, chunk, state.Global, state.currentChunk(), positionStack, location)
+		testCase, err := NewTestCase(TestCaseCreationInput{
+			Meta:        meta,
+			ModChunk:    chunk,
+			ParentState: state.Global,
+			ParentChunk: state.currentChunk(),
+
+			PositionStack:     positionStack,
+			FormattedLocation: formattedLocation,
+		})
 		if err != nil {
 			return nil, err
 		}
