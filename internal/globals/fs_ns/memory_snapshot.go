@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/utils"
 )
@@ -61,6 +62,12 @@ func (s *InMemorySnapshot) ForEachEntry(fn func(m core.EntrySnapshotMetadata) er
 
 func (s *InMemorySnapshot) IsStoredLocally() bool {
 	return true
+}
+
+func (s *InMemorySnapshot) NewAdaptedFilesystem(maxTotalStorageSizeHint core.ByteCount) (afs.Filesystem, error) {
+	maxTotalStorageSize := maxTotalStorageSizeHint
+	fls := NewMemFilesystemFromSnapshot(s, maxTotalStorageSize)
+	return fls, nil
 }
 
 type AddressableContentBytes struct {

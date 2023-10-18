@@ -3,6 +3,8 @@ package core
 import (
 	"errors"
 	"io"
+
+	"github.com/inoxlang/inox/internal/afs"
 )
 
 var (
@@ -37,6 +39,10 @@ type FilesystemSnapshot interface {
 
 	//IsStoredLocally should return true if all of the data & metadata is stored in memory and/or on disk.
 	IsStoredLocally() bool
+
+	//NewAdaptedFilesystem creates a filesystem from the snapshot,
+	//it should be adapted to the FilesystemSnapshot implementation.
+	NewAdaptedFilesystem(maxTotalStorageSizeHint ByteCount) (afs.Filesystem, error)
 }
 
 type AddressableContent interface {
