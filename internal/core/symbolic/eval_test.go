@@ -8612,11 +8612,31 @@ func TestSymbolicEval(t *testing.T) {
 			intLit := parse.FindNode(n, (*parse.IntLiteral)(nil), nil)
 
 			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(intLit, state, META_VAL_OF_TEST_SUITES_SHOULD_EITHER_BE_A_STRING_OR_A_RECORD),
+				makeSymbolicEvalError(intLit, state, META_VAL_OF_TEST_SUITE_SHOULD_EITHER_BE_A_STRING_OR_A_RECORD),
 			}, state.errors())
 			assert.Equal(t, &TestSuite{}, res)
 		})
 
+		t.Run("name value in meta should be a string: string", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`testsuite #{name: "test"} {}`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, &TestSuite{}, res)
+		})
+
+		t.Run("name value in meta should be a string: integer", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`testsuite #{name: 1} {}`)
+			intLit := parse.FindNode(n, (*parse.IntLiteral)(nil), nil)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(intLit, state, fmtNotAssignableToPropOfType(NewInt(1), ANY_STR_LIKE)),
+			}, state.errors())
+			assert.Equal(t, &TestSuite{}, res)
+		})
 		t.Run("error in module", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`testsuite "name" {
 				(1 + true)

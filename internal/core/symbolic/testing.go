@@ -7,6 +7,18 @@ import (
 	"github.com/inoxlang/inox/internal/utils"
 )
 
+const (
+	TEST_ITEM_META__NAME_PROPNAME = "name"
+	TEST_ITEM_META__FS_PROPNAME   = "fs"
+)
+
+var (
+	TEST_ITEM__EXPECTED_META_VALUE = NewMultivalue(ANY_STR_LIKE, NewInexactRecord(map[string]Serializable{
+		TEST_ITEM_META__NAME_PROPNAME: ANY_STR_LIKE,
+		TEST_ITEM_META__FS_PROPNAME:   ANY_FS_SNAPSHOT_IL,
+	}, nil))
+)
+
 // A TestSuite represents a symbolic TestSuite.
 type TestSuite struct {
 	UnassignablePropsMixin
