@@ -25,7 +25,7 @@ func TestEvalStringPatternNode(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		state := NewTreeWalkState(ctx)
-		state.pushChunk(&parse.ParsedChunk{Node: &parse.Chunk{}})
+		state.pushChunk(&parse.ParsedChunk{Node: &parse.Chunk{}}, nil)
 
 		patt, err := evalStringPatternNode(&parse.ComplexStringPatternPiece{
 			Elements: []*parse.PatternPieceElement{
@@ -50,7 +50,7 @@ func TestEvalStringPatternNode(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		state := NewTreeWalkState(ctx)
-		state.pushChunk(&parse.ParsedChunk{Node: &parse.Chunk{}})
+		state.pushChunk(&parse.ParsedChunk{Node: &parse.Chunk{}}, nil)
 
 		patt, err := evalStringPatternNode(&parse.ComplexStringPatternPiece{
 			Elements: []*parse.PatternPieceElement{
@@ -75,7 +75,7 @@ func TestEvalStringPatternNode(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		state := NewTreeWalkState(ctx)
-		state.pushChunk(&parse.ParsedChunk{Node: &parse.Chunk{}})
+		state.pushChunk(&parse.ParsedChunk{Node: &parse.Chunk{}}, nil)
 
 		patt, err := evalStringPatternNode(&parse.ComplexStringPatternPiece{
 			Elements: []*parse.PatternPieceElement{
@@ -99,7 +99,7 @@ func TestEvalStringPatternNode(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		state := NewTreeWalkState(ctx)
-		state.pushChunk(&parse.ParsedChunk{Node: &parse.Chunk{}})
+		state.pushChunk(&parse.ParsedChunk{Node: &parse.Chunk{}}, nil)
 
 		patt, err := evalStringPatternNode(&parse.ComplexStringPatternPiece{
 			Elements: []*parse.PatternPieceElement{
@@ -124,7 +124,7 @@ func TestEvalStringPatternNode(t *testing.T) {
 
 		ctx.AddNamedPattern("b", NewExactStringPattern(Str("c")))
 		state := NewTreeWalkState(ctx)
-		state.pushChunk(&parse.ParsedChunk{Node: &parse.Chunk{}})
+		state.pushChunk(&parse.ParsedChunk{Node: &parse.Chunk{}}, nil)
 
 		patt, err := evalStringPatternNode(&parse.ComplexStringPatternPiece{
 			Elements: []*parse.PatternPieceElement{
@@ -151,7 +151,7 @@ func TestEvalStringPatternNode(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		state := NewTreeWalkState(ctx)
-		state.pushChunk(&parse.ParsedChunk{Node: &parse.Chunk{}})
+		state.pushChunk(&parse.ParsedChunk{Node: &parse.Chunk{}}, nil)
 
 		patt, err := evalStringPatternNode(&parse.PatternUnion{
 			Cases: []parse.Node{
@@ -173,7 +173,7 @@ func TestEvalStringPatternNode(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		state := NewTreeWalkState(ctx)
-		state.pushChunk(&parse.ParsedChunk{Node: &parse.Chunk{}})
+		state.pushChunk(&parse.ParsedChunk{Node: &parse.Chunk{}}, nil)
 
 		patt, err := evalStringPatternNode(&parse.PatternUnion{
 			Cases: []parse.Node{

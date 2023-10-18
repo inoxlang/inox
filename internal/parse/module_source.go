@@ -102,14 +102,14 @@ func (chunk *ParsedChunk) GetLineColumn(node Node) (int32, int32) {
 	return chunk.GetSpanLineColumn(node.Base().Span)
 }
 
-func (chunk *ParsedChunk) FormatNodeLocation(w io.Writer, node Node) (int, error) {
-	line, col := chunk.GetLineColumn(node)
+func (chunk *ParsedChunk) FormatNodeSpanLocation(w io.Writer, nodeSpan NodeSpan) (int, error) {
+	line, col := chunk.GetSpanLineColumn(nodeSpan)
 	return fmt.Fprintf(w, "%s:%d:%d:", chunk.Name(), line, col)
 }
 
 func (chunk *ParsedChunk) GetFormattedNodeLocation(node Node) string {
 	buf := bytes.NewBuffer(nil)
-	chunk.FormatNodeLocation(buf, node)
+	chunk.FormatNodeSpanLocation(buf, node.Base().Span)
 	return buf.String()
 }
 
@@ -348,4 +348,35 @@ func (stack SourcePositionStack) String() string {
 type LocatedError interface {
 	MessageWithoutLocation() string
 	LocationStack() SourcePositionStack
+}
+
+type ChunkStackItem struct {
+	Chunk       *ParsedChunk
+	CurrentNode *InclusionImportStatement //nil for the last item
+}
+
+func GetSourcePositionStack(nodeSpan NodeSpan, chunkStack []*ChunkStackItem) (SourcePositionStack, string) {
+	locationPartBuff := bytes.NewBuffer(nil)
+	var positionStack SourcePositionStack
+
+	//TODO: get whole position stack
+	for i, item := range chunkStack {
+		var span NodeSpan
+
+		if i == len(chunkStack)-1 {
+			span = nodeSpan
+		} else {
+			span = item.CurrentNode.Base().Span
+		}
+
+		position := item.Chunk.GetSourcePosition(span)
+		positionStack = append(positionStack, position)
+
+		item.Chunk.FormatNodeSpanLocation(locationPartBuff, span) //TODO: fix
+
+		if i != len(chunkStack)-1 {
+			locationPartBuff.WriteRune(' ')
+		}
+	}
+	return positionStack, locationPartBuff.String()
 }

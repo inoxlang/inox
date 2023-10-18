@@ -24,9 +24,11 @@ func NewTreeWalkState(ctx *Context, constants ...map[string]Value) *TreeWalkStat
 }
 
 func NewTreeWalkStateWithGlobal(global *GlobalState) *TreeWalkState {
-	var chunkStack []*parse.ParsedChunk
+	var chunkStack []*parse.ChunkStackItem
 	if global.Module != nil {
-		chunkStack = append(chunkStack, global.Module.MainChunk)
+		chunkStack = append(chunkStack, &parse.ChunkStackItem{
+			Chunk: global.Module.MainChunk,
+		})
 	}
 
 	return &TreeWalkState{
@@ -42,7 +44,7 @@ type TreeWalkState struct {
 	Global          *GlobalState
 	LocalScopeStack []map[string]Value
 	frameInfo       []StackFrameInfo //used for debugging only, the list is reversed
-	chunkStack      []*parse.ParsedChunk
+	chunkStack      []*parse.ChunkStackItem
 	constantVars    map[string]bool
 	postHandle      func(node parse.Node, val Value, err error) (Value, error)
 
@@ -54,18 +56,30 @@ type TreeWalkState struct {
 }
 
 func (state TreeWalkState) currentChunk() *parse.ParsedChunk {
+	return state.currentChunkStackItem().Chunk
+}
+
+func (state TreeWalkState) currentChunkStackItem() *parse.ChunkStackItem {
 	if len(state.chunkStack) == 0 {
-		state.chunkStack = append(state.chunkStack, state.Global.Module.MainChunk)
+		state.chunkStack = append(state.chunkStack, &parse.ChunkStackItem{
+			Chunk: state.Global.Module.MainChunk,
+		})
 	}
 	return state.chunkStack[len(state.chunkStack)-1]
 }
 
-func (state *TreeWalkState) pushChunk(chunk *parse.ParsedChunk) {
-	state.chunkStack = append(state.chunkStack, chunk)
+func (state *TreeWalkState) pushChunk(chunk *parse.ParsedChunk, importNode *parse.InclusionImportStatement) {
+	state.currentChunkStackItem().CurrentNode = importNode
+	state.chunkStack = append(state.chunkStack, &parse.ChunkStackItem{
+		Chunk: chunk,
+	})
 }
 
 func (state *TreeWalkState) popChunk() {
 	state.chunkStack = state.chunkStack[:len(state.chunkStack)-1]
+	if len(state.chunkStack) != 0 {
+		state.currentChunkStackItem().CurrentNode = nil
+	}
 }
 
 func (state *TreeWalkState) SetGlobal(name string, value Value, constness GlobalConstness) (ok bool) {
@@ -148,22 +162,7 @@ func (state *TreeWalkState) updateStackTrace(currentStmt parse.Node) {
 }
 
 func (state *TreeWalkState) formatLocation(node parse.Node) (parse.SourcePositionStack, string) {
-	locationPartBuff := bytes.NewBuffer(nil)
-	var positionStack parse.SourcePositionStack
-
-	//TODO: get whole position stack
-	for i, chunk := range state.chunkStack {
-		if i == 0 {
-			positionStack = append(positionStack, chunk.GetSourcePosition(node.Base().Span))
-		}
-
-		chunk.FormatNodeLocation(locationPartBuff, node) //TODO: fix
-
-		if i != len(state.chunkStack)-1 {
-			locationPartBuff.WriteRune(' ')
-		}
-	}
-	return positionStack, locationPartBuff.String()
+	return parse.GetSourcePositionStack(node.Base().Span, state.chunkStack)
 }
 
 type IterationChange int
@@ -1029,7 +1028,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			panic(fmt.Errorf("cannot evaluate inclusion import statement: global state's module is nil"))
 		}
 		chunk := state.Global.Module.InclusionStatementMap[n]
-		state.pushChunk(chunk.ParsedChunk)
+		state.pushChunk(chunk.ParsedChunk, n)
 		defer state.popChunk()
 
 		if state.debug != nil {
