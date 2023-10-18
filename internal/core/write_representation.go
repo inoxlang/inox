@@ -1413,3 +1413,9 @@ func (n AstNode) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConf
 func (p *StructPattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	return ErrNotImplementedYet
 }
+
+func (s *FilesystemSnapshotIL) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
+	//TODO: only serialize if size is at most a dozen kilobytes.
+
+	return ErrNotImplementedYet
+}

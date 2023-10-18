@@ -1155,6 +1155,15 @@ func (p *StructPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream
 	return ErrNotImplementedYet
 }
 
+func (s *FilesystemSnapshotIL) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+	if depth > MAX_JSON_REPR_WRITING_DEPTH {
+		return ErrMaximumJSONReprWritingDepthReached
+	}
+	//TODO: only serialize if size is at most a dozen kilobytes.
+
+	return ErrNotImplementedYet
+}
+
 func noPatternOrAny(p Pattern) bool {
 	return p == nil || p == ANYVAL_PATTERN || p == SERIALIZABLE_PATTERN
 }

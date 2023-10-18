@@ -9,7 +9,8 @@ var (
 	ErrSnapshotEntryPathMustBeAbsolute = errors.New("snapshot file path must be absolute")
 	ErrSnapshotEntryNotAFile           = errors.New("filesystem entry is not a file")
 
-	_ = Value(&FilesystemSnapshotIL{})
+	_ = Value((*FilesystemSnapshotIL)(nil))
+	_ = Serializable((*FilesystemSnapshotIL)(nil))
 )
 
 type SnapshotableFilesystem interface {

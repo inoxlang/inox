@@ -13,6 +13,7 @@ var (
 
 // A FilesystemSnapshotIL represents a symbolic FilesystemSnapshotIL we don't the concrete type.
 type FilesystemSnapshotIL struct {
+	SerializableMixin
 }
 
 func (*FilesystemSnapshotIL) _fssnapshot() {
