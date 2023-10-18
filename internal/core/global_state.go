@@ -59,6 +59,7 @@ type GlobalState struct {
 	Debugger         atomic.Value //nil or (nillable) *Debugger
 	IsTestingEnabled bool         //if true the test suites encountered during executions are run
 	TestFilters      TestFilters
+	TestResultsLock  sync.Mutex
 	TestCaseResults  []*TestCaseResult
 	TestSuiteResults []*TestSuiteResult
 

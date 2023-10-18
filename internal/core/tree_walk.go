@@ -2661,14 +2661,31 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 				return nil, err
 			}
 
-			testCaseResults := lthread.state.TestCaseResults
-			testSuiteResults := lthread.state.TestSuiteResults
+			err = func() error {
+				if !lthread.state.TestResultsLock.TryLock() {
+					return errors.New("test results should not be locked")
+				}
+				defer lthread.state.TestResultsLock.Unlock()
 
-			result, err := NewTestSuiteResult(state.Global.Ctx, testCaseResults, testSuiteResults, suite)
+				testCaseResults := lthread.state.TestCaseResults
+				testSuiteResults := lthread.state.TestSuiteResults
+
+				result, err := NewTestSuiteResult(state.Global.Ctx, testCaseResults, testSuiteResults, suite)
+				if err != nil {
+					return err
+				}
+
+				state.Global.TestResultsLock.Lock()
+				defer state.Global.TestResultsLock.Unlock()
+
+				state.Global.TestSuiteResults = append(state.Global.TestSuiteResults, result)
+				return nil
+			}()
+
 			if err != nil {
 				return nil, err
 			}
-			state.Global.TestSuiteResults = append(state.Global.TestSuiteResults, result)
+
 			return Nil, nil
 		} else {
 			return suite, nil
@@ -2717,12 +2734,30 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			}
 			result, err := lthread.WaitResult(state.Global.Ctx)
 
-			if state.Global.Module.ModuleKind == TestSuiteModule {
+			if state.Global.Module.ModuleKind != TestSuiteModule {
+				return Nil, nil
+			}
+
+			err = func() error {
+				if !lthread.state.TestResultsLock.TryLock() {
+					return errors.New("test results should not be locked")
+				}
+				defer lthread.state.TestResultsLock.Unlock()
+
 				testCaseResult, err := NewTestCaseResult(state.Global.Ctx, result, err, testCase)
 				if err != nil {
-					return nil, err
+					return err
 				}
+
+				state.Global.TestResultsLock.Lock()
+				defer state.Global.TestResultsLock.Unlock()
+
 				state.Global.TestCaseResults = append(state.Global.TestCaseResults, testCaseResult)
+				return nil
+			}()
+
+			if err != nil {
+				return nil, err
 			}
 			return Nil, nil
 		} else {

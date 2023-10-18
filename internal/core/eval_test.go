@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/go-git/go-billy/v5/util"
+	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	parse "github.com/inoxlang/inox/internal/parse"
 	permkind "github.com/inoxlang/inox/internal/permkind"
@@ -5118,6 +5119,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				},
 				Filesystem: fls,
 			}, nil)
+			defer ctx.CancelGracefully()
 
 			mod, err := ParseLocalModule("/mod.ix", ModuleParsingConfig{
 				Context: ctx,
@@ -7302,6 +7304,35 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			}
 		}
 
+		createModuleAndImports := func(code string, modules map[string]string) (*Module, afs.Filesystem, error) {
+			fls := newMemFilesystem()
+			err := util.WriteFile(fls, "/mod.ix", []byte(code), 0600)
+			if err != nil {
+				return nil, nil, err
+			}
+
+			for k, v := range modules {
+				err := util.WriteFile(fls, k, []byte(v), 0600)
+				if err != nil {
+					return nil, nil, err
+				}
+			}
+
+			ctx := NewContexWithEmptyState(ContextConfig{
+				Permissions: []Permission{
+					CreateFsReadPerm(PathPattern("/...")),
+				},
+				Filesystem: fls,
+			}, nil)
+			defer ctx.CancelGracefully()
+
+			mod, err := ParseLocalModule("/mod.ix", ModuleParsingConfig{
+				Context: ctx,
+			})
+
+			return mod, fls, err
+		}
+
 		t.Run("empty: testing disabled", func(t *testing.T) {
 			src := makeSourceFile(`testsuite "name" {}`)
 
@@ -7377,6 +7408,92 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			assert.Len(t, state.TestSuiteResults, 1)
 		})
 
+		t.Run("empty in imported module", func(t *testing.T) {
+
+			mod, fls, err := createModuleAndImports(`
+				manifest {}
+				import res /imported.ix {
+					allow: {
+						create: {threads: {}}
+					}
+				}
+			`, map[string]string{
+				"/imported.ix": `
+					manifest {
+						permissions: {create: {threads: {}}}
+					}
+
+					testsuite "name" {}
+				`,
+			})
+
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			ctx := NewContext(ContextConfig{
+				Permissions: append(GetDefaultGlobalVarPermissions(),
+					LThreadPermission{permkind.Create},
+					FilesystemPermission{permkind.Read, PathPattern("/...")},
+				),
+				Filesystem: fls,
+			})
+			state := NewGlobalState(ctx)
+			state.IsTestingEnabled = true
+			state.TestFilters = allTestsFilter
+			defer state.Ctx.CancelGracefully()
+
+			res, err := Eval(mod, state, false)
+
+			assert.NoError(t, err)
+			assert.Equal(t, Nil, res)
+			assert.Empty(t, state.TestCaseResults)
+			if !assert.Len(t, state.TestSuiteResults, 1) {
+				return
+			}
+			assert.Empty(t, state.TestSuiteResults[0].caseResults)
+		})
+
+		t.Run("empty in included chunk", func(t *testing.T) {
+
+			mod, fls, err := createModuleAndImports(`
+				manifest {}
+				import /included.ix
+			`, map[string]string{
+				"/included.ix": `
+					includable-chunk
+
+					testsuite "name" {}
+				`,
+			})
+
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			ctx := NewContext(ContextConfig{
+				Permissions: append(GetDefaultGlobalVarPermissions(),
+					LThreadPermission{permkind.Create},
+					FilesystemPermission{permkind.Read, PathPattern("/...")},
+				),
+				Filesystem: fls,
+			})
+			state := NewGlobalState(ctx)
+			state.IsTestingEnabled = true
+			state.TestFilters = allTestsFilter
+			defer state.Ctx.CancelGracefully()
+
+			res, err := Eval(mod, state, false)
+
+			assert.NoError(t, err)
+			assert.Equal(t, Nil, res)
+			assert.Empty(t, state.TestCaseResults)
+			if !assert.Len(t, state.TestSuiteResults, 1) {
+				return
+			}
+			assert.Empty(t, state.TestSuiteResults[0].caseResults)
+		})
+
 		t.Run("empty test case", func(t *testing.T) {
 			src := makeSourceFile(`testsuite "name" {
 				testcase {}
@@ -7391,6 +7508,97 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			assert.NoError(t, err)
 			assert.Equal(t, Nil, res)
+		})
+
+		t.Run("empty test case, in imported module", func(t *testing.T) {
+
+			mod, fls, err := createModuleAndImports(`
+				manifest {}
+				import res /imported.ix {
+					allow: {
+						create: {threads: {}}
+					}
+				}
+			`, map[string]string{
+				"/imported.ix": `
+					manifest {
+						permissions: {create: {threads: {}}}
+					}
+
+					testsuite "name" {
+						testcase {}
+					}
+				`,
+			})
+
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			ctx := NewContext(ContextConfig{
+				Permissions: append(GetDefaultGlobalVarPermissions(),
+					LThreadPermission{permkind.Create},
+					FilesystemPermission{permkind.Read, PathPattern("/...")},
+				),
+				Filesystem: fls,
+			})
+			state := NewGlobalState(ctx)
+			state.IsTestingEnabled = true
+			state.TestFilters = allTestsFilter
+			defer state.Ctx.CancelGracefully()
+
+			res, err := Eval(mod, state, false)
+
+			assert.NoError(t, err)
+			assert.Equal(t, Nil, res)
+			assert.Empty(t, state.TestCaseResults)
+			if !assert.Len(t, state.TestSuiteResults, 1) {
+				return
+			}
+
+			assert.Len(t, state.TestSuiteResults[0].caseResults, 1)
+		})
+
+		t.Run("empty test case, in included chunk", func(t *testing.T) {
+
+			mod, fls, err := createModuleAndImports(`
+				manifest {}
+				import /included.ix
+			`, map[string]string{
+				"/included.ix": `
+					includable-chunk
+
+					testsuite "name" {
+						testcase {}
+					}
+				`,
+			})
+
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			ctx := NewContext(ContextConfig{
+				Permissions: append(GetDefaultGlobalVarPermissions(),
+					LThreadPermission{permkind.Create},
+					FilesystemPermission{permkind.Read, PathPattern("/...")},
+				),
+				Filesystem: fls,
+			})
+			state := NewGlobalState(ctx)
+			state.IsTestingEnabled = true
+			state.TestFilters = allTestsFilter
+			defer state.Ctx.CancelGracefully()
+
+			res, err := Eval(mod, state, false)
+
+			assert.NoError(t, err)
+			assert.Equal(t, Nil, res)
+			assert.Empty(t, state.TestCaseResults)
+			if !assert.Len(t, state.TestSuiteResults, 1) {
+				return
+			}
+			assert.Len(t, state.TestSuiteResults[0].caseResults, 1)
 		})
 
 		t.Run("manifest with ungranted permissions", func(t *testing.T) {

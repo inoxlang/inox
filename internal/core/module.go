@@ -74,6 +74,10 @@ const (
 	LifetimeJobModule
 )
 
+func (k ModuleKind) IsTestModule() bool {
+	return k == TestSuiteModule || k == TestCaseModule
+}
+
 func (k ModuleKind) IsEmbedded() bool {
 	return k >= UserLThreadModule && k <= LifetimeJobModule
 }

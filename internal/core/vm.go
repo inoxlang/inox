@@ -1449,37 +1449,70 @@ func (v *VM) run() {
 			testSuite := v.stack[v.sp-3].(*TestSuite)
 			//v.stack[v.sp-1] : result (unused)
 
-			testCaseResults := lthread.state.TestCaseResults
-			testSuiteResults := lthread.state.TestSuiteResults
+			//create test result and add it to .TestSuiteResults.
+			err := func() error {
+				if !lthread.state.TestResultsLock.TryLock() {
+					return errors.New("test results should not be locked")
+				}
+				defer lthread.state.TestResultsLock.Unlock()
 
-			result, err := NewTestSuiteResult(v.global.Ctx, testCaseResults, testSuiteResults, testSuite)
+				testCaseResults := lthread.state.TestCaseResults
+				testSuiteResults := lthread.state.TestSuiteResults
+
+				result, err := NewTestSuiteResult(v.global.Ctx, testCaseResults, testSuiteResults, testSuite)
+				if err != nil {
+					return err
+				}
+
+				v.global.TestResultsLock.Lock()
+				defer v.global.TestResultsLock.Unlock()
+
+				v.global.TestSuiteResults = append(v.global.TestSuiteResults, result)
+				return nil
+			}()
+
 			if err != nil {
 				v.err = err
 				return
 			}
-			v.global.TestSuiteResults = append(v.global.TestSuiteResults, result)
+
 			v.stack[v.sp-1] = Nil
 			v.stack[v.sp-2] = Nil
 			v.stack[v.sp-3] = Nil
 			v.sp -= 3
 		case OpAddTestCaseResult:
-			lthread := v.stack[v.sp-2].(*LThread)
-			testSuite := v.stack[v.sp-3].(*TestSuite)
-			//v.stack[v.sp-1] : result (unused)
+			v.err = ErrNotImplementedYet
+			return
+			//TODO
+			// lthread := v.stack[v.sp-2].(*LThread)
+			// testCase := v.stack[v.sp-3].(*TestCase)
+			// //v.stack[v.sp-1] : result (unused)
 
-			testCaseResults := lthread.state.TestCaseResults
-			testSuiteResults := lthread.state.TestSuiteResults
+			// if v.global.Module.ModuleKind == TestSuiteModule {
+			// 	//create test result and add it to .TestSuiteResults.
+			// 	err := func() error {
+			// 		lthread.state.TestResultsLock.Lock()
+			// 		defer lthread.state.TestResultsLock.Unlock()
 
-			if v.global.Module.ModuleKind == TestSuiteModule {
-				result, err := NewTestSuiteResult(v.global.Ctx, testCaseResults, testSuiteResults, testSuite)
-				if err != nil {
-					v.err = err
-					return
-				}
-				v.global.TestSuiteResults = append(v.global.TestSuiteResults, result)
-			}
+			// 		testCaseResults := lthread.state.TestCaseResults
+			// 		testSuiteResults := lthread.state.TestSuiteResults
 
-			v.sp -= 3
+			// 		result, err := NewTestCaseResult(v.global.Ctx, testCase)
+			// 		if err != nil {
+			// 			return err
+			// 		}
+
+			// 		v.global.TestSuiteResults = append(v.global.TestSuiteResults, result)
+			// 		return nil
+			// 	}()
+
+			// 	if err != nil {
+			// 		v.err = err
+			// 		return
+			// 	}
+			// }
+
+			// v.sp -= 3
 		case OpResolvePattern:
 			v.ip += 2
 			nameIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8

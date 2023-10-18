@@ -41,6 +41,7 @@ var moduleCache = map[string]string{}
 var moduleCacheLock sync.Mutex
 
 // ImportWaitModule imports a module and waits for its lthread to return its result.
+// ImportWaitModule also adds the test suite results to the parent state.
 func ImportWaitModule(config ImportConfig) (Value, error) {
 	lthread, err := ImportModule(config)
 	if err != nil {
@@ -50,6 +51,20 @@ func ImportWaitModule(config ImportConfig) (Value, error) {
 	result, err := lthread.WaitResult(config.ParentState.Ctx)
 	if err != nil {
 		return nil, fmt.Errorf("import: failed: %s", err.Error())
+	}
+
+	//add test suite results to the parent state.
+	//we only try to lock to avoid blocking if already locked.
+	if lthread.state.TestResultsLock.TryLock() {
+		func() {
+			defer lthread.state.TestResultsLock.Unlock()
+
+			parentState := config.ParentState
+			parentState.TestResultsLock.Lock()
+			defer parentState.TestResultsLock.Unlock()
+
+			parentState.TestSuiteResults = append(parentState.TestSuiteResults, lthread.state.TestSuiteResults...)
+		}()
 	}
 
 	return result, nil
@@ -207,6 +222,9 @@ func ImportModule(config ImportConfig) (*LThread, error) {
 		//AbsScriptDir: absScriptDir,
 		Timeout:                      deadline.Sub(time.Now()),
 		IgnoreCreateLThreadPermCheck: true,
+
+		IsTestingEnabled: parentState.IsTestingEnabled,
+		TestFilters:      parentState.TestFilters,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("import: %s", err.Error())
