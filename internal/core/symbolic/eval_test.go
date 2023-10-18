@@ -8716,6 +8716,27 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, &TestCase{}, res)
 		})
 
+		t.Run("pass-fs-copy value in meta should be a boolean: boolean", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`testcase #{pass-live-fs-copy-to-subtests: true} {}`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, &TestCase{}, res)
+		})
+
+		t.Run("pass-fs-copy value in meta should be a string: integer", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`testcase #{pass-live-fs-copy-to-subtests: 1} {}`)
+			intLit := parse.FindNode(n, (*parse.IntLiteral)(nil), nil)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(intLit, state, fmtNotAssignableToPropOfType(NewInt(1), ANY_BOOL)),
+			}, state.errors())
+			assert.Equal(t, &TestCase{}, res)
+		})
+
 		t.Run("error in module", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`testcase "name" {
 				(1 + true)
