@@ -1910,6 +1910,25 @@ switch_:
 		if !inTestSuite && node.IsStatement && (c.currentModule == nil || c.currentModule.ModuleKind != TestSuiteModule) {
 			c.addError(n, TEST_CASE_STMTS_NOT_ALLOWED_OUTSIDE_OF_TEST_SUITES)
 		}
+	case *parse.EmbeddedModule:
+		parentModule := findClosestModule(ancestorChain)
+		globals := c.getModGlobalVars(n)
+		parentModuleGlobals := c.getModGlobalVars(parentModule)
+
+		switch p := parent.(type) {
+		case *parse.TestSuiteExpression:
+			if p.IsStatement {
+				for name, info := range parentModuleGlobals {
+					globals[name] = info
+				}
+			}
+		case *parse.TestCaseExpression:
+			if p.IsStatement {
+				for name, info := range parentModuleGlobals {
+					globals[name] = info
+				}
+			}
+		}
 	}
 
 	return parse.Continue

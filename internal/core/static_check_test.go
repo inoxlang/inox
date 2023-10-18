@@ -2064,6 +2064,34 @@ func TestCheck(t *testing.T) {
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 
+		t.Run("should have its own local scope", func(t *testing.T) {
+			n, src := mustParseCode(`
+				a = 1
+				testsuite { 
+					a
+				}
+			`)
+
+			identLiteral := parse.FindNodes(n, (*parse.IdentifierLiteral)(nil), nil)[1]
+
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(identLiteral, src, fmtVarIsNotDeclared("a")),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("should inherit globals", func(t *testing.T) {
+			n, src := mustParseCode(`
+				$$a = 1
+				testsuite { 
+					a
+				}
+			`)
+
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
 		t.Run("testcase", func(t *testing.T) {
 			n, src := mustParseCode(`
 				manifest {}
@@ -2071,6 +2099,21 @@ func TestCheck(t *testing.T) {
 				testsuite {
 					testcase {
 
+					}
+				}
+			`)
+
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
+		t.Run("testcase should inherit globals of the test suite", func(t *testing.T) {
+			n, src := mustParseCode(`
+				$$a = 1
+				testsuite { 
+					$$b = 2
+					testcase {
+						a
+						b
 					}
 				}
 			`)
@@ -2215,7 +2258,7 @@ func TestCheck(t *testing.T) {
 
 	t.Run("testsuite expression", func(t *testing.T) {
 
-		t.Run("testsuite expression has its own local scope", func(t *testing.T) {
+		t.Run("should have its own local scope", func(t *testing.T) {
 			n, src := mustParseCode(`
 				a = 1
 				testsuite { a }
