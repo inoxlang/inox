@@ -4434,7 +4434,9 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 		return &TestSuite{}, nil
 	case *parse.TestCaseExpression:
 		if n.Meta != nil {
-			meta, err := symbolicEval(n.Meta, state)
+			meta, err := _symbolicEval(n.Meta, state, evalOptions{
+				expectedValue: TEST_ITEM__EXPECTED_META_VALUE,
+			})
 			if err != nil {
 				return nil, err
 			}
