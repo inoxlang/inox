@@ -909,7 +909,7 @@ func (patt *FunctionPattern) Test(ctx *Context, v Value) bool {
 
 			printConfig := parse.PrintConfig{TrimStart: true}
 			if param.Type != nil && parse.SPrint(param.Type, patt.nodeChunk, printConfig) !=
-				parse.SPrint(actualParam.Type, fn.Chunk, printConfig) {
+				parse.SPrint(actualParam.Type, fn.Chunk.Node, printConfig) {
 				return false
 			}
 		}

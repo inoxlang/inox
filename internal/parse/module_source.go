@@ -352,27 +352,55 @@ type LocatedError interface {
 
 type ChunkStackItem struct {
 	Chunk       *ParsedChunk
-	CurrentNode *InclusionImportStatement //nil for the last item
+	CurrentNode Node //nil for the last item
 }
 
-func GetSourcePositionStack(nodeSpan NodeSpan, chunkStack []*ChunkStackItem) (SourcePositionStack, string) {
+func (i ChunkStackItem) GetChunk() (*ParsedChunk, bool) {
+	return i.Chunk, i.Chunk != nil
+}
+
+func (i ChunkStackItem) GetCurrentNode() (Node, bool) {
+	return i.CurrentNode, i.CurrentNode != nil
+}
+
+type StackItem interface {
+	GetChunk() (*ParsedChunk, bool)
+	GetCurrentNode() (Node, bool)
+}
+
+func GetSourcePositionStack[Item StackItem](nodeSpan NodeSpan, chunkStack []Item) (SourcePositionStack, string) {
 	locationPartBuff := bytes.NewBuffer(nil)
 	var positionStack SourcePositionStack
 
 	//TODO: get whole position stack
 	for i, item := range chunkStack {
 		var span NodeSpan
+		chunk, hasChunk := item.GetChunk()
+
+		if !hasChunk {
+			locationPartBuff.WriteString("??:")
+
+			if i != len(chunkStack)-1 {
+				locationPartBuff.WriteRune(' ')
+			}
+			continue
+		}
 
 		if i == len(chunkStack)-1 {
 			span = nodeSpan
 		} else {
-			span = item.CurrentNode.Base().Span
+			currentNode, ok := item.GetCurrentNode()
+			if ok {
+				span = currentNode.Base().Span
+			} else {
+				span = NodeSpan{Start: 0, End: 1}
+			}
 		}
 
-		position := item.Chunk.GetSourcePosition(span)
+		position := chunk.GetSourcePosition(span)
 		positionStack = append(positionStack, position)
 
-		item.Chunk.FormatNodeSpanLocation(locationPartBuff, span) //TODO: fix
+		chunk.FormatNodeSpanLocation(locationPartBuff, span) //TODO: fix
 
 		if i != len(chunkStack)-1 {
 			locationPartBuff.WriteRune(' ')

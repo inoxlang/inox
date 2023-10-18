@@ -1438,7 +1438,7 @@ func (c *compiler) Compile(node parse.Node) error {
 
 		c.emit(node, OpPushConstant, c.addConstant(&InoxFunction{
 			Node:             node,
-			Chunk:            c.currentChunk().Node,
+			Chunk:            c.currentChunk(),
 			compiledFunction: compiledFunction,
 			symbolicValue:    symbolicInoxFunc,
 			staticData:       staticData,

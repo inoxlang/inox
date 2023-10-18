@@ -25,15 +25,20 @@ func NewTreeWalkState(ctx *Context, constants ...map[string]Value) *TreeWalkStat
 
 func NewTreeWalkStateWithGlobal(global *GlobalState) *TreeWalkState {
 	var chunkStack []*parse.ChunkStackItem
+	var fullChunkStack []*parse.ChunkStackItem
+
 	if global.Module != nil {
-		chunkStack = append(chunkStack, &parse.ChunkStackItem{
+		chunk := &parse.ChunkStackItem{
 			Chunk: global.Module.MainChunk,
-		})
+		}
+		chunkStack = append(chunkStack, chunk)
+		fullChunkStack = append(fullChunkStack, chunk)
 	}
 
 	return &TreeWalkState{
 		LocalScopeStack: []map[string]Value{},
 		chunkStack:      chunkStack,
+		fullChunkStack:  fullChunkStack,
 		constantVars:    map[string]bool{},
 		Global:          global,
 	}
@@ -45,15 +50,16 @@ type TreeWalkState struct {
 	LocalScopeStack []map[string]Value
 	frameInfo       []StackFrameInfo //used for debugging only, the list is reversed
 	chunkStack      []*parse.ChunkStackItem
-	constantVars    map[string]bool
-	postHandle      func(node parse.Node, val Value, err error) (Value, error)
+	fullChunkStack  []*parse.ChunkStackItem //chunk stack but including calls' chunks
+
+	constantVars map[string]bool
+	postHandle   func(node parse.Node, val Value, err error) (Value, error)
 
 	debug           *Debugger
 	returnValue     Value           //return value from a function or module
 	iterationChange IterationChange //break, continue, prune
 	self            Value           //value of self in methods
 	entryComputeFn  func(v Value) (Value, error)
-}
 
 func (state TreeWalkState) currentChunk() *parse.ParsedChunk {
 	return state.currentChunkStackItem().Chunk
@@ -67,18 +73,47 @@ func (state TreeWalkState) currentChunkStackItem() *parse.ChunkStackItem {
 	}
 	return state.chunkStack[len(state.chunkStack)-1]
 }
-
-func (state *TreeWalkState) pushChunk(chunk *parse.ParsedChunk, importNode *parse.InclusionImportStatement) {
-	state.currentChunkStackItem().CurrentNode = importNode
-	state.chunkStack = append(state.chunkStack, &parse.ChunkStackItem{
-		Chunk: chunk,
-	})
+func (state TreeWalkState) currentChunk() *parse.ParsedChunk {
+	return state.currentFullChunkStackItem().Chunk
 }
 
-func (state *TreeWalkState) popChunk() {
+func (state TreeWalkState) currentFullChunkStackItem() *parse.ChunkStackItem {
+	if len(state.fullChunkStack) == 0 {
+		state.fullChunkStack = append(state.fullChunkStack, state.currentChunkStackItem())
+	}
+	return state.fullChunkStack[len(state.fullChunkStack)-1]
+}
+
+func (state *TreeWalkState) pushImportedChunk(chunk *parse.ParsedChunk, importNode *parse.InclusionImportStatement) {
+	state.currentFullChunkStackItem().CurrentNode = importNode
+	pushedChunk := &parse.ChunkStackItem{
+		Chunk: chunk,
+	}
+	state.chunkStack = append(state.chunkStack, pushedChunk)
+	state.fullChunkStack = append(state.fullChunkStack, pushedChunk)
+}
+
+func (state *TreeWalkState) popImportedChunk() {
 	state.chunkStack = state.chunkStack[:len(state.chunkStack)-1]
-	if len(state.chunkStack) != 0 {
-		state.currentChunkStackItem().CurrentNode = nil
+	state.fullChunkStack = state.fullChunkStack[:len(state.fullChunkStack)-1]
+
+	if len(state.fullChunkStack) != 0 {
+		state.currentFullChunkStackItem().CurrentNode = nil
+	}
+}
+
+func (state *TreeWalkState) pushChunkOfCall(chunk *parse.ParsedChunk, callingNode parse.Node) {
+	state.currentFullChunkStackItem().CurrentNode = callingNode
+	pushedChunk := &parse.ChunkStackItem{
+		Chunk: chunk,
+	}
+	state.fullChunkStack = append(state.fullChunkStack, pushedChunk)
+}
+
+func (state *TreeWalkState) popChunkOfCall() {
+	state.fullChunkStack = state.fullChunkStack[:len(state.fullChunkStack)-1]
+	if len(state.fullChunkStack) != 0 {
+		state.currentFullChunkStackItem().CurrentNode = nil
 	}
 }
 
@@ -162,7 +197,7 @@ func (state *TreeWalkState) updateStackTrace(currentStmt parse.Node) {
 }
 
 func (state *TreeWalkState) formatLocation(node parse.Node) (parse.SourcePositionStack, string) {
-	return parse.GetSourcePositionStack(node.Base().Span, state.chunkStack)
+	return parse.GetSourcePositionStack(node.Base().Span, state.fullChunkStack)
 }
 
 type IterationChange int
@@ -538,6 +573,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 
 		return TreeWalkCallFunc(TreeWalkCall{
 			callee:        callee,
+			callNode:      n,
 			self:          self,
 			state:         state,
 			arguments:     n.Arguments,
@@ -1028,8 +1064,8 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			panic(fmt.Errorf("cannot evaluate inclusion import statement: global state's module is nil"))
 		}
 		chunk := state.Global.Module.InclusionStatementMap[n]
-		state.pushChunk(chunk.ParsedChunk, n)
-		defer state.popChunk()
+		state.pushImportedChunk(chunk.ParsedChunk, n)
+		defer state.popImportedChunk()
 
 		if state.debug != nil {
 			frameCount := len(state.frameInfo)
@@ -2089,7 +2125,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 
 		return &InoxFunction{
 			Node:                   n,
-			Chunk:                  state.currentChunk().Node,
+			Chunk:                  state.currentChunk(),
 			treeWalkCapturedLocals: capturedLocals,
 			symbolicValue:          symbolicInoxFunc,
 			staticData:             staticData,
@@ -3013,6 +3049,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 
 type TreeWalkCall struct {
 	callee             Value
+	callNode           *parse.CallExpression //nil if the function is called in isolation.
 	self               Value
 	state              *TreeWalkState
 	arguments          any
@@ -3162,6 +3199,16 @@ func TreeWalkCallFunc(call TreeWalkCall) (Value, error) {
 		return nil, fmt.Errorf("invalid number of arguments : %v, %v was expected", len(args), len(fn.Parameters))
 	} else if hasSpreadArg {
 		return nil, errors.New("cannot call non-variadic function with a spread argument")
+	}
+
+	inoxFn := callee.(*InoxFunction)
+
+	if call.callNode != nil { //if the function is not called in isolation
+		state.pushChunkOfCall(inoxFn.Chunk, call.callNode)
+		defer state.popChunkOfCall()
+
+		state.pushChunkOfCall(inoxFn.Chunk, inoxFn.Node)
+		defer state.popChunkOfCall()
 	}
 
 	state.PushScope()

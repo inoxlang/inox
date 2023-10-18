@@ -17,7 +17,7 @@ var (
 
 type InoxFunction struct {
 	Node  parse.Node
-	Chunk *parse.Chunk
+	Chunk *parse.ParsedChunk
 
 	originState            *GlobalState
 	shared                 atomic.Bool
