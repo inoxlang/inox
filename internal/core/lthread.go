@@ -60,6 +60,7 @@ type LthreadSpawnArgs struct {
 
 	IsTestingEnabled bool
 	TestFilters      TestFilters
+	TestItem         TestItem
 
 	//AbsScriptDir string
 	Bytecode    *Bytecode
@@ -140,6 +141,7 @@ func SpawnLThread(args LthreadSpawnArgs) (*LThread, error) {
 	if args.IsTestingEnabled {
 		modState.IsTestingEnabled = true
 		modState.TestFilters = args.TestFilters
+		modState.TestItem = args.TestItem
 	}
 	modState.OutputFieldsInitialized.Store(true)
 

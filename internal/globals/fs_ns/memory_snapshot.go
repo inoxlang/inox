@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/utils"
 )
@@ -64,7 +63,7 @@ func (s *InMemorySnapshot) IsStoredLocally() bool {
 	return true
 }
 
-func (s *InMemorySnapshot) NewAdaptedFilesystem(maxTotalStorageSizeHint core.ByteCount) (afs.Filesystem, error) {
+func (s *InMemorySnapshot) NewAdaptedFilesystem(maxTotalStorageSizeHint core.ByteCount) (core.SnapshotableFilesystem, error) {
 	maxTotalStorageSize := maxTotalStorageSizeHint
 	fls := NewMemFilesystemFromSnapshot(s, maxTotalStorageSize)
 	return fls, nil

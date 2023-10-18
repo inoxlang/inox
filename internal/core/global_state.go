@@ -62,6 +62,7 @@ type GlobalState struct {
 	TestResultsLock  sync.Mutex
 	TestCaseResults  []*TestCaseResult
 	TestSuiteResults []*TestSuiteResult
+	TestItem         TestItem //can be nil
 
 	//errors & check data
 

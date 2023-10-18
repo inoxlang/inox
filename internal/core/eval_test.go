@@ -7210,7 +7210,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			assert.Equal(t, Nil, res.(*TestSuite).meta)
 		})
 
-		t.Run("meta", func(t *testing.T) {
+		t.Run("meta; name", func(t *testing.T) {
 			code := `
 				fn f(){
 					return "my test suite"
@@ -7231,6 +7231,35 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			}
 			assert.Equal(t, "my test suite", res.(*TestSuite).nameFromMeta)
 		})
+
+		t.Run("meta: name + fs", func(t *testing.T) {
+			code := `
+				fn f(){
+					return "my test suite"
+				}
+				return testsuite #{name: f(), fs: snapshot} {}
+			`
+
+			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
+
+			fls := newMemFilesystem()
+			snapshot := &memFilesystemSnapshot{fls: fls}
+			state.Globals.Set("snapshot", WrapFsSnapshot(snapshot))
+
+			res, err := Eval(code, state, false)
+
+			assert.NoError(t, err)
+			if !assert.IsType(t, &TestSuite{}, res) {
+				return
+			}
+			if !assert.NotNil(t, Nil, res.(*TestSuite).meta) {
+				return
+			}
+			assert.Equal(t, "my test suite", res.(*TestSuite).nameFromMeta)
+			assert.Equal(t, snapshot, res.(*TestSuite).filesystemSnapshotFromMeta)
+		})
+
 	})
 
 	t.Run("testcase expression", func(t *testing.T) {
@@ -7492,6 +7521,48 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 			assert.Empty(t, state.TestSuiteResults[0].caseResults)
+		})
+
+		t.Run("if a fs snapshot is specified the filesystem should be created from it", func(t *testing.T) {
+			src := makeSourceFile(`
+				testsuite #{fs: snapshot} {
+					test_read_file(/file.txt)
+					test_read_file(/not-existing.txt)
+				}
+			`)
+
+			state := NewGlobalState(NewDefaultTestContext())
+			state.IsTestingEnabled = true
+			state.TestFilters = allTestsFilter
+			defer state.Ctx.CancelGracefully()
+
+			fls := newMemFilesystem()
+			util.WriteFile(fls, "/file.txt", []byte("content"), 0400)
+			snapshot := &memFilesystemSnapshot{fls: fls}
+			state.Globals.Set("snapshot", WrapFsSnapshot(snapshot))
+
+			callCount := 0
+			state.Globals.Set("test_read_file", WrapGoFunction(func(ctx *Context, path Path) {
+				content, err := util.ReadFile(ctx.GetFileSystem(), path.UnderlyingString())
+				callCount++
+				if path == "/not-existing.txt" {
+					assert.ErrorIs(t, err, os.ErrNotExist)
+				} else {
+					if !assert.NoError(t, err) {
+						return
+					}
+					assert.Equal(t, "content", string(content))
+				}
+			}))
+
+			res, err := Eval(src, state, false)
+			if !assert.NoError(t, err) {
+				return
+			}
+			if !assert.Equal(t, 2, callCount) {
+				return
+			}
+			assert.Equal(t, Nil, res)
 		})
 
 		t.Run("empty test case", func(t *testing.T) {
@@ -7953,6 +8024,125 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 		})
+
+		t.Run("if a fs snapshot is specified the filesystem of test cases should be created from it", func(t *testing.T) {
+			src := makeSourceFile(`
+				testsuite #{fs: snapshot} {
+					# modifications done by the test suite should have no impact.
+					remove_file /file.txt
+
+					testcase {
+						test_read_file(/file.txt)
+						test_read_file(/not-existing.txt)
+					}
+				}
+			`)
+
+			state := NewGlobalState(NewDefaultTestContext())
+			state.IsTestingEnabled = true
+			state.TestFilters = allTestsFilter
+			defer state.Ctx.CancelGracefully()
+
+			fls := newMemFilesystem()
+			util.WriteFile(fls, "/file.txt", []byte("content"), 0400)
+			snapshot := &memFilesystemSnapshot{fls: fls}
+			state.Globals.Set("snapshot", WrapFsSnapshot(snapshot))
+
+			callCount := 0
+			state.Globals.Set("test_read_file", WrapGoFunction(func(ctx *Context, path Path) {
+				content, err := util.ReadFile(ctx.GetFileSystem(), path.UnderlyingString())
+				callCount++
+				if path == "/not-existing.txt" {
+					assert.ErrorIs(t, err, os.ErrNotExist)
+				} else {
+					if !assert.NoError(t, err) {
+						return
+					}
+					assert.Equal(t, "content", string(content))
+				}
+			}))
+
+			state.Globals.Set("remove_file", WrapGoFunction(func(ctx *Context, path Path) {
+				err := ctx.GetFileSystem().Remove(path.UnderlyingString())
+				assert.NoError(t, err)
+			}))
+
+			res, err := Eval(src, state, false)
+			if !assert.NoError(t, err) {
+				return
+			}
+			if !assert.Equal(t, 2, callCount) {
+				return
+			}
+			assert.Equal(t, Nil, res)
+		})
+
+		t.Run("if a fs snapshot is specified and pass-live-fs-snapshot-to-subtests: true then"+
+			"the filesystem of test cases should be created from the live filesystem of the suite", func(t *testing.T) {
+			src := makeSourceFile(`
+				testsuite #{
+					fs: snapshot
+					pass-live-fs-copy-to-subtests: true
+				} {
+					# modifications done by the test suite should have an impact.
+					remove_file /file1.txt
+
+					testcase {
+						test_read_file(/file1.txt)
+						test_read_file(/file2.txt)
+						test_read_file(/not-existing.txt)
+
+						# modifications done by the test case should have no impact.
+						remove_file /file2.txt
+					}
+
+					testcase {
+						test_read_file(/file1.txt)
+						test_read_file(/file2.txt)
+						test_read_file(/not-existing.txt)
+					}
+				}
+			`)
+
+			state := NewGlobalState(NewDefaultTestContext())
+			state.IsTestingEnabled = true
+			state.TestFilters = allTestsFilter
+			defer state.Ctx.CancelGracefully()
+
+			fls := newMemFilesystem()
+			util.WriteFile(fls, "/file1.txt", []byte("content1"), 0400)
+			util.WriteFile(fls, "/file2.txt", []byte("content2"), 0400)
+			snapshot := &memFilesystemSnapshot{fls: fls}
+			state.Globals.Set("snapshot", WrapFsSnapshot(snapshot))
+
+			callCount := 0
+			state.Globals.Set("test_read_file", WrapGoFunction(func(ctx *Context, path Path) {
+				content, err := util.ReadFile(ctx.GetFileSystem(), path.UnderlyingString())
+				callCount++
+				if path == "/file2.txt" {
+					if !assert.NoError(t, err) {
+						return
+					}
+					assert.Equal(t, "content2", string(content))
+				} else {
+					assert.ErrorIs(t, err, os.ErrNotExist)
+				}
+			}))
+
+			state.Globals.Set("remove_file", WrapGoFunction(func(ctx *Context, path Path) {
+				err := ctx.GetFileSystem().Remove(path.UnderlyingString())
+				assert.NoError(t, err)
+			}))
+
+			res, err := Eval(src, state, false)
+			if !assert.NoError(t, err) {
+				return
+			}
+			if !assert.Equal(t, 6, callCount) {
+				return
+			}
+			assert.Equal(t, Nil, res)
+		})
 	})
 
 	t.Run("testcase statement", func(t *testing.T) {
@@ -7987,7 +8177,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			`)
 
 			state := NewGlobalState(NewContext(ContextConfig{
-				Permissions: []Permission{LThreadPermission{Kind_: permkind.Create}},
+				Permissions: append(GetDefaultGlobalVarPermissions(), LThreadPermission{Kind_: permkind.Create}),
 			}))
 			state.IsTestingEnabled = true
 			state.TestFilters = allTestsFilter

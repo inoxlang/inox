@@ -1,10 +1,12 @@
 package core
 
 import (
+	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
 
+	"github.com/go-git/go-billy/v5"
 	"github.com/go-git/go-billy/v5/helper/polyfill"
 	"github.com/go-git/go-billy/v5/memfs"
 	"github.com/go-git/go-billy/v5/osfs"
@@ -904,4 +906,73 @@ func newMemFilesystemRootWD() afs.Filesystem {
 		}
 		return "", ErrNotImplemented
 	})
+}
+
+func newSnapshotableMemFilesystem() *snapshotableMemFilesystem {
+	return &snapshotableMemFilesystem{memfs.New()}
+}
+
+var _ = afs.Filesystem((*snapshotableMemFilesystem)(nil))
+var _ = SnapshotableFilesystem((*snapshotableMemFilesystem)(nil))
+
+func copyMemFs(fls afs.Filesystem) afs.Filesystem {
+	newMemFs := newMemFilesystem()
+	util.Walk(fls, "/", func(path string, info fs.FileInfo, err error) error {
+		if info.IsDir() {
+			return newMemFs.MkdirAll(path, info.Mode().Perm())
+		} else {
+			content, err := util.ReadFile(fls, path)
+			if err != nil {
+				return err
+			}
+			return util.WriteFile(newMemFs, path, content, info.Mode().Perm())
+		}
+	})
+	return newMemFs
+}
+
+type snapshotableMemFilesystem struct {
+	billy.Filesystem
+}
+
+func (*snapshotableMemFilesystem) Absolute(path string) (string, error) {
+	return "", ErrNotImplemented
+}
+
+func (fls *snapshotableMemFilesystem) TakeFilesystemSnapshot(getContent func(ChecksumSHA256 [32]byte) AddressableContent) FilesystemSnapshot {
+	return &memFilesystemSnapshot{
+		fls: copyMemFs(fls),
+	}
+}
+
+var _ = FilesystemSnapshot((*memFilesystemSnapshot)(nil))
+
+// memFilesystemSnapshot is partial implementation of FilesystemSnapshot,
+// it only implements NewAdaptedFilesystem by returning a deep copy of fls.
+type memFilesystemSnapshot struct {
+	fls afs.Filesystem
+}
+
+func (s *memFilesystemSnapshot) NewAdaptedFilesystem(maxTotalStorageSizeHint ByteCount) (SnapshotableFilesystem, error) {
+	return &snapshotableMemFilesystem{copyMemFs(s.fls)}, nil
+}
+
+func (*memFilesystemSnapshot) Content(path string) (AddressableContent, error) {
+	panic("unimplemented")
+}
+
+func (*memFilesystemSnapshot) ForEachEntry(func(m EntrySnapshotMetadata) error) error {
+	panic("unimplemented")
+}
+
+func (*memFilesystemSnapshot) IsStoredLocally() bool {
+	panic("unimplemented")
+}
+
+func (*memFilesystemSnapshot) Metadata(path string) (EntrySnapshotMetadata, error) {
+	panic("unimplemented")
+}
+
+func (*memFilesystemSnapshot) RootDirEntries() []EntrySnapshotMetadata {
+	panic("unimplemented")
 }

@@ -16,6 +16,7 @@ var (
 )
 
 type SnapshotableFilesystem interface {
+	afs.Filesystem
 	TakeFilesystemSnapshot(getContent func(ChecksumSHA256 [32]byte) AddressableContent) FilesystemSnapshot
 }
 
@@ -42,7 +43,7 @@ type FilesystemSnapshot interface {
 
 	//NewAdaptedFilesystem creates a filesystem from the snapshot,
 	//it should be adapted to the FilesystemSnapshot implementation.
-	NewAdaptedFilesystem(maxTotalStorageSizeHint ByteCount) (afs.Filesystem, error)
+	NewAdaptedFilesystem(maxTotalStorageSizeHint ByteCount) (SnapshotableFilesystem, error)
 }
 
 type AddressableContent interface {

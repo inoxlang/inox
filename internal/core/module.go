@@ -214,7 +214,11 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (_ *Manifest, usedRunningState
 	}()
 
 	if m.ManifestTemplate == nil {
-		return NewEmptyManifest(), nil, nil, nil
+		manifest := NewEmptyManifest()
+		if preinitArgs.AddDefaultPermissions {
+			manifest.RequiredPermissions = append(manifest.RequiredPermissions, GetDefaultGlobalVarPermissions()...)
+		}
+		return manifest, nil, nil, nil
 	}
 
 	manifestObjLiteral, ok := m.ManifestTemplate.Object.(*parse.ObjectLiteral)
