@@ -15,7 +15,9 @@ func TestObject(t *testing.T) {
 	t.Run("SetProp", func(t *testing.T) {
 
 		{
-			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			ctx := NewContexWithEmptyState(ContextConfig{
+				Permissions: GetDefaultGlobalVarPermissions(),
+			}, nil)
 			defer ctx.CancelGracefully()
 
 			obj := NewObjectFromMap(ValMap{}, ctx)
@@ -26,7 +28,9 @@ func TestObject(t *testing.T) {
 		}
 
 		{
-			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			ctx := NewContexWithEmptyState(ContextConfig{
+				Permissions: GetDefaultGlobalVarPermissions(),
+			}, nil)
 			defer ctx.CancelGracefully()
 
 			obj := NewObjectFromMap(ValMap{}, ctx)
@@ -53,11 +57,15 @@ func TestObject(t *testing.T) {
 		}
 
 		t.Run("sould wait current transaction to be finished", func(t *testing.T) {
-			ctx1 := NewContexWithEmptyState(ContextConfig{}, nil)
+			ctx1 := NewContexWithEmptyState(ContextConfig{
+				Permissions: GetDefaultGlobalVarPermissions(),
+			}, nil)
 			defer ctx1.CancelGracefully()
 
 			tx1 := StartNewTransaction(ctx1)
-			ctx2 := NewContexWithEmptyState(ContextConfig{}, nil)
+			ctx2 := NewContexWithEmptyState(ContextConfig{
+				Permissions: GetDefaultGlobalVarPermissions(),
+			}, nil)
 			defer ctx2.CancelGracefully()
 
 			obj := NewObjectFromMap(ValMap{}, ctx1)
@@ -103,7 +111,9 @@ func TestObject(t *testing.T) {
 	t.Run("Prop", func(t *testing.T) {
 
 		t.Run("call after invalid PropNotStored call", func(t *testing.T) {
-			ctx1 := NewContexWithEmptyState(ContextConfig{}, nil)
+			ctx1 := NewContexWithEmptyState(ContextConfig{
+				Permissions: GetDefaultGlobalVarPermissions(),
+			}, nil)
 			defer ctx1.CancelGracefully()
 
 			obj := NewObjectFromMap(ValMap{"a": Int(1)}, ctx1)
@@ -115,7 +125,9 @@ func TestObject(t *testing.T) {
 				return
 			}
 
-			ctx2 := NewContexWithEmptyState(ContextConfig{}, nil)
+			ctx2 := NewContexWithEmptyState(ContextConfig{
+				Permissions: GetDefaultGlobalVarPermissions(),
+			}, nil)
 			defer ctx2.CancelGracefully()
 
 			//the object properties should still be accessible from another execution context
@@ -136,6 +148,7 @@ func TestObject(t *testing.T) {
 					LThreadPermission{Kind_: permkind.Create},
 					GlobalVarPermission{Kind_: permkind.Use, Name: "*"},
 					GlobalVarPermission{Kind_: permkind.Read, Name: "*"},
+					GlobalVarPermission{Kind_: permkind.Create, Name: "*"},
 				},
 			})
 
