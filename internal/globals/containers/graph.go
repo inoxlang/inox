@@ -62,7 +62,7 @@ func NewGraph(ctx *core.Context, nodeData *core.List, edges *core.List) *Graph {
 }
 
 type Graph struct {
-	graph     *in_mem_ds.DirectedGraph[core.Value, struct{}]
+	graph     *in_mem_ds.DirectedGraph[core.Value, struct{}, struct{}]
 	roots     map[in_mem_ds.NodeId]bool
 	rootsLock sync.Mutex
 }

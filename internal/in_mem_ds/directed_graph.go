@@ -9,11 +9,13 @@ import (
 )
 
 var (
-	ErrSelfEdgeNotSupportedYet = errors.New("self edge not supported yet")
+	ErrSelfEdgeNotSupportedYet        = errors.New("self edge not supported yet")
+	ErrNodeNotFound                   = errors.New("node not found")
+	ErrUnsupportedSingleNodeRetrieval = errors.New("unsupported single node retrieval")
 )
 
 // DirectedGraph is a directed graph.
-type DirectedGraph[NodeData, EdgeData any] struct {
+type DirectedGraph[NodeData, EdgeData any, InternalData any] struct {
 	nodes map[NodeId]GraphNode[NodeData]
 
 	//source node -> destination nodes
@@ -27,11 +29,30 @@ type DirectedGraph[NodeData, EdgeData any] struct {
 	edgeCount    int64
 
 	lock *sync.RWMutex //if nil the graph is not thread safe
+
+	//the following fields should be set after the call to NewDirectedGraph and before any access to the graph.
+	//if the graph is thread safe all calls are done while the graph is still locked.
+	//all the following functions should never mutate the graph.
+
+	additionalData   InternalData
+	beforeAddingNode func(g *DirectedGraph[NodeData, EdgeData, InternalData], data NodeData) error
+	afterNodeAdded   func(g *DirectedGraph[NodeData, EdgeData, InternalData], node GraphNode[NodeData])
+	afterNodeRemoved func(g *DirectedGraph[NodeData, EdgeData, InternalData], id NodeId, data NodeData)
+
+	//if the node is not found ErrNodeNotFound should be returned.
+	//if the type of retrieval is not supported ErrUnsupportedSingleNodeRetrieval should be returned.
+	getNodeWith func(g *DirectedGraph[NodeData, EdgeData, InternalData], retrieval SingleNodeRetrievalType, arg any) (GraphNode[NodeData], error)
 }
 
-// NewDirectedGraph returns a DirectedGraph.
-func NewDirectedGraph[NodeData, EdgeData any](threadSafety ThreadSafety) *DirectedGraph[NodeData, EdgeData] {
-	graph := &DirectedGraph[NodeData, EdgeData]{
+type SingleNodeRetrievalType int
+
+const (
+	WithData SingleNodeRetrievalType = iota + 1
+)
+
+// NewDirectedGraph returns a DirectedGraph with no special abilities.
+func NewDirectedGraph[NodeData, EdgeData any](threadSafety ThreadSafety) *DirectedGraph[NodeData, EdgeData, struct{}] {
+	graph := &DirectedGraph[NodeData, EdgeData, struct{}]{
 		nodes:  make(map[NodeId]GraphNode[NodeData]),
 		from:   make(map[NodeId]map[NodeId]EdgeData),
 		to:     make(map[NodeId]map[NodeId]EdgeData),
@@ -43,10 +64,25 @@ func NewDirectedGraph[NodeData, EdgeData any](threadSafety ThreadSafety) *Direct
 	}
 
 	return graph
-
 }
 
-func (g *DirectedGraph[NodeData, EdgeData]) NodeCount() int {
+// NewDirectedGraph returns a DirectedGraph.
+func newDirectedGraph[NodeData, EdgeData any, InternalData any](threadSafety ThreadSafety) *DirectedGraph[NodeData, EdgeData, InternalData] {
+	graph := &DirectedGraph[NodeData, EdgeData, InternalData]{
+		nodes:  make(map[NodeId]GraphNode[NodeData]),
+		from:   make(map[NodeId]map[NodeId]EdgeData),
+		to:     make(map[NodeId]map[NodeId]EdgeData),
+		currId: -1,
+	}
+
+	if threadSafety == ThreadSafe {
+		graph.lock = &sync.RWMutex{}
+	}
+
+	return graph
+}
+
+func (g *DirectedGraph[NodeData, EdgeData, InternalData]) NodeCount() int {
 	if g.lock != nil {
 		g.lock.RLock()
 		defer g.lock.RUnlock()
@@ -55,7 +91,7 @@ func (g *DirectedGraph[NodeData, EdgeData]) NodeCount() int {
 	return len(g.nodes)
 }
 
-func (g *DirectedGraph[NodeData, EdgeData]) EdgeCount() int64 {
+func (g *DirectedGraph[NodeData, EdgeData, InternalData]) EdgeCount() int64 {
 	if g.lock != nil {
 		g.lock.RLock()
 		defer g.lock.RUnlock()
@@ -64,7 +100,7 @@ func (g *DirectedGraph[NodeData, EdgeData]) EdgeCount() int64 {
 }
 
 // RandomNode returns the id of a pseudo randomly picked node.
-func (g *DirectedGraph[NodeData, EdgeData]) RandomNode() (NodeId, bool) {
+func (g *DirectedGraph[NodeData, EdgeData, InternalData]) RandomNode() (NodeId, bool) {
 	if g.lock != nil {
 		g.lock.RLock()
 		defer g.lock.RUnlock()
@@ -77,7 +113,7 @@ func (g *DirectedGraph[NodeData, EdgeData]) RandomNode() (NodeId, bool) {
 }
 
 // NodeIds returns all the node ids in the graph.
-func (g *DirectedGraph[NodeData, EdgeData]) NodeIds() []NodeId {
+func (g *DirectedGraph[NodeData, EdgeData, InternalData]) NodeIds() []NodeId {
 	if g.lock != nil {
 		g.lock.RLock()
 		defer g.lock.RUnlock()
@@ -88,10 +124,17 @@ func (g *DirectedGraph[NodeData, EdgeData]) NodeIds() []NodeId {
 
 // AddNode creates an node with the passed data and returns the new node's id.
 // Node ids start at 0.
-func (g *DirectedGraph[NodeData, EdgeData]) AddNode(data NodeData) NodeId {
+func (g *DirectedGraph[NodeData, EdgeData, InternalData]) AddNode(data NodeData) NodeId {
 	if g.lock != nil {
 		g.lock.Lock()
 		defer g.lock.Unlock()
+	}
+
+	if g.beforeAddingNode != nil {
+		err := g.beforeAddingNode(g, data)
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	var id NodeId
@@ -105,9 +148,15 @@ func (g *DirectedGraph[NodeData, EdgeData]) AddNode(data NodeData) NodeId {
 		g.availableIds = g.availableIds[:len(g.availableIds)-1]
 	}
 
-	g.nodes[id] = GraphNode[NodeData]{
+	node := GraphNode[NodeData]{
 		Id:   id,
 		Data: data,
+	}
+
+	g.nodes[id] = node
+
+	if g.afterNodeAdded != nil {
+		g.afterNodeAdded(g, node)
 	}
 
 	return id
@@ -115,7 +164,7 @@ func (g *DirectedGraph[NodeData, EdgeData]) AddNode(data NodeData) NodeId {
 
 // Edge returns the edge from srcId to destId if such an edge exists.
 // The destination node must be directly reachable from the source node.
-func (g *DirectedGraph[NodeData, EdgeData]) Edge(srcId, destId NodeId) (GraphEdge[EdgeData], bool) {
+func (g *DirectedGraph[NodeData, EdgeData, InternalData]) Edge(srcId, destId NodeId) (GraphEdge[EdgeData], bool) {
 	if g.lock != nil {
 		g.lock.RLock()
 		defer g.lock.RUnlock()
@@ -129,7 +178,7 @@ func (g *DirectedGraph[NodeData, EdgeData]) Edge(srcId, destId NodeId) (GraphEdg
 }
 
 // Edges returns all the edges in the graph.
-func (g *DirectedGraph[NodeData, EdgeData]) Edges() []GraphEdge[EdgeData] {
+func (g *DirectedGraph[NodeData, EdgeData, InternalData]) Edges() []GraphEdge[EdgeData] {
 	if g.lock != nil {
 		g.lock.RLock()
 		defer g.lock.RUnlock()
@@ -147,7 +196,7 @@ func (g *DirectedGraph[NodeData, EdgeData]) Edges() []GraphEdge[EdgeData] {
 }
 
 // From returns all nodes in g that can be reached directly from n.
-func (g *DirectedGraph[NodeData, EdgeData]) DestinationNodes(id NodeId) []GraphNode[NodeData] {
+func (g *DirectedGraph[NodeData, EdgeData, InternalData]) DestinationNodes(id NodeId) []GraphNode[NodeData] {
 	if g.lock != nil {
 		g.lock.RLock()
 		defer g.lock.RUnlock()
@@ -168,7 +217,7 @@ func (g *DirectedGraph[NodeData, EdgeData]) DestinationNodes(id NodeId) []GraphN
 }
 
 // From returns the ids of nodes in g that can be reached directly from n.
-func (g *DirectedGraph[NodeData, EdgeData]) DestinationIds(id NodeId) []NodeId {
+func (g *DirectedGraph[NodeData, EdgeData, InternalData]) DestinationIds(id NodeId) []NodeId {
 	if g.lock != nil {
 		g.lock.RLock()
 		defer g.lock.RUnlock()
@@ -183,7 +232,7 @@ func (g *DirectedGraph[NodeData, EdgeData]) DestinationIds(id NodeId) []NodeId {
 }
 
 // To returns all nodes in g that can reach directly to n.
-func (g *DirectedGraph[NodeData, EdgeData]) SourceNodes(id NodeId) []GraphNode[NodeData] {
+func (g *DirectedGraph[NodeData, EdgeData, InternalData]) SourceNodes(id NodeId) []GraphNode[NodeData] {
 	if g.lock != nil {
 		g.lock.RLock()
 		defer g.lock.RUnlock()
@@ -204,7 +253,7 @@ func (g *DirectedGraph[NodeData, EdgeData]) SourceNodes(id NodeId) []GraphNode[N
 }
 
 // CountToTo returns the number of nodes in g that can reach directly to n.
-func (g *DirectedGraph[NodeData, EdgeData]) CountSourceNodes(id NodeId) int {
+func (g *DirectedGraph[NodeData, EdgeData, InternalData]) CountSourceNodes(id NodeId) int {
 	if g.lock != nil {
 		g.lock.RLock()
 		defer g.lock.RUnlock()
@@ -216,7 +265,7 @@ func (g *DirectedGraph[NodeData, EdgeData]) CountSourceNodes(id NodeId) int {
 
 // HasEdgeBetween returns whether an edge exists between nodes x and y without
 // considering direction.
-func (g *DirectedGraph[NodeData, EdgeData]) HasEdgeBetween(xid, yid NodeId) bool {
+func (g *DirectedGraph[NodeData, EdgeData, InternalData]) HasEdgeBetween(xid, yid NodeId) bool {
 	if g.lock != nil {
 		g.lock.RLock()
 		defer g.lock.RUnlock()
@@ -230,7 +279,7 @@ func (g *DirectedGraph[NodeData, EdgeData]) HasEdgeBetween(xid, yid NodeId) bool
 }
 
 // HasEdgeFromTo returns whether an edge exists in the graph from srcId to destId.
-func (g *DirectedGraph[NodeData, EdgeData]) HasEdgeFromTo(srcId, destId NodeId) bool {
+func (g *DirectedGraph[NodeData, EdgeData, InternalData]) HasEdgeFromTo(srcId, destId NodeId) bool {
 	if g.lock != nil {
 		g.lock.RLock()
 		defer g.lock.RUnlock()
@@ -243,7 +292,7 @@ func (g *DirectedGraph[NodeData, EdgeData]) HasEdgeFromTo(srcId, destId NodeId) 
 }
 
 // Node returns the node with the given ID if it exists in the graph.
-func (g *DirectedGraph[NodeData, EdgeData]) Node(id NodeId) (GraphNode[NodeData], bool) {
+func (g *DirectedGraph[NodeData, EdgeData, InternalData]) Node(id NodeId) (GraphNode[NodeData], bool) {
 	if g.lock != nil {
 		g.lock.RLock()
 		defer g.lock.RUnlock()
@@ -254,7 +303,7 @@ func (g *DirectedGraph[NodeData, EdgeData]) Node(id NodeId) (GraphNode[NodeData]
 }
 
 // Node returns the data of the node with the given ID if it exists in the graph.
-func (g *DirectedGraph[NodeData, EdgeData]) NodeData(id NodeId) (_ NodeData, _ bool) {
+func (g *DirectedGraph[NodeData, EdgeData, InternalData]) NodeData(id NodeId) (_ NodeData, _ bool) {
 	if g.lock != nil {
 		g.lock.RLock()
 		defer g.lock.RUnlock()
@@ -267,10 +316,49 @@ func (g *DirectedGraph[NodeData, EdgeData]) NodeData(id NodeId) (_ NodeData, _ b
 	return
 }
 
-// NodeWithID returns a Node with the given ID if possible. If a graph.Node
-// is returned that is not already in the graph NodeWithID will return true
-// for new and the graph.Node must be added to the graph before use.
-func (g *DirectedGraph[NodeData, EdgeData]) NodeWithID(id NodeId) (n GraphNode[NodeData], new bool) {
+// GetNode retrieves a node using the specified retrieval type or returns the error ErrNodeNotFound.
+// If the retrieval type is not supported ErrUnsupportedSingleNodeRetrieval is returned.
+func (g *DirectedGraph[NodeData, EdgeData, InternalData]) GetNode(retrievalType SingleNodeRetrievalType, data any) (node GraphNode[NodeData], finalErr error) {
+	if g.lock != nil {
+		g.lock.RLock()
+		defer g.lock.RUnlock()
+	}
+
+	if g.getNodeWith == nil {
+		finalErr = ErrUnsupportedSingleNodeRetrieval
+		return
+	}
+
+	return g.getNodeWith(g, retrievalType, data)
+}
+
+// HasNode determines if a node existing using the specified retrieval type.
+// If the retrieval type is not supported ErrUnsupportedSingleNodeRetrieval is returned.
+func (g *DirectedGraph[NodeData, EdgeData, InternalData]) HasNode(retrievalType SingleNodeRetrievalType, data any) (found bool, finalErr error) {
+	if g.lock != nil {
+		g.lock.RLock()
+		defer g.lock.RUnlock()
+	}
+
+	if g.getNodeWith == nil {
+		finalErr = ErrUnsupportedSingleNodeRetrieval
+		return
+	}
+
+	_, err := g.getNodeWith(g, retrievalType, data)
+	if errors.Is(err, ErrNodeNotFound) {
+		return
+	}
+	if err != nil {
+		finalErr = err
+		return
+	}
+
+	return true, nil
+}
+
+// NodeWithID returns a Node with the given ID if found.
+func (g *DirectedGraph[NodeData, EdgeData, InternalData]) NodeWithID(id NodeId) (n GraphNode[NodeData], found bool) {
 	if g.lock != nil {
 		g.lock.RLock()
 		defer g.lock.RUnlock()
@@ -285,7 +373,7 @@ func (g *DirectedGraph[NodeData, EdgeData]) NodeWithID(id NodeId) (n GraphNode[N
 
 // RemoveEdge removes the edge with the given end point IDs from the graph, leaving the terminal
 // nodes. If the edge does not exist it is a no-op.
-func (g *DirectedGraph[NodeData, EdgeData]) RemoveEdge(srcId, destId NodeId) {
+func (g *DirectedGraph[NodeData, EdgeData, InternalData]) RemoveEdge(srcId, destId NodeId) {
 	if g.lock != nil {
 		g.lock.Lock()
 		defer g.lock.Unlock()
@@ -309,13 +397,14 @@ func (g *DirectedGraph[NodeData, EdgeData]) RemoveEdge(srcId, destId NodeId) {
 
 // RemoveNode removes the node with the given ID from the graph, as well as any edges attached
 // to it. If the node is not in the graph it is a no-op.
-func (g *DirectedGraph[NodeData, EdgeData]) RemoveNode(id NodeId) {
+func (g *DirectedGraph[NodeData, EdgeData, InternalData]) RemoveNode(id NodeId) {
 	if g.lock != nil {
 		g.lock.Lock()
 		defer g.lock.Unlock()
 	}
 
-	if _, ok := g.nodes[id]; !ok {
+	node, ok := g.nodes[id]
+	if !ok {
 		return
 	}
 	delete(g.nodes, id)
@@ -330,12 +419,16 @@ func (g *DirectedGraph[NodeData, EdgeData]) RemoveNode(id NodeId) {
 	}
 	delete(g.to, id)
 
+	if g.afterNodeRemoved != nil {
+		g.afterNodeRemoved(g, id, node.Data)
+	}
+
 	g.availableIds = append(g.availableIds, id)
 }
 
 // SetEdge adds e, an edge from one node to another. The nodes must exist.
 // It will panic if the target node is the same as the source node.
-func (g *DirectedGraph[NodeData, EdgeData]) SetEdge(from, to NodeId, data EdgeData) {
+func (g *DirectedGraph[NodeData, EdgeData, InternalData]) SetEdge(from, to NodeId, data EdgeData) {
 	e := GraphEdge[EdgeData]{
 		From: from,
 		To:   to,

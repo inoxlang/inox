@@ -17,7 +17,7 @@ const (
 )
 
 type ResourceGraph struct {
-	directed     *in_mem_ds.DirectedGraph[*ResourceNode, ResourceRelationKind]
+	directed     *in_mem_ds.DirectedGraph[*ResourceNode, ResourceRelationKind, struct{}]
 	resourceToId map[string]in_mem_ds.NodeId
 	roots        map[in_mem_ds.NodeId]struct{}
 }

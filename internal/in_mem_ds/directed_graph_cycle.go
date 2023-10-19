@@ -6,7 +6,7 @@ import "github.com/bits-and-blooms/bitset"
 // HasCycleOrCircuit detects if there is a cycle or a circuit in g,
 // time complexity is O(N^2), space complexity is O(N).
 // HasCycleOrCircuit only uses two bitsets of size ~N.
-func (g *DirectedGraph[NodeData, EdgeData]) HasCycleOrCircuit() bool {
+func (g *DirectedGraph[NodeData, EdgeData, InternalData]) HasCycleOrCircuit() bool {
 	if g.lock != nil {
 		g.lock.RLock()
 		defer g.lock.RUnlock()
