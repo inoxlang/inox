@@ -9913,14 +9913,7 @@ func (p *parser) checkImportPath(node SimpleValueLiteral) {
 		return
 	}
 
-	type FSMState int
-	const (
-		SingleDoubleDotAndSlashes FSMState = iota // ./ | ../ | ./../ | ../../ etc
-		AfterSingleDoubleDotAndSlashes
-	)
-	var state FSMState = SingleDoubleDotAndSlashes
-
-	i := 1 //we start at 1 on purpose.
+	i := 0
 
 	if i >= len(runes) {
 		return
@@ -9930,26 +9923,17 @@ func (p *parser) checkImportPath(node SimpleValueLiteral) {
 		r := runes[i]
 		switch r {
 		case '/':
-			if runes[i-1] == '/' {
+			if i != 0 && runes[i-1] == '/' {
 				node.BasePtr().Err = &ParsingError{UnspecifiedParsingError, PATH_LITERALS_USED_AS_IMPORT_SRCS_SHOULD_NOT_CONTAIN_SLASHSLASH}
 				return
 			}
 		case '.':
 			/* /../ */
-			if i < len(runes)-2 && runes[i-1] == '/' && runes[i+1] == '.' && runes[i+2] == '/' {
-				if state != SingleDoubleDotAndSlashes {
-					node.BasePtr().Err = &ParsingError{UnspecifiedParsingError, PATH_LITERALS_USED_AS_IMPORT_SRCS_SHOULD_NOT_CONTAIN_UNECESSARY_DOT_SLASHSLASH}
-					return
-				}
-				if absolute {
-					node.BasePtr().Err = &ParsingError{UnspecifiedParsingError, PATH_LITERALS_USED_AS_IMPORT_SRCS_SHOULD_NOT_CONTAIN_UNECESSARY_DOT_SLASHSLASH}
-					return
-				}
-				i += 3
-				continue
+			if (i == 0 || runes[i-1] == '/') && i < len(runes)-2 && runes[i+1] == '.' && runes[i+2] == '/' {
+				node.BasePtr().Err = &ParsingError{UnspecifiedParsingError, PATH_LITERALS_USED_AS_IMPORT_SRCS_SHOULD_NOT_CONTAIN_DOT_SLASHSLASH}
+				return
 			}
 		default:
-			state = AfterSingleDoubleDotAndSlashes
 		}
 		i++
 	}

@@ -307,8 +307,8 @@ const (
 	INCLUSION_IMPORT_STMT_VALID_STR_SHOULD_BE_A_STRING_LIT = "inclusion import statement: validation should be a string literal"
 
 	//import
-	PATH_LITERALS_USED_AS_IMPORT_SRCS_SHOULD_NOT_CONTAIN_SLASHSLASH                = "path literals used as import sources should not contain '//'"
-	PATH_LITERALS_USED_AS_IMPORT_SRCS_SHOULD_NOT_CONTAIN_UNECESSARY_DOT_SLASHSLASH = "path literals used as import sources should not contain unecessary '/../' segments"
+	PATH_LITERALS_USED_AS_IMPORT_SRCS_SHOULD_NOT_CONTAIN_SLASHSLASH     = "path literals used as import sources should not contain '//'"
+	PATH_LITERALS_USED_AS_IMPORT_SRCS_SHOULD_NOT_CONTAIN_DOT_SLASHSLASH = "path literals used as import sources should not contain '..' segments; if possible use an absolute path literal instead"
 
 	UNTERMINATED_EMBEDDED_MODULE                            = "unterminated embedded module"
 	INVALID_FOR_STMT                                        = "invalid for statement"
