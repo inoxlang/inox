@@ -297,12 +297,18 @@ const (
 	UNTERMINATED_MATCH_STMT_MISSING_VALUE   = "unterminated match statement: missing value"
 	DROP_PERM_KEYWORD_SHOULD_BE_FOLLOWED_BY = "permission dropping statement: 'drop-perms' keyword should be followed by an object literal (permissions)"
 
-	//import
+	//module import
 	IMPORT_STMT_IMPORT_KEYWORD_SHOULD_BE_FOLLOWED_BY_IDENT = "import statement: the 'import' keyword should be followed by an identifier"
 	IMPORT_STMT_SRC_SHOULD_BE_AN_URL_OR_PATH_LIT           = "import statement: source should be a URL literal or Path literal"
 	IMPORT_STMT_CONFIG_SHOULD_BE_AN_OBJ_LIT                = "import statement: configuration should be an object literal"
+
+	//inclusion import
 	INCLUSION_IMPORT_STMT_SRC_SHOULD_BE_A_PATH_LIT         = "inclusion import statement: source should be path literal (/file.ix, ./file.ix, ...)"
 	INCLUSION_IMPORT_STMT_VALID_STR_SHOULD_BE_A_STRING_LIT = "inclusion import statement: validation should be a string literal"
+
+	//import
+	PATH_LITERALS_USED_AS_IMPORT_SRCS_SHOULD_NOT_CONTAIN_SLASHSLASH                = "path literals used as import sources should not contain '//'"
+	PATH_LITERALS_USED_AS_IMPORT_SRCS_SHOULD_NOT_CONTAIN_UNECESSARY_DOT_SLASHSLASH = "path literals used as import sources should not contain unecessary '/../' segments"
 
 	UNTERMINATED_EMBEDDED_MODULE                            = "unterminated embedded module"
 	INVALID_FOR_STMT                                        = "invalid for statement"

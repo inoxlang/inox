@@ -9816,27 +9816,41 @@ func (p *parser) parseImportStatement(importIdent *IdentifierLiteral) Node {
 
 	var identifier *IdentifierLiteral
 
-	switch node := e.(type) {
-	case *RelativePathLiteral, *AbsolutePathLiteral:
+	switch src := e.(type) {
+	case *RelativePathLiteral:
+		p.checkImportPath(src)
+
 		return &InclusionImportStatement{
 			NodeBase: NodeBase{
 				NodeSpan{importIdent.Span.Start, p.i},
 				nil,
 				false,
 			},
-			Source: node,
+			Source: src,
+		}
+	case *AbsolutePathLiteral:
+		p.checkImportPath(src)
+
+		return &InclusionImportStatement{
+			NodeBase: NodeBase{
+				NodeSpan{importIdent.Span.Start, p.i},
+				nil,
+				false,
+			},
+			Source: src,
 		}
 	case *IdentifierLiteral:
-		identifier = node
+		identifier = src
+		//we continue parsing the module import statement
 	default:
-		if NodeIsSimpleValueLiteral(node) {
+		if NodeIsSimpleValueLiteral(src) {
 			return &InclusionImportStatement{
 				NodeBase: NodeBase{
 					NodeSpan{importIdent.Span.Start, p.i},
 					&ParsingError{UnspecifiedParsingError, INCLUSION_IMPORT_STMT_SRC_SHOULD_BE_A_PATH_LIT},
 					false,
 				},
-				Source: node,
+				Source: src,
 			}
 		}
 
@@ -9846,7 +9860,7 @@ func (p *parser) parseImportStatement(importIdent *IdentifierLiteral) Node {
 				&ParsingError{UnspecifiedParsingError, IMPORT_STMT_IMPORT_KEYWORD_SHOULD_BE_FOLLOWED_BY_IDENT},
 				false,
 			},
-			Source: node,
+			Source: src,
 		}
 	}
 
@@ -9856,8 +9870,12 @@ func (p *parser) parseImportStatement(importIdent *IdentifierLiteral) Node {
 
 	var parsingError *ParsingError
 
-	switch src.(type) {
-	case *URLLiteral, *RelativePathLiteral, *AbsolutePathLiteral:
+	switch src := src.(type) {
+	case *URLLiteral:
+	case *RelativePathLiteral:
+		p.checkImportPath(src)
+	case *AbsolutePathLiteral:
+		p.checkImportPath(src)
 	default:
 		parsingError = &ParsingError{UnspecifiedParsingError, IMPORT_STMT_SRC_SHOULD_BE_AN_URL_OR_PATH_LIT}
 	}
@@ -9878,6 +9896,62 @@ func (p *parser) parseImportStatement(importIdent *IdentifierLiteral) Node {
 		Identifier:    identifier,
 		Source:        src,
 		Configuration: config,
+	}
+}
+
+func (p *parser) checkImportPath(node SimpleValueLiteral) {
+	if node.Base().Err != nil {
+		return
+	}
+	path := node.ValueString()
+	runes := []rune(path)
+
+	absolute := path[0] == '/'
+	dotSlash := strings.HasPrefix(path, "./")
+	if !absolute && !dotSlash && !strings.HasPrefix(path, "../") {
+		node.BasePtr().Err = &ParsingError{UnspecifiedParsingError, "unexpected path beginning"}
+		return
+	}
+
+	type FSMState int
+	const (
+		SingleDoubleDotAndSlashes FSMState = iota // ./ | ../ | ./../ | ../../ etc
+		AfterSingleDoubleDotAndSlashes
+	)
+	var state FSMState = SingleDoubleDotAndSlashes
+
+	i := 1 //we start at 1 on purpose.
+
+	if i >= len(runes) {
+		return
+	}
+
+	for i < len(runes) {
+		r := runes[i]
+		switch r {
+		case '/':
+			if runes[i-1] == '/' {
+				node.BasePtr().Err = &ParsingError{UnspecifiedParsingError, PATH_LITERALS_USED_AS_IMPORT_SRCS_SHOULD_NOT_CONTAIN_SLASHSLASH}
+				return
+			}
+		case '.':
+			/* /../ */
+			if i < len(runes)-2 && runes[i-1] == '/' && runes[i+1] == '.' && runes[i+2] == '/' {
+				if state != SingleDoubleDotAndSlashes {
+					node.BasePtr().Err = &ParsingError{UnspecifiedParsingError, PATH_LITERALS_USED_AS_IMPORT_SRCS_SHOULD_NOT_CONTAIN_UNECESSARY_DOT_SLASHSLASH}
+					return
+				}
+				if absolute {
+					node.BasePtr().Err = &ParsingError{UnspecifiedParsingError, PATH_LITERALS_USED_AS_IMPORT_SRCS_SHOULD_NOT_CONTAIN_UNECESSARY_DOT_SLASHSLASH}
+					return
+				}
+				i += 3
+				continue
+			}
+		default:
+			state = AfterSingleDoubleDotAndSlashes
+		}
+		i++
 	}
 }
 
