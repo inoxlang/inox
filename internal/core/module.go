@@ -711,9 +711,14 @@ func ParseModuleFromSource(src parse.ChunkSource, resource ResourceName, config 
 func ParseLocalIncludedFiles(mod *Module, ctx *Context, fls afs.Filesystem, recoverFromNonExistingIncludedFiles bool) (unrecoverableError error) {
 	src := mod.MainChunk.Source.(parse.SourceFile)
 
-	inclusionStmts := parse.FindNodes(mod.MainChunk.Node, &parse.InclusionImportStatement{}, nil)
+	inclusionStmts := parse.FindNodes(mod.MainChunk.Node, (*parse.InclusionImportStatement)(nil), nil)
 
 	for _, stmt := range inclusionStmts {
+		//ignore import if the source has an error
+		if recoverFromNonExistingIncludedFiles && (stmt.Source == nil || stmt.Source.Base().Err != nil) {
+			continue
+		}
+
 		path, isAbsolute := stmt.PathSource()
 		chunkFilepath := path
 
@@ -885,6 +890,11 @@ func ParseLocalSecondaryChunk(config LocalSecondaryChunkParsingConfig) (*Include
 	inclusionStmts := parse.FindNodes(chunk.Node, (*parse.InclusionImportStatement)(nil), nil)
 
 	for _, stmt := range inclusionStmts {
+		//ignore import if the source has an error
+		if config.RecoverFromNonExistingIncludedFiles && (stmt.Source == nil || stmt.Source.Base().Err != nil) {
+			continue
+		}
+
 		path, isAbsolute := stmt.PathSource()
 		chunkFilepath := path
 
