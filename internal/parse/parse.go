@@ -9935,7 +9935,8 @@ func (p *parser) checkImportPath(node SimpleValueLiteral) {
 				node.BasePtr().Err = err
 				return
 			}
-			if i > 0 && runes[i-1] == '/' && i < len(runes) && runes[i+1] == '/' {
+			/* /../ */
+			if i > 0 && runes[i-1] == '/' && i < len(runes)-1 && runes[i+1] == '/' {
 				err := &ParsingError{UnspecifiedParsingError, PATH_LITERALS_USED_AS_IMPORT_SRCS_SHOULD_NOT_CONTAIN_DOT_SEGMENTS}
 				node.BasePtr().Err = err
 				return
