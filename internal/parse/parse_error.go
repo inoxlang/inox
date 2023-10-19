@@ -309,6 +309,7 @@ const (
 	//import
 	PATH_LITERALS_USED_AS_IMPORT_SRCS_SHOULD_NOT_CONTAIN_SLASHSLASH     = "path literals used as import sources should not contain '//'"
 	PATH_LITERALS_USED_AS_IMPORT_SRCS_SHOULD_NOT_CONTAIN_DOT_SLASHSLASH = "path literals used as import sources should not contain '..' segments; if possible use an absolute path literal instead"
+	PATH_LITERALS_USED_AS_IMPORT_SRCS_SHOULD_NOT_CONTAIN_DOT_SEGMENTS   = "path literals used as import sources should not contain segments with only a dot (e.g. /./file.ix); `./` is allowed at the start though"
 
 	UNTERMINATED_EMBEDDED_MODULE                            = "unterminated embedded module"
 	INVALID_FOR_STMT                                        = "invalid for statement"

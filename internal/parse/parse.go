@@ -9924,13 +9924,20 @@ func (p *parser) checkImportPath(node SimpleValueLiteral) {
 		switch r {
 		case '/':
 			if i != 0 && runes[i-1] == '/' {
-				node.BasePtr().Err = &ParsingError{UnspecifiedParsingError, PATH_LITERALS_USED_AS_IMPORT_SRCS_SHOULD_NOT_CONTAIN_SLASHSLASH}
+				err := &ParsingError{UnspecifiedParsingError, PATH_LITERALS_USED_AS_IMPORT_SRCS_SHOULD_NOT_CONTAIN_SLASHSLASH}
+				node.BasePtr().Err = err
 				return
 			}
 		case '.':
 			/* /../ */
 			if (i == 0 || runes[i-1] == '/') && i < len(runes)-2 && runes[i+1] == '.' && runes[i+2] == '/' {
-				node.BasePtr().Err = &ParsingError{UnspecifiedParsingError, PATH_LITERALS_USED_AS_IMPORT_SRCS_SHOULD_NOT_CONTAIN_DOT_SLASHSLASH}
+				err := &ParsingError{UnspecifiedParsingError, PATH_LITERALS_USED_AS_IMPORT_SRCS_SHOULD_NOT_CONTAIN_DOT_SLASHSLASH}
+				node.BasePtr().Err = err
+				return
+			}
+			if i > 0 && runes[i-1] == '/' && i < len(runes) && runes[i+1] == '/' {
+				err := &ParsingError{UnspecifiedParsingError, PATH_LITERALS_USED_AS_IMPORT_SRCS_SHOULD_NOT_CONTAIN_DOT_SEGMENTS}
+				node.BasePtr().Err = err
 				return
 			}
 		default:
