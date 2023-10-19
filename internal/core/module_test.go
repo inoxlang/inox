@@ -24,6 +24,7 @@ func TestParseModuleFromSource(t *testing.T) {
 			Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
 			Filesystem:  fls,
 		}, nil)
+		defer ctx.CancelGracefully()
 
 		mod, err := ParseModuleFromSource(parse.SourceFile{
 			NameString:  "/mod.ix",
@@ -50,6 +51,7 @@ func TestParseModuleFromSource(t *testing.T) {
 				Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
 				Filesystem:  fls,
 			}, nil)
+			defer ctx.CancelGracefully()
 
 			mod, err := ParseModuleFromSource(parse.SourceFile{
 				NameString:  "/mod.ix",
@@ -84,6 +86,7 @@ func TestParseModuleFromSource(t *testing.T) {
 				Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
 				Filesystem:  fls,
 			}, nil)
+			defer ctx.CancelGracefully()
 
 			mod, err := ParseModuleFromSource(parse.SourceFile{
 				NameString:  "/mod.ix",
@@ -118,6 +121,7 @@ func TestParseModuleFromSource(t *testing.T) {
 			Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
 			Filesystem:  fls,
 		}, nil)
+		defer ctx.CancelGracefully()
 
 		mod, err := ParseModuleFromSource(parse.SourceFile{
 			NameString:  "/mod.ix",
@@ -158,12 +162,13 @@ func TestParseLocalModule(t *testing.T) {
 	t.Run("base case", func(t *testing.T) {
 		modpath := writeModuleAndIncludedFiles(t, moduleName, `manifest {}`, nil)
 
-		mod, err := ParseLocalModule(modpath, ModuleParsingConfig{
-			Context: NewContexWithEmptyState(ContextConfig{
-				Permissions: []Permission{CreateFsReadPerm(Path(modpath))},
-				Filesystem:  newOsFilesystem(),
-			}, nil),
-		})
+		parsingCtx := NewContexWithEmptyState(ContextConfig{
+			Permissions: []Permission{CreateFsReadPerm(Path(modpath))},
+			Filesystem:  newOsFilesystem(),
+		}, nil)
+		defer parsingCtx.CancelGracefully()
+
+		mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: parsingCtx})
 		assert.NoError(t, err)
 
 		assert.NotNil(t, mod.MainChunk)
@@ -177,12 +182,13 @@ func TestParseLocalModule(t *testing.T) {
 		util.WriteFile(fls, modpath, []byte(`manifest {}`), 0o400)
 		relpath := "./main.ix"
 
-		mod, err := ParseLocalModule(relpath, ModuleParsingConfig{
-			Context: NewContexWithEmptyState(ContextConfig{
-				Permissions: []Permission{CreateFsReadPerm(Path(modpath))},
-				Filesystem:  fls,
-			}, nil),
-		})
+		parsingCtx := NewContexWithEmptyState(ContextConfig{
+			Permissions: []Permission{CreateFsReadPerm(Path(modpath))},
+			Filesystem:  fls,
+		}, nil)
+		defer parsingCtx.CancelGracefully()
+
+		mod, err := ParseLocalModule(relpath, ModuleParsingConfig{Context: parsingCtx})
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -203,12 +209,13 @@ func TestParseLocalModule(t *testing.T) {
 	t.Run("missing manifest", func(t *testing.T) {
 		modpath := writeModuleAndIncludedFiles(t, moduleName, ``, nil)
 
-		mod, err := ParseLocalModule(modpath, ModuleParsingConfig{
-			Context: NewContexWithEmptyState(ContextConfig{
-				Permissions: []Permission{CreateFsReadPerm(Path(modpath))},
-				Filesystem:  newOsFilesystem(),
-			}, nil),
-		})
+		parsingCtx := NewContexWithEmptyState(ContextConfig{
+			Permissions: []Permission{CreateFsReadPerm(Path(modpath))},
+			Filesystem:  newOsFilesystem(),
+		}, nil)
+		defer parsingCtx.CancelGracefully()
+
+		mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: parsingCtx})
 
 		assert.ErrorContains(t, err, "missing manifest")
 		assert.NotNil(t, mod.MainChunk)
@@ -223,6 +230,7 @@ func TestParseLocalModule(t *testing.T) {
 			Permissions: []Permission{CreateFsReadPerm(Path(modPath))},
 			Filesystem:  newMemFilesystem(),
 		}, nil)
+		defer ctx1.CancelGracefully()
 
 		//NOTE: we do not write the file on purpose.
 
@@ -241,6 +249,7 @@ func TestParseLocalModule(t *testing.T) {
 			Permissions: []Permission{CreateFsReadPerm(Path(modPath))},
 			Filesystem:  newMemFilesystem(),
 		}, nil)
+		defer ctx2.CancelGracefully()
 
 		if !assert.NoError(t, util.WriteFile(ctx2.GetFileSystem(), modPath, []byte(""), 0o700)) {
 			return
@@ -259,12 +268,13 @@ func TestParseLocalModule(t *testing.T) {
 	t.Run("no dependencies + parsing error", func(t *testing.T) {
 		modpath := writeModuleAndIncludedFiles(t, moduleName, "manifest {}\n(", nil)
 
-		mod, err := ParseLocalModule(modpath, ModuleParsingConfig{
-			Context: NewContexWithEmptyState(ContextConfig{
-				Permissions: []Permission{CreateFsReadPerm(Path(modpath))},
-				Filesystem:  newOsFilesystem(),
-			}, nil),
-		})
+		parsingCtx := NewContexWithEmptyState(ContextConfig{
+			Permissions: []Permission{CreateFsReadPerm(Path(modpath))},
+			Filesystem:  newOsFilesystem(),
+		}, nil)
+		defer parsingCtx.CancelGracefully()
+
+		mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: parsingCtx})
 
 		if !assert.Error(t, err) {
 			return
@@ -291,15 +301,16 @@ func TestParseLocalModule(t *testing.T) {
 
 		importedModPath := filepath.Join(filepath.Dir(modpath), "/dep.ix")
 
-		mod, err := ParseLocalModule(modpath, ModuleParsingConfig{
-			Context: NewContexWithEmptyState(ContextConfig{
-				Permissions: []Permission{
-					CreateFsReadPerm(Path(modpath)),
-					CreateFsReadPerm(Path(importedModPath)),
-				},
-				Filesystem: fls,
-			}, nil),
-		})
+		parsingCtx := NewContexWithEmptyState(ContextConfig{
+			Permissions: []Permission{
+				CreateFsReadPerm(Path(modpath)),
+				CreateFsReadPerm(Path(importedModPath)),
+			},
+			Filesystem: fls,
+		}, nil)
+		defer parsingCtx.CancelGracefully()
+
+		mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: parsingCtx})
 		assert.NoError(t, err)
 
 		assert.NotNil(t, mod.MainChunk)
@@ -327,12 +338,13 @@ func TestParseLocalModule(t *testing.T) {
 			import ./dep.ix
 		`, map[string]string{"./dep.ix": "includable-chunk\n("})
 
-		mod, err := ParseLocalModule(modpath, ModuleParsingConfig{
-			Context: NewContexWithEmptyState(ContextConfig{
-				Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
-				Filesystem:  newOsFilesystem(),
-			}, nil),
-		})
+		parsingCtx := NewContexWithEmptyState(ContextConfig{
+			Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
+			Filesystem:  newOsFilesystem(),
+		}, nil)
+		defer parsingCtx.CancelGracefully()
+
+		mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: parsingCtx})
 		assert.Error(t, err)
 		if !assert.NotNil(t, mod) {
 			return
@@ -360,12 +372,13 @@ func TestParseLocalModule(t *testing.T) {
 			"./dep1.ix": "includable-chunk",
 		})
 
-		mod, err := ParseLocalModule(modpath, ModuleParsingConfig{
-			Context: NewContexWithEmptyState(ContextConfig{
-				Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
-				Filesystem:  newOsFilesystem(),
-			}, nil),
-		})
+		parsingCtx := NewContexWithEmptyState(ContextConfig{
+			Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
+			Filesystem:  newOsFilesystem(),
+		}, nil)
+		defer parsingCtx.CancelGracefully()
+
+		mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: parsingCtx})
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -394,12 +407,13 @@ func TestParseLocalModule(t *testing.T) {
 			"./dep1.ix": "includable-chunk \n(",
 		})
 
-		mod, err := ParseLocalModule(modpath, ModuleParsingConfig{
-			Context: NewContexWithEmptyState(ContextConfig{
-				Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
-				Filesystem:  newOsFilesystem(),
-			}, nil),
-		})
+		parsingCtx := NewContexWithEmptyState(ContextConfig{
+			Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
+			Filesystem:  newOsFilesystem(),
+		}, nil)
+		defer parsingCtx.CancelGracefully()
+
+		mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: parsingCtx})
 		assert.Error(t, err)
 
 		assert.NotNil(t, mod.MainChunk)
@@ -430,12 +444,13 @@ func TestParseLocalModule(t *testing.T) {
 			"./dep2.ix": "includable-chunk",
 		})
 
-		mod, err := ParseLocalModule(modpath, ModuleParsingConfig{
-			Context: NewContexWithEmptyState(ContextConfig{
-				Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
-				Filesystem:  newOsFilesystem(),
-			}, nil),
-		})
+		parsingCtx := NewContexWithEmptyState(ContextConfig{
+			Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
+			Filesystem:  newOsFilesystem(),
+		}, nil)
+		defer parsingCtx.CancelGracefully()
+
+		mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: parsingCtx})
 		assert.NoError(t, err)
 
 		assert.NotNil(t, mod.MainChunk)
@@ -459,12 +474,13 @@ func TestParseLocalModule(t *testing.T) {
 			import ./dep.ix
 		`, map[string]string{"./dep.ix": "manifest {}"})
 
-		mod, err := ParseLocalModule(modpath, ModuleParsingConfig{
-			Context: NewContexWithEmptyState(ContextConfig{
-				Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
-				Filesystem:  newOsFilesystem(),
-			}, nil),
-		})
+		parsingCtx := NewContexWithEmptyState(ContextConfig{
+			Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
+			Filesystem:  newOsFilesystem(),
+		}, nil)
+		defer parsingCtx.CancelGracefully()
+
+		mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: parsingCtx})
 		assert.Error(t, err)
 
 		assert.Len(t, mod.ParsingErrors, 1)
@@ -490,15 +506,16 @@ func TestParseLocalModule(t *testing.T) {
 
 			importedModPath := filepath.Join(filepath.Dir(modpath), "/lib.ix")
 
-			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{
-				Context: NewContexWithEmptyState(ContextConfig{
-					Permissions: []Permission{
-						CreateFsReadPerm(Path(modpath)),
-						CreateFsReadPerm(Path(importedModPath)),
-					},
-					Filesystem: newOsFilesystem(),
-				}, nil),
-			})
+			parsingCtx := NewContexWithEmptyState(ContextConfig{
+				Permissions: []Permission{
+					CreateFsReadPerm(Path(modpath)),
+					CreateFsReadPerm(Path(importedModPath)),
+				},
+				Filesystem: newOsFilesystem(),
+			}, nil)
+			defer parsingCtx.CancelGracefully()
+
+			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: parsingCtx})
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -530,16 +547,16 @@ func TestParseLocalModule(t *testing.T) {
 
 			util.WriteFile(fls, "/lib.ix", []byte(`manifest {}`), 0600)
 
-			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{
-				Context: NewContexWithEmptyState(ContextConfig{
-					Permissions: []Permission{
-						CreateFsReadPerm(Path(modpath)),
-						CreateFsReadPerm(Path("/lib.ix")),
-					},
-					Filesystem: fls,
-				}, nil),
-			})
+			parsingCtx := NewContexWithEmptyState(ContextConfig{
+				Permissions: []Permission{
+					CreateFsReadPerm(Path(modpath)),
+					CreateFsReadPerm(Path("/lib.ix")),
+				},
+				Filesystem: fls,
+			}, nil)
+			defer parsingCtx.CancelGracefully()
 
+			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: parsingCtx})
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -571,17 +588,17 @@ func TestParseLocalModule(t *testing.T) {
 
 			util.WriteFile(fls, "/lib.ix", []byte("manifest {}\n; a ="), 0600)
 
-			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{
-				Context: NewContexWithEmptyState(ContextConfig{
-					Permissions: []Permission{
-						CreateFsReadPerm(Path(modpath)),
-						CreateFsReadPerm(Path("/lib.ix")),
-						CreateFsReadPerm(Path("/included.ix")),
-					},
-					Filesystem: fls,
-				}, nil),
-			})
+			parsingCtx := NewContexWithEmptyState(ContextConfig{
+				Permissions: []Permission{
+					CreateFsReadPerm(Path(modpath)),
+					CreateFsReadPerm(Path("/lib.ix")),
+					CreateFsReadPerm(Path("/included.ix")),
+				},
+				Filesystem: fls,
+			}, nil)
+			defer parsingCtx.CancelGracefully()
 
+			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: parsingCtx})
 			if !assert.Error(t, err) {
 				return
 			}
@@ -623,17 +640,17 @@ func TestParseLocalModule(t *testing.T) {
 			util.WriteFile(fls, "/lib.ix", []byte("manifest {}\nimport /included.ix"), 0600)
 			util.WriteFile(fls, "/included.ix", []byte(`includable-chunk`), 0600)
 
-			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{
-				Context: NewContexWithEmptyState(ContextConfig{
-					Permissions: []Permission{
-						CreateFsReadPerm(Path(modpath)),
-						CreateFsReadPerm(Path("/lib.ix")),
-						CreateFsReadPerm(Path("/included.ix")),
-					},
-					Filesystem: fls,
-				}, nil),
-			})
+			parsingCtx := NewContexWithEmptyState(ContextConfig{
+				Permissions: []Permission{
+					CreateFsReadPerm(Path(modpath)),
+					CreateFsReadPerm(Path("/lib.ix")),
+					CreateFsReadPerm(Path("/included.ix")),
+				},
+				Filesystem: fls,
+			}, nil)
+			defer parsingCtx.CancelGracefully()
 
+			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: parsingCtx})
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -670,17 +687,17 @@ func TestParseLocalModule(t *testing.T) {
 			util.WriteFile(fls, "/lib.ix", []byte("manifest {}\nimport /included.ix"), 0600)
 			util.WriteFile(fls, "/included.ix", []byte("includable-chunk\na ="), 0600)
 
-			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{
-				Context: NewContexWithEmptyState(ContextConfig{
-					Permissions: []Permission{
-						CreateFsReadPerm(Path(modpath)),
-						CreateFsReadPerm(Path("/lib.ix")),
-						CreateFsReadPerm(Path("/included.ix")),
-					},
-					Filesystem: fls,
-				}, nil),
-			})
+			parsingCtx := NewContexWithEmptyState(ContextConfig{
+				Permissions: []Permission{
+					CreateFsReadPerm(Path(modpath)),
+					CreateFsReadPerm(Path("/lib.ix")),
+					CreateFsReadPerm(Path("/included.ix")),
+				},
+				Filesystem: fls,
+			}, nil)
+			defer parsingCtx.CancelGracefully()
 
+			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: parsingCtx})
 			if !assert.Error(t, err) {
 				return
 			}
@@ -729,11 +746,14 @@ func TestParseLocalModule(t *testing.T) {
 				import ./dep.ix
 			`, nil)
 
+			parsingCtx := NewContexWithEmptyState(ContextConfig{
+				Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
+				Filesystem:  newOsFilesystem(),
+			}, nil)
+			defer parsingCtx.CancelGracefully()
+
 			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{
-				Context: NewContexWithEmptyState(ContextConfig{
-					Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
-					Filesystem:  newOsFilesystem(),
-				}, nil),
+				Context:                             parsingCtx,
 				RecoverFromNonExistingIncludedFiles: true,
 			})
 
@@ -767,11 +787,14 @@ func TestParseLocalModule(t *testing.T) {
 				import ./dep2.ix
 			`, map[string]string{"./dep2.ix": "includable-chunk"})
 
+			parsingCtx := NewContexWithEmptyState(ContextConfig{
+				Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
+				Filesystem:  newOsFilesystem(),
+			}, nil)
+			defer parsingCtx.CancelGracefully()
+
 			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{
-				Context: NewContexWithEmptyState(ContextConfig{
-					Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
-					Filesystem:  newOsFilesystem(),
-				}, nil),
+				Context:                             parsingCtx,
 				RecoverFromNonExistingIncludedFiles: true,
 			})
 
@@ -809,11 +832,14 @@ func TestParseLocalModule(t *testing.T) {
 				import ./dep2.ix
 			`, nil)
 
+			parsingCtx := NewContexWithEmptyState(ContextConfig{
+				Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
+				Filesystem:  newOsFilesystem(),
+			}, nil)
+			defer parsingCtx.CancelGracefully()
+
 			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{
-				Context: NewContexWithEmptyState(ContextConfig{
-					Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
-					Filesystem:  newOsFilesystem(),
-				}, nil),
+				Context:                             parsingCtx,
 				RecoverFromNonExistingIncludedFiles: true,
 			})
 
