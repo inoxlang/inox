@@ -56,6 +56,9 @@ type CompiledFunction struct {
 	Instructions []byte
 	SourceMap    map[int]instructionSourcePosition
 	Bytecode     *Bytecode //bytecode containing the function
+
+	SourceNodeSpan parse.NodeSpan
+	IncludedChunk  *parse.ParsedChunk //set if the function is defined in an included chunk
 }
 
 func (fn *CompiledFunction) GetSourcePositionRange(ip int) parse.SourcePositionRange {

@@ -84,7 +84,7 @@ func (state TreeWalkState) currentFullChunkStackItem() *parse.ChunkStackItem {
 }
 
 func (state *TreeWalkState) pushImportedChunk(chunk *parse.ParsedChunk, importNode *parse.InclusionImportStatement) {
-	state.currentFullChunkStackItem().CurrentNode = importNode
+	state.currentFullChunkStackItem().CurrentNodeSpan = importNode.Span
 	pushedChunk := &parse.ChunkStackItem{
 		Chunk: chunk,
 	}
@@ -97,12 +97,12 @@ func (state *TreeWalkState) popImportedChunk() {
 	state.fullChunkStack = state.fullChunkStack[:len(state.fullChunkStack)-1]
 
 	if len(state.fullChunkStack) != 0 {
-		state.currentFullChunkStackItem().CurrentNode = nil
+		state.currentFullChunkStackItem().CurrentNodeSpan = parse.NodeSpan{}
 	}
 }
 
 func (state *TreeWalkState) pushChunkOfCall(chunk *parse.ParsedChunk, callingNode parse.Node) {
-	state.currentFullChunkStackItem().CurrentNode = callingNode
+	state.currentFullChunkStackItem().CurrentNodeSpan = callingNode.Base().Span
 	pushedChunk := &parse.ChunkStackItem{
 		Chunk: chunk,
 	}
@@ -112,7 +112,7 @@ func (state *TreeWalkState) pushChunkOfCall(chunk *parse.ParsedChunk, callingNod
 func (state *TreeWalkState) popChunkOfCall() {
 	state.fullChunkStack = state.fullChunkStack[:len(state.fullChunkStack)-1]
 	if len(state.fullChunkStack) != 0 {
-		state.currentFullChunkStackItem().CurrentNode = nil
+		state.currentFullChunkStackItem().CurrentNodeSpan = parse.NodeSpan{}
 	}
 }
 

@@ -1,7 +1,6 @@
 package core
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"math"
@@ -23,6 +22,8 @@ const (
 var (
 	ErrArgsProvidedToModule    = errors.New("cannot provide arguments when running module")
 	ErrInvalidProvidedArgCount = errors.New("number of provided arguments is invalid")
+
+	_ = parse.StackItem(frame{})
 )
 
 // VM is a virtual machine that executes bytecode.
@@ -33,7 +34,7 @@ type VM struct {
 	global           *GlobalState
 	module           *Module
 	frames           [MAX_FRAMES]frame
-	framesIndex      int //first is 1 not zero
+	framesIndex      int //first is 1 not zero, the current frame is accessed with vm.frames[framesIndex-1]
 	curFrame         *frame
 	curInsts         []byte
 	ip               int
@@ -41,8 +42,7 @@ type VM struct {
 	err              error
 	moduleLocalCount int
 
-	forceDisableTesting *bool //used to disable testing in included chunks
-	chunkStack          []*parse.ChunkStackItem
+	chunkStack []*parse.ChunkStackItem
 
 	//the following fields are only set for isolated function calls.
 
@@ -64,6 +64,20 @@ type frame struct {
 	externalFunc       bool
 	popCapturedGlobals bool
 	originalConstants  []Value
+
+	//set when a function is called or an included chunk starts to be executed.
+	currentNodeSpan parse.NodeSpan
+}
+
+func (f frame) GetCurrentNodeSpan() (parse.NodeSpan, bool) {
+	return f.currentNodeSpan, f.currentNodeSpan != parse.NodeSpan{}
+}
+
+func (f frame) GetChunk() (*parse.ParsedChunk, bool) {
+	if f.fn.IncludedChunk != nil {
+		return f.fn.IncludedChunk, true
+	}
+	return f.fn.Bytecode.module.MainChunk, true
 }
 
 type VMConfig struct {
@@ -161,7 +175,7 @@ func (v *VM) Run() (result Value, err error) {
 
 	if v.runFn {
 		v.sp = 1 + v.fnArgCount + 1 + 1
-		if !v.fnCall(v.fnArgCount, false, false) {
+		if !v.fnCall(v.fnArgCount, false, false, -1) {
 			return nil, v.err
 		}
 	} else {
@@ -189,8 +203,8 @@ func (v *VM) Run() (result Value, err error) {
 }
 
 func (v *VM) run() {
-	ip := -1
 
+	ip := -1
 	defer func() {
 		e := recover()
 
@@ -213,36 +227,47 @@ func (v *VM) run() {
 			}
 
 			//add location to error message
-			sourcePos := v.curFrame.fn.GetSourcePositionRange(ip)
-			positionStack := parse.SourcePositionStack{sourcePos}
-			if sourcePos.SourceName != "" {
-				locationPartBuff := bytes.NewBuffer(nil)
 
-				locationPartBuff.Write(utils.StringAsBytes(sourcePos.String()))
-				locationPartBuff.WriteByte(' ')
+			if !v.runFn {
+				//build the stack
+				currentNodePos := v.curFrame.fn.GetSourcePositionRange(ip)
 
-				frameIndex := v.framesIndex
-				var frame *frame
-				for frameIndex > 1 {
-					frameIndex--
-					frame = &v.frames[frameIndex-1]
-					sourcePos = frame.fn.GetSourcePositionRange(frame.ip - 1)
-					positionStack = append(positionStack, sourcePos)
+				var stackItems []parse.StackItem
 
-					locationPartBuff.Write(utils.StringAsBytes(sourcePos.String()))
-					locationPartBuff.WriteByte(' ')
+				//add the mainn chunk and the included chunks
+				for _, chunk := range v.chunkStack {
+					stackItems = append(stackItems, chunk)
 				}
 
-				location := locationPartBuff.String()
-				if assertionErr != nil {
-					assertionErr.msg = location + " " + assertionErr.msg
+				//add call frames.
+				//note: we start at 1 because the first frame is the module's frame.
+				for i := 1; i < v.framesIndex; i++ {
+					frame := v.frames[i]
+
+					functionChunk, ok := frame.GetChunk()
+					//add the position of the function's start.
+					if ok {
+						functionStackItem := parse.ChunkStackItem{
+							Chunk:           functionChunk,
+							CurrentNodeSpan: frame.fn.SourceNodeSpan,
+						}
+						stackItems = append(stackItems, functionStackItem)
+					}
+
+					stackItems = append(stackItems, frame)
 				}
+
+				positionStack, formatted := parse.GetSourcePositionStack(currentNodePos.Span, stackItems)
+
+				//wrap v.err in a LocatedEvalError
 
 				v.err = LocatedEvalError{
-					error:    fmt.Errorf("%s %w", location, v.err),
+					error:    fmt.Errorf("%s %w", formatted, v.err),
 					Message:  v.err.Error(),
 					Location: positionStack,
 				}
+			} else {
+				//TODO
 			}
 		}
 
@@ -1720,12 +1745,14 @@ func (v *VM) run() {
 			}
 			v.stack[v.sp-1] = val
 		case OpCall:
+			callIp := v.ip
+
 			numArgs := int(v.curInsts[v.ip+1])
 			spread := int(v.curInsts[v.ip+2])
 			must := int(v.curInsts[v.ip+3])
 			v.ip += 3
 
-			if !v.fnCall(numArgs, spread == 1, must == 1) {
+			if !v.fnCall(numArgs, spread == 1, must == 1, callIp) {
 				return
 			}
 		case OpReturn:
@@ -1777,6 +1804,13 @@ func (v *VM) run() {
 				v.curInsts = v.curFrame.fn.Instructions
 				v.ip = v.curFrame.ip
 				v.sp = v.frames[v.framesIndex].basePointer
+
+				if !v.runFn {
+					v.curFrame.currentNodeSpan = parse.NodeSpan{}
+					v.chunkStack[len(v.chunkStack)-1].CurrentNodeSpan = parse.NodeSpan{}
+				} else {
+					//TODO: support isolated function call
+				}
 			}
 
 			v.stack[v.sp-1] = retVal
@@ -2460,6 +2494,7 @@ func (v *VM) run() {
 
 			//keep the value on top of the stack
 		case OpPushIncludedChunk:
+			importIp := v.ip
 			v.ip += 2
 			inclusionStmtIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
 			inclusionStmt := v.constants[inclusionStmtIndex].(AstNode).Node.(*parse.InclusionImportStatement)
@@ -2468,11 +2503,13 @@ func (v *VM) run() {
 			if !ok {
 				panic(ErrUnreachable)
 			}
+			v.chunkStack[len(v.chunkStack)-1].CurrentNodeSpan = v.curFrame.fn.GetSourcePositionRange(importIp).Span
 			v.chunkStack = append(v.chunkStack, &parse.ChunkStackItem{
 				Chunk: chunk.ParsedChunk,
 			})
 		case OpPopIncludedChunk:
 			v.chunkStack = v.chunkStack[:len(v.chunkStack)-1]
+			v.chunkStack[len(v.chunkStack)-1].CurrentNodeSpan = parse.NodeSpan{}
 		case OpSuspendVM:
 			return
 		default:
@@ -2482,7 +2519,7 @@ func (v *VM) run() {
 	}
 }
 
-func (v *VM) fnCall(numArgs int, spread, must bool) bool {
+func (v *VM) fnCall(numArgs int, spread, must bool, callIp int) bool {
 	var (
 		objectVal       = v.stack[v.sp-2]
 		callee          = v.stack[v.sp-1]
@@ -2511,7 +2548,7 @@ func (v *VM) fnCall(numArgs int, spread, must bool) bool {
 		}
 	}
 
-	//get rid of callee & object
+	//remove the callee and the object from the stack.
 	v.stack[v.sp-1] = Nil
 	v.stack[v.sp-2] = Nil
 	v.sp -= 2
@@ -2618,6 +2655,13 @@ func (v *VM) fnCall(numArgs int, spread, must bool) bool {
 		if v.framesIndex >= MAX_FRAMES {
 			v.err = ErrStackOverflow
 			return false
+		}
+
+		//update parent call frame
+		if callIp >= 0 && !v.runFn {
+			v.curFrame.currentNodeSpan = v.curFrame.fn.GetSourcePositionRange(callIp).Span
+			v.chunkStack[len(v.chunkStack)-1].CurrentNodeSpan = v.curFrame.currentNodeSpan
+			//TODO: support isolated function call
 		}
 
 		// update call frame

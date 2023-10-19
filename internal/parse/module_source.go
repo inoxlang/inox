@@ -351,21 +351,21 @@ type LocatedError interface {
 }
 
 type ChunkStackItem struct {
-	Chunk       *ParsedChunk
-	CurrentNode Node //nil for the last item
+	Chunk           *ParsedChunk
+	CurrentNodeSpan NodeSpan //zero for the last item
 }
 
 func (i ChunkStackItem) GetChunk() (*ParsedChunk, bool) {
 	return i.Chunk, i.Chunk != nil
 }
 
-func (i ChunkStackItem) GetCurrentNode() (Node, bool) {
-	return i.CurrentNode, i.CurrentNode != nil
+func (i ChunkStackItem) GetCurrentNodeSpan() (NodeSpan, bool) {
+	return i.CurrentNodeSpan, i.CurrentNodeSpan != (NodeSpan{})
 }
 
 type StackItem interface {
 	GetChunk() (*ParsedChunk, bool)
-	GetCurrentNode() (Node, bool)
+	GetCurrentNodeSpan() (NodeSpan, bool)
 }
 
 func GetSourcePositionStack[Item StackItem](nodeSpan NodeSpan, chunkStack []Item) (SourcePositionStack, string) {
@@ -389,10 +389,9 @@ func GetSourcePositionStack[Item StackItem](nodeSpan NodeSpan, chunkStack []Item
 		if i == len(chunkStack)-1 {
 			span = nodeSpan
 		} else {
-			currentNode, ok := item.GetCurrentNode()
-			if ok {
-				span = currentNode.Base().Span
-			} else {
+			var ok bool
+			span, ok = item.GetCurrentNodeSpan()
+			if !ok {
 				span = NodeSpan{Start: 0, End: 1}
 			}
 		}

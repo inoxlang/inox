@@ -44,7 +44,7 @@ type compiler struct {
 	localSymbolTableStack []*symbolTable
 	scopes                []compilationScope
 	scopeIndex            int
-	chunkStack            []*parse.ParsedChunk
+	chunkStack            []*parse.ParsedChunk //main chunk + included chunks
 	loops                 []*loop
 	loopIndex             int
 	walkIndex             int
@@ -1414,11 +1414,16 @@ func (c *compiler) Compile(node parse.Node) error {
 		}
 
 		compiledFunction := &CompiledFunction{
-			Instructions: instructions,
-			LocalCount:   localCount,
-			ParamCount:   len(node.Parameters),
-			IsVariadic:   node.IsVariadic,
-			SourceMap:    sourceMap,
+			Instructions:   instructions,
+			LocalCount:     localCount,
+			ParamCount:     len(node.Parameters),
+			IsVariadic:     node.IsVariadic,
+			SourceMap:      sourceMap,
+			SourceNodeSpan: node.Span,
+		}
+
+		if len(c.chunkStack) > 1 {
+			compiledFunction.IncludedChunk = c.currentChunk()
 		}
 
 		var symbolicInoxFunc *symbolic.InoxFunction

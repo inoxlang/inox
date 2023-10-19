@@ -13,6 +13,10 @@ import (
 
 func TestCompileModule(t *testing.T) {
 
+	joinLines := func(lines ...string) string {
+		return strings.Join(lines, "\n")
+	}
+
 	t.Run("literals", func(t *testing.T) {
 		expectBytecode(t, `1`,
 			0,
@@ -687,10 +691,11 @@ func TestCompileModule(t *testing.T) {
 			[]Value{
 				&InoxFunction{
 					compiledFunction: &CompiledFunction{
-						ParamCount:   0,
-						IsVariadic:   false,
-						LocalCount:   0,
-						Instructions: instrs(inst(OpReturn, 0)),
+						ParamCount:     0,
+						IsVariadic:     false,
+						LocalCount:     0,
+						Instructions:   instrs(inst(OpReturn, 0)),
+						SourceNodeSpan: parse.NodeSpan{Start: 0, End: 8},
 					},
 				},
 				Str("f"),
@@ -714,6 +719,7 @@ func TestCompileModule(t *testing.T) {
 						inst(OpPushConstant, 0),
 						inst(OpReturn, 1),
 					),
+					SourceNodeSpan: parse.NodeSpan{Start: 0, End: 18},
 				}},
 				Str("f"),
 			},
@@ -731,10 +737,11 @@ func TestCompileModule(t *testing.T) {
 			[]Value{
 				&InoxFunction{
 					compiledFunction: &CompiledFunction{
-						ParamCount:   0,
-						IsVariadic:   false,
-						LocalCount:   0,
-						Instructions: instrs(inst(OpReturn, 0)),
+						ParamCount:     0,
+						IsVariadic:     false,
+						LocalCount:     0,
+						Instructions:   instrs(inst(OpReturn, 0)),
+						SourceNodeSpan: parse.NodeSpan{Start: 4, End: 10},
 					},
 				},
 			},
@@ -757,6 +764,7 @@ func TestCompileModule(t *testing.T) {
 							inst(OpPushConstant, 0),
 							inst(OpReturn, 1),
 						),
+						SourceNodeSpan: parse.NodeSpan{Start: 4, End: 11},
 					},
 				},
 			},
@@ -771,19 +779,21 @@ func TestCompileModule(t *testing.T) {
 			[]Value{
 				&InoxFunction{
 					compiledFunction: &CompiledFunction{
-						ParamCount:   1,
-						IsVariadic:   false,
-						LocalCount:   1,
-						Instructions: instrs(inst(OpReturn, 0)),
+						ParamCount:     1,
+						IsVariadic:     false,
+						LocalCount:     1,
+						Instructions:   instrs(inst(OpReturn, 0)),
+						SourceNodeSpan: parse.NodeSpan{Start: 4, End: 11},
 					},
 				},
 			},
 		)
 
-		expectBytecode(t, `
-			f = fn(x){}
-			g = fn(x,y){}
-		`,
+		expectBytecode(t,
+			joinLines(
+				"f = fn(x){}",
+				"g = fn(x,y){}",
+			),
 			2,
 			instrs(
 				inst(OpPushConstant, 0),
@@ -795,18 +805,20 @@ func TestCompileModule(t *testing.T) {
 			[]Value{
 				&InoxFunction{
 					compiledFunction: &CompiledFunction{
-						ParamCount:   1,
-						IsVariadic:   false,
-						LocalCount:   1,
-						Instructions: instrs(inst(OpReturn, 0)),
+						ParamCount:     1,
+						IsVariadic:     false,
+						LocalCount:     1,
+						Instructions:   instrs(inst(OpReturn, 0)),
+						SourceNodeSpan: parse.NodeSpan{Start: 4, End: 11},
 					},
 				},
 				&InoxFunction{
 					compiledFunction: &CompiledFunction{
-						ParamCount:   2,
-						IsVariadic:   false,
-						LocalCount:   2,
-						Instructions: instrs(inst(OpReturn, 0)),
+						ParamCount:     2,
+						IsVariadic:     false,
+						LocalCount:     2,
+						Instructions:   instrs(inst(OpReturn, 0)),
+						SourceNodeSpan: parse.NodeSpan{Start: 16, End: 25},
 					},
 				},
 			},
@@ -829,6 +841,7 @@ func TestCompileModule(t *testing.T) {
 						inst(OpPushConstant, 0),
 						inst(OpReturn, 1),
 					),
+					SourceNodeSpan: parse.NodeSpan{Start: 4, End: 20},
 				}},
 			},
 		)
@@ -851,6 +864,7 @@ func TestCompileModule(t *testing.T) {
 							inst(OpPushConstant, 0),
 							inst(OpReturn, 1),
 						),
+						SourceNodeSpan: parse.NodeSpan{Start: 12, End: 28},
 					},
 				},
 				&InoxFunction{
@@ -863,6 +877,7 @@ func TestCompileModule(t *testing.T) {
 							inst(OpSetLocal, 0),
 							inst(OpReturn, 0),
 						),
+						SourceNodeSpan: parse.NodeSpan{Start: 0, End: 30},
 					},
 				},
 				Str("f"),
@@ -871,10 +886,11 @@ func TestCompileModule(t *testing.T) {
 	})
 
 	t.Run("call declared function", func(t *testing.T) {
-		expectBytecode(t, `
-			fn f(){}
-			return f()
-		`,
+		expectBytecode(t,
+			joinLines(
+				"fn f(){}",
+				"return f()",
+			),
 			0,
 			instrs(
 				inst(OpPushConstant, 0),
@@ -889,10 +905,11 @@ func TestCompileModule(t *testing.T) {
 			[]Value{
 				&InoxFunction{
 					compiledFunction: &CompiledFunction{
-						ParamCount:   0,
-						IsVariadic:   false,
-						LocalCount:   0,
-						Instructions: instrs(inst(OpReturn, 0)),
+						ParamCount:     0,
+						IsVariadic:     false,
+						LocalCount:     0,
+						Instructions:   instrs(inst(OpReturn, 0)),
+						SourceNodeSpan: parse.NodeSpan{Start: 0, End: 8},
 					},
 				},
 				Str("f"),
@@ -903,12 +920,12 @@ func TestCompileModule(t *testing.T) {
 	})
 
 	t.Run("spawn", func(t *testing.T) {
-		expectBytecode(t, `
-			fn f(){
-				return 1
-			}
-			go do f()
-		`,
+		expectBytecode(t, joinLines(
+			"fn f(){",
+			"    return 1",
+			"}",
+			"go do f()",
+		),
 			0,
 			instrs(
 				inst(OpPushConstant, 1),
@@ -931,6 +948,7 @@ func TestCompileModule(t *testing.T) {
 							inst(OpPushConstant, 0),
 							inst(OpReturn, 1),
 						),
+						SourceNodeSpan: parse.NodeSpan{Start: 0, End: 22},
 					},
 				},
 				Str("f"),
@@ -1844,6 +1862,7 @@ func expectBytecode(t *testing.T, input string, localCount int, expectedInstruct
 		return
 	}
 
+	t.Helper()
 	_expectBytecode(t, actual, localCount, expectedInstructions, expectedConstants, bytecodeConstantAssertions...)
 
 }
