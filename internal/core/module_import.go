@@ -249,8 +249,9 @@ func fetchParseImportedModules(mod *Module, ctx *Context, fls afs.Filesystem, co
 	validationStrings := map[WrappedString]string{}
 
 	for _, importStmt := range importStmts {
-		//ignore import if the source has an error
-		if config.recoverFromNonExistingFiles && (importStmt.Source == nil || importStmt.Source.Base().Err != nil) {
+		//ignore import if the source or the config has an error
+		if config.recoverFromNonExistingFiles && (importStmt.Source == nil || importStmt.Source.Base().Err != nil) ||
+			(importStmt.Configuration == nil || importStmt.Configuration.Base().Err != nil) {
 			continue
 		}
 
