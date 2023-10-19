@@ -296,7 +296,7 @@ func (s *Session) execute(mtdInfo MethodInfo, req RequestMessage, args interface
 func (s *Session) handlerRequest(req RequestMessage) error {
 	mtd := req.Method
 	mtdInfo, ok := s.server.methods[mtd]
-	stringifiedID := fmt.Sprintf("%d", req.ID)
+	stringifiedID := fmt.Sprintf("%v", req.ID)
 
 	if !ok {
 		params := req.Params
