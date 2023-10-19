@@ -33,13 +33,18 @@ type VM struct {
 	global           *GlobalState
 	module           *Module
 	frames           [MAX_FRAMES]frame
-	framesIndex      int
+	framesIndex      int //first is 1 not zero
 	curFrame         *frame
 	curInsts         []byte
 	ip               int
 	aborting         int64
 	err              error
 	moduleLocalCount int
+
+	forceDisableTesting *bool //used to disable testing in included chunks
+	chunkStack          []*parse.ChunkStackItem
+
+	//the following fields are only set for isolated function calls.
 
 	runFn              bool
 	fnArgCount         int
@@ -62,7 +67,7 @@ type frame struct {
 }
 
 type VMConfig struct {
-	Bytecode *Bytecode
+	Bytecode *Bytecode //bytecode of the module or bytecode of the function called in isolation.
 	State    *GlobalState
 	Self     Value
 
@@ -158,6 +163,12 @@ func (v *VM) Run() (result Value, err error) {
 		v.sp = 1 + v.fnArgCount + 1 + 1
 		if !v.fnCall(v.fnArgCount, false, false) {
 			return nil, v.err
+		}
+	} else {
+		v.chunkStack = []*parse.ChunkStackItem{
+			{
+				Chunk: v.module.MainChunk,
+			},
 		}
 	}
 	v.run()
@@ -2448,6 +2459,20 @@ func (v *VM) run() {
 			}
 
 			//keep the value on top of the stack
+		case OpPushIncludedChunk:
+			v.ip += 2
+			inclusionStmtIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
+			inclusionStmt := v.constants[inclusionStmtIndex].(AstNode).Node.(*parse.InclusionImportStatement)
+
+			chunk, ok := v.module.InclusionStatementMap[inclusionStmt]
+			if !ok {
+				panic(ErrUnreachable)
+			}
+			v.chunkStack = append(v.chunkStack, &parse.ChunkStackItem{
+				Chunk: chunk.ParsedChunk,
+			})
+		case OpPopIncludedChunk:
+			v.chunkStack = v.chunkStack[:len(v.chunkStack)-1]
 		case OpSuspendVM:
 			return
 		default:

@@ -56,13 +56,14 @@ type GlobalState struct {
 
 	// debugging and testing
 
-	Debugger         atomic.Value //nil or (nillable) *Debugger
-	IsTestingEnabled bool         //if true the test suites encountered during executions are run
-	TestFilters      TestFilters
-	TestResultsLock  sync.Mutex
-	TestCaseResults  []*TestCaseResult
-	TestSuiteResults []*TestSuiteResult
-	TestItem         TestItem //can be nil
+	Debugger               atomic.Value //nil or (nillable) *Debugger
+	IsTestingEnabled       bool         //if true the test suites encountered during executions are run
+	IsImportTestingEnabled bool         //if true the test suites in imported modules and included chunks are run
+	TestFilters            TestFilters
+	TestResultsLock        sync.Mutex
+	TestCaseResults        []*TestCaseResult
+	TestSuiteResults       []*TestSuiteResult
+	TestItem               TestItem //can be nil
 
 	//errors & check data
 

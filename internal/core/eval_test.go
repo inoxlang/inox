@@ -7469,6 +7469,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			})
 			state := NewGlobalState(ctx)
 			state.IsTestingEnabled = true
+			state.IsImportTestingEnabled = true
 			state.TestFilters = allTestsFilter
 			defer state.Ctx.CancelGracefully()
 
@@ -7481,6 +7482,50 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 			assert.Empty(t, state.TestSuiteResults[0].caseResults)
+		})
+
+		t.Run("empty in imported module: disabled import testing", func(t *testing.T) {
+
+			mod, fls, err := createModuleAndImports(`
+				manifest {}
+				import res /imported.ix {
+					allow: {
+						create: {threads: {}}
+					}
+				}
+			`, map[string]string{
+				"/imported.ix": `
+					manifest {
+						permissions: {create: {threads: {}}}
+					}
+
+					testsuite "name" {}
+				`,
+			})
+
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			ctx := NewContext(ContextConfig{
+				Permissions: append(GetDefaultGlobalVarPermissions(),
+					LThreadPermission{permkind.Create},
+					FilesystemPermission{permkind.Read, PathPattern("/...")},
+				),
+				Filesystem: fls,
+			})
+			state := NewGlobalState(ctx)
+			state.IsTestingEnabled = true
+			state.IsImportTestingEnabled = false
+			state.TestFilters = allTestsFilter
+			defer state.Ctx.CancelGracefully()
+
+			res, err := Eval(mod, state, false)
+
+			assert.NoError(t, err)
+			assert.Equal(t, Nil, res)
+			assert.Empty(t, state.TestCaseResults)
+			assert.Empty(t, state.TestSuiteResults)
 		})
 
 		t.Run("empty in included chunk", func(t *testing.T) {
@@ -7509,6 +7554,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			})
 			state := NewGlobalState(ctx)
 			state.IsTestingEnabled = true
+			state.IsImportTestingEnabled = true
 			state.TestFilters = allTestsFilter
 			defer state.Ctx.CancelGracefully()
 
@@ -7521,6 +7567,133 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 			assert.Empty(t, state.TestSuiteResults[0].caseResults)
+		})
+
+		t.Run("empty in included chunk: disabled import testing", func(t *testing.T) {
+
+			mod, fls, err := createModuleAndImports(`
+				manifest {}
+				import /included.ix
+			`, map[string]string{
+				"/included.ix": `
+					includable-chunk
+
+					testsuite "name" {}
+				`,
+			})
+
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			ctx := NewContext(ContextConfig{
+				Permissions: append(GetDefaultGlobalVarPermissions(),
+					LThreadPermission{permkind.Create},
+					FilesystemPermission{permkind.Read, PathPattern("/...")},
+				),
+				Filesystem: fls,
+			})
+			state := NewGlobalState(ctx)
+			state.IsTestingEnabled = true
+			state.IsImportTestingEnabled = false
+			state.TestFilters = allTestsFilter
+			defer state.Ctx.CancelGracefully()
+
+			res, err := Eval(mod, state, false)
+
+			assert.NoError(t, err)
+			assert.Equal(t, Nil, res)
+			assert.Empty(t, state.TestCaseResults)
+			assert.Empty(t, state.TestSuiteResults)
+		})
+
+		t.Run("empty in included chunk (deep)", func(t *testing.T) {
+
+			mod, fls, err := createModuleAndImports(`
+				manifest {}
+				import /included1.ix
+			`, map[string]string{
+				"/included1.ix": `
+					includable-chunk
+
+					import /included2.ix
+				`,
+				"/included2.ix": `
+					includable-chunk
+
+					testsuite "name" {}
+				`,
+			})
+
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			ctx := NewContext(ContextConfig{
+				Permissions: append(GetDefaultGlobalVarPermissions(),
+					LThreadPermission{permkind.Create},
+					FilesystemPermission{permkind.Read, PathPattern("/...")},
+				),
+				Filesystem: fls,
+			})
+			state := NewGlobalState(ctx)
+			state.IsTestingEnabled = true
+			state.IsImportTestingEnabled = true
+			state.TestFilters = allTestsFilter
+			defer state.Ctx.CancelGracefully()
+
+			res, err := Eval(mod, state, false)
+
+			assert.NoError(t, err)
+			assert.Equal(t, Nil, res)
+			assert.Empty(t, state.TestCaseResults)
+			if !assert.Len(t, state.TestSuiteResults, 1) {
+				return
+			}
+			assert.Empty(t, state.TestSuiteResults[0].caseResults)
+		})
+
+		t.Run("empty in included chunk (deep): disabled import testing", func(t *testing.T) {
+
+			mod, fls, err := createModuleAndImports(`
+			manifest {}
+			import /included1.ix
+		`, map[string]string{
+				"/included1.ix": `
+				includable-chunk
+
+				import /included2.ix
+			`,
+				"/included2.ix": `
+				includable-chunk
+
+				testsuite "name" {}
+			`,
+			})
+
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			ctx := NewContext(ContextConfig{
+				Permissions: append(GetDefaultGlobalVarPermissions(),
+					LThreadPermission{permkind.Create},
+					FilesystemPermission{permkind.Read, PathPattern("/...")},
+				),
+				Filesystem: fls,
+			})
+			state := NewGlobalState(ctx)
+			state.IsTestingEnabled = true
+			state.IsImportTestingEnabled = false
+			state.TestFilters = allTestsFilter
+			defer state.Ctx.CancelGracefully()
+
+			res, err := Eval(mod, state, false)
+
+			assert.NoError(t, err)
+			assert.Equal(t, Nil, res)
+			assert.Empty(t, state.TestCaseResults)
+			assert.Empty(t, state.TestSuiteResults)
 		})
 
 		t.Run("if a fs snapshot is specified the filesystem should be created from it", func(t *testing.T) {
@@ -7615,6 +7788,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			})
 			state := NewGlobalState(ctx)
 			state.IsTestingEnabled = true
+			state.IsImportTestingEnabled = true
 			state.TestFilters = allTestsFilter
 			defer state.Ctx.CancelGracefully()
 
@@ -7658,6 +7832,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			})
 			state := NewGlobalState(ctx)
 			state.IsTestingEnabled = true
+			state.IsImportTestingEnabled = true
 			state.TestFilters = allTestsFilter
 			defer state.Ctx.CancelGracefully()
 

@@ -17,19 +17,20 @@ import (
 )
 
 type CompilationInput struct {
-	Mod              *Module
-	Globals          map[string]Value
-	SymbolicData     *symbolic.SymbolicData
-	StaticCheckData  *StaticCheckData
-	TraceWriter      io.Writer
-	Context          *Context
-	IsTestingEnabled bool
+	Mod                                      *Module
+	Globals                                  map[string]Value
+	SymbolicData                             *symbolic.SymbolicData
+	StaticCheckData                          *StaticCheckData
+	TraceWriter                              io.Writer
+	Context                                  *Context
+	IsTestingEnabled, IsImportTestingEnabled bool
 }
 
 // Compile compiles a module to bytecode.
 func Compile(input CompilationInput) (*Bytecode, error) {
 	c := NewCompiler(input.Mod, input.Globals, input.SymbolicData, input.StaticCheckData, input.Context, input.TraceWriter)
 	c.isTestingEnabled = input.IsTestingEnabled
+	c.IsImportTestingEnabled = input.IsImportTestingEnabled
 	return c.compileMainChunk(input.Mod.MainChunk)
 }
 
@@ -53,7 +54,7 @@ type compiler struct {
 
 	context *Context
 
-	isTestingEnabled bool
+	isTestingEnabled, IsImportTestingEnabled bool
 }
 
 // compilationScope contains the instructions for a scope.
@@ -1665,6 +1666,11 @@ func (c *compiler) Compile(node parse.Node) error {
 			c.printTrace(fmt.Sprintf("ENTER INCLUDED CHUNK  %s", chunk.Name()))
 		}
 
+		c.emit(node, OpPushIncludedChunk, c.addConstant(AstNode{
+			Node:  node,
+			chunk: c.currentChunk(),
+		}))
+
 		//compile constants
 		if chunk.Node.GlobalConstantDeclarations != nil {
 			if err := c.Compile(chunk.Node.GlobalConstantDeclarations); err != nil {
@@ -1681,6 +1687,8 @@ func (c *compiler) Compile(node parse.Node) error {
 				c.emit(node, OpPop)
 			}
 		}
+
+		c.emit(node, OpPopIncludedChunk)
 
 		if c.trace != nil {
 			c.printTrace(fmt.Sprintf("LEAVE INCLUDED CHUNK  %s", chunk.Name()))
@@ -1911,7 +1919,7 @@ func (c *compiler) Compile(node parse.Node) error {
 		constantVal := AstNode{Node: node, chunk: c.currentChunk()}
 		c.emit(node, OpRuntimeTypecheck, c.addConstant(constantVal))
 	case *parse.TestSuiteExpression:
-		if !c.isTestingEnabled && node.IsStatement {
+		if node.IsStatement && (!c.isTestingEnabled || (len(c.chunkStack) > 1 && !c.IsImportTestingEnabled)) {
 			break
 		}
 
@@ -1951,8 +1959,7 @@ func (c *compiler) Compile(node parse.Node) error {
 		} //else the test suite is on the top of the stack
 
 	case *parse.TestCaseExpression:
-		if !c.isTestingEnabled && node.IsStatement {
-			c.emit(node, OpPushNil)
+		if node.IsStatement && (!c.isTestingEnabled || (len(c.chunkStack) > 1 && !c.IsImportTestingEnabled)) {
 			break
 		}
 

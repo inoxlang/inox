@@ -52,14 +52,14 @@ func ImportWaitModule(config ImportConfig) (Value, error) {
 	if err != nil {
 		return nil, fmt.Errorf("import: failed: %s", err.Error())
 	}
+	parentState := config.ParentState
 
 	//add test suite results to the parent state.
 	//we only try to lock to avoid blocking if already locked.
-	if lthread.state.TestResultsLock.TryLock() {
+	if parentState.IsTestingEnabled && lthread.state.TestResultsLock.TryLock() {
 		func() {
 			defer lthread.state.TestResultsLock.Unlock()
 
-			parentState := config.ParentState
 			parentState.TestResultsLock.Lock()
 			defer parentState.TestResultsLock.Unlock()
 
@@ -223,7 +223,7 @@ func ImportModule(config ImportConfig) (*LThread, error) {
 		Timeout:                      deadline.Sub(time.Now()),
 		IgnoreCreateLThreadPermCheck: true,
 
-		IsTestingEnabled: parentState.IsTestingEnabled,
+		IsTestingEnabled: parentState.IsTestingEnabled && parentState.IsImportTestingEnabled,
 		TestFilters:      parentState.TestFilters,
 	})
 	if err != nil {

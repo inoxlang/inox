@@ -61,8 +61,7 @@ type TreeWalkState struct {
 	self            Value           //value of self in methods
 	entryComputeFn  func(v Value) (Value, error)
 
-func (state TreeWalkState) currentChunk() *parse.ParsedChunk {
-	return state.currentChunkStackItem().Chunk
+	forceDisableTesting bool //used to disable testing in included chunks
 }
 
 func (state TreeWalkState) currentChunkStackItem() *parse.ChunkStackItem {
@@ -1077,6 +1076,13 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			defer func() {
 				state.frameInfo[frameCount-1].Chunk = prevChunk
 				state.frameInfo[frameCount-1].Name = prevName
+			}()
+		}
+
+		if state.Global.IsTestingEnabled && !state.Global.IsImportTestingEnabled && !state.forceDisableTesting {
+			state.forceDisableTesting = true
+			defer func() {
+				state.forceDisableTesting = false
 			}()
 		}
 
@@ -2646,7 +2652,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 
 		return val, nil
 	case *parse.TestSuiteExpression:
-		if !state.Global.IsTestingEnabled && n.IsStatement {
+		if (!state.Global.IsTestingEnabled || state.forceDisableTesting) && n.IsStatement {
 			return Nil, nil
 		}
 
@@ -2726,7 +2732,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			return suite, nil
 		}
 	case *parse.TestCaseExpression:
-		if !state.Global.IsTestingEnabled && n.IsStatement {
+		if (!state.Global.IsTestingEnabled || state.forceDisableTesting) && n.IsStatement {
 			return Nil, nil
 		}
 

@@ -250,6 +250,8 @@ const (
 	OpBlockLock
 	OpBlockUnlock
 	OpRuntimeTypecheck
+	OpPushIncludedChunk
+	OpPopIncludedChunk
 	OpSuspendVM
 )
 
@@ -382,6 +384,8 @@ var OpcodeNames = [...]string{
 	OpBlockLock:                    "BLOCK_LOCK",
 	OpBlockUnlock:                  "BLOCK_LOCK",
 	OpRuntimeTypecheck:             "TYPECHECK",
+	OpPushIncludedChunk:            "PUSH_CHUNK",
+	OpPopIncludedChunk:             "POP_CHUNK",
 	OpSuspendVM:                    "SUSPEND",
 }
 
@@ -512,6 +516,8 @@ var OpcodeOperands = [...][]int{
 	OpBlockLock:                    {1},
 	OpBlockUnlock:                  {},
 	OpRuntimeTypecheck:             {2},
+	OpPushIncludedChunk:            {2},
+	OpPopIncludedChunk:             {},
 	OpSuspendVM:                    {},
 }
 
@@ -642,6 +648,8 @@ var OpcodeConstantIndexes = [...][]bool{
 	OpBlockLock:                    {false},
 	OpBlockUnlock:                  {},
 	OpRuntimeTypecheck:             {true},
+	OpPushIncludedChunk:            {true},
+	OpPopIncludedChunk:             {},
 	OpSuspendVM:                    {},
 }
 
