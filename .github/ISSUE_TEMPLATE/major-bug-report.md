@@ -1,6 +1,6 @@
 ---
 name: Major Bug Report
-about: Create a report about an major bug
+about: Create a report about a major bug
 title: ''
 labels: important bug
 assignees: ''
