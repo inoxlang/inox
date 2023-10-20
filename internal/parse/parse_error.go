@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strconv"
 	"unicode"
+
+	"github.com/inoxlang/inox/internal/inoxconsts"
 )
 
 const (
@@ -314,6 +316,8 @@ const (
 	PATH_OF_URL_LITERALS_USED_AS_IMPORT_SRCS_SHOULD_NOT_CONTAIN_SLASHSLASH     = "the path of URL literals used as import sources should not contain '//'"
 	PATH_OF_URL_LITERALS_USED_AS_IMPORT_SRCS_SHOULD_NOT_CONTAIN_DOT_SLASHSLASH = "the path of URL literals used as import sources should not contain '..' segments"
 	PATH_OF_URL_LITERALS_USED_AS_IMPORT_SRCS_SHOULD_NOT_CONTAIN_DOT_SEGMENTS   = "the path of URL literals used as import sources should not contain segments with only a dot (e.g. /./file.ix)"
+
+	URL_LITS_AND_PATH_LITS_USED_AS_IMPORT_SRCS_SHOULD_END_WITH_IX = "URL literals and path literals used as import sources should end with `" + inoxconsts.INOXLANG_FILE_EXTENSION + "`"
 
 	UNTERMINATED_EMBEDDED_MODULE                            = "unterminated embedded module"
 	INVALID_FOR_STMT                                        = "invalid for statement"

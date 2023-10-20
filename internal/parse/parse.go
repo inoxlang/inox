@@ -18,6 +18,7 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/utils"
 	"golang.org/x/exp/slices"
 )
@@ -9915,6 +9916,11 @@ func (p *parser) checkImportSource(node SimpleValueLiteral) {
 		path = u.Path
 	} else {
 		path = node.ValueString()
+	}
+
+	if !strings.HasSuffix(path, inoxconsts.INOXLANG_FILE_EXTENSION) {
+		node.BasePtr().Err = &ParsingError{UnspecifiedParsingError, URL_LITS_AND_PATH_LITS_USED_AS_IMPORT_SRCS_SHOULD_END_WITH_IX}
+		return
 	}
 
 	runes := []rune(path)
