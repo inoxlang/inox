@@ -2,7 +2,7 @@
 name: Major Bug Report
 about: Create a report about a major bug
 title: ''
-labels: important bug
+labels: major bug
 assignees: ''
 
 ---
@@ -29,3 +29,5 @@ If applicable, add screenshots to help explain your problem.
  - OS: [e.g. iOS]
  - Browser [e.g. chrome, safari]
  - Inox Version [e.g. 0.12]
+
+> Inox is 100% free and open-source, consider becoming a sponsor to get support: https://github.com/sponsors/GraphR00t.

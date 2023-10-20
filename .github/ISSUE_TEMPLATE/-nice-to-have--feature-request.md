@@ -2,7 +2,7 @@
 name: '"Nice to Have" Feature request'
 about: Suggest a feature that would be nice to have
 title: ''
-labels: ''
+labels: nice-to-have feature
 assignees: ''
 
 ---

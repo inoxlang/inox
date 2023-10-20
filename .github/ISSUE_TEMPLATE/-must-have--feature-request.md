@@ -2,7 +2,7 @@
 name: '"Must Have" Feature request'
 about: Suggest a feature that you think must be added
 title: ''
-labels: ''
+labels: must-have feature
 assignees: ''
 
 ---
@@ -20,3 +20,5 @@ A clear and concise description of any alternative solutions or features you've 
 
 **Additional context**
 Add any other context or screenshots about the feature request here.
+
+> Inox is 100% free and open-source, consider becoming a sponsor to get support: https://github.com/sponsors/GraphR00t.
