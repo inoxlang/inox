@@ -1,0 +1,9 @@
+[this file is an example, make a copy in the same folder and rename it to your Github username]
+
+Github Username: example
+[Optional] Github User ID: <can be found at https://api.github.com/users/your_username>
+[Optional] Real Name: John Doe
+[Optional] Email Address: john.doe@example.com
+
+I agree to the Contributor License Agreement located in CLA.md 
+and that it applies to any open-source contributions I made and will make to the Inox project.
