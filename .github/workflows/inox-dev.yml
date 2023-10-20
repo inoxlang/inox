@@ -4,8 +4,10 @@ on:
   push:
     paths-ignore:
       - 'docs/**'
+      - '.legal/**'
       - 'README.md'
-      - 'CONTRIBUTION.md'
+      - 'CONTRIBUTING.md'
+      - 'CLA.md'
 permissions: write-all
 
 jobs:
