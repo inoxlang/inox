@@ -33,3 +33,7 @@
 - Zero maintaince
 - Secure by default
 - Minimal number of dependencies
+
+___
+
+[README.md](./README.md)

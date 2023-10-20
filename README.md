@@ -37,6 +37,8 @@ Inox deeply integrates with its built-in database engine, testing engine and HTT
 - [Easy declaration of CLI Parameters](#declaration-of-cli-parameters--environment-variables)
 - [Transactions & Effects (WIP)](#transactions--effects-wip)
 
+
+[Planned Features](./FUTURE.md)
 _____
 
 👥 Discord Server: https://discord.gg/53YGx8GzgE
