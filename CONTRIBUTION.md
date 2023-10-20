@@ -4,7 +4,8 @@
 
 ## Guidelines 
 
-Before working on the codebase make sure you read [FUTURE.md](./FUTURE.md).\
+Before working on the codebase make sure you read [FUTURE.md](./FUTURE.md) and the [CLA Readme](.legal/CLA/README.md).
+
 The following changes will **NOT** be accepted:
 - adding a large dependency
 - adding a dependency whose features can be easily implemented in the Inox repository
