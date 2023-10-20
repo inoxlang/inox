@@ -18298,6 +18298,236 @@ func testParse(
 			}, n)
 		})
 
+		//
+
+		t.Run("invalid absolute path as source: presence of a '//' segment at the start", func(t *testing.T) {
+			n, err := parseChunk(t, `import x https://example.com//x {}`, "")
+
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 34}, nil, false},
+				Statements: []Node{
+					&ImportStatement{
+						NodeBase: NodeBase{
+							NodeSpan{0, 34},
+							nil,
+							false,
+						},
+						Identifier: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{7, 8}, nil, false},
+							Name:     "x",
+						},
+						Source: &URLLiteral{
+							NodeBase: NodeBase{
+								NodeSpan{9, 31},
+								&ParsingError{UnspecifiedParsingError, PATH_OF_URL_LITERALS_USED_AS_IMPORT_SRCS_SHOULD_NOT_CONTAIN_SLASHSLASH},
+								false,
+							},
+							Value: "https://example.com//x",
+						},
+						Configuration: &ObjectLiteral{
+							NodeBase: NodeBase{
+								NodeSpan{32, 34},
+								nil,
+								false,
+							},
+							Properties: nil,
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("invalid URL source: presence of a '//' segment in the path", func(t *testing.T) {
+			n, err := parseChunk(t, `import x https://example.com/x//y {}`, "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 36}, nil, false},
+				Statements: []Node{
+					&ImportStatement{
+						NodeBase: NodeBase{
+							NodeSpan{0, 36},
+							nil,
+							false,
+						},
+						Identifier: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{7, 8}, nil, false},
+							Name:     "x",
+						},
+						Source: &URLLiteral{
+							NodeBase: NodeBase{
+								NodeSpan{9, 33},
+								&ParsingError{UnspecifiedParsingError, PATH_OF_URL_LITERALS_USED_AS_IMPORT_SRCS_SHOULD_NOT_CONTAIN_SLASHSLASH},
+								false,
+							},
+							Value: "https://example.com/x//y",
+						},
+						Configuration: &ObjectLiteral{
+							NodeBase: NodeBase{
+								NodeSpan{34, 36},
+								nil,
+								false,
+							},
+							Properties: nil,
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("invalid URL as source: presence of a '/../' segment at the start of the path", func(t *testing.T) {
+			n, err := parseChunk(t, `import x https://example.com/../x {}`, "")
+
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 36}, nil, false},
+				Statements: []Node{
+					&ImportStatement{
+						NodeBase: NodeBase{
+							NodeSpan{0, 36},
+							nil,
+							false,
+						},
+						Identifier: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{7, 8}, nil, false},
+							Name:     "x",
+						},
+						Source: &URLLiteral{
+							NodeBase: NodeBase{
+								NodeSpan{9, 33},
+								&ParsingError{UnspecifiedParsingError, PATH_OF_URL_LITERALS_USED_AS_IMPORT_SRCS_SHOULD_NOT_CONTAIN_DOT_SLASHSLASH},
+								false,
+							},
+							Value: "https://example.com/../x",
+						},
+						Configuration: &ObjectLiteral{
+							NodeBase: NodeBase{
+								NodeSpan{34, 36},
+								nil,
+								false,
+							},
+							Properties: nil,
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("invalid URL path as source: presence of a '/../' segment in the path", func(t *testing.T) {
+			n, err := parseChunk(t, `import x https://example.com/x/../y {}`, "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 38}, nil, false},
+				Statements: []Node{
+					&ImportStatement{
+						NodeBase: NodeBase{
+							NodeSpan{0, 38},
+							nil,
+							false,
+						},
+						Identifier: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{7, 8}, nil, false},
+							Name:     "x",
+						},
+						Source: &URLLiteral{
+							NodeBase: NodeBase{
+								NodeSpan{9, 35},
+								&ParsingError{UnspecifiedParsingError, PATH_OF_URL_LITERALS_USED_AS_IMPORT_SRCS_SHOULD_NOT_CONTAIN_DOT_SLASHSLASH},
+								false,
+							},
+							Value: "https://example.com/x/../y",
+						},
+						Configuration: &ObjectLiteral{
+							NodeBase: NodeBase{
+								NodeSpan{36, 38},
+								nil,
+								false,
+							},
+							Properties: nil,
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("invalid URL as source: presence of a '/./' segment at the start of the path", func(t *testing.T) {
+			n, err := parseChunk(t, `import x https://example.com/./x {}`, "")
+
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 35}, nil, false},
+				Statements: []Node{
+					&ImportStatement{
+						NodeBase: NodeBase{
+							NodeSpan{0, 35},
+							nil,
+							false,
+						},
+						Identifier: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{7, 8}, nil, false},
+							Name:     "x",
+						},
+						Source: &URLLiteral{
+							NodeBase: NodeBase{
+								NodeSpan{9, 32},
+								&ParsingError{UnspecifiedParsingError, PATH_OF_URL_LITERALS_USED_AS_IMPORT_SRCS_SHOULD_NOT_CONTAIN_DOT_SEGMENTS},
+								false,
+							},
+							Value: "https://example.com/./x",
+						},
+						Configuration: &ObjectLiteral{
+							NodeBase: NodeBase{
+								NodeSpan{33, 35},
+								nil,
+								false,
+							},
+							Properties: nil,
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("invalid URL as source: presence of a '/./' segment", func(t *testing.T) {
+			n, err := parseChunk(t, `import x https://example.com/x/./y {}`, "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 37}, nil, false},
+				Statements: []Node{
+					&ImportStatement{
+						NodeBase: NodeBase{
+							NodeSpan{0, 37},
+							nil,
+							false,
+							/*[]Token{
+								{Type: IMPORT_KEYWORD, Span: NodeSpan{0, 6}},
+							},*/
+						},
+						Identifier: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{7, 8}, nil, false},
+							Name:     "x",
+						},
+						Source: &URLLiteral{
+							NodeBase: NodeBase{
+								NodeSpan{9, 34},
+								&ParsingError{UnspecifiedParsingError, PATH_OF_URL_LITERALS_USED_AS_IMPORT_SRCS_SHOULD_NOT_CONTAIN_DOT_SEGMENTS},
+								false,
+							},
+							Value: "https://example.com/x/./y",
+						},
+						Configuration: &ObjectLiteral{
+							NodeBase: NodeBase{
+								NodeSpan{35, 37},
+								nil,
+								false,
+							},
+							Properties: nil,
+						},
+					},
+				},
+			}, n)
+		})
+
 	})
 
 	t.Run("inclusion import statement", func(t *testing.T) {

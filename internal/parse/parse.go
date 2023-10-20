@@ -9818,7 +9818,7 @@ func (p *parser) parseImportStatement(importIdent *IdentifierLiteral) Node {
 
 	switch src := e.(type) {
 	case *RelativePathLiteral:
-		p.checkImportPath(src)
+		p.checkImportSource(src)
 
 		return &InclusionImportStatement{
 			NodeBase: NodeBase{
@@ -9829,7 +9829,7 @@ func (p *parser) parseImportStatement(importIdent *IdentifierLiteral) Node {
 			Source: src,
 		}
 	case *AbsolutePathLiteral:
-		p.checkImportPath(src)
+		p.checkImportSource(src)
 
 		return &InclusionImportStatement{
 			NodeBase: NodeBase{
@@ -9872,10 +9872,11 @@ func (p *parser) parseImportStatement(importIdent *IdentifierLiteral) Node {
 
 	switch src := src.(type) {
 	case *URLLiteral:
+		p.checkImportSource(src)
 	case *RelativePathLiteral:
-		p.checkImportPath(src)
+		p.checkImportSource(src)
 	case *AbsolutePathLiteral:
-		p.checkImportPath(src)
+		p.checkImportSource(src)
 	default:
 		parsingError = &ParsingError{UnspecifiedParsingError, IMPORT_STMT_SRC_SHOULD_BE_AN_URL_OR_PATH_LIT}
 	}
@@ -9899,11 +9900,23 @@ func (p *parser) parseImportStatement(importIdent *IdentifierLiteral) Node {
 	}
 }
 
-func (p *parser) checkImportPath(node SimpleValueLiteral) {
+func (p *parser) checkImportSource(node SimpleValueLiteral) {
 	if node.Base().Err != nil {
 		return
 	}
-	path := node.ValueString()
+	var path string
+	urlLit, isUrl := node.(*URLLiteral)
+
+	if isUrl {
+		u, err := url.Parse(urlLit.Value)
+		if err != nil {
+			return
+		}
+		path = u.Path
+	} else {
+		path = node.ValueString()
+	}
+
 	runes := []rune(path)
 
 	absolute := path[0] == '/'
@@ -9925,6 +9938,11 @@ func (p *parser) checkImportPath(node SimpleValueLiteral) {
 		case '/':
 			if i != 0 && runes[i-1] == '/' {
 				err := &ParsingError{UnspecifiedParsingError, PATH_LITERALS_USED_AS_IMPORT_SRCS_SHOULD_NOT_CONTAIN_SLASHSLASH}
+
+				if isUrl {
+					err.Message = PATH_OF_URL_LITERALS_USED_AS_IMPORT_SRCS_SHOULD_NOT_CONTAIN_SLASHSLASH
+				}
+
 				node.BasePtr().Err = err
 				return
 			}
@@ -9932,12 +9950,20 @@ func (p *parser) checkImportPath(node SimpleValueLiteral) {
 			/* /../ */
 			if (i == 0 || runes[i-1] == '/') && i < len(runes)-2 && runes[i+1] == '.' && runes[i+2] == '/' {
 				err := &ParsingError{UnspecifiedParsingError, PATH_LITERALS_USED_AS_IMPORT_SRCS_SHOULD_NOT_CONTAIN_DOT_SLASHSLASH}
+				if isUrl {
+					err.Message = PATH_OF_URL_LITERALS_USED_AS_IMPORT_SRCS_SHOULD_NOT_CONTAIN_DOT_SLASHSLASH
+				}
+
 				node.BasePtr().Err = err
 				return
 			}
 			/* /../ */
 			if i > 0 && runes[i-1] == '/' && i < len(runes)-1 && runes[i+1] == '/' {
 				err := &ParsingError{UnspecifiedParsingError, PATH_LITERALS_USED_AS_IMPORT_SRCS_SHOULD_NOT_CONTAIN_DOT_SEGMENTS}
+				if isUrl {
+					err.Message = PATH_OF_URL_LITERALS_USED_AS_IMPORT_SRCS_SHOULD_NOT_CONTAIN_DOT_SEGMENTS
+				}
+
 				node.BasePtr().Err = err
 				return
 			}
