@@ -2,7 +2,7 @@
 name: '"Must Have" Feature request'
 about: Suggest a feature that you think must be added
 title: ''
-labels: must-have-feature
+labels: ''
 assignees: ''
 
 ---
