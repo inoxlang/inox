@@ -1,6 +1,6 @@
 ---
-name: Important Bug Report
-about: Create a report about an important bug
+name: Major Bug Report
+about: Create a report about an major bug
 title: ''
 labels: important bug
 assignees: ''
@@ -25,5 +25,7 @@ A clear and concise description of what you expected to happen.
 **Screenshots**
 If applicable, add screenshots to help explain your problem.
 
-**Additional context**
-Add any other context about the problem here.
+**Platforms & Versions**
+ - OS: [e.g. iOS]
+ - Browser [e.g. chrome, safari]
+ - Inox Version [e.g. 0.12]
