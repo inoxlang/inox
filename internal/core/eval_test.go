@@ -1378,6 +1378,53 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		}
 	})
 
+	t.Run("global variable declaration", func(t *testing.T) {
+
+		testCases := []struct {
+			input          string
+			error          bool
+			skipIfBytecode bool
+			result         Value
+		}{
+			{
+				input: `
+					globalvar a = 1; 
+					return a
+				`,
+				result: Int(1),
+			},
+			{
+				input: `
+					globalvar (
+						a = 1
+						b = 2
+					)
+					return [a, b]
+				`,
+				result: NewWrappedValueList(Int(1), Int(2)),
+			},
+		}
+
+		for _, testCase := range testCases {
+			if testCase.skipIfBytecode && bytecodeEval {
+				continue
+			}
+			t.Run(testCase.input, func(t *testing.T) {
+
+				state := NewGlobalState(NewDefaultTestContext())
+				defer state.Ctx.CancelGracefully()
+				res, err := Eval(testCase.input, state, false)
+				if testCase.error {
+					assert.Error(t, err)
+					assert.Nil(t, res)
+				} else {
+					assert.NoError(t, err)
+					assert.Equal(t, testCase.result, res)
+				}
+			})
+		}
+	})
+
 	t.Run("assignment", func(t *testing.T) {
 
 		testCases := []struct {

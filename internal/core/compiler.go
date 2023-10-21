@@ -823,6 +823,16 @@ func (c *compiler) Compile(node parse.Node) error {
 			}
 			c.emit(node, OpSetLocal, symbol.Index)
 		}
+	case *parse.GlobalVariableDeclarations:
+		for _, decl := range node.Declarations {
+			varname := decl.Left.(*parse.IdentifierLiteral).Name
+			c.globalSymbols.Define(varname)
+
+			if err := c.Compile(decl.Right); err != nil {
+				return err
+			}
+			c.emit(node, OpSetGlobal, c.addConstant(Str(varname)))
+		}
 	case *parse.Assignment:
 		err := c.compileAssign(node, node.Left, node.Right)
 		if err != nil {

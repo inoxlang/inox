@@ -638,7 +638,35 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			}
 			currentScope[name] = right
 		}
-		return Nil, nil
+		return nil, nil
+	case *parse.GlobalVariableDeclarations:
+		for _, decl := range n.Declarations {
+			name := decl.Left.(*parse.IdentifierLiteral).Name
+
+			alreadyDefined := state.Global.Globals.Has(name)
+			if alreadyDefined {
+				if _, ok := state.constantVars[name]; ok {
+					return nil, errors.New("attempt to assign a constant global")
+				}
+
+				err := state.Global.Ctx.CheckHasPermission(GlobalVarPermission{Kind_: permkind.Update, Name: name})
+				if err != nil {
+					return nil, err
+				}
+			} else {
+				err = state.Global.Ctx.CheckHasPermission(GlobalVarPermission{Kind_: permkind.Create, Name: name})
+				if err != nil {
+					return nil, err
+				}
+			}
+
+			right, err := TreeWalkEval(decl.Right, state)
+			if err != nil {
+				return nil, err
+			}
+			state.SetGlobal(name, right, GlobalVar)
+		}
+		return nil, nil
 	case *parse.Assignment:
 
 		handleAssignmentOperation := func(left func() Value, right Value) (Value, error) {
