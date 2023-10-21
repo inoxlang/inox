@@ -3174,8 +3174,20 @@ object_pattern_top_loop:
 
 				p.eatSpace()
 
-				if p.i >= p.len || p.s[p.i] == '}' {
-					break object_pattern_top_loop
+				if p.i >= p.len || p.s[p.i] == '}' || p.s[p.i] == ',' { //missing value
+					if propParsingErr == nil {
+						propParsingErr = &ParsingError{MissingObjectPropertyPattern, MISSING_PROPERTY_PATTERN}
+					}
+					properties = append(properties, &ObjectPatternProperty{
+						NodeBase: NodeBase{
+							Span: NodeSpan{propSpanStart, p.i},
+							Err:  propParsingErr,
+						},
+						Key:  key,
+						Type: type_,
+					})
+
+					goto step_end
 				}
 
 				if p.s[p.i] == '\n' {

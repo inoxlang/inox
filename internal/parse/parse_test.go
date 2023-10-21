@@ -21487,6 +21487,36 @@ func testParse(
 			}, n)
 
 		})
+
+		t.Run("missing property pattern", func(t *testing.T) {
+			n, err := parseChunk(t, "%{a:}", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 5}, nil, false},
+				Statements: []Node{
+					&ObjectPatternLiteral{
+						NodeBase: NodeBase{
+							NodeSpan{0, 5},
+							nil,
+							false,
+						},
+						Properties: []*ObjectPatternProperty{
+							{
+								NodeBase: NodeBase{
+									NodeSpan{2, 4},
+									&ParsingError{MissingObjectPropertyPattern, MISSING_PROPERTY_PATTERN},
+									false,
+								},
+								Key: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{2, 3}, nil, false},
+									Name:     "a",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
 	})
 
 	t.Run("list pattern", func(t *testing.T) {
