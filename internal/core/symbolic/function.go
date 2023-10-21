@@ -196,11 +196,11 @@ func (fn *InoxFunction) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPr
 		w.WriteString("[restricted stmts] ")
 	}
 	if fn.result == nil {
-		w.WriteName("fn")
+		w.WriteString("fn")
 		return
 	}
 
-	w.WriteName("fn(")
+	w.WriteString("fn(")
 
 	for i, param := range fn.parameters {
 		if i != 0 {
@@ -964,7 +964,7 @@ func (f *Function) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintCo
 		return
 	}
 
-	w.WriteName("fn(")
+	w.WriteString("fn(")
 
 	for i, param := range f.parameters {
 		if i != 0 {

@@ -74,7 +74,7 @@ func (w PrettyPrintWriter) WriteLFCR() {
 }
 
 func (w PrettyPrintWriter) WriteByte(b byte) {
-	utils.PanicIfErr(w.Writer.WriteByte('\n'))
+	utils.PanicIfErr(w.Writer.WriteByte(b))
 }
 
 func (w PrettyPrintWriter) ZeroDepthIndent() PrettyPrintWriter {
