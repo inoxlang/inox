@@ -1,11 +1,9 @@
 package symbolic
 
 import (
-	"bufio"
 	"strconv"
 
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
-	"github.com/inoxlang/inox/internal/utils"
 )
 
 var (
@@ -62,12 +60,12 @@ func (f *Float) Static() Pattern {
 	return &TypePattern{val: ANY_FLOAT}
 }
 
-func (f *Float) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%float")))
+func (f *Float) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("float")
 	if f.hasValue {
-		utils.PanicIfErr(w.WriteByte('('))
-		utils.Must(w.Write(utils.StringAsBytes(strconv.FormatFloat(f.value, 'g', -1, 64))))
-		utils.PanicIfErr(w.WriteByte(')'))
+		w.WriteByte('(')
+		w.WriteString(strconv.FormatFloat(f.value, 'g', -1, 64))
+		w.WriteByte(')')
 	}
 }
 
@@ -118,12 +116,12 @@ func (i *Int) Static() Pattern {
 	return &TypePattern{val: ANY_INT}
 }
 
-func (i *Int) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%int")))
+func (i *Int) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("int")
 	if i.hasValue {
-		utils.PanicIfErr(w.WriteByte('('))
-		utils.Must(w.Write(utils.StringAsBytes(strconv.FormatInt(i.value, 10))))
-		utils.PanicIfErr(w.WriteByte(')'))
+		w.WriteByte('(')
+		w.WriteString(strconv.FormatInt(i.value, 10))
+		w.WriteByte(')')
 	}
 }
 
@@ -149,8 +147,8 @@ func (*AnyIntegral) Test(v Value, state RecTestCallState) bool {
 	return ok
 }
 
-func (*AnyIntegral) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%integral")))
+func (*AnyIntegral) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("integral")
 }
 
 func (*AnyIntegral) WidestOfType() Value {

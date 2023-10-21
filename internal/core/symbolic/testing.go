@@ -1,10 +1,7 @@
 package symbolic
 
 import (
-	"bufio"
-
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
-	"github.com/inoxlang/inox/internal/utils"
 )
 
 const (
@@ -67,8 +64,8 @@ func (*TestSuite) PropertyNames() []string {
 	return []string{"run"}
 }
 
-func (s *TestSuite) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%test-suite")))
+func (s *TestSuite) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("test-suite")
 	return
 }
 
@@ -110,7 +107,7 @@ func (*TestCase) PropertyNames() []string {
 	return nil
 }
 
-func (s *TestCase) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%test-case")))
+func (s *TestCase) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("test-case")
 	return
 }

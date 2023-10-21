@@ -1,11 +1,9 @@
 package symbolic
 
 import (
-	"bufio"
 	"errors"
 
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
-	"github.com/inoxlang/inox/internal/utils"
 )
 
 var (
@@ -39,8 +37,8 @@ func (m *Snapshot) Test(v Value, state RecTestCallState) bool {
 	return ok
 }
 
-func (m *Snapshot) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%snapshot")))
+func (m *Snapshot) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("snapshot")
 	return
 }
 
@@ -76,8 +74,8 @@ func (s *AnyInMemorySnapshotable) Test(v Value, state RecTestCallState) bool {
 	return ok
 }
 
-func (s *AnyInMemorySnapshotable) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%in-memory-snapshotable")))
+func (s *AnyInMemorySnapshotable) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("in-memory-snapshotable")
 	return
 }
 

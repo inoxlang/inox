@@ -1,7 +1,6 @@
 package symbolic
 
 import (
-	"bufio"
 	"fmt"
 
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
@@ -38,8 +37,8 @@ func (r *Secret) Test(v Value, state RecTestCallState) bool {
 	return ok
 }
 
-func (r *Secret) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%secret")))
+func (r *Secret) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("secret")
 }
 
 func (r *Secret) WidestOfType() Value {
@@ -90,10 +89,10 @@ func (pattern *SecretPattern) HasUnderlyingPattern() bool {
 	return pattern.stringPattern.HasUnderlyingPattern()
 }
 
-func (pattern *SecretPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%secret-pattern(")))
-	pattern.stringPattern.PrettyPrint(w, config, 0, 0)
-	utils.Must(w.Write(utils.StringAsBytes(")")))
+func (pattern *SecretPattern) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("secret-pattern(")
+	pattern.stringPattern.PrettyPrint(w.ZeroDepthIndent(), config)
+	w.WriteString(")")
 }
 
 func (pattern *SecretPattern) WidestOfType() Value {

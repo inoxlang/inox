@@ -1,10 +1,7 @@
 package symbolic
 
 import (
-	"bufio"
-
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
-	"github.com/inoxlang/inox/internal/utils"
 )
 
 // A Transaction represents a symbolic Transaction.
@@ -61,8 +58,8 @@ func (tx *Transaction) GetGoMethod(name string) (*GoFunction, bool) {
 	return nil, false
 }
 
-func (tx *Transaction) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%transaction")))
+func (tx *Transaction) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("transaction")
 	return
 }
 

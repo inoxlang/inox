@@ -1,14 +1,11 @@
 package chrome_ns
 
 import (
-	"bufio"
 	"errors"
 
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	html_ns "github.com/inoxlang/inox/internal/globals/html_ns/symbolic"
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
-
-	"github.com/inoxlang/inox/internal/utils"
 )
 
 var (
@@ -28,8 +25,8 @@ func (r *Handle) Test(v symbolic.Value, state symbolic.RecTestCallState) bool {
 	return ok
 }
 
-func (r *Handle) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%browser-handle")))
+func (r *Handle) PrettyPrint(w symbolic.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("browser-handle")
 }
 
 func (r *Handle) WidestOfType() symbolic.Value {

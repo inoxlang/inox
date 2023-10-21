@@ -679,7 +679,7 @@ func (*symbolicLoadableTestValue) IsMutable() bool {
 	return false
 }
 
-func (*symbolicLoadableTestValue) PrettyPrint(w *bufio.Writer, config *internal.PrettyPrintConfig, depth int, parentIndentCount int) {
+func (*symbolicLoadableTestValue) PrettyPrint(w symbolic.PrettyPrintWriter, config *internal.PrettyPrintConfig) {
 	w.WriteString("symbolicLoadableTestValue")
 }
 
@@ -726,7 +726,7 @@ func (*symbolicLoadableTestValuePattern) IteratorElementValue() symbolic.Value {
 	return symbolic.ANY
 }
 
-func (*symbolicLoadableTestValuePattern) PrettyPrint(w *bufio.Writer, config *internal.PrettyPrintConfig, depth int, parentIndentCount int) {
+func (*symbolicLoadableTestValuePattern) PrettyPrint(w symbolic.PrettyPrintWriter, config *internal.PrettyPrintConfig) {
 	w.WriteString("symbolicLoadableTestValuePattern")
 }
 

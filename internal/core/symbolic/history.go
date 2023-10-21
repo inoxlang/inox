@@ -1,12 +1,10 @@
 package symbolic
 
 import (
-	"bufio"
 	"errors"
 
 	"github.com/inoxlang/inox/internal/commonfmt"
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
-	"github.com/inoxlang/inox/internal/utils"
 )
 
 var (
@@ -96,8 +94,8 @@ func (*ValueHistory) PropertyNames() []string {
 	return VALUE_HISTORY_PROPNAMES
 }
 
-func (h *ValueHistory) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%value-history")))
+func (h *ValueHistory) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("value-history")
 	return
 }
 

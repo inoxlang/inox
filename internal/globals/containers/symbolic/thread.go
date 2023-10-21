@@ -1,12 +1,8 @@
 package containers
 
 import (
-	"bufio"
-
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
-
-	"github.com/inoxlang/inox/internal/utils"
 )
 
 var _ = []symbolic.Iterable{(*Thread)(nil)}
@@ -44,9 +40,8 @@ func (*Thread) Push(ctx *symbolic.Context, elems ...symbolic.Value) {
 
 }
 
-func (*Thread) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%thread")))
-	return
+func (*Thread) PrettyPrint(w symbolic.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("thread")
 }
 
 func (t *Thread) IteratorElementKey() symbolic.Value {

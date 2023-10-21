@@ -1,11 +1,9 @@
 package symbolic
 
 import (
-	"bufio"
 	"errors"
 
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
-	"github.com/inoxlang/inox/internal/utils"
 )
 
 //TODO: implement PotentiallySharable interface
@@ -29,8 +27,8 @@ func (m *Mapping) Test(v Value, state RecTestCallState) bool {
 	return ok
 }
 
-func (m *Mapping) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%mapping")))
+func (m *Mapping) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("mapping")
 	return
 }
 

@@ -1,13 +1,10 @@
 package containers
 
 import (
-	"bufio"
 	"errors"
 
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
-
-	"github.com/inoxlang/inox/internal/utils"
 )
 
 var (
@@ -70,8 +67,8 @@ func (t *Tree) Get(ctx *symbolic.Context, k symbolic.Value) symbolic.Value {
 	return &symbolic.Any{}
 }
 
-func (t *Tree) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%tree")))
+func (t *Tree) PrettyPrint(w symbolic.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("tree")
 }
 
 func (t *Tree) IteratorElementKey() symbolic.Value {
@@ -173,8 +170,8 @@ func (n *TreeNode) IteratorElementValue() symbolic.Value {
 	return n
 }
 
-func (r *TreeNode) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%tree-node")))
+func (r *TreeNode) PrettyPrint(w symbolic.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("tree-node")
 }
 
 func (r *TreeNode) WidestOfType() symbolic.Value {
@@ -235,8 +232,8 @@ func (p *TreeNodePattern) IteratorElementValue() symbolic.Value {
 	return ANY_TREE_NODE
 }
 
-func (p *TreeNodePattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%tree-node-pattern")))
+func (p *TreeNodePattern) PrettyPrint(w symbolic.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("tree-node-pattern")
 }
 
 func (p *TreeNodePattern) WidestOfType() symbolic.Value {

@@ -1,8 +1,6 @@
 package symbolic
 
 import (
-	"bufio"
-
 	internal "github.com/inoxlang/inox/internal/pretty_print"
 )
 
@@ -82,7 +80,7 @@ func (*AnySerializable) Test(v Value, state RecTestCallState) bool {
 
 // IsWidenable implements SymbolicValue.
 
-func (*AnySerializable) PrettyPrint(w *bufio.Writer, config *internal.PrettyPrintConfig, depth int, parentIndentCount int) {
+func (*AnySerializable) PrettyPrint(w PrettyPrintWriter, config *internal.PrettyPrintConfig) {
 	w.WriteString("%serializable")
 }
 

@@ -1,12 +1,10 @@
 package symbolic
 
 import (
-	"bufio"
 	"bytes"
 	"errors"
 
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
-	"github.com/inoxlang/inox/internal/utils"
 	"github.com/oklog/ulid/v2"
 )
 
@@ -84,65 +82,65 @@ func (s *Struct) WithExistingPropReplaced(name string, value Value) (IProps, err
 	panic(ErrNotImplementedYet)
 }
 
-func (s *Struct) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+func (s *Struct) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if s.structType != nil {
-		utils.Must(w.Write(utils.StringAsBytes("struct")))
-		utils.Must(w.Write(utils.StringAsBytes(s.structType.name)))
-		utils.Must(w.Write(utils.StringAsBytes(" {")))
+		w.WriteName("struct")
+		w.WriteString(s.structType.name)
+		w.WriteString(" {")
 	} else {
-		utils.Must(w.Write(utils.StringAsBytes("struct {")))
+		w.WriteName("struct {")
 	}
 
-	if depth > config.MaxDepth {
+	if w.Depth > config.MaxDepth {
 		if len(s.structType.keys) > 0 {
-			utils.Must(w.Write(utils.StringAsBytes("{(...)}")))
+			w.WriteString("{(...)}")
 		} else {
-			utils.Must(w.Write(utils.StringAsBytes(" }")))
+			w.WriteString(" }")
 		}
 		return
 	}
 
-	indentCount := parentIndentCount + 1
+	indentCount := w.ParentIndentCount + 1
 	indent := bytes.Repeat(config.Indent, indentCount)
 
 	propertyNames := s.PropertyNames()
 	for i, name := range propertyNames {
 
 		if !config.Compact {
-			utils.Must(w.Write(LF_CR))
-			utils.Must(w.Write(indent))
+			w.WriteLFCR()
+			w.WriteBytes(indent)
 		}
 
 		if config.Colorize {
-			utils.Must(w.Write(config.Colors.IdentifierLiteral))
+			w.WriteBytes(config.Colors.IdentifierLiteral)
 		}
 
-		utils.Must(w.Write(utils.StringAsBytes(name)))
+		w.WriteString(name)
 
 		if config.Colorize {
-			utils.Must(w.Write(ANSI_RESET_SEQUENCE))
+			w.WriteBytes(ANSI_RESET_SEQUENCE)
 		}
 
 		//colon
-		utils.Must(w.Write(COLON_SPACE))
+		w.WriteBytes(COLON_SPACE)
 
 		//value
 		v := s.Prop(name)
-		v.PrettyPrint(w, config, depth+1, indentCount)
+		v.PrettyPrint(w.IncrDepthWithIndent(indentCount), config)
 
 		//comma & indent
 		isLastEntry := i == len(propertyNames)-1
 
 		if !isLastEntry {
-			utils.Must(w.Write(COMMA_SPACE))
+			w.WriteBytes(COMMA_SPACE)
 		}
 	}
 
 	if !config.Compact && len(propertyNames) > 0 {
-		utils.Must(w.Write(LF_CR))
+		w.WriteLFCR()
 	}
 
-	utils.MustWriteMany(w, bytes.Repeat(config.Indent, depth), []byte{'}'})
+	w.WriteManyBytes(bytes.Repeat(config.Indent, w.Depth), []byte{'}'})
 }
 
 func (s *Struct) WidestOfType() Value {
@@ -214,12 +212,12 @@ func (s *StructPattern) indexOfField(name string) (int, bool) {
 	return -1, false
 }
 
-func (s *StructPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("struct-type ")))
-	utils.Must(w.Write(utils.StringAsBytes(s.name)))
-	utils.Must(w.Write(utils.StringAsBytes(" {")))
+func (s *StructPattern) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("struct-type ")
+	w.WriteString(s.name)
+	w.WriteString(" {")
 
-	utils.Must(w.Write(utils.StringAsBytes("...")))
+	w.WriteString("...")
 	w.WriteByte('}')
 }
 

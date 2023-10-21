@@ -1,9 +1,7 @@
 package symbolic
 
 import (
-	"bufio"
 	"errors"
-	"fmt"
 
 	"github.com/inoxlang/inox/internal/commonfmt"
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
@@ -155,26 +153,26 @@ func (s *String) Static() Pattern {
 	return _ANY_STR_TYPE_PATTERN
 }
 
-func (s *String) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+func (s *String) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if s.hasValue {
 		jsonString := utils.Must(utils.MarshalJsonNoHTMLEspace(s.value))
-		utils.Must(w.Write(jsonString))
+		w.WriteBytes(jsonString)
 	} else {
-		utils.Must(w.Write(utils.StringAsBytes("%string")))
+		w.WriteName("string")
 
 		if s.pattern != nil {
 
 			if seqPattern, ok := s.pattern.(*SequenceStringPattern); ok {
-				utils.Must(w.Write(utils.StringAsBytes("(")))
-				utils.Must(w.Write(utils.StringAsBytes(seqPattern.stringifiedNode)))
-				utils.Must(w.Write(utils.StringAsBytes(")")))
+				w.WriteString("(")
+				w.WriteString(seqPattern.stringifiedNode)
+				w.WriteString(")")
 			} else {
-				utils.Must(w.Write(utils.StringAsBytes("(matching ")))
-				s.pattern.PrettyPrint(w, config, depth, 0)
-				utils.Must(w.Write(utils.StringAsBytes(")")))
+				w.WriteString("(matching ")
+				s.pattern.PrettyPrint(w.ZeroIndent(), config)
+				w.WriteString(")")
 			}
 		} else if s.minLengthPlusOne > 0 {
-			utils.Must(w.Write(utils.StringAsBytes(fmt.Sprintf("(length in %d..%d)", s.minLength(), s.maxLength))))
+			w.WriteStringF("(length in %d..%d)", s.minLength(), s.maxLength)
 		}
 	}
 }
@@ -302,12 +300,12 @@ func (r *Rune) Static() Pattern {
 	return &TypePattern{val: ANY_RUNE}
 }
 
-func (r *Rune) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+func (r *Rune) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if r.hasValue {
-		utils.Must(w.Write(utils.StringAsBytes(commonfmt.FmtRune(r.value))))
+		w.WriteString(commonfmt.FmtRune(r.value))
 		return
 	}
-	utils.Must(w.Write(utils.StringAsBytes("%rune")))
+	w.WriteName("rune")
 }
 
 func (r *Rune) WidestOfType() Value {
@@ -344,8 +342,8 @@ func (s *CheckedString) Test(v Value, state RecTestCallState) bool {
 	return ok
 }
 
-func (s *CheckedString) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%checked-string")))
+func (s *CheckedString) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("checked-string")
 }
 
 func (p *CheckedString) PropertyNames() []string {
@@ -396,8 +394,8 @@ func (s *RuneSlice) Concretize(ctx ConcreteContext) any {
 	panic(ErrNotConcretizable)
 }
 
-func (s *RuneSlice) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%rune-slice")))
+func (s *RuneSlice) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("rune-slice")
 }
 
 func (s *RuneSlice) HasKnownLen() bool {
@@ -527,8 +525,8 @@ func (c *StringConcatenation) Concretize(ctx ConcreteContext) any {
 	panic(ErrNotConcretizable)
 }
 
-func (c *StringConcatenation) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%string-concatenation")))
+func (c *StringConcatenation) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("string-concatenation")
 }
 
 func (c *StringConcatenation) IteratorElementKey() Value {
@@ -625,8 +623,8 @@ func (s *AnyStringLike) Test(v Value, state RecTestCallState) bool {
 	return ok
 }
 
-func (s *AnyStringLike) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%string-like")))
+func (s *AnyStringLike) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("string-like")
 }
 
 func (s *AnyStringLike) element() Value {

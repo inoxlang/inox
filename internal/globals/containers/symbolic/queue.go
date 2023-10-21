@@ -1,12 +1,8 @@
 package containers
 
 import (
-	"bufio"
-
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
-
-	"github.com/inoxlang/inox/internal/utils"
 )
 
 var _ = []symbolic.Iterable{(*Queue)(nil)}
@@ -56,8 +52,8 @@ func (*Queue) Peek(ctx *symbolic.Context) (symbolic.Value, *symbolic.Bool) {
 	return &symbolic.Any{}, nil
 }
 
-func (*Queue) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%queue")))
+func (*Queue) PrettyPrint(w symbolic.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("queue")
 	return
 }
 

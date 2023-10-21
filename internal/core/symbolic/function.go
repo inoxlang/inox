@@ -1,7 +1,6 @@
 package symbolic
 
 import (
-	"bufio"
 	"errors"
 	"fmt"
 	"reflect"
@@ -192,32 +191,32 @@ func (fn *InoxFunction) WatcherElement() Value {
 	return ANY
 }
 
-func (fn *InoxFunction) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+func (fn *InoxFunction) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if fn.visitCheckNode != nil {
-		utils.Must(w.Write(utils.StringAsBytes("[restricted stmts] ")))
+		w.WriteString("[restricted stmts] ")
 	}
 	if fn.result == nil {
-		utils.Must(w.Write(utils.StringAsBytes("fn")))
+		w.WriteName("fn")
 		return
 	}
 
-	utils.Must(w.Write(utils.StringAsBytes("fn(")))
+	w.WriteName("fn(")
 
 	for i, param := range fn.parameters {
 		if i != 0 {
-			utils.Must(w.Write(utils.StringAsBytes(", ")))
+			w.WriteString(", ")
 		}
-		utils.Must(w.Write(utils.StringAsBytes(fn.parameterNames[i])))
-		utils.Must(w.Write(utils.StringAsBytes(" ")))
+		w.WriteString(fn.parameterNames[i])
+		w.WriteString(" ")
 
 		if fn.IsVariadic() && i == len(fn.parameters)-1 {
-			utils.Must(w.Write(utils.StringAsBytes("...")))
+			w.WriteString("...")
 		}
-		param.PrettyPrint(w, config, 0, 0)
+		param.PrettyPrint(w.ZeroDepthIndent(), config)
 	}
 
-	utils.Must(w.Write(utils.StringAsBytes(") ")))
-	fn.result.PrettyPrint(w, config, 0, 0)
+	w.WriteString(") ")
+	fn.result.PrettyPrint(w.ZeroDepthIndent(), config)
 }
 
 func (fn *InoxFunction) WidestOfType() Value {
@@ -336,9 +335,9 @@ func (fn *GoFunction) IsShared() bool {
 	return fn.originState != nil
 }
 
-func (fn *GoFunction) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+func (fn *GoFunction) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if fn.fn == nil {
-		utils.Must(w.Write(utils.StringAsBytes("fn")))
+		w.WriteName("fn")
 	}
 
 	fnValType := reflect.TypeOf(fn.fn)
@@ -351,11 +350,11 @@ func (fn *GoFunction) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintCon
 		start++
 	}
 
-	utils.Must(w.Write(utils.StringAsBytes("fn(")))
+	w.WriteName("fn(")
 
 	for i := start; i < fnValType.NumIn(); i++ {
 		if i != start {
-			utils.Must(w.Write(utils.StringAsBytes(", ")))
+			w.WriteString(", ")
 		}
 
 		reflectParamType := fnValType.In(i)
@@ -367,7 +366,7 @@ func (fn *GoFunction) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintCon
 			if err != nil {
 				w.WriteString("???" + err.Error())
 			} else {
-				param.PrettyPrint(w, config, 0, 0)
+				param.PrettyPrint(w.ZeroDepthIndent(), config)
 			}
 
 		} else {
@@ -378,23 +377,23 @@ func (fn *GoFunction) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintCon
 				w.WriteString("???" + err.Error())
 			} else {
 				if isOptionalParam {
-					utils.Must(w.Write(utils.StringAsBytes(PRETTY_PRINT_OPTIONAL_PARAM_PREFIX)))
+					w.WriteString(PRETTY_PRINT_OPTIONAL_PARAM_PREFIX)
 				}
-				param.PrettyPrint(w, config, 0, 0)
+				param.PrettyPrint(w.ZeroDepthIndent(), config)
 			}
 		}
 
 	}
 
-	utils.Must(w.Write(utils.StringAsBytes(") ")))
+	w.WriteString(") ")
 
 	if fnValType.NumOut() > 1 {
-		utils.Must(w.Write(utils.StringAsBytes("[")))
+		w.WriteString("[")
 	}
 
 	for i := 0; i < fnValType.NumOut(); i++ {
 		if i != 0 {
-			utils.Must(w.Write(utils.StringAsBytes(", ")))
+			w.WriteString(", ")
 		}
 
 		reflectReturnType := fnValType.Out(i)
@@ -403,12 +402,12 @@ func (fn *GoFunction) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintCon
 		if err != nil {
 			w.WriteString("???" + err.Error())
 		} else {
-			ret.PrettyPrint(w, config, 0, 0)
+			ret.PrettyPrint(w.ZeroDepthIndent(), config)
 		}
 	}
 
 	if fnValType.NumOut() > 1 {
-		utils.Must(w.Write(utils.StringAsBytes("]")))
+		w.WriteString("]")
 	}
 
 }
@@ -959,43 +958,43 @@ func (f *Function) Test(v Value, state RecTestCallState) bool {
 	}
 }
 
-func (f *Function) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+func (f *Function) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if f.pattern != nil {
-		utils.Must(w.Write(utils.StringAsBytes("%function(???)")))
+		w.WriteName("function(???)")
 		return
 	}
 
-	utils.Must(w.Write(utils.StringAsBytes("fn(")))
+	w.WriteName("fn(")
 
 	for i, param := range f.parameters {
 		if i != 0 {
-			utils.Must(w.Write(utils.StringAsBytes(", ")))
+			w.WriteString(", ")
 		}
 
 		isVariadicParam := f.variadic && i == len(f.parameters)-1
 		if isVariadicParam {
-			utils.Must(w.Write(utils.StringAsBytes("...")))
+			w.WriteString("...")
 		}
 
 		if len(f.parameterNames) > i {
-			utils.Must(w.Write(utils.StringAsBytes(f.parameterNames[i])))
-			utils.PanicIfErr(w.WriteByte(' '))
+			w.WriteString(f.parameterNames[i])
+			w.WriteByte(' ')
 		}
 
 		if !isVariadicParam && f.HasOptionalParams() && i >= f.firstOptionalParamIndex {
-			utils.Must(w.Write(utils.StringAsBytes(PRETTY_PRINT_OPTIONAL_PARAM_PREFIX)))
+			w.WriteString(PRETTY_PRINT_OPTIONAL_PARAM_PREFIX)
 		}
 
-		param.PrettyPrint(w, config, 0, 0)
+		param.PrettyPrint(w.ZeroDepthIndent(), config)
 	}
 
-	utils.Must(w.Write(utils.StringAsBytes(") ")))
+	w.WriteString(") ")
 	switch len(f.results) {
 	case 0:
 	case 1:
-		f.results[0].PrettyPrint(w, config, 0, 0)
+		f.results[0].PrettyPrint(w.ZeroDepthIndent(), config)
 	default:
-		NewArray(f.results...).PrettyPrint(w, config, 0, 0)
+		NewArray(f.results...).PrettyPrint(w.ZeroDepthIndent(), config)
 	}
 }
 

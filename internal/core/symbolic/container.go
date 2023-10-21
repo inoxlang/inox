@@ -1,11 +1,9 @@
 package symbolic
 
 import (
-	"bufio"
 	"errors"
 
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
-	"github.com/inoxlang/inox/internal/utils"
 )
 
 var (
@@ -41,8 +39,8 @@ func (*AnyContainer) Test(v Value, state RecTestCallState) bool {
 	return ok
 }
 
-func (*AnyContainer) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%container")))
+func (*AnyContainer) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("container")
 }
 
 func (*AnyContainer) Contains(value Value) (yes bool, possible bool) {

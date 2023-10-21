@@ -1,10 +1,7 @@
 package symbolic
 
 import (
-	"bufio"
-
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
-	"github.com/inoxlang/inox/internal/utils"
 )
 
 var (
@@ -66,10 +63,10 @@ func (*AnySequenceOf) KnownLen() int {
 	panic(ErrUnreachable)
 }
 
-func (s *AnySequenceOf) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%sequence(")))
-	s.elem.PrettyPrint(w, config, depth, 0)
-	utils.PanicIfErr(w.WriteByte(')'))
+func (s *AnySequenceOf) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("sequence(")
+	s.elem.PrettyPrint(w.ZeroIndent(), config)
+	w.WriteByte(')')
 }
 
 func (s *AnySequenceOf) element() Value {

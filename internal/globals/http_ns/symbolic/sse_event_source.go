@@ -1,12 +1,8 @@
 package http_ns
 
 import (
-	"bufio"
-
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
-
-	"github.com/inoxlang/inox/internal/utils"
 )
 
 var (
@@ -45,9 +41,8 @@ func (*ServerSentEventSource) PropertyNames() []string {
 func (serv *ServerSentEventSource) close(ctx *symbolic.Context) {
 }
 
-func (r *ServerSentEventSource) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%event-source")))
-	return
+func (r *ServerSentEventSource) PrettyPrint(w symbolic.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("event-source")
 }
 
 func (r *ServerSentEventSource) WidestOfType() symbolic.Value {

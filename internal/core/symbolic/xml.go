@@ -1,12 +1,10 @@
 package symbolic
 
 import (
-	"bufio"
 	"reflect"
 
 	parse "github.com/inoxlang/inox/internal/parse"
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
-	"github.com/inoxlang/inox/internal/utils"
 )
 
 const (
@@ -66,8 +64,8 @@ func (r *XMLElement) Test(v Value, state RecTestCallState) bool {
 	}
 }
 
-func (r *XMLElement) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%xml-element")))
+func (r *XMLElement) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("xml-element")
 	return
 }
 

@@ -1,7 +1,6 @@
 package symbolic
 
 import (
-	"bufio"
 	"errors"
 	"fmt"
 
@@ -62,9 +61,8 @@ func (*EventSource) PropertyNames() []string {
 func (s *EventSource) Close() {
 }
 
-func (s *EventSource) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%event-source")))
-	return
+func (s *EventSource) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("event-source")
 }
 
 func (s *EventSource) IteratorElementKey() Value {
@@ -114,8 +112,8 @@ func (e *Event) Prop(name string) Value {
 	}
 }
 
-func (r *Event) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%event")))
+func (r *Event) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("event")
 }
 
 func (r *Event) WidestOfType() Value {

@@ -1,10 +1,7 @@
 package symbolic
 
 import (
-	"bufio"
-
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
-	"github.com/inoxlang/inox/internal/utils"
 )
 
 const (
@@ -80,8 +77,8 @@ func (t *LThread) Cancel(*Context) {
 
 }
 
-func (t *LThread) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%lthread")))
+func (t *LThread) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("lthread")
 }
 
 // A LThreadGroup represents a symbolic LThreadGroup.
@@ -136,8 +133,8 @@ func (g *LThreadGroup) CancelAll(*Context) {
 
 }
 
-func (g *LThreadGroup) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%lthread-group")))
+func (g *LThreadGroup) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("lthread-group")
 }
 
 func (g *LThreadGroup) WidestOfType() Value {
@@ -196,6 +193,6 @@ func (s *ExecutedStep) WaitResult(ctx *Context) (Value, *Error) {
 func (s *ExecutedStep) Cancel(*Context) {
 }
 
-func (s *ExecutedStep) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%executed-step")))
+func (s *ExecutedStep) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("executed-step")
 }

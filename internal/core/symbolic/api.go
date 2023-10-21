@@ -1,7 +1,6 @@
 package symbolic
 
 import (
-	"bufio"
 	"fmt"
 
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
@@ -94,6 +93,6 @@ func (ApiIL *ApiIL) Close(*Context) *Error {
 	return nil
 }
 
-func (r *ApiIL) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%api")))
+func (r *ApiIL) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("%api")
 }

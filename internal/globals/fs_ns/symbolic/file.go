@@ -1,12 +1,8 @@
 package fs_ns
 
 import (
-	"bufio"
-
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
-
-	"github.com/inoxlang/inox/internal/utils"
 )
 
 type File struct {
@@ -63,9 +59,8 @@ func (f *File) info(ctx *symbolic.Context) (*symbolic.FileInfo, *symbolic.Error)
 	return &symbolic.FileInfo{}, nil
 }
 
-func (r *File) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%file")))
-	return
+func (r *File) PrettyPrint(w symbolic.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("file")
 }
 
 func (r *File) WidestOfType() symbolic.Value {

@@ -1,12 +1,8 @@
 package s3_ns
 
 import (
-	"bufio"
-
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
-
-	"github.com/inoxlang/inox/internal/utils"
 )
 
 type ObjectInfo struct {
@@ -39,9 +35,8 @@ func (*ObjectInfo) PropertyNames() []string {
 	return []string{"key"}
 }
 
-func (r *ObjectInfo) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%object-info")))
-	return
+func (r *ObjectInfo) PrettyPrint(w symbolic.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("object-info")
 }
 
 func (r *ObjectInfo) WidestOfType() symbolic.Value {

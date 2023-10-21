@@ -1,9 +1,7 @@
 package symbolic
 
 import (
-	"bufio"
 	"errors"
-	"fmt"
 	"math"
 	"strings"
 
@@ -40,8 +38,8 @@ func (p *AnyStringPattern) Test(v Value, state RecTestCallState) bool {
 	return ok
 }
 
-func (p *AnyStringPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%string-pattern")))
+func (p *AnyStringPattern) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("string-pattern")
 }
 
 func (p *AnyStringPattern) HasUnderlyingPattern() bool {
@@ -119,13 +117,13 @@ func (p *ExactStringPattern) IsConcretizable() bool {
 	return IsConcretizable(p.value)
 }
 
-func (p *ExactStringPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%exact-string-pattern")))
+func (p *ExactStringPattern) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("exact-string-pattern")
 
 	if p.value != nil {
-		utils.Must(w.Write(utils.StringAsBytes("(")))
-		p.value.PrettyPrint(w, config, depth+1, parentIndentCount)
-		utils.Must(w.Write(utils.StringAsBytes(")")))
+		w.WriteString("(")
+		p.value.PrettyPrint(w.IncrDepth(), config)
+		w.WriteString(")")
 	}
 }
 
@@ -210,11 +208,11 @@ func (p *LengthCheckingStringPattern) Test(v Value, state RecTestCallState) bool
 	return p.minLength == -1 || (otherPattern.minLength >= p.minLength && otherPattern.maxLength <= p.maxLength)
 }
 
-func (p *LengthCheckingStringPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+func (p *LengthCheckingStringPattern) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if p.minLength == -1 {
-		utils.Must(w.Write(utils.StringAsBytes("%length-checking-string-pattern")))
+		w.WriteName("length-checking-string-pattern")
 	} else {
-		utils.Must(w.Write(utils.StringAsBytes(fmt.Sprintf("%%length-checking-string-pattern(%d..%d)", p.minLength, p.maxLength))))
+		w.WriteNameF("length-checking-string-pattern(%d..%d)", p.minLength, p.maxLength)
 	}
 }
 
@@ -320,12 +318,12 @@ func (p *SequenceStringPattern) Test(v Value, state RecTestCallState) bool {
 	return p.node == otherPatt.node
 }
 
-func (p *SequenceStringPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%sequence-string-pattern")))
+func (p *SequenceStringPattern) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("sequence-string-pattern")
 	if p.node != nil {
-		utils.Must(w.Write(utils.StringAsBytes("(")))
-		utils.Must(w.Write(utils.StringAsBytes(p.stringifiedNode)))
-		utils.Must(w.Write(utils.StringAsBytes(")")))
+		w.WriteString("(")
+		w.WriteString(p.stringifiedNode)
+		w.WriteString(")")
 	}
 }
 
@@ -389,8 +387,8 @@ func (p *ParserBasedPattern) Test(v Value, state RecTestCallState) bool {
 	return ok
 }
 
-func (p *ParserBasedPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%parser-based-pattern")))
+func (p *ParserBasedPattern) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("parser-based-pattern")
 }
 
 func (p *ParserBasedPattern) HasUnderlyingPattern() bool {

@@ -1,10 +1,7 @@
 package symbolic
 
 import (
-	"bufio"
-
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
-	"github.com/inoxlang/inox/internal/utils"
 )
 
 var (
@@ -38,8 +35,8 @@ func (m *Message) Test(v Value, state RecTestCallState) bool {
 	return ok
 }
 
-func (m *Message) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%message")))
+func (m *Message) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("message")
 	return
 }
 
@@ -77,8 +74,8 @@ func (r *AnyMessageReceiver) Test(v Value, state RecTestCallState) bool {
 	return ok
 }
 
-func (r *AnyMessageReceiver) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%message-receiver")))
+func (r *AnyMessageReceiver) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("message-receiver")
 	return
 }
 
@@ -109,8 +106,8 @@ func (l *SynchronousMessageHandler) Test(v Value, state RecTestCallState) bool {
 	return ok
 }
 
-func (l *SynchronousMessageHandler) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%reception-handler")))
+func (l *SynchronousMessageHandler) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("reception-handler")
 	return
 }
 

@@ -1,9 +1,6 @@
 package symbolic
 
 import (
-	"bufio"
-	"fmt"
-
 	parse "github.com/inoxlang/inox/internal/parse"
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
 	"github.com/inoxlang/inox/internal/utils"
@@ -42,12 +39,12 @@ func (n *AstNode) Test(v Value, state RecTestCallState) bool {
 	}
 }
 
-func (n *AstNode) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+func (n *AstNode) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if n.Node == nil {
-		utils.Must(w.Write(utils.StringAsBytes("%ast-node")))
+		w.WriteName("ast-node")
 	}
 
-	utils.Must(fmt.Fprintf(w, "%%ast-node(%T)", n.Node))
+	w.WriteNameF("ast-node(%T)", n.Node)
 }
 
 func (n *AstNode) WidestOfType() Value {
@@ -88,8 +85,8 @@ func (n *Token) Test(v Value, state RecTestCallState) bool {
 	return ok
 }
 
-func (t *Token) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%ast-token")))
+func (t *Token) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("ast-token")
 }
 
 func (t *Token) WidestOfType() Value {

@@ -1,7 +1,6 @@
 package symbolic
 
 import (
-	"bufio"
 	"bytes"
 	"errors"
 	"fmt"
@@ -157,8 +156,8 @@ func (p *AnyPattern) Test(v Value, state RecTestCallState) bool {
 	return ok
 }
 
-func (p *AnyPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%pattern")))
+func (p *AnyPattern) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("pattern")
 }
 
 func (p *AnyPattern) HasUnderlyingPattern() bool {
@@ -209,8 +208,8 @@ func (p *AnySerializablePattern) Test(v Value, state RecTestCallState) bool {
 	return ok
 }
 
-func (p *AnySerializablePattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%pattern")))
+func (p *AnySerializablePattern) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("pattern")
 }
 
 func (p *AnySerializablePattern) HasUnderlyingPattern() bool {
@@ -356,20 +355,20 @@ func (p *PathPattern) TestValue(v Value, state RecTestCallState) bool {
 	return p.absoluteness == UnspecifiedPathAbsoluteness && p.dirConstraint == UnspecifiedDirOrFilePath
 }
 
-func (p *PathPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+func (p *PathPattern) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 
 	if p.hasValue {
-		utils.Must(w.Write(utils.StringAsBytes("%" + p.value)))
+		w.WriteString("%" + p.value)
 		return
 	}
 
 	s := "%path-pattern"
 
 	if p.node != nil {
-		utils.Must(w.Write(utils.StringAsBytes(s)))
-		utils.Must(w.Write(utils.StringAsBytes("(")))
-		utils.Must(w.Write(utils.StringAsBytes(p.stringifiedNode)))
-		utils.Must(w.Write(utils.StringAsBytes(")")))
+		w.WriteString(s)
+		w.WriteString("(")
+		w.WriteString(p.stringifiedNode)
+		w.WriteString(")")
 		return
 	}
 
@@ -397,7 +396,7 @@ func (p *PathPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintCon
 		s += ")"
 	}
 
-	utils.Must(w.Write(utils.StringAsBytes(s)))
+	w.WriteString(s)
 }
 
 func (p *PathPattern) HasUnderlyingPattern() bool {
@@ -499,19 +498,19 @@ func (p *URLPattern) Static() Pattern {
 	return &TypePattern{val: p.WidestOfType()}
 }
 
-func (p *URLPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+func (p *URLPattern) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if p.hasValue {
-		utils.Must(w.Write(utils.StringAsBytes("%" + p.value)))
+		w.WriteString("%" + p.value)
 		return
 	}
 
 	s := "%url-pattern"
 
 	if p.node != nil {
-		utils.Must(w.Write(utils.StringAsBytes(s)))
-		utils.Must(w.Write(utils.StringAsBytes("(")))
-		utils.Must(w.Write(utils.StringAsBytes(p.stringifiedNode)))
-		utils.Must(w.Write(utils.StringAsBytes(")")))
+		w.WriteString(s)
+		w.WriteString("(")
+		w.WriteString(p.stringifiedNode)
+		w.WriteString(")")
 		return
 	}
 }
@@ -642,19 +641,19 @@ func (p *HostPattern) Static() Pattern {
 	return &TypePattern{val: p.WidestOfType()}
 }
 
-func (p *HostPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+func (p *HostPattern) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if p.hasValue {
-		utils.Must(w.Write(utils.StringAsBytes("%" + p.value)))
+		w.WriteString("%" + p.value)
 		return
 	}
 
 	s := "%host-pattern"
 
 	if p.node != nil {
-		utils.Must(w.Write(utils.StringAsBytes(s)))
-		utils.Must(w.Write(utils.StringAsBytes("(")))
-		utils.Must(w.Write(utils.StringAsBytes(p.stringifiedNode)))
-		utils.Must(w.Write(utils.StringAsBytes(")")))
+		w.WriteString(s)
+		w.WriteString("(")
+		w.WriteString(p.stringifiedNode)
+		w.WriteString(")")
 		return
 	}
 }
@@ -750,12 +749,12 @@ func (p *NamedSegmentPathPattern) Test(v Value, state RecTestCallState) bool {
 	return p.node == nil || p.node == otherPattern.node
 }
 
-func (p *NamedSegmentPathPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+func (p *NamedSegmentPathPattern) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if p.node == nil {
-		utils.Must(w.Write(utils.StringAsBytes("%named-segment-path-pattern")))
+		w.WriteName("named-segment-path-pattern")
 		return
 	}
-	utils.Must(fmt.Fprintf(w, "%%named-segment-path-pattern(%p)", p.node))
+	w.WriteNameF("named-segment-path-pattern(%p)", p.node)
 }
 
 func (p NamedSegmentPathPattern) HasUnderlyingPattern() bool {
@@ -871,18 +870,18 @@ func (p *ExactValuePattern) IsConcretizable() bool {
 	return IsConcretizable(p.value)
 }
 
-func (p *ExactValuePattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%exact-value-pattern(\n")))
-	innerIndentCount := parentIndentCount + 2
+func (p *ExactValuePattern) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("exact-value-pattern(\n")
+	innerIndentCount := w.ParentIndentCount + 2
 	innerIndent := bytes.Repeat(config.Indent, innerIndentCount)
 	parentIndent := innerIndent[:len(innerIndent)-2*len(config.Indent)]
 
-	utils.Must(w.Write(innerIndent))
-	p.value.PrettyPrint(w, config, depth+2, innerIndentCount)
+	w.WriteBytes(innerIndent)
+	p.value.PrettyPrint(w.WithDepthIndent(w.Depth+2, innerIndentCount), config)
 
-	utils.PanicIfErr(w.WriteByte('\n'))
-	utils.Must(w.Write(parentIndent))
-	utils.PanicIfErr(w.WriteByte(')'))
+	w.WriteByte('\n')
+	w.WriteBytes(parentIndent)
+	w.WriteByte(')')
 
 }
 
@@ -951,12 +950,12 @@ func (p *RegexPattern) Test(v Value, state RecTestCallState) bool {
 	return p.regex == nil || (otherPatt.regex != nil && p.syntax.Equal(otherPatt.syntax))
 }
 
-func (p *RegexPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+func (p *RegexPattern) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if p.regex != nil {
-		utils.Must(w.Write(utils.StringAsBytes("%`" + p.regex.String() + "`")))
+		w.WriteString("%`" + p.regex.String() + "`")
 		return
 	}
-	utils.Must(w.Write(utils.StringAsBytes("%regex-pattern")))
+	w.WriteName("regex-pattern")
 }
 
 func (p *RegexPattern) HasUnderlyingPattern() bool {
@@ -1277,20 +1276,20 @@ func (patt *ObjectPattern) ForEachEntry(fn func(propName string, propPattern Pat
 	return nil
 }
 
-func (p *ObjectPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+func (p *ObjectPattern) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if p.readonly {
-		utils.Must(w.Write(utils.StringAsBytes("%readonly ")))
+		w.WriteName("readonly ")
 	}
 	if p.entries != nil {
-		if depth > config.MaxDepth && len(p.entries) > 0 {
-			utils.Must(w.Write(utils.StringAsBytes("%{(...)}")))
+		if w.Depth > config.MaxDepth && len(p.entries) > 0 {
+			w.WriteString("%{(...)}")
 			return
 		}
 
-		indentCount := parentIndentCount + 1
+		indentCount := w.ParentIndentCount + 1
 		indent := bytes.Repeat(config.Indent, indentCount)
 
-		utils.Must(w.Write([]byte{'%', '{'}))
+		w.WriteBytes([]byte{'%', '{'})
 
 		var keys []string
 		for k := range p.entries {
@@ -1302,60 +1301,58 @@ func (p *ObjectPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintC
 		for i, k := range keys {
 
 			if !config.Compact {
-				utils.Must(w.Write(LF_CR))
-				utils.Must(w.Write(indent))
+				w.WriteLFCR()
+				w.WriteBytes(indent)
 			}
 
 			if config.Colorize {
-				utils.Must(w.Write(config.Colors.IdentifierLiteral))
+				w.WriteBytes(config.Colors.IdentifierLiteral)
 			}
 
-			utils.Must(w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace(k))))
+			w.WriteBytes(utils.Must(utils.MarshalJsonNoHTMLEspace(k)))
 
 			if config.Colorize {
-				utils.Must(w.Write(ANSI_RESET_SEQUENCE))
+				w.WriteBytes(ANSI_RESET_SEQUENCE)
 			}
 
 			if _, ok := p.optionalEntries[k]; ok {
-				utils.PanicIfErr(w.WriteByte('?'))
+				w.WriteByte('?')
 			}
 
 			//colon
-			utils.Must(w.Write(COLON_SPACE))
+			w.WriteBytes(COLON_SPACE)
 
 			//value
 			v := p.entries[k]
-			v.PrettyPrint(w, config, depth+1, indentCount)
+			v.PrettyPrint(w.IncrDepthWithIndent(indentCount), config)
 
 			//comma & indent
 			isLastEntry := i == len(keys)-1
 
 			if !isLastEntry /* /*p.inexact*/ {
-				utils.Must(w.Write(COMMA_SPACE))
+				w.WriteBytes(COMMA_SPACE)
 			}
 		}
 
 		// if p.inexact {
 		// 	if !config.Compact {
-		// 		utils.Must(w.Write(LF_CR))
-		// 		utils.Must(w.Write(indent))
+		// 		w.WriteLFCR()
+		// 		w.WriteBytes(indent)
 		// 	}
 
-		// 	utils.Must(w.Write(THREE_DOTS))
+		// 	w.WriteBytes(THREE_DOTS)
 		// }
 
 		if !config.Compact && len(keys) > 0 {
-			utils.Must(w.Write(LF_CR))
+			w.WriteLFCR()
 		}
 
-		utils.Must(w.Write(bytes.Repeat(config.Indent, depth)))
-		if err := w.WriteByte('}'); err != nil {
-			panic(err)
-		}
+		w.WriteBytes(bytes.Repeat(config.Indent, w.Depth))
+		w.WriteByte('}')
 		return
 	}
 
-	utils.Must(w.Write(utils.StringAsBytes("%object-pattern")))
+	w.WriteName("object-pattern")
 }
 
 func (p *ObjectPattern) HasUnderlyingPattern() bool {
@@ -1543,17 +1540,17 @@ func (p *RecordPattern) Concretize(ctx ConcreteContext) any {
 	return extData.ConcreteValueFactories.CreateRecordPattern(p.inexact, concretePropertyPatterns, maps.Clone(p.optionalEntries))
 }
 
-func (p *RecordPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+func (p *RecordPattern) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if p.entries != nil {
-		if depth > config.MaxDepth && len(p.entries) > 0 {
-			utils.Must(w.Write(utils.StringAsBytes("record(%{(...)})")))
+		if w.Depth > config.MaxDepth && len(p.entries) > 0 {
+			w.WriteName("record(%{(...)})")
 			return
 		}
 
-		indentCount := parentIndentCount + 1
+		indentCount := w.ParentIndentCount + 1
 		indent := bytes.Repeat(config.Indent, indentCount)
 
-		utils.Must(w.Write(utils.StringAsBytes("record(%{")))
+		w.WriteName("record(%{")
 
 		var keys []string
 		for k := range p.entries {
@@ -1565,58 +1562,58 @@ func (p *RecordPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintC
 		for i, k := range keys {
 
 			if !config.Compact {
-				utils.Must(w.Write(LF_CR))
-				utils.Must(w.Write(indent))
+				w.WriteLFCR()
+				w.WriteBytes(indent)
 			}
 
 			if config.Colorize {
-				utils.Must(w.Write(config.Colors.IdentifierLiteral))
+				w.WriteBytes(config.Colors.IdentifierLiteral)
 			}
 
-			utils.Must(w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace(k))))
+			w.WriteBytes(utils.Must(utils.MarshalJsonNoHTMLEspace(k)))
 
 			if config.Colorize {
-				utils.Must(w.Write(ANSI_RESET_SEQUENCE))
+				w.WriteBytes(ANSI_RESET_SEQUENCE)
 			}
 
 			if _, ok := p.optionalEntries[k]; ok {
-				utils.PanicIfErr(w.WriteByte('?'))
+				w.WriteByte('?')
 			}
 
 			//colon
-			utils.Must(w.Write(COLON_SPACE))
+			w.WriteBytes(COLON_SPACE)
 
 			//value
 			v := p.entries[k]
-			v.PrettyPrint(w, config, depth+1, indentCount)
+			v.PrettyPrint(w.IncrDepthWithIndent(indentCount), config)
 
 			//comma & indent
 			isLastEntry := i == len(keys)-1
 
 			if !isLastEntry || p.inexact {
-				utils.Must(w.Write(COMMA_SPACE))
+				w.WriteBytes(COMMA_SPACE)
 
 			}
 		}
 
 		// if p.inexact {
 		// 	if !config.Compact {
-		// 		utils.Must(w.Write(LF_CR))
-		// 		utils.Must(w.Write(indent))
+		// 		w.WriteLFCR()
+		// 		w.WriteBytes(indent)
 		// 	}
 
-		// 	utils.Must(w.Write(THREE_DOTS))
+		// 	w.WriteBytes(THREE_DOTS)
 		// }
 
 		if !config.Compact && len(keys) > 0 {
-			utils.Must(w.Write(LF_CR))
+			w.WriteLFCR()
 		}
 
-		utils.Must(w.Write(bytes.Repeat(config.Indent, depth)))
-		utils.Must(w.Write(CLOSING_CURLY_BRACKET_CLOSING_PAREN))
+		w.WriteBytes(bytes.Repeat(config.Indent, w.Depth))
+		w.WriteBytes(CLOSING_CURLY_BRACKET_CLOSING_PAREN)
 		return
 	}
-	utils.Must(w.Write(utils.StringAsBytes("%record-pattern")))
+	w.WriteName("record-pattern")
 }
 
 func (p *RecordPattern) HasUnderlyingPattern() bool {
@@ -1911,13 +1908,13 @@ func (p *ListPattern) ToReadonlyPattern() (PotentiallyReadonlyPattern, error) {
 }
 
 func prettyPrintListPattern(
-	w *bufio.Writer, tuplePattern bool,
+	w PrettyPrintWriter, tuplePattern bool,
 	generalElementPattern Pattern, elementPatterns []Pattern,
-	config *pprint.PrettyPrintConfig, depth int, parentIndentCount int,
+	config *pprint.PrettyPrintConfig,
 
 ) {
 
-	indentCount := parentIndentCount + 1
+	indentCount := w.ParentIndentCount + 1
 	indent := bytes.Repeat(config.Indent, indentCount)
 
 	if generalElementPattern != nil {
@@ -1927,22 +1924,22 @@ func prettyPrintListPattern(
 			b = utils.StringAsBytes("%#[]")
 		}
 
-		utils.Must(w.Write(b))
+		w.WriteBytes(b)
 
-		generalElementPattern.PrettyPrint(w, config, depth, parentIndentCount)
+		generalElementPattern.PrettyPrint(w, config)
 
 		if tuplePattern {
-			utils.Must(w.Write(utils.StringAsBytes(")")))
+			w.WriteString(")")
 		}
 	}
 
-	if depth > config.MaxDepth && len(elementPatterns) > 0 {
+	if w.Depth > config.MaxDepth && len(elementPatterns) > 0 {
 		b := utils.StringAsBytes("%[(...)]")
 		if tuplePattern {
 			b = utils.StringAsBytes("%#(...)")
 		}
 
-		utils.Must(w.Write(b))
+		w.WriteBytes(b)
 		return
 	}
 
@@ -1950,68 +1947,68 @@ func prettyPrintListPattern(
 	if tuplePattern {
 		start = utils.StringAsBytes("%#[")
 	}
-	utils.Must(w.Write(start))
+	w.WriteBytes(start)
 
 	printIndices := !config.Compact && len(elementPatterns) > 10
 
 	for i, v := range elementPatterns {
 
 		if !config.Compact {
-			utils.Must(w.Write(LF_CR))
-			utils.Must(w.Write(indent))
+			w.WriteLFCR()
+			w.WriteBytes(indent)
 
 			//index
 			if printIndices {
 				if config.Colorize {
-					utils.Must(w.Write(config.Colors.DiscreteColor))
+					w.WriteBytes(config.Colors.DiscreteColor)
 				}
 				if i < 10 {
-					utils.PanicIfErr(w.WriteByte(' '))
+					w.WriteByte(' ')
 				}
-				utils.Must(w.Write(utils.StringAsBytes(strconv.FormatInt(int64(i), 10))))
-				utils.Must(w.Write(config.Colors.DiscreteColor))
-				utils.Must(w.Write(COLON_SPACE))
+				w.WriteString(strconv.FormatInt(int64(i), 10))
+				w.WriteBytes(config.Colors.DiscreteColor)
+				w.WriteBytes(COLON_SPACE)
 
 				if config.Colorize {
-					utils.Must(w.Write(ANSI_RESET_SEQUENCE))
+					w.WriteBytes(ANSI_RESET_SEQUENCE)
 				}
 			}
 		}
 
 		//element
-		v.PrettyPrint(w, config, depth+1, indentCount)
+		v.PrettyPrint(w.IncrDepthWithIndent(indentCount), config)
 
 		//comma & indent
 		isLastEntry := i == len(elementPatterns)-1
 
 		if !isLastEntry {
-			utils.Must(w.Write(COMMA_SPACE))
+			w.WriteBytes(COMMA_SPACE)
 		}
 
 	}
 
 	if !config.Compact && len(elementPatterns) > 0 {
-		utils.Must(w.Write(LF_CR))
-		utils.Must(w.Write(bytes.Repeat(config.Indent, depth)))
+		w.WriteLFCR()
+		w.WriteBytes(bytes.Repeat(config.Indent, w.Depth))
 	}
 
 	if tuplePattern {
-		utils.Must(w.Write(CLOSING_BRACKET_CLOSING_PAREN))
+		w.WriteBytes(CLOSING_BRACKET_CLOSING_PAREN)
 	} else {
-		utils.PanicIfErr(w.WriteByte(']'))
+		w.WriteByte(']')
 	}
 }
 
-func (p *ListPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+func (p *ListPattern) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if p.readonly {
-		utils.Must(w.Write(utils.StringAsBytes("%readonly ")))
+		w.WriteName("readonly ")
 	}
 	if p.elements != nil {
-		prettyPrintListPattern(w, false, p.generalElement, p.elements, config, depth, parentIndentCount)
+		prettyPrintListPattern(w, false, p.generalElement, p.elements, config)
 		return
 	}
-	utils.Must(w.Write(utils.StringAsBytes("%[]")))
-	p.generalElement.PrettyPrint(w, config, depth, parentIndentCount)
+	w.WriteString("%[]")
+	p.generalElement.PrettyPrint(w, config)
 }
 
 func (p *ListPattern) HasUnderlyingPattern() bool {
@@ -2221,13 +2218,13 @@ func (p *TuplePattern) Concretize(ctx ConcreteContext) any {
 	return extData.ConcreteValueFactories.CreateTuplePattern(nil, concreteElementPatterns)
 }
 
-func (p *TuplePattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+func (p *TuplePattern) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if p.elements != nil {
-		prettyPrintListPattern(w, true, p.generalElement, p.elements, config, depth, parentIndentCount)
+		prettyPrintListPattern(w, true, p.generalElement, p.elements, config)
 		return
 	}
-	utils.Must(w.Write(utils.StringAsBytes("%#[]")))
-	p.generalElement.PrettyPrint(w, config, 0, parentIndentCount)
+	w.WriteString("%#[]")
+	p.generalElement.PrettyPrint(w.ZeroDepth(), config)
 }
 
 func (p *TuplePattern) HasUnderlyingPattern() bool {
@@ -2424,25 +2421,25 @@ func (p *UnionPattern) Test(v Value, state RecTestCallState) bool {
 	return true
 }
 
-func (p *UnionPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("(%| ")))
+func (p *UnionPattern) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteString("(%| ")
 
 	if p.disjoint {
-		utils.Must(w.Write(utils.StringAsBytes("(disjoint) ")))
+		w.WriteString("(disjoint) ")
 	}
 
-	indentCount := parentIndentCount + 1
+	indentCount := w.ParentIndentCount + 1
 	indent := bytes.Repeat(config.Indent, indentCount)
 
 	for i, case_ := range p.cases {
 		if i > 0 {
-			utils.PanicIfErr(w.WriteByte('\n'))
-			utils.Must(w.Write(indent))
-			utils.Must(w.Write(utils.StringAsBytes("| ")))
+			w.WriteByte('\n')
+			w.WriteBytes(indent)
+			w.WriteString("| ")
 		}
-		case_.PrettyPrint(w, config, depth+1, indentCount)
+		case_.PrettyPrint(w.IncrDepthWithIndent(indentCount), config)
 	}
-	utils.Must(w.Write(utils.StringAsBytes(")")))
+	w.WriteString(")")
 }
 
 func (p *UnionPattern) HasUnderlyingPattern() bool {
@@ -2598,20 +2595,20 @@ func (p *IntersectionPattern) TestValue(v Value, state RecTestCallState) bool {
 	return true
 }
 
-func (p *IntersectionPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("(%& ")))
-	indentCount := parentIndentCount + 1
+func (p *IntersectionPattern) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteString("(%& ")
+	indentCount := w.ParentIndentCount + 1
 	indent := bytes.Repeat(config.Indent, indentCount)
 
 	for i, case_ := range p.cases {
 		if i > 0 {
-			utils.PanicIfErr(w.WriteByte('\n'))
-			utils.Must(w.Write(indent))
-			utils.Must(w.Write(utils.StringAsBytes("& ")))
+			w.WriteByte('\n')
+			w.WriteBytes(indent)
+			w.WriteString("& ")
 		}
-		case_.PrettyPrint(w, config, depth+1, indentCount)
+		case_.PrettyPrint(w.IncrDepthWithIndent(indentCount), config)
 	}
-	utils.Must(w.Write(utils.StringAsBytes(")")))
+	w.WriteString(")")
 }
 
 func (p *IntersectionPattern) HasUnderlyingPattern() bool {
@@ -2665,14 +2662,14 @@ func (p *OptionPattern) Test(v Value, state RecTestCallState) bool {
 	return p.pattern.Test(other.pattern, state)
 }
 
-func (p *OptionPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%option-pattern(")))
+func (p *OptionPattern) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("option-pattern(")
 	if p.name != "" {
-		NewString(p.name).PrettyPrint(w, config, depth, 0)
-		utils.Must(w.Write(utils.StringAsBytes(", ")))
+		NewString(p.name).PrettyPrint(w.ZeroIndent(), config)
+		w.WriteString(", ")
 	}
-	p.pattern.PrettyPrint(w, config, depth, 0)
-	utils.PanicIfErr(w.WriteByte(')'))
+	p.pattern.PrettyPrint(w.ZeroIndent(), config)
+	w.WriteByte(')')
 }
 
 func (p *OptionPattern) HasUnderlyingPattern() bool {
@@ -2796,10 +2793,10 @@ func (patt *TypePattern) Concretize(ctx ConcreteContext) any {
 	return patt.concreteTypePattern
 }
 
-func (p *TypePattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%type-pattern(")))
-	p.val.PrettyPrint(w, config, depth+1, parentIndentCount)
-	utils.Must(w.Write(utils.StringAsBytes(")")))
+func (p *TypePattern) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("type-pattern(")
+	p.val.PrettyPrint(w.IncrDepth(), config)
+	w.WriteString(")")
 }
 
 func (p *TypePattern) HasUnderlyingPattern() bool {
@@ -2865,12 +2862,12 @@ func (p *DifferencePattern) Test(v Value, state RecTestCallState) bool {
 	return ok && p.Base.Test(other.Base, state) && other.Removed.Test(other.Removed, state)
 }
 
-func (p *DifferencePattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("(")))
-	p.Base.PrettyPrint(w, config, depth+1, parentIndentCount)
-	utils.Must(w.Write(utils.StringAsBytes(" \\ ")))
-	p.Removed.PrettyPrint(w, config, depth+1, parentIndentCount)
-	utils.Must(w.Write(utils.StringAsBytes(")")))
+func (p *DifferencePattern) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteString("(")
+	p.Base.PrettyPrint(w.IncrDepth(), config)
+	w.WriteString(" \\ ")
+	p.Removed.PrettyPrint(w.IncrDepth(), config)
+	w.WriteString(")")
 }
 
 func (p *DifferencePattern) HasUnderlyingPattern() bool {
@@ -2925,9 +2922,9 @@ func (p *OptionalPattern) Test(v Value, state RecTestCallState) bool {
 	return ok && p.pattern.Test(other.pattern, state)
 }
 
-func (p *OptionalPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	p.pattern.PrettyPrint(w, config, depth, parentIndentCount)
-	utils.PanicIfErr(w.WriteByte('?'))
+func (p *OptionalPattern) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	p.pattern.PrettyPrint(w, config)
+	w.WriteByte('?')
 }
 
 func (p *OptionalPattern) HasUnderlyingPattern() bool {
@@ -3074,12 +3071,12 @@ func (p *FunctionPattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
 
-func (fn *FunctionPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+func (fn *FunctionPattern) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if fn.node == nil {
-		utils.Must(w.Write(utils.StringAsBytes("%function-pattern")))
+		w.WriteName("function-pattern")
 		return
 	}
-	utils.Must(fmt.Fprintf(w, "%%function-pattern(%v)", fn.node))
+	w.WriteNameF("function-pattern(%v)", fn.node)
 }
 
 func (fn *FunctionPattern) WidestOfType() Value {
@@ -3101,8 +3098,8 @@ func (p *IntRangePattern) Test(v Value, state RecTestCallState) bool {
 	return ok
 }
 
-func (p *IntRangePattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%int-range-pattern")))
+func (p *IntRangePattern) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("int-range-pattern")
 }
 
 func (p *IntRangePattern) HasUnderlyingPattern() bool {
@@ -3163,8 +3160,8 @@ func (p *FloatRangePattern) Test(v Value, state RecTestCallState) bool {
 	return ok
 }
 
-func (p *FloatRangePattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%float-range-pattern")))
+func (p *FloatRangePattern) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("float-range-pattern")
 }
 
 func (p *FloatRangePattern) HasUnderlyingPattern() bool {
@@ -3236,10 +3233,10 @@ func (p *EventPattern) Test(v Value, state RecTestCallState) bool {
 	return ok && p.ValuePattern.Test(other.ValuePattern, state)
 }
 
-func (p *EventPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%event-pattern(")))
-	p.ValuePattern.PrettyPrint(w, config, depth, 0)
-	utils.PanicIfErr(w.WriteByte(')'))
+func (p *EventPattern) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("event-pattern(")
+	p.ValuePattern.PrettyPrint(w.ZeroIndent(), config)
+	w.WriteByte(')')
 }
 
 func (p *EventPattern) HasUnderlyingPattern() bool {
@@ -3302,10 +3299,10 @@ func (p *MutationPattern) Test(v Value, state RecTestCallState) bool {
 	return ok && p.kind.Test(other.kind, state) && p.data0Pattern.Test(other.data0Pattern, state)
 }
 
-func (p *MutationPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%mutation(?, ")))
-	p.data0Pattern.PrettyPrint(w, config, depth, 0)
-	utils.PanicIfErr(w.WriteByte(')'))
+func (p *MutationPattern) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("mutation(?, ")
+	p.data0Pattern.PrettyPrint(w.ZeroIndent(), config)
+	w.WriteByte(')')
 }
 
 func (p *MutationPattern) HasUnderlyingPattern() bool {
@@ -3390,17 +3387,17 @@ func (ns *PatternNamespace) Test(v Value, state RecTestCallState) bool {
 	return true
 }
 
-func (ns *PatternNamespace) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+func (ns *PatternNamespace) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if ns.entries != nil {
-		if depth > config.MaxDepth && len(ns.entries) > 0 {
-			utils.Must(w.Write(utils.StringAsBytes("(..pattern-namespace..)")))
+		if w.Depth > config.MaxDepth && len(ns.entries) > 0 {
+			w.WriteString("(..pattern-namespace..)")
 			return
 		}
 
-		indentCount := parentIndentCount + 1
+		indentCount := w.ParentIndentCount + 1
 		indent := bytes.Repeat(config.Indent, indentCount)
 
-		utils.Must(w.Write(utils.StringAsBytes("pattern-namespace{")))
+		w.WriteName("pattern-namespace{")
 
 		keys := maps.Keys(ns.entries)
 		sort.Strings(keys)
@@ -3408,43 +3405,43 @@ func (ns *PatternNamespace) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPr
 		for i, k := range keys {
 
 			if !config.Compact {
-				utils.Must(w.Write(LF_CR))
-				utils.Must(w.Write(indent))
+				w.WriteLFCR()
+				w.WriteBytes(indent)
 			}
 
 			if config.Colorize {
-				utils.Must(w.Write(config.Colors.IdentifierLiteral))
+				w.WriteBytes(config.Colors.IdentifierLiteral)
 			}
 
-			utils.Must(w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace(k))))
+			w.WriteBytes(utils.Must(utils.MarshalJsonNoHTMLEspace(k)))
 
 			if config.Colorize {
-				utils.Must(w.Write(ANSI_RESET_SEQUENCE))
+				w.WriteBytes(ANSI_RESET_SEQUENCE)
 			}
 
 			//colon
-			utils.Must(w.Write(COLON_SPACE))
+			w.WriteBytes(COLON_SPACE)
 
 			//value
 			v := ns.entries[k]
-			v.PrettyPrint(w, config, depth+1, indentCount)
+			v.PrettyPrint(w.IncrDepthWithIndent(indentCount), config)
 
 			//comma & indent
 			isLastEntry := i == len(keys)-1
 
 			if !isLastEntry {
-				utils.Must(w.Write(COMMA_SPACE))
+				w.WriteBytes(COMMA_SPACE)
 			}
 		}
 
 		if !config.Compact && len(keys) > 0 {
-			utils.Must(w.Write(LF_CR))
+			w.WriteLFCR()
 		}
 
-		utils.MustWriteMany(w, bytes.Repeat(config.Indent, depth), []byte{'}'})
+		w.WriteManyBytes(bytes.Repeat(config.Indent, w.Depth), []byte{'}'})
 		return
 	}
-	utils.Must(w.Write(utils.StringAsBytes("%pattern-namespace")))
+	w.WriteName("pattern-namespace")
 }
 
 func (ns *PatternNamespace) WidestOfType() Value {

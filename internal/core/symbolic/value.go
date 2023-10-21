@@ -1,9 +1,7 @@
 package symbolic
 
 import (
-	"bufio"
 	"errors"
-	"fmt"
 	"reflect"
 	"strconv"
 	"time"
@@ -59,7 +57,7 @@ type Value interface {
 
 	WidestOfType() Value
 
-	PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int)
+	PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig)
 }
 
 func IsAny(val Value) bool {
@@ -121,8 +119,8 @@ func (a *Any) Test(v Value, state RecTestCallState) bool {
 	return true
 }
 
-func (a *Any) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%any")))
+func (a *Any) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("any")
 	return
 }
 
@@ -143,8 +141,8 @@ func (*Never) Test(v Value, state RecTestCallState) bool {
 	return ok
 }
 
-func (*Never) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%never")))
+func (*Never) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("never")
 }
 
 func (*Never) WidestOfType() Value {
@@ -174,8 +172,8 @@ func (*NilT) Concretize(ctx ConcreteContext) any {
 	return extData.ConcreteValueFactories.CreateNil()
 }
 
-func (n *NilT) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("nil")))
+func (n *NilT) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteString("nil")
 }
 
 func (n *NilT) WidestOfType() Value {
@@ -225,15 +223,15 @@ func (b *Bool) Static() Pattern {
 	return &TypePattern{val: b.WidestOfType()}
 }
 
-func (b *Bool) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+func (b *Bool) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if b.hasValue {
 		if b.value {
-			utils.Must(w.Write(utils.StringAsBytes("true")))
+			w.WriteString("true")
 		} else {
-			utils.Must(w.Write(utils.StringAsBytes("false")))
+			w.WriteString("false")
 		}
 	} else {
-		utils.Must(w.Write(utils.StringAsBytes("%boolean")))
+		w.WriteName("boolean")
 	}
 }
 
@@ -273,12 +271,12 @@ func (e *EmailAddress) Static() Pattern {
 	return &TypePattern{val: e.WidestOfType()}
 }
 
-func (e *EmailAddress) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%email-address")))
+func (e *EmailAddress) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("email-address")
 	if e.hasValue {
-		utils.PanicIfErr(w.WriteByte('('))
-		utils.Must(w.Write(utils.StringAsBytes(e.value)))
-		utils.PanicIfErr(w.WriteByte(')'))
+		w.WriteByte('(')
+		w.WriteString(e.value)
+		w.WriteByte(')')
 	}
 }
 
@@ -345,12 +343,12 @@ func (i *Identifier) Static() Pattern {
 	return &TypePattern{val: i.WidestOfType()}
 }
 
-func (i *Identifier) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+func (i *Identifier) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if i.name == "" {
-		utils.Must(w.Write(utils.StringAsBytes("%identifier")))
+		w.WriteName("identifier")
 		return
 	}
-	utils.Must(fmt.Fprintf(w, "#%s", i.name))
+	w.WriteStringF("#%s", i.name)
 }
 
 func (i *Identifier) underlyingString() *String {
@@ -401,13 +399,13 @@ func (p *PropertyName) Static() Pattern {
 	return &TypePattern{val: p.WidestOfType()}
 }
 
-func (p *PropertyName) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+func (p *PropertyName) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if p.name == "" {
-		utils.Must(w.Write(utils.StringAsBytes("%property-name")))
+		w.WriteName("property-name")
 		return
 	}
 
-	utils.Must(fmt.Fprintf(w, "%%property-name(#%s)", p.name))
+	w.WriteNameF("property-name(#%s)", p.name)
 }
 
 func (s *PropertyName) underlyingString() *String {
@@ -450,12 +448,12 @@ func (m *Mimetype) Static() Pattern {
 	return &TypePattern{val: m.WidestOfType()}
 }
 
-func (m *Mimetype) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%mimetype")))
+func (m *Mimetype) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("mimetype")
 	if m.hasValue {
-		utils.PanicIfErr(w.WriteByte('('))
-		utils.Must(w.Write(utils.StringAsBytes(m.value)))
-		utils.PanicIfErr(w.WriteByte(')'))
+		w.WriteByte('(')
+		w.WriteString(m.value)
+		w.WriteByte(')')
 	}
 }
 
@@ -519,14 +517,14 @@ func (o *Option) Concretize(ctx ConcreteContext) any {
 	return extData.ConcreteValueFactories.CreateOption(o.name, concreteValue)
 }
 
-func (o *Option) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%option(")))
+func (o *Option) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("option(")
 	if o.name != "" {
-		NewString(o.name).PrettyPrint(w, config, depth, 0)
-		utils.Must(w.Write(utils.StringAsBytes(", ")))
+		NewString(o.name).PrettyPrint(w.ZeroIndent(), config)
+		w.WriteString(", ")
 	}
-	o.value.PrettyPrint(w, config, depth, 0)
-	utils.PanicIfErr(w.WriteByte(')'))
+	o.value.PrettyPrint(w.ZeroIndent(), config)
+	w.WriteByte(')')
 }
 
 func (o *Option) WidestOfType() Value {
@@ -572,12 +570,12 @@ func (d *Date) Concretize(ctx ConcreteContext) any {
 	return extData.ConcreteValueFactories.CreateDate(d.value)
 }
 
-func (d *Date) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%date")))
+func (d *Date) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("date")
 	if d.hasValue {
-		utils.PanicIfErr(w.WriteByte('('))
-		utils.Must(w.Write(utils.StringAsBytes(commonfmt.FmtInoxDate(d.value))))
-		utils.PanicIfErr(w.WriteByte(')'))
+		w.WriteByte('(')
+		w.WriteString(commonfmt.FmtInoxDate(d.value))
+		w.WriteByte(')')
 	}
 }
 
@@ -628,12 +626,12 @@ func (d *Duration) Static() Pattern {
 	return &TypePattern{val: d.WidestOfType()}
 }
 
-func (d *Duration) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%duration")))
+func (d *Duration) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("duration")
 	if d.hasValue {
-		utils.PanicIfErr(w.WriteByte('('))
-		utils.Must(w.Write(utils.StringAsBytes(commonfmt.FmtInoxDuration(d.value))))
-		utils.PanicIfErr(w.WriteByte(')'))
+		w.WriteByte('(')
+		w.WriteString(commonfmt.FmtInoxDuration(d.value))
+		w.WriteByte(')')
 	}
 }
 
@@ -658,8 +656,8 @@ func (m *FileMode) Static() Pattern {
 	return &TypePattern{val: m.WidestOfType()}
 }
 
-func (m *FileMode) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%filemode")))
+func (m *FileMode) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("filemode")
 }
 
 func (m *FileMode) WidestOfType() Value {
@@ -722,8 +720,8 @@ func (f *FileInfo) Static() Pattern {
 	return &TypePattern{val: f.WidestOfType()}
 }
 
-func (f *FileInfo) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%file-info")))
+func (f *FileInfo) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("file-info")
 }
 
 func (f *FileInfo) WidestOfType() Value {
@@ -754,12 +752,12 @@ func (t *Type) Test(v Value, state RecTestCallState) bool {
 	return utils.SamePointer(t.Type, other.Type)
 }
 
-func (t *Type) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+func (t *Type) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if t.Type == nil {
-		utils.Must(w.Write(utils.StringAsBytes("%t")))
+		w.WriteName("t")
 		return
 	}
-	utils.Must(fmt.Fprintf(w, "%%type(%v)", t.Type))
+	w.WriteNameF("type(%v)", t.Type)
 }
 
 func (t *Type) WidestOfType() Value {
@@ -876,12 +874,13 @@ func (b *Bytecode) Test(v Value, state RecTestCallState) bool {
 	return utils.SamePointer(b.Bytecode, other.Bytecode)
 }
 
-func (b *Bytecode) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+func (b *Bytecode) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if b.Bytecode == nil {
-		utils.Must(w.Write(utils.StringAsBytes("%bytecode")))
+		w.WriteName("bytecode")
 		return
 	}
-	utils.Must(fmt.Fprintf(w, "%%bytecode(%v)", b.Bytecode))
+
+	w.WriteNameF("bytecode(%v)", b.Bytecode)
 }
 
 func (b *Bytecode) WidestOfType() Value {
@@ -922,8 +921,8 @@ func (r QuantityRange) Contains(value Value) (yes bool, possible bool) {
 	return false, true
 }
 
-func (r *QuantityRange) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%quantity-range")))
+func (r *QuantityRange) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("quantity-range")
 }
 
 func (r *QuantityRange) WidestOfType() Value {
@@ -948,8 +947,8 @@ func (r *IntRange) Static() Pattern {
 	return &TypePattern{val: r.WidestOfType()}
 }
 
-func (r *IntRange) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%int-range")))
+func (r *IntRange) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("int-range")
 }
 
 func (r *IntRange) KnownLen() int {
@@ -1006,8 +1005,8 @@ func (r *FloatRange) Static() Pattern {
 	return &TypePattern{val: r.WidestOfType()}
 }
 
-func (r *FloatRange) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%float-range")))
+func (r *FloatRange) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("float-range")
 }
 
 func (r *FloatRange) Contains(value Value) (bool, bool) {
@@ -1040,8 +1039,8 @@ func (r *RuneRange) Static() Pattern {
 	return &TypePattern{val: r.WidestOfType()}
 }
 
-func (r *RuneRange) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%rune-range")))
+func (r *RuneRange) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("rune-range")
 }
 
 func (r *RuneRange) KnownLen() int {
@@ -1121,12 +1120,12 @@ func (c *ByteCount) Static() Pattern {
 	return &TypePattern{val: c.WidestOfType()}
 }
 
-func (c *ByteCount) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%byte-count")))
+func (c *ByteCount) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("byte-count")
 	if c.hasValue {
-		utils.PanicIfErr(w.WriteByte('('))
-		utils.Must(w.Write(utils.StringAsBytes(utils.Must(commonfmt.FmtByteCount(c.value, -1)))))
-		utils.PanicIfErr(w.WriteByte(')'))
+		w.WriteByte('(')
+		w.WriteString(utils.Must(commonfmt.FmtByteCount(c.value, -1)))
+		w.WriteByte(')')
 	}
 }
 
@@ -1179,13 +1178,13 @@ func (r *ByteRate) Static() Pattern {
 	return &TypePattern{val: r.WidestOfType()}
 }
 
-func (r *ByteRate) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%byte-rate")))
+func (r *ByteRate) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("byte-rate")
 	if r.hasValue {
-		utils.PanicIfErr(w.WriteByte('('))
-		utils.Must(w.Write(utils.StringAsBytes(utils.Must(commonfmt.FmtByteCount(r.value, -1)))))
-		utils.Must(w.Write(utils.StringAsBytes("/s")))
-		utils.PanicIfErr(w.WriteByte(')'))
+		w.WriteByte('(')
+		w.WriteString(utils.Must(commonfmt.FmtByteCount(r.value, -1)))
+		w.WriteString("/s")
+		w.WriteByte(')')
 	}
 }
 
@@ -1237,12 +1236,12 @@ func (c *LineCount) Static() Pattern {
 	return &TypePattern{val: c.WidestOfType()}
 }
 
-func (c *LineCount) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%line-count")))
+func (c *LineCount) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("line-count")
 	if c.hasValue {
-		utils.PanicIfErr(w.WriteByte('('))
-		utils.Must(w.Write(utils.StringAsBytes(strconv.FormatInt(c.value, 10))))
-		utils.PanicIfErr(w.WriteByte(')'))
+		w.WriteByte('(')
+		w.WriteString(strconv.FormatInt(c.value, 10))
+		w.WriteByte(')')
 	}
 }
 
@@ -1288,12 +1287,12 @@ func (c *RuneCount) Static() Pattern {
 	return &TypePattern{val: c.WidestOfType()}
 }
 
-func (c *RuneCount) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%rune-count")))
+func (c *RuneCount) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("rune-count")
 	if c.hasValue {
-		utils.PanicIfErr(w.WriteByte('('))
-		utils.Must(w.Write(utils.StringAsBytes(strconv.FormatInt(c.value, 10))))
-		utils.PanicIfErr(w.WriteByte(')'))
+		w.WriteByte('(')
+		w.WriteString(strconv.FormatInt(c.value, 10))
+		w.WriteByte(')')
 	}
 }
 
@@ -1346,13 +1345,13 @@ func (r *SimpleRate) Static() Pattern {
 	return &TypePattern{val: r.WidestOfType()}
 }
 
-func (r *SimpleRate) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%simple-rate")))
+func (r *SimpleRate) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("simple-rate")
 	if r.hasValue {
-		utils.PanicIfErr(w.WriteByte('('))
-		utils.Must(w.Write(utils.StringAsBytes(strconv.FormatInt(r.value, 10))))
-		utils.Must(w.Write(utils.StringAsBytes("x/s")))
-		utils.PanicIfErr(w.WriteByte(')'))
+		w.WriteByte('(')
+		w.WriteString(strconv.FormatInt(r.value, 10))
+		w.WriteName("x/s")
+		w.WriteByte(')')
 	}
 }
 
@@ -1381,8 +1380,8 @@ func (r *AnyResourceName) Test(v Value, state RecTestCallState) bool {
 	}
 }
 
-func (r *AnyResourceName) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%resource-name")))
+func (r *AnyResourceName) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("resource-name")
 }
 
 func (r *AnyResourceName) underlyingString() *String {
@@ -1417,8 +1416,8 @@ func (p *Port) Static() Pattern {
 	return &TypePattern{val: p.WidestOfType()}
 }
 
-func (p *Port) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%port")))
+func (p *Port) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("port")
 }
 
 func (p *Port) WidestOfType() Value {
@@ -1447,8 +1446,8 @@ func (*UData) WalkerNodeMeta() Value {
 	return Nil
 }
 
-func (i *UData) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%udata")))
+func (i *UData) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("udata")
 }
 
 func (i *UData) WidestOfType() Value {
@@ -1468,8 +1467,8 @@ func (i *UDataHiearchyEntry) Test(v Value, state RecTestCallState) bool {
 	return ok
 }
 
-func (i *UDataHiearchyEntry) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%udata-hiearchy-entry")))
+func (i *UDataHiearchyEntry) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("udata-hiearchy-entry")
 }
 
 func (i *UDataHiearchyEntry) WidestOfType() Value {

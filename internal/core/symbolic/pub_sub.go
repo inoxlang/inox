@@ -1,10 +1,7 @@
 package symbolic
 
 import (
-	"bufio"
-
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
-	"github.com/inoxlang/inox/internal/utils"
 )
 
 var (
@@ -39,8 +36,8 @@ func (r *Publication) Test(v Value, state RecTestCallState) bool {
 	return ok
 }
 
-func (r *Publication) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%publication")))
+func (r *Publication) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("publication")
 	return
 }
 
@@ -71,8 +68,8 @@ func (r *Subscription) Test(v Value, state RecTestCallState) bool {
 	return ok
 }
 
-func (r *Subscription) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%subscription")))
+func (r *Subscription) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("subscription")
 	return
 }
 
@@ -94,8 +91,8 @@ func (r *AnySubscriber) Test(v Value, state RecTestCallState) bool {
 	return ok
 }
 
-func (r *AnySubscriber) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%subscriber")))
+func (r *AnySubscriber) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("subscriber")
 	return
 }
 

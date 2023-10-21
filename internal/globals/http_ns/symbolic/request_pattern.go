@@ -1,12 +1,8 @@
 package http_ns
 
 import (
-	"bufio"
-
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
-
-	"github.com/inoxlang/inox/internal/utils"
 )
 
 var (
@@ -53,9 +49,8 @@ func (r *HttpRequestPattern) IteratorElementValue() symbolic.Value {
 	return symbolic.ANY
 }
 
-func (r *HttpRequestPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%http.request-pattern")))
-	return
+func (r *HttpRequestPattern) PrettyPrint(w symbolic.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("http.request-pattern")
 }
 
 func (r *HttpRequestPattern) WidestOfType() symbolic.Value {

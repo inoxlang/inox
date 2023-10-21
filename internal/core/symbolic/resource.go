@@ -1,11 +1,9 @@
 package symbolic
 
 import (
-	"bufio"
 	"errors"
 
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
-	"github.com/inoxlang/inox/internal/utils"
 )
 
 var (
@@ -111,9 +109,9 @@ func (p *Path) Static() Pattern {
 	return ANY_PATH_PATTERN
 }
 
-func (p *Path) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+func (p *Path) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if p.hasValue {
-		utils.Must(w.Write(utils.StringAsBytes(p.value)))
+		w.WriteString(p.value)
 		return
 	}
 
@@ -142,21 +140,21 @@ func (p *Path) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, de
 		}
 
 		if s != "" {
-			utils.Must(w.Write(utils.StringAsBytes(s)))
+			w.WriteString(s)
 			return
 		}
 
-		utils.Must(w.Write(utils.StringAsBytes("%patch(matching ")))
+		w.WriteName("patch(matching ")
 
 		if p.pattern.node != nil {
-			utils.Must(w.Write(utils.StringAsBytes(p.pattern.stringifiedNode)))
+			w.WriteString(p.pattern.stringifiedNode)
 		} else {
-			p.pattern.PrettyPrint(w, config, depth, 0)
+			p.pattern.PrettyPrint(w.ZeroIndent(), config)
 		}
 
-		utils.PanicIfErr(w.WriteByte(')'))
+		w.WriteByte(')')
 	} else {
-		utils.Must(w.Write(utils.StringAsBytes("%path")))
+		w.WriteName("path")
 	}
 }
 
@@ -286,24 +284,24 @@ func (u *URL) Static() Pattern {
 	return ANY_URL_PATTERN
 }
 
-func (u *URL) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+func (u *URL) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if u.hasValue {
-		utils.Must(w.Write(utils.StringAsBytes(u.value)))
+		w.WriteString(u.value)
 		return
 	}
 
-	utils.Must(w.Write(utils.StringAsBytes("%url")))
+	w.WriteName("url")
 
 	if u.pattern != nil {
-		utils.Must(w.Write(utils.StringAsBytes("(matching ")))
+		w.WriteString("(matching ")
 
 		if u.pattern.node != nil {
-			utils.Must(w.Write(utils.StringAsBytes(u.pattern.stringifiedNode)))
+			w.WriteString(u.pattern.stringifiedNode)
 		} else {
-			u.pattern.PrettyPrint(w, config, depth, 0)
+			u.pattern.PrettyPrint(w.ZeroIndent(), config)
 		}
 
-		utils.PanicIfErr(w.WriteByte(')'))
+		w.WriteByte(')')
 	}
 }
 
@@ -384,11 +382,11 @@ func (s *Scheme) Static() Pattern {
 	return &TypePattern{val: ANY_SCHEME}
 }
 
-func (s *Scheme) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+func (s *Scheme) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if s.hasValue {
-		utils.Must(w.Write(utils.StringAsBytes(s.value)))
+		w.WriteString(s.value)
 	} else {
-		utils.Must(w.Write(utils.StringAsBytes("%scheme")))
+		w.WriteName("scheme")
 	}
 }
 
@@ -462,24 +460,24 @@ func (h *Host) Static() Pattern {
 	return ANY_HOST_PATTERN
 }
 
-func (h *Host) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+func (h *Host) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if h.hasValue {
-		utils.Must(w.Write(utils.StringAsBytes(h.value)))
+		w.WriteString(h.value)
 		return
 	}
 
-	utils.Must(w.Write(utils.StringAsBytes("%host")))
+	w.WriteName("host")
 
 	if h.pattern != nil {
-		utils.Must(w.Write(utils.StringAsBytes("(matching ")))
+		w.WriteString("(matching ")
 
 		if h.pattern.node != nil {
-			utils.Must(w.Write(utils.StringAsBytes(h.pattern.stringifiedNode)))
+			w.WriteString(h.pattern.stringifiedNode)
 		} else {
-			h.pattern.PrettyPrint(w, config, depth, 0)
+			h.pattern.PrettyPrint(w.ZeroIndent(), config)
 		}
 
-		utils.PanicIfErr(w.WriteByte(')'))
+		w.WriteByte(')')
 	}
 }
 

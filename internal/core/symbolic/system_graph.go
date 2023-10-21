@@ -1,11 +1,9 @@
 package symbolic
 
 import (
-	"bufio"
 	"errors"
 
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
-	"github.com/inoxlang/inox/internal/utils"
 )
 
 var (
@@ -93,8 +91,8 @@ func (g *SystemGraph) IsShared() bool {
 	return true
 }
 
-func (g *SystemGraph) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%system-graph")))
+func (g *SystemGraph) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("system-graph")
 	return
 }
 
@@ -142,8 +140,8 @@ func (d *SystemGraphNodes) IteratorElementValue() Value {
 	return ANY_SYSTEM_GRAPH_NODE
 }
 
-func (d *SystemGraphNodes) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%system-graph-nodes")))
+func (d *SystemGraphNodes) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("system-graph-nodes")
 	return
 }
 
@@ -208,8 +206,8 @@ func (n *SystemGraphNode) IsShared() bool {
 	return true
 }
 
-func (n *SystemGraphNode) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%system-graph-node")))
+func (n *SystemGraphNode) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("system-graph-node")
 	return
 }
 
@@ -273,8 +271,8 @@ func (n *SystemGraphEvent) IsShared() bool {
 	return true
 }
 
-func (n *SystemGraphEvent) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%system-graph-event")))
+func (n *SystemGraphEvent) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("system-graph-event")
 	return
 }
 
@@ -326,8 +324,8 @@ func (e *SystemGraphEdge) PropertyNames() []string {
 	return SYSTEM_GRAP_EDGE_PROPNAMES
 }
 
-func (e *SystemGraphEdge) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%system-graph-edge")))
+func (e *SystemGraphEdge) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("system-graph-edge")
 	return
 }
 

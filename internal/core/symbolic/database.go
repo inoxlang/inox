@@ -1,7 +1,6 @@
 package symbolic
 
 import (
-	"bufio"
 	"context"
 	"fmt"
 
@@ -285,7 +284,8 @@ func (db *DatabaseIL) Close(*Context) *Error {
 	return nil
 }
 
-func (db *DatabaseIL) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%database ")))
-	db.schema.PrettyPrint(w, config, depth, 0)
+func (db *DatabaseIL) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("database ")
+	w.ParentIndentCount = 0
+	db.schema.PrettyPrint(w, config)
 }

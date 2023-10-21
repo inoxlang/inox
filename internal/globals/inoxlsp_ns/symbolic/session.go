@@ -1,14 +1,10 @@
 package fs_ns
 
 import (
-	"bufio"
-
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
-
-	"github.com/inoxlang/inox/internal/utils"
 )
 
 var (
@@ -76,8 +72,8 @@ func (*LSPSession) PropertyNames() []string {
 	return LSP_SESSION_PROPNAMES
 }
 
-func (r *LSPSession) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%lsp-session")))
+func (r *LSPSession) PrettyPrint(w symbolic.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("lsp-session")
 }
 
 func (r *LSPSession) WidestOfType() symbolic.Value {

@@ -1,12 +1,8 @@
 package containers
 
 import (
-	"bufio"
-
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
-
-	"github.com/inoxlang/inox/internal/utils"
 )
 
 var _ = []symbolic.Iterable{&Map{}}
@@ -62,8 +58,8 @@ func (*Map) Get(ctx *symbolic.Context, k symbolic.Value) symbolic.Value {
 	return &symbolic.Any{}
 }
 
-func (*Map) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%map")))
+func (*Map) PrettyPrint(w symbolic.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("map")
 	return
 }
 

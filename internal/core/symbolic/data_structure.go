@@ -1,7 +1,6 @@
 package symbolic
 
 import (
-	"bufio"
 	"bytes"
 	"errors"
 	"fmt"
@@ -116,18 +115,18 @@ func (a *Array) Test(v Value, state RecTestCallState) bool {
 	return true
 }
 
-func (a *Array) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+func (a *Array) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if a.elements != nil {
 		length := a.KnownLen()
 
-		if depth > config.MaxDepth && length > 0 {
-			utils.Must(w.Write(utils.StringAsBytes("Array(...)")))
+		if w.Depth > config.MaxDepth && length > 0 {
+			w.WriteName("Array(...)")
 			return
 		}
 
-		utils.Must(w.Write(utils.StringAsBytes("Array(")))
+		w.WriteName("Array(")
 
-		indentCount := parentIndentCount + 1
+		indentCount := w.ParentIndentCount + 1
 		indent := bytes.Repeat(config.Indent, indentCount)
 		printIndices := !config.Compact && length > 10
 
@@ -135,33 +134,33 @@ func (a *Array) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, d
 			v := a.elements[i]
 
 			if !config.Compact {
-				utils.Must(w.Write(LF_CR))
-				utils.Must(w.Write(indent))
+				w.WriteLFCR()
+				w.WriteBytes(indent)
 
 				//index
 				if printIndices {
 					if config.Colorize {
-						utils.Must(w.Write(config.Colors.DiscreteColor))
+						w.WriteBytes(config.Colors.DiscreteColor)
 					}
 					if i < 10 {
-						utils.PanicIfErr(w.WriteByte(' '))
+						w.WriteByte(' ')
 					}
-					utils.Must(w.Write(utils.StringAsBytes(strconv.FormatInt(int64(i), 10))))
-					utils.Must(w.Write(COLON_SPACE))
+					w.WriteString(strconv.FormatInt(int64(i), 10))
+					w.WriteBytes(COLON_SPACE)
 					if config.Colorize {
-						utils.Must(w.Write(ANSI_RESET_SEQUENCE))
+						w.WriteBytes(ANSI_RESET_SEQUENCE)
 					}
 				}
 			}
 
 			//element
-			v.PrettyPrint(w, config, depth+1, indentCount)
+			v.PrettyPrint(w.IncrDepthWithIndent(indentCount), config)
 
 			//comma & indent
 			isLastEntry := i == length-1
 
 			if !isLastEntry {
-				utils.Must(w.Write(COMMA_SPACE))
+				w.WriteBytes(COMMA_SPACE)
 			}
 
 		}
@@ -169,17 +168,17 @@ func (a *Array) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, d
 		var end []byte
 		if !config.Compact && length > 0 {
 			end = append(end, '\n', '\r')
-			end = append(end, bytes.Repeat(config.Indent, depth)...)
+			end = append(end, bytes.Repeat(config.Indent, w.Depth)...)
 		}
 		end = append(end, ')')
 
-		utils.Must(w.Write(end))
+		w.WriteBytes(end)
 		return
 	}
 
-	utils.Must(w.Write(utils.StringAsBytes("%array(")))
-	a.generalElement.PrettyPrint(w, config, depth, parentIndentCount)
-	utils.Must(w.Write(utils.StringAsBytes(")")))
+	w.WriteName("array(")
+	a.generalElement.PrettyPrint(w, config)
+	w.WriteString(")")
 }
 
 func (a *Array) HasKnownLen() bool {
@@ -388,22 +387,22 @@ func (list *List) PropertyNames() []string {
 	return LIST_PROPNAMES
 }
 
-func (list *List) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+func (list *List) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if list.readonly {
-		utils.Must(w.Write(utils.StringAsBytes("%readonly ")))
+		w.WriteName("readonly ")
 	}
 
 	if list.elements != nil {
 		length := list.KnownLen()
 
-		if depth > config.MaxDepth && length > 0 {
-			utils.Must(w.Write(utils.StringAsBytes("[(...)]")))
+		if w.Depth > config.MaxDepth && length > 0 {
+			w.WriteString("[(...)]")
 			return
 		}
 
-		utils.PanicIfErr(w.WriteByte('['))
+		w.WriteByte('[')
 
-		indentCount := parentIndentCount + 1
+		indentCount := w.ParentIndentCount + 1
 		indent := bytes.Repeat(config.Indent, indentCount)
 		printIndices := !config.Compact && length > 10
 
@@ -411,33 +410,33 @@ func (list *List) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig,
 			v := list.elements[i]
 
 			if !config.Compact {
-				utils.Must(w.Write(LF_CR))
-				utils.Must(w.Write(indent))
+				w.WriteLFCR()
+				w.WriteBytes(indent)
 
 				//index
 				if printIndices {
 					if config.Colorize {
-						utils.Must(w.Write(config.Colors.DiscreteColor))
+						w.WriteBytes(config.Colors.DiscreteColor)
 					}
 					if i < 10 {
-						utils.PanicIfErr(w.WriteByte(' '))
+						w.WriteByte(' ')
 					}
-					utils.Must(w.Write(utils.StringAsBytes(strconv.FormatInt(int64(i), 10))))
-					utils.Must(w.Write(COLON_SPACE))
+					w.WriteBytes(utils.StringAsBytes(strconv.FormatInt(int64(i), 10)))
+					w.WriteBytes(COLON_SPACE)
 					if config.Colorize {
-						utils.Must(w.Write(ANSI_RESET_SEQUENCE))
+						w.WriteBytes(ANSI_RESET_SEQUENCE)
 					}
 				}
 			}
 
 			//element
-			v.PrettyPrint(w, config, depth+1, indentCount)
+			v.PrettyPrint(w.IncrDepthWithIndent(indentCount), config)
 
 			//comma & indent
 			isLastEntry := i == length-1
 
 			if !isLastEntry {
-				utils.Must(w.Write(COMMA_SPACE))
+				w.WriteBytes(COMMA_SPACE)
 			}
 
 		}
@@ -445,15 +444,15 @@ func (list *List) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig,
 		var end []byte
 		if !config.Compact && length > 0 {
 			end = append(end, '\n', '\r')
-			end = append(end, bytes.Repeat(config.Indent, depth)...)
+			end = append(end, bytes.Repeat(config.Indent, w.Depth)...)
 		}
 		end = append(end, ']')
 
-		utils.Must(w.Write(end))
+		w.WriteBytes(end)
 		return
 	}
-	utils.Must(w.Write(utils.StringAsBytes("[]")))
-	list.generalElement.PrettyPrint(w, config, depth, parentIndentCount)
+	w.WriteString("[]")
+	list.generalElement.PrettyPrint(w, config)
 }
 
 func (l *List) HasKnownLen() bool {
@@ -715,15 +714,15 @@ func (t *Tuple) Static() Pattern {
 	return NewListPatternOf(&TypePattern{val: elem})
 }
 
-func (t *Tuple) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+func (t *Tuple) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if t.elements != nil {
 		lst := NewList(t.elements...)
-		utils.Must(w.Write([]byte{'#'}))
-		lst.PrettyPrint(w, config, depth, parentIndentCount)
+		w.WriteByte('#')
+		lst.PrettyPrint(w, config)
 		return
 	}
-	utils.Must(w.Write(utils.StringAsBytes("#[]")))
-	t.generalElement.PrettyPrint(w, config, 0, 0)
+	w.WriteString("#[]")
+	t.generalElement.PrettyPrint(w.ZeroDepthIndent(), config)
 }
 
 func (t *Tuple) append(element Value) {
@@ -856,30 +855,30 @@ func (list *KeyList) Concretize(ctx ConcreteContext) any {
 	return extData.ConcreteValueFactories.CreateKeyList(utils.CopySlice(list.Keys))
 }
 
-func (list *KeyList) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+func (list *KeyList) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if list.Keys != nil {
-		if depth > config.MaxDepth && len(list.Keys) > 0 {
-			utils.Must(w.Write(utils.StringAsBytes(".{(...)]}")))
+		if w.Depth > config.MaxDepth && len(list.Keys) > 0 {
+			w.WriteString(".{(...)]}")
 			return
 		}
 
-		utils.Must(w.Write(DOT_OPENING_CURLY_BRACKET))
+		w.WriteBytes(DOT_OPENING_CURLY_BRACKET)
 
 		first := true
 
 		for _, k := range list.Keys {
 			if !first {
-				utils.Must(w.Write(COMMA_SPACE))
+				w.WriteBytes(COMMA_SPACE)
 			}
 			first = false
 
-			utils.Must(w.Write([]byte(k)))
+			w.WriteBytes([]byte(k))
 		}
 
-		utils.PanicIfErr(w.WriteByte(']'))
+		w.WriteByte(']')
 		return
 	}
-	utils.Must(w.Write(utils.StringAsBytes("%key-list")))
+	w.WriteName("key-list")
 }
 
 func (a *KeyList) append(key string) {
@@ -1081,17 +1080,17 @@ func (dict *Dictionary) WatcherElement() Value {
 	return ANY
 }
 
-func (dict *Dictionary) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+func (dict *Dictionary) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if dict.entries != nil {
-		if depth > config.MaxDepth && len(dict.entries) > 0 {
-			utils.Must(w.Write(utils.StringAsBytes(":{(...)}")))
+		if w.Depth > config.MaxDepth && len(dict.entries) > 0 {
+			w.WriteString(":{(...)}")
 			return
 		}
 
-		indentCount := parentIndentCount + 1
+		indentCount := w.ParentIndentCount + 1
 		indent := bytes.Repeat(config.Indent, indentCount)
 
-		utils.Must(w.Write(utils.StringAsBytes(":{")))
+		w.WriteString(":{")
 
 		var keys []string
 		for k := range dict.entries {
@@ -1102,47 +1101,47 @@ func (dict *Dictionary) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintC
 
 		for i, k := range keys {
 			if !config.Compact {
-				utils.Must(w.Write(LF_CR))
-				utils.Must(w.Write(indent))
+				w.WriteLFCR()
+				w.WriteBytes(indent)
 			}
 
 			//key
 			if config.Colorize {
-				utils.Must(w.Write(config.Colors.StringLiteral))
+				w.WriteBytes(config.Colors.StringLiteral)
 
 			}
-			utils.Must(w.Write(utils.StringAsBytes(k)))
+			w.WriteString(k)
 
 			if config.Colorize {
-				utils.Must(w.Write(ANSI_RESET_SEQUENCE))
+				w.WriteBytes(ANSI_RESET_SEQUENCE)
 			}
 
 			//colon
-			utils.Must(w.Write(COLON_SPACE))
+			w.WriteBytes(COLON_SPACE)
 
 			//value
 			v := dict.entries[k]
 
-			v.PrettyPrint(w, config, depth+1, indentCount)
+			v.PrettyPrint(w.IncrDepthWithIndent(indentCount), config)
 
 			//comma & indent
 			isLastEntry := i == len(keys)-1
 
 			if !isLastEntry {
-				utils.Must(w.Write([]byte{',', ' '}))
+				w.WriteBytes([]byte{',', ' '})
 
 			}
 
 		}
 
 		if !config.Compact && len(keys) > 0 {
-			utils.Must(w.Write(LF_CR))
+			w.WriteLFCR()
 		}
-		utils.Must(w.Write(bytes.Repeat(config.Indent, depth)))
-		utils.PanicIfErr(w.WriteByte('}'))
+		w.WriteBytes(bytes.Repeat(config.Indent, w.Depth))
+		w.WriteByte('}')
 		return
 	}
-	utils.Must(w.Write(utils.StringAsBytes("%dictionary")))
+	w.WriteName("dictionary")
 	return
 }
 
@@ -1795,21 +1794,21 @@ func (obj *Object) Static() Pattern {
 	return NewInexactObjectPattern(entries, obj.optionalEntries)
 }
 
-func (obj *Object) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+func (obj *Object) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if obj.readonly {
-		utils.Must(w.Write(utils.StringAsBytes("%readonly ")))
+		w.WriteName("readonly ")
 	}
 
 	if obj.entries != nil {
-		if depth > config.MaxDepth && len(obj.entries) > 0 {
-			utils.Must(w.Write(utils.StringAsBytes("{(...)}")))
+		if w.Depth > config.MaxDepth && len(obj.entries) > 0 {
+			w.WriteString("{(...)}")
 			return
 		}
 
-		indentCount := parentIndentCount + 1
+		indentCount := w.ParentIndentCount + 1
 		indent := bytes.Repeat(config.Indent, indentCount)
 
-		utils.Must(w.Write(utils.StringAsBytes("{")))
+		w.WriteString("{")
 
 		keys := maps.Keys(obj.entries)
 		sort.Strings(keys)
@@ -1817,47 +1816,47 @@ func (obj *Object) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig
 		for i, k := range keys {
 
 			if !config.Compact {
-				utils.Must(w.Write(LF_CR))
-				utils.Must(w.Write(indent))
+				w.WriteLFCR()
+				w.WriteBytes(indent)
 			}
 
 			if config.Colorize {
-				utils.Must(w.Write(config.Colors.IdentifierLiteral))
+				w.WriteBytes(config.Colors.IdentifierLiteral)
 			}
 
-			utils.Must(w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace(k))))
+			w.WriteBytes(utils.Must(utils.MarshalJsonNoHTMLEspace(k)))
 
 			if config.Colorize {
-				utils.Must(w.Write(ANSI_RESET_SEQUENCE))
+				w.WriteBytes(ANSI_RESET_SEQUENCE)
 			}
 
 			if _, isOptional := obj.optionalEntries[k]; isOptional {
-				utils.PanicIfErr(w.WriteByte('?'))
+				w.WriteByte('?')
 			}
 
 			//colon
-			utils.Must(w.Write(COLON_SPACE))
+			w.WriteBytes(COLON_SPACE)
 
 			//value
 			v := obj.entries[k]
-			v.PrettyPrint(w, config, depth+1, indentCount)
+			v.PrettyPrint(w.IncrDepthWithIndent(indentCount), config)
 
 			//comma & indent
 			isLastEntry := i == len(keys)-1
 
 			if !isLastEntry {
-				utils.Must(w.Write(COMMA_SPACE))
+				w.WriteBytes(COMMA_SPACE)
 			}
 		}
 
 		if !config.Compact && len(keys) > 0 {
-			utils.Must(w.Write(LF_CR))
+			w.WriteLFCR()
 		}
 
-		utils.MustWriteMany(w, bytes.Repeat(config.Indent, depth), []byte{'}'})
+		w.WriteManyBytes(bytes.Repeat(config.Indent, w.Depth), []byte{'}'})
 		return
 	}
-	utils.Must(w.Write(utils.StringAsBytes("%object")))
+	w.WriteName("object")
 }
 
 func (o *Object) WidestOfType() Value {
@@ -2110,17 +2109,17 @@ func (rec *Record) Static() Pattern {
 	return NewInexactObjectPattern(entries, rec.optionalEntries)
 }
 
-func (rec *Record) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+func (rec *Record) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if rec.entries != nil {
-		if depth > config.MaxDepth && len(rec.entries) > 0 {
-			utils.Must(w.Write(utils.StringAsBytes("#{(...)}")))
+		if w.Depth > config.MaxDepth && len(rec.entries) > 0 {
+			w.WriteString("#{(...)}")
 			return
 		}
 
-		indentCount := parentIndentCount + 1
+		indentCount := w.ParentIndentCount + 1
 		indent := bytes.Repeat(config.Indent, indentCount)
 
-		utils.Must(w.Write(utils.StringAsBytes("#{")))
+		w.WriteString("#{")
 
 		keys := maps.Keys(rec.entries)
 		sort.Strings(keys)
@@ -2128,53 +2127,53 @@ func (rec *Record) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig
 		for i, k := range keys {
 
 			if !config.Compact {
-				utils.Must(w.Write(LF_CR))
-				utils.Must(w.Write(indent))
+				w.WriteLFCR()
+				w.WriteBytes(indent)
 			}
 
 			if config.Colorize {
-				utils.Must(w.Write(config.Colors.IdentifierLiteral))
+				w.WriteBytes(config.Colors.IdentifierLiteral)
 			}
 
-			utils.Must(w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace(k))))
+			w.WriteBytes(utils.Must(utils.MarshalJsonNoHTMLEspace(k)))
 
 			if config.Colorize {
-				utils.Must(w.Write(ANSI_RESET_SEQUENCE))
+				w.WriteBytes(ANSI_RESET_SEQUENCE)
 			}
 
 			if _, isOptional := rec.optionalEntries[k]; isOptional {
-				utils.PanicIfErr(w.WriteByte('?'))
+				w.WriteByte('?')
 			}
 
 			//colon
-			utils.Must(w.Write(COLON_SPACE))
+			w.WriteBytes(COLON_SPACE)
 
 			//value
 			v := rec.entries[k]
-			v.PrettyPrint(w, config, depth+1, indentCount)
+			v.PrettyPrint(w.IncrDepthWithIndent(indentCount), config)
 
 			//comma & indent
 			isLastEntry := i == len(keys)-1
 
 			if !isLastEntry {
-				utils.Must(w.Write(COMMA_SPACE))
+				w.WriteBytes(COMMA_SPACE)
 			}
 		}
 
 		if !config.Compact && len(keys) > 0 {
-			utils.Must(w.Write(LF_CR))
+			w.WriteLFCR()
 		}
 
-		utils.MustWriteMany(w, bytes.Repeat(config.Indent, depth), []byte{'}'})
+		w.WriteManyBytes(bytes.Repeat(config.Indent, w.Depth), []byte{'}'})
 		return
 	}
 	if rec.valueOnly == nil {
-		utils.Must(w.Write(utils.StringAsBytes("%record")))
+		w.WriteName("record")
 		return
 	}
-	utils.Must(w.Write(utils.StringAsBytes("#{ any -> ")))
-	rec.valueOnly.PrettyPrint(w, config, 0, parentIndentCount)
-	utils.Must(w.Write(utils.StringAsBytes("}")))
+	w.WriteString("#{ any -> ")
+	rec.valueOnly.PrettyPrint(w.ZeroDepth(), config)
+	w.WriteString("}")
 }
 
 func (r *Record) WidestOfType() Value {
@@ -2219,8 +2218,8 @@ func (i *AnyIndexable) HasKnownLen() bool {
 	return false
 }
 
-func (r *AnyIndexable) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%indexable")))
+func (r *AnyIndexable) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("indexable")
 }
 
 func (r *AnyIndexable) WidestOfType() Value {

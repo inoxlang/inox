@@ -1,10 +1,7 @@
 package symbolic
 
 import (
-	"bufio"
-
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
-	"github.com/inoxlang/inox/internal/utils"
 )
 
 var (
@@ -43,8 +40,8 @@ func (*AnyIterable) Test(v Value, state RecTestCallState) bool {
 	return ok
 }
 
-func (*AnyIterable) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%iterable")))
+func (*AnyIterable) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("iterable")
 }
 
 func (*AnyIterable) WidestOfType() Value {
@@ -75,8 +72,8 @@ func (r *AnySerializableIterable) Test(v Value, state RecTestCallState) bool {
 	return isIterable && isSerializable
 }
 
-func (r *AnySerializableIterable) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%serializable-iterable")))
+func (r *AnySerializableIterable) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("serializable-iterable")
 }
 
 func (r *AnySerializableIterable) WidestOfType() Value {
@@ -111,8 +108,8 @@ func (r *Iterator) Test(v Value, state RecTestCallState) bool {
 	return r.ElementValue.Test(it.ElementValue, state)
 }
 
-func (r *Iterator) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%iterator")))
+func (r *Iterator) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("iterator")
 	return
 }
 

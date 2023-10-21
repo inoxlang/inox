@@ -1,10 +1,7 @@
 package symbolic
 
 import (
-	"bufio"
-
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
-	"github.com/inoxlang/inox/internal/utils"
 )
 
 var (
@@ -34,8 +31,8 @@ func (r *AnyWritable) Test(v Value, state RecTestCallState) bool {
 	}
 }
 
-func (r *AnyWritable) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%writable")))
+func (r *AnyWritable) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("writable")
 	return
 }
 
@@ -98,8 +95,8 @@ func (Writer) PropertyNames() []string {
 	return []string{"write"}
 }
 
-func (*Writer) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%writer")))
+func (*Writer) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("writer")
 	return
 }
 

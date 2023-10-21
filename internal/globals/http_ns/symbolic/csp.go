@@ -1,12 +1,8 @@
 package http_ns
 
 import (
-	"bufio"
-
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
-
-	"github.com/inoxlang/inox/internal/utils"
 )
 
 var (
@@ -33,9 +29,8 @@ func (n *ContentSecurityPolicy) Test(v symbolic.Value, state symbolic.RecTestCal
 	return true
 }
 
-func (r *ContentSecurityPolicy) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%content-security-policy")))
-	return
+func (r *ContentSecurityPolicy) PrettyPrint(w symbolic.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("content-security-policy")
 }
 
 func (r *ContentSecurityPolicy) WidestOfType() symbolic.Value {

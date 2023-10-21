@@ -1,8 +1,6 @@
 package containers
 
 import (
-	"bufio"
-
 	"github.com/inoxlang/inox/internal/commonfmt"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	containers_common "github.com/inoxlang/inox/internal/globals/containers/common"
@@ -158,14 +156,14 @@ func (s *Set) Get(ctx *symbolic.Context, k symbolic.StringLike) (symbolic.Value,
 	return s.element, symbolic.ANY_BOOL
 }
 
-func (s *Set) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%Set(")))
-	s.element.PrettyPrint(w, config, depth, parentIndentCount)
+func (s *Set) PrettyPrint(w symbolic.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("Set(")
+	s.element.PrettyPrint(w, config)
 	if s.uniqueness != nil {
-		utils.PanicIfErr(w.WriteByte(','))
-		s.uniqueness.ToSymbolicValue().PrettyPrint(w, config, depth, 0)
+		w.WriteByte(',')
+		s.uniqueness.ToSymbolicValue().PrettyPrint(w.ZeroIndent(), config)
 	}
-	utils.Must(w.Write(utils.StringAsBytes(")")))
+	w.WriteByte(')')
 }
 
 func (*Set) IteratorElementKey() symbolic.Value {
@@ -248,14 +246,14 @@ func (p *SetPattern) SymbolicValue() symbolic.Value {
 	return NewSetWithPattern(p.elementPattern, p.uniqueness)
 }
 
-func (p *SetPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("%set-pattern(")))
-	p.elementPattern.SymbolicValue().PrettyPrint(w, config, depth, parentIndentCount)
+func (p *SetPattern) PrettyPrint(w symbolic.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("set-pattern(")
+	p.elementPattern.SymbolicValue().PrettyPrint(w, config)
 	if p.uniqueness != nil {
-		utils.PanicIfErr(w.WriteByte(','))
-		p.uniqueness.ToSymbolicValue().PrettyPrint(w, config, depth, 0)
+		w.WriteByte(',')
+		p.uniqueness.ToSymbolicValue().PrettyPrint(w.ZeroIndent(), config)
 	}
-	utils.Must(w.Write(utils.StringAsBytes(")")))
+	w.WriteByte(')')
 }
 
 func (*SetPattern) IteratorElementKey() symbolic.Value {
