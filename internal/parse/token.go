@@ -61,6 +61,12 @@ const (
 	FOR_KEYWORD
 	WALK_KEYWORD
 	IN_KEYWORD
+	NOT_IN_KEYWORD
+	IS_KEYWORD
+	IS_NOT_KEYWORD
+	KEYOF_KEYWORD
+	SUBSTROF_KEYWORD
+	NOT_MATCH_KEYWORD
 	GO_KEYWORD
 	IMPORT_KEYWORD
 	FN_KEYWORD
@@ -96,13 +102,6 @@ const (
 	AND_KEYWORD
 	OR_KEYWORD
 	PERCENT_STR
-	IN
-	NOT_IN
-	IS
-	IS_NOT
-	KEYOF
-	NOT_MATCH
-	SUBSTROF
 	PERCENT_SYMBOL
 	TILDE
 	EXCLAMATION_MARK
@@ -313,13 +312,12 @@ var tokenStrings = [...]string{
 	EXCLAMATION_MARK_EQUAL:         "!=",
 	DOUBLE_QUESTION_MARK:           "??",
 	PERCENT_STR:                    "%str",
-	IN:                             "in",
-	NOT_IN:                         "not-in",
-	IS:                             "is",
-	IS_NOT:                         "is-not",
-	KEYOF:                          "keyof",
-	NOT_MATCH:                      "not-match",
-	SUBSTROF:                       "substrof",
+	NOT_IN_KEYWORD:                 "not-in",
+	IS_KEYWORD:                     "is",
+	IS_NOT_KEYWORD:                 "is-not",
+	KEYOF_KEYWORD:                  "keyof",
+	NOT_MATCH_KEYWORD:              "not-match",
+	SUBSTROF_KEYWORD:               "substrof",
 	SELF_CLOSING_TAG_TERMINATOR:    "/>",
 	END_TAG_OPEN_DELIMITER:         "</",
 	OPENING_BRACKET:                "[",
@@ -435,6 +433,12 @@ var tokenTypenames = [...]string{
 	FOR_KEYWORD:                    "FOR_KEYWORD",
 	WALK_KEYWORD:                   "WALK_KEYWORD",
 	IN_KEYWORD:                     "IN_KEYWORD",
+	NOT_IN_KEYWORD:                 "NOT_IN_KEYWORD",
+	IS_KEYWORD:                     "IS_KEYWORD",
+	IS_NOT_KEYWORD:                 "IS_NOT_KEYWORD",
+	KEYOF_KEYWORD:                  "KEYOF_KEYWORD",
+	NOT_MATCH_KEYWORD:              "NOT_MATCH_KEYWORD",
+	SUBSTROF_KEYWORD:               "SUBSTROF_KEYWORD",
 	GO_KEYWORD:                     "GO_KEYWORD",
 	IMPORT_KEYWORD:                 "IMPORT_KEYWORD",
 	FN_KEYWORD:                     "FN_KEYWORD",
@@ -470,13 +474,6 @@ var tokenTypenames = [...]string{
 	AND_KEYWORD:                    "AND_KEYWORD",
 	OR_KEYWORD:                     "OR_KEYWORD",
 	PERCENT_STR:                    "PERCENT_STR",
-	IN:                             "IN",
-	NOT_IN:                         "NOT_IN",
-	IS:                             "IS",
-	IS_NOT:                         "IS_NOT",
-	KEYOF:                          "KEYOF",
-	NOT_MATCH:                      "NOT_MATCH",
-	SUBSTROF:                       "SUBSTROF",
 	PERCENT_SYMBOL:                 "PERCENT_SYMBOL",
 	TILDE:                          "TILDE",
 	EXCLAMATION_MARK:               "EXCLAMATION_MARK",

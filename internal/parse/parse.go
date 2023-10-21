@@ -4968,17 +4968,17 @@ _switch:
 			switch string(p.s[operatorStart : p.i+1]) {
 			case "in":
 				operator = In
-				operatorType = IN
+				operatorType = IN_KEYWORD
 				p.i++
 				break _switch
 			case "is":
 				operator = Is
-				operatorType = IS
+				operatorType = IS_KEYWORD
 				p.i++
 				break _switch
 			case "is-not":
 				operator = IsNot
-				operatorType = IS_NOT
+				operatorType = IS_NOT_KEYWORD
 				p.i++
 				break _switch
 			}
@@ -4993,7 +4993,7 @@ _switch:
 			string(p.s[p.i:p.i+KEYOF_LEN]) == "keyof" &&
 			(p.len-p.i == KEYOF_LEN || !IsIdentChar(p.s[p.i+KEYOF_LEN])) {
 			operator = Keyof
-			operatorType = KEYOF
+			operatorType = KEYOF_KEYWORD
 			p.i += KEYOF_LEN
 			break
 		}
@@ -5006,7 +5006,7 @@ _switch:
 			string(p.s[p.i:p.i+NOTIN_LEN]) == "not-in" &&
 			(p.len-p.i == NOTIN_LEN || !IsIdentChar(p.s[p.i+NOTIN_LEN])) {
 			operator = NotIn
-			operatorType = NOT_IN
+			operatorType = NOT_IN_KEYWORD
 			p.i += NOTIN_LEN
 			break
 		}
@@ -5016,7 +5016,7 @@ _switch:
 			string(p.s[p.i:p.i+NOTMATCH_LEN]) == "not-match" &&
 			(p.len-p.i == NOTMATCH_LEN || !IsIdentChar(p.s[p.i+NOTMATCH_LEN])) {
 			operator = NotMatch
-			operatorType = NOT_MATCH
+			operatorType = NOT_MATCH_KEYWORD
 			p.i += NOTMATCH_LEN
 			break
 		}
@@ -5054,7 +5054,7 @@ _switch:
 			string(p.s[p.i:p.i+SUBSTROF_LEN]) == "substrof" &&
 			(p.len-p.i == SUBSTROF_LEN || !IsIdentChar(p.s[p.i+SUBSTROF_LEN])) {
 			operator = Substrof
-			operatorType = SUBSTROF
+			operatorType = SUBSTROF_KEYWORD
 			p.i += SUBSTROF_LEN
 			break
 		}
