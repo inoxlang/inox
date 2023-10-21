@@ -1,6 +1,21 @@
 manifest {}
 
-# TODO: explanation
 
-print (concat "a" "b") 
-print (concat 0x[00] 0x[11])
+# string concatenation
+string = concat "a" "b"
+print(string)
+
+# byte slice concatenation
+slice = concat 0x[00] 0x[11]
+print(slice)
+
+# tuple concatenation
+tuple = concat #[1, 2, 3] #[4, 5]
+print(tuple)
+
+# multiline concatenation
+string = (concat "a"
+    "b"
+    "c"
+)
+print(string)

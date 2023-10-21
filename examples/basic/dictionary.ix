@@ -1,6 +1,6 @@
 manifest {}
 
-# a dictionary is a mapping which keys are simple values (strings, paths, identifiers, ...)
+# a dictionary is a mapping whose keys are simple values (strings, paths, identifiers, ...)
 dict = :{
     "foo": "bar"
     ./dir/: [./file]

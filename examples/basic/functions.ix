@@ -23,7 +23,7 @@ hello "bar" "!"
 
 # 'must' call are special calls that cause a panic if there is an error.
 # Go functions are considered to return an error if the last return value is a non-nil error.
-# Inox functions are considered to return an error if the return value is a List which last element is an error.
+# Inox functions are considered to return an error if the return value is an Array whose last element is an error.
 # note: Inox functions always return a single value.
 
 # syntaxes for 'must' calls:
