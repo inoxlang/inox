@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/go-git/go-billy/v5"
+	"github.com/inoxlang/inox/internal/afs"
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/minio/minio-go/v7"
@@ -93,7 +94,7 @@ func (fls *S3Filesystem) WithoutSecondaryContext() any {
 }
 
 func (fls *S3Filesystem) Create(filename string) (billy.File, error) {
-	return fls.OpenFile(filename, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
+	return fls.OpenFile(filename, os.O_RDWR|os.O_CREATE|os.O_TRUNC, afs.DEFAULT_CREATE_FPERM)
 }
 
 func (fls *S3Filesystem) Open(filename string) (billy.File, error) {

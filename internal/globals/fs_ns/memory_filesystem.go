@@ -13,6 +13,7 @@ import (
 
 	"github.com/go-git/go-billy/v5"
 	"github.com/go-git/go-billy/v5/util"
+	"github.com/inoxlang/inox/internal/afs"
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/utils"
 )
@@ -54,7 +55,7 @@ func (fs MemFilesystem) Absolute(path string) (string, error) {
 }
 
 func (fs *MemFilesystem) Create(filename string) (billy.File, error) {
-	return fs.OpenFile(filename, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
+	return fs.OpenFile(filename, os.O_RDWR|os.O_CREATE|os.O_TRUNC, afs.DEFAULT_CREATE_FPERM)
 }
 
 func (fs *MemFilesystem) Open(filename string) (billy.File, error) {

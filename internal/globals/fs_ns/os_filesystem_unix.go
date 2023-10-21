@@ -72,7 +72,8 @@ func (fs *OsFilesystem) Create(filename string) (billy.File, error) {
 		fs.ctx.PauseCPUTimeDecrementation()
 		defer fs.ctx.ResumeCPUTimeDecrementation()
 	}
-	return fs.OS.Create(filename)
+	//we don't call fs.OS.Create because it uses a default create mode of 600.
+	return fs.OpenFile(filename, os.O_RDWR|os.O_CREATE|os.O_TRUNC, afs.DEFAULT_CREATE_FPERM)
 }
 
 func (fs *OsFilesystem) Open(filename string) (billy.File, error) {

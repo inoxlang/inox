@@ -1,9 +1,23 @@
 package afs
 
-import "github.com/go-git/go-billy/v5"
+import (
+	"io/fs"
+
+	"github.com/go-git/go-billy/v5"
+)
+
+const (
+	DEFAULT_CREATE_FPERM fs.FileMode = 0600
+)
 
 type Filesystem interface {
 	billy.Filesystem
+
+	// Create creates the named file with mode 0600 (before umask), truncating
+	// it if it already exists. If successful, methods on the returned File can
+	// be used for I/O; the associated file descriptor has mode O_RDWR.
+	Create(filename string) (File, error)
+
 	Absolute(path string) (string, error)
 }
 

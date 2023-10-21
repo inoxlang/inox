@@ -482,7 +482,7 @@ func (fls *MetaFilesystem) Create(filename string) (billy.File, error) {
 		return nil, ErrMaxFileNumberAlreadyReached
 	}
 
-	return fls.OpenFile(filename, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
+	return fls.OpenFile(filename, os.O_RDWR|os.O_CREATE|os.O_TRUNC, afs.DEFAULT_CREATE_FPERM)
 }
 
 func (fls *MetaFilesystem) Open(filename string) (billy.File, error) {
