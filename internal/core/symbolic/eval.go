@@ -3920,6 +3920,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 
 		namespace := &PatternNamespace{}
 		pos := state.getCurrentChunkNodePositionOrZero(n.Left)
+		var namespaceName string
 
 		switch r := right.(type) {
 		case *Object:
@@ -3940,7 +3941,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 			}
 			name, ok := n.NamespaceName()
 			if ok {
-				state.ctx.AddPatternNamespace(name, namespace, state.inPreinit, pos)
+				namespaceName = name
 			}
 		case *Record:
 			if len(r.entries) > 0 {
@@ -3960,17 +3961,21 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 			}
 			name, ok := n.NamespaceName()
 			if ok {
-				state.ctx.AddPatternNamespace(name, namespace, state.inPreinit, pos)
+				namespaceName = name
 			}
 		default:
 			state.addError(makeSymbolicEvalError(node, state, fmtPatternNamespaceShouldBeInitWithNot(right)))
 			name, ok := n.NamespaceName()
 			if ok {
-				state.ctx.AddPatternNamespace(name, namespace, state.inPreinit, pos)
+				namespaceName = name
 			}
 		}
-		state.symbolicData.SetMostSpecificNodeValue(n.Left, namespace)
-		state.symbolicData.SetContextData(n, state.ctx.currentData())
+
+		if namespaceName != "" && state.ctx.ResolvePatternNamespace(namespaceName) == nil {
+			state.ctx.AddPatternNamespace(namespaceName, namespace, state.inPreinit, pos)
+			state.symbolicData.SetMostSpecificNodeValue(n.Left, namespace)
+			state.symbolicData.SetContextData(n, state.ctx.currentData())
+		}
 
 		return nil, nil
 	case *parse.PatternNamespaceIdentifierLiteral:

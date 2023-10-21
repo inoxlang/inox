@@ -8427,6 +8427,27 @@ func TestSymbolicEval(t *testing.T) {
 			})
 		})
 
+		t.Run("duplicate definitions should be ignored", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				pnamespace namespace. = {}
+				pnamespace namespace. = {a: %int}
+
+				return %namespace.
+			`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+
+			//there is already a static check error
+			assert.Empty(t, state.errors())
+			assert.Equal(t, &PatternNamespace{
+				entries: nil,
+			}, res)
+
+			namespace := state.ctx.ResolvePatternNamespace("namespace")
+			assert.Same(t, namespace, res)
+		})
+
 	})
 
 	t.Run("pattern identifier", func(t *testing.T) {
