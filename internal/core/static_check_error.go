@@ -229,6 +229,10 @@ func fmtInvalidLocalVarDeclAlreadyDeclared(name string) string {
 	return fmt.Sprintf("invalid local variable declaration: '%s' is already declared", name)
 }
 
+func fmtInvalidGlobalVarDeclAlreadyDeclared(name string) string {
+	return fmt.Sprintf("invalid global variable declaration: '%s' is already declared", name)
+}
+
 func fmtInvalidGlobalVarAssignmentNameIsFuncName(name string) string {
 	return fmt.Sprintf("invalid global variable assignment: '%s' is a declared function's name", name)
 }

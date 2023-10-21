@@ -1563,6 +1563,47 @@ func TestCheck(t *testing.T) {
 		})
 	})
 
+	t.Run("global variable declaration", func(t *testing.T) {
+		t.Run("declaration after assignment", func(t *testing.T) {
+			n, src := mustParseCode(`
+				$$a = 0
+				globalvar a = 0
+			`)
+			decl := parse.FindNode(n, (*parse.GlobalVariableDeclaration)(nil), nil)
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(decl, src, fmtInvalidGlobalVarDeclAlreadyDeclared("a")),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("shadowing of local variable", func(t *testing.T) {
+			n, src := mustParseCode(`
+				$a = 0
+				globalvar a = 0
+			`)
+			decl := parse.FindNode(n, (*parse.GlobalVariableDeclaration)(nil), nil)
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(decl, src, fmtCannotShadowLocalVariable("a")),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("duplicate declarations", func(t *testing.T) {
+			n, src := mustParseCode(`
+				globalvar a = 0
+				globalvar a = 1
+			`)
+			decl := parse.FindNodes(n, (*parse.GlobalVariableDeclaration)(nil), nil)[1]
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(decl, src, fmtInvalidGlobalVarDeclAlreadyDeclared("a")),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+	})
+
 	t.Run("assignment", func(t *testing.T) {
 		t.Run("assignment with a function's name", func(t *testing.T) {
 			n, src := mustParseCode(`

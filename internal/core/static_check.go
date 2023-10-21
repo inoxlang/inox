@@ -1095,6 +1095,26 @@ switch_:
 			}
 			localVars[name] = localVarInfo{}
 		}
+	case *parse.GlobalVariableDeclarations:
+		globalVars := c.getModGlobalVars(closestModule)
+
+		for _, decl := range node.Declarations {
+			name := decl.Left.(*parse.IdentifierLiteral).Name
+
+			localVariables := c.getLocalVarsInScope(scopeNode)
+
+			if _, alreadyDefined := localVariables[name]; alreadyDefined {
+				c.addError(decl, fmtCannotShadowLocalVariable(name))
+				return parse.Continue
+			}
+
+			_, alreadyUsed := globalVars[name]
+			if alreadyUsed {
+				c.addError(decl, fmtInvalidGlobalVarDeclAlreadyDeclared(name))
+				return parse.Continue
+			}
+			globalVars[name] = globalVarInfo{}
+		}
 	case *parse.Assignment, *parse.MultiAssignment:
 		var names []string
 
