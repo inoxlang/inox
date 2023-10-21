@@ -21504,7 +21504,7 @@ func testParse(
 							{
 								NodeBase: NodeBase{
 									NodeSpan{2, 4},
-									&ParsingError{MissingObjectPropertyPattern, MISSING_PROPERTY_PATTERN},
+									&ParsingError{MissingObjectPatternProperty, MISSING_PROPERTY_PATTERN},
 									false,
 								},
 								Key: &IdentifierLiteral{

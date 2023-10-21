@@ -19,7 +19,7 @@ const (
 	MissingFnBody
 	MissingEqualsSignInDeclaration
 	MissingObjectPropertyValue
-	MissingObjectPropertyPattern
+	MissingObjectPatternProperty
 	ExtractionExpressionExpected
 	InvalidNext
 	//TODO: add more kinds

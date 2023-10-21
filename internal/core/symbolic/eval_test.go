@@ -7598,6 +7598,23 @@ func TestSymbolicEval(t *testing.T) {
 			}, res)
 		})
 
+		t.Run("missing property pattern", func(t *testing.T) {
+			n, state, err := _makeStateAndChunk(`
+				return %{a:}
+			`, nil)
+
+			if !assert.Error(t, err) {
+				return
+			}
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, &ObjectPattern{
+				entries: map[string]Pattern{"a": &TypePattern{val: ANY_SERIALIZABLE}},
+				inexact: true,
+			}, res)
+		})
 	})
 
 	t.Run("record pattern literal", func(t *testing.T) {
@@ -7825,6 +7842,23 @@ func TestSymbolicEval(t *testing.T) {
 			}, res.(*ObjectPattern).entries["x"])
 		})
 
+		t.Run("missing property pattern", func(t *testing.T) {
+			n, state, err := _makeStateAndChunk(`
+				return %{x: #{a:}}
+			`, nil)
+
+			if !assert.Error(t, err) {
+				return
+			}
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, &RecordPattern{
+				entries: map[string]Pattern{"a": &TypePattern{val: ANY_SERIALIZABLE}},
+				inexact: true,
+			}, res.(*ObjectPattern).entries["x"])
+		})
 	})
 
 	t.Run("list pattern literal", func(t *testing.T) {

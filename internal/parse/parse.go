@@ -3176,7 +3176,7 @@ object_pattern_top_loop:
 
 				if p.i >= p.len || p.s[p.i] == '}' || p.s[p.i] == ',' { //missing value
 					if propParsingErr == nil {
-						propParsingErr = &ParsingError{MissingObjectPropertyPattern, MISSING_PROPERTY_PATTERN}
+						propParsingErr = &ParsingError{MissingObjectPatternProperty, MISSING_PROPERTY_PATTERN}
 					}
 					properties = append(properties, &ObjectPatternProperty{
 						NodeBase: NodeBase{
