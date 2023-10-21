@@ -175,7 +175,7 @@ func openBuntDBNoPermCheck(path string, fls billy.Basic, config ...buntDbConfig)
 	if db.persist {
 		var err error
 		// hardcoding 0666 as the default mode.
-		db.file, err = db.fls.OpenFile(path, os.O_CREATE|os.O_RDWR, 0666)
+		db.file, err = db.fls.OpenFile(path, os.O_CREATE|os.O_RDWR, afs.DEFAULT_CREATE_FPERM)
 		if err != nil {
 			return nil, err
 		}
