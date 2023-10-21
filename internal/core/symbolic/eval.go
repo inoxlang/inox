@@ -3902,10 +3902,15 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 		state.symbolicData.SetMostSpecificNodeValue(n.Left, pattern)
 
 		name, ok := n.PatternName()
-		if ok {
+		if !ok {
+			return nil, nil
+		}
+
+		if state.ctx.ResolveNamedPattern(name) == nil {
 			state.ctx.AddNamedPattern(name, pattern, state.inPreinit, state.getCurrentChunkNodePositionOrZero(n.Left))
 			state.symbolicData.SetContextData(n, state.ctx.currentData())
-		}
+		} //else there is already static check error about the duplicate definition.
+
 		return nil, nil
 	case *parse.PatternNamespaceDefinition:
 		right, err := symbolicEval(n.Right, state)

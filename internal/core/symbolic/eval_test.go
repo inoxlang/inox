@@ -8137,6 +8137,22 @@ func TestSymbolicEval(t *testing.T) {
 
 	t.Run("pattern definition", func(t *testing.T) {
 
+		t.Run("duplicate definitions should be ignored", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				pattern p = 1
+				pattern p = 2
+
+				return %p
+			`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+
+			//there is already a static check error
+			assert.Empty(t, state.errors())
+			assert.Equal(t, utils.Must(NewExactValuePattern(NewInt(1))), res)
+		})
+
 		t.Run("object pattern literal", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				pattern p = %{list: %[1]}
