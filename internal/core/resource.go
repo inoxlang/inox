@@ -644,29 +644,32 @@ func stringifyQueryParamValue(val Value) (string, error) {
 	}
 }
 
+func (u URL) mustParse() *url.URL {
+	return utils.Must(url.Parse(string(u)))
+}
+
 func (u URL) Scheme() Scheme {
-	url, _ := url.Parse(string(u))
+	url := u.mustParse()
 	return Scheme(url.Scheme)
 }
 
 func (u URL) Host() Host {
-	url, _ := url.Parse(string(u))
+	url := u.mustParse()
 	return Host(url.Scheme + "://" + url.Host)
 }
 
 func (u URL) Path() Path {
-	url, _ := url.Parse(string(u))
+	url := u.mustParse()
 	return Path(url.Path)
 }
 
 func (u URL) GetLastPathSegment() string {
-	url, _ := url.Parse(string(u))
-
+	url := u.mustParse()
 	return GetLastPathSegment(url.Path)
 }
 
 func (u URL) RawQuery() Str {
-	url, _ := url.Parse(string(u))
+	url := u.mustParse()
 	return Str(url.RawQuery)
 }
 
@@ -686,6 +689,19 @@ func (u URL) WithScheme(scheme Scheme) URL {
 func (u URL) WithoutQuery() URL {
 	newURL, _, _ := strings.Cut(string(u), "?")
 	return URL(newURL)
+}
+
+// DirURL returns the URL of the parent directory, if the current path is / then ("", false) is returned.
+func (u URL) DirURL() (URL, bool) {
+	url := u.mustParse()
+	if url.Path == "" || url.Path == "/" {
+		return "", false
+	}
+
+	path := filepath.Dir(url.Path)
+	path = AppendTrailingSlashIfNotPresent(path)
+	url.Path = path
+	return URL(url.String()), true
 }
 
 func (u URL) ToDirURL() URL {

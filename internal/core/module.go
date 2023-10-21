@@ -16,6 +16,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/in_mem_ds"
 	parse "github.com/inoxlang/inox/internal/parse"
 	permkind "github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
@@ -43,6 +44,9 @@ var (
 // A Module represents an Inox module, it does not hold any state and should NOT be modified. Module implements Value.
 type Module struct {
 	ModuleKind
+
+	//no set for modules with an in-memory sourceName
+	sourceName ResourceName
 
 	MainChunk                  *parse.ParsedChunk
 	IncludedChunkForest        []*IncludedChunk
@@ -82,18 +86,18 @@ func (k ModuleKind) IsEmbedded() bool {
 	return k >= UserLThreadModule && k <= LifetimeJobModule
 }
 
+// AbsoluteSource returns the absolute resource name (URL or absolute path) of the module.
+// If the module is embedded or has an in-memory source then (nil, false) is returned.
+func (mod *Module) AbsoluteSource() (ResourceName, bool) {
+	if mod.sourceName == nil {
+		return nil, false
+	}
+	return mod.sourceName, true
+}
+
 func (mod *Module) HasURLSource() bool {
-	sourceFile, ok := mod.MainChunk.Source.(parse.SourceFile)
-	return ok && sourceFile.IsResourceURL
-}
-
-func (mod *Module) HasResourceDir() bool {
-	_, ok := mod.MainChunk.Source.(parse.SourceFile)
+	_, ok := mod.sourceName.(URL)
 	return ok
-}
-
-func (mod *Module) ResourceDir() string {
-	return mod.MainChunk.Source.(parse.SourceFile).ResourceDir
 }
 
 func (mod *Module) Name() string {
@@ -569,10 +573,31 @@ func ParseInMemoryModule(codeString Str, config InMemoryModuleParsingConfig) (*M
 }
 
 func ParseLocalModule(fpath string, config ModuleParsingConfig) (*Module, error) {
+
+	select {
+	case <-config.Context.Done():
+		return nil, config.Context.Err()
+	default:
+	}
+
 	ctx := config.Context
 	fls := ctx.GetFileSystem()
 	absPath, err := fls.Absolute(fpath)
 	if err != nil {
+		return nil, err
+	}
+
+	if config.moduleGraph == nil {
+		config.moduleGraph = in_mem_ds.NewDirectedGraphUniqueString[string, struct{}](in_mem_ds.ThreadSafe)
+	}
+
+	if found, err := config.moduleGraph.HasNode(in_mem_ds.WithData, absPath); err != nil {
+		return nil, err
+	} else if !found {
+		config.moduleGraph.AddNode(absPath)
+	}
+
+	if err := checkNoCycleOrLongPathInModuleGraph(config.moduleGraph); err != nil {
 		return nil, err
 	}
 
@@ -624,7 +649,7 @@ func ParseLocalModule(fpath string, config ModuleParsingConfig) (*Module, error)
 		IsResourceURL:          false,
 	}
 
-	return ParseModuleFromSource(src, Path(fpath), config)
+	return ParseModuleFromSource(src, Path(absPath), config)
 }
 
 type ModuleParsingConfig struct {
@@ -634,9 +659,44 @@ type ModuleParsingConfig struct {
 	InsecureModImports                  bool
 	//DefaultLimits          []Limit
 	//CustomPermissionTypeHandler CustomPermissionTypeHandler
+
+	moduleGraph *in_mem_ds.DirectedGraph[string, struct{}, map[string]in_mem_ds.NodeId]
 }
 
 func ParseModuleFromSource(src parse.ChunkSource, resource ResourceName, config ModuleParsingConfig) (*Module, error) {
+
+	select {
+	case <-config.Context.Done():
+		return nil, config.Context.Err()
+	default:
+	}
+
+	//check that the resource name is a URL or an absolute path
+	switch r := resource.(type) {
+	case Path:
+		if r.IsRelative() {
+			return nil, fmt.Errorf("invalid resource name: %q, path should have been made absolute by the caller", r.UnderlyingString())
+		}
+	case URL:
+	default:
+		return nil, fmt.Errorf("invalid resource name: %q", r.UnderlyingString())
+	}
+
+	if config.moduleGraph == nil {
+		config.moduleGraph = in_mem_ds.NewDirectedGraphUniqueString[string, struct{}](in_mem_ds.ThreadSafe)
+	}
+
+	//add the module to the graph if necessary
+	var nodeId in_mem_ds.NodeId
+	node, err := config.moduleGraph.GetNode(in_mem_ds.WithData, src.Name())
+	if err != nil && !errors.Is(err, in_mem_ds.ErrNodeNotFound) {
+		return nil, fmt.Errorf("failed to check if module %q is present in the module graph: %w", src.Name(), err)
+	} else if errors.Is(err, in_mem_ds.ErrNodeNotFound) {
+		nodeId = config.moduleGraph.AddNode(src.Name())
+	} else {
+		nodeId = node.Id
+	}
+
 	code, err := parse.ParseChunkSource(src)
 	if err != nil && code == nil {
 		return nil, fmt.Errorf("failed to parse %s: %w", resource.ResourceName(), err)
@@ -647,7 +707,9 @@ func ParseModuleFromSource(src parse.ChunkSource, resource ResourceName, config 
 	}
 
 	mod := &Module{
-		MainChunk:             code,
+		MainChunk:  code,
+		sourceName: resource,
+
 		ManifestTemplate:      code.Node.Manifest,
 		InclusionStatementMap: make(map[*parse.InclusionImportStatement]*IncludedChunk),
 		IncludedChunkMap:      map[string]*IncludedChunk{},
@@ -699,6 +761,7 @@ func ParseModuleFromSource(src parse.ChunkSource, resource ResourceName, config 
 		timeout:                      MOD_IMPORT_FETCH_TIMEOUT,
 		insecure:                     config.InsecureModImports,
 		subModuleParsing:             config,
+		parentModuleId:               nodeId,
 	})
 
 	if unrecoverableError != nil {

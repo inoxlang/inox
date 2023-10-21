@@ -11,6 +11,8 @@ import (
 func TestAddModuleTreeToResourceGraph(t *testing.T) {
 	t.Run("empty module", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		mod := utils.Must(ParseInMemoryModule("manifest {}", InMemoryModuleParsingConfig{
 			Name:    "/main.ix",
 			Context: ctx,
@@ -42,6 +44,7 @@ func TestAddModuleTreeToResourceGraph(t *testing.T) {
 			Filesystem:  fls,
 			Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
 		}, nil)
+		defer ctx.CancelGracefully()
 
 		mod := utils.Must(ParseLocalModule("/main.ix", ModuleParsingConfig{
 			Context: ctx,
@@ -93,6 +96,7 @@ func TestAddModuleTreeToResourceGraph(t *testing.T) {
 			Filesystem:  fls,
 			Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
 		}, nil)
+		defer ctx.CancelGracefully()
 
 		mod := utils.Must(ParseLocalModule("/main.ix", ModuleParsingConfig{
 			Context: ctx,
@@ -160,6 +164,7 @@ func TestAddModuleTreeToResourceGraph(t *testing.T) {
 			Filesystem:  fls,
 			Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
 		}, nil)
+		defer ctx.CancelGracefully()
 
 		mod := utils.Must(ParseLocalModule("/main.ix", ModuleParsingConfig{
 			Context: ctx,
@@ -226,6 +231,7 @@ func TestAddModuleTreeToResourceGraph(t *testing.T) {
 			Filesystem:  fls,
 			Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
 		}, nil)
+		defer ctx.CancelGracefully()
 
 		mod := utils.Must(ParseLocalModule("/main.ix", ModuleParsingConfig{
 			Context: ctx,

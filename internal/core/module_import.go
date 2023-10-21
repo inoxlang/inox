@@ -19,6 +19,7 @@ import (
 
 	afs "github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/in_mem_ds"
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	parse "github.com/inoxlang/inox/internal/parse"
 	permkind "github.com/inoxlang/inox/internal/permkind"
@@ -30,11 +31,16 @@ const (
 	INOX_MIMETYPE          = "application/inox"
 	DEFAULT_FETCH_TIMEOUT  = 10 * time.Second
 	DEFAULT_IMPORT_TIMEOUT = 10 * time.Second
+
+	DEFAULT_MAX_MOD_GRAPH_PATH_LEN = 5
 )
 
 var (
 	ErrInvalidModuleSourceURL                          = errors.New("invalid module source URL")
 	ErrAbsoluteModuleSourcePathUsedInURLImportedModule = errors.New("absolute module source path used in module imported from URL")
+	ErrImportCycleDetected                             = errors.New("import cycle detected")
+	ErrMaxModuleImportDepthExceeded                    = fmt.Errorf(
+		"the module import depth has exceeded the maximum (%d)", DEFAULT_MAX_MOD_GRAPH_PATH_LEN)
 )
 
 var moduleCache = map[string]string{}
@@ -240,12 +246,14 @@ type importedModulesFetchConfig struct {
 	timeout                                                   time.Duration
 	insecure                                                  bool
 	subModuleParsing                                          ModuleParsingConfig
+	parentModuleId                                            in_mem_ds.NodeId
 }
 
-func fetchParseImportedModules(mod *Module, ctx *Context, fls afs.Filesystem, config importedModulesFetchConfig) (unrecoverableError error) {
-	importStmts := parse.FindNodes(mod.MainChunk.Node, (*parse.ImportStatement)(nil), nil)
+func fetchParseImportedModules(parentMod *Module, ctx *Context, fls afs.Filesystem, config importedModulesFetchConfig) (unrecoverableError error) {
+	subModuleParsing := config.subModuleParsing
+	importStmts := parse.FindNodes(parentMod.MainChunk.Node, (*parse.ImportStatement)(nil), nil)
 
-	stmtSources := map[WrappedString]*parse.ImportStatement{}
+	stmtSources := map[ResourceName]*parse.ImportStatement{}
 	validationStrings := map[WrappedString]string{}
 
 	for _, importStmt := range importStmts {
@@ -255,16 +263,41 @@ func fetchParseImportedModules(mod *Module, ctx *Context, fls afs.Filesystem, co
 			continue
 		}
 
-		var src WrappedString
+		var src ResourceName
 
 		switch importStmt.Source.(type) {
 		case *parse.URLLiteral, *parse.AbsolutePathLiteral, *parse.RelativePathLiteral:
 			value, err := evalSimpleValueLiteral(importStmt.Source.(parse.SimpleValueLiteral), nil)
 			if err != nil {
-				continue
+				panic(err)
 			} else {
-				src = value.(WrappedString)
+				src = value.(ResourceName)
 			}
+		}
+
+		src, err := getSourceFromImportSource(src, parentMod, ctx)
+		if err != nil {
+			return err
+		}
+
+		//add the module to the graph if necessary
+		var nodeId in_mem_ds.NodeId
+		node, err := subModuleParsing.moduleGraph.GetNode(in_mem_ds.WithData, src.UnderlyingString())
+		if err != nil && !errors.Is(err, in_mem_ds.ErrNodeNotFound) {
+			return fmt.Errorf("failed to check if module %q is present in the module graph: %w", src.UnderlyingString(), err)
+		} else if errors.Is(err, in_mem_ds.ErrNodeNotFound) {
+			nodeId = subModuleParsing.moduleGraph.AddNode(src.UnderlyingString())
+		} else {
+			nodeId = node.Id
+		}
+		if nodeId == config.parentModuleId {
+			return fmt.Errorf("%w: module %s imports itself", ErrImportCycleDetected, src.UnderlyingString())
+		}
+
+		subModuleParsing.moduleGraph.SetEdge(config.parentModuleId, nodeId, struct{}{})
+
+		if err := checkNoCycleOrLongPathInModuleGraph(subModuleParsing.moduleGraph); err != nil {
+			return err
 		}
 
 		objLiteral, ok := importStmt.Configuration.(*parse.ObjectLiteral)
@@ -297,15 +330,18 @@ func fetchParseImportedModules(mod *Module, ctx *Context, fls afs.Filesystem, co
 		lock                        sync.Mutex
 		importedModules             = map[string]*Module{}
 		importedModulesByImportStmt = map[*parse.ImportStatement]*Module{}
-		errors                      []error
+		errs                        []error
 		unrecoverableErors          []error
 	)
 
 	wg.Add(len(stmtSources))
 
+	childCtx := ctx.BoundChild()
+	defer childCtx.CancelGracefully()
+
 	for src := range stmtSources {
 
-		go func(src WrappedString, validationString string) {
+		go func(src ResourceName, validationString string) {
 			defer wg.Done()
 
 			var importedMod *Module
@@ -323,7 +359,7 @@ func fetchParseImportedModules(mod *Module, ctx *Context, fls afs.Filesystem, co
 						importedModules[importedMod.Name()] = importedMod
 						importedModulesByImportStmt[stmtSources[src]] = importedMod
 						if err != nil {
-							errors = append(errors, err)
+							errs = append(errs, err)
 						}
 					} else {
 						unrecoverableErors = append(unrecoverableErors, err)
@@ -332,13 +368,17 @@ func fetchParseImportedModules(mod *Module, ctx *Context, fls afs.Filesystem, co
 				}
 			}()
 
-			importedMod, err = fetchParseImportedModule(ctx, src, sourceFileDownloadConfig{
-				parentModule:     mod,
+			importedMod, err = fetchParseImportedModule(childCtx, src, sourceFileDownloadConfig{
+				parentModule:     parentMod,
 				validation:       validationString,
 				insecure:         config.insecure,
 				timeout:          config.timeout,
 				subModuleParsing: config.subModuleParsing,
 			})
+
+			if err != nil { //stop all other fetches
+				childCtx.CancelGracefully()
+			}
 
 		}(src, validationStrings[src])
 
@@ -347,16 +387,16 @@ func fetchParseImportedModules(mod *Module, ctx *Context, fls afs.Filesystem, co
 	wg.Wait()
 
 	if len(unrecoverableErors) > 0 {
-		return utils.CombineErrors(unrecoverableErors...)
+		return errors.Join(unrecoverableErors...)
 	}
 
-	mod.DirectlyImportedModules = importedModules
-	mod.DirectlyImportedModulesByStatement = importedModulesByImportStmt
+	parentMod.DirectlyImportedModules = importedModules
+	parentMod.DirectlyImportedModulesByStatement = importedModulesByImportStmt
 
 	for _, importedMod := range importedModules {
-		mod.OriginalErrors = append(mod.OriginalErrors, importedMod.OriginalErrors...)
-		mod.ParsingErrors = append(mod.ParsingErrors, importedMod.ParsingErrors...)
-		mod.ParsingErrorPositions = append(mod.ParsingErrorPositions, importedMod.ParsingErrorPositions...)
+		parentMod.OriginalErrors = append(parentMod.OriginalErrors, importedMod.OriginalErrors...)
+		parentMod.ParsingErrors = append(parentMod.ParsingErrors, importedMod.ParsingErrors...)
+		parentMod.ParsingErrorPositions = append(parentMod.ParsingErrorPositions, importedMod.ParsingErrorPositions...)
 	}
 
 	return nil
@@ -370,12 +410,21 @@ func getSourceFromImportSource(importSrc Value, parentModule *Module, ctx *Conte
 			if val.IsAbsolute() {
 				return nil, ErrAbsoluteModuleSourcePathUsedInURLImportedModule
 			}
-			return URL(parentModule.ResourceDir()).AppendRelativePath(val), nil
+			u := utils.MustGet(parentModule.AbsoluteSource()).(URL)
+
+			dir, ok := u.DirURL()
+			if !ok {
+				return nil, fmt.Errorf("import: impossible to resolve relative import path, parent module URL is %q", u.UnderlyingString())
+			}
+
+			return dir.AppendRelativePath(val), nil
 		} else {
 			fls := ctx.GetFileSystem()
 			if val.IsRelative() {
 				if parentModule != nil {
-					val = Path(fls.Join(parentModule.ResourceDir(), val.UnderlyingString()))
+					path := utils.MustGet(parentModule.AbsoluteSource()).(Path)
+
+					val = Path(fls.Join(string(path.DirPath()), val.UnderlyingString()))
 				} else {
 					return nil, fmt.Errorf("import: impossible to resolve relative import path as parent state has no module")
 				}
@@ -408,15 +457,25 @@ type sourceFileDownloadConfig struct {
 }
 
 // fetchParseImportedModule first fetches a module by reading the filesystem or making an HTTP request, then it parses it.
-func fetchParseImportedModule(ctx *Context, importSrc WrappedString, config sourceFileDownloadConfig) (*Module, error) {
-	parentModule := config.parentModule
-
-	src, err := getSourceFromImportSource(importSrc, parentModule, ctx)
-	if err != nil {
-		return nil, err
+func fetchParseImportedModule(ctx *Context, resolvedImportedSrc ResourceName, config sourceFileDownloadConfig) (*Module, error) {
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	default:
 	}
 
-	if !strings.HasSuffix(src.UnderlyingString(), inoxconsts.INOXLANG_FILE_EXTENSION) {
+	//check that the resource name is a URL or an absolute path
+	switch src := resolvedImportedSrc.(type) {
+	case Path:
+		if src.IsRelative() {
+			return nil, fmt.Errorf("import: invalid source: %q, path should have been made absolute by the caller", src.UnderlyingString())
+		}
+	case URL:
+	default:
+		return nil, fmt.Errorf("import: invalid source: %q", src.UnderlyingString())
+	}
+
+	if !strings.HasSuffix(resolvedImportedSrc.UnderlyingString(), inoxconsts.INOXLANG_FILE_EXTENSION) {
 		return nil, errors.New(symbolic.IMPORTED_MOD_PATH_MUST_END_WITH_IX)
 	}
 
@@ -426,26 +485,6 @@ func fetchParseImportedModule(ctx *Context, importSrc WrappedString, config sour
 	}
 
 	deadline := time.Now().Add(timeout)
-
-	transport := &http.Transport{
-		Proxy: http.ProxyFromEnvironment,
-		DialContext: (&net.Dialer{
-			Timeout:   5 * time.Second,
-			KeepAlive: 5 * time.Second,
-			Deadline:  deadline.Add(-time.Second),
-		}).DialContext,
-		ForceAttemptHTTP2:     true,
-		MaxIdleConns:          1,
-		IdleConnTimeout:       1 * time.Second,
-		TLSHandshakeTimeout:   5 * time.Second,
-		ExpectContinueTimeout: 1 * time.Second,
-	}
-
-	transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: config.insecure}
-	client := http.Client{
-		Timeout:   timeout,
-		Transport: transport,
-	}
 
 	var b []byte
 	var modString string
@@ -463,7 +502,7 @@ func fetchParseImportedModule(ctx *Context, importSrc WrappedString, config sour
 	}()
 
 	if modString, ok = moduleCache[config.validation]; !ok || config.validation == "" {
-		switch srcVal := src.(type) {
+		switch srcVal := resolvedImportedSrc.(type) {
 		case Path:
 			absSrc, err := fls.Absolute(string(srcVal))
 			if err != nil {
@@ -490,6 +529,26 @@ func fetchParseImportedModule(ctx *Context, importSrc WrappedString, config sour
 			{
 				lastSlashIndex := strings.LastIndex(string(pth), "/")
 				absScriptDir = string(srcVal.Host()) + string(pth)[:lastSlashIndex+1]
+			}
+
+			transport := &http.Transport{
+				Proxy: http.ProxyFromEnvironment,
+				DialContext: (&net.Dialer{
+					Timeout:   5 * time.Second,
+					KeepAlive: 5 * time.Second,
+					Deadline:  deadline.Add(-time.Second),
+				}).DialContext,
+				ForceAttemptHTTP2:     true,
+				MaxIdleConns:          1,
+				IdleConnTimeout:       1 * time.Second,
+				TLSHandshakeTimeout:   5 * time.Second,
+				ExpectContinueTimeout: 1 * time.Second,
+			}
+
+			transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: config.insecure}
+			client := http.Client{
+				Timeout:   timeout,
+				Transport: transport,
 			}
 
 			req, err := http.NewRequest("GET", string(srcVal), nil)
@@ -531,7 +590,7 @@ func fetchParseImportedModule(ctx *Context, importSrc WrappedString, config sour
 		hash := array[:]
 
 		if config.validation != "" && !bytes.Equal(hash, []byte(config.validation)) {
-			return nil, &ModuleRetrievalError{message: fmt.Sprintf("failed to get %s: validation failed", src.UnderlyingString())}
+			return nil, &ModuleRetrievalError{message: fmt.Sprintf("failed to get %s: validation failed", resolvedImportedSrc.UnderlyingString())}
 		}
 
 		modString = string(b)
@@ -544,14 +603,14 @@ func fetchParseImportedModule(ctx *Context, importSrc WrappedString, config sour
 	moduleCacheLock.Unlock()
 
 	source := parse.SourceFile{
-		NameString:    src.UnderlyingString(),
-		Resource:      src.UnderlyingString(),
+		NameString:    resolvedImportedSrc.UnderlyingString(),
+		Resource:      resolvedImportedSrc.UnderlyingString(),
 		ResourceDir:   absScriptDir,
 		IsResourceURL: isResourceURL,
 		CodeString:    modString,
 	}
 
-	return ParseModuleFromSource(source, src, config.subModuleParsing)
+	return ParseModuleFromSource(source, resolvedImportedSrc, config.subModuleParsing)
 }
 
 type ModuleRetrievalError struct {
@@ -560,4 +619,18 @@ type ModuleRetrievalError struct {
 
 func (err ModuleRetrievalError) Error() string {
 	return err.message
+}
+
+func checkNoCycleOrLongPathInModuleGraph(moduleGraph *in_mem_ds.DirectedGraph[string, struct{}, map[string]in_mem_ds.NodeId]) error {
+	longestPath, longestPathLen := moduleGraph.LongestPath()
+	if longestPathLen == -1 {
+		return ErrImportCycleDetected
+	}
+	if longestPathLen > DEFAULT_MAX_MOD_GRAPH_PATH_LEN {
+		moduleNames := utils.MapSlice(longestPath, func(nodeId in_mem_ds.NodeId) string {
+			return utils.MustGet(moduleGraph.Node(nodeId)).Data
+		})
+		return fmt.Errorf("%w: path is %s", ErrMaxModuleImportDepthExceeded, strings.Join(moduleNames, " -> "))
+	}
+	return nil
 }

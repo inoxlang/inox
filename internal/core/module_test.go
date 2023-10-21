@@ -113,6 +113,155 @@ func TestParseModuleFromSource(t *testing.T) {
 				return
 			}
 		})
+
+		t.Run("importing itself should be an error: absolute path", func(t *testing.T) {
+			modContent := "manifest {}\nimport res /mod.ix {}"
+
+			fls := newMemFilesystem()
+			util.WriteFile(fls, "/mod.ix", []byte(modContent), 0600)
+			ctx := NewContexWithEmptyState(ContextConfig{
+				Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
+				Filesystem:  fls,
+			}, nil)
+			defer ctx.CancelGracefully()
+
+			mod, err := ParseModuleFromSource(parse.SourceFile{
+				NameString:  "/mod.ix",
+				Resource:    "/mod.ix",
+				ResourceDir: "/",
+				CodeString:  modContent,
+			}, Path("/mod.ix"), ModuleParsingConfig{
+				Context: ctx,
+			})
+
+			if !assert.ErrorIs(t, err, ErrImportCycleDetected) {
+				return
+			}
+			assert.Nil(t, mod)
+		})
+
+		t.Run("importing itself should be an error: relative path", func(t *testing.T) {
+			modContent := "manifest {}\nimport res ./mod.ix {}"
+
+			fls := newMemFilesystem()
+			util.WriteFile(fls, "/mod.ix", []byte(modContent), 0600)
+			ctx := NewContexWithEmptyState(ContextConfig{
+				Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
+				Filesystem:  fls,
+			}, nil)
+			defer ctx.CancelGracefully()
+
+			mod, err := ParseModuleFromSource(parse.SourceFile{
+				NameString:  "/mod.ix",
+				Resource:    "/mod.ix",
+				ResourceDir: "/",
+				CodeString:  modContent,
+			}, Path("/mod.ix"), ModuleParsingConfig{
+				Context: ctx,
+			})
+
+			if !assert.ErrorIs(t, err, ErrImportCycleDetected) {
+				return
+			}
+			assert.Nil(t, mod)
+		})
+
+		t.Run("importing a module that imports its importer should be an error: absolute path", func(t *testing.T) {
+			modContent := "manifest {}\nimport res /child.ix {}"
+			childContent := "manifest {}\nimport res /mod.ix {}"
+
+			fls := newMemFilesystem()
+			util.WriteFile(fls, "/mod.ix", []byte(modContent), 0600)
+			util.WriteFile(fls, "/child.ix", []byte(childContent), 0600)
+			ctx := NewContexWithEmptyState(ContextConfig{
+				Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
+				Filesystem:  fls,
+			}, nil)
+			defer ctx.CancelGracefully()
+
+			mod, err := ParseModuleFromSource(parse.SourceFile{
+				NameString:  "/mod.ix",
+				Resource:    "/mod.ix",
+				ResourceDir: "/",
+				CodeString:  modContent,
+			}, Path("/mod.ix"), ModuleParsingConfig{
+				Context: ctx,
+			})
+
+			if !assert.ErrorIs(t, err, ErrImportCycleDetected) {
+				return
+			}
+			assert.Nil(t, mod)
+		})
+
+		t.Run("importing a module that imports its importer should be an error: relative path", func(t *testing.T) {
+			modContent := "manifest {}\nimport res /child.ix {}"
+			childContent := "manifest {}\nimport res ./mod.ix {}"
+
+			fls := newMemFilesystem()
+			util.WriteFile(fls, "/mod.ix", []byte(modContent), 0600)
+			util.WriteFile(fls, "/child.ix", []byte(childContent), 0600)
+			ctx := NewContexWithEmptyState(ContextConfig{
+				Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
+				Filesystem:  fls,
+			}, nil)
+			defer ctx.CancelGracefully()
+
+			mod, err := ParseModuleFromSource(parse.SourceFile{
+				NameString:  "/mod.ix",
+				Resource:    "/mod.ix",
+				ResourceDir: "/",
+				CodeString:  modContent,
+			}, Path("/mod.ix"), ModuleParsingConfig{
+				Context: ctx,
+			})
+
+			if !assert.ErrorIs(t, err, ErrImportCycleDetected) {
+				return
+			}
+			assert.Nil(t, mod)
+		})
+
+		t.Run("exceeding the maximum module import depth should be an error", func(t *testing.T) {
+			modContent := "manifest {}\nimport res /depth1.ix {}"
+			depth1 := "manifest {}\nimport res /depth2.ix {}"
+			depth2 := "manifest {}\nimport res /depth3.ix {}"
+			depth3 := "manifest {}\nimport res /depth4.ix {}"
+			depth4 := "manifest {}\nimport res /depth5.ix {}"
+			depth5 := "manifest {}\nimport res /depth6.ix {}"
+			depth6 := "manifest {}\n"
+
+			assert.Equal(t, 5, DEFAULT_MAX_MOD_GRAPH_PATH_LEN)
+
+			fls := newMemFilesystem()
+			util.WriteFile(fls, "/mod.ix", []byte(modContent), 0600)
+			util.WriteFile(fls, "/depth1.ix", []byte(depth1), 0600)
+			util.WriteFile(fls, "/depth2.ix", []byte(depth2), 0600)
+			util.WriteFile(fls, "/depth3.ix", []byte(depth3), 0600)
+			util.WriteFile(fls, "/depth4.ix", []byte(depth4), 0600)
+			util.WriteFile(fls, "/depth5.ix", []byte(depth5), 0600)
+			util.WriteFile(fls, "/depth6.ix", []byte(depth6), 0600)
+
+			ctx := NewContexWithEmptyState(ContextConfig{
+				Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
+				Filesystem:  fls,
+			}, nil)
+			defer ctx.CancelGracefully()
+
+			mod, err := ParseModuleFromSource(parse.SourceFile{
+				NameString:  "/mod.ix",
+				Resource:    "/mod.ix",
+				ResourceDir: "/",
+				CodeString:  modContent,
+			}, Path("/mod.ix"), ModuleParsingConfig{
+				Context: ctx,
+			})
+
+			if !assert.ErrorIs(t, err, ErrMaxModuleImportDepthExceeded) {
+				return
+			}
+			assert.Nil(t, mod)
+		})
 	})
 
 	t.Run("parameters", func(t *testing.T) {
