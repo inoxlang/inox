@@ -8247,6 +8247,23 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, expectedPattern, res)
 		})
 
+		t.Run("exact value: not serializable", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				lthread = go do {}
+				pattern p = $lthread
+				return %p
+			`)
+
+			variable := parse.FindNode(n, (*parse.Variable)(nil), nil)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(variable, state, VALUES_INSIDE_PATTERNS_MUST_BE_SERIALIZABLE),
+			}, state.errors())
+			assert.Equal(t, &TypePattern{val: ANY_SERIALIZABLE}, res)
+		})
+
 		t.Run("in preinit block", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				preinit {

@@ -25,6 +25,8 @@ const (
 
 	CANNOT_ADD_NEW_PROPERTY_TO_AN_EXACT_OBJECT = "cannot add new property to an exact object"
 
+	VALUES_INSIDE_PATTERNS_MUST_BE_SERIALIZABLE = "values inside patterns must be serializable"
+
 	MISSING_RETURN_IN_FUNCTION                                                   = "missing return in function"
 	MISSING_UNCONDITIONAL_RETURN_IN_FUNCTION                                     = "missing unconditional return in function"
 	MISSING_RETURN_IN_FUNCTION_PATT                                              = "missing return in function pattern"

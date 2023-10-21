@@ -2748,7 +2748,14 @@ func symbolicallyEvalPatternNode(n parse.Node, state *State) (Pattern, error) {
 			return p, nil
 		}
 
-		return &ExactValuePattern{value: AsSerializableChecked(v)}, nil
+		asSerializable := AsSerializable(v)
+		serializable, ok := asSerializable.(Serializable)
+		if !ok {
+			state.addError(makeSymbolicEvalError(n, state, VALUES_INSIDE_PATTERNS_MUST_BE_SERIALIZABLE))
+			return &TypePattern{val: ANY_SERIALIZABLE}, nil
+		}
+
+		return &ExactValuePattern{value: serializable}, nil
 	}
 }
 
