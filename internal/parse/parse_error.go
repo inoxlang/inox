@@ -242,6 +242,12 @@ const (
 	INVALID_LOCAL_VAR_DECL_LHS_MUST_BE_AN_IDENT        = "invalid local variable declaration, left hand side must be an identifier"
 	EQUAL_SIGN_MISSING_AFTER_TYPE_ANNOTATION           = "'=' missing after type annotation"
 
+	//global var declarations
+	UNTERMINATED_GLOBAL_VAR_DECLS                       = "unterminated global variable declarations"
+	INVALID_GLOBAL_VAR_DECLS_OPENING_PAREN_EXPECTED     = "invalid global variable declarations, expected opening parenthesis after ''"
+	UNTERMINATED_GLOBAL_VAR_DECLS_MISSING_CLOSING_PAREN = "unterminated global variable declarations, missing closing parenthesis"
+	INVALID_GLOBAL_VAR_DECL_LHS_MUST_BE_AN_IDENT        = "invalid global variable declaration, left hand side must be an identifier"
+
 	//spawn expression
 	UNTERMINATED_SPAWN_EXPRESSION_MISSING_EMBEDDED_MODULE_AFTER_GO_KEYWORD = "unterminated spawn expression: missing embedded module after 'go' keyword"
 	UNTERMINATED_SPAWN_EXPRESSION_MISSING_DO_KEYWORD_AFTER_META            = "unterminated spawn expression: missing 'do' keyword after meta value"
@@ -539,6 +545,10 @@ func fmtInvalidConstDeclMissingEqualsSign(name string) string {
 
 func fmtInvalidLocalVarDeclMissingEqualsSign(name string) string {
 	return fmt.Sprintf("invalid local variable declaration, missing '=' sign after name %s", name)
+}
+
+func fmtInvalidGlobalVarDeclMissingEqualsSign(name string) string {
+	return fmt.Sprintf("invalid global variable declaration, missing '=' sign after name %s", name)
 }
 
 func fmtFuncNameShouldBeAnIdentNot(identLike Node) string {

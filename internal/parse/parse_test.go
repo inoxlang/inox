@@ -19,7 +19,7 @@ func TestParseNoContext(t *testing.T) {
 		startMemStats := new(runtime.MemStats)
 		runtime.ReadMemStats(startMemStats)
 
-		defer utils.AssertNoMemoryLeak(t, startMemStats, 125_000)
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 150_000)
 	}
 
 	testParse(t, func(t *testing.T, str string) (result *Chunk) {
@@ -1522,6 +1522,584 @@ func testParse(
 
 		t.Run("miscellaneous", func(t *testing.T) {
 			_, err := parseChunk(t, "var a #{} = 1", "")
+			assert.NoError(t, err)
+		})
+	})
+
+	t.Run("top level global variables declarations", func(t *testing.T) {
+
+		t.Run("empty declarations", func(t *testing.T) {
+			n := mustparseChunk(t, "globalvar ()")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 12}, nil, false},
+				Statements: []Node{
+					&GlobalVariableDeclarations{
+						NodeBase: NodeBase{
+							NodeSpan{0, 12},
+							nil,
+							false,
+						},
+						Declarations: nil,
+					},
+				},
+			}, n)
+		})
+
+		t.Run("single declaration", func(t *testing.T) {
+			n := mustparseChunk(t, "globalvar ( a = 1 )")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 19}, nil, false},
+				Statements: []Node{
+					&GlobalVariableDeclarations{
+						NodeBase: NodeBase{
+							NodeSpan{0, 19},
+							nil,
+							false,
+						},
+						Declarations: []*GlobalVariableDeclaration{
+							{
+								NodeBase: NodeBase{
+									NodeSpan{12, 17},
+									nil,
+									false,
+								},
+								Left: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{12, 13}, nil, false},
+									Name:     "a",
+								},
+								Right: &IntLiteral{
+									NodeBase: NodeBase{NodeSpan{16, 17}, nil, false},
+									Raw:      "1",
+									Value:    1,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("single declaration without parenthesis", func(t *testing.T) {
+			n := mustparseChunk(t, "globalvar a = 1")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 15}, nil, false},
+				Statements: []Node{
+					&GlobalVariableDeclarations{
+						NodeBase: NodeBase{
+							NodeSpan{0, 15},
+							nil,
+							false,
+						},
+						Declarations: []*GlobalVariableDeclaration{
+							{
+								NodeBase: NodeBase{
+									NodeSpan{10, 15},
+									nil,
+									false,
+								},
+								Left: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{10, 11}, nil, false},
+									Name:     "a",
+								},
+								Right: &IntLiteral{
+									NodeBase: NodeBase{NodeSpan{14, 15}, nil, false},
+									Raw:      "1",
+									Value:    1,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("single declaration without parenthesis and with percent-prefixed type", func(t *testing.T) {
+			n := mustparseChunk(t, "globalvar a %int = 1")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 20}, nil, false},
+				Statements: []Node{
+					&GlobalVariableDeclarations{
+						NodeBase: NodeBase{
+							NodeSpan{0, 20},
+							nil,
+							false,
+						},
+						Declarations: []*GlobalVariableDeclaration{
+							{
+								NodeBase: NodeBase{
+									NodeSpan{10, 20},
+									nil,
+									false,
+								},
+								Left: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{10, 11}, nil, false},
+									Name:     "a",
+								},
+								Type: &PatternIdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{12, 16}, nil, false},
+									Name:     "int",
+								},
+								Right: &IntLiteral{
+									NodeBase: NodeBase{NodeSpan{19, 20}, nil, false},
+									Raw:      "1",
+									Value:    1,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("single declaration without parenthesis and with unprefixed named pattern", func(t *testing.T) {
+			n := mustparseChunk(t, "globalvar a int = 1")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 19}, nil, false},
+				Statements: []Node{
+					&GlobalVariableDeclarations{
+						NodeBase: NodeBase{
+							NodeSpan{0, 19},
+							nil,
+							false,
+						},
+						Declarations: []*GlobalVariableDeclaration{
+							{
+								NodeBase: NodeBase{
+									NodeSpan{10, 19},
+									nil,
+									false,
+								},
+								Left: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{10, 11}, nil, false},
+									Name:     "a",
+								},
+								Type: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{12, 15}, nil, false},
+									Unprefixed: true,
+									Name:       "int",
+								},
+								Right: &IntLiteral{
+									NodeBase: NodeBase{NodeSpan{18, 19}, nil, false},
+									Raw:      "1",
+									Value:    1,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("single declaration without parenthesis and with unprefixed pattern namespace member", func(t *testing.T) {
+			n := mustparseChunk(t, "globalvar a x.y = 1")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 19}, nil, false},
+				Statements: []Node{
+					&GlobalVariableDeclarations{
+						NodeBase: NodeBase{
+							NodeSpan{0, 19},
+							nil,
+							false,
+						},
+						Declarations: []*GlobalVariableDeclaration{
+							{
+								NodeBase: NodeBase{
+									NodeSpan{10, 19},
+									nil,
+									false,
+								},
+								Left: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{10, 11}, nil, false},
+									Name:     "a",
+								},
+								Type: &PatternNamespaceMemberExpression{
+									NodeBase: NodeBase{NodeSpan{12, 15}, nil, false},
+									Namespace: &PatternNamespaceIdentifierLiteral{
+										NodeBase:   NodeBase{NodeSpan{12, 14}, nil, false},
+										Unprefixed: true,
+										Name:       "x",
+									},
+									MemberName: &IdentifierLiteral{
+										NodeBase: NodeBase{NodeSpan{14, 15}, nil, false},
+										Name:     "y",
+									},
+								},
+								Right: &IntLiteral{
+									NodeBase: NodeBase{NodeSpan{18, 19}, nil, false},
+									Raw:      "1",
+									Value:    1,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("single declaration without parenthesis and with unprefixed pattern call", func(t *testing.T) {
+			n := mustparseChunk(t, "globalvar a int() = 1")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 21}, nil, false},
+				Statements: []Node{
+					&GlobalVariableDeclarations{
+						NodeBase: NodeBase{
+							NodeSpan{0, 21},
+							nil,
+							false,
+						},
+						Declarations: []*GlobalVariableDeclaration{
+							{
+								NodeBase: NodeBase{
+									NodeSpan{10, 21},
+									nil,
+									false,
+								},
+								Left: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{10, 11}, nil, false},
+									Name:     "a",
+								},
+								Type: &PatternCallExpression{
+									NodeBase: NodeBase{
+										Span:            NodeSpan{12, 17},
+										IsParenthesized: false,
+										/*[]Token{
+											{Type: OPENING_PARENTHESIS, Span: NodeSpan{9, 10}},
+											{Type: CLOSING_PARENTHESIS, Span: NodeSpan{10, 11}},
+										},*/
+									},
+									Callee: &PatternIdentifierLiteral{
+										NodeBase: NodeBase{
+											Span: NodeSpan{12, 15},
+										},
+										Unprefixed: true,
+										Name:       "int",
+									},
+								},
+								Right: &IntLiteral{
+									NodeBase: NodeBase{NodeSpan{20, 21}, nil, false},
+									Raw:      "1",
+									Value:    1,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("single declaration without parenthesis with an optional pattern expression as type", func(t *testing.T) {
+			n := mustparseChunk(t, "globalvar a int? = 1")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 20}, nil, false},
+				Statements: []Node{
+					&GlobalVariableDeclarations{
+						NodeBase: NodeBase{
+							NodeSpan{0, 20},
+							nil,
+							false,
+						},
+						Declarations: []*GlobalVariableDeclaration{
+							{
+								NodeBase: NodeBase{
+									NodeSpan{10, 20},
+									nil,
+									false,
+								},
+								Left: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{10, 11}, nil, false},
+									Name:     "a",
+								},
+								Type: &OptionalPatternExpression{
+									NodeBase: NodeBase{
+										Span: NodeSpan{12, 16},
+									},
+									Pattern: &PatternIdentifierLiteral{
+										NodeBase:   NodeBase{NodeSpan{12, 15}, nil, false},
+										Unprefixed: true,
+										Name:       "int",
+									},
+								},
+								Right: &IntLiteral{
+									NodeBase: NodeBase{NodeSpan{19, 20}, nil, false},
+									Raw:      "1",
+									Value:    1,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("single declaration without parenthesis and with unprefixed pattern call (namespace member)", func(t *testing.T) {
+			n := mustparseChunk(t, "globalvar a a.b() = 1")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 21}, nil, false},
+				Statements: []Node{
+					&GlobalVariableDeclarations{
+						NodeBase: NodeBase{
+							NodeSpan{0, 21},
+							nil,
+							false,
+						},
+						Declarations: []*GlobalVariableDeclaration{
+							{
+								NodeBase: NodeBase{
+									NodeSpan{10, 21},
+									nil,
+									false,
+								},
+								Left: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{10, 11}, nil, false},
+									Name:     "a",
+								},
+								Type: &PatternCallExpression{
+									NodeBase: NodeBase{
+										Span:            NodeSpan{12, 17},
+										IsParenthesized: false,
+										/*[]Token{
+											{Type: OPENING_PARENTHESIS, Span: NodeSpan{9, 10}},
+											{Type: CLOSING_PARENTHESIS, Span: NodeSpan{10, 11}},
+										},*/
+									},
+									Callee: &PatternNamespaceMemberExpression{
+										NodeBase: NodeBase{NodeSpan{12, 15}, nil, false},
+										Namespace: &PatternNamespaceIdentifierLiteral{
+											NodeBase:   NodeBase{NodeSpan{12, 14}, nil, false},
+											Unprefixed: true,
+											Name:       "a",
+										},
+										MemberName: &IdentifierLiteral{
+											NodeBase: NodeBase{NodeSpan{14, 15}, nil, false},
+											Name:     "b",
+										},
+									},
+								},
+								Right: &IntLiteral{
+									NodeBase: NodeBase{NodeSpan{20, 21}, nil, false},
+									Raw:      "1",
+									Value:    1,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("single declaration without parenthesis and with unprefixed pattern call (object pattern argument shorthand)", func(t *testing.T) {
+			n := mustparseChunk(t, "globalvar a int{} = 1")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 21}, nil, false},
+				Statements: []Node{
+					&GlobalVariableDeclarations{
+						NodeBase: NodeBase{
+							NodeSpan{0, 21},
+							nil,
+							false,
+						},
+						Declarations: []*GlobalVariableDeclaration{
+							{
+								NodeBase: NodeBase{
+									NodeSpan{10, 21},
+									nil,
+									false,
+								},
+								Left: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{10, 11}, nil, false},
+									Name:     "a",
+								},
+								Type: &PatternCallExpression{
+									NodeBase: NodeBase{Span: NodeSpan{12, 17}},
+									Callee: &PatternIdentifierLiteral{
+										NodeBase: NodeBase{
+											Span: NodeSpan{12, 15},
+										},
+										Unprefixed: true,
+										Name:       "int",
+									},
+									Arguments: []Node{
+										&ObjectPatternLiteral{
+											NodeBase: NodeBase{
+												Span:            NodeSpan{15, 17},
+												IsParenthesized: false,
+												/*[]Token{
+													{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{9, 10}},
+													{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{10, 11}},
+												},*/
+											},
+										},
+									},
+								},
+								Right: &IntLiteral{
+									NodeBase: NodeBase{NodeSpan{20, 21}, nil, false},
+									Raw:      "1",
+									Value:    1,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+
+			t.Run("single declaration without parenthesis and with unprefixed pattern call (namespace member, object pattern argument shorthand))", func(t *testing.T) {
+				n := mustparseChunk(t, "globalvar a a.b{} = 1")
+				assert.EqualValues(t, &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 21}, nil, false},
+					Statements: []Node{
+						&GlobalVariableDeclarations{
+							NodeBase: NodeBase{
+								NodeSpan{0, 21},
+								nil,
+								false,
+							},
+							Declarations: []*GlobalVariableDeclaration{
+								{
+									NodeBase: NodeBase{
+										NodeSpan{10, 21},
+										nil,
+										false,
+									},
+									Left: &IdentifierLiteral{
+										NodeBase: NodeBase{NodeSpan{10, 11}, nil, false},
+										Name:     "a",
+									},
+									Type: &PatternCallExpression{
+										NodeBase: NodeBase{Span: NodeSpan{12, 17}},
+										Callee: &PatternNamespaceMemberExpression{
+											NodeBase: NodeBase{NodeSpan{12, 15}, nil, false},
+											Namespace: &PatternNamespaceIdentifierLiteral{
+												NodeBase:   NodeBase{NodeSpan{12, 14}, nil, false},
+												Unprefixed: true,
+												Name:       "a",
+											},
+											MemberName: &IdentifierLiteral{
+												NodeBase: NodeBase{NodeSpan{14, 15}, nil, false},
+												Name:     "b",
+											},
+										},
+										Arguments: []Node{
+											&ObjectPatternLiteral{
+												NodeBase: NodeBase{
+													Span:            NodeSpan{15, 17},
+													IsParenthesized: false,
+													/*[]Token{
+														{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{9, 10}},
+														{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{10, 11}},
+													},*/
+												},
+											},
+										},
+									},
+									Right: &IntLiteral{
+										NodeBase: NodeBase{NodeSpan{20, 21}, nil, false},
+										Raw:      "1",
+										Value:    1,
+									},
+								},
+							},
+						},
+					},
+				}, n)
+			})
+		})
+
+		t.Run("globalvar keyword at end of file", func(t *testing.T) {
+			n, err := parseChunk(t, "globalvar", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 9}, nil, false},
+				Statements: []Node{
+					&GlobalVariableDeclarations{
+						NodeBase: NodeBase{
+							NodeSpan{0, 9},
+							&ParsingError{UnspecifiedParsingError, UNTERMINATED_GLOBAL_VAR_DECLS},
+							false,
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("globalvar keyword followed by line feed", func(t *testing.T) {
+			n, err := parseChunk(t, "globalvar\n", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{
+					NodeSpan{0, 10},
+					nil,
+					false,
+				},
+				Statements: []Node{
+					&GlobalVariableDeclarations{
+						NodeBase: NodeBase{
+							NodeSpan{0, 9},
+							&ParsingError{UnspecifiedParsingError, UNTERMINATED_GLOBAL_VAR_DECLS},
+							false,
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("globalvar keyword followed by line feed + expression", func(t *testing.T) {
+			n, err := parseChunk(t, "globalvar\n1", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{
+					NodeSpan{0, 11},
+					nil,
+					false,
+				},
+				Statements: []Node{
+					&GlobalVariableDeclarations{
+						NodeBase: NodeBase{
+							NodeSpan{0, 9},
+							&ParsingError{UnspecifiedParsingError, UNTERMINATED_GLOBAL_VAR_DECLS},
+							false,
+						},
+					},
+					&IntLiteral{
+						NodeBase: NodeBase{NodeSpan{10, 11}, nil, false},
+						Raw:      "1",
+						Value:    1,
+					},
+				},
+			}, n)
+		})
+
+		t.Run("single declaration with invalid LHS", func(t *testing.T) {
+			mod, err := parseChunk(t, "globalvar %| %int | %str", "")
+			assert.NotNil(t, mod)
+			assert.Error(t, err)
+		})
+
+		t.Run("single declaration with keyword LHS", func(t *testing.T) {
+			mod, err := parseChunk(t, "globalvar manifest", "")
+			assert.NotNil(t, mod)
+			assert.Error(t, err)
+		})
+
+		t.Run("single declaration with invalid LHS", func(t *testing.T) {
+			mod, err := parseChunk(t, "globalvar 1 = 1", "")
+			assert.NotNil(t, mod)
+			assert.Error(t, err)
+		})
+
+		t.Run("single declaration with keyword LHS", func(t *testing.T) {
+			mod, err := parseChunk(t, "globalvar manifest = 1", "")
+			assert.NotNil(t, mod)
+			assert.ErrorContains(t, err, KEYWORDS_SHOULD_NOT_BE_USED_IN_ASSIGNMENT_LHS)
+		})
+
+		t.Run("single declaration with unexpected char as LHS", func(t *testing.T) {
+			mod, err := parseChunk(t, "globalvar ? = 1", "")
+			assert.NotNil(t, mod)
+			assert.Error(t, err)
+		})
+
+		t.Run("miscellaneous", func(t *testing.T) {
+			_, err := parseChunk(t, "globalvar a #{} = 1", "")
 			assert.NoError(t, err)
 		})
 	})

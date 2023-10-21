@@ -17,6 +17,8 @@ const (
 	MIN_TOKEN_CACHING_COUNT = 2
 
 	OTHERPROPS_KEYWORD_STRING = "otherprops"
+	ASSERT_KEYWORD_STRING     = "assert"
+	IF_KEYWORD_STRING         = "if"
 )
 
 var (
@@ -58,6 +60,7 @@ const (
 	READONLY_KEYWORD
 	CONST_KEYWORD
 	VAR_KEYWORD
+	GLOBALVAR_KEYWORD
 	FOR_KEYWORD
 	WALK_KEYWORD
 	IN_KEYWORD
@@ -259,7 +262,7 @@ func (m TokenMeta) Strings() ([16]string, int) {
 }
 
 var tokenStrings = [...]string{
-	IF_KEYWORD:                     "if",
+	IF_KEYWORD:                     IF_KEYWORD_STRING,
 	ELSE_KEYWORD:                   "else",
 	PREINIT_KEYWORD:                "preinit",
 	MANIFEST_KEYWORD:               "manifest",
@@ -269,6 +272,7 @@ var tokenStrings = [...]string{
 	READONLY_KEYWORD:               "readonly",
 	CONST_KEYWORD:                  "const",
 	VAR_KEYWORD:                    "var",
+	GLOBALVAR_KEYWORD:              "globalvar",
 	FOR_KEYWORD:                    "for",
 	WALK_KEYWORD:                   "walk",
 	IN_KEYWORD:                     "in",
@@ -283,7 +287,7 @@ var tokenStrings = [...]string{
 	BREAK_KEYWORD:                  "break",
 	CONTINUE_KEYWORD:               "continue",
 	PRUNE_KEYWORD:                  "prune",
-	ASSERT_KEYWORD:                 "assert",
+	ASSERT_KEYWORD:                 ASSERT_KEYWORD_STRING,
 	SELF_KEYWORD:                   "self",
 	MAPPING_KEYWORD:                "Mapping",
 	COMP_KEYWORD:                   "comp",
@@ -430,6 +434,7 @@ var tokenTypenames = [...]string{
 	READONLY_KEYWORD:               "READONLY_KEYWORD",
 	CONST_KEYWORD:                  "CONST_KEYWORD",
 	VAR_KEYWORD:                    "VAR_KEYWORD",
+	GLOBALVAR_KEYWORD:              "GLOBALVAR_KEYWORD",
 	FOR_KEYWORD:                    "FOR_KEYWORD",
 	WALK_KEYWORD:                   "WALK_KEYWORD",
 	IN_KEYWORD:                     "IN_KEYWORD",

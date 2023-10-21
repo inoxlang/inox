@@ -7161,11 +7161,7 @@ func (p *parser) parseSingleLocalVarDeclaration(declarations *[]*LocalVariableDe
 
 	p.eatSpace()
 
-	isAcceptedFirstTypeChar := func(r rune) bool {
-		return r == '%' || r == '#' || IsFirstIdentChar(r) || isOpeningDelim(r)
-	}
-
-	if p.i >= p.len || (p.s[p.i] != '=' && !isAcceptedFirstTypeChar(p.s[p.i])) {
+	if p.i >= p.len || (p.s[p.i] != '=' && !isAcceptedFirstVariableTypeAnnotationChar(p.s[p.i])) {
 		if ident != nil {
 			declParsingErr = &ParsingError{UnspecifiedParsingError, fmtInvalidLocalVarDeclMissingEqualsSign(ident.Name)}
 		}
@@ -7185,7 +7181,7 @@ func (p *parser) parseSingleLocalVarDeclaration(declarations *[]*LocalVariableDe
 
 	var type_ Node
 
-	if isAcceptedFirstTypeChar(p.s[p.i]) {
+	if isAcceptedFirstVariableTypeAnnotationChar(p.s[p.i]) {
 		prev := p.inPattern
 		p.inPattern = true
 
@@ -7262,9 +7258,10 @@ func (p *parser) parseLocalVariableDeclarations(varKeywordBase NodeBase) *LocalV
 	} else {
 		if p.s[p.i] != '(' {
 			parsingErr = &ParsingError{UnspecifiedParsingError, INVALID_LOCAL_VAR_DECLS_OPENING_PAREN_EXPECTED}
+		} else {
+			p.tokens = append(p.tokens, Token{Type: OPENING_PARENTHESIS, Span: NodeSpan{p.i, p.i + 1}})
+			p.i++
 		}
-
-		p.i++
 
 		for p.i < p.len && p.s[p.i] != ')' {
 			p.eatSpaceNewlineComment()
@@ -7284,11 +7281,164 @@ func (p *parser) parseLocalVariableDeclarations(varKeywordBase NodeBase) *LocalV
 		}
 
 		if p.i < p.len && p.s[p.i] == ')' {
+			p.tokens = append(p.tokens, Token{Type: CLOSING_PARENTHESIS, Span: NodeSpan{p.i, p.i + 1}})
 			p.i++
 		}
 	}
 
 	decls := &LocalVariableDeclarations{
+		NodeBase: NodeBase{
+			NodeSpan{start, p.i},
+			parsingErr,
+			false,
+		},
+		Declarations: declarations,
+	}
+
+	return decls
+}
+
+func (p *parser) parseSingleGlobalVarDeclaration(declarations *[]*GlobalVariableDeclaration) {
+	p.panicIfContextDone()
+
+	var declParsingErr *ParsingError
+
+	lhs, _ := p.parseExpression()
+	ident, ok := lhs.(*IdentifierLiteral)
+	if !ok {
+		declParsingErr = &ParsingError{UnspecifiedParsingError, INVALID_GLOBAL_VAR_DECL_LHS_MUST_BE_AN_IDENT}
+	} else if isKeyword(ident.Name) {
+		declParsingErr = &ParsingError{UnspecifiedParsingError, KEYWORDS_SHOULD_NOT_BE_USED_IN_ASSIGNMENT_LHS}
+	}
+
+	p.eatSpace()
+
+	if p.i >= p.len || (p.s[p.i] != '=' && !isAcceptedFirstVariableTypeAnnotationChar(p.s[p.i])) {
+		if ident != nil {
+			declParsingErr = &ParsingError{UnspecifiedParsingError, fmtInvalidGlobalVarDeclMissingEqualsSign(ident.Name)}
+		}
+		if p.i < p.len {
+			p.i++
+		}
+		*declarations = append(*declarations, &GlobalVariableDeclaration{
+			NodeBase: NodeBase{
+				NodeSpan{lhs.Base().Span.Start, p.i},
+				declParsingErr,
+				false,
+			},
+			Left: lhs,
+		})
+		return
+	}
+
+	var type_ Node
+
+	if isAcceptedFirstVariableTypeAnnotationChar(p.s[p.i]) {
+		prev := p.inPattern
+		p.inPattern = true
+
+		type_, _ = p.parseExpression()
+		p.inPattern = prev
+	}
+
+	p.eatSpace()
+
+	//temporary
+	if p.i >= p.len || p.s[p.i] != '=' {
+		declParsingErr = &ParsingError{MissingEqualsSignInDeclaration, EQUAL_SIGN_MISSING_AFTER_TYPE_ANNOTATION}
+		if p.i < p.len {
+			p.i++
+		}
+		*declarations = append(*declarations, &GlobalVariableDeclaration{
+			NodeBase: NodeBase{
+				NodeSpan{lhs.Base().Span.Start, p.i},
+				declParsingErr,
+				false,
+			},
+			Left: lhs.(*IdentifierLiteral),
+			Type: type_,
+		})
+		return
+	}
+
+	equalSignIndex := p.i
+	p.i++
+	p.eatSpace()
+
+	rhs, _ := p.parseExpression()
+	p.tokens = append(p.tokens, Token{Type: EQUAL, Span: NodeSpan{equalSignIndex, equalSignIndex + 1}})
+
+	*declarations = append(*declarations, &GlobalVariableDeclaration{
+		NodeBase: NodeBase{
+			NodeSpan{lhs.Base().Span.Start, rhs.Base().Span.End},
+			declParsingErr,
+			false,
+		},
+		Left:  lhs,
+		Type:  type_,
+		Right: rhs,
+	})
+}
+
+func (p *parser) parseGlobalVariableDeclarations(globalVarKeywordBase NodeBase) *GlobalVariableDeclarations {
+	p.panicIfContextDone()
+
+	p.tokens = append(p.tokens, Token{Type: GLOBALVAR_KEYWORD, Span: globalVarKeywordBase.Span})
+
+	var (
+		start = globalVarKeywordBase.Span.Start
+	)
+
+	p.eatSpace()
+	var (
+		declarations []*GlobalVariableDeclaration
+		parsingErr   *ParsingError
+	)
+
+	if p.i >= p.len || p.s[p.i] == '\n' {
+		return &GlobalVariableDeclarations{
+			NodeBase: NodeBase{
+				NodeSpan{start, p.i},
+				&ParsingError{UnspecifiedParsingError, UNTERMINATED_GLOBAL_VAR_DECLS},
+				false,
+			},
+		}
+	}
+
+	if isAlpha(p.s[p.i]) || p.s[p.i] == '_' {
+		p.parseSingleGlobalVarDeclaration(&declarations)
+	} else {
+		if p.s[p.i] != '(' {
+			parsingErr = &ParsingError{UnspecifiedParsingError, INVALID_GLOBAL_VAR_DECLS_OPENING_PAREN_EXPECTED}
+		} else {
+			p.tokens = append(p.tokens, Token{Type: OPENING_PARENTHESIS, Span: NodeSpan{p.i, p.i + 1}})
+			p.i++
+		}
+
+		for p.i < p.len && p.s[p.i] != ')' {
+			p.eatSpaceNewlineComment()
+
+			if p.i < p.len && p.s[p.i] == ')' {
+				break
+			}
+
+			if p.i >= p.len {
+				parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_GLOBAL_VAR_DECLS_MISSING_CLOSING_PAREN}
+				break
+			}
+
+			p.parseSingleGlobalVarDeclaration(&declarations)
+
+			p.eatSpaceNewlineComment()
+		}
+
+		if p.i < p.len && p.s[p.i] == ')' {
+			p.tokens = append(p.tokens, Token{Type: CLOSING_PARENTHESIS, Span: NodeSpan{p.i, p.i + 1}})
+			p.i++
+		}
+	}
+
+	decls := &GlobalVariableDeclarations{
 		NodeBase: NodeBase{
 			NodeSpan{start, p.i},
 			parsingErr,
@@ -10667,7 +10817,7 @@ func (p *parser) parseStatement() Node {
 		return ev
 	case *IdentifierLiteral:
 		switch ev.Name {
-		case tokenStrings[ASSERT_KEYWORD]:
+		case ASSERT_KEYWORD_STRING:
 			p.eatSpace()
 
 			expr, _ := p.parseExpression()
@@ -10681,7 +10831,7 @@ func (p *parser) parseStatement() Node {
 				},
 				Expr: expr,
 			}
-		case tokenStrings[IF_KEYWORD]:
+		case IF_KEYWORD_STRING:
 			return p.parseIfStatement(ev)
 		case tokenStrings[FOR_KEYWORD]:
 			return p.parseForStatement(ev)
@@ -10729,6 +10879,8 @@ func (p *parser) parseStatement() Node {
 			return p.parseMultiAssignmentStatement(ev)
 		case tokenStrings[VAR_KEYWORD]:
 			return p.parseLocalVariableDeclarations(ev.Base())
+		case tokenStrings[GLOBALVAR_KEYWORD]:
+			return p.parseGlobalVariableDeclarations(ev.Base())
 		case tokenStrings[SYNCHRONIZED_KEYWORD]:
 			return p.parseSynchronizedBlock(ev)
 		case tokenStrings[PATTERN_KEYWORD]:
@@ -11174,6 +11326,10 @@ func isAcceptedReturnTypeStart(runes []rune, i int32) bool {
 	default:
 		return IsFirstIdentChar(runes[i])
 	}
+}
+
+func isAcceptedFirstVariableTypeAnnotationChar(r rune) bool {
+	return r == '%' || r == '#' || IsFirstIdentChar(r) || isOpeningDelim(r)
 }
 
 func IsAnyVariableIdentifier(node Node) bool {

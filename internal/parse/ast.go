@@ -1253,6 +1253,26 @@ func (LocalVariableDeclaration) Kind() NodeKind {
 	return Stmt
 }
 
+type GlobalVariableDeclarations struct {
+	NodeBase
+	Declarations []*GlobalVariableDeclaration
+}
+
+func (GlobalVariableDeclarations) Kind() NodeKind {
+	return Stmt
+}
+
+type GlobalVariableDeclaration struct {
+	NodeBase
+	Left  Node
+	Type  Node //can be nil
+	Right Node
+}
+
+func (GlobalVariableDeclaration) Kind() NodeKind {
+	return Stmt
+}
+
 type Assignment struct {
 	NodeBase
 	Left     Node
@@ -2467,6 +2487,14 @@ func walk(node, parent Node, ancestorChain *[]Node, fn, afterFn NodeHandler) {
 			walk(decl, node, ancestorChain, fn, afterFn)
 		}
 	case *LocalVariableDeclaration:
+		walk(n.Left, node, ancestorChain, fn, afterFn)
+		walk(n.Type, node, ancestorChain, fn, afterFn)
+		walk(n.Right, node, ancestorChain, fn, afterFn)
+	case *GlobalVariableDeclarations:
+		for _, decl := range n.Declarations {
+			walk(decl, node, ancestorChain, fn, afterFn)
+		}
+	case *GlobalVariableDeclaration:
 		walk(n.Left, node, ancestorChain, fn, afterFn)
 		walk(n.Type, node, ancestorChain, fn, afterFn)
 		walk(n.Right, node, ancestorChain, fn, afterFn)
