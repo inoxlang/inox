@@ -688,11 +688,19 @@ func runStartupScript(startupScriptPath string, outW io.Writer) (*core.Object, *
 	}
 	startupScriptPath = absPath
 
+	parsingCtx := core.NewContext(core.ContextConfig{
+		Permissions: []core.Permission{core.CreateFsReadPerm(core.Path(startupScriptPath))},
+		Filesystem:  fs_ns.GetOsFilesystem(),
+	})
+	{
+		state := core.NewGlobalState(parsingCtx)
+		state.Out = outW
+		state.Logger = zerolog.New(outW)
+	}
+	defer parsingCtx.CancelGracefully()
+
 	startupMod, err := core.ParseLocalModule(startupScriptPath, core.ModuleParsingConfig{
-		Context: core.NewContext(core.ContextConfig{
-			Permissions: []core.Permission{core.CreateFsReadPerm(core.Path(startupScriptPath))},
-			Filesystem:  fs_ns.GetOsFilesystem(),
-		}),
+		Context: parsingCtx,
 	})
 	if err != nil {
 		panic(fmt.Errorf("failed to parse startup script: %w", err))
