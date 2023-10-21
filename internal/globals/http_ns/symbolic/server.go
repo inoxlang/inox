@@ -18,7 +18,7 @@ type HttpServer struct {
 	_ int
 }
 
-func (r *HttpServer) Test(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+func (r *HttpServer) Test(v symbolic.Value, state symbolic.RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -36,7 +36,7 @@ func (serv *HttpServer) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 	return nil, false
 }
 
-func (s *HttpServer) Prop(name string) symbolic.SymbolicValue {
+func (s *HttpServer) Prop(name string) symbolic.Value {
 	return symbolic.GetGoMethodOrPanic(name, s)
 }
 
@@ -55,6 +55,6 @@ func (r *HttpServer) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConf
 	return
 }
 
-func (r *HttpServer) WidestOfType() symbolic.SymbolicValue {
+func (r *HttpServer) WidestOfType() symbolic.Value {
 	return &HttpServer{}
 }

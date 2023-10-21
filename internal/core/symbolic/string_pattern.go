@@ -32,7 +32,7 @@ type AnyStringPattern struct {
 	SerializableMixin
 }
 
-func (p *AnyStringPattern) Test(v SymbolicValue, state RecTestCallState) bool {
+func (p *AnyStringPattern) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -48,19 +48,19 @@ func (p *AnyStringPattern) HasUnderlyingPattern() bool {
 	return true
 }
 
-func (p *AnyStringPattern) TestValue(v SymbolicValue, state RecTestCallState) bool {
+func (p *AnyStringPattern) TestValue(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 	_, ok := v.(StringLike)
 	return ok
 }
 
-func (p *AnyStringPattern) MatchGroups(v SymbolicValue) (bool, map[string]SymbolicValue) {
+func (p *AnyStringPattern) MatchGroups(v Value) (bool, map[string]Value) {
 	//TODO
 	return false, nil
 }
 
-func (p *AnyStringPattern) SymbolicValue() SymbolicValue {
+func (p *AnyStringPattern) SymbolicValue() Value {
 	return ANY_STR
 }
 
@@ -73,15 +73,15 @@ func (p *AnyStringPattern) HasRegex() bool {
 	return false
 }
 
-func (p *AnyStringPattern) IteratorElementKey() SymbolicValue {
+func (p *AnyStringPattern) IteratorElementKey() Value {
 	return ANY_INT
 }
 
-func (p *AnyStringPattern) IteratorElementValue() SymbolicValue {
+func (p *AnyStringPattern) IteratorElementValue() Value {
 	return ANY
 }
 
-func (p *AnyStringPattern) WidestOfType() SymbolicValue {
+func (p *AnyStringPattern) WidestOfType() Value {
 	return ANY_STR_PATTERN
 }
 
@@ -99,7 +99,7 @@ func NewExactStringPattern(value *String) *ExactStringPattern {
 	return &ExactStringPattern{value: value}
 }
 
-func (p *ExactStringPattern) Test(v SymbolicValue, state RecTestCallState) bool {
+func (p *ExactStringPattern) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -133,7 +133,7 @@ func (p *ExactStringPattern) HasUnderlyingPattern() bool {
 	return true
 }
 
-func (p *ExactStringPattern) TestValue(v SymbolicValue, state RecTestCallState) bool {
+func (p *ExactStringPattern) TestValue(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 	stringLike, ok := v.(StringLike)
@@ -144,7 +144,7 @@ func (p *ExactStringPattern) TestValue(v SymbolicValue, state RecTestCallState) 
 	return p.value.value == stringLike.GetOrBuildString().value
 }
 
-func (p *ExactStringPattern) SymbolicValue() SymbolicValue {
+func (p *ExactStringPattern) SymbolicValue() Value {
 	return p.value
 }
 
@@ -156,15 +156,15 @@ func (p *ExactStringPattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
 
-func (p *ExactStringPattern) IteratorElementKey() SymbolicValue {
+func (p *ExactStringPattern) IteratorElementKey() Value {
 	return ANY_INT
 }
 
-func (p *ExactStringPattern) IteratorElementValue() SymbolicValue {
+func (p *ExactStringPattern) IteratorElementValue() Value {
 	return p.value
 }
 
-func (p *ExactStringPattern) WidestOfType() SymbolicValue {
+func (p *ExactStringPattern) WidestOfType() Value {
 	return ANY_EXACT_STR_PATTERN
 }
 
@@ -198,7 +198,7 @@ func NewLengthCheckingStringPattern(minLength, maxLength int64) *LengthCheckingS
 	}
 }
 
-func (p *LengthCheckingStringPattern) Test(v SymbolicValue, state RecTestCallState) bool {
+func (p *LengthCheckingStringPattern) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -222,7 +222,7 @@ func (p *LengthCheckingStringPattern) HasUnderlyingPattern() bool {
 	return true
 }
 
-func (p *LengthCheckingStringPattern) TestValue(v SymbolicValue, state RecTestCallState) bool {
+func (p *LengthCheckingStringPattern) TestValue(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 	strLike, ok := v.(StringLike)
@@ -251,11 +251,11 @@ func (p *LengthCheckingStringPattern) TestValue(v SymbolicValue, state RecTestCa
 	return s.maxLength == math.MaxInt64
 }
 
-func (p *LengthCheckingStringPattern) MatchGroups(v SymbolicValue) (bool, map[string]SymbolicValue) {
+func (p *LengthCheckingStringPattern) MatchGroups(v Value) (bool, map[string]Value) {
 	return false, nil
 }
 
-func (p *LengthCheckingStringPattern) SymbolicValue() SymbolicValue {
+func (p *LengthCheckingStringPattern) SymbolicValue() Value {
 	if p.minLength == -1 {
 		return ANY_STR
 	}
@@ -270,15 +270,15 @@ func (p *LengthCheckingStringPattern) HasRegex() bool {
 	return true
 }
 
-func (p *LengthCheckingStringPattern) IteratorElementKey() SymbolicValue {
+func (p *LengthCheckingStringPattern) IteratorElementKey() Value {
 	return ANY_INT
 }
 
-func (p *LengthCheckingStringPattern) IteratorElementValue() SymbolicValue {
+func (p *LengthCheckingStringPattern) IteratorElementValue() Value {
 	return p.SymbolicValue()
 }
 
-func (p *LengthCheckingStringPattern) WidestOfType() SymbolicValue {
+func (p *LengthCheckingStringPattern) WidestOfType() Value {
 	return ANY_SEQ_STRING_PATTERN
 }
 
@@ -306,7 +306,7 @@ func NewSequenceStringPattern(node *parse.ComplexStringPatternPiece, chunk *pars
 	}
 }
 
-func (p *SequenceStringPattern) Test(v SymbolicValue, state RecTestCallState) bool {
+func (p *SequenceStringPattern) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -333,19 +333,19 @@ func (p *SequenceStringPattern) HasUnderlyingPattern() bool {
 	return true
 }
 
-func (p *SequenceStringPattern) TestValue(v SymbolicValue, state RecTestCallState) bool {
+func (p *SequenceStringPattern) TestValue(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 	strLike, ok := v.(StringLike)
 	return ok && strLike.GetOrBuildString().pattern == p
 }
 
-func (p *SequenceStringPattern) MatchGroups(v SymbolicValue) (bool, map[string]SymbolicValue) {
+func (p *SequenceStringPattern) MatchGroups(v Value) (bool, map[string]Value) {
 	//it's not possible to know if a string matches the sequence pattern.
 	return false, nil
 }
 
-func (p *SequenceStringPattern) SymbolicValue() SymbolicValue {
+func (p *SequenceStringPattern) SymbolicValue() Value {
 	//it's not possible to know if a string matches the sequence pattern.
 	return NewStringMatchingPattern(p)
 }
@@ -359,15 +359,15 @@ func (p *SequenceStringPattern) HasRegex() bool {
 	return false
 }
 
-func (p *SequenceStringPattern) IteratorElementKey() SymbolicValue {
+func (p *SequenceStringPattern) IteratorElementKey() Value {
 	return ANY_INT
 }
 
-func (p *SequenceStringPattern) IteratorElementValue() SymbolicValue {
+func (p *SequenceStringPattern) IteratorElementValue() Value {
 	return ANY_STR
 }
 
-func (p *SequenceStringPattern) WidestOfType() SymbolicValue {
+func (p *SequenceStringPattern) WidestOfType() Value {
 	return ANY_SEQ_STRING_PATTERN
 }
 
@@ -381,7 +381,7 @@ func NewParserBasedPattern() *ParserBasedPattern {
 	return &ParserBasedPattern{}
 }
 
-func (p *ParserBasedPattern) Test(v SymbolicValue, state RecTestCallState) bool {
+func (p *ParserBasedPattern) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -397,14 +397,14 @@ func (p *ParserBasedPattern) HasUnderlyingPattern() bool {
 	return true
 }
 
-func (p *ParserBasedPattern) TestValue(v SymbolicValue, state RecTestCallState) bool {
+func (p *ParserBasedPattern) TestValue(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 	_, ok := v.(StringLike)
 	return ok
 }
 
-func (p *ParserBasedPattern) SymbolicValue() SymbolicValue {
+func (p *ParserBasedPattern) SymbolicValue() Value {
 	return ANY_STR
 }
 
@@ -417,15 +417,15 @@ func (p *ParserBasedPattern) HasRegex() bool {
 	return false
 }
 
-func (p *ParserBasedPattern) IteratorElementKey() SymbolicValue {
+func (p *ParserBasedPattern) IteratorElementKey() Value {
 	return ANY_INT
 }
 
-func (p *ParserBasedPattern) IteratorElementValue() SymbolicValue {
+func (p *ParserBasedPattern) IteratorElementValue() Value {
 	return ANY_STR
 }
 
-func (p *ParserBasedPattern) WidestOfType() SymbolicValue {
+func (p *ParserBasedPattern) WidestOfType() Value {
 	return ANY_PARSED_BASED_STRING_PATTERN
 }
 

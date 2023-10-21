@@ -16,7 +16,7 @@ type Queue struct {
 	_ int
 }
 
-func (*Queue) Test(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+func (*Queue) Test(v symbolic.Value, state symbolic.RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -36,7 +36,7 @@ func (q *Queue) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 	return nil, false
 }
 
-func (q *Queue) Prop(name string) symbolic.SymbolicValue {
+func (q *Queue) Prop(name string) symbolic.Value {
 	return symbolic.GetGoMethodOrPanic(name, q)
 }
 
@@ -44,15 +44,15 @@ func (*Queue) PropertyNames() []string {
 	return []string{"enqueue", "dequeue", "peek"}
 }
 
-func (*Queue) Enqueue(ctx *symbolic.Context, elems symbolic.SymbolicValue) {
+func (*Queue) Enqueue(ctx *symbolic.Context, elems symbolic.Value) {
 
 }
 
-func (*Queue) Dequeue(ctx *symbolic.Context) (symbolic.SymbolicValue, *symbolic.Bool) {
+func (*Queue) Dequeue(ctx *symbolic.Context) (symbolic.Value, *symbolic.Bool) {
 	return &symbolic.Any{}, nil
 }
 
-func (*Queue) Peek(ctx *symbolic.Context) (symbolic.SymbolicValue, *symbolic.Bool) {
+func (*Queue) Peek(ctx *symbolic.Context) (symbolic.Value, *symbolic.Bool) {
 	return &symbolic.Any{}, nil
 }
 
@@ -61,14 +61,14 @@ func (*Queue) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, dep
 	return
 }
 
-func (*Queue) IteratorElementKey() symbolic.SymbolicValue {
+func (*Queue) IteratorElementKey() symbolic.Value {
 	return &symbolic.Any{}
 }
 
-func (*Queue) IteratorElementValue() symbolic.SymbolicValue {
+func (*Queue) IteratorElementValue() symbolic.Value {
 	return &symbolic.Any{}
 }
 
-func (*Queue) WidestOfType() symbolic.SymbolicValue {
+func (*Queue) WidestOfType() symbolic.Value {
 	return &Queue{}
 }

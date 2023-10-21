@@ -11,24 +11,24 @@ func TestInoxFunction(t *testing.T) {
 	t.Run("Test()", func(t *testing.T) {
 
 		fnWithAssignment := &InoxFunction{
-			parameters:     []SymbolicValue{},
+			parameters:     []Value{},
 			parameterNames: []string{},
 			node:           parse.MustParseExpression(`fn(){a = 1}`),
 			result:         ANY,
 		}
 
 		fnWithOnlyIntLiteral := &InoxFunction{
-			parameters:     []SymbolicValue{},
+			parameters:     []Value{},
 			parameterNames: []string{},
 			node:           parse.MustParseExpression(`fn(){1}`),
 			result:         ANY,
 		}
 
 		fnOnlyAllowingIntLiteralsInBody := &InoxFunction{
-			parameters:     []SymbolicValue{},
+			parameters:     []Value{},
 			parameterNames: []string{},
 			result:         ANY,
-			visitCheckNode: func(visit visitArgs, globalsAtCreation map[string]SymbolicValue) (parse.TraversalAction, bool, error) {
+			visitCheckNode: func(visit visitArgs, globalsAtCreation map[string]Value) (parse.TraversalAction, bool, error) {
 				_, ok := visit.node.(*parse.IntLiteral)
 				return parse.Continue, ok, nil
 			},

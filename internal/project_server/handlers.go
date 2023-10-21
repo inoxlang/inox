@@ -58,6 +58,8 @@ type additionalSessionData struct {
 	projectMode        bool
 	project            *project.Project
 
+	//testing
+
 	//debug adapter protocol
 	debugSessions *DebugSessions
 }

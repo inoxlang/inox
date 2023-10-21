@@ -573,10 +573,10 @@ func TestDatabaseIL(t *testing.T) {
 }
 
 var (
-	_ UrlHolder              = (*loadableTestValue)(nil)
-	_ Pattern                = (*loadableTestValuePattern)(nil)
-	_ symbolic.Pattern       = (*symbolicLoadableTestValuePattern)(nil)
-	_ symbolic.SymbolicValue = (*symbolicLoadableTestValue)(nil)
+	_ UrlHolder        = (*loadableTestValue)(nil)
+	_ Pattern          = (*loadableTestValuePattern)(nil)
+	_ symbolic.Pattern = (*symbolicLoadableTestValuePattern)(nil)
+	_ symbolic.Value   = (*symbolicLoadableTestValue)(nil)
 
 	LOADABLE_TEST_VALUE_PATTERN = &loadableTestValuePattern{}
 )
@@ -606,7 +606,7 @@ func (*loadableTestValue) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig
 	panic(ErrNotImplemented)
 }
 
-func (*loadableTestValue) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (*loadableTestValue) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	panic(ErrNotImplemented)
 }
 
@@ -653,7 +653,7 @@ func (*loadableTestValuePattern) Test(ctx *Context, val Value) bool {
 	return ok
 }
 
-func (*loadableTestValuePattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (*loadableTestValuePattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return &symbolicLoadableTestValuePattern{}, nil
 }
 
@@ -687,14 +687,14 @@ func (*symbolicLoadableTestValue) StringPattern() (symbolic.StringPattern, bool)
 	return nil, false
 }
 
-func (*symbolicLoadableTestValue) Test(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+func (*symbolicLoadableTestValue) Test(v symbolic.Value, state symbolic.RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
 	panic(ErrNotImplementedYet)
 }
 
-func (*symbolicLoadableTestValue) WidestOfType() symbolic.SymbolicValue {
+func (*symbolicLoadableTestValue) WidestOfType() symbolic.Value {
 	return &symbolicLoadableTestValue{}
 }
 
@@ -718,11 +718,11 @@ func (*symbolicLoadableTestValuePattern) IsMutable() bool {
 	return false
 }
 
-func (*symbolicLoadableTestValuePattern) IteratorElementKey() symbolic.SymbolicValue {
+func (*symbolicLoadableTestValuePattern) IteratorElementKey() symbolic.Value {
 	return symbolic.ANY_INT
 }
 
-func (*symbolicLoadableTestValuePattern) IteratorElementValue() symbolic.SymbolicValue {
+func (*symbolicLoadableTestValuePattern) IteratorElementValue() symbolic.Value {
 	return symbolic.ANY
 }
 
@@ -734,23 +734,23 @@ func (*symbolicLoadableTestValuePattern) StringPattern() (symbolic.StringPattern
 	return nil, false
 }
 
-func (*symbolicLoadableTestValuePattern) SymbolicValue() symbolic.SymbolicValue {
+func (*symbolicLoadableTestValuePattern) SymbolicValue() symbolic.Value {
 	panic(ErrNotImplementedYet)
 }
 
-func (*symbolicLoadableTestValuePattern) Test(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+func (*symbolicLoadableTestValuePattern) Test(v symbolic.Value, state symbolic.RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
 	panic(ErrNotImplementedYet)
 }
 
-func (*symbolicLoadableTestValuePattern) TestValue(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+func (*symbolicLoadableTestValuePattern) TestValue(v symbolic.Value, state symbolic.RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 	panic(ErrNotImplementedYet)
 }
 
-func (*symbolicLoadableTestValuePattern) WidestOfType() symbolic.SymbolicValue {
+func (*symbolicLoadableTestValuePattern) WidestOfType() symbolic.Value {
 	return &symbolicLoadableTestValuePattern{}
 }

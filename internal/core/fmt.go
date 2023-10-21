@@ -22,7 +22,7 @@ var (
 )
 
 func init() {
-	RegisterSymbolicGoFunction(Fmt, func(ctx *symbolic.Context, format symbolic.Format, v symbolic.SymbolicValue) (symbolic.SymbolicValue, *symbolic.Error) {
+	RegisterSymbolicGoFunction(Fmt, func(ctx *symbolic.Context, format symbolic.Format, v symbolic.Value) (symbolic.Value, *symbolic.Error) {
 		return symbolic.ANY, nil
 	})
 }

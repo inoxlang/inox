@@ -14,7 +14,7 @@ import (
 // A Namespace represents a symbolic Namespace.
 type Namespace struct {
 	UnassignablePropsMixin
-	entries map[string]SymbolicValue //if nil, matches any Namespace
+	entries map[string]Value //if nil, matches any Namespace
 }
 
 func NewAnyNamespace() *Namespace {
@@ -22,14 +22,14 @@ func NewAnyNamespace() *Namespace {
 }
 
 func NewEmptyNamespace() *Namespace {
-	return &Namespace{entries: map[string]SymbolicValue{}}
+	return &Namespace{entries: map[string]Value{}}
 }
 
-func NewNamespace(entries map[string]SymbolicValue) *Namespace {
+func NewNamespace(entries map[string]Value) *Namespace {
 	return &Namespace{entries: entries}
 }
 
-func (ns *Namespace) Test(v SymbolicValue, state RecTestCallState) bool {
+func (ns *Namespace) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -53,7 +53,7 @@ func (ns *Namespace) Test(v SymbolicValue, state RecTestCallState) bool {
 	return true
 }
 
-func (ns *Namespace) Prop(name string) SymbolicValue {
+func (ns *Namespace) Prop(name string) Value {
 	v, ok := ns.entries[name]
 	if !ok {
 		panic(fmt.Errorf("Namespace does not have a .%s property", name))
@@ -122,6 +122,6 @@ func (ns *Namespace) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConf
 	utils.Must(w.Write(utils.StringAsBytes("%namespace")))
 }
 
-func (ns *Namespace) WidestOfType() SymbolicValue {
+func (ns *Namespace) WidestOfType() Value {
 	return ANY_REC
 }

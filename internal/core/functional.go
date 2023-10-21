@@ -8,16 +8,16 @@ import (
 
 func init() {
 	RegisterSymbolicGoFunctions([]any{
-		Filter, func(ctx *symbolic.Context, iterable symbolic.Iterable, cond symbolic.SymbolicValue) *symbolic.List {
+		Filter, func(ctx *symbolic.Context, iterable symbolic.Iterable, cond symbolic.Value) *symbolic.List {
 			return symbolic.NewListOf(symbolic.ANY_SERIALIZABLE)
 		},
-		Some, func(ctx *symbolic.Context, iterable symbolic.Iterable, cond symbolic.SymbolicValue) *symbolic.Bool {
+		Some, func(ctx *symbolic.Context, iterable symbolic.Iterable, cond symbolic.Value) *symbolic.Bool {
 			return &symbolic.Bool{}
 		},
-		All, func(ctx *symbolic.Context, iterable symbolic.Iterable, cond symbolic.SymbolicValue) *symbolic.Bool {
+		All, func(ctx *symbolic.Context, iterable symbolic.Iterable, cond symbolic.Value) *symbolic.Bool {
 			return &symbolic.Bool{}
 		},
-		None, func(ctx *symbolic.Context, iterable symbolic.Iterable, cond symbolic.SymbolicValue) *symbolic.Bool {
+		None, func(ctx *symbolic.Context, iterable symbolic.Iterable, cond symbolic.Value) *symbolic.Bool {
 			return &symbolic.Bool{}
 		},
 	})

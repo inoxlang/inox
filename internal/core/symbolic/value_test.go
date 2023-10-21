@@ -344,6 +344,6 @@ func TestSymbolicAnyIterable(t *testing.T) {
 
 }
 
-func symbolicGoFn(ctx *Context, list *List, args ...SymbolicValue) *List {
+func symbolicGoFn(ctx *Context, list *List, args ...Value) *List {
 	return list
 }

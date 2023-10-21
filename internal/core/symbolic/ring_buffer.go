@@ -17,7 +17,7 @@ var (
 	RING_BUFFER_PROPNAMES = []string{"write", "read"}
 )
 
-func (r *RingBuffer) Test(v SymbolicValue, state RecTestCallState) bool {
+func (r *RingBuffer) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -29,7 +29,7 @@ func (r *RingBuffer) Test(v SymbolicValue, state RecTestCallState) bool {
 	}
 }
 
-func (RingBuffer *RingBuffer) Prop(name string) SymbolicValue {
+func (RingBuffer *RingBuffer) Prop(name string) Value {
 	method, ok := RingBuffer.GetGoMethod(name)
 	if !ok {
 		panic(FormatErrPropertyDoesNotExist(name, RingBuffer))
@@ -63,7 +63,7 @@ func (r *RingBuffer) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConf
 	utils.Must(w.Write(utils.StringAsBytes("%ring-buffer")))
 }
 
-func (r *RingBuffer) WidestOfType() SymbolicValue {
+func (r *RingBuffer) WidestOfType() Value {
 	return &RingBuffer{}
 }
 

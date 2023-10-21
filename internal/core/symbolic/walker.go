@@ -16,9 +16,9 @@ var (
 
 // An Walkable represents a symbolic Walkable.
 type Walkable interface {
-	SymbolicValue
-	WalkerElement() SymbolicValue
-	WalkerNodeMeta() SymbolicValue
+	Value
+	WalkerElement() Value
+	WalkerNodeMeta() Value
 }
 
 // An AnyWalkable represents a symbolic Walkable we do not know the concrete type.
@@ -26,7 +26,7 @@ type AnyWalkable struct {
 	_ int
 }
 
-func (r *AnyWalkable) Test(v SymbolicValue, state RecTestCallState) bool {
+func (r *AnyWalkable) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -39,11 +39,11 @@ func (r *AnyWalkable) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintCon
 	utils.Must(w.Write(utils.StringAsBytes("%walkable")))
 }
 
-func (r *AnyWalkable) WidestOfType() SymbolicValue {
+func (r *AnyWalkable) WidestOfType() Value {
 	return ANY_WALKABLE
 }
 
-func (r *AnyWalkable) WalkerElement() SymbolicValue {
+func (r *AnyWalkable) WalkerElement() Value {
 	return ANY
 }
 
@@ -54,7 +54,7 @@ type Walker struct {
 	_ int
 }
 
-func (r *Walker) Test(v SymbolicValue, state RecTestCallState) bool {
+func (r *Walker) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -67,6 +67,6 @@ func (r *Walker) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, 
 	utils.Must(w.Write(utils.StringAsBytes("%walker")))
 }
 
-func (r *Walker) WidestOfType() SymbolicValue {
+func (r *Walker) WidestOfType() Value {
 	return ANY_WALKER
 }

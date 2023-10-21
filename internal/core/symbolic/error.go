@@ -139,7 +139,7 @@ func fmtCannotCallNode(node parse.Node) string {
 	return fmt.Sprintf("cannot call node of type %T", node)
 }
 
-func fmtCannotCall(v SymbolicValue) string {
+func fmtCannotCall(v Value) string {
 	return fmt.Sprintf("cannot call %s", Stringify(v))
 }
 
@@ -147,11 +147,11 @@ func fmtInvalidBinaryOperator(operator parse.BinaryOperator) string {
 	return "invalid binary operator " + operator.String()
 }
 
-func fmtOperandOfBoolNegateShouldBeBool(v SymbolicValue) string {
+func fmtOperandOfBoolNegateShouldBeBool(v Value) string {
 	return fmt.Sprintf("operand of ! should should be a boolean but is a %s", Stringify(v))
 }
 
-func fmtOperandOfNumberNegateShouldBeIntOrFloat(v SymbolicValue) string {
+func fmtOperandOfNumberNegateShouldBeIntOrFloat(v Value) string {
 	return fmt.Sprintf("operand of '-' should should be an integer or float but is a %s", Stringify(v))
 }
 
@@ -167,7 +167,7 @@ func fmtRightOperandOfBinaryShouldBeLikeLeftOperand(operator parse.BinaryOperato
 	return fmt.Sprintf("right operand of binary '%s' should be a(n) %s like the left operand but is %s", operator.String(), expectedType, actual)
 }
 
-func fmtInvalidBinExprCannnotCheckNonObjectHasKey(v SymbolicValue) string {
+func fmtInvalidBinExprCannnotCheckNonObjectHasKey(v Value) string {
 	return fmt.Sprintf("invalid binary expression: cannot check if non-object has a key: %s", Stringify(v))
 }
 
@@ -179,23 +179,23 @@ func fmtEntriesOfRecordPatternShouldMatchOnlyImmutableValues(k string) string {
 	return fmt.Sprintf("invalid value for key '%s', entry patterns of a record pattern should match only immutable values", k)
 }
 
-func fmtIfStmtTestNotBoolBut(test SymbolicValue) string {
+func fmtIfStmtTestNotBoolBut(test Value) string {
 	return fmt.Sprintf("if statement test is not a boolean but a(n) %s", Stringify(test))
 }
 
-func fmtIfExprTestNotBoolBut(test SymbolicValue) string {
+func fmtIfExprTestNotBoolBut(test Value) string {
 	return fmt.Sprintf("if expression test is not a boolean but a %T", test)
 }
 
-func fmtNotAssignableToVarOftype(a SymbolicValue, b Pattern) string {
+func fmtNotAssignableToVarOftype(a Value, b Pattern) string {
 	return fmt.Sprintf("a(n) %s is not assignable to a variable of type %s", Stringify(a), Stringify(b.SymbolicValue()))
 }
 
-func fmtVarOfTypeCannotBeNarrowedToAn(variable SymbolicValue, val SymbolicValue) string {
+func fmtVarOfTypeCannotBeNarrowedToAn(variable Value, val Value) string {
 	return fmt.Sprintf("variable of type %s cannot be narrowed to a(n) %s", Stringify(variable), Stringify(val))
 }
 
-func fmtNotAssignableToPropOfType(a SymbolicValue, b SymbolicValue) string {
+func fmtNotAssignableToPropOfType(a Value, b Value) string {
 	examples := GetExamples(b, ExampleComputationContext{NonMatchingValue: a})
 	examplesString := ""
 	if len(examples) > 0 {
@@ -205,11 +205,11 @@ func fmtNotAssignableToPropOfType(a SymbolicValue, b SymbolicValue) string {
 	return fmt.Sprintf("a(n) %s is not assignable to a property of type %s%s", Stringify(a), Stringify(b), examplesString)
 }
 
-func fmtNotAssignableToEntryOfExpectedValue(a SymbolicValue, b SymbolicValue) string {
+func fmtNotAssignableToEntryOfExpectedValue(a Value, b Value) string {
 	return fmt.Sprintf("a(n) %s is not assignable to an entry of expected value %s", Stringify(a), Stringify(b))
 }
 
-func fmtNotAssignableToElementOfValue(a SymbolicValue, b SymbolicValue) string {
+func fmtNotAssignableToElementOfValue(a Value, b Value) string {
 	examples := GetExamples(b, ExampleComputationContext{NonMatchingValue: a})
 	examplesString := ""
 	if len(examples) > 0 {
@@ -219,11 +219,11 @@ func fmtNotAssignableToElementOfValue(a SymbolicValue, b SymbolicValue) string {
 	return fmt.Sprintf("a(n) %s is not assignable to an element of value %s%s", Stringify(a), Stringify(b), examplesString)
 }
 
-func fmtSeqOfXNotAssignableToSliceOfTheValue(a SymbolicValue, b SymbolicValue) string {
+func fmtSeqOfXNotAssignableToSliceOfTheValue(a Value, b Value) string {
 	return fmt.Sprintf("a sequence of %s is not assignable to a slice of value %s, try to have a less specific sequence on the left", Stringify(a), Stringify(b))
 }
 
-func fmtHasElementsOfType(val Sequence, typ SymbolicValue) string {
+func fmtHasElementsOfType(val Sequence, typ Value) string {
 	return fmt.Sprintf("%s has elements of type: %s", Stringify(val), Stringify(typ))
 }
 
@@ -235,7 +235,7 @@ func fmtUnexpectedPropertyDidYouMeanElse(name string, suggestion string) string 
 	return fmt.Sprintf("unexpected property '%s', did you mean '%s' ?", name, suggestion)
 }
 
-func fmtUnexpectedElemInListAnnotated(e SymbolicValue, elemType Pattern) string {
+func fmtUnexpectedElemInListAnnotated(e Value, elemType Pattern) string {
 	expectedElem := elemType.SymbolicValue()
 	examples := GetExamples(expectedElem, ExampleComputationContext{NonMatchingValue: e})
 	examplesString := ""
@@ -246,7 +246,7 @@ func fmtUnexpectedElemInListAnnotated(e SymbolicValue, elemType Pattern) string 
 	return fmt.Sprintf("unexpected element of type %s in a list of %s (annotated)%s", Stringify(e), Stringify(expectedElem), examplesString)
 }
 
-func fmtUnexpectedElemInListofValues(e SymbolicValue, elemType SymbolicValue) string {
+func fmtUnexpectedElemInListofValues(e Value, elemType Value) string {
 	examples := GetExamples(elemType, ExampleComputationContext{NonMatchingValue: e})
 	examplesString := ""
 	if len(examples) > 0 {
@@ -256,7 +256,7 @@ func fmtUnexpectedElemInListofValues(e SymbolicValue, elemType SymbolicValue) st
 	return fmt.Sprintf("unexpected element of type %s in a list of %s%s", Stringify(e), Stringify(elemType), examplesString)
 }
 
-func fmtUnexpectedElemInTupleAnnotated(e SymbolicValue, elemType Pattern) string {
+func fmtUnexpectedElemInTupleAnnotated(e Value, elemType Pattern) string {
 	expectedElem := elemType.SymbolicValue()
 	examples := GetExamples(expectedElem, ExampleComputationContext{NonMatchingValue: e})
 	examplesString := ""
@@ -267,19 +267,19 @@ func fmtUnexpectedElemInTupleAnnotated(e SymbolicValue, elemType Pattern) string
 	return fmt.Sprintf("unexpected element of type %s in a tuple of %s (annotated)%s", Stringify(e), Stringify(expectedElem), examplesString)
 }
 
-func FmtCannotAssignPropertyOf(v SymbolicValue) string {
+func FmtCannotAssignPropertyOf(v Value) string {
 	return fmt.Sprintf("cannot assign property of a(n) %s", Stringify(v))
 }
 
-func fmtIndexIsNotAnIntButA(v SymbolicValue) string {
+func fmtIndexIsNotAnIntButA(v Value) string {
 	return fmt.Sprintf("index is not an integer but a(n) %s", Stringify(v))
 }
 
-func fmtStartIndexIsNotAnIntButA(v SymbolicValue) string {
+func fmtStartIndexIsNotAnIntButA(v Value) string {
 	return fmt.Sprintf("start index is not an integer but a(n) %s", Stringify(v))
 }
 
-func fmtEndIndexIsNotAnIntButA(v SymbolicValue) string {
+func fmtEndIndexIsNotAnIntButA(v Value) string {
 	return fmt.Sprintf("end index is not an integer but a(n) %s", Stringify(v))
 }
 
@@ -311,43 +311,43 @@ func fmtInvalidNumberOfNonArgsAtLeastMandatoryMax(actual, mandatory int, max int
 	return fmt.Sprintf("invalid number of non-spread arguments: %v, at least %v were expected (max %v)", actual, mandatory, max)
 }
 
-func FmtInvalidArg(position int, actual, expected SymbolicValue) string {
+func FmtInvalidArg(position int, actual, expected Value) string {
 	return fmt.Sprintf("invalid value for argument at position %d: type is %s, but %s was expected", position, Stringify(actual), Stringify(expected))
 }
 
-func fmtInvalidReturnValue(actual, expected SymbolicValue) string {
+func fmtInvalidReturnValue(actual, expected Value) string {
 	return fmt.Sprintf("invalid return value: type is %v, but a value matching %v was expected", Stringify(actual), Stringify(expected))
 }
 
-func fmtSeqExpectedButIs(value SymbolicValue) string {
+func fmtSeqExpectedButIs(value Value) string {
 	return fmt.Sprintf("a sequence was expected but value is a(n) %s", Stringify(value))
 }
 
-func fmtXisNotIterable(v SymbolicValue) string {
+func fmtXisNotIterable(v Value) string {
 	return fmt.Sprintf("a(n) %s is not iterable", Stringify(v))
 }
 
-func fmtXisNotWalkable(v SymbolicValue) string {
+func fmtXisNotWalkable(v Value) string {
 	return fmt.Sprintf("a(n) %s is not walkable", Stringify(v))
 }
 
-func fmtXisNotIndexable(v SymbolicValue) string {
+func fmtXisNotIndexable(v Value) string {
 	return fmt.Sprintf("a(n) %s is not indexable", Stringify(v))
 }
 
-func fmtXisNotASequence(v SymbolicValue) string {
+func fmtXisNotASequence(v Value) string {
 	return fmt.Sprintf("a(n) %s is not a sequence", Stringify(v))
 }
 
-func fmtXisNotAMutableSequence(v SymbolicValue) string {
+func fmtXisNotAMutableSequence(v Value) string {
 	return fmt.Sprintf("a(n) %s is not a mutable sequence", Stringify(v))
 }
 
-func fmtSequenceExpectedButIs(value SymbolicValue) string {
+func fmtSequenceExpectedButIs(value Value) string {
 	return fmt.Sprintf("a sequence was expected but value is a(n) %s", Stringify(value))
 }
 
-func fmtMutableSequenceExpectedButIs(value SymbolicValue) string {
+func fmtMutableSequenceExpectedButIs(value Value) string {
 	return fmt.Sprintf("a mutable sequence was expected but value is a(n) %s", Stringify(value))
 }
 
@@ -383,11 +383,11 @@ func fmtAttempToAssignConstantGlobal(name string) string {
 	return fmt.Sprintf("attempt to assign constant global '%s'", name)
 }
 
-func fmtAssertedValueShouldBeBoolNot(v SymbolicValue) string {
+func fmtAssertedValueShouldBeBoolNot(v Value) string {
 	return fmt.Sprintf("asserted value should be a boolean not a %s", Stringify(v))
 }
 
-func fmtGroupPropertyNotLThreadGroup(v SymbolicValue) string {
+func fmtGroupPropertyNotLThreadGroup(v Value) string {
 	return fmt.Sprintf("value of .group should be a lthread group, not a(n) %s", Stringify(v))
 }
 
@@ -395,7 +395,7 @@ func fmtValueOfVarShouldBeAModuleNode(name string) string {
 	return fmt.Sprintf("%s should be a module node", name)
 }
 
-func fmtSpreadArgumentShouldBeIterable(v SymbolicValue) string {
+func fmtSpreadArgumentShouldBeIterable(v Value) string {
 	return fmt.Sprintf("a spread argument should be iterable but is a(n) %s", Stringify(v))
 }
 
@@ -422,15 +422,15 @@ func fmtCannotInterpolateMemberOfPatternNamespaceDoesNotExist(name string, names
 	return fmt.Sprintf("cannot interpolate: member .%s of pattern namespace '%s' does not exist", name, namespace)
 }
 
-func fmtInterpolationIsNotStringlikeOrIntBut(v SymbolicValue) string {
+func fmtInterpolationIsNotStringlikeOrIntBut(v Value) string {
 	return fmt.Sprintf("result of interpolation expression should be a string/int but is a(n) %s", Stringify(v))
 }
 
-func fmtUntypedInterpolationIsNotStringlikeOrIntBut(v SymbolicValue) string {
+func fmtUntypedInterpolationIsNotStringlikeOrIntBut(v Value) string {
 	return fmt.Sprintf("result of untyped interpolation expression should be a string/int but is a(n) %s", Stringify(v))
 }
 
-func fmtPropOfDoesNotExist(name string, v SymbolicValue, suggestion string) string {
+func fmtPropOfDoesNotExist(name string, v Value, suggestion string) string {
 	if suggestion != "" {
 		suggestion = " maybe you meant ." + suggestion
 	}
@@ -448,11 +448,11 @@ func fmtExtensionsDoNotProvideTheXProp(name string, suggestion string) string {
 	return fmt.Sprintf("extensions do not provide a(n) '%s' property%s", name, suggestion)
 }
 
-func fmtPatternSpreadInObjectPatternShouldBeAnObjectPatternNot(v SymbolicValue) string {
+func fmtPatternSpreadInObjectPatternShouldBeAnObjectPatternNot(v Value) string {
 	return fmt.Sprintf("a pattern that is a spread in an object pattern should be an object pattern not a(n) %s", Stringify(v))
 }
 
-func fmtPatternSpreadInRecordPatternShouldBeAnRecordPatternNot(v SymbolicValue) string {
+func fmtPatternSpreadInRecordPatternShouldBeAnRecordPatternNot(v Value) string {
 	return fmt.Sprintf("a pattern that is a spread in an record pattern should be an record pattern not a(n) %s", Stringify(v))
 }
 
@@ -460,11 +460,11 @@ func fmtPropertyShouldNotBePresentInSeveralSpreadPatterns(name string) string {
 	return fmt.Sprintf("property '%s' should not be present in several spread patterns", name)
 }
 
-func fmtCannotCreateHostAliasWithA(value SymbolicValue) string {
+func fmtCannotCreateHostAliasWithA(value Value) string {
 	return fmt.Sprintf("cannot create a host alias with a value of type %s", Stringify(value))
 }
 
-func fmtPatternNamespaceShouldBeInitWithNot(v SymbolicValue) string {
+func fmtPatternNamespaceShouldBeInitWithNot(v Value) string {
 	return fmt.Sprintf("a pattern namespace should be initialized with an object or a record not a(n) %s", Stringify(v))
 }
 
@@ -484,27 +484,27 @@ func fmtCannotInitializedMetaProp(key string) string {
 	return fmt.Sprintf("cannot initialize metaproperty '%s'", key)
 }
 
-func fmtCannotGetDynamicMemberOfValueWithNoProps(v SymbolicValue) string {
+func fmtCannotGetDynamicMemberOfValueWithNoProps(v Value) string {
 	return fmt.Sprintf("cannot get dynamic member of value with no properties: %s", Stringify(v))
 }
 
-func fmtValueHasNoProperties(value SymbolicValue) string {
+func fmtValueHasNoProperties(value Value) string {
 	return fmt.Sprintf("value has no properties: %s", Stringify(value))
 }
 
-func FormatErrPropertyDoesNotExist(name string, v SymbolicValue) error {
+func FormatErrPropertyDoesNotExist(name string, v Value) error {
 	return fmt.Errorf("property .%s of value %#v does not exist", name, v)
 }
 
-func fmtSynchronizedValueShouldBeASharableValueOrImmutableNot(v SymbolicValue) string {
+func fmtSynchronizedValueShouldBeASharableValueOrImmutableNot(v Value) string {
 	return fmt.Sprintf("synchronized value should be a sharable or immutable value not a(n) %s", Stringify(v))
 }
 
-func fmtXisNotAGroupMatchingPattern(v SymbolicValue) string {
+func fmtXisNotAGroupMatchingPattern(v Value) string {
 	return fmt.Sprintf("a(n) %s is not a group matching pattern", Stringify(v))
 }
 
-func fmtSubjectOfLifetimeJobShouldBeObjectPatternNot(v SymbolicValue) string {
+func fmtSubjectOfLifetimeJobShouldBeObjectPatternNot(v Value) string {
 	return fmt.Sprintf("the subject pattern of a lifetime job should be an object pattern not an %s", Stringify(v))
 }
 
@@ -516,7 +516,7 @@ func fmtListShouldHaveLengthGreaterOrEqualTo(n int) string {
 	return fmt.Sprintf("list should have a length greater or equal to %d", n)
 }
 
-func fmtComputedPropNameShouldBeAStringNotA(v SymbolicValue) string {
+func fmtComputedPropNameShouldBeAStringNotA(v Value) string {
 	return fmt.Sprintf("computed property name should be a string, not a(n) %s", Stringify(v))
 }
 
@@ -524,15 +524,15 @@ func fmtUnknownSectionInLThreadMetadata(name string) string {
 	return fmt.Sprintf("unknown section '%s' in lthread metadata", name)
 }
 
-func fmtValueNotStringifiableToQueryParamValue(val SymbolicValue) string {
+func fmtValueNotStringifiableToQueryParamValue(val Value) string {
 	return fmt.Sprintf("value of type %s is not stringifiable to a query param value: only strings, integers & booleans are accepted", Stringify(val))
 }
 
-func fmtVal1Val2HaveNoOverlap(val1, val2 SymbolicValue) string {
+func fmtVal1Val2HaveNoOverlap(val1, val2 Value) string {
 	return fmt.Sprintf("%s and %s have no overlap", Stringify(val1), Stringify(val2))
 }
 
-func fmtStringConcatInvalidElementOfType(v SymbolicValue) string {
+func fmtStringConcatInvalidElementOfType(v Value) string {
 	return fmt.Sprintf("string concatenation: invalid element of type %s", Stringify(v))
 }
 

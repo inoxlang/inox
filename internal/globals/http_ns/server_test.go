@@ -103,7 +103,7 @@ func init() {
 		})
 	}
 
-	core.RegisterSymbolicGoFunction(toStr, func(ctx *symbolic.Context, arg symbolic.SymbolicValue) symbolic.StringLike {
+	core.RegisterSymbolicGoFunction(toStr, func(ctx *symbolic.Context, arg symbolic.Value) symbolic.StringLike {
 		return symbolic.ANY_STR_LIKE
 	})
 
@@ -113,7 +113,7 @@ func init() {
 		return symbolic.ANY_BYTE_SLICE
 	})
 
-	core.RegisterSymbolicGoFunction(toRstream, func(ctx *symbolic.Context, v symbolic.SymbolicValue) *symbolic.ReadableStream {
+	core.RegisterSymbolicGoFunction(toRstream, func(ctx *symbolic.Context, v symbolic.Value) *symbolic.ReadableStream {
 		return symbolic.NewReadableStream(symbolic.ANY)
 	})
 	if !core.IsSymbolicEquivalentOfGoFunctionRegistered(core.Sleep) {

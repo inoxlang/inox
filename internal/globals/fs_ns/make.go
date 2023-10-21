@@ -27,10 +27,10 @@ var (
 	ErrTooDeepFileHierarchy = errors.New("file hierarchy is too deep")
 
 	MKDIR_ARG_NAMES   = []string{"dirpath", "content"}
-	MKDIR_SYMB_PARAMS = &[]symbolic.SymbolicValue{symbolic.ANY_DIR_PATH, symbolic.ANY_DICT}
+	MKDIR_SYMB_PARAMS = &[]symbolic.Value{symbolic.ANY_DIR_PATH, symbolic.ANY_DICT}
 
 	MKFILE_ARG_NAMES   = []string{"filepath", "content"}
-	MKFILE_SYMB_PARAMS = &[]symbolic.SymbolicValue{symbolic.ANY_NON_DIR_PATH, symbolic.ANY_READABLE}
+	MKFILE_SYMB_PARAMS = &[]symbolic.Value{symbolic.ANY_NON_DIR_PATH, symbolic.ANY_READABLE}
 )
 
 // Mkdir expects a core.Path argument and creates a directory.

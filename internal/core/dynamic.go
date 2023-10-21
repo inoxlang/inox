@@ -20,10 +20,10 @@ var (
 
 func init() {
 	RegisterSymbolicGoFunctions([]any{
-		NewDynamicIf, func(ctx *symbolic.Context, cond *symbolic.DynamicValue, consequent, alternate symbolic.SymbolicValue) *symbolic.DynamicValue {
+		NewDynamicIf, func(ctx *symbolic.Context, cond *symbolic.DynamicValue, consequent, alternate symbolic.Value) *symbolic.DynamicValue {
 			return symbolic.NewDynamicValue(symbolic.NewMultivalue(consequent, alternate))
 		},
-		NewDynamicCall, func(ctx *symbolic.Context, callee symbolic.SymbolicValue, args ...symbolic.SymbolicValue) *symbolic.DynamicValue {
+		NewDynamicCall, func(ctx *symbolic.Context, callee symbolic.Value, args ...symbolic.Value) *symbolic.DynamicValue {
 			switch callee.(type) {
 			case *symbolic.InoxFunction, *symbolic.GoFunction:
 			default:

@@ -18,7 +18,7 @@ type Filesystem struct {
 	_ int
 }
 
-func (fls *Filesystem) Test(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+func (fls *Filesystem) Test(v symbolic.Value, state symbolic.RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -30,7 +30,7 @@ func (fls *Filesystem) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 	return nil, false
 }
 
-func (fls *Filesystem) Prop(name string) symbolic.SymbolicValue {
+func (fls *Filesystem) Prop(name string) symbolic.Value {
 	method, ok := fls.GetGoMethod(name)
 	if !ok {
 		panic(symbolic.FormatErrPropertyDoesNotExist(name, fls))
@@ -42,6 +42,6 @@ func (fls *Filesystem) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintCo
 	utils.Must(w.Write(utils.StringAsBytes("%filesystem")))
 }
 
-func (fls *Filesystem) WidestOfType() symbolic.SymbolicValue {
+func (fls *Filesystem) WidestOfType() symbolic.Value {
 	return ANY_FILESYSTEM
 }

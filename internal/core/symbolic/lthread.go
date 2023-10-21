@@ -30,7 +30,7 @@ type LThread struct {
 	_ int
 }
 
-func (t *LThread) Test(v SymbolicValue, state RecTestCallState) bool {
+func (t *LThread) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -42,7 +42,7 @@ func (t *LThread) Test(v SymbolicValue, state RecTestCallState) bool {
 	}
 }
 
-func (t *LThread) WidestOfType() SymbolicValue {
+func (t *LThread) WidestOfType() Value {
 	return ANY_LTHREAD
 }
 
@@ -56,7 +56,7 @@ func (t *LThread) GetGoMethod(name string) (*GoFunction, bool) {
 	return nil, false
 }
 
-func (t *LThread) Prop(name string) SymbolicValue {
+func (t *LThread) Prop(name string) Value {
 	switch name {
 	case "steps":
 		return NewArrayOf(&ExecutedStep{})
@@ -72,7 +72,7 @@ func (*LThread) PropertyNames() []string {
 	return ROUTINE_PROPNAMES
 }
 
-func (t *LThread) WaitResult(ctx *Context) (SymbolicValue, *Error) {
+func (t *LThread) WaitResult(ctx *Context) (Value, *Error) {
 	return ANY, nil
 }
 
@@ -90,7 +90,7 @@ type LThreadGroup struct {
 	_ int
 }
 
-func (g *LThreadGroup) Test(v SymbolicValue, state RecTestCallState) bool {
+func (g *LThreadGroup) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -112,7 +112,7 @@ func (g *LThreadGroup) GetGoMethod(name string) (*GoFunction, bool) {
 	return nil, false
 }
 
-func (g *LThreadGroup) Prop(name string) SymbolicValue {
+func (g *LThreadGroup) Prop(name string) Value {
 	method, ok := g.GetGoMethod(name)
 	if !ok {
 		panic(FormatErrPropertyDoesNotExist(name, g))
@@ -140,7 +140,7 @@ func (g *LThreadGroup) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintCo
 	utils.Must(w.Write(utils.StringAsBytes("%lthread-group")))
 }
 
-func (g *LThreadGroup) WidestOfType() SymbolicValue {
+func (g *LThreadGroup) WidestOfType() Value {
 	return ANY_LTHREAD_GROUP
 }
 
@@ -150,7 +150,7 @@ type ExecutedStep struct {
 	_ int
 }
 
-func (s *ExecutedStep) Test(v SymbolicValue, state RecTestCallState) bool {
+func (s *ExecutedStep) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -162,7 +162,7 @@ func (s *ExecutedStep) Test(v SymbolicValue, state RecTestCallState) bool {
 	}
 }
 
-func (s *ExecutedStep) WidestOfType() SymbolicValue {
+func (s *ExecutedStep) WidestOfType() Value {
 	return ANY_EXECUTED_STEP
 }
 
@@ -170,7 +170,7 @@ func (s *ExecutedStep) GetGoMethod(name string) (*GoFunction, bool) {
 	return nil, false
 }
 
-func (s *ExecutedStep) Prop(name string) SymbolicValue {
+func (s *ExecutedStep) Prop(name string) Value {
 	switch name {
 	case "result":
 		return ANY
@@ -189,7 +189,7 @@ func (*ExecutedStep) PropertyNames() []string {
 	return EXECUTED_STEP_PROPNAMES
 }
 
-func (s *ExecutedStep) WaitResult(ctx *Context) (SymbolicValue, *Error) {
+func (s *ExecutedStep) WaitResult(ctx *Context) (Value, *Error) {
 	return ANY, nil
 }
 

@@ -19,7 +19,7 @@ var (
 	xmlInterpolationCheckingFunctions = map[uintptr] /* go symbolic function pointer*/ XMLInterpolationCheckingFunction{}
 )
 
-type XMLInterpolationCheckingFunction func(n parse.Node, value SymbolicValue) (errorMsg string)
+type XMLInterpolationCheckingFunction func(n parse.Node, value Value) (errorMsg string)
 
 func RegisterXMLInterpolationCheckingFunction(factory any, fn XMLInterpolationCheckingFunction) {
 	xmlInterpolationCheckingFunctions[reflect.ValueOf(factory).Pointer()] = fn
@@ -32,11 +32,11 @@ func UnregisterXMLCheckingFunction(factory any) {
 // A XMLElement represents a symbolic XMLElement.
 type XMLElement struct {
 	name       string //if "" matches any node value
-	attributes map[string]SymbolicValue
-	children   []SymbolicValue
+	attributes map[string]Value
+	children   []Value
 }
 
-func NewXmlElement(name string, attributes map[string]SymbolicValue, children []SymbolicValue) *XMLElement {
+func NewXmlElement(name string, attributes map[string]Value, children []Value) *XMLElement {
 	return &XMLElement{name: name, children: children, attributes: attributes}
 }
 
@@ -45,16 +45,16 @@ func (e *XMLElement) Name() string {
 }
 
 // result should not be modified.
-func (e *XMLElement) Attributes() map[string]SymbolicValue {
+func (e *XMLElement) Attributes() map[string]Value {
 	return e.attributes
 }
 
 // result should not be modified.
-func (e *XMLElement) Children() []SymbolicValue {
+func (e *XMLElement) Children() []Value {
 	return e.children
 }
 
-func (r *XMLElement) Test(v SymbolicValue, state RecTestCallState) bool {
+func (r *XMLElement) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -75,6 +75,6 @@ func (r *XMLElement) Writer() *Writer {
 	return &Writer{}
 }
 
-func (r *XMLElement) WidestOfType() SymbolicValue {
+func (r *XMLElement) WidestOfType() Value {
 	return ANY_XML_ELEM
 }

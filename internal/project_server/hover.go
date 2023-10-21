@@ -67,7 +67,7 @@ func getHoverContent(fpath string, line, column int32, handlingCtx *core.Context
 	xmlElementInfo, hasXmlElementInfo := getXmlElementInfo(hoveredNode, ancestors)
 
 	mostSpecificVal, ok := state.SymbolicData.GetMostSpecificNodeValue(hoveredNode)
-	var lessSpecificVal symbolic.SymbolicValue
+	var lessSpecificVal symbolic.Value
 	if !ok {
 		if hasXmlElementInfo {
 			return &defines.Hover{

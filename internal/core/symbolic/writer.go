@@ -13,7 +13,7 @@ var (
 
 // A Writable represents a symbolic Writable.
 type Writable interface {
-	SymbolicValue
+	Value
 	Writer() *Writer
 }
 
@@ -22,7 +22,7 @@ type AnyWritable struct {
 	_ int
 }
 
-func (r *AnyWritable) Test(v SymbolicValue, state RecTestCallState) bool {
+func (r *AnyWritable) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -43,7 +43,7 @@ func (r *AnyWritable) Writer() *Writer {
 	return &Writer{}
 }
 
-func (r *AnyWritable) WidestOfType() SymbolicValue {
+func (r *AnyWritable) WidestOfType() Value {
 	return &AnyWritable{}
 }
 
@@ -54,7 +54,7 @@ type Writer struct {
 	_ int
 }
 
-func (w *Writer) Test(v SymbolicValue, state RecTestCallState) bool {
+func (w *Writer) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -74,7 +74,7 @@ func (w *Writer) ReadAll() (*ByteSlice, *Error) {
 	return &ByteSlice{}, nil
 }
 
-func (w *Writer) Prop(name string) SymbolicValue {
+func (w *Writer) Prop(name string) Value {
 	method, ok := w.GetGoMethod(name)
 	if !ok {
 		panic(FormatErrPropertyDoesNotExist(name, w))
@@ -103,7 +103,7 @@ func (*Writer) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, de
 	return
 }
 
-func (*Writer) WidestOfType() SymbolicValue {
+func (*Writer) WidestOfType() Value {
 	return &Writer{}
 }
 

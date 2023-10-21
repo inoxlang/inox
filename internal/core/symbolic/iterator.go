@@ -19,9 +19,9 @@ var (
 
 // An Iterable represents a symbolic Iterable.
 type Iterable interface {
-	SymbolicValue
-	IteratorElementKey() SymbolicValue
-	IteratorElementValue() SymbolicValue
+	Value
+	IteratorElementKey() Value
+	IteratorElementValue() Value
 }
 
 type SerializableIterable interface {
@@ -34,7 +34,7 @@ type AnyIterable struct {
 	_ int
 }
 
-func (*AnyIterable) Test(v SymbolicValue, state RecTestCallState) bool {
+func (*AnyIterable) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -47,15 +47,15 @@ func (*AnyIterable) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfi
 	utils.Must(w.Write(utils.StringAsBytes("%iterable")))
 }
 
-func (*AnyIterable) WidestOfType() SymbolicValue {
+func (*AnyIterable) WidestOfType() Value {
 	return ANY_ITERABLE
 }
 
-func (*AnyIterable) IteratorElementKey() SymbolicValue {
+func (*AnyIterable) IteratorElementKey() Value {
 	return ANY
 }
 
-func (*AnyIterable) IteratorElementValue() SymbolicValue {
+func (*AnyIterable) IteratorElementValue() Value {
 	return ANY
 }
 
@@ -65,7 +65,7 @@ type AnySerializableIterable struct {
 	SerializableMixin
 }
 
-func (r *AnySerializableIterable) Test(v SymbolicValue, state RecTestCallState) bool {
+func (r *AnySerializableIterable) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -79,25 +79,25 @@ func (r *AnySerializableIterable) PrettyPrint(w *bufio.Writer, config *pprint.Pr
 	utils.Must(w.Write(utils.StringAsBytes("%serializable-iterable")))
 }
 
-func (r *AnySerializableIterable) WidestOfType() SymbolicValue {
+func (r *AnySerializableIterable) WidestOfType() Value {
 	return ANY_SERIALIZABLE_ITERABLE
 }
 
-func (r *AnySerializableIterable) IteratorElementKey() SymbolicValue {
+func (r *AnySerializableIterable) IteratorElementKey() Value {
 	return ANY
 }
 
-func (r *AnySerializableIterable) IteratorElementValue() SymbolicValue {
+func (r *AnySerializableIterable) IteratorElementValue() Value {
 	return ANY
 }
 
 // An Iterator represents a symbolic Iterator.
 type Iterator struct {
-	ElementValue SymbolicValue //if nil matches any
+	ElementValue Value //if nil matches any
 	_            int
 }
 
-func (r *Iterator) Test(v SymbolicValue, state RecTestCallState) bool {
+func (r *Iterator) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -116,17 +116,17 @@ func (r *Iterator) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig
 	return
 }
 
-func (r *Iterator) IteratorElementKey() SymbolicValue {
+func (r *Iterator) IteratorElementKey() Value {
 	return ANY
 }
 
-func (r *Iterator) IteratorElementValue() SymbolicValue {
+func (r *Iterator) IteratorElementValue() Value {
 	if r.ElementValue == nil {
 		return ANY
 	}
 	return r.ElementValue
 }
 
-func (r *Iterator) WidestOfType() SymbolicValue {
+func (r *Iterator) WidestOfType() Value {
 	return &Iterator{}
 }

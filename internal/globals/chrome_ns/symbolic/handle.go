@@ -20,7 +20,7 @@ type Handle struct {
 	_ int
 }
 
-func (r *Handle) Test(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+func (r *Handle) Test(v symbolic.Value, state symbolic.RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -32,7 +32,7 @@ func (r *Handle) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, 
 	utils.Must(w.Write(utils.StringAsBytes("%browser-handle")))
 }
 
-func (r *Handle) WidestOfType() symbolic.SymbolicValue {
+func (r *Handle) WidestOfType() symbolic.Value {
 	return &Handle{}
 }
 
@@ -63,11 +63,11 @@ func (h *Handle) HtmlNode(ctx *symbolic.Context, sel *symbolic.String) (*html_ns
 func (h *Handle) Close(ctx *symbolic.Context) {
 }
 
-func (h *Handle) Prop(name string) symbolic.SymbolicValue {
+func (h *Handle) Prop(name string) symbolic.Value {
 	return symbolic.GetGoMethodOrPanic(name, h)
 }
 
-func (h *Handle) WithExistingPropReplaced(name string, value symbolic.SymbolicValue) (symbolic.IProps, error) {
+func (h *Handle) WithExistingPropReplaced(name string, value symbolic.Value) (symbolic.IProps, error) {
 	return nil, errors.New(symbolic.FmtCannotAssignPropertyOf(h))
 }
 

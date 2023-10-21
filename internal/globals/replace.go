@@ -33,7 +33,7 @@ func _replace(ctx *core.Context, old, new, location core.Value) (core.Value, err
 
 }
 
-func _symbolic_replace(ctx *symbolic.Context, old, new, location symbolic.SymbolicValue) (symbolic.SymbolicValue, *symbolic.Error) {
+func _symbolic_replace(ctx *symbolic.Context, old, new, location symbolic.Value) (symbolic.Value, *symbolic.Error) {
 	switch location.(type) {
 	case symbolic.StringLike:
 		_, ok := old.(symbolic.StringLike)

@@ -14,7 +14,7 @@ type Bucket struct {
 	_ int
 }
 
-func (r *Bucket) Test(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+func (r *Bucket) Test(v symbolic.Value, state symbolic.RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -26,7 +26,7 @@ func (serv *Bucket) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 	return nil, false
 }
 
-func (b *Bucket) Prop(name string) symbolic.SymbolicValue {
+func (b *Bucket) Prop(name string) symbolic.Value {
 	return symbolic.GetGoMethodOrPanic(name, b)
 }
 
@@ -39,6 +39,6 @@ func (r *Bucket) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, 
 	return
 }
 
-func (r *Bucket) WidestOfType() symbolic.SymbolicValue {
+func (r *Bucket) WidestOfType() symbolic.Value {
 	return &Bucket{}
 }

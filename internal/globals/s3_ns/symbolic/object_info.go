@@ -14,7 +14,7 @@ type ObjectInfo struct {
 	symbolic.SerializableMixin
 }
 
-func (r *ObjectInfo) Test(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+func (r *ObjectInfo) Test(v symbolic.Value, state symbolic.RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -26,7 +26,7 @@ func (resp *ObjectInfo) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 	return nil, false
 }
 
-func (resp *ObjectInfo) Prop(name string) symbolic.SymbolicValue {
+func (resp *ObjectInfo) Prop(name string) symbolic.Value {
 	switch name {
 	case "key":
 		return &symbolic.String{}
@@ -44,6 +44,6 @@ func (r *ObjectInfo) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConf
 	return
 }
 
-func (r *ObjectInfo) WidestOfType() symbolic.SymbolicValue {
+func (r *ObjectInfo) WidestOfType() symbolic.Value {
 	return &ObjectInfo{}
 }

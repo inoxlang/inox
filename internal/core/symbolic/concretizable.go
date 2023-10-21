@@ -95,12 +95,12 @@ type PotentiallyConcretizable interface {
 	Concretize(ctx ConcreteContext) any
 }
 
-func IsConcretizable(v SymbolicValue) bool {
+func IsConcretizable(v Value) bool {
 	potentiallyConcretizable, ok := v.(PotentiallyConcretizable)
 	return ok && potentiallyConcretizable.IsConcretizable()
 }
 
-func Concretize(v SymbolicValue, ctx ConcreteContext) (any, error) {
+func Concretize(v Value, ctx ConcreteContext) (any, error) {
 	potentiallyConcretizable, ok := v.(PotentiallyConcretizable)
 	if !ok || !potentiallyConcretizable.IsConcretizable() {
 		return nil, ErrNotConcretizable

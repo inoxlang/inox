@@ -42,7 +42,7 @@ type TopicGroup struct {
 
 func init() {
 	core.RegisterSymbolicGoFunctions([]any{
-		Help, func(ctx *symbolic.Context, args ...symbolic.SymbolicValue) {},
+		Help, func(ctx *symbolic.Context, args ...symbolic.Value) {},
 	})
 
 	if err := yaml.Unmarshal(utils.StringAsBytes(BUILTIN_HELP_YAML), &topicGroups); err != nil {

@@ -23,23 +23,23 @@ type State struct {
 	recursiveFunctionName string
 
 	calleeStack           []*parse.FunctionExpression
-	topLevelSelf          SymbolicValue // can be nil
-	returnType            SymbolicValue
-	returnValue           SymbolicValue
+	topLevelSelf          Value // can be nil
+	returnType            Value
+	returnValue           Value
 	conditionalReturn     bool
 	iterationChange       IterationChange
 	checkXMLInterpolation XMLInterpolationCheckingFunction
 	Module                *Module
 
-	baseGlobals           map[string]SymbolicValue
+	baseGlobals           map[string]Value
 	basePatterns          map[string]Pattern
 	basePatternNamespaces map[string]*PatternNamespace
 
 	tempSymbolicGoFunctionErrors         []string
 	tempSymbolicGoFunctionWarnings       []string
-	tempSymbolicGoFunctionParameters     *[]SymbolicValue
+	tempSymbolicGoFunctionParameters     *[]Value
 	tempSymbolicGoFunctionParameterNames []string
-	tempUpdatedSelf                      SymbolicValue
+	tempUpdatedSelf                      Value
 
 	lastErrorNode        parse.Node
 	symbolicData         *SymbolicData
@@ -47,14 +47,14 @@ type State struct {
 }
 
 type scopeInfo struct {
-	self      SymbolicValue //can be nil
-	nextSelf  SymbolicValue //can be nil
+	self      Value //can be nil
+	nextSelf  Value //can be nil
 	variables map[string]varSymbolicInfo
 }
 
 type tempSymbolicGoFunctionSignature struct {
-	params      []SymbolicValue
-	returnTypes []SymbolicValue
+	params      []Value
+	returnTypes []Value
 }
 
 func newSymbolicState(ctx *Context, chunk *parse.ParsedChunk) *State {
@@ -124,7 +124,7 @@ func (state *State) localCount() int {
 	return len(state.scopeStack[len(state.scopeStack)-1].variables)
 }
 
-func (state *State) setGlobal(name string, value SymbolicValue, constness GlobalConstness, optDefinitionNode ...parse.Node) (ok bool) {
+func (state *State) setGlobal(name string, value Value, constness GlobalConstness, optDefinitionNode ...parse.Node) (ok bool) {
 	scope := state.scopeStack[0]
 	var info varSymbolicInfo
 
@@ -155,7 +155,7 @@ func (state *State) setGlobal(name string, value SymbolicValue, constness Global
 	return true
 }
 
-func (state *State) overrideGlobal(name string, value SymbolicValue) (ok bool) {
+func (state *State) overrideGlobal(name string, value Value) (ok bool) {
 	scope := state.scopeStack[0]
 	info := scope.variables[name]
 	info.value = value
@@ -163,7 +163,7 @@ func (state *State) overrideGlobal(name string, value SymbolicValue) (ok bool) {
 	return true
 }
 
-func (state *State) setLocal(name string, value SymbolicValue, static Pattern, optDefinitionNode ...parse.Node) {
+func (state *State) setLocal(name string, value Value, static Pattern, optDefinitionNode ...parse.Node) {
 	state.assertHasLocals()
 	scope := state.scopeStack[len(state.scopeStack)-1]
 
@@ -187,7 +187,7 @@ func (state *State) getCurrentChunkNodePositionOrZero(node parse.Node) parse.Sou
 	return state.currentChunk().GetSourcePosition(node.Base().Span)
 }
 
-func (state *State) overrideLocal(name string, value SymbolicValue) {
+func (state *State) overrideLocal(name string, value Value) {
 	state.assertHasLocals()
 	scope := state.scopeStack[len(state.scopeStack)-1]
 
@@ -206,7 +206,7 @@ func (state *State) removeLocal(name string) {
 	delete(scope.variables, name)
 }
 
-func (state *State) setNextSelf(value SymbolicValue) {
+func (state *State) setNextSelf(value Value) {
 	state.assertHasLocals()
 	scope := state.scopeStack[len(state.scopeStack)-1]
 
@@ -228,14 +228,14 @@ func (state *State) unsetNextSelf() {
 	scope.nextSelf = nil
 }
 
-func (state *State) getNextSelf() (SymbolicValue, bool) {
+func (state *State) getNextSelf() (Value, bool) {
 	state.assertHasLocals()
 	scope := state.scopeStack[len(state.scopeStack)-1]
 
 	return scope.nextSelf, scope.nextSelf != nil
 }
 
-func (state *State) setSelf(value SymbolicValue) {
+func (state *State) setSelf(value Value) {
 	state.assertHasLocals()
 	scope := state.scopeStack[len(state.scopeStack)-1]
 
@@ -257,7 +257,7 @@ func (state *State) unsetSelf() {
 	scope.self = nil
 }
 
-func (state *State) getSelf() (SymbolicValue, bool) {
+func (state *State) getSelf() (Value, bool) {
 	state.assertHasLocals()
 	scope := state.scopeStack[len(state.scopeStack)-1]
 	return scope.self, scope.self != nil
@@ -311,15 +311,15 @@ func (state *State) get(name string) (varSymbolicInfo, bool) {
 	return state.getGlobal(name)
 }
 
-func (state *State) updateLocal(name string, value SymbolicValue, node parse.Node) bool {
-	ok, _ := state.updateLocal2(name, node, func(expected SymbolicValue) (SymbolicValue, bool, error) {
+func (state *State) updateLocal(name string, value Value, node parse.Node) bool {
+	ok, _ := state.updateLocal2(name, node, func(expected Value) (Value, bool, error) {
 		return value, false, nil
 	}, false)
 	return ok
 }
 
-func (state *State) narrowLocal(name string, value SymbolicValue, node parse.Node) bool {
-	ok, _ := state.updateLocal2(name, node, func(expected SymbolicValue) (SymbolicValue, bool, error) {
+func (state *State) narrowLocal(name string, value Value, node parse.Node) bool {
+	ok, _ := state.updateLocal2(name, node, func(expected Value) (Value, bool, error) {
 		return value, false, nil
 	}, true)
 	return ok
@@ -328,7 +328,7 @@ func (state *State) narrowLocal(name string, value SymbolicValue, node parse.Nod
 func (state *State) updateLocal2(
 	name string,
 	node parse.Node,
-	getValue func(expected SymbolicValue) (value SymbolicValue, deeperMismatch bool, _ error),
+	getValue func(expected Value) (value Value, deeperMismatch bool, _ error),
 	narrowing bool,
 ) (bool, error) {
 	state.assertHasLocals()
@@ -358,15 +358,15 @@ func (state *State) updateLocal2(
 	return false, nil
 }
 
-func (state *State) updateGlobal(name string, value SymbolicValue, node parse.Node) bool {
-	ok, _ := state.updateGlobal2(name, node, func(expected SymbolicValue) (SymbolicValue, bool, error) {
+func (state *State) updateGlobal(name string, value Value, node parse.Node) bool {
+	ok, _ := state.updateGlobal2(name, node, func(expected Value) (Value, bool, error) {
 		return value, false, nil
 	}, false)
 	return ok
 }
 
-func (state *State) narrowGlobal(name string, value SymbolicValue, node parse.Node) bool {
-	ok, _ := state.updateGlobal2(name, node, func(expected SymbolicValue) (SymbolicValue, bool, error) {
+func (state *State) narrowGlobal(name string, value Value, node parse.Node) bool {
+	ok, _ := state.updateGlobal2(name, node, func(expected Value) (Value, bool, error) {
 		return value, false, nil
 	}, true)
 	return ok
@@ -375,7 +375,7 @@ func (state *State) narrowGlobal(name string, value SymbolicValue, node parse.No
 func (state *State) updateGlobal2(
 	name string,
 	node parse.Node,
-	getValue func(expected SymbolicValue) (value SymbolicValue, deeperMismatch bool, _ error),
+	getValue func(expected Value) (value Value, deeperMismatch bool, _ error),
 	narrowing bool,
 ) (bool, error) {
 	scope := state.scopeStack[0]
@@ -591,7 +591,7 @@ func (state *State) join(forks ...*State) {
 			if !ok {
 				continue
 			}
-			varInfo.value = joinValues([]SymbolicValue{varInfo.value, forkVarInfo.value})
+			varInfo.value = joinValues([]Value{varInfo.value, forkVarInfo.value})
 			scope.variables[k] = varInfo
 		}
 
@@ -603,7 +603,7 @@ func (state *State) join(forks ...*State) {
 			state.returnValue = fork.returnValue
 			state.conditionalReturn = true
 		} else {
-			state.returnValue = joinValues([]SymbolicValue{state.returnValue, fork.returnValue})
+			state.returnValue = joinValues([]Value{state.returnValue, fork.returnValue})
 		}
 	}
 }
@@ -640,7 +640,7 @@ func (state *State) consumeSymbolicGoFunctionWarnings(fn func(msg string)) {
 	state.tempSymbolicGoFunctionWarnings = state.tempSymbolicGoFunctionWarnings[:0]
 }
 
-func (state *State) setSymbolicGoFunctionParameters(parameters *[]SymbolicValue, names []string) {
+func (state *State) setSymbolicGoFunctionParameters(parameters *[]Value, names []string) {
 	if state.tempSymbolicGoFunctionParameters != nil {
 		panic(errors.New("a temporary signature is already present"))
 	}
@@ -648,7 +648,7 @@ func (state *State) setSymbolicGoFunctionParameters(parameters *[]SymbolicValue,
 	state.tempSymbolicGoFunctionParameters = parameters
 }
 
-func (state *State) consumeSymbolicGoFunctionParameters() ([]SymbolicValue, []string, bool) {
+func (state *State) consumeSymbolicGoFunctionParameters() ([]Value, []string, bool) {
 	if state.tempSymbolicGoFunctionParameters == nil {
 		return nil, nil, false
 	}
@@ -659,14 +659,14 @@ func (state *State) consumeSymbolicGoFunctionParameters() ([]SymbolicValue, []st
 	return *state.tempSymbolicGoFunctionParameters, state.tempSymbolicGoFunctionParameterNames, true
 }
 
-func (state *State) setUpdatedSelf(v SymbolicValue) {
+func (state *State) setUpdatedSelf(v Value) {
 	if state.tempUpdatedSelf != nil {
 		panic(errors.New("an updated self is already present"))
 	}
 	state.tempUpdatedSelf = v
 }
 
-func (state *State) consumeUpdatedSelf() (SymbolicValue, bool) {
+func (state *State) consumeUpdatedSelf() (Value, bool) {
 	defer func() {
 		state.tempUpdatedSelf = nil
 	}()
@@ -692,7 +692,7 @@ func (state *State) Warnings() []SymbolicEvaluationWarning {
 }
 
 type varSymbolicInfo struct {
-	value              SymbolicValue
+	value              Value
 	static             Pattern
 	isConstant         bool
 	definitionPosition parse.SourcePositionRange

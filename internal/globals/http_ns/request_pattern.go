@@ -66,7 +66,7 @@ var (
 				},
 			}, nil
 		},
-		SymbolicCallImpl: func(ctx *symbolic.Context, values []symbolic.SymbolicValue) (symbolic.Pattern, error) {
+		SymbolicCallImpl: func(ctx *symbolic.Context, values []symbolic.Value) (symbolic.Pattern, error) {
 			const OBJ_ARG_NAME = "description"
 
 			if len(values) != 1 {

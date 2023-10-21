@@ -28,7 +28,7 @@ type LSPSession struct {
 	_      int
 }
 
-func (s *LSPSession) Test(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+func (s *LSPSession) Test(v symbolic.Value, state symbolic.RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -64,7 +64,7 @@ func (s *LSPSession) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 	return nil, false
 }
 
-func (s *LSPSession) Prop(name string) symbolic.SymbolicValue {
+func (s *LSPSession) Prop(name string) symbolic.Value {
 	method, ok := s.GetGoMethod(name)
 	if !ok {
 		panic(symbolic.FormatErrPropertyDoesNotExist(name, s))
@@ -80,7 +80,7 @@ func (r *LSPSession) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConf
 	utils.Must(w.Write(utils.StringAsBytes("%lsp-session")))
 }
 
-func (r *LSPSession) WidestOfType() symbolic.SymbolicValue {
+func (r *LSPSession) WidestOfType() symbolic.Value {
 	return ANY_LSP_SESSION
 }
 

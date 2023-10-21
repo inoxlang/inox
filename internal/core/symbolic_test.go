@@ -163,22 +163,22 @@ func TestToSymbolicValue(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 
 		patt := NewInexactObjectPattern(map[string]Pattern{"a": INT_PATTERN})
-		symb, err := patt.ToSymbolicValue(ctx, map[uintptr]symbolic.SymbolicValue{})
+		symb, err := patt.ToSymbolicValue(ctx, map[uintptr]symbolic.Value{})
 		if assert.NoError(t, err) {
 			expected := symbolic.NewInexactObjectPattern(
 				map[string]symbolic.Pattern{
-					"a": utils.Must(INT_PATTERN.ToSymbolicValue(ctx, map[uintptr]symbolic.SymbolicValue{})).(symbolic.Pattern),
+					"a": utils.Must(INT_PATTERN.ToSymbolicValue(ctx, map[uintptr]symbolic.Value{})).(symbolic.Pattern),
 				}, nil)
 
 			assert.Equal(t, symbolic.Stringify(expected), symbolic.Stringify(symb))
 		}
 
 		patt = NewInexactObjectPatternWithOptionalProps(map[string]Pattern{"a": INT_PATTERN}, map[string]struct{}{"a": {}})
-		symb, err = patt.ToSymbolicValue(ctx, map[uintptr]symbolic.SymbolicValue{})
+		symb, err = patt.ToSymbolicValue(ctx, map[uintptr]symbolic.Value{})
 		if assert.NoError(t, err) {
 			expected := symbolic.NewInexactObjectPattern(
 				map[string]symbolic.Pattern{
-					"a": utils.Must(INT_PATTERN.ToSymbolicValue(ctx, map[uintptr]symbolic.SymbolicValue{})).(symbolic.Pattern),
+					"a": utils.Must(INT_PATTERN.ToSymbolicValue(ctx, map[uintptr]symbolic.Value{})).(symbolic.Pattern),
 				}, map[string]struct{}{"a": {}})
 
 			assert.Equal(t, symbolic.Stringify(expected), symbolic.Stringify(symb))

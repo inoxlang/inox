@@ -13,16 +13,16 @@ var (
 )
 
 type Error struct {
-	data SymbolicValue
+	data Value
 	UnassignablePropsMixin
 	SerializableMixin
 }
 
-func NewError(data SymbolicValue) *Error {
+func NewError(data Value) *Error {
 	return &Error{data: data}
 }
 
-func (e *Error) Test(v SymbolicValue, state RecTestCallState) bool {
+func (e *Error) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -36,11 +36,11 @@ func (e *Error) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, d
 	return
 }
 
-func (e *Error) WidestOfType() SymbolicValue {
+func (e *Error) WidestOfType() Value {
 	return ANY_ERR
 }
 
-func (e *Error) Prop(name string) SymbolicValue {
+func (e *Error) Prop(name string) Value {
 	switch name {
 	case "text":
 		return ANY_STR_LIKE

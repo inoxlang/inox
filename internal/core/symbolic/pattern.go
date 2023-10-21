@@ -106,12 +106,12 @@ type Pattern interface {
 	HasUnderlyingPattern() bool
 
 	//equivalent of Test() for concrete patterns
-	TestValue(v SymbolicValue, state RecTestCallState) bool
+	TestValue(v Value, state RecTestCallState) bool
 
-	Call(ctx *Context, values []SymbolicValue) (Pattern, error)
+	Call(ctx *Context, values []Value) (Pattern, error)
 
 	//returns a symbolic value that represent all concrete values that match against this pattern
-	SymbolicValue() SymbolicValue
+	SymbolicValue() Value
 
 	StringPattern() (StringPattern, bool)
 }
@@ -119,23 +119,23 @@ type Pattern interface {
 type NotCallablePatternMixin struct {
 }
 
-func (NotCallablePatternMixin) Call(ctx *Context, values []SymbolicValue) (Pattern, error) {
+func (NotCallablePatternMixin) Call(ctx *Context, values []Value) (Pattern, error) {
 	return nil, ErrPatternNotCallable
 }
 
 // A GroupPattern represents a symbolic GroupPattern.
 type GroupPattern interface {
 	Pattern
-	MatchGroups(SymbolicValue) (ok bool, groups map[string]Serializable)
+	MatchGroups(Value) (ok bool, groups map[string]Serializable)
 }
 
-func isAnyPattern(val SymbolicValue) bool {
+func isAnyPattern(val Value) bool {
 	_, ok := val.(*AnyPattern)
 	return ok
 }
 
 type IPropsPattern interface {
-	SymbolicValue
+	Value
 	//ValuePropPattern should return the pattern of the property (name).
 	ValuePropPattern(name string) (propPattern Pattern, isOptional bool, ok bool)
 
@@ -149,7 +149,7 @@ type AnyPattern struct {
 	SerializableMixin
 }
 
-func (p *AnyPattern) Test(v SymbolicValue, state RecTestCallState) bool {
+func (p *AnyPattern) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -165,11 +165,11 @@ func (p *AnyPattern) HasUnderlyingPattern() bool {
 	return false
 }
 
-func (p *AnyPattern) TestValue(SymbolicValue, RecTestCallState) bool {
+func (p *AnyPattern) TestValue(Value, RecTestCallState) bool {
 	return true
 }
 
-func (p *AnyPattern) SymbolicValue() SymbolicValue {
+func (p *AnyPattern) SymbolicValue() Value {
 	return ANY
 }
 
@@ -177,15 +177,15 @@ func (p *AnyPattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
 
-func (p *AnyPattern) IteratorElementKey() SymbolicValue {
+func (p *AnyPattern) IteratorElementKey() Value {
 	return ANY_INT
 }
 
-func (p *AnyPattern) IteratorElementValue() SymbolicValue {
+func (p *AnyPattern) IteratorElementValue() Value {
 	return ANY
 }
 
-func (p *AnyPattern) WidestOfType() SymbolicValue {
+func (p *AnyPattern) WidestOfType() Value {
 	return ANY_PATTERN
 }
 
@@ -196,7 +196,7 @@ type AnySerializablePattern struct {
 	SerializableMixin
 }
 
-func (p *AnySerializablePattern) Test(v SymbolicValue, state RecTestCallState) bool {
+func (p *AnySerializablePattern) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -217,11 +217,11 @@ func (p *AnySerializablePattern) HasUnderlyingPattern() bool {
 	return false
 }
 
-func (p *AnySerializablePattern) TestValue(SymbolicValue, RecTestCallState) bool {
+func (p *AnySerializablePattern) TestValue(Value, RecTestCallState) bool {
 	return true
 }
 
-func (p *AnySerializablePattern) SymbolicValue() SymbolicValue {
+func (p *AnySerializablePattern) SymbolicValue() Value {
 	return ANY_SERIALIZABLE
 }
 
@@ -229,15 +229,15 @@ func (p *AnySerializablePattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
 
-func (p *AnySerializablePattern) IteratorElementKey() SymbolicValue {
+func (p *AnySerializablePattern) IteratorElementKey() Value {
 	return ANY_INT
 }
 
-func (p *AnySerializablePattern) IteratorElementValue() SymbolicValue {
+func (p *AnySerializablePattern) IteratorElementValue() Value {
 	return ANY_SERIALIZABLE
 }
 
-func (p *AnySerializablePattern) WidestOfType() SymbolicValue {
+func (p *AnySerializablePattern) WidestOfType() Value {
 	return ANY_SERIALIZABLE_PATTERN
 }
 
@@ -278,7 +278,7 @@ func NewPathPatternFromNode(n parse.Node, chunk *parse.Chunk) *PathPattern {
 	}
 }
 
-func (p *PathPattern) Test(v SymbolicValue, state RecTestCallState) bool {
+func (p *PathPattern) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -315,7 +315,7 @@ func (p *PathPattern) Static() Pattern {
 	return &TypePattern{val: p.WidestOfType()}
 }
 
-func (p *PathPattern) TestValue(v SymbolicValue, state RecTestCallState) bool {
+func (p *PathPattern) TestValue(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -404,7 +404,7 @@ func (p *PathPattern) HasUnderlyingPattern() bool {
 	return true
 }
 
-func (p *PathPattern) SymbolicValue() SymbolicValue {
+func (p *PathPattern) SymbolicValue() Value {
 	return NewPathMatchingPattern(p)
 }
 
@@ -416,18 +416,18 @@ func (p *PathPattern) PropertyNames() []string {
 	return nil
 }
 
-func (*PathPattern) Prop(name string) SymbolicValue {
+func (*PathPattern) Prop(name string) Value {
 	switch name {
 	default:
 		return nil
 	}
 }
 
-func (p *PathPattern) IteratorElementKey() SymbolicValue {
+func (p *PathPattern) IteratorElementKey() Value {
 	return ANY_INT
 }
 
-func (p *PathPattern) IteratorElementValue() SymbolicValue {
+func (p *PathPattern) IteratorElementValue() Value {
 	return p.SymbolicValue()
 }
 
@@ -435,7 +435,7 @@ func (p *PathPattern) underlyingString() *String {
 	return ANY_STR
 }
 
-func (p *PathPattern) WidestOfType() SymbolicValue {
+func (p *PathPattern) WidestOfType() Value {
 	return ANY_PATH_PATTERN
 }
 
@@ -470,7 +470,7 @@ func NewUrlPatternFromNode(n parse.Node, chunk *parse.Chunk) *URLPattern {
 	}
 }
 
-func (p *URLPattern) Test(v SymbolicValue, state RecTestCallState) bool {
+func (p *URLPattern) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -520,7 +520,7 @@ func (p *URLPattern) HasUnderlyingPattern() bool {
 	return true
 }
 
-func (p *URLPattern) TestValue(v SymbolicValue, state RecTestCallState) bool {
+func (p *URLPattern) TestValue(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -547,7 +547,7 @@ func (p *URLPattern) TestValue(v SymbolicValue, state RecTestCallState) bool {
 	return !p.hasValue
 }
 
-func (p *URLPattern) SymbolicValue() SymbolicValue {
+func (p *URLPattern) SymbolicValue() Value {
 	return NewUrlMatchingPattern(p)
 }
 
@@ -559,18 +559,18 @@ func (p *URLPattern) PropertyNames() []string {
 	return nil
 }
 
-func (*URLPattern) Prop(name string) SymbolicValue {
+func (*URLPattern) Prop(name string) Value {
 	switch name {
 	default:
 		return nil
 	}
 }
 
-func (p *URLPattern) IteratorElementKey() SymbolicValue {
+func (p *URLPattern) IteratorElementKey() Value {
 	return ANY_INT
 }
 
-func (p *URLPattern) IteratorElementValue() SymbolicValue {
+func (p *URLPattern) IteratorElementValue() Value {
 	return p.SymbolicValue()
 }
 
@@ -578,7 +578,7 @@ func (p *URLPattern) underlyingString() *String {
 	return ANY_STR
 }
 
-func (p *URLPattern) WidestOfType() SymbolicValue {
+func (p *URLPattern) WidestOfType() Value {
 	return ANY_URL_PATTERN
 }
 
@@ -613,7 +613,7 @@ func NewHostPatternFromNode(n parse.Node, chunk *parse.Chunk) *HostPattern {
 	}
 }
 
-func (p *HostPattern) Test(v SymbolicValue, state RecTestCallState) bool {
+func (p *HostPattern) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -663,7 +663,7 @@ func (p *HostPattern) HasUnderlyingPattern() bool {
 	return true
 }
 
-func (p *HostPattern) TestValue(v SymbolicValue, state RecTestCallState) bool {
+func (p *HostPattern) TestValue(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -690,7 +690,7 @@ func (p *HostPattern) TestValue(v SymbolicValue, state RecTestCallState) bool {
 	return !p.hasValue
 }
 
-func (p *HostPattern) SymbolicValue() SymbolicValue {
+func (p *HostPattern) SymbolicValue() Value {
 	return NewHostMatchingPattern(p)
 }
 
@@ -702,18 +702,18 @@ func (p *HostPattern) PropertyNames() []string {
 	return nil
 }
 
-func (*HostPattern) Prop(name string) SymbolicValue {
+func (*HostPattern) Prop(name string) Value {
 	switch name {
 	default:
 		return nil
 	}
 }
 
-func (p *HostPattern) IteratorElementKey() SymbolicValue {
+func (p *HostPattern) IteratorElementKey() Value {
 	return ANY_INT
 }
 
-func (p *HostPattern) IteratorElementValue() SymbolicValue {
+func (p *HostPattern) IteratorElementValue() Value {
 	return p.SymbolicValue()
 }
 
@@ -721,7 +721,7 @@ func (p *HostPattern) underlyingString() *String {
 	return ANY_STR
 }
 
-func (p *HostPattern) WidestOfType() SymbolicValue {
+func (p *HostPattern) WidestOfType() Value {
 	return ANY_HOST_PATTERN
 }
 
@@ -738,7 +738,7 @@ func NewNamedSegmentPathPattern(node *parse.NamedSegmentPathPatternLiteral) *Nam
 	return &NamedSegmentPathPattern{node: node}
 }
 
-func (p *NamedSegmentPathPattern) Test(v SymbolicValue, state RecTestCallState) bool {
+func (p *NamedSegmentPathPattern) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -762,7 +762,7 @@ func (p NamedSegmentPathPattern) HasUnderlyingPattern() bool {
 	return true
 }
 
-func (p *NamedSegmentPathPattern) TestValue(v SymbolicValue, state RecTestCallState) bool {
+func (p *NamedSegmentPathPattern) TestValue(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -770,7 +770,7 @@ func (p *NamedSegmentPathPattern) TestValue(v SymbolicValue, state RecTestCallSt
 	return ok
 }
 
-func (p *NamedSegmentPathPattern) SymbolicValue() SymbolicValue {
+func (p *NamedSegmentPathPattern) SymbolicValue() Value {
 	return &Path{}
 }
 
@@ -778,7 +778,7 @@ func (p *NamedSegmentPathPattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
 
-func (p *NamedSegmentPathPattern) MatchGroups(v SymbolicValue) (bool, map[string]Serializable) {
+func (p *NamedSegmentPathPattern) MatchGroups(v Value) (bool, map[string]Serializable) {
 	//TODO
 	return false, nil
 }
@@ -787,22 +787,22 @@ func (p *NamedSegmentPathPattern) PropertyNames() []string {
 	return nil
 }
 
-func (*NamedSegmentPathPattern) Prop(name string) SymbolicValue {
+func (*NamedSegmentPathPattern) Prop(name string) Value {
 	switch name {
 	default:
 		return nil
 	}
 }
 
-func (p *NamedSegmentPathPattern) IteratorElementKey() SymbolicValue {
+func (p *NamedSegmentPathPattern) IteratorElementKey() Value {
 	return ANY_INT
 }
 
-func (p *NamedSegmentPathPattern) IteratorElementValue() SymbolicValue {
+func (p *NamedSegmentPathPattern) IteratorElementValue() Value {
 	return &Path{}
 }
 
-func (p *NamedSegmentPathPattern) WidestOfType() SymbolicValue {
+func (p *NamedSegmentPathPattern) WidestOfType() Value {
 	return &NamedSegmentPathPattern{}
 }
 
@@ -843,11 +843,11 @@ func (p *ExactValuePattern) SetVal(v Serializable) {
 }
 
 // result should not be modified
-func (p *ExactValuePattern) GetVal() SymbolicValue {
+func (p *ExactValuePattern) GetVal() Value {
 	return p.value
 }
 
-func (p *ExactValuePattern) Test(v SymbolicValue, state RecTestCallState) bool {
+func (p *ExactValuePattern) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -890,14 +890,14 @@ func (p *ExactValuePattern) HasUnderlyingPattern() bool {
 	return true
 }
 
-func (p *ExactValuePattern) TestValue(v SymbolicValue, state RecTestCallState) bool {
+func (p *ExactValuePattern) TestValue(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
 	return p.value.Test(v, state) && v.Test(p.value, state)
 }
 
-func (p *ExactValuePattern) SymbolicValue() SymbolicValue {
+func (p *ExactValuePattern) SymbolicValue() Value {
 	return p.value
 }
 
@@ -909,15 +909,15 @@ func (p *ExactValuePattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
 
-func (p *ExactValuePattern) IteratorElementKey() SymbolicValue {
+func (p *ExactValuePattern) IteratorElementKey() Value {
 	return ANY_INT
 }
 
-func (p *ExactValuePattern) IteratorElementValue() SymbolicValue {
+func (p *ExactValuePattern) IteratorElementValue() Value {
 	return p.value
 }
 
-func (p *ExactValuePattern) WidestOfType() SymbolicValue {
+func (p *ExactValuePattern) WidestOfType() Value {
 	return &ExactValuePattern{value: ANY_SERIALIZABLE}
 }
 
@@ -940,7 +940,7 @@ func NewRegexPattern(s string) *RegexPattern {
 	}
 }
 
-func (p *RegexPattern) Test(v SymbolicValue, state RecTestCallState) bool {
+func (p *RegexPattern) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -963,7 +963,7 @@ func (p *RegexPattern) HasUnderlyingPattern() bool {
 	return true
 }
 
-func (p *RegexPattern) TestValue(v SymbolicValue, state RecTestCallState) bool {
+func (p *RegexPattern) TestValue(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -983,7 +983,7 @@ func (p *RegexPattern) HasRegex() bool {
 	return true
 }
 
-func (p *RegexPattern) SymbolicValue() SymbolicValue {
+func (p *RegexPattern) SymbolicValue() Value {
 	return NewStringMatchingPattern(p)
 }
 
@@ -991,15 +991,15 @@ func (p *RegexPattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
 
-func (p *RegexPattern) IteratorElementKey() SymbolicValue {
+func (p *RegexPattern) IteratorElementKey() Value {
 	return ANY_INT
 }
 
-func (p *RegexPattern) IteratorElementValue() SymbolicValue {
+func (p *RegexPattern) IteratorElementValue() Value {
 	return ANY_STR
 }
 
-func (p *RegexPattern) WidestOfType() SymbolicValue {
+func (p *RegexPattern) WidestOfType() Value {
 	return ANY_REGEX_PATTERN
 }
 
@@ -1065,7 +1065,7 @@ func (p *ObjectPattern) ToRecordPattern() *RecordPattern {
 	return patt
 }
 
-func (p *ObjectPattern) Test(v SymbolicValue, state RecTestCallState) bool {
+func (p *ObjectPattern) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -1109,7 +1109,7 @@ func (p *ObjectPattern) Test(v SymbolicValue, state RecTestCallState) bool {
 	return true
 }
 
-func (p *ObjectPattern) TestValue(v SymbolicValue, state RecTestCallState) bool {
+func (p *ObjectPattern) TestValue(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -1362,7 +1362,7 @@ func (p *ObjectPattern) HasUnderlyingPattern() bool {
 	return true
 }
 
-func (p *ObjectPattern) SymbolicValue() SymbolicValue {
+func (p *ObjectPattern) SymbolicValue() Value {
 	if p.entries == nil {
 		if p.readonly {
 			return ANY_READONLY_OBJ
@@ -1430,15 +1430,15 @@ func (p *ObjectPattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
 
-func (p *ObjectPattern) IteratorElementKey() SymbolicValue {
+func (p *ObjectPattern) IteratorElementKey() Value {
 	return ANY_INT
 }
 
-func (p *ObjectPattern) IteratorElementValue() SymbolicValue {
+func (p *ObjectPattern) IteratorElementValue() Value {
 	return p.SymbolicValue()
 }
 
-func (p *ObjectPattern) WidestOfType() SymbolicValue {
+func (p *ObjectPattern) WidestOfType() Value {
 	return ANY_OBJECT_PATTERN
 }
 
@@ -1486,7 +1486,7 @@ func NewInexactRecordPattern(entries map[string]Pattern, optionalEntries map[str
 	}
 }
 
-func (p *RecordPattern) Test(v SymbolicValue, state RecTestCallState) bool {
+func (p *RecordPattern) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -1623,7 +1623,7 @@ func (p *RecordPattern) HasUnderlyingPattern() bool {
 	return true
 }
 
-func (p *RecordPattern) TestValue(v SymbolicValue, state RecTestCallState) bool {
+func (p *RecordPattern) TestValue(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -1669,7 +1669,7 @@ func (p *RecordPattern) TestValue(v SymbolicValue, state RecTestCallState) bool 
 	return true
 }
 
-func (p *RecordPattern) SymbolicValue() SymbolicValue {
+func (p *RecordPattern) SymbolicValue() Value {
 	if p.entries == nil {
 		return ANY_REC
 	}
@@ -1732,15 +1732,15 @@ func (p *RecordPattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
 
-func (p *RecordPattern) IteratorElementKey() SymbolicValue {
+func (p *RecordPattern) IteratorElementKey() Value {
 	return ANY_INT
 }
 
-func (p *RecordPattern) IteratorElementValue() SymbolicValue {
+func (p *RecordPattern) IteratorElementValue() Value {
 	return p.SymbolicValue()
 }
 
-func (p *RecordPattern) WidestOfType() SymbolicValue {
+func (p *RecordPattern) WidestOfType() Value {
 	return ANY_RECORD_PATTERN
 }
 
@@ -1783,7 +1783,7 @@ func InitializeListPatternGeneralElement(patt *ListPattern, element Pattern) {
 	patt.generalElement = element
 }
 
-func (p *ListPattern) Test(v SymbolicValue, state RecTestCallState) bool {
+func (p *ListPattern) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -2018,7 +2018,7 @@ func (p *ListPattern) HasUnderlyingPattern() bool {
 	return true
 }
 
-func (p *ListPattern) TestValue(v SymbolicValue, state RecTestCallState) bool {
+func (p *ListPattern) TestValue(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -2055,7 +2055,7 @@ func (p *ListPattern) TestValue(v SymbolicValue, state RecTestCallState) bool {
 
 }
 
-func (p *ListPattern) SymbolicValue() SymbolicValue {
+func (p *ListPattern) SymbolicValue() Value {
 	list := &List{readonly: p.readonly}
 
 	if p.elements != nil {
@@ -2106,15 +2106,15 @@ func (p *ListPattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
 
-func (p *ListPattern) IteratorElementKey() SymbolicValue {
+func (p *ListPattern) IteratorElementKey() Value {
 	return ANY_INT
 }
 
-func (p *ListPattern) IteratorElementValue() SymbolicValue {
+func (p *ListPattern) IteratorElementValue() Value {
 	return p.SymbolicValue()
 }
 
-func (p *ListPattern) WidestOfType() SymbolicValue {
+func (p *ListPattern) WidestOfType() Value {
 	return &ListPattern{}
 }
 
@@ -2150,7 +2150,7 @@ func InitializeTuplePatternGeneralElement(patt *TuplePattern, element Pattern) {
 	patt.generalElement = element
 }
 
-func (p *TuplePattern) Test(v SymbolicValue, state RecTestCallState) bool {
+func (p *TuplePattern) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -2234,7 +2234,7 @@ func (p *TuplePattern) HasUnderlyingPattern() bool {
 	return true
 }
 
-func (p *TuplePattern) TestValue(v SymbolicValue, state RecTestCallState) bool {
+func (p *TuplePattern) TestValue(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -2271,7 +2271,7 @@ func (p *TuplePattern) TestValue(v SymbolicValue, state RecTestCallState) bool {
 
 }
 
-func (p *TuplePattern) SymbolicValue() SymbolicValue {
+func (p *TuplePattern) SymbolicValue() Value {
 	tuple := &Tuple{}
 
 	if p.elements != nil {
@@ -2322,15 +2322,15 @@ func (p *TuplePattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
 
-func (p *TuplePattern) IteratorElementKey() SymbolicValue {
+func (p *TuplePattern) IteratorElementKey() Value {
 	return ANY_INT
 }
 
-func (p *TuplePattern) IteratorElementValue() SymbolicValue {
+func (p *TuplePattern) IteratorElementValue() Value {
 	return p.SymbolicValue()
 }
 
-func (p *TuplePattern) WidestOfType() SymbolicValue {
+func (p *TuplePattern) WidestOfType() Value {
 	return ANY_TUPLE_PATTERN
 }
 
@@ -2397,7 +2397,7 @@ func (p *UnionPattern) Cases() []Pattern {
 	return p.cases
 }
 
-func (p *UnionPattern) Test(v SymbolicValue, state RecTestCallState) bool {
+func (p *UnionPattern) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -2449,15 +2449,15 @@ func (p *UnionPattern) HasUnderlyingPattern() bool {
 	return true
 }
 
-func (p *UnionPattern) TestValue(v SymbolicValue, state RecTestCallState) bool {
+func (p *UnionPattern) TestValue(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
-	var values []SymbolicValue
+	var values []Value
 	if multi, ok := v.(*Multivalue); ok {
 		values = multi.values
 	} else {
-		values = []SymbolicValue{v}
+		values = []Value{v}
 	}
 
 	if p.disjoint {
@@ -2493,8 +2493,8 @@ func (p *UnionPattern) TestValue(v SymbolicValue, state RecTestCallState) bool {
 	return true
 }
 
-func (p *UnionPattern) SymbolicValue() SymbolicValue {
-	values := make([]SymbolicValue, len(p.cases))
+func (p *UnionPattern) SymbolicValue() Value {
+	values := make([]Value, len(p.cases))
 
 	for i, case_ := range p.cases {
 		values[i] = case_.SymbolicValue()
@@ -2507,15 +2507,15 @@ func (p *UnionPattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
 
-func (p *UnionPattern) IteratorElementKey() SymbolicValue {
+func (p *UnionPattern) IteratorElementKey() Value {
 	return ANY_INT
 }
 
-func (p *UnionPattern) IteratorElementValue() SymbolicValue {
+func (p *UnionPattern) IteratorElementValue() Value {
 	return ANY
 }
 
-func (p *UnionPattern) WidestOfType() SymbolicValue {
+func (p *UnionPattern) WidestOfType() Value {
 	return &UnionPattern{}
 }
 
@@ -2523,14 +2523,14 @@ func (p *UnionPattern) WidestOfType() SymbolicValue {
 type IntersectionPattern struct {
 	NotCallablePatternMixin
 	cases []Pattern //if nil, any union pattern is matched
-	value SymbolicValue
+	value Value
 
 	SerializableMixin
 }
 
 func NewIntersectionPattern(cases []Pattern) (*IntersectionPattern, error) {
 
-	var values []SymbolicValue
+	var values []Value
 	for _, c := range cases {
 		values = append(values, c.SymbolicValue())
 	}
@@ -2546,7 +2546,7 @@ func NewIntersectionPattern(cases []Pattern) (*IntersectionPattern, error) {
 	}, nil
 }
 
-func (p *IntersectionPattern) Test(v SymbolicValue, state RecTestCallState) bool {
+func (p *IntersectionPattern) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -2580,7 +2580,7 @@ func (p *IntersectionPattern) Test(v SymbolicValue, state RecTestCallState) bool
 	return true
 }
 
-func (p *IntersectionPattern) TestValue(v SymbolicValue, state RecTestCallState) bool {
+func (p *IntersectionPattern) TestValue(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -2618,7 +2618,7 @@ func (p *IntersectionPattern) HasUnderlyingPattern() bool {
 	return true
 }
 
-func (p *IntersectionPattern) SymbolicValue() SymbolicValue {
+func (p *IntersectionPattern) SymbolicValue() Value {
 	return p.value
 }
 
@@ -2626,15 +2626,15 @@ func (p *IntersectionPattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
 
-func (p *IntersectionPattern) IteratorElementKey() SymbolicValue {
+func (p *IntersectionPattern) IteratorElementKey() Value {
 	return ANY_INT
 }
 
-func (p *IntersectionPattern) IteratorElementValue() SymbolicValue {
+func (p *IntersectionPattern) IteratorElementValue() Value {
 	return ANY
 }
 
-func (p *IntersectionPattern) WidestOfType() SymbolicValue {
+func (p *IntersectionPattern) WidestOfType() Value {
 	return &IntersectionPattern{}
 }
 
@@ -2654,7 +2654,7 @@ func NewOptionPattern(name string, pattern Pattern) *OptionPattern {
 	return &OptionPattern{name: name, pattern: pattern}
 }
 
-func (p *OptionPattern) Test(v SymbolicValue, state RecTestCallState) bool {
+func (p *OptionPattern) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -2679,7 +2679,7 @@ func (p *OptionPattern) HasUnderlyingPattern() bool {
 	return true
 }
 
-func (p *OptionPattern) TestValue(v SymbolicValue, state RecTestCallState) bool {
+func (p *OptionPattern) TestValue(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -2690,7 +2690,7 @@ func (p *OptionPattern) TestValue(v SymbolicValue, state RecTestCallState) bool 
 	return p.pattern.TestValue(opt.value, state)
 }
 
-func (p *OptionPattern) SymbolicValue() SymbolicValue {
+func (p *OptionPattern) SymbolicValue() Value {
 	if p.name == "" {
 		return NewAnyNameOption(p.pattern.SymbolicValue())
 	}
@@ -2701,15 +2701,15 @@ func (p *OptionPattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
 
-func (p *OptionPattern) IteratorElementKey() SymbolicValue {
+func (p *OptionPattern) IteratorElementKey() Value {
 	return ANY_INT
 }
 
-func (p *OptionPattern) IteratorElementValue() SymbolicValue {
+func (p *OptionPattern) IteratorElementValue() Value {
 	return p.SymbolicValue()
 }
 
-func (p *OptionPattern) WidestOfType() SymbolicValue {
+func (p *OptionPattern) WidestOfType() Value {
 	return ANY_OPTION_PATTERN
 }
 
@@ -2756,8 +2756,8 @@ func symbolicallyEvalPatternNode(n parse.Node, state *State) (Pattern, error) {
 }
 
 type TypePattern struct {
-	val                 SymbolicValue //symbolic value that represents concrete values matching
-	call                func(ctx *Context, values []SymbolicValue) (Pattern, error)
+	val                 Value //symbolic value that represents concrete values matching
+	call                func(ctx *Context, values []Value) (Pattern, error)
 	stringPattern       func() (StringPattern, bool)
 	concreteTypePattern any //we play safe
 
@@ -2765,7 +2765,7 @@ type TypePattern struct {
 }
 
 func NewTypePattern(
-	value SymbolicValue, call func(ctx *Context, values []SymbolicValue) (Pattern, error),
+	value Value, call func(ctx *Context, values []Value) (Pattern, error),
 	stringPattern func() (StringPattern, bool), concrete any,
 ) *TypePattern {
 	return &TypePattern{
@@ -2776,7 +2776,7 @@ func NewTypePattern(
 	}
 }
 
-func (p *TypePattern) Test(v SymbolicValue, state RecTestCallState) bool {
+func (p *TypePattern) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -2806,21 +2806,21 @@ func (p *TypePattern) HasUnderlyingPattern() bool {
 	return true
 }
 
-func (p *TypePattern) TestValue(v SymbolicValue, state RecTestCallState) bool {
+func (p *TypePattern) TestValue(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
 	return p.val.Test(v, state)
 }
 
-func (p *TypePattern) Call(ctx *Context, values []SymbolicValue) (Pattern, error) {
+func (p *TypePattern) Call(ctx *Context, values []Value) (Pattern, error) {
 	if p.call == nil {
 		return nil, ErrPatternNotCallable
 	}
 	return p.call(ctx, values)
 }
 
-func (p *TypePattern) SymbolicValue() SymbolicValue {
+func (p *TypePattern) SymbolicValue() Value {
 	return p.val
 }
 
@@ -2838,15 +2838,15 @@ func (p *TypePattern) StringPattern() (StringPattern, bool) {
 	return p.stringPattern()
 }
 
-func (p *TypePattern) IteratorElementKey() SymbolicValue {
+func (p *TypePattern) IteratorElementKey() Value {
 	return ANY_INT
 }
 
-func (p *TypePattern) IteratorElementValue() SymbolicValue {
+func (p *TypePattern) IteratorElementValue() Value {
 	return nil
 }
 
-func (p *TypePattern) WidestOfType() SymbolicValue {
+func (p *TypePattern) WidestOfType() Value {
 	return &TypePattern{val: ANY}
 }
 
@@ -2857,7 +2857,7 @@ type DifferencePattern struct {
 	SerializableMixin
 }
 
-func (p *DifferencePattern) Test(v SymbolicValue, state RecTestCallState) bool {
+func (p *DifferencePattern) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -2877,14 +2877,14 @@ func (p *DifferencePattern) HasUnderlyingPattern() bool {
 	return true
 }
 
-func (p *DifferencePattern) TestValue(v SymbolicValue, state RecTestCallState) bool {
+func (p *DifferencePattern) TestValue(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
 	return p.Base.Test(v, state) && !p.Removed.TestValue(v, state)
 }
 
-func (p *DifferencePattern) SymbolicValue() SymbolicValue {
+func (p *DifferencePattern) SymbolicValue() Value {
 	//TODO
 	panic(errors.New("SymbolicValue() not implement for DifferencePattern"))
 }
@@ -2893,16 +2893,16 @@ func (p *DifferencePattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
 
-func (p *DifferencePattern) IteratorElementKey() SymbolicValue {
+func (p *DifferencePattern) IteratorElementKey() Value {
 	return ANY_INT
 }
 
-func (p *DifferencePattern) IteratorElementValue() SymbolicValue {
+func (p *DifferencePattern) IteratorElementValue() Value {
 	//TODO
 	return ANY
 }
 
-func (p *DifferencePattern) WidestOfType() SymbolicValue {
+func (p *DifferencePattern) WidestOfType() Value {
 	return &DifferencePattern{}
 }
 
@@ -2917,7 +2917,7 @@ func NewOptionalPattern(p Pattern) *OptionalPattern {
 	return &OptionalPattern{pattern: p}
 }
 
-func (p *OptionalPattern) Test(v SymbolicValue, state RecTestCallState) bool {
+func (p *OptionalPattern) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -2934,7 +2934,7 @@ func (p *OptionalPattern) HasUnderlyingPattern() bool {
 	return true
 }
 
-func (p *OptionalPattern) TestValue(v SymbolicValue, state RecTestCallState) bool {
+func (p *OptionalPattern) TestValue(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -2944,7 +2944,7 @@ func (p *OptionalPattern) TestValue(v SymbolicValue, state RecTestCallState) boo
 	return p.pattern.TestValue(v, state)
 }
 
-func (p *OptionalPattern) SymbolicValue() SymbolicValue {
+func (p *OptionalPattern) SymbolicValue() Value {
 	//TODO
 	return NewMultivalue(p.pattern.SymbolicValue(), Nil)
 }
@@ -2953,34 +2953,34 @@ func (p *OptionalPattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
 
-func (p *OptionalPattern) IteratorElementKey() SymbolicValue {
+func (p *OptionalPattern) IteratorElementKey() Value {
 	return ANY_INT
 }
 
-func (p *OptionalPattern) IteratorElementValue() SymbolicValue {
+func (p *OptionalPattern) IteratorElementValue() Value {
 	//TODO
 	return ANY
 }
 
-func (p *OptionalPattern) WidestOfType() SymbolicValue {
+func (p *OptionalPattern) WidestOfType() Value {
 	return &OptionalPattern{}
 }
 
 type FunctionPattern struct {
-	parameters              []SymbolicValue
+	parameters              []Value
 	parameterNames          []string
 	firstOptionalParamIndex int //-1 if no optional parameters
 	isVariadic              bool
 
 	node       *parse.FunctionPatternExpression //if nil, any function is matched
 	nodeChunk  *parse.Chunk
-	returnType SymbolicValue
+	returnType Value
 
 	NotCallablePatternMixin
 	SerializableMixin
 }
 
-func (fn *FunctionPattern) Test(v SymbolicValue, state RecTestCallState) bool {
+func (fn *FunctionPattern) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -2999,7 +2999,7 @@ func (fn *FunctionPattern) Test(v SymbolicValue, state RecTestCallState) bool {
 	return utils.SamePointer(fn.node, other.node)
 }
 
-func (pattern *FunctionPattern) TestValue(v SymbolicValue, state RecTestCallState) bool {
+func (pattern *FunctionPattern) TestValue(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -3057,16 +3057,16 @@ func (fn *FunctionPattern) HasUnderlyingPattern() bool {
 	return true
 }
 
-func (p *FunctionPattern) IteratorElementKey() SymbolicValue {
+func (p *FunctionPattern) IteratorElementKey() Value {
 	return ANY_INT
 }
 
-func (fn *FunctionPattern) IteratorElementValue() SymbolicValue {
+func (fn *FunctionPattern) IteratorElementValue() Value {
 	//TODO
 	return &Function{pattern: fn}
 }
 
-func (fn *FunctionPattern) SymbolicValue() SymbolicValue {
+func (fn *FunctionPattern) SymbolicValue() Value {
 	return &Function{fn.parameters, fn.firstOptionalParamIndex, fn.parameterNames, nil, fn.isVariadic, fn}
 }
 
@@ -3082,7 +3082,7 @@ func (fn *FunctionPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPri
 	utils.Must(fmt.Fprintf(w, "%%function-pattern(%v)", fn.node))
 }
 
-func (fn *FunctionPattern) WidestOfType() SymbolicValue {
+func (fn *FunctionPattern) WidestOfType() Value {
 	return &FunctionPattern{firstOptionalParamIndex: -1}
 }
 
@@ -3093,7 +3093,7 @@ type IntRangePattern struct {
 	SerializableMixin
 }
 
-func (p *IntRangePattern) Test(v SymbolicValue, state RecTestCallState) bool {
+func (p *IntRangePattern) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -3109,7 +3109,7 @@ func (p *IntRangePattern) HasUnderlyingPattern() bool {
 	return true
 }
 
-func (p *IntRangePattern) TestValue(v SymbolicValue, state RecTestCallState) bool {
+func (p *IntRangePattern) TestValue(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -3117,7 +3117,7 @@ func (p *IntRangePattern) TestValue(v SymbolicValue, state RecTestCallState) boo
 	return ok
 }
 
-func (p *IntRangePattern) SymbolicValue() SymbolicValue {
+func (p *IntRangePattern) SymbolicValue() Value {
 	return ANY_INT
 }
 
@@ -3129,22 +3129,22 @@ func (p *IntRangePattern) PropertyNames() []string {
 	return nil
 }
 
-func (*IntRangePattern) Prop(name string) SymbolicValue {
+func (*IntRangePattern) Prop(name string) Value {
 	switch name {
 	default:
 		return nil
 	}
 }
 
-func (p *IntRangePattern) IteratorElementKey() SymbolicValue {
+func (p *IntRangePattern) IteratorElementKey() Value {
 	return ANY_INT
 }
 
-func (p *IntRangePattern) IteratorElementValue() SymbolicValue {
+func (p *IntRangePattern) IteratorElementValue() Value {
 	return ANY_INT
 }
 
-func (p *IntRangePattern) WidestOfType() SymbolicValue {
+func (p *IntRangePattern) WidestOfType() Value {
 	return ANY_INT_RANGE_PATTERN
 }
 
@@ -3155,7 +3155,7 @@ type FloatRangePattern struct {
 	SerializableMixin
 }
 
-func (p *FloatRangePattern) Test(v SymbolicValue, state RecTestCallState) bool {
+func (p *FloatRangePattern) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -3171,7 +3171,7 @@ func (p *FloatRangePattern) HasUnderlyingPattern() bool {
 	return true
 }
 
-func (p *FloatRangePattern) TestValue(v SymbolicValue, state RecTestCallState) bool {
+func (p *FloatRangePattern) TestValue(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -3179,7 +3179,7 @@ func (p *FloatRangePattern) TestValue(v SymbolicValue, state RecTestCallState) b
 	return ok
 }
 
-func (p *FloatRangePattern) SymbolicValue() SymbolicValue {
+func (p *FloatRangePattern) SymbolicValue() Value {
 	return ANY_FLOAT
 }
 
@@ -3191,22 +3191,22 @@ func (p *FloatRangePattern) PropertyNames() []string {
 	return nil
 }
 
-func (*FloatRangePattern) Prop(name string) SymbolicValue {
+func (*FloatRangePattern) Prop(name string) Value {
 	switch name {
 	default:
 		return nil
 	}
 }
 
-func (p *FloatRangePattern) IteratorElementKey() SymbolicValue {
+func (p *FloatRangePattern) IteratorElementKey() Value {
 	return ANY_INT
 }
 
-func (p *FloatRangePattern) IteratorElementValue() SymbolicValue {
+func (p *FloatRangePattern) IteratorElementValue() Value {
 	return ANY_FLOAT
 }
 
-func (p *FloatRangePattern) WidestOfType() SymbolicValue {
+func (p *FloatRangePattern) WidestOfType() Value {
 	return ANY_INT_RANGE_PATTERN
 }
 
@@ -3228,7 +3228,7 @@ func NewEventPattern(valuePattern Pattern) (*EventPattern, error) {
 	}, nil
 }
 
-func (p *EventPattern) Test(v SymbolicValue, state RecTestCallState) bool {
+func (p *EventPattern) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -3246,7 +3246,7 @@ func (p *EventPattern) HasUnderlyingPattern() bool {
 	return true
 }
 
-func (p *EventPattern) TestValue(v SymbolicValue, state RecTestCallState) bool {
+func (p *EventPattern) TestValue(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -3257,7 +3257,7 @@ func (p *EventPattern) TestValue(v SymbolicValue, state RecTestCallState) bool {
 	return p.ValuePattern.TestValue(event, state)
 }
 
-func (p *EventPattern) SymbolicValue() SymbolicValue {
+func (p *EventPattern) SymbolicValue() Value {
 	return utils.Must(NewEvent(p.ValuePattern.SymbolicValue()))
 }
 
@@ -3265,16 +3265,16 @@ func (p *EventPattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
 
-func (p *EventPattern) IteratorElementKey() SymbolicValue {
+func (p *EventPattern) IteratorElementKey() Value {
 	return ANY_INT
 }
 
-func (p *EventPattern) IteratorElementValue() SymbolicValue {
+func (p *EventPattern) IteratorElementValue() Value {
 	//TODO
 	return ANY
 }
 
-func (p *EventPattern) WidestOfType() SymbolicValue {
+func (p *EventPattern) WidestOfType() Value {
 	return &EventPattern{ValuePattern: ANY_PATTERN}
 }
 
@@ -3294,7 +3294,7 @@ func NewMutationPattern(kind *Int, data0Pattern Pattern) *MutationPattern {
 	}
 }
 
-func (p *MutationPattern) Test(v SymbolicValue, state RecTestCallState) bool {
+func (p *MutationPattern) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -3312,7 +3312,7 @@ func (p *MutationPattern) HasUnderlyingPattern() bool {
 	return true
 }
 
-func (p *MutationPattern) TestValue(v SymbolicValue, state RecTestCallState) bool {
+func (p *MutationPattern) TestValue(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -3323,7 +3323,7 @@ func (p *MutationPattern) TestValue(v SymbolicValue, state RecTestCallState) boo
 	return p.data0Pattern.TestValue(event, state)
 }
 
-func (p *MutationPattern) SymbolicValue() SymbolicValue {
+func (p *MutationPattern) SymbolicValue() Value {
 	//TODO
 	return &Mutation{}
 }
@@ -3332,16 +3332,16 @@ func (p *MutationPattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
 
-func (p *MutationPattern) IteratorElementKey() SymbolicValue {
+func (p *MutationPattern) IteratorElementKey() Value {
 	return ANY_INT
 }
 
-func (p *MutationPattern) IteratorElementValue() SymbolicValue {
+func (p *MutationPattern) IteratorElementValue() Value {
 	//TODO
 	return &Mutation{}
 }
 
-func (p *MutationPattern) WidestOfType() SymbolicValue {
+func (p *MutationPattern) WidestOfType() Value {
 	return &MutationPattern{}
 }
 
@@ -3365,7 +3365,7 @@ func (ns *PatternNamespace) ForEachPattern(fn func(name string, patt Pattern) er
 	return nil
 }
 
-func (ns *PatternNamespace) Test(v SymbolicValue, state RecTestCallState) bool {
+func (ns *PatternNamespace) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -3447,6 +3447,6 @@ func (ns *PatternNamespace) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPr
 	utils.Must(w.Write(utils.StringAsBytes("%pattern-namespace")))
 }
 
-func (ns *PatternNamespace) WidestOfType() SymbolicValue {
+func (ns *PatternNamespace) WidestOfType() Value {
 	return &PatternNamespace{}
 }

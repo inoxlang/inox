@@ -11,17 +11,17 @@ import (
 func TestJoinValues(t *testing.T) {
 
 	cases := []struct {
-		input  []SymbolicValue
-		output SymbolicValue
+		input  []Value
+		output Value
 	}{
-		{[]SymbolicValue{ANY_INT}, ANY_INT},
-		{[]SymbolicValue{ANY_INT, ANY_INT}, ANY_INT},
-		{[]SymbolicValue{ANY_INT, &String{}}, NewMultivalue(ANY_INT, &String{})},
-		{[]SymbolicValue{&String{}, ANY_INT}, NewMultivalue(&String{}, ANY_INT)},
-		{[]SymbolicValue{&Identifier{name: "foo"}, &Identifier{}}, &Identifier{}},
-		{[]SymbolicValue{&Identifier{}, &Identifier{name: "foo"}}, &Identifier{}},
+		{[]Value{ANY_INT}, ANY_INT},
+		{[]Value{ANY_INT, ANY_INT}, ANY_INT},
+		{[]Value{ANY_INT, &String{}}, NewMultivalue(ANY_INT, &String{})},
+		{[]Value{&String{}, ANY_INT}, NewMultivalue(&String{}, ANY_INT)},
+		{[]Value{&Identifier{name: "foo"}, &Identifier{}}, &Identifier{}},
+		{[]Value{&Identifier{}, &Identifier{name: "foo"}}, &Identifier{}},
 		{
-			[]SymbolicValue{
+			[]Value{
 				NewInexactObject(map[string]Serializable{"a": ANY_INT}, nil, nil),
 				NewInexactObject(map[string]Serializable{}, nil, nil),
 			},
@@ -31,7 +31,7 @@ func TestJoinValues(t *testing.T) {
 			),
 		},
 		{
-			[]SymbolicValue{
+			[]Value{
 				NewInexactObject(map[string]Serializable{}, nil, nil),
 				NewInexactObject(map[string]Serializable{"a": ANY_INT}, nil, nil),
 			},
@@ -41,14 +41,14 @@ func TestJoinValues(t *testing.T) {
 			),
 		},
 		{
-			[]SymbolicValue{
+			[]Value{
 				NewInexactObject(map[string]Serializable{"a": ANY_SERIALIZABLE}, nil, nil),
 				NewInexactObject(map[string]Serializable{"a": ANY_INT}, nil, nil),
 			},
 			NewInexactObject(map[string]Serializable{"a": ANY_SERIALIZABLE}, nil, nil),
 		},
 		{
-			[]SymbolicValue{
+			[]Value{
 				NewList(&String{}),
 				NewList(ANY_INT),
 			},
@@ -58,7 +58,7 @@ func TestJoinValues(t *testing.T) {
 			),
 		},
 		{
-			[]SymbolicValue{
+			[]Value{
 				NewList(&String{}, &String{}),
 				NewList(ANY_INT, &String{}),
 			},
@@ -79,8 +79,8 @@ func TestJoinValues(t *testing.T) {
 func TestWidenToSameStaticTypeInMultivalue(t *testing.T) {
 
 	cases := []struct {
-		input  SymbolicValue
-		output SymbolicValue
+		input  Value
+		output Value
 	}{
 		{ANY_INT, ANY_INT},
 		{NewInt(0), NewInt(0)},

@@ -23,7 +23,7 @@ var (
 type Container interface {
 	Serializable
 	Iterable
-	Contains(value SymbolicValue) (yes bool, possible bool)
+	Contains(value Value) (yes bool, possible bool)
 }
 
 // An AnyContainer represents a symbolic Iterable we do not know the concrete type.
@@ -32,7 +32,7 @@ type AnyContainer struct {
 	SerializableMixin
 }
 
-func (*AnyContainer) Test(v SymbolicValue, state RecTestCallState) bool {
+func (*AnyContainer) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -45,18 +45,18 @@ func (*AnyContainer) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConf
 	utils.Must(w.Write(utils.StringAsBytes("%container")))
 }
 
-func (*AnyContainer) Contains(value SymbolicValue) (yes bool, possible bool) {
+func (*AnyContainer) Contains(value Value) (yes bool, possible bool) {
 	return false, true
 }
 
-func (*AnyContainer) WidestOfType() SymbolicValue {
+func (*AnyContainer) WidestOfType() Value {
 	return ANY_CONTAINER
 }
 
-func (*AnyContainer) IteratorElementKey() SymbolicValue {
+func (*AnyContainer) IteratorElementKey() Value {
 	return ANY
 }
 
-func (*AnyContainer) IteratorElementValue() SymbolicValue {
+func (*AnyContainer) IteratorElementValue() Value {
 	return ANY
 }

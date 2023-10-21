@@ -16,12 +16,12 @@ var (
 )
 
 type PotentiallyReadonly interface {
-	SymbolicValue
+	Value
 	IsReadonly() bool
 	ToReadonly() (PotentiallyReadonly, error)
 }
 
-func IsReadonlyOrImmutable(v SymbolicValue) bool {
+func IsReadonlyOrImmutable(v Value) bool {
 	if !v.IsMutable() {
 		return true
 	}
@@ -29,7 +29,7 @@ func IsReadonlyOrImmutable(v SymbolicValue) bool {
 	return ok && potentiallyReadonly.IsReadonly()
 }
 
-func IsReadonly(v SymbolicValue) bool {
+func IsReadonly(v Value) bool {
 	potentiallyReadonly, ok := v.(PotentiallyReadonly)
 	return ok && potentiallyReadonly.IsReadonly()
 }

@@ -33,7 +33,7 @@ func NewFloat(v float64) *Float {
 	}
 }
 
-func (f *Float) Test(v SymbolicValue, state RecTestCallState) bool {
+func (f *Float) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -71,7 +71,7 @@ func (f *Float) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, d
 	}
 }
 
-func (f *Float) WidestOfType() SymbolicValue {
+func (f *Float) WidestOfType() Value {
 	return &Float{}
 }
 
@@ -89,7 +89,7 @@ func NewInt(v int64) *Int {
 	}
 }
 
-func (i *Int) Test(v SymbolicValue, state RecTestCallState) bool {
+func (i *Int) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -127,7 +127,7 @@ func (i *Int) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, dep
 	}
 }
 
-func (i *Int) WidestOfType() SymbolicValue {
+func (i *Int) WidestOfType() Value {
 	return ANY_INT
 }
 
@@ -140,7 +140,7 @@ type AnyIntegral struct {
 	_ int
 }
 
-func (*AnyIntegral) Test(v SymbolicValue, state RecTestCallState) bool {
+func (*AnyIntegral) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -153,15 +153,15 @@ func (*AnyIntegral) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfi
 	utils.Must(w.Write(utils.StringAsBytes("%integral")))
 }
 
-func (*AnyIntegral) WidestOfType() SymbolicValue {
+func (*AnyIntegral) WidestOfType() Value {
 	return ANY_INTEGRAL
 }
 
-func (*AnyIntegral) IteratorElementKey() SymbolicValue {
+func (*AnyIntegral) IteratorElementKey() Value {
 	return ANY
 }
 
-func (*AnyIntegral) IteratorElementValue() SymbolicValue {
+func (*AnyIntegral) IteratorElementValue() Value {
 	return ANY
 }
 

@@ -24,7 +24,7 @@ func NewHTMLNode() *HTMLNode {
 	return &HTMLNode{}
 }
 
-func (n *HTMLNode) Test(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+func (n *HTMLNode) Test(v symbolic.Value, state symbolic.RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -36,7 +36,7 @@ func (n *HTMLNode) Test(v symbolic.SymbolicValue, state symbolic.RecTestCallStat
 	return true
 }
 
-func (n *HTMLNode) Prop(name string) symbolic.SymbolicValue {
+func (n *HTMLNode) Prop(name string) symbolic.Value {
 	switch name {
 	case "first-child":
 		return NewHTMLNode()
@@ -59,7 +59,7 @@ func (n *HTMLNode) PropertyNames() []string {
 	return HTML_NODE_PROPNAMES
 }
 
-func (n *HTMLNode) WatcherElement() symbolic.SymbolicValue {
+func (n *HTMLNode) WatcherElement() symbolic.Value {
 	return symbolic.ANY
 }
 
@@ -67,6 +67,6 @@ func (n *HTMLNode) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig
 	utils.Must(w.Write(utils.StringAsBytes("%html-node")))
 }
 
-func (r *HTMLNode) WidestOfType() symbolic.SymbolicValue {
+func (r *HTMLNode) WidestOfType() symbolic.Value {
 	return &HTMLNode{}
 }

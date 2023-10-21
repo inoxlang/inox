@@ -97,7 +97,7 @@ func TestLengthCheckingStringPattern(t *testing.T) {
 	t.Run("TestValue()", func(t *testing.T) {
 		cases := []struct {
 			pattern *LengthCheckingStringPattern
-			value   SymbolicValue
+			value   Value
 			ok      bool
 		}{
 			{

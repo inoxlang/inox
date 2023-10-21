@@ -48,19 +48,19 @@ var (
 
 // A Serializable represents a symbolic Serializable.
 type Serializable interface {
-	SymbolicValue
+	Value
 	_serializable()
 }
 
-func SerializablesToValues(serializables []Serializable) []SymbolicValue {
-	var values []SymbolicValue
+func SerializablesToValues(serializables []Serializable) []Value {
+	var values []Value
 	for _, e := range serializables {
 		values = append(values, e)
 	}
 	return values
 }
 
-func ValuesToSerializable(values []SymbolicValue) []Serializable {
+func ValuesToSerializable(values []Value) []Serializable {
 	var serializables []Serializable
 	for _, e := range values {
 		serializables = append(serializables, e.(Serializable))
@@ -72,7 +72,7 @@ type AnySerializable struct {
 	SerializableMixin
 }
 
-func (*AnySerializable) Test(v SymbolicValue, state RecTestCallState) bool {
+func (*AnySerializable) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -86,7 +86,7 @@ func (*AnySerializable) PrettyPrint(w *bufio.Writer, config *internal.PrettyPrin
 	w.WriteString("%serializable")
 }
 
-func (*AnySerializable) WidestOfType() SymbolicValue {
+func (*AnySerializable) WidestOfType() Value {
 	return ANY_SERIALIZABLE
 }
 

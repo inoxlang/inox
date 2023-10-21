@@ -25,7 +25,7 @@ func init() {
 
 	//register symbolic version of go functions
 	core.RegisterSymbolicGoFunctions([]any{
-		Mkfile, func(ctx *symbolic.Context, path *symbolic.Path, args ...symbolic.SymbolicValue) *symbolic.Error {
+		Mkfile, func(ctx *symbolic.Context, path *symbolic.Path, args ...symbolic.Value) *symbolic.Error {
 			//ctx.SetSymbolicGoFunctionParameters(MKFILE_SYMB_PARAMS, MKFILE_ARG_NAMES)
 			return nil
 		},
@@ -37,17 +37,17 @@ func init() {
 			ctx.SetSymbolicGoFunctionParameters(READFILE_SYMB_PARAMS, READFILE_ARG_NAMES)
 			return symbolic.ANY_BYTE_SLICE, nil
 		},
-		Read, func(ctx *symbolic.Context, pth *symbolic.Path, args ...symbolic.SymbolicValue) (symbolic.SymbolicValue, *symbolic.Error) {
+		Read, func(ctx *symbolic.Context, pth *symbolic.Path, args ...symbolic.Value) (symbolic.Value, *symbolic.Error) {
 			return symbolic.ANY, nil
 		},
-		ListFiles, func(ctx *symbolic.Context, pathOrPattern *symbolic.OptionalParam[symbolic.SymbolicValue]) (*symbolic.List, *symbolic.Error) {
+		ListFiles, func(ctx *symbolic.Context, pathOrPattern *symbolic.OptionalParam[symbolic.Value]) (*symbolic.List, *symbolic.Error) {
 			ctx.SetSymbolicGoFunctionParameters(LISTFILES_SYMB_PARAMS, LISTFILES_ARG_NAMES)
 			return symbolic.NewListOf(symbolic.ANY_FILEINFO), nil
 		},
-		Remove, func(ctx *symbolic.Context, args ...symbolic.SymbolicValue) *symbolic.Error {
+		Remove, func(ctx *symbolic.Context, args ...symbolic.Value) *symbolic.Error {
 			return nil
 		},
-		Copy, func(ctx *symbolic.Context, args ...symbolic.SymbolicValue) *symbolic.Error {
+		Copy, func(ctx *symbolic.Context, args ...symbolic.Value) *symbolic.Error {
 			return nil
 		},
 		Rename, func(ctx *symbolic.Context, old, new *symbolic.Path) *symbolic.Error {
@@ -65,7 +65,7 @@ func init() {
 		Find, func(ctx *symbolic.Context, pth *symbolic.Path, filters ...symbolic.Pattern) (*symbolic.List, *symbolic.Error) {
 			return &symbolic.List{}, nil
 		},
-		OpenExisting, func(ctx *symbolic.Context, args ...symbolic.SymbolicValue) (*fs_symbolic.File, *symbolic.Error) {
+		OpenExisting, func(ctx *symbolic.Context, args ...symbolic.Value) (*fs_symbolic.File, *symbolic.Error) {
 			return &fs_symbolic.File{}, nil
 		},
 		Glob, func(ctx *symbolic.Context, patt ...*symbolic.PathPattern) *symbolic.List {

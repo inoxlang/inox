@@ -14,7 +14,7 @@ type GetObjectResponse struct {
 	_ int
 }
 
-func (r *GetObjectResponse) Test(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+func (r *GetObjectResponse) Test(v symbolic.Value, state symbolic.RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -26,7 +26,7 @@ func (resp *GetObjectResponse) GetGoMethod(name string) (*symbolic.GoFunction, b
 	return nil, false
 }
 
-func (resp *GetObjectResponse) Prop(name string) symbolic.SymbolicValue {
+func (resp *GetObjectResponse) Prop(name string) symbolic.Value {
 	switch name {
 	case "body":
 		return &symbolic.Reader{}
@@ -44,7 +44,7 @@ func (r *GetObjectResponse) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPr
 	return
 }
 
-func (r *GetObjectResponse) WidestOfType() symbolic.SymbolicValue {
+func (r *GetObjectResponse) WidestOfType() symbolic.Value {
 	return &GetObjectResponse{}
 }
 
@@ -53,7 +53,7 @@ type PutObjectResponse struct {
 	_ int
 }
 
-func (r *PutObjectResponse) Test(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+func (r *PutObjectResponse) Test(v symbolic.Value, state symbolic.RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -65,7 +65,7 @@ func (resp *PutObjectResponse) GetGoMethod(name string) (*symbolic.GoFunction, b
 	return nil, false
 }
 
-func (resp *PutObjectResponse) Prop(name string) symbolic.SymbolicValue {
+func (resp *PutObjectResponse) Prop(name string) symbolic.Value {
 	switch name {
 	case "body":
 		return &symbolic.Reader{}
@@ -83,7 +83,7 @@ func (r *PutObjectResponse) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPr
 	return
 }
 
-func (r *PutObjectResponse) WidestOfType() symbolic.SymbolicValue {
+func (r *PutObjectResponse) WidestOfType() symbolic.Value {
 	return &PutObjectResponse{}
 }
 
@@ -92,7 +92,7 @@ type GetBucketPolicyResponse struct {
 	_ int
 }
 
-func (r *GetBucketPolicyResponse) Test(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+func (r *GetBucketPolicyResponse) Test(v symbolic.Value, state symbolic.RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -104,7 +104,7 @@ func (resp *GetBucketPolicyResponse) GetGoMethod(name string) (*symbolic.GoFunct
 	return nil, false
 }
 
-func (resp *GetBucketPolicyResponse) Prop(name string) symbolic.SymbolicValue {
+func (resp *GetBucketPolicyResponse) Prop(name string) symbolic.Value {
 	switch name {
 	case "body":
 		return &symbolic.Reader{}
@@ -122,6 +122,6 @@ func (r *GetBucketPolicyResponse) PrettyPrint(w *bufio.Writer, config *pprint.Pr
 	return
 }
 
-func (r *GetBucketPolicyResponse) WidestOfType() symbolic.SymbolicValue {
+func (r *GetBucketPolicyResponse) WidestOfType() symbolic.Value {
 	return &GetBucketPolicyResponse{}
 }

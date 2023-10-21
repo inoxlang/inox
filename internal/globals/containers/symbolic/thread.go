@@ -16,7 +16,7 @@ type Thread struct {
 	_ int
 }
 
-func (*Thread) Test(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+func (*Thread) Test(v symbolic.Value, state symbolic.RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -32,7 +32,7 @@ func (t *Thread) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 	return nil, false
 }
 
-func (t *Thread) Prop(name string) symbolic.SymbolicValue {
+func (t *Thread) Prop(name string) symbolic.Value {
 	return symbolic.GetGoMethodOrPanic(name, t)
 }
 
@@ -40,7 +40,7 @@ func (*Thread) PropertyNames() []string {
 	return []string{"push"}
 }
 
-func (*Thread) Push(ctx *symbolic.Context, elems ...symbolic.SymbolicValue) {
+func (*Thread) Push(ctx *symbolic.Context, elems ...symbolic.Value) {
 
 }
 
@@ -49,14 +49,14 @@ func (*Thread) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, de
 	return
 }
 
-func (t *Thread) IteratorElementKey() symbolic.SymbolicValue {
+func (t *Thread) IteratorElementKey() symbolic.Value {
 	return &symbolic.Any{}
 }
 
-func (*Thread) IteratorElementValue() symbolic.SymbolicValue {
+func (*Thread) IteratorElementValue() symbolic.Value {
 	return &symbolic.Any{}
 }
 
-func (*Thread) WidestOfType() symbolic.SymbolicValue {
+func (*Thread) WidestOfType() symbolic.Value {
 	return &Thread{}
 }

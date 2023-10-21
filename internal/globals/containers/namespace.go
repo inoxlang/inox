@@ -44,7 +44,7 @@ var (
 				Params: utils.CopySlice(values),
 			}), nil
 		},
-		SymbolicCallImpl: func(ctx *symbolic.Context, values []symbolic.SymbolicValue) (symbolic.Pattern, error) {
+		SymbolicCallImpl: func(ctx *symbolic.Context, values []symbolic.Value) (symbolic.Pattern, error) {
 			switch len(values) {
 			case 0:
 				return nil, commonfmt.FmtMissingArgument("element pattern")
@@ -87,7 +87,7 @@ func init() {
 		NewGraph, func(ctx *symbolic.Context, nodes, edges *symbolic.List) *coll_symbolic.Graph {
 			return &coll_symbolic.Graph{}
 		},
-		NewTree, func(ctx *symbolic.Context, data *symbolic.UData, args ...symbolic.SymbolicValue) *coll_symbolic.Tree {
+		NewTree, func(ctx *symbolic.Context, data *symbolic.UData, args ...symbolic.Value) *coll_symbolic.Tree {
 			return &coll_symbolic.Tree{}
 		},
 		NewRanking, func(ctx *symbolic.Context, flatEntries *symbolic.List) *coll_symbolic.Ranking {

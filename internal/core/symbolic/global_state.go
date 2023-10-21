@@ -19,7 +19,7 @@ type GlobalState struct {
 	_ int
 }
 
-func (r *GlobalState) Test(v SymbolicValue, state RecTestCallState) bool {
+func (r *GlobalState) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -31,7 +31,7 @@ func (r *GlobalState) Test(v SymbolicValue, state RecTestCallState) bool {
 	}
 }
 
-func (r *GlobalState) WidestOfType() SymbolicValue {
+func (r *GlobalState) WidestOfType() Value {
 	return ANY_GLOBAL_STATE
 }
 
@@ -41,7 +41,7 @@ func (r *GlobalState) GetGoMethod(name string) (*GoFunction, bool) {
 	return nil, false
 }
 
-func (r *GlobalState) Prop(name string) SymbolicValue {
+func (r *GlobalState) Prop(name string) Value {
 	switch name {
 	case "module":
 		return ANY_MODULE
@@ -57,7 +57,7 @@ func (*GlobalState) PropertyNames() []string {
 	return GLOBAL_STATE_PROPNAMES
 }
 
-func (GlobalState *GlobalState) WaitResult(ctx *Context) (SymbolicValue, *Error) {
+func (GlobalState *GlobalState) WaitResult(ctx *Context) (Value, *Error) {
 	return ANY, nil
 }
 

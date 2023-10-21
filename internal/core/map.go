@@ -11,12 +11,12 @@ func init() {
 	var MAP_PARAM_NAMES = []string{"iterable", "mapper"}
 
 	RegisterSymbolicGoFunctions([]any{
-		Map, func(ctx *symbolic.Context, iterable symbolic.Iterable, mapper symbolic.SymbolicValue) *symbolic.List {
+		Map, func(ctx *symbolic.Context, iterable symbolic.Iterable, mapper symbolic.Value) *symbolic.List {
 
-			makeParams := func(result symbolic.SymbolicValue) *[]symbolic.SymbolicValue {
-				return &[]symbolic.SymbolicValue{iterable, symbolic.NewFunction(
-					[]symbolic.SymbolicValue{iterable.IteratorElementValue()}, nil, -1, false,
-					[]symbolic.SymbolicValue{result},
+			makeParams := func(result symbolic.Value) *[]symbolic.Value {
+				return &[]symbolic.Value{iterable, symbolic.NewFunction(
+					[]symbolic.Value{iterable.IteratorElementValue()}, nil, -1, false,
+					[]symbolic.Value{result},
 				)}
 			}
 

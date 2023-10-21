@@ -20,7 +20,7 @@ type HttpResponse struct {
 	_ int
 }
 
-func (r *HttpResponse) Test(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+func (r *HttpResponse) Test(v symbolic.Value, state symbolic.RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -32,7 +32,7 @@ func (resp *HttpResponse) GetGoMethod(name string) (*symbolic.GoFunction, bool) 
 	return nil, false
 }
 
-func (resp *HttpResponse) Prop(name string) symbolic.SymbolicValue {
+func (resp *HttpResponse) Prop(name string) symbolic.Value {
 	switch name {
 	case "body":
 		return &symbolic.Reader{}
@@ -56,6 +56,6 @@ func (r *HttpResponse) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintCo
 	return
 }
 
-func (r *HttpResponse) WidestOfType() symbolic.SymbolicValue {
+func (r *HttpResponse) WidestOfType() symbolic.Value {
 	return &HttpResponse{}
 }

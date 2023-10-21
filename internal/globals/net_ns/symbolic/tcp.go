@@ -13,7 +13,7 @@ type TcpConn struct {
 	_ int
 }
 
-func (r *TcpConn) Test(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+func (r *TcpConn) Test(v symbolic.Value, state symbolic.RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -33,7 +33,7 @@ func (conn *TcpConn) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 	return nil, false
 }
 
-func (conn *TcpConn) Prop(name string) symbolic.SymbolicValue {
+func (conn *TcpConn) Prop(name string) symbolic.Value {
 	return symbolic.GetGoMethodOrPanic(name, conn)
 }
 
@@ -56,6 +56,6 @@ func (r *TcpConn) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig,
 	utils.Must(w.Write(utils.StringAsBytes("%tcp-conn")))
 }
 
-func (r *TcpConn) WidestOfType() symbolic.SymbolicValue {
+func (r *TcpConn) WidestOfType() symbolic.Value {
 	return &TcpConn{}
 }

@@ -13,7 +13,7 @@ type Transaction struct {
 	_ int
 }
 
-func (tx *Transaction) Test(v SymbolicValue, state RecTestCallState) bool {
+func (tx *Transaction) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -37,7 +37,7 @@ func (tx *Transaction) Rollback(ctx *Context) *Error {
 	return nil
 }
 
-func (tx *Transaction) Prop(name string) SymbolicValue {
+func (tx *Transaction) Prop(name string) Value {
 	method, ok := tx.GetGoMethod(name)
 	if !ok {
 		panic(FormatErrPropertyDoesNotExist(name, tx))
@@ -66,6 +66,6 @@ func (tx *Transaction) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintCo
 	return
 }
 
-func (tx *Transaction) WidestOfType() SymbolicValue {
+func (tx *Transaction) WidestOfType() Value {
 	return &Transaction{}
 }

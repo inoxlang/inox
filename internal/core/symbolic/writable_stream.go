@@ -14,9 +14,9 @@ var (
 
 // An StreamSink represents a symbolic StreamSink.
 type StreamSink interface {
-	SymbolicValue
-	WritableStreamElement() SymbolicValue
-	ChunkedWritableStreamElement() SymbolicValue
+	Value
+	WritableStreamElement() Value
+	ChunkedWritableStreamElement() Value
 }
 
 // An AnyStreamSink represents a symbolic StreamSink we do not know the concrete type.
@@ -24,7 +24,7 @@ type AnyStreamSink struct {
 	_ int
 }
 
-func (r *AnyStreamSink) Test(v SymbolicValue, state RecTestCallState) bool {
+func (r *AnyStreamSink) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -37,30 +37,30 @@ func (r *AnyStreamSink) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintC
 	utils.Must(w.Write(utils.StringAsBytes("%stream-sink")))
 }
 
-func (r *AnyStreamSink) WidestOfType() SymbolicValue {
+func (r *AnyStreamSink) WidestOfType() Value {
 	return ANY_STREAM_SINK
 }
 
-func (r *AnyStreamSink) WritableStreamElement() SymbolicValue {
+func (r *AnyStreamSink) WritableStreamElement() Value {
 	return ANY
 }
 
-func (r *AnyStreamSink) ChunkedWritableStreamElement() SymbolicValue {
+func (r *AnyStreamSink) ChunkedWritableStreamElement() Value {
 	return ANY
 }
 
 // An WritableStream represents a symbolic WritableStream.
 type WritableStream struct {
-	element SymbolicValue //if nil matches any
+	element Value //if nil matches any
 	_       int
 }
 
 // TODO: add chunk argument ?
-func NewWritableStream(element SymbolicValue) *WritableStream {
+func NewWritableStream(element Value) *WritableStream {
 	return &WritableStream{element: element}
 }
 
-func (r *WritableStream) Test(v SymbolicValue, state RecTestCallState) bool {
+func (r *WritableStream) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -79,17 +79,17 @@ func (r *WritableStream) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrint
 	return
 }
 
-func (r *WritableStream) WritableStreamElement() SymbolicValue {
+func (r *WritableStream) WritableStreamElement() Value {
 	if r.element == nil {
 		return ANY
 	}
 	return r.element
 }
 
-func (r *WritableStream) ChunkedWritableStreamElement() SymbolicValue {
+func (r *WritableStream) ChunkedWritableStreamElement() Value {
 	return ANY
 }
 
-func (r *WritableStream) WidestOfType() SymbolicValue {
+func (r *WritableStream) WidestOfType() Value {
 	return &WritableStream{}
 }

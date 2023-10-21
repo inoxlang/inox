@@ -373,8 +373,8 @@ outer:
 }
 
 func (p *ModuleParameters) GetSymbolicArguments(ctx *Context) *symbolic.Struct {
-	resultEntries := map[string]symbolic.SymbolicValue{}
-	encountered := map[uintptr]symbolic.SymbolicValue{}
+	resultEntries := map[string]symbolic.Value{}
+	encountered := map[uintptr]symbolic.Value{}
 
 	for _, param := range p.others {
 		symbolicPatt := utils.Must(param.pattern.ToSymbolicValue(nil, encountered)).(symbolic.Pattern)
@@ -417,7 +417,7 @@ func (p ModuleParameter) Required(ctx *Context) bool {
 }
 
 func (p ModuleParameter) StringifiedPattern() string {
-	symb := utils.Must(p.pattern.ToSymbolicValue(nil, map[uintptr]symbolic.SymbolicValue{}))
+	symb := utils.Must(p.pattern.ToSymbolicValue(nil, map[uintptr]symbolic.Value{}))
 	return symbolic.Stringify(symb.(symbolic.Pattern).SymbolicValue())
 }
 

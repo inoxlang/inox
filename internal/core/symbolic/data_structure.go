@@ -51,38 +51,38 @@ var (
 // An Indexable represents a symbolic Indexable.
 type Indexable interface {
 	Iterable
-	element() SymbolicValue
-	elementAt(i int) SymbolicValue
+	element() Value
+	elementAt(i int) Value
 	KnownLen() int
 	HasKnownLen() bool
 }
 
 type InexactCapable interface {
-	SymbolicValue
+	Value
 
 	//TestExact should behave like Test() at the only difference that inexactness should be ignored.
 	//For example an inexact object should not match an another object that has additional properties.
-	TestExact(v SymbolicValue) bool
+	TestExact(v Value) bool
 }
 
 // An Array represents a symbolic Array.
 type Array struct {
-	elements       []SymbolicValue
-	generalElement SymbolicValue
+	elements       []Value
+	generalElement Value
 }
 
-func NewArray(elements ...SymbolicValue) *Array {
+func NewArray(elements ...Value) *Array {
 	if elements == nil {
-		elements = []SymbolicValue{}
+		elements = []Value{}
 	}
 	return &Array{elements: elements}
 }
 
-func NewArrayOf(generalElement SymbolicValue) *Array {
+func NewArrayOf(generalElement Value) *Array {
 	return &Array{generalElement: generalElement}
 }
 
-func (a *Array) Test(v SymbolicValue, state RecTestCallState) bool {
+func (a *Array) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -194,7 +194,7 @@ func (a *Array) KnownLen() int {
 	return len(a.elements)
 }
 
-func (a *Array) element() SymbolicValue {
+func (a *Array) element() Value {
 	if a.elements != nil {
 		if len(a.elements) == 0 {
 			return ANY
@@ -204,7 +204,7 @@ func (a *Array) element() SymbolicValue {
 	return ANY
 }
 
-func (a *Array) elementAt(i int) SymbolicValue {
+func (a *Array) elementAt(i int) Value {
 	if a.elements != nil {
 		if len(a.elements) == 0 || i >= len(a.elements) {
 			return ANY // return "never" ?
@@ -218,15 +218,15 @@ func (a *Array) slice(start, end *Int) Sequence {
 	return ANY_ARRAY
 }
 
-func (a *Array) IteratorElementKey() SymbolicValue {
+func (a *Array) IteratorElementKey() Value {
 	return ANY_INT
 }
 
-func (a *Array) IteratorElementValue() SymbolicValue {
+func (a *Array) IteratorElementValue() Value {
 	return a.element()
 }
 
-func (*Array) WidestOfType() SymbolicValue {
+func (*Array) WidestOfType() Value {
 	return ANY_ARRAY
 }
 
@@ -258,7 +258,7 @@ func NewListOf(generalElement Serializable) *List {
 	return &List{generalElement: generalElement}
 }
 
-func (list *List) Test(v SymbolicValue, state RecTestCallState) bool {
+func (list *List) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -362,7 +362,7 @@ func (list *List) Static() Pattern {
 		return NewListPatternOf(&TypePattern{val: list.generalElement})
 	}
 
-	var elements []SymbolicValue
+	var elements []Value
 	for _, e := range list.elements {
 		elements = append(elements, getStatic(e).SymbolicValue())
 	}
@@ -375,7 +375,7 @@ func (list *List) Static() Pattern {
 	return NewListPatternOf(&TypePattern{val: elem})
 }
 
-func (list *List) Prop(name string) SymbolicValue {
+func (list *List) Prop(name string) Value {
 	switch name {
 	case "append":
 		return WrapGoMethod(list.Append)
@@ -468,7 +468,7 @@ func (l *List) KnownLen() int {
 	return len(l.elements)
 }
 
-func (l *List) element() SymbolicValue {
+func (l *List) element() Value {
 	if l.elements != nil {
 		if len(l.elements) == 0 {
 			return ANY_SERIALIZABLE
@@ -478,7 +478,7 @@ func (l *List) element() SymbolicValue {
 	return l.generalElement
 }
 
-func (l *List) elementAt(i int) SymbolicValue {
+func (l *List) elementAt(i int) Value {
 	if l.elements != nil {
 		if len(l.elements) == 0 || i >= len(l.elements) {
 			return ANY // return "never" ?
@@ -488,7 +488,7 @@ func (l *List) elementAt(i int) SymbolicValue {
 	return l.generalElement
 }
 
-func (l *List) Contains(value SymbolicValue) (bool, bool) {
+func (l *List) Contains(value Value) (bool, bool) {
 	if l.elements == nil {
 		if l.generalElement.Test(value, RecTestCallState{}) {
 			return false, true
@@ -509,15 +509,15 @@ func (l *List) Contains(value SymbolicValue) (bool, bool) {
 	return false, possible
 }
 
-func (l *List) IteratorElementKey() SymbolicValue {
+func (l *List) IteratorElementKey() Value {
 	return ANY_INT
 }
 
-func (l *List) IteratorElementValue() SymbolicValue {
+func (l *List) IteratorElementValue() Value {
 	return l.element()
 }
 
-func (l *List) WidestOfType() SymbolicValue {
+func (l *List) WidestOfType() Value {
 	return WIDEST_LIST_PATTERN
 }
 
@@ -530,7 +530,7 @@ func (l *List) slice(start, end *Int) Sequence {
 	}
 }
 
-func (l *List) set(ctx *Context, i *Int, v SymbolicValue) {
+func (l *List) set(ctx *Context, i *Int, v Value) {
 	//TODO
 }
 
@@ -538,7 +538,7 @@ func (l *List) SetSlice(ctx *Context, start, end *Int, v Sequence) {
 	//TODO
 }
 
-func (l *List) insertElement(ctx *Context, v SymbolicValue, i *Int) {
+func (l *List) insertElement(ctx *Context, v Value, i *Int) {
 	//TODO
 }
 
@@ -562,7 +562,7 @@ func (l *List) insertSequence(ctx *Context, seq Sequence, i *Int) {
 		}
 		return
 	}
-	element := AsSerializable(widenToSameStaticTypeInMultivalue(joinValues([]SymbolicValue{l.element(), seq.element()})))
+	element := AsSerializable(widenToSameStaticTypeInMultivalue(joinValues([]Value{l.element(), seq.element()})))
 	if serializable, ok := element.(Serializable); ok {
 		ctx.SetUpdatedSelf(NewListOf(serializable))
 	} else {
@@ -596,7 +596,7 @@ func (l *List) appendSequence(ctx *Context, seq Sequence) {
 		}
 		return
 	}
-	element := AsSerializable(widenToSameStaticTypeInMultivalue(joinValues([]SymbolicValue{l.element(), seq.element()})))
+	element := AsSerializable(widenToSameStaticTypeInMultivalue(joinValues([]Value{l.element(), seq.element()})))
 	if serializable, ok := element.(Serializable); ok {
 		ctx.SetUpdatedSelf(NewListOf(serializable))
 	} else {
@@ -606,12 +606,12 @@ func (l *List) appendSequence(ctx *Context, seq Sequence) {
 
 func (l *List) Append(ctx *Context, elements ...Serializable) {
 	if l.generalElement != nil {
-		ctx.SetSymbolicGoFunctionParameters(&[]SymbolicValue{l.element()}, []string{"values"})
+		ctx.SetSymbolicGoFunctionParameters(&[]Value{l.element()}, []string{"values"})
 	}
 	l.appendSequence(ctx, NewList(elements...))
 }
 
-func (l *List) WatcherElement() SymbolicValue {
+func (l *List) WatcherElement() Value {
 	return ANY
 }
 
@@ -635,7 +635,7 @@ func NewTupleOf(generalElement Serializable) *Tuple {
 	return &Tuple{generalElement: generalElement}
 }
 
-func (t *Tuple) Test(v SymbolicValue, state RecTestCallState) bool {
+func (t *Tuple) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -702,7 +702,7 @@ func (t *Tuple) Static() Pattern {
 		return NewListPatternOf(&TypePattern{val: t.generalElement})
 	}
 
-	var elements []SymbolicValue
+	var elements []Value
 	for _, e := range t.elements {
 		elements = append(elements, getStatic(e).SymbolicValue())
 	}
@@ -726,7 +726,7 @@ func (t *Tuple) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, d
 	t.generalElement.PrettyPrint(w, config, 0, 0)
 }
 
-func (t *Tuple) append(element SymbolicValue) {
+func (t *Tuple) append(element Value) {
 	if t.elements == nil {
 		t.elements = make([]Serializable, 0)
 	}
@@ -746,7 +746,7 @@ func (t *Tuple) KnownLen() int {
 	return len(t.elements)
 }
 
-func (t *Tuple) element() SymbolicValue {
+func (t *Tuple) element() Value {
 	if t.elements != nil {
 		if len(t.elements) == 0 {
 			return ANY_SERIALIZABLE // return "never" ?
@@ -756,7 +756,7 @@ func (t *Tuple) element() SymbolicValue {
 	return t.generalElement
 }
 
-func (t *Tuple) elementAt(i int) SymbolicValue {
+func (t *Tuple) elementAt(i int) Value {
 	if t.elements != nil {
 		if len(t.elements) == 0 || i >= len(t.elements) {
 			return ANY // return "never" ?
@@ -766,7 +766,7 @@ func (t *Tuple) elementAt(i int) SymbolicValue {
 	return t.generalElement
 }
 
-func (t *Tuple) Contains(value SymbolicValue) (bool, bool) {
+func (t *Tuple) Contains(value Value) (bool, bool) {
 	if t.elements == nil {
 		if t.generalElement.Test(value, RecTestCallState{}) {
 			return false, true
@@ -787,15 +787,15 @@ func (t *Tuple) Contains(value SymbolicValue) (bool, bool) {
 	return false, possible
 }
 
-func (t *Tuple) IteratorElementKey() SymbolicValue {
+func (t *Tuple) IteratorElementKey() Value {
 	return ANY_INT
 }
 
-func (t *Tuple) IteratorElementValue() SymbolicValue {
+func (t *Tuple) IteratorElementValue() Value {
 	return t.element()
 }
 
-func (t *Tuple) WidestOfType() SymbolicValue {
+func (t *Tuple) WidestOfType() Value {
 	return WIDEST_TUPLE_PATTERN
 }
 
@@ -818,7 +818,7 @@ func NewAnyKeyList() *KeyList {
 	return &KeyList{}
 }
 
-func (list *KeyList) Test(v SymbolicValue, state RecTestCallState) bool {
+func (list *KeyList) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -886,7 +886,7 @@ func (a *KeyList) append(key string) {
 	a.Keys = append(a.Keys, key)
 }
 
-func (l *KeyList) WidestOfType() SymbolicValue {
+func (l *KeyList) WidestOfType() Value {
 	return &KeyList{}
 }
 
@@ -933,7 +933,7 @@ func InitializeDictionary(d *Dictionary, entries map[string]Serializable, keys m
 	d.keys = keys
 }
 
-func (dict *Dictionary) Test(v SymbolicValue, state RecTestCallState) bool {
+func (dict *Dictionary) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -1015,7 +1015,7 @@ func (dict *Dictionary) hasKey(keyRepr string) bool {
 	return ok
 }
 
-func (dict *Dictionary) get(keyRepr string) (SymbolicValue, bool) {
+func (dict *Dictionary) get(keyRepr string) (Value, bool) {
 	if dict.entries == nil {
 		return ANY, true
 	}
@@ -1023,7 +1023,7 @@ func (dict *Dictionary) get(keyRepr string) (SymbolicValue, bool) {
 	return v, ok
 }
 
-func (dict *Dictionary) Get(ctx *Context, key Serializable) (SymbolicValue, *Bool) {
+func (dict *Dictionary) Get(ctx *Context, key Serializable) (Value, *Bool) {
 	return ANY_SERIALIZABLE, ANY_BOOL
 }
 
@@ -1031,12 +1031,12 @@ func (dict *Dictionary) SetValue(ctx *Context, key, value Serializable) {
 
 }
 
-func (dict *Dictionary) key() SymbolicValue {
+func (dict *Dictionary) key() Value {
 	if dict.entries != nil {
 		if len(dict.entries) == 0 {
 			return ANY
 		}
-		var keys []SymbolicValue
+		var keys []Value
 		for _, k := range dict.keys {
 			keys = append(keys, k)
 		}
@@ -1045,7 +1045,7 @@ func (dict *Dictionary) key() SymbolicValue {
 	return ANY
 }
 
-func (dict *Dictionary) ForEachEntry(fn func(k string, v SymbolicValue) error) error {
+func (dict *Dictionary) ForEachEntry(fn func(k string, v Value) error) error {
 	for k, v := range dict.entries {
 		if err := fn(k, v); err != nil {
 			return err
@@ -1054,7 +1054,7 @@ func (dict *Dictionary) ForEachEntry(fn func(k string, v SymbolicValue) error) e
 	return nil
 }
 
-func (dict *Dictionary) Prop(name string) SymbolicValue {
+func (dict *Dictionary) Prop(name string) Value {
 	switch name {
 	case "get":
 		return WrapGoMethod(dict.Get)
@@ -1069,15 +1069,15 @@ func (dict *Dictionary) PropertyNames() []string {
 	return DICTIONARY_PROPNAMES
 }
 
-func (dict *Dictionary) IteratorElementKey() SymbolicValue {
+func (dict *Dictionary) IteratorElementKey() Value {
 	return dict.key()
 }
 
-func (dict *Dictionary) IteratorElementValue() SymbolicValue {
+func (dict *Dictionary) IteratorElementValue() Value {
 	return ANY
 }
 
-func (dict *Dictionary) WatcherElement() SymbolicValue {
+func (dict *Dictionary) WatcherElement() Value {
 	return ANY
 }
 
@@ -1146,7 +1146,7 @@ func (dict *Dictionary) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintC
 	return
 }
 
-func (d *Dictionary) WidestOfType() SymbolicValue {
+func (d *Dictionary) WidestOfType() Value {
 	return &Dictionary{}
 }
 
@@ -1237,18 +1237,18 @@ func (o *Object) ReadonlyObject() *Object {
 	return &readonly
 }
 
-func (obj *Object) TestExact(v SymbolicValue) bool {
+func (obj *Object) TestExact(v Value) bool {
 	return obj.test(v, true, RecTestCallState{})
 }
 
-func (obj *Object) Test(v SymbolicValue, state RecTestCallState) bool {
+func (obj *Object) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
 	return obj.test(v, obj.exact, state)
 }
 
-func (obj *Object) test(v SymbolicValue, exact bool, state RecTestCallState) bool {
+func (obj *Object) test(v Value, exact bool, state RecTestCallState) bool {
 	otherObj, ok := v.(*Object)
 	if !ok || obj.readonly != otherObj.readonly {
 		return false
@@ -1333,7 +1333,7 @@ func (obj *Object) test(v SymbolicValue, exact bool, state RecTestCallState) boo
 	return true
 }
 
-func (o *Object) SpecificIntersection(v SymbolicValue, depth int) (SymbolicValue, error) {
+func (o *Object) SpecificIntersection(v Value, depth int) (Value, error) {
 	if depth > MAX_INTERSECTION_COMPUTATION_DEPTH {
 		return nil, ErrMaxIntersectionComputationDepthExceeded
 	}
@@ -1363,7 +1363,7 @@ func (o *Object) SpecificIntersection(v SymbolicValue, depth int) (SymbolicValue
 	// add properties of self
 	for propName, prop := range o.entries {
 
-		var propInResult SymbolicValue = prop
+		var propInResult Value = prop
 		propInOther, existsInOther := other.entries[propName]
 		if existsInOther {
 			val, err := getIntersection(depth+1, prop, propInOther)
@@ -1557,7 +1557,7 @@ func (obj *Object) IsShared() bool {
 	return obj.shared
 }
 
-func (obj *Object) Prop(name string) SymbolicValue {
+func (obj *Object) Prop(name string) Value {
 	v, ok := obj.entries[name]
 	if !ok {
 		panic(fmt.Errorf("object does not have a .%s property", name))
@@ -1569,7 +1569,7 @@ func (obj *Object) MatchAnyObject() bool {
 	return obj.entries == nil
 }
 
-func (obj *Object) ForEachEntry(fn func(propName string, propValue SymbolicValue) error) error {
+func (obj *Object) ForEachEntry(fn func(propName string, propValue Value) error) error {
 	for k, v := range obj.entries {
 		if err := fn(k, v); err != nil {
 			return err
@@ -1578,15 +1578,15 @@ func (obj *Object) ForEachEntry(fn func(propName string, propValue SymbolicValue
 	return nil
 }
 
-func (obj *Object) ValueEntryMap() map[string]SymbolicValue {
-	entries := map[string]SymbolicValue{}
+func (obj *Object) ValueEntryMap() map[string]Value {
+	entries := map[string]Value{}
 	for k, v := range obj.entries {
 		entries[k] = v
 	}
 	return entries
 }
 
-func (obj *Object) SetProp(name string, value SymbolicValue) (IProps, error) {
+func (obj *Object) SetProp(name string, value Value) (IProps, error) {
 	if obj.readonly {
 		return nil, ErrReadonlyValueCannotBeMutated
 	}
@@ -1625,7 +1625,7 @@ func (obj *Object) SetProp(name string, value SymbolicValue) (IProps, error) {
 	return &modified, nil
 }
 
-func (obj *Object) WithExistingPropReplaced(name string, value SymbolicValue) (IProps, error) {
+func (obj *Object) WithExistingPropReplaced(name string, value Value) (IProps, error) {
 	if obj.readonly {
 		return nil, ErrReadonlyValueCannotBeMutated
 	}
@@ -1702,7 +1702,7 @@ func (obj *Object) hasDeps(name string) bool {
 }
 
 // result should not be modfied
-func (obj *Object) GetProperty(name string) (SymbolicValue, Pattern, bool) {
+func (obj *Object) GetProperty(name string) (Value, Pattern, bool) {
 	if obj.entries == nil {
 		return ANY, nil, true
 	}
@@ -1742,15 +1742,15 @@ func (o *Object) KnownLen() int {
 	return -1
 }
 
-func (o *Object) element() SymbolicValue {
+func (o *Object) element() Value {
 	return ANY
 }
 
-func (*Object) elementAt(i int) SymbolicValue {
+func (*Object) elementAt(i int) Value {
 	return ANY
 }
 
-func (o *Object) Contains(value SymbolicValue) (bool, bool) {
+func (o *Object) Contains(value Value) (bool, bool) {
 	if o.entries == nil {
 		return false, true
 	}
@@ -1768,15 +1768,15 @@ func (o *Object) Contains(value SymbolicValue) (bool, bool) {
 	return false, possible
 }
 
-func (o *Object) IteratorElementKey() SymbolicValue {
+func (o *Object) IteratorElementKey() Value {
 	return &String{}
 }
 
-func (o *Object) IteratorElementValue() SymbolicValue {
+func (o *Object) IteratorElementValue() Value {
 	return o.element()
 }
 
-func (o *Object) WatcherElement() SymbolicValue {
+func (o *Object) WatcherElement() Value {
 	return ANY
 }
 
@@ -1860,7 +1860,7 @@ func (obj *Object) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig
 	utils.Must(w.Write(utils.StringAsBytes("%object")))
 }
 
-func (o *Object) WidestOfType() SymbolicValue {
+func (o *Object) WidestOfType() Value {
 	return ANY_OBJ
 }
 
@@ -1869,7 +1869,7 @@ type Record struct {
 	UnassignablePropsMixin
 	entries         map[string]Serializable //if nil, matches any record
 	optionalEntries map[string]struct{}
-	valueOnly       SymbolicValue
+	valueOnly       Value
 	exact           bool
 
 	SerializableMixin
@@ -1899,7 +1899,7 @@ func NewExactRecord(entries map[string]Serializable, optionalEntries map[string]
 	}
 }
 
-func NewAnyKeyRecord(value SymbolicValue) *Record {
+func NewAnyKeyRecord(value Value) *Record {
 	return &Record{valueOnly: value}
 }
 
@@ -1907,18 +1907,18 @@ func NewBoundEntriesRecord(entries map[string]Serializable) *Record {
 	return &Record{entries: entries}
 }
 
-func (rec *Record) TestExact(v SymbolicValue) bool {
+func (rec *Record) TestExact(v Value) bool {
 	return rec.test(v, true, RecTestCallState{})
 }
 
-func (rec *Record) Test(v SymbolicValue, state RecTestCallState) bool {
+func (rec *Record) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
 	return rec.test(v, rec.exact, state)
 }
 
-func (rec *Record) test(v SymbolicValue, exact bool, state RecTestCallState) bool {
+func (rec *Record) test(v Value, exact bool, state RecTestCallState) bool {
 	otherRec, ok := v.(*Record)
 	if !ok {
 		return false
@@ -2001,7 +2001,7 @@ func (rec *Record) Concretize(ctx ConcreteContext) any {
 	return extData.ConcreteValueFactories.CreateObject(concreteProperties)
 }
 
-func (rec *Record) Prop(name string) SymbolicValue {
+func (rec *Record) Prop(name string) Value {
 	v, ok := rec.entries[name]
 	if !ok {
 		panic(fmt.Errorf("record does not have a .%s property", name))
@@ -2029,8 +2029,8 @@ func (rec *Record) OptionalPropertyNames() []string {
 	return maps.Keys(rec.optionalEntries)
 }
 
-func (rec *Record) ValueEntryMap() map[string]SymbolicValue {
-	entries := map[string]SymbolicValue{}
+func (rec *Record) ValueEntryMap() map[string]Value {
+	entries := map[string]Value{}
 	for k, v := range rec.entries {
 		entries[k] = v
 	}
@@ -2045,7 +2045,7 @@ func (rec *Record) hasProperty(name string) bool {
 	return ok
 }
 
-func (rec *Record) getProperty(name string) (SymbolicValue, bool) {
+func (rec *Record) getProperty(name string) (Value, bool) {
 	if rec.entries == nil {
 		return ANY, true
 	}
@@ -2053,7 +2053,7 @@ func (rec *Record) getProperty(name string) (SymbolicValue, bool) {
 	return v, ok
 }
 
-func (rec *Record) ForEachEntry(fn func(k string, v SymbolicValue) error) error {
+func (rec *Record) ForEachEntry(fn func(k string, v Value) error) error {
 	for k, v := range rec.entries {
 		if err := fn(k, v); err != nil {
 			return err
@@ -2070,11 +2070,11 @@ func (rec *Record) KnownLen() int {
 	return -1
 }
 
-func (rec *Record) element() SymbolicValue {
+func (rec *Record) element() Value {
 	return ANY
 }
 
-func (r *Record) Contains(value SymbolicValue) (bool, bool) {
+func (r *Record) Contains(value Value) (bool, bool) {
 	if r.entries == nil {
 		return false, true
 	}
@@ -2092,11 +2092,11 @@ func (r *Record) Contains(value SymbolicValue) (bool, bool) {
 	return false, possible
 }
 
-func (rec *Record) IteratorElementKey() SymbolicValue {
+func (rec *Record) IteratorElementKey() Value {
 	return &String{}
 }
 
-func (rec *Record) IteratorElementValue() SymbolicValue {
+func (rec *Record) IteratorElementValue() Value {
 	return rec.element()
 }
 
@@ -2177,7 +2177,7 @@ func (rec *Record) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig
 	utils.Must(w.Write(utils.StringAsBytes("}")))
 }
 
-func (r *Record) WidestOfType() SymbolicValue {
+func (r *Record) WidestOfType() Value {
 	return ANY_REC
 }
 
@@ -2186,7 +2186,7 @@ type AnyIndexable struct {
 	_ int
 }
 
-func (r *AnyIndexable) Test(v SymbolicValue, state RecTestCallState) bool {
+func (r *AnyIndexable) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -2195,19 +2195,19 @@ func (r *AnyIndexable) Test(v SymbolicValue, state RecTestCallState) bool {
 	return ok
 }
 
-func (i *AnyIndexable) IteratorElementKey() SymbolicValue {
+func (i *AnyIndexable) IteratorElementKey() Value {
 	return ANY
 }
 
-func (i *AnyIndexable) IteratorElementValue() SymbolicValue {
+func (i *AnyIndexable) IteratorElementValue() Value {
 	return ANY
 }
 
-func (i *AnyIndexable) element() SymbolicValue {
+func (i *AnyIndexable) element() Value {
 	return ANY
 }
 
-func (i *AnyIndexable) elementAt(index int) SymbolicValue {
+func (i *AnyIndexable) elementAt(index int) Value {
 	return ANY
 }
 
@@ -2223,6 +2223,6 @@ func (r *AnyIndexable) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintCo
 	utils.Must(w.Write(utils.StringAsBytes("%indexable")))
 }
 
-func (r *AnyIndexable) WidestOfType() SymbolicValue {
+func (r *AnyIndexable) WidestOfType() Value {
 	return ANY_INDEXABLE
 }

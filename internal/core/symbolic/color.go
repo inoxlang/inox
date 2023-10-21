@@ -17,7 +17,7 @@ type Color struct {
 	_ int
 }
 
-func (c *Color) Test(v SymbolicValue, state RecTestCallState) bool {
+func (c *Color) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -29,11 +29,11 @@ func (c *Color) Test(v SymbolicValue, state RecTestCallState) bool {
 	}
 }
 
-func (c *Color) WidestOfType() SymbolicValue {
+func (c *Color) WidestOfType() Value {
 	return ANY_COLOR
 }
 
-func (c *Color) Prop(name string) SymbolicValue {
+func (c *Color) Prop(name string) Value {
 	switch name {
 	}
 	return nil

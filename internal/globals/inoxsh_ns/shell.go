@@ -457,7 +457,7 @@ func (sh *shell) applyConfiguration(prevTermState *term.State) {
 
 		if !core.IsSymbolicEquivalentOfGoFunctionRegistered(executeCmdFn) {
 			core.RegisterSymbolicGoFunction(executeCmdFn,
-				func(ctx *symbolic.Context, args ...symbolic.SymbolicValue) (symbolic.SymbolicValue, *symbolic.Error) {
+				func(ctx *symbolic.Context, args ...symbolic.Value) (symbolic.Value, *symbolic.Error) {
 					return &symbolic.Any{}, nil
 				},
 			)
@@ -1455,7 +1455,7 @@ func (sh *shell) PrettyPrint(w *bufio.Writer, config *core.PrettyPrintConfig, de
 	utils.Must(fmt.Fprintf(w, "%#v", sh))
 }
 
-func (sh *shell) ToSymbolicValue(ctx *core.Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (sh *shell) ToSymbolicValue(ctx *core.Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return &symbolic_shell.Shell{}, nil
 }
 

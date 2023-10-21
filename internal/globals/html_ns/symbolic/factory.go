@@ -8,7 +8,7 @@ import (
 func init() {
 	symbolic.RegisterXMLInterpolationCheckingFunction(
 		CreateHTMLNodeFromXMLElement,
-		func(n parse.Node, value symbolic.SymbolicValue) (errorMsg string) {
+		func(n parse.Node, value symbolic.Value) (errorMsg string) {
 			const ERROR_MSG = "only HTML nodes, string-like and integer values are allowed"
 
 			switch {

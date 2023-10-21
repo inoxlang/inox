@@ -245,7 +245,7 @@ func NewValueLifetimeJobs(ctx *Context, self Value, jobs []*LifetimeJob) *ValueL
 	}
 
 	for _, job := range jobs {
-		symbolicSubject, err := self.(Serializable).ToSymbolicValue(ctx, map[uintptr]symbolic.SymbolicValue{})
+		symbolicSubject, err := self.(Serializable).ToSymbolicValue(ctx, map[uintptr]symbolic.Value{})
 		if err != nil {
 			panic(err)
 		}

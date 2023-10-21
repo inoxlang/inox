@@ -17,16 +17,16 @@ func TestSymbolicEval(t *testing.T) {
 		enableMultivalueCaching = prev
 	}()
 
-	symbolicMap := func(ctx *Context, iterable Iterable, mapper SymbolicValue) *List {
+	symbolicMap := func(ctx *Context, iterable Iterable, mapper Value) *List {
 		var MAP_PARAM_NAMES = []string{"iterable", "mapper"}
 
-		makeParams := func(result SymbolicValue) *[]SymbolicValue {
-			return &[]SymbolicValue{iterable, NewFunction(
-				[]SymbolicValue{iterable.IteratorElementValue()},
+		makeParams := func(result Value) *[]Value {
+			return &[]Value{iterable, NewFunction(
+				[]Value{iterable.IteratorElementValue()},
 				nil,
 				-1,
 				false,
-				[]SymbolicValue{result},
+				[]Value{result},
 			)}
 		}
 
@@ -176,8 +176,8 @@ func TestSymbolicEval(t *testing.T) {
 			}
 			panic(ErrUnreachable)
 		}
-		extData.ToSymbolicValue = func(v any, wide bool) (SymbolicValue, error) {
-			return v.(SymbolicValue), nil
+		extData.ToSymbolicValue = func(v any, wide bool) (Value, error) {
+			return v.(Value), nil
 		}
 
 		t.Run("no upper bound", func(t *testing.T) {
@@ -888,7 +888,7 @@ func TestSymbolicEval(t *testing.T) {
 			expectedFn := &InoxFunction{
 				node:           fnExpr,
 				nodeChunk:      n,
-				parameters:     []SymbolicValue{argType},
+				parameters:     []Value{argType},
 				parameterNames: []string{"v"},
 				result:         argType,
 			}
@@ -2447,13 +2447,13 @@ func TestSymbolicEval(t *testing.T) {
 				}
 				panic(ErrUnreachable)
 			}
-			extData.ToSymbolicValue = func(v any, wide bool) (SymbolicValue, error) {
-				return v.(SymbolicValue), nil
+			extData.ToSymbolicValue = func(v any, wide bool) (Value, error) {
+				return v.(Value), nil
 			}
 
 			testCases := []struct {
 				code   string
-				result SymbolicValue
+				result Value
 				err    bool
 			}{
 				{"(1 .. 2)", ANY_INT_RANGE, false},
@@ -2575,7 +2575,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, &InoxFunction{
 				node:           fnExpr,
 				nodeChunk:      n,
-				parameters:     []SymbolicValue{ANY},
+				parameters:     []Value{ANY},
 				parameterNames: []string{"a"},
 				result:         ANY,
 			}, res)
@@ -2594,7 +2594,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, &InoxFunction{
 				node:           fnExpr,
 				nodeChunk:      n,
-				parameters:     []SymbolicValue{NewListOf(ANY_SERIALIZABLE)},
+				parameters:     []Value{NewListOf(ANY_SERIALIZABLE)},
 				parameterNames: []string{"a"},
 				result:         NewListOf(ANY_SERIALIZABLE),
 			}, res)
@@ -2616,7 +2616,7 @@ func TestSymbolicEval(t *testing.T) {
 				node:           fnExpr,
 				nodeChunk:      n,
 				result:         ANY_INT,
-				capturedLocals: map[string]SymbolicValue{"a": ANY_INT},
+				capturedLocals: map[string]Value{"a": ANY_INT},
 			}, res)
 		})
 
@@ -2636,7 +2636,7 @@ func TestSymbolicEval(t *testing.T) {
 				node:      fnExpr,
 				nodeChunk: n,
 				result:    NewList(ANY_INT, NewString("1")),
-				capturedLocals: map[string]SymbolicValue{
+				capturedLocals: map[string]Value{
 					"a": ANY_INT,
 					"b": NewString("1"),
 				},
@@ -2864,7 +2864,7 @@ func TestSymbolicEval(t *testing.T) {
 				node:                    fnPatt,
 				nodeChunk:               n,
 				returnType:              Nil,
-				parameters:              []SymbolicValue{},
+				parameters:              []Value{},
 				parameterNames:          []string{},
 				firstOptionalParamIndex: -1,
 			}, res)
@@ -2881,7 +2881,7 @@ func TestSymbolicEval(t *testing.T) {
 				node:                    fnPatt,
 				nodeChunk:               n,
 				returnType:              Nil,
-				parameters:              []SymbolicValue{ANY},
+				parameters:              []Value{ANY},
 				parameterNames:          []string{"a"},
 				firstOptionalParamIndex: -1,
 			}, res)
@@ -2904,7 +2904,7 @@ func TestSymbolicEval(t *testing.T) {
 				node:                    fnPatt,
 				nodeChunk:               n,
 				returnType:              ANY_INT,
-				parameters:              []SymbolicValue{},
+				parameters:              []Value{},
 				parameterNames:          []string{},
 				firstOptionalParamIndex: -1,
 			}, res)
@@ -2929,7 +2929,7 @@ func TestSymbolicEval(t *testing.T) {
 				node:                    fnPatt,
 				nodeChunk:               n,
 				returnType:              ANY_INT,
-				parameters:              []SymbolicValue{},
+				parameters:              []Value{},
 				parameterNames:          []string{},
 				firstOptionalParamIndex: -1,
 			}, res)
@@ -3658,7 +3658,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, &InoxFunction{
 				node:           fnExpr,
 				nodeChunk:      n,
-				parameters:     []SymbolicValue{NewMultivalue(NewListOf(ANY_INT), NewListOf(ANY_STR_LIKE))},
+				parameters:     []Value{NewMultivalue(NewListOf(ANY_INT), NewListOf(ANY_STR_LIKE))},
 				parameterNames: []string{"list"},
 				result:         Nil,
 			}, res)
@@ -4102,7 +4102,7 @@ func TestSymbolicEval(t *testing.T) {
 					if i.Value != nil {
 						ctx.AddSymbolicGoFunctionError("argument should not have been provided")
 					}
-					ctx.SetSymbolicGoFunctionParameters(&[]SymbolicValue{ANY_INT, NewInt(2)}, []string{"a", "b"})
+					ctx.SetSymbolicGoFunctionParameters(&[]Value{ANY_INT, NewInt(2)}, []string{"a", "b"})
 					return ANY_INT
 				},
 			}
@@ -4189,7 +4189,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, &InoxFunction{
 				node:           fnExpr,
 				nodeChunk:      n,
-				parameters:     []SymbolicValue{NewMultivalue(NewListOf(ANY_STR_LIKE), NewListOf(ANY_INT))},
+				parameters:     []Value{NewMultivalue(NewListOf(ANY_STR_LIKE), NewListOf(ANY_INT))},
 				parameterNames: []string{"list"},
 				result:         NewListOf(ANY_SERIALIZABLE),
 			}, res)
@@ -4227,7 +4227,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, &InoxFunction{
 				node:           fnExpr,
 				nodeChunk:      n,
-				parameters:     []SymbolicValue{NewMultivalue(NewListOf(ANY_STR_LIKE), NewListOf(ANY_INT))},
+				parameters:     []Value{NewMultivalue(NewListOf(ANY_STR_LIKE), NewListOf(ANY_INT))},
 				parameterNames: []string{"list"},
 				result:         NewListOf(ANY_SERIALIZABLE),
 			}, res)
@@ -4340,7 +4340,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			state.setGlobal("list", &List{generalElement: ANY_SERIALIZABLE}, GlobalConst)
 			goFunc := &GoFunction{
-				fn: func(*Context, SymbolicValue, ...*Int) *Int {
+				fn: func(*Context, Value, ...*Int) *Int {
 					return ANY_INT
 				},
 			}
@@ -4402,9 +4402,9 @@ func TestSymbolicEval(t *testing.T) {
 			callExprNode := n.Statements[0].(*parse.ReturnStatement).Expr.(*parse.CallExpression)
 
 			goFunc := &GoFunction{
-				fn: func(ctx *Context, arg SymbolicValue) *Int {
+				fn: func(ctx *Context, arg Value) *Int {
 					if _, ok := arg.(*Identifier); ok {
-						ctx.SetSymbolicGoFunctionParameters(&[]SymbolicValue{&Identifier{name: "a"}}, []string{"arg"})
+						ctx.SetSymbolicGoFunctionParameters(&[]Value{&Identifier{name: "a"}}, []string{"arg"})
 					}
 					return ANY_INT
 				},
@@ -4423,9 +4423,9 @@ func TestSymbolicEval(t *testing.T) {
 
 			if !assert.Equal(t, &Function{
 				firstOptionalParamIndex: -1,
-				parameters:              []SymbolicValue{NewIdentifier("a")},
+				parameters:              []Value{NewIdentifier("a")},
 				parameterNames:          []string{"arg"},
-				results:                 []SymbolicValue{ANY_INT},
+				results:                 []Value{ANY_INT},
 			}, calleeData) {
 				return
 			}
@@ -4442,9 +4442,9 @@ func TestSymbolicEval(t *testing.T) {
 			argNode := n.Statements[0].(*parse.ReturnStatement).Expr.(*parse.CallExpression).Arguments[0]
 
 			goFunc := &GoFunction{
-				fn: func(ctx *Context, arg SymbolicValue) *Int {
+				fn: func(ctx *Context, arg Value) *Int {
 					if _, ok := arg.(*Identifier); ok {
-						ctx.SetSymbolicGoFunctionParameters(&[]SymbolicValue{&Identifier{name: "a"}}, []string{"arg"})
+						ctx.SetSymbolicGoFunctionParameters(&[]Value{&Identifier{name: "a"}}, []string{"arg"})
 					}
 					return ANY_INT
 				},
@@ -4468,9 +4468,9 @@ func TestSymbolicEval(t *testing.T) {
 			argNode := callExprNode.Arguments[0]
 
 			goFunc := &GoFunction{
-				fn: func(ctx *Context, arg *OptionalParam[SymbolicValue]) *Int {
+				fn: func(ctx *Context, arg *OptionalParam[Value]) *Int {
 					if _, ok := (*arg.Value).(*Identifier); ok {
-						ctx.SetSymbolicGoFunctionParameters(&[]SymbolicValue{NewIdentifier("a")}, []string{"arg"})
+						ctx.SetSymbolicGoFunctionParameters(&[]Value{NewIdentifier("a")}, []string{"arg"})
 					}
 					return ANY_INT
 				},
@@ -4494,9 +4494,9 @@ func TestSymbolicEval(t *testing.T) {
 
 			if !assert.Equal(t, &Function{
 				firstOptionalParamIndex: 0,
-				parameters:              []SymbolicValue{NewIdentifier("a")},
+				parameters:              []Value{NewIdentifier("a")},
 				parameterNames:          []string{"arg"},
-				results:                 []SymbolicValue{ANY_INT},
+				results:                 []Value{ANY_INT},
 			}, calleeData) {
 				return
 			}
@@ -4517,8 +4517,8 @@ func TestSymbolicEval(t *testing.T) {
 			}, nil, nil)
 
 			goFunc := &GoFunction{
-				fn: func(ctx *Context, arg SymbolicValue) *Int {
-					ctx.SetSymbolicGoFunctionParameters(&[]SymbolicValue{param}, []string{"arg"})
+				fn: func(ctx *Context, arg Value) *Int {
+					ctx.SetSymbolicGoFunctionParameters(&[]Value{param}, []string{"arg"})
 					return ANY_INT
 				},
 			}
@@ -4549,8 +4549,8 @@ func TestSymbolicEval(t *testing.T) {
 			}, nil)
 
 			goFunc := &GoFunction{
-				fn: func(ctx *Context, arg SymbolicValue) *Int {
-					ctx.SetSymbolicGoFunctionParameters(&[]SymbolicValue{param}, []string{"arg"})
+				fn: func(ctx *Context, arg Value) *Int {
+					ctx.SetSymbolicGoFunctionParameters(&[]Value{param}, []string{"arg"})
 					return ANY_INT
 				},
 			}
@@ -4582,8 +4582,8 @@ func TestSymbolicEval(t *testing.T) {
 			}, nil, nil)
 
 			goFunc := &GoFunction{
-				fn: func(ctx *Context, arg SymbolicValue) *Int {
-					ctx.SetSymbolicGoFunctionParameters(&[]SymbolicValue{param}, []string{"arg"})
+				fn: func(ctx *Context, arg Value) *Int {
+					ctx.SetSymbolicGoFunctionParameters(&[]Value{param}, []string{"arg"})
 					return ANY_INT
 				},
 			}
@@ -4739,17 +4739,17 @@ func TestSymbolicEval(t *testing.T) {
 			expectedFn := &InoxFunction{
 				node:      fnExpr,
 				nodeChunk: n,
-				parameters: []SymbolicValue{
+				parameters: []Value{
 					&Function{
 						pattern: &FunctionPattern{
 							node:                    fnPatt.(*parse.FunctionPatternExpression),
 							nodeChunk:               n,
 							returnType:              ANY_INT,
-							parameters:              []SymbolicValue{},
+							parameters:              []Value{},
 							parameterNames:          []string{},
 							firstOptionalParamIndex: -1,
 						},
-						parameters:              []SymbolicValue{},
+						parameters:              []Value{},
 						parameterNames:          []string{},
 						firstOptionalParamIndex: -1,
 					},
@@ -4767,7 +4767,7 @@ func TestSymbolicEval(t *testing.T) {
 		`)
 
 		state.ctx.AddNamedPattern("mypattern", &TypePattern{
-			call: func(ctx *Context, values []SymbolicValue) (Pattern, error) {
+			call: func(ctx *Context, values []Value) (Pattern, error) {
 				return &ExactValuePattern{value: ANY_INT}, nil
 			},
 		}, false)
@@ -5595,7 +5595,7 @@ func TestSymbolicEval(t *testing.T) {
 				expectedFn := &InoxFunction{
 					node:           fnExpr,
 					nodeChunk:      n,
-					parameters:     []SymbolicValue{NewMultivalue(ANY_INT, Nil)},
+					parameters:     []Value{NewMultivalue(ANY_INT, Nil)},
 					parameterNames: []string{"v"},
 					result:         NewMultivalue(ANY_INT, FALSE),
 				}
@@ -6573,7 +6573,7 @@ func TestSymbolicEval(t *testing.T) {
 					return list
 				`)
 				state.setGlobal("serializable", ANY_INT, GlobalConst)
-				state.setGlobal("Array", WrapGoFunction(func(ctx *Context, elements ...SymbolicValue) *Array {
+				state.setGlobal("Array", WrapGoFunction(func(ctx *Context, elements ...Value) *Array {
 					return NewArray()
 				}), GlobalConst)
 				assignement := parse.FindNode(n.Statements[1], (*parse.Assignment)(nil), nil)
@@ -7500,7 +7500,7 @@ func TestSymbolicEval(t *testing.T) {
 				return %{a: %int(0..1)}
 			`)
 
-			patt, _ := state.ctx.ResolveNamedPattern("int").Call(nil, []SymbolicValue{&IntRange{}})
+			patt, _ := state.ctx.ResolveNamedPattern("int").Call(nil, []Value{&IntRange{}})
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
@@ -7741,7 +7741,7 @@ func TestSymbolicEval(t *testing.T) {
 				return %{x: #{a: %int(0..1)}}
 			`)
 
-			patt, _ := state.ctx.ResolveNamedPattern("int").Call(nil, []SymbolicValue{&IntRange{}})
+			patt, _ := state.ctx.ResolveNamedPattern("int").Call(nil, []Value{&IntRange{}})
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
@@ -9184,7 +9184,7 @@ func TestSymbolicEval(t *testing.T) {
 			expectedFn := &InoxFunction{
 				node:           fnExpr,
 				nodeChunk:      n,
-				parameters:     []SymbolicValue{NewTupleOf(ANY_INT), NewTupleOf(&String{})},
+				parameters:     []Value{NewTupleOf(ANY_INT), NewTupleOf(&String{})},
 				parameterNames: []string{"a", "b"},
 				result:         NewTupleOf(AsSerializableChecked(NewMultivalue(ANY_INT, ANY_STR))),
 			}
@@ -9207,7 +9207,7 @@ func TestSymbolicEval(t *testing.T) {
 			expectedFn := &InoxFunction{
 				node:           fnExpr,
 				nodeChunk:      n,
-				parameters:     []SymbolicValue{NewTupleOf(ANY_INT), NewTupleOf(ANY_INT)},
+				parameters:     []Value{NewTupleOf(ANY_INT), NewTupleOf(ANY_INT)},
 				parameterNames: []string{"a", "b"},
 				result:         NewTupleOf(ANY_INT),
 			}
@@ -9436,7 +9436,7 @@ func TestSymbolicEval(t *testing.T) {
 
 		t.Run("namespace has not the property for the factory", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`html<div></div>`)
-			state.setGlobal("html", NewNamespace(map[string]SymbolicValue{}), GlobalConst)
+			state.setGlobal("html", NewNamespace(map[string]Value{}), GlobalConst)
 			res, err := symbolicEval(n, state)
 
 			namespaceIdent := n.Statements[0].(*parse.XMLExpression).Namespace
@@ -9450,7 +9450,7 @@ func TestSymbolicEval(t *testing.T) {
 
 		t.Run("namespace's factory has not the right type", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`html<div></div>`)
-			state.setGlobal("html", NewNamespace(map[string]SymbolicValue{
+			state.setGlobal("html", NewNamespace(map[string]Value{
 				FROM_XML_FACTORY_NAME: Nil,
 			}), GlobalConst)
 			res, err := symbolicEval(n, state)
@@ -9466,7 +9466,7 @@ func TestSymbolicEval(t *testing.T) {
 
 		t.Run("namespace's factory has not the right signature", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`html<div></div>`)
-			state.setGlobal("html", NewNamespace(map[string]SymbolicValue{
+			state.setGlobal("html", NewNamespace(map[string]Value{
 				FROM_XML_FACTORY_NAME: WrapGoFunction(func(ctx *Context) *Object {
 					return NewEmptyObject()
 				}),
@@ -9484,7 +9484,7 @@ func TestSymbolicEval(t *testing.T) {
 
 		t.Run("namespace's factory is valid", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`html<div></div>`)
-			state.setGlobal("html", NewNamespace(map[string]SymbolicValue{
+			state.setGlobal("html", NewNamespace(map[string]Value{
 				FROM_XML_FACTORY_NAME: WrapGoFunction(func(ctx *Context, elem *XMLElement) *Identifier {
 					return &Identifier{name: elem.name}
 				}),
@@ -9498,7 +9498,7 @@ func TestSymbolicEval(t *testing.T) {
 
 		t.Run("self-closing element", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`html<div/>`)
-			state.setGlobal("html", NewNamespace(map[string]SymbolicValue{
+			state.setGlobal("html", NewNamespace(map[string]Value{
 				FROM_XML_FACTORY_NAME: WrapGoFunction(func(ctx *Context, elem *XMLElement) *Identifier {
 					return &Identifier{name: elem.name}
 				}),
@@ -9512,7 +9512,7 @@ func TestSymbolicEval(t *testing.T) {
 
 		t.Run("interpolation", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`html<div>{int}</div>`)
-			state.setGlobal("html", NewNamespace(map[string]SymbolicValue{
+			state.setGlobal("html", NewNamespace(map[string]Value{
 				FROM_XML_FACTORY_NAME: WrapGoFunction(func(ctx *Context, elem *XMLElement) *XMLElement {
 					return elem
 				}),
@@ -9523,7 +9523,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Empty(t, state.errors())
 			assert.Equal(t, &XMLElement{
 				name:     "div",
-				children: []SymbolicValue{ANY_STR, ANY_INT, ANY_STR},
+				children: []Value{ANY_STR, ANY_INT, ANY_STR},
 			}, res)
 		})
 
@@ -9533,11 +9533,11 @@ func TestSymbolicEval(t *testing.T) {
 				return elem
 			}
 
-			state.setGlobal("html", NewNamespace(map[string]SymbolicValue{
+			state.setGlobal("html", NewNamespace(map[string]Value{
 				FROM_XML_FACTORY_NAME: WrapGoFunction(goFn),
 			}), GlobalConst)
 
-			RegisterXMLInterpolationCheckingFunction(goFn, func(n parse.Node, value SymbolicValue) (errorMsg string) {
+			RegisterXMLInterpolationCheckingFunction(goFn, func(n parse.Node, value Value) (errorMsg string) {
 				//no error
 				return ""
 			})
@@ -9549,7 +9549,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Empty(t, state.errors())
 			assert.Equal(t, &XMLElement{
 				name:     "div",
-				children: []SymbolicValue{ANY_STR, ANY_INT, ANY_STR},
+				children: []Value{ANY_STR, ANY_INT, ANY_STR},
 			}, res)
 		})
 
@@ -9559,11 +9559,11 @@ func TestSymbolicEval(t *testing.T) {
 				return elem
 			}
 
-			state.setGlobal("html", NewNamespace(map[string]SymbolicValue{
+			state.setGlobal("html", NewNamespace(map[string]Value{
 				FROM_XML_FACTORY_NAME: WrapGoFunction(goFn),
 			}), GlobalConst)
 
-			RegisterXMLInterpolationCheckingFunction(goFn, func(n parse.Node, value SymbolicValue) (errorMsg string) {
+			RegisterXMLInterpolationCheckingFunction(goFn, func(n parse.Node, value Value) (errorMsg string) {
 				return "integers not allowed"
 			})
 			defer UnregisterXMLCheckingFunction(goFn)
@@ -9573,7 +9573,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Equal(t, &XMLElement{
 				name:     "div",
-				children: []SymbolicValue{ANY_STR, ANY_INT, ANY_STR},
+				children: []Value{ANY_STR, ANY_INT, ANY_STR},
 			}, res)
 
 			intIdent := parse.FindNode(n, (*parse.IdentifierLiteral)(nil), func(n *parse.IdentifierLiteral, isUnique bool) bool {
@@ -9587,7 +9587,7 @@ func TestSymbolicEval(t *testing.T) {
 
 		t.Run("attribute with value", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`a = "a"; return html<div a=a></div>`)
-			state.setGlobal("html", NewNamespace(map[string]SymbolicValue{
+			state.setGlobal("html", NewNamespace(map[string]Value{
 				FROM_XML_FACTORY_NAME: WrapGoFunction(func(ctx *Context, elem *XMLElement) *XMLElement {
 					return elem
 				}),
@@ -9598,14 +9598,14 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Empty(t, state.errors())
 			assert.Equal(t, &XMLElement{
 				name:       "div",
-				attributes: map[string]SymbolicValue{"a": NewString("a")},
-				children:   []SymbolicValue{ANY_STR},
+				attributes: map[string]Value{"a": NewString("a")},
+				children:   []Value{ANY_STR},
 			}, res)
 		})
 
 		t.Run("attribute without value", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`a = "a"; return html<div a></div>`)
-			state.setGlobal("html", NewNamespace(map[string]SymbolicValue{
+			state.setGlobal("html", NewNamespace(map[string]Value{
 				FROM_XML_FACTORY_NAME: WrapGoFunction(func(ctx *Context, elem *XMLElement) *XMLElement {
 					return elem
 				}),
@@ -9616,14 +9616,14 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Empty(t, state.errors())
 			assert.Equal(t, &XMLElement{
 				name:       "div",
-				attributes: map[string]SymbolicValue{"a": ANY_STR},
-				children:   []SymbolicValue{ANY_STR},
+				attributes: map[string]Value{"a": ANY_STR},
+				children:   []Value{ANY_STR},
 			}, res)
 		})
 
 		t.Run("error during factory call", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`return html<div></div>`)
-			state.setGlobal("html", NewNamespace(map[string]SymbolicValue{
+			state.setGlobal("html", NewNamespace(map[string]Value{
 				FROM_XML_FACTORY_NAME: WrapGoFunction(func(ctx *Context, elem *XMLElement) *XMLElement {
 					ctx.AddSymbolicGoFunctionError("factory error")
 					return elem
@@ -9634,7 +9634,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Equal(t, &XMLElement{
 				name:     "div",
-				children: []SymbolicValue{ANY_STR},
+				children: []Value{ANY_STR},
 			}, res)
 
 			xmlExpr := parse.FindNode(n, (*parse.XMLExpression)(nil), nil)
@@ -9680,7 +9680,7 @@ func TestSymbolicEval(t *testing.T) {
 			state.ctx.ResolveNamedPattern("int"),
 		}), structType)
 
-		assert.Equal(t, NewStruct(structType, map[string]SymbolicValue{
+		assert.Equal(t, NewStruct(structType, map[string]Value{
 			"a": ANY_BOOL,
 			"b": ANY_STR_LIKE,
 			"c": ANY_INT,
@@ -9744,7 +9744,7 @@ func TestSymbolicEval(t *testing.T) {
 					})),
 				},
 			}
-			state.baseGlobals = map[string]SymbolicValue{
+			state.baseGlobals = map[string]Value{
 				"v": NewInt(1),
 			}
 

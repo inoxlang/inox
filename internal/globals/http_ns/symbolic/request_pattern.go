@@ -22,7 +22,7 @@ type HttpRequestPattern struct {
 	symbolic.NotCallablePatternMixin
 }
 
-func (r *HttpRequestPattern) Test(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+func (r *HttpRequestPattern) Test(v symbolic.Value, state symbolic.RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -30,14 +30,14 @@ func (r *HttpRequestPattern) Test(v symbolic.SymbolicValue, state symbolic.RecTe
 	return ok
 }
 
-func (r *HttpRequestPattern) TestValue(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+func (r *HttpRequestPattern) TestValue(v symbolic.Value, state symbolic.RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 	_, ok := v.(*HttpRequest)
 	return ok
 }
 
-func (r *HttpRequestPattern) SymbolicValue() symbolic.SymbolicValue {
+func (r *HttpRequestPattern) SymbolicValue() symbolic.Value {
 	return ANY_HTTP_REQUEST
 }
 
@@ -45,11 +45,11 @@ func (r *HttpRequestPattern) HasUnderlyingPattern() bool {
 	return true
 }
 
-func (r *HttpRequestPattern) IteratorElementKey() symbolic.SymbolicValue {
+func (r *HttpRequestPattern) IteratorElementKey() symbolic.Value {
 	return symbolic.ANY
 }
 
-func (r *HttpRequestPattern) IteratorElementValue() symbolic.SymbolicValue {
+func (r *HttpRequestPattern) IteratorElementValue() symbolic.Value {
 	return symbolic.ANY
 }
 
@@ -58,7 +58,7 @@ func (r *HttpRequestPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyP
 	return
 }
 
-func (r *HttpRequestPattern) WidestOfType() symbolic.SymbolicValue {
+func (r *HttpRequestPattern) WidestOfType() symbolic.Value {
 	return ANY_REQUEST_PATTERN
 }
 

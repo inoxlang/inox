@@ -20,7 +20,7 @@ func (*FilesystemSnapshotIL) _fssnapshot() {
 
 }
 
-func (t *FilesystemSnapshotIL) Test(v SymbolicValue, state RecTestCallState) bool {
+func (t *FilesystemSnapshotIL) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -32,7 +32,7 @@ func (t *FilesystemSnapshotIL) Test(v SymbolicValue, state RecTestCallState) boo
 	}
 }
 
-func (t *FilesystemSnapshotIL) WidestOfType() SymbolicValue {
+func (t *FilesystemSnapshotIL) WidestOfType() Value {
 	return ANY_FS_SNAPSHOT_IL
 }
 

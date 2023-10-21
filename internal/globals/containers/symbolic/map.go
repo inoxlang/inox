@@ -16,7 +16,7 @@ type Map struct {
 	_ int
 }
 
-func (*Map) Test(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+func (*Map) Test(v symbolic.Value, state symbolic.RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -38,7 +38,7 @@ func (m *Map) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 	return nil, false
 }
 
-func (m *Map) Prop(name string) symbolic.SymbolicValue {
+func (m *Map) Prop(name string) symbolic.Value {
 	return symbolic.GetGoMethodOrPanic(name, m)
 }
 
@@ -46,19 +46,19 @@ func (*Map) PropertyNames() []string {
 	return []string{"insert", "update", "remove", "get"}
 }
 
-func (*Map) Insert(ctx *symbolic.Context, k, v symbolic.SymbolicValue) {
+func (*Map) Insert(ctx *symbolic.Context, k, v symbolic.Value) {
 
 }
 
-func (*Map) Update(ctx *symbolic.Context, k, v symbolic.SymbolicValue) {
+func (*Map) Update(ctx *symbolic.Context, k, v symbolic.Value) {
 
 }
 
-func (*Map) Remove(ctx *symbolic.Context, k symbolic.SymbolicValue) {
+func (*Map) Remove(ctx *symbolic.Context, k symbolic.Value) {
 
 }
 
-func (*Map) Get(ctx *symbolic.Context, k symbolic.SymbolicValue) symbolic.SymbolicValue {
+func (*Map) Get(ctx *symbolic.Context, k symbolic.Value) symbolic.Value {
 	return &symbolic.Any{}
 }
 
@@ -67,14 +67,14 @@ func (*Map) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth
 	return
 }
 
-func (m *Map) IteratorElementKey() symbolic.SymbolicValue {
+func (m *Map) IteratorElementKey() symbolic.Value {
 	return &symbolic.Any{}
 }
 
-func (*Map) IteratorElementValue() symbolic.SymbolicValue {
+func (*Map) IteratorElementValue() symbolic.Value {
 	return &symbolic.Any{}
 }
 
-func (*Map) WidestOfType() symbolic.SymbolicValue {
+func (*Map) WidestOfType() symbolic.Value {
 	return &Map{}
 }

@@ -25,16 +25,16 @@ var (
 type InoxFunction struct {
 	node           parse.Node //optional but required for call evaluation
 	nodeChunk      *parse.Chunk
-	parameters     []SymbolicValue
+	parameters     []Value
 	parameterNames []string
 	noNodeVariadic bool
-	result         SymbolicValue //if nil any function is matched
-	capturedLocals map[string]SymbolicValue
+	result         Value //if nil any function is matched
+	capturedLocals map[string]Value
 	originState    *State
 
 	//optional, should not be present if node is not present
-	visitCheckNode    func(visit visitArgs, globalsAtCreation map[string]SymbolicValue) (parse.TraversalAction, bool, error)
-	globalsAtCreation map[string]SymbolicValue
+	visitCheckNode    func(visit visitArgs, globalsAtCreation map[string]Value) (parse.TraversalAction, bool, error)
+	globalsAtCreation map[string]Value
 
 	SerializableMixin
 }
@@ -45,7 +45,7 @@ type visitArgs struct {
 	after                   bool
 }
 
-func NewInoxFunction(parameters map[string]SymbolicValue, capturedLocals map[string]SymbolicValue, result SymbolicValue) *InoxFunction {
+func NewInoxFunction(parameters map[string]Value, capturedLocals map[string]Value, result Value) *InoxFunction {
 	fn := &InoxFunction{
 		capturedLocals: capturedLocals,
 		result:         result,
@@ -66,11 +66,11 @@ func (fn *InoxFunction) IsVariadic() bool {
 	return fn.FuncExpr().IsVariadic
 }
 
-func (fn *InoxFunction) Parameters() []SymbolicValue {
+func (fn *InoxFunction) Parameters() []Value {
 	return fn.parameters
 }
 
-func (fn *InoxFunction) Result() SymbolicValue {
+func (fn *InoxFunction) Result() Value {
 	return fn.result
 }
 
@@ -88,7 +88,7 @@ func (fn *InoxFunction) FuncExpr() *parse.FunctionExpression {
 	}
 }
 
-func (fn *InoxFunction) Test(v SymbolicValue, state RecTestCallState) bool {
+func (fn *InoxFunction) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -188,7 +188,7 @@ func (fn *InoxFunction) IsShared() bool {
 	return fn.originState != nil
 }
 
-func (fn *InoxFunction) WatcherElement() SymbolicValue {
+func (fn *InoxFunction) WatcherElement() Value {
 	return ANY
 }
 
@@ -220,7 +220,7 @@ func (fn *InoxFunction) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintC
 	fn.result.PrettyPrint(w, config, 0, 0)
 }
 
-func (fn *InoxFunction) WidestOfType() SymbolicValue {
+func (fn *InoxFunction) WidestOfType() Value {
 	return ANY_INOX_FUNC
 }
 
@@ -244,17 +244,17 @@ type GoFunction struct {
 	hasOptionalParams bool
 	optionalParams    []optionalParam
 
-	nonVariadicParameters []SymbolicValue
-	parameters            []SymbolicValue
+	nonVariadicParameters []Value
+	parameters            []Value
 
-	variadicElem SymbolicValue
-	results      []SymbolicValue
+	variadicElem Value
+	results      []Value
 	resultList   *Array
-	result       SymbolicValue
+	result       Value
 }
 
 // the result should not be modified
-func (fn *GoFunction) NonVariadicParametersExceptCtx() []SymbolicValue {
+func (fn *GoFunction) NonVariadicParametersExceptCtx() []Value {
 	utils.PanicIfErr(fn.LoadSignatureData())
 	if fn.isfirstArgCtx {
 		return fn.nonVariadicParameters[1:]
@@ -263,7 +263,7 @@ func (fn *GoFunction) NonVariadicParametersExceptCtx() []SymbolicValue {
 }
 
 // the result should not be modified
-func (fn *GoFunction) ParametersExceptCtx() []SymbolicValue {
+func (fn *GoFunction) ParametersExceptCtx() []Value {
 	utils.PanicIfErr(fn.LoadSignatureData())
 	if fn.isfirstArgCtx {
 		return fn.parameters[1:]
@@ -295,7 +295,7 @@ func (fn *GoFunction) GoFunc() any {
 	return fn.fn
 }
 
-func (fn *GoFunction) Test(v SymbolicValue, state RecTestCallState) bool {
+func (fn *GoFunction) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -413,11 +413,11 @@ func (fn *GoFunction) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintCon
 
 }
 
-func (fn *GoFunction) WidestOfType() SymbolicValue {
+func (fn *GoFunction) WidestOfType() Value {
 	return &GoFunction{}
 }
 
-func (goFunc *GoFunction) Result() SymbolicValue {
+func (goFunc *GoFunction) Result() Value {
 	return goFunc.result
 }
 
@@ -456,7 +456,7 @@ func (goFunc *GoFunction) LoadSignatureData() (finalErr error) {
 		nonVariadicParamCount -= 1
 	}
 
-	goFunc.nonVariadicParameters = make([]SymbolicValue, nonVariadicParamCount)
+	goFunc.nonVariadicParameters = make([]Value, nonVariadicParamCount)
 	for paramIndex := 0; paramIndex < nonVariadicParamCount; paramIndex++ {
 		if paramIndex == 0 && goFunc.isfirstArgCtx {
 			continue
@@ -544,7 +544,7 @@ func (goFunc *GoFunction) LoadSignatureData() (finalErr error) {
 }
 
 type goFunctionCallInput struct {
-	symbolicArgs      []SymbolicValue
+	symbolicArgs      []Value
 	nonSpreadArgCount int
 	hasSpreadArg      bool
 	state, extState   *State
@@ -552,7 +552,7 @@ type goFunctionCallInput struct {
 	callLikeNode      parse.Node
 }
 
-func (goFunc *GoFunction) Call(input goFunctionCallInput) (finalResult SymbolicValue, multipleResults bool, enoughArgs bool, finalErr error) {
+func (goFunc *GoFunction) Call(input goFunctionCallInput) (finalResult Value, multipleResults bool, enoughArgs bool, finalErr error) {
 	if goFunc.fn == nil {
 		input.state.addError(makeSymbolicEvalError(input.callLikeNode, input.state, CANNOT_CALL_GO_FUNC_NO_CONCRETE_VALUE))
 		return ANY, false, false, nil
@@ -645,7 +645,7 @@ func (goFunc *GoFunction) Call(input goFunctionCallInput) (finalResult SymbolicV
 			argumentNodes = []parse.Node{c.Element}
 		}
 
-		var arg SymbolicValue
+		var arg Value
 		if paramIndex >= len(args) {
 			if !goFunc.hasOptionalParams || paramIndex <= goFunc.lastMandatoryParamIndex {
 				enoughArgs = false
@@ -662,7 +662,7 @@ func (goFunc *GoFunction) Call(input goFunctionCallInput) (finalResult SymbolicV
 				position -= 1
 			}
 
-			arg = args[paramIndex].(SymbolicValue)
+			arg = args[paramIndex].(Value)
 			argNode := argumentNodes[position]
 			setOptionalParamValue := false
 
@@ -702,7 +702,7 @@ func (goFunc *GoFunction) Call(input goFunctionCallInput) (finalResult SymbolicV
 				optionalParam := goFunc.optionalParams[index].new()
 
 				if setOptionalParamValue {
-					optionalParam.setValue(args[paramIndex].(SymbolicValue))
+					optionalParam.setValue(args[paramIndex].(Value))
 				}
 
 				args[paramIndex] = optionalParam
@@ -714,12 +714,12 @@ func (goFunc *GoFunction) Call(input goFunctionCallInput) (finalResult SymbolicV
 		variadicArgs := args[nonVariadicParamCount:]
 
 		for i, arg := range variadicArgs {
-			if !goFunc.variadicElem.Test(arg.(SymbolicValue), RecTestCallState{}) {
+			if !goFunc.variadicElem.Test(arg.(Value), RecTestCallState{}) {
 				position := i + nonVariadicParamCount
 				if goFunc.isfirstArgCtx {
 					position -= 1
 				}
-				state.addError(makeSymbolicEvalError(callLikeNode, state, FmtInvalidArg(position, arg.(SymbolicValue), goFunc.variadicElem)))
+				state.addError(makeSymbolicEvalError(callLikeNode, state, FmtInvalidArg(position, arg.(Value), goFunc.variadicElem)))
 				variadicArgs[i] = goFunc.variadicElem
 			} else {
 				variadicArgs[i] = arg
@@ -746,7 +746,7 @@ func (goFunc *GoFunction) Call(input goFunctionCallInput) (finalResult SymbolicV
 	resultValues := fnVal.Call(argValues)
 	resultCount := fnValType.NumOut()
 
-	symbolicResultValues := make([]SymbolicValue, resultCount)
+	symbolicResultValues := make([]Value, resultCount)
 
 	for i := 0; i < fnValType.NumOut(); i++ {
 		reflectVal := resultValues[i]
@@ -754,7 +754,7 @@ func (goFunc *GoFunction) Call(input goFunctionCallInput) (finalResult SymbolicV
 		if reflectVal.IsZero() {
 			symbolicResultValues[i] = goFunc.results[i]
 		} else {
-			symbolicVal, ok := reflectVal.Interface().(SymbolicValue)
+			symbolicVal, ok := reflectVal.Interface().(Value)
 			if !ok {
 				return nil, false, enoughArgs, fmt.Errorf(
 					"cannot convert one of a Go function result %s.%s (function name: %s): "+
@@ -791,7 +791,7 @@ func (goFunc *GoFunction) Call(input goFunctionCallInput) (finalResult SymbolicV
 		return symbolicResultValues[0], false, enoughArgs, nil
 	}
 
-	var results []SymbolicValue
+	var results []Value
 
 	if isExt {
 		for _, resultValue := range symbolicResultValues {
@@ -813,22 +813,22 @@ func (goFunc *GoFunction) Call(input goFunctionCallInput) (finalResult SymbolicV
 // An Function represents a symbolic function we do not know the concrete type.
 type Function struct {
 	//if pattern is nil this function matches any function with the following parameters & results
-	parameters              []SymbolicValue
+	parameters              []Value
 	firstOptionalParamIndex int //-1 if no optional parameters
 	parameterNames          []string
-	results                 []SymbolicValue
+	results                 []Value
 	variadic                bool
 
 	pattern *FunctionPattern
 }
 
 func NewFunction(
-	params []SymbolicValue,
+	params []Value,
 	paramNames []string,
 	//should have a value of -1 if there are no optional parameters
 	firstOptionalParamIndex int,
 	variadic bool,
-	results []SymbolicValue,
+	results []Value,
 ) *Function {
 	//TODO: check that variadic parameter is a list
 
@@ -848,7 +848,7 @@ func NewFunction(
 }
 
 // returned slice should not be modified.
-func (fn *Function) NonVariadicParameters() []SymbolicValue {
+func (fn *Function) NonVariadicParameters() []Value {
 	if fn.variadic {
 		return fn.parameters[:len(fn.parameters)-1]
 	}
@@ -863,7 +863,7 @@ func (fn *Function) HasOptionalParams() bool {
 	return fn.firstOptionalParamIndex >= 0
 }
 
-func (fn *Function) VariadicParamElem() SymbolicValue {
+func (fn *Function) VariadicParamElem() Value {
 	if !fn.variadic {
 		panic(errors.New("function is not variadic"))
 	}
@@ -871,7 +871,7 @@ func (fn *Function) VariadicParamElem() SymbolicValue {
 	return param.(*List).IteratorElementValue()
 }
 
-func (f *Function) Test(v SymbolicValue, state RecTestCallState) bool {
+func (f *Function) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -943,7 +943,7 @@ func (f *Function) Test(v SymbolicValue, state RecTestCallState) bool {
 			}
 		}
 
-		var result SymbolicValue
+		var result Value
 		switch len(f.results) {
 		case 0:
 			_, ok := inoxFn.result.(*NilT)
@@ -999,7 +999,7 @@ func (f *Function) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig
 	}
 }
 
-func (f *Function) WidestOfType() SymbolicValue {
+func (f *Function) WidestOfType() Value {
 	return &Function{
 		pattern: (&FunctionPattern{}).WidestOfType().(*FunctionPattern),
 	}

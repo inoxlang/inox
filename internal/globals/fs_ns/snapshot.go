@@ -16,7 +16,7 @@ var (
 		FS_SNAPSHOT_SYMB_DESC_FILES_PROPNAME: symbolic.ANY_DICT,
 	})
 
-	NEW_FS_SNAPSHOT_SYMB_ARGS      = &[]symbolic.SymbolicValue{NEW_FS_SNAPSHOT_DESC}
+	NEW_FS_SNAPSHOT_SYMB_ARGS      = &[]symbolic.Value{NEW_FS_SNAPSHOT_DESC}
 	NEW_FS_SNAPSHOT_SYMB_ARG_NAMES = []string{"description"}
 )
 

@@ -31,7 +31,7 @@ var (
 
 type Set struct {
 	elementPattern symbolic.Pattern
-	element        symbolic.SymbolicValue //cache
+	element        symbolic.Value //cache
 
 	uniqueness *containers_common.UniquenessConstraint
 	shared     bool
@@ -82,7 +82,7 @@ func NewSetWithPattern(elementPattern symbolic.Pattern, uniqueness *containers_c
 	return set
 }
 
-func (s *Set) Test(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+func (s *Set) Test(v symbolic.Value, state symbolic.RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -127,7 +127,7 @@ func (s *Set) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 	return nil, false
 }
 
-func (s *Set) Prop(name string) symbolic.SymbolicValue {
+func (s *Set) Prop(name string) symbolic.Value {
 	return symbolic.GetGoMethodOrPanic(name, s)
 }
 
@@ -136,25 +136,25 @@ func (*Set) PropertyNames() []string {
 }
 
 func (s *Set) Has(ctx *symbolic.Context, v symbolic.Serializable) *symbolic.Bool {
-	ctx.SetSymbolicGoFunctionParameters(&[]symbolic.SymbolicValue{
+	ctx.SetSymbolicGoFunctionParameters(&[]symbolic.Value{
 		s.element,
 	}, SET_ADD_METHOD_PARAM_NAMES)
 	return symbolic.ANY_BOOL
 }
 
 func (s *Set) Add(ctx *symbolic.Context, v symbolic.Serializable) {
-	ctx.SetSymbolicGoFunctionParameters(&[]symbolic.SymbolicValue{
+	ctx.SetSymbolicGoFunctionParameters(&[]symbolic.Value{
 		s.element,
 	}, SET_ADD_METHOD_PARAM_NAMES)
 }
 
 func (s *Set) Remove(ctx *symbolic.Context, v symbolic.Serializable) {
-	ctx.SetSymbolicGoFunctionParameters(&[]symbolic.SymbolicValue{
+	ctx.SetSymbolicGoFunctionParameters(&[]symbolic.Value{
 		s.element,
 	}, SET_ADD_METHOD_PARAM_NAMES)
 }
 
-func (s *Set) Get(ctx *symbolic.Context, k symbolic.StringLike) (symbolic.SymbolicValue, *symbolic.Bool) {
+func (s *Set) Get(ctx *symbolic.Context, k symbolic.StringLike) (symbolic.Value, *symbolic.Bool) {
 	return s.element, symbolic.ANY_BOOL
 }
 
@@ -168,15 +168,15 @@ func (s *Set) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, dep
 	utils.Must(w.Write(utils.StringAsBytes(")")))
 }
 
-func (*Set) IteratorElementKey() symbolic.SymbolicValue {
+func (*Set) IteratorElementKey() symbolic.Value {
 	return symbolic.ANY
 }
 
-func (s *Set) IteratorElementValue() symbolic.SymbolicValue {
+func (s *Set) IteratorElementValue() symbolic.Value {
 	return s.element
 }
 
-func (*Set) WidestOfType() symbolic.SymbolicValue {
+func (*Set) WidestOfType() symbolic.Value {
 	return ANY_SET
 }
 
@@ -197,7 +197,7 @@ func (p *SetPattern) MigrationInitialValue() (symbolic.Serializable, bool) {
 	return symbolic.EMPTY_LIST, true
 }
 
-func (p *SetPattern) Test(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+func (p *SetPattern) Test(v symbolic.Value, state symbolic.RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -226,7 +226,7 @@ func (p *SetPattern) Concretize(ctx symbolic.ConcreteContext) any {
 	return externalData.CreateConcreteSetPattern(*p.uniqueness, concreteElementPattern)
 }
 
-func (p *SetPattern) TestValue(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+func (p *SetPattern) TestValue(v symbolic.Value, state symbolic.RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 	if otherPatt, ok := v.(*SetPattern); ok {
@@ -244,7 +244,7 @@ func (p *SetPattern) StringPattern() (symbolic.StringPattern, bool) {
 	return nil, false
 }
 
-func (p *SetPattern) SymbolicValue() symbolic.SymbolicValue {
+func (p *SetPattern) SymbolicValue() symbolic.Value {
 	return NewSetWithPattern(p.elementPattern, p.uniqueness)
 }
 
@@ -258,14 +258,14 @@ func (p *SetPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConf
 	utils.Must(w.Write(utils.StringAsBytes(")")))
 }
 
-func (*SetPattern) IteratorElementKey() symbolic.SymbolicValue {
+func (*SetPattern) IteratorElementKey() symbolic.Value {
 	return symbolic.ANY
 }
 
-func (*SetPattern) IteratorElementValue() symbolic.SymbolicValue {
+func (*SetPattern) IteratorElementValue() symbolic.Value {
 	return symbolic.ANY
 }
 
-func (*SetPattern) WidestOfType() symbolic.SymbolicValue {
+func (*SetPattern) WidestOfType() symbolic.Value {
 	return ANY_SET
 }

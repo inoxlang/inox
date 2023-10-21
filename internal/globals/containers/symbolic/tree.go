@@ -30,7 +30,7 @@ func NewTree(shared bool) *Tree {
 	return t
 }
 
-func (t *Tree) Test(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+func (t *Tree) Test(v symbolic.Value, state symbolic.RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -42,7 +42,7 @@ func (t *Tree) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 	return nil, false
 }
 
-func (t *Tree) Prop(name string) symbolic.SymbolicValue {
+func (t *Tree) Prop(name string) symbolic.Value {
 	switch name {
 	case "root":
 		return NewTreeNode(t)
@@ -54,7 +54,7 @@ func (*Tree) PropertyNames() []string {
 	return []string{"root"}
 }
 
-func (t *Tree) InsertNode(ctx *symbolic.Context, v symbolic.SymbolicValue) *TreeNode {
+func (t *Tree) InsertNode(ctx *symbolic.Context, v symbolic.Value) *TreeNode {
 	return t.treeNode
 }
 
@@ -66,7 +66,7 @@ func (t *Tree) Connect(ctx *symbolic.Context, n1, n2 *TreeNode) {
 
 }
 
-func (t *Tree) Get(ctx *symbolic.Context, k symbolic.SymbolicValue) symbolic.SymbolicValue {
+func (t *Tree) Get(ctx *symbolic.Context, k symbolic.Value) symbolic.Value {
 	return &symbolic.Any{}
 }
 
@@ -74,23 +74,23 @@ func (t *Tree) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, de
 	utils.Must(w.Write(utils.StringAsBytes("%tree")))
 }
 
-func (t *Tree) IteratorElementKey() symbolic.SymbolicValue {
+func (t *Tree) IteratorElementKey() symbolic.Value {
 	return symbolic.ANY
 }
 
-func (t *Tree) IteratorElementValue() symbolic.SymbolicValue {
+func (t *Tree) IteratorElementValue() symbolic.Value {
 	return t.treeNode
 }
 
-func (t *Tree) WalkerElement() symbolic.SymbolicValue {
+func (t *Tree) WalkerElement() symbolic.Value {
 	return t.treeNode
 }
 
-func (t *Tree) WalkerNodeMeta() symbolic.SymbolicValue {
+func (t *Tree) WalkerNodeMeta() symbolic.Value {
 	return symbolic.ANY
 }
 
-func (r *Tree) WidestOfType() symbolic.SymbolicValue {
+func (r *Tree) WidestOfType() symbolic.Value {
 	return ANY_TREE
 }
 
@@ -127,7 +127,7 @@ func NewTreeNode(t *Tree) *TreeNode {
 	return &TreeNode{tree: t}
 }
 
-func (r *TreeNode) Test(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+func (r *TreeNode) Test(v symbolic.Value, state symbolic.RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -141,7 +141,7 @@ func (f *TreeNode) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 	return nil, false
 }
 
-func (t *TreeNode) Prop(name string) symbolic.SymbolicValue {
+func (t *TreeNode) Prop(name string) symbolic.Value {
 	switch name {
 	case "data":
 		return &symbolic.Any{}
@@ -157,7 +157,7 @@ func (*TreeNode) PropertyNames() []string {
 	return []string{"data", "children", "add_child"}
 }
 
-func (n *TreeNode) AddChild(ctx *symbolic.Context, data symbolic.SymbolicValue) {
+func (n *TreeNode) AddChild(ctx *symbolic.Context, data symbolic.Value) {
 	if n.tree.shared {
 		if ok, _ := symbolic.IsSharable(data); !ok {
 			ctx.AddSymbolicGoFunctionError(symbolic.ErrCannotAddNonSharableToSharedContainer.Error())
@@ -165,11 +165,11 @@ func (n *TreeNode) AddChild(ctx *symbolic.Context, data symbolic.SymbolicValue) 
 	}
 }
 
-func (n *TreeNode) IteratorElementKey() symbolic.SymbolicValue {
+func (n *TreeNode) IteratorElementKey() symbolic.Value {
 	return &symbolic.Any{}
 }
 
-func (n *TreeNode) IteratorElementValue() symbolic.SymbolicValue {
+func (n *TreeNode) IteratorElementValue() symbolic.Value {
 	return n
 }
 
@@ -177,7 +177,7 @@ func (r *TreeNode) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig
 	utils.Must(w.Write(utils.StringAsBytes("%tree-node")))
 }
 
-func (r *TreeNode) WidestOfType() symbolic.SymbolicValue {
+func (r *TreeNode) WidestOfType() symbolic.Value {
 	return ANY_TREE_NODE
 }
 
@@ -194,7 +194,7 @@ func NewTreeNodePattern(valuePattern symbolic.Pattern) (*TreeNodePattern, error)
 	}, nil
 }
 
-func (patt *TreeNodePattern) Test(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+func (patt *TreeNodePattern) Test(v symbolic.Value, state symbolic.RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -205,7 +205,7 @@ func (patt *TreeNodePattern) Test(v symbolic.SymbolicValue, state symbolic.RecTe
 	return patt.valuePattern.Test(otherPatt.valuePattern, state)
 }
 
-func (p *TreeNodePattern) TestValue(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+func (p *TreeNodePattern) TestValue(v symbolic.Value, state symbolic.RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 	if _, ok := v.(*TreeNode); ok {
@@ -219,7 +219,7 @@ func (p *TreeNodePattern) HasUnderlyingPattern() bool {
 	return true
 }
 
-func (p *TreeNodePattern) SymbolicValue() symbolic.SymbolicValue {
+func (p *TreeNodePattern) SymbolicValue() symbolic.Value {
 	return ANY_TREE_NODE
 }
 
@@ -227,11 +227,11 @@ func (p *TreeNodePattern) StringPattern() (symbolic.StringPattern, bool) {
 	return nil, false
 }
 
-func (p *TreeNodePattern) IteratorElementKey() symbolic.SymbolicValue {
+func (p *TreeNodePattern) IteratorElementKey() symbolic.Value {
 	return &symbolic.Int{}
 }
 
-func (p *TreeNodePattern) IteratorElementValue() symbolic.SymbolicValue {
+func (p *TreeNodePattern) IteratorElementValue() symbolic.Value {
 	return ANY_TREE_NODE
 }
 
@@ -239,7 +239,7 @@ func (p *TreeNodePattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrin
 	utils.Must(w.Write(utils.StringAsBytes("%tree-node-pattern")))
 }
 
-func (p *TreeNodePattern) WidestOfType() symbolic.SymbolicValue {
+func (p *TreeNodePattern) WidestOfType() symbolic.Value {
 	return &TreeNodePattern{
 		valuePattern: symbolic.ANY_PATTERN,
 	}

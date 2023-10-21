@@ -17,7 +17,7 @@ func init() {
 		core.StartNewTransaction, func(ctx *symbolic.Context, options ...*symbolic.Option) *symbolic.Transaction {
 			return &symbolic.Transaction{}
 		},
-		_execute, func(ctx *symbolic.Context, args ...symbolic.SymbolicValue) (*symbolic.String, *symbolic.Error) {
+		_execute, func(ctx *symbolic.Context, args ...symbolic.Value) (*symbolic.String, *symbolic.Error) {
 			return &symbolic.String{}, nil
 		},
 		_sha1, func(ctx *symbolic.Context, arg symbolic.Readable) *symbolic.ByteSlice {
@@ -26,25 +26,25 @@ func init() {
 		_sha2, func(ctx *symbolic.Context, arg symbolic.Readable) *symbolic.ByteSlice {
 			return &symbolic.ByteSlice{}
 		},
-		_mkpath, func(ctx *symbolic.Context, arg symbolic.SymbolicValue) *symbolic.Path {
+		_mkpath, func(ctx *symbolic.Context, arg symbolic.Value) *symbolic.Path {
 			return &symbolic.Path{}
 		},
-		_make_path_pattern, func(ctx *symbolic.Context, arg symbolic.SymbolicValue) *symbolic.PathPattern {
+		_make_path_pattern, func(ctx *symbolic.Context, arg symbolic.Value) *symbolic.PathPattern {
 			return &symbolic.PathPattern{}
 		},
-		_mkurl, func(ctx *symbolic.Context, arg symbolic.SymbolicValue) *symbolic.URL {
+		_mkurl, func(ctx *symbolic.Context, arg symbolic.Value) *symbolic.URL {
 			return &symbolic.URL{}
 		},
 
-		_rand, func(ctx *symbolic.Context, arg symbolic.SymbolicValue) symbolic.SymbolicValue {
+		_rand, func(ctx *symbolic.Context, arg symbolic.Value) symbolic.Value {
 			return symbolic.ANY
 		},
 
-		_logvals, func(ctx *symbolic.Context, arg ...symbolic.SymbolicValue) {},
-		_log, func(ctx *symbolic.Context, arg ...symbolic.SymbolicValue) {},
-		_print, func(ctx *symbolic.Context, arg ...symbolic.SymbolicValue) {},
-		_fprint, func(ctx *symbolic.Context, out symbolic.Writable, arg ...symbolic.SymbolicValue) {},
-		_printvals, func(ctx *symbolic.Context, arg ...symbolic.SymbolicValue) {},
+		_logvals, func(ctx *symbolic.Context, arg ...symbolic.Value) {},
+		_log, func(ctx *symbolic.Context, arg ...symbolic.Value) {},
+		_print, func(ctx *symbolic.Context, arg ...symbolic.Value) {},
+		_fprint, func(ctx *symbolic.Context, out symbolic.Writable, arg ...symbolic.Value) {},
+		_printvals, func(ctx *symbolic.Context, arg ...symbolic.Value) {},
 		_stringify_ast, func(ctx *symbolic.Context, arg *symbolic.AstNode) {},
 		_Error, func(ctx *symbolic.Context, s *symbolic.String, args ...symbolic.Serializable) *symbolic.Error {
 			if len(args) > 1 {
@@ -61,8 +61,8 @@ func init() {
 		},
 
 		//resource
-		_readResource, func(ctx *symbolic.Context, res symbolic.ResourceName, args ...symbolic.SymbolicValue) (symbolic.SymbolicValue, *symbolic.Error) {
-			var result symbolic.SymbolicValue = symbolic.ANY
+		_readResource, func(ctx *symbolic.Context, res symbolic.ResourceName, args ...symbolic.Value) (symbolic.Value, *symbolic.Error) {
+			var result symbolic.Value = symbolic.ANY
 
 			for _, arg := range args {
 				switch v := arg.(type) {
@@ -76,10 +76,10 @@ func init() {
 
 			return result, nil
 		},
-		_getResource, func(*symbolic.Context, symbolic.ResourceName, ...symbolic.SymbolicValue) (symbolic.SymbolicValue, *symbolic.Error) {
+		_getResource, func(*symbolic.Context, symbolic.ResourceName, ...symbolic.Value) (symbolic.Value, *symbolic.Error) {
 			return symbolic.ANY, nil
 		},
-		_createResource, func(ctx *symbolic.Context, resource symbolic.ResourceName, args ...symbolic.SymbolicValue) (symbolic.SymbolicValue, *symbolic.Error) {
+		_createResource, func(ctx *symbolic.Context, resource symbolic.ResourceName, args ...symbolic.Value) (symbolic.Value, *symbolic.Error) {
 			switch resource.(type) {
 			case *symbolic.Path:
 				return nil, symbolic.ANY_ERR
@@ -90,10 +90,10 @@ func init() {
 			}
 			return symbolic.ANY, nil
 		},
-		_updateResource, func(*symbolic.Context, symbolic.ResourceName, ...symbolic.SymbolicValue) (symbolic.SymbolicValue, *symbolic.Error) {
+		_updateResource, func(*symbolic.Context, symbolic.ResourceName, ...symbolic.Value) (symbolic.Value, *symbolic.Error) {
 			return symbolic.ANY, nil
 		},
-		_deleteResource, func(*symbolic.Context, symbolic.ResourceName, ...symbolic.SymbolicValue) (symbolic.SymbolicValue, *symbolic.Error) {
+		_deleteResource, func(*symbolic.Context, symbolic.ResourceName, ...symbolic.Value) (symbolic.Value, *symbolic.Error) {
 			return symbolic.ANY, nil
 		},
 
@@ -104,7 +104,7 @@ func init() {
 		},
 
 		//
-		_typeof, func(ctx *symbolic.Context, arg symbolic.SymbolicValue) *symbolic.Type {
+		_typeof, func(ctx *symbolic.Context, arg symbolic.Value) *symbolic.Type {
 			return &symbolic.Type{}
 		},
 
@@ -124,7 +124,7 @@ func init() {
 			return symbolic.ANY_BYTE_SLICE, nil
 		},
 
-		_tostr, func(ctx *symbolic.Context, arg symbolic.SymbolicValue) symbolic.StringLike {
+		_tostr, func(ctx *symbolic.Context, arg symbolic.Value) symbolic.StringLike {
 			return symbolic.ANY_STR_LIKE
 		},
 		_torune, func(ctx *symbolic.Context, arg symbolic.Integral) *symbolic.Rune {
@@ -136,7 +136,7 @@ func init() {
 		_tofloat, func(ctx *symbolic.Context, arg *symbolic.Int) *symbolic.Float {
 			return symbolic.ANY_FLOAT
 		},
-		_toint, func(ctx *symbolic.Context, arg symbolic.SymbolicValue) *symbolic.Int {
+		_toint, func(ctx *symbolic.Context, arg symbolic.Value) *symbolic.Int {
 			switch arg.(type) {
 			case *symbolic.Float, *symbolic.Byte:
 			default:
@@ -144,33 +144,33 @@ func init() {
 			}
 			return symbolic.ANY_INT
 		},
-		_torstream, func(ctx *symbolic.Context, arg symbolic.SymbolicValue) *symbolic.ReadableStream {
+		_torstream, func(ctx *symbolic.Context, arg symbolic.Value) *symbolic.ReadableStream {
 			return symbolic.NewReadableStream(symbolic.ANY)
 		},
 
 		//
 
-		core.ToJSON, func(ctx *symbolic.Context, arg symbolic.SymbolicValue) *symbolic.String {
+		core.ToJSON, func(ctx *symbolic.Context, arg symbolic.Value) *symbolic.String {
 			return &symbolic.String{}
 		},
-		core.ToPrettyJSON, func(ctx *symbolic.Context, arg symbolic.SymbolicValue) *symbolic.String {
+		core.ToPrettyJSON, func(ctx *symbolic.Context, arg symbolic.Value) *symbolic.String {
 			return &symbolic.String{}
 		},
 
 		_repr, func(ctx *symbolic.Context, arg symbolic.Serializable) *symbolic.String {
 			return &symbolic.String{}
 		},
-		_parse_repr, func(ctx *symbolic.Context, arg symbolic.Readable) (symbolic.SymbolicValue, *symbolic.Error) {
+		_parse_repr, func(ctx *symbolic.Context, arg symbolic.Readable) (symbolic.Value, *symbolic.Error) {
 			return symbolic.ANY, nil
 		},
-		_parse, func(ctx *symbolic.Context, arg symbolic.Readable, p symbolic.Pattern) (symbolic.SymbolicValue, *symbolic.Error) {
+		_parse, func(ctx *symbolic.Context, arg symbolic.Readable, p symbolic.Pattern) (symbolic.Value, *symbolic.Error) {
 			return p.SymbolicValue(), nil
 		},
-		_split, func(ctx *symbolic.Context, arg symbolic.Readable, sep *symbolic.String, p symbolic.Pattern) (symbolic.SymbolicValue, *symbolic.Error) {
+		_split, func(ctx *symbolic.Context, arg symbolic.Readable, sep *symbolic.String, p symbolic.Pattern) (symbolic.Value, *symbolic.Error) {
 			return symbolic.NewListOf(p.SymbolicValue().(symbolic.Serializable)), nil
 		},
 
-		_idt, func(ctx *symbolic.Context, arg symbolic.SymbolicValue) symbolic.SymbolicValue {
+		_idt, func(ctx *symbolic.Context, arg symbolic.Value) symbolic.Value {
 			return arg
 		},
 		_len, func(ctx *symbolic.Context, arg symbolic.Indexable) *symbolic.Int {
@@ -193,10 +193,10 @@ func init() {
 			return &symbolic.Reader{}
 		},
 
-		_dynimport, func(ctx *symbolic.Context, src symbolic.SymbolicValue, argObj *symbolic.Object, manifestObj *symbolic.Object, options ...symbolic.SymbolicValue) (*symbolic.LThread, *symbolic.Error) {
+		_dynimport, func(ctx *symbolic.Context, src symbolic.Value, argObj *symbolic.Object, manifestObj *symbolic.Object, options ...symbolic.Value) (*symbolic.LThread, *symbolic.Error) {
 			return &symbolic.LThread{}, nil
 		},
-		_run, func(ctx *symbolic.Context, src *symbolic.Path, args ...symbolic.SymbolicValue) *symbolic.Error {
+		_run, func(ctx *symbolic.Context, src *symbolic.Path, args ...symbolic.Value) *symbolic.Error {
 			return nil
 		},
 		_is_rune_space, func(ctx *symbolic.Context, s *symbolic.Rune) *symbolic.Bool {
@@ -210,7 +210,7 @@ func init() {
 		},
 		//
 
-		core.NewEventSource, func(ctx *symbolic.Context, resourceNameOrPattern symbolic.SymbolicValue) (*symbolic.EventSource, *symbolic.Error) {
+		core.NewEventSource, func(ctx *symbolic.Context, resourceNameOrPattern symbolic.Value) (*symbolic.EventSource, *symbolic.Error) {
 			return symbolic.NewEventSource(), nil
 		},
 
@@ -218,7 +218,7 @@ func init() {
 
 		},
 
-		_url_of, func(ctx *symbolic.Context, v symbolic.SymbolicValue) *symbolic.URL {
+		_url_of, func(ctx *symbolic.Context, v symbolic.Value) *symbolic.URL {
 			return &symbolic.URL{}
 		},
 		//
@@ -227,10 +227,10 @@ func init() {
 			return symbolic.NewAnyObject(), nil
 		},
 
-		_List, func(ctx *symbolic.Context, args ...symbolic.SymbolicValue) *symbolic.List {
+		_List, func(ctx *symbolic.Context, args ...symbolic.Value) *symbolic.List {
 			return symbolic.NewListOf(symbolic.ANY_SERIALIZABLE)
 		},
-		_Event, func(ctx *symbolic.Context, value symbolic.SymbolicValue) *symbolic.Event {
+		_Event, func(ctx *symbolic.Context, value symbolic.Value) *symbolic.Event {
 			event, err := symbolic.NewEvent(value)
 			if err != nil {
 				ctx.AddSymbolicGoFunctionError(err.Error())
@@ -249,21 +249,21 @@ func init() {
 		},
 
 		//
-		_Color, func(ctx *symbolic.Context, firstArg symbolic.SymbolicValue, others ...symbolic.SymbolicValue) *symbolic.Color {
+		_Color, func(ctx *symbolic.Context, firstArg symbolic.Value, others ...symbolic.Value) *symbolic.Color {
 			return symbolic.ANY_COLOR
 		},
 
-		_add_ctx_data, func(ctx *symbolic.Context, name *symbolic.Identifier, value symbolic.SymbolicValue) {
+		_add_ctx_data, func(ctx *symbolic.Context, name *symbolic.Identifier, value symbolic.Value) {
 
 		},
-		_ctx_data, func(ctx *symbolic.Context, name *symbolic.Identifier) symbolic.SymbolicValue {
+		_ctx_data, func(ctx *symbolic.Context, name *symbolic.Identifier) symbolic.Value {
 			return symbolic.ANY
 		},
 		_get_system_graph, func(ctx *symbolic.Context) (*symbolic.SystemGraph, *symbolic.Bool) {
 			return symbolic.ANY_SYSTEM_GRAPH, symbolic.ANY_BOOL
 		},
 
-		_propnames, func(ctx *symbolic.Context, v symbolic.SymbolicValue) *symbolic.List {
+		_propnames, func(ctx *symbolic.Context, v symbolic.Value) *symbolic.List {
 			if _, ok := v.(symbolic.IProps); !ok {
 				ctx.AddSymbolicGoFunctionError("value cannot have properties")
 			}

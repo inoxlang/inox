@@ -30,7 +30,7 @@ type Snapshot struct {
 	_ int
 }
 
-func (m *Snapshot) Test(v SymbolicValue, state RecTestCallState) bool {
+func (m *Snapshot) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -44,15 +44,15 @@ func (m *Snapshot) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig
 	return
 }
 
-func (m *Snapshot) WidestOfType() SymbolicValue {
+func (m *Snapshot) WidestOfType() Value {
 	return ANY_SNAPSHOT
 }
 
-func (m *Snapshot) ReceiveSnapshot(SymbolicValue) error {
+func (m *Snapshot) ReceiveSnapshot(Value) error {
 	return nil
 }
 
-func (m *Snapshot) Prop(name string) SymbolicValue {
+func (m *Snapshot) Prop(name string) Value {
 	switch name {
 	}
 	panic(FormatErrPropertyDoesNotExist(name, m))
@@ -67,7 +67,7 @@ type AnyInMemorySnapshotable struct {
 	_ int
 }
 
-func (s *AnyInMemorySnapshotable) Test(v SymbolicValue, state RecTestCallState) bool {
+func (s *AnyInMemorySnapshotable) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -81,11 +81,11 @@ func (s *AnyInMemorySnapshotable) PrettyPrint(w *bufio.Writer, config *pprint.Pr
 	return
 }
 
-func (s *AnyInMemorySnapshotable) WidestOfType() SymbolicValue {
+func (s *AnyInMemorySnapshotable) WidestOfType() Value {
 	return ANY_IN_MEM_SNAPSHOTABLE
 }
 
-func (s *AnyInMemorySnapshotable) WatcherElement() SymbolicValue {
+func (s *AnyInMemorySnapshotable) WatcherElement() Value {
 	return ANY
 }
 

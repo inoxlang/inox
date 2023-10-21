@@ -14,14 +14,14 @@ var (
 // A DataChunk represents a symbolic DataChunk.
 type DataChunk struct {
 	UnassignablePropsMixin
-	data SymbolicValue
+	data Value
 }
 
-func NewChunk(data SymbolicValue) *DataChunk {
+func NewChunk(data Value) *DataChunk {
 	return &DataChunk{data: data}
 }
 
-func (c *DataChunk) Test(v SymbolicValue, state RecTestCallState) bool {
+func (c *DataChunk) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -33,7 +33,7 @@ func (c *DataChunk) Test(v SymbolicValue, state RecTestCallState) bool {
 	}
 }
 
-func (r *DataChunk) WidestOfType() SymbolicValue {
+func (r *DataChunk) WidestOfType() Value {
 	return &DataChunk{
 		data: ANY,
 	}
@@ -45,7 +45,7 @@ func (r *DataChunk) GetGoMethod(name string) (*GoFunction, bool) {
 	return nil, false
 }
 
-func (r *DataChunk) Prop(name string) SymbolicValue {
+func (r *DataChunk) Prop(name string) Value {
 	switch name {
 	case "data":
 		return r.data

@@ -18,7 +18,7 @@ type ServerSentEventSource struct {
 	_ int
 }
 
-func (r *ServerSentEventSource) Test(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+func (r *ServerSentEventSource) Test(v symbolic.Value, state symbolic.RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -34,7 +34,7 @@ func (serv *ServerSentEventSource) GetGoMethod(name string) (*symbolic.GoFunctio
 	return nil, false
 }
 
-func (s *ServerSentEventSource) Prop(name string) symbolic.SymbolicValue {
+func (s *ServerSentEventSource) Prop(name string) symbolic.Value {
 	return symbolic.GetGoMethodOrPanic(name, s)
 }
 
@@ -50,6 +50,6 @@ func (r *ServerSentEventSource) PrettyPrint(w *bufio.Writer, config *pprint.Pret
 	return
 }
 
-func (r *ServerSentEventSource) WidestOfType() symbolic.SymbolicValue {
+func (r *ServerSentEventSource) WidestOfType() symbolic.Value {
 	return &ServerSentEventSource{}
 }

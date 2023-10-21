@@ -44,7 +44,7 @@ const (
 var (
 	CTX_PTR_TYPE                         = reflect.TypeOf((*Context)(nil))
 	ERROR_TYPE                           = reflect.TypeOf((*Error)(nil))
-	SYMBOLIC_VALUE_INTERFACE_TYPE        = reflect.TypeOf((*SymbolicValue)(nil)).Elem()
+	SYMBOLIC_VALUE_INTERFACE_TYPE        = reflect.TypeOf((*Value)(nil)).Elem()
 	SERIALIZABLE_INTERFACE_TYPE          = reflect.TypeOf((*Serializable)(nil)).Elem()
 	ITERABLE_INTERFACE_TYPE              = reflect.TypeOf((*Iterable)(nil)).Elem()
 	SERIALIZABLE_ITERABLE_INTERFACE_TYPE = reflect.TypeOf((*SerializableIterable)(nil)).Elem()
@@ -101,10 +101,10 @@ type SymbolicEvalCheckInput struct {
 
 	//should not be set if UseBaseGlobals is true
 	Globals                        map[string]ConcreteGlobalValue
-	AdditionalSymbolicGlobalConsts map[string]SymbolicValue
+	AdditionalSymbolicGlobalConsts map[string]Value
 
 	UseBaseGlobals                bool
-	SymbolicBaseGlobals           map[string]SymbolicValue
+	SymbolicBaseGlobals           map[string]Value
 	SymbolicBasePatterns          map[string]Pattern
 	SymbolicBasePatternNamespaces map[string]*PatternNamespace
 
@@ -196,17 +196,17 @@ func SymbolicEvalCheck(input SymbolicEvalCheckInput) (*SymbolicData, error) {
 	return state.symbolicData, errors.New(finalErrBuff.String())
 }
 
-func SymbolicEval(node parse.Node, state *State) (result SymbolicValue, finalErr error) {
+func SymbolicEval(node parse.Node, state *State) (result Value, finalErr error) {
 	return symbolicEval(node, state)
 }
 
-func symbolicEval(node parse.Node, state *State) (result SymbolicValue, finalErr error) {
+func symbolicEval(node parse.Node, state *State) (result Value, finalErr error) {
 	return _symbolicEval(node, state, evalOptions{})
 }
 
 type evalOptions struct {
 	ignoreNodeValue     bool
-	expectedValue       SymbolicValue
+	expectedValue       Value
 	actualValueMismatch *bool
 	reEval              bool
 
@@ -220,7 +220,7 @@ func (opts evalOptions) setActualValueMismatchIfNotNil() {
 	}
 }
 
-func _symbolicEval(node parse.Node, state *State, options evalOptions) (result SymbolicValue, finalErr error) {
+func _symbolicEval(node parse.Node, state *State, options evalOptions) (result Value, finalErr error) {
 	defer func() {
 
 		e := recover()
@@ -492,7 +492,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 		}
 
 		if state.returnValue != nil {
-			state.returnValue = joinValues([]SymbolicValue{state.returnValue, v})
+			state.returnValue = joinValues([]Value{state.returnValue, v})
 		} else {
 			state.returnValue = v
 		}
@@ -525,7 +525,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			return nil, err
 		}
 
-		args := make([]SymbolicValue, len(n.Arguments))
+		args := make([]Value, len(n.Arguments))
 
 		errCount := len(state.errors())
 
@@ -567,7 +567,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			state.removeLocal("")
 		}()
 
-		var res SymbolicValue
+		var res Value
 		var err error
 
 		for _, stage := range stages {
@@ -584,7 +584,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			name := decl.Left.(*parse.IdentifierLiteral).Name
 
 			var static Pattern
-			var staticMatching SymbolicValue
+			var staticMatching Value
 
 			if decl.Type != nil {
 				type_, err := symbolicEval(decl.Type, state)
@@ -602,7 +602,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			}
 
 			var (
-				right SymbolicValue
+				right Value
 				err   error
 			)
 
@@ -641,14 +641,14 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 		return nil, nil
 	case *parse.Assignment:
 		badIntOperationRHS := false
-		var __rhs SymbolicValue
+		var __rhs Value
 
-		getRHS := func(expected SymbolicValue) (value SymbolicValue, deeperMismatch bool, _ error) {
+		getRHS := func(expected Value) (value Value, deeperMismatch bool, _ error) {
 			if __rhs != nil {
 				panic(errors.New("right node already evaluated"))
 			}
 
-			var result SymbolicValue
+			var result Value
 			var err error
 			if expected == nil {
 				result, err = symbolicEval(n.Right, state)
@@ -852,7 +852,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 				}
 			}
 
-			var expectedValue SymbolicValue
+			var expectedValue Value
 			static, ok := iprops.(IToStatic)
 			if ok {
 				expectedIprops, ok := AsIprops(static.Static().SymbolicValue()).(IProps)
@@ -976,7 +976,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			lastPropName := lastPropNameNode.Name
 			hasPrevValue := utils.SliceContains(iprops.PropertyNames(), lastPropName)
 
-			var expectedValue SymbolicValue
+			var expectedValue Value
 			static, ok := iprops.(IToStatic)
 			if ok {
 				expectedIprops, ok := AsIprops(static.Static().SymbolicValue()).(IProps)
@@ -1091,7 +1091,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 				//evaluate right
 				var deeperMismatch bool
 				{
-					var expectedValue SymbolicValue = seqElementAtIndex
+					var expectedValue Value = seqElementAtIndex
 					if expectedValue == nil {
 						expectedValue = seq.element()
 					}
@@ -1135,7 +1135,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 				if seqElementAtIndex == nil || !seqElementAtIndex.Test(__rhs, RecTestCallState{}) {
 					assignable := false
 					var staticSeq MutableLengthSequence
-					var staticSeqElement SymbolicValue
+					var staticSeqElement Value
 
 					//get static
 					static, ofConstant, ok := state.getInfoOfNode(lhs.Indexed)
@@ -1264,7 +1264,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 				ignoreNextAssignabilityError := false
 				invalidRHSLength := false
 				var staticSeq MutableSequence
-				var rightSeqElement SymbolicValue
+				var rightSeqElement Value
 				var deeperMismatch bool
 
 				//get static
@@ -1282,7 +1282,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 
 				{
 					//evaluate right
-					var expectedValue SymbolicValue = NewAnySequenceOf(staticSeq.element())
+					var expectedValue Value = NewAnySequenceOf(staticSeq.element())
 					_, deeperMismatch, err = getRHS(expectedValue)
 					if err != nil {
 						return nil, err
@@ -1390,7 +1390,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 
 				val := seq.elementAt(i)
 				if isNillable && (!seq.HasKnownLen() || i >= seq.KnownLen() && isNillable) {
-					val = joinValues([]SymbolicValue{val, Nil})
+					val = joinValues([]Value{val, Nil})
 				}
 
 				if state.hasLocal(name) {
@@ -1483,7 +1483,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			//we read the type & name of parameters and we set the module arguments variable.
 			if object, ok := manifestObject.(*Object); ok && !state.hasGlobal(extData.MOD_ARGS_VARNAME) {
 				parameters := getModuleParameters(object, n.Manifest.Object.(*parse.ObjectLiteral))
-				args := make(map[string]SymbolicValue)
+				args := make(map[string]Value)
 
 				var paramNames []string
 				var paramPatterns []Pattern
@@ -1516,12 +1516,12 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			}
 
 			if res == nil && state.returnValue != nil {
-				return joinValues([]SymbolicValue{state.returnValue, Nil}), nil
+				return joinValues([]Value{state.returnValue, Nil}), nil
 			}
 			return res, nil
 		}
 
-		var returnValue SymbolicValue
+		var returnValue Value
 		for _, stmt := range n.Statements {
 			_, err := symbolicEval(stmt, state)
 
@@ -1654,10 +1654,10 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 
 		return nil, nil
 	case *parse.SpawnExpression:
-		var actualGlobals = map[string]SymbolicValue{}
+		var actualGlobals = map[string]Value{}
 		var embeddedModule *parse.Chunk
 
-		var meta map[string]SymbolicValue
+		var meta map[string]Value
 		var globals any
 		var permListingNode *parse.ObjectLiteral
 
@@ -1666,7 +1666,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 		}
 
 		if n.Meta != nil {
-			meta = map[string]SymbolicValue{}
+			meta = map[string]Value{}
 			if objLit, ok := n.Meta.(*parse.ObjectLiteral); ok {
 
 				for _, property := range objLit.Properties {
@@ -1676,7 +1676,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 						globalsObjectLit, ok := property.Value.(*parse.ObjectLiteral)
 						//handle description separately if it's an object literal because non-serializable value are not accepted.
 						if ok {
-							globalMap := map[string]SymbolicValue{}
+							globalMap := map[string]Value{}
 							globals = globalMap
 
 							for _, prop := range globalsObjectLit.Properties {
@@ -1727,7 +1727,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 		}
 
 		switch g := globals.(type) {
-		case map[string]SymbolicValue:
+		case map[string]Value:
 			for k, v := range g {
 				symVal, err := ShareOrClone(v, state)
 				if err != nil {
@@ -2081,7 +2081,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 		//add allowed missing properties
 		{
 			var properties []string
-			expectedObj.ForEachEntry(func(propName string, propValue SymbolicValue) error {
+			expectedObj.ForEachEntry(func(propName string, propValue Value) error {
 				if slices.Contains(keys, propName) {
 					return nil
 				}
@@ -2115,7 +2115,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			}
 
 			var (
-				propVal      SymbolicValue
+				propVal      Value
 				err          error
 				serializable Serializable
 			)
@@ -2224,7 +2224,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 		expectedRecord, ok := findInMultivalue[*Record](options.expectedValue)
 		if ok && expectedRecord.entries != nil {
 			var properties []string
-			expectedRecord.ForEachEntry(func(propName string, _ SymbolicValue) error {
+			expectedRecord.ForEachEntry(func(propName string, _ Value) error {
 				if slices.Contains(keys, propName) {
 					return nil
 				}
@@ -2304,7 +2304,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			deeperMismatch := false
 
 			for _, elemNode := range n.Elements {
-				var e SymbolicValue
+				var e Value
 
 				spreadElemNode, ok := elemNode.(*parse.ElementSpreadElement)
 				if ok {
@@ -2344,7 +2344,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			return resultList, nil
 		}
 
-		var expectedElement SymbolicValue = nil
+		var expectedElement Value = nil
 		if expectedList != nil {
 			expectedElement = expectedList.element()
 		} else {
@@ -2363,7 +2363,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 		}
 
 		for _, elemNode := range n.Elements {
-			var e SymbolicValue
+			var e Value
 			deeperMismatch := false
 
 			spreadElemNode, ok := elemNode.(*parse.ElementSpreadElement)
@@ -2430,7 +2430,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 
 			for _, elemNode := range n.Elements {
 				spreadElemNode, ok := elemNode.(*parse.ElementSpreadElement)
-				var e SymbolicValue
+				var e Value
 				if ok {
 					val, err := _symbolicEval(spreadElemNode.Expr, state, evalOptions{expectedValue: result, actualValueMismatch: &deeperMismatch})
 					if err != nil {
@@ -2472,7 +2472,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 		}
 
 		expectedTuple, ok := findInMultivalue[*Tuple](options.expectedValue)
-		var expectedElement SymbolicValue = nil
+		var expectedElement Value = nil
 		if ok {
 			expectedElement = expectedTuple.element()
 		} else {
@@ -2488,7 +2488,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 		}
 
 		for _, elemNode := range n.Elements {
-			var e SymbolicValue
+			var e Value
 			deeperMismatch := false
 
 			spreadElemNode, ok := elemNode.(*parse.ElementSpreadElement)
@@ -2546,7 +2546,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 		expectedDictionary, ok := findInMultivalue[*Dictionary](options.expectedValue)
 		if ok && expectedDictionary.entries != nil {
 			var keys []string
-			expectedDictionary.ForEachEntry(func(keyRepr string, _ SymbolicValue) error {
+			expectedDictionary.ForEachEntry(func(keyRepr string, _ Value) error {
 				if slices.Contains(keys, keyRepr) {
 					return nil
 				}
@@ -2653,8 +2653,8 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			return nil, err
 		}
 
-		var consequentValue SymbolicValue
-		var atlernateValue SymbolicValue
+		var consequentValue Value
+		var atlernateValue Value
 
 		if _, ok := test.(*Bool); ok {
 			if n.Consequent != nil {
@@ -2679,7 +2679,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 					if err != nil {
 						return nil, err
 					}
-					return joinValues([]SymbolicValue{consequentValue, atlernateValue}), nil
+					return joinValues([]Value{consequentValue, atlernateValue}), nil
 				}
 
 				if alternateStateFork != nil {
@@ -2711,8 +2711,8 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			eVarname = n.ValueElemIdent.Name
 		}
 
-		var keyType SymbolicValue = ANY
-		var valueType SymbolicValue = ANY
+		var keyType Value = ANY
+		var valueType Value = ANY
 
 		if iterable, ok := asIterable(iteratedValue).(Iterable); ok {
 			if n.Chunked {
@@ -2767,7 +2767,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 
 		walkable, ok := walkedValue.(Walkable)
 
-		var nodeMeta, entry SymbolicValue
+		var nodeMeta, entry Value
 
 		if ok {
 			entry = walkable.WalkerElement()
@@ -2856,7 +2856,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 		}
 
 		var forks []*State
-		var possibleValues []SymbolicValue
+		var possibleValues []Value
 
 		for _, matchCase := range n.Cases {
 			for _, valNode := range matchCase.Values { //TODO: fix handling of multi cases
@@ -3016,7 +3016,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			} else {
 				state.addError(makeSymbolicEvalError(n.Left, state, fmtLeftOperandOfBinaryShouldBe(n.Operator, "int or float", Stringify(left))))
 
-				var arithmeticReturnVal SymbolicValue
+				var arithmeticReturnVal Value
 				switch right.(type) {
 				case *Int:
 					arithmeticReturnVal = ANY_INT
@@ -3140,7 +3140,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 				Removed: ANY_PATTERN,
 			}, nil
 		case parse.NilCoalescing:
-			return joinValues([]SymbolicValue{narrowOut(Nil, left), right}), nil
+			return joinValues([]Value{narrowOut(Nil, left), right}), nil
 		default:
 			return nil, fmt.Errorf(fmtInvalidBinaryOperator(n.Operator))
 		}
@@ -3196,18 +3196,18 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			defer stateFork.unsetSelf()
 		}
 
-		var params []SymbolicValue
+		var params []Value
 		var paramNames []string
 
 		if len(n.Parameters) > 0 {
-			params = make([]SymbolicValue, len(n.Parameters))
+			params = make([]Value, len(n.Parameters))
 			paramNames = make([]string, len(n.Parameters))
 		}
 
 		//declare arguments
 		for i, p := range n.Parameters[:n.NonVariadicParamCount()] {
 			name := p.Var.Name
-			var paramValue SymbolicValue = ANY
+			var paramValue Value = ANY
 			var paramType Pattern
 
 			if p.Type != nil {
@@ -3241,7 +3241,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 		}
 
 		//declare captured locals
-		capturedLocals := map[string]SymbolicValue{}
+		capturedLocals := map[string]Value{}
 		for _, e := range n.CaptureList {
 			name := e.(*parse.IdentifierLiteral).Name
 			info, ok := state.getLocal(name)
@@ -3273,8 +3273,8 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 
 		//-----------------------------
 
-		var signatureReturnType SymbolicValue
-		var storedReturnType SymbolicValue
+		var signatureReturnType Value
+		var storedReturnType Value
 		var err error
 
 		if n.ReturnType != nil {
@@ -3415,14 +3415,14 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			defer stateFork.unsetSelf()
 		}
 
-		parameterTypes := make([]SymbolicValue, len(n.Parameters))
+		parameterTypes := make([]Value, len(n.Parameters))
 		parameterNames := make([]string, len(n.Parameters))
 		isVariadic := n.IsVariadic
 
 		//declare arguments
 		for paramIndex, p := range n.Parameters[:n.NonVariadicParamCount()] {
 			name := p.Var.Name
-			var paramType SymbolicValue = ANY
+			var paramType Value = ANY
 
 			if p.Type != nil {
 				pattern, err := symbolicallyEvalPatternNode(p.Type, stateFork)
@@ -3453,8 +3453,8 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 
 		//-----------------------------
 
-		var signatureReturnType SymbolicValue
-		var storedReturnType SymbolicValue
+		var signatureReturnType Value
+		var storedReturnType Value
 		var err error
 
 		if n.ReturnType != nil {
@@ -3540,7 +3540,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 
 		val := symbolicMemb(left, n.PropertyName.Name, n.Optional, n, state)
 		if n.Optional {
-			val = joinValues([]SymbolicValue{val, Nil})
+			val = joinValues([]Value{val, Nil})
 		}
 
 		state.symbolicData.SetMostSpecificNodeValue(n.PropertyName, val)
@@ -3713,7 +3713,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 
 			//if found
 			if expr != (propertyExpression{}) {
-				var result SymbolicValue
+				var result Value
 
 				if expr.Method != nil {
 					if len(options.doubleColonExprAncestorChain) == 0 {
@@ -4241,7 +4241,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 		if len(n.Elements) == 0 {
 			return nil, errors.New("cannot create concatenation with no elements")
 		}
-		var values []SymbolicValue
+		var values []Value
 		var nodeIndexes []int
 		atLeastOneSpread := false
 
@@ -4327,7 +4327,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 				return values[0], nil
 			}
 
-			var generalElements []SymbolicValue
+			var generalElements []Value
 			var elements []Serializable
 
 			for i, concatElem := range values {
@@ -4488,7 +4488,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			state.addError(makeSymbolicEvalError(n.Meta, state, META_VAL_OF_LIFETIMEJOB_SHOULD_BE_IMMUTABLE))
 		}
 
-		var subject SymbolicValue = ANY
+		var subject Value = ANY
 		var subjectPattern Pattern = ANY_PATTERN
 
 		if n.Subject != nil {
@@ -4705,7 +4705,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			}
 
 			result, _, _, err := goFn.Call(goFunctionCallInput{
-				symbolicArgs:      []SymbolicValue{elem},
+				symbolicArgs:      []Value{elem},
 				nonSpreadArgCount: 1,
 				hasSpreadArg:      false,
 				state:             state,
@@ -4724,11 +4724,11 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 			return result, err
 		}
 	case *parse.XMLElement:
-		var children []SymbolicValue
+		var children []Value
 		name := n.Opening.Name.(*parse.IdentifierLiteral).Name
-		var attrs map[string]SymbolicValue
+		var attrs map[string]Value
 		if len(n.Opening.Attributes) > 0 {
-			attrs = make(map[string]SymbolicValue, len(n.Opening.Attributes))
+			attrs = make(map[string]Value, len(n.Opening.Attributes))
 
 			for _, attr := range n.Opening.Attributes {
 				name := attr.Name.(*parse.IdentifierLiteral).Name
@@ -4884,7 +4884,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result S
 	}
 }
 
-func symbolicMemb(value SymbolicValue, name string, optionalMembExpr bool, node parse.Node, state *State) (result SymbolicValue) {
+func symbolicMemb(value Value, name string, optionalMembExpr bool, node parse.Node, state *State) (result Value) {
 	//note: the property of a %serializable is not necessarily serializable (example: Go methods)
 
 	iprops, ok := AsIprops(value).(IProps)
@@ -4934,7 +4934,7 @@ const (
 	removePossibleValue
 )
 
-func narrowPath(path parse.Node, action pathNarrowing, value SymbolicValue, state *State, ignored int) {
+func narrowPath(path parse.Node, action pathNarrowing, value Value, state *State, ignored int) {
 	//TODO: use reEval option in in symbolicEval calls ?
 
 switch_:
@@ -5016,7 +5016,7 @@ switch_:
 					}
 					ipropsList = append(ipropsList, movingIprops)
 				}
-				var newValue SymbolicValue = value
+				var newValue Value = value
 
 				//update iprops from right to left
 				for i := len(ipropsList) - 1; i >= 0; i-- {
@@ -5231,7 +5231,7 @@ func makeSymbolicEvalWarning(node parse.Node, state *State, msg string) Symbolic
 	return SymbolicEvaluationWarning{msg, locatedMsg, location}
 }
 
-func converTypeToSymbolicValue(t reflect.Type, allowOptionalParam bool) (result SymbolicValue, optionalParam bool, _ error) {
+func converTypeToSymbolicValue(t reflect.Type, allowOptionalParam bool) (result Value, optionalParam bool, _ error) {
 	err := fmt.Errorf("cannot convert type to symbolic value : %#v", t)
 
 	if t.Implements(OPTIONAL_PARAM_TYPE) {
@@ -5256,7 +5256,7 @@ func converTypeToSymbolicValue(t reflect.Type, allowOptionalParam bool) (result 
 
 	if t.Kind() == reflect.Pointer && t.Elem().Kind() == reflect.Struct {
 		v := reflect.New(t.Elem())
-		symbolicVal, ok := v.Interface().(SymbolicValue)
+		symbolicVal, ok := v.Interface().(Value)
 		if !ok {
 			return nil, false, err
 		}

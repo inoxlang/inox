@@ -16,7 +16,7 @@ type Ranking struct {
 	_ int
 }
 
-func (r *Ranking) Test(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+func (r *Ranking) Test(v symbolic.Value, state symbolic.RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -34,7 +34,7 @@ func (r *Ranking) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 	return nil, false
 }
 
-func (r *Ranking) Prop(name string) symbolic.SymbolicValue {
+func (r *Ranking) Prop(name string) symbolic.Value {
 	return symbolic.GetGoMethodOrPanic(name, r)
 }
 
@@ -54,15 +54,15 @@ func (r *Ranking) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig,
 	utils.Must(w.Write(utils.StringAsBytes("%ranking")))
 }
 
-func (r *Ranking) IteratorElementKey() symbolic.SymbolicValue {
+func (r *Ranking) IteratorElementKey() symbolic.Value {
 	return &symbolic.Any{}
 }
 
-func (r *Ranking) IteratorElementValue() symbolic.SymbolicValue {
+func (r *Ranking) IteratorElementValue() symbolic.Value {
 	return &symbolic.Any{}
 }
 
-func (r *Ranking) WidestOfType() symbolic.SymbolicValue {
+func (r *Ranking) WidestOfType() symbolic.Value {
 	return &Ranking{}
 }
 
@@ -71,7 +71,7 @@ type Rank struct {
 	_ int
 }
 
-func (r *Rank) Test(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+func (r *Rank) Test(v symbolic.Value, state symbolic.RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -83,7 +83,7 @@ func (r *Rank) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 	return nil, false
 }
 
-func (r *Rank) Prop(name string) symbolic.SymbolicValue {
+func (r *Rank) Prop(name string) symbolic.Value {
 	switch name {
 	case "values":
 		return symbolic.NewListOf(symbolic.ANY_SERIALIZABLE)
@@ -100,14 +100,14 @@ func (r *Rank) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, de
 	return
 }
 
-func (r *Rank) IteratorElementKey() symbolic.SymbolicValue {
+func (r *Rank) IteratorElementKey() symbolic.Value {
 	return &symbolic.Any{}
 }
 
-func (r *Rank) IteratorElementValue() symbolic.SymbolicValue {
+func (r *Rank) IteratorElementValue() symbolic.Value {
 	return &symbolic.Any{}
 }
 
-func (r *Rank) WidestOfType() symbolic.SymbolicValue {
+func (r *Rank) WidestOfType() symbolic.Value {
 	return &Rank{}
 }

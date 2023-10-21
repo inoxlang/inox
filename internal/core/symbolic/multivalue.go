@@ -25,11 +25,11 @@ var (
 
 // A Multivalue represents a set of possible values.
 type Multivalue struct {
-	cache  map[reflect.Type]SymbolicValue
-	values []SymbolicValue
+	cache  map[reflect.Type]Value
+	values []Value
 }
 
-func NewMultivalue(values ...SymbolicValue) *Multivalue {
+func NewMultivalue(values ...Value) *Multivalue {
 	if len(values) < 2 {
 		panic(errors.New("failed to create MultiValue: value slice should have at least 2 elements"))
 	}
@@ -37,7 +37,7 @@ func NewMultivalue(values ...SymbolicValue) *Multivalue {
 	return &Multivalue{values: values}
 }
 
-func (mv *Multivalue) Test(v SymbolicValue, state RecTestCallState) bool {
+func (mv *Multivalue) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -69,7 +69,7 @@ func (mv *Multivalue) Test(v SymbolicValue, state RecTestCallState) bool {
 	return true
 }
 
-func (mv *Multivalue) as(itf reflect.Type) SymbolicValue {
+func (mv *Multivalue) as(itf reflect.Type) Value {
 	result, ok := mv.cache[itf]
 	if ok {
 		return result
@@ -161,7 +161,7 @@ top_switch:
 
 	if enableMultivalueCaching {
 		if mv.cache == nil {
-			mv.cache = make(map[reflect.Type]SymbolicValue)
+			mv.cache = make(map[reflect.Type]Value)
 		}
 
 		mv.cache[itf] = result
@@ -170,11 +170,11 @@ top_switch:
 	return result
 }
 
-func (mv *Multivalue) getValues() []SymbolicValue {
+func (mv *Multivalue) getValues() []Value {
 	return mv.values
 }
 
-func (mv *Multivalue) AllValues(callbackFn func(v SymbolicValue) bool) bool {
+func (mv *Multivalue) AllValues(callbackFn func(v Value) bool) bool {
 	for _, val := range mv.values {
 		if !callbackFn(val) {
 			return false
@@ -183,7 +183,7 @@ func (mv *Multivalue) AllValues(callbackFn func(v SymbolicValue) bool) bool {
 	return true
 }
 
-func (mv *Multivalue) WidenSimpleValues() SymbolicValue {
+func (mv *Multivalue) WidenSimpleValues() Value {
 	first := mv.values[0]
 	if IsSimpleSymbolicInoxVal(first) {
 		widened := first.WidestOfType()
@@ -211,7 +211,7 @@ func (mv *Multivalue) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintCon
 	utils.PanicIfErr(w.WriteByte(')'))
 }
 
-func (mv *Multivalue) WidestOfType() SymbolicValue {
+func (mv *Multivalue) WidestOfType() Value {
 	return joinValues(mv.values)
 }
 
@@ -232,8 +232,8 @@ type indexableMultivalue struct {
 	*Multivalue
 }
 
-func (mv *indexableMultivalue) element() SymbolicValue {
-	elements := make([]SymbolicValue, len(mv.values))
+func (mv *indexableMultivalue) element() Value {
+	elements := make([]Value, len(mv.values))
 	for i, val := range mv.values {
 		elements[i] = val.(Indexable).element()
 	}
@@ -241,8 +241,8 @@ func (mv *indexableMultivalue) element() SymbolicValue {
 	return joinValues(elements)
 }
 
-func (mv *indexableMultivalue) elementAt(i int) SymbolicValue {
-	elements := make([]SymbolicValue, len(mv.values))
+func (mv *indexableMultivalue) elementAt(i int) Value {
+	elements := make([]Value, len(mv.values))
 	for i, val := range mv.values {
 		indexable := val.(Indexable)
 		if !indexable.HasKnownLen() || i >= indexable.KnownLen() {
@@ -254,11 +254,11 @@ func (mv *indexableMultivalue) elementAt(i int) SymbolicValue {
 	return joinValues(elements)
 }
 
-func (mv *indexableMultivalue) IteratorElementKey() SymbolicValue {
+func (mv *indexableMultivalue) IteratorElementKey() Value {
 	return ANY_INT
 }
 
-func (mv *indexableMultivalue) IteratorElementValue() SymbolicValue {
+func (mv *indexableMultivalue) IteratorElementValue() Value {
 	return mv.element()
 }
 
@@ -287,7 +287,7 @@ func (mv *indexableMultivalue) HasKnownLen() bool {
 	return true
 }
 
-func (mv *indexableMultivalue) as(itf reflect.Type) SymbolicValue {
+func (mv *indexableMultivalue) as(itf reflect.Type) Value {
 	return mv.Multivalue.as(itf)
 }
 
@@ -295,8 +295,8 @@ type iterableMultivalue struct {
 	*Multivalue
 }
 
-func (mv *iterableMultivalue) IteratorElementKey() SymbolicValue {
-	elements := make([]SymbolicValue, len(mv.values))
+func (mv *iterableMultivalue) IteratorElementKey() Value {
+	elements := make([]Value, len(mv.values))
 	for i, val := range mv.values {
 		elements[i] = val.(Iterable).IteratorElementKey()
 	}
@@ -304,8 +304,8 @@ func (mv *iterableMultivalue) IteratorElementKey() SymbolicValue {
 	return joinValues(elements)
 }
 
-func (mv *iterableMultivalue) IteratorElementValue() SymbolicValue {
-	elements := make([]SymbolicValue, len(mv.values))
+func (mv *iterableMultivalue) IteratorElementValue() Value {
+	elements := make([]Value, len(mv.values))
 	for i, val := range mv.values {
 		elements[i] = val.(Iterable).IteratorElementValue()
 	}
@@ -313,7 +313,7 @@ func (mv *iterableMultivalue) IteratorElementValue() SymbolicValue {
 	return joinValues(elements)
 }
 
-func (mv *iterableMultivalue) as(itf reflect.Type) SymbolicValue {
+func (mv *iterableMultivalue) as(itf reflect.Type) Value {
 	return mv.Multivalue.as(itf)
 }
 
@@ -321,11 +321,11 @@ type watchableMultivalue struct {
 	*Multivalue
 }
 
-func (mv *watchableMultivalue) WatcherElement() SymbolicValue {
+func (mv *watchableMultivalue) WatcherElement() Value {
 	return ANY
 }
 
-func (mv *watchableMultivalue) as(itf reflect.Type) SymbolicValue {
+func (mv *watchableMultivalue) as(itf reflect.Type) Value {
 	return mv.Multivalue.as(itf)
 }
 
@@ -333,8 +333,8 @@ type ipropsMultivalue struct {
 	*Multivalue
 }
 
-func (mv *ipropsMultivalue) Prop(name string) SymbolicValue {
-	props := make([]SymbolicValue, len(mv.values))
+func (mv *ipropsMultivalue) Prop(name string) Value {
+	props := make([]Value, len(mv.values))
 	for i, val := range mv.values {
 		props[i] = val.(IProps).Prop(name)
 	}
@@ -342,11 +342,11 @@ func (mv *ipropsMultivalue) Prop(name string) SymbolicValue {
 	return joinValues(props)
 }
 
-func (mv *ipropsMultivalue) SetProp(name string, value SymbolicValue) (IProps, error) {
+func (mv *ipropsMultivalue) SetProp(name string, value Value) (IProps, error) {
 	return nil, errors.New(FmtCannotAssignPropertyOf(mv))
 }
 
-func (mv *ipropsMultivalue) WithExistingPropReplaced(name string, value SymbolicValue) (IProps, error) {
+func (mv *ipropsMultivalue) WithExistingPropReplaced(name string, value Value) (IProps, error) {
 	return nil, errors.New(FmtCannotAssignPropertyOf(mv))
 }
 
@@ -354,7 +354,7 @@ func (mv *ipropsMultivalue) PropertyNames() []string {
 	return nil
 }
 
-func (mv *ipropsMultivalue) as(itf reflect.Type) SymbolicValue {
+func (mv *ipropsMultivalue) as(itf reflect.Type) Value {
 	return mv.Multivalue.as(itf)
 }
 
@@ -363,11 +363,11 @@ type strLikeMultivalue struct {
 	SerializableMixin
 }
 
-func (c *strLikeMultivalue) IteratorElementKey() SymbolicValue {
+func (c *strLikeMultivalue) IteratorElementKey() Value {
 	return ANY_STR.IteratorElementKey()
 }
 
-func (c *strLikeMultivalue) IteratorElementValue() SymbolicValue {
+func (c *strLikeMultivalue) IteratorElementValue() Value {
 	return ANY_STR.IteratorElementKey()
 }
 
@@ -379,11 +379,11 @@ func (c *strLikeMultivalue) KnownLen() int {
 	return -1
 }
 
-func (c *strLikeMultivalue) element() SymbolicValue {
+func (c *strLikeMultivalue) element() Value {
 	return ANY_STR.element()
 }
 
-func (c *strLikeMultivalue) elementAt(i int) SymbolicValue {
+func (c *strLikeMultivalue) elementAt(i int) Value {
 	return ANY_STR.elementAt(i)
 }
 
@@ -395,7 +395,7 @@ func (c *strLikeMultivalue) GetOrBuildString() *String {
 	return ANY_STR
 }
 
-func (c *strLikeMultivalue) WidestOfType() SymbolicValue {
+func (c *strLikeMultivalue) WidestOfType() Value {
 	return joinValues(c.values)
 }
 
@@ -407,7 +407,7 @@ func (c *strLikeMultivalue) PropertyNames() []string {
 	return STRING_LIKE_PSEUDOPROPS
 }
 
-func (c *strLikeMultivalue) Prop(name string) SymbolicValue {
+func (c *strLikeMultivalue) Prop(name string) Value {
 	switch name {
 	case "replace":
 		return &GoFunction{
@@ -438,10 +438,10 @@ func (c *strLikeMultivalue) Prop(name string) SymbolicValue {
 	}
 }
 
-func (mv *strLikeMultivalue) WithExistingPropReplaced(name string, value SymbolicValue) (StringLike, error) {
+func (mv *strLikeMultivalue) WithExistingPropReplaced(name string, value Value) (StringLike, error) {
 	return nil, errors.New(FmtCannotAssignPropertyOf(mv))
 }
 
-func (mv *strLikeMultivalue) as(itf reflect.Type) SymbolicValue {
+func (mv *strLikeMultivalue) as(itf reflect.Type) Value {
 	return mv.Multivalue.as(itf)
 }

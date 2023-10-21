@@ -26,7 +26,7 @@ func NewValueHistory() *ValueHistory {
 	return &ValueHistory{}
 }
 
-func (h *ValueHistory) Test(v SymbolicValue, state RecTestCallState) bool {
+func (h *ValueHistory) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -38,7 +38,7 @@ func (h *ValueHistory) Test(v SymbolicValue, state RecTestCallState) bool {
 	}
 }
 
-func (h *ValueHistory) WidestOfType() SymbolicValue {
+func (h *ValueHistory) WidestOfType() Value {
 	return &ValueHistory{}
 }
 
@@ -64,7 +64,7 @@ func (h *ValueHistory) IsShared() bool {
 	return true
 }
 
-func (h *ValueHistory) Prop(name string) SymbolicValue {
+func (h *ValueHistory) Prop(name string) Value {
 	switch name {
 	case "last-value", "value-at-selection", "selected-date":
 		return ANY
@@ -76,7 +76,7 @@ func (h *ValueHistory) Prop(name string) SymbolicValue {
 	return method
 }
 
-func (h *ValueHistory) SetProp(name string, value SymbolicValue) (IProps, error) {
+func (h *ValueHistory) SetProp(name string, value Value) (IProps, error) {
 	switch name {
 	case "selected-date":
 		_, ok := value.(*Date)
@@ -88,7 +88,7 @@ func (h *ValueHistory) SetProp(name string, value SymbolicValue) (IProps, error)
 	return nil, errors.New("unassignable properties")
 }
 
-func (h *ValueHistory) WithExistingPropReplaced(name string, value SymbolicValue) (IProps, error) {
+func (h *ValueHistory) WithExistingPropReplaced(name string, value Value) (IProps, error) {
 	return h.SetProp(name, value)
 }
 
@@ -101,7 +101,7 @@ func (h *ValueHistory) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintCo
 	return
 }
 
-func (h *ValueHistory) ValueAt(ctx *Context, d *Date) SymbolicValue {
+func (h *ValueHistory) ValueAt(ctx *Context, d *Date) Value {
 	return ANY
 }
 

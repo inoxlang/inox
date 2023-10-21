@@ -6,11 +6,11 @@ import "reflect"
 // such as Indexable, Iterable, Serializable.
 // The primary implementation of asInterface is Multivalue.
 type asInterface interface {
-	SymbolicValue
-	as(itf reflect.Type) SymbolicValue
+	Value
+	as(itf reflect.Type) Value
 }
 
-func as(v SymbolicValue, itf reflect.Type) SymbolicValue {
+func as(v Value, itf reflect.Type) Value {
 	val, ok := v.(asInterface)
 	if !ok {
 		return v
@@ -19,38 +19,38 @@ func as(v SymbolicValue, itf reflect.Type) SymbolicValue {
 	return val.as(itf)
 }
 
-func AsSerializable(v SymbolicValue) SymbolicValue {
+func AsSerializable(v Value) Value {
 	return as(v, SERIALIZABLE_INTERFACE_TYPE)
 }
 
-func AsSerializableChecked(v SymbolicValue) Serializable {
+func AsSerializableChecked(v Value) Serializable {
 	return AsSerializable(v).(Serializable)
 }
 
-func AsIprops(v SymbolicValue) SymbolicValue {
+func AsIprops(v Value) Value {
 	return as(v, IPROPS_INTERFACE_TYPE)
 }
 
-func asIndexable(v SymbolicValue) SymbolicValue {
+func asIndexable(v Value) Value {
 	return as(v, INDEXABLE_INTERFACE_TYPE)
 }
 
-func asSequence(v SymbolicValue) SymbolicValue {
+func asSequence(v Value) Value {
 	return as(v, INDEXABLE_INTERFACE_TYPE)
 }
 
-func asIterable(v SymbolicValue) SymbolicValue {
+func asIterable(v Value) Value {
 	return as(v, ITERABLE_INTERFACE_TYPE)
 }
 
-func asStreamable(v SymbolicValue) SymbolicValue {
+func asStreamable(v Value) Value {
 	return as(v, STREAMABLE_INTERFACE_TYPE)
 }
 
-func asWatchable(v SymbolicValue) SymbolicValue {
+func asWatchable(v Value) Value {
 	return as(v, WATCHABLE_INTERFACE_TYPE)
 }
 
-func AsStringLike(v SymbolicValue) SymbolicValue {
+func AsStringLike(v Value) Value {
 	return as(v, STRLIKE_INTERFACE_TYPE)
 }

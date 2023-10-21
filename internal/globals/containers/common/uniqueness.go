@@ -61,7 +61,7 @@ func UniquenessConstraintFromValue(val core.Value) (UniquenessConstraint, bool) 
 	return uniqueness, true
 }
 
-func UniquenessConstraintFromSymbolicValue(val symbolic.SymbolicValue, elementPattern symbolic.Pattern) (UniquenessConstraint, error) {
+func UniquenessConstraintFromSymbolicValue(val symbolic.Value, elementPattern symbolic.Pattern) (UniquenessConstraint, error) {
 	elem := elementPattern.SymbolicValue()
 	switch val := val.(type) {
 	case *symbolic.PropertyName:
@@ -114,7 +114,7 @@ func (c UniquenessConstraint) ToValue() core.Serializable {
 	}
 }
 
-func (c UniquenessConstraint) ToSymbolicValue() symbolic.SymbolicValue {
+func (c UniquenessConstraint) ToSymbolicValue() symbolic.Value {
 	switch c.Type {
 	case UniqueRepr:
 		return REPR_UNIQUENESS_SYMB_IDENT

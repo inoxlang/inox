@@ -16,8 +16,8 @@ var (
 
 // SymbolicData represents the data produced by the symbolic execution of an AST.
 type SymbolicData struct {
-	mostSpecificNodeValues      map[parse.Node]SymbolicValue
-	lessSpecificNodeValues      map[parse.Node]SymbolicValue
+	mostSpecificNodeValues      map[parse.Node]Value
+	lessSpecificNodeValues      map[parse.Node]Value
 	localScopeData              map[parse.Node]ScopeData
 	globalScopeData             map[parse.Node]ScopeData
 	contextData                 map[parse.Node]ContextData
@@ -36,8 +36,8 @@ type SymbolicData struct {
 
 func NewSymbolicData() *SymbolicData {
 	return &SymbolicData{
-		mostSpecificNodeValues:      make(map[parse.Node]SymbolicValue, 0),
-		lessSpecificNodeValues:      make(map[parse.Node]SymbolicValue, 0),
+		mostSpecificNodeValues:      make(map[parse.Node]Value, 0),
+		lessSpecificNodeValues:      make(map[parse.Node]Value, 0),
 		localScopeData:              make(map[parse.Node]ScopeData),
 		globalScopeData:             make(map[parse.Node]ScopeData),
 		allowedNonPresentProperties: make(map[parse.Node][]string, 0),
@@ -75,7 +75,7 @@ func (data *SymbolicData) AddWarning(warning SymbolicEvaluationWarning) {
 	data.warnings = append(data.warnings, warning)
 }
 
-func (data *SymbolicData) SetMostSpecificNodeValue(node parse.Node, v SymbolicValue) {
+func (data *SymbolicData) SetMostSpecificNodeValue(node parse.Node, v Value) {
 	if data == nil {
 		return
 	}
@@ -90,12 +90,12 @@ func (data *SymbolicData) SetMostSpecificNodeValue(node parse.Node, v SymbolicVa
 	data.mostSpecificNodeValues[node] = v
 }
 
-func (data *SymbolicData) GetMostSpecificNodeValue(node parse.Node) (SymbolicValue, bool) {
+func (data *SymbolicData) GetMostSpecificNodeValue(node parse.Node) (Value, bool) {
 	v, ok := data.mostSpecificNodeValues[node]
 	return v, ok
 }
 
-func (data *SymbolicData) SetLessSpecificNodeValue(node parse.Node, v SymbolicValue) {
+func (data *SymbolicData) SetLessSpecificNodeValue(node parse.Node, v Value) {
 	if data == nil {
 		return
 	}
@@ -110,12 +110,12 @@ func (data *SymbolicData) SetLessSpecificNodeValue(node parse.Node, v SymbolicVa
 	data.lessSpecificNodeValues[node] = v
 }
 
-func (data *SymbolicData) GetLessSpecificNodeValue(node parse.Node) (SymbolicValue, bool) {
+func (data *SymbolicData) GetLessSpecificNodeValue(node parse.Node) (Value, bool) {
 	v, ok := data.lessSpecificNodeValues[node]
 	return v, ok
 }
 
-func (data *SymbolicData) PushNodeValue(node parse.Node, v SymbolicValue) {
+func (data *SymbolicData) PushNodeValue(node parse.Node, v Value) {
 	if data == nil {
 		return
 	}
@@ -227,7 +227,7 @@ func (data *SymbolicData) AddData(newData *SymbolicData) {
 	data.warnings = append(data.warnings, newData.warnings...)
 }
 
-func (d *SymbolicData) Test(v SymbolicValue, state RecTestCallState) bool {
+func (d *SymbolicData) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -240,7 +240,7 @@ func (d *SymbolicData) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintCo
 	utils.Must(w.Write(utils.StringAsBytes("%symbolic-data")))
 }
 
-func (m *SymbolicData) WidestOfType() SymbolicValue {
+func (m *SymbolicData) WidestOfType() Value {
 	return &SymbolicData{}
 }
 
@@ -248,7 +248,7 @@ func (d *SymbolicData) GetGoMethod(name string) (*GoFunction, bool) {
 	return nil, false
 }
 
-func (d *SymbolicData) Prop(name string) SymbolicValue {
+func (d *SymbolicData) Prop(name string) Value {
 	switch name {
 	case "errors":
 		return NewTupleOf(NewError(SOURCE_POSITION_RECORD))
@@ -256,11 +256,11 @@ func (d *SymbolicData) Prop(name string) SymbolicValue {
 	return GetGoMethodOrPanic(name, d)
 }
 
-func (d *SymbolicData) SetProp(name string, value SymbolicValue) (IProps, error) {
+func (d *SymbolicData) SetProp(name string, value Value) (IProps, error) {
 	return nil, errors.New(FmtCannotAssignPropertyOf(d))
 }
 
-func (d *SymbolicData) WithExistingPropReplaced(name string, value SymbolicValue) (IProps, error) {
+func (d *SymbolicData) WithExistingPropReplaced(name string, value Value) (IProps, error) {
 	return nil, errors.New(FmtCannotAssignPropertyOf(d))
 }
 
@@ -268,7 +268,7 @@ func (*SymbolicData) PropertyNames() []string {
 	return STATIC_CHECK_DATA_PROP_NAMES
 }
 
-func (d *SymbolicData) Compute(ctx *Context, key SymbolicValue) SymbolicValue {
+func (d *SymbolicData) Compute(ctx *Context, key Value) Value {
 	return ANY
 }
 
@@ -526,7 +526,7 @@ type ScopeData struct {
 
 type VarData struct {
 	Name               string
-	Value              SymbolicValue
+	Value              Value
 	DefinitionPosition parse.SourcePositionRange
 }
 

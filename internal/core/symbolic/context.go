@@ -21,7 +21,7 @@ type Context struct {
 	noCheckFuel             int
 	startingConcreteContext ConcreteContext
 
-	hostAliases                         map[string]SymbolicValue
+	hostAliases                         map[string]Value
 	namedPatterns                       map[string]Pattern
 	namedPatternPositionDefinitions     map[string]parse.SourcePositionRange
 	patternNamespaces                   map[string]*PatternNamespace
@@ -40,7 +40,7 @@ func NewSymbolicContext(startingConcreteContext, concreteContext ConcreteContext
 		parent:      parentContext,
 		noCheckFuel: INITIAL_NO_CHECK_FUEL,
 
-		hostAliases:                         make(map[string]SymbolicValue, 0),
+		hostAliases:                         make(map[string]Value, 0),
 		namedPatterns:                       make(map[string]Pattern, 0),
 		namedPatternPositionDefinitions:     make(map[string]parse.SourcePositionRange, 0),
 		patternNamespaces:                   make(map[string]*PatternNamespace, 0),
@@ -146,7 +146,7 @@ func (ctx *Context) AddTypeExtension(extension *TypeExtension) {
 	ctx.typeExtensions = append(ctx.typeExtensions, extension)
 }
 
-func (ctx *Context) GetExtensions(v SymbolicValue) (extensions []*TypeExtension) {
+func (ctx *Context) GetExtensions(v Value) (extensions []*TypeExtension) {
 	for _, extension := range ctx.typeExtensions {
 		if extension.ExtendedPattern.TestValue(v, RecTestCallState{}) {
 			extensions = append(extensions, extension)
@@ -176,11 +176,11 @@ func (ctx *Context) AddFormattedSymbolicGoFunctionError(format string, args ...a
 	ctx.associatedState.addSymbolicGoFunctionError(fmt.Sprintf(format, args...))
 }
 
-func (ctx *Context) SetSymbolicGoFunctionParameters(parameters *[]SymbolicValue, names []string) {
+func (ctx *Context) SetSymbolicGoFunctionParameters(parameters *[]Value, names []string) {
 	ctx.associatedState.setSymbolicGoFunctionParameters(parameters, names)
 }
 
-func (ctx *Context) SetUpdatedSelf(v SymbolicValue) {
+func (ctx *Context) SetUpdatedSelf(v Value) {
 	ctx.associatedState.setUpdatedSelf(v)
 }
 

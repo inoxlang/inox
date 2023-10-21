@@ -17,7 +17,7 @@ var (
 )
 
 func init() {
-	RegisterSymbolicGoFunction(SendVal, func(ctx *symbolic.Context, v symbolic.SymbolicValue, r symbolic.MessageReceiver, s symbolic.SymbolicValue) *symbolic.Error {
+	RegisterSymbolicGoFunction(SendVal, func(ctx *symbolic.Context, v symbolic.Value, r symbolic.MessageReceiver, s symbolic.Value) *symbolic.Error {
 		return nil
 	})
 }

@@ -19,7 +19,7 @@ var (
 		MOD_ARGS_VARNAME:                        "mod-args",
 		MANIFEST_POSITIONAL_PARAM_NAME_FIELD:    "name",
 		MANIFEST_POSITIONAL_PARAM_PATTERN_FIELD: "pattern",
-		SymbolicToPattern: func(v SymbolicValue) (any, bool) {
+		SymbolicToPattern: func(v Value) (any, bool) {
 			//not a real pattern but it's okay
 			return struct{}{}, true
 		},
@@ -48,8 +48,8 @@ var (
 )
 
 type ExternalData struct {
-	ToSymbolicValue                        func(v any, wide bool) (SymbolicValue, error)
-	SymbolicToPattern                      func(v SymbolicValue) (any, bool)
+	ToSymbolicValue                        func(v any, wide bool) (Value, error)
+	SymbolicToPattern                      func(v Value) (any, bool)
 	GetQuantity                            func(values []float64, units []string) (any, error)
 	GetRate                                func(values []float64, units []string, divUnit string) (any, error)
 	ConvertKeyReprToValue                  func(string) any

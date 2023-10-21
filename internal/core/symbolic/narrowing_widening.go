@@ -18,7 +18,7 @@ type IToStatic interface {
 	Static() Pattern
 }
 
-func getStatic(value SymbolicValue) Pattern {
+func getStatic(value Value) Pattern {
 	itf, ok := value.(IToStatic)
 	if ok {
 		return itf.Static()
@@ -27,7 +27,7 @@ func getStatic(value SymbolicValue) Pattern {
 }
 
 // join values joins a list of values into a single value by searching for equality/inclusion, the passed list is never modified.
-func joinValues(values []SymbolicValue) SymbolicValue {
+func joinValues(values []Value) Value {
 
 	// if one of the value is any we just return any
 	for _, val := range values {
@@ -42,7 +42,7 @@ func joinValues(values []SymbolicValue) SymbolicValue {
 	case 1:
 		return values[0]
 	default:
-		copy_ := make([]SymbolicValue, len(values))
+		copy_ := make([]Value, len(values))
 		copy(copy_, values)
 		values = copy_
 
@@ -51,7 +51,7 @@ func joinValues(values []SymbolicValue) SymbolicValue {
 		for {
 			for i, val := range values {
 				if multiVal, ok := val.(*Multivalue); ok {
-					updated := make([]SymbolicValue, len(values)+len(multiVal.values)-1)
+					updated := make([]Value, len(values)+len(multiVal.values)-1)
 					copy(updated[:i], values[:i])
 					copy(updated[i:i+len(multiVal.values)], multiVal.values)
 					copy(updated[i+len(multiVal.values):], values[i+1:])
@@ -89,7 +89,7 @@ func joinValues(values []SymbolicValue) SymbolicValue {
 				break
 			}
 
-			var newValues = make([]SymbolicValue, 0, len(values)-len(removed))
+			var newValues = make([]Value, 0, len(values)-len(removed))
 
 			for i, val := range values {
 				if utils.SliceContains(removed, i) {
@@ -108,7 +108,7 @@ func joinValues(values []SymbolicValue) SymbolicValue {
 	}
 }
 
-func widenToSameStaticTypeInMultivalue(v SymbolicValue) SymbolicValue {
+func widenToSameStaticTypeInMultivalue(v Value) Value {
 	val, ok := v.(IMultivalue)
 	if !ok {
 		return v
@@ -122,7 +122,7 @@ func widenToSameStaticTypeInMultivalue(v SymbolicValue) SymbolicValue {
 
 	var removedIndexes []int
 	var processedIndexes []int
-	replacements := make([]SymbolicValue, len(multiValue.values))
+	replacements := make([]Value, len(multiValue.values))
 
 	for patternIndex, pattern := range static {
 		for otherPatternIndex, otherPattern := range static {
@@ -140,7 +140,7 @@ func widenToSameStaticTypeInMultivalue(v SymbolicValue) SymbolicValue {
 		processedIndexes = append(processedIndexes, patternIndex)
 	}
 
-	var remainingValues []SymbolicValue
+	var remainingValues []Value
 
 	for i, e := range multiValue.values {
 		if slices.Contains(removedIndexes, i) {
@@ -158,10 +158,10 @@ func widenToSameStaticTypeInMultivalue(v SymbolicValue) SymbolicValue {
 }
 
 // narrowOut narrows out narrowedOut of toNarrow
-func narrowOut(narrowedOut SymbolicValue, toNarrow SymbolicValue) SymbolicValue {
+func narrowOut(narrowedOut Value, toNarrow Value) Value {
 	switch n := toNarrow.(type) {
 	case *Multivalue:
-		var remainingValues []SymbolicValue
+		var remainingValues []Value
 
 		for _, val := range n.values {
 			if narrowedOut.Test(val, RecTestCallState{}) {
@@ -245,7 +245,7 @@ func narrow(positive bool, n parse.Node, state *State, targetState *State) {
 	}
 }
 
-func findInMultivalue[T SymbolicValue](v SymbolicValue) (result T, found bool) {
+func findInMultivalue[T Value](v Value) (result T, found bool) {
 	if t, ok := v.(T); ok {
 		return t, true
 	}
@@ -265,14 +265,14 @@ func findInMultivalue[T SymbolicValue](v SymbolicValue) (result T, found bool) {
 	return
 }
 
-func ImplementsOrIsMultivalueWithAllValuesImplementing[T SymbolicValue](v SymbolicValue) bool {
+func ImplementsOrIsMultivalueWithAllValuesImplementing[T Value](v Value) bool {
 	_, ok := v.(T)
 	if ok {
 		return true
 	}
 
 	if mv, ok := v.(IMultivalue); ok {
-		return mv.OriginalMultivalue().AllValues(func(v SymbolicValue) bool {
+		return mv.OriginalMultivalue().AllValues(func(v Value) bool {
 			return ImplementsOrIsMultivalueWithAllValuesImplementing[T](v)
 		})
 	}

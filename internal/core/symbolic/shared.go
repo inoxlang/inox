@@ -17,7 +17,7 @@ var (
 )
 
 type PotentiallySharable interface {
-	SymbolicValue
+	Value
 	IsSharable() (bool, string)
 	// Share should be equivalent to concrete PotentiallySharable.Share, the only difference is that
 	// it should NOT modify the value and should instead return a copy of the value but shared.
@@ -25,7 +25,7 @@ type PotentiallySharable interface {
 	IsShared() bool
 }
 
-func ShareOrClone(v SymbolicValue, originState *State) (SymbolicValue, error) {
+func ShareOrClone(v Value, originState *State) (Value, error) {
 	if !v.IsMutable() {
 		return v, nil
 	}
@@ -42,7 +42,7 @@ func Share[T PotentiallySharable](v T, originState *State) T {
 	return v.Share(originState).(T)
 }
 
-func IsSharable(v SymbolicValue) (bool, string) {
+func IsSharable(v Value) (bool, string) {
 	if !v.IsMutable() {
 		return true, ""
 	}
@@ -52,7 +52,7 @@ func IsSharable(v SymbolicValue) (bool, string) {
 	return false, ""
 }
 
-func IsSharableOrClonable(v SymbolicValue) (bool, string) {
+func IsSharableOrClonable(v Value) (bool, string) {
 	if !v.IsMutable() {
 		return true, ""
 	}
@@ -63,7 +63,7 @@ func IsSharableOrClonable(v SymbolicValue) (bool, string) {
 	return ok, ""
 }
 
-func IsShared(v SymbolicValue) bool {
+func IsShared(v Value) bool {
 	if s, ok := v.(PotentiallySharable); ok && s.IsShared() {
 		return true
 	}
@@ -77,7 +77,7 @@ func checkNotClonedObjectPropMutation(path parse.Node, state *State, propAssignm
 }
 
 func _checkNotClonedObjectPropDeepMutation(path parse.Node, state *State, first bool, propAssignment bool, elementNameHelp string) {
-	isSharedObject := func(v SymbolicValue) bool {
+	isSharedObject := func(v Value) bool {
 		obj, ok := v.(*Object)
 		return ok && obj.IsShared()
 	}
@@ -86,7 +86,7 @@ func _checkNotClonedObjectPropDeepMutation(path parse.Node, state *State, first 
 		elementNameHelp = "<prop name>"
 	}
 
-	getNodeValue := func(n parse.Node) SymbolicValue {
+	getNodeValue := func(n parse.Node) Value {
 		val, ok := state.symbolicData.GetMostSpecificNodeValue(n)
 		if ok {
 			return val

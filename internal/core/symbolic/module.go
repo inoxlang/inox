@@ -48,7 +48,7 @@ func (mod *Module) GetLineColumn(node parse.Node) (int32, int32) {
 	return mod.mainChunk.GetLineColumn(node)
 }
 
-func (m *Module) Test(v SymbolicValue, state RecTestCallState) bool {
+func (m *Module) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -68,7 +68,7 @@ func (m *Module) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, 
 	utils.Must(w.Write(utils.StringAsBytes("%module")))
 }
 
-func (m *Module) WidestOfType() SymbolicValue {
+func (m *Module) WidestOfType() Value {
 	return ANY_MODULE
 }
 
@@ -76,7 +76,7 @@ func (m *Module) GetGoMethod(name string) (*GoFunction, bool) {
 	return nil, false
 }
 
-func (m *Module) Prop(name string) SymbolicValue {
+func (m *Module) Prop(name string) Value {
 	switch name {
 	case "parsing_errors":
 		return NewTupleOf(NewError(SOURCE_POSITION_RECORD))
@@ -86,11 +86,11 @@ func (m *Module) Prop(name string) SymbolicValue {
 	return GetGoMethodOrPanic(name, m)
 }
 
-func (m *Module) SetProp(name string, value SymbolicValue) (IProps, error) {
+func (m *Module) SetProp(name string, value Value) (IProps, error) {
 	return nil, errors.New(FmtCannotAssignPropertyOf(m))
 }
 
-func (m *Module) WithExistingPropReplaced(name string, value SymbolicValue) (IProps, error) {
+func (m *Module) WithExistingPropReplaced(name string, value Value) (IProps, error) {
 	return nil, errors.New(FmtCannotAssignPropertyOf(m))
 }
 
@@ -172,7 +172,7 @@ func getModuleParameters(manifestObject *Object, manifestObjectLiteral *parse.Ob
 			case *Object:
 				paramDesc := val
 
-				paramDesc.ForEachEntry(func(k string, v SymbolicValue) error {
+				paramDesc.ForEachEntry(func(k string, v Value) error {
 					switch k {
 					case extData.MANIFEST_POSITIONAL_PARAM_PATTERN_FIELD:
 						moduleParams = append(moduleParams, moduleParameter{

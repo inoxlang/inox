@@ -150,11 +150,11 @@ func (patt *ExactValuePattern) StringPattern() (StringPattern, bool) {
 type TypePattern struct {
 	Type          reflect.Type
 	Name          string
-	SymbolicValue symbolic.SymbolicValue
+	SymbolicValue symbolic.Value
 	RandomImpl    func(options ...Option) Value
 
 	CallImpl         func(pattern *TypePattern, values []Serializable) (Pattern, error)
-	SymbolicCallImpl func(ctx *symbolic.Context, values []symbolic.SymbolicValue) (symbolic.Pattern, error)
+	SymbolicCallImpl func(ctx *symbolic.Context, values []symbolic.Value) (symbolic.Pattern, error)
 
 	stringPattern         func() (StringPattern, bool)
 	symbolicStringPattern func() (symbolic.StringPattern, bool)

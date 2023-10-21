@@ -22,7 +22,7 @@ type Shell struct {
 	_ int
 }
 
-func (r *Shell) Test(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+func (r *Shell) Test(v symbolic.Value, state symbolic.RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -34,7 +34,7 @@ func (r *Shell) Test(v symbolic.SymbolicValue, state symbolic.RecTestCallState) 
 	}
 }
 
-func (r *Shell) WidestOfType() symbolic.SymbolicValue {
+func (r *Shell) WidestOfType() symbolic.Value {
 	return &Shell{}
 }
 
@@ -48,7 +48,7 @@ func (r *Shell) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 	return nil, false
 }
 
-func (r *Shell) Prop(name string) symbolic.SymbolicValue {
+func (r *Shell) Prop(name string) symbolic.Value {
 	method, ok := r.GetGoMethod(name)
 	if !ok {
 		panic(symbolic.FormatErrPropertyDoesNotExist(name, r))

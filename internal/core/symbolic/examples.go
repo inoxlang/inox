@@ -38,21 +38,21 @@ var (
 )
 
 type MatchingValueExampleProvider interface {
-	SymbolicValue
+	Value
 
 	Examples(cctx ExampleComputationContext) []MatchingValueExample
 }
 
 type ExampleComputationContext struct {
-	NonMatchingValue SymbolicValue
+	NonMatchingValue Value
 }
 
 type MatchingValueExample struct {
-	Value             SymbolicValue
+	Value             Value
 	AdditionalMessage string
 }
 
-func GetExamples(v SymbolicValue, cctx ExampleComputationContext) []MatchingValueExample {
+func GetExamples(v Value, cctx ExampleComputationContext) []MatchingValueExample {
 	if IsConcretizable(v) {
 		return []MatchingValueExample{{Value: v}}
 	}

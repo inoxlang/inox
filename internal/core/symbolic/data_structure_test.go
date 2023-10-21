@@ -218,7 +218,7 @@ func TestSymbolicObject(t *testing.T) {
 	})
 
 	t.Run("SpecificIntersection", func(t *testing.T) {
-		must := utils.Must[SymbolicValue]
+		must := utils.Must[Value]
 		t.Run("inexact", func(t *testing.T) {
 			emptyInexact := NewInexactObject(map[string]Serializable{}, nil, nil)
 			assert.Same(t, emptyInexact, must(emptyInexact.SpecificIntersection(emptyInexact, 0)))

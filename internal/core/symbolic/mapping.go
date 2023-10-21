@@ -20,7 +20,7 @@ func NewMapping() *Mapping {
 	return &Mapping{}
 }
 
-func (m *Mapping) Test(v SymbolicValue, state RecTestCallState) bool {
+func (m *Mapping) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -34,15 +34,15 @@ func (m *Mapping) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig,
 	return
 }
 
-func (m *Mapping) WidestOfType() SymbolicValue {
+func (m *Mapping) WidestOfType() Value {
 	return &Mapping{}
 }
 
-func (m *Mapping) IteratorElementKey() SymbolicValue {
+func (m *Mapping) IteratorElementKey() Value {
 	return ANY
 }
 
-func (m *Mapping) IteratorElementValue() SymbolicValue {
+func (m *Mapping) IteratorElementValue() Value {
 	return ANY
 }
 
@@ -72,15 +72,15 @@ func (m *Mapping) GetGoMethod(name string) (*GoFunction, bool) {
 	return nil, false
 }
 
-func (m *Mapping) Prop(name string) SymbolicValue {
+func (m *Mapping) Prop(name string) Value {
 	return GetGoMethodOrPanic(name, m)
 }
 
-func (m *Mapping) SetProp(name string, value SymbolicValue) (IProps, error) {
+func (m *Mapping) SetProp(name string, value Value) (IProps, error) {
 	return nil, errors.New(FmtCannotAssignPropertyOf(m))
 }
 
-func (m *Mapping) WithExistingPropReplaced(name string, value SymbolicValue) (IProps, error) {
+func (m *Mapping) WithExistingPropReplaced(name string, value Value) (IProps, error) {
 	return nil, errors.New(FmtCannotAssignPropertyOf(m))
 }
 
@@ -88,6 +88,6 @@ func (*Mapping) PropertyNames() []string {
 	return []string{"compute"}
 }
 
-func (m *Mapping) Compute(ctx *Context, key SymbolicValue) SymbolicValue {
+func (m *Mapping) Compute(ctx *Context, key Value) Value {
 	return ANY
 }

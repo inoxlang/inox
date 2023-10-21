@@ -20,7 +20,7 @@ type HttpClient struct {
 	_ int
 }
 
-func (c *HttpClient) Test(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+func (c *HttpClient) Test(v symbolic.Value, state symbolic.RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -36,7 +36,7 @@ func (c *HttpClient) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 	return nil, false
 }
 
-func (c *HttpClient) Prop(name string) symbolic.SymbolicValue {
+func (c *HttpClient) Prop(name string) symbolic.Value {
 	return symbolic.GetGoMethodOrPanic(name, c)
 }
 
@@ -53,7 +53,7 @@ func (c *HttpClient) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConf
 	return
 }
 
-func (c *HttpClient) WidestOfType() symbolic.SymbolicValue {
+func (c *HttpClient) WidestOfType() symbolic.Value {
 	return &HttpClient{}
 }
 

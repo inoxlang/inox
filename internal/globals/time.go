@@ -13,7 +13,7 @@ func init() {
 	core.RegisterSymbolicGoFunction(_ago, func(ctx *symbolic.Context, d *symbolic.Duration) *symbolic.Date {
 		return &symbolic.Date{}
 	})
-	core.RegisterSymbolicGoFunction(_now, func(ctx *symbolic.Context, args ...symbolic.SymbolicValue) *symbolic.Date {
+	core.RegisterSymbolicGoFunction(_now, func(ctx *symbolic.Context, args ...symbolic.Value) *symbolic.Date {
 		return &symbolic.Date{}
 	})
 	core.RegisterSymbolicGoFunction(core.Sleep, func(ctx *symbolic.Context, d *symbolic.Duration) {})

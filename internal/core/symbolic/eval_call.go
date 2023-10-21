@@ -9,11 +9,11 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, state *State, argNodes []parse.Node, must bool, cmdLineSyntax bool) (SymbolicValue, error) {
+func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, state *State, argNodes []parse.Node, must bool, cmdLineSyntax bool) (Value, error) {
 	var (
-		callee          SymbolicValue
+		callee          Value
 		err             error
-		self            SymbolicValue
+		self            Value
 		selfPartialNode parse.Node //not necessarily a node from the evaluated code
 	)
 
@@ -59,7 +59,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 
 	var extState *State
 	isSharedFunction := false
-	var nonGoParameters []SymbolicValue
+	var nonGoParameters []Value
 	var argMismatches []bool
 
 	if inoxFn, ok := callee.(*InoxFunction); ok {
@@ -82,7 +82,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 
 	//evaluation of arguments
 
-	args := make([]SymbolicValue, 0)
+	args := make([]Value, 0)
 	nonSpreadArgCount := 0
 	hasSpreadArg := false
 	var spreadArgNode parse.Node
@@ -100,7 +100,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 			iterable, ok := v.(Iterable)
 
 			if ok {
-				var elements []SymbolicValue
+				var elements []Value
 
 				indexable, ok := v.(Indexable)
 				if ok && indexable.HasKnownLen() {
@@ -184,7 +184,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 	//execution
 
 	var fn *parse.FunctionExpression
-	var capturedLocals map[string]SymbolicValue
+	var capturedLocals map[string]Value
 
 	switch f := callee.(type) {
 	case *InoxFunction:
@@ -252,12 +252,12 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 			params = f.ParametersExceptCtx()
 		}
 
-		var results []SymbolicValue
+		var results []Value
 
 		if list, ok := result.(*List); ok && multipleResults {
 			results = SerializablesToValues(list.elements)
 		} else {
-			results = []SymbolicValue{result}
+			results = []Value{result}
 		}
 
 		firstOptionalParamIndex := -1
@@ -383,7 +383,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 			//if they are not enough arguments we use the parameter types to set their value
 
 			for i := len(args); i < nonVariadicParamCount; i++ {
-				var paramType SymbolicValue
+				var paramType Value
 
 				paramTypeNode := parameterNodes[i].Type
 				if paramTypeNode == nil {
@@ -413,7 +413,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 		} else {
 			//if they are not enough arguments we use the parameter types to set their value
 			for i := len(args); i < len(parameterNodes); i++ {
-				var paramType SymbolicValue
+				var paramType Value
 
 				paramTypeNode := parameterNodes[i].Type
 				if paramTypeNode == nil {
@@ -433,7 +433,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 
 	//check arguments
 
-	var params []SymbolicValue
+	var params []Value
 
 	for i, arg := range args {
 		var paramTypeNode parse.Node
@@ -553,7 +553,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 
 		defer state.popCallee()
 
-		var ret SymbolicValue
+		var ret Value
 
 		if isBodyExpression {
 			ret, err = symbolicEval(fn.Body, state)
@@ -616,7 +616,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 
 }
 
-func setAllowedNonPresentProperties(argNodes []parse.Node, nonSpreadArgCount int, params []SymbolicValue, state *State) {
+func setAllowedNonPresentProperties(argNodes []parse.Node, nonSpreadArgCount int, params []Value, state *State) {
 	//ignore spread arg
 	argNodes = argNodes[:min(len(argNodes), nonSpreadArgCount)]
 	//ignore additional arguments

@@ -27,7 +27,7 @@ func init() {
 		S3GetBucketPolicy, func(ctx *symbolic.Context, u *symbolic.URL) (*s3_symbolic.GetBucketPolicyResponse, *symbolic.Error) {
 			return &s3_symbolic.GetBucketPolicyResponse{}, nil
 		},
-		S3SetBucketPolicy, func(ctx *symbolic.Context, u *symbolic.URL, policy symbolic.SymbolicValue) *symbolic.Error {
+		S3SetBucketPolicy, func(ctx *symbolic.Context, u *symbolic.URL, policy symbolic.Value) *symbolic.Error {
 			return nil
 		},
 		S3RemoveBucketPolicy, func(ctx *symbolic.Context, u *symbolic.URL) *symbolic.Error {

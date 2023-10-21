@@ -45,44 +45,44 @@ func init() {
 
 	// register symbolic version of Go functions
 	core.RegisterSymbolicGoFunctions([]any{
-		httpExists, func(ctx *symbolic.Context, arg symbolic.SymbolicValue) *symbolic.Bool {
+		httpExists, func(ctx *symbolic.Context, arg symbolic.Value) *symbolic.Bool {
 			if !ctx.HasAPermissionWithKindAndType(permkind.Read, permkind.HTTP_PERM_TYPENAME) {
 				ctx.AddSymbolicGoFunctionWarning(HTTP_READ_PERM_MIGHT_BE_MISSING)
 			}
 			return symbolic.ANY_BOOL
 		},
-		HttpGet, func(ctx *symbolic.Context, u *symbolic.URL, args ...symbolic.SymbolicValue) (*http_symbolic.HttpResponse, *symbolic.Error) {
+		HttpGet, func(ctx *symbolic.Context, u *symbolic.URL, args ...symbolic.Value) (*http_symbolic.HttpResponse, *symbolic.Error) {
 			if !ctx.HasAPermissionWithKindAndType(permkind.Read, permkind.HTTP_PERM_TYPENAME) {
 				ctx.AddSymbolicGoFunctionWarning(HTTP_READ_PERM_MIGHT_BE_MISSING)
 			}
 			return http_symbolic.ANY_RESP, nil
 		},
-		HttpRead, func(ctx *symbolic.Context, u *symbolic.URL, args ...symbolic.SymbolicValue) (symbolic.SymbolicValue, *symbolic.Error) {
+		HttpRead, func(ctx *symbolic.Context, u *symbolic.URL, args ...symbolic.Value) (symbolic.Value, *symbolic.Error) {
 			if !ctx.HasAPermissionWithKindAndType(permkind.Read, permkind.HTTP_PERM_TYPENAME) {
 				ctx.AddSymbolicGoFunctionWarning(HTTP_READ_PERM_MIGHT_BE_MISSING)
 			}
 			return symbolic.ANY, nil
 		},
-		HttpPost, func(ctx *symbolic.Context, args ...symbolic.SymbolicValue) (*http_symbolic.HttpResponse, *symbolic.Error) {
+		HttpPost, func(ctx *symbolic.Context, args ...symbolic.Value) (*http_symbolic.HttpResponse, *symbolic.Error) {
 			if !ctx.HasAPermissionWithKindAndType(permkind.Write, permkind.HTTP_PERM_TYPENAME) {
 				ctx.AddSymbolicGoFunctionWarning(HTTP_WRITE_PERM_MIGHT_BE_MISSING)
 			}
 			return http_symbolic.ANY_RESP, nil
 		},
-		HttpPatch, func(ctx *symbolic.Context, args ...symbolic.SymbolicValue) (*http_symbolic.HttpResponse, *symbolic.Error) {
+		HttpPatch, func(ctx *symbolic.Context, args ...symbolic.Value) (*http_symbolic.HttpResponse, *symbolic.Error) {
 			if !ctx.HasAPermissionWithKindAndType(permkind.Write, permkind.HTTP_PERM_TYPENAME) {
 				ctx.AddSymbolicGoFunctionWarning(HTTP_WRITE_PERM_MIGHT_BE_MISSING)
 			}
 			return http_symbolic.ANY_RESP, nil
 		},
-		HttpDelete, func(ctx *symbolic.Context, args ...symbolic.SymbolicValue) (*http_symbolic.HttpResponse, *symbolic.Error) {
+		HttpDelete, func(ctx *symbolic.Context, args ...symbolic.Value) (*http_symbolic.HttpResponse, *symbolic.Error) {
 			if !ctx.HasAPermissionWithKindAndType(permkind.Delete, permkind.HTTP_PERM_TYPENAME) {
 				ctx.AddSymbolicGoFunctionWarning(HTTP_DELETE_PERM_MIGHT_BE_MISSING)
 			}
 			return http_symbolic.ANY_RESP, nil
 		},
 		NewHttpServer, newSymbolicHttpServer,
-		NewFileServer, func(ctx *symbolic.Context, args ...symbolic.SymbolicValue) (*http_symbolic.HttpServer, *symbolic.Error) {
+		NewFileServer, func(ctx *symbolic.Context, args ...symbolic.Value) (*http_symbolic.HttpServer, *symbolic.Error) {
 			if !ctx.HasAPermissionWithKindAndType(permkind.Provide, permkind.HTTP_PERM_TYPENAME) {
 				ctx.AddSymbolicGoFunctionWarning(HTTP_PROVIDE_PERM_MIGHT_BE_MISSING)
 			}
@@ -94,7 +94,7 @@ func init() {
 		Mime_, func(ctx *symbolic.Context, arg *symbolic.String) (*symbolic.Mimetype, *symbolic.Error) {
 			return &symbolic.Mimetype{}, nil
 		},
-		core.UrlOf, func(ctx *symbolic.Context, v symbolic.SymbolicValue) symbolic.SymbolicValue {
+		core.UrlOf, func(ctx *symbolic.Context, v symbolic.Value) symbolic.Value {
 			return symbolic.ANY
 		},
 		NewClient, func(ctx *symbolic.Context, config *symbolic.Object) *http_symbolic.HttpClient {
@@ -107,7 +107,7 @@ func init() {
 			return symbolic.ANY_STR_LIKE, nil
 		},
 		NewCSP, func(ctx *symbolic.Context, desc *symbolic.Object) (*http_symbolic.ContentSecurityPolicy, *symbolic.Error) {
-			ctx.SetSymbolicGoFunctionParameters(&[]symbolic.SymbolicValue{
+			ctx.SetSymbolicGoFunctionParameters(&[]symbolic.Value{
 				symbolic.NewInexactObject(map[string]symbolic.Serializable{
 					"default-src":     stringOrStringList,
 					"frame-ancestors": stringOrStringList,

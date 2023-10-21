@@ -14,7 +14,7 @@ type File struct {
 	_ int
 }
 
-func (r *File) Test(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+func (r *File) Test(v symbolic.Value, state symbolic.RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -36,7 +36,7 @@ func (f *File) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 	return nil, false
 }
 
-func (f *File) Prop(name string) symbolic.SymbolicValue {
+func (f *File) Prop(name string) symbolic.Value {
 	method, ok := f.GetGoMethod(name)
 	if !ok {
 		panic(symbolic.FormatErrPropertyDoesNotExist(name, f))
@@ -68,6 +68,6 @@ func (r *File) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, de
 	return
 }
 
-func (r *File) WidestOfType() symbolic.SymbolicValue {
+func (r *File) WidestOfType() symbolic.Value {
 	return &File{}
 }

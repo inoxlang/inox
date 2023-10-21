@@ -21,13 +21,13 @@ type Sequence interface {
 
 type MutableSequence interface {
 	Sequence
-	set(ctx *Context, i *Int, v SymbolicValue)
+	set(ctx *Context, i *Int, v Value)
 	SetSlice(ctx *Context, start, end *Int, v Sequence)
 }
 
 type MutableLengthSequence interface {
 	MutableSequence
-	insertElement(ctx *Context, v SymbolicValue, i *Int)
+	insertElement(ctx *Context, v Value, i *Int)
 	removePosition(ctx *Context, i *Int)
 	//TODO: add removePositionRange
 	insertSequence(ctx *Context, seq Sequence, i *Int)
@@ -35,14 +35,14 @@ type MutableLengthSequence interface {
 }
 
 type AnySequenceOf struct {
-	elem SymbolicValue
+	elem Value
 }
 
-func NewAnySequenceOf(elem SymbolicValue) *AnySequenceOf {
+func NewAnySequenceOf(elem Value) *AnySequenceOf {
 	return &AnySequenceOf{elem: elem}
 }
 
-func (s *AnySequenceOf) Test(v SymbolicValue, state RecTestCallState) bool {
+func (s *AnySequenceOf) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -50,11 +50,11 @@ func (s *AnySequenceOf) Test(v SymbolicValue, state RecTestCallState) bool {
 	return ok && s.elem.Test(widenToSameStaticTypeInMultivalue(seq.element()), state)
 }
 
-func (*AnySequenceOf) IteratorElementKey() SymbolicValue {
+func (*AnySequenceOf) IteratorElementKey() Value {
 	return ANY_INT
 }
 
-func (s *AnySequenceOf) IteratorElementValue() SymbolicValue {
+func (s *AnySequenceOf) IteratorElementValue() Value {
 	return s.elem
 }
 
@@ -72,11 +72,11 @@ func (s *AnySequenceOf) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintC
 	utils.PanicIfErr(w.WriteByte(')'))
 }
 
-func (s *AnySequenceOf) element() SymbolicValue {
+func (s *AnySequenceOf) element() Value {
 	return s.elem
 }
 
-func (s *AnySequenceOf) elementAt(i int) SymbolicValue {
+func (s *AnySequenceOf) elementAt(i int) Value {
 	return s.elem
 }
 
@@ -84,6 +84,6 @@ func (s *AnySequenceOf) slice(start *Int, end *Int) Sequence {
 	return s
 }
 
-func (*AnySequenceOf) WidestOfType() SymbolicValue {
+func (*AnySequenceOf) WidestOfType() Value {
 	return ANY_SEQ_OF_ANY
 }

@@ -22,7 +22,7 @@ func NewCSP() *ContentSecurityPolicy {
 	return &ContentSecurityPolicy{}
 }
 
-func (n *ContentSecurityPolicy) Test(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+func (n *ContentSecurityPolicy) Test(v symbolic.Value, state symbolic.RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -38,6 +38,6 @@ func (r *ContentSecurityPolicy) PrettyPrint(w *bufio.Writer, config *pprint.Pret
 	return
 }
 
-func (r *ContentSecurityPolicy) WidestOfType() symbolic.SymbolicValue {
+func (r *ContentSecurityPolicy) WidestOfType() symbolic.Value {
 	return &ContentSecurityPolicy{}
 }

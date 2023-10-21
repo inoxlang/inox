@@ -263,7 +263,7 @@ func (p *Project) PrettyPrint(w *bufio.Writer, config *core.PrettyPrintConfig, d
 	core.PrintType(w, p)
 }
 
-func (p *Project) ToSymbolicValue(ctx *core.Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (p *Project) ToSymbolicValue(ctx *core.Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return symbolic.ANY, nil
 }
 

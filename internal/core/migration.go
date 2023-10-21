@@ -43,7 +43,7 @@ type MigrationCapable interface {
 
 type MigrationOp interface {
 	GetPseudoPath() string
-	ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) symbolic.MigrationOp
+	ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) symbolic.MigrationOp
 }
 
 type MigrationOpKind int
@@ -68,7 +68,7 @@ type ReplacementMigrationOp struct {
 	MigrationMixin
 }
 
-func (op ReplacementMigrationOp) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) symbolic.MigrationOp {
+func (op ReplacementMigrationOp) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) symbolic.MigrationOp {
 	return symbolic.ReplacementMigrationOp{
 		Current:        utils.Must(op.Current.ToSymbolicValue(ctx, encountered)).(symbolic.Pattern),
 		Next:           utils.Must(op.Next.ToSymbolicValue(ctx, encountered)).(symbolic.Pattern),
@@ -81,7 +81,7 @@ type RemovalMigrationOp struct {
 	MigrationMixin
 }
 
-func (op RemovalMigrationOp) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) symbolic.MigrationOp {
+func (op RemovalMigrationOp) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) symbolic.MigrationOp {
 	return symbolic.RemovalMigrationOp{
 		Value:          utils.Must(op.Value.ToSymbolicValue(ctx, encountered)).(symbolic.Pattern),
 		MigrationMixin: symbolic.MigrationMixin{PseudoPath: op.PseudoPath},
@@ -93,7 +93,7 @@ type NillableInitializationMigrationOp struct {
 	MigrationMixin
 }
 
-func (op NillableInitializationMigrationOp) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) symbolic.MigrationOp {
+func (op NillableInitializationMigrationOp) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) symbolic.MigrationOp {
 	return symbolic.NillableInitializationMigrationOp{
 		Value:          utils.Must(op.Value.ToSymbolicValue(ctx, encountered)).(symbolic.Pattern),
 		MigrationMixin: symbolic.MigrationMixin{PseudoPath: op.PseudoPath},
@@ -106,7 +106,7 @@ type InclusionMigrationOp struct {
 	MigrationMixin
 }
 
-func (op InclusionMigrationOp) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) symbolic.MigrationOp {
+func (op InclusionMigrationOp) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) symbolic.MigrationOp {
 	return symbolic.InclusionMigrationOp{
 		Value:          utils.Must(op.Value.ToSymbolicValue(ctx, encountered)).(symbolic.Pattern),
 		MigrationMixin: symbolic.MigrationMixin{PseudoPath: op.PseudoPath},
@@ -328,7 +328,7 @@ func GetMigrationOperations(ctx *Context, current, next Pattern, pseudoPath stri
 		}
 	}
 
-	if current == next || isSubType(current, next, ctx, map[uintptr]symbolic.SymbolicValue{}) {
+	if current == next || isSubType(current, next, ctx, map[uintptr]symbolic.Value{}) {
 		return nil, nil
 	}
 
@@ -1013,7 +1013,7 @@ func migrateListOrTuple(
 	return o, nil
 }
 
-func isSubType(sub, super Pattern, ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) bool {
+func isSubType(sub, super Pattern, ctx *Context, encountered map[uintptr]symbolic.Value) bool {
 	symbolicSub := utils.Must(sub.ToSymbolicValue(ctx, encountered))
 	symbolicSuper := utils.Must(super.ToSymbolicValue(ctx, encountered))
 
@@ -1028,6 +1028,6 @@ func isSubType(sub, super Pattern, ctx *Context, encountered map[uintptr]symboli
 	return symbolicSuper.Test(symbolicSub, symbolic.RecTestCallState{})
 }
 
-func isSuperType(super, sub Pattern, ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) bool {
+func isSuperType(super, sub Pattern, ctx *Context, encountered map[uintptr]symbolic.Value) bool {
 	return isSubType(sub, super, ctx, encountered)
 }

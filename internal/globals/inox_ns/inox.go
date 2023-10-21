@@ -54,7 +54,7 @@ func init() {
 		_prepare_local_script, func(ctx *symbolic.Context, p *symbolic.Path) (*symbolic.Module, *symbolic.GlobalState, *symbolic.Record, *symbolic.Error) {
 			return symbolic.ANY_MODULE, symbolic.ANY_GLOBAL_STATE, SYMB_PREPARATION_ERRORS_RECORD, nil
 		},
-		_run_local_script, func(ctx *symbolic.Context, p *symbolic.Path, config *symbolic.Object) (symbolic.SymbolicValue, *symbolic.GlobalState, *symbolic.Record, *symbolic.Error) {
+		_run_local_script, func(ctx *symbolic.Context, p *symbolic.Path, config *symbolic.Object) (symbolic.Value, *symbolic.GlobalState, *symbolic.Record, *symbolic.Error) {
 			return symbolic.ANY, symbolic.ANY_GLOBAL_STATE, SYMB_PREPARATION_ERRORS_RECORD, nil
 		},
 	})

@@ -19,8 +19,8 @@ var (
 
 // An MessageReceiver represents a symbolic MessageReceiver.
 type MessageReceiver interface {
-	SymbolicValue
-	ReceiveMessage(SymbolicValue) error
+	Value
+	ReceiveMessage(Value) error
 }
 
 // An Message represents a symbolic Message.
@@ -29,7 +29,7 @@ type Message struct {
 	_ int
 }
 
-func (m *Message) Test(v SymbolicValue, state RecTestCallState) bool {
+func (m *Message) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -43,15 +43,15 @@ func (m *Message) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig,
 	return
 }
 
-func (m *Message) WidestOfType() SymbolicValue {
+func (m *Message) WidestOfType() Value {
 	return ANY_MSG
 }
 
-func (m *Message) ReceiveMessage(SymbolicValue) error {
+func (m *Message) ReceiveMessage(Value) error {
 	return nil
 }
 
-func (m *Message) Prop(name string) SymbolicValue {
+func (m *Message) Prop(name string) Value {
 	switch name {
 	case "data":
 		return ANY
@@ -68,7 +68,7 @@ type AnyMessageReceiver struct {
 	_ int
 }
 
-func (r *AnyMessageReceiver) Test(v SymbolicValue, state RecTestCallState) bool {
+func (r *AnyMessageReceiver) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -82,11 +82,11 @@ func (r *AnyMessageReceiver) PrettyPrint(w *bufio.Writer, config *pprint.PrettyP
 	return
 }
 
-func (r *AnyMessageReceiver) WidestOfType() SymbolicValue {
+func (r *AnyMessageReceiver) WidestOfType() Value {
 	return ANY_MSG_RECEIVER
 }
 
-func (r *AnyMessageReceiver) ReceiveMessage(SymbolicValue) error {
+func (r *AnyMessageReceiver) ReceiveMessage(Value) error {
 	return nil
 }
 
@@ -100,7 +100,7 @@ func NewMessageHandler() *SynchronousMessageHandler {
 	return &SynchronousMessageHandler{}
 }
 
-func (l *SynchronousMessageHandler) Test(v SymbolicValue, state RecTestCallState) bool {
+func (l *SynchronousMessageHandler) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -114,15 +114,15 @@ func (l *SynchronousMessageHandler) PrettyPrint(w *bufio.Writer, config *pprint.
 	return
 }
 
-func (l *SynchronousMessageHandler) WidestOfType() SymbolicValue {
+func (l *SynchronousMessageHandler) WidestOfType() Value {
 	return ANY_SYNC_MSG_HANDLER
 }
 
-func (l *SynchronousMessageHandler) ReceiveMessage(SymbolicValue) error {
+func (l *SynchronousMessageHandler) ReceiveMessage(Value) error {
 	return nil
 }
 
-func (l *SynchronousMessageHandler) Prop(name string) SymbolicValue {
+func (l *SynchronousMessageHandler) Prop(name string) Value {
 	panic(FormatErrPropertyDoesNotExist(name, l))
 }
 
@@ -130,12 +130,12 @@ func (m *SynchronousMessageHandler) PropertyNames() []string {
 	return nil
 }
 
-func (m *SynchronousMessageHandler) WatcherElement() SymbolicValue {
+func (m *SynchronousMessageHandler) WatcherElement() Value {
 	return ANY
 }
 
 //
 
-func (*Object) ReceiveMessage(SymbolicValue) error {
+func (*Object) ReceiveMessage(Value) error {
 	return nil
 }

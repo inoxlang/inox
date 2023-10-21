@@ -45,7 +45,7 @@ var (
 
 			return NewExactValuePattern(values[0]), nil
 		},
-		SymbolicCallImpl: func(ctx *symbolic.Context, values []symbolic.SymbolicValue) (symbolic.Pattern, error) {
+		SymbolicCallImpl: func(ctx *symbolic.Context, values []symbolic.Value) (symbolic.Pattern, error) {
 			var recordPattern *symbolic.RecordPattern
 
 			if len(values) != 1 {
@@ -85,7 +85,7 @@ var (
 
 			return stringPattern, nil
 		},
-		SymbolicCallImpl: func(ctx *symbolic.Context, values []symbolic.SymbolicValue) (symbolic.Pattern, error) {
+		SymbolicCallImpl: func(ctx *symbolic.Context, values []symbolic.Value) (symbolic.Pattern, error) {
 			if len(values) != 1 {
 				return nil, commonfmt.FmtErrNArgumentsExpected("1")
 			}
@@ -206,7 +206,7 @@ var (
 
 			return recordPattern, nil
 		},
-		SymbolicCallImpl: func(ctx *symbolic.Context, values []symbolic.SymbolicValue) (symbolic.Pattern, error) {
+		SymbolicCallImpl: func(ctx *symbolic.Context, values []symbolic.Value) (symbolic.Pattern, error) {
 			var recordPattern *symbolic.RecordPattern
 
 			for _, val := range values {
@@ -263,7 +263,7 @@ var (
 
 			return NewTuplePatternOf(elemPattern), nil
 		},
-		SymbolicCallImpl: func(ctx *symbolic.Context, values []symbolic.SymbolicValue) (symbolic.Pattern, error) {
+		SymbolicCallImpl: func(ctx *symbolic.Context, values []symbolic.Value) (symbolic.Pattern, error) {
 			var elemPattern symbolic.Pattern
 
 			for _, val := range values {
@@ -346,7 +346,7 @@ var (
 				},
 			}, nil
 		},
-		SymbolicCallImpl: func(ctx *symbolic.Context, values []symbolic.SymbolicValue) (symbolic.Pattern, error) {
+		SymbolicCallImpl: func(ctx *symbolic.Context, values []symbolic.Value) (symbolic.Pattern, error) {
 			return &symbolic.IntRangePattern{}, nil
 		},
 
@@ -397,7 +397,7 @@ var (
 				},
 			}, nil
 		},
-		SymbolicCallImpl: func(ctx *symbolic.Context, values []symbolic.SymbolicValue) (symbolic.Pattern, error) {
+		SymbolicCallImpl: func(ctx *symbolic.Context, values []symbolic.Value) (symbolic.Pattern, error) {
 			return &symbolic.IntRangePattern{}, nil
 		},
 
@@ -552,7 +552,7 @@ var (
 			}
 			return NewEventPattern(valuePattern), nil
 		},
-		SymbolicCallImpl: func(ctx *symbolic.Context, args []symbolic.SymbolicValue) (symbolic.Pattern, error) {
+		SymbolicCallImpl: func(ctx *symbolic.Context, args []symbolic.Value) (symbolic.Pattern, error) {
 			var valuePattern symbolic.Pattern
 
 			for _, arg := range args {
@@ -621,7 +621,7 @@ var (
 
 			return NewMutationPattern(kind, data0Pattern), nil
 		},
-		SymbolicCallImpl: func(ctx *symbolic.Context, args []symbolic.SymbolicValue) (symbolic.Pattern, error) {
+		SymbolicCallImpl: func(ctx *symbolic.Context, args []symbolic.Value) (symbolic.Pattern, error) {
 			switch len(args) {
 			case 2:
 			case 1:
@@ -734,7 +734,7 @@ var (
 				},
 			}, nil
 		},
-		SymbolicCallImpl: func(ctx *symbolic.Context, values []symbolic.SymbolicValue) (symbolic.Pattern, error) {
+		SymbolicCallImpl: func(ctx *symbolic.Context, values []symbolic.Value) (symbolic.Pattern, error) {
 			var stringPattern symbolic.StringPattern
 
 			if len(values) == 0 {

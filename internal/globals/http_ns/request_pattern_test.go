@@ -105,7 +105,7 @@ func TestCreationOfSymbolicHttpRequestPattern(t *testing.T) {
 	ctx := &symbolic.Context{}
 
 	t.Run("no argument", func(t *testing.T) {
-		pattern, err := CALLABLE_HTTP_REQUEST_PATTERN.SymbolicCallImpl(ctx, []symbolic.SymbolicValue{})
+		pattern, err := CALLABLE_HTTP_REQUEST_PATTERN.SymbolicCallImpl(ctx, []symbolic.Value{})
 		if !assert.Error(t, err) {
 			return
 		}
@@ -113,7 +113,7 @@ func TestCreationOfSymbolicHttpRequestPattern(t *testing.T) {
 	})
 
 	t.Run("argument of invalid type", func(t *testing.T) {
-		pattern, err := CALLABLE_HTTP_REQUEST_PATTERN.SymbolicCallImpl(ctx, []symbolic.SymbolicValue{symbolic.NewInt(1)})
+		pattern, err := CALLABLE_HTTP_REQUEST_PATTERN.SymbolicCallImpl(ctx, []symbolic.Value{symbolic.NewInt(1)})
 		if !assert.Error(t, err) {
 			return
 		}
@@ -121,7 +121,7 @@ func TestCreationOfSymbolicHttpRequestPattern(t *testing.T) {
 	})
 
 	t.Run("empty description", func(t *testing.T) {
-		pattern, err := CALLABLE_HTTP_REQUEST_PATTERN.SymbolicCallImpl(ctx, []symbolic.SymbolicValue{symbolic.NewInexactObjectPattern(nil, nil)})
+		pattern, err := CALLABLE_HTTP_REQUEST_PATTERN.SymbolicCallImpl(ctx, []symbolic.Value{symbolic.NewInexactObjectPattern(nil, nil)})
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -133,7 +133,7 @@ func TestCreationOfSymbolicHttpRequestPattern(t *testing.T) {
 			"method": utils.Must(symbolic.NewExactValuePattern(symbolic.NewIdentifier("GET"))),
 		}, nil)
 
-		pattern, err := CALLABLE_HTTP_REQUEST_PATTERN.SymbolicCallImpl(ctx, []symbolic.SymbolicValue{description})
+		pattern, err := CALLABLE_HTTP_REQUEST_PATTERN.SymbolicCallImpl(ctx, []symbolic.Value{description})
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -145,7 +145,7 @@ func TestCreationOfSymbolicHttpRequestPattern(t *testing.T) {
 			"method": utils.Must(symbolic.NewExactValuePattern(symbolic.NewString("GET_"))),
 		}, nil)
 
-		pattern, err := CALLABLE_HTTP_REQUEST_PATTERN.SymbolicCallImpl(ctx, []symbolic.SymbolicValue{description})
+		pattern, err := CALLABLE_HTTP_REQUEST_PATTERN.SymbolicCallImpl(ctx, []symbolic.Value{description})
 		if !assert.Error(t, err) {
 			return
 		}
@@ -157,7 +157,7 @@ func TestCreationOfSymbolicHttpRequestPattern(t *testing.T) {
 			"method": utils.Must(symbolic.NewExactValuePattern(symbolic.ANY_IDENTIFIER)),
 		}, nil)
 
-		pattern, err := CALLABLE_HTTP_REQUEST_PATTERN.SymbolicCallImpl(ctx, []symbolic.SymbolicValue{description})
+		pattern, err := CALLABLE_HTTP_REQUEST_PATTERN.SymbolicCallImpl(ctx, []symbolic.Value{description})
 		if !assert.Error(t, err) {
 			return
 		}
@@ -172,7 +172,7 @@ func TestCreationOfSymbolicHttpRequestPattern(t *testing.T) {
 			}, false)),
 		}, nil)
 
-		pattern, err := CALLABLE_HTTP_REQUEST_PATTERN.SymbolicCallImpl(ctx, []symbolic.SymbolicValue{description})
+		pattern, err := CALLABLE_HTTP_REQUEST_PATTERN.SymbolicCallImpl(ctx, []symbolic.Value{description})
 		if !assert.Error(t, err) {
 			return
 		}

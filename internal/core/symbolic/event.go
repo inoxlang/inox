@@ -23,7 +23,7 @@ func NewEventSource() *EventSource {
 	return &EventSource{}
 }
 
-func (s *EventSource) Test(v SymbolicValue, state RecTestCallState) bool {
+func (s *EventSource) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -39,7 +39,7 @@ func (s *EventSource) GetGoMethod(name string) (*GoFunction, bool) {
 	return nil, false
 }
 
-func (s *EventSource) Prop(name string) SymbolicValue {
+func (s *EventSource) Prop(name string) Value {
 	method, ok := s.GetGoMethod(name)
 	if !ok {
 		panic(FormatErrPropertyDoesNotExist(name, s))
@@ -47,11 +47,11 @@ func (s *EventSource) Prop(name string) SymbolicValue {
 	return method
 }
 
-func (s *EventSource) SetProp(name string, value SymbolicValue) (IProps, error) {
+func (s *EventSource) SetProp(name string, value Value) (IProps, error) {
 	return nil, errors.New(FmtCannotAssignPropertyOf(s))
 }
 
-func (s *EventSource) WithExistingPropReplaced(name string, value SymbolicValue) (IProps, error) {
+func (s *EventSource) WithExistingPropReplaced(name string, value Value) (IProps, error) {
 	return nil, errors.New(FmtCannotAssignPropertyOf(s))
 }
 
@@ -67,31 +67,31 @@ func (s *EventSource) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintCon
 	return
 }
 
-func (s *EventSource) IteratorElementKey() SymbolicValue {
+func (s *EventSource) IteratorElementKey() Value {
 	return ANY_INT
 }
 
-func (s *EventSource) IteratorElementValue() SymbolicValue {
+func (s *EventSource) IteratorElementValue() Value {
 	return ANY_EVENT
 }
 
-func (s *EventSource) WidestOfType() SymbolicValue {
+func (s *EventSource) WidestOfType() Value {
 	return &EventSource{}
 }
 
 type Event struct {
 	UnassignablePropsMixin
-	value SymbolicValue
+	value Value
 }
 
-func NewEvent(value SymbolicValue) (*Event, error) {
+func NewEvent(value Value) (*Event, error) {
 	if !IsAny(value) && value.IsMutable() {
 		return nil, fmt.Errorf("failed to create event: value should be immutable: %T", value)
 	}
 	return &Event{value: value}, nil
 }
 
-func (r *Event) Test(v SymbolicValue, state RecTestCallState) bool {
+func (r *Event) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -103,7 +103,7 @@ func (e *Event) PropertyNames() []string {
 	return []string{"time", "value"}
 }
 
-func (e *Event) Prop(name string) SymbolicValue {
+func (e *Event) Prop(name string) Value {
 	switch name {
 	case "time":
 		return &Date{}
@@ -118,6 +118,6 @@ func (r *Event) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, d
 	utils.Must(w.Write(utils.StringAsBytes("%event")))
 }
 
-func (r *Event) WidestOfType() SymbolicValue {
+func (r *Event) WidestOfType() Value {
 	return &Event{value: ANY}
 }

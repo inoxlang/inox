@@ -51,28 +51,28 @@ var (
 	FILEINFO_PROPNAMES = []string{"name", "abs-path", "size", "mode", "mod-time", "is-dir"}
 )
 
-// A SymbolicValue represents a Value during symbolic evaluation, its underlying data should be immutable.
-type SymbolicValue interface {
-	Test(v SymbolicValue, state RecTestCallState) bool
+// A Value represents a Value during symbolic evaluation, its underlying data should be immutable.
+type Value interface {
+	Test(v Value, state RecTestCallState) bool
 
 	IsMutable() bool
 
-	WidestOfType() SymbolicValue
+	WidestOfType() Value
 
 	PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int)
 }
 
-func IsAny(val SymbolicValue) bool {
+func IsAny(val Value) bool {
 	_, ok := val.(*Any)
 	return ok
 }
 
-func IsAnySerializable(val SymbolicValue) bool {
+func IsAnySerializable(val Value) bool {
 	_, ok := val.(*AnySerializable)
 	return ok
 }
 
-func IsAnyOrAnySerializable(val SymbolicValue) bool {
+func IsAnyOrAnySerializable(val Value) bool {
 	switch val.(type) {
 	case *Any, *AnySerializable:
 		return true
@@ -81,23 +81,23 @@ func IsAnyOrAnySerializable(val SymbolicValue) bool {
 	}
 }
 
-func isNever(val SymbolicValue) bool {
+func isNever(val Value) bool {
 	_, ok := val.(*Never)
 	return ok
 }
 
-func deeplyEqual(v1, v2 SymbolicValue) bool {
+func deeplyEqual(v1, v2 Value) bool {
 	return v1.Test(v2, RecTestCallState{}) && v2.Test(v1, RecTestCallState{})
 }
 
 type PseudoPropsValue interface {
-	SymbolicValue
+	Value
 	PropertyNames() []string
-	Prop(name string) SymbolicValue
+	Prop(name string) Value
 }
 
 type StaticDataHolder interface {
-	SymbolicValue
+	Value
 
 	//AddStatic returns a new StaticDataHolder with the added static data.
 	AddStatic(Pattern) (StaticDataHolder, error)
@@ -114,7 +114,7 @@ type Any struct {
 	_ int
 }
 
-func (a *Any) Test(v SymbolicValue, state RecTestCallState) bool {
+func (a *Any) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -126,7 +126,7 @@ func (a *Any) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, dep
 	return
 }
 
-func (a *Any) WidestOfType() SymbolicValue {
+func (a *Any) WidestOfType() Value {
 	return ANY
 }
 
@@ -135,7 +135,7 @@ type Never struct {
 	_ int
 }
 
-func (*Never) Test(v SymbolicValue, state RecTestCallState) bool {
+func (*Never) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -147,7 +147,7 @@ func (*Never) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, dep
 	utils.Must(w.Write(utils.StringAsBytes("%never")))
 }
 
-func (*Never) WidestOfType() SymbolicValue {
+func (*Never) WidestOfType() Value {
 	return NEVER
 }
 
@@ -158,7 +158,7 @@ type NilT struct {
 	SerializableMixin
 }
 
-func (n *NilT) Test(v SymbolicValue, state RecTestCallState) bool {
+func (n *NilT) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -178,7 +178,7 @@ func (n *NilT) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, de
 	utils.Must(w.Write(utils.StringAsBytes("nil")))
 }
 
-func (n *NilT) WidestOfType() SymbolicValue {
+func (n *NilT) WidestOfType() Value {
 	return Nil
 }
 
@@ -196,7 +196,7 @@ func NewBool(v bool) *Bool {
 	}
 }
 
-func (b *Bool) Test(v SymbolicValue, state RecTestCallState) bool {
+func (b *Bool) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -237,7 +237,7 @@ func (b *Bool) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, de
 	}
 }
 
-func (b *Bool) WidestOfType() SymbolicValue {
+func (b *Bool) WidestOfType() Value {
 	return ANY_BOOL
 }
 
@@ -255,7 +255,7 @@ func NewEmailAddress(v string) *EmailAddress {
 	}
 }
 
-func (e *EmailAddress) Test(v SymbolicValue, state RecTestCallState) bool {
+func (e *EmailAddress) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -286,7 +286,7 @@ func (e *EmailAddress) PropertyNames() []string {
 	return []string{"username", "domain"}
 }
 
-func (*EmailAddress) Prop(name string) SymbolicValue {
+func (*EmailAddress) Prop(name string) Value {
 	switch name {
 	case "username":
 		return &String{}
@@ -297,7 +297,7 @@ func (*EmailAddress) Prop(name string) SymbolicValue {
 	}
 }
 
-func (e *EmailAddress) WidestOfType() SymbolicValue {
+func (e *EmailAddress) WidestOfType() Value {
 	return ANY_EMAIL_ADDR
 }
 
@@ -311,7 +311,7 @@ func NewIdentifier(name string) *Identifier {
 	return &Identifier{name: name}
 }
 
-func (i *Identifier) Test(v SymbolicValue, state RecTestCallState) bool {
+func (i *Identifier) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -357,7 +357,7 @@ func (i *Identifier) underlyingString() *String {
 	return &String{}
 }
 
-func (i *Identifier) WidestOfType() SymbolicValue {
+func (i *Identifier) WidestOfType() Value {
 	return ANY_IDENTIFIER
 }
 
@@ -375,7 +375,7 @@ func (n *PropertyName) Name() string {
 	return n.name
 }
 
-func (p *PropertyName) Test(v SymbolicValue, state RecTestCallState) bool {
+func (p *PropertyName) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -414,7 +414,7 @@ func (s *PropertyName) underlyingString() *String {
 	return &String{}
 }
 
-func (s *PropertyName) WidestOfType() SymbolicValue {
+func (s *PropertyName) WidestOfType() Value {
 	return ANY_PROPNAME
 }
 
@@ -432,7 +432,7 @@ func NewMimetype(v string) *Mimetype {
 	}
 }
 
-func (m *Mimetype) Test(v SymbolicValue, state RecTestCallState) bool {
+func (m *Mimetype) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -459,26 +459,26 @@ func (m *Mimetype) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig
 	}
 }
 
-func (m *Mimetype) WidestOfType() SymbolicValue {
+func (m *Mimetype) WidestOfType() Value {
 	return ANY_MIMETYPE
 }
 
 // An Option represents a symbolic Option.
 type Option struct {
 	name  string //if "", any name is matched
-	value SymbolicValue
+	value Value
 	SerializableMixin
 	PseudoClonableMixin
 }
 
-func NewOption(name string, value SymbolicValue) *Option {
+func NewOption(name string, value Value) *Option {
 	if name == "" {
 		panic(errors.New("name should not be empty"))
 	}
 	return &Option{name: name, value: value}
 }
 
-func NewAnyNameOption(value SymbolicValue) *Option {
+func NewAnyNameOption(value Value) *Option {
 	return &Option{value: value}
 }
 
@@ -489,7 +489,7 @@ func (o *Option) Name() (string, bool) {
 	return o.name, true
 }
 
-func (o *Option) Test(v SymbolicValue, state RecTestCallState) bool {
+func (o *Option) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -529,7 +529,7 @@ func (o *Option) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, 
 	utils.PanicIfErr(w.WriteByte(')'))
 }
 
-func (o *Option) WidestOfType() SymbolicValue {
+func (o *Option) WidestOfType() Value {
 	return ANY_OPTION
 }
 
@@ -547,7 +547,7 @@ func NewDate(v time.Time) *Date {
 	}
 }
 
-func (d *Date) Test(v SymbolicValue, state RecTestCallState) bool {
+func (d *Date) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -581,7 +581,7 @@ func (d *Date) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, de
 	}
 }
 
-func (d *Date) WidestOfType() SymbolicValue {
+func (d *Date) WidestOfType() Value {
 	return ANY_DATE
 }
 
@@ -599,7 +599,7 @@ func NewDuration(v time.Duration) *Duration {
 	}
 }
 
-func (d *Duration) Test(v SymbolicValue, state RecTestCallState) bool {
+func (d *Duration) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -637,7 +637,7 @@ func (d *Duration) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig
 	}
 }
 
-func (d *Duration) WidestOfType() SymbolicValue {
+func (d *Duration) WidestOfType() Value {
 	return ANY_DURATION
 }
 
@@ -646,7 +646,7 @@ type FileMode struct {
 	_ int
 }
 
-func (m *FileMode) Test(v SymbolicValue, state RecTestCallState) bool {
+func (m *FileMode) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -662,7 +662,7 @@ func (m *FileMode) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig
 	utils.Must(w.Write(utils.StringAsBytes("%filemode")))
 }
 
-func (m *FileMode) WidestOfType() SymbolicValue {
+func (m *FileMode) WidestOfType() Value {
 	return ANY_FILEMODE
 }
 
@@ -672,7 +672,7 @@ type FileInfo struct {
 	SerializableMixin
 }
 
-func (f *FileInfo) Test(v SymbolicValue, state RecTestCallState) bool {
+func (f *FileInfo) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -692,7 +692,7 @@ func (f FileInfo) GetGoMethod(name string) (*GoFunction, bool) {
 	return nil, false
 }
 
-func (f *FileInfo) Prop(name string) SymbolicValue {
+func (f *FileInfo) Prop(name string) Value {
 	switch name {
 	case "name":
 		return ANY_STR
@@ -726,7 +726,7 @@ func (f *FileInfo) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig
 	utils.Must(w.Write(utils.StringAsBytes("%file-info")))
 }
 
-func (f *FileInfo) WidestOfType() SymbolicValue {
+func (f *FileInfo) WidestOfType() Value {
 	return ANY_FILEINFO
 }
 
@@ -735,7 +735,7 @@ type Type struct {
 	Type reflect.Type //if nil, any type is matched
 }
 
-func (t *Type) Test(v SymbolicValue, state RecTestCallState) bool {
+func (t *Type) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -762,20 +762,20 @@ func (t *Type) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, de
 	utils.Must(fmt.Fprintf(w, "%%type(%v)", t.Type))
 }
 
-func (t *Type) WidestOfType() SymbolicValue {
+func (t *Type) WidestOfType() Value {
 	return &Type{}
 }
 
 type IProps interface {
-	SymbolicValue
-	Prop(name string) SymbolicValue
+	Value
+	Prop(name string) Value
 
 	// SetProp should be equivalent to .SetProp of a concrete IProps, the difference being that the original IProps should
 	// not be modified since all symbolic values are immutable, an IProps with the modification should be returned.
-	SetProp(name string, value SymbolicValue) (IProps, error)
+	SetProp(name string, value Value) (IProps, error)
 
 	// WithExistingPropReplaced should return a version of the Iprops with the replacement value of the given property.
-	WithExistingPropReplaced(name string, value SymbolicValue) (IProps, error)
+	WithExistingPropReplaced(name string, value Value) (IProps, error)
 
 	// returned slice should never be modified
 	PropertyNames() []string
@@ -784,11 +784,11 @@ type IProps interface {
 type UnassignablePropsMixin struct {
 }
 
-func (UnassignablePropsMixin) SetProp(name string, value SymbolicValue) (IProps, error) {
+func (UnassignablePropsMixin) SetProp(name string, value Value) (IProps, error) {
 	return nil, errors.New("unassignable properties")
 }
 
-func (UnassignablePropsMixin) WithExistingPropReplaced(name string, value SymbolicValue) (IProps, error) {
+func (UnassignablePropsMixin) WithExistingPropReplaced(name string, value Value) (IProps, error) {
 	return nil, ErrUnassignablePropsMixin
 }
 
@@ -839,13 +839,13 @@ func HasRequiredProperty(v IProps, name string) bool {
 //
 
 type GoValue interface {
-	SymbolicValue
-	Prop(name string) SymbolicValue
+	Value
+	Prop(name string) Value
 	PropertyNames() []string
 	GetGoMethod(name string) (*GoFunction, bool)
 }
 
-func GetGoMethodOrPanic(name string, v GoValue) SymbolicValue {
+func GetGoMethodOrPanic(name string, v GoValue) Value {
 	method, ok := v.GetGoMethod(name)
 	if !ok {
 		panic(FormatErrPropertyDoesNotExist(name, v))
@@ -857,7 +857,7 @@ type Bytecode struct {
 	Bytecode any //if nil, any function is matched
 }
 
-func (b *Bytecode) Test(v SymbolicValue, state RecTestCallState) bool {
+func (b *Bytecode) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -884,7 +884,7 @@ func (b *Bytecode) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig
 	utils.Must(fmt.Fprintf(w, "%%bytecode(%v)", b.Bytecode))
 }
 
-func (b *Bytecode) WidestOfType() SymbolicValue {
+func (b *Bytecode) WidestOfType() Value {
 	return &Bytecode{}
 }
 
@@ -898,7 +898,7 @@ func NewQuantityRange(element Serializable) *QuantityRange {
 	return &QuantityRange{element: element}
 }
 
-func (r *QuantityRange) Test(v SymbolicValue, state RecTestCallState) bool {
+func (r *QuantityRange) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -906,15 +906,15 @@ func (r *QuantityRange) Test(v SymbolicValue, state RecTestCallState) bool {
 	return ok && r.element.Test(other.element, RecTestCallState{})
 }
 
-func (r *QuantityRange) IteratorElementKey() SymbolicValue {
+func (r *QuantityRange) IteratorElementKey() Value {
 	return ANY_INT
 }
 
-func (r *QuantityRange) IteratorElementValue() SymbolicValue {
+func (r *QuantityRange) IteratorElementValue() Value {
 	return r.element
 }
 
-func (r QuantityRange) Contains(value SymbolicValue) (yes bool, possible bool) {
+func (r QuantityRange) Contains(value Value) (yes bool, possible bool) {
 	if !r.element.Test(value, RecTestCallState{}) {
 		return false, false
 	}
@@ -926,7 +926,7 @@ func (r *QuantityRange) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintC
 	utils.Must(w.Write(utils.StringAsBytes("%quantity-range")))
 }
 
-func (r *QuantityRange) WidestOfType() SymbolicValue {
+func (r *QuantityRange) WidestOfType() Value {
 	return &QuantityRange{}
 }
 
@@ -936,7 +936,7 @@ type IntRange struct {
 	SerializableMixin
 }
 
-func (r *IntRange) Test(v SymbolicValue, state RecTestCallState) bool {
+func (r *IntRange) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -956,15 +956,15 @@ func (r *IntRange) KnownLen() int {
 	return -1
 }
 
-func (r *IntRange) element() SymbolicValue {
+func (r *IntRange) element() Value {
 	return ANY_INT
 }
 
-func (*IntRange) elementAt(i int) SymbolicValue {
+func (*IntRange) elementAt(i int) Value {
 	return ANY_INT
 }
 
-func (r *IntRange) Contains(value SymbolicValue) (bool, bool) {
+func (r *IntRange) Contains(value Value) (bool, bool) {
 	if _, ok := value.(*Int); ok {
 		return false, true
 	}
@@ -976,15 +976,15 @@ func (r *IntRange) HasKnownLen() bool {
 	return false
 }
 
-func (r *IntRange) IteratorElementKey() SymbolicValue {
+func (r *IntRange) IteratorElementKey() Value {
 	return ANY_INT
 }
 
-func (r *IntRange) IteratorElementValue() SymbolicValue {
+func (r *IntRange) IteratorElementValue() Value {
 	return ANY_INT
 }
 
-func (r *IntRange) WidestOfType() SymbolicValue {
+func (r *IntRange) WidestOfType() Value {
 	return ANY_INT_RANGE
 }
 
@@ -994,7 +994,7 @@ type FloatRange struct {
 	SerializableMixin
 }
 
-func (r *FloatRange) Test(v SymbolicValue, state RecTestCallState) bool {
+func (r *FloatRange) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -1010,7 +1010,7 @@ func (r *FloatRange) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConf
 	utils.Must(w.Write(utils.StringAsBytes("%float-range")))
 }
 
-func (r *FloatRange) Contains(value SymbolicValue) (bool, bool) {
+func (r *FloatRange) Contains(value Value) (bool, bool) {
 	if _, ok := value.(*Float); ok {
 		return false, true
 	}
@@ -1018,7 +1018,7 @@ func (r *FloatRange) Contains(value SymbolicValue) (bool, bool) {
 	return false, false
 }
 
-func (r *FloatRange) WidestOfType() SymbolicValue {
+func (r *FloatRange) WidestOfType() Value {
 	return ANY_FLOAT_RANGE
 }
 
@@ -1028,7 +1028,7 @@ type RuneRange struct {
 	SerializableMixin
 }
 
-func (r *RuneRange) Test(v SymbolicValue, state RecTestCallState) bool {
+func (r *RuneRange) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -1048,11 +1048,11 @@ func (r *RuneRange) KnownLen() int {
 	return -1
 }
 
-func (r *RuneRange) element() SymbolicValue {
+func (r *RuneRange) element() Value {
 	return &Rune{}
 }
 
-func (r *RuneRange) Contains(value SymbolicValue) (bool, bool) {
+func (r *RuneRange) Contains(value Value) (bool, bool) {
 	if _, ok := value.(*Rune); ok {
 		return false, true
 	}
@@ -1064,15 +1064,15 @@ func (r *RuneRange) HasKnownLen() bool {
 	return false
 }
 
-func (r *RuneRange) IteratorElementKey() SymbolicValue {
+func (r *RuneRange) IteratorElementKey() Value {
 	return ANY_INT
 }
 
-func (r *RuneRange) IteratorElementValue() SymbolicValue {
+func (r *RuneRange) IteratorElementValue() Value {
 	return ANY_RUNE
 }
 
-func (r *RuneRange) WidestOfType() SymbolicValue {
+func (r *RuneRange) WidestOfType() Value {
 	return ANY_RUNE_RANGE
 }
 
@@ -1090,7 +1090,7 @@ func NewByteCount(v int64) *ByteCount {
 	}
 }
 
-func (c *ByteCount) Test(v SymbolicValue, state RecTestCallState) bool {
+func (c *ByteCount) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -1130,7 +1130,7 @@ func (c *ByteCount) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfi
 	}
 }
 
-func (c *ByteCount) WidestOfType() SymbolicValue {
+func (c *ByteCount) WidestOfType() Value {
 	return ANY_BYTECOUNT
 }
 
@@ -1148,7 +1148,7 @@ func NewByteRate(v int64) *ByteRate {
 	}
 }
 
-func (c *ByteRate) Test(v SymbolicValue, state RecTestCallState) bool {
+func (c *ByteRate) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -1189,7 +1189,7 @@ func (r *ByteRate) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig
 	}
 }
 
-func (r *ByteRate) WidestOfType() SymbolicValue {
+func (r *ByteRate) WidestOfType() Value {
 	return ANY_BYTERATE
 }
 
@@ -1206,7 +1206,7 @@ func NewLineCount(v int64) *LineCount {
 	}
 }
 
-func (c *LineCount) Test(v SymbolicValue, state RecTestCallState) bool {
+func (c *LineCount) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -1246,7 +1246,7 @@ func (c *LineCount) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfi
 	}
 }
 
-func (c *LineCount) WidestOfType() SymbolicValue {
+func (c *LineCount) WidestOfType() Value {
 	return ANY_LINECOUNT
 }
 
@@ -1264,7 +1264,7 @@ func NewRuneCount(v int64) *RuneCount {
 	}
 }
 
-func (c *RuneCount) Test(v SymbolicValue, state RecTestCallState) bool {
+func (c *RuneCount) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -1297,7 +1297,7 @@ func (c *RuneCount) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfi
 	}
 }
 
-func (c *RuneCount) WidestOfType() SymbolicValue {
+func (c *RuneCount) WidestOfType() Value {
 	return ANY_RUNECOUNT
 }
 
@@ -1315,7 +1315,7 @@ func NewSimpleRate(v int64) *SimpleRate {
 	}
 }
 
-func (c *SimpleRate) Test(v SymbolicValue, state RecTestCallState) bool {
+func (c *SimpleRate) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -1356,7 +1356,7 @@ func (r *SimpleRate) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConf
 	}
 }
 
-func (r *SimpleRate) WidestOfType() SymbolicValue {
+func (r *SimpleRate) WidestOfType() Value {
 	return ANY_SIMPLERATE
 }
 
@@ -1369,7 +1369,7 @@ type AnyResourceName struct {
 	_ int
 }
 
-func (r *AnyResourceName) Test(v SymbolicValue, state RecTestCallState) bool {
+func (r *AnyResourceName) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -1393,7 +1393,7 @@ func (r *AnyResourceName) ResourceName() *String {
 	return &String{}
 }
 
-func (r *AnyResourceName) WidestOfType() SymbolicValue {
+func (r *AnyResourceName) WidestOfType() Value {
 	return ANY_RES_NAME
 }
 
@@ -1405,7 +1405,7 @@ type Port struct {
 	_ int
 }
 
-func (p *Port) Test(v SymbolicValue, state RecTestCallState) bool {
+func (p *Port) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -1421,7 +1421,7 @@ func (p *Port) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, de
 	utils.Must(w.Write(utils.StringAsBytes("%port")))
 }
 
-func (p *Port) WidestOfType() SymbolicValue {
+func (p *Port) WidestOfType() Value {
 	return ANY_PORT
 }
 
@@ -1431,7 +1431,7 @@ type UData struct {
 	SerializableMixin
 }
 
-func (i *UData) Test(v SymbolicValue, state RecTestCallState) bool {
+func (i *UData) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -1439,11 +1439,11 @@ func (i *UData) Test(v SymbolicValue, state RecTestCallState) bool {
 	return ok
 }
 
-func (*UData) WalkerElement() SymbolicValue {
+func (*UData) WalkerElement() Value {
 	return ANY
 }
 
-func (*UData) WalkerNodeMeta() SymbolicValue {
+func (*UData) WalkerNodeMeta() Value {
 	return Nil
 }
 
@@ -1451,7 +1451,7 @@ func (i *UData) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, d
 	utils.Must(w.Write(utils.StringAsBytes("%udata")))
 }
 
-func (i *UData) WidestOfType() SymbolicValue {
+func (i *UData) WidestOfType() Value {
 	return &UData{}
 }
 
@@ -1460,7 +1460,7 @@ type UDataHiearchyEntry struct {
 	_ int
 }
 
-func (i *UDataHiearchyEntry) Test(v SymbolicValue, state RecTestCallState) bool {
+func (i *UDataHiearchyEntry) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -1472,11 +1472,11 @@ func (i *UDataHiearchyEntry) PrettyPrint(w *bufio.Writer, config *pprint.PrettyP
 	utils.Must(w.Write(utils.StringAsBytes("%udata-hiearchy-entry")))
 }
 
-func (i *UDataHiearchyEntry) WidestOfType() SymbolicValue {
+func (i *UDataHiearchyEntry) WidestOfType() Value {
 	return &UDataHiearchyEntry{}
 }
 
-func IsSimpleSymbolicInoxVal(v SymbolicValue) bool {
+func IsSimpleSymbolicInoxVal(v Value) bool {
 	switch v.(type) {
 	case *NilT, *Rune, *Byte, *Bool, *Int, *Float, WrappedString, *Port:
 		return true

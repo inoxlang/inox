@@ -38,7 +38,7 @@ func NewApiIL(schema *ObjectPattern) *ApiIL {
 	}
 }
 
-func (api *ApiIL) Test(v SymbolicValue, state RecTestCallState) bool {
+func (api *ApiIL) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -50,7 +50,7 @@ func (api *ApiIL) Test(v SymbolicValue, state RecTestCallState) bool {
 	}
 }
 
-func (api *ApiIL) WidestOfType() SymbolicValue {
+func (api *ApiIL) WidestOfType() Value {
 	return ANY_API
 }
 
@@ -60,7 +60,7 @@ func (api *ApiIL) GetGoMethod(name string) (*GoFunction, bool) {
 	return nil, false
 }
 
-func (api *ApiIL) Prop(name string) SymbolicValue {
+func (api *ApiIL) Prop(name string) Value {
 	switch name {
 	case "version":
 		return ANY_STR

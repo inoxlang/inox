@@ -1837,7 +1837,7 @@ func TestSymbolicRecordPattern(t *testing.T) {
 	t.Run("Test()", func(t *testing.T) {
 		cases := []struct {
 			pattern *RecordPattern
-			value   SymbolicValue
+			value   Value
 			ok      bool
 		}{
 			//symbolic object
@@ -1922,7 +1922,7 @@ func TestSymbolicRecordPattern(t *testing.T) {
 
 		cases := []struct {
 			pattern     *RecordPattern
-			testedValue SymbolicValue
+			testedValue Value
 			ok          bool
 		}{
 			{&RecordPattern{entries: nil}, &RecordPattern{entries: nil}, false},
@@ -2060,7 +2060,7 @@ func TestSymbolicListPattern(t *testing.T) {
 	t.Run("Test()", func(t *testing.T) {
 		cases := []struct {
 			pattern *ListPattern
-			value   SymbolicValue
+			value   Value
 			ok      bool
 		}{
 
@@ -2155,7 +2155,7 @@ func TestSymbolicListPattern(t *testing.T) {
 
 		cases := []struct {
 			pattern     *ListPattern
-			testedValue SymbolicValue
+			testedValue Value
 			ok          bool
 		}{
 			//[]any
@@ -2697,7 +2697,7 @@ func TestSymbolicUnionPattern(t *testing.T) {
 	t.Run("Test()", func(t *testing.T) {
 		cases := []struct {
 			pattern *UnionPattern
-			value   SymbolicValue
+			value   Value
 			ok      bool
 		}{
 			{
@@ -2758,7 +2758,7 @@ func TestSymbolicUnionPattern(t *testing.T) {
 	t.Run("TestValue()", func(t *testing.T) {
 		cases := []struct {
 			pattern *UnionPattern
-			value   SymbolicValue
+			value   Value
 			ok      bool
 		}{
 			{
@@ -2874,7 +2874,7 @@ func TestSymbolicIntersectionPattern(t *testing.T) {
 		cases := []struct {
 			name    string
 			pattern *IntersectionPattern
-			value   SymbolicValue
+			value   Value
 			ok      bool
 		}{
 			{
@@ -2940,7 +2940,7 @@ func TestSymbolicIntersectionPattern(t *testing.T) {
 		cases := []struct {
 			name    string
 			pattern *IntersectionPattern
-			value   SymbolicValue
+			value   Value
 			ok      bool
 		}{
 			{
@@ -3196,22 +3196,22 @@ func TestFunctionPattern(t *testing.T) {
 
 }
 
-func assertTestValue(t *testing.T, a Pattern, b SymbolicValue, msg ...any) bool {
+func assertTestValue(t *testing.T, a Pattern, b Value, msg ...any) bool {
 	t.Helper()
 	return assert.True(t, a.TestValue(b, RecTestCallState{}), msg...)
 }
 
-func assertTestValueFalse(t *testing.T, a Pattern, b SymbolicValue, msg ...any) bool {
+func assertTestValueFalse(t *testing.T, a Pattern, b Value, msg ...any) bool {
 	t.Helper()
 	return assert.False(t, a.TestValue(b, RecTestCallState{}), msg...)
 }
 
-func assertTest(t *testing.T, a, b SymbolicValue) bool {
+func assertTest(t *testing.T, a, b Value) bool {
 	t.Helper()
 	return assert.True(t, a.Test(b, RecTestCallState{}))
 }
 
-func assertTestFalse(t *testing.T, a, b SymbolicValue) bool {
+func assertTestFalse(t *testing.T, a, b Value) bool {
 	t.Helper()
 	return assert.False(t, a.Test(b, RecTestCallState{}))
 }

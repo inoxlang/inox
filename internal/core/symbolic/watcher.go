@@ -22,8 +22,8 @@ var (
 
 // An Watchable represents a symbolic Watchable.
 type Watchable interface {
-	SymbolicValue
-	WatcherElement() SymbolicValue
+	Value
+	WatcherElement() Value
 }
 
 // An AnyWatchable represents a symbolic Watchable we do not know the concrete type.
@@ -31,7 +31,7 @@ type AnyWatchable struct {
 	_ int
 }
 
-func (r *AnyWatchable) Test(v SymbolicValue, state RecTestCallState) bool {
+func (r *AnyWatchable) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -44,11 +44,11 @@ func (r *AnyWatchable) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintCo
 	utils.Must(w.Write(utils.StringAsBytes("%watchable")))
 }
 
-func (r *AnyWatchable) WidestOfType() SymbolicValue {
+func (r *AnyWatchable) WidestOfType() Value {
 	return ANY_WATCHABLE
 }
 
-func (r *AnyWatchable) WatcherElement() SymbolicValue {
+func (r *AnyWatchable) WatcherElement() Value {
 	return ANY
 }
 
@@ -64,7 +64,7 @@ func NewWatcher(filter Pattern) *Watcher {
 	return &Watcher{filter: filter}
 }
 
-func (r *Watcher) Test(v SymbolicValue, state RecTestCallState) bool {
+func (r *Watcher) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -82,27 +82,27 @@ func (r *Watcher) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig,
 	utils.Must(w.Write(utils.StringAsBytes("%watcher")))
 }
 
-func (r *Watcher) WatcherElement() SymbolicValue {
+func (r *Watcher) WatcherElement() Value {
 	if r.filter == nil {
 		return ANY
 	}
 	return r.filter.SymbolicValue()
 }
 
-func (r *Watcher) StreamElement() SymbolicValue {
+func (r *Watcher) StreamElement() Value {
 	if r.filter == nil {
 		return ANY
 	}
 	return r.filter.SymbolicValue()
 }
 
-func (r *Watcher) ChunkedStreamElement() SymbolicValue {
+func (r *Watcher) ChunkedStreamElement() Value {
 	if r.filter == nil {
 		return ANY
 	}
 	return NewTupleOf(r.filter.SymbolicValue().(Serializable))
 }
 
-func (r *Watcher) WidestOfType() SymbolicValue {
+func (r *Watcher) WidestOfType() Value {
 	return ANY_WATCHER
 }

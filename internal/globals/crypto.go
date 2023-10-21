@@ -48,7 +48,7 @@ var (
 
 func init() {
 	core.RegisterSymbolicGoFunctions([]any{
-		_hashPassword, func(ctx *symbolic.Context, arg *symbolic.String, args ...symbolic.SymbolicValue) *symbolic.String {
+		_hashPassword, func(ctx *symbolic.Context, arg *symbolic.String, args ...symbolic.Value) *symbolic.String {
 			return &symbolic.String{}
 		},
 		_checkPassword, func(ctx *symbolic.Context, pass *symbolic.String, hash *symbolic.String) *symbolic.Bool {

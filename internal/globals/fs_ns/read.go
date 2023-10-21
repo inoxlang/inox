@@ -22,10 +22,10 @@ import (
 
 var (
 	READFILE_ARG_NAMES   = []string{"filepath"}
-	READFILE_SYMB_PARAMS = &[]symbolic.SymbolicValue{symbolic.ANY_DIR_PATH}
+	READFILE_SYMB_PARAMS = &[]symbolic.Value{symbolic.ANY_DIR_PATH}
 
 	LISTFILES_ARG_NAMES   = []string{"path-or-pattern"}
-	LISTFILES_SYMB_PARAMS = &[]symbolic.SymbolicValue{symbolic.NewMultivalue(symbolic.ANY_PATH, symbolic.ANY_PATH_PATTERN)}
+	LISTFILES_SYMB_PARAMS = &[]symbolic.Value{symbolic.NewMultivalue(symbolic.ANY_PATH, symbolic.ANY_PATH_PATTERN)}
 )
 
 // ReadFile expects a core.Path argument, it reads the whole content of a file.

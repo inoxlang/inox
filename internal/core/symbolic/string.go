@@ -35,13 +35,13 @@ var (
 	STRING_LIKE_PSEUDOPROPS = []string{"replace", "trim_space", "has_prefix", "has_suffix"}
 	RUNE_SLICE_PROPNAMES    = []string{"insert", "remove_position", "remove_position_range"}
 
-	RUNE_SLICE__INSERT_PARAMS      = &[]SymbolicValue{NewMultivalue(ANY_RUNE, NewAnySequenceOf(ANY_RUNE))}
+	RUNE_SLICE__INSERT_PARAMS      = &[]Value{NewMultivalue(ANY_RUNE, NewAnySequenceOf(ANY_RUNE))}
 	RUNE_SLICE__INSERT_PARAM_NAMES = []string{"rune", "index"}
 )
 
 // An WrappedString represents a symbolic WrappedString.
 type WrappedString interface {
-	SymbolicValue
+	Value
 	underlyingString() *String
 }
 
@@ -104,7 +104,7 @@ func (s *String) minLength() int64 {
 	return s.minLengthPlusOne - 1
 }
 
-func (s *String) Test(v SymbolicValue, state RecTestCallState) bool {
+func (s *String) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -187,19 +187,19 @@ func (s *String) KnownLen() int {
 	return -1
 }
 
-func (s *String) element() SymbolicValue {
+func (s *String) element() Value {
 	return ANY_BYTE
 }
 
-func (*String) elementAt(i int) SymbolicValue {
+func (*String) elementAt(i int) Value {
 	return ANY_BYTE
 }
 
-func (s *String) IteratorElementKey() SymbolicValue {
+func (s *String) IteratorElementKey() Value {
 	return ANY_INT
 }
 
-func (s *String) IteratorElementValue() SymbolicValue {
+func (s *String) IteratorElementValue() Value {
 	return ANY_BYTE
 }
 
@@ -211,7 +211,7 @@ func (s *String) GetOrBuildString() *String {
 	return s
 }
 
-func (f *String) WidestOfType() SymbolicValue {
+func (f *String) WidestOfType() Value {
 	return ANY_STR
 }
 
@@ -223,7 +223,7 @@ func (p *String) PropertyNames() []string {
 	return STRING_LIKE_PSEUDOPROPS
 }
 
-func (s *String) Prop(name string) SymbolicValue {
+func (s *String) Prop(name string) Value {
 	switch name {
 	case "replace":
 		return &GoFunction{
@@ -273,7 +273,7 @@ func NewRune(r rune) *Rune {
 	}
 }
 
-func (r *Rune) Test(v SymbolicValue, state RecTestCallState) bool {
+func (r *Rune) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -310,7 +310,7 @@ func (r *Rune) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, de
 	utils.Must(w.Write(utils.StringAsBytes("%rune")))
 }
 
-func (r *Rune) WidestOfType() SymbolicValue {
+func (r *Rune) WidestOfType() Value {
 	return ANY_RUNE
 }
 
@@ -318,7 +318,7 @@ func (r *Rune) PropertyNames() []string {
 	return []string{"is_space", "is_printable", "is_letter"}
 }
 
-func (r *Rune) Prop(name string) SymbolicValue {
+func (r *Rune) Prop(name string) Value {
 	switch name {
 	case "is_space":
 		return ANY_BOOL
@@ -336,7 +336,7 @@ type CheckedString struct {
 	_ int
 }
 
-func (s *CheckedString) Test(v SymbolicValue, state RecTestCallState) bool {
+func (s *CheckedString) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -352,7 +352,7 @@ func (p *CheckedString) PropertyNames() []string {
 	return []string{"pattern_name", "pattern"}
 }
 
-func (s *CheckedString) Prop(name string) SymbolicValue {
+func (s *CheckedString) Prop(name string) Value {
 	switch name {
 	case "pattern_name":
 		return ANY_STR
@@ -367,7 +367,7 @@ func (s *CheckedString) underlyingString() *String {
 	return ANY_STR
 }
 
-func (s *CheckedString) WidestOfType() SymbolicValue {
+func (s *CheckedString) WidestOfType() Value {
 	return ANY_CHECKED_STR
 }
 
@@ -380,7 +380,7 @@ func NewRuneSlice() *RuneSlice {
 	return &RuneSlice{}
 }
 
-func (s *RuneSlice) Test(v SymbolicValue, state RecTestCallState) bool {
+func (s *RuneSlice) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -408,23 +408,23 @@ func (s *RuneSlice) KnownLen() int {
 	return -1
 }
 
-func (s *RuneSlice) element() SymbolicValue {
+func (s *RuneSlice) element() Value {
 	return ANY_RUNE
 }
 
-func (*RuneSlice) elementAt(i int) SymbolicValue {
+func (*RuneSlice) elementAt(i int) Value {
 	return ANY_RUNE
 }
 
-func (s *RuneSlice) IteratorElementKey() SymbolicValue {
+func (s *RuneSlice) IteratorElementKey() Value {
 	return ANY_INT
 }
 
-func (s *RuneSlice) IteratorElementValue() SymbolicValue {
+func (s *RuneSlice) IteratorElementValue() Value {
 	return ANY_RUNE
 }
 
-func (b *RuneSlice) WidestOfType() SymbolicValue {
+func (b *RuneSlice) WidestOfType() Value {
 	return ANY_RUNE_SLICE
 }
 
@@ -432,17 +432,17 @@ func (s *RuneSlice) slice(start, end *Int) Sequence {
 	return &RuneSlice{}
 }
 
-func (s *RuneSlice) set(ctx *Context, i *Int, v SymbolicValue) {
+func (s *RuneSlice) set(ctx *Context, i *Int, v Value) {
 
 }
 func (s *RuneSlice) SetSlice(ctx *Context, start, end *Int, v Sequence) {
 
 }
 
-func (s *RuneSlice) insertElement(ctx *Context, v SymbolicValue, i *Int) {
+func (s *RuneSlice) insertElement(ctx *Context, v Value, i *Int) {
 }
 
-func (s *RuneSlice) Insert(ctx *Context, v SymbolicValue, i *Int) {
+func (s *RuneSlice) Insert(ctx *Context, v Value, i *Int) {
 	ctx.SetSymbolicGoFunctionParameters(RUNE_SLICE__INSERT_PARAMS, RUNE_SLICE__INSERT_PARAM_NAMES)
 }
 
@@ -480,7 +480,7 @@ func (s *RuneSlice) PropertyNames() []string {
 	return RUNE_SLICE_PROPNAMES
 }
 
-func (s *RuneSlice) Prop(name string) SymbolicValue {
+func (s *RuneSlice) Prop(name string) Value {
 	switch name {
 	case "insert":
 		return WrapGoMethod(s.Insert)
@@ -493,15 +493,15 @@ func (s *RuneSlice) Prop(name string) SymbolicValue {
 	}
 }
 
-func (s *RuneSlice) SetProp(name string, value SymbolicValue) (IProps, error) {
+func (s *RuneSlice) SetProp(name string, value Value) (IProps, error) {
 	return nil, errors.New(FmtCannotAssignPropertyOf(s))
 }
 
-func (s *RuneSlice) WithExistingPropReplaced(name string, value SymbolicValue) (IProps, error) {
+func (s *RuneSlice) WithExistingPropReplaced(name string, value Value) (IProps, error) {
 	return nil, errors.New(FmtCannotAssignPropertyOf(s))
 }
 
-func (s *RuneSlice) WatcherElement() SymbolicValue {
+func (s *RuneSlice) WatcherElement() Value {
 	return ANY
 }
 
@@ -511,7 +511,7 @@ type StringConcatenation struct {
 	SerializableMixin
 }
 
-func (c *StringConcatenation) Test(v SymbolicValue, state RecTestCallState) bool {
+func (c *StringConcatenation) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -531,11 +531,11 @@ func (c *StringConcatenation) PrettyPrint(w *bufio.Writer, config *pprint.Pretty
 	utils.Must(w.Write(utils.StringAsBytes("%string-concatenation")))
 }
 
-func (c *StringConcatenation) IteratorElementKey() SymbolicValue {
+func (c *StringConcatenation) IteratorElementKey() Value {
 	return ANY_STR.IteratorElementKey()
 }
 
-func (c *StringConcatenation) IteratorElementValue() SymbolicValue {
+func (c *StringConcatenation) IteratorElementValue() Value {
 	return ANY_STR.IteratorElementKey()
 }
 
@@ -547,11 +547,11 @@ func (c *StringConcatenation) KnownLen() int {
 	return -1
 }
 
-func (c *StringConcatenation) element() SymbolicValue {
+func (c *StringConcatenation) element() Value {
 	return ANY_STR.element()
 }
 
-func (c *StringConcatenation) elementAt(i int) SymbolicValue {
+func (c *StringConcatenation) elementAt(i int) Value {
 	return ANY_STR.elementAt(i)
 }
 
@@ -563,7 +563,7 @@ func (c *StringConcatenation) GetOrBuildString() *String {
 	return ANY_STR
 }
 
-func (c *StringConcatenation) WidestOfType() SymbolicValue {
+func (c *StringConcatenation) WidestOfType() Value {
 	return ANY_STR_CONCAT
 }
 
@@ -575,7 +575,7 @@ func (c *StringConcatenation) PropertyNames() []string {
 	return STRING_LIKE_PSEUDOPROPS
 }
 
-func (c *StringConcatenation) Prop(name string) SymbolicValue {
+func (c *StringConcatenation) Prop(name string) Value {
 	switch name {
 	case "replace":
 		return &GoFunction{
@@ -606,7 +606,7 @@ func (c *StringConcatenation) Prop(name string) SymbolicValue {
 	}
 }
 
-func isAnyStringLike(v SymbolicValue) bool {
+func isAnyStringLike(v Value) bool {
 	_, ok := v.(*AnyStringLike)
 	return ok
 }
@@ -617,7 +617,7 @@ type AnyStringLike struct {
 	Serializable
 }
 
-func (s *AnyStringLike) Test(v SymbolicValue, state RecTestCallState) bool {
+func (s *AnyStringLike) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -629,19 +629,19 @@ func (s *AnyStringLike) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintC
 	utils.Must(w.Write(utils.StringAsBytes("%string-like")))
 }
 
-func (s *AnyStringLike) element() SymbolicValue {
+func (s *AnyStringLike) element() Value {
 	return ANY_BYTE
 }
 
-func (s *AnyStringLike) elementAt(i int) SymbolicValue {
+func (s *AnyStringLike) elementAt(i int) Value {
 	return ANY_BYTE
 }
 
-func (s *AnyStringLike) IteratorElementKey() SymbolicValue {
+func (s *AnyStringLike) IteratorElementKey() Value {
 	return ANY_INT
 }
 
-func (s *AnyStringLike) IteratorElementValue() SymbolicValue {
+func (s *AnyStringLike) IteratorElementValue() Value {
 	return ANY_BYTE
 }
 
@@ -660,7 +660,7 @@ func (s *AnyStringLike) GetOrBuildString() *String {
 	return ANY_STR
 }
 
-func (s *AnyStringLike) WidestOfType() SymbolicValue {
+func (s *AnyStringLike) WidestOfType() Value {
 	return ANY_STR
 }
 
@@ -672,7 +672,7 @@ func (p *AnyStringLike) PropertyNames() []string {
 	return STRING_LIKE_PSEUDOPROPS
 }
 
-func (s *AnyStringLike) Prop(name string) SymbolicValue {
+func (s *AnyStringLike) Prop(name string) Value {
 	switch name {
 	case "replace":
 		return &GoFunction{

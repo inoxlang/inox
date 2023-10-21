@@ -16,7 +16,7 @@ type Stack struct {
 	_ int
 }
 
-func (*Stack) Test(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+func (*Stack) Test(v symbolic.Value, state symbolic.RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -36,7 +36,7 @@ func (s *Stack) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 	return nil, false
 }
 
-func (s *Stack) Prop(name string) symbolic.SymbolicValue {
+func (s *Stack) Prop(name string) symbolic.Value {
 	return symbolic.GetGoMethodOrPanic(name, s)
 }
 
@@ -44,7 +44,7 @@ func (*Stack) PropertyNames() []string {
 	return []string{"push", "pop", "peek"}
 }
 
-func (*Stack) Push(ctx *symbolic.Context, elems ...symbolic.SymbolicValue) {
+func (*Stack) Push(ctx *symbolic.Context, elems ...symbolic.Value) {
 
 }
 
@@ -52,7 +52,7 @@ func (*Stack) Pop(ctx *symbolic.Context) {
 
 }
 
-func (*Stack) Peek(ctx *symbolic.Context) symbolic.SymbolicValue {
+func (*Stack) Peek(ctx *symbolic.Context) symbolic.Value {
 	return &symbolic.Any{}
 }
 
@@ -61,14 +61,14 @@ func (*Stack) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, dep
 	return
 }
 
-func (*Stack) IteratorElementKey() symbolic.SymbolicValue {
+func (*Stack) IteratorElementKey() symbolic.Value {
 	return &symbolic.Any{}
 }
 
-func (*Stack) IteratorElementValue() symbolic.SymbolicValue {
+func (*Stack) IteratorElementValue() symbolic.Value {
 	return &symbolic.Any{}
 }
 
-func (*Stack) WidestOfType() symbolic.SymbolicValue {
+func (*Stack) WidestOfType() symbolic.Value {
 	return &Stack{}
 }

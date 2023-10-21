@@ -51,7 +51,7 @@ func init() {
 		DEFAULT_PATTERN_NAMESPACES: func() map[string]*symbolic.PatternNamespace {
 			result := make(map[string]*symbolic.PatternNamespace)
 			for name, ns := range DEFAULT_PATTERN_NAMESPACES {
-				symbolicNamespace, err := ns.ToSymbolicValue(nil, map[uintptr]symbolic.SymbolicValue{})
+				symbolicNamespace, err := ns.ToSymbolicValue(nil, map[uintptr]symbolic.Value{})
 				if err != nil {
 					panic(err)
 				}
@@ -60,10 +60,10 @@ func init() {
 			return result
 		}(),
 
-		ToSymbolicValue: func(v any, wide bool) (symbolic.SymbolicValue, error) {
+		ToSymbolicValue: func(v any, wide bool) (symbolic.Value, error) {
 			return ToSymbolicValue(nil, v.(Value), wide)
 		},
-		SymbolicToPattern: func(v symbolic.SymbolicValue) (any, bool) {
+		SymbolicToPattern: func(v symbolic.Value) (any, bool) {
 			return symbolicToPattern(v)
 		},
 		GetQuantity: func(values []float64, units []string) (any, error) {
@@ -129,7 +129,7 @@ func init() {
 				return nil, err
 			}
 			symbolicMigrationOps := make([]symbolic.MigrationOp, len(concreteMigrationOps))
-			encountered := map[uintptr]symbolic.SymbolicValue{}
+			encountered := map[uintptr]symbolic.Value{}
 
 			for i, op := range concreteMigrationOps {
 				symbolicMigrationOps[i] = op.ToSymbolicValue(ctx, encountered)
@@ -439,8 +439,8 @@ func (*SymbolicData) PropertyNames(ctx *Context) []string {
 	return SYMBOLIC_DATA_PROP_NAMES
 }
 
-func ToSymbolicValue(ctx *Context, v Value, wide bool) (symbolic.SymbolicValue, error) {
-	return _toSymbolicValue(ctx, v, wide, make(map[uintptr]symbolic.SymbolicValue))
+func ToSymbolicValue(ctx *Context, v Value, wide bool) (symbolic.Value, error) {
+	return _toSymbolicValue(ctx, v, wide, make(map[uintptr]symbolic.Value))
 }
 
 func GetStringifiedSymbolicValue(ctx *Context, v Value, wide bool) (string, error) {
@@ -451,42 +451,42 @@ func GetStringifiedSymbolicValue(ctx *Context, v Value, wide bool) (string, erro
 	return symbolic.Stringify(symbolicVal), nil
 }
 
-func (n NilT) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (n NilT) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return symbolic.Nil, nil
 }
 
-func (i Int) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (i Int) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return symbolic.NewInt(int64(i)), nil
 }
 
-func (b Bool) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (b Bool) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	if b {
 		return symbolic.TRUE, nil
 	}
 	return symbolic.FALSE, nil
 }
 
-func (f Float) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (f Float) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return symbolic.NewFloat(float64(f)), nil
 }
 
-func (r Rune) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (r Rune) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return symbolic.NewRune(rune(r)), nil
 }
 
-func (s Str) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (s Str) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return symbolic.NewString(string(s)), nil
 }
 
-func (s CheckedString) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (s CheckedString) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return symbolic.ANY_CHECKED_STR, nil
 }
 
-func (s *RuneSlice) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (s *RuneSlice) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return symbolic.ANY_RUNE_SLICE, nil
 }
 
-func (e Error) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (e Error) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	data, err := e.data.ToSymbolicValue(ctx, encountered)
 	if err != nil {
 		return nil, err
@@ -494,35 +494,35 @@ func (e Error) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Sy
 	return symbolic.NewError(data), nil
 }
 
-func (i Identifier) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (i Identifier) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return symbolic.NewIdentifier(i.UnderlyingString()), nil
 }
 
-func (p PropertyName) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (p PropertyName) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return symbolic.NewPropertyName(p.UnderlyingString()), nil
 }
 
-func (p Path) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (p Path) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return symbolic.NewPath(p.UnderlyingString()), nil
 }
 
-func (p PathPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (p PathPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return symbolic.NewPathPattern(p.UnderlyingString()), nil
 }
 
-func (u URL) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (u URL) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return symbolic.ANY_URL, nil
 }
 
-func (u URLPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (u URLPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return symbolic.ANY_URL_PATTERN, nil
 }
 
-func (p HostPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (p HostPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return symbolic.ANY_HOST_PATTERN, nil
 }
 
-func (o Option) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (o Option) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	value, err := o.Value.ToSymbolicValue(ctx, encountered)
 	if err != nil {
 		return nil, err
@@ -530,42 +530,42 @@ func (o Option) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.S
 	return symbolic.NewOption(o.Name, value), nil
 }
 
-func (*Array) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (*Array) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return symbolic.ANY_ARRAY, nil
 }
 
-func (l *List) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (l *List) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return l.underlyingList.ToSymbolicValue(ctx, encountered)
 }
 
-func (l *ValueList) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (l *ValueList) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return symbolic.NewListOf(symbolic.ANY_SERIALIZABLE), nil
 }
 
-func (l *IntList) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (l *IntList) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return symbolic.NewListOf(symbolic.ANY_INT), nil
 }
 
-func (l *BoolList) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (l *BoolList) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return symbolic.NewListOf(symbolic.ANY_BOOL), nil
 }
 
-func (l *StringList) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (l *StringList) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return symbolic.NewListOf(symbolic.ANY_STR_LIKE), nil
 }
 
-func (l KeyList) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (l KeyList) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	var keys = make([]string, len(l))
 	copy(keys, l)
 	return &symbolic.KeyList{Keys: keys}, nil
 }
 
-func (t Tuple) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (t Tuple) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	//TODO
 	return symbolic.NewTupleOf(symbolic.ANY_SERIALIZABLE), nil
 }
 
-func (obj *Object) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (obj *Object) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	ptr := reflect.ValueOf(obj).Pointer()
 	if r, ok := encountered[ptr]; ok {
 		return r, nil
@@ -591,7 +591,7 @@ func (obj *Object) ToSymbolicValue(ctx *Context, encountered map[uintptr]symboli
 	return symbolicObj, nil
 }
 
-func (rec *Record) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (rec *Record) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	ptr := reflect.ValueOf(rec).Pointer()
 	if r, ok := encountered[ptr]; ok {
 		return r, nil
@@ -614,7 +614,7 @@ func (rec *Record) ToSymbolicValue(ctx *Context, encountered map[uintptr]symboli
 	return symbolicRec, nil
 }
 
-func (dict *Dictionary) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (dict *Dictionary) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	ptr := reflect.ValueOf(dict).Pointer()
 	if r, ok := encountered[ptr]; ok {
 		return r, nil
@@ -645,7 +645,7 @@ func (dict *Dictionary) ToSymbolicValue(ctx *Context, encountered map[uintptr]sy
 	return symbolicDict, nil
 }
 
-func (s *Struct) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (s *Struct) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	ptr := reflect.ValueOf(s).Pointer()
 	if r, ok := encountered[ptr]; ok {
 		return r, nil
@@ -662,7 +662,7 @@ func (s *Struct) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.
 	return symbolicStruct, nil
 }
 
-func (p *UnionPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (p *UnionPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	ptr := reflect.ValueOf(p).Pointer()
 	if r, ok := encountered[ptr]; ok {
 		return r, nil
@@ -683,7 +683,7 @@ func (p *UnionPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]sym
 	return symbolic.NewUnionPattern(cases, p.disjoint)
 }
 
-func (p *IntersectionPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (p *IntersectionPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	ptr := reflect.ValueOf(p).Pointer()
 	if r, ok := encountered[ptr]; ok {
 		return r, nil
@@ -703,7 +703,7 @@ func (p *IntersectionPattern) ToSymbolicValue(ctx *Context, encountered map[uint
 	return symbolic.NewIntersectionPattern(cases)
 }
 
-func (p *RegexPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (p *RegexPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	ptr := reflect.ValueOf(p).Pointer()
 	if r, ok := encountered[ptr]; ok {
 		return r, nil
@@ -711,38 +711,38 @@ func (p *RegexPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]sym
 	return &symbolic.RegexPattern{}, nil
 }
 
-func (p *RuneRangeStringPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (p *RuneRangeStringPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return &symbolic.AnyStringPattern{}, nil
 }
 
-func (p *IntRangePattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (p *IntRangePattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return &symbolic.IntRangePattern{}, nil
 }
 
-func (p *FloatRangePattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (p *FloatRangePattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return &symbolic.IntRangePattern{}, nil
 }
 
-func (p *UnionStringPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (p *UnionStringPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return &symbolic.AnyStringPattern{}, nil
 }
 
-func (p *RepeatedPatternElement) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (p *RepeatedPatternElement) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return &symbolic.AnyStringPattern{}, nil
 }
 
-func (p *LengthCheckingStringPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (p *LengthCheckingStringPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return symbolic.NewLengthCheckingStringPattern(p.lengthRange.Start, p.lengthRange.End), nil
 }
 
-func (p *SequenceStringPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (p *SequenceStringPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	if p.node == nil {
 		return symbolic.NewSequenceStringPattern(nil, nil), nil
 	}
 	return symbolic.NewSequenceStringPattern(p.node, p.nodeChunk), nil
 }
 
-func (p *ExactValuePattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (p *ExactValuePattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	ptr := reflect.ValueOf(p).Pointer()
 	if r, ok := encountered[ptr]; ok {
 		return r, nil
@@ -758,7 +758,7 @@ func (p *ExactValuePattern) ToSymbolicValue(ctx *Context, encountered map[uintpt
 	return exactValPattern, nil
 }
 
-func (p *ExactStringPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (p *ExactStringPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	ptr := reflect.ValueOf(p).Pointer()
 	if r, ok := encountered[ptr]; ok {
 		return r, nil
@@ -773,7 +773,7 @@ func (p *ExactStringPattern) ToSymbolicValue(ctx *Context, encountered map[uintp
 	return exactValPattern, nil
 }
 
-func (p *ListPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (p *ListPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	ptr := reflect.ValueOf(p).Pointer()
 	if r, ok := encountered[ptr]; ok {
 		return r, nil
@@ -801,7 +801,7 @@ func (p *ListPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symb
 	return listPattern, nil
 }
 
-func (p *TuplePattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (p *TuplePattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	ptr := reflect.ValueOf(p).Pointer()
 	if r, ok := encountered[ptr]; ok {
 		return r, nil
@@ -829,7 +829,7 @@ func (p *TuplePattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]sym
 	return tuplePattern, nil
 }
 
-func (p *ObjectPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (p *ObjectPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	ptr := reflect.ValueOf(p).Pointer()
 	if r, ok := encountered[ptr]; ok {
 		return r, nil
@@ -853,7 +853,7 @@ func (p *ObjectPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]sy
 	return objPattern, nil
 }
 
-func (p *RecordPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (p *RecordPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	ptr := reflect.ValueOf(p).Pointer()
 	if r, ok := encountered[ptr]; ok {
 		return r, nil
@@ -877,7 +877,7 @@ func (p *RecordPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]sy
 	return recPattern, nil
 }
 
-func (p *OptionPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (p *OptionPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	ptr := reflect.ValueOf(p).Pointer()
 	if r, ok := encountered[ptr]; ok {
 		return r, nil
@@ -890,7 +890,7 @@ func (p *OptionPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]sy
 	return symbolic.NewOptionPattern(p.name, pattern.(symbolic.Pattern)), nil
 }
 
-func (p *TypePattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (p *TypePattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	ptr := reflect.ValueOf(p).Pointer()
 	if r, ok := encountered[ptr]; ok {
 		return r, nil
@@ -939,15 +939,15 @@ func (p *TypePattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symb
 	return symbolic.ANY_PATTERN, nil
 }
 
-func (p NamedSegmentPathPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (p NamedSegmentPathPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return symbolic.NewNamedSegmentPathPattern(p.node), nil
 }
 
-func (p *DynamicStringPatternElement) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (p *DynamicStringPatternElement) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return &symbolic.AnyStringPattern{}, nil
 }
 
-func (p *DifferencePattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (p *DifferencePattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	ptr := reflect.ValueOf(p).Pointer()
 	if r, ok := encountered[ptr]; ok {
 		return r, nil
@@ -969,7 +969,7 @@ func (p *DifferencePattern) ToSymbolicValue(ctx *Context, encountered map[uintpt
 	}, nil
 }
 
-func (p *OptionalPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (p *OptionalPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	ptr := reflect.ValueOf(p).Pointer()
 	if r, ok := encountered[ptr]; ok {
 		return r, nil
@@ -983,11 +983,11 @@ func (p *OptionalPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]
 	return symbolic.NewOptionalPattern(symbPatt.(symbolic.Pattern)), nil
 }
 
-func (p *FunctionPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (p *FunctionPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return p.symbolicValue, nil
 }
 
-func (p *EventPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (p *EventPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	ptr := reflect.ValueOf(p).Pointer()
 	if r, ok := encountered[ptr]; ok {
 		return r, nil
@@ -999,7 +999,7 @@ func (p *EventPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]sym
 	return symbolic.NewEventPattern(symValuePattern.(symbolic.Pattern))
 }
 
-func (p *MutationPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (p *MutationPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	ptr := reflect.ValueOf(p).Pointer()
 	if r, ok := encountered[ptr]; ok {
 		return r, nil
@@ -1011,7 +1011,7 @@ func (p *MutationPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]
 	return symbolic.NewMutationPattern(&symbolic.Int{}, data0Pattern.(symbolic.Pattern)), nil
 }
 
-func (p *ParserBasedPseudoPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (p *ParserBasedPseudoPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	ptr := reflect.ValueOf(p).Pointer()
 	if r, ok := encountered[ptr]; ok {
 		return r, nil
@@ -1019,15 +1019,15 @@ func (p *ParserBasedPseudoPattern) ToSymbolicValue(ctx *Context, encountered map
 	return symbolic.NewParserBasedPattern(), nil
 }
 
-func (p *IntRangeStringPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (p *IntRangeStringPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return symbolic.ANY_STR_PATTERN, nil
 }
 
-func (p *PathStringPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (p *PathStringPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return symbolic.ANY_STR_PATTERN, nil
 }
 
-func (f *GoFunction) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (f *GoFunction) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	goFunc := f.fn
 	ptr := reflect.ValueOf(goFunc).Pointer()
 	symbolicGoFunc, ok := symbolicGoFunctionMap[ptr]
@@ -1037,47 +1037,47 @@ func (f *GoFunction) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbo
 	return symbolicGoFunc, nil
 }
 
-func (d Date) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (d Date) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return symbolic.NewDate(time.Time(d)), nil
 }
 
-func (d Duration) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (d Duration) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return symbolic.NewDuration(time.Duration(d)), nil
 }
 
-func (b Byte) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (b Byte) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return symbolic.ANY_BYTE, nil
 }
 
-func (s *ByteSlice) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (s *ByteSlice) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return symbolic.ANY_BYTE_SLICE, nil
 }
 
-func (s Scheme) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (s Scheme) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return symbolic.ANY_SCHEME, nil
 }
 
-func (h Host) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (h Host) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return symbolic.ANY_HOST, nil
 }
 
-func (addr EmailAddress) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (addr EmailAddress) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return symbolic.NewEmailAddress(addr.UnderlyingString()), nil
 }
 
-func (n AstNode) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (n AstNode) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return &symbolic.AstNode{Node: n.Node}, nil
 }
 
-func (t Token) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (t Token) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return symbolic.ANY_TOKEN, nil
 }
 
-func (m FileMode) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (m FileMode) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return symbolic.ANY_FILEMODE, nil
 }
 
-func (r QuantityRange) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (r QuantityRange) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	elem, err := r.start.ToSymbolicValue(ctx, encountered)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert lower bound of quantity range to symbolic: %w", err)
@@ -1085,172 +1085,172 @@ func (r QuantityRange) ToSymbolicValue(ctx *Context, encountered map[uintptr]sym
 	return symbolic.NewQuantityRange(elem.(symbolic.Serializable)), nil
 }
 
-func (r IntRange) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (r IntRange) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return symbolic.ANY_INT_RANGE, nil
 }
 
-func (r FloatRange) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (r FloatRange) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return symbolic.ANY_FLOAT_RANGE, nil
 }
 
-func (r RuneRange) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (r RuneRange) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return &symbolic.RuneRange{}, nil
 }
 
-func (c ByteCount) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (c ByteCount) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return symbolic.NewByteCount(int64(c)), nil
 }
 
-func (c LineCount) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (c LineCount) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return symbolic.NewLineCount(int64(c)), nil
 }
 
-func (c RuneCount) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (c RuneCount) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return symbolic.NewRuneCount(int64(c)), nil
 }
 
-func (r ByteRate) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (r ByteRate) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return symbolic.NewByteRate(int64(r)), nil
 }
 
-func (r SimpleRate) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (r SimpleRate) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return symbolic.NewSimpleRate(int64(r)), nil
 }
 
-func (r *Reader) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (r *Reader) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return symbolic.ANY_READER, nil
 }
 
-func (writer *Writer) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (writer *Writer) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return &symbolic.Writer{}, nil
 }
 
-func (it *KeyFilteredIterator) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (it *KeyFilteredIterator) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return &symbolic.Iterator{}, nil
 }
 
-func (it *ValueFilteredIterator) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (it *ValueFilteredIterator) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return &symbolic.Iterator{}, nil
 }
 
-func (it *KeyValueFilteredIterator) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (it *KeyValueFilteredIterator) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return &symbolic.Iterator{}, nil
 }
 
-func (it *ArrayIterator) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (it *ArrayIterator) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return &symbolic.Iterator{}, nil
 }
 
-func (it *indexableIterator) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (it *indexableIterator) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return &symbolic.Iterator{}, nil
 }
 
-func (it *immutableSliceIterator[T]) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (it *immutableSliceIterator[T]) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return &symbolic.Iterator{}, nil
 }
 
-func (it IntRangeIterator) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (it IntRangeIterator) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return &symbolic.Iterator{}, nil
 }
 
-func (it RuneRangeIterator) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (it RuneRangeIterator) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return &symbolic.Iterator{}, nil
 }
 
-func (it QuantityRangeIterator) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (it QuantityRangeIterator) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return &symbolic.Iterator{}, nil
 }
 
-func (it PatternIterator) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (it PatternIterator) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return &symbolic.Iterator{}, nil
 }
 
-func (it indexedEntryIterator) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (it indexedEntryIterator) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return &symbolic.Iterator{}, nil
 }
 
-func (it *IpropsIterator) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (it *IpropsIterator) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return &symbolic.Iterator{}, nil
 }
 
-func (it *EventSourceIterator) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (it *EventSourceIterator) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return &symbolic.Iterator{}, nil
 }
 
-func (it *DirWalker) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (it *DirWalker) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return nil, symbolic.ErrNoSymbolicValue
 }
 
-func (it *UdataWalker) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (it *UdataWalker) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return nil, symbolic.ErrNoSymbolicValue
 }
 
-func (it *ValueListIterator) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (it *ValueListIterator) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return &symbolic.Iterator{}, nil
 }
 
-func (it *IntListIterator) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (it *IntListIterator) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return &symbolic.Iterator{}, nil
 }
 
-func (it *BitSetIterator) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (it *BitSetIterator) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return &symbolic.Iterator{}, nil
 }
 
-func (it *StrListIterator) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (it *StrListIterator) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return &symbolic.Iterator{}, nil
 }
 
-func (it *TupleIterator) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (it *TupleIterator) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return &symbolic.Iterator{}, nil
 }
 
 //
 
-func (r *LThread) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (r *LThread) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return &symbolic.LThread{}, nil
 }
 
-func (g *LThreadGroup) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (g *LThreadGroup) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return &symbolic.LThreadGroup{}, nil
 }
 
-func (i FileInfo) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (i FileInfo) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return symbolic.ANY_FILEINFO, nil
 }
 
-func (t Mimetype) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (t Mimetype) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return symbolic.NewMimetype(t.UnderlyingString()), nil
 }
 
-func (fn *InoxFunction) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (fn *InoxFunction) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	if fn.symbolicValue == nil {
 		return nil, errors.New("cannot convert Inox function to symbolic value, .SymbolicValue is nil")
 	}
 	return fn.symbolicValue, nil
 }
 
-func (b *Bytecode) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (b *Bytecode) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return &symbolic.Bytecode{Bytecode: b}, nil
 }
 
-func (t Type) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (t Type) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return &symbolic.Type{Type: t}, nil
 }
 
-func (tx *Transaction) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (tx *Transaction) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return &symbolic.Transaction{}, nil
 }
 
-func (r *RandomnessSource) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (r *RandomnessSource) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return &symbolic.RandomnessSource{}, nil
 }
 
-func (m *Mapping) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (m *Mapping) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return &symbolic.Mapping{}, nil
 }
 
-func (ns *PatternNamespace) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (ns *PatternNamespace) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 
 	symbPatterns := make(map[string]symbolic.Pattern)
 	for name, pattern := range ns.Patterns {
@@ -1263,40 +1263,40 @@ func (ns *PatternNamespace) ToSymbolicValue(ctx *Context, encountered map[uintpt
 	return symbolic.NewPatternNamespace(symbPatterns), nil
 }
 
-func (port Port) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (port Port) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return symbolic.ANY_PORT, nil
 }
 
-func (u *UData) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (u *UData) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return &symbolic.UData{}, nil
 }
 
-func (e UDataHiearchyEntry) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (e UDataHiearchyEntry) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return &symbolic.UDataHiearchyEntry{}, nil
 }
 
-func (c *StringConcatenation) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (c *StringConcatenation) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return &symbolic.StringConcatenation{}, nil
 }
 
-func (c *BytesConcatenation) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (c *BytesConcatenation) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return &symbolic.BytesConcatenation{}, nil
 }
 
-func (s *TestSuite) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (s *TestSuite) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return &symbolic.TestSuite{}, nil
 }
 
-func (c *TestCase) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (c *TestCase) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return &symbolic.TestCase{}, nil
 }
 
-func (r *TestCaseResult) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (r *TestCaseResult) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	//TODO
 	return symbolic.ANY, nil
 }
 
-func (d *DynamicValue) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (d *DynamicValue) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	symbVal, err := d.Resolve(ctx).ToSymbolicValue(ctx, encountered)
 	if err != nil {
 		return nil, err
@@ -1304,7 +1304,7 @@ func (d *DynamicValue) ToSymbolicValue(ctx *Context, encountered map[uintptr]sym
 	return symbolic.NewDynamicValue(symbVal), nil
 }
 
-func (e *Event) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (e *Event) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	symbVal, err := e.value.ToSymbolicValue(ctx, encountered)
 	if err != nil {
 		return nil, err
@@ -1312,11 +1312,11 @@ func (e *Event) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.S
 	return symbolic.NewEvent(symbVal)
 }
 
-func (s *ExecutedStep) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (s *ExecutedStep) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return &symbolic.ExecutedStep{}, nil
 }
 
-func (j *LifetimeJob) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (j *LifetimeJob) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	var symbPattern symbolic.Pattern
 
 	if j.subjectPattern == nil {
@@ -1332,9 +1332,9 @@ func (j *LifetimeJob) ToSymbolicValue(ctx *Context, encountered map[uintptr]symb
 	return symbolic.NewLifetimeJob(symbPattern), nil
 }
 
-func _toSymbolicValue(ctx *Context, v Value, wide bool, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func _toSymbolicValue(ctx *Context, v Value, wide bool, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	if encountered == nil {
-		encountered = map[uintptr]symbolic.SymbolicValue{}
+		encountered = map[uintptr]symbolic.Value{}
 	}
 
 	rval := reflect.ValueOf(v)
@@ -1361,8 +1361,8 @@ func _toSymbolicValue(ctx *Context, v Value, wide bool, encountered map[uintptr]
 	return e, nil
 }
 
-func symbolicToPattern(v symbolic.SymbolicValue) (Pattern, bool) {
-	encountered := map[uintptr]symbolic.SymbolicValue{}
+func symbolicToPattern(v symbolic.Value) (Pattern, bool) {
+	encountered := map[uintptr]symbolic.Value{}
 
 	for _, pattern := range DEFAULT_NAMED_PATTERNS {
 		symbolicPattern, err := pattern.ToSymbolicValue(nil, encountered)
@@ -1380,7 +1380,7 @@ func symbolicToPattern(v symbolic.SymbolicValue) (Pattern, bool) {
 	return nil, false
 }
 
-func (w *GenericWatcher) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (w *GenericWatcher) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	filter, err := w.config.Filter.ToSymbolicValue(ctx, encountered)
 	if err != nil {
 		return nil, err
@@ -1389,7 +1389,7 @@ func (w *GenericWatcher) ToSymbolicValue(ctx *Context, encountered map[uintptr]s
 	return symbolic.NewWatcher(filter.(symbolic.Pattern)), nil
 }
 
-func (w *PeriodicWatcher) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (w *PeriodicWatcher) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	filter, err := w.config.Filter.ToSymbolicValue(ctx, encountered)
 	if err != nil {
 		return nil, err
@@ -1398,11 +1398,11 @@ func (w *PeriodicWatcher) ToSymbolicValue(ctx *Context, encountered map[uintptr]
 	return symbolic.NewWatcher(filter.(symbolic.Pattern)), nil
 }
 
-func (m Mutation) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (m Mutation) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return &symbolic.Mutation{}, nil
 }
 
-func (w *joinedWatchers) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (w *joinedWatchers) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	filter, err := w.config.Filter.ToSymbolicValue(ctx, encountered)
 	if err != nil {
 		return nil, err
@@ -1411,7 +1411,7 @@ func (w *joinedWatchers) ToSymbolicValue(ctx *Context, encountered map[uintptr]s
 	return symbolic.NewWatcher(filter.(symbolic.Pattern)), nil
 }
 
-func (w stoppedWatcher) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (w stoppedWatcher) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	filter, err := w.config.Filter.ToSymbolicValue(ctx, encountered)
 	if err != nil {
 		return nil, err
@@ -1420,7 +1420,7 @@ func (w stoppedWatcher) ToSymbolicValue(ctx *Context, encountered map[uintptr]sy
 	return symbolic.NewWatcher(filter.(symbolic.Pattern)), nil
 }
 
-func (s *wrappedWatcherStream) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (s *wrappedWatcherStream) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	element, err := s.watcher.Config().Filter.ToSymbolicValue(ctx, encountered)
 	if err != nil {
 		return nil, err
@@ -1428,7 +1428,7 @@ func (s *wrappedWatcherStream) ToSymbolicValue(ctx *Context, encountered map[uin
 	return symbolic.NewReadableStream(element), nil
 }
 
-func (s *ElementsStream) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (s *ElementsStream) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	element, err := s.filter.ToSymbolicValue(ctx, encountered)
 	if err != nil {
 		return nil, err
@@ -1436,27 +1436,27 @@ func (s *ElementsStream) ToSymbolicValue(ctx *Context, encountered map[uintptr]s
 	return symbolic.NewReadableStream(element), nil
 }
 
-func (s *ReadableByteStream) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (s *ReadableByteStream) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return symbolic.NewReadableStream(&symbolic.Byte{}), nil
 }
 
-func (s *WritableByteStream) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (s *WritableByteStream) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return symbolic.NewWritableStream(&symbolic.Byte{}), nil
 }
 
-func (s *ConfluenceStream) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (s *ConfluenceStream) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return symbolic.NewWritableStream(&symbolic.Any{}), nil
 }
 
-func (c Color) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (c Color) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return &symbolic.Color{}, nil
 }
 
-func (r *RingBuffer) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (r *RingBuffer) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return &symbolic.RingBuffer{}, nil
 }
 
-func (c *DataChunk) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (c *DataChunk) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	data, err := c.data.ToSymbolicValue(ctx, encountered)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert data of chunk to symbolic value: %w", err)
@@ -1464,82 +1464,82 @@ func (c *DataChunk) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbol
 	return symbolic.NewChunk(data), nil
 }
 
-func (d *StaticCheckData) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (d *StaticCheckData) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return &symbolic.StaticCheckData{}, nil
 }
 
-func (d *SymbolicData) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (d *SymbolicData) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return d.SymbolicData, nil
 }
 
-func (m *Module) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (m *Module) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return m.ToSymbolic(), nil
 }
 
-func (s *GlobalState) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (s *GlobalState) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return &symbolic.GlobalState{}, nil
 }
 
-func (f *DateFormat) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (f *DateFormat) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return symbolic.ANY_FORMAT, nil
 }
 
-func (m Message) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (m Message) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return symbolic.ANY_MSG, nil
 }
 
-func (s *Subscription) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (s *Subscription) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return symbolic.NewSubscription(), nil
 }
 
-func (p *Publication) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (p *Publication) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return symbolic.NewPublication(), nil
 }
 
-func (h *ValueHistory) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (h *ValueHistory) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return symbolic.NewValueHistory(), nil
 }
 
-func (h *SynchronousMessageHandler) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (h *SynchronousMessageHandler) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return symbolic.NewMessageHandler(), nil
 }
 
-func (g *SystemGraph) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (g *SystemGraph) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return symbolic.ANY_SYSTEM_GRAPH, nil
 }
 
-func (n *SystemGraphNodes) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (n *SystemGraphNodes) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return symbolic.ANY_SYSTEM_GRAPH_NODES, nil
 }
 
-func (n *SystemGraphNode) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (n *SystemGraphNode) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return symbolic.ANY_SYSTEM_GRAPH_NODE, nil
 }
 
-func (e SystemGraphEvent) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (e SystemGraphEvent) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return symbolic.ANY_SYSTEM_GRAPH_EVENT, nil
 }
 
-func (e SystemGraphEdge) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (e SystemGraphEdge) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return symbolic.ANY_SYSTEM_GRAPH_EDGE, nil
 }
 
-func (s *Secret) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (s *Secret) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return symbolic.NewSecret(
 		utils.Must(s.value.ToSymbolicValue(ctx, encountered)),
 		utils.Must(s.pattern.ToSymbolicValue(ctx, encountered)).(*symbolic.SecretPattern),
 	)
 }
 
-func (p *SecretPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (p *SecretPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	stringPattern := utils.Must(p.stringPattern.ToSymbolicValue(ctx, encountered))
 
 	return symbolic.NewSecretPattern(stringPattern.(symbolic.StringPattern)), nil
 }
 
-func (p *XMLElement) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (p *XMLElement) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 
-	attributes := make(map[string]symbolic.SymbolicValue, len(p.attributes))
+	attributes := make(map[string]symbolic.Value, len(p.attributes))
 
 	for _, attr := range p.attributes {
 		symbolicVal, err := attr.value.ToSymbolicValue(ctx, encountered)
@@ -1549,7 +1549,7 @@ func (p *XMLElement) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbo
 		attributes[attr.name] = symbolicVal
 	}
 
-	children := make([]symbolic.SymbolicValue, len(p.children))
+	children := make([]symbolic.Value, len(p.children))
 	for i, child := range p.children {
 		symbolicVal, err := child.ToSymbolicValue(ctx, encountered)
 		if err != nil {
@@ -1561,7 +1561,7 @@ func (p *XMLElement) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbo
 	return symbolic.NewXmlElement(p.name, attributes, children), nil
 }
 
-func (db *DatabaseIL) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (db *DatabaseIL) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	pattern, err := db.inner.Schema().ToSymbolicValue(ctx, encountered)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert schema to symbolic: %w", err)
@@ -1570,7 +1570,7 @@ func (db *DatabaseIL) ToSymbolicValue(ctx *Context, encountered map[uintptr]symb
 	return symbolic.NewDatabaseIL(pattern.(*symbolic.ObjectPattern), db.schemaUpdateExpected), nil
 }
 
-func (api *ApiIL) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (api *ApiIL) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	pattern, err := api.inner.Schema().ToSymbolicValue(ctx, encountered)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert schema to symbolic: %w", err)
@@ -1579,13 +1579,13 @@ func (api *ApiIL) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic
 	return symbolic.NewApiIL(pattern.(*symbolic.ObjectPattern)), nil
 }
 
-func (ns *Namespace) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (ns *Namespace) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	ptr := reflect.ValueOf(ns).Pointer()
 	if r, ok := encountered[ptr]; ok {
 		return r, nil
 	}
 
-	entries := map[string]symbolic.SymbolicValue{}
+	entries := map[string]symbolic.Value{}
 
 	for key, val := range ns.entries {
 		symbolicVal, err := val.ToSymbolicValue(ctx, encountered)
@@ -1600,7 +1600,7 @@ func (ns *Namespace) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbo
 	return result, nil
 }
 
-func (s *StructPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (s *StructPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	ptr := reflect.ValueOf(s).Pointer()
 	if r, ok := encountered[ptr]; ok {
 		return r, nil
@@ -1624,6 +1624,6 @@ func (s *StructPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]sy
 	return symbolicStructPattern, nil
 }
 
-func (s *FilesystemSnapshotIL) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (s *FilesystemSnapshotIL) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return symbolic.ANY_FS_SNAPSHOT_IL, nil
 }

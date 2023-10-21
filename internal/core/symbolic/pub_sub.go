@@ -16,7 +16,7 @@ var (
 
 // An Subscriber represents a symbolic Subscriber.
 type Subscriber interface {
-	SymbolicValue
+	Value
 	ReceivePublication(*Publication) error
 }
 
@@ -30,7 +30,7 @@ func NewPublication() *Publication {
 	return &Publication{}
 }
 
-func (r *Publication) Test(v SymbolicValue, state RecTestCallState) bool {
+func (r *Publication) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -44,11 +44,11 @@ func (r *Publication) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintCon
 	return
 }
 
-func (r *Publication) WidestOfType() SymbolicValue {
+func (r *Publication) WidestOfType() Value {
 	return ANY_PUBLICATION
 }
 
-func (r *Publication) ReceivePublication(SymbolicValue) error {
+func (r *Publication) ReceivePublication(Value) error {
 	return nil
 }
 
@@ -62,7 +62,7 @@ func NewSubscription() *Subscription {
 	return &Subscription{}
 }
 
-func (r *Subscription) Test(v SymbolicValue, state RecTestCallState) bool {
+func (r *Subscription) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -76,7 +76,7 @@ func (r *Subscription) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintCo
 	return
 }
 
-func (r *Subscription) WidestOfType() SymbolicValue {
+func (r *Subscription) WidestOfType() Value {
 	return ANY_SUBSCRIPTION
 }
 
@@ -85,7 +85,7 @@ type AnySubscriber struct {
 	_ int
 }
 
-func (r *AnySubscriber) Test(v SymbolicValue, state RecTestCallState) bool {
+func (r *AnySubscriber) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -99,11 +99,11 @@ func (r *AnySubscriber) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintC
 	return
 }
 
-func (r *AnySubscriber) WidestOfType() SymbolicValue {
+func (r *AnySubscriber) WidestOfType() Value {
 	return ANY_SUBSCRIBER
 }
 
-func (r *AnySubscriber) ReceivePublication(SymbolicValue) error {
+func (r *AnySubscriber) ReceivePublication(Value) error {
 	return nil
 }
 

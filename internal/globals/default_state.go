@@ -316,9 +316,9 @@ func NewDefaultGlobalState(ctx *core.Context, conf default_state.DefaultGlobalSt
 	baseGlobals := maps.Clone(constants)
 	constants[default_state.PREINIT_DATA_GLOBAL_NAME] = preinitData
 
-	symbolicBaseGlobals := map[string]symbolic.SymbolicValue{}
+	symbolicBaseGlobals := map[string]symbolic.Value{}
 	{
-		encountered := map[uintptr]symbolic.SymbolicValue{}
+		encountered := map[uintptr]symbolic.Value{}
 		for k, v := range baseGlobals {
 			symbolicValue, err := v.ToSymbolicValue(ctx, encountered)
 			if err != nil {

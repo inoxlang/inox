@@ -479,7 +479,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 	})
 
 	delete(globals, core.MOD_ARGS_VARNAME)
-	additionalSymbolicGlobals := map[string]symbolic.SymbolicValue{
+	additionalSymbolicGlobals := map[string]symbolic.Value{
 		core.MOD_ARGS_VARNAME: manifest.Parameters.GetSymbolicArguments(ctx),
 	}
 
@@ -493,7 +493,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 	symbolicBasePatterns := map[string]symbolic.Pattern{}
 	symbolicBasePatternNamespaces := map[string]*symbolic.PatternNamespace{}
 
-	encountered := map[uintptr]symbolic.SymbolicValue{}
+	encountered := map[uintptr]symbolic.Value{}
 	for k, v := range basePatterns {
 		symbolicBasePatterns[k] = utils.Must(v.ToSymbolicValue(ctx, encountered)).(symbolic.Pattern)
 	}

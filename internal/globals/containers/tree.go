@@ -59,7 +59,7 @@ func init() {
 						},
 					}, nil
 				},
-				SymbolicCallImpl: func(ctx *symbolic.Context, values []symbolic.SymbolicValue) (symbolic.Pattern, error) {
+				SymbolicCallImpl: func(ctx *symbolic.Context, values []symbolic.Value) (symbolic.Pattern, error) {
 					return coll_symbolic.NewTreeNodePattern(symbolic.ANY_PATTERN)
 				},
 			},

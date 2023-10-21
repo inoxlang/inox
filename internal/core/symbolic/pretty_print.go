@@ -31,7 +31,7 @@ var (
 )
 
 // Stringify calls PrettyPrint on the passed value
-func Stringify(v SymbolicValue) string {
+func Stringify(v Value) string {
 	buff := &bytes.Buffer{}
 	w := bufio.NewWriterSize(buff, PRETTY_PRINT_BUFF_WRITER_SIZE)
 
@@ -49,7 +49,7 @@ func Stringify(v SymbolicValue) string {
 	return buff.String()
 }
 
-func PrettyPrint(v SymbolicValue, w io.Writer, config *pprint.PrettyPrintConfig, depth, parentIndentCount int) (err error) {
+func PrettyPrint(v Value, w io.Writer, config *pprint.PrettyPrintConfig, depth, parentIndentCount int) (err error) {
 	buffered, ok := w.(*bufio.Writer)
 	if !ok {
 		buffered = bufio.NewWriterSize(w, PRETTY_PRINT_BUFF_WRITER_SIZE)

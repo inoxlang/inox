@@ -17,10 +17,10 @@ var (
 )
 
 type ISpecificIntersection interface {
-	SpecificIntersection(other SymbolicValue, depth int) (SymbolicValue, error)
+	SpecificIntersection(other Value, depth int) (Value, error)
 }
 
-func getIntersection(depth int, values ...SymbolicValue) (SymbolicValue, error) {
+func getIntersection(depth int, values ...Value) (Value, error) {
 	if depth > MAX_INTERSECTION_COMPUTATION_DEPTH {
 		return nil, ErrMaxIntersectionComputationDepthExceeded
 	}

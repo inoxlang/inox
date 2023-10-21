@@ -2639,7 +2639,7 @@ func TestCheck(t *testing.T) {
 			assert.NoError(t, err)
 
 			state := createState(mod)
-			state.SymbolicBaseGlobalsForImportedModule = map[string]symbolic.SymbolicValue{"a": symbolic.NewInt(1)}
+			state.SymbolicBaseGlobalsForImportedModule = map[string]symbolic.Value{"a": symbolic.NewInt(1)}
 			defer state.Ctx.CancelGracefully()
 
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{
@@ -3948,7 +3948,7 @@ func (r testMutableGoValue) PrettyPrint(w *bufio.Writer, config *PrettyPrintConf
 	utils.Must(fmt.Fprintf(w, "%#v", r))
 }
 
-func (v testMutableGoValue) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (v testMutableGoValue) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return symbolic.ANY, nil
 }
 

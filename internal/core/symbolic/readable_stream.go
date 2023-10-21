@@ -14,9 +14,9 @@ var (
 
 // An StreamSource represents a symbolic StreamSource.
 type StreamSource interface {
-	SymbolicValue
-	StreamElement() SymbolicValue
-	ChunkedStreamElement() SymbolicValue
+	Value
+	StreamElement() Value
+	ChunkedStreamElement() Value
 }
 
 // An AnyStreamSource represents a symbolic StreamSource we do not know the concrete type.
@@ -24,7 +24,7 @@ type AnyStreamSource struct {
 	_ int
 }
 
-func (r *AnyStreamSource) Test(v SymbolicValue, state RecTestCallState) bool {
+func (r *AnyStreamSource) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -38,30 +38,30 @@ func (r *AnyStreamSource) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrin
 	return
 }
 
-func (r *AnyStreamSource) WidestOfType() SymbolicValue {
+func (r *AnyStreamSource) WidestOfType() Value {
 	return &AnyStreamSource{}
 }
 
-func (r *AnyStreamSource) StreamElement() SymbolicValue {
+func (r *AnyStreamSource) StreamElement() Value {
 	return ANY
 }
 
-func (r *AnyStreamSource) ChunkedStreamElement() SymbolicValue {
+func (r *AnyStreamSource) ChunkedStreamElement() Value {
 	return ANY
 }
 
 // An ReadableStream represents a symbolic ReadableStream.
 type ReadableStream struct {
-	element SymbolicValue //if nil matches any
+	element Value //if nil matches any
 	_       int
 }
 
 // TODO: add chunk argument ?
-func NewReadableStream(element SymbolicValue) *ReadableStream {
+func NewReadableStream(element Value) *ReadableStream {
 	return &ReadableStream{element: element}
 }
 
-func (r *ReadableStream) Test(v SymbolicValue, state RecTestCallState) bool {
+func (r *ReadableStream) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -80,17 +80,17 @@ func (r *ReadableStream) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrint
 	return
 }
 
-func (r *ReadableStream) StreamElement() SymbolicValue {
+func (r *ReadableStream) StreamElement() Value {
 	if r.element == nil {
 		return ANY
 	}
 	return r.element
 }
 
-func (r *ReadableStream) ChunkedStreamElement() SymbolicValue {
+func (r *ReadableStream) ChunkedStreamElement() Value {
 	return ANY
 }
 
-func (r *ReadableStream) WidestOfType() SymbolicValue {
+func (r *ReadableStream) WidestOfType() Value {
 	return &ReadableStream{}
 }

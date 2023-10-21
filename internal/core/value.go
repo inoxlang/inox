@@ -34,7 +34,7 @@ type Value interface {
 	PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int)
 
 	//ToSymbolicValue should return a symbolic value that represents the value.
-	ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error)
+	ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error)
 }
 
 // A resource name is a string value that designates a resource, examples: URL, Path & Host are resource names.

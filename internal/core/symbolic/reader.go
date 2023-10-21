@@ -13,7 +13,7 @@ var (
 
 // A Readable represents a symbolic Readable.
 type Readable interface {
-	SymbolicValue
+	Value
 	Reader() *Reader
 }
 
@@ -22,7 +22,7 @@ type AnyReadable struct {
 	_ int
 }
 
-func (r *AnyReadable) Test(v SymbolicValue, state RecTestCallState) bool {
+func (r *AnyReadable) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -43,7 +43,7 @@ func (r *AnyReadable) Reader() *Reader {
 	return &Reader{}
 }
 
-func (r *AnyReadable) WidestOfType() SymbolicValue {
+func (r *AnyReadable) WidestOfType() Value {
 	return &AnyReadable{}
 }
 
@@ -54,7 +54,7 @@ type Reader struct {
 	_ int
 }
 
-func (r *Reader) Test(v SymbolicValue, state RecTestCallState) bool {
+func (r *Reader) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -74,7 +74,7 @@ func (reader *Reader) ReadAll() (*ByteSlice, *Error) {
 	return &ByteSlice{}, nil
 }
 
-func (reader *Reader) Prop(name string) SymbolicValue {
+func (reader *Reader) Prop(name string) Value {
 	method, ok := reader.GetGoMethod(name)
 	if !ok {
 		panic(FormatErrPropertyDoesNotExist(name, reader))
@@ -105,7 +105,7 @@ func (r *Reader) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, 
 	return
 }
 
-func (r *Reader) WidestOfType() SymbolicValue {
+func (r *Reader) WidestOfType() Value {
 	return &Reader{}
 }
 

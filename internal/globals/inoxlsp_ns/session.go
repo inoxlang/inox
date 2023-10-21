@@ -73,7 +73,7 @@ func (s *LSPSession) GetGoMethod(name string) (*core.GoFunction, bool) {
 	return nil, false
 }
 
-func (evs *LSPSession) ToSymbolicValue(ctx *core.Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (evs *LSPSession) ToSymbolicValue(ctx *core.Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return symbolic_inox_ns.ANY_LSP_SESSION, nil
 }
 

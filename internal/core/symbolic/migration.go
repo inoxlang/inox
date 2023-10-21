@@ -48,7 +48,7 @@ type MigrationInitialValueCapablePattern interface {
 	MigrationInitialValue() (Serializable, bool)
 }
 
-func isNodeAllowedInMigrationHandler(visit visitArgs, globalsAtCreation map[string]SymbolicValue) (parse.TraversalAction, bool, error) {
+func isNodeAllowedInMigrationHandler(visit visitArgs, globalsAtCreation map[string]Value) (parse.TraversalAction, bool, error) {
 	switch visit.node.(type) {
 	case parse.SimpleValueLiteral, //includes IdentifierLiteral
 		*parse.GlobalVariable, *parse.Variable,

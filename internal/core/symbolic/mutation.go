@@ -16,7 +16,7 @@ type Mutation struct {
 	_ int
 }
 
-func (r *Mutation) Test(v SymbolicValue, state RecTestCallState) bool {
+func (r *Mutation) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -30,6 +30,6 @@ func (r *Mutation) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig
 	return
 }
 
-func (r *Mutation) WidestOfType() SymbolicValue {
+func (r *Mutation) WidestOfType() Value {
 	return ANY_MUTATION
 }

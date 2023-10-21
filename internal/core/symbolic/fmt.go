@@ -17,7 +17,7 @@ var (
 
 type Format interface {
 	Pattern
-	Format(v SymbolicValue) error
+	Format(v Value) error
 }
 
 // An AnyFormat represents a symbolic Pattern we do not know the concrete type.
@@ -26,7 +26,7 @@ type AnyFormat struct {
 	SerializableMixin
 }
 
-func (p *AnyFormat) Test(v SymbolicValue, state RecTestCallState) bool {
+func (p *AnyFormat) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -43,11 +43,11 @@ func (p *AnyFormat) HasUnderlyingPattern() bool {
 	return false
 }
 
-func (p *AnyFormat) TestValue(SymbolicValue, RecTestCallState) bool {
+func (p *AnyFormat) TestValue(Value, RecTestCallState) bool {
 	return true
 }
 
-func (p *AnyFormat) SymbolicValue() SymbolicValue {
+func (p *AnyFormat) SymbolicValue() Value {
 	return ANY
 }
 
@@ -55,18 +55,18 @@ func (p *AnyFormat) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
 
-func (p *AnyFormat) IteratorElementKey() SymbolicValue {
+func (p *AnyFormat) IteratorElementKey() Value {
 	return ANY_INT
 }
 
-func (p *AnyFormat) IteratorElementValue() SymbolicValue {
+func (p *AnyFormat) IteratorElementValue() Value {
 	return ANY
 }
 
-func (p *AnyFormat) WidestOfType() SymbolicValue {
+func (p *AnyFormat) WidestOfType() Value {
 	return ANY_FORMAT
 }
 
-func (p *AnyFormat) Format(v SymbolicValue) error {
+func (p *AnyFormat) Format(v Value) error {
 	return ErrInvalidFormattingArgument
 }

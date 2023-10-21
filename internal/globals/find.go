@@ -80,6 +80,6 @@ func _find(ctx *core.Context, pattern core.Pattern, location core.Value) (*core.
 
 }
 
-func _symbolic_find(ctx *symbolic.Context, patt symbolic.Pattern, location symbolic.SymbolicValue) (*symbolic.List, *symbolic.Error) {
+func _symbolic_find(ctx *symbolic.Context, patt symbolic.Pattern, location symbolic.Value) (*symbolic.List, *symbolic.Error) {
 	return symbolic.NewListOf(patt.SymbolicValue().(symbolic.Serializable)), nil
 }

@@ -782,7 +782,7 @@ func handleIdentifierMemberCompletions(
 		} else {
 			// if at one point in the member chain a value is any we have no completions to propose
 			// so we just return an empty list
-			if symbolic.IsAny(curr.(symbolic.SymbolicValue)) {
+			if symbolic.IsAny(curr.(symbolic.Value)) {
 				return nil
 			}
 			iprops, ok := curr.(symbolic.IProps)
@@ -918,7 +918,7 @@ loop:
 		} else {
 			// if the at one point in the member chain a value is any we have no completions to propose
 			// so we just return an empty list
-			if symbolic.IsAnyOrAnySerializable(curr.(symbolic.SymbolicValue)) {
+			if symbolic.IsAnyOrAnySerializable(curr.(symbolic.Value)) {
 				return nil
 			}
 			// if the at one point in the member chain a value has no properties we have no completions to propose
@@ -978,7 +978,7 @@ func handleDoubleColonExpressionCompletions(n *parse.DoubleColonExpression, stat
 
 	switch l := leftVal.(type) {
 	case *symbolic.Object:
-		l.ForEachEntry(func(propName string, propValue symbolic.SymbolicValue) error {
+		l.ForEachEntry(func(propName string, propValue symbolic.Value) error {
 			if symbolic.IsAnyOrAnySerializable(propValue) || utils.Ret0(symbolic.IsSharable(propValue)) {
 				return nil
 			}

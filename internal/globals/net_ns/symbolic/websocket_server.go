@@ -14,7 +14,7 @@ type WebsocketServer struct {
 	_ int
 }
 
-func (s *WebsocketServer) Test(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+func (s *WebsocketServer) Test(v symbolic.Value, state symbolic.RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -32,7 +32,7 @@ func (s *WebsocketServer) GetGoMethod(name string) (*symbolic.GoFunction, bool) 
 	return nil, false
 }
 
-func (s *WebsocketServer) Prop(name string) symbolic.SymbolicValue {
+func (s *WebsocketServer) Prop(name string) symbolic.Value {
 	return symbolic.GetGoMethodOrPanic(name, s)
 }
 
@@ -52,6 +52,6 @@ func (s *WebsocketServer) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrin
 	utils.Must(w.Write(utils.StringAsBytes("%websocket-server")))
 }
 
-func (s *WebsocketServer) WidestOfType() symbolic.SymbolicValue {
+func (s *WebsocketServer) WidestOfType() symbolic.Value {
 	return &WebsocketServer{}
 }

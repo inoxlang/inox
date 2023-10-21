@@ -20,7 +20,7 @@ type HttpRequest struct {
 	symbolic.PotentiallySharable
 }
 
-func (r *HttpRequest) Test(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+func (r *HttpRequest) Test(v symbolic.Value, state symbolic.RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -44,7 +44,7 @@ func (req *HttpRequest) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 	return nil, false
 }
 
-func (req *HttpRequest) Prop(name string) symbolic.SymbolicValue {
+func (req *HttpRequest) Prop(name string) symbolic.Value {
 	switch name {
 	case "method":
 		return &symbolic.String{}
@@ -72,6 +72,6 @@ func (r *HttpRequest) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintCon
 	utils.Must(w.Write(utils.StringAsBytes("%http.req")))
 }
 
-func (r *HttpRequest) WidestOfType() symbolic.SymbolicValue {
+func (r *HttpRequest) WidestOfType() symbolic.Value {
 	return &HttpRequest{}
 }

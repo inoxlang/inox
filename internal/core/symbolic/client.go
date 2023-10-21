@@ -13,7 +13,7 @@ var (
 
 // A ProtocolClient represents a symbolic ProtocolClient;
 type ProtocolClient interface {
-	SymbolicValue
+	Value
 	Schemes() []string
 }
 
@@ -22,7 +22,7 @@ type AnyProtocolClient struct {
 	_ int
 }
 
-func (r *AnyProtocolClient) Test(v SymbolicValue, state RecTestCallState) bool {
+func (r *AnyProtocolClient) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -39,6 +39,6 @@ func (r *AnyProtocolClient) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPr
 	utils.Must(w.Write(utils.StringAsBytes("%protocol-client")))
 }
 
-func (r *AnyProtocolClient) WidestOfType() SymbolicValue {
+func (r *AnyProtocolClient) WidestOfType() Value {
 	return ANY_PROTOCOL_CLIENT
 }

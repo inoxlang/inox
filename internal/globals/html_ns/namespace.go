@@ -23,14 +23,14 @@ func init() {
 
 	// register symbolic version of Go functions
 	core.RegisterSymbolicGoFunctions([]any{
-		_html_find, func(ctx *symbolic.Context, selector *symbolic.String, node symbolic.SymbolicValue) *symbolic.List {
+		_html_find, func(ctx *symbolic.Context, selector *symbolic.String, node symbolic.Value) *symbolic.List {
 			return symbolic.NewListOf(_html_symbolic.NewHTMLNode())
 		},
 		NewNode, symbolicElement,
-		Render, func(ctx *symbolic.Context, arg symbolic.SymbolicValue) *symbolic.ByteSlice {
+		Render, func(ctx *symbolic.Context, arg symbolic.Value) *symbolic.ByteSlice {
 			return &symbolic.ByteSlice{}
 		},
-		RenderToString, func(ctx *symbolic.Context, arg symbolic.SymbolicValue) *symbolic.String {
+		RenderToString, func(ctx *symbolic.Context, arg symbolic.Value) *symbolic.String {
 			return &symbolic.String{}
 		},
 		EscapeString, func(ctx *symbolic.Context, s symbolic.StringLike) *symbolic.String {

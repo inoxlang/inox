@@ -27,7 +27,7 @@ type TestSuite struct {
 	_ int
 }
 
-func (s *TestSuite) Test(v SymbolicValue, state RecTestCallState) bool {
+func (s *TestSuite) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -43,7 +43,7 @@ func (s *TestSuite) Run(ctx *Context, options ...Option) (*LThread, *Error) {
 	return &LThread{}, nil
 }
 
-func (s *TestSuite) WidestOfType() SymbolicValue {
+func (s *TestSuite) WidestOfType() Value {
 	return &TestSuite{}
 }
 
@@ -55,7 +55,7 @@ func (s *TestSuite) GetGoMethod(name string) (*GoFunction, bool) {
 	return nil, false
 }
 
-func (s *TestSuite) Prop(name string) SymbolicValue {
+func (s *TestSuite) Prop(name string) Value {
 	method, ok := s.GetGoMethod(name)
 	if !ok {
 		panic(FormatErrPropertyDoesNotExist(name, s))
@@ -78,7 +78,7 @@ type TestCase struct {
 	_ int
 }
 
-func (s *TestCase) Test(v SymbolicValue, state RecTestCallState) bool {
+func (s *TestCase) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -90,7 +90,7 @@ func (s *TestCase) Test(v SymbolicValue, state RecTestCallState) bool {
 	}
 }
 
-func (s *TestCase) WidestOfType() SymbolicValue {
+func (s *TestCase) WidestOfType() Value {
 	return &TestCase{}
 }
 
@@ -98,7 +98,7 @@ func (s *TestCase) GetGoMethod(name string) (*GoFunction, bool) {
 	return nil, false
 }
 
-func (s *TestCase) Prop(name string) SymbolicValue {
+func (s *TestCase) Prop(name string) Value {
 	method, ok := s.GetGoMethod(name)
 	if !ok {
 		panic(FormatErrPropertyDoesNotExist(name, s))

@@ -52,7 +52,7 @@ type GlobalState struct {
 
 	GetBaseGlobalsForImportedModule      func(ctx *Context, manifest *Manifest) (GlobalVariables, error) // ok if nil
 	GetBasePatternsForImportedModule     func() (map[string]Pattern, map[string]*PatternNamespace)       // return nil maps by default
-	SymbolicBaseGlobalsForImportedModule map[string]symbolic.SymbolicValue                               // ok if nil, should not be modified
+	SymbolicBaseGlobalsForImportedModule map[string]symbolic.Value                                       // ok if nil, should not be modified
 
 	// debugging and testing
 

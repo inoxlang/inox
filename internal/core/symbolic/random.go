@@ -13,7 +13,7 @@ type RandomnessSource struct {
 	_ int
 }
 
-func (r *RandomnessSource) Test(v SymbolicValue, state RecTestCallState) bool {
+func (r *RandomnessSource) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -37,7 +37,7 @@ func (r *RandomnessSource) Rollback(cr *Context) *Error {
 	return nil
 }
 
-func (r *RandomnessSource) Prop(name string) SymbolicValue {
+func (r *RandomnessSource) Prop(name string) Value {
 	method, ok := r.GetGoMethod(name)
 	if !ok {
 		panic(FormatErrPropertyDoesNotExist(name, r))
@@ -58,6 +58,6 @@ func (r *RandomnessSource) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPri
 	return
 }
 
-func (r *RandomnessSource) WidestOfType() SymbolicValue {
+func (r *RandomnessSource) WidestOfType() Value {
 	return &RandomnessSource{}
 }

@@ -20,14 +20,14 @@ var (
 // A Struct represents a symbolic Struct.
 type Struct struct {
 	structType  *StructPattern //if nil matches any struct
-	fieldValues map[string]SymbolicValue
+	fieldValues map[string]Value
 }
 
-func NewStruct(structType *StructPattern, fieldValues map[string]SymbolicValue) *Struct {
+func NewStruct(structType *StructPattern, fieldValues map[string]Value) *Struct {
 	return &Struct{structType: structType, fieldValues: fieldValues}
 }
 
-func (s *Struct) Test(v SymbolicValue, state RecTestCallState) bool {
+func (s *Struct) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -47,7 +47,7 @@ func (s *Struct) Test(v SymbolicValue, state RecTestCallState) bool {
 	return true
 }
 
-func (s *Struct) Prop(name string) SymbolicValue {
+func (s *Struct) Prop(name string) Value {
 	if s.structType == nil {
 		return ANY
 	}
@@ -68,7 +68,7 @@ func (s *Struct) PropertyNames() []string {
 	return s.structType.keys
 }
 
-func (s *Struct) SetProp(name string, value SymbolicValue) (IProps, error) {
+func (s *Struct) SetProp(name string, value Value) (IProps, error) {
 	fieldType, ok := s.structType.typeOfField(name)
 	if !ok {
 		return nil, FormatErrPropertyDoesNotExist(name, s)
@@ -80,7 +80,7 @@ func (s *Struct) SetProp(name string, value SymbolicValue) (IProps, error) {
 	return s, nil
 }
 
-func (s *Struct) WithExistingPropReplaced(name string, value SymbolicValue) (IProps, error) {
+func (s *Struct) WithExistingPropReplaced(name string, value Value) (IProps, error) {
 	panic(ErrNotImplementedYet)
 }
 
@@ -145,7 +145,7 @@ func (s *Struct) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, 
 	utils.MustWriteMany(w, bytes.Repeat(config.Indent, depth), []byte{'}'})
 }
 
-func (s *Struct) WidestOfType() SymbolicValue {
+func (s *Struct) WidestOfType() Value {
 	return ANY_STRUCT
 }
 
@@ -181,7 +181,7 @@ func CreateStructPattern(name string, id ulid.ULID, keys []string, types []Patte
 	}
 }
 
-func (p *StructPattern) Test(v SymbolicValue, state RecTestCallState) bool {
+func (p *StructPattern) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -223,6 +223,6 @@ func (s *StructPattern) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintC
 	w.WriteByte('}')
 }
 
-func (s *StructPattern) WidestOfType() SymbolicValue {
+func (s *StructPattern) WidestOfType() Value {
 	return ANY_STRUCT_PATTERN
 }

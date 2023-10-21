@@ -21,7 +21,7 @@ type HttpResponseWriter struct {
 	_ int
 }
 
-func (r *HttpResponseWriter) Test(v symbolic.SymbolicValue, state symbolic.RecTestCallState) bool {
+func (r *HttpResponseWriter) Test(v symbolic.Value, state symbolic.RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -54,7 +54,7 @@ func (resp *HttpResponseWriter) GetGoMethod(name string) (*symbolic.GoFunction, 
 	}
 }
 
-func (resp *HttpResponseWriter) Prop(name string) symbolic.SymbolicValue {
+func (resp *HttpResponseWriter) Prop(name string) symbolic.Value {
 	return symbolic.GetGoMethodOrPanic(name, resp)
 }
 
@@ -66,7 +66,7 @@ func (r *HttpResponseWriter) PrettyPrint(w *bufio.Writer, config *pprint.PrettyP
 	utils.Must(w.Write(utils.StringAsBytes("%http-response-writer")))
 }
 
-func (r *HttpResponseWriter) WidestOfType() symbolic.SymbolicValue {
+func (r *HttpResponseWriter) WidestOfType() symbolic.Value {
 	return &HttpResponseWriter{}
 }
 
@@ -78,7 +78,7 @@ func (resp *HttpResponseWriter) WriteBinary(ctx *symbolic.Context, v *symbolic.B
 	return &symbolic.Int{}, nil
 }
 
-func (resp *HttpResponseWriter) WriteHTML(ctx *symbolic.Context, v symbolic.SymbolicValue) (*symbolic.Int, *symbolic.Error) {
+func (resp *HttpResponseWriter) WriteHTML(ctx *symbolic.Context, v symbolic.Value) (*symbolic.Int, *symbolic.Error) {
 	return &symbolic.Int{}, nil
 }
 

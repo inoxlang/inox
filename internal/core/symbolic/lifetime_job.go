@@ -19,7 +19,7 @@ func NewLifetimeJob(subjectPattern Pattern) *LifetimeJob {
 	return &LifetimeJob{subjectPattern: subjectPattern}
 }
 
-func (j *LifetimeJob) Test(v SymbolicValue, state RecTestCallState) bool {
+func (j *LifetimeJob) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -30,7 +30,7 @@ func (j *LifetimeJob) Test(v SymbolicValue, state RecTestCallState) bool {
 	return j.subjectPattern.Test(other.subjectPattern, state)
 }
 
-func (j *LifetimeJob) WidestOfType() SymbolicValue {
+func (j *LifetimeJob) WidestOfType() Value {
 	return &LifetimeJob{subjectPattern: ANY_PATTERN}
 }
 
@@ -40,7 +40,7 @@ func (j *LifetimeJob) GetGoMethod(name string) (*GoFunction, bool) {
 	return nil, false
 }
 
-func (j *LifetimeJob) Prop(name string) SymbolicValue {
+func (j *LifetimeJob) Prop(name string) Value {
 	method, ok := j.GetGoMethod(name)
 	if !ok {
 		panic(FormatErrPropertyDoesNotExist(name, j))

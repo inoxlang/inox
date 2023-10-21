@@ -77,7 +77,7 @@ func NewPathMatchingPattern(p *PathPattern) *Path {
 	}
 }
 
-func (p *Path) Test(v SymbolicValue, state RecTestCallState) bool {
+func (p *Path) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -168,7 +168,7 @@ func (p *Path) PropertyNames() []string {
 	return PATH_PROPNAMES
 }
 
-func (p *Path) Prop(name string) SymbolicValue {
+func (p *Path) Prop(name string) Value {
 	switch name {
 	case "segments":
 		return NewListOf(ANY_STR)
@@ -212,15 +212,15 @@ func (p *Path) underlyingString() *String {
 	return ANY_STR
 }
 
-func (p *Path) WalkerElement() SymbolicValue {
+func (p *Path) WalkerElement() Value {
 	return WALK_ELEM
 }
 
-func (p *Path) WalkerNodeMeta() SymbolicValue {
+func (p *Path) WalkerNodeMeta() Value {
 	return ANY
 }
 
-func (p *Path) WidestOfType() SymbolicValue {
+func (p *Path) WidestOfType() Value {
 	return ANY_PATH
 }
 
@@ -251,7 +251,7 @@ func NewUrlMatchingPattern(p *URLPattern) *URL {
 	}
 }
 
-func (u *URL) Test(v SymbolicValue, state RecTestCallState) bool {
+func (u *URL) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -319,7 +319,7 @@ func (u *URL) PropertyNames() []string {
 	return []string{"scheme", "host", "path", "raw_query"}
 }
 
-func (u *URL) Prop(name string) SymbolicValue {
+func (u *URL) Prop(name string) Value {
 	switch name {
 	case "scheme":
 		return ANY_STR
@@ -334,7 +334,7 @@ func (u *URL) Prop(name string) SymbolicValue {
 	}
 }
 
-func (u *URL) WidestOfType() SymbolicValue {
+func (u *URL) WidestOfType() Value {
 	return ANY_URL
 }
 
@@ -355,7 +355,7 @@ func NewScheme(v string) *Scheme {
 	}
 }
 
-func (s *Scheme) Test(v SymbolicValue, state RecTestCallState) bool {
+func (s *Scheme) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -396,7 +396,7 @@ func (s *Scheme) underlyingString() *String {
 	return ANY_STR
 }
 
-func (s *Scheme) WidestOfType() SymbolicValue {
+func (s *Scheme) WidestOfType() Value {
 	return ANY_SCHEME
 }
 
@@ -427,7 +427,7 @@ func NewHostMatchingPattern(p *HostPattern) *Host {
 	}
 }
 
-func (h *Host) Test(v SymbolicValue, state RecTestCallState) bool {
+func (h *Host) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -491,7 +491,7 @@ func (s *Host) PropertyNames() []string {
 	return []string{"scheme", "explicit_port", "without_port"}
 }
 
-func (*Host) Prop(name string) SymbolicValue {
+func (*Host) Prop(name string) Value {
 	switch name {
 	case "scheme":
 		return ANY_STR
@@ -508,6 +508,6 @@ func (h *Host) underlyingString() *String {
 	return ANY_STR
 }
 
-func (h *Host) WidestOfType() SymbolicValue {
+func (h *Host) WidestOfType() Value {
 	return ANY_HOST
 }

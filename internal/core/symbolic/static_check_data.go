@@ -17,7 +17,7 @@ type StaticCheckData struct {
 	_ int
 }
 
-func (d *StaticCheckData) Test(v SymbolicValue, state RecTestCallState) bool {
+func (d *StaticCheckData) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -31,7 +31,7 @@ func (d *StaticCheckData) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrin
 	return
 }
 
-func (m *StaticCheckData) WidestOfType() SymbolicValue {
+func (m *StaticCheckData) WidestOfType() Value {
 	return &StaticCheckData{}
 }
 
@@ -39,7 +39,7 @@ func (d *StaticCheckData) GetGoMethod(name string) (*GoFunction, bool) {
 	return nil, false
 }
 
-func (d *StaticCheckData) Prop(name string) SymbolicValue {
+func (d *StaticCheckData) Prop(name string) Value {
 	switch name {
 	case "errors":
 		return NewTupleOf(NewError(SOURCE_POSITION_RECORD))
@@ -47,11 +47,11 @@ func (d *StaticCheckData) Prop(name string) SymbolicValue {
 	return GetGoMethodOrPanic(name, d)
 }
 
-func (d *StaticCheckData) SetProp(name string, value SymbolicValue) (IProps, error) {
+func (d *StaticCheckData) SetProp(name string, value Value) (IProps, error) {
 	return nil, errors.New(FmtCannotAssignPropertyOf(d))
 }
 
-func (d *StaticCheckData) WithExistingPropReplaced(name string, value SymbolicValue) (IProps, error) {
+func (d *StaticCheckData) WithExistingPropReplaced(name string, value Value) (IProps, error) {
 	return nil, errors.New(FmtCannotAssignPropertyOf(d))
 }
 
@@ -59,6 +59,6 @@ func (*StaticCheckData) PropertyNames() []string {
 	return STATIC_CHECK_DATA_PROP_NAMES
 }
 
-func (d *StaticCheckData) Compute(ctx *Context, key SymbolicValue) SymbolicValue {
+func (d *StaticCheckData) Compute(ctx *Context, key Value) Value {
 	return ANY
 }

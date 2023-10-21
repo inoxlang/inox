@@ -9,6 +9,6 @@ import (
 func init() {
 }
 
-func (h *Handle) ToSymbolicValue(ctx *core.Context, encountered map[uintptr]symbolic.SymbolicValue) (symbolic.SymbolicValue, error) {
+func (h *Handle) ToSymbolicValue(ctx *core.Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return &chrome_symbolic.Handle{}, nil
 }

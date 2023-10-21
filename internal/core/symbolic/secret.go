@@ -12,25 +12,25 @@ var (
 	ANY_SECRET_PATTERN = NewSecretPattern(ANY_STR_PATTERN)
 	ANY_SECRET         = utils.Must(NewSecret(ANY_STR_LIKE, ANY_SECRET_PATTERN))
 
-	_ = []SymbolicValue{(*Secret)(nil)}
+	_ = []Value{(*Secret)(nil)}
 	_ = []Pattern{(*SecretPattern)(nil)}
 )
 
 // A Secret represents a symbolic Secret.
 type Secret struct {
 	pattern *SecretPattern
-	value   SymbolicValue
+	value   Value
 	SerializableMixin
 }
 
-func NewSecret(value SymbolicValue, pattern *SecretPattern) (*Secret, error) {
+func NewSecret(value Value, pattern *SecretPattern) (*Secret, error) {
 	if !isAnyStringLike(value) && value.IsMutable() {
 		return nil, fmt.Errorf("failed to create secret: value should be immutable: %T", value)
 	}
 	return &Secret{value: value}, nil
 }
 
-func (r *Secret) Test(v SymbolicValue, state RecTestCallState) bool {
+func (r *Secret) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -42,7 +42,7 @@ func (r *Secret) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, 
 	utils.Must(w.Write(utils.StringAsBytes("%secret")))
 }
 
-func (r *Secret) WidestOfType() SymbolicValue {
+func (r *Secret) WidestOfType() Value {
 	return &Secret{value: ANY}
 }
 
@@ -60,7 +60,7 @@ func NewSecretPattern(patt StringPattern) *SecretPattern {
 	}
 }
 
-func (pattern *SecretPattern) Test(v SymbolicValue, state RecTestCallState) bool {
+func (pattern *SecretPattern) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -71,7 +71,7 @@ func (pattern *SecretPattern) Test(v SymbolicValue, state RecTestCallState) bool
 	return pattern.stringPattern.Test(otherPattern.stringPattern, state)
 }
 
-func (pattern *SecretPattern) TestValue(v SymbolicValue, state RecTestCallState) bool {
+func (pattern *SecretPattern) TestValue(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 	secret, ok := v.(*Secret)
@@ -82,7 +82,7 @@ func (pattern *SecretPattern) TestValue(v SymbolicValue, state RecTestCallState)
 	return secret.pattern == pattern
 }
 
-func (pattern *SecretPattern) SymbolicValue() SymbolicValue {
+func (pattern *SecretPattern) SymbolicValue() Value {
 	return utils.Must(NewSecret(pattern.stringPattern.SymbolicValue(), pattern))
 }
 
@@ -96,15 +96,15 @@ func (pattern *SecretPattern) PrettyPrint(w *bufio.Writer, config *pprint.Pretty
 	utils.Must(w.Write(utils.StringAsBytes(")")))
 }
 
-func (pattern *SecretPattern) WidestOfType() SymbolicValue {
+func (pattern *SecretPattern) WidestOfType() Value {
 	return nil
 }
 
-func (pattern *SecretPattern) IteratorElementKey() SymbolicValue {
+func (pattern *SecretPattern) IteratorElementKey() Value {
 	return ANY
 }
 
-func (pattern *SecretPattern) IteratorElementValue() SymbolicValue {
+func (pattern *SecretPattern) IteratorElementValue() Value {
 	return ANY
 }
 

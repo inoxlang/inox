@@ -7,7 +7,7 @@ import (
 	parse "github.com/inoxlang/inox/internal/parse"
 )
 
-func _makeStateAndChunk(code string, includedFiles map[string]string, globals ...map[string]SymbolicValue) (*parse.Chunk, *State, error) {
+func _makeStateAndChunk(code string, includedFiles map[string]string, globals ...map[string]Value) (*parse.Chunk, *State, error) {
 	chunk, err := parse.ParseChunkSource(parse.InMemorySource{
 		NameString: "",
 		CodeString: code,
@@ -24,7 +24,7 @@ func _makeStateAndChunk(code string, includedFiles map[string]string, globals ..
 
 	state.ctx.AddNamedPattern("int", &TypePattern{
 		val: ANY_INT,
-		call: func(ctx *Context, values []SymbolicValue) (Pattern, error) {
+		call: func(ctx *Context, values []Value) (Pattern, error) {
 			if len(values) == 0 {
 				return nil, errors.New("missing argument")
 			}
@@ -75,7 +75,7 @@ func _makeStateAndChunk(code string, includedFiles map[string]string, globals ..
 	return chunk.Node, state, err
 }
 
-func MakeTestStateAndChunk(code string, globals ...map[string]SymbolicValue) (*parse.Chunk, *State) {
+func MakeTestStateAndChunk(code string, globals ...map[string]Value) (*parse.Chunk, *State) {
 	node, state, err := _makeStateAndChunk(code, nil, globals...)
 	if err != nil {
 		panic(err)
@@ -83,7 +83,7 @@ func MakeTestStateAndChunk(code string, globals ...map[string]SymbolicValue) (*p
 	return node, state
 }
 
-func MakeTestStateAndChunks(code string, files map[string]string, globals ...map[string]SymbolicValue) (*parse.Chunk, *State) {
+func MakeTestStateAndChunks(code string, files map[string]string, globals ...map[string]Value) (*parse.Chunk, *State) {
 	node, state, err := _makeStateAndChunk(code, files, globals...)
 	if err != nil {
 		panic(err)

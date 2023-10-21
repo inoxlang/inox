@@ -24,7 +24,7 @@ type AstNode struct {
 	UnassignablePropsMixin
 }
 
-func (n *AstNode) Test(v SymbolicValue, state RecTestCallState) bool {
+func (n *AstNode) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -50,16 +50,16 @@ func (n *AstNode) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig,
 	utils.Must(fmt.Fprintf(w, "%%ast-node(%T)", n.Node))
 }
 
-func (n *AstNode) WidestOfType() SymbolicValue {
+func (n *AstNode) WidestOfType() Value {
 	return ANY_AST_NODE
 }
 
-func (r *AstNode) Prop(name string) SymbolicValue {
+func (r *AstNode) Prop(name string) Value {
 	switch name {
 	case "position":
 		return extData.DEFAULT_PATTERN_NAMESPACES["inox"].entries["source_position"].SymbolicValue()
 	case "token_at_position":
-		return WrapGoClosure(func(ctx *Context, pos *Int) SymbolicValue {
+		return WrapGoClosure(func(ctx *Context, pos *Int) Value {
 			return ANY_TOKEN_OR_NIL
 		})
 	}
@@ -77,7 +77,7 @@ type Token struct {
 	UnassignablePropsMixin
 }
 
-func (n *Token) Test(v SymbolicValue, state RecTestCallState) bool {
+func (n *Token) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -92,11 +92,11 @@ func (t *Token) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintConfig, d
 	utils.Must(w.Write(utils.StringAsBytes("%ast-token")))
 }
 
-func (t *Token) WidestOfType() SymbolicValue {
+func (t *Token) WidestOfType() Value {
 	return ANY_TOKEN
 }
 
-func (r *Token) Prop(name string) SymbolicValue {
+func (r *Token) Prop(name string) Value {
 	switch name {
 	case "type":
 		return ANY_STR_LIKE

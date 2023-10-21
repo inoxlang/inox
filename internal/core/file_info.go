@@ -13,7 +13,7 @@ var (
 )
 
 func init() {
-	RegisterSymbolicGoFunction(FileModeFrom, func(ctx *symbolic.Context, firstArg symbolic.SymbolicValue) *symbolic.FileMode {
+	RegisterSymbolicGoFunction(FileModeFrom, func(ctx *symbolic.Context, firstArg symbolic.Value) *symbolic.FileMode {
 		_, ok := firstArg.(*symbolic.Int)
 		if !ok {
 			ctx.AddSymbolicGoFunctionError("argument should be an integer")

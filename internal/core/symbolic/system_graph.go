@@ -38,7 +38,7 @@ func NewSystemGraph() *SystemGraph {
 	return &SystemGraph{}
 }
 
-func (g *SystemGraph) Test(v SymbolicValue, state RecTestCallState) bool {
+func (g *SystemGraph) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -54,11 +54,11 @@ func (g *SystemGraph) TakeInMemorySnapshot() (*Snapshot, error) {
 	return ANY_SNAPSHOT, nil
 }
 
-func (g *SystemGraph) WatcherElement() SymbolicValue {
+func (g *SystemGraph) WatcherElement() Value {
 	return ANY
 }
 
-func (g *SystemGraph) Prop(memberName string) SymbolicValue {
+func (g *SystemGraph) Prop(memberName string) Value {
 	switch memberName {
 	case "nodes":
 		return ANY_SYSTEM_GRAPH_NODES
@@ -69,11 +69,11 @@ func (g *SystemGraph) Prop(memberName string) SymbolicValue {
 	panic(FormatErrPropertyDoesNotExist(memberName, g))
 }
 
-func (g *SystemGraph) SetProp(name string, value SymbolicValue) (IProps, error) {
+func (g *SystemGraph) SetProp(name string, value Value) (IProps, error) {
 	return nil, errors.New(FmtCannotAssignPropertyOf(g))
 }
 
-func (g *SystemGraph) WithExistingPropReplaced(name string, value SymbolicValue) (IProps, error) {
+func (g *SystemGraph) WithExistingPropReplaced(name string, value Value) (IProps, error) {
 	return nil, errors.New(FmtCannotAssignPropertyOf(g))
 }
 
@@ -98,7 +98,7 @@ func (g *SystemGraph) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrintCon
 	return
 }
 
-func (g *SystemGraph) WidestOfType() SymbolicValue {
+func (g *SystemGraph) WidestOfType() Value {
 	return ANY_SYSTEM_GRAPH
 }
 
@@ -111,7 +111,7 @@ func NewSystemGraphNodes() *SystemGraphNodes {
 	return &SystemGraphNodes{}
 }
 
-func (g *SystemGraphNodes) Test(v SymbolicValue, state RecTestCallState) bool {
+func (g *SystemGraphNodes) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -135,10 +135,10 @@ func (n *SystemGraphNodes) IsShared() bool {
 	return true
 }
 
-func (d *SystemGraphNodes) IteratorElementKey() SymbolicValue {
+func (d *SystemGraphNodes) IteratorElementKey() Value {
 	return ANY
 }
-func (d *SystemGraphNodes) IteratorElementValue() SymbolicValue {
+func (d *SystemGraphNodes) IteratorElementValue() Value {
 	return ANY_SYSTEM_GRAPH_NODE
 }
 
@@ -147,7 +147,7 @@ func (d *SystemGraphNodes) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPri
 	return
 }
 
-func (d *SystemGraphNodes) WidestOfType() SymbolicValue {
+func (d *SystemGraphNodes) WidestOfType() Value {
 	return ANY_SYSTEM_GRAPH_NODES
 }
 
@@ -160,7 +160,7 @@ func NewSystemGraphNode() *SystemGraphNode {
 	return &SystemGraphNode{}
 }
 
-func (n *SystemGraphNode) Test(v SymbolicValue, state RecTestCallState) bool {
+func (n *SystemGraphNode) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -172,7 +172,7 @@ func (n *SystemGraphNode) Test(v SymbolicValue, state RecTestCallState) bool {
 	return false
 }
 
-func (n *SystemGraphNode) Prop(memberName string) SymbolicValue {
+func (n *SystemGraphNode) Prop(memberName string) Value {
 	switch memberName {
 	case "name", "type_name":
 		return ANY_STR
@@ -184,11 +184,11 @@ func (n *SystemGraphNode) Prop(memberName string) SymbolicValue {
 	panic(FormatErrPropertyDoesNotExist(memberName, n))
 }
 
-func (n *SystemGraphNode) SetProp(name string, value SymbolicValue) (IProps, error) {
+func (n *SystemGraphNode) SetProp(name string, value Value) (IProps, error) {
 	return nil, errors.New(FmtCannotAssignPropertyOf(n))
 }
 
-func (n *SystemGraphNode) WithExistingPropReplaced(name string, value SymbolicValue) (IProps, error) {
+func (n *SystemGraphNode) WithExistingPropReplaced(name string, value Value) (IProps, error) {
 	return nil, errors.New(FmtCannotAssignPropertyOf(n))
 }
 
@@ -213,7 +213,7 @@ func (n *SystemGraphNode) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrin
 	return
 }
 
-func (n *SystemGraphNode) WidestOfType() SymbolicValue {
+func (n *SystemGraphNode) WidestOfType() Value {
 	return ANY_SYSTEM_GRAPH_NODE
 }
 
@@ -227,7 +227,7 @@ func NewSystemGraphEvent() *SystemGraphEvent {
 	return &SystemGraphEvent{}
 }
 
-func (n *SystemGraphEvent) Test(v SymbolicValue, state RecTestCallState) bool {
+func (n *SystemGraphEvent) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -239,7 +239,7 @@ func (n *SystemGraphEvent) Test(v SymbolicValue, state RecTestCallState) bool {
 	return false
 }
 
-func (n *SystemGraphEvent) Prop(memberName string) SymbolicValue {
+func (n *SystemGraphEvent) Prop(memberName string) Value {
 	switch memberName {
 	case "text":
 		return ANY_STR
@@ -249,11 +249,11 @@ func (n *SystemGraphEvent) Prop(memberName string) SymbolicValue {
 	panic(FormatErrPropertyDoesNotExist(memberName, n))
 }
 
-func (n *SystemGraphEvent) SetProp(name string, value SymbolicValue) (IProps, error) {
+func (n *SystemGraphEvent) SetProp(name string, value Value) (IProps, error) {
 	return nil, errors.New(FmtCannotAssignPropertyOf(n))
 }
 
-func (n *SystemGraphEvent) WithExistingPropReplaced(name string, value SymbolicValue) (IProps, error) {
+func (n *SystemGraphEvent) WithExistingPropReplaced(name string, value Value) (IProps, error) {
 	return nil, errors.New(FmtCannotAssignPropertyOf(n))
 }
 
@@ -278,7 +278,7 @@ func (n *SystemGraphEvent) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPri
 	return
 }
 
-func (n *SystemGraphEvent) WidestOfType() SymbolicValue {
+func (n *SystemGraphEvent) WidestOfType() Value {
 	return ANY_SYSTEM_GRAPH_EVENT
 }
 
@@ -292,7 +292,7 @@ func NewSystemGraphEdge() *SystemGraphEdge {
 	return &SystemGraphEdge{}
 }
 
-func (e *SystemGraphEdge) Test(v SymbolicValue, state RecTestCallState) bool {
+func (e *SystemGraphEdge) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -304,7 +304,7 @@ func (e *SystemGraphEdge) Test(v SymbolicValue, state RecTestCallState) bool {
 	return false
 }
 
-func (e *SystemGraphEdge) Prop(memberName string) SymbolicValue {
+func (e *SystemGraphEdge) Prop(memberName string) Value {
 	switch memberName {
 	case "text":
 		return ANY_STR
@@ -314,11 +314,11 @@ func (e *SystemGraphEdge) Prop(memberName string) SymbolicValue {
 	panic(FormatErrPropertyDoesNotExist(memberName, e))
 }
 
-func (e *SystemGraphEdge) SetProp(name string, value SymbolicValue) (IProps, error) {
+func (e *SystemGraphEdge) SetProp(name string, value Value) (IProps, error) {
 	return nil, errors.New(FmtCannotAssignPropertyOf(e))
 }
 
-func (e *SystemGraphEdge) WithExistingPropReplaced(name string, value SymbolicValue) (IProps, error) {
+func (e *SystemGraphEdge) WithExistingPropReplaced(name string, value Value) (IProps, error) {
 	return nil, errors.New(FmtCannotAssignPropertyOf(e))
 }
 
@@ -331,6 +331,6 @@ func (e *SystemGraphEdge) PrettyPrint(w *bufio.Writer, config *pprint.PrettyPrin
 	return
 }
 
-func (e *SystemGraphEdge) WidestOfType() SymbolicValue {
+func (e *SystemGraphEdge) WidestOfType() Value {
 	return ANY_SYSTEM_GRAPH_EDGE
 }

@@ -60,7 +60,7 @@ func NewDatabaseIL(schema *ObjectPattern, schemaUpdateExpected bool) *DatabaseIL
 	return db
 }
 
-func (db *DatabaseIL) Test(v SymbolicValue, state RecTestCallState) bool {
+func (db *DatabaseIL) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -72,7 +72,7 @@ func (db *DatabaseIL) Test(v SymbolicValue, state RecTestCallState) bool {
 	}
 }
 
-func (*DatabaseIL) WidestOfType() SymbolicValue {
+func (*DatabaseIL) WidestOfType() Value {
 	return ANY_DATABASE
 }
 
@@ -86,7 +86,7 @@ func (db *DatabaseIL) GetGoMethod(name string) (*GoFunction, bool) {
 	return nil, false
 }
 
-func (db *DatabaseIL) Prop(name string) SymbolicValue {
+func (db *DatabaseIL) Prop(name string) Value {
 	switch name {
 	case "schema":
 		return db.schema
@@ -146,7 +146,7 @@ func (db *DatabaseIL) UpdateSchema(ctx *Context, schema *ObjectPattern, addition
 				exact:   true,
 			}
 
-			ctx.SetSymbolicGoFunctionParameters(&[]SymbolicValue{ANY_OBJECT_PATTERN, expectedObject}, []string{"new-schema", "migrations"})
+			ctx.SetSymbolicGoFunctionParameters(&[]Value{ANY_OBJECT_PATTERN, expectedObject}, []string{"new-schema", "migrations"})
 			return
 		}
 	} else {
@@ -173,7 +173,7 @@ func (db *DatabaseIL) UpdateSchema(ctx *Context, schema *ObjectPattern, addition
 			for _, op := range replacements {
 				pathPattern := "%" + op.PseudoPath
 				var entryValue Serializable = &InoxFunction{
-					parameters:     []SymbolicValue{op.Current.SymbolicValue()},
+					parameters:     []Value{op.Current.SymbolicValue()},
 					parameterNames: []string{"previous-value"},
 					result:         op.Next.SymbolicValue(),
 					visitCheckNode: isNodeAllowedInMigrationHandler,
@@ -183,7 +183,7 @@ func (db *DatabaseIL) UpdateSchema(ctx *Context, schema *ObjectPattern, addition
 				if ok {
 					acceptedInitialValue, ok := capable.MigrationInitialValue()
 					if ok {
-						entryValue = AsSerializableChecked(joinValues([]SymbolicValue{entryValue, acceptedInitialValue}))
+						entryValue = AsSerializableChecked(joinValues([]Value{entryValue, acceptedInitialValue}))
 					}
 				}
 
@@ -203,7 +203,7 @@ func (db *DatabaseIL) UpdateSchema(ctx *Context, schema *ObjectPattern, addition
 				pathPattern := "%" + op.PseudoPath
 				dict.entries[pathPattern] = AsSerializable(NewMultivalue(
 					&InoxFunction{
-						parameters:     []SymbolicValue{op.Value.SymbolicValue()},
+						parameters:     []Value{op.Value.SymbolicValue()},
 						parameterNames: []string{"removed-value"},
 						result:         Nil,
 						visitCheckNode: isNodeAllowedInMigrationHandler,
@@ -225,7 +225,7 @@ func (db *DatabaseIL) UpdateSchema(ctx *Context, schema *ObjectPattern, addition
 			for _, op := range inclusions {
 				pathPattern := "%" + op.PseudoPath
 				var entryValue Serializable = &InoxFunction{
-					parameters:     []SymbolicValue{ANY},
+					parameters:     []Value{ANY},
 					parameterNames: []string{"previous-value"},
 					result:         op.Value.SymbolicValue(),
 					visitCheckNode: isNodeAllowedInMigrationHandler,
@@ -235,7 +235,7 @@ func (db *DatabaseIL) UpdateSchema(ctx *Context, schema *ObjectPattern, addition
 				if ok {
 					acceptedInitialValue, ok := capable.MigrationInitialValue()
 					if ok {
-						entryValue = AsSerializableChecked(joinValues([]SymbolicValue{entryValue, acceptedInitialValue}))
+						entryValue = AsSerializableChecked(joinValues([]Value{entryValue, acceptedInitialValue}))
 					}
 				}
 
@@ -256,7 +256,7 @@ func (db *DatabaseIL) UpdateSchema(ctx *Context, schema *ObjectPattern, addition
 				value := op.Value.SymbolicValue()
 
 				var entryValue Serializable = &InoxFunction{
-					parameters:     []SymbolicValue{joinValues([]SymbolicValue{value, Nil})},
+					parameters:     []Value{joinValues([]Value{value, Nil})},
 					parameterNames: []string{"previous-value"},
 					result:         value,
 					visitCheckNode: isNodeAllowedInMigrationHandler,
@@ -266,7 +266,7 @@ func (db *DatabaseIL) UpdateSchema(ctx *Context, schema *ObjectPattern, addition
 				if ok {
 					acceptedInitialValue, ok := capable.MigrationInitialValue()
 					if ok {
-						entryValue = AsSerializableChecked(joinValues([]SymbolicValue{entryValue, acceptedInitialValue}))
+						entryValue = AsSerializableChecked(joinValues([]Value{entryValue, acceptedInitialValue}))
 					}
 				}
 
@@ -276,7 +276,7 @@ func (db *DatabaseIL) UpdateSchema(ctx *Context, schema *ObjectPattern, addition
 			expectedObject.entries[DB_MIGRATION__INITIALIZATIONS_PROP_NAME] = dict
 		}
 
-		ctx.SetSymbolicGoFunctionParameters(&[]SymbolicValue{ANY_OBJECT_PATTERN, expectedObject}, []string{"new-schema", "migrations"})
+		ctx.SetSymbolicGoFunctionParameters(&[]Value{ANY_OBJECT_PATTERN, expectedObject}, []string{"new-schema", "migrations"})
 		return
 	}
 }
