@@ -1,4 +1,4 @@
-[Install Inox](../README.md#installation) | [Language Basics](./language-basics.md) |  [Built-in Functions](./builtin.md) | [Project](./project.md) | [Shell Basics](./shell-basics.md) | [Scripting Basics](./scripting-basics.md)
+[Install Inox](../README.md#installation) | [Language Reference](./language-reference.md) |  [Built-in Functions](./builtin.md) | [Project](./project.md) | [Shell Basics](./shell-basics.md) | [Scripting Basics](./scripting-basics.md)
 
 -----
 
@@ -6,10 +6,13 @@
 # Web Application Development
 
 In this tutorial you will learn how to create a basic a **todo** application.
-Before going further create a new empty **todo** [project] using Visual Studio Code and open the workspace.
+Before going further create a new empty **todo** [project](./project.md) using Visual Studio Code and open the workspace.
 
 Outline:\
-[HTTP Server](#1-http-server)
+[1) HTTP Server](#1-http-server)
+[2) Filesystem Routing](#2-filesystem-routing)
+[3) Database](#3-database)
+
 
 ## 1) HTTP Server
 
@@ -17,7 +20,7 @@ In the **Project Filesystem** (virtual) let's create the following folders:
 - **/static** - this folder will contain the static files of the application (JS, CSS, images)
 - **/routes** - this folder will contain the handler files for dynamic content
 
-Now let's create **main.ix** file with the following content:
+Now let's create **/main.ix** file with the following content:
 
 ```inox
 const (
@@ -55,7 +58,6 @@ for the request and invokes the handler. The routing rules are the following:
 | /about | GET | /GET-about.ix , /about.ix , /about/GET.ix , /about/index.ix |
 | /users | POST | /POST-users.ix , /users.ix , /users/POST.ix , /POST/users/index.ix |
 
-
 Now create the `/routes/index.ix` file to handle the home page:
 ```inox
 manifest {
@@ -75,3 +77,24 @@ return html<html>
 ```
 
 ℹ️ Since the manifest does not contain any parameter the only accepted methods are **GET** and **HEAD**.
+
+## 3) Database
+
+We need a database in order to store & retrieve Todo items, let's define a database in **/main.ix**
+```
+manifest {
+    permissions: {
+        provide: HOST
+        read: %/...
+        write: %/...    # required by the database
+    }
+    databases: {
+        main: {
+            resource: ldb://main
+
+            # location of the data in the project filesystem
+            resolution-data: /databases/main/   
+        }
+    }
+}
+```

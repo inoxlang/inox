@@ -20,6 +20,12 @@
 - WebAssembly support using https://github.com/tetratelabs/wazero.
 - Internal plugin system or hooks (Inox | WASM)
 
+## Planned Improvements
+
+- Reduction of memory usage
+- Faster runtime
+- Security improvements
+
 ## Won't Have Or Provide 
 
 - Interactivity with native code (FFIs ...)
