@@ -57,7 +57,7 @@ func NewTestSuite(input TestSuiteCreationInput) (*TestSuite, error) {
 
 	parsedChunk := &parse.ParsedChunk{
 		Node:   embeddedModChunk,
-		Source: parentState.Module.MainChunk.Source,
+		Source: parentChunk.Source,
 	}
 
 	parsedChunk.GetFormattedNodeLocation(embeddedModChunk)
@@ -297,7 +297,7 @@ func NewTestCase(input TestCaseCreationInput) (*TestCase, error) {
 
 	parsedChunk := &parse.ParsedChunk{
 		Node:   modChunk,
-		Source: parentState.Module.MainChunk.Source,
+		Source: parentChunk.Source,
 	}
 
 	// manifest, err := evaluateTestingManifest(parsedChunk, parentState)

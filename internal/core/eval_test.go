@@ -5406,7 +5406,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			assert.Equal(t, Int(2), res)
 		})
 
-		t.Run("pass an additional global to a embedded module (block)", func(t *testing.T) {
+		t.Run("pass an additional global to an embedded module (block)", func(t *testing.T) {
 			code := `
 				rt = go {globals: {b: 2}} do { 
 					return b
@@ -5421,7 +5421,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			assert.Equal(t, Int(2), res)
 		})
 
-		t.Run("group (used once)", func(t *testing.T) {
+		t.Run("group: used once", func(t *testing.T) {
 			code := `
 				group = LThreadGroup()
 				go {group: group} do { }
@@ -5437,7 +5437,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			assert.Len(t, res.(*LThreadGroup).threads, 1)
 		})
 
-		t.Run("group (used twice)", func(t *testing.T) {
+		t.Run("group: used twice", func(t *testing.T) {
 			code := `
 				group = LThreadGroup()
 				go {group: group} do { }
@@ -5455,7 +5455,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			assert.Len(t, res.(*LThreadGroup).threads, 2)
 		})
 
-		t.Run("call passed Inox function", func(t *testing.T) {
+		t.Run("call a passed Inox function", func(t *testing.T) {
 			code := `
 				fn f(){
 					return 2
@@ -5473,7 +5473,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			assert.Equal(t, Int(2), res)
 		})
 
-		t.Run("call passed Inox function that access a captured global", func(t *testing.T) {
+		t.Run("call a passed Inox function that access a captured global", func(t *testing.T) {
 			code := `
 				$$a = 1
 				fn f(){
@@ -5798,6 +5798,103 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			assert.Nil(t, state.Ctx.ResolveNamedPattern("p2"))
 		})
 
+		t.Run("the source of a lthread's main chunk should be the source of the main module: call expression", func(t *testing.T) {
+			code := `
+				fn f(){
+					return 1
+				}
+				lthread = go do f()
+				return lthread
+			`
+			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
+
+			state.Logger = zerolog.New(state.Out)
+			res, err := Eval(code, state, false)
+			if !assert.NoError(t, err) {
+				return
+			}
+			lthread := res.(*LThread)
+			assert.Equal(t, state.Module.MainChunk.Source, lthread.module.MainChunk.Source)
+		})
+
+		t.Run("the source of a lthread's main chunk should be the source of the main module: block", func(t *testing.T) {
+			code := `
+				fn f(){
+					return 1
+				}
+				lthread = go do {}
+				return lthread
+			`
+			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
+
+			state.Logger = zerolog.New(state.Out)
+			res, err := Eval(code, state, false)
+			if !assert.NoError(t, err) {
+				return
+			}
+			lthread := res.(*LThread)
+			assert.Equal(t, state.Module.MainChunk.Source, lthread.module.MainChunk.Source)
+		})
+
+		t.Run("the source of the main chunk of a lthread spawned at the top level of an included file "+
+			"should be the source of the included chunk", func(t *testing.T) {
+			moduleName := "mymod.ix"
+			modpath := writeModuleAndIncludedFiles(t, moduleName, `
+				manifest {}
+				import ./dep.ix
+				return lthread
+			`, map[string]string{"./dep.ix": `
+				includable-chunk
+				lthread = go do {}
+			`})
+
+			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
+			if !assert.NoError(t, err) {
+				return
+			}
+			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
+
+			state.Logger = zerolog.New(state.Out)
+			res, err := Eval(mod, state, false)
+			if !assert.NoError(t, err) {
+				return
+			}
+			lthread := res.(*LThread)
+			assert.Equal(t, state.Module.IncludedChunkForest[0].Source, lthread.module.MainChunk.Source)
+		})
+
+		t.Run("the source of the main chunk of a lthread spawned in a function that is defined in an included file "+
+			"but called by the module should be the source of the included chunk", func(t *testing.T) {
+			moduleName := "mymod.ix"
+			modpath := writeModuleAndIncludedFiles(t, moduleName, `
+				manifest {}
+				import ./dep.ix
+				return f()
+			`, map[string]string{"./dep.ix": `
+				includable-chunk
+				fn f(){
+					return go do {}
+				}
+			`})
+
+			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
+			if !assert.NoError(t, err) {
+				return
+			}
+			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
+
+			state.Logger = zerolog.New(state.Out)
+			res, err := Eval(mod, state, false)
+			if !assert.NoError(t, err) {
+				return
+			}
+			lthread := res.(*LThread)
+			assert.Equal(t, state.Module.IncludedChunkForest[0].Source, lthread.module.MainChunk.Source)
+		})
 	})
 
 	t.Run("mapping expression", func(t *testing.T) {
@@ -7194,6 +7291,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 			assert.Equal(t, Str("name"), res.(*TestSuite).meta)
+			assert.Equal(t, state.Module.MainChunk.Source, res.(*TestSuite).module.MainChunk.Source)
 		})
 
 		t.Run("no meta", func(t *testing.T) {
@@ -7208,6 +7306,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 			assert.Equal(t, Nil, res.(*TestSuite).meta)
+			assert.Equal(t, state.Module.MainChunk.Source, res.(*TestSuite).module.MainChunk.Source)
 		})
 
 		t.Run("meta; name", func(t *testing.T) {
@@ -7260,6 +7359,64 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			assert.Equal(t, snapshot, res.(*TestSuite).filesystemSnapshotFromMeta)
 		})
 
+		t.Run("the source of the main chunk of a testsuite created at the top level of an included file "+
+			"should be the source of the included chunk", func(t *testing.T) {
+			moduleName := "mymod.ix"
+			modpath := writeModuleAndIncludedFiles(t, moduleName, `
+				manifest {}
+				import ./dep.ix
+				return case
+			`, map[string]string{"./dep.ix": `
+				includable-chunk
+				case = testsuite "name" {}
+			`})
+
+			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
+			if !assert.NoError(t, err) {
+				return
+			}
+			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
+
+			state.Logger = zerolog.New(state.Out)
+			res, err := Eval(mod, state, false)
+			if !assert.NoError(t, err) {
+				return
+			}
+			testSuite := res.(*TestSuite)
+			assert.Equal(t, state.Module.IncludedChunkForest[0].Source, testSuite.module.MainChunk.Source)
+		})
+
+		t.Run("the source of the main chunk of a testsuite created in a function that is defined in an included file "+
+			"but called by the module should be the source of the included chunk", func(t *testing.T) {
+			moduleName := "mymod.ix"
+			modpath := writeModuleAndIncludedFiles(t, moduleName, `
+				manifest {}
+				import ./dep.ix
+				return f()
+			`, map[string]string{"./dep.ix": `
+				includable-chunk
+				fn f(){
+					return testsuite "name" {}
+				}
+			`})
+
+			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
+			if !assert.NoError(t, err) {
+				return
+			}
+			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
+
+			state.Logger = zerolog.New(state.Out)
+			res, err := Eval(mod, state, false)
+			if !assert.NoError(t, err) {
+				return
+			}
+			testSuite := res.(*TestSuite)
+			assert.Equal(t, state.Module.IncludedChunkForest[0].Source, testSuite.module.MainChunk.Source)
+		})
+
 	})
 
 	t.Run("testcase expression", func(t *testing.T) {
@@ -7276,6 +7433,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 			assert.Equal(t, Str("name"), res.(*TestCase).meta)
+			assert.Equal(t, state.Module.MainChunk.Source, res.(*TestCase).module.MainChunk.Source)
 		})
 
 		t.Run("no meta", func(t *testing.T) {
@@ -7290,8 +7448,66 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 			assert.Equal(t, Nil, res.(*TestCase).meta)
+			assert.Equal(t, state.Module.MainChunk.Source, res.(*TestCase).module.MainChunk.Source)
 		})
 
+		t.Run("the source of the main chunk of a testcase created at the top level of an included file "+
+			"should be the source of the included chunk", func(t *testing.T) {
+			moduleName := "mymod.ix"
+			modpath := writeModuleAndIncludedFiles(t, moduleName, `
+				manifest {}
+				import ./dep.ix
+				return case
+			`, map[string]string{"./dep.ix": `
+				includable-chunk
+				case = testcase "name" {}
+			`})
+
+			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
+			if !assert.NoError(t, err) {
+				return
+			}
+			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
+
+			state.Logger = zerolog.New(state.Out)
+			res, err := Eval(mod, state, false)
+			if !assert.NoError(t, err) {
+				return
+			}
+			testCase := res.(*TestCase)
+			assert.Equal(t, state.Module.IncludedChunkForest[0].Source, testCase.module.MainChunk.Source)
+		})
+
+		t.Run("the source of the main chunk of a testcase created in a function that is defined in an included file "+
+			"but called by the module should be the source of the included chunk", func(t *testing.T) {
+			moduleName := "mymod.ix"
+			modpath := writeModuleAndIncludedFiles(t, moduleName, `
+				manifest {}
+				import ./dep.ix
+				return f()
+			`, map[string]string{"./dep.ix": `
+				includable-chunk
+				fn f(){
+					return testcase "name" {}
+				}
+			`})
+
+			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
+			if !assert.NoError(t, err) {
+				return
+			}
+			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
+
+			state.Logger = zerolog.New(state.Out)
+			res, err := Eval(mod, state, false)
+			if !assert.NoError(t, err) {
+				return
+			}
+			testCase := res.(*TestCase)
+			assert.Equal(t, state.Module.IncludedChunkForest[0].Source, testCase.module.MainChunk.Source)
+		})
 	})
 
 	t.Run("lifetimejob expression", func(t *testing.T) {
@@ -7308,8 +7524,66 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 			assert.Equal(t, Str("name"), res.(*LifetimeJob).meta)
+			assert.Equal(t, state.Module.MainChunk.Source, res.(*LifetimeJob).module.MainChunk.Source)
 		})
 
+		t.Run("the source of the main chunk of a lifetimejob created at the top level of an included file "+
+			"should be the source of the included chunk", func(t *testing.T) {
+			moduleName := "mymod.ix"
+			modpath := writeModuleAndIncludedFiles(t, moduleName, `
+				manifest {}
+				import ./dep.ix
+				return job
+			`, map[string]string{"./dep.ix": `
+				includable-chunk
+				job = lifetimejob "name" {}
+			`})
+
+			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
+			if !assert.NoError(t, err) {
+				return
+			}
+			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
+
+			state.Logger = zerolog.New(state.Out)
+			res, err := Eval(mod, state, false)
+			if !assert.NoError(t, err) {
+				return
+			}
+			job := res.(*LifetimeJob)
+			assert.Equal(t, state.Module.IncludedChunkForest[0].Source, job.module.MainChunk.Source)
+		})
+
+		t.Run("the source of the main chunk of a lifetimejob create in a function that is defined in an included file "+
+			"but called by the module should be the source of the included chunk", func(t *testing.T) {
+			moduleName := "mymod.ix"
+			modpath := writeModuleAndIncludedFiles(t, moduleName, `
+				manifest {}
+				import ./dep.ix
+				return f()
+			`, map[string]string{"./dep.ix": `
+				includable-chunk
+				fn f(){
+					return lifetimejob "name" {}
+				}
+			`})
+
+			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
+			if !assert.NoError(t, err) {
+				return
+			}
+			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
+
+			state.Logger = zerolog.New(state.Out)
+			res, err := Eval(mod, state, false)
+			if !assert.NoError(t, err) {
+				return
+			}
+			job := res.(*LifetimeJob)
+			assert.Equal(t, state.Module.IncludedChunkForest[0].Source, job.module.MainChunk.Source)
+		})
 	})
 
 	t.Run("testsuite statement", func(t *testing.T) {

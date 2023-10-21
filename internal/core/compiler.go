@@ -1761,7 +1761,7 @@ func (c *compiler) Compile(node parse.Node) error {
 		routineChunk := node.Module.ToChunk()
 
 		routineMod := &Module{
-			MainChunk:  parse.NewParsedChunk(routineChunk, c.module.MainChunk.Source),
+			MainChunk:  parse.NewParsedChunk(routineChunk, c.currentChunk().Source),
 			ModuleKind: UserLThreadModule,
 		}
 
@@ -1830,7 +1830,7 @@ func (c *compiler) Compile(node parse.Node) error {
 
 		jobMod := &Module{
 			ModuleKind:       LifetimeJobModule,
-			MainChunk:        parse.NewParsedChunk(jobChunk, c.module.MainChunk.Source),
+			MainChunk:        parse.NewParsedChunk(jobChunk, c.currentChunk().Source),
 			ManifestTemplate: node.Module.Manifest,
 		}
 

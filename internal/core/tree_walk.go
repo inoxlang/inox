@@ -2829,7 +2829,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 
 		parsedChunk := &parse.ParsedChunk{
 			Node:   chunk,
-			Source: state.Global.Module.MainChunk.Source,
+			Source: state.currentChunk().Source,
 		}
 
 		jobMod := &Module{
