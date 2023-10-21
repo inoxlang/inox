@@ -97,7 +97,7 @@ const (
 	MISPLACED_DOUBLE_COLON_EXPR_EXT_METHOD_CAN_ONLY_BE_CALLED = "misplaced double-colon expression: extension methods can only be called"
 
 	OPERANDS_OF_BINARY_RANGE_EXPRS_SHOULD_BE_SERIALIZABLE = "operands of binary range expressions should be serializable"
-	LOCAL_VARIABLE_ANNOTATION_MUST_BE_A_PATTERN           = "local variable annotation must be a pattern"
+	VARIABLE_DECL_ANNOTATION_MUST_BE_A_PATTERN            = "variable declaration annotation must be a pattern"
 
 	//extend statement
 	EXTENDED_PATTERN_MUST_BE_CONCRETIZABLE_AT_CHECK_TIME = "extended pattern must be concretizable at check time (example of non concretizable pattern: %{a: $runtime-value})"

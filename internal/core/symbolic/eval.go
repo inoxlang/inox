@@ -598,7 +598,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 					static = pattern
 					staticMatching = static.SymbolicValue()
 				} else {
-					state.addError(makeSymbolicEvalError(decl.Type, state, LOCAL_VARIABLE_ANNOTATION_MUST_BE_A_PATTERN))
+					state.addError(makeSymbolicEvalError(decl.Type, state, VARIABLE_DECL_ANNOTATION_MUST_BE_A_PATTERN))
 				}
 			}
 
@@ -639,6 +639,66 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 			state.symbolicData.SetMostSpecificNodeValue(decl.Left, right)
 		}
 		state.symbolicData.SetLocalScopeData(n, state.currentLocalScopeData())
+		return nil, nil
+	case *parse.GlobalVariableDeclarations:
+		for _, decl := range n.Declarations {
+			name := decl.Left.(*parse.IdentifierLiteral).Name
+
+			var static Pattern
+			var staticMatching Value
+
+			if decl.Type != nil {
+				type_, err := symbolicEval(decl.Type, state)
+				if err != nil {
+					return nil, err
+				}
+
+				pattern, isPattern := type_.(Pattern)
+				if isPattern {
+					static = pattern
+					staticMatching = static.SymbolicValue()
+				} else {
+					state.addError(makeSymbolicEvalError(decl.Type, state, VARIABLE_DECL_ANNOTATION_MUST_BE_A_PATTERN))
+				}
+			}
+
+			var (
+				right Value
+				err   error
+			)
+
+			if decl.Right != nil {
+				deeperMismatch := false
+				right, err = _symbolicEval(decl.Right, state, evalOptions{expectedValue: staticMatching, actualValueMismatch: &deeperMismatch})
+				if err != nil {
+					return nil, err
+				}
+
+				if static != nil {
+					if !static.TestValue(right, RecTestCallState{}) {
+						if !deeperMismatch {
+							state.addError(makeSymbolicEvalError(decl.Right, state, fmtNotAssignableToVarOftype(right, static)))
+						}
+						right = ANY
+					} else if holder, ok := right.(StaticDataHolder); ok {
+						right, err = holder.AddStatic(static) //TODO: use path narowing, values should never be modified directly
+						if err != nil {
+							state.addError(makeSymbolicEvalError(decl.Right, state, err.Error()))
+						}
+					}
+				}
+			} else {
+				if static == nil {
+					right = ANY
+				} else {
+					right = static.SymbolicValue()
+				}
+			}
+
+			state.setGlobal(name, right, GlobalVar, decl.Left)
+			state.symbolicData.SetMostSpecificNodeValue(decl.Left, right)
+		}
+		state.symbolicData.SetGlobalScopeData(n, state.currentGlobalScopeData())
 		return nil, nil
 	case *parse.Assignment:
 		badIntOperationRHS := false

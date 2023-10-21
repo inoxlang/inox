@@ -699,7 +699,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, NewInt(1), res)
 
 			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(typeAnnotation, state, LOCAL_VARIABLE_ANNOTATION_MUST_BE_A_PATTERN),
+				makeSymbolicEvalError(typeAnnotation, state, VARIABLE_DECL_ANNOTATION_MUST_BE_A_PATTERN),
 			}, state.errors())
 		})
 
@@ -896,7 +896,283 @@ func TestSymbolicEval(t *testing.T) {
 		})
 	})
 
-	t.Run("global variable defintion", func(t *testing.T) {
+	t.Run("global variable declaration", func(t *testing.T) {
+		t.Run("no type annotation", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				globalvar a = int; 
+				return a
+			`)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, ANY_INT, res)
+
+			//check definition position data
+			idents, ancestorChains := parse.FindNodesAndChains(n, (*parse.IdentifierLiteral)(nil), nil)
+			definitionIdent := idents[0]
+			returnIdent := idents[2]
+			returnIdentAncestors := ancestorChains[2]
+
+			pos, ok := state.symbolicData.GetVariableDefinitionPosition(returnIdent, returnIdentAncestors)
+			if !assert.True(t, ok) {
+				return
+			}
+
+			assert.Equal(t, definitionIdent.Span, pos.Span)
+		})
+
+		t.Run("value not assignable to type", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				globalvar a %str = int; 
+				return a
+			`)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+
+			decl := parse.FindNode(n, (*parse.GlobalVariableDeclaration)(nil), nil)
+
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(decl.Right, state,
+					fmtNotAssignableToVarOftype(ANY_INT, &TypePattern{val: ANY_STR_LIKE})),
+			}, state.errors())
+			assert.Equal(t, ANY, res)
+		})
+
+		t.Run("missing value", func(t *testing.T) {
+			n, state, _ := _makeStateAndChunk(`
+				globalvar a 
+				return a
+			`, nil)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors()) //there is already a parsing error
+			assert.Equal(t, ANY, res)
+		})
+
+		t.Run("missing value after annotation", func(t *testing.T) {
+			n, state, _ := _makeStateAndChunk(`
+				globalvar a int
+				return a
+			`, nil)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors()) //there is already a parsing error
+			assert.Equal(t, ANY_INT, res)
+		})
+
+		t.Run("annotation should be a pattern", func(t *testing.T) {
+			n, state, _ := _makeStateAndChunk(`
+				myint = 1
+				globalvar a ($myint) = 1
+				return a
+			`, nil)
+
+			typeAnnotation := parse.FindNode(n, (*parse.GlobalVariableDeclaration)(nil), nil).Type
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.NotEmpty(t, state.errors())
+			assert.Equal(t, NewInt(1), res)
+
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(typeAnnotation, state, VARIABLE_DECL_ANNOTATION_MUST_BE_A_PATTERN),
+			}, state.errors())
+		})
+
+		t.Run("value not assignable to type (deep mismatch: object property)", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				globalvar a %{a: str} = {a: 1}; 
+				return a
+			`)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+
+			objectProp := parse.FindNode(n, (*parse.ObjectProperty)(nil), nil)
+
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(objectProp.Value, state,
+					fmtNotAssignableToPropOfType(NewInt(1), ANY_STR_LIKE)),
+			}, state.errors())
+			assert.Equal(t, ANY, res)
+		})
+
+		t.Run("value not assignable to type (deep mismatch: record property)", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				globalvar a #{a: str} = #{a: 1}; 
+				return a
+			`)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+
+			objectProp := parse.FindNode(n, (*parse.ObjectProperty)(nil), nil)
+
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(objectProp.Value, state,
+					fmtNotAssignableToPropOfType(NewInt(1), ANY_STR_LIKE)),
+			}, state.errors())
+			assert.Equal(t, ANY, res)
+		})
+
+		t.Run("value not assignable to type (deep mismatch: dictionary entry)", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				globalvar a %(:{"a": "str"}) = :{"a": 1}; 
+				return a
+			`)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+
+			intLiteral := parse.FindNode(n, (*parse.IntLiteral)(nil), nil)
+
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(intLiteral, state,
+					fmtNotAssignableToEntryOfExpectedValue(NewInt(1), NewString("str"))),
+			}, state.errors())
+			assert.Equal(t, ANY, res)
+		})
+
+		t.Run("value not assignable to type (deep mismatch: list element)", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				globalvar a []str = [1]; 
+				return a
+			`)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+
+			intLiteral := parse.FindNode(n, (*parse.IntLiteral)(nil), nil)
+
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(intLiteral, state,
+					fmtUnexpectedElemInListofValues(NewInt(1), ANY_STR_LIKE)),
+			}, state.errors())
+			assert.Equal(t, ANY, res)
+		})
+
+		t.Run("value not assignable to type (deep mismatch: tuple element)", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				globalvar a #[]str = #[1]; 
+				return a
+			`)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+
+			intLiteral := parse.FindNode(n, (*parse.IntLiteral)(nil), nil)
+
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(intLiteral, state,
+					fmtUnexpectedElemInListofValues(NewInt(1), ANY_STR_LIKE)),
+			}, state.errors())
+			assert.Equal(t, ANY, res)
+		})
+
+		t.Run("value not assignable to type (unprefixed named pattern)", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				globalvar a str = int; 
+				return a
+			`)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+
+			decl := parse.FindNode(n, (*parse.GlobalVariableDeclaration)(nil), nil)
+
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(decl.Right, state,
+					fmtNotAssignableToVarOftype(ANY_INT, &TypePattern{val: ANY_STR_LIKE})),
+			}, state.errors())
+			assert.Equal(t, ANY, res)
+		})
+
+		t.Run("object (ability to hold static data) is not assignable to type", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				globalvar a %str = {}; 
+				return a
+			`)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+
+			decl := parse.FindNode(n, (*parse.GlobalVariableDeclaration)(nil), nil)
+
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(decl.Right, state,
+					fmtNotAssignableToVarOftype(NewEmptyObject(), &TypePattern{val: ANY_STR_LIKE}),
+				),
+			}, state.errors())
+			assert.Equal(t, ANY, res)
+		})
+
+		t.Run("value assignable to type", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				globalvar obj %{name: %| %str | %int} = {name: int}; 
+				return obj
+			`)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+
+			assert.Empty(t, state.errors())
+			assert.Equal(t, &Object{
+				entries: map[string]Serializable{
+					"name": ANY_INT,
+				},
+				static: map[string]Pattern{
+					"name": &UnionPattern{
+						cases: []Pattern{
+							state.ctx.ResolveNamedPattern("str"),
+							state.ctx.ResolveNamedPattern("int"),
+						},
+					},
+				},
+			}, res)
+		})
+
+		t.Run("object assignable to wide type", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				globalvar obj object = {name: str}; 
+				return obj
+			`)
+			state.setGlobal("str", ANY_STR_LIKE, GlobalConst)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+
+			assert.Empty(t, state.errors())
+			assert.Equal(t, &Object{
+				entries: map[string]Serializable{
+					"name": ANY_STR_LIKE,
+				},
+				static: map[string]Pattern{
+					"name": state.ctx.ResolveNamedPattern("str"),
+				},
+			}, res)
+		})
+
+		t.Run("multivalue LHS", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				return fn(v %| %[]%int | %[]%str){
+					globalvar a %| %[]%int | %[]%str = v; 
+					return a
+				}
+			`)
+
+			fnExpr := n.Statements[0].(*parse.ReturnStatement).Expr
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+
+			argType := NewMultivalue(
+				NewListOf(ANY_INT), NewListOf(ANY_STR_LIKE),
+			)
+
+			expectedFn := &InoxFunction{
+				node:           fnExpr,
+				nodeChunk:      n,
+				parameters:     []Value{argType},
+				parameterNames: []string{"v"},
+				result:         argType,
+			}
+			assert.Equal(t, expectedFn, res)
+		})
+	})
+
+	t.Run("global variable assignment", func(t *testing.T) {
 		n, state := MakeTestStateAndChunk(`
 			$$v = []
 			return $$v
