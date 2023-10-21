@@ -30,7 +30,8 @@
 ## Goals (Zen)
 
 - Zero config (or dead simple)
-- Dead simple maintenance
+- Zero boilerplate
+- Low maintenance
 - Secure by default
 - Minimal number of dependencies
 
