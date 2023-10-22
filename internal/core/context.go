@@ -61,8 +61,8 @@ type Context struct {
 	done      atomic.Bool
 	cancel    context.CancelFunc
 
-	onGracefulTearDownMicrotasks []GracefulTearDownTaskFn
-	gracefulTearDownStatus       atomic.Int64 //see GracefulTeardownStatus
+	onGracefulTearDownTasks []GracefulTearDownTaskFn
+	gracefulTearDownStatus  atomic.Int64 //see GracefulTeardownStatus
 
 	tearedDown       atomic.Bool //true when the context is done and the 'done' microtasks have been called.
 	onDoneMicrotasks []ContextDoneMicrotaskFn
@@ -473,10 +473,10 @@ func (ctx *Context) OnDone(microtask ContextDoneMicrotaskFn) {
 	ctx.onDoneMicrotasks = append(ctx.onDoneMicrotasks, microtask)
 }
 
-func (ctx *Context) OnGracefulTearDown(microtask GracefulTearDownTaskFn) {
+func (ctx *Context) OnGracefulTearDown(task GracefulTearDownTaskFn) {
 	ctx.lock.Lock()
 	defer ctx.lock.Unlock()
-	ctx.onGracefulTearDownMicrotasks = append(ctx.onGracefulTearDownMicrotasks, microtask)
+	ctx.onGracefulTearDownTasks = append(ctx.onGracefulTearDownTasks, task)
 }
 
 func (ctx *Context) GracefulTearDownStatus() GracefulTeardownStatus {
@@ -1289,10 +1289,10 @@ func (ctx *Context) gracefullyTearDown() {
 	}
 
 	defer func() {
-		ctx.onGracefulTearDownMicrotasks = nil
+		ctx.onGracefulTearDownTasks = nil
 	}()
 
-	for _, taskFn := range ctx.onGracefulTearDownMicrotasks {
+	for _, taskFn := range ctx.onGracefulTearDownTasks {
 		func() {
 			defer func() {
 				if e := recover(); e != nil {
