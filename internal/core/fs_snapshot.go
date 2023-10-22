@@ -17,7 +17,7 @@ var (
 
 type SnapshotableFilesystem interface {
 	afs.Filesystem
-	TakeFilesystemSnapshot(getContent func(ChecksumSHA256 [32]byte) AddressableContent) FilesystemSnapshot
+	TakeFilesystemSnapshot(getContent func(ChecksumSHA256 [32]byte) AddressableContent) (FilesystemSnapshot, error)
 }
 
 // A FilesystemSnapshot represents an immutable snapshot of a filesystem,

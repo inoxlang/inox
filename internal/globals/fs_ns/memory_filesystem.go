@@ -226,7 +226,7 @@ func (fs *MemFilesystem) Capabilities() billy.Capability {
 		billy.TruncateCapability
 }
 
-func (fs *MemFilesystem) TakeFilesystemSnapshot(getContent func(ChecksumSHA256 [32]byte) core.AddressableContent) core.FilesystemSnapshot {
+func (fs *MemFilesystem) TakeFilesystemSnapshot(getContent func(ChecksumSHA256 [32]byte) core.AddressableContent) (core.FilesystemSnapshot, error) {
 	storage := fs.s
 	storage.lock.RLock()
 	defer storage.lock.RUnlock()
@@ -284,5 +284,5 @@ func (fs *MemFilesystem) TakeFilesystemSnapshot(getContent func(ChecksumSHA256 [
 
 	}
 
-	return snapshot
+	return snapshot, nil
 }

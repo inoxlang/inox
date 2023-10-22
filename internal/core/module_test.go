@@ -1092,7 +1092,7 @@ var _ = SnapshotableFilesystem((*snapshotableMemFilesystem)(nil))
 
 func copyMemFs(fls afs.Filesystem) afs.Filesystem {
 	newMemFs := newMemFilesystem()
-	util.Walk(fls, "/", func(path string, info fs.FileInfo, err error) error {
+	err := util.Walk(fls, "/", func(path string, info fs.FileInfo, err error) error {
 		if info.IsDir() {
 			return newMemFs.MkdirAll(path, info.Mode().Perm())
 		} else {
@@ -1103,6 +1103,9 @@ func copyMemFs(fls afs.Filesystem) afs.Filesystem {
 			return util.WriteFile(newMemFs, path, content, info.Mode().Perm())
 		}
 	})
+	if err != nil {
+		panic(err)
+	}
 	return newMemFs
 }
 
@@ -1114,10 +1117,10 @@ func (*snapshotableMemFilesystem) Absolute(path string) (string, error) {
 	return "", ErrNotImplemented
 }
 
-func (fls *snapshotableMemFilesystem) TakeFilesystemSnapshot(getContent func(ChecksumSHA256 [32]byte) AddressableContent) FilesystemSnapshot {
+func (fls *snapshotableMemFilesystem) TakeFilesystemSnapshot(getContent func(ChecksumSHA256 [32]byte) AddressableContent) (FilesystemSnapshot, error) {
 	return &memFilesystemSnapshot{
 		fls: copyMemFs(fls),
-	}
+	}, nil
 }
 
 var _ = FilesystemSnapshot((*memFilesystemSnapshot)(nil))

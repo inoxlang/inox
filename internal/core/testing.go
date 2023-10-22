@@ -643,9 +643,12 @@ func getTestItemFilesystem(test TestItem, parentTestSuite *TestSuite, spawnerSta
 		parentFls := spawnerState.Ctx.GetFileSystem()
 
 		if snapshotable, ok := parentFls.(SnapshotableFilesystem); ok {
-			snapshot := snapshotable.TakeFilesystemSnapshot(func(ChecksumSHA256 [32]byte) AddressableContent {
+			snapshot, err := snapshotable.TakeFilesystemSnapshot(func(ChecksumSHA256 [32]byte) AddressableContent {
 				return nil
 			})
+			if err != nil {
+				return nil, fmt.Errorf("failed to take snapshot of the live filesystem of the parent test suite: %w", err)
+			}
 			filesystem, err := snapshot.NewAdaptedFilesystem(TEST__MAX_FS_STORAGE_HINT)
 			if err != nil {
 				return nil, fmt.Errorf("failed to create filesystem from the live filesystem of the parent test suite")

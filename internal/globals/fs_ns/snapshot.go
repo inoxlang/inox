@@ -42,9 +42,13 @@ func NewFilesystemSnapshot(ctx *core.Context, desc *core.Object) *core.Filesyste
 				panic(err)
 			}
 
-			snapshot = fls.TakeFilesystemSnapshot(func(ChecksumSHA256 [32]byte) core.AddressableContent {
+			snapshot, err = fls.TakeFilesystemSnapshot(func(ChecksumSHA256 [32]byte) core.AddressableContent {
 				return nil
 			})
+
+			if err != nil {
+				panic(err)
+			}
 
 			return nil
 		}
