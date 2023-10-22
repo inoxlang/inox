@@ -25,6 +25,10 @@
 - Reduction of memory usage
 - Faster runtime
 - Security improvements
+- Stabilization of the default namespace APIs
+- Better code quality
+- (short term) 90-95% unit test coverage
+- (long term) 99-100% unit test coverage
 
 ## Won't Have Or Provide 
 
