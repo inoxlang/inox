@@ -19,7 +19,7 @@ The following changes will **NOT** be accepted:
 
 Run all tests with:
 ```
-go test -race -count=1 -p=1 ./...
+go test -race -count=1 -p=1 ./... -timeout=3m
 ```
 
 If you have Chrome installed you can set the env var RUN_BROWSER_AUTOMATION_EXAMPLES to "true". 
