@@ -64,6 +64,9 @@ func (r FloatRange) InclusiveEnd() float64 {
 	return math.Nextafter(r.End, math.Inf(-1))
 }
 
+// intAdd adds l an r in a safe way:
+// - if there is an overflow the returned value is nil and the error is ErrIntOverflow.
+// - if there is an underflow the returned value is nil and the error is ErrIntUnderflow.
 func intAdd(l, r Int) (Value, error) {
 	if r > 0 {
 		if l > math.MaxInt64-r {
@@ -77,6 +80,9 @@ func intAdd(l, r Int) (Value, error) {
 	return l + r, nil
 }
 
+// intSub substracts r from l in a safe way:
+// - if there is an overflow the returned value is nil and the error is ErrIntOverflow.
+// - if there is an underflow the returned value is nil and the error is ErrIntUnderflow.
 func intSub(l, r Int) (Value, error) {
 	if r < 0 {
 		if l > math.MaxInt64+r {
@@ -90,6 +96,9 @@ func intSub(l, r Int) (Value, error) {
 	return l - r, nil
 }
 
+// intMul multiplies l and r in a safe way:
+// - if there is an overflow the returned value is nil and the error is ErrIntOverflow.
+// - if there is an underflow the returned value is nil and the error is ErrIntUnderflow.
 func intMul(l, r Int) (Value, error) {
 	if r > 0 {
 		if l > math.MaxInt64/r || l < math.MinInt64/r {
@@ -107,6 +116,9 @@ func intMul(l, r Int) (Value, error) {
 	return l * r, nil
 }
 
+// intDiv multiplies l by r in a safe way:
+// - if there is an overflow the returned value is nil and the error is ErrIntOverflow.
+// - if r is equal to zero the returned value is nil and the error is ErrIntDivisionByZero.
 func intDiv(l, r Int) (Value, error) {
 	if r == 0 {
 		return nil, ErrIntDivisionByZero

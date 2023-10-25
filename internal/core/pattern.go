@@ -46,6 +46,7 @@ func RegisterDefaultPatternNamespace(s string, ns *PatternNamespace) {
 	DEFAULT_PATTERN_NAMESPACES[s] = ns
 }
 
+// The Pattern interface is implemented by Inox patterns (e.g. *ObjectPattern, *ListPattern, URLPattern, ....).
 type Pattern interface {
 	Serializable
 	Iterable
@@ -117,6 +118,8 @@ func NewExactValuePattern(value Serializable) *ExactValuePattern {
 	}
 }
 
+// NewMostAdaptedExactPattern returns an *ExactStringPattern if value implements StringLike,
+// otherwise an *ExactValuePattern is returned.
 func NewMostAdaptedExactPattern(value Serializable) Pattern {
 	if value.IsMutable() {
 		panic(ErrValueInExactPatternValueShouldBeImmutable)
@@ -146,7 +149,7 @@ func (patt *ExactValuePattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
 
-// TypePattern matches values implementing .Type (if .Type is an interface) or having their type equal to .Type
+// A TypePattern matches values implementing .Type (if .Type is an interface) or having their type equal to .Type
 type TypePattern struct {
 	Type          reflect.Type
 	Name          string
