@@ -49,7 +49,7 @@ func resetLimitRegistry() {
 }
 
 // A Limit represents a limit for a running piece of code, for example: the maximum rate of http requests.
-// A Context stores one token bucket for each provided limit.
+// A Context stores one token bucket for each provided limit. A Limit does not hold any state.
 type Limit struct {
 	Name  string
 	Kind  LimitKind

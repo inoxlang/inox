@@ -127,6 +127,10 @@ type PreinitFile struct {
 
 type DatabaseConfigs []DatabaseConfig
 
+// A DatabaseConfig represent the configuration of a database accessed by a module.
+// The configurations of databases owned by a module are defined in the databases section of the manifest.
+// When a module B needs a database owned (defined) by another module A, a DatabaseConfig
+// with a set .Provided field is added to the manifest of B.
 type DatabaseConfig struct {
 	Name                 string       //declared name, this is NOT the basename.
 	Resource             SchemeHolder //URL or Host
@@ -134,7 +138,7 @@ type DatabaseConfig struct {
 	ExpectedSchemaUpdate bool
 	Owned                bool
 
-	Provided *DatabaseIL //optional (can be provided by parent state)
+	Provided *DatabaseIL //optional (can be provided by another module instance)
 }
 
 func (c DatabaseConfig) IsPermissionForThisDB(perm DatabasePermission) bool {
@@ -500,7 +504,7 @@ func (p ModuleParameter) GetArgumentFromCliArg(ctx *Context, s string) (v Serial
 		if err != nil {
 			return nil, true, err
 		}
-		return argValue.(Serializable), true, nil
+		return argValue, true, nil
 	}
 }
 
@@ -527,7 +531,7 @@ func (p ModuleParameter) GetRestArgumentFromCliArgs(ctx *Context, args []string)
 		if err != nil {
 			return nil, err //TODO: improve error
 		}
-		elements[i] = argValue.(Serializable)
+		elements[i] = argValue
 	}
 
 	return NewWrappedValueListFrom(elements), nil
