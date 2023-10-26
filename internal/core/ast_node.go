@@ -47,7 +47,7 @@ func (AstNode) SetProp(ctx *Context, name string, value Value) error {
 	return ErrCannotSetProp
 }
 
-// An AstNode is a Value wrapping a token.
+// A Token is a Value wrapping a token.
 type Token struct {
 	value parse.Token
 }

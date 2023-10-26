@@ -11,6 +11,7 @@ import (
 
 const ASSERTION_BUFF_WRITER_SIZE = 100
 
+// An AssertionError is raised when an assertion statement fails (negative condition).
 type AssertionError struct {
 	msg  string
 	data *AssertionData
@@ -53,6 +54,8 @@ func (err AssertionError) Error() string {
 	return buf.String()
 }
 
+// writeExplanation attempts to determine an explanation about why the assertion failed,
+// if an explanation is found it is written to w.
 func (err AssertionError) writeExplanation(w *bufio.Writer, config *PrettyPrintConfig) {
 	expr := err.data.assertionStatement.Expr
 
@@ -89,6 +92,7 @@ func (err AssertionError) PrettySPrint(config *PrettyPrintConfig) string {
 	return buf.String()
 }
 
+// AssertionData is the data recorded about an assertion.
 type AssertionData struct {
 	assertionStatement *parse.AssertionStatement
 	intermediaryValues map[parse.Node]Value
