@@ -3107,12 +3107,20 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 			default:
 				state.addError(makeSymbolicEvalError(n.Right, state, fmtRightOperandOfBinaryShouldBe(n.Operator, "container", Stringify(right))))
 			}
+			_, ok := AsSerializable(left).(Serializable)
+			if !ok {
+				state.addError(makeSymbolicEvalError(n.Left, state, fmtLeftOperandOfBinaryShouldBe(n.Operator, "serializable", Stringify(left))))
+			}
 			return ANY_BOOL, nil
 		case parse.NotIn:
 			switch right.(type) {
 			case Container:
 			default:
 				state.addError(makeSymbolicEvalError(n.Right, state, fmtRightOperandOfBinaryShouldBe(n.Operator, "container", Stringify(right))))
+			}
+			_, ok := AsSerializable(left).(Serializable)
+			if !ok {
+				state.addError(makeSymbolicEvalError(n.Left, state, fmtLeftOperandOfBinaryShouldBe(n.Operator, "serializable", Stringify(left))))
 			}
 			return ANY_BOOL, nil
 		case parse.Keyof:

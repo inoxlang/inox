@@ -1996,14 +1996,14 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		case parse.In:
 			switch rightVal := right.(type) {
 			case Container:
-				return Bool(rightVal.Contains(state.Global.Ctx, left)), nil
+				return Bool(rightVal.Contains(state.Global.Ctx, left.(Serializable))), nil
 			default:
 				return nil, fmt.Errorf("invalid binary expression: cannot check if value is inside a %T", rightVal)
 			}
 		case parse.NotIn:
 			switch rightVal := right.(type) {
 			case Container:
-				return !Bool(rightVal.Contains(state.Global.Ctx, left)), nil
+				return !Bool(rightVal.Contains(state.Global.Ctx, left.(Serializable))), nil
 			default:
 				return nil, fmt.Errorf("invalid binary expression: cannot check if value is inside a(n) %T", rightVal)
 			}

@@ -913,7 +913,7 @@ func (r *QuantityRange) IteratorElementValue() Value {
 	return r.element
 }
 
-func (r QuantityRange) Contains(value Value) (yes bool, possible bool) {
+func (r QuantityRange) Contains(value Serializable) (yes bool, possible bool) {
 	if !r.element.Test(value, RecTestCallState{}) {
 		return false, false
 	}
@@ -963,7 +963,7 @@ func (*IntRange) elementAt(i int) Value {
 	return ANY_INT
 }
 
-func (r *IntRange) Contains(value Value) (bool, bool) {
+func (r *IntRange) Contains(value Serializable) (bool, bool) {
 	if _, ok := value.(*Int); ok {
 		return false, true
 	}
@@ -1009,7 +1009,7 @@ func (r *FloatRange) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrint
 	w.WriteName("float-range")
 }
 
-func (r *FloatRange) Contains(value Value) (bool, bool) {
+func (r *FloatRange) Contains(value Serializable) (bool, bool) {
 	if _, ok := value.(*Float); ok {
 		return false, true
 	}
@@ -1051,7 +1051,7 @@ func (r *RuneRange) element() Value {
 	return &Rune{}
 }
 
-func (r *RuneRange) Contains(value Value) (bool, bool) {
+func (r *RuneRange) Contains(value Serializable) (bool, bool) {
 	if _, ok := value.(*Rune); ok {
 		return false, true
 	}

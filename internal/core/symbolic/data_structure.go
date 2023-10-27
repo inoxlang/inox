@@ -487,7 +487,7 @@ func (l *List) elementAt(i int) Value {
 	return l.generalElement
 }
 
-func (l *List) Contains(value Value) (bool, bool) {
+func (l *List) Contains(value Serializable) (bool, bool) {
 	if l.elements == nil {
 		if l.generalElement.Test(value, RecTestCallState{}) {
 			return false, true
@@ -765,7 +765,7 @@ func (t *Tuple) elementAt(i int) Value {
 	return t.generalElement
 }
 
-func (t *Tuple) Contains(value Value) (bool, bool) {
+func (t *Tuple) Contains(value Serializable) (bool, bool) {
 	if t.elements == nil {
 		if t.generalElement.Test(value, RecTestCallState{}) {
 			return false, true
@@ -1749,7 +1749,7 @@ func (*Object) elementAt(i int) Value {
 	return ANY
 }
 
-func (o *Object) Contains(value Value) (bool, bool) {
+func (o *Object) Contains(value Serializable) (bool, bool) {
 	if o.entries == nil {
 		return false, true
 	}
@@ -2073,7 +2073,7 @@ func (rec *Record) element() Value {
 	return ANY
 }
 
-func (r *Record) Contains(value Value) (bool, bool) {
+func (r *Record) Contains(value Serializable) (bool, bool) {
 	if r.entries == nil {
 		return false, true
 	}

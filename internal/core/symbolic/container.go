@@ -21,7 +21,7 @@ var (
 type Container interface {
 	Serializable
 	Iterable
-	Contains(value Value) (yes bool, possible bool)
+	Contains(value Serializable) (yes bool, possible bool)
 }
 
 // An AnyContainer represents a symbolic Iterable we do not know the concrete type.
@@ -43,7 +43,7 @@ func (*AnyContainer) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrint
 	w.WriteName("container")
 }
 
-func (*AnyContainer) Contains(value Value) (yes bool, possible bool) {
+func (*AnyContainer) Contains(value Serializable) (yes bool, possible bool) {
 	return false, true
 }
 

@@ -13,6 +13,9 @@ var (
 	}
 )
 
+// The Container interface should be implemented by data structures
+// able to tell if they contain a specific value. The data structure
+// can contain a infinite number of values.
 type Container interface {
 	Serializable
 	Iterable
@@ -20,10 +23,10 @@ type Container interface {
 	//Contains should return true:
 	// - if the value has a URL AND there is an element such as Same(element, value) is true.
 	// - if the value has not a URL AND there is an element equal to value.
-	Contains(ctx *Context, value Value) bool
+	Contains(ctx *Context, value Serializable) bool
 }
 
-func (l *List) Contains(ctx *Context, value Value) bool {
+func (l *List) Contains(ctx *Context, value Serializable) bool {
 	if urlHolder, ok := value.(UrlHolder); ok {
 		_, ok := urlHolder.URL()
 		if ok {
@@ -46,7 +49,7 @@ func (l *List) Contains(ctx *Context, value Value) bool {
 	return false
 }
 
-func (t *Tuple) Contains(ctx *Context, value Value) bool {
+func (t *Tuple) Contains(ctx *Context, value Serializable) bool {
 	if urlHolder, ok := value.(UrlHolder); ok {
 		_, ok := urlHolder.URL()
 		if ok {
@@ -69,7 +72,7 @@ func (t *Tuple) Contains(ctx *Context, value Value) bool {
 	return false
 }
 
-func (obj *Object) Contains(ctx *Context, value Value) bool {
+func (obj *Object) Contains(ctx *Context, value Serializable) bool {
 	closestState := ctx.GetClosestState()
 	obj.Lock(closestState)
 	defer obj.Unlock(closestState)
@@ -96,7 +99,7 @@ func (obj *Object) Contains(ctx *Context, value Value) bool {
 	return false
 }
 
-func (rec *Record) Contains(ctx *Context, value Value) bool {
+func (rec *Record) Contains(ctx *Context, value Serializable) bool {
 	if urlHolder, ok := value.(UrlHolder); ok {
 		_, ok := urlHolder.URL()
 		if ok {
@@ -119,17 +122,17 @@ func (rec *Record) Contains(ctx *Context, value Value) bool {
 	return false
 }
 
-func (r IntRange) Contains(ctx *Context, v Value) bool {
+func (r IntRange) Contains(ctx *Context, v Serializable) bool {
 	i, ok := v.(Int)
 	return ok && r.Includes(ctx, i)
 }
 
-func (r RuneRange) Contains(ctx *Context, v Value) bool {
+func (r RuneRange) Contains(ctx *Context, v Serializable) bool {
 	i, ok := v.(Rune)
 	return ok && r.Includes(ctx, i)
 }
 
-func (r QuantityRange) Contains(ctx *Context, v Value) bool {
+func (r QuantityRange) Contains(ctx *Context, v Serializable) bool {
 	val := reflect.ValueOf(v)
 	endReflVal := reflect.ValueOf(r.InclusiveEnd())
 

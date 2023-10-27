@@ -2686,12 +2686,25 @@ func TestSymbolicEval(t *testing.T) {
 
 		t.Run("binary in/not-in", func(t *testing.T) {
 
-			t.Run("right operand is not a container", func(t *testing.T) {
+			t.Run("base case", func(t *testing.T) {
 				n, state := MakeTestStateAndChunk("(1 in [])")
 				res, err := symbolicEval(n, state)
 
 				assert.NoError(t, err)
 				assert.Empty(t, state.errors())
+				assert.Equal(t, ANY_BOOL, res)
+			})
+
+			t.Run("left operand is not serializable", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk("((go do {}) in [])")
+				res, err := symbolicEval(n, state)
+
+				spawnExpr := parse.FindNode(n, (*parse.SpawnExpression)(nil), nil)
+
+				assert.NoError(t, err)
+				assert.Equal(t, []SymbolicEvaluationError{
+					makeSymbolicEvalError(spawnExpr, state, fmtLeftOperandOfBinaryShouldBe(parse.In, "serializable", Stringify(ANY_LTHREAD))),
+				}, state.errors())
 				assert.Equal(t, ANY_BOOL, res)
 			})
 
