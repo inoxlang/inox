@@ -1017,6 +1017,14 @@ func (r *FloatRange) Contains(value Serializable) (bool, bool) {
 	return false, false
 }
 
+func (r *FloatRange) IteratorElementKey() Value {
+	return ANY_INT
+}
+
+func (r *FloatRange) IteratorElementValue() Value {
+	return ANY_FLOAT
+}
+
 func (r *FloatRange) WidestOfType() Value {
 	return ANY_FLOAT_RANGE
 }

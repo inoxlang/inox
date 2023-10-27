@@ -2,7 +2,6 @@ package core
 
 import (
 	"bytes"
-	"log"
 	"math"
 	"reflect"
 	"sort"
@@ -15,7 +14,10 @@ import (
 )
 
 var _ = []Iterable{
-	(*List)(nil), (*Tuple)(nil), (*Object)(nil), (*Record)(nil), IntRange{}, (*RuneRange)(nil), Pattern(nil), EventSource(nil),
+	(*List)(nil), (*Tuple)(nil), (*Object)(nil), (*Record)(nil),
+	FloatRange{}, IntRange{}, (*RuneRange)(nil),
+
+	Pattern(nil), EventSource(nil),
 }
 
 type Iterable interface {
@@ -608,11 +610,40 @@ func (it *IntRangeIterator) Value(*Context) Value {
 
 func (r IntRange) Iterator(ctx *Context, config IteratorConfiguration) Iterator {
 	if r.unknownStart {
-		log.Panicln("cannot create iterator from an IntRange with no known start")
+		panic(ErrUnknownStartIntRange)
 	}
 	return config.CreateIterator(&IntRangeIterator{
 		range_: r,
 		next:   r.Start,
+	})
+}
+
+type FloatRangeIterator struct {
+	range_ FloatRange
+}
+
+func (it *FloatRangeIterator) HasNext(*Context) bool {
+	return false
+}
+
+func (it *FloatRangeIterator) Next(ctx *Context) bool {
+	return false
+}
+
+func (it *FloatRangeIterator) Key(ctx *Context) Value {
+	panic(ErrNotImplementedYet)
+}
+
+func (it *FloatRangeIterator) Value(*Context) Value {
+	panic(ErrNotImplementedYet)
+}
+
+func (r FloatRange) Iterator(ctx *Context, config IteratorConfiguration) Iterator {
+	if r.unknownStart {
+		panic(ErrUnknownStartFloatRange)
+	}
+	return config.CreateIterator(&FloatRangeIterator{
+		range_: r,
 	})
 }
 

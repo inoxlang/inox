@@ -1153,6 +1153,10 @@ func (it IntRangeIterator) ToSymbolicValue(ctx *Context, encountered map[uintptr
 	return &symbolic.Iterator{}, nil
 }
 
+func (it FloatRangeIterator) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
+	return &symbolic.Iterator{}, nil
+}
+
 func (it RuneRangeIterator) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return &symbolic.Iterator{}, nil
 }

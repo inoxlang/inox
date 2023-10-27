@@ -376,6 +376,10 @@ func (it IntRangeIterator) IsMutable() bool {
 	return true
 }
 
+func (it FloatRangeIterator) IsMutable() bool {
+	return true
+}
+
 func (it RuneRangeIterator) IsMutable() bool {
 	return true
 }

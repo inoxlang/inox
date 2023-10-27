@@ -1496,6 +1496,15 @@ func (it IntRangeIterator) Equal(ctx *Context, other Value, alreadyCompared map[
 	return it == otherIterator
 }
 
+func (it FloatRangeIterator) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	otherIterator, ok := other.(FloatRangeIterator)
+	if !ok {
+		return false
+	}
+
+	return it == otherIterator
+}
+
 func (it RuneRangeIterator) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
 	otherIterator, ok := other.(RuneRangeIterator)
 	if !ok {

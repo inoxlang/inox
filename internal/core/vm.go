@@ -622,7 +622,7 @@ func (v *VM) run() {
 
 			switch rightVal := right.(type) {
 			case Container:
-				val = Bool(rightVal.Contains(v.global.Ctx, left))
+				val = Bool(rightVal.Contains(v.global.Ctx, left.(Serializable)))
 			default:
 				v.err = fmt.Errorf("invalid binary expression: cannot check if value is inside a(n) %T", rightVal)
 				return

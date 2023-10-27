@@ -9,7 +9,8 @@ var (
 	ErrCannotAddNonSharableToSharedContainer = errors.New("cannot add a non sharable element to a shared container")
 
 	_ = []Container{
-		(*List)(nil), (*Tuple)(nil), (*Object)(nil), (*Record)(nil), IntRange{}, RuneRange{}, QuantityRange{},
+		(*List)(nil), (*Tuple)(nil), (*Object)(nil), (*Record)(nil),
+		IntRange{}, FloatRange{}, RuneRange{}, QuantityRange{},
 	}
 )
 
@@ -125,6 +126,11 @@ func (rec *Record) Contains(ctx *Context, value Serializable) bool {
 func (r IntRange) Contains(ctx *Context, v Serializable) bool {
 	i, ok := v.(Int)
 	return ok && r.Includes(ctx, i)
+}
+
+func (r FloatRange) Contains(ctx *Context, v Serializable) bool {
+	f, ok := v.(Float)
+	return ok && r.Includes(ctx, f)
 }
 
 func (r RuneRange) Contains(ctx *Context, v Serializable) bool {
