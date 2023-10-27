@@ -19,7 +19,7 @@ type Container interface {
 
 	//Contains should return true:
 	// - if the value has a URL AND there is an element such as Same(element, value) is true.
-	// - if the value has not a URL AND  there is an element equal to value.
+	// - if the value has not a URL AND there is an element equal to value.
 	Contains(ctx *Context, value Value) bool
 }
 

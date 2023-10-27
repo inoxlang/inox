@@ -82,7 +82,6 @@ func (e *CompileError) Error() string {
 	return e.Message
 }
 
-// NewCompiler creates a Compiler.
 func NewCompiler(
 	mod *Module,
 	globals map[string]Value,

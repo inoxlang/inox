@@ -8,6 +8,8 @@ import (
 	parse "github.com/inoxlang/inox/internal/parse"
 )
 
+// A Bytecode contains the constants and a reference to a *CompiledFunction.
+// The bytecode instructions are in the *CompiledFunction.
 type Bytecode struct {
 	module    *Module
 	constants []Value
@@ -49,6 +51,8 @@ func (b *Bytecode) Format(ctx *Context, leftPadding string) string {
 	return s
 }
 
+// A CompiledFunction contains the bytecode instructions of a module or a compiled Inox function.
+// The compilation of a module produces a *CompiledFunction that is the "main" function.
 type CompiledFunction struct {
 	ParamCount   int
 	IsVariadic   bool
@@ -258,7 +262,7 @@ const (
 	OpSuspendVM
 )
 
-// OpcodeNames are string representation of opcodes.
+// OpcodeNames contains the string representation of each opcode.
 // TODO: improve names
 var OpcodeNames = [...]string{
 	OpPushConstant:                 "PUSH_CONST",
@@ -392,7 +396,7 @@ var OpcodeNames = [...]string{
 	OpSuspendVM:                    "SUSPEND",
 }
 
-// OpcodeOperands is the number of operands.
+// OpcodeOperands contains the number of operands of each opcode.
 var OpcodeOperands = [...][]int{
 	OpPushConstant:                 {2},
 	OpPop:                          {},
@@ -524,6 +528,7 @@ var OpcodeOperands = [...][]int{
 	OpSuspendVM:                    {},
 }
 
+// OpcodeConstantIndexes stores for each opcode what arguments are indexes (positions) of constants.
 var OpcodeConstantIndexes = [...][]bool{
 	OpPushConstant:                 {true},
 	OpPop:                          {},

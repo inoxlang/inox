@@ -15,6 +15,7 @@ const (
 	ansiColor256
 )
 
+// A Color represents a color in a given encoding.
 type Color struct {
 	data       [6]byte
 	encodingId colorEncodingId
