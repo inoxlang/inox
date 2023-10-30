@@ -38,6 +38,7 @@ var (
 type PermissionKind int
 
 const (
+	//up to 16 major permission kinds
 	Read    PermissionKind = (1 << iota)
 	Write                  = (1 << iota)
 	Delete                 = (1 << iota)
@@ -45,12 +46,11 @@ const (
 	Consume                = (1 << iota)
 	Provide                = (1 << iota)
 	See                    = (1 << iota)
-	//up to 16 major permission kinds
 
+	//up to 16 minor permission kinds for each major one
 	Update      = Write + (1 << 16)
 	Create      = Write + (2 << 16)
 	WriteStream = Write + (4 << 16)
-	//up to 16 minor permission kinds for each major one
 )
 
 func (k PermissionKind) Major() PermissionKind {

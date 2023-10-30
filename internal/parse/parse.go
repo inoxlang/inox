@@ -1468,7 +1468,7 @@ func (p *parser) parseQuotedStringLiteral() *QuotedStringLiteral {
 
 	p.i++
 
-	for p.i < p.len && p.s[p.i] != '\n' && (p.s[p.i] != '"' || countPrevBackslashes(p.s, p.i)%2 == 1) {
+	for p.i < p.len && p.s[p.i] != '\n' && (p.s[p.i] != '"' || utils.CountPrevBackslashes(p.s, p.i)%2 == 1) {
 		p.i++
 	}
 
@@ -1613,7 +1613,7 @@ search_for_globbing:
 		if pathSlice, ok := slice.(*PathSlice); ok {
 
 			for i, e := range pathSlice.Value {
-				if (e == '[' || e == '*' || e == '?') && countPrevBackslashes(p.s, start+int32(i))%2 == 0 {
+				if (e == '[' || e == '*' || e == '?') && utils.CountPrevBackslashes(p.s, start+int32(i))%2 == 0 {
 					hasGlobbing = true
 					break search_for_globbing
 				}
@@ -4218,7 +4218,7 @@ func (p *parser) parsePercentPrefixedPattern() Node {
 		}
 	case '`':
 		p.i++
-		for p.i < p.len && (p.s[p.i] != '`' || countPrevBackslashes(p.s, p.i)%2 == 1) {
+		for p.i < p.len && (p.s[p.i] != '`' || utils.CountPrevBackslashes(p.s, p.i)%2 == 1) {
 			p.i++
 		}
 
@@ -4429,7 +4429,7 @@ func (p *parser) parseStringTemplateLiteralOrMultilineStringLiteral(pattern Node
 	var parsingErr *ParsingError
 	isMultilineStringLiteral := false
 
-	for p.i < p.len && (p.s[p.i] != '`' || countPrevBackslashes(p.s, p.i)%2 == 1) {
+	for p.i < p.len && (p.s[p.i] != '`' || utils.CountPrevBackslashes(p.s, p.i)%2 == 1) {
 
 		//interpolation
 		if p.s[p.i] == '{' && p.s[p.i-1] == '{' {
@@ -11254,24 +11254,10 @@ func HasPathLikeStart(s string) bool {
 	return s[0] == '/' || strings.HasPrefix(s, "./") || strings.HasPrefix(s, "../")
 }
 
-func countPrevBackslashes(s []rune, i int32) int32 {
-	index := i - 1
-	count := int32(0)
-	for ; index >= 0; index-- {
-		if s[index] == '\\' {
-			count += 1
-		} else {
-			break
-		}
-	}
-
-	return count
-}
-
 func containsNotEscapedBracket(s []rune) bool {
 	for i, e := range s {
 		if e == '{' {
-			if countPrevBackslashes(s, int32(i))%2 == 0 {
+			if utils.CountPrevBackslashes(s, int32(i))%2 == 0 {
 				return true
 			}
 		}
@@ -11282,7 +11268,7 @@ func containsNotEscapedBracket(s []rune) bool {
 func containsNotEscapedDollar(s []rune) bool {
 	for i, e := range s {
 		if e == '$' {
-			if countPrevBackslashes(s, int32(i))%2 == 0 {
+			if utils.CountPrevBackslashes(s, int32(i))%2 == 0 {
 				return true
 			}
 		}

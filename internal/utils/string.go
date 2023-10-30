@@ -205,3 +205,17 @@ func FindDoubleLineSequence(bytes []byte) (index int, length int) {
 
 	return -1, 0
 }
+
+func CountPrevBackslashes(s []rune, i int32) int32 {
+	index := i - 1
+	count := int32(0)
+	for ; index >= 0; index-- {
+		if s[index] == '\\' {
+			count += 1
+		} else {
+			break
+		}
+	}
+
+	return count
+}
