@@ -3,6 +3,8 @@ package afs
 import (
 	"errors"
 	"os"
+
+	"github.com/go-git/go-billy/v5"
 )
 
 var (
@@ -10,9 +12,11 @@ var (
 )
 
 type StatCapable interface {
+	billy.File
 	Stat() (os.FileInfo, error)
 }
 
 type SyncCapable interface {
+	billy.File
 	Sync() error
 }
