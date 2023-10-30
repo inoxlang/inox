@@ -368,6 +368,77 @@ func TestPreInit(t *testing.T) {
 		// 	//error: true,
 		// },
 		{
+			name: "use named command",
+			module: `
+				manifest {
+					permissions: {
+						use: {
+							commands: {
+								"go": {}
+							}
+						}
+					}
+				}`,
+			expectedPermissions: []Permission{
+				CommandPermission{
+					CommandName: Str("go"),
+				},
+			},
+			expectedLimits: []Limit{},
+		},
+		{
+			name: "use command with path",
+			module: `
+				manifest {
+					permissions: {
+						use: {
+							commands: {
+								"/usr/local/go/bin/go": {}
+							}
+						}
+					}
+				}`,
+			expectedPermissions: []Permission{
+				CommandPermission{
+					CommandName: Path("/usr/local/go/bin/go"),
+				},
+			},
+			expectedLimits: []Limit{},
+		},
+		{
+			name: "use commands matching a prefix path pattern",
+			module: `
+				manifest {
+					permissions: {
+						use: {
+							commands: {
+								"%/usr/local/...": {}
+							}
+						}
+					}
+				}`,
+			expectedPermissions: []Permission{
+				CommandPermission{
+					CommandName: PathPattern("/usr/local/..."),
+				},
+			},
+			expectedLimits: []Limit{},
+		},
+		{
+			name: "use commands matching a globbing path pattern (error)",
+			module: `
+				manifest {
+					permissions: {
+						use: {
+							commands: {
+								"%/usr/local/**/*": {}
+							}
+						}
+					}
+				}`,
+			error: true,
+		},
+		{
 			name: "invalid node type in preinit block",
 			module: `
 			preinit {

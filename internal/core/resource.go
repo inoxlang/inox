@@ -28,6 +28,8 @@ const (
 
 	//TODO: change value
 	MAX_TESTED_HOST_PATTERN_BYTE_LENGTH = 100
+
+	PREFIX_PATH_PATTERN_SUFFIX = "/..."
 )
 
 var (
@@ -383,7 +385,7 @@ func NewPathPattern(slices []Value, isStaticPathSliceList []bool) (Value, error)
 		}
 	}
 
-	if strings.Contains(strings.TrimSuffix(pth, "/..."), "..") {
+	if strings.Contains(strings.TrimSuffix(pth, PREFIX_PATH_PATTERN_SUFFIX), "..") {
 		return nil, errors.New("path pattern expression: error: result should not contain the substring '..' ")
 	}
 
@@ -413,7 +415,7 @@ func (patt PathPattern) IsDirGlobbingPattern() bool {
 }
 
 func (patt PathPattern) IsPrefixPattern() bool {
-	return strings.HasSuffix(string(patt), "/...")
+	return strings.HasSuffix(string(patt), PREFIX_PATH_PATTERN_SUFFIX)
 }
 
 func (patt PathPattern) ToGlobbingPattern() PathPattern {
@@ -933,7 +935,7 @@ func (u URLPattern) Scheme() Scheme {
 }
 
 func (patt URLPattern) IsPrefixPattern() bool {
-	return strings.HasSuffix(string(patt), "/...")
+	return strings.HasSuffix(string(patt), PREFIX_PATH_PATTERN_SUFFIX)
 }
 
 func (patt URLPattern) Prefix() string {

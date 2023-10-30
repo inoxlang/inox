@@ -1651,6 +1651,10 @@ func getCommandPermissions(n Value) ([]Permission, error) {
 			default:
 				return nil, errors.New(PATH_ERR)
 			}
+
+			if patt, ok := cmdName.(PathPattern); ok && !patt.IsPrefixPattern() {
+				return nil, errors.New("only prefix path patterns are allowed")
+			}
 		} else {
 			cmdName = Str(cmdNameKey)
 		}
