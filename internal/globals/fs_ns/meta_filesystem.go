@@ -379,6 +379,65 @@ func (fls *MetaFilesystem) deleteFileMetadata(pth core.Path, usedTx *filekv.Data
 	return nil
 }
 
+func (fls *MetaFilesystem) Walk(visit func(normalizedPath string, absolutePath core.Path, metadata *metaFsFileMetadata) error) error {
+	return fls.walk(visit)
+}
+
+func (fls *MetaFilesystem) walk(visit func(normalizedPath string, absolutePath core.Path, metadata *metaFsFileMetadata) error) error {
+	rootDirMeta, _, err := fls.getFileMetadata("/", nil)
+	if err != nil {
+		return err
+	}
+
+	pathSegments := []string{"", ""}
+	stack := slices.Clone(rootDirMeta.children)
+	firstChildIndexes := []int{0}
+
+	for len(stack) > 0 {
+		//pop last children from the stack.
+		index := len(stack) - 1
+		child := stack[index]
+		stack = stack[:index]
+
+		pathSegments[len(pathSegments)-1] = string(child)
+		normalizedPath := NormalizeAsAbsolute(strings.Join(pathSegments, "/"))
+
+		childMetadata, ok, err := fls.getFileMetadata(core.Path(normalizedPath), nil)
+		if err != nil {
+			return fmt.Errorf("failed to get the metadata of %s: %w", normalizedPath, err)
+		}
+		if !ok {
+			return fmt.Errorf("failed to get the metadata of %s", normalizedPath)
+		}
+
+		path := childMetadata.path
+
+		if childMetadata.mode.IsDir() {
+			path = core.AppendTrailingSlashIfNotPresent(path)
+			//push entries into the stack.
+			if len(childMetadata.children) > 0 {
+				pathSegments = append(pathSegments, "")
+				firstChildIndexes = append(firstChildIndexes, index+1)
+				stack = append(stack, childMetadata.children...)
+			}
+		}
+
+		err = visit(normalizedPath, path, childMetadata)
+		if err != nil {
+			return err
+		}
+
+		if firstChildIndexes[len(firstChildIndexes)-1] == index {
+			//remove parent from path segments
+			firstChildIndexes = firstChildIndexes[:len(firstChildIndexes)-1]
+			pathSegments = pathSegments[:len(pathSegments)-1]
+		}
+
+	}
+
+	return nil
+}
+
 func (fls *MetaFilesystem) TakeFilesystemSnapshot(getContent func(ChecksumSHA256 [32]byte) core.AddressableContent) (core.FilesystemSnapshot, error) {
 	if !fls.snapshoting.CompareAndSwap(false, true) {
 		return nil, core.ErrAlreadyBeingSnapshoted
@@ -416,11 +475,6 @@ func (fls *MetaFilesystem) TakeFilesystemSnapshot(getContent func(ChecksumSHA256
 	fls.untrackSomeClosedFiles(100)
 
 	var writableFiles []*metaFsFile
-
-	rootDirMeta, _, err := fls.getFileMetadata("/", nil)
-	if err != nil {
-		return nil, err
-	}
 
 	for _, files := range fls.openFiles {
 		for sameFile := range files {
@@ -468,80 +522,50 @@ func (fls *MetaFilesystem) TakeFilesystemSnapshot(getContent func(ChecksumSHA256
 		}
 	}
 
-	pathSegments := []string{"", ""}
-	stack := slices.Clone(rootDirMeta.children)
-	firstChildIndexes := []int{0}
-
 	//add other files to the snapshot
-	for len(stack) > 0 {
-		//pop last children from the stack.
-		index := len(stack) - 1
-		child := stack[index]
-		stack = stack[:index]
-
-		pathSegments[len(pathSegments)-1] = string(child)
-		normalizedPath := NormalizeAsAbsolute(strings.Join(pathSegments, "/"))
-
-		childMetadata, ok, err := fls.getFileMetadata(core.Path(normalizedPath), nil)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get the metadata of %s: %w", normalizedPath, err)
-		}
-		if !ok {
-			return nil, fmt.Errorf("failed to get the metadata of %s", normalizedPath)
-		}
-
+	err = fls.walk(func(normalizedPath string, absolutePath core.Path, metadata *metaFsFileMetadata) error {
 		var content []byte
 		var checksum [32]byte
-		path := childMetadata.path
 
-		if childMetadata.mode.IsDir() {
-			path = core.AppendTrailingSlashIfNotPresent(path)
-			//push entries into the stack.
-			if len(childMetadata.children) > 0 {
-				pathSegments = append(pathSegments, "")
-				firstChildIndexes = append(firstChildIndexes, index+1)
-				stack = append(stack, childMetadata.children...)
-			}
-		} else {
-			concreteFilePath := childMetadata.concreteFile.UnderlyingString()
+		if !metadata.mode.IsDir() {
+			concreteFilePath := metadata.concreteFile.UnderlyingString()
 			content, err = util.ReadFile(fls.underlying, concreteFilePath)
 			if err != nil {
-				return nil, err
+				return err
 			}
 			checksum = sha256.Sum256(content)
 		}
 
 		//add the file's content and metadata to the snapshot
-		metadata := &core.EntrySnapshotMetadata{
+		entryMetadata := &core.EntrySnapshotMetadata{
 			Size:             core.ByteCount(len(content)),
-			AbsolutePath:     path,
-			CreationTime:     childMetadata.creationTime,
-			ModificationTime: childMetadata.modificationTime,
-			Mode:             core.FileMode(childMetadata.mode),
+			AbsolutePath:     absolutePath,
+			CreationTime:     metadata.creationTime,
+			ModificationTime: metadata.modificationTime,
+			Mode:             core.FileMode(metadata.mode),
 			ChecksumSHA256:   checksum,
-			ChildNames:       utils.ConvertToStringSlice(childMetadata.children),
+			ChildNames:       utils.ConvertToStringSlice(metadata.children),
 		}
 
-		snapshot.MetadataMap[normalizedPath] = metadata
+		snapshot.MetadataMap[normalizedPath] = entryMetadata
 		if normalizedPath != "/" && strings.Count(normalizedPath, "/") == 1 {
-			snapshot.RootDirEntryList = append(snapshot.RootDirEntryList, metadata)
+			snapshot.RootDirEntryList = append(snapshot.RootDirEntryList, entryMetadata)
 		}
 
-		snapshot.MetadataMap[normalizedPath] = metadata
+		snapshot.MetadataMap[normalizedPath] = entryMetadata
 
-		if !metadata.IsDir() {
+		if !entryMetadata.IsDir() {
 			snapshot.FileContents[normalizedPath] = AddressableContentBytes{
 				Sha256: checksum,
 				Data:   content,
 			}
 		}
 
-		if firstChildIndexes[len(firstChildIndexes)-1] == index {
-			//remove parent from path segments
+		return nil
+	})
 
-			firstChildIndexes = firstChildIndexes[:len(firstChildIndexes)-1]
-			pathSegments = pathSegments[:len(pathSegments)-1]
-		}
+	if err != nil {
+		return nil, err
 	}
 
 	return snapshot, nil
