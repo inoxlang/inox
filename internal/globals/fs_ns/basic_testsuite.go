@@ -225,6 +225,88 @@ func (s *BasicTestSuite) TestOpenFileReadWrite(c *check.C) {
 	s.testReadClose(c, f, "quxbar")
 }
 
+func (s *BasicTestSuite) TestOpenFileReadWriteAfterRemoval(c *check.C) {
+	defaultMode := os.FileMode(0666)
+
+	f, err := s.FS.OpenFile("foo1", os.O_CREATE|os.O_TRUNC|os.O_RDWR, defaultMode)
+	c.Assert(err, check.IsNil)
+	c.Assert(f.Name(), check.Equals, "foo1")
+
+	//close and remove file
+	modifTime := utils.Must(s.FS.Stat("foo1")).ModTime()
+	c.Assert(f.Close(), check.IsNil)
+	c.Assert(s.FS.Remove("foo1"), check.IsNil)
+
+	f, err = s.FS.OpenFile("foo1", os.O_CREATE|os.O_TRUNC|os.O_RDWR, defaultMode)
+	c.Assert(err, check.IsNil)
+	c.Assert(f.Name(), check.Equals, "foo1")
+
+	//check modification time
+	t := utils.Must(s.FS.Stat("foo1")).ModTime()
+	if !t.After(modifTime) {
+		c.Fatal("the mtime of the file should be greater than the mtime of the removed file")
+	}
+	modifTime = t
+
+	//write
+	written, err := f.Write([]byte("foobar"))
+	c.Assert(written, check.Equals, 6)
+	c.Assert(err, check.IsNil)
+
+	//check modification time
+	t = utils.Must(s.FS.Stat("foo1")).ModTime()
+	if !t.After(modifTime) {
+		c.FailNow()
+	}
+	modifTime = t
+
+	_, err = f.Seek(0, os.SEEK_SET)
+	c.Assert(err, check.IsNil)
+
+	//write
+	written, err = f.Write([]byte("qux"))
+	c.Assert(written, check.Equals, 3)
+	c.Assert(err, check.IsNil)
+
+	//check modification time
+	t = utils.Must(s.FS.Stat("foo1")).ModTime()
+	if !t.After(modifTime) {
+		c.FailNow()
+	}
+
+	_, err = f.Seek(0, os.SEEK_SET)
+	c.Assert(err, check.IsNil)
+
+	s.testReadClose(c, f, "quxbar")
+}
+
+func (s *BasicTestSuite) TestOpenFileReadAfterRemoval(c *check.C) {
+	defaultMode := os.FileMode(0666)
+
+	f, err := s.FS.OpenFile("foo1", os.O_CREATE|os.O_TRUNC|os.O_RDWR, defaultMode)
+	c.Assert(err, check.IsNil)
+	c.Assert(f.Name(), check.Equals, "foo1")
+
+	//write
+	written, err := f.Write([]byte("foobar"))
+	c.Assert(written, check.Equals, 6)
+	c.Assert(err, check.IsNil)
+
+	//close and remove file
+	c.Assert(f.Close(), check.IsNil)
+	c.Assert(s.FS.Remove("foo1"), check.IsNil)
+
+	f, err = s.FS.OpenFile("foo1", os.O_CREATE|os.O_TRUNC|os.O_RDWR, defaultMode)
+	c.Assert(err, check.IsNil)
+	c.Assert(f.Name(), check.Equals, "foo1")
+
+	//check that the file is empty
+	info, err := s.FS.Stat("foo1")
+	c.Assert(err, check.IsNil)
+	c.Assert(info.Size(), check.Equals, int64(0))
+	s.testReadClose(c, f, "")
+}
+
 func (s *BasicTestSuite) TestOpenFileWithModes(c *check.C) {
 	f, err := s.FS.OpenFile("foo", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, customMode)
 	c.Assert(err, check.IsNil)
