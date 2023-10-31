@@ -3,15 +3,19 @@
 package inoxprocess
 
 import (
+	"errors"
+	"io/fs"
+	"os/exec"
 	"strings"
 
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/shoenig/go-landlock"
 )
 
-func restrictProcessAccess(grantedPerms, forbiddenPerms []core.Permission) {
+func restrictProcessAccess(grantedPerms, forbiddenPerms []core.Permission, fls *fs_ns.OsFilesystem) {
 	allowedPaths := []*landlock.Path{landlock.VMInfo(), landlock.Stdio()}
 	var allowDNS, allowCerts bool
 
@@ -35,12 +39,19 @@ func restrictProcessAccess(grantedPerms, forbiddenPerms []core.Permission) {
 				} else {
 					panic(core.ErrUnreachable)
 				}
+			case core.Str:
+				path, err := exec.LookPath(cmdName.UnderlyingString())
+				if err != nil {
+					panic(err)
+				}
+				allowedPath = landlock.File(path, "rx")
 			default:
 				panic(core.ErrUnreachable)
 			}
 			allowedPaths = append(allowedPaths, allowedPath)
 		case core.FilesystemPermission:
 			var allowedPath *landlock.Path
+			var allowedPathString string
 
 			getMode := func(kind permkind.PermissionKind) string {
 				kind = kind.Major()
@@ -59,16 +70,19 @@ func restrictProcessAccess(grantedPerms, forbiddenPerms []core.Permission) {
 			switch entity := p.Entity.(type) {
 			case core.Path:
 				mode := getMode(p.Kind())
+				allowedPathString = entity.UnderlyingString()
+
 				if entity.IsDirPath() {
-					allowedPath = landlock.Dir(entity.UnderlyingString(), mode)
+					allowedPath = landlock.Dir(allowedPathString, mode)
 				} else {
-					allowedPath = landlock.File(entity.UnderlyingString(), mode)
+					allowedPath = landlock.File(allowedPathString, mode)
 				}
 			case core.PathPattern:
 				mode := getMode(p.Kind())
 
 				if entity.IsPrefixPattern() {
-					allowedPath = landlock.Dir(entity.Prefix(), mode)
+					allowedPathString = entity.Prefix()
+					allowedPath = landlock.Dir(allowedPathString, mode)
 				} else {
 					//we try to find the longest path that contains all matched paths.
 
@@ -95,16 +109,25 @@ func restrictProcessAccess(grantedPerms, forbiddenPerms []core.Permission) {
 
 					if lastIncludedSegmentIndex >= 0 {
 						dir := strings.Join(segments[:lastIncludedSegmentIndex+1], "/")
+						allowedPathString = dir
 						allowedPath = landlock.Dir(dir, mode)
 					} else if entity.IsDirGlobbingPattern() {
-						allowedPath = landlock.Dir(entity.UnderlyingString(), mode)
+						allowedPathString = entity.UnderlyingString()
+						allowedPath = landlock.Dir(allowedPathString, mode)
 					} else {
-						allowedPath = landlock.File(entity.UnderlyingString(), mode)
+						allowedPathString = entity.UnderlyingString()
+						allowedPath = landlock.File(allowedPathString, mode)
 					}
 				}
 			default:
 				panic(core.ErrUnreachable)
 			}
+
+			//ignore non existing paths
+			if _, err := fls.Stat(allowedPathString); errors.Is(err, fs.ErrNotExist) {
+				continue
+			}
+
 			allowedPaths = append(allowedPaths, allowedPath)
 		}
 	}
