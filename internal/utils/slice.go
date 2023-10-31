@@ -63,6 +63,16 @@ func MapSliceIndexed[T any, U any](s []T, mapper func(e T, i int) U) []U {
 	return result
 }
 
+func ConvertToStringSlice[T ~string](s []T) []string {
+	result := make([]string, len(s))
+
+	for i, e := range s {
+		result[i] = string(e)
+	}
+
+	return result
+}
+
 func FilterSlice[T any](s []T, filter func(e T) bool) []T {
 	result := make([]T, 0)
 

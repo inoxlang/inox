@@ -12,6 +12,8 @@ func TestNewFilesystemSnapshot(t *testing.T) {
 
 	t.Run("empty", func(t *testing.T) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		desc := core.NewObjectFromMapNoInit(core.ValMap{
 			FS_SNAPSHOT_SYMB_DESC_FILES_PROPNAME: core.NewDictionary(core.ValMap{}),
 		})
@@ -22,6 +24,8 @@ func TestNewFilesystemSnapshot(t *testing.T) {
 
 	t.Run("file in rootdir", func(t *testing.T) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		desc := core.NewObjectFromMapNoInit(core.ValMap{
 			FS_SNAPSHOT_SYMB_DESC_FILES_PROPNAME: core.NewDictionary(core.ValMap{
 				"./a.txt": core.Str("a"),
@@ -58,6 +62,8 @@ func TestNewFilesystemSnapshot(t *testing.T) {
 
 	t.Run("empty subdir in root dir", func(t *testing.T) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		desc := core.NewObjectFromMapNoInit(core.ValMap{
 			FS_SNAPSHOT_SYMB_DESC_FILES_PROPNAME: core.NewDictionary(core.ValMap{
 				"./dir/": core.NewWrappedValueList(),
@@ -83,6 +89,8 @@ func TestNewFilesystemSnapshot(t *testing.T) {
 
 	t.Run("subdir with file in root dir", func(t *testing.T) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		desc := core.NewObjectFromMapNoInit(core.ValMap{
 			FS_SNAPSHOT_SYMB_DESC_FILES_PROPNAME: core.NewDictionary(core.ValMap{
 				"./dir/": core.NewWrappedValueList(core.Path("./file.txt")),
@@ -131,6 +139,8 @@ func TestNewFilesystemSnapshot(t *testing.T) {
 
 	t.Run("empty subdir & file in root dir", func(t *testing.T) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		desc := core.NewObjectFromMapNoInit(core.ValMap{
 			FS_SNAPSHOT_SYMB_DESC_FILES_PROPNAME: core.NewDictionary(core.ValMap{
 				"./dir/":  core.NewWrappedValueList(),
@@ -180,6 +190,8 @@ func TestNewFilesystemSnapshot(t *testing.T) {
 
 	t.Run("subdir with empty subdir in root dir", func(t *testing.T) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		desc := core.NewObjectFromMapNoInit(core.ValMap{
 			FS_SNAPSHOT_SYMB_DESC_FILES_PROPNAME: core.NewDictionary(core.ValMap{
 				"./dir/": core.NewDictionary(core.ValMap{
@@ -221,6 +233,8 @@ func TestNewFilesystemSnapshot(t *testing.T) {
 
 	t.Run("subdir with subdir containing empty file in root dir", func(t *testing.T) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
 		desc := core.NewObjectFromMapNoInit(core.ValMap{
 			FS_SNAPSHOT_SYMB_DESC_FILES_PROPNAME: core.NewDictionary(core.ValMap{
 				"./dir/": core.NewDictionary(core.ValMap{

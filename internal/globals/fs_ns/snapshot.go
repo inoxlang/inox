@@ -1,6 +1,7 @@
 package fs_ns
 
 import (
+	"errors"
 	"reflect"
 
 	"github.com/inoxlang/inox/internal/core"
@@ -18,6 +19,8 @@ var (
 
 	NEW_FS_SNAPSHOT_SYMB_ARGS      = &[]symbolic.Value{NEW_FS_SNAPSHOT_DESC}
 	NEW_FS_SNAPSHOT_SYMB_ARG_NAMES = []string{"description"}
+
+	ErrFileBeingSnapshoted = errors.New("file is being snapshoted")
 )
 
 func NewFilesystemSnapshot(ctx *core.Context, desc *core.Object) *core.FilesystemSnapshotIL {

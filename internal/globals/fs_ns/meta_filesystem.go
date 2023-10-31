@@ -1,11 +1,13 @@
 package fs_ns
 
 import (
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -13,7 +15,9 @@ import (
 	"time"
 
 	"github.com/go-git/go-billy/v5"
+	"github.com/go-git/go-billy/v5/util"
 	"github.com/inoxlang/inox/internal/afs"
+	"github.com/inoxlang/inox/internal/commonfmt"
 	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/filekv"
 	"github.com/inoxlang/inox/internal/utils"
@@ -39,28 +43,36 @@ const (
 	METAFS_ALWAYS_CHECK_USED_SPACE_BYTE_COUNT_THRESHOLD = 100_000
 	METAFS_DEFAULT_MAX_FILE_COUNT                       = 1000
 	METAFS_DEFAULT_MAX_PARALLEL_FILE_CREATION_COUNT     = 10
+
+	METAFS_MAX_SNAPSHOTABLE_SIZE                 = core.ByteCount(100_000_000)
+	METAFS_DEFAULT_MAX_UNTRACK_CLOSED_FILE_COUNT = 10
 )
 
 var (
 	REQUIRED_METAFS_FILE_METADATA_PROPNAMES = []string{METAFS_FILE_MODE_PROPNAME, METAFS_CREATION_TIME_PROPNAME, METAFS_MODIF_TIME_PROPNAME}
+
+	_ = core.SnapshotableFilesystem((*MetaFilesystem)(nil))
 )
 
 // MetaFilesystem is a filesystem that works on top of another filesystem, it stores its metadata in a file and file contents
 // in regular files.
 type MetaFilesystem struct {
-	//underlying afs.Filesystem
-	underlying               billy.Basic
-	dir                      *string        //optional, if set underlying is an afs.Filesytem
 	maxUsableSpace           core.ByteCount //maximum space usable in the underyling filesystem
 	maxFileCount             int32          //maximum number of files stored by MetaFilesystem in the underyling filesystem
 	maxParallelCreationCount int32
+
+	//underlying afs.Filesystem
+	underlying billy.Basic
+	dir        *string //optional, if set underlying is an afs.Filesytem
+	openFiles  map[ /*normalized path*/ string]map[*metaFsFile]struct{}
 
 	//all the metadata about files is stored in this Key value store.
 	metadata *filekv.SingleFileKV
 	ctx      *core.Context
 
-	lock   sync.RWMutex
-	closed atomic.Bool
+	lock        sync.RWMutex
+	closed      atomic.Bool
+	snapshoting atomic.Bool
 
 	pendingFileCreations atomic.Int32
 
@@ -127,8 +139,10 @@ func OpenMetaFilesystem(ctx *core.Context, underlying billy.Basic, opts MetaFile
 	}
 
 	fls := &MetaFilesystem{
-		ctx:                      ctx,
-		underlying:               underlying,
+		ctx:        ctx,
+		underlying: underlying,
+		openFiles:  map[string]map[*metaFsFile]struct{}{},
+
 		metadata:                 kv,
 		maxUsableSpace:           maxUsableSpace,
 		maxFileCount:             maxFileCount,
@@ -171,11 +185,29 @@ func OpenMetaFilesystem(ctx *core.Context, underlying billy.Basic, opts MetaFile
 		return nil, fmt.Errorf("failed to check used space: %w", err)
 	}
 
+	ctx.OnGracefulTearDown(func(ctx *core.Context) error {
+		return fls.Close(ctx)
+	})
+
 	return fls, nil
 }
 
 func (fls *MetaFilesystem) Close(ctx *core.Context) error {
 	if fls.closed.CompareAndSwap(false, true) {
+		fls.openFiles = nil
+		openFiles := fls.openFiles
+
+		//close all files
+		for _, files := range openFiles {
+			for sameFile := range files {
+				func() {
+					defer utils.Recover()
+					sameFile.Close()
+				}()
+			}
+		}
+
+		//close the key-value store
 		return fls.metadata.Close(ctx)
 	}
 	return nil
@@ -303,7 +335,6 @@ func (fls *MetaFilesystem) setFileMetadata(metadata *metaFsFileMetadata, usedTx 
 	}
 
 	recordPropertyValues := []core.Serializable{
-
 		core.FileMode(metadata.mode),
 		metadata.creationTime,
 		metadata.modificationTime,
@@ -346,6 +377,197 @@ func (fls *MetaFilesystem) deleteFileMetadata(pth core.Path, usedTx *filekv.Data
 	}
 
 	return nil
+}
+
+func (fls *MetaFilesystem) TakeFilesystemSnapshot(getContent func(ChecksumSHA256 [32]byte) core.AddressableContent) (core.FilesystemSnapshot, error) {
+	if !fls.snapshoting.CompareAndSwap(false, true) {
+		return nil, core.ErrAlreadyBeingSnapshoted
+	}
+	defer fls.snapshoting.Store(false)
+
+	size, err := fls.computeUsedSpace(false)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if size > METAFS_MAX_SNAPSHOTABLE_SIZE {
+		max, err := commonfmt.FmtByteCount(int64(METAFS_MAX_SNAPSHOTABLE_SIZE), -1)
+		if err != nil {
+			panic(err)
+		}
+		return nil, fmt.Errorf("snapshoting of meta filesystems only support filesystems up to %s", max)
+	}
+
+	switch fls.underlying.(type) {
+	case *OsFilesystem, *MemFilesystem:
+	default:
+		return nil,
+			errors.New("for now snapshoting is only supported when the underlying filesystem is the OS filesystem or a memory filesystem")
+	}
+
+	snapshot := &InMemorySnapshot{
+		MetadataMap:  make(map[string]*core.EntrySnapshotMetadata),
+		FileContents: make(map[string]core.AddressableContent),
+	}
+
+	fls.lock.Lock()
+	defer fls.lock.Unlock()
+	fls.untrackSomeClosedFiles(100)
+
+	var writableFiles []*metaFsFile
+
+	rootDirMeta, _, err := fls.getFileMetadata("/", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, files := range fls.openFiles {
+		for sameFile := range files {
+			if !IsReadOnly(sameFile.flag) {
+				writableFiles = append(writableFiles, sameFile)
+				sameFile.snapshoting.Store(true)
+				break
+			}
+		}
+	}
+
+	defer func() {
+		for _, file := range writableFiles {
+			file.snapshoting.Store(false)
+		}
+	}()
+
+	//add writable files to the snapshot
+	for _, file := range writableFiles {
+		normalizedPath := NormalizeAsAbsolute(file.metadata.path.UnderlyingString())
+		concreteFilePath := file.metadata.concreteFile.UnderlyingString()
+
+		file.underlying.Sync()
+
+		content, err := util.ReadFile(fls.underlying, concreteFilePath)
+		if err != nil {
+			return nil, err
+		}
+		checkSum := sha256.Sum256(content)
+
+		//add the file's content and metadata to the snapshot
+		metadata := &core.EntrySnapshotMetadata{
+			Size:             core.ByteCount(len(content)),
+			AbsolutePath:     file.metadata.path,
+			CreationTime:     file.metadata.creationTime,
+			ModificationTime: file.metadata.modificationTime,
+			Mode:             core.FileMode(file.metadata.mode),
+			ChecksumSHA256:   checkSum,
+		}
+
+		snapshot.MetadataMap[normalizedPath] = metadata
+		snapshot.FileContents[normalizedPath] = AddressableContentBytes{
+			Sha256: checkSum,
+			Data:   content,
+		}
+	}
+
+	pathSegments := []string{"", ""}
+	stack := slices.Clone(rootDirMeta.children)
+	firstChildIndexes := []int{0}
+
+	//add other files to the snapshot
+	for len(stack) > 0 {
+		//pop last children from the stack.
+		index := len(stack) - 1
+		child := stack[index]
+		stack = stack[:index]
+
+		pathSegments[len(pathSegments)-1] = string(child)
+		normalizedPath := NormalizeAsAbsolute(strings.Join(pathSegments, "/"))
+
+		childMetadata, ok, err := fls.getFileMetadata(core.Path(normalizedPath), nil)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get the metadata of %s: %w", normalizedPath, err)
+		}
+		if !ok {
+			return nil, fmt.Errorf("failed to get the metadata of %s", normalizedPath)
+		}
+
+		var content []byte
+		var checksum [32]byte
+		path := childMetadata.path
+
+		if childMetadata.mode.IsDir() {
+			path = core.AppendTrailingSlashIfNotPresent(path)
+			//push entries into the stack.
+			if len(childMetadata.children) > 0 {
+				pathSegments = append(pathSegments, "")
+				firstChildIndexes = append(firstChildIndexes, index+1)
+				stack = append(stack, childMetadata.children...)
+			}
+		} else {
+			concreteFilePath := childMetadata.concreteFile.UnderlyingString()
+			content, err = util.ReadFile(fls.underlying, concreteFilePath)
+			if err != nil {
+				return nil, err
+			}
+			checksum = sha256.Sum256(content)
+		}
+
+		//add the file's content and metadata to the snapshot
+		metadata := &core.EntrySnapshotMetadata{
+			Size:             core.ByteCount(len(content)),
+			AbsolutePath:     path,
+			CreationTime:     childMetadata.creationTime,
+			ModificationTime: childMetadata.modificationTime,
+			Mode:             core.FileMode(childMetadata.mode),
+			ChecksumSHA256:   checksum,
+			ChildNames:       utils.ConvertToStringSlice(childMetadata.children),
+		}
+
+		snapshot.MetadataMap[normalizedPath] = metadata
+		if normalizedPath != "/" && strings.Count(normalizedPath, "/") == 1 {
+			snapshot.RootDirEntryList = append(snapshot.RootDirEntryList, metadata)
+		}
+
+		snapshot.MetadataMap[normalizedPath] = metadata
+
+		if !metadata.IsDir() {
+			snapshot.FileContents[normalizedPath] = AddressableContentBytes{
+				Sha256: checksum,
+				Data:   content,
+			}
+		}
+
+		if firstChildIndexes[len(firstChildIndexes)-1] == index {
+			//remove parent from path segments
+
+			firstChildIndexes = firstChildIndexes[:len(firstChildIndexes)-1]
+			pathSegments = pathSegments[:len(pathSegments)-1]
+		}
+	}
+
+	return snapshot, nil
+}
+
+// untrackSomeClosedFiles untracks up to maxRemovalCount closed files, if maxRemovalCount is <= 0
+// up to METAFS_DEFAULT_MAX_UNTRACK_CLOSED_FILE_COUNT are untracked.
+func (fls *MetaFilesystem) untrackSomeClosedFiles(maxRemovalCount int) {
+	//in order for this function to execute as fast as possible we only remove a few tracked files.
+
+	if maxRemovalCount <= 0 {
+		maxRemovalCount = METAFS_DEFAULT_MAX_UNTRACK_CLOSED_FILE_COUNT
+	}
+	removedCount := 0
+
+	for _, files := range fls.openFiles {
+		for sameFile := range files {
+			if sameFile.closed.Load() {
+				delete(files, sameFile)
+				removedCount++
+				if removedCount >= maxRemovalCount {
+					return
+				}
+			}
+		}
+	}
 }
 
 func (fls *MetaFilesystem) getUnderlyingFileCount() (int32, error) {
@@ -583,13 +805,28 @@ func (fls *MetaFilesystem) OpenFile(filename string, flag int, perm os.FileMode)
 		return nil, fmt.Errorf("failed to open %s", pth)
 	}
 
+	if _, ok := underlyingFile.(afs.SyncCapable); !ok {
+		return nil, errors.New("file returned by the underlying filesystem is not sync-capable")
+	}
+
+	files, ok := fls.openFiles[filename]
+	if !ok {
+		files = map[*metaFsFile]struct{}{}
+		fls.openFiles[filename] = files
+	}
+
+	fls.untrackSomeClosedFiles(-1)
+
 	file := &metaFsFile{
 		path:         pth,
 		fs:           fls,
 		originalPath: originalPath,
+		flag:         flag,
 		metadata:     metadata,
-		underlying:   underlyingFile,
+		underlying:   underlyingFile.(afs.SyncCapable),
 	}
+
+	files[file] = struct{}{}
 
 	return file, nil
 }
@@ -1090,6 +1327,7 @@ func (fls *MetaFilesystem) Readlink(link string) (string, error) {
 	return "", core.ErrNotImplementedYet
 }
 
+// a metaFsFileMetadata is the metadata about a file or directory.
 type metaFsFileMetadata struct {
 	path             core.Path
 	concreteFile     *core.Path //nil if dir

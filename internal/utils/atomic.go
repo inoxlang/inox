@@ -16,3 +16,15 @@ func InefficientlyWaitUntilTrue(b *atomic.Bool, timeout time.Duration) bool {
 
 	return b.Load()
 }
+
+// InefficientlyWaitUntilFalse checks every ~millisecond if *b is false,
+// it returns true if *b is false or returns false on timeout.
+func InefficientlyWaitUntilFalse(b *atomic.Bool, timeout time.Duration) bool {
+	start := time.Now()
+	for b.Load() && time.Since(start) <= timeout {
+		//wait at least one millisecond
+		time.Sleep(time.Millisecond)
+	}
+
+	return !b.Load()
+}

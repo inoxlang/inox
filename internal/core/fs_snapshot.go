@@ -10,6 +10,7 @@ import (
 var (
 	ErrSnapshotEntryPathMustBeAbsolute = errors.New("snapshot file path must be absolute")
 	ErrSnapshotEntryNotAFile           = errors.New("filesystem entry is not a file")
+	ErrAlreadyBeingSnapshoted          = errors.New("the filesystem is already being snapshoted")
 
 	_ = Value((*FilesystemSnapshotIL)(nil))
 	_ = Serializable((*FilesystemSnapshotIL)(nil))
@@ -58,7 +59,7 @@ type EntrySnapshotMetadata struct {
 	ModificationTime Date
 	Mode             FileMode
 	ChildNames       []string
-	ChecksumSHA256   [32]byte //empty if directory
+	ChecksumSHA256   [32]byte //zero if directory
 }
 
 func (m EntrySnapshotMetadata) IsDir() bool {
