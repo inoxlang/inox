@@ -185,16 +185,21 @@ func (s *inMemStorage) newNoLock(path string, mode os.FileMode, flag int) (*InMe
 	f.content.filesystemMaxStorageSize = s.maxStorageSize
 
 	s.files[path] = f
-	s.createParentNoLock(path, mode, f)
+	s.createUpdateParentNoLock(path, mode, f)
 	return f, nil
 }
 
-func (s *inMemStorage) createParentNoLock(path string, mode os.FileMode, f *InMemfile) error {
+func (s *inMemStorage) createUpdateParentNoLock(path string, mode os.FileMode, f *InMemfile) error {
 	base := filepath.Dir(path)
 	if base == "." {
 		base = "/"
 	}
 	base = NormalizeAsAbsolute(base)
+
+	dir, ok := s.files[base]
+	if ok {
+		dir.content.modificationTime.Store(time.Now())
+	}
 
 	if f.Name() == "/" {
 		return nil
@@ -320,7 +325,7 @@ func (s *inMemStorage) moveNoLock(from, to string) error {
 		delete(s.children[filepath.Dir(from)], filepath.Base(from))
 	}()
 
-	return s.createParentNoLock(to, 0644, s.files[to])
+	return s.createUpdateParentNoLock(to, 0644, s.files[to])
 }
 
 func (s *inMemStorage) Remove(path string) error {
@@ -340,6 +345,7 @@ func (s *inMemStorage) Remove(path string) error {
 
 	base, file := filepath.Split(path)
 	base = filepath.Clean(base)
+	s.files[base].content.modificationTime.Store(time.Now())
 
 	delete(s.children[base], file)
 	delete(s.files, path)

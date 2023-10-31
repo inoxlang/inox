@@ -13,6 +13,7 @@ import (
 
 	billy "github.com/go-git/go-billy/v5"
 	"github.com/go-git/go-billy/v5/util"
+	"github.com/inoxlang/inox/internal/utils"
 	"gopkg.in/check.v1"
 )
 
@@ -190,17 +191,33 @@ func (s *BasicTestSuite) TestOpenFileReadWrite(c *check.C) {
 	f, err := s.FS.OpenFile("foo1", os.O_CREATE|os.O_TRUNC|os.O_RDWR, defaultMode)
 	c.Assert(err, check.IsNil)
 	c.Assert(f.Name(), check.Equals, "foo1")
+	modifTime := utils.Must(s.FS.Stat("foo1")).ModTime()
 
+	//write
 	written, err := f.Write([]byte("foobar"))
 	c.Assert(written, check.Equals, 6)
 	c.Assert(err, check.IsNil)
 
+	//check modification time
+	t := utils.Must(s.FS.Stat("foo1")).ModTime()
+	if !t.After(modifTime) {
+		c.FailNow()
+	}
+	modifTime = t
+
 	_, err = f.Seek(0, os.SEEK_SET)
 	c.Assert(err, check.IsNil)
 
+	//write
 	written, err = f.Write([]byte("qux"))
 	c.Assert(written, check.Equals, 3)
 	c.Assert(err, check.IsNil)
+
+	//check modification time
+	t = utils.Must(s.FS.Stat("foo1")).ModTime()
+	if !t.After(modifTime) {
+		c.FailNow()
+	}
 
 	_, err = f.Seek(0, os.SEEK_SET)
 	c.Assert(err, check.IsNil)

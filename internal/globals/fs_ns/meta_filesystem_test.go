@@ -24,6 +24,10 @@ func TestMetaFilesystemWithUnderlyingFs(t *testing.T) {
 		return
 	}
 
+	if testing.Short() {
+		return
+	}
+
 	testCount := result.Succeeded
 	resultWhenClosed := check.Run(&MetaFsWithUnderlyingFsTestSuite{closed: true}, &check.RunConf{
 		Verbose: true,
@@ -44,9 +48,13 @@ func TestMetaFilesystemWithBasic(t *testing.T) {
 		assert.Fail(t, result.String())
 	}
 
+	if testing.Short() {
+		return
+	}
+
 	testCount := result.Succeeded
 	resultWhenClosed := check.Run(&MetaFsWithUnderlyingFsTestSuite{closed: true}, &check.RunConf{
-		Verbose: true,
+		Verbose: false,
 	})
 
 	if resultWhenClosed.Failed+resultWhenClosed.Panicked != testCount-1 {

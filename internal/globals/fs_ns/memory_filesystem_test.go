@@ -269,10 +269,6 @@ func TestMemoryFilesystemTakeFilesystemSnapshot(t *testing.T) {
 		err := fs.MkdirAll("/dir", DEFAULT_DIR_FMODE)
 		assert.NoError(t, err)
 
-		info, err := fs.ReadDir("/")
-		assert.NoError(t, err)
-		dirInfo := info[0].(core.FileInfo)
-
 		//create file
 		f, err := fs.Create("/dir/file.txt")
 		assert.NoError(t, err)
@@ -283,6 +279,10 @@ func TestMemoryFilesystemTakeFilesystemSnapshot(t *testing.T) {
 		fileModifTime := fileInfo.ModTime_
 		fileMode := fileInfo.Mode_
 		f.Close()
+
+		info, err := fs.ReadDir("/")
+		assert.NoError(t, err)
+		dirInfo := info[0].(core.FileInfo)
 
 		snapshot := utils.Must(fs.TakeFilesystemSnapshot(getContentNoCache)).(*InMemorySnapshot)
 

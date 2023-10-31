@@ -66,6 +66,10 @@ type MetaFilesystem struct {
 	dir        *string //optional, if set underlying is an afs.Filesytem
 	openFiles  map[ /*normalized path*/ string]map[*metaFsFile]struct{}
 
+	// last modification times of non-dir files
+	lastModificationTimes     map[ /*normalized path*/ string]core.Date
+	lastModificationTimesLock sync.RWMutex
+
 	//all the metadata about files is stored in this Key value store.
 	metadata *filekv.SingleFileKV
 	ctx      *core.Context
@@ -139,9 +143,10 @@ func OpenMetaFilesystem(ctx *core.Context, underlying billy.Basic, opts MetaFile
 	}
 
 	fls := &MetaFilesystem{
-		ctx:        ctx,
-		underlying: underlying,
-		openFiles:  map[string]map[*metaFsFile]struct{}{},
+		ctx:                   ctx,
+		underlying:            underlying,
+		openFiles:             map[string]map[*metaFsFile]struct{}{},
+		lastModificationTimes: map[string]core.Date{},
 
 		metadata:                 kv,
 		maxUsableSpace:           maxUsableSpace,
@@ -188,6 +193,28 @@ func OpenMetaFilesystem(ctx *core.Context, underlying billy.Basic, opts MetaFile
 	ctx.OnGracefulTearDown(func(ctx *core.Context) error {
 		return fls.Close(ctx)
 	})
+
+	// update modification time of files
+	err = fls.Walk(func(normalizedPath string, path core.Path, metadata *metaFsFileMetadata) error {
+		if metadata.mode.IsDir() {
+			return nil
+		}
+
+		info, err := fls.underlying.Stat(metadata.concreteFile.UnderlyingString())
+		if err != nil {
+			return err
+		}
+
+		if time.Time(metadata.modificationTime).Before(info.ModTime()) {
+			metadata.modificationTime = core.Date(info.ModTime())
+			fls.setFileMetadata(metadata, nil)
+		}
+		return nil
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to update modification times during opening of meta filesystem: %w", err)
+	}
 
 	return fls, nil
 }
@@ -245,6 +272,14 @@ func (fls *MetaFilesystem) getFileMetadata(pth core.Path, usedTx *filekv.Databas
 		return nil, false, ErrClosedFilesystem
 	}
 
+	var lastModificationTime core.Date
+	var hasLastModifTime bool
+	func() {
+		fls.lastModificationTimesLock.RLock()
+		defer fls.lastModificationTimesLock.RUnlock()
+		lastModificationTime, hasLastModifTime = fls.lastModificationTimes[NormalizeAsAbsolute(pth.UnderlyingString())]
+	}()
+
 	key := getKvKeyFromPath(pth)
 
 	var (
@@ -282,6 +317,10 @@ func (fls *MetaFilesystem) getFileMetadata(pth core.Path, usedTx *filekv.Databas
 	fileMode := record.Prop(fls.ctx, METAFS_FILE_MODE_PROPNAME).(core.FileMode)
 	creationTime := record.Prop(fls.ctx, METAFS_CREATION_TIME_PROPNAME).(core.Date)
 	modifTime := record.Prop(fls.ctx, METAFS_MODIF_TIME_PROPNAME).(core.Date)
+
+	if hasLastModifTime {
+		modifTime = lastModificationTime
+	}
 
 	var symlinkTarget *core.Path
 	if record.HasProp(fls.ctx, METAFS_SYMLINK_TARGET_PROPNAME) {
@@ -379,11 +418,11 @@ func (fls *MetaFilesystem) deleteFileMetadata(pth core.Path, usedTx *filekv.Data
 	return nil
 }
 
-func (fls *MetaFilesystem) Walk(visit func(normalizedPath string, absolutePath core.Path, metadata *metaFsFileMetadata) error) error {
+func (fls *MetaFilesystem) Walk(visit func(normalizedPath string, path core.Path, metadata *metaFsFileMetadata) error) error {
 	return fls.walk(visit)
 }
 
-func (fls *MetaFilesystem) walk(visit func(normalizedPath string, absolutePath core.Path, metadata *metaFsFileMetadata) error) error {
+func (fls *MetaFilesystem) walk(visit func(normalizedPath string, path core.Path, metadata *metaFsFileMetadata) error) error {
 	rootDirMeta, _, err := fls.getFileMetadata("/", nil)
 	if err != nil {
 		return err
@@ -523,7 +562,7 @@ func (fls *MetaFilesystem) TakeFilesystemSnapshot(getContent func(ChecksumSHA256
 	}
 
 	//add other files to the snapshot
-	err = fls.walk(func(normalizedPath string, absolutePath core.Path, metadata *metaFsFileMetadata) error {
+	err = fls.walk(func(normalizedPath string, path core.Path, metadata *metaFsFileMetadata) error {
 		var content []byte
 		var checksum [32]byte
 
@@ -539,7 +578,7 @@ func (fls *MetaFilesystem) TakeFilesystemSnapshot(getContent func(ChecksumSHA256
 		//add the file's content and metadata to the snapshot
 		entryMetadata := &core.EntrySnapshotMetadata{
 			Size:             core.ByteCount(len(content)),
-			AbsolutePath:     absolutePath,
+			AbsolutePath:     path,
 			CreationTime:     metadata.creationTime,
 			ModificationTime: metadata.modificationTime,
 			Mode:             core.FileMode(metadata.mode),
@@ -777,6 +816,7 @@ func (fls *MetaFilesystem) OpenFile(filename string, flag int, perm os.FileMode)
 			return nil, fmt.Errorf("failed to create %s: parent directory %s does not exist", pth, dirPath)
 		}
 		dirMetadata.children = append(dirMetadata.children, pth.Basename())
+		dirMetadata.modificationTime = core.Date(time.Now())
 		if err := fls.setFileMetadata(dirMetadata, nil); err != nil {
 			return nil, err
 		}
@@ -842,12 +882,13 @@ func (fls *MetaFilesystem) OpenFile(filename string, flag int, perm os.FileMode)
 	fls.untrackSomeClosedFiles(-1)
 
 	file := &metaFsFile{
-		path:         pth,
-		fs:           fls,
-		originalPath: originalPath,
-		flag:         flag,
-		metadata:     metadata,
-		underlying:   underlyingFile.(afs.SyncCapable),
+		path:           pth,
+		fs:             fls,
+		originalPath:   originalPath,
+		normalizedPath: filename,
+		flag:           flag,
+		metadata:       metadata,
+		underlying:     underlyingFile.(afs.SyncCapable),
 	}
 
 	files[file] = struct{}{}
@@ -1027,7 +1068,9 @@ func (fls *MetaFilesystem) MkdirAllNoLock_(path string, perm os.FileMode, tx *fi
 		if !found {
 			panic(core.ErrUnreachable)
 		}
+
 		dirMetadata.children = append(dirMetadata.children, pth.Basename())
+		dirMetadata.modificationTime = core.Date(time.Now())
 		if err := fls.setFileMetadata(dirMetadata, tx); err != nil {
 			return err
 		}
@@ -1035,14 +1078,14 @@ func (fls *MetaFilesystem) MkdirAllNoLock_(path string, perm os.FileMode, tx *fi
 		//create metadata for new directory & store it
 		creationTime := core.Date(time.Now())
 
-		newFileMetadata := &metaFsFileMetadata{
+		newDirMetadata := &metaFsFileMetadata{
 			path:             pth,
 			mode:             perm,
 			creationTime:     creationTime,
 			modificationTime: creationTime,
 		}
 
-		if err := fls.setFileMetadata(newFileMetadata, tx); err != nil {
+		if err := fls.setFileMetadata(newDirMetadata, tx); err != nil {
 			return err
 		}
 	} else if !metadata.mode.IsDir() {
@@ -1145,6 +1188,7 @@ func (fls *MetaFilesystem) Rename(from, to string) error {
 			return fmt.Errorf("failed to remove %s from children of %s", fromPath.Basename(), fromDirPath)
 		}
 
+		fromDirMetadata.modificationTime = core.Date(time.Now())
 		if err := fls.setFileMetadata(fromDirMetadata, dbTx); err != nil {
 			return err
 		}
@@ -1168,6 +1212,7 @@ func (fls *MetaFilesystem) Rename(from, to string) error {
 		}
 
 		toDirMetadata.children = append(toDirMetadata.children, toPath.Basename())
+		toDirMetadata.modificationTime = core.Date(time.Now())
 
 		if err := fls.setFileMetadata(toDirMetadata, dbTx); err != nil {
 			return err
@@ -1271,6 +1316,7 @@ func (fls *MetaFilesystem) Remove(filename string) error {
 			panic(core.ErrUnreachable)
 		}
 
+		parentMetadata.modificationTime = core.Date(time.Now())
 		if err := fls.setFileMetadata(parentMetadata, dbTx); err != nil {
 			return err
 		}
@@ -1288,6 +1334,10 @@ func (fls *MetaFilesystem) Remove(filename string) error {
 		if !metadata.mode.IsDir() {
 			return nil
 		}
+
+		fls.lastModificationTimesLock.Lock()
+		delete(fls.lastModificationTimes, filename)
+		fls.lastModificationTimesLock.Unlock()
 
 		//remove descendants recursively (the code is not used yet because .Remove is not recursive)
 		queue := utils.CopySlice(metadata.ChildrenPaths())

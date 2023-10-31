@@ -24,12 +24,13 @@ var (
 )
 
 type metaFsFile struct {
-	fs           *MetaFilesystem
-	originalPath string
-	path         core.Path
-	flag         int
-	underlying   afs.SyncCapable
-	metadata     *metaFsFileMetadata
+	fs             *MetaFilesystem
+	originalPath   string
+	normalizedPath string
+	path           core.Path
+	flag           int
+	underlying     afs.SyncCapable
+	metadata       *metaFsFileMetadata
 
 	snapshoting atomic.Bool
 	closed      atomic.Bool
@@ -62,6 +63,12 @@ func (f *metaFsFile) Write(p []byte) (n int, err error) {
 	if err := f.checkUsableSpace(len(p)); err != nil {
 		return 0, err
 	}
+
+	func() {
+		f.fs.lastModificationTimesLock.Lock()
+		defer f.fs.lastModificationTimesLock.Unlock()
+		f.fs.lastModificationTimes[f.normalizedPath] = core.Date(time.Now())
+	}()
 
 	//TODO: prevent leaks about underlying file
 	return f.underlying.Write(p)
@@ -140,6 +147,12 @@ func (f *metaFsFile) Truncate(size int64) error {
 			}
 		}
 	}
+
+	func() {
+		f.fs.lastModificationTimesLock.Lock()
+		defer f.fs.lastModificationTimesLock.Unlock()
+		f.fs.lastModificationTimes[f.normalizedPath] = core.Date(time.Now())
+	}()
 
 	err := f.underlying.Truncate(size)
 	if err != nil {

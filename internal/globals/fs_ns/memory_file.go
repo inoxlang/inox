@@ -8,7 +8,12 @@ import (
 	"sync/atomic"
 
 	"github.com/go-git/go-billy/v5"
+	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core"
+)
+
+var (
+	_ = afs.SyncCapable((*InMemfile)(nil))
 )
 
 type InMemfile struct {
@@ -93,6 +98,11 @@ func (f *InMemfile) Write(p []byte) (int, error) {
 	f.position += int64(n)
 
 	return n, err
+}
+
+func (*InMemfile) Sync() error {
+	//no-op
+	return nil
 }
 
 func (f *InMemfile) Close() error {

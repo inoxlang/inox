@@ -5,9 +5,11 @@ package fs_ns
 import (
 	"os"
 	"strconv"
+	"time"
 
 	billy "github.com/go-git/go-billy/v5"
 	"github.com/go-git/go-billy/v5/util"
+	"github.com/inoxlang/inox/internal/utils"
 	"gopkg.in/check.v1"
 )
 
@@ -65,10 +67,12 @@ func (s *DirTestSuite) TestMkdirAllAndCreate(c *check.C) {
 	err := s.FS.MkdirAll("dir", os.FileMode(0755))
 	c.Assert(err, check.IsNil)
 
+	//create file
 	f, err := s.FS.Create("dir/bar/foo")
 	c.Assert(err, check.IsNil)
 	c.Assert(f.Close(), check.IsNil)
 
+	//check file stats
 	fi, err := s.FS.Stat("dir/bar/foo")
 	c.Assert(err, check.IsNil)
 	c.Assert(fi.IsDir(), check.Equals, false)
@@ -129,6 +133,51 @@ func (s *BasicTestSuite) TestStatDeep(c *check.C) {
 	c.Assert(err, check.IsNil)
 	c.Assert(fi.Name(), check.Equals, "baz")
 	c.Assert(fi.IsDir(), check.Equals, false)
+}
+
+func (s *DirTestSuite) TestCreateFileInDir(c *check.C) {
+	err := s.FS.MkdirAll("dir", os.FileMode(0755))
+	c.Assert(err, check.IsNil)
+	dirModifTime := utils.Must(s.FS.Stat("dir")).ModTime()
+
+	//create file
+	time.Sleep(time.Second)
+	f, err := s.FS.Create("dir/bar")
+	c.Assert(err, check.IsNil)
+	c.Assert(f.Close(), check.IsNil)
+
+	//check file stats
+	fi, err := s.FS.Stat("dir/bar")
+	c.Assert(err, check.IsNil)
+	c.Assert(fi.IsDir(), check.Equals, false)
+
+	//check dir stats
+	t := utils.Must(s.FS.Stat("dir")).ModTime()
+	if !t.After(dirModifTime) {
+		c.Fatalf("the mtime should have been updated")
+	}
+}
+
+func (s *DirTestSuite) TestRemoveFileFromDir(c *check.C) {
+	err := s.FS.MkdirAll("dir", os.FileMode(0755))
+	c.Assert(err, check.IsNil)
+
+	//create file
+	f, err := s.FS.Create("dir/bar")
+	c.Assert(err, check.IsNil)
+	c.Assert(f.Close(), check.IsNil)
+	dirModifTime := utils.Must(s.FS.Stat("dir")).ModTime()
+
+	//remove file
+	time.Sleep(time.Second)
+	err = s.FS.Remove("dir/bar")
+	c.Assert(err, check.IsNil)
+
+	//check dir stats
+	t := utils.Must(s.FS.Stat("dir")).ModTime()
+	if !t.After(dirModifTime) {
+		c.Fatalf("the mtime should have been updated")
+	}
 }
 
 func (s *DirTestSuite) TestReadDir(c *check.C) {
