@@ -16,8 +16,10 @@ import (
 )
 
 func restrictProcessAccess(grantedPerms, forbiddenPerms []core.Permission, fls *fs_ns.OsFilesystem) {
-	allowedPaths := []*landlock.Path{landlock.VMInfo(), landlock.Stdio()}
+	allowedPaths := []*landlock.Path{landlock.VMInfo(), landlock.Stdio(), landlock.Shared()}
 	var allowDNS, allowCerts bool
+
+	executablePaths := map[string]struct{}{}
 
 	for _, perm := range grantedPerms {
 		switch p := perm.(type) {
@@ -32,7 +34,13 @@ func restrictProcessAccess(grantedPerms, forbiddenPerms []core.Permission, fls *
 
 			switch cmdName := p.CommandName.(type) {
 			case core.Path:
-				allowedPath = landlock.File(string(cmdName), "rx")
+				name := string(cmdName)
+				if _, ok := executablePaths[name]; ok {
+					continue
+				}
+
+				executablePaths[name] = struct{}{}
+				allowedPath = landlock.File(name, "rx")
 			case core.PathPattern:
 				if cmdName.IsPrefixPattern() {
 					allowedPath = landlock.Dir(cmdName.Prefix(), "rx")
@@ -44,6 +52,11 @@ func restrictProcessAccess(grantedPerms, forbiddenPerms []core.Permission, fls *
 				if err != nil {
 					panic(err)
 				}
+				if _, ok := executablePaths[path]; ok {
+					continue
+				}
+
+				executablePaths[path] = struct{}{}
 				allowedPath = landlock.File(path, "rx")
 			default:
 				panic(core.ErrUnreachable)
