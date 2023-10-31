@@ -109,7 +109,7 @@ func registerProjectMethodHandlers(server *lsp.Server, opts LSPServerConfigurati
 				}
 			}
 
-			lspFilesystem := NewFilesystem(project.Filesystem(), fs_ns.NewMemFilesystem(10_000_000))
+			lspFilesystem := NewFilesystem(project.LiveFilesystem(), fs_ns.NewMemFilesystem(10_000_000))
 
 			sessionData := getLockedSessionData(session)
 			defer sessionData.lock.Unlock()

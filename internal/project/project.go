@@ -7,7 +7,6 @@ import (
 	"regexp"
 
 	"github.com/go-git/go-billy/v5/util"
-	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/inoxconsts"
@@ -41,7 +40,7 @@ var (
 
 type Project struct {
 	id                core.ProjectID
-	projectFilesystem afs.Filesystem
+	projectFilesystem core.SnapshotableFilesystem
 	lock              core.SmartLock
 	tempTokens        *TempProjectTokens
 	secretsBucket     *s3_ns.Bucket
@@ -142,7 +141,7 @@ type DevSideCloudflareConfig struct {
 
 // NewDummyProject creates a project without any providers or tokens,
 // the returned project should only be used in test.
-func NewDummyProject(name string, fls afs.Filesystem) *Project {
+func NewDummyProject(name string, fls core.SnapshotableFilesystem) *Project {
 	return &Project{
 		id:                core.RandomProjectID(name),
 		projectFilesystem: fls,
@@ -242,7 +241,7 @@ func (p *Project) CanProvideS3Credentials(s3Provider string) (bool, error) {
 	return false, nil
 }
 
-func (p *Project) Filesystem() afs.Filesystem {
+func (p *Project) LiveFilesystem() core.SnapshotableFilesystem {
 	return p.projectFilesystem
 }
 

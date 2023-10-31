@@ -191,7 +191,7 @@ func TestOpenProject(t *testing.T) {
 
 		assert.Same(t, project1, project2)
 
-		fls := project1.Filesystem()
+		fls := project1.LiveFilesystem()
 		entries, err := fls.ReadDir("/")
 		if !assert.NoError(t, err) {
 			return
