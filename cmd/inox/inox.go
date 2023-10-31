@@ -195,6 +195,11 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 			Out:                       outW,
 
 			FullAccessToDatabases: true,
+
+			OnPrepared: func(state *core.GlobalState) error {
+				inoxprocess.RestrictProcessAccess(state.Ctx)
+				return nil
+			},
 		})
 
 		prettyPrintConfig := config.DEFAULT_PRETTY_PRINT_CONFIG.WithContext(compilationCtx) // TODO: use another context?
@@ -256,6 +261,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 		dir := getScriptDir(fpath)
 
 		compilationCtx := createCompilationCtx(dir)
+		inoxprocess.RestrictProcessAccess(compilationCtx)
 
 		data := inox_ns.GetCheckData(fpath, compilationCtx, outW)
 		fmt.Fprintf(outW, "%s\n\r", utils.Must(json.Marshal(data)))
@@ -352,6 +358,8 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 		state.Logger = zerolog.New(out)
 		state.OutputFieldsInitialized.Store(true)
 
+		inoxprocess.RestrictProcessAccess(ctx)
+
 		if err := project_server.StartLSPServer(ctx, opts); err != nil {
 			fmt.Fprintln(errW, "failed to start LSP server:", err)
 		}
@@ -437,6 +445,8 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 		state.Out = out
 		state.Logger = zerolog.New(out)
 		state.OutputFieldsInitialized.Store(true)
+
+		inoxprocess.RestrictProcessAccess(ctx)
 
 		//configure server
 
@@ -541,6 +551,8 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 		state.Logger = zerolog.New(state.Out)
 		state.OutputFieldsInitialized.Store(true)
 
+		inoxprocess.RestrictProcessAccess(ctx)
+
 		client, err := inoxprocess.ConnectToProcessControlServer(ctx, u, token)
 		if err != nil {
 			fmt.Fprintln(errW, err)
@@ -577,6 +589,8 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 			fmt.Fprintln(outW, "configuration error:", err)
 			return
 		}
+
+		inoxprocess.RestrictProcessAccess(state.Ctx)
 
 		//start the shell
 
@@ -631,6 +645,8 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 				return
 			}
 		}()
+
+		inoxprocess.RestrictProcessAccess(state.Ctx)
 
 		//evaluate
 

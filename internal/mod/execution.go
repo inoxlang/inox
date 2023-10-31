@@ -56,9 +56,11 @@ type RunScriptArgs struct {
 
 	LogOut io.Writer
 
-	//PreparedChan signals when the script is prepared (nil error) or failed to prepared (non-nil error),
+	//PreparedChan signals when the script is prepared (nil error) or failed to be prepared (non-nil error),
 	//the channel should be buffered.
 	PreparedChan chan error
+
+	OnPrepared func(state *core.GlobalState) error
 }
 
 // RunLocalScript runs a script located in the filesystem.
@@ -97,6 +99,13 @@ func RunLocalScript(args RunScriptArgs) (
 
 	if err != nil {
 		return nil, state, mod, false, err
+	}
+
+	if args.OnPrepared != nil {
+		err := args.OnPrepared(state)
+		if err != nil {
+			return nil, state, mod, false, err
+		}
 	}
 
 	return RunPreparedScript(RunPreparedScriptArgs{
