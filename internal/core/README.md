@@ -32,11 +32,16 @@ This package contains most the code for the Inox Runtime, the type checking logi
     - **token_bucket.go**
 - Secrets
     - **secrets.go**
+- Mutation
+    - **mutation.go**
+    - **watcher.go**
 - Database
     - **database.go**
 - Debugger
     - **debug.go**
     - **debug_types.go**
+- Testing
+    - **testing.go**
 - Serialization / Deserialization
     - **write_representation.go**
     - **write_json_representation.go**
@@ -86,7 +91,7 @@ ChildContext -.->|can stop| Interpreter1
 
 ### Global State
 
-Each module instance has itw own **global state** that contains.
+Each module instance has its own **global state** that contains:
 - global variables.
 - the module instance's manifest (immutable).
 - the module instances's [context](./#context).
