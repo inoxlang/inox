@@ -88,13 +88,18 @@ func TestMemoryFilesystemCapabilities(t *testing.T) {
 
 func TestMemoryFilesystemTakeFilesystemSnapshot(t *testing.T) {
 	const MAX_STORAGE_SIZE = 10_000
-	getContentNoCache := func(ChecksumSHA256 [32]byte) core.AddressableContent {
-		return nil
+
+	snapshotConfig := core.FilesystemSnapshotConfig{
+		GetContent: func(ChecksumSHA256 [32]byte) core.AddressableContent {
+			//no cache
+			return nil
+		},
+		InclusionFilters: []core.PathPattern{"/..."},
 	}
 
 	t.Run("empty filesystem", func(t *testing.T) {
 		fs := NewMemFilesystem(MAX_STORAGE_SIZE)
-		snapshot := utils.Must(fs.TakeFilesystemSnapshot(getContentNoCache)).(*InMemorySnapshot)
+		snapshot := utils.Must(fs.TakeFilesystemSnapshot(snapshotConfig)).(*InMemorySnapshot)
 
 		assert.Len(t, snapshot.MetadataMap, 1)
 		assert.Len(t, snapshot.FileContents, 0)
@@ -113,7 +118,7 @@ func TestMemoryFilesystemTakeFilesystemSnapshot(t *testing.T) {
 		mode := info.Mode_
 		f.Close()
 
-		snapshot := utils.Must(fs.TakeFilesystemSnapshot(getContentNoCache)).(*InMemorySnapshot)
+		snapshot := utils.Must(fs.TakeFilesystemSnapshot(snapshotConfig)).(*InMemorySnapshot)
 
 		if !assert.Len(t, snapshot.MetadataMap, 2) {
 			return
@@ -169,7 +174,7 @@ func TestMemoryFilesystemTakeFilesystemSnapshot(t *testing.T) {
 		mode2 := info2.Mode_
 		f2.Close()
 
-		snapshot := utils.Must(fs.TakeFilesystemSnapshot(getContentNoCache)).(*InMemorySnapshot)
+		snapshot := utils.Must(fs.TakeFilesystemSnapshot(snapshotConfig)).(*InMemorySnapshot)
 
 		if !assert.Len(t, snapshot.MetadataMap, 3) {
 			return
@@ -242,7 +247,7 @@ func TestMemoryFilesystemTakeFilesystemSnapshot(t *testing.T) {
 		assert.NoError(t, err)
 		dirInfo := info[0].(core.FileInfo)
 
-		snapshot := utils.Must(fs.TakeFilesystemSnapshot(getContentNoCache)).(*InMemorySnapshot)
+		snapshot := utils.Must(fs.TakeFilesystemSnapshot(snapshotConfig)).(*InMemorySnapshot)
 
 		if !assert.Len(t, snapshot.MetadataMap, 2) {
 			return
@@ -284,7 +289,7 @@ func TestMemoryFilesystemTakeFilesystemSnapshot(t *testing.T) {
 		assert.NoError(t, err)
 		dirInfo := info[0].(core.FileInfo)
 
-		snapshot := utils.Must(fs.TakeFilesystemSnapshot(getContentNoCache)).(*InMemorySnapshot)
+		snapshot := utils.Must(fs.TakeFilesystemSnapshot(snapshotConfig)).(*InMemorySnapshot)
 
 		if !assert.Len(t, snapshot.MetadataMap, 3) {
 			return
@@ -336,13 +341,17 @@ func TestMemoryFilesystemTakeFilesystemSnapshot(t *testing.T) {
 
 func TestNewMemFilesystemFromSnapshot(t *testing.T) {
 	const MAX_STORAGE_SIZE = 10_000
-	getContentNoCache := func(ChecksumSHA256 [32]byte) core.AddressableContent {
-		return nil
+	snapshotConfig := core.FilesystemSnapshotConfig{
+		GetContent: func(ChecksumSHA256 [32]byte) core.AddressableContent {
+			//no cache
+			return nil
+		},
+		InclusionFilters: []core.PathPattern{"/..."},
 	}
 
 	t.Run("empty filesystem", func(t *testing.T) {
 		originalFS := NewMemFilesystem(MAX_STORAGE_SIZE)
-		snapshot := utils.Must(originalFS.TakeFilesystemSnapshot(getContentNoCache))
+		snapshot := utils.Must(originalFS.TakeFilesystemSnapshot(snapshotConfig))
 
 		fs := NewMemFilesystemFromSnapshot(snapshot, MAX_STORAGE_SIZE)
 
@@ -359,7 +368,7 @@ func TestNewMemFilesystemFromSnapshot(t *testing.T) {
 		f.Write([]byte("hello"))
 		f.Close()
 
-		snapshot := utils.Must(originalFS.TakeFilesystemSnapshot(getContentNoCache))
+		snapshot := utils.Must(originalFS.TakeFilesystemSnapshot(snapshotConfig))
 		fs := NewMemFilesystemFromSnapshot(snapshot, MAX_STORAGE_SIZE)
 
 		entries, err := fs.ReadDir("/")
@@ -394,7 +403,7 @@ func TestNewMemFilesystemFromSnapshot(t *testing.T) {
 		f2.Write([]byte("hello2"))
 		f2.Close()
 
-		snapshot := utils.Must(originalFS.TakeFilesystemSnapshot(getContentNoCache))
+		snapshot := utils.Must(originalFS.TakeFilesystemSnapshot(snapshotConfig))
 		fs := NewMemFilesystemFromSnapshot(snapshot, MAX_STORAGE_SIZE)
 
 		entries, err := fs.ReadDir("/")
@@ -429,7 +438,7 @@ func TestNewMemFilesystemFromSnapshot(t *testing.T) {
 		err := originalFS.MkdirAll("/dir", DEFAULT_DIR_FMODE)
 		assert.NoError(t, err)
 
-		snapshot := utils.Must(originalFS.TakeFilesystemSnapshot(getContentNoCache))
+		snapshot := utils.Must(originalFS.TakeFilesystemSnapshot(snapshotConfig))
 		fs := NewMemFilesystemFromSnapshot(snapshot, MAX_STORAGE_SIZE)
 
 		//check the dir exists in the new filesystem
@@ -466,7 +475,7 @@ func TestNewMemFilesystemFromSnapshot(t *testing.T) {
 		assert.NoError(t, err)
 		f.Write([]byte("hello"))
 
-		snapshot := utils.Must(originalFS.TakeFilesystemSnapshot(getContentNoCache))
+		snapshot := utils.Must(originalFS.TakeFilesystemSnapshot(snapshotConfig))
 		fs := NewMemFilesystemFromSnapshot(snapshot, MAX_STORAGE_SIZE)
 
 		//check the dir exists in the new filesystem

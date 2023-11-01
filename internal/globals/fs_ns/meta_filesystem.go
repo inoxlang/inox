@@ -477,7 +477,7 @@ func (fls *MetaFilesystem) walk(visit func(normalizedPath string, path core.Path
 	return nil
 }
 
-func (fls *MetaFilesystem) TakeFilesystemSnapshot(getContent func(ChecksumSHA256 [32]byte) core.AddressableContent) (core.FilesystemSnapshot, error) {
+func (fls *MetaFilesystem) TakeFilesystemSnapshot(config core.FilesystemSnapshotConfig) (core.FilesystemSnapshot, error) {
 	if !fls.snapshoting.CompareAndSwap(false, true) {
 		return nil, core.ErrAlreadyBeingSnapshoted
 	}
@@ -517,6 +517,10 @@ func (fls *MetaFilesystem) TakeFilesystemSnapshot(getContent func(ChecksumSHA256
 
 	for _, files := range fls.openFiles {
 		for sameFile := range files {
+			if !config.IsFileIncluded(sameFile.path) {
+				continue
+			}
+
 			if !IsReadOnly(sameFile.flag) {
 				writableFiles = append(writableFiles, sameFile)
 				sameFile.snapshoting.Store(true)
@@ -533,6 +537,10 @@ func (fls *MetaFilesystem) TakeFilesystemSnapshot(getContent func(ChecksumSHA256
 
 	//add writable files to the snapshot
 	for _, file := range writableFiles {
+		if !config.IsFileIncluded(file.path) {
+			continue
+		}
+
 		normalizedPath := NormalizeAsAbsolute(file.metadata.path.UnderlyingString())
 		concreteFilePath := file.metadata.concreteFile.UnderlyingString()
 

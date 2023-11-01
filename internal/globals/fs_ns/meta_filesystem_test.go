@@ -493,11 +493,18 @@ func TestMetaFilesystemTakeSnapshot(t *testing.T) {
 		return ctx, fls
 	}
 
+	snapshotConfig := core.FilesystemSnapshotConfig{
+		GetContent: func(ChecksumSHA256 [32]byte) core.AddressableContent {
+			return nil
+		},
+		InclusionFilters: []core.PathPattern{"/..."},
+	}
+
 	t.Run("empty", func(t *testing.T) {
 		ctx, fls := createEmptyMetaFS(t)
 		defer ctx.CancelGracefully()
 
-		snapshot, err := fls.TakeFilesystemSnapshot(nil)
+		snapshot, err := fls.TakeFilesystemSnapshot(snapshotConfig)
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -510,7 +517,7 @@ func TestMetaFilesystemTakeSnapshot(t *testing.T) {
 
 		util.WriteFile(fls, "/a.txt", []byte("a"), DEFAULT_FILE_FMODE)
 
-		snapshot, err := fls.TakeFilesystemSnapshot(nil)
+		snapshot, err := fls.TakeFilesystemSnapshot(snapshotConfig)
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -547,7 +554,7 @@ func TestMetaFilesystemTakeSnapshot(t *testing.T) {
 
 		fls.MkdirAll("/dir/", DEFAULT_DIR_FMODE)
 
-		snapshot, err := fls.TakeFilesystemSnapshot(nil)
+		snapshot, err := fls.TakeFilesystemSnapshot(snapshotConfig)
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -574,7 +581,7 @@ func TestMetaFilesystemTakeSnapshot(t *testing.T) {
 		fls.MkdirAll("/dir/", DEFAULT_DIR_FMODE)
 		util.WriteFile(fls, "/dir/file.txt", nil, DEFAULT_FILE_FMODE)
 
-		snapshot, err := fls.TakeFilesystemSnapshot(nil)
+		snapshot, err := fls.TakeFilesystemSnapshot(snapshotConfig)
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -624,7 +631,7 @@ func TestMetaFilesystemTakeSnapshot(t *testing.T) {
 		fls.MkdirAll("/dir/", DEFAULT_DIR_FMODE)
 		util.WriteFile(fls, "/a.txt", []byte("a"), DEFAULT_FILE_FMODE)
 
-		snapshot, err := fls.TakeFilesystemSnapshot(nil)
+		snapshot, err := fls.TakeFilesystemSnapshot(snapshotConfig)
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -674,7 +681,7 @@ func TestMetaFilesystemTakeSnapshot(t *testing.T) {
 		fls.MkdirAll("/dir/", DEFAULT_DIR_FMODE)
 		util.WriteFile(fls, "/e.txt", []byte("e"), DEFAULT_FILE_FMODE)
 
-		snapshot, err := fls.TakeFilesystemSnapshot(nil)
+		snapshot, err := fls.TakeFilesystemSnapshot(snapshotConfig)
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -724,7 +731,7 @@ func TestMetaFilesystemTakeSnapshot(t *testing.T) {
 		fls.MkdirAll("/dir/", DEFAULT_DIR_FMODE)
 		fls.MkdirAll("/dir/subdir/", DEFAULT_DIR_FMODE)
 
-		snapshot, err := fls.TakeFilesystemSnapshot(nil)
+		snapshot, err := fls.TakeFilesystemSnapshot(snapshotConfig)
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -766,7 +773,7 @@ func TestMetaFilesystemTakeSnapshot(t *testing.T) {
 		fls.MkdirAll("/dir/subdir/", DEFAULT_DIR_FMODE)
 		util.WriteFile(fls, "/dir/subdir/a.txt", nil, DEFAULT_FILE_FMODE)
 
-		snapshot, err := fls.TakeFilesystemSnapshot(nil)
+		snapshot, err := fls.TakeFilesystemSnapshot(snapshotConfig)
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -837,7 +844,7 @@ func TestMetaFilesystemTakeSnapshot(t *testing.T) {
 			return
 		}
 
-		snapshot, err := fls.TakeFilesystemSnapshot(nil)
+		snapshot, err := fls.TakeFilesystemSnapshot(snapshotConfig)
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -886,7 +893,7 @@ func TestMetaFilesystemTakeSnapshot(t *testing.T) {
 			return
 		}
 
-		snapshot, err := fls.TakeFilesystemSnapshot(nil)
+		snapshot, err := fls.TakeFilesystemSnapshot(snapshotConfig)
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -983,7 +990,7 @@ func TestMetaFilesystemTakeSnapshot(t *testing.T) {
 		}()
 
 		time.Sleep(time.Millisecond)
-		snapshot, err := fls.TakeFilesystemSnapshot(nil)
+		snapshot, err := fls.TakeFilesystemSnapshot(snapshotConfig)
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -1042,7 +1049,7 @@ func TestMetaFilesystemTakeSnapshot(t *testing.T) {
 			return
 		}
 
-		snapshot, err := fls.TakeFilesystemSnapshot(nil)
+		snapshot, err := fls.TakeFilesystemSnapshot(snapshotConfig)
 		if !assert.NoError(t, err) {
 			return
 		}

@@ -16,9 +16,31 @@ var (
 	_ = Serializable((*FilesystemSnapshotIL)(nil))
 )
 
+type FilesystemSnapshotConfig struct {
+	GetContent       func(ChecksumSHA256 [32]byte) AddressableContent
+	InclusionFilters []PathPattern
+	ExclusionFilters []PathPattern
+}
+
+func (c FilesystemSnapshotConfig) IsFileIncluded(path Path) bool {
+	for _, filter := range c.ExclusionFilters {
+		if filter.Test(nil, path) {
+			return false
+		}
+	}
+
+	for _, filter := range c.InclusionFilters {
+		if filter.Test(nil, path) {
+			return true
+		}
+	}
+
+	return false
+}
+
 type SnapshotableFilesystem interface {
 	afs.Filesystem
-	TakeFilesystemSnapshot(getContent func(ChecksumSHA256 [32]byte) AddressableContent) (FilesystemSnapshot, error)
+	TakeFilesystemSnapshot(config FilesystemSnapshotConfig) (FilesystemSnapshot, error)
 }
 
 // A FilesystemSnapshot represents an immutable snapshot of a filesystem,

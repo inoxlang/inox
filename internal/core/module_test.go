@@ -1117,7 +1117,7 @@ func (*snapshotableMemFilesystem) Absolute(path string) (string, error) {
 	return "", ErrNotImplemented
 }
 
-func (fls *snapshotableMemFilesystem) TakeFilesystemSnapshot(getContent func(ChecksumSHA256 [32]byte) AddressableContent) (FilesystemSnapshot, error) {
+func (fls *snapshotableMemFilesystem) TakeFilesystemSnapshot(config FilesystemSnapshotConfig) (FilesystemSnapshot, error) {
 	return &memFilesystemSnapshot{
 		fls: copyMemFs(fls),
 	}, nil

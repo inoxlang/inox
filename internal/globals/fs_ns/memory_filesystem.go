@@ -226,7 +226,7 @@ func (fs *MemFilesystem) Capabilities() billy.Capability {
 		billy.TruncateCapability
 }
 
-func (fs *MemFilesystem) TakeFilesystemSnapshot(getContent func(ChecksumSHA256 [32]byte) core.AddressableContent) (core.FilesystemSnapshot, error) {
+func (fs *MemFilesystem) TakeFilesystemSnapshot(config core.FilesystemSnapshotConfig) (core.FilesystemSnapshot, error) {
 	storage := fs.s
 	storage.lock.RLock()
 	defer storage.lock.RUnlock()
@@ -237,6 +237,10 @@ func (fs *MemFilesystem) TakeFilesystemSnapshot(getContent func(ChecksumSHA256 [
 	}
 
 	for normalizedPath, f := range storage.files {
+		if !config.IsFileIncluded(f.absPath) {
+			continue
+		}
+
 		f.content.lock.RLock()
 		defer f.content.lock.RUnlock()
 
@@ -271,7 +275,7 @@ func (fs *MemFilesystem) TakeFilesystemSnapshot(getContent func(ChecksumSHA256 [
 		if !info.IsDir() {
 			metadata.ChecksumSHA256 = sha256.Sum256(f.content.bytes)
 
-			content := getContent(metadata.ChecksumSHA256)
+			content := config.GetContent(metadata.ChecksumSHA256)
 			if content == nil {
 				content = AddressableContentBytes{
 					Sha256: metadata.ChecksumSHA256,
