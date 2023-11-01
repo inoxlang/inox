@@ -4,7 +4,7 @@ import (
 	"sync"
 	"time"
 
-	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core"
 	nettypes "github.com/inoxlang/inox/internal/net_types"
 	ratelimit "github.com/inoxlang/inox/internal/rate_limit"
 	cmap "github.com/orcaman/concurrent-map/v2"

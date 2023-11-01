@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/mimeconsts"
 	"github.com/rs/zerolog"

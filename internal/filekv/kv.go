@@ -8,7 +8,7 @@ import (
 	"sync"
 
 	"github.com/go-git/go-billy/v5"
-	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core"
 
 	"github.com/inoxlang/inox/internal/utils"
 )

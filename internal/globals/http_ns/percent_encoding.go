@@ -1,7 +1,7 @@
 package http_ns
 
 import (
-	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/utils"
 )
 

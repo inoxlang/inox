@@ -13,7 +13,7 @@ import (
 	jsoniter "github.com/inoxlang/inox/internal/jsoniter"
 	nettypes "github.com/inoxlang/inox/internal/net_types"
 
-	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/oklog/ulid/v2"
 	"github.com/rs/zerolog"

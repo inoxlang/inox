@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core"
 )
 
 var (

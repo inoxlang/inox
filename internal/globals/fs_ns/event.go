@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync"
 
-	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/permkind"
 )
 

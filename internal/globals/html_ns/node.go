@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"sync"
 
-	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core"
 	jsoniter "github.com/inoxlang/inox/internal/jsoniter"
 	"github.com/inoxlang/inox/internal/mimeconsts"
 	"golang.org/x/net/html"

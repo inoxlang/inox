@@ -13,7 +13,7 @@ import (
 	fsutil "github.com/go-git/go-billy/v5/util"
 	"github.com/google/uuid"
 
-	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/project"
 	"github.com/inoxlang/inox/internal/project_server/jsonrpc"
 	"github.com/inoxlang/inox/internal/project_server/logs"

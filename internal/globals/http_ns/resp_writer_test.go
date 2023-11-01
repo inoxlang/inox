@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/aohorodnyk/mimeheader"
-	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/mimeconsts"
 
 	"github.com/stretchr/testify/assert"

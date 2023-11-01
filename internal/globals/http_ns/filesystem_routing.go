@@ -10,7 +10,7 @@ import (
 
 	"slices"
 
-	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/mimeconsts"
 	"github.com/inoxlang/inox/internal/mod"
@@ -98,7 +98,7 @@ func createHandleDynamic(server *HttpServer, routingDirPath core.Path) handlerFn
 		preparationStart := time.Now()
 		logger := handlerGlobalState.Logger.With().Str("handler-module", modulePath).Logger()
 
-		state, _, _, err := mod.PrepareLocalScript(mod.ScriptPreparationArgs{
+		state, _, _, err := core.PrepareLocalScript(core.ScriptPreparationArgs{
 			Fpath:                 modulePath,
 			CachedModule:          module,
 			ParentContext:         handlerCtx,

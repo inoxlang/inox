@@ -5,7 +5,7 @@ import (
 	"encoding/hex"
 	"io/ioutil"
 
-	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/utils"
 )
 

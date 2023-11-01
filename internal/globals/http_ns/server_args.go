@@ -7,9 +7,8 @@ import (
 	"slices"
 
 	"github.com/inoxlang/inox/internal/commonfmt"
-	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
-	"github.com/inoxlang/inox/internal/default_state"
 	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
 )
@@ -27,11 +26,11 @@ func readHttpServerArgs(ctx *core.Context, server *HttpServer, host core.Host, a
 ) {
 
 	defaultLimits = map[string]core.Limit{}
-	for _, limit := range default_state.GetDefaultRequestHandlingLimits() {
+	for _, limit := range core.GetDefaultRequestHandlingLimits() {
 		defaultLimits[limit.Name] = limit
 	}
 	maxLimits = map[string]core.Limit{}
-	for _, limit := range default_state.GetDefaultMaxRequestHandlerLimits() {
+	for _, limit := range core.GetDefaultMaxRequestHandlerLimits() {
 		maxLimits[limit.Name] = limit
 	}
 

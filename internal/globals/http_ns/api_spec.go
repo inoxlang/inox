@@ -6,7 +6,7 @@ import (
 	"net/url"
 	"strconv"
 
-	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/mimeconsts"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/pb33f/libopenapi"

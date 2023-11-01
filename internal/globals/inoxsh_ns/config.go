@@ -6,7 +6,7 @@ import (
 
 	"github.com/muesli/termenv"
 
-	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core"
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
 )
 

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/net_ns"
 	nettypes "github.com/inoxlang/inox/internal/net_types"
 	"github.com/inoxlang/inox/internal/project_server/logs"

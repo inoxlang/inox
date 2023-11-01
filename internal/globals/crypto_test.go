@@ -3,7 +3,7 @@ package internal
 import (
 	"testing"
 
-	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core"
 	"github.com/stretchr/testify/assert"
 )
 

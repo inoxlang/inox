@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"mime"
 
-	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/mimeconsts"
 )
 

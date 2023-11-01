@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core"
 )
 
 func getClientAndOptions(ctx *core.Context, u core.URL, requestOptionArgs ...core.Value) (*HttpClient, *HttpRequestOptions, error) {

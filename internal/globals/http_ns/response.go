@@ -4,7 +4,7 @@ import (
 	"io"
 	"net/http"
 
-	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core"
 
 	http_ns_symb "github.com/inoxlang/inox/internal/globals/http_ns/symbolic"
 )

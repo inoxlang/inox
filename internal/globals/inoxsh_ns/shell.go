@@ -21,7 +21,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/inoxlang/inox/internal/config"
-	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core"
 
 	"github.com/rs/zerolog"
 

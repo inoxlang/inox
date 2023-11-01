@@ -7,7 +7,7 @@ import (
 
 	"github.com/chromedp/chromedp"
 
-	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/html_ns"
 )
 

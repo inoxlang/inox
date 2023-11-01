@@ -8,7 +8,7 @@ import (
 	"github.com/muesli/termenv"
 
 	"github.com/inoxlang/inox/internal/config"
-	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core"
 
 	parse "github.com/inoxlang/inox/internal/parse"
 	pprint "github.com/inoxlang/inox/internal/pretty_print"

@@ -15,7 +15,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/utils"
 )
 

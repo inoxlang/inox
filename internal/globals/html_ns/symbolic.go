@@ -1,7 +1,7 @@
 package html_ns
 
 import (
-	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	_html_symbolic "github.com/inoxlang/inox/internal/globals/html_ns/symbolic"
 )

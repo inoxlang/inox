@@ -11,7 +11,7 @@ import (
 	"testing"
 
 	"github.com/go-git/go-billy/v5/util"
-	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/mod"
 
 	_ "github.com/inoxlang/inox/internal/obs_db"

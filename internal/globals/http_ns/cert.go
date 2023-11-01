@@ -16,7 +16,7 @@ import (
 
 	"github.com/caddyserver/certmagic"
 
-	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/utils"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"

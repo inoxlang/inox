@@ -1,6 +1,6 @@
 package html_ns
 
-import core "github.com/inoxlang/inox/internal/core"
+import "github.com/inoxlang/inox/internal/core"
 
 var (
 	_ core.Watchable = (*HTMLNode)(nil)

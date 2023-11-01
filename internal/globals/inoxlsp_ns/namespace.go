@@ -6,7 +6,7 @@ import (
 	"reflect"
 
 	"github.com/inoxlang/inox/internal/commonfmt"
-	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	symbolic_inoxlsp "github.com/inoxlang/inox/internal/globals/inoxlsp_ns/symbolic"
 	"github.com/inoxlang/inox/internal/project_server/jsonrpc"

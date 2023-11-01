@@ -8,15 +8,14 @@ import (
 	"github.com/inoxlang/inox/internal/core"
 	_ "github.com/inoxlang/inox/internal/globals"
 	metricsperf "github.com/inoxlang/inox/internal/metrics-perf"
+	"github.com/inoxlang/inox/internal/mod"
 
 	// ====================== INOX IMPORTS ============================
 
-	"github.com/inoxlang/inox/internal/mod"
 	"github.com/inoxlang/inox/internal/project/systemdprovider"
 	"github.com/inoxlang/inox/internal/project_server/inoxd"
 	"github.com/inoxlang/inox/internal/project_server/jsonrpc"
 
-	"github.com/inoxlang/inox/internal/default_state"
 	"github.com/inoxlang/inox/internal/permkind"
 
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
@@ -463,7 +462,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 				sessionCtx := core.NewContext(core.ContextConfig{
 					Permissions:          rpcCtx.GetGrantedPermissions(),
 					ForbiddenPermissions: rpcCtx.GetForbiddenPermissions(),
-					Limits:               default_state.GetDefaultScriptLimits(),
+					Limits:               core.GetDefaultScriptLimits(),
 
 					ParentContext: rpcCtx,
 				})
@@ -731,12 +730,12 @@ func runStartupScript(startupScriptPath string, outW io.Writer) (*core.Object, *
 		panic(fmt.Errorf("failed to evalute startup script's manifest: %w", err))
 	}
 
-	ctx := utils.Must(default_state.NewDefaultContext(default_state.DefaultContextConfig{
+	ctx := utils.Must(core.NewDefaultContext(core.DefaultContextConfig{
 		Permissions:     startupManifest.RequiredPermissions,
 		Limits:          startupManifest.Limits,
 		HostResolutions: startupManifest.HostResolutions,
 	}))
-	state, err := default_state.NewDefaultGlobalState(ctx, default_state.DefaultGlobalStateConfig{
+	state, err := core.NewDefaultGlobalState(ctx, core.DefaultGlobalStateConfig{
 		Out:    outW,
 		LogOut: outW,
 	})

@@ -8,7 +8,7 @@ import (
 	"sort"
 
 	"github.com/inoxlang/inox/internal/commonfmt"
-	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core"
 	jsoniter "github.com/inoxlang/inox/internal/jsoniter"
 
 	"github.com/inoxlang/inox/internal/utils"

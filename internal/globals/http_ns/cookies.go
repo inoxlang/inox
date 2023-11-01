@@ -7,7 +7,7 @@ import (
 	"net/url"
 	"sync"
 
-	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/utils"
 	"golang.org/x/net/publicsuffix"
 )

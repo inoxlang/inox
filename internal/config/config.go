@@ -9,7 +9,7 @@ import (
 
 	"github.com/adrg/xdg"
 
-	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
 	"github.com/inoxlang/inox/internal/utils"

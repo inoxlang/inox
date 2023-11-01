@@ -73,7 +73,7 @@ func RunLocalScript(args RunScriptArgs) (
 		return nil, nil, nil, false, errors.New(".ParentContextRequired is set to true but passed .ParentContext is nil")
 	}
 
-	state, mod, _, err := PrepareLocalScript(ScriptPreparationArgs{
+	state, mod, _, err := core.PrepareLocalScript(core.ScriptPreparationArgs{
 		Fpath:                     args.Fpath,
 		CliArgs:                   args.PassedCLIArgs,
 		Args:                      args.PassedArgs,

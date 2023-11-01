@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync"
 
-	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/filekv"
 	"github.com/inoxlang/inox/internal/globals/s3_ns"
 	"github.com/inoxlang/inox/internal/parse"

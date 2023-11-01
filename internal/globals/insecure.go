@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/url"
 
-	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core"
 	parse "github.com/inoxlang/inox/internal/parse"
 )
 

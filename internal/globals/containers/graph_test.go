@@ -3,7 +3,7 @@ package containers
 import (
 	"testing"
 
-	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/in_mem_ds"
 	"github.com/stretchr/testify/assert"
 )

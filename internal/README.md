@@ -22,7 +22,7 @@ This folder contains most of the code for the `inox` binary.
 - default limits
 
 **mod**     
-- main module creation & execution.
+- module execution.
 
 **inoxprocess**       
 - control server

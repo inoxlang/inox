@@ -13,7 +13,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/commonfmt"
 	"github.com/inoxlang/inox/internal/config"
-	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/mod"
 
 	"github.com/inoxlang/inox/internal/globals/inoxsh_ns"

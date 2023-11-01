@@ -3,7 +3,7 @@ package http_ns
 import (
 	"reflect"
 
-	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	http_symbolic "github.com/inoxlang/inox/internal/globals/http_ns/symbolic"
 	"github.com/inoxlang/inox/internal/help"

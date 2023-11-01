@@ -1,4 +1,4 @@
-package mod
+package core
 
 import (
 	"context"
@@ -13,12 +13,9 @@ import (
 	"time"
 
 	"github.com/inoxlang/inox/internal/afs"
-	core "github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
-	"github.com/inoxlang/inox/internal/default_state"
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	parse "github.com/inoxlang/inox/internal/parse"
-	"github.com/inoxlang/inox/internal/project"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
@@ -36,7 +33,7 @@ type ScriptPreparationArgs struct {
 	Fpath string
 
 	//if not nil the module is not parsed and this value is used.
-	CachedModule *core.Module
+	CachedModule *Module
 
 	// enable data extraction mode, this mode allows some errors.
 	// this mode is intended to be used by the LSP server.
@@ -48,15 +45,15 @@ type ScriptPreparationArgs struct {
 	// If set this function is called just before the context creation,
 	// the preparation is aborted if an error is returned.
 	// The returned limits are used instead of the manifest limits.
-	BeforeContextCreation func(*core.Manifest) ([]core.Limit, error)
+	BeforeContextCreation func(*Manifest) ([]Limit, error)
 
 	CliArgs []string
-	Args    *core.Struct
+	Args    *Struct
 	// if set the result of the function is used instead of .Args
-	GetArguments func(*core.Manifest) (*core.Struct, error)
+	GetArguments func(*Manifest) (*Struct, error)
 
-	ParsingCompilationContext *core.Context
-	ParentContext             *core.Context
+	ParsingCompilationContext *Context
+	ParentContext             *Context
 	ParentContextRequired     bool
 	UseParentStateAsMainState bool
 
@@ -64,7 +61,7 @@ type ScriptPreparationArgs struct {
 	StdlibCtx context.Context
 
 	//should only be set if the module is a main module
-	Project *project.Project
+	Project Project
 
 	//defaults to os.Stdout
 	Out io.Writer
@@ -78,11 +75,11 @@ type ScriptPreparationArgs struct {
 	//used to create the context
 	ScriptContextFileSystem afs.Filesystem
 
-	AdditionalGlobalsTestOnly map[string]core.Value
+	AdditionalGlobalsTestOnly map[string]Value
 }
 
 // PrepareLocalScript parses & checks a script located in the filesystem and initializes its state.
-func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mod *core.Module, manif *core.Manifest, finalErr error) {
+func PrepareLocalScript(args ScriptPreparationArgs) (state *GlobalState, mod *Module, manif *Manifest, finalErr error) {
 
 	//check arguments
 
@@ -118,8 +115,8 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 	} else {
 		start := time.Now()
 
-		var module *core.Module
-		module, parsingErr = core.ParseLocalModule(args.Fpath, core.ModuleParsingConfig{
+		var module *Module
+		module, parsingErr = ParseLocalModule(args.Fpath, ModuleParsingConfig{
 			Context:                             args.ParsingCompilationContext,
 			RecoverFromNonExistingIncludedFiles: args.DataExtractionMode,
 		})
@@ -136,36 +133,36 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 
 	//create context and state
 
-	var ctx *core.Context
+	var ctx *Context
 
 	parentContext := args.ParentContext
 
 	var (
-		parentState              *core.GlobalState
-		manifest                 *core.Manifest
-		preinitState             *core.TreeWalkState
+		parentState              *GlobalState
+		manifest                 *Manifest
+		preinitState             *TreeWalkState
 		preinitErr               error
-		preinitStaticCheckErrors []*core.StaticCheckError
-		project                  core.Project = args.Project
+		preinitStaticCheckErrors []*StaticCheckError
+		project                  Project = args.Project
 	)
 
 	if parentContext != nil {
 		parentState = parentContext.GetClosestState()
 	}
 
-	if reflect.ValueOf(project).IsNil() && args.UseParentStateAsMainState && parentState != nil {
+	if (project == nil || reflect.ValueOf(project).IsZero()) && args.UseParentStateAsMainState && parentState != nil {
 		project = parentState.Project
 	}
 
 	if mod != nil {
 		preinitStart := time.Now()
 
-		manifest, preinitState, preinitStaticCheckErrors, preinitErr = mod.PreInit(core.PreinitArgs{
+		manifest, preinitState, preinitStaticCheckErrors, preinitErr = mod.PreInit(PreinitArgs{
 			GlobalConsts:          mod.MainChunk.Node.GlobalConstantDeclarations,
 			ParentState:           parentState,
 			PreinitStatement:      mod.MainChunk.Node.Preinit,
 			PreinitFilesystem:     args.PreinitFilesystem,
-			DefaultLimits:         default_state.GetDefaultScriptLimits(),
+			DefaultLimits:         GetDefaultScriptLimits(),
 			AddDefaultPermissions: true,
 			IgnoreUnknownSections: args.DataExtractionMode,
 			IgnoreConstDeclErrors: args.DataExtractionMode,
@@ -175,20 +172,20 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 		})
 		logger.Debug().Dur("preinit-dur", time.Since(preinitStart)).Send()
 
-		if (!args.DataExtractionMode && preinitErr != nil) || errors.Is(preinitErr, core.ErrParsingErrorInManifestOrPreinit) {
+		if (!args.DataExtractionMode && preinitErr != nil) || errors.Is(preinitErr, ErrParsingErrorInManifestOrPreinit) {
 			finalErr = preinitErr
 			return
 		}
 
 		if manifest == nil {
-			manifest = core.NewEmptyManifest()
+			manifest = NewEmptyManifest()
 		}
 
 	} else {
-		manifest = core.NewEmptyManifest()
+		manifest = NewEmptyManifest()
 	}
 
-	var limits []core.Limit = manifest.Limits
+	var limits []Limit = manifest.Limits
 	if args.BeforeContextCreation != nil {
 		limitList, err := args.BeforeContextCreation(manifest)
 		if err != nil {
@@ -200,7 +197,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 	//create the script's context
 	var ctxErr error
 
-	ctx, ctxErr = default_state.NewDefaultContext(default_state.DefaultContextConfig{
+	ctx, ctxErr = NewDefaultContext(DefaultContextConfig{
 		Permissions:         manifest.RequiredPermissions,
 		Limits:              limits,
 		HostResolutions:     manifest.HostResolutions,
@@ -228,7 +225,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 
 	// create the script's state
 
-	globalState, err := default_state.NewDefaultGlobalState(ctx, default_state.DefaultGlobalStateConfig{
+	globalState, err := NewDefaultGlobalState(ctx, DefaultGlobalStateConfig{
 		AbsoluteModulePath: absPath,
 
 		EnvPattern:          manifest.EnvPattern,
@@ -254,7 +251,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 	state.MainPreinitError = preinitErr
 	if args.UseParentStateAsMainState {
 		if parentState == nil {
-			panic(core.ErrUnreachable)
+			panic(ErrUnreachable)
 		}
 		state.MainState = parentState
 	} else {
@@ -267,7 +264,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 	//TODO: disconnect if connection still not used after a few minutes
 
 	var dbOpeningError error
-	dbs := map[string]*core.DatabaseIL{}
+	dbs := map[string]*DatabaseIL{}
 	ownedDatabases := map[string]struct{}{}
 
 	dbOpeningStart := time.Now()
@@ -278,20 +275,20 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 			continue
 		}
 		if !config.Owned {
-			panic(core.ErrUnreachable)
+			panic(ErrUnreachable)
 		}
 
-		if host, ok := config.Resource.(core.Host); ok {
+		if host, ok := config.Resource.(Host); ok {
 			ctx.AddHostResolutionData(host, config.ResolutionData)
 		}
 
-		openDB, ok := core.GetOpenDbFn(config.Resource.Scheme())
+		openDB, ok := GetOpenDbFn(config.Resource.Scheme())
 		if !ok {
 			ctx.CancelGracefully()
 			return nil, nil, nil, ErrDatabaseOpenFunctionNotFound
 		}
 
-		db, err := openDB(ctx, core.DbOpenConfiguration{
+		db, err := openDB(ctx, DbOpenConfiguration{
 			Resource:       config.Resource,
 			ResolutionData: config.ResolutionData,
 			FullAccess:     args.FullAccessToDatabases,
@@ -305,10 +302,10 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 			}
 			dbOpeningError = err
 			//TODO: use cached schema
-			db = core.NewFailedToOpenDatabase(config.Resource)
+			db = NewFailedToOpenDatabase(config.Resource)
 		}
 
-		wrapped, err := core.WrapDatabase(ctx, core.DatabaseWrappingArgs{
+		wrapped, err := WrapDatabase(ctx, DatabaseWrappingArgs{
 			Inner:                        db,
 			ExpectedSchemaUpdate:         config.ExpectedSchemaUpdate,
 			ForceLoadBeforeOwnerStateSet: false,
@@ -331,11 +328,11 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 	state.Databases = dbs
 
 	//add namespace 'dbs'
-	dbsNamespaceEntries := make(map[string]core.Value)
+	dbsNamespaceEntries := make(map[string]Value)
 	for dbName, db := range dbs {
 		dbsNamespaceEntries[dbName] = db
 	}
-	state.Globals.Set(default_state.DATABASES_GLOBAL_NAME, core.NewNamespace("dbs", dbsNamespaceEntries))
+	state.Globals.Set(DATABASES_GLOBAL_NAME, NewNamespace("dbs", dbsNamespaceEntries))
 
 	for dbName, db := range dbs {
 		if _, ok := ownedDatabases[dbName]; ok {
@@ -355,7 +352,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 	logger.Debug().Dur("db-openings-dur", time.Since(dbOpeningStart)).Send()
 
 	//add project-secrets global
-	if args.Project != nil {
+	if args.Project != nil && !reflect.ValueOf(args.Project).IsNil() {
 		secrets, err := args.Project.GetSecrets(ctx)
 		if err != nil {
 			finalErr = fmt.Errorf("failed to create default global state: %w", err)
@@ -363,27 +360,27 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 		}
 
 		secretNames := make([]string, len(secrets))
-		secretValues := make([]core.Serializable, len(secrets))
+		secretValues := make([]Serializable, len(secrets))
 
 		for i, secret := range secrets {
 			secretNames[i] = secret.Name
 			secretValues[i] = secret.Value
 		}
 
-		record := core.NewRecordFromKeyValLists(secretNames, secretValues)
-		state.Globals.Set(default_state.PROJECT_SECRETS_GLOBAL_NAME, record)
+		record := NewRecordFromKeyValLists(secretNames, secretValues)
+		state.Globals.Set(PROJECT_SECRETS_GLOBAL_NAME, record)
 	}
 
 	//pass patterns & host aliases of the preinit state to the state
 	if preinitState != nil {
 		for name, patt := range preinitState.Global.Ctx.GetNamedPatterns() {
-			if _, ok := core.DEFAULT_NAMED_PATTERNS[name]; ok {
+			if _, ok := DEFAULT_NAMED_PATTERNS[name]; ok {
 				continue
 			}
 			state.Ctx.AddNamedPattern(name, patt)
 		}
 		for name, ns := range preinitState.Global.Ctx.GetPatternNamespaces() {
-			if _, ok := core.DEFAULT_PATTERN_NAMESPACES[name]; ok {
+			if _, ok := DEFAULT_PATTERN_NAMESPACES[name]; ok {
 				continue
 			}
 			state.Ctx.AddPatternNamespace(name, ns)
@@ -394,7 +391,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 	}
 
 	// CLI arguments | arguments of imported/invoked module
-	var modArgs *core.Struct
+	var modArgs *Struct
 	var modArgsError error
 
 	if args.GetArguments != nil {
@@ -415,21 +412,21 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 		}
 	} else { // no arguments provided
 		if args.DataExtractionMode || manifest.Parameters.NoParameters() {
-			modArgs = core.NewEmptyStruct()
+			modArgs = NewEmptyStruct()
 		} else {
 			modArgsError = errors.New("module arguments not provided")
 		}
 	}
 
 	if modArgsError == nil {
-		state.Globals.Set(core.MOD_ARGS_VARNAME, modArgs)
+		state.Globals.Set(MOD_ARGS_VARNAME, modArgs)
 	}
 
 	// static check
 
 	staticCheckStart := time.Now()
 
-	staticCheckData, staticCheckErr := core.StaticCheck(core.StaticCheckInput{
+	staticCheckData, staticCheckErr := StaticCheck(StaticCheckInput{
 		State:   state,
 		Module:  mod,
 		Node:    mod.MainChunk.Node,
@@ -437,7 +434,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 		Globals: state.Globals,
 		AdditionalGlobalConsts: func() []string {
 			if modArgsError != nil {
-				return []string{core.MOD_ARGS_VARNAME}
+				return []string{MOD_ARGS_VARNAME}
 			}
 			return nil
 		}(),
@@ -470,7 +467,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 	// symbolic check
 
 	globals := map[string]symbolic.ConcreteGlobalValue{}
-	state.Globals.Foreach(func(k string, v core.Value, isConst bool) error {
+	state.Globals.Foreach(func(k string, v Value, isConst bool) error {
 		globals[k] = symbolic.ConcreteGlobalValue{
 			Value:      v,
 			IsConstant: isConst,
@@ -478,9 +475,9 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 		return nil
 	})
 
-	delete(globals, core.MOD_ARGS_VARNAME)
+	delete(globals, MOD_ARGS_VARNAME)
 	additionalSymbolicGlobals := map[string]symbolic.Value{
-		core.MOD_ARGS_VARNAME: manifest.Parameters.GetSymbolicArguments(ctx),
+		MOD_ARGS_VARNAME: manifest.Parameters.GetSymbolicArguments(ctx),
 	}
 
 	symbolicCtx, symbolicCheckError := state.Ctx.ToSymbolicValue()
@@ -548,8 +545,8 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 type IncludableChunkfilePreparationArgs struct {
 	Fpath string //path of the file in the .ParsingCompilationContext's filesystem.
 
-	ParsingContext *core.Context
-	StdlibCtx      context.Context //used as default_state.DefaultContextConfig.ParentStdLibContext
+	ParsingContext *Context
+	StdlibCtx      context.Context //used as core.DefaultContextConfig.ParentStdLibContext
 
 	Out    io.Writer //defaults to os.Stdout
 	LogOut io.Writer //defaults to Out
@@ -559,7 +556,7 @@ type IncludableChunkfilePreparationArgs struct {
 }
 
 // PrepareExtractionModeIncludableChunkfile parses & checks an includable-chunk file located in the filesystem and initializes its state.
-func PrepareExtractionModeIncludableChunkfile(args IncludableChunkfilePreparationArgs) (state *core.GlobalState, _ *core.Module, _ *core.IncludedChunk, finalErr error) {
+func PrepareExtractionModeIncludableChunkfile(args IncludableChunkfilePreparationArgs) (state *GlobalState, _ *Module, _ *IncludedChunk, finalErr error) {
 	// parse module
 
 	absPath, err := args.ParsingContext.GetFileSystem().Absolute(args.Fpath)
@@ -581,13 +578,13 @@ func PrepareExtractionModeIncludableChunkfile(args IncludableChunkfilePreparatio
 		ResourceDir: includedChunkDir,
 	}
 
-	mod := &core.Module{
+	mod := &Module{
 		MainChunk:             utils.Must(parse.ParseChunkSource(modSource)),
-		InclusionStatementMap: make(map[*parse.InclusionImportStatement]*core.IncludedChunk),
-		IncludedChunkMap:      map[string]*core.IncludedChunk{},
+		InclusionStatementMap: make(map[*parse.InclusionImportStatement]*IncludedChunk),
+		IncludedChunkMap:      map[string]*IncludedChunk{},
 	}
 
-	criticalParsingError := core.ParseLocalIncludedFiles(mod, args.ParsingContext, args.IncludedChunkContextFileSystem, true)
+	criticalParsingError := ParseLocalIncludedFiles(mod, args.ParsingContext, args.IncludedChunkContextFileSystem, true)
 	if criticalParsingError != nil {
 		finalErr = criticalParsingError
 		return
@@ -597,12 +594,12 @@ func PrepareExtractionModeIncludableChunkfile(args IncludableChunkfilePreparatio
 
 	var parsingErr error
 	if len(mod.ParsingErrors) > 0 {
-		parsingErr = core.CombineParsingErrorValues(mod.ParsingErrors, mod.ParsingErrorPositions)
+		parsingErr = CombineParsingErrorValues(mod.ParsingErrors, mod.ParsingErrorPositions)
 	}
 
 	//create context and state
 
-	ctx, ctxErr := default_state.NewDefaultContext(default_state.DefaultContextConfig{
+	ctx, ctxErr := NewDefaultContext(DefaultContextConfig{
 		Permissions:         nil,
 		Limits:              nil,
 		HostResolutions:     nil,
@@ -628,7 +625,7 @@ func PrepareExtractionModeIncludableChunkfile(args IncludableChunkfilePreparatio
 
 	// create the included chunk's state
 
-	globalState, err := default_state.NewDefaultGlobalState(ctx, default_state.DefaultGlobalStateConfig{
+	globalState, err := NewDefaultGlobalState(ctx, DefaultGlobalStateConfig{
 		AllowMissingEnvVars: false,
 		Out:                 out,
 		LogOut:              args.LogOut,
@@ -639,12 +636,12 @@ func PrepareExtractionModeIncludableChunkfile(args IncludableChunkfilePreparatio
 	}
 	state = globalState
 	state.Module = mod
-	state.Manifest = core.NewEmptyManifest()
+	state.Manifest = NewEmptyManifest()
 	state.MainState = state
 
 	// static check
 
-	staticCheckData, staticCheckErr := core.StaticCheck(core.StaticCheckInput{
+	staticCheckData, staticCheckErr := StaticCheck(StaticCheckInput{
 		State:             state,
 		Module:            mod,
 		Node:              mod.MainChunk.Node,
@@ -673,7 +670,7 @@ func PrepareExtractionModeIncludableChunkfile(args IncludableChunkfilePreparatio
 	// symbolic check
 
 	globals := map[string]symbolic.ConcreteGlobalValue{}
-	state.Globals.Foreach(func(k string, v core.Value, isConst bool) error {
+	state.Globals.Foreach(func(k string, v Value, isConst bool) error {
 		globals[k] = symbolic.ConcreteGlobalValue{
 			Value:      v,
 			IsConstant: isConst,

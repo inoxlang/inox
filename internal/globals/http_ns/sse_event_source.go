@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core"
 	http_ns_symb "github.com/inoxlang/inox/internal/globals/http_ns/symbolic"
 	"github.com/inoxlang/inox/internal/mimeconsts"
 

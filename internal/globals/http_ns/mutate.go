@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/inoxlang/inox/internal/commonfmt"
-	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core"
 )
 
 func IsMutationMethod(method string) bool {

@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"testing"
 
-	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/mimeconsts"
 	"github.com/stretchr/testify/assert"
 )

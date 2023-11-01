@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
-	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/utils"
 	"golang.org/x/net/html"
 )

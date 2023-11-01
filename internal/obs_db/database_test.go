@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/inoxlang/inox/internal/afs"
-	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/containers"
 	containers_common "github.com/inoxlang/inox/internal/globals/containers/common"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"

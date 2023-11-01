@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 
-	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/project_server/jsonrpc"
 

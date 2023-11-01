@@ -7,8 +7,7 @@ import (
 	"testing"
 	"time"
 
-	core "github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/default_state"
+	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/globals/http_ns"
 	"github.com/inoxlang/inox/internal/permkind"
@@ -18,14 +17,14 @@ import (
 
 func TestWebsocketServer(t *testing.T) {
 
-	if !default_state.AreDefaultRequestHandlingLimitsSet() {
-		default_state.SetDefaultRequestHandlingLimits([]core.Limit{})
-		defer default_state.UnsetDefaultRequestHandlingLimits()
+	if !core.AreDefaultRequestHandlingLimitsSet() {
+		core.SetDefaultRequestHandlingLimits([]core.Limit{})
+		defer core.UnsetDefaultRequestHandlingLimits()
 	}
 
-	if !default_state.AreDefaultMaxRequestHandlerLimitsSet() {
-		default_state.SetDefaultMaxRequestHandlerLimits([]core.Limit{})
-		defer default_state.UnsetDefaultMaxRequestHandlerLimits()
+	if !core.AreDefaultMaxRequestHandlerLimitsSet() {
+		core.SetDefaultMaxRequestHandlerLimits([]core.Limit{})
+		defer core.UnsetDefaultMaxRequestHandlerLimits()
 	}
 
 	t.Run("create with required permission", func(t *testing.T) {

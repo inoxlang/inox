@@ -10,7 +10,7 @@ import (
 	"time"
 
 	fsutil "github.com/go-git/go-billy/v5/util"
-	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/utils"
 )
 

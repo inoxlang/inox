@@ -3,7 +3,7 @@ package s3_ns
 import (
 	"io"
 
-	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core"
 	"github.com/johannesboyne/gofakes3"
 	"github.com/minio/minio-go/v7"
 )

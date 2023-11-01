@@ -3,7 +3,7 @@ package http_ns
 import (
 	"sync/atomic"
 
-	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core"
 )
 
 const DEFAULT_SUBSCRIPTION_CHAN_SIZE = 50

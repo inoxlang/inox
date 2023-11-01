@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/inoxlang/inox/internal/config"
-	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core"
 
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	parse "github.com/inoxlang/inox/internal/parse"

@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"io"
 
-	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/mimeconsts"
 	"golang.org/x/net/html"
 )

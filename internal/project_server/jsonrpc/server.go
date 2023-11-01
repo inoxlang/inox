@@ -4,7 +4,7 @@ import (
 	"context"
 	"sync"
 
-	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core"
 )
 
 type MethodInfo struct {

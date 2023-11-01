@@ -7,12 +7,11 @@ import (
 	"time"
 
 	"github.com/inoxlang/inox/internal/config"
-	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/globalnames"
 	"golang.org/x/exp/maps"
 
-	"github.com/inoxlang/inox/internal/default_state"
 	"github.com/inoxlang/inox/internal/globals/chrome_ns"
 	"github.com/inoxlang/inox/internal/globals/containers"
 	"github.com/inoxlang/inox/internal/globals/env_ns"
@@ -101,21 +100,21 @@ func init() {
 	registerHelp()
 
 	inoxsh_ns.SetNewDefaultGlobalState(func(ctx *core.Context, envPattern *core.ObjectPattern, out io.Writer) *core.GlobalState {
-		return utils.Must(NewDefaultGlobalState(ctx, default_state.DefaultGlobalStateConfig{
+		return utils.Must(NewDefaultGlobalState(ctx, core.DefaultGlobalStateConfig{
 			EnvPattern: envPattern,
 			Out:        out,
 		}))
 	})
 
-	default_state.SetNewDefaultGlobalStateFn(NewDefaultGlobalState)
-	default_state.SetNewDefaultContext(NewDefaultContext)
-	default_state.SetDefaultScriptLimits(DEFAULT_SCRIPT_LIMITS)
-	default_state.SetDefaultRequestHandlingLimits(DEFAULT_REQUEST_HANDLING_LIMITS)
-	default_state.SetDefaultMaxRequestHandlerLimits(DEFAULT_MAX_REQUEST_HANDLER_LIMITS)
+	core.SetNewDefaultGlobalStateFn(NewDefaultGlobalState)
+	core.SetNewDefaultContext(NewDefaultContext)
+	core.SetDefaultScriptLimits(DEFAULT_SCRIPT_LIMITS)
+	core.SetDefaultRequestHandlingLimits(DEFAULT_REQUEST_HANDLING_LIMITS)
+	core.SetDefaultMaxRequestHandlerLimits(DEFAULT_MAX_REQUEST_HANDLER_LIMITS)
 }
 
 // NewDefaultGlobalState creates a new GlobalState with the default globals.
-func NewDefaultGlobalState(ctx *core.Context, conf default_state.DefaultGlobalStateConfig) (*core.GlobalState, error) {
+func NewDefaultGlobalState(ctx *core.Context, conf core.DefaultGlobalStateConfig) (*core.GlobalState, error) {
 	logOut := conf.LogOut
 	var logger zerolog.Logger
 	if logOut == nil { //if there is not writer for logs we log to conf.Out
@@ -309,12 +308,12 @@ func NewDefaultGlobalState(ctx *core.Context, conf default_state.DefaultGlobalSt
 	}
 
 	if conf.AbsoluteModulePath != "" {
-		constants[default_state.MODULE_DIRPATH_GLOBAL_NAME] = core.DirPathFrom(filepath.Dir(conf.AbsoluteModulePath))
-		constants[default_state.MODULE_FILEPATH_GLOBAL_NAME] = core.PathFrom(conf.AbsoluteModulePath)
+		constants[core.MODULE_DIRPATH_GLOBAL_NAME] = core.DirPathFrom(filepath.Dir(conf.AbsoluteModulePath))
+		constants[core.MODULE_FILEPATH_GLOBAL_NAME] = core.PathFrom(conf.AbsoluteModulePath)
 	}
 
 	baseGlobals := maps.Clone(constants)
-	constants[default_state.PREINIT_DATA_GLOBAL_NAME] = preinitData
+	constants[core.PREINIT_DATA_GLOBAL_NAME] = preinitData
 
 	symbolicBaseGlobals := map[string]symbolic.Value{}
 	{
@@ -352,7 +351,7 @@ func NewDefaultGlobalState(ctx *core.Context, conf default_state.DefaultGlobalSt
 }
 
 // NewDefaultState creates a new Context with the default patterns.
-func NewDefaultContext(config default_state.DefaultContextConfig) (*core.Context, error) {
+func NewDefaultContext(config core.DefaultContextConfig) (*core.Context, error) {
 
 	ctxConfig := core.ContextConfig{
 		Permissions:          config.Permissions,

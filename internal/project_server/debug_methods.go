@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/google/go-dap"
-	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/mod"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/project_server/jsonrpc"

@@ -10,7 +10,7 @@ import (
 
 	"github.com/gorilla/websocket"
 
-	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/http_ns"
 	nettypes "github.com/inoxlang/inox/internal/net_types"
 	"github.com/inoxlang/inox/internal/permkind"

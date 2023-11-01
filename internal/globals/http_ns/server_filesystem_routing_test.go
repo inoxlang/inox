@@ -9,8 +9,7 @@ import (
 
 	"github.com/go-git/go-billy/v5/util"
 	"github.com/inoxlang/inox/internal/afs"
-	core "github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/default_state"
+	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/containers"
 	containers_common "github.com/inoxlang/inox/internal/globals/containers/common"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
@@ -27,15 +26,15 @@ func TestFilesystemRouting(t *testing.T) {
 	}
 
 	//set default request handling limits
-	if default_state.AreDefaultRequestHandlingLimitsSet() {
-		save := default_state.GetDefaultRequestHandlingLimits()
-		default_state.UnsetDefaultRequestHandlingLimits()
-		default_state.SetDefaultRequestHandlingLimits([]core.Limit{cpuTimeLimit})
-		defer default_state.SetDefaultRequestHandlingLimits(save)
-		defer default_state.UnsetDefaultRequestHandlingLimits()
+	if core.AreDefaultRequestHandlingLimitsSet() {
+		save := core.GetDefaultRequestHandlingLimits()
+		core.UnsetDefaultRequestHandlingLimits()
+		core.SetDefaultRequestHandlingLimits([]core.Limit{cpuTimeLimit})
+		defer core.SetDefaultRequestHandlingLimits(save)
+		defer core.UnsetDefaultRequestHandlingLimits()
 	} else {
-		default_state.SetDefaultRequestHandlingLimits([]core.Limit{cpuTimeLimit})
-		defer default_state.UnsetDefaultRequestHandlingLimits()
+		core.SetDefaultRequestHandlingLimits([]core.Limit{cpuTimeLimit})
+		defer core.UnsetDefaultRequestHandlingLimits()
 	}
 
 	//set default max request handler limits
@@ -45,15 +44,15 @@ func TestFilesystemRouting(t *testing.T) {
 		return
 	}
 
-	if default_state.AreDefaultMaxRequestHandlerLimitsSet() {
-		save := default_state.GetDefaultMaxRequestHandlerLimits()
-		default_state.UnsetDefaultMaxRequestHandlerLimits()
-		default_state.SetDefaultMaxRequestHandlerLimits([]core.Limit{maxCpuTimeLimit})
-		defer default_state.SetDefaultMaxRequestHandlerLimits(save)
-		defer default_state.UnsetDefaultMaxRequestHandlerLimits()
+	if core.AreDefaultMaxRequestHandlerLimitsSet() {
+		save := core.GetDefaultMaxRequestHandlerLimits()
+		core.UnsetDefaultMaxRequestHandlerLimits()
+		core.SetDefaultMaxRequestHandlerLimits([]core.Limit{maxCpuTimeLimit})
+		defer core.SetDefaultMaxRequestHandlerLimits(save)
+		defer core.UnsetDefaultMaxRequestHandlerLimits()
 	} else {
-		default_state.SetDefaultMaxRequestHandlerLimits([]core.Limit{maxCpuTimeLimit})
-		defer default_state.UnsetDefaultMaxRequestHandlerLimits()
+		core.SetDefaultMaxRequestHandlerLimits([]core.Limit{maxCpuTimeLimit})
+		defer core.UnsetDefaultMaxRequestHandlerLimits()
 	}
 
 	t.Run("GET /x should return the result of /routes/x.ix", func(t *testing.T) {

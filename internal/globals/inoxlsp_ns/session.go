@@ -3,7 +3,7 @@ package inoxlsp_ns
 import (
 	"bufio"
 
-	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/project_server/jsonrpc"
 
 	"github.com/inoxlang/inox/internal/core/symbolic"

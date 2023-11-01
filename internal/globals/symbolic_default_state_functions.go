@@ -1,7 +1,7 @@
 package internal
 
 import (
-	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	_http_symbolic "github.com/inoxlang/inox/internal/globals/http_ns/symbolic"
 

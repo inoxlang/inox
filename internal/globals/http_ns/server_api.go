@@ -8,8 +8,7 @@ import (
 	"slices"
 	"strings"
 
-	core "github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/mod"
+	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
 )
@@ -175,7 +174,7 @@ func addFilesysteDirEndpoints(ctx *core.Context, endpoints map[string]*ApiEndpoi
 				//if false there is nothing to do as the parentCtx is already set to ctx.
 			} else if parentState.Module.Name() != path.Value {
 
-				state, _, _, err := mod.PrepareLocalScript(mod.ScriptPreparationArgs{
+				state, _, _, err := core.PrepareLocalScript(core.ScriptPreparationArgs{
 					Fpath:                     path.Value,
 					ParsingCompilationContext: ctx,
 
@@ -197,7 +196,7 @@ func addFilesysteDirEndpoints(ctx *core.Context, endpoints map[string]*ApiEndpoi
 			}
 		}
 
-		state, mod, _, err := mod.PrepareLocalScript(mod.ScriptPreparationArgs{
+		state, mod, _, err := core.PrepareLocalScript(core.ScriptPreparationArgs{
 			Fpath:                     absEntryPath,
 			ParsingCompilationContext: parentCtx,
 

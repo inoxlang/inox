@@ -20,9 +20,8 @@ import (
 
 	"github.com/go-git/go-billy/v5/util"
 	"github.com/inoxlang/inox/internal/afs"
-	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
-	"github.com/inoxlang/inox/internal/default_state"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/globals/html_ns"
 	"github.com/inoxlang/inox/internal/mimeconsts"
@@ -49,12 +48,12 @@ var (
 
 func init() {
 	port.Store(8080)
-	if !default_state.AreDefaultScriptLimitsSet() {
-		default_state.SetDefaultScriptLimits([]core.Limit{})
+	if !core.AreDefaultScriptLimitsSet() {
+		core.SetDefaultScriptLimits([]core.Limit{})
 	}
 
-	if default_state.NewDefaultContext == nil {
-		default_state.SetNewDefaultContext(func(config default_state.DefaultContextConfig) (*core.Context, error) {
+	if core.NewDefaultContext == nil {
+		core.SetNewDefaultContext(func(config core.DefaultContextConfig) (*core.Context, error) {
 
 			if len(config.OwnedDatabases) != 0 {
 				panic(errors.New("not supported"))
@@ -88,7 +87,7 @@ func init() {
 			return ctx, nil
 		})
 
-		default_state.SetNewDefaultGlobalStateFn(func(ctx *core.Context, conf default_state.DefaultGlobalStateConfig) (*core.GlobalState, error) {
+		core.SetNewDefaultGlobalStateFn(func(ctx *core.Context, conf core.DefaultGlobalStateConfig) (*core.GlobalState, error) {
 			state := core.NewGlobalState(ctx, map[string]core.Value{
 				"html":              core.ValOf(html_ns.NewHTMLNamespace()),
 				"sleep":             core.WrapGoFunction(core.Sleep),
@@ -125,14 +124,14 @@ func init() {
 
 func TestHttpServerMissingProvidePermission(t *testing.T) {
 
-	if !default_state.AreDefaultRequestHandlingLimitsSet() {
-		default_state.SetDefaultRequestHandlingLimits([]core.Limit{})
-		defer default_state.UnsetDefaultRequestHandlingLimits()
+	if !core.AreDefaultRequestHandlingLimitsSet() {
+		core.SetDefaultRequestHandlingLimits([]core.Limit{})
+		defer core.UnsetDefaultRequestHandlingLimits()
 	}
 
-	if !default_state.AreDefaultMaxRequestHandlerLimitsSet() {
-		default_state.SetDefaultMaxRequestHandlerLimits([]core.Limit{})
-		defer default_state.UnsetDefaultMaxRequestHandlerLimits()
+	if !core.AreDefaultMaxRequestHandlerLimitsSet() {
+		core.SetDefaultMaxRequestHandlerLimits([]core.Limit{})
+		defer core.UnsetDefaultMaxRequestHandlerLimits()
 	}
 
 	host := core.Host("https://localhost:8080")
@@ -148,14 +147,14 @@ func TestHttpServerMissingProvidePermission(t *testing.T) {
 }
 
 func TestHttpServerUserHandler(t *testing.T) {
-	if !default_state.AreDefaultRequestHandlingLimitsSet() {
-		default_state.SetDefaultRequestHandlingLimits([]core.Limit{})
-		defer default_state.UnsetDefaultRequestHandlingLimits()
+	if !core.AreDefaultRequestHandlingLimitsSet() {
+		core.SetDefaultRequestHandlingLimits([]core.Limit{})
+		defer core.UnsetDefaultRequestHandlingLimits()
 	}
 
-	if !default_state.AreDefaultMaxRequestHandlerLimitsSet() {
-		default_state.SetDefaultMaxRequestHandlerLimits([]core.Limit{})
-		defer default_state.UnsetDefaultMaxRequestHandlerLimits()
+	if !core.AreDefaultMaxRequestHandlerLimitsSet() {
+		core.SetDefaultMaxRequestHandlerLimits([]core.Limit{})
+		defer core.UnsetDefaultMaxRequestHandlerLimits()
 	}
 
 	//TODO: rework test & add case where handler access a global
@@ -213,14 +212,14 @@ func TestHttpServerUserHandler(t *testing.T) {
 
 func TestHttpServerMapping(t *testing.T) {
 
-	if !default_state.AreDefaultRequestHandlingLimitsSet() {
-		default_state.SetDefaultRequestHandlingLimits([]core.Limit{})
-		defer default_state.UnsetDefaultRequestHandlingLimits()
+	if !core.AreDefaultRequestHandlingLimitsSet() {
+		core.SetDefaultRequestHandlingLimits([]core.Limit{})
+		defer core.UnsetDefaultRequestHandlingLimits()
 	}
 
-	if !default_state.AreDefaultMaxRequestHandlerLimitsSet() {
-		default_state.SetDefaultMaxRequestHandlerLimits([]core.Limit{})
-		defer default_state.UnsetDefaultMaxRequestHandlerLimits()
+	if !core.AreDefaultMaxRequestHandlerLimitsSet() {
+		core.SetDefaultMaxRequestHandlerLimits([]core.Limit{})
+		defer core.UnsetDefaultMaxRequestHandlerLimits()
 	}
 
 	t.Run("CUSTOMMETHOD /x", func(t *testing.T) {

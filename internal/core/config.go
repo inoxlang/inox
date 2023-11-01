@@ -1,11 +1,10 @@
-package default_state
+package core
 
 import (
 	"context"
 	"errors"
 
 	"github.com/inoxlang/inox/internal/afs"
-	"github.com/inoxlang/inox/internal/core"
 
 	"io"
 )
@@ -21,24 +20,24 @@ const (
 var (
 	NewDefaultGlobalState          NewDefaultGlobalStateFn
 	NewDefaultContext              NewDefaultContextFn
-	defaultScriptLimits            []core.Limit
-	defaultRequestHandlingLimits   []core.Limit
-	defaultMaxRequestHandlerLimits []core.Limit
+	defaultScriptLimits            []Limit
+	defaultRequestHandlingLimits   []Limit
+	defaultMaxRequestHandlerLimits []Limit
 )
 
 type DefaultGlobalStateConfig struct {
 	//if set MODULE_DIRPATH_GLOBAL_NAME & MODULE_FILEPATH_GLOBAL_NAME should be defined.
 	AbsoluteModulePath string
 
-	EnvPattern          *core.ObjectPattern
-	PreinitFiles        core.PreinitFiles
+	EnvPattern          *ObjectPattern
+	PreinitFiles        PreinitFiles
 	AllowMissingEnvVars bool
 
 	Out    io.Writer
 	LogOut io.Writer
 }
 
-type NewDefaultGlobalStateFn func(ctx *core.Context, conf DefaultGlobalStateConfig) (*core.GlobalState, error)
+type NewDefaultGlobalStateFn func(ctx *Context, conf DefaultGlobalStateConfig) (*GlobalState, error)
 
 func SetNewDefaultGlobalStateFn(fn NewDefaultGlobalStateFn) {
 	if NewDefaultGlobalState != nil {
@@ -54,14 +53,14 @@ func SetNewDefaultContext(fn NewDefaultContextFn) {
 	NewDefaultContext = fn
 }
 
-func SetDefaultScriptLimits(limits []core.Limit) {
+func SetDefaultScriptLimits(limits []Limit) {
 	if defaultScriptLimits != nil {
 		panic(errors.New("default script limits already set"))
 	}
 	defaultScriptLimits = limits
 }
 
-func GetDefaultScriptLimits() []core.Limit {
+func GetDefaultScriptLimits() []Limit {
 	if defaultScriptLimits == nil {
 		panic(errors.New("default script limits are not set"))
 	}
@@ -76,14 +75,14 @@ func UnsetDefaultScriptLimits() {
 	defaultScriptLimits = nil
 }
 
-func SetDefaultRequestHandlingLimits(limits []core.Limit) {
+func SetDefaultRequestHandlingLimits(limits []Limit) {
 	if defaultRequestHandlingLimits != nil {
 		panic(errors.New("default request handling limits already set"))
 	}
 	defaultRequestHandlingLimits = limits
 }
 
-func GetDefaultRequestHandlingLimits() []core.Limit {
+func GetDefaultRequestHandlingLimits() []Limit {
 	if defaultRequestHandlingLimits == nil {
 		panic(errors.New("default request handling limits are not set"))
 	}
@@ -98,14 +97,14 @@ func UnsetDefaultRequestHandlingLimits() {
 	defaultRequestHandlingLimits = nil
 }
 
-func SetDefaultMaxRequestHandlerLimits(limits []core.Limit) {
+func SetDefaultMaxRequestHandlerLimits(limits []Limit) {
 	if defaultMaxRequestHandlerLimits != nil {
 		panic(errors.New("default max request handler limits already set"))
 	}
 	defaultMaxRequestHandlerLimits = limits
 }
 
-func GetDefaultMaxRequestHandlerLimits() []core.Limit {
+func GetDefaultMaxRequestHandlerLimits() []Limit {
 	if defaultMaxRequestHandlerLimits == nil {
 		panic(errors.New("default max request handler limits are not set"))
 	}
@@ -121,14 +120,14 @@ func UnsetDefaultMaxRequestHandlerLimits() {
 }
 
 type DefaultContextConfig struct {
-	Permissions          []core.Permission
-	ForbiddenPermissions []core.Permission
-	Limits               []core.Limit
-	HostResolutions      map[core.Host]core.Value
-	OwnedDatabases       []core.DatabaseConfig
-	ParentContext        *core.Context   //optional
+	Permissions          []Permission
+	ForbiddenPermissions []Permission
+	Limits               []Limit
+	HostResolutions      map[Host]Value
+	OwnedDatabases       []DatabaseConfig
+	ParentContext        *Context        //optional
 	ParentStdLibContext  context.Context //optional, should not be set if ParentContext is set
 	Filesystem           afs.Filesystem  //if nil the OS filesystem is used
 }
 
-type NewDefaultContextFn func(config DefaultContextConfig) (*core.Context, error)
+type NewDefaultContextFn func(config DefaultContextConfig) (*Context, error)

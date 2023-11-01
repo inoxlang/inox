@@ -1,7 +1,7 @@
 package net_ns
 
 import (
-	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	net_symbolic "github.com/inoxlang/inox/internal/globals/net_ns/symbolic"
 	"github.com/inoxlang/inox/internal/help"

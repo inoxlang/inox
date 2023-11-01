@@ -3,7 +3,7 @@ package containers
 import (
 	"errors"
 
-	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core"
 )
 
 const (

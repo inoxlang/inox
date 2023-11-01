@@ -1,7 +1,7 @@
 package chrome_ns
 
 import (
-	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	chrome_symbolic "github.com/inoxlang/inox/internal/globals/chrome_ns/symbolic"
 	"github.com/inoxlang/inox/internal/help"

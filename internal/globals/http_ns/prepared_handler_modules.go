@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sync"
 
-	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core"
 )
 
 type preparedModules struct {

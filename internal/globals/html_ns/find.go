@@ -2,7 +2,7 @@ package html_ns
 
 import (
 	"github.com/PuerkitoBio/goquery"
-	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core"
 )
 
 func _html_find(ctx *core.Context, selector core.Str, node core.Value) []*HTMLNode {

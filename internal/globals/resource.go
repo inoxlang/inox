@@ -6,7 +6,7 @@ import (
 	"io"
 
 	"github.com/inoxlang/inox/internal/commonfmt"
-	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/globals/http_ns"
 	"github.com/inoxlang/inox/internal/mimeconsts"

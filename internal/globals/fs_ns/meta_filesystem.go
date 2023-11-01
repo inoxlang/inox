@@ -19,7 +19,7 @@ import (
 	"github.com/go-git/go-billy/v5/util"
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/commonfmt"
-	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/filekv"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/oklog/ulid/v2"

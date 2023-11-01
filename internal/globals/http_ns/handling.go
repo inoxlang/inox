@@ -6,7 +6,7 @@ import (
 
 	"slices"
 
-	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	jsoniter "github.com/inoxlang/inox/internal/jsoniter"
 	"github.com/inoxlang/inox/internal/mimeconsts"

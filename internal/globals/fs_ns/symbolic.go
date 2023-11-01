@@ -1,7 +1,7 @@
 package fs_ns
 
 import (
-	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	fs_symbolic "github.com/inoxlang/inox/internal/globals/fs_ns/symbolic"
 )

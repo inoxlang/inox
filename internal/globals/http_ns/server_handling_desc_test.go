@@ -9,8 +9,7 @@ import (
 
 	"github.com/go-git/go-billy/v5/util"
 	"github.com/inoxlang/inox/internal/afs"
-	core "github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/default_state"
+	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/mimeconsts"
 	"github.com/inoxlang/inox/internal/utils"
@@ -20,14 +19,14 @@ import (
 
 func TestHttpServerHandlingDescription(t *testing.T) {
 
-	if !default_state.AreDefaultRequestHandlingLimitsSet() {
-		default_state.SetDefaultRequestHandlingLimits([]core.Limit{})
-		defer default_state.UnsetDefaultRequestHandlingLimits()
+	if !core.AreDefaultRequestHandlingLimitsSet() {
+		core.SetDefaultRequestHandlingLimits([]core.Limit{})
+		defer core.UnsetDefaultRequestHandlingLimits()
 	}
 
-	if !default_state.AreDefaultMaxRequestHandlerLimitsSet() {
-		default_state.SetDefaultMaxRequestHandlerLimits([]core.Limit{})
-		defer default_state.UnsetDefaultMaxRequestHandlerLimits()
+	if !core.AreDefaultMaxRequestHandlerLimitsSet() {
+		core.SetDefaultMaxRequestHandlerLimits([]core.Limit{})
+		defer core.UnsetDefaultMaxRequestHandlerLimits()
 	}
 
 	runHandlingDescTestCase := func(t *testing.T, testCase serverTestCase, defaultCreateClientFn func() *http.Client) {

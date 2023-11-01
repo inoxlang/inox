@@ -1,7 +1,7 @@
 package containers
 
 import (
-	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/in_mem_ds"
 )
 

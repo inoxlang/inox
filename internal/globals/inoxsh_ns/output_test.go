@@ -3,7 +3,7 @@ package inoxsh_ns
 import (
 	"testing"
 
-	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core"
 	parse "github.com/inoxlang/inox/internal/parse"
 	internal "github.com/inoxlang/inox/internal/pretty_print"
 

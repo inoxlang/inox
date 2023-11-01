@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"math/big"
 
-	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core"
 )
 
 func _rand(ctx *core.Context, v core.Value, options ...core.Option) core.Value {

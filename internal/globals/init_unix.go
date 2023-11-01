@@ -5,7 +5,7 @@ package internal
 import (
 	"os"
 
-	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core"
 )
 
 func targetSpecificInit() {

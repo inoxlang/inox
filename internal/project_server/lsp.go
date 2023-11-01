@@ -7,7 +7,7 @@ import (
 	"runtime/debug"
 
 	"github.com/inoxlang/inox/internal/afs"
-	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core"
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
 	"github.com/inoxlang/inox/internal/project_server/jsonrpc"
 	"github.com/inoxlang/inox/internal/project_server/logs"

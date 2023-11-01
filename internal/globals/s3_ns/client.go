@@ -5,7 +5,7 @@ import (
 	"io"
 	"strings"
 
-	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core"
 	"github.com/minio/minio-go/v7"
 )
 

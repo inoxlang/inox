@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	core "github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core"
 	containers_common "github.com/inoxlang/inox/internal/globals/containers/common"
 	"github.com/stretchr/testify/assert"
 )
