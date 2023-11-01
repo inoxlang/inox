@@ -1151,6 +1151,6 @@ func (*memFilesystemSnapshot) Metadata(path string) (EntrySnapshotMetadata, erro
 	panic("unimplemented")
 }
 
-func (*memFilesystemSnapshot) RootDirEntries() []EntrySnapshotMetadata {
+func (*memFilesystemSnapshot) RootDirEntries() []string {
 	panic("unimplemented")
 }

@@ -30,7 +30,7 @@ var (
 type inMemStorage struct {
 	lock             sync.RWMutex
 	files            map[string]*InMemfile
-	children         map[string]map[string]*InMemfile
+	children         map[string]map[ /* basename */ string]*InMemfile
 	totalContentSize atomic.Int64
 	maxStorageSize   int64
 }

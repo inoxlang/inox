@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"maps"
 	"os"
 	"path/filepath"
 	"slices"
@@ -520,6 +521,7 @@ func (fls *MetaFilesystem) TakeFilesystemSnapshot(config core.FilesystemSnapshot
 
 	//files being written to.
 	var writableFiles []*metaFsFile
+	writableFilePaths := map[string]struct{}{}
 
 top:
 	for _, files := range fls.openFiles {
@@ -530,6 +532,8 @@ top:
 
 			if !IsReadOnly(sameFile.flag) {
 				writableFiles = append(writableFiles, sameFile)
+				writableFilePaths[sameFile.normalizedPath] = struct{}{}
+
 				sameFile.snapshoting.Store(true)
 				break
 			}
@@ -572,9 +576,35 @@ top:
 		}
 	}
 
+	includableFiles := map[ /*normalized path*/ string]struct{}{"/": {}}
+	maps.Copy(includableFiles, writableFilePaths)
+
+	// determine what remaining files are includable
+	fls.walk(func(normalizedPath string, path core.Path, metadata *metaFsFileMetadata) error {
+		if !config.IsFileIncluded(path) {
+			return nil
+		}
+
+		includableFiles[normalizedPath] = struct{}{}
+		return nil
+	})
+
+	// add directory hierarchy of includable files
+	for includable := range includableFiles {
+		for i := 1; i < len(includable); i++ {
+			if includable[i] == '/' {
+				includableFiles[includable[:i]] = struct{}{}
+			}
+		}
+	}
+
 	//add other files to the snapshot
 	err = fls.walk(func(normalizedPath string, path core.Path, metadata *metaFsFileMetadata) error {
-		if path != "/" && !config.IsFileIncluded(path) {
+		if _, ok := writableFilePaths[normalizedPath]; ok {
+			//already in the snapshot
+			return nil
+		}
+		if _, ok := includableFiles[normalizedPath]; !ok {
 			return nil
 		}
 
@@ -599,17 +629,16 @@ top:
 			Mode:             core.FileMode(metadata.mode),
 			ChecksumSHA256:   checksum,
 			ChildNames: utils.FilterMapSlice(metadata.children, func(childName core.Str) (string, bool) {
-				childPath := path + "/" + core.Path(childName)
-				if !config.IsFileIncluded(childPath) {
+				childPath := normalizedPath + "/" + string(childName)
+				if normalizedPath == "/" {
+					childPath = childPath[1:]
+				}
+
+				if _, ok := includableFiles[childPath]; !ok {
 					return "", false
 				}
 				return string(childName), true
 			}),
-		}
-
-		snapshot.MetadataMap[normalizedPath] = entryMetadata
-		if normalizedPath != "/" && strings.Count(normalizedPath, "/") == 1 {
-			snapshot.RootDirEntryList = append(snapshot.RootDirEntryList, entryMetadata)
 		}
 
 		snapshot.MetadataMap[normalizedPath] = entryMetadata

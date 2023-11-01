@@ -33,6 +33,13 @@ func PanicIfErr(err error) {
 	}
 }
 
+func PanicIfErrAmong(errs ...error) {
+	err := errors.Join(errs...)
+	if err != nil {
+		panic(err)
+	}
+}
+
 func Ret0[A, B any](a A, b B) A {
 	return a
 }

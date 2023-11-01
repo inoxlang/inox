@@ -5,17 +5,16 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"slices"
 
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/utils"
 )
 
 // An InMemorySnapshot is an implementation of FilesystemSnapshot that
 // stores all the data & metadata in memory.
 type InMemorySnapshot struct {
-	MetadataMap      map[string]*core.EntrySnapshotMetadata
-	FileContents     map[string]core.AddressableContent
-	RootDirEntryList []*core.EntrySnapshotMetadata
+	MetadataMap  map[string]*core.EntrySnapshotMetadata
+	FileContents map[string]core.AddressableContent
 }
 
 func (s *InMemorySnapshot) Content(path string) (core.AddressableContent, error) {
@@ -44,11 +43,10 @@ func (s *InMemorySnapshot) Metadata(path string) (core.EntrySnapshotMetadata, er
 	return *metadata, nil
 }
 
-func (s *InMemorySnapshot) RootDirEntries() []core.EntrySnapshotMetadata {
-	return utils.MapSlice(s.RootDirEntryList, func(m *core.EntrySnapshotMetadata) core.EntrySnapshotMetadata {
-		return *m
-	})
+func (s *InMemorySnapshot) RootDirEntries() []string {
+	return slices.Clone(s.MetadataMap["/"].ChildNames)
 }
+
 func (s *InMemorySnapshot) ForEachEntry(fn func(m core.EntrySnapshotMetadata) error) error {
 	for _, metadata := range s.MetadataMap {
 		err := fn(*metadata)

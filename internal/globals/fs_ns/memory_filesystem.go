@@ -8,7 +8,6 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
-	"strings"
 	"time"
 
 	"github.com/go-git/go-billy/v5"
@@ -236,8 +235,27 @@ func (fs *MemFilesystem) TakeFilesystemSnapshot(config core.FilesystemSnapshotCo
 		FileContents: make(map[string]core.AddressableContent, len(storage.files)),
 	}
 
+	// determine what files are includable
+	includableFiles := map[ /*normalized path*/ string]struct{}{"/": {}}
 	for normalizedPath, f := range storage.files {
-		if normalizedPath != "/" && !config.IsFileIncluded(f.absPath) {
+		if !config.IsFileIncluded(f.absPath) {
+			continue
+		}
+		includableFiles[normalizedPath] = struct{}{}
+	}
+
+	// add directory hierarchy of includable files
+	for includable := range includableFiles {
+		for i := 1; i < len(includable); i++ {
+			if includable[i] == '/' {
+				includableFiles[includable[:i]] = struct{}{}
+			}
+		}
+	}
+
+	//add includable files & directories to the snapshot
+	for normalizedPath, f := range storage.files {
+		if _, ok := includableFiles[normalizedPath]; !ok {
 			continue
 		}
 
@@ -249,11 +267,15 @@ func (fs *MemFilesystem) TakeFilesystemSnapshot(config core.FilesystemSnapshotCo
 		childrenMap := storage.children[normalizedPath]
 		var childNames []string
 
-		for child, childFile := range childrenMap {
-			if !config.IsFileIncluded(childFile.absPath) {
-				continue
+		for childBaseName := range childrenMap {
+			childPath := normalizedPath + "/" + string(childBaseName)
+			if normalizedPath == "/" {
+				childPath = childPath[1:]
 			}
-			childNames = append(childNames, filepath.Base(child))
+
+			if _, ok := includableFiles[childPath]; ok {
+				childNames = append(childNames, childBaseName)
+			}
 		}
 
 		absPath := f.absPath
@@ -271,9 +293,6 @@ func (fs *MemFilesystem) TakeFilesystemSnapshot(config core.FilesystemSnapshotCo
 		}
 
 		snapshot.MetadataMap[normalizedPath] = metadata
-		if normalizedPath != "/" && strings.Count(normalizedPath, "/") == 1 {
-			snapshot.RootDirEntryList = append(snapshot.RootDirEntryList, metadata)
-		}
 
 		if !info.IsDir() {
 			metadata.ChecksumSHA256 = sha256.Sum256(f.content.bytes)

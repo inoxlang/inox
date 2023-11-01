@@ -672,4 +672,90 @@ func testSnapshoting(t *testing.T, createFS func(*testing.T) (*core.Context, cor
 		}
 		assert.Empty(t, metadata.ChildNames)
 	})
+
+	t.Run("included file in folder", func(t *testing.T) {
+		ctx, fls := createFS(t)
+		defer ctx.CancelGracefully()
+
+		utils.PanicIfErrAmong(
+			fls.MkdirAll("/dir", DEFAULT_DIR_FMODE),
+			util.WriteFile(fls, "/dir/a.ix", []byte("a"), DEFAULT_FILE_FMODE),
+		)
+
+		snapshot, err := fls.TakeFilesystemSnapshot(core.FilesystemSnapshotConfig{
+			GetContent:       snapshotConfig.GetContent,
+			InclusionFilters: []core.PathPattern{"/**/*.ix"},
+		})
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		if !assert.Len(t, snapshot.RootDirEntries(), 1) {
+			return
+		}
+
+		metadata, err := snapshot.Metadata("/")
+		if !assert.NoError(t, err) {
+			return
+		}
+		assert.Equal(t, []string{"dir"}, metadata.ChildNames)
+
+		metadata, err = snapshot.Metadata("/dir")
+		if !assert.NoError(t, err) {
+			return
+		}
+		assert.Equal(t, []string{"a.ix"}, metadata.ChildNames)
+	})
+
+	t.Run("file in folder: file is being written", func(t *testing.T) {
+		ctx, fls := createFS(t)
+		defer ctx.CancelGracefully()
+
+		utils.PanicIfErr(fls.MkdirAll("/dir", DEFAULT_DIR_FMODE))
+
+		f, err := fls.OpenFile("/dir/a.ix", os.O_CREATE|os.O_WRONLY, DEFAULT_FILE_FMODE)
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		wg := new(sync.WaitGroup)
+		var snapshotDone atomic.Bool
+		wg.Add(1)
+
+		go func() {
+			defer wg.Done()
+			defer f.Close()
+			for !snapshotDone.Load() {
+				f.Write([]byte("a"))
+			}
+		}()
+
+		time.Sleep(time.Millisecond)
+		snapshot, err := fls.TakeFilesystemSnapshot(core.FilesystemSnapshotConfig{
+			GetContent:       snapshotConfig.GetContent,
+			InclusionFilters: []core.PathPattern{"/**/*.ix"},
+		})
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		snapshotDone.Store(true)
+		wg.Wait()
+
+		if !assert.Len(t, snapshot.RootDirEntries(), 1) {
+			return
+		}
+
+		metadata, err := snapshot.Metadata("/")
+		if !assert.NoError(t, err) {
+			return
+		}
+		assert.Equal(t, []string{"dir"}, metadata.ChildNames)
+
+		metadata, err = snapshot.Metadata("/dir")
+		if !assert.NoError(t, err) {
+			return
+		}
+		assert.Equal(t, []string{"a.ix"}, metadata.ChildNames)
+	})
 }

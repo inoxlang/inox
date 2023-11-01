@@ -40,6 +40,11 @@ func (c FilesystemSnapshotConfig) IsFileIncluded(path Path) bool {
 
 type SnapshotableFilesystem interface {
 	afs.Filesystem
+
+	//TakeFilesystemSnapshot takes a snapshot of the filesystem using the provided configuration.
+	//Implementations should use config.IsFileIncluded to determine if a file or dir should be included in the snapshot;
+	//Ancestor hieararchy of included files should always be included.
+	//Implementations should use config.GetContent to reduce memory or disk usage.
 	TakeFilesystemSnapshot(config FilesystemSnapshotConfig) (FilesystemSnapshot, error)
 }
 
@@ -51,7 +56,7 @@ type FilesystemSnapshot interface {
 	//If the file does not exist os.ErrNotExist should be returned.
 	Metadata(path string) (EntrySnapshotMetadata, error)
 
-	RootDirEntries() []EntrySnapshotMetadata
+	RootDirEntries() []string //names of root directory's entries
 
 	ForEachEntry(func(m EntrySnapshotMetadata) error) error
 
