@@ -139,11 +139,17 @@ func (f *InMemfile) Duplicate(originalPath string, mode os.FileMode, flag int) b
 }
 
 func (f *InMemfile) FileInfo() core.FileInfo {
+	f.content.lock.RLock()
+	defer f.content.lock.RUnlock()
+	return f.FileInfoContentNotLocked()
+}
+
+func (f *InMemfile) FileInfoContentNotLocked() core.FileInfo {
 	return core.FileInfo{
 		BaseName_:       f.basename,
 		AbsPath_:        f.absPath,
 		Mode_:           core.FileMode(f.mode),
-		Size_:           core.ByteCount(f.content.Len()),
+		Size_:           core.ByteCount(f.content.lenNoLock()),
 		ModTime_:        core.Date(f.content.ModifTime()),
 		HasCreationTime: true,
 		CreationTime_:   core.Date(f.content.creationTime),

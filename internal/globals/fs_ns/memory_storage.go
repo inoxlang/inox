@@ -481,6 +481,10 @@ func (c *InMemFileContent) Truncate(size int64) error {
 func (c *InMemFileContent) Len() int {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
+	return c.lenNoLock()
+}
+
+func (c *InMemFileContent) lenNoLock() int {
 	return len(c.bytes)
 }
 

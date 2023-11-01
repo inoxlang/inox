@@ -237,19 +237,22 @@ func (fs *MemFilesystem) TakeFilesystemSnapshot(config core.FilesystemSnapshotCo
 	}
 
 	for normalizedPath, f := range storage.files {
-		if !config.IsFileIncluded(f.absPath) {
+		if normalizedPath != "/" && !config.IsFileIncluded(f.absPath) {
 			continue
 		}
 
 		f.content.lock.RLock()
 		defer f.content.lock.RUnlock()
 
-		info := f.FileInfo()
+		info := f.FileInfoContentNotLocked()
 
 		childrenMap := storage.children[normalizedPath]
 		var childNames []string
 
-		for child := range childrenMap {
+		for child, childFile := range childrenMap {
+			if !config.IsFileIncluded(childFile.absPath) {
+				continue
+			}
 			childNames = append(childNames, filepath.Base(child))
 		}
 

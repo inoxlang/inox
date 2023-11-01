@@ -428,6 +428,11 @@ func (fls *MetaFilesystem) walk(visit func(normalizedPath string, path core.Path
 		return err
 	}
 
+	err = visit("/", "/", rootDirMeta)
+	if err != nil {
+		return err
+	}
+
 	pathSegments := []string{"", ""}
 	stack := slices.Clone(rootDirMeta.children)
 	firstChildIndexes := []int{0}
@@ -513,12 +518,14 @@ func (fls *MetaFilesystem) TakeFilesystemSnapshot(config core.FilesystemSnapshot
 	defer fls.lock.Unlock()
 	fls.untrackSomeClosedFiles(100)
 
+	//files being written to.
 	var writableFiles []*metaFsFile
 
+top:
 	for _, files := range fls.openFiles {
 		for sameFile := range files {
 			if !config.IsFileIncluded(sameFile.path) {
-				continue
+				continue top
 			}
 
 			if !IsReadOnly(sameFile.flag) {
@@ -537,10 +544,6 @@ func (fls *MetaFilesystem) TakeFilesystemSnapshot(config core.FilesystemSnapshot
 
 	//add writable files to the snapshot
 	for _, file := range writableFiles {
-		if !config.IsFileIncluded(file.path) {
-			continue
-		}
-
 		normalizedPath := NormalizeAsAbsolute(file.metadata.path.UnderlyingString())
 		concreteFilePath := file.metadata.concreteFile.UnderlyingString()
 
@@ -571,6 +574,10 @@ func (fls *MetaFilesystem) TakeFilesystemSnapshot(config core.FilesystemSnapshot
 
 	//add other files to the snapshot
 	err = fls.walk(func(normalizedPath string, path core.Path, metadata *metaFsFileMetadata) error {
+		if path != "/" && !config.IsFileIncluded(path) {
+			return nil
+		}
+
 		var content []byte
 		var checksum [32]byte
 
@@ -591,7 +598,13 @@ func (fls *MetaFilesystem) TakeFilesystemSnapshot(config core.FilesystemSnapshot
 			ModificationTime: metadata.modificationTime,
 			Mode:             core.FileMode(metadata.mode),
 			ChecksumSHA256:   checksum,
-			ChildNames:       utils.ConvertToStringSlice(metadata.children),
+			ChildNames: utils.FilterMapSlice(metadata.children, func(childName core.Str) (string, bool) {
+				childPath := path + "/" + core.Path(childName)
+				if !config.IsFileIncluded(childPath) {
+					return "", false
+				}
+				return string(childName), true
+			}),
 		}
 
 		snapshot.MetadataMap[normalizedPath] = entryMetadata

@@ -64,6 +64,10 @@ func MapSliceIndexed[T any, U any](s []T, mapper func(e T, i int) U) []U {
 }
 
 func ConvertToStringSlice[T ~string](s []T) []string {
+	if s == nil {
+		return nil
+	}
+
 	result := make([]string, len(s))
 
 	for i, e := range s {
