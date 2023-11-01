@@ -4048,14 +4048,18 @@ type testProject struct {
 	id ProjectID
 }
 
+func (p *testProject) Id() ProjectID {
+	return p.id
+}
+
+func (*testProject) BaseImage() (Image, error) {
+	panic("unimplemented")
+}
+
 func (*testProject) CanProvideS3Credentials(s3Provider string) (bool, error) {
 	panic("unimplemented")
 }
 
 func (*testProject) GetS3CredentialsForBucket(ctx *Context, bucketName string, provider string) (accessKey string, secretKey string, s3Endpoint Host, _ error) {
 	panic("unimplemented")
-}
-
-func (p *testProject) Id() ProjectID {
-	return p.id
 }
