@@ -502,7 +502,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 	}
 
 	symbolicCheckStart := time.Now()
-	symbolicData, symbolicCheckError := symbolic.SymbolicEvalCheck(symbolic.SymbolicEvalCheckInput{
+	symbolicData, symbolicCheckError := symbolic.EvalCheck(symbolic.EvalCheckInput{
 		Node:                           mod.MainChunk.Node,
 		Module:                         state.Module.ToSymbolic(),
 		Globals:                        globals,
@@ -687,7 +687,7 @@ func PrepareExtractionModeIncludableChunkfile(args IncludableChunkfilePreparatio
 		return
 	}
 
-	symbolicData, symbolicCheckError := symbolic.SymbolicEvalCheck(symbolic.SymbolicEvalCheckInput{
+	symbolicData, symbolicCheckError := symbolic.EvalCheck(symbolic.EvalCheckInput{
 		Node:    mod.MainChunk.Node,
 		Module:  state.Module.ToSymbolic(),
 		Globals: globals,

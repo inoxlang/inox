@@ -21,7 +21,7 @@ func TestSymbolicEvalCheck(t *testing.T) {
 
 		mod := &Module{MainChunk: chunk}
 
-		_, err := symbolic.SymbolicEvalCheck(symbolic.SymbolicEvalCheckInput{
+		_, err := symbolic.EvalCheck(symbolic.EvalCheckInput{
 			Node:   chunk.Node,
 			Module: mod.ToSymbolic(),
 			Globals: map[string]symbolic.ConcreteGlobalValue{
@@ -42,7 +42,7 @@ func TestSymbolicEvalCheck(t *testing.T) {
 
 		mod := &Module{MainChunk: chunk}
 
-		_, err := symbolic.SymbolicEvalCheck(symbolic.SymbolicEvalCheckInput{
+		_, err := symbolic.EvalCheck(symbolic.EvalCheckInput{
 			Node:   chunk.Node,
 			Module: mod.ToSymbolic(),
 			Globals: map[string]symbolic.ConcreteGlobalValue{
@@ -63,7 +63,7 @@ func TestSymbolicEvalCheck(t *testing.T) {
 
 		mod := &Module{MainChunk: chunk}
 
-		data, err := symbolic.SymbolicEvalCheck(symbolic.SymbolicEvalCheckInput{
+		data, err := symbolic.EvalCheck(symbolic.EvalCheckInput{
 			Node:   chunk.Node,
 			Module: mod.ToSymbolic(),
 			Globals: map[string]symbolic.ConcreteGlobalValue{
@@ -88,7 +88,7 @@ func TestSymbolicEvalCheck(t *testing.T) {
 
 		mod := &Module{MainChunk: chunk}
 
-		data, err := symbolic.SymbolicEvalCheck(symbolic.SymbolicEvalCheckInput{
+		data, err := symbolic.EvalCheck(symbolic.EvalCheckInput{
 			Node:   chunk.Node,
 			Module: mod.ToSymbolic(),
 			Globals: map[string]symbolic.ConcreteGlobalValue{
@@ -124,7 +124,7 @@ func TestSymbolicEvalCheck(t *testing.T) {
 
 		mod := &Module{MainChunk: chunk}
 
-		data, err := symbolic.SymbolicEvalCheck(symbolic.SymbolicEvalCheckInput{
+		data, err := symbolic.EvalCheck(symbolic.EvalCheckInput{
 			Node:    chunk.Node,
 			Module:  mod.ToSymbolic(),
 			Globals: map[string]symbolic.ConcreteGlobalValue{},

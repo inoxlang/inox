@@ -19,7 +19,7 @@ import (
 type CompilationInput struct {
 	Mod                                      *Module
 	Globals                                  map[string]Value
-	SymbolicData                             *symbolic.SymbolicData
+	SymbolicData                             *symbolic.Data
 	StaticCheckData                          *StaticCheckData
 	TraceWriter                              io.Writer
 	Context                                  *Context
@@ -37,7 +37,7 @@ func Compile(input CompilationInput) (*Bytecode, error) {
 // compiler compiles the AST into a bytecode.
 type compiler struct {
 	module                *Module
-	symbolicData          *symbolic.SymbolicData
+	symbolicData          *symbolic.Data
 	staticCheckData       *StaticCheckData
 	constants             []Value
 	globalSymbols         *symbolTable
@@ -85,7 +85,7 @@ func (e *CompileError) Error() string {
 func NewCompiler(
 	mod *Module,
 	globals map[string]Value,
-	symbolicData *symbolic.SymbolicData,
+	symbolicData *symbolic.Data,
 	staticCheckData *StaticCheckData,
 	ctx *Context,
 	trace io.Writer,

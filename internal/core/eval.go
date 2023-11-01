@@ -136,7 +136,7 @@ func EvalVM(mod *Module, state *GlobalState, config BytecodeEvaluationConfig) (V
 	bytecode, err := Compile(CompilationInput{
 		Mod:                    mod,
 		Globals:                state.Globals.permanent,
-		SymbolicData:           state.SymbolicData.SymbolicData,
+		SymbolicData:           state.SymbolicData.Data,
 		StaticCheckData:        state.StaticCheckData,
 		TraceWriter:            compilationTracer,
 		Context:                config.CompilationContext,

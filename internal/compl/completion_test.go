@@ -86,7 +86,7 @@ func TestFindCompletions(t *testing.T) {
 						return nil
 					})
 
-					data, _ := symbolic.SymbolicEvalCheck(symbolic.SymbolicEvalCheckInput{
+					data, _ := symbolic.EvalCheck(symbolic.EvalCheckInput{
 						Node:         chunk.Node,
 						Module:       symbolic.NewModule(chunk, nil, nil),
 						Globals:      globals,

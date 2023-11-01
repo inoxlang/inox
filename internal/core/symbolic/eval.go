@@ -97,7 +97,7 @@ func (v ConcreteGlobalValue) Constness() GlobalConstness {
 	return GlobalVar
 }
 
-type SymbolicEvalCheckInput struct {
+type EvalCheckInput struct {
 	Node   *parse.Chunk
 	Module *Module
 
@@ -119,15 +119,15 @@ type SymbolicEvalCheckInput struct {
 	ProjectFilesystem billy.Filesystem
 
 	importPositions     []parse.SourcePositionRange
-	initialSymbolicData *SymbolicData
+	initialSymbolicData *Data
 }
 
-// SymbolicEvalCheck performs various checks on an AST, most checks are type checks.
+// EvalCheck performs various checks on an AST, most checks are type checks.
 // If the returned data is not nil the error is nil or is the combination of checking errors, the list of checking errors
 // is stored in the symbolic data.
 // If the returned data is nil the error is an unexpected one (it is not about bad code).
 // StaticCheck() should be runned before this function.
-func SymbolicEvalCheck(input SymbolicEvalCheckInput) (*SymbolicData, error) {
+func EvalCheck(input EvalCheckInput) (*Data, error) {
 
 	state := newSymbolicState(input.Context, input.Module.mainChunk)
 	state.Module = input.Module
@@ -1700,7 +1700,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 
 		importPositions := append(utils.CopySlice(state.importPositions), state.getErrorMesssageLocation(n)...)
 
-		data, err := SymbolicEvalCheck(SymbolicEvalCheckInput{
+		data, err := EvalCheck(EvalCheckInput{
 			Node:   importedModule.mainChunk.Node,
 			Module: importedModule,
 

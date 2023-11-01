@@ -43,7 +43,7 @@ type State struct {
 	tempUpdatedSelf                      Value
 
 	lastErrorNode        parse.Node
-	symbolicData         *SymbolicData
+	symbolicData         *Data
 	shellTrustedCommands []string
 
 	//nil if no project

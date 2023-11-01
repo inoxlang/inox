@@ -87,7 +87,7 @@ func NewGlobalState(ctx *Context, constants ...map[string]Value) *GlobalState {
 	state := &GlobalState{
 		id:               StateId(previousStateId.Add(1)),
 		Ctx:              ctx,
-		SymbolicData:     &SymbolicData{SymbolicData: symbolic.NewSymbolicData()},
+		SymbolicData:     &SymbolicData{Data: symbolic.NewSymbolicData()},
 		descendantStates: make(map[ResourceName]*GlobalState, 0),
 
 		Out:    io.Discard,

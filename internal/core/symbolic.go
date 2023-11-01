@@ -395,7 +395,7 @@ func GetConcreteGoFuncFromSymbolic(fn *symbolic.GoFunction) (reflect.Value, bool
 }
 
 type SymbolicData struct {
-	*symbolic.SymbolicData
+	*symbolic.Data
 
 	//.errors property accessible from scripts
 	errorsPropSet atomic.Bool
@@ -404,8 +404,8 @@ type SymbolicData struct {
 
 func (d *SymbolicData) ErrorTuple() *Tuple {
 	if d.errorsPropSet.CompareAndSwap(false, true) {
-		errors := make([]Serializable, len(d.SymbolicData.Errors()))
-		for i, err := range d.SymbolicData.Errors() {
+		errors := make([]Serializable, len(d.Data.Errors()))
+		for i, err := range d.Data.Errors() {
 			data := createRecordFromSourcePositionStack(err.Location)
 			errors[i] = NewError(err, data)
 		}
@@ -1473,7 +1473,7 @@ func (d *StaticCheckData) ToSymbolicValue(ctx *Context, encountered map[uintptr]
 }
 
 func (d *SymbolicData) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
-	return d.SymbolicData, nil
+	return d.Data, nil
 }
 
 func (m *Module) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {

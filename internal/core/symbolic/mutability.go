@@ -519,7 +519,7 @@ func (d *StaticCheckData) IsMutable() bool {
 	return false
 }
 
-func (d *SymbolicData) IsMutable() bool {
+func (d *Data) IsMutable() bool {
 	return false
 }
 

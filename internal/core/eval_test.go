@@ -128,7 +128,7 @@ func bytecodeTest(t *testing.T, optimize bool) {
 				return nil, err
 			}
 
-			symbData, err := symbolic.SymbolicEvalCheck(symbolic.SymbolicEvalCheckInput{
+			symbData, err := symbolic.EvalCheck(symbolic.EvalCheckInput{
 				Node:    mod.MainChunk.Node,
 				Module:  mod.ToSymbolic(),
 				Globals: globals,
@@ -10063,7 +10063,7 @@ func makeTreeWalkEvalFunc(t *testing.T) func(c any, s *GlobalState, doSymbolicCh
 				return nil, err
 			}
 
-			symbData, err := symbolic.SymbolicEvalCheck(symbolic.SymbolicEvalCheckInput{
+			symbData, err := symbolic.EvalCheck(symbolic.EvalCheckInput{
 				Node:    mod.MainChunk.Node,
 				Module:  mod.ToSymbolic(),
 				Globals: globals,

@@ -13,8 +13,8 @@ var (
 	SYMBOLIC_DATA_PROP_NAMES = []string{"errors"}
 )
 
-// SymbolicData represents the data produced by the symbolic execution of an AST.
-type SymbolicData struct {
+// Data represents the data produced by the symbolic execution of an AST.
+type Data struct {
 	mostSpecificNodeValues      map[parse.Node]Value
 	lessSpecificNodeValues      map[parse.Node]Value
 	localScopeData              map[parse.Node]ScopeData
@@ -33,8 +33,8 @@ type SymbolicData struct {
 	warnings          []SymbolicEvaluationWarning
 }
 
-func NewSymbolicData() *SymbolicData {
-	return &SymbolicData{
+func NewSymbolicData() *Data {
+	return &Data{
 		mostSpecificNodeValues:      make(map[parse.Node]Value, 0),
 		lessSpecificNodeValues:      make(map[parse.Node]Value, 0),
 		localScopeData:              make(map[parse.Node]ScopeData),
@@ -51,11 +51,11 @@ func NewSymbolicData() *SymbolicData {
 	}
 }
 
-func (data *SymbolicData) IsEmpty() bool {
+func (data *Data) IsEmpty() bool {
 	return len(data.mostSpecificNodeValues) == 0 && len(data.errors) == 0
 }
 
-func (data *SymbolicData) AddError(err SymbolicEvaluationError) {
+func (data *Data) AddError(err SymbolicEvaluationError) {
 	if data.errorMessageSet[err.Error()] {
 		return
 	}
@@ -64,7 +64,7 @@ func (data *SymbolicData) AddError(err SymbolicEvaluationError) {
 	data.errors = append(data.errors, err)
 }
 
-func (data *SymbolicData) AddWarning(warning SymbolicEvaluationWarning) {
+func (data *Data) AddWarning(warning SymbolicEvaluationWarning) {
 	if warning.LocatedMessage != "" {
 		if data.warningMessageSet[warning.LocatedMessage] {
 			return
@@ -74,7 +74,7 @@ func (data *SymbolicData) AddWarning(warning SymbolicEvaluationWarning) {
 	data.warnings = append(data.warnings, warning)
 }
 
-func (data *SymbolicData) SetMostSpecificNodeValue(node parse.Node, v Value) {
+func (data *Data) SetMostSpecificNodeValue(node parse.Node, v Value) {
 	if data == nil {
 		return
 	}
@@ -89,12 +89,12 @@ func (data *SymbolicData) SetMostSpecificNodeValue(node parse.Node, v Value) {
 	data.mostSpecificNodeValues[node] = v
 }
 
-func (data *SymbolicData) GetMostSpecificNodeValue(node parse.Node) (Value, bool) {
+func (data *Data) GetMostSpecificNodeValue(node parse.Node) (Value, bool) {
 	v, ok := data.mostSpecificNodeValues[node]
 	return v, ok
 }
 
-func (data *SymbolicData) SetLessSpecificNodeValue(node parse.Node, v Value) {
+func (data *Data) SetLessSpecificNodeValue(node parse.Node, v Value) {
 	if data == nil {
 		return
 	}
@@ -109,12 +109,12 @@ func (data *SymbolicData) SetLessSpecificNodeValue(node parse.Node, v Value) {
 	data.lessSpecificNodeValues[node] = v
 }
 
-func (data *SymbolicData) GetLessSpecificNodeValue(node parse.Node) (Value, bool) {
+func (data *Data) GetLessSpecificNodeValue(node parse.Node) (Value, bool) {
 	v, ok := data.lessSpecificNodeValues[node]
 	return v, ok
 }
 
-func (data *SymbolicData) PushNodeValue(node parse.Node, v Value) {
+func (data *Data) PushNodeValue(node parse.Node, v Value) {
 	if data == nil {
 		return
 	}
@@ -129,7 +129,7 @@ func (data *SymbolicData) PushNodeValue(node parse.Node, v Value) {
 	data.mostSpecificNodeValues[node] = v
 }
 
-func (data *SymbolicData) SetRuntimeTypecheckPattern(node parse.Node, pattern any) {
+func (data *Data) SetRuntimeTypecheckPattern(node parse.Node, pattern any) {
 	if data == nil {
 		return
 	}
@@ -142,12 +142,12 @@ func (data *SymbolicData) SetRuntimeTypecheckPattern(node parse.Node, pattern an
 	data.runtimeTypeCheckPatterns[node] = pattern
 }
 
-func (data *SymbolicData) GetRuntimeTypecheckPattern(node parse.Node) (any, bool) {
+func (data *Data) GetRuntimeTypecheckPattern(node parse.Node) (any, bool) {
 	v, ok := data.runtimeTypeCheckPatterns[node]
 	return v, ok
 }
 
-func (data *SymbolicData) SetAllowedNonPresentProperties(node parse.Node, properties []string) {
+func (data *Data) SetAllowedNonPresentProperties(node parse.Node, properties []string) {
 	if data == nil {
 		return
 	}
@@ -155,12 +155,12 @@ func (data *SymbolicData) SetAllowedNonPresentProperties(node parse.Node, proper
 	data.allowedNonPresentProperties[node] = properties
 }
 
-func (data *SymbolicData) GetAllowedNonPresentProperties(node parse.Node) ([]string, bool) {
+func (data *Data) GetAllowedNonPresentProperties(node parse.Node) ([]string, bool) {
 	v, ok := data.allowedNonPresentProperties[node]
 	return v, ok
 }
 
-func (data *SymbolicData) SetAllowedNonPresentKeys(node parse.Node, keys []string) {
+func (data *Data) SetAllowedNonPresentKeys(node parse.Node, keys []string) {
 	if data == nil {
 		return
 	}
@@ -168,20 +168,20 @@ func (data *SymbolicData) SetAllowedNonPresentKeys(node parse.Node, keys []strin
 	data.allowedNonPresentKeys[node] = keys
 }
 
-func (data *SymbolicData) GetAllowedNonPresentKeys(node parse.Node) ([]string, bool) {
+func (data *Data) GetAllowedNonPresentKeys(node parse.Node) ([]string, bool) {
 	v, ok := data.allowedNonPresentKeys[node]
 	return v, ok
 }
 
-func (data *SymbolicData) Errors() []SymbolicEvaluationError {
+func (data *Data) Errors() []SymbolicEvaluationError {
 	return data.errors
 }
 
-func (data *SymbolicData) Warnings() []SymbolicEvaluationWarning {
+func (data *Data) Warnings() []SymbolicEvaluationWarning {
 	return data.warnings
 }
 
-func (data *SymbolicData) AddData(newData *SymbolicData) {
+func (data *Data) AddData(newData *Data) {
 	for k, v := range newData.mostSpecificNodeValues {
 		data.SetMostSpecificNodeValue(k, v)
 	}
@@ -226,28 +226,28 @@ func (data *SymbolicData) AddData(newData *SymbolicData) {
 	data.warnings = append(data.warnings, newData.warnings...)
 }
 
-func (d *SymbolicData) Test(v Value, state RecTestCallState) bool {
+func (d *Data) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
-	_, ok := v.(*SymbolicData)
+	_, ok := v.(*Data)
 
 	return ok
 }
 
-func (d *SymbolicData) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (d *Data) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("symbolic-data")
 }
 
-func (m *SymbolicData) WidestOfType() Value {
-	return &SymbolicData{}
+func (m *Data) WidestOfType() Value {
+	return &Data{}
 }
 
-func (d *SymbolicData) GetGoMethod(name string) (*GoFunction, bool) {
+func (d *Data) GetGoMethod(name string) (*GoFunction, bool) {
 	return nil, false
 }
 
-func (d *SymbolicData) Prop(name string) Value {
+func (d *Data) Prop(name string) Value {
 	switch name {
 	case "errors":
 		return NewTupleOf(NewError(SOURCE_POSITION_RECORD))
@@ -255,31 +255,31 @@ func (d *SymbolicData) Prop(name string) Value {
 	return GetGoMethodOrPanic(name, d)
 }
 
-func (d *SymbolicData) SetProp(name string, value Value) (IProps, error) {
+func (d *Data) SetProp(name string, value Value) (IProps, error) {
 	return nil, errors.New(FmtCannotAssignPropertyOf(d))
 }
 
-func (d *SymbolicData) WithExistingPropReplaced(name string, value Value) (IProps, error) {
+func (d *Data) WithExistingPropReplaced(name string, value Value) (IProps, error) {
 	return nil, errors.New(FmtCannotAssignPropertyOf(d))
 }
 
-func (*SymbolicData) PropertyNames() []string {
+func (*Data) PropertyNames() []string {
 	return STATIC_CHECK_DATA_PROP_NAMES
 }
 
-func (d *SymbolicData) Compute(ctx *Context, key Value) Value {
+func (d *Data) Compute(ctx *Context, key Value) Value {
 	return ANY
 }
 
-func (d *SymbolicData) GetLocalScopeData(n parse.Node, ancestorChain []parse.Node) (ScopeData, bool) {
+func (d *Data) GetLocalScopeData(n parse.Node, ancestorChain []parse.Node) (ScopeData, bool) {
 	return d.getScopeData(n, ancestorChain, false)
 }
 
-func (d *SymbolicData) GetGlobalScopeData(n parse.Node, ancestorChain []parse.Node) (ScopeData, bool) {
+func (d *Data) GetGlobalScopeData(n parse.Node, ancestorChain []parse.Node) (ScopeData, bool) {
 	return d.getScopeData(n, ancestorChain, true)
 }
 
-func (d *SymbolicData) getScopeData(n parse.Node, ancestorChain []parse.Node, global bool) (ScopeData, bool) {
+func (d *Data) getScopeData(n parse.Node, ancestorChain []parse.Node, global bool) (ScopeData, bool) {
 	if d == nil {
 		return ScopeData{}, false
 	}
@@ -329,7 +329,7 @@ func (d *SymbolicData) getScopeData(n parse.Node, ancestorChain []parse.Node, gl
 	}
 }
 
-func (d *SymbolicData) SetLocalScopeData(n parse.Node, scopeData ScopeData) {
+func (d *Data) SetLocalScopeData(n parse.Node, scopeData ScopeData) {
 	if d == nil {
 		return
 	}
@@ -343,7 +343,7 @@ func (d *SymbolicData) SetLocalScopeData(n parse.Node, scopeData ScopeData) {
 }
 
 // TODO: global scope data generally contain a lot of variables, find a way to reduce memory usage.
-func (d *SymbolicData) SetGlobalScopeData(n parse.Node, scopeData ScopeData) {
+func (d *Data) SetGlobalScopeData(n parse.Node, scopeData ScopeData) {
 	if d == nil {
 		return
 	}
@@ -356,7 +356,7 @@ func (d *SymbolicData) SetGlobalScopeData(n parse.Node, scopeData ScopeData) {
 	d.globalScopeData[n] = scopeData
 }
 
-func (d *SymbolicData) SetContextData(n parse.Node, contextData ContextData) {
+func (d *Data) SetContextData(n parse.Node, contextData ContextData) {
 	if d == nil {
 		return
 	}
@@ -369,12 +369,12 @@ func (d *SymbolicData) SetContextData(n parse.Node, contextData ContextData) {
 	d.contextData[n] = contextData
 }
 
-func (d *SymbolicData) GetUsedTypeExtension(n *parse.DoubleColonExpression) (*TypeExtension, bool) {
+func (d *Data) GetUsedTypeExtension(n *parse.DoubleColonExpression) (*TypeExtension, bool) {
 	e, ok := d.usedTypeExtensions[n]
 	return e, ok
 }
 
-func (d *SymbolicData) SetUsedTypeExtension(n *parse.DoubleColonExpression, ext *TypeExtension) {
+func (d *Data) SetUsedTypeExtension(n *parse.DoubleColonExpression, ext *TypeExtension) {
 	if d == nil {
 		return
 	}
@@ -387,12 +387,12 @@ func (d *SymbolicData) SetUsedTypeExtension(n *parse.DoubleColonExpression, ext 
 	d.usedTypeExtensions[n] = ext
 }
 
-func (d *SymbolicData) GetAllTypeExtensions(n *parse.DoubleColonExpression) ([]*TypeExtension, bool) {
+func (d *Data) GetAllTypeExtensions(n *parse.DoubleColonExpression) ([]*TypeExtension, bool) {
 	extensions, ok := d.typeExtensions[n]
 	return extensions, ok
 }
 
-func (d *SymbolicData) SetAllTypeExtensions(n *parse.DoubleColonExpression, extensions []*TypeExtension) {
+func (d *Data) SetAllTypeExtensions(n *parse.DoubleColonExpression, extensions []*TypeExtension) {
 	if d == nil {
 		return
 	}
@@ -405,7 +405,7 @@ func (d *SymbolicData) SetAllTypeExtensions(n *parse.DoubleColonExpression, exte
 	d.typeExtensions[n] = extensions
 }
 
-func (d *SymbolicData) GetVariableDefinitionPosition(node parse.Node, ancestors []parse.Node) (pos parse.SourcePositionRange, found bool) {
+func (d *Data) GetVariableDefinitionPosition(node parse.Node, ancestors []parse.Node) (pos parse.SourcePositionRange, found bool) {
 
 	var data ScopeData
 	var ok bool
@@ -457,7 +457,7 @@ switch_:
 	return
 }
 
-func (d *SymbolicData) GetNamedPatternOrPatternNamespacePositionDefinition(node parse.Node, ancestors []parse.Node) (pos parse.SourcePositionRange, found bool) {
+func (d *Data) GetNamedPatternOrPatternNamespacePositionDefinition(node parse.Node, ancestors []parse.Node) (pos parse.SourcePositionRange, found bool) {
 
 	switch node := node.(type) {
 	case *parse.PatternIdentifierLiteral:
@@ -488,7 +488,7 @@ func (d *SymbolicData) GetNamedPatternOrPatternNamespacePositionDefinition(node 
 	return
 }
 
-func (d *SymbolicData) GetContextData(n parse.Node, ancestorChain []parse.Node) (ContextData, bool) {
+func (d *Data) GetContextData(n parse.Node, ancestorChain []parse.Node) (ContextData, bool) {
 	if d == nil {
 		return ContextData{}, false
 	}

@@ -1129,7 +1129,7 @@ func (sh *shell) handleAction(action termAction) (stop bool) {
 			moveCursorNextLine(sh.preOut, 1)
 
 			mod, err := sh.parseModule(inputString)
-			var symbolicData *symbolic.SymbolicData
+			var symbolicData *symbolic.Data
 			var staticCheckData *core.StaticCheckData
 
 			if err == nil {
@@ -1196,7 +1196,7 @@ func (sh *shell) parseModule(inputString string) (*core.Module, error) {
 	}, err
 }
 
-func (sh *shell) checkModule(mod *core.Module) (*core.StaticCheckData, *symbolic.SymbolicData, error) {
+func (sh *shell) checkModule(mod *core.Module) (*core.StaticCheckData, *symbolic.Data, error) {
 	staticCheckData, checkErr := core.StaticCheck(core.StaticCheckInput{
 		State:             sh.state.Global,
 		Node:              mod.MainChunk.Node,
@@ -1230,7 +1230,7 @@ func (sh *shell) checkModule(mod *core.Module) (*core.StaticCheckData, *symbolic
 		shellLocalVars[k] = v
 	}
 
-	symbData, err := symbolic.SymbolicEvalCheck(symbolic.SymbolicEvalCheckInput{
+	symbData, err := symbolic.EvalCheck(symbolic.EvalCheckInput{
 		Node:    mod.MainChunk.Node,
 		Module:  symbolic.NewModule(mod.MainChunk, nil, nil),
 		Globals: globals,
