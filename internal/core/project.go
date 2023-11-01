@@ -5,6 +5,8 @@ import "github.com/oklog/ulid/v2"
 type Project interface {
 	Id() ProjectID
 
+	BaseImage() Image
+
 	//CanProvideS3Credentials should return true if the project can provide S3 credentials for
 	//the given S3 provider AT THE MOMENT OF THE CALL. If the error is not nil the boolean result
 	//should be false.
