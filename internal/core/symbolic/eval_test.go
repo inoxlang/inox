@@ -9045,6 +9045,60 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, &TestSuite{}, res)
 		})
 
+		t.Run("program value in meta should not be present if we are not in a project: testsuite in imported module", func(t *testing.T) {
+			n, state := MakeTestStateAndImportedModules(`
+				manifest {}; 
+				import res /lib.ix {}
+			`, map[string]string{
+				"/lib.ix": `
+					manifest {}
+					testsuite #{program: /program.ix} {}
+				`,
+			})
+
+			_, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			if !assert.Len(t, state.errors(), 1) {
+				return
+			}
+			assert.ErrorContains(t, state.errors()[0], PROGRAM_TESTING_ONLY_SUPPORTED_IN_PROJECTS)
+		})
+
+		t.Run("program value is allowed in meta if we are in a project", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				manifest {}; 
+				testsuite #{program: /program.ix} {}
+			`)
+
+			fls := memfs.New()
+			util.WriteFile(fls, "/program.ix", []byte("manifest {}"), 0600)
+			state.projectFilesystem = fls
+
+			_, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+		})
+
+		t.Run("program value is allowed in meta if we are in a project: testsuite in imported module", func(t *testing.T) {
+			n, state := MakeTestStateAndImportedModules(`
+				manifest {}; 
+				import res /lib.ix {}
+			`, map[string]string{
+				"/lib.ix": `
+					manifest {}
+					testsuite #{program: /program.ix} {}
+				`,
+			})
+
+			fls := memfs.New()
+			util.WriteFile(fls, "/program.ix", []byte("manifest {}"), 0600)
+			state.projectFilesystem = fls
+
+			_, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+		})
+
 		t.Run("error in module", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`testsuite "name" {
 				(1 + true)

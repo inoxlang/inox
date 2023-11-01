@@ -1712,6 +1712,8 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 
 			initialSymbolicData: state.symbolicData,
 			importPositions:     importPositions,
+
+			ProjectFilesystem: state.projectFilesystem,
 		})
 
 		if data == nil && err != nil {
