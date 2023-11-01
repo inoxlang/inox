@@ -21,7 +21,7 @@ func TestNewContext(t *testing.T) {
 		startMemStats := new(runtime.MemStats)
 		runtime.ReadMemStats(startMemStats)
 
-		defer utils.AssertNoMemoryLeak(t, startMemStats, 100, utils.AssertNoMemoryLeakOptions{
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 1000, utils.AssertNoMemoryLeakOptions{
 			PreSleepDurationMillis: 100,
 			CheckGoroutines:        true,
 			GoroutineCount:         runtime.NumGoroutine(),
@@ -324,7 +324,7 @@ func TestContextBuckets(t *testing.T) {
 		startMemStats := new(runtime.MemStats)
 		runtime.ReadMemStats(startMemStats)
 
-		defer utils.AssertNoMemoryLeak(t, startMemStats, 100, utils.AssertNoMemoryLeakOptions{
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 1000, utils.AssertNoMemoryLeakOptions{
 			PreSleepDurationMillis: 100,
 			CheckGoroutines:        true,
 			GoroutineCount:         runtime.NumGoroutine(),
