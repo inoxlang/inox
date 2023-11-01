@@ -12,16 +12,16 @@ import (
 
 func TestCreateProject(t *testing.T) {
 
-	t.Run("invalid projec's name", func(t *testing.T) {
+	t.Run("invalid project's name", func(t *testing.T) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		fls := fs_ns.NewMemFilesystem(1_000)
 
-		r := utils.Must(OpenRegistry("/projects", fls, ctx))
-		defer r.Close(ctx)
+		reg := utils.Must(OpenRegistry("/projects", fls, ctx))
+		defer reg.Close(ctx)
 
-		id, err := r.CreateProject(ctx, CreateProjectParams{
+		id, err := reg.CreateProject(ctx, CreateProjectParams{
 			Name: " myproject",
 		})
 
@@ -35,10 +35,10 @@ func TestCreateProject(t *testing.T) {
 
 		fls := fs_ns.NewMemFilesystem(1_000)
 
-		r := utils.Must(OpenRegistry("/projects", fls, ctx))
-		defer r.Close(ctx)
+		reg := utils.Must(OpenRegistry("/projects", fls, ctx))
+		defer reg.Close(ctx)
 
-		id, err := r.CreateProject(ctx, CreateProjectParams{
+		id, err := reg.CreateProject(ctx, CreateProjectParams{
 			Name: "myproject",
 		})
 
@@ -55,14 +55,14 @@ func TestCreateProject(t *testing.T) {
 
 		fls := fs_ns.NewMemFilesystem(1_000)
 
-		r := utils.Must(OpenRegistry("/projects", fls, ctx))
-		defer r.Close(ctx)
+		reg := utils.Must(OpenRegistry("/projects", fls, ctx))
+		defer reg.Close(ctx)
 
-		r.CreateProject(ctx, CreateProjectParams{
+		reg.CreateProject(ctx, CreateProjectParams{
 			Name: "myproject",
 		})
 
-		id, err := r.CreateProject(ctx, CreateProjectParams{
+		id, err := reg.CreateProject(ctx, CreateProjectParams{
 			Name: "myproject",
 		})
 
@@ -80,18 +80,19 @@ func TestOpenProject(t *testing.T) {
 
 		fls := fs_ns.NewMemFilesystem(1_000)
 
-		r := utils.Must(OpenRegistry("/projects", fls, ctx))
-		defer r.Close(ctx)
+		reg := utils.Must(OpenRegistry("/projects", fls, ctx))
+		defer reg.Close(ctx)
 
 		params := CreateProjectParams{
-			Name: "myproject",
+			Name:        "myproject",
+			AddMainFile: true,
 		}
-		id := utils.Must(r.CreateProject(ctx, params))
+		id := utils.Must(reg.CreateProject(ctx, params))
 
 		assert.NotEmpty(t, id)
 
 		//open
-		project, err := r.OpenProject(ctx, OpenProjectParams{
+		project, err := reg.OpenProject(ctx, OpenProjectParams{
 			Id: id,
 		})
 
@@ -110,18 +111,19 @@ func TestOpenProject(t *testing.T) {
 
 		fls := fs_ns.NewMemFilesystem(1_000)
 
-		r := utils.Must(OpenRegistry("/projects", fls, ctx))
-		defer r.Close(ctx)
+		reg := utils.Must(OpenRegistry("/projects", fls, ctx))
+		defer reg.Close(ctx)
 
 		params := CreateProjectParams{
-			Name: "myproject",
+			Name:        "myproject",
+			AddMainFile: true,
 		}
-		id := utils.Must(r.CreateProject(ctx, params))
+		id := utils.Must(reg.CreateProject(ctx, params))
 
 		assert.NotEmpty(t, id)
 
 		//first open
-		project1, err := r.OpenProject(ctx, OpenProjectParams{
+		project1, err := reg.OpenProject(ctx, OpenProjectParams{
 			Id: id,
 		})
 
@@ -133,7 +135,7 @@ func TestOpenProject(t *testing.T) {
 		assert.Equal(t, id, project1.id)
 
 		//second open
-		project2, err := r.OpenProject(ctx, OpenProjectParams{
+		project2, err := reg.OpenProject(ctx, OpenProjectParams{
 			Id: id,
 		})
 
@@ -152,17 +154,18 @@ func TestOpenProject(t *testing.T) {
 		projectRegistryCtx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 		defer projectRegistryCtx.CancelGracefully()
 
-		r := utils.Must(OpenRegistry("/projects", fs_ns.NewMemFilesystem(1_000), projectRegistryCtx))
-		defer r.Close(ctx1)
+		reg := utils.Must(OpenRegistry("/projects", fs_ns.NewMemFilesystem(1_000), projectRegistryCtx))
+		defer reg.Close(ctx1)
 
-		id := utils.Must(r.CreateProject(ctx1, CreateProjectParams{
-			Name: "myproject",
+		id := utils.Must(reg.CreateProject(ctx1, CreateProjectParams{
+			Name:        "myproject",
+			AddMainFile: true,
 		}))
 
 		assert.NotEmpty(t, id)
 
 		//first open
-		project1, err := r.OpenProject(ctx1, OpenProjectParams{
+		project1, err := reg.OpenProject(ctx1, OpenProjectParams{
 			Id: id,
 		})
 
@@ -181,7 +184,7 @@ func TestOpenProject(t *testing.T) {
 		ctx2 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx2.CancelGracefully()
 
-		project2, err := r.OpenProject(ctx2, OpenProjectParams{
+		project2, err := reg.OpenProject(ctx2, OpenProjectParams{
 			Id: id,
 		})
 
@@ -209,19 +212,20 @@ func TestOpenProject(t *testing.T) {
 
 		fls := fs_ns.NewMemFilesystem(1_000)
 
-		r := utils.Must(OpenRegistry("/projects", fls, ctx))
+		reg := utils.Must(OpenRegistry("/projects", fls, ctx))
 
-		id := utils.Must(r.CreateProject(ctx, CreateProjectParams{
-			Name: "myproject",
+		id := utils.Must(reg.CreateProject(ctx, CreateProjectParams{
+			Name:        "myproject",
+			AddMainFile: true,
 		}))
 
 		assert.NotEmpty(t, id)
 		//re-open registry
-		r.Close(ctx)
-		r = utils.Must(OpenRegistry("/projects", fls, ctx))
+		reg.Close(ctx)
+		reg = utils.Must(OpenRegistry("/projects", fls, ctx))
 
 		//open
-		project, err := r.OpenProject(ctx, OpenProjectParams{
+		project, err := reg.OpenProject(ctx, OpenProjectParams{
 			Id: id,
 		})
 

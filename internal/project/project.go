@@ -21,9 +21,10 @@ const (
 	DEFAULT_MAIN_FILENAME = "main" + inoxconsts.INOXLANG_FILE_EXTENSION
 	DEFAULT_TUT_FILENAME  = "learn.tut" + inoxconsts.INOXLANG_FILE_EXTENSION
 
-	CREATION_PARAMS_METADATA_KEY              = "creation-params"
-	CREATION_PARAMS_NAME_METADATA_KEY         = "name"
-	CREATION_PARAMS_ADD_TUT_FILE_METADATA_KEY = "add-tut-file"
+	CREATION_PARAMS_METADATA_KEY               = "creation-params"
+	CREATION_PARAMS_NAME_METADATA_KEY          = "name"
+	CREATION_PARAMS_ADD_TUT_FILE_METADATA_KEY  = "add-tut-file"
+	CREATION_PARAMS_ADD_MAIN_FILE_METADATA_KEY = "add-main-file"
 
 	PROJECT_NAME_REGEX = "^[a-zA-Z][a-zA-Z0-9_-]+$"
 )
@@ -39,15 +40,22 @@ var (
 )
 
 type Project struct {
-	id                core.ProjectID
-	projectFilesystem core.SnapshotableFilesystem
-	lock              core.SmartLock
-	tempTokens        *TempProjectTokens
-	secretsBucket     *s3_ns.Bucket
+	id   core.ProjectID
+	lock core.SmartLock
+
+	//filesystems and images
+
+	//TODO: add base filesystem (VCS ?)
+	liveFilesystem core.SnapshotableFilesystem
+
+	//tokens and secrets
+
+	tempTokens    *TempProjectTokens
+	secretsBucket *s3_ns.Bucket
 
 	//providers
-	cloudflare *Cloudflare //can be nil
 
+	cloudflare     *Cloudflare //can be nil
 	creationParams CreateProjectParams
 }
 
@@ -68,8 +76,9 @@ func getProjectKvKey(id core.ProjectID) core.Path {
 }
 
 type CreateProjectParams struct {
-	Name       string
-	AddTutFile bool
+	Name        string
+	AddMainFile bool
+	AddTutFile  bool
 }
 
 // CreateProject
@@ -88,8 +97,9 @@ func (r *Registry) CreateProject(ctx *core.Context, params CreateProjectParams) 
 	// persist metadata
 	projectMetadata := core.NewRecordFromMap(core.ValMap{
 		CREATION_PARAMS_METADATA_KEY: core.NewRecordFromMap(core.ValMap{
-			CREATION_PARAMS_NAME_METADATA_KEY:         core.Str(params.Name),
-			CREATION_PARAMS_ADD_TUT_FILE_METADATA_KEY: core.Bool(params.AddTutFile),
+			CREATION_PARAMS_NAME_METADATA_KEY:          core.Str(params.Name),
+			CREATION_PARAMS_ADD_TUT_FILE_METADATA_KEY:  core.Bool(params.AddTutFile),
+			CREATION_PARAMS_ADD_MAIN_FILE_METADATA_KEY: core.Bool(params.AddMainFile),
 		}),
 	})
 
@@ -113,9 +123,9 @@ func (r *Registry) CreateProject(ctx *core.Context, params CreateProjectParams) 
 
 	defer projectFS.Close(ctx)
 
-	// we don't check errors returned by the following writes because this is not critical
-
-	util.WriteFile(projectFS, DEFAULT_MAIN_FILENAME, []byte("manifest {\n\n}"), fs_ns.DEFAULT_FILE_FMODE)
+	if params.AddMainFile {
+		util.WriteFile(projectFS, DEFAULT_MAIN_FILENAME, []byte("manifest {\n\n}"), fs_ns.DEFAULT_FILE_FMODE)
+	}
 
 	if params.AddTutFile {
 		util.WriteFile(projectFS, DEFAULT_TUT_FILENAME, []byte(nil), fs_ns.DEFAULT_DIR_FMODE)
@@ -143,8 +153,8 @@ type DevSideCloudflareConfig struct {
 // the returned project should only be used in test.
 func NewDummyProject(name string, fls core.SnapshotableFilesystem) *Project {
 	return &Project{
-		id:                core.RandomProjectID(name),
-		projectFilesystem: fls,
+		id:             core.RandomProjectID(name),
+		liveFilesystem: fls,
 	}
 }
 
@@ -167,6 +177,7 @@ func (r *Registry) OpenProject(ctx *core.Context, params OpenProjectParams) (*Pr
 	creationParams := metadata.(*core.Record).Prop(ctx, CREATION_PARAMS_METADATA_KEY).(*core.Record)
 	name := creationParams.Prop(ctx, CREATION_PARAMS_NAME_METADATA_KEY).(core.Str)
 	addTutFile := creationParams.Prop(ctx, CREATION_PARAMS_ADD_TUT_FILE_METADATA_KEY).(core.Bool)
+	addMainFile := creationParams.Prop(ctx, CREATION_PARAMS_ADD_MAIN_FILE_METADATA_KEY).(core.Bool)
 
 	projectDir := r.filesystem.Join(r.projectsDir, string(params.Id))
 	projectFS, err := fs_ns.OpenMetaFilesystem(r.openProjectsContext, r.filesystem, fs_ns.MetaFilesystemParams{
@@ -178,13 +189,14 @@ func (r *Registry) OpenProject(ctx *core.Context, params OpenProjectParams) (*Pr
 	}
 
 	project := &Project{
-		id:                params.Id,
-		projectFilesystem: projectFS,
-		tempTokens:        params.TempTokens,
+		id:             params.Id,
+		liveFilesystem: projectFS,
+		tempTokens:     params.TempTokens,
 
 		creationParams: CreateProjectParams{
-			Name:       name.GetOrBuildString(),
-			AddTutFile: bool(addTutFile),
+			Name:        name.GetOrBuildString(),
+			AddTutFile:  bool(addTutFile),
+			AddMainFile: bool(addMainFile),
 		},
 	}
 
@@ -242,7 +254,24 @@ func (p *Project) CanProvideS3Credentials(s3Provider string) (bool, error) {
 }
 
 func (p *Project) LiveFilesystem() core.SnapshotableFilesystem {
-	return p.projectFilesystem
+	return p.liveFilesystem
+}
+
+func (p *Project) BaseImage() (core.Image, error) {
+	snapshot, err := p.liveFilesystem.TakeFilesystemSnapshot(core.FilesystemSnapshotConfig{
+		GetContent: func(ChecksumSHA256 [32]byte) core.AddressableContent {
+			return nil
+		},
+		InclusionFilters: []core.PathPattern{"/**/*.ix", "/static/..."},
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &Image{
+		filesystem: snapshot,
+	}, nil
 }
 
 func (p *Project) IsMutable() bool {
