@@ -12,6 +12,7 @@ import (
 
 	"slices"
 
+	"github.com/go-git/go-billy/v5"
 	"github.com/inoxlang/inox/internal/in_mem_ds"
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	parse "github.com/inoxlang/inox/internal/parse"
@@ -114,6 +115,9 @@ type SymbolicEvalCheckInput struct {
 	ShellTrustedCommands []string
 	Context              *Context
 
+	//nil if no project
+	ProjectFilesystem billy.Filesystem
+
 	importPositions     []parse.SourcePositionRange
 	initialSymbolicData *SymbolicData
 }
@@ -132,6 +136,7 @@ func SymbolicEvalCheck(input SymbolicEvalCheckInput) (*SymbolicData, error) {
 	state.basePatternNamespaces = input.SymbolicBasePatternNamespaces
 	state.importPositions = utils.CopySlice(input.importPositions)
 	state.shellTrustedCommands = input.ShellTrustedCommands
+	state.projectFilesystem = input.ProjectFilesystem
 
 	if input.UseBaseGlobals {
 		if input.Globals != nil {
@@ -4486,8 +4491,13 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 			if err != nil {
 				return nil, err
 			}
-			switch meta.(type) {
-			case *Record, StringLike:
+			switch m := meta.(type) {
+			case *Record:
+				err := checkTestItemMeta(m, n.Meta, state)
+				if err != nil {
+					return nil, err
+				}
+			case StringLike:
 			default:
 				state.addError(makeSymbolicEvalError(n.Meta, state, META_VAL_OF_TEST_SUITE_SHOULD_EITHER_BE_A_STRING_OR_A_RECORD))
 			}
@@ -4532,8 +4542,13 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 				return nil, err
 			}
 
-			switch meta.(type) {
-			case *Record, StringLike:
+			switch m := meta.(type) {
+			case *Record:
+				err := checkTestItemMeta(m, n.Meta, state)
+				if err != nil {
+					return nil, err
+				}
+			case StringLike:
 			default:
 				state.addError(makeSymbolicEvalError(n.Meta, state, META_VAL_OF_TEST_CASES_SHOULD_EITHER_BE_A_STRING_OR_A_RECORD))
 			}

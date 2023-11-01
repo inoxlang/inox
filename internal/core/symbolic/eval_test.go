@@ -5,6 +5,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/go-git/go-billy/v5/memfs"
+	"github.com/go-git/go-billy/v5/util"
 	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
@@ -9015,6 +9017,34 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, &TestSuite{}, res)
 		})
 
+		t.Run("program value in meta should be an absolute non-dir path: relative non-dir path", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`testsuite #{program: ./mod.ix} {}`)
+			pathLit := parse.FindNode(n, (*parse.RelativePathLiteral)(nil), nil)
+
+			fls := memfs.New()
+			util.WriteFile(fls, "/mod.ix", []byte("manifest {}"), 0600)
+			state.projectFilesystem = fls
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(pathLit, state, fmtNotAssignableToPropOfType(NewPath("./mod.ix"), ANY_ABS_NON_DIR_PATH)),
+			}, state.errors())
+			assert.Equal(t, &TestSuite{}, res)
+		})
+
+		t.Run("program value in meta should not be present if we are not in a project", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`testsuite #{program: /mod.ix} {}`)
+			recordLit := parse.FindNode(n, (*parse.RecordLiteral)(nil), nil)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(recordLit, state, PROGRAM_TESTING_ONLY_SUPPORTED_IN_PROJECTS),
+			}, state.errors())
+			assert.Equal(t, &TestSuite{}, res)
+		})
+
 		t.Run("error in module", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`testsuite "name" {
 				(1 + true)
@@ -9110,6 +9140,34 @@ func TestSymbolicEval(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
 				makeSymbolicEvalError(intLit, state, fmtNotAssignableToPropOfType(NewInt(1), ANY_BOOL)),
+			}, state.errors())
+			assert.Equal(t, &TestCase{}, res)
+		})
+
+		t.Run("program value in meta should be an absolute non-dir path: relative non-dir path", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`testcase #{program: ./mod.ix} {}`)
+			pathLit := parse.FindNode(n, (*parse.RelativePathLiteral)(nil), nil)
+
+			fls := memfs.New()
+			util.WriteFile(fls, "/mod.ix", []byte("manifest {}"), 0600)
+			state.projectFilesystem = fls
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(pathLit, state, fmtNotAssignableToPropOfType(NewPath("./mod.ix"), ANY_ABS_NON_DIR_PATH)),
+			}, state.errors())
+			assert.Equal(t, &TestCase{}, res)
+		})
+
+		t.Run("program value in meta should not be present if we are not in a project", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`testcase #{program: /mod.ix} {}`)
+			recordLit := parse.FindNode(n, (*parse.RecordLiteral)(nil), nil)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(recordLit, state, PROGRAM_TESTING_ONLY_SUPPORTED_IN_PROJECTS),
 			}, state.errors())
 			assert.Equal(t, &TestCase{}, res)
 		})

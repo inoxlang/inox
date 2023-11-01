@@ -1,12 +1,16 @@
 package symbolic
 
 import (
+	"fmt"
+
+	parse "github.com/inoxlang/inox/internal/parse"
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
 )
 
 const (
 	TEST_ITEM_META__NAME_PROPNAME     = "name"
 	TEST_ITEM_META__FS_PROPNAME       = "fs"
+	TEST_ITEM_META__PROGRAM_PROPNAME  = "program"
 	TEST_ITEM_META__PASS_LIVE_FS_COPY = "pass-live-fs-copy-to-subtests"
 )
 
@@ -15,6 +19,7 @@ var (
 		TEST_ITEM_META__NAME_PROPNAME:     ANY_STR_LIKE,
 		TEST_ITEM_META__FS_PROPNAME:       ANY_FS_SNAPSHOT_IL,
 		TEST_ITEM_META__PASS_LIVE_FS_COPY: ANY_BOOL,
+		TEST_ITEM_META__PROGRAM_PROPNAME:  ANY_ABS_NON_DIR_PATH,
 	}, nil))
 )
 
@@ -109,5 +114,31 @@ func (*TestCase) PropertyNames() []string {
 
 func (s *TestCase) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("test-case")
-	return
+}
+
+func checkTestItemMeta(m *Record, node parse.Node, state *State) error {
+	if !m.hasProperty(TEST_ITEM_META__PROGRAM_PROPNAME) {
+		return nil
+	}
+	if state.projectFilesystem == nil {
+		state.addError(makeSymbolicEvalError(node, state, PROGRAM_TESTING_ONLY_SUPPORTED_IN_PROJECTS))
+		return nil
+	}
+
+	program, ok := m.Prop(TEST_ITEM_META__PROGRAM_PROPNAME).(*Path)
+	if !ok || program.pattern == nil || program.pattern.absoluteness != AbsolutePath || program.pattern.dirConstraint != DirPath {
+		return nil
+	}
+
+	if program.hasValue {
+		info, err := state.projectFilesystem.Stat(program.value)
+		if err != nil {
+			return fmt.Errorf("failed to get info of file %s: %w", program.value, err)
+		}
+		if !info.Mode().IsRegular() {
+			state.addError(makeSymbolicEvalError(node, state, fmtNotRegularFile(program.value)))
+		}
+	}
+
+	return nil
 }

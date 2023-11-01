@@ -3,6 +3,7 @@ package symbolic
 import (
 	"errors"
 
+	"github.com/go-git/go-billy/v5"
 	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
 )
@@ -44,6 +45,9 @@ type State struct {
 	lastErrorNode        parse.Node
 	symbolicData         *SymbolicData
 	shellTrustedCommands []string
+
+	//nil if no project
+	projectFilesystem billy.Filesystem
 }
 
 type scopeInfo struct {
@@ -548,6 +552,7 @@ func (state *State) fork() *State {
 	child.basePatterns = state.basePatterns
 	child.basePatternNamespaces = state.basePatternNamespaces
 	child.checkXMLInterpolation = state.checkXMLInterpolation
+	child.projectFilesystem = state.projectFilesystem
 
 	globalScopeCopy := &scopeInfo{
 		variables: make(map[string]varSymbolicInfo, 0),

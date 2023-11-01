@@ -110,6 +110,7 @@ const (
 	//test suites & cases
 	META_VAL_OF_TEST_SUITE_SHOULD_EITHER_BE_A_STRING_OR_A_RECORD = "the meta value of a test suite should either be a string or a record (e.g. #{name: \"my test suite\"})"
 	META_VAL_OF_TEST_CASES_SHOULD_EITHER_BE_A_STRING_OR_A_RECORD = "the meta value of a test case should either be a string or a record (e.g. #{name: \"my test suite\"})"
+	PROGRAM_TESTING_ONLY_SUPPORTED_IN_PROJECTS                   = "program testing is only supported in projects"
 )
 
 var (
@@ -571,4 +572,8 @@ func fmtExpectedValueExamples(examples []MatchingValueExample) string {
 func fmtUselessMutationInClonedPropValue(elementName string) string {
 	return fmt.Sprintf("%s, you should use a double-colon expression (<object>::%s) to retrieve the actual property's value",
 		USELESS_MUTATION_IN_CLONED_PROP_VALUE, elementName)
+}
+
+func fmtNotRegularFile(path string) string {
+	return fmt.Sprintf("%q is not a regular file", path)
 }
