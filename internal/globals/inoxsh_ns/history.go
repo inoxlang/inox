@@ -12,6 +12,10 @@ type commandHistory struct {
 }
 
 func (history commandHistory) currentNoDuplicate() string {
+	if len(history.commandsEmptySubsequentDuplicates) == 0 {
+		return ""
+	}
+
 	i := history.index
 	cmd := history.commandsEmptySubsequentDuplicates[i]
 	for cmd == "" && i > 0 {
