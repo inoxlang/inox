@@ -52,7 +52,7 @@ This package contains most the code for the Inox Runtime, the type checking logi
 
 ## Module Preparation
 
-Module preparation is implemented in preparation.go, it consists of several steps:
+Module preparation is implemented in [module_preparation.go](./module_preparation.go), it consists of several steps:
 - Parsing
 - Pre-initialization
 - Context Creation
@@ -93,9 +93,9 @@ The most relevant inputs are:
 
 ### Global State Creation
 
-[implementation](../globals/core.go)
+[implementation](../globals/default_state.go)
 
-The global state of the module is created it is initialized
+The global state of the module is created and is initialized
 with the default globals (variables, functions & namespaces).
 
 ### Database Openings
