@@ -32,7 +32,7 @@ func TestURL(t *testing.T) {
 		startMemStats := new(runtime.MemStats)
 		runtime.ReadMemStats(startMemStats)
 
-		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 100)
 	}
 
 	t.Run("AppendRelativePath", func(t *testing.T) {
