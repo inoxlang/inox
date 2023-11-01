@@ -889,6 +889,14 @@ func (p *testProject) Id() core.ProjectID {
 	return p.id
 }
 
+func (*testProject) GetSecrets(ctx *core.Context) ([]core.ProjectSecret, error) {
+	panic("unimplemented")
+}
+
+func (*testProject) ListSecrets(ctx *core.Context) ([]core.ProjectSecretInfo, error) {
+	panic("unimplemented")
+}
+
 func (p *testProject) BaseImage() (core.Image, error) {
 	return nil, core.ErrNotImplemented
 }

@@ -77,7 +77,7 @@ func TestUpsertListSecrets(t *testing.T) {
 			return
 		}
 
-		secrets2, err := project.ListSecrets2(ctx)
+		secrets2, err := project.GetSecrets(ctx)
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -204,7 +204,7 @@ func TestUpsertListSecrets(t *testing.T) {
 				return
 			}
 
-			secrets2, err := project.ListSecrets2(ctx)
+			secrets2, err := project.GetSecrets(ctx)
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -286,7 +286,7 @@ func TestUpsertListSecrets(t *testing.T) {
 		}
 		assert.Equal(t, "my-secret", secrets[0].Name)
 
-		secrets2, err := project.ListSecrets2(ctx)
+		secrets2, err := project.GetSecrets(ctx)
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -309,7 +309,7 @@ func TestUpsertListSecrets(t *testing.T) {
 			return
 		}
 
-		secrets2, err = project.ListSecrets2(ctx)
+		secrets2, err = project.GetSecrets(ctx)
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -377,7 +377,7 @@ func TestUpsertListSecrets(t *testing.T) {
 			}
 			assert.Equal(t, "my-secret", secrets[0].Name)
 
-			secrets2, err := project.ListSecrets2(ctx)
+			secrets2, err := project.GetSecrets(ctx)
 			if !assert.NoError(t, err) {
 				return
 			}

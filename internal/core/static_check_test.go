@@ -4052,6 +4052,14 @@ func (p *testProject) Id() ProjectID {
 	return p.id
 }
 
+func (*testProject) GetSecrets(ctx *Context) ([]ProjectSecret, error) {
+	panic("unimplemented")
+}
+
+func (*testProject) ListSecrets(ctx *Context) ([]ProjectSecretInfo, error) {
+	panic("unimplemented")
+}
+
 func (*testProject) BaseImage() (Image, error) {
 	panic("unimplemented")
 }

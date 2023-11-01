@@ -126,6 +126,14 @@ func (p *testProject) BaseImage() (core.Image, error) {
 	return nil, core.ErrNotImplemented
 }
 
+func (*testProject) GetSecrets(ctx *core.Context) ([]core.ProjectSecret, error) {
+	panic("unimplemented")
+}
+
+func (*testProject) ListSecrets(ctx *core.Context) ([]core.ProjectSecretInfo, error) {
+	panic("unimplemented")
+}
+
 func (*testProject) GetS3CredentialsForBucket(
 	ctx *core.Context,
 	bucketName string,

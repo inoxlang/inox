@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/s3_ns"
@@ -17,18 +16,7 @@ var (
 	ErrFailedToListSecrets = errors.New("failed to list secrets")
 )
 
-type ProjectSecret struct {
-	Name          string
-	LastModifDate time.Time
-	Value         *core.Secret
-}
-
-type ProjectSecretInfo struct {
-	Name          string    `json:"name"`
-	LastModifDate time.Time `json:"lastModificationDate"`
-}
-
-func (p *Project) ListSecrets(ctx *core.Context) (info []ProjectSecretInfo, _ error) {
+func (p *Project) ListSecrets(ctx *core.Context) (info []core.ProjectSecretInfo, _ error) {
 	if !p.HasProviders() {
 		return nil, nil
 	}
@@ -46,15 +34,15 @@ func (p *Project) ListSecrets(ctx *core.Context) (info []ProjectSecretInfo, _ er
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrFailedToListSecrets, err)
 	}
-	return utils.MapSlice(objects, func(o *s3_ns.ObjectInfo) ProjectSecretInfo {
-		return ProjectSecretInfo{
+	return utils.MapSlice(objects, func(o *s3_ns.ObjectInfo) core.ProjectSecretInfo {
+		return core.ProjectSecretInfo{
 			Name:          o.Key,
 			LastModifDate: o.LastModified,
 		}
 	}), nil
 }
 
-func (p *Project) ListSecrets2(ctx *core.Context) (secrets []ProjectSecret, _ error) {
+func (p *Project) GetSecrets(ctx *core.Context) (secrets []core.ProjectSecret, _ error) {
 	if !p.HasProviders() {
 		return nil, nil
 	}
@@ -84,7 +72,7 @@ func (p *Project) ListSecrets2(ctx *core.Context) (secrets []ProjectSecret, _ er
 	wg := new(sync.WaitGroup)
 	wg.Add(len(objects))
 
-	secrets = make([]ProjectSecret, len(objects))
+	secrets = make([]core.ProjectSecret, len(objects))
 	errs := make([]error, len(objects))
 
 	var lock sync.Mutex
@@ -117,7 +105,7 @@ func (p *Project) ListSecrets2(ctx *core.Context) (secrets []ProjectSecret, _ er
 				return
 			}
 
-			secrets[i] = ProjectSecret{
+			secrets[i] = core.ProjectSecret{
 				Name:          info.Key,
 				Value:         secretValue,
 				LastModifDate: info.LastModified,

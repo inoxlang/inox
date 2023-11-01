@@ -356,7 +356,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *core.GlobalState, mo
 
 	//add project-secrets global
 	if args.Project != nil {
-		secrets, err := args.Project.ListSecrets2(ctx)
+		secrets, err := args.Project.GetSecrets(ctx)
 		if err != nil {
 			finalErr = fmt.Errorf("failed to create default global state: %w", err)
 			return
