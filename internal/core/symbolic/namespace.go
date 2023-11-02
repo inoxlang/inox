@@ -13,7 +13,8 @@ import (
 // A Namespace represents a symbolic Namespace.
 type Namespace struct {
 	UnassignablePropsMixin
-	entries map[string]Value //if nil, matches any Namespace
+	entries        map[string]Value //if nil, matches any Namespace
+	mutableEntries bool
 }
 
 func NewAnyNamespace() *Namespace {
@@ -25,7 +26,16 @@ func NewEmptyNamespace() *Namespace {
 }
 
 func NewNamespace(entries map[string]Value) *Namespace {
-	return &Namespace{entries: entries}
+	return &Namespace{
+		entries: entries,
+	}
+}
+
+func NewMutableEntriesNamespace(entries map[string]Value) *Namespace {
+	return &Namespace{
+		entries:        entries,
+		mutableEntries: true,
+	}
 }
 
 func (ns *Namespace) Test(v Value, state RecTestCallState) bool {

@@ -630,8 +630,8 @@ func (*ApiIL) IsMutable() bool {
 	return true
 }
 
-func (*Namespace) IsMutable() bool {
-	return false
+func (ns *Namespace) IsMutable() bool {
+	return ns.mutableEntries
 }
 
 func (*StructPattern) IsMutable() bool {

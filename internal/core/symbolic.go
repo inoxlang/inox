@@ -1599,7 +1599,13 @@ func (ns *Namespace) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbo
 		entries[key] = symbolicVal
 	}
 
-	result := symbolic.NewNamespace(entries)
+	var result *symbolic.Namespace
+	if ns.mutableEntries {
+		result = symbolic.NewMutableEntriesNamespace(entries)
+	} else {
+		result = symbolic.NewNamespace(entries)
+	}
+
 	encountered[ptr] = result
 	return result, nil
 }

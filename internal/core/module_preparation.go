@@ -337,7 +337,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *GlobalState, mod *Mo
 	for dbName, db := range dbs {
 		dbsNamespaceEntries[dbName] = db
 	}
-	state.Globals.Set(globalnames.DATABASES, NewNamespace("dbs", dbsNamespaceEntries))
+	state.Globals.Set(globalnames.DATABASES, NewMutableEntriesNamespace(globalnames.DATABASES, dbsNamespaceEntries))
 
 	for dbName, db := range dbs {
 		if _, ok := ownedDatabases[dbName]; ok {
