@@ -311,12 +311,12 @@ func NewDefaultGlobalState(ctx *core.Context, conf core.DefaultGlobalStateConfig
 	}
 
 	if conf.AbsoluteModulePath != "" {
-		constants[core.MODULE_DIRPATH_GLOBAL_NAME] = core.DirPathFrom(filepath.Dir(conf.AbsoluteModulePath))
-		constants[core.MODULE_FILEPATH_GLOBAL_NAME] = core.PathFrom(conf.AbsoluteModulePath)
+		constants[globalnames.MODULE_DIRPATH] = core.DirPathFrom(filepath.Dir(conf.AbsoluteModulePath))
+		constants[globalnames.MODULE_FILEPATH] = core.PathFrom(conf.AbsoluteModulePath)
 	}
 
 	baseGlobals := maps.Clone(constants)
-	constants[core.PREINIT_DATA_GLOBAL_NAME] = preinitData
+	constants[globalnames.PREINIT_DATA] = preinitData
 
 	symbolicBaseGlobals := map[string]symbolic.Value{}
 	{

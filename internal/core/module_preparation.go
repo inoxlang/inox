@@ -14,6 +14,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/globalnames"
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
@@ -336,7 +337,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *GlobalState, mod *Mo
 	for dbName, db := range dbs {
 		dbsNamespaceEntries[dbName] = db
 	}
-	state.Globals.Set(DATABASES_GLOBAL_NAME, NewNamespace("dbs", dbsNamespaceEntries))
+	state.Globals.Set(globalnames.DATABASES, NewNamespace("dbs", dbsNamespaceEntries))
 
 	for dbName, db := range dbs {
 		if _, ok := ownedDatabases[dbName]; ok {
@@ -372,7 +373,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *GlobalState, mod *Mo
 		}
 
 		record := NewRecordFromKeyValLists(secretNames, secretValues)
-		state.Globals.Set(PROJECT_SECRETS_GLOBAL_NAME, record)
+		state.Globals.Set(globalnames.PROJECT_SECRETS, record)
 	}
 
 	//pass patterns & host aliases of the preinit state to the state

@@ -12,6 +12,7 @@ import (
 	"github.com/cloudflare/cloudflare-go"
 	"github.com/go-git/go-billy/v5/util"
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/globalnames"
 	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/project"
 	"github.com/inoxlang/inox/internal/utils"
@@ -1161,7 +1162,7 @@ func TestPrepareLocalScript(t *testing.T) {
 			manifest {
 				permissions: {}
 			}
-			return `+core.PROJECT_SECRETS_GLOBAL_NAME+`.my-secret
+			return `+globalnames.PROJECT_SECRETS+`.my-secret
 		`), 0o600)
 
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{
@@ -1201,7 +1202,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		// symbolic check should have been performed
 		assert.False(t, state.SymbolicData.IsEmpty())
 
-		projectSecrets, ok := state.Globals.CheckedGet(core.PROJECT_SECRETS_GLOBAL_NAME)
+		projectSecrets, ok := state.Globals.CheckedGet(globalnames.PROJECT_SECRETS)
 		if !assert.True(t, ok) {
 			return
 		}

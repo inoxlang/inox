@@ -10,14 +10,6 @@ import (
 	"io"
 )
 
-const (
-	PREINIT_DATA_GLOBAL_NAME    = "preinit-data"
-	DATABASES_GLOBAL_NAME       = "dbs"
-	PROJECT_SECRETS_GLOBAL_NAME = "project-secrets"
-	MODULE_DIRPATH_GLOBAL_NAME  = "__mod-dir"
-	MODULE_FILEPATH_GLOBAL_NAME = "__mod-file"
-)
-
 var (
 	NewDefaultGlobalState          NewDefaultGlobalStateFn
 	NewDefaultContext              NewDefaultContextFn

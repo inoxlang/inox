@@ -143,4 +143,11 @@ const (
 	FILEMODE_FN = "FileMode"
 
 	HELP_FN = "help"
+
+	//meta
+	MODULE_DIRPATH  = "__mod-dir"
+	MODULE_FILEPATH = "__mod-file"
+
+	//other
+	PREINIT_DATA = "preinit-data"
 )
