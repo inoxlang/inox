@@ -74,6 +74,8 @@ because Inox primarily focuses on Web Application Development.
 To learn scripting go [here](./docs/scripting-basics.md).
 View [Shell Basics](./docs/shell-basics.md) to learn how to use Inox interactively.
 
+📖 Language Reference: **docs/language-reference.md**
+
 ## Features
 
 ### XML expressions
