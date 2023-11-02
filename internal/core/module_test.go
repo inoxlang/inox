@@ -1114,6 +1114,9 @@ type snapshotableMemFilesystem struct {
 }
 
 func (*snapshotableMemFilesystem) Absolute(path string) (string, error) {
+	if path[0] == '/' {
+		return path, nil
+	}
 	return "", ErrNotImplemented
 }
 

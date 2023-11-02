@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"github.com/inoxlang/inox/internal/afs"
+	"github.com/rs/zerolog"
 
 	"io"
 )
@@ -33,8 +34,10 @@ type DefaultGlobalStateConfig struct {
 	PreinitFiles        PreinitFiles
 	AllowMissingEnvVars bool
 
-	Out    io.Writer
-	LogOut io.Writer
+	Out io.Writer
+
+	LogOut io.Writer //ignore if .Logger is set
+	Logger zerolog.Logger
 }
 
 type NewDefaultGlobalStateFn func(ctx *Context, conf DefaultGlobalStateConfig) (*GlobalState, error)

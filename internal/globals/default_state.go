@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
+	"reflect"
 	"time"
 
 	"github.com/inoxlang/inox/internal/config"
@@ -115,20 +116,22 @@ func init() {
 
 // NewDefaultGlobalState creates a new GlobalState with the default globals.
 func NewDefaultGlobalState(ctx *core.Context, conf core.DefaultGlobalStateConfig) (*core.GlobalState, error) {
-	logOut := conf.LogOut
-	var logger zerolog.Logger
-	if logOut == nil { //if there is not writer for logs we log to conf.Out
-		logOut = conf.Out
+	logger := conf.Logger
+	if reflect.ValueOf(logger).IsZero() {
+		logOut := conf.LogOut
+		if logOut == nil { //if there is no writer for logs we log to conf.Out
+			logOut = conf.Out
 
-		consoleLogger := zerolog.NewConsoleWriter(func(w *zerolog.ConsoleWriter) {
-			w.Out = logOut
-			w.NoColor = !config.SHOULD_COLORIZE
-			w.TimeFormat = "15:04:05"
-			w.FieldsExclude = []string{"src"}
-		})
-		logger = zerolog.New(consoleLogger)
-	} else {
-		logger = zerolog.New(logOut)
+			consoleLogger := zerolog.NewConsoleWriter(func(w *zerolog.ConsoleWriter) {
+				w.Out = logOut
+				w.NoColor = !config.SHOULD_COLORIZE
+				w.TimeFormat = "15:04:05"
+				w.FieldsExclude = []string{"src"}
+			})
+			logger = zerolog.New(consoleLogger)
+		} else {
+			logger = zerolog.New(logOut)
+		}
 	}
 
 	logger = logger.With().Timestamp().Logger().Level(zerolog.InfoLevel)

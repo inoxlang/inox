@@ -8,10 +8,12 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -8639,6 +8641,425 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			}
 			assert.Equal(t, Nil, res)
 		})
+
+		//setup for following tests
+
+		if !AreDefaultScriptLimitsSet() {
+			SetDefaultScriptLimits([]Limit{})
+			defer UnsetDefaultScriptLimits()
+		}
+
+		newDefaultContext := func(config DefaultContextConfig) (*Context, error) {
+
+			ctxConfig := ContextConfig{
+				Permissions:          config.Permissions,
+				ForbiddenPermissions: config.ForbiddenPermissions,
+				Limits:               config.Limits,
+				HostResolutions:      config.HostResolutions,
+				ParentContext:        config.ParentContext,
+				ParentStdLibContext:  config.ParentStdLibContext,
+				Filesystem:           config.Filesystem,
+				OwnedDatabases:       config.OwnedDatabases,
+			}
+
+			if ctxConfig.ParentContext != nil {
+				if err, _ := ctxConfig.Check(); err != nil {
+					return nil, err
+				}
+			}
+
+			ctx := NewContext(ctxConfig)
+
+			for k, v := range DEFAULT_NAMED_PATTERNS {
+				ctx.AddNamedPattern(k, v)
+			}
+
+			for k, v := range DEFAULT_PATTERN_NAMESPACES {
+				ctx.AddPatternNamespace(k, v)
+			}
+
+			return ctx, nil
+		}
+
+		newDefaultContextBackup := NewDefaultContext
+		defer func() {
+			NewDefaultContext = newDefaultContextBackup
+		}()
+		NewDefaultContext = newDefaultContext
+
+		newDefaultGlobalStateBackup := NewDefaultGlobalState
+		defer func() {
+			NewDefaultGlobalState = newDefaultGlobalStateBackup
+		}()
+
+		//billy.memfs is not thread safe
+		var flsLock sync.Mutex
+
+		NewDefaultGlobalState = func(ctx *Context, conf DefaultGlobalStateConfig) (*GlobalState, error) {
+
+			writeFile := func(ctx *Context, path Path) {
+				flsLock.Lock()
+				defer flsLock.Unlock()
+
+				err := util.WriteFile(ctx.GetFileSystem(), path.UnderlyingString(), []byte("content"), 0600)
+				assert.NoError(t, err)
+			}
+
+			symbWriteFile := func(ctx *symbolic.Context, path *symbolic.Path) {
+
+			}
+
+			if !IsSymbolicEquivalentOfGoFunctionRegistered(writeFile) {
+				RegisterSymbolicGoFunction(writeFile, symbWriteFile)
+			}
+
+			state := NewGlobalState(ctx, map[string]Value{
+				"write_file": WrapGoFunction(writeFile),
+			})
+
+			state.Out = conf.Out
+
+			state.Logger = conf.Logger
+			if reflect.ValueOf(state.Logger).IsZero() {
+				state.Logger = zerolog.New(conf.LogOut)
+			}
+			if reflect.ValueOf(state.Logger).IsZero() {
+				state.Logger = zerolog.New(conf.Out)
+			}
+			return state, nil
+		}
+
+		t.Run("program specified by top level suite", func(t *testing.T) {
+
+			mod, fls, err := createModuleAndImports(`
+				manifest {}
+				
+				testsuite(#{
+					program: /program.ix
+				}) {
+
+				}
+
+			`, map[string]string{
+				"/program.ix": `
+					manifest {
+
+					}
+				`,
+			})
+
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			ctx := NewContext(ContextConfig{
+				Permissions: append(GetDefaultGlobalVarPermissions(),
+					LThreadPermission{permkind.Create},
+					FilesystemPermission{permkind.Read, PathPattern("/...")},
+				),
+				Filesystem: fls,
+			})
+
+			state := NewGlobalState(ctx)
+			state.IsTestingEnabled = true
+			state.IsImportTestingEnabled = true
+			state.TestFilters = allTestsFilter
+			state.Project = &testProjectWithImage{
+				id: RandomProjectID("test"),
+				image: &testImage{
+					snapshot: &memFilesystemSnapshot{
+						fls: copyMemFs(fls),
+					},
+				},
+			}
+
+			defer state.Ctx.CancelGracefully()
+
+			res, err := Eval(mod, state, false)
+
+			assert.NoError(t, err)
+			assert.Equal(t, Nil, res)
+			assert.Empty(t, state.TestCaseResults)
+			if !assert.Len(t, state.TestSuiteResults, 1) {
+				return
+			}
+
+			assert.Empty(t, state.TestSuiteResults[0].caseResults, 0)
+		})
+
+		t.Run("program specified by top level suite: empty testcase", func(t *testing.T) {
+
+			mod, fls, err := createModuleAndImports(`
+				manifest {}
+				
+				testsuite(#{
+					program: /program.ix
+				}) {
+					testcase {}
+				}
+
+			`, map[string]string{
+				"/program.ix": `
+					manifest {
+
+					}
+				`,
+			})
+
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			ctx := NewContext(ContextConfig{
+				Permissions: append(GetDefaultGlobalVarPermissions(),
+					LThreadPermission{permkind.Create},
+					FilesystemPermission{permkind.Read, PathPattern("/...")},
+					FilesystemPermission{permkind.Write, PathPattern("/...")},
+				),
+				Filesystem: fls,
+			})
+
+			state := NewGlobalState(ctx)
+			state.IsTestingEnabled = true
+			state.IsImportTestingEnabled = true
+			state.TestFilters = allTestsFilter
+			state.Project = &testProjectWithImage{
+				id: RandomProjectID("test"),
+				image: &testImage{
+					snapshot: &memFilesystemSnapshot{
+						fls: copyMemFs(fls),
+					},
+				},
+			}
+
+			defer state.Ctx.CancelGracefully()
+
+			res, err := Eval(mod, state, false)
+
+			assert.NoError(t, err)
+			assert.Equal(t, Nil, res)
+			assert.Empty(t, state.TestCaseResults)
+			if !assert.Len(t, state.TestSuiteResults, 1) {
+				return
+			}
+
+			assert.Len(t, state.TestSuiteResults[0].caseResults, 1)
+		})
+
+		t.Run("program specified by top level suite: testcase and program should use the same filesystem", func(t *testing.T) {
+
+			mod, fls, err := createModuleAndImports(`
+				manifest {}
+
+				testsuite(#{
+					program: /program.ix
+				}) {
+					manifest {
+						permissions: {
+							read: %/...
+							write: %/...
+						}
+					}
+
+					testcase {
+						manifest {
+							permissions: {
+								read: %/...
+								write: %/...
+							}
+						}
+
+						sleep10ms()
+						test_read_file /file_in_shared_fs.txt
+					}
+				}
+
+			`, map[string]string{
+				"/program.ix": `
+					manifest {
+						permissions: {
+							write: %/...
+						}
+					}
+
+					write_file /file_in_shared_fs.txt
+				`,
+			})
+
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			ctx := NewContext(ContextConfig{
+				Permissions: append(GetDefaultGlobalVarPermissions(),
+					LThreadPermission{permkind.Create},
+					FilesystemPermission{permkind.Read, PathPattern("/...")},
+					FilesystemPermission{permkind.Write, PathPattern("/...")},
+				),
+				Filesystem: fls,
+			})
+
+			var correctFile atomic.Bool
+
+			state := NewGlobalState(ctx)
+			state.IsTestingEnabled = true
+			state.IsImportTestingEnabled = true
+			state.TestFilters = allTestsFilter
+			state.Project = &testProjectWithImage{
+				id: RandomProjectID("test"),
+				image: &testImage{
+					snapshot: &memFilesystemSnapshot{
+						fls: copyMemFs(fls),
+					},
+				},
+			}
+
+			state.Globals.Set("sleep10ms", WrapGoFunction(func(ctx *Context) {
+				Sleep(ctx, Duration(10*time.Millisecond))
+			}))
+
+			state.Globals.Set("test_read_file", WrapGoFunction(func(ctx *Context, path Path) {
+				flsLock.Lock()
+				defer flsLock.Unlock()
+
+				content, err := util.ReadFile(ctx.GetFileSystem(), path.UnderlyingString())
+				if !assert.NoError(t, err) {
+					return
+				}
+				if !assert.Equal(t, "content", string(content)) {
+					return
+				}
+				correctFile.Store(true)
+			}))
+
+			defer state.Ctx.CancelGracefully()
+
+			res, err := Eval(mod, state, false)
+
+			assert.NoError(t, err)
+			assert.Equal(t, Nil, res)
+			assert.Empty(t, state.TestCaseResults)
+			if !assert.Len(t, state.TestSuiteResults, 1) {
+				return
+			}
+
+			assert.Len(t, state.TestSuiteResults[0].caseResults, 1)
+
+			assert.True(t, correctFile.Load())
+		})
+
+		t.Run("program specified by top level suite: testcase in sub testsuite and program should use the same filesystem", func(t *testing.T) {
+
+			mod, fls, err := createModuleAndImports(`
+				manifest {}
+
+				testsuite(#{
+					program: /program.ix
+				}) {
+					manifest {
+						permissions: {
+							read: %/...
+							write: %/...
+						}
+					}
+
+					testsuite {
+						manifest {
+							permissions: {
+								read: %/...
+								write: %/...
+							}
+						}
+	
+						testcase {
+							manifest {
+								permissions: {
+									read: %/...
+									write: %/...
+								}
+							}
+	
+							sleep10ms()
+							test_read_file /file_in_shared_fs.txt
+						}
+					}
+				}
+
+			`, map[string]string{
+				"/program.ix": `
+					manifest {
+						permissions: {
+							write: %/...
+						}
+					}
+
+					write_file /file_in_shared_fs.txt
+				`,
+			})
+
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			ctx := NewContext(ContextConfig{
+				Permissions: append(GetDefaultGlobalVarPermissions(),
+					LThreadPermission{permkind.Create},
+					FilesystemPermission{permkind.Read, PathPattern("/...")},
+					FilesystemPermission{permkind.Write, PathPattern("/...")},
+				),
+				Filesystem: fls,
+			})
+
+			var correctFile atomic.Bool
+
+			state := NewGlobalState(ctx)
+			state.IsTestingEnabled = true
+			state.IsImportTestingEnabled = true
+			state.TestFilters = allTestsFilter
+			state.Project = &testProjectWithImage{
+				id: RandomProjectID("test"),
+				image: &testImage{
+					snapshot: &memFilesystemSnapshot{
+						fls: copyMemFs(fls),
+					},
+				},
+			}
+
+			state.Globals.Set("sleep10ms", WrapGoFunction(func(ctx *Context) {
+				Sleep(ctx, Duration(10*time.Millisecond))
+			}))
+
+			state.Globals.Set("test_read_file", WrapGoFunction(func(ctx *Context, path Path) {
+				flsLock.Lock()
+				defer flsLock.Unlock()
+
+				content, err := util.ReadFile(ctx.GetFileSystem(), path.UnderlyingString())
+				if !assert.NoError(t, err) {
+					return
+				}
+				if !assert.Equal(t, "content", string(content)) {
+					return
+				}
+				correctFile.Store(true)
+			}))
+
+			defer state.Ctx.CancelGracefully()
+
+			res, err := Eval(mod, state, false)
+
+			assert.NoError(t, err)
+			assert.Equal(t, Nil, res)
+			assert.Empty(t, state.TestCaseResults)
+			if !assert.Len(t, state.TestSuiteResults, 1) {
+				return
+			}
+
+			assert.True(t, correctFile.Load())
+			if !assert.Len(t, state.TestSuiteResults[0].subSuiteResults, 1) {
+				return
+			}
+			assert.Len(t, state.TestSuiteResults[0].subSuiteResults[0].caseResults, 1)
+		})
 	})
 
 	t.Run("testcase statement", func(t *testing.T) {
@@ -10079,4 +10500,41 @@ func makeTreeWalkEvalFunc(t *testing.T) func(c any, s *GlobalState, doSymbolicCh
 		treeWalkState := NewTreeWalkStateWithGlobal(s)
 		return TreeWalkEval(mod.MainChunk.Node, treeWalkState)
 	}
+}
+
+type testProjectWithImage struct {
+	id    ProjectID
+	image Image
+}
+
+func (p *testProjectWithImage) Id() ProjectID {
+	return p.id
+}
+
+func (p *testProjectWithImage) GetSecrets(ctx *Context) ([]ProjectSecret, error) {
+	return nil, nil
+}
+
+func (p *testProjectWithImage) ListSecrets(ctx *Context) ([]ProjectSecretInfo, error) {
+	return nil, nil
+}
+
+func (p *testProjectWithImage) BaseImage() (Image, error) {
+	return p.image, nil
+}
+
+func (p *testProjectWithImage) CanProvideS3Credentials(s3Provider string) (bool, error) {
+	panic("unimplemented")
+}
+
+func (p *testProjectWithImage) GetS3CredentialsForBucket(ctx *Context, bucketName string, provider string) (accessKey string, secretKey string, s3Endpoint Host, _ error) {
+	panic("unimplemented")
+}
+
+type testImage struct {
+	snapshot FilesystemSnapshot
+}
+
+func (img testImage) FilesystemSnapshot() FilesystemSnapshot {
+	return img.snapshot
 }

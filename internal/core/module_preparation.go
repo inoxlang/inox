@@ -17,6 +17,7 @@ import (
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
+	"github.com/rs/zerolog"
 )
 
 const (
@@ -66,8 +67,10 @@ type ScriptPreparationArgs struct {
 	//defaults to os.Stdout
 	Out io.Writer
 
-	//defaults to Out
+	//defaults to Out, ignored if .Logger is set
 	LogOut io.Writer
+
+	Logger zerolog.Logger
 
 	//used during the preinit
 	PreinitFilesystem afs.Filesystem
@@ -233,6 +236,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *GlobalState, mod *Mo
 		AllowMissingEnvVars: args.AllowMissingEnvVars,
 		Out:                 out,
 		LogOut:              args.LogOut,
+		Logger:              args.Logger,
 	})
 
 	if err != nil {

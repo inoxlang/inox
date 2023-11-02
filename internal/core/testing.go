@@ -1,6 +1,7 @@
 package core
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"regexp"
@@ -34,6 +35,8 @@ type TestSuite struct {
 	nameFromMeta                     string             //can be empty
 	filesystemSnapshotFromMeta       FilesystemSnapshot //can be nil
 	passLiveFilesystemCopyToSubTests bool
+	programToTest                    Path    //can be empty
+	programProject                   Project //set if .programToTest is set
 
 	node         *parse.TestSuiteExpression
 	module       *Module // module executed when running the test suite
@@ -50,6 +53,8 @@ type TestSuiteCreationInput struct {
 }
 
 func NewTestSuite(input TestSuiteCreationInput) (*TestSuite, error) {
+	//implementation should not perform resource intensive operations or IO operations.
+
 	meta := input.Meta
 	embeddedModChunk := input.EmbeddedModChunk
 	parentChunk := input.ParentChunk
@@ -74,16 +79,17 @@ func NewTestSuite(input TestSuiteCreationInput) (*TestSuite, error) {
 		//TODO: bytecode ?
 	}
 
-	//get name of test suite
 	nameFromMeta := ""
 	passLiveFsCopyToSubTests := false
 	var snapshotFromMeta FilesystemSnapshot
+	var programToTest Path
+	var programProject Project
 
 	switch m := meta.(type) {
 	case StringLike:
 		nameFromMeta = m.GetOrBuildString()
 	case *Record:
-		m.ForEachEntry(func(k string, v Value) error {
+		err := m.ForEachEntry(func(k string, v Value) error {
 			switch k {
 			case symbolic.TEST_ITEM_META__NAME_PROPNAME:
 				strLike, ok := v.(StringLike)
@@ -97,24 +103,48 @@ func NewTestSuite(input TestSuiteCreationInput) (*TestSuite, error) {
 				}
 			case symbolic.TEST_ITEM_META__PASS_LIVE_FS_COPY:
 				passLiveFsCopyToSubTests = bool(v.(Bool))
+			case symbolic.TEST_ITEM_META__PROGRAM_PROPNAME:
+				if parentState.Project == nil {
+					return errors.New("program testing is only supported in projects")
+				}
+				baseImg, err := parentState.Project.BaseImage()
+				if err != nil {
+					return err
+				}
+				snapshotFromMeta = baseImg.FilesystemSnapshot()
+				programToTest = v.(Path)
+				programProject = parentState.Project
 			}
 			return nil
 		})
+		if err != nil {
+			return nil, err
+		}
 	case NilT:
 	default:
 		panic(ErrUnreachable)
 	}
 
-	return &TestSuite{
-		meta:         meta,
-		node:         input.Node,
-		module:       routineMod,
-		parentModule: parentState.Module,
-		parentChunk:  parentChunk,
+	if programToTest == "" {
+		//inherit program to test from parent test suite
+		if parentTestSuite, ok := input.ParentState.TestItem.(*TestSuite); ok && parentTestSuite.programToTest != "" {
+			programToTest = parentTestSuite.programToTest
+			programProject = parentTestSuite.programProject
+		}
+	}
 
+	return &TestSuite{
+		meta:                             meta,
 		nameFromMeta:                     nameFromMeta,
 		filesystemSnapshotFromMeta:       snapshotFromMeta,
 		passLiveFilesystemCopyToSubTests: passLiveFsCopyToSubTests,
+		programToTest:                    programToTest,
+		programProject:                   programProject,
+		node:                             input.Node,
+
+		module:       routineMod,
+		parentModule: parentState.Module,
+		parentChunk:  parentChunk,
 	}, nil
 }
 
@@ -178,58 +208,7 @@ func (s *TestSuite) Run(ctx *Context, options ...Option) (*LThread, error) {
 		return nil, fmt.Errorf("testing: following permission is required for running tests: %w", err)
 	}
 
-	manifest, _, _, err := s.module.PreInit(PreinitArgs{
-		RunningState:          NewTreeWalkStateWithGlobal(spawnerState),
-		ParentState:           spawnerState,
-		AddDefaultPermissions: true,
-
-		//TODO: should Project be set ?
-	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	//create the lthread context
-
-	for _, perm := range manifest.RequiredPermissions {
-		if err := spawnerState.Ctx.CheckHasPermission(perm); err != nil {
-			return nil, fmt.Errorf("testing: cannot allow permission: %w", err)
-		}
-	}
-
-	permissions := utils.CopySlice(manifest.RequiredPermissions)
-	permissions = append(permissions, createLthreadPerm)
-
-	routineCtx := NewContext(ContextConfig{
-		Kind:            TestingContext,
-		ParentContext:   ctx,
-		Permissions:     permissions,
-		Limits:          manifest.Limits,
-		HostResolutions: manifest.HostResolutions,
-
-		Filesystem: fls,
-	})
-
-	//spawn the lthread
-
-	lthread, err := SpawnLThread(LthreadSpawnArgs{
-		SpawnerState: spawnerState,
-		LthreadCtx:   routineCtx,
-		Globals:      spawnerState.Globals,
-		Module:       s.module,
-		Manifest:     manifest,
-		Timeout:      timeout,
-
-		IsTestingEnabled: spawnerState.IsTestingEnabled,
-		TestFilters:      spawnerState.TestFilters,
-		TestItem:         s,
-	})
-
-	if err != nil {
-		return nil, fmt.Errorf("testing: %w", err)
-	}
-	return lthread, nil
+	return runTestItem(ctx, spawnerState, s, s.module, fls, timeout, parentTestSuite, "", nil, nil)
 }
 
 func (s *TestSuite) GetGoMethod(name string) (*GoFunction, bool) {
@@ -262,7 +241,10 @@ type TestCase struct {
 	nameFromMeta                     string             //can be empty
 	filesystemSnapshotFromMeta       FilesystemSnapshot //can be nil
 	passLiveFilesystemCopyToSubTests bool
-	node                             *parse.TestCaseExpression
+	programToTest                    Path    //can be empty
+	programProject                   Project //set if .programToTest is set
+
+	node *parse.TestCaseExpression
 
 	module       *Module // module executed when running the test case
 	parentModule *Module
@@ -286,6 +268,8 @@ type TestCaseCreationInput struct {
 }
 
 func NewTestCase(input TestCaseCreationInput) (*TestCase, error) {
+	//implementation should not perform resource intensive operations or IO operations.
+
 	meta := input.Meta
 	modChunk := input.ModChunk
 	parentState := input.ParentState
@@ -316,6 +300,8 @@ func NewTestCase(input TestCaseCreationInput) (*TestCase, error) {
 	nameFromMeta := ""
 	passLiveFsCopyToSubTests := false
 	var snapshotFromMeta FilesystemSnapshot
+	var programToTest Path
+	var programProject Project
 
 	switch m := meta.(type) {
 	case StringLike:
@@ -335,6 +321,17 @@ func NewTestCase(input TestCaseCreationInput) (*TestCase, error) {
 				}
 			case symbolic.TEST_ITEM_META__PASS_LIVE_FS_COPY:
 				passLiveFsCopyToSubTests = bool(v.(Bool))
+			case symbolic.TEST_ITEM_META__PROGRAM_PROPNAME:
+				if parentState.Project == nil {
+					return errors.New("program testing is only supported in projects")
+				}
+				baseImg, err := parentState.Project.BaseImage()
+				if err != nil {
+					return err
+				}
+				snapshotFromMeta = baseImg.FilesystemSnapshot()
+				programToTest = v.(Path)
+				programProject = parentState.Project
 			}
 			return nil
 		})
@@ -352,7 +349,10 @@ func NewTestCase(input TestCaseCreationInput) (*TestCase, error) {
 		nameFromMeta:                     nameFromMeta,
 		filesystemSnapshotFromMeta:       snapshotFromMeta,
 		passLiveFilesystemCopyToSubTests: passLiveFsCopyToSubTests,
-		node:                             input.Node,
+		programToTest:                    programToTest,
+		programProject:                   programProject,
+
+		node: input.Node,
 
 		module:       routineMod,
 		parentModule: parentState.Module,
@@ -362,55 +362,6 @@ func NewTestCase(input TestCaseCreationInput) (*TestCase, error) {
 		formattedPosition: formattedPosition,
 	}, nil
 }
-
-// func evaluateTestingManifest(chunk *parse.ParsedChunk, parentState *GlobalState) (*Manifest, error) {
-// 	createRoutinePerm := RoutinePermission{Kind_: permkind.Create}
-
-// 	if err := parentState.Ctx.CheckHasPermission(createRoutinePerm); err != nil {
-// 		return nil, fmt.Errorf("testing: following permission is required for running tests: %w", err)
-// 	}
-
-// 	if chunk.Node.Manifest == nil {
-// 		return &Manifest{
-// 			RequiredPermissions: []Permission{createRoutinePerm},
-// 		}, nil
-// 	}
-
-// 	objectLiteral := chunk.Node.Manifest.Object
-// 	state := NewTreeWalkStateWithGlobal(parentState)
-
-// 	manifestObj, err := evaluateManifestObjectNode(objectLiteral, ManifestEvaluationConfig{
-// 		RunningState: state,
-// 	})
-
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	manifest, err := createManifest(manifestObj, manifestObjectConfig{
-// 		addDefaultPermissions: true,
-// 	})
-
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	hasCreateRoutine := false
-
-// 	for _, perm := range manifest.RequiredPermissions {
-// 		if perm.Includes(createRoutinePerm) && createRoutinePerm.Includes(perm) {
-// 			hasCreateRoutine = true
-// 		}
-// 		if err := parentState.Ctx.CheckHasPermission(perm); err != nil {
-// 			return nil, fmt.Errorf("testing: cannot allow permission: %w", err)
-// 		}
-// 	}
-
-// 	if !hasCreateRoutine {
-// 		manifest.RequiredPermissions = append(manifest.RequiredPermissions, createRoutinePerm)
-// 	}
-// 	return manifest, err
-// }
 
 // Module returns the module that contains the test.
 func (c *TestCase) ParentModule() *Module {
@@ -466,56 +417,26 @@ func (c *TestCase) Run(ctx *Context, options ...Option) (*LThread, error) {
 		return nil, err
 	}
 
-	manifest, _, _, err := c.module.PreInit(PreinitArgs{
-		RunningState: NewTreeWalkStateWithGlobal(spawnerState),
-		ParentState:  spawnerState,
+	programToTest := c.programToTest
+	programProject := c.programProject
 
-		AddDefaultPermissions: true,
+	var programModuleCache *Module
 
-		//TODO: should Project be set ?
-	})
+	if programToTest == "" && parentTestSuite.programToTest != "" {
+		programToTest = parentTestSuite.programToTest
+		programProject = parentTestSuite.programProject
 
-	if err != nil {
-		return nil, err
-	}
-
-	//create the lthread context
-
-	for _, perm := range manifest.RequiredPermissions {
-		if err := spawnerState.Ctx.CheckHasPermission(perm); err != nil {
-			return nil, fmt.Errorf("testing: cannot allow permission: %w", err)
+		if spawnerState.ProgramToTestModule != nil {
+			programModuleCache = spawnerState.ProgramToTestModule
+			resourceName, ok := programModuleCache.AbsoluteSource()
+			if !ok || resourceName != programToTest {
+				panic(ErrUnreachable)
+			}
 		}
+
 	}
 
-	routineCtx := NewContext(ContextConfig{
-		Kind:            TestingContext,
-		ParentContext:   ctx,
-		Permissions:     manifest.RequiredPermissions,
-		Limits:          manifest.Limits,
-		HostResolutions: manifest.HostResolutions,
-
-		Filesystem: fls,
-	})
-
-	//spawn the lthread
-
-	lthread, err := SpawnLThread(LthreadSpawnArgs{
-		SpawnerState: spawnerState,
-		LthreadCtx:   routineCtx,
-		Globals:      spawnerState.Globals,
-		Module:       c.module,
-		Manifest:     manifest,
-		Timeout:      timeout,
-
-		IsTestingEnabled: spawnerState.IsTestingEnabled,
-		TestFilters:      spawnerState.TestFilters,
-		TestItem:         c,
-	})
-
-	if err != nil {
-		return nil, fmt.Errorf("testing: %w", err)
-	}
-	return lthread, nil
+	return runTestItem(ctx, spawnerState, c, c.module, fls, timeout, parentTestSuite, programToTest, programModuleCache, programProject)
 }
 
 func (s *TestCase) GetGoMethod(name string) (*GoFunction, bool) {
@@ -540,6 +461,183 @@ func (*TestCase) SetProp(ctx *Context, name string, value Value) error {
 
 func (*TestCase) PropertyNames(ctx *Context) []string {
 	return []string{"run"}
+}
+
+func runTestItem(
+	parentCtx *Context,
+	spawnerState *GlobalState,
+	testItem TestItem,
+	testItemModule *Module,
+	testItemFS afs.Filesystem,
+	timeout time.Duration,
+	parentTestSuite *TestSuite,
+
+	programToTest Path, //can be empty
+	programModuleCache *Module, //can be nil
+	programProject Project, //only set if programToTest is not empty
+) (*LThread, error) {
+
+	//get the manifest of the test item's module
+	manifest, _, _, err := testItemModule.PreInit(PreinitArgs{
+		RunningState:          NewTreeWalkStateWithGlobal(spawnerState),
+		ParentState:           spawnerState,
+		AddDefaultPermissions: true,
+
+		//TODO: should Project be set ?
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	//create the lthread context
+
+	for _, perm := range manifest.RequiredPermissions {
+		if err := spawnerState.Ctx.CheckHasPermission(perm); err != nil {
+			return nil, fmt.Errorf("testing: cannot allow permission: %w", err)
+		}
+	}
+
+	createLthreadPerm := LThreadPermission{Kind_: permkind.Create}
+
+	permissions := utils.CopySlice(manifest.RequiredPermissions)
+	permissions = append(permissions, createLthreadPerm)
+
+	lthreadCtx := NewContext(ContextConfig{
+		Kind:            TestingContext,
+		ParentContext:   parentCtx,
+		Permissions:     permissions,
+		Limits:          manifest.Limits,
+		HostResolutions: manifest.HostResolutions,
+
+		Filesystem: testItemFS,
+	})
+
+	var programToTestModule *Module
+
+	//prepare & start the program to test
+	if programToTest != "" {
+		programState, _, _, err := PrepareLocalScript(ScriptPreparationArgs{
+			FullAccessToDatabases: true,
+			Fpath:                 string(programToTest),
+			Project:               programProject,
+			CachedModule:          programModuleCache,
+
+			ParsingCompilationContext: parentCtx,
+			ParentContext:             lthreadCtx, //TODO: gracefully stops the program
+
+			ScriptContextFileSystem: testItemFS,
+			PreinitFilesystem:       testItemFS,
+
+			Out:    spawnerState.Out,
+			Logger: spawnerState.Logger,
+		})
+
+		if err != nil {
+			if programState != nil && programState.Ctx != nil {
+				programState.Ctx.CancelGracefully()
+			}
+			return nil, fmt.Errorf("failed to prepare the program to test (%q): %w", programToTest, err)
+		}
+
+		go func() {
+			var err error
+			defer func() {
+				e := recover()
+				if e != nil {
+					err = utils.ConvertPanicValueToError(e)
+					spawnerState.Logger.Err(err)
+				}
+			}()
+
+			treeWalkState := NewTreeWalkStateWithGlobal(programState)
+			_, err = TreeWalkEval(programState.Module.MainChunk.Node, treeWalkState)
+			if err != nil {
+				spawnerState.Logger.Err(err).Msgf("error in tested program")
+			}
+		}()
+		//else if the test item is a test suite with a program to test we parse it for later use by sub suites & test cases.
+	} else if suite, ok := testItem.(*TestSuite); ok && suite.programToTest != "" {
+		mod, err := ParseLocalModule(string(suite.programToTest), ModuleParsingConfig{
+			Context:    parentCtx,
+			Filesystem: testItemFS,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse the program to test for caching (%q): %w", suite.programToTest, err)
+		}
+
+		programToTestModule = mod
+	}
+
+	//spawn the lthread
+
+	lthread, err := SpawnLThread(LthreadSpawnArgs{
+		SpawnerState: spawnerState,
+		LthreadCtx:   lthreadCtx,
+		Globals:      spawnerState.Globals,
+		Module:       testItemModule,
+		Manifest:     manifest,
+		Timeout:      timeout,
+
+		IsTestingEnabled:    spawnerState.IsTestingEnabled,
+		TestFilters:         spawnerState.TestFilters,
+		TestItem:            testItem,
+		ProgramToTestModule: programToTestModule,
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("testing: %w", err)
+	}
+	return lthread, nil
+}
+
+// getTestItemFilesystem retrieves or create the filesystem for a test item.
+//   - if the test item has a filesystem snapshot then a filesystem is created from it.
+//   - else if the parent test suite is nil then the parent state's filesystem is returned.
+//   - else if the parent test suite is configured to pass a shapshot of its live filesystem
+//     then its filesystem is snapshoted and a filesystem is created from it.
+//   - else if the parent test suite has a filesystem snapshot then a filesystem is created from it.
+//   - else the parent state's filesystem is returned.
+func getTestItemFilesystem(test TestItem, parentTestSuite *TestSuite, spawnerState *GlobalState) (afs.Filesystem, error) {
+	if snapshot, ok := test.FilesystemSnapshot(); ok {
+		return snapshot.NewAdaptedFilesystem(TEST__MAX_FS_STORAGE_HINT)
+	} else if parentTestSuite == nil {
+		return spawnerState.Ctx.GetFileSystem(), nil
+	} else if parentTestSuite.passLiveFilesystemCopyToSubTests {
+		parentFls := spawnerState.Ctx.GetFileSystem()
+
+		if snapshotable, ok := parentFls.(SnapshotableFilesystem); ok {
+			snapshotConfig := FilesystemSnapshotConfig{
+				GetContent: func(ChecksumSHA256 [32]byte) AddressableContent {
+					return nil
+				},
+				InclusionFilters: []PathPattern{"/..."},
+			}
+
+			snapshot, err := snapshotable.TakeFilesystemSnapshot(snapshotConfig)
+			if err != nil {
+				return nil, fmt.Errorf("failed to take snapshot of the live filesystem of the parent test suite: %w", err)
+			}
+			filesystem, err := snapshot.NewAdaptedFilesystem(TEST__MAX_FS_STORAGE_HINT)
+			if err != nil {
+				return nil, fmt.Errorf("failed to create filesystem from the live filesystem of the parent test suite")
+			}
+			return filesystem, nil
+		} else {
+			return nil, fmt.Errorf("failed to create filesystem: the filesystem of the parent test suite is not snapshotable")
+		}
+	} else {
+		snapshot, ok := spawnerState.TestItem.FilesystemSnapshot()
+		if ok {
+			filesystem, err := snapshot.NewAdaptedFilesystem(TEST__MAX_FS_STORAGE_HINT)
+			if err != nil {
+				return nil, fmt.Errorf("failed to create filesystem from the filesystem snapshot of the parent test suite")
+			}
+			return filesystem, nil
+		} else {
+			return spawnerState.Ctx.GetFileSystem(), nil
+		}
+	}
 }
 
 type TestFilters struct {
@@ -625,53 +723,4 @@ func (f TestFilter) IsTestEnabled(absoluteFilePath string, name string, statemen
 	}
 
 	return true, "the test is enabled because it matches the filter " + f.String()
-}
-
-// getTestItemFilesystem retrieves or create the filesystem for a test item.
-//   - if the test item has a filesystem snapshot then a filesystem is created from it.
-//   - else if the parent test suite is nil then the parent state's filesystem is returned.
-//   - else if the parent test suite is configured to pass a shapshot of its live filesystem
-//     then its filesystem is snapshoted and a filesystem is created from it.
-//   - else if the parent test suite has a filesystem snapshot then a filesystem is created from it.
-//   - else the parent state's filesystem is returned.
-func getTestItemFilesystem(test TestItem, parentTestSuite *TestSuite, spawnerState *GlobalState) (afs.Filesystem, error) {
-	if snapshot, ok := test.FilesystemSnapshot(); ok {
-		return snapshot.NewAdaptedFilesystem(TEST__MAX_FS_STORAGE_HINT)
-	} else if parentTestSuite == nil {
-		return spawnerState.Ctx.GetFileSystem(), nil
-	} else if parentTestSuite.passLiveFilesystemCopyToSubTests {
-		parentFls := spawnerState.Ctx.GetFileSystem()
-
-		if snapshotable, ok := parentFls.(SnapshotableFilesystem); ok {
-			snapshotConfig := FilesystemSnapshotConfig{
-				GetContent: func(ChecksumSHA256 [32]byte) AddressableContent {
-					return nil
-				},
-				InclusionFilters: []PathPattern{"/..."},
-			}
-
-			snapshot, err := snapshotable.TakeFilesystemSnapshot(snapshotConfig)
-			if err != nil {
-				return nil, fmt.Errorf("failed to take snapshot of the live filesystem of the parent test suite: %w", err)
-			}
-			filesystem, err := snapshot.NewAdaptedFilesystem(TEST__MAX_FS_STORAGE_HINT)
-			if err != nil {
-				return nil, fmt.Errorf("failed to create filesystem from the live filesystem of the parent test suite")
-			}
-			return filesystem, nil
-		} else {
-			return nil, fmt.Errorf("failed to create filesystem: the filesystem of the parent test suite is not snapshotable")
-		}
-	} else {
-		snapshot, ok := spawnerState.TestItem.FilesystemSnapshot()
-		if ok {
-			filesystem, err := snapshot.NewAdaptedFilesystem(TEST__MAX_FS_STORAGE_HINT)
-			if err != nil {
-				return nil, fmt.Errorf("failed to create filesystem from the filesystem snapshot of the parent test suite")
-			}
-			return filesystem, nil
-		} else {
-			return spawnerState.Ctx.GetFileSystem(), nil
-		}
-	}
 }
