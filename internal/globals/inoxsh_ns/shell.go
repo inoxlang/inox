@@ -1292,7 +1292,10 @@ func (sh *shell) printFgTaskResult() {
 
 	switch r := result.(type) {
 	default:
-		core.PrettyPrint(r, sh.preOut, prettyPrintConfig, 0, 0)
+		err := core.PrettyPrint(r, sh.preOut, prettyPrintConfig, 0, 0)
+		if err != nil {
+			sh.preOut.Write([]byte(err.Error()))
+		}
 		sh.preOut.Write([]byte{'\n'})
 	case nil, core.NilT:
 		return
