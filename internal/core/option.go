@@ -27,14 +27,14 @@ func (opt Option) String() string {
 	return buff.String()
 }
 
-func SumOptions(ctx *Context, config *Object, options ...Option) (*Object, error) {
+func SumOptions(ctx *Context, config *Object, options ...Option) (Value, error) {
 	sum := &Object{}
 	for _, option := range options {
 		if sum.HasProp(ctx, option.Name) {
-			return nil, fmt.Errorf("duplicate option '%s'", option.Name)
+			return Nil, fmt.Errorf("duplicate option '%s'", option.Name)
 		}
 		if err := sum.SetProp(ctx, option.Name, option.Value); err != nil {
-			return nil, err
+			return Nil, err
 		}
 	}
 

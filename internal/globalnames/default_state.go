@@ -147,6 +147,7 @@ const (
 	//meta
 	MODULE_DIRPATH  = "__mod-dir"
 	MODULE_FILEPATH = "__mod-file"
+	CURRENT_TEST    = "__test"
 
 	//other
 	PREINIT_DATA = "preinit-data"

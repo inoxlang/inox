@@ -223,8 +223,8 @@ func init() {
 		},
 		//
 
-		core.SumOptions, func(ctx *symbolic.Context, config *symbolic.Object, options ...*symbolic.Option) (*symbolic.Object, *symbolic.Error) {
-			return symbolic.NewAnyObject(), nil
+		core.SumOptions, func(ctx *symbolic.Context, config *symbolic.Object, options ...*symbolic.Option) (symbolic.Value, *symbolic.Error) {
+			return symbolic.NewMultivalue(symbolic.ANY_OBJ, symbolic.Nil), nil
 		},
 
 		_List, func(ctx *symbolic.Context, args ...symbolic.Value) *symbolic.List {
