@@ -121,6 +121,6 @@ func NewFsNamespace() *core.Namespace {
 		"glob":               core.WrapGoFunction(Glob),
 		"get_tree_data":      core.WrapGoFunction(GetTreeData),
 		"new_mem_filesystem": core.WrapGoFunction(NewMemFilesystemIL),
-		"FsSnapshot":         core.WrapGoFunction(NewFilesystemSnapshot),
+		"new_snapshot":       core.WrapGoFunction(NewFilesystemSnapshot),
 	})
 }
