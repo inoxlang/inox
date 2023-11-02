@@ -55,6 +55,10 @@
     - [Schema](#database-schema)
     - [Serialization](#serialization)
     - [Access From Other Modules](#access-from-other-modules)
+- [Testing](#testing)
+    - [Basic](#basic)
+    - [Custom Filesystem](#custom-filesystem)
+    - [Program Testing](#program-testing)
 - [Structures (not implemented yet)](#structs)
 
 # Literals
@@ -656,7 +660,7 @@ Values & keys can be filtered by putting a pattern in front of the **value** and
 **Value filtering:**
 
 ```
-for %int(0..2) elem in ["a", 0, 1, 2, 3] {
+for int(0..2) elem in ["a", 0, 1, 2, 3] {
     print(elem)
 }
 
@@ -1674,6 +1678,117 @@ for user in dbs.main.users {
 ℹ️ The module defining the databases is automatically granted access to the database.
 
 ⚠️ Permissions still need to be granted in the import statement.
+
+# Testing
+
+Inox comes with a powerful testing engine that is deeply integrated with the Inox runtime.
+
+
+## Basic
+
+A single test is defined by a **testcase** statement. Test suites are defined using **testsuite** statements
+and can be nested.
+
+```
+testsuite "my test suite" {
+    testcase "1 < 2" {
+        assert (1 < 2)
+    }
+}
+
+testsuite "my test suite" {
+    testsuite "my sub test suite" {
+        testcase "1 < 2" {
+            assert (1 < 2)
+        }
+    }
+}
+```
+
+
+The metadata and parameters of the test suites and test cases are specified in a [record](#records) value.
+
+```
+testsuite (#{
+    name: "my test suite"
+}) {
+
+    testcase(#{ name: "1 < 2"}) {
+
+    }
+
+}
+```
+
+## Custom Filesystem
+
+Test suites and test cases can be configured to use a short-live filesystem:
+```
+snapshot = fs.new_snapshot{
+    files: :{
+        ./file1.txt: "content 1"
+        ./dir/: :{
+            ./file2.txt: "content 2"
+        }
+    }
+}
+
+testsuite (#{
+    # a filesystem will be created from the snapshot for each test suite and test case.
+    fs: snapshot
+}) {
+
+    assert fs.exists(/file1.txt)
+    fs.rm(/file1.txt)
+
+    testcase {
+        # no error
+        assert fs.exists(/file1.txt)
+        fs.rm(/file1.txt)
+    }
+
+    testcase {
+        # no error
+        assert fs.exists(/file1.txt)
+    }
+}
+```
+
+Test suites can pass a copy of their filesystem to subtests:
+
+```
+testsuite #{
+    fs: snapshot
+    pass-live-fs-copy-to-subtests: true
+} {
+    fs.rm(/file1.txt)
+
+    testcase {
+        # error
+        assert fs.exists(/file1.txt)
+    }
+
+    testcase {
+        # modifications done by test cases have no effect for subsequent tests
+        # because they are given a copy of the test suite's filesystem.
+        fs.rm(/file2.txt)
+    }
+
+    testcase {
+        # no error
+        assert fs.exists(/file2.txt)
+
+        # error
+        assert fs.exists(/file1.txt)
+    }
+
+}
+```
+
+## Program Testing
+
+TODO
+
 
 # Structs
 
