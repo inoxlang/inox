@@ -4487,21 +4487,8 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 		return val, nil
 	case *parse.TestSuiteExpression:
 		if n.Meta != nil {
-			meta, err := _symbolicEval(n.Meta, state, evalOptions{
-				expectedValue: TEST_ITEM__EXPECTED_META_VALUE,
-			})
-			if err != nil {
+			if err := checkTestItemMeta(n.Meta, state, false); err != nil {
 				return nil, err
-			}
-			switch m := meta.(type) {
-			case *Record:
-				err := checkTestItemMeta(m, n.Meta, state)
-				if err != nil {
-					return nil, err
-				}
-			case StringLike:
-			default:
-				state.addError(makeSymbolicEvalError(n.Meta, state, META_VAL_OF_TEST_SUITE_SHOULD_EITHER_BE_A_STRING_OR_A_RECORD))
 			}
 		}
 
@@ -4537,22 +4524,8 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 		return &TestSuite{}, nil
 	case *parse.TestCaseExpression:
 		if n.Meta != nil {
-			meta, err := _symbolicEval(n.Meta, state, evalOptions{
-				expectedValue: TEST_ITEM__EXPECTED_META_VALUE,
-			})
-			if err != nil {
+			if err := checkTestItemMeta(n.Meta, state, true); err != nil {
 				return nil, err
-			}
-
-			switch m := meta.(type) {
-			case *Record:
-				err := checkTestItemMeta(m, n.Meta, state)
-				if err != nil {
-					return nil, err
-				}
-			case StringLike:
-			default:
-				state.addError(makeSymbolicEvalError(n.Meta, state, META_VAL_OF_TEST_CASES_SHOULD_EITHER_BE_A_STRING_OR_A_RECORD))
 			}
 		}
 

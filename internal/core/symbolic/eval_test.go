@@ -9099,6 +9099,64 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Empty(t, state.errors())
 		})
 
+		t.Run("main-db-schema property in meta should not be present if the program property is not present", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				manifest {}; 
+				testsuite #{main-db-schema: %{}} {}
+			`)
+
+			recordLit := parse.FindNode(n, (*parse.RecordLiteral)(nil), nil)
+
+			fls := memfs.New()
+			state.projectFilesystem = fls
+
+			_, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(recordLit, state, MAIN_DB_SCHEMA_CAN_ONLY_BE_SPECIFIED_WHEN_TESTING_A_PROGRAM),
+			}, state.errors())
+		})
+
+		t.Run("main-db-migrations property in meta should not be present if the program property is not present", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				manifest {}; 
+				testsuite #{main-db-migrations: #{}} {}
+			`)
+
+			recordLit := parse.FindNode(n, (*parse.RecordLiteral)(nil), func(n *parse.RecordLiteral, isUnique bool) bool {
+				return len(n.Properties) == 1
+			})
+
+			fls := memfs.New()
+			state.projectFilesystem = fls
+
+			_, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(recordLit, state, MAIN_DB_MIGRATIONS_CAN_ONLY_BE_SPECIFIED_WHEN_TESTING_A_PROGRAM),
+			}, state.errors())
+		})
+
+		t.Run("main-db-migrations property in meta should not be present if the program property is not present", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				manifest {}; 
+				testsuite #{main-db-migrations: #{}} {}
+			`)
+
+			recordLit := parse.FindNode(n, (*parse.RecordLiteral)(nil), func(n *parse.RecordLiteral, isUnique bool) bool {
+				return len(n.Properties) == 1
+			})
+
+			fls := memfs.New()
+			state.projectFilesystem = fls
+
+			_, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(recordLit, state, MAIN_DB_MIGRATIONS_CAN_ONLY_BE_SPECIFIED_WHEN_TESTING_A_PROGRAM),
+			}, state.errors())
+		})
+
 		t.Run("error in module", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`testsuite "name" {
 				(1 + true)
@@ -9151,7 +9209,7 @@ func TestSymbolicEval(t *testing.T) {
 			intLit := parse.FindNode(n, (*parse.IntLiteral)(nil), nil)
 
 			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(intLit, state, META_VAL_OF_TEST_CASES_SHOULD_EITHER_BE_A_STRING_OR_A_RECORD),
+				makeSymbolicEvalError(intLit, state, META_VAL_OF_TEST_CASE_SHOULD_EITHER_BE_A_STRING_OR_A_RECORD),
 			}, state.errors())
 			assert.Equal(t, &TestCase{}, res)
 		})

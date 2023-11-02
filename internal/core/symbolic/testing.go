@@ -8,18 +8,40 @@ import (
 )
 
 const (
-	TEST_ITEM_META__NAME_PROPNAME     = "name"
-	TEST_ITEM_META__FS_PROPNAME       = "fs"
-	TEST_ITEM_META__PROGRAM_PROPNAME  = "program"
-	TEST_ITEM_META__PASS_LIVE_FS_COPY = "pass-live-fs-copy-to-subtests"
+	TEST_ITEM_META__NAME_PROPNAME      = "name"
+	TEST_ITEM_META__FS_PROPNAME        = "fs"
+	TEST_ITEM_META__PROGRAM_PROPNAME   = "program"
+	TEST_ITEM_META__PASS_LIVE_FS_COPY  = "pass-live-fs-copy-to-subtests"
+	TEST_ITEM_META__MAIN_DB_SCHEMA     = "main-db-schema"
+	TEST_ITEM_META__MAIN_DB_MIGRATIONS = "main-db-migrations"
 )
 
 var (
 	TEST_ITEM__EXPECTED_META_VALUE = NewMultivalue(ANY_STR_LIKE, NewInexactRecord(map[string]Serializable{
-		TEST_ITEM_META__NAME_PROPNAME:     ANY_STR_LIKE,
+		TEST_ITEM_META__NAME_PROPNAME: ANY_STR_LIKE,
+
+		//filesystem
 		TEST_ITEM_META__FS_PROPNAME:       ANY_FS_SNAPSHOT_IL,
 		TEST_ITEM_META__PASS_LIVE_FS_COPY: ANY_BOOL,
-		TEST_ITEM_META__PROGRAM_PROPNAME:  ANY_ABS_NON_DIR_PATH,
+
+		//program testing
+		TEST_ITEM_META__PROGRAM_PROPNAME: ANY_ABS_NON_DIR_PATH,
+		TEST_ITEM_META__MAIN_DB_SCHEMA:   ANY_OBJECT_PATTERN,
+		TEST_ITEM_META__MAIN_DB_MIGRATIONS: NewInexactRecord(
+			map[string]Serializable{
+				DB_MIGRATION__DELETIONS_PROP_NAME:       ANY_DICT,
+				DB_MIGRATION__INCLUSIONS_PROP_NAME:      ANY_DICT,
+				DB_MIGRATION__REPLACEMENTS_PROP_NAME:    ANY_DICT,
+				DB_MIGRATION__INITIALIZATIONS_PROP_NAME: ANY_DICT,
+			},
+			//optional entries
+			map[string]struct{}{
+				DB_MIGRATION__DELETIONS_PROP_NAME:       {},
+				DB_MIGRATION__INCLUSIONS_PROP_NAME:      {},
+				DB_MIGRATION__REPLACEMENTS_PROP_NAME:    {},
+				DB_MIGRATION__INITIALIZATIONS_PROP_NAME: {},
+			},
+		),
 	}, nil))
 )
 
@@ -116,28 +138,50 @@ func (s *TestCase) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintCo
 	w.WriteName("test-case")
 }
 
-func checkTestItemMeta(m *Record, node parse.Node, state *State) error {
-	if !m.hasProperty(TEST_ITEM_META__PROGRAM_PROPNAME) {
-		return nil
+func checkTestItemMeta(node parse.Node, state *State, isTestCase bool) error {
+	meta, err := _symbolicEval(node, state, evalOptions{
+		expectedValue: TEST_ITEM__EXPECTED_META_VALUE,
+	})
+	if err != nil {
+		return err
 	}
-	if state.projectFilesystem == nil {
-		state.addError(makeSymbolicEvalError(node, state, PROGRAM_TESTING_ONLY_SUPPORTED_IN_PROJECTS))
-		return nil
-	}
-
-	program, ok := m.Prop(TEST_ITEM_META__PROGRAM_PROPNAME).(*Path)
-	if !ok || program.pattern == nil || program.pattern.absoluteness != AbsolutePath || program.pattern.dirConstraint != DirPath {
-		return nil
-	}
-
-	if program.hasValue {
-		info, err := state.projectFilesystem.Stat(program.value)
-		if err != nil {
-			return fmt.Errorf("failed to get info of file %s: %w", program.value, err)
+	switch m := meta.(type) {
+	case *Record:
+		if !m.hasProperty(TEST_ITEM_META__PROGRAM_PROPNAME) {
+			if m.hasProperty(TEST_ITEM_META__MAIN_DB_SCHEMA) {
+				state.addError(makeSymbolicEvalError(node, state, MAIN_DB_SCHEMA_CAN_ONLY_BE_SPECIFIED_WHEN_TESTING_A_PROGRAM))
+			}
+			if m.hasProperty(TEST_ITEM_META__MAIN_DB_MIGRATIONS) {
+				state.addError(makeSymbolicEvalError(node, state, MAIN_DB_MIGRATIONS_CAN_ONLY_BE_SPECIFIED_WHEN_TESTING_A_PROGRAM))
+			}
+			return nil
 		}
-		if !info.Mode().IsRegular() {
-			state.addError(makeSymbolicEvalError(node, state, fmtNotRegularFile(program.value)))
+		if state.projectFilesystem == nil {
+			state.addError(makeSymbolicEvalError(node, state, PROGRAM_TESTING_ONLY_SUPPORTED_IN_PROJECTS))
+			return nil
 		}
+
+		program, ok := m.Prop(TEST_ITEM_META__PROGRAM_PROPNAME).(*Path)
+		if !ok || program.pattern == nil || program.pattern.absoluteness != AbsolutePath || program.pattern.dirConstraint != DirPath {
+			return nil
+		}
+
+		if program.hasValue {
+			info, err := state.projectFilesystem.Stat(program.value)
+			if err != nil {
+				return fmt.Errorf("failed to get info of file %s: %w", program.value, err)
+			}
+			if !info.Mode().IsRegular() {
+				state.addError(makeSymbolicEvalError(node, state, fmtNotRegularFile(program.value)))
+			}
+		}
+	case StringLike:
+	default:
+		msg := META_VAL_OF_TEST_SUITE_SHOULD_EITHER_BE_A_STRING_OR_A_RECORD
+		if isTestCase {
+			msg = META_VAL_OF_TEST_CASE_SHOULD_EITHER_BE_A_STRING_OR_A_RECORD
+		}
+		state.addError(makeSymbolicEvalError(node, state, msg))
 	}
 
 	return nil
