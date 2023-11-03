@@ -9298,6 +9298,20 @@ func TestSymbolicEval(t *testing.T) {
 			}, state.errors())
 			assert.Equal(t, &TestCase{}, res)
 		})
+
+		t.Run("a __test global with a program property should be defined within the testcase", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				testcase {
+					$$__test.program
+				}
+			`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, &TestCase{}, res)
+		})
+
 	})
 
 	t.Run("lifetimejob expression", func(t *testing.T) {

@@ -44,9 +44,10 @@ var (
 		),
 	}, nil))
 
-	ANY_CURRENT_TEST          = &CurrentTest{testedProgram: ANY_TESTED_PROGRAM_OR_NIL}
-	ANY_TESTED_PROGRAM        = &TestedProgram{}
-	ANY_TESTED_PROGRAM_OR_NIL = NewMultivalue(ANY_TESTED_PROGRAM, Nil)
+	ANY_CURRENT_TEST              = &CurrentTest{testedProgram: ANY_TESTED_PROGRAM_OR_NIL}
+	ANY_CURRENT_TEST_WITH_PROGRAM = &CurrentTest{testedProgram: ANY_TESTED_PROGRAM}
+	ANY_TESTED_PROGRAM            = &TestedProgram{}
+	ANY_TESTED_PROGRAM_OR_NIL     = NewMultivalue(ANY_TESTED_PROGRAM, Nil)
 
 	CURRENT_TEST_PROPNAMES   = []string{"program"}
 	TESTED_PROGRAM_PROPNAMES = []string{"cancel"}
@@ -145,12 +146,12 @@ func (s *TestCase) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintCo
 	w.WriteName("test-case")
 }
 
-func checkTestItemMeta(node parse.Node, state *State, isTestCase bool) error {
+func checkTestItemMeta(node parse.Node, state *State, isTestCase bool) (hasProgram bool, _ error) {
 	meta, err := _symbolicEval(node, state, evalOptions{
 		expectedValue: TEST_ITEM__EXPECTED_META_VALUE,
 	})
 	if err != nil {
-		return err
+		return false, err
 	}
 	switch m := meta.(type) {
 	case *Record:
@@ -161,22 +162,22 @@ func checkTestItemMeta(node parse.Node, state *State, isTestCase bool) error {
 			if m.hasProperty(TEST_ITEM_META__MAIN_DB_MIGRATIONS) {
 				state.addError(makeSymbolicEvalError(node, state, MAIN_DB_MIGRATIONS_CAN_ONLY_BE_SPECIFIED_WHEN_TESTING_A_PROGRAM))
 			}
-			return nil
+			return false, nil
 		}
 		if state.projectFilesystem == nil {
 			state.addError(makeSymbolicEvalError(node, state, PROGRAM_TESTING_ONLY_SUPPORTED_IN_PROJECTS))
-			return nil
+			return true, nil
 		}
 
 		program, ok := m.Prop(TEST_ITEM_META__PROGRAM_PROPNAME).(*Path)
 		if !ok || program.pattern == nil || program.pattern.absoluteness != AbsolutePath || program.pattern.dirConstraint != DirPath {
-			return nil
+			return true, nil
 		}
 
 		if program.hasValue {
 			info, err := state.projectFilesystem.Stat(program.value)
 			if err != nil {
-				return fmt.Errorf("failed to get info of file %s: %w", program.value, err)
+				return true, fmt.Errorf("failed to get info of file %s: %w", program.value, err)
 			}
 			if !info.Mode().IsRegular() {
 				state.addError(makeSymbolicEvalError(node, state, fmtNotRegularFile(program.value)))
@@ -191,7 +192,7 @@ func checkTestItemMeta(node parse.Node, state *State, isTestCase bool) error {
 		state.addError(makeSymbolicEvalError(node, state, msg))
 	}
 
-	return nil
+	return false, nil
 }
 
 // A CurrentTest represents a symbolic CurrentTest.

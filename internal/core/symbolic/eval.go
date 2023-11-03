@@ -13,6 +13,7 @@ import (
 	"slices"
 
 	"github.com/go-git/go-billy/v5"
+	"github.com/inoxlang/inox/internal/globalnames"
 	"github.com/inoxlang/inox/internal/in_mem_ds"
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	parse "github.com/inoxlang/inox/internal/parse"
@@ -4486,11 +4487,17 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 
 		return val, nil
 	case *parse.TestSuiteExpression:
+		hasProgram := false
+
 		if n.Meta != nil {
-			if err := checkTestItemMeta(n.Meta, state, false); err != nil {
+			hasProg, err := checkTestItemMeta(n.Meta, state, false)
+			if err != nil {
 				return nil, err
 			}
+			hasProgram = hasProg
 		}
+
+		_ = hasProgram
 
 		v, err := symbolicEval(n.Module, state)
 		if err != nil {
@@ -4508,6 +4515,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 		modState.Module = state.Module
 		modState.symbolicData = state.symbolicData
 
+		//evaluate
 		_, err = symbolicEval(embeddedModule, modState)
 		if err != nil {
 			return nil, err
@@ -4523,10 +4531,14 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 
 		return &TestSuite{}, nil
 	case *parse.TestCaseExpression:
+		hasProgram := false
+
 		if n.Meta != nil {
-			if err := checkTestItemMeta(n.Meta, state, true); err != nil {
+			hasProg, err := checkTestItemMeta(n.Meta, state, true)
+			if err != nil {
 				return nil, err
 			}
+			hasProgram = hasProg
 		}
 
 		v, err := symbolicEval(n.Module, state)
@@ -4545,6 +4557,14 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 		modState.Module = state.Module
 		modState.symbolicData = state.symbolicData
 
+		//add the __test global
+		test := ANY_CURRENT_TEST
+		if hasProgram {
+			test = ANY_CURRENT_TEST_WITH_PROGRAM
+		}
+		modState.setGlobal(globalnames.CURRENT_TEST, test, GlobalConst)
+
+		//evaluate
 		_, err = symbolicEval(embeddedModule, modState)
 		if err != nil {
 			return nil, err
