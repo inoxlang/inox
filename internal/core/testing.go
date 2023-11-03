@@ -11,9 +11,11 @@ import (
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/commonfmt"
 	"github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/globalnames"
 	parse "github.com/inoxlang/inox/internal/parse"
 	permkind "github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
+	"golang.org/x/exp/maps"
 )
 
 const (
@@ -481,6 +483,8 @@ func runTestItem(
 	programProject Project, //only set if programToTest is not empty
 ) (*LThread, error) {
 
+	suite, isTestSuite := testItem.(*TestSuite)
+
 	//get the manifest of the test item's module
 	manifest, _, _, err := testItemModule.PreInit(PreinitArgs{
 		RunningState:          NewTreeWalkStateWithGlobal(spawnerState),
@@ -517,7 +521,8 @@ func runTestItem(
 		Filesystem: testItemFS,
 	})
 
-	var programToTestModule *Module
+	var testedProgramModule *Module
+	var testedProgramThread *LThread
 
 	//prepare & start the program to test
 	if programToTest != "" {
@@ -544,24 +549,17 @@ func runTestItem(
 			return nil, fmt.Errorf("failed to prepare the program to test (%q): %w", programToTest, err)
 		}
 
-		go func() {
-			var err error
-			defer func() {
-				e := recover()
-				if e != nil {
-					err = utils.ConvertPanicValueToError(e)
-					spawnerState.Logger.Err(err)
-				}
-			}()
+		testedProgramThread, err = SpawnLthreadWithState(LthreadWithStateSpawnArgs{
+			SpawnerState: spawnerState,
+			State:        programState,
+		})
 
-			treeWalkState := NewTreeWalkStateWithGlobal(programState)
-			_, err = TreeWalkEval(programState.Module.MainChunk.Node, treeWalkState)
-			if err != nil {
-				spawnerState.Logger.Err(err).Msgf("error in tested program")
-			}
-		}()
+		if err != nil {
+			return nil, fmt.Errorf("failed to spawn a lthread for the program to test (%q): %w", programToTest, err)
+		}
+
 		//else if the test item is a test suite with a program to test we parse it for later use by sub suites & test cases.
-	} else if suite, ok := testItem.(*TestSuite); ok && suite.programToTest != "" {
+	} else if isTestSuite && suite.programToTest != "" {
 		mod, err := ParseLocalModule(string(suite.programToTest), ModuleParsingConfig{
 			Context:    parentCtx,
 			Filesystem: testItemFS,
@@ -570,15 +568,24 @@ func runTestItem(
 			return nil, fmt.Errorf("failed to parse the program to test for caching (%q): %w", suite.programToTest, err)
 		}
 
-		programToTestModule = mod
+		testedProgramModule = mod
 	}
 
 	//spawn the lthread
 
+	globals := spawnerState.Globals.Entries()
+	var currentTest *CurrentTest
+	if !isTestSuite {
+		currentTest = &CurrentTest{
+			&TestedProgram{lthread: testedProgramThread},
+		}
+		globals[globalnames.CURRENT_TEST] = currentTest
+	}
+
 	lthread, err := SpawnLThread(LthreadSpawnArgs{
 		SpawnerState: spawnerState,
 		LthreadCtx:   lthreadCtx,
-		Globals:      spawnerState.Globals,
+		Globals:      GlobalVariablesFromMap(globals, maps.Keys(globals)),
 		Module:       testItemModule,
 		Manifest:     manifest,
 		Timeout:      timeout,
@@ -586,8 +593,17 @@ func runTestItem(
 		IsTestingEnabled:    spawnerState.IsTestingEnabled,
 		TestFilters:         spawnerState.TestFilters,
 		TestItem:            testItem,
-		ProgramToTestModule: programToTestModule,
+		ProgramToTestModule: testedProgramModule,
 	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	err = lthread.ResumeAsync()
+	if err != nil {
+		return nil, err
+	}
 
 	if err != nil {
 		return nil, fmt.Errorf("testing: %w", err)
@@ -771,13 +787,15 @@ func (p *TestedProgram) Cancel(*Context) {
 func (p *TestedProgram) GetGoMethod(name string) (*GoFunction, bool) {
 	switch name {
 	case "cancel":
-
+		return WrapGoMethod(p.Cancel), true
 	}
 	return nil, false
 }
 
 func (p *TestedProgram) Prop(ctx *Context, name string) Value {
 	switch name {
+	case "is_done":
+		return Bool(p.lthread.IsDone())
 	}
 	method, ok := p.GetGoMethod(name)
 	if !ok {

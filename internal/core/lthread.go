@@ -147,8 +147,33 @@ func SpawnLThread(args LthreadSpawnArgs) (*LThread, error) {
 	}
 	modState.OutputFieldsInitialized.Store(true)
 
+	return SpawnLthreadWithState(LthreadWithStateSpawnArgs{
+		Timeout:         args.Timeout,
+		SpawnerState:    args.SpawnerState,
+		State:           modState,
+		UseBytecode:     args.UseBytecode,
+		PauseAfterYield: args.PauseAfterYield,
+		StartPaused:     args.StartPaused,
+		Self:            args.Self,
+	})
+}
+
+type LthreadWithStateSpawnArgs struct {
+	Timeout         time.Duration
+	SpawnerState    *GlobalState
+	State           *GlobalState
+	UseBytecode     bool
+	PauseAfterYield bool
+	StartPaused     bool
+
+	Self Value
+}
+
+func SpawnLthreadWithState(args LthreadWithStateSpawnArgs) (*LThread, error) {
+	modState := args.State
+
 	lthread := &LThread{
-		module:           args.Module,
+		module:           modState.Module,
 		state:            modState,
 		wait_result:      make(chan struct{}, 1),
 		continueExecChan: make(chan struct{}, 1),
@@ -157,7 +182,6 @@ func SpawnLThread(args LthreadSpawnArgs) (*LThread, error) {
 			return !args.PauseAfterYield
 		},
 	}
-
 	modState.LThread = lthread
 
 	if args.Timeout != 0 {
@@ -255,7 +279,7 @@ func SpawnLThread(args LthreadSpawnArgs) (*LThread, error) {
 			res, err = TreeWalkEval(chunk, state)
 		}
 
-	}(modState, args.Module.MainChunk.Node, lthread, args.StartPaused, args.Self)
+	}(modState, modState.Module.MainChunk.Node, lthread, args.StartPaused, args.Self)
 
 	return lthread, nil
 }
@@ -368,9 +392,11 @@ func (lthread *LThread) ResumeAsync() error {
 		return nil
 	}
 
-	if len(lthread.continueExecChan) == 0 {
-		lthread.continueExecChan <- struct{}{}
+	select {
+	case lthread.continueExecChan <- struct{}{}:
+	default:
 	}
+
 	return nil
 }
 

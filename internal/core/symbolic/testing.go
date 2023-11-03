@@ -50,7 +50,7 @@ var (
 	ANY_TESTED_PROGRAM_OR_NIL     = NewMultivalue(ANY_TESTED_PROGRAM, Nil)
 
 	CURRENT_TEST_PROPNAMES   = []string{"program"}
-	TESTED_PROGRAM_PROPNAMES = []string{"cancel"}
+	TESTED_PROGRAM_PROPNAMES = []string{"is_done", "cancel"}
 )
 
 // A TestSuite represents a symbolic TestSuite.
@@ -280,6 +280,8 @@ func (t *TestedProgram) GetGoMethod(name string) (*GoFunction, bool) {
 
 func (t *TestedProgram) Prop(name string) Value {
 	switch name {
+	case "is_done":
+		return ANY_BOOL
 	}
 	method, ok := t.GetGoMethod(name)
 	if !ok {

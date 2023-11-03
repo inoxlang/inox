@@ -8846,6 +8846,156 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			assert.Len(t, state.TestSuiteResults[0].caseResults, 1)
 		})
 
+		t.Run("program specified by top level suite: testcase should have access to the program", func(t *testing.T) {
+
+			mod, fls, err := createModuleAndImports(`
+				manifest {}
+				
+				testsuite(#{
+					program: /program.ix
+				}) {
+					testcase {
+						check_program_not_nil(__test.program)
+					}
+				}
+
+			`, map[string]string{
+				"/program.ix": `
+					manifest {
+
+					}
+				`,
+			})
+
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			ctx := NewContext(ContextConfig{
+				Permissions: append(GetDefaultGlobalVarPermissions(),
+					LThreadPermission{permkind.Create},
+					FilesystemPermission{permkind.Read, PathPattern("/...")},
+					FilesystemPermission{permkind.Write, PathPattern("/...")},
+				),
+				Filesystem: fls,
+			})
+
+			var isNotNil atomic.Bool
+
+			state := NewGlobalState(ctx)
+			state.IsTestingEnabled = true
+			state.IsImportTestingEnabled = true
+			state.TestFilters = allTestsFilter
+			state.Project = &testProjectWithImage{
+				id: RandomProjectID("test"),
+				image: &testImage{
+					snapshot: &memFilesystemSnapshot{
+						fls: copyMemFs(fls),
+					},
+				},
+			}
+			state.Globals.Set("check_program_not_nil", WrapGoFunction(func(ctx *Context, v Value) {
+				program, ok := v.(*TestedProgram)
+				if !assert.True(t, ok) {
+					return
+				}
+				if !assert.NotNil(t, program.lthread) {
+					return
+				}
+				isNotNil.Store(true)
+			}))
+
+			defer state.Ctx.CancelGracefully()
+
+			res, err := Eval(mod, state, false)
+
+			assert.NoError(t, err)
+			assert.Equal(t, Nil, res)
+			assert.Empty(t, state.TestCaseResults)
+			if !assert.Len(t, state.TestSuiteResults, 1) {
+				return
+			}
+
+			assert.Len(t, state.TestSuiteResults[0].caseResults, 1)
+			assert.True(t, isNotNil.Load())
+		})
+
+		t.Run("program specified by top level suite: testcase should be able to cancel the program", func(t *testing.T) {
+
+			mod, fls, err := createModuleAndImports(`
+				manifest {}
+				
+				testsuite(#{
+					program: /program.ix
+				}) {
+					testcase {
+						__test.program.cancel()
+						sleep10ms()
+						check_program_is_done(__test.program)
+					}
+				}
+
+			`, map[string]string{
+				"/program.ix": `
+					manifest {
+
+					}
+				`,
+			})
+
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			ctx := NewContext(ContextConfig{
+				Permissions: append(GetDefaultGlobalVarPermissions(),
+					LThreadPermission{permkind.Create},
+					FilesystemPermission{permkind.Read, PathPattern("/...")},
+					FilesystemPermission{permkind.Write, PathPattern("/...")},
+				),
+				Filesystem: fls,
+			})
+
+			var isDone atomic.Bool
+
+			state := NewGlobalState(ctx)
+			state.IsTestingEnabled = true
+			state.IsImportTestingEnabled = true
+			state.TestFilters = allTestsFilter
+			state.Project = &testProjectWithImage{
+				id: RandomProjectID("test"),
+				image: &testImage{
+					snapshot: &memFilesystemSnapshot{
+						fls: copyMemFs(fls),
+					},
+				},
+			}
+			state.Globals.Set("sleep10ms", WrapGoFunction(func(ctx *Context) {
+				Sleep(ctx, Duration(10*time.Millisecond))
+			}))
+
+			state.Globals.Set("check_program_is_done", WrapGoFunction(func(ctx *Context, program *TestedProgram) {
+				if !assert.True(t, program.lthread.IsDone()) {
+					return
+				}
+				isDone.Store(true)
+			}))
+
+			defer state.Ctx.CancelGracefully()
+
+			res, err := Eval(mod, state, false)
+
+			assert.NoError(t, err)
+			assert.Equal(t, Nil, res)
+			assert.Empty(t, state.TestCaseResults)
+			if !assert.Len(t, state.TestSuiteResults, 1) {
+				return
+			}
+
+			assert.Len(t, state.TestSuiteResults[0].caseResults, 1)
+			assert.True(t, isDone.Load())
+		})
+
 		t.Run("program specified by top level suite: testcase and program should use the same filesystem", func(t *testing.T) {
 
 			mod, fls, err := createModuleAndImports(`

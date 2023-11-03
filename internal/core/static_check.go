@@ -1944,7 +1944,7 @@ switch_:
 				}
 			}
 		case *parse.TestCaseExpression:
-			globals[globalnames.CURRENT_TEST] = globalVarInfo{isConst: true}
+			globals[globalnames.CURRENT_TEST] = globalVarInfo{isConst: true, isStartConstant: true}
 
 			if p.IsStatement {
 				for name, info := range parentModuleGlobals {
