@@ -20,6 +20,10 @@ const (
 	TEST__MAX_FS_STORAGE_HINT = ByteCount(10_000_000)
 )
 
+var (
+	_ = Value((*CurrentTest)(nil))
+)
+
 // A TestItem is a TestSuite or a TestCase.
 type TestItem interface {
 	ItemName() (string, bool)
@@ -723,4 +727,69 @@ func (f TestFilter) IsTestEnabled(absoluteFilePath string, name string, statemen
 	}
 
 	return true, "the test is enabled because it matches the filter " + f.String()
+}
+
+type CurrentTest struct {
+	program *TestedProgram //can be nil
+}
+
+func (t *CurrentTest) GetGoMethod(name string) (*GoFunction, bool) {
+	return nil, false
+}
+
+func (t *CurrentTest) Prop(ctx *Context, name string) Value {
+	switch name {
+	case "program":
+		if t.program == nil {
+			return Nil
+		}
+		return t.program
+	}
+	method, ok := t.GetGoMethod(name)
+	if !ok {
+		panic(FormatErrPropertyDoesNotExist(name, t))
+	}
+	return method
+}
+
+func (*CurrentTest) SetProp(ctx *Context, name string, value Value) error {
+	return ErrCannotSetProp
+}
+
+func (*CurrentTest) PropertyNames(ctx *Context) []string {
+	return symbolic.CURRENT_TEST_PROPNAMES
+}
+
+type TestedProgram struct {
+	lthread *LThread
+}
+
+func (p *TestedProgram) Cancel(*Context) {
+	p.lthread.state.Ctx.CancelGracefully()
+}
+
+func (p *TestedProgram) GetGoMethod(name string) (*GoFunction, bool) {
+	switch name {
+	case "cancel":
+
+	}
+	return nil, false
+}
+
+func (p *TestedProgram) Prop(ctx *Context, name string) Value {
+	switch name {
+	}
+	method, ok := p.GetGoMethod(name)
+	if !ok {
+		panic(FormatErrPropertyDoesNotExist(name, p))
+	}
+	return method
+}
+
+func (*TestedProgram) SetProp(ctx *Context, name string, value Value) error {
+	return ErrCannotSetProp
+}
+
+func (*TestedProgram) PropertyNames(ctx *Context) []string {
+	return symbolic.TESTED_PROGRAM_PROPNAMES
 }

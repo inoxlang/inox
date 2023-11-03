@@ -43,6 +43,13 @@ var (
 			},
 		),
 	}, nil))
+
+	ANY_CURRENT_TEST          = &CurrentTest{testedProgram: ANY_TESTED_PROGRAM_OR_NIL}
+	ANY_TESTED_PROGRAM        = &TestedProgram{}
+	ANY_TESTED_PROGRAM_OR_NIL = NewMultivalue(ANY_TESTED_PROGRAM, Nil)
+
+	CURRENT_TEST_PROPNAMES   = []string{"program"}
+	TESTED_PROGRAM_PROPNAMES = []string{"cancel"}
 )
 
 // A TestSuite represents a symbolic TestSuite.
@@ -185,4 +192,109 @@ func checkTestItemMeta(node parse.Node, state *State, isTestCase bool) error {
 	}
 
 	return nil
+}
+
+// A CurrentTest represents a symbolic CurrentTest.
+type CurrentTest struct {
+	UnassignablePropsMixin
+	testedProgram Value
+}
+
+func (t *CurrentTest) Test(v Value, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
+	switch v.(type) {
+	case *CurrentTest:
+		return true
+	default:
+		return false
+	}
+}
+
+func (t *CurrentTest) WidestOfType() Value {
+	return ANY_CURRENT_TEST
+}
+
+func (t *CurrentTest) GetGoMethod(name string) (*GoFunction, bool) {
+	return nil, false
+}
+
+func (t *CurrentTest) Prop(name string) Value {
+	switch name {
+	case "program":
+		return t.testedProgram
+	}
+	method, ok := t.GetGoMethod(name)
+	if !ok {
+		panic(FormatErrPropertyDoesNotExist(name, t))
+	}
+	return method
+}
+
+func (*CurrentTest) PropertyNames() []string {
+	return CURRENT_TEST_PROPNAMES
+}
+
+func (t *CurrentTest) WaitResult(ctx *Context) (Value, *Error) {
+	return ANY, nil
+}
+
+func (t *CurrentTest) Cancel(*Context) {
+
+}
+
+func (t *CurrentTest) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("current-test")
+}
+
+// A TestedProgram represents a symbolic TestedProgram.
+type TestedProgram struct {
+	UnassignablePropsMixin
+}
+
+func (t *TestedProgram) Test(v Value, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
+	switch v.(type) {
+	case *TestedProgram:
+		return true
+	default:
+		return false
+	}
+}
+
+func (t *TestedProgram) WidestOfType() Value {
+	return ANY_TESTED_PROGRAM
+}
+
+func (t *TestedProgram) GetGoMethod(name string) (*GoFunction, bool) {
+	switch name {
+	case "cancel":
+		return WrapGoMethod(t.Cancel), true
+	}
+	return nil, false
+}
+
+func (t *TestedProgram) Prop(name string) Value {
+	switch name {
+	}
+	method, ok := t.GetGoMethod(name)
+	if !ok {
+		panic(FormatErrPropertyDoesNotExist(name, t))
+	}
+	return method
+}
+
+func (*TestedProgram) PropertyNames() []string {
+	return TESTED_PROGRAM_PROPNAMES
+}
+
+func (t *TestedProgram) Cancel(*Context) {
+
+}
+
+func (t *TestedProgram) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("tested-program")
 }

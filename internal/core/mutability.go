@@ -641,3 +641,11 @@ func (*StructPattern) IsMutable() bool {
 func (*FilesystemSnapshotIL) IsMutable() bool {
 	return false
 }
+
+func (*CurrentTest) IsMutable() bool {
+	return false
+}
+
+func (*TestedProgram) IsMutable() bool {
+	return false
+}

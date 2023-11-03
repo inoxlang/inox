@@ -2097,3 +2097,15 @@ func (s *FilesystemSnapshotIL) Equal(ctx *Context, other Value, alreadyCompared 
 	otherPatt, ok := other.(*FilesystemSnapshotIL)
 	return ok && s == otherPatt
 }
+
+func (t *CurrentTest) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	other, ok := other.(*CurrentTest)
+
+	return ok && t == other
+}
+
+func (p *TestedProgram) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	other, ok := other.(*TestedProgram)
+
+	return ok && p == other
+}

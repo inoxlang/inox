@@ -2012,6 +2012,14 @@ func (s *FilesystemSnapshotIL) PrettyPrint(w *bufio.Writer, config *PrettyPrintC
 	utils.Must(w.Write(utils.StringAsBytes("fs-snapshot")))
 }
 
+func (t *CurrentTest) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	InspectPrint(w, t)
+}
+
+func (p *TestedProgram) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	InspectPrint(w, p)
+}
+
 func InspectPrint[T any](w *bufio.Writer, v T) {
 	utils.Must(fmt.Fprintf(w, "%#v", v))
 }

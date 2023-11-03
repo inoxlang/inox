@@ -1637,3 +1637,11 @@ func (s *StructPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]sy
 func (s *FilesystemSnapshotIL) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return symbolic.ANY_FS_SNAPSHOT_IL, nil
 }
+
+func (t *CurrentTest) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
+	return symbolic.ANY_CURRENT_TEST, nil
+}
+
+func (p *TestedProgram) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
+	return symbolic.ANY_TESTED_PROGRAM, nil
+}
