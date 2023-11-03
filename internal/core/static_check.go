@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/globalnames"
 	"github.com/inoxlang/inox/internal/parse"
 	permkind "github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
@@ -1943,6 +1944,8 @@ switch_:
 				}
 			}
 		case *parse.TestCaseExpression:
+			globals[globalnames.CURRENT_TEST] = globalVarInfo{isConst: true}
+
 			if p.IsStatement {
 				for name, info := range parentModuleGlobals {
 					globals[name] = info
