@@ -20,6 +20,7 @@ Inox deeply integrates with its built-in database engine, testing engine and HTT
 - [Permission system](#permission-system)
   - [Required permissions](#required-permissions)
   - [Isolation of dependencies](#isolation-of-dependencies)
+  - [Process-Level Access Control](#process-level-access-control)
   - [Dropping permissions](#dropping-permissions)
 - [DoS Mitigation (WIP)](#dos-mitigation)
 - [Sensitive Data Protection](#sensitive-data-protection)
@@ -316,6 +317,11 @@ data = fs.read!(/etc/passwd)
 
 If the imported module asks more permissions than granted an error is thrown:\
 `import: some permissions in the imported module's manifest are not granted: [read path(s) /...] `
+
+### **Process-Level Access Control**
+
+In addition to the checks performed by the permission system, the **inox** binary uses [Landlock](https://landlock.io/) 
+to restrict file access for the whole process and its children.
 
 #### **Dropping Permissions**
 
