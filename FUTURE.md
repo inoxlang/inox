@@ -24,6 +24,8 @@
 
 - Reduction of memory usage
 - Faster runtime
+    - (short term) improve the bytecode interpreter
+    - (medium term) compile to WASM functions or modules written in a **subset** of Inoxlang
 - Security improvements
 - Stabilization of the default namespace APIs
 - Better code quality
