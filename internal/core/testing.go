@@ -533,12 +533,19 @@ func runTestItem(
 
 	var testedProgramModule *Module
 
-	//additional permissions for the test item, not the tested program.
-	//note for the future: adding additional permissions should be avoided
-	//because some permission types are specific to the execution context (filesystem, hosts ...).
 	var implicitlyAddedPermissions []Permission
+	implicitlyAddedPermissions = append(implicitlyAddedPermissions, programDatabasePermissions...)
 
-	implicitlyAddedPermissions = programDatabasePermissions
+	fsPerms := []Permission{
+		FilesystemPermission{Kind_: permkind.Read, Entity: PathPattern("/...")},
+		FilesystemPermission{Kind_: permkind.Write, Entity: PathPattern("/...")},
+		FilesystemPermission{Kind_: permkind.Delete, Entity: PathPattern("/...")},
+	}
+	for _, fsPerm := range fsPerms {
+		if parentCtx.HasPermission(fsPerm) {
+			implicitlyAddedPermissions = append(implicitlyAddedPermissions, fsPerm)
+		}
+	}
 
 	// if the test item is a test suite with a program to test we parse it for later use by sub suites & test cases.
 	if programToExecute == "" && isTestSuite && suite.testedProgramPath != "" {

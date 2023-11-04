@@ -8824,7 +8824,6 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				Permissions: append(GetDefaultGlobalVarPermissions(),
 					LThreadPermission{permkind.Create},
 					FilesystemPermission{permkind.Read, PathPattern("/...")},
-					FilesystemPermission{permkind.Write, PathPattern("/...")},
 				),
 				Filesystem: fls,
 			})
@@ -8885,7 +8884,6 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				Permissions: append(GetDefaultGlobalVarPermissions(),
 					LThreadPermission{permkind.Create},
 					FilesystemPermission{permkind.Read, PathPattern("/...")},
-					FilesystemPermission{permkind.Write, PathPattern("/...")},
 				),
 				Filesystem: fls,
 			})
@@ -8961,7 +8959,6 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				Permissions: append(GetDefaultGlobalVarPermissions(),
 					LThreadPermission{permkind.Create},
 					FilesystemPermission{permkind.Read, PathPattern("/...")},
-					FilesystemPermission{permkind.Write, PathPattern("/...")},
 				),
 				Filesystem: fls,
 			})
@@ -9014,21 +9011,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				testsuite({
 					program: /program.ix
 				}) {
-					manifest {
-						permissions: {
-							read: %/...
-							write: %/...
-						}
-					}
-
 					testcase {
-						manifest {
-							permissions: {
-								read: %/...
-								write: %/...
-							}
-						}
-
 						sleep10ms()
 						test_read_file /file_in_shared_fs.txt
 					}
@@ -9116,29 +9099,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				testsuite({
 					program: /program.ix
 				}) {
-					manifest {
-						permissions: {
-							read: %/...
-							write: %/...
-						}
-					}
-
 					testsuite {
-						manifest {
-							permissions: {
-								read: %/...
-								write: %/...
-							}
-						}
-	
 						testcase {
-							manifest {
-								permissions: {
-									read: %/...
-									write: %/...
-								}
-							}
-	
 							sleep10ms()
 							test_read_file /file_in_shared_fs.txt
 						}
