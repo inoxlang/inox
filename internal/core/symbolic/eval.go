@@ -4487,17 +4487,12 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 
 		return val, nil
 	case *parse.TestSuiteExpression:
-		hasProgram := false
-
 		if n.Meta != nil {
-			hasProg, err := checkTestItemMeta(n.Meta, state, false)
+			_, err := checkTestItemMeta(n.Meta, state, false)
 			if err != nil {
 				return nil, err
 			}
-			hasProgram = hasProg
 		}
-
-		_ = hasProgram
 
 		v, err := symbolicEval(n.Module, state)
 		if err != nil {
@@ -4514,6 +4509,9 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 		})
 		modState.Module = state.Module
 		modState.symbolicData = state.symbolicData
+		state.forEachGlobal(func(name string, info varSymbolicInfo) {
+			modState.setGlobal(name, info.value, GlobalConst)
+		})
 
 		//evaluate
 		_, err = symbolicEval(embeddedModule, modState)
@@ -4531,14 +4529,16 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 
 		return &TestSuite{}, nil
 	case *parse.TestCaseExpression:
-		hasProgram := false
+		var currentTest *CurrentTest
 
 		if n.Meta != nil {
-			hasProg, err := checkTestItemMeta(n.Meta, state, true)
+			test, err := checkTestItemMeta(n.Meta, state, true)
 			if err != nil {
 				return nil, err
 			}
-			hasProgram = hasProg
+			currentTest = test
+		} else {
+			currentTest = ANY_CURRENT_TEST
 		}
 
 		v, err := symbolicEval(n.Module, state)
@@ -4556,13 +4556,12 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 		})
 		modState.Module = state.Module
 		modState.symbolicData = state.symbolicData
+		state.forEachGlobal(func(name string, info varSymbolicInfo) {
+			modState.setGlobal(name, info.value, GlobalConst)
+		})
 
 		//add the __test global
-		test := ANY_CURRENT_TEST
-		if hasProgram {
-			test = ANY_CURRENT_TEST_WITH_PROGRAM
-		}
-		modState.setGlobal(globalnames.CURRENT_TEST, test, GlobalConst)
+		modState.setGlobal(globalnames.CURRENT_TEST, currentTest, GlobalConst)
 
 		//evaluate
 		_, err = symbolicEval(embeddedModule, modState)

@@ -110,11 +110,12 @@ const (
 	THIS_VAL_IS_AN_OPT_LIT_DID_YOU_FORGET_A_SPACE = "this value is an option literal, did you forget a space between '-' and the variable name ?"
 
 	//test suites & cases
-	META_VAL_OF_TEST_SUITE_SHOULD_EITHER_BE_A_STRING_OR_A_RECORD    = "the meta value of a test suite should either be a string or a record (e.g. #{name: \"my test suite\"})"
-	META_VAL_OF_TEST_CASE_SHOULD_EITHER_BE_A_STRING_OR_A_RECORD    = "the meta value of a test case should either be a string or a record (e.g. #{name: \"my test suite\"})"
+	META_VAL_OF_TEST_SUITE_SHOULD_EITHER_BE_A_STRING_OR_A_RECORD    = "the meta value of a test suite should either be a string or an object (e.g. {name: \"my test suite\"})"
+	META_VAL_OF_TEST_CASE_SHOULD_EITHER_BE_A_STRING_OR_A_RECORD     = "the meta value of a test case should either be a string or an object (e.g. {name: \"my test suite\"})"
 	PROGRAM_TESTING_ONLY_SUPPORTED_IN_PROJECTS                      = "program testing is only supported in projects"
 	MAIN_DB_SCHEMA_CAN_ONLY_BE_SPECIFIED_WHEN_TESTING_A_PROGRAM     = "main database schema can only be specified when testing a program"
-	MAIN_DB_MIGRATIONS_CAN_ONLY_BE_SPECIFIED_WHEN_TESTING_A_PROGRAM = "main database migeations can only be specified when testing a program"
+	MAIN_DB_MIGRATIONS_CAN_ONLY_BE_SPECIFIED_WHEN_TESTING_A_PROGRAM = "main database migrations can only be specified when testing a program"
+	MISSING_MAIN_DB_MIGRATIONS_PROPERTY                             = "missing property: '" + TEST_ITEM_META__MAIN_DB_MIGRATIONS + "'"
 )
 
 var (

@@ -24,7 +24,6 @@ var (
 	ANY_OBJ          = &Object{}
 	ANY_READONLY_OBJ = &Object{readonly: true}
 	ANY_REC          = &Record{}
-	ANY_NAMESPACE    = NewAnyNamespace()
 	ANY_DICT         = NewAnyDictionary()
 	ANY_KEYLIST      = NewAnyKeyList()
 

@@ -8304,14 +8304,14 @@ func TestSymbolicEval(t *testing.T) {
 				return %p
 			`)
 
-			_, ok := any(ANY_NAMESPACE).(Serializable)
+			_, ok := any(ANY_IMMUTABLE_NAMESPACE).(Serializable)
 			if !assert.False(t, ok) {
 				return
 			}
-			if !assert.False(t, ANY_NAMESPACE.IsMutable()) {
+			if !assert.False(t, ANY_IMMUTABLE_NAMESPACE.IsMutable()) {
 				return
 			}
-			state.ctx.AddNamedPattern("ns", &TypePattern{val: ANY_NAMESPACE}, false)
+			state.ctx.AddNamedPattern("ns", &TypePattern{val: ANY_IMMUTABLE_NAMESPACE}, false)
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
@@ -8348,14 +8348,14 @@ func TestSymbolicEval(t *testing.T) {
 				pattern p = #[ns]
 				return %p
 			`)
-			_, ok := any(ANY_NAMESPACE).(Serializable)
+			_, ok := any(ANY_IMMUTABLE_NAMESPACE).(Serializable)
 			if !assert.False(t, ok) {
 				return
 			}
-			if !assert.False(t, ANY_NAMESPACE.IsMutable()) {
+			if !assert.False(t, ANY_IMMUTABLE_NAMESPACE.IsMutable()) {
 				return
 			}
-			state.ctx.AddNamedPattern("ns", &TypePattern{val: ANY_NAMESPACE}, false)
+			state.ctx.AddNamedPattern("ns", &TypePattern{val: ANY_IMMUTABLE_NAMESPACE}, false)
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
@@ -8975,7 +8975,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("meta value should either be a string or a record: record", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`testsuite #{} {}`)
+			n, state := MakeTestStateAndChunk(`testsuite({}) {}`)
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
@@ -8997,7 +8997,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("name value in meta should be a string: string", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`testsuite #{name: "test"} {}`)
+			n, state := MakeTestStateAndChunk(`testsuite({name: "test"}) {}`)
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
@@ -9006,7 +9006,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("name value in meta should be a string: integer", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`testsuite #{name: 1} {}`)
+			n, state := MakeTestStateAndChunk(`testsuite({name: 1}) {}`)
 			intLit := parse.FindNode(n, (*parse.IntLiteral)(nil), nil)
 
 			res, err := symbolicEval(n, state)
@@ -9018,7 +9018,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("program value in meta should be an absolute non-dir path: relative non-dir path", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`testsuite #{program: ./mod.ix} {}`)
+			n, state := MakeTestStateAndChunk(`testsuite({program: ./mod.ix}) {}`)
 			pathLit := parse.FindNode(n, (*parse.RelativePathLiteral)(nil), nil)
 
 			fls := memfs.New()
@@ -9034,13 +9034,13 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("program value in meta should not be present if we are not in a project", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`testsuite #{program: /mod.ix} {}`)
-			recordLit := parse.FindNode(n, (*parse.RecordLiteral)(nil), nil)
+			n, state := MakeTestStateAndChunk(`testsuite({program: /mod.ix}) {}`)
+			objectLit := parse.FindNode(n.Statements[0], (*parse.ObjectLiteral)(nil), nil)
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(recordLit, state, PROGRAM_TESTING_ONLY_SUPPORTED_IN_PROJECTS),
+				makeSymbolicEvalError(objectLit, state, PROGRAM_TESTING_ONLY_SUPPORTED_IN_PROJECTS),
 			}, state.errors())
 			assert.Equal(t, &TestSuite{}, res)
 		})
@@ -9052,7 +9052,7 @@ func TestSymbolicEval(t *testing.T) {
 			`, map[string]string{
 				"/lib.ix": `
 					manifest {}
-					testsuite #{program: /program.ix} {}
+					testsuite({program: /program.ix}) {}
 				`,
 			})
 
@@ -9067,7 +9067,7 @@ func TestSymbolicEval(t *testing.T) {
 		t.Run("program value is allowed in meta if we are in a project", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				manifest {}; 
-				testsuite #{program: /program.ix} {}
+				testsuite({program: /program.ix}) {}
 			`)
 
 			fls := memfs.New()
@@ -9086,7 +9086,7 @@ func TestSymbolicEval(t *testing.T) {
 			`, map[string]string{
 				"/lib.ix": `
 					manifest {}
-					testsuite #{program: /program.ix} {}
+					testsuite({program: /program.ix}) {}
 				`,
 			})
 
@@ -9102,10 +9102,10 @@ func TestSymbolicEval(t *testing.T) {
 		t.Run("main-db-schema property in meta should not be present if the program property is not present", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				manifest {}; 
-				testsuite #{main-db-schema: %{}} {}
+				testsuite({main-db-schema: %{}}) {}
 			`)
 
-			recordLit := parse.FindNode(n, (*parse.RecordLiteral)(nil), nil)
+			objectLit := parse.FindNode(n.Statements[0], (*parse.ObjectLiteral)(nil), nil)
 
 			fls := memfs.New()
 			state.projectFilesystem = fls
@@ -9113,17 +9113,17 @@ func TestSymbolicEval(t *testing.T) {
 			_, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(recordLit, state, MAIN_DB_SCHEMA_CAN_ONLY_BE_SPECIFIED_WHEN_TESTING_A_PROGRAM),
+				makeSymbolicEvalError(objectLit, state, MAIN_DB_SCHEMA_CAN_ONLY_BE_SPECIFIED_WHEN_TESTING_A_PROGRAM),
 			}, state.errors())
 		})
 
 		t.Run("main-db-migrations property in meta should not be present if the program property is not present", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				manifest {}; 
-				testsuite #{main-db-migrations: #{}} {}
+				testsuite({main-db-migrations: {}}) {}
 			`)
 
-			recordLit := parse.FindNode(n, (*parse.RecordLiteral)(nil), func(n *parse.RecordLiteral, isUnique bool) bool {
+			objectLit := parse.FindNode(n.Statements[0], (*parse.ObjectLiteral)(nil), func(n *parse.ObjectLiteral, isUnique bool) bool {
 				return len(n.Properties) == 1
 			})
 
@@ -9133,17 +9133,17 @@ func TestSymbolicEval(t *testing.T) {
 			_, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(recordLit, state, MAIN_DB_MIGRATIONS_CAN_ONLY_BE_SPECIFIED_WHEN_TESTING_A_PROGRAM),
+				makeSymbolicEvalError(objectLit, state, MAIN_DB_MIGRATIONS_CAN_ONLY_BE_SPECIFIED_WHEN_TESTING_A_PROGRAM),
 			}, state.errors())
 		})
 
 		t.Run("main-db-migrations property in meta should not be present if the program property is not present", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				manifest {}; 
-				testsuite #{main-db-migrations: #{}} {}
+				testsuite({main-db-migrations: {}}) {}
 			`)
 
-			recordLit := parse.FindNode(n, (*parse.RecordLiteral)(nil), func(n *parse.RecordLiteral, isUnique bool) bool {
+			objectLit := parse.FindNode(n.Statements[0], (*parse.ObjectLiteral)(nil), func(n *parse.ObjectLiteral, isUnique bool) bool {
 				return len(n.Properties) == 1
 			})
 
@@ -9153,7 +9153,7 @@ func TestSymbolicEval(t *testing.T) {
 			_, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(recordLit, state, MAIN_DB_MIGRATIONS_CAN_ONLY_BE_SPECIFIED_WHEN_TESTING_A_PROGRAM),
+				makeSymbolicEvalError(objectLit, state, MAIN_DB_MIGRATIONS_CAN_ONLY_BE_SPECIFIED_WHEN_TESTING_A_PROGRAM),
 			}, state.errors())
 		})
 
@@ -9193,7 +9193,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("meta value should either be a string or a record: record", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`testcase #{} {}`)
+			n, state := MakeTestStateAndChunk(`testcase({}) {}`)
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
@@ -9215,7 +9215,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("name value in meta should be a string: string", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`testcase #{name: "my test"} {}`)
+			n, state := MakeTestStateAndChunk(`testcase({name: "my test"}) {}`)
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
@@ -9224,7 +9224,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("name value in meta should be a string: integer", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`testcase #{name: 1} {}`)
+			n, state := MakeTestStateAndChunk(`testcase({name: 1}) {}`)
 			intLit := parse.FindNode(n, (*parse.IntLiteral)(nil), nil)
 
 			res, err := symbolicEval(n, state)
@@ -9236,7 +9236,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("pass-fs-copy value in meta should be a boolean: boolean", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`testcase #{pass-live-fs-copy-to-subtests: true} {}`)
+			n, state := MakeTestStateAndChunk(`testcase({pass-live-fs-copy-to-subtests: true}) {}`)
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
@@ -9245,7 +9245,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("pass-fs-copy value in meta should be a string: integer", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`testcase #{pass-live-fs-copy-to-subtests: 1} {}`)
+			n, state := MakeTestStateAndChunk(`testcase({pass-live-fs-copy-to-subtests: 1}) {}`)
 			intLit := parse.FindNode(n, (*parse.IntLiteral)(nil), nil)
 
 			res, err := symbolicEval(n, state)
@@ -9257,7 +9257,7 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("program value in meta should be an absolute non-dir path: relative non-dir path", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`testcase #{program: ./mod.ix} {}`)
+			n, state := MakeTestStateAndChunk(`testcase({program: ./mod.ix}) {}`)
 			pathLit := parse.FindNode(n, (*parse.RelativePathLiteral)(nil), nil)
 
 			fls := memfs.New()
@@ -9273,13 +9273,13 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("program value in meta should not be present if we are not in a project", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`testcase #{program: /mod.ix} {}`)
-			recordLit := parse.FindNode(n, (*parse.RecordLiteral)(nil), nil)
+			n, state := MakeTestStateAndChunk(`testcase({program: /mod.ix}) {}`)
+			objectLit := parse.FindNode(n.Statements[0], (*parse.ObjectLiteral)(nil), nil)
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(recordLit, state, PROGRAM_TESTING_ONLY_SUPPORTED_IN_PROJECTS),
+				makeSymbolicEvalError(objectLit, state, PROGRAM_TESTING_ONLY_SUPPORTED_IN_PROJECTS),
 			}, state.errors())
 			assert.Equal(t, &TestCase{}, res)
 		})
@@ -9310,6 +9310,49 @@ func TestSymbolicEval(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
 			assert.Equal(t, &TestCase{}, res)
+		})
+
+		t.Run("if the main-db-schema and main-db-migrations properties are present __test.program.dbs.main should be defined", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				testcase({
+					program: /program.ix
+					main-db-schema: %{
+						user: {name: str}
+					}
+					main-db-migrations: {
+						inclusions: :{
+							%/user: {name: "foo"}
+						}
+					}
+				}){
+					check_databases(__test.program.dbs)
+				}
+			`)
+
+			fls := memfs.New()
+			util.WriteFile(fls, "/program.ix", []byte("manifest {}"), 0600)
+			state.projectFilesystem = fls
+
+			called := false
+			state.setGlobal("check_databases", WrapGoFunction(func(_ *Context, ns *Namespace) {
+				called = true
+				if !assert.Equal(t, []string{"main"}, ns.PropertyNames()) {
+					return
+				}
+				value := ns.Prop("main")
+				if !assert.IsType(t, (*DatabaseIL)(nil), value) {
+					return
+				}
+
+				db := value.(*DatabaseIL)
+				assert.True(t, HasRequiredProperty(db, "user"))
+			}), GlobalConst)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, &TestCase{}, res)
+			assert.True(t, called)
 		})
 
 	})

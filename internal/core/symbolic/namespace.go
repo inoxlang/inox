@@ -10,31 +10,51 @@ import (
 	"golang.org/x/exp/maps"
 )
 
+var (
+	ANY_NAMESPACE                 = &Namespace{}
+	ANY_MUTABLE_ENTRIES_NAMESPACE = &Namespace{
+		checkMutability: true,
+		mutableEntries:  true,
+	}
+	ANY_IMMUTABLE_NAMESPACE = &Namespace{
+		checkMutability: true,
+		mutableEntries:  false,
+	}
+)
+
 // A Namespace represents a symbolic Namespace.
 type Namespace struct {
 	UnassignablePropsMixin
-	entries        map[string]Value //if nil, matches any Namespace
-	mutableEntries bool
-}
+	entries map[string]Value //if nil, matches any Namespace
 
-func NewAnyNamespace() *Namespace {
-	return &Namespace{}
+	mutableEntries  bool
+	checkMutability bool
 }
 
 func NewEmptyNamespace() *Namespace {
 	return &Namespace{entries: map[string]Value{}}
 }
 
+func NewEmptyMutableEntriesNamespace() *Namespace {
+	return &Namespace{
+		entries:         map[string]Value{},
+		mutableEntries:  true,
+		checkMutability: true,
+	}
+}
+
 func NewNamespace(entries map[string]Value) *Namespace {
 	return &Namespace{
-		entries: entries,
+		entries:         entries,
+		checkMutability: true,
 	}
 }
 
 func NewMutableEntriesNamespace(entries map[string]Value) *Namespace {
 	return &Namespace{
-		entries:        entries,
-		mutableEntries: true,
+		entries:         entries,
+		mutableEntries:  true,
+		checkMutability: true,
 	}
 }
 
@@ -44,6 +64,10 @@ func (ns *Namespace) Test(v Value, state RecTestCallState) bool {
 
 	otherNs, ok := v.(*Namespace)
 	if !ok {
+		return false
+	}
+
+	if ns.checkMutability && ns.mutableEntries != otherNs.mutableEntries {
 		return false
 	}
 
@@ -132,5 +156,5 @@ func (ns *Namespace) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrint
 }
 
 func (ns *Namespace) WidestOfType() Value {
-	return ANY_REC
+	return ANY_NAMESPACE
 }

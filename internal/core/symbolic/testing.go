@@ -17,7 +17,7 @@ const (
 )
 
 var (
-	TEST_ITEM__EXPECTED_META_VALUE = NewMultivalue(ANY_STR_LIKE, NewInexactRecord(map[string]Serializable{
+	TEST_ITEM__EXPECTED_META_VALUE = NewMultivalue(ANY_STR_LIKE, NewExactObject(map[string]Serializable{
 		TEST_ITEM_META__NAME_PROPNAME: ANY_STR_LIKE,
 
 		//filesystem
@@ -27,7 +27,7 @@ var (
 		//program testing
 		TEST_ITEM_META__PROGRAM_PROPNAME: ANY_ABS_NON_DIR_PATH,
 		TEST_ITEM_META__MAIN_DB_SCHEMA:   ANY_OBJECT_PATTERN,
-		TEST_ITEM_META__MAIN_DB_MIGRATIONS: NewInexactRecord(
+		TEST_ITEM_META__MAIN_DB_MIGRATIONS: NewInexactObject(
 			map[string]Serializable{
 				DB_MIGRATION__DELETIONS_PROP_NAME:       ANY_DICT,
 				DB_MIGRATION__INCLUSIONS_PROP_NAME:      ANY_DICT,
@@ -41,16 +41,18 @@ var (
 				DB_MIGRATION__REPLACEMENTS_PROP_NAME:    {},
 				DB_MIGRATION__INITIALIZATIONS_PROP_NAME: {},
 			},
+			nil,
 		),
-	}, nil))
+	}, nil, nil))
+
+	ANY_TESTED_PROGRAM_OR_NIL = NewMultivalue(ANY_TESTED_PROGRAM, Nil)
+	ANY_TESTED_PROGRAM        = &TestedProgram{databases: ANY_MUTABLE_ENTRIES_NAMESPACE}
 
 	ANY_CURRENT_TEST              = &CurrentTest{testedProgram: ANY_TESTED_PROGRAM_OR_NIL}
 	ANY_CURRENT_TEST_WITH_PROGRAM = &CurrentTest{testedProgram: ANY_TESTED_PROGRAM}
-	ANY_TESTED_PROGRAM            = &TestedProgram{}
-	ANY_TESTED_PROGRAM_OR_NIL     = NewMultivalue(ANY_TESTED_PROGRAM, Nil)
 
 	CURRENT_TEST_PROPNAMES   = []string{"program"}
-	TESTED_PROGRAM_PROPNAMES = []string{"is_done", "cancel"}
+	TESTED_PROGRAM_PROPNAMES = []string{"is_done", "cancel", "dbs"}
 )
 
 // A TestSuite represents a symbolic TestSuite.
@@ -146,38 +148,71 @@ func (s *TestCase) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintCo
 	w.WriteName("test-case")
 }
 
-func checkTestItemMeta(node parse.Node, state *State, isTestCase bool) (hasProgram bool, _ error) {
+// checkTestItemMeta evaluates & checks the meta value of a test item, it returns a *CurrentTest for test cases.
+func checkTestItemMeta(node parse.Node, state *State, isTestCase bool) (currentTest *CurrentTest, _ error) {
 	meta, err := _symbolicEval(node, state, evalOptions{
 		expectedValue: TEST_ITEM__EXPECTED_META_VALUE,
 	})
 	if err != nil {
-		return false, err
+		return nil, err
 	}
+
+	if isTestCase {
+		currentTest = ANY_CURRENT_TEST
+	}
+
 	switch m := meta.(type) {
-	case *Record:
+	case *Object:
+		hasMainDatabaseSchema := m.hasProperty(TEST_ITEM_META__MAIN_DB_SCHEMA)
+		hasMainDatabaseMigrations := m.hasProperty(TEST_ITEM_META__MAIN_DB_MIGRATIONS)
+
 		if !m.hasProperty(TEST_ITEM_META__PROGRAM_PROPNAME) {
-			if m.hasProperty(TEST_ITEM_META__MAIN_DB_SCHEMA) {
+			if hasMainDatabaseSchema {
 				state.addError(makeSymbolicEvalError(node, state, MAIN_DB_SCHEMA_CAN_ONLY_BE_SPECIFIED_WHEN_TESTING_A_PROGRAM))
 			}
-			if m.hasProperty(TEST_ITEM_META__MAIN_DB_MIGRATIONS) {
+			if hasMainDatabaseMigrations {
 				state.addError(makeSymbolicEvalError(node, state, MAIN_DB_MIGRATIONS_CAN_ONLY_BE_SPECIFIED_WHEN_TESTING_A_PROGRAM))
 			}
-			return false, nil
+			return
 		}
+		//else if the test item tests a program
+
 		if state.projectFilesystem == nil {
 			state.addError(makeSymbolicEvalError(node, state, PROGRAM_TESTING_ONLY_SUPPORTED_IN_PROJECTS))
-			return true, nil
+			return
+		}
+
+		currentTest = &CurrentTest{
+			testedProgram: &TestedProgram{
+				databases: ANY_NAMESPACE,
+			},
+		}
+
+		if hasMainDatabaseSchema {
+			if !hasMainDatabaseMigrations {
+				state.addError(makeSymbolicEvalError(node, state, MISSING_MAIN_DB_MIGRATIONS_PROPERTY))
+			}
+
+			schema, ok := m.Prop(TEST_ITEM_META__MAIN_DB_SCHEMA).(*ObjectPattern)
+
+			if ok {
+				currentTest.testedProgram = &TestedProgram{
+					databases: NewMutableEntriesNamespace(map[string]Value{
+						"main": NewDatabaseIL(schema, false),
+					}),
+				}
+			}
 		}
 
 		program, ok := m.Prop(TEST_ITEM_META__PROGRAM_PROPNAME).(*Path)
 		if !ok || program.pattern == nil || program.pattern.absoluteness != AbsolutePath || program.pattern.dirConstraint != DirPath {
-			return true, nil
+			return
 		}
 
 		if program.hasValue {
 			info, err := state.projectFilesystem.Stat(program.value)
 			if err != nil {
-				return true, fmt.Errorf("failed to get info of file %s: %w", program.value, err)
+				return nil, fmt.Errorf("failed to get info of file %s: %w", program.value, err)
 			}
 			if !info.Mode().IsRegular() {
 				state.addError(makeSymbolicEvalError(node, state, fmtNotRegularFile(program.value)))
@@ -192,7 +227,7 @@ func checkTestItemMeta(node parse.Node, state *State, isTestCase bool) (hasProgr
 		state.addError(makeSymbolicEvalError(node, state, msg))
 	}
 
-	return false, nil
+	return
 }
 
 // A CurrentTest represents a symbolic CurrentTest.
@@ -237,14 +272,6 @@ func (*CurrentTest) PropertyNames() []string {
 	return CURRENT_TEST_PROPNAMES
 }
 
-func (t *CurrentTest) WaitResult(ctx *Context) (Value, *Error) {
-	return ANY, nil
-}
-
-func (t *CurrentTest) Cancel(*Context) {
-
-}
-
 func (t *CurrentTest) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("current-test")
 }
@@ -252,6 +279,7 @@ func (t *CurrentTest) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrin
 // A TestedProgram represents a symbolic TestedProgram.
 type TestedProgram struct {
 	UnassignablePropsMixin
+	databases *Namespace
 }
 
 func (t *TestedProgram) Test(v Value, state RecTestCallState) bool {
@@ -282,6 +310,8 @@ func (t *TestedProgram) Prop(name string) Value {
 	switch name {
 	case "is_done":
 		return ANY_BOOL
+	case "dbs":
+		return t.databases
 	}
 	method, ok := t.GetGoMethod(name)
 	if !ok {
