@@ -643,9 +643,9 @@ func (*FilesystemSnapshotIL) IsMutable() bool {
 }
 
 func (*CurrentTest) IsMutable() bool {
-	return false
+	return true
 }
 
 func (*TestedProgram) IsMutable() bool {
-	return false
+	return true
 }

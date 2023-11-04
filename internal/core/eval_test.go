@@ -7363,7 +7363,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				fn f(){
 					return "my test suite"
 				}
-				return testsuite #{name: f()} {}
+				return testsuite({name: f()}) {}
 			`
 
 			state := NewGlobalState(NewDefaultTestContext())
@@ -7377,7 +7377,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			if !assert.NotNil(t, Nil, res.(*TestSuite).meta) {
 				return
 			}
-			assert.Equal(t, "my test suite", res.(*TestSuite).nameFromMeta)
+			assert.Equal(t, "my test suite", res.(*TestSuite).nameFrom)
 		})
 
 		t.Run("meta: name + fs", func(t *testing.T) {
@@ -7385,7 +7385,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				fn f(){
 					return "my test suite"
 				}
-				return testsuite #{name: f(), fs: snapshot} {}
+				return testsuite({name: f(), fs: snapshot}) {}
 			`
 
 			state := NewGlobalState(NewDefaultTestContext())
@@ -7404,8 +7404,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			if !assert.NotNil(t, Nil, res.(*TestSuite).meta) {
 				return
 			}
-			assert.Equal(t, "my test suite", res.(*TestSuite).nameFromMeta)
-			assert.Equal(t, snapshot, res.(*TestSuite).filesystemSnapshotFromMeta)
+			assert.Equal(t, "my test suite", res.(*TestSuite).nameFrom)
+			assert.Equal(t, snapshot, res.(*TestSuite).filesystemSnapshot)
 		})
 
 		t.Run("the source of the main chunk of a testsuite created at the top level of an included file "+
@@ -7707,7 +7707,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					return "my test suite"
 				}
 
-				testsuite #{name: f()} {
+				testsuite({name: f()}) {
 					
 				}
 
@@ -8021,7 +8021,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		t.Run("if a fs snapshot is specified the filesystem should be created from it", func(t *testing.T) {
 			src := makeSourceFile(`
-				testsuite #{fs: snapshot} {
+				testsuite({fs: snapshot}) {
 					test_read_file(/file.txt)
 					test_read_file(/not-existing.txt)
 				}
@@ -8525,7 +8525,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		t.Run("if a fs snapshot is specified the filesystem of test cases should be created from it", func(t *testing.T) {
 			src := makeSourceFile(`
-				testsuite #{fs: snapshot} {
+				testsuite({fs: snapshot}) {
 					# modifications done by the test suite should have no impact.
 					remove_file /file.txt
 
@@ -8578,10 +8578,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("if a fs snapshot is specified and pass-live-fs-snapshot-to-subtests: true then"+
 			"the filesystem of test cases should be created from the live filesystem of the suite", func(t *testing.T) {
 			src := makeSourceFile(`
-				testsuite #{
+				testsuite({
 					fs: snapshot
 					pass-live-fs-copy-to-subtests: true
-				} {
+				}) {
 					# modifications done by the test suite should have an impact.
 					remove_file /file1.txt
 
@@ -8729,12 +8729,20 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			return state, nil
 		}
 
+		RegisterOpenDbFn("ldb", func(ctx *Context, config DbOpenConfiguration) (Database, error) {
+			return &dummyDatabase{
+				resource:         config.Resource,
+				schemaUpdated:    false,
+				topLevelEntities: map[string]Serializable{},
+			}, nil
+		})
+
 		t.Run("program specified by top level suite", func(t *testing.T) {
 
 			mod, fls, err := createModuleAndImports(`
 				manifest {}
 				
-				testsuite(#{
+				testsuite({
 					program: /program.ix
 				}) {
 
@@ -8792,7 +8800,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			mod, fls, err := createModuleAndImports(`
 				manifest {}
 				
-				testsuite(#{
+				testsuite({
 					program: /program.ix
 				}) {
 					testcase {}
@@ -8851,7 +8859,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			mod, fls, err := createModuleAndImports(`
 				manifest {}
 				
-				testsuite(#{
+				testsuite({
 					program: /program.ix
 				}) {
 					testcase {
@@ -8925,7 +8933,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			mod, fls, err := createModuleAndImports(`
 				manifest {}
 				
-				testsuite(#{
+				testsuite({
 					program: /program.ix
 				}) {
 					testcase {
@@ -9001,7 +9009,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			mod, fls, err := createModuleAndImports(`
 				manifest {}
 
-				testsuite(#{
+				testsuite({
 					program: /program.ix
 				}) {
 					manifest {
@@ -9103,7 +9111,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			mod, fls, err := createModuleAndImports(`
 				manifest {}
 
-				testsuite(#{
+				testsuite({
 					program: /program.ix
 				}) {
 					manifest {
@@ -9209,6 +9217,133 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 			assert.Len(t, state.TestSuiteResults[0].subSuiteResults[0].caseResults, 1)
+		})
+
+		t.Run("main db schema and migrations specified by top level suite: main database should be initialized", func(t *testing.T) {
+
+			mod, fls, err := createModuleAndImports(`
+				manifest {}
+				
+				testsuite({
+					program: /program.ix
+					main-db-schema: %{
+						user: {
+							name: "foo"
+						}
+					}
+					main-db-migrations: {
+						inclusions: :{
+							%/user: {
+								name: "foo"
+							}
+						}
+					}
+				}) {
+					manifest {
+						permissions: {
+							read: ldb://main
+						}
+					}
+
+					testcase {
+						manifest {
+							permissions: {
+								read: ldb://main
+							}
+						}
+						check_databases(__test.program.dbs)
+					}
+				}
+
+			`, map[string]string{
+				"/program.ix": `
+					manifest {
+						databases: {
+							main: {
+								resource: ldb://main
+								resolution-data: /databases/main/
+							}
+						}
+					}
+				`,
+			})
+
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			ctx := NewContext(ContextConfig{
+				Permissions: append(GetDefaultGlobalVarPermissions(),
+					LThreadPermission{permkind.Create},
+					FilesystemPermission{permkind.Read, PathPattern("/...")},
+					FilesystemPermission{permkind.Write, PathPattern("/...")},
+					DatabasePermission{permkind.Read, Host("ldb://main")},
+				),
+				Filesystem: fls,
+			})
+
+			var isProperlyInitialized atomic.Bool
+
+			state := NewGlobalState(ctx)
+			state.IsTestingEnabled = true
+			state.IsImportTestingEnabled = true
+			state.TestFilters = allTestsFilter
+			state.Project = &testProjectWithImage{
+				id: RandomProjectID("test"),
+				image: &testImage{
+					snapshot: &memFilesystemSnapshot{
+						fls: copyMemFs(fls),
+					},
+				},
+			}
+			state.Globals.Set("check_databases", WrapGoFunction(func(ctx *Context, ns *Namespace) {
+				if !assert.Contains(t, ns.PropertyNames(ctx), "main") {
+					return
+				}
+
+				database := ns.Prop(ctx, "main").(*DatabaseIL)
+
+				if !assert.True(t, database.TopLevelEntitiesLoaded()) {
+					return
+				}
+
+				user := database.Prop(ctx, "user").(*Object)
+
+				if !assert.Contains(t, user.PropertyNames(ctx), "name") {
+					return
+				}
+
+				assert.Equal(t, Str("foo"), user.Prop(ctx, "name"))
+
+				isProperlyInitialized.Store(true)
+			}))
+			state.Ctx.AddNamedPattern("str", STRLIKE_PATTERN)
+
+			defer state.Ctx.CancelGracefully()
+
+			res, err := Eval(mod, state, false)
+
+			assert.NoError(t, err)
+			assert.Equal(t, Nil, res)
+			assert.Empty(t, state.TestCaseResults)
+			if !assert.Len(t, state.TestSuiteResults, 1) {
+				return
+			}
+
+			if !assert.Len(t, state.TestSuiteResults[0].caseResults, 1) {
+				return
+			}
+			result := state.TestSuiteResults[0].caseResults[0]
+			if !assert.NoError(t, result.error) {
+				return
+			}
+			assert.True(t, isProperlyInitialized.Load())
+		})
+
+		t.Run("main db schema and migrations specified by top level suite: tested program should be allowed to update the data", func(t *testing.T) {
+			//TODO
+
+			//this test requires the definiting of a top-level collection or container in the schema
 		})
 	})
 

@@ -15,7 +15,6 @@ import (
 	parse "github.com/inoxlang/inox/internal/parse"
 	permkind "github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
-	"golang.org/x/exp/maps"
 )
 
 const (
@@ -38,11 +37,13 @@ type TestItem interface {
 // A TestSuite represents a test suite, TestSuite implements Value.
 type TestSuite struct {
 	meta                             Value
-	nameFromMeta                     string             //can be empty
-	filesystemSnapshotFromMeta       FilesystemSnapshot //can be nil
+	nameFrom                         string             //can be empty
+	filesystemSnapshot               FilesystemSnapshot //can be nil
 	passLiveFilesystemCopyToSubTests bool
-	programToTest                    Path    //can be empty
-	programProject                   Project //set if .programToTest is set
+	programToTest                    Path           //can be empty
+	programProject                   Project        //set if .programToTest is set
+	mainDatabaseSchema               *ObjectPattern //can be nil
+	mainDatabaseMigrations           *Object        //can be nil
 
 	node         *parse.TestSuiteExpression
 	module       *Module // module executed when running the test suite
@@ -85,30 +86,33 @@ func NewTestSuite(input TestSuiteCreationInput) (*TestSuite, error) {
 		//TODO: bytecode ?
 	}
 
-	nameFromMeta := ""
-	passLiveFsCopyToSubTests := false
-	var snapshotFromMeta FilesystemSnapshot
-	var programToTest Path
-	var programProject Project
+	suite := &TestSuite{
+		meta: meta,
+		node: input.Node,
+
+		module:       routineMod,
+		parentModule: parentState.Module,
+		parentChunk:  parentChunk,
+	}
 
 	switch m := meta.(type) {
 	case StringLike:
-		nameFromMeta = m.GetOrBuildString()
-	case *Record:
-		err := m.ForEachEntry(func(k string, v Value) error {
+		suite.nameFrom = m.GetOrBuildString()
+	case *Object:
+		err := m.ForEachEntry(func(k string, v Serializable) error {
 			switch k {
 			case symbolic.TEST_ITEM_META__NAME_PROPNAME:
 				strLike, ok := v.(StringLike)
 				if ok {
-					nameFromMeta = strLike.GetOrBuildString()
+					suite.nameFrom = strLike.GetOrBuildString()
 				}
 			case symbolic.TEST_ITEM_META__FS_PROPNAME:
 				snapshot, ok := v.(*FilesystemSnapshotIL)
 				if ok {
-					snapshotFromMeta = snapshot.underlying
+					suite.filesystemSnapshot = snapshot.underlying
 				}
 			case symbolic.TEST_ITEM_META__PASS_LIVE_FS_COPY:
-				passLiveFsCopyToSubTests = bool(v.(Bool))
+				suite.passLiveFilesystemCopyToSubTests = bool(v.(Bool))
 			case symbolic.TEST_ITEM_META__PROGRAM_PROPNAME:
 				if parentState.Project == nil {
 					return errors.New("program testing is only supported in projects")
@@ -117,9 +121,13 @@ func NewTestSuite(input TestSuiteCreationInput) (*TestSuite, error) {
 				if err != nil {
 					return err
 				}
-				snapshotFromMeta = baseImg.FilesystemSnapshot()
-				programToTest = v.(Path)
-				programProject = parentState.Project
+				suite.filesystemSnapshot = baseImg.FilesystemSnapshot()
+				suite.programToTest = v.(Path)
+				suite.programProject = parentState.Project
+			case symbolic.TEST_ITEM_META__MAIN_DB_SCHEMA:
+				suite.mainDatabaseSchema = v.(*ObjectPattern)
+			case symbolic.TEST_ITEM_META__MAIN_DB_MIGRATIONS:
+				suite.mainDatabaseMigrations = v.(*Object)
 			}
 			return nil
 		})
@@ -131,27 +139,17 @@ func NewTestSuite(input TestSuiteCreationInput) (*TestSuite, error) {
 		panic(ErrUnreachable)
 	}
 
-	if programToTest == "" {
+	if suite.programToTest == "" {
 		//inherit program to test from parent test suite
 		if parentTestSuite, ok := input.ParentState.TestItem.(*TestSuite); ok && parentTestSuite.programToTest != "" {
-			programToTest = parentTestSuite.programToTest
-			programProject = parentTestSuite.programProject
+			suite.programToTest = parentTestSuite.programToTest
+			suite.programProject = parentTestSuite.programProject
+			suite.mainDatabaseSchema = parentTestSuite.mainDatabaseSchema
+			suite.mainDatabaseMigrations = parentTestSuite.mainDatabaseMigrations
 		}
 	}
 
-	return &TestSuite{
-		meta:                             meta,
-		nameFromMeta:                     nameFromMeta,
-		filesystemSnapshotFromMeta:       snapshotFromMeta,
-		passLiveFilesystemCopyToSubTests: passLiveFsCopyToSubTests,
-		programToTest:                    programToTest,
-		programProject:                   programProject,
-		node:                             input.Node,
-
-		module:       routineMod,
-		parentModule: parentState.Module,
-		parentChunk:  parentChunk,
-	}, nil
+	return suite, nil
 }
 
 // Module returns the module that contains the test.
@@ -165,10 +163,10 @@ func (s *TestSuite) ParentChunk() *parse.ParsedChunk {
 }
 
 func (s *TestSuite) ItemName() (string, bool) {
-	if s.nameFromMeta == "" {
+	if s.nameFrom == "" {
 		return "", false
 	}
-	return s.nameFromMeta, true
+	return s.nameFrom, true
 }
 
 func (s *TestSuite) Statement() parse.Node {
@@ -176,8 +174,8 @@ func (s *TestSuite) Statement() parse.Node {
 }
 
 func (s *TestSuite) FilesystemSnapshot() (FilesystemSnapshot, bool) {
-	if s.filesystemSnapshotFromMeta != nil {
-		return s.filesystemSnapshotFromMeta, true
+	if s.filesystemSnapshot != nil {
+		return s.filesystemSnapshot, true
 	}
 	return nil, false
 }
@@ -214,7 +212,7 @@ func (s *TestSuite) Run(ctx *Context, options ...Option) (*LThread, error) {
 		return nil, fmt.Errorf("testing: following permission is required for running tests: %w", err)
 	}
 
-	return runTestItem(ctx, spawnerState, s, s.module, fls, timeout, parentTestSuite, "", nil, nil)
+	return runTestItem(ctx, spawnerState, s, s.module, fls, timeout, parentTestSuite, "", nil, nil, nil, nil)
 }
 
 func (s *TestSuite) GetGoMethod(name string) (*GoFunction, bool) {
@@ -244,11 +242,13 @@ func (*TestSuite) PropertyNames(ctx *Context) []string {
 // A TestCase represents a test case, TestCase implements Value.
 type TestCase struct {
 	meta                             Value
-	nameFromMeta                     string             //can be empty
-	filesystemSnapshotFromMeta       FilesystemSnapshot //can be nil
+	name                             string             //can be empty
+	filesystemSnapshot               FilesystemSnapshot //can be nil
 	passLiveFilesystemCopyToSubTests bool
-	programToTest                    Path    //can be empty
-	programProject                   Project //set if .programToTest is set
+	programToTest                    Path           //can be empty
+	programProject                   Project        //set if .programToTest is set
+	mainDatabaseSchema               *ObjectPattern //can be nil
+	mainDatabaseMigrations           *Object        //can be nil
 
 	node *parse.TestCaseExpression
 
@@ -302,31 +302,38 @@ func NewTestCase(input TestCaseCreationInput) (*TestCase, error) {
 		//TODO: bytecode ?
 	}
 
+	testCase := &TestCase{
+		meta: meta,
+		node: input.Node,
+
+		module:       routineMod,
+		parentModule: parentState.Module,
+		parentChunk:  parentChunk,
+
+		positionStack:     positionStack,
+		formattedPosition: formattedPosition,
+	}
+
 	//get name of test case
-	nameFromMeta := ""
-	passLiveFsCopyToSubTests := false
-	var snapshotFromMeta FilesystemSnapshot
-	var programToTest Path
-	var programProject Project
 
 	switch m := meta.(type) {
 	case StringLike:
-		nameFromMeta = m.GetOrBuildString()
-	case *Record:
-		m.ForEachEntry(func(k string, v Value) error {
+		testCase.name = m.GetOrBuildString()
+	case *Object:
+		m.ForEachEntry(func(k string, v Serializable) error {
 			switch k {
 			case symbolic.TEST_ITEM_META__NAME_PROPNAME:
 				strLike, ok := v.(StringLike)
 				if ok {
-					nameFromMeta = strLike.GetOrBuildString()
+					testCase.name = strLike.GetOrBuildString()
 				}
 			case symbolic.TEST_ITEM_META__FS_PROPNAME:
 				snapshot, ok := v.(*FilesystemSnapshotIL)
 				if ok {
-					snapshotFromMeta = snapshot.underlying
+					testCase.filesystemSnapshot = snapshot.underlying
 				}
 			case symbolic.TEST_ITEM_META__PASS_LIVE_FS_COPY:
-				passLiveFsCopyToSubTests = bool(v.(Bool))
+				testCase.passLiveFilesystemCopyToSubTests = bool(v.(Bool))
 			case symbolic.TEST_ITEM_META__PROGRAM_PROPNAME:
 				if parentState.Project == nil {
 					return errors.New("program testing is only supported in projects")
@@ -335,9 +342,13 @@ func NewTestCase(input TestCaseCreationInput) (*TestCase, error) {
 				if err != nil {
 					return err
 				}
-				snapshotFromMeta = baseImg.FilesystemSnapshot()
-				programToTest = v.(Path)
-				programProject = parentState.Project
+				testCase.filesystemSnapshot = baseImg.FilesystemSnapshot()
+				testCase.programToTest = v.(Path)
+				testCase.programProject = parentState.Project
+			case symbolic.TEST_ITEM_META__MAIN_DB_SCHEMA:
+				testCase.mainDatabaseSchema = v.(*ObjectPattern)
+			case symbolic.TEST_ITEM_META__MAIN_DB_MIGRATIONS:
+				testCase.mainDatabaseMigrations = v.(*Object)
 			}
 			return nil
 		})
@@ -349,24 +360,9 @@ func NewTestCase(input TestCaseCreationInput) (*TestCase, error) {
 	//clean formattedPosition
 	formattedPosition = strings.TrimSpace(formattedPosition)
 	formattedPosition = strings.TrimSuffix(formattedPosition, ":")
+	testCase.formattedPosition = formattedPosition
 
-	return &TestCase{
-		meta:                             meta,
-		nameFromMeta:                     nameFromMeta,
-		filesystemSnapshotFromMeta:       snapshotFromMeta,
-		passLiveFilesystemCopyToSubTests: passLiveFsCopyToSubTests,
-		programToTest:                    programToTest,
-		programProject:                   programProject,
-
-		node: input.Node,
-
-		module:       routineMod,
-		parentModule: parentState.Module,
-		parentChunk:  parentChunk,
-
-		positionStack:     positionStack,
-		formattedPosition: formattedPosition,
-	}, nil
+	return testCase, nil
 }
 
 // Module returns the module that contains the test.
@@ -380,10 +376,10 @@ func (c *TestCase) ParentChunk() *parse.ParsedChunk {
 }
 
 func (c *TestCase) ItemName() (string, bool) {
-	if c.nameFromMeta == "" {
+	if c.name == "" {
 		return "", false
 	}
-	return c.nameFromMeta, true
+	return c.name, true
 }
 
 func (c *TestCase) Statement() parse.Node {
@@ -391,8 +387,8 @@ func (c *TestCase) Statement() parse.Node {
 }
 
 func (c *TestCase) FilesystemSnapshot() (FilesystemSnapshot, bool) {
-	if c.filesystemSnapshotFromMeta != nil {
-		return c.filesystemSnapshotFromMeta, true
+	if c.filesystemSnapshot != nil {
+		return c.filesystemSnapshot, true
 	}
 	return nil, false
 }
@@ -425,12 +421,16 @@ func (c *TestCase) Run(ctx *Context, options ...Option) (*LThread, error) {
 
 	programToTest := c.programToTest
 	programProject := c.programProject
+	mainDatabaseSchema := c.mainDatabaseSchema
+	mainDatabaseMigrations := c.mainDatabaseMigrations
 
 	var programModuleCache *Module
 
 	if programToTest == "" && parentTestSuite.programToTest != "" {
 		programToTest = parentTestSuite.programToTest
 		programProject = parentTestSuite.programProject
+		mainDatabaseSchema = parentTestSuite.mainDatabaseSchema
+		mainDatabaseMigrations = parentTestSuite.mainDatabaseMigrations
 
 		if spawnerState.ProgramToTestModule != nil {
 			programModuleCache = spawnerState.ProgramToTestModule
@@ -442,7 +442,10 @@ func (c *TestCase) Run(ctx *Context, options ...Option) (*LThread, error) {
 
 	}
 
-	return runTestItem(ctx, spawnerState, c, c.module, fls, timeout, parentTestSuite, programToTest, programModuleCache, programProject)
+	return runTestItem(
+		ctx, spawnerState, c, c.module, fls, timeout, parentTestSuite, programToTest,
+		programModuleCache, programProject, mainDatabaseSchema, mainDatabaseMigrations,
+	)
 }
 
 func (s *TestCase) GetGoMethod(name string) (*GoFunction, bool) {
@@ -481,9 +484,16 @@ func runTestItem(
 	programToTest Path, //can be empty
 	programModuleCache *Module, //can be nil
 	programProject Project, //only set if programToTest is not empty
+	mainDatabaseSchema *ObjectPattern, //can be nil
+	mainDatabaseMigrations *Object, //can be nil
 ) (*LThread, error) {
 
 	suite, isTestSuite := testItem.(*TestSuite)
+	_, isTestCase := testItem.(*TestCase)
+
+	if !isTestCase && !isTestSuite {
+		panic(ErrUnreachable)
+	}
 
 	//get the manifest of the test item's module
 	manifest, _, _, err := testItemModule.PreInit(PreinitArgs{
@@ -523,14 +533,17 @@ func runTestItem(
 
 	var testedProgramModule *Module
 	var testedProgramThread *LThread
+	var testedProgramDatabases *Namespace
 
 	//prepare & start the program to test
 	if programToTest != "" {
 		programState, _, _, err := PrepareLocalScript(ScriptPreparationArgs{
-			FullAccessToDatabases: true,
-			Fpath:                 string(programToTest),
-			Project:               programProject,
-			CachedModule:          programModuleCache,
+			FullAccessToDatabases:   true,
+			ForceExpectSchemaUpdate: true,
+
+			Fpath:        string(programToTest),
+			Project:      programProject,
+			CachedModule: programModuleCache,
 
 			ParsingCompilationContext: parentCtx,
 			ParentContext:             lthreadCtx, //TODO: gracefully stops the program
@@ -546,8 +559,22 @@ func runTestItem(
 			if programState != nil && programState.Ctx != nil {
 				programState.Ctx.CancelGracefully()
 			}
-			return nil, fmt.Errorf("failed to prepare the program to test (%q): %w", programToTest, err)
+			return nil, fmt.Errorf("testing: failed to prepare the program to test (%q): %w", programToTest, err)
 		}
+
+		if mainDatabaseSchema != nil {
+			db, ok := programState.Databases["main"]
+			if !ok {
+				return nil, fmt.Errorf("testing: the program to test (%q) has not a main database", programToTest)
+			}
+			db.UpdateSchema(programState.Ctx, mainDatabaseSchema, mainDatabaseMigrations)
+		}
+
+		dbs := map[string]Value{}
+		for k, v := range programState.Databases {
+			dbs[k] = v
+		}
+		testedProgramDatabases = NewMutableEntriesNamespace("dbs", dbs)
 
 		testedProgramThread, err = SpawnLthreadWithState(LthreadWithStateSpawnArgs{
 			SpawnerState: spawnerState,
@@ -555,7 +582,7 @@ func runTestItem(
 		})
 
 		if err != nil {
-			return nil, fmt.Errorf("failed to spawn a lthread for the program to test (%q): %w", programToTest, err)
+			return nil, fmt.Errorf("testing: failed to spawn a lthread for the program to test (%q): %w", programToTest, err)
 		}
 
 		//else if the test item is a test suite with a program to test we parse it for later use by sub suites & test cases.
@@ -565,7 +592,7 @@ func runTestItem(
 			Filesystem: testItemFS,
 		})
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse the program to test for caching (%q): %w", suite.programToTest, err)
+			return nil, fmt.Errorf("testing: failed to parse the program to test for caching (%q): %w", suite.programToTest, err)
 		}
 
 		testedProgramModule = mod
@@ -577,7 +604,10 @@ func runTestItem(
 	var currentTest *CurrentTest
 	if !isTestSuite {
 		currentTest = &CurrentTest{
-			&TestedProgram{lthread: testedProgramThread},
+			&TestedProgram{
+				lthread:   testedProgramThread,
+				databases: testedProgramDatabases,
+			},
 		}
 		globals[globalnames.CURRENT_TEST] = currentTest
 	}
@@ -585,7 +615,8 @@ func runTestItem(
 	lthread, err := SpawnLThread(LthreadSpawnArgs{
 		SpawnerState: spawnerState,
 		LthreadCtx:   lthreadCtx,
-		Globals:      GlobalVariablesFromMap(globals, maps.Keys(globals)),
+		Globals:      GlobalVariablesFromMap(globals, nil),
+		NewGlobals:   []string{globalnames.CURRENT_TEST},
 		Module:       testItemModule,
 		Manifest:     manifest,
 		Timeout:      timeout,
@@ -777,7 +808,8 @@ func (*CurrentTest) PropertyNames(ctx *Context) []string {
 }
 
 type TestedProgram struct {
-	lthread *LThread
+	lthread   *LThread
+	databases *Namespace
 }
 
 func (p *TestedProgram) Cancel(*Context) {
@@ -796,6 +828,8 @@ func (p *TestedProgram) Prop(ctx *Context, name string) Value {
 	switch name {
 	case "is_done":
 		return Bool(p.lthread.IsDone())
+	case "dbs":
+		return p.databases
 	}
 	method, ok := p.GetGoMethod(name)
 	if !ok {

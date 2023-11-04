@@ -41,8 +41,9 @@ type ScriptPreparationArgs struct {
 	// this mode is intended to be used by the LSP server.
 	DataExtractionMode bool
 
-	AllowMissingEnvVars   bool
-	FullAccessToDatabases bool
+	AllowMissingEnvVars     bool
+	FullAccessToDatabases   bool
+	ForceExpectSchemaUpdate bool
 
 	// If set this function is called just before the context creation,
 	// the preparation is aborted if an error is returned.
@@ -312,7 +313,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *GlobalState, mod *Mo
 
 		wrapped, err := WrapDatabase(ctx, DatabaseWrappingArgs{
 			Inner:                        db,
-			ExpectedSchemaUpdate:         config.ExpectedSchemaUpdate,
+			ExpectedSchemaUpdate:         config.ExpectedSchemaUpdate || args.ForceExpectSchemaUpdate,
 			ForceLoadBeforeOwnerStateSet: false,
 			Name:                         config.Name,
 			DevMode:                      args.DataExtractionMode,

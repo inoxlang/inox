@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -53,6 +54,8 @@ type LThread struct {
 type LthreadSpawnArgs struct {
 	SpawnerState *GlobalState
 	Globals      GlobalVariables
+	NewGlobals   []string //listed globals are not shared nor cloned.
+
 	Module       *Module
 	Manifest     *Manifest
 	LthreadCtx   *Context
@@ -118,11 +121,15 @@ func SpawnLThread(args LthreadSpawnArgs) (*LThread, error) {
 			return nil
 		}
 
-		shared, err := ShareOrClone(v, args.SpawnerState)
-		if err != nil {
-			return fmt.Errorf("failed to share/clone provided global '%s': %w", name, err)
+		if slices.Contains(args.NewGlobals, name) {
+			modState.Globals.Set(name, v)
+		} else {
+			shared, err := ShareOrClone(v, args.SpawnerState)
+			if err != nil {
+				return fmt.Errorf("failed to share/clone provided global '%s': %w", name, err)
+			}
+			modState.Globals.Set(name, shared)
 		}
-		modState.Globals.Set(name, shared)
 		return nil
 	})
 	if err != nil {

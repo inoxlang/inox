@@ -77,7 +77,7 @@ func NewTestCaseResult(ctx *Context, executionResult Value, executionError error
 		result.Message = "PASS "
 	}
 
-	name := testCase.nameFromMeta
+	name := testCase.name
 	if name == "" {
 		name = testCase.formattedPosition
 		if name == "" {
@@ -198,7 +198,7 @@ func NewTestSuiteResult(ctx *Context, testCaseResults []*TestCaseResult, subSuit
 		suiteResult.Message += subSuiteResult.Message + "\n\n"
 	}
 
-	name := suiteResult.testSuite.nameFromMeta
+	name := suiteResult.testSuite.nameFrom
 	if name == "" {
 		if testSuite.module != nil {
 			name = "(no name) " + testSuite.module.MainChunk.GetFormattedNodeLocation(testSuite.module.MainChunk.Node)
