@@ -61,10 +61,10 @@ type LthreadSpawnArgs struct {
 	LthreadCtx   *Context
 	PreinitState *GlobalState
 
-	IsTestingEnabled    bool
-	TestFilters         TestFilters
-	TestItem            TestItem
-	ProgramToTestModule *Module
+	IsTestingEnabled bool
+	TestFilters      TestFilters
+	TestItem         TestItem
+	TestedProgram    *Module
 
 	//AbsScriptDir string
 	Bytecode    *Bytecode
@@ -150,7 +150,7 @@ func SpawnLThread(args LthreadSpawnArgs) (*LThread, error) {
 		modState.IsTestingEnabled = true
 		modState.TestFilters = args.TestFilters
 		modState.TestItem = args.TestItem
-		modState.ProgramToTestModule = args.ProgramToTestModule
+		modState.TestedProgram = args.TestedProgram
 	}
 	modState.OutputFieldsInitialized.Store(true)
 

@@ -40,8 +40,9 @@ type TestSuite struct {
 	nameFrom                         string             //can be empty
 	filesystemSnapshot               FilesystemSnapshot //can be nil
 	passLiveFilesystemCopyToSubTests bool
-	programToTest                    Path           //can be empty
-	programProject                   Project        //set if .programToTest is set
+	testedProgramPath                Path //can be empty
+	isTestedProgramFromParent        bool
+	programProject                   Project        //set if .testedProgramPath is set
 	mainDatabaseSchema               *ObjectPattern //can be nil
 	mainDatabaseMigrations           *Object        //can be nil
 
@@ -122,7 +123,7 @@ func NewTestSuite(input TestSuiteCreationInput) (*TestSuite, error) {
 					return err
 				}
 				suite.filesystemSnapshot = baseImg.FilesystemSnapshot()
-				suite.programToTest = v.(Path)
+				suite.testedProgramPath = v.(Path)
 				suite.programProject = parentState.Project
 			case symbolic.TEST_ITEM_META__MAIN_DB_SCHEMA:
 				suite.mainDatabaseSchema = v.(*ObjectPattern)
@@ -139,10 +140,12 @@ func NewTestSuite(input TestSuiteCreationInput) (*TestSuite, error) {
 		panic(ErrUnreachable)
 	}
 
-	if suite.programToTest == "" {
-		//inherit program to test from parent test suite
-		if parentTestSuite, ok := input.ParentState.TestItem.(*TestSuite); ok && parentTestSuite.programToTest != "" {
-			suite.programToTest = parentTestSuite.programToTest
+	if suite.testedProgramPath == "" {
+		//inherit tested program from parent test suite
+		if parentTestSuite, ok := input.ParentState.TestItem.(*TestSuite); ok && parentTestSuite.testedProgramPath != "" {
+			suite.testedProgramPath = parentTestSuite.testedProgramPath
+			suite.isTestedProgramFromParent = true
+
 			suite.programProject = parentTestSuite.programProject
 			suite.mainDatabaseSchema = parentTestSuite.mainDatabaseSchema
 			suite.mainDatabaseMigrations = parentTestSuite.mainDatabaseMigrations
@@ -212,7 +215,7 @@ func (s *TestSuite) Run(ctx *Context, options ...Option) (*LThread, error) {
 		return nil, fmt.Errorf("testing: following permission is required for running tests: %w", err)
 	}
 
-	return runTestItem(ctx, spawnerState, s, s.module, fls, timeout, parentTestSuite, "", nil, nil, nil, nil)
+	return runTestItem(ctx, spawnerState, s, s.module, fls, timeout, parentTestSuite, "", nil, nil, nil, nil, nil)
 }
 
 func (s *TestSuite) GetGoMethod(name string) (*GoFunction, bool) {
@@ -245,8 +248,8 @@ type TestCase struct {
 	name                             string             //can be empty
 	filesystemSnapshot               FilesystemSnapshot //can be nil
 	passLiveFilesystemCopyToSubTests bool
-	programToTest                    Path           //can be empty
-	programProject                   Project        //set if .programToTest is set
+	testedProgramPath                Path           //can be empty
+	programProject                   Project        //set if .testedProgramPath is set
 	mainDatabaseSchema               *ObjectPattern //can be nil
 	mainDatabaseMigrations           *Object        //can be nil
 
@@ -343,7 +346,7 @@ func NewTestCase(input TestCaseCreationInput) (*TestCase, error) {
 					return err
 				}
 				testCase.filesystemSnapshot = baseImg.FilesystemSnapshot()
-				testCase.programToTest = v.(Path)
+				testCase.testedProgramPath = v.(Path)
 				testCase.programProject = parentState.Project
 			case symbolic.TEST_ITEM_META__MAIN_DB_SCHEMA:
 				testCase.mainDatabaseSchema = v.(*ObjectPattern)
@@ -419,32 +422,51 @@ func (c *TestCase) Run(ctx *Context, options ...Option) (*LThread, error) {
 		return nil, err
 	}
 
-	programToTest := c.programToTest
+	programToTest := c.testedProgramPath
 	programProject := c.programProject
 	mainDatabaseSchema := c.mainDatabaseSchema
 	mainDatabaseMigrations := c.mainDatabaseMigrations
 
 	var programModuleCache *Module
+	var programDatabasePermissions []Permission
 
-	if programToTest == "" && parentTestSuite.programToTest != "" {
-		programToTest = parentTestSuite.programToTest
+	//if the current case has not specified a tested program, it inherits the tested program.
+	if programToTest == "" && parentTestSuite != nil && parentTestSuite.testedProgramPath != "" {
+		programToTest = parentTestSuite.testedProgramPath
 		programProject = parentTestSuite.programProject
 		mainDatabaseSchema = parentTestSuite.mainDatabaseSchema
 		mainDatabaseMigrations = parentTestSuite.mainDatabaseMigrations
 
-		if spawnerState.ProgramToTestModule != nil {
-			programModuleCache = spawnerState.ProgramToTestModule
-			resourceName, ok := programModuleCache.AbsoluteSource()
-			if !ok || resourceName != programToTest {
-				panic(ErrUnreachable)
-			}
+		if spawnerState.TestedProgram == nil {
+			panic(ErrUnreachable)
 		}
 
+		programModuleCache = spawnerState.TestedProgram
+		resourceName, ok := programModuleCache.AbsoluteSource()
+		if !ok || resourceName != programToTest {
+			panic(ErrUnreachable)
+		}
+		programDatabasePermissions = utils.FilterSlice(spawnerState.Ctx.GetGrantedPermissions(), func(e Permission) bool {
+			return utils.Implements[DatabasePermission](e)
+		})
 	}
 
 	return runTestItem(
-		ctx, spawnerState, c, c.module, fls, timeout, parentTestSuite, programToTest,
-		programModuleCache, programProject, mainDatabaseSchema, mainDatabaseMigrations,
+		ctx,
+		spawnerState,
+		c,
+		c.module,
+		fls,
+		timeout,
+		parentTestSuite,
+
+		//program testing
+		programToTest,
+		programModuleCache,
+		programProject,
+		programDatabasePermissions,
+		mainDatabaseSchema,
+		mainDatabaseMigrations,
 	)
 }
 
@@ -481,9 +503,10 @@ func runTestItem(
 	timeout time.Duration,
 	parentTestSuite *TestSuite,
 
-	programToTest Path, //can be empty
+	programToExecute Path, //can be empty
 	programModuleCache *Module, //can be nil
 	programProject Project, //only set if programToTest is not empty
+	programDatabasePermissions []Permission,
 	mainDatabaseSchema *ObjectPattern, //can be nil
 	mainDatabaseMigrations *Object, //can be nil
 ) (*LThread, error) {
@@ -508,6 +531,69 @@ func runTestItem(
 		return nil, err
 	}
 
+	var testedProgramModule *Module
+
+	//additional permissions for the test item, not the tested program.
+	//note for the future: adding additional permissions should be avoided
+	//because some permission types are specific to the execution context (filesystem, hosts ...).
+	var implicitlyAddedPermissions []Permission
+
+	implicitlyAddedPermissions = programDatabasePermissions
+
+	// if the test item is a test suite with a program to test we parse it for later use by sub suites & test cases.
+	if programToExecute == "" && isTestSuite && suite.testedProgramPath != "" {
+
+		//if the parent test suite has already parsed the module, use the cache.
+		if suite.isTestedProgramFromParent && parentTestSuite != nil && parentTestSuite.testedProgramPath == suite.testedProgramPath {
+			if spawnerState.TestedProgram.sourceName != parentTestSuite.testedProgramPath {
+				panic(ErrUnreachable)
+			}
+			testedProgramModule = spawnerState.TestedProgram
+		} else {
+			mod, err := ParseLocalModule(string(suite.testedProgramPath), ModuleParsingConfig{
+				Context:    parentCtx,
+				Filesystem: testItemFS,
+			})
+			if err != nil {
+				return nil, fmt.Errorf("testing: failed to parse the program to test for caching (%q): %w", suite.testedProgramPath, err)
+			}
+			testedProgramModule = mod
+		}
+
+		//read the manifest to determine the database resource names
+
+		fmtImpossibleToDetermineDatabaseResources := func(fmtString string, args ...any) error {
+			return fmt.Errorf("testing: impossible to determine the scheme of the database resources: "+fmtString, args...)
+		}
+
+		if testedProgramModule.ManifestTemplate == nil {
+			return nil, fmtImpossibleToDetermineDatabaseResources("missing manifest in tested program")
+		}
+
+		if testedProgramModule == nil {
+			return nil, fmtImpossibleToDetermineDatabaseResources("module cache is not present")
+		}
+
+		manifestObj, ok := testedProgramModule.ManifestTemplate.Object.(*parse.ObjectLiteral)
+		if !ok {
+			return nil, fmtImpossibleToDetermineDatabaseResources("tested program's manifest has no object literal")
+		}
+
+		val, _ := manifestObj.PropValue(MANIFEST_DATABASES_SECTION_NAME)
+		databasesObj, ok := val.(*parse.ObjectLiteral)
+
+		//add database permissions
+		if ok {
+			checkDatabasesObject(databasesObj, nil, func(name string, scheme Scheme, resource ResourceName) {
+				implicitlyAddedPermissions = append(implicitlyAddedPermissions,
+					DatabasePermission{Kind_: permkind.Read, Entity: resource},
+					DatabasePermission{Kind_: permkind.Write, Entity: resource},
+					DatabasePermission{Kind_: permkind.Delete, Entity: resource},
+				)
+			}, spawnerState.Project)
+		}
+	}
+
 	//create the lthread context
 
 	for _, perm := range manifest.RequiredPermissions {
@@ -520,6 +606,7 @@ func runTestItem(
 
 	permissions := utils.CopySlice(manifest.RequiredPermissions)
 	permissions = append(permissions, createLthreadPerm)
+	permissions = append(permissions, implicitlyAddedPermissions...)
 
 	lthreadCtx := NewContext(ContextConfig{
 		Kind:            TestingContext,
@@ -531,17 +618,16 @@ func runTestItem(
 		Filesystem: testItemFS,
 	})
 
-	var testedProgramModule *Module
 	var testedProgramThread *LThread
 	var testedProgramDatabases *Namespace
 
 	//prepare & start the program to test
-	if programToTest != "" {
+	if programToExecute != "" {
 		programState, _, _, err := PrepareLocalScript(ScriptPreparationArgs{
 			FullAccessToDatabases:   true,
 			ForceExpectSchemaUpdate: true,
 
-			Fpath:        string(programToTest),
+			Fpath:        string(programToExecute),
 			Project:      programProject,
 			CachedModule: programModuleCache,
 
@@ -559,13 +645,13 @@ func runTestItem(
 			if programState != nil && programState.Ctx != nil {
 				programState.Ctx.CancelGracefully()
 			}
-			return nil, fmt.Errorf("testing: failed to prepare the program to test (%q): %w", programToTest, err)
+			return nil, fmt.Errorf("testing: failed to prepare the program to test (%q): %w", programToExecute, err)
 		}
 
 		if mainDatabaseSchema != nil {
 			db, ok := programState.Databases["main"]
 			if !ok {
-				return nil, fmt.Errorf("testing: the program to test (%q) has not a main database", programToTest)
+				return nil, fmt.Errorf("testing: the program to test (%q) has not a main database", programToExecute)
 			}
 			db.UpdateSchema(programState.Ctx, mainDatabaseSchema, mainDatabaseMigrations)
 		}
@@ -582,20 +668,8 @@ func runTestItem(
 		})
 
 		if err != nil {
-			return nil, fmt.Errorf("testing: failed to spawn a lthread for the program to test (%q): %w", programToTest, err)
+			return nil, fmt.Errorf("testing: failed to spawn a lthread for the program to test (%q): %w", programToExecute, err)
 		}
-
-		//else if the test item is a test suite with a program to test we parse it for later use by sub suites & test cases.
-	} else if isTestSuite && suite.programToTest != "" {
-		mod, err := ParseLocalModule(string(suite.programToTest), ModuleParsingConfig{
-			Context:    parentCtx,
-			Filesystem: testItemFS,
-		})
-		if err != nil {
-			return nil, fmt.Errorf("testing: failed to parse the program to test for caching (%q): %w", suite.programToTest, err)
-		}
-
-		testedProgramModule = mod
 	}
 
 	//spawn the lthread
@@ -621,10 +695,10 @@ func runTestItem(
 		Manifest:     manifest,
 		Timeout:      timeout,
 
-		IsTestingEnabled:    spawnerState.IsTestingEnabled,
-		TestFilters:         spawnerState.TestFilters,
-		TestItem:            testItem,
-		ProgramToTestModule: testedProgramModule,
+		IsTestingEnabled: spawnerState.IsTestingEnabled,
+		TestFilters:      spawnerState.TestFilters,
+		TestItem:         testItem,
+		TestedProgram:    testedProgramModule,
 	})
 
 	if err != nil {

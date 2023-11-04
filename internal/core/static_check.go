@@ -2186,7 +2186,7 @@ func checkManifestObject(args manifestStaticCheckArguments) {
 
 			switch propVal := p.Value.(type) {
 			case *parse.ObjectLiteral:
-				checkDatabasesObject(propVal, onError, args.project)
+				checkDatabasesObject(propVal, onError, nil, args.project)
 			case *parse.AbsolutePathLiteral:
 			default:
 				onError(p, DATABASES_SECTION_SHOULD_BE_AN_OBJECT_OR_ABS_PATH)
@@ -2403,7 +2403,20 @@ func checkPreinitFilesObject(obj *parse.ObjectLiteral, onError func(n parse.Node
 	}
 }
 
-func checkDatabasesObject(obj *parse.ObjectLiteral, onError func(n parse.Node, msg string), project Project) {
+func checkDatabasesObject(
+	obj *parse.ObjectLiteral,
+	onError func(n parse.Node, msg string), //optional
+	onValidDatabase func(name string, scheme Scheme, resource ResourceName), //optional
+	project Project,
+) {
+
+	if onError == nil {
+		onError = func(n parse.Node, msg string) {}
+	}
+
+	if onValidDatabase == nil {
+		onValidDatabase = func(name string, scheme Scheme, resource ResourceName) {}
+	}
 
 	parse.Walk(obj, func(node, parent, scopeNode parse.Node, ancestorChain []parse.Node, after bool) (parse.TraversalAction, error) {
 		if node == obj {
@@ -2434,8 +2447,10 @@ func checkDatabasesObject(obj *parse.ObjectLiteral, onError func(n parse.Node, m
 		}
 
 		var scheme Scheme
+		var resource ResourceName
 		var resourceFound bool
 		var resolutionDataFound bool
+		isValidDescription := true
 
 		for _, prop := range dbDesc.Properties {
 			if prop.HasImplicitKey() {
@@ -2451,13 +2466,16 @@ func checkDatabasesObject(obj *parse.ObjectLiteral, onError func(n parse.Node, m
 					u, _ := url.Parse(res.Value)
 					if u != nil {
 						scheme = Scheme(u.Scheme)
+						resource = utils.Must(evalSimpleValueLiteral(res, nil)).(Host)
 					}
 				case *parse.URLLiteral:
 					u, _ := url.Parse(res.Value)
 					if u != nil {
 						scheme = Scheme(u.Scheme)
+						resource = utils.Must(evalSimpleValueLiteral(res, nil)).(URL)
 					}
 				default:
+					isValidDescription = false
 					onError(p, DATABASES__DB_RESOURCE_SHOULD_BE_HOST_OR_URL)
 				}
 			case MANIFEST_DATABASE__RESOLUTION_DATA_PROP_NAME:
@@ -2472,19 +2490,23 @@ func checkDatabasesObject(obj *parse.ObjectLiteral, onError func(n parse.Node, m
 					if ok {
 						errMsg := checkData(prop.Value, project)
 						if errMsg != "" {
+							isValidDescription = false
 							onError(prop.Value, errMsg)
 						}
 					}
 				default:
+					isValidDescription = false
 					onError(p, DATABASES__DB_RESOLUTION_DATA_ONLY_PATHS_SUPPORTED)
 				}
 			case MANIFEST_DATABASE__EXPECTED_SCHEMA_UPDATE_PROP_NAME:
 				switch prop.Value.(type) {
 				case *parse.BooleanLiteral:
 				default:
+					isValidDescription = false
 					onError(p, DATABASES__DB_EXPECTED_SCHEMA_UPDATE_SHOULD_BE_BOOL_LIT)
 				}
 			default:
+				isValidDescription = false
 				onError(p, fmtUnexpectedPropOfDatabaseDescription(prop.Name()))
 			}
 		}
@@ -2495,6 +2517,10 @@ func checkDatabasesObject(obj *parse.ObjectLiteral, onError func(n parse.Node, m
 
 		if !resolutionDataFound {
 			onError(p, fmtMissingPropInDatabaseDescription(MANIFEST_DATABASE__RESOLUTION_DATA_PROP_NAME, dbName))
+		}
+
+		if isValidDescription {
+			onValidDatabase(dbName, scheme, resource)
 		}
 	}
 }

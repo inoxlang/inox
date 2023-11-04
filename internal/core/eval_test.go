@@ -8729,13 +8729,15 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			return state, nil
 		}
 
-		RegisterOpenDbFn("ldb", func(ctx *Context, config DbOpenConfiguration) (Database, error) {
-			return &dummyDatabase{
-				resource:         config.Resource,
-				schemaUpdated:    false,
-				topLevelEntities: map[string]Serializable{},
-			}, nil
-		})
+		if _, ok := GetOpenDbFn("ldb"); !ok {
+			RegisterOpenDbFn("ldb", func(ctx *Context, config DbOpenConfiguration) (Database, error) {
+				return &dummyDatabase{
+					resource:         config.Resource,
+					schemaUpdated:    false,
+					topLevelEntities: map[string]Serializable{},
+				}, nil
+			})
+		}
 
 		t.Run("program specified by top level suite", func(t *testing.T) {
 
@@ -9219,7 +9221,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			assert.Len(t, state.TestSuiteResults[0].subSuiteResults[0].caseResults, 1)
 		})
 
-		t.Run("main db schema and migrations specified by top level suite: main database should be initialized", func(t *testing.T) {
+		t.Run("main db schema and migrations specified by top level suite: main database should be initialized in test case", func(t *testing.T) {
 
 			mod, fls, err := createModuleAndImports(`
 				manifest {}
@@ -9239,18 +9241,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 						}
 					}
 				}) {
-					manifest {
-						permissions: {
-							read: ldb://main
-						}
-					}
-
 					testcase {
-						manifest {
-							permissions: {
-								read: ldb://main
-							}
-						}
 						check_databases(__test.program.dbs)
 					}
 				}
@@ -9278,6 +9269,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					FilesystemPermission{permkind.Read, PathPattern("/...")},
 					FilesystemPermission{permkind.Write, PathPattern("/...")},
 					DatabasePermission{permkind.Read, Host("ldb://main")},
+					DatabasePermission{permkind.Write, Host("ldb://main")},
+					DatabasePermission{permkind.Delete, Host("ldb://main")},
 				),
 				Filesystem: fls,
 			})
@@ -9334,6 +9327,125 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 			result := state.TestSuiteResults[0].caseResults[0]
+			if !assert.NoError(t, result.error) {
+				return
+			}
+			assert.True(t, isProperlyInitialized.Load())
+		})
+
+		t.Run("main db schema and migrations specified by top level suite: main database should be initialized in test case located in sub suite", func(t *testing.T) {
+
+			mod, fls, err := createModuleAndImports(`
+				manifest {}
+				
+				testsuite({
+					program: /program.ix
+					main-db-schema: %{
+						user: {
+							name: "foo"
+						}
+					}
+					main-db-migrations: {
+						inclusions: :{
+							%/user: {
+								name: "foo"
+							}
+						}
+					}
+				}) {
+					testsuite {
+						testcase {
+							check_databases(__test.program.dbs)
+						}
+					}
+				}
+
+			`, map[string]string{
+				"/program.ix": `
+					manifest {
+						databases: {
+							main: {
+								resource: ldb://main
+								resolution-data: /databases/main/
+							}
+						}
+					}
+				`,
+			})
+
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			ctx := NewContext(ContextConfig{
+				Permissions: append(GetDefaultGlobalVarPermissions(),
+					LThreadPermission{permkind.Create},
+					FilesystemPermission{permkind.Read, PathPattern("/...")},
+					FilesystemPermission{permkind.Write, PathPattern("/...")},
+					DatabasePermission{permkind.Read, Host("ldb://main")},
+					DatabasePermission{permkind.Write, Host("ldb://main")},
+					DatabasePermission{permkind.Delete, Host("ldb://main")},
+				),
+				Filesystem: fls,
+			})
+
+			var isProperlyInitialized atomic.Bool
+
+			state := NewGlobalState(ctx)
+			state.IsTestingEnabled = true
+			state.IsImportTestingEnabled = true
+			state.TestFilters = allTestsFilter
+			state.Project = &testProjectWithImage{
+				id: RandomProjectID("test"),
+				image: &testImage{
+					snapshot: &memFilesystemSnapshot{
+						fls: copyMemFs(fls),
+					},
+				},
+			}
+			state.Globals.Set("check_databases", WrapGoFunction(func(ctx *Context, ns *Namespace) {
+				if !assert.Contains(t, ns.PropertyNames(ctx), "main") {
+					return
+				}
+
+				database := ns.Prop(ctx, "main").(*DatabaseIL)
+
+				if !assert.True(t, database.TopLevelEntitiesLoaded()) {
+					return
+				}
+
+				user := database.Prop(ctx, "user").(*Object)
+
+				if !assert.Contains(t, user.PropertyNames(ctx), "name") {
+					return
+				}
+
+				assert.Equal(t, Str("foo"), user.Prop(ctx, "name"))
+
+				isProperlyInitialized.Store(true)
+			}))
+			state.Ctx.AddNamedPattern("str", STRLIKE_PATTERN)
+
+			defer state.Ctx.CancelGracefully()
+
+			res, err := Eval(mod, state, false)
+
+			assert.NoError(t, err)
+			assert.Equal(t, Nil, res)
+			assert.Empty(t, state.TestCaseResults)
+			if !assert.Len(t, state.TestSuiteResults, 1) {
+				return
+			}
+
+			if !assert.Len(t, state.TestSuiteResults[0].subSuiteResults, 1) {
+				return
+			}
+			subSuiteResult := state.TestSuiteResults[0].subSuiteResults[0]
+
+			if !assert.Len(t, subSuiteResult.caseResults, 1) {
+				return
+			}
+			result := subSuiteResult.caseResults[0]
 			if !assert.NoError(t, result.error) {
 				return
 			}

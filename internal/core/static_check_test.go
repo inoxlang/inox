@@ -3808,7 +3808,7 @@ func TestCheckDatabasesObject(t *testing.T) {
 
 		checkDatabasesObject(objLiteral, func(n parse.Node, msg string) {
 			assert.Fail(t, msg)
-		}, nil)
+		}, nil, nil)
 	})
 
 	t.Run("database with correct description", func(t *testing.T) {
@@ -3823,7 +3823,7 @@ func TestCheckDatabasesObject(t *testing.T) {
 
 		checkDatabasesObject(objLiteral, func(n parse.Node, msg string) {
 			assert.Fail(t, msg)
-		}, nil)
+		}, nil, nil)
 	})
 
 	t.Run("database with missing resource property", func(t *testing.T) {
@@ -3840,7 +3840,7 @@ func TestCheckDatabasesObject(t *testing.T) {
 		checkDatabasesObject(objLiteral, func(n parse.Node, msg string) {
 			err = true
 			assert.Equal(t, fmtMissingPropInDatabaseDescription(MANIFEST_DATABASE__RESOURCE_PROP_NAME, "main"), msg)
-		}, nil)
+		}, nil, nil)
 
 		assert.True(t, err)
 	})
@@ -3859,7 +3859,7 @@ func TestCheckDatabasesObject(t *testing.T) {
 		checkDatabasesObject(objLiteral, func(n parse.Node, msg string) {
 			err = true
 			assert.Equal(t, DATABASES__DB_RESOURCE_SHOULD_BE_HOST_OR_URL, msg)
-		}, nil)
+		}, nil, nil)
 		assert.True(t, err)
 	})
 
@@ -3875,7 +3875,7 @@ func TestCheckDatabasesObject(t *testing.T) {
 
 		checkDatabasesObject(objLiteral, func(n parse.Node, msg string) {
 			assert.Fail(t, msg)
-		}, nil)
+		}, nil, nil)
 	})
 
 	t.Run("database with unsupported value for the resolution-data property", func(t *testing.T) {
@@ -3892,7 +3892,7 @@ func TestCheckDatabasesObject(t *testing.T) {
 		checkDatabasesObject(objLiteral, func(n parse.Node, msg string) {
 			err = true
 			assert.Equal(t, DATABASES__DB_RESOLUTION_DATA_ONLY_PATHS_SUPPORTED, msg)
-		}, nil)
+		}, nil, nil)
 
 		assert.True(t, err)
 	})
@@ -3923,7 +3923,7 @@ func TestCheckDatabasesObject(t *testing.T) {
 		checkDatabasesObject(objLiteral, func(n parse.Node, msg string) {
 			err = true
 			assert.Equal(t, errMsg, msg)
-		}, nil)
+		}, nil, nil)
 
 		assert.True(t, err)
 	})
@@ -3957,7 +3957,7 @@ func TestCheckDatabasesObject(t *testing.T) {
 		checkDatabasesObject(objLiteral, func(n parse.Node, msg string) {
 			err = true
 			assert.Equal(t, errMsg, msg)
-		}, project)
+		}, nil, project)
 
 		assert.True(t, err)
 	})
