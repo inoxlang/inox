@@ -31,7 +31,7 @@ func OpenRegistry(projectsDir string, fls afs.Filesystem, openProjectsContext *c
 	})
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to open database of projects")
+		return nil, fmt.Errorf("failed to open database of projects: %w", err)
 	}
 
 	return &Registry{
