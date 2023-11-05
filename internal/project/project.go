@@ -185,7 +185,7 @@ func (r *Registry) OpenProject(ctx *core.Context, params OpenProjectParams) (*Pr
 	})
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to open filesystem of project %s", params.Id)
+		return nil, fmt.Errorf("failed to open filesystem of project %s: %w", params.Id, err)
 	}
 
 	project := &Project{
