@@ -231,7 +231,7 @@ func TestPreInit(t *testing.T) {
 				manifest {
 					permissions: { read: $$URL}
 				}`,
-			expectedPermissions: []Permission{HttpPermission{permkind.Read, URL("https://example.com/")}},
+			expectedPermissions: []Permission{HttpPermission{Kind_: permkind.Read, Entity: URL("https://example.com/")}},
 			expectedLimits:      []Limit{},
 			expectedResolutions: nil,
 			error:               false,

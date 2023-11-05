@@ -10697,7 +10697,7 @@ func NewDefaultTestContext() *Context {
 			GlobalVarPermission{permkind.Create, "*"},
 			GlobalVarPermission{permkind.Use, "*"},
 
-			HttpPermission{permkind.Read, HostPattern("https://**")},
+			HttpPermission{Kind_: permkind.Read, Entity: HostPattern("https://**")},
 			LThreadPermission{permkind.Create},
 		},
 		Filesystem: newOsFilesystem(),

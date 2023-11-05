@@ -65,6 +65,16 @@ func TestHttpPermission(t *testing.T) {
 		assert.False(t, createPerm.Includes(writePerm))
 		assert.False(t, updatePerm.Includes(writePerm))
 	})
+
+	t.Run("special any entity permission", func(t *testing.T) {
+		perm := HttpPermission{Kind_: permkind.Write, Entity: nil, AnyEntity: true}
+
+		assert.True(t, perm.Includes(HttpPermission{Kind_: permkind.Write, Entity: Host("https://localhost")}))
+		assert.True(t, perm.Includes(HttpPermission{Kind_: permkind.Write, Entity: Host("https://localhost:8080")}))
+		assert.True(t, perm.Includes(HttpPermission{Kind_: permkind.Write, Entity: Host("http://localhost")}))
+
+		assert.False(t, perm.Includes(HttpPermission{Kind_: permkind.Read, Entity: Host("https://localhost")}))
+	})
 }
 
 func TestWebsocketPermission(t *testing.T) {

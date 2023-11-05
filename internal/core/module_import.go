@@ -437,7 +437,7 @@ func getSourceFromImportSource(importSrc Value, parentModule *Module, ctx *Conte
 			return val, nil
 		}
 	case URL:
-		httpPerm := HttpPermission{permkind.Read, val}
+		httpPerm := HttpPermission{Kind_: permkind.Read, Entity: val}
 		if err := ctx.CheckHasPermission(httpPerm); err != nil {
 			return nil, fmt.Errorf("import: %s", err.Error())
 		}

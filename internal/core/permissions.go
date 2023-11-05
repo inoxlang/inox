@@ -242,8 +242,9 @@ func (perm CommandPermission) String() string {
 }
 
 type HttpPermission struct {
-	Kind_  PermissionKind
-	Entity WrappedString //URL, URLPattern, HTTPHost, HTTPHostPattern ....
+	Kind_     PermissionKind
+	Entity    WrappedString //URL, URLPattern, HTTPHost, HTTPHostPattern ....
+	AnyEntity bool
 }
 
 func CreateHttpReadPerm(entity WrappedString) HttpPermission {
@@ -262,6 +263,10 @@ func (perm HttpPermission) Includes(otherPerm Permission) bool {
 	otherHttpPerm, ok := otherPerm.(HttpPermission)
 	if !ok || !perm.Kind_.Includes(otherHttpPerm.Kind_) {
 		return false
+	}
+
+	if perm.AnyEntity {
+		return true
 	}
 
 	switch e := perm.Entity.(type) {
