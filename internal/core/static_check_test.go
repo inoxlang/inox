@@ -2313,6 +2313,22 @@ func TestCheck(t *testing.T) {
 			assert.Equal(t, expectedErr, err)
 		})
 
+		t.Run("should not inherit the `dbs` global", func(t *testing.T) {
+			n, src := mustParseCode(`
+				globalvar dbs = {}
+				testsuite { 
+					dbs
+				 }
+			`)
+
+			identLiteral := parse.FindNodes(n, (*parse.IdentifierLiteral)(nil), nil)[1]
+
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(identLiteral, src, fmtVarIsNotDeclared("dbs")),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
 	})
 
 	t.Run("testcase expression", func(t *testing.T) {
@@ -2338,6 +2354,23 @@ func TestCheck(t *testing.T) {
 			`)
 
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
+		t.Run("should not inherit the `dbs` global", func(t *testing.T) {
+			n, src := mustParseCode(`
+				globalvar dbs = {}
+				return testcase {
+					dbs
+				}
+			`)
+
+			identLiteral := parse.FindNodes(n, (*parse.IdentifierLiteral)(nil), nil)[1]
+
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(identLiteral, src, fmtVarIsNotDeclared("dbs")),
+			)
+			assert.Equal(t, expectedErr, err)
 		})
 	})
 

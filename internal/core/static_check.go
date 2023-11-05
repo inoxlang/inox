@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"slices"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -1940,6 +1941,9 @@ switch_:
 		case *parse.TestSuiteExpression:
 			if p.IsStatement {
 				for name, info := range parentModuleGlobals {
+					if slices.Contains(globalnames.TEST_ITEM_NON_INHERITED_GLOBALS, name) {
+						continue
+					}
 					globals[name] = info
 				}
 			}
@@ -1948,6 +1952,9 @@ switch_:
 
 			if p.IsStatement {
 				for name, info := range parentModuleGlobals {
+					if slices.Contains(globalnames.TEST_ITEM_NON_INHERITED_GLOBALS, name) {
+						continue
+					}
 					globals[name] = info
 				}
 			}
