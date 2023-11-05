@@ -45,7 +45,9 @@ type RunScriptArgs struct {
 
 	AllowMissingEnvVars bool
 	IgnoreHighRiskScore bool
-	EnableTesting       bool
+
+	EnableTesting bool
+	TestFilters   core.TestFilters
 
 	//if not nil AND UseBytecode is false the script is executed in debug mode with this debugger.
 	//Debugger.AttachAndStart is called before starting the evaluation.
@@ -91,6 +93,7 @@ func RunLocalScript(args RunScriptArgs) (
 		Project:               args.Project,
 
 		EnableTesting: args.EnableTesting,
+		TestFilters:   args.TestFilters,
 	})
 
 	if args.PreparedChan != nil {

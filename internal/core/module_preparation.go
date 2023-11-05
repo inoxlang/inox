@@ -47,6 +47,7 @@ type ScriptPreparationArgs struct {
 	FullAccessToDatabases   bool
 	ForceExpectSchemaUpdate bool
 	EnableTesting           bool
+	TestFilters             TestFilters
 
 	// If set this function is called just before the context creation,
 	// the preparation is aborted if an error is returned.
@@ -271,6 +272,8 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *GlobalState, mod *Mo
 	state.PrenitStaticCheckErrors = preinitStaticCheckErrors
 	state.MainPreinitError = preinitErr
 	state.IsTestingEnabled = args.EnableTesting
+	state.TestFilters = args.TestFilters
+
 	if args.UseParentStateAsMainState {
 		if parentState == nil {
 			panic(ErrUnreachable)
