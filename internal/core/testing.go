@@ -682,6 +682,11 @@ func runTestItem(
 	//spawn the lthread
 
 	globals := spawnerState.Globals.Entries()
+
+	for _, name := range globalnames.TEST_ITEM_NON_INHERITED_GLOBALS {
+		delete(globals, name)
+	}
+
 	var currentTest *CurrentTest
 	if !isTestSuite {
 		currentTest = &CurrentTest{
