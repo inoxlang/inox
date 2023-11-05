@@ -441,8 +441,9 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 			core.HttpPermission{Kind_: permkind.Provide, Entity: core.ANY_HTTPS_HOST_PATTERN},
 			core.HttpPermission{Kind_: permkind.Provide, Entity: core.HostPattern("https://**:8080")},
 
-			core.HttpPermission{Kind_: permkind.Read, Entity: core.ANY_HTTPS_HOST_PATTERN},
-			core.HttpPermission{Kind_: permkind.Write, Entity: core.ANY_HTTPS_HOST_PATTERN},
+			core.HttpPermission{Kind_: permkind.Read, AnyEntity: true},
+			core.HttpPermission{Kind_: permkind.Write, AnyEntity: true},
+			core.HttpPermission{Kind_: permkind.Delete, AnyEntity: true},
 
 			core.LThreadPermission{Kind_: permkind.Create},
 		}
