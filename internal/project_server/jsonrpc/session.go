@@ -305,7 +305,7 @@ func (s *Session) handlerRequest(req RequestMessage) error {
 			params = params[:min(MAX_PARAMS_LOGGING_SIZE, len(req.Params))]
 			suffix = "..." + string(params[len(params)-1])
 		}
-		logs.Printf("Request: [%v] [%s], content: [%v]%s\n", stringifiedID, req.Method, params, suffix)
+		logs.Printf("Request: [%v] [%s], content: [%s]%s\n", stringifiedID, req.Method, params, suffix)
 		return MethodNotFound
 	}
 
