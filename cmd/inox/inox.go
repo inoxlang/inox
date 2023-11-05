@@ -2,6 +2,7 @@ package main
 
 import (
 	// ====================== IMPORTANT SIDE EFFECTS ============================
+	"regexp"
 	"runtime/debug"
 
 	"github.com/inoxlang/inox/internal/config"
@@ -184,6 +185,17 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 			return utils.SliceContains(accepted, input), nil
 		})
 
+		var testFilters core.TestFilters
+		if enableTestingMode {
+			testFilters = core.TestFilters{
+				PositiveTestFilters: []core.TestFilter{
+					{
+						NameRegex: regexp.MustCompile(".*"),
+					},
+				},
+			}
+		}
+
 		res, scriptState, _, _, err := mod.RunLocalScript(mod.RunScriptArgs{
 			Fpath:                     fpath,
 			PassedCLIArgs:             moduleArgs,
@@ -197,6 +209,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 
 			FullAccessToDatabases: true,
 			EnableTesting:         enableTestingMode,
+			TestFilters:           testFilters,
 
 			OnPrepared: func(state *core.GlobalState) error {
 				inoxprocess.RestrictProcessAccess(state.Ctx)
