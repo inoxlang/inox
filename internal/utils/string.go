@@ -4,10 +4,15 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"regexp"
 	"strings"
 	"time"
 
 	"github.com/texttheater/golang-levenshtein/levenshtein"
+)
+
+var (
+	MATCHALL_REGEX = regexp.MustCompile(".*")
 )
 
 func AddCarriageReturnAfterNewlines(s string) string {

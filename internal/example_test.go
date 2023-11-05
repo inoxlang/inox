@@ -185,6 +185,11 @@ func testExample(t *testing.T, config exampleTestConfig) {
 			AllowMissingEnvVars:       true,
 			IgnoreHighRiskScore:       true,
 			//Out:              os.Stdout, // &utils.TestWriter{T: t},
+
+			EnableTesting: strings.HasSuffix(fpath, inoxconsts.INOXLANG_SPEC_FILE_SUFFIX),
+			TestFilters: core.TestFilters{
+				PositiveTestFilters: []core.TestFilter{{NameRegex: utils.MATCHALL_REGEX}},
+			},
 		})
 
 		if utils.SliceContains(CANCELLED_TOP_CTX_EXAMPLES, filename) {
