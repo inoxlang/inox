@@ -20,6 +20,8 @@ func restrictProcessAccess(grantedPerms, forbiddenPerms []core.Permission, fls *
 	var allowDNS, allowCerts bool
 
 	executablePaths := map[string]struct{}{}
+	dirPaths := map[string]map[permkind.PermissionKind]struct{}{}
+	filePaths := map[string]map[permkind.PermissionKind]struct{}{}
 
 	for _, perm := range grantedPerms {
 		switch p := perm.(type) {
@@ -63,39 +65,21 @@ func restrictProcessAccess(grantedPerms, forbiddenPerms []core.Permission, fls *
 			}
 			allowedPaths = append(allowedPaths, allowedPath)
 		case core.FilesystemPermission:
-			var allowedPath *landlock.Path
 			var allowedPathString string
 
-			getMode := func(kind permkind.PermissionKind) string {
-				kind = kind.Major()
-				switch kind {
-				case permkind.Read:
-					return "r"
-				case permkind.Write, permkind.Delete:
-					//TODO: improve
-
-					return "wc"
-				default:
-					panic(core.ErrUnreachable)
-				}
-			}
+			dir := true
 
 			switch entity := p.Entity.(type) {
 			case core.Path:
-				mode := getMode(p.Kind())
 				allowedPathString = entity.UnderlyingString()
 
 				if entity.IsDirPath() {
-					allowedPath = landlock.Dir(allowedPathString, mode)
-				} else {
-					allowedPath = landlock.File(allowedPathString, mode)
+					dir = false
 				}
-			case core.PathPattern:
-				mode := getMode(p.Kind())
 
+			case core.PathPattern:
 				if entity.IsPrefixPattern() {
 					allowedPathString = entity.Prefix()
-					allowedPath = landlock.Dir(allowedPathString, mode)
 				} else {
 					//we try to find the longest path that contains all matched paths.
 
@@ -123,13 +107,11 @@ func restrictProcessAccess(grantedPerms, forbiddenPerms []core.Permission, fls *
 					if lastIncludedSegmentIndex >= 0 {
 						dir := strings.Join(segments[:lastIncludedSegmentIndex+1], "/")
 						allowedPathString = dir
-						allowedPath = landlock.Dir(dir, mode)
 					} else if entity.IsDirGlobbingPattern() {
 						allowedPathString = entity.UnderlyingString()
-						allowedPath = landlock.Dir(allowedPathString, mode)
 					} else {
+						dir = false
 						allowedPathString = entity.UnderlyingString()
-						allowedPath = landlock.File(allowedPathString, mode)
 					}
 				}
 			default:
@@ -141,8 +123,62 @@ func restrictProcessAccess(grantedPerms, forbiddenPerms []core.Permission, fls *
 				continue
 			}
 
-			allowedPaths = append(allowedPaths, allowedPath)
+			if dir {
+				map_, ok := dirPaths[allowedPathString]
+				if !ok {
+					map_ = map[permkind.PermissionKind]struct{}{}
+					dirPaths[allowedPathString] = map_
+				}
+
+				map_[p.Kind_.Major()] = struct{}{}
+			} else {
+				map_, ok := filePaths[allowedPathString]
+				if !ok {
+					map_ = map[permkind.PermissionKind]struct{}{}
+					filePaths[allowedPathString] = map_
+				}
+
+				map_[p.Kind_.Major()] = struct{}{}
+			}
 		}
+	}
+
+	getMode := func(kinds map[core.PermissionKind]struct{}) string {
+		read := false
+		write := false
+		create := false
+
+		for kind := range kinds {
+			switch kind {
+			case permkind.Read:
+				read = true
+			case permkind.Write:
+				write = true
+				create = true
+			case permkind.Delete:
+				write = true
+			}
+		}
+
+		s := ""
+		if read {
+			s += "r"
+		}
+		if write {
+			s += "w"
+		}
+		if create {
+			s += "c"
+		}
+		return s
+	}
+
+	for path, kinds := range dirPaths {
+		allowedPaths = append(allowedPaths, landlock.Dir(path, getMode(kinds)))
+	}
+
+	for path, kinds := range filePaths {
+		allowedPaths = append(allowedPaths, landlock.File(path, getMode(kinds)))
 	}
 
 	if allowDNS {
