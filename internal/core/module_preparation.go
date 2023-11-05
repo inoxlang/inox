@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/inoxlang/inox/internal/afs"
@@ -17,6 +18,7 @@ import (
 	"github.com/inoxlang/inox/internal/globalnames"
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	parse "github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/rs/zerolog"
 )
@@ -44,6 +46,7 @@ type ScriptPreparationArgs struct {
 	AllowMissingEnvVars     bool
 	FullAccessToDatabases   bool
 	ForceExpectSchemaUpdate bool
+	EnableTesting           bool
 
 	// If set this function is called just before the context creation,
 	// the preparation is aborted if an error is returned.
@@ -186,6 +189,18 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *GlobalState, mod *Mo
 			manifest = NewEmptyManifest()
 		}
 
+		//if testing is enabled and the file is a spec file we add some permissions.
+		if args.EnableTesting && strings.HasSuffix(args.Fpath, inoxconsts.INOXLANG_SPEC_FILE_SUFFIX) {
+			manifest.RequiredPermissions = append(manifest.RequiredPermissions,
+				FilesystemPermission{Kind_: permkind.Read, Entity: PathPattern("/...")},
+				FilesystemPermission{Kind_: permkind.Write, Entity: PathPattern("/...")},
+				FilesystemPermission{Kind_: permkind.Delete, Entity: PathPattern("/...")},
+
+				HttpPermission{Kind_: permkind.Read, AnyEntity: true},
+
+				LThreadPermission{Kind_: permkind.Create},
+			)
+		}
 	} else {
 		manifest = NewEmptyManifest()
 	}
@@ -255,6 +270,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *GlobalState, mod *Mo
 	state.Manifest = manifest
 	state.PrenitStaticCheckErrors = preinitStaticCheckErrors
 	state.MainPreinitError = preinitErr
+	state.IsTestingEnabled = args.EnableTesting
 	if args.UseParentStateAsMainState {
 		if parentState == nil {
 			panic(ErrUnreachable)

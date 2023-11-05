@@ -1981,6 +1981,86 @@ func TestPrepareLocalScript(t *testing.T) {
 		}
 	})
 
+	t.Run(".spec.ix modules should be granted wide implicit permissions if testing is enabled", func(t *testing.T) {
+
+		dir := t.TempDir()
+		file := filepath.Join(dir, "file.spec.ix")
+		compilationCtx := createCompilationCtx(dir)
+		defer compilationCtx.CancelGracefully()
+
+		os.WriteFile(file, []byte(`
+			manifest {
+			}
+		
+		`), 0o600)
+
+		state, mod, _, err := core.PrepareLocalScript(core.ScriptPreparationArgs{
+			Fpath:                     file,
+			ParsingCompilationContext: compilationCtx,
+			Out:                       io.Discard,
+
+			EnableTesting: true,
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		// the module should be present
+		if !assert.NotNil(t, mod) {
+			return
+		}
+
+		// the state should be present
+		if !assert.NotNil(t, state) {
+			return
+		}
+
+		perms := state.Ctx.GetGrantedPermissions()
+		assert.Contains(t, perms, core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")})
+		assert.Contains(t, perms, core.FilesystemPermission{Kind_: permkind.Write, Entity: core.PathPattern("/...")})
+		assert.Contains(t, perms, core.LThreadPermission{Kind_: permkind.Create})
+	})
+
+	t.Run(".spec.ix modules should not be granted wide implicit permissions if testing is disabled", func(t *testing.T) {
+
+		dir := t.TempDir()
+		file := filepath.Join(dir, "file.spec.ix")
+		compilationCtx := createCompilationCtx(dir)
+		defer compilationCtx.CancelGracefully()
+
+		os.WriteFile(file, []byte(`
+			manifest {
+			}
+		
+		`), 0o600)
+
+		state, mod, _, err := core.PrepareLocalScript(core.ScriptPreparationArgs{
+			Fpath:                     file,
+			ParsingCompilationContext: compilationCtx,
+			Out:                       io.Discard,
+
+			EnableTesting: false,
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		// the module should be present
+		if !assert.NotNil(t, mod) {
+			return
+		}
+
+		// the state should be present
+		if !assert.NotNil(t, state) {
+			return
+		}
+
+		perms := state.Ctx.GetGrantedPermissions()
+		assert.NotContains(t, perms, core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")})
+	})
+
 }
 
 func TestPrepareDevModeIncludableChunkFile(t *testing.T) {
