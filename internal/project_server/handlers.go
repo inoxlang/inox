@@ -59,6 +59,7 @@ type additionalSessionData struct {
 	project            *project.Project
 
 	//testing
+	testRuns map[TestRunId]*TestRun
 
 	//debug adapter protocol
 	debugSessions *DebugSessions
@@ -84,6 +85,7 @@ func getSessionData(session *jsonrpc.Session) *additionalSessionData {
 		sessionData = &additionalSessionData{
 			didSaveCapabilityRegistrationIds: make(map[defines.DocumentUri]uuid.UUID, 0),
 			unsavedDocumentSyncData:          make(map[string]*unsavedDocumentSyncData, 0),
+			testRuns:                         make(map[TestRunId]*TestRun, 0),
 		}
 		sessionToAdditionalData[session] = sessionData
 	}
@@ -101,6 +103,7 @@ func registerHandlers(server *lsp.Server, serverConfig LSPServerConfiguration) {
 		registerSecretsMethodHandlers(server, serverConfig)
 		registerDebugMethodHandlers(server, serverConfig)
 		registerLearningMethodHandlers(server)
+		registerTestingMethodHandlers(server, serverConfig)
 	}
 
 	server.OnInitialize(func(ctx context.Context, req *defines.InitializeParams) (result *defines.InitializeResult, err *defines.InitializeError) {
