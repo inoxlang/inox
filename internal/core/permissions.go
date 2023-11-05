@@ -269,6 +269,10 @@ func (perm HttpPermission) Includes(otherPerm Permission) bool {
 		return true
 	}
 
+	if otherHttpPerm.AnyEntity {
+		return false
+	}
+
 	switch e := perm.Entity.(type) {
 	case URL:
 		otherURL, ok := otherHttpPerm.Entity.(URL)

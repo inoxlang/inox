@@ -73,7 +73,8 @@ func TestHttpPermission(t *testing.T) {
 		assert.True(t, perm.Includes(HttpPermission{Kind_: permkind.Write, Entity: Host("https://localhost:8080")}))
 		assert.True(t, perm.Includes(HttpPermission{Kind_: permkind.Write, Entity: Host("http://localhost")}))
 
-		assert.False(t, perm.Includes(HttpPermission{Kind_: permkind.Read, Entity: Host("https://localhost")}))
+		writeLocahost := HttpPermission{Kind_: permkind.Write, Entity: Host("https://localhost")}
+		assert.False(t, writeLocahost.Includes(perm))
 	})
 }
 
