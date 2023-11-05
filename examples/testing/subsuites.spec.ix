@@ -1,14 +1,8 @@
-manifest {
-    permissions: {
-        create: {
-            threads: {}
-        }
-    }
-}
+manifest {}
 
-testsuite #{
+testsuite({
     name: "my test suite"
-} {
+}) {
 
     testsuite "sub suite 1" {
         testcase "1 == 1" {

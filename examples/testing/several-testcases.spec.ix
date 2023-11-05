@@ -1,10 +1,4 @@
-manifest {
-    permissions: {
-        create: {
-            threads: {}
-        }
-    }
-}
+manifest {}
 
 testsuite {
     testcase "1 != 2" {

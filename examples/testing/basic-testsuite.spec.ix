@@ -1,0 +1,11 @@
+# implicit permissions granted for .spec.ix files in test mode:
+# - read, write, delete all files
+# - read any http(s) resource
+# - create lightweight threads
+manifest {}
+
+testsuite {
+    testcase "1 != 2" {
+        assert (1 == 2)
+    }
+}
