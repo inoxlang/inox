@@ -3,9 +3,11 @@ package project_server
 import (
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/project_server/jsonrpc"
 	"github.com/inoxlang/inox/internal/project_server/logs"
@@ -171,7 +173,7 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 			}
 		}
 
-		state, mod, _, err := core.PrepareLocalScript(core.ScriptPreparationArgs{
+		args := core.ScriptPreparationArgs{
 			Fpath:                     fpath,
 			ParsingCompilationContext: ctx,
 
@@ -185,7 +187,13 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 			PreinitFilesystem:       fls,
 
 			Project: project,
-		})
+		}
+
+		if strings.HasSuffix(fpath, inoxconsts.INOXLANG_SPEC_FILE_SUFFIX) {
+			args.EnableTesting = true
+		}
+
+		state, mod, _, err := core.PrepareLocalScript(args)
 
 		if mod == nil {
 			logs.Println("unrecoverable parsing error", err.Error())
