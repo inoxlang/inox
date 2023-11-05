@@ -45,6 +45,9 @@ var (
 		),
 	}, nil, nil))
 
+	ANY_TEST_SUITE = &TestSuite{}
+	ANY_TEST_CASE  = &TestCase{}
+
 	ANY_TESTED_PROGRAM_OR_NIL = NewMultivalue(ANY_TESTED_PROGRAM, Nil)
 	ANY_TESTED_PROGRAM        = &TestedProgram{databases: ANY_MUTABLE_ENTRIES_NAMESPACE}
 
@@ -73,12 +76,12 @@ func (s *TestSuite) Test(v Value, state RecTestCallState) bool {
 	}
 }
 
-func (s *TestSuite) Run(ctx *Context, options ...Option) (*LThread, *Error) {
-	return &LThread{}, nil
+func (s *TestSuite) Run(ctx *Context, options ...*Option) (*LThread, *Error) {
+	return ANY_LTHREAD, nil
 }
 
 func (s *TestSuite) WidestOfType() Value {
-	return &TestSuite{}
+	return ANY_TEST_SUITE
 }
 
 func (s *TestSuite) GetGoMethod(name string) (*GoFunction, bool) {
@@ -125,7 +128,7 @@ func (s *TestCase) Test(v Value, state RecTestCallState) bool {
 }
 
 func (s *TestCase) WidestOfType() Value {
-	return &TestCase{}
+	return ANY_TEST_CASE
 }
 
 func (s *TestCase) GetGoMethod(name string) (*GoFunction, bool) {
