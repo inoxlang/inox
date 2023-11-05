@@ -1,69 +1,72 @@
-[Install Inox](../README.md#installation) | [Built-in Functions](./builtin.md) | [Project](./project.md) | [Web App Development](./web-app-development.md) | [Shell Basics](./shell-basics.md) | [Scripting Basics](./scripting-basics.md)
+[Install Inox](../README.md#installation) | [Built-in Functions](./builtin.md) |
+[Project](./project.md) | [Web App Development](./web-app-development.md) |
+[Shell Basics](./shell-basics.md) | [Scripting Basics](./scripting-basics.md)
 
------
+---
 
 # Inox Language Reference
 
 - [Literals](#Literals)
 - [Variables](#variables)
 - [Operations](#operations)
-    - [Binary operations](#binary-operations)
-    - [Unary operations](#unary-operations)
-    - [Concatenation](#concatenation-operation)
-    - [Interpolation](#interpolation)
+  - [Binary operations](#binary-operations)
+  - [Unary operations](#unary-operations)
+  - [Concatenation](#concatenation-operation)
+  - [Interpolation](#interpolation)
 - [Data Structures](#data-structures)
-    - [Lists](#lists)
-    - [Objects](#objects)
-    - [Tuples](#tuples)
-    - [Records](#records)
-    - [Udata](#udata)
-    - [Mappings](#mappings)
-    - [Dictionaries](#dictionaries)
+  - [Lists](#lists)
+  - [Objects](#objects)
+  - [Tuples](#tuples)
+  - [Records](#records)
+  - [Udata](#udata)
+  - [Mappings](#mappings)
+  - [Dictionaries](#dictionaries)
 - [Control flow](#Control-flow)
-    - [If statement](#if-statement--expression)
-    - [Switch statement](#switch-statement)
-    - [Match statement](#match-statement)
-    - [For statement](#for-statement)
-    - [Walk statement](#walk-statement)
-    - [Pipe statement](#pipe-statement)
+  - [If statement](#if-statement--expression)
+  - [Switch statement](#switch-statement)
+  - [Match statement](#match-statement)
+  - [For statement](#for-statement)
+  - [Walk statement](#walk-statement)
+  - [Pipe statement](#pipe-statement)
 - [Functions](#functions)
-    - [Definitions](#function-definitions)
-    - [Call](#calling-a-function)
+  - [Definitions](#function-definitions)
+  - [Call](#calling-a-function)
 - [Patterns](#patterns)
-    - [Named patterns](#named-patterns)
-    - [Object patterns](#object-patterns)
-    - [List patterns](#list-patterns)
-    - [String patterns](#string-patterns)
-    - [Union Patterns](#union-patterns)
-    - [Pattern namespaces](#pattern-namespaces)
+  - [Named patterns](#named-patterns)
+  - [Object patterns](#object-patterns)
+  - [List patterns](#list-patterns)
+  - [String patterns](#string-patterns)
+  - [Union Patterns](#union-patterns)
+  - [Pattern namespaces](#pattern-namespaces)
 - [Extensions](#extensions)
 - [XML Expressions](#xml-expressions)
 - [Modules](#modules)
-    - [Module Parameters](#module-parameters)
-    - [Permissions](#permissions)
-    - [Execution Phases](#execution-phases)
-    - [Inclusion Imports](#inclusion-imports)
-    - [Module Imports](#module-imports)
-    - [Limits](#limits)
-    - [Main Module](#main-module)
+  - [Module Parameters](#module-parameters)
+  - [Permissions](#permissions)
+  - [Execution Phases](#execution-phases)
+  - [Inclusion Imports](#inclusion-imports)
+  - [Module Imports](#module-imports)
+  - [Limits](#limits)
+  - [Main Module](#main-module)
 - [Static check](#static-check)
 - [Symbolic evaluation](#symbolic-evaluation)
 - [Concurrency](#concurrency)
-    - [LThreads](#lthreads)
-    - [Data Sharing](#data-sharing)
+  - [LThreads](#lthreads)
+  - [Data Sharing](#data-sharing)
 - [Databases](#databases)
-    - [Schema](#database-schema)
-    - [Serialization](#serialization)
-    - [Access From Other Modules](#access-from-other-modules)
+  - [Schema](#database-schema)
+  - [Serialization](#serialization)
+  - [Access From Other Modules](#access-from-other-modules)
 - [Testing](#testing)
-    - [Basic](#basic)
-    - [Custom Filesystem](#custom-filesystem)
-    - [Program Testing](#program-testing)
+  - [Basic](#basic)
+  - [Custom Filesystem](#custom-filesystem)
+  - [Program Testing](#program-testing)
+- [Project Images](#project-images)
 - [Structures (not implemented yet)](#structs)
 
 # Literals
 
-Here are the most commonly used literals in Inox: 
+Here are the most commonly used literals in Inox:
 
 - numbers with a point (.) are floating point numbers: `1.0, 2.0e3`
 - numbers without a point are integers: `1, -200, 1_000`
@@ -72,29 +75,32 @@ Here are the most commonly used literals in Inox:
 - nil literal (it represents the absence of value): `nil`
 - single line strings have double quotes: `"hello !"`
 - multiline strings have backquotes:
-    ``` 
-    `first line
-    second line`
-    ```
+  ```
+  `first line
+  second line`
+  ```
 - runes represent a single character, they have single quotes: `'a', '\n'`
-- regex literals: ``%`a+` ``
+- regex literals: `` %`a+` ``
 
 <details>
 
 **<summary>URL & Path literals</summary>**
 
 - path literals represent a path in the filesystem: `/etc/passwd, /home/user/`
-    - they always start with `./`, `../` or `/`
-    - paths ending with `/` are directory paths
-    - if the path contains spaces or delimiters such as `[` or `]` you can use a quoted path: `` /`[ ]` ``
+  - they always start with `./`, `../` or `/`
+  - paths ending with `/` are directory paths
+  - if the path contains spaces or delimiters such as `[` or `]` you can use a
+    quoted path: `` /`[ ]` ``
 - path pattern literals allow you match a path
-    - `%/tmp/...` matches any path starting with `/tmp/`, it's a prefix path pattern
-    - `%./*.go` matches any file in the `./` directory that ends with `.go`, it's a globbing path pattern
-    - ⚠️ They are values, they don't expand like when you do `ls ./*.go`
-    - note: you cannot mix prefix & globbing path patterns for now
+  - `%/tmp/...` matches any path starting with `/tmp/`, it's a prefix path
+    pattern
+  - `%./*.go` matches any file in the `./` directory that ends with `.go`, it's
+    a globbing path pattern
+  - ⚠️ They are values, they don't expand like when you do `ls ./*.go`
+  - note: you cannot mix prefix & globbing path patterns for now
 - URL literals: `https://example.com/index.html, https://google.com?q=inox`
 - URL pattern literals:
-    - URL prefix patterns: `%https://example.com/...`
+  - URL prefix patterns: `%https://example.com/...`
 
 </details>
 
@@ -104,11 +110,12 @@ Here are the most commonly used literals in Inox:
 
 - host literals: `https://example.com, https://127.0.0.1`
 - host pattern literals:
-    - `%https://**.com` matches any domain or subdomain ending in .com
-    - `%https://**.example.com` matches any subdomain of `example.com`
+  - `%https://**.com` matches any domain or subdomain ending in .com
+  - `%https://**.example.com` matches any subdomain of `example.com`
 - port literals: `:80, :80/http`
-- date literals represent a specific point in time: `2020y-10mt-5d-CET`, `2020y-10mt-5d-5h-4m-CET`
-    - The location part (CET | UTC | Local | ...) at the end is mandatory.
+- date literals represent a specific point in time: `2020y-10mt-5d-CET`,
+  `2020y-10mt-5d-5h-4m-CET`
+  - The location part (CET | UTC | Local | ...) at the end is mandatory.
 - quantity literals: `1B 2kB 10%`
 - quantity range literals `1kB..1MB 1kB..`
 - rate literals: `5B/s 10kB/s`
@@ -116,11 +123,11 @@ Here are the most commonly used literals in Inox:
 
 </details>
 
-
-
 # Variables
 
-There are two kinds of variables: globals & locals, local variables are declared with the `var` keyword or with an assignment.
+There are two kinds of variables: globals & locals, local variables are declared
+with the `var` keyword or with an assignment.
+
 ## Locals
 
 ```
@@ -128,9 +135,11 @@ var local1 = 1
 local2 = 2
 ```
 
-ℹ️ Assigning a local that is not defined is allowed but redeclaration is an error.
+ℹ️ Assigning a local that is not defined is allowed but redeclaration is an
+error.
 
 Local variable declarations can have a type annotation:
+
 ```
 var i int = 0
 ```
@@ -141,6 +150,7 @@ var i int = 0
 
 Type annotations are just [patterns](#patterns) with no leading `%` required.
 The following declarations are valid:
+
 ```
 var i int = 0
 var i %int = 0
@@ -157,6 +167,7 @@ var object {a: int} = {}
 ## Globals
 
 Declaration of global variables:
+
 ```
 $$myglobal = 1 # note: the syntax might change in the near future.
 
@@ -167,11 +178,11 @@ print (myglobal + local2)
 var myglobal = 3
 ```
 
-Go to the [Functions](#functions) section to learn more about variables & scopes.
-
-
+Go to the [Functions](#functions) section to learn more about variables &
+scopes.
 
 Global constants are defined at the top of the file, before the manifest.
+
 ```
 const (
     A = 1
@@ -185,23 +196,24 @@ print(A)
 ## Multi Assignment
 
 Multiple variables can be assigned at once using the `assign` keyword:
+
 ```
 assign first second = [1, 2]
 
 assign first second = unknown_length_list
 ```
 
-⚠️ If the number of elements is less than the number of variables the evaluation will panic.
-You can use a nillable multi-assignment to avoid that:
+⚠️ If the number of elements is less than the number of variables the evaluation
+will panic. You can use a nillable multi-assignment to avoid that:
 
 ```
 assign? first second = unknown_length_list
 ```
 
-If at runtime `unknown_length_list` has a single element `second` will receive a value of `nil`.
+If at runtime `unknown_length_list` has a single element `second` will receive a
+value of `nil`.
 
 # Operations
-
 
 ## Binary Operations
 
@@ -215,26 +227,30 @@ Binary operations are always parenthesized:
 - logical operations: `(a or b)`, `(a and b)`
 
 ℹ️ Parentheses can be omitted around operands of **or**/**and** chains:
+
 ```
 (a or b or c)       # ok
 (a < b or c < d)    # ok
 
 (a or b and c)      # error: 'or' and 'and' cannot be mixed in the same chain
 (a or (b and c))    # ok
-((a or b) and c)    # ok 
+((a or b) and c)    # ok
 ```
 
-This [script](../examples/basic/binary-expressions.ix) contains most possible binary operations.
+This [script](../examples/basic/binary-expressions.ix) contains most possible
+binary operations.
 
-## Unary Operations 
+## Unary Operations
 
 A number negation is always parenthesized
+
 ```
 (- 1.0)
 (- 1)
 ```
 
 Boolean negation:
+
 ```
 !true # false
 
@@ -244,7 +260,9 @@ myvar = true
 
 ## Concatenation Operation
 
-Concatenation of strings, byte slices and tuples is performed with a concatenation expression.
+Concatenation of strings, byte slices and tuples is performed with a
+concatenation expression.
+
 ```
 # result: "ab"
 concat "a" "b"
@@ -257,6 +275,7 @@ concat #[1] #[2]
 ```
 
 **Parenthesized** concatenation expressions can span several lines:
+
 ```
 (concat "start"
     "1" # comment
@@ -278,8 +297,10 @@ I am {{name}}`
 
 ### Checked Strings
 
-In Inox checked strings are strings that are validated against a pattern. When you dynamically
-create a checked string all the interpolations must be explicitly typed:
+In Inox checked strings are strings that are validated against a pattern. When
+you dynamically create a checked string all the interpolations must be
+explicitly typed:
+
 ```
 pattern integer = %`(0|[1-9]+[0-9]*)`
 
@@ -294,23 +315,25 @@ two = "2"
 checked_string = %math.expr`{{int:one}}+{{int:two}}`
 ```
 
-
 ### URL Expressions
 
-When you dynamically create URLs the interpolations are restricted based on their location (path, query).
+When you dynamically create URLs the interpolations are restricted based on
+their location (path, query).
 
 ```
 https://example.com/api/{path}/?x={x}
 ```
 
 - interpolations before the **'?'** are **path** interpolations
-    - the strings/characters **..** | **\*** | **\\** | **?** | **#** are forbidden
-    - **':'** is forbidden at the start of the finalized path (after all interpolations have been evaluated)
-- interpolations after the **'?'** are **query** interpolations 
-    - the characters **'&'** and **'#'** are forbidden
-
+  - the strings/characters **..** | **\*** | **\\** | **?** | **#** are
+    forbidden
+  - **':'** is forbidden at the start of the finalized path (after all
+    interpolations have been evaluated)
+- interpolations after the **'?'** are **query** interpolations
+  - the characters **'&'** and **'#'** are forbidden
 
 URL path interpolations:
+
 ```
 path = /index.html        # you can also use the string "/index.html"
 https://example.com{path} 
@@ -322,6 +345,7 @@ https://example.com/api/{path}
 ```
 
 URL query interpolations:
+
 ```
 param_value = "x"
 https://google.com/?q={param_value}
@@ -333,6 +357,7 @@ https://google.com/?q={param_value}hub
 ```
 
 Host aliases:
+
 ```
 @host = https://example.com   # host literal
 @host/index.html
@@ -346,7 +371,9 @@ path = /.bashrc     # you can also use the path ./.bashrc or a string
 # result: /home/user/.bashrc
 ```
 
-⚠️ Some sequences such as '..' are allowed in the path but not in the interpolation !
+⚠️ Some sequences such as '..' are allowed in the path but not in the
+interpolation !
+
 ```
 # ok
 /home/user/dir/..
@@ -356,12 +383,12 @@ path = /../../etc/passwd
 # error: result of a path interpolation should not contain any of the following substrings: '..', '\', '*', '?'
 ```
 
-
 # Data Structures
 
 ## Lists
 
-A list is a sequence of elements, you can add elements to it and change the value of an element at a given position.
+A list is a sequence of elements, you can add elements to it and change the
+value of an element at a given position.
 
 ```
 list = []
@@ -376,7 +403,8 @@ first_two_elems = list[0:2] # creates a new list containing 1 and 2
 
 ## Objects
 
-An object is a data structure containing properties, each property has a name and a value.
+An object is a data structure containing properties, each property has a name
+and a value.
 
 ```
 object = {  
@@ -388,7 +416,9 @@ object = {
 a = object.a
 ```
 
-Implicit-key properties are properties that can be set without specifying a name:
+Implicit-key properties are properties that can be set without specifying a
+name:
+
 ```
 object = {
     1
@@ -404,7 +434,9 @@ output:
 }
 ```
 
-Properties with an implicit key can be accessed thanks to an index expression, the index should always be an integer:
+Properties with an implicit key can be accessed thanks to an index expression,
+the index should always be an integer:
+
 ```
 object = {1}
 one = object[0] # 1
@@ -426,11 +458,13 @@ object = {
 object.print()
 ```
 
-ℹ️ It is recommended to define methods in [extensions](#extensions), not in the objects.
+ℹ️ It is recommended to define methods in [extensions](#extensions), not in the
+objects.
 
 ### Computed Member Expressions
 
-Computed member expressions are member expressions where the property name is computed at runtime:
+Computed member expressions are member expressions where the property name is
+computed at runtime:
 
 ```
 object = { name: "foo" }
@@ -438,7 +472,8 @@ property_name = "name"
 name = object.(property_name)
 ```
 
-⚠️ Accessing properties dynamically may cause security issues, this feature will be made more secure in the near future.
+⚠️ Accessing properties dynamically may cause security issues, this feature will
+be made more secure in the near future.
 
 ## Records
 
@@ -446,7 +481,9 @@ name = object.(property_name)
 
 <summary>Click to expand</summary>
 
-Records are the immutable equivalent of objects, their properties can only have immutable values.
+Records are the immutable equivalent of objects, their properties can only have
+immutable values.
+
 ```
 record = #{
     a: 1
@@ -462,7 +499,6 @@ record = #{
 
 </details>
 
-
 ## Tuples
 
 <details>
@@ -470,6 +506,7 @@ record = #{
 <summary>Click to expand</summary>
 
 Tuples are the immutable equivalent of lists.
+
 ```
 tuple = #[1, #[2, 3]]
 
@@ -478,14 +515,14 @@ tuple = #[1, [2, 3]] # error ! a list is mutable, it's not a valid element for a
 
 </details>
 
-
 ## Udata
 
 <details>
 
 <summary>Click to expand</summary>
 
-A udata value allows you to represent immutable data that has the shape of a tree.
+A udata value allows you to represent immutable data that has the shape of a
+tree.
 
 ```
 udata "root" { 
@@ -501,7 +538,6 @@ udata "root" {
 <!-- In the shell execute the following command to see an example of udata value ``fs.get_tree_data ./docs/`` -->
 
 </details>
-
 
 ## Mappings
 
@@ -538,8 +574,9 @@ path
 
 <summary>Click to expand</summary>
 
-Dictionaries are similar to objects in that they store key-value pairs, but unlike objects, 
-they allow keys of any data type as long as they are representable (serializable).
+Dictionaries are similar to objects in that they store key-value pairs, but
+unlike objects, they allow keys of any data type as long as they are
+representable (serializable).
 
 ```
 dict = :{
@@ -569,7 +606,9 @@ string = (if (a > 0) "positive" else "negative or zero")
 val = (if false 1) # val is nil because the condition is false
 ```
 
-When the condition is a boolean conversion expression the type of the converted value is narrowed:
+When the condition is a boolean conversion expression the type of the converted
+value is narrowed:
+
 ```
 intOrNil = ...
 
@@ -599,8 +638,9 @@ output:
 
 ## Match Statement
 
-The match statement is similar to the switch statement but uses **patterns** as case values.
-The match statement executes the block following the first pattern matching the value.
+The match statement is similar to the switch statement but uses **patterns** as
+case values. The match statement executes the block following the first pattern
+matching the value.
 
 ```
 value = /a 
@@ -655,7 +695,8 @@ b 2
 <details>
 <summary>Advanced use</summary>
 
-Values & keys can be filtered by putting a pattern in front of the **value** and **key** variables.
+Values & keys can be filtered by putting a pattern in front of the **value** and
+**key** variables.
 
 **Value filtering:**
 
@@ -691,8 +732,8 @@ aa 2
 <details>
     <summary>Click to expand</summary>
 
-**walk statements** iterate over a **walkable** value. Like in **for statements** 
-you can use the **break** & **continue** keywords.
+**walk statements** iterate over a **walkable** value. Like in **for
+statements** you can use the **break** & **continue** keywords.
 
 ```
 fs.mkdir ./tempdir/ :{
@@ -752,8 +793,8 @@ output:
 
 ## Pipe Statement
 
-Pipe statements are analogous to pipes in Unix but they act on the values returned by functions, not 
-file descriptors.
+Pipe statements are analogous to pipes in Unix but they act on the values
+returned by functions, not file descriptors.
 
 Here is an example:
 
@@ -761,20 +802,22 @@ Here is an example:
 map [{value: "a"}, {value: 1}] .value | filter $ %int
 ```
 
-- in the first call we extract the .value property of several objects using the `map` function
+- in the first call we extract the .value property of several objects using the
+  `map` function
 - in the second call we filter the result of the previous call
   - `$` is an anonymous variable that contains the result of the previous call
   - `%int` is a pattern matching integers
 
-
 Pipe expressions allows you to store the final result in a variable:
+
 ```
 ints = | map [{value: "a"}, {value: 1}] .value | filter $ %int
 ```
 
 # Functions
 
-There are 2 kinds of functions in Inox: normal Inox functions & native Golang functions (that you cannot define).
+There are 2 kinds of functions in Inox: normal Inox functions & native Golang
+functions (that you cannot define).
 
 ## Function Definitions
 
@@ -799,8 +842,10 @@ fn add(a int, b int) int {
 
 **<summary>Learn more about type annotations</summary>**
 
-As for local variable declarations, type annotations are just [patterns](#patterns) with no leading `%` required.
-The following function declarations are valid:
+As for local variable declarations, type annotations are just
+[patterns](#patterns) with no leading `%` required. The following function
+declarations are valid:
+
 ```
 fn add(a int, b int) int {
     return (a + b)
@@ -821,9 +866,8 @@ fn add(a %{a: int}, b %{a: int}) %{a: int} {
 
 </details>
 
-
-Local variables are local to a function's scope or to the module's top local scope.
-Blocks might be introduced in the future.
+Local variables are local to a function's scope or to the module's top local
+scope. Blocks might be introduced in the future.
 
 ```
 fn f(){
@@ -848,14 +892,17 @@ fn g(arg){
 }
 ```
 
-You can call `f` with parentheses or with a command-like syntax: 
+You can call `f` with parentheses or with a command-like syntax:
+
 ```
 result = f(1, 2)
 
 f 1 2 # this syntax is mostly used in the REPL
 ```
 
-Since the `g` function has a single parameter you can call it with a special syntax in addition to the previous ones.
+Since the `g` function has a single parameter you can call it with a special
+syntax in addition to the previous ones.
+
 ```
 g{a: 1}   # equivalent to g({a: 1})
 
@@ -864,12 +911,14 @@ g"string" # equivalent to g("a")
 
 # Patterns
 
-Besides the pattern [literals](#literals) there are other kinds of patterns in Inox.
+Besides the pattern [literals](#literals) there are other kinds of patterns in
+Inox.
 
 ## Named Patterns
 
-Named patterns are equivalent to variables but for patterns, there are many built-in named patterns such as: `int, str, bool`.
-Pattern definitions allow you to declare a pattern.
+Named patterns are equivalent to variables but for patterns, there are many
+built-in named patterns such as: `int, str, bool`. Pattern definitions allow you
+to declare a pattern.
 
 ```
 pattern int_list = []int
@@ -885,12 +934,15 @@ pattern user = {
 
 ⚠️ Named patterns cannot be reassigned.
 
-Some named patterns are callable, for example if you want a pattern that matches all integers in the range 0..10 you can do the following:
+Some named patterns are callable, for example if you want a pattern that matches
+all integers in the range 0..10 you can do the following:
+
 ```
 pattern zero-to-ten = %int(0..10)
 ```
 
 Creating a named pattern `%user` does not prevent you to name a variable `user`:
+
 ```
 pattern user = {
     name: str
@@ -945,12 +997,14 @@ pattern user = {
 }
 
 # true
-({name: "John", additional_prop: 0} match user) 
+({name: "John", additional_prop: 0} match user)
 ```
 
 ## List Patterns
 
-The syntax for patterns that match a list with **elements of the same type** (only integers, only strings, etc.) is as follows:
+The syntax for patterns that match a list with **elements of the same type**
+(only integers, only strings, etc.) is as follows:
+
 ```
 pattern int_list = []int
 
@@ -962,9 +1016,11 @@ pattern int_list = []int
 <details>
 
 **<summary>Alternative syntax with leading '%' symbol</summary>**
+
 ```
 pattern int_list = %[]int
 ```
+
 </details>
 
 You can also create list patterns that match a list of known length:
@@ -984,7 +1040,8 @@ pattern two_pairs = [ [int, str], [int, str] ]
 
 ## String Patterns
 
-Inox allows you to describe string patterns that are easier to read than regex expressions.
+Inox allows you to describe string patterns that are easier to read than regex
+expressions.
 
 ```
 # matches any string containing only 'a's
@@ -998,6 +1055,7 @@ Inox allows you to describe string patterns that are easier to read than regex e
 ```
 
 String patterns can be composed thanks to named patterns:
+
 ```
 pattern domain = "@mail.com"
 pattern email-address = (("user1" | "user2") %domain)
@@ -1015,7 +1073,8 @@ pattern int_or_str = | int | str
 ("a" match int_or_str)
 ```
 
-ℹ️ A value is matched by an union pattern if it matches **at least one** of the union's cases.
+ℹ️ A value is matched by an union pattern if it matches **at least one** of the
+union's cases.
 
 ## Pattern Namespaces
 
@@ -1039,8 +1098,8 @@ namespace = %ints.
 
 # Extensions
 
-An **extension** consists of a set of computed properties and methods that can be accessed/called on
-values matching a given pattern.
+An **extension** consists of a set of computed properties and methods that can
+be accessed/called on values matching a given pattern.
 
 ```
 pattern todo = {
@@ -1084,6 +1143,7 @@ user.todos
 # XML Expressions
 
 An XML expression is the interpretation of a XML-like value by a namespace:
+
 ```
 string = "world"
 element = html<div> Hello {string} ! </div>
@@ -1098,8 +1158,10 @@ An Inox module is a code file that starts with a manifest.
 
 ## Module Parameters
 
-Module can take parameters, for the main module they correpond to the CLI parameters.\
-In the following module manifest two parameters are defined: **dir** and **verbose**:
+Module can take parameters, for the main module they correpond to the CLI
+parameters.\
+In the following module manifest two parameters are defined: **dir** and
+**verbose**:
 
 ```
 manifest {
@@ -1121,15 +1183,17 @@ clean-existing = mod-args.clean-existing
 ```
 
 Arguments should be added after the path when executing the program:
+
 ```
 inox run [...run options...] ./script.ix ./dir/ --verbose
 ```
 
 ## Permissions
 
-The permissions section of the manifest lists the permissions required by the module. 
-Permissions represent a type of action a module is allowed (or forbidden) to do. 
-Most IO operations (filesystem access, HTTP requests) and resource intensive operations (lthread creation) necessitate a permission.
+The permissions section of the manifest lists the permissions required by the
+module. Permissions represent a type of action a module is allowed (or
+forbidden) to do. Most IO operations (filesystem access, HTTP requests) and
+resource intensive operations (lthread creation) necessitate a permission.
 
 **Examples:**
 
@@ -1184,10 +1248,10 @@ manifest {
 }
 ```
 
-
 ## Execution Phases
 
 The execution of a module has several phases:
+
 - **Parsing**
 - [Static Check](#static-check)
 - [Symbolic Evaluation/Check](#symbolic-evaluation)
@@ -1197,6 +1261,7 @@ The execution of a module has several phases:
 ## Result
 
 Inox modules can return a value with a return statement:
+
 ```
 # return-1.ix
 manifest {}
@@ -1204,12 +1269,14 @@ manifest {}
 return 1
 ```
 
-This feature is generally used by imported modules to return a result or export functions.
+This feature is generally used by imported modules to return a result or export
+functions.
 
 ## Inclusion Imports
 
-Inclusion imports include the content of a file in the current file.
-They are useful to decompose a module or regroup pattern definitions/functions shared between modules.
+Inclusion imports include the content of a file in the current file. They are
+useful to decompose a module or regroup pattern definitions/functions shared
+between modules.
 
 ```
 # main.ix
@@ -1226,12 +1293,14 @@ pattern user = {
 }
 ```
 
-⚠️ This feature is currently in development ! File inclusion will follow strict rules.
+⚠️ This feature is currently in development ! File inclusion will follow strict
+rules.
 
 ## Module Imports
 
-As the name imply this language construct imports a **module**: an Inox file that starts with a manifest.
-Here is a minimal example:
+As the name imply this language construct imports a **module**: an Inox file
+that starts with a manifest. Here is a minimal example:
+
 ```
 # main.ix
 manifest {
@@ -1253,8 +1322,8 @@ return 1
 
 ### Arguments
 
-As explained [here](#module-parameters) module can take parameters. 
-When an imported module does have parameters you have to pass arguments to it.
+As explained [here](#module-parameters) module can take parameters. When an
+imported module does have parameters you have to pass arguments to it.
 
 ```
 # main.ix
@@ -1289,10 +1358,12 @@ return (mod-args.first_operand + mod-args.second_operand)
 
 ### Granting Permissions
 
-In most cases the modules you import will require access to the filesystem or the network.
-You can grant them the required permissions in the **allow** section of the import.
+In most cases the modules you import will require access to the filesystem or
+the network. You can grant them the required permissions in the **allow**
+section of the import.
 
-> Note: in the following example IWD_PREFIX refers to a prefix path pattern matching the working directory
+> Note: in the following example IWD_PREFIX refers to a prefix path pattern
+> matching the working directory
 
 ```
 # main.ix
@@ -1323,16 +1394,15 @@ return fn(){
 ```
 
 ⁉️ So I need to write a manifest + specify permissions in **EACH** file ?\
--> No, you will typically use [inclusion imports](#inclusion-imports) for trusted, local files. Modules are useful to 
-provide a library or to decompose an application in smaller parts.
-
+-> No, you will typically use [inclusion imports](#inclusion-imports) for
+trusted, local files. Modules are useful to provide a library or to decompose an
+application in smaller parts.
 
 ## Limits
 
-Limits limit intensive operations, there are three kinds of limits: **[byte rate](#byte-rate-limits)**, 
-**[simple rate](#simple-rate-limits)** & **[total](#total-limits)**.
-Limits are defined in module manifests. 
-
+Limits limit intensive operations, there are three kinds of limits:
+**[byte rate](#byte-rate-limits)**, **[simple rate](#simple-rate-limits)** &
+**[total](#total-limits)**. Limits are defined in module manifests.
 
 ```
 manifest {
@@ -1348,9 +1418,11 @@ manifest {
 
 ### Sharing
 
-At runtime a counter will be created for each limit, the behaviour of the counter is specific to the limit's kind.
-Limits defined by a module will be shared with all of its child modules/threads.
-In other words when the module defining the limit or one if its children performs an operation a shared counter is decremented.
+At runtime a counter will be created for each limit, the behaviour of the
+counter is specific to the limit's kind. Limits defined by a module will be
+shared with all of its child modules/threads. In other words when the module
+defining the limit or one if its children performs an operation a shared counter
+is decremented.
 
 **Example 1 - CPU Time**
 
@@ -1408,6 +1480,7 @@ lthread = go do {
 
 This kind of limit represents a number of bytes per second.\
 Examples:
+
 - `fs/read`
 - `fs/write`
 
@@ -1415,6 +1488,7 @@ Examples:
 
 This kind of limit represents a number of operations per second.\
 Examples:
+
 - `fs/new-file`
 - `http/request`
 - `object-storage/request`
@@ -1422,33 +1496,40 @@ Examples:
 ### Total Limits
 
 This kind of limit represents a total number of operations or resources.
-Attempting to make an operation while the counter associated with the limit is at zero will cause a panic.\
-Examples: 
-- `fs/total-new-file` - the counter can only go down.
-- `ws/simul-connection` - simultaneous number of WebSocket connections, the counter can go up & down since connections can be closed.
-- `execution/cpu-time` - the counter decrements on its own, it pauses when an IO operation is being performed.
-- `execution/total-time` - the counter decrements on its own.
+Attempting to make an operation while the counter associated with the limit is
+at zero will cause a panic.\
+Examples:
 
+- `fs/total-new-file` - the counter can only go down.
+- `ws/simul-connection` - simultaneous number of WebSocket connections, the
+  counter can go up & down since connections can be closed.
+- `execution/cpu-time` - the counter decrements on its own, it pauses when an IO
+  operation is being performed.
+- `execution/total-time` - the counter decrements on its own.
 
 ## Main Module
 
 In Inoxlang "a" **main module** does not always refer to the first module being
-executed because in some cases modules can invoke other "main" modules.
-In general the main module is the "main" module of "a" project.
+executed because in some cases modules can invoke other "main" modules. In
+general the main module is the "main" module of "a" project.
 
 # Static Check
 
-During the static check phase the code is analyzed in order to find the following issues:
+During the static check phase the code is analyzed in order to find the
+following issues:
+
 - misplaced statements
 - undeclared variables or patterns
 - duplicate declarations
 
-*(and a few others)*
+_(and a few others)_
 
 # Symbolic Evaluation
 
-The symbolic evaluation of a module is a "virtual" evaluation, it performs checks similar to those of a type checker.
-Throughout the Inox documentation you may encounter the terms "type checker"/ "type checking", they correspond to the symbolic evaluation phase.
+The symbolic evaluation of a module is a "virtual" evaluation, it performs
+checks similar to those of a type checker. Throughout the Inox documentation you
+may encounter the terms "type checker"/ "type checking", they correspond to the
+symbolic evaluation phase.
 
 # Compilation
 
@@ -1456,37 +1537,42 @@ TODO
 
 # Evaluation
 
-The evaluation is performed by either a **bytecode interpreter or** a **tree walking interpreter**. You don't really need to understand
-how they work, just remember that:
+The evaluation is performed by either a **bytecode interpreter or** a **tree
+walking interpreter**. You don't really need to understand how they work, just
+remember that:
+
 - the bytecode interpreter is the default when running a script with `inox run`
 - the REPL always uses the tree walking interpreter
-- the tree walking intepreter is much slower (filesystem & network operations are not affected)
-
+- the tree walking intepreter is much slower (filesystem & network operations
+  are not affected)
 
 # Concurrency
 
 ## LThreads
 
-LThreads (lightweight threads) are mainly used for concurrent work and isolation. Each lthread runs an Inox module in a dedicated Goroutine.
+LThreads (lightweight threads) are mainly used for concurrent work and
+isolation. Each lthread runs an Inox module in a dedicated Goroutine.
 
 **Embedded module:**
 
-````
+```
 thread = go {allow: {read: %https://example.com/...}} do {
     # embedded module
 
     return read!(https://example.com/)
 }
-````
+```
 
 Call syntax (all permissions are inherited):
-````
+
+```
 thread = go do f()
-````
+```
 
-LThreads can optionally be part of a "thread group" that allows easier control of multiple lthreads.
+LThreads can optionally be part of a "thread group" that allows easier control
+of multiple lthreads.
 
-````
+```
 req_group = LThreadGroup()
 
 for (1 .. 10) {
@@ -1494,7 +1580,7 @@ for (1 .. 10) {
 }
 
 results = req_group.wait_results!()
-````
+```
 
 ## Data Sharing
 
@@ -1512,10 +1598,12 @@ go {globals: {immutable: immutable, lock_protected: lock_protected}} do {
 }
 ```
 
-The most common immutables values are floats, integral values (ints, bytes, ...), string-like values and records & tuples.
-The most common lock-protected values are objects.
+The most common immutables values are floats, integral values (ints, bytes,
+...), string-like values and records & tuples. The most common lock-protected
+values are objects.
 
-**Non-sharable** values that are **clonable** are cloned when passed to another execution context:
+**Non-sharable** values that are **clonable** are cloned when passed to another
+execution context:
 
 ```
 clonable = [1, 2, 3]
@@ -1531,6 +1619,7 @@ go {globals: {clone: clonable}} do {
 Inox functions are generally sharable unless they assign a global variable.
 
 Go **functions** are sharable but Go **methods** are not:
+
 ```
 # not sharable
 method = LThreadGroup().wait_results
@@ -1539,6 +1628,7 @@ method = LThreadGroup().wait_results
 ### Objects
 
 Properties of **shared objects** are shared/cloned when accessed:
+
 ```
 user = {friends: ["foo"]}
 
@@ -1549,18 +1639,21 @@ friends_copy.append("bar")
 ```
 
 The mutation of a property is achieved by using a **double-colon** syntax:
+
 ```
 user::friends.append("bar")
 ```
 
-In Inox Web applications it is frequent for request execution contexts to access properties of the same object concurrently. 
-When an object is accessed by an execution context having an **associated transaction** all other access attempts
+In Inox Web applications it is frequent for request execution contexts to access
+properties of the same object concurrently. When an object is accessed by an
+execution context having an **associated transaction** all other access attempts
 from other execution contexts are paused until the transaction finishes.
-
 
 # Databases
 
-Inox comes with an embedded database engine, you can define databases in the manifest:
+Inox comes with an embedded database engine, you can define databases in the
+manifest:
+
 ```
 manifest {
     # permissions required by the database
@@ -1579,8 +1672,9 @@ manifest {
 
 ## Database Schema
 
-The schema of an Inox Database is an [object pattern](#object-patterns), it can be
-set by calling the **update_schema** method on the database:
+The schema of an Inox Database is an [object pattern](#object-patterns), it can
+be set by calling the **update_schema** method on the database:
+
 ```
 pattern user = {
   name: str
@@ -1591,12 +1685,13 @@ dbs.main.update_schema(%{
 })
 ```
 
-⚠️ calling **.update_schema** requires the following property in the db description: **expected-schema-update: true**
+⚠️ calling **.update_schema** requires the following property in the db
+description: **expected-schema-update: true**
 
 ## Migrations
 
-Updating the schema often requires data updates, when this is the case .updated_schema needs a 
-second argument that describes the updates.
+Updating the schema often requires data updates, when this is the case
+.updated_schema needs a second argument that describes the updates.
 
 ```
 pattern new_user = {
@@ -1615,30 +1710,32 @@ dbs.main.update_schema(%{
 })
 ```
 
-| Type |  Reason  | Value, Handler Signature |
-| ----------- | -----------  | ----------- |
-| **deletions** | deletion of a property or element | **nil** OR **fn(deleted_value)** |
-| **replacements** | complete replacement of a property or element |**value** OR **fn(prev_user user) new_user** |
-| **inclusions** | new property or element |**value** OR **fn(prev_value) new_user** |
-| **initializations** | initialization of a previously optional property |**value** OR **fn(prev_value) new_user** |
+| Type                | Reason                                           | Value, Handler Signature                     |
+| ------------------- | ------------------------------------------------ | -------------------------------------------- |
+| **deletions**       | deletion of a property or element                | **nil** OR **fn(deleted_value)**             |
+| **replacements**    | complete replacement of a property or element    | **value** OR **fn(prev_user user) new_user** |
+| **inclusions**      | new property or element                          | **value** OR **fn(prev_value) new_user**     |
+| **initializations** | initialization of a previously optional property | **value** OR **fn(prev_value) new_user**     |
 
-ℹ️ In application logic properties can be added to database objects even if they are not defined in the schema.\
+ℹ️ In application logic properties can be added to database objects even if they
+are not defined in the schema.\
 During a migration previous values are passed to the handlers.
 
 ## Serialization
 
-Most Inox types (objects, lists, Sets) are serializable so no translation layer is
-needed to add/retrieve objects to/from the database. 
+Most Inox types (objects, lists, Sets) are serializable so no translation layer
+is needed to add/retrieve objects to/from the database.
 
 ```
 new_user = {name: "John"}
 dbs.main.users.add(new_user)
 
 # true
-dbs.main.users.has(new_user) 
+dbs.main.users.has(new_user)
 ```
 
 Since most Inox types are serializable they cannot contain transient values.
+
 ```
 object = {
   # error: non-serializable values are not allowed as initial values for properties of serializables
@@ -1655,8 +1752,8 @@ list = [
 
 ## Access From Other Modules
 
-If the `/main.ix` module defines a `ldb://main` database, imported modules can access the database with
-the following manifest:
+If the `/main.ix` module defines a `ldb://main` database, imported modules can
+access the database with the following manifest:
 
 ```
 manifest { 
@@ -1674,22 +1771,24 @@ for user in dbs.main.users {
 }
 ```
 
-
-ℹ️ The module defining the databases is automatically granted access to the database.
+ℹ️ The module defining the databases is automatically granted access to the
+database.
 
 ⚠️ Permissions still need to be granted in the import statement.
 
 # Testing
 
-Inox comes with a powerful testing engine that is deeply integrated with the Inox runtime.
-
+Inox comes with a powerful testing engine that is deeply integrated with the
+Inox runtime.
 
 ## Basic
 
-A single test is defined by a **testcase** statement. Test suites are defined using **testsuite** statements
-and can be nested.
+A single test is defined by a **testcase** statement. Test suites are defined
+using **testsuite** statements and can be nested.
 
 ```
+manifest {}
+
 testsuite "my test suite" {
     testcase "1 < 2" {
         assert (1 < 2)
@@ -1705,15 +1804,24 @@ testsuite "my test suite" {
 }
 ```
 
+Permissions granted by default to modules whose filename matches `*.spec.ix`:
 
-The metadata and parameters of the test suites and test cases are specified in a [record](#records) value.
+- **read, write, delete all files**
+- **read any http(s) resource**
+- **create lightweight threads (always required for testing)**
+
+The metadata and parameters of the test suites and test cases are specified in
+an object:
 
 ```
-testsuite (#{
+manifest {}
+
+
+testsuite ({
     name: "my test suite"
 }) {
 
-    testcase(#{ name: "1 < 2"}) {
+    testcase({ name: "1 < 2"}) {
 
     }
 
@@ -1722,8 +1830,11 @@ testsuite (#{
 
 ## Custom Filesystem
 
-Test suites and test cases can be configured to use a short-live filesystem:
+Test suites and test cases can be configured to use a short-lived filesystem:
+
 ```
+manifest {}
+
 snapshot = fs.new_snapshot{
     files: :{
         ./file1.txt: "content 1"
@@ -1733,7 +1844,7 @@ snapshot = fs.new_snapshot{
     }
 }
 
-testsuite (#{
+testsuite ({
     # a filesystem will be created from the snapshot for each test suite and test case.
     fs: snapshot
 }) {
@@ -1757,10 +1868,10 @@ testsuite (#{
 Test suites can pass a copy of their filesystem to subtests:
 
 ```
-testsuite #{
+testsuite ({
     fs: snapshot
     pass-live-fs-copy-to-subtests: true
-} {
+}) {
     fs.rm(/file1.txt)
 
     testcase {
@@ -1787,16 +1898,56 @@ testsuite #{
 
 ## Program Testing
 
-TODO
+Inox's testing engine is able to launch an Inox program/application. Test suites
+& test cases accept a **program** parameter that is inherited by subtests. The
+program is launched for each test case in a short-lived filesystem.
 
+```
+manifest {
+    permissions: {
+        # no permissions of kind provide are granted by default to .spec.ix modules,
+        # so they should be specified.
+        provide: https://localhost:8080
+    }
+}
+
+testsuite({
+    program: /web-app.ix
+}) {
+    testcase {
+        assert http.exists(https://localhost:8080/)
+    }
+
+    testcase {
+        assert http.exists(https://localhost:8080/about)
+    }
+}
+```
+
+The short-lived filesystem is created from the current project's
+[base image](#project-images).
+
+# Project Images
+
+A **project image** is a filesystem snapshot + some metadata about the project.
+Projects have several types of **images**, the most important one is the **base
+image**.
+
+The base image contains:
+
+- all `.ix` files
+- all files in `/static/`
 
 # Structs
 
 ⚠️ This feature is not implemented yet and is subject to change.
 
-Structs are transient values that only exist in the stack on in a temporary storage managed by a module.\
-Unlike most core Inox types such as objects & lists, structs are not necessarily serializable but will be more memory efficient.\
-Accessing the field of a struct will be faster than accessing a property/element of other Inox types.
+Structs are transient values that only exist in the stack on in a temporary
+storage managed by a module.\
+Unlike most core Inox types such as objects & lists, structs are not necessarily
+serializable but will be more memory efficient.\
+Accessing the field of a struct will be faster than accessing a property/element
+of other Inox types.
 
 The main usage of structs will be storing and representing temporary state.
 
