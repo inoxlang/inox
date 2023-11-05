@@ -3,6 +3,7 @@ package core
 import (
 	"testing"
 
+	permkind "github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -93,6 +94,26 @@ func TestComputeProgramRiskScore(t *testing.T) {
 		expectedHttpScore := RiskScore((HTTP_READ_PERM_RISK_SCORE * URL_RISK_MULTIPLIER))
 		expectedScore := 2 * expectedHttpScore
 		assert.Equal(t, expectedScore, utils.Ret0(ComputeProgramRiskScore(mod, manifest)))
+	})
+
+	t.Run("any-entity read http permission", func(t *testing.T) {
+		ctx := NewContext(ContextConfig{})
+		defer ctx.CancelGracefully()
+
+		mod := utils.Must(ParseInMemoryModule(`
+			manifest {
+				permissions: {}
+			}
+		`, InMemoryModuleParsingConfig{
+			Name:    "",
+			Context: ctx,
+		}))
+
+		ComputeProgramRiskScore(mod, &Manifest{
+			RequiredPermissions: []Permission{
+				HttpPermission{Kind_: permkind.Read, AnyEntity: true},
+			},
+		})
 	})
 
 	t.Run("create threads permission", func(t *testing.T) {

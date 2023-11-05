@@ -184,6 +184,11 @@ func ComputePermissionRiskScore(perm Permission) RiskScore {
 	case GlobalVarPermission:
 		return 1
 	case HttpPermission:
+		if p.AnyEntity {
+			score *= HOST_PATTERN_RISK_MULTIPLIER
+			break
+		}
+
 		switch p.Entity.(type) {
 		case HostPattern:
 			score *= HOST_PATTERN_RISK_MULTIPLIER
