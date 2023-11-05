@@ -318,7 +318,7 @@ data = fs.read!(/etc/passwd)
 If the imported module asks more permissions than granted an error is thrown:\
 `import: some permissions in the imported module's manifest are not granted: [read path(s) /...] `
 
-### **Process-Level Access Control**
+#### **Process-Level Access Control**
 
 In addition to the checks performed by the permission system, the **inox** binary uses [Landlock](https://landlock.io/) 
 to restrict file access for the whole process and its children.
