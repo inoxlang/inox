@@ -155,6 +155,7 @@ const (
 	OpAndJump // Logical AND jump
 	OpOrJump  // Logical OR jump
 	OpJump
+	OpPopJumpIfTestDisabled
 	OpPushNil
 	OpCreateList
 	OpCreateKeyList
@@ -259,6 +260,7 @@ const (
 	OpRuntimeTypecheck
 	OpPushIncludedChunk
 	OpPopIncludedChunk
+	OpNoOp
 	OpSuspendVM
 )
 
@@ -289,6 +291,7 @@ var OpcodeNames = [...]string{
 	OpAndJump:                      "AND_JUMP",
 	OpOrJump:                       "OR_JUMP",
 	OpJump:                         "JUMP",
+	OpPopJumpIfTestDisabled:        "PJUMP_IF_TDISABLED",
 	OpPushNil:                      "PUSH_NIL",
 	OpCreateList:                   "CRT_LST",
 	OpCreateKeyList:                "CRT_KLST",
@@ -393,6 +396,7 @@ var OpcodeNames = [...]string{
 	OpRuntimeTypecheck:             "TYPECHECK",
 	OpPushIncludedChunk:            "PUSH_CHUNK",
 	OpPopIncludedChunk:             "POP_CHUNK",
+	OpNoOp:                         "NO_OP",
 	OpSuspendVM:                    "SUSPEND",
 }
 
@@ -422,6 +426,7 @@ var OpcodeOperands = [...][]int{
 	OpAndJump:                      {2},
 	OpOrJump:                       {2},
 	OpJump:                         {2},
+	OpPopJumpIfTestDisabled:        {2},
 	OpPushNil:                      {},
 	OpGetGlobal:                    {2},
 	OpSetGlobal:                    {2},
@@ -525,6 +530,7 @@ var OpcodeOperands = [...][]int{
 	OpRuntimeTypecheck:             {2},
 	OpPushIncludedChunk:            {2},
 	OpPopIncludedChunk:             {},
+	OpNoOp:                         {},
 	OpSuspendVM:                    {},
 }
 
@@ -554,6 +560,7 @@ var OpcodeConstantIndexes = [...][]bool{
 	OpAndJump:                      {false},
 	OpOrJump:                       {false},
 	OpJump:                         {false},
+	OpPopJumpIfTestDisabled:        {false},
 	OpPushNil:                      {},
 	OpGetGlobal:                    {true},
 	OpSetGlobal:                    {true},
@@ -658,6 +665,7 @@ var OpcodeConstantIndexes = [...][]bool{
 	OpRuntimeTypecheck:             {true},
 	OpPushIncludedChunk:            {true},
 	OpPopIncludedChunk:             {},
+	OpNoOp:                         {},
 	OpSuspendVM:                    {},
 }
 

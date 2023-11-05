@@ -1957,6 +1957,8 @@ func (c *compiler) Compile(node parse.Node) error {
 		c.emit(node, OpCreateTestSuite, c.addConstant(testSuiteNode), c.addConstant(parentChunk))
 
 		if node.IsStatement {
+			jumpPos := c.emit(node, OpPopJumpIfTestDisabled, 0)
+
 			c.emit(node, OpCopyTop)
 			c.emit(node, OpCopyTop) //copy test suite ref for next OpMemb
 			c.emit(node, OpPushNil) //slot for the next call's result
@@ -1970,6 +1972,10 @@ func (c *compiler) Compile(node parse.Node) error {
 			c.emit(node, OpMemb, c.addConstant(Str("wait_result")))
 			c.emit(node, OpCall, 0, 0, 1) //must call
 			c.emit(node, OpAddTestSuiteResult)
+
+			currPos := len(c.currentInstructions())
+			c.changeOperand(jumpPos, currPos)
+			c.emit(node, OpNoOp)
 		} //else the test suite is on the top of the stack
 
 	case *parse.TestCaseExpression:
@@ -1997,7 +2003,9 @@ func (c *compiler) Compile(node parse.Node) error {
 		c.emit(node, OpCreateTestCase, c.addConstant(testSuiteNode), c.addConstant(parentChunk))
 
 		if node.IsStatement {
-			//the emitted bytecode may be wrong because test suites are not compiled at the moment.
+			jumpPos := c.emit(node, OpPopJumpIfTestDisabled, 0)
+
+			//the emitted bytecode may be wrong because test suites are not compiled for now.
 
 			c.emit(node, OpCopyTop)
 			c.emit(node, OpCopyTop) //copy test case ref for next OpMemb
@@ -2011,6 +2019,10 @@ func (c *compiler) Compile(node parse.Node) error {
 			c.emit(node, OpMemb, c.addConstant(Str("wait_result")))
 			c.emit(node, OpCall, 0, 0, 1)
 			c.emit(node, OpAddTestCaseResult)
+
+			currPos := len(c.currentInstructions())
+			c.changeOperand(jumpPos, currPos)
+			c.emit(node, OpNoOp)
 		} //else the test case is on the top of the stack
 
 	case *parse.StringTemplateLiteral:

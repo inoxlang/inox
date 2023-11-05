@@ -7741,6 +7741,28 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			assert.Len(t, state.TestSuiteResults, 1)
 		})
 
+		t.Run("empty: filtered out", func(t *testing.T) {
+			src := makeSourceFile(`testsuite "name" {}`)
+
+			state := NewGlobalState(NewDefaultTestContext())
+			state.IsTestingEnabled = true
+			state.TestFilters = TestFilters{
+				PositiveTestFilters: []TestFilter{
+					{
+						NameRegex: regexp.MustCompile("not this test"),
+					},
+				},
+			}
+			defer state.Ctx.CancelGracefully()
+
+			res, err := Eval(src, state, false)
+
+			assert.NoError(t, err)
+			assert.Equal(t, Nil, res)
+			assert.Empty(t, state.TestCaseResults)
+			assert.Empty(t, state.TestSuiteResults)
+		})
+
 		t.Run("empty: return statement after test suite", func(t *testing.T) {
 			src := makeSourceFile(`
 				testsuite "name" {}
@@ -8168,6 +8190,33 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 			assert.Len(t, state.TestSuiteResults[0].caseResults, 1)
+		})
+
+		t.Run("empty test case: filtered out", func(t *testing.T) {
+			src := makeSourceFile(`testsuite "suite" {
+				testcase {}
+			}`)
+
+			state := NewGlobalState(NewDefaultTestContext())
+			state.IsTestingEnabled = true
+			state.TestFilters = TestFilters{
+				PositiveTestFilters: []TestFilter{
+					{
+						NameRegex: regexp.MustCompile("suite"),
+					},
+				},
+			}
+			defer state.Ctx.CancelGracefully()
+
+			res, err := Eval(src, state, false)
+
+			assert.NoError(t, err)
+			assert.Equal(t, Nil, res)
+			assert.Empty(t, state.TestCaseResults)
+			if !assert.Len(t, state.TestSuiteResults, 1) {
+				return
+			}
+			assert.Empty(t, state.TestSuiteResults[0].caseResults)
 		})
 
 		t.Run("manifest with ungranted permissions", func(t *testing.T) {

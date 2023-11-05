@@ -2783,6 +2783,8 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		positionStack, formattedLocation := state.formatLocation(node)
 
 		testCase, err := NewTestCase(TestCaseCreationInput{
+			Node: n,
+
 			Meta:        meta,
 			ModChunk:    chunk,
 			ParentState: state.Global,
@@ -2797,10 +2799,15 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 
 		//execute the test case if the node is a statement
 		if n.IsStatement {
+			if ok, _ := state.Global.TestFilters.IsTestEnabled(testCase); !ok {
+				return Nil, nil
+			}
+
 			lthread, err := testCase.Run(state.Global.Ctx)
 			if err != nil {
 				return nil, err
 			}
+
 			result, err := lthread.WaitResult(state.Global.Ctx)
 
 			if state.Global.Module.ModuleKind != TestSuiteModule {

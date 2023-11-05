@@ -698,6 +698,17 @@ func (v *VM) run() {
 		case OpJump:
 			pos := int(v.curInsts[v.ip+2]) | int(v.curInsts[v.ip+1])<<8
 			v.ip = pos - 1
+		case OpPopJumpIfTestDisabled:
+			v.ip += 2
+			testItem := v.stack[v.sp-1].(TestItem)
+
+			if enabled, _ := v.global.TestFilters.IsTestEnabled(testItem); !enabled {
+				pos := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
+
+				v.stack[v.sp-1] = Nil
+				v.sp--
+				v.ip = pos
+			}
 		case OpSetGlobal:
 			v.ip += 2
 			v.sp--
@@ -2510,6 +2521,7 @@ func (v *VM) run() {
 		case OpPopIncludedChunk:
 			v.chunkStack = v.chunkStack[:len(v.chunkStack)-1]
 			v.chunkStack[len(v.chunkStack)-1].CurrentNodeSpan = parse.NodeSpan{}
+		case OpNoOp:
 		case OpSuspendVM:
 			return
 		default:
