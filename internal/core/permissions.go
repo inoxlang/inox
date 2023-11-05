@@ -323,6 +323,9 @@ func (perm HttpPermission) Includes(otherPerm Permission) bool {
 }
 
 func (perm HttpPermission) String() string {
+	if perm.AnyEntity {
+		return fmt.Sprintf("[%s any]", perm.Kind_)
+	}
 	return fmt.Sprintf("[%s %s]", perm.Kind_, perm.Entity)
 }
 
