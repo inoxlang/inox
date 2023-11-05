@@ -120,10 +120,12 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 
 		runFlags := flag.NewFlagSet("run", flag.ExitOnError)
 		var useTreeWalking bool
+		var enableTestingMode bool
 		var showBytecode bool
 		var disableOptimization bool
 		var fullyTrusted bool
 
+		runFlags.BoolVar(&enableTestingMode, "test", false, "enable testing mode")
 		runFlags.BoolVar(&useTreeWalking, "t", false, "use tree walking interpreter")
 		runFlags.BoolVar(&showBytecode, "show-bytecode", false, "show emitted bytecode before evaluating the script")
 		runFlags.BoolVar(&disableOptimization, "no-optimization", false, "disable bytecode optimization")
@@ -194,6 +196,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 			Out:                       outW,
 
 			FullAccessToDatabases: true,
+			EnableTesting:         enableTestingMode,
 
 			OnPrepared: func(state *core.GlobalState) error {
 				inoxprocess.RestrictProcessAccess(state.Ctx)
