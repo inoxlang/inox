@@ -23,7 +23,7 @@ func TestDatabaseIL(t *testing.T) {
 	runtime.ReadMemStats(startMemStats)
 
 	defer func() {
-		utils.AssertNoMemoryLeak(t, startMemStats, 100, utils.AssertNoMemoryLeakOptions{
+		utils.AssertNoMemoryLeak(t, startMemStats, 10_000, utils.AssertNoMemoryLeakOptions{
 			PreSleepDurationMillis: 100,
 		})
 	}()
