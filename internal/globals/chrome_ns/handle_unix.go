@@ -19,7 +19,7 @@ func newHandle(ctx *core.Context) (*Handle, error) {
 	}
 
 	//create a temporary directory to store user data
-	tempDir := string(core.CreateTempdir("chrome", fs_ns.GetOsFilesystem()))
+	tempDir := string(fs_ns.CreateDirInProcessTempDir("chrome"))
 
 	logger := *ctx.Logger()
 	logger = logger.With().Str(core.SOURCE_LOG_FIELD_NAME, SRC_PATH).Logger()
