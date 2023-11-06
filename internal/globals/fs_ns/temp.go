@@ -4,14 +4,19 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
+	"path/filepath"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/rs/zerolog"
+	processutils "github.com/shirou/gopsutil/v3/process"
 )
 
 const (
-	PROCESS_TEMP_DIR_PREFIX = "inoxlang"
+	PROCESS_TEMP_DIR_PREFIX = "inoxlangprocess"
 )
 
 var (
@@ -57,5 +62,49 @@ func DeleteProcessTempDir() {
 	if processTempDir != "" {
 		fls.RemoveAll(processTempDir)
 		processTempDir = ""
+	}
+}
+
+func DeleteDeadProcessTempDirs(logger zerolog.Logger, maxDuration time.Duration) {
+	fls := GetOsFilesystem()
+
+	entries, err := fls.ReadDir("/tmp")
+	if err != nil {
+		panic(err)
+	}
+
+	deadline := time.Now().Add(maxDuration)
+
+	for _, entry := range entries {
+
+		path := filepath.Join("/tmp", entry.Name())
+
+		if !strings.HasPrefix(entry.Name(), PROCESS_TEMP_DIR_PREFIX) {
+			continue
+		}
+
+		if time.Now().After(deadline) {
+			return
+		}
+
+		parts := strings.Split(entry.Name(), "-")
+		if len(parts) < 3 {
+			continue
+		}
+
+		pidString := parts[1]
+
+		pid, err := strconv.ParseInt(pidString, 10, 32)
+		if err != nil {
+			continue
+		}
+
+		if exists, err := processutils.PidExists(int32(pid)); err == nil && !exists {
+			logger.Info().Msgf("remove temp dir %s", path)
+			err := fls.RemoveAll(path)
+			if err != nil {
+				logger.Err(err).Msgf("failed to remove dead process's temporary directory (%s): %s", path, err.Error())
+			}
+		}
 	}
 }

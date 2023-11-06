@@ -65,6 +65,7 @@ const (
 	PERF_PROFILES_COLLECTION_SAVE_PERIOD = 30 * time.Second
 	MAX_STACK_SIZE                       = 200_000_000
 	BROWSER_DOWNLOAD_TIMEOUT             = 300 * time.Second
+	TEMP_DIR_CLEANUP_TIMEOUT             = time.Second / 2
 
 	//text
 
@@ -435,6 +436,14 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 		}
 
 		out := os.Stdout
+
+		//cleanup the temporary directories of dead inox processes.
+		go func() {
+			defer utils.Recover()
+
+			logger := zerolog.New(out).With().Str(core.SOURCE_LOG_FIELD_NAME, "temp-dir-cleanup").Logger()
+			fs_ns.DeleteDeadProcessTempDirs(logger, TEMP_DIR_CLEANUP_TIMEOUT)
+		}()
 
 		//download a chrome browser if not present.
 		//this is done synchronously because Landlock is invoked further in the code.
