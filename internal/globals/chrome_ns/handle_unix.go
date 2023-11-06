@@ -9,6 +9,7 @@ import (
 	"github.com/chromedp/chromedp"
 
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/globals/html_ns"
 )
 
@@ -17,13 +18,16 @@ func newHandle(ctx *core.Context) (*Handle, error) {
 		return nil, errors.New("BROWSER_BINPATH is not set")
 	}
 
+	//create a temporary directory to store user data
+	tempDir := string(core.CreateTempdir("chrome", fs_ns.GetOsFilesystem()))
+
 	logger := *ctx.Logger()
 	logger = logger.With().Str(core.SOURCE_LOG_FIELD_NAME, SRC_PATH).Logger()
 
 	opts := append(chromedp.DefaultExecAllocatorOptions[:],
 		chromedp.DisableGPU,
 		chromedp.Flag("headless", true),
-		chromedp.UserDataDir(string(core.CreateTempdir("chrome", ctx.GetFileSystem()))),
+		chromedp.UserDataDir(tempDir),
 		chromedp.ExecPath(BROWSER_BINPATH),
 		//chromedp.Headless,
 	)
