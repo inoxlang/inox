@@ -7,7 +7,9 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/go-git/go-billy/v5/util"
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/check.v1"
 )
@@ -140,6 +142,171 @@ func (s *MetaFsTestSuite) TearDownTest(c *check.C) {
 	for _, ctx := range s.contexts {
 		ctx.CancelGracefully()
 	}
+}
+
+func TestOpenMetaFilesystem(t *testing.T) {
+	t.Run("once", func(t *testing.T) {
+		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+		underlyingFS := NewMemFilesystem(100_000_000)
+
+		fls, err := OpenMetaFilesystem(ctx, underlyingFS, MetaFilesystemParams{
+			Dir: "/",
+		})
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		defer fls.Close(ctx)
+	})
+
+	t.Run("re-open", func(t *testing.T) {
+		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+		underlyingFS := NewMemFilesystem(100_000_000)
+
+		fls, err := OpenMetaFilesystem(ctx, underlyingFS, MetaFilesystemParams{
+			Dir: "/",
+		})
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		fls.Close(ctx)
+
+		fls, err = OpenMetaFilesystem(ctx, underlyingFS, MetaFilesystemParams{})
+		if !assert.NoError(t, err) {
+			return
+		}
+		defer fls.Close(ctx)
+	})
+
+	t.Run("re-open after creation of files and directories", func(t *testing.T) {
+		type testCase struct {
+			name   string
+			mutate func(fls *MetaFilesystem)
+		}
+
+		cases := []testCase{
+			{
+				name: "top-level file",
+				mutate: func(fls *MetaFilesystem) {
+					utils.PanicIfErr(util.WriteFile(fls, "a.txt", nil, 0600))
+				},
+			},
+			{
+				name: "top-level directory",
+				mutate: func(fls *MetaFilesystem) {
+					utils.PanicIfErr(fls.MkdirAll("/dir", DEFAULT_DIR_FMODE))
+				},
+			},
+			{
+				name: "top-level file + top-level directory, filename < dirname",
+				mutate: func(fls *MetaFilesystem) {
+					utils.PanicIfErrAmong(
+						util.WriteFile(fls, "a.txt", nil, 0600),
+						fls.MkdirAll("/dir", DEFAULT_DIR_FMODE),
+					)
+				},
+			},
+			{
+				name: "top-level file + top-level directory, filename > dirname",
+				mutate: func(fls *MetaFilesystem) {
+					utils.PanicIfErrAmong(
+						util.WriteFile(fls, "e.txt", nil, 0600),
+						fls.MkdirAll("/dir", DEFAULT_DIR_FMODE),
+					)
+				},
+			},
+			{
+				name: "top-level file + top-level directory with file, filename < dirname",
+				mutate: func(fls *MetaFilesystem) {
+					utils.PanicIfErrAmong(
+						util.WriteFile(fls, "a.txt", nil, 0600),
+
+						fls.MkdirAll("/dir", DEFAULT_DIR_FMODE),
+						util.WriteFile(fls, "/dir/b.txt", nil, 0600),
+					)
+				},
+			},
+			{
+				name: "2 top-level files + top-level directory with file, top-level filenames < dirname",
+				mutate: func(fls *MetaFilesystem) {
+					utils.PanicIfErrAmong(
+						util.WriteFile(fls, "a.txt", nil, 0600),
+						util.WriteFile(fls, "b.txt", nil, 0600),
+
+						fls.MkdirAll("/dir", DEFAULT_DIR_FMODE),
+						util.WriteFile(fls, "dir/b.txt", nil, 0600),
+					)
+				},
+			},
+			{
+				name: "2 top-level files + top-level directory with file, top-level filenames > dirname",
+				mutate: func(fls *MetaFilesystem) {
+					utils.PanicIfErrAmong(
+						util.WriteFile(fls, "e_a.txt", nil, 0600),
+						util.WriteFile(fls, "e_b.txt", nil, 0600),
+
+						fls.MkdirAll("/dir", DEFAULT_DIR_FMODE),
+						util.WriteFile(fls, "dir/b.txt", nil, 0600),
+					)
+				},
+			},
+			{
+				name: "3 top-level files + top-level directory with file, top-level filenames < dirname",
+				mutate: func(fls *MetaFilesystem) {
+					utils.PanicIfErrAmong(
+						util.WriteFile(fls, "a.txt", nil, 0600),
+						util.WriteFile(fls, "b.txt", nil, 0600),
+						util.WriteFile(fls, "c.txt", nil, 0600),
+
+						fls.MkdirAll("/dir", DEFAULT_DIR_FMODE),
+						util.WriteFile(fls, "dir/b.txt", nil, 0600),
+					)
+				},
+			},
+			{
+				name: "3 top-level files + top-level directory with file, top-level filenames > dirname",
+				mutate: func(fls *MetaFilesystem) {
+					utils.PanicIfErrAmong(
+						util.WriteFile(fls, "e_a.txt", nil, 0600),
+						util.WriteFile(fls, "e_b.txt", nil, 0600),
+						util.WriteFile(fls, "e_c.txt", nil, 0600),
+
+						fls.MkdirAll("/dir", DEFAULT_DIR_FMODE),
+						util.WriteFile(fls, "dir/b.txt", nil, 0600),
+					)
+				},
+			},
+		}
+
+		for _, testCase := range cases {
+			t.Run(testCase.name, func(t *testing.T) {
+				ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+				defer ctx.CancelGracefully()
+				underlyingFS := NewMemFilesystem(100_000_000)
+
+				fls, err := OpenMetaFilesystem(ctx, underlyingFS, MetaFilesystemParams{
+					Dir: "/",
+				})
+				if !assert.NoError(t, err) {
+					return
+				}
+
+				testCase.mutate(fls)
+
+				fls.Close(ctx)
+
+				fls, err = OpenMetaFilesystem(ctx, underlyingFS, MetaFilesystemParams{})
+				if !assert.NoError(t, err) {
+					return
+				}
+				defer fls.Close(ctx)
+			})
+		}
+	})
+
 }
 
 func TestMetaFilesystemRemoveShouldRemoveConcreteFile(t *testing.T) {

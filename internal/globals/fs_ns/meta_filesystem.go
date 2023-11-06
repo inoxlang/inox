@@ -208,7 +208,7 @@ func OpenMetaFilesystem(ctx *core.Context, underlying billy.Basic, opts MetaFile
 
 		if time.Time(metadata.modificationTime).Before(info.ModTime()) {
 			metadata.modificationTime = core.Date(info.ModTime())
-			fls.setFileMetadata(metadata, nil)
+			return fls.setFileMetadata(metadata, nil)
 		}
 		return nil
 	})
@@ -436,7 +436,7 @@ func (fls *MetaFilesystem) walk(visit func(normalizedPath string, path core.Path
 
 	pathSegments := []string{"", ""}
 	stack := slices.Clone(rootDirMeta.children)
-	firstChildIndexes := []int{0}
+	firstChildIndexes := []int{0} //indexes in stack
 
 	for len(stack) > 0 {
 		//pop last children from the stack.
@@ -457,13 +457,16 @@ func (fls *MetaFilesystem) walk(visit func(normalizedPath string, path core.Path
 
 		path := childMetadata.path
 
+		keepFirstChildIndex := false
+
 		if childMetadata.mode.IsDir() {
 			path = core.AppendTrailingSlashIfNotPresent(path)
 			//push entries into the stack.
 			if len(childMetadata.children) > 0 {
 				pathSegments = append(pathSegments, "")
-				firstChildIndexes = append(firstChildIndexes, index+1)
+				firstChildIndexes = append(firstChildIndexes, index)
 				stack = append(stack, childMetadata.children...)
+				keepFirstChildIndex = true
 			}
 		}
 
@@ -472,7 +475,7 @@ func (fls *MetaFilesystem) walk(visit func(normalizedPath string, path core.Path
 			return err
 		}
 
-		if firstChildIndexes[len(firstChildIndexes)-1] == index {
+		if !keepFirstChildIndex && firstChildIndexes[len(firstChildIndexes)-1] == index {
 			//remove parent from path segments
 			firstChildIndexes = firstChildIndexes[:len(firstChildIndexes)-1]
 			pathSegments = pathSegments[:len(pathSegments)-1]
