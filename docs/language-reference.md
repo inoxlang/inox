@@ -89,15 +89,15 @@ Here are the most commonly used literals in Inox:
 - path literals represent a path in the filesystem: `/etc/passwd, /home/user/`
   - they always start with `./`, `../` or `/`
   - paths ending with `/` are directory paths
-  - if the path contains spaces or delimiters such as `[` or `]` you can use a
-    quoted path: `` /`[ ]` ``
-- path pattern literals allow you match a path
+  - if the path contains spaces or delimiters such as `[` or `]` it should be
+    quoted: `` /`[ ]` ``
+- path pattern literals allow you to match paths
   - `%/tmp/...` matches any path starting with `/tmp/`, it's a prefix path
     pattern
   - `%./*.go` matches any file in the `./` directory that ends with `.go`, it's
     a globbing path pattern
   - ⚠️ They are values, they don't expand like when you do `ls ./*.go`
-  - note: you cannot mix prefix & globbing path patterns for now
+  - note: you cannot mix prefix & globbing path patterns
 - URL literals: `https://example.com/index.html, https://google.com?q=inox`
 - URL pattern literals:
   - URL prefix patterns: `%https://example.com/...`
@@ -115,7 +115,7 @@ Here are the most commonly used literals in Inox:
 - port literals: `:80, :80/http`
 - date literals represent a specific point in time: `2020y-10mt-5d-CET`,
   `2020y-10mt-5d-5h-4m-CET`
-  - The location part (CET | UTC | Local | ...) at the end is mandatory.
+  - The location part at the end is mandatory (CET | UTC | Local | ...).
 - quantity literals: `1B 2kB 10%`
 - quantity range literals `1kB..1MB 1kB..`
 - rate literals: `5B/s 10kB/s`
@@ -166,10 +166,10 @@ var object {a: int} = {}
 
 ## Globals
 
-Declaration of global variables:
+**Declaration of global variables**:
 
 ```
-$$myglobal = 1 # note: the syntax might change in the near future.
+globalvar myglobal = 1
 
 var local1 = 2
 print (myglobal + local2)
@@ -181,7 +181,16 @@ var myglobal = 3
 Go to the [Functions](#functions) section to learn more about variables &
 scopes.
 
-Global constants are defined at the top of the file, before the manifest.
+**Assignment of global variables**:
+
+```
+$$myglobal = 0
+```
+
+ℹ️ Assigning a global that is not defined is allowed but redeclaration is an
+error.
+
+**Global constants** are defined at the top of the file, before the manifest.
 
 ```
 const (
