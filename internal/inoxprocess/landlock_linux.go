@@ -15,8 +15,10 @@ import (
 	"github.com/shoenig/go-landlock"
 )
 
-func restrictProcessAccess(grantedPerms, forbiddenPerms []core.Permission, fls *fs_ns.OsFilesystem) {
+func restrictProcessAccess(grantedPerms, forbiddenPerms []core.Permission, fls *fs_ns.OsFilesystem, additionalPaths []*landlock.Path) {
 	allowedPaths := []*landlock.Path{landlock.VMInfo(), landlock.Stdio(), landlock.Shared()}
+	allowedPaths = append(allowedPaths, additionalPaths...)
+
 	var allowDNS, allowCerts bool
 
 	executablePaths := map[string]struct{}{}

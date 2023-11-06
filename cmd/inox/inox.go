@@ -3,6 +3,7 @@ package main
 import (
 	// ====================== IMPORTANT SIDE EFFECTS ============================
 
+	"context"
 	"runtime/debug"
 
 	"github.com/inoxlang/inox/internal/config"
@@ -19,6 +20,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/permkind"
 
+	"github.com/inoxlang/inox/internal/globals/chrome_ns"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/globals/http_ns"
 	"github.com/inoxlang/inox/internal/globals/inox_ns"
@@ -62,6 +64,7 @@ const (
 
 	PERF_PROFILES_COLLECTION_SAVE_PERIOD = 30 * time.Second
 	MAX_STACK_SIZE                       = 200_000_000
+	BROWSER_DOWNLOAD_TIMEOUT             = 300 * time.Second
 
 	//text
 
@@ -86,7 +89,8 @@ func main() {
 }
 
 type userProjectServerConfiguration struct {
-	MaxWebSocketPerIp int `json:"maxWebsocketPerIp"`
+	MaxWebSocketPerIp      int  `json:"maxWebsocketPerIp"`
+	IgnoreInstalledBrowser bool `json:"ignoreInstalledBrowser,omitempty"`
 }
 
 func _main(args []string, outW io.Writer, errW io.Writer) {
@@ -212,7 +216,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 			TestFilters:           testFilters,
 
 			OnPrepared: func(state *core.GlobalState) error {
-				inoxprocess.RestrictProcessAccess(state.Ctx)
+				inoxprocess.RestrictProcessAccess(state.Ctx, true)
 				return nil
 			},
 		})
@@ -276,7 +280,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 		dir := getScriptDir(fpath)
 
 		compilationCtx := createCompilationCtx(dir)
-		inoxprocess.RestrictProcessAccess(compilationCtx)
+		inoxprocess.RestrictProcessAccess(compilationCtx, false)
 
 		data := inox_ns.GetCheckData(fpath, compilationCtx, outW)
 		fmt.Fprintf(outW, "%s\n\r", utils.Must(json.Marshal(data)))
@@ -373,7 +377,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 		state.Logger = zerolog.New(out)
 		state.OutputFieldsInitialized.Store(true)
 
-		inoxprocess.RestrictProcessAccess(ctx)
+		inoxprocess.RestrictProcessAccess(ctx, true)
 
 		if err := project_server.StartLSPServer(ctx, opts); err != nil {
 			fmt.Fprintln(errW, "failed to start LSP server:", err)
@@ -430,6 +434,37 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 			}
 		}
 
+		out := os.Stdout
+
+		//download a chrome browser if not present.
+		//this is done synchronously because Landlock is invoked further in the code.
+		func() {
+			defer utils.Recover()
+
+			logger := zerolog.New(out).With().Str(core.SOURCE_LOG_FIELD_NAME, "browser-installation").Logger()
+			downloadCtx, cancel := context.WithTimeout(context.Background(), BROWSER_DOWNLOAD_TIMEOUT)
+			defer cancel()
+
+			if !projectServerConfig.IgnoreInstalledBrowser {
+				path, ok := chrome_ns.LookPath()
+				if ok {
+					logger.Info().Msgf("chrome browser found at %q\n", path)
+					chrome_ns.SetBrowserBinPath(path)
+					return
+				}
+			} else {
+				logger.Info().Msgf("any browser not installed by the project server will be ignored")
+			}
+
+			binpath, err := chrome_ns.DownloadBrowser(downloadCtx, logger)
+			if err != nil {
+				logger.Err(err).Msg("failed to download a browser")
+				return
+			}
+			logger.Info().Msgf("set browser binary path to %s", binpath)
+			chrome_ns.SetBrowserBinPath(binpath)
+		}()
+
 		//create context & state
 		perms := []core.Permission{
 			//TODO: change path pattern
@@ -450,7 +485,6 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 
 		perms = append(perms, core.GetDefaultGlobalVarPermissions()...)
 
-		out := os.Stdout
 		filesystem := fs_ns.GetOsFilesystem()
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: perms,
@@ -462,7 +496,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 		state.Logger = zerolog.New(out)
 		state.OutputFieldsInitialized.Store(true)
 
-		inoxprocess.RestrictProcessAccess(ctx)
+		inoxprocess.RestrictProcessAccess(ctx, true)
 
 		//configure server
 
@@ -567,7 +601,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 		state.Logger = zerolog.New(state.Out)
 		state.OutputFieldsInitialized.Store(true)
 
-		inoxprocess.RestrictProcessAccess(ctx)
+		inoxprocess.RestrictProcessAccess(ctx, true)
 
 		client, err := inoxprocess.ConnectToProcessControlServer(ctx, u, token)
 		if err != nil {
@@ -606,7 +640,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 			return
 		}
 
-		inoxprocess.RestrictProcessAccess(state.Ctx)
+		inoxprocess.RestrictProcessAccess(state.Ctx, true)
 
 		//start the shell
 
@@ -662,7 +696,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 			}
 		}()
 
-		inoxprocess.RestrictProcessAccess(state.Ctx)
+		inoxprocess.RestrictProcessAccess(state.Ctx, false)
 
 		//evaluate
 
