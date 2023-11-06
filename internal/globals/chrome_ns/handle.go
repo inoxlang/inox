@@ -27,7 +27,10 @@ type Handle struct {
 }
 
 func NewHandle(ctx *core.Context) (*Handle, error) {
-	handle := newHandle(ctx)
+	handle, err := newHandle(ctx)
+	if err != nil {
+		return nil, err
+	}
 	if err := handle.doEmulateViewPort(ctx); err != nil {
 		return nil, err
 	}

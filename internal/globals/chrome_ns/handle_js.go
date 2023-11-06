@@ -13,7 +13,7 @@ var (
 	ErrChromeHandleNotAvailable = errors.New("chrome handle not available")
 )
 
-func newHandle(ctx *core.Context) *Handle {
+func newHandle(ctx *core.Context) (*Handle, error) {
 	panic(ErrChromeHandleNotAvailable)
 }
 

@@ -3,6 +3,7 @@
 package chrome_ns
 
 import (
+	"errors"
 	"time"
 
 	"github.com/chromedp/chromedp"
@@ -11,7 +12,11 @@ import (
 	"github.com/inoxlang/inox/internal/globals/html_ns"
 )
 
-func newHandle(ctx *core.Context) *Handle {
+func newHandle(ctx *core.Context) (*Handle, error) {
+	if BROWSER_BINPATH == "" {
+		return nil, errors.New("BROWSER_BINPATH is not set")
+	}
+
 	logger := *ctx.Logger()
 	logger = logger.With().Str(core.SOURCE_LOG_FIELD_NAME, SRC_PATH).Logger()
 
@@ -19,6 +24,7 @@ func newHandle(ctx *core.Context) *Handle {
 		chromedp.DisableGPU,
 		chromedp.Flag("headless", true),
 		chromedp.UserDataDir(string(core.CreateTempdir("chrome", ctx.GetFileSystem()))),
+		chromedp.ExecPath(BROWSER_BINPATH),
 		//chromedp.Headless,
 	)
 
@@ -50,7 +56,7 @@ func newHandle(ctx *core.Context) *Handle {
 		cancelChromedpContext: cancel,
 	}
 
-	return handle
+	return handle, nil
 }
 
 func (h *Handle) doEmulateViewPort(ctx *core.Context) error {
