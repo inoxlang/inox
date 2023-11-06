@@ -87,7 +87,7 @@ func registerTestingMethodHandlers(server *lsp.Server, opts LSPServerConfigurati
 		NewRequest: func() interface{} {
 			return &TestFileParams{}
 		},
-		RateLimits: []int{1, 5, 50},
+		RateLimits: []int{2, 10, 30},
 		Handler: func(ctx context.Context, req interface{}) (interface{}, error) {
 			session := jsonrpc.GetSession(ctx)
 			params := req.(*TestFileParams)
