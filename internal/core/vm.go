@@ -702,7 +702,7 @@ func (v *VM) run() {
 			v.ip += 2
 			testItem := v.stack[v.sp-1].(TestItem)
 
-			if enabled, _ := v.global.TestFilters.IsTestEnabled(testItem); !enabled {
+			if enabled, _ := v.global.TestFilters.IsTestEnabled(testItem, v.global); !enabled {
 				pos := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
 
 				v.stack[v.sp-1] = Nil

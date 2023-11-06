@@ -149,8 +149,12 @@ func SpawnLThread(args LthreadSpawnArgs) (*LThread, error) {
 	if args.IsTestingEnabled {
 		modState.IsTestingEnabled = true
 		modState.TestFilters = args.TestFilters
-		modState.TestItem = args.TestItem
-		modState.TestedProgram = args.TestedProgram
+
+		if args.TestItem != nil {
+			modState.TestItem = args.TestItem
+			modState.TestedProgram = args.TestedProgram
+			modState.TestItemFullName = makeTestFullName(args.TestItem, args.SpawnerState)
+		}
 	}
 	modState.OutputFieldsInitialized.Store(true)
 

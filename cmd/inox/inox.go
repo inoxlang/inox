@@ -2,7 +2,7 @@ package main
 
 import (
 	// ====================== IMPORTANT SIDE EFFECTS ============================
-	"regexp"
+
 	"runtime/debug"
 
 	"github.com/inoxlang/inox/internal/config"
@@ -190,7 +190,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 			testFilters = core.TestFilters{
 				PositiveTestFilters: []core.TestFilter{
 					{
-						NameRegex: regexp.MustCompile(".*"),
+						NameRegex: ".*",
 					},
 				},
 			}

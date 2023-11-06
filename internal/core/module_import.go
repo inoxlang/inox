@@ -226,7 +226,7 @@ func ImportModule(config ImportConfig) (*LThread, error) {
 		LthreadCtx:   routineCtx,
 		//Bytecode: //TODO
 		//AbsScriptDir: absScriptDir,
-		Timeout:                      deadline.Sub(time.Now()),
+		Timeout:                      time.Until(deadline),
 		IgnoreCreateLThreadPermCheck: true,
 
 		IsTestingEnabled: parentState.IsTestingEnabled && parentState.IsImportTestingEnabled,

@@ -2717,7 +2717,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 				return Nil, nil
 			}
 
-			if ok, _ := state.Global.TestFilters.IsTestEnabled(suite); !ok {
+			if ok, _ := state.Global.TestFilters.IsTestEnabled(suite, state.Global); !ok {
 				return Nil, nil
 			}
 
@@ -2799,7 +2799,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 
 		//execute the test case if the node is a statement
 		if n.IsStatement {
-			if ok, _ := state.Global.TestFilters.IsTestEnabled(testCase); !ok {
+			if ok, _ := state.Global.TestFilters.IsTestEnabled(testCase, state.Global); !ok {
 				return Nil, nil
 			}
 

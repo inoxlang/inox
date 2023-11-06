@@ -188,7 +188,7 @@ func testExample(t *testing.T, config exampleTestConfig) {
 
 			EnableTesting: strings.HasSuffix(fpath, inoxconsts.INOXLANG_SPEC_FILE_SUFFIX),
 			TestFilters: core.TestFilters{
-				PositiveTestFilters: []core.TestFilter{{NameRegex: utils.MATCHALL_REGEX}},
+				PositiveTestFilters: []core.TestFilter{{NameRegex: ".*"}},
 			},
 		})
 

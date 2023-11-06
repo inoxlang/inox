@@ -19,6 +19,7 @@ import (
 
 const (
 	TEST__MAX_FS_STORAGE_HINT = ByteCount(10_000_000)
+	TEST_FULL_NAME_PART_SEP   = "::"
 )
 
 var (
@@ -777,15 +778,27 @@ func getTestItemFilesystem(test TestItem, parentTestSuite *TestSuite, spawnerSta
 	}
 }
 
+func makeTestFullName(item TestItem, parentState *GlobalState) string {
+	name, ok := item.ItemName()
+	if !ok {
+		name = "??"
+	}
+	parentTestItem := parentState.TestItem
+
+	if parentTestItem == nil {
+		return name
+	}
+
+	return parentState.TestItemFullName + TEST_FULL_NAME_PART_SEP + name
+}
+
 type TestFilters struct {
 	PositiveTestFilters []TestFilter
 	NegativeTestFilters []TestFilter
 }
 
-func (filters TestFilters) IsTestEnabled(item TestItem) (enabled bool, reason string) {
-	itemName, _ := item.ItemName()
+func (filters TestFilters) IsTestEnabled(item TestItem, parentState *GlobalState) (enabled bool, reason string) {
 	srcName := item.ParentChunk().Source.Name()
-	stmtSpan := item.Statement().Base().Span
 
 	if !strings.HasPrefix(srcName, "/") {
 		return false, "the test is disabled because it is not located in a local file or the file's path is not absolute"
@@ -793,14 +806,14 @@ func (filters TestFilters) IsTestEnabled(item TestItem) (enabled bool, reason st
 	absoluteFilePath := srcName
 
 	for _, negativeFilter := range filters.NegativeTestFilters {
-		if disabled, _ := negativeFilter.IsTestEnabled(absoluteFilePath, itemName, stmtSpan); disabled {
+		if disabled, _ := negativeFilter.IsTestEnabled(absoluteFilePath, item, parentState); disabled {
 			return false, fmt.Sprintf(
 				"the test is disabled because it matches the negative filter %q", negativeFilter.String())
 		}
 	}
 
 	for _, positiveFilter := range filters.PositiveTestFilters {
-		if enabled, _ := positiveFilter.IsTestEnabled(absoluteFilePath, itemName, stmtSpan); enabled {
+		if enabled, _ := positiveFilter.IsTestEnabled(absoluteFilePath, item, parentState); enabled {
 			return true, fmt.Sprintf(
 				"the test is enabled because it matches the positive filter %q", positiveFilter.String())
 		}
@@ -811,14 +824,15 @@ func (filters TestFilters) IsTestEnabled(item TestItem) (enabled bool, reason st
 
 // A TestFilter filter tests by checking several values.
 type TestFilter struct {
+	//never nil
+	NameRegex string
+
 	//if path ends with '/...' all tests found in subdirectories are also enabled.
-	//this field is ignore if it is empty.
+	//this field is ignored if it is empty.
 	AbsolutePath string
 
-	//never nil
-	NameRegex *regexp.Regexp
-
-	//span of the test suite or test case statement, this field is ignored if it is equal to the zero value.
+	//span of the test suite or test case statement, this field is ignored if it is equal to the zero value
+	//or AbsolutePath is empty.
 	NodeSpan parse.NodeSpan
 }
 
@@ -829,15 +843,17 @@ func (f TestFilter) String() string {
 	}
 
 	if reflect.ValueOf(f.NodeSpan).IsZero() {
-		return fmt.Sprintf("[path(s):%s name:%s]", absolutePath, f.NameRegex.String())
+		return fmt.Sprintf("[path(s):%s name:%s]", absolutePath, f.NameRegex)
 	}
-	return fmt.Sprintf("[path(s):%s span:%d,%d name:%s]", absolutePath, f.NodeSpan.Start, f.NodeSpan.End, f.NameRegex.String())
+	return fmt.Sprintf("[path(s):%s span:%d,%d name:%s]", absolutePath, f.NodeSpan.Start, f.NodeSpan.End, f.NameRegex)
 }
 
-func (f TestFilter) IsTestEnabled(absoluteFilePath string, name string, statementSpan parse.NodeSpan) (enabled bool, reason string) {
-	if f.AbsolutePath != "" {
+func (f TestFilter) IsTestEnabled(absoluteFilePath string, item TestItem, parentState *GlobalState) (enabled bool, reason string) {
+	stmtSpan := item.Statement().Base().Span
+	itemFullName := makeTestFullName(item, parentState)
 
-		if strings.HasSuffix(f.AbsolutePath, "/...") {
+	if f.AbsolutePath != "" {
+		if strings.HasSuffix(f.AbsolutePath, PREFIX_PATH_PATTERN_SUFFIX) {
 			if !PathPattern(f.AbsolutePath).Test(nil, Str(absoluteFilePath)) {
 				return false, fmt.Sprintf(
 					"the test is disabled because its path (%q) does not match the filter's path pattern (%q)", absoluteFilePath, f.AbsolutePath)
@@ -846,17 +862,44 @@ func (f TestFilter) IsTestEnabled(absoluteFilePath string, name string, statemen
 			return false, fmt.Sprintf(
 				"the test is disabled because its path (%q) does not match the filter's path (%q)", absoluteFilePath, f.AbsolutePath)
 		}
+
+		//check the node span
+		if !reflect.ValueOf(f.NodeSpan).IsZero() &&
+			//if the statement's span is not equal to and not inside the filter's node span
+			stmtSpan != f.NodeSpan &&
+			(stmtSpan.Start < f.NodeSpan.Start || stmtSpan.End > f.NodeSpan.End) {
+
+			if _, ok := item.(*TestCase); ok {
+				return false, fmt.Sprintf(
+					"the test case is disabled because its span (%d:%d) does not match the filter's span (%d:%d)",
+					stmtSpan.Start, stmtSpan.End, f.NodeSpan.Start, f.NodeSpan.End)
+				//else check that the span is inside the test suite's span
+			} else if f.NodeSpan.Start < stmtSpan.Start || f.NodeSpan.End > stmtSpan.End {
+				return false, fmt.Sprintf(
+					"the test is disabled because its span (%d:%d) does not includes the filter's span (%d:%d)",
+					stmtSpan.Start, stmtSpan.End, f.NodeSpan.Start, f.NodeSpan.End)
+			}
+		}
 	}
 
-	if !f.NameRegex.MatchString(name) {
-		return false, fmt.Sprintf(
-			"the test is disabled because its name (%q) does not match the filter's name regex (%q)", name, f.NameRegex.String())
+	nameParts := strings.Split(itemFullName, TEST_FULL_NAME_PART_SEP)
+	partRegexes := strings.Split(f.NameRegex, TEST_FULL_NAME_PART_SEP)
+	nameMatches := true
+
+	//check that part regexes match their corresponding name part.
+	//it's not a problem if there are more name parts than part regexes ot the other way around.
+
+	for i, regex := range partRegexes[:min(len(nameParts), len(partRegexes))] {
+		namePart := nameParts[i]
+		if ok, err := regexp.MatchString(regex, namePart); !ok || err != nil {
+			nameMatches = false
+			break
+		}
 	}
 
-	if !reflect.ValueOf(f.NodeSpan).IsZero() && statementSpan != f.NodeSpan {
+	if !nameMatches {
 		return false, fmt.Sprintf(
-			"the test is disabled because its span (%q:%q) does not match the filter's span (%d:%d)",
-			statementSpan.Start, statementSpan.End, f.NodeSpan.Start, f.NodeSpan.End)
+			"the test is disabled because its full name (%q) does not match the filter's regex (%q)", itemFullName, f.NameRegex)
 	}
 
 	return true, "the test is enabled because it matches the filter " + f.String()

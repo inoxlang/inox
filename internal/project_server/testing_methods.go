@@ -2,7 +2,6 @@ package project_server
 
 import (
 	"context"
-	"regexp"
 
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/parse"
@@ -58,7 +57,7 @@ type TestFilter struct {
 func (f TestFilter) Filter() core.TestFilter {
 	return core.TestFilter{
 		AbsolutePath: f.AbsolutePath,
-		NameRegex:    regexp.MustCompile(f.Regex),
+		NameRegex:    f.Regex,
 		NodeSpan:     f.NodeSpan,
 	}
 }

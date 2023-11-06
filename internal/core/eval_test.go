@@ -9,7 +9,6 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
-	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
@@ -7640,7 +7639,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		allTestsFilter := TestFilters{
 			PositiveTestFilters: []TestFilter{
 				{
-					NameRegex: regexp.MustCompile(".*"),
+					NameRegex: ".*",
 				},
 			},
 		}
@@ -7749,7 +7748,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state.TestFilters = TestFilters{
 				PositiveTestFilters: []TestFilter{
 					{
-						NameRegex: regexp.MustCompile("not this test"),
+						NameRegex: "not this test",
 					},
 				},
 			}
@@ -8099,7 +8098,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			assert.Equal(t, Nil, res)
 		})
 
-		t.Run("empty test case, in imported module", func(t *testing.T) {
+		t.Run("empty test case: test suite in imported module", func(t *testing.T) {
 
 			mod, fls, err := createModuleAndImports(`
 				manifest {}
@@ -8149,7 +8148,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			assert.Len(t, state.TestSuiteResults[0].caseResults, 1)
 		})
 
-		t.Run("empty test case, in included chunk", func(t *testing.T) {
+		t.Run("empty test case: test suite in included chunk", func(t *testing.T) {
 
 			mod, fls, err := createModuleAndImports(`
 				manifest {}
@@ -8190,33 +8189,6 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 			assert.Len(t, state.TestSuiteResults[0].caseResults, 1)
-		})
-
-		t.Run("empty test case: filtered out", func(t *testing.T) {
-			src := makeSourceFile(`testsuite "suite" {
-				testcase {}
-			}`)
-
-			state := NewGlobalState(NewDefaultTestContext())
-			state.IsTestingEnabled = true
-			state.TestFilters = TestFilters{
-				PositiveTestFilters: []TestFilter{
-					{
-						NameRegex: regexp.MustCompile("suite"),
-					},
-				},
-			}
-			defer state.Ctx.CancelGracefully()
-
-			res, err := Eval(src, state, false)
-
-			assert.NoError(t, err)
-			assert.Equal(t, Nil, res)
-			assert.Empty(t, state.TestCaseResults)
-			if !assert.Len(t, state.TestSuiteResults, 1) {
-				return
-			}
-			assert.Empty(t, state.TestSuiteResults[0].caseResults)
 		})
 
 		t.Run("manifest with ungranted permissions", func(t *testing.T) {
@@ -8689,6 +8661,452 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 			assert.Equal(t, Nil, res)
+		})
+
+		t.Run("if the filter's name only matches the top level suite, all sub tests should be executed", func(t *testing.T) {
+			src := makeSourceFile(`testsuite "suite" {
+				testcase "shallow" {
+
+				}
+
+				testsuite {
+					testcase "deep" {
+
+					}
+				}
+			}`)
+
+			state := NewGlobalState(NewDefaultTestContext())
+			state.IsTestingEnabled = true
+			state.TestFilters = TestFilters{
+				PositiveTestFilters: []TestFilter{
+					{
+						NameRegex: "suite",
+					},
+				},
+			}
+			defer state.Ctx.CancelGracefully()
+
+			res, err := Eval(src, state, false)
+
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.Equal(t, Nil, res)
+
+			testSuitResult := state.TestSuiteResults[0]
+			assert.Len(t, testSuitResult.caseResults, 1)
+
+			if !assert.Len(t, testSuitResult.subSuiteResults, 1) {
+				return
+			}
+
+			subSuiteResult := testSuitResult.subSuiteResults[0]
+			if !assert.Len(t, subSuiteResult.caseResults, 1) {
+				return
+			}
+			assert.Equal(t, "shallow", testSuitResult.caseResults[0].testCase.name)
+		})
+
+		t.Run("if the filter specifies a path and the node span of a test case (direct child), the test case should be executed", func(t *testing.T) {
+			src := makeSourceFile(`testsuite "suite" {
+				testcase "shallow 1" {
+
+				}
+
+				testcase "shallow 2" {
+
+				}
+
+				testsuite {
+					testcase "deep" {
+
+					}
+				}
+			}`)
+
+			chunk := parse.MustParseChunk(src.CodeString)
+			testcaseNode := chunk.Statements[0].(*parse.TestSuiteExpression).Module.Statements[0].(*parse.TestCaseExpression)
+
+			state := NewGlobalState(NewDefaultTestContext())
+			state.IsTestingEnabled = true
+			state.TestFilters = TestFilters{
+				PositiveTestFilters: []TestFilter{
+					{
+						AbsolutePath: "/mod.ix",
+						NameRegex:    ".*",
+						NodeSpan:     testcaseNode.Span,
+					},
+				},
+			}
+			defer state.Ctx.CancelGracefully()
+
+			res, err := Eval(src, state, false)
+
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.Equal(t, Nil, res)
+
+			if !assert.Len(t, state.TestSuiteResults, 1) {
+				return
+			}
+
+			testSuitResult := state.TestSuiteResults[0]
+			if !assert.Len(t, testSuitResult.caseResults, 1) {
+				return
+			}
+			assert.Len(t, testSuitResult.subSuiteResults, 0)
+			assert.Equal(t, "shallow 1", testSuitResult.caseResults[0].testCase.name)
+		})
+
+		t.Run("if the filter specifies a path and the node span of a test case (not direct child), the test case should be executed", func(t *testing.T) {
+			src := makeSourceFile(`testsuite "suite" {
+				testcase "shallow 1" {
+
+				}
+
+				testcase "shallow 2" {
+
+				}
+
+				testsuite {
+					testcase "deep 1" {
+
+					}
+
+					testcase "deep 2" {
+
+					}
+				}
+			}`)
+
+			chunk := parse.MustParseChunk(src.CodeString)
+			testcaseNode := chunk.Statements[0].(*parse.TestSuiteExpression).
+				Module.Statements[2].(*parse.TestSuiteExpression).
+				Module.Statements[0].(*parse.TestCaseExpression)
+
+			state := NewGlobalState(NewDefaultTestContext())
+			state.IsTestingEnabled = true
+			state.TestFilters = TestFilters{
+				PositiveTestFilters: []TestFilter{
+					{
+						AbsolutePath: "/mod.ix",
+						NameRegex:    ".*",
+						NodeSpan:     testcaseNode.Span,
+					},
+				},
+			}
+			defer state.Ctx.CancelGracefully()
+
+			res, err := Eval(src, state, false)
+
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.Equal(t, Nil, res)
+
+			testSuitResult := state.TestSuiteResults[0]
+			assert.Empty(t, testSuitResult.caseResults)
+
+			if !assert.Len(t, testSuitResult.subSuiteResults, 1) {
+				return
+			}
+
+			subsuiteResult := testSuitResult.subSuiteResults[0]
+
+			if !assert.Len(t, subsuiteResult.caseResults, 1) {
+				return
+			}
+			assert.Equal(t, "deep 1", subsuiteResult.caseResults[0].testCase.name)
+		})
+
+		t.Run("if the filter specifies a path and the node span of a test suite (direct child), the test suite should be executed", func(t *testing.T) {
+			src := makeSourceFile(`testsuite "suite" {
+				testcase "shallow 1" {
+
+				}
+
+				testsuite {
+					testcase "deep 1" {
+
+					}
+
+					testcase "deep 2" {
+
+					}
+				}
+			}`)
+
+			chunk := parse.MustParseChunk(src.CodeString)
+			testsuiteNode := chunk.Statements[0].(*parse.TestSuiteExpression).Module.Statements[1].(*parse.TestSuiteExpression)
+
+			state := NewGlobalState(NewDefaultTestContext())
+			state.IsTestingEnabled = true
+			state.TestFilters = TestFilters{
+				PositiveTestFilters: []TestFilter{
+					{
+						AbsolutePath: "/mod.ix",
+						NameRegex:    ".*",
+						NodeSpan:     testsuiteNode.Span,
+					},
+				},
+			}
+			defer state.Ctx.CancelGracefully()
+
+			res, err := Eval(src, state, false)
+
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.Equal(t, Nil, res)
+
+			testSuitResult := state.TestSuiteResults[0]
+			assert.Empty(t, testSuitResult.caseResults)
+
+			if !assert.Len(t, testSuitResult.subSuiteResults, 1) {
+				return
+			}
+
+			subsuiteResult := testSuitResult.subSuiteResults[0]
+			assert.Len(t, subsuiteResult.caseResults, 2)
+		})
+
+		t.Run("if the test filter specifies the path /mod.ix, the tests in /imported.ix should not be executed", func(t *testing.T) {
+
+			mod, fls, err := createModuleAndImports(`
+				manifest {}
+				import res /imported.ix {
+					allow: {
+						create: {threads: {}}
+					}
+				}
+			`, map[string]string{
+				"/imported.ix": `
+					manifest {
+						permissions: {create: {threads: {}}}
+					}
+
+					testsuite "name" {
+						testcase {}
+					}
+				`,
+			})
+
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			ctx := NewContext(ContextConfig{
+				Permissions: append(GetDefaultGlobalVarPermissions(),
+					LThreadPermission{permkind.Create},
+					FilesystemPermission{permkind.Read, PathPattern("/...")},
+				),
+				Filesystem: fls,
+			})
+			state := NewGlobalState(ctx)
+			state.IsTestingEnabled = true
+			state.IsImportTestingEnabled = true
+			state.TestFilters = TestFilters{
+				PositiveTestFilters: []TestFilter{
+					{
+						AbsolutePath: "/mod.ix",
+						NameRegex:    ".*",
+					},
+				},
+			}
+			defer state.Ctx.CancelGracefully()
+
+			res, err := Eval(mod, state, false)
+
+			assert.NoError(t, err)
+			assert.Equal(t, Nil, res)
+			assert.Empty(t, state.TestCaseResults)
+			assert.Empty(t, state.TestSuiteResults)
+		})
+
+		t.Run("if the test filter specifies the path /imported.ix, the tests in /mod.ix should not be executed", func(t *testing.T) {
+
+			mod, fls, err := createModuleAndImports(`
+				manifest {}
+				import res /imported.ix {
+					allow: {
+						create: {threads: {}}
+					}
+				}
+
+				testsuite "in mod.ix" {
+					testcase {}
+				}
+
+			`, map[string]string{
+				"/imported.ix": `
+					manifest {
+						permissions: {create: {threads: {}}}
+					}
+
+					testsuite "in imported.ix" {
+						testcase {}
+					}
+				`,
+			})
+
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			ctx := NewContext(ContextConfig{
+				Permissions: append(GetDefaultGlobalVarPermissions(),
+					LThreadPermission{permkind.Create},
+					FilesystemPermission{permkind.Read, PathPattern("/...")},
+				),
+				Filesystem: fls,
+			})
+			state := NewGlobalState(ctx)
+			state.IsTestingEnabled = true
+			state.IsImportTestingEnabled = true
+			state.TestFilters = TestFilters{
+				PositiveTestFilters: []TestFilter{
+					{
+						AbsolutePath: "/imported.ix",
+						NameRegex:    ".*",
+					},
+				},
+			}
+			defer state.Ctx.CancelGracefully()
+
+			res, err := Eval(mod, state, false)
+
+			assert.NoError(t, err)
+			assert.Equal(t, Nil, res)
+			assert.Empty(t, state.TestCaseResults)
+			if !assert.Len(t, state.TestSuiteResults, 1) {
+				return
+			}
+
+			result := state.TestSuiteResults[0]
+			if !assert.Len(t, result.caseResults, 1) {
+				return
+			}
+
+			assert.Equal(t, "/imported.ix", result.testSuite.parentChunk.Source.Name())
+			assert.Equal(t, "/imported.ix", result.caseResults[0].testCase.parentChunk.Source.Name())
+		})
+
+		t.Run("if the filter's name matches a test case (direct child) in the top level suite, only the matching test case should be executed", func(t *testing.T) {
+			src := makeSourceFile(`testsuite "suite" {
+				testcase "my test" {
+
+				}
+
+				testcase "my other test" {
+
+				}
+
+				testcase {
+
+				}
+
+				testsuite {
+					testcase {
+
+					}
+
+					testcase "my test" {
+						
+					}
+				}
+			}`)
+
+			state := NewGlobalState(NewDefaultTestContext())
+			state.IsTestingEnabled = true
+			state.TestFilters = TestFilters{
+				PositiveTestFilters: []TestFilter{
+					{
+						NameRegex: "suite::my test",
+					},
+				},
+			}
+			defer state.Ctx.CancelGracefully()
+
+			res, err := Eval(src, state, false)
+
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.Equal(t, Nil, res)
+
+			if !assert.Len(t, state.TestSuiteResults, 1) {
+				return
+			}
+
+			testSuitResult := state.TestSuiteResults[0]
+			if !assert.Len(t, testSuitResult.caseResults, 1) {
+				return
+			}
+
+			assert.Equal(t, "my test", testSuitResult.caseResults[0].testCase.name)
+			assert.Empty(t, testSuitResult.subSuiteResults)
+		})
+
+		t.Run("if the filter's name only matches a test case (not direct child) in the top level suite, only the matching test case should be executed", func(t *testing.T) {
+			src := makeSourceFile(`testsuite "suite" {
+				testcase "my test" {
+
+				}
+
+				testcase "my other test" {
+
+				}
+
+				testcase {
+
+				}
+
+				testsuite "sub suite" {
+					testcase {
+
+					}
+
+					testcase "my test (deep)" {
+						
+					}
+				}
+			}`)
+
+			state := NewGlobalState(NewDefaultTestContext())
+			state.IsTestingEnabled = true
+			state.TestFilters = TestFilters{
+				PositiveTestFilters: []TestFilter{
+					{
+						NameRegex: "suite::sub suite::my test",
+					},
+				},
+			}
+			defer state.Ctx.CancelGracefully()
+
+			res, err := Eval(src, state, false)
+
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.Equal(t, Nil, res)
+
+			if !assert.Len(t, state.TestSuiteResults, 1) {
+				return
+			}
+
+			testSuitResult := state.TestSuiteResults[0]
+			assert.Empty(t, testSuitResult.caseResults)
+			if !assert.Len(t, testSuitResult.subSuiteResults, 1) {
+				return
+			}
+
+			subsuiteResult := testSuitResult.subSuiteResults[0]
+			if !assert.Len(t, subsuiteResult.caseResults, 1) {
+				return
+			}
+			assert.Equal(t, "my test (deep)", subsuiteResult.caseResults[0].testCase.name)
 		})
 
 		//setup for following tests
@@ -9474,7 +9892,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		allTestsFilter := TestFilters{
 			PositiveTestFilters: []TestFilter{
 				{
-					NameRegex: regexp.MustCompile(".*"),
+					NameRegex: ".*",
 				},
 			},
 		}

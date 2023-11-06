@@ -64,6 +64,7 @@ type GlobalState struct {
 	TestCaseResults        []*TestCaseResult
 	TestSuiteResults       []*TestSuiteResult
 	TestItem               TestItem //can be nil
+	TestItemFullName string //can be empty
 	TestedProgram          *Module  //can be nil
 
 	//errors & check data
