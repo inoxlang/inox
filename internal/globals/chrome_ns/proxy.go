@@ -1,8 +1,8 @@
 package chrome_ns
 
 import (
+	"errors"
 	"net/http"
-	"os"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -10,7 +10,7 @@ import (
 	"github.com/elazarl/goproxy"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/http_ns"
-	"github.com/rs/zerolog"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 const (
@@ -22,6 +22,8 @@ const (
 	//The hostname should not be changed because using the loopback allows to check that
 	//requests to the loopback do not bypass the proxy.
 	CHROME_INSTANCE_REGISTRATION_URL_PREFIX = "https://127.0.0.1:9999/register-browser-instance/"
+
+	BROWSER_PROXY_SRC_NAME = "/browser-proxy"
 )
 
 var (
@@ -29,18 +31,21 @@ var (
 
 	handleIdToContext     = map[string]*core.Context{}
 	handleIdToContextLock sync.Mutex
+
+	ErrProxyAlreadyStarted = errors.New("browser proxy already started")
 )
 
 // StartSharedProxy starts an HTTP proxy in another goroutine, the proxy is used by all browser instances
 // controlled by the current package.
-func StartSharedProxy() {
+func StartSharedProxy(ctx *core.Context) error {
 	//https://chromium.googlesource.com/chromium/src/+/HEAD/net/docs/proxy.md#HTTP-proxy-scheme
 
 	if !proxyStarted.CompareAndSwap(false, true) {
-		return
+		return nil
 	}
+	logger := ctx.Logger().With().Str(core.SOURCE_LOG_FIELD_NAME, BROWSER_PROXY_SRC_NAME).Logger()
 
-	go http_ns.StartHTTPProxy(http_ns.HTTPProxyParams{
+	proxyServer, err := http_ns.MakeHTTPProxy(ctx, http_ns.HTTPProxyParams{
 		Port: BROWSER_PROXY_PORT,
 		OnRequest: func(req *http.Request, proxyCtx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
 			return req, nil
@@ -55,9 +60,20 @@ func StartSharedProxy() {
 
 			return handleIdToContext[values[0]]
 		},
-		Logger:                zerolog.New(os.Stdout),
+		Logger:                logger,
 		RemovedRequestHeaders: []string{HANDLE_ID_HEADER},
 	})
 
+	if err != nil {
+		return err
+	}
+
+	go func() {
+		defer utils.Recover()
+		logger.Debug().Msgf("start browser proxy server listening on %s", BROWSER_PROXY_ADDR)
+		proxyServer.ListenAndServe()
+	}()
+
 	time.Sleep(10 * time.Millisecond)
+	return nil
 }

@@ -11,6 +11,7 @@ import (
 	"github.com/elazarl/goproxy"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/mimeconsts"
+	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/rs/zerolog"
 )
@@ -33,8 +34,15 @@ type HTTPProxyParams struct {
 // StartHTTPProxy starts an HTTP proxy listening on 127.0.0.1:<port>.
 // The connection between the client and an HTTP proxy is not encrypted,
 // https://chromium.googlesource.com/chromium/src/+/HEAD/net/docs/proxy.md#http-proxy-scheme.
-func StartHTTPProxy(params HTTPProxyParams) error {
+func MakeHTTPProxy(ctx *core.Context, params HTTPProxyParams) (*http.Server, error) {
+
 	addr := "127.0.0.1:" + strconv.Itoa(params.Port)
+
+	perm := core.HttpPermission{Kind_: permkind.Provide, Entity: core.Host("http://" + addr)}
+
+	if err := ctx.CheckHasPermission(perm); err != nil {
+		return nil, err
+	}
 
 	proxy := goproxy.NewProxyHttpServer()
 	proxy.Verbose = true
@@ -112,7 +120,7 @@ func StartHTTPProxy(params HTTPProxyParams) error {
 		return resp
 	})
 
-	return http.ListenAndServe(addr, proxy)
+	return &http.Server{Addr: addr, Handler: proxy}, nil
 }
 
 type printfLogger struct {

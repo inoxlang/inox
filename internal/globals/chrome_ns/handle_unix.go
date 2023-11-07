@@ -44,7 +44,7 @@ func newHandle(ctx *core.Context) (*Handle, error) {
 	})
 
 	//start the shared proxy if necessary
-	StartSharedProxy()
+	StartSharedProxy(ctx)
 
 	logger := *ctx.Logger()
 	logger = logger.With().Str(core.SOURCE_LOG_FIELD_NAME, SRC_PATH).Logger()

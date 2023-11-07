@@ -484,6 +484,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 			core.WebsocketPermission{Kind_: permkind.Provide},
 			core.HttpPermission{Kind_: permkind.Provide, Entity: core.ANY_HTTPS_HOST_PATTERN},
 			core.HttpPermission{Kind_: permkind.Provide, Entity: core.HostPattern("https://**:8080")},
+			core.HttpPermission{Kind_: permkind.Provide, Entity: core.HostPattern("http://" + chrome_ns.BROWSER_PROXY_ADDR)},
 
 			core.HttpPermission{Kind_: permkind.Read, AnyEntity: true},
 			core.HttpPermission{Kind_: permkind.Write, AnyEntity: true},
@@ -553,6 +554,12 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 				fmt.Fprintln(errW, "failed to start collection of perfomance profiles:", err)
 				return
 			}
+		}
+
+		err = chrome_ns.StartSharedProxy(ctx)
+		if err != nil {
+			fmt.Fprintln(errW, "failed to start shared browser proxy:", err)
+			return
 		}
 
 		if err := project_server.StartLSPServer(ctx, opts); err != nil {
