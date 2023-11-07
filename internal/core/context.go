@@ -873,6 +873,7 @@ func (ctx *Context) DoIO(fn func() error) error {
 	ctx.PauseCPUTimeDecrementation()
 	defer ctx.ResumeCPUTimeDecrementation()
 
+	//do not recover from panics on purpose
 	return fn()
 }
 
@@ -880,6 +881,7 @@ func DoIO[T any](ctx *Context, fn func() T) T {
 	ctx.PauseCPUTimeDecrementation()
 	defer ctx.ResumeCPUTimeDecrementation()
 
+	//do not recover from panics on purpose
 	return fn()
 }
 
@@ -887,6 +889,7 @@ func DoIO2[T any](ctx *Context, fn func() (T, error)) (T, error) {
 	ctx.PauseCPUTimeDecrementation()
 	defer ctx.ResumeCPUTimeDecrementation()
 
+	//do not recover from panics on purpose
 	return fn()
 }
 

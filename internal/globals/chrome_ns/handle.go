@@ -19,6 +19,8 @@ var (
 )
 
 type Handle struct {
+	id string
+
 	allocCtx       context.Context
 	cancelAllocCtx context.CancelFunc
 
@@ -67,6 +69,10 @@ func (h *Handle) Close(ctx *core.Context) {
 }
 
 func (h *Handle) close() {
+	handleIdToContextLock.Lock()
+	delete(handleIdToContext, h.id)
+	handleIdToContextLock.Unlock()
+
 	h.cancelChromedpContext()
 	h.cancelAllocCtx()
 }

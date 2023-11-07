@@ -4,13 +4,25 @@ package chrome_ns
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
+	"github.com/chromedp/cdproto/network"
 	"github.com/chromedp/chromedp"
+	"github.com/oklog/ulid/v2"
 
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/globals/html_ns"
+	"github.com/inoxlang/inox/internal/utils"
+)
+
+const (
+	HANDLE_ID_HEADER = "X-Browser-Handle"
+)
+
+var (
+	ErrPageFailedToLoad = errors.New("page failed to load")
 )
 
 func newHandle(ctx *core.Context) (*Handle, error) {
@@ -18,22 +30,37 @@ func newHandle(ctx *core.Context) (*Handle, error) {
 		return nil, errors.New("BROWSER_BINPATH is not set")
 	}
 
+	id := ulid.Make().String()
+
 	//create a temporary directory to store user data
 	tempDir := fs_ns.CreateDirInProcessTempDir("chrome")
 
 	ctx.OnGracefulTearDown(func(ctx *core.Context) error {
+		handleIdToContextLock.Lock()
+		delete(handleIdToContext, id)
+		handleIdToContextLock.Unlock()
+
 		return fs_ns.DeleteDirInProcessTempDir(tempDir)
 	})
+
+	//start the shared proxy if necessary
+	StartSharedProxy()
 
 	logger := *ctx.Logger()
 	logger = logger.With().Str(core.SOURCE_LOG_FIELD_NAME, SRC_PATH).Logger()
 
 	opts := append(chromedp.DefaultExecAllocatorOptions[:],
-		chromedp.DisableGPU,
-		chromedp.Flag("headless", true),
+		//execution
 		chromedp.UserDataDir(string(tempDir)),
 		chromedp.ExecPath(BROWSER_BINPATH),
-		//chromedp.Headless,
+
+		//headless
+		chromedp.DisableGPU,
+
+		//network
+		chromedp.ProxyServer(BROWSER_PROXY_ADDR),
+		chromedp.IgnoreCertErrors,
+		chromedp.Flag("proxy-bypass-list", "<-loopback>"),
 	)
 
 	allocCtx, cancelAllocCtx := chromedp.NewExecAllocator(ctx, opts...)
@@ -57,12 +84,18 @@ func newHandle(ctx *core.Context) (*Handle, error) {
 	)
 
 	handle := &Handle{
+		id:             id,
 		allocCtx:       allocCtx,
 		cancelAllocCtx: cancelAllocCtx,
 
 		chromedpContext:       chromedpCtx,
 		cancelChromedpContext: cancel,
 	}
+
+	//register the browser's context
+	handleIdToContextLock.Lock()
+	handleIdToContext[handle.id] = ctx
+	handleIdToContextLock.Unlock()
 
 	return handle, nil
 }
@@ -75,8 +108,25 @@ func (h *Handle) doEmulateViewPort(ctx *core.Context) error {
 }
 
 func (h *Handle) doNavigate(ctx *core.Context, u core.URL) error {
-	action := chromedp.Navigate(string(u))
-	return h.do(ctx, action)
+	setHeaders := network.SetExtraHTTPHeaders(network.Headers{
+		HANDLE_ID_HEADER: h.id,
+	})
+
+	err := h.do(ctx, setHeaders)
+	if err != nil {
+		return err
+	}
+
+	netResp, err := h.doResponse(ctx, chromedp.Navigate(string(u)))
+
+	if netResp != nil && netResp.Status >= 400 {
+		return fmt.Errorf("%w: status %q (%d)", ErrPageFailedToLoad, netResp.StatusText, netResp.Status)
+	}
+
+	if err != nil {
+		return fmt.Errorf("%w: %w", ErrPageFailedToLoad, err)
+	}
+	return nil
 }
 
 func (h *Handle) doWaitVisible(ctx *core.Context, s core.Str) error {
@@ -126,6 +176,8 @@ func (h *Handle) do(ctx *core.Context, action chromedp.Action) error {
 	done := make(chan struct{})
 
 	go func() {
+		defer utils.Recover()
+
 		select {
 		case <-done:
 		case <-time.After(DEFAULT_SINGLE_ACTION_TIMEOUT):
@@ -138,6 +190,28 @@ func (h *Handle) do(ctx *core.Context, action chromedp.Action) error {
 	}()
 
 	return chromedp.Run(h.chromedpContext,
+		action,
+	)
+}
+
+func (h *Handle) doResponse(ctx *core.Context, action chromedp.Action) (*network.Response, error) {
+	done := make(chan struct{})
+
+	go func() {
+		defer utils.Recover()
+
+		select {
+		case <-done:
+		case <-time.After(DEFAULT_SINGLE_ACTION_TIMEOUT):
+			h.close()
+		}
+	}()
+
+	defer func() {
+		done <- struct{}{}
+	}()
+
+	return chromedp.RunResponse(h.chromedpContext,
 		action,
 	)
 }

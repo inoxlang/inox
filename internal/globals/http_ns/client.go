@@ -8,6 +8,7 @@ import (
 	"net/http"
 	_cookiejar "net/http/cookiejar"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/inoxlang/inox/internal/core"
@@ -148,25 +149,9 @@ func (c *HttpClient) GetHostCookieObjects(ctx *core.Context, h core.Host) *core.
 }
 
 func (c *HttpClient) MakeRequest(ctx *core.Context, method string, u core.URL, body io.Reader, contentType string, opts *HttpRequestOptions) (*HttpRequest, error) {
-	var perm core.Permission
-	switch method {
-	case "GET", "HEAD":
-		perm = core.HttpPermission{
-			Kind_:  permkind.Read,
-			Entity: u,
-		}
-	case "POST", "PATCH":
-		perm = core.HttpPermission{
-			Kind_:  permkind.Create,
-			Entity: u,
-		}
-	case "DELETE":
-		perm = core.HttpPermission{
-			Kind_:  permkind.Delete,
-			Entity: u,
-		}
-	default:
-		panic(errors.New("following http method is not supported: " + method))
+	perm, err := getPermForRequest(method, u)
+	if err != nil {
+		return nil, err
 	}
 
 	if err := ctx.CheckHasPermission(perm); err != nil {
@@ -252,4 +237,31 @@ type HttpClientConfig struct {
 	Insecure     bool
 	SaveCookies  bool
 	Finalization *core.Dictionary
+}
+
+func getPermForRequest(method string, u core.URL) (core.HttpPermission, error) {
+	method = strings.ToUpper(method)
+
+	var perm core.HttpPermission
+	switch method {
+	case "GET", "HEAD", "OPTIONS":
+		perm = core.HttpPermission{
+			Kind_:  permkind.Read,
+			Entity: u,
+		}
+	case "POST", "PATCH":
+		perm = core.HttpPermission{
+			Kind_:  permkind.Create,
+			Entity: u,
+		}
+	case "DELETE":
+		perm = core.HttpPermission{
+			Kind_:  permkind.Delete,
+			Entity: u,
+		}
+	default:
+		return core.HttpPermission{}, errors.New("following http method is not supported: " + method)
+	}
+
+	return perm, nil
 }
