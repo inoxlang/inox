@@ -1,4 +1,4 @@
-# this script requires Chrome or Chromium to be installed.
+# if you don't use the project server (local or not), Chrome or Chromium should be installed for this script to work.
 
 manifest {
     permissions: {
