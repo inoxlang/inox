@@ -145,7 +145,7 @@ func restrictProcessAccess(grantedPerms, forbiddenPerms []core.Permission, fls *
 		}
 	}
 
-	getMode := func(kinds map[core.PermissionKind]struct{}) string {
+	getMode := func(kinds map[core.PermissionKind]struct{}, isDir bool) string {
 		read := false
 		write := false
 		create := false
@@ -176,11 +176,11 @@ func restrictProcessAccess(grantedPerms, forbiddenPerms []core.Permission, fls *
 	}
 
 	for path, kinds := range dirPaths {
-		allowedPaths = append(allowedPaths, landlock.Dir(path, getMode(kinds)))
+		allowedPaths = append(allowedPaths, landlock.Dir(path, getMode(kinds, true)))
 	}
 
 	for path, kinds := range filePaths {
-		allowedPaths = append(allowedPaths, landlock.File(path, getMode(kinds)))
+		allowedPaths = append(allowedPaths, landlock.File(path, getMode(kinds, false)))
 	}
 
 	if allowDNS {
@@ -191,7 +191,25 @@ func restrictProcessAccess(grantedPerms, forbiddenPerms []core.Permission, fls *
 		allowedPaths = append(allowedPaths, landlock.Certs())
 	}
 
-	locker := landlock.New(allowedPaths...)
+	//remove duplicates
+	var deduplicatedAllowedPaths []*landlock.Path
+	for i, path1 := range allowedPaths {
+		isDuplicate := false
+
+		//search an equal path with a lower index.
+		for _, path2 := range allowedPaths[:i] {
+			if path1.Equal(path2) {
+				isDuplicate = true
+				break
+			}
+		}
+
+		if !isDuplicate {
+			deduplicatedAllowedPaths = append(deduplicatedAllowedPaths, path1)
+		}
+	}
+
+	locker := landlock.New(deduplicatedAllowedPaths...)
 	safety := landlock.OnlySupported //if running on Linux, require Landlock support.
 
 	err := locker.Lock(safety)
