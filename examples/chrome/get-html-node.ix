@@ -3,6 +3,9 @@
 manifest {
     permissions: {
         read: https://go.dev
+
+        # the following permission is required by the proxy server if the project server is not used.
+        provide: http://127.0.0.1:12750
     }
 }
 
