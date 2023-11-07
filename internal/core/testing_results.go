@@ -57,7 +57,7 @@ func NewTestCaseResult(ctx *Context, executionResult Value, executionError error
 	red := string(GetFullColorSequence(termenv.ANSIBrightRed, false))
 	if executionError != nil {
 		if isAssertionError && assertionError.isTestAssertion {
-			prefix := red + "FAIL" + string(ANSI_RESET_SEQUENCE) + " "
+			prefix := red + "FAIL:" + string(ANSI_RESET_SEQUENCE) + " "
 
 			result.DarkModePrettyMessage = prefix + assertionError.PrettySPrint(TEST_CASE_RESULT_DARK_MODE_PRETTY_PRINT_CONFIG)
 			result.LightModePrettyMessage = prefix + assertionError.PrettySPrint(TEST_CASE_RESULT_LIGTH_MODE_PRETTY_PRINT_CONFIG)
