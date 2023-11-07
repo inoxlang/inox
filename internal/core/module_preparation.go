@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -67,6 +68,9 @@ type ScriptPreparationArgs struct {
 	//should not be set if ParentContext is set
 	StdlibCtx context.Context
 
+	//should not be set if ParentContext is set
+	AdditionalPermissions []Permission
+
 	//should only be set if the module is a main module
 	Project Project
 
@@ -94,6 +98,10 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *GlobalState, mod *Mo
 
 	if args.ParentContextRequired && args.ParentContext == nil {
 		return nil, nil, nil, errors.New(".ParentContextRequired is set to true but passed .ParentContext is nil")
+	}
+
+	if args.ParentContext != nil && len(args.AdditionalPermissions) != 0 {
+		return nil, nil, nil, errors.New(".ParentContext is set  but passed .AdditionalPermissions is not empty")
 	}
 
 	if args.UseParentStateAsMainState && args.Project != nil {
@@ -219,7 +227,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *GlobalState, mod *Mo
 	var ctxErr error
 
 	ctx, ctxErr = NewDefaultContext(DefaultContextConfig{
-		Permissions:         manifest.RequiredPermissions,
+		Permissions:         append(slices.Clone(manifest.RequiredPermissions), args.AdditionalPermissions...),
 		Limits:              limits,
 		HostResolutions:     manifest.HostResolutions,
 		ParentContext:       parentContext,

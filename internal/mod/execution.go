@@ -30,8 +30,9 @@ type RunScriptArgs struct {
 	ParsingCompilationContext *core.Context
 
 	ParentContext         *core.Context
-	ParentContextRequired bool            //make .ParentContext required
-	StdlibCtx             context.Context //should not be set if ParentContext is set
+	ParentContextRequired bool              //make .ParentContext required
+	StdlibCtx             context.Context   //should not be set if ParentContext is set
+	AdditionalPermissions []core.Permission //should not be set if ParentContext is set
 
 	//used during the preinit
 	PreinitFilesystem afs.Filesystem
@@ -84,6 +85,7 @@ func RunLocalScript(args RunScriptArgs) (
 		ParentContext:             args.ParentContext,
 		ParentContextRequired:     args.ParentContextRequired,
 		StdlibCtx:                 args.StdlibCtx,
+		AdditionalPermissions:     args.AdditionalPermissions,
 
 		Out:                   args.Out,
 		LogOut:                args.LogOut,
