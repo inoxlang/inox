@@ -4,6 +4,7 @@ manifest {
     permissions: {
         create: IWD_PREFIX
         delete: IWD_PREFIX
+        read: https://go.dev
     }
 
     limits: {

@@ -1,7 +1,9 @@
 # this script requires Chrome or Chromium to be installed.
 
 manifest {
-    permissions: {}
+    permissions: {
+        read: https://go.dev
+    }
 }
 
 h = chrome.Handle!()
