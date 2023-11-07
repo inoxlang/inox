@@ -53,6 +53,26 @@ func CreateDirInProcessTempDir(namePrefix string) core.Path {
 	return path
 }
 
+func DeleteDirInProcessTempDir(path core.Path) error {
+	pth := path.UnderlyingString()
+
+	if path[0] != '/' {
+		return nil
+	}
+
+	parts := strings.Split(pth[1:], "/")
+	if len(parts) != 3 {
+		return nil
+	}
+
+	if parts[0] != "tmp" || !strings.HasPrefix(parts[1], PROCESS_TEMP_DIR_PREFIX) {
+		return nil
+	}
+
+	fls := GetOsFilesystem()
+	return fls.RemoveAll(pth)
+}
+
 func DeleteProcessTempDir() {
 	fls := GetOsFilesystem()
 

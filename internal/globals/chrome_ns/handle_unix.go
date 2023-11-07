@@ -19,7 +19,11 @@ func newHandle(ctx *core.Context) (*Handle, error) {
 	}
 
 	//create a temporary directory to store user data
-	tempDir := string(fs_ns.CreateDirInProcessTempDir("chrome"))
+	tempDir := fs_ns.CreateDirInProcessTempDir("chrome")
+
+	ctx.OnGracefulTearDown(func(ctx *core.Context) error {
+		return fs_ns.DeleteDirInProcessTempDir(tempDir)
+	})
 
 	logger := *ctx.Logger()
 	logger = logger.With().Str(core.SOURCE_LOG_FIELD_NAME, SRC_PATH).Logger()
@@ -27,7 +31,7 @@ func newHandle(ctx *core.Context) (*Handle, error) {
 	opts := append(chromedp.DefaultExecAllocatorOptions[:],
 		chromedp.DisableGPU,
 		chromedp.Flag("headless", true),
-		chromedp.UserDataDir(tempDir),
+		chromedp.UserDataDir(string(tempDir)),
 		chromedp.ExecPath(BROWSER_BINPATH),
 		//chromedp.Headless,
 	)
