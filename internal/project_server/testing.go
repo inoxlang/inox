@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/inoxlang/inox/internal/config"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/project_server/jsonrpc"
 	"github.com/inoxlang/inox/internal/utils"
@@ -95,8 +94,8 @@ func testFileAsync(path string, filters core.TestFilters, session *jsonrpc.Sessi
 
 		buf := bytes.NewBufferString("TEST RESULTS\r\n\r\n")
 
-		colorized := config.DEFAULT_PRETTY_PRINT_CONFIG.Colorize
-		backgroundIsDark := config.INITIAL_BG_COLOR.IsDarkBackgroundColor()
+		colorized := false
+		backgroundIsDark := true
 
 		for _, suiteResult := range state.TestSuiteResults {
 			msg := utils.AddCarriageReturnAfterNewlines(suiteResult.MostAdaptedMessage(colorized, backgroundIsDark))
