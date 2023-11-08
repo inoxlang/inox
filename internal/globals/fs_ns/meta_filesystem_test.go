@@ -2,7 +2,9 @@ package fs_ns
 
 import (
 	"bytes"
+	"path/filepath"
 	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -225,7 +227,40 @@ func TestOpenMetaFilesystem(t *testing.T) {
 						util.WriteFile(fls, "a.txt", nil, 0600),
 
 						fls.MkdirAll("/dir", DEFAULT_DIR_FMODE),
-						util.WriteFile(fls, "/dir/b.txt", nil, 0600),
+						util.WriteFile(fls, "/dir/_b.txt", nil, 0600),
+					)
+				},
+			},
+			{
+				name: "2 top-level files + empty top-level directory, top-level filenames < dirname",
+				mutate: func(fls *MetaFilesystem) {
+					utils.PanicIfErrAmong(
+						util.WriteFile(fls, "a.txt", nil, 0600),
+						util.WriteFile(fls, "b.txt", nil, 0600),
+
+						fls.MkdirAll("/dir", DEFAULT_DIR_FMODE),
+					)
+				},
+			},
+			{
+				name: "2 top-level files + empty top-level directory, top-level filenames > dirname",
+				mutate: func(fls *MetaFilesystem) {
+					utils.PanicIfErrAmong(
+						util.WriteFile(fls, "e_a.txt", nil, 0600),
+						util.WriteFile(fls, "e_b.txt", nil, 0600),
+
+						fls.MkdirAll("/dir", DEFAULT_DIR_FMODE),
+					)
+				},
+			},
+			{
+				name: "2 top-level files + empty top-level directory, top-level filename1 < dirname < filename2",
+				mutate: func(fls *MetaFilesystem) {
+					utils.PanicIfErrAmong(
+						util.WriteFile(fls, "a.txt", nil, 0600),
+						util.WriteFile(fls, "e.txt", nil, 0600),
+
+						fls.MkdirAll("/dir", DEFAULT_DIR_FMODE),
 					)
 				},
 			},
@@ -237,7 +272,7 @@ func TestOpenMetaFilesystem(t *testing.T) {
 						util.WriteFile(fls, "b.txt", nil, 0600),
 
 						fls.MkdirAll("/dir", DEFAULT_DIR_FMODE),
-						util.WriteFile(fls, "dir/b.txt", nil, 0600),
+						util.WriteFile(fls, "/dir/_b.txt", nil, 0600),
 					)
 				},
 			},
@@ -249,7 +284,7 @@ func TestOpenMetaFilesystem(t *testing.T) {
 						util.WriteFile(fls, "e_b.txt", nil, 0600),
 
 						fls.MkdirAll("/dir", DEFAULT_DIR_FMODE),
-						util.WriteFile(fls, "dir/b.txt", nil, 0600),
+						util.WriteFile(fls, "/dir/_b.txt", nil, 0600),
 					)
 				},
 			},
@@ -262,7 +297,7 @@ func TestOpenMetaFilesystem(t *testing.T) {
 						util.WriteFile(fls, "c.txt", nil, 0600),
 
 						fls.MkdirAll("/dir", DEFAULT_DIR_FMODE),
-						util.WriteFile(fls, "dir/b.txt", nil, 0600),
+						util.WriteFile(fls, "/dir/_b.txt", nil, 0600),
 					)
 				},
 			},
@@ -275,7 +310,143 @@ func TestOpenMetaFilesystem(t *testing.T) {
 						util.WriteFile(fls, "e_c.txt", nil, 0600),
 
 						fls.MkdirAll("/dir", DEFAULT_DIR_FMODE),
-						util.WriteFile(fls, "dir/b.txt", nil, 0600),
+						util.WriteFile(fls, "/dir/_b.txt", nil, 0600),
+					)
+				},
+			},
+			{
+				name: "top-level file + top-level directories with file, top-level filename < dirnames",
+				mutate: func(fls *MetaFilesystem) {
+					utils.PanicIfErrAmong(
+						util.WriteFile(fls, "a.txt", nil, 0600),
+
+						fls.MkdirAll("/b_dir", DEFAULT_DIR_FMODE),
+						fls.MkdirAll("/c_dir", DEFAULT_DIR_FMODE),
+						util.WriteFile(fls, "/b_dir/_b.txt", nil, 0600),
+						util.WriteFile(fls, "/c_dir/_c.txt", nil, 0600),
+					)
+				},
+			},
+			{
+				name: "top-level file + 2 empty top-level directories, top-level filename > dirnames",
+				mutate: func(fls *MetaFilesystem) {
+					utils.PanicIfErrAmong(
+						util.WriteFile(fls, "d.txt", nil, 0600),
+
+						fls.MkdirAll("/b_dir", DEFAULT_DIR_FMODE),
+						fls.MkdirAll("/c_dir", DEFAULT_DIR_FMODE),
+					)
+				},
+			},
+			{
+				name: "top-level file + 2 empty top-level directories, top-level filename < dirnames",
+				mutate: func(fls *MetaFilesystem) {
+					utils.PanicIfErrAmong(
+						util.WriteFile(fls, "a.txt", nil, 0600),
+
+						fls.MkdirAll("/b_dir", DEFAULT_DIR_FMODE),
+						fls.MkdirAll("/c_dir", DEFAULT_DIR_FMODE),
+					)
+				},
+			},
+			{
+				name: "top-level file + 2 top-level directories with file, top-level filename > dirnames",
+				mutate: func(fls *MetaFilesystem) {
+					utils.PanicIfErrAmong(
+						util.WriteFile(fls, "d.txt", nil, 0600),
+
+						fls.MkdirAll("/b_dir", DEFAULT_DIR_FMODE),
+						fls.MkdirAll("/c_dir", DEFAULT_DIR_FMODE),
+						util.WriteFile(fls, "/b_dir/_b.txt", nil, 0600),
+						util.WriteFile(fls, "/c_dir/_c.txt", nil, 0600),
+					)
+				},
+			},
+			{
+				name: "top-level file + empty top-level dir + top-level dir with file, top-level filename > dirnames",
+				mutate: func(fls *MetaFilesystem) {
+					utils.PanicIfErrAmong(
+						util.WriteFile(fls, "d.txt", nil, 0600),
+
+						fls.MkdirAll("/b_dir", DEFAULT_DIR_FMODE),
+						fls.MkdirAll("/c_dir", DEFAULT_DIR_FMODE),
+						util.WriteFile(fls, "/b_dir/_b.txt", nil, 0600),
+					)
+				},
+			},
+			{
+				name: "top-level file + top-level dir with file + empty top-level dir, top-level filename > dirnames",
+				mutate: func(fls *MetaFilesystem) {
+					utils.PanicIfErrAmong(
+						util.WriteFile(fls, "d.txt", nil, 0600),
+
+						fls.MkdirAll("/b_dir", DEFAULT_DIR_FMODE),
+						fls.MkdirAll("/c_dir", DEFAULT_DIR_FMODE),
+						util.WriteFile(fls, "/c_dir/_c.txt", nil, 0600),
+					)
+				},
+			},
+			{
+				name: "2 top-level files + 2 top-level directories with file, top-level filenames > dirnames",
+				mutate: func(fls *MetaFilesystem) {
+					utils.PanicIfErrAmong(
+						util.WriteFile(fls, "d.txt", nil, 0600),
+						util.WriteFile(fls, "e.txt", nil, 0600),
+
+						fls.MkdirAll("/b_dir", DEFAULT_DIR_FMODE),
+						fls.MkdirAll("/c_dir", DEFAULT_DIR_FMODE),
+						util.WriteFile(fls, "/b_dir/_b.txt", nil, 0600),
+						util.WriteFile(fls, "/c_dir/_c.txt", nil, 0600),
+					)
+				},
+			},
+			{
+				name: "2 top-level files + 2 top-level directories with file, top-level filenames < dirnames",
+				mutate: func(fls *MetaFilesystem) {
+					utils.PanicIfErrAmong(
+						util.WriteFile(fls, "a_a.txt", nil, 0600),
+						util.WriteFile(fls, "a_b.txt", nil, 0600),
+
+						fls.MkdirAll("/b_dir", DEFAULT_DIR_FMODE),
+						fls.MkdirAll("/c_dir", DEFAULT_DIR_FMODE),
+						util.WriteFile(fls, "/b_dir/_b.txt", nil, 0600),
+						util.WriteFile(fls, "/c_dir/_c.txt", nil, 0600),
+					)
+				},
+			},
+			{
+				name: "2 top-level files + 2 empty top-level directories, top-level filenames > dirnames",
+				mutate: func(fls *MetaFilesystem) {
+					utils.PanicIfErrAmong(
+						util.WriteFile(fls, "d.txt", nil, 0600),
+						util.WriteFile(fls, "e.txt", nil, 0600),
+
+						fls.MkdirAll("/b_dir", DEFAULT_DIR_FMODE),
+						fls.MkdirAll("/c_dir", DEFAULT_DIR_FMODE),
+					)
+				},
+			},
+			{
+				name: "2 top-level files + 2 empty top-level directories, top-level filenames < dirnames",
+				mutate: func(fls *MetaFilesystem) {
+					utils.PanicIfErrAmong(
+						util.WriteFile(fls, "a_a.txt", nil, 0600),
+						util.WriteFile(fls, "a_b.txt", nil, 0600),
+
+						fls.MkdirAll("/b_dir", DEFAULT_DIR_FMODE),
+						fls.MkdirAll("/c_dir", DEFAULT_DIR_FMODE),
+					)
+				},
+			},
+			{
+				name: "2 top-level files + 2 empty top-level directories, top-level filename1 < dirnames < filename2",
+				mutate: func(fls *MetaFilesystem) {
+					utils.PanicIfErrAmong(
+						util.WriteFile(fls, "a.txt", nil, 0600),
+						util.WriteFile(fls, "e.txt", nil, 0600),
+
+						fls.MkdirAll("/b_dir", DEFAULT_DIR_FMODE),
+						fls.MkdirAll("/c_dir", DEFAULT_DIR_FMODE),
 					)
 				},
 			},
@@ -655,4 +826,91 @@ func TestMetaFilesystemTakeSnapshot(t *testing.T) {
 	}
 
 	testSnapshoting(t, createEmptyMetaFS)
+}
+
+func TestMetaFilesystemWalk(t *testing.T) {
+
+	cases := []struct {
+		files             []string
+		emptyDirs         []string
+		expectedTraversal []string
+	}{
+		{
+			files:             []string{"/a.txt"},
+			expectedTraversal: []string{"/", "/a.txt"},
+		},
+		{
+			files:             []string{"/a.txt", "/b.txt"},
+			expectedTraversal: []string{"/", "/a.txt", "/b.txt"},
+		},
+		{
+			files:             []string{"/a.txt", "/b.txt"},
+			emptyDirs:         []string{"/dir"},
+			expectedTraversal: []string{"/", "/a.txt", "/b.txt", "/dir"},
+		},
+		{
+			files:             []string{"/a.txt", "/b.txt"},
+			emptyDirs:         []string{"/c_dir"},
+			expectedTraversal: []string{"/", "/a.txt", "/b.txt", "/c_dir"},
+		},
+		{
+			files:             []string{"/a.txt", "/e.txt"},
+			emptyDirs:         []string{"/dir"},
+			expectedTraversal: []string{"/", "/a.txt", "/dir", "/e.txt"},
+		},
+		{
+			files:             []string{"/dir_a/a.txt", "/dir_a/e.txt"},
+			emptyDirs:         []string{"/dir_b"},
+			expectedTraversal: []string{"/", "/dir_a", "/dir_a/a.txt", "/dir_a/e.txt", "/dir_b"},
+		},
+		{
+			files:             []string{"/dir_b/a.txt"},
+			emptyDirs:         []string{"/dir_a"},
+			expectedTraversal: []string{"/", "/dir_a", "/dir_b", "/dir_b/a.txt"},
+		},
+	}
+
+	for _, testCase := range cases {
+		t.Run("files: "+strings.Join(testCase.files, " & ")+", empty dirs: "+strings.Join(testCase.emptyDirs, " & "), func(t *testing.T) {
+			ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+			defer ctx.CancelGracefully()
+			underlyingFS := NewMemFilesystem(100_000_000)
+
+			fls, err := OpenMetaFilesystem(ctx, underlyingFS, MetaFilesystemParams{
+				Dir: "/",
+			})
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			for _, dir := range testCase.emptyDirs {
+				fls.MkdirAll(dir, DEFAULT_DIR_FMODE)
+			}
+
+			for _, file := range testCase.files {
+				dir := filepath.Dir(file)
+				fls.MkdirAll(dir, DEFAULT_DIR_FMODE)
+				f, err := fls.Create(file)
+				if !assert.NoError(t, err) {
+					return
+				}
+				f.Close()
+			}
+
+			var traversal []string
+
+			fls.Walk(func(normalizedPath string, path core.Path, metadata *metaFsFileMetadata) error {
+				traversal = append(traversal, normalizedPath)
+				return nil
+			})
+
+			assert.Equal(t, testCase.expectedTraversal, traversal)
+
+			fls, err = OpenMetaFilesystem(ctx, underlyingFS, MetaFilesystemParams{})
+			if !assert.NoError(t, err) {
+				return
+			}
+			defer fls.Close(ctx)
+		})
+	}
 }

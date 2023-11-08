@@ -434,8 +434,12 @@ func (fls *MetaFilesystem) walk(visit func(normalizedPath string, path core.Path
 		return err
 	}
 
+	childrenNames := slices.Clone(rootDirMeta.children)
+	slices.Sort(childrenNames)
+	slices.Reverse(childrenNames)
+
 	pathSegments := []string{"", ""}
-	stack := slices.Clone(rootDirMeta.children)
+	stack := childrenNames
 	firstChildIndexes := []int{0} //indexes in stack
 
 	for len(stack) > 0 {
@@ -463,9 +467,13 @@ func (fls *MetaFilesystem) walk(visit func(normalizedPath string, path core.Path
 			path = core.AppendTrailingSlashIfNotPresent(path)
 			//push entries into the stack.
 			if len(childMetadata.children) > 0 {
+				childrenNames := slices.Clone(childMetadata.children)
+				slices.Sort(childrenNames)
+				slices.Reverse(childrenNames)
+
 				pathSegments = append(pathSegments, "")
 				firstChildIndexes = append(firstChildIndexes, index)
-				stack = append(stack, childMetadata.children...)
+				stack = append(stack, childrenNames...)
 				keepFirstChildIndex = true
 			}
 		}
