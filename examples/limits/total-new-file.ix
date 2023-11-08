@@ -3,7 +3,7 @@ manifest {
         create: %/...
     }
     limits: {
-        "fs/total-new-file": 2
+        "fs/total-new-file": 1
     }   
 }
 
