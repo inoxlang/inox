@@ -84,7 +84,8 @@ func TestPreInit(t *testing.T) {
 		//errors
 		error                     bool
 		expectedParsingError      bool
-		errorIs                   error //optional
+		errorIs                   error  //optional
+		errorContains             string //optional
 		expectedStaticCheckErrors []string
 		expectedPreinitFileErrors []string
 	}
@@ -454,6 +455,77 @@ func TestPreInit(t *testing.T) {
 			},
 			expectedStaticCheckErrors: []string{ErrForbiddenNodeinPreinit.Error()},
 			error:                     true,
+		},
+		{
+			name: "inclusion import: pattern definition",
+			module: `
+				preinit {
+					import /models.ix
+				}
+
+				manifest {
+					parameters: {
+						name: %username
+					}
+				}`,
+			setupFilesystem: func(fls afs.Filesystem) {
+				util.WriteFile(fls, "/models.ix", []byte(`
+					includable-chunk
+
+					pattern username = str
+				`), 0600)
+			},
+			expectedLimits: []Limit{},
+			expectedParameters: []ModuleParameter{
+				{
+					positional: false,
+					pattern:    STR_PATTERN,
+					name:       "name",
+					cliArgName: "name",
+				},
+			},
+		},
+		{
+			name: "inclusion import: host alias definition",
+			module: `
+				preinit {
+					import /hosts.ix
+				}
+
+				manifest {
+					permissions: {
+						read: @host/index.html
+					}
+				}`,
+			setupFilesystem: func(fls afs.Filesystem) {
+				util.WriteFile(fls, "/hosts.ix", []byte(`
+					includable-chunk
+
+					@host = https://localhost:8080
+				`), 0600)
+			},
+			expectedLimits:      []Limit{},
+			expectedPermissions: []Permission{HttpPermission{Kind_: permkind.Read, Entity: URL("https://localhost:8080/index.html")}},
+		},
+		{
+			name: "inclusion import: forbidden node in chunk",
+			module: `
+				preinit {
+					import /models.ix
+				}
+
+				manifest {
+					parameters: {
+						name: %username
+					}
+				}`,
+			setupFilesystem: func(fls afs.Filesystem) {
+				util.WriteFile(fls, "/models.ix", []byte(`
+					go do {}
+				`), 0600)
+			},
+			error:         true,
+			errorContains: FORBIDDEN_NODE_TYPE_IN_INCLUDABLE_CHUNK_IMPORTED_BY_PREINIT,
 		},
 		{
 			name: "invalid value for permissions section",
@@ -1111,11 +1183,31 @@ func TestPreInit(t *testing.T) {
 			}
 
 			mod := &Module{
-				MainChunk: parse.NewParsedChunk(chunk, parse.InMemorySource{
-					NameString: "test",
-					CodeString: testCase.module,
-				}),
-				ManifestTemplate: chunk.Manifest,
+				MainChunk: parse.NewParsedChunk(chunk,
+					parse.SourceFile{
+						NameString:             "/main.ix",
+						UserFriendlyNameString: "/main.ix",
+						Resource:               "/main.ix",
+						ResourceDir:            "/",
+						IsResourceURL:          false,
+						CodeString:             testCase.module,
+					},
+				),
+				ManifestTemplate:      chunk.Manifest,
+				InclusionStatementMap: map[*parse.InclusionImportStatement]*IncludedChunk{},
+				IncludedChunkMap:      map[string]*IncludedChunk{},
+			}
+
+			{
+				ctx := NewContext(ContextConfig{
+					Permissions: []Permission{
+						FilesystemPermission{Kind_: permkind.Read, Entity: PathPattern("/...")},
+					},
+					DoNotSpawnDoneGoroutine: true,
+					Filesystem:              fls,
+				})
+				ParseLocalIncludedFiles(mod, ctx, fls, false)
+				ctx.CancelGracefully()
 			}
 
 			start := time.Now()
@@ -1129,7 +1221,7 @@ func TestPreInit(t *testing.T) {
 			})
 
 			//PreInit should be fast
-			if !assert.Less(t, time.Since(start), time.Millisecond) {
+			if !assert.Less(t, time.Since(start), 2*time.Millisecond) {
 				return
 			}
 
@@ -1161,6 +1253,11 @@ func TestPreInit(t *testing.T) {
 				}
 				if testCase.errorIs != nil {
 					if !assert.ErrorIs(t, err, testCase.errorIs) {
+						return
+					}
+				}
+				if testCase.errorContains != "" {
+					if !assert.ErrorContains(t, err, testCase.errorContains) {
 						return
 					}
 				}

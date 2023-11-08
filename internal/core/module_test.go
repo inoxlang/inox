@@ -512,6 +512,50 @@ func TestParseLocalModule(t *testing.T) {
 		assert.Equal(t, []*IncludedChunk{includedChunk1}, mod.FlattenedIncludedChunkList)
 	})
 
+	t.Run("file included in the preinit block", func(t *testing.T) {
+		fls := newMemFilesystemRootWD()
+		modpath := "/main.ix"
+		util.WriteFile(fls, modpath, []byte(`
+			preinit {
+				import ./dep.ix
+			}
+			manifest {}
+		`), 0o400)
+		util.WriteFile(fls, "/dep.ix", []byte(`includable-chunk`), 0o400)
+
+		importedModPath := filepath.Join(filepath.Dir(modpath), "/dep.ix")
+
+		parsingCtx := NewContexWithEmptyState(ContextConfig{
+			Permissions: []Permission{
+				CreateFsReadPerm(Path(modpath)),
+				CreateFsReadPerm(Path(importedModPath)),
+			},
+			Filesystem: fls,
+		}, nil)
+		defer parsingCtx.CancelGracefully()
+
+		mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: parsingCtx})
+		assert.NoError(t, err)
+
+		assert.NotNil(t, mod.MainChunk)
+		assert.Len(t, mod.IncludedChunkForest, 1)
+		assert.NotNil(t, mod.ManifestTemplate)
+
+		includedChunk1 := mod.IncludedChunkForest[0]
+		assert.NotNil(t, includedChunk1.Node)
+		assert.Empty(t, includedChunk1.IncludedChunkForest)
+
+		assert.Equal(t, []*IncludedChunk{includedChunk1}, mod.FlattenedIncludedChunkList)
+
+		assert.Equal(t, parse.SourceFile{
+			NameString:             "/dep.ix",
+			UserFriendlyNameString: "/dep.ix",
+			Resource:               "/dep.ix",
+			ResourceDir:            filepath.Dir(modpath),
+			CodeString:             "includable-chunk",
+		}, includedChunk1.Source)
+	})
+
 	t.Run("single included file which itself includes a file", func(t *testing.T) {
 		modpath := writeModuleAndIncludedFiles(t, moduleName, `
 			manifest {}

@@ -10,6 +10,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/globalnames"
 	"github.com/inoxlang/inox/internal/parse"
@@ -826,6 +827,11 @@ switch_:
 		}
 
 	case *parse.InclusionImportStatement:
+		//if the import is performed by the preinit block, prune the traversal.
+		if _, ok := parent.(*parse.Block); ok && inPreinitBlock {
+			return parse.Prune
+		}
+
 		if _, ok := parent.(*parse.Chunk); !ok {
 			c.addError(node, MISPLACED_INCLUSION_IMPORT_STATEMENT_TOP_LEVEL_STMT)
 			return parse.Continue
@@ -2004,15 +2010,57 @@ func (checker *checker) postCheckSingleNode(node, parent, scopeNode parse.Node, 
 	return parse.Continue
 }
 
-func checkPreinitBlock(preinit *parse.PreinitStatement, onError func(n parse.Node, msg string)) {
-	parse.Walk(preinit.Block, func(node, parent, scopeNode parse.Node, ancestorChain []parse.Node, after bool) (parse.TraversalAction, error) {
-		switch n := node.(type) {
-		case *parse.Block, *parse.HostAliasDefinition, *parse.IdentifierLiteral, *parse.PatternDefinition, parse.SimpleValueLiteral,
-			*parse.PatternIdentifierLiteral, *parse.URLExpression, *parse.ComplexStringPatternPiece, *parse.PatternPieceElement,
+type preinitBlockCheckParams struct {
+	node    *parse.PreinitStatement
+	fls     afs.Filesystem
+	onError func(n parse.Node, msg string)
+	module  *Module
+}
 
-			*parse.InclusionImportStatement:
+func checkPreinitBlock(args preinitBlockCheckParams) {
+	parse.Walk(args.node.Block, func(node, parent, scopeNode parse.Node, ancestorChain []parse.Node, after bool) (parse.TraversalAction, error) {
+		switch n := node.(type) {
+		case *parse.Block, *parse.IdentifierLiteral,
+			*parse.PatternDefinition, parse.SimpleValueLiteral, *parse.PatternIdentifierLiteral,
+			*parse.URLExpression, *parse.ComplexStringPatternPiece, *parse.PatternPieceElement:
+			//ok
+		case *parse.InclusionImportStatement:
+			includedChunk := args.module.InclusionStatementMap[n]
+
+			checkPatternOnlyIncludedChunk(includedChunk.Node, args.onError)
 		default:
-			onError(n, fmt.Sprintf("%s: %T", ErrForbiddenNodeinPreinit, n))
+			args.onError(n, fmt.Sprintf("%s: %T", ErrForbiddenNodeinPreinit, n))
+			return parse.Prune, nil
+		}
+
+		return parse.Continue, nil
+	}, nil)
+}
+
+func checkPatternOnlyIncludedChunk(chunk *parse.Chunk, onError func(n parse.Node, msg string)) {
+	parse.Walk(chunk, func(node, parent, scopeNode parse.Node, ancestorChain []parse.Node, after bool) (parse.TraversalAction, error) {
+
+		if node == chunk {
+			return parse.Continue, nil
+		}
+
+		switch n := node.(type) {
+		case *parse.IncludableChunkDescription,
+			//
+			parse.SimpleValueLiteral,
+
+			//patterns
+			*parse.PatternDefinition, *parse.PatternIdentifierLiteral,
+			*parse.PatternNamespaceDefinition, *parse.PatternConversionExpression,
+			*parse.ComplexStringPatternPiece, *parse.PatternPieceElement,
+			*parse.ObjectPatternLiteral, *parse.RecordPatternLiteral, *parse.ObjectPatternProperty,
+			*parse.PatternCallExpression, *parse.PatternGroupName,
+			*parse.PatternUnion,
+
+			//host alias
+			*parse.HostAliasDefinition:
+		default:
+			onError(n, fmt.Sprintf("%s: %T", FORBIDDEN_NODE_TYPE_IN_INCLUDABLE_CHUNK_IMPORTED_BY_PREINIT, n))
 			return parse.Prune, nil
 		}
 

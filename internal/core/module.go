@@ -48,16 +48,25 @@ type Module struct {
 	//no set for modules with an in-memory sourceName
 	sourceName ResourceName
 
-	MainChunk                  *parse.ParsedChunk
+	MainChunk *parse.ParsedChunk
+
+	//inclusion imports (in top level adnd preinit block)
+
 	IncludedChunkForest        []*IncludedChunk
 	FlattenedIncludedChunkList []*IncludedChunk
 	InclusionStatementMap      map[*parse.InclusionImportStatement]*IncludedChunk
 	IncludedChunkMap           map[string]*IncludedChunk
 
+	//module imports
+
 	DirectlyImportedModules            map[string]*Module
 	DirectlyImportedModulesByStatement map[*parse.ImportStatement]*Module
 
+	//manifest node
+
 	ManifestTemplate *parse.Manifest
+
+	//errors
 
 	ParsingErrors         []Error
 	ParsingErrorPositions []parse.SourcePositionRange
@@ -238,10 +247,16 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (_ *Manifest, usedRunningState
 	//check preinit block
 	if preinitArgs.PreinitStatement != nil {
 		var checkErrs []*StaticCheckError
-		checkPreinitBlock(preinitArgs.PreinitStatement, func(n parse.Node, msg string) {
-			location := m.MainChunk.GetSourcePosition(n.Base().Span)
-			checkErr := NewStaticCheckError(msg, parse.SourcePositionStack{location})
-			checkErrs = append(checkErrs, checkErr)
+		checkPreinitBlock(preinitBlockCheckParams{
+			node:   preinitArgs.PreinitStatement,
+			fls:    preinitArgs.PreinitFilesystem,
+			module: m,
+
+			onError: func(n parse.Node, msg string) {
+				location := m.MainChunk.GetSourcePosition(n.Base().Span)
+				checkErr := NewStaticCheckError(msg, parse.SourcePositionStack{location})
+				checkErrs = append(checkErrs, checkErr)
+			},
 		})
 		if len(checkErrs) != 0 {
 			return nil, nil, checkErrs, fmt.Errorf("%s: error while checking preinit block: %w", m.Name(), combineStaticCheckErrors(checkErrs...))
