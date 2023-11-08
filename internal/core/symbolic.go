@@ -1566,7 +1566,13 @@ func (p *XMLElement) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbo
 }
 
 func (db *DatabaseIL) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
-	pattern, err := db.inner.Schema().ToSymbolicValue(ctx, encountered)
+	var schema *ObjectPattern
+	if db.newSchemaSet.Load() {
+		schema = db.newSchema
+	} else {
+		schema = db.initialSchema
+	}
+	pattern, err := schema.ToSymbolicValue(ctx, encountered)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert schema to symbolic: %w", err)
 	}
