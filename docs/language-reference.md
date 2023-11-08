@@ -947,7 +947,7 @@ Some named patterns are callable, for example if you want a pattern that matches
 all integers in the range 0..10 you can do the following:
 
 ```
-pattern zero-to-ten = %int(0..10)
+pattern zero-to-ten = int(0..10)
 ```
 
 Creating a named pattern `%user` does not prevent you to name a variable `user`:
@@ -1813,7 +1813,9 @@ testsuite "my test suite" {
 }
 ```
 
-Permissions granted by default to modules whose filename matches `*.spec.ix`:
+Tests are allowed in any Inox file but it is recommended to write them in
+`*.spec.ix` files. The modules whose filename matches `*.spec.ix` are granted
+the following permissions by default in test mode:
 
 - **read, write, delete all files**
 - **read any http(s) resource**
@@ -1914,8 +1916,6 @@ program is launched for each test case in a short-lived filesystem.
 ```
 manifest {
     permissions: {
-        # no permissions of kind provide are granted by default to .spec.ix modules,
-        # so they should be specified.
         provide: https://localhost:8080
     }
 }
@@ -1935,6 +1935,46 @@ testsuite({
 
 The short-lived filesystem is created from the current project's
 [base image](#project-images).
+
+**Database initialization**:
+
+The main database of the program can be initialized by specifying a schema and some initial data:
+```
+manifest {
+    permissions: {
+        provide: https://localhost:8080
+    }
+}
+
+pattern user = {
+    name: str
+}
+
+testsuite({
+    program: /web-app.ix
+    main-db-schema: %{
+        users: Set(user, #url)
+    }
+    # initial data
+    main-db-migrations: {
+        inclusions: :{
+            %/users: []
+        }
+    }
+}) {
+    testcase "user creation" {
+        assert http.post(https://localhost:8080/users, {
+            name: "new user"
+        })
+
+        db = __test.program.dbs.main
+        users = List(db.users)
+
+        assert (len(users) == 1)
+        assert (users[0].name == "new user")
+    }
+}
+```
 
 # Project Images
 
