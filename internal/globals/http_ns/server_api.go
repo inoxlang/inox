@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
 )
@@ -54,8 +55,6 @@ func addFilesysteDirEndpoints(ctx *core.Context, endpoints map[string]*ApiEndpoi
 		urlDirPathNoTrailingSlash = "/"
 	}
 
-	_ = urlDirPathNoTrailingSlash
-
 	parentState, _ := ctx.GetState()
 
 	for _, entry := range entries {
@@ -79,8 +78,8 @@ func addFilesysteDirEndpoints(ctx *core.Context, endpoints map[string]*ApiEndpoi
 			continue
 		}
 
-		//ignore non-Inox files
-		if !strings.HasSuffix(entryName, INOX_FILE_EXTENSION) {
+		//ignore non-Inox files and .spec.ix files
+		if !strings.HasSuffix(entryName, INOX_FILE_EXTENSION) || strings.HasSuffix(entryName, inoxconsts.INOXLANG_SPEC_FILE_SUFFIX) {
 			continue
 		}
 

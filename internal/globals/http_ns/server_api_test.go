@@ -1,6 +1,7 @@
 package http_ns
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/go-git/go-billy/v5/util"
@@ -28,6 +29,8 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 		fls.MkdirAll("/routes/", 0o700)
 
 		for file, content := range files {
+			fls.MkdirAll(filepath.Dir(file), 0700)
+
 			err := util.WriteFile(fls, file, []byte(content), 0o700)
 			if err != nil {
 				assert.FailNow(t, err.Error())
@@ -233,6 +236,71 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			assert.Same(t, api.endpoints["/x/users"], childNode.endpoint)
 			assert.Equal(t, "/x/users", childNode.path)
 			assert.Equal(t, "users", childNode.segment)
+		})
+
+		t.Run(".spec.ix files should be ignored", func(t *testing.T) {
+			ctx := setup(map[string]string{
+				"/routes/a.spec.ix": `
+					manifest {
+						parameters: {
+	
+						}
+					}
+				`,
+				"/routes/b.spec.ix": `
+					manifest {
+					}
+				`,
+				"/routes/c.ix": `
+					manifest {
+						parameters: {
+	
+						}
+					}
+				`,
+				"/routes/d/e.ix": `
+					manifest {
+						parameters: {
+	
+						}
+					}
+				`,
+				"/routes/d/f.spec.ix": `
+					manifest {
+						parameters: {
+	
+						}
+					}
+				`,
+			})
+			defer ctx.CancelGracefully()
+
+			api, err := getFSRoutingServerAPI(ctx, "/routes/")
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			if !assert.NotContains(t, api.endpoints, "/a") {
+				return
+			}
+
+			if !assert.NotContains(t, api.endpoints, "/b") {
+				return
+			}
+
+			if !assert.Contains(t, api.endpoints, "/c") {
+				return
+			}
+
+			if !assert.Contains(t, api.endpoints, "/d/e") {
+				return
+			}
+
+			if !assert.NotContains(t, api.endpoints, "/d/f") {
+				return
+			}
+
+			assert.NotNil(t, api.tree)
 		})
 	})
 
