@@ -48,6 +48,7 @@
   - [Module Imports](#module-imports)
   - [Limits](#limits)
   - [Main Module](#main-module)
+- [Pre-Initialization](#pre-initialization)
 - [Static check](#static-check)
 - [Symbolic evaluation](#symbolic-evaluation)
 - [Concurrency](#concurrency)
@@ -1261,9 +1262,16 @@ manifest {
 
 The execution of a module has several phases:
 
+**preparation phases**:
+
 - **Parsing**
+- [Pre-initialization](#pre-initialization)
+- **Opening of Databases**
 - [Static Check](#static-check)
 - [Symbolic Evaluation/Check](#symbolic-evaluation)
+
+**actual execution phases**:
+
 - [Compilation](#compilation) (if using the [bytecode interpreter](#evaluation))
 - [Evaluation](#evaluation)
 
@@ -1521,6 +1529,54 @@ Examples:
 In Inoxlang "a" **main module** does not always refer to the first module being
 executed because in some cases modules can invoke other "main" modules. In
 general the main module is the "main" module of "a" project.
+
+# Pre-Initialization
+
+The pre-initialization is the first of the module execution phases. During this
+phase the `manifest` and the `preinit` block are evaluated.
+
+```
+const (
+    HOST = https://localhost:8080
+)
+
+manifest {
+    permissions: {
+        read: HOST
+    }
+}
+```
+
+Any logic that has to be executed before the manifest should be written in the
+`preinit` statement:
+
+```
+const (
+    HOST = https://localhost:8080
+)
+
+# < no code allowed here >
+
+preinit {
+    @host = HOST
+}
+
+# < no code allowed here >
+
+manifest {
+    permissions: {
+        read: @host/index.html
+    }
+}
+```
+
+The code in the preinit statement is heavily restricted, only a few constructs
+are allowed:
+
+- **host alias definitions**
+- **pattern** and **pattern namespace definitions**
+- **inclusion imports** of files subject to the same constraints as the preinit
+  statement.
 
 # Static Check
 
@@ -1938,7 +1994,9 @@ The short-lived filesystem is created from the current project's
 
 **Database initialization**:
 
-The main database of the program can be initialized by specifying a schema and some initial data:
+The main database of the program can be initialized by specifying a schema and
+some initial data:
+
 ```
 manifest {
     permissions: {
