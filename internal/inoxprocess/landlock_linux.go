@@ -33,6 +33,7 @@ func restrictProcessAccess(grantedPerms, forbiddenPerms []core.Permission, fls *
 			allowCerts = true
 		case core.HttpPermission:
 			allowCerts = true
+			allowDNS = true
 		case core.CommandPermission:
 			var allowedPath *landlock.Path
 
