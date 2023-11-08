@@ -30,6 +30,8 @@ var (
 	ErrTopLevelEntitiesAlreadyLoaded                   = errors.New("top-level entities already loaded")
 	ErrDatabaseSchemaOnlyUpdatableByOwnerState         = errors.New("database schema can only be updated by owner state")
 	ErrNoDatabaseSchemaUpdateExpected                  = errors.New("no database schema update is expected")
+	ErrCurrentSchemaNotEqualToExpectedSchema           = errors.New("current schema not equal to expected schema")
+	ErrNewSchemaNotEqualToExpectedSchema               = errors.New("new schema not equal to expected schema")
 	ErrDatabaseSchemaAlreadyUpdatedOrNotAllowed        = errors.New("database schema already updated or no longer allowed")
 	ErrInvalidAccessSchemaNotUpdatedYet                = errors.New("access to database is not allowed because schema is not updated yet")
 	ErrInvalidDatabaseDirpath                          = errors.New("invalid database dir path")
@@ -55,8 +57,10 @@ type DatabaseIL struct {
 	schemaUpdateExpected bool
 	schemaUpdated        atomic.Bool
 	schemaUpdateLock     sync.Mutex
-	ownerState           *GlobalState //optional, can be set later using .SetOwnerStateOnceAndLoadIfNecessary
-	name                 string
+	expectedSchema       *ObjectPattern
+
+	ownerState *GlobalState //optional, can be set later using .SetOwnerStateOnceAndLoadIfNecessary
+	name       string
 
 	propertyNames                     []string
 	topLevelEntitiesLoaded            atomic.Bool
@@ -139,10 +143,18 @@ type Database interface {
 }
 
 type DatabaseWrappingArgs struct {
-	Inner                Database
-	OwnerState           *GlobalState //if nil the owner state should be set later by calling SetOwnerStateOnceAndLoadIfNecessary
+	Name       string
+	Inner      Database
+	OwnerState *GlobalState //if nil the owner state should be set later by calling SetOwnerStateOnceAndLoadIfNecessary
+
+	//If true the database is not loaded until the schema has been updated.
+	//This field is unrelated to ExpectedSchema.
 	ExpectedSchemaUpdate bool
-	Name                 string
+
+	//If not nil the current schema is compared to the expected schema.
+	//The comparison is performed after any schema update.
+	//This field is unrelated to ExpectedSchemaUpdate.
+	ExpectedSchema *ObjectPattern
 
 	//force the loading top level entities if there is not expected schema update
 	ForceLoadBeforeOwnerStateSet bool
@@ -166,20 +178,30 @@ func WrapDatabase(ctx *Context, args DatabaseWrappingArgs) (*DatabaseIL, error) 
 		initialSchema:        schema,
 		propertyNames:        propertyNames,
 		schemaUpdateExpected: args.ExpectedSchemaUpdate,
+		expectedSchema:       args.ExpectedSchema,
 		ownerState:           args.OwnerState,
 		name:                 args.Name,
 
 		devMode: args.DevMode,
 	}
 
-	if !args.ExpectedSchemaUpdate && args.ForceLoadBeforeOwnerStateSet {
-		topLevelEntities, err := args.Inner.LoadTopLevelEntities(ctx)
-		if err != nil {
-			return nil, err
+	if !args.ExpectedSchemaUpdate {
+		if args.ExpectedSchema != nil {
+			currentSchema := args.Inner.Schema()
+			if !currentSchema.Equal(ctx, args.ExpectedSchema, map[uintptr]uintptr{}, 0) {
+				return nil, ErrCurrentSchemaNotEqualToExpectedSchema
+			}
 		}
-		db.topLevelEntities = topLevelEntities
-		db.topLevelEntitiesLoaded.Store(true)
-		db.setDatabasePermissions()
+
+		if args.ForceLoadBeforeOwnerStateSet {
+			topLevelEntities, err := args.Inner.LoadTopLevelEntities(ctx)
+			if err != nil {
+				return nil, err
+			}
+			db.topLevelEntities = topLevelEntities
+			db.topLevelEntitiesLoaded.Store(true)
+			db.setDatabasePermissions()
+		}
 	}
 
 	if db.ownerState != nil {
@@ -493,6 +515,10 @@ func (db *DatabaseIL) UpdateSchema(ctx *Context, nextSchema *ObjectPattern, migr
 		panic(err)
 	}
 
+	if db.expectedSchema != nil && !nextSchema.Equal(ctx, db.expectedSchema, map[uintptr]uintptr{}, 0) {
+		panic(ErrNewSchemaNotEqualToExpectedSchema)
+	}
+
 	db.schemaUpdateLock.Lock()
 	defer db.schemaUpdateLock.Unlock()
 
@@ -690,6 +716,7 @@ func (db *FailedToOpenDatabase) Close(ctx *Context) error {
 type dummyDatabase struct {
 	resource         SchemeHolder
 	schemaUpdated    bool
+	currentSchema    *ObjectPattern //if nil EMPTY_INEXACT_OBJECT_PATTERN is the schema.
 	topLevelEntities map[string]Serializable
 	closed           atomic.Bool
 }
@@ -702,6 +729,9 @@ func (db *dummyDatabase) Schema() *ObjectPattern {
 	if db.closed.Load() {
 		panic(ErrDatabaseClosed)
 	}
+	if db.currentSchema != nil {
+		return db.currentSchema
+	}
 	return EMPTY_INEXACT_OBJECT_PATTERN
 }
 
@@ -713,6 +743,7 @@ func (db *dummyDatabase) UpdateSchema(ctx *Context, schema *ObjectPattern, handl
 		panic(ErrDatabaseClosed)
 	}
 	db.schemaUpdated = true
+	db.currentSchema = schema
 
 	state := ctx.GetClosestState()
 

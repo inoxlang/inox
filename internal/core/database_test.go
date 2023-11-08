@@ -152,7 +152,7 @@ func TestDatabaseIL(t *testing.T) {
 		}()
 	})
 
-	t.Run("", func(t *testing.T) {
+	t.Run("base case", func(t *testing.T) {
 		resetLoadInstanceFnRegistry()
 		defer resetLoadInstanceFnRegistry()
 
@@ -187,6 +187,42 @@ func TestDatabaseIL(t *testing.T) {
 		assert.Equal(t, map[string]Serializable{"a": &loadableTestValue{
 			value: 1,
 		}}, dbIL.topLevelEntities)
+	})
+
+	t.Run("if the current schema is not equal to the expected schema an error should be returned", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{
+			Permissions: []Permission{
+				DatabasePermission{
+					Kind_:  permkind.Read,
+					Entity: Host("ldb://main"),
+				},
+			},
+		}, nil)
+		defer ctx.CancelGracefully()
+
+		db := &dummyDatabase{
+			resource: Host("ldb://main"),
+			topLevelEntities: map[string]Serializable{"a": &loadableTestValue{
+				value: 1,
+			}},
+		}
+
+		expectedSchema := NewInexactObjectPattern(map[string]Pattern{
+			"a": LOADABLE_TEST_VALUE_PATTERN,
+			"b": LOADABLE_TEST_VALUE_PATTERN,
+		})
+
+		dbIL, err := WrapDatabase(ctx, DatabaseWrappingArgs{
+			Inner:          db,
+			OwnerState:     ctx.state,
+			Name:           "main",
+			ExpectedSchema: expectedSchema,
+		})
+
+		if !assert.Nil(t, dbIL) {
+			return
+		}
+		assert.ErrorIs(t, err, ErrCurrentSchemaNotEqualToExpectedSchema)
 	})
 
 	t.Run("if a schema update is expected top level entities should not be loaded", func(t *testing.T) {
@@ -510,6 +546,73 @@ func TestDatabaseIL(t *testing.T) {
 
 		val := dbIL.Prop(ctx, "a")
 		assert.Same(t, db.topLevelEntities["a"], val)
+	})
+
+	t.Run("updating the database to a schema not equal to the expected schema should cause an error", func(t *testing.T) {
+		resetLoadInstanceFnRegistry()
+		defer resetLoadInstanceFnRegistry()
+
+		RegisterLoadInstanceFn(reflect.TypeOf(LOADABLE_TEST_VALUE_PATTERN), func(ctx *Context, args InstanceLoadArgs) (UrlHolder, error) {
+			assert.Fail(t, "should never be called")
+			return nil, nil
+		})
+
+		ctx := NewContexWithEmptyState(ContextConfig{
+			Permissions: []Permission{
+				DatabasePermission{
+					Kind_:  permkind.Read,
+					Entity: Host("ldb://main"),
+				},
+			},
+		}, nil)
+		defer ctx.CancelGracefully()
+
+		newSchema := NewInexactObjectPattern(map[string]Pattern{
+			"a": LOADABLE_TEST_VALUE_PATTERN,
+		})
+
+		expectedSchema := NewInexactObjectPattern(map[string]Pattern{
+			"a": LOADABLE_TEST_VALUE_PATTERN,
+			"b": LOADABLE_TEST_VALUE_PATTERN,
+		})
+
+		db := &dummyDatabase{
+			resource:         Host("ldb://main"),
+			topLevelEntities: map[string]Serializable{},
+		}
+
+		dbIL := utils.Must(WrapDatabase(ctx, DatabaseWrappingArgs{
+			Name:                 "main",
+			Inner:                db,
+			OwnerState:           ctx.state,
+			ExpectedSchemaUpdate: true,
+			ExpectedSchema:       expectedSchema,
+		}))
+
+		migrationHandlerReturnedVal := &loadableTestValue{value: 1}
+
+		symbolicFn := symbolic.NewInoxFunction(nil, nil, &symbolicLoadableTestValue{})
+		handler := &InoxFunction{
+			Node: &parse.FunctionExpression{
+				IsBodyExpression: true,
+				Body: &parse.IdentifierLiteral{
+					Name: "val",
+				},
+			},
+			treeWalkCapturedLocals: map[string]Value{
+				"val": migrationHandlerReturnedVal,
+			},
+			symbolicValue: symbolicFn,
+			staticData:    &FunctionStaticData{},
+		}
+
+		assert.PanicsWithError(t, ErrNewSchemaNotEqualToExpectedSchema.Error(), func() {
+			dbIL.UpdateSchema(ctx, newSchema, NewObjectFromMap(ValMap{
+				symbolic.DB_MIGRATION__INCLUSIONS_PROP_NAME: NewDictionary(ValMap{
+					"%/a": handler,
+				}),
+			}, ctx))
+		})
 	})
 
 	t.Run("gracefully cancelling the context should close the database", func(t *testing.T) {
