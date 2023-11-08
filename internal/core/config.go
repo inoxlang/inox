@@ -122,7 +122,10 @@ type DefaultContextConfig struct {
 	OwnedDatabases       []DatabaseConfig
 	ParentContext        *Context        //optional
 	ParentStdLibContext  context.Context //optional, should not be set if ParentContext is set
-	Filesystem           afs.Filesystem  //if nil the OS filesystem is used
+
+	//if nil the parent context's filesystem is used.
+	//if there is not parent context the OS filesystem is used.
+	Filesystem afs.Filesystem
 }
 
 type NewDefaultContextFn func(config DefaultContextConfig) (*Context, error)

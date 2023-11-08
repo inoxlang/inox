@@ -85,7 +85,9 @@ type ScriptPreparationArgs struct {
 	//used during the preinit
 	PreinitFilesystem afs.Filesystem
 
-	//used to create the context
+	//Used to create the context.
+	//If nil the parent context's filesystem is used.
+	//If there is no parent context the OS filesystem is used.
 	ScriptContextFileSystem afs.Filesystem
 
 	AdditionalGlobalsTestOnly map[string]Value

@@ -37,6 +37,10 @@ type RunScriptArgs struct {
 	//used during the preinit
 	PreinitFilesystem afs.Filesystem
 
+	//If nil the parent context's filesystem is used.
+	//If there is no parent context the OS filesystem is used.
+	ScriptContextFileSystem afs.Filesystem
+
 	FullAccessToDatabases bool
 	Project               *project.Project
 
@@ -86,6 +90,7 @@ func RunLocalScript(args RunScriptArgs) (
 		ParentContextRequired:     args.ParentContextRequired,
 		StdlibCtx:                 args.StdlibCtx,
 		AdditionalPermissions:     args.AdditionalPermissions,
+		ScriptContextFileSystem:   args.ScriptContextFileSystem,
 
 		Out:                   args.Out,
 		LogOut:                args.LogOut,
