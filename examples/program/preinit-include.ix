@@ -1,0 +1,14 @@
+preinit {
+    import ./models.ix
+}
+
+manifest {
+    parameters: {
+        log-level: {
+            pattern: %log-level
+            default: "warn"
+        }
+    }
+}
+
+assert (%log-level match %pattern)
