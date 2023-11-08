@@ -2022,7 +2022,9 @@ func checkPreinitBlock(args preinitBlockCheckParams) {
 		switch n := node.(type) {
 		case *parse.Block, *parse.IdentifierLiteral,
 			*parse.PatternDefinition, parse.SimpleValueLiteral, *parse.PatternIdentifierLiteral,
-			*parse.URLExpression, *parse.ComplexStringPatternPiece, *parse.PatternPieceElement:
+			*parse.URLExpression, *parse.ComplexStringPatternPiece, *parse.PatternPieceElement,
+			//host alias
+			*parse.HostAliasDefinition, *parse.AtHostLiteral:
 			//ok
 		case *parse.InclusionImportStatement:
 			includedChunk := args.module.InclusionStatementMap[n]
@@ -2058,7 +2060,7 @@ func checkPatternOnlyIncludedChunk(chunk *parse.Chunk, onError func(n parse.Node
 			*parse.PatternUnion,
 
 			//host alias
-			*parse.HostAliasDefinition:
+			*parse.HostAliasDefinition, *parse.AtHostLiteral:
 		default:
 			onError(n, fmt.Sprintf("%s: %T", FORBIDDEN_NODE_TYPE_IN_INCLUDABLE_CHUNK_IMPORTED_BY_PREINIT, n))
 			return parse.Prune, nil
