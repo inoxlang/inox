@@ -9,4 +9,4 @@ users = [
 names = map!(users, .name)
 names = filter!(names, @($ == "Foo"))
 
-print $names
+print(names)

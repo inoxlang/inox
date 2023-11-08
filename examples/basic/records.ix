@@ -6,4 +6,4 @@ record = #{
     # c: { } <-- this whould cause an error because values in record must be immutable
 }
 
-print $record
+print(record)

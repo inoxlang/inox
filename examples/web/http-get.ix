@@ -7,5 +7,5 @@ manifest {
 res = http.get!(https://jsonplaceholder.typicode.com/posts/1)
 json = tostr(res.body.read_all!())
 
-print $json
+print(json)
 

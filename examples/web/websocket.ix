@@ -37,7 +37,7 @@ conn.sendJSON!({data: "hello"})
 assign msg err = conn.readJSON()
 
 if err? {
-    print $err
+    print(err)
 } else {
     print "message from server:" 
     print $msg
