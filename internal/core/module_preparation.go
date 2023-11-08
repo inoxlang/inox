@@ -348,7 +348,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *GlobalState, mod *Mo
 			ExpectedSchema:               config.ExpectedSchema,
 			DevMode:                      args.DataExtractionMode,
 		})
-		if err != nil {
+		if err != nil && (!args.DataExtractionMode || !errors.Is(err, ErrCurrentSchemaNotEqualToExpectedSchema)) {
 			err = fmt.Errorf("failed to wrap '%s' database: %w", config.Name, err)
 			if !args.DataExtractionMode {
 				ctx.CancelGracefully()
@@ -356,6 +356,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *GlobalState, mod *Mo
 			}
 			dbOpeningError = err
 		}
+		//note: in dev mode WrapDatabase returns the database alongside the error if the latter is ErrCurrentSchemaNotEqualToExpectedSchema.
 		dbs[config.Name] = wrapped
 		ownedDatabases[config.Name] = struct{}{}
 	}
@@ -370,18 +371,20 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *GlobalState, mod *Mo
 	}
 	state.Globals.Set(globalnames.DATABASES, NewMutableEntriesNamespace(globalnames.DATABASES, dbsNamespaceEntries))
 
+	//call the .SetOwnerStateOnceAndLoadIfNecessary method of owned databases.
 	for dbName, db := range dbs {
-		if _, ok := ownedDatabases[dbName]; ok {
-			if err := db.SetOwnerStateOnceAndLoadIfNecessary(ctx, state); err != nil {
-				err = fmt.Errorf("failed to load data of the '%s' database: %w", dbName, err)
-				if !args.DataExtractionMode {
-					ctx.CancelGracefully()
-					return nil, nil, nil, err
-				}
-				dbOpeningError = err
-				if state.FirstDatabaseOpeningError == nil {
-					state.FirstDatabaseOpeningError = err
-				}
+		if _, isOwned := ownedDatabases[dbName]; !isOwned {
+			continue
+		}
+		if err := db.SetOwnerStateOnceAndLoadIfNecessary(ctx, state); err != nil {
+			err = fmt.Errorf("failed to load data of the '%s' database: %w", dbName, err)
+			if !args.DataExtractionMode {
+				ctx.CancelGracefully()
+				return nil, nil, nil, err
+			}
+			dbOpeningError = err
+			if state.FirstDatabaseOpeningError == nil {
+				state.FirstDatabaseOpeningError = err
 			}
 		}
 	}

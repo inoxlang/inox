@@ -645,7 +645,245 @@ func TestPrepareLocalScript(t *testing.T) {
 		assert.Equal(t, core.Host("ldb://main"), state.Databases["local"].Resource())
 	})
 
-	t.Run("local database + expected schema update: the entities should not be loaded", func(t *testing.T) {
+	t.Run("if the current schema of a database does not match the expected schema, only an error should be returned", func(t *testing.T) {
+		dir := t.TempDir()
+		file := filepath.Join(dir, "script.ix")
+		compilationCtx := createCompilationCtx(dir)
+		defer compilationCtx.CancelGracefully()
+
+		os.WriteFile(file, []byte(`
+			preinit {
+				pattern expected-schema = %{
+					user: {name: "foo"}
+				}
+			}
+			manifest {
+				permissions: {
+					read: %/...
+					write: %/...
+				}
+				databases: {
+					local: {
+						resource: ldb://main
+						resolution-data: /
+						assert-schema: %expected-schema
+					}
+				}
+			}
+		`), 0o600)
+
+		fs := fs_ns.NewMemFilesystem(1000)
+
+		ctx := core.NewContext(core.ContextConfig{
+			Permissions: append(
+				core.GetDefaultGlobalVarPermissions(),
+				core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},
+				core.FilesystemPermission{Kind_: permkind.Write, Entity: core.PathPattern("/...")},
+			),
+			Filesystem: fs,
+		})
+		core.NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
+
+		state, mod, _, err := core.PrepareLocalScript(core.ScriptPreparationArgs{
+			Fpath:                     file,
+			ParsingCompilationContext: compilationCtx,
+			ParentContext:             ctx,
+			ParentContextRequired:     true,
+			Out:                       io.Discard,
+
+			PreinitFilesystem:       fs,
+			ScriptContextFileSystem: fs,
+			FullAccessToDatabases:   true,
+		})
+
+		if !assert.ErrorIs(t, err, core.ErrCurrentSchemaNotEqualToExpectedSchema) {
+			return
+		}
+
+		// the module should not be present
+		if !assert.Nil(t, mod) {
+			return
+		}
+
+		// the state should not be present
+		if !assert.Nil(t, state) {
+			return
+		}
+	})
+
+	t.Run("in data extraction mode if the current schema of a database does not match the expected schema, the state and an error should be returned", func(t *testing.T) {
+		dir := t.TempDir()
+		file := filepath.Join(dir, "script.ix")
+		compilationCtx := createCompilationCtx(dir)
+		defer compilationCtx.CancelGracefully()
+
+		os.WriteFile(file, []byte(`
+			preinit {
+				pattern expected-schema = %{
+					user: {name: "foo"}
+				}
+			}
+			manifest {
+				permissions: {
+					read: %/...
+					write: %/...
+				}
+				databases: {
+					local: {
+						resource: ldb://main
+						resolution-data: /
+						assert-schema: %expected-schema
+					}
+				}
+			}
+		`), 0o600)
+
+		fs := fs_ns.NewMemFilesystem(1000)
+
+		ctx := core.NewContext(core.ContextConfig{
+			Permissions: append(
+				core.GetDefaultGlobalVarPermissions(),
+				core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},
+				core.FilesystemPermission{Kind_: permkind.Write, Entity: core.PathPattern("/...")},
+			),
+			Filesystem: fs,
+		})
+		core.NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
+
+		state, mod, _, err := core.PrepareLocalScript(core.ScriptPreparationArgs{
+			Fpath:                     file,
+			ParsingCompilationContext: compilationCtx,
+			ParentContext:             ctx,
+			ParentContextRequired:     true,
+			Out:                       io.Discard,
+
+			PreinitFilesystem:       fs,
+			ScriptContextFileSystem: fs,
+			FullAccessToDatabases:   true,
+
+			DataExtractionMode: true,
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		// the module should be present
+		if !assert.NotNil(t, mod) {
+			return
+		}
+
+		// the state should be present
+		if !assert.NotNil(t, state) {
+			return
+		}
+
+		// static check should have been performed
+		if !assert.Empty(t, state.StaticCheckData.Errors()) {
+			return
+		}
+
+		// symbolic check should have been performed
+		assert.False(t, state.SymbolicData.IsEmpty())
+
+		//the state should contain the database.
+
+		if !assert.Contains(t, state.Databases, "local") {
+			return
+		}
+
+		schema := core.NewInexactObjectPattern(map[string]core.Pattern{
+			"user": core.NewInexactObjectPattern(map[string]core.Pattern{"name": core.NewExactStringPattern("foo")}),
+		})
+
+		assert.Equal(t, schema, state.Databases["local"].Prop(ctx, "schema"))
+		assert.Equal(t, core.Host("ldb://main"), state.Databases["local"].Resource())
+	})
+
+	t.Run("local database + assert-schema matching the current schema", func(t *testing.T) {
+		dir := t.TempDir()
+		file := filepath.Join(dir, "script.ix")
+		compilationCtx := createCompilationCtx(dir)
+		defer compilationCtx.CancelGracefully()
+
+		os.WriteFile(file, []byte(`
+			preinit {
+				pattern expected-schema = %{}
+			}
+			manifest {
+				permissions: {
+					read: %/...
+					write: %/...
+				}
+				databases: {
+					local: {
+						resource: ldb://main
+						resolution-data: /
+						assert-schema: %expected-schema
+					}
+				}
+			}
+		`), 0o600)
+
+		fs := fs_ns.NewMemFilesystem(1000)
+
+		ctx := core.NewContext(core.ContextConfig{
+			Permissions: append(
+				core.GetDefaultGlobalVarPermissions(),
+				core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},
+				core.FilesystemPermission{Kind_: permkind.Write, Entity: core.PathPattern("/...")},
+			),
+			Filesystem: fs,
+		})
+		core.NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
+
+		state, mod, _, err := core.PrepareLocalScript(core.ScriptPreparationArgs{
+			Fpath:                     file,
+			ParsingCompilationContext: compilationCtx,
+			ParentContext:             ctx,
+			ParentContextRequired:     true,
+			Out:                       io.Discard,
+
+			PreinitFilesystem:       fs,
+			ScriptContextFileSystem: fs,
+			FullAccessToDatabases:   true,
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		// the module should be present
+		if !assert.NotNil(t, mod) {
+			return
+		}
+
+		// the state should be present
+		if !assert.NotNil(t, state) {
+			return
+		}
+
+		// static check should have been performed
+		if !assert.Empty(t, state.StaticCheckData.Errors()) {
+			return
+		}
+
+		// symbolic check should have been performed
+		assert.False(t, state.SymbolicData.IsEmpty())
+
+		//the state should contain the database.
+
+		if !assert.Contains(t, state.Databases, "local") {
+			return
+		}
+
+		assert.Equal(t, core.Host("ldb://main"), state.Databases["local"].Resource())
+	})
+
+	t.Run("local database + expected schema update: the entities should not be loaded yet", func(t *testing.T) {
 		dir := t.TempDir()
 		file := filepath.Join(dir, "script.ix")
 		compilationCtx := createCompilationCtx(dir)
@@ -820,7 +1058,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		assert.Equal(t, core.Host("ldb://main"), state.Databases["local"].Resource())
 	})
 
-	t.Run("manifest & symbolic eval should be ignored when there is a preinit check error: data extraction mode", func(t *testing.T) {
+	t.Run("manifest eval & symbolic eval should be ignored when there is a preinit check error: data extraction mode", func(t *testing.T) {
 		dir := t.TempDir()
 		file := filepath.Join(dir, "script.ix")
 		compilationCtx := createCompilationCtx(dir)
