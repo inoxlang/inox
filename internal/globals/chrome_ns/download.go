@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 
 	"github.com/rs/zerolog"
@@ -26,11 +27,32 @@ const (
 )
 
 var (
-	BROWSER_BINPATH = ""
+	BROWSER_BINPATH   = ""
+	BROWSER_INSTALLED = false //true if a browser not downloaded by Inox is present
 )
 
 func SetBrowserBinPath(val string) {
 	BROWSER_BINPATH = val
+	if slices.Contains(pathList, val) {
+		BROWSER_INSTALLED = true
+	}
+}
+
+func SetBrowserBinPathToInstalledOrCachedBrowser() bool {
+	binPath, found := getCachedBrowserPath()
+	if found {
+		BROWSER_BINPATH = binPath
+		return true
+	}
+
+	binPath, ok := LookPath()
+	if ok {
+		BROWSER_BINPATH = binPath
+		BROWSER_INSTALLED = true
+		return true
+	}
+
+	return false
 }
 
 // DefaultBrowserDir for downloaded browser. For unix is "$HOME/.cache/inox/browser",
@@ -38,11 +60,29 @@ var DefaultBrowserDir = filepath.Join(map[string]string{
 	"linux": filepath.Join(os.Getenv("HOME"), ".cache"),
 }[runtime.GOOS], "inox", "browser")
 
+func makeBrowserBinpath(revision int) string {
+	dir := filepath.Join(DefaultBrowserDir, fmt.Sprintf("chromium-%d", revision))
+	return filepath.Join(dir, "chrome")
+}
+
+func getCachedBrowserPath() (binpath string, cached bool) {
+	revision := RevisionDefault
+	binpath = makeBrowserBinpath(revision)
+
+	//check the binary is not in the cache.
+	if err := Validate(binpath); err == nil {
+		cached = true
+		return
+	}
+	binpath = ""
+	return
+}
+
 // DownloadBrowser downloads a chrome browser, no permissions are checked.
 func DownloadBrowser(ctx context.Context, logger zerolog.Logger) (execPath string, finalErr error) {
 	revision := RevisionDefault
-	dir := filepath.Join(DefaultBrowserDir, fmt.Sprintf("chromium-%d", revision))
-	binpath := filepath.Join(dir, "chrome")
+	binpath := makeBrowserBinpath(revision)
+	dir := filepath.Dir(binpath)
 
 	//check the binary is not in the cache.
 	if err := Validate(binpath); err == nil {
@@ -110,31 +150,32 @@ func Validate(binpath string) error {
 	return nil
 }
 
+var pathList = map[string][]string{
+	"linux": {
+		//chrome
+		"chrome",
+		"google-chrome",
+		"/usr/bin/google-chrome",
+
+		//edge
+		"microsoft-edge",
+		"/usr/bin/microsoft-edge",
+
+		//chromium
+		"chromium",
+		"chromium-browser",
+		"/usr/bin/google-chrome-stable",
+		"/usr/bin/chromium",
+		"/usr/bin/chromium-browser",
+		"/snap/bin/chromium",
+		"/data/data/com.termux/files/usr/bin/chromium-browser",
+	},
+}[runtime.GOOS]
+
 // LookPath searches for the browser executable from often used paths on current operating system.
 func LookPath() (found string, has bool) {
-	list := map[string][]string{
-		"linux": {
-			//chrome
-			"chrome",
-			"google-chrome",
-			"/usr/bin/google-chrome",
 
-			//edge
-			"microsoft-edge",
-			"/usr/bin/microsoft-edge",
-
-			//chromium
-			"chromium",
-			"chromium-browser",
-			"/usr/bin/google-chrome-stable",
-			"/usr/bin/chromium",
-			"/usr/bin/chromium-browser",
-			"/snap/bin/chromium",
-			"/data/data/com.termux/files/usr/bin/chromium-browser",
-		},
-	}[runtime.GOOS]
-
-	for _, path := range list {
+	for _, path := range pathList {
 		var err error
 		found, err = exec.LookPath(path)
 		has = err == nil
