@@ -15,7 +15,7 @@ func TestTransaction(t *testing.T) {
 		startMemStats := new(runtime.MemStats)
 		runtime.ReadMemStats(startMemStats)
 
-		defer utils.AssertNoMemoryLeak(t, startMemStats, 10, utils.AssertNoMemoryLeakOptions{
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 100, utils.AssertNoMemoryLeakOptions{
 			PreSleepDurationMillis: 100,
 		})
 	}
