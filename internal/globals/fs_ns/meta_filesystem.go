@@ -434,13 +434,17 @@ func (fls *MetaFilesystem) walk(visit func(normalizedPath string, path core.Path
 		return err
 	}
 
+	//this slice is reused in the for loop to avoid allocating.
 	childrenNames := slices.Clone(rootDirMeta.children)
 	slices.Sort(childrenNames)
 	slices.Reverse(childrenNames)
 
 	pathSegments := []string{"", ""}
-	stack := childrenNames
+	stack := slices.Clone(childrenNames)
 	firstChildIndexes := []int{0} //indexes in stack
+
+	//used to update pathSegments
+	segmentCountToRemove := 1
 
 	for len(stack) > 0 {
 		//pop last children from the stack.
@@ -460,21 +464,27 @@ func (fls *MetaFilesystem) walk(visit func(normalizedPath string, path core.Path
 		}
 
 		path := childMetadata.path
-
-		keepFirstChildIndex := false
+		isFirstChild := firstChildIndexes[len(firstChildIndexes)-1] == index
+		removeFirstChildIndex := isFirstChild
 
 		if childMetadata.mode.IsDir() {
 			path = core.AppendTrailingSlashIfNotPresent(path)
 			//push entries into the stack.
 			if len(childMetadata.children) > 0 {
-				childrenNames := slices.Clone(childMetadata.children)
+				childrenNames = childrenNames[:0]
+				childrenNames = append(childrenNames, childMetadata.children...)
 				slices.Sort(childrenNames)
 				slices.Reverse(childrenNames)
+
+				if removeFirstChildIndex {
+					removeFirstChildIndex = false
+					firstChildIndexes = firstChildIndexes[:len(firstChildIndexes)-1]
+					segmentCountToRemove++
+				}
 
 				pathSegments = append(pathSegments, "")
 				firstChildIndexes = append(firstChildIndexes, index)
 				stack = append(stack, childrenNames...)
-				keepFirstChildIndex = true
 			}
 		}
 
@@ -483,10 +493,10 @@ func (fls *MetaFilesystem) walk(visit func(normalizedPath string, path core.Path
 			return err
 		}
 
-		if !keepFirstChildIndex && firstChildIndexes[len(firstChildIndexes)-1] == index {
-			//remove parent from path segments
+		if removeFirstChildIndex {
 			firstChildIndexes = firstChildIndexes[:len(firstChildIndexes)-1]
-			pathSegments = pathSegments[:len(pathSegments)-1]
+			pathSegments = pathSegments[:len(pathSegments)-segmentCountToRemove]
+			segmentCountToRemove = 1
 		}
 
 	}

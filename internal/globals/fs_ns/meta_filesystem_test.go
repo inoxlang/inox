@@ -868,6 +868,27 @@ func TestMetaFilesystemWalk(t *testing.T) {
 			emptyDirs:         []string{"/dir_a"},
 			expectedTraversal: []string{"/", "/dir_a", "/dir_b", "/dir_b/a.txt"},
 		},
+		{
+			files:             []string{"/dir_b/a.txt", "/dir_b/b.txt"},
+			emptyDirs:         []string{"/dir_a"},
+			expectedTraversal: []string{"/", "/dir_a", "/dir_b", "/dir_b/a.txt", "/dir_b/b.txt"},
+		},
+		{
+			files:             []string{"/a.txt", "/dir/subdir/c.txt"},
+			expectedTraversal: []string{"/", "/a.txt", "/dir", "/dir/subdir", "/dir/subdir/c.txt"},
+		},
+		{
+			files:             []string{"/a.txt", "/dir/subdir/c.txt", "/e.txt"},
+			expectedTraversal: []string{"/", "/a.txt", "/dir", "/dir/subdir", "/dir/subdir/c.txt", "/e.txt"},
+		},
+		{
+			files:             []string{"/a.txt", "/dir/subdir/c.txt", "/otherdir/e.txt"},
+			expectedTraversal: []string{"/", "/a.txt", "/dir", "/dir/subdir", "/dir/subdir/c.txt", "/otherdir", "/otherdir/e.txt"},
+		},
+		{
+			files:             []string{"/a.txt", "/dir/subdir/c.txt", "/dir/subdir/d.txt"},
+			expectedTraversal: []string{"/", "/a.txt", "/dir", "/dir/subdir", "/dir/subdir/c.txt", "/dir/subdir/d.txt"},
+		},
 	}
 
 	for _, testCase := range cases {
@@ -882,6 +903,7 @@ func TestMetaFilesystemWalk(t *testing.T) {
 			if !assert.NoError(t, err) {
 				return
 			}
+			defer fls.Close(ctx)
 
 			for _, dir := range testCase.emptyDirs {
 				fls.MkdirAll(dir, DEFAULT_DIR_FMODE)
@@ -899,18 +921,16 @@ func TestMetaFilesystemWalk(t *testing.T) {
 
 			var traversal []string
 
-			fls.Walk(func(normalizedPath string, path core.Path, metadata *metaFsFileMetadata) error {
+			err = fls.Walk(func(normalizedPath string, path core.Path, metadata *metaFsFileMetadata) error {
 				traversal = append(traversal, normalizedPath)
 				return nil
 			})
 
-			assert.Equal(t, testCase.expectedTraversal, traversal)
-
-			fls, err = OpenMetaFilesystem(ctx, underlyingFS, MetaFilesystemParams{})
 			if !assert.NoError(t, err) {
 				return
 			}
-			defer fls.Close(ctx)
+
+			assert.Equal(t, testCase.expectedTraversal, traversal)
 		})
 	}
 }
