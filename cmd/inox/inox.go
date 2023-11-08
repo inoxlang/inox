@@ -5,6 +5,7 @@ import (
 
 	"context"
 	"runtime/debug"
+	"slices"
 
 	"github.com/inoxlang/inox/internal/config"
 	"github.com/inoxlang/inox/internal/core"
@@ -104,6 +105,19 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 	} else {
 		mainSubCommand = args[1]
 		mainSubCommandArgs = args[2:]
+	}
+
+	processTempDir := fs_ns.GetCreateProcessTempDir()
+	defer func() {
+		fs_ns.GetOsFilesystem().RemoveAll(processTempDir.UnderlyingString())
+	}()
+
+	processTempDirPrefix := core.AppendTrailingSlashIfNotPresent(core.PathPattern(processTempDir)) + "..."
+
+	processTempDirPerms := []core.Permission{
+		core.FilesystemPermission{Kind_: permkind.Read, Entity: processTempDirPrefix},
+		core.FilesystemPermission{Kind_: permkind.Write, Entity: processTempDirPrefix},
+		core.FilesystemPermission{Kind_: permkind.Delete, Entity: processTempDirPrefix},
 	}
 
 	switch mainSubCommand {
@@ -207,10 +221,12 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 			PreinitFilesystem:         compilationCtx.GetFileSystem(),
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             nil, //grant all permissions
-			UseBytecode:               !useTreeWalking,
-			ShowBytecode:              showBytecode,
-			OptimizeBytecode:          !useTreeWalking && !disableOptimization,
-			Out:                       outW,
+			AdditionalPermissions:     processTempDirPerms,
+
+			UseBytecode:      !useTreeWalking,
+			ShowBytecode:     showBytecode,
+			OptimizeBytecode: !useTreeWalking && !disableOptimization,
+			Out:              outW,
 
 			FullAccessToDatabases: true,
 			EnableTesting:         enableTestingMode,
@@ -648,7 +664,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 			return
 		}
 
-		startupResult, state := runStartupScript(startupScriptPath, outW)
+		startupResult, state := runStartupScript(startupScriptPath, processTempDirPerms, outW)
 
 		config, err := inoxsh_ns.MakeREPLConfiguration(startupResult)
 		if err != nil {
@@ -698,7 +714,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 			return
 		}
 
-		_, state := runStartupScript(startupScriptPath, outW)
+		_, state := runStartupScript(startupScriptPath, nil, outW)
 
 		signalChan := make(chan os.Signal, 1)
 		signal.Notify(signalChan, os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT)
@@ -761,7 +777,7 @@ func moveFlagsStart(args []string) {
 	}
 }
 
-func runStartupScript(startupScriptPath string, outW io.Writer) (*core.Object, *core.GlobalState) {
+func runStartupScript(startupScriptPath string, processTempDirPerms []core.Permission, outW io.Writer) (*core.Object, *core.GlobalState) {
 	//we read, parse and evaluate the startup script
 
 	absPath, err := filepath.Abs(startupScriptPath)
@@ -798,7 +814,7 @@ func runStartupScript(startupScriptPath string, outW io.Writer) (*core.Object, *
 	}
 
 	ctx := utils.Must(core.NewDefaultContext(core.DefaultContextConfig{
-		Permissions:     startupManifest.RequiredPermissions,
+		Permissions:     append(slices.Clone(startupManifest.RequiredPermissions), processTempDirPerms...),
 		Limits:          startupManifest.Limits,
 		HostResolutions: startupManifest.HostResolutions,
 	}))

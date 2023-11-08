@@ -29,22 +29,8 @@ var (
 func CreateDirInProcessTempDir(namePrefix string) core.Path {
 	fls := GetOsFilesystem()
 
-	func() {
-		processTempDirLock.Lock()
-		defer processTempDirLock.Unlock()
-
-		//create the process's temporary directory if it does not already exist.
-		if processTempDir == "" {
-			dir := fmt.Sprintf("/tmp/%s-%d-%s", PROCESS_TEMP_DIR_PREFIX, os.Getpid(), time.Now().Format(time.RFC3339Nano))
-			err := fls.MkdirAll(dir, 0700)
-			if err != nil {
-				panic(err)
-			}
-			processTempDir = dir
-		}
-	}()
-
-	path := core.Path(fmt.Sprintf("%s/%s-%d-%s", processTempDir, namePrefix, rand.Int(), time.Now().Format(time.RFC3339Nano)))
+	tempDir := GetCreateProcessTempDir()
+	path := core.Path(fmt.Sprintf("%s/%s-%d-%s", tempDir, namePrefix, rand.Int(), time.Now().Format(time.RFC3339Nano)))
 
 	if err := fls.MkdirAll(string(path), 0o700); err != nil {
 		panic(err)
@@ -71,6 +57,24 @@ func DeleteDirInProcessTempDir(path core.Path) error {
 
 	fls := GetOsFilesystem()
 	return fls.RemoveAll(pth)
+}
+
+func GetCreateProcessTempDir() core.Path {
+	fls := GetOsFilesystem()
+
+	processTempDirLock.Lock()
+	defer processTempDirLock.Unlock()
+
+	//create the process's temporary directory if it does not already exist.
+	if processTempDir == "" {
+		dir := fmt.Sprintf("/tmp/%s-%d-%s", PROCESS_TEMP_DIR_PREFIX, os.Getpid(), time.Now().Format(time.RFC3339Nano))
+		err := fls.MkdirAll(dir, 0700)
+		if err != nil {
+			panic(err)
+		}
+		processTempDir = dir
+	}
+	return core.Path(processTempDir)
 }
 
 func DeleteProcessTempDir() {
