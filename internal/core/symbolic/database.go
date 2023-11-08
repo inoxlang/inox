@@ -286,6 +286,5 @@ func (db *DatabaseIL) Close(*Context) *Error {
 
 func (db *DatabaseIL) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("database ")
-	w.ParentIndentCount = 0
 	db.schema.PrettyPrint(w, config)
 }
