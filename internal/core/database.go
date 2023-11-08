@@ -34,6 +34,7 @@ var (
 	ErrNewSchemaNotEqualToExpectedSchema               = errors.New("new schema not equal to expected schema")
 	ErrDatabaseSchemaAlreadyUpdatedOrNotAllowed        = errors.New("database schema already updated or no longer allowed")
 	ErrInvalidAccessSchemaNotUpdatedYet                = errors.New("access to database is not allowed because schema is not updated yet")
+	ErrSchemaCannotBeUpdatedInDevMode                  = errors.New("schema cannot be updated in dev mode")
 	ErrInvalidDatabaseDirpath                          = errors.New("invalid database dir path")
 	ErrDatabaseAlreadyOpen                             = errors.New("database is already open")
 	ErrDatabaseClosed                                  = errors.New("database is closed")
@@ -51,13 +52,18 @@ var (
 )
 
 type DatabaseIL struct {
-	inner                Database
-	initialSchema        *ObjectPattern
+	inner         Database
+	initialSchema *ObjectPattern
+
+	newSchema    *ObjectPattern //set on schema update or if there is an override (see DatabaseWrappingArgs).
+	newSchemaSet atomic.Bool
+
 	devMode              bool
 	schemaUpdateExpected bool
 	schemaUpdated        atomic.Bool
 	schemaUpdateLock     sync.Mutex
-	expectedSchema       *ObjectPattern
+
+	expectedSchema *ObjectPattern
 
 	ownerState *GlobalState //optional, can be set later using .SetOwnerStateOnceAndLoadIfNecessary
 	name       string
@@ -156,11 +162,17 @@ type DatabaseWrappingArgs struct {
 	//This field is unrelated to ExpectedSchemaUpdate.
 	ExpectedSchema *ObjectPattern
 
-	//force the loading top level entities if there is not expected schema update
+	//Force the loading top level entities if there is not expected schema update.
+	//This parameter has lower priority than DevMode.
 	ForceLoadBeforeOwnerStateSet bool
-	DevMode                      bool
+
+	//In dev mode top level entities are never loaded, and a mismatch between
+	//the current schema and the expected schema causes the expected schema to be used.
+	DevMode bool
 }
 
+// WrapDatabase wraps a Database in a struct that implements Value.
+// In dev mode if the current schema does not match ExpectedSchema a DatbaseIL is returned alongside the error.
 func WrapDatabase(ctx *Context, args DatabaseWrappingArgs) (*DatabaseIL, error) {
 	schema := args.Inner.Schema()
 
@@ -185,12 +197,25 @@ func WrapDatabase(ctx *Context, args DatabaseWrappingArgs) (*DatabaseIL, error) 
 		devMode: args.DevMode,
 	}
 
+	var errInDevMode error
+
 	if !args.ExpectedSchemaUpdate {
-		if args.ExpectedSchema != nil {
-			currentSchema := args.Inner.Schema()
-			if !currentSchema.Equal(ctx, args.ExpectedSchema, map[uintptr]uintptr{}, 0) {
-				return nil, ErrCurrentSchemaNotEqualToExpectedSchema
+		currentSchema := args.Inner.Schema()
+
+		//compare the current schema with the expected schema.
+		if args.ExpectedSchema != nil && !currentSchema.Equal(ctx, args.ExpectedSchema, map[uintptr]uintptr{}, 0) {
+			if db.devMode {
+				db.newSchema = args.ExpectedSchema
+				db.newSchemaSet.Store(true)
+
+				if db.ownerState != nil {
+					db.AddOwnerStateTeardownCallback()
+				}
+
+				errInDevMode = ErrCurrentSchemaNotEqualToExpectedSchema
+				goto return_
 			}
+			return nil, ErrCurrentSchemaNotEqualToExpectedSchema
 		}
 
 		if args.ForceLoadBeforeOwnerStateSet {
@@ -208,7 +233,8 @@ func WrapDatabase(ctx *Context, args DatabaseWrappingArgs) (*DatabaseIL, error) 
 		db.AddOwnerStateTeardownCallback()
 	}
 
-	return db, nil
+return_:
+	return db, errInDevMode
 }
 
 func RegisterOpenDbFn(scheme Scheme, fn OpenDBFn) {
@@ -490,6 +516,10 @@ func (h MigrationOpHandler) GetResult(ctx *Context, state *GlobalState) Value {
 }
 
 func (db *DatabaseIL) UpdateSchema(ctx *Context, nextSchema *ObjectPattern, migrations ...*Object) {
+	if db.devMode {
+		panic(ErrSchemaCannotBeUpdatedInDevMode)
+	}
+
 	if db.ownerState == nil {
 		panic(ErrOwnerStateNotSet)
 	}
@@ -624,6 +654,8 @@ func (db *DatabaseIL) UpdateSchema(ctx *Context, nextSchema *ObjectPattern, migr
 	db.inner.UpdateSchema(ctx, nextSchema, migrationHandlers)
 	db.topLevelEntities = utils.Must(db.inner.LoadTopLevelEntities(ctx))
 	db.topLevelEntitiesLoaded.Store(true)
+	db.newSchema = nextSchema
+	db.newSchemaSet.Store(true)
 	db.setDatabasePermissions()
 }
 
@@ -651,6 +683,9 @@ func (db *DatabaseIL) Prop(ctx *Context, name string) Value {
 
 	switch name {
 	case "schema":
+		if db.newSchemaSet.Load() {
+			return db.newSchema
+		}
 		return db.initialSchema
 	case "update_schema", "close":
 	default:

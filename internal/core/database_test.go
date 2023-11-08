@@ -225,6 +225,46 @@ func TestDatabaseIL(t *testing.T) {
 		assert.ErrorIs(t, err, ErrCurrentSchemaNotEqualToExpectedSchema)
 	})
 
+	t.Run("if the current schema is not equal to the expected schema in dev mode the expected schema should be used", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{
+			Permissions: []Permission{
+				DatabasePermission{
+					Kind_:  permkind.Read,
+					Entity: Host("ldb://main"),
+				},
+			},
+		}, nil)
+		defer ctx.CancelGracefully()
+
+		db := &dummyDatabase{
+			resource: Host("ldb://main"),
+			topLevelEntities: map[string]Serializable{"a": &loadableTestValue{
+				value: 1,
+			}},
+		}
+
+		expectedSchema := NewInexactObjectPattern(map[string]Pattern{
+			"a": LOADABLE_TEST_VALUE_PATTERN,
+			"b": LOADABLE_TEST_VALUE_PATTERN,
+		})
+
+		dbIL, err := WrapDatabase(ctx, DatabaseWrappingArgs{
+			DevMode:        true,
+			Inner:          db,
+			OwnerState:     ctx.state,
+			Name:           "main",
+			ExpectedSchema: expectedSchema,
+		})
+
+		assert.ErrorIs(t, err, ErrCurrentSchemaNotEqualToExpectedSchema)
+		if !assert.NotNil(t, dbIL) {
+			return
+		}
+
+		assert.Same(t, expectedSchema, dbIL.newSchema)
+		assert.Same(t, expectedSchema, dbIL.Prop(ctx, "schema"))
+	})
+
 	t.Run("if a schema update is expected top level entities should not be loaded", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{
 			Permissions: []Permission{
@@ -536,9 +576,10 @@ func TestDatabaseIL(t *testing.T) {
 			staticData:    &FunctionStaticData{},
 		}
 
-		dbIL.UpdateSchema(ctx, NewInexactObjectPattern(map[string]Pattern{
+		newSchema := NewInexactObjectPattern(map[string]Pattern{
 			"a": LOADABLE_TEST_VALUE_PATTERN,
-		}), NewObjectFromMap(ValMap{
+		})
+		dbIL.UpdateSchema(ctx, newSchema, NewObjectFromMap(ValMap{
 			symbolic.DB_MIGRATION__INCLUSIONS_PROP_NAME: NewDictionary(ValMap{
 				"%/a": handler,
 			}),
@@ -546,6 +587,8 @@ func TestDatabaseIL(t *testing.T) {
 
 		val := dbIL.Prop(ctx, "a")
 		assert.Same(t, db.topLevelEntities["a"], val)
+
+		assert.Same(t, newSchema, dbIL.Prop(ctx, "schema"))
 	})
 
 	t.Run("updating the database to a schema not equal to the expected schema should cause an error", func(t *testing.T) {
