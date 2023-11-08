@@ -778,7 +778,48 @@ func TestPreInit(t *testing.T) {
 				},
 			},
 			expectedResolutions: nil,
-			error:               false,
+		},
+		{
+			name: "correct_database_with_assert_schema",
+			module: `
+				preinit {
+					pattern expected-schema = %{
+						user: {name: "foo"}
+					}
+				}
+				manifest {
+					databases: {
+						main: {
+							resource: ldb://main
+							resolution-data: /tmp/mydb/
+							assert-schema: %expected-schema
+						}
+					}
+				}`,
+			expectedPermissions: []Permission{
+				DatabasePermission{
+					permkind.Read,
+					Host("ldb://main"),
+				},
+				DatabasePermission{
+					permkind.Write,
+					Host("ldb://main"),
+				},
+			},
+			expectedLimits: []Limit{},
+			expectedDatabaseConfigs: DatabaseConfigs{
+				{
+					Name:           "main",
+					Owned:          true,
+					Resource:       Host("ldb://main"),
+					ResolutionData: Path("/tmp/mydb/"),
+					ExpectedSchema: NewInexactObjectPattern(map[string]Pattern{
+						"user": NewInexactObjectPattern(map[string]Pattern{
+							"name": NewExactStringPattern("foo"),
+						}),
+					}),
+				},
+			},
 		},
 		{
 			name: "database_with_invalid_resource",

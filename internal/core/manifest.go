@@ -34,11 +34,14 @@ const (
 	MANIFEST_PREINIT_FILE__PATTERN_PROP_NAME = "pattern"
 	MANIFEST_PREINIT_FILE__PATH_PROP_NAME    = "path"
 
-	//preinit-files section
-	MANIFEST_DATABASES_SECTION_NAME                     = "databases"
+	//databases section
+	MANIFEST_DATABASES_SECTION_NAME = "databases"
+
+	//database description in databases section
 	MANIFEST_DATABASE__RESOURCE_PROP_NAME               = "resource"
 	MANIFEST_DATABASE__RESOLUTION_DATA_PROP_NAME        = "resolution-data"
 	MANIFEST_DATABASE__EXPECTED_SCHEMA_UPDATE_PROP_NAME = "expected-schema-update"
+	MANIFEST_DATABASE__ASSERT_SCHEMA_UPDATE_PROP_NAME   = "assert-schema"
 
 	//invocation section
 	MANIFEST_INVOCATION__ON_ADDED_ELEM_PROP_NAME = "on-added-element"
@@ -136,6 +139,7 @@ type DatabaseConfig struct {
 	Resource             SchemeHolder //URL or Host
 	ResolutionData       ResourceName
 	ExpectedSchemaUpdate bool
+	ExpectedSchema       *ObjectPattern //can be nil, not related to .ExpectedSchemaUpdate
 	Owned                bool
 
 	Provided *DatabaseIL //optional (can be provided by another module instance)
@@ -1456,6 +1460,13 @@ func getDatabaseConfigurations(v Value, parentState *GlobalState) (DatabaseConfi
 					config.ExpectedSchemaUpdate = bool(val)
 				default:
 					return fmt.Errorf("invalid value found for the .%s of a database description", MANIFEST_DATABASE__RESOLUTION_DATA_PROP_NAME)
+				}
+			case MANIFEST_DATABASE__ASSERT_SCHEMA_UPDATE_PROP_NAME:
+				switch val := propVal.(type) {
+				case *ObjectPattern:
+					config.ExpectedSchema = val
+				default:
+					return fmt.Errorf("invalid value found for the .%s of a database description", MANIFEST_DATABASE__ASSERT_SCHEMA_UPDATE_PROP_NAME)
 				}
 			}
 			return nil

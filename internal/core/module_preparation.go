@@ -345,6 +345,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *GlobalState, mod *Mo
 			ExpectedSchemaUpdate:         config.ExpectedSchemaUpdate || args.ForceExpectSchemaUpdate,
 			ForceLoadBeforeOwnerStateSet: false,
 			Name:                         config.Name,
+			ExpectedSchema:               config.ExpectedSchema,
 			DevMode:                      args.DataExtractionMode,
 		})
 		if err != nil {

@@ -2021,8 +2021,16 @@ func checkPreinitBlock(args preinitBlockCheckParams) {
 	parse.Walk(args.node.Block, func(node, parent, scopeNode parse.Node, ancestorChain []parse.Node, after bool) (parse.TraversalAction, error) {
 		switch n := node.(type) {
 		case *parse.Block, *parse.IdentifierLiteral,
-			*parse.PatternDefinition, parse.SimpleValueLiteral, *parse.PatternIdentifierLiteral,
-			*parse.URLExpression, *parse.ComplexStringPatternPiece, *parse.PatternPieceElement,
+			parse.SimpleValueLiteral, *parse.URLExpression,
+
+			//patterns
+			*parse.PatternDefinition, *parse.PatternIdentifierLiteral,
+			*parse.PatternNamespaceDefinition, *parse.PatternConversionExpression,
+			*parse.ComplexStringPatternPiece, *parse.PatternPieceElement,
+			*parse.ObjectPatternLiteral, *parse.RecordPatternLiteral, *parse.ObjectPatternProperty,
+			*parse.PatternCallExpression, *parse.PatternGroupName,
+			*parse.PatternUnion,
+
 			//host alias
 			*parse.HostAliasDefinition, *parse.AtHostLiteral:
 			//ok
@@ -2561,6 +2569,13 @@ func checkDatabasesObject(
 				default:
 					isValidDescription = false
 					onError(p, DATABASES__DB_EXPECTED_SCHEMA_UPDATE_SHOULD_BE_BOOL_LIT)
+				}
+			case MANIFEST_DATABASE__ASSERT_SCHEMA_UPDATE_PROP_NAME:
+				switch prop.Value.(type) {
+				case *parse.PatternIdentifierLiteral, *parse.ObjectPatternLiteral:
+				default:
+					isValidDescription = false
+					onError(p, DATABASES__DB_ASSERT_SCHEMA_SHOULD_BE_PATT_IDENT_OR_OBJ_PATT)
 				}
 			default:
 				isValidDescription = false

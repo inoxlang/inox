@@ -42,8 +42,9 @@ const (
 	//databases section
 	DATABASES_SECTION_SHOULD_BE_AN_OBJECT_OR_ABS_PATH            = "the '" + MANIFEST_DATABASES_SECTION_NAME + "' section of the manifest should be an object literal or an absolute path literal"
 	DATABASES__DB_CONFIG_SHOULD_BE_AN_OBJECT                     = "the description of each database in the '" + MANIFEST_DATABASES_SECTION_NAME + "' section of the manifest should be an object literal"
-	DATABASES__DB_RESOURCE_SHOULD_BE_HOST_OR_URL                 = "the ." + MANIFEST_DATABASE__RESOURCE_PROP_NAME + " of each database in the '" + MANIFEST_DATABASES_SECTION_NAME + "' section (manifest) should be a Host or a URL"
-	DATABASES__DB_EXPECTED_SCHEMA_UPDATE_SHOULD_BE_BOOL_LIT      = "the ." + MANIFEST_DATABASE__EXPECTED_SCHEMA_UPDATE_PROP_NAME + " of each database in the '" + MANIFEST_DATABASES_SECTION_NAME + "' section (manifest) should be a boolean literal (the property is optional)"
+	DATABASES__DB_RESOURCE_SHOULD_BE_HOST_OR_URL                 = "the ." + MANIFEST_DATABASE__RESOURCE_PROP_NAME + " property of database descriptions in the '" + MANIFEST_DATABASES_SECTION_NAME + "' section (manifest) should be a Host or a URL"
+	DATABASES__DB_EXPECTED_SCHEMA_UPDATE_SHOULD_BE_BOOL_LIT      = "the ." + MANIFEST_DATABASE__EXPECTED_SCHEMA_UPDATE_PROP_NAME + " property of database descriptions in the '" + MANIFEST_DATABASES_SECTION_NAME + "' section (manifest) should be a boolean literal (the property is optional)"
+	DATABASES__DB_ASSERT_SCHEMA_SHOULD_BE_PATT_IDENT_OR_OBJ_PATT = "the ." + MANIFEST_DATABASE__ASSERT_SCHEMA_UPDATE_PROP_NAME + " property of database descriptions in the '" + MANIFEST_DATABASES_SECTION_NAME + "' section (manifest) should be a pattern identifier or an object pattern literal (the property is optional)"
 	DATABASES_SECTION_NOT_AVAILABLE_IN_EMBEDDED_MODULE_MANIFESTS = "the '" + MANIFEST_DATABASES_SECTION_NAME + "' section is not available in embedded module manifests"
 	DATABASES__DB_RESOLUTION_DATA_ONLY_PATHS_SUPPORTED           = "paths are the only supported values for ." + MANIFEST_DATABASE__RESOLUTION_DATA_PROP_NAME + " in a database description"
 
