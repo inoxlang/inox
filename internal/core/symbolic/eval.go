@@ -244,6 +244,12 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 			return
 		}
 
+		//set most specific node value in most cases
+
+		if utils.Implements[*parse.EmbeddedModule](node) {
+			return
+		}
+
 		if !options.ignoreNodeValue && !options.reEval && finalErr == nil && result != nil && state.symbolicData != nil {
 			state.symbolicData.SetMostSpecificNodeValue(node, result)
 		}
