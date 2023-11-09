@@ -2132,6 +2132,39 @@ func TestCheck(t *testing.T) {
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 
+		t.Run("should inherit patterns", func(t *testing.T) {
+			n, src := mustParseCode(`
+				pattern p = 1
+				testsuite { 
+					%p
+				}
+			`)
+
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
+		t.Run("should inherit pattern namespaces", func(t *testing.T) {
+			n, src := mustParseCode(`
+				pnamespace ns. = {a: %{a: 1}}
+				testsuite { 
+					%ns.
+				}
+			`)
+
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
+		t.Run("should inherit host aliases", func(t *testing.T) {
+			n, src := mustParseCode(`
+				@host = https://localhost
+				testsuite { 
+					val = @host/index.html
+				}
+			`)
+
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
 		t.Run("testcase", func(t *testing.T) {
 			n, src := mustParseCode(`
 				manifest {}
@@ -2154,6 +2187,51 @@ func TestCheck(t *testing.T) {
 					testcase {
 						a
 						b
+					}
+				}
+			`)
+
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
+		t.Run("testcase should inherit patterns of the test suite", func(t *testing.T) {
+			n, src := mustParseCode(`
+				pattern p1 = 1
+				testsuite { 
+					pattern p2 = 1
+					testcase {
+						%p1
+						%p2
+					}
+				}
+			`)
+
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
+		t.Run("testcase should inherit pattern namespaces of the test suite", func(t *testing.T) {
+			n, src := mustParseCode(`
+				pnamespace ns1. = {a: %{a: 1}}
+				testsuite { 
+					pnamespace ns2. = {a: %{a: 1}}
+					testcase {
+						%ns1.
+						%ns2.
+					}
+				}
+			`)
+
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
+		t.Run("testcase should inherit host aliases of the test suite", func(t *testing.T) {
+			n, src := mustParseCode(`
+				@host1 = https://localhost:8081
+				testsuite { 
+					@host2 = https://localhost:8082
+					testcase {
+						val1 = @host1/index.html
+						val2 = @host2/index.html
 					}
 				}
 			`)

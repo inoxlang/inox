@@ -317,7 +317,7 @@ func (checker *checker) getModFunctionDecls(mod parse.Node) map[string]int {
 	return fns
 }
 
-func (checker *checker) geHostAliases(mod parse.Node) map[string]int {
+func (checker *checker) getModHostAliases(mod parse.Node) map[string]int {
 	aliases, ok := checker.hostAliases[mod]
 	if !ok {
 		aliases = make(map[string]int)
@@ -1774,7 +1774,7 @@ switch_:
 			}
 		}
 		aliasName := node.Left.Value[1:]
-		hostAliases := c.geHostAliases(closestModule)
+		hostAliases := c.getModHostAliases(closestModule)
 
 		if _, alreadyDefined := hostAliases[aliasName]; alreadyDefined && !inPreinitBlock {
 			c.addError(node, fmtHostAliasAlreadyDeclared(aliasName))
@@ -1941,28 +1941,59 @@ switch_:
 	case *parse.EmbeddedModule:
 		parentModule := findClosestModule(ancestorChain)
 		globals := c.getModGlobalVars(n)
-		parentModuleGlobals := c.getModGlobalVars(parentModule)
+		patterns := c.getModPatterns(n)
+		patternNamespaces := c.getModPatternNamespaces(n)
+		hostAliases := c.getModHostAliases(n)
 
-		switch p := parent.(type) {
+		parentModuleGlobals := c.getModGlobalVars(parentModule)
+		parentModulePatterns := c.getModPatterns(parentModule)
+		parentModulePatternNamespaces := c.getModPatternNamespaces(parentModule)
+		parentModuleHostAliases := c.getModHostAliases(parentModule)
+
+		switch parent.(type) {
 		case *parse.TestSuiteExpression:
-			if p.IsStatement {
-				for name, info := range parentModuleGlobals {
-					if slices.Contains(globalnames.TEST_ITEM_NON_INHERITED_GLOBALS, name) {
-						continue
-					}
-					globals[name] = info
+			//inherit globals
+			for name, info := range parentModuleGlobals {
+				if slices.Contains(globalnames.TEST_ITEM_NON_INHERITED_GLOBALS, name) {
+					continue
 				}
+				globals[name] = info
+			}
+
+			//inherit patterns
+			for name, info := range parentModulePatterns {
+				patterns[name] = info
+			}
+			for name, info := range parentModulePatternNamespaces {
+				patternNamespaces[name] = info
+			}
+
+			//inherit host aliases
+			for name, info := range parentModuleHostAliases {
+				hostAliases[name] = info
 			}
 		case *parse.TestCaseExpression:
 			globals[globalnames.CURRENT_TEST] = globalVarInfo{isConst: true, isStartConstant: true}
 
-			if p.IsStatement {
-				for name, info := range parentModuleGlobals {
-					if slices.Contains(globalnames.TEST_ITEM_NON_INHERITED_GLOBALS, name) {
-						continue
-					}
-					globals[name] = info
+			//inherit globals
+			for name, info := range parentModuleGlobals {
+				if slices.Contains(globalnames.TEST_ITEM_NON_INHERITED_GLOBALS, name) {
+					continue
 				}
+				globals[name] = info
+			}
+
+			//inherit patterns
+			for name, info := range parentModulePatterns {
+				patterns[name] = info
+			}
+			for name, info := range parentModulePatternNamespaces {
+				patternNamespaces[name] = info
+			}
+
+			//inherit host aliases
+			for name, info := range parentModuleHostAliases {
+				hostAliases[name] = info
 			}
 		}
 	}
