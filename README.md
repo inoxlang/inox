@@ -50,15 +50,15 @@ _Zero config. Zero boilerplate. Secure by Default._
 
 👥 Discord Server: https://discord.gg/53YGx8GzgE
 
-📖 Language Reference: **docs/language-reference.md**
+📖 Language Reference: [docs/language-reference.md](docs/language-reference.md)
 
 ⚠️ The language is not production ready yet.\
 I am working full-time on Inox, please consider donating. Thanks !
 
 ## Installation
 
-**Inox can be used on any operating system by installing the
-[VSCode extension](https://marketplace.visualstudio.com/items?itemName=graphr00t.inox).**
+<!-- **Inox can be used on any operating system by installing the
+[VSCode extension](https://marketplace.visualstudio.com/items?itemName=graphr00t.inox).** -->
 
 If you are using Linux, an archive with a binary and some examples is available
 in the [release assets](https://github.com/inoxlang/inox/releases)
@@ -78,9 +78,14 @@ If you want to compile the language yourself go [here](#compile-from-source).
 
 ## Learning Inox
 
-**You can learn Inox directly in VSCode: download the
+<!-- **You can learn Inox directly in VSCode: download the
 [extension](https://marketplace.visualstudio.com/items?itemName=graphr00t.inox)
-and follow the explanations.**
+and follow the explanations.** -->
+
+📖 Language Reference: [docs/language-reference.md](docs/language-reference.md)
+
+<details>
+<summary>Scripting</summary>
 
 Inox can be used for scripting & provides a shell. The development of the
 language in those domains is not very active because Inox primarily focuses on
@@ -89,7 +94,7 @@ Web Application Development.
 To learn scripting go [here](./docs/scripting-basics.md). View
 [Shell Basics](./docs/shell-basics.md) to learn how to use Inox interactively.
 
-📖 Language Reference: **docs/language-reference.md**
+</details>
 
 ## Features
 
