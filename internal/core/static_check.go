@@ -402,12 +402,14 @@ func (c *checker) checkSingleNode(n, parent, scopeNode parse.Node, ancestorChain
 	if closestAssertion != nil {
 		switch n.(type) {
 		case *parse.Variable, *parse.GlobalVariable, *parse.IdentifierLiteral, *parse.BinaryExpression,
+			*parse.URLExpression, *parse.AtHostLiteral,
 			*parse.PatternIdentifierLiteral, *parse.ObjectPatternLiteral, *parse.RecordPatternLiteral,
 			*parse.ObjectProperty, *parse.ObjectPatternProperty,
 			*parse.ListPatternLiteral, *parse.TuplePatternLiteral,
 			*parse.ObjectLiteral, *parse.ListLiteral, *parse.FunctionPatternExpression,
 			*parse.PatternNamespaceIdentifierLiteral, *parse.PatternNamespaceMemberExpression,
-			*parse.OptionPatternLiteral, *parse.OptionalPatternExpression, *parse.MemberExpression, *parse.IdentifierMemberExpression:
+			*parse.OptionPatternLiteral, *parse.OptionalPatternExpression,
+			*parse.MemberExpression, *parse.IdentifierMemberExpression, *parse.DoubleColonExpression:
 		default:
 			if !parse.NodeIsSimpleValueLiteral(n) {
 				c.addError(n, fmtFollowingNodeTypeNotAllowedInAssertions(n))
