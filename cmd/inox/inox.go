@@ -3,23 +3,16 @@ package main
 import (
 	// ====================== IMPORTANT SIDE EFFECTS ============================
 
-	"context"
-	"runtime/debug"
-	"slices"
-
 	"github.com/inoxlang/inox/internal/config"
 	"github.com/inoxlang/inox/internal/core"
 	_ "github.com/inoxlang/inox/internal/globals"
-	metricsperf "github.com/inoxlang/inox/internal/metrics-perf"
-	"github.com/inoxlang/inox/internal/mod"
 
 	// ====================== INOX IMPORTS ============================
 
+	metricsperf "github.com/inoxlang/inox/internal/metrics-perf"
+
 	"github.com/inoxlang/inox/internal/project/systemdprovider"
 	"github.com/inoxlang/inox/internal/project_server/inoxd"
-	"github.com/inoxlang/inox/internal/project_server/jsonrpc"
-
-	"github.com/inoxlang/inox/internal/permkind"
 
 	"github.com/inoxlang/inox/internal/globals/chrome_ns"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
@@ -29,11 +22,19 @@ import (
 	"github.com/inoxlang/inox/internal/globals/s3_ns"
 
 	"github.com/inoxlang/inox/internal/inoxprocess"
+	"github.com/inoxlang/inox/internal/mod"
 	"github.com/inoxlang/inox/internal/parse"
-	"github.com/inoxlang/inox/internal/project_server"
+	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
 
+	"github.com/inoxlang/inox/internal/project_server"
+	"github.com/inoxlang/inox/internal/project_server/jsonrpc"
+
 	// ====================== STDLIB ============================
+
+	"context"
+	"runtime/debug"
+	"slices"
 
 	"encoding/gob"
 	"encoding/hex"
@@ -405,6 +406,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 			return
 		}
 
+		//read & check arguments
 		lspFlags := flag.NewFlagSet("project-server", flag.ExitOnError)
 		var host string
 		var configOrConfigFile string
@@ -414,7 +416,6 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 
 		var projectsDir = filepath.Join(config.USER_HOME, "inox-projects") + "/"
 
-		//parse & check arguments
 		err := lspFlags.Parse(mainSubCommandArgs)
 		if err != nil {
 			fmt.Fprintln(errW, "project-server:", err)
@@ -601,6 +602,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 			return
 		}
 
+		//decode the permissions of the controlled process
 		core.RegisterPermissionTypesInGob()
 		core.RegisterSimpleValueTypesInGob()
 
@@ -623,7 +625,6 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 		}
 
 		//connect to the control server
-
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions:          grantedPerms,
 			ForbiddenPermissions: forbiddenPerms,
@@ -648,6 +649,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 			return
 		}
 
+		//read & check arguments
 		shellFlags := flag.NewFlagSet("shell", flag.ExitOnError)
 		startupScriptPath, err := config.GetStartupScriptPath()
 		if err != nil {
@@ -663,6 +665,10 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 			fmt.Fprintln(errW, err)
 			return
 		}
+
+		//Run the startup script to get the shell configuration.
+		//The global state of the startup script is re-used by the shell
+		//in order to keep the permissions and access the defined globals.
 
 		startupResult, state := runStartupScript(startupScriptPath, processTempDirPerms, outW)
 
