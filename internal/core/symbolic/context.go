@@ -56,7 +56,7 @@ func (ctx *Context) AddHostAlias(name string, val *Host, ignoreError bool) {
 	ctx.hostAliases[name] = val
 }
 
-func (ctx *Context) ResolveHostAlias(alias string) interface{} {
+func (ctx *Context) ResolveHostAlias(alias string) Value {
 	host, ok := ctx.hostAliases[alias]
 	if !ok {
 		if ctx.forkingParent != nil {
@@ -68,6 +68,19 @@ func (ctx *Context) ResolveHostAlias(alias string) interface{} {
 		return nil
 	}
 	return host
+}
+
+func (ctx *Context) CopyHostAliasesIn(destCtx *Context) {
+	if ctx.forkingParent != nil {
+		ctx.forkingParent.CopyHostAliasesIn(destCtx)
+	}
+
+	for name, value := range ctx.hostAliases {
+		if _, alreadyDefined := destCtx.hostAliases[name]; alreadyDefined {
+			panic(fmt.Errorf("host alias %q already defined", name))
+		}
+		destCtx.hostAliases[name] = value
+	}
 }
 
 func (ctx *Context) ResolveNamedPattern(name string) Pattern {
@@ -99,13 +112,28 @@ func (ctx *Context) AddNamedPattern(name string, pattern Pattern, ignoreError bo
 	}
 }
 
-func (ctx *Context) ForEachPattern(fn func(name string, pattern Pattern)) {
+func (ctx *Context) ForEachPattern(fn func(name string, pattern Pattern, knowPosition bool, position parse.SourcePositionRange)) {
 	if ctx.forkingParent != nil {
 		ctx.forkingParent.ForEachPattern(fn)
 	}
 	for k, v := range ctx.namedPatterns {
-		fn(k, v)
+		pos, knowPosition := ctx.namedPatternPositionDefinitions[k]
+		fn(k, v, knowPosition, pos)
 	}
+}
+
+func (ctx *Context) CopyNamedPatternsIn(destCtx *Context) {
+	if ctx.forkingParent != nil {
+		ctx.forkingParent.CopyNamedPatternsIn(destCtx)
+	}
+
+	ctx.ForEachPattern(func(name string, pattern Pattern, knowPosition bool, position parse.SourcePositionRange) {
+		if knowPosition {
+			destCtx.AddNamedPattern(name, pattern, false, position)
+		} else {
+			destCtx.AddNamedPattern(name, pattern, false)
+		}
+	})
 }
 
 func (ctx *Context) ResolvePatternNamespace(name string) *PatternNamespace {
@@ -133,13 +161,27 @@ func (ctx *Context) AddPatternNamespace(name string, namespace *PatternNamespace
 	}
 }
 
-func (ctx *Context) ForEachPatternNamespace(fn func(name string, namespace *PatternNamespace)) {
+func (ctx *Context) ForEachPatternNamespace(fn func(name string, namespace *PatternNamespace, knowPosition bool, position parse.SourcePositionRange)) {
 	if ctx.forkingParent != nil {
 		ctx.forkingParent.ForEachPatternNamespace(fn)
 	}
 	for k, v := range ctx.patternNamespaces {
-		fn(k, v)
+		pos, knowPosition := ctx.patternNamespacePositionDefinitions[k]
+		fn(k, v, knowPosition, pos)
 	}
+}
+
+func (ctx *Context) CopyPatternNamespacesIn(destCtx *Context) {
+	if ctx.forkingParent != nil {
+		ctx.forkingParent.CopyPatternNamespacesIn(destCtx)
+	}
+	ctx.ForEachPatternNamespace(func(name string, namespace *PatternNamespace, knowPosition bool, position parse.SourcePositionRange) {
+		if knowPosition {
+			destCtx.AddPatternNamespace(name, namespace, false, position)
+		} else {
+			destCtx.AddPatternNamespace(name, namespace, false)
+		}
+	})
 }
 
 func (ctx *Context) AddTypeExtension(extension *TypeExtension) {
@@ -162,6 +204,12 @@ func (ctx *Context) GetExtensions(v Value) (extensions []*TypeExtension) {
 	//
 
 	return
+}
+
+func (ctx *Context) CopyTypeExtensions(destCtx *Context) {
+	for _, extension := range ctx.typeExtensions {
+		destCtx.AddTypeExtension(extension)
+	}
 }
 
 func (ctx *Context) AddSymbolicGoFunctionError(msg string) {

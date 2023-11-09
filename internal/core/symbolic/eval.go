@@ -392,7 +392,15 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 	case *parse.HostLiteral:
 		return NewHost(n.Value), nil
 	case *parse.AtHostLiteral:
-		return ANY, nil
+		if n.Value == "" {
+			return ANY_HOST, nil
+		}
+		value := state.ctx.ResolveHostAlias(n.Name())
+		if value == nil {
+			state.addError(makeSymbolicEvalError(n, state, fmtHostAliasIsNotDeclared(n.Name())))
+			return ANY_HOST, nil
+		}
+		return value, nil
 	case *parse.EmailAddressLiteral:
 		return NewEmailAddress(n.Value), nil
 	case *parse.HostPatternLiteral:
@@ -4510,6 +4518,10 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 
 		//TODO: read the manifest to known the permissions
 		modCtx := NewSymbolicContext(state.ctx.startingConcreteContext, state.ctx.startingConcreteContext, state.ctx)
+		state.ctx.CopyNamedPatternsIn(modCtx)
+		state.ctx.CopyPatternNamespacesIn(modCtx)
+		state.ctx.CopyHostAliasesIn(modCtx)
+
 		modState := newSymbolicState(modCtx, &parse.ParsedChunk{
 			Node:   embeddedModule,
 			Source: state.currentChunk().Source,
@@ -4562,6 +4574,10 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 
 		//TODO: read the manifest to known the permissions
 		modCtx := NewSymbolicContext(state.ctx.startingConcreteContext, state.ctx.startingConcreteContext, state.ctx)
+		state.ctx.CopyNamedPatternsIn(modCtx)
+		state.ctx.CopyPatternNamespacesIn(modCtx)
+		state.ctx.CopyHostAliasesIn(modCtx)
+
 		modState := newSymbolicState(modCtx, &parse.ParsedChunk{
 			Node:   embeddedModule,
 			Source: state.currentChunk().Source,
@@ -4630,10 +4646,10 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 
 		//TODO: read the manifest to known the permissions
 		modCtx := NewSymbolicContext(state.ctx.startingConcreteContext, state.ctx.startingConcreteContext, state.ctx)
-		state.ctx.ForEachPattern(func(name string, pattern Pattern) {
+		state.ctx.ForEachPattern(func(name string, pattern Pattern, knowPosition bool, position parse.SourcePositionRange) {
 			modCtx.AddNamedPattern(name, pattern, state.inPreinit, parse.SourcePositionRange{})
 		})
-		state.ctx.ForEachPatternNamespace(func(name string, namespace *PatternNamespace) {
+		state.ctx.ForEachPatternNamespace(func(name string, namespace *PatternNamespace, knowPosition bool, position parse.SourcePositionRange) {
 			modCtx.AddPatternNamespace(name, namespace, state.inPreinit, parse.SourcePositionRange{})
 		})
 

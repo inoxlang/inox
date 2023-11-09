@@ -375,6 +375,10 @@ func fmtPatternNamespaceIsNotDeclared(name string) string {
 	return fmt.Sprintf("pattern namespace %%%s. is not declared", name)
 }
 
+func fmtHostAliasIsNotDeclared(name string) string {
+	return fmt.Sprintf("host alias @%s is not declared", name)
+}
+
 func fmtVarIsNotDeclared(name string) string {
 	return fmt.Sprintf("variable '%s' is not declared", name)
 }

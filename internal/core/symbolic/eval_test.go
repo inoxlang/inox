@@ -8965,6 +8965,34 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, &TestSuite{}, res)
 		})
 
+		t.Run("tests suite should inherit patterns defined by the parent state", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				pattern p = 1
+				return testsuite "name" {
+					val = %p
+				}
+			`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, &TestSuite{}, res)
+		})
+
+		t.Run("tests suite should inherit host aliases defined by the parent state", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				@host = https://localhost
+				return testsuite "name" {
+					val = @host/index.html
+				}
+			`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, &TestSuite{}, res)
+		})
+
 		t.Run("meta value should either be a string or a record: string", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`testsuite "my test case" {}`)
 
@@ -9488,6 +9516,54 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Empty(t, state.errors())
 			assert.Equal(t, &TestSuite{}, res)
 			assert.True(t, called)
+		})
+
+		t.Run("testcase should inherit patterns defined by the parent test suite", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				return testsuite {
+					pattern p = 1
+					testcase {
+						var val p = 1
+					}
+				}
+			`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, &TestSuite{}, res)
+		})
+
+		t.Run("testcase should inherit host aliases defined by the parent test suite", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				return testsuite {
+					@host = https://localhost
+					testcase {
+						val = @host/index.html
+					}
+				}
+			`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, &TestSuite{}, res)
+		})
+
+		t.Run("testcase should inherit host aliases defined in the top-level scope", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				@host = https://localhost
+				return testsuite {
+					testcase {
+						val = @host/index.html
+					}
+				}
+			`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, &TestSuite{}, res)
 		})
 	})
 

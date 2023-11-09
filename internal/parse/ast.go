@@ -634,6 +634,13 @@ func (l AtHostLiteral) ValueString() string {
 	return l.Value
 }
 
+func (l AtHostLiteral) Name() string {
+	if l.Value == "" {
+		panic(ErrUnreachable)
+	}
+	return l.Value[1:]
+}
+
 func (AtHostLiteral) Kind() NodeKind {
 	return Expr
 }
