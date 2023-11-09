@@ -185,6 +185,12 @@ func (s *TestSuite) FilesystemSnapshot() (FilesystemSnapshot, bool) {
 }
 
 func (s *TestSuite) Run(ctx *Context, options ...Option) (*LThread, error) {
+	if !s.node.IsStatement {
+		//TODO: if the TestSuiteExpression node is not a statement,
+		//the global variables, patterns and host aliases should be captured in the TestSuite.
+		return nil, errors.New("running free test suites is not supported yet")
+	}
+
 	var timeout time.Duration
 
 	for _, opt := range options {
@@ -399,6 +405,12 @@ func (c *TestCase) FilesystemSnapshot() (FilesystemSnapshot, bool) {
 
 func (c *TestCase) Run(ctx *Context, options ...Option) (*LThread, error) {
 	var timeout time.Duration
+
+	if !c.node.IsStatement {
+		//TODO: if the TestCaseExpression node is not a statement,
+		//the global variables, patterns and host aliases should be captured in the TestCase.
+		return nil, errors.New("running free test cases is not supported yet")
+	}
 
 	for _, opt := range options {
 		switch opt.Name {
@@ -626,10 +638,26 @@ func runTestItem(
 		Filesystem: testItemFS,
 	})
 
+	//inherit patterns and host aliases.
+	spawnerState.Ctx.ForEachNamedPattern(func(name string, pattern Pattern) error {
+		lthreadCtx.AddNamedPattern(name, pattern)
+		return nil
+	})
+
+	spawnerState.Ctx.ForEachPatternNamespace(func(name string, namespace *PatternNamespace) error {
+		lthreadCtx.AddPatternNamespace(name, namespace)
+		return nil
+	})
+
+	spawnerState.Ctx.ForEachHostAlias(func(name string, value Host) error {
+		lthreadCtx.AddHostAlias(name, value)
+		return nil
+	})
+
+	//prepare & start the program to test
 	var testedProgramThread *LThread
 	var testedProgramDatabases *Namespace
 
-	//prepare & start the program to test
 	if programToExecute != "" {
 		programState, _, _, err := PrepareLocalScript(ScriptPreparationArgs{
 			FullAccessToDatabases:   true,
@@ -687,6 +715,10 @@ func runTestItem(
 	for _, name := range globalnames.TEST_ITEM_NON_INHERITED_GLOBALS {
 		delete(globals, name)
 	}
+
+	//Note: the globals are going to be shared/cloned by SpawnLThread.
+	//This is okay because only testsuite & testcase statements are supported for now, not expressions.
+	//Therefore the globals cannot be modified by another goroutine.
 
 	var currentTest *CurrentTest
 	if !isTestSuite {

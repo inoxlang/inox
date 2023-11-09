@@ -997,6 +997,19 @@ func (ctx *Context) GetHostAliases() map[string]Host {
 	return maps.Clone(ctx.hostAliases)
 }
 
+func (ctx *Context) ForEachHostAlias(fn func(name string, value Host) error) error {
+	ctx.lock.RLock()
+	defer ctx.lock.RUnlock()
+
+	for k, v := range ctx.hostAliases {
+		err := fn(k, v)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // ResolveNamedPattern returns the pattern associated with the passed name, if the pattern does not exist nil is returned.
 func (ctx *Context) ResolveNamedPattern(name string) Pattern {
 	ctx.lock.RLock()
@@ -1014,6 +1027,19 @@ func (ctx *Context) GetNamedPatterns() map[string]Pattern {
 	defer ctx.lock.RUnlock()
 
 	return maps.Clone(ctx.namedPatterns)
+}
+
+func (ctx *Context) ForEachNamedPattern(fn func(name string, pattern Pattern) error) error {
+	ctx.lock.RLock()
+	defer ctx.lock.RUnlock()
+
+	for k, v := range ctx.namedPatterns {
+		err := fn(k, v)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // AddNamedPattern associates a Pattern with the passed pattern name, if the pattern is already defined the function will panic.
@@ -1062,6 +1088,19 @@ func (ctx *Context) GetPatternNamespaces() map[string]*PatternNamespace {
 	defer ctx.lock.RUnlock()
 
 	return maps.Clone(ctx.patternNamespaces)
+}
+
+func (ctx *Context) ForEachPatternNamespace(fn func(name string, namespace *PatternNamespace) error) error {
+	ctx.lock.RLock()
+	defer ctx.lock.RUnlock()
+
+	for k, v := range ctx.patternNamespaces {
+		err := fn(k, v)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (ctx *Context) SetProtocolClientForURL(u URL, client ProtocolClient) error {

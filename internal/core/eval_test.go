@@ -7724,6 +7724,72 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			assert.Empty(t, state.TestSuiteResults)
 		})
 
+		t.Run("should inherit patterns", func(t *testing.T) {
+
+			src := makeSourceFile(`
+				pattern p = 1
+				testsuite "name" {
+					val = %p
+				}
+			`)
+
+			state := NewGlobalState(NewDefaultTestContext())
+			state.IsTestingEnabled = true
+			state.TestFilters = allTestsFilter
+			defer state.Ctx.CancelGracefully()
+
+			res, err := Eval(src, state, false)
+
+			assert.NoError(t, err)
+			assert.Equal(t, Nil, res)
+			assert.Empty(t, state.TestCaseResults)
+			assert.Len(t, state.TestSuiteResults, 1)
+		})
+
+		t.Run("should inherit pattern namespaces", func(t *testing.T) {
+
+			src := makeSourceFile(`
+				pnamespace ns. = {a: %{a: 1}}
+				testsuite "name" {
+					val = %ns.
+				}
+			`)
+
+			state := NewGlobalState(NewDefaultTestContext())
+			state.IsTestingEnabled = true
+			state.TestFilters = allTestsFilter
+			defer state.Ctx.CancelGracefully()
+
+			res, err := Eval(src, state, false)
+
+			assert.NoError(t, err)
+			assert.Equal(t, Nil, res)
+			assert.Empty(t, state.TestCaseResults)
+			assert.Len(t, state.TestSuiteResults, 1)
+		})
+
+		t.Run("should inherit host aliases", func(t *testing.T) {
+
+			src := makeSourceFile(`
+				@host = https://localhost
+				testsuite "name" {
+					assert (@host/index.html == https://localhost/index.html)
+				}
+			`)
+
+			state := NewGlobalState(NewDefaultTestContext())
+			state.IsTestingEnabled = true
+			state.TestFilters = allTestsFilter
+			defer state.Ctx.CancelGracefully()
+
+			res, err := Eval(src, state, false)
+
+			assert.NoError(t, err)
+			assert.Equal(t, Nil, res)
+			assert.Empty(t, state.TestCaseResults)
+			assert.Len(t, state.TestSuiteResults, 1)
+		})
+
 		t.Run("empty", func(t *testing.T) {
 			src := makeSourceFile(`testsuite "name" {}`)
 
@@ -8189,6 +8255,79 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 			assert.Len(t, state.TestSuiteResults[0].caseResults, 1)
+		})
+
+		t.Run("test cases should inherit the patterns of the parent testsuite", func(t *testing.T) {
+			src := makeSourceFile(`
+				pattern p1 = 1
+
+				testsuite "name" {
+					pattern p2 = 2
+
+					testcase {
+						val = [%p1, %p2]
+					}
+				}
+			`)
+
+			state := NewGlobalState(NewDefaultTestContext())
+			state.IsTestingEnabled = true
+			state.TestFilters = allTestsFilter
+			defer state.Ctx.CancelGracefully()
+
+			res, err := Eval(src, state, false)
+
+			assert.NoError(t, err)
+			assert.Equal(t, Nil, res)
+		})
+
+		t.Run("test cases should inherit the pattern namespaces of the parent testsuite", func(t *testing.T) {
+			src := makeSourceFile(`
+				pnamespace ns1. = {a: %{a: 1}}
+
+				testsuite "name" {
+					pnamespace ns2. = {a: %{a: 2}}
+
+					testcase {
+						val = [%ns1., %ns2.]
+					}
+				}
+			`)
+
+			state := NewGlobalState(NewDefaultTestContext())
+			state.IsTestingEnabled = true
+			state.TestFilters = allTestsFilter
+			defer state.Ctx.CancelGracefully()
+
+			res, err := Eval(src, state, false)
+
+			assert.NoError(t, err)
+			assert.Equal(t, Nil, res)
+		})
+
+		t.Run("test cases should inherit the host aliases of the parent testsuite", func(t *testing.T) {
+			src := makeSourceFile(`
+				@host1 = https://localhost:8081
+
+				testsuite "name" {
+					@host2 = https://localhost:8082
+
+					testcase {
+						assert (@host1/index.html == https://localhost:8081/index.html)
+						assert (@host1/index.html == https://localhost:8081/index.html)
+					}
+				}
+			`)
+
+			state := NewGlobalState(NewDefaultTestContext())
+			state.IsTestingEnabled = true
+			state.TestFilters = allTestsFilter
+			defer state.Ctx.CancelGracefully()
+
+			res, err := Eval(src, state, false)
+
+			assert.NoError(t, err)
+			assert.Equal(t, Nil, res)
 		})
 
 		t.Run("manifest with ungranted permissions", func(t *testing.T) {
