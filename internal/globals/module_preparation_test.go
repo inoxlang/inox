@@ -12,6 +12,7 @@ import (
 	"github.com/cloudflare/cloudflare-go"
 	"github.com/go-git/go-billy/v5/util"
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/globalnames"
 	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/project"
@@ -2258,6 +2259,141 @@ func TestPrepareLocalScript(t *testing.T) {
 		assert.Contains(t, perms, core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")})
 		assert.Contains(t, perms, core.FilesystemPermission{Kind_: permkind.Write, Entity: core.PathPattern("/...")})
 		assert.Contains(t, perms, core.LThreadPermission{Kind_: permkind.Create})
+	})
+
+	t.Run("program testing should be allowed in project mode", func(t *testing.T) {
+		fls := fs_ns.NewMemFilesystem(100_000)
+
+		compilationCtx := core.NewContexWithEmptyState(core.ContextConfig{
+			Permissions: []core.Permission{
+				core.CreateFsReadPerm(core.PathPattern("/...")),
+			},
+			Filesystem: fls,
+		}, nil)
+		defer compilationCtx.CancelGracefully()
+
+		util.WriteFile(fls, "/main.spec.ix", []byte(`
+			manifest {
+
+			}
+
+			testsuite({
+				program: /main.ix
+			}){
+
+				testcase {
+
+				}
+			}
+		
+		`), 0o600)
+
+		util.WriteFile(fls, "/main.ix", []byte(`
+			manifest {
+
+			}
+			
+			testsuite()
+		
+		`), 0o600)
+
+		state, mod, _, err := core.PrepareLocalScript(core.ScriptPreparationArgs{
+			Fpath:                     "/main.spec.ix",
+			ParsingCompilationContext: compilationCtx,
+			Out:                       io.Discard,
+			Project:                   project.NewDummyProject("project", fls),
+
+			EnableTesting: true,
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		// the module should be present
+		if !assert.NotNil(t, mod) {
+			return
+		}
+
+		// the state should be present
+		if !assert.NotNil(t, state) {
+			return
+		}
+
+		// static check should have been performed
+		if !assert.Empty(t, state.StaticCheckData.Errors()) {
+			return
+		}
+
+		// symbolic check should have been performed
+		assert.False(t, state.SymbolicData.IsEmpty())
+	})
+
+	t.Run("program testing should not be allowed when not in project mode", func(t *testing.T) {
+		fls := fs_ns.NewMemFilesystem(100_000)
+
+		compilationCtx := core.NewContexWithEmptyState(core.ContextConfig{
+			Permissions: []core.Permission{
+				core.CreateFsReadPerm(core.PathPattern("/...")),
+			},
+			Filesystem: fls,
+		}, nil)
+		defer compilationCtx.CancelGracefully()
+
+		util.WriteFile(fls, "/main.spec.ix", []byte(`
+			manifest {
+
+			}
+
+			testsuite({
+				program: /main.ix
+			}){
+
+				testcase {
+
+				}
+			}
+		
+		`), 0o600)
+
+		util.WriteFile(fls, "/main.ix", []byte(`
+			manifest {
+
+			}
+			
+			testsuite()
+		
+		`), 0o600)
+
+		state, mod, _, err := core.PrepareLocalScript(core.ScriptPreparationArgs{
+			Fpath:                     "/main.spec.ix",
+			ParsingCompilationContext: compilationCtx,
+			Out:                       io.Discard,
+
+			EnableTesting: true,
+		})
+
+		if !assert.ErrorContains(t, err, symbolic.PROGRAM_TESTING_ONLY_SUPPORTED_IN_PROJECTS) {
+			return
+		}
+
+		// the module should be present
+		if !assert.NotNil(t, mod) {
+			return
+		}
+
+		// the state should be present
+		if !assert.NotNil(t, state) {
+			return
+		}
+
+		// static check should have been performed
+		if !assert.Empty(t, state.StaticCheckData.Errors()) {
+			return
+		}
+
+		// symbolic check should have been performed
+		assert.False(t, state.SymbolicData.IsEmpty())
 	})
 
 	t.Run(".spec.ix modules should not be granted wide implicit permissions if testing is disabled", func(t *testing.T) {

@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-git/go-billy/v5"
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/globalnames"
@@ -547,6 +548,8 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *GlobalState, mod *Mo
 		SymbolicBaseGlobals:           state.SymbolicBaseGlobalsForImportedModule,
 		SymbolicBasePatterns:          symbolicBasePatterns,
 		SymbolicBasePatternNamespaces: symbolicBasePatternNamespaces,
+
+		ProjectFilesystem: utils.If[billy.Filesystem](state.Project != nil, ctx.GetFileSystem(), nil),
 
 		Context: symbolicCtx,
 	})
