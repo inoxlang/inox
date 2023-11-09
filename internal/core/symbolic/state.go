@@ -46,6 +46,8 @@ type State struct {
 	symbolicData         *Data
 	shellTrustedCommands []string
 
+	testedProgram *TestedProgram //can be nil
+
 	//nil if no project
 	projectFilesystem billy.Filesystem
 }

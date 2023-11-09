@@ -152,24 +152,34 @@ func (s *TestCase) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintCo
 }
 
 // checkTestItemMeta evaluates & checks the meta value of a test item, it returns a *CurrentTest for test cases.
-func checkTestItemMeta(node parse.Node, state *State, isTestCase bool) (currentTest *CurrentTest, _ error) {
+func checkTestItemMeta(node parse.Node, state *State, isTestCase bool) (currentTest *CurrentTest, testedProgram *TestedProgram, _ error) {
 	meta, err := _symbolicEval(node, state, evalOptions{
 		expectedValue: TEST_ITEM__EXPECTED_META_VALUE,
 	})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	if isTestCase {
 		currentTest = ANY_CURRENT_TEST
 	}
 
+	parentTestedProgram := state.testedProgram //can be nil
+
 	switch m := meta.(type) {
 	case *Object:
 		hasMainDatabaseSchema := m.hasProperty(TEST_ITEM_META__MAIN_DB_SCHEMA)
 		hasMainDatabaseMigrations := m.hasProperty(TEST_ITEM_META__MAIN_DB_MIGRATIONS)
+		hasProgram := m.hasProperty(TEST_ITEM_META__PROGRAM_PROPNAME)
 
-		if !m.hasProperty(TEST_ITEM_META__PROGRAM_PROPNAME) {
+		if parentTestedProgram != nil && !hasProgram && !hasMainDatabaseSchema && !hasMainDatabaseMigrations {
+			//inherit tested program
+			testedProgram = parentTestedProgram
+			currentTest = &CurrentTest{testedProgram: testedProgram}
+			return
+		}
+
+		if !hasProgram {
 			if hasMainDatabaseSchema {
 				state.addError(makeSymbolicEvalError(node, state, MAIN_DB_SCHEMA_CAN_ONLY_BE_SPECIFIED_WHEN_TESTING_A_PROGRAM))
 			}
@@ -185,11 +195,10 @@ func checkTestItemMeta(node parse.Node, state *State, isTestCase bool) (currentT
 			return
 		}
 
-		currentTest = &CurrentTest{
-			testedProgram: &TestedProgram{
-				databases: ANY_NAMESPACE,
-			},
+		testedProgram = &TestedProgram{
+			databases: ANY_NAMESPACE,
 		}
+		currentTest = &CurrentTest{testedProgram: testedProgram}
 
 		if hasMainDatabaseSchema {
 			if !hasMainDatabaseMigrations {
@@ -199,11 +208,9 @@ func checkTestItemMeta(node parse.Node, state *State, isTestCase bool) (currentT
 			schema, ok := m.Prop(TEST_ITEM_META__MAIN_DB_SCHEMA).(*ObjectPattern)
 
 			if ok {
-				currentTest.testedProgram = &TestedProgram{
-					databases: NewMutableEntriesNamespace(map[string]Value{
-						"main": NewDatabaseIL(schema, false),
-					}),
-				}
+				testedProgram.databases = NewMutableEntriesNamespace(map[string]Value{
+					"main": NewDatabaseIL(schema, false),
+				})
 			}
 		}
 
@@ -215,13 +222,21 @@ func checkTestItemMeta(node parse.Node, state *State, isTestCase bool) (currentT
 		if program.hasValue {
 			info, err := state.projectFilesystem.Stat(program.value)
 			if err != nil {
-				return nil, fmt.Errorf("failed to get info of file %s: %w", program.value, err)
+				return nil, nil, fmt.Errorf("failed to get info of file %s: %w", program.value, err)
 			}
 			if !info.Mode().IsRegular() {
 				state.addError(makeSymbolicEvalError(node, state, fmtNotRegularFile(program.value)))
 			}
 		}
 	case StringLike:
+
+		//inherit tested program
+		if parentTestedProgram != nil {
+			testedProgram = parentTestedProgram
+			currentTest = &CurrentTest{testedProgram: testedProgram}
+			return
+		}
+
 	default:
 		msg := META_VAL_OF_TEST_SUITE_SHOULD_EITHER_BE_A_STRING_OR_A_RECORD
 		if isTestCase {
@@ -239,16 +254,25 @@ type CurrentTest struct {
 	testedProgram Value
 }
 
+func (t *CurrentTest) hasMainDatabase() bool {
+	program, ok := t.testedProgram.(*TestedProgram)
+	if ok {
+		return program.hasMainDatabase()
+	}
+	return false
+}
+
 func (t *CurrentTest) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
-	switch v.(type) {
-	case *CurrentTest:
-		return true
-	default:
+	otherTest, ok := v.(*CurrentTest)
+
+	if !ok {
 		return false
 	}
+
+	return t.testedProgram.Test(otherTest.testedProgram, state)
 }
 
 func (t *CurrentTest) WidestOfType() Value {
@@ -283,6 +307,10 @@ func (t *CurrentTest) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrin
 type TestedProgram struct {
 	UnassignablePropsMixin
 	databases *Namespace
+}
+
+func (t *TestedProgram) hasMainDatabase() bool {
+	return HasRequiredProperty(t.databases, "main")
 }
 
 func (t *TestedProgram) Test(v Value, state RecTestCallState) bool {

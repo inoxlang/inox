@@ -9355,6 +9355,140 @@ func TestSymbolicEval(t *testing.T) {
 			assert.True(t, called)
 		})
 
+		t.Run("if parent suite has database parameters and the testcase has no meta value, __test.program.dbs.main should be defined", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				testsuite({
+					program: /program.ix
+					main-db-schema: %{
+						user: {name: str}
+					}
+					main-db-migrations: {
+						inclusions: :{
+							%/user: {name: "foo"}
+						}
+					}
+				}){
+					testcase {
+						check_databases(__test.program.dbs)
+					}
+				}
+			`)
+
+			fls := memfs.New()
+			util.WriteFile(fls, "/program.ix", []byte("manifest {}"), 0600)
+			state.projectFilesystem = fls
+
+			called := false
+			state.setGlobal("check_databases", WrapGoFunction(func(_ *Context, ns *Namespace) {
+				called = true
+				if !assert.Equal(t, []string{"main"}, ns.PropertyNames()) {
+					return
+				}
+				value := ns.Prop("main")
+				if !assert.IsType(t, (*DatabaseIL)(nil), value) {
+					return
+				}
+
+				db := value.(*DatabaseIL)
+				assert.True(t, HasRequiredProperty(db, "user"))
+			}), GlobalConst)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, &TestSuite{}, res)
+			assert.True(t, called)
+		})
+
+		t.Run("if parent suite has database parameters and the testcase has a string meta value, __test.program.dbs.main should be defined", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				testsuite({
+					program: /program.ix
+					main-db-schema: %{
+						user: {name: str}
+					}
+					main-db-migrations: {
+						inclusions: :{
+							%/user: {name: "foo"}
+						}
+					}
+				}){
+					testcase "test" {
+						check_databases(__test.program.dbs)
+					}
+				}
+			`)
+
+			fls := memfs.New()
+			util.WriteFile(fls, "/program.ix", []byte("manifest {}"), 0600)
+			state.projectFilesystem = fls
+
+			called := false
+			state.setGlobal("check_databases", WrapGoFunction(func(_ *Context, ns *Namespace) {
+				called = true
+				if !assert.Equal(t, []string{"main"}, ns.PropertyNames()) {
+					return
+				}
+				value := ns.Prop("main")
+				if !assert.IsType(t, (*DatabaseIL)(nil), value) {
+					return
+				}
+
+				db := value.(*DatabaseIL)
+				assert.True(t, HasRequiredProperty(db, "user"))
+			}), GlobalConst)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, &TestSuite{}, res)
+			assert.True(t, called)
+		})
+
+		t.Run("if parent suite has database parameters and the testcase has an empty record as meta value, __test.program.dbs.main should be defined", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				testsuite({
+					program: /program.ix
+					main-db-schema: %{
+						user: {name: str}
+					}
+					main-db-migrations: {
+						inclusions: :{
+							%/user: {name: "foo"}
+						}
+					}
+				}){
+					testcase({}){
+						check_databases(__test.program.dbs)
+					}
+				}
+			`)
+
+			fls := memfs.New()
+			util.WriteFile(fls, "/program.ix", []byte("manifest {}"), 0600)
+			state.projectFilesystem = fls
+
+			called := false
+			state.setGlobal("check_databases", WrapGoFunction(func(_ *Context, ns *Namespace) {
+				called = true
+				if !assert.Equal(t, []string{"main"}, ns.PropertyNames()) {
+					return
+				}
+				value := ns.Prop("main")
+				if !assert.IsType(t, (*DatabaseIL)(nil), value) {
+					return
+				}
+
+				db := value.(*DatabaseIL)
+				assert.True(t, HasRequiredProperty(db, "user"))
+			}), GlobalConst)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, &TestSuite{}, res)
+			assert.True(t, called)
+		})
 	})
 
 	t.Run("lifetimejob expression", func(t *testing.T) {

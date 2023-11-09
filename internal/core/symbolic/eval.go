@@ -4487,11 +4487,18 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 
 		return val, nil
 	case *parse.TestSuiteExpression:
+
+		var testedProgram *TestedProgram
+
 		if n.Meta != nil {
-			_, err := checkTestItemMeta(n.Meta, state, false)
+			var err error
+			_, testedProgram, err = checkTestItemMeta(n.Meta, state, false)
 			if err != nil {
 				return nil, err
 			}
+		} else if state.testedProgram != nil {
+			//inherit tested program
+			testedProgram = state.testedProgram
 		}
 
 		v, err := symbolicEval(n.Module, state)
@@ -4509,6 +4516,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 		})
 		modState.Module = state.Module
 		modState.symbolicData = state.symbolicData
+		modState.testedProgram = testedProgram
 		state.forEachGlobal(func(name string, info varSymbolicInfo) {
 			modState.setGlobal(name, info.value, GlobalConst)
 		})
@@ -4529,16 +4537,20 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 
 		return &TestSuite{}, nil
 	case *parse.TestCaseExpression:
-		var currentTest *CurrentTest
+		var currentTest *CurrentTest = ANY_CURRENT_TEST
+		var testedProgram *TestedProgram
 
 		if n.Meta != nil {
-			test, err := checkTestItemMeta(n.Meta, state, true)
+			test, program, err := checkTestItemMeta(n.Meta, state, true)
 			if err != nil {
 				return nil, err
 			}
 			currentTest = test
-		} else {
-			currentTest = ANY_CURRENT_TEST
+			testedProgram = program
+		} else if state.testedProgram != nil {
+			//inherit tested program
+			testedProgram = state.testedProgram
+			currentTest = &CurrentTest{testedProgram: testedProgram}
 		}
 
 		v, err := symbolicEval(n.Module, state)
@@ -4556,6 +4568,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 		})
 		modState.Module = state.Module
 		modState.symbolicData = state.symbolicData
+		modState.testedProgram = testedProgram
 		state.forEachGlobal(func(name string, info varSymbolicInfo) {
 			modState.setGlobal(name, info.value, GlobalConst)
 		})
