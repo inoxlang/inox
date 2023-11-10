@@ -470,6 +470,27 @@ filter([0, 1, 2], @($ >= 1))
 # output: 
 [1, 2]
 ```
+### get_at_most
+
+the get_at_most function gets at most the specified number of elements from an iterable.
+
+**examples**
+
+```inox
+get_at_most(1, [])
+# output: 
+[]
+```
+```inox
+get_at_most(3, ["a", "b"])
+# output: 
+["a", "b"]
+```
+```inox
+get_at_most(2, ["a", "b", "c"])
+# output: 
+["a", "b"]
+```
 ### some
 
 the some function returns true if and only if at least one element of an iterable passes a condition. For an empty iterable the result is always true.

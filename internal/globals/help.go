@@ -2,35 +2,37 @@ package internal
 
 import (
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/globalnames"
 	"github.com/inoxlang/inox/internal/help"
 )
 
 func registerHelp() {
 	help.RegisterHelpValues(map[string]any{
 		//functional
-		"map":    core.Map,
-		"filter": core.Filter,
-		"some":   core.Some,
-		"all":    core.All,
-		"none":   core.None,
-		"rand":   _rand,
-		"find":   _find,
-		"sort":   core.Sort,
+		globalnames.MAP_FN:         core.Map,
+		globalnames.FILTER_FN:      core.Filter,
+		globalnames.GET_AT_MOST_FN: core.GetAtMost,
+		globalnames.SOME_FN:        core.Some,
+		globalnames.ALL_FN:         core.All,
+		globalnames.NONE_FN:        core.None,
+		globalnames.RAND_FN:        _rand,
+		globalnames.FIND_FN:        _find,
+		globalnames.SORT_FN:        core.Sort,
 
 		//resource manipulation
-		"create": _createResource,
-		"read":   _readResource,
-		"update": _updateResource,
-		"delete": _deleteResource,
+		globalnames.CREATE_FN: _createResource,
+		globalnames.READ_FN:   _readResource,
+		globalnames.UPDATE_FN: _updateResource,
+		globalnames.DELETE_FN: _deleteResource,
 
 		//encoding
-		"b64":  encodeBase64,
-		"db64": decodeBase64,
+		globalnames.B64_FN:  encodeBase64,
+		globalnames.DB64_FN: decodeBase64,
 
-		"hex":   encodeHex,
-		"unhex": decodeHex,
+		globalnames.HEX_FN:   encodeHex,
+		globalnames.UNHEX_FN: decodeHex,
 
 		//others
-		"Error": _Error,
+		globalnames.ERROR_FN: _Error,
 	})
 }

@@ -2,7 +2,7 @@ functional:
   title: Functional Programming
   elements:
   - topic: map
-    related-topics: [filter, some, all, none]
+    related-topics: [filter, get_at_most, some, all, none]
     text: the map function creates a list by applying an operation on each element of an iterable
     examples:
     - code: 'map([{name: "foo"}], .name)'
@@ -17,13 +17,24 @@ functional:
       output: '[1, 2, 3]'
 
   - topic: filter
-    related-topics: [map, some, all, none]
+    related-topics: [map, get_at_most, some, all, none]
     text: the filter function creates a list by iterating over an iterable and keeping elements that pass a condition
     examples:
     - code: 'filter(["a", "0", 1], %int)'
       output: '[1]'
     - code: 'filter([0, 1, 2], @($ >= 1))'
       output: '[1, 2]'
+
+  - topic: get_at_most
+    related-topics: [filter, map, some, all, none]
+    text: the get_at_most function gets at most the specified number of elements from an iterable
+    examples:
+    - code: 'get_at_most(1, [])'
+      output: '[]'
+    - code: 'get_at_most(3, ["a", "b"])'
+      output: '["a", "b"]'
+    - code: 'get_at_most(2, ["a", "b", "c"])'
+      output: '["a", "b"]'
 
   - topic: some
     related-topics: [map, filter, all, none]
