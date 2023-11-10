@@ -273,7 +273,7 @@ A number negation is always parenthesized. Integers and floats that are
 immediately preceded by a '-' sign are parsed as literals.
 
 ```
-# -1 and -1.0 are literals because is no space between the minus sign and the first digit.
+# -1 and -1.0 are literals because there is no space between the minus sign and the first digit.
 int = -1        
 float = -1.0
 
@@ -1222,7 +1222,8 @@ user.todos
 
 # XML Expressions
 
-An XML expression is the interpretation of a XML-like value by a namespace:
+An XML expression produces a value by passing a XML-like structure to a
+namespace that interprets it:
 
 ```
 string = "world"
@@ -1230,6 +1231,22 @@ element = html<div> Hello {string} ! </div>
 
 # self closing tag
 html<img src="..."/>
+```
+
+In the `<script>` and `<style>` tags, anything inside single brackets is not treated
+as an interpolation:
+
+```
+html<html>
+    <style>
+        html, body {
+            margin: 0;
+        }
+    </style>
+    <script>
+        const object = {a: 1}
+    </script>
+</html>
 ```
 
 # Modules
