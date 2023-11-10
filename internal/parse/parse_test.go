@@ -183,6 +183,50 @@ func TestParseSystematicCheckAndDefaultTimeout(t *testing.T) {
 	}
 }
 
+func TestCheckEmbddedModuleTokens(t *testing.T) {
+	t.Run("empty: no tokens", func(t *testing.T) {
+		chunk := MustParseChunk(`go do {}`)
+
+		embeddedMod := FindNode(chunk, (*EmbeddedModule)(nil), nil)
+		assert.Empty(t, embeddedMod.Tokens)
+	})
+
+	t.Run("empty: no tokens, missing closing bracket", func(t *testing.T) {
+		chunk, _ := ParseChunk(`go do {`, "test")
+
+		embeddedMod := FindNode(chunk, (*EmbeddedModule)(nil), nil)
+		assert.Empty(t, embeddedMod.Tokens)
+	})
+
+	t.Run("empty: single non-stored token", func(t *testing.T) {
+		chunk := MustParseChunk(`go do {1}`)
+
+		embeddedMod := FindNode(chunk, (*EmbeddedModule)(nil), nil)
+		assert.Empty(t, embeddedMod.Tokens)
+	})
+
+	t.Run("empty: single non-stored token, missing closing bracket", func(t *testing.T) {
+		chunk, _ := ParseChunk(`go do {1`, "test")
+
+		embeddedMod := FindNode(chunk, (*EmbeddedModule)(nil), nil)
+		assert.Empty(t, embeddedMod.Tokens)
+	})
+
+	t.Run("empty: single stored token", func(t *testing.T) {
+		chunk, _ := ParseChunk(`go do {?}`, "test")
+
+		embeddedMod := FindNode(chunk, (*EmbeddedModule)(nil), nil)
+		assert.Equal(t, []Token{{Type: UNEXPECTED_CHAR, Raw: "?", Span: NodeSpan{7, 8}}}, embeddedMod.Tokens)
+	})
+
+	t.Run("empty: single stored token, missing closing bracket", func(t *testing.T) {
+		chunk, _ := ParseChunk(`go do {?`, "test")
+
+		embeddedMod := FindNode(chunk, (*EmbeddedModule)(nil), nil)
+		assert.Equal(t, []Token{{Type: UNEXPECTED_CHAR, Raw: "?", Span: NodeSpan{7, 8}}}, embeddedMod.Tokens)
+	})
+}
+
 //TODO: add more specific tests for testing context checks.
 
 func testParse(
@@ -27057,6 +27101,12 @@ func parseChunkForgetTokens(s, name string, opts ...ParserOptions) (*Chunk, erro
 	c, err := ParseChunk(s, name, opts...)
 	if c != nil {
 		c.Tokens = nil
+		Walk(c, func(node, parent, scopeNode Node, ancestorChain []Node, after bool) (TraversalAction, error) {
+			if mod, ok := node.(*EmbeddedModule); ok {
+				mod.Tokens = nil
+			}
+			return Continue, nil
+		}, nil)
 	}
 	return c, err
 }
@@ -27064,5 +27114,11 @@ func parseChunkForgetTokens(s, name string, opts ...ParserOptions) (*Chunk, erro
 func mustParseChunkForgetTokens(s string, opts ...ParserOptions) *Chunk {
 	c := MustParseChunk(s, opts...)
 	c.Tokens = nil
+	Walk(c, func(node, parent, scopeNode Node, ancestorChain []Node, after bool) (TraversalAction, error) {
+		if mod, ok := node.(*EmbeddedModule); ok {
+			mod.Tokens = nil
+		}
+		return Continue, nil
+	}, nil)
 	return c
 }

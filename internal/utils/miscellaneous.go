@@ -74,8 +74,3 @@ func Implements[T any](v any) bool {
 	_, ok := v.(T)
 	return ok
 }
-
-func IsZero[T any](v any) bool {
-	_, ok := v.(T)
-	return ok
-}

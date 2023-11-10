@@ -161,7 +161,9 @@ type Chunk struct {
 	Statements                 []Node                      `json:"statements"`
 	IsShellChunk               bool
 
-	Tokens []Token //mostly valueless tokens, sorted by position (ascending)
+	//mostly valueless tokens, sorted by position (ascending).
+	//EmbeddedModule nodes hold references to subslices of .Tokens.
+	Tokens []Token
 }
 
 type EmbeddedModule struct {
@@ -169,6 +171,7 @@ type EmbeddedModule struct {
 	Manifest       *Manifest `json:"manifest"` //can be nil
 	Statements     []Node    `json:"statements"`
 	SingleCallExpr bool      `json:"isSingleCallExpr"`
+	Tokens         []Token/*slice of the parent chunk .Tokens*/ `json:"tokens"`
 }
 
 func (emod *EmbeddedModule) ToChunk() *Chunk {
@@ -176,6 +179,7 @@ func (emod *EmbeddedModule) ToChunk() *Chunk {
 		NodeBase:   emod.NodeBase,
 		Manifest:   emod.Manifest,
 		Statements: emod.Statements,
+		Tokens:     emod.Tokens,
 	}
 }
 

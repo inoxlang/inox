@@ -7458,6 +7458,8 @@ func (p *parser) parseEmbeddedModule() *EmbeddedModule {
 
 	p.tokens = append(p.tokens, Token{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{start, start + 1}})
 
+	firstInnerTokenIndex := len(p.tokens)
+
 	var (
 		emod             = &EmbeddedModule{}
 		prevStmtEndIndex = int32(-1)
@@ -7515,10 +7517,12 @@ func (p *parser) parseEmbeddedModule() *EmbeddedModule {
 	}
 
 	var embeddedModuleErr *ParsingError
+	hasClosingBracket := false
 
 	if p.i >= p.len || p.s[p.i] != '}' {
 		embeddedModuleErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_EMBEDDED_MODULE}
 	} else {
+		hasClosingBracket = true
 		p.tokens = append(p.tokens, Token{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{p.i, p.i + 1}})
 		p.i++
 	}
@@ -7529,6 +7533,14 @@ func (p *parser) parseEmbeddedModule() *EmbeddedModule {
 		NodeSpan{start, p.i},
 		embeddedModuleErr,
 		false,
+	}
+	//add tokens
+	if firstInnerTokenIndex < len(p.tokens) {
+		end := len(p.tokens)
+		if hasClosingBracket {
+			end--
+		}
+		emod.Tokens = p.tokens[firstInnerTokenIndex:end]
 	}
 
 	return emod
