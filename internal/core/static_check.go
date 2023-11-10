@@ -400,16 +400,45 @@ func (c *checker) checkSingleNode(n, parent, scopeNode parse.Node, ancestorChain
 	//check that the node is allowed in assertion
 
 	if closestAssertion != nil {
-		switch n.(type) {
-		case *parse.Variable, *parse.GlobalVariable, *parse.IdentifierLiteral, *parse.BinaryExpression,
-			*parse.URLExpression, *parse.AtHostLiteral,
-			*parse.PatternIdentifierLiteral, *parse.ObjectPatternLiteral, *parse.RecordPatternLiteral,
-			*parse.ObjectProperty, *parse.ObjectPatternProperty,
+		switch n := n.(type) {
+		case
+			//variables
+			*parse.Variable, *parse.GlobalVariable, *parse.IdentifierLiteral,
+
+			*parse.BinaryExpression, *parse.URLExpression, *parse.AtHostLiteral,
+			parse.SimpleValueLiteral, *parse.IntegerRangeLiteral, *parse.FloatRangeLiteral,
+
+			//data structure literals
+			*parse.ObjectLiteral, *parse.ObjectProperty, *parse.ListLiteral, *parse.RecordLiteral,
+
+			//member-like expressions
+			*parse.MemberExpression, *parse.IdentifierMemberExpression, *parse.DoubleColonExpression,
+			*parse.IndexExpression, *parse.SliceExpression,
+
+			//patterns
+			*parse.PatternIdentifierLiteral,
+			*parse.ObjectPatternLiteral, *parse.ObjectPatternProperty, *parse.RecordPatternLiteral,
 			*parse.ListPatternLiteral, *parse.TuplePatternLiteral,
-			*parse.ObjectLiteral, *parse.ListLiteral, *parse.FunctionPatternExpression,
+			*parse.FunctionPatternExpression,
 			*parse.PatternNamespaceIdentifierLiteral, *parse.PatternNamespaceMemberExpression,
 			*parse.OptionPatternLiteral, *parse.OptionalPatternExpression,
-			*parse.MemberExpression, *parse.IdentifierMemberExpression, *parse.DoubleColonExpression:
+			*parse.ComplexStringPatternPiece, *parse.PatternPieceElement, *parse.PatternGroupName,
+			*parse.PatternUnion,
+			*parse.PatternCallExpression:
+		case *parse.CallExpression:
+			allowed := false
+
+			ident, ok := n.Callee.(*parse.IdentifierLiteral)
+			if ok {
+				switch ident.Name {
+				case globalnames.LEN_FN:
+					allowed = true
+				}
+			}
+
+			if !allowed {
+				c.addError(n, fmtFollowingNodeTypeNotAllowedInAssertions(n))
+			}
 		default:
 			if !parse.NodeIsSimpleValueLiteral(n) {
 				c.addError(n, fmtFollowingNodeTypeNotAllowedInAssertions(n))
