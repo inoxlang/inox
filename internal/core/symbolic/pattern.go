@@ -2814,6 +2814,15 @@ func (p *TypePattern) TestValue(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
+	if mv, ok := v.(IMultivalue); ok {
+		for _, val := range mv.OriginalMultivalue().getValues() {
+			if !p.val.Test(val, state) {
+				return false
+			}
+		}
+		return true
+	}
+
 	return p.val.Test(v, state)
 }
 

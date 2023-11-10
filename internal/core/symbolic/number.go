@@ -11,6 +11,9 @@ var (
 	ANY_INTEGRAL = &AnyIntegral{}
 	ANY_INT      = &Int{}
 	ANY_FLOAT    = &Float{}
+	INT_1        = NewInt(1)
+	INT_2        = NewInt(2)
+	INT_1_OR_2   = NewMultivalue(INT_1, INT_2)
 )
 
 type Integral interface {

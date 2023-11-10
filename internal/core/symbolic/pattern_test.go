@@ -27,6 +27,13 @@ func TestSymbolicAnyPattern(t *testing.T) {
 
 }
 
+func TestSymbolicTypePattern(t *testing.T) {
+	patt := &TypePattern{val: ANY_INT}
+
+	assertTestValue(t, patt, INT_1)
+	assertTestValue(t, patt, NewMultivalue(INT_1, INT_2))
+}
+
 func TestSymbolicPathPattern(t *testing.T) {
 
 	t.Run("Test()", func(t *testing.T) {

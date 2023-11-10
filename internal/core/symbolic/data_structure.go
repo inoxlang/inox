@@ -548,18 +548,23 @@ func (l *List) insertSequence(ctx *Context, seq Sequence, i *Int) {
 	if l.readonly {
 		ctx.AddSymbolicGoFunctionError(ErrReadonlyValueCannotBeMutated.Error())
 	}
+	//do nothing if no elements are inserted.
 	if seq.HasKnownLen() && seq.KnownLen() == 0 {
 		return
 	}
+
 	if l.HasKnownLen() && l.KnownLen() == 0 {
 		element := seq.element()
 		if serializable, ok := element.(Serializable); ok {
-			ctx.SetUpdatedSelf(NewList(serializable))
+			//we could pass a list with a known length but we don't know how many times
+			//the mutation can ocurr (e.g. in for loops).
+			ctx.SetUpdatedSelf(NewListOf(serializable))
 		} else {
 			ctx.AddSymbolicGoFunctionError(NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE)
 		}
 		return
 	}
+
 	element := AsSerializable(widenToSameStaticTypeInMultivalue(joinValues([]Value{l.element(), seq.element()})))
 	if serializable, ok := element.(Serializable); ok {
 		ctx.SetUpdatedSelf(NewListOf(serializable))
@@ -572,28 +577,24 @@ func (l *List) appendSequence(ctx *Context, seq Sequence) {
 	if l.readonly {
 		ctx.AddSymbolicGoFunctionError(ErrReadonlyValueCannotBeMutated.Error())
 	}
+
+	//do nothing if no elements are appended.
 	if seq.HasKnownLen() && seq.KnownLen() == 0 {
 		return
 	}
+
 	if l.HasKnownLen() && l.KnownLen() == 0 {
 		element := seq.element()
 		if serializable, ok := element.(Serializable); ok {
-			if seq.HasKnownLen() {
-				length := seq.KnownLen()
-				elements := make([]Serializable, length)
-
-				for i := 0; i < length; i++ {
-					elements[i] = seq.elementAt(i).(Serializable)
-				}
-				ctx.SetUpdatedSelf(NewList(elements...))
-			} else {
-				ctx.SetUpdatedSelf(NewListOf(serializable))
-			}
+			//we could pass a list with a known length but we don't know how many times
+			//the mutation can ocurr (e.g. in for loops).
+			ctx.SetUpdatedSelf(NewListOf(serializable))
 		} else {
 			ctx.AddSymbolicGoFunctionError(NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE)
 		}
 		return
 	}
+
 	element := AsSerializable(widenToSameStaticTypeInMultivalue(joinValues([]Value{l.element(), seq.element()})))
 	if serializable, ok := element.(Serializable); ok {
 		ctx.SetUpdatedSelf(NewListOf(serializable))

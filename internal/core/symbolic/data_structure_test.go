@@ -472,7 +472,7 @@ func TestSymbolicList(t *testing.T) {
 	})
 
 	t.Run("Append()", func(t *testing.T) {
-		t.Run("adding no elements to empty list", func(t *testing.T) {
+		t.Run("adding no elements to an empty list", func(t *testing.T) {
 			ctx := NewSymbolicContext(dummyConcreteContext{context.Background()}, nil, nil)
 			state := newSymbolicState(ctx, nil)
 
@@ -483,7 +483,7 @@ func TestSymbolicList(t *testing.T) {
 			assert.False(t, ok)
 		})
 
-		t.Run("adding element to empty list", func(t *testing.T) {
+		t.Run("adding a single element to an empty list", func(t *testing.T) {
 			ctx := NewSymbolicContext(dummyConcreteContext{context.Background()}, nil, nil)
 			state := newSymbolicState(ctx, nil)
 
@@ -495,10 +495,25 @@ func TestSymbolicList(t *testing.T) {
 				return
 			}
 
-			assert.Equal(t, NewList(NewInt(1)), updatedSelf)
+			assert.Equal(t, NewListOf(INT_1), updatedSelf)
 		})
 
-		t.Run("adding no element to list with single element", func(t *testing.T) {
+		t.Run("adding two different elements of the same type to an empty list", func(t *testing.T) {
+			ctx := NewSymbolicContext(dummyConcreteContext{context.Background()}, nil, nil)
+			state := newSymbolicState(ctx, nil)
+
+			list := NewList()
+			list.Append(ctx, NewInt(1), NewInt(2))
+
+			updatedSelf, ok := state.consumeUpdatedSelf()
+			if !assert.True(t, ok) {
+				return
+			}
+
+			assert.Equal(t, NewListOf(AsSerializableChecked(NewMultivalue(INT_1, INT_2))), updatedSelf)
+		})
+
+		t.Run("adding no element to a list with single element", func(t *testing.T) {
 			ctx := NewSymbolicContext(dummyConcreteContext{context.Background()}, nil, nil)
 			state := newSymbolicState(ctx, nil)
 

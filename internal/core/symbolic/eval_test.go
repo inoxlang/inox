@@ -3420,7 +3420,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, &Object{}, res)
 		})
 
-		t.Run("invalid mutation", func(t *testing.T) {
+		t.Run("invalid mutation of a list", func(t *testing.T) {
 			t.Run("", func(t *testing.T) {
 				n, state := MakeTestStateAndChunk(`
 					var l = [1]
@@ -3472,8 +3472,8 @@ func TestSymbolicEval(t *testing.T) {
 			})
 		})
 
-		t.Run("valid mutation", func(t *testing.T) {
-			t.Run("", func(t *testing.T) {
+		t.Run("valid mutation of a list", func(t *testing.T) {
+			t.Run("append an int to a list with a single int element", func(t *testing.T) {
 				n, state := MakeTestStateAndChunk(`
 					var l = [1]
 					l.append(2)
@@ -3487,7 +3487,35 @@ func TestSymbolicEval(t *testing.T) {
 				assert.Equal(t, NewListOf(ANY_INT), res)
 			})
 
-			t.Run("", func(t *testing.T) {
+			t.Run("append an int to an empty list", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					var l = [1]
+					l.append(2)
+					return l
+				`)
+
+				res, err := symbolicEval(n, state)
+
+				assert.NoError(t, err)
+				assert.Empty(t, state.errors())
+				assert.Equal(t, NewListOf(ANY_INT), res)
+			})
+
+			t.Run("append two different ints to an empty list", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					var l = []
+					l.append(1, 2)
+					return l
+				`)
+
+				res, err := symbolicEval(n, state)
+
+				assert.NoError(t, err)
+				assert.Empty(t, state.errors())
+				assert.Equal(t, NewListOf(AsSerializableChecked(INT_1_OR_2)), res)
+			})
+
+			t.Run("append an int to a list with a single int element that has []int as static type", func(t *testing.T) {
 				n, state := MakeTestStateAndChunk(`
 					var l []int = [1]
 					l.append(2)
@@ -3501,7 +3529,35 @@ func TestSymbolicEval(t *testing.T) {
 				assert.Equal(t, NewListOf(ANY_INT), res)
 			})
 
-			t.Run("", func(t *testing.T) {
+			t.Run("append an int to an empty list that has []int as static type", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					var l []int = []
+					l.append(2)
+					return l
+				`)
+
+				res, err := symbolicEval(n, state)
+
+				assert.NoError(t, err)
+				assert.Empty(t, state.errors())
+				assert.Equal(t, NewListOf(INT_2), res)
+			})
+
+			t.Run("append two different ints to an empty list that has []int as static type", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					var l []int = []
+					l.append(1, 2)
+					return l
+				`)
+
+				res, err := symbolicEval(n, state)
+
+				assert.NoError(t, err)
+				assert.Empty(t, state.errors())
+				assert.Equal(t, NewListOf(AsSerializableChecked(INT_1_OR_2)), res)
+			})
+
+			t.Run("append an int to a list with a single int element that has []%(1) as static type", func(t *testing.T) {
 				n, state := MakeTestStateAndChunk(`
 					var l []%(1) = [1]
 					l.append(1)
@@ -10950,7 +11006,7 @@ func TestSymbolicEval(t *testing.T) {
 				assert.NoError(t, err)
 				assert.Empty(t, state.errors())
 				assert.Equal(t, NewInexactObject(map[string]Serializable{
-					"list": NewList(NewInt(1)),
+					"list": NewListOf(INT_1),
 				}, nil, map[string]Pattern{
 					"list": NewListPatternOf(&TypePattern{val: ANY_SERIALIZABLE}),
 				}), res)
