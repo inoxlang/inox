@@ -30,7 +30,7 @@ func TestInoxFunction(t *testing.T) {
 			result:         ANY,
 			visitCheckNode: func(visit visitArgs, globalsAtCreation map[string]Value) (parse.TraversalAction, bool, error) {
 				_, ok := visit.node.(*parse.IntLiteral)
-				return parse.Continue, ok, nil
+				return parse.ContinueTraversal, ok, nil
 			},
 		}
 

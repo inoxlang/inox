@@ -108,7 +108,7 @@ func FindCompletions(args CompletionSearchArgs) []Completion {
 
 		}
 
-		return parse.Continue, nil
+		return parse.ContinueTraversal, nil
 	}, nil)
 
 	if nodeAtCursor == nil {

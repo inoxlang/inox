@@ -2066,7 +2066,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 					depId, ok := dependencyGraph.IdOfNode(dependencyName)
 					if !ok {
 						//?
-						return parse.Continue, nil
+						return parse.ContinueTraversal, nil
 					}
 
 					if dependentKeyId == depId {
@@ -2076,7 +2076,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 						dependencyGraph.AddEdge(dependentKeyId, depId)
 					}
 				}
-				return parse.Continue, nil
+				return parse.ContinueTraversal, nil
 			}, nil)
 		}
 
@@ -3426,7 +3426,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 				n.Body,
 				func(node, parent, scopeNode parse.Node, ancestorChain []parse.Node, after bool) (parse.TraversalAction, error) {
 					if _, isBody := node.(*parse.Block); isBody && node == n.Body {
-						return parse.Continue, nil
+						return parse.ContinueTraversal, nil
 					}
 
 					action, allowed, err := visitCheckNode(visitArgs{node, parent, scopeNode, ancestorChain, after}, expectedFunction.capturedLocals)
@@ -5304,7 +5304,7 @@ func handleConstraints(obj *Object, block *parse.InitializationBlock, state *Sta
 	err := parse.Walk(block, func(node, parent, scopeNode parse.Node, ancestorChain []parse.Node, after bool) (parse.TraversalAction, error) {
 
 		if node == block {
-			return parse.Continue, nil
+			return parse.ContinueTraversal, nil
 		}
 
 		switch node.(type) {
@@ -5315,7 +5315,7 @@ func handleConstraints(obj *Object, block *parse.InitializationBlock, state *Sta
 		default:
 			state.addError(makeSymbolicEvalError(node, state, CONSTRAINTS_INIT_BLOCK_EXPLANATION))
 		}
-		return parse.Continue, nil
+		return parse.ContinueTraversal, nil
 	}, nil)
 
 	if err != nil {
@@ -5336,7 +5336,7 @@ func handleConstraints(obj *Object, block *parse.InitializationBlock, state *Sta
 				if utils.Implements[*parse.SelfExpression](node) && utils.Implements[*parse.MemberExpression](parent) {
 					constraint.Properties = append(constraint.Properties, parent.(*parse.MemberExpression).PropertyName.Name)
 				}
-				return parse.Continue, nil
+				return parse.ContinueTraversal, nil
 			}, nil)
 
 			obj.complexPropertyConstraints = append(obj.complexPropertyConstraints, constraint)

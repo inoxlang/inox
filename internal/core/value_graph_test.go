@@ -16,7 +16,7 @@ func TestTraverse(t *testing.T) {
 
 		err := Traverse(Int(1), func(v Value) (parse.TraversalAction, error) {
 			called = true
-			return parse.Continue, nil
+			return parse.ContinueTraversal, nil
 		}, TraversalConfiguration{})
 
 		assert.NoError(t, err)
@@ -28,7 +28,7 @@ func TestTraverse(t *testing.T) {
 
 		err := Traverse(objFrom(nil), func(v Value) (parse.TraversalAction, error) {
 			called = true
-			return parse.Continue, nil
+			return parse.ContinueTraversal, nil
 		}, TraversalConfiguration{})
 
 		assert.NoError(t, err)
@@ -40,7 +40,7 @@ func TestTraverse(t *testing.T) {
 
 		err := Traverse(objFrom(ValMap{"n": Int(1)}), func(v Value) (parse.TraversalAction, error) {
 			callCount++
-			return parse.Continue, nil
+			return parse.ContinueTraversal, nil
 		}, TraversalConfiguration{MaxDepth: 0})
 
 		assert.NoError(t, err)
@@ -52,7 +52,7 @@ func TestTraverse(t *testing.T) {
 
 		err := Traverse(objFrom(ValMap{"n": Int(1)}), func(v Value) (parse.TraversalAction, error) {
 			callCount++
-			return parse.Continue, nil
+			return parse.ContinueTraversal, nil
 		}, TraversalConfiguration{MaxDepth: 1})
 
 		assert.NoError(t, err)
@@ -70,7 +70,7 @@ func TestTraverse(t *testing.T) {
 
 		err := Traverse(obj, func(v Value) (parse.TraversalAction, error) {
 			callCount++
-			return parse.Continue, nil
+			return parse.ContinueTraversal, nil
 		}, TraversalConfiguration{MaxDepth: 10})
 
 		assert.NoError(t, err)
@@ -82,7 +82,7 @@ func TestTraverse(t *testing.T) {
 
 		err := Traverse(objFrom(nil), func(v Value) (parse.TraversalAction, error) {
 			called = true
-			return parse.Continue, nil
+			return parse.ContinueTraversal, nil
 		}, TraversalConfiguration{})
 
 		assert.NoError(t, err)
@@ -94,7 +94,7 @@ func TestTraverse(t *testing.T) {
 
 		err := Traverse(NewRecordFromMap(ValMap{"n": Int(1)}), func(v Value) (parse.TraversalAction, error) {
 			callCount++
-			return parse.Continue, nil
+			return parse.ContinueTraversal, nil
 		}, TraversalConfiguration{MaxDepth: 0})
 
 		assert.NoError(t, err)
@@ -106,7 +106,7 @@ func TestTraverse(t *testing.T) {
 
 		err := Traverse(NewRecordFromMap(ValMap{"n": Int(1)}), func(v Value) (parse.TraversalAction, error) {
 			callCount++
-			return parse.Continue, nil
+			return parse.ContinueTraversal, nil
 		}, TraversalConfiguration{MaxDepth: 1})
 
 		assert.NoError(t, err)
@@ -121,7 +121,7 @@ func TestTraverse(t *testing.T) {
 
 		err := Traverse(list, func(v Value) (parse.TraversalAction, error) {
 			callCount++
-			return parse.Continue, nil
+			return parse.ContinueTraversal, nil
 		}, TraversalConfiguration{MaxDepth: 10})
 
 		assert.NoError(t, err)
@@ -135,7 +135,7 @@ func TestTraverse(t *testing.T) {
 
 		err := Traverse(udata, func(v Value) (parse.TraversalAction, error) {
 			visited = append(visited, v)
-			return parse.Continue, nil
+			return parse.ContinueTraversal, nil
 		}, TraversalConfiguration{MaxDepth: 10})
 
 		assert.NoError(t, err)
@@ -156,7 +156,7 @@ func TestTraverse(t *testing.T) {
 
 		err := Traverse(udata, func(v Value) (parse.TraversalAction, error) {
 			visited = append(visited, v)
-			return parse.Continue, nil
+			return parse.ContinueTraversal, nil
 		}, TraversalConfiguration{MaxDepth: 10})
 
 		assert.NoError(t, err)
@@ -180,7 +180,7 @@ func TestTraverse(t *testing.T) {
 
 		err := Traverse(udata, func(v Value) (parse.TraversalAction, error) {
 			visited = append(visited, v)
-			return parse.Continue, nil
+			return parse.ContinueTraversal, nil
 		}, TraversalConfiguration{MaxDepth: 10})
 
 		assert.NoError(t, err)
@@ -208,7 +208,7 @@ func TestTraverse(t *testing.T) {
 
 		err := Traverse(udata, func(v Value) (parse.TraversalAction, error) {
 			visited = append(visited, v)
-			return parse.Continue, nil
+			return parse.ContinueTraversal, nil
 		}, TraversalConfiguration{MaxDepth: 10})
 
 		assert.NoError(t, err)
@@ -236,7 +236,7 @@ func TestTraverse(t *testing.T) {
 			if obj, ok := v.(*Object); ok && obj.Prop(ctx, "v") == Int(1) {
 				return parse.Prune, nil
 			}
-			return parse.Continue, nil
+			return parse.ContinueTraversal, nil
 		}, TraversalConfiguration{MaxDepth: 10})
 
 		assert.NoError(t, err)
@@ -262,7 +262,7 @@ func TestTraverse(t *testing.T) {
 			if obj, ok := v.(*Object); ok && obj.Prop(ctx, "v") == Int(1) {
 				return parse.StopTraversal, nil
 			}
-			return parse.Continue, nil
+			return parse.ContinueTraversal, nil
 		}, TraversalConfiguration{MaxDepth: 10})
 
 		assert.NoError(t, err)

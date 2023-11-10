@@ -17,7 +17,7 @@ func TestWalk(t *testing.T) {
 			default:
 				t.Fatal("the traversal should get pruned on the Module")
 			}
-			return Continue, nil
+			return ContinueTraversal, nil
 		}, nil)
 	})
 
@@ -31,7 +31,7 @@ func TestWalk(t *testing.T) {
 				}
 				return StopTraversal, nil
 			}
-			return Continue, nil
+			return ContinueTraversal, nil
 		}, nil)
 	})
 }

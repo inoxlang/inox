@@ -32,7 +32,7 @@ func EstimateIndentationUnit(code []rune, chunk *Chunk) string {
 		case *GlobalConstantDeclaration:
 			update(n.Span.Start)
 		case *Chunk, *GlobalConstantDeclarations, *Manifest, *FunctionDeclaration, *FunctionExpression:
-			return Continue, nil
+			return ContinueTraversal, nil
 
 		}
 		return Prune, nil

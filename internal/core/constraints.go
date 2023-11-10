@@ -51,7 +51,7 @@ func initializeConstraintMetaproperty(v *Object, block *parse.InitializationBloc
 			if membExpr, ok := node.(*parse.MemberExpression); ok && utils.Implements[*parse.SelfExpression](membExpr.Left) {
 				props = append(props, membExpr.PropertyName.Name)
 			}
-			return parse.Continue, nil
+			return parse.ContinueTraversal, nil
 		}, nil)
 
 		patt.complexPropertyPatterns = append(patt.complexPropertyPatterns, &ComplexPropertyConstraint{

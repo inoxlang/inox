@@ -2297,7 +2297,7 @@ func shiftNodeSpans(node Node, offset int32) {
 		// 	token.Span.End += offset
 		// 	tokens[i] = token
 		// }
-		return Continue, nil
+		return ContinueTraversal, nil
 	}, nil)
 }
 
@@ -2305,7 +2305,7 @@ type TraversalAction int
 type TraversalOrder int
 
 const (
-	Continue TraversalAction = iota
+	ContinueTraversal TraversalAction = iota
 	Prune
 	StopTraversal
 )
@@ -2859,7 +2859,7 @@ func walk(node, parent Node, ancestorChain *[]Node, fn, afterFn NodeHandler) {
 func CountNodes(n Node) (count int) {
 	Walk(n, func(node, parent, scopeNode Node, ancestorChain []Node, after bool) (TraversalAction, error) {
 		count += 1
-		return Continue, nil
+		return ContinueTraversal, nil
 	}, nil)
 
 	return
@@ -2878,7 +2878,7 @@ func FindNodeWithSpan(root Node, searchedNodeSpan NodeSpan) (n Node, found bool)
 			found = true
 			return StopTraversal, nil
 		}
-		return Continue, nil
+		return ContinueTraversal, nil
 	}, nil)
 
 	return
@@ -2901,7 +2901,7 @@ func FindNodesAndChains[T Node](root Node, typ T, handle func(n T) bool) ([]T, [
 				ancestors = append(ancestors, utils.CopySlice(ancestorChain))
 			}
 		}
-		return Continue, nil
+		return ContinueTraversal, nil
 	}, nil)
 
 	return found, ancestors
@@ -2927,7 +2927,7 @@ func FindNodeAndChain[T Node](root Node, typ T, handle func(n T, isUnique bool) 
 				_ancestorChain = ancestorChain
 			}
 		}
-		return Continue, nil
+		return ContinueTraversal, nil
 	}, nil)
 
 	return found, _ancestorChain
@@ -3014,7 +3014,7 @@ func HasErrorAtAnyDepth(n Node) bool {
 			err = true
 			return StopTraversal, nil
 		}
-		return Continue, nil
+		return ContinueTraversal, nil
 	}, nil)
 
 	return err
@@ -3055,14 +3055,14 @@ func GetTreeView(n Node, chunk *Chunk) string {
 			buf.WriteByte('\n')
 		}
 
-		return Continue, nil
+		return ContinueTraversal, nil
 	}, func(node, parent, scopeNode Node, ancestorChain []Node, after bool) (TraversalAction, error) {
 		if !NodeIsSimpleValueLiteral(node) {
 			depth := len(ancestorChain)
 			buf.Write(bytes.Repeat([]byte{' ', ' '}, depth))
 			buf.WriteString("}\n")
 		}
-		return Continue, nil
+		return ContinueTraversal, nil
 	})
 
 	return buf.String()

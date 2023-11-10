@@ -27105,7 +27105,7 @@ func parseChunkForgetTokens(s, name string, opts ...ParserOptions) (*Chunk, erro
 			if mod, ok := node.(*EmbeddedModule); ok {
 				mod.Tokens = nil
 			}
-			return Continue, nil
+			return ContinueTraversal, nil
 		}, nil)
 	}
 	return c, err
@@ -27118,7 +27118,7 @@ func mustParseChunkForgetTokens(s string, opts ...ParserOptions) *Chunk {
 		if mod, ok := node.(*EmbeddedModule); ok {
 			mod.Tokens = nil
 		}
-		return Continue, nil
+		return ContinueTraversal, nil
 	}, nil)
 	return c
 }

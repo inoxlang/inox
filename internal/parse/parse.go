@@ -114,14 +114,14 @@ func ParseChunk2(str string, fpath string, opts ...ParserOptions) (runes []rune,
 
 			Walk(result, func(node, parent, scopeNode Node, ancestorChain []Node, _ bool) (TraversalAction, error) {
 				if reflect.ValueOf(node).IsNil() {
-					return Continue, nil
+					return ContinueTraversal, nil
 				}
 
 				nodeBase := node.Base()
 
 				parsingErr := nodeBase.Err
 				if parsingErr == nil {
-					return Continue, nil
+					return ContinueTraversal, nil
 				}
 
 				if aggregation == nil {
@@ -169,7 +169,7 @@ func ParseChunk2(str string, fpath string, opts ...ParserOptions) (runes []rune,
 
 				aggregation.Message = fmt.Sprintf("%s\n%s:%d:%d: %s", aggregation.Message, fpath, line, col, parsingErr.Message)
 				resultErr = aggregation
-				return Continue, nil
+				return ContinueTraversal, nil
 			}, nil)
 		}
 
@@ -11065,7 +11065,7 @@ func parseExpression(runes []rune, firstOnly bool) (n Node, ok bool) {
 			noError = false
 			return StopTraversal, nil
 		}
-		return Continue, nil
+		return ContinueTraversal, nil
 	}, nil)
 
 	return expr, noError && !isMissingExpr && (firstOnly || p.i >= p.len)
@@ -11405,7 +11405,7 @@ func isAllowedMatchCase(node Node) (result bool) {
 				result = false
 				return StopTraversal, nil
 			}
-			return Continue, nil
+			return ContinueTraversal, nil
 		}, nil)
 	}
 	return

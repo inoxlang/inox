@@ -64,5 +64,5 @@ func isNodeAllowedInMigrationHandler(visit visitArgs, globalsAtCreation map[stri
 	default:
 		return parse.Prune, false, nil
 	}
-	return parse.Continue, true, nil
+	return parse.ContinueTraversal, true, nil
 }

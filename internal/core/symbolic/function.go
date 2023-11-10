@@ -113,7 +113,7 @@ func (fn *InoxFunction) Test(v Value, state RecTestCallState) bool {
 			body,
 			func(node, parent, scopeNode parse.Node, ancestorChain []parse.Node, after bool) (parse.TraversalAction, error) {
 				if _, isBody := node.(*parse.Block); isBody && node == body {
-					return parse.Continue, nil
+					return parse.ContinueTraversal, nil
 				}
 
 				action, allowed, err := fn.visitCheckNode(visitArgs{node, parent, scopeNode, ancestorChain, after}, fn.capturedLocals)

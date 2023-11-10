@@ -235,7 +235,7 @@ func (chunk *ParsedChunk) GetNodeAndChainAtSpan(target NodeSpan) (foundNode Node
 			ok = true
 		}
 
-		return Continue, nil
+		return ContinueTraversal, nil
 	}, nil)
 
 	return

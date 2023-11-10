@@ -1060,7 +1060,7 @@ func TestParseRepr(t *testing.T) {
 					obj.addMessageHandlers(ctx) // add handlers before because jobs can mutate the object
 					obj.instantiateLifetimeJobs(ctx)
 				}
-				return parse.Continue, nil
+				return parse.ContinueTraversal, nil
 			}, TraversalConfiguration{MaxDepth: 10})
 
 			//check

@@ -294,7 +294,7 @@ func GetNodeColorizations(chunk *parse.Chunk, lightMode bool) []ColorizationInfo
 			// 	})
 			// }
 		}
-		return parse.Continue, nil
+		return parse.ContinueTraversal, nil
 	}, nil)
 
 	sort.Slice(colorizations, func(i, j int) bool {

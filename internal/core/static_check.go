@@ -467,7 +467,7 @@ switch_:
 		for partIndex := 0; partIndex < len(node.Values); partIndex++ {
 			if node.Values[partIndex] < 0 {
 				c.addError(n, ErrNegQuantityNotSupported.Error())
-				return parse.Continue
+				return parse.ContinueTraversal
 			}
 
 			i := 0
@@ -485,7 +485,7 @@ switch_:
 
 			if i > 0 && len(node.Units[partIndex]) == 1 {
 				c.addError(node, fmtNonSupportedUnit(node.Units[0]))
-				return parse.Continue
+				return parse.ContinueTraversal
 			}
 
 			unit := node.Units[partIndex][i:]
@@ -494,7 +494,7 @@ switch_:
 			case "x", LINE_COUNT_UNIT, RUNE_COUNT_UNIT, BYTE_COUNT_UNIT:
 				if partIndex != 0 || prevUnit != "" {
 					c.addError(node, INVALID_QUANTITY)
-					return parse.Continue
+					return parse.ContinueTraversal
 				}
 				prevUnit = unit
 			case "h", "mn", "s", "ms", "us", "ns":
@@ -517,7 +517,7 @@ switch_:
 
 				if prevUnit != "" && (prevDurationUnitValue == 0 || durationUnitValue >= prevDurationUnitValue) {
 					c.addError(node, INVALID_QUANTITY)
-					return parse.Continue
+					return parse.ContinueTraversal
 				}
 
 				prevDurationUnitValue = durationUnitValue
@@ -525,7 +525,7 @@ switch_:
 			case "%":
 				if partIndex != 0 || prevUnit != "" {
 					c.addError(node, INVALID_QUANTITY)
-					return parse.Continue
+					return parse.ContinueTraversal
 				}
 				if i == 0 {
 					prevUnit = unit
@@ -534,7 +534,7 @@ switch_:
 				fallthrough
 			default:
 				c.addError(node, fmtNonSupportedUnit(node.Units[0]))
-				return parse.Continue
+				return parse.ContinueTraversal
 			}
 		}
 
@@ -558,11 +558,11 @@ switch_:
 			}
 			switch lastUnit1[i:] {
 			case "x", BYTE_COUNT_UNIT:
-				return parse.Continue
+				return parse.ContinueTraversal
 			}
 		}
 		c.addError(node, INVALID_RATE)
-		return parse.Continue
+		return parse.ContinueTraversal
 	case *parse.URLLiteral:
 		if strings.HasPrefix(node.Value, "mem://") && utils.Must(url.Parse(node.Value)).Host != MEM_HOSTNAME {
 			c.addError(node, INVALID_MEM_HOST_ONLY_VALID_VALUE)
@@ -576,7 +576,7 @@ switch_:
 			c.addError(n, msg)
 		})
 
-		if action != parse.Continue {
+		if action != parse.ContinueTraversal {
 			return action
 		}
 
@@ -598,7 +598,7 @@ switch_:
 			c.addError(n, msg)
 		})
 
-		if action != parse.Continue {
+		if action != parse.ContinueTraversal {
 			return action
 		}
 	case *parse.ObjectPatternLiteral, *parse.RecordPatternLiteral:
@@ -663,7 +663,7 @@ switch_:
 				_, found := keys[name]
 				if found {
 					c.addError(key, fmtDuplicateKey(name))
-					return parse.Continue
+					return parse.ContinueTraversal
 				}
 				keys[name] = struct{}{}
 			}
@@ -680,7 +680,7 @@ switch_:
 			}
 		}
 
-		return parse.Continue
+		return parse.ContinueTraversal
 	case *parse.DictionaryLiteral:
 		keys := map[string]bool{}
 
@@ -792,7 +792,7 @@ switch_:
 		}
 
 		if node.Subject != nil {
-			return parse.Continue
+			return parse.ContinueTraversal
 		}
 
 		if prop, ok := parent.(*parse.ObjectProperty); !ok || !prop.HasImplicitKey() {
@@ -865,7 +865,7 @@ switch_:
 
 		if _, ok := parent.(*parse.Chunk); !ok {
 			c.addError(node, MISPLACED_INCLUSION_IMPORT_STATEMENT_TOP_LEVEL_STMT)
-			return parse.Continue
+			return parse.ContinueTraversal
 		}
 		includedChunk := c.currentModule.InclusionStatementMap[node]
 
@@ -1010,12 +1010,12 @@ switch_:
 		_, alreadyUsed := variables[name]
 		if alreadyUsed {
 			c.addError(node, fmtInvalidImportStmtAlreadyDeclaredGlobal(name))
-			return parse.Continue
+			return parse.ContinueTraversal
 		}
 		variables[name] = globalVarInfo{isConst: true}
 
 		if c.inclusionImportStatement != nil || node.Source == nil {
-			return parse.Continue
+			return parse.ContinueTraversal
 		}
 
 		var importedModuleSource WrappedString
@@ -1029,11 +1029,11 @@ switch_:
 			src, err := getSourceFromImportSource(value, c.currentModule, c.checkInput.State.Ctx)
 			if err != nil {
 				c.addError(node, fmt.Sprintf("failed to resolve location of imported module: %s", err.Error()))
-				return parse.Continue
+				return parse.ContinueTraversal
 			}
 			importedModuleSource = src
 		default:
-			return parse.Continue
+			return parse.ContinueTraversal
 		}
 
 		importedModule := c.currentModule.DirectlyImportedModules[importedModuleSource.UnderlyingString()]
@@ -1110,7 +1110,7 @@ switch_:
 			_, alreadyUsed := globalVars[name]
 			if alreadyUsed {
 				c.addError(decl, fmtInvalidConstDeclGlobalAlreadyDeclared(name))
-				return parse.Continue
+				return parse.ContinueTraversal
 			}
 			globalVars[name] = globalVarInfo{isConst: true}
 		}
@@ -1124,13 +1124,13 @@ switch_:
 
 			if _, alreadyDefined := globalVariables[name]; alreadyDefined {
 				c.addError(decl, fmtCannotShadowGlobalVariable(name))
-				return parse.Continue
+				return parse.ContinueTraversal
 			}
 
 			_, alreadyUsed := localVars[name]
 			if alreadyUsed {
 				c.addError(decl, fmtInvalidLocalVarDeclAlreadyDeclared(name))
-				return parse.Continue
+				return parse.ContinueTraversal
 			}
 			localVars[name] = localVarInfo{}
 		}
@@ -1144,13 +1144,13 @@ switch_:
 
 			if _, alreadyDefined := localVariables[name]; alreadyDefined {
 				c.addError(decl, fmtCannotShadowLocalVariable(name))
-				return parse.Continue
+				return parse.ContinueTraversal
 			}
 
 			_, alreadyUsed := globalVars[name]
 			if alreadyUsed {
 				c.addError(decl, fmtInvalidGlobalVarDeclAlreadyDeclared(name))
-				return parse.Continue
+				return parse.ContinueTraversal
 			}
 			globalVars[name] = globalVarInfo{}
 		}
@@ -1167,7 +1167,7 @@ switch_:
 					_, alreadyUsed := fns[left.Name]
 					if alreadyUsed {
 						c.addError(node, fmtInvalidGlobalVarAssignmentNameIsFuncName(left.Name))
-						return parse.Continue
+						return parse.ContinueTraversal
 					}
 				}
 
@@ -1175,7 +1175,7 @@ switch_:
 
 				if _, alreadyDefined := localVars[left.Name]; alreadyDefined {
 					c.addError(node, fmtCannotShadowLocalVariable(left.Name))
-					return parse.Continue
+					return parse.ContinueTraversal
 				}
 
 				variables := c.getModGlobalVars(closestModule)
@@ -1184,7 +1184,7 @@ switch_:
 				if alreadyDefined {
 					if varInfo.isConst {
 						c.addError(node, fmtInvalidGlobalVarAssignmentNameIsConstant(left.Name))
-						return parse.Continue
+						return parse.ContinueTraversal
 					}
 				} else {
 					if assignment.Operator != parse.Assign {
@@ -1196,14 +1196,14 @@ switch_:
 			case *parse.Variable:
 				if left.Name == "" { //$
 					c.addError(node, INVALID_ASSIGNMENT_ANONYMOUS_VAR_CANNOT_BE_ASSIGNED)
-					return parse.Continue
+					return parse.ContinueTraversal
 				}
 
 				globalVariables := c.getModGlobalVars(closestModule)
 
 				if _, alreadyDefined := globalVariables[left.Name]; alreadyDefined {
 					c.addError(node, fmtCannotShadowGlobalVariable(left.Name))
-					return parse.Continue
+					return parse.ContinueTraversal
 				}
 
 				localVars := c.getLocalVarsInScope(scopeNode)
@@ -1218,7 +1218,7 @@ switch_:
 
 				if _, alreadyDefined := globalVariables[left.Name]; alreadyDefined {
 					c.addError(node, fmtCannotShadowGlobalVariable(left.Name))
-					return parse.Continue
+					return parse.ContinueTraversal
 				}
 
 				localVars := c.getLocalVarsInScope(scopeNode)
@@ -1283,7 +1283,7 @@ switch_:
 			if _, alreadyDefined := variables[node.KeyIndexIdent.Name]; alreadyDefined &&
 				!c.shellLocalVars[node.KeyIndexIdent.Name] {
 				c.addError(node, fmtCannotShadowVariable(node.KeyIndexIdent.Name))
-				return parse.Continue
+				return parse.ContinueTraversal
 			}
 			variables[node.KeyIndexIdent.Name] = localVarInfo{}
 		}
@@ -1292,7 +1292,7 @@ switch_:
 			if _, alreadyDefined := variables[node.ValueElemIdent.Name]; alreadyDefined &&
 				!c.shellLocalVars[node.ValueElemIdent.Name] {
 				c.addError(node, fmtCannotShadowVariable(node.ValueElemIdent.Name))
-				return parse.Continue
+				return parse.ContinueTraversal
 			}
 			variables[node.ValueElemIdent.Name] = localVarInfo{}
 		}
@@ -1307,7 +1307,7 @@ switch_:
 			if _, alreadyDefined := variables[node.EntryIdent.Name]; alreadyDefined &&
 				!c.shellLocalVars[node.EntryIdent.Name] {
 				c.addError(node, fmtCannotShadowVariable(node.EntryIdent.Name))
-				return parse.Continue
+				return parse.ContinueTraversal
 			}
 			variables[node.EntryIdent.Name] = localVarInfo{}
 		}
@@ -1333,20 +1333,20 @@ switch_:
 			_, alreadyDeclared := fns[node.Name.Name]
 			if alreadyDeclared {
 				c.addError(node, fmtInvalidFnDeclAlreadyDeclared(node.Name.Name))
-				return parse.Continue
+				return parse.ContinueTraversal
 			}
 
 			_, alreadyUsed := globVars[node.Name.Name]
 			if alreadyUsed {
 				c.addError(node, fmtInvalidFnDeclGlobVarExist(node.Name.Name))
-				return parse.Continue
+				return parse.ContinueTraversal
 			}
 
 			fns[node.Name.Name] = 0
 			globVars[node.Name.Name] = globalVarInfo{isConst: true, fnExpr: node.Function}
 		default:
 			c.addError(node, INVALID_FN_DECL_SHOULD_BE_TOP_LEVEL_STMT)
-			return parse.Continue
+			return parse.ContinueTraversal
 		}
 	case *parse.FunctionExpression:
 		fnLocalVars := c.getLocalVarsInScope(node)
@@ -1371,7 +1371,7 @@ switch_:
 
 			if _, alreadyDefined := globalVariables[name]; alreadyDefined {
 				c.addError(p, fmtParameterCannotShadowGlobalVariable(name))
-				return parse.Continue
+				return parse.ContinueTraversal
 			}
 
 			fnLocalVars[name] = localVarInfo{}
@@ -1390,7 +1390,7 @@ switch_:
 
 			if _, alreadyDefined := globalVariables[name]; alreadyDefined {
 				c.addError(p, fmtParameterCannotShadowGlobalVariable(name))
-				return parse.Continue
+				return parse.ContinueTraversal
 			}
 
 			fnLocalVars[name] = localVarInfo{}
@@ -1434,7 +1434,7 @@ switch_:
 
 		if iterativeStmtIndex < 0 {
 			c.addError(node, INVALID_BREAK_OR_CONTINUE_STMT_SHOULD_BE_IN_A_FOR_OR_WALK_STMT)
-			return parse.Continue
+			return parse.ContinueTraversal
 		}
 
 		for i := iterativeStmtIndex + 1; i < len(ancestorChain); i++ {
@@ -1443,7 +1443,7 @@ switch_:
 				*parse.MatchCase, *parse.MatchStatement, *parse.Block:
 			default:
 				c.addError(node, INVALID_BREAK_OR_CONTINUE_STMT_SHOULD_BE_IN_A_FOR_OR_WALK_STMT)
-				return parse.Continue
+				return parse.ContinueTraversal
 			}
 		}
 	case *parse.PruneStatement:
@@ -1460,7 +1460,7 @@ switch_:
 
 		if walkStmtIndex < 0 {
 			c.addError(node, INVALID_PRUNE_STMT_SHOULD_BE_IN_WALK_STMT)
-			return parse.Continue
+			return parse.ContinueTraversal
 		}
 
 		for i := walkStmtIndex + 1; i < len(ancestorChain); i++ {
@@ -1468,7 +1468,7 @@ switch_:
 			case *parse.IfStatement, *parse.SwitchStatement, *parse.MatchStatement, *parse.Block, *parse.ForStatement:
 			default:
 				c.addError(node, INVALID_PRUNE_STMT_SHOULD_BE_IN_WALK_STMT)
-				return parse.Continue
+				return parse.ContinueTraversal
 			}
 		}
 	case *parse.MatchStatement:
@@ -1485,21 +1485,21 @@ switch_:
 
 		if _, alreadyDefined := c.getModGlobalVars(closestModule)[variable.Name]; alreadyDefined {
 			c.addError(variable, fmtCannotShadowGlobalVariable(variable.Name))
-			return parse.Continue
+			return parse.ContinueTraversal
 		}
 
 		localVars := c.getLocalVarsInScope(scopeNode)
 
 		if info, alreadyDefined := localVars[variable.Name]; alreadyDefined && info != (localVarInfo{isGroupMatchingVar: true}) {
 			c.addError(variable, fmtCannotShadowLocalVariable(variable.Name))
-			return parse.Continue
+			return parse.ContinueTraversal
 		}
 
 		localVars[variable.Name] = localVarInfo{isGroupMatchingVar: true}
 	case *parse.Variable:
 		if len(node.Name) > MAX_NAME_BYTE_LEN {
 			c.addError(node, fmtNameIsTooLong(node.Name))
-			return parse.Continue
+			return parse.ContinueTraversal
 		}
 
 		if node.Name == "" {
@@ -1512,7 +1512,7 @@ switch_:
 
 		if _, ok := scopeNode.(*parse.ExtendStatement); ok {
 			c.addError(node, VARS_NOT_ALLOWED_IN_EXTENDED_PATTERN_AND_EXTENSION_OBJECT_PROPERTIES)
-			return parse.Continue
+			return parse.ContinueTraversal
 		}
 
 		variables := c.getLocalVarsInScope(scopeNode)
@@ -1520,13 +1520,13 @@ switch_:
 
 		if !exist {
 			c.addError(node, fmtLocalVarIsNotDeclared(node.Name))
-			return parse.Continue
+			return parse.ContinueTraversal
 		}
 
 	case *parse.GlobalVariable:
 		if len(node.Name) > MAX_NAME_BYTE_LEN {
 			c.addError(node, fmtNameIsTooLong(node.Name))
-			return parse.Continue
+			return parse.ContinueTraversal
 		}
 
 		if _, isAssignment := parent.(*parse.Assignment); isAssignment {
@@ -1544,12 +1544,12 @@ switch_:
 
 		if _, ok := scopeNode.(*parse.ExtendStatement); ok {
 			c.addError(node, VARS_NOT_ALLOWED_IN_EXTENDED_PATTERN_AND_EXTENSION_OBJECT_PROPERTIES)
-			return parse.Continue
+			return parse.ContinueTraversal
 		}
 
 		if !exist {
 			c.addError(node, fmtGlobalVarIsNotDeclared(node.Name))
-			return parse.Continue
+			return parse.ContinueTraversal
 		}
 
 		switch scope := scopeNode.(type) {
@@ -1588,7 +1588,7 @@ switch_:
 
 		if len(node.Name) > MAX_NAME_BYTE_LEN {
 			c.addError(node, fmtNameIsTooLong(node.Name))
-			return parse.Continue
+			return parse.ContinueTraversal
 		}
 
 		if _, ok := scopeNode.(*parse.LazyExpression); ok {
@@ -1650,12 +1650,12 @@ switch_:
 
 		if _, ok := scopeNode.(*parse.ExtendStatement); ok {
 			c.addError(node, VARS_NOT_ALLOWED_IN_EXTENDED_PATTERN_AND_EXTENSION_OBJECT_PROPERTIES)
-			return parse.Continue
+			return parse.ContinueTraversal
 		}
 
 		if !c.varExists(node.Name, ancestorChain) {
 			c.addError(node, fmtVarIsNotDeclared(node.Name))
-			return parse.Continue
+			return parse.ContinueTraversal
 		}
 
 		// if the variable is a global in a function expression or in a mapping entry we capture it
@@ -1769,21 +1769,21 @@ switch_:
 				if i == 0 || !utils.Implements[*parse.LifetimejobExpression](ancestorChain[i-1]) {
 					c.addError(node, misplacementErr)
 				}
-				return parse.Continue
+				return parse.ContinueTraversal
 			case *parse.Chunk:
 				if c.currentModule != nil && c.currentModule.ModuleKind == LifetimeJobModule { // ok
-					return parse.Continue
+					return parse.ContinueTraversal
 				}
 			case *parse.ExtendStatement:
 				if isSelfExpr && node.Base().IncludedIn(a.Extension) { //ok
-					return parse.Continue
+					return parse.ContinueTraversal
 				}
 			}
 		}
 
 		if objectLiteral == nil {
 			c.addError(node, misplacementErr)
-			return parse.Continue
+			return parse.ContinueTraversal
 		}
 
 		propInfo := c.getPropertyInfo(objectLiteral)
@@ -1895,7 +1895,7 @@ switch_:
 	case *parse.ExtendStatement:
 		if _, ok := parent.(*parse.Chunk); !ok {
 			c.addError(node, MISPLACED_EXTEND_STATEMENT_TOP_LEVEL_STMT)
-			return parse.Continue
+			return parse.ContinueTraversal
 		}
 	case *parse.TestSuiteExpression:
 		hasSubsuiteStmt := false
@@ -2029,7 +2029,7 @@ switch_:
 		}
 	}
 
-	return parse.Continue
+	return parse.ContinueTraversal
 }
 
 // checkSingleNode perform post checks on a single node.
@@ -2069,7 +2069,7 @@ func (checker *checker) postCheckSingleNode(node, parent, scopeNode parse.Node, 
 			checker.setScopeLocalVars(scopeNode, varsBefore.(map[string]localVarInfo))
 		}
 	}
-	return parse.Continue
+	return parse.ContinueTraversal
 }
 
 type preinitBlockCheckParams struct {
@@ -2105,7 +2105,7 @@ func checkPreinitBlock(args preinitBlockCheckParams) {
 			return parse.Prune, nil
 		}
 
-		return parse.Continue, nil
+		return parse.ContinueTraversal, nil
 	}, nil)
 }
 
@@ -2113,7 +2113,7 @@ func checkPatternOnlyIncludedChunk(chunk *parse.Chunk, onError func(n parse.Node
 	parse.Walk(chunk, func(node, parent, scopeNode parse.Node, ancestorChain []parse.Node, after bool) (parse.TraversalAction, error) {
 
 		if node == chunk {
-			return parse.Continue, nil
+			return parse.ContinueTraversal, nil
 		}
 
 		switch n := node.(type) {
@@ -2136,7 +2136,7 @@ func checkPatternOnlyIncludedChunk(chunk *parse.Chunk, onError func(n parse.Node
 			return parse.Prune, nil
 		}
 
-		return parse.Continue, nil
+		return parse.ContinueTraversal, nil
 	}, nil)
 }
 
@@ -2175,7 +2175,7 @@ func checkManifestObject(args manifestStaticCheckArguments) {
 			}
 		}
 
-		return parse.Continue, nil
+		return parse.ContinueTraversal, nil
 	}, nil)
 
 	for _, p := range objLit.Properties {
@@ -2202,7 +2202,7 @@ func checkManifestObject(args manifestStaticCheckArguments) {
 
 			parse.Walk(dict, func(node, parent, scopeNode parse.Node, ancestorChain []parse.Node, after bool) (parse.TraversalAction, error) {
 				if node == dict {
-					return parse.Continue, nil
+					return parse.ContinueTraversal, nil
 				}
 
 				switch n := node.(type) {
@@ -2214,7 +2214,7 @@ func checkManifestObject(args manifestStaticCheckArguments) {
 					onError(n, fmtForbiddenNodeInHostResolutionSection(n))
 				}
 
-				return parse.Continue, nil
+				return parse.ContinueTraversal, nil
 			}, nil)
 
 			if !hasErrors {
@@ -2252,7 +2252,7 @@ func checkManifestObject(args manifestStaticCheckArguments) {
 
 			parse.Walk(obj, func(node, parent, scopeNode parse.Node, ancestorChain []parse.Node, after bool) (parse.TraversalAction, error) {
 				if node == obj {
-					return parse.Continue, nil
+					return parse.ContinueTraversal, nil
 				}
 
 				switch n := node.(type) {
@@ -2261,7 +2261,7 @@ func checkManifestObject(args manifestStaticCheckArguments) {
 					onError(n, fmtForbiddenNodeInLimitsSection(n))
 				}
 
-				return parse.Continue, nil
+				return parse.ContinueTraversal, nil
 			}, nil)
 		case MANIFEST_ENV_SECTION_NAME:
 
@@ -2279,7 +2279,7 @@ func checkManifestObject(args manifestStaticCheckArguments) {
 
 			parse.Walk(patt, func(node, parent, scopeNode parse.Node, ancestorChain []parse.Node, after bool) (parse.TraversalAction, error) {
 				if node == patt {
-					return parse.Continue, nil
+					return parse.ContinueTraversal, nil
 				}
 
 				switch n := node.(type) {
@@ -2289,7 +2289,7 @@ func checkManifestObject(args manifestStaticCheckArguments) {
 					onError(n, fmtForbiddenNodeInEnvSection(n))
 				}
 
-				return parse.Continue, nil
+				return parse.ContinueTraversal, nil
 			}, nil)
 		case MANIFEST_PREINIT_FILES_SECTION_NAME:
 			if args.embeddedModule {
@@ -2362,7 +2362,7 @@ func checkPermissionListingObject(objLit *parse.ObjectLiteral, onError func(n pa
 			onError(n, fmtForbiddenNodeInPermListing(n))
 		}
 
-		return parse.Continue, nil
+		return parse.ContinueTraversal, nil
 	}, nil)
 
 	for _, p := range objLit.Properties {
@@ -2482,7 +2482,7 @@ func checkPreinitFilesObject(obj *parse.ObjectLiteral, onError func(n parse.Node
 
 	parse.Walk(obj, func(node, parent, scopeNode parse.Node, ancestorChain []parse.Node, after bool) (parse.TraversalAction, error) {
 		if node == obj {
-			return parse.Continue, nil
+			return parse.ContinueTraversal, nil
 		}
 
 		switch n := node.(type) {
@@ -2494,7 +2494,7 @@ func checkPreinitFilesObject(obj *parse.ObjectLiteral, onError func(n parse.Node
 			hasForbiddenNodes = true
 		}
 
-		return parse.Continue, nil
+		return parse.ContinueTraversal, nil
 	}, nil)
 
 	if hasForbiddenNodes {
@@ -2547,7 +2547,7 @@ func checkDatabasesObject(
 
 	parse.Walk(obj, func(node, parent, scopeNode parse.Node, ancestorChain []parse.Node, after bool) (parse.TraversalAction, error) {
 		if node == obj {
-			return parse.Continue, nil
+			return parse.ContinueTraversal, nil
 		}
 
 		switch n := node.(type) {
@@ -2558,7 +2558,7 @@ func checkDatabasesObject(
 			onError(n, fmtForbiddenNodeInDatabasesSection(n))
 		}
 
-		return parse.Continue, nil
+		return parse.ContinueTraversal, nil
 	}, nil)
 
 	for _, p := range obj.Properties {
@@ -2704,7 +2704,7 @@ func checkParametersObject(objLit *parse.ObjectLiteral, onError func(n parse.Nod
 
 	parse.Walk(objLit, func(node, parent, scopeNode parse.Node, ancestorChain []parse.Node, after bool) (parse.TraversalAction, error) {
 		if node == objLit {
-			return parse.Continue, nil
+			return parse.ContinueTraversal, nil
 		}
 
 		switch n := node.(type) {
@@ -2726,7 +2726,7 @@ func checkParametersObject(objLit *parse.ObjectLiteral, onError func(n parse.Nod
 			onError(n, fmtForbiddenNodeInParametersSection(n))
 		}
 
-		return parse.Continue, nil
+		return parse.ContinueTraversal, nil
 	}, nil)
 
 	positionalParamsEnd := false
@@ -2977,13 +2977,13 @@ func shallowCheckObjectRecordProperties(
 			_, found := keys[name]
 			if found {
 				addError(key, fmtDuplicateKey(name))
-				return parse.Continue, nil
+				return parse.ContinueTraversal, nil
 			}
 			keys[name] = true
 		}
 	}
 
-	return parse.Continue, keys
+	return parse.ContinueTraversal, keys
 }
 
 // CombineParsingErrorValues combines errors into a single error with a multiline message.

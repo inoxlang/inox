@@ -48,9 +48,9 @@ func Mkdir(ctx *core.Context, dirpath core.Path, content *core.OptionalParam[*co
 			switch val.(type) {
 			case *core.List, core.Path, *core.Dictionary, core.StringLike, core.BytesLike:
 			default:
-				return parse.Continue, fmt.Errorf("invalid content description: it contains a value of type %T", val)
+				return parse.ContinueTraversal, fmt.Errorf("invalid content description: it contains a value of type %T", val)
 			}
-			return parse.Continue, nil
+			return parse.ContinueTraversal, nil
 		}
 
 		err := contentDesc.ForEachEntry(ctx, func(keyRepr string, key, v core.Serializable) error {

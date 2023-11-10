@@ -80,7 +80,7 @@ func traverse(v Value, fn traverseVisitFn, config TraversalConfiguration, visite
 	}
 
 	switch action {
-	case parse.Continue:
+	case parse.ContinueTraversal:
 		break
 	case parse.Prune:
 		return nil

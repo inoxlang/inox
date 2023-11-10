@@ -128,7 +128,7 @@ func format(chunk *parse.ParsedChunk, options defines.FormattingOptions) (result
 			}
 
 		}
-		return parse.Continue, nil
+		return parse.ContinueTraversal, nil
 	}, func(node, parent, scopeNode parse.Node, ancestorChain []parse.Node, after bool) (parse.TraversalAction, error) {
 		if doesNodeIncreaseDepth(node) {
 			depth--
@@ -154,7 +154,7 @@ func format(chunk *parse.ParsedChunk, options defines.FormattingOptions) (result
 				replaceSurroundingSpaces(token.Span, 1, 1)
 			}
 		}
-		return parse.Continue, nil
+		return parse.ContinueTraversal, nil
 	})
 
 	sort.Slice(replacements, func(i, j int) bool {

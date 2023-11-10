@@ -672,7 +672,7 @@ func GetTokens(node Node, chunk *Chunk, addMeta bool) []Token {
 				})
 			}
 
-			return Continue, nil
+			return ContinueTraversal, nil
 		case *DynamicMemberExpression:
 			i := n.Left.Base().Span.End
 
@@ -688,7 +688,7 @@ func GetTokens(node Node, chunk *Chunk, addMeta bool) []Token {
 				})
 			}
 
-			return Continue, nil
+			return ContinueTraversal, nil
 		case *IdentifierMemberExpression:
 			for _, ident := range n.PropertyNames {
 				i := ident.Base().Span.Start - 1
@@ -698,7 +698,7 @@ func GetTokens(node Node, chunk *Chunk, addMeta bool) []Token {
 					Span: NodeSpan{i, i + 1},
 				})
 			}
-			return Continue, nil
+			return ContinueTraversal, nil
 		case *URLExpression:
 
 			for i, r := range n.Raw {
@@ -716,7 +716,7 @@ func GetTokens(node Node, chunk *Chunk, addMeta bool) []Token {
 				}
 			}
 
-			return Continue, nil
+			return ContinueTraversal, nil
 		case *URLQueryParameter:
 
 			tokens = append(tokens, Token{
@@ -725,13 +725,13 @@ func GetTokens(node Node, chunk *Chunk, addMeta bool) []Token {
 				Raw:  n.Name + "=",
 			})
 
-			return Continue, nil
+			return ContinueTraversal, nil
 		case *OptionalPatternExpression:
 			tokens = append(tokens, Token{
 				Type: QUESTION_MARK,
 				Span: NodeSpan{n.Span.End - 1, n.Span.End},
 			})
-			return Continue, nil
+			return ContinueTraversal, nil
 
 		case *BooleanConversionExpression:
 			tokens = append(tokens, Token{
@@ -983,7 +983,7 @@ func GetTokens(node Node, chunk *Chunk, addMeta bool) []Token {
 				Raw:  raw,
 			})
 		}
-		return Continue, nil
+		return ContinueTraversal, nil
 	}, nil)
 
 	sort.Slice(tokens, func(i, j int) bool {
