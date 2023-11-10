@@ -250,6 +250,21 @@ Binary operations are always parenthesized:
 This [script](../examples/basic/binary-expressions.ix) contains most possible
 binary operations.
 
+### Match
+
+The binary `match` operation is a bit special because the right operand is
+parsed as a type annotation:
+
+```
+object = {a: 1}
+
+(object match {a: 1}) # the right operand is NOT an object here, it's a pattern.
+(object match %{a: 1}) # equivalent to the previous line
+
+(object match {a: int})
+(object match %{a: int}) # equivalent
+```
+
 ## Unary Operations
 
 A number negation is always parenthesized
@@ -1782,7 +1797,7 @@ dbs.main.update_schema(%{
 | **inclusions**      | new property or element                          | **value** OR **fn(prev_value) new_user**     |
 | **initializations** | initialization of a previously optional property | **value** OR **fn(prev_value) new_user**     |
 
-ℹ️ In application logic properties can be added to database objects even if they
+ℹ️ In application logic, properties can be added to database objects even if they
 are not defined in the schema.\
 During a migration previous values are passed to the handlers.
 
