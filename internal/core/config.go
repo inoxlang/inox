@@ -115,13 +115,15 @@ func UnsetDefaultMaxRequestHandlerLimits() {
 }
 
 type DefaultContextConfig struct {
-	Permissions          []Permission
-	ForbiddenPermissions []Permission
-	Limits               []Limit
-	HostResolutions      map[Host]Value
-	OwnedDatabases       []DatabaseConfig
-	ParentContext        *Context        //optional
-	ParentStdLibContext  context.Context //optional, should not be set if ParentContext is set
+	Permissions             []Permission
+	ForbiddenPermissions    []Permission
+	DoNotCheckDatabasePerms bool //used for the configuration of the created context.
+
+	Limits              []Limit
+	HostResolutions     map[Host]Value
+	OwnedDatabases      []DatabaseConfig
+	ParentContext       *Context        //optional
+	ParentStdLibContext context.Context //optional, should not be set if ParentContext is set
 
 	//if nil the parent context's filesystem is used.
 	//if there is not parent context the OS filesystem is used.

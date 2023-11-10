@@ -358,14 +358,16 @@ func NewDefaultGlobalState(ctx *core.Context, conf core.DefaultGlobalStateConfig
 func NewDefaultContext(config core.DefaultContextConfig) (*core.Context, error) {
 
 	ctxConfig := core.ContextConfig{
-		Permissions:          config.Permissions,
-		ForbiddenPermissions: config.ForbiddenPermissions,
-		Limits:               config.Limits,
-		HostResolutions:      config.HostResolutions,
-		ParentContext:        config.ParentContext,
-		ParentStdLibContext:  config.ParentStdLibContext,
-		Filesystem:           config.Filesystem,
-		OwnedDatabases:       config.OwnedDatabases,
+		Permissions:             config.Permissions,
+		ForbiddenPermissions:    config.ForbiddenPermissions,
+		DoNotCheckDatabasePerms: config.DoNotCheckDatabasePerms,
+
+		Limits:              config.Limits,
+		HostResolutions:     config.HostResolutions,
+		ParentContext:       config.ParentContext,
+		ParentStdLibContext: config.ParentStdLibContext,
+		Filesystem:          config.Filesystem,
+		OwnedDatabases:      config.OwnedDatabases,
 	}
 
 	if ctxConfig.Filesystem == nil && ctxConfig.ParentContext == nil {

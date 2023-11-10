@@ -113,9 +113,10 @@ type GracefulTearDownTaskFn func(ctx *Context) error
 type ContextDoneMicrotaskFn func(timeoutCtx context.Context) error
 
 type ContextConfig struct {
-	Kind                 ContextKind
-	Permissions          []Permission
-	ForbiddenPermissions []Permission
+	Kind                    ContextKind
+	Permissions             []Permission
+	ForbiddenPermissions    []Permission
+	DoNotCheckDatabasePerms bool
 
 	//if (cpu time limit is not present) AND (parent context has it) then the limit is inherited.
 	//The decrementation of total limit's tokens for the created context starts when the associated state is set.
@@ -152,14 +153,18 @@ func (c ContextConfig) Check() (firstErr error, ok bool) {
 		return nil, true
 	}
 
-top:
+outer_loop:
 	for _, perm := range c.Permissions {
 
 		dbPerm, ok := perm.(DatabasePermission)
 		if ok {
+			if c.DoNotCheckDatabasePerms {
+				continue outer_loop
+			}
+
 			for _, dbConfig := range c.OwnedDatabases {
 				if dbConfig.IsPermissionForThisDB(dbPerm) {
-					continue top
+					continue outer_loop
 				}
 			}
 		}

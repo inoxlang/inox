@@ -27,6 +27,7 @@ import (
 
 const (
 	MOD_PREP_LOG_SRC = "mod-prep"
+	LDB_MAIN_HOST    = Host("ldb://main")
 )
 
 var (
@@ -210,6 +211,10 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *GlobalState, mod *Mo
 
 				HttpPermission{Kind_: permkind.Read, AnyEntity: true},
 
+				DatabasePermission{Kind_: permkind.Read, Entity: LDB_MAIN_HOST},
+				DatabasePermission{Kind_: permkind.Write, Entity: LDB_MAIN_HOST},
+				DatabasePermission{Kind_: permkind.Delete, Entity: LDB_MAIN_HOST},
+
 				LThreadPermission{Kind_: permkind.Create},
 			)
 		}
@@ -230,7 +235,9 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *GlobalState, mod *Mo
 	var ctxErr error
 
 	ctx, ctxErr = NewDefaultContext(DefaultContextConfig{
-		Permissions:         append(slices.Clone(manifest.RequiredPermissions), args.AdditionalPermissions...),
+		Permissions:             append(slices.Clone(manifest.RequiredPermissions), args.AdditionalPermissions...),
+		DoNotCheckDatabasePerms: args.EnableTesting,
+
 		Limits:              limits,
 		HostResolutions:     manifest.HostResolutions,
 		ParentContext:       parentContext,
