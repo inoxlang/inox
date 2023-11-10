@@ -6,11 +6,11 @@ manifest {}
 pattern json_list = @ %str( '[' (%json_val ",")* ']')
 pattern json_val = @ %str( (| %json_list | '1' ))
 
-print "[] match %json_val:" ("[]" match %json_val)
-print "[1,] match %json_val:" ("[1,]" match %json_val)
-print "[[],] match %json_val:" ("[[],]" match %json_val)
-print "[[1,],] match %json_val:" ("[[1,],]" match %json_val)
-print "[[1,[],],] match %json_val:" ("[[1,[],],]" match %json_val)
+print "[] match json_val:" ("[]" match json_val)
+print "[1,] match json_val:" ("[1,]" match json_val)
+print "[[],] match json_val:" ("[[],]" match json_val)
+print "[[1,],] match json_val:" ("[[1,],]" match json_val)
+print "[[1,[],],] match json_val:" ("[[1,[],],]" match json_val)
 
-print "[ match %json_val:" ("[" match %json_val)
-print "[1, match %json_val:" ("[1," match %json_val)
+print "[ match json_val:" ("[" match json_val)
+print "[1, match json_val:" ("[1," match json_val)

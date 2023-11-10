@@ -2,5 +2,5 @@ manifest {}
 
 pattern s = "s"
 
-print (nil match %s?)
-print ("s" match %s?)
+print (nil match s?)
+print ("s" match s?)

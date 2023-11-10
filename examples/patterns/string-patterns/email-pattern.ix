@@ -6,5 +6,5 @@ pattern domain = %str( %domain-w+ ('.' %domain-w+)+ )
 
 pattern email-address = %str( %email-username '@' %domain )
 
-print ("a@mail.com" match %email-address)
-print ("a@" match %email-address)
+print ("a@mail.com" match email-address)
+print ("a@" match email-address)
