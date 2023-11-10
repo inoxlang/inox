@@ -1889,6 +1889,7 @@ Tests are allowed in any Inox file but it is recommended to write them in
 the following permissions by default in test mode:
 
 - **read, write, delete all files**
+- **read, write, delete all values in the ldb://main database**
 - **read any http(s) resource**
 - **create lightweight threads (always required for testing)**
 
@@ -2036,12 +2037,12 @@ testsuite({
     }
 }) {
     testcase "user creation" {
-        assert http.post(https://localhost:8080/users, {
+        http.post!(https://localhost:8080/users, {
             name: "new user"
         })
 
         db = __test.program.dbs.main
-        users = List(db.users)
+        users = get_at_most(10, db.users)
 
         assert (len(users) == 1)
         assert (users[0].name == "new user")
