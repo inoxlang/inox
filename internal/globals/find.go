@@ -81,5 +81,11 @@ func _find(ctx *core.Context, pattern core.Pattern, location core.Value) (*core.
 }
 
 func _symbolic_find(ctx *symbolic.Context, patt symbolic.Pattern, location symbolic.Value) (*symbolic.List, *symbolic.Error) {
-	return symbolic.NewListOf(patt.SymbolicValue().(symbolic.Serializable)), nil
+	serializable, ok := symbolic.AsSerializable(patt.SymbolicValue()).(symbolic.Serializable)
+	if !ok {
+		ctx.AddSymbolicGoFunctionError("values matching the pattern should be serializable")
+		serializable = symbolic.ANY_SERIALIZABLE
+	}
+
+	return symbolic.NewListOf(serializable), nil
 }
