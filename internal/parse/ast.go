@@ -79,10 +79,12 @@ type GroupPatternLiteral interface {
 }
 
 var _ = []SimpleValueLiteral{
-	&QuotedStringLiteral{}, &UnquotedStringLiteral{}, &MultilineStringLiteral{}, &IdentifierLiteral{}, &UnambiguousIdentifierLiteral{}, &IntLiteral{}, &FloatLiteral{},
-	&AbsolutePathLiteral{}, &RelativePathLiteral{}, &AbsolutePathPatternLiteral{}, &RelativePathPatternLiteral{}, &FlagLiteral{},
-	&NamedSegmentPathPatternLiteral{}, &RegularExpressionLiteral{}, &BooleanLiteral{}, &NilLiteral{}, &HostLiteral{}, &HostPatternLiteral{},
-	&EmailAddressLiteral{}, &URLLiteral{}, &URLPatternLiteral{}, &PortLiteral{},
+	(*QuotedStringLiteral)(nil), (*UnquotedStringLiteral)(nil), (*MultilineStringLiteral)(nil), (*IdentifierLiteral)(nil),
+	(*UnambiguousIdentifierLiteral)(nil), (*IntLiteral)(nil), (*FloatLiteral)(nil),
+	(*AbsolutePathLiteral)(nil), (*RelativePathLiteral)(nil), (*AbsolutePathPatternLiteral)(nil), (*RelativePathPatternLiteral)(nil),
+	(*NamedSegmentPathPatternLiteral)(nil), (*RegularExpressionLiteral)(nil), (*BooleanLiteral)(nil), (*NilLiteral)(nil),
+	(*HostLiteral)(nil), (*HostPatternLiteral)(nil), (*URLLiteral)(nil), (*URLPatternLiteral)(nil), (*PortLiteral)(nil),
+	(*EmailAddressLiteral)(nil), (*FlagLiteral)(nil),
 }
 
 var _ = []IIdentifierLiteral{UnambiguousIdentifierLiteral{}, IdentifierLiteral{}}

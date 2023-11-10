@@ -9809,7 +9809,7 @@ top_loop:
 					goto parse_block
 				}
 
-				if isMatchStmt && !hasStaticallyKnownValue(valueNode) {
+				if isMatchStmt && !isAllowedMatchCase(valueNode) {
 					matchCase.Err = &ParsingError{UnspecifiedParsingError, INVALID_MATCH_CASE_VALUE_EXPLANATION}
 				} else if !isMatchStmt && !NodeIsSimpleValueLiteral(valueNode) {
 					switchCase.Err = &ParsingError{UnspecifiedParsingError, INVALID_SWITCH_CASE_VALUE_EXPLANATION}
@@ -11357,23 +11357,45 @@ func GetNameIfVariable(node Node) (string, bool) {
 	}
 }
 
-func hasStaticallyKnownValue(node Node) (result bool) {
-
-	result = true
-
-	Walk(node, func(node, parent, scopeNode Node, ancestorChain []Node, _ bool) (TraversalAction, error) {
-		switch node.(type) {
-		case *NamedSegmentPathPatternLiteral:
-			return Prune, nil
-		case *GlobalVariable, *Variable, *AtHostLiteral, *CallExpression, *IndexExpression, *MemberExpression,
-			*SliceExpression, *AbsolutePathExpression, *IfStatement, *ForStatement, *SwitchStatement, *MatchStatement, *Assignment,
-			*MultiAssignment, *ImportStatement, *BreakStatement, *ContinueStatement, *ReturnStatement, *FunctionExpression:
-			result = false
-			return StopTraversal, nil
+func isAllowedMatchCase(node Node) (result bool) {
+	isAllowedMatchCaseNode := func(node Node) bool {
+		if NodeIsPattern(node) {
+			return true
 		}
-		return Continue, nil
-	}, nil)
 
+		switch node.(type) {
+		case SimpleValueLiteral, *IntegerRangeLiteral, *FloatRangeLiteral, *NamedSegmentPathPatternLiteral:
+			return true
+		case *ObjectLiteral, *ObjectProperty, *RecordLiteral, *ListLiteral, *TupleLiteral:
+			return true
+		case *ObjectPatternProperty, *PatternPieceElement:
+			return true
+		}
+		return false
+	}
+
+	if !isAllowedMatchCaseNode(node) {
+		return false
+	}
+
+	if NodeIsPattern(node) {
+		return true
+	}
+
+	switch node.(type) {
+	case SimpleValueLiteral, *IntegerRangeLiteral, *FloatRangeLiteral, *NamedSegmentPathPatternLiteral:
+		return true
+	case *ObjectLiteral, *ObjectProperty, *RecordLiteral, *ListLiteral, *TupleLiteral,
+		*ObjectPatternLiteral, *RecordPatternLiteral, *ListPatternLiteral, *TuplePatternLiteral:
+		result = true
+		Walk(node, func(node, parent, scopeNode Node, ancestorChain []Node, _ bool) (TraversalAction, error) {
+			if !isAllowedMatchCaseNode(node) {
+				result = false
+				return StopTraversal, nil
+			}
+			return Continue, nil
+		}, nil)
+	}
 	return
 }
 
