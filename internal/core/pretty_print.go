@@ -62,17 +62,22 @@ func GetFullColorSequence(color termenv.Color, bg bool) []byte {
 
 // Stringify calls PrettyPrint on the passed value
 func Stringify(v Value, ctx *Context) string {
-	buff := &bytes.Buffer{}
-	w := bufio.NewWriterSize(buff, PRETTY_PRINT_BUFF_WRITER_SIZE)
-
-	err := PrettyPrint(v, w, &PrettyPrintConfig{
+	return StringifyWithConfig(v, &PrettyPrintConfig{
 		PrettyPrintConfig: pprint.PrettyPrintConfig{
 			MaxDepth: 7,
 			Colorize: false,
 			Compact:  true,
 		},
 		Context: ctx,
-	}, 0, 0)
+	})
+}
+
+// Stringify calls PrettyPrint on the passed value
+func StringifyWithConfig(v Value, config *PrettyPrintConfig) string {
+	buff := &bytes.Buffer{}
+	w := bufio.NewWriterSize(buff, PRETTY_PRINT_BUFF_WRITER_SIZE)
+
+	err := PrettyPrint(v, w, config, 0, 0)
 
 	if err != nil {
 		panic(fmt.Errorf("failed to stringify value of type %T: %w", v, err))
