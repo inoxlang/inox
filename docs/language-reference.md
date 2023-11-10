@@ -235,6 +235,8 @@ Binary operations are always parenthesized:
 - floating point comparison: `(1.0 < 2.5)`
 - deep equality: `({a: 1} == {a: 1})`
 - logical operations: `(a or b)`, `(a and b)`
+- exclusive-end range: `(0 ..< 2)`
+- inclusive-end range: `(0 .. 2)`
 
 ℹ️ Parentheses can be omitted around operands of **or**/**and** chains:
 
@@ -252,8 +254,8 @@ binary operations.
 
 ### Match
 
-The binary `match` operation is a bit special because the right operand is
-parsed as a type annotation:
+The binary **match** operation returns true if the value on the left matches the
+pattern on the right. The pattern does not require a `%` prefix.
 
 ```
 object = {a: 1}
@@ -267,11 +269,18 @@ object = {a: 1}
 
 ## Unary Operations
 
-A number negation is always parenthesized
+A number negation is always parenthesized. Integers and floats that are
+immediately preceded by a '-' sign are parsed as literals.
 
 ```
-(- 1.0)
-(- 1)
+# -1 and -1.0 are literals because is no space between the minus sign and the first digit.
+int = -1        
+float = -1.0
+
+(- int)     # integer negation: 1
+(- float)   # float negation: 1.0
+(- 1.0)     # float negation
+(- 1)       # integer negation
 ```
 
 Boolean negation:
@@ -717,6 +726,40 @@ a 1
 b 2
 ```
 
+```
+list = ["a", "b", "c"]
+for i in (0 ..< len(list)) {
+    print(i, list[i])
+}
+
+output:
+0 "a"
+1 "b"
+2 "c"
+```
+
+```
+for i in (0 .. 2) {
+    print(i)
+}
+
+output:
+0
+1
+2
+```
+
+```
+for (0 .. 2) {
+    print("x")
+}
+
+output:
+x
+x
+x
+```
+
 <details>
 <summary>Advanced use</summary>
 
@@ -936,8 +979,20 @@ g"string" # equivalent to g("a")
 
 # Patterns
 
-Besides the pattern [literals](#literals) there are other kinds of patterns in
-Inox.
+In Inox a pattern is a **runtime value** that match values of a given kind and
+shape.\
+Besides the pattern [literals](#literals), there are other kinds of patterns in
+Inox such as object patterns `%{a: int}`.\
+Even though patterns are created at runtime, they can act as types:
+
+```
+pattern small_int = int(0..10)
+
+# small_int is created at runtime but it can be used in type annotations:
+var n small_int = 0
+```
+
+ℹ️ In summary you will mostly define **patterns**, not types.
 
 ## Named Patterns
 
