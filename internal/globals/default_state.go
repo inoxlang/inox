@@ -260,15 +260,16 @@ func NewDefaultGlobalState(ctx *core.Context, conf core.DefaultGlobalStateConfig
 		globalnames.RINGBUFFER_FN:    core.ValOf(core.NewRingBuffer),
 
 		// functional
-		globalnames.IDENTITY_FN: core.WrapGoFunction(_idt),
-		globalnames.MAP_FN:      core.WrapGoFunction(core.Map),
-		globalnames.FILTER_FN:   core.WrapGoFunction(core.Filter),
-		globalnames.SOME_FN:     core.WrapGoFunction(core.Some),
-		globalnames.ALL_FN:      core.WrapGoFunction(core.All),
-		globalnames.NONE_FN:     core.WrapGoFunction(core.None),
-		globalnames.REPLACE_FN:  core.WrapGoFunction(_replace),
-		globalnames.FIND_FN:     core.WrapGoFunction(_find),
-		globalnames.SORT_FN:     core.WrapGoFunction(core.Sort),
+		globalnames.IDENTITY_FN:    core.WrapGoFunction(_idt),
+		globalnames.MAP_FN:         core.WrapGoFunction(core.Map),
+		globalnames.FILTER_FN:      core.WrapGoFunction(core.Filter),
+		globalnames.GET_AT_MOST_FN: core.WrapGoFunction(core.GetAtMost),
+		globalnames.SOME_FN:        core.WrapGoFunction(core.Some),
+		globalnames.ALL_FN:         core.WrapGoFunction(core.All),
+		globalnames.NONE_FN:        core.WrapGoFunction(core.None),
+		globalnames.REPLACE_FN:     core.WrapGoFunction(_replace),
+		globalnames.FIND_FN:        core.WrapGoFunction(_find),
+		globalnames.SORT_FN:        core.WrapGoFunction(core.Sort),
 
 		// concurrency & execution
 		globalnames.LTHREADGROUP_FN: core.ValOf(core.NewLThreadGroup),

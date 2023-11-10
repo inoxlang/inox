@@ -56,6 +56,8 @@ type Iterator interface {
 	Next(*Context) bool
 	Key(*Context) Value
 	Value(*Context) Value
+
+	//TODO: Close(*Context)
 }
 
 type KeyFilteredIterator struct {

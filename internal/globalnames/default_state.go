@@ -99,15 +99,16 @@ const (
 	RINGBUFFER_FN    = "RingBugger"
 
 	// functional
-	IDENTITY_FN = "idt"
-	MAP_FN      = "map"
-	FILTER_FN   = "filter"
-	SOME_FN     = "some"
-	ALL_FN      = "all"
-	NONE_FN     = "none"
-	REPLACE_FN  = "replace"
-	FIND_FN     = "find"
-	SORT_FN     = "sort"
+	IDENTITY_FN    = "idt"
+	MAP_FN         = "map"
+	FILTER_FN      = "filter"
+	GET_AT_MOST_FN = "get_at_most"
+	SOME_FN        = "some"
+	ALL_FN         = "all"
+	NONE_FN        = "none"
+	REPLACE_FN     = "replace"
+	FIND_FN        = "find"
+	SORT_FN        = "sort"
 
 	// concurrency & execution
 	LTHREADGROUP_FN = "LThreadGroup"
