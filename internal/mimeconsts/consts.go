@@ -11,6 +11,7 @@ const (
 	HTML_CTYPE             = "text/html"
 	CSS_CTYPE              = "text/css"
 	JS_CTYPE               = "text/javascript" //https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types#textjavascript
+	INOX_CTYPE             = "text/inox"
 	PLAIN_TEXT_CTYPE       = "text/plain"
 	EVENT_STREAM_CTYPE     = "text/event-stream"
 	APP_OCTET_STREAM_CTYPE = "application/octet-stream"
@@ -23,6 +24,7 @@ var FILE_EXTENSION_TO_MIMETYPE = map[string]string{
 	".yml":  APP_YAML_CTYPE,
 	".css":  CSS_CTYPE,
 	".js":   JS_CTYPE,
+	".ix":   INOX_CTYPE,
 	".html": HTML_CTYPE,
 	".htm":  HTML_CTYPE,
 	".txt":  PLAIN_TEXT_CTYPE,
