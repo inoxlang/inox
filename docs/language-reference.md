@@ -527,7 +527,7 @@ record = #{
 }
 
 record = #{
-    a: {  } # error ! an object is mutable, it's not a valid property value for a record
+    a: {  } # error ! an object is mutable, it's not a valid property value for a record.
 }
 ```
 
@@ -544,7 +544,7 @@ Tuples are the immutable equivalent of lists.
 ```
 tuple = #[1, #[2, 3]]
 
-tuple = #[1, [2, 3]] # error ! a list is mutable, it's not a valid element for a tuple
+tuple = #[1, [2, 3]] # error ! a list is mutable, it's not a valid element for a tuple.
 ```
 
 </details>
@@ -581,7 +581,7 @@ udata "root" {
 
 <!-- TODO: add explanation about static key entries, ... -->
 
-A mapping maps keys and pattern of keys to values
+A mapping maps keys and key patterns to values:
 
 ```
 mapping = Mapping {
@@ -881,7 +881,7 @@ map [{value: "a"}, {value: 1}] .value | filter $ %int
   - `$` is an anonymous variable that contains the result of the previous call
   - `%int` is a pattern matching integers
 
-Pipe expressions allows you to store the final result in a variable:
+Pipe expressions allow you to store the final result in a variable:
 
 ```
 ints = | map [{value: "a"}, {value: 1}] .value | filter $ %int
@@ -984,7 +984,7 @@ g"string" # equivalent to g("a")
 
 # Patterns
 
-In Inox a pattern is a **runtime value** that match values of a given kind and
+In Inox a pattern is a **runtime value** that matches values of a given kind and
 shape.\
 Besides the pattern [literals](#literals), there are other kinds of patterns in
 Inox such as object patterns `%{a: int}`.\
@@ -1019,8 +1019,8 @@ pattern user = {
 
 ⚠️ Named patterns cannot be reassigned.
 
-Some named patterns are callable, for example if you want a pattern that matches
-all integers in the range 0..10 you can do the following:
+Some named patterns are callable. For example if you want a pattern that matches
+all integers in the range 0..10, you can do the following:
 
 ```
 pattern zero-to-ten = int(0..10)
