@@ -307,12 +307,65 @@ func TestSymbolicQuantityRange(t *testing.T) {
 func TestSymbolicIntRange(t *testing.T) {
 
 	t.Run("Test()", func(t *testing.T) {
-		intRange := &IntRange{}
+		anyIntRange := &IntRange{}
+		intRange1_2 := NewIncludedEndIntRange(INT_1, INT_2)
+		intRange1_2UnsupportedStep := NewIncludedEndIntRange(INT_1, INT_2)
+		intRange1_2UnsupportedStep.isStepNotOne = true
+		intRangeExclusiveEnd1_2 := NewExcludedEndIntRange(INT_1, INT_2)
 
-		assertTest(t, intRange, intRange)
-		assertTest(t, intRange, &IntRange{})
-		assertTestFalse(t, intRange, &String{})
-		assertTestFalse(t, intRange, &Int{})
+		assertTest(t, anyIntRange, anyIntRange)
+		assertTest(t, anyIntRange, &IntRange{})
+		assertTest(t, anyIntRange, intRange1_2)
+		assertTest(t, anyIntRange, intRange1_2UnsupportedStep)
+		assertTest(t, anyIntRange, intRangeExclusiveEnd1_2)
+		assertTestFalse(t, anyIntRange, ANY_STR)
+		assertTestFalse(t, anyIntRange, ANY_INT)
+
+		//check intRange1_2
+		assertTest(t, intRange1_2, intRange1_2)
+		assertTestFalse(t, intRange1_2, anyIntRange)
+		assertTestFalse(t, intRange1_2, intRangeExclusiveEnd1_2)
+		assertTestFalse(t, intRange1_2, intRange1_2UnsupportedStep)
+		assertTestFalse(t, intRange1_2, ANY_INT)
+
+		//check intRange1_2UnsupportedStep
+		assertTest(t, intRange1_2UnsupportedStep, intRange1_2UnsupportedStep)
+		assertTestFalse(t, intRange1_2UnsupportedStep, anyIntRange)
+		assertTestFalse(t, intRange1_2UnsupportedStep, intRangeExclusiveEnd1_2)
+		assertTestFalse(t, intRange1_2UnsupportedStep, intRange1_2)
+		assertTestFalse(t, intRange1_2UnsupportedStep, ANY_INT)
+
+		//check intRangeExclusiveEnd1_2
+		assertTest(t, intRangeExclusiveEnd1_2, intRangeExclusiveEnd1_2)
+		assertTestFalse(t, intRangeExclusiveEnd1_2, anyIntRange)
+		assertTestFalse(t, intRangeExclusiveEnd1_2, intRange1_2)
+		assertTestFalse(t, intRangeExclusiveEnd1_2, intRange1_2UnsupportedStep)
+		assertTestFalse(t, intRangeExclusiveEnd1_2, ANY_INT)
+	})
+
+	t.Run("Contains()", func(t *testing.T) {
+		anyIntRange := &IntRange{}
+		assertMayContain(t, anyIntRange, INT_0)
+		assertMayContain(t, anyIntRange, INT_1)
+
+		intRange1_2 := NewIncludedEndIntRange(INT_1, INT_2)
+		assertContains(t, intRange1_2, INT_1)
+		assertContains(t, intRange1_2, INT_2)
+		assertCannotPossiblyContain(t, intRange1_2, INT_0)
+		assertCannotPossiblyContain(t, intRange1_2, INT_3)
+
+		intRange1_2ExcludedEnd := NewExcludedEndIntRange(INT_1, INT_2)
+		assertContains(t, intRange1_2ExcludedEnd, INT_1)
+		assertCannotPossiblyContain(t, intRange1_2ExcludedEnd, INT_0)
+		assertCannotPossiblyContain(t, intRange1_2ExcludedEnd, INT_2)
+		assertCannotPossiblyContain(t, intRange1_2ExcludedEnd, INT_3)
+
+		intRangeUnsupportedStep := NewIncludedEndIntRange(INT_1, INT_2)
+		intRangeUnsupportedStep.isStepNotOne = true
+		assertMayContain(t, intRangeUnsupportedStep, INT_1)
+		assertMayContain(t, intRangeUnsupportedStep, INT_2)
+		assertCannotPossiblyContain(t, intRange1_2, INT_0)
+		assertCannotPossiblyContain(t, intRange1_2, INT_3)
 	})
 
 }

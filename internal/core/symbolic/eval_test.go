@@ -146,11 +146,21 @@ func TestSymbolicEval(t *testing.T) {
 	})
 
 	t.Run("integer range literal", func(t *testing.T) {
-		n, state := MakeTestStateAndChunk("1..2")
-		res, err := symbolicEval(n, state)
-		assert.NoError(t, err)
-		assert.Empty(t, state.errors())
-		assert.Equal(t, ANY_INT_RANGE, res)
+		t.Run("", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk("1..2")
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, NewIncludedEndIntRange(INT_1, INT_2), res)
+		})
+
+		t.Run("no upper bound", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk("1..")
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, NewIncludedEndIntRange(INT_1, MAX_INT), res)
+		})
 	})
 
 	t.Run("float range literal", func(t *testing.T) {
@@ -2747,8 +2757,8 @@ func TestSymbolicEval(t *testing.T) {
 				result Value
 				err    bool
 			}{
-				{"(1 .. 2)", ANY_INT_RANGE, false},
-				{"(1 ..< 2)", ANY_INT_RANGE, false},
+				{"(1 .. 2)", NewIncludedEndIntRange(INT_1, INT_2), false},
+				{"(1 ..< 2)", NewExcludedEndIntRange(INT_1, INT_2), false},
 				{"(1.0 .. 2.0)", ANY_FLOAT_RANGE, false},
 				{"(1.0 ..< 2.0)", ANY_FLOAT_RANGE, false},
 				{"(1B .. 2B)", &QuantityRange{element: ANY_BYTECOUNT}, false},

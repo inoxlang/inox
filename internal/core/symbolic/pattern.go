@@ -3104,6 +3104,8 @@ type IntRangePattern struct {
 	NotCallablePatternMixin
 	UnassignablePropsMixin
 	SerializableMixin
+
+	intRange *IntRange
 }
 
 func (p *IntRangePattern) Test(v Value, state RecTestCallState) bool {

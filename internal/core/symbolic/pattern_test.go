@@ -3222,3 +3222,27 @@ func assertTestFalse(t *testing.T, a, b Value) bool {
 	t.Helper()
 	return assert.False(t, a.Test(b, RecTestCallState{}))
 }
+
+func assertContains(t *testing.T, a Container, b Serializable) bool {
+	t.Helper()
+	yes, possible := a.Contains(b)
+
+	if !assert.True(t, possible) {
+		return false
+	}
+	return assert.True(t, yes)
+}
+
+func assertCannotPossiblyContain(t *testing.T, a Container, b Serializable) bool {
+	t.Helper()
+	_, possible := a.Contains(b)
+
+	return assert.False(t, possible)
+}
+
+func assertMayContain(t *testing.T, a Container, b Serializable) bool {
+	t.Helper()
+	_, possible := a.Contains(b)
+
+	return assert.True(t, possible)
+}

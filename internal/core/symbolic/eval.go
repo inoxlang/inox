@@ -3158,13 +3158,22 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 			}
 			return ANY_BOOL, nil
 		case parse.Range, parse.ExclEndRange:
-			switch left.(type) {
+			switch left := left.(type) {
 			case *Int:
 				if !ANY_INT.Test(right, RecTestCallState{}) {
 					msg := fmtRightOperandOfBinaryShouldBeLikeLeftOperand(n.Operator, Stringify(left), Stringify(ANY_INT))
 					state.addError(makeSymbolicEvalError(n.Right, state, msg))
+					return ANY_INT_RANGE, nil
 				}
-				return ANY_INT_RANGE, nil
+
+				rightInt := right.(*Int)
+
+				return &IntRange{
+					hasValue:     true,
+					inclusiveEnd: n.Operator == parse.Range,
+					start:        left,
+					end:          rightInt,
+				}, nil
 			case *Float:
 				if !ANY_FLOAT.Test(right, RecTestCallState{}) {
 					msg := fmtRightOperandOfBinaryShouldBeLikeLeftOperand(n.Operator, Stringify(left), Stringify(ANY_FLOAT))
@@ -3250,7 +3259,29 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 			return ANY_QUANTITY_RANGE, nil
 		}
 	case *parse.IntegerRangeLiteral:
-		return ANY_INT_RANGE, nil
+		if n.LowerBound == nil || n.LowerBound.Err != nil {
+			return ANY_INT_RANGE, nil
+		}
+
+		if n.UpperBound != nil && n.UpperBound.Base().Err != nil {
+			return ANY_INT_RANGE, nil
+		}
+
+		lowerBound := NewInt(n.LowerBound.Value)
+		upperBound := MAX_INT
+
+		intLit, ok := n.UpperBound.(*parse.IntLiteral)
+
+		if ok {
+			upperBound = NewInt(intLit.Value)
+		}
+
+		return &IntRange{
+			hasValue:     true,
+			start:        lowerBound,
+			end:          upperBound,
+			inclusiveEnd: true,
+		}, nil
 	case *parse.FloatRangeLiteral:
 		return ANY_FLOAT_RANGE, nil
 	case *parse.QuantityRangeLiteral:

@@ -1,6 +1,7 @@
 package symbolic
 
 import (
+	"math"
 	"strconv"
 
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
@@ -11,9 +12,15 @@ var (
 	ANY_INTEGRAL = &AnyIntegral{}
 	ANY_INT      = &Int{}
 	ANY_FLOAT    = &Float{}
-	INT_1        = NewInt(1)
-	INT_2        = NewInt(2)
-	INT_1_OR_2   = NewMultivalue(INT_1, INT_2)
+
+	INT_0      = NewInt(0)
+	INT_1      = NewInt(1)
+	INT_2      = NewInt(2)
+	INT_3      = NewInt(3)
+	INT_1_OR_2 = NewMultivalue(INT_1, INT_2)
+
+	MAX_INT   = NewInt(math.MaxInt64)
+	MAX_FLOAT = NewFloat(math.MaxFloat64)
 )
 
 type Integral interface {

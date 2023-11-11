@@ -1086,7 +1086,16 @@ func (r QuantityRange) ToSymbolicValue(ctx *Context, encountered map[uintptr]sym
 }
 
 func (r IntRange) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
-	return symbolic.ANY_INT_RANGE, nil
+	if r.unknownStart {
+		return symbolic.ANY_INT_RANGE, nil
+	}
+
+	return symbolic.NewIntRange(
+		symbolic.NewInt(r.Start),
+		symbolic.NewInt(r.End),
+		r.inclusiveEnd,
+		r.Step != 1,
+	), nil
 }
 
 func (r FloatRange) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {

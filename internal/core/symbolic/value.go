@@ -931,16 +931,65 @@ func (r *QuantityRange) WidestOfType() Value {
 
 // An IntRange represents a symbolic IntRange.
 type IntRange struct {
-	_ int
 	SerializableMixin
+	hasValue bool
+
+	//fields set if .hasValue is true
+
+	inclusiveEnd bool
+	start        *Int
+	end          *Int
+	isStepNotOne bool //only symbolic int ranges with a step of 1 are fully supported
+}
+
+func NewIncludedEndIntRange(start, end *Int) *IntRange {
+	return &IntRange{
+		hasValue:     true,
+		inclusiveEnd: true,
+		start:        start,
+		end:          end,
+	}
+}
+
+func NewExcludedEndIntRange(start, end *Int) *IntRange {
+	return &IntRange{
+		hasValue:     true,
+		inclusiveEnd: false,
+		start:        start,
+		end:          end,
+	}
+}
+
+func NewIntRange(start, end *Int, inclusiveEnd, isStepNotOne bool) *IntRange {
+	return &IntRange{
+		hasValue:     true,
+		inclusiveEnd: inclusiveEnd,
+		isStepNotOne: isStepNotOne,
+		start:        start,
+		end:          end,
+	}
 }
 
 func (r *IntRange) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
-	_, ok := v.(*IntRange)
-	return ok
+	otherRange, ok := v.(*IntRange)
+	if !ok {
+		return false
+	}
+
+	if !r.hasValue {
+		return true
+	}
+	if !otherRange.hasValue {
+		return false
+	} //else boh ranges have a value
+
+	return r.isStepNotOne == otherRange.isStepNotOne &&
+		r.start == otherRange.start &&
+		r.end == otherRange.end &&
+		r.inclusiveEnd == otherRange.inclusiveEnd
 }
 
 func (r *IntRange) Static() Pattern {
@@ -963,12 +1012,30 @@ func (*IntRange) elementAt(i int) Value {
 	return ANY_INT
 }
 
-func (r *IntRange) Contains(value Serializable) (bool, bool) {
-	if _, ok := value.(*Int); ok {
+func (r *IntRange) InclusiveEnd() int64 {
+	if r.inclusiveEnd {
+		return r.end.value
+	}
+	return r.end.value - 1
+}
+
+func (r *IntRange) Contains(value Serializable) (yes bool, possible bool) {
+	int, ok := value.(*Int)
+	if !ok {
+		return false, false
+	}
+
+	if !r.hasValue || !int.hasValue {
 		return false, true
 	}
 
-	return false, false
+	contained := int.value >= r.start.value && int.value <= r.InclusiveEnd()
+
+	if contained && r.isStepNotOne {
+		return false, true
+	}
+
+	return contained, contained
 }
 
 func (r *IntRange) HasKnownLen() bool {
