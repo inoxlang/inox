@@ -378,31 +378,31 @@ func convertJsonSchemaToPattern(schema *jsonschema.Schema, baseSchema *jsonschem
 	} else if allowInteger {
 		hasRange := false
 		intRange := IntRange{
-			Start:        math.MinInt64,
-			End:          math.MaxInt64,
+			start:        math.MinInt64,
+			end:          math.MaxInt64,
 			inclusiveEnd: true,
-			Step:         1,
+			step:         1,
 		}
 
 		if schema.Minimum != nil {
 			min, _ := schema.Minimum.Float64()
-			intRange.Start = int64(math.Floor(min))
+			intRange.start = int64(math.Floor(min))
 			hasRange = true
 		} else if schema.ExclusiveMinimum != nil {
 			exclusiveMinimum, _ := schema.Minimum.Float64()
 			min := math.Nextafter(exclusiveMinimum, math.Inf(1))
-			intRange.Start = int64(math.Floor(min))
+			intRange.start = int64(math.Floor(min))
 			hasRange = true
 		}
 
 		if schema.Maximum != nil {
 			exclusiveMax, _ := schema.Maximum.Float64()
 			intRange.inclusiveEnd = true
-			intRange.End = int64(math.Ceil(exclusiveMax))
+			intRange.end = int64(math.Ceil(exclusiveMax))
 			hasRange = true
 		} else if schema.ExclusiveMaximum != nil {
 			max, _ := schema.Maximum.Float64()
-			intRange.End = int64(math.Ceil(max))
+			intRange.end = int64(math.Ceil(max))
 			hasRange = true
 		}
 
@@ -444,22 +444,22 @@ func convertJsonSchemaToPattern(schema *jsonschema.Schema, baseSchema *jsonschem
 		var hasLengthRange bool
 
 		if schema.MinLength != -1 {
-			lengthRange.Start = int64(schema.MinLength)
+			lengthRange.start = int64(schema.MinLength)
 			hasLengthRange = true
 
 			if schema.MaxLength == -1 {
-				lengthRange.End = math.MaxInt64
+				lengthRange.end = math.MaxInt64
 				lengthRange.inclusiveEnd = true
 			}
 		}
 
 		if schema.MaxLength != -1 {
-			lengthRange.End = int64(schema.MaxLength)
+			lengthRange.end = int64(schema.MaxLength)
 			lengthRange.inclusiveEnd = true
 			hasLengthRange = true
 
 			if schema.MinLength == -1 {
-				lengthRange.Start = 0
+				lengthRange.start = 0
 			}
 		}
 
@@ -492,7 +492,7 @@ func convertJsonSchemaToPattern(schema *jsonschema.Schema, baseSchema *jsonschem
 
 		if pattern == nil {
 			if hasLengthRange {
-				pattern = NewLengthCheckingStringPattern(lengthRange.Start, lengthRange.InclusiveEnd())
+				pattern = NewLengthCheckingStringPattern(lengthRange.start, lengthRange.InclusiveEnd())
 			} else {
 				pattern = STRLIKE_PATTERN
 			}

@@ -803,7 +803,7 @@ func TestIntRangeJSONRepresentation(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
-		intRange := IntRange{Start: 0, End: 100, inclusiveEnd: true, Step: 1}
+		intRange := IntRange{start: 0, end: 100, inclusiveEnd: true, step: 1}
 
 		assert.Equal(t, `{"int-range__value":{"start":0,"end":100}}`, getJSONRepr(t, intRange, ctx))
 		assert.Equal(t, `{"start":0,"end":100}`, getJSONRepr(t, intRange, ctx, JSONSerializationConfig{
@@ -815,7 +815,7 @@ func TestIntRangeJSONRepresentation(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
-		intRange := IntRange{Start: 0, End: 100, unknownStart: true, inclusiveEnd: true, Step: 1}
+		intRange := IntRange{start: 0, end: 100, unknownStart: true, inclusiveEnd: true, step: 1}
 
 		assert.Equal(t, `{"int-range__value":{"end":100}}`, getJSONRepr(t, intRange, ctx))
 		assert.Equal(t, `{"end":100}`, getJSONRepr(t, intRange, ctx, JSONSerializationConfig{
@@ -827,7 +827,7 @@ func TestIntRangeJSONRepresentation(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
-		intRange := IntRange{Start: 0, End: 100, inclusiveEnd: false, Step: 1}
+		intRange := IntRange{start: 0, end: 100, inclusiveEnd: false, step: 1}
 
 		assert.Equal(t, `{"int-range__value":{"start":0,"exclusiveEnd":100}}`, getJSONRepr(t, intRange, ctx))
 		assert.Equal(t, `{"start":0,"exclusiveEnd":100}`, getJSONRepr(t, intRange, ctx, JSONSerializationConfig{

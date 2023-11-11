@@ -134,10 +134,10 @@ func (pattern *ExactStringPattern) LengthRange() IntRange {
 
 	length := utf8.RuneCountInString(string(pattern.value))
 	return IntRange{
-		Start:        int64(length),
-		End:          int64(length),
+		start:        int64(length),
+		end:          int64(length),
 		inclusiveEnd: true,
-		Step:         1,
+		step:         1,
 	}
 }
 
@@ -159,10 +159,10 @@ func NewLengthCheckingStringPattern(minLength, maxLength int64) *LengthCheckingS
 	return &LengthCheckingStringPattern{
 		lengthRange: IntRange{
 			unknownStart: false,
-			Start:        minLength,
+			start:        minLength,
 			inclusiveEnd: true,
-			End:          maxLength,
-			Step:         1,
+			end:          maxLength,
+			step:         1,
 		},
 	}
 }
@@ -261,10 +261,10 @@ func NewSequenceStringPattern(
 	var entireStringRegex *regexp.Regexp
 
 	lengthRange := IntRange{
-		Start:        0,
-		End:          0,
+		start:        0,
+		end:          0,
 		inclusiveEnd: true,
-		Step:         1,
+		step:         1,
 	}
 
 	if allElemsHaveRegex {
@@ -679,15 +679,15 @@ func (patt *UnionStringPattern) lengthRange(effective bool) IntRange {
 			lenRange = case_.LengthRange()
 		}
 
-		minLen = min(minLen, lenRange.Start)
+		minLen = min(minLen, lenRange.start)
 		maxLen = max(maxLen, lenRange.InclusiveEnd())
 	}
 
 	return IntRange{
-		Start:        minLen,
-		End:          maxLen,
+		start:        minLen,
+		end:          maxLen,
 		inclusiveEnd: true,
-		Step:         1,
+		step:         1,
 	}
 }
 
@@ -772,10 +772,10 @@ func (patt *RuneRangeStringPattern) HasRegex() bool {
 
 func (patt *RuneRangeStringPattern) LengthRange() IntRange {
 	return IntRange{
-		Start:        1,
-		End:          1,
+		start:        1,
+		end:          1,
 		inclusiveEnd: true,
-		Step:         1,
+		step:         1,
 	}
 }
 
@@ -832,7 +832,7 @@ func NewIntRangeStringPattern(lower, upperIncluded int64, node parse.Node) *IntR
 	}) + "$"
 
 	lengthRange := IntRange{
-		Step:         1,
+		step:         1,
 		inclusiveEnd: true,
 	}
 
@@ -847,8 +847,8 @@ func NewIntRangeStringPattern(lower, upperIncluded int64, node parse.Node) *IntR
 			maxDigitCount := utils.CountDigits(max)
 			minDigitCount := utils.CountDigits(min)
 
-			lengthRange.Start = 1 + int64(minDigitCount)
-			lengthRange.End = 1 + int64(maxDigitCount)
+			lengthRange.start = 1 + int64(minDigitCount)
+			lengthRange.end = 1 + int64(maxDigitCount)
 		} else {
 			negMaxDigitCount := utils.CountDigits(absLower)
 			posMaxDigitCount := 1
@@ -856,8 +856,8 @@ func NewIntRangeStringPattern(lower, upperIncluded int64, node parse.Node) *IntR
 				posMaxDigitCount = utils.CountDigits(upperIncluded)
 			}
 
-			lengthRange.Start = 1 // zero
-			lengthRange.End = int64(max(1+negMaxDigitCount, posMaxDigitCount))
+			lengthRange.start = 1 // zero
+			lengthRange.end = int64(max(1+negMaxDigitCount, posMaxDigitCount))
 		}
 	} else {
 		minDigitCount := 1
@@ -871,8 +871,8 @@ func NewIntRangeStringPattern(lower, upperIncluded int64, node parse.Node) *IntR
 			maxDigitCount = utils.CountDigits(upperIncluded)
 		}
 
-		lengthRange.Start = int64(minDigitCount)
-		lengthRange.End = int64(maxDigitCount)
+		lengthRange.start = int64(minDigitCount)
+		lengthRange.end = int64(maxDigitCount)
 	}
 	return &IntRangeStringPattern{
 		regexp:             regexp.MustCompile(entireRegex[1 : len(entireRegex)-1]),
@@ -881,9 +881,9 @@ func NewIntRangeStringPattern(lower, upperIncluded int64, node parse.Node) *IntR
 		node: node,
 		intRange: IntRange{
 			inclusiveEnd: true,
-			Start:        lower,
-			End:          upperIncluded,
-			Step:         1,
+			start:        lower,
+			end:          upperIncluded,
+			step:         1,
 		},
 		lengthRange: lengthRange,
 		CallBasedPatternReprMixin: CallBasedPatternReprMixin{
@@ -1111,24 +1111,24 @@ func (patt *RepeatedPatternElement) lengthRange(effective bool) IntRange {
 		return elemRange
 	case parse.AtLeastOneOcurrence:
 		return IntRange{
-			Start:        elemRange.Start, //elem range should always have a known start
-			End:          math.MaxInt64,
+			start:        elemRange.start, //elem range should always have a known start
+			end:          math.MaxInt64,
 			inclusiveEnd: true,
-			Step:         1,
+			step:         1,
 		}
 	case parse.ZeroOrMoreOcurrence:
 		return IntRange{
-			Start:        0,
-			End:          math.MaxInt64,
+			start:        0,
+			end:          math.MaxInt64,
 			inclusiveEnd: true,
-			Step:         1,
+			step:         1,
 		}
 	case parse.OptionalOcurrence:
 		return IntRange{
-			Start:        0,
-			End:          elemRange.End,
+			start:        0,
+			end:          elemRange.end,
 			inclusiveEnd: elemRange.inclusiveEnd,
-			Step:         1,
+			step:         1,
 		}
 	case parse.ExactOcurrence:
 		return elemRange.times(int64(patt.exactCount), int64(patt.exactCount), true)
@@ -1210,9 +1210,9 @@ func (patt *ParserBasedPseudoPattern) FindMatches(ctx *Context, val Serializable
 func (patt *ParserBasedPseudoPattern) LengthRange() IntRange {
 	return IntRange{
 		inclusiveEnd: true,
-		Start:        0,
-		End:          10_000,
-		Step:         1,
+		start:        0,
+		end:          10_000,
+		step:         1,
 	}
 }
 
@@ -1384,7 +1384,7 @@ func (patt *RegexPattern) LengthRange() IntRange {
 
 	computeLenRange = func(r *syntax.Regexp) (lenRange IntRange) {
 		lenRange = IntRange{
-			Step:         1,
+			step:         1,
 			inclusiveEnd: true,
 		}
 
@@ -1404,30 +1404,30 @@ func (patt *RegexPattern) LengthRange() IntRange {
 
 		case syntax.OpLiteral:
 			n := int64(len(r.Rune))
-			lenRange.Start = n
-			lenRange.End = n
+			lenRange.start = n
+			lenRange.end = n
 			return
 
 		case syntax.OpCharClass:
-			lenRange.Start = 1
-			lenRange.End = 1
+			lenRange.start = 1
+			lenRange.end = 1
 			return
 
 		case syntax.OpQuest:
 			subLenRange := computeLenRange(r.Sub[0])
-			lenRange.Start = 0
-			lenRange.End = subLenRange.End
+			lenRange.start = 0
+			lenRange.end = subLenRange.end
 			return
 
 		case syntax.OpPlus:
 			subLenRange := computeLenRange(r.Sub[0])
-			lenRange.Start = subLenRange.Start
-			lenRange.End = math.MaxInt64
+			lenRange.start = subLenRange.start
+			lenRange.end = math.MaxInt64
 			return
 
 		case syntax.OpStar:
-			lenRange.Start = 0
-			lenRange.End = math.MaxInt64
+			lenRange.start = 0
+			lenRange.end = math.MaxInt64
 			return
 
 		case syntax.OpRepeat:
@@ -1445,8 +1445,8 @@ func (patt *RegexPattern) LengthRange() IntRange {
 			return computeLenRange(r.Sub[0])
 
 		case syntax.OpAnyChar, syntax.OpAnyCharNotNL:
-			lenRange.Start = 1
-			lenRange.End = 1
+			lenRange.start = 1
+			lenRange.end = 1
 			return
 
 		case syntax.OpAlternate:
@@ -1455,17 +1455,17 @@ func (patt *RegexPattern) LengthRange() IntRange {
 
 			for _, sub := range r.Sub {
 				subLenRange := computeLenRange(sub)
-				minLen = min(minLen, subLenRange.Start)
-				maxLen = max(maxLen, subLenRange.End)
+				minLen = min(minLen, subLenRange.start)
+				maxLen = max(maxLen, subLenRange.end)
 			}
 
-			lenRange.Start = minLen
-			lenRange.End = maxLen
+			lenRange.start = minLen
+			lenRange.end = maxLen
 			return
 
 		case syntax.OpEmptyMatch:
-			lenRange.Start = 0
-			lenRange.End = 0
+			lenRange.start = 0
+			lenRange.end = 0
 			return
 		case syntax.OpNoWordBoundary, syntax.OpWordBoundary, syntax.OpBeginText, syntax.OpEndText:
 			return
@@ -1628,10 +1628,10 @@ func (patt *PathStringPattern) MatchGroups(ctx *Context, v Serializable) (map[st
 
 func (patt *PathStringPattern) LengthRange() IntRange {
 	return IntRange{
-		Start:        1,
-		End:          100,
+		start:        1,
+		end:          100,
 		inclusiveEnd: true,
-		Step:         1,
+		step:         1,
 	}
 }
 
@@ -1680,10 +1680,10 @@ func getNewEffectiveLenRange(args []Serializable, originalRange IntRange) (intRa
 		return IntRange{}, false, errors.New("provided length range should not have an unknown start")
 	}
 
-	if intRange.Start < originalRange.Start {
+	if intRange.start < originalRange.start {
 		return IntRange{}, false, fmt.Errorf(
 			"provided length range have a minimum (%d) smaller than the minimum length of the called pattern (%d)",
-			intRange.Start, originalRange.Start,
+			intRange.start, originalRange.start,
 		)
 	}
 
@@ -1702,13 +1702,13 @@ func checkMatchedStringLen(s StringLike, patt StringPattern) bool {
 
 	minPossibleRuneCount, maxPossibleRuneCount := utils.MinMaxPossibleRuneCount(s.ByteLen())
 
-	if int64(minPossibleRuneCount) > lenRange.InclusiveEnd() || int64(maxPossibleRuneCount) < lenRange.Start {
+	if int64(minPossibleRuneCount) > lenRange.InclusiveEnd() || int64(maxPossibleRuneCount) < lenRange.start {
 		return false
 	}
 
 	//slow check
 	runeCount := int64(s.RuneCount())
-	return runeCount >= lenRange.Start && runeCount <= lenRange.InclusiveEnd()
+	return runeCount >= lenRange.start && runeCount <= lenRange.InclusiveEnd()
 }
 
 func FindMatchesForStringPattern(ctx *Context, patt StringPattern, val Serializable, config MatchesFindConfig) (matches []Serializable, err error) {

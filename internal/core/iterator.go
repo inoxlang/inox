@@ -588,9 +588,9 @@ type IntRangeIterator struct {
 
 func (it *IntRangeIterator) HasNext(*Context) bool {
 	if it.range_.inclusiveEnd {
-		return it.next <= it.range_.End
+		return it.next <= it.range_.end
 	}
-	return it.next < it.range_.End
+	return it.next < it.range_.end
 }
 
 func (it *IntRangeIterator) Next(ctx *Context) bool {
@@ -603,7 +603,7 @@ func (it *IntRangeIterator) Next(ctx *Context) bool {
 }
 
 func (it *IntRangeIterator) Key(ctx *Context) Value {
-	return Int(it.next - 1 - it.range_.Start)
+	return Int(it.next - 1 - it.range_.start)
 }
 
 func (it *IntRangeIterator) Value(*Context) Value {
@@ -616,7 +616,7 @@ func (r IntRange) Iterator(ctx *Context, config IteratorConfiguration) Iterator 
 	}
 	return config.CreateIterator(&IntRangeIterator{
 		range_: r,
-		next:   r.Start,
+		next:   r.start,
 	})
 }
 

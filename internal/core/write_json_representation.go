@@ -831,7 +831,7 @@ func (r IntRange) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, conf
 
 		if !r.unknownStart {
 			w.WriteObjectField("start")
-			writeIntJsonRepr(Int(r.Start), w)
+			writeIntJsonRepr(Int(r.start), w)
 			w.WriteMore()
 		}
 
@@ -840,7 +840,7 @@ func (r IntRange) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, conf
 		} else {
 			w.WriteObjectField("end")
 		}
-		writeIntJsonRepr(Int(r.End), w)
+		writeIntJsonRepr(Int(r.end), w)
 
 		w.WriteObjectEnd()
 		return nil

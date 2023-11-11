@@ -371,7 +371,7 @@ func (m Mutation) ApplyTo(ctx *Context, v Value) error {
 		v.(MutableLengthSequence).set(ctx, int(m.AffectedIndex(ctx)), m.Element(ctx))
 	case SetSliceAtRange:
 		intRange := m.AffectedRange(ctx)
-		v.(MutableLengthSequence).SetSlice(ctx, int(intRange.Start), int(intRange.End), m.Element(ctx).(Sequence))
+		v.(MutableLengthSequence).SetSlice(ctx, int(intRange.start), int(intRange.end), m.Element(ctx).(Sequence))
 	case InsertElemAtIndex:
 		v.(MutableLengthSequence).insertElement(ctx, m.Element(ctx), Int(m.AffectedIndex(ctx)))
 	case InsertSequenceAtIndex:

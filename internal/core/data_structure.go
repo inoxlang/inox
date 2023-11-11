@@ -1103,11 +1103,11 @@ func (l *List) removePositionRange(ctx *Context, r IntRange) {
 	l.underlyingList.removePositionRange(ctx, r)
 
 	if l.elementMutationCallbacks != nil {
-		for index := int(r.Start); index < int(r.End); index++ {
+		for index := int(r.start); index < int(r.end); index++ {
 			l.removeElementMutationCallbackNoLock(ctx, index, l.underlyingList.At(ctx, index).(Serializable))
 		}
 
-		l.elementMutationCallbacks = slices.Replace(l.elementMutationCallbacks, int(r.Start), int(r.End))
+		l.elementMutationCallbacks = slices.Replace(l.elementMutationCallbacks, int(r.start), int(r.end))
 	}
 
 	path := Path("/" + strconv.Itoa(int(r.KnownStart())) + ".." + strconv.Itoa(int(r.InclusiveEnd())))

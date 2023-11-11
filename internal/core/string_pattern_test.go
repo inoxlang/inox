@@ -229,10 +229,10 @@ func TestEvalStringPatternNode(t *testing.T) {
 
 func TestComplexPatternParsing(t *testing.T) {
 	lenRange := IntRange{
-		Start:        0,
-		End:          math.MaxInt64,
+		start:        0,
+		end:          math.MaxInt64,
 		inclusiveEnd: true,
-		Step:         1,
+		step:         1,
 	}
 
 	t.Run("sequence with a singme non repeated element", func(t *testing.T) {
@@ -453,9 +453,9 @@ func TestLengthCheckingStringPattern(t *testing.T) {
 
 		assert.Equal(t, IntRange{
 			inclusiveEnd: true,
-			Start:        0,
-			End:          1,
-			Step:         1,
+			start:        0,
+			end:          1,
+			step:         1,
 		}, pattern.LengthRange())
 
 	})
@@ -509,9 +509,9 @@ func TestSequenceStringPattern(t *testing.T) {
 			}
 			assert.Equal(t, IntRange{
 				inclusiveEnd: true,
-				Start:        2,
-				End:          math.MaxInt64,
-				Step:         1,
+				start:        2,
+				end:          math.MaxInt64,
+				step:         1,
 			}, patt.LengthRange())
 		})
 
@@ -528,9 +528,9 @@ func TestSequenceStringPattern(t *testing.T) {
 			}
 			assert.Equal(t, IntRange{
 				inclusiveEnd: true,
-				Start:        4,
-				End:          math.MaxInt64,
-				Step:         1,
+				start:        4,
+				end:          math.MaxInt64,
+				step:         1,
 			}, patt.LengthRange())
 		})
 
@@ -550,9 +550,9 @@ func TestSequenceStringPattern(t *testing.T) {
 			}
 			assert.Equal(t, IntRange{
 				inclusiveEnd: true,
-				Start:        4,
-				End:          math.MaxInt64,
-				Step:         1,
+				start:        4,
+				end:          math.MaxInt64,
+				step:         1,
 			}, patt.LengthRange())
 		})
 
@@ -647,10 +647,10 @@ func TestRuneRangeStringPattern(t *testing.T) {
 		}
 
 		assert.Equal(t, IntRange{
-			Start:        1,
-			End:          1,
+			start:        1,
+			end:          1,
 			inclusiveEnd: true,
-			Step:         1,
+			step:         1,
 		}, patt.LengthRange())
 	})
 
@@ -875,10 +875,10 @@ func TestUnionStringPattern(t *testing.T) {
 			},
 		}
 		assert.Equal(t, IntRange{
-			Start:        1,
-			End:          2,
+			start:        1,
+			end:          2,
 			inclusiveEnd: true,
-			Step:         1,
+			step:         1,
 		}, patt.LengthRange())
 	})
 
@@ -917,58 +917,58 @@ func TestRegexPattern(t *testing.T) {
 	t.Run(".LengthRange()", func(t *testing.T) {
 		testCases := map[string]IntRange{
 			``: {
-				Start: 0,
-				End:   0,
+				start: 0,
+				end:   0,
 			},
 			`a`: {
-				Start: 1,
-				End:   1,
+				start: 1,
+				end:   1,
 			},
 			`a?`: {
-				Start: 0,
-				End:   1,
+				start: 0,
+				end:   1,
 			},
 			`a+`: {
-				Start: 1,
-				End:   math.MaxInt64,
+				start: 1,
+				end:   math.MaxInt64,
 			},
 			`a*`: {
-				Start: 0,
-				End:   math.MaxInt64,
+				start: 0,
+				end:   math.MaxInt64,
 			},
 			`a{0,1}`: {
-				Start: 0,
-				End:   1,
+				start: 0,
+				end:   1,
 			},
 			`a{0,2}`: {
-				Start: 0,
-				End:   2,
+				start: 0,
+				end:   2,
 			},
 			`a{1,2}`: {
-				Start: 1,
-				End:   2,
+				start: 1,
+				end:   2,
 			},
 			`a{1,3}`: {
-				Start: 1,
-				End:   3,
+				start: 1,
+				end:   3,
 			},
 			`.`: {
-				Start: 1,
-				End:   1,
+				start: 1,
+				end:   1,
 			},
 			`[a-z]`: {
-				Start: 1,
-				End:   1,
+				start: 1,
+				end:   1,
 			},
 			`(a|bc)`: {
-				Start: 1,
-				End:   2,
+				start: 1,
+				end:   2,
 			},
 		}
 
 		for regex, expectedRange := range testCases {
 			t.Run("`"+regex+"`", func(t *testing.T) {
-				expectedRange.Step = 1
+				expectedRange.step = 1
 				expectedRange.inclusiveEnd = true
 
 				patt := NewRegexPattern(regex)

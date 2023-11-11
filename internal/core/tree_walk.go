@@ -2025,9 +2025,9 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			case Int:
 				return IntRange{
 					inclusiveEnd: n.Operator == parse.Range,
-					Start:        int64(left.(Int)),
-					End:          int64(right.(Int)),
-					Step:         1,
+					start:        int64(left.(Int)),
+					end:          int64(right.(Int)),
+					step:         1,
 				}, nil
 			case Float:
 				return FloatRange{
@@ -2078,8 +2078,8 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			return IntRange{
 				unknownStart: true,
 				inclusiveEnd: true,
-				End:          int64(v),
-				Step:         1,
+				end:          int64(v),
+				step:         1,
 			}, nil
 		case Float:
 			return FloatRange{
@@ -2104,9 +2104,9 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		return IntRange{
 			unknownStart: false,
 			inclusiveEnd: true,
-			Start:        n.LowerBound.Value,
-			End:          upperBound,
-			Step:         1,
+			start:        n.LowerBound.Value,
+			end:          upperBound,
+			step:         1,
 		}, nil
 	case *parse.FloatRangeLiteral:
 		upperBound := float64(math.MaxFloat64)

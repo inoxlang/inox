@@ -74,7 +74,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 			assert.Equal(t, Float(1), v)
 		}
 
-		intPattern := NewIntRangePattern(IntRange{Start: 0, End: 2, inclusiveEnd: true, Step: 1}, -1)
+		intPattern := NewIntRangePattern(IntRange{start: 0, end: 2, inclusiveEnd: true, step: 1}, -1)
 		v, err = ParseJSONRepresentation(ctx, `1`, intPattern)
 		if assert.NoError(t, err) {
 			assert.Equal(t, Int(1), v)
@@ -702,8 +702,8 @@ func TestParseJSONRepresentation(t *testing.T) {
 		})
 
 		t.Run("integers", func(t *testing.T) {
-			range1 := IntRange{Start: 0, End: 2, inclusiveEnd: true, Step: 1}
-			range2 := IntRange{Start: 1, End: 3, inclusiveEnd: true, Step: 1}
+			range1 := IntRange{start: 0, end: 2, inclusiveEnd: true, step: 1}
+			range2 := IntRange{start: 1, end: 3, inclusiveEnd: true, step: 1}
 
 			pattern1 := NewUnionPattern([]Pattern{NewIntRangePattern(range1, -1), NewIntRangePattern(range2, -1)}, nil)
 
@@ -793,8 +793,8 @@ func TestParseJSONRepresentation(t *testing.T) {
 		})
 
 		t.Run("integers", func(t *testing.T) {
-			range1 := IntRange{Start: 0, End: 2, inclusiveEnd: true, Step: 1}
-			range2 := IntRange{Start: 2, End: 3, inclusiveEnd: true, Step: 1}
+			range1 := IntRange{start: 0, end: 2, inclusiveEnd: true, step: 1}
+			range2 := IntRange{start: 2, end: 3, inclusiveEnd: true, step: 1}
 
 			pattern1 := NewDisjointUnionPattern([]Pattern{NewIntRangePattern(range1, -1), NewIntRangePattern(range2, -1)}, nil)
 

@@ -168,11 +168,11 @@ func (r IntRange) Random(ctx *Context) Value {
 	if r.unknownStart {
 		panic("Random() not supported for int ranges with no start")
 	}
-	start := r.Start
-	end := r.End
+	start := r.start
+	end := r.end
 
 	if !r.inclusiveEnd {
-		end = r.End - 1
+		end = r.end - 1
 	}
 
 	return Int(DefaultRandSource.RandInt64Range(int64(start), int64(end)))

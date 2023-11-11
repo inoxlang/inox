@@ -106,7 +106,7 @@ func (l *ValueList) removePosition(ctx *Context, i Int) {
 
 func (l *ValueList) removePositionRange(ctx *Context, r IntRange) {
 	end := int(r.InclusiveEnd())
-	start := int(r.Start)
+	start := int(r.start)
 
 	if end <= len(l.elements)-1 {
 		copy(l.elements[start:], l.elements[end+1:])
@@ -237,7 +237,7 @@ func (l *IntList) removePosition(ctx *Context, i Int) {
 
 func (l *IntList) removePositionRange(ctx *Context, r IntRange) {
 	end := int(r.InclusiveEnd())
-	start := int(r.Start)
+	start := int(r.start)
 
 	if end <= len(l.elements)-1 {
 		copy(l.elements[start:], l.elements[end+1:])
@@ -368,7 +368,7 @@ func (l *StringList) removePosition(ctx *Context, i Int) {
 
 func (l *StringList) removePositionRange(ctx *Context, r IntRange) {
 	end := int(r.InclusiveEnd())
-	start := int(r.Start)
+	start := int(r.start)
 
 	if end <= len(l.elements)-1 {
 		copy(l.elements[start:], l.elements[end+1:])
@@ -502,7 +502,7 @@ func (l *BoolList) removePosition(ctx *Context, i Int) {
 }
 
 func (l *BoolList) removePositionRange(ctx *Context, r IntRange) {
-	index := int(r.Start)
+	index := int(r.start)
 	for i := 0; i < r.Len(); i++ {
 		l.elements.DeleteAt(uint(index))
 	}

@@ -132,16 +132,16 @@ func intDiv(l, r Int) (Value, error) {
 type IntRange struct {
 	unknownStart bool //if true .Start depends on the context (not *Context)
 	inclusiveEnd bool
-	Start        int64
-	End          int64
-	Step         int64 //only 1 supported for now
+	start        int64
+	end          int64
+	step         int64 //only 1 supported for now
 }
 
 func NewIncludedEndIntRange(start, end int64) IntRange {
 	if end < start {
 		panic(fmt.Errorf("failed to create int pattern, end < start"))
 	}
-	return IntRange{inclusiveEnd: true, Start: start, End: end, Step: 1}
+	return IntRange{inclusiveEnd: true, start: start, end: end, step: 1}
 }
 
 func (r IntRange) Includes(ctx *Context, i Int) bool {
@@ -149,14 +149,14 @@ func (r IntRange) Includes(ctx *Context, i Int) bool {
 		panic(ErrUnknownStartIntRange)
 	}
 
-	return r.Start <= int64(i) && int64(i) <= r.InclusiveEnd()
+	return r.start <= int64(i) && int64(i) <= r.InclusiveEnd()
 }
 
 func (r IntRange) At(ctx *Context, i int) Value {
 	if i >= r.Len() {
 		panic(ErrIndexOutOfRange)
 	}
-	return Int(i + int(r.Start))
+	return Int(i + int(r.start))
 }
 
 func (r IntRange) Len() int {
@@ -164,29 +164,29 @@ func (r IntRange) Len() int {
 		panic(ErrUnknownStartIntRange)
 	}
 
-	return r.len(r.Start)
+	return r.len(r.start)
 }
 
 func (r IntRange) KnownStart() int64 {
 	if r.unknownStart {
 		panic(ErrUnknownStartIntRange)
 	}
-	return r.Start
+	return r.start
 }
 
 func (r IntRange) InclusiveEnd() int64 {
 	if r.inclusiveEnd {
-		return r.End
+		return r.end
 	}
-	return r.End - 1
+	return r.end - 1
 }
 
 func (r IntRange) len(min int64) int {
-	start := r.Start
+	start := r.start
 	if r.unknownStart {
 		start = min
 	}
-	length := r.End - start
+	length := r.end - start
 	if r.inclusiveEnd {
 		length++
 	}
@@ -201,35 +201,35 @@ func (r IntRange) clampedAdd(other IntRange) IntRange {
 		panic(errors.New("cannot clamp add int ranges with at least one unknown start"))
 	}
 
-	if r.Step != 1 || other.Step != 1 {
+	if r.step != 1 || other.step != 1 {
 		panic(errors.New("cannot clamp add other range: only ranges with a step of 1 are supported"))
 	}
 
-	if r.Start < 0 || other.Start < 0 {
+	if r.start < 0 || other.start < 0 {
 		panic(errors.New("cannot clamp add other range: only positive start ranges are supported"))
 	}
 
 	newRange := IntRange{
-		Start:        r.Start,
-		End:          r.End,
+		start:        r.start,
+		end:          r.end,
 		inclusiveEnd: r.inclusiveEnd,
-		Step:         1,
+		step:         1,
 	}
 
-	if other.Start >= math.MaxInt64-r.Start {
-		newRange.Start = math.MaxInt64
-		newRange.End = math.MaxInt64
+	if other.start >= math.MaxInt64-r.start {
+		newRange.start = math.MaxInt64
+		newRange.end = math.MaxInt64
 		newRange.inclusiveEnd = true
 		return newRange
 	} else {
-		newRange.Start = r.Start + other.Start
+		newRange.start = r.start + other.start
 	}
 
-	if other.End >= math.MaxInt64-r.End {
-		newRange.End = math.MaxInt64
+	if other.end >= math.MaxInt64-r.end {
+		newRange.end = math.MaxInt64
 		newRange.inclusiveEnd = true
 	} else {
-		newRange.End = r.End + other.InclusiveEnd()
+		newRange.end = r.end + other.InclusiveEnd()
 	}
 
 	return newRange
@@ -249,8 +249,8 @@ func (r IntRange) times(n, m int64, clamped bool) IntRange {
 		panic(errors.New("cannot multiply int range with an unknown start"))
 	}
 
-	minOverflow := r.Start != 0 && n >= math.MaxInt64/r.Start
-	maxOverflow := r.End != 0 && m >= math.MaxInt64/r.End
+	minOverflow := r.start != 0 && n >= math.MaxInt64/r.start
+	maxOverflow := r.end != 0 && m >= math.MaxInt64/r.end
 
 	if !clamped && (minOverflow || maxOverflow) {
 		inclusiveEnd := r.InclusiveEnd()
@@ -258,7 +258,7 @@ func (r IntRange) times(n, m int64, clamped bool) IntRange {
 		if r.unknownStart {
 			panic(fmt.Errorf("cannot multiply integer range ..%d by %d %d", inclusiveEnd, n, m))
 		}
-		panic(fmt.Errorf("cannot multiply integer range %d..%d by %d %d", r.Start, inclusiveEnd, n, m))
+		panic(fmt.Errorf("cannot multiply integer range %d..%d by %d %d", r.start, inclusiveEnd, n, m))
 	}
 
 	start := int64(0)
@@ -267,19 +267,19 @@ func (r IntRange) times(n, m int64, clamped bool) IntRange {
 	if minOverflow {
 		start = math.MaxInt64
 	} else {
-		start = r.Start * n
+		start = r.start * n
 	}
 
 	if maxOverflow {
 		end = math.MaxInt64
 	} else {
-		end = r.End * m
+		end = r.end * m
 	}
 
 	return IntRange{
 		inclusiveEnd: r.inclusiveEnd,
-		Start:        start,
-		End:          end,
-		Step:         r.Step,
+		start:        start,
+		end:          end,
+		step:         r.step,
 	}
 }

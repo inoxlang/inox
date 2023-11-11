@@ -21,10 +21,10 @@ func TestExactStringPattern(t *testing.T) {
 	t.Run(".LengthRange()", func(t *testing.T) {
 		patt := NewExactStringPattern(Str("ab"))
 		assert.Equal(t, IntRange{
-			Start:        2,
-			End:          2,
+			start:        2,
+			end:          2,
 			inclusiveEnd: true,
-			Step:         1,
+			step:         1,
 		}, patt.LengthRange())
 	})
 

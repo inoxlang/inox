@@ -981,10 +981,10 @@ func (r QuantityRange) WriteRepresentation(ctx *Context, w io.Writer, config *Re
 func (r IntRange) write(w io.Writer) (int, error) {
 	b := make([]byte, 0, 10)
 	if !r.unknownStart {
-		b = append(b, strconv.FormatInt(r.Start, 10)...)
+		b = append(b, strconv.FormatInt(r.start, 10)...)
 	}
 	b = append(b, '.', '.')
-	b = append(b, strconv.FormatInt(r.End, 10)...)
+	b = append(b, strconv.FormatInt(r.end, 10)...)
 
 	return w.Write(b)
 }

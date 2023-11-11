@@ -1048,7 +1048,7 @@ func TestIntRangeRepresentation(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
-		intRange := IntRange{Start: 0, End: 100, inclusiveEnd: true, Step: 1}
+		intRange := IntRange{start: 0, end: 100, inclusiveEnd: true, step: 1}
 
 		expectedRepr := "0..100"
 		assert.Equal(t, expectedRepr, getReprAllVisible(t, intRange, ctx))
@@ -1062,7 +1062,7 @@ func TestIntRangeRepresentation(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
-		intRange := IntRange{Start: 0, End: 100, unknownStart: true, inclusiveEnd: true, Step: 1}
+		intRange := IntRange{start: 0, end: 100, unknownStart: true, inclusiveEnd: true, step: 1}
 
 		expectedRepr := "..100"
 		assert.Equal(t, expectedRepr, getReprAllVisible(t, intRange, ctx))

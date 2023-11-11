@@ -965,7 +965,7 @@ func NewIncludedEndIntRangePattern(start, end int64, multipleOf int64) *IntRange
 
 // multipleOf is ignored if not greater than zero
 func NewIntRangePattern(intRange IntRange, multipleOf int64) *IntRangePattern {
-	if intRange.End < intRange.Start {
+	if intRange.end < intRange.start {
 		panic(fmt.Errorf("failed to create int range pattern, end < start"))
 	}
 
@@ -984,7 +984,7 @@ func NewIntRangePattern(intRange IntRange, multipleOf int64) *IntRangePattern {
 }
 
 func NewIntRangePatternFloatMultiple(intRange IntRange, multipleOf Float) *IntRangePattern {
-	if intRange.End < intRange.Start {
+	if intRange.end < intRange.start {
 		panic(fmt.Errorf("failed to create int range pattern, end < start"))
 	}
 
@@ -1004,7 +1004,7 @@ func NewIntRangePatternFloatMultiple(intRange IntRange, multipleOf Float) *IntRa
 }
 
 func NewSingleElementIntRangePattern(n int64) *IntRangePattern {
-	range_ := IntRange{inclusiveEnd: true, Start: n, End: n, Step: 1}
+	range_ := IntRange{inclusiveEnd: true, start: n, end: n, step: 1}
 	return &IntRangePattern{
 		intRange: range_,
 		CallBasedPatternReprMixin: CallBasedPatternReprMixin{
@@ -1023,7 +1023,7 @@ func (patt *IntRangePattern) Test(ctx *Context, v Value) bool {
 }
 
 func (patt *IntRangePattern) Includes(ctx *Context, n Int) bool {
-	if n < Int(patt.intRange.Start) ||
+	if n < Int(patt.intRange.start) ||
 		n > Int(patt.intRange.InclusiveEnd()) {
 		return false
 	}
@@ -1042,7 +1042,7 @@ func (patt *IntRangePattern) StringPattern() (StringPattern, bool) {
 	if patt.multipleOf >= 0 {
 		return nil, false
 	}
-	return NewIntRangeStringPattern(patt.intRange.Start, patt.intRange.InclusiveEnd(), nil), true
+	return NewIntRangeStringPattern(patt.intRange.start, patt.intRange.InclusiveEnd(), nil), true
 }
 
 // An FloatRangePattern represents a pattern matching floats in a given range.

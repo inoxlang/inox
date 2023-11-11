@@ -471,9 +471,9 @@ func (v *VM) run() {
 			case Int:
 				res = IntRange{
 					inclusiveEnd: !exclEnd,
-					Start:        int64(left.(Int)),
-					End:          int64(right.(Int)),
-					Step:         1,
+					start:        int64(left.(Int)),
+					end:          int64(right.(Int)),
+					step:         1,
 				}
 			case Float:
 				res = FloatRange{
@@ -1400,9 +1400,9 @@ func (v *VM) run() {
 			v.stack[v.sp-2] = IntRange{
 				unknownStart: false,
 				inclusiveEnd: true,
-				Start:        lower,
-				End:          upper,
-				Step:         1,
+				start:        lower,
+				end:          upper,
+				step:         1,
 			}
 			v.sp--
 		case OpCreateFloatRange:
@@ -1423,8 +1423,8 @@ func (v *VM) run() {
 				v.stack[v.sp-1] = IntRange{
 					unknownStart: true,
 					inclusiveEnd: true,
-					End:          int64(val),
-					Step:         1,
+					end:          int64(val),
+					step:         1,
 				}
 			case Float:
 				v.stack[v.sp-1] = FloatRange{
