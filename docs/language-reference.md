@@ -614,8 +614,13 @@ representable (serializable).
 
 ```
 dict = :{
+    # path key
     ./a: 1
+
+    # string key
     "./a": 2
+
+    # integer key
     1: 3
 }
 ```
@@ -1233,8 +1238,8 @@ element = html<div> Hello {string} ! </div>
 html<img src="..."/>
 ```
 
-In the `<script>` and `<style>` tags, anything inside single brackets is not treated
-as an interpolation:
+In the `<script>` and `<style>` tags, anything inside single brackets is not
+treated as an interpolation:
 
 ```
 html<html>
@@ -1815,7 +1820,8 @@ manifest {
     }
     databases: {
         main: {
-            resource: ldb://main  #ldb stands for Local Database
+            #ldb stands for Local Database
+            resource: ldb://main 
             resolution-data: /databases/main/
         }
     }
@@ -1837,13 +1843,52 @@ dbs.main.update_schema(%{
 })
 ```
 
-⚠️ calling **.update_schema** requires the following property in the db
-description: **expected-schema-update: true**
+⚠️ Calling **.update_schema** requires the following property in the database
+description: `expected-schema-update: true`.
+
+The current schema of the database determinates what values are accessible from
+`dbs.main`.\
+If the current schema has a `users` property the users will be accessible by
+typing `dbs.main.users`.
+
+You can make the typesystem pretend the schema was updated by adding the
+**assert-schema** property to the database description.\
+For example if the database has an empty schema, you can use the following
+manifest to add the `users` property to the database value:
+
+```
+preinit {
+    pattern schema = %{
+        users: Set(user, #url)
+    }
+}
+
+manifest {
+    permissions: {
+        read: %/databases/...
+        write: %/databases/...
+    }
+    databases: {
+        main: {
+            resource: ldb://main 
+            resolution-data: /databases/main/
+            assert-schema: %schema
+        }
+    }
+}
+
+users = dbs.main.users
+```
+
+⚠️ At runtime the current schema of the database is matched against
+`assert-schema`.\
+So before executing the program you will need to add a call to
+`dbs.main.update_schema` with the new schema.
 
 ## Migrations
 
-Updating the schema often requires data updates, when this is the case
-.updated_schema needs a second argument that describes the updates.
+Updating the schema often requires data updates. When this is the case
+`.updated_schema` needs a second argument that describes the updates.
 
 ```
 pattern new_user = {
@@ -1856,6 +1901,7 @@ dbs.main.update_schema(%{
 }, {
    inclusions: :{
         %/users/*/new-property: 0
+
         # a handler can be passed instead of an initial value
         # %/users/*/new-property: fn(prev_value) => 0
     }
