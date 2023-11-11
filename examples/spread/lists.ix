@@ -2,4 +2,4 @@ manifest {}
 
 list = [2, 3]
 
-printvals [1, ...list]
+print [1, ...list]

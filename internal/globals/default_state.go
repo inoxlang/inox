@@ -246,7 +246,6 @@ func NewDefaultGlobalState(ctx *core.Context, conf core.DefaultGlobalStateConfig
 		globalnames.LOGVALS_FN:       core.ValOf(_logvals),
 		globalnames.LOG_FN:           core.ValOf(_log),
 		globalnames.PRINT_FN:         core.ValOf(_print),
-		globalnames.PRINTVALS_FN:     core.ValOf(_printvals),
 		globalnames.FPRINT_FN:        core.ValOf(_fprint),
 		globalnames.STRINGIFY_AST_FN: core.ValOf(_stringify_ast),
 		globalnames.FMT_FN:           core.ValOf(core.Fmt),

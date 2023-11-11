@@ -39,8 +39,8 @@ print "a in [\"a\"] :" ("a" in ["a"])
 print "\"ab\" substrof \"abc\" :" ("ab" substrof "abc")
 print "\"a\" keyof {a: 1} :" ("a" keyof {a: 1})
 print "nil ?? 1 :" (nil ?? 1)
-print "1 .. 2 :" 
-printvals (1 .. 2)
+print "1 .. 2 :" (1 .. 2)
+
 pattern patt = %str("a"+)
 print "%patt = \"a\"+;  \"a\" match %patt :" ("a" match %patt)
 print "%patt = \"a\"+;  \"a\" match %patt :" ("a" match patt)

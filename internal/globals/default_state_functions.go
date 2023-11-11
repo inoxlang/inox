@@ -91,16 +91,6 @@ func _fprint(ctx *core.Context, out core.Writable, args ...core.Value) {
 	__fprint(ctx, out.Writer(), args...)
 }
 
-func _printvals(ctx *core.Context, args ...core.Value) {
-	buff := bytes.NewBuffer(nil)
-	for _, arg := range args {
-		buff.WriteString(fmt.Sprintf("%#v", arg))
-	}
-
-	out := ctx.GetClosestState().Out
-	fmt.Fprintln(out, utils.StripANSISequences(buff.String()))
-}
-
 func _stringify_ast(ctx *core.Context, arg core.AstNode) core.Str {
 	buf := bytes.Buffer{}
 	_, err := parse.Print(arg.Node, arg.Chunk().Node, &buf, parse.PrintConfig{TrimStart: true})
