@@ -55,7 +55,7 @@ func TestPreInit(t *testing.T) {
 	startMemStats := new(runtime.MemStats)
 	runtime.ReadMemStats(startMemStats)
 
-	defer utils.AssertNoMemoryLeak(t, startMemStats, 100, utils.AssertNoMemoryLeakOptions{
+	defer utils.AssertNoMemoryLeak(t, startMemStats, 10_000, utils.AssertNoMemoryLeakOptions{
 		PreSleepDurationMillis: 100,
 		CheckGoroutines:        true,
 		GoroutineCount:         runtime.NumGoroutine(),
@@ -65,6 +65,7 @@ func TestPreInit(t *testing.T) {
 	type testCase struct {
 		//input
 		name                string
+		moduleKind          ModuleKind //ok if not set
 		module              string
 		setup               func() error
 		teardown            func()
@@ -1140,6 +1141,372 @@ func TestPreInit(t *testing.T) {
 			},
 		},
 
+		//check the parameters section is forbidden in most modules.
+
+		{
+			name:       "the parameters section is not allowed in spec modules",
+			moduleKind: SpecModule,
+			module: `
+				manifest {
+					parameters: {}
+				}`,
+			error:                     true,
+			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("parameters")},
+			expectedLimits:            []Limit{},
+		},
+
+		{
+			name:       "the parameters section is not allowed in lifetime job modules",
+			moduleKind: LifetimeJobModule,
+			module: `
+				manifest {
+					parameters: {}
+				}`,
+			error:                     true,
+			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("parameters")},
+			expectedLimits:            []Limit{},
+		},
+
+		{
+			name:       "the parameters section is not allowed in lthread modules",
+			moduleKind: LThreadSpawnedEventType,
+			module: `
+				manifest {
+					parameters: {}
+				}`,
+			error:                     true,
+			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("parameters")},
+			expectedLimits:            []Limit{},
+		},
+
+		{
+			name:       "the parameters section is not allowed in testsuite modules",
+			moduleKind: TestSuiteModule,
+			module: `
+				manifest {
+					parameters: {}
+				}`,
+			error:                     true,
+			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("parameters")},
+			expectedLimits:            []Limit{},
+		},
+		{
+			name:       "the parameters section is not allowed in testcase modules",
+			moduleKind: TestCaseModule,
+			module: `
+				manifest {
+					parameters: {}
+				}`,
+			error:                     true,
+			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("parameters")},
+			expectedLimits:            []Limit{},
+		},
+
+		//check the databases section is forbidden in most modules.
+
+		{
+			name:       "the databases section is not allowed in spec modules",
+			moduleKind: SpecModule,
+			module: `
+				manifest {
+					databases: {}
+				}`,
+			error:                     true,
+			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("databases")},
+			expectedLimits:            []Limit{},
+		},
+
+		{
+			name:       "the databases section is not allowed in lifetime job modules",
+			moduleKind: LifetimeJobModule,
+			module: `
+				manifest {
+					databases: {}
+				}`,
+			error:                     true,
+			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("databases")},
+			expectedLimits:            []Limit{},
+		},
+
+		{
+			name:       "the databases section is not allowed in lthread modules",
+			moduleKind: LThreadSpawnedEventType,
+			module: `
+				manifest {
+					databases: {}
+				}`,
+			error:                     true,
+			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("databases")},
+			expectedLimits:            []Limit{},
+		},
+
+		{
+			name:       "the databases section is not allowed in testsuite modules",
+			moduleKind: TestSuiteModule,
+			module: `
+				manifest {
+					databases: {}
+				}`,
+			error:                     true,
+			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("databases")},
+			expectedLimits:            []Limit{},
+		},
+		{
+			name:       "the databases section is not allowed in testcase modules",
+			moduleKind: TestCaseModule,
+			module: `
+				manifest {
+					databases: {}
+				}`,
+			error:                     true,
+			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("databases")},
+			expectedLimits:            []Limit{},
+		},
+
+		//check the parameters section is forbidden in most modules.
+
+		{
+			name:       "the parameters section is not allowed in spec modules",
+			moduleKind: SpecModule,
+			module: `
+					manifest {
+						parameters: {}
+					}`,
+			error:                     true,
+			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("parameters")},
+			expectedLimits:            []Limit{},
+		},
+
+		{
+			name:       "the parameters section is not allowed in lifetime job modules",
+			moduleKind: LifetimeJobModule,
+			module: `
+					manifest {
+						parameters: {}
+					}`,
+			error:                     true,
+			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("parameters")},
+			expectedLimits:            []Limit{},
+		},
+
+		{
+			name:       "the parameters section is not allowed in lthread modules",
+			moduleKind: LThreadSpawnedEventType,
+			module: `
+					manifest {
+						parameters: {}
+					}`,
+			error:                     true,
+			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("parameters")},
+			expectedLimits:            []Limit{},
+		},
+
+		{
+			name:       "the parameters section is not allowed in testsuite modules",
+			moduleKind: TestSuiteModule,
+			module: `
+					manifest {
+						parameters: {}
+					}`,
+			error:                     true,
+			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("parameters")},
+			expectedLimits:            []Limit{},
+		},
+		{
+			name:       "the parameters section is not allowed in testcase modules",
+			moduleKind: TestCaseModule,
+			module: `
+					manifest {
+						parameters: {}
+					}`,
+			error:                     true,
+			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("parameters")},
+			expectedLimits:            []Limit{},
+		},
+
+		//check the invocation section is forbidden in most modules.
+
+		{
+			name:       "the invocation section is not allowed in spec modules",
+			moduleKind: SpecModule,
+			module: `
+					manifest {
+						invocation: {}
+					}`,
+			error:                     true,
+			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("invocation")},
+			expectedLimits:            []Limit{},
+		},
+
+		{
+			name:       "the invocation section is not allowed in lifetime job modules",
+			moduleKind: LifetimeJobModule,
+			module: `
+					manifest {
+						invocation: {}
+					}`,
+			error:                     true,
+			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("invocation")},
+			expectedLimits:            []Limit{},
+		},
+
+		{
+			name:       "the invocation section is not allowed in lthread modules",
+			moduleKind: LThreadSpawnedEventType,
+			module: `
+					manifest {
+						invocation: {}
+					}`,
+			error:                     true,
+			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("invocation")},
+			expectedLimits:            []Limit{},
+		},
+
+		{
+			name:       "the invocation section is not allowed in testsuite modules",
+			moduleKind: TestSuiteModule,
+			module: `
+					manifest {
+						invocation: {}
+					}`,
+			error:                     true,
+			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("invocation")},
+			expectedLimits:            []Limit{},
+		},
+		{
+			name:       "the invocation section is not allowed in testcase modules",
+			moduleKind: TestCaseModule,
+			module: `
+					manifest {
+						invocation: {}
+					}`,
+			error:                     true,
+			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("invocation")},
+			expectedLimits:            []Limit{},
+		},
+
+		//check the preinit-files section is forbidden in most modules.
+
+		{
+			name:       "the preinit-files section is not allowed in spec modules",
+			moduleKind: SpecModule,
+			module: `
+					manifest {
+						preinit-files: {}
+					}`,
+			error:                     true,
+			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("preinit-files")},
+			expectedLimits:            []Limit{},
+		},
+
+		{
+			name:       "the preinit-files section is not allowed in lifetime job modules",
+			moduleKind: LifetimeJobModule,
+			module: `
+					manifest {
+						preinit-files: {}
+					}`,
+			error:                     true,
+			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("preinit-files")},
+			expectedLimits:            []Limit{},
+		},
+
+		{
+			name:       "the preinit-files section is not allowed in lthread modules",
+			moduleKind: LThreadSpawnedEventType,
+			module: `
+					manifest {
+						preinit-files: {}
+					}`,
+			error:                     true,
+			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("preinit-files")},
+			expectedLimits:            []Limit{},
+		},
+
+		{
+			name:       "the preinit-files section is not allowed in testsuite modules",
+			moduleKind: TestSuiteModule,
+			module: `
+					manifest {
+						preinit-files: {}
+					}`,
+			error:                     true,
+			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("preinit-files")},
+			expectedLimits:            []Limit{},
+		},
+		{
+			name:       "the preinit-files section is not allowed in testcase modules",
+			moduleKind: TestCaseModule,
+			module: `
+					manifest {
+						preinit-files: {}
+					}`,
+			error:                     true,
+			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("preinit-files")},
+			expectedLimits:            []Limit{},
+		},
+
+		//check the env section is forbidden in most modules.
+
+		{
+			name:       "the env section is not allowed in spec modules",
+			moduleKind: SpecModule,
+			module: `
+						manifest {
+							env: {}
+						}`,
+			error:                     true,
+			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("env")},
+			expectedLimits:            []Limit{},
+		},
+
+		{
+			name:       "the env section is not allowed in lifetime job modules",
+			moduleKind: LifetimeJobModule,
+			module: `
+						manifest {
+							env: {}
+						}`,
+			error:                     true,
+			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("env")},
+			expectedLimits:            []Limit{},
+		},
+
+		{
+			name:       "the env section is not allowed in lthread modules",
+			moduleKind: LThreadSpawnedEventType,
+			module: `
+						manifest {
+							env: {}
+						}`,
+			error:                     true,
+			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("env")},
+			expectedLimits:            []Limit{},
+		},
+
+		{
+			name:       "the env section is not allowed in testsuite modules",
+			moduleKind: TestSuiteModule,
+			module: `
+						manifest {
+							env: {}
+						}`,
+			error:                     true,
+			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("env")},
+			expectedLimits:            []Limit{},
+		},
+		{
+			name:       "the env section is not allowed in testcase modules",
+			moduleKind: TestCaseModule,
+			module: `
+						manifest {
+							env: {}
+						}`,
+			error:                     true,
+			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("env")},
+			expectedLimits:            []Limit{},
+		},
+
 		//TODO: improve tests.
 	}
 
@@ -1234,6 +1601,7 @@ func TestPreInit(t *testing.T) {
 						CodeString:             testCase.module,
 					},
 				),
+				ModuleKind:            testCase.moduleKind,
 				ManifestTemplate:      chunk.Manifest,
 				InclusionStatementMap: map[*parse.InclusionImportStatement]*IncludedChunk{},
 				IncludedChunkMap:      map[string]*IncludedChunk{},

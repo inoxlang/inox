@@ -339,3 +339,7 @@ func fmtOnlyAbsPathPatternsAreAcceptedInPerms(v string) string {
 func fmtCannotInferPermission(kind string, name string) string {
 	return fmt.Sprintf("cannot infer '%s' permission '%s", kind, name)
 }
+
+func fmtTheXSectionIsNotAllowedForTheCurrentModuleKind(sectionName string) string {
+	return fmt.Sprintf("the %q section is not allowed for the current module kind", sectionName)
+}

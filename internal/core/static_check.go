@@ -2200,7 +2200,14 @@ func checkManifestObject(args manifestStaticCheckArguments) {
 			continue
 		}
 
-		switch p.Name() {
+		sectionName := p.Name()
+		allowedSectionNames := MODULE_KIND_TO_ALLOWED_SECTION_NAMES[args.moduleKind]
+		if !slices.Contains(allowedSectionNames, sectionName) {
+			onError(p.Key, fmtTheXSectionIsNotAllowedForTheCurrentModuleKind(sectionName))
+			continue
+		}
+
+		switch sectionName {
 		case MANIFEST_PERMS_SECTION_NAME:
 			if obj, ok := p.Value.(*parse.ObjectLiteral); ok {
 				checkPermissionListingObject(obj, onError)
