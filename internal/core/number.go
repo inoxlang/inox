@@ -31,15 +31,15 @@ type Float float64
 type FloatRange struct {
 	unknownStart bool //if true .Start depends on the context (not *Context)
 	inclusiveEnd bool
-	Start        float64 //can be negative infinity
-	End          float64 //can be positive infinity
+	start        float64 //can be negative infinity
+	end          float64 //can be positive infinity
 }
 
 func NewIncludedEndFloatRange(start, end float64) FloatRange {
 	if end < start {
 		panic(fmt.Errorf("failed to create float range, end < start"))
 	}
-	return FloatRange{inclusiveEnd: true, Start: start, End: end}
+	return FloatRange{inclusiveEnd: true, start: start, end: end}
 }
 
 func (r FloatRange) Includes(ctx *Context, n Float) bool {
@@ -47,21 +47,21 @@ func (r FloatRange) Includes(ctx *Context, n Float) bool {
 		panic(ErrUnknownStartFloatRange)
 	}
 
-	return r.Start <= float64(n) && float64(n) <= r.InclusiveEnd()
+	return r.start <= float64(n) && float64(n) <= r.InclusiveEnd()
 }
 
 func (r FloatRange) KnownStart() float64 {
 	if r.unknownStart {
 		panic(ErrUnknownStartFloatRange)
 	}
-	return r.Start
+	return r.start
 }
 
 func (r FloatRange) InclusiveEnd() float64 {
-	if r.inclusiveEnd || math.IsInf(r.End, 1) {
-		return r.End
+	if r.inclusiveEnd || math.IsInf(r.end, 1) {
+		return r.end
 	}
-	return math.Nextafter(r.End, math.Inf(-1))
+	return math.Nextafter(r.end, math.Inf(-1))
 }
 
 // intAdd adds l an r in a safe way:

@@ -478,8 +478,8 @@ func (v *VM) run() {
 			case Float:
 				res = FloatRange{
 					inclusiveEnd: !exclEnd,
-					Start:        float64(left.(Float)),
-					End:          float64(right.(Float)),
+					start:        float64(left.(Float)),
+					end:          float64(right.(Float)),
 				}
 			default:
 				res = QuantityRange{
@@ -1411,8 +1411,8 @@ func (v *VM) run() {
 			v.stack[v.sp-2] = FloatRange{
 				unknownStart: false,
 				inclusiveEnd: true,
-				Start:        lower,
-				End:          upper,
+				start:        lower,
+				end:          upper,
 			}
 			v.sp--
 		case OpCreateUpperBoundRange:
@@ -1430,7 +1430,7 @@ func (v *VM) run() {
 				v.stack[v.sp-1] = FloatRange{
 					unknownStart: true,
 					inclusiveEnd: true,
-					End:          float64(val),
+					end:          float64(val),
 				}
 			default:
 				v.stack[v.sp-1] = QuantityRange{

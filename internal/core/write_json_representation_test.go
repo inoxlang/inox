@@ -844,7 +844,7 @@ func TestFloatRangeJSONRepresentation(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
-		floatRange := FloatRange{Start: 0, End: 100, inclusiveEnd: true}
+		floatRange := FloatRange{start: 0, end: 100, inclusiveEnd: true}
 
 		assert.Equal(t, `{"float-range__value":{"start":0,"end":100}}`, getJSONRepr(t, floatRange, ctx))
 		assert.Equal(t, `{"start":0,"end":100}`, getJSONRepr(t, floatRange, ctx, JSONSerializationConfig{
@@ -856,7 +856,7 @@ func TestFloatRangeJSONRepresentation(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
-		floatRange := FloatRange{Start: 0, End: 100, unknownStart: true, inclusiveEnd: true}
+		floatRange := FloatRange{start: 0, end: 100, unknownStart: true, inclusiveEnd: true}
 
 		assert.Equal(t, `{"float-range__value":{"end":100}}`, getJSONRepr(t, floatRange, ctx))
 		assert.Equal(t, `{"end":100}`, getJSONRepr(t, floatRange, ctx, JSONSerializationConfig{
@@ -868,7 +868,7 @@ func TestFloatRangeJSONRepresentation(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
-		floatRange := FloatRange{Start: 0, End: 100, inclusiveEnd: false}
+		floatRange := FloatRange{start: 0, end: 100, inclusiveEnd: false}
 
 		assert.Equal(t, `{"float-range__value":{"start":0,"exclusiveEnd":100}}`, getJSONRepr(t, floatRange, ctx))
 		assert.Equal(t, `{"start":0,"exclusiveEnd":100}`, getJSONRepr(t, floatRange, ctx, JSONSerializationConfig{

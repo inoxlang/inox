@@ -334,33 +334,33 @@ func convertJsonSchemaToPattern(schema *jsonschema.Schema, baseSchema *jsonschem
 	if allowNumber {
 		hasSpecifiedRange := false
 		floatRange := FloatRange{
-			Start: math.Inf(-1),
-			End:   math.Inf(1),
+			start: math.Inf(-1),
+			end:   math.Inf(1),
 		}
 
 		if schema.Minimum != nil {
 			hasSpecifiedRange = true
 			min, _ := schema.Minimum.Float64()
-			floatRange.Start = min
+			floatRange.start = min
 		} else if schema.ExclusiveMinimum != nil {
 			hasSpecifiedRange = true
 			exclusiveMinimum, _ := schema.ExclusiveMinimum.Float64()
-			floatRange.Start = math.Nextafter(exclusiveMinimum, math.Inf(1))
+			floatRange.start = math.Nextafter(exclusiveMinimum, math.Inf(1))
 		}
 
 		if schema.Maximum != nil {
 			hasSpecifiedRange = true
 			max, _ := schema.Maximum.Float64()
-			floatRange.End = max
+			floatRange.end = max
 			floatRange.inclusiveEnd = true
 		} else if schema.ExclusiveMaximum != nil {
 			hasSpecifiedRange = true
 			exclusiveMaximum, _ := schema.ExclusiveMaximum.Float64()
 
 			if math.IsInf(exclusiveMaximum, 1) {
-				floatRange.End = exclusiveMaximum
+				floatRange.end = exclusiveMaximum
 			} else {
-				floatRange.End = math.Nextafter(exclusiveMaximum, math.Inf(-1))
+				floatRange.end = math.Nextafter(exclusiveMaximum, math.Inf(-1))
 			}
 		}
 

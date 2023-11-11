@@ -330,8 +330,8 @@ func TestFloatRangePattern(t *testing.T) {
 
 	t.Run("0.0..100.0", func(t *testing.T) {
 		patt := NewFloatRangePattern(FloatRange{
-			Start: 0,
-			End:   100,
+			start: 0,
+			end:   100,
 		}, -1)
 		assert.True(t, patt.Test(ctx, Float(0)))
 		assert.True(t, patt.Test(ctx, Float(1)))
@@ -347,8 +347,8 @@ func TestFloatRangePattern(t *testing.T) {
 
 	t.Run("0.0..100.0, multiple of 3", func(t *testing.T) {
 		patt := NewFloatRangePattern(FloatRange{
-			Start: 0,
-			End:   100,
+			start: 0,
+			end:   100,
 		}, 3)
 		assert.True(t, patt.Test(ctx, Float(0)))
 		assert.True(t, patt.Test(ctx, Float(3)))

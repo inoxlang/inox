@@ -997,7 +997,7 @@ func (r IntRange) WriteRepresentation(ctx *Context, w io.Writer, config *ReprCon
 func (r FloatRange) write(w io.Writer) (int, error) {
 	b := make([]byte, 0, 10)
 	if !r.unknownStart {
-		repr := fmtFloat(r.Start)
+		repr := fmtFloat(r.start)
 		b = append(b, repr...)
 
 		hasPoint := false
@@ -1013,7 +1013,7 @@ func (r FloatRange) write(w io.Writer) (int, error) {
 	}
 	b = append(b, '.', '.')
 
-	repr := fmtFloat(r.End)
+	repr := fmtFloat(r.end)
 	b = append(b, repr...)
 
 	hasPoint := false

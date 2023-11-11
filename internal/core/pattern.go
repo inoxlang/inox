@@ -1056,7 +1056,7 @@ type FloatRangePattern struct {
 
 // multipleOf is ignored if not greater than zero
 func NewFloatRangePattern(floatRange FloatRange, multipleOf float64) *FloatRangePattern {
-	if floatRange.End < floatRange.Start {
+	if floatRange.end < floatRange.start {
 		panic(fmt.Errorf("failed to create float range pattern, end < start"))
 	}
 
@@ -1075,7 +1075,7 @@ func NewFloatRangePattern(floatRange FloatRange, multipleOf float64) *FloatRange
 }
 
 func NewSingleElementFloatRangePattern(n float64) *FloatRangePattern {
-	range_ := FloatRange{inclusiveEnd: true, Start: n, End: n}
+	range_ := FloatRange{inclusiveEnd: true, start: n, end: n}
 	return &FloatRangePattern{
 		floatRange: range_,
 		CallBasedPatternReprMixin: CallBasedPatternReprMixin{
@@ -1091,7 +1091,7 @@ func (patt *FloatRangePattern) Test(ctx *Context, v Value) bool {
 		return false
 	}
 
-	if n < Float(patt.floatRange.Start) ||
+	if n < Float(patt.floatRange.start) ||
 		n > Float(patt.floatRange.InclusiveEnd()) {
 		return false
 	}

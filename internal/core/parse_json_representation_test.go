@@ -116,7 +116,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 			assert.Equal(t, Float(1), v)
 		}
 
-		floatPattern := NewFloatRangePattern(FloatRange{Start: 0, End: 2, inclusiveEnd: true}, -1)
+		floatPattern := NewFloatRangePattern(FloatRange{start: 0, end: 2, inclusiveEnd: true}, -1)
 		v, err = ParseJSONRepresentation(ctx, `1`, floatPattern)
 		if assert.NoError(t, err) {
 			assert.Equal(t, Float(1), v)

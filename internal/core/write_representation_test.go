@@ -1078,7 +1078,7 @@ func TestFloatRangeRepresentation(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
-		floatRange := FloatRange{Start: 0, End: 100, inclusiveEnd: true}
+		floatRange := FloatRange{start: 0, end: 100, inclusiveEnd: true}
 
 		expectedRepr := "0.0..100.0"
 		assert.Equal(t, expectedRepr, getReprAllVisible(t, floatRange, ctx))
@@ -1092,7 +1092,7 @@ func TestFloatRangeRepresentation(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
-		floatRange := FloatRange{Start: 0, End: 100, unknownStart: true, inclusiveEnd: true}
+		floatRange := FloatRange{start: 0, end: 100, unknownStart: true, inclusiveEnd: true}
 
 		expectedRepr := "..100.0"
 		assert.Equal(t, expectedRepr, getReprAllVisible(t, floatRange, ctx))
