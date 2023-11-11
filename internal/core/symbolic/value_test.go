@@ -55,11 +55,16 @@ func TestSymbolicFloat(t *testing.T) {
 func TestSymbolicInt(t *testing.T) {
 
 	t.Run("Test()", func(t *testing.T) {
-		int := &Int{}
+		anyInt := &Int{}
+		anyIntMatchingSpecificPattern := &Int{matchingPattern: &IntRangePattern{
+			intRange: NewIncludedEndIntRange(INT_1, INT_2),
+		}}
 
-		assertTest(t, int, int)
-		assertTest(t, int, &Int{})
-		assertTestFalse(t, int, &Float{})
+		assertTest(t, anyInt, anyInt)
+		assertTest(t, anyInt, &Int{})
+		assertTest(t, anyInt, INT_1)
+		assertTest(t, anyInt, anyIntMatchingSpecificPattern)
+		assertTestFalse(t, anyInt, ANY_FLOAT)
 	})
 
 }

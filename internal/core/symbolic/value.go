@@ -84,7 +84,7 @@ func isNever(val Value) bool {
 	return ok
 }
 
-func deeplyEqual(v1, v2 Value) bool {
+func deeplyMatch(v1, v2 Value) bool {
 	return v1.Test(v2, RecTestCallState{}) && v2.Test(v1, RecTestCallState{})
 }
 
@@ -943,6 +943,13 @@ type IntRange struct {
 }
 
 func NewIncludedEndIntRange(start, end *Int) *IntRange {
+	if !start.hasValue {
+		panic(errors.New("lower bound has no value"))
+	}
+	if !end.hasValue {
+		panic(errors.New("lower bound has no value"))
+	}
+
 	return &IntRange{
 		hasValue:     true,
 		inclusiveEnd: true,
@@ -952,6 +959,13 @@ func NewIncludedEndIntRange(start, end *Int) *IntRange {
 }
 
 func NewExcludedEndIntRange(start, end *Int) *IntRange {
+	if !start.hasValue {
+		panic(errors.New("lower bound has no value"))
+	}
+	if !end.hasValue {
+		panic(errors.New("lower bound has no value"))
+	}
+
 	return &IntRange{
 		hasValue:     true,
 		inclusiveEnd: false,
@@ -961,6 +975,13 @@ func NewExcludedEndIntRange(start, end *Int) *IntRange {
 }
 
 func NewIntRange(start, end *Int, inclusiveEnd, isStepNotOne bool) *IntRange {
+	if !start.hasValue {
+		panic(errors.New("lower bound has no value"))
+	}
+	if !end.hasValue {
+		panic(errors.New("lower bound has no value"))
+	}
+
 	return &IntRange{
 		hasValue:     true,
 		inclusiveEnd: inclusiveEnd,
@@ -997,7 +1018,20 @@ func (r *IntRange) Static() Pattern {
 }
 
 func (r *IntRange) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
-	w.WriteName("int-range")
+	if !r.hasValue {
+		w.WriteName("int-range")
+		return
+	}
+
+	if r.inclusiveEnd {
+		w.WriteStringF("%d..%d", r.start.value, r.end.value)
+	} else {
+		w.WriteStringF("%d..<%d", r.start.value, r.end.value)
+	}
+
+	if r.isStepNotOne {
+		w.WriteString("(step?)")
+	}
 }
 
 func (r *IntRange) KnownLen() int {
@@ -1005,7 +1039,10 @@ func (r *IntRange) KnownLen() int {
 }
 
 func (r *IntRange) element() Value {
-	return ANY_INT
+	return &Int{
+		hasValue:        false,
+		matchingPattern: &IntRangePattern{intRange: r},
+	}
 }
 
 func (*IntRange) elementAt(i int) Value {
@@ -1023,6 +1060,10 @@ func (r *IntRange) Contains(value Serializable) (yes bool, possible bool) {
 	int, ok := value.(*Int)
 	if !ok {
 		return false, false
+	}
+
+	if int.matchingPattern != nil && r.Test(int.matchingPattern.intRange, RecTestCallState{}) {
+		return true, true
 	}
 
 	if !r.hasValue || !int.hasValue {
@@ -1047,7 +1088,7 @@ func (r *IntRange) IteratorElementKey() Value {
 }
 
 func (r *IntRange) IteratorElementValue() Value {
-	return ANY_INT
+	return r.element()
 }
 
 func (r *IntRange) WidestOfType() Value {

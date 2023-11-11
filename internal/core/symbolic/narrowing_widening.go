@@ -132,7 +132,7 @@ func widenToSameStaticTypeInMultivalue(v Value) Value {
 				continue
 			}
 
-			if deeplyEqual(pattern, otherPattern) {
+			if deeplyMatch(pattern, otherPattern) {
 				replacements[patternIndex] = pattern.SymbolicValue()
 				removedIndexes = append(removedIndexes, otherPatternIndex)
 			}

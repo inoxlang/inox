@@ -88,12 +88,26 @@ type Int struct {
 	SerializableMixin
 	value    int64
 	hasValue bool
+
+	//this field can be set whatever the value of hasValue.
+	matchingPattern *IntRangePattern
 }
 
 func NewInt(v int64) *Int {
 	return &Int{
 		value:    v,
 		hasValue: true,
+	}
+}
+
+func (i *Int) WithMatchingPattern(pattern *IntRangePattern) *Int {
+	if i.matchingPattern == pattern {
+		return i
+	}
+	return &Int{
+		value:           i.value,
+		hasValue:        i.hasValue,
+		matchingPattern: pattern,
 	}
 }
 
@@ -106,7 +120,10 @@ func (i *Int) Test(v Value, state RecTestCallState) bool {
 		return false
 	}
 	if !i.hasValue {
-		return true
+		if i.matchingPattern == nil || i.matchingPattern.TestValue(otherInt, state) {
+			return true
+		}
+		return otherInt.matchingPattern != nil && i.matchingPattern.Test(otherInt.matchingPattern, state)
 	}
 	return otherInt.hasValue && i.value == otherInt.value
 }
@@ -131,6 +148,10 @@ func (i *Int) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig)
 	if i.hasValue {
 		w.WriteByte('(')
 		w.WriteString(strconv.FormatInt(i.value, 10))
+		w.WriteByte(')')
+	} else if i.matchingPattern != nil {
+		w.WriteByte('(')
+		i.matchingPattern.intRange.PrettyPrint(w.WithDepthIndent(w.Depth+1, 0), config)
 		w.WriteByte(')')
 	}
 }

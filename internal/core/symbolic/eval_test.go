@@ -7275,7 +7275,9 @@ func TestSymbolicEval(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
 
-			expectedResultFromForStmt := NewList(ANY_INT, ANY_INT)
+			pattern := NewIntRangePattern(NewIncludedEndIntRange(INT_1, INT_3))
+
+			expectedResultFromForStmt := NewList(ANY_INT, ANY_INT.WithMatchingPattern(pattern))
 			assert.Equal(t, NewMultivalue(expectedResultFromForStmt, Nil), res)
 		})
 
@@ -7857,7 +7859,8 @@ func TestSymbolicEval(t *testing.T) {
 				return %{a: %int(0..1)}
 			`)
 
-			patt, _ := state.ctx.ResolveNamedPattern("int").Call(nil, []Value{&IntRange{}})
+			intRange := NewIncludedEndIntRange(INT_0, INT_1)
+			patt, _ := state.ctx.ResolveNamedPattern("int").Call(nil, []Value{intRange})
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
@@ -8115,7 +8118,9 @@ func TestSymbolicEval(t *testing.T) {
 				return %{x: #{a: %int(0..1)}}
 			`)
 
-			patt, _ := state.ctx.ResolveNamedPattern("int").Call(nil, []Value{&IntRange{}})
+
+			intRange := NewIncludedEndIntRange(INT_0, INT_1)
+			patt, _ := state.ctx.ResolveNamedPattern("int").Call(nil, []Value{intRange})
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)

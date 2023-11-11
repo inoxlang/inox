@@ -176,7 +176,7 @@ func init() {
 			return symbolic.ANY_INT
 		},
 		_len_range, func(ctx *symbolic.Context, arg symbolic.StringPattern) *symbolic.IntRange {
-			return &symbolic.IntRange{}
+			return symbolic.ANY_INT_RANGE
 		},
 
 		_mkbytes, func(ctx *symbolic.Context, size *symbolic.Int) *symbolic.ByteSlice {

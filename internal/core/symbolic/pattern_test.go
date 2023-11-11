@@ -3102,6 +3102,60 @@ func TestTypePattern(t *testing.T) {
 
 }
 
+func TestIntRangePattern(t *testing.T) {
+
+	t.Run("Test()", func(t *testing.T) {
+		intRangePattern1_2 := NewIntRangePattern(NewIncludedEndIntRange(INT_1, INT_2))
+		intRangePattern1_2ExcludedEnd := NewIntRangePattern(NewExcludedEndIntRange(INT_1, INT_2))
+
+		assertTest(t, ANY_INT_RANGE_PATTERN, ANY_INT_RANGE_PATTERN)
+		assertTest(t, ANY_INT_RANGE_PATTERN, intRangePattern1_2)
+
+		//check intRangePattern1_2
+		assertTest(t, intRangePattern1_2, intRangePattern1_2)
+		assertTestFalse(t, intRangePattern1_2, ANY_INT_RANGE_PATTERN)
+
+		//check intRangePattern1_2ExcludedEnd
+		assertTest(t, intRangePattern1_2ExcludedEnd, intRangePattern1_2ExcludedEnd)
+		assertTestFalse(t, intRangePattern1_2ExcludedEnd, ANY_INT_RANGE_PATTERN)
+		assertTestFalse(t, intRangePattern1_2ExcludedEnd, intRangePattern1_2)
+	})
+
+	t.Run("TestValue()", func(t *testing.T) {
+		assertTestValueFalse(t, ANY_INT_RANGE_PATTERN, INT_0)
+		assertTestValueFalse(t, ANY_INT_RANGE_PATTERN, INT_1)
+
+		val := ANY_INT_RANGE_PATTERN.SymbolicValue()
+		assertTestFalse(t, val, INT_0)
+		assertTestFalse(t, val, INT_1)
+
+		intRangePattern1_2 := NewIntRangePattern(NewIncludedEndIntRange(INT_1, INT_2))
+		assertTestValue(t, intRangePattern1_2, INT_1)
+		assertTestValue(t, intRangePattern1_2, INT_2)
+		assertTestValueFalse(t, intRangePattern1_2, INT_3)
+		assertTestValueFalse(t, intRangePattern1_2, INT_0)
+
+		val = intRangePattern1_2.SymbolicValue()
+		assertTest(t, val, INT_1)
+		assertTest(t, val, INT_2)
+		assertTestFalse(t, val, INT_3)
+		assertTestFalse(t, val, INT_0)
+
+		intRangePattern1_2ExcludedEnd := NewIntRangePattern(NewExcludedEndIntRange(INT_1, INT_2))
+		assertTestValue(t, intRangePattern1_2ExcludedEnd, INT_1)
+		assertTestValueFalse(t, intRangePattern1_2ExcludedEnd, INT_2)
+		assertTestValueFalse(t, intRangePattern1_2ExcludedEnd, INT_3)
+		assertTestValueFalse(t, intRangePattern1_2ExcludedEnd, INT_0)
+
+		val = intRangePattern1_2ExcludedEnd.SymbolicValue()
+		assertTest(t, val, INT_1)
+		assertTestFalse(t, val, INT_2)
+		assertTestFalse(t, val, INT_3)
+		assertTestFalse(t, val, INT_0)
+	})
+
+}
+
 func TestFunctionPattern(t *testing.T) {
 
 	t.Run("any function pattern", func(t *testing.T) {

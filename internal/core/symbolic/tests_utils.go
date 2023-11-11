@@ -28,7 +28,12 @@ func _makeStateAndChunk(code string, globals ...map[string]Value) (*parse.Chunk,
 			if len(values) == 0 {
 				return nil, errors.New("missing argument")
 			}
-			return &IntRangePattern{}, nil
+			intRange, ok := values[0].(*IntRange)
+
+			if !ok {
+				return nil, errors.New("argument should be an integer range")
+			}
+			return NewIntRangePattern(intRange), nil
 		},
 	}, false)
 	state.ctx.AddNamedPattern("bool", &TypePattern{

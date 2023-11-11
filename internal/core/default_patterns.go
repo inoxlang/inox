@@ -347,7 +347,15 @@ var (
 			}, nil
 		},
 		SymbolicCallImpl: func(ctx *symbolic.Context, values []symbolic.Value) (symbolic.Pattern, error) {
-			return &symbolic.IntRangePattern{}, nil
+			if len(values) == 0 {
+				return nil, errors.New("missing argument")
+			}
+			intRange, ok := values[0].(*symbolic.IntRange)
+
+			if !ok {
+				return nil, errors.New("argument should be an integer range")
+			}
+			return symbolic.NewIntRangePattern(intRange), nil
 		},
 
 		stringPattern: func() (StringPattern, bool) {
@@ -398,7 +406,7 @@ var (
 			}, nil
 		},
 		SymbolicCallImpl: func(ctx *symbolic.Context, values []symbolic.Value) (symbolic.Pattern, error) {
-			return &symbolic.IntRangePattern{}, nil
+			return symbolic.ANY_FLOAT_RANGE_PATTERN, nil
 		},
 
 		stringPattern: func() (StringPattern, bool) {

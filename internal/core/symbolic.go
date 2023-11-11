@@ -712,15 +712,22 @@ func (p *RegexPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]sym
 }
 
 func (p *RuneRangeStringPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
-	return &symbolic.AnyStringPattern{}, nil
+	return symbolic.ANY_STR_PATTERN, nil
 }
 
 func (p *IntRangePattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
-	return &symbolic.IntRangePattern{}, nil
+	if p.multipleOf > 0 || p.multipleOfFloat != nil {
+		return symbolic.ANY_INT_RANGE_PATTERN, nil
+	}
+	intRange, err := p.intRange.ToSymbolicValue(ctx, encountered)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert int range of int range pattern to symbolic: %w", err)
+	}
+	return symbolic.NewIntRangePattern(intRange.(*symbolic.IntRange)), nil
 }
 
 func (p *FloatRangePattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
-	return &symbolic.IntRangePattern{}, nil
+	return symbolic.ANY_FLOAT_RANGE_PATTERN, nil
 }
 
 func (p *UnionStringPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {

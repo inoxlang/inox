@@ -145,14 +145,14 @@ func (fn *InoxFunction) Test(v Value, state RecTestCallState) bool {
 
 	for i, paramVal := range fn.parameters {
 		otherParamVal := other.parameters[i]
-		if !deeplyEqual(paramVal, otherParamVal) {
+		if !deeplyMatch(paramVal, otherParamVal) {
 			return false
 		}
 	}
 
 	for name, val := range fn.capturedLocals {
 		otherVal, found := other.capturedLocals[name]
-		if !found || !deeplyEqual(val, otherVal) {
+		if !found || !deeplyMatch(val, otherVal) {
 			return false
 		}
 	}
@@ -912,19 +912,19 @@ func (f *Function) Test(v Value, state RecTestCallState) bool {
 		}
 
 		for i, param := range f.NonVariadicParameters() {
-			if !deeplyEqual(param, fnNonVariadicParams[i]) {
+			if !deeplyMatch(param, fnNonVariadicParams[i]) {
 				return false
 			}
 		}
 
 		variadicParamElem := f.VariadicParamElem()
 
-		if !deeplyEqual(variadicParamElem, goFunc.variadicElem) {
+		if !deeplyMatch(variadicParamElem, goFunc.variadicElem) {
 			return false
 		}
 
 		for i, result := range f.results {
-			if !deeplyEqual(result, goFunc.results[i]) {
+			if !deeplyMatch(result, goFunc.results[i]) {
 				return false
 			}
 		}
@@ -937,7 +937,7 @@ func (f *Function) Test(v Value, state RecTestCallState) bool {
 		}
 
 		for i, param := range f.parameters {
-			if !deeplyEqual(param, inoxFn.parameters[i]) {
+			if !deeplyMatch(param, inoxFn.parameters[i]) {
 				return false
 			}
 		}
@@ -952,7 +952,7 @@ func (f *Function) Test(v Value, state RecTestCallState) bool {
 		default:
 			result = NewArray(f.results...)
 		}
-		return deeplyEqual(result, inoxFn.result)
+		return deeplyMatch(result, inoxFn.result)
 	default:
 		return false
 	}

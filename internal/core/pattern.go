@@ -935,8 +935,8 @@ func (patt *FunctionPattern) StringPattern() (StringPattern, bool) {
 // An IntRangePattern represents a pattern matching integers in a given range.
 type IntRangePattern struct {
 	intRange        IntRange
-	multipleOf      Int
-	multipleOfFloat *Float
+	multipleOf      Int    //ignored if <= 0
+	multipleOfFloat *Float //can be nil
 
 	CallBasedPatternReprMixin
 	NotCallablePatternMixin

@@ -89,7 +89,7 @@ var (
 	}
 
 	ANY_REGEX_PATTERN       = &RegexPattern{}
-	ANY_INT_RANGE_PATTERN   = &IntRangePattern{}
+	ANY_INT_RANGE_PATTERN   = NewIntRangePattern(ANY_INT_RANGE)
 	ANY_FLOAT_RANGE_PATTERN = &FloatRangePattern{}
 
 	ErrPatternNotCallable                        = errors.New("pattern is not callable")
@@ -3100,6 +3100,8 @@ func (fn *FunctionPattern) WidestOfType() Value {
 }
 
 // A IntRangePattern represents a symbolic IntRangePattern.
+// This symbolic Value does not support the multipleOf constraint, therefore the symbolic version
+// of concrete IntRangePattern(s) with such a constraint should be ANY_INT_RANGE_PATTERN.
 type IntRangePattern struct {
 	NotCallablePatternMixin
 	UnassignablePropsMixin
@@ -3108,16 +3110,29 @@ type IntRangePattern struct {
 	intRange *IntRange
 }
 
+func NewIntRangePattern(intRange *IntRange) *IntRangePattern {
+	return &IntRangePattern{intRange: intRange}
+}
+
 func (p *IntRangePattern) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
-	_, ok := v.(*IntRangePattern)
-	return ok
+	otherPattern, ok := v.(*IntRangePattern)
+	if !ok {
+		return false
+	}
+	return p.intRange.Test(otherPattern.intRange, state)
 }
 
 func (p *IntRangePattern) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("int-range-pattern")
+	if !p.intRange.hasValue {
+		return
+	}
+	w.WriteByte('(')
+	p.intRange.PrettyPrint(w.WithDepthIndent(w.Depth+1, 0), config)
+	w.WriteByte(')')
 }
 
 func (p *IntRangePattern) HasUnderlyingPattern() bool {
@@ -3128,12 +3143,16 @@ func (p *IntRangePattern) TestValue(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
-	_, ok := v.(*Int)
-	return ok
+	int, ok := v.(*Int)
+	if !ok {
+		return false
+	}
+	yes, _ := p.intRange.Contains(int)
+	return yes
 }
 
 func (p *IntRangePattern) SymbolicValue() Value {
-	return ANY_INT
+	return p.intRange.element()
 }
 
 func (p *IntRangePattern) StringPattern() (StringPattern, bool) {
@@ -3156,7 +3175,7 @@ func (p *IntRangePattern) IteratorElementKey() Value {
 }
 
 func (p *IntRangePattern) IteratorElementValue() Value {
-	return ANY_INT
+	return p.SymbolicValue()
 }
 
 func (p *IntRangePattern) WidestOfType() Value {
