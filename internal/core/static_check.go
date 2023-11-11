@@ -2043,17 +2043,33 @@ func (checker *checker) postCheckSingleNode(node, parent, scopeNode parse.Node, 
 		//manifest
 
 		if utils.Implements[*parse.Manifest](parent) {
-			if len(ancestorChain) < 2 {
+			if len(ancestorChain) < 3 {
 				checker.addError(parent, CANNOT_CHECK_MANIFEST_WITHOUT_PARENT)
 				break
 			}
 
-			embeddedModule := !utils.Implements[*parse.Chunk](ancestorChain[len(ancestorChain)-2])
-			if embeddedModule {
+			chunk := ancestorChain[len(ancestorChain)-2]
+			isEmbeddedModule := utils.Implements[*parse.EmbeddedModule](chunk)
+
+			if isEmbeddedModule {
+				var moduleKind ModuleKind
+				switch ancestorChain[len(ancestorChain)-3].(type) {
+				case *parse.LifetimejobExpression:
+					moduleKind = LifetimeJobModule
+				case *parse.SpawnExpression:
+					moduleKind = UserLThreadModule
+				case *parse.TestSuiteExpression:
+					moduleKind = TestSuiteModule
+				case *parse.TestCaseExpression:
+					moduleKind = TestCaseModule
+				default:
+					panic(ErrUnreachable)
+				}
+
 				checkManifestObject(manifestStaticCheckArguments{
 					objLit:                n,
 					ignoreUnknownSections: true,
-					embeddedModule:        embeddedModule,
+					moduleKind:            moduleKind,
 					onError: func(n parse.Node, msg string) {
 						checker.addError(n, msg)
 					},
@@ -2143,7 +2159,7 @@ func checkPatternOnlyIncludedChunk(chunk *parse.Chunk, onError func(n parse.Node
 type manifestStaticCheckArguments struct {
 	objLit                *parse.ObjectLiteral
 	ignoreUnknownSections bool
-	embeddedModule        bool
+	moduleKind            ModuleKind
 	onError               func(n parse.Node, msg string)
 	project               Project
 }
@@ -2265,7 +2281,7 @@ func checkManifestObject(args manifestStaticCheckArguments) {
 			}, nil)
 		case MANIFEST_ENV_SECTION_NAME:
 
-			if args.embeddedModule {
+			if args.moduleKind.IsEmbedded() {
 				onError(p, ENV_SECTION_NOT_AVAILABLE_IN_EMBEDDED_MODULE_MANIFESTS)
 				continue
 			}
@@ -2292,7 +2308,7 @@ func checkManifestObject(args manifestStaticCheckArguments) {
 				return parse.ContinueTraversal, nil
 			}, nil)
 		case MANIFEST_PREINIT_FILES_SECTION_NAME:
-			if args.embeddedModule {
+			if args.moduleKind.IsEmbedded() {
 				onError(p, PREINIT_FILES_SECTION_NOT_AVAILABLE_IN_EMBEDDED_MODULE_MANIFESTS)
 				continue
 			}
@@ -2306,7 +2322,7 @@ func checkManifestObject(args manifestStaticCheckArguments) {
 
 			checkPreinitFilesObject(obj, onError)
 		case MANIFEST_DATABASES_SECTION_NAME:
-			if args.embeddedModule {
+			if args.moduleKind.IsEmbedded() {
 				onError(p, DATABASES_SECTION_NOT_AVAILABLE_IN_EMBEDDED_MODULE_MANIFESTS)
 				continue
 			}
@@ -2319,7 +2335,7 @@ func checkManifestObject(args manifestStaticCheckArguments) {
 				onError(p, DATABASES_SECTION_SHOULD_BE_AN_OBJECT_OR_ABS_PATH)
 			}
 		case MANIFEST_INVOCATION_SECTION_NAME:
-			if args.embeddedModule {
+			if args.moduleKind.IsEmbedded() {
 				onError(p, INVOCATION_SECTION_NOT_AVAILABLE_IN_EMBEDDED_MODULE_MANIFESTS)
 				continue
 			}
@@ -2331,7 +2347,7 @@ func checkManifestObject(args manifestStaticCheckArguments) {
 				onError(p, INVOCATION_SECTION_SHOULD_BE_AN_OBJECT)
 			}
 		case MANIFEST_PARAMS_SECTION_NAME:
-			if args.embeddedModule {
+			if args.moduleKind.IsEmbedded() {
 				onError(p, PARAMS_SECTION_NOT_AVAILABLE_IN_EMBEDDED_MODULE_MANIFESTS)
 				continue
 			}

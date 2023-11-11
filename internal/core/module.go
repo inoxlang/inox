@@ -17,6 +17,7 @@ import (
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/in_mem_ds"
+	"github.com/inoxlang/inox/internal/inoxconsts"
 	parse "github.com/inoxlang/inox/internal/parse"
 	permkind "github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
@@ -81,6 +82,7 @@ type ModuleKind int
 
 const (
 	UnspecifiedModuleKind ModuleKind = iota
+	SpecModule                       //.spec.ix file
 	UserLThreadModule
 	TestSuiteModule
 	TestCaseModule
@@ -269,6 +271,7 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (_ *Manifest, usedRunningState
 		checkManifestObject(manifestStaticCheckArguments{
 			objLit:                manifestObjLiteral,
 			ignoreUnknownSections: preinitArgs.IgnoreUnknownSections,
+			moduleKind:            m.ModuleKind,
 			onError: func(n parse.Node, msg string) {
 				location := m.MainChunk.GetSourcePosition(n.Base().Span)
 				checkErr := NewStaticCheckError(msg, parse.SourcePositionStack{location})
@@ -735,6 +738,11 @@ func ParseModuleFromSource(src parse.ChunkSource, resource ResourceName, config 
 		ManifestTemplate:      code.Node.Manifest,
 		InclusionStatementMap: make(map[*parse.InclusionImportStatement]*IncludedChunk),
 		IncludedChunkMap:      map[string]*IncludedChunk{},
+	}
+
+	//the following condition should be updated if URLs with a query are supported.
+	if strings.HasSuffix(resource.UnderlyingString(), inoxconsts.INOXLANG_SPEC_FILE_SUFFIX) {
+		mod.ModuleKind = SpecModule
 	}
 
 	// add parsing errors to the module
