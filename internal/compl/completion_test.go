@@ -619,7 +619,7 @@ func TestFindCompletions(t *testing.T) {
 
 			})
 
-			t.Run("permission kind", func(t *testing.T) {
+			t.Run("permission kind in manifest", func(t *testing.T) {
 				state := newState()
 				chunk, _ := parseChunkSource("manifest{permissions:{}}", "")
 				doSymbolicCheck(chunk, state.Global)
@@ -632,7 +632,7 @@ func TestFindCompletions(t *testing.T) {
 				})
 			})
 
-			t.Run("permission kind from prefix", func(t *testing.T) {
+			t.Run("permission kind from prefix in manifest", func(t *testing.T) {
 				state := newState()
 				chunk, _ := parseChunkSource("manifest{permissions:{r}}", "")
 				doSymbolicCheck(chunk, state.Global)
@@ -643,6 +643,34 @@ func TestFindCompletions(t *testing.T) {
 						ShownString:   "read",
 						Value:         "read",
 						ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 22, End: 23}},
+					},
+				}, completions)
+			})
+
+			t.Run("permission kind in module import", func(t *testing.T) {
+				state := newState()
+				chunk, _ := parseChunkSource("manifest{};import lib /lib.ix {allow:{}}", "")
+				doSymbolicCheck(chunk, state.Global)
+
+				completions := findCompletions(state, chunk, 38)
+				assert.Contains(t, completions, Completion{
+					ShownString:   "read",
+					Value:         "read",
+					ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 38, End: 38}},
+				})
+			})
+
+			t.Run("permission kind from prefix in manifest", func(t *testing.T) {
+				state := newState()
+				chunk, _ := parseChunkSource("manifest{};import lib /lib.ix {allow:{r}}", "")
+				doSymbolicCheck(chunk, state.Global)
+
+				completions := findCompletions(state, chunk, 39)
+				assert.EqualValues(t, []Completion{
+					{
+						ShownString:   "read",
+						Value:         "read",
+						ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 38, End: 39}},
 					},
 				}, completions)
 			})

@@ -381,7 +381,8 @@ func handleIdentifierAndKeywordCompletions(
 
 	var completions []Completion
 
-	if deepestCall != nil && deepestCall.CommandLikeSyntax { //subcommand completions
+	//subcommand completions
+	if deepestCall != nil && deepestCall.CommandLikeSyntax {
 		argIndex := -1
 
 		for i, arg := range deepestCall.Arguments {
@@ -499,39 +500,60 @@ after_subcommand_completions:
 		switch parent.(type) {
 		case *parse.ObjectProperty:
 
-			//case: the current property is in an object describing one of the section of the manifest
+			//case: the current property is a property of the permissions section of the manifest.
 			if len(ancestors) >= 6 && utils.Implements[*parse.ObjectLiteral](ancestors[len(ancestors)-2]) &&
 				utils.Implements[*parse.ObjectProperty](ancestors[len(ancestors)-3]) &&
+				ancestors[len(ancestors)-3].(*parse.ObjectProperty).HasNameEqualTo(core.MANIFEST_PERMS_SECTION_NAME) &&
 				utils.Implements[*parse.Manifest](ancestors[len(ancestors)-5]) {
 
-				manifestObjProp := ancestors[len(ancestors)-3].(*parse.ObjectProperty)
-
-				if manifestObjProp.HasImplicitKey() {
-					break
-				}
-
-				switch manifestObjProp.Name() {
-				case core.MANIFEST_PERMS_SECTION_NAME:
-					for _, info := range permkind.PERMISSION_KINDS {
-						if !hasPrefixCaseInsensitive(info.Name, ident.Name) {
-							continue
-						}
-
-						detail := MAJOR_PERM_KIND_TEXT
-
-						if info.PermissionKind.IsMinor() {
-							detail = MINOR_PERM_KIND_TEXT
-						}
-
-						completions = append(completions, Completion{
-							ShownString: info.Name,
-							Value:       info.Name,
-							Kind:        defines.CompletionItemKindVariable,
-							LabelDetail: detail,
-						})
+				for _, info := range permkind.PERMISSION_KINDS {
+					if !hasPrefixCaseInsensitive(info.Name, ident.Name) {
+						continue
 					}
+
+					detail := MAJOR_PERM_KIND_TEXT
+
+					if info.PermissionKind.IsMinor() {
+						detail = MINOR_PERM_KIND_TEXT
+					}
+
+					completions = append(completions, Completion{
+						ShownString: info.Name,
+						Value:       info.Name,
+						Kind:        defines.CompletionItemKindVariable,
+						LabelDetail: detail,
+					})
 				}
-				break
+
+				return completions
+			}
+
+			//case: the current property is in the 'allow' object in a module import statement.
+			if len(ancestors) >= 6 && utils.Implements[*parse.ObjectLiteral](ancestors[len(ancestors)-2]) &&
+				utils.Implements[*parse.ObjectProperty](ancestors[len(ancestors)-3]) &&
+				ancestors[len(ancestors)-3].(*parse.ObjectProperty).HasNameEqualTo(core.IMPORT_CONFIG__ALLOW_PROPNAME) &&
+				utils.Implements[*parse.ImportStatement](ancestors[len(ancestors)-5]) {
+
+				for _, info := range permkind.PERMISSION_KINDS {
+					if !hasPrefixCaseInsensitive(info.Name, ident.Name) {
+						continue
+					}
+
+					detail := MAJOR_PERM_KIND_TEXT
+
+					if info.PermissionKind.IsMinor() {
+						detail = MINOR_PERM_KIND_TEXT
+					}
+
+					completions = append(completions, Completion{
+						ShownString: info.Name,
+						Value:       info.Name,
+						Kind:        defines.CompletionItemKindVariable,
+						LabelDetail: detail,
+					})
+				}
+
+				return completions
 			}
 
 			properties, ok := state.Global.SymbolicData.GetAllowedNonPresentProperties(objectLiteral)
@@ -1266,6 +1288,33 @@ func findObjectInteriorCompletions(
 			return
 		}
 
+		//allowed permissions in module import statement
+		if len(ancestors) >= 5 &&
+			parent.HasNameEqualTo(core.IMPORT_CONFIG__ALLOW_PROPNAME) &&
+			utils.Implements[*parse.ImportStatement](ancestors[len(ancestors)-3]) {
+
+			for _, info := range permkind.PERMISSION_KINDS {
+				//ignore kinds that are already present.
+				if n.HasNamedProp(info.Name) {
+					continue
+				}
+
+				detail := MAJOR_PERM_KIND_TEXT
+
+				if info.PermissionKind.IsMinor() {
+					detail = MINOR_PERM_KIND_TEXT
+				}
+
+				completions = append(completions, Completion{
+					ShownString:   info.Name,
+					Value:         info.Name,
+					Kind:          defines.CompletionItemKindVariable,
+					ReplacedRange: pos,
+					LabelDetail:   detail,
+				})
+			}
+		}
+
 		//grandParent := ancestors[len(ancestors)-2]
 
 		switch greatGrandParent := ancestors[len(ancestors)-3].(type) {
@@ -1273,6 +1322,11 @@ func findObjectInteriorCompletions(
 			switch parent.Name() {
 			case core.MANIFEST_PERMS_SECTION_NAME: //permissions section
 				for _, info := range permkind.PERMISSION_KINDS {
+					//ignore kinds that are already present.
+					if n.HasNamedProp(info.Name) {
+						continue
+					}
+
 					detail := MAJOR_PERM_KIND_TEXT
 
 					if info.PermissionKind.IsMinor() {

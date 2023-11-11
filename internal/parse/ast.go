@@ -936,6 +936,17 @@ func (prop ObjectProperty) Name() string {
 	}
 }
 
+func (prop ObjectProperty) HasNameEqualTo(name string) bool {
+	switch v := prop.Key.(type) {
+	case *IdentifierLiteral:
+		return v.Name == name
+	case *QuotedStringLiteral:
+		return v.Value == name
+	default:
+		return false
+	}
+}
+
 type ObjectPatternProperty struct {
 	NodeBase
 	Key      Node //can be nil (implicit key)

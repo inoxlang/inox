@@ -33,6 +33,8 @@ const (
 	DEFAULT_IMPORT_TIMEOUT = 10 * time.Second
 
 	DEFAULT_MAX_MOD_GRAPH_PATH_LEN = 5
+
+	IMPORT_CONFIG__ALLOW_PROPNAME = "allow"
 )
 
 var (
@@ -103,7 +105,7 @@ func buildImportConfig(obj *Object, importSource ResourceName, parentState *Glob
 			config.ValidationString = v.(Str)
 		case "arguments":
 			config.ArgObj = v.(*Object)
-		case "allow":
+		case IMPORT_CONFIG__ALLOW_PROPNAME:
 			config.GrantedPermListing = v.(*Object)
 		default:
 			return ImportConfig{}, fmt.Errorf("invalid import configuration, unknown section '%s'", k)
