@@ -1106,7 +1106,15 @@ func (r IntRange) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic
 }
 
 func (r FloatRange) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
-	return symbolic.ANY_FLOAT_RANGE, nil
+	if r.unknownStart {
+		return symbolic.ANY_FLOAT_RANGE, nil
+	}
+
+	return symbolic.NewFloatRange(
+		symbolic.NewFloat(r.start),
+		symbolic.NewFloat(r.end),
+		r.inclusiveEnd,
+	), nil
 }
 
 func (r RuneRange) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {

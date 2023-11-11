@@ -406,7 +406,15 @@ var (
 			}, nil
 		},
 		SymbolicCallImpl: func(ctx *symbolic.Context, values []symbolic.Value) (symbolic.Pattern, error) {
-			return symbolic.ANY_FLOAT_RANGE_PATTERN, nil
+			if len(values) == 0 {
+				return nil, errors.New("missing argument")
+			}
+			floatRange, ok := values[0].(*symbolic.FloatRange)
+
+			if !ok {
+				return nil, errors.New("argument should be a float range")
+			}
+			return symbolic.NewFloatRangePattern(floatRange), nil
 		},
 
 		stringPattern: func() (StringPattern, bool) {

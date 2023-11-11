@@ -168,7 +168,7 @@ func TestSymbolicEval(t *testing.T) {
 		res, err := symbolicEval(n, state)
 		assert.NoError(t, err)
 		assert.Empty(t, state.errors())
-		assert.Equal(t, ANY_FLOAT_RANGE, res)
+		assert.Equal(t, NewIncludedEndFloatRange(FLOAT_1, FLOAT_2), res)
 	})
 
 	t.Run("quantity range literal", func(t *testing.T) {
@@ -2759,8 +2759,8 @@ func TestSymbolicEval(t *testing.T) {
 			}{
 				{"(1 .. 2)", NewIncludedEndIntRange(INT_1, INT_2), false},
 				{"(1 ..< 2)", NewExcludedEndIntRange(INT_1, INT_2), false},
-				{"(1.0 .. 2.0)", ANY_FLOAT_RANGE, false},
-				{"(1.0 ..< 2.0)", ANY_FLOAT_RANGE, false},
+				{"(1.0 .. 2.0)", NewIncludedEndFloatRange(FLOAT_1, FLOAT_2), false},
+				{"(1.0 ..< 2.0)", NewExcludedEndFloatRange(FLOAT_1, FLOAT_2), false},
 				{"(1B .. 2B)", &QuantityRange{element: ANY_BYTECOUNT}, false},
 				{"(1B ..< 2B)", &QuantityRange{element: ANY_BYTECOUNT}, false},
 
@@ -8117,7 +8117,6 @@ func TestSymbolicEval(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				return %{x: #{a: %int(0..1)}}
 			`)
-
 
 			intRange := NewIncludedEndIntRange(INT_0, INT_1)
 			patt, _ := state.ctx.ResolveNamedPattern("int").Call(nil, []Value{intRange})

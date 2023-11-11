@@ -3153,7 +3153,59 @@ func TestIntRangePattern(t *testing.T) {
 		assertTestFalse(t, val, INT_3)
 		assertTestFalse(t, val, INT_0)
 	})
+}
 
+func TestFloatRangePattern(t *testing.T) {
+
+	t.Run("Test()", func(t *testing.T) {
+		floatRangePattern1_2 := NewFloatRangePattern(NewIncludedEndFloatRange(FLOAT_1, FLOAT_2))
+		floatRangePattern1_2ExcludedEnd := NewFloatRangePattern(NewExcludedEndFloatRange(FLOAT_1, FLOAT_2))
+
+		assertTest(t, ANY_FLOAT_RANGE_PATTERN, ANY_FLOAT_RANGE_PATTERN)
+		assertTest(t, ANY_FLOAT_RANGE_PATTERN, floatRangePattern1_2)
+
+		//check floatRangePattern1_2
+		assertTest(t, floatRangePattern1_2, floatRangePattern1_2)
+		assertTestFalse(t, floatRangePattern1_2, ANY_FLOAT_RANGE_PATTERN)
+
+		//check floatRangePattern1_2ExcludedEnd
+		assertTest(t, floatRangePattern1_2ExcludedEnd, floatRangePattern1_2ExcludedEnd)
+		assertTestFalse(t, floatRangePattern1_2ExcludedEnd, ANY_FLOAT_RANGE_PATTERN)
+		assertTestFalse(t, floatRangePattern1_2ExcludedEnd, floatRangePattern1_2)
+	})
+
+	t.Run("TestValue()", func(t *testing.T) {
+		assertTestValueFalse(t, ANY_FLOAT_RANGE_PATTERN, FLOAT_0)
+		assertTestValueFalse(t, ANY_FLOAT_RANGE_PATTERN, FLOAT_1)
+
+		val := ANY_FLOAT_RANGE_PATTERN.SymbolicValue()
+		assertTestFalse(t, val, FLOAT_0)
+		assertTestFalse(t, val, FLOAT_1)
+
+		floatRangePattern1_2 := NewFloatRangePattern(NewIncludedEndFloatRange(FLOAT_1, FLOAT_2))
+		assertTestValue(t, floatRangePattern1_2, FLOAT_1)
+		assertTestValue(t, floatRangePattern1_2, FLOAT_2)
+		assertTestValueFalse(t, floatRangePattern1_2, FLOAT_3)
+		assertTestValueFalse(t, floatRangePattern1_2, FLOAT_0)
+
+		val = floatRangePattern1_2.SymbolicValue()
+		assertTest(t, val, FLOAT_1)
+		assertTest(t, val, FLOAT_2)
+		assertTestFalse(t, val, FLOAT_3)
+		assertTestFalse(t, val, FLOAT_0)
+
+		floatRangePattern1_2ExcludedEnd := NewFloatRangePattern(NewExcludedEndFloatRange(FLOAT_1, FLOAT_2))
+		assertTestValue(t, floatRangePattern1_2ExcludedEnd, FLOAT_1)
+		assertTestValueFalse(t, floatRangePattern1_2ExcludedEnd, FLOAT_2)
+		assertTestValueFalse(t, floatRangePattern1_2ExcludedEnd, FLOAT_3)
+		assertTestValueFalse(t, floatRangePattern1_2ExcludedEnd, FLOAT_0)
+
+		val = floatRangePattern1_2ExcludedEnd.SymbolicValue()
+		assertTest(t, val, FLOAT_1)
+		assertTestFalse(t, val, FLOAT_2)
+		assertTestFalse(t, val, FLOAT_3)
+		assertTestFalse(t, val, FLOAT_0)
+	})
 }
 
 func TestFunctionPattern(t *testing.T) {

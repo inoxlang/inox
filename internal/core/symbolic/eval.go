@@ -3178,8 +3178,17 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 				if !ANY_FLOAT.Test(right, RecTestCallState{}) {
 					msg := fmtRightOperandOfBinaryShouldBeLikeLeftOperand(n.Operator, Stringify(left), Stringify(ANY_FLOAT))
 					state.addError(makeSymbolicEvalError(n.Right, state, msg))
+					return ANY_FLOAT_RANGE, nil
 				}
-				return ANY_FLOAT_RANGE, nil
+
+				rightFloat := right.(*Float)
+
+				return &FloatRange{
+					hasValue:     true,
+					inclusiveEnd: n.Operator == parse.Range,
+					start:        left,
+					end:          rightFloat,
+				}, nil
 			default:
 				if _, ok := left.(Serializable); !ok {
 					state.addError(makeSymbolicEvalError(n.Right, state, OPERANDS_OF_BINARY_RANGE_EXPRS_SHOULD_BE_SERIALIZABLE))
@@ -3283,7 +3292,29 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 			inclusiveEnd: true,
 		}, nil
 	case *parse.FloatRangeLiteral:
-		return ANY_FLOAT_RANGE, nil
+		if n.LowerBound == nil || n.LowerBound.Err != nil {
+			return ANY_FLOAT_RANGE, nil
+		}
+
+		if n.UpperBound != nil && n.UpperBound.Base().Err != nil {
+			return ANY_FLOAT_RANGE, nil
+		}
+
+		lowerBound := NewFloat(n.LowerBound.Value)
+		upperBound := MAX_FLOAT
+
+		floatLit, ok := n.UpperBound.(*parse.FloatLiteral)
+
+		if ok {
+			upperBound = NewFloat(floatLit.Value)
+		}
+
+		return &FloatRange{
+			hasValue:     true,
+			start:        lowerBound,
+			end:          upperBound,
+			inclusiveEnd: true,
+		}, nil
 	case *parse.QuantityRangeLiteral:
 		lowerBound, err := symbolicEval(n.LowerBound, state)
 		if err != nil {

@@ -3,6 +3,7 @@ package symbolic
 import (
 	"math"
 	"strconv"
+	"strings"
 
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
 )
@@ -10,17 +11,21 @@ import (
 var (
 	_            = []Integral{(*Int)(nil), (*Byte)(nil), (*AnyIntegral)(nil)}
 	ANY_INTEGRAL = &AnyIntegral{}
-	ANY_INT      = &Int{}
-	ANY_FLOAT    = &Float{}
 
+	ANY_INT    = &Int{}
 	INT_0      = NewInt(0)
 	INT_1      = NewInt(1)
 	INT_2      = NewInt(2)
 	INT_3      = NewInt(3)
 	INT_1_OR_2 = NewMultivalue(INT_1, INT_2)
+	MAX_INT    = NewInt(math.MaxInt64)
 
-	MAX_INT   = NewInt(math.MaxInt64)
+	ANY_FLOAT = &Float{}
 	MAX_FLOAT = NewFloat(math.MaxFloat64)
+	FLOAT_0   = NewFloat(0)
+	FLOAT_1   = NewFloat(1)
+	FLOAT_2   = NewFloat(2)
+	FLOAT_3   = NewFloat(3)
 )
 
 type Integral interface {
@@ -32,6 +37,9 @@ type Float struct {
 	SerializableMixin
 	value    float64
 	hasValue bool
+
+	//this field can be set whatever the value of hasValue.
+	matchingPattern *FloatRangePattern
 }
 
 func NewFloat(v float64) *Float {
@@ -49,8 +57,12 @@ func (f *Float) Test(v Value, state RecTestCallState) bool {
 	if !ok {
 		return false
 	}
+
 	if !f.hasValue {
-		return true
+		if f.matchingPattern == nil || f.matchingPattern.TestValue(otherFloat, state) {
+			return true
+		}
+		return otherFloat.matchingPattern != nil && f.matchingPattern.Test(otherFloat.matchingPattern, state)
 	}
 	return otherFloat.hasValue && f.value == otherFloat.value
 }
@@ -74,7 +86,15 @@ func (f *Float) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfi
 	w.WriteName("float")
 	if f.hasValue {
 		w.WriteByte('(')
-		w.WriteString(strconv.FormatFloat(f.value, 'g', -1, 64))
+		s := strconv.FormatFloat(f.value, 'g', -1, 64)
+		w.WriteString(s)
+		if !strings.ContainsAny(s, ".e") {
+			w.WriteString(".0")
+		}
+		w.WriteByte(')')
+	} else if f.matchingPattern != nil {
+		w.WriteByte('(')
+		f.matchingPattern.floatRange.PrettyPrint(w.WithDepthIndent(w.Depth+1, 0), config)
 		w.WriteByte(')')
 	}
 }

@@ -90,7 +90,7 @@ var (
 
 	ANY_REGEX_PATTERN       = &RegexPattern{}
 	ANY_INT_RANGE_PATTERN   = NewIntRangePattern(ANY_INT_RANGE)
-	ANY_FLOAT_RANGE_PATTERN = &FloatRangePattern{}
+	ANY_FLOAT_RANGE_PATTERN = NewFloatRangePattern(ANY_FLOAT_RANGE)
 
 	ErrPatternNotCallable                        = errors.New("pattern is not callable")
 	ErrValueAlreadyInitialized                   = errors.New("value already initialized")
@@ -3152,7 +3152,10 @@ func (p *IntRangePattern) TestValue(v Value, state RecTestCallState) bool {
 }
 
 func (p *IntRangePattern) SymbolicValue() Value {
-	return p.intRange.element()
+	return &Int{
+		hasValue:        false,
+		matchingPattern: p,
+	}
 }
 
 func (p *IntRangePattern) StringPattern() (StringPattern, bool) {
@@ -3187,18 +3190,33 @@ type FloatRangePattern struct {
 	NotCallablePatternMixin
 	UnassignablePropsMixin
 	SerializableMixin
+
+	floatRange *FloatRange
+}
+
+func NewFloatRangePattern(floatRange *FloatRange) *FloatRangePattern {
+	return &FloatRangePattern{floatRange: floatRange}
 }
 
 func (p *FloatRangePattern) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
-	_, ok := v.(*FloatRangePattern)
-	return ok
+	otherPattern, ok := v.(*FloatRangePattern)
+	if !ok {
+		return false
+	}
+	return p.floatRange.Test(otherPattern.floatRange, state)
 }
 
 func (p *FloatRangePattern) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("float-range-pattern")
+	if !p.floatRange.hasValue {
+		return
+	}
+	w.WriteByte('(')
+	p.floatRange.PrettyPrint(w.WithDepthIndent(w.Depth+1, 0), config)
+	w.WriteByte(')')
 }
 
 func (p *FloatRangePattern) HasUnderlyingPattern() bool {
@@ -3209,12 +3227,19 @@ func (p *FloatRangePattern) TestValue(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
-	_, ok := v.(*Float)
-	return ok
+	float, ok := v.(*Float)
+	if !ok {
+		return false
+	}
+	yes, _ := p.floatRange.Contains(float)
+	return yes
 }
 
 func (p *FloatRangePattern) SymbolicValue() Value {
-	return ANY_FLOAT
+	return &Float{
+		hasValue:        false,
+		matchingPattern: p,
+	}
 }
 
 func (p *FloatRangePattern) StringPattern() (StringPattern, bool) {

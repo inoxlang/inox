@@ -2,8 +2,10 @@ package symbolic
 
 import (
 	"errors"
+	"math"
 	"reflect"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/inoxlang/inox/internal/commonfmt"
@@ -1097,16 +1099,83 @@ func (r *IntRange) WidestOfType() Value {
 
 // An FloatRange represents a symbolic FloatRange.
 type FloatRange struct {
-	_ int
 	SerializableMixin
+	hasValue bool
+
+	//fields set if .hasValue is true
+
+	inclusiveEnd bool
+	start        *Float
+	end          *Float
+}
+
+func NewIncludedEndFloatRange(start, end *Float) *FloatRange {
+	if !start.hasValue {
+		panic(errors.New("lower bound has no value"))
+	}
+	if !end.hasValue {
+		panic(errors.New("lower bound has no value"))
+	}
+
+	return &FloatRange{
+		hasValue:     true,
+		inclusiveEnd: true,
+		start:        start,
+		end:          end,
+	}
+}
+
+func NewExcludedEndFloatRange(start, end *Float) *FloatRange {
+	if !start.hasValue {
+		panic(errors.New("lower bound has no value"))
+	}
+	if !end.hasValue {
+		panic(errors.New("lower bound has no value"))
+	}
+
+	return &FloatRange{
+		hasValue:     true,
+		inclusiveEnd: false,
+		start:        start,
+		end:          end,
+	}
+}
+
+func NewFloatRange(start, end *Float, inclusiveEnd bool) *FloatRange {
+	if !start.hasValue {
+		panic(errors.New("lower bound has no value"))
+	}
+	if !end.hasValue {
+		panic(errors.New("lower bound has no value"))
+	}
+
+	return &FloatRange{
+		hasValue:     true,
+		inclusiveEnd: inclusiveEnd,
+		start:        start,
+		end:          end,
+	}
 }
 
 func (r *FloatRange) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
-	_, ok := v.(*FloatRange)
-	return ok
+	otherRange, ok := v.(*FloatRange)
+	if !ok {
+		return false
+	}
+
+	if !r.hasValue {
+		return true
+	}
+	if !otherRange.hasValue {
+		return false
+	} //else boh ranges have a value
+
+	return r.start == otherRange.start &&
+		r.end == otherRange.end &&
+		r.inclusiveEnd == otherRange.inclusiveEnd
 }
 
 func (r *FloatRange) Static() Pattern {
@@ -1114,15 +1183,55 @@ func (r *FloatRange) Static() Pattern {
 }
 
 func (r *FloatRange) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
-	w.WriteName("float-range")
+	if !r.hasValue {
+		w.WriteName("float-range")
+		return
+	}
+
+	//print start
+	s := strconv.FormatFloat(r.start.value, 'g', -1, 64)
+	w.WriteString(s)
+	if !strings.ContainsAny(s, ".e") {
+		w.WriteString(".0")
+	}
+
+	if r.inclusiveEnd {
+		w.WriteString("..")
+	} else {
+		w.WriteString("..<")
+	}
+
+	//print end
+	s = strconv.FormatFloat(r.end.value, 'g', -1, 64)
+	w.WriteString(s)
+	if !strings.ContainsAny(s, ".e") {
+		w.WriteString(".0")
+	}
 }
 
-func (r *FloatRange) Contains(value Serializable) (bool, bool) {
-	if _, ok := value.(*Float); ok {
+func (r *FloatRange) InclusiveEnd() float64 {
+	if r.inclusiveEnd || math.IsInf(r.end.value, 1) {
+		return r.end.value
+	}
+	return math.Nextafter(r.end.value, math.Inf(-1))
+}
+
+func (r *FloatRange) Contains(value Serializable) (yes bool, possible bool) {
+	float, ok := value.(*Float)
+	if !ok {
+		return false, false
+	}
+
+	if float.matchingPattern != nil && r.Test(float.matchingPattern.floatRange, RecTestCallState{}) {
+		return true, true
+	}
+
+	if !r.hasValue || !float.hasValue {
 		return false, true
 	}
 
-	return false, false
+	contained := float.value >= r.start.value && float.value <= r.InclusiveEnd()
+	return contained, contained
 }
 
 func (r *FloatRange) IteratorElementKey() Value {

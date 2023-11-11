@@ -43,11 +43,23 @@ func TestSymbolicBool(t *testing.T) {
 func TestSymbolicFloat(t *testing.T) {
 
 	t.Run("Test()", func(t *testing.T) {
-		float := &Float{}
+		floatMatchingSpecificPattern := &Float{matchingPattern: NewFloatRangePattern(NewIncludedEndFloatRange(FLOAT_1, FLOAT_2))}
 
-		assertTest(t, float, float)
-		assertTest(t, float, &Float{})
-		assertTestFalse(t, float, &Int{})
+		assertTest(t, ANY_FLOAT, ANY_FLOAT)
+		assertTest(t, ANY_FLOAT, floatMatchingSpecificPattern)
+		assertTest(t, ANY_FLOAT, FLOAT_1)
+
+		//check FLOAT_1
+		assertTest(t, FLOAT_1, FLOAT_1)
+		assertTestFalse(t, FLOAT_1, ANY_FLOAT)
+		assertTestFalse(t, FLOAT_1, FLOAT_2)
+		assertTestFalse(t, FLOAT_1, floatMatchingSpecificPattern)
+
+		//check floatMatchingSpecificPattern
+		assertTest(t, floatMatchingSpecificPattern, floatMatchingSpecificPattern)
+		assertTest(t, floatMatchingSpecificPattern, FLOAT_1)
+		assertTest(t, floatMatchingSpecificPattern, FLOAT_2)
+		assertTestFalse(t, floatMatchingSpecificPattern, ANY_FLOAT)
 	})
 
 }
@@ -373,6 +385,52 @@ func TestSymbolicIntRange(t *testing.T) {
 		assertCannotPossiblyContain(t, intRange1_2, INT_3)
 	})
 
+}
+
+func TestSymbolicFloatRange(t *testing.T) {
+
+	t.Run("Test()", func(t *testing.T) {
+		anyFloatRange := &FloatRange{}
+		floatRange1_2 := NewIncludedEndFloatRange(FLOAT_1, FLOAT_2)
+		floatRangeExclusiveEnd1_2 := NewExcludedEndFloatRange(FLOAT_1, FLOAT_2)
+
+		assertTest(t, anyFloatRange, anyFloatRange)
+		assertTest(t, anyFloatRange, &FloatRange{})
+		assertTest(t, anyFloatRange, floatRange1_2)
+		assertTest(t, anyFloatRange, floatRangeExclusiveEnd1_2)
+		assertTestFalse(t, anyFloatRange, ANY_STR)
+		assertTestFalse(t, anyFloatRange, ANY_FLOAT)
+
+		//check floatRange1_2
+		assertTest(t, floatRange1_2, floatRange1_2)
+		assertTestFalse(t, floatRange1_2, anyFloatRange)
+		assertTestFalse(t, floatRange1_2, floatRangeExclusiveEnd1_2)
+		assertTestFalse(t, floatRange1_2, ANY_FLOAT)
+
+		//check floatRangeExclusiveEnd1_2
+		assertTest(t, floatRangeExclusiveEnd1_2, floatRangeExclusiveEnd1_2)
+		assertTestFalse(t, floatRangeExclusiveEnd1_2, anyFloatRange)
+		assertTestFalse(t, floatRangeExclusiveEnd1_2, floatRange1_2)
+		assertTestFalse(t, floatRangeExclusiveEnd1_2, ANY_FLOAT)
+	})
+
+	t.Run("Contains()", func(t *testing.T) {
+		anyFloatRange := &FloatRange{}
+		assertMayContain(t, anyFloatRange, FLOAT_0)
+		assertMayContain(t, anyFloatRange, FLOAT_1)
+
+		floatRange1_2 := NewIncludedEndFloatRange(FLOAT_1, FLOAT_2)
+		assertContains(t, floatRange1_2, FLOAT_1)
+		assertContains(t, floatRange1_2, FLOAT_2)
+		assertCannotPossiblyContain(t, floatRange1_2, FLOAT_0)
+		assertCannotPossiblyContain(t, floatRange1_2, FLOAT_3)
+
+		intRange1_2ExcludedEnd := NewExcludedEndFloatRange(FLOAT_1, FLOAT_2)
+		assertContains(t, intRange1_2ExcludedEnd, FLOAT_1)
+		assertCannotPossiblyContain(t, intRange1_2ExcludedEnd, FLOAT_0)
+		assertCannotPossiblyContain(t, intRange1_2ExcludedEnd, FLOAT_2)
+		assertCannotPossiblyContain(t, intRange1_2ExcludedEnd, FLOAT_3)
+	})
 }
 
 func TestSymbolicRuneRange(t *testing.T) {
