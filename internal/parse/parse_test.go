@@ -6946,6 +6946,84 @@ func testParse(
 			}, n)
 		})
 
+		t.Run("year and month: month 0", func(t *testing.T) {
+			n, err := parseChunk(t, "2020y-0mt-UTC", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 13}, nil, false},
+				Statements: []Node{
+					&DateLiteral{
+						NodeBase: NodeBase{
+							NodeSpan{0, 13},
+							&ParsingError{UnspecifiedParsingError, INVALID_MONTH_VALUE},
+							false,
+						},
+						Raw: "2020y-0mt-UTC",
+					},
+				},
+			}, n)
+		})
+
+		t.Run("year and month: month 05", func(t *testing.T) {
+			n := mustparseChunk(t, "2020y-05mt-UTC")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 14}, nil, false},
+				Statements: []Node{
+					&DateLiteral{
+						NodeBase: NodeBase{NodeSpan{0, 14}, nil, false},
+						Raw:      "2020y-05mt-UTC",
+						Value:    time.Date(2020, 5, 1, 0, 0, 0, 0, time.UTC),
+					},
+				},
+			}, n)
+		})
+
+		t.Run("year and day", func(t *testing.T) {
+			n := mustparseChunk(t, "2020y-5d-UTC")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 12}, nil, false},
+				Statements: []Node{
+					&DateLiteral{
+						NodeBase: NodeBase{NodeSpan{0, 12}, nil, false},
+						Raw:      "2020y-5d-UTC",
+						Value:    time.Date(2020, 1, 5, 0, 0, 0, 0, time.UTC),
+					},
+				},
+			}, n)
+		})
+
+		t.Run("year and day: day 0", func(t *testing.T) {
+			n, err := parseChunk(t, "2020y-0d-UTC", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 12}, nil, false},
+				Statements: []Node{
+					&DateLiteral{
+						NodeBase: NodeBase{
+							NodeSpan{0, 12},
+							&ParsingError{UnspecifiedParsingError, INVALID_DAY_VALUE},
+							false,
+						},
+						Raw: "2020y-0d-UTC",
+					},
+				},
+			}, n)
+		})
+
+		t.Run("year and day: day 05", func(t *testing.T) {
+			n := mustparseChunk(t, "2020y-05d-UTC")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 13}, nil, false},
+				Statements: []Node{
+					&DateLiteral{
+						NodeBase: NodeBase{NodeSpan{0, 13}, nil, false},
+						Raw:      "2020y-05d-UTC",
+						Value:    time.Date(2020, 1, 5, 0, 0, 0, 0, time.UTC),
+					},
+				},
+			}, n)
+		})
+
 		t.Run("missing location part", func(t *testing.T) {
 			n, err := parseChunk(t, "2020y-5mt", "")
 			assert.Error(t, err)

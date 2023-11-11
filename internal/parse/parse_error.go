@@ -366,6 +366,10 @@ const (
 	UNTERMINATED_DATE_LITERAL                              = "unterminated date literal"
 	INVALID_DATE_LITERAL                                   = "invalid date literal"
 	INVALID_DATE_LITERAL_MISSING_LOCATION_PART_AT_THE_END  = "invalid date literal: missing location part at the end (e.g.,`-UTC`, `-America/Los_Angeles`)"
+	MISSING_MONTH_VALUE                                    = "missing month value"
+	INVALID_MONTH_VALUE                                    = "invalid month value"
+	MISSING_DAY_VALUE                                      = "missing day value"
+	INVALID_DAY_VALUE                                      = "invalid day value"
 
 	//synchronized
 	SYNCHRONIZED_KEYWORD_SHOULD_BE_FOLLOWED_BY_SYNC_VALUES = "synchronized keyword should be followed by synchronized values"

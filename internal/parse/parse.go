@@ -5533,8 +5533,31 @@ func ParseDateLiteral(braw []byte) (date time.Time, parsingErr *ParsingError) {
 		switch part[len32(part)-1] {
 		case 't':
 			month = string(part[:len32(part)-2])
+
+			if len(month) == 0 {
+				return time.Time{}, &ParsingError{UnspecifiedParsingError, MISSING_MONTH_VALUE}
+			}
+
+			if month[0] == '0' {
+				if len(month) == 1 || !isDecDigit(rune(month[1])) {
+					return time.Time{}, &ParsingError{UnspecifiedParsingError, INVALID_MONTH_VALUE}
+				}
+				month = month[1:]
+			}
+
 		case 'd':
 			day = string(part[:len32(part)-1])
+
+			if len(day) == 0 {
+				return time.Time{}, &ParsingError{UnspecifiedParsingError, MISSING_MONTH_VALUE}
+			}
+
+			if day[0] == '0' {
+				if len(day) == 1 || !isDecDigit(rune(day[1])) {
+					return time.Time{}, &ParsingError{UnspecifiedParsingError, INVALID_DAY_VALUE}
+				}
+				day = day[1:]
+			}
 		case 'h':
 			hour = string(part[:len32(part)-1])
 		case 'm':
