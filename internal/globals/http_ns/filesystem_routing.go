@@ -99,11 +99,11 @@ func createHandleDynamic(server *HttpsServer, routingDirPath core.Path) handlerF
 		logger := handlerGlobalState.Logger.With().Str("handler-module", modulePath).Logger()
 
 		state, _, _, err := core.PrepareLocalScript(core.ScriptPreparationArgs{
-			Fpath:                       modulePath,
-			CachedModule:                module,
-			ParentContext:               handlerCtx,
-			ParentContextRequired:       true,
-			DoNotAddDefaultScriptLimits: true,
+			Fpath:                 modulePath,
+			CachedModule:          module,
+			ParentContext:         handlerCtx,
+			ParentContextRequired: true,
+			DefaultLimits:         core.GetDefaultRequestHandlingLimits(),
 
 			ParsingCompilationContext: handlerCtx,
 			Out:                       handlerGlobalState.Out,

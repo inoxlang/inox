@@ -89,6 +89,7 @@ func RunLocalScript(args RunScriptArgs) (
 		ParentContext:             args.ParentContext,
 		ParentContextRequired:     args.ParentContextRequired,
 		StdlibCtx:                 args.StdlibCtx,
+		DefaultLimits:             core.GetDefaultScriptLimits(),
 		AdditionalPermissions:     args.AdditionalPermissions,
 		ScriptContextFileSystem:   args.ScriptContextFileSystem,
 

@@ -669,6 +669,7 @@ func runTestItem(
 
 			ParsingCompilationContext: parentCtx,
 			ParentContext:             lthreadCtx, //TODO: gracefully stops the program
+			DefaultLimits:             GetDefaultScriptLimits(),
 
 			ScriptContextFileSystem: testItemFS,
 			PreinitFilesystem:       testItemFS,

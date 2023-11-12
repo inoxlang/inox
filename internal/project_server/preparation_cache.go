@@ -24,7 +24,7 @@ var (
 )
 
 func init() {
-	go startUnusedCacheClearingGoroutine()
+	go clearUnusedCachePeriodically()
 }
 
 type preparedFileCache struct {
@@ -184,9 +184,9 @@ func (c *preparedFileCacheEntry) update(state *core.GlobalState, mod *core.Modul
 	}
 }
 
-// startUnusedCacheClearingGoroutine starts a goroutine that periodically iterate over file caches
+// clearUnusedCachePeriodically periodically iterates over file caches
 // and clear them if necessary.
-func startUnusedCacheClearingGoroutine() {
+func clearUnusedCachePeriodically() {
 	if !cacheClearingGoroutineStarted.CompareAndSwap(false, true) {
 		return
 	}

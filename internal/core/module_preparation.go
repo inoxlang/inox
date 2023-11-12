@@ -46,12 +46,12 @@ type ScriptPreparationArgs struct {
 	// this mode is intended to be used by the LSP server.
 	DataExtractionMode bool
 
-	AllowMissingEnvVars         bool
-	FullAccessToDatabases       bool
-	ForceExpectSchemaUpdate     bool
-	EnableTesting               bool
-	TestFilters                 TestFilters
-	DoNotAddDefaultScriptLimits bool
+	AllowMissingEnvVars     bool
+	FullAccessToDatabases   bool
+	ForceExpectSchemaUpdate bool
+
+	EnableTesting bool
+	TestFilters   TestFilters
 
 	// If set this function is called just before the context creation,
 	// the preparation is aborted if an error is returned.
@@ -70,6 +70,10 @@ type ScriptPreparationArgs struct {
 
 	//should not be set if ParentContext is set
 	StdlibCtx context.Context
+
+	//Limits that are not in this list nor in the prepared module's manifest will be initialized
+	//with the minimum value.
+	DefaultLimits []Limit
 
 	//should not be set if ParentContext is set
 	AdditionalPermissions []Permission
@@ -184,7 +188,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *GlobalState, mod *Mo
 			ParentState:           parentState,
 			PreinitStatement:      mod.MainChunk.Node.Preinit,
 			PreinitFilesystem:     args.PreinitFilesystem,
-			DefaultLimits:         GetDefaultScriptLimits(),
+			DefaultLimits:         args.DefaultLimits,
 			AddDefaultPermissions: true,
 			IgnoreUnknownSections: args.DataExtractionMode,
 			IgnoreConstDeclErrors: args.DataExtractionMode,

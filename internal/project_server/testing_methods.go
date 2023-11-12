@@ -10,10 +10,16 @@ import (
 )
 
 const (
+	//request methods
+
 	ENABLE_TEST_DISCOVERY_METHOD = "testing/enableContinousDiscovery"
 	TEST_FILE_METHOD             = "testing/testFileAsync"
-	TEST_OUTPUT_EVENT_METHOD     = "testing/outputEvent"
 	STOP_TEST_RUN_METHOD         = "testing/stopRun"
+
+	//notification methods
+
+	TEST_OUTPUT_EVENT_METHOD = "testing/outputEvent"
+	TEST_RUN_FINISHED_METHOD = "testing/runFinished"
 )
 
 type EnableContinuousTestDiscoveryParams struct {
@@ -21,6 +27,9 @@ type EnableContinuousTestDiscoveryParams struct {
 
 type TestOutputEvent struct {
 	DataBase64 string `json:"data"`
+}
+
+type RunFinishedParams struct {
 }
 
 type TestFileParams struct {
@@ -101,6 +110,7 @@ func registerTestingMethodHandlers(server *lsp.Server, opts LSPServerConfigurati
 		NewRequest: func() interface{} {
 			return &StopTestRunParams{}
 		},
+		RateLimits: []int{2, 10, 30},
 		Handler: func(ctx context.Context, req interface{}) (interface{}, error) {
 			session := jsonrpc.GetSession(ctx)
 			params := req.(*StopTestRunParams)

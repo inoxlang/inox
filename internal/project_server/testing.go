@@ -46,7 +46,9 @@ func testFileAsync(path string, filters core.TestFilters, session *jsonrpc.Sessi
 		ParsingCompilationContext: handlingCtx,
 		ParentContext:             handlingCtx,
 		ParentContextRequired:     true,
-		PreinitFilesystem:         fls,
+		DefaultLimits:             core.GetDefaultScriptLimits(),
+
+		PreinitFilesystem: fls,
 
 		AllowMissingEnvVars:   false,
 		FullAccessToDatabases: true,
@@ -80,11 +82,16 @@ func testFileAsync(path string, filters core.TestFilters, session *jsonrpc.Sessi
 
 	go func() {
 		defer utils.Recover()
+
+		defer func() {
+			sendTestRunFinished(session)
+		}()
+
 		twState := core.NewTreeWalkStateWithGlobal(state)
 
 		_, err := core.TreeWalkEval(state.Module.MainChunk.Node, twState)
 		if err != nil {
-
+			sendTestOutput(utils.StringAsBytes(err.Error()), session)
 			return
 		}
 
@@ -110,8 +117,11 @@ func testFileAsync(path string, filters core.TestFilters, session *jsonrpc.Sessi
 	}, nil
 }
 
-func sendTestOutput(msg []byte, session *jsonrpc.Session) {
+func sendTestOutput(bytesOrStringBytes []byte, session *jsonrpc.Session) {
 	//TODO: split in chunks
+
+	//improve output
+	msg := bytes.ReplaceAll(bytesOrStringBytes, []byte{'\r'}, nil)
 
 	outputEvent := TestOutputEvent{
 		DataBase64: base64.StdEncoding.EncodeToString(msg),
@@ -120,6 +130,15 @@ func sendTestOutput(msg []byte, session *jsonrpc.Session) {
 	session.Notify(jsonrpc.NotificationMessage{
 		Method: TEST_OUTPUT_EVENT_METHOD,
 		Params: utils.Must(json.Marshal(outputEvent)),
+	})
+}
+
+func sendTestRunFinished(session *jsonrpc.Session) {
+	runFinished := RunFinishedParams{}
+
+	session.Notify(jsonrpc.NotificationMessage{
+		Method: TEST_RUN_FINISHED_METHOD,
+		Params: utils.Must(json.Marshal(runFinished)),
 	})
 }
 

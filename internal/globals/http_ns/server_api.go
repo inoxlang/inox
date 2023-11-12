@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
@@ -179,6 +180,9 @@ func addFilesysteDirEndpoints(ctx *core.Context, endpoints map[string]*ApiEndpoi
 
 					ParentContext:         ctx,
 					ParentContextRequired: true,
+					DefaultLimits: []core.Limit{
+						core.MustMakeNotDecrementingLimit(fs_ns.FS_READ_LIMIT_NAME, 10_000_000),
+					},
 
 					Out:                     io.Discard,
 					DataExtractionMode:      true,
@@ -201,6 +205,9 @@ func addFilesysteDirEndpoints(ctx *core.Context, endpoints map[string]*ApiEndpoi
 
 			ParentContext:         parentCtx,
 			ParentContextRequired: true,
+			DefaultLimits: []core.Limit{
+				core.MustMakeNotDecrementingLimit(fs_ns.FS_READ_LIMIT_NAME, 10_000_000),
+			},
 
 			Out:                     io.Discard,
 			DataExtractionMode:      true,

@@ -9,6 +9,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/commonfmt"
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/utils"
 
 	"github.com/inoxlang/inox/internal/core/symbolic"
@@ -127,6 +128,8 @@ func _prepare_local_script(ctx *core.Context, src core.Path) (*core.Module, *cor
 		ParentContext:             ctx,
 		ParentContextRequired:     true,
 
+		DefaultLimits: core.GetDefaultScriptLimits(),
+
 		Out: ctx.GetClosestState().Out,
 	})
 
@@ -233,7 +236,11 @@ func GetCheckData(fpath string, compilationCtx *core.Context, out io.Writer) map
 		Args:                      nil,
 		ParsingCompilationContext: compilationCtx,
 		ParentContext:             nil,
-		Out:                       out,
+		DefaultLimits: []core.Limit{
+			core.MustMakeNotDecrementingLimit(fs_ns.FS_READ_LIMIT_NAME, 10_000_000),
+		},
+
+		Out: out,
 	})
 
 	data := map[string]any{
