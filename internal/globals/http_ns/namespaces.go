@@ -81,7 +81,7 @@ func init() {
 			}
 			return http_symbolic.ANY_RESP, nil
 		},
-		NewHttpServer, newSymbolicHttpServer,
+		NewHttpsServer, newSymbolicHttpServer,
 		NewFileServer, func(ctx *symbolic.Context, args ...symbolic.Value) (*http_symbolic.HttpServer, *symbolic.Error) {
 			if !ctx.HasAPermissionWithKindAndType(permkind.Provide, permkind.HTTP_PERM_TYPENAME) {
 				ctx.AddSymbolicGoFunctionWarning(HTTP_PROVIDE_PERM_MIGHT_BE_MISSING)
@@ -140,7 +140,7 @@ func init() {
 		"http.post":       HttpPost,
 		"http.patch":      HttpPatch,
 		"http.delete":     HttpDelete,
-		"http.Server":     NewHttpServer,
+		"http.Server":     NewHttpsServer,
 		"http.FileServer": NewFileServer,
 		"http.servefile":  serveFile,
 		"http.Client":     NewClient,
@@ -156,7 +156,7 @@ func NewHttpNamespace() *core.Namespace {
 		"post":           core.WrapGoFunction(HttpPost),
 		"patch":          core.WrapGoFunction(HttpPatch),
 		"delete":         core.WrapGoFunction(HttpDelete),
-		"Server":         core.WrapGoFunction(NewHttpServer),
+		"Server":         core.WrapGoFunction(NewHttpsServer),
 		"FileServer":     core.WrapGoFunction(NewFileServer),
 		"servefile":      core.WrapGoFunction(serveFile),
 		"Client":         core.WrapGoFunction(NewClient),

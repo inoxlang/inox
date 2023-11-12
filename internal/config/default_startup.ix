@@ -2,8 +2,6 @@ const(
     HOME = %/home/user/...
     HTTPS_LOCALHOST_8080 = https://localhost:8080
     HTTPS_LOCALHOST_8000 = https://localhost:8000
-    HTTP_LOCALHOST_8080 = http://localhost:8080
-    HTTP_LOCALHOST_8000 = http://localhost:8000
     LOCALHOST_1200 = https://localhost:1200
 )
 
@@ -16,9 +14,7 @@ manifest {
             %/...
             %https://**
             HTTPS_LOCALHOST_8080
-            HTTP_LOCALHOST_8080
             HTTPS_LOCALHOST_8000
-            HTTP_LOCALHOST_8000
             LOCALHOST_1200
             HOME
             %/tmp/mydb/...
@@ -51,9 +47,7 @@ manifest {
         create: {
             %https://**
             HTTPS_LOCALHOST_8080
-            HTTP_LOCALHOST_8080
             HTTPS_LOCALHOST_8000
-            HTTP_LOCALHOST_8000
             LOCALHOST_1200
             HOME
             %/tmp/mydb/...
@@ -66,27 +60,21 @@ manifest {
             globals: "*"
             %https://**
             HTTPS_LOCALHOST_8080
-            HTTP_LOCALHOST_8080
             HTTPS_LOCALHOST_8000
-            HTTP_LOCALHOST_8000
             LOCALHOST_1200
             HOME
         }
         delete: {
             %https://**
             HTTPS_LOCALHOST_8080
-            HTTP_LOCALHOST_8080
             HTTPS_LOCALHOST_8000
-            HTTP_LOCALHOST_8000
             LOCALHOST_1200
             HOME
         }
         provide: {
             %https://**
             HTTPS_LOCALHOST_8080
-            HTTP_LOCALHOST_8080
             HTTPS_LOCALHOST_8000
-            HTTP_LOCALHOST_8000
             LOCALHOST_1200
         }
     }

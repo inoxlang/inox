@@ -139,7 +139,7 @@ func TestHttpServerMissingProvidePermission(t *testing.T) {
 		Filesystem: fs_ns.GetOsFilesystem(),
 	})
 	core.NewGlobalState(ctx)
-	server, err := NewHttpServer(ctx, host)
+	server, err := NewHttpsServer(ctx, host)
 
 	assert.IsType(t, &core.NotAllowedError{}, err)
 	assert.Equal(t, core.HttpPermission{Kind_: permkind.Provide, Entity: host}, err.(*core.NotAllowedError).Permission)
@@ -183,7 +183,7 @@ func TestHttpServerUserHandler(t *testing.T) {
 			state.Module = module
 			state.Logger = zerolog.New(io.Discard)
 
-			server, err := NewHttpServer(ctx, host, handler)
+			server, err := NewHttpsServer(ctx, host, handler)
 			if server != nil {
 				defer server.Close(ctx)
 				time.Sleep(time.Millisecond)
@@ -731,8 +731,8 @@ func runServerTest(t *testing.T, testCase serverTestCase, defaultCreateClient fu
 		return
 	}
 
-	runAdvancedServerTest(t, testCase, defaultCreateClient, func() (*HttpServer, *core.Context, core.Host, error) {
-		server, err := NewHttpServer(ctx, host, handler)
+	runAdvancedServerTest(t, testCase, defaultCreateClient, func() (*HttpsServer, *core.Context, core.Host, error) {
+		server, err := NewHttpsServer(ctx, host, handler)
 
 		return server, ctx, host, err
 	})
@@ -740,7 +740,7 @@ func runServerTest(t *testing.T, testCase serverTestCase, defaultCreateClient fu
 
 func runAdvancedServerTest(
 	t *testing.T, testCase serverTestCase,
-	defaultCreateClient func() *http.Client, setup func() (*HttpServer, *core.Context, core.Host, error),
+	defaultCreateClient func() *http.Client, setup func() (*HttpsServer, *core.Context, core.Host, error),
 ) {
 
 	server, ctx, host, err := setup()

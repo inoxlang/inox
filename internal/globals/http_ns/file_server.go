@@ -2,6 +2,7 @@ package http_ns
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"net/url"
 	"time"
@@ -12,13 +13,17 @@ import (
 )
 
 // NewFileServer returns an HttpServer that uses Go's http.FileServer(dir) to handle requests
-func NewFileServer(ctx *core.Context, args ...core.Value) (*HttpServer, error) {
+func NewFileServer(ctx *core.Context, args ...core.Value) (*HttpsServer, error) {
 	var addr string
 	var dir core.Path
 
 	for _, arg := range args {
 		switch v := arg.(type) {
 		case core.Host:
+			if v.Scheme() != "https" {
+				return nil, fmt.Errorf("invalid scheme '%s', only https is supported", v.Scheme())
+			}
+
 			if addr != "" {
 				return nil, errors.New("address already provided")
 			}
@@ -78,7 +83,7 @@ func NewFileServer(ctx *core.Context, args ...core.Value) (*HttpServer, error) {
 	}()
 
 	time.Sleep(5 * time.Millisecond)
-	return &HttpServer{
+	return &HttpsServer{
 		wrappedServer: server,
 		endChan:       endChan,
 	}, nil

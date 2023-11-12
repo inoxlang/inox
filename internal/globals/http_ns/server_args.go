@@ -13,7 +13,7 @@ import (
 	"github.com/inoxlang/inox/internal/utils"
 )
 
-func readHttpServerArgs(ctx *core.Context, server *HttpServer, host core.Host, args ...core.Value) (
+func readHttpServerArgs(ctx *core.Context, server *HttpsServer, host core.Host, args ...core.Value) (
 	addr string,
 	certificate string,
 	certKey *core.Secret,
@@ -40,7 +40,7 @@ func readHttpServerArgs(ctx *core.Context, server *HttpServer, host core.Host, a
 	{
 		parsed, _ := url.Parse(string(host))
 		if host.Scheme() != "https" {
-			argErr = fmt.Errorf("invalid scheme '%s'", host)
+			argErr = fmt.Errorf("invalid scheme '%s', only https is supported", host)
 			return
 		}
 		server.host = host

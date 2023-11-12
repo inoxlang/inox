@@ -327,7 +327,7 @@ func createWebsocketServer(config testWebsocketServerConfig, ctx *core.Context) 
 
 		//log.Println(ctx.GetFileSystem(), string(debug.Stack()))
 
-		server, err := http_ns.NewHttpServer(ctx, config.host, handler)
+		server, err := http_ns.NewHttpsServer(ctx, config.host, handler)
 		if err != nil {
 			log.Panicln("failed to create test server", err)
 		}

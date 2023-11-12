@@ -9,7 +9,7 @@ import (
 	"github.com/inoxlang/inox/internal/utils"
 )
 
-func (s *HttpServer) PrettyPrint(w *bufio.Writer, config *core.PrettyPrintConfig, depth int, parentIndentCount int) {
+func (s *HttpsServer) PrettyPrint(w *bufio.Writer, config *core.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(fmt.Fprintf(w, "%#v", s))
 }
 

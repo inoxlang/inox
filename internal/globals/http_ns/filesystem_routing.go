@@ -29,7 +29,7 @@ var (
 	FS_ROUTING_METHODS = []string{"GET", "OPTIONS", "POST", "PATCH", "PUT", "DELETE"}
 )
 
-func createHandleDynamic(server *HttpServer, routingDirPath core.Path) handlerFn {
+func createHandleDynamic(server *HttpsServer, routingDirPath core.Path) handlerFn {
 	return func(req *HttpRequest, rw *HttpResponseWriter, handlerGlobalState *core.GlobalState) {
 		path := req.Path
 		method := req.Method.UnderlyingString()
@@ -121,7 +121,7 @@ func createHandleDynamic(server *HttpServer, routingDirPath core.Path) handlerFn
 				var defaultLimits map[string]core.Limit = maps.Clone(server.defaultLimits)
 
 				for _, limit := range m.Limits {
-					maxLimit, ok := server.maxHandlerModuleLimits[limit.Name]
+					maxLimit, ok := server.maxLimits[limit.Name]
 					if ok && maxLimit.MoreRestrictiveThan(limit) {
 						return nil, fmt.Errorf(
 							"limit %q of handler module %q is higher than the maximum limit allowed, "+

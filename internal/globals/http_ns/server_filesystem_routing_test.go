@@ -25,7 +25,24 @@ func TestFilesystemRouting(t *testing.T) {
 		return
 	}
 
-	//set default request handling limits
+	threadCountLimit, err := core.GetLimit(nil, core.THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME, core.Int(10))
+	if !assert.NoError(t, err) {
+		return
+	}
+
+	//set default script limits: threadCountLimit
+	if core.AreDefaultScriptLimitsSet() {
+		save := core.GetDefaultScriptLimits()
+		core.UnsetDefaultScriptLimits()
+		core.SetDefaultScriptLimits([]core.Limit{threadCountLimit})
+		defer core.SetDefaultScriptLimits(save)
+		defer core.UnsetDefaultScriptLimits()
+	} else {
+		core.SetDefaultScriptLimits([]core.Limit{threadCountLimit})
+		defer core.UnsetDefaultScriptLimits()
+	}
+
+	//set default request handling limits: cpuTimeLimit
 	if core.AreDefaultRequestHandlingLimitsSet() {
 		save := core.GetDefaultRequestHandlingLimits()
 		core.UnsetDefaultRequestHandlingLimits()
@@ -347,7 +364,7 @@ func TestFilesystemRouting(t *testing.T) {
 			return
 		}
 
-		_, err = NewHttpServer(ctx, host, core.NewObjectFromMapNoInit(core.ValMap{
+		_, err = NewHttpsServer(ctx, host, core.NewObjectFromMapNoInit(core.ValMap{
 			HANDLING_DESC_ROUTING_PROPNAME: core.NewObjectFromMapNoInit(core.ValMap{
 				"dynamic": core.Path("/routes/"),
 			}),

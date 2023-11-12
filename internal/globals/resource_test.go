@@ -31,7 +31,7 @@ func setup(t *testing.T, handler func(ctx *core.Context, rw *http_ns.HttpRespons
 	state.Out = os.Stdout
 	state.Logger = zerolog.New(state.Out)
 
-	_, err := http_ns.NewHttpServer(ctx, RESOURCE_TEST_HOST, core.WrapGoFunction(handler))
+	_, err := http_ns.NewHttpsServer(ctx, RESOURCE_TEST_HOST, core.WrapGoFunction(handler))
 
 	assert.NoError(t, err)
 

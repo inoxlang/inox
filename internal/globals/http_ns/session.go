@@ -27,7 +27,7 @@ var (
 type Session struct {
 	Id     string
 	lock   sync.Mutex
-	server *HttpServer
+	server *HttpsServer
 }
 
 func getSession(req *http.Request) (*Session, error) {
@@ -49,7 +49,7 @@ func getSession(req *http.Request) (*Session, error) {
 }
 
 // addNewSession creates a new session an saves it in a global map.
-func addNewSession(server *HttpServer) *Session {
+func addNewSession(server *HttpsServer) *Session {
 	//random session ID
 	var sessionId [DEFAULT_SESSION_ID_BYTE_COUNT]byte
 	_, err := rand.Read(sessionId[:])

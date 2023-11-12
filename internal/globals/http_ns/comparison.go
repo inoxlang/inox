@@ -6,8 +6,8 @@ import (
 	"github.com/inoxlang/inox/internal/core"
 )
 
-func (s *HttpServer) Equal(ctx *core.Context, other core.Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
-	otherServer, ok := other.(*HttpServer)
+func (s *HttpsServer) Equal(ctx *core.Context, other core.Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	otherServer, ok := other.(*HttpsServer)
 	return ok && s == otherServer
 }
 

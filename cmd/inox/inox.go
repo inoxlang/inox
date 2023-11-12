@@ -756,7 +756,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 			}
 
 			switch r := result.(type) {
-			case *http_ns.HttpServer:
+			case *http_ns.HttpsServer:
 				r.WaitClosed(state.Ctx)
 			}
 		}

@@ -6,7 +6,7 @@ import (
 	http_symbolic "github.com/inoxlang/inox/internal/globals/http_ns/symbolic"
 )
 
-func (serv *HttpServer) ToSymbolicValue(ctx *core.Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
+func (serv *HttpsServer) ToSymbolicValue(ctx *core.Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return &http_symbolic.HttpServer{}, nil
 }
 

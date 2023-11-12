@@ -43,8 +43,8 @@ func TestHttpServerHandlingDescription(t *testing.T) {
 			return
 		}
 
-		runAdvancedServerTest(t, testCase, defaultCreateClientFn, func() (*HttpServer, *core.Context, core.Host, error) {
-			server, err := NewHttpServer(ctx, host, desc)
+		runAdvancedServerTest(t, testCase, defaultCreateClientFn, func() (*HttpsServer, *core.Context, core.Host, error) {
+			server, err := NewHttpsServer(ctx, host, desc)
 
 			return server, ctx, host, err
 		})
@@ -161,8 +161,8 @@ func TestHttpServerHandlingDescription(t *testing.T) {
 
 		//run the test
 
-		runAdvancedServerTest(t, testCase, createClient, func() (*HttpServer, *core.Context, core.Host, error) {
-			server, err := NewHttpServer(ctx, host, desc)
+		runAdvancedServerTest(t, testCase, createClient, func() (*HttpsServer, *core.Context, core.Host, error) {
+			server, err := NewHttpsServer(ctx, host, desc)
 
 			return server, ctx, host, err
 		})

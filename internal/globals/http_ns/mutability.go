@@ -1,6 +1,6 @@
 package http_ns
 
-func (serv *HttpServer) IsMutable() bool {
+func (serv *HttpsServer) IsMutable() bool {
 	return true
 }
 

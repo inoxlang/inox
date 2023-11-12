@@ -79,8 +79,8 @@ var (
 	NEW_SERVER_TWO_PARAM_NAMES = []string{"host", "handling"}
 )
 
-// HttpServer implements the GoValue interface.
-type HttpServer struct {
+// HttpsServer implements the GoValue interface.
+type HttpsServer struct {
 	host          core.Host
 	wrappedServer *http.Server
 	lock          sync.RWMutex
@@ -98,13 +98,16 @@ type HttpServer struct {
 	api            *API
 	//preparedModules *preparedModule //mostly used during invocation of handler modules
 
-	defaultLimits          map[string]core.Limit //readonly
-	maxHandlerModuleLimits map[string]core.Limit //readonly
+	defaultLimits map[string]core.Limit //readonly
+	maxLimits     map[string]core.Limit //readonly
 }
 
-func NewHttpServer(ctx *core.Context, host core.Host, args ...core.Value) (*HttpServer, error) {
+// NewHttpsServer creates a listening HTTPS server.
+// The server's defaultLimits are constructed by merging the default request handling limits with the default-limits in arguments.
+// The server's maxLimits are constructed by merging the default max request handling limits with the max-limits in arguments.
+func NewHttpsServer(ctx *core.Context, host core.Host, args ...core.Value) (*HttpsServer, error) {
 	ctxLogger := *ctx.Logger()
-	_server := &HttpServer{
+	_server := &HttpsServer{
 		state:      ctx.GetClosestState(),
 		defaultCSP: DEFAULT_CSP,
 	}
@@ -120,7 +123,7 @@ func NewHttpServer(ctx *core.Context, host core.Host, args ...core.Value) (*Http
 		return nil, argErr
 	}
 
-	_server.maxHandlerModuleLimits = maxLimits
+	_server.maxLimits = maxLimits
 	_server.defaultLimits = defaultLimits
 
 	//create logger and security engine
@@ -298,11 +301,11 @@ func NewHttpServer(ctx *core.Context, host core.Host, args ...core.Value) (*Http
 	return _server, nil
 }
 
-func (serv *HttpServer) Host(name string) core.Host {
+func (serv *HttpsServer) Host(name string) core.Host {
 	return serv.host
 }
 
-func (serv *HttpServer) getOrCreateStream(id string) (*multiSubscriptionSSEStream, *SseServer, error) {
+func (serv *HttpsServer) getOrCreateStream(id string) (*multiSubscriptionSSEStream, *SseServer, error) {
 	serv.lock.Lock()
 	defer serv.lock.Unlock()
 
@@ -318,7 +321,7 @@ func (serv *HttpServer) getOrCreateStream(id string) (*multiSubscriptionSSEStrea
 	return stream, serv.sseServer, nil
 }
 
-func (serv *HttpServer) GetGoMethod(name string) (*core.GoFunction, bool) {
+func (serv *HttpsServer) GetGoMethod(name string) (*core.GoFunction, bool) {
 	switch name {
 	case "wait_closed":
 		return core.WrapGoMethod(serv.WaitClosed), true
@@ -328,7 +331,7 @@ func (serv *HttpServer) GetGoMethod(name string) (*core.GoFunction, bool) {
 	return nil, false
 }
 
-func (s *HttpServer) Prop(ctx *core.Context, name string) core.Value {
+func (s *HttpsServer) Prop(ctx *core.Context, name string) core.Value {
 	method, ok := s.GetGoMethod(name)
 	if !ok {
 		panic(core.FormatErrPropertyDoesNotExist(name, s))
@@ -336,19 +339,19 @@ func (s *HttpServer) Prop(ctx *core.Context, name string) core.Value {
 	return method
 }
 
-func (*HttpServer) SetProp(ctx *core.Context, name string, value core.Value) error {
+func (*HttpsServer) SetProp(ctx *core.Context, name string, value core.Value) error {
 	return core.ErrCannotSetProp
 }
 
-func (*HttpServer) PropertyNames(ctx *core.Context) []string {
+func (*HttpsServer) PropertyNames(ctx *core.Context) []string {
 	return http_ns_symb.HTTP_SERVER_PROPNAMES
 }
 
-func (serv *HttpServer) WaitClosed(ctx *core.Context) {
+func (serv *HttpsServer) WaitClosed(ctx *core.Context) {
 	<-serv.endChan
 }
 
-func (serv *HttpServer) ImmediatelyClose(ctx *core.Context) {
+func (serv *HttpsServer) ImmediatelyClose(ctx *core.Context) {
 	serv.wrappedServer.Close()
 
 	serv.lock.Lock()
@@ -360,7 +363,7 @@ func (serv *HttpServer) ImmediatelyClose(ctx *core.Context) {
 	}
 }
 
-func (serv *HttpServer) Close(ctx *core.Context) {
+func (serv *HttpsServer) Close(ctx *core.Context) {
 	//we first close the event streams to prevent hanging during shutdown
 	serv.lock.Lock()
 	sse := serv.sseServer

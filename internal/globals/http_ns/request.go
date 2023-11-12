@@ -76,7 +76,7 @@ func NewClientSideRequest(r *http.Request) (*HttpRequest, error) {
 	}, nil
 }
 
-func NewServerSideRequest(r *http.Request, logger zerolog.Logger, server *HttpServer) (*HttpRequest, error) {
+func NewServerSideRequest(r *http.Request, logger zerolog.Logger, server *HttpsServer) (*HttpRequest, error) {
 	id := ulid.Make()
 	now := time.Now()
 

@@ -32,7 +32,7 @@ type handlerFn func(*HttpRequest, *HttpResponseWriter, *core.GlobalState)
 
 // addHandlerFunction creates a function of type handlerFn from handlerValue and updates the server.lastHandlerFn or server.middlewares.
 // addHandlerFunction also sets server.api & server.preparedModules.
-func addHandlerFunction(handlerValue core.Value, isMiddleware bool, server *HttpServer) error {
+func addHandlerFunction(handlerValue core.Value, isMiddleware bool, server *HttpsServer) error {
 
 	//set value for handler based on provided arguments
 	switch userHandler := handlerValue.(type) {
@@ -191,7 +191,7 @@ type handlingArguments struct {
 	req          *HttpRequest
 	rw           *HttpResponseWriter
 	state        *core.GlobalState
-	server       *HttpServer
+	server       *HttpsServer
 	logger       zerolog.Logger
 	isMiddleware bool
 }
