@@ -42,6 +42,8 @@ var (
 	ErrNotSharableUserDataValue                = errors.New("attempt to set a user data entry with a non sharable value ")
 	ErrDoubleUserDataDefinition                = errors.New("cannot define a user data entry more than once")
 	ErrTypeExtensionAlreadyRegistered          = errors.New("type extension is already registered")
+
+	ErrLimitNotPresentInContext = errors.New("limit not present in context")
 )
 
 type Context struct {
@@ -799,14 +801,15 @@ func (ctx *Context) Take(limitName string, count int64) error {
 	}
 
 	limiter, ok := ctx.limiters[limitName]
-	if ok {
-		ctx.DoIO(func() error {
-			limiter.Take(count)
-			return nil
-		})
+	if !ok {
+		//we panic to make sure the execution of the module stops.
+		panic(fmt.Errorf("%w: %s", ErrLimitNotPresentInContext, limitName))
 	}
 
-	return nil
+	return ctx.DoIO(func() error {
+		limiter.Take(count)
+		return nil
+	})
 }
 
 // GiveBack gives backs an amount of tokens from the bucket associated with a limit.
@@ -819,9 +822,12 @@ func (ctx *Context) GiveBack(limitName string, count int64) error {
 	scaledCount := TOKEN_BUCKET_CAPACITY_SCALE * count
 
 	limiter, ok := ctx.limiters[limitName]
-	if ok {
-		limiter.GiveBack(scaledCount)
+	if !ok {
+		//we panic to make sure the execution of the module stops.
+		panic(fmt.Errorf("%w: %s", ErrLimitNotPresentInContext, limitName))
 	}
+
+	limiter.GiveBack(scaledCount)
 	return nil
 }
 

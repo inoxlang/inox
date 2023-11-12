@@ -22,6 +22,7 @@ import (
 
 func TestControlClient(t *testing.T) {
 	controlServerURL := utils.Must(url.Parse("wss://localhost:8310"))
+	permissiveSocketCountLimit := core.MustMakeNotDecrementingLimit(net_ns.WS_SIMUL_CONN_TOTAL_LIMIT_NAME, 10_000)
 
 	ctx := core.NewContexWithEmptyState(core.ContextConfig{
 		Permissions: []core.Permission{
@@ -30,6 +31,7 @@ func TestControlClient(t *testing.T) {
 			core.WebsocketPermission{Kind_: permkind.Write, Endpoint: core.Host("wss://localhost:8310")},
 		},
 		Filesystem: fs_ns.NewMemFilesystem(10_000),
+		Limits:     []core.Limit{permissiveSocketCountLimit},
 	}, os.Stdout)
 	defer ctx.CancelGracefully()
 

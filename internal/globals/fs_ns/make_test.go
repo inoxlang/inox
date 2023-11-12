@@ -14,6 +14,11 @@ import (
 
 func TestCreateFile(t *testing.T) {
 
+	var (
+		permissiveTotalLimit       = core.MustMakeNotDecrementingLimit(FS_TOTAL_NEW_FILE_LIMIT_NAME, 100_000)
+		permissiveNewFileRateLimit = core.MustMakeNotDecrementingLimit(FS_NEW_FILE_RATE_LIMIT_NAME, 100_000)
+	)
+
 	//in the following tests token buckets are emptied before calling __createFile
 
 	if testing.Short() {
@@ -22,7 +27,7 @@ func TestCreateFile(t *testing.T) {
 
 	cases := []struct {
 		name             string
-		limits           core.Limit
+		limit            core.Limit
 		contentByteSize  int
 		expectedDuration time.Duration
 	}{
@@ -75,11 +80,11 @@ func TestCreateFile(t *testing.T) {
 				Permissions: []core.Permission{
 					core.FilesystemPermission{Kind_: permkind.Create, Entity: fpath},
 				},
-				Limits:     []core.Limit{testCase.limits},
+				Limits:     []core.Limit{testCase.limit, permissiveNewFileRateLimit, permissiveTotalLimit},
 				Filesystem: GetOsFilesystem(),
 			})
 
-			ctx.Take(testCase.limits.Name, testCase.limits.Value)
+			ctx.Take(testCase.limit.Name, testCase.limit.Value)
 
 			start := time.Now()
 			assert.NoError(t, __createFile(ctx, fpath, b, DEFAULT_FILE_FMODE))
@@ -115,11 +120,21 @@ func TestMkdir(t *testing.T) {
 
 	t.Run("provided content", func(t *testing.T) {
 		tmpDir := t.TempDir()
+
+		var (
+			permissiveTotalLimit       = core.MustMakeNotDecrementingLimit(FS_TOTAL_NEW_FILE_LIMIT_NAME, 100_000)
+			permissiveNewFileRateLimit = core.MustMakeNotDecrementingLimit(FS_NEW_FILE_RATE_LIMIT_NAME, 100_000)
+		)
+
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
 				core.FilesystemPermission{Kind_: permkind.Create, Entity: core.PathPattern(tmpDir + "/...")},
 			},
-			Limits:     []core.Limit{{Name: FS_WRITE_LIMIT_NAME, Kind: core.ByteRateLimit, Value: 1_000}},
+			Limits: []core.Limit{
+				permissiveTotalLimit,
+				permissiveNewFileRateLimit,
+				{Name: FS_WRITE_LIMIT_NAME, Kind: core.ByteRateLimit, Value: 1_000},
+			},
 			Filesystem: GetOsFilesystem(),
 		})
 
@@ -173,6 +188,7 @@ func TestCopy(t *testing.T) {
 				{Name: FS_READ_LIMIT_NAME, Kind: core.ByteRateLimit, Value: 1 << 32},
 				{Name: FS_WRITE_LIMIT_NAME, Kind: core.ByteRateLimit, Value: 1 << 32},
 				{Name: FS_NEW_FILE_RATE_LIMIT_NAME, Kind: core.ByteRateLimit, Value: 100},
+				{Name: FS_TOTAL_NEW_FILE_LIMIT_NAME, Kind: core.ByteRateLimit, Value: 1000},
 			},
 			Filesystem: GetOsFilesystem(),
 		})
@@ -291,11 +307,20 @@ func TestFsMkfile(t *testing.T) {
 
 	t.Run("provided file's content", func(t *testing.T) {
 		tmpDir := t.TempDir()
+		var (
+			permissiveTotalLimit       = core.MustMakeNotDecrementingLimit(FS_TOTAL_NEW_FILE_LIMIT_NAME, 100_000)
+			permissiveNewFileRateLimit = core.MustMakeNotDecrementingLimit(FS_NEW_FILE_RATE_LIMIT_NAME, 100_000)
+		)
+
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
 				core.FilesystemPermission{Kind_: permkind.Create, Entity: core.PathPattern(tmpDir + "/...")},
 			},
-			Limits:     []core.Limit{{Name: FS_WRITE_LIMIT_NAME, Kind: core.ByteRateLimit, Value: 1_000}},
+			Limits: []core.Limit{
+				permissiveTotalLimit,
+				permissiveNewFileRateLimit,
+				{Name: FS_WRITE_LIMIT_NAME, Kind: core.ByteRateLimit, Value: 1_000},
+			},
 			Filesystem: GetOsFilesystem(),
 		})
 

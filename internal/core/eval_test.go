@@ -165,6 +165,8 @@ func bytecodeTest(t *testing.T, optimize bool) {
 // testEval executes the suite of evaluation tests with a given evaluation function
 // that can have any implementation (tree walk, bytecode, ...).
 func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
+	permissiveLthreadLimit := MustMakeNotDecrementingLimit(THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME, 100_000)
+
 	if false {
 		runtime.GC()
 		startMemStats := new(runtime.MemStats)
@@ -4408,11 +4410,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			defer state.Ctx.CancelGracefully()
 			state.Globals.Set("LThreadGroup", ValOf(NewLThreadGroup))
 			state.Globals.Set("start_tx", ValOf(func(ctx *Context) *Transaction {
-				fmt.Printf("start tx, context %p\n", ctx)
+				//fmt.Printf("start tx, context %p\n", ctx)
 				return StartNewTransaction(ctx)
 			}))
 			state.Globals.Set("commit_tx", ValOf(func(ctx *Context) {
-				fmt.Printf("commited, context %p\n", ctx)
+				//fmt.Printf("commited, context %p\n", ctx)
 				ctx.GetTx().Commit(ctx)
 			}))
 
@@ -5346,6 +5348,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					LThreadPermission{permkind.Create},
 				),
 				Filesystem: newOsFilesystem(),
+				Limits:     []Limit{permissiveLthreadLimit},
 			})
 			ctx.AddNamedPattern("int", INT_PATTERN)
 			state := NewGlobalState(ctx)
@@ -7876,6 +7879,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					FilesystemPermission{permkind.Read, PathPattern("/...")},
 				),
 				Filesystem: fls,
+				Limits:     []Limit{permissiveLthreadLimit},
 			})
 			state := NewGlobalState(ctx)
 			state.IsTestingEnabled = true
@@ -7923,6 +7927,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					FilesystemPermission{permkind.Read, PathPattern("/...")},
 				),
 				Filesystem: fls,
+				Limits:     []Limit{permissiveLthreadLimit},
 			})
 			state := NewGlobalState(ctx)
 			state.IsTestingEnabled = true
@@ -7961,6 +7966,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					FilesystemPermission{permkind.Read, PathPattern("/...")},
 				),
 				Filesystem: fls,
+				Limits:     []Limit{permissiveLthreadLimit},
 			})
 			state := NewGlobalState(ctx)
 			state.IsTestingEnabled = true
@@ -8002,6 +8008,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					FilesystemPermission{permkind.Read, PathPattern("/...")},
 				),
 				Filesystem: fls,
+				Limits:     []Limit{permissiveLthreadLimit},
 			})
 			state := NewGlobalState(ctx)
 			state.IsTestingEnabled = true
@@ -8045,6 +8052,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					FilesystemPermission{permkind.Read, PathPattern("/...")},
 				),
 				Filesystem: fls,
+				Limits:     []Limit{permissiveLthreadLimit},
 			})
 			state := NewGlobalState(ctx)
 			state.IsTestingEnabled = true
@@ -8091,6 +8099,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					FilesystemPermission{permkind.Read, PathPattern("/...")},
 				),
 				Filesystem: fls,
+				Limits:     []Limit{permissiveLthreadLimit},
 			})
 			state := NewGlobalState(ctx)
 			state.IsTestingEnabled = true
@@ -8195,6 +8204,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					FilesystemPermission{permkind.Read, PathPattern("/...")},
 				),
 				Filesystem: fls,
+				Limits:     []Limit{permissiveLthreadLimit},
 			})
 			state := NewGlobalState(ctx)
 			state.IsTestingEnabled = true
@@ -8239,6 +8249,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					FilesystemPermission{permkind.Read, PathPattern("/...")},
 				),
 				Filesystem: fls,
+				Limits:     []Limit{permissiveLthreadLimit},
 			})
 			state := NewGlobalState(ctx)
 			state.IsTestingEnabled = true
@@ -8339,6 +8350,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			state := NewGlobalState(NewContext(ContextConfig{
 				Permissions: []Permission{LThreadPermission{Kind_: permkind.Create}},
+				Limits:      []Limit{permissiveLthreadLimit},
 			}))
 			state.IsTestingEnabled = true
 			state.TestFilters = allTestsFilter
@@ -9042,6 +9054,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					FilesystemPermission{permkind.Read, PathPattern("/...")},
 				),
 				Filesystem: fls,
+				Limits:     []Limit{permissiveLthreadLimit},
 			})
 			state := NewGlobalState(ctx)
 			state.IsTestingEnabled = true
@@ -9100,6 +9113,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					FilesystemPermission{permkind.Read, PathPattern("/...")},
 				),
 				Filesystem: fls,
+				Limits:     []Limit{permissiveLthreadLimit},
 			})
 			state := NewGlobalState(ctx)
 			state.IsTestingEnabled = true
@@ -9374,6 +9388,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					FilesystemPermission{permkind.Read, PathPattern("/...")},
 				),
 				Filesystem: fls,
+				Limits:     []Limit{permissiveLthreadLimit},
 			})
 
 			state := NewGlobalState(ctx)
@@ -9432,6 +9447,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					FilesystemPermission{permkind.Read, PathPattern("/...")},
 				),
 				Filesystem: fls,
+				Limits:     []Limit{permissiveLthreadLimit},
 			})
 
 			state := NewGlobalState(ctx)
@@ -9492,6 +9508,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					FilesystemPermission{permkind.Read, PathPattern("/...")},
 				),
 				Filesystem: fls,
+				Limits:     []Limit{permissiveLthreadLimit},
 			})
 
 			var isNotNil atomic.Bool
@@ -9567,6 +9584,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					FilesystemPermission{permkind.Read, PathPattern("/...")},
 				),
 				Filesystem: fls,
+				Limits:     []Limit{permissiveLthreadLimit},
 			})
 
 			var isDone atomic.Bool
@@ -9646,6 +9664,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					FilesystemPermission{permkind.Write, PathPattern("/...")},
 				),
 				Filesystem: fls,
+				Limits:     []Limit{permissiveLthreadLimit},
 			})
 
 			var correctFile atomic.Bool
@@ -9736,6 +9755,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					FilesystemPermission{permkind.Write, PathPattern("/...")},
 				),
 				Filesystem: fls,
+				Limits:     []Limit{permissiveLthreadLimit},
 			})
 
 			var correctFile atomic.Bool
@@ -9841,6 +9861,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					DatabasePermission{permkind.Delete, Host("ldb://main")},
 				),
 				Filesystem: fls,
+				Limits:     []Limit{permissiveLthreadLimit},
 			})
 
 			var isProperlyInitialized atomic.Bool
@@ -9955,6 +9976,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					DatabasePermission{permkind.Delete, Host("ldb://main")},
 				),
 				Filesystem: fls,
+				Limits:     []Limit{permissiveLthreadLimit},
 			})
 
 			var isProperlyInitialized atomic.Bool
@@ -10060,6 +10082,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			state := NewGlobalState(NewContext(ContextConfig{
 				Permissions: append(GetDefaultGlobalVarPermissions(), LThreadPermission{Kind_: permkind.Create}),
+				Limits:      []Limit{permissiveLthreadLimit},
 			}))
 			state.IsTestingEnabled = true
 			state.TestFilters = allTestsFilter
@@ -11307,6 +11330,7 @@ func NewDefaultTestContext() *Context {
 			LThreadPermission{permkind.Create},
 		},
 		Filesystem: newOsFilesystem(),
+		Limits:     []Limit{MustMakeNotDecrementingLimit(THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME, 100_000)},
 	})
 }
 

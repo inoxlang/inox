@@ -16,6 +16,7 @@ import (
 )
 
 func TestWebsocketServer(t *testing.T) {
+	permissiveSocketCountLimit := core.MustMakeNotDecrementingLimit(WS_SIMUL_CONN_TOTAL_LIMIT_NAME, 100)
 
 	if !core.AreDefaultRequestHandlingLimitsSet() {
 		core.SetDefaultRequestHandlingLimits([]core.Limit{})
@@ -58,6 +59,7 @@ func TestWebsocketServer(t *testing.T) {
 				core.WebsocketPermission{Kind_: permkind.Read, Endpoint: ENDPOINT},
 			},
 			Filesystem: fs_ns.GetOsFilesystem(),
+			Limits:     []core.Limit{permissiveSocketCountLimit},
 		})
 
 		serverCtx := core.NewContext(core.ContextConfig{
@@ -99,6 +101,7 @@ func TestWebsocketServer(t *testing.T) {
 				core.WebsocketPermission{Kind_: permkind.Read, Endpoint: ENDPOINT},
 			},
 			Filesystem: fs_ns.GetOsFilesystem(),
+			Limits:     []core.Limit{permissiveSocketCountLimit},
 		})
 
 		serverCtx := core.NewContext(core.ContextConfig{
@@ -152,6 +155,7 @@ func TestWebsocketServer(t *testing.T) {
 				core.WebsocketPermission{Kind_: permkind.Read, Endpoint: ENDPOINT},
 			},
 			Filesystem: fs_ns.GetOsFilesystem(),
+			Limits:     []core.Limit{permissiveSocketCountLimit},
 		})
 
 		serverCtx := core.NewContext(core.ContextConfig{
@@ -219,6 +223,7 @@ func TestWebsocketServer(t *testing.T) {
 				core.WebsocketPermission{Kind_: permkind.Read, Endpoint: ENDPOINT},
 			},
 			Filesystem: fs_ns.GetOsFilesystem(),
+			Limits:     []core.Limit{permissiveSocketCountLimit},
 		})
 
 		serverCtx := core.NewContext(core.ContextConfig{

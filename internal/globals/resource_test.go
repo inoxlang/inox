@@ -19,12 +19,15 @@ import (
 const RESOURCE_TEST_HOST = core.Host("https://localhost:8080")
 
 func setup(t *testing.T, handler func(ctx *core.Context, rw *http_ns.HttpResponseWriter, req *http_ns.HttpRequest)) *core.Context {
+	permissiveHttpReqLimit := core.MustMakeNotDecrementingLimit(http_ns.HTTP_REQUEST_RATE_LIMIT_NAME, 10_000)
+
 	ctx := core.NewContext(core.ContextConfig{
 		Permissions: []core.Permission{
 			core.HttpPermission{Kind_: permkind.Read, Entity: core.URLPattern("https://localhost:8080/...")},
 			core.HttpPermission{Kind_: permkind.Provide, Entity: RESOURCE_TEST_HOST},
 		},
 		Filesystem: fs_ns.GetOsFilesystem(),
+		Limits:     []core.Limit{permissiveHttpReqLimit},
 	})
 
 	state := core.NewGlobalState(ctx)

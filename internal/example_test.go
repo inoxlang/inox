@@ -11,12 +11,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-git/go-billy/v5/util"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core"
 	_ "github.com/inoxlang/inox/internal/globals"
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/mod"
+	"github.com/inoxlang/inox/internal/project"
 
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 
@@ -28,12 +31,13 @@ import (
 const (
 	DEFAULT_TEST_TIMEMOUT_DURATION = 10 * time.Second
 	CHROME_EXAMPLE_FOLDER          = "chrome/"
+	PROJECT_EXAMPLES_FOLDER        = "projects/"
 )
 
 var (
 	TIMING_OUT_EXAMPLES        = []string{"events.ix"}
 	CANCELLED_TOP_CTX_EXAMPLES = []string{"execution-time.ix", "rollback-on-cancellation.ix"}
-	SKIPPED_EXAMPLES           = []string{"get-resource.ix", "websocket.ix", "shared-patterns.ix", "add.ix"}
+	SKIPPED_EXAMPLES           = []string{"get-resource.ix", "websocket.ix", "shared-patterns.ix", "add.ix", "models.ix"}
 
 	RUN_BROWSER_AUTOMATION_EXAMPLES = os.Getenv("RUN_BROWSER_AUTOMATION_EXAMPLES") == "true"
 )
@@ -88,6 +92,14 @@ func testExamples(t *testing.T, useBytecode, optimizeBytecode bool) {
 	for _, fpath := range exampleFilePaths {
 		testName := strings.ReplaceAll(fpath, "/", "--")
 
+		if strings.Contains(fpath, PROJECT_EXAMPLES_FOLDER) && !strings.HasSuffix(fpath, "/main.ix") {
+			continue
+		}
+
+		if utils.SliceContains(SKIPPED_EXAMPLES, filepath.Base(fpath)) {
+			continue
+		}
+
 		t.Run(testName, func(t *testing.T) {
 			testExample(t, exampleTestConfig{
 				fpath:            fpath,
@@ -119,12 +131,39 @@ func testExample(t *testing.T, config exampleTestConfig) {
 
 	filename := filepath.Base(fpath)
 
-	if strings.Contains(fpath, CHROME_EXAMPLE_FOLDER) && !RUN_BROWSER_AUTOMATION_EXAMPLES ||
-		utils.SliceContains(SKIPPED_EXAMPLES, filename) {
+	if strings.Contains(fpath, CHROME_EXAMPLE_FOLDER) && !RUN_BROWSER_AUTOMATION_EXAMPLES {
 		t.Skip()
+		return
 	}
 
-	if runInTempDir {
+	osFilesystem := fs_ns.GetOsFilesystem()
+	var scriptContextFileSystem afs.Filesystem
+	var proj *project.Project
+
+	if strings.Contains(fpath, PROJECT_EXAMPLES_FOLDER) {
+		//create the project's filesystem
+
+		fileDirNoTrailingSlash := filepath.Dir(fpath)
+		fileDir := core.Path(fileDirNoTrailingSlash) + "/"
+		scriptContextFileSystem = fs_ns.NewMemFilesystem(1_000_000)
+
+		core.WalkDir(osFilesystem, fileDir, func(path core.Path, d fs.DirEntry, err error) error {
+			pathInSnapshot := strings.TrimPrefix(string(path), fileDirNoTrailingSlash)
+
+			if d.IsDir() {
+				return scriptContextFileSystem.MkdirAll(pathInSnapshot, d.Type())
+			} else {
+				content, err := util.ReadFile(osFilesystem, path.UnderlyingString())
+				if err != nil {
+					return err
+				}
+				return util.WriteFile(scriptContextFileSystem, pathInSnapshot, content, d.Type())
+			}
+		})
+
+		proj = project.NewDummyProject("project", scriptContextFileSystem.(core.SnapshotableFilesystem))
+	} else if runInTempDir {
+		scriptContextFileSystem = osFilesystem
 		tempDir := t.TempDir()
 
 		//we copy the examples in test directory and we set the WD to this directory
@@ -135,20 +174,10 @@ func testExample(t *testing.T, config exampleTestConfig) {
 				core.FilesystemPermission{Kind_: permkind.Create, Entity: core.PathPattern("/...")},
 				core.FilesystemPermission{Kind_: permkind.WriteStream, Entity: core.PathPattern("/...")},
 			},
-			Limits: []core.Limit{
-				{
-					Name:  fs_ns.FS_READ_LIMIT_NAME,
-					Kind:  core.ByteRateLimit,
-					Value: 100_000_000,
-				},
-				{
-					Name:  fs_ns.FS_WRITE_LIMIT_NAME,
-					Kind:  core.ByteRateLimit,
-					Value: 100_000_000,
-				},
-			},
-			Filesystem: fs_ns.GetOsFilesystem(),
+			Limits:     core.GetDefaultScriptLimits(),
+			Filesystem: scriptContextFileSystem,
 		}), core.Path("./examples/"), core.Path(filepath.Join(tempDir, "./examples/")+"/"))
+
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -171,19 +200,29 @@ func testExample(t *testing.T, config exampleTestConfig) {
 
 		parsingCompilationContext := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{core.CreateFsReadPerm(core.PathPattern("/..."))},
-			Filesystem:  fs_ns.GetOsFilesystem(),
+			Filesystem:  scriptContextFileSystem,
 		})
+
 		core.NewGlobalState(parsingCompilationContext)
 
+		actualFpath := fpath
+		if proj != nil {
+			actualFpath = "/main.ix"
+		}
+
 		_, _, _, _, err := mod.RunLocalScript(mod.RunScriptArgs{
-			Fpath:                     fpath,
+			Fpath:                     actualFpath,
 			PassedArgs:                core.NewEmptyStruct(),
 			UseBytecode:               useBytecode,
 			OptimizeBytecode:          optimizeBytecode,
 			ParsingCompilationContext: parsingCompilationContext,
-			Out:                       io.Discard,
-			AllowMissingEnvVars:       true,
-			IgnoreHighRiskScore:       true,
+
+			ScriptContextFileSystem: scriptContextFileSystem,
+			Project:                 proj,
+
+			Out:                 io.Discard,
+			AllowMissingEnvVars: true,
+			IgnoreHighRiskScore: true,
 			//Out:              os.Stdout, // &utils.TestWriter{T: t},
 
 			EnableTesting: strings.HasSuffix(fpath, inoxconsts.INOXLANG_SPEC_FILE_SUFFIX),

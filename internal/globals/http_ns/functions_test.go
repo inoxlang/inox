@@ -15,6 +15,8 @@ import (
 
 func TestHttpClient(t *testing.T) {
 
+	permissiveHttpReqLimit := core.MustMakeNotDecrementingLimit(HTTP_REQUEST_RATE_LIMIT_NAME, 10_000)
+
 	const ADDR = "localhost:8080"
 	const URL = core.URL("http://" + ADDR + "/")
 	url_, _ := url.Parse(string(URL))
@@ -40,7 +42,7 @@ func TestHttpClient(t *testing.T) {
 			Permissions: []core.Permission{
 				core.HttpPermission{Kind_: permkind.Read, Entity: URL},
 			},
-			Limits: []core.Limit{},
+			Limits: []core.Limit{permissiveHttpReqLimit},
 		})
 		core.NewGlobalState(ctx)
 		defer ctx.CancelGracefully()
@@ -65,7 +67,7 @@ func TestHttpClient(t *testing.T) {
 			Permissions: []core.Permission{
 				core.HttpPermission{Kind_: permkind.Read, Entity: URL},
 			},
-			Limits: []core.Limit{},
+			Limits: []core.Limit{permissiveHttpReqLimit},
 		})
 		core.NewGlobalState(ctx)
 		defer ctx.CancelGracefully()
@@ -90,7 +92,7 @@ func TestHttpClient(t *testing.T) {
 			Permissions: []core.Permission{
 				core.HttpPermission{Kind_: permkind.Read, Entity: URL},
 			},
-			Limits: []core.Limit{},
+			Limits: []core.Limit{permissiveHttpReqLimit},
 		})
 		core.NewGlobalState(ctx)
 		defer ctx.CancelGracefully()
@@ -111,7 +113,6 @@ func TestHttpClient(t *testing.T) {
 }
 
 func TestHttpGet(t *testing.T) {
-
 	const ADDR = "localhost:8080"
 	const URL = core.URL("http://" + ADDR + "/")
 
@@ -136,7 +137,6 @@ func TestHttpGet(t *testing.T) {
 			Permissions: []core.Permission{
 				core.HttpPermission{Kind_: permkind.Delete, Entity: URL},
 			},
-			Limits: []core.Limit{},
 		})
 		core.NewGlobalState(ctx)
 		defer ctx.CancelGracefully()

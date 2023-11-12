@@ -17,6 +17,8 @@ import (
 
 func TestExecutionTimeLimitIntegration(t *testing.T) {
 
+	permissiveLthreadLimit := MustMakeNotDecrementingLimit(THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME, 100_000)
+
 	t.Run("context should not be cancelled faster in the presence of child threads", func(t *testing.T) {
 		execLimit, err := GetLimit(nil, EXECUTION_TOTAL_LIMIT_NAME, Duration(100*time.Millisecond))
 		if !assert.NoError(t, err) {
@@ -32,7 +34,7 @@ func TestExecutionTimeLimitIntegration(t *testing.T) {
 					Kind_: permkind.Create,
 				},
 			},
-			Limits: []Limit{execLimit},
+			Limits: []Limit{execLimit, permissiveLthreadLimit},
 		}, nil)
 		defer ctx.CancelGracefully()
 
@@ -70,6 +72,7 @@ func TestExecutionTimeLimitIntegration(t *testing.T) {
 }
 
 func TestCPUTimeLimitIntegration(t *testing.T) {
+	permissiveLthreadLimit := MustMakeNotDecrementingLimit(THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME, 100_000)
 
 	t.Run("context should be cancelled if all CPU time is spent", func(t *testing.T) {
 		cpuLimit, err := GetLimit(nil, EXECUTION_CPU_TIME_LIMIT_NAME, Duration(50*time.Millisecond))
@@ -81,7 +84,7 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 		eval := makeTreeWalkEvalFunc(t)
 
 		ctx := NewContexWithEmptyState(ContextConfig{
-			Limits: []Limit{cpuLimit},
+			Limits: []Limit{cpuLimit, permissiveLthreadLimit},
 		}, nil)
 		defer ctx.CancelGracefully()
 
@@ -109,7 +112,7 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 		}
 
 		ctx := NewContexWithEmptyState(ContextConfig{
-			Limits: []Limit{cpuLimit},
+			Limits: []Limit{cpuLimit, permissiveLthreadLimit},
 		}, nil)
 		defer ctx.CancelGracefully()
 
@@ -161,7 +164,7 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 		}
 
 		ctx := NewContexWithEmptyState(ContextConfig{
-			Limits: []Limit{cpuLimit},
+			Limits: []Limit{cpuLimit, permissiveLthreadLimit},
 		}, nil)
 		defer ctx.CancelGracefully()
 
@@ -190,6 +193,7 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 				GlobalVarPermission{Kind_: permkind.Create, Name: "*"},
 				LThreadPermission{permkind.Create},
 			},
+			Limits: []Limit{permissiveLthreadLimit},
 		}))
 		defer state.Ctx.CancelGracefully()
 
@@ -305,7 +309,7 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 					Kind_: permkind.Create,
 				},
 			},
-			Limits: []Limit{cpuLimit},
+			Limits: []Limit{cpuLimit, permissiveLthreadLimit},
 		}, nil)
 		defer ctx.CancelGracefully()
 
@@ -365,7 +369,7 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 					Kind_: permkind.Create,
 				},
 			},
-			Limits: []Limit{cpuLimit},
+			Limits: []Limit{cpuLimit, permissiveLthreadLimit},
 		}, nil)
 		defer ctx.CancelGracefully()
 
@@ -404,7 +408,7 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 					Kind_: permkind.Create,
 				},
 			},
-			Limits: []Limit{cpuLimit},
+			Limits: []Limit{cpuLimit, permissiveLthreadLimit},
 		}, nil)
 		defer ctx.CancelGracefully()
 
@@ -447,7 +451,7 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 					Kind_: permkind.Create,
 				},
 			},
-			Limits: []Limit{cpuLimit},
+			Limits: []Limit{cpuLimit, permissiveLthreadLimit},
 		}, nil)
 		defer ctx.CancelGracefully()
 
@@ -484,7 +488,7 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 					Kind_: permkind.Create,
 				},
 			},
-			Limits: []Limit{cpuLimit},
+			Limits: []Limit{cpuLimit, permissiveLthreadLimit},
 		}, nil)
 		defer ctx.CancelGracefully()
 

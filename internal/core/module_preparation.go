@@ -184,7 +184,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *GlobalState, mod *Mo
 			ParentState:           parentState,
 			PreinitStatement:      mod.MainChunk.Node.Preinit,
 			PreinitFilesystem:     args.PreinitFilesystem,
-			DefaultLimits:         utils.If(args.DoNotAddDefaultScriptLimits, nil, GetDefaultScriptLimits()),
+			DefaultLimits:         GetDefaultScriptLimits(),
 			AddDefaultPermissions: true,
 			IgnoreUnknownSections: args.DataExtractionMode,
 			IgnoreConstDeclErrors: args.DataExtractionMode,

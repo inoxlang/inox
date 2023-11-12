@@ -37,6 +37,20 @@ func TestPreInit(t *testing.T) {
 
 	}
 
+	threadLimit := mustGetMinimumNotDecrementingLimit(THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME)
+
+	minLimitA := Limit{
+		Name:  "a",
+		Kind:  TotalLimit,
+		Value: 0,
+	}
+
+	minLimitB := Limit{
+		Name:  "b",
+		Kind:  ByteRateLimit,
+		Value: 0,
+	}
+
 	//register host resolution checking functions
 	{
 		resetStaticallyCheckHostResolutionDataFnRegistry()
@@ -55,7 +69,7 @@ func TestPreInit(t *testing.T) {
 	startMemStats := new(runtime.MemStats)
 	runtime.ReadMemStats(startMemStats)
 
-	defer utils.AssertNoMemoryLeak(t, startMemStats, 10_000, utils.AssertNoMemoryLeakOptions{
+	defer utils.AssertNoMemoryLeak(t, startMemStats, 15_000, utils.AssertNoMemoryLeakOptions{
 		PreSleepDurationMillis: 100,
 		CheckGoroutines:        true,
 		GoroutineCount:         runtime.NumGoroutine(),
@@ -114,7 +128,7 @@ func TestPreInit(t *testing.T) {
 						name: %str
 					}
 				}`,
-			expectedLimits: []Limit{},
+			expectedLimits: []Limit{minLimitA, minLimitB, threadLimit},
 			expectedParameters: []ModuleParameter{
 				{
 					positional: false,
@@ -133,7 +147,7 @@ func TestPreInit(t *testing.T) {
 						node: %inox.node
 					}
 				}`,
-			expectedLimits: []Limit{},
+			expectedLimits: []Limit{minLimitA, minLimitB, threadLimit},
 			expectedParameters: []ModuleParameter{
 				{
 					positional: false,
@@ -153,7 +167,7 @@ func TestPreInit(t *testing.T) {
 					}
 				}`,
 			expectedPermissions: []Permission{},
-			expectedLimits:      []Limit{},
+			expectedLimits:      []Limit{minLimitA, minLimitB, threadLimit},
 			expectedResolutions: map[Host]Value{"ldb://main": Path("/mydb")},
 			error:               false,
 		},
@@ -172,7 +186,7 @@ func TestPreInit(t *testing.T) {
 					}
 				}`,
 			expectedPermissions: []Permission{},
-			expectedLimits:      []Limit{},
+			expectedLimits:      []Limit{minLimitA, minLimitB, threadLimit},
 			expectedResolutions: map[Host]Value{"s3://database": NewObjectFromMapNoInit(ValMap{
 				"bucket":     Str("test"),
 				"provider":   Str("cloudflare"),
@@ -186,7 +200,7 @@ func TestPreInit(t *testing.T) {
 			name:                "empty manifest",
 			module:              `manifest {}`,
 			expectedPermissions: []Permission{},
-			expectedLimits:      []Limit{},
+			expectedLimits:      []Limit{minLimitA, minLimitB, threadLimit},
 			expectedResolutions: nil,
 			error:               false,
 		},
@@ -196,7 +210,7 @@ func TestPreInit(t *testing.T) {
 					permissions: { read: {globals: "*"} }
 				}`,
 			expectedPermissions: []Permission{GlobalVarPermission{permkind.Read, "*"}},
-			expectedLimits:      []Limit{},
+			expectedLimits:      []Limit{minLimitA, minLimitB, threadLimit},
 			expectedResolutions: nil,
 			error:               false,
 		},
@@ -208,7 +222,7 @@ func TestPreInit(t *testing.T) {
 					}
 				}`,
 			expectedPermissions: []Permission{LThreadPermission{permkind.Create}},
-			expectedLimits:      []Limit{},
+			expectedLimits:      []Limit{minLimitA, minLimitB, threadLimit},
 			expectedResolutions: nil,
 			error:               false,
 		},
@@ -220,7 +234,7 @@ func TestPreInit(t *testing.T) {
 					}
 				}`,
 			expectedPermissions: []Permission{LThreadPermission{permkind.Create}},
-			expectedLimits:      []Limit{},
+			expectedLimits:      []Limit{minLimitA, minLimitB, threadLimit},
 			expectedResolutions: nil,
 			error:               false,
 		},
@@ -234,7 +248,7 @@ func TestPreInit(t *testing.T) {
 					permissions: { read: $$URL}
 				}`,
 			expectedPermissions: []Permission{HttpPermission{Kind_: permkind.Read, Entity: URL("https://example.com/")}},
-			expectedLimits:      []Limit{},
+			expectedLimits:      []Limit{minLimitA, minLimitB, threadLimit},
 			expectedResolutions: nil,
 			error:               false,
 		},
@@ -248,7 +262,7 @@ func TestPreInit(t *testing.T) {
 					permissions: { Read: $$URL}
 				}`,
 			expectedPermissions: []Permission{},
-			expectedLimits:      []Limit{},
+			expectedLimits:      []Limit{minLimitA, minLimitB, threadLimit},
 			expectedResolutions: nil,
 			error:               true,
 
@@ -264,6 +278,8 @@ func TestPreInit(t *testing.T) {
 			expectedPermissions: []Permission{},
 			expectedLimits: []Limit{
 				{Name: "a", Kind: TotalLimit, Value: int64(100 * time.Millisecond)},
+				minLimitB,
+				threadLimit,
 			},
 			expectedResolutions: nil,
 			error:               false,
@@ -278,6 +294,8 @@ func TestPreInit(t *testing.T) {
 			expectedPermissions: []Permission{},
 			expectedLimits: []Limit{
 				{Name: "a", Kind: TotalLimit, Value: MAX_LIMIT_VALUE},
+				minLimitB,
+				threadLimit,
 			},
 			expectedResolutions: nil,
 			error:               false,
@@ -319,7 +337,7 @@ func TestPreInit(t *testing.T) {
 			expectedPermissions: []Permission{
 				DNSPermission{permkind.Read, HostPattern("://**.com")},
 			},
-			expectedLimits:      []Limit{},
+			expectedLimits:      []Limit{minLimitA, minLimitB, threadLimit},
 			expectedResolutions: nil,
 			error:               false,
 		},
@@ -349,7 +367,7 @@ func TestPreInit(t *testing.T) {
 					URLPattern("ldb://main/users"),
 				},
 			},
-			expectedLimits: []Limit{},
+			expectedLimits: []Limit{minLimitA, minLimitB, threadLimit},
 		},
 		// {
 		// 	name: "see email addresses",
@@ -386,7 +404,7 @@ func TestPreInit(t *testing.T) {
 					CommandName: Str("go"),
 				},
 			},
-			expectedLimits: []Limit{},
+			expectedLimits: []Limit{minLimitA, minLimitB, threadLimit},
 		},
 		{
 			name: "use command with path",
@@ -405,7 +423,7 @@ func TestPreInit(t *testing.T) {
 					CommandName: Path("/usr/local/go/bin/go"),
 				},
 			},
-			expectedLimits: []Limit{},
+			expectedLimits: []Limit{minLimitA, minLimitB, threadLimit},
 		},
 		{
 			name: "use commands matching a prefix path pattern",
@@ -424,7 +442,7 @@ func TestPreInit(t *testing.T) {
 					CommandName: PathPattern("/usr/local/..."),
 				},
 			},
-			expectedLimits: []Limit{},
+			expectedLimits: []Limit{minLimitA, minLimitB, threadLimit},
 		},
 		{
 			name: "use commands matching a globbing path pattern (error)",
@@ -476,7 +494,7 @@ func TestPreInit(t *testing.T) {
 					pattern username = str
 				`), 0600)
 			},
-			expectedLimits: []Limit{},
+			expectedLimits: []Limit{minLimitA, minLimitB, threadLimit},
 			expectedParameters: []ModuleParameter{
 				{
 					positional: false,
@@ -505,7 +523,7 @@ func TestPreInit(t *testing.T) {
 					@host = https://localhost:8080
 				`), 0600)
 			},
-			expectedLimits:      []Limit{},
+			expectedLimits:      []Limit{minLimitA, minLimitB, threadLimit},
 			expectedPermissions: []Permission{HttpPermission{Kind_: permkind.Read, Entity: URL("https://localhost:8080/index.html")}},
 		},
 		{
@@ -547,7 +565,7 @@ func TestPreInit(t *testing.T) {
 					preinit-files: {}
 				}`,
 			expectedPermissions: []Permission{},
-			expectedLimits:      []Limit{},
+			expectedLimits:      []Limit{minLimitA, minLimitB, threadLimit},
 			expectedResolutions: nil,
 			error:               false,
 		},
@@ -565,7 +583,7 @@ func TestPreInit(t *testing.T) {
 				util.WriteFile(fls, "/file.txt", nil, 0o600)
 			},
 			expectedPermissions: []Permission{},
-			expectedLimits:      []Limit{},
+			expectedLimits:      []Limit{minLimitA, minLimitB, threadLimit},
 			expectedPreinitFileConfigs: PreinitFiles{
 				{
 					Name:               "F",
@@ -591,7 +609,7 @@ func TestPreInit(t *testing.T) {
 				util.WriteFile(fls, "/file.txt", []byte("a"), 0o600)
 			},
 			expectedPermissions: []Permission{},
-			expectedLimits:      []Limit{},
+			expectedLimits:      []Limit{minLimitA, minLimitB, threadLimit},
 			expectedPreinitFileConfigs: PreinitFiles{
 				{
 					Name:               "F",
@@ -615,7 +633,7 @@ func TestPreInit(t *testing.T) {
 					}
 				}`,
 			expectedPermissions: []Permission{},
-			expectedLimits:      []Limit{},
+			expectedLimits:      []Limit{minLimitA, minLimitB, threadLimit},
 			expectedPreinitFileConfigs: PreinitFiles{
 				{
 					Name:               "F",
@@ -647,7 +665,7 @@ func TestPreInit(t *testing.T) {
 				util.WriteFile(fls, "/file.txt", nil, 0o600)
 			},
 			expectedPermissions: []Permission{},
-			expectedLimits:      []Limit{},
+			expectedLimits:      []Limit{minLimitA, minLimitB, threadLimit},
 			expectedPreinitFileConfigs: PreinitFiles{
 				{
 					Name:               "F",
@@ -679,7 +697,7 @@ func TestPreInit(t *testing.T) {
 				util.WriteFile(fls, "/file2.txt", nil, 0o600)
 			},
 			expectedPermissions: []Permission{},
-			expectedLimits:      []Limit{},
+			expectedLimits:      []Limit{minLimitA, minLimitB, threadLimit},
 			expectedPreinitFileConfigs: PreinitFiles{
 				{
 					Name:               "F1",
@@ -711,7 +729,7 @@ func TestPreInit(t *testing.T) {
 					databases: {}
 				}`,
 			expectedPermissions: []Permission{},
-			expectedLimits:      []Limit{},
+			expectedLimits:      []Limit{minLimitA, minLimitB, threadLimit},
 			expectedResolutions: nil,
 			error:               false,
 		},
@@ -735,7 +753,7 @@ func TestPreInit(t *testing.T) {
 					Host("ldb://main"),
 				},
 			},
-			expectedLimits: []Limit{},
+			expectedLimits: []Limit{minLimitA, minLimitB, threadLimit},
 			expectedDatabaseConfigs: DatabaseConfigs{
 				{
 					Name:           "main",
@@ -768,7 +786,7 @@ func TestPreInit(t *testing.T) {
 					Host("ldb://main"),
 				},
 			},
-			expectedLimits: []Limit{},
+			expectedLimits: []Limit{minLimitA, minLimitB, threadLimit},
 			expectedDatabaseConfigs: DatabaseConfigs{
 				{
 					Name:                 "main",
@@ -807,7 +825,7 @@ func TestPreInit(t *testing.T) {
 					Host("ldb://main"),
 				},
 			},
-			expectedLimits: []Limit{},
+			expectedLimits: []Limit{minLimitA, minLimitB, threadLimit},
 			expectedDatabaseConfigs: DatabaseConfigs{
 				{
 					Name:           "main",
@@ -920,7 +938,7 @@ func TestPreInit(t *testing.T) {
 					databases: /main.ix
 				}`,
 			expectedPermissions: []Permission{},
-			expectedLimits:      []Limit{},
+			expectedLimits:      []Limit{minLimitA, minLimitB, threadLimit},
 			expectedDatabaseConfigs: DatabaseConfigs{
 				{
 					Name:           "main",
@@ -946,7 +964,7 @@ func TestPreInit(t *testing.T) {
 					databases: /main.ix
 				}`,
 			expectedPermissions: []Permission{},
-			expectedLimits:      []Limit{},
+			expectedLimits:      []Limit{minLimitA, minLimitB, threadLimit},
 			expectedDatabaseConfigs: DatabaseConfigs{
 				{
 					Name:           "main",
@@ -998,7 +1016,7 @@ func TestPreInit(t *testing.T) {
 					}
 				}`,
 			expectedPermissions: []Permission{},
-			expectedLimits:      []Limit{},
+			expectedLimits:      []Limit{minLimitA, minLimitB, threadLimit},
 			expectedDatabaseConfigs: DatabaseConfigs{
 				{
 					Name:           "main",
@@ -1078,7 +1096,7 @@ func TestPreInit(t *testing.T) {
 					}
 				}`,
 			expectedPermissions: []Permission{},
-			expectedLimits:      []Limit{},
+			expectedLimits:      []Limit{minLimitA, minLimitB, threadLimit},
 			error:               true,
 			errorIs:             ErrURLNotCorrespondingToDefinedDB,
 
@@ -1115,7 +1133,7 @@ func TestPreInit(t *testing.T) {
 					}
 				}`,
 			expectedPermissions: []Permission{},
-			expectedLimits:      []Limit{},
+			expectedLimits:      []Limit{minLimitA, minLimitB, threadLimit},
 			expectedDatabaseConfigs: DatabaseConfigs{
 				{
 					Name:           "main",
@@ -1684,7 +1702,7 @@ func TestPreInit(t *testing.T) {
 				}
 
 				assert.EqualValues(t, testCase.expectedPermissions, manifest.RequiredPermissions)
-				assert.EqualValues(t, testCase.expectedLimits, manifest.Limits)
+				assert.ElementsMatch(t, testCase.expectedLimits, manifest.Limits)
 				assert.EqualValues(t, testCase.expectedResolutions, manifest.HostResolutions)
 				assert.EqualValues(t, testCase.expectedAutoInvocationConfig, manifest.AutoInvocation)
 

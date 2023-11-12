@@ -3,7 +3,6 @@ package core
 import (
 	"errors"
 	"fmt"
-	"log"
 	"math"
 	"sync"
 	"sync/atomic"
@@ -124,6 +123,21 @@ func (r *limitRegistry) getLimitInfo(name string) (kind LimitKind, minimum int64
 	return registeredKind, min, true
 }
 
+func (r *limitRegistry) ForEachRegisteredLimit(fn func(name string, kind LimitKind, minimum int64) error) error {
+	for name, minimum := range r.minimumLimits {
+		kind, ok := r.kinds[name]
+		if !ok {
+			panic(ErrUnreachable)
+		}
+
+		err := fn(name, kind, minimum)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (r *limitRegistry) Clear() {
 	r.lock.Lock()
 	defer r.lock.Unlock()
@@ -142,6 +156,9 @@ type limiter struct {
 	// prevent race condition when Destroy & DefinitelyStopDecrementation are called
 	// at the same time.
 	definitelyStopped atomic.Bool
+
+	//TODO: reduce CPU & memory usage by using only an atomic int64 for limits of kind total with no decrementation function.
+	//the atomic value should be shared with child limiters.
 }
 
 func (l *limiter) SetStateOnce(id StateId) {
@@ -188,6 +205,7 @@ func (l *limiter) Total() (int64, error) {
 }
 
 func (l *limiter) Take(count int64) {
+
 	available := l.bucket.Available()
 	if l.limit.Kind == TotalLimit && l.limit.Value != 0 && available < count {
 		panic(fmt.Errorf("cannot take %v tokens from bucket (%s), only %v token(s) available", count, l.limit.Name, available))
@@ -232,6 +250,53 @@ func (l *limiter) ResumeDecrementation() {
 	}
 	l.bucket.ResumeOneStateDecrementation()
 	l.pausedDecrementation = false
+}
+
+func isLimitWithDecrementingValue(limitName string) bool {
+	switch limitName {
+	case EXECUTION_TOTAL_LIMIT_NAME, EXECUTION_CPU_TIME_LIMIT_NAME:
+		return true
+	}
+	return false
+}
+
+func MustMakeNotDecrementingLimit(limitName string, value int64) Limit {
+	if isLimitWithDecrementingValue(limitName) {
+		panic(fmt.Errorf("invalid argument: limit %q has auto decrementation", limitName))
+	}
+
+	kind, minimum, ok := limRegistry.getLimitInfo(limitName)
+	if !ok {
+		panic(fmt.Errorf("limit %q does not exist", limitName))
+	}
+
+	if value < minimum {
+		panic(fmt.Errorf("value provided for limit %q (%d) is smaller than the allowed minimum (%d)", limitName, value, minimum))
+	}
+
+	return Limit{
+		Name:  limitName,
+		Kind:  kind,
+		Value: value,
+	}
+}
+
+func mustGetMinimumNotDecrementingLimit(limitName string) Limit {
+
+	if isLimitWithDecrementingValue(limitName) {
+		panic(fmt.Errorf("invalid argument: limit %q has auto decrementation", limitName))
+	}
+
+	kind, minimum, ok := limRegistry.getLimitInfo(limitName)
+	if !ok {
+		panic(fmt.Errorf("limit %q does not exist", limitName))
+	}
+
+	return Limit{
+		Name:  limitName,
+		Kind:  kind,
+		Value: minimum,
+	}
 }
 
 func GetLimit(ctx *Context, limitName string, limitValue Serializable) (_ Limit, resultErr error) {
@@ -293,18 +358,21 @@ func GetLimit(ctx *Context, limitName string, limitValue Serializable) (_ Limit,
 	switch limit.Name {
 	case EXECUTION_TOTAL_LIMIT_NAME:
 		if limit.Value == 0 {
-			log.Panicf("invalid manifest, limits: %s should have a total value\n", EXECUTION_TOTAL_LIMIT_NAME)
+			resultErr = fmt.Errorf("invalid manifest, limits: %s should have a total value", EXECUTION_TOTAL_LIMIT_NAME)
+			return
 		}
 		limit.DecrementFn = func(lastDecrementTime time.Time, decrementingStateCount int32) int64 {
 			return time.Since(lastDecrementTime).Nanoseconds()
 		}
 	case EXECUTION_CPU_TIME_LIMIT_NAME:
 		if limit.Value == 0 {
-			log.Panicf("invalid manifest, limits: %s should have a total value\n", EXECUTION_CPU_TIME_LIMIT_NAME)
+			resultErr = fmt.Errorf("invalid manifest, limits: %s should have a total value", EXECUTION_CPU_TIME_LIMIT_NAME)
+			return
 		}
 		limit.DecrementFn = func(lastDecrementTime time.Time, decrementingStateCount int32) int64 {
 			return time.Since(lastDecrementTime).Nanoseconds() * int64(decrementingStateCount)
 		}
+		//IMPORTANT: make sure to exclude all limits with auto decrementation in mustGetMinimumNotDecrementingLimit.
 	}
 
 	return limit, nil

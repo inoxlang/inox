@@ -150,6 +150,7 @@ func TestObject(t *testing.T) {
 					GlobalVarPermission{Kind_: permkind.Read, Name: "*"},
 					GlobalVarPermission{Kind_: permkind.Create, Name: "*"},
 				},
+				Limits: []Limit{MustMakeNotDecrementingLimit(THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME, 10)},
 			})
 
 			state := NewGlobalState(ctx)

@@ -11,6 +11,7 @@ import (
 )
 
 func TestSpawnLThread(t *testing.T) {
+	permissiveLthreadLimit := MustMakeNotDecrementingLimit(THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME, 100_000)
 
 	t.Run("spawning a lthread without the required permission should fail", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{
@@ -48,6 +49,7 @@ func TestSpawnLThread(t *testing.T) {
 				GlobalVarPermission{Kind_: permkind.Create, Name: "*"},
 				LThreadPermission{permkind.Create},
 			},
+			Limits: []Limit{permissiveLthreadLimit},
 		}))
 		defer state.Ctx.CancelGracefully()
 
@@ -81,6 +83,7 @@ func TestSpawnLThread(t *testing.T) {
 				GlobalVarPermission{Kind_: permkind.Create, Name: "*"},
 				LThreadPermission{permkind.Create},
 			},
+			Limits: []Limit{permissiveLthreadLimit},
 		}))
 		defer state.Ctx.CancelGracefully()
 
@@ -117,6 +120,7 @@ func TestSpawnLThread(t *testing.T) {
 				GlobalVarPermission{Kind_: permkind.Create, Name: "*"},
 				LThreadPermission{permkind.Create},
 			},
+			Limits: []Limit{permissiveLthreadLimit},
 		})
 		defer ctx.CancelGracefully()
 
@@ -155,6 +159,7 @@ func TestSpawnLThread(t *testing.T) {
 				GlobalVarPermission{Kind_: permkind.Create, Name: "*"},
 				LThreadPermission{permkind.Create},
 			},
+			Limits: []Limit{permissiveLthreadLimit},
 		}))
 		defer state.Ctx.CancelGracefully()
 

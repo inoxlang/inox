@@ -12,6 +12,7 @@ import (
 
 	permkind "github.com/inoxlang/inox/internal/permkind"
 	"github.com/oklog/ulid/v2"
+	"golang.org/x/exp/maps"
 
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	parse "github.com/inoxlang/inox/internal/parse"
@@ -728,19 +729,18 @@ func (m *Module) createManifest(ctx *Context, object *Object, config manifestObj
 		autoInvocation *AutoInvocationConfig
 	)
 	permListing := NewObject()
-	limits := make([]Limit, 0)
+	limits := make(map[string]Limit, 0)
 	hostResolutions := make(map[Host]Value, 0)
-	defaultLimitsToNotSet := make(map[string]bool)
 	specifiedGlobalPermKinds := map[PermissionKind]bool{}
 
 	for k, v := range object.EntryMap(nil) {
 		switch k {
 		case MANIFEST_LIMITS_SECTION_NAME:
-			l, err := getLimits(v, defaultLimitsToNotSet)
+			l, err := getLimits(v)
 			if err != nil {
 				return nil, err
 			}
-			limits = append(limits, l...)
+			maps.Copy(limits, l)
 		case MANIFEST_HOST_RESOLUTION_SECTION_NAME:
 			resolutions, err := getHostResolutions(v)
 			if err != nil {
@@ -802,11 +802,29 @@ func (m *Module) createManifest(ctx *Context, object *Object, config manifestObj
 
 	//add default limits
 	for _, limit := range config.defaultLimits {
-		if defaultLimitsToNotSet[limit.Name] {
-			continue
+		if _, ok := limits[limit.Name]; !ok {
+			limits[limit.Name] = limit
 		}
-		limits = append(limits, limit)
 	}
+	//add minimal limits.
+	//this piece of code present to make sure that almost all limits are present.
+	limRegistry.ForEachRegisteredLimit(func(name string, kind LimitKind, minimum int64) error {
+
+		switch name {
+		//ignored because these limits have a .DecrementFn.
+		case EXECUTION_TOTAL_LIMIT_NAME, EXECUTION_CPU_TIME_LIMIT_NAME:
+			return nil
+		}
+
+		if _, ok := limits[name]; !ok {
+			limits[name] = Limit{
+				Name:  name,
+				Kind:  kind,
+				Value: minimum,
+			}
+		}
+		return nil
+	})
 
 	var ownerDBPermissions []Permission
 	//add permissions for accessing owned databases
@@ -865,7 +883,7 @@ func (m *Module) createManifest(ctx *Context, object *Object, config manifestObj
 
 	return &Manifest{
 		RequiredPermissions: perms,
-		Limits:              limits,
+		Limits:              maps.Values(limits),
 		HostResolutions:     hostResolutions,
 		EnvPattern:          envPattern,
 		Parameters:          moduleParams,
@@ -1019,8 +1037,8 @@ func GetDefaultGlobalVarPermissions() (perms []Permission) {
 	return
 }
 
-func getLimits(desc Value, defaultLimitsToNotSet map[string]bool) ([]Limit, error) {
-	var limits []Limit
+func getLimits(desc Value) (map[string]Limit, error) {
+	limits := make(map[string]Limit, 0)
 	ctx := NewContext(ContextConfig{
 		DoNotSpawnDoneGoroutine: true,
 	})
@@ -1034,17 +1052,18 @@ func getLimits(desc Value, defaultLimitsToNotSet map[string]bool) ([]Limit, erro
 	//add limits
 
 	for limitName, limitPropValue := range limitObj.EntryMap(nil) {
-
 		var limit Limit
-		defaultLimitsToNotSet[limitName] = true
-
 		limit, err := GetLimit(ctx, limitName, limitPropValue)
 
 		if err != nil {
 			return nil, err
 		}
 
-		limits = append(limits, limit)
+		if _, ok := limits[limit.Name]; ok {
+			panic(ErrUnreachable)
+		}
+
+		limits[limit.Name] = limit
 	}
 
 	return limits, nil
