@@ -338,7 +338,7 @@ func TestFilesystemRouting(t *testing.T) {
 		)
 	})
 
-	t.Run("an error should be returned during sevrer creation if there a checking error in the handler module", func(t *testing.T) {
+	t.Run("an error should be returned during server creation if there a checking error in the handler module", func(t *testing.T) {
 		_, ctx, _, host, err := setupTestCase(t, serverTestCase{
 			input: `return {
 					routing: {dynamic: /routes/}
@@ -613,7 +613,7 @@ func TestFilesystemRouting(t *testing.T) {
 		assert.WithinDuration(t, start.Add(workDuration), end, cpuTime/10+5*time.Millisecond)
 	})
 
-	t.Run("the handler modules should alwas be created with any of the default script limits", func(t *testing.T) {
+	t.Run("the handler modules should never be created with any of the default script limits", func(t *testing.T) {
 		//In this test we spawn many lthreads to make sure the test has not be created with
 		//the default script limits that we configured at the start of the test suite.
 
@@ -645,47 +645,7 @@ func TestFilesystemRouting(t *testing.T) {
 					{
 						path:                "/x",
 						acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
-						status:              http.StatusInternalServerError,
-					},
-				},
-			},
-			createClient,
-		)
-	})
-
-	t.Run("the handler modules should not be created with any of the default script limits", func(t *testing.T) {
-		//In this test we spawn many lthreads to make sure the test has not be created with
-		//the default script limits that we configured at the start of the test suite.
-
-		runServerTest(t,
-			serverTestCase{
-				input: `return {
-						routing: {dynamic: /routes/}
-					}`,
-				makeFilesystem: func() afs.Filesystem {
-					fls := fs_ns.NewMemFilesystem(10_000)
-					fls.MkdirAll("/routes", fs_ns.DEFAULT_DIR_FMODE)
-					util.WriteFile(fls, "/routes/x.ix", []byte(`
-							manifest {}
-
-							for 1..15 {
-								go do {
-									sleep 0.5s
-								}
-							}
-
-							sleep 1s
-
-							return "hello"
-						`), fs_ns.DEFAULT_FILE_FMODE)
-
-					return fls
-				},
-				requests: []requestTestInfo{
-					{
-						path:                "/x",
-						acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
-						status:              http.StatusInternalServerError,
+						status:              http.StatusNotFound,
 					},
 				},
 			},

@@ -11,6 +11,7 @@ import (
 	"slices"
 
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/mimeconsts"
 	"github.com/inoxlang/inox/internal/mod"
@@ -28,6 +29,61 @@ var (
 	//methods allowed in handler module filenames.
 	FS_ROUTING_METHODS = []string{"GET", "OPTIONS", "POST", "PATCH", "PUT", "DELETE"}
 )
+
+func addFilesystemRoutingHandler(server *HttpsServer, staticDir, dynamicDir core.Path, isMiddleware bool) error {
+	var handleDynamic handlerFn
+	if dynamicDir != "" {
+		handleDynamic = createHandleDynamic(server, dynamicDir)
+	}
+
+	handler := func(req *HttpRequest, rw *HttpResponseWriter, handlerGlobalState *core.GlobalState) {
+
+		if staticDir != "" {
+			staticResourcePath := staticDir.JoinAbsolute(req.Path, handlerGlobalState.Ctx.GetFileSystem())
+
+			if staticResourcePath.IsDirPath() {
+				staticResourcePath += "index.html"
+			}
+
+			if fs_ns.Exists(handlerGlobalState.Ctx, staticResourcePath) {
+				err := serveFile(handlerGlobalState.Ctx, rw, req, staticResourcePath)
+				if err != nil {
+					handlerGlobalState.Logger.Err(err).Send()
+					rw.writeStatus(http.StatusNotFound)
+					return
+				}
+				return
+			}
+		}
+
+		if handleDynamic != nil {
+			handleDynamic(req, rw, handlerGlobalState)
+		}
+
+		if staticDir == "" && dynamicDir == "" {
+			rw.rw.Write([]byte(NO_HANDLER_PLACEHOLDER_MESSAGE))
+		}
+	}
+
+	if isMiddleware {
+		return errors.New("filesystem routing handler cannot be used as a middleware")
+	} else {
+		api, err := getFSRoutingServerAPI(server.state.Ctx, dynamicDir.UnderlyingString())
+		if err != nil {
+			return err
+		}
+		server.lastHandlerFn = handler
+		server.api = api
+
+		// preparedModules := newPreparedModules(server.state.Ctx)
+		// err = preparedModules.prepareFrom(api)
+		// if err != nil {
+		// 	return err
+		// }
+	}
+
+	return nil
+}
 
 func createHandleDynamic(server *HttpsServer, routingDirPath core.Path) handlerFn {
 	return func(req *HttpRequest, rw *HttpResponseWriter, handlerGlobalState *core.GlobalState) {

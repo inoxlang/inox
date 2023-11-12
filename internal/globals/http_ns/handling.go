@@ -7,7 +7,6 @@ import (
 	"slices"
 
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	jsoniter "github.com/inoxlang/inox/internal/jsoniter"
 	"github.com/inoxlang/inox/internal/mimeconsts"
 	"github.com/rs/zerolog"
@@ -88,7 +87,6 @@ func addHandlerFunction(handlerValue core.Value, isMiddleware bool, server *Http
 
 		var staticDir core.Path
 		var dynamicDir core.Path
-		var handleDynamic handlerFn
 
 		propertyNames := userHandler.PropertyNames(server.state.Ctx)
 		if slices.Contains(propertyNames, "static") {
@@ -96,54 +94,9 @@ func addHandlerFunction(handlerValue core.Value, isMiddleware bool, server *Http
 		}
 		if slices.Contains(propertyNames, "dynamic") {
 			dynamicDir = userHandler.Prop(server.state.Ctx, "dynamic").(core.Path)
-			handleDynamic = createHandleDynamic(server, dynamicDir)
 		}
 
-		handler := func(req *HttpRequest, rw *HttpResponseWriter, handlerGlobalState *core.GlobalState) {
-
-			if staticDir != "" {
-				staticResourcePath := staticDir.JoinAbsolute(req.Path, handlerGlobalState.Ctx.GetFileSystem())
-
-				if staticResourcePath.IsDirPath() {
-					staticResourcePath += "index.html"
-				}
-
-				if fs_ns.Exists(handlerGlobalState.Ctx, staticResourcePath) {
-					err := serveFile(handlerGlobalState.Ctx, rw, req, staticResourcePath)
-					if err != nil {
-						handlerGlobalState.Logger.Err(err).Send()
-						rw.writeStatus(http.StatusNotFound)
-						return
-					}
-					return
-				}
-			}
-
-			if handleDynamic != nil {
-				handleDynamic(req, rw, handlerGlobalState)
-			}
-
-			if staticDir == "" && dynamicDir == "" {
-				rw.rw.Write([]byte(NO_HANDLER_PLACEHOLDER_MESSAGE))
-			}
-		}
-
-		if isMiddleware {
-			server.middlewares = append(server.middlewares, handler)
-		} else {
-			api, err := getFSRoutingServerAPI(server.state.Ctx, dynamicDir.UnderlyingString())
-			if err != nil {
-				return err
-			}
-			server.lastHandlerFn = handler
-			server.api = api
-
-			// preparedModules := newPreparedModules(server.state.Ctx)
-			// err = preparedModules.prepareFrom(api)
-			// if err != nil {
-			// 	return err
-			// }
-		}
+		return addFilesystemRoutingHandler(server, staticDir, dynamicDir, isMiddleware)
 	case *core.Mapping:
 		routing := userHandler
 		//if a routing Mapping is provided we compute a value by passing the request's path to the Mapping.
