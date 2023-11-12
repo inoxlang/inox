@@ -20,8 +20,8 @@ const (
 
 func init() {
 	//register limits
-	core.LimRegistry.RegisterLimit(HTTP_REQUEST_RATE_LIMIT_NAME, core.SimpleRateLimit, 0)
-	core.LimRegistry.RegisterLimit(HTTP_UPLOAD_RATE_LIMIT_NAME, core.ByteRateLimit, 0)
+	core.RegisterLimit(HTTP_REQUEST_RATE_LIMIT_NAME, core.SimpleRateLimit, 0)
+	core.RegisterLimit(HTTP_UPLOAD_RATE_LIMIT_NAME, core.ByteRateLimit, 0)
 
 	//register patterns
 	core.RegisterDefaultPatternNamespace("http", &core.PatternNamespace{

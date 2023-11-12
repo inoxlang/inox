@@ -57,6 +57,7 @@ func GetByteSize[T any]() uintptr {
 	return unsafe.Sizeof(v)
 }
 
+// If cond is true a is returned, else b is returned.
 func If[T any](cond bool, a, b T) T {
 	if cond {
 		return a

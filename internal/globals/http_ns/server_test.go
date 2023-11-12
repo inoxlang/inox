@@ -15,6 +15,7 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+	"unicode/utf8"
 
 	"slices"
 
@@ -913,7 +914,11 @@ func runAdvancedServerTest(
 				if !assert.Equal(t, info.status, resp.StatusCode, reqInfo) {
 					body, err := io.ReadAll(resp.Body)
 					if err == nil {
-						t.Log("body content is ", body)
+						var logArg any = body
+						if utf8.Valid(body) {
+							logArg = string(body)
+						}
+						t.Log("body content is", logArg)
 					}
 					return
 				}

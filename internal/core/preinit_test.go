@@ -32,8 +32,8 @@ func TestPreInit(t *testing.T) {
 		resetLimitRegistry()
 		defer resetLimitRegistry()
 
-		LimRegistry.RegisterLimit("a", TotalLimit, 0)
-		LimRegistry.RegisterLimit("b", ByteRateLimit, 0)
+		limRegistry.RegisterLimit("a", TotalLimit, 0)
+		limRegistry.RegisterLimit("b", ByteRateLimit, 0)
 
 	}
 

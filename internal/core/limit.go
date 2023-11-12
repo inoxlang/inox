@@ -27,7 +27,7 @@ const (
 )
 
 var (
-	LimRegistry = limitRegistry{
+	limRegistry = limitRegistry{
 		kinds:         make(map[string]LimitKind),
 		minimumLimits: make(map[string]int64),
 	}
@@ -42,10 +42,10 @@ func init() {
 }
 
 func resetLimitRegistry() {
-	LimRegistry.Clear()
-	LimRegistry.RegisterLimit(THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME, TotalLimit, 0)
-	LimRegistry.RegisterLimit(EXECUTION_TOTAL_LIMIT_NAME, TotalLimit, 0)
-	LimRegistry.RegisterLimit(EXECUTION_CPU_TIME_LIMIT_NAME, TotalLimit, 0)
+	limRegistry.Clear()
+	limRegistry.RegisterLimit(THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME, TotalLimit, 0)
+	limRegistry.RegisterLimit(EXECUTION_TOTAL_LIMIT_NAME, TotalLimit, 0)
+	limRegistry.RegisterLimit(EXECUTION_CPU_TIME_LIMIT_NAME, TotalLimit, 0)
 }
 
 // A Limit represents a limit for a running piece of code, for example: the maximum rate of http requests.
@@ -92,13 +92,17 @@ type limitRegistry struct {
 	minimumLimits map[string]int64
 }
 
+func RegisterLimit(name string, kind LimitKind, minimumLimit int64) {
+	limRegistry.RegisterLimit(name, kind, minimumLimit)
+}
+
 func (r *limitRegistry) RegisterLimit(name string, kind LimitKind, minimumLimit int64) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
 	registeredKind, ok := r.kinds[name]
 	if ok && (registeredKind != kind || minimumLimit != r.minimumLimits[name]) {
-		panic(fmt.Errorf("cannot register the limit '%s' with a different type or minimum", name))
+		panic(fmt.Errorf("cannot register the limit '%s' with a different kind or minimum", name))
 	}
 
 	if !ok {
@@ -266,7 +270,7 @@ func GetLimit(ctx *Context, limitName string, limitValue Serializable) (_ Limit,
 		return
 	}
 
-	registeredKind, registeredMinimum, ok := LimRegistry.getLimitInfo(limitName)
+	registeredKind, registeredMinimum, ok := limRegistry.getLimitInfo(limitName)
 	if !ok {
 		resultErr = fmt.Errorf("invalid manifest, limits: '%s' is not a registered limit", limitName)
 		return

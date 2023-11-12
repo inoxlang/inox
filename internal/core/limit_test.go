@@ -242,7 +242,7 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 	t.Run("time spent waiting for limit token bucket to refill should not count as CPU time", func(t *testing.T) {
 		resetLimitRegistry()
 		defer resetLimitRegistry()
-		LimRegistry.RegisterLimit("my-limit", SimpleRateLimit, 0)
+		limRegistry.RegisterLimit("my-limit", SimpleRateLimit, 0)
 
 		CPU_TIME := 50 * time.Millisecond
 		cpuLimit, err := GetLimit(nil, EXECUTION_CPU_TIME_LIMIT_NAME, Duration(CPU_TIME))

@@ -99,10 +99,11 @@ func createHandleDynamic(server *HttpsServer, routingDirPath core.Path) handlerF
 		logger := handlerGlobalState.Logger.With().Str("handler-module", modulePath).Logger()
 
 		state, _, _, err := core.PrepareLocalScript(core.ScriptPreparationArgs{
-			Fpath:                 modulePath,
-			CachedModule:          module,
-			ParentContext:         handlerCtx,
-			ParentContextRequired: true,
+			Fpath:                       modulePath,
+			CachedModule:                module,
+			ParentContext:               handlerCtx,
+			ParentContextRequired:       true,
+			DoNotAddDefaultScriptLimits: true,
 
 			ParsingCompilationContext: handlerCtx,
 			Out:                       handlerGlobalState.Out,
@@ -120,6 +121,8 @@ func createHandleDynamic(server *HttpsServer, routingDirPath core.Path) handlerF
 			BeforeContextCreation: func(m *core.Manifest) ([]core.Limit, error) {
 				var defaultLimits map[string]core.Limit = maps.Clone(server.defaultLimits)
 
+				//check the manifest's limits against the server's maximum limits
+				//and remove present limits from defaultLimits.
 				for _, limit := range m.Limits {
 					maxLimit, ok := server.maxLimits[limit.Name]
 					if ok && maxLimit.MoreRestrictiveThan(limit) {
@@ -132,6 +135,7 @@ func createHandleDynamic(server *HttpsServer, routingDirPath core.Path) handlerF
 					delete(defaultLimits, limit.Name)
 				}
 
+				//add remaining defaultLimits.
 				limits := slices.Clone(m.Limits)
 
 				for _, limit := range defaultLimits {

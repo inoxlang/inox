@@ -9,8 +9,8 @@ import (
 
 func init() {
 	// register limits
-	core.LimRegistry.RegisterLimit(WS_SIMUL_CONN_TOTAL_LIMIT_NAME, core.TotalLimit, 0)
-	core.LimRegistry.RegisterLimit(TCP_SIMUL_CONN_TOTAL_LIMIT_NAME, core.TotalLimit, 0)
+	core.RegisterLimit(WS_SIMUL_CONN_TOTAL_LIMIT_NAME, core.TotalLimit, 0)
+	core.RegisterLimit(TCP_SIMUL_CONN_TOTAL_LIMIT_NAME, core.TotalLimit, 0)
 
 	// register symbolic version of Go Functions
 	core.RegisterSymbolicGoFunctions([]any{

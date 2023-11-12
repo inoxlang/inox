@@ -19,18 +19,18 @@ import (
 )
 
 func TestFilesystemRouting(t *testing.T) {
-	const cpuTime = 25 * time.Millisecond
+	const cpuTime = 250000 * time.Millisecond
 	cpuTimeLimit, err := core.GetLimit(nil, core.EXECUTION_CPU_TIME_LIMIT_NAME, core.Duration(cpuTime))
 	if !assert.NoError(t, err) {
 		return
 	}
 
-	threadCountLimit, err := core.GetLimit(nil, core.THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME, core.Int(10))
+	threadCountLimit, err := core.GetLimit(nil, core.THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME, core.Int(20))
 	if !assert.NoError(t, err) {
 		return
 	}
 
-	//set default script limits: threadCountLimit
+	//we set the default script limits with a single limits: the thread count limit with a high value.
 	if core.AreDefaultScriptLimitsSet() {
 		save := core.GetDefaultScriptLimits()
 		core.UnsetDefaultScriptLimits()
@@ -611,6 +611,86 @@ func TestFilesystemRouting(t *testing.T) {
 
 		//TODO: improve implementation in order for the assertion to pass with +1ms instead of the +5ms.
 		assert.WithinDuration(t, start.Add(workDuration), end, cpuTime/10+5*time.Millisecond)
+	})
+
+	t.Run("the handler modules should alwas be created with any of the default script limits", func(t *testing.T) {
+		//In this test we spawn many lthreads to make sure the test has not be created with
+		//the default script limits that we configured at the start of the test suite.
+
+		runServerTest(t,
+			serverTestCase{
+				input: `return {
+						routing: {dynamic: /routes/}
+					}`,
+				makeFilesystem: func() afs.Filesystem {
+					fls := fs_ns.NewMemFilesystem(10_000)
+					fls.MkdirAll("/routes", fs_ns.DEFAULT_DIR_FMODE)
+					util.WriteFile(fls, "/routes/x.ix", []byte(`
+							manifest {}
+
+							for 1..15 {
+								go do {
+									sleep 0.5s
+								}
+							}
+
+							sleep 1s
+
+							return "hello"
+						`), fs_ns.DEFAULT_FILE_FMODE)
+
+					return fls
+				},
+				requests: []requestTestInfo{
+					{
+						path:                "/x",
+						acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
+						status:              http.StatusInternalServerError,
+					},
+				},
+			},
+			createClient,
+		)
+	})
+
+	t.Run("the handler modules should not be created with any of the default script limits", func(t *testing.T) {
+		//In this test we spawn many lthreads to make sure the test has not be created with
+		//the default script limits that we configured at the start of the test suite.
+
+		runServerTest(t,
+			serverTestCase{
+				input: `return {
+						routing: {dynamic: /routes/}
+					}`,
+				makeFilesystem: func() afs.Filesystem {
+					fls := fs_ns.NewMemFilesystem(10_000)
+					fls.MkdirAll("/routes", fs_ns.DEFAULT_DIR_FMODE)
+					util.WriteFile(fls, "/routes/x.ix", []byte(`
+							manifest {}
+
+							for 1..15 {
+								go do {
+									sleep 0.5s
+								}
+							}
+
+							sleep 1s
+
+							return "hello"
+						`), fs_ns.DEFAULT_FILE_FMODE)
+
+					return fls
+				},
+				requests: []requestTestInfo{
+					{
+						path:                "/x",
+						acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
+						status:              http.StatusInternalServerError,
+					},
+				},
+			},
+			createClient,
+		)
 	})
 
 	t.Run("request transaction should be commited or rollbacked after request", func(t *testing.T) {
