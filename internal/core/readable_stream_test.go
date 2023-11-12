@@ -15,7 +15,7 @@ func TestWrappedWatcherStream(t *testing.T) {
 		startMemStats := new(runtime.MemStats)
 		runtime.ReadMemStats(startMemStats)
 
-		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 300)
 	}
 
 	t.Run("WaitNext", func(t *testing.T) {

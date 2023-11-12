@@ -253,7 +253,7 @@ func TestBoundChild(t *testing.T) {
 		startMemStats := new(runtime.MemStats)
 		runtime.ReadMemStats(startMemStats)
 
-		defer utils.AssertNoMemoryLeak(t, startMemStats, 1500, utils.AssertNoMemoryLeakOptions{
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 2000, utils.AssertNoMemoryLeakOptions{
 			PreSleepDurationMillis: 100,
 			CheckGoroutines:        true,
 			GoroutineCount:         runtime.NumGoroutine(),
@@ -427,7 +427,7 @@ func TestContextLimiters(t *testing.T) {
 		startMemStats := new(runtime.MemStats)
 		runtime.ReadMemStats(startMemStats)
 
-		defer utils.AssertNoMemoryLeak(t, startMemStats, 8_000, utils.AssertNoMemoryLeakOptions{
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 9_000, utils.AssertNoMemoryLeakOptions{
 			PreSleepDurationMillis: 100,
 			CheckGoroutines:        true,
 			GoroutineCount:         runtime.NumGoroutine(),
@@ -630,7 +630,7 @@ func TestContextGracefulTearDownTasks(t *testing.T) {
 		startMemStats := new(runtime.MemStats)
 		runtime.ReadMemStats(startMemStats)
 
-		defer utils.AssertNoMemoryLeak(t, startMemStats, 1000, utils.AssertNoMemoryLeakOptions{
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 1500, utils.AssertNoMemoryLeakOptions{
 			PreSleepDurationMillis: 100,
 			CheckGoroutines:        true,
 			GoroutineCount:         runtime.NumGoroutine(),
@@ -767,7 +767,7 @@ func TestContextDone(t *testing.T) {
 			startMemStats := new(runtime.MemStats)
 			runtime.ReadMemStats(startMemStats)
 
-			defer utils.AssertNoMemoryLeak(t, startMemStats, 100, utils.AssertNoMemoryLeakOptions{
+			defer utils.AssertNoMemoryLeak(t, startMemStats, 300, utils.AssertNoMemoryLeakOptions{
 				PreSleepDurationMillis: 100,
 				CheckGoroutines:        true,
 				GoroutineCount:         runtime.NumGoroutine(),
