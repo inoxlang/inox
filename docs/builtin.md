@@ -40,7 +40,15 @@ Error("failed to create user", {user_id: 100})
 chrome namespace.
 ### chrome.Handle
 
-the Handle function creates a new Chrome handle that provides methods to interact with a web browser instance. You should call its .close() method when you are finished using it. The project server downloads a Chromium browser if none is present. The list of checked paths can be found here: https://github.com/inoxlang/inox/blob/master/internal/globals/chrome_ns/download.go#L114C1-L114C43. If you are not using the project server you have to install Chrome or Chromium.
+The Handle function creates a new Chrome handle that provides methods to interact with a web browser instance.
+You should call its .close() method when you are finished using it. 
+
+The project server downloads a Chromium browser
+if none is present. The list of checked paths can be found here: https://github.com/inoxlang/inox/blob/master/internal/globals/chrome_ns/download.go#L114C1-L114C43.
+If you are not using the project server you have to install Chrome or Chromium.
+
+The browser instance always forwards the HTTP requests to a local proxy server that runs inside an Inox process.
+Therefore make sure to add the necessary HTTP permissions in the manifest.
 
 **examples**
 
@@ -49,7 +57,7 @@ chrome.Handle!()
 ```
 ### chrome.Handle/nav
 
-the nav method makes the browser navigate to a page.
+the nav method makes the browser navigate to a page. All HTTP requests made by the browser are checked against the permission system, so make sure to add the necessary permissions.
 
 **examples**
 
