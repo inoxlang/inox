@@ -2,7 +2,7 @@ manifest {
     
 }
 
-# the following set can contain any serializable value:
+# the following set can contain any immutable serializable value:
 set = Set([])
 set.add(1)
 set.add("hello")

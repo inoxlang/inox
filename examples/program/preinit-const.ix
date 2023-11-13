@@ -14,5 +14,5 @@ manifest {
 
 print(@host/)
 
-body = http.read!(@host/posts/1, --insecure)
+body = http.read!(@host/posts/1)
 print(body)

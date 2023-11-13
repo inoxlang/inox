@@ -26,15 +26,16 @@ hello "bar" "!"
 # Inox functions are considered to return an error if the return value is an Array whose last element is an error.
 # note: Inox functions always return a single value.
 
-# syntaxes for 'must' calls:
-# f
+# syntax for 'must' calls:
 # f!()
 
 fn f(){
-    return [1, Error("expected failure !!")]
+    return Array(1, Error("expected failure !!"))
 }
 
-assign res err = f() # the list is destructured
+f!()
+
+assign res err = f() # the array is destructured
 print "res =" $res "err =" $err
 
 

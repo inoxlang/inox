@@ -6,7 +6,8 @@ manifest {
     }
 }
 
-# the walk statement walks a directory, the entries are read in the lexicographic order, symlinks are not followed
+# the walk statement walks a walkable value such as a directory path or a udata value.
+# When walking a directory the entries are read in the lexicographic order, symlinks are not followed.
 
 delete ./tempdir/
 fs.mkdir ./tempdir/ :{
