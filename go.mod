@@ -5,7 +5,7 @@ go 1.21
 require (
 	github.com/PuerkitoBio/goquery v1.8.0
 	github.com/adrg/xdg v0.4.0
-	github.com/alecthomas/chroma/v2 v2.7.0
+	github.com/alecthomas/chroma/v2 v2.11.1
 	github.com/alexedwards/argon2id v0.0.0-20230305115115-4b3c3280a736
 	github.com/aohorodnyk/mimeheader v0.0.6
 	github.com/bits-and-blooms/bitset v1.8.0
@@ -17,7 +17,7 @@ require (
 	github.com/coreos/go-systemd/v22 v22.5.0
 	github.com/djherbis/times v1.5.0
 	github.com/elazarl/goproxy v0.0.0-20231031074852-3ec07828be7a
-	github.com/fsnotify/fsnotify v1.6.0
+	github.com/fsnotify/fsnotify v1.7.0
 	github.com/go-git/go-billy/v5 v5.4.1
 	github.com/goccy/go-yaml v1.11.0
 	github.com/google/go-dap v0.11.0
@@ -58,7 +58,7 @@ require (
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/chromedp/sysutil v1.0.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/dlclark/regexp2 v1.4.0 // indirect
+	github.com/dlclark/regexp2 v1.10.0 // indirect
 	github.com/dprotaso/go-yit v0.0.0-20220510233725-9ba8df137936 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/fatih/color v1.13.0 // indirect
@@ -109,7 +109,7 @@ require (
 	golang.org/x/crypto v0.13.0 // indirect
 	golang.org/x/mod v0.12.0 // indirect
 	golang.org/x/sync v0.3.0 // indirect
-	golang.org/x/sys v0.13.0 // indirect
+	golang.org/x/sys v0.14.0 // indirect
 	golang.org/x/text v0.13.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	golang.org/x/tools v0.13.0 // indirect
