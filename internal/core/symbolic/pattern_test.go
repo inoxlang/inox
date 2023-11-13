@@ -202,28 +202,55 @@ func TestSymbolicUrlPattern(t *testing.T) {
 
 }
 
-func TestSymbolicHostPattern(t *testing.T) {
+func TestHostPattern(t *testing.T) {
 
 	t.Run("Test()", func(t *testing.T) {
 		anyHostPattern := &HostPattern{}
 
 		assertTest(t, anyHostPattern, &HostPattern{})
+		assertTest(t, anyHostPattern, ANY_HTTP_HOST_PATTERN)
+		assertTest(t, anyHostPattern, ANY_HTTPS_HOST_PATTERN)
 		assertTestFalse(t, anyHostPattern, ANY_INT)
 		assertTestFalse(t, anyHostPattern, ANY_PATTERN)
 
-		hostPatternWithValue := NewHostPattern("https://example.com")
-		assertTest(t, hostPatternWithValue, hostPatternWithValue)
-		assertTestFalse(t, hostPatternWithValue, anyHostPattern)
-		assertTestFalse(t, hostPatternWithValue, ANY_INT)
-		assertTestFalse(t, hostPatternWithValue, ANY_PATTERN)
+		httpsHostPatternWithValue := NewHostPattern("https://example.com")
+		assertTest(t, httpsHostPatternWithValue, httpsHostPatternWithValue)
+		assertTestFalse(t, httpsHostPatternWithValue, anyHostPattern)
+		assertTestFalse(t, httpsHostPatternWithValue, ANY_HTTP_HOST_PATTERN)
+		assertTestFalse(t, httpsHostPatternWithValue, ANY_HTTPS_HOST_PATTERN)
+
+		httpHostPatternWithValue := NewHostPattern("http://example.com")
+		assertTest(t, httpHostPatternWithValue, httpHostPatternWithValue)
+		assertTestFalse(t, httpHostPatternWithValue, anyHostPattern)
+		assertTestFalse(t, httpHostPatternWithValue, ANY_HTTP_HOST_PATTERN)
+		assertTestFalse(t, httpHostPatternWithValue, ANY_HTTPS_HOST_PATTERN)
+		assertTestFalse(t, httpHostPatternWithValue, httpsHostPatternWithValue)
+
+		schemelessHostPatternWithValue := NewHostPattern("://example.com")
+		assertTest(t, schemelessHostPatternWithValue, schemelessHostPatternWithValue)
+		assertTestFalse(t, schemelessHostPatternWithValue, anyHostPattern)
+		assertTestFalse(t, schemelessHostPatternWithValue, ANY_HTTP_HOST_PATTERN)
+		assertTestFalse(t, schemelessHostPatternWithValue, ANY_HTTPS_HOST_PATTERN)
 
 		hostPatternWithNode := NewHostPatternFromNode(&parse.PathPatternExpression{}, &parse.Chunk{})
 		assertTest(t, hostPatternWithNode, hostPatternWithNode)
 		assertTestFalse(t, hostPatternWithNode, NewHostPatternFromNode(&parse.PathPatternExpression{}, &parse.Chunk{}))
 		assertTestFalse(t, hostPatternWithNode, anyHostPattern)
-		assertTestFalse(t, hostPatternWithNode, hostPatternWithValue)
-		assertTestFalse(t, hostPatternWithNode, ANY_INT)
-		assertTestFalse(t, hostPatternWithNode, ANY_PATTERN)
+		assertTestFalse(t, hostPatternWithNode, httpsHostPatternWithValue)
+
+		httpHostPatternWithNode := NewHostPatternFromNode(&parse.PathPatternExpression{}, &parse.Chunk{})
+		httpHostPatternWithNode.scheme = HTTP_SCHEME
+
+		//check ANY_HTTPS_HOST_PATTERN
+		assertTest(t, ANY_HTTPS_HOST_PATTERN, ANY_HTTPS_HOST_PATTERN)
+		assertTest(t, ANY_HTTPS_HOST_PATTERN, httpsHostPatternWithValue)
+		assertTestFalse(t, ANY_HTTPS_HOST_PATTERN, NewHostPatternFromNode(&parse.PathPatternExpression{}, &parse.Chunk{}))
+		assertTestFalse(t, ANY_HTTPS_HOST_PATTERN, anyHostPattern)
+		assertTestFalse(t, ANY_HTTPS_HOST_PATTERN, ANY_HTTP_HOST_PATTERN)
+		assertTestFalse(t, ANY_HTTPS_HOST_PATTERN, hostPatternWithNode)
+		assertTestFalse(t, ANY_HTTPS_HOST_PATTERN, httpHostPatternWithNode)
+		assertTestFalse(t, ANY_HTTPS_HOST_PATTERN, httpHostPatternWithValue)
+		assertTestFalse(t, ANY_HTTPS_HOST_PATTERN, schemelessHostPatternWithValue)
 	})
 
 	t.Run("TestValue()", func(t *testing.T) {
@@ -231,6 +258,7 @@ func TestSymbolicHostPattern(t *testing.T) {
 
 		assertTestValue(t, anyHostPattern, &Host{})
 		assertTestValue(t, anyHostPattern, NewHost("https://example.com"))
+		assertTestValue(t, anyHostPattern, NewHost("://example.com"))
 		assertTestValue(t, anyHostPattern, NewHostMatchingPattern(NewHostPatternFromNode(&parse.HostPatternLiteral{}, &parse.Chunk{})))
 		assertTestValueFalse(t, anyHostPattern, ANY_INT)
 		assertTestValueFalse(t, anyHostPattern, ANY_HOST_PATTERN)
@@ -239,6 +267,7 @@ func TestSymbolicHostPattern(t *testing.T) {
 		anyHostPattern_val := anyHostPattern.SymbolicValue()
 		assertTest(t, anyHostPattern_val, &Host{})
 		assertTest(t, anyHostPattern_val, NewHost("https://example.com"))
+		assertTest(t, anyHostPattern_val, NewHost("://example.com"))
 		assertTest(t, anyHostPattern_val, NewHostMatchingPattern(NewHostPatternFromNode(&parse.HostPatternLiteral{}, &parse.Chunk{})))
 		assertTestFalse(t, anyHostPattern_val, ANY_INT)
 		assertTestFalse(t, anyHostPattern_val, ANY_HOST_PATTERN)
@@ -246,6 +275,7 @@ func TestSymbolicHostPattern(t *testing.T) {
 		hostPatternWithValue := NewHostPattern("https://example.com")
 		assertTestValue(t, hostPatternWithValue, NewHost("https://example.com"))
 		assertTestValueFalse(t, hostPatternWithValue, NewHost("https://localhost"))
+		assertTestValueFalse(t, hostPatternWithValue, NewHost("://localhost"))
 		assertTestValueFalse(t, hostPatternWithValue, NewHostMatchingPattern(NewHostPatternFromNode(&parse.HostPatternLiteral{}, &parse.Chunk{})))
 		assertTestValueFalse(t, hostPatternWithValue, &Host{})
 		assertTestValueFalse(t, hostPatternWithValue, ANY_INT)
@@ -255,6 +285,7 @@ func TestSymbolicHostPattern(t *testing.T) {
 		hostPatternWithValue_val := hostPatternWithValue.SymbolicValue()
 		assertTest(t, hostPatternWithValue_val, NewHost("https://example.com"))
 		assertTestFalse(t, hostPatternWithValue_val, NewHost("https://localhost"))
+		assertTestFalse(t, hostPatternWithValue_val, NewHost("://localhost"))
 		assertTestFalse(t, hostPatternWithValue_val, NewHostMatchingPattern(NewHostPatternFromNode(&parse.HostPatternLiteral{}, &parse.Chunk{})))
 		assertTestFalse(t, hostPatternWithValue_val, &Host{})
 		assertTestFalse(t, hostPatternWithValue_val, ANY_INT)
@@ -264,6 +295,7 @@ func TestSymbolicHostPattern(t *testing.T) {
 		assertTestValue(t, hostPatternWithNode, NewHostMatchingPattern(hostPatternWithNode))
 		assertTestValueFalse(t, hostPatternWithNode, NewHostMatchingPattern(NewHostPatternFromNode(&parse.HostPatternLiteral{}, &parse.Chunk{})))
 		assertTestValueFalse(t, hostPatternWithNode, NewHost("https://example.com"))
+		assertTestValueFalse(t, hostPatternWithNode, NewHost("://example.com"))
 		assertTestValueFalse(t, hostPatternWithNode, &Host{})
 		assertTestValueFalse(t, hostPatternWithNode, ANY_INT)
 		assertTestValueFalse(t, hostPatternWithNode, ANY_HOST_PATTERN)
@@ -273,9 +305,38 @@ func TestSymbolicHostPattern(t *testing.T) {
 		assertTest(t, hostPatternWithNode_val, NewHostMatchingPattern(hostPatternWithNode))
 		assertTestFalse(t, hostPatternWithNode_val, NewHostMatchingPattern(NewHostPatternFromNode(&parse.HostPatternLiteral{}, &parse.Chunk{})))
 		assertTestFalse(t, hostPatternWithNode_val, NewHost("https://example.com"))
+		assertTestFalse(t, hostPatternWithNode_val, NewHost("://example.com"))
 		assertTestFalse(t, hostPatternWithNode_val, &Host{})
 		assertTestFalse(t, hostPatternWithNode_val, ANY_INT)
 		assertTestFalse(t, hostPatternWithNode_val, ANY_HOST_PATTERN)
+
+		//check ANY_HTTPS_HOST_PATTERN
+		ANY_HTTPS_HOST_PATTERN_val := ANY_HTTPS_HOST_PATTERN.SymbolicValue()
+		assertTest(t, ANY_HTTPS_HOST_PATTERN_val, NewHostMatchingPattern(ANY_HTTPS_HOST_PATTERN))
+		assertTest(t, ANY_HTTPS_HOST_PATTERN_val, NewHost("https://example.com"))
+		assertTest(t, ANY_HTTPS_HOST_PATTERN_val, NewHostMatchingPattern(NewHostPattern("https://example.com")))
+		assertTestFalse(t, ANY_HTTPS_HOST_PATTERN_val, NewHostMatchingPattern(NewHostPatternFromNode(&parse.HostPatternLiteral{}, &parse.Chunk{})))
+		assertTestFalse(t, ANY_HTTPS_HOST_PATTERN_val, NewHost("http://example.com"))
+		assertTestFalse(t, ANY_HTTPS_HOST_PATTERN_val, NewHost("://example.com"))
+		assertTestFalse(t, ANY_HTTPS_HOST_PATTERN_val, NewHostMatchingPattern(ANY_HTTP_HOST_PATTERN))
+		assertTestFalse(t, ANY_HTTPS_HOST_PATTERN_val, NewHostMatchingPattern(NewHostPattern("http://example.com")))
+		assertTestFalse(t, ANY_HTTPS_HOST_PATTERN_val, &Host{})
+		assertTestFalse(t, ANY_HTTPS_HOST_PATTERN_val, ANY_INT)
+		assertTestFalse(t, ANY_HTTPS_HOST_PATTERN_val, ANY_HOST_PATTERN)
+
+		//check ANY_HTTP_HOST_PATTERN
+		ANY_HTTP_HOST_PATTERN_val := ANY_HTTP_HOST_PATTERN.SymbolicValue()
+		assertTest(t, ANY_HTTP_HOST_PATTERN_val, NewHostMatchingPattern(ANY_HTTP_HOST_PATTERN))
+		assertTest(t, ANY_HTTP_HOST_PATTERN_val, NewHost("http://example.com"))
+		assertTest(t, ANY_HTTP_HOST_PATTERN_val, NewHostMatchingPattern(NewHostPattern("http://example.com")))
+		assertTestFalse(t, ANY_HTTP_HOST_PATTERN_val, NewHostMatchingPattern(NewHostPatternFromNode(&parse.HostPatternLiteral{}, &parse.Chunk{})))
+		assertTestFalse(t, ANY_HTTP_HOST_PATTERN_val, NewHost("https://example.com"))
+		assertTestFalse(t, ANY_HTTP_HOST_PATTERN_val, NewHost("://example.com"))
+		assertTestFalse(t, ANY_HTTP_HOST_PATTERN_val, NewHostMatchingPattern(ANY_HTTPS_HOST_PATTERN))
+		assertTestFalse(t, ANY_HTTP_HOST_PATTERN_val, NewHostMatchingPattern(NewHostPattern("https://example.com")))
+		assertTestFalse(t, ANY_HTTP_HOST_PATTERN_val, &Host{})
+		assertTestFalse(t, ANY_HTTP_HOST_PATTERN_val, ANY_INT)
+		assertTestFalse(t, ANY_HTTP_HOST_PATTERN_val, ANY_HOST_PATTERN)
 	})
 
 }

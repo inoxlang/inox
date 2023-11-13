@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"net/url"
 	"regexp"
 	"regexp/syntax"
 	"slices"
@@ -87,6 +88,11 @@ var (
 		absoluteness:  RelativePath,
 		dirConstraint: NonDirPath,
 	}
+
+	ANY_HTTP_HOST_PATTERN  = &HostPattern{scheme: HTTP_SCHEME}
+	ANY_HTTPS_HOST_PATTERN = &HostPattern{scheme: HTTPS_SCHEME}
+	ANY_WS_HOST_PATTERN    = &HostPattern{scheme: WS_SCHEME}
+	ANY_WSS_HOST_PATTERN   = &HostPattern{scheme: WSS_SCHEME}
 
 	ANY_REGEX_PATTERN       = &RegexPattern{}
 	ANY_INT_RANGE_PATTERN   = NewIntRangePattern(ANY_INT_RANGE)
@@ -583,8 +589,10 @@ func (p *URLPattern) WidestOfType() Value {
 
 // A HostPattern represents a symbolic HostPattern.
 type HostPattern struct {
+	scheme *Scheme //optional, not set if .hasValue is true
+
 	hasValue bool
-	value    string
+	value    string // ://**.com, https://**.com, ....
 
 	node            parse.Node
 	stringifiedNode string
@@ -612,6 +620,18 @@ func NewHostPatternFromNode(n parse.Node, chunk *parse.Chunk) *HostPattern {
 	}
 }
 
+func (p *HostPattern) Scheme() (*Scheme, bool) {
+	if p.hasValue {
+		if p.value[0] == ':' { //scheme-less host
+			return nil, false
+		}
+		u := utils.Must(url.Parse(p.value))
+		return GetOrNewScheme(u.Scheme), true
+	}
+
+	return p.scheme, p.scheme != nil
+}
+
 func (p *HostPattern) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
@@ -630,7 +650,12 @@ func (p *HostPattern) Test(v Value, state RecTestCallState) bool {
 		return otherPattern.hasValue && otherPattern.value == p.value
 	}
 
-	return true
+	if p.scheme == nil || p.scheme.Test(ANY_SCHEME, state) {
+		return true
+	} //else we know that p has a concrete scheme.
+
+	otherPatternScheme, ok := otherPattern.Scheme()
+	return ok && p.scheme.Test(otherPatternScheme, state)
 }
 
 func (p *HostPattern) IsConcretizable() bool {
@@ -683,6 +708,16 @@ func (p *HostPattern) TestValue(v Value, state RecTestCallState) bool {
 	if h.hasValue {
 		if p.hasValue {
 			return extData.HostMatch(h.value, p.value)
+		}
+	}
+
+	patternScheme, ok1 := p.Scheme()
+	if ok1 {
+		//check scheme
+		hostScheme, ok2 := h.Scheme()
+
+		if ok1 != ok2 || (ok1 && !patternScheme.Test(hostScheme, state)) {
+			return false
 		}
 	}
 

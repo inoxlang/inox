@@ -2,8 +2,10 @@ package symbolic
 
 import (
 	"errors"
+	"net/url"
 
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 var (
@@ -28,6 +30,16 @@ var (
 	ANY_SCHEME           = &Scheme{}
 	ANY_HOST             = &Host{}
 	ANY_PORT             = &Port{}
+
+	HTTP_SCHEME  = NewScheme("http")
+	HTTPS_SCHEME = NewScheme("https")
+	WS_SCHEME    = NewScheme("ws")
+	WSS_SCHEME   = NewScheme("wss")
+
+	ANY_HTTP_HOST  = NewHostMatchingPattern(ANY_HTTP_HOST_PATTERN)
+	ANY_HTTPS_HOST = NewHostMatchingPattern(ANY_HTTPS_HOST_PATTERN)
+	ANY_WS_HOST    = NewHostMatchingPattern(ANY_WS_HOST_PATTERN)
+	ANY_WSS_HOST   = NewHostMatchingPattern(ANY_WSS_HOST_PATTERN)
 
 	PATH_PROPNAMES = []string{"segments", "extension", "name", "dir", "ends_with_slash", "rel_equiv", "change_extension", "join"}
 )
@@ -353,6 +365,23 @@ func NewScheme(v string) *Scheme {
 	}
 }
 
+func GetOrNewScheme(v string) *Scheme {
+	if v == "" {
+		panic(errors.New("string should not be empty"))
+	}
+	switch v {
+	case "http":
+		return HTTP_SCHEME
+	case "https":
+		return HTTPS_SCHEME
+	case "ws":
+		return WS_SCHEME
+	case "wss":
+		return WSS_SCHEME
+	}
+	return NewScheme(v)
+}
+
 func (s *Scheme) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
@@ -401,7 +430,7 @@ func (s *Scheme) WidestOfType() Value {
 // A Host represents a symbolic Host.
 type Host struct {
 	hasValue bool
-	value    string
+	value    string // ://example.com, https://example.com, ...
 
 	pattern *HostPattern
 
@@ -423,6 +452,21 @@ func NewHostMatchingPattern(p *HostPattern) *Host {
 	return &Host{
 		pattern: p,
 	}
+}
+
+func (h *Host) Scheme() (*Scheme, bool) {
+	if h.hasValue {
+		if h.value[0] == ':' { //scheme-less host
+			return nil, false
+		}
+		u := utils.Must(url.Parse(h.value))
+		return GetOrNewScheme(u.Scheme), true
+	}
+
+	if h.pattern != nil {
+		return h.pattern.Scheme()
+	}
+	return nil, false
 }
 
 func (h *Host) Test(v Value, state RecTestCallState) bool {
