@@ -10,7 +10,7 @@ require (
 	github.com/aohorodnyk/mimeheader v0.0.6
 	github.com/bits-and-blooms/bitset v1.8.0
 	github.com/bmatcuk/doublestar/v4 v4.6.0
-	github.com/caddyserver/certmagic v0.17.2
+	github.com/caddyserver/certmagic v0.19.2
 	github.com/chromedp/cdproto v0.0.0-20220924210414-0e3390be1777
 	github.com/chromedp/chromedp v0.8.6
 	github.com/cloudflare/cloudflare-go v0.75.0
@@ -43,7 +43,7 @@ require (
 	github.com/tidwall/match v1.1.1
 	github.com/tidwall/rtred v0.1.2
 	github.com/ysmood/fetchup v0.2.3
-	go.uber.org/zap v1.24.0
+	go.uber.org/zap v1.26.0
 	golang.org/x/exp v0.0.0-20230811145659-89c5cff77bcb
 	golang.org/x/net v0.18.0
 	golang.org/x/term v0.14.0
@@ -74,7 +74,7 @@ require (
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.16.6 // indirect
-	github.com/klauspost/cpuid/v2 v2.2.5 // indirect
+	github.com/klauspost/cpuid/v2 v2.2.6 // indirect
 	github.com/kr/pretty v0.3.0 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/libdns/libdns v0.2.1 // indirect
@@ -84,7 +84,7 @@ require (
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.18 // indirect
 	github.com/mattn/go-runewidth v0.0.14 // indirect
-	github.com/mholt/acmez v1.1.0 // indirect
+	github.com/mholt/acmez v1.2.0 // indirect
 	github.com/minio/md5-simd v1.1.2 // indirect
 	github.com/minio/sha256-simd v1.0.1 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
@@ -104,8 +104,8 @@ require (
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/vmware-labs/yaml-jsonpath v0.3.2 // indirect
 	github.com/yusufpapurcu/wmi v1.2.3 // indirect
-	go.uber.org/atomic v1.9.0 // indirect
-	go.uber.org/multierr v1.6.0 // indirect
+	github.com/zeebo/blake3 v0.2.3 // indirect
+	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.15.0 // indirect
 	golang.org/x/mod v0.14.0 // indirect
 	golang.org/x/sync v0.5.0 // indirect
