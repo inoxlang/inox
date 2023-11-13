@@ -8,6 +8,8 @@
 
 - [Literals](#Literals)
 - [Variables](#variables)
+  - [Locals](#locals)
+  - [Globals](#globals)
 - [Operations](#operations)
   - [Binary operations](#binary-operations)
   - [Unary operations](#unary-operations)
@@ -171,6 +173,9 @@ var object {a: int} = {}
 </details>
 
 ## Globals
+
+Globals are variables or constants that are global to a **module**.\
+In other terms the global scope of a module is not shared with other modules.
 
 **Declaration of global variables**:
 
@@ -1275,9 +1280,9 @@ Supported schemes are: `http, https, ws, wss, ldb, odb, file, mem, s3`.
 **<summary>URL patterns</summary>**
 
 URL patterns always have at least a path, a query or a fragment.
-`%https://example.com` is a **host pattern** not a URL pattern.
+`%https://example.com` is a **host pattern**, not a URL pattern.
 
-A URL pattern that ends with `/...` is a **prefix URL patterns**, it matches any
+A URL pattern that ends with `/...` is a **prefix URL pattern**, it matches any
 URL that contains its prefix.
 
 | pattern                          | value                                    | match ?                            |
