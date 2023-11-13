@@ -39,6 +39,7 @@
   - [Union Patterns](#union-patterns)
   - [Pattern namespaces](#pattern-namespaces)
   - [Path Patterns](#path-patterns)
+  - [Host and URL Patterns](#host-and-url-patterns)
 - [Extensions](#extensions)
 - [XML Expressions](#xml-expressions)
 - [Modules](#modules)
@@ -113,7 +114,7 @@ Here are the most commonly used literals in Inox:
 
 **<summary>Other literals</summary>**
 
-- host literals: `https://example.com, https://127.0.0.1`
+- host literals: `https://example.com, https://127.0.0.1, ://example.com`
 - host pattern literals:
   - `%https://**.com` matches any domain or subdomain ending in .com
   - `%https://**.example.com` matches any subdomain of `example.com`
@@ -1185,7 +1186,7 @@ pnamespace ints. = {
 namespace = %ints.
 ```
 
-# Path Patterns
+## Path Patterns
 
 - Alway start with either `%/`, `%./` or `%../`
 - Path patterns that end with `/...` are **prefix patterns**, all the other
@@ -1259,6 +1260,75 @@ https://en.wikipedia.org/wiki/Glob_(programming)
 | `` %/`[a-z]+` `` | `/a`            | yes     |
 | `` %/`[a-z]+` `` | `/aa`           | yes     |
 | `` %/`[a-z]+` `` | `/0`            | no      |
+
+</details>
+
+> If you find an error in the documentation or a bug in the runtime, please
+> create an issue.
+
+# Host and URL Patterns
+
+Supported schemes are: `http, https, ws, wss, ldb, odb, file, mem, s3`.
+
+<details>
+
+**<summary>URL patterns</summary>**
+
+URL patterns always have at least a path, a query or a fragment.
+`%https://example.com` is a **host pattern** not a URL pattern.
+
+A URL pattern that ends with `/...` is a **prefix URL patterns**, it matches any
+URL that contains its prefix.
+
+| pattern                          | value                                    | match ?                            |
+| -------------------------------- | ---------------------------------------- | ---------------------------------- |
+| `%https://example.com/...`       | `https://example.com/`                   | yes                                |
+| `%https://example.com/...`       | `https://example.com/index.html`         | yes                                |
+| `%https://example.com/...`       | `https://example.com/about/`             | yes                                |
+| `%https://example.com/...`       | `https://example.com/about/company.html` | yes                                |
+| `%https://example.com/...`       | `https://example.com:443/`               | no (that may change in the future) |
+| `%https://example.com/...`       | `https://example.com` (Host)             | no                                 |
+| ---                              | ---                                      | ---                                |
+| `%https://example.com/about/...` | `https://example.com/about/`             | yes                                |
+| `%https://example.com/about/...` | `https://example.com/about/company.html` | yes                                |
+| `%https://example.com/about/...` | `https://example.com/about`              | no                                 |
+| ---                              |                                          |                                    |
+
+</details>
+
+<details>
+
+**<summary>Host patterns</summary>**
+
+| pattern                  | value                           | match ? |
+| ------------------------ | ------------------------------- | ------- |
+| `%https://example.com`   | `https://example.com`           | yes     |
+| `%https://example.com`   | `https://example.com:443`       | yes     |
+| `%https://example.com`   | `https://example.com/` (URL)    | no      |
+| ---                      | ---                             | ---     |
+| `%https://**.com`        | `https://example.com`           | yes     |
+| `%https://**.com`        | `https://subdomain.example.com` | yes     |
+| ---                      | ---                             | ---     |
+| `%https://**.com:443`    | `https://example.com`           | yes     |
+| `%https://**.com:443`    | `https://example.com:443`       | yes     |
+| ---                      | ---                             | ---     |
+| `%https://*.com`         | `https://example.com`           | yes     |
+| `%https://*.com`         | `https://subdomain.example.com` | no      |
+| ---                      | ---                             | ---     |
+| `%https://**example.com` | `https://example.com`           | yes     |
+| `%https://**example.com` | `https://subdomain.example.com` | yes     |
+| ---                      | ---                             | ---     |
+| `%https://example.*`     | `https://example.com`           | yes     |
+| `%https://example.*`     | `https://example.org`           | yes     |
+
+**Scheme-less host patterns**:
+
+`%://**.com` is a valid host pattern.
+
+| pattern           | value                 | match ? |
+| ----------------- | --------------------- | ------- |
+| `%://example.com` | `://example.com`      | yes     |
+| `%://example.com` | `https://example.com` | no      |
 
 </details>
 
