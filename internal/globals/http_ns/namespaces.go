@@ -81,7 +81,7 @@ func init() {
 			}
 			return http_symbolic.ANY_RESP, nil
 		},
-		NewHttpsServer, newSymbolicHttpServer,
+		NewHttpsServer, newSymbolicHttpsServer,
 		NewFileServer, func(ctx *symbolic.Context, args ...symbolic.Value) (*http_symbolic.HttpServer, *symbolic.Error) {
 			if !ctx.HasAPermissionWithKindAndType(permkind.Provide, permkind.HTTP_PERM_TYPENAME) {
 				ctx.AddSymbolicGoFunctionWarning(HTTP_PROVIDE_PERM_MIGHT_BE_MISSING)

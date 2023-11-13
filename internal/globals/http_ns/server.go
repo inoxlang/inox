@@ -76,7 +76,8 @@ var (
 		HANDLING_DESC_MAX_LIMITS_PROPNAME:     {},
 	}, nil)
 
-	NEW_SERVER_TWO_PARAM_NAMES = []string{"host", "handling"}
+	NEW_SERVER_SINGLE_PARAM_NAME = []string{"host"}
+	NEW_SERVER_TWO_PARAM_NAMES   = []string{"host", "handling"}
 )
 
 // HttpsServer implements the GoValue interface.
@@ -380,14 +381,19 @@ func (serv *HttpsServer) Close(ctx *core.Context) {
 	serv.wrappedServer.Shutdown(timeoutCtx)
 }
 
-func newSymbolicHttpServer(ctx *symbolic.Context, host *symbolic.Host, args ...symbolic.Value) (*http_ns_symb.HttpServer, *symbolic.Error) {
+func newSymbolicHttpsServer(ctx *symbolic.Context, host *symbolic.Host, args ...symbolic.Value) (*http_ns_symb.HttpServer, *symbolic.Error) {
 	if !ctx.HasAPermissionWithKindAndType(permkind.Provide, permkind.HTTP_PERM_TYPENAME) {
 		ctx.AddSymbolicGoFunctionWarning(HTTP_PROVIDE_PERM_MIGHT_BE_MISSING)
 	}
 
+	symbolic.ANY_HOST_PATTERN.PropertyNames()
+
 	server := &http_ns_symb.HttpServer{}
 
 	if len(args) == 0 {
+		if !symbolic.ANY_HTTPS_HOST_PATTERN.Test(host, symbolic.RecTestCallState{}) {
+			ctx.SetSymbolicGoFunctionParameters(&[]symbolic.Value{symbolic.ANY_HTTPS_HOST}, NEW_SERVER_SINGLE_PARAM_NAME)
+		}
 		return server, nil
 	}
 
@@ -397,12 +403,12 @@ func newSymbolicHttpServer(ctx *symbolic.Context, host *symbolic.Host, args ...s
 	case *symbolic.Mapping:
 	case *symbolic.Object:
 		ctx.SetSymbolicGoFunctionParameters(&[]symbolic.Value{
-			symbolic.ANY_HOST,
+			symbolic.ANY_HTTPS_HOST,
 			SYMBOLIC_HANDLING_DESC,
 		}, NEW_SERVER_TWO_PARAM_NAMES)
 	default:
 		ctx.SetSymbolicGoFunctionParameters(&[]symbolic.Value{
-			symbolic.ANY_HOST,
+			symbolic.ANY_HTTPS_HOST,
 			symbolic.NewMultivalue(
 				symbolic.ANY_INOX_FUNC,
 				symbolic.NewMapping(),
