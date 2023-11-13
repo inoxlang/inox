@@ -673,13 +673,20 @@ func (p *HostPattern) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrin
 	}
 
 	s := "%host-pattern"
+	w.WriteString(s)
 
 	if p.node != nil {
-		w.WriteString(s)
 		w.WriteString("(")
 		w.WriteString(p.stringifiedNode)
 		w.WriteString(")")
-		return
+	} else if p.scheme != nil {
+		w.WriteString("(")
+		if p.scheme.hasValue {
+			w.WriteString(p.scheme.value)
+			w.WriteString(")")
+		} else {
+			w.WriteString("?)")
+		}
 	}
 }
 

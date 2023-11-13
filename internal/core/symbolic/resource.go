@@ -513,15 +513,17 @@ func (h *Host) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig
 	w.WriteName("host")
 
 	if h.pattern != nil {
-		w.WriteString("(matching ")
-
 		if h.pattern.node != nil {
+			w.WriteString("(matching ")
 			w.WriteString(h.pattern.stringifiedNode)
-		} else {
-			h.pattern.PrettyPrint(w.ZeroIndent(), config)
+			w.WriteByte(')')
+		} else if h.pattern.scheme != nil && h.pattern.scheme.hasValue {
+			w.WriteString("(")
+			w.WriteString(h.pattern.scheme.value)
+			w.WriteString(")")
+			return
 		}
-
-		w.WriteByte(')')
+		w.WriteString("(?)")
 	}
 }
 
