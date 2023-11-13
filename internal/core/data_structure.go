@@ -27,7 +27,7 @@ var (
 
 func init() {
 	RegisterSymbolicGoFunction(NewArray, func(ctx *symbolic.Context, elements ...symbolic.Value) *symbolic.Array {
-		return symbolic.NewArray()
+		return symbolic.NewArray(elements...)
 	})
 }
 

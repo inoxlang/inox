@@ -524,8 +524,8 @@ func fmtSelfShouldMatchLifetimeJobSubjectPattern(p Pattern) string {
 	return fmt.Sprintf("self should match subject pattern of lifetime job (%s) ", Stringify(p))
 }
 
-func fmtListShouldHaveLengthGreaterOrEqualTo(n int) string {
-	return fmt.Sprintf("list should have a length greater or equal to %d", n)
+func fmtSequenceShouldHaveLengthGreaterOrEqualTo(n int) string {
+	return fmt.Sprintf("the sequence should have a length greater or equal to %d", n)
 }
 
 func fmtComputedPropNameShouldBeAStringNotA(v Value) string {

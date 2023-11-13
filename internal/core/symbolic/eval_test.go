@@ -4655,6 +4655,123 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, ANY_INT, res)
 		})
 
+		t.Run("signature is func(...*Int) *Int: no argument provided", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				return f()
+			`)
+
+			goFunc := &GoFunction{
+				fn: func(args ...*Int) *Int {
+					assert.Empty(t, args)
+					return ANY_INT
+				},
+			}
+			state.setGlobal("f", goFunc, GlobalConst)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, ANY_INT, res)
+		})
+
+		t.Run("signature is func(...*Int) *Int: one argument provided", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				return f(1)
+			`)
+
+			goFunc := &GoFunction{
+				fn: func(args ...*Int) *Int {
+					if assert.Equal(t, []*Int{INT_1}, args) {
+						return INT_1
+					}
+					return ANY_INT
+				},
+			}
+			state.setGlobal("f", goFunc, GlobalConst)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, INT_1, res)
+		})
+
+		t.Run("signature is func(...*Int) *Int: two arguments provided", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				return f(1, 2)
+			`)
+
+			goFunc := &GoFunction{
+				fn: func(args ...*Int) *Int {
+					if assert.Equal(t, []*Int{INT_1, INT_2}, args) {
+						return INT_3
+					}
+					return ANY_INT
+				},
+			}
+			state.setGlobal("f", goFunc, GlobalConst)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, INT_3, res)
+		})
+
+		t.Run("signature is func(...Value) Value: no argument provided", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				return f()
+			`)
+
+			goFunc := &GoFunction{
+				fn: func(args ...Value) Value {
+					if assert.Empty(t, args) {
+						return INT_0
+					}
+					return ANY
+				},
+			}
+			state.setGlobal("f", goFunc, GlobalConst)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, INT_0, res)
+		})
+		t.Run("signature is func(...Value) Value: one argument provided", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				return f(1)
+			`)
+
+			goFunc := &GoFunction{
+				fn: func(args ...Value) Value {
+					if assert.Equal(t, []Value{INT_1}, args) {
+						return INT_1
+					}
+					return ANY
+				},
+			}
+			state.setGlobal("f", goFunc, GlobalConst)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, INT_1, res)
+		})
+
+		t.Run("signature is func(...Value) Value: two arguments provided", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				return f(1, 2)
+			`)
+
+			goFunc := &GoFunction{
+				fn: func(args ...Value) Value {
+					if assert.Equal(t, []Value{INT_1, INT_2}, args) {
+						return INT_3
+					}
+					return ANY
+				},
+			}
+			state.setGlobal("f", goFunc, GlobalConst)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, INT_3, res)
+		})
+
 		t.Run("signature is func(*Context) error", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				return f()
@@ -7064,7 +7181,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(stmt, state, fmtListShouldHaveLengthGreaterOrEqualTo(1)),
+				makeSymbolicEvalError(stmt, state, fmtSequenceShouldHaveLengthGreaterOrEqualTo(1)),
 			}, state.errors())
 			assert.Nil(t, res)
 		})
@@ -7078,7 +7195,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(stmt, state, fmtListShouldHaveLengthGreaterOrEqualTo(2)),
+				makeSymbolicEvalError(stmt, state, fmtSequenceShouldHaveLengthGreaterOrEqualTo(2)),
 			}, state.errors())
 			assert.Nil(t, res)
 		})
@@ -7138,6 +7255,39 @@ func TestSymbolicEval(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
 			assert.Equal(t, NewList(ANY_INT, ANY_INT), res)
+		})
+
+		t.Run("RHS is an array returned by a function", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				fn f(){
+					return Array(1, 2)
+				}
+				assign first second = f()
+				return [first, second]
+			`)
+			state.setGlobal("Array", WrapGoFunction(NewArray), GlobalConst)
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, NewList(INT_1, INT_2), res)
+		})
+
+		t.Run("RHS is an array ending with an error returned by a function", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				fn f(){
+					return Array(1, Error("x"))
+				}
+				assign first second = f()
+				return [first, second]
+			`)
+			state.setGlobal("Array", WrapGoFunction(NewArray), GlobalConst)
+			state.setGlobal("Error", WrapGoFunction(NewError), GlobalConst)
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, NewList(INT_1, NewError(NewString("x"))), res)
 		})
 	})
 

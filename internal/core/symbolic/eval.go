@@ -1463,7 +1463,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 			}
 		} else {
 			if seq.HasKnownLen() && seq.KnownLen() < len(n.Variables) && !isNillable {
-				state.addError(makeSymbolicEvalError(node, state, fmtListShouldHaveLengthGreaterOrEqualTo(len(n.Variables))))
+				state.addError(makeSymbolicEvalError(node, state, fmtSequenceShouldHaveLengthGreaterOrEqualTo(len(n.Variables))))
 			}
 
 			for i, var_ := range n.Variables {
