@@ -11,11 +11,11 @@ import (
 //TODO: add equivalent tests for transactions
 
 func TestKvSet(t *testing.T) {
-	t.Run("Set", func(t *testing.T) {
+	t.Run("SetSerialized", func(t *testing.T) {
 		testKvSet(t, true)
 	})
 
-	t.Run("SetSerialized", func(t *testing.T) {
+	t.Run("Set", func(t *testing.T) {
 		testKvSet(t, false)
 	})
 }
@@ -144,11 +144,11 @@ func TestKvGetSerialized(t *testing.T) {
 }
 
 func TestKvInsert(t *testing.T) {
-	t.Run("Insert", func(t *testing.T) {
+	t.Run("InsertSerialized", func(t *testing.T) {
 		testKvInsert(t, true)
 	})
 
-	t.Run("InsertSerialized", func(t *testing.T) {
+	t.Run("Insert", func(t *testing.T) {
 		testKvInsert(t, false)
 	})
 }
