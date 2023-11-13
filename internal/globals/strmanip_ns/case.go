@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/titlecase"
+	"github.com/inoxlang/inox/internal/third_party_stable/titlecase"
 )
 
 func Titlecase(s core.StringLike) core.Str {

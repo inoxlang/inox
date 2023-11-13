@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/texttheater/golang-levenshtein/levenshtein"
+	"github.com/inoxlang/inox/internal/third_party_stable/golang-levenshtein/levenshtein"
 )
 
 var (
