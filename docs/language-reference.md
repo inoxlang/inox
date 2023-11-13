@@ -38,6 +38,7 @@
   - [String patterns](#string-patterns)
   - [Union Patterns](#union-patterns)
   - [Pattern namespaces](#pattern-namespaces)
+  - [Path Patterns](#path-patterns)
 - [Extensions](#extensions)
 - [XML Expressions](#xml-expressions)
 - [Modules](#modules)
@@ -64,6 +65,9 @@
   - [Program Testing](#program-testing)
 - [Project Images](#project-images)
 - [Structures (not implemented yet)](#structs)
+
+> If you find an error in the documentation or a bug in the runtime, please
+> create an issue.
 
 # Literals
 
@@ -1180,6 +1184,86 @@ pnamespace ints. = {
 # assign the namespace %ints to a variable
 namespace = %ints.
 ```
+
+# Path Patterns
+
+- Alway start with either `%/`, `%./` or `%../`
+- Path paterns that end with `/...` are **prefix patterns**, all the other
+  patterns are **glob patterns**.
+- If a pattern contains special characters such as `'['` or `'{'`, it should be
+  quoted with backticks (**\`**):
+  ```
+  %/`[a-z].txt`   # valid
+  %/[a-z].txt     # invalid
+  ```
+
+<details>
+
+**<summary>Prefix path patterns</summary>**
+
+A prefix path pattern match any path that contains its prefix.
+
+| pattern   | value                | match ? |
+| --------- | -------------------- | ------- |
+| %/...     | /                    | yes     |
+| %/...     | /file.txt            | yes     |
+| %/...     | /dir/                | yes     |
+| %/...     | /dir/file.txt        | yes     |
+| ---       | ---                  | ---     |
+| %/dir/... | /                    | no      |
+| %/dir/... | /file.txt            | no      |
+| %/dir/... | /dir                 | no      |
+| %/dir/... | /dir/                | yes     |
+| %/dir/... | /dir/file.txt        | yes     |
+| %/dir/... | /dir/subdir/         | yes     |
+| %/dir/... | /dir/subdir/file.txt | yes     |
+
+</details>
+
+<details>
+
+**<summary>Glob patterns</summary>**
+
+https://en.wikipedia.org/wiki/Glob_(programming)
+
+| pattern      | value         | match ? |
+| ------------ | ------------- | ------- |
+| %/*          | /             | yes     |
+| %/*          | /file.txt     | yes     |
+| %/*          | /dir/         | no      |
+| %/*          | /dir/file.txt | no      |
+| %/*          | /             | yes     |
+| %/*          | /file.txt     | yes     |
+| %/*          | /dir/         | no      |
+| %/*          | /dir/file.txt | no      |
+| ---          | ---           | ---     |
+| %/*.txt      | /             | yes     |
+| %/*.txt      | /file.txt     | yes     |
+| %/*.txt      | /file.json    | no      |
+| %/*.txt      | /dir/file.txt | no      |
+| ---          | ---           | ---     |
+| %/**         | /             | yes     |
+| %/**         | /file.txt     | yes     |
+| %/**         | /dir/         | yes     |
+| %/**         | /dir/file.txt | yes     |
+| %/**         | /dir/subdir/  | yes     |
+| ---          | ---           | ---     |
+| %/*/**       | /             | no      |
+| %/*/**       | /file.txt     | no      |
+| %/*/**       | /dir          | no      |
+| %/*/**       | /dir/         | yes     |
+| %/*/**       | /dir/file.txt | yes     |
+| %/*/**       | /dir/subdir/  | yes     |
+| ---          | ---           | ---     |
+| %/\`[a-z]+\` | /             | no      |
+| %/\`[a-z]+\` | /a            | yes     |
+| %/\`[a-z]+\` | /aa           | yes     |
+| %/\`[a-z]+\` | /0            | no      |
+
+</details>
+
+> If you find an error in the documentation or a bug in the runtime, please
+> create an issue.
 
 # Extensions
 
