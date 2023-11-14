@@ -12,11 +12,18 @@ import (
 )
 
 const (
-	CALLEE_HAS_NODE_BUT_NOT_DEFINED                                               = "callee is a node but has no defined type"
-	CANNOT_CALL_GO_FUNC_NO_CONCRETE_VALUE                                         = "cannot call go function with no concrete value"
-	SPREAD_ARGS_NOT_SUPPORTED_FOR_NON_VARIADIC_FUNCS                              = "spread arguments are not supported when calling non-variadic functions"
+	//calls
+
+	CALLEE_HAS_NODE_BUT_NOT_DEFINED                         = "callee is a node but has no defined type"
+	CANNOT_CALL_GO_FUNC_NO_CONCRETE_VALUE                   = "cannot call go function with no concrete value"
+	SPREAD_ARGS_NOT_SUPPORTED_FOR_NON_VARIADIC_FUNCS        = "spread arguments are not supported when calling non-variadic functions"
+	FUNCS_CALLED_RECU_SHOULD_HAVE_RET_TYPE                  = "functions called recursively should have a return type"
+	INVALID_MUST_CALL_OF_AN_INOX_FN_RETURN_TYPE_MUST_BE_XXX = //
+	"invalid 'must' call of an Inox function: return type should either be nil, (error|nil) or an array of known length (!= 0) whose last element is error or (error|nil)"
+	NO_ERROR_IS_RETURNED                             = "no error is returned"
+	ERROR_IS_ALWAYS_RETURNED_THIS_WILL_CAUSE_A_PANIC = "error is always returned, this will cause a panic"
+
 	STR_TEMPL_LITS_WITH_INTERP_SHOULD_BE_PRECEDED_BY_PATTERN_WICH_NAME_HAS_PREFIX = "string template literals with interpolations should be preceded by a pattern which name has a prefix"
-	FUNCS_CALLED_RECU_SHOULD_HAVE_RET_TYPE                                        = "functions called recursively should have a return type"
 	CANNOT_SPREAD_OBJ_PATTERN_THAT_MATCHES_ANY_OBJECT                             = "cannot spread an object pattern that matches any object"
 	CANNOT_SPREAD_REC_PATTERN_THAT_MATCHES_ANY_RECORD                             = "cannot spread an record pattern that matches any record"
 	CANNOT_SPREAD_OBJ_PATTERN_THAT_IS_INEXACT                                     = "cannot spread an object pattern that is inexact"

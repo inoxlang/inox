@@ -36,9 +36,8 @@ func _makeStateAndChunk(code string, globals ...map[string]Value) (*parse.Chunk,
 			return NewIntRangePattern(intRange), nil
 		},
 	}, false)
-	state.ctx.AddNamedPattern("bool", &TypePattern{
-		val: ANY_BOOL,
-	}, false)
+	state.ctx.AddNamedPattern("bool", &TypePattern{val: ANY_BOOL}, false)
+	state.ctx.AddNamedPattern("nil", &TypePattern{val: Nil}, false)
 	state.ctx.AddNamedPattern("str", &TypePattern{val: ANY_STR_LIKE}, false)
 	state.ctx.AddNamedPattern("object", &TypePattern{val: NewAnyObject()}, false)
 	state.ctx.AddNamedPattern("list", &TypePattern{val: NewListOf(ANY_SERIALIZABLE)}, false)

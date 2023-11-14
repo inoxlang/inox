@@ -7,7 +7,7 @@ import (
 
 	"github.com/go-git/go-billy/v5/memfs"
 	"github.com/go-git/go-billy/v5/util"
-	parse "github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -4217,6 +4217,141 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Empty(t, state.errors())
 			assert.Equal(t, NewInt(1), res)
 		})
+
+		t.Run("'must' call: function always returns an error", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				fn f(){
+					return err
+				}
+				return f!()
+			`)
+			state.setGlobal("err", ANY_ERR, GlobalConst)
+
+			res, err := symbolicEval(n, state)
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.Empty(t, state.errors())
+			assert.NotEmpty(t, state.warnings())
+			assert.Equal(t, Nil, res)
+		})
+
+		t.Run("'must' call: function always returns nil", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				fn f(){
+					return nil
+				}
+				return f!()
+			`)
+
+			res, err := symbolicEval(n, state)
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.Empty(t, state.errors())
+			assert.NotEmpty(t, state.warnings())
+			assert.Equal(t, Nil, res)
+		})
+
+		t.Run("'must' call: function always returns (error|nil)", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				fn f(arg bool){
+					if arg {
+						return err
+					}
+					return nil
+				}
+				return f!(bool)
+			`)
+			state.setGlobal("err", ANY_ERR, GlobalConst)
+			state.setGlobal("bool", ANY_BOOL, GlobalConst)
+
+			res, err := symbolicEval(n, state)
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.Empty(t, state.errors())
+			assert.Empty(t, state.warnings())
+			assert.Equal(t, Nil, res)
+		})
+
+		t.Run("'must' call: function always return an array of length-2 with an error", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				fn f(){
+					return Array(1, err)
+				}
+				return f!()
+			`)
+			state.setGlobal("Array", WrapGoFunction(NewArray), GlobalConst)
+			state.setGlobal("err", ANY_ERR, GlobalConst)
+
+			res, err := symbolicEval(n, state)
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.Empty(t, state.errors())
+			assert.Equal(t, NewInt(1), res)
+		})
+
+		t.Run("'must' call: function always return an array of length-2 with an (error|nil)", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				fn f(){
+					return Array(1, err_or_nil)
+				}
+				return f!()
+			`)
+			state.setGlobal("Array", WrapGoFunction(NewArray), GlobalConst)
+			state.setGlobal("err_or_nil", NewMultivalue(ANY_ERR, Nil), GlobalConst)
+
+			res, err := symbolicEval(n, state)
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.Empty(t, state.errors())
+			assert.Equal(t, NewInt(1), res)
+		})
+
+		t.Run("'must' call: function should not return an empty array", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				fn f(){
+					return Array()
+				}
+				return f!()
+			`)
+			fnIdent := n.Statements[1].(*parse.ReturnStatement).Expr.(*parse.CallExpression).Callee
+			state.setGlobal("Array", WrapGoFunction(NewArray), GlobalConst)
+
+			res, err := symbolicEval(n, state)
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(fnIdent, state, INVALID_MUST_CALL_OF_AN_INOX_FN_RETURN_TYPE_MUST_BE_XXX),
+			}, state.errors())
+			assert.Empty(t, state.warnings())
+			assert.Equal(t, NewArray(), res)
+		})
+
+		t.Run("'must' call: function should not return a value that is not nil, nor err, nor an array", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				fn f(){
+					return 1
+				}
+				return f!()
+			`)
+			fnIdent := n.Statements[1].(*parse.ReturnStatement).Expr.(*parse.CallExpression).Callee
+			state.setGlobal("Array", WrapGoFunction(NewArray), GlobalConst)
+
+			res, err := symbolicEval(n, state)
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(fnIdent, state, INVALID_MUST_CALL_OF_AN_INOX_FN_RETURN_TYPE_MUST_BE_XXX),
+			}, state.errors())
+			assert.Empty(t, state.warnings())
+			assert.Equal(t, INT_1, res)
+		})
 	})
 
 	t.Run("call Go function", func(t *testing.T) {
@@ -5234,6 +5369,181 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, expectedFn, res)
 		})
 
+		t.Run("'must' call: fn() %error", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				fn f(func %fn() %error){
+					return func!()
+				}
+				return f
+			`)
+			state.ctx.AddNamedPattern("error", &TypePattern{val: ANY_ERR}, false)
+
+			res, err := symbolicEval(n, state)
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.Empty(t, state.errors())
+			assert.NotEmpty(t, state.warnings())
+			if !assert.IsType(t, (*InoxFunction)(nil), res) {
+				return
+			}
+
+			result := res.(*InoxFunction).Result()
+			assert.Equal(t, Nil, result)
+		})
+
+		t.Run("'must' call: fn() %nil", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				fn f(func %fn() %nil){
+					return func!()
+				}
+				return f
+			`)
+
+			res, err := symbolicEval(n, state)
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.Empty(t, state.errors())
+			assert.NotEmpty(t, state.warnings())
+			if !assert.IsType(t, (*InoxFunction)(nil), res) {
+				return
+			}
+
+			result := res.(*InoxFunction).Result()
+			assert.Equal(t, Nil, result)
+		})
+
+		t.Run("'must' call: %fn() (error|nil)", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				fn f(func %fn() (| %error | %nil)){
+					return func!()
+				}
+				return f
+			`)
+			state.ctx.AddNamedPattern("error", &TypePattern{val: ANY_ERR}, false)
+
+			res, err := symbolicEval(n, state)
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.Empty(t, state.errors())
+			assert.Empty(t, state.warnings())
+			if !assert.IsType(t, (*InoxFunction)(nil), res) {
+				return
+			}
+
+			result := res.(*InoxFunction).Result()
+			assert.Equal(t, Nil, result)
+		})
+
+		t.Run("'must' call: %fn() Array(1, %err)", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				fn f(func %fn() array2_with_err){
+					return func!()
+				}
+				return f
+			`)
+			state.setGlobal("Array", WrapGoFunction(NewArray), GlobalConst)
+			state.ctx.AddNamedPattern("error", &TypePattern{val: ANY_ERR}, false)
+			state.ctx.AddNamedPattern("array2_with_err", &TypePattern{
+				val: NewArray(INT_1, ANY_ERR),
+			}, false)
+
+			res, err := symbolicEval(n, state)
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.Empty(t, state.errors())
+			if !assert.IsType(t, (*InoxFunction)(nil), res) {
+				return
+			}
+
+			result := res.(*InoxFunction).Result()
+			assert.Equal(t, INT_1, result)
+		})
+
+		t.Run("'must' call: %fn() Array(1, | %err | %nil)", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				fn f(func %fn() array2_with_err_or_nil){
+					return func!()
+				}
+				return f
+			`)
+			state.setGlobal("Array", WrapGoFunction(NewArray), GlobalConst)
+			state.ctx.AddNamedPattern("error", &TypePattern{val: ANY_ERR}, false)
+			state.ctx.AddNamedPattern("array2_with_err_or_nil", &TypePattern{
+				val: NewArray(INT_1, NewMultivalue(ANY_ERR, Nil)),
+			}, false)
+
+			res, err := symbolicEval(n, state)
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.Empty(t, state.errors())
+			if !assert.IsType(t, (*InoxFunction)(nil), res) {
+				return
+			}
+
+			result := res.(*InoxFunction).Result()
+			assert.Equal(t, INT_1, result)
+		})
+
+		t.Run("'must' call: function should not return an empty array", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				fn f(func %fn() empty_array){
+					return func!()
+				}
+				return f
+			`)
+			fnIdent := parse.FindNode(n, (*parse.CallExpression)(nil), nil).Callee
+			state.setGlobal("Array", WrapGoFunction(NewArray), GlobalConst)
+			state.ctx.AddNamedPattern("error", &TypePattern{val: ANY_ERR}, false)
+			state.ctx.AddNamedPattern("empty_array", &TypePattern{
+				val: NewArray(),
+			}, false)
+
+			res, err := symbolicEval(n, state)
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(fnIdent, state, INVALID_MUST_CALL_OF_AN_INOX_FN_RETURN_TYPE_MUST_BE_XXX),
+			}, state.errors())
+			if !assert.IsType(t, (*InoxFunction)(nil), res) {
+				return
+			}
+
+			result := res.(*InoxFunction).Result()
+			assert.Equal(t, NewArray(), result)
+		})
+
+		t.Run("'must' call: function should not return a value that is not nil, nor err, nor an array", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				fn f(func %fn() int){
+					return func!()
+				}
+				return f
+			`)
+			fnIdent := parse.FindNode(n, (*parse.CallExpression)(nil), nil).Callee
+			state.setGlobal("Array", WrapGoFunction(NewArray), GlobalConst)
+
+			res, err := symbolicEval(n, state)
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(fnIdent, state, INVALID_MUST_CALL_OF_AN_INOX_FN_RETURN_TYPE_MUST_BE_XXX),
+			}, state.errors())
+			assert.Empty(t, state.warnings())
+			if !assert.IsType(t, (*InoxFunction)(nil), res) {
+				return
+			}
+
+			result := res.(*InoxFunction).Result()
+			assert.Equal(t, ANY_INT, result)
+		})
 	})
 	t.Run("call pattern", func(t *testing.T) {
 		n, state := MakeTestStateAndChunk(`
@@ -5306,17 +5616,20 @@ func TestSymbolicEval(t *testing.T) {
 	t.Run("pipe statement", func(t *testing.T) {
 		t.Run("ok", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
-				fn one(){
-					return int
+				fn get_int(){
+					return Array(int, nil)
 				}
 	
 				fn addOne(i %int){
 					$$result = (i + int)
 				}
 	
-				one | addOne $
+				get_int | addOne $
 				return $$result
 			`)
+
+			state.setGlobal("Array", WrapGoFunction(NewArray), GlobalConst)
+
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
@@ -5326,7 +5639,7 @@ func TestSymbolicEval(t *testing.T) {
 		t.Run("$ is an invalid argument in second call", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				fn one(){
-					return "1"
+					return Array("1", nil)
 				}
 	
 				fn addOne(i %int){
@@ -5336,8 +5649,8 @@ func TestSymbolicEval(t *testing.T) {
 				one | addOne $
 				return $$result
 			`)
-
-			secondCall := parse.FindNodes(n, (*parse.CallExpression)(nil), nil)[1]
+			state.setGlobal("Array", WrapGoFunction(NewArray), GlobalConst)
+			secondCall := parse.FindNodes(n.Statements[2], (*parse.CallExpression)(nil), nil)[1]
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
@@ -5350,7 +5663,7 @@ func TestSymbolicEval(t *testing.T) {
 		t.Run("pipe statement should not be impacted by previous pipe statements", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				fn idt(arg){
-					return arg
+					return Array(arg, nil)
 				}
 
 				idt int | idt $
@@ -5358,6 +5671,8 @@ func TestSymbolicEval(t *testing.T) {
 
 				return result
 			`)
+			state.setGlobal("Array", WrapGoFunction(NewArray), GlobalConst)
+
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
@@ -5367,14 +5682,14 @@ func TestSymbolicEval(t *testing.T) {
 		t.Run("anonymous variable should not be defined after pipe statement", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				fn idt(arg){
-					return arg
+					return Array(arg, nil)
 				}
 
 				idt int | idt $
 
 				return $
 			`)
-
+			state.setGlobal("Array", WrapGoFunction(NewArray), GlobalConst)
 			varIdent := parse.FindNodes(n, (*parse.Variable)(nil), nil)[1]
 
 			res, err := symbolicEval(n, state)

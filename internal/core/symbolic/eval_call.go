@@ -508,7 +508,12 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 		if err != nil {
 			return nil, err
 		}
-		return patt.(Pattern).SymbolicValue(), nil
+		ret := patt.(Pattern).SymbolicValue()
+
+		if must {
+			ret = checkTransformMustCallReturnValue(ret, callNode, state)
+		}
+		return ret, nil
 	} //else Inox function
 
 	inoxFn := callee.(*InoxFunction)
@@ -593,14 +598,9 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 			ret = state.returnValue
 		}
 
+		//'must' call: check and update return type
 		if must {
-			if array, isArray := ret.(*Array); isArray && array.HasKnownLen() && array.KnownLen() != 0 {
-				lastElem := array.elements[len(array.elements)-1]
-
-				if _, ok := lastElem.(*Error); ok {
-					panic("symbolic evaluation of 'must' calls not fully implemented")
-				}
-			}
+			ret = checkTransformMustCallReturnValue(ret, callNode, state)
 		}
 
 		if isSharedFunction {
@@ -668,4 +668,61 @@ func setAllowedNonPresentProperties(argNodes []parse.Node, nonSpreadArgCount int
 			continue
 		}
 	}
+}
+
+func checkTransformMustCallReturnValue(ret Value, callNode *parse.CallExpression, state *State) Value {
+	INVALID_RETURN_TYPE_MSG := INVALID_MUST_CALL_OF_AN_INOX_FN_RETURN_TYPE_MUST_BE_XXX
+
+	switch r := ret.(type) {
+	case *Array:
+		array := r
+		if !array.HasKnownLen() || array.KnownLen() == 0 {
+			break
+		}
+
+		lastElem := array.elements[len(array.elements)-1]
+		ok := false
+
+		switch lastElem := lastElem.(type) {
+		case *Error:
+			ok = true
+		case IMultivalue:
+			onlyErrorsAndNil := lastElem.OriginalMultivalue().AllValues(func(v Value) bool {
+				return utils.Implements[*Error](v) || utils.Implements[*NilT](v)
+			})
+			ok = onlyErrorsAndNil
+		case *NilT:
+			ok = true
+		}
+
+		if ok {
+			switch array.KnownLen() {
+			case 1:
+				return Nil
+			case 2:
+				return array.elementAt(0)
+			default:
+				return NewArray(array.elements[:len(array.elements)-1]...)
+			}
+		}
+	case IMultivalue:
+		mv := r
+		if len(mv.OriginalMultivalue().getValues()) == 2 {
+			onlyErrorsAndNil := mv.OriginalMultivalue().AllValues(func(v Value) bool {
+				return utils.Implements[*Error](v) || utils.Implements[*NilT](v)
+			})
+			if onlyErrorsAndNil {
+				return Nil
+			}
+		}
+	case *Error:
+		state.addWarning(makeSymbolicEvalWarning(callNode, state, ERROR_IS_ALWAYS_RETURNED_THIS_WILL_CAUSE_A_PANIC))
+		return Nil
+	case *NilT:
+		state.addWarning(makeSymbolicEvalWarning(callNode, state, NO_ERROR_IS_RETURNED))
+		return Nil
+	}
+
+	state.addError(makeSymbolicEvalError(callNode.Callee, state, INVALID_RETURN_TYPE_MSG))
+	return ret
 }
