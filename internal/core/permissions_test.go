@@ -40,6 +40,21 @@ func TestHttpPermission(t *testing.T) {
 		}
 	}
 
+	t.Run("https://**:<port>", func(t *testing.T) {
+		anyHttps8080Host := HttpPermission{Kind_: permkind.Write, Entity: HostPattern("https://**:8080")}
+		localhost8080 := HttpPermission{Kind_: permkind.Write, Entity: Host("https://localhost:8080")}
+		exampleCom8080 := HttpPermission{Kind_: permkind.Write, Entity: Host("https://example.com:8080")}
+		exampleComSudomain8080 := HttpPermission{Kind_: permkind.Write, Entity: Host("https://sub.example.com:8080")}
+		localhost := HttpPermission{Kind_: permkind.Write, Entity: Host("https://localhost")}
+		exampleCom := HttpPermission{Kind_: permkind.Write, Entity: Host("https://example.com")}
+
+		assert.True(t, anyHttps8080Host.Includes(localhost8080))
+		assert.True(t, anyHttps8080Host.Includes(exampleCom8080))
+		assert.True(t, anyHttps8080Host.Includes(exampleComSudomain8080))
+		assert.False(t, anyHttps8080Host.Includes(localhost))
+		assert.False(t, anyHttps8080Host.Includes(exampleCom))
+	})
+
 	t.Run("a permission with a prefix pattern should include a permission with a longer prefix pattern", func(t *testing.T) {
 		perm := HttpPermission{Kind_: permkind.Read, Entity: URLPattern("https://localhost:443/...")}
 		otherPerm := HttpPermission{Kind_: permkind.Read, Entity: URL("https://localhost:443/abc/...")}
