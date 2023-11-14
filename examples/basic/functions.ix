@@ -49,16 +49,16 @@ print "identity(1) + 2: " (identity(1) + 2)
 
 # ------ 'Must' calls ------
 
-# 'must' call are special calls that cause a panic if there is an error.
+# 'must' calls are special calls that cause a panic if there is an error.
+# If there is no error the returned value is transformed:
+# (error|nil) -> nil
+# Array(1, (error|nil)) -> 1
+# Array(1, 2, (error|nil)) -> Array(1, 2)
 
 # A Go function is considered to have failed if the last return value is a non-nil error.
 # A Go function that doesn't fail has one less return value.
 
 # An Inox function is considered to have failed if it returns an error or an Array whose last element is an error.
-# If an Inoxfunction doesn't fail the returned value is transformed:
-# (error|nil) -> nil
-# Array(1, (error|nil)) -> 1
-# Array(1, 2, (error|nil)) -> Array(1, 2)
 # note: Inox functions always return a single value.
 
 fn g(){
@@ -67,3 +67,4 @@ fn g(){
 
 # syntax for 'must' calls:
 # one = g!()
+# bytes = unhex!("not hexadecimal")
