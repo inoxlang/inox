@@ -9,7 +9,7 @@ require (
 	github.com/alexedwards/argon2id v1.0.0
 	github.com/aohorodnyk/mimeheader v0.0.6
 	github.com/bits-and-blooms/bitset v1.8.0
-	github.com/bmatcuk/doublestar/v4 v4.6.0
+	github.com/bmatcuk/doublestar/v4 v4.6.1
 	github.com/caddyserver/certmagic v0.19.2
 	github.com/chromedp/cdproto v0.0.0-20231112213822-7d5b36658e55
 	github.com/chromedp/chromedp v0.9.3
