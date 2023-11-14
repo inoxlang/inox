@@ -3338,7 +3338,9 @@ func TreeWalkCallFunc(call TreeWalkCall) (Value, error) {
 	}
 
 	if must {
-		if ok, err := IsResultWithError(ret); ok {
+		if transformed, err := checkTransformMustCallResult(ret); err == nil {
+			ret = transformed
+		} else {
 			panic(err)
 		}
 	}

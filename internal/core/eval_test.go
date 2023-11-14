@@ -3385,6 +3385,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		noargs := func() []Value { return nil }
 
+		anError := NewError(errors.New("an error"), Nil)
+
 		testCases := []struct {
 			name                  string
 			error                 bool
@@ -3396,7 +3398,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			doSymbolicCheck       bool
 		}{
 			{
-				name:  "must call with an error",
+				name:  "must call of a function returning an array of length 2 whose last element is an error",
 				error: true,
 				input: `
 					fn f(){
@@ -3404,6 +3406,76 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					}
 					return f!()
 				`,
+			},
+			{
+				name: "must call of a function returning an array of length 2 whose last element is nil",
+				input: `
+					fn f(){
+						return Array(1, nil)
+					}
+					return f!()
+				`,
+				result: Int(1),
+			},
+			{
+				name: "must call of a function returning nil",
+				input: `
+					fn f(){
+						return nil
+					}
+					return f!()
+				`,
+				result: Nil,
+			},
+			{
+				name:  "must call of a function returning an error",
+				error: true,
+				input: `
+					fn f(){
+						return an-error
+					}
+					return f!()
+				`,
+			},
+			{
+				name: "normal call of a function returning an array of length 2 whose last element is an error",
+				input: `
+					fn f(){
+						return Array(1, an-error)
+					}
+					return f()
+				`,
+				result: NewArray(nil, Int(1), anError),
+			},
+			{
+				name: "normal call of a function returning an array of length 2 whose last element is nil",
+				input: `
+					fn f(){
+						return Array(1, nil)
+					}
+					return f()
+				`,
+				result: NewArray(nil, Int(1), Nil),
+			},
+			{
+				name: "normal call of a function returning nil",
+				input: `
+					fn f(){
+						return nil
+					}
+					return f()
+				`,
+				result: Nil,
+			},
+			{
+				name: "normal of a function returning an error",
+				input: `
+					fn f(){
+						return an-error
+					}
+					return f()
+				`,
+				result: anError,
 			},
 			{
 				name: "declared void function",
@@ -3834,7 +3906,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				defer state.Ctx.CancelGracefully()
 
 				state.Globals.Set("Array", WrapGoFunction(NewArray))
-				state.Globals.Set("an-error", NewError(errors.New("an error"), Nil))
+				state.Globals.Set("an-error", anError)
 
 				res, err := Eval(testCase.input, state, testCase.doSymbolicCheck)
 				if testCase.error {

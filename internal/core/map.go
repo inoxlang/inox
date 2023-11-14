@@ -121,7 +121,9 @@ func Map(ctx *Context, iterable Iterable, mapper Value) *List {
 			if err != nil {
 				panic(err)
 			}
-			if ok, err := IsResultWithError(res); ok {
+			if transformed, err := checkTransformMustCallResult(res); err == nil {
+				res = transformed
+			} else {
 				panic(err)
 			}
 			result.elements = append(result.elements, res.(Serializable))

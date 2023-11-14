@@ -1,6 +1,7 @@
 package core
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"reflect"
@@ -339,14 +340,35 @@ func (goFunc *GoFunction) Call(args []any, globalState, extState *GlobalState, i
 	return NewArrayFrom(results...), nil
 }
 
-func IsResultWithError(result Value) (bool, error) {
-	if array, isArray := result.(*Array); isArray && array.Len() != 0 {
-		lastElem := reflect.ValueOf((*array)[array.Len()-1])
-		if lastElem.Type().Implements(ERROR_INTERFACE_TYPE) && !lastElem.IsNil() {
-			return true, lastElem.Interface().(error)
-		}
+// checkTransformMustCallResult checks the result of an Inox function 'must' call:
+// - if checkTransformMustCallResult finds an error it returns (nil, the error).
+// - if the result is an Array of length > 2, checkTransformMustCallResult returns a slice of the array with one less element.
+// - if the result is an Array of length 2, checkTransformMustCallResult returns the first element.
+// - if the result is not an error, it is returned unmodified.
+func checkTransformMustCallResult(result Value) (Value, error) {
+	reflectVal := reflect.ValueOf(result)
+	if reflectVal.Type().Implements(ERROR_INTERFACE_TYPE) {
+		return nil, reflectVal.Interface().(error)
 	}
-	return false, nil
+
+	if array, isArray := result.(*Array); isArray {
+		if array.Len() < 2 {
+			return nil, errors.New("unreachable: array of length < 2 returned by a 'must' call")
+		}
+
+		length := array.Len()
+		lastElem := reflect.ValueOf((*array)[length-1])
+		if lastElem.Type().Implements(ERROR_INTERFACE_TYPE) {
+			return nil, lastElem.Interface().(error)
+		}
+		if length == 2 {
+			return (*array)[0], nil
+		}
+		slice := (*array)[:length-1]
+		return &slice, nil
+	}
+
+	return result, nil
 }
 
 // ConvertReturnValue converts to Value a reflect.Value returned by calling a Go funtion using reflection.

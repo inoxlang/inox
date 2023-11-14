@@ -1773,9 +1773,13 @@ func (v *VM) run() {
 			if isValOnStack {
 				retVal = v.stack[v.sp-1]
 
-				if yes, err := IsResultWithError(retVal); yes {
-					v.err = err
-					return
+				if v.curFrame.mustCall {
+					if transformed, err := checkTransformMustCallResult(retVal); err == nil {
+						retVal = transformed
+					} else {
+						v.err = err
+						return
+					}
 				}
 			} else {
 				retVal = Nil
