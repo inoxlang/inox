@@ -275,7 +275,25 @@ func (s *Session) execute(mtdInfo MethodInfo, req RequestMessage, args interface
 			}
 		}()
 
-		resp, err := mtdInfo.Handler(ctx, args)
+		var (
+			resp any
+			err  error
+		)
+
+		//call the method handler.
+		func() {
+			defer func() {
+				if e := recover(); e != nil {
+					err = utils.ConvertPanicValueToError(e)
+					err = ResponseError{
+						Code:    InternalError.Code,
+						Message: fmt.Sprintf("%s: %s", err, string(debug.Stack())),
+						Data:    err,
+					}
+				}
+			}()
+			resp, err = mtdInfo.Handler(ctx, args)
+		}()
 
 		select {
 		case <-ctx.Done():

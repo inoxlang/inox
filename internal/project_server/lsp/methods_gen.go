@@ -9,7 +9,7 @@ import (
 )
 
 type Methods struct {
-	Opt                                        Options
+	Opt                                        Config
 	onInitialize                               func(ctx context.Context, req *defines.InitializeParams) (*defines.InitializeResult, *defines.InitializeError)
 	onInitialized                              func(ctx context.Context, req *defines.InitializeParams) error
 	onShutdown                                 func(ctx context.Context, req *defines.NoParams) error

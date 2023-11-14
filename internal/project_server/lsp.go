@@ -68,7 +68,7 @@ func StartLSPServer(ctx *core.Context, serverConfig LSPServerConfiguration) (fin
 		}
 	}()
 
-	options := &lsp.Options{
+	options := &lsp.Config{
 		OnSession: serverConfig.OnSession,
 	}
 

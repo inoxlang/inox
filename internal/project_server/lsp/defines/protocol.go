@@ -1,19 +1,19 @@
 package defines
 
 type ClientCapabilities struct {
-	_ClientCapabilities
+	ClientCapabilities_
 }
 type ServerCapabilities struct {
-	_ServerCapabilities
+	ServerCapabilities_
 	WorkspaceFoldersServerCapabilities
 }
 
 type InitializeParams struct {
-	_InitializeParams
+	InitializeParams_
 	WorkspaceFoldersInitializeParams
 }
 
-type _ServerCapabilities struct {
+type ServerCapabilities_ struct {
 
 	// Defines how text documents are synced. Is either a detailed structure defining each notification or
 	// for backwards compatibility the TextDocumentSyncKind number.
@@ -485,7 +485,7 @@ type GeneralClientCapabilities struct {
 /**
  * Defines the capabilities provided by the client.
  */
-type _ClientCapabilities struct {
+type ClientCapabilities_ struct {
 
 	// Workspace specific client capabilities.
 	Workspace *WorkspaceClientCapabilities `json:"workspace,omitempty"`
@@ -562,7 +562,7 @@ type InitializeResult struct {
 /**
  * The initialize parameters
  */
-type _InitializeParams struct {
+type InitializeParams_ struct {
 	WorkDoneProgressParams
 
 	// The process Id of the parent process that started

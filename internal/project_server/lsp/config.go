@@ -8,7 +8,7 @@ import (
 	"github.com/inoxlang/inox/internal/project_server/lsp/defines"
 )
 
-type Options struct {
+type Config struct {
 	// if Network is null, will use stdio
 	Network           string
 	Address           string

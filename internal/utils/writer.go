@@ -28,6 +28,12 @@ func (writer FnWriter) Write(p []byte) (n int, err error) {
 	return writer.WriteFn(p)
 }
 
+type FnReader func(p []byte) (n int, err error)
+
+func (fn FnReader) Read(p []byte) (n int, err error) {
+	return fn(p)
+}
+
 type FnReaderWriter struct {
 	WriteFn func(p []byte) (n int, err error)
 	ReadFn  func(p []byte) (n int, err error)

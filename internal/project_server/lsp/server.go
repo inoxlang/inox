@@ -26,7 +26,7 @@ type Server struct {
 	ServerHttpHandler    http.Handler
 }
 
-func NewServer(ctx *core.Context, opt *Options) *Server {
+func NewServer(ctx *core.Context, opt *Config) *Server {
 	s := &Server{
 		ctx: ctx,
 	}
