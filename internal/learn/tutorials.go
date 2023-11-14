@@ -4,8 +4,8 @@ import (
 	_ "embed"
 	"log"
 
+	"github.com/goccy/go-yaml"
 	"github.com/inoxlang/inox/internal/utils"
-	"gopkg.in/yaml.v3"
 )
 
 var (
