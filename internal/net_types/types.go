@@ -1,8 +1,22 @@
 package nettypes
 
-import "net"
+import (
+	"errors"
+	"net"
+)
 
 type RemoteAddrWithPort string
+
+func RemoteAddrWithPortFrom(s string) (RemoteAddrWithPort, error) {
+	if s == "" {
+		return "", errors.New("empty string")
+	}
+	_, _, err := net.SplitHostPort(string(s))
+	if err != nil {
+		return "", err
+	}
+	return RemoteAddrWithPort(s), nil
+}
 
 func (s RemoteAddrWithPort) String() string {
 	return string(s)

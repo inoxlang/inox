@@ -11,6 +11,7 @@ import (
 	"github.com/elazarl/goproxy"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/mimeconsts"
+	nettypes "github.com/inoxlang/inox/internal/net_types"
 	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/rs/zerolog"
@@ -69,6 +70,21 @@ func MakeHTTPProxy(ctx *core.Context, params HTTPProxyParams) (*http.Server, err
 				params.Logger.Debug().Err(err).Send()
 			}
 		}()
+
+		//check the request was sent from localhost.
+		addr, err := nettypes.RemoteAddrWithPortFrom(req.RemoteAddr)
+		if err != nil {
+			body := fmt.Sprintf("failed to get the get the IP:port of the sender: %s\n", err.Error())
+			resp := goproxy.NewResponse(req, mimeconsts.HTML_CTYPE, http.StatusInternalServerError, body)
+			resp.Status = "proxy error, invalid ip:port"
+			return req, resp
+		}
+		if !isLocalhostOr127001Addr(addr) {
+			body := fmt.Sprintf("the sender has an invalid IP:port : %s, only requests from localhost are allowed\n", addr)
+			resp := goproxy.NewResponse(req, mimeconsts.HTML_CTYPE, http.StatusInternalServerError, body)
+			resp.Status = "proxy error, invalid ip:port"
+			return req, resp
+		}
 
 		req, resp := params.OnRequest(req, proxyCtx)
 		if resp != nil {

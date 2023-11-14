@@ -108,9 +108,9 @@ func NewGolangHttpServer(ctx *core.Context, config GolangHttpServerConfig) (*htt
 	return server, nil
 }
 
-func isLocalhostOr127001Addr(addr string) bool {
+func isLocalhostOr127001Addr[S ~string](addr S) bool {
 	if addr == "localhost" || addr == "127.0.0.1" {
 		return true
 	}
-	return strings.HasPrefix(addr, "localhost:") || strings.HasPrefix(addr, "127.0.0.1:")
+	return strings.HasPrefix(string(addr), "localhost:") || strings.HasPrefix(string(addr), "127.0.0.1:")
 }
