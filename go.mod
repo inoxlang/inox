@@ -6,7 +6,7 @@ require (
 	github.com/PuerkitoBio/goquery v1.8.0
 	github.com/adrg/xdg v0.4.0
 	github.com/alecthomas/chroma/v2 v2.11.1
-	github.com/alexedwards/argon2id v0.0.0-20230305115115-4b3c3280a736
+	github.com/alexedwards/argon2id v1.0.0
 	github.com/aohorodnyk/mimeheader v0.0.6
 	github.com/bits-and-blooms/bitset v1.8.0
 	github.com/bmatcuk/doublestar/v4 v4.6.0
