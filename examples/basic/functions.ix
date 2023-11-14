@@ -3,7 +3,7 @@ manifest {}
 # functions are declared in the global scope
 fn hello(name, end){
     print("hello", name, end)
-    return 0
+    return nil
 }
 
 # function expression
@@ -19,25 +19,12 @@ hello("foo", "!")
 hello "bar" "!"
 
 
-# ------ 'Must' calls ------
-
-# 'must' call are special calls that cause a panic if there is an error.
-# Go functions are considered to return an error if the last return value is a non-nil error.
-# Inox functions are considered to return an error if the return value is an Array whose last element is an error.
-# note: Inox functions always return a single value.
-
-# syntax for 'must' calls:
-# f!()
-
 fn f(){
     return Array(1, Error("expected failure !!"))
 }
 
-f!()
-
 assign res err = f() # the array is destructured
 print "res =" $res "err =" $err
-
 
 # ------ Parameter and return types ------
 
@@ -59,3 +46,24 @@ fn identity(x){
 }
 
 print "identity(1) + 2: " (identity(1) + 2)
+
+# ------ 'Must' calls ------
+
+# 'must' call are special calls that cause a panic if there is an error.
+
+# A Go function is considered to have failed if the last return value is a non-nil error.
+# A Go function that doesn't fail has one less return value.
+
+# An Inox function is considered to have failed if it returns an error or an Array whose last element is an error.
+# If an Inoxfunction doesn't fail the returned value is transformed:
+# (error|nil) -> nil
+# Array(1, (error|nil)) -> 1
+# Array(1, 2, (error|nil)) -> Array(1, 2)
+# note: Inox functions always return a single value.
+
+fn g(){
+    return Array(1, Error("expected failure !!"))
+}
+
+# syntax for 'must' calls:
+# one = g!()
