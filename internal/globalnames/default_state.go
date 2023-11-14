@@ -91,8 +91,8 @@ const (
 
 	// bytes & string
 	MKBYTES_FN       = "mkbytes"
-	RUNES_FN         = "runes"
-	BYTES_FN         = "bytes"
+	RUNES_FN         = "Runes"
+	BYTES_FN         = "Bytes"
 	IS_RUNE_SPACE_FN = "is_rune"
 	READER_FN        = "Reader"
 	RINGBUFFER_FN    = "RingBugger"
