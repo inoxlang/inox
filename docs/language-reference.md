@@ -992,6 +992,72 @@ g{a: 1}   # equivalent to g({a: 1})
 g"string" # equivalent to g("a")
 ```
 
+### 'Must' Calls
+
+**'must' calls** are special calls that cause a panic if there is an error. If
+there is no error the returned value is transformed:
+
+- (error|nil) -> nil
+- Array(1, (error|nil)) -> 1
+- Array(1, 2, (error|nil)) -> Array(1, 2)
+
+**Native (Golang) functions**:
+
+A Go function is considered to have failed if the last return value is a non-nil
+error.\
+Let's see an example: `unhex` is a Go function decoding a hexadecimal string
+that has the following return type (byte-slice, error). The result is returned
+as an `Array(byte-slice, error | nil)`.
+
+```
+# normal call: a value of type Array(byte-slice, (error | nil)) is returned.
+assign bytes error = unhex("...")
+
+# must call: a value of type byte-slice is returned.
+bytes = unhex!("...")
+```
+
+**Inox functions**:
+
+An Inox function is considered to have failed if it returns an error or an Array
+whose last element is an error.
+
+```
+fn f() (| error | nil) {
+    ... some logic ...
+    if issue {
+        return Error("error")
+    }
+    return nil
+}
+
+# normal call: a value of type (error | nil) is returned.
+err = f()
+
+# must call: on error the runtime panics, otherwise nil is returned.
+nil_value = f!()
+```
+
+```
+fn g() {
+    ... some logic ...
+    if issue {
+        return Array(-1, Error("error"))
+    }
+
+    return Array(1, nil)
+}
+
+# normal call: a value of type Array(int, (error | nil)) is returned.
+assign int err = g()
+
+# must call: a value of type int is returned.
+int = g!()
+```
+
+> If you find an error in the documentation or a bug in the runtime, please
+> create an issue.
+
 # Patterns
 
 In Inox a pattern is a **runtime value** that matches values of a given kind and
