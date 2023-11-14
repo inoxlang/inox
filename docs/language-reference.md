@@ -1232,39 +1232,39 @@ A prefix path pattern match any path that contains its prefix.
 
 https://en.wikipedia.org/wiki/Glob_(programming)
 
-| pattern          | value           | match ? |
-| ---------------- | --------------- | ------- |
-| `%/*`            | `/`             | yes     |
-| `%/*`            | `/file.txt`     | yes     |
-| `%/*`            | `/dir/`         | no      |
-| `%/*`            | `/dir/file.txt` | no      |
-| `%/*`            | `/`             | yes     |
-| `%/*`            | `/file.txt`     | yes     |
-| `%/*`            | `/dir/`         | no      |
-| `%/*`            | `/dir/file.txt` | no      |
-| ---              | ---             | ---     |
-| `%/*.txt`        | `/`             | yes     |
-| `%/*.txt`        | `/file.txt`     | yes     |
-| `%/*.txt`        | `/file.json`    | no      |
-| `%/*.txt`        | `/dir/file.txt` | no      |
-| ---              | ---             | ---     |
-| `%/**`           | `/`             | yes     |
-| `%/**`           | `/file.txt`     | yes     |
-| `%/**`           | `/dir/`         | yes     |
-| `%/**`           | `/dir/file.txt` | yes     |
-| `%/**`           | `/dir/subdir/`  | yes     |
-| ---              | ---             | ---     |
-| `%/*/**`         | `/`             | no      |
-| `%/*/**`         | `/file.txt`     | no      |
-| `%/*/**`         | `/dir`          | no      |
-| `%/*/**`         | `/dir/`         | yes     |
-| `%/*/**`         | `/dir/file.txt` | yes     |
-| `%/*/**`         | `/dir/subdir/`  | yes     |
-| ---              | ---             | ---     |
-| `` %/`[a-z]+` `` | `/`             | no      |
-| `` %/`[a-z]+` `` | `/a`            | yes     |
-| `` %/`[a-z]+` `` | `/aa`           | yes     |
-| `` %/`[a-z]+` `` | `/0`            | no      |
+| pattern         | value           | match ? |
+| --------------- | --------------- | ------- |
+| `%/*`           | `/`             | yes     |
+| `%/*`           | `/file.txt`     | yes     |
+| `%/*`           | `/dir/`         | no      |
+| `%/*`           | `/dir/file.txt` | no      |
+| `%/*`           | `/`             | yes     |
+| `%/*`           | `/file.txt`     | yes     |
+| `%/*`           | `/dir/`         | no      |
+| `%/*`           | `/dir/file.txt` | no      |
+| ---             | ---             | ---     |
+| `%/*.txt`       | `/`             | yes     |
+| `%/*.txt`       | `/file.txt`     | yes     |
+| `%/*.txt`       | `/file.json`    | no      |
+| `%/*.txt`       | `/dir/file.txt` | no      |
+| ---             | ---             | ---     |
+| `%/**`          | `/`             | yes     |
+| `%/**`          | `/file.txt`     | yes     |
+| `%/**`          | `/dir/`         | yes     |
+| `%/**`          | `/dir/file.txt` | yes     |
+| `%/**`          | `/dir/subdir/`  | yes     |
+| ---             | ---             | ---     |
+| `%/*/**`        | `/`             | no      |
+| `%/*/**`        | `/file.txt`     | no      |
+| `%/*/**`        | `/dir`          | no      |
+| `%/*/**`        | `/dir/`         | yes     |
+| `%/*/**`        | `/dir/file.txt` | yes     |
+| `%/*/**`        | `/dir/subdir/`  | yes     |
+| ---             | ---             | ---     |
+| `` %/`[a-z]` `` | `/`             | no      |
+| `` %/`[a-z]` `` | `/a`            | yes     |
+| `` %/`[a-z]` `` | `/aa`           | no      |
+| `` %/`[a-z]` `` | `/0`            | no      |
 
 </details>
 
