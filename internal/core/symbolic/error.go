@@ -19,7 +19,7 @@ const (
 	SPREAD_ARGS_NOT_SUPPORTED_FOR_NON_VARIADIC_FUNCS        = "spread arguments are not supported when calling non-variadic functions"
 	FUNCS_CALLED_RECU_SHOULD_HAVE_RET_TYPE                  = "functions called recursively should have a return type"
 	INVALID_MUST_CALL_OF_AN_INOX_FN_RETURN_TYPE_MUST_BE_XXX = //
-	"invalid 'must' call of an Inox function: return type should either be nil, (error|nil) or an array of known length (!= 0) whose last element is error or (error|nil)"
+	"invalid 'must' call of an Inox function: return type should either be nil, (error|nil) or an array of known length (>= 2) whose last element is error or (error|nil)"
 	NO_ERROR_IS_RETURNED                             = "no error is returned"
 	ERROR_IS_ALWAYS_RETURNED_THIS_WILL_CAUSE_A_PANIC = "error is always returned, this will cause a panic"
 

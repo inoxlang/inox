@@ -673,6 +673,7 @@ func setAllowedNonPresentProperties(argNodes []parse.Node, nonSpreadArgCount int
 func checkTransformMustCallReturnValue(ret Value, callNode *parse.CallExpression, state *State) Value {
 	INVALID_RETURN_TYPE_MSG := INVALID_MUST_CALL_OF_AN_INOX_FN_RETURN_TYPE_MUST_BE_XXX
 
+outer:
 	switch r := ret.(type) {
 	case *Array:
 		array := r
@@ -698,7 +699,7 @@ func checkTransformMustCallReturnValue(ret Value, callNode *parse.CallExpression
 		if ok {
 			switch array.KnownLen() {
 			case 1:
-				return Nil
+				break outer
 			case 2:
 				return array.elementAt(0)
 			default:

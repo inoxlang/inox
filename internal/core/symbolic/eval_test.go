@@ -4332,6 +4332,27 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, NewArray(), res)
 		})
 
+		t.Run("'must' call: function should not return an array of length 1", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				fn f(){
+					return Array(1)
+				}
+				return f!()
+			`)
+			fnIdent := n.Statements[1].(*parse.ReturnStatement).Expr.(*parse.CallExpression).Callee
+			state.setGlobal("Array", WrapGoFunction(NewArray), GlobalConst)
+
+			res, err := symbolicEval(n, state)
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(fnIdent, state, INVALID_MUST_CALL_OF_AN_INOX_FN_RETURN_TYPE_MUST_BE_XXX),
+			}, state.errors())
+			assert.Empty(t, state.warnings())
+			assert.Equal(t, NewArray(INT_1), res)
+		})
+
 		t.Run("'must' call: function should not return a value that is not nil, nor err, nor an array", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				fn f(){
