@@ -52,10 +52,41 @@ func TestURLPattern(t *testing.T) {
 
 func TestPathPattern(t *testing.T) {
 	t.Run("", func(t *testing.T) {
+
+		assert.True(t, PathPattern("/...").Test(nil, Path("/")))
+		assert.True(t, PathPattern("/...").Test(nil, Path("/f")))
+		assert.True(t, PathPattern("/...").Test(nil, Path("/file.txt")))
+		assert.True(t, PathPattern("/...").Test(nil, Path("/dir/")))
+		assert.True(t, PathPattern("/...").Test(nil, Path("/dir/file.txt")))
+
+		assert.True(t, PathPattern("/dir/...").Test(nil, Path("/dir/")))
+		assert.True(t, PathPattern("/dir/...").Test(nil, Path("/dir/file.txt")))
+		assert.False(t, PathPattern("/dir/...").Test(nil, Path("/")))
+		assert.False(t, PathPattern("/dir/...").Test(nil, Path("/f")))
+		assert.False(t, PathPattern("/dir/...").Test(nil, Path("/file.txt")))
+
 		assert.True(t, PathPattern("/*").Test(nil, Path("/")))
-		assert.True(t, PathPattern("/*").Test(nil, Path("/e")))
-		assert.False(t, PathPattern("/*").Test(nil, Path("/e/")))
-		assert.False(t, PathPattern("/*").Test(nil, Path("/e/e")))
+		assert.True(t, PathPattern("/*").Test(nil, Path("/f")))
+		assert.True(t, PathPattern("/*").Test(nil, Path("/file.txt")))
+		assert.False(t, PathPattern("/*").Test(nil, Path("/dir/")))
+		assert.False(t, PathPattern("/*").Test(nil, Path("/dir/file.txt")))
+
+		assert.True(t, PathPattern("/[a-z]").Test(nil, Path("/a")))
+		assert.False(t, PathPattern("/[a-z]").Test(nil, Path("/aa")))
+		assert.False(t, PathPattern("/[a-z]").Test(nil, Path("/a0")))
+		assert.False(t, PathPattern("/[a-z]").Test(nil, Path("/0")))
+		assert.False(t, PathPattern("/[a-z]").Test(nil, Path("/a/")))
+		assert.False(t, PathPattern("/[a-z]").Test(nil, Path("/a/a")))
+
+		assert.True(t, PathPattern("/**").Test(nil, Path("/")))
+		assert.True(t, PathPattern("/**").Test(nil, Path("/f")))
+		assert.True(t, PathPattern("/**").Test(nil, Path("/file.txt")))
+		assert.True(t, PathPattern("/**").Test(nil, Path("/dir/")))
+		assert.True(t, PathPattern("/**").Test(nil, Path("/dir/file.txt")))
+
+		assert.True(t, PathPattern("/**/file.txt").Test(nil, Path("/file.txt")))
+		assert.True(t, PathPattern("/**/file.txt").Test(nil, Path("/dir/file.txt")))
+		assert.True(t, PathPattern("/**/file.txt").Test(nil, Path("/dir/subdir/file.txt")))
 	})
 }
 
