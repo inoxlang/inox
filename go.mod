@@ -13,7 +13,7 @@ require (
 	github.com/caddyserver/certmagic v0.19.2
 	github.com/chromedp/cdproto v0.0.0-20231112213822-7d5b36658e55
 	github.com/chromedp/chromedp v0.9.3
-	github.com/cloudflare/cloudflare-go v0.75.0
+	github.com/cloudflare/cloudflare-go v0.81.0
 	github.com/coreos/go-systemd/v22 v22.5.0
 	github.com/djherbis/times v1.5.0
 	github.com/elazarl/goproxy v0.0.0-20231031074852-3ec07828be7a
@@ -68,7 +68,7 @@ require (
 	github.com/goccy/go-json v0.10.2 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
-	github.com/hashicorp/go-retryablehttp v0.7.4 // indirect
+	github.com/hashicorp/go-retryablehttp v0.7.5 // indirect
 	github.com/hashicorp/go-set v0.1.9 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
@@ -110,7 +110,7 @@ require (
 	golang.org/x/sync v0.5.0 // indirect
 	golang.org/x/sys v0.14.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
-	golang.org/x/time v0.3.0 // indirect
+	golang.org/x/time v0.4.0 // indirect
 	golang.org/x/tools v0.15.0 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
