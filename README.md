@@ -354,7 +354,7 @@ is allowed to do, here are a few examples of permissions:
   - DNS (read)
   - Raw TCP (read, write)
 - access to environment variables (read, write, delete)
-- create coroutines (multi threading)
+- create lighweight threads
 - execute specific commands
 
 Inox modules always start with a **manifest** that describes the required

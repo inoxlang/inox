@@ -265,12 +265,13 @@ binary operations.
 ### Match
 
 The binary **match** operation returns true if the value on the left matches the
-pattern on the right. The pattern does not require a `%` prefix.
+pattern on the right. The pattern does not require a `%` prefix, unless it's a
+pattern literal.
 
 ```
 object = {a: 1}
 
-(object match {a: 1}) # the right operand is NOT an object here, it's a pattern.
+(object match {a: 1})  # the right operand is NOT an object here, it's a pattern.
 (object match %{a: 1}) # equivalent to the previous line
 
 (object match {a: int})
@@ -431,12 +432,12 @@ path = /../../etc/passwd
 
 ## Lists
 
-A list is a sequence of elements, you can add elements to it and change the
+A list is a sequence of elements. You can add elements to it and change the
 value of an element at a given position.
 
 ```
 list = []
-append(list, 1)
+list.append(1)
 
 first_elem = list[0] # index expression
 list[0] = 2
@@ -983,13 +984,13 @@ result = f(1, 2)
 f 1 2 # this syntax is mostly used in the REPL
 ```
 
-Since the `g` function has a single parameter you can call it with a special
-syntax in addition to the previous ones.
+Since the `g` function has a single parameter it can also be called with the
+following shorthand syntaxs:
 
 ```
 g{a: 1}   # equivalent to g({a: 1})
 
-g"string" # equivalent to g("a")
+g"string" # equivalent to g("string")
 ```
 
 ### 'Must' Calls
