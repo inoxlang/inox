@@ -363,13 +363,34 @@ const (
 	QUANTITY_LIT_NOT_ALLOWED_WITH_OCTAL_NUM                = "quantity literals with an octal number are not allowed"
 	INVALID_RATE_LIT                                       = "invalid rate literal"
 	INVALID_RATE_LIT_DIV_SYMBOL_SHOULD_BE_FOLLOWED_BY_UNIT = "invalid rate literal: '/' should be immediately followed by a unit"
-	UNTERMINATED_DATE_LITERAL                              = "unterminated date literal"
-	INVALID_DATE_LITERAL                                   = "invalid date literal"
-	INVALID_DATE_LITERAL_MISSING_LOCATION_PART_AT_THE_END  = "invalid date literal: missing location part at the end (e.g.,`-UTC`, `-America/Los_Angeles`)"
-	MISSING_MONTH_VALUE                                    = "missing month value"
-	INVALID_MONTH_VALUE                                    = "invalid month value"
-	MISSING_DAY_VALUE                                      = "missing day value"
-	INVALID_DAY_VALUE                                      = "invalid day value"
+
+	INVALID_DATE_LIKE_LITERAL                                 = "invalid date-like literal"
+	INVALID_DATELIKE_LITERAL_MISSING_LOCATION_PART_AT_THE_END = "invalid date-like literal: missing location part at the end (e.g.,`-UTC`, `-America/Los_Angeles`)"
+
+	//year literal
+
+	INVALID_YEAR_LITERAL = "invalid year literal"
+
+	//date literal
+
+	INVALID_YEAR_OR_DATE_LITERAL                      = "invalid year or date literal"
+	INVALID_DATE_LITERAL_DAY_COUNT_PROBABLY_MISSING   = "invalid date literal: the day count is probably missing (example: '-5d' for the 5th day)"
+	INVALID_DATE_LITERAL_MONTH_COUNT_PROBABLY_MISSING = "invalid date literal: the month count is probably missing (example: '-1mt' for the first month, January)"
+
+	//datetime literal
+
+	UNTERMINATED_DATE_LITERAL = "unterminated datetime literal"
+	INVALID_DATETIME_LITERAL  = "invalid datetime literal"
+
+	INVALID_DATETIME_LITERAL_DAY_COUNT_PROBABLY_MISSING                = "invalid datetime literal: the day count is probably missing (example: '-5d' for the 5th day)"
+	INVALID_DATETIME_LITERAL_MONTH_COUNT_PROBABLY_MISSING              = "invalid datetime literal: the month count is probably missing (example: '-1mt' for the first month, January)"
+	INVALID_DATETIME_LITERAL_BOTH_MONTH_AND_DAY_COUNT_PROBABLY_MISSING = //
+	"invalid datetime literal: both the month and day count are probably missing (example: '-1mt-1d' for the first of January)"
+
+	MISSING_MONTH_VALUE = "missing month value"
+	INVALID_MONTH_VALUE = "invalid month value"
+	MISSING_DAY_VALUE   = "missing day value"
+	INVALID_DAY_VALUE   = "invalid day value"
 
 	//synchronized
 	SYNCHRONIZED_KEYWORD_SHOULD_BE_FOLLOWED_BY_SYNC_VALUES = "synchronized keyword should be followed by synchronized values"

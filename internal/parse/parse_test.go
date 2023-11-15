@@ -6917,13 +6917,13 @@ func testParse(
 		})
 	})
 
-	t.Run("date literal", func(t *testing.T) {
-		t.Run("year only", func(t *testing.T) {
+	t.Run("date-like literals", func(t *testing.T) {
+		t.Run("year literal", func(t *testing.T) {
 			n := mustparseChunk(t, "2020y-UTC")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 9}, nil, false},
 				Statements: []Node{
-					&DateTimeLiteral{
+					&YearLiteral{
 						NodeBase: NodeBase{NodeSpan{0, 9}, nil, false},
 						Raw:      "2020y-UTC",
 						Value:    time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC),
@@ -6932,131 +6932,179 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("year and month", func(t *testing.T) {
-			n := mustparseChunk(t, "2020y-5mt-UTC")
-			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{NodeSpan{0, 13}, nil, false},
-				Statements: []Node{
-					&DateTimeLiteral{
-						NodeBase: NodeBase{NodeSpan{0, 13}, nil, false},
-						Raw:      "2020y-5mt-UTC",
-						Value:    time.Date(2020, 5, 1, 0, 0, 0, 0, time.UTC),
-					},
-				},
-			}, n)
-		})
-
-		t.Run("year and month: month 0", func(t *testing.T) {
-			n, err := parseChunk(t, "2020y-0mt-UTC", "")
+		t.Run("year literal: missing location after dash", func(t *testing.T) {
+			n, err := parseChunk(t, "2020y-", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{NodeSpan{0, 13}, nil, false},
+				NodeBase: NodeBase{NodeSpan{0, 6}, nil, false},
 				Statements: []Node{
-					&DateTimeLiteral{
+					&YearLiteral{
 						NodeBase: NodeBase{
-							NodeSpan{0, 13},
-							&ParsingError{UnspecifiedParsingError, INVALID_MONTH_VALUE},
+							NodeSpan{0, 6},
+							&ParsingError{UnspecifiedParsingError, INVALID_DATELIKE_LITERAL_MISSING_LOCATION_PART_AT_THE_END},
 							false,
 						},
-						Raw: "2020y-0mt-UTC",
+						Raw: "2020y-",
 					},
 				},
 			}, n)
 		})
 
-		t.Run("year and month: month 05", func(t *testing.T) {
-			n := mustparseChunk(t, "2020y-05mt-UTC")
-			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{NodeSpan{0, 14}, nil, false},
-				Statements: []Node{
-					&DateTimeLiteral{
-						NodeBase: NodeBase{NodeSpan{0, 14}, nil, false},
-						Raw:      "2020y-05mt-UTC",
-						Value:    time.Date(2020, 5, 1, 0, 0, 0, 0, time.UTC),
-					},
-				},
-			}, n)
-		})
-
-		t.Run("year and day", func(t *testing.T) {
-			n := mustparseChunk(t, "2020y-5d-UTC")
-			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{NodeSpan{0, 12}, nil, false},
-				Statements: []Node{
-					&DateTimeLiteral{
-						NodeBase: NodeBase{NodeSpan{0, 12}, nil, false},
-						Raw:      "2020y-5d-UTC",
-						Value:    time.Date(2020, 1, 5, 0, 0, 0, 0, time.UTC),
-					},
-				},
-			}, n)
-		})
-
-		t.Run("year and day: day 0", func(t *testing.T) {
-			n, err := parseChunk(t, "2020y-0d-UTC", "")
+		t.Run("year literal: parenthesized, missing location after dash", func(t *testing.T) {
+			n, err := parseChunk(t, "(2020y-)", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{NodeSpan{0, 12}, nil, false},
+				NodeBase: NodeBase{NodeSpan{0, 8}, nil, false},
 				Statements: []Node{
-					&DateTimeLiteral{
+					&YearLiteral{
 						NodeBase: NodeBase{
-							NodeSpan{0, 12},
+							NodeSpan{1, 7},
+							&ParsingError{UnspecifiedParsingError, INVALID_DATELIKE_LITERAL_MISSING_LOCATION_PART_AT_THE_END},
+							true,
+						},
+						Raw: "2020y-",
+					},
+				},
+				// Tokens: []Token{
+				// 	{Type: OPENING_PARENTHESIS, Span: NodeSpan{0, 1}},
+				// 	{Type: OPENING_PARENTHESIS, Span: NodeSpan{7, 8}},
+				// },
+			}, n)
+		})
+
+		t.Run("date: missing day", func(t *testing.T) {
+			n, err := parseChunk(t, "2020y-5mt-UTC", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 13}, nil, false},
+				Statements: []Node{
+					&DateLiteral{
+						NodeBase: NodeBase{
+							NodeSpan{0, 13},
+							&ParsingError{UnspecifiedParsingError, INVALID_DATE_LITERAL_DAY_COUNT_PROBABLY_MISSING},
+							false,
+						},
+						Raw: "2020y-5mt-UTC",
+					},
+				},
+			}, n)
+		})
+
+		t.Run("date: invalid day: 0", func(t *testing.T) {
+			n, err := parseChunk(t, "2020y-1mt-0d-UTC", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 16}, nil, false},
+				Statements: []Node{
+					&DateLiteral{
+						NodeBase: NodeBase{
+							NodeSpan{0, 16},
 							&ParsingError{UnspecifiedParsingError, INVALID_DAY_VALUE},
 							false,
 						},
-						Raw: "2020y-0d-UTC",
+						Raw: "2020y-1mt-0d-UTC",
 					},
 				},
 			}, n)
 		})
 
-		t.Run("year and day: day 05", func(t *testing.T) {
-			n := mustparseChunk(t, "2020y-05d-UTC")
+		t.Run("date: day 05", func(t *testing.T) {
+			n := mustparseChunk(t, "2020y-1mt-05d-UTC")
 			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{NodeSpan{0, 13}, nil, false},
+				NodeBase: NodeBase{NodeSpan{0, 17}, nil, false},
 				Statements: []Node{
-					&DateTimeLiteral{
-						NodeBase: NodeBase{NodeSpan{0, 13}, nil, false},
-						Raw:      "2020y-05d-UTC",
+					&DateLiteral{
+						NodeBase: NodeBase{NodeSpan{0, 17}, nil, false},
+						Raw:      "2020y-1mt-05d-UTC",
 						Value:    time.Date(2020, 1, 5, 0, 0, 0, 0, time.UTC),
 					},
 				},
 			}, n)
 		})
 
-		t.Run("missing location part", func(t *testing.T) {
-			n, err := parseChunk(t, "2020y-5mt", "")
+		t.Run("date: missing month", func(t *testing.T) {
+			n, err := parseChunk(t, "2020y-5d-UTC", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{NodeSpan{0, 9}, nil, false},
+				NodeBase: NodeBase{NodeSpan{0, 12}, nil, false},
 				Statements: []Node{
-					&DateTimeLiteral{
+					&DateLiteral{
 						NodeBase: NodeBase{
-							NodeSpan{0, 9},
-							&ParsingError{UnspecifiedParsingError, INVALID_DATE_LITERAL_MISSING_LOCATION_PART_AT_THE_END},
+							NodeSpan{0, 12},
+							&ParsingError{UnspecifiedParsingError, INVALID_DATE_LITERAL_MONTH_COUNT_PROBABLY_MISSING},
 							false,
 						},
-						Raw: "2020y-5mt",
+						Raw: "2020y-5d-UTC",
 					},
 				},
 			}, n)
 		})
 
-		t.Run("year and microseconds", func(t *testing.T) {
-			n := mustparseChunk(t, "2020y-5us-UTC")
+		t.Run("date: invalid month value: 0", func(t *testing.T) {
+			n, err := parseChunk(t, "2020y-0mt-1d-UTC", "")
+			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{NodeSpan{0, 13}, nil, false},
+				NodeBase: NodeBase{NodeSpan{0, 16}, nil, false},
+				Statements: []Node{
+					&DateLiteral{
+						NodeBase: NodeBase{
+							NodeSpan{0, 16},
+							&ParsingError{UnspecifiedParsingError, INVALID_MONTH_VALUE},
+							false,
+						},
+						Raw: "2020y-0mt-1d-UTC",
+					},
+				},
+			}, n)
+		})
+
+		t.Run("date: month 05", func(t *testing.T) {
+			n := mustparseChunk(t, "2020y-05mt-1d-UTC")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 17}, nil, false},
+				Statements: []Node{
+					&DateLiteral{
+						NodeBase: NodeBase{NodeSpan{0, 17}, nil, false},
+						Raw:      "2020y-05mt-1d-UTC",
+						Value:    time.Date(2020, 5, 1, 0, 0, 0, 0, time.UTC),
+					},
+				},
+			}, n)
+		})
+
+		t.Run("date: missing location part", func(t *testing.T) {
+			n, err := parseChunk(t, "2020y-5mt-1d", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 12}, nil, false},
+				Statements: []Node{
+					&DateLiteral{
+						NodeBase: NodeBase{
+							NodeSpan{0, 12},
+							&ParsingError{UnspecifiedParsingError, INVALID_DATELIKE_LITERAL_MISSING_LOCATION_PART_AT_THE_END},
+							false,
+						},
+						Raw: "2020y-5mt-1d",
+					},
+				},
+			}, n)
+		})
+
+		t.Run("datetime: microseconds", func(t *testing.T) {
+			n := mustparseChunk(t, "2020y-1mt-1d-5us-UTC")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 20}, nil, false},
 				Statements: []Node{
 					&DateTimeLiteral{
-						NodeBase: NodeBase{NodeSpan{0, 13}, nil, false},
-						Raw:      "2020y-5us-UTC",
+						NodeBase: NodeBase{NodeSpan{0, 20}, nil, false},
+						Raw:      "2020y-1mt-1d-5us-UTC",
 						Value:    time.Date(2020, 1, 1, 0, 0, 0, 5_000, time.UTC),
 					},
 				},
 			}, n)
 		})
 
-		t.Run("up to minutes", func(t *testing.T) {
+		t.Run("datetime: up to minutes", func(t *testing.T) {
 			n := mustparseChunk(t, "2020y-10mt-5d-5h-4m-UTC")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 23}, nil, false},
@@ -7070,7 +7118,7 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("up to microseconds", func(t *testing.T) {
+		t.Run("datetime: up to microseconds", func(t *testing.T) {
 			n := mustparseChunk(t, "2020y-10mt-5d-5h-4m-5s-400ms-100us-UTC")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 38}, nil, false},
@@ -7084,7 +7132,7 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("up to microseconds (longer)", func(t *testing.T) {
+		t.Run("datetime: up to microseconds (longer)", func(t *testing.T) {
 			n := mustparseChunk(t, "2020y-6mt-12d-18h-4m-4s-349ms-665us-Local")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 41}, nil, false},
@@ -7098,7 +7146,7 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("up to microseconds (long location)", func(t *testing.T) {
+		t.Run("datetime: up to microseconds (long location)", func(t *testing.T) {
 			n := mustparseChunk(t, "2020y-6mt-12d-18h-4m-4s-349ms-665us-America/Los_Angeles")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 55}, nil, false},

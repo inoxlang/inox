@@ -412,6 +412,34 @@ func (QuantityLiteral) Kind() NodeKind {
 	return Expr
 }
 
+type YearLiteral struct {
+	NodeBase `json:"base:year-lit"`
+	Raw      string
+	Value    time.Time
+}
+
+func (l YearLiteral) ValueString() string {
+	return l.Raw
+}
+
+func (YearLiteral) Kind() NodeKind {
+	return Expr
+}
+
+type DateLiteral struct {
+	NodeBase `json:"base:date-lit"`
+	Raw      string
+	Value    time.Time
+}
+
+func (l DateLiteral) ValueString() string {
+	return l.Raw
+}
+
+func (DateLiteral) Kind() NodeKind {
+	return Expr
+}
+
 type DateTimeLiteral struct {
 	NodeBase `json:"base:datetime-lit"`
 	Raw      string

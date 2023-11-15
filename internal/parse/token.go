@@ -193,7 +193,9 @@ const (
 	REGEX_LITERAL
 	RATE_LITERAL
 	QUANTITY_LITERAL
+	YEAR_LITERAL
 	DATE_LITERAL
+	DATETIME_LITERAL
 	FLAG_LITERAL
 	RUNE_LITERAL
 	AT_HOST_LITERAL
@@ -397,7 +399,7 @@ var tokenStrings = [...]string{
 	REGEX_LITERAL:                         "<?>",
 	RATE_LITERAL:                          "<?>",
 	QUANTITY_LITERAL:                      "<?>",
-	DATE_LITERAL:                          "<?>",
+	DATETIME_LITERAL:                      "<?>",
 	FLAG_LITERAL:                          "<?>",
 	RUNE_LITERAL:                          "<?>",
 	AT_HOST_LITERAL:                       "<?>",
@@ -563,7 +565,7 @@ var tokenTypenames = [...]string{
 	REGEX_LITERAL:                         "REGEX_LITERAL",
 	RATE_LITERAL:                          "RATE_LITERAL",
 	QUANTITY_LITERAL:                      "QUANTITY_LITERAL",
-	DATE_LITERAL:                          "DATE_LITERAL",
+	DATETIME_LITERAL:                      "DATETIME_LITERAL",
 	FLAG_LITERAL:                          "FLAG_LITERAL",
 	RUNE_LITERAL:                          "RUNE_LITERAL",
 	AT_HOST_LITERAL:                       "AT_HOST_LITERAL",
@@ -829,8 +831,14 @@ func GetTokens(node Node, chunk *Chunk, addMeta bool) []Token {
 		case *QuantityLiteral:
 			tokenType = QUANTITY_LITERAL
 			raw = n.Raw
-		case *DateTimeLiteral:
+		case *YearLiteral:
+			tokenType = YEAR_LITERAL
+			raw = n.Raw
+		case *DateLiteral:
 			tokenType = DATE_LITERAL
+			raw = n.Raw
+		case *DateTimeLiteral:
+			tokenType = DATETIME_LITERAL
 			raw = n.Raw
 		case *FlagLiteral:
 			tokenType = FLAG_LITERAL

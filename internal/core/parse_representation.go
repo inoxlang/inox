@@ -495,7 +495,7 @@ func _parseRepr(b []byte, ctx *Context) (val Serializable, errorIndex int, speci
 
 			v = EmailAddress(atomBytes)
 		case rstateDate:
-			date, err := parse.ParseDateLiteral(atomBytes)
+			date, _, err := parse.ParseDateLikeLiteral(atomBytes)
 			if err != nil {
 				index = len(atomBytes)
 				break

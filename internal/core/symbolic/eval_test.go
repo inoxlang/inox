@@ -220,7 +220,7 @@ func TestSymbolicEval(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Empty(t, state.errors())
 
-		expectedDate, _ := parse.ParseDateLiteral([]byte("2020y-UTC"))
+		expectedDate, _, _ := parse.ParseDateLikeLiteral([]byte("2020y-UTC"))
 		assert.Equal(t, NewDateTime(expectedDate), res)
 	})
 

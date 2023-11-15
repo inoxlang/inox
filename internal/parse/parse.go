@@ -31,14 +31,20 @@ const (
 	DEFAULT_TIMEOUT       = 20 * time.Millisecond
 	DEFAULT_NO_CHECK_FUEL = 10
 
-	LOOSE_URL_EXPR_PATTERN            = "^(@[a-zA-Z0-9_-]+|https?:\\/\\/([-\\w]+|(www\\.)?[-a-zA-Z0-9@:%._+~#=]{1,64}\\.[a-zA-Z0-9]{1,6}\\b|\\{[$]{0,2}[-\\w]+\\}))([{?#/][-a-zA-Z0-9@:%_+.~#?&//=${}]*)$"
-	LOOSE_HOST_PATTERN_PATTERN        = "^([a-z0-9+]+)?:\\/\\/([-\\w]+|[*]+|(www\\.)?[-a-zA-Z0-9.*]{1,64}\\.[a-zA-Z0-9*]{1,6})(:[0-9]{1,5})?$"
-	LOOSE_HOST_PATTERN                = "^([a-z0-9+]+)?:\\/\\/([-\\w]+|(www\\.)?[-a-zA-Z0-9.]{1,64}\\.[a-zA-Z0-9]{1,6})(:[0-9]{1,5})?$"
-	URL_PATTERN                       = "^([a-z0-9+]+):\\/\\/([-\\w]+|(www\\.)?[-a-zA-Z0-9@:%._+~#=]{1,64}\\.[a-zA-Z0-9]{1,6})\\b([-a-zA-Z0-9@:%_+.~#?&//=]*)$"
-	NO_LOCATION_DATE_LITERAL_PATTERN  = "^(\\d+y)(-\\d{1,2}mt)?(-\\d{1,2}d)?(-\\d{1,2}h)?(-\\d{1,2}m)?(-\\d{1,2}s)?(-\\d{1,3}ms)?(-\\d{1,3}us)?"
-	_NO_LOCATION_DATE_LITERAL_PATTERN = NO_LOCATION_DATE_LITERAL_PATTERN + "$"
-	DATE_LITERAL_PATTERN              = NO_LOCATION_DATE_LITERAL_PATTERN + "(-[a-zA-Z_/]+[a-zA-Z_])$"
-	STRICT_EMAIL_ADDRESS_PATTERN      = "(?i)(^[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,24}$)"
+	//URL & host
+
+	LOOSE_URL_EXPR_PATTERN     = "^(@[a-zA-Z0-9_-]+|https?:\\/\\/([-\\w]+|(www\\.)?[-a-zA-Z0-9@:%._+~#=]{1,64}\\.[a-zA-Z0-9]{1,6}\\b|\\{[$]{0,2}[-\\w]+\\}))([{?#/][-a-zA-Z0-9@:%_+.~#?&//=${}]*)$"
+	LOOSE_HOST_PATTERN_PATTERN = "^([a-z0-9+]+)?:\\/\\/([-\\w]+|[*]+|(www\\.)?[-a-zA-Z0-9.*]{1,64}\\.[a-zA-Z0-9*]{1,6})(:[0-9]{1,5})?$"
+	LOOSE_HOST_PATTERN         = "^([a-z0-9+]+)?:\\/\\/([-\\w]+|(www\\.)?[-a-zA-Z0-9.]{1,64}\\.[a-zA-Z0-9]{1,6})(:[0-9]{1,5})?$"
+	URL_PATTERN                = "^([a-z0-9+]+):\\/\\/([-\\w]+|(www\\.)?[-a-zA-Z0-9@:%._+~#=]{1,64}\\.[a-zA-Z0-9]{1,6})\\b([-a-zA-Z0-9@:%_+.~#?&//=]*)$"
+
+	//date like
+
+	NO_LOCATION_DATELIKE_LITERAL_PATTERN  = "^(\\d+y)(?:|(-\\d{1,2}mt)(-\\d{1,2}d)(-\\d{1,2}h)?(-\\d{1,2}m)?(-\\d{1,2}s)?(-\\d{1,3}ms)?(-\\d{1,3}us)?)"
+	_NO_LOCATION_DATELIKE_LITERAL_PATTERN = NO_LOCATION_DATELIKE_LITERAL_PATTERN + "$"
+	DATELIKE_LITERAL_PATTERN              = NO_LOCATION_DATELIKE_LITERAL_PATTERN + "(-[a-zA-Z_/]+[a-zA-Z_])$"
+
+	STRICT_EMAIL_ADDRESS_PATTERN = "(?i)(^[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,24}$)"
 
 	NO_OTHERPROPS_PATTERN_NAME = "no"
 
@@ -47,6 +53,8 @@ const (
 )
 
 var (
+	ErrUnreachable = errors.New("unreachable")
+
 	KEYWORDS                     = tokenStrings[IF_KEYWORD : OR_KEYWORD+1]
 	PREINIT_KEYWORD_STR          = tokenStrings[PREINIT_KEYWORD]
 	MANIFEST_KEYWORD_STR         = tokenStrings[MANIFEST_KEYWORD]
@@ -55,17 +63,22 @@ var (
 	READONLY_KEYWORD_STR         = tokenStrings[READONLY_KEYWORD]
 	SCHEMES                      = []string{"http", "https", "ws", "wss", "ldb", "odb", "file", "mem", "s3"}
 
-	//regexes
-	URL_REGEX                      = regexp.MustCompile(URL_PATTERN)
-	LOOSE_HOST_REGEX               = regexp.MustCompile(LOOSE_HOST_PATTERN)
-	LOOSE_HOST_PATTERN_REGEX       = regexp.MustCompile(LOOSE_HOST_PATTERN_PATTERN)
-	LOOSE_URL_EXPR_REGEX           = regexp.MustCompile(LOOSE_URL_EXPR_PATTERN)
-	ContainsSpace                  = regexp.MustCompile(`\s`).MatchString
-	NO_LOCATION_DATE_LITERAL_REGEX = regexp.MustCompile(_NO_LOCATION_DATE_LITERAL_PATTERN)
-	DATE_LITERAL_REGEX             = regexp.MustCompile(DATE_LITERAL_PATTERN)
-	STRICT_EMAIL_ADDRESS_REGEX     = regexp.MustCompile(STRICT_EMAIL_ADDRESS_PATTERN)
+	//URL & host regexes
 
-	ErrUnreachable = errors.New("unreachable")
+	URL_REGEX                = regexp.MustCompile(URL_PATTERN)
+	LOOSE_HOST_REGEX         = regexp.MustCompile(LOOSE_HOST_PATTERN)
+	LOOSE_HOST_PATTERN_REGEX = regexp.MustCompile(LOOSE_HOST_PATTERN_PATTERN)
+	LOOSE_URL_EXPR_REGEX     = regexp.MustCompile(LOOSE_URL_EXPR_PATTERN)
+
+	//date regexes
+
+	NO_LOCATION_DATELIKE_LITERAL_REGEX = regexp.MustCompile(_NO_LOCATION_DATELIKE_LITERAL_PATTERN)
+	DATELIKE_LITERAL_REGEX             = regexp.MustCompile(DATELIKE_LITERAL_PATTERN)
+
+	//other regexes
+
+	STRICT_EMAIL_ADDRESS_REGEX = regexp.MustCompile(STRICT_EMAIL_ADDRESS_PATTERN)
+	ContainsSpace              = regexp.MustCompile(`\s`).MatchString
 )
 
 // parses a file module, resultErr is either a non-syntax error or an aggregation of syntax errors (*ParsingErrorAggregation).
@@ -5507,16 +5520,101 @@ func (p *parser) parseCallArgsNoParenthesis(call *CallExpression) {
 	}
 }
 
-func ParseDateLiteral(braw []byte) (date time.Time, parsingErr *ParsingError) {
+type DateLikeLiteralKind int
+
+const (
+	YearLit DateLikeLiteralKind = iota + 1
+	DateLit
+	DateTimeLit
+)
+
+// ParseDateLikeLiteral parses a date-like literal (year, date or datetime). If there is a parsing error,
+// the kind result is set to the best guess.
+func ParseDateLikeLiteral(braw []byte) (date time.Time, kind DateLikeLiteralKind, parsingErr *ParsingError) {
 	if len(braw) > 70 {
-		return time.Time{}, &ParsingError{UnspecifiedParsingError, INVALID_DATE_LITERAL}
+		return time.Time{}, DateTimeLit, &ParsingError{UnspecifiedParsingError, INVALID_DATE_LIKE_LITERAL}
 	}
 
-	if !DATE_LITERAL_REGEX.Match(braw) {
-		if NO_LOCATION_DATE_LITERAL_REGEX.Match(braw) {
-			return time.Time{}, &ParsingError{UnspecifiedParsingError, INVALID_DATE_LITERAL_MISSING_LOCATION_PART_AT_THE_END}
+	if !DATELIKE_LITERAL_REGEX.Match(braw) {
+		dashCount := bytes.Count(braw, []byte{'-'})
+
+		//almost ok but location is missing
+		if NO_LOCATION_DATELIKE_LITERAL_REGEX.Match(braw) {
+			var estimatedKind DateLikeLiteralKind = DateTimeLit
+			switch dashCount {
+			case 0:
+				estimatedKind = YearLit
+			case 2:
+				estimatedKind = DateLit
+			default:
+				estimatedKind = DateTimeLit
+			}
+
+			return time.Time{}, estimatedKind, &ParsingError{UnspecifiedParsingError, INVALID_DATELIKE_LITERAL_MISSING_LOCATION_PART_AT_THE_END}
 		}
-		return time.Time{}, &ParsingError{UnspecifiedParsingError, INVALID_DATE_LITERAL}
+
+		hasDays := false
+		hasMonths := false
+		hasHours := false
+		hasMinutes := false
+		hasSeconds := false
+		hasMicroseconds := false
+
+		for i, c := range braw {
+			// detect the sequence <digit> <alpha> ('-' | <alpha> | EOF)
+			if isDecDigit(rune(c)) &&
+				i < len(braw)-1 &&
+				isAlpha(rune(braw[i+1])) &&
+				(i == len(braw)-2 || braw[i+2] == '-' || isAlpha(rune(braw[i+2]))) {
+				nextChar := braw[i+1]
+				switch nextChar {
+				case 'm':
+					if i < len(braw)-2 && braw[i+2] == '-' {
+						hasMinutes = true
+					} else {
+						hasMonths = true
+					}
+				case 'd':
+					hasDays = true
+				case 's':
+					hasSeconds = true
+				case 'h':
+					hasHours = true
+				case 'u':
+					hasMicroseconds = true
+				}
+			}
+		}
+
+		estimatedKind := DateTimeLit
+		errorMessage := INVALID_DATE_LIKE_LITERAL
+
+		switch {
+		case hasHours || hasMinutes || hasSeconds || hasMicroseconds:
+			estimatedKind = DateTimeLit
+
+			if !hasMonths && !hasDays {
+				errorMessage = INVALID_DATETIME_LITERAL_BOTH_MONTH_AND_DAY_COUNT_PROBABLY_MISSING
+			} else if !hasDays {
+				errorMessage = INVALID_DATETIME_LITERAL_DAY_COUNT_PROBABLY_MISSING
+			} else if !hasMonths {
+				errorMessage = INVALID_DATETIME_LITERAL_MONTH_COUNT_PROBABLY_MISSING
+			}
+
+		case !hasDays && !hasMonths:
+			estimatedKind = YearLit
+			errorMessage = INVALID_YEAR_LITERAL
+
+		case hasDays && !hasMonths:
+			estimatedKind = DateLit
+			errorMessage = INVALID_DATE_LITERAL_MONTH_COUNT_PROBABLY_MISSING
+
+		case hasMonths && !hasDays:
+			estimatedKind = DateLit
+			errorMessage = INVALID_DATE_LITERAL_DAY_COUNT_PROBABLY_MISSING
+		}
+
+		return time.Time{}, estimatedKind, &ParsingError{UnspecifiedParsingError, errorMessage}
 	}
 
 	parts := bytes.Split(braw, []byte{'-'})
@@ -5529,32 +5627,47 @@ func ParseDateLiteral(braw []byte) (date time.Time, parsingErr *ParsingError) {
 	ms := "0"
 	us := "0"
 
+	if len(parts) > 2 {
+		if len(parts) > 4 {
+			kind = DateTimeLit
+		} else {
+			//<year>-<month>-<day>-<location>
+			kind = DateLit
+		}
+	} else {
+		//<year>-<location>
+		kind = YearLit
+	}
+
 	for _, part := range parts[1 : len32(parts)-1] {
 		switch part[len32(part)-1] {
 		case 't':
 			month = string(part[:len32(part)-2])
 
 			if len(month) == 0 {
-				return time.Time{}, &ParsingError{UnspecifiedParsingError, MISSING_MONTH_VALUE}
+				parsingErr = &ParsingError{UnspecifiedParsingError, MISSING_MONTH_VALUE}
+				return
 			}
 
 			if month[0] == '0' {
 				if len(month) == 1 || !isDecDigit(rune(month[1])) {
-					return time.Time{}, &ParsingError{UnspecifiedParsingError, INVALID_MONTH_VALUE}
+					parsingErr = &ParsingError{UnspecifiedParsingError, INVALID_MONTH_VALUE}
+					return
 				}
 				month = month[1:]
 			}
-
 		case 'd':
 			day = string(part[:len32(part)-1])
 
 			if len(day) == 0 {
-				return time.Time{}, &ParsingError{UnspecifiedParsingError, MISSING_MONTH_VALUE}
+				parsingErr = &ParsingError{UnspecifiedParsingError, MISSING_DAY_VALUE}
+				return
 			}
 
 			if day[0] == '0' {
 				if len(day) == 1 || !isDecDigit(rune(day[1])) {
-					return time.Time{}, &ParsingError{UnspecifiedParsingError, INVALID_DAY_VALUE}
+					parsingErr = &ParsingError{UnspecifiedParsingError, INVALID_DAY_VALUE}
+					return
 				}
 				day = day[1:]
 			}
@@ -5582,40 +5695,49 @@ func ParseDateLiteral(braw []byte) (date time.Time, parsingErr *ParsingError) {
 
 	loc, err := time.LoadLocation(locationPart)
 	if err != nil {
-		return time.Time{}, &ParsingError{UnspecifiedParsingError, fmt.Sprintf("invalid time location in literal: %s", err)}
+		parsingErr = &ParsingError{UnspecifiedParsingError, fmt.Sprintf("invalid time location in literal: %s", err)}
+		return
 	}
 
 	nanoseconds := 1_000*mustAtoi(us) + 1_000_000*mustAtoi(ms)
 
 	return time.Date(
 		mustAtoi(year), time.Month(mustAtoi(month)), mustAtoi(day),
-		mustAtoi(hour), mustAtoi(minute), mustAtoi(second), nanoseconds, loc), nil
+		mustAtoi(hour), mustAtoi(minute), mustAtoi(second), nanoseconds, loc), kind, nil
 }
 
-func (p *parser) parseDateLiterals(start int32) *DateTimeLiteral {
+func (p *parser) parseDateLikeLiterals(start int32) Node {
 	p.panicIfContextDone()
 
-	literal := &DateTimeLiteral{
-		NodeBase: NodeBase{
-			NodeSpan{start, p.i},
-			nil,
-			false,
-		},
+	base := NodeBase{
+		NodeSpan{start, p.i},
+		nil,
+		false,
 	}
+
 	p.i++
+	base.Span.End = p.i
 
 	if p.i >= p.len {
-		literal.Err = &ParsingError{UnspecifiedParsingError, UNTERMINATED_DATE_LITERAL}
-		return literal
+		base.Err = &ParsingError{UnspecifiedParsingError, INVALID_DATELIKE_LITERAL_MISSING_LOCATION_PART_AT_THE_END}
+		return &YearLiteral{
+			NodeBase: base,
+			Raw:      string(p.s[start:p.i]),
+		}
 	}
 
 	r := p.s[p.i]
 
 	if r == '-' {
 		p.i++
-		if p.i >= p.len {
-			literal.Err = &ParsingError{UnspecifiedParsingError, UNTERMINATED_DATE_LITERAL}
-			return literal
+		base.Span.End = p.i
+
+		if p.i >= p.len || isUnpairedOrIsClosingDelim(p.s[p.i]) {
+			base.Err = &ParsingError{UnspecifiedParsingError, INVALID_DATELIKE_LITERAL_MISSING_LOCATION_PART_AT_THE_END}
+			return &YearLiteral{
+				NodeBase: base,
+				Raw:      string(p.s[start:p.i]),
+			}
 		}
 	}
 
@@ -5628,20 +5750,42 @@ func (p *parser) parseDateLiterals(start int32) *DateTimeLiteral {
 		r = p.s[p.i]
 	}
 
-	literal.Span.End = p.i
-	literal.Raw = string(p.s[start:p.i])
-	braw := []byte(literal.Raw)
+	base.Span.End = p.i
+	raw := string(p.s[start:p.i])
+	braw := []byte(raw)
 
-	date, err := ParseDateLiteral(braw)
+	var value time.Time
+
+	date, kind, err := ParseDateLikeLiteral(braw)
 
 	if err != nil {
-		literal.Err = err
+		base.Err = err
 	} else {
-		literal.Value = date
+		value = date
 	}
 
-	return literal
-
+	switch kind {
+	case YearLit:
+		return &YearLiteral{
+			NodeBase: base,
+			Raw:      raw,
+			Value:    value,
+		}
+	case DateLit:
+		return &DateLiteral{
+			NodeBase: base,
+			Raw:      raw,
+			Value:    value,
+		}
+	case DateTimeLit:
+		return &DateTimeLiteral{
+			NodeBase: base,
+			Raw:      raw,
+			Value:    value,
+		}
+	default:
+		panic(ErrUnreachable)
+	}
 }
 
 func (p *parser) parsePortLiteral() *PortLiteral {
@@ -6158,7 +6302,7 @@ func (p *parser) parseQuantityOrRateLiteral(start int32, fValue float64, float b
 
 	//date literal
 	if !float && p.s[unitStart] == 'y' && (p.i < p.len-1 && p.s[p.i+1] == '-') {
-		return p.parseDateLiterals(start)
+		return p.parseDateLikeLiterals(start)
 	}
 
 	p.i++
