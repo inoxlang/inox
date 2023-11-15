@@ -77,7 +77,7 @@ var (
 	EMAIL_ADDR_TYPE         = reflect.TypeOf(EmailAddress(""))
 	URL_PATT_TYPE           = reflect.TypeOf(URLPattern(""))
 	FILE_MODE_TYPE          = reflect.TypeOf(FileMode(0))
-	DATE_TYPE               = reflect.TypeOf(Date{})
+	DATE_TYPE               = reflect.TypeOf(DateTime{})
 	EVENT_TYPE              = reflect.TypeOf((*Event)(nil))
 	MUTATION_TYPE           = reflect.TypeOf(Mutation{})
 	MSG_TYPE                = reflect.TypeOf(Message{})
@@ -316,7 +316,7 @@ func evalSimpleValueLiteral(n parse.SimpleValueLiteral, global *GlobalState) (Se
 	case *parse.QuantityLiteral:
 		return evalQuantity(node.Values, node.Units)
 	case *parse.DateLiteral:
-		return Date(node.Value), nil
+		return DateTime(node.Value), nil
 	case *parse.RateLiteral:
 		q, err := evalQuantity(node.Values, node.Units)
 		if err != nil {

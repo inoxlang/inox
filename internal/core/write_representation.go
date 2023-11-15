@@ -911,11 +911,11 @@ func (d Duration) WriteRepresentation(ctx *Context, w io.Writer, config *ReprCon
 	return err
 }
 
-func (d Date) write(w io.Writer) (int, error) {
+func (d DateTime) write(w io.Writer) (int, error) {
 	return w.Write(utils.StringAsBytes(commonfmt.FmtInoxDate(time.Time(d))))
 }
 
-func (d Date) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
+func (d DateTime) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	_, err := d.write(w)
 	return err
 }

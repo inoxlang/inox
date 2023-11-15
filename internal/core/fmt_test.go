@@ -13,7 +13,7 @@ func TestDateFormat(t *testing.T) {
 
 	layout := time.UnixDate
 	format := NewDateFormat(layout, "unix-date")
-	date := Date(time.Date(2022, 1, 1, 1, 1, 1, 0, time.UTC))
+	date := DateTime(time.Date(2022, 1, 1, 1, 1, 1, 0, time.UTC))
 
 	//check formatting
 	res, err := Fmt(ctx, format, date)

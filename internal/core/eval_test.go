@@ -1827,7 +1827,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		res, err := Eval(code, state, false)
 		assert.NoError(t, err)
 
-		assert.EqualValues(t, Date(time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)), res)
+		assert.EqualValues(t, DateTime(time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)), res)
 	})
 
 	t.Run("rate literal : byte rate", func(t *testing.T) {

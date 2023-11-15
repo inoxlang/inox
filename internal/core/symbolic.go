@@ -222,7 +222,7 @@ func init() {
 				return Duration(d)
 			},
 			CreateDate: func(t time.Time) any {
-				return Date(t)
+				return DateTime(t)
 			},
 			CreateByte: func(b byte) any {
 				return Byte(b)
@@ -1044,8 +1044,8 @@ func (f *GoFunction) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbo
 	return symbolicGoFunc, nil
 }
 
-func (d Date) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
-	return symbolic.NewDate(time.Time(d)), nil
+func (d DateTime) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
+	return symbolic.NewDateTime(time.Time(d)), nil
 }
 
 func (d Duration) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {

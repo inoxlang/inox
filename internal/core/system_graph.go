@@ -116,7 +116,7 @@ func (k SystemGraphEdgeKind) DefaultText() string {
 type SystemGraphEvent struct {
 	value0Ptr, value1Ptr uintptr
 	text                 string
-	date                 Date
+	date                 DateTime
 }
 
 func (e SystemGraphEvent) Prop(ctx *Context, name string) Value {

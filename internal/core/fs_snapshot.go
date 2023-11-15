@@ -82,8 +82,8 @@ type AddressableContent interface {
 type EntrySnapshotMetadata struct {
 	AbsolutePath     Path
 	Size             ByteCount
-	CreationTime     Date
-	ModificationTime Date
+	CreationTime     DateTime
+	ModificationTime DateTime
 	Mode             FileMode
 	ChildNames       []string
 	ChecksumSHA256   [32]byte //zero if directory

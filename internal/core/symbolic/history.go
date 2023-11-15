@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	VALUE_HISTORY_PROPNAMES = []string{"value_at", "forget_last", "last-value", "selected-date", "value-at-selection"}
+	VALUE_HISTORY_PROPNAMES = []string{"value_at", "forget_last", "last-value", "selected-datetime", "value-at-selection"}
 
 	ANY_VALUE_HISTORY = &ValueHistory{}
 )
@@ -64,7 +64,7 @@ func (h *ValueHistory) IsShared() bool {
 
 func (h *ValueHistory) Prop(name string) Value {
 	switch name {
-	case "last-value", "value-at-selection", "selected-date":
+	case "last-value", "value-at-selection", "selected-datetime":
 		return ANY
 	}
 	method, ok := h.GetGoMethod(name)
@@ -76,8 +76,8 @@ func (h *ValueHistory) Prop(name string) Value {
 
 func (h *ValueHistory) SetProp(name string, value Value) (IProps, error) {
 	switch name {
-	case "selected-date":
-		_, ok := value.(*Date)
+	case "selected-datetime":
+		_, ok := value.(*DateTime)
 		if !ok {
 			return nil, commonfmt.FmtFailedToSetPropXAcceptXButZProvided(name, "date", Stringify(value))
 		}
@@ -99,7 +99,7 @@ func (h *ValueHistory) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPri
 	return
 }
 
-func (h *ValueHistory) ValueAt(ctx *Context, d *Date) Value {
+func (h *ValueHistory) ValueAt(ctx *Context, d *DateTime) Value {
 	return ANY
 }
 

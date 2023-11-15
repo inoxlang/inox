@@ -9,7 +9,7 @@ var (
 	_ = []PotentiallyConcretizable{
 		(*Bool)(nil), (*Int)(nil), (*Float)(nil), Nil,
 
-		(*ByteCount)(nil), (*LineCount)(nil), (*ByteRate)(nil), (*SimpleRate)(nil), (*Duration)(nil), (*Date)(nil),
+		(*ByteCount)(nil), (*LineCount)(nil), (*ByteRate)(nil), (*SimpleRate)(nil), (*Duration)(nil), (*DateTime)(nil),
 
 		(*Rune)(nil), (*String)(nil), (*Path)(nil), (*URL)(nil), (*Host)(nil), (*Scheme)(nil),
 		(*Identifier)(nil),

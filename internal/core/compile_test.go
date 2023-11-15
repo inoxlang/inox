@@ -42,7 +42,7 @@ func TestCompileModule(t *testing.T) {
 				MakeInstruction(OpPushConstant, 0),
 				MakeInstruction(OpSuspendVM),
 			),
-			[]Value{Date(time.Date(2020, 5, 3, 0, 0, 0, 0, time.UTC))},
+			[]Value{DateTime(time.Date(2020, 5, 3, 0, 0, 0, 0, time.UTC))},
 		)
 
 		expectBytecode(t, `1s`,

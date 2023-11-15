@@ -35,7 +35,7 @@ var (
 	ANY_RUNE_RANGE     = &RuneRange{}
 	ANY_QUANTITY_RANGE = &QuantityRange{element: ANY_SERIALIZABLE}
 	ANY_FILEMODE       = &FileMode{}
-	ANY_DATE           = &Date{}
+	ANY_DATETIME       = &DateTime{}
 	ANY_DURATION       = &Duration{}
 	ANY_BYTECOUNT      = &ByteCount{}
 	ANY_LINECOUNT      = &LineCount{}
@@ -533,25 +533,25 @@ func (o *Option) WidestOfType() Value {
 	return ANY_OPTION
 }
 
-// A Date represents a symbolic Date.
-type Date struct {
+// A DateTime represents a symbolic DateTime.
+type DateTime struct {
 	SerializableMixin
 	value    time.Time
 	hasValue bool
 }
 
-func NewDate(v time.Time) *Date {
-	return &Date{
+func NewDateTime(v time.Time) *DateTime {
+	return &DateTime{
 		value:    v,
 		hasValue: true,
 	}
 }
 
-func (d *Date) Test(v Value, state RecTestCallState) bool {
+func (d *DateTime) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
-	other, ok := v.(*Date)
+	other, ok := v.(*DateTime)
 	if !ok {
 		return false
 	}
@@ -561,19 +561,19 @@ func (d *Date) Test(v Value, state RecTestCallState) bool {
 	return other.hasValue && d.value == other.value
 }
 
-func (d *Date) IsConcretizable() bool {
+func (d *DateTime) IsConcretizable() bool {
 	return d.hasValue
 }
 
-func (d *Date) Concretize(ctx ConcreteContext) any {
+func (d *DateTime) Concretize(ctx ConcreteContext) any {
 	if !d.IsConcretizable() {
 		panic(ErrNotConcretizable)
 	}
 	return extData.ConcreteValueFactories.CreateDate(d.value)
 }
 
-func (d *Date) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
-	w.WriteName("date")
+func (d *DateTime) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("datetime")
 	if d.hasValue {
 		w.WriteByte('(')
 		w.WriteString(commonfmt.FmtInoxDate(d.value))
@@ -581,8 +581,8 @@ func (d *Date) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig
 	}
 }
 
-func (d *Date) WidestOfType() Value {
-	return ANY_DATE
+func (d *DateTime) WidestOfType() Value {
+	return ANY_DATETIME
 }
 
 // A Duration represents a symbolic Duration.
@@ -703,7 +703,7 @@ func (f *FileInfo) Prop(name string) Value {
 	case "mode":
 		return ANY_FILEMODE
 	case "mod-time":
-		return ANY_DATE
+		return ANY_DATETIME
 	case "is-dir":
 		return ANY_BOOL
 	}

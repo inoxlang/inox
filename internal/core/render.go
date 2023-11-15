@@ -156,11 +156,11 @@ func (n Int) Render(ctx *Context, w io.Writer, config RenderingInput) (int, erro
 	}
 }
 
-func (d Date) IsRecursivelyRenderable(ctx *Context, input RenderingInput) bool {
+func (d DateTime) IsRecursivelyRenderable(ctx *Context, input RenderingInput) bool {
 	return true
 }
 
-func (d Date) Render(ctx *Context, w io.Writer, config RenderingInput) (int, error) {
+func (d DateTime) Render(ctx *Context, w io.Writer, config RenderingInput) (int, error) {
 	var format *DateFormat
 
 	if config.OptionalUserConfig != nil {

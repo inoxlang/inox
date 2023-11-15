@@ -300,7 +300,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 		}
 		return extData.ToSymbolicValue(v, false)
 	case *parse.DateLiteral:
-		return NewDate(n.Value), nil
+		return NewDateTime(n.Value), nil
 	case *parse.RateLiteral:
 		v, err := extData.GetRate(n.Values, n.Units, n.DivUnit)
 		if err != nil {

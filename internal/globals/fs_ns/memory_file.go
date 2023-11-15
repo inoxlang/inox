@@ -150,9 +150,9 @@ func (f *InMemfile) FileInfoContentNotLocked() core.FileInfo {
 		AbsPath_:        f.absPath,
 		Mode_:           core.FileMode(f.mode),
 		Size_:           core.ByteCount(f.content.lenNoLock()),
-		ModTime_:        core.Date(f.content.ModifTime()),
+		ModTime_:        core.DateTime(f.content.ModifTime()),
 		HasCreationTime: true,
-		CreationTime_:   core.Date(f.content.creationTime),
+		CreationTime_:   core.DateTime(f.content.creationTime),
 	}
 }
 

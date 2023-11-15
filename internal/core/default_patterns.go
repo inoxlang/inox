@@ -507,7 +507,7 @@ var (
 	DATE_PATTERN = &TypePattern{
 		Type:          DATE_TYPE,
 		Name:          "date",
-		SymbolicValue: &symbolic.Date{},
+		SymbolicValue: &symbolic.DateTime{},
 	}
 
 	PATTERN_PATTERN = &TypePattern{

@@ -68,7 +68,7 @@ type MetaFilesystem struct {
 	openFiles  map[ /*normalized path*/ string]map[*metaFsFile]struct{}
 
 	// last modification times of non-dir files
-	lastModificationTimes     map[ /*normalized path*/ string]core.Date
+	lastModificationTimes     map[ /*normalized path*/ string]core.DateTime
 	lastModificationTimesLock sync.RWMutex
 
 	//all the metadata about files is stored in this Key value store.
@@ -147,7 +147,7 @@ func OpenMetaFilesystem(ctx *core.Context, underlying billy.Basic, opts MetaFile
 		ctx:                   ctx,
 		underlying:            underlying,
 		openFiles:             map[string]map[*metaFsFile]struct{}{},
-		lastModificationTimes: map[string]core.Date{},
+		lastModificationTimes: map[string]core.DateTime{},
 
 		metadata:                 kv,
 		maxUsableSpace:           maxUsableSpace,
@@ -169,7 +169,7 @@ func OpenMetaFilesystem(ctx *core.Context, underlying billy.Basic, opts MetaFile
 	}
 
 	if !exists {
-		now := core.Date(time.Now())
+		now := core.DateTime(time.Now())
 		metadata := &metaFsFileMetadata{
 			path:             rootPath,
 			mode:             0o700 | fs.ModeDir,
@@ -207,7 +207,7 @@ func OpenMetaFilesystem(ctx *core.Context, underlying billy.Basic, opts MetaFile
 		}
 
 		if time.Time(metadata.modificationTime).Before(info.ModTime()) {
-			metadata.modificationTime = core.Date(info.ModTime())
+			metadata.modificationTime = core.DateTime(info.ModTime())
 			return fls.setFileMetadata(metadata, nil)
 		}
 		return nil
@@ -273,7 +273,7 @@ func (fls *MetaFilesystem) getFileMetadata(pth core.Path, usedTx *filekv.Databas
 		return nil, false, ErrClosedFilesystem
 	}
 
-	var lastModificationTime core.Date
+	var lastModificationTime core.DateTime
 	var hasLastModifTime bool
 	func() {
 		fls.lastModificationTimesLock.RLock()
@@ -316,8 +316,8 @@ func (fls *MetaFilesystem) getFileMetadata(pth core.Path, usedTx *filekv.Databas
 	}
 
 	fileMode := record.Prop(fls.ctx, METAFS_FILE_MODE_PROPNAME).(core.FileMode)
-	creationTime := record.Prop(fls.ctx, METAFS_CREATION_TIME_PROPNAME).(core.Date)
-	modifTime := record.Prop(fls.ctx, METAFS_MODIF_TIME_PROPNAME).(core.Date)
+	creationTime := record.Prop(fls.ctx, METAFS_CREATION_TIME_PROPNAME).(core.DateTime)
+	modifTime := record.Prop(fls.ctx, METAFS_MODIF_TIME_PROPNAME).(core.DateTime)
 
 	if hasLastModifTime {
 		modifTime = lastModificationTime
@@ -887,7 +887,7 @@ func (fls *MetaFilesystem) OpenFile(filename string, flag int, perm os.FileMode)
 			return nil, fmt.Errorf("failed to create %s: parent directory %s does not exist", pth, dirPath)
 		}
 		dirMetadata.children = append(dirMetadata.children, pth.Basename())
-		dirMetadata.modificationTime = core.Date(time.Now())
+		dirMetadata.modificationTime = core.DateTime(time.Now())
 		if err := fls.setFileMetadata(dirMetadata, nil); err != nil {
 			return nil, err
 		}
@@ -901,7 +901,7 @@ func (fls *MetaFilesystem) OpenFile(filename string, flag int, perm os.FileMode)
 			underlyingFilePath = core.Path(NormalizeAsAbsolute(ulid.Make().String()))
 		}
 
-		creationTime := core.Date(time.Now())
+		creationTime := core.DateTime(time.Now())
 
 		mode := fs.FileMode(perm)
 
@@ -1141,13 +1141,13 @@ func (fls *MetaFilesystem) MkdirAllNoLock_(path string, perm os.FileMode, tx *fi
 		}
 
 		dirMetadata.children = append(dirMetadata.children, pth.Basename())
-		dirMetadata.modificationTime = core.Date(time.Now())
+		dirMetadata.modificationTime = core.DateTime(time.Now())
 		if err := fls.setFileMetadata(dirMetadata, tx); err != nil {
 			return err
 		}
 
 		//create metadata for new directory & store it
-		creationTime := core.Date(time.Now())
+		creationTime := core.DateTime(time.Now())
 
 		newDirMetadata := &metaFsFileMetadata{
 			path:             pth,
@@ -1259,7 +1259,7 @@ func (fls *MetaFilesystem) Rename(from, to string) error {
 			return fmt.Errorf("failed to remove %s from children of %s", fromPath.Basename(), fromDirPath)
 		}
 
-		fromDirMetadata.modificationTime = core.Date(time.Now())
+		fromDirMetadata.modificationTime = core.DateTime(time.Now())
 		if err := fls.setFileMetadata(fromDirMetadata, dbTx); err != nil {
 			return err
 		}
@@ -1283,7 +1283,7 @@ func (fls *MetaFilesystem) Rename(from, to string) error {
 		}
 
 		toDirMetadata.children = append(toDirMetadata.children, toPath.Basename())
-		toDirMetadata.modificationTime = core.Date(time.Now())
+		toDirMetadata.modificationTime = core.DateTime(time.Now())
 
 		if err := fls.setFileMetadata(toDirMetadata, dbTx); err != nil {
 			return err
@@ -1387,7 +1387,7 @@ func (fls *MetaFilesystem) Remove(filename string) error {
 			panic(core.ErrUnreachable)
 		}
 
-		parentMetadata.modificationTime = core.Date(time.Now())
+		parentMetadata.modificationTime = core.DateTime(time.Now())
 		if err := fls.setFileMetadata(parentMetadata, dbTx); err != nil {
 			return err
 		}
@@ -1477,8 +1477,8 @@ type metaFsFileMetadata struct {
 	path             core.Path
 	concreteFile     *core.Path //nil if dir
 	mode             fs.FileMode
-	creationTime     core.Date
-	modificationTime core.Date
+	creationTime     core.DateTime
+	modificationTime core.DateTime
 
 	//the targets of symlinks are directly stored in the metadata,
 	//there is no underlying file.

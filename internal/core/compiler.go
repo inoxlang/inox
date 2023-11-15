@@ -258,7 +258,7 @@ func (c *compiler) Compile(node parse.Node) error {
 	case *parse.PropertyNameLiteral:
 		c.emit(node, OpPushConstant, c.addConstant(PropertyName(node.Name)))
 	case *parse.DateLiteral:
-		c.emit(node, OpPushConstant, c.addConstant(Date(node.Value)))
+		c.emit(node, OpPushConstant, c.addConstant(DateTime(node.Value)))
 	//quantities & rates
 	case *parse.QuantityLiteral:
 		//This implementation does not allow custom units.

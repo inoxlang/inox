@@ -172,7 +172,7 @@ func (s *ExecutedStep) Prop(name string) Value {
 	case "result":
 		return ANY
 	case "end_time":
-		return ANY_DATE
+		return ANY_DATETIME
 	}
 
 	method, ok := s.GetGoMethod(name)

@@ -34,7 +34,7 @@ func Subscribe(ctx *Context, subscriber Subscriber, publisher Value, filter Patt
 	sub := &Subscription{
 		publisher:    publisher,
 		subscriber:   subscriber,
-		creationDate: Date(time.Now()),
+		creationDate: DateTime(time.Now()),
 		filter:       filter,
 	}
 
@@ -59,7 +59,7 @@ func Publish(ctx *Context, publisher Value, data Value) error {
 	pub := &Publication{
 		data:            data,
 		publisher:       publisher,
-		publicationDate: Date(time.Now()),
+		publicationDate: DateTime(time.Now()),
 	}
 
 	subs.ReceivePublications(ctx, pub)
@@ -72,7 +72,7 @@ type Publication struct {
 	//internalId      InternalPublicationId
 	data            Value // immutable value
 	publisher       Value
-	publicationDate Date
+	publicationDate DateTime
 }
 
 type InternalPublicationId int64
@@ -85,6 +85,6 @@ func (p *Publication) Publisher() Value {
 	return p.publisher
 }
 
-func (p *Publication) PublicationDate() Date {
+func (p *Publication) PublicationDate() DateTime {
 	return p.publicationDate
 }

@@ -47,7 +47,7 @@ func TestSnapshot(t *testing.T) {
 			var change Change
 			graph.OnMutation(ctx, func(ctx *Context, mutation Mutation) (registerAgain bool) {
 				registerAgain = false
-				change = NewChange(mutation, Date(time.Now()))
+				change = NewChange(mutation, DateTime(time.Now()))
 				return
 			}, MutationWatchingConfiguration{Depth: ShallowWatching})
 
@@ -76,7 +76,7 @@ func TestSnapshot(t *testing.T) {
 			snap := utils.Must(TakeSnapshot(ctx, obj, false))
 			mutation := NewAddPropMutation(ctx, "a", Int(1), ShallowWatching, "")
 
-			newSnap, err := snap.WithChangeApplied(ctx, NewChange(mutation, Date(time.Now())))
+			newSnap, err := snap.WithChangeApplied(ctx, NewChange(mutation, DateTime(time.Now())))
 			if !assert.NoError(t, err) {
 				return
 			}

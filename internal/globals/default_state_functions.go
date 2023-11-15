@@ -385,7 +385,7 @@ func _List(ctx *core.Context, args ...core.Value) *core.List {
 }
 
 func _Event(ctx *core.Context, value core.Value) *core.Event {
-	return core.NewEvent(value, core.Date(time.Now()))
+	return core.NewEvent(value, core.DateTime(time.Now()))
 }
 
 func _Color(ctx *core.Context, firstArg core.Value, other ...core.Value) core.Color {

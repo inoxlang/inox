@@ -813,8 +813,8 @@ func (d Duration) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]u
 	return d == otherDuration
 }
 
-func (d Date) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
-	otherDate, ok := other.(Date)
+func (d DateTime) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	otherDate, ok := other.(DateTime)
 	if !ok {
 		return false
 	}

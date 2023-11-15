@@ -422,18 +422,18 @@ func mutationKindFromString(s string) (MutationKind, bool) {
 // moment in time where the mutation happpened.
 type Change struct {
 	mutation Mutation
-	date     Date
+	datetime DateTime
 }
 
-func NewChange(mutation Mutation, date Date) Change {
+func NewChange(mutation Mutation, datetime DateTime) Change {
 	return Change{
 		mutation: mutation,
-		date:     date,
+		datetime: datetime,
 	}
 }
 
-func (c Change) Date() Date {
-	return c.date
+func (c Change) DateTime() DateTime {
+	return c.datetime
 }
 
 // MutationCallbacks is used by watchables that implement OnMutation.

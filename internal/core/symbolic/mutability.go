@@ -250,7 +250,7 @@ func (d Duration) IsMutable() bool {
 	return false
 }
 
-func (d Date) IsMutable() bool {
+func (d DateTime) IsMutable() bool {
 	return false
 }
 

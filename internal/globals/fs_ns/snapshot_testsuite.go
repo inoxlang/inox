@@ -69,8 +69,8 @@ func testSnapshoting(t *testing.T, createFS func(*testing.T) (*core.Context, cor
 		assert.Equal(t, core.EntrySnapshotMetadata{
 			AbsolutePath:     "/a.txt",
 			Size:             1,
-			CreationTime:     core.Date(creationTime),
-			ModificationTime: core.Date(modTime),
+			CreationTime:     core.DateTime(creationTime),
+			ModificationTime: core.DateTime(modTime),
 			Mode:             core.FileMode(mode),
 			ChecksumSHA256:   sha256.Sum256([]byte("a")),
 		}, metadata)
@@ -111,8 +111,8 @@ func testSnapshoting(t *testing.T, createFS func(*testing.T) (*core.Context, cor
 
 		assert.Equal(t, core.EntrySnapshotMetadata{
 			AbsolutePath:     "/dir/",
-			CreationTime:     core.Date(creationTime),
-			ModificationTime: core.Date(modTime),
+			CreationTime:     core.DateTime(creationTime),
+			ModificationTime: core.DateTime(modTime),
 			Mode:             core.FileMode(info.Mode()),
 		}, metadata)
 	})
@@ -150,8 +150,8 @@ func testSnapshoting(t *testing.T, createFS func(*testing.T) (*core.Context, cor
 
 		assert.Equal(t, core.EntrySnapshotMetadata{
 			AbsolutePath:     "/dir/",
-			CreationTime:     core.Date(dirCreationTime),
-			ModificationTime: core.Date(dirModTime),
+			CreationTime:     core.DateTime(dirCreationTime),
+			ModificationTime: core.DateTime(dirModTime),
 			Mode:             core.FileMode(dirInfo.Mode()),
 			ChildNames:       []string{"file.txt"},
 		}, dirMetadata)
@@ -164,8 +164,8 @@ func testSnapshoting(t *testing.T, createFS func(*testing.T) (*core.Context, cor
 		assert.Equal(t, core.EntrySnapshotMetadata{
 			AbsolutePath:     "/dir/file.txt",
 			Size:             1,
-			CreationTime:     core.Date(fileCreationTime),
-			ModificationTime: core.Date(fileModifTime),
+			CreationTime:     core.DateTime(fileCreationTime),
+			ModificationTime: core.DateTime(fileModifTime),
 			Mode:             core.FileMode(fileInfo.Mode()),
 			ChecksumSHA256:   sha256.Sum256([]byte("a")),
 		}, fileMetadata)

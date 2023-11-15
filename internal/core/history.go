@@ -16,7 +16,7 @@ const (
 )
 
 var (
-	VALUE_HISTORY_PROPNAMES = []string{"value_at", "forget_last", "last-value", "selected-date", "value-at-selection"}
+	VALUE_HISTORY_PROPNAMES = []string{"value_at", "forget_last", "last-value", "selected-datetime", "value-at-selection"}
 )
 
 func init() {
@@ -30,9 +30,9 @@ func init() {
 type ValueHistory struct {
 	startValue *Snapshot
 	changes    []Change
-	start      Date
+	start      DateTime
 
-	selectedDate      Date
+	selectedDate      DateTime
 	providedSelection bool // if no date is provided the selected date is the current date
 
 	lock                  sync.Mutex
@@ -68,7 +68,7 @@ func NewValueHistory(ctx *Context, v InMemorySnapshotable, config *Object) *Valu
 		handle, err = current.OnMutation(ctx, func(ctx *Context, mutation Mutation) (registerAgain bool) {
 			registerAgain = true
 
-			history.AddChange(ctx, NewChange(mutation, Date(time.Now())))
+			history.AddChange(ctx, NewChange(mutation, DateTime(time.Now())))
 
 			return
 		}, MutationWatchingConfiguration{
@@ -119,7 +119,7 @@ func (h *ValueHistory) AddChange(ctx *Context, c Change) {
 	}
 }
 
-func (h *ValueHistory) ValueAt(ctx *Context, d Date) Value {
+func (h *ValueHistory) ValueAt(ctx *Context, d DateTime) Value {
 	h.lock.Lock()
 	defer h.lock.Unlock()
 
@@ -160,7 +160,7 @@ func (h *ValueHistory) LastValue(ctx *Context) Value {
 	return v
 }
 
-func (h *ValueHistory) SelectDate(ctx *Context, d Date) {
+func (h *ValueHistory) SelectDate(ctx *Context, d DateTime) {
 	h.lock.Lock()
 	defer h.lock.Unlock()
 
@@ -175,7 +175,7 @@ func (h *ValueHistory) ValueAtSelection(ctx *Context) Value {
 	return Nil
 }
 
-func (h *ValueHistory) ForgetChangesBeforeDate(ctx *Context, d Date) {
+func (h *ValueHistory) ForgetChangesBeforeDate(ctx *Context, d DateTime) {
 	h.lock.Lock()
 	defer h.lock.Unlock()
 
@@ -219,15 +219,15 @@ func (h *ValueHistory) forgetChangesBeforeIndex(ctx *Context, index int) {
 
 	copy(h.changes[0:], h.changes[index:])
 	h.changes = h.changes[:newLength]
-	h.start = lastForgottenChange.date
+	h.start = lastForgottenChange.datetime
 }
 
-func (h *ValueHistory) indexAtOrAfterMoment(d Date) (int, bool) {
+func (h *ValueHistory) indexAtOrAfterMoment(d DateTime) (int, bool) {
 	//TODO: use binary search
 	t := time.Time(d)
 
 	for i, c := range h.changes {
-		if time.Time(c.date).Equal(t) || time.Time(c.date).After(t) {
+		if time.Time(c.datetime).Equal(t) || time.Time(c.datetime).After(t) {
 			return i, true
 		}
 	}
@@ -235,13 +235,13 @@ func (h *ValueHistory) indexAtOrAfterMoment(d Date) (int, bool) {
 	return -1, false
 }
 
-func (h *ValueHistory) indexAtOrBeforeMoment(d Date) (int, bool) {
+func (h *ValueHistory) indexAtOrBeforeMoment(d DateTime) (int, bool) {
 	//TODO: use binary search
 	t := time.Time(d)
 
 	for i := len(h.changes) - 1; i >= 0; i-- {
 		c := h.changes[i]
-		if time.Time(c.date).Equal(t) || time.Time(c.date).Before(t) {
+		if time.Time(c.datetime).Equal(t) || time.Time(c.datetime).Before(t) {
 			return i, true
 		}
 	}
@@ -296,7 +296,7 @@ func (h *ValueHistory) Prop(ctx *Context, name string) Value {
 		return h.LastValue(ctx)
 	case "value-at-selection":
 		return h.ValueAtSelection(ctx)
-	case "selected-date":
+	case "selected-datetime":
 		h.lock.Lock()
 		defer h.lock.Unlock()
 		if h.providedSelection {
@@ -313,10 +313,10 @@ func (h *ValueHistory) Prop(ctx *Context, name string) Value {
 
 func (h *ValueHistory) SetProp(ctx *Context, name string, value Value) error {
 	switch name {
-	case "selected-date":
-		date, ok := value.(Date)
+	case "selected-datetime":
+		date, ok := value.(DateTime)
 		if !ok {
-			return commonfmt.FmtFailedToSetPropXAcceptXButZProvided(name, "date", fmt.Sprintf("%T", value))
+			return commonfmt.FmtFailedToSetPropXAcceptXButZProvided(name, "datetime", fmt.Sprintf("%T", value))
 		}
 		h.SelectDate(ctx, date)
 		return nil

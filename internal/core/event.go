@@ -37,12 +37,12 @@ func GetEventSourceFactory(scheme Scheme) (EventSourceFactory, bool) {
 
 // An Event represents a generic event, Event implements Value.
 type Event struct {
-	time              Date
+	time              DateTime
 	affectedResources []ResourceName //can be empty
 	value             Value
 }
 
-func NewEvent(value Value, time Date, affectedResources ...ResourceName) *Event {
+func NewEvent(value Value, time DateTime, affectedResources ...ResourceName) *Event {
 	if value.IsMutable() {
 		panic(fmt.Errorf("failed to create event: value should be immutable: %T", value))
 	}

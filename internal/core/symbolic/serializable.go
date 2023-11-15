@@ -10,7 +10,7 @@ var (
 	_ = []Serializable{
 		(*Bool)(nil), (*Int)(nil), (*Float)(nil), (*Byte)(nil), Nil,
 
-		(*ByteCount)(nil), (*LineCount)(nil), (*ByteRate)(nil), (*SimpleRate)(nil), (*Duration)(nil), (*Date)(nil),
+		(*ByteCount)(nil), (*LineCount)(nil), (*ByteRate)(nil), (*SimpleRate)(nil), (*Duration)(nil), (*DateTime)(nil),
 
 		(*Rune)(nil), (*String)(nil), (StringLike)(nil), (*AnyStringLike)(nil), (*Path)(nil), (*URL)(nil), (*Host)(nil), (*Scheme)(nil),
 		(*Identifier)(nil),

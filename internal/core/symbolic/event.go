@@ -104,7 +104,7 @@ func (e *Event) PropertyNames() []string {
 func (e *Event) Prop(name string) Value {
 	switch name {
 	case "time":
-		return &Date{}
+		return &DateTime{}
 	case "value":
 		return e.value
 	default:

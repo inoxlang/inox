@@ -67,7 +67,7 @@ func (f *metaFsFile) Write(p []byte) (n int, err error) {
 	func() {
 		f.fs.lastModificationTimesLock.Lock()
 		defer f.fs.lastModificationTimesLock.Unlock()
-		f.fs.lastModificationTimes[f.normalizedPath] = core.Date(time.Now())
+		f.fs.lastModificationTimes[f.normalizedPath] = core.DateTime(time.Now())
 	}()
 
 	//TODO: prevent leaks about underlying file
@@ -151,7 +151,7 @@ func (f *metaFsFile) Truncate(size int64) error {
 	func() {
 		f.fs.lastModificationTimesLock.Lock()
 		defer f.fs.lastModificationTimesLock.Unlock()
-		f.fs.lastModificationTimes[f.normalizedPath] = core.Date(time.Now())
+		f.fs.lastModificationTimes[f.normalizedPath] = core.DateTime(time.Now())
 	}()
 
 	err := f.underlying.Truncate(size)

@@ -185,7 +185,7 @@ func (fls *S3Filesystem) Stat(filename string) (os.FileInfo, error) {
 			AbsPath_:        core.Path(filename),
 			Size_:           core.ByteCount(file.content.Len()),
 			Mode_:           core.FileMode(file.perm),
-			ModTime_:        core.Date(file.content.ModifTime()),
+			ModTime_:        core.DateTime(file.content.ModifTime()),
 			HasCreationTime: false,
 		}, nil
 	}
@@ -223,7 +223,7 @@ func (fls *S3Filesystem) Stat(filename string) (os.FileInfo, error) {
 				AbsPath_:        core.DirPathFrom(filename),
 				Size_:           core.ByteCount(0),
 				Mode_:           core.FileMode(DIR_FMODE),
-				ModTime_:        core.Date(mostRecentModifTime),
+				ModTime_:        core.DateTime(mostRecentModifTime),
 				HasCreationTime: false,
 			}, nil
 		case <-time.After(time.Second):
@@ -241,7 +241,7 @@ func (fls *S3Filesystem) Stat(filename string) (os.FileInfo, error) {
 		AbsPath_:        core.Path(filename),
 		Size_:           core.ByteCount(info.Size),
 		Mode_:           core.FileMode(perm),
-		ModTime_:        core.Date(info.LastModified),
+		ModTime_:        core.DateTime(info.LastModified),
 		HasCreationTime: false,
 	}, nil
 }

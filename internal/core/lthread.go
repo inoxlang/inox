@@ -519,7 +519,7 @@ func (s *ExecutedStep) Prop(ctx *Context, name string) Value {
 	case "result":
 		return s.result
 	case "end_time":
-		return Date(s.endTime)
+		return DateTime(s.endTime)
 	}
 	method, ok := s.GetGoMethod(name)
 	if !ok {

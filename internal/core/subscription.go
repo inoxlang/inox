@@ -18,7 +18,7 @@ type Subscription struct {
 	lock         sync.Mutex
 	publisher    Value
 	subscriber   Subscriber
-	creationDate Date
+	creationDate DateTime
 	filter       Pattern
 }
 

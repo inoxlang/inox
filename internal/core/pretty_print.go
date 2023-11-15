@@ -1109,7 +1109,7 @@ func (d Duration) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth 
 	}
 }
 
-func (d Date) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (d DateTime) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(d.write(w))
 }
 

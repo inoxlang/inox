@@ -100,7 +100,7 @@ func makeFileInfo(info fs.FileInfo, pth string, fls afs.Filesystem) core.FileInf
 		AbsPath_:  absPath,
 		Size_:     core.ByteCount(info.Size()),
 		Mode_:     core.FileMode(info.Mode()),
-		ModTime_:  core.Date(info.ModTime()),
+		ModTime_:  core.DateTime(info.ModTime()),
 	}
 }
 

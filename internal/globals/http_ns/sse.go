@@ -41,7 +41,7 @@ func (e *ServerSentEvent) ToEvent() *core.Event {
 		valMap["comment"] = core.Str(e.Comment)
 	}
 
-	return core.NewEvent(core.NewRecordFromMap(valMap), core.Date(e.timestamp))
+	return core.NewEvent(core.NewRecordFromMap(valMap), core.DateTime(e.timestamp))
 }
 
 func (e *ServerSentEvent) HasContent() bool {

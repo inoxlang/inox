@@ -36,7 +36,7 @@ func SendVal(ctx *Context, value Value, r MessageReceiver, sender Value) error {
 type Message struct {
 	data         Value // immutable value
 	sender       Value
-	sendindgDate Date
+	sendindgDate DateTime
 }
 
 func (m Message) Data() Value {
@@ -47,7 +47,7 @@ func NewMessage(data Value, sender Value) Message {
 	if data.IsMutable() {
 		panic(ErrMutableMessageData)
 	}
-	return Message{data: data, sender: sender, sendindgDate: Date(time.Now())}
+	return Message{data: data, sender: sender, sendindgDate: DateTime(time.Now())}
 }
 
 func (m Message) Prop(ctx *Context, name string) Value {

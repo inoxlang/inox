@@ -75,7 +75,7 @@ func NewDateFormat(layout, namespaceMemberName string) *DateFormat {
 }
 
 func (f *DateFormat) Format(ctx *Context, v Value, w io.Writer) (int, error) {
-	t, ok := v.(Date)
+	t, ok := v.(DateTime)
 	if !ok {
 		return -1, ErrInvalidFormattingArgument
 	}
@@ -97,5 +97,5 @@ func (p *dateLayoutParser) Parse(ctx *Context, s string) (Serializable, error) {
 	if err != nil {
 		return nil, err
 	}
-	return Date(t), nil
+	return DateTime(t), nil
 }

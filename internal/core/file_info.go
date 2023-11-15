@@ -35,8 +35,8 @@ type FileInfo struct {
 	AbsPath_      Path
 	Size_         ByteCount
 	Mode_         FileMode
-	ModTime_      Date
-	CreationTime_ Date
+	ModTime_      DateTime
+	CreationTime_ DateTime
 
 	HasCreationTime bool
 }

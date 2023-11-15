@@ -103,7 +103,7 @@ func (watcher fsWatcher) listenForEventsSync(
 				"remove_op": core.Bool(removeOp),
 				"chmod_op":  core.Bool(chmodOp),
 				"rename_op": core.Bool(renameOp),
-			}), core.Date(now), eventPath)
+			}), core.DateTime(now), eventPath)
 
 			for _, handler := range eventSource.GetHandlers() {
 				func() {

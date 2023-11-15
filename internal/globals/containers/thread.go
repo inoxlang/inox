@@ -22,7 +22,7 @@ func NewThread(ctx *core.Context, elements core.Iterable) *Thread {
 		e := it.Value(ctx)
 		thread.elements = append(thread.elements, threadElement{
 			value: e,
-			date:  core.Date(now),
+			date:  core.DateTime(now),
 		})
 	}
 
@@ -31,7 +31,7 @@ func NewThread(ctx *core.Context, elements core.Iterable) *Thread {
 
 type threadElement struct {
 	value core.Value
-	date  core.Date
+	date  core.DateTime
 }
 
 func (s *Thread) Push(ctx *core.Context, elems ...core.Value) {
@@ -40,7 +40,7 @@ func (s *Thread) Push(ctx *core.Context, elems ...core.Value) {
 	for _, e := range elems {
 		s.elements = append(s.elements, threadElement{
 			value: e,
-			date:  core.Date(now),
+			date:  core.DateTime(now),
 		})
 	}
 }

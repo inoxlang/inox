@@ -772,7 +772,7 @@ func (d Duration) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, conf
 	return nil
 }
 
-func (d Date) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+func (d DateTime) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	var buff bytes.Buffer
 
 	if _, err := d.write(&buff); err != nil {

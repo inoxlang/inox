@@ -504,7 +504,7 @@ func _parseRepr(b []byte, ctx *Context) (val Serializable, errorIndex int, speci
 				break
 			}
 
-			v = Date(date)
+			v = DateTime(date)
 		case rstateQtyUnit, rstateRateUnit:
 			if state == rstateQtyUnit {
 				quantityUnits = append(quantityUnits, string(b[unitStart:i]))

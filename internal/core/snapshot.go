@@ -17,12 +17,12 @@ var (
 
 // Snapshot holds either the serialized representation of a Value or a in-memory FROZEN value.
 type Snapshot struct {
-	date     Date
+	date     DateTime
 	repr     ValueRepresentation
 	inMemory Serializable //value should be either an InMemorySnapshotable or an immutable
 }
 
-func (s *Snapshot) Date() Date {
+func (s *Snapshot) Date() DateTime {
 	return s.date
 }
 
@@ -38,7 +38,7 @@ type InMemorySnapshotable interface {
 }
 
 func TakeSnapshot(ctx *Context, v Serializable, mustBeSerialized bool) (*Snapshot, error) {
-	now := Date(time.Now())
+	now := DateTime(time.Now())
 	if !v.IsMutable() {
 		return &Snapshot{date: now, inMemory: v}, nil
 	}
@@ -98,7 +98,7 @@ func (s *Snapshot) WithChangeApplied(ctx *Context, c Change) (*Snapshot, error) 
 	}
 
 	snapshotDate := time.Time(s.date)
-	changeDate := time.Time(c.date)
+	changeDate := time.Time(c.datetime)
 
 	if snapshotDate.After(changeDate) {
 		return nil, fmt.Errorf("cannot apply a change (date: %s) on a snapshot that is more recent than the change: %s", changeDate, snapshotDate)
@@ -110,7 +110,7 @@ func (s *Snapshot) WithChangeApplied(ctx *Context, c Change) (*Snapshot, error) 
 
 	if snapshotable, ok := v.(InMemorySnapshotable); ok {
 		return &Snapshot{
-			date:     c.date,
+			date:     c.datetime,
 			inMemory: snapshotable,
 		}, nil
 	}
@@ -121,7 +121,7 @@ func (s *Snapshot) WithChangeApplied(ctx *Context, c Change) (*Snapshot, error) 
 	}
 
 	return &Snapshot{
-		date: c.date,
+		date: c.datetime,
 		repr: repr,
 	}, nil
 }
@@ -133,7 +133,7 @@ func (r *RuneSlice) TakeInMemorySnapshot(ctx *Context) (*Snapshot, error) {
 	sliceClone.frozen = true
 
 	return &Snapshot{
-		date:     Date(time.Now()),
+		date:     DateTime(time.Now()),
 		inMemory: sliceClone,
 	}, nil
 }
@@ -208,7 +208,7 @@ func (g *SystemGraph) takeSnapshot(ctx *Context) *SystemGraph {
 func (g *SystemGraph) TakeInMemorySnapshot(ctx *Context) (*Snapshot, error) {
 	return &Snapshot{
 		inMemory: g.takeSnapshot(ctx),
-		date:     Date(time.Now()),
+		date:     DateTime(time.Now()),
 	}, nil
 }
 
