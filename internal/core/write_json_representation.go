@@ -772,7 +772,25 @@ func (d Duration) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, conf
 	return nil
 }
 
-func (d DateTime) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+func (y Year) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+	var buff bytes.Buffer
+
+	if _, err := y.write(&buff); err != nil {
+		return err
+	}
+
+	if noPatternOrAny(config.Pattern) {
+		writeUntypedValueJSON(YEAR_PATTERN.Name, func(w *jsoniter.Stream) error {
+			w.WriteString(buff.String())
+			return nil
+		}, w)
+		return nil
+	}
+	w.WriteString(buff.String())
+	return nil
+}
+
+func (d Date) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	var buff bytes.Buffer
 
 	if _, err := d.write(&buff); err != nil {
@@ -781,6 +799,24 @@ func (d DateTime) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, conf
 
 	if noPatternOrAny(config.Pattern) {
 		writeUntypedValueJSON(DATE_PATTERN.Name, func(w *jsoniter.Stream) error {
+			w.WriteString(buff.String())
+			return nil
+		}, w)
+		return nil
+	}
+	w.WriteString(buff.String())
+	return nil
+}
+
+func (d DateTime) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+	var buff bytes.Buffer
+
+	if _, err := d.write(&buff); err != nil {
+		return err
+	}
+
+	if noPatternOrAny(config.Pattern) {
+		writeUntypedValueJSON(DATETIME_PATTERN.Name, func(w *jsoniter.Stream) error {
 			w.WriteString(buff.String())
 			return nil
 		}, w)

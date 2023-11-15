@@ -36,7 +36,7 @@ func TestCompileModule(t *testing.T) {
 			[]Value{Str("a")},
 		)
 
-		expectBytecode(t, `2020y-5mt-3d-UTC`,
+		expectBytecode(t, `2020y-5mt-3d-0h-UTC`,
 			0,
 			instrs(
 				MakeInstruction(OpPushConstant, 0),

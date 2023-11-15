@@ -323,9 +323,9 @@ func TestParseRepr(t *testing.T) {
 		{`a.b@a.`, 6, nil},
 
 		//dates
-		{`2020y-UTC`, -1, DateTime(time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC))},
+		{`2020y-UTC`, -1, Year(time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC))},
 		{`2020y-Local`, 11, nil},
-		{`2020y-10mt-UTC`, -1, DateTime(time.Date(2020, 10, 1, 0, 0, 0, 0, time.UTC))},
+		{`2020y-10mt-1d-UTC`, -1, Date(time.Date(2020, 10, 1, 0, 0, 0, 0, time.UTC))},
 		{
 			`2020y-6mt-12d-18h-4m-4s-349ms-665us-UTC`,
 			-1,

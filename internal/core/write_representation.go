@@ -911,6 +911,24 @@ func (d Duration) WriteRepresentation(ctx *Context, w io.Writer, config *ReprCon
 	return err
 }
 
+func (y Year) write(w io.Writer) (int, error) {
+	return w.Write(utils.StringAsBytes(commonfmt.FmtInoxYear(time.Time(y))))
+}
+
+func (d Year) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
+	_, err := d.write(w)
+	return err
+}
+
+func (d Date) write(w io.Writer) (int, error) {
+	return w.Write(utils.StringAsBytes(commonfmt.FmtInoxDate(time.Time(d))))
+}
+
+func (d Date) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
+	_, err := d.write(w)
+	return err
+}
+
 func (d DateTime) write(w io.Writer) (int, error) {
 	return w.Write(utils.StringAsBytes(commonfmt.FmtInoxDateTime(time.Time(d))))
 }

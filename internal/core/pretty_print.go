@@ -228,7 +228,8 @@ func GetNodeColorizations(chunk *parse.Chunk, lightMode bool) []ColorizationInfo
 				Span:          n.Base().Span,
 				ColorSequence: colors.PathLiteral,
 			})
-		case *parse.IntLiteral, *parse.FloatLiteral, *parse.QuantityLiteral, *parse.PortLiteral, *parse.DateTimeLiteral:
+		case *parse.IntLiteral, *parse.FloatLiteral, *parse.QuantityLiteral, *parse.PortLiteral,
+			*parse.YearLiteral, *parse.DateLiteral, *parse.DateTimeLiteral:
 			colorizations = append(colorizations, ColorizationInfo{
 				Span:          n.Base().Span,
 				ColorSequence: colors.NumberLiteral,
@@ -1107,6 +1108,14 @@ func (d Duration) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth 
 	if config.Colorize {
 		utils.Must(w.Write(ANSI_RESET_SEQUENCE))
 	}
+}
+
+func (y Year) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(y.write(w))
+}
+
+func (d Date) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(d.write(w))
 }
 
 func (d DateTime) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {

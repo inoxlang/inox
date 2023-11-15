@@ -98,7 +98,7 @@ const (
 	rstateIntInclusiveRange
 
 	//dates
-	rstateDate
+	rstateDateLike
 
 	//quantities & rates
 	rstateQtyUnit
@@ -494,8 +494,8 @@ func _parseRepr(b []byte, ctx *Context) (val Serializable, errorIndex int, speci
 			}
 
 			v = EmailAddress(atomBytes)
-		case rstateDate:
-			date, _, err := parse.ParseDateLikeLiteral(atomBytes)
+		case rstateDateLike:
+			date, kind, err := parse.ParseDateLikeLiteral(atomBytes)
 			if err != nil {
 				index = len(atomBytes)
 				break
@@ -504,7 +504,16 @@ func _parseRepr(b []byte, ctx *Context) (val Serializable, errorIndex int, speci
 				break
 			}
 
-			v = DateTime(date)
+			switch kind {
+			case parse.YearLit:
+				v = Year(date)
+			case parse.DateLit:
+				v = Date(date)
+			case parse.DateTimeLit:
+				v = DateTime(date)
+			default:
+				panic(ErrUnreachable)
+			}
 		case rstateQtyUnit, rstateRateUnit:
 			if state == rstateQtyUnit {
 				quantityUnits = append(quantityUnits, string(b[unitStart:i]))
@@ -612,7 +621,7 @@ func _parseRepr(b []byte, ctx *Context) (val Serializable, errorIndex int, speci
 			//email address
 			rstateEmailAddress,
 			//dates
-			rstateDate,
+			rstateDateLike,
 			//quantities & rates
 			rstateQtyUnit,
 			rstateRateUnit,
@@ -820,7 +829,7 @@ func _parseRepr(b []byte, ctx *Context) (val Serializable, errorIndex int, speci
 				rstateHostPattern,
 				rstateURLPatternInPath, rstateURLPatternInQuery, rstateURLPatternInFragment,
 				rstateEmailAddress,
-				rstateDate,
+				rstateDateLike,
 				rstateIdentifier,
 				rstatePropertyName:
 			default:
@@ -859,7 +868,7 @@ func _parseRepr(b []byte, ctx *Context) (val Serializable, errorIndex int, speci
 				rstateHostLike, rstateHostPattern,
 				rstateURLPatternInPath,
 				rstateEmailAddressUsername, rstateEmailAddress,
-				rstateDate,
+				rstateDateLike,
 				rstateIdentifier,
 				rstatePropertyName:
 			default:
@@ -990,7 +999,7 @@ func _parseRepr(b []byte, ctx *Context) (val Serializable, errorIndex int, speci
 				quantityUnits = append(quantityUnits, string(b[unitStart:i]))
 				state = rstateRateSlash
 			case rstateURLLike, rstateURLPatternInPath,
-				rstateDate:
+				rstateDateLike:
 			default:
 				return nil, i, nil
 			}
@@ -2307,7 +2316,7 @@ func _parseRepr(b []byte, ctx *Context) (val Serializable, errorIndex int, speci
 					case c == 'x' && (i-atomStartIndex) == 1 && b[i-1] == '0' && i < len(b)-1 && b[i+1] == '[':
 						state = rstate0x
 					case c == 'y' && i < len(b)-1 && b[i+1] == '-':
-						state = rstateDate
+						state = rstateDateLike
 					default:
 						unitStart = i
 						if ind, err := pushQuantityNumber(); ind >= 0 {
@@ -2359,7 +2368,7 @@ func _parseRepr(b []byte, ctx *Context) (val Serializable, errorIndex int, speci
 					rstateURLPatternInQuery,
 					rstateURLPatternInFragment,
 					rstateEmailAddressUsername, rstateEmailAddress,
-					rstateDate,
+					rstateDateLike,
 					rstateIdentifier,
 					rstatePropertyName,
 					rstateRateUnit:
@@ -2403,7 +2412,7 @@ func _parseRepr(b []byte, ctx *Context) (val Serializable, errorIndex int, speci
 		//email address
 		rstateEmailAddress,
 		//dates
-		rstateDate,
+		rstateDateLike,
 		//quantities & rates
 		rstateQtyUnit,
 		rstateRateUnit,

@@ -813,6 +813,22 @@ func (d Duration) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]u
 	return d == otherDuration
 }
 
+func (y Year) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	otherYear, ok := other.(Year)
+	if !ok {
+		return false
+	}
+	return y == otherYear
+}
+
+func (d Date) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	otherDate, ok := other.(Date)
+	if !ok {
+		return false
+	}
+	return d == otherDate
+}
+
 func (d DateTime) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
 	otherDate, ok := other.(DateTime)
 	if !ok {

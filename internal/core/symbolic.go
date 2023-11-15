@@ -221,6 +221,12 @@ func init() {
 			CreateDuration: func(d time.Duration) any {
 				return Duration(d)
 			},
+			CreateYear: func(t time.Time) any {
+				return Year(t)
+			},
+			CreateDate: func(t time.Time) any {
+				return Date(t)
+			},
 			CreateDateTime: func(t time.Time) any {
 				return DateTime(t)
 			},
@@ -1042,6 +1048,14 @@ func (f *GoFunction) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbo
 		return nil, fmt.Errorf("missing symbolic equivalent of Go function: %#v %s", goFunc, runtime.FuncForPC(ptr).Name())
 	}
 	return symbolicGoFunc, nil
+}
+
+func (y Year) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
+	return symbolic.NewYear(time.Time(y)), nil
+}
+
+func (d Date) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
+	return symbolic.NewDate(time.Time(d)), nil
 }
 
 func (d DateTime) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {

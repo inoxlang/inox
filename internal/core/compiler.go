@@ -257,6 +257,10 @@ func (c *compiler) Compile(node parse.Node) error {
 		c.emit(node, OpPushConstant, c.addConstant(Identifier(node.Name)))
 	case *parse.PropertyNameLiteral:
 		c.emit(node, OpPushConstant, c.addConstant(PropertyName(node.Name)))
+	case *parse.YearLiteral:
+		c.emit(node, OpPushConstant, c.addConstant(Year(node.Value)))
+	case *parse.DateLiteral:
+		c.emit(node, OpPushConstant, c.addConstant(Date(node.Value)))
 	case *parse.DateTimeLiteral:
 		c.emit(node, OpPushConstant, c.addConstant(DateTime(node.Value)))
 	//quantities & rates

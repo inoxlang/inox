@@ -504,10 +504,23 @@ var (
 		Name:          "filemode",
 		SymbolicValue: &symbolic.FileMode{},
 	}
+
+	YEAR_PATTERN = &TypePattern{
+		Type:          DATETIME_TYPE,
+		Name:          "year",
+		SymbolicValue: symbolic.ANY_YEAR,
+	}
+
 	DATE_PATTERN = &TypePattern{
-		Type:          DATE_TYPE,
-		Name:          "date",
-		SymbolicValue: &symbolic.DateTime{},
+		Type:          DATETIME_TYPE,
+		Name:          "datetime",
+		SymbolicValue: symbolic.ANY_DATE,
+	}
+
+	DATETIME_PATTERN = &TypePattern{
+		Type:          DATETIME_TYPE,
+		Name:          "datetime",
+		SymbolicValue: symbolic.ANY_DATETIME,
 	}
 
 	PATTERN_PATTERN = &TypePattern{
@@ -808,7 +821,7 @@ var (
 		BYTECOUNT_PATTERN.Name:             BYTECOUNT_PATTERN,
 		FLOAT_PATTERN.Name:                 FLOAT_PATTERN,
 		FILE_MODE_PATTERN.Name:             FILE_MODE_PATTERN,
-		DATE_PATTERN.Name:                  DATE_PATTERN,
+		DATETIME_PATTERN.Name:              DATETIME_PATTERN,
 		PATTERN_PATTERN.Name:               PATTERN_PATTERN,
 		READABLE_PATTERN.Name:              READABLE_PATTERN,
 		READER_PATTERN.Name:                READER_PATTERN,
@@ -826,7 +839,7 @@ var (
 				"is-dir":   BOOL_PATTERN,
 				"size":     INT_PATTERN,
 				"mode":     FILE_MODE_PATTERN,
-				"mod-time": DATE_PATTERN,
+				"mod-time": DATETIME_PATTERN,
 				"name":     STR_PATTERN,
 			},
 		},

@@ -77,21 +77,25 @@ var (
 	EMAIL_ADDR_TYPE         = reflect.TypeOf(EmailAddress(""))
 	URL_PATT_TYPE           = reflect.TypeOf(URLPattern(""))
 	FILE_MODE_TYPE          = reflect.TypeOf(FileMode(0))
-	DATE_TYPE               = reflect.TypeOf(DateTime{})
-	EVENT_TYPE              = reflect.TypeOf((*Event)(nil))
-	MUTATION_TYPE           = reflect.TypeOf(Mutation{})
-	MSG_TYPE                = reflect.TypeOf(Message{})
-	ERROR_TYPE              = reflect.TypeOf(Error{})
-	INT_RANGE_TYPE          = reflect.TypeOf(IntRange{})
-	FLOAT_RANGE_TYPE        = reflect.TypeOf(FloatRange{})
-	RUNE_RANGE_TYPE         = reflect.TypeOf(RuneRange{})
-	VALUE_HISTORY_TYPE      = reflect.TypeOf(&ValueHistory{})
-	SYSGRAPH_TYPE           = reflect.TypeOf(&SystemGraph{})
-	SYSGRAPH_NODE_TYPE      = reflect.TypeOf(&SystemGraphNode{})
-	SYSGRAPH_EDGE_TYPE      = reflect.TypeOf(SystemGraphEdge{})
-	SECRET_TYPE             = reflect.TypeOf((*Secret)(nil))
-	READER_INTERFACE_TYPE   = reflect.TypeOf((*Reader)(nil))
-	OBJECT_PATTERN_TYPE     = reflect.TypeOf((*ObjectPattern)(nil))
+
+	YEAR_TYPE     = reflect.TypeOf(Year{})
+	DATE_TYPE     = reflect.TypeOf(Date{})
+	DATETIME_TYPE = reflect.TypeOf(DateTime{})
+
+	EVENT_TYPE            = reflect.TypeOf((*Event)(nil))
+	MUTATION_TYPE         = reflect.TypeOf(Mutation{})
+	MSG_TYPE              = reflect.TypeOf(Message{})
+	ERROR_TYPE            = reflect.TypeOf(Error{})
+	INT_RANGE_TYPE        = reflect.TypeOf(IntRange{})
+	FLOAT_RANGE_TYPE      = reflect.TypeOf(FloatRange{})
+	RUNE_RANGE_TYPE       = reflect.TypeOf(RuneRange{})
+	VALUE_HISTORY_TYPE    = reflect.TypeOf(&ValueHistory{})
+	SYSGRAPH_TYPE         = reflect.TypeOf(&SystemGraph{})
+	SYSGRAPH_NODE_TYPE    = reflect.TypeOf(&SystemGraphNode{})
+	SYSGRAPH_EDGE_TYPE    = reflect.TypeOf(SystemGraphEdge{})
+	SECRET_TYPE           = reflect.TypeOf((*Secret)(nil))
+	READER_INTERFACE_TYPE = reflect.TypeOf((*Reader)(nil))
+	OBJECT_PATTERN_TYPE   = reflect.TypeOf((*ObjectPattern)(nil))
 )
 
 var IMPLICITLY_REMOVED_ROUTINE_PERMS = []Permission{
@@ -315,6 +319,10 @@ func evalSimpleValueLiteral(n parse.SimpleValueLiteral, global *GlobalState) (Se
 		}, nil
 	case *parse.QuantityLiteral:
 		return evalQuantity(node.Values, node.Units)
+	case *parse.YearLiteral:
+		return Year(node.Value), nil
+	case *parse.DateLiteral:
+		return Date(node.Value), nil
 	case *parse.DateTimeLiteral:
 		return DateTime(node.Value), nil
 	case *parse.RateLiteral:

@@ -1819,7 +1819,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		})
 	})
 
-	t.Run("date literal", func(t *testing.T) {
+	t.Run("year literal", func(t *testing.T) {
 		code := `2020y-UTC`
 		state := NewGlobalState(NewDefaultTestContext())
 		defer state.Ctx.CancelGracefully()
@@ -1828,6 +1828,28 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		assert.NoError(t, err)
 
 		assert.EqualValues(t, DateTime(time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)), res)
+	})
+
+	t.Run("date literal", func(t *testing.T) {
+		code := `2020y-1mt-1d-UTC`
+		state := NewGlobalState(NewDefaultTestContext())
+		defer state.Ctx.CancelGracefully()
+
+		res, err := Eval(code, state, false)
+		assert.NoError(t, err)
+
+		assert.EqualValues(t, DateTime(time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)), res)
+	})
+
+	t.Run("datetime literal", func(t *testing.T) {
+		code := `2020y-1mt-1d-5h-3m-UTC`
+		state := NewGlobalState(NewDefaultTestContext())
+		defer state.Ctx.CancelGracefully()
+
+		res, err := Eval(code, state, false)
+		assert.NoError(t, err)
+
+		assert.EqualValues(t, DateTime(time.Date(2020, 1, 1, 5, 3, 0, 0, time.UTC)), res)
 	})
 
 	t.Run("rate literal : byte rate", func(t *testing.T) {
