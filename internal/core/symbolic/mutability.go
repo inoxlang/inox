@@ -250,6 +250,14 @@ func (d Duration) IsMutable() bool {
 	return false
 }
 
+func (d Year) IsMutable() bool {
+	return false
+}
+
+func (d Date) IsMutable() bool {
+	return false
+}
+
 func (d DateTime) IsMutable() bool {
 	return false
 }

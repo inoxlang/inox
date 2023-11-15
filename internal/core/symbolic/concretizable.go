@@ -43,13 +43,17 @@ type ConcreteValueFactories struct {
 	CreateFloat func(float64) any
 	CreateInt   func(int64) any
 
-	CreateByteCount           func(int64) any
-	CreateLineCount           func(int64) any
-	CreateRuneCount           func(int64) any
-	CreateSimpleRate          func(int64) any
-	CreateByteRate            func(int64) any
-	CreateDuration            func(time.Duration) any
-	CreateDate                func(time.Time) any
+	CreateByteCount  func(int64) any
+	CreateLineCount  func(int64) any
+	CreateRuneCount  func(int64) any
+	CreateSimpleRate func(int64) any
+	CreateByteRate   func(int64) any
+
+	CreateDuration func(time.Duration) any
+	CreateYear     func(time.Time) any
+	CreateDate     func(time.Time) any
+	CreateDateTime func(time.Time) any
+
 	CreateByte                func(byte) any
 	CreateRune                func(rune) any
 	CreateString              func(string) any

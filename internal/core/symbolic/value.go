@@ -6,7 +6,6 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/inoxlang/inox/internal/commonfmt"
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
@@ -35,18 +34,22 @@ var (
 	ANY_RUNE_RANGE     = &RuneRange{}
 	ANY_QUANTITY_RANGE = &QuantityRange{element: ANY_SERIALIZABLE}
 	ANY_FILEMODE       = &FileMode{}
-	ANY_DATETIME       = &DateTime{}
-	ANY_DURATION       = &Duration{}
-	ANY_BYTECOUNT      = &ByteCount{}
-	ANY_LINECOUNT      = &LineCount{}
-	ANY_RUNECOUNT      = &RuneCount{}
-	ANY_BYTERATE       = &ByteRate{}
-	ANY_SIMPLERATE     = &SimpleRate{}
-	ANY_IDENTIFIER     = &Identifier{}
-	ANY_PROPNAME       = &PropertyName{}
-	ANY_EMAIL_ADDR     = &EmailAddress{}
-	ANY_FILEINFO       = &FileInfo{}
-	ANY_MIMETYPE       = &Mimetype{}
+
+	ANY_YEAR     = &Year{}
+	ANY_DATE     = &Date{}
+	ANY_DATETIME = &DateTime{}
+	ANY_DURATION = &Duration{}
+
+	ANY_BYTECOUNT  = &ByteCount{}
+	ANY_LINECOUNT  = &LineCount{}
+	ANY_RUNECOUNT  = &RuneCount{}
+	ANY_BYTERATE   = &ByteRate{}
+	ANY_SIMPLERATE = &SimpleRate{}
+	ANY_IDENTIFIER = &Identifier{}
+	ANY_PROPNAME   = &PropertyName{}
+	ANY_EMAIL_ADDR = &EmailAddress{}
+	ANY_FILEINFO   = &FileInfo{}
+	ANY_MIMETYPE   = &Mimetype{}
 
 	FILEINFO_PROPNAMES = []string{"name", "abs-path", "size", "mode", "mod-time", "is-dir"}
 )
@@ -531,114 +534,6 @@ func (o *Option) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConf
 
 func (o *Option) WidestOfType() Value {
 	return ANY_OPTION
-}
-
-// A DateTime represents a symbolic DateTime.
-type DateTime struct {
-	SerializableMixin
-	value    time.Time
-	hasValue bool
-}
-
-func NewDateTime(v time.Time) *DateTime {
-	return &DateTime{
-		value:    v,
-		hasValue: true,
-	}
-}
-
-func (d *DateTime) Test(v Value, state RecTestCallState) bool {
-	state.StartCall()
-	defer state.FinishCall()
-
-	other, ok := v.(*DateTime)
-	if !ok {
-		return false
-	}
-	if !d.hasValue {
-		return true
-	}
-	return other.hasValue && d.value == other.value
-}
-
-func (d *DateTime) IsConcretizable() bool {
-	return d.hasValue
-}
-
-func (d *DateTime) Concretize(ctx ConcreteContext) any {
-	if !d.IsConcretizable() {
-		panic(ErrNotConcretizable)
-	}
-	return extData.ConcreteValueFactories.CreateDate(d.value)
-}
-
-func (d *DateTime) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
-	w.WriteName("datetime")
-	if d.hasValue {
-		w.WriteByte('(')
-		w.WriteString(commonfmt.FmtInoxDate(d.value))
-		w.WriteByte(')')
-	}
-}
-
-func (d *DateTime) WidestOfType() Value {
-	return ANY_DATETIME
-}
-
-// A Duration represents a symbolic Duration.
-type Duration struct {
-	SerializableMixin
-	value    time.Duration
-	hasValue bool
-}
-
-func NewDuration(v time.Duration) *Duration {
-	return &Duration{
-		value:    v,
-		hasValue: true,
-	}
-}
-
-func (d *Duration) Test(v Value, state RecTestCallState) bool {
-	state.StartCall()
-	defer state.FinishCall()
-
-	other, ok := v.(*Duration)
-	if !ok {
-		return false
-	}
-	if !d.hasValue {
-		return true
-	}
-	return other.hasValue && d.value == other.value
-}
-
-func (d *Duration) IsConcretizable() bool {
-	return d.hasValue
-}
-
-func (d *Duration) Concretize(ctx ConcreteContext) any {
-	if !d.IsConcretizable() {
-		panic(ErrNotConcretizable)
-	}
-	return extData.ConcreteValueFactories.CreateDuration(d.value)
-}
-
-func (d *Duration) Static() Pattern {
-	return &TypePattern{val: d.WidestOfType()}
-}
-
-func (d *Duration) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
-	w.WriteName("duration")
-	if d.hasValue {
-		w.WriteByte('(')
-		w.WriteString(commonfmt.FmtInoxDuration(d.value))
-		w.WriteByte(')')
-	}
-}
-
-func (d *Duration) WidestOfType() Value {
-	return ANY_DURATION
 }
 
 // A FileMode represents a symbolic FileMode.

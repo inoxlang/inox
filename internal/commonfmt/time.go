@@ -46,7 +46,23 @@ func FmtInoxDuration(d time.Duration) string {
 	return string(b)
 }
 
+func FmtInoxYear(d time.Time) string {
+	// TODO: change
+	t := d.UTC()
+
+	return fmt.Sprintf("%dy-%s",
+		t.Year(), t.Location().String())
+}
+
 func FmtInoxDate(d time.Time) string {
+	// TODO: change
+	t := d.UTC()
+
+	return fmt.Sprintf("%dy-%dmt-%dd-%s",
+		t.Year(), t.Month(), t.Day(), t.Location().String())
+}
+
+func FmtInoxDateTime(d time.Time) string {
 	// TODO: change
 	t := d.UTC()
 	ns := t.Nanosecond()

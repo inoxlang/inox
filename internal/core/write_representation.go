@@ -912,7 +912,7 @@ func (d Duration) WriteRepresentation(ctx *Context, w io.Writer, config *ReprCon
 }
 
 func (d DateTime) write(w io.Writer) (int, error) {
-	return w.Write(utils.StringAsBytes(commonfmt.FmtInoxDate(time.Time(d))))
+	return w.Write(utils.StringAsBytes(commonfmt.FmtInoxDateTime(time.Time(d))))
 }
 
 func (d DateTime) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {

@@ -299,6 +299,10 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 			return ANY, nil
 		}
 		return extData.ToSymbolicValue(v, false)
+	case *parse.YearLiteral:
+		return NewYear(n.Value), nil
+	case *parse.DateLiteral:
+		return NewDate(n.Value), nil
 	case *parse.DateTimeLiteral:
 		return NewDateTime(n.Value), nil
 	case *parse.RateLiteral:

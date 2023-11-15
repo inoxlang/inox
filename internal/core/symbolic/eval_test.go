@@ -214,14 +214,34 @@ func TestSymbolicEval(t *testing.T) {
 		})
 	})
 
-	t.Run("date literal", func(t *testing.T) {
+	t.Run("year literal", func(t *testing.T) {
 		n, state := MakeTestStateAndChunk("2020y-UTC")
 		res, err := symbolicEval(n, state)
 		assert.NoError(t, err)
 		assert.Empty(t, state.errors())
 
-		expectedDate, _, _ := parse.ParseDateLikeLiteral([]byte("2020y-UTC"))
-		assert.Equal(t, NewDateTime(expectedDate), res)
+		expectedYear, _, _ := parse.ParseDateLikeLiteral([]byte("2020y-UTC"))
+		assert.Equal(t, NewYear(expectedYear), res)
+	})
+
+	t.Run("date literal", func(t *testing.T) {
+		n, state := MakeTestStateAndChunk("2020y-1mt-1d-UTC")
+		res, err := symbolicEval(n, state)
+		assert.NoError(t, err)
+		assert.Empty(t, state.errors())
+
+		expectedDate, _, _ := parse.ParseDateLikeLiteral([]byte("2020y-1mt-1d-UTC"))
+		assert.Equal(t, NewDate(expectedDate), res)
+	})
+
+	t.Run("datetime literal", func(t *testing.T) {
+		n, state := MakeTestStateAndChunk("2020y-1mt-1d-5h-3m-UTC")
+		res, err := symbolicEval(n, state)
+		assert.NoError(t, err)
+		assert.Empty(t, state.errors())
+
+		expectedDateTime, _, _ := parse.ParseDateLikeLiteral([]byte("2020y-1mt-1d-5h-3m-UTC"))
+		assert.Equal(t, NewDateTime(expectedDateTime), res)
 	})
 
 	t.Run("path literal", func(t *testing.T) {

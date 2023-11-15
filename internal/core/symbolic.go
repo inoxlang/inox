@@ -221,7 +221,7 @@ func init() {
 			CreateDuration: func(d time.Duration) any {
 				return Duration(d)
 			},
-			CreateDate: func(t time.Time) any {
+			CreateDateTime: func(t time.Time) any {
 				return DateTime(t)
 			},
 			CreateByte: func(b byte) any {
