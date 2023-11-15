@@ -77,7 +77,7 @@ func getSignatureHelp(fpath string, line, column int32, handlingCtx *core.Contex
 	//get signature information
 	calleeValue, ok := state.SymbolicData.GetMostSpecificNodeValue(callee)
 	if !ok {
-		if callee == nil {
+		if calleeValue == nil {
 			logs.Println(NO_DATA_MSG)
 			return &defines.SignatureHelp{}, nil
 		}
