@@ -10,6 +10,14 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var (
+	objectStorageLimit = core.Limit{
+		Name:  s3_ns.OBJECT_STORAGE_REQUEST_RATE_LIMIT_NAME,
+		Kind:  core.SimpleRateLimit,
+		Value: 100,
+	}
+)
+
 func TestCreateS3CredentialsForSingleBucket(t *testing.T) {
 	projectId := core.ProjectID("test-s3-creds-single-bucket")
 
@@ -18,7 +26,9 @@ func TestCreateS3CredentialsForSingleBucket(t *testing.T) {
 		return
 	}
 
-	ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+	ctx := core.NewContexWithEmptyState(core.ContextConfig{
+		Limits: []core.Limit{objectStorageLimit},
+	}, nil)
 	defer ctx.CancelGracefully()
 
 	cf, err := newCloudflare(projectId, &cloudflareConfig)

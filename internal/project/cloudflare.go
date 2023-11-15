@@ -31,7 +31,7 @@ type Cloudflare struct {
 
 	//---- APIs with high permissions ----
 	apiTokensApi *cloudflare.API
-	//updated each time .tempTokens.HighPermsR2Token is changed, can be nil
+	//updated each time .highPermsTokens.R2Token is changed, can be nil
 	highPermsR2API *cloudflare.API
 
 	singleR2BucketCredentials     map[string]singleR2BucketCredentials
@@ -264,6 +264,7 @@ func (c *Cloudflare) CreateR2Bucket(ctx *core.Context, bucketName string) error 
 	_, err := api.CreateR2Bucket(ctx, c.accountId, cloudflare.CreateR2BucketParameters{
 		Name: bucketName,
 	})
+	time.Sleep(R2_BUCKET_POST_CREATION_DELAY)
 
 	return err
 }
