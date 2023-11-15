@@ -315,7 +315,7 @@ func evalSimpleValueLiteral(n parse.SimpleValueLiteral, global *GlobalState) (Se
 		}, nil
 	case *parse.QuantityLiteral:
 		return evalQuantity(node.Values, node.Units)
-	case *parse.DateLiteral:
+	case *parse.DateTimeLiteral:
 		return DateTime(node.Value), nil
 	case *parse.RateLiteral:
 		q, err := evalQuantity(node.Values, node.Units)

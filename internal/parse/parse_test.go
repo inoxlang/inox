@@ -6923,7 +6923,7 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 9}, nil, false},
 				Statements: []Node{
-					&DateLiteral{
+					&DateTimeLiteral{
 						NodeBase: NodeBase{NodeSpan{0, 9}, nil, false},
 						Raw:      "2020y-UTC",
 						Value:    time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC),
@@ -6937,7 +6937,7 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 13}, nil, false},
 				Statements: []Node{
-					&DateLiteral{
+					&DateTimeLiteral{
 						NodeBase: NodeBase{NodeSpan{0, 13}, nil, false},
 						Raw:      "2020y-5mt-UTC",
 						Value:    time.Date(2020, 5, 1, 0, 0, 0, 0, time.UTC),
@@ -6952,7 +6952,7 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 13}, nil, false},
 				Statements: []Node{
-					&DateLiteral{
+					&DateTimeLiteral{
 						NodeBase: NodeBase{
 							NodeSpan{0, 13},
 							&ParsingError{UnspecifiedParsingError, INVALID_MONTH_VALUE},
@@ -6969,7 +6969,7 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 14}, nil, false},
 				Statements: []Node{
-					&DateLiteral{
+					&DateTimeLiteral{
 						NodeBase: NodeBase{NodeSpan{0, 14}, nil, false},
 						Raw:      "2020y-05mt-UTC",
 						Value:    time.Date(2020, 5, 1, 0, 0, 0, 0, time.UTC),
@@ -6983,7 +6983,7 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 12}, nil, false},
 				Statements: []Node{
-					&DateLiteral{
+					&DateTimeLiteral{
 						NodeBase: NodeBase{NodeSpan{0, 12}, nil, false},
 						Raw:      "2020y-5d-UTC",
 						Value:    time.Date(2020, 1, 5, 0, 0, 0, 0, time.UTC),
@@ -6998,7 +6998,7 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 12}, nil, false},
 				Statements: []Node{
-					&DateLiteral{
+					&DateTimeLiteral{
 						NodeBase: NodeBase{
 							NodeSpan{0, 12},
 							&ParsingError{UnspecifiedParsingError, INVALID_DAY_VALUE},
@@ -7015,7 +7015,7 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 13}, nil, false},
 				Statements: []Node{
-					&DateLiteral{
+					&DateTimeLiteral{
 						NodeBase: NodeBase{NodeSpan{0, 13}, nil, false},
 						Raw:      "2020y-05d-UTC",
 						Value:    time.Date(2020, 1, 5, 0, 0, 0, 0, time.UTC),
@@ -7030,7 +7030,7 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 9}, nil, false},
 				Statements: []Node{
-					&DateLiteral{
+					&DateTimeLiteral{
 						NodeBase: NodeBase{
 							NodeSpan{0, 9},
 							&ParsingError{UnspecifiedParsingError, INVALID_DATE_LITERAL_MISSING_LOCATION_PART_AT_THE_END},
@@ -7047,7 +7047,7 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 13}, nil, false},
 				Statements: []Node{
-					&DateLiteral{
+					&DateTimeLiteral{
 						NodeBase: NodeBase{NodeSpan{0, 13}, nil, false},
 						Raw:      "2020y-5us-UTC",
 						Value:    time.Date(2020, 1, 1, 0, 0, 0, 5_000, time.UTC),
@@ -7061,7 +7061,7 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 23}, nil, false},
 				Statements: []Node{
-					&DateLiteral{
+					&DateTimeLiteral{
 						NodeBase: NodeBase{NodeSpan{0, 23}, nil, false},
 						Raw:      "2020y-10mt-5d-5h-4m-UTC",
 						Value:    time.Date(2020, 10, 5, 5, 4, 0, 0, time.UTC),
@@ -7075,7 +7075,7 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 38}, nil, false},
 				Statements: []Node{
-					&DateLiteral{
+					&DateTimeLiteral{
 						NodeBase: NodeBase{NodeSpan{0, 38}, nil, false},
 						Raw:      "2020y-10mt-5d-5h-4m-5s-400ms-100us-UTC",
 						Value:    time.Date(2020, 10, 5, 5, 4, 5, 400_000_000+100_000, time.UTC),
@@ -7089,7 +7089,7 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 41}, nil, false},
 				Statements: []Node{
-					&DateLiteral{
+					&DateTimeLiteral{
 						NodeBase: NodeBase{NodeSpan{0, 41}, nil, false},
 						Raw:      "2020y-6mt-12d-18h-4m-4s-349ms-665us-Local",
 						Value:    time.Date(2020, 6, 12, 18, 4, 4, (349*1_000_000)+(665*1000), time.Local),
@@ -7103,7 +7103,7 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 55}, nil, false},
 				Statements: []Node{
-					&DateLiteral{
+					&DateTimeLiteral{
 						NodeBase: NodeBase{NodeSpan{0, 55}, nil, false},
 						Raw:      "2020y-6mt-12d-18h-4m-4s-349ms-665us-America/Los_Angeles",
 						Value:    time.Date(2020, 6, 12, 18, 4, 4, (349*1_000_000)+(665*1000), utils.Must(time.LoadLocation("America/Los_Angeles"))),

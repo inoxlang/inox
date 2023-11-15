@@ -829,7 +829,7 @@ func GetTokens(node Node, chunk *Chunk, addMeta bool) []Token {
 		case *QuantityLiteral:
 			tokenType = QUANTITY_LITERAL
 			raw = n.Raw
-		case *DateLiteral:
+		case *DateTimeLiteral:
 			tokenType = DATE_LITERAL
 			raw = n.Raw
 		case *FlagLiteral:

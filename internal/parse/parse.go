@@ -5592,10 +5592,10 @@ func ParseDateLiteral(braw []byte) (date time.Time, parsingErr *ParsingError) {
 		mustAtoi(hour), mustAtoi(minute), mustAtoi(second), nanoseconds, loc), nil
 }
 
-func (p *parser) parseDateLiterals(start int32) *DateLiteral {
+func (p *parser) parseDateLiterals(start int32) *DateTimeLiteral {
 	p.panicIfContextDone()
 
-	literal := &DateLiteral{
+	literal := &DateTimeLiteral{
 		NodeBase: NodeBase{
 			NodeSpan{start, p.i},
 			nil,
