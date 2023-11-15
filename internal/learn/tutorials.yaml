@@ -10,9 +10,7 @@
     id: hello-world
     program: |
       # Inox modules always start with a manifest.
-      manifest {
-
-      }
+      manifest { }
       
       print("Hello World!")
     output: 
@@ -20,27 +18,31 @@
   - name: Variables
     id: var-basics
     program: |
-      manifest {
-
-      }
+      manifest {}
       
-      # There are two kinds of variables: globals & locals, local variables are declared with the `var` keyword or with an assignment.
+      # There are two kinds of variables: globals & locals.
+      # Local variables are declared with the `var` keyword or with an assignment.
       var local1 = 1
       
-      # ℹ️ Assigning a local that is not defined is allowed but redeclaration is an error.
+      # Assigning a local that is not declared is equivalent to declaring it.
       local2 = 2
       
-      # Local variable declarations can have a type annotation.
-      # Replace `0` with "string" to see what happen.
+      # Variable declarations can have a type annotation.
+      # Replace `0` with `string` to see what happens.
       var i int = 0
 
-      # Declaration/Assignment of global variables
-      $$myglobal = 1
+      # Global variable declaration
+      globalvar global1 = 1
 
-      # global variables cannot be shadowed by local variables ! 
-      var myglobal = 3
-    output: 
-    - Hello World!
+      # Assigning a global that is not declared is equivalent to declaring it.
+      $$global2 = 2
+      
+      # Global variables cannot be shadowed by local variables.
+      # var global1 = 3
+
+      print("local1 =", local1, "global1 =", global1)
+    output:
+    - "local1 = 1 global1 = 1"
   
 # ------------------------------------------------------------
 
