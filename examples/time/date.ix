@@ -1,5 +1,10 @@
 manifest {}
 
-for date in [now(), 2020y-CET, 2020y-10mt-5d-5h-4m-CET] {
-    print repr(date)
+
+year = 2020y-UTC
+date = 2020y-1mt-1d-UTC # first of January
+datetime =  2020y-10mt-5d-5h-4m-CET
+
+for datelike in [year, date, now(), 2020y-10mt-5d-5h-4m-CET] {
+    print repr(datelike)
 }
