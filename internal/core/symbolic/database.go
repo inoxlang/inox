@@ -182,7 +182,7 @@ func (db *DatabaseIL) UpdateSchema(ctx *Context, schema *ObjectPattern, addition
 				if ok {
 					acceptedInitialValue, ok := capable.MigrationInitialValue()
 					if ok {
-						entryValue = AsSerializableChecked(joinValues([]Value{entryValue, acceptedInitialValue}))
+						entryValue = AsSerializableChecked(joinValues([]Value{acceptedInitialValue, entryValue}))
 					}
 				}
 
@@ -234,7 +234,7 @@ func (db *DatabaseIL) UpdateSchema(ctx *Context, schema *ObjectPattern, addition
 				if ok {
 					acceptedInitialValue, ok := capable.MigrationInitialValue()
 					if ok {
-						entryValue = AsSerializableChecked(joinValues([]Value{entryValue, acceptedInitialValue}))
+						entryValue = AsSerializableChecked(joinValues([]Value{acceptedInitialValue, entryValue}))
 					}
 				}
 
@@ -265,7 +265,7 @@ func (db *DatabaseIL) UpdateSchema(ctx *Context, schema *ObjectPattern, addition
 				if ok {
 					acceptedInitialValue, ok := capable.MigrationInitialValue()
 					if ok {
-						entryValue = AsSerializableChecked(joinValues([]Value{entryValue, acceptedInitialValue}))
+						entryValue = AsSerializableChecked(joinValues([]Value{acceptedInitialValue, entryValue}))
 					}
 				}
 
