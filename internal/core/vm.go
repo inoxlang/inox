@@ -716,7 +716,20 @@ func (v *VM) run() {
 			globalName := v.constants[globalNameIndex].(Str)
 
 			val := v.stack[v.sp]
-			v.global.Globals.Set(string(globalName), val)
+
+			err := v.global.Globals.SetCheck(string(globalName), val, func(defined bool) error {
+				perm := GlobalVarPermission{Kind_: permkind.Create, Name: string(globalName)}
+				if defined {
+					perm.Kind_ = permkind.Update
+				}
+
+				return v.global.Ctx.CheckHasPermission(perm)
+			})
+
+			if err != nil {
+				v.err = err
+				return
+			}
 
 			if watchable, ok := val.(SystemGraphNodeValue); ok {
 				v.global.ProposeSystemGraph(watchable, string(globalName))

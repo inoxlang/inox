@@ -24,7 +24,9 @@ func expectError(t *testing.T, input string, globals map[Identifier]Value, targe
 
 	vm, err := NewVM(VMConfig{
 		Bytecode: actual,
-		State:    NewGlobalState(NewContext(ContextConfig{})),
+		State: NewGlobalState(NewContext(ContextConfig{
+			Permissions: GetDefaultGlobalVarPermissions(),
+		})),
 	})
 	assert.NoError(t, err)
 

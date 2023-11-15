@@ -64,7 +64,7 @@ type GlobalState struct {
 	TestCaseResults        []*TestCaseResult
 	TestSuiteResults       []*TestSuiteResult
 	TestItem               TestItem //can be nil
-	TestItemFullName string //can be empty
+	TestItemFullName       string   //can be empty
 	TestedProgram          *Module  //can be nil
 
 	//errors & check data
@@ -248,7 +248,7 @@ func (g *GlobalVariables) Foreach(fn func(name string, v Value, isStartConstant 
 	return nil
 }
 
-// Set set the value for a global variable (not constant)
+// Set sets the value for a global variable (not constant)
 func (g *GlobalVariables) Set(name string, value Value) {
 
 	if utils.SliceContains(g.startConstants, name) {
@@ -264,6 +264,28 @@ func (g *GlobalVariables) Set(name string, value Value) {
 	}
 
 	g.permanent[name] = value
+}
+
+// SetChecked sets the value for a global variable (not constant), it called
+func (g *GlobalVariables) SetCheck(name string, value Value, allow func(defined bool) error) error {
+	if utils.SliceContains(g.startConstants, name) {
+		panic(fmt.Errorf("cannot change value of global constant %s", name))
+	}
+
+	if len(g.capturedGlobalsStack) != 0 {
+		for _, captured := range g.capturedGlobalsStack[len(g.capturedGlobalsStack)-1] {
+			if captured.name == name {
+				panic(ErrAttemptToSetCaptureGlobal)
+			}
+		}
+	}
+
+	_, alreadyDefined := g.permanent[name]
+	if err := allow(alreadyDefined); err != nil {
+		return err
+	}
+	g.permanent[name] = value
+	return nil
 }
 
 func (g *GlobalVariables) PushCapturedGlobals(captured []capturedGlobal) {
