@@ -30,8 +30,8 @@ require (
 	github.com/muesli/termenv v0.15.1
 	github.com/oklog/ulid/v2 v2.1.0
 	github.com/orcaman/concurrent-map/v2 v2.0.1
-	github.com/pb33f/libopenapi v0.10.6
-	github.com/rs/zerolog v1.29.1
+	github.com/pb33f/libopenapi v0.13.9
+	github.com/rs/zerolog v1.31.0
 	github.com/santhosh-tekuri/jsonschema/v5 v5.3.1
 	github.com/shirou/gopsutil/v3 v3.23.10
 	github.com/shoenig/go-landlock v0.1.7
@@ -44,7 +44,7 @@ require (
 	github.com/tidwall/rtred v0.1.2
 	github.com/ysmood/fetchup v0.2.3
 	go.uber.org/zap v1.26.0
-	golang.org/x/exp v0.0.0-20230811145659-89c5cff77bcb
+	golang.org/x/exp v0.0.0-20231110203233-9a3e6036ecaa
 	golang.org/x/net v0.18.0
 	golang.org/x/term v0.14.0
 	gopkg.in/cenkalti/backoff.v1 v1.1.0
@@ -81,7 +81,7 @@ require (
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
-	github.com/mattn/go-isatty v0.0.18 // indirect
+	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-runewidth v0.0.14 // indirect
 	github.com/mholt/acmez v1.2.0 // indirect
 	github.com/minio/md5-simd v1.1.2 // indirect
