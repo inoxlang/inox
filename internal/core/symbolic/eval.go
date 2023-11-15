@@ -219,6 +219,8 @@ type evalOptions struct {
 
 	//used for checking that double-colon expressions are not misplaced
 	doubleColonExprAncestorChain []parse.Node
+
+	neverModifiedArgument bool
 }
 
 func (opts evalOptions) setActualValueMismatchIfNotNil() {
@@ -1966,6 +1968,9 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 
 			selfDependentArray [32]string
 			selfDependent      = selfDependentArray[:0]
+
+			hasMethods      bool
+			hasLifetimeJobs bool
 		)
 
 		//first iteration of the properties: we get all keys
@@ -2040,6 +2045,8 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 			if _, ok := p.Value.(*parse.FunctionExpression); !ok {
 				continue
 			}
+
+			hasMethods = true
 
 			// find method's dependencies
 			parse.Walk(p.Value, func(node, parent, scopeNode parse.Node, ancestorChain []parse.Node, after bool) (parse.TraversalAction, error) {
@@ -2131,8 +2138,11 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 
 			// we move all implicit lifetime jobs at the end
 			p1 := keyToProp.MustGet(keyA)
-			if _, ok := p1.Value.(*parse.LifetimejobExpression); ok && p1.HasImplicitKey() {
-				return false
+			if _, ok := p1.Value.(*parse.LifetimejobExpression); ok {
+				hasLifetimeJobs = true
+				if p1.HasImplicitKey() {
+					return false
+				}
 			}
 			p2 := keyToProp.MustGet(keyB)
 			if _, ok := p2.Value.(*parse.LifetimejobExpression); ok && p2.HasImplicitKey() {
@@ -2145,7 +2155,9 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 			return getDependencyChainDepth(idA, nil) < getDependencyChainDepth(idB, nil)
 		})
 
-		obj := NewInexactObject(entries, nil, nil)
+		isExact := options.neverModifiedArgument && len(n.SpreadElements) == 0 && !hasMethods && !hasLifetimeJobs
+
+		obj := NewObject(isExact, entries, nil, nil)
 		if expectedObj.readonly {
 			obj.readonly = true
 		}

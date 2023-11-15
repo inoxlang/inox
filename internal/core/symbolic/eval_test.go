@@ -5228,6 +5228,69 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, ANY_INT, res)
 		})
 
+		t.Run("object literal arguments without methods or lifetime jobs should be evaluated as exact objects", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				return f({a: "a"})
+			`)
+			objLiteral := parse.FindNode(n, (*parse.ObjectLiteral)(nil), nil)
+
+			goFunc := &GoFunction{
+				fn: func(ctx *Context, arg Value) Value {
+					return arg
+				},
+			}
+			state.setGlobal("f", goFunc, GlobalConst)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+
+			expectedObject := NewExactObject(map[string]Serializable{
+				"a": NewString("a"),
+			}, nil, map[string]Pattern{
+				"a": &TypePattern{val: ANY_STR},
+			})
+
+			assert.Equal(t, expectedObject, res)
+			val, ok := state.symbolicData.GetMostSpecificNodeValue(objLiteral)
+			if !assert.True(t, ok) {
+				return
+			}
+			assert.Equal(t, expectedObject, val)
+		})
+
+		t.Run("object literal arguments with methods should be evaluated as inexact objects", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				return f({
+					a: "a",
+					f: fn(){}
+				})
+			`)
+			objLiteral := parse.FindNode(n, (*parse.ObjectLiteral)(nil), nil)
+
+			goFunc := &GoFunction{
+				fn: func(ctx *Context, arg Value) Value {
+					return arg
+				},
+			}
+			state.setGlobal("f", goFunc, GlobalConst)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+
+			if !assert.IsType(t, (*Object)(nil), res) {
+				return
+			}
+
+			assert.True(t, res.(*Object).IsInexact())
+			val, ok := state.symbolicData.GetMostSpecificNodeValue(objLiteral)
+			if !assert.True(t, ok) {
+				return
+			}
+			assert.True(t, val.(*Object).IsInexact())
+		})
+
 		t.Run("complex specific Go function with invalid argument", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				return map([int, 2, 3], fn(arg %str){

@@ -61,6 +61,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 	isSharedFunction := false
 	var nonGoParameters []Value
 	var argMismatches []bool
+	isGoFunc := false
 
 	if inoxFn, ok := callee.(*InoxFunction); ok {
 		isSharedFunction = inoxFn.IsShared()
@@ -73,6 +74,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 		if isSharedFunction {
 			extState = goFn.originState
 		}
+		isGoFunc = true
 	} else if function, ok := callee.(*Function); ok {
 		nonGoParameters = function.parameters
 	} else {
@@ -152,7 +154,12 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 				}
 
 			} else {
-				options := evalOptions{}
+				//we assume that Go functions don't modify their arguments so
+				//we are (almost) certain that the object will not get additional properties.
+				//TODO: track Go functions that mutate their arguments.
+				//TODO: for Inox function calls set forceExactObjectLiteral to true if the expected argument is a readonly object.
+				options := evalOptions{neverModifiedArgument: isGoFunc}
+
 				if len(nonGoParameters) > 0 && argIndex < len(nonGoParameters) {
 					options.expectedValue = nonGoParameters[argIndex]
 

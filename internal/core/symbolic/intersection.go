@@ -32,7 +32,7 @@ func getIntersection(depth int, values ...Value) (Value, error) {
 		return values[0], nil
 	}
 
-	//move multivalues & intersections at the start
+	//move multivalues at the start
 	sort.Slice(values, func(i, j int) bool {
 		switch values[i].(type) {
 		case IMultivalue:
