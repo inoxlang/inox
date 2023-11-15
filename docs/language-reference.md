@@ -121,7 +121,9 @@ Here are the most commonly used literals in Inox:
   - `%https://**.com` matches any domain or subdomain ending in .com
   - `%https://**.example.com` matches any subdomain of `example.com`
 - port literals: `:80, :80/http`
-- date literals represent a specific point in time: `2020y-10mt-5d-CET`,
+- year literals: `2020y-UTC`
+- date literals: `2020y-10mt-5d-5h-4m-CET`
+- datetime literals represent a specific point in time:
   `2020y-10mt-5d-5h-4m-CET`
   - The location part at the end is mandatory (CET | UTC | Local | ...).
 - quantity literals: `1B 2kB 10%`
