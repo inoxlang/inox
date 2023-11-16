@@ -26,6 +26,22 @@ func RegexForRange(min, max int64, conf ...IntegerRangeRegexConfig) string {
 
 	isHardMinimum := min == math.MinInt64
 	if isHardMinimum {
+		if max == math.MinInt64 {
+			prefix := "(?:"
+			if config.CapturingGroup {
+				prefix = "("
+			}
+
+			negativeOnlyPrefix := "-"
+			if config.NegativeOnlyPrefix != "" {
+				negativeOnlyPrefix = config.NegativeOnlyPrefix
+			}
+
+			minInt64withoutSign := strconv.FormatInt(math.MinInt64, 10)[1:]
+
+			return prefix + negativeOnlyPrefix + minInt64withoutSign + ")"
+		}
+
 		min++
 	}
 
