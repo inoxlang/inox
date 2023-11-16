@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"maps"
 	"net/http"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -45,7 +46,15 @@ func addFilesystemRoutingHandler(server *HttpsServer, staticDir, dynamicDir core
 				staticResourcePath += "index.html"
 			}
 
+			fileExtension := filepath.Ext(string(staticResourcePath))
+
 			if fs_ns.Exists(handlerGlobalState.Ctx, staticResourcePath) {
+
+				//add CSP header if the content is HTML.
+				if mimeconsts.IsMimeTypeExtension(mimeconsts.HTML_CTYPE, fileExtension) {
+					rw.AddHeader(handlerGlobalState.Ctx, CSP_HEADER_NAME, core.Str(server.defaultCSP.String()))
+				}
+
 				err := serveFile(handlerGlobalState.Ctx, rw, req, staticResourcePath)
 				if err != nil {
 					handlerGlobalState.Logger.Err(err).Send()
@@ -68,7 +77,12 @@ func addFilesystemRoutingHandler(server *HttpsServer, staticDir, dynamicDir core
 	if isMiddleware {
 		return errors.New("filesystem routing handler cannot be used as a middleware")
 	} else {
-		api, err := getFSRoutingServerAPI(server.state.Ctx, dynamicDir.UnderlyingString())
+		dynamicDirString := ""
+		if dynamicDir != "" {
+			dynamicDirString = dynamicDir.UnderlyingString()
+		}
+
+		api, err := getFSRoutingServerAPI(server.state.Ctx, dynamicDirString)
 		if err != nil {
 			return err
 		}

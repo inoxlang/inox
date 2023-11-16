@@ -31,9 +31,11 @@ func getFSRoutingServerAPI(ctx *core.Context, dir string) (*API, error) {
 
 	endpoints := map[string]*ApiEndpoint{}
 
-	err := addFilesysteDirEndpoints(ctx, endpoints, dir, "/", preparedModuleCache)
-	if err != nil {
-		return nil, err
+	if dir != "" {
+		err := addFilesysteDirEndpoints(ctx, endpoints, dir, "/", preparedModuleCache)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return NewAPI(endpoints)

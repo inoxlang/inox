@@ -30,3 +30,8 @@ var FILE_EXTENSION_TO_MIMETYPE = map[string]string{
 	".txt":  PLAIN_TEXT_CTYPE,
 	".md":   PLAIN_TEXT_CTYPE,
 }
+
+// IsMimeTypeExtension returns true if ext corresponds to mimetype.
+func IsMimeTypeExtension(mimetype string, ext string) bool {
+	return FILE_EXTENSION_TO_MIMETYPE[ext] == mimetype
+}

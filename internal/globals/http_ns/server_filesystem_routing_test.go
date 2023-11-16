@@ -72,6 +72,31 @@ func TestFilesystemRouting(t *testing.T) {
 		defer core.UnsetDefaultMaxRequestHandlerLimits()
 	}
 
+	t.Run("GET /x.html should return the content of /static/x.html and the CSP header should be set", func(t *testing.T) {
+		runServerTest(t,
+			serverTestCase{
+				input: `return {
+						routing: {static: /static/}
+					}`,
+				makeFilesystem: func() afs.Filesystem {
+					fls := fs_ns.NewMemFilesystem(10_000)
+					fls.MkdirAll("/static", fs_ns.DEFAULT_DIR_FMODE)
+					util.WriteFile(fls, "/static/x.html", []byte(`x`), fs_ns.DEFAULT_FILE_FMODE)
+
+					return fls
+				},
+				requests: []requestTestInfo{
+					{
+						path:                "/x.html",
+						acceptedContentType: mimeconsts.HTML_CTYPE,
+						result:              `x`,
+					},
+				},
+			},
+			createClient,
+		)
+	})
+
 	t.Run("GET /x should return the result of /routes/x.ix", func(t *testing.T) {
 		runServerTest(t,
 			serverTestCase{
