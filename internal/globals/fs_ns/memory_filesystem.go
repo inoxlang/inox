@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"sync"
 	"time"
 
 	"github.com/go-git/go-billy/v5"
@@ -24,6 +25,9 @@ var (
 type MemFilesystem struct {
 	s         *inMemStorage
 	tempCount int
+
+	watchers     []*virtualFilesystemWatcher
+	watchersLock sync.Mutex
 }
 
 func NewMemFilesystem(maxTotalStorageSize core.ByteCount) *MemFilesystem {

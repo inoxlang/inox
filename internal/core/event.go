@@ -112,7 +112,8 @@ func (evs *EventSourceHandlerManagement) OnEvent(handler EventHandler) error {
 	})
 	return nil
 }
-
+ 
+// GetHandlers returns all event listeners (handlers), they are safe to call without recovering.
 func (evs *EventSourceHandlerManagement) GetHandlers() []EventHandler {
 	evs.lock.RLock()
 	defer evs.lock.RUnlock()

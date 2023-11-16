@@ -22,6 +22,12 @@ func TestEvents(t *testing.T) {
 			return GetOsFilesystem(), t.TempDir() + "/"
 		})
 	})
+
+	t.Run("Memory filesystem", func(t *testing.T) {
+		testEvents(t, func(t *testing.T) (fls afs.Filesystem, tempDir string) {
+			return NewMemFilesystem(1_000_000), "/"
+		})
+	})
 }
 
 func testEvents(t *testing.T, setup func(t *testing.T) (fls afs.Filesystem, tempDir string)) {
@@ -37,21 +43,23 @@ func testEvents(t *testing.T, setup func(t *testing.T) (fls afs.Filesystem, temp
 			Permissions: []core.Permission{
 				core.FilesystemPermission{Kind_: permkind.Read, Entity: dirPatt},
 			},
-			Filesystem: GetOsFilesystem(),
+			Filesystem: fls,
 		})
 		defer ctx.CancelGracefully()
 
 		// create the event source & add a callback function
 		evs, err := NewEventSource(ctx, dirPatt)
-		assert.NoError(t, err)
+		if !assert.NoError(t, err) {
+			return
+		}
 		defer evs.Close()
 
-		callCount := int32(0)
+		var callCount atomic.Int32
 		filepth := filepath.Join(string(tempDir), "file_in_dir.txt")
 		subdirFilepth := filepath.Join(string(subdir), "file_in_subdir.txt")
 
 		err = evs.OnEvent(func(event *core.Event) {
-			count := atomic.AddInt32(&callCount, 1)
+			count := callCount.Add(1)
 
 			switch count {
 			case 1:
@@ -109,7 +117,7 @@ func testEvents(t *testing.T, setup func(t *testing.T) (fls afs.Filesystem, temp
 		assert.NoError(t, fls.Remove(filepth))
 		time.Sleep(100 * time.Millisecond)
 
-		assert.EqualValues(t, 3, atomic.LoadInt32(&callCount))
+		assert.EqualValues(t, 3, callCount.Load())
 
 		// create a file in the subdirectory
 		f, err = fls.Create(subdirFilepth)
@@ -118,7 +126,7 @@ func testEvents(t *testing.T, setup func(t *testing.T) (fls afs.Filesystem, temp
 		}
 
 		time.Sleep(SLEEP_DURATION)
-		assert.EqualValues(t, 4, atomic.LoadInt32(&callCount))
+		assert.EqualValues(t, 4, callCount.Load())
 	})
 
 	t.Run("file path", func(t *testing.T) {
@@ -138,19 +146,21 @@ func testEvents(t *testing.T, setup func(t *testing.T) (fls afs.Filesystem, temp
 			Permissions: []core.Permission{
 				core.FilesystemPermission{Kind_: permkind.Read, Entity: filepth},
 			},
-			Filesystem: GetOsFilesystem(),
+			Filesystem: fls,
 		})
 		defer ctx.CancelGracefully()
 
 		// create the event source & add a callback function
 		evs, err := NewEventSource(ctx, filepth)
-		assert.NoError(t, err)
+		if !assert.NoError(t, err) {
+			return
+		}
 		defer evs.Close()
 
-		callCount := int32(0)
+		var callCount atomic.Int32
 
 		err = evs.OnEvent(func(event *core.Event) {
-			count := atomic.AddInt32(&callCount, 1)
+			count := callCount.Add(1)
 
 			switch count {
 			case 1:
@@ -176,7 +186,7 @@ func testEvents(t *testing.T, setup func(t *testing.T) (fls afs.Filesystem, temp
 		assert.NoError(t, fls.Remove(string(filepth)))
 		time.Sleep(100 * time.Millisecond)
 
-		assert.EqualValues(t, 1, atomic.LoadInt32(&callCount))
+		assert.EqualValues(t, 1, callCount.Load())
 	})
 
 	t.Run("dir path", func(t *testing.T) {
@@ -191,21 +201,23 @@ func testEvents(t *testing.T, setup func(t *testing.T) (fls afs.Filesystem, temp
 			Permissions: []core.Permission{
 				core.FilesystemPermission{Kind_: permkind.Read, Entity: dirPatt},
 			},
-			Filesystem: GetOsFilesystem(),
+			Filesystem: fls,
 		})
 		defer ctx.CancelGracefully()
 
 		// create the event source & add a callback function
 		evs, err := NewEventSource(ctx, dirPatt)
-		assert.NoError(t, err)
+		if !assert.NoError(t, err) {
+			return
+		}
 		defer evs.Close()
 
-		callCount := int32(0)
+		var callCount atomic.Int32
 		filepth := filepath.Join(string(tempDir), "file_in_dir.txt")
 		subdirFilepth := filepath.Join(string(subdir), "file_in_subdir.txt")
 
 		err = evs.OnEvent(func(event *core.Event) {
-			count := atomic.AddInt32(&callCount, 1)
+			count := callCount.Add(1)
 
 			switch count {
 			case 1:
@@ -254,7 +266,7 @@ func testEvents(t *testing.T, setup func(t *testing.T) (fls afs.Filesystem, temp
 		assert.NoError(t, fls.Remove(filepth))
 		time.Sleep(100 * time.Millisecond)
 
-		assert.EqualValues(t, 3, atomic.LoadInt32(&callCount))
+		assert.EqualValues(t, 3, callCount.Load())
 
 		// create a file in the subdirectory
 		f, err = fls.Create(subdirFilepth)
@@ -263,23 +275,28 @@ func testEvents(t *testing.T, setup func(t *testing.T) (fls afs.Filesystem, temp
 		}
 
 		time.Sleep(SLEEP_DURATION)
-		assert.EqualValues(t, 4, atomic.LoadInt32(&callCount))
+		assert.EqualValues(t, int32(4), callCount.Load())
 	})
 
 	t.Run("dir path should end in '/'", func(t *testing.T) {
 		// we create a temporary dir
-		dir := core.Path(t.TempDir())
+		fls, tempDir := setup(t)
+		subdir := filepath.Join(tempDir, "subdir")
+		if !assert.NoError(t, fls.MkdirAll(subdir, DEFAULT_DIR_FMODE)) {
+			return
+		}
+		subdirPath := core.Path(subdir)
 
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.FilesystemPermission{Kind_: permkind.Read, Entity: dir},
+				core.FilesystemPermission{Kind_: permkind.Read, Entity: subdirPath},
 			},
-			Filesystem: GetOsFilesystem(),
+			Filesystem: fls,
 		})
 		defer ctx.CancelGracefully()
 
 		// we create an event source
-		evs, err := NewEventSource(ctx, dir)
+		evs, err := NewEventSource(ctx, subdirPath)
 		assert.ErrorIs(t, err, core.ErrDirPathShouldEndInSlash)
 		assert.Nil(t, evs)
 	})
@@ -297,7 +314,7 @@ func testEvents(t *testing.T, setup func(t *testing.T) (fls afs.Filesystem, temp
 			Permissions: []core.Permission{
 				core.FilesystemPermission{Kind_: permkind.Read, Entity: dirPatt},
 			},
-			Filesystem: GetOsFilesystem(),
+			Filesystem: fls,
 		})
 		defer ctx.CancelGracefully()
 

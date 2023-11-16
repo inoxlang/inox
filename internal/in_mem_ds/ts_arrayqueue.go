@@ -38,6 +38,18 @@ func (q *TSArrayQueue[T]) Dequeue() (value T, ok bool) {
 	return elem, true
 }
 
+// Dequeue removes all the elements of the queue and returns them.
+// The first element of the queue is the first element in the returned slice.
+func (q *TSArrayQueue[T]) DequeueAll() []T {
+	q.lock.Lock()
+	defer q.lock.Unlock()
+
+	elements := slices.Clone(q.elements)
+	q.elements = q.elements[:0]
+
+	return elements
+}
+
 // Peek returns first element of the queue without removing it, or nil if queue is empty.
 // Second return parameter is true, unless the queue was empty and there was nothing to peek.
 func (q *TSArrayQueue[T]) Peek() (value T, ok bool) {
@@ -72,7 +84,7 @@ func (q *TSArrayQueue[T]) Clear() {
 	q.lock.Lock()
 	defer q.lock.Unlock()
 
-	q.elements = q.elements[:1]
+	q.elements = q.elements[:0]
 }
 
 // Values returns all elements in the queue (FIFO order).

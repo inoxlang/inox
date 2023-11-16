@@ -9,6 +9,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/permkind"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 func init() {
@@ -19,10 +20,10 @@ func init() {
 
 type FilesystemEventSource struct {
 	path       core.Path
-	pathFilter core.PathPattern //ignored if empty
+	pathFilter core.PathPattern
 
 	core.EventSourceHandlerManagement
-	watcher  fsWatcher
+	watcher  interface{ Close() error }
 	lock     sync.RWMutex
 	isClosed bool
 }
@@ -94,6 +95,7 @@ func NewEventSource(ctx *core.Context, resourceNameOrPattern core.Value) (*Files
 			return nil, errors.New("only prefix path patterns can be used to create a filesystem event source")
 		}
 		eventSource.path = core.Path(patt.Prefix())
+		eventSource.pathFilter = patt //prefix pattern
 		recursive = true
 		permissionEntity = patt
 	case core.Path:
@@ -114,14 +116,14 @@ func NewEventSource(ctx *core.Context, resourceNameOrPattern core.Value) (*Files
 			}
 			eventSource.path = pth
 			permissionEntity = pth
-
+			eventSource.pathFilter = core.PathPattern(pth) //globbing pattern
 		} else {
 			if pth.IsDirPath() {
 				return nil, core.ErrFilePathShouldNotEndInSlash
 			}
 			dir := filepath.Dir(string(pth))
 			eventSource.path = core.Path(dir + "/")
-			eventSource.pathFilter = core.PathPattern(pth)
+			eventSource.pathFilter = core.PathPattern(pth) //globbing pattern
 		}
 	}
 
@@ -140,33 +142,69 @@ func NewEventSource(ctx *core.Context, resourceNameOrPattern core.Value) (*Files
 
 	//create watcher & add paths
 
-	watcher, err := newFsWatcher()
-	if err != nil {
-		return nil, err
-	}
-
-	// TODO: prevent watching on special filesystems
-	err = watcher.Add(string(eventSource.path))
-	if err != nil {
-		return nil, err
-	}
-
-	eventSource.watcher = watcher
-
-	watchedDirPaths := map[core.Path]bool{}
-
+	watchedDirPaths := map[core.Path]struct{}{}
 	if recursive {
 		_, paths := core.GetWalkEntries(ctx.GetFileSystem(), eventSource.path)
 		for _, pathList := range paths[1:] {
-			err = watcher.Add(pathList[0])
-			watchedDirPaths[core.Path(pathList[0])] = true
+			watchedDirPaths[core.Path(pathList[0])] = struct{}{}
 			if err != nil {
 				return nil, err
 			}
 		}
 	}
 
-	go watcher.listenForEventsSync(ctx, fls, eventSource, watchedDirPaths)
+	if watchable, ok := fls.(watchableVirtualFilesystem); ok {
+		watcher := watchable.watcher(eventSource)
 
+		eventSource.watcher = watcher
+	} else {
+		watcher, err := newFsWatcher()
+		if err != nil {
+			return nil, err
+		}
+
+		// TODO: prevent watching on special filesystems
+		err = watcher.Add(string(eventSource.path))
+		if err != nil {
+			return nil, err
+		}
+
+		eventSource.watcher = watcher
+		watchedDirPaths := map[core.Path]struct{}{}
+
+		if recursive {
+			_, paths := core.GetWalkEntries(ctx.GetFileSystem(), eventSource.path)
+			for _, pathList := range paths[1:] {
+				err = watcher.Add(pathList[0])
+				watchedDirPaths[core.Path(pathList[0])] = struct{}{}
+				if err != nil {
+					return nil, err
+				}
+			}
+		}
+
+		go func() {
+			defer utils.Recover()
+			watcher.listenForEventsSync(ctx, fls, eventSource, watchedDirPaths)
+		}()
+
+	}
 	return eventSource, nil
+}
+
+type fsEventInfo struct {
+	path                                           core.Path
+	writeOp, createOp, removeOp, chmodOp, renameOp bool
+	dateTime                                       core.DateTime
+}
+
+func newFsEvent(info fsEventInfo) *core.Event {
+	return core.NewEvent(core.NewRecordFromMap(core.ValMap{
+		"path":      info.path,
+		"write_op":  core.Bool(info.writeOp),
+		"create_op": core.Bool(info.createOp),
+		"remove_op": core.Bool(info.removeOp),
+		"chmod_op":  core.Bool(info.chmodOp),
+		"rename_op": core.Bool(info.renameOp),
+	}), info.dateTime, info.path)
 }

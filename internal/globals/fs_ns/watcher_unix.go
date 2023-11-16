@@ -28,7 +28,7 @@ func (watcher fsWatcher) listenForEventsSync(
 	ctx *core.Context,
 	fls afs.Filesystem,
 	eventSource *FilesystemEventSource,
-	watchedDirPaths map[core.Path]bool,
+	watchedDirPaths map[core.Path]struct{},
 ) {
 
 	for {
@@ -43,10 +43,11 @@ func (watcher fsWatcher) listenForEventsSync(
 
 			eventPath := core.Path(event.Name)
 
+			//update eventPath if event.Name is a directory.
 			if eventPath[len(eventPath)-1] != '/' {
 				dirPath := eventPath + "/"
 
-				if watchedDirPaths[dirPath] {
+				if _, ok := watchedDirPaths[dirPath]; ok {
 					eventPath = dirPath
 				} else {
 					info, err := fls.Lstat(event.Name)
@@ -76,7 +77,7 @@ func (watcher fsWatcher) listenForEventsSync(
 
 				if eventPath.IsDirPath() {
 					watcher.Add(event.Name)
-					watchedDirPaths[eventPath] = true
+					watchedDirPaths[eventPath] = struct{}{}
 				}
 			}
 
@@ -96,14 +97,15 @@ func (watcher fsWatcher) listenForEventsSync(
 				renameOp = true
 			}
 
-			fsEvent := core.NewEvent(core.NewRecordFromMap(core.ValMap{
-				"path":      eventPath,
-				"write_op":  core.Bool(writeOp),
-				"create_op": core.Bool(createOp),
-				"remove_op": core.Bool(removeOp),
-				"chmod_op":  core.Bool(chmodOp),
-				"rename_op": core.Bool(renameOp),
-			}), core.DateTime(now), eventPath)
+			fsEvent := newFsEvent(fsEventInfo{
+				path:     eventPath,
+				writeOp:  writeOp,
+				createOp: createOp,
+				removeOp: removeOp,
+				chmodOp:  chmodOp,
+				renameOp: renameOp,
+				dateTime: core.DateTime(now),
+			})
 
 			for _, handler := range eventSource.GetHandlers() {
 				func() {

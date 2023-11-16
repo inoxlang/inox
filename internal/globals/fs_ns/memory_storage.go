@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/in_mem_ds"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
@@ -33,6 +34,8 @@ type inMemStorage struct {
 	children         map[string]map[ /* basename */ string]*InMemfile
 	totalContentSize atomic.Int64
 	maxStorageSize   int64
+
+	eventQueue *in_mem_ds.TSArrayQueue[fsEventInfo]
 }
 
 func newInMemoryStorage(maxStorageSize core.ByteCount) *inMemStorage {
@@ -48,9 +51,11 @@ func newInMemoryStorage(maxStorageSize core.ByteCount) *inMemStorage {
 		files:          make(map[string]*InMemfile, 0),
 		children:       make(map[string]map[string]*InMemfile, 0),
 		maxStorageSize: int64(maxStorageSize),
+
+		eventQueue: in_mem_ds.NewTSArrayQueue[fsEventInfo](),
 	}
 
-	f, err := storage.newNoLock("/", 0700|fs.ModeDir, 0)
+	f, err := storage.newNoLock("/", 0700|fs.ModeDir, 0, true)
 	if err != nil {
 		panic(err)
 	}
@@ -67,11 +72,12 @@ func newInMemoryStorageFromSnapshot(snapshot core.FilesystemSnapshot, maxStorage
 		path := NormalizeAsAbsolute(string(metadata.AbsolutePath))
 
 		file := &InMemfile{
-			basename:     filepath.Base(path),
-			originalPath: path,
-			absPath:      metadata.AbsolutePath,
-			flag:         0,
-			mode:         fs.FileMode(metadata.Mode),
+			basename:          filepath.Base(path),
+			originalPath:      path,
+			absPath:           metadata.AbsolutePath,
+			flag:              0,
+			mode:              fs.FileMode(metadata.Mode),
+			storageLastEvents: storage.eventQueue,
 		}
 		storage.files[path] = file
 
@@ -144,10 +150,10 @@ func (s *inMemStorage) hasNoLock(path string) bool {
 func (s *inMemStorage) New(path string, mode os.FileMode, flag int) (*InMemfile, error) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
-	return s.newNoLock(path, mode, flag)
+	return s.newNoLock(path, mode, flag, false)
 }
 
-func (s *inMemStorage) newNoLock(path string, mode os.FileMode, flag int) (*InMemfile, error) {
+func (s *inMemStorage) newNoLock(path string, mode os.FileMode, flag int, ignoreEvent bool) (*InMemfile, error) {
 	originalPath := path
 	path = NormalizeAsAbsolute(path)
 	if s.hasNoLock(path) {
@@ -169,8 +175,9 @@ func (s *inMemStorage) newNoLock(path string, mode os.FileMode, flag int) (*InMe
 			name:         name,
 			creationTime: now,
 		},
-		mode: mode,
-		flag: flag,
+		mode:              mode,
+		flag:              flag,
+		storageLastEvents: s.eventQueue,
 	}
 
 	if f.mode.IsDir() {
@@ -186,6 +193,25 @@ func (s *inMemStorage) newNoLock(path string, mode os.FileMode, flag int) (*InMe
 
 	s.files[path] = f
 	s.createUpdateParentNoLock(path, mode, f)
+
+	if !ignoreEvent {
+		func() {
+			defer utils.Recover()
+
+			event := fsEventInfo{
+				path:     core.Path(f.absPath),
+				createOp: true,
+				dateTime: core.DateTime(now),
+			}
+
+			if f.mode.IsDir() {
+				event.path = core.AppendTrailingSlashIfNotPresent(event.path)
+			}
+
+			s.eventQueue.Enqueue(event)
+		}()
+	}
+
 	return f, nil
 }
 
@@ -206,7 +232,7 @@ func (s *inMemStorage) createUpdateParentNoLock(path string, mode os.FileMode, f
 	}
 
 	if base != "/" {
-		if _, err := s.newNoLock(base, mode.Perm()|os.ModeDir, 0); err != nil {
+		if _, err := s.newNoLock(base, mode.Perm()|os.ModeDir, 0, true); err != nil {
 			return err
 		}
 	}
@@ -298,11 +324,14 @@ func (s *inMemStorage) Rename(from, to string) error {
 		move = append(move, [2]string{pathFrom, pathTo})
 	}
 
-	for _, ops := range move {
-		from := ops[0]
-		to := ops[1]
+	for i, ops := range move {
+		//ignore events for all move operations expected the first one.
+		ignoreEvent := i != 0
 
-		if err := s.moveNoLock(from, to); err != nil {
+		opFrom := ops[0]
+		opTo := ops[1]
+
+		if err := s.moveNoLock(opFrom, opTo, ignoreEvent); err != nil {
 			return err
 		}
 	}
@@ -310,7 +339,7 @@ func (s *inMemStorage) Rename(from, to string) error {
 	return nil
 }
 
-func (s *inMemStorage) moveNoLock(from, to string) error {
+func (s *inMemStorage) moveNoLock(from, to string, ignoreEvent bool) error {
 	s.files[to] = s.files[from]
 	f := s.files[to]
 	f.basename = filepath.Base(to)
@@ -318,6 +347,23 @@ func (s *inMemStorage) moveNoLock(from, to string) error {
 	f.originalPath = to
 
 	s.children[to] = s.children[from]
+
+	//add event
+	if !ignoreEvent {
+		defer func() {
+			defer utils.Recover()
+			event := fsEventInfo{
+				path:     core.Path(f.absPath),
+				renameOp: true,
+				dateTime: core.DateTime(time.Now()),
+			}
+
+			if f.mode.IsDir() {
+				event.path = core.AppendTrailingSlashIfNotPresent(event.path)
+			}
+			s.eventQueue.Enqueue(event)
+		}()
+	}
 
 	defer func() {
 		delete(s.children, from)
@@ -339,16 +385,35 @@ func (s *inMemStorage) Remove(path string) error {
 		return os.ErrNotExist
 	}
 
-	if f.mode.IsDir() && len(s.children[path]) != 0 {
+	isDir := f.mode.IsDir()
+
+	if isDir && len(s.children[path]) != 0 {
 		return errors.New(fmtDirContainFiles(path))
 	}
 
+	now := time.Now()
+
 	base, file := filepath.Split(path)
 	base = filepath.Clean(base)
-	s.files[base].content.modificationTime.Store(time.Now())
+	s.files[base].content.modificationTime.Store(now)
 
 	delete(s.children[base], file)
 	delete(s.files, path)
+
+	func() {
+		defer utils.Recover()
+		event := fsEventInfo{
+			path:     core.Path(f.absPath),
+			removeOp: true,
+			dateTime: core.DateTime(now),
+		}
+
+		if isDir {
+			event.path = core.AppendTrailingSlashIfNotPresent(event.path)
+		}
+		s.eventQueue.Enqueue(event)
+	}()
+
 	return nil
 }
 

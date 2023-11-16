@@ -10,6 +10,7 @@ import (
 	"github.com/go-git/go-billy/v5"
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/in_mem_ds"
 )
 
 var (
@@ -28,6 +29,9 @@ type InMemfile struct {
 
 	position     int64
 	positionLock sync.Mutex
+
+	//last events of the inMemStorage containing the file.
+	storageLastEvents *in_mem_ds.TSArrayQueue[fsEventInfo]
 }
 
 func (f *InMemfile) Name() string {
@@ -97,6 +101,13 @@ func (f *InMemfile) Write(p []byte) (int, error) {
 	n, err := f.content.WriteAt(p, f.position)
 	f.position += int64(n)
 
+	//add event
+	f.storageLastEvents.Enqueue(fsEventInfo{
+		path:     core.Path(f.absPath),
+		writeOp:  true,
+		dateTime: core.DateTime(f.content.ModifTime()),
+	})
+
 	return n, err
 }
 
@@ -114,7 +125,18 @@ func (f *InMemfile) Close() error {
 }
 
 func (f *InMemfile) Truncate(size int64) error {
-	return f.content.Truncate(size)
+	err := f.content.Truncate(size)
+
+	if err == nil {
+		//add event
+		f.storageLastEvents.Enqueue(fsEventInfo{
+			path:     core.Path(f.absPath),
+			writeOp:  true,
+			dateTime: core.DateTime(f.content.ModifTime()),
+		})
+	}
+
+	return err
 }
 
 func (f *InMemfile) Duplicate(originalPath string, mode os.FileMode, flag int) billy.File {
@@ -125,6 +147,8 @@ func (f *InMemfile) Duplicate(originalPath string, mode os.FileMode, flag int) b
 		content:      f.content,
 		mode:         mode,
 		flag:         flag,
+
+		storageLastEvents: f.storageLastEvents,
 	}
 
 	if IsTruncate(flag) {
