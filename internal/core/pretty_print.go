@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/inoxlang/inox/internal/commonfmt"
 	parse "github.com/inoxlang/inox/internal/parse"
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
 	"github.com/inoxlang/inox/internal/utils"
@@ -866,7 +867,7 @@ func (slice *ByteSlice) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, 
 }
 
 func (v *GoFunction) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
-	InspectPrint(w, v)
+	utils.Must(w.WriteString(commonfmt.FormatGoFunctionSignature(v.fn)))
 }
 
 func (opt Option) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
