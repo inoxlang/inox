@@ -20,6 +20,9 @@ import (
 const (
 	//maximum length of strings tested against regex patterns, sequence string patterns and parser patterns.
 	DEFAULT_MAX_TESTED_STRING_BYTE_LENGTH = 10_000_000
+
+	UNSIGNED_DECIMAL_FLOAT_REGEX = "[0-9]+(?:\\.?[0-9]*)(?:[Ee][-+]?[0-9]*)?"
+	UNSIGNED_ZERO_FLOAT_REGEX    = "0+(?:\\.?0*)?(?:[Ee][-+]?[0-9]*)?"
 )
 
 var (
@@ -29,10 +32,16 @@ var (
 	ErrTestedStringTooLarge                             = errors.New("tested string is too large")
 	ErrFailedToConvertValueToMatchingString             = errors.New("failed to convert value to matching string")
 	ErrIntNotInPatternRange                             = errors.New("integer is not in the pattern's range")
+	ErrFloatNotInPatternRange                           = errors.New("float is not in the pattern's range")
 
 	//_ = []StringPattern{&ParserBasedPseudoPattern{}}
 
 	_ = []ToStringConversionCapableStringPattern{(*IntRangeStringPattern)(nil)}
+
+	MAX_CHAR_COUNT_MAXIMUM_FLOAT_64 = max(
+		len(strconv.FormatFloat(math.MaxFloat64, 'f', -1, 64)),
+		len(strconv.FormatFloat(math.MaxFloat64, 'e', -1, 64)),
+	)
 )
 
 type StringPattern interface {
@@ -789,7 +798,7 @@ func (patt *RuneRangeStringPattern) StringPattern() (StringPattern, bool) {
 }
 
 // An IntRangeStringPattern matches a string (or substring) representing a decimal integer number in a given range.
-// Example: for the range (-99,99) the found match substrings in the following strings are surrounded  by parentheses.
+// Example: for the range (-99,99) the found match substrings in the following strings are surrounded by parentheses.
 // positive:
 // (12)
 // (12)-
@@ -959,6 +968,138 @@ func (patt *IntRangeStringPattern) StringFrom(ctx *Context, v Value) (string, er
 	switch val := v.(type) {
 	case Int:
 		return strconv.FormatInt(int64(val), 10), nil
+	default:
+		return "", ErrFailedToConvertValueToMatchingString
+	}
+}
+
+// An FloatRangeStringPattern matches a string (or substring) representing a decimal floating point number in a given range.
+// As of now only the following ranges are supported:
+//   - [-math.MaxFloat64, math.MaxFloat64]
+//   - [-math.MaxFloat64, 0]
+//   - [0, math.MaxFloat64]
+//
+// TODO: make sure all the methods are consistent.
+type FloatRangeStringPattern struct {
+	regexp             *regexp.Regexp
+	entireStringRegexp *regexp.Regexp
+
+	node        parse.Node
+	floatRange  FloatRange
+	lengthRange IntRange
+
+	CallBasedPatternReprMixin
+
+	NotCallablePatternMixin
+}
+
+func NewFloatRangeStringPattern(lower, upperIncluded float64, node parse.Node) *FloatRangeStringPattern {
+
+	lengthRange := IntRange{
+		step:         1,
+		inclusiveEnd: true,
+		start:        1,
+	}
+
+	var regex string
+
+	switch {
+	case lower == -math.MaxFloat64 && upperIncluded == math.MaxFloat64:
+		regex = "-?" + UNSIGNED_DECIMAL_FLOAT_REGEX
+		lengthRange.end = (1 /*sign*/) + int64(MAX_CHAR_COUNT_MAXIMUM_FLOAT_64)
+	case lower == -math.MaxFloat64 && upperIncluded == 0:
+		regex = UNSIGNED_ZERO_FLOAT_REGEX + "|-" + UNSIGNED_DECIMAL_FLOAT_REGEX
+		lengthRange.end = (1 /*sign*/) + int64(MAX_CHAR_COUNT_MAXIMUM_FLOAT_64)
+	case lower == 0 && upperIncluded == math.MaxFloat64:
+		regex = UNSIGNED_DECIMAL_FLOAT_REGEX
+		lengthRange.end = int64(MAX_CHAR_COUNT_MAXIMUM_FLOAT_64)
+	default:
+		panic(fmt.Errorf("unsupported floating point range: %g..%g", lower, upperIncluded))
+	}
+
+	entireRegex := "^(?:" + regex + ")$"
+
+	floatRange := NewIncludedEndFloatRange(lower, upperIncluded)
+
+	return &FloatRangeStringPattern{
+		regexp:             regexp.MustCompile(entireRegex[1 : len(entireRegex)-1]),
+		entireStringRegexp: regexp.MustCompile(entireRegex),
+
+		node:        node,
+		floatRange:  floatRange,
+		lengthRange: lengthRange,
+		CallBasedPatternReprMixin: CallBasedPatternReprMixin{
+			Callee: STR_PATTERN_PATTERN,
+			Params: []Serializable{floatRange},
+		},
+	}
+}
+
+func (patt *FloatRangeStringPattern) Test(ctx *Context, v Value) bool {
+	str, ok := v.(StringLike)
+	if !ok {
+		return false
+	}
+	return patt.entireStringRegexp.MatchString(str.GetOrBuildString())
+}
+
+func (patt *FloatRangeStringPattern) validate(s string, i *int) bool {
+	panic(ErrNotImplementedYet)
+}
+
+func (patt *FloatRangeStringPattern) Parse(ctx *Context, s string) (Serializable, error) {
+	i, err := strconv.ParseFloat(s, 64)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if patt.floatRange.unknownStart {
+		panic(ErrUnreachable)
+	}
+
+	if patt.floatRange.start >= 0 && strings.ContainsAny(s, "-") {
+		return nil, ErrFloatNotInPatternRange
+	}
+
+	if patt.floatRange.Includes(ctx, Float(i)) {
+		return Float(i), nil
+	}
+	return nil, ErrFloatNotInPatternRange
+}
+
+func (patt *FloatRangeStringPattern) FindMatches(ctx *Context, val Serializable, config MatchesFindConfig) (groups []Serializable, err error) {
+	return FindMatchesForStringPattern(ctx, patt, val, config)
+}
+
+func (patt *FloatRangeStringPattern) Regex() string {
+	return patt.regexp.String()
+}
+
+func (patt *FloatRangeStringPattern) CompiledRegex() *regexp.Regexp {
+	return patt.regexp
+}
+
+func (patt *FloatRangeStringPattern) HasRegex() bool {
+	return true
+}
+
+func (patt *FloatRangeStringPattern) LengthRange() IntRange {
+	return patt.lengthRange
+}
+
+func (patt *FloatRangeStringPattern) EffectiveLengthRange() IntRange {
+	return patt.LengthRange()
+}
+
+func (patt *FloatRangeStringPattern) StringPattern() (StringPattern, bool) {
+	return nil, false
+}
+
+func (patt *FloatRangeStringPattern) StringFrom(ctx *Context, v Value) (string, error) {
+	switch val := v.(type) {
+	case Float:
+		return strconv.FormatFloat(float64(val), 'g', -1, 64), nil
 	default:
 		return "", ErrFailedToConvertValueToMatchingString
 	}

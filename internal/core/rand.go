@@ -516,6 +516,11 @@ func (pattern *IntRangeStringPattern) Random(ctx *Context, options ...Option) Va
 	return Str(strconv.FormatInt(n, 10))
 }
 
+func (pattern *FloatRangeStringPattern) Random(ctx *Context, options ...Option) Value {
+	n := float64(pattern.floatRange.Random(ctx).(Float))
+	return Str(strconv.FormatFloat(n, 'g', -1, 64))
+}
+
 func (pattern *PathStringPattern) Random(ctx *Context, options ...Option) Value {
 	panic(ErrNotImplementedYet)
 }

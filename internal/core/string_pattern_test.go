@@ -939,6 +939,86 @@ func TestIntRangeStringPattern(t *testing.T) {
 	assertTestAndParse(t, pattern, "-100")
 }
 
+func TestFloatRangeStringPattern(t *testing.T) {
+	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	defer ctx.CancelGracefully()
+
+	max := float64(math.MaxFloat64)
+	min := -float64(math.MaxFloat64)
+
+	minS := strconv.FormatFloat(min, 'g', -1, 64)
+	maxS := strconv.FormatFloat(max, 'g', -1, 64)
+
+	assertTestAndParse := func(t *testing.T, stringPattern StringPattern, s string) {
+		assert.True(t, stringPattern.Test(ctx, Str(s)))
+
+		v, err := stringPattern.Parse(ctx, s)
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		n, err := strconv.ParseFloat(s, 64)
+		if !assert.NoError(t, err) {
+			return
+		}
+		assert.Equal(t, Float(n), v)
+	}
+
+	assertDoesNotTestAndParse := func(t *testing.T, stringPattern StringPattern, s string) {
+		assert.False(t, stringPattern.Test(ctx, Str(s)))
+
+		_, err := stringPattern.Parse(ctx, s)
+		assert.Error(t, err)
+	}
+
+	pattern := NewFloatRangeStringPattern(min, 0, nil)
+	assert.Equal(t, NewIncludedEndIntRange(1, 1+int64(MAX_CHAR_COUNT_MAXIMUM_FLOAT_64)), pattern.LengthRange())
+	assertTestAndParse(t, pattern, minS)
+	assertTestAndParse(t, pattern, "0")
+	assertTestAndParse(t, pattern, "00")
+	assertTestAndParse(t, pattern, "0.0")
+	assertTestAndParse(t, pattern, "0.")
+	assertTestAndParse(t, pattern, "-1")
+	assertTestAndParse(t, pattern, "-01")
+	assertTestAndParse(t, pattern, "-1.0")
+	assertTestAndParse(t, pattern, "-1.")
+	assertTestAndParse(t, pattern, "-0.0")
+	assertTestAndParse(t, pattern, "-0.")
+	assertDoesNotTestAndParse(t, pattern, "1.0")
+	assertDoesNotTestAndParse(t, pattern, "1.")
+	assertDoesNotTestAndParse(t, pattern, "2.0")
+	assertDoesNotTestAndParse(t, pattern, "2.")
+
+	pattern = NewFloatRangeStringPattern(min, max, nil)
+	assert.Equal(t, NewIncludedEndIntRange(1, 1+int64(MAX_CHAR_COUNT_MAXIMUM_FLOAT_64)), pattern.LengthRange())
+	assertTestAndParse(t, pattern, minS)
+	assertTestAndParse(t, pattern, maxS)
+	assertTestAndParse(t, pattern, "0")
+	assertTestAndParse(t, pattern, "0.0")
+	assertTestAndParse(t, pattern, "00")
+	assertTestAndParse(t, pattern, "00.0")
+	assertTestAndParse(t, pattern, "-1")
+	assertTestAndParse(t, pattern, "-01")
+	assertTestAndParse(t, pattern, "-1.0")
+	assertTestAndParse(t, pattern, "-0.0")
+	assertTestAndParse(t, pattern, "1.0")
+	assertTestAndParse(t, pattern, "2.0")
+
+	pattern = NewFloatRangeStringPattern(0, max, nil)
+	assert.Equal(t, NewIncludedEndIntRange(1, int64(MAX_CHAR_COUNT_MAXIMUM_FLOAT_64)), pattern.LengthRange())
+	assertTestAndParse(t, pattern, maxS)
+	assertTestAndParse(t, pattern, "0")
+	assertTestAndParse(t, pattern, "0.0")
+	assertTestAndParse(t, pattern, "00")
+	assertTestAndParse(t, pattern, "00.0")
+	assertTestAndParse(t, pattern, "0.")
+	assertTestAndParse(t, pattern, "1.0")
+	assertTestAndParse(t, pattern, "2.0")
+	assertDoesNotTestAndParse(t, pattern, minS)
+	assertDoesNotTestAndParse(t, pattern, "-1.0")
+	assertDoesNotTestAndParse(t, pattern, "-1.")
+}
+
 func TestUnionStringPattern(t *testing.T) {
 	t.Run(".LengthRange()", func(t *testing.T) {
 		patt := &UnionStringPattern{

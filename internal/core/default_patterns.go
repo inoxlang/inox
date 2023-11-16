@@ -418,8 +418,7 @@ var (
 		},
 
 		stringPattern: func() (StringPattern, bool) {
-			//TODO: use real range when int range string pattern supports any range
-			return NewIntRangeStringPattern(-999999999999999999, 999999999999999999, nil), true
+			return NewFloatRangeStringPattern(-math.MaxFloat64, math.MaxFloat64, nil), true
 		},
 		symbolicStringPattern: func() (symbolic.StringPattern, bool) {
 			//TODO

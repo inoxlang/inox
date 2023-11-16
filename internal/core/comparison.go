@@ -1366,6 +1366,15 @@ func (patt *IntRangeStringPattern) Equal(ctx *Context, other Value, alreadyCompa
 	return patt.intRange.Equal(ctx, otherPatt.intRange, alreadyCompared, depth+1)
 }
 
+func (patt *FloatRangeStringPattern) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	otherPatt, ok := other.(*FloatRangeStringPattern)
+	if !ok {
+		return false
+	}
+
+	return patt.floatRange.Equal(ctx, otherPatt.floatRange, alreadyCompared, depth+1)
+}
+
 func (patt *PathStringPattern) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
 	otherPatt, ok := other.(*PathStringPattern)
 	if !ok {
