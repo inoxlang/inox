@@ -59,3 +59,30 @@ func TestIdentLines(t *testing.T) {
 	//empty line in the middle
 	assert.Equal(t, "abx\n\nabx", IndentLines("x\n\nx", "ab"))
 }
+
+func TestMinMaxPossibleRuneCount(t *testing.T) {
+
+	min, max := MinMaxPossibleRuneCount(4)
+	assert.Equal(t, 1, min)
+	assert.Equal(t, 4, max)
+
+	min, max = MinMaxPossibleRuneCount(5)
+	assert.Equal(t, 2, min)
+	assert.Equal(t, 5, max)
+
+	min, max = MinMaxPossibleRuneCount(6)
+	assert.Equal(t, 2, min)
+	assert.Equal(t, 6, max)
+
+	min, max = MinMaxPossibleRuneCount(7)
+	assert.Equal(t, 2, min)
+	assert.Equal(t, 7, max)
+
+	min, max = MinMaxPossibleRuneCount(8)
+	assert.Equal(t, 2, min)
+	assert.Equal(t, 8, max)
+
+	min, max = MinMaxPossibleRuneCount(9)
+	assert.Equal(t, 3, min)
+	assert.Equal(t, 9, max)
+}

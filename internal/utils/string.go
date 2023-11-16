@@ -45,9 +45,13 @@ func IndentLines(s string, indent string) string {
 }
 
 func MinMaxPossibleRuneCount(byteCount int) (int, int) {
-	minPossibleRuneCount := byteCount / 4 //4 is the maximum number of bytes for a single character in UTF-8
-	maxPossibleRuneCount := byteCount
+	//4 is the maximum number of bytes for a single character in UTF-8
+	minPossibleRuneCount := byteCount / 4
+	if (byteCount % 4) > 0 {
+		minPossibleRuneCount++
+	}
 
+	maxPossibleRuneCount := byteCount
 	return minPossibleRuneCount, maxPossibleRuneCount
 }
 
