@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"math"
 	"regexp"
 	"regexp/syntax"
 	"strconv"
@@ -43,7 +44,7 @@ func TestRegexForRange(t *testing.T) {
 		assert.Equal(t, `(?:-[1-9]|@1\d|\d)`, RegexForRange(-19, 19, IntegerRangeRegexConfig{IntersectedPrefix: "@"}))
 	})
 
-	checkMatches := func(t *testing.T, regex string, min int64, max int64, from_min int64, to_max int64) {
+	checkMatchesRange := func(t *testing.T, regex string, min int64, max int64, from_min int64, to_max int64) {
 		compiledRegex := regexp.MustCompile("^" + regex + "$")
 
 		for nr := from_min; nr <= to_max; nr++ {
@@ -55,64 +56,107 @@ func TestRegexForRange(t *testing.T) {
 		}
 	}
 
+	checkMatches := func(t *testing.T, regex string, n int64) {
+		compiledRegex := regexp.MustCompile("^" + regex + "$")
+		assert.Regexp(t, compiledRegex, strconv.FormatInt(n, 10))
+	}
+
+	checkNotMatches := func(t *testing.T, regex string, n int64) {
+		compiledRegex := regexp.MustCompile("^" + regex + "$")
+		assert.NotRegexp(t, compiledRegex, strconv.FormatInt(n, 10))
+	}
+
 	t.Run("", func(t *testing.T) {
 		regex := RegexForRange(1, 1)
-		checkMatches(t, regex, 1, 1, 0, 100)
+		checkMatchesRange(t, regex, 1, 1, 0, 100)
 
 		regex = RegexForRange(65443, 65443)
-		checkMatches(t, regex, 65443, 65443, 65000, 66000)
+		checkMatchesRange(t, regex, 65443, 65443, 65000, 66000)
 
 		regex = RegexForRange(192, 100020000300000)
-		checkMatches(t, regex, 192, 1000, 0, 1000)
+		checkMatchesRange(t, regex, 192, 1000, 0, 1000)
 		//verify(t, regex, 100019999300000, 100020000300000, 100019999300000, 100020000400000)
 
 		regex = RegexForRange(10331, 20381)
-		checkMatches(t, regex, 10331, 20381, 0, 99999)
+		checkMatchesRange(t, regex, 10331, 20381, 0, 99999)
 
 		regex = RegexForRange(10031, 20081)
-		checkMatches(t, regex, 10031, 20081, 0, 99999)
+		checkMatchesRange(t, regex, 10031, 20081, 0, 99999)
 
 		regex = RegexForRange(10301, 20101)
-		checkMatches(t, regex, 10301, 20101, 0, 99999)
+		checkMatchesRange(t, regex, 10301, 20101, 0, 99999)
 
 		regex = RegexForRange(1030, 20101)
-		checkMatches(t, regex, 1030, 20101, 0, 99999)
+		checkMatchesRange(t, regex, 1030, 20101, 0, 99999)
 
 		regex = RegexForRange(102, 111)
-		checkMatches(t, regex, 102, 111, 0, 1000)
+		checkMatchesRange(t, regex, 102, 111, 0, 1000)
 
 		regex = RegexForRange(102, 110)
-		checkMatches(t, regex, 102, 110, 0, 1000)
+		checkMatchesRange(t, regex, 102, 110, 0, 1000)
 
 		regex = RegexForRange(102, 130)
-		checkMatches(t, regex, 102, 130, 0, 1000)
+		checkMatchesRange(t, regex, 102, 130, 0, 1000)
 
 		regex = RegexForRange(4173, 7981)
-		checkMatches(t, regex, 4173, 7981, 0, 99999)
+		checkMatchesRange(t, regex, 4173, 7981, 0, 99999)
 
 		regex = RegexForRange(3, 7)
-		checkMatches(t, regex, 3, 7, 0, 99)
+		checkMatchesRange(t, regex, 3, 7, 0, 99)
 
 		regex = RegexForRange(1, 9)
-		checkMatches(t, regex, 1, 9, 0, 1000)
+		checkMatchesRange(t, regex, 1, 9, 0, 1000)
 
 		regex = RegexForRange(1000, 8632)
-		checkMatches(t, regex, 1000, 8632, 0, 99999)
+		checkMatchesRange(t, regex, 1000, 8632, 0, 99999)
 
 		regex = RegexForRange(13, 8632)
-		checkMatches(t, regex, 13, 8632, 0, 10000)
+		checkMatchesRange(t, regex, 13, 8632, 0, 10000)
 
 		regex = RegexForRange(9, 11)
-		checkMatches(t, regex, 9, 11, 0, 100)
+		checkMatchesRange(t, regex, 9, 11, 0, 100)
 
 		regex = RegexForRange(90, 98099)
-		checkMatches(t, regex, 90, 98099, 0, 99999)
+		checkMatchesRange(t, regex, 90, 98099, 0, 99999)
 
 		regex = RegexForRange(19, 21)
-		checkMatches(t, regex, 19, 21, 0, 100)
+		checkMatchesRange(t, regex, 19, 21, 0, 100)
 
 		regex = RegexForRange(999, 10000)
-		checkMatches(t, regex, 999, 10000, 1, 20000)
+		checkMatchesRange(t, regex, 999, 10000, 1, 20000)
+
+		regex = RegexForRange(math.MinInt64+1, 0)
+		checkMatches(t, regex, math.MinInt64+1)
+		checkMatches(t, regex, math.MinInt64+2)
+		checkMatches(t, regex, -1)
+		checkMatches(t, regex, 0)
+		checkNotMatches(t, regex, math.MinInt64)
+		checkNotMatches(t, regex, 1)
+
+		regex = RegexForRange(math.MinInt64, 0)
+		checkMatches(t, regex, math.MinInt64)
+		checkMatches(t, regex, math.MinInt64+1)
+		checkMatches(t, regex, math.MinInt64+2)
+		checkMatches(t, regex, -1)
+		checkMatches(t, regex, 0)
+		checkNotMatches(t, regex, 1)
+		checkNotMatches(t, regex, math.MaxInt64)
+
+		regex = RegexForRange(0, math.MaxInt64)
+		checkMatches(t, regex, math.MaxInt64)
+		checkMatches(t, regex, math.MaxInt64-1)
+		checkMatches(t, regex, 0)
+		checkMatches(t, regex, 1)
+		checkNotMatches(t, regex, math.MinInt64)
+		checkNotMatches(t, regex, -1)
+
+		regex = RegexForRange(math.MinInt64+1, math.MaxInt64)
+		checkMatches(t, regex, math.MinInt64+1)
+		checkMatches(t, regex, math.MaxInt64)
+		checkMatches(t, regex, math.MaxInt64-1)
+		checkMatches(t, regex, 0)
+		checkMatches(t, regex, 1)
+		checkNotMatches(t, regex, math.MinInt64)
 	})
 }
 

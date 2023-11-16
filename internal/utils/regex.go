@@ -24,6 +24,11 @@ func RegexForRange(min, max int64, conf ...IntegerRangeRegexConfig) string {
 		config = conf[0]
 	}
 
+	isHardMinimum := min == math.MinInt64
+	if isHardMinimum {
+		min++
+	}
+
 	splitToRanges := func(min, max int64) []int64 {
 		stopsSet := map[int64]struct{}{max: {}}
 
@@ -112,6 +117,10 @@ func RegexForRange(min, max int64, conf ...IntegerRangeRegexConfig) string {
 	})
 
 	subpatterns := append(append(negativeOnlySubpatterns, intersectedSubpatterns...), positiveOnlySubpatterns...)
+
+	if isHardMinimum {
+		subpatterns = append(subpatterns, strconv.FormatInt(math.MinInt64, 10))
+	}
 
 	prefix := "(?:"
 	if config.CapturingGroup {
