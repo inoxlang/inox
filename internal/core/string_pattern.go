@@ -28,6 +28,7 @@ var (
 	ErrInvalidInputString                               = errors.New("invalid input string")
 	ErrTestedStringTooLarge                             = errors.New("tested string is too large")
 	ErrFailedToConvertValueToMatchingString             = errors.New("failed to convert value to matching string")
+	ErrIntNotInPatternRange                             = errors.New("integer is not in the pattern's range")
 
 	//_ = []StringPattern{&ParserBasedPseudoPattern{}}
 
@@ -820,10 +821,6 @@ type IntRangeStringPattern struct {
 }
 
 func NewIntRangeStringPattern(lower, upperIncluded int64, node parse.Node) *IntRangeStringPattern {
-	if lower == math.MinInt64 {
-		panic(fmt.Errorf("minimum int64 not supported yet"))
-	}
-
 	entireRegex := "^" + utils.RegexForRange(lower, upperIncluded, utils.IntegerRangeRegexConfig{
 		CapturingGroup:     false,
 		NegativeOnlyPrefix: "-",
@@ -836,8 +833,17 @@ func NewIntRangeStringPattern(lower, upperIncluded int64, node parse.Node) *IntR
 		inclusiveEnd: true,
 	}
 
+	//compute the minimum and maximum number of digits
 	if lower < 0 {
-		absLower := utils.Abs(lower)
+		usedLower := lower
+
+		//since MinInt64 has no absolute value we decrement lower.
+		//there is no impact on the number of digits.
+		if usedLower == math.MinInt64 {
+			usedLower++
+		}
+
+		absLower := utils.Abs(usedLower)
 		absUpper := utils.Abs(upperIncluded)
 
 		if upperIncluded < 0 {
@@ -906,14 +912,19 @@ func (patt *IntRangeStringPattern) validate(s string, i *int) bool {
 }
 
 func (patt *IntRangeStringPattern) Parse(ctx *Context, s string) (Serializable, error) {
-	i, err := strconv.ParseInt(s, 10, 16)
+	i, err := strconv.ParseInt(s, 10, 64)
+
+	if s == "-0" {
+		return nil, errors.New("-0 not supported")
+	}
+
 	if err != nil {
 		return nil, err
 	}
 	if patt.intRange.Includes(ctx, Int(i)) {
 		return Int(i), nil
 	}
-	return nil, errors.New("integer is not in valid range")
+	return nil, ErrIntNotInPatternRange
 }
 
 func (patt *IntRangeStringPattern) FindMatches(ctx *Context, val Serializable, config MatchesFindConfig) (groups []Serializable, err error) {
