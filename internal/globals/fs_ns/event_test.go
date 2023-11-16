@@ -10,6 +10,7 @@ import (
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/permkind"
+	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -31,6 +32,7 @@ func TestEvents(t *testing.T) {
 }
 
 func testEvents(t *testing.T, setup func(t *testing.T) (fls afs.Filesystem, tempDir string)) {
+
 	t.Run("prefix pattern", func(t *testing.T) {
 		// create a temporary directory & a subdirectory in it
 		fls, tempDir := setup(t)
@@ -323,4 +325,77 @@ func testEvents(t *testing.T, setup func(t *testing.T) (fls afs.Filesystem, temp
 		assert.ErrorIs(t, err, core.ErrFilePathShouldNotEndInSlash)
 		assert.Nil(t, evs)
 	})
+
+	t.Run("if the FS is virtual, a single event should be emitted for a few same-file writes that are very close in time", func(t *testing.T) {
+		// create a temporary directory & a file in it
+		fls, tempDir := setup(t)
+
+		if utils.Implements[*OsFilesystem](fls) {
+			t.SkipNow()
+		}
+
+		filepth := core.Path(filepath.Join(tempDir, "file.txt"))
+
+		f, err := fls.Create(string(filepth))
+		if assert.NoError(t, err) {
+			if capable, ok := f.(afs.SyncCapable); ok {
+				capable.Sync()
+			}
+		}
+
+		ctx := core.NewContext(core.ContextConfig{
+			Permissions: []core.Permission{
+				core.FilesystemPermission{Kind_: permkind.Read, Entity: filepth},
+			},
+			Filesystem: fls,
+		})
+		defer ctx.CancelGracefully()
+
+		// create the event source & add a callback function
+		evs, err := NewEventSource(ctx, filepth)
+		if !assert.NoError(t, err) {
+			return
+		}
+		defer evs.Close()
+
+		var callCount atomic.Int32
+
+		err = evs.OnEvent(func(event *core.Event) {
+			count := callCount.Add(1)
+
+			switch count {
+			case 1:
+				//a single event with write_op true is expected.
+				assert.Equal(t, core.NewRecordFromMap(core.ValMap{
+					"path":      filepth,
+					"write_op":  core.True,
+					"create_op": core.False,
+					"remove_op": core.False,
+					"chmod_op":  core.False,
+					"rename_op": core.False,
+				}), event.Value())
+			}
+		})
+		assert.NoError(t, err)
+
+		for i := 0; i < 10; i++ {
+			_, err := f.Write([]byte{'a'})
+			if !assert.NoError(t, err) {
+				return
+			}
+		}
+
+		if capable, ok := f.(afs.SyncCapable); ok {
+			capable.Sync()
+		}
+
+		if !assert.NoError(t, f.Close()) {
+			return
+		}
+
+		time.Sleep(SLEEP_DURATION)
+
+		assert.EqualValues(t, 1, callCount.Load())
+	})
+
 }

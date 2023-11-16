@@ -7,6 +7,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/in_mem_ds"
 	"github.com/inoxlang/inox/internal/utils"
 )
@@ -111,13 +112,41 @@ func startWatcherManagingGoroutine() {
 		ticker := time.NewTicker(WATCHER_MANAGEMENT_TICK_INTERVAL)
 		defer ticker.Stop()
 
+		//these slice are re-used accross all invocations of manageSingleFs to minimize allocations.
+		var deduplicatedEvents []fsEventInfo
+		var writtenFiles []core.Path
+
 		manageSingleFs := func(vfs watchableVirtualFilesystem) {
 			defer utils.Recover()
 
 			watchers := vfs.getWatchers()
 			queue := vfs.events()
 			events := queue.DequeueAll()
-			coreEvents := utils.MapSlice(events, newFsEvent)
+
+			deduplicatedEvents = deduplicatedEvents[:0]
+			writtenFiles = writtenFiles[:0]
+
+			defer func() {
+				deduplicatedEvents = deduplicatedEvents[:0]
+				writtenFiles = writtenFiles[:0]
+			}()
+
+			//collapse write-only events on the same file
+			for _, event := range events {
+
+				if !event.writeOp || event.createOp || event.removeOp || event.renameOp {
+					deduplicatedEvents = append(deduplicatedEvents, event)
+					continue
+				}
+
+				if !slices.Contains(writtenFiles, event.path) {
+					deduplicatedEvents = append(deduplicatedEvents, event)
+					writtenFiles = append(writtenFiles, event.path)
+				}
+			}
+
+			events = nil
+			coreEvents := utils.MapSlice(deduplicatedEvents, newFsEvent)
 
 			//inform watchers about the events
 			for _, w := range watchers {
@@ -128,7 +157,7 @@ func startWatcherManagingGoroutine() {
 					continue
 				}
 
-				for eventIndex, event := range events {
+				for eventIndex, event := range deduplicatedEvents {
 					filter := w.eventSource.GetFilter()
 					if filter != "" && !filter.Test(nil, event.path) {
 						continue
