@@ -67,15 +67,15 @@
       print("add(1, 2) =", add(1, 2))
 
       pattern user = {
-        name: str
-        friends: []str
+          name: str
+          friends: []str
       }
 
       fn new_user(data {name: str}) user {
-        return {
-          name: data.name
-          friends: []
-        }
+          return {
+              name: data.name
+              friends: []
+          }
       }
 
       # Shorthand call syntax for functions accepting a single argument of type object.
@@ -85,7 +85,7 @@
     - "add(1, 2) = 3"
 
   - name: "'Must' calls"
-    id: inox-func-basics
+    id: must-call-basics
     program: |
       manifest {}
 
@@ -120,6 +120,130 @@
     output:
     - "decoding error: (hex.InvalidByteError)encoding/hex: invalid byte: U+002E '.'"
     - "error returned by `f`: (*errors.errorString)there is an issue !"
+
+  - name: Binary expressions
+    id: bin-expr-basics
+    program: |
+      manifest {}
+
+      # Binary operations are always parenthesized:
+
+      int = (1 + 2)
+      float = (1.0 + (5.0 + 2.0))
+      range1 = (0 .. 2)   # inclusive end
+      range2 = (0 ..< 3)  # exclusive end
+
+      # Parentheses can be omitted around operands of or/and chains:
+
+      a = true; b = false; c = true
+      n = 0; p = 2
+
+      (a or b or c)      
+      (n < 1 or p < 3)
+
+      # 'or' and 'and' cannot be mixed in the same chain
+      # (a or b and c)     
+
+    output: []
+
+
+  - name: If, Switch, Match
+    id: if-switch-match-basics
+    program: |
+      manifest {}
+
+      a = 0
+
+      # if statement
+      if (a == 0) {
+          print("a == 0")
+      } else {
+          print("a != 0")
+      }
+
+      # if expression
+      zero = (if (a == 0) 0 else 1)
+
+      b = 1
+
+      # switch statement
+      switch b {
+          0 {
+              print("b == 0")
+          }
+          1 {
+              print("b == 1")
+          }
+          defaultcase {
+              print("b != 0 and b != 1")
+          }
+      }
+
+      # The match statement is similar to the switch statement but uses patterns as case values. 
+      # It executes the block following the first pattern matching the value.
+
+      c = 2
+
+      match c {
+          %int(0..2) {
+              print "c is in the range 0..2"
+          }
+          %int {
+              print "c is an integer"
+          }
+          defaultcase { 
+              print "c is not an integer"
+          }
+      }
+    output:
+    - "a == 0"
+    - "b == 1"
+    - "c is in the range 0..2"
+
+  - name: For statement
+    id: for-stmt-basics
+    program: |
+      manifest {}
+
+      list = ["a", "b", "c"]
+
+      for elem in list {
+          print(elem)
+      }
+
+      print()
+
+      for index, elem in list {
+          print(index, elem)
+      }
+
+      print()
+
+      for i in (0 ..< len(list)) {
+          print(i, list[i])
+      }
+
+      print()
+
+      for key, value in {name: "Tom", age: 30} {
+          print(key, value)
+      }
+
+    output:
+    - "a"
+    - "b"
+    - "c"
+
+    - "0 a"
+    - "1 b"
+    - "2 c"
+
+    - "0 a"
+    - "1 b"
+    - "2 c"
+
+    - "age 30"
+    - "name Tom"
 # ------------------------------------------------------------
 
 
