@@ -12,8 +12,7 @@ import (
 )
 
 const (
-	DEFAULT_VFS_WATCHER_EVENT_BATCH_CHAN_CAPACITY = 100
-	WATCHER_MANAGEMENT_TICK_INTERVAL              = 10 * time.Millisecond
+	WATCHER_MANAGEMENT_TICK_INTERVAL = 10 * time.Millisecond
 )
 
 var (
@@ -153,18 +152,16 @@ func startWatcherManagingGoroutine() {
 		filesystems := map[watchableVirtualFilesystem]struct{}{}
 
 		for range ticker.C {
-			func() {
-				clear(filesystems)
+			clear(filesystems)
 
-				watchedVirtualFilesystemsLock.Lock()
-				//we copy the filesystems to avoid locking the map for too long.
-				maps.Copy(filesystems, watchedVirtualFilesystems)
-				watchedVirtualFilesystemsLock.Unlock()
+			watchedVirtualFilesystemsLock.Lock()
+			//we copy the filesystems to avoid locking the map for too long.
+			maps.Copy(filesystems, watchedVirtualFilesystems)
+			watchedVirtualFilesystemsLock.Unlock()
 
-				for vfs := range filesystems {
-					manageSingleFs(vfs)
-				}
-			}()
+			for vfs := range filesystems {
+				manageSingleFs(vfs)
+			}
 		}
 	}()
 
