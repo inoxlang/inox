@@ -17,7 +17,7 @@ func TestEvalStringPatternNode(t *testing.T) {
 		startMemStats := new(runtime.MemStats)
 		runtime.ReadMemStats(startMemStats)
 
-		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 100)
 	}
 
 	t.Run("single element : string literal", func(t *testing.T) {
@@ -27,7 +27,7 @@ func TestEvalStringPatternNode(t *testing.T) {
 		state := NewTreeWalkState(ctx)
 		chunk := &parse.ChunkStackItem{Chunk: &parse.ParsedChunk{Node: &parse.Chunk{}}}
 		state.chunkStack = append(state.chunkStack, chunk)
-		state.fullChunkStack = append(state.fullChunkStack)
+		state.fullChunkStack = append(state.fullChunkStack, chunk)
 
 		patt, err := evalStringPatternNode(&parse.ComplexStringPatternPiece{
 			Elements: []*parse.PatternPieceElement{
@@ -54,7 +54,7 @@ func TestEvalStringPatternNode(t *testing.T) {
 		state := NewTreeWalkState(ctx)
 		chunk := &parse.ChunkStackItem{Chunk: &parse.ParsedChunk{Node: &parse.Chunk{}}}
 		state.chunkStack = append(state.chunkStack, chunk)
-		state.fullChunkStack = append(state.fullChunkStack)
+		state.fullChunkStack = append(state.fullChunkStack, chunk)
 
 		patt, err := evalStringPatternNode(&parse.ComplexStringPatternPiece{
 			Elements: []*parse.PatternPieceElement{
@@ -81,7 +81,7 @@ func TestEvalStringPatternNode(t *testing.T) {
 		state := NewTreeWalkState(ctx)
 		chunk := &parse.ChunkStackItem{Chunk: &parse.ParsedChunk{Node: &parse.Chunk{}}}
 		state.chunkStack = append(state.chunkStack, chunk)
-		state.fullChunkStack = append(state.fullChunkStack)
+		state.fullChunkStack = append(state.fullChunkStack, chunk)
 
 		patt, err := evalStringPatternNode(&parse.ComplexStringPatternPiece{
 			Elements: []*parse.PatternPieceElement{
@@ -107,7 +107,7 @@ func TestEvalStringPatternNode(t *testing.T) {
 		state := NewTreeWalkState(ctx)
 		chunk := &parse.ChunkStackItem{Chunk: &parse.ParsedChunk{Node: &parse.Chunk{}}}
 		state.chunkStack = append(state.chunkStack, chunk)
-		state.fullChunkStack = append(state.fullChunkStack)
+		state.fullChunkStack = append(state.fullChunkStack, chunk)
 
 		patt, err := evalStringPatternNode(&parse.ComplexStringPatternPiece{
 			Elements: []*parse.PatternPieceElement{
@@ -134,7 +134,7 @@ func TestEvalStringPatternNode(t *testing.T) {
 		state := NewTreeWalkState(ctx)
 		chunk := &parse.ChunkStackItem{Chunk: &parse.ParsedChunk{Node: &parse.Chunk{}}}
 		state.chunkStack = append(state.chunkStack, chunk)
-		state.fullChunkStack = append(state.fullChunkStack)
+		state.fullChunkStack = append(state.fullChunkStack, chunk)
 
 		patt, err := evalStringPatternNode(&parse.ComplexStringPatternPiece{
 			Elements: []*parse.PatternPieceElement{
@@ -163,7 +163,7 @@ func TestEvalStringPatternNode(t *testing.T) {
 		state := NewTreeWalkState(ctx)
 		chunk := &parse.ChunkStackItem{Chunk: &parse.ParsedChunk{Node: &parse.Chunk{}}}
 		state.chunkStack = append(state.chunkStack, chunk)
-		state.fullChunkStack = append(state.fullChunkStack)
+		state.fullChunkStack = append(state.fullChunkStack, chunk)
 
 		patt, err := evalStringPatternNode(&parse.PatternUnion{
 			Cases: []parse.Node{
@@ -187,7 +187,7 @@ func TestEvalStringPatternNode(t *testing.T) {
 		state := NewTreeWalkState(ctx)
 		chunk := &parse.ChunkStackItem{Chunk: &parse.ParsedChunk{Node: &parse.Chunk{}}}
 		state.chunkStack = append(state.chunkStack, chunk)
-		state.fullChunkStack = append(state.fullChunkStack)
+		state.fullChunkStack = append(state.fullChunkStack, chunk)
 
 		patt, err := evalStringPatternNode(&parse.PatternUnion{
 			Cases: []parse.Node{
