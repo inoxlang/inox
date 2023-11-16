@@ -3,7 +3,6 @@ package core
 import (
 	"bytes"
 	"crypto/rand"
-	pseudorand "math/rand"
 
 	"encoding/binary"
 	"encoding/hex"
@@ -139,8 +138,7 @@ func RandInt(options ...Option) Value {
 func RandFloat(options ...Option) Value {
 	var source = getRandomnessSource(options...)
 
-	pseudoRandSource := pseudorand.NewSource(source.Int64())
-	float := utils.NewFloatRand(pseudoRandSource).Float64()
+	float := utils.RandFloat(-math.MaxFloat64, math.MaxFloat64, source.Uint64())
 	return Float(float)
 }
 
@@ -182,7 +180,11 @@ func (r FloatRange) Random(ctx *Context) Value {
 	if r.unknownStart {
 		panic("Random() not supported for float ranges with no start")
 	}
-	panic(ErrNotImplementedYet)
+
+	var source = getRandomnessSource()
+
+	float := utils.RandFloat(r.start, r.end, source.Uint64())
+	return Float(float)
 }
 
 // ------------ patterns ------------
