@@ -28,7 +28,7 @@
       local2 = 2
       
       # Variable declarations can have a type annotation.
-      # Replace `0` with `string` to see what happens.
+      # Replace `0` with `str` to see what happens.
       var i int = 0
 
       # Global variable declaration
@@ -43,7 +43,83 @@
       print("local1 =", local1, "global1 =", global1)
     output:
     - "local1 = 1 global1 = 1"
-  
+
+  - name: Functions
+    id: func-basics
+    program: |
+      manifest {}
+      
+      # Native (Golang) functions are built-in and cannot be defined.
+      print("print is a native function")
+
+      # Inox Functions are declared at the top-level of the module.
+      fn hello(arg){
+          print("hello", arg)
+          return 0
+      }
+
+      # Parameters and return value of a function can have a type annotation:
+      fn add(a int, b int) int {
+          return (a + b)
+      }
+
+      # Parenthesized call
+      print("add(1, 2) =", add(1, 2))
+
+      pattern user = {
+        name: str
+        friends: []str
+      }
+
+      fn new_user(data {name: str}) user {
+        return {
+          name: data.name
+          friends: []
+        }
+      }
+
+      # Shorthand call syntax for functions accepting a single argument of type object.
+      user = new_user{name: "Tom"}
+    output:
+    - "print is a native function"
+    - "add(1, 2) = 3"
+
+  - name: "'Must' calls"
+    id: inox-func-basics
+    program: |
+      manifest {}
+
+      # 'must' calls are special calls that cause a panic if there is an error. 
+      # If there is no error the returned value is transformed.
+
+      # the unhex function decodes an hexadecimal strig.
+      # normal call: a value of type Array(byte-slice, (error | nil)) is returned.
+      assign bytes error = unhex("...")
+
+      print("decoding error:", error)
+
+      # must call: a value of type byte-slice is returned if there is no error.
+      # bytes = unhex!("...")
+
+      fn f(issue bool) (| error | nil) {
+          if issue {
+              return Error("there is an issue !")
+          }
+          return nil
+      }
+
+      # normal call: a value of type (error | nil) is returned.
+      err = f(true)
+
+      print("error returned by `f`:", err)
+
+      # must call: on error the runtime panics, otherwise nil is returned.
+      nil_value = f!(false)      
+
+      # you can learn more about must calls here: https://github.com/inoxlang/inox/blob/master/docs/language-reference.md#must-calls.
+    output:
+    - "decoding error: (hex.InvalidByteError)encoding/hex: invalid byte: U+002E '.'"
+    - "error returned by `f`: (*errors.errorString)there is an issue !"
 # ------------------------------------------------------------
 
 
