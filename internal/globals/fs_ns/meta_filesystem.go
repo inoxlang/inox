@@ -155,7 +155,9 @@ func OpenMetaFilesystem(ctx *core.Context, underlying billy.Basic, opts MetaFile
 		underlying:            underlying,
 		openFiles:             map[string]map[*metaFsFile]struct{}{},
 		lastModificationTimes: map[string]core.DateTime{},
-		eventQueue:            in_mem_ds.NewTSArrayQueue[fsEventInfo](),
+		eventQueue: in_mem_ds.NewTSArrayQueueWithConfig(in_mem_ds.TSArrayQueueConfig[fsEventInfo]{
+			AutoRemoveCondition: isOldEvent,
+		}),
 
 		metadata:                 kv,
 		maxUsableSpace:           maxUsableSpace,
@@ -919,7 +921,7 @@ func (fls *MetaFilesystem) OpenFile(filename string, flag int, perm os.FileMode)
 	files[file] = struct{}{}
 
 	//add event
-	fls.eventQueue.Enqueue(fsEventInfo{
+	fls.eventQueue.EnqueueAutoRemove(fsEventInfo{
 		path:     core.Path(file.path),
 		createOp: true,
 		dateTime: metadata.creationTime,
@@ -1122,7 +1124,7 @@ func (fls *MetaFilesystem) MkdirAllNoLock_(path string, perm os.FileMode, tx *fi
 		}
 
 		//add event
-		fls.eventQueue.Enqueue(fsEventInfo{
+		fls.eventQueue.EnqueueAutoRemove(fsEventInfo{
 			path:     newDirMetadata.path,
 			createOp: true,
 			dateTime: newDirMetadata.creationTime,
@@ -1311,7 +1313,7 @@ func (fls *MetaFilesystem) Rename(from, to string) error {
 				if metadata.mode.IsDir() {
 					event.path = core.AppendTrailingSlashIfNotPresent(event.path)
 				}
-				fls.eventQueue.Enqueue(event)
+				fls.eventQueue.EnqueueAutoRemove(event)
 			}
 		}
 		return nil
@@ -1363,7 +1365,7 @@ func (fls *MetaFilesystem) Remove(filename string) error {
 			}
 		}
 
-		fls.eventQueue.EnqueueAll(events...)
+		fls.eventQueue.EnqueueAllAutoRemove(events...)
 	}()
 
 	err = fls.metadata.UpdateNoCtx(func(dbTx *filekv.DatabaseTx) error {

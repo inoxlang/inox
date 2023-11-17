@@ -53,7 +53,9 @@ func newInMemoryStorage(maxStorageSize core.ByteCount) *inMemStorage {
 		children:       make(map[string]map[string]*InMemfile, 0),
 		maxStorageSize: int64(maxStorageSize),
 
-		eventQueue: in_mem_ds.NewTSArrayQueue[fsEventInfo](),
+		eventQueue: in_mem_ds.NewTSArrayQueueWithConfig(in_mem_ds.TSArrayQueueConfig[fsEventInfo]{
+			AutoRemoveCondition: isOldEvent,
+		}),
 	}
 
 	f, err := storage.newNoLock("/", 0700|fs.ModeDir, 0, true)
@@ -209,7 +211,7 @@ func (s *inMemStorage) newNoLock(path string, mode os.FileMode, flag int, ignore
 				event.path = core.AppendTrailingSlashIfNotPresent(event.path)
 			}
 
-			s.eventQueue.Enqueue(event)
+			s.eventQueue.EnqueueAutoRemove(event)
 		}()
 	}
 
@@ -362,7 +364,7 @@ func (s *inMemStorage) moveNoLock(from, to string, ignoreEvent bool) error {
 			if f.mode.IsDir() {
 				event.path = core.AppendTrailingSlashIfNotPresent(event.path)
 			}
-			s.eventQueue.Enqueue(event)
+			s.eventQueue.EnqueueAutoRemove(event)
 		}()
 	}
 
@@ -412,7 +414,7 @@ func (s *inMemStorage) Remove(path string) error {
 		if isDir {
 			event.path = core.AppendTrailingSlashIfNotPresent(event.path)
 		}
-		s.eventQueue.Enqueue(event)
+		s.eventQueue.EnqueueAutoRemove(event)
 	}()
 
 	return nil

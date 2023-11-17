@@ -153,6 +153,7 @@ func (q *TSArrayQueue[T]) autoRemoveNoLock() {
 		e := q.elements[i]
 
 		if !q.autoRemoveCondition(e) {
+			i++
 			continue
 		}
 

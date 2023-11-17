@@ -48,6 +48,12 @@ func TestTSArrayQueue(t *testing.T) {
 			assert.False(t, q.Empty())
 			assert.Equal(t, []int{3}, q.Values())
 
+			//AutoRemove() should have no effect since 3 >= 0
+			q.AutoRemove()
+			assert.NotZero(t, q.Size())
+			assert.False(t, q.Empty())
+			assert.Equal(t, []int{3}, q.Values())
+
 			elem, ok := q.Dequeue()
 			if !assert.True(t, ok) {
 				return
