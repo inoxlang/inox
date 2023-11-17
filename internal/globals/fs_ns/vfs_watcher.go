@@ -27,6 +27,8 @@ var (
 
 // watchableVirtualFilesystem is implemented by non-OS filesystems that can track FS events.
 type watchableVirtualFilesystem interface {
+	ClosableFilesystem
+
 	//watcher creates a new watcher.
 	watcher(evs *FilesystemEventSource) *virtualFilesystemWatcher
 

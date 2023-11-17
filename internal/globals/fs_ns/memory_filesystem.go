@@ -10,6 +10,7 @@ import (
 	"slices"
 	"sort"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/go-git/go-billy/v5"
@@ -28,6 +29,8 @@ type MemFilesystem struct {
 
 	watchers     []*virtualFilesystemWatcher
 	watchersLock sync.Mutex
+
+	closed atomic.Bool
 }
 
 func NewMemFilesystem(maxTotalStorageSize core.ByteCount) *MemFilesystem {
@@ -315,4 +318,27 @@ func (fs *MemFilesystem) TakeFilesystemSnapshot(config core.FilesystemSnapshotCo
 	}
 
 	return snapshot, nil
+}
+
+func (fls *MemFilesystem) Close(ctx *core.Context) error {
+	if !fls.closed.CompareAndSwap(false, true) {
+		return nil
+	}
+
+	//unregister the filesystem from the watched filesystems.
+	watchedVirtualFilesystemsLock.Lock()
+	delete(watchedVirtualFilesystems, fls)
+	watchedVirtualFilesystemsLock.Unlock()
+
+	//stop and remove all watchers
+	fls.watchersLock.Lock()
+	for _, watcher := range fls.watchers {
+		watcher.Close()
+	}
+	fls.watchers = nil
+	fls.watchersLock.Unlock()
+
+	//remove all events
+	fls.s.eventQueue.Clear()
+	return nil
 }

@@ -522,4 +522,71 @@ func testEvents(t *testing.T, setup func(t *testing.T) (fls afs.Filesystem, temp
 		assert.EqualValues(t, 2, callCount.Load())
 	})
 
+	t.Run("if virtual FS, no events should be emitted if the FS is closed immediately after a few writes", func(t *testing.T) {
+		// create a temporary directory & a file in it
+		fls, tempDir := setup(t)
+
+		if utils.Implements[*OsFilesystem](fls) {
+			t.SkipNow()
+		}
+
+		if !utils.Implements[ClosableFilesystem](fls) {
+			assert.FailNow(t, "filesystem should be closable")
+		}
+
+		closable := fls.(ClosableFilesystem)
+
+		filepth := core.Path(filepath.Join(tempDir, "file.txt"))
+
+		f, err := fls.Create(string(filepth))
+		if assert.NoError(t, err) {
+			if capable, ok := f.(afs.SyncCapable); ok {
+				capable.Sync()
+			}
+		}
+
+		ctx := core.NewContexWithEmptyState(core.ContextConfig{
+			Permissions: []core.Permission{
+				core.FilesystemPermission{Kind_: permkind.Read, Entity: filepth},
+			},
+			Filesystem: fls,
+		}, nil)
+		defer ctx.CancelGracefully()
+
+		// create the event source & add a callback function
+		evs, err := NewEventSource(ctx, filepth)
+		if !assert.NoError(t, err) {
+			return
+		}
+		defer evs.Close()
+
+		var callCount atomic.Int32
+
+		err = evs.OnEvent(func(event *core.Event) {
+			callCount.Add(1)
+		})
+		assert.NoError(t, err)
+
+		for i := 0; i < 10; i++ {
+			_, err := f.Write([]byte{'a'})
+			if !assert.NoError(t, err) {
+				return
+			}
+		}
+
+		if capable, ok := f.(afs.SyncCapable); ok {
+			capable.Sync()
+		}
+
+		if !assert.NoError(t, f.Close()) {
+			return
+		}
+		if !assert.NoError(t, closable.Close(ctx)) {
+			return
+		}
+		time.Sleep(SLEEP_DURATION)
+
+		assert.EqualValues(t, 0, callCount.Load())
+	})
+
 }

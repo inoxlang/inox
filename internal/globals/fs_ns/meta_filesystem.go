@@ -228,24 +228,44 @@ func OpenMetaFilesystem(ctx *core.Context, underlying billy.Basic, opts MetaFile
 }
 
 func (fls *MetaFilesystem) Close(ctx *core.Context) error {
-	if fls.closed.CompareAndSwap(false, true) {
-		fls.openFiles = nil
-		openFiles := fls.openFiles
-
-		//close all files
-		for _, files := range openFiles {
-			for sameFile := range files {
-				func() {
-					defer utils.Recover()
-					sameFile.Close()
-				}()
-			}
-		}
-
-		//close the key-value store
-		return fls.metadata.Close(ctx)
+	if !fls.closed.CompareAndSwap(false, true) {
+		return nil
 	}
-	return nil
+	fls.openFiles = nil
+	openFiles := fls.openFiles
+
+	//unregister the filesystem from the watched filesystems.
+	watchedVirtualFilesystemsLock.Lock()
+	delete(watchedVirtualFilesystems, fls)
+	watchedVirtualFilesystemsLock.Unlock()
+
+	//stop and remove all watchers
+	func() {
+		defer utils.Recover()
+
+		fls.fsWatchersLock.Lock()
+		for _, watcher := range fls.fsWatchers {
+			watcher.Close()
+		}
+		fls.fsWatchers = nil
+		fls.fsWatchersLock.Unlock()
+	}()
+
+	//remove all events
+	fls.eventQueue.Clear()
+
+	//close all files
+	for _, files := range openFiles {
+		for sameFile := range files {
+			func() {
+				defer utils.Recover()
+				sameFile.Close()
+			}()
+		}
+	}
+
+	//close the key-value store
+	return fls.metadata.Close(ctx)
 }
 
 func (fls *MetaFilesystem) Chroot(path string) (billy.Filesystem, error) {
