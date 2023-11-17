@@ -10,6 +10,7 @@ import (
 	"github.com/inoxlang/inox/internal/commonfmt"
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
 	"github.com/inoxlang/inox/internal/utils"
+	"golang.org/x/exp/slices"
 )
 
 const (
@@ -693,7 +694,7 @@ type OptionalIProps interface {
 }
 
 func GetAllPropertyNames(v IProps) []string {
-	names := utils.CopySlice(v.PropertyNames())
+	names := slices.Clone(v.PropertyNames())
 	if optIprops, ok := v.(OptionalIProps); ok {
 		names = append(names, optIprops.OptionalPropertyNames()...)
 	}

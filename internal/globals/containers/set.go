@@ -7,6 +7,7 @@ import (
 	"io"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strings"
 
 	"github.com/inoxlang/inox/internal/commonfmt"
@@ -413,7 +414,7 @@ func (s *Set) Migrate(ctx *core.Context, key core.Path, migration *core.Instance
 
 			if elementKey == "*" {
 				for elemKey, elem := range s.elements {
-					elementPathPatternSegments := append(utils.CopySlice(pathPatternSegments[:depth]), elemKey)
+					elementPathPatternSegments := append(slices.Clone(pathPatternSegments[:depth]), elemKey)
 					delete(s.elements, elemKey)
 
 					migrationCapable, ok := elem.(core.MigrationCapable)

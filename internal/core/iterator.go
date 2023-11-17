@@ -4,13 +4,13 @@ import (
 	"bytes"
 	"math"
 	"reflect"
+	"slices"
 	"sort"
 	"strconv"
 	"sync"
 
 	"github.com/bits-and-blooms/bitset"
 	"github.com/inoxlang/inox/internal/in_mem_ds"
-	"github.com/inoxlang/inox/internal/utils"
 )
 
 var _ = []Iterable{
@@ -574,7 +574,7 @@ func (obj *Object) Iterator(ctx *Context, config IteratorConfiguration) Iterator
 		values[i] = e
 	}
 
-	return NewIpropsIterator(ctx, utils.CopySlice(obj.keys), values, config)
+	return NewIpropsIterator(ctx, slices.Clone(obj.keys), values, config)
 }
 
 func (rec *Record) Iterator(ctx *Context, config IteratorConfiguration) Iterator {

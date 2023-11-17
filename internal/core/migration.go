@@ -462,8 +462,8 @@ func migrateObjectOrRecord(
 				} else {
 					if !nextRecord {
 						nextRecord = true
-						nextRecordKeys = utils.CopySlice(*propKeys)
-						nextRecordValues = utils.CopySlice(*propValues)
+						nextRecordKeys = slices.Clone(*propKeys)
+						nextRecordValues = slices.Clone(*propValues)
 					}
 					nextRecordKeys = slices.Delete(nextRecordKeys, propIndex, propIndex+1)
 					nextRecordValues = slices.Delete(nextRecordValues, propIndex, propIndex+1)
@@ -504,8 +504,8 @@ func migrateObjectOrRecord(
 			if !isObject {
 				if !nextRecord {
 					nextRecord = true
-					nextRecordKeys = utils.CopySlice(*propKeys)
-					nextRecordValues = utils.CopySlice(*propValues)
+					nextRecordKeys = slices.Clone(*propKeys)
+					nextRecordValues = slices.Clone(*propValues)
 				}
 				nextRecordValues[propIndex] = nextPropValue.(Serializable)
 			}
@@ -554,8 +554,8 @@ func migrateObjectOrRecord(
 			} else {
 				if !isObject && !nextRecord {
 					nextRecord = true
-					nextRecordKeys = utils.CopySlice(*propKeys)
-					nextRecordValues = utils.CopySlice(*propValues)
+					nextRecordKeys = slices.Clone(*propKeys)
+					nextRecordValues = slices.Clone(*propValues)
 				}
 
 				propIndex := -1
@@ -661,8 +661,8 @@ func migrateObjectOrRecord(
 
 				if !nextRecord {
 					nextRecord = true
-					nextRecordKeys = utils.CopySlice(*propKeys)
-					nextRecordValues = utils.CopySlice(*propValues)
+					nextRecordKeys = slices.Clone(*propKeys)
+					nextRecordValues = slices.Clone(*propValues)
 				}
 				nextRecordValues[propIndex] = nextPropValue.(Serializable)
 			}
@@ -820,7 +820,7 @@ func migrateListOrTuple(
 				} else {
 					if !nextTuple {
 						nextTuple = true
-						nextTupleElements = utils.CopySlice(o.(*Tuple).elements)
+						nextTupleElements = slices.Clone(o.(*Tuple).elements)
 					}
 					nextTupleElements = slices.Delete(nextTupleElements, index, index+1)
 				}
@@ -851,7 +851,7 @@ func migrateListOrTuple(
 			if !isList {
 				if !nextTuple {
 					nextTuple = true
-					nextTupleElements = utils.CopySlice(o.(*Tuple).elements)
+					nextTupleElements = slices.Clone(o.(*Tuple).elements)
 				}
 				nextTupleElements[index] = nextElementValue.(Serializable)
 			}
@@ -931,7 +931,7 @@ func migrateListOrTuple(
 				} else {
 					if !nextTuple {
 						nextTuple = true
-						nextTupleElements = utils.CopySlice(o.(*Tuple).elements)
+						nextTupleElements = slices.Clone(o.(*Tuple).elements)
 					}
 					nextTupleElements[index] = nextElementValue.(Serializable)
 				}
@@ -965,7 +965,7 @@ func migrateListOrTuple(
 			} else { //if o is a tuple a new tuple with the element replacement has to be created
 				if !nextTuple {
 					nextTuple = true
-					nextTupleElements = utils.CopySlice(o.(*Tuple).elements)
+					nextTupleElements = slices.Clone(o.(*Tuple).elements)
 				}
 				nextTupleElements[index] = nextElementValue.(Serializable)
 			}

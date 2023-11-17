@@ -2,13 +2,13 @@ package containers
 
 import (
 	"reflect"
+	"slices"
 
 	"github.com/inoxlang/inox/internal/commonfmt"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	containers_common "github.com/inoxlang/inox/internal/globals/containers/common"
 	coll_symbolic "github.com/inoxlang/inox/internal/globals/containers/symbolic"
-	"github.com/inoxlang/inox/internal/utils"
 
 	"github.com/inoxlang/inox/internal/help"
 )
@@ -41,7 +41,7 @@ var (
 				Uniqueness: uniqueness,
 			}, core.CallBasedPatternReprMixin{
 				Callee: typePattern,
-				Params: utils.CopySlice(values),
+				Params: slices.Clone(values),
 			}), nil
 		},
 		SymbolicCallImpl: func(ctx *symbolic.Context, values []symbolic.Value) (symbolic.Pattern, error) {

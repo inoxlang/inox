@@ -2,9 +2,9 @@ package containers
 
 import (
 	"maps"
+	"slices"
 
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/utils"
 )
 
 type CollectionIterator struct {
@@ -273,7 +273,7 @@ func (t *Tree) Iterator(ctx *core.Context, config core.IteratorConfiguration) co
 	t.Lock(state)
 	defer t.Unlock(state)
 
-	return config.CreateIterator(&TreeIterator{start: t.root, children: utils.CopySlice(t.root.children), i: -1, childIndex: -1})
+	return config.CreateIterator(&TreeIterator{start: t.root, children: slices.Clone(t.root.children), i: -1, childIndex: -1})
 }
 
 func (node *TreeNode) Iterator(ctx *core.Context, config core.IteratorConfiguration) core.Iterator {
@@ -281,5 +281,5 @@ func (node *TreeNode) Iterator(ctx *core.Context, config core.IteratorConfigurat
 	node.tree.Lock(state)
 	defer node.tree.Unlock(state)
 
-	return config.CreateIterator(&TreeIterator{start: node, children: utils.CopySlice(node.children), i: -1, childIndex: -1})
+	return config.CreateIterator(&TreeIterator{start: node, children: slices.Clone(node.children), i: -1, childIndex: -1})
 }

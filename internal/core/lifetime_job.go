@@ -3,6 +3,7 @@ package core
 import (
 	"errors"
 	"fmt"
+	"slices"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -102,7 +103,7 @@ func (j *LifetimeJob) Instantiate(ctx *Context, self Value) (*LifetimeJobInstanc
 		return nil, err
 	}
 
-	permissions := utils.CopySlice(manifest.RequiredPermissions)
+	permissions := slices.Clone(manifest.RequiredPermissions)
 	permissions = append(permissions, createLThreadPerm)
 
 	readGlobalPerm := GlobalVarPermission{Kind_: permkind.Read, Name: "*"}
@@ -286,7 +287,7 @@ func (jobs *ValueLifetimeJobs) Instances() []*LifetimeJobInstance {
 	}
 	jobs.lock.Lock()
 	defer jobs.lock.Unlock()
-	return utils.CopySlice(jobs.instances)
+	return slices.Clone(jobs.instances)
 }
 
 func spawnLifetimeJobScheduler() {

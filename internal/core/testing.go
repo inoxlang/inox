@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"reflect"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 
@@ -624,7 +625,7 @@ func runTestItem(
 
 	createLthreadPerm := LThreadPermission{Kind_: permkind.Create}
 
-	permissions := utils.CopySlice(manifest.RequiredPermissions)
+	permissions := slices.Clone(manifest.RequiredPermissions)
 	permissions = append(permissions, createLthreadPerm)
 	permissions = append(permissions, implicitlyAddedPermissions...)
 

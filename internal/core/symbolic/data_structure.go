@@ -852,7 +852,7 @@ func (list *KeyList) Concretize(ctx ConcreteContext) any {
 		panic(ErrNotConcretizable)
 	}
 
-	return extData.ConcreteValueFactories.CreateKeyList(utils.CopySlice(list.Keys))
+	return extData.ConcreteValueFactories.CreateKeyList(slices.Clone(list.Keys))
 }
 
 func (list *KeyList) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {

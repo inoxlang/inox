@@ -2,9 +2,9 @@ package html_ns
 
 import (
 	"reflect"
+	"slices"
 
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/utils"
 	"golang.org/x/net/html"
 )
 
@@ -44,7 +44,7 @@ func cloneHtmlNode(n *html.Node, clones map[*html.Node]*html.Node) *html.Node {
 	*clone = *n
 	clones[n] = clone
 
-	clone.Attr = utils.CopySlice(n.Attr)
+	clone.Attr = slices.Clone(n.Attr)
 
 	clone.Parent = cloneHtmlNode(n.Parent, clones)
 	clone.PrevSibling = cloneHtmlNode(n.PrevSibling, clones)

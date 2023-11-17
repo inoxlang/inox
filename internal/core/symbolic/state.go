@@ -5,7 +5,7 @@ import (
 
 	"github.com/go-git/go-billy/v5"
 	parse "github.com/inoxlang/inox/internal/parse"
-	"github.com/inoxlang/inox/internal/utils"
+	"golang.org/x/exp/slices"
 )
 
 // State is the state of a symbolic evaluation.
@@ -86,7 +86,7 @@ func newSymbolicState(ctx *Context, chunk *parse.ParsedChunk) *State {
 }
 
 func (state *State) getErrorMesssageLocation(node parse.Node) parse.SourcePositionStack {
-	sourcePositionStack := utils.CopySlice(state.importPositions)
+	sourcePositionStack := slices.Clone(state.importPositions)
 	sourcePositionStack = append(sourcePositionStack, state.currentChunk().GetSourcePosition(node.Base().Span))
 	return sourcePositionStack
 }
@@ -546,7 +546,7 @@ func (state *State) fork() *State {
 	child.ctx.associatedState = child
 	child.parent = state
 	child.Module = state.Module
-	child.chunkStack = utils.CopySlice(state.chunkStack)
+	child.chunkStack = slices.Clone(state.chunkStack)
 	child.symbolicData = state.symbolicData
 	child.shellTrustedCommands = state.shellTrustedCommands
 	child.returnType = state.returnType
@@ -691,11 +691,11 @@ func (state *State) warnings() []SymbolicEvaluationWarning {
 }
 
 func (state *State) Errors() []SymbolicEvaluationError {
-	return utils.CopySlice(state.symbolicData.errors)
+	return slices.Clone(state.symbolicData.errors)
 }
 
 func (state *State) Warnings() []SymbolicEvaluationWarning {
-	return utils.CopySlice(state.symbolicData.warnings)
+	return slices.Clone(state.symbolicData.warnings)
 }
 
 type varSymbolicInfo struct {

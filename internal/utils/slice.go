@@ -7,13 +7,6 @@ import (
 	"golang.org/x/exp/constraints"
 )
 
-func CopySlice[T any](s []T) []T {
-	sliceCopy := make([]T, len(s))
-	copy(sliceCopy, s)
-
-	return sliceCopy
-}
-
 func ReversedSlice[T any](s []T) []T {
 	reversed := make([]T, len(s))
 	copy(reversed, s)

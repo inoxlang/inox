@@ -9,8 +9,6 @@ import (
 	"unicode/utf8"
 
 	"slices"
-
-	"github.com/inoxlang/inox/internal/utils"
 )
 
 const (
@@ -629,7 +627,7 @@ func GetTokens(node Node, chunk *Chunk, addMeta bool) []Token {
 	tokenCacheLock.Lock()
 	if tokens, ok := tokenCache[ptr]; ok {
 		tokenCacheLock.Unlock()
-		return utils.CopySlice(tokens)
+		return slices.Clone(tokens)
 	}
 
 	chunkTokens := chunk.Tokens
@@ -1017,7 +1015,7 @@ func GetTokens(node Node, chunk *Chunk, addMeta bool) []Token {
 	}
 
 	if len(tokens) >= MIN_TOKEN_CACHING_COUNT {
-		tokenCache[ptr] = utils.CopySlice(uniqueTokens)
+		tokenCache[ptr] = slices.Clone(uniqueTokens)
 
 		// we remove the cache entry when the node is no longer reachable
 		runtime.SetFinalizer(node, func(n Node) {

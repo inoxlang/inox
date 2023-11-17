@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"reflect"
+	"slices"
 	"strings"
 	"time"
 	"unicode"
@@ -278,7 +279,7 @@ func _Bytes(ctx *core.Context, v core.Readable) *core.ByteSlice {
 		}
 		b = bytes.Bytes
 	} else {
-		b = utils.CopySlice(r.GetBytesDataToNotModify())
+		b = slices.Clone(r.GetBytesDataToNotModify())
 	}
 
 	return core.NewByteSlice(b, true, "")

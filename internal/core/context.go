@@ -346,8 +346,8 @@ func NewContext(config ContextConfig) *Context {
 		parentCtx:            parentCtx,
 		fs:                   actualFilesystem,
 		executionStartTime:   time.Now(),
-		grantedPermissions:   utils.CopySlice(config.Permissions),
-		forbiddenPermissions: utils.CopySlice(config.ForbiddenPermissions),
+		grantedPermissions:   slices.Clone(config.Permissions),
+		forbiddenPermissions: slices.Clone(config.ForbiddenPermissions),
 		limits:               limits,
 		limiters:             limiters,
 		hostAliases:          map[string]Host{},
@@ -959,21 +959,21 @@ func (ctx *Context) GetGrantedPermissions() []Permission {
 	ctx.lock.RLock()
 	defer ctx.lock.RUnlock()
 
-	return utils.CopySlice(ctx.grantedPermissions)
+	return slices.Clone(ctx.grantedPermissions)
 }
 
 func (ctx *Context) GetForbiddenPermissions() []Permission {
 	ctx.lock.RLock()
 	defer ctx.lock.RUnlock()
 
-	return utils.CopySlice(ctx.forbiddenPermissions)
+	return slices.Clone(ctx.forbiddenPermissions)
 }
 
 func (ctx *Context) Limits() []Limit {
 	ctx.lock.RLock()
 	defer ctx.lock.RUnlock()
 
-	return utils.CopySlice(ctx.limits)
+	return slices.Clone(ctx.limits)
 }
 
 // ResolveHostAlias returns the Host associated with the passed alias name, if the alias does not exist nil is returned.

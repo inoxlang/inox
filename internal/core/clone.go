@@ -4,9 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"slices"
 
 	jsoniter "github.com/inoxlang/inox/internal/jsoniter"
-	"github.com/inoxlang/inox/internal/utils"
 )
 
 const (
@@ -152,7 +152,7 @@ func (list *IntList) PseudoClone(originState *GlobalState, sharableValues *[]Pot
 	}
 
 	return &IntList{
-		elements: utils.CopySlice(list.elements),
+		elements: slices.Clone(list.elements),
 	}, nil
 }
 
@@ -180,7 +180,7 @@ func (list *StringList) PseudoClone(originState *GlobalState, sharableValues *[]
 	}
 
 	return &StringList{
-		elements: utils.CopySlice(list.elements),
+		elements: slices.Clone(list.elements),
 	}, nil
 }
 
@@ -250,7 +250,7 @@ func (c *BytesConcatenation) PseudoClone(originState *GlobalState, sharableValue
 	}
 
 	return &BytesConcatenation{
-		elements: utils.CopySlice(c.elements),
+		elements: slices.Clone(c.elements),
 		totalLen: c.totalLen,
 	}, nil
 }

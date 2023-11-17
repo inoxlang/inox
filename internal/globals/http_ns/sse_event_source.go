@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"slices"
 	"sync"
 	"time"
 
@@ -313,7 +314,7 @@ func (c *ServerSentEventSource) parseEvent(eventMessage []byte) (event *ServerSe
 		switch line[0] {
 		case 'i':
 			if bytes.HasPrefix(line, SSE_ID_HEADER) {
-				e.ID = utils.CopySlice(trimEventStreamHeader(len(SSE_ID_HEADER), line))
+				e.ID = slices.Clone(trimEventStreamHeader(len(SSE_ID_HEADER), line))
 			}
 		case 'd':
 			if len(line) == 4 && bytes.Equal(line, []byte("data")) {
@@ -325,11 +326,11 @@ func (c *ServerSentEventSource) parseEvent(eventMessage []byte) (event *ServerSe
 			}
 		case 'e':
 			if bytes.HasPrefix(line, SSE_EVENT_HEADER) {
-				e.Event = utils.CopySlice(trimEventStreamHeader(len(SSE_EVENT_HEADER), line))
+				e.Event = slices.Clone(trimEventStreamHeader(len(SSE_EVENT_HEADER), line))
 			}
 		case 'r':
 			if bytes.HasPrefix(line, SSE_RETRY_HEADER) {
-				e.Retry = utils.CopySlice(trimEventStreamHeader(len(SSE_RETRY_HEADER), line))
+				e.Retry = slices.Clone(trimEventStreamHeader(len(SSE_RETRY_HEADER), line))
 			}
 		default:
 			// ignore

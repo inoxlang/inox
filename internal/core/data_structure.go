@@ -1144,7 +1144,7 @@ func NewTupleVariadic(elements ...Serializable) *Tuple {
 
 // the caller can modify the result
 func (tuple *Tuple) GetOrBuildElements(ctx *Context) []Serializable {
-	return utils.CopySlice(tuple.elements)
+	return slices.Clone(tuple.elements)
 }
 
 func (tuple *Tuple) slice(start, end int) Sequence {
@@ -1233,7 +1233,7 @@ func sortProps[V Value](keys []string, values []V) ([]string, []V, []int) {
 	if len(keys) == 0 {
 		return nil, nil, nil
 	}
-	newKeys := utils.CopySlice(keys)
+	newKeys := slices.Clone(keys)
 	sort.Strings(newKeys)
 	newValues := make([]V, len(values))
 	newIndexes := make([]int, len(values))

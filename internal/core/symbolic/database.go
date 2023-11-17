@@ -7,6 +7,7 @@ import (
 	"github.com/inoxlang/inox/internal/parse"
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
 	"github.com/inoxlang/inox/internal/utils"
+	"golang.org/x/exp/slices"
 )
 
 const (
@@ -36,7 +37,7 @@ type DatabaseIL struct {
 }
 
 func NewDatabaseIL(schema *ObjectPattern, schemaUpdateExpected bool) *DatabaseIL {
-	propertyNames := utils.CopySlice(DATABASE_PROPNAMES)
+	propertyNames := slices.Clone(DATABASE_PROPNAMES)
 	for propName := range schema.entries {
 		if utils.SliceContains(DATABASE_PROPNAMES, propName) {
 			panic(fmt.Errorf("name collision with inital property name '%s'", propName))

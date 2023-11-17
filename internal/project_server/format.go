@@ -1,16 +1,16 @@
 package project_server
 
 import (
+	"slices"
 	"sort"
 	"strings"
 
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/project_server/lsp/defines"
-	"github.com/inoxlang/inox/internal/utils"
 )
 
 func format(chunk *parse.ParsedChunk, options defines.FormattingOptions) (result string) {
-	code := utils.CopySlice(chunk.Runes())
+	code := slices.Clone(chunk.Runes())
 
 	defer func() {
 		if recover() != nil {

@@ -1,6 +1,7 @@
 package compl
 
 import (
+	"slices"
 	"strings"
 
 	"github.com/inoxlang/inox/internal/core"
@@ -81,24 +82,24 @@ func FindCompletions(args CompletionSearchArgs) []Completion {
 				if len(ancestorChain) > 1 {
 					_parent = ancestorChain[len(ancestorChain)-2]
 				}
-				_ancestorChain = utils.CopySlice(ancestorChain[:len(ancestorChain)-1])
+				_ancestorChain = slices.Clone(ancestorChain[:len(ancestorChain)-1])
 			case *parse.DoubleColonExpression:
 				if nodeAtCursor == p.Element {
 					nodeAtCursor = parent
 					if len(ancestorChain) > 1 {
 						_parent = ancestorChain[len(ancestorChain)-2]
 					}
-					_ancestorChain = utils.CopySlice(ancestorChain[:len(ancestorChain)-1])
+					_ancestorChain = slices.Clone(ancestorChain[:len(ancestorChain)-1])
 				}
 			case *parse.PatternNamespaceMemberExpression:
 				nodeAtCursor = parent
 				if len(ancestorChain) > 1 {
 					_parent = ancestorChain[len(ancestorChain)-2]
 				}
-				_ancestorChain = utils.CopySlice(ancestorChain[:len(ancestorChain)-1])
+				_ancestorChain = slices.Clone(ancestorChain[:len(ancestorChain)-1])
 			default:
 				_parent = parent
-				_ancestorChain = utils.CopySlice(ancestorChain)
+				_ancestorChain = slices.Clone(ancestorChain)
 			}
 
 			switch n := nodeAtCursor.(type) {

@@ -162,11 +162,11 @@ func (c DatabaseConfig) IsPermissionForThisDB(perm DatabasePermission) bool {
 }
 
 func (p *ModuleParameters) PositionalParameters() []ModuleParameter {
-	return utils.CopySlice(p.positional)
+	return slices.Clone(p.positional)
 }
 
 func (p *ModuleParameters) NonPositionalParameters() []ModuleParameter {
-	return utils.CopySlice(p.others)
+	return slices.Clone(p.others)
 }
 
 func (p *ModuleParameters) GetArgumentsFromObject(ctx *Context, argObj *Object) (*Struct, error) {

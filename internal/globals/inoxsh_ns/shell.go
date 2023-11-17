@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"os/user"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -797,7 +798,7 @@ func (sh *shell) handleAction(action termAction) (stop bool) {
 		}
 
 		start := len(sh.input) - sh.backspaceCount
-		right := utils.CopySlice(sh.input[start+1:])
+		right := slices.Clone(sh.input[start+1:])
 		sh.input = append(sh.input[0:start], right...)
 
 		saveCursorPosition(sh.preOut)
@@ -814,7 +815,7 @@ func (sh *shell) handleAction(action termAction) (stop bool) {
 		}
 
 		start := len(sh.input) - sh.backspaceCount - 1
-		right := utils.CopySlice(sh.input[start+1:])
+		right := slices.Clone(sh.input[start+1:])
 		sh.input = append(sh.input[0:start], right...)
 
 		moveCursorBack(sh.preOut, 1)
@@ -866,7 +867,7 @@ func (sh *shell) handleAction(action termAction) (stop bool) {
 
 		//remove the part of the token that is before the cursor
 		start := lastToken.Span.Start
-		right := utils.CopySlice(sh.input[cursorIndex:])
+		right := slices.Clone(sh.input[cursorIndex:])
 		sh.input = append(sh.input[0:start], right...)
 
 		sh.printPromptAndInput(false, nil)
@@ -899,7 +900,7 @@ func (sh *shell) handleAction(action termAction) (stop bool) {
 		lastToken := tokens[tokenIndex]
 
 		//remove the part of the token that is after the cursor
-		right := utils.CopySlice(sh.input[lastToken.Span.End:])
+		right := slices.Clone(sh.input[lastToken.Span.End:])
 		sh.input = append(sh.input[0:cursorIndex], right...)
 		sh.backspaceCount -= int(lastToken.Span.End - lastToken.Span.Start)
 
@@ -1075,7 +1076,7 @@ func (sh *shell) handleAction(action termAction) (stop bool) {
 		//replace the incomplete element with replacement
 		if replacement != "" {
 			beforeElem := sh.input[:replacedSpan.Start]
-			afterElem := utils.CopySlice(sh.input[min(len(sh.input), int(replacedSpan.End)):])
+			afterElem := slices.Clone(sh.input[min(len(sh.input), int(replacedSpan.End)):])
 
 			prevLen := len(sh.input)
 			sh.input = append(beforeElem, []rune(replacement)...)

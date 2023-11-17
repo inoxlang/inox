@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"sync"
 	"time"
@@ -15,7 +16,6 @@ import (
 	"github.com/go-git/go-billy/v5/util"
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/utils"
 )
 
 var (
@@ -305,7 +305,7 @@ func (fs *MemFilesystem) TakeFilesystemSnapshot(config core.FilesystemSnapshotCo
 			if content == nil {
 				content = AddressableContentBytes{
 					Sha256: metadata.ChecksumSHA256,
-					Data:   utils.CopySlice(f.content.bytes),
+					Data:   slices.Clone(f.content.bytes),
 				}
 			}
 

@@ -135,7 +135,7 @@ func EvalCheck(input EvalCheckInput) (*Data, error) {
 	state.baseGlobals = input.SymbolicBaseGlobals
 	state.basePatterns = input.SymbolicBasePatterns
 	state.basePatternNamespaces = input.SymbolicBasePatternNamespaces
-	state.importPositions = utils.CopySlice(input.importPositions)
+	state.importPositions = slices.Clone(input.importPositions)
 	state.shellTrustedCommands = input.ShellTrustedCommands
 	state.projectFilesystem = input.ProjectFilesystem
 
@@ -1719,7 +1719,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 			importedModuleContext.AddPatternNamespace(name, basePatternNamespace, false)
 		}
 
-		importPositions := append(utils.CopySlice(state.importPositions), state.getErrorMesssageLocation(n)...)
+		importPositions := append(slices.Clone(state.importPositions), state.getErrorMesssageLocation(n)...)
 
 		data, err := EvalCheck(EvalCheckInput{
 			Node:   importedModule.mainChunk.Node,

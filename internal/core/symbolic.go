@@ -263,10 +263,10 @@ func init() {
 			},
 
 			CreateByteSlice: func(bytes []byte) any {
-				return NewByteSlice(utils.CopySlice(bytes), true, "")
+				return NewByteSlice(slices.Clone(bytes), true, "")
 			},
 			CreateRuneSlice: func(runes []rune) any {
-				return NewRuneSlice(utils.CopySlice(runes))
+				return NewRuneSlice(slices.Clone(runes))
 			},
 
 			CreateObject: func(concreteProperties map[string]any) any {
@@ -1667,7 +1667,7 @@ func (s *StructPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]sy
 		return r, nil
 	}
 
-	keys := utils.CopySlice(s.keys)
+	keys := slices.Clone(s.keys)
 	types := make([]symbolic.Pattern, len(keys))
 
 	symbolicStructPattern := new(symbolic.StructPattern)

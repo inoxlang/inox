@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"slices"
 
 	"github.com/inoxlang/inox/internal/commonfmt"
 	"github.com/inoxlang/inox/internal/core"
@@ -279,7 +280,7 @@ func (n *TreeNode) Prop(ctx *core.Context, name string) core.Value {
 		children := n.children
 
 		if n.tree.IsShared() {
-			children = utils.CopySlice(n.children)
+			children = slices.Clone(n.children)
 		}
 
 		return &CollectionIterator{

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"slices"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -563,7 +564,7 @@ func registerHandlers(server *lsp.Server, serverConfig LSPServerConfiguration) {
 				lastRangeExlusiveEnd = chunk.GetLineColumnPosition(endLine, endColumn)
 				rangeLength := lastRangeExlusiveEnd - lastRangeStart
 
-				afterRange := utils.CopySlice(currentContent[lastRangeStart+rangeLength:])
+				afterRange := slices.Clone(currentContent[lastRangeStart+rangeLength:])
 				currentContent = append(currentContent[:lastRangeStart], lastReplacementStirng...)
 				currentContent = append(currentContent, afterRange...)
 			}

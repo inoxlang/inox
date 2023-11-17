@@ -5,6 +5,7 @@ import (
 
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
 	"github.com/inoxlang/inox/internal/utils"
+	"golang.org/x/exp/slices"
 )
 
 var (
@@ -22,7 +23,7 @@ type ApiIL struct {
 }
 
 func NewApiIL(schema *ObjectPattern) *ApiIL {
-	propertyNames := utils.CopySlice(API_PROPNAMES)
+	propertyNames := slices.Clone(API_PROPNAMES)
 	for propName := range schema.entries {
 		if utils.SliceContains(API_PROPNAMES, propName) {
 			panic(fmt.Errorf("name collision with inital property name '%s'", propName))

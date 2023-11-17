@@ -463,7 +463,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 		//no pattern
 		list, err := ParseJSONRepresentation(ctx, `{"list__value":[]}`, nil)
 		if assert.NoError(t, err) {
-			assert.Equal(t, []Serializable{}, list.(*List).GetOrBuildElements(ctx))
+			assert.Empty(t, list.(*List).GetOrBuildElements(ctx))
 		}
 
 		list, err = ParseJSONRepresentation(ctx, `{"list__value":["1"]}`, nil)
@@ -474,7 +474,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 		//%list patteren
 		list, err = ParseJSONRepresentation(ctx, `[]`, LIST_PATTERN)
 		if assert.NoError(t, err) {
-			assert.Equal(t, []Serializable{}, list.(*List).GetOrBuildElements(ctx))
+			assert.Empty(t, list.(*List).GetOrBuildElements(ctx))
 		}
 
 		list, err = ParseJSONRepresentation(ctx, `["1"]`, LIST_PATTERN)
@@ -487,7 +487,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 
 		list, err = ParseJSONRepresentation(ctx, `[]`, pattern)
 		if assert.NoError(t, err) {
-			assert.Equal(t, []Serializable{}, list.(*List).GetOrBuildElements(ctx))
+			assert.Empty(t, list.(*List).GetOrBuildElements(ctx))
 			assert.IsType(t, (*IntList)(nil), list.(*List).underlyingList)
 		}
 
@@ -502,7 +502,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 
 		list, err = ParseJSONRepresentation(ctx, `[]`, pattern)
 		if assert.NoError(t, err) {
-			assert.Equal(t, []Serializable{}, list.(*List).GetOrBuildElements(ctx))
+			assert.Empty(t, list.(*List).GetOrBuildElements(ctx))
 			assert.IsType(t, (*BoolList)(nil), list.(*List).underlyingList)
 		}
 
@@ -517,7 +517,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 
 		list, err = ParseJSONRepresentation(ctx, `[]`, pattern)
 		if assert.NoError(t, err) {
-			assert.Equal(t, []Serializable{}, list.(*List).GetOrBuildElements(ctx))
+			assert.Empty(t, list.(*List).GetOrBuildElements(ctx))
 		}
 
 		list, err = ParseJSONRepresentation(ctx, `["1"]`, pattern)
@@ -582,7 +582,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 		//no pattern
 		tuple, err := ParseJSONRepresentation(ctx, `{"tuple__value":[]}`, nil)
 		if assert.NoError(t, err) {
-			assert.Equal(t, []Serializable{}, tuple.(*Tuple).GetOrBuildElements(ctx))
+			assert.Empty(t, tuple.(*Tuple).GetOrBuildElements(ctx))
 		}
 
 		tuple, err = ParseJSONRepresentation(ctx, `{"tuple__value":["1"]}`, nil)
@@ -593,7 +593,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 		//%tuple patteren
 		tuple, err = ParseJSONRepresentation(ctx, `[]`, TUPLE_PATTERN)
 		if assert.NoError(t, err) {
-			assert.Equal(t, []Serializable{}, tuple.(*Tuple).GetOrBuildElements(ctx))
+			assert.Empty(t, tuple.(*Tuple).GetOrBuildElements(ctx))
 		}
 
 		tuple, err = ParseJSONRepresentation(ctx, `["1"]`, TUPLE_PATTERN)
@@ -606,7 +606,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 
 		tuple, err = ParseJSONRepresentation(ctx, `[]`, pattern)
 		if assert.NoError(t, err) {
-			assert.Equal(t, []Serializable{}, tuple.(*Tuple).GetOrBuildElements(ctx))
+			assert.Empty(t, tuple.(*Tuple).GetOrBuildElements(ctx))
 		}
 
 		tuple, err = ParseJSONRepresentation(ctx, `[1]`, pattern)
@@ -619,7 +619,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 
 		tuple, err = ParseJSONRepresentation(ctx, `[]`, pattern)
 		if assert.NoError(t, err) {
-			assert.Equal(t, []Serializable{}, tuple.(*Tuple).GetOrBuildElements(ctx))
+			assert.Empty(t, tuple.(*Tuple).GetOrBuildElements(ctx))
 		}
 
 		tuple, err = ParseJSONRepresentation(ctx, `[1]`, pattern)

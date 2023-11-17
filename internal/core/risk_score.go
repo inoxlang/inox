@@ -3,6 +3,7 @@ package core
 import (
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strconv"
 
 	permkind "github.com/inoxlang/inox/internal/permkind"
@@ -117,7 +118,7 @@ var (
 // The current logic is intended to be a starting point, it may be adjusted based on additional research and feedback.
 func ComputeProgramRiskScore(mod *Module, manifest *Manifest) (totalScore RiskScore, requiredPerms []Permission) {
 	permTypeRiskScores := map[reflect.Type]RiskScore{}
-	requiredPerms = utils.CopySlice(manifest.RequiredPermissions)
+	requiredPerms = slices.Clone(manifest.RequiredPermissions)
 
 	for _, preinitFilePerm := range manifest.PreinitFiles {
 		requiredPerms = append(requiredPerms, preinitFilePerm.RequiredPermission)

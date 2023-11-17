@@ -7,6 +7,7 @@ import (
 	"io"
 	"math"
 	"reflect"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -334,7 +335,7 @@ func (c *compiler) Compile(node parse.Node) error {
 	case *parse.AtHostLiteral:
 		c.emit(node, OpResolveHost, c.addConstant(Str(node.Value)))
 	case *parse.ByteSliceLiteral:
-		c.emit(node, OpPushConstant, c.addConstant(&ByteSlice{Bytes: utils.CopySlice(node.Value), IsDataMutable: true}))
+		c.emit(node, OpPushConstant, c.addConstant(&ByteSlice{Bytes: slices.Clone(node.Value), IsDataMutable: true}))
 	case *parse.OptionExpression:
 		if err := c.Compile(node.Value); err != nil {
 			return err

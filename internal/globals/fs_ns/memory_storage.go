@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime/debug"
+	"slices"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -479,7 +480,7 @@ func (c *InMemFileContent) Persist(persistFn func(p []byte) error) (finalErr err
 		c.lock.Unlock()
 		return
 	}
-	bytes := utils.CopySlice(c.bytes)
+	bytes := slices.Clone(c.bytes)
 	c.beingPersisted = true
 	c.lock.Unlock()
 

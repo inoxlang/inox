@@ -7,6 +7,7 @@ import (
 	"math"
 	"regexp"
 	"regexp/syntax"
+	"slices"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -339,7 +340,7 @@ func NewSequenceStringPattern(
 		elements:             subpatterns,
 		lengthRange:          lengthRange,
 		effectiveLengthRange: lengthRange,
-		groupNames:           utils.CopySlice(groupNames),
+		groupNames:           slices.Clone(groupNames),
 	}, nil
 }
 

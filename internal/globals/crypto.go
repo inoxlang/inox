@@ -12,6 +12,7 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"slices"
 
 	"github.com/alexedwards/argon2id"
 	"github.com/inoxlang/inox/internal/core"
@@ -222,7 +223,7 @@ func _rsa_encrypt_oaep(_ *core.Context, arg core.Readable, key core.StringLike) 
 		return nil, fmt.Errorf("failed to read all data to encrypt: %w", err)
 	}
 
-	bytes := utils.CopySlice(slice.Bytes)
+	bytes := slices.Clone(slice.Bytes)
 
 	encrypted, err := rsa.EncryptOAEP(sha256.New(), core.CryptoRandSource, pubKey, bytes, nil)
 	if err != nil {
@@ -250,7 +251,7 @@ func _rsa_decrypt_oaep(_ *core.Context, arg core.Readable, key *core.Secret) (*c
 		return nil, fmt.Errorf("failed to read all data to decrypt: %w", err)
 	}
 
-	bytes := utils.CopySlice(slice.Bytes)
+	bytes := slices.Clone(slice.Bytes)
 
 	decrypted, err := rsa.DecryptOAEP(sha256.New(), core.CryptoRandSource, privKey, bytes, nil)
 	if err != nil {

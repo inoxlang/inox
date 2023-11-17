@@ -3,9 +3,8 @@ package core
 import (
 	"errors"
 	"fmt"
+	"slices"
 	"time"
-
-	"github.com/inoxlang/inox/internal/utils"
 )
 
 var (
@@ -170,14 +169,14 @@ func (g *SystemGraph) takeSnapshot(ctx *Context) *SystemGraph {
 	defer g.nodes.lock.Unlock()
 
 	newNodes := &SystemGraphNodes{
-		list: utils.CopySlice(g.nodes.list),
+		list: slices.Clone(g.nodes.list),
 	}
 
 	origToCopy := make(map[*SystemGraphNode]*SystemGraphNode, len(newNodes.list))
 	for i, origNode := range g.nodes.list {
 		nodeCopy := *origNode
 		if nodeCopy.edgesFrom != nil {
-			nodeCopy.edgesFrom = utils.CopySlice(nodeCopy.edgesFrom)
+			nodeCopy.edgesFrom = slices.Clone(nodeCopy.edgesFrom)
 		}
 		newNodes.list[i] = &nodeCopy
 		origToCopy[origNode] = &nodeCopy
@@ -196,7 +195,7 @@ func (g *SystemGraph) takeSnapshot(ctx *Context) *SystemGraph {
 	newGraph := &SystemGraph{
 		isFrozen: true,
 		nodes:    newNodes,
-		eventLog: utils.CopySlice(g.eventLog),
+		eventLog: slices.Clone(g.eventLog),
 	}
 	newGraph.nodes.graph = newGraph
 

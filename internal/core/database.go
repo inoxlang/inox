@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"runtime/debug"
+	"slices"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -176,7 +177,7 @@ type DatabaseWrappingArgs struct {
 func WrapDatabase(ctx *Context, args DatabaseWrappingArgs) (*DatabaseIL, error) {
 	schema := args.Inner.Schema()
 
-	propertyNames := utils.CopySlice(DATABASE_PROPNAMES)
+	propertyNames := slices.Clone(DATABASE_PROPNAMES)
 	schema.ForEachEntry(func(propName string, propPattern Pattern, isOptional bool) error {
 		if utils.SliceContains(DATABASE_PROPNAMES, propName) {
 			panic(fmt.Errorf("%w: %s", ErrNameCollisionWithInitialDatabasePropertyName, propName))

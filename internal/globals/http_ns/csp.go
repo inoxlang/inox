@@ -3,6 +3,7 @@ package http_ns
 import (
 	"bytes"
 	"fmt"
+	"slices"
 
 	"io"
 	"sort"
@@ -10,8 +11,6 @@ import (
 	"github.com/inoxlang/inox/internal/commonfmt"
 	"github.com/inoxlang/inox/internal/core"
 	jsoniter "github.com/inoxlang/inox/internal/jsoniter"
-
-	"github.com/inoxlang/inox/internal/utils"
 )
 
 const (
@@ -87,7 +86,7 @@ func NewCSPWithDirectives(directives []CSPDirective) (*ContentSecurityPolicy, er
 		if _, ok := directiveMap[k]; !ok {
 			directiveMap[k] = CSPDirective{
 				name:   k,
-				values: utils.CopySlice(v),
+				values: slices.Clone(v),
 			}
 		}
 	}

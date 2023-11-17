@@ -7,10 +7,9 @@ import (
 	"net/url"
 	"reflect"
 	"runtime/debug"
+	"slices"
 	"strings"
 	"time"
-
-	"github.com/inoxlang/inox/internal/utils"
 )
 
 var (
@@ -2937,7 +2936,7 @@ func FindNodesAndChains[T Node](root Node, typ T, handle func(n T) bool) ([]T, [
 		if reflect.TypeOf(node) == searchedType {
 			if handle == nil || handle(node.(T)) {
 				found = append(found, node.(T))
-				ancestors = append(ancestors, utils.CopySlice(ancestorChain))
+				ancestors = append(ancestors, slices.Clone(ancestorChain))
 			}
 		}
 		return ContinueTraversal, nil
