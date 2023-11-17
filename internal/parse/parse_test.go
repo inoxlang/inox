@@ -7270,6 +7270,14 @@ func testParse(
 				},
 			},
 
+			`"\u0061"`: {
+				result: &QuotedStringLiteral{
+					NodeBase: NodeBase{NodeSpan{0, 8}, nil, false},
+					Raw:      `"\u0061"`,
+					Value:    `a`,
+				},
+			},
+
 			`"ab`: {
 				result: &QuotedStringLiteral{
 					NodeBase: NodeBase{
@@ -7463,6 +7471,18 @@ func testParse(
 							NodeBase: NodeBase{NodeSpan{0, 5}, nil, false},
 							Raw:      "`\"a\"`",
 							Value:    "\"a\"",
+						},
+					},
+				},
+			},
+			"`\\u0061`": {
+				result: &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 8}, nil, false},
+					Statements: []Node{
+						&MultilineStringLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 8}, nil, false},
+							Raw:      "`\\u0061`",
+							Value:    "a",
 						},
 					},
 				},

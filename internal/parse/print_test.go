@@ -20,6 +20,10 @@ func TestPrint(t *testing.T) {
 		//simple literals
 		"1",
 		" 1",
+		`""`,
+		`"1"`,
+		`"\n"`,
+		`"\u"`, //invalid unicode sequence
 		"1x",
 		"1x/s",
 		"https://example.com",

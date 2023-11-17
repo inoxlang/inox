@@ -1489,9 +1489,11 @@ func (p *parser) parseQuotedStringLiteral() *QuotedStringLiteral {
 		p.i++
 
 		raw = string(p.s[start:p.i])
-		err := json.Unmarshal([]byte(raw), &value)
-
-		if err != nil {
+		decoded, ok := DecodeJsonStringLiteral(utils.StringAsBytes(raw))
+		if ok {
+			value = decoded
+		} else { //use json.Unmarshal to get the error
+			err := json.Unmarshal(utils.StringAsBytes(raw), &decoded)
 			parsingErr = &ParsingError{UnspecifiedParsingError, fmtInvalidStringLitJSON(err.Error())}
 		}
 	}
@@ -4376,8 +4378,6 @@ func (p *parser) parseOptionPatternLiteral(start int32, unprefixedOptionPatternN
 func (p *parser) getValueOfMultilineStringSliceOrLiteral(raw []byte, literal bool) (string, *ParsingError) {
 	p.panicIfContextDone()
 
-	var value string
-
 	if literal {
 		raw[0] = '"'
 		raw[len32(raw)-1] = '"'
@@ -4405,12 +4405,15 @@ func (p *parser) getValueOfMultilineStringSliceOrLiteral(raw []byte, literal boo
 			marshalingInput = append(marshalingInput, _byte)
 		}
 	}
-	err := json.Unmarshal(marshalingInput, &value)
-
-	if err != nil {
-		return "", &ParsingError{UnspecifiedParsingError, fmtInvalidStringLitJSON(err.Error())}
+	decoded, ok := DecodeJsonStringLiteral(marshalingInput)
+	if ok {
+		return decoded, nil
 	}
-	return value, nil
+
+	//use json.Unmarshal to get the error
+	err := json.Unmarshal(marshalingInput, &decoded)
+	return "", &ParsingError{UnspecifiedParsingError, fmtInvalidStringLitJSON(err.Error())}
+
 }
 
 func (p *parser) parseStringTemplateLiteralOrMultilineStringLiteral(pattern Node) Node {
