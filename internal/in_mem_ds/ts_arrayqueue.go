@@ -23,6 +23,14 @@ func (q *TSArrayQueue[T]) Enqueue(value T) {
 	q.elements = append(q.elements, value)
 }
 
+// Enqueue adds zero or more values to the end of the queue
+func (q *TSArrayQueue[T]) EnqueueAll(values ...T) {
+	q.lock.Lock()
+	defer q.lock.Unlock()
+
+	q.elements = append(q.elements, values...)
+}
+
 // Dequeue removes first element of the queue and returns it, or nil if queue is empty.
 // Second return parameter is true, unless the queue was empty and there was nothing to dequeue.
 func (q *TSArrayQueue[T]) Dequeue() (value T, ok bool) {

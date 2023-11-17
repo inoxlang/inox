@@ -64,10 +64,27 @@ func (f *metaFsFile) Write(p []byte) (n int, err error) {
 		return 0, err
 	}
 
+	var modifTime core.DateTime
+
 	func() {
 		f.fs.lastModificationTimesLock.Lock()
 		defer f.fs.lastModificationTimesLock.Unlock()
-		f.fs.lastModificationTimes[f.normalizedPath] = core.DateTime(time.Now())
+
+		modifTime = core.DateTime(time.Now())
+		f.fs.lastModificationTimes[f.normalizedPath] = modifTime
+	}()
+
+	defer func() {
+		if err != nil {
+			return
+		}
+
+		//add event
+		f.fs.eventQueue.Enqueue(fsEventInfo{
+			path:     f.path,
+			writeOp:  true,
+			dateTime: modifTime,
+		})
 	}()
 
 	//TODO: prevent leaks about underlying file
@@ -148,10 +165,14 @@ func (f *metaFsFile) Truncate(size int64) error {
 		}
 	}
 
+	var modifTime core.DateTime
+
 	func() {
 		f.fs.lastModificationTimesLock.Lock()
 		defer f.fs.lastModificationTimesLock.Unlock()
-		f.fs.lastModificationTimes[f.normalizedPath] = core.DateTime(time.Now())
+
+		modifTime = core.DateTime(time.Now())
+		f.fs.lastModificationTimes[f.normalizedPath] = modifTime
 	}()
 
 	err := f.underlying.Truncate(size)
@@ -159,6 +180,14 @@ func (f *metaFsFile) Truncate(size int64) error {
 		f.fs.ctx.Logger().Err(err).Msg("failed to close metafs file " + string(f.metadata.path))
 		return fmt.Errorf("failed to truncate %s", f.metadata.path)
 	}
+
+	//add event
+	f.fs.eventQueue.Enqueue(fsEventInfo{
+		path:     f.path,
+		writeOp:  true,
+		dateTime: modifTime,
+	})
+
 	return nil
 }
 

@@ -22,7 +22,7 @@ var (
 
 	watcherManagingGoroutineStarted atomic.Bool
 
-	_ = []watchableVirtualFilesystem{(*MemFilesystem)(nil)}
+	_ = []watchableVirtualFilesystem{(*MemFilesystem)(nil), (*MetaFilesystem)(nil)}
 )
 
 // watchableVirtualFilesystem is implemented by non-OS filesystems that can track FS events.
@@ -77,19 +77,7 @@ func (fls *MemFilesystem) getWatchers() []*virtualFilesystemWatcher {
 	fls.watchersLock.Lock()
 	defer fls.watchersLock.Unlock()
 
-	//remove stopped watchers
-	startIndex := 0
-outer:
-	for startIndex < len(fls.watchers) {
-		for i, watcher := range fls.watchers[startIndex:] {
-			if watcher.stopped.Load() {
-				fls.watchers = slices.Delete(fls.watchers, i, i+1)
-				startIndex = i //don't continue checking from the start (perf)
-				continue outer
-			}
-			startIndex = i + 1 //don't continue checking from the start (perf)
-		}
-	}
+	removeStoppedWatchers(&fls.watchers)
 
 	watchers := slices.Clone(fls.watchers)
 
@@ -100,6 +88,62 @@ outer:
 	}
 
 	return watchers
+}
+
+func (fls *MetaFilesystem) watcher(evs *FilesystemEventSource) *virtualFilesystemWatcher {
+	watcher := &virtualFilesystemWatcher{
+		eventSource:  evs,
+		creationTime: time.Now(),
+	}
+
+	startWatcherManagingGoroutine()
+
+	fls.fsWatchersLock.Lock()
+	fls.fsWatchers = append(fls.fsWatchers, watcher)
+	fls.fsWatchersLock.Unlock()
+
+	watchedVirtualFilesystemsLock.Lock()
+	watchedVirtualFilesystems[fls] = struct{}{}
+	watchedVirtualFilesystemsLock.Unlock()
+
+	return watcher
+}
+
+func (fls *MetaFilesystem) events() *in_mem_ds.TSArrayQueue[fsEventInfo] {
+	return fls.eventQueue
+}
+
+func (fls *MetaFilesystem) getWatchers() []*virtualFilesystemWatcher {
+	fls.fsWatchersLock.Lock()
+	defer fls.fsWatchersLock.Unlock()
+
+	removeStoppedWatchers(&fls.fsWatchers)
+
+	watchers := slices.Clone(fls.fsWatchers)
+
+	if len(watchers) == 0 {
+		watchedVirtualFilesystemsLock.Lock()
+		delete(watchedVirtualFilesystems, fls)
+		watchedVirtualFilesystemsLock.Unlock()
+	}
+
+	return watchers
+}
+
+func removeStoppedWatchers(watchers *[]*virtualFilesystemWatcher) {
+	//remove stopped watchers
+	startIndex := 0
+outer:
+	for startIndex < len(*watchers) {
+		for i, watcher := range (*watchers)[startIndex:] {
+			if watcher.stopped.Load() {
+				*watchers = slices.Delete(*watchers, i, i+1)
+				startIndex = i //don't continue checking from the start (perf)
+				continue outer
+			}
+			startIndex = i + 1 //don't continue checking from the start (perf)
+		}
+	}
 }
 
 func startWatcherManagingGoroutine() {

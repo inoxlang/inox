@@ -35,7 +35,7 @@ type inMemStorage struct {
 	totalContentSize atomic.Int64
 	maxStorageSize   int64
 
-	eventQueue *in_mem_ds.TSArrayQueue[fsEventInfo]
+	eventQueue *in_mem_ds.TSArrayQueue[fsEventInfo] //periodically emptied
 }
 
 func newInMemoryStorage(maxStorageSize core.ByteCount) *inMemStorage {

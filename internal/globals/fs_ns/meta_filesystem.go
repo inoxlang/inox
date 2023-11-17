@@ -21,6 +21,7 @@ import (
 	"github.com/inoxlang/inox/internal/commonfmt"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/filekv"
+	"github.com/inoxlang/inox/internal/in_mem_ds"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/oklog/ulid/v2"
 )
@@ -71,6 +72,10 @@ type MetaFilesystem struct {
 	lastModificationTimes     map[ /*normalized path*/ string]core.DateTime
 	lastModificationTimesLock sync.RWMutex
 
+	eventQueue     *in_mem_ds.TSArrayQueue[fsEventInfo] //periodically emptied
+	fsWatchers     []*virtualFilesystemWatcher
+	fsWatchersLock sync.Mutex
+
 	//all the metadata about files is stored in this Key value store.
 	metadata *filekv.SingleFileKV
 	ctx      *core.Context
@@ -84,6 +89,7 @@ type MetaFilesystem struct {
 	usedSpaceCache     core.ByteCount
 	usedSpaceCacheLock sync.RWMutex
 	lastSpaceCheckTime atomic.Int64 //unix milli (the millisecond precision is required)
+
 }
 
 type MetaFilesystemParams struct {
@@ -148,6 +154,7 @@ func OpenMetaFilesystem(ctx *core.Context, underlying billy.Basic, opts MetaFile
 		underlying:            underlying,
 		openFiles:             map[string]map[*metaFsFile]struct{}{},
 		lastModificationTimes: map[string]core.DateTime{},
+		eventQueue:            in_mem_ds.NewTSArrayQueue[fsEventInfo](),
 
 		metadata:                 kv,
 		maxUsableSpace:           maxUsableSpace,
@@ -964,6 +971,13 @@ func (fls *MetaFilesystem) OpenFile(filename string, flag int, perm os.FileMode)
 
 	files[file] = struct{}{}
 
+	//add event
+	fls.eventQueue.Enqueue(fsEventInfo{
+		path:     core.Path(file.path),
+		createOp: true,
+		dateTime: metadata.creationTime,
+	})
+
 	return file, nil
 }
 
@@ -1159,6 +1173,13 @@ func (fls *MetaFilesystem) MkdirAllNoLock_(path string, perm os.FileMode, tx *fi
 		if err := fls.setFileMetadata(newDirMetadata, tx); err != nil {
 			return err
 		}
+
+		//add event
+		fls.eventQueue.Enqueue(fsEventInfo{
+			path:     newDirMetadata.path,
+			createOp: true,
+			dateTime: newDirMetadata.creationTime,
+		})
 	} else if !metadata.mode.IsDir() {
 		//if there is a non-dir file we return an error
 		return fmt.Errorf("%w at %q", os.ErrExist, path)
@@ -1206,7 +1227,7 @@ func (fls *MetaFilesystem) Rename(from, to string) error {
 
 	//TODO: use a single transaction to search for move operations & do the update
 
-	//iterare the metadata database to find all files & directories to move.
+	//iterate the metadata database to find all files & directories to move.
 	err = fls.metadata.ForEach(fls.ctx, func(key core.Path, getVal func() core.Value) error {
 		path := strings.TrimPrefix(string(key), filesPrefix)
 
@@ -1291,7 +1312,7 @@ func (fls *MetaFilesystem) Rename(from, to string) error {
 
 		//update metadata of moved files & directories
 
-		for _, ops := range move {
+		for opIndex, ops := range move {
 
 			if noCheckFuel <= 0 { //check context
 				select {
@@ -1330,6 +1351,21 @@ func (fls *MetaFilesystem) Rename(from, to string) error {
 			if err := fls.deleteFileMetadata(from, dbTx); err != nil {
 				return err
 			}
+
+			//add event
+			if opIndex == 0 {
+				event := fsEventInfo{
+					path:     core.Path(metadata.path),
+					renameOp: true,
+					dateTime: core.DateTime(time.Now()),
+				}
+
+				//TODO: remove if unecessary
+				if metadata.mode.IsDir() {
+					event.path = core.AppendTrailingSlashIfNotPresent(event.path)
+				}
+				fls.eventQueue.Enqueue(event)
+			}
 		}
 		return nil
 	})
@@ -1361,6 +1397,27 @@ func (fls *MetaFilesystem) Remove(filename string) error {
 	}
 
 	noCheckFuel := 10
+
+	var removed []core.Path
+	var removalTimes []time.Time
+
+	defer func() {
+		defer utils.Recover()
+
+		//add events
+		//note: the events are not added one by one in order to reduce the number of lockings.
+		events := make([]fsEventInfo, len(removed))
+
+		for i, path := range removed {
+			events[i] = fsEventInfo{
+				path:     core.Path(path),
+				removeOp: true,
+				dateTime: core.DateTime(removalTimes[i]),
+			}
+		}
+
+		fls.eventQueue.EnqueueAll(events...)
+	}()
 
 	err = fls.metadata.UpdateNoCtx(func(dbTx *filekv.DatabaseTx) error {
 		dir := filepath.Dir(filename)
@@ -1402,6 +1459,9 @@ func (fls *MetaFilesystem) Remove(filename string) error {
 			return err
 		}
 
+		removed = append(removed, metadata.path)
+		removalTimes = append(removalTimes, time.Time(parentMetadata.modificationTime))
+
 		if !metadata.mode.IsDir() {
 			return nil
 		}
@@ -1411,7 +1471,7 @@ func (fls *MetaFilesystem) Remove(filename string) error {
 		fls.lastModificationTimesLock.Unlock()
 
 		//remove descendants recursively (the code is not used yet because .Remove is not recursive)
-		queue := utils.CopySlice(metadata.ChildrenPaths())
+		queue := slices.Clone(metadata.ChildrenPaths())
 
 		for len(queue) > 0 {
 			if noCheckFuel <= 0 { //check context
@@ -1452,6 +1512,9 @@ func (fls *MetaFilesystem) Remove(filename string) error {
 			if err := fls.deleteFileMetadata(current, dbTx); err != nil {
 				return err
 			}
+
+			removed = append(removed, metadata.path)
+			removalTimes = append(removalTimes, time.Now())
 		}
 
 		return nil

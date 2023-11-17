@@ -29,6 +29,22 @@ func TestEvents(t *testing.T) {
 			return NewMemFilesystem(1_000_000), "/"
 		})
 	})
+
+	t.Run("Meta filesystem", func(t *testing.T) {
+		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
+		testEvents(t, func(t *testing.T) (fls afs.Filesystem, tempDir string) {
+			underlyingFS := NewMemFilesystem(1_000_000)
+			metaFS, err := OpenMetaFilesystem(ctx, underlyingFS, MetaFilesystemParams{})
+
+			if !assert.NoError(t, err) {
+				t.SkipNow()
+				return
+			}
+			return metaFS, "/"
+		})
+	})
 }
 
 func testEvents(t *testing.T, setup func(t *testing.T) (fls afs.Filesystem, tempDir string)) {
@@ -326,7 +342,7 @@ func testEvents(t *testing.T, setup func(t *testing.T) (fls afs.Filesystem, temp
 		assert.Nil(t, evs)
 	})
 
-	t.Run("if the FS is virtual, a single event should be emitted for a few same-file writes that are very close in time", func(t *testing.T) {
+	t.Run("if virtual FS, a single event should be emitted for a few same-file writes that are very close in time", func(t *testing.T) {
 		// create a temporary directory & a file in it
 		fls, tempDir := setup(t)
 
@@ -396,6 +412,114 @@ func testEvents(t *testing.T, setup func(t *testing.T) (fls afs.Filesystem, temp
 		time.Sleep(SLEEP_DURATION)
 
 		assert.EqualValues(t, 1, callCount.Load())
+	})
+
+	t.Run("if virtual FS, a single event should be emitted for a few same-file writes that are very close in time (several files)", func(t *testing.T) {
+		// create a temporary directory & a file in it
+		fls, tempDir := setup(t)
+
+		if utils.Implements[*OsFilesystem](fls) {
+			t.SkipNow()
+		}
+
+		dirPatt := core.PathPattern(tempDir + "...")
+		filepth1 := core.Path(filepath.Join(tempDir, "file1.txt"))
+		filepth2 := core.Path(filepath.Join(tempDir, "file2.txt"))
+
+		f1, err := fls.Create(string(filepth1))
+		if assert.NoError(t, err) {
+			if capable, ok := f1.(afs.SyncCapable); ok {
+				capable.Sync()
+			}
+		}
+		f2, err := fls.Create(string(filepth2))
+		if assert.NoError(t, err) {
+			if capable, ok := f2.(afs.SyncCapable); ok {
+				capable.Sync()
+			}
+		}
+
+		ctx := core.NewContext(core.ContextConfig{
+			Permissions: []core.Permission{
+				core.FilesystemPermission{Kind_: permkind.Read, Entity: dirPatt},
+			},
+			Filesystem: fls,
+		})
+		defer ctx.CancelGracefully()
+
+		// create the event source & add a callback function
+		evs, err := NewEventSource(ctx, dirPatt)
+		if !assert.NoError(t, err) {
+			return
+		}
+		defer evs.Close()
+
+		var callCount atomic.Int32
+
+		err = evs.OnEvent(func(event *core.Event) {
+			count := callCount.Add(1)
+
+			switch count {
+			case 1:
+				//a single event with write_op true is expected for file1.txt.
+				assert.Equal(t, core.NewRecordFromMap(core.ValMap{
+					"path":      filepth1,
+					"write_op":  core.True,
+					"create_op": core.False,
+					"remove_op": core.False,
+					"chmod_op":  core.False,
+					"rename_op": core.False,
+				}), event.Value())
+			case 2:
+				//a single event with write_op true is expected for file2.txt.
+				assert.Equal(t, core.NewRecordFromMap(core.ValMap{
+					"path":      filepth2,
+					"write_op":  core.True,
+					"create_op": core.False,
+					"remove_op": core.False,
+					"chmod_op":  core.False,
+					"rename_op": core.False,
+				}), event.Value())
+			}
+		})
+		assert.NoError(t, err)
+
+		//write to file 1
+		for i := 0; i < 10; i++ {
+			_, err := f1.Write([]byte{'a'})
+			if !assert.NoError(t, err) {
+				return
+			}
+		}
+
+		//write to file 2
+		for i := 0; i < 10; i++ {
+			_, err := f2.Write([]byte{'a'})
+			if !assert.NoError(t, err) {
+				return
+			}
+		}
+
+		//sync and close both files
+		if capable, ok := f1.(afs.SyncCapable); ok {
+			capable.Sync()
+		}
+
+		if !assert.NoError(t, f1.Close()) {
+			return
+		}
+
+		if capable, ok := f2.(afs.SyncCapable); ok {
+			capable.Sync()
+		}
+
+		if !assert.NoError(t, f2.Close()) {
+			return
+		}
+
+		time.Sleep(SLEEP_DURATION)
+
+		assert.EqualValues(t, 2, callCount.Load())
 	})
 
 }
