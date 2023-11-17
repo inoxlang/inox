@@ -5,6 +5,8 @@ import (
 	"io"
 )
 
+//TODO: add tests on iteration
+
 // ValueType the type for JSON element
 type ValueType int
 

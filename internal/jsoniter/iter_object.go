@@ -44,7 +44,7 @@ func (iter *Iterator) ReadObject() (ret string) {
 	}
 }
 
-// ReadObjectCB read object with callback, the key is ascii only and field name not copied
+// ReadObjectCB reads an object and calls callback each time it reads a key.
 func (iter *Iterator) ReadObjectCB(callback func(*Iterator, string) bool) bool {
 	c := iter.nextToken()
 	var field string
@@ -58,7 +58,7 @@ func (iter *Iterator) ReadObjectCB(callback func(*Iterator, string) bool) bool {
 			field = iter.ReadString()
 			c = iter.nextToken()
 			if c != ':' {
-				iter.ReportError("ReadObject", "expect : after object field, but found "+string([]byte{c}))
+				iter.ReportError("ReadObjectCB", "expect : after object field, but found "+string([]byte{c}))
 			}
 			if !callback(iter, field) {
 				iter.decrementDepth()
@@ -69,7 +69,7 @@ func (iter *Iterator) ReadObjectCB(callback func(*Iterator, string) bool) bool {
 				field = iter.ReadString()
 				c = iter.nextToken()
 				if c != ':' {
-					iter.ReportError("ReadObject", "expect : after object field, but found "+string([]byte{c}))
+					iter.ReportError("ReadObjectCB", "expect : after object field, but found "+string([]byte{c}))
 				}
 				if !callback(iter, field) {
 					iter.decrementDepth()
@@ -96,6 +96,67 @@ func (iter *Iterator) ReadObjectCB(callback func(*Iterator, string) bool) bool {
 		return true // null
 	}
 	iter.ReportError("ReadObjectCB", `expect { or n, but found `+string([]byte{c}))
+	return false
+}
+
+// ReadObjectAvoidAllocationsCB reads an object and calls callbackFn each time it reads a key,
+// keys that don't require decoding are passed to the callbackFn without allocation.
+// If the callback function is called with the allocated argument to true that means the key has been decoded,
+// the key argument can be stored and modified. Otherwise the key should only be accessed during the duration
+// of the current callback.
+func (iter *Iterator) ReadObjectMinimizeAllocationsCB(callbackFn func(it *Iterator, key []byte, allocated bool) bool) bool {
+	c := iter.nextToken()
+	var field []byte
+	var fieldAllocated bool
+
+	if c == '{' {
+		if !iter.incrementDepth() {
+			return false
+		}
+		c = iter.nextToken()
+		if c == '"' {
+			iter.unreadByte()
+			field, fieldAllocated = iter.ReadStringAsBytes()
+			c = iter.nextToken()
+			if c != ':' {
+				iter.ReportError("ReadObjectMinimizeAllocationsCB", "expect : after object field, but found "+string([]byte{c}))
+			}
+			if !callbackFn(iter, field, fieldAllocated) {
+				iter.decrementDepth()
+				return false
+			}
+			c = iter.nextToken()
+			for c == ',' {
+				field, fieldAllocated = iter.ReadStringAsBytes()
+				c = iter.nextToken()
+				if c != ':' {
+					iter.ReportError("ReadObjectMinimizeAllocationsCB", "expect : after object field, but found "+string([]byte{c}))
+				}
+				if !callbackFn(iter, field, fieldAllocated) {
+					iter.decrementDepth()
+					return false
+				}
+				c = iter.nextToken()
+			}
+			if c != '}' {
+				iter.ReportError("ReadObjectMinimizeAllocationsCB", `object not ended with }`)
+				iter.decrementDepth()
+				return false
+			}
+			return iter.decrementDepth()
+		}
+		if c == '}' {
+			return iter.decrementDepth()
+		}
+		iter.ReportError("ReadObjectMinimizeAllocationsCB", `expect " after {, but found `+string([]byte{c}))
+		iter.decrementDepth()
+		return false
+	}
+	if c == 'n' {
+		iter.skipThreeBytes('u', 'l', 'l')
+		return true // null
+	}
+	iter.ReportError("ReadObjectMinimizeAllocationsCB", `expect { or n, but found `+string([]byte{c}))
 	return false
 }
 

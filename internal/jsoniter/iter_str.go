@@ -3,42 +3,57 @@ package jsoniter
 import (
 	"fmt"
 	"unicode/utf16"
+
+	"github.com/inoxlang/inox/internal/utils"
 )
 
-// ReadString read string from iterator
-func (iter *Iterator) ReadString() (ret string) {
+// ReadString reads and decodes a JSON string literal.
+func (iter *Iterator) ReadString() string {
+	bytes, allocated := iter.ReadStringAsBytes()
+	if allocated {
+		return utils.BytesAsString(bytes)
+	}
+	return string(bytes)
+}
+
+// ReadStringAsBytes reads and decodes a JSON string literal.
+// If allocated is false the slice should not be stored or modified, and
+// it should not be read or modified after any mutation of the iterator.
+func (iter *Iterator) ReadStringAsBytes() (ret []byte, allocated bool) {
 	c := iter.nextToken()
 	if c == '"' {
 		for i := iter.head; i < iter.tail; i++ {
 			c := iter.buf[i]
 			if c == '"' {
-				ret = string(iter.buf[iter.head:i])
+				ret = iter.buf[iter.head:i]
+				ret = ret[0:len(ret):len(ret)]
 				iter.head = i + 1
-				return ret
+				return ret, false
 			} else if c == '\\' {
 				break
 			} else if c < ' ' {
-				iter.ReportError("ReadString",
+				iter.ReportError("ReadStringAsBytes",
 					fmt.Sprintf(`invalid control character found: %d`, c))
 				return
 			}
 		}
-		return iter.readStringSlowPath()
+		return iter.readStringSlowPath(), true
 	} else if c == 'n' {
 		iter.skipThreeBytes('u', 'l', 'l')
-		return ""
+		return nil, true
 	}
-	iter.ReportError("ReadString", `expects " or n, but found `+string([]byte{c}))
+	iter.ReportError("ReadStringAsBytes", `expects " or n, but found `+string([]byte{c}))
 	return
 }
 
-func (iter *Iterator) readStringSlowPath() (ret string) {
+// readStringSlowPath reads and decodes a JSON literal string, the returned value is not a subslice of the buffer.
+func (iter *Iterator) readStringSlowPath() (ret []byte) {
 	var str []byte
 	var c byte
 	for iter.Error == nil {
 		c = iter.readByte()
 		if c == '"' {
-			return string(str)
+			return str
 		}
 		if c == '\\' {
 			c = iter.readByte()
