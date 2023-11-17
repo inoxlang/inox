@@ -309,26 +309,32 @@ func writeStringSlowPathWithHTMLEscaped(stream *Stream, i int, s string, valLen 
 
 // WriteString write string to stream without html escape
 func (stream *Stream) WriteString(s string) {
-	valLen := len(s)
-	stream.buf = append(stream.buf, '"')
+	AppendString(&stream.buf, s)
+}
+
+func AppendString(buf *[]byte, str string) {
+	valLen := len(str)
+	*buf = append(*buf, '"')
 	// write string, the fast path, without utf8 and escape support
 	i := 0
 	for ; i < valLen; i++ {
-		c := s[i]
+		c := str[i]
 		if c > 31 && c != '"' && c != '\\' {
-			stream.buf = append(stream.buf, c)
+			*buf = append(*buf, c)
 		} else {
 			break
 		}
 	}
 	if i == valLen {
-		stream.buf = append(stream.buf, '"')
+		*buf = append(*buf, '"')
 		return
 	}
-	writeStringSlowPath(stream, i, s, valLen)
+	WriteStringSlowPath(buf, i, str)
 }
 
-func writeStringSlowPath(stream *Stream, i int, s string, valLen int) {
+func WriteStringSlowPath(buf *[]byte, i int, s string) {
+	valLen := len(s)
+
 	start := i
 	// for the remaining parts, we process them char by char
 	for i < valLen {
@@ -338,25 +344,20 @@ func writeStringSlowPath(stream *Stream, i int, s string, valLen int) {
 				continue
 			}
 			if start < i {
-				stream.WriteRaw(s[start:i])
+				*buf = append(*buf, s[start:i]...)
 			}
 			switch b {
 			case '\\', '"':
-				stream.writeTwoBytes('\\', b)
+				*buf = append(*buf, '\\', b)
 			case '\n':
-				stream.writeTwoBytes('\\', 'n')
+				*buf = append(*buf, '\\', 'n')
 			case '\r':
-				stream.writeTwoBytes('\\', 'r')
+				*buf = append(*buf, '\\', 'r')
 			case '\t':
-				stream.writeTwoBytes('\\', 't')
+				*buf = append(*buf, '\\', 't')
 			default:
 				// This encodes bytes < 0x20 except for \t, \n and \r.
-				// If escapeHTML is set, it also escapes <, >, and &
-				// because they can lead to security holes when
-				// user-controlled strings are rendered into JSON
-				// and served to some browsers.
-				stream.WriteRaw(`\u00`)
-				stream.writeTwoBytes(hex[b>>4], hex[b&0xF])
+				*buf = append(*buf, '\\', 'u', '0', '0', hex[b>>4], hex[b&0xF])
 			}
 			i++
 			start = i
@@ -366,7 +367,7 @@ func writeStringSlowPath(stream *Stream, i int, s string, valLen int) {
 		continue
 	}
 	if start < len(s) {
-		stream.WriteRaw(s[start:])
+		*buf = append(*buf, s[start:]...)
 	}
-	stream.writeByte('"')
+	*buf = append(*buf, '"')
 }
