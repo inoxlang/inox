@@ -3,7 +3,6 @@ package core
 import (
 	"bytes"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
@@ -372,9 +371,8 @@ func _parseRepr(b []byte, ctx *Context) (val Serializable, errorIndex int, speci
 				}
 			}
 		case rstateClosingDoubleQuotes:
-			var s string
-			err := json.Unmarshal(atomBytes, &s)
-			if err != nil {
+			s, ok := parse.DecodeJsonStringLiteral(atomBytes)
+			if !ok {
 				index = len(atomBytes) //fix
 			} else {
 				switch call {
@@ -1506,8 +1504,9 @@ func _parseRepr(b []byte, ctx *Context) (val Serializable, errorIndex int, speci
 
 				var s string
 				bytes := b[atomStartIndex:end]
-				err := json.Unmarshal(bytes, &s)
-				if err != nil {
+
+				s, ok := parse.DecodeJsonStringLiteral(bytes)
+				if !ok {
 					return nil, i, nil
 				}
 

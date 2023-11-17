@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	internal "github.com/inoxlang/inox/internal/parse"
 	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/stretchr/testify/assert"
 )
@@ -377,6 +376,9 @@ func TestParseRepr(t *testing.T) {
 		/*    */ {`""` + "\n", 2, nil},
 		/*    */ {"\"\n\"", 1, nil},
 		{`" "`, -1, Str(" ")}, //space is U2001
+		{`"\u0061"`, -1, Str("a")},
+		{`"\u"`, 4, nil},
+		{`"\u0"`, 5, nil},
 		{`"# "`, -1, Str("# ")},
 		{`"# a"`, -1, Str("# a")},
 		{`"a"`, -1, Str("a")},
@@ -1055,7 +1057,7 @@ func TestParseRepr(t *testing.T) {
 			//prepare expected value
 			expected := case_.value
 
-			Traverse(expected, func(v Value) (internal.TraversalAction, error) {
+			Traverse(expected, func(v Value) (parse.TraversalAction, error) {
 				if obj, ok := v.(*Object); ok {
 					obj.addMessageHandlers(ctx) // add handlers before because jobs can mutate the object
 					obj.instantiateLifetimeJobs(ctx)
