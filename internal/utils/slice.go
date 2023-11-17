@@ -18,14 +18,6 @@ func ReversedSlice[T any](s []T) []T {
 	return reversed
 }
 
-func Reverse[T any](slice []T) {
-	length := len(slice)
-
-	for i, j := 0, length-1; i < j; i, j = i+1, j-1 {
-		slice[i], slice[j] = slice[j], slice[i]
-	}
-}
-
 func SliceContains[T constraints.Ordered](slice []T, v T) bool {
 	for _, e := range slice {
 		if e == v {

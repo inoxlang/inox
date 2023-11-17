@@ -2,6 +2,7 @@ package core
 
 import (
 	"fmt"
+	"slices"
 	"sort"
 
 	"github.com/inoxlang/inox/internal/core/symbolic"
@@ -78,7 +79,7 @@ func Sort(ctx *Context, list *List, order Identifier) *List {
 			sort.Strings(strings)
 		case "revlex":
 			sort.Strings(strings)
-			utils.Reverse(strings)
+			slices.Reverse(strings)
 		default:
 			panic(fmt.Errorf("%s unsupported order for strings: '%s'", ERR_PREFIX, order))
 		}
@@ -105,7 +106,7 @@ func Sort(ctx *Context, list *List, order Identifier) *List {
 			sort.Slice(ints, func(i, j int) bool {
 				return ints[i] < ints[j]
 			})
-			utils.Reverse(ints)
+			slices.Reverse(ints)
 		default:
 			panic(fmt.Errorf("%s unsupported order for integers: '%s'", ERR_PREFIX, order))
 		}
