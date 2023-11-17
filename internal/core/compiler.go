@@ -314,8 +314,6 @@ func (c *compiler) Compile(node parse.Node) error {
 		c.emit(node, OpPushConstant, c.addConstant(Host(node.Value)))
 	case *parse.HostPatternLiteral:
 		c.emit(node, OpPushConstant, c.addConstant(HostPattern(node.Value)))
-	case *parse.EmailAddressLiteral:
-		c.emit(node, OpPushConstant, c.addConstant(EmailAddress(node.Value)))
 	case *parse.NilLiteral:
 		c.emit(node, OpPushNil)
 	case *parse.NamedSegmentPathPatternLiteral:

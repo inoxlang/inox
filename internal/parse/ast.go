@@ -83,7 +83,7 @@ var _ = []SimpleValueLiteral{
 	(*AbsolutePathLiteral)(nil), (*RelativePathLiteral)(nil), (*AbsolutePathPatternLiteral)(nil), (*RelativePathPatternLiteral)(nil),
 	(*NamedSegmentPathPatternLiteral)(nil), (*RegularExpressionLiteral)(nil), (*BooleanLiteral)(nil), (*NilLiteral)(nil),
 	(*HostLiteral)(nil), (*HostPatternLiteral)(nil), (*URLLiteral)(nil), (*URLPatternLiteral)(nil), (*PortLiteral)(nil),
-	(*EmailAddressLiteral)(nil), (*FlagLiteral)(nil),
+	(*FlagLiteral)(nil),
 }
 
 var _ = []IIdentifierLiteral{UnambiguousIdentifierLiteral{}, IdentifierLiteral{}}
@@ -628,19 +628,6 @@ func (l HostPatternLiteral) ValueString() string {
 }
 
 func (HostPatternLiteral) Kind() NodeKind {
-	return Expr
-}
-
-type EmailAddressLiteral struct {
-	NodeBase
-	Value string
-}
-
-func (l EmailAddressLiteral) ValueString() string {
-	return l.Value
-}
-
-func (EmailAddressLiteral) Kind() NodeKind {
 	return Expr
 }
 

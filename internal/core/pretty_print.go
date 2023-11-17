@@ -223,7 +223,7 @@ func GetNodeColorizations(chunk *parse.Chunk, lightMode bool) []ColorizationInfo
 			// 	Span:          n.Tokens[0].Span,
 			// 	ColorSequence: colors.StringLiteral,
 			// })
-		case *parse.URLLiteral, *parse.SchemeLiteral, *parse.HostLiteral, *parse.EmailAddressLiteral, *parse.AbsolutePathLiteral,
+		case *parse.URLLiteral, *parse.SchemeLiteral, *parse.HostLiteral, *parse.AbsolutePathLiteral,
 			*parse.RelativePathLiteral, *parse.URLQueryParameterValueSlice:
 			colorizations = append(colorizations, ColorizationInfo{
 				Span:          n.Base().Span,

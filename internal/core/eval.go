@@ -292,8 +292,6 @@ func evalSimpleValueLiteral(n parse.SimpleValueLiteral, global *GlobalState) (Se
 		return Scheme(node.Name), nil
 	case *parse.HostLiteral:
 		return Host(node.Value), nil
-	case *parse.EmailAddressLiteral:
-		return EmailAddress(node.Value), nil
 	case *parse.AtHostLiteral:
 		res := global.Ctx.ResolveHostAlias(node.Value[1:])
 		if res == "" {

@@ -413,8 +413,6 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 			return ANY_HOST, nil
 		}
 		return value, nil
-	case *parse.EmailAddressLiteral:
-		return NewEmailAddress(n.Value), nil
 	case *parse.HostPatternLiteral:
 		return NewHostPattern(n.Value), nil
 	case *parse.URLPatternLiteral:

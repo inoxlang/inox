@@ -44,8 +44,6 @@ const (
 	_NO_LOCATION_DATELIKE_LITERAL_PATTERN = NO_LOCATION_DATELIKE_LITERAL_PATTERN + "$"
 	DATELIKE_LITERAL_PATTERN              = NO_LOCATION_DATELIKE_LITERAL_PATTERN + "(-[a-zA-Z_/]+[a-zA-Z_])$"
 
-	STRICT_EMAIL_ADDRESS_PATTERN = "(?i)(^[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,24}$)"
-
 	NO_OTHERPROPS_PATTERN_NAME = "no"
 
 	SCRIPT_TAG_NAME = "script"
@@ -77,8 +75,7 @@ var (
 
 	//other regexes
 
-	STRICT_EMAIL_ADDRESS_REGEX = regexp.MustCompile(STRICT_EMAIL_ADDRESS_PATTERN)
-	ContainsSpace              = regexp.MustCompile(`\s`).MatchString
+	ContainsSpace = regexp.MustCompile(`\s`).MatchString
 )
 
 // parses a file module, resultErr is either a non-syntax error or an aggregation of syntax errors (*ParsingErrorAggregation).
@@ -1305,7 +1302,7 @@ func (p *parser) parseDashStartingExpression(precededByOpeningParen bool) Node {
 
 	if !isAlpha(p.s[p.i]) && !isDecDigit(p.s[p.i]) {
 		if unicode.IsSpace(p.s[p.i]) || isValidUnquotedStringChar(p.s, p.i) {
-			return p.parseUnquotedStringLiteralAndEmailAddress(__start)
+			return p.parseUnquotedStringLiteral(__start)
 		}
 		return &FlagLiteral{
 			NodeBase: NodeBase{
@@ -1509,7 +1506,7 @@ func (p *parser) parseQuotedStringLiteral() *QuotedStringLiteral {
 	}
 }
 
-func (p *parser) parseUnquotedStringLiteralAndEmailAddress(start int32) Node {
+func (p *parser) parseUnquotedStringLiteral(start int32) Node {
 	p.panicIfContextDone()
 
 	p.i++
@@ -1531,13 +1528,6 @@ func (p *parser) parseUnquotedStringLiteralAndEmailAddress(start int32) Node {
 	base := NodeBase{
 		Span: NodeSpan{start, p.i},
 		Err:  parsingErr,
-	}
-
-	if STRICT_EMAIL_ADDRESS_REGEX.MatchString(raw) {
-		return &EmailAddressLiteral{
-			NodeBase: base,
-			Value:    raw,
-		}
 	}
 
 	return &UnquotedStringLiteral{
@@ -2295,7 +2285,7 @@ func (p *parser) parseIdentStartingExpression(allowUnprefixedPatternNamespaceIde
 			case isAlpha(p.s[p.i]) || p.s[p.i] == '_':
 				isDynamic = false
 			case isValidUnquotedStringChar(p.s, p.i):
-				return p.parseUnquotedStringLiteralAndEmailAddress(start)
+				return p.parseUnquotedStringLiteral(start)
 				//memberExpr.NodeBase.Err = &ParsingError{UnspecifiedParsingError, makePropNameShouldStartWithAletterNot(p.s[p.i])}
 				//return memberExpr
 			default:
@@ -2390,7 +2380,7 @@ func (p *parser) parseIdentStartingExpression(allowUnprefixedPatternNamespaceIde
 		memberExpr.BasePtr().Span.End = p.i
 
 		if p.i < p.len && (p.s[p.i] == '\\' || (isValidUnquotedStringChar(p.s, p.i) && p.s[p.i] != ':')) {
-			return p.parseUnquotedStringLiteralAndEmailAddress(start)
+			return p.parseUnquotedStringLiteral(start)
 		}
 		return memberExpr
 	}
@@ -2398,7 +2388,7 @@ func (p *parser) parseIdentStartingExpression(allowUnprefixedPatternNamespaceIde
 	isProtocol := p.i < p.len-2 && string(p.s[p.i:p.i+3]) == "://"
 
 	if !isProtocol && p.i < p.len && (p.s[p.i] == '\\' || (isValidUnquotedStringChar(p.s, p.i) && p.s[p.i] != ':')) {
-		return p.parseUnquotedStringLiteralAndEmailAddress(start)
+		return p.parseUnquotedStringLiteral(start)
 	}
 
 	switch name {
@@ -6643,7 +6633,7 @@ func (p *parser) parseExpression(precededByOpeningParen ...bool) (expr Node, isM
 			break
 		}
 		start := p.i
-		return p.parseUnquotedStringLiteralAndEmailAddress(start), false
+		return p.parseUnquotedStringLiteral(start), false
 
 	case '/':
 		return p.parsePathLikeExpression(false), false

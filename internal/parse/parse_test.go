@@ -5315,47 +5315,6 @@ func testParse(
 		})
 	})
 
-	t.Run("email address literal", func(t *testing.T) {
-		t.Run("only letters in username", func(t *testing.T) {
-			n := mustparseChunk(t, `foo@mail.com`)
-			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{NodeSpan{0, 12}, nil, false},
-				Statements: []Node{
-					&EmailAddressLiteral{
-						NodeBase: NodeBase{NodeSpan{0, 12}, nil, false},
-						Value:    "foo@mail.com",
-					},
-				},
-			}, n)
-		})
-
-		t.Run("letters, dots & numbers", func(t *testing.T) {
-			n := mustparseChunk(t, `foo.e.9@mail.com`)
-			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{NodeSpan{0, 16}, nil, false},
-				Statements: []Node{
-					&EmailAddressLiteral{
-						NodeBase: NodeBase{NodeSpan{0, 16}, nil, false},
-						Value:    "foo.e.9@mail.com",
-					},
-				},
-			}, n)
-		})
-
-		t.Run("letters, dots & numbers", func(t *testing.T) {
-			n := mustparseChunk(t, `foo+e%9@mail.com`)
-			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{NodeSpan{0, 16}, nil, false},
-				Statements: []Node{
-					&EmailAddressLiteral{
-						NodeBase: NodeBase{NodeSpan{0, 16}, nil, false},
-						Value:    "foo+e%9@mail.com",
-					},
-				},
-			}, n)
-		})
-	})
-
 	t.Run("url expressions", func(t *testing.T) {
 		t.Run("no query, host interpolation", func(t *testing.T) {
 			n := mustparseChunk(t, `https://{$host}/`)
