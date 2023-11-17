@@ -80,12 +80,23 @@ func TestStrRepresentation(t *testing.T) {
 	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
-	s := Str("a\nb")
+	t.Run("newline character", func(t *testing.T) {
+		s := Str("a\nb")
 
-	expectedRepr := `"a\nb"`
-	assert.Equal(t, expectedRepr, getReprAllVisible(t, s, ctx))
-	node := assertParseExpression(t, expectedRepr)
-	assert.Equal(t, s, utils.Must(evalSimpleValueLiteral(node.(parse.SimpleValueLiteral), nil)))
+		expectedRepr := `"a\nb"`
+		assert.Equal(t, expectedRepr, getReprAllVisible(t, s, ctx))
+		node := assertParseExpression(t, expectedRepr)
+		assert.Equal(t, s, utils.Must(evalSimpleValueLiteral(node.(parse.SimpleValueLiteral), nil)))
+	})
+
+	t.Run("html unsafe characters", func(t *testing.T) {
+		s := Str("<script></script>")
+
+		expectedRepr := `"<script></script>"`
+		assert.Equal(t, expectedRepr, getReprAllVisible(t, s, ctx))
+		node := assertParseExpression(t, expectedRepr)
+		assert.Equal(t, s, utils.Must(evalSimpleValueLiteral(node.(parse.SimpleValueLiteral), nil)))
+	})
 }
 
 func TestObjectRepresentation(t *testing.T) {

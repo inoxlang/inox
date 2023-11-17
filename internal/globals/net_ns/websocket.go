@@ -104,6 +104,7 @@ func (conn *WebsocketConnection) readJSON(ctx *core.Context) (core.Value, error)
 		return nil, err
 	}
 
+	//TODO: use ParseJSONRepresentation (add tests before change)
 	return core.ConvertJSONValToInoxVal(v, false), nil
 }
 

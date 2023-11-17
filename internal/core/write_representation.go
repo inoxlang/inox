@@ -212,11 +212,9 @@ func (s Str) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, 
 		return ErrMaximumReprWritingDepthReached
 	}
 
-	jsonStr, err := utils.MarshalJsonNoHTMLEspace(string(s))
-	if err != nil {
-		return err
-	}
-	_, err = w.Write(jsonStr)
+	var buf []byte
+	jsoniter.AppendString(&buf, string(s))
+	_, err := w.Write(buf)
 	return err
 }
 

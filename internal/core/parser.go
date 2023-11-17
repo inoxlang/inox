@@ -58,6 +58,7 @@ func (p *jsonParser) Parse(ctx *Context, s string) (Serializable, error) {
 	if err != nil {
 		return nil, err
 	}
+	//TODO: use ParseJSONRepresentation (add tests before change)
 	return ConvertJSONValToInoxVal(jsonVal, false), nil
 }
 
