@@ -9,10 +9,23 @@ import (
 type TSArrayQueue[T any] struct {
 	elements []T
 	lock     sync.RWMutex
+
+	autoRemoveCondition func(v T) bool
 }
 
 func NewTSArrayQueue[T any]() *TSArrayQueue[T] {
 	return &TSArrayQueue[T]{}
+}
+
+func NewTSArrayQueueWithConfig[T any](config TSArrayQueueConfig[T]) *TSArrayQueue[T] {
+	q := &TSArrayQueue[T]{}
+	q.autoRemoveCondition = config.AutoRemoveCondition
+
+	return q
+}
+
+type TSArrayQueueConfig[T any] struct {
+	AutoRemoveCondition func(v T) bool
 }
 
 // Enqueue adds a value to the end of the queue
@@ -23,6 +36,15 @@ func (q *TSArrayQueue[T]) Enqueue(value T) {
 	q.elements = append(q.elements, value)
 }
 
+// EnqueueAutoRemove does the same as Enqueue but also removes all elements that validate the autoremove condition.
+func (q *TSArrayQueue[T]) EnqueueAutoRemove(value T) {
+	q.lock.Lock()
+	defer q.lock.Unlock()
+
+	q.elements = append(q.elements, value)
+	q.autoRemoveNoLock()
+}
+
 // Enqueue adds zero or more values to the end of the queue
 func (q *TSArrayQueue[T]) EnqueueAll(values ...T) {
 	q.lock.Lock()
@@ -31,12 +53,25 @@ func (q *TSArrayQueue[T]) EnqueueAll(values ...T) {
 	q.elements = append(q.elements, values...)
 }
 
+// EnqueueAllAutoRemove does the same as EnqueueAllAutoRemove but also removes all elements that validate the autoremove condition.
+func (q *TSArrayQueue[T]) EnqueueAllAutoRemove(values ...T) {
+	q.lock.Lock()
+	defer q.lock.Unlock()
+
+	q.elements = append(q.elements, values...)
+	q.autoRemoveNoLock()
+}
+
 // Dequeue removes first element of the queue and returns it, or nil if queue is empty.
 // Second return parameter is true, unless the queue was empty and there was nothing to dequeue.
 func (q *TSArrayQueue[T]) Dequeue() (value T, ok bool) {
 	q.lock.Lock()
 	defer q.lock.Unlock()
 
+	return q.dequeueNoLock()
+}
+
+func (q *TSArrayQueue[T]) dequeueNoLock() (value T, ok bool) {
 	if len(q.elements) == 0 {
 		return
 	}
@@ -95,6 +130,44 @@ func (q *TSArrayQueue[T]) Clear() {
 	q.elements = q.elements[:0]
 }
 
+// AutoRemove removes all elements that validate the autoremove condition.
+// If there is not autoremove condition the function does nothing.
+func (q *TSArrayQueue[T]) AutoRemove() {
+	if q.autoRemoveCondition == nil {
+		return
+	}
+
+	q.lock.Lock()
+	defer q.lock.Unlock()
+
+	q.autoRemoveNoLock()
+}
+
+func (q *TSArrayQueue[T]) autoRemoveNoLock() {
+	if q.autoRemoveCondition == nil {
+		return
+	}
+
+	i := 0
+	for i < len(q.elements) {
+		e := q.elements[i]
+
+		if !q.autoRemoveCondition(e) {
+			continue
+		}
+
+		//auto remove
+		if i == len(q.elements)-1 { //if last element
+			q.dequeueNoLock()
+			return
+		}
+
+		//shift next elements to the left.
+		copy(q.elements[i:], q.elements[i+1:])
+		q.elements = q.elements[:len(q.elements)-1]
+	}
+}
+
 // Values returns all elements in the queue (FIFO order).
 func (q *TSArrayQueue[T]) Values() []T {
 	q.lock.RLock()
@@ -104,6 +177,9 @@ func (q *TSArrayQueue[T]) Values() []T {
 }
 
 func (q *TSArrayQueue[T]) Iterator() *ArrayQueueIterator[T] {
+	q.lock.RLock()
+	defer q.lock.RUnlock()
+
 	return &ArrayQueueIterator[T]{
 		index:    -1,
 		elements: slices.Clone(q.elements),

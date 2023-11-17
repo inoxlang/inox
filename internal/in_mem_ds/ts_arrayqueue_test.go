@@ -11,24 +11,83 @@ import (
 func TestTSArrayQueue(t *testing.T) {
 
 	t.Run("single goroutine", func(t *testing.T) {
-		q := NewTSArrayQueue[int]()
-		assert.Zero(t, q.Size())
-		assert.True(t, q.Empty())
-		assert.Equal(t, []int(nil), q.Values())
 
-		q.Enqueue(3)
-		assert.NotZero(t, q.Size())
-		assert.False(t, q.Empty())
-		assert.Equal(t, []int{3}, q.Values())
+		t.Run("no autoremove", func(t *testing.T) {
+			q := NewTSArrayQueue[int]()
+			assert.Zero(t, q.Size())
+			assert.True(t, q.Empty())
+			assert.Equal(t, []int(nil), q.Values())
 
-		elem, ok := q.Dequeue()
-		if !assert.True(t, ok) {
-			return
-		}
-		assert.Equal(t, 3, elem)
-		assert.Zero(t, q.Size())
-		assert.True(t, q.Empty())
-		assert.Equal(t, []int{}, q.Values())
+			q.Enqueue(3)
+			assert.NotZero(t, q.Size())
+			assert.False(t, q.Empty())
+			assert.Equal(t, []int{3}, q.Values())
+
+			elem, ok := q.Dequeue()
+			if !assert.True(t, ok) {
+				return
+			}
+			assert.Equal(t, 3, elem)
+			assert.Zero(t, q.Size())
+			assert.True(t, q.Empty())
+			assert.Equal(t, []int{}, q.Values())
+		})
+
+		t.Run("autoremove condition", func(t *testing.T) {
+			q := NewTSArrayQueueWithConfig[int](TSArrayQueueConfig[int]{
+				AutoRemoveCondition: func(v int) bool {
+					return v < 0
+				},
+			})
+			assert.Zero(t, q.Size())
+			assert.True(t, q.Empty())
+			assert.Equal(t, []int(nil), q.Values())
+
+			q.Enqueue(3)
+			assert.NotZero(t, q.Size())
+			assert.False(t, q.Empty())
+			assert.Equal(t, []int{3}, q.Values())
+
+			elem, ok := q.Dequeue()
+			if !assert.True(t, ok) {
+				return
+			}
+			assert.Equal(t, 3, elem)
+			assert.Zero(t, q.Size())
+			assert.True(t, q.Empty())
+			assert.Equal(t, []int{}, q.Values())
+
+			//EnqueueAutoRemove should not add the element since the autoremove condition passes.
+			q.EnqueueAutoRemove(-1)
+
+			assert.Zero(t, q.Size())
+			assert.True(t, q.Empty())
+			assert.Equal(t, []int{}, q.Values())
+
+			//EnqueueAutoRemove should not add the elements since the autoremove condition passes.
+			q.EnqueueAllAutoRemove(-1, -2)
+
+			assert.Zero(t, q.Size())
+			assert.True(t, q.Empty())
+			assert.Equal(t, []int{}, q.Values())
+
+			q.Enqueue(-1)
+			assert.EqualValues(t, 1, q.Size())
+
+			q.AutoRemove()
+			assert.Zero(t, q.Size())
+			assert.True(t, q.Empty())
+			assert.Equal(t, []int{}, q.Values())
+
+			q.EnqueueAll(-1, -2)
+			assert.EqualValues(t, 2, q.Size())
+
+			q.AutoRemove()
+			assert.Zero(t, q.Size())
+			assert.True(t, q.Empty())
+			assert.Equal(t, []int{}, q.Values())
+		})
+
 	})
 
 	t.Run("several goroutines", func(t *testing.T) {
