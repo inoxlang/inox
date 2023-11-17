@@ -2,6 +2,8 @@ package fs_ns
 
 import (
 	"path/filepath"
+	"strconv"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -587,6 +589,119 @@ func testEvents(t *testing.T, setup func(t *testing.T) (fls afs.Filesystem, temp
 		time.Sleep(SLEEP_DURATION)
 
 		assert.EqualValues(t, 0, callCount.Load())
+	})
+
+	t.Run("several spaced out writes in the same file", func(t *testing.T) {
+		// create a temporary directory & a file in it
+		fls, tempDir := setup(t)
+
+		if utils.Implements[*OsFilesystem](fls) {
+			t.SkipNow()
+		}
+
+		const INTERVAL = 50 * time.Millisecond
+
+		if !assert.Greater(t, INTERVAL, WATCHER_MANAGEMENT_TICK_INTERVAL) {
+			return
+		}
+
+		filepth := core.Path(filepath.Join(tempDir, "file.txt"))
+
+		f, err := fls.Create(string(filepth))
+		if assert.NoError(t, err) {
+			if capable, ok := f.(afs.SyncCapable); ok {
+				capable.Sync()
+			}
+		}
+
+		ctx := core.NewContext(core.ContextConfig{
+			Permissions: []core.Permission{
+				core.FilesystemPermission{Kind_: permkind.Read, Entity: filepth},
+			},
+			Filesystem: fls,
+		})
+		defer ctx.CancelGracefully()
+
+		// create the event source & add a callback function
+		evs, err := NewEventSource(ctx, filepth)
+		if !assert.NoError(t, err) {
+			return
+		}
+		defer evs.Close()
+
+		var callCount atomic.Int32
+
+		writeCount := 10
+
+		err = evs.OnEvent(func(event *core.Event) {
+			callCount.Add(1)
+		})
+		assert.NoError(t, err)
+
+		for i := 0; i < writeCount; i++ {
+			_, err := f.Write([]byte{'a'})
+			if !assert.NoError(t, err) {
+				return
+			}
+			time.Sleep(INTERVAL)
+		}
+
+		if capable, ok := f.(afs.SyncCapable); ok {
+			capable.Sync()
+		}
+
+		time.Sleep(SLEEP_DURATION)
+
+		assert.EqualValues(t, writeCount, callCount.Load())
+	})
+
+	t.Run("high number of file creation in parallel", func(t *testing.T) {
+		// create a temporary directory & a file in it
+		fls, tempDir := setup(t)
+
+		if utils.Implements[*OsFilesystem](fls) {
+			t.SkipNow()
+		}
+
+		dirPatt := core.PathPattern(tempDir + "...")
+
+		ctx := core.NewContext(core.ContextConfig{
+			Permissions: []core.Permission{
+				core.FilesystemPermission{Kind_: permkind.Read, Entity: dirPatt},
+			},
+			Filesystem: fls,
+		})
+		defer ctx.CancelGracefully()
+
+		// create the event source & add a callback function
+		evs, err := NewEventSource(ctx, dirPatt)
+		if !assert.NoError(t, err) {
+			return
+		}
+		defer evs.Close()
+
+		var callCount atomic.Int32
+		fileCount := 1000
+
+		err = evs.OnEvent(func(event *core.Event) {
+			callCount.Add(1)
+		})
+		assert.NoError(t, err)
+
+		wg := new(sync.WaitGroup)
+		wg.Add(fileCount)
+
+		for i := 0; i < fileCount; i++ {
+			go func(i int) {
+				defer wg.Done()
+				util.WriteFile(fls, "/file"+strconv.Itoa(i)+".txt", []byte("a"), DEFAULT_FILE_FMODE)
+			}(i)
+		}
+
+		wg.Wait()
+		time.Sleep(SLEEP_DURATION)
+
+		assert.EqualValues(t, 2*fileCount, callCount.Load())
 	})
 
 }

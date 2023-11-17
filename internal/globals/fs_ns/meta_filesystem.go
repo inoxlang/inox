@@ -231,8 +231,6 @@ func (fls *MetaFilesystem) Close(ctx *core.Context) error {
 	if !fls.closed.CompareAndSwap(false, true) {
 		return nil
 	}
-	fls.openFiles = nil
-	openFiles := fls.openFiles
 
 	//unregister the filesystem from the watched filesystems.
 	watchedVirtualFilesystemsLock.Lock()
@@ -253,6 +251,11 @@ func (fls *MetaFilesystem) Close(ctx *core.Context) error {
 
 	//remove all events
 	fls.eventQueue.Clear()
+
+	fls.lock.Lock()
+	openFiles := fls.openFiles
+	fls.openFiles = nil
+	fls.lock.Unlock()
 
 	//close all files
 	for _, files := range openFiles {
