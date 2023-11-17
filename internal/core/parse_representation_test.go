@@ -307,7 +307,7 @@ func TestParseRepr(t *testing.T) {
 		{`%https://example.com/.../a`, 26, nil},
 
 		//email addresses
-		// {`a@a.com`, -1, EmailAddress("a@a.com")},
+		{`EmailAddress"a@a.com"`, -1, EmailAddress("a@a.com")},
 		// {`a@a-b.com`, -1, EmailAddress("a@a-b.com")},
 		// {`a@sub.a.com`, -1, EmailAddress("a@sub.a.com")},
 		// {`a.b@a.com`, -1, EmailAddress("a.b@a.com")},

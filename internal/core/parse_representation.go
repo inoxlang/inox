@@ -215,6 +215,7 @@ type InReprCall int
 
 const (
 	CreateRunesInRepr InReprCall = iota + 1
+	CreateEmailAddrInRepr
 )
 
 func _parseRepr(b []byte, ctx *Context) (val Serializable, errorIndex int, specifiedError error) {
@@ -379,6 +380,8 @@ func _parseRepr(b []byte, ctx *Context) (val Serializable, errorIndex int, speci
 				switch call {
 				case CreateRunesInRepr:
 					v = NewRuneSlice([]rune(s))
+				case CreateEmailAddrInRepr:
+					v = EmailAddress(s)
 				default:
 					v = Str(s)
 				}
@@ -2187,8 +2190,12 @@ func _parseRepr(b []byte, ctx *Context) (val Serializable, errorIndex int, speci
 
 					switch len(ident) {
 					case 5:
-						if bytes.Equal(ident, utils.StringAsBytes("Runes")) {
+						if bytes.Equal(ident, utils.StringAsBytes(globalnames.RUNES_FN)) {
 							call = CreateRunesInRepr
+						}
+					case 12:
+						if bytes.Equal(ident, utils.StringAsBytes(globalnames.EMAIL_ADDRESS_FN)) {
+							call = CreateEmailAddrInRepr
 						}
 					default:
 						return nil, i, nil

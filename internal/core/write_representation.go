@@ -230,7 +230,48 @@ func (slice *RuneSlice) WriteRepresentation(ctx *Context, w io.Writer, config *R
 		return err
 	}
 
-	_, err = w.Write(utils.StringAsBytes("Runes"))
+	_, err = w.Write(utils.StringAsBytes(globalnames.RUNES_FN))
+	if err != nil {
+		return err
+	}
+
+	_, err = w.Write(jsonStr)
+	return err
+}
+
+func (addr EmailAddress) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
+	if config.AllVisible || len(addr) < 5 {
+		jsonStr, err := utils.MarshalJsonNoHTMLEspace(string(addr))
+		if err != nil {
+			return err
+		}
+
+		_, err = w.Write(utils.StringAsBytes(globalnames.EMAIL_ADDRESS_FN))
+		if err != nil {
+			return err
+		}
+
+		_, err = w.Write(jsonStr)
+		return err
+	}
+
+	addrS := string(addr)
+	atDomainIndex := strings.LastIndexByte(addrS, '@')
+	if atDomainIndex < 0 {
+		return fmt.Errorf("invalid email address")
+	}
+
+	name := addrS[:atDomainIndex]
+	atDomain := addrS[atDomainIndex:]
+
+	finalString := name[0:1] + strings.Repeat("*", len(name)-1) + atDomain
+
+	jsonStr, err := utils.MarshalJsonNoHTMLEspace(string(finalString))
+	if err != nil {
+		return err
+	}
+
+	_, err = w.Write(utils.StringAsBytes(globalnames.EMAIL_ADDRESS_FN))
 	if err != nil {
 		return err
 	}
@@ -734,25 +775,6 @@ func (patt HostPattern) WriteRepresentation(ctx *Context, w io.Writer, config *R
 	b = append(b, patt...)
 
 	_, err := w.Write(b)
-	return err
-}
-
-func (addr EmailAddress) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
-	if config.AllVisible || len(addr) < 5 {
-		_, err := w.Write(utils.StringAsBytes(addr))
-		return err
-	}
-
-	addrS := string(addr)
-	atDomainIndex := strings.LastIndexByte(addrS, '@')
-	if atDomainIndex < 0 {
-		return fmt.Errorf("invalid email address")
-	}
-
-	name := addrS[:atDomainIndex]
-	atDomain := addrS[atDomainIndex:]
-
-	_, err := w.Write(utils.StringAsBytes(name[0:1] + strings.Repeat("*", len(name)-1) + atDomain))
 	return err
 }
 

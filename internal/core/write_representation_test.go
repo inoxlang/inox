@@ -185,7 +185,7 @@ func TestObjectRepresentation(t *testing.T) {
 			"e":        EmailAddress("a@mail.com"),
 		})
 
-		expectedRepr := `{"a":1,"e":a@mail.com,"password":"mypassword"}`
+		expectedRepr := `{"a":1,"e":EmailAddress"a@mail.com","password":"mypassword"}`
 
 		assert.Equal(t, expectedRepr, getReprAllVisible(t, obj, reprTestCtx, &ReprConfig{
 			AllVisible: true,
@@ -206,7 +206,7 @@ func TestObjectRepresentation(t *testing.T) {
 			publicKeys: []string{"a", "password", "e"},
 		})
 
-		expectedRepr := `{"a":1,"e":a@mail.com,"password":"mypassword"}`
+		expectedRepr := `{"a":1,"e":EmailAddress"a@mail.com","password":"mypassword"}`
 
 		assert.Equal(t, expectedRepr, getReprAllVisible(t, obj, reprTestCtx, &ReprConfig{
 			AllVisible: false,
@@ -806,14 +806,11 @@ func TestEmailAddressRepresentation(t *testing.T) {
 
 			addr := EmailAddress(testCase)
 
-			expectedRepr := testCase
+			expectedRepr := `EmailAddress"` + testCase + `"`
 			assert.Equal(t, expectedRepr, getReprAllVisible(t, addr, ctx))
 
 			expectedPartiallyHiddenRepr := expectedPartiallyHiddenValues[i]
-			assert.Equal(t, expectedPartiallyHiddenRepr, getReprAllVisible(t, addr, ctx, &ReprConfig{AllVisible: false}))
-
-			node := assertParseExpression(t, expectedRepr)
-			assert.Equal(t, addr, utils.Must(evalSimpleValueLiteral(node.(parse.SimpleValueLiteral), nil)))
+			assert.Equal(t, `EmailAddress"`+expectedPartiallyHiddenRepr+`"`, getReprAllVisible(t, addr, ctx, &ReprConfig{AllVisible: false}))
 		})
 	}
 
