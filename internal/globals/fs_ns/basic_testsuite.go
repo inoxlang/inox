@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"time"
 
 	billy "github.com/go-git/go-billy/v5"
 	"github.com/go-git/go-billy/v5/util"
@@ -470,6 +471,7 @@ func (s *BasicTestSuite) TestFileCloseTwice(c *check.C) {
 }
 
 func (s *BasicTestSuite) TestStat(c *check.C) {
+	start := time.Now()
 	util.WriteFile(s.FS, "foo/bar", []byte("foo"), customMode)
 
 	fi, err := s.FS.Stat("foo/bar")
@@ -477,8 +479,11 @@ func (s *BasicTestSuite) TestStat(c *check.C) {
 	c.Assert(fi.Name(), check.Equals, "bar")
 	c.Assert(fi.Size(), check.Equals, int64(3))
 	c.Assert(fi.Mode(), check.Equals, customMode)
-	c.Assert(fi.ModTime().IsZero(), check.Equals, false)
 	c.Assert(fi.IsDir(), check.Equals, false)
+
+	modTime := fi.ModTime()
+	c.Assert(modTime.After(start), check.Equals, true)
+	c.Assert(modTime.Before(start.Add(time.Second)), check.Equals, true)
 }
 
 func (s *BasicTestSuite) TestStatNonExistent(c *check.C) {

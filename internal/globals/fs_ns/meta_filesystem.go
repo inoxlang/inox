@@ -22,6 +22,7 @@ import (
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/filekv"
 	"github.com/inoxlang/inox/internal/in_mem_ds"
+	"github.com/inoxlang/inox/internal/jsoniter"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/oklog/ulid/v2"
 )
@@ -314,15 +315,17 @@ func (fls *MetaFilesystem) getFileMetadata(pth core.Path, usedTx *filekv.Databas
 	key := getKvKeyFromPath(pth)
 
 	var (
-		info core.Value
-		ok   core.Bool
-		err  error
+		serializedMetadata string
+		ok                 core.Bool
+		err                error
 	)
 
+	metadata := metaFsFileMetadata{path: pth}
+
 	if usedTx == nil {
-		info, ok, err = fls.metadata.Get(fls.ctx, key, fls)
+		serializedMetadata, ok, err = fls.metadata.GetSerialized(fls.ctx, key, fls)
 	} else {
-		info, ok, err = usedTx.Get(fls.ctx, key)
+		serializedMetadata, ok, err = usedTx.GetSerialized(fls.ctx, key)
 	}
 
 	if err != nil {
@@ -333,64 +336,12 @@ func (fls *MetaFilesystem) getFileMetadata(pth core.Path, usedTx *filekv.Databas
 		return nil, false, nil
 	}
 
-	record, ok := info.(*core.Record)
-	if !ok {
-		return nil, false, fmt.Errorf("invalid type for metadata of file %s: %T", pth, info)
+	err = metadata.initFromJSON(serializedMetadata, hasLastModifTime, lastModificationTime)
+	if err != nil {
+		return nil, false, err
 	}
 
-	for _, propName := range REQUIRED_METAFS_FILE_METADATA_PROPNAMES {
-		if !record.HasProp(fls.ctx, propName) {
-			return nil, false,
-				fmt.Errorf("invalid record for metadata of file %s, missing .%s property: %s", pth, propName, core.Stringify(record, fls.ctx))
-		}
-	}
-
-	fileMode := record.Prop(fls.ctx, METAFS_FILE_MODE_PROPNAME).(core.FileMode)
-	creationTime := record.Prop(fls.ctx, METAFS_CREATION_TIME_PROPNAME).(core.DateTime)
-	modifTime := record.Prop(fls.ctx, METAFS_MODIF_TIME_PROPNAME).(core.DateTime)
-
-	if hasLastModifTime {
-		modifTime = lastModificationTime
-	}
-
-	var symlinkTarget *core.Path
-	if record.HasProp(fls.ctx, METAFS_SYMLINK_TARGET_PROPNAME) {
-		symlinkTarget = new(core.Path)
-		*symlinkTarget = record.Prop(fls.ctx, METAFS_SYMLINK_TARGET_PROPNAME).(core.Path)
-	}
-
-	var underlyingFilePath *core.Path
-	if record.HasProp(fls.ctx, METAFS_UNDERLYING_FILE_PROPNAME) {
-		underlyingFile := record.Prop(fls.ctx, METAFS_UNDERLYING_FILE_PROPNAME).(core.Str)
-
-		underlyingFilePath = new(core.Path)
-		if fls.dir != nil {
-			*underlyingFilePath = core.PathFrom(fls.underlying.Join(*fls.dir, string(underlyingFile)))
-		} else {
-			*underlyingFilePath = core.PathFrom(NormalizeAsAbsolute(string(underlyingFile)))
-		}
-	}
-
-	var children []core.Str
-	if os.FileMode(fileMode).IsDir() && record.HasProp(fls.ctx, METAFS_CHILDREN_PROPNAME) {
-		tuple := record.Prop(fls.ctx, METAFS_CHILDREN_PROPNAME).(*core.Tuple)
-		for _, elem := range tuple.GetOrBuildElements(fls.ctx) {
-			children = append(children, elem.(core.Str))
-		}
-	}
-
-	metadata := &metaFsFileMetadata{
-		path:             pth,
-		concreteFile:     underlyingFilePath,
-		mode:             fs.FileMode(fileMode),
-		creationTime:     creationTime,
-		modificationTime: modifTime,
-
-		children:      children,
-		symlinkTarget: symlinkTarget,
-	}
-
-	return metadata, true, nil
+	return &metadata, true, nil
 }
 
 func (fls *MetaFilesystem) setFileMetadata(metadata *metaFsFileMetadata, usedTx *filekv.DatabaseTx) error {
@@ -398,40 +349,13 @@ func (fls *MetaFilesystem) setFileMetadata(metadata *metaFsFileMetadata, usedTx 
 		return errors.New("file's path should be absolute")
 	}
 
-	recordPropertyNames := []string{
-		METAFS_FILE_MODE_PROPNAME,
-		METAFS_CREATION_TIME_PROPNAME,
-		METAFS_MODIF_TIME_PROPNAME,
-	}
-
-	recordPropertyValues := []core.Serializable{
-		core.FileMode(metadata.mode),
-		metadata.creationTime,
-		metadata.modificationTime,
-	}
-
-	if metadata.mode.IsDir() {
-		var children []core.Serializable
-
-		for _, childName := range metadata.children {
-			children = append(children, childName)
-		}
-
-		recordPropertyNames = append(recordPropertyNames, METAFS_CHILDREN_PROPNAME)
-		recordPropertyValues = append(recordPropertyValues, core.NewTuple(children))
-	} else { //if not a dir set name of underlying file
-		recordPropertyNames = append(recordPropertyNames, METAFS_UNDERLYING_FILE_PROPNAME)
-		recordPropertyValues = append(recordPropertyValues, core.Str(metadata.concreteFile.Basename()))
-	}
-
-	metadataRecord := core.NewRecordFromKeyValLists(recordPropertyNames, recordPropertyValues)
-
+	json := metadata.marshalJSON()
 	key := getKvKeyFromPath(metadata.path)
 
 	if usedTx == nil {
-		fls.metadata.Set(fls.ctx, key, metadataRecord, fls)
+		fls.metadata.SetSerialized(fls.ctx, key, json, fls)
 	} else {
-		return usedTx.Set(fls.ctx, key, metadataRecord)
+		return usedTx.SetSerialized(fls.ctx, key, json)
 	}
 
 	return nil
@@ -1580,6 +1504,127 @@ func (m *metaFsFileMetadata) ChildrenPaths() []core.Path {
 		children[i] = core.Path(filepath.Join(m.path.UnderlyingString(), string(childName)))
 	}
 	return children
+}
+
+func (m *metaFsFileMetadata) initFromJSON(serialized string, updateLastModiftime bool, newModifTime core.DateTime) error {
+
+	it := jsoniter.NewIterator(jsoniter.ConfigDefault).ResetBytes(utils.StringAsBytes(serialized))
+
+	hasMode := false
+	hasCreationTime := false
+	hasModifTime := false
+	hasUnderlyingFile := false
+
+	it.ReadObjectMinimizeAllocationsCB(func(it *jsoniter.Iterator, key []byte, allocated bool) bool {
+		keyString := utils.BytesAsString(key)
+
+		switch keyString {
+		case METAFS_FILE_MODE_PROPNAME:
+			hasMode = true
+
+			integer := it.ReadUint32()
+			m.mode = fs.FileMode(integer)
+		case METAFS_CREATION_TIME_PROPNAME:
+			hasCreationTime = true
+
+			var creationTime time.Time
+			data, _ := it.ReadStringAsBytes()
+			utils.PanicIfErr(creationTime.UnmarshalText(data))
+
+			m.creationTime = core.DateTime(creationTime)
+		case METAFS_MODIF_TIME_PROPNAME:
+			hasModifTime = true
+
+			var modifTime time.Time
+			data, _ := it.ReadStringAsBytes()
+			utils.PanicIfErr(modifTime.UnmarshalText(data))
+			m.modificationTime = core.DateTime(modifTime)
+		case METAFS_UNDERLYING_FILE_PROPNAME:
+			hasUnderlyingFile = true
+
+			path := core.Path(it.ReadString())
+			m.concreteFile = &path
+		case METAFS_SYMLINK_TARGET_PROPNAME:
+			path := core.Path(it.ReadString())
+			m.symlinkTarget = &path
+		case METAFS_CHILDREN_PROPNAME:
+			it.ReadArrayCB(func(i *jsoniter.Iterator) bool {
+				m.children = append(m.children, core.Str(it.ReadString()))
+				return true
+			})
+		default:
+			it.ReportError("read metadata", "unexpected property: "+keyString)
+		}
+
+		return it.Error == nil
+	})
+
+	if it.Error != nil {
+		return fmt.Errorf("invalid metadata for file %s, %w", m.path, it.Error)
+	}
+
+	fmtMissingPropErrr := func(propName string) error {
+		return fmt.Errorf("invalid metadata for file %s, missing property .%s", m.path, propName)
+	}
+
+	if !hasMode {
+		return fmtMissingPropErrr(METAFS_FILE_MODE_PROPNAME)
+	}
+
+	if !hasCreationTime {
+		return fmtMissingPropErrr(METAFS_CREATION_TIME_PROPNAME)
+	}
+
+	if !hasModifTime {
+		return fmtMissingPropErrr(METAFS_MODIF_TIME_PROPNAME)
+	}
+
+	if !m.mode.IsDir() && !hasUnderlyingFile {
+		return errors.New("missing path of nderlying file")
+	}
+
+	if updateLastModiftime {
+		m.modificationTime = core.DateTime(newModifTime)
+	}
+
+	return nil
+}
+
+func (m *metaFsFileMetadata) marshalJSON() string {
+	stream := jsoniter.NewStream(jsoniter.ConfigDefault, nil, 0)
+
+	stream.WriteObjectStart()
+
+	stream.WriteObjectField(METAFS_FILE_MODE_PROPNAME)
+	stream.WriteUint32(uint32(m.mode))
+	stream.WriteMore()
+
+	stream.WriteObjectField(METAFS_CREATION_TIME_PROPNAME)
+	stream.Write(utils.Must(time.Time(m.creationTime).MarshalJSON()))
+	stream.WriteMore()
+
+	stream.WriteObjectField(METAFS_MODIF_TIME_PROPNAME)
+	stream.Write(utils.Must(time.Time(m.modificationTime).MarshalJSON()))
+	stream.WriteMore()
+
+	if m.mode.IsDir() {
+		stream.WriteObjectField(METAFS_CHILDREN_PROPNAME)
+		stream.WriteArrayStart()
+
+		for i, child := range m.children {
+			if i != 0 {
+				stream.WriteMore()
+			}
+			stream.WriteString(string(child))
+		}
+		stream.WriteArrayEnd()
+	} else {
+		stream.WriteObjectField(METAFS_UNDERLYING_FILE_PROPNAME)
+		stream.WriteString(m.concreteFile.UnderlyingString())
+	}
+
+	stream.WriteObjectEnd()
+	return string(stream.Buffer())
 }
 
 func getKvKeyFromPath(pth core.Path) core.Path {
