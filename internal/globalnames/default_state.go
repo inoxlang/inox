@@ -92,6 +92,7 @@ const (
 	// bytes & string
 	MKBYTES_FN       = "mkbytes"
 	RUNES_FN         = "Runes"
+	EMAIL_ADDRESS_FN = "EmailAddress"
 	BYTES_FN         = "Bytes"
 	IS_RUNE_SPACE_FN = "is_rune"
 	READER_FN        = "Reader"

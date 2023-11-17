@@ -253,6 +253,7 @@ func NewDefaultGlobalState(ctx *core.Context, conf core.DefaultGlobalStateConfig
 		// bytes & string
 		globalnames.MKBYTES_FN:       core.ValOf(_mkbytes),
 		globalnames.RUNES_FN:         core.ValOf(_Runes),
+		globalnames.EMAIL_ADDRESS_FN: core.ValOf(_EmailAddress),
 		globalnames.BYTES_FN:         core.ValOf(_Bytes),
 		globalnames.IS_RUNE_SPACE_FN: core.ValOf(_is_rune_space),
 		globalnames.READER_FN:        core.ValOf(_Reader),

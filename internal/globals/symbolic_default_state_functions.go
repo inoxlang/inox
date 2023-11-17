@@ -180,16 +180,19 @@ func init() {
 		},
 
 		_mkbytes, func(ctx *symbolic.Context, size *symbolic.Int) *symbolic.ByteSlice {
-			return &symbolic.ByteSlice{}
+			return symbolic.ANY_BYTE_SLICE
 		},
 		_Runes, func(ctx *symbolic.Context, arg symbolic.Readable) *symbolic.RuneSlice {
-			return &symbolic.RuneSlice{}
+			return symbolic.ANY_RUNE_SLICE
+		},
+		_EmailAddress, func(ctx *symbolic.Context, arg symbolic.Readable) *symbolic.EmailAddress {
+			return symbolic.ANY_EMAIL_ADDR
 		},
 		_Bytes, func(ctx *symbolic.Context, arg symbolic.Readable) *symbolic.ByteSlice {
-			return &symbolic.ByteSlice{}
+			return symbolic.ANY_BYTE_SLICE
 		},
 		_Reader, func(ctx *symbolic.Context, arg symbolic.Readable) *symbolic.Reader {
-			return &symbolic.Reader{}
+			return symbolic.ANY_READER
 		},
 
 		_dynimport, func(ctx *symbolic.Context, src symbolic.Value, argObj *symbolic.Object, manifestObj *symbolic.Object, options ...symbolic.Value) (*symbolic.LThread, *symbolic.Error) {
