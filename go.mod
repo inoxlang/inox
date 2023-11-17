@@ -15,6 +15,7 @@ require (
 	github.com/chromedp/chromedp v0.9.3
 	github.com/cloudflare/cloudflare-go v0.81.0
 	github.com/coreos/go-systemd/v22 v22.5.0
+	github.com/dimuska139/go-email-normalizer v1.2.1
 	github.com/djherbis/times v1.5.0
 	github.com/elazarl/goproxy v0.0.0-20231031074852-3ec07828be7a
 	github.com/fsnotify/fsnotify v1.7.0

@@ -269,7 +269,7 @@ func _Runes(ctx *core.Context, v core.Readable) *core.RuneSlice {
 }
 
 func _EmailAddress(ctx *core.Context, s core.StringLike) core.EmailAddress {
-	return core.EmailAddress(s.GetOrBuildString())
+	return utils.Must(core.NormalizeEmailAddress(s.GetOrBuildString()))
 }
 
 func _Bytes(ctx *core.Context, v core.Readable) *core.ByteSlice {

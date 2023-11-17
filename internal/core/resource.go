@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"net/mail"
 	"net/url"
 	"path"
 	"path/filepath"
@@ -14,6 +15,7 @@ import (
 	"sync"
 
 	"github.com/bmatcuk/doublestar/v4"
+	emailnormalizer "github.com/dimuska139/go-email-normalizer"
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/mimeconsts"
 	parse "github.com/inoxlang/inox/internal/parse"
@@ -42,12 +44,15 @@ var (
 	ErrTestedPathTooLarge                  = errors.New("tested path is too large")
 	ErrTestedURLTooLarge                   = errors.New("tested URL is too large")
 	ErrTestedHostPatternTooLarge           = errors.New("tested host pattern is too large")
+	ErrInvalidEmailAdddres                 = errors.New("invalid email address per RFC 5322")
 
 	PATH_PROPNAMES         = []string{"segments", "extension", "name", "dir", "ends_with_slash", "rel_equiv", "change_extension", "join"}
 	HOST_PROPNAMES         = []string{"scheme", "explicit_port", "without_port"}
 	HOST_PATTERN_PROPNAMES = []string{"scheme"}
 	URL_PROPNAMES          = []string{"scheme", "host", "path", "raw_query"}
 	EMAIL_ADDR_PROPNAMES   = []string{"username", "domain"}
+
+	defaultEmailNormalizer = emailnormalizer.NewNormalizer()
 )
 
 func init() {
@@ -898,6 +903,16 @@ func (HostPattern) SetProp(ctx *Context, name string, value Value) error {
 }
 
 type EmailAddress string
+
+// NormalizeEmailAddress checks and normalize the provided address.
+func NormalizeEmailAddress(s string) (EmailAddress, error) {
+	_, err := mail.ParseAddress(s)
+	if err != nil {
+		return "", ErrInvalidEmailAdddres
+
+	}
+	return EmailAddress(defaultEmailNormalizer.Normalize(s)), nil
+}
 
 func (addr EmailAddress) UnderlyingString() string {
 	return string(addr)
