@@ -58,14 +58,13 @@ func (fs *Filesystem) Close(ctx *core.Context) error {
 }
 
 func (fs *Filesystem) Events() *in_mem_ds.TSArrayQueue[fs_ns.Event] {
-	return fs.Filesystem.(fs_ns.WatchableVirtualFilesystem).events()
+	return fs.Filesystem.(fs_ns.WatchableVirtualFilesystem).Events()
 }
 
-func (*Filesystem) GetWatchers() []*fs_ns.WatchableVirtualFilesystem {
-	panic("unimplemented")
+func (fs *Filesystem) GetWatchers() []*fs_ns.VirtualFilesystemWatcher {
+	return fs.Filesystem.(fs_ns.WatchableVirtualFilesystem).GetWatchers()
 }
 
-// watcher implements fs_ns.WatchableVirtualFilesystem.
-func (*Filesystem) watcher(evs *fs_ns.FilesystemEventSource) *fs_ns.virtualFilesystemWatcher {
-	panic("unimplemented")
+func (fs *Filesystem) Watcher(evs *fs_ns.FilesystemEventSource) *fs_ns.VirtualFilesystemWatcher {
+	return fs.Filesystem.(fs_ns.WatchableVirtualFilesystem).Watcher(evs)
 }
