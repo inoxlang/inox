@@ -42,7 +42,7 @@ func init() {
 }
 
 type ServerSentEventSource struct {
-	core.EventSourceHandlerManagement
+	core.EventSourceBase
 	isClosed bool
 
 	//retry             time.Time

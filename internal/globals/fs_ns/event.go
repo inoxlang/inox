@@ -23,7 +23,7 @@ type FilesystemEventSource struct {
 	path       core.Path
 	pathFilter core.PathPattern
 
-	core.EventSourceHandlerManagement
+	core.EventSourceBase
 	watcher  interface{ Close() error }
 	lock     sync.RWMutex
 	isClosed bool
