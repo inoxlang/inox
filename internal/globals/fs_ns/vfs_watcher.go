@@ -18,30 +18,30 @@ const (
 )
 
 var (
-	watchedVirtualFilesystems     = map[watchableVirtualFilesystem]struct{}{}
+	watchedVirtualFilesystems     = map[WatchableVirtualFilesystem]struct{}{}
 	watchedVirtualFilesystemsLock sync.Mutex
 
 	watcherManagingGoroutineStarted atomic.Bool
 
-	_ = []watchableVirtualFilesystem{(*MemFilesystem)(nil), (*MetaFilesystem)(nil)}
+	_ = []WatchableVirtualFilesystem{(*MemFilesystem)(nil), (*MetaFilesystem)(nil)}
 )
 
-// watchableVirtualFilesystem is implemented by non-OS filesystems that can track FS events.
-type watchableVirtualFilesystem interface {
+// WatchableVirtualFilesystem is implemented by non-OS filesystems that can track FS events.
+type WatchableVirtualFilesystem interface {
 	ClosableFilesystem
 
-	//watcher creates a new watcher.
-	watcher(evs *FilesystemEventSource) *virtualFilesystemWatcher
+	//Watcher creates a new Watcher.
+	Watcher(evs *FilesystemEventSource) *virtualFilesystemWatcher
 
-	//getWatchers returns a copy of the list of current watchers, it is preferrable to not return
+	//GetWatchers returns a copy of the list of current watchers, it is preferrable to not return
 	//stopped watchers.
-	getWatchers() []*virtualFilesystemWatcher
+	GetWatchers() []*virtualFilesystemWatcher
 
-	//events() returns the ACTUAL queue of events.
+	//Events() returns the ACTUAL queue of Events.
 	//If the filesystem is properly added to the watchedVirtualFilesystems, it is periodically emptied by the watcher managing goroutine.
-	//Wathever it is watched, the filesystem is responsible for removing old events, especially after a recent event.
+	//Wathever it is watched, the filesystem is responsible for removing old Events, especially after a recent event.
 	//Old is specified as being >= OLD_EVENT_MIN_AGE.
-	events() *in_mem_ds.TSArrayQueue[Event]
+	Events() *in_mem_ds.TSArrayQueue[Event]
 }
 
 func isOldEvent(v Event) bool {
@@ -59,7 +59,7 @@ func (w *virtualFilesystemWatcher) Close() error {
 	return nil
 }
 
-func (fls *MemFilesystem) watcher(evs *FilesystemEventSource) *virtualFilesystemWatcher {
+func (fls *MemFilesystem) Watcher(evs *FilesystemEventSource) *virtualFilesystemWatcher {
 	watcher := &virtualFilesystemWatcher{
 		eventSource:  evs,
 		creationTime: time.Now(),
@@ -78,11 +78,11 @@ func (fls *MemFilesystem) watcher(evs *FilesystemEventSource) *virtualFilesystem
 	return watcher
 }
 
-func (fls *MemFilesystem) events() *in_mem_ds.TSArrayQueue[Event] {
+func (fls *MemFilesystem) Events() *in_mem_ds.TSArrayQueue[Event] {
 	return fls.s.eventQueue
 }
 
-func (fls *MemFilesystem) getWatchers() []*virtualFilesystemWatcher {
+func (fls *MemFilesystem) GetWatchers() []*virtualFilesystemWatcher {
 	fls.watchersLock.Lock()
 	defer fls.watchersLock.Unlock()
 
@@ -99,7 +99,7 @@ func (fls *MemFilesystem) getWatchers() []*virtualFilesystemWatcher {
 	return watchers
 }
 
-func (fls *MetaFilesystem) watcher(evs *FilesystemEventSource) *virtualFilesystemWatcher {
+func (fls *MetaFilesystem) Watcher(evs *FilesystemEventSource) *virtualFilesystemWatcher {
 	watcher := &virtualFilesystemWatcher{
 		eventSource:  evs,
 		creationTime: time.Now(),
@@ -118,11 +118,11 @@ func (fls *MetaFilesystem) watcher(evs *FilesystemEventSource) *virtualFilesyste
 	return watcher
 }
 
-func (fls *MetaFilesystem) events() *in_mem_ds.TSArrayQueue[Event] {
+func (fls *MetaFilesystem) Events() *in_mem_ds.TSArrayQueue[Event] {
 	return fls.eventQueue
 }
 
-func (fls *MetaFilesystem) getWatchers() []*virtualFilesystemWatcher {
+func (fls *MetaFilesystem) GetWatchers() []*virtualFilesystemWatcher {
 	fls.fsWatchersLock.Lock()
 	defer fls.fsWatchersLock.Unlock()
 
@@ -166,7 +166,7 @@ func startWatcherManagingGoroutine() {
 		defer ticker.Stop()
 
 		for range ticker.C {
-			filesystems := map[watchableVirtualFilesystem]struct{}{}
+			filesystems := map[WatchableVirtualFilesystem]struct{}{}
 
 			watchedVirtualFilesystemsLock.Lock()
 			//we copy the filesystems to avoid locking the map for too long.
@@ -179,18 +179,18 @@ func startWatcherManagingGoroutine() {
 
 }
 
-func informWatchersAboutEvents(filesystems map[watchableVirtualFilesystem]struct{}) {
+func informWatchersAboutEvents(filesystems map[WatchableVirtualFilesystem]struct{}) {
 	defer utils.Recover()
 
 	var deduplicatedEvents []Event
 	var writtenFiles []core.Path
 	//these slice are re-used accross all invocations of manageSingleFs to minimize allocations.
 
-	manageSingleFS := func(vfs watchableVirtualFilesystem) {
+	manageSingleFS := func(vfs WatchableVirtualFilesystem) {
 		defer utils.Recover()
 
-		watchers := vfs.getWatchers()
-		queue := vfs.events()
+		watchers := vfs.GetWatchers()
+		queue := vfs.Events()
 		events := queue.DequeueAll()
 
 		deduplicatedEvents = deduplicatedEvents[:0]

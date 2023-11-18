@@ -708,11 +708,11 @@ func testEvents(t *testing.T, setup func(t *testing.T) (fls afs.Filesystem, temp
 		// create a temporary directory & a file in it
 		fls, tempDir := setup(t)
 
-		if !utils.Implements[watchableVirtualFilesystem](fls) {
+		if !utils.Implements[WatchableVirtualFilesystem](fls) {
 			t.SkipNow()
 		}
 
-		watchableFilesystem := fls.(watchableVirtualFilesystem)
+		watchableFilesystem := fls.(WatchableVirtualFilesystem)
 
 		dirPatt := core.PathPattern(tempDir + "...")
 
@@ -739,14 +739,14 @@ func testEvents(t *testing.T, setup func(t *testing.T) (fls afs.Filesystem, temp
 
 		wg.Wait()
 
-		assert.EqualValues(t, 2*(fileCount-1), watchableFilesystem.events().Size())
+		assert.EqualValues(t, 2*(fileCount-1), watchableFilesystem.Events().Size())
 		time.Sleep(OLD_EVENT_MIN_AGE)
 
 		//create a last file
 		util.WriteFile(fls, "/file"+strconv.Itoa(fileCount-1)+".txt", []byte("a"), DEFAULT_FILE_FMODE)
 
 		//all old events should have been removed.
-		assert.EqualValues(t, 2, watchableFilesystem.events().Size(), fileCount/2)
+		assert.EqualValues(t, 2, watchableFilesystem.Events().Size(), fileCount/2)
 	})
 
 }

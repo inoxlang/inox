@@ -150,8 +150,8 @@ func NewEventSourceWithFilesystem(ctx *core.Context, fls afs.Filesystem, resourc
 
 	//create watcher & add paths
 
-	if watchable, ok := fls.(watchableVirtualFilesystem); ok {
-		watcher := watchable.watcher(eventSource)
+	if watchable, ok := fls.(WatchableVirtualFilesystem); ok {
+		watcher := watchable.Watcher(eventSource)
 
 		eventSource.watcher = watcher
 	} else {
