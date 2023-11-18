@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"maps"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -36,9 +37,20 @@ func addFilesystemRoutingHandler(server *HttpsServer, staticDir, dynamicDir core
 		return errors.New("filesystem routing handler cannot be used as a middleware")
 	}
 
+	fls := server.state.Ctx.GetFileSystem()
+
 	var handleDynamic handlerFn
 	if dynamicDir != "" {
+		if _, err := fls.Stat(string(dynamicDir)); os.IsNotExist(err) {
+			return fmt.Errorf("directory %q does not exist", dynamicDir)
+		}
 		handleDynamic = createHandleDynamic(server, dynamicDir)
+	}
+
+	if staticDir != "" {
+		if _, err := fls.Stat(string(staticDir)); os.IsNotExist(err) {
+			return fmt.Errorf("directory %q does not exist", staticDir)
+		}
 	}
 
 	handler := func(req *HttpRequest, rw *HttpResponseWriter, handlerGlobalState *core.GlobalState) {
