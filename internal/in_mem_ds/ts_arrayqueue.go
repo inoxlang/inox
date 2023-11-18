@@ -11,6 +11,7 @@ type TSArrayQueue[T any] struct {
 	lock     sync.RWMutex
 
 	autoRemoveCondition func(v T) bool
+	hasHadElements      bool
 }
 
 func NewTSArrayQueue[T any]() *TSArrayQueue[T] {
@@ -34,6 +35,7 @@ func (q *TSArrayQueue[T]) Enqueue(value T) {
 	defer q.lock.Unlock()
 
 	q.elements = append(q.elements, value)
+	q.hasHadElements = true
 }
 
 // EnqueueAutoRemove does the same as Enqueue but also removes all elements that validate the autoremove condition.
@@ -42,6 +44,7 @@ func (q *TSArrayQueue[T]) EnqueueAutoRemove(value T) {
 	defer q.lock.Unlock()
 
 	q.elements = append(q.elements, value)
+	q.hasHadElements = true
 	q.autoRemoveNoLock()
 }
 
@@ -51,6 +54,9 @@ func (q *TSArrayQueue[T]) EnqueueAll(values ...T) {
 	defer q.lock.Unlock()
 
 	q.elements = append(q.elements, values...)
+	if len(values) > 0 {
+		q.hasHadElements = true
+	}
 }
 
 // EnqueueAllAutoRemove does the same as EnqueueAllAutoRemove but also removes all elements that validate the autoremove condition.
@@ -59,6 +65,9 @@ func (q *TSArrayQueue[T]) EnqueueAllAutoRemove(values ...T) {
 	defer q.lock.Unlock()
 
 	q.elements = append(q.elements, values...)
+	if len(values) > 0 {
+		q.hasHadElements = true
+	}
 	q.autoRemoveNoLock()
 }
 
@@ -112,6 +121,14 @@ func (q *TSArrayQueue[T]) IsEmpty() bool {
 	defer q.lock.RUnlock()
 
 	return len(q.elements) == 0
+}
+
+// HasNeverHadElements returns true if no element was ever added to the queue.
+func (q *TSArrayQueue[T]) HasNeverHadElements() bool {
+	q.lock.RLock()
+	defer q.lock.RUnlock()
+
+	return !q.hasHadElements
 }
 
 // Size returns the number of elements within the queue.

@@ -14,11 +14,13 @@ func TestTSArrayQueue(t *testing.T) {
 
 		t.Run("no autoremove", func(t *testing.T) {
 			q := NewTSArrayQueue[int]()
+			assert.True(t, q.HasNeverHadElements())
 			assert.Zero(t, q.Size())
 			assert.True(t, q.IsEmpty())
 			assert.Equal(t, []int(nil), q.Values())
 
 			q.Enqueue(3)
+			assert.False(t, q.HasNeverHadElements())
 			assert.NotZero(t, q.Size())
 			assert.False(t, q.IsEmpty())
 			assert.Equal(t, []int{3}, q.Values())
@@ -28,6 +30,8 @@ func TestTSArrayQueue(t *testing.T) {
 				return
 			}
 			assert.Equal(t, 3, elem)
+
+			assert.False(t, q.HasNeverHadElements())
 			assert.Zero(t, q.Size())
 			assert.True(t, q.IsEmpty())
 			assert.Equal(t, []int{}, q.Values())
@@ -39,17 +43,20 @@ func TestTSArrayQueue(t *testing.T) {
 					return v < 0
 				},
 			})
+			assert.True(t, q.HasNeverHadElements())
 			assert.Zero(t, q.Size())
 			assert.True(t, q.IsEmpty())
 			assert.Equal(t, []int(nil), q.Values())
 
 			q.Enqueue(3)
+			assert.False(t, q.HasNeverHadElements())
 			assert.NotZero(t, q.Size())
 			assert.False(t, q.IsEmpty())
 			assert.Equal(t, []int{3}, q.Values())
 
 			//AutoRemove() should have no effect since 3 >= 0
 			q.AutoRemove()
+			assert.False(t, q.HasNeverHadElements())
 			assert.NotZero(t, q.Size())
 			assert.False(t, q.IsEmpty())
 			assert.Equal(t, []int{3}, q.Values())
@@ -59,6 +66,8 @@ func TestTSArrayQueue(t *testing.T) {
 				return
 			}
 			assert.Equal(t, 3, elem)
+
+			assert.False(t, q.HasNeverHadElements())
 			assert.Zero(t, q.Size())
 			assert.True(t, q.IsEmpty())
 			assert.Equal(t, []int{}, q.Values())
@@ -73,6 +82,7 @@ func TestTSArrayQueue(t *testing.T) {
 			//EnqueueAutoRemove should not add the elements since the autoremove condition passes.
 			q.EnqueueAllAutoRemove(-1, -2)
 
+			assert.False(t, q.HasNeverHadElements())
 			assert.Zero(t, q.Size())
 			assert.True(t, q.IsEmpty())
 			assert.Equal(t, []int{}, q.Values())
@@ -89,6 +99,7 @@ func TestTSArrayQueue(t *testing.T) {
 			assert.EqualValues(t, 2, q.Size())
 
 			q.AutoRemove()
+			assert.False(t, q.HasNeverHadElements())
 			assert.Zero(t, q.Size())
 			assert.True(t, q.IsEmpty())
 			assert.Equal(t, []int{}, q.Values())
@@ -119,6 +130,7 @@ func TestTSArrayQueue(t *testing.T) {
 
 			wg.Wait()
 
+			assert.False(t, q.HasNeverHadElements())
 			assert.Zero(t, q.Size())
 			assert.True(t, q.IsEmpty())
 			assert.Equal(t, []int{}, q.Values())
@@ -150,6 +162,7 @@ func TestTSArrayQueue(t *testing.T) {
 
 			wg.Wait()
 
+			assert.False(t, q.HasNeverHadElements())
 			assert.Equal(t, 1, q.Size())
 			assert.False(t, q.IsEmpty())
 			assert.Equal(t, []int{3}, q.Values())
@@ -183,6 +196,7 @@ func TestTSArrayQueue(t *testing.T) {
 
 			wg.Wait()
 
+			assert.False(t, q.HasNeverHadElements())
 			assert.Equal(t, int(enqueueCount.Load()-successfulDequeueCount.Load()), q.Size())
 		})
 
