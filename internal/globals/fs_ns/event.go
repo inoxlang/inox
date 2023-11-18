@@ -150,17 +150,6 @@ func NewEventSourceWithFilesystem(ctx *core.Context, fls afs.Filesystem, resourc
 
 	//create watcher & add paths
 
-	watchedDirPaths := map[core.Path]struct{}{}
-	if recursive {
-		_, paths := core.GetWalkEntries(ctx.GetFileSystem(), eventSource.path)
-		for _, pathList := range paths[1:] {
-			watchedDirPaths[core.Path(pathList[0])] = struct{}{}
-			if err != nil {
-				return nil, err
-			}
-		}
-	}
-
 	if watchable, ok := fls.(watchableVirtualFilesystem); ok {
 		watcher := watchable.watcher(eventSource)
 
