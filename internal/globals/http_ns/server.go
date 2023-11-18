@@ -3,17 +3,22 @@ package http_ns
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
+	"runtime/debug"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/mimeconsts"
+	"github.com/inoxlang/inox/internal/utils"
 	"github.com/rs/zerolog"
 	"golang.org/x/exp/maps"
 
+	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	http_ns_symb "github.com/inoxlang/inox/internal/globals/http_ns/symbolic"
 
 	"github.com/inoxlang/inox/internal/permkind"
@@ -45,7 +50,8 @@ const (
 )
 
 var (
-	ErrHandlerNotSharable = errors.New("handler is not sharable")
+	ErrHandlerNotSharable            = errors.New("handler is not sharable")
+	ErrCannotMutateInitializedServer = errors.New("cannot mutate initialized server")
 
 	HTTP_ROUTING_SYMB_OBJ = symbolic.NewInexactObject(map[string]symbolic.Serializable{
 		"static":  symbolic.ANY_ABS_DIR_PATH,
@@ -84,11 +90,13 @@ var (
 type HttpsServer struct {
 	host          core.Host
 	wrappedServer *http.Server
+	initialized   atomic.Bool
 	lock          sync.RWMutex
 
-	endChan      chan struct{}
-	state        *core.GlobalState
-	serverLogger zerolog.Logger
+	endChan       chan struct{}
+	state         *core.GlobalState
+	serverLogger  zerolog.Logger
+	fsEventSource *fs_ns.FilesystemEventSource
 
 	lastHandlerFn handlerFn
 	middlewares   []handlerFn
@@ -96,7 +104,10 @@ type HttpsServer struct {
 	sseServer      *SseServer
 	defaultCSP     *ContentSecurityPolicy
 	securityEngine *securityEngine
-	api            *API
+
+	api     *API //An API is immutable but this field can be re-assigned.
+	apiLock sync.Mutex
+
 	//preparedModules *preparedModule //mostly used during invocation of handler modules
 
 	defaultLimits map[string]core.Limit //readonly
@@ -270,6 +281,7 @@ func NewHttpsServer(ctx *core.Context, host core.Host, args ...core.Value) (*Htt
 
 	_server.wrappedServer = server
 	_server.endChan = make(chan struct{}, 1)
+	_server.initialized.Store(true)
 
 	//listen and serve in a goroutine
 	go func() {
@@ -364,6 +376,67 @@ func (serv *HttpsServer) ImmediatelyClose(ctx *core.Context) {
 	}
 }
 
+type idleFilesystemHandler struct {
+	microtask    func(serverCtx *core.Context)
+	watchedPaths []core.PathPattern
+}
+
+func (serv *HttpsServer) onIdleFilesystem(handler idleFilesystemHandler) {
+	if serv.initialized.Load() {
+		panic(ErrCannotMutateInitializedServer)
+	}
+
+	if len(handler.watchedPaths) == 0 {
+		return
+	}
+
+	if serv.fsEventSource == nil {
+		fls := serv.state.Ctx.GetFileSystem()
+		//TODO: only watch .ix files and the /static/ folder.
+		evs, err := fs_ns.NewEventSourceWithFilesystem(serv.state.Ctx, fls, core.PathPattern("/..."))
+		if err != nil {
+			panic(err)
+		}
+		serv.fsEventSource = evs
+	}
+
+	logger := serv.serverLogger
+	serverCtx := serv.state.Ctx
+
+	isRelevantEvent := func(e *core.Event) bool {
+		fsEvent := e.SourceValue().(fs_ns.Event)
+		if !fsEvent.ContentChange() {
+			return false
+		}
+
+		for _, pathPattern := range handler.watchedPaths {
+			if pathPattern.Test(nil, fsEvent.Path()) {
+				return true
+			}
+		}
+
+		return false
+	}
+
+	serv.fsEventSource.OnIDLE(core.IdleEventSourceHandler{
+		MinimumLastEventAge: core.HARD_MINIMUM_LAST_EVENT_AGE,
+		IsIgnoredEvent: func(e *core.Event) core.Bool {
+			return !core.Bool(isRelevantEvent(e))
+		},
+		Microtask: func() {
+			defer func() {
+				e := recover()
+				if e != nil {
+					err := utils.ConvertPanicValueToError(e)
+					err = fmt.Errorf("%w: %s", err, debug.Stack())
+					logger.Err(err).Msg("error in on-idle microtask")
+				}
+			}()
+			handler.microtask(serverCtx)
+		},
+	})
+}
+
 func (serv *HttpsServer) Close(ctx *core.Context) {
 	//we first close the event streams to prevent hanging during shutdown
 	serv.lock.Lock()
@@ -379,6 +452,10 @@ func (serv *HttpsServer) Close(ctx *core.Context) {
 	timeoutCtx, cancel := context.WithTimeout(ctx, HTTP_SERVER_GRACEFUL_SHUTDOWN_TIMEOUT)
 	defer cancel()
 	serv.wrappedServer.Shutdown(timeoutCtx)
+
+	if serv.fsEventSource != nil {
+		serv.fsEventSource.Close()
+	}
 }
 
 func newSymbolicHttpsServer(ctx *symbolic.Context, host *symbolic.Host, args ...symbolic.Value) (*http_ns_symb.HttpServer, *symbolic.Error) {

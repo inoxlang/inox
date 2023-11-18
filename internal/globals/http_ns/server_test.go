@@ -97,6 +97,7 @@ func init() {
 				"tostr":             core.WrapGoFunction(toStr),
 				"cancel_exec":       core.WrapGoFunction(cancelExec),
 				"do_cpu_bound_work": core.WrapGoFunction(doCpuBoundWork),
+				"EmailAddress":      core.WrapGoFunction(makeEmailAddress),
 			})
 
 			return state, nil
@@ -111,6 +112,9 @@ func init() {
 	core.RegisterSymbolicGoFunction(doCpuBoundWork, func(ctx *symbolic.Context, _ *symbolic.Duration) {})
 	core.RegisterSymbolicGoFunction(mkBytes, func(ctx *symbolic.Context, i *symbolic.Int) *symbolic.ByteSlice {
 		return symbolic.ANY_BYTE_SLICE
+	})
+	core.RegisterSymbolicGoFunction(makeEmailAddress, func(ctx *symbolic.Context, s symbolic.StringLike) *symbolic.EmailAddress {
+		return symbolic.ANY_EMAIL_ADDR
 	})
 
 	core.RegisterSymbolicGoFunction(toRstream, func(ctx *symbolic.Context, v symbolic.Value) *symbolic.ReadableStream {
@@ -487,7 +491,7 @@ func TestHttpServerMapping(t *testing.T) {
 				$$model = {
 					a: 1
 					password: "mypassword"
-					e: foo@mail.com
+					e: EmailAddress("foo@mail.com")
 				}
 
 				return Mapping {
@@ -508,7 +512,7 @@ func TestHttpServerMapping(t *testing.T) {
 				input: `$$model = {
 					a: 1
 					password: "mypassword"
-					e: a@mail.com
+					e: EmailAddress("a@mail.com")
 
 					_visibility_ {
 						{
@@ -538,7 +542,7 @@ func TestHttpServerMapping(t *testing.T) {
 				input: ` $$model = {
 					a: 1
 					password: "mypassword"
-					e: foo@mail.com
+					e: EmailAddress("foo@mail.com")
 				}
 
 				return Mapping {
@@ -558,7 +562,7 @@ func TestHttpServerMapping(t *testing.T) {
 				input: `$$model = {
 					a: 1
 					password: "mypassword"
-					e: a@mail.com
+					e: EmailAddress("a@mail.com")
 
 					_visibility_ {
 						{
@@ -571,7 +575,7 @@ func TestHttpServerMapping(t *testing.T) {
 					%/... => model
 				}`,
 				requests: []requestTestInfo{
-					{acceptedContentType: mimeconsts.IXON_CTYPE, result: `{"a":1,"e":a@mail.com,"password":"mypassword"}`},
+					{acceptedContentType: mimeconsts.IXON_CTYPE, result: `{"a":1,"e":EmailAddress"a@mail.com","password":"mypassword"}`},
 				},
 			},
 			createClient,
@@ -676,12 +680,13 @@ func setupTestCase(t *testing.T, testCase serverTestCase) (*core.GlobalState, *c
 	}
 
 	state := core.NewGlobalState(ctx, map[string]core.Value{
-		"html":        core.ValOf(html_ns.NewHTMLNamespace()),
-		"sleep":       core.WrapGoFunction(core.Sleep),
-		"torstream":   core.WrapGoFunction(toRstream),
-		"mkbytes":     core.WrapGoFunction(mkBytes),
-		"tostr":       core.WrapGoFunction(toStr),
-		"cancel_exec": core.WrapGoFunction(cancelExec),
+		"html":         core.ValOf(html_ns.NewHTMLNamespace()),
+		"sleep":        core.WrapGoFunction(core.Sleep),
+		"torstream":    core.WrapGoFunction(toRstream),
+		"mkbytes":      core.WrapGoFunction(mkBytes),
+		"tostr":        core.WrapGoFunction(toStr),
+		"cancel_exec":  core.WrapGoFunction(cancelExec),
+		"EmailAddress": core.WrapGoFunction(makeEmailAddress),
 	})
 
 	state.Module = module
@@ -1046,6 +1051,10 @@ func doCpuBoundWork(ctx *core.Context, duration core.Duration) {
 
 func mkBytes(ctx *core.Context, size core.Int) *core.ByteSlice {
 	return &core.ByteSlice{Bytes: make([]byte, size), IsDataMutable: true}
+}
+
+func makeEmailAddress(ctx *core.Context, s core.StringLike) core.EmailAddress {
+	return utils.Must(core.NormalizeEmailAddress(s.GetOrBuildString()))
 }
 
 func toRstream(ctx *core.Context, v core.Value) core.ReadableStream {

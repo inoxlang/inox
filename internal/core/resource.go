@@ -236,6 +236,16 @@ func (pth Path) RelativeEquiv() Path {
 	return "." + pth
 }
 
+// ToPrefixPattern makes a prefix pattern by appending "..." to the path,
+// if the path is not a directory the function panics.
+func (pth Path) ToPrefixPattern() PathPattern {
+	if !pth.IsDirPath() {
+		panic(errors.New("path should be a directory"))
+	}
+
+	return PathPattern(pth.UnderlyingString() + "...")
+}
+
 func (pth Path) ToGlobbingPattern() PathPattern {
 	pattern := make([]byte, 0, len(pth))
 

@@ -90,6 +90,9 @@ func TestFilesystemRouting(t *testing.T) {
 						path:                "/x.html",
 						acceptedContentType: mimeconsts.HTML_CTYPE,
 						result:              `x`,
+						header: http.Header{
+							CSP_HEADER_NAME: []string{DEFAULT_CSP.String()},
+						},
 					},
 				},
 			},
@@ -671,6 +674,137 @@ func TestFilesystemRouting(t *testing.T) {
 						path:                "/x",
 						acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
 						status:              http.StatusNotFound,
+					},
+				},
+			},
+			createClient,
+		)
+	})
+
+	t.Run("a handler module should be updated each time its file is changed", func(t *testing.T) {
+		runServerTest(t,
+			serverTestCase{
+				input: `return {
+						routing: {dynamic: /routes/}
+					}`,
+				makeFilesystem: func() afs.Filesystem {
+					fls := fs_ns.NewMemFilesystem(10_000)
+					fls.MkdirAll("/routes", fs_ns.DEFAULT_DIR_FMODE)
+					util.WriteFile(fls, "/routes/x.ix", []byte(`
+							manifest {}
+	
+							return "hello 1"
+						`), fs_ns.DEFAULT_FILE_FMODE)
+
+					go func() {
+						time.Sleep(100 * time.Millisecond)
+						util.WriteFile(fls, "/routes/x.ix", []byte(`
+							manifest {}
+
+							return "hello 2"
+						`), fs_ns.DEFAULT_FILE_FMODE)
+					}()
+
+					return fls
+				},
+				requests: []requestTestInfo{
+					{
+						path:                "/x",
+						acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
+						result:              `hello 1`,
+					},
+					{
+						pause:               200 * time.Millisecond, //wait for the file to be updated.
+						path:                "/x",
+						acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
+						result:              `hello 2`,
+					},
+				},
+			},
+			createClient,
+		)
+	})
+
+	t.Run("an endpoint should be removed after the handler file is removed", func(t *testing.T) {
+		runServerTest(t,
+			serverTestCase{
+				input: `return {
+						routing: {dynamic: /routes/}
+					}`,
+				makeFilesystem: func() afs.Filesystem {
+					fls := fs_ns.NewMemFilesystem(10_000)
+					fls.MkdirAll("/routes", fs_ns.DEFAULT_DIR_FMODE)
+					util.WriteFile(fls, "/routes/x.ix", []byte(`
+							manifest {}
+	
+							return "hello"
+						`), fs_ns.DEFAULT_FILE_FMODE)
+
+					go func() {
+						time.Sleep(100 * time.Millisecond)
+						fls.Remove("/routes/x.ix")
+					}()
+
+					return fls
+				},
+				requests: []requestTestInfo{
+					{
+						path:                "/x",
+						acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
+						result:              `hello`,
+					},
+					{
+						pause:  200 * time.Millisecond, //wait for the file to be removed.
+						path:   "/x",
+						status: http.StatusNotFound,
+					},
+				},
+			},
+			createClient,
+		)
+	})
+
+	t.Run("an endpoint should be created after a handler file is added", func(t *testing.T) {
+		runServerTest(t,
+			serverTestCase{
+				input: `return {
+						routing: {dynamic: /routes/}
+					}`,
+				makeFilesystem: func() afs.Filesystem {
+					fls := fs_ns.NewMemFilesystem(10_000)
+					fls.MkdirAll("/routes", fs_ns.DEFAULT_DIR_FMODE)
+					util.WriteFile(fls, "/routes/x.ix", []byte(`
+							manifest {}
+	
+							return "hello from x"
+						`), fs_ns.DEFAULT_FILE_FMODE)
+
+					go func() {
+						time.Sleep(100 * time.Millisecond)
+						util.WriteFile(fls, "/routes/y.ix", []byte(`
+							manifest {}
+
+							return "hello from y"
+						`), fs_ns.DEFAULT_FILE_FMODE)
+					}()
+
+					return fls
+				},
+				requests: []requestTestInfo{
+					{
+						path:                "/x",
+						acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
+						result:              `hello from x`,
+					},
+					{
+						pause:  200 * time.Millisecond, //wait for the new file to be added.
+						path:   "/y",
+						result: `hello from y`,
+					},
+					//the /x endpoint should still be present.
+					{
+						path:   "/x",
+						result: `hello from x`,
 					},
 				},
 			},

@@ -32,6 +32,10 @@ var (
 )
 
 func addFilesystemRoutingHandler(server *HttpsServer, staticDir, dynamicDir core.Path, isMiddleware bool) error {
+	if isMiddleware {
+		return errors.New("filesystem routing handler cannot be used as a middleware")
+	}
+
 	var handleDynamic handlerFn
 	if dynamicDir != "" {
 		handleDynamic = createHandleDynamic(server, dynamicDir)
@@ -74,27 +78,55 @@ func addFilesystemRoutingHandler(server *HttpsServer, staticDir, dynamicDir core
 		}
 	}
 
-	if isMiddleware {
-		return errors.New("filesystem routing handler cannot be used as a middleware")
-	} else {
-		dynamicDirString := ""
-		if dynamicDir != "" {
-			dynamicDirString = dynamicDir.UnderlyingString()
-		}
+	server.lastHandlerFn = handler
 
-		api, err := getFSRoutingServerAPI(server.state.Ctx, dynamicDirString)
-		if err != nil {
-			return err
-		}
-		server.lastHandlerFn = handler
-		server.api = api
-
-		// preparedModules := newPreparedModules(server.state.Ctx)
-		// err = preparedModules.prepareFrom(api)
-		// if err != nil {
-		// 	return err
-		// }
+	dynamicDirString := ""
+	if dynamicDir != "" {
+		dynamicDirString = dynamicDir.UnderlyingString()
 	}
+
+	api, err := getFSRoutingServerAPI(server.state.Ctx, dynamicDirString)
+	if err != nil {
+		return err
+	}
+
+	server.api = api
+
+	if dynamicDir != "" {
+		// update the API each time the files are changed.
+		server.onIdleFilesystem(idleFilesystemHandler{
+			watchedPaths: []core.PathPattern{dynamicDir.ToPrefixPattern()},
+			microtask: func(serverCtx *core.Context) {
+				select {
+				case <-serverCtx.Done():
+					return
+				default:
+				}
+
+				updatedAPI, err := getFSRoutingServerAPI(serverCtx, dynamicDirString)
+
+				if err != nil {
+					serverCtx.Logger().Debug().Err(err).Send()
+					return
+				}
+
+				select {
+				case <-serverCtx.Done():
+					return
+				default:
+				}
+
+				server.apiLock.Lock()
+				server.api = updatedAPI
+				server.apiLock.Unlock()
+			},
+		})
+	}
+
+	// preparedModules := newPreparedModules(server.state.Ctx)
+	// err = preparedModules.prepareFrom(api)
+	// 	return err
+	// }
 
 	return nil
 }
@@ -131,7 +163,11 @@ func createHandleDynamic(server *HttpsServer, routingDirPath core.Path) handlerF
 			searchedMethod = "GET"
 		}
 
-		endpt, err := server.api.GetEndpoint(string(path))
+		server.apiLock.Lock()
+		api := server.api
+		server.apiLock.Unlock()
+
+		endpt, err := api.GetEndpoint(string(path))
 		if errors.Is(err, ErrEndpointNotFound) {
 			rw.writeStatus(http.StatusNotFound)
 			return
