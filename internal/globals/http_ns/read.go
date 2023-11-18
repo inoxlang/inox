@@ -105,7 +105,7 @@ func HttpRead(ctx *core.Context, u core.URL, args ...core.Value) (result core.Va
 		contentType = respContentType
 	}
 
-	result, _, finalErr = core.ParseOrValidateResourceContent(ctx, b, respContentType, doParse, validateRaw)
+	result, _, finalErr = core.ParseOrValidateResourceContent(ctx, b, contentType, doParse, validateRaw)
 	return
 }
 
