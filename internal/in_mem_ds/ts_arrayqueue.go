@@ -106,8 +106,8 @@ func (q *TSArrayQueue[T]) Peek() (value T, ok bool) {
 	return q.elements[0], true
 }
 
-// Empty returns true if queue does not contain any elements.
-func (q *TSArrayQueue[T]) Empty() bool {
+// IsEmpty returns true if queue does not contain any elements.
+func (q *TSArrayQueue[T]) IsEmpty() bool {
 	q.lock.RLock()
 	defer q.lock.RUnlock()
 

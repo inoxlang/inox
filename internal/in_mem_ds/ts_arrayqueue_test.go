@@ -15,12 +15,12 @@ func TestTSArrayQueue(t *testing.T) {
 		t.Run("no autoremove", func(t *testing.T) {
 			q := NewTSArrayQueue[int]()
 			assert.Zero(t, q.Size())
-			assert.True(t, q.Empty())
+			assert.True(t, q.IsEmpty())
 			assert.Equal(t, []int(nil), q.Values())
 
 			q.Enqueue(3)
 			assert.NotZero(t, q.Size())
-			assert.False(t, q.Empty())
+			assert.False(t, q.IsEmpty())
 			assert.Equal(t, []int{3}, q.Values())
 
 			elem, ok := q.Dequeue()
@@ -29,7 +29,7 @@ func TestTSArrayQueue(t *testing.T) {
 			}
 			assert.Equal(t, 3, elem)
 			assert.Zero(t, q.Size())
-			assert.True(t, q.Empty())
+			assert.True(t, q.IsEmpty())
 			assert.Equal(t, []int{}, q.Values())
 		})
 
@@ -40,18 +40,18 @@ func TestTSArrayQueue(t *testing.T) {
 				},
 			})
 			assert.Zero(t, q.Size())
-			assert.True(t, q.Empty())
+			assert.True(t, q.IsEmpty())
 			assert.Equal(t, []int(nil), q.Values())
 
 			q.Enqueue(3)
 			assert.NotZero(t, q.Size())
-			assert.False(t, q.Empty())
+			assert.False(t, q.IsEmpty())
 			assert.Equal(t, []int{3}, q.Values())
 
 			//AutoRemove() should have no effect since 3 >= 0
 			q.AutoRemove()
 			assert.NotZero(t, q.Size())
-			assert.False(t, q.Empty())
+			assert.False(t, q.IsEmpty())
 			assert.Equal(t, []int{3}, q.Values())
 
 			elem, ok := q.Dequeue()
@@ -60,21 +60,21 @@ func TestTSArrayQueue(t *testing.T) {
 			}
 			assert.Equal(t, 3, elem)
 			assert.Zero(t, q.Size())
-			assert.True(t, q.Empty())
+			assert.True(t, q.IsEmpty())
 			assert.Equal(t, []int{}, q.Values())
 
 			//EnqueueAutoRemove should not add the element since the autoremove condition passes.
 			q.EnqueueAutoRemove(-1)
 
 			assert.Zero(t, q.Size())
-			assert.True(t, q.Empty())
+			assert.True(t, q.IsEmpty())
 			assert.Equal(t, []int{}, q.Values())
 
 			//EnqueueAutoRemove should not add the elements since the autoremove condition passes.
 			q.EnqueueAllAutoRemove(-1, -2)
 
 			assert.Zero(t, q.Size())
-			assert.True(t, q.Empty())
+			assert.True(t, q.IsEmpty())
 			assert.Equal(t, []int{}, q.Values())
 
 			q.Enqueue(-1)
@@ -82,7 +82,7 @@ func TestTSArrayQueue(t *testing.T) {
 
 			q.AutoRemove()
 			assert.Zero(t, q.Size())
-			assert.True(t, q.Empty())
+			assert.True(t, q.IsEmpty())
 			assert.Equal(t, []int{}, q.Values())
 
 			q.EnqueueAll(-1, -2)
@@ -90,7 +90,7 @@ func TestTSArrayQueue(t *testing.T) {
 
 			q.AutoRemove()
 			assert.Zero(t, q.Size())
-			assert.True(t, q.Empty())
+			assert.True(t, q.IsEmpty())
 			assert.Equal(t, []int{}, q.Values())
 		})
 
@@ -120,7 +120,7 @@ func TestTSArrayQueue(t *testing.T) {
 			wg.Wait()
 
 			assert.Zero(t, q.Size())
-			assert.True(t, q.Empty())
+			assert.True(t, q.IsEmpty())
 			assert.Equal(t, []int{}, q.Values())
 		})
 
@@ -151,7 +151,7 @@ func TestTSArrayQueue(t *testing.T) {
 			wg.Wait()
 
 			assert.Equal(t, 1, q.Size())
-			assert.False(t, q.Empty())
+			assert.False(t, q.IsEmpty())
 			assert.Equal(t, []int{3}, q.Values())
 		})
 
