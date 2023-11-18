@@ -31,7 +31,7 @@ type InMemfile struct {
 	positionLock sync.Mutex
 
 	//last events of the inMemStorage containing the file.
-	storageLastEvents *in_mem_ds.TSArrayQueue[fsEventInfo]
+	storageLastEvents *in_mem_ds.TSArrayQueue[FsEvent]
 }
 
 func (f *InMemfile) Name() string {
@@ -102,7 +102,7 @@ func (f *InMemfile) Write(p []byte) (int, error) {
 	f.position += int64(n)
 
 	//add event and remove old events.
-	f.storageLastEvents.EnqueueAutoRemove(fsEventInfo{
+	f.storageLastEvents.EnqueueAutoRemove(FsEvent{
 		path:     core.Path(f.absPath),
 		writeOp:  true,
 		dateTime: core.DateTime(f.content.ModifTime()),
@@ -129,7 +129,7 @@ func (f *InMemfile) Truncate(size int64) error {
 
 	if err == nil {
 		//add event and remove old events.
-		f.storageLastEvents.EnqueueAutoRemove(fsEventInfo{
+		f.storageLastEvents.EnqueueAutoRemove(FsEvent{
 			path:     core.Path(f.absPath),
 			writeOp:  true,
 			dateTime: core.DateTime(f.content.ModifTime()),

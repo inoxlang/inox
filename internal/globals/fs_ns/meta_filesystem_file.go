@@ -80,7 +80,7 @@ func (f *metaFsFile) Write(p []byte) (n int, err error) {
 		}
 
 		//add event
-		f.fs.eventQueue.Enqueue(fsEventInfo{
+		f.fs.eventQueue.Enqueue(FsEvent{
 			path:     f.path,
 			writeOp:  true,
 			dateTime: modifTime,
@@ -182,7 +182,7 @@ func (f *metaFsFile) Truncate(size int64) error {
 	}
 
 	//add event
-	f.fs.eventQueue.Enqueue(fsEventInfo{
+	f.fs.eventQueue.Enqueue(FsEvent{
 		path:     f.path,
 		writeOp:  true,
 		dateTime: modifTime,

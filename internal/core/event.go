@@ -39,15 +39,17 @@ func GetEventSourceFactory(scheme Scheme) (EventSourceFactory, bool) {
 type Event struct {
 	time              DateTime
 	affectedResources []ResourceName //can be empty
-	value             Value
+	value             Value          //data
+	sourceValue       any            //Golang value
 }
 
-func NewEvent(value Value, time DateTime, affectedResources ...ResourceName) *Event {
+func NewEvent(srcValue any, value Value, time DateTime, affectedResources ...ResourceName) *Event {
 	if value.IsMutable() {
 		panic(fmt.Errorf("failed to create event: value should be immutable: %T", value))
 	}
 	return &Event{
 		value:             value,
+		sourceValue:       srcValue,
 		time:              time,
 		affectedResources: affectedResources,
 	}
@@ -55,6 +57,11 @@ func NewEvent(value Value, time DateTime, affectedResources ...ResourceName) *Ev
 
 func (e *Event) Value() Value {
 	return e.value
+}
+
+// SourceValue() returns the Golang value that was used to create the event, it can be nil.
+func (e *Event) SourceValue() any {
+	return e.sourceValue
 }
 
 func (e *Event) PropertyNames(ctx *Context) []string {
@@ -112,7 +119,7 @@ func (evs *EventSourceHandlerManagement) OnEvent(handler EventHandler) error {
 	})
 	return nil
 }
- 
+
 // GetHandlers returns all event listeners (handlers), they are safe to call without recovering.
 func (evs *EventSourceHandlerManagement) GetHandlers() []EventHandler {
 	evs.lock.RLock()

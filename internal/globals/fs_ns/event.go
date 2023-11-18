@@ -192,19 +192,20 @@ func NewEventSource(ctx *core.Context, resourceNameOrPattern core.Value) (*Files
 	return eventSource, nil
 }
 
-type fsEventInfo struct {
+type FsEvent struct {
 	path                                           core.Path
 	writeOp, createOp, removeOp, chmodOp, renameOp bool
 	dateTime                                       core.DateTime
 }
 
-func newFsEvent(info fsEventInfo) *core.Event {
-	return core.NewEvent(core.NewRecordFromMap(core.ValMap{
-		"path":      info.path,
-		"write_op":  core.Bool(info.writeOp),
-		"create_op": core.Bool(info.createOp),
-		"remove_op": core.Bool(info.removeOp),
-		"chmod_op":  core.Bool(info.chmodOp),
-		"rename_op": core.Bool(info.renameOp),
-	}), info.dateTime, info.path)
+func (e FsEvent) CreateCoreEvent() *core.Event {
+	val := core.NewRecordFromMap(core.ValMap{
+		"path":      e.path,
+		"write_op":  core.Bool(e.writeOp),
+		"create_op": core.Bool(e.createOp),
+		"remove_op": core.Bool(e.removeOp),
+		"chmod_op":  core.Bool(e.chmodOp),
+		"rename_op": core.Bool(e.renameOp),
+	})
+	return core.NewEvent(e, val, e.dateTime, e.path)
 }

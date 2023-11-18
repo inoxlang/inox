@@ -97,7 +97,7 @@ func (watcher fsWatcher) listenForEventsSync(
 				renameOp = true
 			}
 
-			fsEvent := newFsEvent(fsEventInfo{
+			fsEvent := FsEvent{
 				path:     eventPath,
 				writeOp:  writeOp,
 				createOp: createOp,
@@ -105,7 +105,7 @@ func (watcher fsWatcher) listenForEventsSync(
 				chmodOp:  chmodOp,
 				renameOp: renameOp,
 				dateTime: core.DateTime(now),
-			})
+			}.CreateCoreEvent()
 
 			for _, handler := range eventSource.GetHandlers() {
 				func() {

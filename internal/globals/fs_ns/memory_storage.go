@@ -36,7 +36,7 @@ type inMemStorage struct {
 	totalContentSize atomic.Int64
 	maxStorageSize   int64
 
-	eventQueue *in_mem_ds.TSArrayQueue[fsEventInfo] //periodically emptied
+	eventQueue *in_mem_ds.TSArrayQueue[FsEvent] //periodically emptied
 }
 
 func newInMemoryStorage(maxStorageSize core.ByteCount) *inMemStorage {
@@ -53,7 +53,7 @@ func newInMemoryStorage(maxStorageSize core.ByteCount) *inMemStorage {
 		children:       make(map[string]map[string]*InMemfile, 0),
 		maxStorageSize: int64(maxStorageSize),
 
-		eventQueue: in_mem_ds.NewTSArrayQueueWithConfig(in_mem_ds.TSArrayQueueConfig[fsEventInfo]{
+		eventQueue: in_mem_ds.NewTSArrayQueueWithConfig(in_mem_ds.TSArrayQueueConfig[FsEvent]{
 			AutoRemoveCondition: isOldEvent,
 		}),
 	}
@@ -201,7 +201,7 @@ func (s *inMemStorage) newNoLock(path string, mode os.FileMode, flag int, ignore
 		func() {
 			defer utils.Recover()
 
-			event := fsEventInfo{
+			event := FsEvent{
 				path:     core.Path(f.absPath),
 				createOp: true,
 				dateTime: core.DateTime(now),
@@ -356,7 +356,7 @@ func (s *inMemStorage) moveNoLock(from, to string, ignoreEvent bool) error {
 	if !ignoreEvent {
 		defer func() {
 			defer utils.Recover()
-			event := fsEventInfo{
+			event := FsEvent{
 				path:     core.Path(f.absPath),
 				renameOp: true,
 				dateTime: core.DateTime(time.Now()),
@@ -408,7 +408,7 @@ func (s *inMemStorage) Remove(path string) error {
 
 	func() {
 		defer utils.Recover()
-		event := fsEventInfo{
+		event := FsEvent{
 			path:     core.Path(f.absPath),
 			removeOp: true,
 			dateTime: core.DateTime(now),

@@ -41,10 +41,10 @@ type watchableVirtualFilesystem interface {
 	//If the filesystem is properly added to the watchedVirtualFilesystems, it is periodically emptied by the watcher managing goroutine.
 	//Wathever it is watched, the filesystem is responsible for removing old events, especially after a recent event.
 	//Old is specified as being >= OLD_EVENT_MIN_AGE.
-	events() *in_mem_ds.TSArrayQueue[fsEventInfo]
+	events() *in_mem_ds.TSArrayQueue[FsEvent]
 }
 
-func isOldEvent(v fsEventInfo) bool {
+func isOldEvent(v FsEvent) bool {
 	return time.Time(v.dateTime).Before(time.Now().Add(-OLD_EVENT_MIN_AGE))
 }
 
@@ -78,7 +78,7 @@ func (fls *MemFilesystem) watcher(evs *FilesystemEventSource) *virtualFilesystem
 	return watcher
 }
 
-func (fls *MemFilesystem) events() *in_mem_ds.TSArrayQueue[fsEventInfo] {
+func (fls *MemFilesystem) events() *in_mem_ds.TSArrayQueue[FsEvent] {
 	return fls.s.eventQueue
 }
 
@@ -118,7 +118,7 @@ func (fls *MetaFilesystem) watcher(evs *FilesystemEventSource) *virtualFilesyste
 	return watcher
 }
 
-func (fls *MetaFilesystem) events() *in_mem_ds.TSArrayQueue[fsEventInfo] {
+func (fls *MetaFilesystem) events() *in_mem_ds.TSArrayQueue[FsEvent] {
 	return fls.eventQueue
 }
 
@@ -182,7 +182,7 @@ func startWatcherManagingGoroutine() {
 func informWatchersAboutEvents(filesystems map[watchableVirtualFilesystem]struct{}) {
 	defer utils.Recover()
 
-	var deduplicatedEvents []fsEventInfo
+	var deduplicatedEvents []FsEvent
 	var writtenFiles []core.Path
 	//these slice are re-used accross all invocations of manageSingleFs to minimize allocations.
 
@@ -216,7 +216,7 @@ func informWatchersAboutEvents(filesystems map[watchableVirtualFilesystem]struct
 		}
 
 		events = nil
-		coreEvents := utils.MapSlice(deduplicatedEvents, newFsEvent)
+		coreEvents := utils.MapSlice(deduplicatedEvents, func(e FsEvent) *core.Event { return e.CreateCoreEvent() })
 
 		//inform watchers about the events
 		for _, w := range watchers {
