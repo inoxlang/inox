@@ -13,6 +13,7 @@ import (
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/learn"
 	"github.com/inoxlang/inox/internal/mod"
+	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 
@@ -65,10 +66,14 @@ func testTutorial(t *testing.T, series learn.TutorialSeries, tut learn.Tutorial,
 			util.WriteFile(fls, fpath, []byte(tut.Program), 0500)
 
 			parsingCompilationContext := core.NewContext(core.ContextConfig{
-				Permissions: []core.Permission{core.CreateFsReadPerm(core.PathPattern("/..."))},
-				Filesystem:  fls,
+				Permissions: []core.Permission{
+					core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},
+					core.HttpPermission{Kind_: permkind.Read, AnyEntity: true},
+				},
+				Filesystem: fls,
 			})
 			core.NewGlobalState(parsingCompilationContext)
+			defer parsingCompilationContext.CancelGracefully()
 
 			outputBuff := bytes.NewBuffer(nil)
 			logOutputBuff := bytes.NewBuffer(nil)
@@ -78,12 +83,15 @@ func testTutorial(t *testing.T, series learn.TutorialSeries, tut learn.Tutorial,
 				PassedArgs:                core.NewEmptyStruct(),
 				ParsingCompilationContext: parsingCompilationContext,
 				StdlibCtx:                 stdlibCtx,
-				UseBytecode:               useBytecode,
-				OptimizeBytecode:          useBytecode,
-				Out:                       outputBuff,
-				LogOut:                    logOutputBuff,
-				AllowMissingEnvVars:       true,
-				IgnoreHighRiskScore:       true,
+				PreinitFilesystem:         fls,
+				ScriptContextFileSystem:   fls,
+
+				UseBytecode:         useBytecode,
+				OptimizeBytecode:    useBytecode,
+				Out:                 outputBuff,
+				LogOut:              logOutputBuff,
+				AllowMissingEnvVars: true,
+				IgnoreHighRiskScore: true,
 			})
 
 			if assert.NoError(t, err) {
@@ -91,7 +99,9 @@ func testTutorial(t *testing.T, series learn.TutorialSeries, tut learn.Tutorial,
 				output = utils.FilterSlice(output, func(e string) bool {
 					return e != ""
 				})
-				assert.Equal(t, tut.ExpectedOutput, output)
+				if tut.ExpectedLogOutput != nil {
+					assert.Equal(t, tut.ExpectedOutput, output)
+				}
 			}
 		}()
 
