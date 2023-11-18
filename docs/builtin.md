@@ -358,10 +358,10 @@ fs.mkdir ./dir_b/ $dir_content
 ```
 ### fs.read
 
-the fs.read function behaves exactly like the read function but only works on files & directories.
+The fs.read function behaves exactly like the read function but only works on files & directories. The content of files is parsed by default, to disable parsing use --raw after the path: a byte slice will be returned instead.  The type of content is determined by looking at the extension.
 ### fs.read_file
 
-the fs.read function behaves exactly like the read function but only works on files.
+The fs.read function behaves exactly like the read function but only works on files. The content is parsed by default, to disable parsing use --raw after the path: a byte slice will be returned instead. The type of content is determined by looking at the extension.
 ### fs.ls
 
 the fs.ls function takes a directory path or a path pattern as first argument and returns a list of entries, if no argument is provided the ./ directory is used.
@@ -622,7 +622,7 @@ http.get https://example.com/
 ```
 ### http.read
 
-the http.read function behaves exactly like the read function but only works on HTTP resources.
+The http.read function behaves exactly like the read function but only works on HTTP resources. The type of content is determined by looking at the Content-Type header. You can specify a content type by adding a mimetype value such as mime"json".
 
 **examples**
 

@@ -434,10 +434,17 @@ fs:
         fs.mkdir ./dir_b/ $dir_content
 
   - topic: fs.read
-    text: 'the fs.read function behaves exactly like the read function but only works on files & directories.'
+    text: > 
+      The fs.read function behaves exactly like the read function but only works on files & directories.
+      The content of files is parsed by default, to disable parsing use --raw after the path: a byte slice will be returned instead. 
+      The type of content is determined by looking at the extension.
 
   - topic: fs.read_file
-    text: 'the fs.read function behaves exactly like the read function but only works on files.'
+    text: >
+      The fs.read function behaves exactly like the read function but only works on files.
+      The content is parsed by default, to disable parsing use --raw after the path: a
+      byte slice will be returned instead. The type of content is determined by
+      looking at the extension.
 
   - topic: fs.ls
     text: >
@@ -516,7 +523,10 @@ http:
     - code: 'http.get https://example.com/'
 
   - topic: http.read
-    text: 'the http.read function behaves exactly like the read function but only works on HTTP resources.'
+    text: >
+      The http.read function behaves exactly like the read function but only works on HTTP resources.
+      By default the type of content is determined by looking at the Content-Type header. You can specify a content type
+      by adding a mimetype value such as mime"json".
     examples:
     - code: 'http.read https://jsonplaceholder.typicode.com/posts/1'
 
