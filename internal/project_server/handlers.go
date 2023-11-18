@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"slices"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -15,6 +16,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/project"
 	"github.com/inoxlang/inox/internal/project_server/jsonrpc"
 	"github.com/inoxlang/inox/internal/project_server/logs"
@@ -778,7 +780,12 @@ func getFilePath(uri defines.DocumentUri, usingInoxFs bool) (string, error) {
 	if !usingInoxFs && u.Scheme != "file" {
 		return "", fmt.Errorf("%w, URI is: %s", ErrFileURIExpected, string(uri))
 	}
-	return filepath.Clean(u.Path), nil
+
+	clean := filepath.Clean(u.Path)
+	if !strings.HasSuffix(clean, inoxconsts.INOXLANG_FILE_EXTENSION) {
+		return "", fmt.Errorf("unxepected file extension: '%s'", filepath.Ext(clean))
+	}
+	return clean, nil
 }
 
 func getPath(uri defines.URI, usingInoxFS bool) (string, error) {
