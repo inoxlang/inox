@@ -74,7 +74,7 @@ type MetaFilesystem struct {
 	lastModificationTimesLock sync.RWMutex
 
 	eventQueue     *in_mem_ds.TSArrayQueue[Event] //periodically emptied
-	fsWatchers     []*virtualFilesystemWatcher
+	fsWatchers     []*VirtualFilesystemWatcher
 	fsWatchersLock sync.Mutex
 
 	//all the metadata about files is stored in this Key value store.

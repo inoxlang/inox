@@ -27,7 +27,7 @@ type MemFilesystem struct {
 	s         *inMemStorage
 	tempCount int
 
-	watchers     []*virtualFilesystemWatcher
+	watchers     []*VirtualFilesystemWatcher
 	watchersLock sync.Mutex
 
 	closed atomic.Bool

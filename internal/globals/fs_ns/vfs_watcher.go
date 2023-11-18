@@ -31,11 +31,11 @@ type WatchableVirtualFilesystem interface {
 	ClosableFilesystem
 
 	//Watcher creates a new Watcher.
-	Watcher(evs *FilesystemEventSource) *virtualFilesystemWatcher
+	Watcher(evs *FilesystemEventSource) *VirtualFilesystemWatcher
 
 	//GetWatchers returns a copy of the list of current watchers, it is preferrable to not return
 	//stopped watchers.
-	GetWatchers() []*virtualFilesystemWatcher
+	GetWatchers() []*VirtualFilesystemWatcher
 
 	//Events() returns the ACTUAL queue of Events.
 	//If the filesystem is properly added to the watchedVirtualFilesystems, it is periodically emptied by the watcher managing goroutine.
@@ -48,19 +48,19 @@ func isOldEvent(v Event) bool {
 	return time.Time(v.dateTime).Before(time.Now().Add(-OLD_EVENT_MIN_AGE))
 }
 
-type virtualFilesystemWatcher struct {
+type VirtualFilesystemWatcher struct {
 	eventSource  *FilesystemEventSource
 	creationTime time.Time
 	stopped      atomic.Bool
 }
 
-func (w *virtualFilesystemWatcher) Close() error {
+func (w *VirtualFilesystemWatcher) Close() error {
 	w.stopped.Store(true)
 	return nil
 }
 
-func (fls *MemFilesystem) Watcher(evs *FilesystemEventSource) *virtualFilesystemWatcher {
-	watcher := &virtualFilesystemWatcher{
+func (fls *MemFilesystem) Watcher(evs *FilesystemEventSource) *VirtualFilesystemWatcher {
+	watcher := &VirtualFilesystemWatcher{
 		eventSource:  evs,
 		creationTime: time.Now(),
 	}
@@ -82,7 +82,7 @@ func (fls *MemFilesystem) Events() *in_mem_ds.TSArrayQueue[Event] {
 	return fls.s.eventQueue
 }
 
-func (fls *MemFilesystem) GetWatchers() []*virtualFilesystemWatcher {
+func (fls *MemFilesystem) GetWatchers() []*VirtualFilesystemWatcher {
 	fls.watchersLock.Lock()
 	defer fls.watchersLock.Unlock()
 
@@ -99,8 +99,8 @@ func (fls *MemFilesystem) GetWatchers() []*virtualFilesystemWatcher {
 	return watchers
 }
 
-func (fls *MetaFilesystem) Watcher(evs *FilesystemEventSource) *virtualFilesystemWatcher {
-	watcher := &virtualFilesystemWatcher{
+func (fls *MetaFilesystem) Watcher(evs *FilesystemEventSource) *VirtualFilesystemWatcher {
+	watcher := &VirtualFilesystemWatcher{
 		eventSource:  evs,
 		creationTime: time.Now(),
 	}
@@ -122,7 +122,7 @@ func (fls *MetaFilesystem) Events() *in_mem_ds.TSArrayQueue[Event] {
 	return fls.eventQueue
 }
 
-func (fls *MetaFilesystem) GetWatchers() []*virtualFilesystemWatcher {
+func (fls *MetaFilesystem) GetWatchers() []*VirtualFilesystemWatcher {
 	fls.fsWatchersLock.Lock()
 	defer fls.fsWatchersLock.Unlock()
 
@@ -139,7 +139,7 @@ func (fls *MetaFilesystem) GetWatchers() []*virtualFilesystemWatcher {
 	return watchers
 }
 
-func removeStoppedWatchers(watchers *[]*virtualFilesystemWatcher) {
+func removeStoppedWatchers(watchers *[]*VirtualFilesystemWatcher) {
 	//remove stopped watchers
 	startIndex := 0
 outer:
