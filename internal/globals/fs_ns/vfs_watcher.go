@@ -39,7 +39,7 @@ type watchableVirtualFilesystem interface {
 
 	//events() returns the ACTUAL queue of events.
 	//If the filesystem is properly added to the watchedVirtualFilesystems, it is periodically emptied by the watcher managing goroutine.
-	//Wathever it is watched, the filesystem is responsible for removing old events.
+	//Wathever it is watched, the filesystem is responsible for removing old events, especially after a recent event.
 	//Old is specified as being >= OLD_EVENT_MIN_AGE.
 	events() *in_mem_ds.TSArrayQueue[fsEventInfo]
 }
@@ -165,10 +165,8 @@ func startWatcherManagingGoroutine() {
 		ticker := time.NewTicker(WATCHER_MANAGEMENT_TICK_INTERVAL)
 		defer ticker.Stop()
 
-		filesystems := map[watchableVirtualFilesystem]struct{}{}
-
 		for range ticker.C {
-			clear(filesystems)
+			filesystems := map[watchableVirtualFilesystem]struct{}{}
 
 			watchedVirtualFilesystemsLock.Lock()
 			//we copy the filesystems to avoid locking the map for too long.

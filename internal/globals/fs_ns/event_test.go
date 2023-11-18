@@ -704,7 +704,7 @@ func testEvents(t *testing.T, setup func(t *testing.T) (fls afs.Filesystem, temp
 		assert.EqualValues(t, 2*fileCount, callCount.Load())
 	})
 
-	t.Run("even if no watcher was created, old events should be removed", func(t *testing.T) {
+	t.Run("even if no watcher is created, all old events should be removed after a recent event", func(t *testing.T) {
 		// create a temporary directory & a file in it
 		fls, tempDir := setup(t)
 
@@ -725,25 +725,28 @@ func testEvents(t *testing.T, setup func(t *testing.T) (fls afs.Filesystem, temp
 		defer ctx.CancelGracefully()
 
 		fileCount := 10
-		wg := new(sync.WaitGroup)
-		wg.Add(fileCount)
 
-		//create fileCount files
-		for i := 0; i < fileCount; i++ {
+		//create fileCount-1 files
+		wg := new(sync.WaitGroup)
+		wg.Add(fileCount - 1)
+
+		for i := 0; i < fileCount-1; i++ {
 			go func(i int) {
 				defer wg.Done()
 				util.WriteFile(fls, "/file"+strconv.Itoa(i)+".txt", []byte("a"), DEFAULT_FILE_FMODE)
 			}(i)
-			time.Sleep(WATCHER_MANAGEMENT_TICK_INTERVAL)
 		}
 
-		assert.False(t, watchableFilesystem.events().Empty())
-
 		wg.Wait()
-		time.Sleep(10 * WATCHER_MANAGEMENT_TICK_INTERVAL)
 
-		//old events should have been removed.
-		assert.True(t, watchableFilesystem.events().Empty())
+		assert.EqualValues(t, 2*(fileCount-1), watchableFilesystem.events().Size())
+		time.Sleep(OLD_EVENT_MIN_AGE)
+
+		//create a last file
+		util.WriteFile(fls, "/file"+strconv.Itoa(fileCount-1)+".txt", []byte("a"), DEFAULT_FILE_FMODE)
+
+		//all old events should have been removed.
+		assert.EqualValues(t, 2, watchableFilesystem.events().Size(), fileCount/2)
 	})
 
 }
