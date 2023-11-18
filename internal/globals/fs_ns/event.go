@@ -58,6 +58,7 @@ func (evs *FilesystemEventSource) Close() {
 	defer evs.lock.Unlock()
 	evs.isClosed = true
 	evs.watcher.Close()
+	evs.EventSourceBase.RemoveAllHandlers()
 }
 
 func (evs *FilesystemEventSource) IsClosed() bool {

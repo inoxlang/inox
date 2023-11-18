@@ -172,6 +172,7 @@ func (evs *ServerSentEventSource) Close() {
 	}
 
 	evs.isClosed = true
+	evs.EventSourceBase.RemoveAllHandlers()
 	evs.context.CancelGracefully()
 }
 
