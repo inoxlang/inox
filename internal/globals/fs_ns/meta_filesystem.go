@@ -73,7 +73,7 @@ type MetaFilesystem struct {
 	lastModificationTimes     map[ /*normalized path*/ string]core.DateTime
 	lastModificationTimesLock sync.RWMutex
 
-	eventQueue     *in_mem_ds.TSArrayQueue[FsEvent] //periodically emptied
+	eventQueue     *in_mem_ds.TSArrayQueue[Event] //periodically emptied
 	fsWatchers     []*virtualFilesystemWatcher
 	fsWatchersLock sync.Mutex
 
@@ -155,7 +155,7 @@ func OpenMetaFilesystem(ctx *core.Context, underlying billy.Basic, opts MetaFile
 		underlying:            underlying,
 		openFiles:             map[string]map[*metaFsFile]struct{}{},
 		lastModificationTimes: map[string]core.DateTime{},
-		eventQueue: in_mem_ds.NewTSArrayQueueWithConfig(in_mem_ds.TSArrayQueueConfig[FsEvent]{
+		eventQueue: in_mem_ds.NewTSArrayQueueWithConfig(in_mem_ds.TSArrayQueueConfig[Event]{
 			AutoRemoveCondition: isOldEvent,
 		}),
 
@@ -921,7 +921,7 @@ func (fls *MetaFilesystem) OpenFile(filename string, flag int, perm os.FileMode)
 	files[file] = struct{}{}
 
 	//add event and remove old events.
-	fls.eventQueue.EnqueueAutoRemove(FsEvent{
+	fls.eventQueue.EnqueueAutoRemove(Event{
 		path:     core.Path(file.path),
 		createOp: true,
 		dateTime: metadata.creationTime,
@@ -1124,7 +1124,7 @@ func (fls *MetaFilesystem) MkdirAllNoLock_(path string, perm os.FileMode, tx *fi
 		}
 
 		//add event and remove old events.
-		fls.eventQueue.EnqueueAutoRemove(FsEvent{
+		fls.eventQueue.EnqueueAutoRemove(Event{
 			path:     newDirMetadata.path,
 			createOp: true,
 			dateTime: newDirMetadata.creationTime,
@@ -1303,7 +1303,7 @@ func (fls *MetaFilesystem) Rename(from, to string) error {
 
 			//add event
 			if opIndex == 0 {
-				event := FsEvent{
+				event := Event{
 					path:     core.Path(metadata.path),
 					renameOp: true,
 					dateTime: core.DateTime(time.Now()),
@@ -1357,10 +1357,10 @@ func (fls *MetaFilesystem) Remove(filename string) error {
 
 		//add events
 		//note: the events are not added one by one in order to reduce the number of lockings.
-		events := make([]FsEvent, len(removed))
+		events := make([]Event, len(removed))
 
 		for i, path := range removed {
-			events[i] = FsEvent{
+			events[i] = Event{
 				path:     core.Path(path),
 				removeOp: true,
 				dateTime: core.DateTime(removalTimes[i]),

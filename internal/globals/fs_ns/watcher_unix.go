@@ -97,7 +97,7 @@ func (watcher fsWatcher) listenForEventsSync(
 				renameOp = true
 			}
 
-			fsEvent := FsEvent{
+			fsEvent := Event{
 				path:     eventPath,
 				writeOp:  writeOp,
 				createOp: createOp,

@@ -7,6 +7,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
@@ -81,9 +82,15 @@ func (evs *FilesystemEventSource) Iterator(ctx *core.Context, config core.Iterat
 	return core.NewEventSourceIterator(evs, config)
 }
 
+// NewEventSource calls NewEventSourceWithFilesystem with ctx's filesystem.
 func NewEventSource(ctx *core.Context, resourceNameOrPattern core.Value) (*FilesystemEventSource, error) {
-	eventSource := &FilesystemEventSource{}
 	fls := ctx.GetFileSystem()
+
+	return NewEventSourceWithFilesystem(ctx, fls, resourceNameOrPattern)
+}
+
+func NewEventSourceWithFilesystem(ctx *core.Context, fls afs.Filesystem, resourceNameOrPattern core.Value) (*FilesystemEventSource, error) {
+	eventSource := &FilesystemEventSource{}
 
 	recursive := false
 	var permissionEntity core.WrappedString
@@ -192,13 +199,40 @@ func NewEventSource(ctx *core.Context, resourceNameOrPattern core.Value) (*Files
 	return eventSource, nil
 }
 
-type FsEvent struct {
+type Event struct {
 	path                                           core.Path
 	writeOp, createOp, removeOp, chmodOp, renameOp bool
 	dateTime                                       core.DateTime
 }
 
-func (e FsEvent) CreateCoreEvent() *core.Event {
+func (e Event) Path() core.Path {
+	return e.path
+}
+
+func (e Event) Time() core.DateTime {
+	return e.dateTime
+}
+
+func (e Event) HasWriteOp() bool {
+	return e.writeOp
+}
+
+func (e Event) HasCreateOp() bool {
+	return e.createOp
+}
+func (e Event) HasRemoveOp() bool {
+	return e.removeOp
+}
+
+func (e Event) HasChmodOp() bool {
+	return e.chmodOp
+}
+
+func (e Event) HasRenameOp() bool {
+	return e.chmodOp
+}
+
+func (e Event) CreateCoreEvent() *core.Event {
 	val := core.NewRecordFromMap(core.ValMap{
 		"path":      e.path,
 		"write_op":  core.Bool(e.writeOp),
