@@ -203,6 +203,8 @@ type Event struct {
 	path                                           core.Path
 	writeOp, createOp, removeOp, chmodOp, renameOp bool
 	dateTime                                       core.DateTime
+
+	//TODO: add readOp ? if yes the performance impact should be minimal.
 }
 
 func (e Event) Path() core.Path {
@@ -213,6 +215,11 @@ func (e Event) Time() core.DateTime {
 	return e.dateTime
 }
 
+// ContentChange() returns true if e.HasCreateOp() || e.HasRenameOp() || e.HasRemoveOp() || e.HasWriteOp()
+func (e Event) ContentChange() bool {
+	return e.createOp || e.renameOp || e.removeOp || e.writeOp
+}
+
 func (e Event) HasWriteOp() bool {
 	return e.writeOp
 }
@@ -220,6 +227,7 @@ func (e Event) HasWriteOp() bool {
 func (e Event) HasCreateOp() bool {
 	return e.createOp
 }
+
 func (e Event) HasRemoveOp() bool {
 	return e.removeOp
 }
@@ -229,7 +237,7 @@ func (e Event) HasChmodOp() bool {
 }
 
 func (e Event) HasRenameOp() bool {
-	return e.chmodOp
+	return e.renameOp
 }
 
 func (e Event) CreateCoreEvent() *core.Event {
