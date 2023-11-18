@@ -1558,9 +1558,10 @@ func NewEventSourceIterator(source EventSource, config IteratorConfiguration) It
 		defer it.lock.Unlock()
 
 		it.queue.Enqueue(event)
-		if len(it.waitNext) == 0 {
-			it.waitNext <- struct{}{}
-		} else {
+
+		select {
+		case it.waitNext <- struct{}{}:
+		default:
 		}
 	})
 
