@@ -101,13 +101,12 @@ func (f *InMemfile) Write(p []byte) (int, error) {
 	n, err := f.content.WriteAt(p, f.position)
 	f.position += int64(n)
 
-	//add event
+	//add event and remove old events.
 	f.storageLastEvents.EnqueueAutoRemove(fsEventInfo{
 		path:     core.Path(f.absPath),
 		writeOp:  true,
 		dateTime: core.DateTime(f.content.ModifTime()),
 	})
-	f.storageLastEvents.AutoRemove()
 
 	return n, err
 }
@@ -129,7 +128,7 @@ func (f *InMemfile) Truncate(size int64) error {
 	err := f.content.Truncate(size)
 
 	if err == nil {
-		//add event
+		//add event and remove old events.
 		f.storageLastEvents.EnqueueAutoRemove(fsEventInfo{
 			path:     core.Path(f.absPath),
 			writeOp:  true,

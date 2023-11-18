@@ -211,6 +211,7 @@ func (s *inMemStorage) newNoLock(path string, mode os.FileMode, flag int, ignore
 				event.path = core.AppendTrailingSlashIfNotPresent(event.path)
 			}
 
+			//add event and remove old events.
 			s.eventQueue.EnqueueAutoRemove(event)
 		}()
 	}
@@ -364,6 +365,8 @@ func (s *inMemStorage) moveNoLock(from, to string, ignoreEvent bool) error {
 			if f.mode.IsDir() {
 				event.path = core.AppendTrailingSlashIfNotPresent(event.path)
 			}
+
+			//add event and remove old events.
 			s.eventQueue.EnqueueAutoRemove(event)
 		}()
 	}
@@ -414,6 +417,8 @@ func (s *inMemStorage) Remove(path string) error {
 		if isDir {
 			event.path = core.AppendTrailingSlashIfNotPresent(event.path)
 		}
+
+		//add event and remove old events.
 		s.eventQueue.EnqueueAutoRemove(event)
 	}()
 

@@ -920,7 +920,7 @@ func (fls *MetaFilesystem) OpenFile(filename string, flag int, perm os.FileMode)
 
 	files[file] = struct{}{}
 
-	//add event
+	//add event and remove old events.
 	fls.eventQueue.EnqueueAutoRemove(fsEventInfo{
 		path:     core.Path(file.path),
 		createOp: true,
@@ -1123,7 +1123,7 @@ func (fls *MetaFilesystem) MkdirAllNoLock_(path string, perm os.FileMode, tx *fi
 			return err
 		}
 
-		//add event
+		//add event and remove old events.
 		fls.eventQueue.EnqueueAutoRemove(fsEventInfo{
 			path:     newDirMetadata.path,
 			createOp: true,
@@ -1313,6 +1313,8 @@ func (fls *MetaFilesystem) Rename(from, to string) error {
 				if metadata.mode.IsDir() {
 					event.path = core.AppendTrailingSlashIfNotPresent(event.path)
 				}
+
+				//add event and remove old events.
 				fls.eventQueue.EnqueueAutoRemove(event)
 			}
 		}
@@ -1365,6 +1367,7 @@ func (fls *MetaFilesystem) Remove(filename string) error {
 			}
 		}
 
+		//add event and remove old events.
 		fls.eventQueue.EnqueueAllAutoRemove(events...)
 	}()
 
