@@ -293,7 +293,6 @@
       print("content:", fs.read!(PATH))
 
       # learn more by hovering the called functions.
-
     output:
     - "content: hello"
 
@@ -303,13 +302,17 @@
       const (
           # directory paths always end with a slash.
           DIR_PATH = /temp_dir/
+
+
+          # path patterns always start with the '%' symbol.
+          DIR_PATH_PATTERN = %/temp_dir/...
       )
 
       manifest {
           permissions: {
-              read: %/temp_dir/...    # allow reading any file inside /temp_dir/.
-              write: %/temp_dir/...   # allow creating /temp_dir/ and creating + writing any file in it.
-              delete: %/temp_dir/...  # allow removing /temp_dir/ and any file in it.
+              read: DIR_PATH_PATTERN    # allow reading any file inside /temp_dir/.
+              write: DIR_PATH_PATTERN   # allow creating /temp_dir/ and creating + writing any file in it.
+              delete: DIR_PATH_PATTERN  # allow removing /temp_dir/ and any file in it.
           }
       }
 
@@ -326,7 +329,71 @@
       print("entries:", fs.ls!(DIR_PATH))
 
       # learn more by hovering the called functions.
-      
+- name: HTTP Requests
+  id: http-reqs
+
+  tutorials:
+  - name: GET Requests
+    id: http-get-reqs
+    program: |
+      const (
+          # host literal - note: adding a slash at the end would turn it into a URL literal.
+          # This domain provides a mocked HTTP API.
+          HOST = https://jsonplaceholder.typicode.com
+      )
+
+      # making HTTP operations requires specifying some permissions in the manifest.
+      manifest {
+          permissions: {
+              # allow making GET and HEAD requests to HOST.
+              read: HOST
+          }
+      }
+
+      # create a host alias @host
+      @host = HOST
+      url = @host/posts/1
+
+      assign resp err = http.get(url)
+      if err? {
+          print("err: ", err)
+          return    
+      }
+      # note: if you don't want to handle the error you can use a 'must' call instead.
+      # See the corresponding tutorial in the Basics series.
+
+      print(resp)
+
+      # read all the body and print it.
+      raw_content = resp.body.read_all!()
+      print("raw content: ", tostr(raw_content))
+
+      # the next tutorial show how to use a more convenient function: http.read.
+  - name: GET Requests 2 (http.read)
+    id: http-get-reqs2
+    program: |
+      const (
+          HOST = https://jsonplaceholder.typicode.com
+      )
+
+      manifest {
+          permissions: {
+              read: HOST
+          }
+      }
+
+      @host = HOST
+
+      # The http.read function directly reads and parses the body.
+      # By default the type of content is determined by looking at the Content-Type header.
+
+      parsed_json = http.read!(@host/posts/1)
+      print("value:", parsed_json)
+
+      # You can specify a content type by adding a mimetype value.
+
+      text = http.read!(@host/posts/1, mime"text")
+      print("text:", text)
 # ------------------------------------------------------------
 
 
