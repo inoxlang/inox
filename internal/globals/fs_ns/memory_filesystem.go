@@ -45,15 +45,15 @@ func NewMemFilesystemFromSnapshot(snapshot core.FilesystemSnapshot, maxTotalStor
 	}
 }
 
-func (fs MemFilesystem) Chroot(path string) (billy.Filesystem, error) {
+func (fs *MemFilesystem) Chroot(path string) (billy.Filesystem, error) {
 	return nil, core.ErrNotImplemented
 }
 
-func (fs MemFilesystem) Root() string {
+func (fs *MemFilesystem) Root() string {
 	panic(core.ErrNotImplemented)
 }
 
-func (fs MemFilesystem) Absolute(path string) (string, error) {
+func (fs *MemFilesystem) Absolute(path string) (string, error) {
 	if core.PathFrom(path).IsAbsolute() {
 		return path, nil
 	}
