@@ -1233,11 +1233,20 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 				Statements: n.Module.Statements,
 			}
 
-			calleeIdent := n.Module.Statements[0].(*parse.CallExpression).Callee.(*parse.IdentifierLiteral)
-			callee, _ := state.Get(calleeIdent.Name)
-			actualGlobals[calleeIdent.Name] = callee
-		} else {
+			calleeNode := n.Module.Statements[0].(*parse.CallExpression).Callee
+			var callee Value
 
+			switch calleeNode := calleeNode.(type) {
+			case *parse.IdentifierLiteral:
+				callee, _ = state.Get(calleeNode.Name)
+				actualGlobals[calleeNode.Name] = callee
+			case *parse.IdentifierMemberExpression:
+				namespace, _ := state.Get(calleeNode.Left.Name)
+				actualGlobals[calleeNode.Left.Name] = namespace
+			default:
+				panic(ErrUnreachable)
+			}
+		} else {
 			expr, err := TreeWalkEval(n.Module, state)
 			if err != nil {
 				return nil, err

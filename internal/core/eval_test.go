@@ -5464,7 +5464,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	})
 
 	t.Run("spawn expression", func(t *testing.T) {
-		t.Run("single expression", func(t *testing.T) {
+		t.Run("call expression: user declared function", func(t *testing.T) {
 			code := `
 				fn f(){
 					return 1
@@ -5478,6 +5478,26 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.Equal(t, Int(1), res)
+		})
+
+		t.Run("call expression: namespace's function", func(t *testing.T) {
+			code := `
+				lthread = go do http.read(https://example.com/)
+				return lthread.wait_result!()
+			`
+			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
+				"http": NewNamespace("http", map[string]Value{
+					"read": WrapGoFunction(func(*Context, URL) Str {
+						return Str("result")
+					}),
+				}),
+			})
+			defer state.Ctx.CancelGracefully()
+			state.Logger = zerolog.New(state.Out)
+
+			res, err := Eval(code, state, false)
+			assert.NoError(t, err)
+			assert.Equal(t, Str("result"), res)
 		})
 
 		t.Run("empty embedded module", func(t *testing.T) {

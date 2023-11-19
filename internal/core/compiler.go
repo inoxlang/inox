@@ -1787,11 +1787,20 @@ func (c *compiler) Compile(node parse.Node) error {
 
 		if node.Module.SingleCallExpr {
 			isSingleExpr = 1
-			callee := node.Module.Statements[0].(*parse.CallExpression).Callee
-			calleeName = callee.(*parse.IdentifierLiteral).Name
-			embeddedModCompiler.globalSymbols.Define(calleeName)
+			calleeNode := node.Module.Statements[0].(*parse.CallExpression).Callee
 
-			if err := c.Compile(callee); err != nil {
+			switch calleeNode := calleeNode.(type) {
+			case *parse.IdentifierLiteral:
+				calleeName = calleeNode.Name
+				embeddedModCompiler.globalSymbols.Define(calleeName)
+			case *parse.IdentifierMemberExpression:
+				namespaceName := calleeNode.Left.Name
+				embeddedModCompiler.globalSymbols.Define(namespaceName)
+			default:
+				panic(ErrUnreachable)
+			}
+
+			if err := c.Compile(calleeNode); err != nil {
 				return err
 			}
 
