@@ -394,6 +394,65 @@
 
       text = http.read!(@host/posts/1, mime"text")
       print("text:", text)
+  - name: POST & PATCH Requests
+    id: http-post-patch-reqs
+    program: |
+        const (
+            USERS_ENDPOINT = https://jsonplaceholder.typicode.com/users
+            USER1_ENDPOINT = https://jsonplaceholder.typicode.com/users/1
+        )
+
+        # note: https://jsonplaceholder.typicode.com provides a mocked API,
+        # the requests we make further in the code have no real effects.
+
+        manifest {
+            permissions: {
+                # allow making POST and PATCH requests to the specified endpoints.
+                write: {
+                    USERS_ENDPOINT
+                    USER1_ENDPOINT
+                }
+            }
+        }
+
+        # make a POST request to create a new user.
+        resp1 = http.post!(USERS_ENDPOINT, {
+            name: "John Doe",
+            username: "JohnD",
+            email: "john.doe@example.com"
+        })
+
+        body = tostr(resp1.body.read_all!())
+        print("first response's body:", body)
+
+
+        # make a PATCH request to update a user.
+        resp2 = http.patch!(USER1_ENDPOINT, {
+            title: "New title",
+        })
+
+        print("second response:", resp2)
+  - name: DELETE Requests
+    id: http-delete-reqs
+    program: |
+        const (
+            USER1_ENDPOINT = https://jsonplaceholder.typicode.com/users/1
+        )
+
+        # note: https://jsonplaceholder.typicode.com provides a mocked API,
+        # the requests we make further in the code have no real effects.
+
+        manifest {
+            permissions: {
+                # allow making DELETE requests to the specified endpoint.
+                delete: USER1_ENDPOINT
+            }
+        }
+
+        # make a DELETE request to delete the user of id 1
+        resp = http.delete!(USER1_ENDPOINT)
+
+        print(resp)
 # ------------------------------------------------------------
 
 
