@@ -7774,8 +7774,12 @@ parse_embedded_module:
 
 		if call, ok := expr.(*CallExpression); !ok {
 			embeddedModuleErr = &ParsingError{UnspecifiedParsingError, SPAWN_EXPR_ONLY_SIMPLE_CALLS_ARE_SUPPORTED}
-		} else if _, ok := call.Callee.(*IdentifierLiteral); !ok {
-			embeddedModuleErr = &ParsingError{UnspecifiedParsingError, SPAWN_EXPR_ONLY_SIMPLE_CALLS_ARE_SUPPORTED}
+		} else {
+			switch call.Callee.(type) {
+			case *IdentifierLiteral, *IdentifierMemberExpression:
+			default:
+				embeddedModuleErr = &ParsingError{UnspecifiedParsingError, SPAWN_EXPR_ONLY_SIMPLE_CALLS_ARE_SUPPORTED}
+			}
 		}
 
 		emod = &EmbeddedModule{}

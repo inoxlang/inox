@@ -339,7 +339,10 @@ func TestPrint(t *testing.T) {
 		"udata { 0 {1, 2}, 3}",
 		//spawn expression
 		"go {} do",
+		"go nil do",
 		"go {} do {}",
+		"go {} do f()",
+		"go {} do http.read()",
 		//mapping expression
 		"Mapping {}",
 		"Mapping { }",

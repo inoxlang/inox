@@ -19442,7 +19442,7 @@ func testParse(
 	})
 
 	t.Run("spawn expression", func(t *testing.T) {
-		t.Run("call expression", func(t *testing.T) {
+		t.Run("call expression: called is an identifier literal", func(t *testing.T) {
 			n := mustparseChunk(t, `go nil do f()`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 13}, nil, false},
@@ -19477,6 +19477,51 @@ func testParse(
 									Callee: &IdentifierLiteral{
 										NodeBase: NodeBase{NodeSpan{10, 11}, nil, false},
 										Name:     "f",
+									},
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("call expression: calee is an identifier member expression", func(t *testing.T) {
+			n := mustparseChunk(t, `go nil do http.read()`)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 21}, nil, false},
+				Statements: []Node{
+					&SpawnExpression{
+						NodeBase: NodeBase{
+							NodeSpan{0, 21},
+							nil,
+							false,
+						},
+						Meta: &NilLiteral{
+							NodeBase: NodeBase{NodeSpan{3, 6}, nil, false},
+						},
+						Module: &EmbeddedModule{
+							NodeBase:       NodeBase{NodeSpan{10, 21}, nil, false},
+							SingleCallExpr: true,
+							Statements: []Node{
+								&CallExpression{
+									NodeBase: NodeBase{
+										NodeSpan{10, 21},
+										nil,
+										false,
+									},
+									Callee: &IdentifierMemberExpression{
+										NodeBase: NodeBase{NodeSpan{10, 19}, nil, false},
+										Left: &IdentifierLiteral{
+											NodeBase: NodeBase{NodeSpan{10, 14}, nil, false},
+											Name:     "http",
+										},
+										PropertyNames: []*IdentifierLiteral{
+											{
+												NodeBase: NodeBase{NodeSpan{15, 19}, nil, false},
+												Name:     "read",
+											},
+										},
 									},
 								},
 							},
