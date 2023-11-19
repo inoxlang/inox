@@ -808,12 +808,28 @@ func TestCheck(t *testing.T) {
 	})
 
 	t.Run("spawn expression", func(t *testing.T) {
-		t.Run("single call expression", func(t *testing.T) {
+		t.Run("single call expression: user declared function", func(t *testing.T) {
 			n, src := mustParseCode(`
 				fn f(){}
 				go {} do f()
 			`)
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
+		t.Run("single call expression: identifier member expr: namespace method", func(t *testing.T) {
+			n, src := mustParseCode(`
+				go {} do http.read(https://example.com/)
+			`)
+
+			input := StaticCheckInput{Node: n, Chunk: src, Globals: GlobalVariablesFromMap(map[string]Value{
+				"http": NewNamespace("http", map[string]Value{
+					"read": WrapGoFunction(func(*Context, URL) Str {
+						return ""
+					}),
+				}),
+			}, nil)}
+
+			assert.NoError(t, staticCheckNoData(input))
 		})
 
 		t.Run("no additional provided globals (single call expression)", func(t *testing.T) {

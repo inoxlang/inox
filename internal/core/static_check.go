@@ -763,8 +763,14 @@ switch_:
 		}
 
 		if node.Module != nil && node.Module.SingleCallExpr {
-			calleeName := node.Module.Statements[0].(*parse.CallExpression).Callee.(*parse.IdentifierLiteral).Name
-			globals[calleeName] = globalVarInfo{isConst: true}
+			calleeNode := node.Module.Statements[0].(*parse.CallExpression).Callee
+
+			switch calleeNode := calleeNode.(type) {
+			case *parse.IdentifierLiteral:
+				globals[calleeNode.Name] = globalVarInfo{isConst: true}
+			case *parse.IdentifierMemberExpression:
+				globals[calleeNode.Left.Name] = globalVarInfo{isConst: true}
+			}
 		}
 
 		embeddedModuleGlobals := c.getModGlobalVars(node.Module)
