@@ -251,7 +251,7 @@ func getPermForRequest(method string, u core.URL) (core.HttpPermission, error) {
 		}
 	case "POST", "PATCH":
 		perm = core.HttpPermission{
-			Kind_:  permkind.Create,
+			Kind_:  permkind.Write,
 			Entity: u,
 		}
 	case "DELETE":

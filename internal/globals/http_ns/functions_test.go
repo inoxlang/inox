@@ -88,7 +88,7 @@ func TestHttpPost(t *testing.T) {
 		resp, err := HttpPost(ctx, URL)
 		assert.Error(t, err)
 		assert.IsType(t, &core.NotAllowedError{}, err)
-		assert.Equal(t, core.HttpPermission{Kind_: permkind.Create, Entity: URL}, err.(*core.NotAllowedError).Permission)
+		assert.Equal(t, core.HttpPermission{Kind_: permkind.Write, Entity: URL}, err.(*core.NotAllowedError).Permission)
 		assert.Nil(t, resp)
 	})
 }
