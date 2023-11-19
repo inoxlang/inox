@@ -87,6 +87,10 @@ const (
 	INVALID_MUTATION                               = "invalid mutation"
 	PATTERN_IS_NOT_CONVERTIBLE_TO_READONLY_VERSION = "pattern is not convertible to a readonly version"
 
+	//spawn expression
+	INVALID_SPAWN_EXPR_WITH_SHORTHAND_SYNTAX_CALLEE_SHOULD_BE_AN_FN_IDENTIFIER_OR_A_NAMESPACE_METHOD = //
+	"invalid spawn expression with the shorthand syntax: callee should be a function identifier or a namespace method"
+
 	//permissions
 	POSSIBLE_MISSING_PERM_TO_CREATE_A_LTHREAD = "missing permission to create a lthread"
 

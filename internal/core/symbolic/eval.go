@@ -1880,11 +1880,35 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 		}
 
 		if n.Module.SingleCallExpr {
-			calleeName := n.Module.Statements[0].(*parse.CallExpression).Callee.(*parse.IdentifierLiteral).Name
-			info, ok := state.get(calleeName)
-			if ok {
-				modState.setGlobal(calleeName, info.value, GlobalConst)
+			calleeNode := n.Module.Statements[0].(*parse.CallExpression).Callee
+
+			switch calleeNode := calleeNode.(type) {
+			case *parse.IdentifierLiteral:
+				calleeName := calleeNode.Name
+				info, ok := state.get(calleeName)
+				if !ok {
+					modState.setGlobal(calleeName, info.value, GlobalConst)
+				}
+			case *parse.IdentifierMemberExpression:
+				if calleeNode.Err != nil {
+					break
+				}
+
+				varInfo, ok := state.get(calleeNode.Left.Name)
+
+				if !ok {
+					break
+				}
+
+				modState.setGlobal(calleeNode.Left.Name, varInfo.value, GlobalConst)
+
+				_, ok = varInfo.value.(*Namespace)
+				if !ok || len(calleeNode.PropertyNames) != 1 {
+					state.addError(makeSymbolicEvalError(calleeNode.Left, state, INVALID_SPAWN_EXPR_WITH_SHORTHAND_SYNTAX_CALLEE_SHOULD_BE_AN_FN_IDENTIFIER_OR_A_NAMESPACE_METHOD))
+					return ANY_LTHREAD, nil
+				}
 			}
+
 		}
 
 		_, err = symbolicEval(embeddedModule, modState)
@@ -1900,7 +1924,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 			state.addWarning(warning)
 		}
 
-		return &LThread{}, nil
+		return ANY_LTHREAD, nil
 	case *parse.MappingExpression:
 		mapping := &Mapping{}
 

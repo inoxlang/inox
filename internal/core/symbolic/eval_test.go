@@ -10336,7 +10336,7 @@ func TestSymbolicEval(t *testing.T) {
 	})
 
 	t.Run("spawn expression", func(t *testing.T) {
-		t.Run("single expression", func(t *testing.T) {
+		t.Run("call expression: user defined function", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				fn f(){ }
 				return go {globals: .{}} do f()
@@ -10348,7 +10348,47 @@ func TestSymbolicEval(t *testing.T) {
 			assert.IsType(t, &LThread{}, res)
 		})
 
-		t.Run("single expression without meta", func(t *testing.T) {
+		t.Run("call expression: identifier member expr: namespace method", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				return go {globals: .{}} do http.read(https://example.com/)
+			`)
+
+			namespace := NewNamespace(map[string]Value{
+				"read": WrapGoFunction(func(*Context, *URL) *String {
+					return ANY_STR
+				}),
+			})
+			state.setGlobal("http", namespace, GlobalConst)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.IsType(t, &LThread{}, res)
+		})
+
+		t.Run("call expression: identifier member expr: object is not a namespace", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				obj = {
+					read: fn(){
+						return 1
+					}
+				}
+				return go {globals: .{}} do obj.read()
+			`)
+			objIdent := parse.FindNode(n.Statements[1], (*parse.IdentifierLiteral)(nil), func(n *parse.IdentifierLiteral, isUnique bool) bool {
+				return n.Name == "obj"
+			})
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.IsType(t, &LThread{}, res)
+
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(objIdent, state, INVALID_SPAWN_EXPR_WITH_SHORTHAND_SYNTAX_CALLEE_SHOULD_BE_AN_FN_IDENTIFIER_OR_A_NAMESPACE_METHOD),
+			}, state.errors())
+		})
+
+		t.Run("call expression without meta", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				fn f(){ }
 				return go do f()
