@@ -2073,7 +2073,7 @@ func TestSymbolicEval(t *testing.T) {
 			`)
 			memberExpr := n.Statements[0].(*parse.ReturnStatement).Expr
 
-			goVal := &LThread{}
+			goVal := ANY_LTHREAD
 			state.setGlobal("v", goVal, GlobalConst)
 
 			res, err := symbolicEval(n, state)
@@ -2089,7 +2089,7 @@ func TestSymbolicEval(t *testing.T) {
 				return v.cancel
 			`)
 
-			goVal := &LThread{}
+			goVal := ANY_LTHREAD
 			state.setGlobal("v", goVal, GlobalConst)
 
 			res, err := symbolicEval(n, state)
@@ -2103,7 +2103,7 @@ func TestSymbolicEval(t *testing.T) {
 				return v.XYZ
 			`)
 			memberExpr := n.Statements[0].(*parse.ReturnStatement).Expr
-			goVal := &LThread{}
+			goVal := ANY_LTHREAD
 			state.setGlobal("v", goVal, GlobalConst)
 
 			res, err := symbolicEval(n, state)
@@ -2211,7 +2211,7 @@ func TestSymbolicEval(t *testing.T) {
 			`)
 			memberExpr := n.Statements[0].(*parse.ReturnStatement).Expr
 
-			goVal := &LThread{}
+			goVal := ANY_LTHREAD
 			state.setGlobal("v", goVal, GlobalConst)
 
 			res, err := symbolicEval(n, state)
@@ -2227,7 +2227,7 @@ func TestSymbolicEval(t *testing.T) {
 				return v.<cancel
 			`)
 
-			goVal := &LThread{}
+			goVal := ANY_LTHREAD
 			state.setGlobal("v", goVal, GlobalConst)
 
 			res, err := symbolicEval(n, state)
@@ -2241,7 +2241,7 @@ func TestSymbolicEval(t *testing.T) {
 				return v.<XYZ
 			`)
 			memberExpr := n.Statements[0].(*parse.ReturnStatement).Expr
-			goVal := &LThread{}
+			goVal := ANY_LTHREAD
 			state.setGlobal("v", goVal, GlobalConst)
 
 			res, err := symbolicEval(n, state)
@@ -3600,6 +3600,58 @@ func TestSymbolicEval(t *testing.T) {
 				assert.Empty(t, state.errors())
 				assert.Equal(t, NewListOf(NewInt(1)), res)
 			})
+		})
+	})
+
+	t.Run("call undefined function", func(t *testing.T) {
+		t.Run("regular call", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				return f()
+			`)
+
+			ident := parse.FindNode(n, (*parse.IdentifierLiteral)(nil), nil)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(ident, state, fmtVarIsNotDeclared("f")),
+				makeSymbolicEvalError(ident, state, fmtCannotCall(ANY)),
+			}, state.errors())
+			assert.Equal(t, ANY, res)
+		})
+
+		t.Run("regular call: undefined variable as single argument", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				return f(x)
+			`)
+
+			ident := parse.FindNode(n, (*parse.IdentifierLiteral)(nil), func(n *parse.IdentifierLiteral, isUnique bool) bool {
+				return n.Name == "f"
+			})
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				//makeSymbolicEvalError(ident, state, fmtVarIsNotDeclared("x")),
+				makeSymbolicEvalError(ident, state, fmtVarIsNotDeclared("f")),
+				makeSymbolicEvalError(ident, state, fmtCannotCall(ANY)),
+			}, state.errors())
+			assert.Equal(t, ANY, res)
+		})
+
+		t.Run("must call", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				return f!()
+			`)
+			ident := parse.FindNode(n, (*parse.IdentifierLiteral)(nil), nil)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(ident, state, fmtVarIsNotDeclared("f")),
+				makeSymbolicEvalError(ident, state, fmtCannotCall(ANY)),
+			}, state.errors())
+			assert.Equal(t, ANY, res)
 		})
 	})
 
@@ -10345,7 +10397,24 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
-			assert.IsType(t, &LThread{}, res)
+			assert.IsType(t, ANY_LTHREAD, res)
+		})
+
+		t.Run("call expression: undefined function", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				return go {globals: .{}} do f()
+			`)
+			ident := parse.FindNode(n, (*parse.IdentifierLiteral)(nil), func(n *parse.IdentifierLiteral, isUnique bool) bool {
+				return n.Name == "f"
+			})
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(ident, state, fmtVarIsNotDeclared("f")),
+				makeSymbolicEvalError(ident, state, fmtCannotCall(ANY)),
+			}, state.errors())
+			assert.IsType(t, ANY_LTHREAD, res)
 		})
 
 		t.Run("call expression: identifier member expr: namespace method", func(t *testing.T) {
@@ -10363,7 +10432,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
-			assert.IsType(t, &LThread{}, res)
+			assert.IsType(t, ANY_LTHREAD, res)
 		})
 
 		t.Run("call expression: identifier member expr: object is not a namespace", func(t *testing.T) {
@@ -10381,7 +10450,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
-			assert.IsType(t, &LThread{}, res)
+			assert.IsType(t, ANY_LTHREAD, res)
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				makeSymbolicEvalError(objIdent, state, INVALID_SPAWN_EXPR_WITH_SHORTHAND_SYNTAX_CALLEE_SHOULD_BE_AN_FN_IDENTIFIER_OR_A_NAMESPACE_METHOD),
@@ -10397,7 +10466,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
-			assert.IsType(t, &LThread{}, res)
+			assert.IsType(t, ANY_LTHREAD, res)
 		})
 
 		t.Run("provided group is not a lthread group", func(t *testing.T) {
@@ -10412,7 +10481,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, []SymbolicEvaluationError{
 				makeSymbolicEvalError(obj, state, fmtGroupPropertyNotLThreadGroup(ANY_INT)),
 			}, state.errors())
-			assert.IsType(t, &LThread{}, res)
+			assert.IsType(t, ANY_LTHREAD, res)
 		})
 
 		t.Run("error in embedded module", func(t *testing.T) {
@@ -10427,7 +10496,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, []SymbolicEvaluationError{
 				makeSymbolicEvalError(binExpr.Right, state, fmtRightOperandOfBinaryShouldBe(parse.Add, "int", "\"a\"")),
 			}, state.errors())
-			assert.IsType(t, &LThread{}, res)
+			assert.IsType(t, ANY_LTHREAD, res)
 		})
 
 		t.Run("call provided function", func(t *testing.T) {

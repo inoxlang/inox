@@ -1886,7 +1886,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 			case *parse.IdentifierLiteral:
 				calleeName := calleeNode.Name
 				info, ok := state.get(calleeName)
-				if !ok {
+				if ok {
 					modState.setGlobal(calleeName, info.value, GlobalConst)
 				}
 			case *parse.IdentifierMemberExpression:
