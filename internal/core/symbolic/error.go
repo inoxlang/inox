@@ -112,6 +112,9 @@ const (
 	OPERANDS_OF_BINARY_RANGE_EXPRS_SHOULD_BE_SERIALIZABLE = "operands of binary range expressions should be serializable"
 	VARIABLE_DECL_ANNOTATION_MUST_BE_A_PATTERN            = "variable declaration annotation must be a pattern"
 
+	//match statement
+	AN_EXACT_VALUE_USED_AS_MATCH_CASE_SHOULD_BE_SERIALIZABLE = "an exact value used as a match case should be serializable"
+
 	//extend statement
 	EXTENDED_PATTERN_MUST_BE_CONCRETIZABLE_AT_CHECK_TIME = "extended pattern must be concretizable at check time (example of non concretizable pattern: %{a: $runtime-value})"
 	ONLY_SERIALIZABLE_VALUE_PATTERNS_ARE_ALLOWED         = "only patterns of serializable values are allowed"

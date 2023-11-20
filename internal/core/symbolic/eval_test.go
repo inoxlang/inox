@@ -8348,6 +8348,48 @@ func TestSymbolicEval(t *testing.T) {
 			), res)
 		})
 
+		t.Run("error in a case value", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				v = /path
+				match v {
+					undefined_var {}
+				}
+			`)
+
+			ident := parse.FindNode(n, (*parse.IdentifierLiteral)(nil), func(n *parse.IdentifierLiteral, isUnique bool) bool {
+				return n.Name == "undefined_var"
+			})
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(ident, state, fmtVarIsNotDeclared("undefined_var")),
+			}, state.errors())
+			assert.Nil(t, res)
+		})
+
+		t.Run("an exact value used as a match case should be serializable", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				v = /path
+				non_serializable_value = go do {}
+
+				match v {
+					non_serializable_value {}
+				}
+			`)
+
+			ident := parse.FindNode(n, (*parse.IdentifierLiteral)(nil), func(n *parse.IdentifierLiteral, isUnique bool) bool {
+				return n.Name == "non_serializable_value"
+			})
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(ident, state, AN_EXACT_VALUE_USED_AS_MATCH_CASE_SHOULD_BE_SERIALIZABLE),
+			}, state.errors())
+			assert.Nil(t, res)
+		})
+
 		t.Run("error in every block", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				v = /path

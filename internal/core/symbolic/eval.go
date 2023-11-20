@@ -2989,20 +2989,32 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 					continue
 				}
 
+				errCount := len(state.errors())
+
 				val, err := symbolicEval(valNode, state)
 				if err != nil {
 					return nil, err
 				}
 
+				newEvalErr := len(state.errors()) > errCount
 				pattern, ok := val.(Pattern)
 
 				if !ok { //if the value of the case is not a pattern we just check for equality
-					patt, err := NewExactValuePattern(val.(Serializable))
-					if err == nil {
-						pattern = patt
+					serializable, ok := AsSerializable(val).(Serializable)
+
+					if !ok {
+						if !newEvalErr {
+							state.addError(makeSymbolicEvalError(valNode, state, AN_EXACT_VALUE_USED_AS_MATCH_CASE_SHOULD_BE_SERIALIZABLE))
+						}
+						continue
 					} else {
-						pattern = ANY_PATTERN
-						state.addError(makeSymbolicEvalError(valNode, state, err.Error()))
+						patt, err := NewExactValuePattern(serializable)
+						if err == nil {
+							pattern = patt
+						} else {
+							state.addError(makeSymbolicEvalError(valNode, state, err.Error()))
+							continue
+						}
 					}
 				}
 
