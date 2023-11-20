@@ -10457,6 +10457,55 @@ func TestSymbolicEval(t *testing.T) {
 			}, state.errors())
 		})
 
+		t.Run("call expression: global constants should be usable as arguments", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				fn f(arg){ return arg }
+				return go {globals: .{}} do f(myconst)
+			`)
+			state.setGlobal("myconst", INT_1, GlobalConst)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.IsType(t, ANY_LTHREAD, res)
+		})
+
+		t.Run("call expression: global variables should be usable as arguments", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				fn f(arg){ return arg }
+				return go {globals: .{}} do f(myglobal)
+			`)
+			ident := parse.FindNode(n.Statements[1], (*parse.IdentifierLiteral)(nil), func(n *parse.IdentifierLiteral, isUnique bool) bool {
+				return n.Name == "myglobal"
+			})
+			state.setGlobal("myglobal", INT_1, GlobalVar)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(ident, state, fmtVarIsNotDeclared("myglobal")),
+			}, state.errors())
+			assert.IsType(t, ANY_LTHREAD, res)
+		})
+
+		t.Run("call expression: local variables should not be usable as arguments", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				v = 1
+				fn f(arg){ return arg }
+				return go {globals: .{}} do f(v)
+			`)
+			ident := parse.FindNode(n.Statements[2], (*parse.IdentifierLiteral)(nil), func(n *parse.IdentifierLiteral, isUnique bool) bool {
+				return n.Name == "v"
+			})
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(ident, state, fmtVarIsNotDeclared("v")),
+			}, state.errors())
+			assert.IsType(t, ANY_LTHREAD, res)
+		})
+
 		t.Run("call expression without meta", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				fn f(){ }
