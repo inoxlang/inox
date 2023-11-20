@@ -874,8 +874,50 @@ func TestMetaFilesystemWalk(t *testing.T) {
 			expectedTraversal: []string{"/", "/dir_a", "/dir_b", "/dir_b/a.txt", "/dir_b/b.txt"},
 		},
 		{
+			files:             []string{"/dir_b/a.txt", "/dir_b/b.txt", "/dir_b/c.txt"},
+			emptyDirs:         []string{"/dir_a"},
+			expectedTraversal: []string{"/", "/dir_a", "/dir_b", "/dir_b/a.txt", "/dir_b/b.txt", "/dir_b/c.txt"},
+		},
+		{
+			files:             []string{"/dir_b/a.txt", "/dir_b/b.txt", "/dir_b/c.txt", "/dir_b/d.txt"},
+			emptyDirs:         []string{"/dir_a"},
+			expectedTraversal: []string{"/", "/dir_a", "/dir_b", "/dir_b/a.txt", "/dir_b/b.txt", "/dir_b/c.txt", "/dir_b/d.txt"},
+		},
+		{
+			files:             []string{"/dir/a.txt", "/dir/b.txt", "/dir/c.txt", "/dir/d.txt"},
+			expectedTraversal: []string{"/", "/dir", "/dir/a.txt", "/dir/b.txt", "/dir/c.txt", "/dir/d.txt"},
+		},
+		{
+			files:             []string{"/a.txt", "/dir/a.txt", "/dir/b.txt", "/dir/c.txt", "/dir/d.txt"},
+			expectedTraversal: []string{"/", "/a.txt", "/dir", "/dir/a.txt", "/dir/b.txt", "/dir/c.txt", "/dir/d.txt"},
+		},
+		{
+			files:             []string{"/z.txt", "/dir/a.txt", "/dir/b.txt", "/dir/c.txt", "/dir/d.txt"},
+			expectedTraversal: []string{"/", "/dir", "/dir/a.txt", "/dir/b.txt", "/dir/c.txt", "/dir/d.txt", "/z.txt"},
+		},
+		{
+			files:             []string{"/a.txt", "/b.txt", "/dir/a.txt", "/dir/b.txt", "/dir/c.txt", "/dir/d.txt"},
+			expectedTraversal: []string{"/", "/a.txt", "/b.txt", "/dir", "/dir/a.txt", "/dir/b.txt", "/dir/c.txt", "/dir/d.txt"},
+		},
+		{
+			files:             []string{"/y.txt", "/z.txt", "/dir/a.txt", "/dir/b.txt", "/dir/c.txt", "/dir/d.txt"},
+			expectedTraversal: []string{"/", "/dir", "/dir/a.txt", "/dir/b.txt", "/dir/c.txt", "/dir/d.txt", "/y.txt", "/z.txt"},
+		},
+		{
+			files:             []string{"/a.txt", "/z.txt", "/dir/a.txt", "/dir/b.txt", "/dir/c.txt", "/dir/d.txt"},
+			expectedTraversal: []string{"/", "/a.txt", "/dir", "/dir/a.txt", "/dir/b.txt", "/dir/c.txt", "/dir/d.txt", "/z.txt"},
+		},
+		{
 			files:             []string{"/a.txt", "/dir/subdir/c.txt"},
 			expectedTraversal: []string{"/", "/a.txt", "/dir", "/dir/subdir", "/dir/subdir/c.txt"},
+		},
+		{
+			files:             []string{"/a.txt", "/b.txt", "/dir/subdir/c.txt"},
+			expectedTraversal: []string{"/", "/a.txt", "/b.txt", "/dir", "/dir/subdir", "/dir/subdir/c.txt"},
+		},
+		{
+			files:             []string{"/a.txt", "/dir/subdir/c.txt", "/dir/subdir/d.txt"},
+			expectedTraversal: []string{"/", "/a.txt", "/dir", "/dir/subdir", "/dir/subdir/c.txt", "/dir/subdir/d.txt"},
 		},
 		{
 			files:             []string{"/a.txt", "/dir/subdir/c.txt", "/e.txt"},
