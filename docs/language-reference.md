@@ -1643,7 +1643,7 @@ that starts with a manifest. Here is a minimal example:
 # main.ix
 manifest {
     permissions: {
-        read: IWD_PREFIX    # don't forget the read permission
+        read: %/...    # don't forget the read permission
     }
 }
 
@@ -1656,6 +1656,53 @@ print(result)
 manifest {}
 
 return 1
+```
+
+Module imports starts by the creation of a new instance of the imported module.
+Then the instance is executed and its result is returned.
+
+⚠️ As a consequence, if you import the same module from two different files, the
+instances will not be the same. Let's see an example.
+
+We have the modules `/main.ix`, `/lib1.ix`, `/lib2.ix`.
+
+- Both `main` and `lib1` import `lib2`
+- `main` also imports `lib1`
+
+```
+# --- main.ix ---
+
+manifest {
+    permissions: {
+        read: %/...
+    }
+}
+
+import lib1 ./lib1.ix {}
+
+# this instance of lib2 is not the same as the one in /lib1.ix.
+import lib2 ./lib2.ix {}
+
+
+# --- lib1.ix ---
+
+manifest {
+    permissions: {
+        read: %/...
+    }
+}
+
+# this instance of lib2 is not the same as the one in /main.ix.
+import lib2 ./lib2.ix {}
+
+
+# --- lib2.ix ---
+
+return {
+    state: {
+        # ....
+    }
+}
 ```
 
 ### Arguments
