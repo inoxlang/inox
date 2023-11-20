@@ -57,6 +57,7 @@
 - [Symbolic evaluation](#symbolic-evaluation)
 - [Concurrency](#concurrency)
   - [LThreads](#lthreads)
+  - [LThread Groups](#lthread-groups)
   - [Data Sharing](#data-sharing)
 - [Databases](#databases)
   - [Schema](#database-schema)
@@ -1938,21 +1939,72 @@ remember that:
 LThreads (lightweight threads) are mainly used for concurrent work and
 isolation. Each lthread runs an Inox module in a dedicated Goroutine.
 
-**Embedded module:**
+The main way to create a lthread is by using a spawn expression:
 
 ```
-thread = go {allow: {read: %https://example.com/...}} do {
+thread = go do {
     # embedded module
 
     return read!(https://example.com/)
 }
-```
 
-Call syntax (all permissions are inherited):
-
-```
+# shorthand syntax
 thread = go do f()
 ```
+
+### Passing Values
+
+Values can be passed to the lthread by adding a meta value (an object) with a
+**globals** section:
+
+```
+var mylocal = 1
+globalvar myglobal = 2
+
+thread = go {globals: {a: mylocal, b: myglobal}} do {
+    # in the embedded module both a and b are globals.
+    return (a + b)
+}
+
+thread = go {globals: {a: mylocal, b: globalvar}} do idt((a + b))
+```
+
+Data sharing follows specific rules that are explained in details
+[here](#data-sharing).
+
+ℹ️ Predefined globals (print, read, write, http, fs, ...) are always inherited,
+you don't need to add them to the **globals** section.
+
+### Permissions
+
+Lthreads created by spawn expressions inherit almost all of the permissions of
+the parent module by default. The thread creation permission is removed.
+
+You can specify what permissions are granted in the **allow** section of the
+meta value:
+
+```
+# create a lthread with no permissions.
+thread = go {
+    allow: {}
+} do {
+
+}
+
+# create a lthread allowed to read any file.
+thread = go {
+    allow: { read: %/... }
+} do {
+    return fs.read!(/file.txt)
+}
+
+# the wait_result method returns an Array with two elements: 
+- the value returned by the thread (or nil on error)
+- an error (or nil)
+assign file_content err = thread.wait_result()
+```
+
+## Lthread Groups
 
 LThreads can optionally be part of a "thread group" that allows easier control
 of multiple lthreads.
@@ -1961,7 +2013,7 @@ of multiple lthreads.
 req_group = LThreadGroup()
 
 for (1 .. 10) {
-    go {group: req_group} read!(https://jsonplaceholder.typicode.com/posts)
+    go {group: req_group} do read!(https://jsonplaceholder.typicode.com/posts)
 }
 
 results = req_group.wait_results!()
