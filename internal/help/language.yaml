@@ -188,6 +188,9 @@ module-import:
     - topic: module-import-config/arguments-section
       text: >
         The arguments passed to the imported module.
+    - topic: module-import-config/validation-section
+      text: >
+        A base64 encoded SHA256 hash of the imported module's code.
 concurrency:
   title: Concurrency
   elements:

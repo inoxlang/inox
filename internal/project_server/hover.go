@@ -246,6 +246,16 @@ func getSectionHelp(n parse.Node, ancestors []parse.Node) (string, bool) {
 		if ok {
 			return help, true
 		}
+	case *parse.ImportStatement:
+		sectionName := propName
+		//hovered node is a module import section's name
+		help, ok := help.HelpFor(fmt.Sprintf("module-import-config/%s-section", sectionName), help.HelpMessageConfig{
+			Format: help.MarkdownFormat,
+		})
+
+		if ok {
+			return help, true
+		}
 	case *parse.SpawnExpression:
 		sectionName := propName
 		if object == gp.Meta {
