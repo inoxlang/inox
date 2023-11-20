@@ -832,6 +832,76 @@ func TestCheck(t *testing.T) {
 			assert.NoError(t, staticCheckNoData(input))
 		})
 
+		t.Run("single call expression: embedded module should inherit start constants", func(t *testing.T) {
+			n, src := mustParseCode(`
+				fn f(arg){ return arg }
+				go {} do f(myconst)
+			`)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{
+				Node:  n,
+				Chunk: src,
+				Globals: GlobalVariablesFromMap(map[string]Value{
+					"myconst": Int(1),
+				}, nil),
+			}))
+		})
+
+		t.Run("single call expression: embedded module should not inherit explictly defined global constants", func(t *testing.T) {
+			n, src := mustParseCode(`
+				const (
+					myconst = 1
+				)
+				fn f(arg){ return arg }
+				go {} do f(myconst)
+			`)
+
+			ident := parse.FindNode(n, (*parse.IdentifierLiteral)(nil), func(n *parse.IdentifierLiteral, isUnique bool) bool {
+				return n.Name == "myconst"
+			})
+
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(ident, src, fmtVarIsNotDeclared("myconst")),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("single call expression: embedded module should not inherit global variables", func(t *testing.T) {
+			n, src := mustParseCode(`
+				globalvar myglobal = 1
+				fn f(arg){ return arg }
+				go {} do f(myglobal)
+			`)
+
+			ident := parse.FindNode(n, (*parse.IdentifierLiteral)(nil), func(n *parse.IdentifierLiteral, isUnique bool) bool {
+				return n.Name == "myglobal"
+			})
+
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(ident, src, fmtVarIsNotDeclared("myglobal")),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("single call expression: embedded module should not inherit local variables", func(t *testing.T) {
+			n, src := mustParseCode(`
+				var mylocal = 1
+				fn f(arg){ return arg }
+				go {} do f(mylocal)
+			`)
+
+			ident := parse.FindNode(n, (*parse.IdentifierLiteral)(nil), func(n *parse.IdentifierLiteral, isUnique bool) bool {
+				return n.Name == "mylocal"
+			})
+
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(ident, src, fmtVarIsNotDeclared("mylocal")),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
 		t.Run("no additional provided globals (single call expression)", func(t *testing.T) {
 			n, src := mustParseCode(`go {} do idt(a)`)
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{
