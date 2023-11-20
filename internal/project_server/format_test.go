@@ -167,6 +167,123 @@ func TestFormat(t *testing.T) {
 				"}",
 			},
 		},
+
+		//switch
+		{
+			{
+				"manifest {}",
+				"switch 1 {",
+				"0 {}",
+				"}",
+			},
+			{
+				"manifest {}",
+				"switch 1 {",
+				"\t0 {}",
+				"}",
+			},
+		},
+		{
+			{
+				"manifest {}",
+				"switch 1 {",
+				"\t0 {}",
+				"}",
+			},
+			{
+				"manifest {}",
+				"switch 1 {",
+				"\t0 {}",
+				"}",
+			},
+		},
+		{
+			{
+				"manifest {}",
+				"switch 1 {",
+				"defaultcase {}",
+				"}",
+			},
+			{
+				"manifest {}",
+				"switch 1 {",
+				"\tdefaultcase {}",
+				"}",
+			},
+		},
+		{
+			{
+				"manifest {}",
+				"switch 1 {",
+				"\tdefaultcase {}",
+				"}",
+			},
+			{
+				"manifest {}",
+				"switch 1 {",
+				"\tdefaultcase {}",
+				"}",
+			},
+		},
+
+		//match
+
+		{
+			{
+				"manifest {}",
+				"match 1 {",
+				"0 {}",
+				"}",
+			},
+			{
+				"manifest {}",
+				"match 1 {",
+				"\t0 {}",
+				"}",
+			},
+		},
+		{
+			{
+				"manifest {}",
+				"match 1 {",
+				"\t0 {}",
+				"}",
+			},
+			{
+				"manifest {}",
+				"match 1 {",
+				"\t0 {}",
+				"}",
+			},
+		},
+		{
+			{
+				"manifest {}",
+				"match 1 {",
+				"defaultcase {}",
+				"}",
+			},
+			{
+				"manifest {}",
+				"match 1 {",
+				"\tdefaultcase {}",
+				"}",
+			},
+		},
+		{
+			{
+				"manifest {}",
+				"match 1 {",
+				"\tdefaultcase {}",
+				"}",
+			},
+			{
+				"manifest {}",
+				"match 1 {",
+				"\tdefaultcase {}",
+				"}",
+			},
+		},
 	}
 
 	for _, testCase := range cases {

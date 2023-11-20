@@ -180,7 +180,8 @@ func needsIndentation(n parse.Node, parent parse.Node, ancestors []parse.Node) b
 	switch n.(type) {
 	case *parse.ObjectMetaProperty, *parse.ObjectProperty, *parse.ObjectPatternProperty,
 		*parse.DictionaryEntry,
-		*parse.StaticMappingEntry, *parse.DynamicMappingEntry:
+		*parse.StaticMappingEntry, *parse.DynamicMappingEntry,
+		*parse.SwitchCase, *parse.MatchCase, *parse.DefaultCase:
 		return true
 	}
 
@@ -195,7 +196,8 @@ func needsIndentation(n parse.Node, parent parse.Node, ancestors []parse.Node) b
 func doesNodeIncreaseDepth(node parse.Node) bool {
 	switch node.(type) {
 	case *parse.ObjectLiteral, *parse.ObjectPatternLiteral, *parse.RecordLiteral,
-		*parse.ListLiteral, *parse.MappingExpression, *parse.DictionaryLiteral, *parse.EmbeddedModule, *parse.Block:
+		*parse.ListLiteral, *parse.MappingExpression, *parse.DictionaryLiteral, *parse.EmbeddedModule, *parse.Block,
+		*parse.SwitchStatement, *parse.MatchStatement:
 		return true
 	}
 	return false
