@@ -333,7 +333,7 @@
   id: http-reqs
 
   tutorials:
-  - name: GET Requests
+  - name: GET Requests 1
     id: http-get-reqs
     program: |
       const (
@@ -608,10 +608,13 @@
 
   tutorials:
   - name: Inclusion imports
+    id: incl-imports
     program: |
         manifest {}
-
+      
         # An inclusion import includes the content of a file in the current module.
+        # Inclusion imports are useful to decompose a module or regroup pattern definitions 
+        # and functions shared between modules.
         # In order to be includable a file should start with the `includable-chunk` keyword:
 
         import /tutorial-files/schema.ix
@@ -636,4 +639,58 @@
             pattern user = {
                 name: str
             }
+  - name: Module imports
+    id: module-imports
+    program: |
+        manifest {
+            permissions: {
+                read: %/...    # don't forget the read permission
+            }
+        }
+
+        # A module import imports a module: an Inox file that starts with a manifest.
+        # ⚠️ Each module import creates a new instance of the imported module.
+        import result ./tutorial-files/return_1.ix {}
+
+        print(result) 
+    other-files: 
+        /tutorial-files/return_1.ix: |
+            manifest {}
+
+            return 1
+  - name: Arguments
+    id: module-imports-with-args
+    program: |
+        manifest {
+            permissions: {
+                read: %/...    # don't forget the read permission
+            }
+        }
+
+        # Importing a module
+        import result ./tutorial-files/add.ix {
+            # import configuration
+
+            arguments: {1, 2}
+        } 
+
+        print(result)
+    other-files: 
+        /tutorial-files/add.ix: |
+            manifest {
+                parameters: {
+                    {
+                        name: #first_operand
+                        pattern: %int
+                    }
+                    {
+                        name: #second_operand
+                        pattern: %int
+                    }
+                }
+            }
+
+            # the module arguments are stored in the `mod-args` variable.
+
+            return (mod-args.first_operand + mod-args.second_operand)
 # ------------------------------------------------------------
