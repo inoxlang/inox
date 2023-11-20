@@ -470,6 +470,33 @@ after_subcommand_completions:
 			return completions
 		}
 
+		//suggest sections of module import configuration
+		if utils.Implements[*parse.ImportStatement](ancestors[len(ancestors)-3]) {
+			for _, sectionName := range core.IMPORT_CONFIG_SECTION_NAMES {
+				if hasPrefixCaseInsensitive(sectionName, ident.Name) {
+
+					suffix := ""
+					if prop.HasImplicitKey() {
+						suffix = ": "
+
+						valueCompletion, ok := MODULE_IMPORT_SECTION_DEFAULT_VALUE_COMPLETIONS[sectionName]
+						if ok {
+							suffix += valueCompletion
+						}
+					}
+
+					completions = append(completions, Completion{
+						ShownString:           sectionName + suffix,
+						Value:                 sectionName + suffix,
+						LabelDetail:           MODULE_IMPORT_SECTION_LABEL_DETAILS[sectionName],
+						MarkdownDocumentation: MODULE_IMPORT_SECTION_DOC[sectionName],
+						Kind:                  defines.CompletionItemKindVariable,
+					})
+				}
+			}
+			return completions
+		}
+
 		//suggest sections of lthread meta
 		if len(ancestors) > 3 && utils.Implements[*parse.SpawnExpression](ancestors[len(ancestors)-3]) &&
 			objectLiteral == ancestors[len(ancestors)-3].(*parse.SpawnExpression).Meta {
@@ -1252,6 +1279,29 @@ func findObjectInteriorCompletions(
 				ShownString:           sectionName + suffix,
 				Value:                 sectionName + suffix,
 				MarkdownDocumentation: MANIFEST_SECTION_DOC[sectionName],
+				Kind:                  defines.CompletionItemKindVariable,
+				ReplacedRange:         pos,
+			})
+		}
+	case *parse.ImportStatement: //suggest sections of the module import config that are not present
+	mod_import_sections_loop:
+		for _, sectionName := range core.IMPORT_CONFIG_SECTION_NAMES {
+			for _, prop := range n.Properties {
+				if !prop.HasImplicitKey() && prop.Name() == sectionName {
+					continue mod_import_sections_loop
+				}
+			}
+
+			suffix := ": "
+			valueCompletion, ok := MODULE_IMPORT_SECTION_DEFAULT_VALUE_COMPLETIONS[sectionName]
+			if ok {
+				suffix += valueCompletion
+			}
+
+			completions = append(completions, Completion{
+				ShownString:           sectionName + suffix,
+				Value:                 sectionName + suffix,
+				MarkdownDocumentation: MODULE_IMPORT_SECTION_DOC[sectionName],
 				Kind:                  defines.CompletionItemKindVariable,
 				ReplacedRange:         pos,
 			})

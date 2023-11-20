@@ -34,7 +34,9 @@ const (
 
 	DEFAULT_MAX_MOD_GRAPH_PATH_LEN = 5
 
-	IMPORT_CONFIG__ALLOW_PROPNAME = "allow"
+	IMPORT_CONFIG__ALLOW_PROPNAME      = "allow"
+	IMPORT_CONFIG__ARGUMENTS_PROPNAME  = "arguments"
+	IMPORT_CONFIG__VALIDATION_PROPNAME = "validation"
 )
 
 var (
@@ -43,6 +45,10 @@ var (
 	ErrImportCycleDetected                             = errors.New("import cycle detected")
 	ErrMaxModuleImportDepthExceeded                    = fmt.Errorf(
 		"the module import depth has exceeded the maximum (%d)", DEFAULT_MAX_MOD_GRAPH_PATH_LEN)
+
+	IMPORT_CONFIG_SECTION_NAMES = []string{
+		IMPORT_CONFIG__ALLOW_PROPNAME, IMPORT_CONFIG__ARGUMENTS_PROPNAME, IMPORT_CONFIG__VALIDATION_PROPNAME,
+	}
 )
 
 var moduleCache = map[string]string{}
@@ -101,9 +107,9 @@ func buildImportConfig(obj *Object, importSource ResourceName, parentState *Glob
 
 	for k, v := range obj.EntryMap(nil) {
 		switch k {
-		case "validation":
+		case IMPORT_CONFIG__VALIDATION_PROPNAME:
 			config.ValidationString = v.(Str)
-		case "arguments":
+		case IMPORT_CONFIG__ARGUMENTS_PROPNAME:
 			config.ArgObj = v.(*Object)
 		case IMPORT_CONFIG__ALLOW_PROPNAME:
 			config.GrantedPermListing = v.(*Object)

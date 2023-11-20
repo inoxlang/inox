@@ -26,7 +26,7 @@ module:
           }
 
           import result ./add.ix {
-              args: {1, 2}
+              arguments: {1, 2}
           } 
 
           print(result) 
@@ -175,6 +175,19 @@ module:
                   }
               }
           }
+module-import:
+  title: Module import
+  elements:
+  - topic: module-import-config
+    text: Module Import Configuration
+    subtopics:
+    - topic: module-import-config/allow-section
+      text: >
+        The permissions granted to the imported module.
+        Make sure the importing module has the granted permissions.
+    - topic: module-import-config/arguments-section
+      text: >
+        The arguments passed to the imported module.
 concurrency:
   title: Concurrency
   elements:

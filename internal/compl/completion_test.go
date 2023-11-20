@@ -569,6 +569,41 @@ func TestFindCompletions(t *testing.T) {
 
 			})
 
+			t.Run("module import config section", func(t *testing.T) {
+				t.Run("from prefix", func(t *testing.T) {
+					state := newState()
+					chunk := utils.Must(parseChunkSource("import lib /a.ix {a}", ""))
+					doSymbolicCheck(chunk, state.Global)
+
+					completions := findCompletions(state, chunk, 19)
+					assert.EqualValues(t, []Completion{
+						{
+							ShownString:   core.IMPORT_CONFIG__ALLOW_PROPNAME + ": {}",
+							Value:         core.IMPORT_CONFIG__ALLOW_PROPNAME + ": {}",
+							ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 18, End: 19}},
+						},
+						{
+							ShownString:   core.IMPORT_CONFIG__ARGUMENTS_PROPNAME + ": {}",
+							Value:         core.IMPORT_CONFIG__ARGUMENTS_PROPNAME + ": {}",
+							ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 18, End: 19}},
+						},
+					}, completions)
+				})
+
+				t.Run("in empty module import config", func(t *testing.T) {
+					state := newState()
+					chunk := utils.Must(parseChunkSource("import lib /a.ix {}", ""))
+					doSymbolicCheck(chunk, state.Global)
+
+					completions := findCompletions(state, chunk, 18)
+					assert.Contains(t, completions, Completion{
+						ShownString:   core.IMPORT_CONFIG__ALLOW_PROPNAME + ": {}",
+						Value:         core.IMPORT_CONFIG__ALLOW_PROPNAME + ": {}",
+						ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 18, End: 18}},
+					})
+				})
+			})
+
 			t.Run("lthread meta section", func(t *testing.T) {
 				t.Run("from prefix", func(t *testing.T) {
 					state := newState()
