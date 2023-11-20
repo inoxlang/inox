@@ -10,7 +10,7 @@ func TestWalk(t *testing.T) {
 
 	t.Run("prune", func(t *testing.T) {
 		chunk := MustParseChunk("1")
-		Walk(chunk, func(node, parent, scopeNode Node, n4 []Node, _ bool) (TraversalAction, error) {
+		Walk(chunk, func(node, parent, scopeNode Node, ancestorChain []Node, _ bool) (TraversalAction, error) {
 			switch node.(type) {
 			case *Chunk:
 				return Prune, nil
@@ -23,7 +23,7 @@ func TestWalk(t *testing.T) {
 
 	t.Run("stop", func(t *testing.T) {
 		chunk := MustParseChunk("1 2")
-		Walk(chunk, func(node, parent, scopeNode Node, n4 []Node, _ bool) (TraversalAction, error) {
+		Walk(chunk, func(node, parent, scopeNode Node, ancestorChain []Node, _ bool) (TraversalAction, error) {
 			switch n := node.(type) {
 			case *IntLiteral:
 				if n.Value == 2 {
@@ -34,6 +34,37 @@ func TestWalk(t *testing.T) {
 			return ContinueTraversal, nil
 		}, nil)
 	})
+
+	t.Run("traversal", func(t *testing.T) {
+		chunk := MustParseChunk("import lib /lib.ix {}")
+		callCount := 0
+
+		err := Walk(chunk, func(node, parent, scopeNode Node, ancestorChain []Node, _ bool) (TraversalAction, error) {
+			switch callCount {
+			case 0:
+				assert.IsType(t, (*Chunk)(nil), node)
+				assert.Equal(t, []Node{nil}, ancestorChain)
+			case 1:
+				assert.IsType(t, (*ImportStatement)(nil), node)
+				assert.Equal(t, []Node{nil, chunk}, ancestorChain)
+			case 2:
+				assert.IsType(t, (*IdentifierLiteral)(nil), node)
+				assert.Equal(t, []Node{nil, chunk, chunk.Statements[0]}, ancestorChain)
+			case 3:
+				assert.IsType(t, (*AbsolutePathLiteral)(nil), node)
+				assert.Equal(t, []Node{nil, chunk, chunk.Statements[0]}, ancestorChain)
+			case 4:
+				assert.IsType(t, (*ObjectLiteral)(nil), node)
+				assert.Equal(t, []Node{nil, chunk, chunk.Statements[0]}, ancestorChain)
+			}
+
+			callCount++
+			return ContinueTraversal, nil
+		}, nil)
+
+		assert.NoError(t, err)
+	})
+
 }
 
 func TestShiftNodeSpans(t *testing.T) {
