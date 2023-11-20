@@ -6,6 +6,10 @@ import (
 	pprint "github.com/inoxlang/inox/internal/pretty_print"
 )
 
+var (
+	ANY_MAPPING = &Mapping{}
+)
+
 //TODO: implement PotentiallySharable interface
 
 // A Mapping represents a symbolic Mapping.
