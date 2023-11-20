@@ -73,14 +73,15 @@ If you want to compile the language yourself go [here](#compile-from-source).
 
 ### Editor Support
 
-- [VSCode](https://marketplace.visualstudio.com/items?itemName=graphr00t.inox) :
-  LSP, Debug, colorization, snippets
+- [VSCode & VSCodium](https://marketplace.visualstudio.com/items?itemName=graphr00t.inox)
+  : LSP, Debug, colorization, snippets
 
 ## Learning Inox
 
-<!-- **You can learn Inox directly in VSCode: download the
-[extension](https://marketplace.visualstudio.com/items?itemName=graphr00t.inox)
-and follow the explanations.** -->
+You can learn Inox directly in VSCode by creating a file with a name ending with
+`.tut.ix`. This is the recommended way.
+
+![tutorial-demo](https://github.com/inoxlang/inox-vscode/raw/master/assets/docs/tutorial-demo.gif)
 
 📖 Language Reference: [docs/language-reference.md](docs/language-reference.md)
 
