@@ -1,6 +1,6 @@
 manifest {
     permissions: {
-        create: https://jsonplaceholder.typicode.com/posts
+        write: https://jsonplaceholder.typicode.com/posts
     }
 }
 
