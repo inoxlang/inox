@@ -1772,6 +1772,10 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 								if err != nil {
 									return nil, err
 								}
+								pattern, ok := state.getStaticOfNode(prop.Value)
+								if ok {
+									globalVal = pattern.SymbolicValue()
+								}
 								globalMap[globalName] = globalVal
 							}
 							continue

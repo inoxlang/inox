@@ -10684,10 +10684,10 @@ func TestSymbolicEval(t *testing.T) {
 				fn f(){
 					return 2
 				}
-				rt = go {globals: {f: f}} do {
+				lthread = go {globals: {f: f}} do {
 					return f() # f is external for the embedded module
 				}
-				return rt.wait_result!()
+				return lthread.wait_result!()
 			`)
 
 			res, err := symbolicEval(n, state)
@@ -10714,10 +10714,10 @@ func TestSymbolicEval(t *testing.T) {
 
 		t.Run("allow section", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
-				rt = go {allow: {}} do {
+				lthread = go {allow: {}} do {
 					return int
 				}
-				return rt.wait_result!()
+				return lthread.wait_result!()
 			`)
 
 			metadataNode := parse.FindNode(n, (*parse.ObjectLiteral)(nil), nil)
@@ -10730,6 +10730,31 @@ func TestSymbolicEval(t *testing.T) {
 				state.warnings(),
 				makeSymbolicEvalWarning(metadataNode, state, fmtUnknownSectionInLThreadMetadata(LTHREAD_META_ALLOW_SECTION)),
 			) //we use contains because there is also a warning about a missing permission
+		})
+
+		t.Run("if a variable is a passed as a global, the static type should be preserved", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				list = [1, 2, 3]
+
+				lthread = go {
+					globals: {list: list}
+				} do {
+					list[0] = 0
+					list.append(1)
+				}
+
+				return list
+			`)
+
+			res, err := symbolicEval(n, state)
+
+			//make sure the value of `list` is not equal to its static type.
+			if !assert.Equal(t, NewList(INT_1, INT_2, INT_3), res) {
+				return
+			}
+
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
 		})
 	})
 
