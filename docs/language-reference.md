@@ -1937,8 +1937,7 @@ remember that:
 ## LThreads
 
 LThreads (lightweight threads) are mainly used for concurrent work and
-isolation. Each lthread runs an Inox module in a dedicated Goroutine.
-
+isolation. Each lthread runs an Inox module in a dedicated Goroutine.\
 The main way to create a lthread is by using a spawn expression:
 
 ```
@@ -1965,6 +1964,12 @@ thread = go {globals: {a: mylocal, b: myglobal}} do {
     # in the embedded module both a and b are globals.
     return (a + b)
 }
+
+# the wait_result method returns an Array with two elements: 
+- the value returned by the thread (or nil on error)
+- an error (or nil)
+assign result err = thread.wait_result()
+
 
 thread = go {globals: {a: mylocal, b: globalvar}} do idt((a + b))
 ```
@@ -1997,11 +2002,6 @@ thread = go {
 } do {
     return fs.read!(/file.txt)
 }
-
-# the wait_result method returns an Array with two elements: 
-- the value returned by the thread (or nil on error)
-- an error (or nil)
-assign file_content err = thread.wait_result()
 ```
 
 ## Lthread Groups
