@@ -1203,8 +1203,8 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		var startConstants []string
 		actualGlobals := make(map[string]Value)
 
-		state.Global.Globals.Foreach(func(name string, v Value, isConstant bool) error {
-			if isConstant {
+		state.Global.Globals.Foreach(func(name string, v Value, isStartConstant bool) error {
+			if isStartConstant {
 				actualGlobals[name] = v
 				startConstants = append(startConstants, name)
 			}

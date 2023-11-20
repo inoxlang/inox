@@ -5500,6 +5500,63 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			assert.Equal(t, Str("result"), res)
 		})
 
+		t.Run("call expression: embedded module should inherit global start constants", func(t *testing.T) {
+			code := `
+				fn f(arg){
+					return arg
+				}
+				lthread = go do f(myconst)
+				return lthread.wait_result!()
+			`
+			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
+				"myconst": Int(1),
+			})
+			defer state.Ctx.CancelGracefully()
+			state.Logger = zerolog.New(state.Out)
+
+			res, err := Eval(code, state, false)
+			assert.NoError(t, err)
+			assert.Equal(t, Int(1), res)
+		})
+
+		t.Run("call expression: embedded module should not inherit explicitly defined global constants", func(t *testing.T) {
+			code := `
+				const (
+					myconst = 1
+				)
+				fn f(arg){
+					return arg
+				}
+
+				lthread = go do f(myconst)
+				return lthread.wait_result!()
+			`
+			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
+			state.Logger = zerolog.New(state.Out)
+
+			_, err := Eval(code, state, false)
+			assert.Error(t, err)
+		})
+
+		t.Run("call expression: embedded module should not inherit global variables", func(t *testing.T) {
+			code := `
+				fn f(arg){
+					return arg
+				}
+
+				globalvar myglobal = 1
+				lthread = go do f(myglobal)
+				return lthread.wait_result!()
+			`
+			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
+			state.Logger = zerolog.New(state.Out)
+
+			_, err := Eval(code, state, false)
+			assert.Error(t, err)
+		})
+
 		t.Run("empty embedded module", func(t *testing.T) {
 			code := `
 				go do { }
