@@ -5207,6 +5207,137 @@ func TestSymbolicEval(t *testing.T) {
 			assert.True(t, fn.HasOptionalParams())
 		})
 
+		t.Run("specific variadic Go function: single argument (variadic)", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				return f(1)
+			`)
+
+			callExprNode := n.Statements[0].(*parse.ReturnStatement).Expr.(*parse.CallExpression)
+
+			goFunc := &GoFunction{
+				fn: func(ctx *Context, ints ...*Int) *Int {
+					ctx.SetSymbolicGoFunctionParameters(&[]Value{ANY_INT}, []string{"ints"})
+					return ANY_INT
+				},
+			}
+
+			state.setGlobal("f", goFunc, GlobalConst)
+			res, err := symbolicEval(n, state)
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			assert.Empty(t, state.errors())
+			assert.Equal(t, ANY_INT, res)
+
+			calleeData, ok := state.symbolicData.GetMostSpecificNodeValue(callExprNode.Callee)
+			if !assert.True(t, ok) {
+				return
+			}
+
+			if !assert.Equal(t, &Function{
+				firstOptionalParamIndex: -1,
+				parameters:              []Value{ANY_INT},
+				parameterNames:          []string{"ints"},
+				results:                 []Value{ANY_INT},
+				variadic:                true,
+			}, calleeData) {
+				return
+			}
+
+			fn := calleeData.(*Function)
+			assert.False(t, fn.HasOptionalParams())
+			assert.Same(t, ANY_INT, fn.VariadicParamElem())
+		})
+
+		t.Run("specific variadic Go function: two arguments (variadic)", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				return f(1, 2)
+			`)
+
+			callExprNode := n.Statements[0].(*parse.ReturnStatement).Expr.(*parse.CallExpression)
+
+			goFunc := &GoFunction{
+				fn: func(ctx *Context, ints ...*Int) *Int {
+					ctx.SetSymbolicGoFunctionParameters(&[]Value{ANY_INT}, []string{"ints"})
+					return ANY_INT
+				},
+			}
+
+			state.setGlobal("f", goFunc, GlobalConst)
+			res, err := symbolicEval(n, state)
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			assert.Empty(t, state.errors())
+			assert.Equal(t, ANY_INT, res)
+
+			calleeData, ok := state.symbolicData.GetMostSpecificNodeValue(callExprNode.Callee)
+			if !assert.True(t, ok) {
+				return
+			}
+
+			if !assert.Equal(t, &Function{
+				firstOptionalParamIndex: -1,
+				parameters:              []Value{ANY_INT},
+				parameterNames:          []string{"ints"},
+				results:                 []Value{ANY_INT},
+				variadic:                true,
+			}, calleeData) {
+				return
+			}
+
+			fn := calleeData.(*Function)
+			assert.False(t, fn.HasOptionalParams())
+			assert.Same(t, ANY_INT, fn.VariadicParamElem())
+		})
+
+		t.Run("specific variadic Go function: spread argument of unknown length", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				return f(...list)
+			`)
+
+			callExprNode := n.Statements[0].(*parse.ReturnStatement).Expr.(*parse.CallExpression)
+
+			goFunc := &GoFunction{
+				fn: func(ctx *Context, ints ...*Int) *Int {
+					ctx.SetSymbolicGoFunctionParameters(&[]Value{ANY_INT}, []string{"ints"})
+					return ANY_INT
+				},
+			}
+
+			state.setGlobal("f", goFunc, GlobalConst)
+			state.setGlobal("list", NewListOf(ANY_INT), GlobalVar)
+
+			res, err := symbolicEval(n, state)
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			assert.Empty(t, state.errors())
+			assert.Equal(t, ANY_INT, res)
+
+			calleeData, ok := state.symbolicData.GetMostSpecificNodeValue(callExprNode.Callee)
+			if !assert.True(t, ok) {
+				return
+			}
+
+			if !assert.Equal(t, &Function{
+				firstOptionalParamIndex: -1,
+				parameters:              []Value{ANY_INT},
+				parameterNames:          []string{"ints"},
+				results:                 []Value{ANY_INT},
+				variadic:                true,
+			}, calleeData) {
+				return
+			}
+
+			fn := calleeData.(*Function)
+			assert.False(t, fn.HasOptionalParams())
+			assert.Same(t, ANY_INT, fn.VariadicParamElem())
+		})
+
 		t.Run("specific Go function with non-empty object parameter, missing property in argument", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				return f({})

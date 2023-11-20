@@ -866,8 +866,7 @@ func (fn *Function) VariadicParamElem() Value {
 	if !fn.variadic {
 		panic(errors.New("function is not variadic"))
 	}
-	param := fn.parameters[len(fn.parameters)-1]
-	return param.(*Array).IteratorElementValue()
+	return fn.parameters[len(fn.parameters)-1]
 }
 
 func (f *Function) Test(v Value, state RecTestCallState) bool {

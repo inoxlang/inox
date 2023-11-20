@@ -307,7 +307,12 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 				argNode = argNodes[i]
 			}
 
-			paramType := paramTypes[i]
+			paramTypeIndex := i
+			if f.isVariadic && paramTypeIndex >= len(paramTypes) {
+				paramTypeIndex = len(paramNames) - 1
+			}
+
+			paramType := paramTypes[paramTypeIndex]
 
 			// for !IsAnyOrAnySerializable(widenedArg) && !paramType.Test(widenedArg) {
 			// 	widenedArg = widenOrAny(widenedArg)
