@@ -62,9 +62,14 @@ func testTutorial(t *testing.T, series learn.TutorialSeries, tut learn.Tutorial,
 				close(done)
 			}()
 
+			//create filesystem
 			fls := fs_ns.NewMemFilesystem(10_000)
 			util.WriteFile(fls, fpath, []byte(tut.Program), 0500)
+			for filePath, content := range tut.OtherFiles {
+				util.WriteFile(fls, filePath, []byte(content), 0500)
+			}
 
+			//
 			parsingCompilationContext := core.NewContext(core.ContextConfig{
 				Permissions: []core.Permission{
 					core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},

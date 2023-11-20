@@ -505,6 +505,7 @@
         print("lthread3's result:", lthread3.wait_result!())
 
 
+        # Data sharing follows specific rules that are explained in details in a turorial in this series.
   - name: Permissions
     id: lthread-perms
     program: |
@@ -545,13 +546,13 @@
         # LThread Groups allow easier control of multiple lthreads.
 
         const (
-            USERS_ENDPOINT_PATTERN = %https://jsonplaceholder.typicode.com/users/...
+            USERS_PREFIX_PATTERN = %https://jsonplaceholder.typicode.com/users/...
         )
 
         manifest {
             permissions: {
                 create: {threads: {}}
-                read: USERS_ENDPOINT_PATTERN
+                read: USERS_PREFIX_PATTERN
             }
         }
 
@@ -562,6 +563,77 @@
 
         results = req_group.wait_results!()
         print("users:", results)
+  - name: Data sharing
+    id: lthread-data-sharing
+    program: |
+        manifest {
+            permissions: {
+                create: {threads: {}}
+            }
+        }
+
+        # Immutable and lock-protected values are sharable between threads.
+        
+        # The most common immutables values are records, tuples, string-like values
+        # and all simple values ( floats, integral values (ints, bytes, ...)
+        immutable = #{a: 1}
+        
+        # The most common lock-protected values are objects.
+        lock_protected = {b: 2}
+
+        lthread = go {
+            globals: {
+                record: immutable
+                object: lock_protected
+            }
+        } do {
+            # assigning a property of a lock-protected value causes the underlying lock of the object to be acquired
+            # before the mutation and to be released afterwards.
+            
+            object.b = 3
+        }
+
+        lthread.wait_result!()
+        print("object =", lock_protected)
+
+        # Non-sharable values that are clonable are cloned when passed to another execution context.
+        clonable = [1, 2, 3]
+
+        go {globals: {list: clonable}} do {
+            # since the value is cloned mutating the list has no impact on the variable `clonable`.
+            list.append(4)
+        }
+- name: Imports
+  id: imports
+
+  tutorials:
+  - name: Inclusion imports
+    program: |
+        manifest {}
+
+        # An inclusion import includes the content of a file in the current module.
+        # In order to be includable a file should start with the `includable-chunk` keyword:
+
+        import /tutorial-files/schema.ix
+
+        print("CONST_FROM_FILE:", CONST_FROM_FILE)
+        print("pattern from the included file:", %user)
+        
+        function_from_file()
+    other-files: 
+        /tutorial-files/schema.ix: |
+            # In order to be includable a file should start with the following keyword.
+            includable-chunk
+
+            const (
+                CONST_FROM_FILE = 1
+            )
+
+            fn function_from_file(){
+                print("hello from included file")
+            }
+
+            pattern user = {
+                name: str
+            }
 # ------------------------------------------------------------
-
-

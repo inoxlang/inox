@@ -29,11 +29,12 @@ type TutorialSeries struct {
 }
 
 type Tutorial struct {
-	Id                string   `yaml:"id" json:"id"`
-	Name              string   `yaml:"name" json:"name"`
-	Program           string   `yaml:"program" json:"program"`
-	ExpectedOutput    []string `yaml:"output" json:"output,omitempty"`
-	ExpectedLogOutput []string `yaml:"log-output" json:"logOutput,omitempty"`
+	Id                string            `yaml:"id" json:"id"`
+	Name              string            `yaml:"name" json:"name"`
+	Program           string            `yaml:"program" json:"program"`
+	OtherFiles        map[string]string `yaml:"other-files" json:"otherFiles,omitempty"`
+	ExpectedOutput    []string          `yaml:"output" json:"output,omitempty"`
+	ExpectedLogOutput []string          `yaml:"log-output" json:"logOutput,omitempty"`
 }
 
 func ListTutorials() (tutorials []Tutorial) {
