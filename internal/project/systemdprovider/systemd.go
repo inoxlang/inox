@@ -102,6 +102,10 @@ func WriteInoxUnitFile(args InoxUnitParams) (unitName string, _ error) {
 				Value: args.Homedir,
 			},
 			{
+				Name:  "Delegate",
+				Value: "yes",
+			},
+			{
 				Name: "ExecStart",
 				//inox daemon '-config=....'
 				Value: DEFAULT_INOX_PATH + " " + inoxd.DAEMON_SUBCMD + " " + inoxConfig,

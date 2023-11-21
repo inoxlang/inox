@@ -75,3 +75,9 @@ func Implements[T any](v any) bool {
 	_, ok := v.(T)
 	return ok
 }
+
+func New[T any](v T) *T {
+	ptr := new(T)
+	*ptr = v
+	return ptr
+}

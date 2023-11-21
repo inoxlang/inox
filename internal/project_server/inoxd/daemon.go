@@ -6,6 +6,7 @@ import (
 	"io"
 	"os/exec"
 
+	"github.com/containerd/cgroups/v3"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
@@ -25,6 +26,30 @@ type IndividualProjectServerConfig struct {
 
 func Inoxd(config DaemonConfig, errW, outW io.Writer) {
 	serverConfig := config.Server
+
+	mode := cgroups.Mode()
+	modeName := "unavailable"
+	switch mode {
+	case cgroups.Legacy:
+		modeName = "legacy"
+	case cgroups.Hybrid:
+		modeName = "hybrid"
+	case cgroups.Unified:
+		modeName = "unified"
+	}
+
+	fmt.Fprintf(outW, "current cgroup mode is %q\n", modeName)
+
+	if config.InoxCloud {
+		if mode != cgroups.Unified {
+			fmt.Fprintf(errW, "abort execution because current cgroup mode is not 'unified'\n")
+			return
+		}
+
+		if !createInoxCgroup(outW, errW) {
+			return
+		}
+	}
 
 	launchProjectServer(projectServerCmdParams{
 		config:         serverConfig,
