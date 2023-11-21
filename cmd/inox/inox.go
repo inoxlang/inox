@@ -94,6 +94,7 @@ func main() {
 type userProjectServerConfiguration struct {
 	MaxWebSocketPerIp      int  `json:"maxWebsocketPerIp"`
 	IgnoreInstalledBrowser bool `json:"ignoreInstalledBrowser,omitempty"`
+	ProjectsDir            bool `json:"projectsDir,omitempty"` //if not set, defaults to filepath.Join(config.USER_HOME, "inox-projects")
 }
 
 func _main(args []string, outW io.Writer, errW io.Writer) {
@@ -309,7 +310,15 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 			fmt.Fprintln(errW, err)
 		}
 
-		unitName, err := systemdprovider.WriteInoxUnitFile(username, homedir, uid, outW)
+		inoxCloud := slices.Contains(mainSubCommandArgs, "--inox-cloud")
+
+		unitName, err := systemdprovider.WriteInoxUnitFile(systemdprovider.InoxUnitParams{
+			Username:  username,
+			Homedir:   homedir,
+			UID:       uid,
+			Log:       outW,
+			InoxCloud: inoxCloud,
+		})
 		alreadyExists := errors.Is(err, systemdprovider.ErrUnitFileExists)
 		if err != nil {
 			fmt.Fprintln(outW, err)
@@ -582,6 +591,41 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 		if err := project_server.StartLSPServer(ctx, opts); err != nil {
 			fmt.Fprintln(errW, "failed to start LSP server:", err)
 		}
+	case inoxd.DAEMON_SUBCMD:
+		//read & check arguments
+		lspFlags := flag.NewFlagSet(inoxd.DAEMON_SUBCMD, flag.ExitOnError)
+		var configOrConfigFile string
+
+		lspFlags.StringVar(&configOrConfigFile, "config", "", "JSON configuration or JSON file")
+
+		err := lspFlags.Parse(mainSubCommandArgs)
+		if err != nil {
+			fmt.Fprintln(errW, "daemon:", err)
+			return
+		}
+
+		var daemonConfig inoxd.DaemonConfig
+
+		configOrConfigFile = strings.TrimSpace(configOrConfigFile)
+		if configOrConfigFile != "" {
+			if configOrConfigFile[0] == '{' {
+				err := json.Unmarshal([]byte(configOrConfigFile), &daemonConfig)
+				if err != nil {
+					fmt.Fprintln(errW, "daemon: failed to unmarshal configuration argument", err)
+				}
+			} else {
+				content, err := os.ReadFile(configOrConfigFile)
+				if err != nil {
+					fmt.Fprintln(errW, "daemon: failed to read configuration file", err)
+				}
+				err = json.Unmarshal(content, &daemonConfig)
+				if err != nil {
+					fmt.Fprintln(errW, "daemon: failed to unmarshal configuration file", err)
+				}
+			}
+		}
+
+		inoxd.Inoxd(daemonConfig)
 	case inoxprocess.CONTROLLED_SUBCMD: //the current process is controlled by a control server
 		//read & parse arguments
 

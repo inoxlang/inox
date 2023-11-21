@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/coreos/go-systemd/v22/unit"
+	"github.com/inoxlang/inox/internal/project_server/inoxd"
 )
 
 const (
@@ -33,9 +34,17 @@ var (
 	SYSTEMCTL_ALLOWED_LOCATIONS = []string{"/usr/bin/systemctl"}
 )
 
+type InoxUnitParams struct {
+	Username, Homedir string
+	UID               int
+	Log               io.Writer
+
+	InoxCloud bool
+}
+
 // WriteInoxUnitFile writes the unit file for the inox service at INOX_SERVICE_UNIT_PATH, if the file already exists
 // ErrUnitFileExists is returned and unitName is set.
-func WriteInoxUnitFile(username, homedir string, uid int, out io.Writer) (unitName string, _ error) {
+func WriteInoxUnitFile(args InoxUnitParams) (unitName string, _ error) {
 	path := INOX_SERVICE_UNIT_PATH
 	unitName = strings.TrimSuffix(filepath.Base(path), ".service")
 
@@ -75,6 +84,8 @@ func WriteInoxUnitFile(username, homedir string, uid int, out io.Writer) (unitNa
 		},
 	}
 
+	inoxConfig := fmt.Sprintf(`'-config={"inoxCloud":%t,"serverConfig":{"maxWebsocketPerIp":2}}'`, args.InoxCloud)
+
 	serviceSection := unit.UnitSection{
 		Section: "Service",
 		Entries: []*unit.UnitEntry{
@@ -84,15 +95,16 @@ func WriteInoxUnitFile(username, homedir string, uid int, out io.Writer) (unitNa
 			},
 			{
 				Name:  "User",
-				Value: username,
+				Value: args.Username,
 			},
 			{
 				Name:  "WorkingDirectory",
-				Value: homedir,
+				Value: args.Homedir,
 			},
 			{
-				Name:  "ExecStart",
-				Value: fmt.Sprintf(`%s project-server '-config={"maxWebsocketPerIp":2}'`, DEFAULT_INOX_PATH),
+				Name: "ExecStart",
+				//inox daemon '-config=....'
+				Value: DEFAULT_INOX_PATH + " " + inoxd.DAEMON_SUBCMD + " " + inoxConfig,
 			},
 		},
 	}
@@ -117,7 +129,7 @@ func WriteInoxUnitFile(username, homedir string, uid int, out io.Writer) (unitNa
 		return "", err
 	}
 
-	fmt.Fprintln(out, "\nwrite "+path+":")
+	fmt.Fprintln(args.Log, "\nwrite "+path+":")
 
 	return unitName, os.WriteFile(path, serialized, INOX_SERVICE_UNIT_FPERMS)
 }
