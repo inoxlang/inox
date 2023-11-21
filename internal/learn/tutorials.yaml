@@ -84,7 +84,7 @@
     - "print is a native function"
     - "add(1, 2) = 3"
 
-  - name: "'Must' calls"
+  - name: "'Must' Calls"
     id: must-call-basics
     program: |
       manifest {}
@@ -121,7 +121,7 @@
     - "decoding error: (hex.InvalidByteError)encoding/hex: invalid byte: U+002E '.'"
     - "error returned by `f`: (*errors.errorString)there is an issue !"
 
-  - name: Binary expressions
+  - name: Binary Expressions
     id: bin-expr-basics
     program: |
       manifest {}
@@ -244,6 +244,106 @@
 
     - "age 30"
     - "name Tom"
+  - name: Paths and Path patterns
+    id: paths-path-patterns
+    program: |
+        manifest {}
+
+        # ====== paths ======
+
+        absolute_filepath = /file.txt
+        relative_filepath1 = ./file.txt
+        relative_filepath2 = ../file.txt
+
+        # directory paths end with a slash.
+        absolute_dirpath = /dir/
+
+        path = absolute_dirpath.join(./file.txt)
+        print("(/dir/).join(./file.txt):", path)
+
+        # if a path contains spaces or delimiters such as `[` or `]` it should be quoted:
+        quoted_path = /`[file].txt`
+
+        # ====== path patterns ======
+
+        # prefix path patterns end with /...
+        prefix_path_pattern = %/...
+
+        print "\n(/ match %/...):" (/ match %/...)
+        print "(/file.txt match %/...):" (/file.txt match %/...)
+        print "(/dir/file.txt match %/...):" (/dir/file.txt match %/...)
+        print "(/file.txt match %/dir/...):" (/file.txt match %/dir/...)
+
+        # path patterns that do not end with /... are glob path patterns.
+        glob_path_pattern = %/*.json
+
+        print "\n(/ match %/*.json):" (/ match %/*.json)
+        print "(/file.json match %/*.json):" (/file.json match %/*.json)
+        print "(/dir/file.json match %/*.json):" (/dir/file.json match %/*.json)
+
+        # You can learn more about path patterns in the language reference: 
+        # https://github.com/inoxlang/inox/blob/master/docs/language-reference.md#path-patterns.
+  - name: URLs and URLs patterns
+    id: urls-url-patterns
+    program: |
+        manifest {}
+
+        # ====== URLs and Hosts ======
+
+        # host literals
+        https_host = https://example.com
+        websocket_host = wss://example.com
+        schemeless_host = ://example.com
+
+        # url literals
+        url1 = https://example/
+        url2 = https://example/index.html
+
+        # ====== URL patterns ======
+
+        # A URL pattern that ends with `/...` is a prefix URL pattern, it matches any URL that contains its prefix.
+
+        print(
+            "(https://example.com/ match %https://example.com/data/...):" 
+            (https://example.com/ match %https://example.com/data/...)
+        )
+
+        print(
+            "(https://example.com/data/ match %https://example.com/data/...):" 
+            (https://example.com/data/ match %https://example.com/data/...)
+        )
+
+        print(
+            "(https://example.com/data/file.json match %https://example.com/data/...):", 
+            (https://example.com/data/file.json match %https://example.com/data/...)
+        )
+
+        # ====== Host patterns ======
+
+        host_pattern = %http://**.com
+
+        print(
+            "\n(https://example.com match %https://**.com):" 
+            (https://example.com match %https://**.com)
+        )
+
+        print(
+            "(https://subdomain.example.com match %https://**.com):" 
+            (https://subdomain.example.com match %https://**.com)
+        )
+
+        print(
+            "(https://example.com match %https://*.example.com):" 
+            (https://example.com match %https://*.example.com)
+        )
+
+        print(
+            "(https://subdomain.example.com match %https://*.example.com):" 
+            (https://subdomain.example.com match %https://*.example.com)
+        )
+
+        # You can learn more about URL patterns and host patterns in the language reference: 
+        # https://github.com/inoxlang/inox/blob/master/docs/language-reference.md#host-and-url-patterns.
   - name: Permissions
     id: perm-basics
     program: |
@@ -607,7 +707,7 @@
   id: imports
 
   tutorials:
-  - name: Inclusion imports
+  - name: Inclusion Imports
     id: incl-imports
     program: |
         manifest {}
@@ -639,7 +739,7 @@
             pattern user = {
                 name: str
             }
-  - name: Module imports
+  - name: Module Imports
     id: module-imports
     program: |
         manifest {
@@ -697,7 +797,7 @@
   id: database
 
   tutorials:
-  - name: Database definition
+  - name: Database Definition
     id: db-definition
     program: |
         # Inox comes with an embedded database engine.
