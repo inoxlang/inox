@@ -543,6 +543,9 @@ func registerHandlers(server *lsp.Server, serverConfig LSPServerConfiguration) {
 				lastRangeStart        int32
 				lastRangeExlusiveEnd  int32
 			)
+			//TODO: minimize number and size of allocations.
+
+			nextContent := []rune(utils.BytesAsString(currentContent))
 
 			for _, change := range req.ContentChanges {
 				startLine, startColumn := getLineColumn(change.Range.Start)
@@ -566,12 +569,12 @@ func registerHandlers(server *lsp.Server, serverConfig LSPServerConfiguration) {
 				lastRangeExlusiveEnd = chunk.GetLineColumnPosition(endLine, endColumn)
 				rangeLength := lastRangeExlusiveEnd - lastRangeStart
 
-				afterRange := slices.Clone(currentContent[lastRangeStart+rangeLength:])
-				currentContent = append(currentContent[:lastRangeStart], lastReplacementStirng...)
-				currentContent = append(currentContent, afterRange...)
+				afterRange := slices.Clone(nextContent[lastRangeStart+rangeLength:])
+				nextContent = append(nextContent[:lastRangeStart], []rune(lastReplacementStirng)...)
+				nextContent = append(nextContent, afterRange...)
 			}
 
-			fullDocumentText = string(currentContent)
+			fullDocumentText = string(nextContent)
 
 			textEdit, ok := getAutoEditForChange(fullDocumentText, lastReplacementStirng, lastRangeStart, lastRangeExlusiveEnd)
 
