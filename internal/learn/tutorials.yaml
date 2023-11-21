@@ -244,6 +244,51 @@
 
     - "age 30"
     - "name Tom"
+  - name: Objects
+    id: objects
+    program: |
+        manifest {}
+
+        # An object is a data structure containing properties, each property has a name and a value.
+        object1 = {  
+            a: 1
+            "b": 2
+            c: 0, d: 100ms
+        }
+
+        a = object1.a
+        print("a:", a)
+
+        # Implicit-key properties are properties that can be set without specifying a name:
+        object2 = {
+            1
+            []
+        }
+
+        print(object2)
+
+        # Properties with an implicit key can be accessed thanks to an index expression,
+        # the index should always be an integer.
+        object3 = {1}
+        print("object3[0]:", object3[0])
+  - name: Lists
+    id: lists
+    program: |
+        manifest {}
+
+        # A list is a sequence of elements. You can add elements to it and change the
+        # value of an element at a given position.
+
+        list1 = []
+        list1.append(1)
+
+        first_elem = list1[0] # index expression
+        list1[0] = 2
+
+        list2 = [1, 2, 3]
+
+        # the following slice expression creates a new list containing 1 and 2 
+        print("list2[0:2]:", list2[0:2])
   - name: Paths and Path patterns
     id: paths-path-patterns
     program: |
@@ -344,6 +389,83 @@
 
         # You can learn more about URL patterns and host patterns in the language reference: 
         # https://github.com/inoxlang/inox/blob/master/docs/language-reference.md#host-and-url-patterns.
+
+  - name: Named Patterns and Typing
+    id: pattern-decl
+    program: |
+        manifest {}
+
+        # In Inox a pattern is a runtime value that matches values of a given kind and shape.
+        # Besides the pattern literals, there are other kinds of patterns in Inox such as object patterns: `%{a: int}`.
+        # Even though patterns are created at runtime, they can act as types:
+
+        pattern small_int = int(0..10)
+
+        # small_int is created at runtime but it can be used in type annotations:
+        var n small_int = 0
+
+        fn add(a small_int, b small_int){
+            return (a + b)
+        }
+
+        add(1, 2)
+
+        # uncomment to see the error.
+        # add(1, 2000)
+
+        # Creating a named pattern `user` does not prevent you to name a variable `user`:
+        pattern user = {
+            name: str
+        }
+
+        user = {name: "foo"}
+
+        # true
+        (user match user)
+
+        # alternative syntax
+        (user match %user)
+  - name: Object Patterns
+    id: object-patterns
+    program: |
+        manifest {}
+
+        # object pattern with a single property
+        %{
+            name: str
+        }
+
+        # same pattern stored in a named pattern ('%' not required)
+        pattern object_pattern = {
+            name: str
+        }
+
+        # ⚠️ By default object patterns are inexact: they accept additional properties.
+        ({name: "John"} match {}) # true
+
+        pattern user = {
+            name: str
+        }
+
+        # true
+        ({name: "John", additional_prop: 0} match user)
+  - name:  List Patterns
+    id: list-patterns
+    program: |
+        manifest {}
+
+        # list pattern matching any list containing (only) integers.
+        pattern int_list = []int
+
+        print `([] match []int):` ([] match []int)
+        print `([1] match []int):` ([1] match []int)
+        print `([1, "a"] match []int):` ([1, "a"] match []int)
+
+        # list pattern matching any list of length 2 having an integer as first element 
+        # and a string-like value as second element.
+        pattern pair = [int, str]
+
+        print `\n([1, "a"] match [int, str]):` ([1, "a"] match [int, str])
   - name: Permissions
     id: perm-basics
     program: |
