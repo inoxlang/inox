@@ -625,7 +625,9 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 			}
 		}
 
-		inoxd.Inoxd(daemonConfig)
+		daemonConfig.InoxBinaryPath = systemdprovider.DEFAULT_INOX_PATH
+
+		inoxd.Inoxd(daemonConfig, errW, outW)
 	case inoxprocess.CONTROLLED_SUBCMD: //the current process is controlled by a control server
 		//read & parse arguments
 
