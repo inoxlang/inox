@@ -5,6 +5,7 @@ package inoxprocess
 import (
 	"errors"
 	"io/fs"
+	"os"
 	"os/exec"
 	"strings"
 
@@ -15,8 +16,53 @@ import (
 	"github.com/shoenig/go-landlock"
 )
 
+var (
+	stdioPaths []*landlock.Path
+)
+
+func init() {
+	//initialize stdioPaths.
+	//directly using landlock.Stdio() causes locking to return EBADFD when stdin is not available.
+
+	paths := []*landlock.Path{
+		landlock.File("/dev/full", "rw"),
+		landlock.File("/dev/zero", "r"),
+		landlock.File("/dev/fd", "r"),
+		landlock.File("/dev/stdin", "rw"),
+		landlock.File("/dev/stdout", "rw"),
+		landlock.File("/dev/urandom", "r"),
+		landlock.Dir("/dev/log", "w"),
+		landlock.Dir("/usr/share/locale", "r"),
+		landlock.File("/proc/self/cmdline", "r"),
+		landlock.File("/usr/share/zoneinfo", "r"),
+		landlock.File("/usr/share/common-licenses", "r"),
+		landlock.File("/proc/sys/kernel/ngroups_max", "r"),
+		landlock.File("/proc/sys/kernel/cap_last_cap", "r"),
+		landlock.File("/proc/sys/vm/overcommit_memory", "r"),
+	}
+
+	for _, p := range paths {
+		var fsPath string
+		var colonCount = 0
+		s := p.String()
+
+		for i, c := range s {
+			if c == ':' {
+				colonCount++
+			}
+			if colonCount == 3 {
+				fsPath = s[i+1:]
+			}
+		}
+		if _, err := os.Stat(fsPath); err == nil {
+			stdioPaths = append(stdioPaths, p)
+		}
+	}
+}
+
 func restrictProcessAccess(grantedPerms, forbiddenPerms []core.Permission, fls *fs_ns.OsFilesystem, additionalPaths []*landlock.Path) {
-	allowedPaths := []*landlock.Path{landlock.VMInfo(), landlock.Stdio(), landlock.Shared()}
+	allowedPaths := []*landlock.Path{landlock.VMInfo(), landlock.Shared()}
+	allowedPaths = append(allowedPaths, stdioPaths...)
 	allowedPaths = append(allowedPaths, additionalPaths...)
 
 	var allowDNS, allowCerts bool
