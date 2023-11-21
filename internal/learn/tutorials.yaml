@@ -693,4 +693,76 @@
             # the module arguments are stored in the `mod-args` variable.
 
             return (mod-args.first_operand + mod-args.second_operand)
+- name: Database
+  id: database
+
+  tutorials:
+  - name: Database definition
+    id: db-definition
+    program: |
+        # Inox comes with an embedded database engine.
+        # Databases are defined in the manifest:
+
+        manifest {
+            permissions: {
+                read: %/tutorial-files/databases/main0/...
+                write: %/tutorial-files/databases/main0/...
+            }
+
+            databases: {
+                # define a local database named 'main0' that persists data in /tutorial-files/databases/main0/.
+                main0: {
+                    resource: ldb://main0
+                    resolution-data: /tutorial-files/databases/main0/
+                }
+            }
+        }
+
+        # the `dbs` global variable holds references to the defined databases.
+        db = dbs.main0
+        print("schema:", db.schema)
+  - name: Database Schema
+    id: db-schema
+    program: |
+        # Inox comes with an embedded database engine.
+        # Databases are defined in the manifest:
+
+        manifest {
+            permissions: {
+                read: %/tutorial-files/databases/main1/...
+                write: %/tutorial-files/databases/main1/...
+            }
+
+            databases: {
+                # define a local database named 'main1' that persists data in /tutorial-files/databases/main1/.
+                main1: {
+                    resource: ldb://main1
+                    resolution-data: /tutorial-files/databases/main1/
+
+                    expected-schema-update: true
+                }
+            }
+        }
+
+        # The schema of an Inox Database is an object pattern and can
+        # be set by calling the `update_schema` method on the database.
+        # ⚠️ Calling `update_schema` requires the following property in the database description: `expected-schema-update: true`.
+
+        db = dbs.main1
+
+        pattern user = {
+            name: str
+        }
+
+        print("schema before update:", db.schema)
+
+        db.update_schema(%{
+            users: Set(user, #url)
+        }, {
+            inclusions: :{
+                %/users: []
+            }
+        })
+
+        print("schema after update:", db.schema)
 # ------------------------------------------------------------
