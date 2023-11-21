@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"os/user"
+	"runtime/debug"
 	"slices"
 	"sort"
 	"strconv"
@@ -284,7 +285,18 @@ func (sh *shell) printPromptAndInput(inputGotReplaced bool, completions []string
 	buff.WriteString(prompt)
 
 	if sh.config.PrintingConfig.Colorized() {
-		core.PrintColorizedChunk(buff, chunk, sh.input, sh.config.IsLight(), sh.config.defaultFgColorSequence)
+		func() {
+			defer func() {
+				e := recover()
+				if e != nil {
+					err := utils.ConvertPanicValueToError(e)
+					buff.Reset()
+					buff.Write([]byte(fmt.Sprintf("%s: %s\r\n", err.Error(), debug.Stack())))
+				}
+			}()
+
+			core.PrintColorizedChunk(buff, chunk, sh.input, sh.config.IsLight(), sh.config.defaultFgColorSequence)
+		}()
 	} else {
 		buff.Write(utils.StringAsBytes(string(sh.input)))
 	}
