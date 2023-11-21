@@ -152,6 +152,8 @@ func format(chunk *parse.ParsedChunk, options defines.FormattingOptions) (result
 				}
 			case parse.ARROW:
 				replaceSurroundingSpaces(token.Span, 1, 1)
+			case parse.EQUAL:
+				replaceSurroundingSpaces(token.Span, 1, 1)
 			}
 		}
 		return parse.ContinueTraversal, nil

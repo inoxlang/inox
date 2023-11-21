@@ -47,7 +47,7 @@ func TestFormat(t *testing.T) {
 			},
 		},
 
-		//properties
+		//properties of a top level object-like literal
 		{
 			{
 				"manifest {}",
@@ -124,7 +124,106 @@ func TestFormat(t *testing.T) {
 			},
 		},
 
-		//colon
+		//properties of a an object-like literal in a function
+		{
+			{
+				"manifest {}",
+				"fn(){",
+				"\ta = {",
+				"\tprop: 1",
+				"\t}",
+				"}",
+			},
+			{
+				"manifest {}",
+				"fn(){",
+				"\ta = {",
+				"\t\tprop: 1",
+				"\t}",
+				"}",
+			},
+		},
+		{
+			{
+				"manifest {}",
+				"fn(){",
+				"\ta = #{",
+				"\tprop: 1",
+				"\t}",
+				"}",
+			},
+			{
+				"manifest {}",
+				"fn(){",
+				"\ta = #{",
+				"\t\tprop: 1",
+				"\t}",
+				"}",
+			},
+		},
+
+		{
+			{
+				"manifest {}",
+				"fn(){",
+				"\ta = %{",
+				"\tprop: 1",
+				"\t}",
+				"}",
+			},
+			{
+				"manifest {}",
+				"fn(){",
+				"\ta = %{",
+				"\t\tprop: 1",
+				"\t}",
+				"}",
+			},
+		},
+
+		{
+			{
+				"manifest {}",
+				"fn(){",
+				"\ta = {",
+				"\t1",
+				"\t}",
+				"}",
+			},
+			{
+				"manifest {}",
+				"fn(){",
+				"\ta = {",
+				"\t\t1",
+				"\t}",
+				"}",
+			},
+		},
+
+		{
+			{
+				"manifest {}",
+				"fn(){",
+				"\ta = {",
+				"\tinner: {",
+				"\tprop: {}",
+				"\t}",
+				"\t}",
+				"}",
+			},
+			{
+				"manifest {}",
+				"fn(){",
+				"\ta = {",
+				"\t\tinner: {",
+				"\t\t\tprop: {}",
+				"\t\t}",
+				"\t}",
+				"}",
+			},
+		},
+
+		//colon in a top level object-like literal
 		{
 			{
 				"manifest {}",
@@ -282,6 +381,118 @@ func TestFormat(t *testing.T) {
 				"match 1 {",
 				"\tdefaultcase {}",
 				"}",
+			},
+		},
+
+		//pattern definition
+		{
+			{
+				"manifest {}",
+				"\tpattern p = {",
+				"}",
+			},
+			{
+				"manifest {}",
+				"pattern p = {",
+				"}",
+			},
+		},
+		{
+			{
+				"manifest {}",
+				"pattern p = {",
+				"}",
+			},
+			{
+				"manifest {}",
+				"pattern p = {",
+				"}",
+			},
+		},
+
+		//pattern namespace definition
+		{
+			{
+				"manifest {}",
+				"\tpnamespace ns. = {",
+				"}",
+			},
+			{
+				"manifest {}",
+				"pnamespace ns. = {",
+				"}",
+			},
+		},
+		{
+			{
+				"manifest {}",
+				"pnamespace ns. = {",
+				"}",
+			},
+			{
+				"manifest {}",
+				"pnamespace ns. = {",
+				"}",
+			},
+		},
+
+		//function definition
+		{
+			{
+				"manifest {}",
+				"\tfn f(){",
+				"}",
+			},
+			{
+				"manifest {}",
+				"fn f(){",
+				"}",
+			},
+		},
+		{
+			{
+				"manifest {}",
+				"fn f(){",
+				"}",
+			},
+			{
+				"manifest {}",
+				"fn f(){",
+				"}",
+			},
+		},
+
+		//assignment
+
+		{
+			{
+				"manifest {}",
+				"a=1",
+			},
+			{
+				"manifest {}",
+				"a = 1",
+			},
+		},
+
+		{
+			{
+				"manifest {}",
+				"a= 1",
+			},
+			{
+				"manifest {}",
+				"a = 1",
+			},
+		},
+		{
+			{
+				"manifest {}",
+				"a =1",
+			},
+			{
+				"manifest {}",
+				"a = 1",
 			},
 		},
 	}
