@@ -280,6 +280,15 @@ func registerDebugMethodHandlers(
 		return debugSession, nil
 	}
 
+	removeDebugSession := func(debugSession *DebugSession, session *jsonrpc.Session) {
+		sessionData := getLockedSessionData(session)
+		debugSessions := sessionData.debugSessions
+		sessionData.lock.Unlock()
+		if debugSessions != nil {
+			debugSessions.RemoveSession(debugSession)
+		}
+	}
+
 	server.OnCustom(jsonrpc.MethodInfo{
 		Name: "debug/initialize",
 		NewRequest: func() interface{} {
@@ -418,6 +427,7 @@ func registerDebugMethodHandlers(
 
 			fls, ok := getLspFilesystem(session)
 			if !ok {
+				removeDebugSession(debugSession, session)
 				return nil, errors.New(string(FsNoFilesystem))
 			}
 
@@ -439,6 +449,8 @@ func registerDebugMethodHandlers(
 			var launchArgs DebugLaunchArgs
 			err = json.Unmarshal(utils.Must(dapRequest.Arguments.MarshalJSON()), &launchArgs)
 			if err != nil {
+				removeDebugSession(debugSession, session)
+
 				return nil, jsonrpc.ResponseError{
 					Code:    jsonrpc.InternalError.Code,
 					Message: err.Error(),
@@ -447,6 +459,8 @@ func registerDebugMethodHandlers(
 
 			if launchArgs.Program == "" {
 				if err != nil {
+					removeDebugSession(debugSession, session)
+
 					return dap.LaunchResponse{
 						Response: dap.Response{
 							RequestSeq: dapRequest.Seq,
@@ -493,16 +507,7 @@ func registerDebugMethodHandlers(
 					}
 				}()
 
-				defer func() {
-					//remove the debug session
-
-					sessionData := getLockedSessionData(session)
-					debugSessions := sessionData.debugSessions
-					sessionData.lock.Unlock()
-					if debugSessions != nil {
-						debugSessions.RemoveSession(debugSession)
-					}
-				}()
+				defer removeDebugSession(debugSession, session)
 
 				select {
 				case <-session.Context().Done():
@@ -518,6 +523,8 @@ func registerDebugMethodHandlers(
 
 			err = <-debugSession.programPreparedOrFailedToChan
 			if err != nil {
+				removeDebugSession(debugSession, session)
+
 				return dap.LaunchResponse{
 					Response: dap.Response{
 						RequestSeq: dapRequest.Seq,
@@ -1520,15 +1527,7 @@ func registerDebugMethodHandlers(
 					},
 				}
 
-				defer func() {
-					//remove session
-					sessionData := getLockedSessionData(session)
-					debugSessions := sessionData.debugSessions
-					sessionData.lock.Unlock()
-					if debugSessions != nil {
-						debugSessions.RemoveSession(debugSession)
-					}
-				}()
+				defer removeDebugSession(debugSession, session)
 
 				select {
 				case <-doneChan:
