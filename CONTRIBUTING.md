@@ -54,6 +54,20 @@ go test -p=1 -count=1 ./internal/core -short -race -timeout=100s -run=TestXXXX -
 go vet ./...
 ```
 
+## Check Potentiel Nil Panics
+
+Install https://github.com/uber-go/nilaway.
+
+```
+go install go.uber.org/nilaway/cmd/nilaway@latest
+```
+
+Run the checks:
+
+```
+nilaway ./...
+```
+
 ## List Packages & Their CGo files
 
 ```
