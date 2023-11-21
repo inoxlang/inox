@@ -2564,6 +2564,48 @@ func testParse(
 			}, n)
 		})
 
+		t.Run("unterminated quoted path literal: missing closing backtick + followed by EOF", func(t *testing.T) {
+			n, err := parseChunk(t, "/`[]", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 4}, nil, false},
+				Statements: []Node{
+					&AbsolutePathLiteral{
+						NodeBase: NodeBase{
+							NodeSpan{0, 4},
+							&ParsingError{UnspecifiedParsingError, UNTERMINATED_QUOTED_PATH_LIT_MISSING_CLOSING_BACTICK},
+							false,
+						},
+						Raw:   "/`[]",
+						Value: "/[]",
+					},
+				},
+			}, n)
+		})
+
+		t.Run("unterminated quoted path literal: missing closing backtick + followed by linefeed", func(t *testing.T) {
+			n, err := parseChunk(t, "/`[]\na", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 6}, nil, false},
+				Statements: []Node{
+					&AbsolutePathLiteral{
+						NodeBase: NodeBase{
+							NodeSpan{0, 4},
+							&ParsingError{UnspecifiedParsingError, UNTERMINATED_QUOTED_PATH_LIT_MISSING_CLOSING_BACTICK},
+							false,
+						},
+						Raw:   "/`[]",
+						Value: "/[]",
+					},
+					&IdentifierLiteral{
+						NodeBase: NodeBase{NodeSpan{5, 6}, nil, false},
+						Name:     "a",
+					},
+				},
+			}, n)
+		})
+
 	})
 
 	t.Run("path pattern", func(t *testing.T) {
@@ -2661,6 +2703,48 @@ func testParse(
 			}, n)
 		})
 
+		t.Run("unterminated quoted path pattern literal: missing closing backtick + followed by EOF", func(t *testing.T) {
+			n, err := parseChunk(t, "%/`[a-z]", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 8}, nil, false},
+				Statements: []Node{
+					&AbsolutePathPatternLiteral{
+						NodeBase: NodeBase{
+							NodeSpan{0, 8},
+							&ParsingError{UnspecifiedParsingError, UNTERMINATED_QUOTED_PATH_PATTERN_LIT_MISSING_CLOSING_BACTICK},
+							false,
+						},
+						Raw:   "%/`[a-z]",
+						Value: "/[a-z]",
+					},
+				},
+			}, n)
+		})
+
+		t.Run("unterminated quoted path pattern literal: missing closing backtick + followed by line feed", func(t *testing.T) {
+			n, err := parseChunk(t, "%/`[a-z]\na", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 10}, nil, false},
+				Statements: []Node{
+					&AbsolutePathPatternLiteral{
+						NodeBase: NodeBase{
+							NodeSpan{0, 8},
+							&ParsingError{UnspecifiedParsingError, UNTERMINATED_QUOTED_PATH_PATTERN_LIT_MISSING_CLOSING_BACTICK},
+							false,
+						},
+						Raw:   "%/`[a-z]",
+						Value: "/[a-z]",
+					},
+					&IdentifierLiteral{
+						NodeBase: NodeBase{NodeSpan{9, 10}, nil, false},
+						Name:     "a",
+					},
+				},
+			}, n)
+		})
+
 	})
 
 	t.Run("named-segment path pattern literal  ", func(t *testing.T) {
@@ -2692,6 +2776,39 @@ func testParse(
 						},
 						Raw:         "%/home/{:username}",
 						StringValue: "%/home/{:username}",
+					},
+				},
+			}, n)
+		})
+
+		t.Run("quoting is not suppported yet", func(t *testing.T) {
+			n, err := parseChunk(t, "%/`home/{:username}`", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 20}, nil, false},
+				Statements: []Node{
+					&NamedSegmentPathPatternLiteral{
+						NodeBase: NodeBase{
+							NodeSpan{0, 20},
+							&ParsingError{UnspecifiedParsingError, QUOTED_NAMED_SEGMENT_PATH_PATTERNS_ARE_NOT_SUPPORTED_YET},
+							false,
+						},
+						Slices: []Node{
+							&PathPatternSlice{
+								NodeBase: NodeBase{NodeSpan{1, 8}, nil, false},
+								Value:    "/`home/",
+							},
+							&NamedPathSegment{
+								NodeBase: NodeBase{NodeSpan{9, 18}, nil, false},
+								Name:     "username",
+							},
+							&PathPatternSlice{
+								NodeBase: NodeBase{NodeSpan{19, 20}, nil, false},
+								Value:    "`",
+							},
+						},
+						Raw:         "",
+						StringValue: "",
 					},
 				},
 			}, n)
@@ -2794,6 +2911,36 @@ func testParse(
 			}, n)
 		})
 
+		t.Run("named segments are not allowed", func(t *testing.T) {
+			n, err := parseChunk(t, "%/`home/{$username}`", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 20}, nil, false},
+				Statements: []Node{
+					&PathPatternExpression{
+						NodeBase: NodeBase{
+							NodeSpan{0, 20},
+							&ParsingError{UnspecifiedParsingError, QUOTED_PATH_PATTERN_EXPRS_ARE_NOT_SUPPORTED_YET},
+							false,
+						},
+						Slices: []Node{
+							&PathPatternSlice{
+								NodeBase: NodeBase{NodeSpan{1, 8}, nil, false},
+								Value:    "/`home/",
+							},
+							&Variable{
+								NodeBase: NodeBase{NodeSpan{9, 18}, nil, false},
+								Name:     "username",
+							},
+							&PathPatternSlice{
+								NodeBase: NodeBase{NodeSpan{19, 20}, nil, false},
+								Value:    "`",
+							},
+						},
+					},
+				},
+			}, n)
+		})
 	})
 
 	t.Run("path expression", func(t *testing.T) {

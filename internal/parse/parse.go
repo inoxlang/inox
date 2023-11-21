@@ -866,7 +866,7 @@ func (p *parser) parsePathExpressionSlices(start int32, exclEnd int32) []Node {
 							slices = append(slices, &UnknownNode{
 								NodeBase: NodeBase{
 									NodeSpan{sliceStart, exclEnd},
-									&ParsingError{UnspecifiedParsingError, INVALID_NAMED_SEGMENT_COLON_SHOULD_BE_FOLLOWED_BY_A_NAME},
+									&ParsingError{UnspecifiedParsingError, INVALID_NAMED_SEGMENT_PATH_PATTERN_COLON_SHOULD_BE_FOLLOWED_BY_A_NAME},
 									false,
 								},
 							})
@@ -879,7 +879,7 @@ func (p *parser) parsePathExpressionSlices(start int32, exclEnd int32) []Node {
 					if ok {
 						var err *ParsingError
 						if len(interpolation) == 1 {
-							err = &ParsingError{UnspecifiedParsingError, INVALID_NAMED_SEGMENT_COLON_SHOULD_BE_FOLLOWED_BY_A_NAME}
+							err = &ParsingError{UnspecifiedParsingError, INVALID_NAMED_SEGMENT_PATH_PATTERN_COLON_SHOULD_BE_FOLLOWED_BY_A_NAME}
 						}
 						slices = append(slices, &NamedPathSegment{
 							NodeBase: NodeBase{
@@ -1565,7 +1565,7 @@ func (p *parser) parsePathLikeExpression(isPattern bool) Node {
 
 	if isQuoted {
 		p.i++
-		for p.i < p.len && p.s[p.i] != '`' {
+		for p.i < p.len && p.s[p.i] != '\n' && p.s[p.i] != '`' {
 			//no escape
 			p.i++
 		}
@@ -1595,6 +1595,7 @@ func (p *parser) parsePathLikeExpression(isPattern bool) Node {
 	raw := string(runes)
 
 	_path := p.s[pathStart:p.i]
+	missingClosingBacktick := isQuoted && len(_path) != 0 && _path[len(_path)-1] != '`'
 
 	var clean []rune
 	for _, r := range _path {
@@ -1611,16 +1612,16 @@ func (p *parser) parsePathLikeExpression(isPattern bool) Node {
 
 	slices := p.parsePathExpressionSlices(pathStart, p.i)
 	hasInterpolationsOrNamedSegments := len32(slices) > 1
-	hasGlobbing := false
+	hasGlobWildcard := false
 
-search_for_globbing:
+search_for_glob_wildcard:
 	for _, slice := range slices {
 		if pathSlice, ok := slice.(*PathSlice); ok {
 
 			for i, e := range pathSlice.Value {
 				if (e == '[' || e == '*' || e == '?') && utils.CountPrevBackslashes(p.s, start+int32(i))%2 == 0 {
-					hasGlobbing = true
-					break search_for_globbing
+					hasGlobWildcard = true
+					break search_for_glob_wildcard
 				}
 			}
 		}
@@ -1632,7 +1633,7 @@ search_for_globbing:
 		base.Err = &ParsingError{UnspecifiedParsingError, fmtSlashDotDotDotCanOnlyBePresentAtEndOfPathPattern(value)}
 	}
 
-	if !isPattern && isPrefixPattern && hasGlobbing {
+	if !isPattern && isPrefixPattern && hasGlobWildcard {
 		base.Err = &ParsingError{UnspecifiedParsingError, fmtPrefixPattCannotContainGlobbingPattern(value)}
 		return &InvalidPathPattern{
 			NodeBase: base,
@@ -1643,6 +1644,10 @@ search_for_globbing:
 	if isPattern {
 
 		if !hasInterpolationsOrNamedSegments {
+			if missingClosingBacktick && base.Err == nil {
+				base.Err = &ParsingError{UnspecifiedParsingError, UNTERMINATED_QUOTED_PATH_PATTERN_LIT_MISSING_CLOSING_BACTICK}
+			}
+
 			if isAbsolute {
 				return &AbsolutePathPatternLiteral{
 					NodeBase: base,
@@ -1707,8 +1712,13 @@ search_for_globbing:
 					}
 					if j < len(slices)-1 {
 						next := slices[j+1].(*PathPatternSlice).Value
+
 						if next[0] != '/' {
-							base.Err = &ParsingError{UnspecifiedParsingError, INVALID_PATH_PATT_NAMED_SEGMENTS}
+							if isQuoted {
+								base.Err = &ParsingError{UnspecifiedParsingError, QUOTED_NAMED_SEGMENT_PATH_PATTERNS_ARE_NOT_SUPPORTED_YET}
+							} else {
+								base.Err = &ParsingError{UnspecifiedParsingError, INVALID_PATH_PATT_NAMED_SEGMENTS}
+							}
 
 							return &NamedSegmentPathPatternLiteral{
 								NodeBase: base,
@@ -1719,6 +1729,10 @@ search_for_globbing:
 				}
 			}
 
+			if isQuoted {
+				base.Err = &ParsingError{UnspecifiedParsingError, QUOTED_NAMED_SEGMENT_PATH_PATTERNS_ARE_NOT_SUPPORTED_YET}
+			}
+
 			return &NamedSegmentPathPatternLiteral{
 				NodeBase:    base,
 				Slices:      slices,
@@ -1726,6 +1740,10 @@ search_for_globbing:
 				StringValue: "%" + value,
 			}
 		} else {
+
+			if isQuoted {
+				base.Err = &ParsingError{UnspecifiedParsingError, QUOTED_PATH_PATTERN_EXPRS_ARE_NOT_SUPPORTED_YET}
+			}
 
 			return &PathPatternExpression{
 				NodeBase: base,
@@ -1746,6 +1764,9 @@ search_for_globbing:
 	}
 
 	if hasInterpolationsOrNamedSegments {
+		if missingClosingBacktick && base.Err == nil {
+			base.Err = &ParsingError{UnspecifiedParsingError, UNTERMINATED_QUOTED_PATH_EXPR_MISSING_CLOSING_BACTICK}
+		}
 
 		if isAbsolute {
 			return &AbsolutePathExpression{
@@ -1757,6 +1778,10 @@ search_for_globbing:
 			NodeBase: base,
 			Slices:   slices,
 		}
+	}
+
+	if missingClosingBacktick && base.Err == nil {
+		base.Err = &ParsingError{UnspecifiedParsingError, UNTERMINATED_QUOTED_PATH_LIT_MISSING_CLOSING_BACTICK}
 	}
 
 	if isAbsolute {
