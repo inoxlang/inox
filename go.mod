@@ -57,6 +57,7 @@ require (
 	github.com/aws/aws-sdk-go v1.44.272 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/chromedp/sysutil v1.0.0 // indirect
+	github.com/containerd/cgroups/v3 v3.0.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dlclark/regexp2 v1.10.0 // indirect
 	github.com/dprotaso/go-yit v0.0.0-20220510233725-9ba8df137936 // indirect

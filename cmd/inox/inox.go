@@ -91,12 +91,6 @@ func main() {
 	_main(os.Args, os.Stdout, os.Stderr)
 }
 
-type userProjectServerConfiguration struct {
-	MaxWebSocketPerIp      int  `json:"maxWebsocketPerIp"`
-	IgnoreInstalledBrowser bool `json:"ignoreInstalledBrowser,omitempty"`
-	ProjectsDir            bool `json:"projectsDir,omitempty"` //if not set, defaults to filepath.Join(config.USER_HOME, "inox-projects")
-}
-
 func _main(args []string, outW io.Writer, errW io.Writer) {
 	mainSubCommand := ""
 	var mainSubCommandArgs []string
@@ -440,7 +434,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 			return
 		}
 
-		var projectServerConfig userProjectServerConfiguration
+		var projectServerConfig inoxd.IndividualProjectServerConfig
 
 		configOrConfigFile = strings.TrimSpace(configOrConfigFile)
 		if configOrConfigFile != "" {
@@ -592,6 +586,11 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 			fmt.Fprintln(errW, "failed to start LSP server:", err)
 		}
 	case inoxd.DAEMON_SUBCMD:
+		if !checkNotRunningAsRoot(errW) {
+			os.Exit(INVALID_INPUT_STATUS)
+			return
+		}
+
 		//read & check arguments
 		lspFlags := flag.NewFlagSet(inoxd.DAEMON_SUBCMD, flag.ExitOnError)
 		var configOrConfigFile string
@@ -629,6 +628,11 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 
 		inoxd.Inoxd(daemonConfig, errW, outW)
 	case inoxprocess.CONTROLLED_SUBCMD: //the current process is controlled by a control server
+		if !checkNotRunningAsRoot(errW) {
+			os.Exit(INVALID_INPUT_STATUS)
+			return
+		}
+
 		//read & parse arguments
 
 		if len(mainSubCommandArgs) != 4 {
