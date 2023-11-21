@@ -267,7 +267,21 @@ func (pth Path) ToGlobbingPattern() PathPattern {
 	return PathPattern(utils.BytesAsString(pattern))
 }
 
-// JoinAbsolute joins the current path to a relative path:
+// JoinEntry joins the current dir path to an entry name.
+func (pth Path) JoinEntry(name string, fls afs.Filesystem) Path {
+	if !pth.IsDirPath() {
+		panic(errors.New("entry name can only be joined with a directory path"))
+	}
+
+	if strings.Contains(name, "/") {
+		//TODO: allow if escaped ?
+		panic(fmt.Errorf("entry name should not contain a slash: %q", name))
+	}
+
+	return pth + Path(name)
+}
+
+// Join joins the current path to a relative path:
 // /a , ./b -> /a/b
 // /a , ./b/ -> /a/b/
 // /a , /b -> error

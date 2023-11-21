@@ -859,6 +859,18 @@ func TestMetaFilesystemWalk(t *testing.T) {
 			expectedTraversal: []string{"/", "/a.txt", "/dir", "/e.txt"},
 		},
 		{
+			files:             []string{"/dir/a.txt", "/e.txt"},
+			expectedTraversal: []string{"/", "/dir", "/dir/a.txt", "/e.txt"},
+		},
+		{
+			files:             []string{"/a.txt", "/dir/a.txt", "/e.txt"},
+			expectedTraversal: []string{"/", "/a.txt", "/dir", "/dir/a.txt", "/e.txt"},
+		},
+		{
+			files:             []string{"/a.txt", "/dir/a.txt", "/e.txt", "/f.txt"},
+			expectedTraversal: []string{"/", "/a.txt", "/dir", "/dir/a.txt", "/e.txt", "/f.txt"},
+		},
+		{
 			files:             []string{"/dir_a/a.txt", "/dir_a/e.txt"},
 			emptyDirs:         []string{"/dir_b"},
 			expectedTraversal: []string{"/", "/dir_a", "/dir_a/a.txt", "/dir_a/e.txt", "/dir_b"},
@@ -930,6 +942,193 @@ func TestMetaFilesystemWalk(t *testing.T) {
 		{
 			files:             []string{"/a.txt", "/dir/subdir/c.txt", "/dir/subdir/d.txt"},
 			expectedTraversal: []string{"/", "/a.txt", "/dir", "/dir/subdir", "/dir/subdir/c.txt", "/dir/subdir/d.txt"},
+		},
+
+		{
+			files:             []string{"/a.txt", "/dir/subdir/subdir/c.txt"},
+			expectedTraversal: []string{"/", "/a.txt", "/dir", "/dir/subdir", "/dir/subdir/subdir", "/dir/subdir/subdir/c.txt"},
+		},
+
+		{
+			files: []string{"/a.txt", "/dir/subdir/subdir/c.txt", "/e.txt"},
+			expectedTraversal: []string{
+				"/",
+				"/a.txt",
+				"/dir", "/dir/subdir", "/dir/subdir/subdir", "/dir/subdir/subdir/c.txt",
+				"/e.txt",
+			},
+		},
+		{
+			files: []string{"/a.txt", "/dir/subdir/subsubdir/c.txt", "/dir/z.txt"},
+			expectedTraversal: []string{
+				"/",
+				"/a.txt",
+				"/dir", "/dir/subdir",
+				/* */ "/dir/subdir/subsubdir", "/dir/subdir/subsubdir/c.txt",
+				/* */ "/dir/z.txt",
+			},
+		},
+
+		{
+			files:             []string{"/b.txt", "/c_dir/a.txt", "/c_dir/b.txt", "/c_dir/c.txt", "/c_dir/d.txt"},
+			emptyDirs:         []string{"/a_dir"},
+			expectedTraversal: []string{"/", "/a_dir", "/b.txt", "/c_dir", "/c_dir/a.txt", "/c_dir/b.txt", "/c_dir/c.txt", "/c_dir/d.txt"},
+		},
+		{
+			files: []string{
+				"/a_dir/a.txt",
+				"/b.txt", "/c_dir/a.txt",
+				"/c_dir/b.txt", "/c_dir/c.txt", "/c_dir/d.txt",
+			},
+			expectedTraversal: []string{
+				"/",
+				"/a_dir",
+				"/a_dir/a.txt",
+				"/b.txt",
+				"/c_dir", "/c_dir/a.txt", "/c_dir/b.txt", "/c_dir/c.txt", "/c_dir/d.txt",
+			},
+		},
+		{
+			files: []string{
+				"/a.txt", "/b.txt",
+				"/c_dir/a.txt",
+				"/d_dir/a.txt", "/d_dir/b.txt", "/d_dir/c.txt", "/d_dir/d.txt",
+			},
+			expectedTraversal: []string{
+				"/",
+				"/a.txt",
+				"/b.txt",
+				"/c_dir", "/c_dir/a.txt",
+				"/d_dir", "/d_dir/a.txt", "/d_dir/b.txt", "/d_dir/c.txt", "/d_dir/d.txt",
+			},
+		},
+		{
+			files: []string{
+				"/a.txt", "/b.txt",
+				"/c_dir/a.txt",
+				"/d.txt",
+				"/e_dir/a.txt", "/e_dir/b.txt", "/e_dir/c.txt", "/e_dir/d.txt",
+			},
+			expectedTraversal: []string{
+				"/",
+				"/a.txt",
+				"/b.txt",
+				"/c_dir", "/c_dir/a.txt",
+				"/d.txt",
+				"/e_dir", "/e_dir/a.txt", "/e_dir/b.txt", "/e_dir/c.txt", "/e_dir/d.txt",
+			},
+		},
+		{
+			files: []string{
+				"/a.txt", "/b.txt",
+				"/c_dir/a.txt", "/c_dir/b.txt",
+				"/d.txt",
+				"/e_dir/a.txt", "/e_dir/b.txt", "/e_dir/c.txt", "/e_dir/d.txt",
+			},
+			expectedTraversal: []string{
+				"/",
+				"/a.txt",
+				"/b.txt",
+				"/c_dir", "/c_dir/a.txt", "/c_dir/b.txt",
+				"/d.txt",
+				"/e_dir", "/e_dir/a.txt", "/e_dir/b.txt", "/e_dir/c.txt", "/e_dir/d.txt",
+			},
+		},
+		{
+			files: []string{
+				"/a.txt", "/b.txt",
+				"/c_dir/a.txt", "/c_dir/b.txt", "/c_dir/c.txt", "/c_dir/d.txt",
+				"/d.txt",
+				"/e_dir/a.txt", "/e_dir/b.txt", "/e_dir/c.txt", "/e_dir/d.txt",
+			},
+			expectedTraversal: []string{
+				"/",
+				"/a.txt",
+				"/b.txt",
+				"/c_dir", "/c_dir/a.txt", "/c_dir/b.txt", "/c_dir/c.txt", "/c_dir/d.txt",
+				"/d.txt",
+				"/e_dir", "/e_dir/a.txt", "/e_dir/b.txt", "/e_dir/c.txt", "/e_dir/d.txt",
+			},
+		},
+		{
+			files: []string{
+				"/a.txt", "/b.txt",
+				"/c_dir/a.txt", "/c_dir/b.txt", "/c_dir/c.txt", "/c_dir/d.txt",
+				"/e.txt",
+				"/f_dir/a.txt", "/f_dir/b.txt", "/f_dir/c.txt", "/f_dir/d.txt",
+			},
+			emptyDirs: []string{"/d_dir"},
+			expectedTraversal: []string{
+				"/",
+				"/a.txt",
+				"/b.txt",
+				"/c_dir", "/c_dir/a.txt", "/c_dir/b.txt", "/c_dir/c.txt", "/c_dir/d.txt",
+				"/d_dir",
+				"/e.txt",
+				"/f_dir", "/f_dir/a.txt", "/f_dir/b.txt", "/f_dir/c.txt", "/f_dir/d.txt",
+			},
+		},
+		{
+			files: []string{
+				"/a.txt", "/b.txt",
+				"/c_dir/a.txt", "/c_dir/b.txt", "/c_dir/c.txt", "/c_dir/d.txt",
+				"/d_dir/a.txt",
+				"/e.txt",
+				"/f_dir/a.txt", "/f_dir/b.txt", "/f_dir/c.txt", "/f_dir/d.txt",
+			},
+			expectedTraversal: []string{
+				"/",
+				"/a.txt",
+				"/b.txt",
+				"/c_dir", "/c_dir/a.txt", "/c_dir/b.txt", "/c_dir/c.txt", "/c_dir/d.txt",
+				"/d_dir", "/d_dir/a.txt",
+				"/e.txt",
+				"/f_dir", "/f_dir/a.txt", "/f_dir/b.txt", "/f_dir/c.txt", "/f_dir/d.txt",
+			},
+		},
+		{
+			files: []string{
+				"/a.txt", "/b.txt",
+				"/c_dir/a.txt", "/c_dir/b.txt", "/c_dir/c.txt", "/c_dir/d.txt",
+				"/d_dir/a.txt",
+				"/e.txt",
+				"/f_dir/a.txt", "/f_dir/b.txt", "/f_dir/c.txt", "/f_dir/d.txt",
+				"/g.txt",
+				"/h_dir/a.txt", "/h_dir/b.txt", "/h_dir/c.txt", "/h_dir/d.txt",
+			},
+			expectedTraversal: []string{
+				"/",
+				"/a.txt",
+				"/b.txt",
+				"/c_dir", "/c_dir/a.txt", "/c_dir/b.txt", "/c_dir/c.txt", "/c_dir/d.txt",
+				"/d_dir", "/d_dir/a.txt",
+				"/e.txt",
+				"/f_dir", "/f_dir/a.txt", "/f_dir/b.txt", "/f_dir/c.txt", "/f_dir/d.txt",
+				"/g.txt",
+				"/h_dir", "/h_dir/a.txt", "/h_dir/b.txt", "/h_dir/c.txt", "/h_dir/d.txt",
+			},
+		},
+		{
+			files: []string{
+				"/a.txt", "/b.txt",
+				"/c_dir/a.txt",
+				"/d_dir/a.txt",
+				"/e.txt",
+				"/f_dir/a.txt", "/f_dir/b.txt", "/f_dir/c.txt", "/f_dir/d.txt",
+				"/g.txt",
+				"/h_dir/a.txt", "/h_dir/b.txt", "/h_dir/c.txt", "/h_dir/d.txt",
+			},
+			expectedTraversal: []string{
+				"/",
+				"/a.txt",
+				"/b.txt",
+				"/c_dir", "/c_dir/a.txt",
+				"/d_dir", "/d_dir/a.txt",
+				"/e.txt",
+				"/f_dir", "/f_dir/a.txt", "/f_dir/b.txt", "/f_dir/c.txt", "/f_dir/d.txt",
+				"/g.txt",
+				"/h_dir", "/h_dir/a.txt", "/h_dir/b.txt", "/h_dir/c.txt", "/h_dir/d.txt",
+			},
 		},
 	}
 

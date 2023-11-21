@@ -376,85 +376,34 @@ func (fls *MetaFilesystem) deleteFileMetadata(pth core.Path, usedTx *filekv.Data
 }
 
 func (fls *MetaFilesystem) Walk(visit func(normalizedPath string, path core.Path, metadata *metaFsFileMetadata) error) error {
-	return fls.walk(visit)
+	return fls.walk("/", visit)
 }
 
-func (fls *MetaFilesystem) walk(visit func(normalizedPath string, path core.Path, metadata *metaFsFileMetadata) error) error {
-	rootDirMeta, _, err := fls.getFileMetadata("/", nil)
+func (fls *MetaFilesystem) walk(path core.Path, visit func(normalizedPath string, path core.Path, metadata *metaFsFileMetadata) error) error {
+	meta, _, err := fls.getFileMetadata(path, nil)
 	if err != nil {
 		return err
 	}
 
-	err = visit("/", "/", rootDirMeta)
+	if meta.mode.IsDir() && !path.IsDirPath() {
+		path += "/"
+	}
+
+	err = visit(NormalizeAsAbsolute(string(path)), path, meta)
 	if err != nil {
 		return err
 	}
 
-	//this slice is reused in the for loop to avoid allocating.
-	childrenNames := slices.Clone(rootDirMeta.children)
-	slices.Sort(childrenNames)
-	slices.Reverse(childrenNames)
+	if len(meta.children) > 0 {
+		childrenNames := slices.Clone(meta.children)
+		slices.Sort(childrenNames)
 
-	pathSegments := []string{"", ""}
-	stack := slices.Clone(childrenNames)
-	firstChildIndexes := []int{0} //indexes in stack
-
-	//used to update pathSegments
-	segmentCountToRemove := 1
-
-	for len(stack) > 0 {
-		//pop last children from the stack.
-		index := len(stack) - 1
-		child := stack[index]
-		stack = stack[:index]
-
-		pathSegments[len(pathSegments)-1] = string(child)
-		normalizedPath := NormalizeAsAbsolute(strings.Join(pathSegments, "/"))
-
-		childMetadata, ok, err := fls.getFileMetadata(core.Path(normalizedPath), nil)
-		if err != nil {
-			return fmt.Errorf("failed to get the metadata of %s: %w", normalizedPath, err)
-		}
-		if !ok {
-			return fmt.Errorf("failed to get the metadata of %s", normalizedPath)
-		}
-
-		path := childMetadata.path
-		isFirstChild := firstChildIndexes[len(firstChildIndexes)-1] == index
-		removeFirstChildIndex := isFirstChild
-
-		if childMetadata.mode.IsDir() {
-			path = core.AppendTrailingSlashIfNotPresent(path)
-			//push entries into the stack.
-			if len(childMetadata.children) > 0 {
-				childrenNames = childrenNames[:0]
-				childrenNames = append(childrenNames, childMetadata.children...)
-				slices.Sort(childrenNames)
-				slices.Reverse(childrenNames)
-
-				if removeFirstChildIndex {
-					removeFirstChildIndex = false
-					firstChildIndexes = firstChildIndexes[:len(firstChildIndexes)-1]
-					segmentCountToRemove++
-				}
-
-				pathSegments = append(pathSegments, "")
-				firstChildIndexes = append(firstChildIndexes, index)
-				stack = append(stack, childrenNames...)
+		for _, childName := range childrenNames {
+			childPath := path.JoinEntry(string(childName), fls)
+			if err := fls.walk(childPath, visit); err != nil {
+				return fmt.Errorf("%q: %w", childPath, err)
 			}
 		}
-
-		err = visit(normalizedPath, path, childMetadata)
-		if err != nil {
-			return err
-		}
-
-		if removeFirstChildIndex {
-			firstChildIndexes = firstChildIndexes[:len(firstChildIndexes)-1]
-			pathSegments = pathSegments[:len(pathSegments)-segmentCountToRemove]
-			segmentCountToRemove = 1
-		}
-
 	}
 
 	return nil
@@ -557,7 +506,7 @@ top:
 	maps.Copy(includableFiles, writableFilePaths)
 
 	// determine what remaining files are includable
-	fls.walk(func(normalizedPath string, path core.Path, metadata *metaFsFileMetadata) error {
+	fls.Walk(func(normalizedPath string, path core.Path, metadata *metaFsFileMetadata) error {
 		if !config.IsFileIncluded(path) {
 			return nil
 		}
@@ -576,7 +525,7 @@ top:
 	}
 
 	//add other files to the snapshot
-	err = fls.walk(func(normalizedPath string, path core.Path, metadata *metaFsFileMetadata) error {
+	err = fls.Walk(func(normalizedPath string, path core.Path, metadata *metaFsFileMetadata) error {
 		if _, ok := writableFilePaths[normalizedPath]; ok {
 			//already in the snapshot
 			return nil
