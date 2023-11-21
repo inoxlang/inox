@@ -33,6 +33,8 @@ This folder contains most of the code for the `inox` binary.
 - control client
 - ExternalFS
 
+**inoxd**
+
 **filekv**
 
 - single file Key-Value store (BuntDB fork).

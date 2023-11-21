@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/coreos/go-systemd/v22/unit"
-	"github.com/inoxlang/inox/internal/project_server/inoxd"
+	"github.com/inoxlang/inox/internal/inoxd"
 )
 
 const (

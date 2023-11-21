@@ -11,8 +11,8 @@ import (
 
 	metricsperf "github.com/inoxlang/inox/internal/metrics-perf"
 
+	"github.com/inoxlang/inox/internal/inoxd"
 	"github.com/inoxlang/inox/internal/project/systemdprovider"
-	"github.com/inoxlang/inox/internal/project_server/inoxd"
 
 	"github.com/inoxlang/inox/internal/globals/chrome_ns"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
