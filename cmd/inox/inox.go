@@ -8,6 +8,7 @@ import (
 	"github.com/inoxlang/inox/internal/config"
 	"github.com/inoxlang/inox/internal/core"
 	_ "github.com/inoxlang/inox/internal/globals"
+	"github.com/inoxlang/inox/internal/inoxd/cloudproxy"
 
 	// ====================== INOX IMPORTS ============================
 
@@ -63,7 +64,6 @@ const (
 	INVALID_INPUT_STATUS = 1
 
 	DEFAULT_ALLOWED_DEV_HOST             = core.Host("https://localhost:8080")
-	DEFAULT_PROJECT_SERVER_PORT          = "8305"
 	PERF_PROFILES_COLLECTION_SAVE_PERIOD = 30 * time.Second
 	MAX_STACK_SIZE                       = 200_000_000
 	BROWSER_DOWNLOAD_TIMEOUT             = 300 * time.Second
@@ -229,7 +229,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 			TestFilters:           testFilters,
 
 			OnPrepared: func(state *core.GlobalState) error {
-				inoxprocess.RestrictProcessAccess(state.Ctx, true)
+				inoxprocess.RestrictProcessAccess(state.Ctx, inoxprocess.ProcessRestrictionConfig{AllowBrowserAccess: true})
 				return nil
 			},
 		})
@@ -293,7 +293,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 		dir := getScriptDir(fpath)
 
 		compilationCtx := createCompilationCtx(dir)
-		inoxprocess.RestrictProcessAccess(compilationCtx, false)
+		inoxprocess.RestrictProcessAccess(compilationCtx, inoxprocess.ProcessRestrictionConfig{AllowBrowserAccess: false})
 
 		data := inox_ns.GetCheckData(fpath, compilationCtx, outW)
 		fmt.Fprintf(outW, "%s\n\r", utils.Must(json.Marshal(data)))
@@ -398,7 +398,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 		state.Logger = zerolog.New(out)
 		state.OutputFieldsInitialized.Store(true)
 
-		inoxprocess.RestrictProcessAccess(ctx, true)
+		inoxprocess.RestrictProcessAccess(ctx, inoxprocess.ProcessRestrictionConfig{AllowBrowserAccess: true})
 
 		if err := project_server.StartLSPServer(ctx, opts); err != nil {
 			fmt.Fprintln(errW, "failed to start LSP server:", err)
@@ -455,7 +455,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 		if projectServerConfig.Port > 0 {
 			websocketAddr += strconv.Itoa(projectServerConfig.Port)
 		} else {
-			websocketAddr += DEFAULT_PROJECT_SERVER_PORT
+			websocketAddr += project_server.DEFAULT_PROJECT_SERVER_PORT
 		}
 
 		out := os.Stdout
@@ -529,7 +529,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 		state.Logger = zerolog.New(out)
 		state.OutputFieldsInitialized.Store(true)
 
-		inoxprocess.RestrictProcessAccess(ctx, true)
+		inoxprocess.RestrictProcessAccess(ctx, inoxprocess.ProcessRestrictionConfig{AllowBrowserAccess: true})
 
 		//configure server
 
@@ -688,7 +688,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 		state.Logger = zerolog.New(state.Out)
 		state.OutputFieldsInitialized.Store(true)
 
-		inoxprocess.RestrictProcessAccess(ctx, true)
+		inoxprocess.RestrictProcessAccess(ctx, inoxprocess.ProcessRestrictionConfig{AllowBrowserAccess: true})
 
 		client, err := inoxprocess.ConnectToProcessControlServer(ctx, u, token)
 		if err != nil {
@@ -732,7 +732,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 			return
 		}
 
-		inoxprocess.RestrictProcessAccess(state.Ctx, true)
+		inoxprocess.RestrictProcessAccess(state.Ctx, inoxprocess.ProcessRestrictionConfig{AllowBrowserAccess: true})
 
 		//start the shell
 
@@ -788,7 +788,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 			}
 		}()
 
-		inoxprocess.RestrictProcessAccess(state.Ctx, false)
+		inoxprocess.RestrictProcessAccess(state.Ctx, inoxprocess.ProcessRestrictionConfig{AllowBrowserAccess: false})
 
 		//evaluate
 
