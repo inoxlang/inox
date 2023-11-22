@@ -1,7 +1,6 @@
 package inoxd
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"os/exec"
@@ -9,24 +8,16 @@ import (
 
 	"github.com/containerd/cgroups/v3"
 	"github.com/inoxlang/inox/internal/inoxd/cloudproxy"
-	"github.com/inoxlang/inox/internal/utils"
+	"github.com/inoxlang/inox/internal/project_server"
 )
 
 const DAEMON_SUBCMD = "daemon"
 
 type DaemonConfig struct {
-	InoxCloud      bool                          `json:"inoxCloud"`
-	CloudProxy     *CloudProxyConfig             `json:"cloudProxy,omitempty"` //ignored if inoxCloud is false
-	Server         IndividualProjectServerConfig `json:"serverConfig"`
+	InoxCloud      bool                                  `json:"inoxCloud"`
+	CloudProxy     *CloudProxyConfig                     `json:"cloudProxy,omitempty"` //ignored if inoxCloud is false
+	Server         project_server.IndividualServerConfig `json:"serverConfig"`
 	InoxBinaryPath string
-}
-
-type IndividualProjectServerConfig struct {
-	MaxWebSocketPerIp      int    `json:"maxWebsocketPerIp"`
-	IgnoreInstalledBrowser bool   `json:"ignoreInstalledBrowser,omitempty"`
-	ProjectsDir            string `json:"projectsDir,omitempty"` //if not set, defaults to filepath.Join(config.USER_HOME, "inox-projects")
-	BehindCloudProxy       bool   `json:"behindCloudProxy,omitempty"`
-	Port                   int    `json:"port,omitempty"`
 }
 
 type CloudProxyConfig struct {
@@ -49,79 +40,58 @@ func Inoxd(config DaemonConfig, errW, outW io.Writer) {
 
 	fmt.Fprintf(outW, "current cgroup mode is %q\n", modeName)
 
-	if config.InoxCloud {
-		serverConfig.BehindCloudProxy = true
+	if !config.InoxCloud {
+		project_server.ExecuteProjectServerCmd(project_server.ProjectServerCmdParams{
+			Config:         serverConfig,
+			InoxBinaryPath: config.InoxBinaryPath,
+			Stderr:         errW,
+			Stdout:         outW,
+		})
+		return
+	}
 
-		if mode != cgroups.Unified {
-			fmt.Fprintf(errW, "abort execution because current cgroup mode is not 'unified'\n")
-			return
-		}
+	serverConfig.BehindCloudProxy = true
 
-		if !createInoxCgroup(outW, errW) {
-			return
-		}
+	if mode != cgroups.Unified {
+		fmt.Fprintf(errW, "abort execution because current cgroup mode is not 'unified'\n")
+		return
+	}
 
-		//launch proxy
-		go func() {
-			const MAX_TRY_COUNT = 3
-			tryCount := 0
-			var lastLaunchTime time.Time
+	if !createInoxCgroup(outW, errW) {
+		return
+	}
 
-			for {
-				if tryCount >= MAX_TRY_COUNT {
-					fmt.Fprintf(errW, "cloud proxy process exited unexpectedly %d or more times in a short timeframe; wait 5 minutes", MAX_TRY_COUNT)
-					time.Sleep(5 * time.Minute)
-					tryCount = 0
-				}
+	//launch proxy
+	go func() {
+		const MAX_TRY_COUNT = 3
+		tryCount := 0
+		var lastLaunchTime time.Time
 
-				tryCount++
-				lastLaunchTime = time.Now()
-
-				err := launchCloudProxy(CloudProxyCmdParams{
-					inoxBinaryPath: config.InoxBinaryPath,
-					stderr:         errW,
-					stdout:         outW,
-				})
-
-				fmt.Fprintf(errW, "cloud proxy process returned: %s\n", err.Error())
-
-				if time.Since(lastLaunchTime) < 10*time.Second {
-					tryCount++
-				} else {
-					tryCount = 1
-				}
+		for {
+			if tryCount >= MAX_TRY_COUNT {
+				fmt.Fprintf(errW, "cloud proxy process exited unexpectedly %d or more times in a short timeframe; wait 5 minutes", MAX_TRY_COUNT)
+				time.Sleep(5 * time.Minute)
+				tryCount = 0
 			}
-		}()
-	}
 
-	// launchProjectServer(projectServerCmdParams{
-	// 	config:         serverConfig,
-	// 	inoxBinaryPath: config.InoxBinaryPath,
-	// 	stderr:         errW,
-	// 	stdout:         outW,
-	// })
+			tryCount++
+			lastLaunchTime = time.Now()
 
-	time.Sleep(time.Hour)
-}
+			err := launchCloudProxy(CloudProxyCmdParams{
+				inoxBinaryPath: config.InoxBinaryPath,
+				stderr:         errW,
+				stdout:         outW,
+			})
 
-type projectServerCmdParams struct {
-	config         IndividualProjectServerConfig
-	inoxBinaryPath string
-	stderr, stdout io.Writer
-}
+			fmt.Fprintf(errW, "cloud proxy process returned: %s\n", err.Error())
 
-func launchProjectServer(args projectServerCmdParams) {
-	projectServerConfig := "-config=" + string(utils.Must(json.Marshal(args.config)))
-
-	cmd := exec.Command(args.inoxBinaryPath, "project-server", projectServerConfig)
-	cmd.Stderr = args.stderr
-	cmd.Stdout = args.stdout
-
-	fmt.Fprintln(args.stdout, "create a new inox process (project server)")
-
-	if err := cmd.Run(); err != nil {
-		fmt.Fprintln(args.stderr, err.Error())
-	}
+			if time.Since(lastLaunchTime) < 10*time.Second {
+				tryCount++
+			} else {
+				tryCount = 1
+			}
+		}
+	}()
 }
 
 type CloudProxyCmdParams struct {

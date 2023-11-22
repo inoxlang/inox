@@ -24,7 +24,9 @@ func Run(outW, errW io.Writer) error {
 	addr := "localhost:" + project_server.DEFAULT_PROJECT_SERVER_PORT
 	host := core.Host("wss://" + addr)
 
-	ctx := createContext(host, outW, errW)
+	ctx, topCtx := createContext(host, outW, errW)
+	defer topCtx.CancelGracefully()
+
 	wsServer, err := net_ns.NewWebsocketServer(ctx)
 
 	if err != nil {
@@ -66,7 +68,7 @@ func Run(outW, errW io.Writer) error {
 	return nil
 }
 
-func createContext(host core.Host, outW, errW io.Writer) *core.Context {
+func createContext(host core.Host, outW, errW io.Writer) (ctx, topCtx *core.Context) {
 	perms := []core.Permission{
 		core.WebsocketPermission{
 			Kind_:    permkind.Provide,
@@ -80,24 +82,23 @@ func createContext(host core.Host, outW, errW io.Writer) *core.Context {
 		},
 	}
 
-	topCtx := core.NewContexWithEmptyState(core.ContextConfig{
+	topCtx = core.NewContexWithEmptyState(core.ContextConfig{
 		Filesystem:  fs_ns.GetOsFilesystem(),
 		Permissions: perms,
 	}, outW)
-	defer topCtx.CancelGracefully()
 
 	inoxprocess.RestrictProcessAccess(topCtx, inoxprocess.ProcessRestrictionConfig{
 		ForceAllowDNS: true,
 	})
 
 	fls := fs_ns.NewMemFilesystem(1_000_000)
-	ctx := core.NewContexWithEmptyState(core.ContextConfig{
+	ctx = core.NewContexWithEmptyState(core.ContextConfig{
 		ParentContext: topCtx,
 		Filesystem:    fls,
 		Permissions:   perms,
 	}, outW)
 
-	return ctx
+	return ctx, topCtx
 }
 
 func allowConnection(remoteAddrPort nettypes.RemoteAddrWithPort, remoteAddr nettypes.RemoteIpAddr, currentConns []*net_ns.WebsocketConnection) error {

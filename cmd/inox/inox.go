@@ -421,7 +421,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 			return
 		}
 
-		var projectServerConfig inoxd.IndividualProjectServerConfig
+		var projectServerConfig project_server.IndividualServerConfig
 
 		configOrConfigFile = strings.TrimSpace(configOrConfigFile)
 		if configOrConfigFile != "" {
