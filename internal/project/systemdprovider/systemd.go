@@ -30,6 +30,7 @@ const (
 var (
 	ErrUnitFileExists = errors.New("unit file already exists")
 	ErrNoSystemd      = errors.New("systemd does not seem to be the init system on this machine")
+	ErrNotRoot        = errors.New("current user is not root")
 
 	SYSTEMCTL_ALLOWED_LOCATIONS = []string{"/usr/bin/systemctl"}
 )
@@ -40,6 +41,7 @@ type InoxUnitParams struct {
 	Log               io.Writer
 
 	InoxCloud bool
+	EnvFile   string //optional
 }
 
 // WriteInoxUnitFile writes the unit file for the inox service at INOX_SERVICE_UNIT_PATH, if the file already exists
@@ -134,6 +136,15 @@ func WriteInoxUnitFile(args InoxUnitParams) (unitName string, _ error) {
 				Value: "5",
 			},
 		},
+	}
+
+	if args.EnvFile != "" {
+		//https://www.freedesktop.org/software/systemd/man/latest/systemd.exec.html#EnvironmentFile=
+
+		serviceSection.Entries = append(serviceSection.Entries, &unit.UnitEntry{
+			Name:  "EnvironmentFile",
+			Value: args.EnvFile,
+		})
 	}
 
 	installSection := unit.UnitSection{

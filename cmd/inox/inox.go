@@ -302,9 +302,15 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 		username, uid, homedir, err := inoxd.CreateInoxdUserIfNotExists(outW, errW)
 		if err != nil {
 			fmt.Fprintln(errW, err)
+			return
 		}
 
 		inoxCloud := slices.Contains(mainSubCommandArgs, "--inox-cloud")
+		envFilePath, err := systemdprovider.CreateInoxdEnvFileIfNotExists(outW)
+		if err != nil {
+			fmt.Fprintln(errW, err)
+			return
+		}
 
 		unitName, err := systemdprovider.WriteInoxUnitFile(systemdprovider.InoxUnitParams{
 			Username:  username,
@@ -312,7 +318,9 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 			UID:       uid,
 			Log:       outW,
 			InoxCloud: inoxCloud,
+			EnvFile:   envFilePath,
 		})
+
 		alreadyExists := errors.Is(err, systemdprovider.ErrUnitFileExists)
 		if err != nil {
 			fmt.Fprintln(outW, err)
