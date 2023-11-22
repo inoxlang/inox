@@ -39,39 +39,72 @@ func TestInoxdMasterKeySet(t *testing.T) {
 }
 
 func TestLoadInoxdMasterKeysetFromEnv(t *testing.T) {
-	save, ok := os.LookupEnv(INOXD_MASTER_KEYSET_ENV_VARNAME)
-	if ok {
-		defer os.Setenv(INOXD_MASTER_KEYSET_ENV_VARNAME, save)
-	} else {
-		defer os.Unsetenv(INOXD_MASTER_KEYSET_ENV_VARNAME)
-	}
+	varname := INOXD_MASTER_KEYSET_ENV_VARNAME
 
-	key := GenerateRandomInoxdMasterKeyset()
-	os.Setenv(INOXD_MASTER_KEYSET_ENV_VARNAME, string(key))
+	t.Run("if the env var is not set an error should be returned", func(t *testing.T) {
+		save, ok := os.LookupEnv(varname)
+		if ok {
+			defer os.Setenv(varname, save)
+		} else {
+			defer os.Unsetenv(varname)
+		}
 
-	keyset, err := LoadInoxdMasterKeysetFromEnv()
-	if !assert.NoError(t, err) {
-		return
-	}
+		_, err := LoadInoxdMasterKeysetFromEnv()
+		assert.ErrorIs(t, err, ErrInoxdMasterKeysetEnvVarNotFound)
+	})
 
-	primitive, err := aead.New(keyset)
-	if !assert.NoError(t, err) {
-		return
-	}
+	t.Run("if the env var is set but empty an error should be returned", func(t *testing.T) {
+		save, ok := os.LookupEnv(varname)
+		if ok {
+			defer os.Setenv(varname, save)
+		} else {
+			defer os.Unsetenv(varname)
+		}
 
-	//check the keyset by encrypting + decrypting.
+		os.Setenv(varname, "")
 
-	plaintext := []byte("message")
-	associatedData := []byte("example encryption")
-	ciphertext, err := primitive.Encrypt(plaintext, associatedData)
-	if !assert.NoError(t, err) {
-		return
-	}
+		_, err := LoadInoxdMasterKeysetFromEnv()
+		assert.ErrorIs(t, err, ErrInoxdMasterKeysetEnvVarSetButEmpty)
+	})
 
-	decrypted, err := primitive.Decrypt(ciphertext, associatedData)
-	if !assert.NoError(t, err) {
-		return
-	}
+	t.Run("env var is set", func(t *testing.T) {
+		save, ok := os.LookupEnv(varname)
+		if ok {
+			defer os.Setenv(varname, save)
+		} else {
+			defer os.Unsetenv(varname)
+		}
 
-	assert.Equal(t, "message", string(decrypted))
+		key := GenerateRandomInoxdMasterKeyset()
+		os.Setenv(varname, string(key))
+
+		keyset, err := LoadInoxdMasterKeysetFromEnv()
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		_, ok = os.LookupEnv(varname)
+		assert.False(t, ok)
+
+		primitive, err := aead.New(keyset)
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		//check the keyset by encrypting + decrypting.
+
+		plaintext := []byte("message")
+		associatedData := []byte("example encryption")
+		ciphertext, err := primitive.Encrypt(plaintext, associatedData)
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		decrypted, err := primitive.Decrypt(ciphertext, associatedData)
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		assert.Equal(t, "message", string(decrypted))
+	})
 }

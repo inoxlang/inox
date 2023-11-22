@@ -40,6 +40,8 @@ func LoadInoxdMasterKeysetFromEnv() (*keyset.Handle, error) {
 		return nil, fmt.Errorf("inoxd master keyset not found in environment variables: %w", ErrInoxdMasterKeysetEnvVarSetButEmpty)
 	}
 
+	os.Unsetenv(INOXD_MASTER_KEYSET_ENV_VARNAME)
+
 	return InoxdMasterKeySetHandleFrom(value)
 }
 
