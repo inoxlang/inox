@@ -15,10 +15,9 @@ import (
 )
 
 const (
-	DEFAULT_INOXD_ENV_FILE_PATH     = "/run/inoxd/env"
-	INOXD_ENV_FILE_PERMS            = fs.FileMode(0o440)
-	INOXD_ENV_FILE_DIR_PERMS        = fs.FileMode(0o770)
-	INOXD_MASTER_KEYSET_ENV_VARNAME = "INOXD_MASTER_KEYSET"
+	DEFAULT_INOXD_ENV_FILE_PATH = "/run/inoxd/env"
+	INOXD_ENV_FILE_PERMS        = fs.FileMode(0o440)
+	INOXD_ENV_FILE_DIR_PERMS    = fs.FileMode(0o770)
 )
 
 var (
@@ -85,7 +84,7 @@ func CreateInoxdEnvFileIfNotExists(outW io.Writer) (path string, _ error) {
 
 		//write environment variables to the file
 
-		fmt.Fprintf(f, "%s='%s'\n", INOXD_MASTER_KEYSET_ENV_VARNAME, inoxdcrypto.GenerateRandomInoxdMasterKeySet())
+		fmt.Fprintf(f, "%s='%s'\n", inoxdcrypto.INOXD_MASTER_KEYSET_ENV_VARNAME, inoxdcrypto.GenerateRandomInoxdMasterKeyset())
 		f.Close()
 
 		//remove write permission
