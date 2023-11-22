@@ -107,7 +107,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 	}
 
 	if mainSubCommand != "add-service" && !checkNotRunningAsRoot(errW) {
-		return
+		return ERROR_STATUS_CODE
 	}
 
 	processTempDir := fs_ns.GetCreateProcessTempDir()
