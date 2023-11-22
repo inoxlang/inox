@@ -44,6 +44,8 @@ require (
 	github.com/tidwall/lotsa v1.0.3
 	github.com/tidwall/match v1.1.1
 	github.com/tidwall/rtred v0.1.2
+	github.com/tink-crypto/tink-go v0.0.0-20230613075026-d6de17e3f164
+	github.com/tink-crypto/tink-go/v2 v2.0.0
 	github.com/ysmood/fetchup v0.2.3
 	go.uber.org/zap v1.26.0
 	golang.org/x/exp v0.0.0-20231110203233-9a3e6036ecaa
@@ -118,7 +120,7 @@ require (
 	golang.org/x/time v0.4.0 // indirect
 	golang.org/x/tools v0.15.0 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
-	google.golang.org/protobuf v1.27.1 // indirect
+	google.golang.org/protobuf v1.30.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	kernel.org/pub/linux/libs/security/libcap/psx v1.2.68 // indirect

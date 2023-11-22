@@ -88,10 +88,13 @@ const (
 
 func main() {
 	debug.SetMaxStack(MAX_STACK_SIZE)
-	_main(os.Args, os.Stdout, os.Stderr)
+	statusCode := _main(os.Args, os.Stdout, os.Stderr)
+	if statusCode != 0 {
+		os.Exit(statusCode)
+	}
 }
 
-func _main(args []string, outW io.Writer, errW io.Writer) {
+func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 	mainSubCommand := ""
 	var mainSubCommandArgs []string
 
@@ -122,16 +125,14 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 		return
 	case "run":
 		if !checkNotRunningAsRoot(errW) {
-			os.Exit(ERROR_STATUS_CODE)
-			return
+			return ERROR_STATUS_CODE
 		}
 
 		//read and check arguments
 
 		if len(mainSubCommandArgs) == 0 {
 			fmt.Fprintf(errW, "missing script path\n")
-			os.Exit(ERROR_STATUS_CODE)
-			return
+			return ERROR_STATUS_CODE
 		}
 
 		runFlags := flag.NewFlagSet("run", flag.ExitOnError)
@@ -171,8 +172,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 
 		if fpath == "" {
 			fmt.Fprintf(errW, "missing script path\n")
-			os.Exit(ERROR_STATUS_CODE)
-			return
+			return ERROR_STATUS_CODE
 		}
 
 		//run script
@@ -279,14 +279,12 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 		}
 	case "check":
 		if !checkNotRunningAsRoot(errW) {
-			os.Exit(ERROR_STATUS_CODE)
-			return
+			return ERROR_STATUS_CODE
 		}
 
 		if len(mainSubCommandArgs) == 0 {
 			fmt.Fprintf(errW, "missing script path\n")
-			os.Exit(ERROR_STATUS_CODE)
-			return
+			return ERROR_STATUS_CODE
 		}
 
 		fpath := mainSubCommandArgs[0]
@@ -301,15 +299,15 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 	case "add-service":
 		username, uid, homedir, err := inoxd.CreateInoxdUserIfNotExists(outW, errW)
 		if err != nil {
-			fmt.Fprintln(errW, err)
-			return
+			fmt.Fprintln(errW, "ERROR:", err)
+			return ERROR_STATUS_CODE
 		}
 
 		inoxCloud := slices.Contains(mainSubCommandArgs, "--inox-cloud")
 		envFilePath, err := systemdprovider.CreateInoxdEnvFileIfNotExists(outW)
 		if err != nil {
-			fmt.Fprintln(errW, err)
-			return
+			fmt.Fprintln(errW, "ERROR:", err)
+			return ERROR_STATUS_CODE
 		}
 
 		unitName, err := systemdprovider.WriteInoxUnitFile(systemdprovider.InoxUnitParams{
@@ -323,9 +321,11 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 
 		alreadyExists := errors.Is(err, systemdprovider.ErrUnitFileExists)
 		if err != nil {
-			fmt.Fprintln(outW, err)
-			if !alreadyExists {
-				return
+			if alreadyExists {
+				fmt.Fprintln(outW, err)
+			} else {
+				fmt.Fprintln(errW, "ERROR:", err)
+				return ERROR_STATUS_CODE
 			}
 		} else {
 			fmt.Fprintln(outW, "unit file created")
@@ -335,8 +335,8 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 		if !alreadyExists {
 			err = systemdprovider.EnableInoxd(unitName, outW, errW)
 			if err != nil {
-				fmt.Fprintln(errW, err)
-				return
+				fmt.Fprintln(errW, "ERROR:", err)
+				return ERROR_STATUS_CODE
 			}
 		}
 
@@ -344,14 +344,13 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 
 		err = systemdprovider.StartInoxd(unitName, restart, outW, errW)
 		if err != nil {
-			fmt.Fprintln(errW, err)
+			fmt.Fprintln(errW, "ERROR:", err)
 			return
 		}
 		fmt.Fprintln(outW, "")
 	case "lsp":
 		if !checkNotRunningAsRoot(errW) {
-			os.Exit(ERROR_STATUS_CODE)
-			return
+			return ERROR_STATUS_CODE
 		}
 
 		lspFlags := flag.NewFlagSet("lsp", flag.ExitOnError)
@@ -413,8 +412,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 		}
 	case "project-server":
 		if !checkNotRunningAsRoot(errW) {
-			os.Exit(ERROR_STATUS_CODE)
-			return
+			return ERROR_STATUS_CODE
 		}
 
 		//read & check arguments
@@ -599,8 +597,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 		}
 	case inoxd.DAEMON_SUBCMD:
 		if !checkNotRunningAsRoot(errW) {
-			os.Exit(ERROR_STATUS_CODE)
-			return
+			return ERROR_STATUS_CODE
 		}
 
 		//read & check arguments
@@ -644,12 +641,11 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 		err := cloudproxy.Run(outW, errW)
 		if err != nil {
 			fmt.Fprintln(errW, err)
-			os.Exit(ERROR_STATUS_CODE)
+			return ERROR_STATUS_CODE
 		}
 	case inoxprocess.CONTROLLED_SUBCMD: //the current process is controlled by a control server
 		if !checkNotRunningAsRoot(errW) {
-			os.Exit(ERROR_STATUS_CODE)
-			return
+			return ERROR_STATUS_CODE
 		}
 
 		//read & parse arguments
@@ -714,8 +710,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 		client.StartControl()
 	case "shell":
 		if !checkNotRunningAsRoot(errW) {
-			os.Exit(ERROR_STATUS_CODE)
-			return
+			return ERROR_STATUS_CODE
 		}
 
 		//read & check arguments
@@ -743,7 +738,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 
 		config, err := inoxsh_ns.MakeREPLConfiguration(startupResult)
 		if err != nil {
-			fmt.Fprintln(outW, "configuration error:", err)
+			fmt.Fprintln(outW, "configuration ERROR:", err)
 			return
 		}
 
@@ -754,14 +749,12 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 		inoxsh_ns.StartShell(state, config)
 	case "eval", "e":
 		if !checkNotRunningAsRoot(errW) {
-			os.Exit(ERROR_STATUS_CODE)
-			return
+			return ERROR_STATUS_CODE
 		}
 
 		if len(mainSubCommandArgs) == 0 {
 			fmt.Fprintf(errW, "missing code string")
-			os.Exit(ERROR_STATUS_CODE)
-			return
+			return ERROR_STATUS_CODE
 		}
 
 		evalFlags := flag.NewFlagSet("eval", flag.ExitOnError)
@@ -785,8 +778,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 
 		if strings.TrimSpace(code) == "" {
 			fmt.Fprintln(outW, "empty command")
-			os.Exit(ERROR_STATUS_CODE)
-			return
+			return ERROR_STATUS_CODE
 		}
 
 		_, state := runStartupScript(startupScriptPath, nil, outW)
@@ -831,9 +823,10 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 		}
 	default:
 		fmt.Fprintf(errW, "unknown command '%s'\n", mainSubCommand)
-		os.Exit(ERROR_STATUS_CODE)
-		return
+		return ERROR_STATUS_CODE
 	}
+
+	return 0
 }
 
 func moveFlagsStart(args []string) {
