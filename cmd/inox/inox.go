@@ -106,6 +106,10 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 		mainSubCommandArgs = args[2:]
 	}
 
+	if mainSubCommand != "add-service" && !checkNotRunningAsRoot(errW) {
+		return
+	}
+
 	processTempDir := fs_ns.GetCreateProcessTempDir()
 	defer func() {
 		fs_ns.GetOsFilesystem().RemoveAll(processTempDir.UnderlyingString())
@@ -124,10 +128,6 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 		fmt.Fprint(outW, HELP)
 		return
 	case "run":
-		if !checkNotRunningAsRoot(errW) {
-			return ERROR_STATUS_CODE
-		}
-
 		//read and check arguments
 
 		if len(mainSubCommandArgs) == 0 {
@@ -278,10 +278,6 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 			fmt.Fprint(outW, msg)
 		}
 	case "check":
-		if !checkNotRunningAsRoot(errW) {
-			return ERROR_STATUS_CODE
-		}
-
 		if len(mainSubCommandArgs) == 0 {
 			fmt.Fprintf(errW, "missing script path\n")
 			return ERROR_STATUS_CODE
@@ -349,10 +345,6 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 		}
 		fmt.Fprintln(outW, "")
 	case "lsp":
-		if !checkNotRunningAsRoot(errW) {
-			return ERROR_STATUS_CODE
-		}
-
 		lspFlags := flag.NewFlagSet("lsp", flag.ExitOnError)
 		var host string
 		lspFlags.StringVar(&host, "h", "", "host")
@@ -411,10 +403,6 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 			fmt.Fprintln(errW, "failed to start LSP server:", err)
 		}
 	case "project-server":
-		if !checkNotRunningAsRoot(errW) {
-			return ERROR_STATUS_CODE
-		}
-
 		//read & check arguments
 		lspFlags := flag.NewFlagSet("project-server", flag.ExitOnError)
 		var configOrConfigFile string
@@ -596,10 +584,6 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 			fmt.Fprintln(errW, "failed to start LSP server:", err)
 		}
 	case inoxd.DAEMON_SUBCMD:
-		if !checkNotRunningAsRoot(errW) {
-			return ERROR_STATUS_CODE
-		}
-
 		//read & check arguments
 		lspFlags := flag.NewFlagSet(inoxd.DAEMON_SUBCMD, flag.ExitOnError)
 		var configOrConfigFile string
@@ -644,10 +628,6 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 			return ERROR_STATUS_CODE
 		}
 	case inoxprocess.CONTROLLED_SUBCMD: //the current process is controlled by a control server
-		if !checkNotRunningAsRoot(errW) {
-			return ERROR_STATUS_CODE
-		}
-
 		//read & parse arguments
 
 		if len(mainSubCommandArgs) != 4 {
@@ -709,10 +689,6 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 
 		client.StartControl()
 	case "shell":
-		if !checkNotRunningAsRoot(errW) {
-			return ERROR_STATUS_CODE
-		}
-
 		//read & check arguments
 		shellFlags := flag.NewFlagSet("shell", flag.ExitOnError)
 		startupScriptPath, err := config.GetStartupScriptPath()
@@ -748,10 +724,6 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 
 		inoxsh_ns.StartShell(state, config)
 	case "eval", "e":
-		if !checkNotRunningAsRoot(errW) {
-			return ERROR_STATUS_CODE
-		}
-
 		if len(mainSubCommandArgs) == 0 {
 			fmt.Fprintf(errW, "missing code string")
 			return ERROR_STATUS_CODE
