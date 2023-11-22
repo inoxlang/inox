@@ -24,7 +24,7 @@ inox project-server
 ```
 
 This server is listening on `localhost:8305` by default. The listening port can
-be changed with the **-h** flag: `-h=wss://localhost:8305`.
+be changed with the **-config** flag: `-config='{"port":8305}'`.
 
 ### Remote Linux Server
 
@@ -35,7 +35,7 @@ inox project-server
 ```
 
 This server is listening on `localhost:8305` by default. The listening port can
-be changed with the **-h** flag: `-h=wss://localhost:8305`.\
+be changed with the **-config** flag: `-config='{"port":8305}'`.
 Note that you have to expose the localhost server yourself. The project server
 can be started automatically by installing the **Inox service**.
 

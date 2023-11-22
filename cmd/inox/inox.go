@@ -3,6 +3,8 @@ package main
 import (
 	// ====================== IMPORTANT SIDE EFFECTS ============================
 
+	"strconv"
+
 	"github.com/inoxlang/inox/internal/config"
 	"github.com/inoxlang/inox/internal/core"
 	_ "github.com/inoxlang/inox/internal/globals"
@@ -60,10 +62,8 @@ import (
 const (
 	INVALID_INPUT_STATUS = 1
 
-	DEFAULT_ALLOWED_DEV_HOST    = core.Host("https://localhost:8080")
-	DEFAULT_PROJECT_SERVER_PORT = "8305"
-	DEFAULT_PROJECT_SERVER_HOST = core.Host("wss://localhost:" + DEFAULT_PROJECT_SERVER_PORT)
-
+	DEFAULT_ALLOWED_DEV_HOST             = core.Host("https://localhost:8080")
+	DEFAULT_PROJECT_SERVER_PORT          = "8305"
 	PERF_PROFILES_COLLECTION_SAVE_PERIOD = 30 * time.Second
 	MAX_STACK_SIZE                       = 200_000_000
 	BROWSER_DOWNLOAD_TIMEOUT             = 300 * time.Second
@@ -411,24 +411,13 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 
 		//read & check arguments
 		lspFlags := flag.NewFlagSet("project-server", flag.ExitOnError)
-		var host string
 		var configOrConfigFile string
 
-		lspFlags.StringVar(&host, "h", "", "host")
 		lspFlags.StringVar(&configOrConfigFile, "config", "", "JSON configuration or JSON file")
 
 		err := lspFlags.Parse(mainSubCommandArgs)
 		if err != nil {
 			fmt.Fprintln(errW, "project-server:", err)
-			return
-		}
-
-		if host == "" {
-			host = string(DEFAULT_PROJECT_SERVER_HOST)
-		}
-
-		u := checkLspHost(host, errW)
-		if u == nil {
 			return
 		}
 
@@ -439,25 +428,37 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 			if configOrConfigFile[0] == '{' {
 				err := json.Unmarshal([]byte(configOrConfigFile), &projectServerConfig)
 				if err != nil {
-					fmt.Fprintln(errW, "project-server: failed to unmarshal configuration argument", err)
+					fmt.Fprintln(errW, "project-server: failed to unmarshal configuration argument:", err)
+					return
 				}
 			} else {
 				content, err := os.ReadFile(configOrConfigFile)
 				if err != nil {
-					fmt.Fprintln(errW, "project-server: failed to read configuration file", err)
+					fmt.Fprintln(errW, "project-server: failed to read configuration file:", err)
+					return
 				}
 				err = json.Unmarshal(content, &projectServerConfig)
 				if err != nil {
-					fmt.Fprintln(errW, "project-server: failed to unmarshal configuration file", err)
+					fmt.Fprintln(errW, "project-server: failed to unmarshal configuration file:", err)
+					return
 				}
 			}
 		}
 
-		out := os.Stdout
 		projectsDir := projectServerConfig.ProjectsDir
 		if projectsDir == "" {
 			projectsDir = filepath.Join(config.USER_HOME, "inox-projects") + "/"
 		}
+
+		websocketAddr := "localhost:"
+
+		if projectServerConfig.Port > 0 {
+			websocketAddr += strconv.Itoa(projectServerConfig.Port)
+		} else {
+			websocketAddr += DEFAULT_PROJECT_SERVER_PORT
+		}
+
+		out := os.Stdout
 
 		//cleanup the temporary directories of dead inox processes.
 		go func() {
@@ -534,7 +535,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 
 		opts := project_server.LSPServerConfiguration{
 			Websocket: &project_server.WebsocketServerConfiguration{
-				Addr:              u.Host,
+				Addr:              websocketAddr,
 				MaxWebsocketPerIp: projectServerConfig.MaxWebSocketPerIp,
 			},
 			UseContextLogger:      true,
