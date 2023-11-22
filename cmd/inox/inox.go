@@ -61,7 +61,7 @@ import (
 )
 
 const (
-	INVALID_INPUT_STATUS = 1
+	ERROR_STATUS_CODE = 1
 
 	DEFAULT_ALLOWED_DEV_HOST             = core.Host("https://localhost:8080")
 	PERF_PROFILES_COLLECTION_SAVE_PERIOD = 30 * time.Second
@@ -122,7 +122,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 		return
 	case "run":
 		if !checkNotRunningAsRoot(errW) {
-			os.Exit(INVALID_INPUT_STATUS)
+			os.Exit(ERROR_STATUS_CODE)
 			return
 		}
 
@@ -130,7 +130,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 
 		if len(mainSubCommandArgs) == 0 {
 			fmt.Fprintf(errW, "missing script path\n")
-			os.Exit(INVALID_INPUT_STATUS)
+			os.Exit(ERROR_STATUS_CODE)
 			return
 		}
 
@@ -171,7 +171,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 
 		if fpath == "" {
 			fmt.Fprintf(errW, "missing script path\n")
-			os.Exit(INVALID_INPUT_STATUS)
+			os.Exit(ERROR_STATUS_CODE)
 			return
 		}
 
@@ -279,13 +279,13 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 		}
 	case "check":
 		if !checkNotRunningAsRoot(errW) {
-			os.Exit(INVALID_INPUT_STATUS)
+			os.Exit(ERROR_STATUS_CODE)
 			return
 		}
 
 		if len(mainSubCommandArgs) == 0 {
 			fmt.Fprintf(errW, "missing script path\n")
-			os.Exit(INVALID_INPUT_STATUS)
+			os.Exit(ERROR_STATUS_CODE)
 			return
 		}
 
@@ -342,7 +342,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 		fmt.Fprintln(outW, "")
 	case "lsp":
 		if !checkNotRunningAsRoot(errW) {
-			os.Exit(INVALID_INPUT_STATUS)
+			os.Exit(ERROR_STATUS_CODE)
 			return
 		}
 
@@ -405,7 +405,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 		}
 	case "project-server":
 		if !checkNotRunningAsRoot(errW) {
-			os.Exit(INVALID_INPUT_STATUS)
+			os.Exit(ERROR_STATUS_CODE)
 			return
 		}
 
@@ -591,7 +591,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 		}
 	case inoxd.DAEMON_SUBCMD:
 		if !checkNotRunningAsRoot(errW) {
-			os.Exit(INVALID_INPUT_STATUS)
+			os.Exit(ERROR_STATUS_CODE)
 			return
 		}
 
@@ -631,9 +631,16 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 		daemonConfig.InoxBinaryPath = systemdprovider.DEFAULT_INOX_PATH
 
 		inoxd.Inoxd(daemonConfig, errW, outW)
+
+	case cloudproxy.CLOUD_PROXY_SUBCMD_NAME:
+		err := cloudproxy.Run(outW, errW)
+		if err != nil {
+			fmt.Fprintln(errW, err)
+			os.Exit(ERROR_STATUS_CODE)
+		}
 	case inoxprocess.CONTROLLED_SUBCMD: //the current process is controlled by a control server
 		if !checkNotRunningAsRoot(errW) {
-			os.Exit(INVALID_INPUT_STATUS)
+			os.Exit(ERROR_STATUS_CODE)
 			return
 		}
 
@@ -699,7 +706,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 		client.StartControl()
 	case "shell":
 		if !checkNotRunningAsRoot(errW) {
-			os.Exit(INVALID_INPUT_STATUS)
+			os.Exit(ERROR_STATUS_CODE)
 			return
 		}
 
@@ -739,13 +746,13 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 		inoxsh_ns.StartShell(state, config)
 	case "eval", "e":
 		if !checkNotRunningAsRoot(errW) {
-			os.Exit(INVALID_INPUT_STATUS)
+			os.Exit(ERROR_STATUS_CODE)
 			return
 		}
 
 		if len(mainSubCommandArgs) == 0 {
 			fmt.Fprintf(errW, "missing code string")
-			os.Exit(INVALID_INPUT_STATUS)
+			os.Exit(ERROR_STATUS_CODE)
 			return
 		}
 
@@ -770,7 +777,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 
 		if strings.TrimSpace(code) == "" {
 			fmt.Fprintln(outW, "empty command")
-			os.Exit(INVALID_INPUT_STATUS)
+			os.Exit(ERROR_STATUS_CODE)
 			return
 		}
 
@@ -816,7 +823,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 		}
 	default:
 		fmt.Fprintf(errW, "unknown command '%s'\n", mainSubCommand)
-		os.Exit(INVALID_INPUT_STATUS)
+		os.Exit(ERROR_STATUS_CODE)
 		return
 	}
 }

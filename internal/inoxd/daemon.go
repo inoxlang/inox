@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"io"
 	"os/exec"
+	"time"
 
 	"github.com/containerd/cgroups/v3"
+	"github.com/inoxlang/inox/internal/inoxd/cloudproxy"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
@@ -58,14 +60,48 @@ func Inoxd(config DaemonConfig, errW, outW io.Writer) {
 		if !createInoxCgroup(outW, errW) {
 			return
 		}
+
+		//launch proxy
+		go func() {
+			const MAX_TRY_COUNT = 3
+			tryCount := 0
+			var lastLaunchTime time.Time
+
+			for {
+				if tryCount >= MAX_TRY_COUNT {
+					fmt.Fprintf(errW, "cloud proxy process exited unexpectedly %d or more times in a short timeframe; wait 5 minutes", MAX_TRY_COUNT)
+					time.Sleep(5 * time.Minute)
+					tryCount = 0
+				}
+
+				tryCount++
+				lastLaunchTime = time.Now()
+
+				err := launchCloudProxy(CloudProxyCmdParams{
+					inoxBinaryPath: config.InoxBinaryPath,
+					stderr:         errW,
+					stdout:         outW,
+				})
+
+				fmt.Fprintf(errW, "cloud proxy process returned: %s\n", err.Error())
+
+				if time.Since(lastLaunchTime) < 10*time.Second {
+					tryCount++
+				} else {
+					tryCount = 1
+				}
+			}
+		}()
 	}
 
-	launchProjectServer(projectServerCmdParams{
-		config:         serverConfig,
-		inoxBinaryPath: config.InoxBinaryPath,
-		stderr:         errW,
-		stdout:         outW,
-	})
+	// launchProjectServer(projectServerCmdParams{
+	// 	config:         serverConfig,
+	// 	inoxBinaryPath: config.InoxBinaryPath,
+	// 	stderr:         errW,
+	// 	stdout:         outW,
+	// })
+
+	time.Sleep(time.Hour)
 }
 
 type projectServerCmdParams struct {
@@ -81,7 +117,23 @@ func launchProjectServer(args projectServerCmdParams) {
 	cmd.Stderr = args.stderr
 	cmd.Stdout = args.stdout
 
+	fmt.Fprintln(args.stdout, "create a new inox process (project server)")
+
 	if err := cmd.Run(); err != nil {
 		fmt.Fprintln(args.stderr, err.Error())
 	}
+}
+
+type CloudProxyCmdParams struct {
+	inoxBinaryPath string
+	stderr, stdout io.Writer
+}
+
+func launchCloudProxy(args CloudProxyCmdParams) error {
+	cmd := exec.Command(args.inoxBinaryPath, cloudproxy.CLOUD_PROXY_SUBCMD_NAME)
+	cmd.Stderr = args.stderr
+	cmd.Stdout = args.stdout
+
+	fmt.Fprintln(args.stdout, "create a new inox process (cloud proxy)")
+	return cmd.Run()
 }

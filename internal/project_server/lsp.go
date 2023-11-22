@@ -15,7 +15,8 @@ import (
 )
 
 const (
-	LSP_LOG_SRC = "/lsp"
+	LSP_LOG_SRC                 = "/lsp"
+	DEFAULT_PROJECT_SERVER_PORT = "8305"
 )
 
 var HOVER_PRETTY_PRINT_CONFIG = &pprint.PrettyPrintConfig{
