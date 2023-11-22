@@ -417,8 +417,6 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 		lspFlags.StringVar(&host, "h", "", "host")
 		lspFlags.StringVar(&configOrConfigFile, "config", "", "JSON configuration or JSON file")
 
-		var projectsDir = filepath.Join(config.USER_HOME, "inox-projects") + "/"
-
 		err := lspFlags.Parse(mainSubCommandArgs)
 		if err != nil {
 			fmt.Fprintln(errW, "project-server:", err)
@@ -456,6 +454,10 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 		}
 
 		out := os.Stdout
+		projectsDir := projectServerConfig.ProjectsDir
+		if projectsDir == "" {
+			projectsDir = filepath.Join(config.USER_HOME, "inox-projects") + "/"
+		}
 
 		//cleanup the temporary directories of dead inox processes.
 		go func() {

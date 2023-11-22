@@ -14,14 +14,20 @@ const DAEMON_SUBCMD = "daemon"
 
 type DaemonConfig struct {
 	InoxCloud      bool                          `json:"inoxCloud"`
+	CloudProxy     *CloudProxyConfig             `json:"cloudProxy,omitempty"` //ignored if inoxCloud is false
 	Server         IndividualProjectServerConfig `json:"serverConfig"`
 	InoxBinaryPath string
 }
 
 type IndividualProjectServerConfig struct {
-	MaxWebSocketPerIp      int  `json:"maxWebsocketPerIp"`
-	IgnoreInstalledBrowser bool `json:"ignoreInstalledBrowser,omitempty"`
-	ProjectsDir            bool `json:"projectsDir,omitempty"` //if not set, defaults to filepath.Join(config.USER_HOME, "inox-projects")
+	MaxWebSocketPerIp      int    `json:"maxWebsocketPerIp"`
+	IgnoreInstalledBrowser bool   `json:"ignoreInstalledBrowser,omitempty"`
+	ProjectsDir            string `json:"projectsDir,omitempty"` //if not set, defaults to filepath.Join(config.USER_HOME, "inox-projects")
+	BehindCloudProxy       bool   `json:"behindCloudProxy,omitempty"`
+}
+
+type CloudProxyConfig struct {
+	MaxWebSocketPerIp int `json:"maxWebsocketPerIp"`
 }
 
 func Inoxd(config DaemonConfig, errW, outW io.Writer) {
@@ -41,6 +47,8 @@ func Inoxd(config DaemonConfig, errW, outW io.Writer) {
 	fmt.Fprintf(outW, "current cgroup mode is %q\n", modeName)
 
 	if config.InoxCloud {
+		serverConfig.BehindCloudProxy = true
+
 		if mode != cgroups.Unified {
 			fmt.Fprintf(errW, "abort execution because current cgroup mode is not 'unified'\n")
 			return

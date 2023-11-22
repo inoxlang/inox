@@ -74,17 +74,16 @@ func createInoxCgroup(outW, errW io.Writer) bool {
 		if err != nil {
 			fmt.Fprintln(errW, err.Error())
 			return false
-
 		}
 
 		_, err = f.Write([]byte("+cpuset +cpu +io +memory +pids"))
 
 		if err != nil {
 			fmt.Fprintln(errW, err.Error())
+			f.Close()
 			return false
 
 		}
-
 		f.Close()
 	}
 
