@@ -10,13 +10,15 @@ import (
 	"path/filepath"
 	"strconv"
 	"syscall"
+
+	inoxdcrypto "github.com/inoxlang/inox/internal/inoxd/crypto"
 )
 
 const (
-	DEFAULT_INOXD_ENV_FILE_PATH  = "/run/inoxd/env"
-	INOXD_ENV_FILE_PERMS         = fs.FileMode(0o440)
-	INOXD_ENV_FILE_DIR_PERMS     = fs.FileMode(0o770)
-	INOXD_MASTER_KEY_ENV_VARNAME = "INOXD_MASTER_KEY"
+	DEFAULT_INOXD_ENV_FILE_PATH     = "/run/inoxd/env"
+	INOXD_ENV_FILE_PERMS            = fs.FileMode(0o440)
+	INOXD_ENV_FILE_DIR_PERMS        = fs.FileMode(0o770)
+	INOXD_MASTER_KEYSET_ENV_VARNAME = "INOXD_MASTER_KEYSET"
 )
 
 var (
@@ -28,6 +30,7 @@ var (
 
 // CreateInoxdEnvFileIfNotExists creates an environment file to be used by systemd to start inoxd.
 // The file contains EXTREMELY SENSITIVE information:
+// INOXD_MASTER_KEYSET: a set of master keys primarily used to encrypt and decrypt keys.
 func CreateInoxdEnvFileIfNotExists(outW io.Writer) (path string, _ error) {
 	currentUser, err := user.Current()
 	if err != nil {
@@ -80,7 +83,9 @@ func CreateInoxdEnvFileIfNotExists(outW io.Writer) (path string, _ error) {
 			return "", err
 		}
 
-		fmt.Fprintln(f, "XX=3")
+		//write environment variables to the file
+
+		fmt.Fprintf(f, "%s='%s'\n", INOXD_MASTER_KEYSET_ENV_VARNAME, inoxdcrypto.GenerateRandomInoxdMasterKeySet())
 		f.Close()
 
 		//remove write permission
