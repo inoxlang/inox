@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/containerd/cgroups/v3"
 	"github.com/containerd/cgroups/v3/cgroup2"
 	"github.com/inoxlang/inox/internal/utils"
 )
@@ -13,6 +14,21 @@ import (
 const (
 	CGROUPV2_PATH = "/sys/fs/cgroup/"
 )
+
+func getCgroupMode() (cgroups.CGMode, string) {
+	mode := cgroups.Mode()
+	modeName := "unavailable"
+	switch mode {
+	case cgroups.Legacy:
+		modeName = "legacy"
+	case cgroups.Hybrid:
+		modeName = "hybrid"
+	case cgroups.Unified:
+		modeName = "unified"
+	}
+
+	return mode, modeName
+}
 
 // createInoxCgroup creates the inox cgroup, it's a subgroup of the unit group (inox.service).
 func createInoxCgroup(outW, errW io.Writer) bool {

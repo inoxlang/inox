@@ -8,6 +8,7 @@ import (
 
 	"github.com/containerd/cgroups/v3"
 	"github.com/inoxlang/inox/internal/inoxd/cloudproxy"
+	inoxdcrypto "github.com/inoxlang/inox/internal/inoxd/crypto"
 	"github.com/inoxlang/inox/internal/project_server"
 )
 
@@ -27,18 +28,16 @@ type CloudProxyConfig struct {
 func Inoxd(config DaemonConfig, errW, outW io.Writer) {
 	serverConfig := config.Server
 
-	mode := cgroups.Mode()
-	modeName := "unavailable"
-	switch mode {
-	case cgroups.Legacy:
-		modeName = "legacy"
-	case cgroups.Hybrid:
-		modeName = "hybrid"
-	case cgroups.Unified:
-		modeName = "unified"
+	mode, modeName := getCgroupMode()
+	fmt.Fprintf(outW, "current cgroup mode is %q\n", modeName)
+
+	masterKeySet, err := inoxdcrypto.LoadInoxdMasterKeysetFromEnv()
+	if err != nil {
+		fmt.Fprintf(errW, "failed to load inox master keyset: %s", err.Error())
+		return
 	}
 
-	fmt.Fprintf(outW, "current cgroup mode is %q\n", modeName)
+	fmt.Fprintf(outW, "master keyset successfully loaded, it contains %d key(s)\n", len(masterKeySet.KeysetInfo().KeyInfo))
 
 	if !config.InoxCloud {
 		project_server.ExecuteProjectServerCmd(project_server.ProjectServerCmdParams{
