@@ -8,6 +8,7 @@ import (
 	"github.com/inoxlang/inox/internal/config"
 	"github.com/inoxlang/inox/internal/core"
 	_ "github.com/inoxlang/inox/internal/globals"
+	"github.com/inoxlang/inox/internal/inoxd/cloudflared"
 	"github.com/inoxlang/inox/internal/inoxd/cloudproxy"
 
 	// ====================== INOX IMPORTS ============================
@@ -299,7 +300,40 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 			return ERROR_STATUS_CODE
 		}
 
-		inoxCloud := slices.Contains(mainSubCommandArgs, "--inox-cloud")
+		flags := flag.NewFlagSet("add-service", flag.ExitOnError)
+		var inoxCloud bool
+		var tunnelProvider string
+
+		flags.BoolVar(&inoxCloud, "inox-cloud", false, "enable inox cloud")
+		flags.StringVar(&tunnelProvider, "tunnel-provider", "", "name of the tunnel provider, only 'cloudflare' is supported for now.")
+
+		err = flags.Parse(mainSubCommandArgs)
+		if err != nil {
+			fmt.Fprintln(errW, "ERROR:", err)
+			return ERROR_STATUS_CODE
+		}
+
+		if tunnelProvider != "" {
+			if tunnelProvider != "cloudflare" {
+				fmt.Fprintln(errW, "ERROR: only 'cloudflare' is supported as a tunnel provider for now")
+				return ERROR_STATUS_CODE
+			}
+
+			fmt.Fprintln(outW, "download cloudflared")
+			binary, err := cloudflared.DownloadLatestBinaryFromGithub()
+			if err != nil {
+				fmt.Fprintln(errW, "ERROR:", err)
+				return ERROR_STATUS_CODE
+			}
+
+			fmt.Fprintln(errW, "install the cloudlared binary")
+			err = cloudflared.InstallBinary(binary)
+			if err != nil {
+				fmt.Fprintln(errW, "ERROR:", err)
+				return ERROR_STATUS_CODE
+			}
+		}
+
 		envFilePath, err := systemdprovider.CreateInoxdEnvFileIfNotExists(outW)
 		if err != nil {
 			fmt.Fprintln(errW, "ERROR:", err)
