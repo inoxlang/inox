@@ -11,7 +11,6 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
-	"time"
 
 	"github.com/coreos/go-systemd/v22/unit"
 	"github.com/inoxlang/inox/internal/inoxd"
@@ -31,8 +30,6 @@ var (
 	ErrUnitFileExists = errors.New("unit file already exists")
 	ErrNoSystemd      = errors.New("systemd does not seem to be the init system on this machine")
 	ErrNotRoot        = errors.New("current user is not root")
-
-	SYSTEMCTL_ALLOWED_LOCATIONS = []string{"/usr/bin/systemctl"}
 )
 
 type InoxUnitParams struct {
@@ -190,56 +187,4 @@ func EnableInoxd(unitName string, out io.Writer, errOut io.Writer) error {
 	fmt.Fprintln(out, cmd.String())
 
 	return cmd.Run()
-}
-
-func StartInoxd(unitName string, restart bool, out io.Writer, errOut io.Writer) error {
-	systemctlPath, err := exec.LookPath(SYSTEMCTL_CMD_NAME)
-	if err != nil {
-		return err
-	}
-
-	if !slices.Contains(SYSTEMCTL_ALLOWED_LOCATIONS, systemctlPath) {
-		return fmt.Errorf("the binary for the %s command has an unexpected location: %q", SYSTEMCTL_CMD_NAME, systemctlPath)
-	}
-
-	subcmd := "start"
-	if restart {
-		subcmd = "restart"
-	}
-
-	startCmd := exec.Command(systemctlPath, subcmd, unitName)
-	startCmd.Stderr = errOut
-	startCmd.Stdout = out
-
-	fmt.Fprintln(out, "\nstart inoxd service:")
-	fmt.Fprintln(out, startCmd.String())
-
-	err = startCmd.Run()
-	if err != nil {
-		return err
-	}
-
-	//wait a bit before getting the status
-	time.Sleep(time.Second)
-
-	//get and print status
-
-	statusCmd := exec.Command(systemctlPath, "status", unitName)
-
-	//wrap out & errOut to disable interactivity.
-	//TODO: force systemctl to use colors, setting SYSTEMD_COLORS=1 and SYSTEMD_URLIFY=0 does not seem to work (?).
-	statusCmd.Stdout = io.MultiWriter(out)
-	statusCmd.Stderr = io.MultiWriter(errOut)
-
-	fmt.Fprintln(out, "\nget status:")
-	fmt.Fprintln(out, statusCmd.String())
-
-	err = statusCmd.Run()
-
-	//ignore error if systemctl's exit status is 3 because it does not seem to signal an important issue.
-	if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == 3 {
-		return nil
-	}
-
-	return err
 }

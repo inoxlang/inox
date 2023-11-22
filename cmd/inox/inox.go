@@ -74,6 +74,7 @@ const (
 
 	HELP = "Usage:\n\t<command> [arguments]\n\nThe commands are:\n" +
 		"\tadd-service - [root] add the Inox service unit (systemd) and create the " + inoxd.INOXD_USERNAME + " user\n" +
+		"\tremove-service - [root] stop the Inox service and remove the Inox service unit (systemd)\n" +
 		"\trun - run a script\n" +
 		"\tcheck - check a script\n" +
 		"\tshell - start the shell\n" +
@@ -107,7 +108,10 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 		mainSubCommandArgs = args[2:]
 	}
 
-	if mainSubCommand != "add-service" && !checkNotRunningAsRoot(errW) {
+	//abort execution if the command is not allowed to be runned as root.
+	if mainSubCommand != "add-service" && mainSubCommand != "remove-service" && mainSubCommand != "help" &&
+		mainSubCommand != "--help" && mainSubCommand != "-h" &&
+		!checkNotRunningAsRoot(errW) {
 		return ERROR_STATUS_CODE
 	}
 
@@ -361,7 +365,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 			fmt.Fprintln(outW, "unit file created")
 		}
 
-		//enable & start inox
+		//enable & start inoxd
 		if !alreadyExists {
 			err = systemdprovider.EnableInoxd(unitName, outW, errW)
 			if err != nil {
@@ -378,6 +382,25 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 			return
 		}
 		fmt.Fprintln(outW, "")
+	case "remove-service":
+		flags := flag.NewFlagSet("remove-service", flag.ExitOnError)
+		var unitName string
+
+		flags.StringVar(&unitName, "unit", "", "name of the inox unit, it should be 'inox'")
+		if unitName == "" {
+			unitName = "inox"
+		}
+
+		err := flags.Parse(mainSubCommandArgs)
+		if err != nil {
+			fmt.Fprintln(errW, "ERROR:", err)
+			return ERROR_STATUS_CODE
+		}
+
+		if err := systemdprovider.StopRemoveUnit(unitName, outW, errW); err != nil {
+			fmt.Fprintln(errW, "ERROR:", err)
+			return ERROR_STATUS_CODE
+		}
 	case "lsp":
 		lspFlags := flag.NewFlagSet("lsp", flag.ExitOnError)
 		var host string
