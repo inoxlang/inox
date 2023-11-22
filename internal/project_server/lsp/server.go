@@ -137,6 +137,7 @@ func (s *Server) startWebsocketServer(addr string) error {
 		Addr:              addr,
 		RpcServer:         s.rpcServer,
 		MaxWebsocketPerIp: s.Opt.MaxWebsocketPerIp,
+		BehindCloudProxy:  s.Opt.BehindCloudProxy,
 	})
 	if err != nil {
 		return err

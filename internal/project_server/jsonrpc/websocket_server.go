@@ -1,6 +1,7 @@
 package jsonrpc
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -12,8 +13,13 @@ import (
 )
 
 const (
-	JSON_RPC_SERVER_LOGC_SRC = "/json-rpc"
-	DEFAULT_MAX_IP_WS_CONNS  = 3
+	JSON_RPC_SERVER_LOGC_SRC                = "/json-rpc"
+	DEFAULT_MAX_IP_WS_CONNS                 = 3
+	DEFAULT_MAX_IP_WS_CONNS_IF_BEHIND_PROXY = 10_000
+)
+
+var (
+	ErrOnly127001AllowedIfBehindProxy = errors.New("only connections from the same host (127.0.0.1) are allowed")
 )
 
 type JsonRpcWebsocketServer struct {
@@ -30,6 +36,10 @@ type JsonRpcWebsocketServerConfig struct {
 
 	//defaults to DEFAULT_MAX_IP_WS_CONNS
 	MaxWebsocketPerIp int
+
+	//if true only connections from localhost are allowed and
+	//the effective value of MaxWebsocketPerIp is set to DEFAULT_MAX_IP_WS_CONNS_IF_BEHIND_PROXY.
+	BehindCloudProxy bool
 }
 
 func NewJsonRpcWebsocketServer(ctx *core.Context, config JsonRpcWebsocketServerConfig) (*JsonRpcWebsocketServer, error) {
@@ -44,6 +54,10 @@ func NewJsonRpcWebsocketServer(ctx *core.Context, config JsonRpcWebsocketServerC
 
 	if config.MaxWebsocketPerIp <= 0 {
 		config.MaxWebsocketPerIp = DEFAULT_MAX_IP_WS_CONNS
+	}
+
+	if config.BehindCloudProxy {
+		config.MaxWebsocketPerIp = DEFAULT_MAX_IP_WS_CONNS_IF_BEHIND_PROXY
 	}
 
 	server := &JsonRpcWebsocketServer{
@@ -82,6 +96,12 @@ func (server *JsonRpcWebsocketServer) allowNewConnection(
 	remoteAddrPort nettypes.RemoteAddrWithPort,
 	remoteAddr nettypes.RemoteIpAddr,
 	currentConns []*net_ns.WebsocketConnection) error {
+
+	if server.config.BehindCloudProxy {
+		if remoteAddr != "127.0.0.1" {
+			return ErrOnly127001AllowedIfBehindProxy
+		}
+	}
 
 	if len(currentConns)+1 <= server.config.MaxWebsocketPerIp {
 		return nil

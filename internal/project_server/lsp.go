@@ -48,6 +48,7 @@ type WebsocketServerConfiguration struct {
 	Certificate           string
 	CertificatePrivateKey string
 	MaxWebsocketPerIp     int
+	BehindCloudProxy      bool
 }
 
 func StartLSPServer(ctx *core.Context, serverConfig LSPServerConfiguration) (finalErr error) {
@@ -92,6 +93,7 @@ func StartLSPServer(ctx *core.Context, serverConfig LSPServerConfiguration) (fin
 		options.Certificate = serverConfig.Websocket.Certificate
 		options.CertificateKey = serverConfig.Websocket.CertificatePrivateKey
 		options.MaxWebsocketPerIp = serverConfig.Websocket.MaxWebsocketPerIp
+		options.BehindCloudProxy = serverConfig.Websocket.BehindCloudProxy
 	}
 
 	if serverConfig.MessageReaderWriter != nil {

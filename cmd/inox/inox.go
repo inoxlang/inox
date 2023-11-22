@@ -537,6 +537,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) {
 			Websocket: &project_server.WebsocketServerConfiguration{
 				Addr:              websocketAddr,
 				MaxWebsocketPerIp: projectServerConfig.MaxWebSocketPerIp,
+				BehindCloudProxy:  projectServerConfig.BehindCloudProxy,
 			},
 			UseContextLogger:      true,
 			ProjectMode:           true,

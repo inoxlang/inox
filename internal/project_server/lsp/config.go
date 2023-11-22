@@ -15,6 +15,7 @@ type Config struct {
 	Certificate       string
 	CertificateKey    string
 	MaxWebsocketPerIp int
+	BehindCloudProxy  bool
 	HttpHandler       http.Handler
 
 	OnSession jsonrpc.SessionCreationCallbackFn
