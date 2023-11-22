@@ -235,5 +235,11 @@ func StartInoxd(unitName string, restart bool, out io.Writer, errOut io.Writer) 
 	fmt.Fprintln(out, statusCmd.String())
 
 	err = statusCmd.Run()
+
+	//ignore error if systemctl's exit status is 3 because it does not seem to signal an important issue.
+	if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == 3 {
+		return nil
+	}
+
 	return err
 }
