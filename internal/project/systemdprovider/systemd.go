@@ -90,6 +90,11 @@ func WriteInoxUnitFile(args InoxUnitParams) (unitName string, _ error) {
 		Section: "Service",
 		Entries: []*unit.UnitEntry{
 			{
+				Name: "ExecStart",
+				//inox daemon '-config=....'
+				Value: DEFAULT_INOX_PATH + " " + inoxd.DAEMON_SUBCMD + " " + inoxConfig,
+			},
+			{
 				Name:  "Type",
 				Value: "simple",
 			},
@@ -101,14 +106,32 @@ func WriteInoxUnitFile(args InoxUnitParams) (unitName string, _ error) {
 				Name:  "WorkingDirectory",
 				Value: args.Homedir,
 			},
+
 			{
+				//https://systemd.io/CGROUP_DELEGATION
+				//https://www.freedesktop.org/wiki/Software/systemd/ControlGroupInterface/
 				Name:  "Delegate",
 				Value: "yes",
 			},
 			{
-				Name: "ExecStart",
-				//inox daemon '-config=....'
-				Value: DEFAULT_INOX_PATH + " " + inoxd.DAEMON_SUBCMD + " " + inoxConfig,
+				Name:  "Restart",
+				Value: "always",
+			},
+
+			{
+				//https://www.freedesktop.org/software/systemd/man/latest/systemd.service.html#RestartSec=
+				Name:  "RestartSec",
+				Value: "1s",
+			},
+
+			{
+				//https://www.freedesktop.org/software/systemd/man/latest/systemd.unit.html#StartLimitIntervalSec=interval
+				Name:  "StartLimitIntervalSec",
+				Value: "300",
+			},
+			{
+				Name:  "StartLimitBurst",
+				Value: "5",
 			},
 		},
 	}
