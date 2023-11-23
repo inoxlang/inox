@@ -126,6 +126,7 @@ func RemoveInoxdUser(args UserRemovalParams) error {
 	cmd.Stdout = args.Out
 	cmd.Stderr = args.ErrOut
 
+	fmt.Fprintln(args.Out, cmd.String())
 	err = cmd.Run()
 	if err != nil {
 		return fmt.Errorf("the userdel command failed: %w", err)
