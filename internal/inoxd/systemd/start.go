@@ -31,7 +31,7 @@ func StartInoxd(unitName string, restart bool, out io.Writer, errOut io.Writer) 
 	}
 
 	//wait a bit before getting the status
-	time.Sleep(time.Second)
+	time.Sleep(2 * time.Second)
 
 	//get and print status
 

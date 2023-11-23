@@ -9,7 +9,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"slices"
 	"strings"
 
 	"github.com/coreos/go-systemd/v22/unit"
@@ -170,13 +169,9 @@ func WriteInoxUnitFile(args InoxUnitParams) (unitName string, _ error) {
 }
 
 func EnableInoxd(unitName string, out io.Writer, errOut io.Writer) error {
-	systemctlPath, err := exec.LookPath(SYSTEMCTL_CMD_NAME)
+	systemctlPath, err := getSystemctlPath()
 	if err != nil {
 		return err
-	}
-
-	if !slices.Contains(SYSTEMCTL_ALLOWED_LOCATIONS, systemctlPath) {
-		return fmt.Errorf("the binary for the %s command has an unexpected location: %q", SYSTEMCTL_CMD_NAME, systemctlPath)
 	}
 
 	cmd := exec.Command(systemctlPath, "enable", unitName)
