@@ -40,7 +40,7 @@ type InoxUnitParams struct {
 	EnvFile   string //optional
 }
 
-// WriteInoxUnitFile writes the unit file for the inox service at INOX_SERVICE_UNIT_PATH, if the file already exists
+// WriteInoxUnitFile writes the unit file for inoxd at INOX_SERVICE_UNIT_PATH, if the file already exists
 // ErrUnitFileExists is returned and unitName is set.
 func WriteInoxUnitFile(args InoxUnitParams) (unitName string, _ error) {
 	path := INOX_SERVICE_UNIT_PATH
@@ -69,7 +69,7 @@ func WriteInoxUnitFile(args InoxUnitParams) (unitName string, _ error) {
 		Entries: []*unit.UnitEntry{
 			{
 				Name:  "Description",
-				Value: "Inox service (Inoxd)",
+				Value: "Inox Daemon (inoxd)",
 			},
 			{
 				Name:  "Requires",
