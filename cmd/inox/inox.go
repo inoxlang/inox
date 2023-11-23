@@ -355,6 +355,13 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 			return ERROR_STATUS_CODE
 		}
 
+		if tunnelProvider != "" && tunnelProvider != "cloudflare" {
+			fmt.Fprintln(errW, "ERROR: only 'cloudflare' is supported as a tunnel provider for now")
+			return ERROR_STATUS_CODE
+		}
+
+		//create the inoxd user and add the inoxd unit.
+
 		username, uid, homedir, err := inoxd.CreateInoxdUserIfNotExists(outW, errW)
 		if err != nil {
 			fmt.Fprintln(errW, "ERROR:", err)
@@ -363,10 +370,6 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 		utils.PrintSmallLineSeparator(outW)
 
 		if tunnelProvider != "" {
-			if tunnelProvider != "cloudflare" {
-				fmt.Fprintln(errW, "ERROR: only 'cloudflare' is supported as a tunnel provider for now")
-				return ERROR_STATUS_CODE
-			}
 
 			fmt.Fprintln(outW, "download cloudflared")
 			binary, err := cloudflared.DownloadLatestBinaryFromGithub()
