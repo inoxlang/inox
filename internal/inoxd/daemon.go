@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/containerd/cgroups/v3"
-	"github.com/inoxlang/inox/internal/inoxd/cloudproxy"
+	"github.com/inoxlang/inox/internal/inoxd/cloud/cloudproxy"
 	inoxdcrypto "github.com/inoxlang/inox/internal/inoxd/crypto"
 	"github.com/inoxlang/inox/internal/project_server"
 )

@@ -12,8 +12,8 @@ import (
 	metricsperf "github.com/inoxlang/inox/internal/metrics-perf"
 
 	"github.com/inoxlang/inox/internal/inoxd"
+	"github.com/inoxlang/inox/internal/inoxd/cloud/cloudproxy"
 	"github.com/inoxlang/inox/internal/inoxd/cloudflared"
-	"github.com/inoxlang/inox/internal/inoxd/cloudproxy"
 	"github.com/inoxlang/inox/internal/inoxd/systemd"
 
 	"github.com/inoxlang/inox/internal/globals/chrome_ns"

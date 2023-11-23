@@ -37,11 +37,15 @@ func Run(outW, errW io.Writer) error {
 		Addr: addr,
 		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if r.URL.Path == "/" {
-				_, err := wsServer.UpgradeGoValues(w, r, allowConnection)
-				if err != nil {
-					w.WriteHeader(http.StatusInternalServerError)
-				}
-				return
+
+				_ = wsServer
+
+				w.Write([]byte("hello"))
+				// _, err := wsServer.UpgradeGoValues(w, r, allowConnection)
+				// if err != nil {
+				// 	w.WriteHeader(http.StatusInternalServerError)
+				// }
+				// return
 			}
 		}),
 	})
