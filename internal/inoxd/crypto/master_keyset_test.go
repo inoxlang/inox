@@ -4,6 +4,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/inoxlang/inox/internal/inoxd/systemd/unitenv"
 	"github.com/stretchr/testify/assert"
 	"github.com/tink-crypto/tink-go/aead"
 )
@@ -39,7 +40,7 @@ func TestInoxdMasterKeySet(t *testing.T) {
 }
 
 func TestLoadInoxdMasterKeysetFromEnv(t *testing.T) {
-	varname := INOXD_MASTER_KEYSET_ENV_VARNAME
+	varname := unitenv.INOXD_MASTER_KEYSET_ENV_VARNAME
 
 	t.Run("if the env var is not set an error should be returned", func(t *testing.T) {
 		save, ok := os.LookupEnv(varname)
