@@ -1,6 +1,7 @@
 package systemdprovider
 
 import (
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"io"
@@ -12,6 +13,7 @@ import (
 	"syscall"
 
 	inoxdcrypto "github.com/inoxlang/inox/internal/inoxd/crypto"
+	"github.com/inoxlang/inox/internal/project/systemdprovider/unitenv"
 )
 
 const (
@@ -27,10 +29,15 @@ var (
 	ErrEnvFileNotOwnedByRootGroup = errors.New("the inoxd environment file is not owned by the root group")
 )
 
+type EnvFileCreationParams struct {
+	CloudflareOriginCertificate string //optional, if set CLOUDFLARE_ORIGIN_CERTIFICATE is set.
+}
+
 // CreateInoxdEnvFileIfNotExists creates an environment file to be used by systemd to start inoxd.
 // The file contains EXTREMELY SENSITIVE information:
 // INOXD_MASTER_KEYSET: a set of master keys primarily used to encrypt and decrypt keys.
-func CreateInoxdEnvFileIfNotExists(outW io.Writer) (path string, _ error) {
+// CLOUDFLARE_ORIGIN_CERTIFICATE: the origin certificate delivered by Cloudflare.
+func CreateInoxdEnvFileIfNotExists(outW io.Writer, input EnvFileCreationParams) (path string, _ error) {
 	currentUser, err := user.Current()
 	if err != nil {
 		return "", fmt.Errorf("failed to get current user: %w", err)
@@ -84,7 +91,13 @@ func CreateInoxdEnvFileIfNotExists(outW io.Writer) (path string, _ error) {
 
 		//write environment variables to the file
 
-		fmt.Fprintf(f, "%s='%s'\n", inoxdcrypto.INOXD_MASTER_KEYSET_ENV_VARNAME, inoxdcrypto.GenerateRandomInoxdMasterKeyset())
+		fmt.Fprintf(f, "%s='%s'\n", unitenv.INOXD_MASTER_KEYSET_ENV_VARNAME, inoxdcrypto.GenerateRandomInoxdMasterKeyset())
+		if input.CloudflareOriginCertificate != "" {
+			//encode to base64 to avoid having linefeeds and carriage returns.
+			varValue := base64.StdEncoding.EncodeToString([]byte(input.CloudflareOriginCertificate))
+			fmt.Fprintf(f, "%s='%s'\n", unitenv.CLOUDFLARE_ORIGIN_CERTIFICATE_ENV_VARNAME, varValue)
+		}
+
 		f.Close()
 
 		//remove write permission

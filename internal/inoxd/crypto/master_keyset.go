@@ -8,20 +8,17 @@ import (
 	"log"
 	"os"
 
+	"github.com/inoxlang/inox/internal/project/systemdprovider/unitenv"
 	"github.com/tink-crypto/tink-go/aead"
 	"github.com/tink-crypto/tink-go/insecurecleartextkeyset"
 	"github.com/tink-crypto/tink-go/keyset"
 )
 
-const (
-	INOXD_MASTER_KEYSET_ENV_VARNAME = "INOXD_MASTER_KEYSET"
-)
-
 var (
 	INOXD_MASTER_KEYSET_ENCODING = base64.StdEncoding
 
-	ErrInoxdMasterKeysetEnvVarNotFound    = errors.New(INOXD_MASTER_KEYSET_ENV_VARNAME + " is not set")
-	ErrInoxdMasterKeysetEnvVarSetButEmpty = errors.New(INOXD_MASTER_KEYSET_ENV_VARNAME + " is set but is empty")
+	ErrInoxdMasterKeysetEnvVarNotFound    = errors.New(unitenv.INOXD_MASTER_KEYSET_ENV_VARNAME + " is not set")
+	ErrInoxdMasterKeysetEnvVarSetButEmpty = errors.New(unitenv.INOXD_MASTER_KEYSET_ENV_VARNAME + " is set but is empty")
 )
 
 type JSONSerializedKeySet string
@@ -32,7 +29,7 @@ func InoxdMasterKeySetHandleFrom(serializedKeyset string) (*keyset.Handle, error
 }
 
 func LoadInoxdMasterKeysetFromEnv() (*keyset.Handle, error) {
-	value, ok := os.LookupEnv(INOXD_MASTER_KEYSET_ENV_VARNAME)
+	value, ok := os.LookupEnv(unitenv.INOXD_MASTER_KEYSET_ENV_VARNAME)
 	if !ok {
 		return nil, fmt.Errorf("inoxd master keyset not found in environment variables: %w", ErrInoxdMasterKeysetEnvVarNotFound)
 	}
@@ -40,7 +37,7 @@ func LoadInoxdMasterKeysetFromEnv() (*keyset.Handle, error) {
 		return nil, fmt.Errorf("inoxd master keyset not found in environment variables: %w", ErrInoxdMasterKeysetEnvVarSetButEmpty)
 	}
 
-	os.Unsetenv(INOXD_MASTER_KEYSET_ENV_VARNAME)
+	os.Unsetenv(unitenv.INOXD_MASTER_KEYSET_ENV_VARNAME)
 
 	return InoxdMasterKeySetHandleFrom(value)
 }

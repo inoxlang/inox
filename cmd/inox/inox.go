@@ -317,6 +317,8 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 			return ERROR_STATUS_CODE
 		}
 
+		var cloudflareOriginCertificate string
+
 		if tunnelProvider != "" {
 			if tunnelProvider != "cloudflare" {
 				fmt.Fprintln(errW, "ERROR: only 'cloudflare' is supported as a tunnel provider for now")
@@ -337,14 +339,16 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 				return ERROR_STATUS_CODE
 			}
 
-			_, err = cloudflared.Login(outW, errW)
+			cloudflareOriginCertificate, err = cloudflared.LoginToGetOriginCertificate(outW, errW)
 			if err != nil {
 				fmt.Fprintln(errW, "ERROR:", err)
 				return ERROR_STATUS_CODE
 			}
 		}
 
-		envFilePath, err := systemdprovider.CreateInoxdEnvFileIfNotExists(outW)
+		envFilePath, err := systemdprovider.CreateInoxdEnvFileIfNotExists(outW, systemdprovider.EnvFileCreationParams{
+			CloudflareOriginCertificate: cloudflareOriginCertificate,
+		})
 		if err != nil {
 			fmt.Fprintln(errW, "ERROR:", err)
 			return ERROR_STATUS_CODE
