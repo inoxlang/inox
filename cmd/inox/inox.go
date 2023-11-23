@@ -3,8 +3,6 @@ package main
 import (
 	// ====================== IMPORTANT SIDE EFFECTS ============================
 
-	"strconv"
-
 	"github.com/inoxlang/inox/internal/config"
 	"github.com/inoxlang/inox/internal/core"
 	_ "github.com/inoxlang/inox/internal/globals"
@@ -39,6 +37,7 @@ import (
 	"context"
 	"runtime/debug"
 	"slices"
+	"strconv"
 
 	"encoding/gob"
 	"encoding/hex"
@@ -296,13 +295,13 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 
 		data := inox_ns.GetCheckData(fpath, compilationCtx, outW)
 		fmt.Fprintf(outW, "%s\n\r", utils.Must(json.Marshal(data)))
-
 	case "add-service":
 		username, uid, homedir, err := inoxd.CreateInoxdUserIfNotExists(outW, errW)
 		if err != nil {
 			fmt.Fprintln(errW, "ERROR:", err)
 			return ERROR_STATUS_CODE
 		}
+		utils.PrintSmallLineSeparator(outW)
 
 		flags := flag.NewFlagSet("add-service", flag.ExitOnError)
 		var inoxCloud bool
@@ -310,6 +309,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 
 		flags.BoolVar(&inoxCloud, "inox-cloud", false, "enable inox cloud")
 		flags.StringVar(&tunnelProvider, "tunnel-provider", "", "name of the tunnel provider, only 'cloudflare' is supported for now.")
+		flags.StringVar(&tunnelProvider, "", "", "name of the tunnel provider, only 'cloudflare' is supported for now.")
 
 		err = flags.Parse(mainSubCommandArgs)
 		if err != nil {
@@ -318,6 +318,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 		}
 
 		var cloudflareOriginCertificate string
+		var cloudflareOriginCertificatePath string
 
 		if tunnelProvider != "" {
 			if tunnelProvider != "cloudflare" {
@@ -339,20 +340,37 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 				return ERROR_STATUS_CODE
 			}
 
-			cloudflareOriginCertificate, err = cloudflared.LoginToGetOriginCertificate(outW, errW)
+			cloudflareOriginCertificate, cloudflareOriginCertificatePath, err = cloudflared.LoginToGetOriginCertificate(outW, errW)
 			if err != nil {
 				fmt.Fprintln(errW, "ERROR:", err)
 				return ERROR_STATUS_CODE
 			}
+			utils.PrintSmallLineSeparator(outW)
+
+			token, err := cloudflared.CreateTunnel(cloudflared.CreateTunnelParams{
+				UniqueName:            "inoxd",
+				OriginCertificatePath: cloudflareOriginCertificatePath,
+				OutW:                  outW,
+				ErrW:                  errW,
+			})
+
+			if err != nil {
+				fmt.Fprintln(errW, "ERROR:", err)
+				return ERROR_STATUS_CODE
+			}
+			fmt.Fprintln(outW, string(utils.Must(json.Marshal(token))))
+			utils.PrintSmallLineSeparator(outW)
 		}
 
 		envFilePath, err := systemd.CreateInoxdEnvFileIfNotExists(outW, systemd.EnvFileCreationParams{
 			CloudflareOriginCertificate: cloudflareOriginCertificate,
 		})
+
 		if err != nil {
 			fmt.Fprintln(errW, "ERROR:", err)
 			return ERROR_STATUS_CODE
 		}
+		utils.PrintSmallLineSeparator(outW)
 
 		unitName, err := systemd.WriteInoxUnitFile(systemd.InoxUnitParams{
 			Username:  username,
@@ -373,6 +391,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 			}
 		} else {
 			fmt.Fprintln(outW, "unit file created")
+			utils.PrintSmallLineSeparator(outW)
 		}
 
 		//enable & start inoxd
@@ -383,6 +402,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 				return ERROR_STATUS_CODE
 			}
 		}
+		utils.PrintSmallLineSeparator(outW)
 
 		restart := alreadyExists
 
