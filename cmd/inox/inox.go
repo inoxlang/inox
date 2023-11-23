@@ -395,13 +395,24 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 	case "remove-service":
 		flags := flag.NewFlagSet("remove-service", flag.ExitOnError)
 		var unitName string
+		var removeTunnelConfigs bool
 
 		flags.StringVar(&unitName, "unit", "inox", "name of the inox unit")
+		flags.BoolVar(&removeTunnelConfigs, "remove-tunnel-configs", false, "remove all configuration files of tunnels")
 
 		err := flags.Parse(mainSubCommandArgs)
 		if err != nil {
 			fmt.Fprintln(errW, "ERROR:", err)
 			return ERROR_STATUS_CODE
+		}
+
+		if removeTunnelConfigs {
+			err = cloudflared.RemoveCloudflaredDir(outW)
+			if err != nil {
+				fmt.Fprintln(errW, "ERROR:", err)
+				return ERROR_STATUS_CODE
+			}
+			utils.PrintSmallLineSeparator(outW)
 		}
 
 		if err := systemd.StopRemoveUnit(unitName, outW, errW); err != nil {

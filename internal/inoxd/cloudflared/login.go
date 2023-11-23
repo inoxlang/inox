@@ -8,10 +8,6 @@ import (
 	"os/exec"
 )
 
-const (
-	CERT_PEM_LOCATION = "/root/.cloudflared/cert.pem"
-)
-
 // LoginToGetOriginCertificate executes the cloudlfared login command that shows a link leading to the Cloudflare dashboard
 // to allow the installation of a certificate. The created cert.pem file is read and its content is returned.
 func LoginToGetOriginCertificate(outW, errW io.Writer) (certPemContent string, _ error) {
