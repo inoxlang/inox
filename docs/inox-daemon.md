@@ -23,19 +23,13 @@ inox add-service --tunnel-provider=cloudflare
 
 ```mermaid
 
-flowchart TD
-
-subgraph X[" "]
-direction LR
+flowchart LR
     
 Internet(Internet) -.- CloudflareInfra(Cloudflare Infrastructure) -.- |tunnel| Cloudflared(Cloudflared)
 
 subgraph YourMachine["Your machine"]
     direction LR
         Cloudflared -.- ProjectServer(Project Server)
-end
-
-
 end
 ```
 
