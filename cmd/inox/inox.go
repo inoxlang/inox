@@ -3,6 +3,8 @@ package main
 import (
 	// ====================== IMPORTANT SIDE EFFECTS ============================
 
+	"unicode"
+
 	"github.com/inoxlang/inox/internal/config"
 	"github.com/inoxlang/inox/internal/core"
 	_ "github.com/inoxlang/inox/internal/globals"
@@ -71,21 +73,35 @@ const (
 
 	//text
 
-	HELP = "Usage:\n\t<command> [arguments]\n\nThe commands are:\n" +
-		"\tadd-service - [root] add the Inox service unit (systemd) and create the " + inoxd.INOXD_USERNAME + " user\n" +
-		"\tremove-service - [root] stop the Inox service and remove the Inox service unit (systemd)\n" +
-		"\trun - run a script\n" +
-		"\tcheck - check a script\n" +
-		"\tshell - start the shell\n" +
-		"\teval - evaluate a single statement\n" +
-		"\te - alias for eval\n" +
-		"\tlsp - start the language server (LSP)\n" +
-		"\tproject-server - start the project server\n\n" +
-		"The run command:\n" +
-		"\trun <script path> [passed arguments]\n"
-
 	LINE_SEP = "\n-----------------------------------------"
 )
+
+var (
+	CLI_SUBCOMMANDS = []string{"add-service", "remove-service", "run", "check", "shell", "eval", "e", "lsp", "lsp", "project-server", "help"}
+	SUBCOMMANDS     = append(slices.Clone(CLI_SUBCOMMANDS), inoxd.DAEMON_SUBCMD, inoxprocess.CONTROLLED_SUBCMD, cloudproxy.CLOUD_PROXY_SUBCMD_NAME)
+
+	CLI_SUBCOMMAND_DESCRIPTIONS = map[string]string{
+		"add-service":    "[root] add the Inox service unit (systemd) and create the " + inoxd.INOXD_USERNAME + " user",
+		"remove-service": "[root] stop the Inox service and remove the Inox service unit (systemd)",
+		"run":            "run a script",
+		"check":          "check a script",
+		"shell":          "start the shell",
+		"eval":           "evaluate a single statement",
+		"e":              "alias for eval",
+		"lsp":            "start the language server (LSP)",
+		"project-server": "start the project server",
+		"help":           "show the general help or command-specific help",
+	}
+
+	USAGE = "Usage: "
+)
+
+func init() {
+	for cmd, desc := range CLI_SUBCOMMAND_DESCRIPTIONS {
+		USAGE += "\t" + cmd + " - " + desc + "\n"
+	}
+	USAGE += "\nType `inox help <command>` to get command-specific help.\n"
+}
 
 func main() {
 	debug.SetMaxStack(MAX_STACK_SIZE)
@@ -107,6 +123,25 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 		mainSubCommandArgs = args[2:]
 	}
 
+	//if the command has the shape help <subcommand> ... we modify the arguments to ask the subcommand to print its help message.
+	if mainSubCommand == "help" && len(mainSubCommandArgs) > 0 && mainSubCommandArgs[0] != "" && unicode.IsLetter(rune(mainSubCommandArgs[0][0])) {
+		mainSubCommand = mainSubCommandArgs[0]
+		mainSubCommandArgs = []string{"-h"}
+	}
+
+	//unknown command
+	if !slices.Contains(SUBCOMMANDS, mainSubCommand) {
+		fmt.Fprintf(errW, "unknown command '%s'", mainSubCommand)
+
+		closest, _, ok := utils.FindClosestString(context.Background(), SUBCOMMANDS, mainSubCommand, 2)
+		if ok {
+			fmt.Fprintf(errW, ", did you mean '%s' ?\n", closest)
+		} else {
+			fmt.Fprint(errW, "\n"+USAGE, closest)
+		}
+		return ERROR_STATUS_CODE
+	}
+
 	//abort execution if the command is not allowed to be runned as root.
 	if mainSubCommand != "add-service" && mainSubCommand != "remove-service" && mainSubCommand != "help" &&
 		mainSubCommand != "--help" && mainSubCommand != "-h" &&
@@ -114,6 +149,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 		return ERROR_STATUS_CODE
 	}
 
+	//create a temp directory for the process.
 	processTempDir := fs_ns.GetCreateProcessTempDir()
 	defer func() {
 		fs_ns.GetOsFilesystem().RemoveAll(processTempDir.UnderlyingString())
@@ -129,7 +165,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 
 	switch mainSubCommand {
 	case "help", "--help", "-h":
-		fmt.Fprint(outW, HELP)
+		fmt.Fprint(outW, USAGE)
 		return
 	case "run":
 		//read and check arguments
@@ -139,18 +175,18 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 			return ERROR_STATUS_CODE
 		}
 
-		runFlags := flag.NewFlagSet("run", flag.ExitOnError)
+		flags := flag.NewFlagSet(mainSubCommand, flag.ExitOnError)
 		var useTreeWalking bool
 		var enableTestingMode bool
 		var showBytecode bool
 		var disableOptimization bool
 		var fullyTrusted bool
 
-		runFlags.BoolVar(&enableTestingMode, "test", false, "enable testing mode")
-		runFlags.BoolVar(&useTreeWalking, "t", false, "use tree walking interpreter")
-		runFlags.BoolVar(&showBytecode, "show-bytecode", false, "show emitted bytecode before evaluating the script")
-		runFlags.BoolVar(&disableOptimization, "no-optimization", false, "disable bytecode optimization")
-		runFlags.BoolVar(&fullyTrusted, "fully-trusted", false, "does not show confirmation prompt if the risk score is high")
+		flags.BoolVar(&enableTestingMode, "test", false, "enable testing mode")
+		flags.BoolVar(&useTreeWalking, "t", false, "use tree walking interpreter")
+		flags.BoolVar(&showBytecode, "show-bytecode", false, "show emitted bytecode before evaluating the script")
+		flags.BoolVar(&disableOptimization, "no-optimization", false, "disable bytecode optimization")
+		flags.BoolVar(&fullyTrusted, "fully-trusted", false, "does not show confirmation prompt if the risk score is high")
 
 		//moveFlagsStart(commandArgs)
 
@@ -166,13 +202,17 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 		moduleArgs := mainSubCommandArgs[fileArgIndex+1:]
 		mainSubCommandArgs = mainSubCommandArgs[:fileArgIndex+1]
 
-		err := runFlags.Parse(mainSubCommandArgs)
+		if showHelp(flags, mainSubCommandArgs, outW) { //only show help
+			return
+		}
+
+		err := flags.Parse(mainSubCommandArgs)
 		if err != nil {
 			fmt.Fprintln(outW, err)
 			return
 		}
 
-		fpath := runFlags.Arg(0)
+		fpath := flags.Arg(0)
 
 		if fpath == "" {
 			fmt.Fprintf(errW, "missing script path\n")
@@ -296,26 +336,31 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 		data := inox_ns.GetCheckData(fpath, compilationCtx, outW)
 		fmt.Fprintf(outW, "%s\n\r", utils.Must(json.Marshal(data)))
 	case "add-service":
+		//read and check arguments
+
+		flags := flag.NewFlagSet(mainSubCommand, flag.ExitOnError)
+		var inoxCloud bool
+		var tunnelProvider string
+
+		flags.BoolVar(&inoxCloud, "inox-cloud", false, "enable inox cloud")
+		flags.StringVar(&tunnelProvider, "tunnel-provider", "", "name of the tunnel provider, only 'cloudflare' is supported for now.")
+
+		if showHelp(flags, mainSubCommandArgs, outW) { //only show help
+			return
+		}
+
+		err := flags.Parse(mainSubCommandArgs)
+		if err != nil {
+			fmt.Fprintln(errW, "ERROR:", err)
+			return ERROR_STATUS_CODE
+		}
+
 		username, uid, homedir, err := inoxd.CreateInoxdUserIfNotExists(outW, errW)
 		if err != nil {
 			fmt.Fprintln(errW, "ERROR:", err)
 			return ERROR_STATUS_CODE
 		}
 		utils.PrintSmallLineSeparator(outW)
-
-		flags := flag.NewFlagSet("add-service", flag.ExitOnError)
-		var inoxCloud bool
-		var tunnelProvider string
-
-		flags.BoolVar(&inoxCloud, "inox-cloud", false, "enable inox cloud")
-		flags.StringVar(&tunnelProvider, "tunnel-provider", "", "name of the tunnel provider, only 'cloudflare' is supported for now.")
-		flags.StringVar(&tunnelProvider, "", "", "name of the tunnel provider, only 'cloudflare' is supported for now.")
-
-		err = flags.Parse(mainSubCommandArgs)
-		if err != nil {
-			fmt.Fprintln(errW, "ERROR:", err)
-			return ERROR_STATUS_CODE
-		}
 
 		if tunnelProvider != "" {
 			if tunnelProvider != "cloudflare" {
@@ -387,18 +432,26 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 		}
 		fmt.Fprintln(outW, "")
 	case "remove-service":
-		flags := flag.NewFlagSet("remove-service", flag.ExitOnError)
+		//read and check arguments
+
+		flags := flag.NewFlagSet(mainSubCommand, flag.ExitOnError)
 		var unitName string
 		var removeTunnelConfigs bool
 
 		flags.StringVar(&unitName, "unit", "inox", "name of the inox unit")
 		flags.BoolVar(&removeTunnelConfigs, "remove-tunnel-configs", false, "remove all configuration files of tunnels")
 
+		if showHelp(flags, mainSubCommandArgs, outW) { //only show help
+			return
+		}
+
 		err := flags.Parse(mainSubCommandArgs)
 		if err != nil {
 			fmt.Fprintln(errW, "ERROR:", err)
 			return ERROR_STATUS_CODE
 		}
+
+		//perform removal(s)
 
 		if removeTunnelConfigs {
 			err = cloudflared.RemoveCloudflaredDir(outW)
@@ -414,18 +467,25 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 			return ERROR_STATUS_CODE
 		}
 	case "lsp":
-		lspFlags := flag.NewFlagSet("lsp", flag.ExitOnError)
+		//read and check arguments
+
+		flags := flag.NewFlagSet(mainSubCommand, flag.ExitOnError)
 		var host string
-		lspFlags.StringVar(&host, "h", "", "host")
+		flags.StringVar(&host, "h", "", "host")
 
-		opts := project_server.LSPServerConfiguration{}
+		if showHelp(flags, mainSubCommandArgs, outW) { //only show help
+			return
+		}
 
-		err := lspFlags.Parse(mainSubCommandArgs)
+		err := flags.Parse(mainSubCommandArgs)
 		if err != nil {
 			fmt.Fprintln(errW, "lsp:", err)
 			return
 		}
 
+		//create the LSP server configuration from the provided arguments.
+
+		opts := project_server.LSPServerConfiguration{}
 		var out io.Writer
 
 		if host != "" {
@@ -445,6 +505,8 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 			out = f
 			defer f.Close()
 		}
+
+		//create context and state
 
 		perms := []core.Permission{
 			//TODO: change path pattern
@@ -466,6 +528,8 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 		state.Logger = zerolog.New(out)
 		state.OutputFieldsInitialized.Store(true)
 
+		//restrict filesystem access at the process level and  start the LSP server.
+
 		inoxprocess.RestrictProcessAccess(ctx, inoxprocess.ProcessRestrictionConfig{AllowBrowserAccess: true})
 
 		if err := project_server.StartLSPServer(ctx, opts); err != nil {
@@ -473,12 +537,16 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 		}
 	case "project-server":
 		//read & check arguments
-		lspFlags := flag.NewFlagSet("project-server", flag.ExitOnError)
+		flags := flag.NewFlagSet(mainSubCommand, flag.ExitOnError)
 		var configOrConfigFile string
 
-		lspFlags.StringVar(&configOrConfigFile, "config", "", "JSON configuration or JSON file")
+		flags.StringVar(&configOrConfigFile, "config", "", "JSON configuration or JSON file")
 
-		err := lspFlags.Parse(mainSubCommandArgs)
+		if showHelp(flags, mainSubCommandArgs, outW) { //only show help
+			return
+		}
+
+		err := flags.Parse(mainSubCommandArgs)
 		if err != nil {
 			fmt.Fprintln(errW, "project-server:", err)
 			return
@@ -592,6 +660,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 		state.Logger = zerolog.New(out)
 		state.OutputFieldsInitialized.Store(true)
 
+		//restrict filesystem access at the process level.
 		inoxprocess.RestrictProcessAccess(ctx, inoxprocess.ProcessRestrictionConfig{AllowBrowserAccess: true})
 
 		//configure server
@@ -654,12 +723,16 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 		}
 	case inoxd.DAEMON_SUBCMD:
 		//read & check arguments
-		lspFlags := flag.NewFlagSet(inoxd.DAEMON_SUBCMD, flag.ExitOnError)
+		flags := flag.NewFlagSet(mainSubCommand, flag.ExitOnError)
 		var configOrConfigFile string
 
-		lspFlags.StringVar(&configOrConfigFile, "config", "", "JSON configuration or JSON file")
+		flags.StringVar(&configOrConfigFile, "config", "", "JSON configuration or JSON file")
 
-		err := lspFlags.Parse(mainSubCommandArgs)
+		if showHelp(flags, mainSubCommandArgs, outW) { //only show help
+			return
+		}
+
+		err := flags.Parse(mainSubCommandArgs)
 		if err != nil {
 			fmt.Fprintln(errW, "daemon:", err)
 			return
@@ -759,17 +832,21 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 		client.StartControl()
 	case "shell":
 		//read & check arguments
-		shellFlags := flag.NewFlagSet("shell", flag.ExitOnError)
+		flags := flag.NewFlagSet(mainSubCommand, flag.ExitOnError)
 		startupScriptPath, err := config.GetStartupScriptPath()
 		if err != nil {
 			fmt.Fprintln(errW, err)
 			return
 		}
 
-		shellFlags.StringVar(&startupScriptPath, "c", startupScriptPath, "startup script path")
+		flags.StringVar(&startupScriptPath, "c", startupScriptPath, "startup script path")
 		moveFlagsStart(mainSubCommandArgs)
 
-		err = shellFlags.Parse(mainSubCommandArgs)
+		if showHelp(flags, mainSubCommandArgs, outW) { //only show help
+			return
+		}
+
+		err = flags.Parse(mainSubCommandArgs)
 		if err != nil {
 			fmt.Fprintln(errW, err)
 			return
@@ -794,28 +871,32 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 		inoxsh_ns.StartShell(state, config)
 	case "eval", "e":
 		if len(mainSubCommandArgs) == 0 {
-			fmt.Fprintf(errW, "missing code string")
+			fmt.Fprintf(errW, "missing code string\n")
 			return ERROR_STATUS_CODE
 		}
 
-		evalFlags := flag.NewFlagSet("eval", flag.ExitOnError)
+		flags := flag.NewFlagSet(mainSubCommand, flag.ExitOnError)
 		startupScriptPath, err := config.GetStartupScriptPath()
 		if err != nil {
 			fmt.Fprintln(errW, err)
 			return
 		}
 
-		evalFlags.StringVar(&startupScriptPath, "c", startupScriptPath, "startup script path")
+		flags.StringVar(&startupScriptPath, "c", startupScriptPath, "startup script path")
 
 		moveFlagsStart(mainSubCommandArgs)
 
-		err = evalFlags.Parse(mainSubCommandArgs)
+		if showHelp(flags, mainSubCommandArgs, outW) { //only show help
+			return
+		}
+
+		err = flags.Parse(mainSubCommandArgs)
 		if err != nil {
 			fmt.Fprintln(errW, err)
 			return
 		}
 
-		code := evalFlags.Arg(0)
+		code := flags.Arg(0)
 
 		if strings.TrimSpace(code) == "" {
 			fmt.Fprintln(outW, "empty command")
@@ -1015,4 +1096,22 @@ func checkNotRunningAsRoot(errW io.Writer) bool {
 	}
 
 	return true
+}
+
+func showHelp(flags *flag.FlagSet, args []string, out io.Writer) bool {
+	//only show help
+	if slices.Contains(args, "-h") || slices.Contains(args, "--help") {
+
+		cmd := flags.Name()
+		if desc, ok := CLI_SUBCOMMAND_DESCRIPTIONS[cmd]; ok {
+			fmt.Fprintln(out, desc)
+		}
+
+		flags.SetOutput(out)
+		flags.PrintDefaults()
+
+		return true
+	}
+
+	return false
 }
