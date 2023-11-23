@@ -14,19 +14,10 @@ func StopRemoveUnit(unitName string, out io.Writer, errOut io.Writer) error {
 		return err
 	}
 
-	stopCmd := exec.Command(systemctlPath, "stop", unitName)
-	stopCmd.Stderr = errOut
-	stopCmd.Stdout = out
-
-	fmt.Fprintln(out, stopCmd.String())
-	err = stopCmd.Run()
-	if err != nil {
-		return errors.New("failed to stop the unit")
-	}
-
+	//disable the service
 	disableCmd := exec.Command(systemctlPath, "disable", unitName)
-	stopCmd.Stderr = errOut
-	stopCmd.Stdout = out
+	disableCmd.Stderr = errOut
+	disableCmd.Stdout = out
 
 	fmt.Fprintln(out, disableCmd.String())
 	err = disableCmd.Run()
@@ -34,11 +25,24 @@ func StopRemoveUnit(unitName string, out io.Writer, errOut io.Writer) error {
 		return errors.New("failed to disable the unit")
 	}
 
+	//remove the unit file.
 	fmt.Fprintln(out, "remove "+INOX_SERVICE_UNIT_PATH)
 	err = os.Remove(INOX_SERVICE_UNIT_PATH)
 	if err != nil {
 		fmt.Fprintln(errOut, err)
 		return nil
+	}
+
+	//stop the service, errors are printed only.
+	stopCmd := exec.Command(systemctlPath, "stop", unitName)
+	stopCmd.Stderr = errOut
+	stopCmd.Stdout = out
+
+	fmt.Fprintln(out, stopCmd.String())
+	err = stopCmd.Run()
+	if err != nil {
+		fmt.Fprintln(errOut, "failed to stop the unit")
+		//keep going
 	}
 
 	reloadCmd := exec.Command(systemctlPath, "daemon-reload")

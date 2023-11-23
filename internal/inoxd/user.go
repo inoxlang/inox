@@ -17,6 +17,7 @@ const (
 
 var (
 	ALLOWED_USERADD_LOCATIONS = []string{"/usr/sbin/useradd", "/sbin/useradd"}
+	ALLOWED_USERDEL_LOCATIONS = []string{"/usr/sbin/userdel", "/sbin/userdel"}
 )
 
 func CreateInoxdUserIfNotExists(out io.Writer, errOut io.Writer) (username string, uid int, homedir string, _ error) {
@@ -100,4 +101,34 @@ func CreateInoxdUserIfNotExists(out io.Writer, errOut io.Writer) (username strin
 	}
 
 	return
+}
+
+type UserRemovalParams struct {
+	RemoveHomedir bool
+	ErrOut, Out   io.Writer
+}
+
+func RemoveInoxdUser(args UserRemovalParams) error {
+	cmdArgs := []string{INOXD_USERNAME}
+	if args.RemoveHomedir {
+		cmdArgs = append(cmdArgs, "--remove")
+	}
+
+	userdelPath, err := exec.LookPath("userdel")
+	if err != nil {
+		return err
+	}
+	if !slices.Contains(ALLOWED_USERDEL_LOCATIONS, userdelPath) {
+		return fmt.Errorf("the binary for the userdel command has an unexpected location: %q", userdelPath)
+	}
+
+	cmd := exec.Command(userdelPath, cmdArgs...)
+	cmd.Stdout = args.Out
+	cmd.Stderr = args.ErrOut
+
+	err = cmd.Run()
+	if err != nil {
+		return fmt.Errorf("the userdel command failed: %w", err)
+	}
+	return nil
 }

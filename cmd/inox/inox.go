@@ -437,9 +437,13 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 		flags := flag.NewFlagSet(mainSubCommand, flag.ExitOnError)
 		var unitName string
 		var removeTunnelConfigs bool
+		var removeInoxdUser bool
+		var removeInoxdHomedir bool
 
 		flags.StringVar(&unitName, "unit", "inox", "name of the inox unit")
 		flags.BoolVar(&removeTunnelConfigs, "remove-tunnel-configs", false, "remove all configuration files of tunnels")
+		flags.BoolVar(&removeInoxdUser, "remove-inoxd-user", false, "if --remove-inoxd-homedir is present the homedir is also removed")
+		flags.BoolVar(&removeInoxdHomedir, "remove-inoxd-homedir", false, "remove the inoxd user, the homedir is not removed")
 
 		if showHelp(flags, mainSubCommandArgs, outW) { //only show help
 			return
@@ -464,7 +468,20 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 
 		if err := systemd.StopRemoveUnit(unitName, outW, errW); err != nil {
 			fmt.Fprintln(errW, "ERROR:", err)
-			return ERROR_STATUS_CODE
+			//keep going
+			utils.PrintSmallLineSeparator(outW)
+		}
+
+		if removeInoxdUser {
+			err = inoxd.RemoveInoxdUser(inoxd.UserRemovalParams{
+				RemoveHomedir: removeInoxdHomedir,
+				ErrOut:        errW,
+				Out:           outW,
+			})
+			if err != nil {
+				fmt.Fprintln(errW, "ERROR:", err)
+				return ERROR_STATUS_CODE
+			}
 		}
 	case "lsp":
 		//read and check arguments
