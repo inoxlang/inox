@@ -7,7 +7,6 @@ import (
 	"io/fs"
 	"net/http"
 	"os"
-	"os/user"
 )
 
 const (
@@ -38,12 +37,9 @@ func DownloadLatestBinaryFromGithub() ([]byte, error) {
 }
 
 func InstallBinary(bytes []byte) error {
-	currentUser, err := user.Current()
-	if err != nil {
+	if yes, err := isRunningAsRoot(); err != nil {
 		return err
-	}
-
-	if currentUser.Uid != "0" {
+	} else if !yes {
 		return errors.New("installing the cloudflared binary requires to be running as root")
 	}
 

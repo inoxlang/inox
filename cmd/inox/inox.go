@@ -336,6 +336,12 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 				fmt.Fprintln(errW, "ERROR:", err)
 				return ERROR_STATUS_CODE
 			}
+
+			_, err = cloudflared.Login(outW, errW)
+			if err != nil {
+				fmt.Fprintln(errW, "ERROR:", err)
+				return ERROR_STATUS_CODE
+			}
 		}
 
 		envFilePath, err := systemdprovider.CreateInoxdEnvFileIfNotExists(outW)
