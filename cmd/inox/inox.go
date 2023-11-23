@@ -93,14 +93,14 @@ var (
 		"help":           "show the general help or command-specific help",
 	}
 
-	USAGE = "Usage: "
+	INOX_CMD_HELP = "commands:\n"
 )
 
 func init() {
 	for cmd, desc := range CLI_SUBCOMMAND_DESCRIPTIONS {
-		USAGE += "\t" + cmd + " - " + desc + "\n"
+		INOX_CMD_HELP += "\t" + cmd + " - " + desc + "\n"
 	}
-	USAGE += "\nType `inox help <command>` to get command-specific help.\n"
+	INOX_CMD_HELP += "\nType `inox help <command>` to get command-specific help.\n"
 }
 
 func main() {
@@ -137,7 +137,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 		if ok {
 			fmt.Fprintf(errW, ", did you mean '%s' ?\n", closest)
 		} else {
-			fmt.Fprint(errW, "\n"+USAGE, closest)
+			fmt.Fprint(errW, "\n"+INOX_CMD_HELP, closest)
 		}
 		return ERROR_STATUS_CODE
 	}
@@ -165,15 +165,10 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 
 	switch mainSubCommand {
 	case "help", "--help", "-h":
-		fmt.Fprint(outW, USAGE)
+		fmt.Fprint(outW, INOX_CMD_HELP)
 		return
 	case "run":
 		//read and check arguments
-
-		if len(mainSubCommandArgs) == 0 {
-			fmt.Fprintf(errW, "missing script path\n")
-			return ERROR_STATUS_CODE
-		}
 
 		flags := flag.NewFlagSet(mainSubCommand, flag.ExitOnError)
 		var useTreeWalking bool
@@ -188,8 +183,6 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 		flags.BoolVar(&disableOptimization, "no-optimization", false, "disable bytecode optimization")
 		flags.BoolVar(&fullyTrusted, "fully-trusted", false, "does not show confirmation prompt if the risk score is high")
 
-		//moveFlagsStart(commandArgs)
-
 		fileArgIndex := -1
 
 		for i, arg := range mainSubCommandArgs {
@@ -199,12 +192,18 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 			}
 		}
 
+		if fileArgIndex == -1 { //file not found
+			if slices.Contains(mainSubCommandArgs, "-h") {
+				showHelp(flags, mainSubCommandArgs, outW)
+				return
+			}
+			fmt.Fprintf(errW, "missing script path\n")
+			showHelp(flags, mainSubCommandArgs, outW)
+			return ERROR_STATUS_CODE
+		}
+
 		moduleArgs := mainSubCommandArgs[fileArgIndex+1:]
 		mainSubCommandArgs = mainSubCommandArgs[:fileArgIndex+1]
-
-		if showHelp(flags, mainSubCommandArgs, outW) { //only show help
-			return
-		}
 
 		err := flags.Parse(mainSubCommandArgs)
 		if err != nil {
@@ -216,6 +215,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 
 		if fpath == "" {
 			fmt.Fprintf(errW, "missing script path\n")
+			showHelp(flags, mainSubCommandArgs, outW)
 			return ERROR_STATUS_CODE
 		}
 
@@ -1108,6 +1108,7 @@ func showHelp(flags *flag.FlagSet, args []string, out io.Writer) bool {
 		}
 
 		flags.SetOutput(out)
+		fmt.Fprint(out, "\noptions:\n")
 		flags.PrintDefaults()
 
 		return true
