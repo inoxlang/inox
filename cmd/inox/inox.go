@@ -8,14 +8,14 @@ import (
 	"github.com/inoxlang/inox/internal/config"
 	"github.com/inoxlang/inox/internal/core"
 	_ "github.com/inoxlang/inox/internal/globals"
-	"github.com/inoxlang/inox/internal/inoxd/cloudflared"
-	"github.com/inoxlang/inox/internal/inoxd/cloudproxy"
 
 	// ====================== INOX IMPORTS ============================
 
 	metricsperf "github.com/inoxlang/inox/internal/metrics-perf"
 
 	"github.com/inoxlang/inox/internal/inoxd"
+	"github.com/inoxlang/inox/internal/inoxd/cloudflared"
+	"github.com/inoxlang/inox/internal/inoxd/cloudproxy"
 	"github.com/inoxlang/inox/internal/inoxd/systemd"
 
 	"github.com/inoxlang/inox/internal/globals/chrome_ns"
@@ -396,10 +396,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 		flags := flag.NewFlagSet("remove-service", flag.ExitOnError)
 		var unitName string
 
-		flags.StringVar(&unitName, "unit", "", "name of the inox unit, it should be 'inox'")
-		if unitName == "" {
-			unitName = "inox"
-		}
+		flags.StringVar(&unitName, "unit", "inox", "name of the inox unit")
 
 		err := flags.Parse(mainSubCommandArgs)
 		if err != nil {
