@@ -442,8 +442,8 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 
 		flags.StringVar(&unitName, "unit", "inox", "name of the inox unit")
 		flags.BoolVar(&removeTunnelConfigs, "remove-tunnel-configs", false, "remove all configuration files of tunnels")
-		flags.BoolVar(&removeInoxdUser, "remove-inoxd-user", false, "if --remove-inoxd-homedir is present the homedir is also removed")
-		flags.BoolVar(&removeInoxdHomedir, "remove-inoxd-homedir", false, "remove the inoxd user, the homedir is not removed")
+		flags.BoolVar(&removeInoxdUser, "remove-inoxd-user", false, " remove the inoxd user, the homedir is not removed")
+		flags.BoolVar(&removeInoxdHomedir, "remove-inoxd-homedir", false, "if --remove-inoxd-user is present the homedir is also removed")
 
 		if showHelp(flags, mainSubCommandArgs, outW) { //only show help
 			return
