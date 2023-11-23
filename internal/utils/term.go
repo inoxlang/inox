@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	SMALL_LINE_SEP = "--------------------"
+	SMALL_LINE_SEP = "------------------------------"
 )
 
 var ANSI_ESCAPE_SEQUENCE_REGEX = regexp.MustCompile("[\u001B\u009B][[\\]()#;?]*(?:(?:(?:[a-zA-Z\\d]*(?:;[a-zA-Z\\d]*)*)?\u0007)|(?:(?:\\d{1,4}(?:;\\d{0,4})*)?[\\dA-PRZcf-ntqry=><~]))")

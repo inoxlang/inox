@@ -317,9 +317,6 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 			return ERROR_STATUS_CODE
 		}
 
-		var cloudflareOriginCertificate string
-		var cloudflareOriginCertificatePath string
-
 		if tunnelProvider != "" {
 			if tunnelProvider != "cloudflare" {
 				fmt.Fprintln(errW, "ERROR: only 'cloudflare' is supported as a tunnel provider for now")
@@ -339,32 +336,9 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 				fmt.Fprintln(errW, "ERROR:", err)
 				return ERROR_STATUS_CODE
 			}
-
-			cloudflareOriginCertificate, cloudflareOriginCertificatePath, err = cloudflared.LoginToGetOriginCertificate(outW, errW)
-			if err != nil {
-				fmt.Fprintln(errW, "ERROR:", err)
-				return ERROR_STATUS_CODE
-			}
-			utils.PrintSmallLineSeparator(outW)
-
-			token, err := cloudflared.CreateTunnel(cloudflared.CreateTunnelParams{
-				UniqueName:            "inoxd",
-				OriginCertificatePath: cloudflareOriginCertificatePath,
-				OutW:                  outW,
-				ErrW:                  errW,
-			})
-
-			if err != nil {
-				fmt.Fprintln(errW, "ERROR:", err)
-				return ERROR_STATUS_CODE
-			}
-			fmt.Fprintln(outW, string(utils.Must(json.Marshal(token))))
-			utils.PrintSmallLineSeparator(outW)
 		}
 
-		envFilePath, err := systemd.CreateInoxdEnvFileIfNotExists(outW, systemd.EnvFileCreationParams{
-			CloudflareOriginCertificate: cloudflareOriginCertificate,
-		})
+		envFilePath, err := systemd.CreateInoxdEnvFileIfNotExists(outW, systemd.EnvFileCreationParams{})
 
 		if err != nil {
 			fmt.Fprintln(errW, "ERROR:", err)
