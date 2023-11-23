@@ -8,7 +8,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/inoxlang/inox/internal/project/systemdprovider/unitenv"
+	"github.com/inoxlang/inox/internal/inoxd/systemd/unitenv"
 	"github.com/tink-crypto/tink-go/aead"
 	"github.com/tink-crypto/tink-go/insecurecleartextkeyset"
 	"github.com/tink-crypto/tink-go/keyset"

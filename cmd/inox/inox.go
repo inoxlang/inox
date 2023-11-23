@@ -16,7 +16,7 @@ import (
 	metricsperf "github.com/inoxlang/inox/internal/metrics-perf"
 
 	"github.com/inoxlang/inox/internal/inoxd"
-	"github.com/inoxlang/inox/internal/project/systemdprovider"
+	"github.com/inoxlang/inox/internal/inoxd/systemd"
 
 	"github.com/inoxlang/inox/internal/globals/chrome_ns"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
@@ -346,7 +346,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 			}
 		}
 
-		envFilePath, err := systemdprovider.CreateInoxdEnvFileIfNotExists(outW, systemdprovider.EnvFileCreationParams{
+		envFilePath, err := systemd.CreateInoxdEnvFileIfNotExists(outW, systemd.EnvFileCreationParams{
 			CloudflareOriginCertificate: cloudflareOriginCertificate,
 		})
 		if err != nil {
@@ -354,7 +354,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 			return ERROR_STATUS_CODE
 		}
 
-		unitName, err := systemdprovider.WriteInoxUnitFile(systemdprovider.InoxUnitParams{
+		unitName, err := systemd.WriteInoxUnitFile(systemd.InoxUnitParams{
 			Username:  username,
 			Homedir:   homedir,
 			UID:       uid,
@@ -363,7 +363,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 			EnvFile:   envFilePath,
 		})
 
-		alreadyExists := errors.Is(err, systemdprovider.ErrUnitFileExists)
+		alreadyExists := errors.Is(err, systemd.ErrUnitFileExists)
 		if err != nil {
 			if alreadyExists {
 				fmt.Fprintln(outW, err)
@@ -377,7 +377,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 
 		//enable & start inoxd
 		if !alreadyExists {
-			err = systemdprovider.EnableInoxd(unitName, outW, errW)
+			err = systemd.EnableInoxd(unitName, outW, errW)
 			if err != nil {
 				fmt.Fprintln(errW, "ERROR:", err)
 				return ERROR_STATUS_CODE
@@ -386,7 +386,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 
 		restart := alreadyExists
 
-		err = systemdprovider.StartInoxd(unitName, restart, outW, errW)
+		err = systemd.StartInoxd(unitName, restart, outW, errW)
 		if err != nil {
 			fmt.Fprintln(errW, "ERROR:", err)
 			return
@@ -407,7 +407,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 			return ERROR_STATUS_CODE
 		}
 
-		if err := systemdprovider.StopRemoveUnit(unitName, outW, errW); err != nil {
+		if err := systemd.StopRemoveUnit(unitName, outW, errW); err != nil {
 			fmt.Fprintln(errW, "ERROR:", err)
 			return ERROR_STATUS_CODE
 		}
@@ -684,7 +684,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 			}
 		}
 
-		daemonConfig.InoxBinaryPath = systemdprovider.DEFAULT_INOX_PATH
+		daemonConfig.InoxBinaryPath = systemd.DEFAULT_INOX_PATH
 
 		inoxd.Inoxd(daemonConfig, errW, outW)
 

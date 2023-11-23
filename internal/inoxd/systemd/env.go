@@ -1,4 +1,4 @@
-package systemdprovider
+package systemd
 
 import (
 	"encoding/base64"
@@ -13,7 +13,7 @@ import (
 	"syscall"
 
 	inoxdcrypto "github.com/inoxlang/inox/internal/inoxd/crypto"
-	"github.com/inoxlang/inox/internal/project/systemdprovider/unitenv"
+	"github.com/inoxlang/inox/internal/inoxd/systemd/unitenv"
 )
 
 const (

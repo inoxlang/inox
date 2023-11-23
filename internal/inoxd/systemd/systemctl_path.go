@@ -1,4 +1,4 @@
-package systemdprovider
+package systemd
 
 import (
 	"fmt"

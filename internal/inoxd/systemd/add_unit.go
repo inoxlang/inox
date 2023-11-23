@@ -1,6 +1,6 @@
 //go:build linux
 
-package systemdprovider
+package systemd
 
 import (
 	"errors"
