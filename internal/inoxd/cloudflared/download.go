@@ -13,7 +13,7 @@ const (
 	LINUX_ADM64_BINARY_URL    = "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64"
 	CLOUDFLARED_BINARY_FPERMS = fs.FileMode(0555)
 
-	DEFAULT_CLOUDFLARED_BINARY_NAME = "inox-cloudflared"
+	DEFAULT_CLOUDFLARED_BINARY_NAME = "cloudflared"
 	DEFAULT_CLOUDFLARED_BINARY_PATH = "/usr/local/bin/" + DEFAULT_CLOUDFLARED_BINARY_NAME
 )
 
