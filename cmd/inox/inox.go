@@ -332,7 +332,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 				return ERROR_STATUS_CODE
 			}
 
-			fmt.Fprintln(errW, "install the cloudlared binary")
+			fmt.Fprintln(errW, "install the cloudflared binary")
 			err = cloudflared.InstallBinary(binary)
 			if err != nil {
 				fmt.Fprintln(errW, "ERROR:", err)
