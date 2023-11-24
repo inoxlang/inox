@@ -3,6 +3,7 @@
 package systemd
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -13,6 +14,8 @@ import (
 
 	"github.com/coreos/go-systemd/v22/unit"
 	"github.com/inoxlang/inox/internal/inoxd"
+	"github.com/inoxlang/inox/internal/project_server"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 const (
@@ -36,13 +39,31 @@ type InoxUnitParams struct {
 	UID               int
 	Log               io.Writer
 
-	InoxCloud bool
-	EnvFile   string //optional
+	InoxCloud            bool
+	EnvFilePath          string //optional
+	ExposeProjectServers bool
+	ExposeWebServers     bool
+	TunnelProviderName   string //optional
+}
+
+func CheckFileDoesNotExist() error {
+	path := INOX_SERVICE_UNIT_PATH
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return nil
+	} else if err != nil {
+		return err
+	}
+	return fmt.Errorf("%w: %s", ErrUnitFileExists, path)
 }
 
 // WriteInoxUnitFile writes the unit file for inoxd at INOX_SERVICE_UNIT_PATH, if the file already exists
 // ErrUnitFileExists is returned and unitName is set.
 func WriteInoxUnitFile(args InoxUnitParams) (unitName string, _ error) {
+	if (args.TunnelProviderName != "" && (args.ExposeProjectServers || args.ExposeWebServers)) ||
+		(args.InoxCloud && (args.ExposeProjectServers || args.ExposeWebServers)) {
+		return "", errors.New("invalid arguments")
+	}
+
 	path := INOX_SERVICE_UNIT_PATH
 	unitName = strings.TrimSuffix(filepath.Base(path), ".service")
 
@@ -82,7 +103,17 @@ func WriteInoxUnitFile(args InoxUnitParams) (unitName string, _ error) {
 		},
 	}
 
-	inoxConfig := fmt.Sprintf(`'-config={"inoxCloud":%t,"serverConfig":{"maxWebsocketPerIp":2}}'`, args.InoxCloud)
+	daemonConfig := inoxd.DaemonConfig{
+		InoxCloud: args.InoxCloud,
+		Server: project_server.IndividualServerConfig{
+			BehindCloudProxy:    args.InoxCloud,
+			BindToAllInterfaces: args.ExposeProjectServers,
+		},
+		ExposeWebServers: args.ExposeProjectServers,
+		TunnelProvider:   args.TunnelProviderName,
+	}
+
+	configString := fmt.Sprintf(`'-config=%s'`, utils.Must(json.Marshal(daemonConfig)))
 
 	serviceSection := unit.UnitSection{
 		Section: "Service",
@@ -90,7 +121,7 @@ func WriteInoxUnitFile(args InoxUnitParams) (unitName string, _ error) {
 			{
 				Name: "ExecStart",
 				//inox daemon '-config=....'
-				Value: DEFAULT_INOX_PATH + " " + inoxd.DAEMON_SUBCMD + " " + inoxConfig,
+				Value: DEFAULT_INOX_PATH + " " + inoxd.DAEMON_SUBCMD + " " + configString,
 			},
 			{
 				Name:  "Type",
@@ -134,12 +165,12 @@ func WriteInoxUnitFile(args InoxUnitParams) (unitName string, _ error) {
 		},
 	}
 
-	if args.EnvFile != "" {
+	if args.EnvFilePath != "" {
 		//https://www.freedesktop.org/software/systemd/man/latest/systemd.exec.html#EnvironmentFile=
 
 		serviceSection.Entries = append(serviceSection.Entries, &unit.UnitEntry{
 			Name:  "EnvironmentFile",
-			Value: args.EnvFile,
+			Value: args.EnvFilePath,
 		})
 	}
 

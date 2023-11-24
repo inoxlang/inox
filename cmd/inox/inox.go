@@ -345,8 +345,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 		var exposeWebServers bool
 
 		flags.BoolVar(&inoxCloud, "inox-cloud", false, "enable inox cloud")
-		flags.StringVar(&tunnelProvider, "tunnel-provider", "", "name of the tunnel provider, only 'cloudflare' is supported for now"+
-			"this flag causes ")
+		flags.StringVar(&tunnelProvider, "tunnel-provider", "", "name of the tunnel provider, only 'cloudflare' is supported for now")
 		flags.BoolVar(&exposeProjectServers, "expose-project-servers", false, "allow project servers to bind on all interfaces")
 		flags.BoolVar(&exposeWebServers, "expose-web-servers", false, "allow web servers to bind on all interfaces")
 
@@ -375,7 +374,22 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 			return ERROR_STATUS_CODE
 		}
 
+		if inoxCloud && exposeProjectServers {
+			fmt.Fprintln(errW, "--expose-project-servers and --inox-cloud are mutually exclusive flags")
+			return ERROR_STATUS_CODE
+		}
+
+		if inoxCloud && exposeWebServers {
+			fmt.Fprintln(errW, "--expose-web-servers and --inox-cloud are mutually exclusive flags")
+			return ERROR_STATUS_CODE
+		}
+
 		//create the inoxd user and add the inoxd unit.
+
+		if err := systemd.CheckFileDoesNotExist(); err != nil {
+			fmt.Fprintln(errW, "ERROR:", err)
+			return ERROR_STATUS_CODE
+		}
 
 		username, uid, homedir, err := inoxd.CreateInoxdUserIfNotExists(outW, errW)
 		if err != nil {
@@ -401,11 +415,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 			}
 		}
 
-		envFilePath, err := systemd.CreateInoxdEnvFileIfNotExists(outW, systemd.EnvFileCreationParams{
-			TunnelProviderName:   tunnelProvider,
-			ExposeProjectServers: exposeProjectServers,
-			ExposeWebservers:     exposeWebServers,
-		})
+		envFilePath, err := systemd.CreateInoxdEnvFileIfNotExists(outW, systemd.EnvFileCreationParams{})
 
 		if err != nil {
 			fmt.Fprintln(errW, "ERROR:", err)
@@ -414,12 +424,17 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 		utils.PrintSmallLineSeparator(outW)
 
 		unitName, err := systemd.WriteInoxUnitFile(systemd.InoxUnitParams{
-			Username:  username,
-			Homedir:   homedir,
-			UID:       uid,
-			Log:       outW,
-			InoxCloud: inoxCloud,
-			EnvFile:   envFilePath,
+			Log: outW,
+
+			Username: username,
+			Homedir:  homedir,
+			UID:      uid,
+
+			InoxCloud:            inoxCloud,
+			EnvFilePath:          envFilePath,
+			TunnelProviderName:   tunnelProvider,
+			ExposeProjectServers: exposeProjectServers,
+			ExposeWebServers:     exposeWebServers,
 		})
 
 		alreadyExists := errors.Is(err, systemd.ErrUnitFileExists)

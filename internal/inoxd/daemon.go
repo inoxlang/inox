@@ -15,10 +15,12 @@ import (
 const DAEMON_SUBCMD = "daemon"
 
 type DaemonConfig struct {
-	InoxCloud      bool                                  `json:"inoxCloud"`
-	CloudProxy     *CloudProxyConfig                     `json:"cloudProxy,omitempty"` //ignored if inoxCloud is false
-	Server         project_server.IndividualServerConfig `json:"serverConfig"`
-	InoxBinaryPath string
+	InoxCloud        bool                                  `json:"inoxCloud,omitempty"`
+	CloudProxy       *CloudProxyConfig                     `json:"cloudProxy,omitempty"` //ignored if inoxCloud is false
+	Server           project_server.IndividualServerConfig `json:"projectServerConfig"`
+	ExposeWebServers bool                                  `json:"exposeWebServers,omitempty"`
+	TunnelProvider   string                                `json:"tunnelProvider,omitempty"`
+	InoxBinaryPath   string                                `json:"-"`
 }
 
 type CloudProxyConfig struct {
