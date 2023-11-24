@@ -11,7 +11,7 @@ import (
 type Config struct {
 	// if Network is null, will use stdio
 	Network           string
-	Address           string
+	Address           string //examples: localhost:8305, :8305
 	Certificate       string
 	CertificateKey    string
 	MaxWebsocketPerIp int

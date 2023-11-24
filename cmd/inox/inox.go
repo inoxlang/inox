@@ -629,8 +629,15 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 			projectsDir = filepath.Join(config.USER_HOME, "inox-projects") + "/"
 		}
 
-		websocketAddr := "localhost:"
+		websocketAddr := ""
 
+		if projectServerConfig.BindToAllInterfaces {
+			websocketAddr = ":"
+		} else {
+			websocketAddr = "localhost:"
+		}
+
+		//append port
 		if projectServerConfig.Port > 0 {
 			websocketAddr += strconv.Itoa(projectServerConfig.Port)
 		} else {

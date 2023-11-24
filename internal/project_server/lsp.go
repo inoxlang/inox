@@ -45,7 +45,7 @@ type InternalStdio struct {
 }
 
 type WebsocketServerConfiguration struct {
-	Addr                  string
+	Addr                  string //examples: localhost:8305, :8305
 	Certificate           string
 	CertificatePrivateKey string
 	MaxWebsocketPerIp     int

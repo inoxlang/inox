@@ -15,10 +15,11 @@ import (
 )
 
 type GolangHttpServerConfig struct {
-	Addr           string
-	Handler        http.Handler
-	PemEncodedCert string
-	PemEncodedKey  string
+	Addr                                    string //hostname:port or :port
+	Handler                                 http.Handler
+	PemEncodedCert                          string
+	PemEncodedKey                           string
+	AllowLocalhostCertCreationEvenIfExposed bool
 
 	ReadHeaderTimeout time.Duration // defaults to DEFAULT_HTTP_SERVER_READ_HEADER_TIMEOUT
 	ReadTimeout       time.Duration // defaults to DEFAULT_HTTP_SERVER_READ_TIMEOUT
@@ -33,7 +34,7 @@ func NewGolangHttpServer(ctx *core.Context, config GolangHttpServerConfig) (*htt
 	pemEncodedKey := config.PemEncodedKey
 
 	//if no certificate is provided by the user we create one
-	if isLocalhostOr127001Addr(config.Addr) && config.PemEncodedCert == "" {
+	if (isLocalhostOr127001Addr(config.Addr) && config.PemEncodedCert == "") || config.AllowLocalhostCertCreationEvenIfExposed {
 		//we generate a self signed certificate that we write to disk so that
 		//we can reuse it
 		CERT_FILEPATH := "localhost.cert"
