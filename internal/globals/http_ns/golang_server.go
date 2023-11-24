@@ -34,7 +34,7 @@ func NewGolangHttpServer(ctx *core.Context, config GolangHttpServerConfig) (*htt
 	pemEncodedKey := config.PemEncodedKey
 
 	//if no certificate is provided by the user we create one
-	if (isLocalhostOr127001Addr(config.Addr) && config.PemEncodedCert == "") || config.AllowLocalhostCertCreationEvenIfExposed {
+	if config.PemEncodedCert == "" && (isLocalhostOr127001Addr(config.Addr) || config.AllowLocalhostCertCreationEvenIfExposed) {
 		//we generate a self signed certificate that we write to disk so that
 		//we can reuse it
 		CERT_FILEPATH := "localhost.cert"
