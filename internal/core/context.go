@@ -59,9 +59,10 @@ type Context struct {
 
 	currentTx *Transaction
 
-	longLived atomic.Bool
-	done      atomic.Bool
-	cancel    context.CancelFunc
+	longLived                    atomic.Bool
+	done                         atomic.Bool
+	cancel                       context.CancelFunc
+	gracefulTearDownCallLocation atomic.Value //nil or string
 
 	onGracefulTearDownTasks []GracefulTearDownTaskFn
 	gracefulTearDownStatus  atomic.Int64 //see GracefulTeardownStatus
@@ -452,6 +453,9 @@ func NewContext(config ContextConfig) *Context {
 }
 
 func (ctx *Context) makeDoneContextError() error {
+	if location, ok := ctx.gracefulTearDownCallLocation.Load().(string); ok {
+		return fmt.Errorf("done context: %w\n((CancelGracefully() was called here:\n%s))", ctx.Err(), location)
+	}
 	return fmt.Errorf("done context: %w", ctx.Err())
 }
 
@@ -1317,6 +1321,8 @@ func (ctx *Context) gracefullyTearDown() {
 	if !ctx.gracefulTearDownStatus.CompareAndSwap(int64(NeverStartedGracefulTeardown), int64(GracefullyTearingDown)) {
 		return
 	}
+
+	ctx.gracefulTearDownCallLocation.Store(string(debug.Stack()))
 
 	defer ctx.gracefulTearDownStatus.Store(int64(GracefullyTearedDown))
 
