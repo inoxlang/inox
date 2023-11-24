@@ -11,10 +11,12 @@ import (
 	"github.com/inoxlang/inox/internal/core"
 	nettypes "github.com/inoxlang/inox/internal/net_types"
 	"github.com/inoxlang/inox/internal/permkind"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 var (
 	ErrClosingOrClosedWebsocketConn = errors.New("closed or closing websocket connection")
+	ErrAlreadyReadingAllMessages    = errors.New("already reading all messages")
 )
 
 type WebsocketMessageType int
@@ -32,9 +34,10 @@ type WebsocketConnection struct {
 	remoteAddrWithPort nettypes.RemoteAddrWithPort
 	endpoint           core.URL //HTTP endpoint
 
-	messageTimeout  time.Duration
-	closingOrClosed atomic.Bool
-	tokenGivenBack  atomic.Bool
+	messageTimeout               time.Duration
+	closingOrClosed              atomic.Bool
+	tokenGivenBack               atomic.Bool
+	isReadingAllMessagesIntoChan atomic.Bool
 
 	server *WebsocketServer //nil on client side
 
@@ -118,6 +121,67 @@ func (conn *WebsocketConnection) ReadMessage(ctx *core.Context) (messageType Web
 	conn.closeIfNecessary(err)
 
 	return WebsocketMessageType(msgType), p, err
+}
+
+type WebsocketMessageChanItem struct {
+	Error   error
+	Type    WebsocketMessageType //nil if error
+	Payload []byte               //nil if error
+}
+
+// StartReadingAllMessagesIntoChan creates a goroutine that continuously calls ReadMessage() and puts results in channel.
+// The goroutine stops when the context is done or the connection is closed or closing; the channel is closed.
+// If the connection is already reading all messages ErrAlreadyReadingAllMessages is returned and the channel is not closed.
+// If the connection is connection is closed ErrClosingOrClosedWebsocketConn is returned and the channel is not closed.
+func (conn *WebsocketConnection) StartReadingAllMessagesIntoChan(ctx *core.Context, channel chan WebsocketMessageChanItem) error {
+
+	if !conn.isReadingAllMessagesIntoChan.CompareAndSwap(false, true) {
+		return ErrAlreadyReadingAllMessages
+	}
+
+	if conn.IsClosedOrClosing() {
+		return ErrClosingOrClosedWebsocketConn
+	}
+
+	go func() {
+		defer utils.Recover()
+		defer conn.isReadingAllMessagesIntoChan.Store(true)
+		defer close(channel)
+
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			default:
+			}
+
+			msgType, payload, err := conn.ReadMessage(ctx)
+			if conn.closingOrClosed.Load() {
+				if err != nil {
+					channel <- WebsocketMessageChanItem{
+						Error: err,
+					}
+				}
+				channel <- WebsocketMessageChanItem{
+					Error: ErrClosingOrClosedWebsocketConn,
+				}
+				return
+			}
+
+			if err != nil {
+				channel <- WebsocketMessageChanItem{
+					Error: err,
+				}
+			} else {
+				channel <- WebsocketMessageChanItem{
+					Type:    msgType,
+					Payload: payload,
+				}
+			}
+		}
+	}()
+
+	return nil
 }
 
 func (conn *WebsocketConnection) WriteMessage(ctx *core.Context, messageType WebsocketMessageType, data []byte) error {

@@ -1,6 +1,7 @@
 package net_ns
 
 import (
+	"bytes"
 	"testing"
 	"time"
 
@@ -16,12 +17,16 @@ func TestWebsocketConnection(t *testing.T) {
 
 	if !core.AreDefaultRequestHandlingLimitsSet() {
 		core.SetDefaultRequestHandlingLimits([]core.Limit{})
-		defer core.UnsetDefaultRequestHandlingLimits()
+		defer func() {
+			core.UnsetDefaultRequestHandlingLimits()
+		}()
 	}
 
 	if !core.AreDefaultMaxRequestHandlerLimitsSet() {
 		core.SetDefaultMaxRequestHandlerLimits([]core.Limit{})
-		defer core.UnsetDefaultMaxRequestHandlerLimits()
+		defer func() {
+			core.UnsetDefaultMaxRequestHandlerLimits()
+		}()
 	}
 
 	t.Run("connection should be allowed even if the client's context has only a write permission", func(t *testing.T) {
@@ -43,6 +48,7 @@ func TestWebsocketConnection(t *testing.T) {
 			Limits:     []core.Limit{{Name: WS_SIMUL_CONN_TOTAL_LIMIT_NAME, Kind: core.TotalLimit, Value: 1}},
 			Filesystem: fs_ns.GetOsFilesystem(),
 		})
+		defer clientCtx.CancelGracefully()
 
 		conn, err := websocketConnect(clientCtx, ENDPOINT, core.Option{Name: "insecure", Value: core.True})
 		if !assert.NoError(t, err) {
@@ -92,6 +98,7 @@ func TestWebsocketConnection(t *testing.T) {
 			Limits:     []core.Limit{{Name: WS_SIMUL_CONN_TOTAL_LIMIT_NAME, Kind: core.TotalLimit, Value: 1}},
 			Filesystem: fs_ns.GetOsFilesystem(),
 		})
+		defer clientCtx.CancelGracefully()
 
 		conn, err := websocketConnect(clientCtx, ENDPOINT, core.Option{Name: "insecure", Value: core.True})
 		if !assert.NoError(t, err) {
@@ -142,6 +149,7 @@ func TestWebsocketConnection(t *testing.T) {
 			Limits:     []core.Limit{{Name: WS_SIMUL_CONN_TOTAL_LIMIT_NAME, Kind: core.TotalLimit, Value: 1}},
 			Filesystem: fs_ns.GetOsFilesystem(),
 		})
+		defer clientCtx.CancelGracefully()
 
 		conn, err := websocketConnect(clientCtx, ENDPOINT, core.Option{Name: "insecure", Value: core.True})
 		if !assert.NoError(t, err) {
@@ -191,6 +199,7 @@ func TestWebsocketConnection(t *testing.T) {
 			Limits:     []core.Limit{{Name: WS_SIMUL_CONN_TOTAL_LIMIT_NAME, Kind: core.TotalLimit, Value: 1}},
 			Filesystem: fs_ns.GetOsFilesystem(),
 		})
+		defer clientCtx.CancelGracefully()
 
 		conn, err := websocketConnect(clientCtx, ENDPOINT, core.Option{Name: "insecure", Value: core.True})
 		if !assert.NoError(t, err) {
@@ -217,4 +226,140 @@ func TestWebsocketConnection(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, int64(0), total)
 	})
+
+	t.Run("StartReadingAllMessagesIntoChan", func(t *testing.T) {
+		setup := func() (*WebsocketConnection, *core.Context, chan struct{}, bool) {
+			closeChan := createWebsocketServer(testWebsocketServerConfig{
+				host:           HTTPS_HOST,
+				messageTimeout: time.Second,
+				echo:           true,
+			}, nil)
+
+			clientCtx := core.NewContext(core.ContextConfig{
+				Permissions: []core.Permission{
+					core.WebsocketPermission{Kind_: permkind.Read, Endpoint: ENDPOINT},
+					core.WebsocketPermission{Kind_: permkind.Write, Endpoint: ENDPOINT},
+				},
+				Limits:     []core.Limit{{Name: WS_SIMUL_CONN_TOTAL_LIMIT_NAME, Kind: core.TotalLimit, Value: 1}},
+				Filesystem: fs_ns.GetOsFilesystem(),
+			})
+
+			conn, err := websocketConnect(clientCtx, ENDPOINT, core.Option{Name: "insecure", Value: core.True})
+			if !assert.NoError(t, err) {
+				clientCtx.CancelGracefully()
+				return nil, nil, nil, false
+			}
+
+			return conn, clientCtx, closeChan, true
+		}
+
+		t.Run("base case", func(t *testing.T) {
+			conn, ctx, closeServerChan, ok := setup()
+			if !ok {
+				return
+			}
+			defer ctx.CancelGracefully()
+			defer func() {
+				closeServerChan <- struct{}{}
+			}()
+
+			channel := make(chan WebsocketMessageChanItem, 10)
+			if !assert.NoError(t, conn.StartReadingAllMessagesIntoChan(ctx, channel)) {
+				return
+			}
+
+			payload := `"a"`
+
+			if !assert.NoError(t, conn.WriteMessage(ctx, WebsocketTextMessage, []byte(payload))) {
+				return
+			}
+
+			select {
+			//echo
+			case item := <-channel:
+				item.Payload = bytes.TrimSpace(item.Payload)
+
+				assert.Equal(t, WebsocketMessageChanItem{
+					Type:    WebsocketTextMessage,
+					Payload: []byte(payload),
+				}, item)
+			case <-time.After(100 * time.Millisecond):
+				t.Log("timeout")
+				t.Fail()
+				return
+			}
+
+			//close connection
+			conn.Close()
+
+			select {
+			case item := <-channel:
+				assert.Nil(t, item.Payload)
+				assert.Zero(t, item.Type)
+				assert.Error(t, item.Error)
+			case <-time.After(100 * time.Millisecond):
+				t.Log("timeout")
+				t.Fail()
+				return
+			}
+		})
+
+		t.Run("a second call should return ErrAlreadyReadingAllMessages and should not have any effect", func(t *testing.T) {
+			conn, ctx, closeServerChan, ok := setup()
+			if !ok {
+				return
+			}
+			defer ctx.CancelGracefully()
+			defer func() {
+				closeServerChan <- struct{}{}
+			}()
+
+			channel := make(chan WebsocketMessageChanItem, 10)
+			if !assert.NoError(t, conn.StartReadingAllMessagesIntoChan(ctx, channel)) {
+				return
+			}
+
+			//second call
+			if !assert.ErrorIs(t, conn.StartReadingAllMessagesIntoChan(ctx, channel), ErrAlreadyReadingAllMessages) {
+				return
+			}
+			//the second call should have no effect on the current reading.
+
+			payload := `"a"`
+
+			if !assert.NoError(t, conn.WriteMessage(ctx, WebsocketTextMessage, []byte(payload))) {
+				return
+			}
+
+			select {
+			//echo
+			case item := <-channel:
+				item.Payload = bytes.TrimSpace(item.Payload)
+
+				assert.Equal(t, WebsocketMessageChanItem{
+					Type:    WebsocketTextMessage,
+					Payload: []byte(payload),
+				}, item)
+			case <-time.After(100 * time.Millisecond):
+				t.Log("timeout")
+				t.Fail()
+				return
+			}
+
+			//close connection
+			conn.Close()
+
+			select {
+			case item := <-channel:
+				assert.Nil(t, item.Payload)
+				assert.Zero(t, item.Type)
+				assert.Error(t, item.Error)
+			case <-time.After(100 * time.Millisecond):
+				t.Log("timeout")
+				t.Fail()
+				return
+			}
+		})
+	})
+
 }

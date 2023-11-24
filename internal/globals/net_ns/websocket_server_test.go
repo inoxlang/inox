@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"runtime/debug"
 	"testing"
 	"time"
 
@@ -11,6 +12,7 @@ import (
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/globals/http_ns"
 	"github.com/inoxlang/inox/internal/permkind"
+	"github.com/inoxlang/inox/internal/utils"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 )
@@ -285,6 +287,8 @@ type testWebsocketServerConfig struct {
 	doNotReadMessages bool
 }
 
+// createWebsocketServer creates a websocket server that echoes the JSON messages it receives if config.echo is true.
+// Writing to closeChan closes the server and cancel its context.
 func createWebsocketServer(config testWebsocketServerConfig, ctx *core.Context) (closeChan chan struct{}) {
 	if ctx == nil {
 		ctx = core.NewContext(core.ContextConfig{
@@ -303,7 +307,22 @@ func createWebsocketServer(config testWebsocketServerConfig, ctx *core.Context) 
 
 	//log.Println(ctx.GetFileSystem(), string(debug.Stack()))
 
+	httpServerCreated := make(chan struct{})
+
 	go func() {
+		defer func() {
+			ctx.CancelGracefully()
+		}()
+
+		defer func() {
+			e := recover()
+			if e != nil {
+				err := utils.ConvertPanicValueToError(e)
+				err = fmt.Errorf("%w: %s", err, debug.Stack())
+				fmt.Println(err)
+			}
+		}()
+
 		wsServer, _ := newWebsocketServer(ctx, config.messageTimeout)
 		handler := core.WrapGoFunction(func(ctx *core.Context, rw *http_ns.HttpResponseWriter, req *http_ns.HttpRequest) {
 			conn, err := wsServer.Upgrade(rw, req)
@@ -313,21 +332,18 @@ func createWebsocketServer(config testWebsocketServerConfig, ctx *core.Context) 
 				return
 			}
 
-			go func() {
-				// echo
-				var v core.Value
-				var err error
+			// echo
+			var v core.Value
 
-				if config.doNotReadMessages {
-					return
-				}
+			if config.doNotReadMessages {
+				return
+			}
 
-				for ; err == nil; v, err = conn.readJSON(ctx) {
-					if v != nil && config.echo {
-						conn.sendJSON(ctx, v)
-					}
+			for ; err == nil; v, err = conn.readJSON(ctx) {
+				if v != nil && config.echo {
+					conn.sendJSON(ctx, v)
 				}
-			}()
+			}
 		})
 
 		//log.Println(ctx.GetFileSystem(), string(debug.Stack()))
@@ -337,6 +353,8 @@ func createWebsocketServer(config testWebsocketServerConfig, ctx *core.Context) 
 			log.Panicln("failed to create test server", err)
 		}
 
+		httpServerCreated <- struct{}{}
+
 		select {
 		case <-closeChan:
 		case <-time.After(10 * time.Second):
@@ -345,7 +363,11 @@ func createWebsocketServer(config testWebsocketServerConfig, ctx *core.Context) 
 		wsServer.Close(ctx)
 	}()
 
-	time.Sleep(time.Second / 10)
+	select {
+	case <-time.After(time.Second):
+		log.Panicln("timeout")
+	case <-httpServerCreated:
+	}
 
 	return
 }
