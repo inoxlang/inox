@@ -81,8 +81,8 @@ var (
 	SUBCOMMANDS     = append(slices.Clone(CLI_SUBCOMMANDS), inoxd.DAEMON_SUBCMD, inoxprocess.CONTROLLED_SUBCMD, cloudproxy.CLOUD_PROXY_SUBCMD_NAME)
 
 	CLI_SUBCOMMAND_DESCRIPTIONS = map[string]string{
-		"add-service":    "[root] add the Inox service unit (systemd) and create the " + inoxd.INOXD_USERNAME + " user",
-		"remove-service": "[root] stop the Inox service and remove the Inox service unit (systemd)",
+		"add-service":    "[root] add the 'inox' unit (systemd) and create the " + inoxd.INOXD_USERNAME + " user",
+		"remove-service": "[root] stop inoxd and remove the 'inox' unit (systemd)",
 		"run":            "run a script",
 		"check":          "check a script",
 		"shell":          "start the shell",
@@ -341,9 +341,14 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 		flags := flag.NewFlagSet(mainSubCommand, flag.ExitOnError)
 		var inoxCloud bool
 		var tunnelProvider string
+		var exposeProjectServers bool
+		var exposeWebServers bool
 
 		flags.BoolVar(&inoxCloud, "inox-cloud", false, "enable inox cloud")
-		flags.StringVar(&tunnelProvider, "tunnel-provider", "", "name of the tunnel provider, only 'cloudflare' is supported for now.")
+		flags.StringVar(&tunnelProvider, "tunnel-provider", "", "name of the tunnel provider, only 'cloudflare' is supported for now"+
+			"this flag causes ")
+		flags.BoolVar(&exposeProjectServers, "expose-project-servers", false, "allow project servers to bind on all interfaces")
+		flags.BoolVar(&exposeWebServers, "expose-web-servers", false, "allow web servers to bind on all interfaces")
 
 		if showHelp(flags, mainSubCommandArgs, outW) { //only show help
 			return
@@ -357,6 +362,16 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 
 		if tunnelProvider != "" && tunnelProvider != "cloudflare" {
 			fmt.Fprintln(errW, "ERROR: only 'cloudflare' is supported as a tunnel provider for now")
+			return ERROR_STATUS_CODE
+		}
+
+		if tunnelProvider != "" && exposeProjectServers {
+			fmt.Fprintln(errW, "--expose-project-servers and --tunnel-provider are mutually exclusive flags")
+			return ERROR_STATUS_CODE
+		}
+
+		if tunnelProvider != "" && exposeWebServers {
+			fmt.Fprintln(errW, "--expose-web-servers and --tunnel-provider are mutually exclusive flags")
 			return ERROR_STATUS_CODE
 		}
 
@@ -386,7 +401,11 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 			}
 		}
 
-		envFilePath, err := systemd.CreateInoxdEnvFileIfNotExists(outW, systemd.EnvFileCreationParams{})
+		envFilePath, err := systemd.CreateInoxdEnvFileIfNotExists(outW, systemd.EnvFileCreationParams{
+			TunnelProviderName:   tunnelProvider,
+			ExposeProjectServers: exposeProjectServers,
+			ExposeWebservers:     exposeWebServers,
+		})
 
 		if err != nil {
 			fmt.Fprintln(errW, "ERROR:", err)
