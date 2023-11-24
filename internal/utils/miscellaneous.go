@@ -2,7 +2,9 @@ package utils
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
+	"runtime/debug"
 	"unsafe"
 )
 
@@ -38,6 +40,18 @@ func PanicIfErrAmong(errs ...error) {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func Catch(fn func()) (result error) {
+	defer func() {
+		e := recover()
+		if e != nil {
+			err := ConvertPanicValueToError(result)
+			result = fmt.Errorf("%w: %s", err, string(debug.Stack()))
+		}
+	}()
+	fn()
+	return nil
 }
 
 func Ret0[A, B any](a A, b B) A {
