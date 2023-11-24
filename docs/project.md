@@ -35,7 +35,7 @@ inox project-server
 ```
 
 This server is listening on `localhost:8305` by default. The listening port can
-be changed with the **-config** flag: `-config='{"port":8305}'`. The project server can only binds to localhost.
+be changed with the **-config** flag: `-config='{"port":8305}'`.
 
 **It is recommended to add the [inox daemon](./inox-daemon.md) in order to start the project server automatically and to expose it.**
 

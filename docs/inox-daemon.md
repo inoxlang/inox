@@ -3,22 +3,24 @@
 **Inoxd** creates and manages one or more project server processes (command `inox project-server`).\
 Inoxd can be installed on any Linux distribution that uses **systemd**.
 
-# Installation A - Inoxd
+## Installation A - Inoxd + Publicly Exposed Servers
 
-The following command will add a new systemd service and create a new user named `inoxd`.
-You will have to expose the project server listening on localhost (port 8305 by default) yourself.
-If you don't want to do that you can perform the **Installation B** instead.
+The command below will add a new systemd service and create a new user named `inoxd`.\
+The `--expose-project-servers` flag makes project servers listen on ⚠️ ALL interfaces.\
+The `--expose-web-servers` flag makes web (application) servers listen on ⚠️ ALL interfaces.
 
 ```
-inox add-service
+sudo inox add-service --expose-project-servers --expose-web-servers
 ```
 
-# Installation B - Inoxd + Cloudflared
+**This installation is not recommended for production environments.**
+
+## Installation B - Inoxd + Cloudflare Tunnel
 
 The following command will add a new systemd service, create a new user named `inoxd` and download the latest [Cloudflared](https://github.com/cloudflare/cloudflared) binary. 
 
 ```
-inox add-service --tunnel-provider=cloudflare
+sudo inox add-service --tunnel-provider=cloudflare
 ```
 
 ```mermaid
@@ -32,4 +34,3 @@ subgraph YourMachine["Your machine"]
         Cloudflared -.- ProjectServer(Project Server)
 end
 ```
-
