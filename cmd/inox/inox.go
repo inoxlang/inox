@@ -16,6 +16,7 @@ import (
 	"github.com/inoxlang/inox/internal/inoxd"
 	"github.com/inoxlang/inox/internal/inoxd/cloud/cloudproxy"
 	"github.com/inoxlang/inox/internal/inoxd/cloudflared"
+	inoxdconsts "github.com/inoxlang/inox/internal/inoxd/consts"
 	"github.com/inoxlang/inox/internal/inoxd/systemd"
 
 	"github.com/inoxlang/inox/internal/globals/chrome_ns"
@@ -449,6 +450,12 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 			fmt.Fprintln(outW, "unit file created")
 			utils.PrintSmallLineSeparator(outW)
 		}
+
+		//create a directory to store data
+		fmt.Fprintf(outW, "create directory %s and change its owner to %q\n", inoxdconsts.DATA_DIR, username)
+		os.MkdirAll(inoxdconsts.DATA_DIR, 0700)
+		os.Chown(inoxdconsts.DATA_DIR, uid, -1)
+		utils.PrintSmallLineSeparator(outW)
 
 		//enable & start inoxd
 		if !alreadyExists {
