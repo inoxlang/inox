@@ -483,12 +483,14 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 		var removeInoxdUser bool
 		var removeInoxdHomedir bool
 		var removeEnvFile bool
+		var removeDataDir bool
 		var removeAll bool
 
 		flags.BoolVar(&removeTunnelConfigs, "remove-tunnel-configs", false, "remove all configuration files of tunnels")
 		flags.BoolVar(&removeInoxdUser, "remove-inoxd-user", false, " remove the inoxd user, the homedir is not removed")
 		flags.BoolVar(&removeInoxdHomedir, "remove-inoxd-homedir", false, "if --remove-inoxd-user is present the homedir is also removed")
 		flags.BoolVar(&removeEnvFile, "remove-env-file", false, "remove the environment file specified in the unit file")
+		flags.BoolVar(&removeDataDir, "remove-data-dir", false, "remove the data directory ("+inoxdconsts.DATA_DIR+")")
 		flags.BoolVar(&removeAll, "dangerously-remove-all", false, "enable all --remove-xxx flags")
 
 		if showHelp(flags, mainSubCommandArgs, outW) { //only show help
@@ -506,6 +508,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 			removeInoxdUser = true
 			removeInoxdHomedir = true
 			removeEnvFile = true
+			removeDataDir = true
 		}
 
 		//perform removal(s)
@@ -522,6 +525,16 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 		if err := systemd.StopRemoveUnit(removeEnvFile, outW, errW); err != nil {
 			fmt.Fprintln(errW, "ERROR:", err)
 			//keep going
+			utils.PrintSmallLineSeparator(outW)
+		}
+
+		if removeDataDir {
+			fmt.Fprintln(outW, "remove ", inoxdconsts.DATA_DIR)
+			err := os.RemoveAll(inoxdconsts.DATA_DIR)
+			if err != nil {
+				fmt.Fprintln(errW, "ERROR:", err)
+				//keep going
+			}
 			utils.PrintSmallLineSeparator(outW)
 		}
 
