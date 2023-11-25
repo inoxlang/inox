@@ -28,6 +28,7 @@ func TestCloudProxy(t *testing.T) {
 	errW := os.Stdout
 
 	config := CloudProxyConfig{
+		CloudDataDir:                 "/",
 		AnonymousAccountDatabasePath: "/db.kv",
 		Port:                         project_server.DEFAULT_PROJECT_SERVER_PORT_INT,
 	}

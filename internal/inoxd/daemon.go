@@ -9,6 +9,7 @@ import (
 
 	"github.com/containerd/cgroups/v3"
 	"github.com/inoxlang/inox/internal/inoxd/cloud/cloudproxy"
+	"github.com/inoxlang/inox/internal/inoxd/consts"
 	inoxdcrypto "github.com/inoxlang/inox/internal/inoxd/crypto"
 	"github.com/inoxlang/inox/internal/project_server"
 	"github.com/inoxlang/inox/internal/utils"
@@ -18,7 +19,6 @@ const DAEMON_SUBCMD = "daemon"
 
 type DaemonConfig struct {
 	InoxCloud        bool                                  `json:"inoxCloud,omitempty"`
-	CloudProxy       *cloudproxy.CloudProxyConfig          `json:"cloudProxy,omitempty"` //ignored if inoxCloud is false
 	Server           project_server.IndividualServerConfig `json:"projectServerConfig"`
 	ExposeWebServers bool                                  `json:"exposeWebServers,omitempty"`
 	TunnelProvider   string                                `json:"tunnelProvider,omitempty"`
@@ -61,12 +61,9 @@ func Inoxd(config DaemonConfig, errW, outW io.Writer) {
 	}
 
 	//launch proxy
-	var proxyConfig cloudproxy.CloudProxyConfig
-	if config.CloudProxy != nil {
-		proxyConfig = *config.CloudProxy
-	}
-	if proxyConfig.Port == 0 {
-		proxyConfig.Port = project_server.DEFAULT_PROJECT_SERVER_PORT_INT
+	proxyConfig := cloudproxy.CloudProxyConfig{
+		CloudDataDir: consts.CLOUD_DATA_DIR,
+		Port:         project_server.DEFAULT_PROJECT_SERVER_PORT_INT,
 	}
 
 	go func() {
@@ -76,7 +73,7 @@ func Inoxd(config DaemonConfig, errW, outW io.Writer) {
 
 		for {
 			if tryCount >= MAX_TRY_COUNT {
-				fmt.Fprintf(errW, "cloud proxy process exited unexpectedly %d or more times in a short timeframe; wait 5 minutes", MAX_TRY_COUNT)
+				fmt.Fprintf(errW, "cloud proxy process exited unexpectedly %d or more times in a short timeframe; wait 5 minutes\n", MAX_TRY_COUNT)
 				time.Sleep(5 * time.Minute)
 				tryCount = 0
 			}

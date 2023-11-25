@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core"
@@ -14,6 +16,7 @@ import (
 	"github.com/inoxlang/inox/internal/globals/http_ns"
 	"github.com/inoxlang/inox/internal/globals/net_ns"
 	"github.com/inoxlang/inox/internal/inoxd/cloud/account"
+	"github.com/inoxlang/inox/internal/inoxd/consts"
 	"github.com/inoxlang/inox/internal/inoxprocess"
 	nettypes "github.com/inoxlang/inox/internal/net_types"
 	"github.com/inoxlang/inox/internal/utils"
@@ -37,13 +40,23 @@ type CloudProxyArgs struct {
 }
 
 type CloudProxyConfig struct {
+	CloudDataDir string `json:"dataDir"`
+	//should be in DataDir, if not set defaults to <DATA DIR>/<DEFAULT_ANON_ACCOUNT_DB_BASENAME>
 	AnonymousAccountDatabasePath string `json:"anonAccountDBPath,omitempty"`
 	Port                         int    `json:"port"`
 }
 
 func Run(args CloudProxyArgs) error {
+	if args.Config.CloudDataDir == "" {
+		return errors.New("invalid cloud-proxy configuration: missing cloud data dir")
+	}
+
 	if args.Config.AnonymousAccountDatabasePath == "" {
-		args.Config.AnonymousAccountDatabasePath = account.DEFAULT_ANON_ACCOUNT_STORE_PATH
+		args.Config.AnonymousAccountDatabasePath = filepath.Join(args.Config.CloudDataDir, consts.DEFAULT_ANON_ACCOUNT_DB_BASENAME)
+	}
+
+	if !strings.HasPrefix(args.Config.AnonymousAccountDatabasePath, core.AppendTrailingSlashIfNotPresent(args.Config.CloudDataDir)) {
+		return errors.New("invalid cloud-proxy configuration: the anonymous account database should be located in the cloud data directory")
 	}
 
 	if args.Config.Port == 0 {
@@ -55,6 +68,12 @@ func Run(args CloudProxyArgs) error {
 	}
 
 	fls := args.Filesystem
+
+	//create the cloud data dir if necessary
+	err := fls.MkdirAll(args.Config.CloudDataDir, 0700)
+	if err != nil {
+		return fmt.Errorf("failed to create the data directory %q: %w", args.Config.CloudDataDir, err)
+	}
 
 	//errW := args.ErrW
 	config := args.Config

@@ -3,20 +3,13 @@ package account
 import (
 	"encoding/json"
 	"errors"
-	"path/filepath"
 	"sync/atomic"
 
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/filekv"
-	"github.com/inoxlang/inox/internal/inoxd/consts"
 	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
-)
-
-var (
-	CLOUD_DATA_DIR                  = filepath.Join(consts.DATA_DIR, "cloud")
-	DEFAULT_ANON_ACCOUNT_STORE_PATH = filepath.Join(CLOUD_DATA_DIR, "anon-accounts.kv")
 )
 
 var (
