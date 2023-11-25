@@ -265,6 +265,7 @@ func NewHttpsServer(ctx *core.Context, host core.Host, args ...core.Value) (*Htt
 	config := GolangHttpServerConfig{
 		Addr:    addr,
 		Handler: topHandler,
+		PersistCreatedLocalCert: true,
 	}
 	if userProvidedCert != "" {
 		config.PemEncodedCert = userProvidedCert

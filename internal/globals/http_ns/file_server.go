@@ -61,8 +61,9 @@ func NewFileServer(ctx *core.Context, args ...core.Value) (*HttpsServer, error) 
 	}
 
 	server, err := NewGolangHttpServer(ctx, GolangHttpServerConfig{
-		Addr:    addr,
-		Handler: http.FileServer(http.Dir(dir)),
+		Addr:                    addr,
+		Handler:                 http.FileServer(http.Dir(dir)),
+		PersistCreatedLocalCert: true,
 	})
 	if err != nil {
 		return nil, err
