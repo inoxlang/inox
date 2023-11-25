@@ -461,8 +461,14 @@ func (s *Session) mustWrite(data []byte) error {
 	}
 	return nil
 }
+
 func (s *Session) handlerResponse(id interface{}, result interface{}, err error, sensitiveDataMethod bool) error {
-	resp := ResponseMessage{ID: id}
+	resp := ResponseMessage{
+		ID: id,
+		BaseMessage: BaseMessage{
+			Jsonrpc: JSONRPC_VERSION,
+		},
+	}
 	if err != nil {
 		if errors.Is(err, io.EOF) {
 			return err
