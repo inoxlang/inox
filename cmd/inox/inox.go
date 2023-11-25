@@ -881,10 +881,11 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 		//proxy
 
 		err = cloudproxy.Run(cloudproxy.CloudProxyArgs{
-			Config:    proxyConfig,
-			OutW:      outW,
-			ErrW:      errW,
-			GoContext: context.Background(),
+			Config:                proxyConfig,
+			OutW:                  outW,
+			ErrW:                  errW,
+			GoContext:             context.Background(),
+			RestrictProcessAccess: true,
 		})
 		if err != nil {
 			fmt.Fprintln(errW, err)

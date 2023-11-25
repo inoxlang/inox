@@ -11,6 +11,7 @@ import (
 	"github.com/inoxlang/inox/internal/globals/http_ns"
 	"github.com/inoxlang/inox/internal/globals/net_ns"
 	"github.com/inoxlang/inox/internal/inoxd/cloud/account"
+	"github.com/inoxlang/inox/internal/inoxprocess"
 	nettypes "github.com/inoxlang/inox/internal/net_types"
 	"github.com/inoxlang/inox/internal/project_server"
 	"github.com/inoxlang/inox/internal/utils"
@@ -26,10 +27,11 @@ const (
 )
 
 type CloudProxyArgs struct {
-	Config     CloudProxyConfig
-	OutW, ErrW io.Writer
-	GoContext  context.Context
-	Filesystem afs.Filesystem
+	Config                CloudProxyConfig
+	OutW, ErrW            io.Writer
+	GoContext             context.Context
+	Filesystem            afs.Filesystem
+	RestrictProcessAccess bool
 }
 
 type CloudProxyConfig struct {
@@ -41,16 +43,21 @@ func Run(args CloudProxyArgs) error {
 		args.Config.AnonymousAccountDatabasePath = account.DEFAULT_ANON_ACCOUNT_STORE_PATH
 	}
 
+	//errW := args.ErrW
 	config := args.Config
 	outW := args.OutW
-	//errW := args.ErrW
 	dbPath := core.Path(config.AnonymousAccountDatabasePath)
-
 	addr := "localhost:" + project_server.DEFAULT_PROJECT_SERVER_PORT
 	host := core.Host("wss://" + addr)
 
 	ctx, topCtx := createContext(host, args)
 	defer topCtx.CancelGracefully()
+
+	if args.RestrictProcessAccess {
+		inoxprocess.RestrictProcessAccess(topCtx, inoxprocess.ProcessRestrictionConfig{
+			ForceAllowDNS: true,
+		})
+	}
 
 	wsServer, err := net_ns.NewWebsocketServer(ctx)
 
@@ -65,6 +72,8 @@ func Run(args CloudProxyArgs) error {
 	}
 
 	accountManagementLogger := ctx.Logger().With().Str(core.SOURCE_LOG_FIELD_NAME, ACCOUT_MANAGEMENT_LOG_SRC).Logger()
+
+	//create a http server, register teardown callbacks and start listening.
 
 	httpServer, err := http_ns.NewGolangHttpServer(ctx, http_ns.GolangHttpServerConfig{
 		Addr: addr,
