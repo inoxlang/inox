@@ -623,18 +623,18 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 				err := json.Unmarshal([]byte(configOrConfigFile), &projectServerConfig)
 				if err != nil {
 					fmt.Fprintln(errW, "project-server: failed to unmarshal configuration argument:", err)
-					return
+					return ERROR_STATUS_CODE
 				}
 			} else {
 				content, err := os.ReadFile(configOrConfigFile)
 				if err != nil {
 					fmt.Fprintln(errW, "project-server: failed to read configuration file:", err)
-					return
+					return ERROR_STATUS_CODE
 				}
 				err = json.Unmarshal(content, &projectServerConfig)
 				if err != nil {
 					fmt.Fprintln(errW, "project-server: failed to unmarshal configuration file:", err)
-					return
+					return ERROR_STATUS_CODE
 				}
 			}
 		}
@@ -778,18 +778,19 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 
 			if err != nil {
 				fmt.Fprintln(errW, "failed to start collection of perfomance profiles:", err)
-				return
+				return ERROR_STATUS_CODE
 			}
 		}
 
 		err = chrome_ns.StartSharedProxy(ctx)
 		if err != nil {
 			fmt.Fprintln(errW, "failed to start shared browser proxy:", err)
-			return
+			return ERROR_STATUS_CODE
 		}
 
 		if err := project_server.StartLSPServer(ctx, opts); err != nil {
 			fmt.Fprintln(errW, "failed to start LSP server:", err)
+			return ERROR_STATUS_CODE
 		}
 	case inoxd.DAEMON_SUBCMD:
 		//read & check arguments
@@ -816,15 +817,18 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 				err := json.Unmarshal([]byte(configOrConfigFile), &daemonConfig)
 				if err != nil {
 					fmt.Fprintln(errW, "daemon: failed to unmarshal configuration argument", err)
+					return ERROR_STATUS_CODE
 				}
 			} else {
 				content, err := os.ReadFile(configOrConfigFile)
 				if err != nil {
-					fmt.Fprintln(errW, "daemon: failed to read configuration file", err)
+					fmt.Fprintln(errW, "daemon: failed to read configuration file:", err)
+					return ERROR_STATUS_CODE
 				}
 				err = json.Unmarshal(content, &daemonConfig)
 				if err != nil {
-					fmt.Fprintln(errW, "daemon: failed to unmarshal configuration file", err)
+					fmt.Fprintln(errW, "daemon: failed to unmarshal configuration file:", err)
+					return ERROR_STATUS_CODE
 				}
 			}
 		}
@@ -858,15 +862,18 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 				err := json.Unmarshal([]byte(configOrConfigFile), &proxyConfig)
 				if err != nil {
 					fmt.Fprintln(errW, "cloud-proxy: failed to unmarshal configuration argument", err)
+					return ERROR_STATUS_CODE
 				}
 			} else {
 				content, err := os.ReadFile(configOrConfigFile)
 				if err != nil {
-					fmt.Fprintln(errW, "cloud-proxy: failed to read configuration file", err)
+					fmt.Fprintln(errW, "cloud-proxy: failed to read configuration file:", err)
+					return ERROR_STATUS_CODE
 				}
 				err = json.Unmarshal(content, &proxyConfig)
 				if err != nil {
-					fmt.Fprintln(errW, "cloud-proxy: failed to unmarshal configuration file", err)
+					fmt.Fprintln(errW, "cloud-proxy: failed to unmarshal configuration file:", err)
+					return ERROR_STATUS_CODE
 				}
 			}
 		} //else empty configuration
