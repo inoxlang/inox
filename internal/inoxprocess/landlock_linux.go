@@ -122,7 +122,7 @@ func restrictProcessAccess(grantedPerms, forbiddenPerms []core.Permission, fls *
 			case core.Path:
 				allowedPathString = entity.UnderlyingString()
 
-				if entity.IsDirPath() {
+				if !entity.IsDirPath() {
 					dir = false
 				}
 
