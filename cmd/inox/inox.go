@@ -834,7 +834,51 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 		inoxd.Inoxd(daemonConfig, errW, outW)
 
 	case cloudproxy.CLOUD_PROXY_SUBCMD_NAME:
-		err := cloudproxy.Run(outW, errW)
+		//read & check arguments
+		flags := flag.NewFlagSet(mainSubCommand, flag.ExitOnError)
+		var configOrConfigFile string
+
+		flags.StringVar(&configOrConfigFile, "config", "", "JSON configuration or JSON file")
+
+		if showHelp(flags, mainSubCommandArgs, outW) { //only show help
+			return
+		}
+
+		err := flags.Parse(mainSubCommandArgs)
+		if err != nil {
+			fmt.Fprintln(errW, "cloud-proxy:", err)
+			return
+		}
+
+		var proxyConfig cloudproxy.CloudProxyConfig
+
+		configOrConfigFile = strings.TrimSpace(configOrConfigFile)
+		if configOrConfigFile != "" {
+			if configOrConfigFile[0] == '{' {
+				err := json.Unmarshal([]byte(configOrConfigFile), &proxyConfig)
+				if err != nil {
+					fmt.Fprintln(errW, "cloud-proxy: failed to unmarshal configuration argument", err)
+				}
+			} else {
+				content, err := os.ReadFile(configOrConfigFile)
+				if err != nil {
+					fmt.Fprintln(errW, "cloud-proxy: failed to read configuration file", err)
+				}
+				err = json.Unmarshal(content, &proxyConfig)
+				if err != nil {
+					fmt.Fprintln(errW, "cloud-proxy: failed to unmarshal configuration file", err)
+				}
+			}
+		} //else empty configuration
+
+		//proxy
+
+		err = cloudproxy.Run(cloudproxy.CloudProxyArgs{
+			Config:    proxyConfig,
+			OutW:      outW,
+			ErrW:      errW,
+			GoContext: context.Background(),
+		})
 		if err != nil {
 			fmt.Fprintln(errW, err)
 			return ERROR_STATUS_CODE

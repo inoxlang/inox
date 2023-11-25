@@ -874,6 +874,14 @@ func (host Host) ExplicitPort() int {
 	return -1
 }
 
+func (host Host) URLWithPath(absPath Path) URL {
+	if !absPath.IsAbsolute() {
+		panic(errors.New("path argument is not absolute"))
+	}
+
+	return URL(string(host) + string(absPath))
+}
+
 func (host Host) UnderlyingString() string {
 	return string(host)
 }

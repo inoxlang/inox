@@ -3,27 +3,43 @@ package account
 import (
 	"encoding/json"
 	"errors"
+	"path/filepath"
 	"sync/atomic"
 
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/filekv"
+	"github.com/inoxlang/inox/internal/inoxd/consts"
 	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
+)
+
+var (
+	CLOUD_DATA_DIR                  = filepath.Join(consts.DATA_DIR, "cloud")
+	DEFAULT_ANON_ACCOUNT_STORE_PATH = filepath.Join(CLOUD_DATA_DIR, "anon-accounts.kv")
 )
 
 var (
 	UnknownAccountToken = errors.New("unknown account token")
 )
 
-func OpenAnonymousAccountDatabase(ctx *core.Context, path core.Path, fls afs.Filesystem) (*DisposableAccountDatabase, error) {
+func OpenAnonymousAccountDatabase(ctx *core.Context, path core.Path, fls afs.Filesystem) (*AnonymousAccountDatabase, error) {
 
-	perm := core.FilesystemPermission{
+	readPerm := core.FilesystemPermission{
 		Kind_:  permkind.Read,
 		Entity: path,
 	}
 
-	if err := ctx.CheckHasPermission(perm); err != nil {
+	if err := ctx.CheckHasPermission(readPerm); err != nil {
+		return nil, err
+	}
+
+	writePerm := core.FilesystemPermission{
+		Kind_:  permkind.Write,
+		Entity: path,
+	}
+
+	if err := ctx.CheckHasPermission(writePerm); err != nil {
 		return nil, err
 	}
 
@@ -36,7 +52,7 @@ func OpenAnonymousAccountDatabase(ctx *core.Context, path core.Path, fls afs.Fil
 		return nil, err
 	}
 
-	db := &DisposableAccountDatabase{
+	db := &AnonymousAccountDatabase{
 		kv: store,
 	}
 	ctx.OnGracefulTearDown(func(ctx *core.Context) error {
@@ -46,12 +62,12 @@ func OpenAnonymousAccountDatabase(ctx *core.Context, path core.Path, fls afs.Fil
 	return db, nil
 }
 
-type DisposableAccountDatabase struct {
+type AnonymousAccountDatabase struct {
 	kv     *filekv.SingleFileKV
 	closed atomic.Bool
 }
 
-func (db *DisposableAccountDatabase) Persist(ctx *core.Context, account *AnonymousAccount) error {
+func (db *AnonymousAccountDatabase) Persist(ctx *core.Context, account *AnonymousAccount) error {
 	marshalled, err := json.Marshal(account)
 	if err != nil {
 		return err
@@ -64,7 +80,7 @@ func (db *DisposableAccountDatabase) Persist(ctx *core.Context, account *Anonymo
 	})
 }
 
-func (db *DisposableAccountDatabase) GetAccount(ctx *core.Context, cleartextToken string) (*AnonymousAccount, error) {
+func (db *AnonymousAccountDatabase) GetAccount(ctx *core.Context, cleartextToken string) (*AnonymousAccount, error) {
 	tokenHash, err := HashCleartextToken(cleartextToken)
 	if err != nil {
 		return nil, err
@@ -94,7 +110,7 @@ func (db *DisposableAccountDatabase) GetAccount(ctx *core.Context, cleartextToke
 	return &account, nil
 }
 
-func (db *DisposableAccountDatabase) Close(ctx *core.Context) error {
+func (db *AnonymousAccountDatabase) Close(ctx *core.Context) error {
 	if !db.closed.CompareAndSwap(false, true) {
 		return nil
 	}

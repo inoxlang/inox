@@ -16,11 +16,10 @@ import (
 )
 
 func TestCreation(t *testing.T) {
-	//t.Skip("this test is performed manually")
+	t.Skip("manual test")
+	username := "<Github username>"
 
-	username := "GraphRO0t"
 	fls := fs_ns.NewMemFilesystem(1_000_000)
-
 	ctx := core.NewContexWithEmptyState(core.ContextConfig{
 		Permissions: []core.Permission{
 			core.HttpPermission{Kind_: permkind.Read, AnyEntity: true},
@@ -53,7 +52,7 @@ func TestCreation(t *testing.T) {
 				err = utils.ConvertPanicValueToError(e)
 			}
 		}()
-		err = CreateDisposableAccountInteractively(ctx, Github.String(), conn, db)
+		err = CreateAnonymousAccountInteractively(ctx, Github.String(), conn, db)
 	}()
 
 	select {

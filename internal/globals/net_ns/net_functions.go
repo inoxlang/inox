@@ -67,10 +67,15 @@ func WebsocketConnect(ctx *core.Context, u core.URL, insecure bool, requestHeade
 		InsecureSkipVerify: insecure,
 	}
 
-	c, _, err := dialer.Dial(string(u), requestHeader)
+	c, resp, err := dialer.Dial(string(u), requestHeader)
 	if err != nil {
 		ctx.GiveBack(WS_SIMUL_CONN_TOTAL_LIMIT_NAME, 1)
-		return nil, fmt.Errorf("dial: %s", err.Error())
+
+		if resp == nil {
+			return nil, fmt.Errorf("dial: %s", err.Error())
+		} else {
+			return nil, fmt.Errorf("dial: %s (http status code: %d, text: %s)", err.Error(), resp.StatusCode, resp.Status)
+		}
 	}
 
 	return &WebsocketConnection{

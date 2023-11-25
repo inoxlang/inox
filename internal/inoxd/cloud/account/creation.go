@@ -34,8 +34,8 @@ var (
 	ErrAccountCreationFailedChallValueDoesNotMatch = fmt.Errorf("%w: challenge value does not match", ErrAccountCreationFailed)
 )
 
-// CreateDisposableAccountInteractively communicates with conn to create a disposable account interactively.
-func CreateDisposableAccountInteractively(ctx *core.Context, hosterName string, conn *Connection, db *DisposableAccountDatabase) error {
+// CreateAnonymousAccountInteractively communicates with conn to create a disposable account interactively.
+func CreateAnonymousAccountInteractively(ctx *core.Context, hosterName string, conn *Connection, db *AnonymousAccountDatabase) error {
 	hoster, err := getProofHosterByName(hosterName)
 	if err != nil {
 		return err
@@ -124,7 +124,7 @@ func CreateDisposableAccountInteractively(ctx *core.Context, hosterName string, 
 		}
 
 		if apiResponse.Owner.Type != "User" {
-			return fmt.Errorf("%w: repository should be owned by a user", ErrAccountCreationFailed)
+			return fmt.Errorf("%w: repository should be owned by a user, not %q", ErrAccountCreationFailed, apiResponse.Owner.Type)
 		}
 
 		if apiResponse.Owner.Login != username {
@@ -163,7 +163,7 @@ func CreateDisposableAccountInteractively(ctx *core.Context, hosterName string, 
 
 	err = db.Persist(ctx, account)
 	if err != nil {
-		return fmt.Errorf("%w: failed to persist new account", ErrAccountCreationFailed)
+		return fmt.Errorf("%w: failed to persist new account: %w", ErrAccountCreationFailed, err)
 	}
 	return nil
 }
