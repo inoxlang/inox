@@ -2,18 +2,20 @@ package cloudproxy
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/globals/http_ns"
 	"github.com/inoxlang/inox/internal/globals/net_ns"
 	"github.com/inoxlang/inox/internal/inoxd/cloud/account"
 	"github.com/inoxlang/inox/internal/inoxprocess"
 	nettypes "github.com/inoxlang/inox/internal/net_types"
-	"github.com/inoxlang/inox/internal/project_server"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/rs/zerolog"
 )
@@ -36,6 +38,7 @@ type CloudProxyArgs struct {
 
 type CloudProxyConfig struct {
 	AnonymousAccountDatabasePath string `json:"anonAccountDBPath,omitempty"`
+	Port                         int    `json:"port"`
 }
 
 func Run(args CloudProxyArgs) error {
@@ -43,11 +46,21 @@ func Run(args CloudProxyArgs) error {
 		args.Config.AnonymousAccountDatabasePath = account.DEFAULT_ANON_ACCOUNT_STORE_PATH
 	}
 
+	if args.Config.Port == 0 {
+		return errors.New("invalid cloud-proxy configuration: missing port")
+	}
+
+	if args.Filesystem == nil {
+		args.Filesystem = fs_ns.GetOsFilesystem()
+	}
+
+	fls := args.Filesystem
+
 	//errW := args.ErrW
 	config := args.Config
 	outW := args.OutW
 	dbPath := core.Path(config.AnonymousAccountDatabasePath)
-	addr := "localhost:" + project_server.DEFAULT_PROJECT_SERVER_PORT
+	addr := "localhost:" + strconv.Itoa(args.Config.Port)
 	host := core.Host("wss://" + addr)
 
 	ctx, topCtx := createContext(host, args)
@@ -65,12 +78,13 @@ func Run(args CloudProxyArgs) error {
 		return err
 	}
 
-	accountDB, err := account.OpenAnonymousAccountDatabase(ctx, dbPath, ctx.GetFileSystem())
+	accountDB, err := account.OpenAnonymousAccountDatabase(ctx, dbPath, fls)
 
 	if err != nil {
 		return err
 	}
 
+	fmt.Fprintf(outW, "anonymous account database opened (file %s)\n", dbPath)
 	accountManagementLogger := ctx.Logger().With().Str(core.SOURCE_LOG_FIELD_NAME, ACCOUT_MANAGEMENT_LOG_SRC).Logger()
 
 	//create a http server, register teardown callbacks and start listening.

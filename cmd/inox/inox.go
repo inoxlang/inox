@@ -886,6 +886,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 			ErrW:                  errW,
 			GoContext:             context.Background(),
 			RestrictProcessAccess: true,
+			Filesystem:            fs_ns.GetOsFilesystem(),
 		})
 		if err != nil {
 			fmt.Fprintln(errW, err)

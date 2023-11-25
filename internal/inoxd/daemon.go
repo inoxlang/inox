@@ -1,6 +1,7 @@
 package inoxd
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"os/exec"
@@ -10,21 +11,18 @@ import (
 	"github.com/inoxlang/inox/internal/inoxd/cloud/cloudproxy"
 	inoxdcrypto "github.com/inoxlang/inox/internal/inoxd/crypto"
 	"github.com/inoxlang/inox/internal/project_server"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 const DAEMON_SUBCMD = "daemon"
 
 type DaemonConfig struct {
 	InoxCloud        bool                                  `json:"inoxCloud,omitempty"`
-	CloudProxy       *CloudProxyConfig                     `json:"cloudProxy,omitempty"` //ignored if inoxCloud is false
+	CloudProxy       *cloudproxy.CloudProxyConfig          `json:"cloudProxy,omitempty"` //ignored if inoxCloud is false
 	Server           project_server.IndividualServerConfig `json:"projectServerConfig"`
 	ExposeWebServers bool                                  `json:"exposeWebServers,omitempty"`
 	TunnelProvider   string                                `json:"tunnelProvider,omitempty"`
 	InoxBinaryPath   string                                `json:"-"`
-}
-
-type CloudProxyConfig struct {
-	MaxWebSocketPerIp int `json:"maxWebsocketPerIp"`
 }
 
 func Inoxd(config DaemonConfig, errW, outW io.Writer) {
@@ -63,6 +61,14 @@ func Inoxd(config DaemonConfig, errW, outW io.Writer) {
 	}
 
 	//launch proxy
+	var proxyConfig cloudproxy.CloudProxyConfig
+	if config.CloudProxy != nil {
+		proxyConfig = *config.CloudProxy
+	}
+	if proxyConfig.Port == 0 {
+		proxyConfig.Port = project_server.DEFAULT_PROJECT_SERVER_PORT_INT
+	}
+
 	go func() {
 		const MAX_TRY_COUNT = 3
 		tryCount := 0
@@ -78,10 +84,11 @@ func Inoxd(config DaemonConfig, errW, outW io.Writer) {
 			tryCount++
 			lastLaunchTime = time.Now()
 
-			err := launchCloudProxy(CloudProxyCmdParams{
+			err := launchCloudProxy(cloudProxyCmdParams{
 				inoxBinaryPath: config.InoxBinaryPath,
 				stderr:         errW,
 				stdout:         outW,
+				config:         proxyConfig,
 			})
 
 			fmt.Fprintf(errW, "cloud proxy process returned: %s\n", err.Error())
@@ -93,15 +100,22 @@ func Inoxd(config DaemonConfig, errW, outW io.Writer) {
 			}
 		}
 	}()
+
+	for {
+		time.Sleep(time.Minute)
+	}
 }
 
-type CloudProxyCmdParams struct {
+type cloudProxyCmdParams struct {
 	inoxBinaryPath string
 	stderr, stdout io.Writer
+	config         cloudproxy.CloudProxyConfig
 }
 
-func launchCloudProxy(args CloudProxyCmdParams) error {
-	cmd := exec.Command(args.inoxBinaryPath, cloudproxy.CLOUD_PROXY_SUBCMD_NAME)
+func launchCloudProxy(args cloudProxyCmdParams) error {
+	config := "-config=" + string(utils.Must(json.Marshal(args.config)))
+
+	cmd := exec.Command(args.inoxBinaryPath, cloudproxy.CLOUD_PROXY_SUBCMD_NAME, config)
 	cmd.Stderr = args.stderr
 	cmd.Stdout = args.stdout
 

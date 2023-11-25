@@ -29,6 +29,7 @@ func TestCloudProxy(t *testing.T) {
 
 	config := CloudProxyConfig{
 		AnonymousAccountDatabasePath: "/db.kv",
+		Port:                         project_server.DEFAULT_PROJECT_SERVER_PORT_INT,
 	}
 	goctx, cancel := context.WithTimeout(context.Background(), 29*time.Second)
 	defer cancel()

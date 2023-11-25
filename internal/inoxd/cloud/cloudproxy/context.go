@@ -1,13 +1,16 @@
 package cloudproxy
 
 import (
+	"path/filepath"
+
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/globals/fs_ns"
-	"github.com/inoxlang/inox/internal/inoxprocess"
 	"github.com/inoxlang/inox/internal/permkind"
 )
 
 func createContext(host core.Host, proxyArgs CloudProxyArgs) (ctx, topCtx *core.Context) {
+	databaseDir := core.DirPathFrom(filepath.Dir(proxyArgs.Config.AnonymousAccountDatabasePath))
+	databaseDirPattern := databaseDir.ToPrefixPattern()
+
 	perms := []core.Permission{
 		core.WebsocketPermission{
 			Kind_:    permkind.Provide,
@@ -21,28 +24,22 @@ func createContext(host core.Host, proxyArgs CloudProxyArgs) (ctx, topCtx *core.
 		},
 		core.FilesystemPermission{
 			Kind_:  permkind.Read,
-			Entity: core.PathFrom(proxyArgs.Config.AnonymousAccountDatabasePath),
+			Entity: databaseDirPattern,
 		},
 		core.FilesystemPermission{
 			Kind_:  permkind.Write,
-			Entity: core.PathFrom(proxyArgs.Config.AnonymousAccountDatabasePath),
+			Entity: databaseDirPattern,
 		},
 	}
 
 	topCtx = core.NewContexWithEmptyState(core.ContextConfig{
-		Filesystem:          fs_ns.GetOsFilesystem(),
+		Filesystem:          proxyArgs.Filesystem,
 		Permissions:         perms,
 		ParentStdLibContext: proxyArgs.GoContext,
 	}, proxyArgs.OutW)
 
-	inoxprocess.RestrictProcessAccess(topCtx, inoxprocess.ProcessRestrictionConfig{
-		ForceAllowDNS: true,
-	})
-
-	fls := fs_ns.NewMemFilesystem(1_000_000)
 	ctx = core.NewContexWithEmptyState(core.ContextConfig{
 		ParentContext: topCtx,
-		Filesystem:    fls,
 		Permissions:   perms,
 	}, proxyArgs.OutW)
 

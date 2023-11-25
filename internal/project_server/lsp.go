@@ -5,6 +5,7 @@ import (
 	"io"
 	"log"
 	"runtime/debug"
+	"strconv"
 
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core"
@@ -12,11 +13,16 @@ import (
 	"github.com/inoxlang/inox/internal/project_server/jsonrpc"
 	"github.com/inoxlang/inox/internal/project_server/logs"
 	"github.com/inoxlang/inox/internal/project_server/lsp"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 const (
 	LSP_LOG_SRC                 = "/lsp"
 	DEFAULT_PROJECT_SERVER_PORT = "8305"
+)
+
+var (
+	DEFAULT_PROJECT_SERVER_PORT_INT = utils.Must(strconv.Atoi(DEFAULT_PROJECT_SERVER_PORT))
 )
 
 var HOVER_PRETTY_PRINT_CONFIG = &pprint.PrettyPrintConfig{
