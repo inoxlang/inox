@@ -10,10 +10,10 @@ the [CLA Readme](.legal/CLA/README.md).
 
 The following changes will **NOT** be accepted:
 
-- adding a large dependency
+- adding a feature that will be used by only a few Inox projects
+- adding a dependency that is large or has a copyleft license
 - adding a dependency whose features can be easily implemented in the Inox
   repository
-- adding a dependency with a copyleft license
 - adding code without at least a few tests
 - modifying the **core** package, unless you have a very good reason to do so
 
