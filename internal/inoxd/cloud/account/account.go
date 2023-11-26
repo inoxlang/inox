@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	DISPOSABLE_TOKEN_ID_LENGTH = 32
+	ANON_ACCOUNT_TOKEN_ID_LENGTH = 32
 )
 
 var (
@@ -34,14 +34,14 @@ type AnonymousAccount struct {
 	TokenHash TokenHash `json:"tokenHash"`
 }
 
-type DisposableAccountCreation struct {
+type AnonAccountCreation struct {
 	Hoster         ProofHoster
 	UserIdOnHoster string
 }
 
-func NewDisposableAccount(input DisposableAccountCreation) (account *AnonymousAccount, hexEncodedToken string, _ error) {
+func NewAnonAccount(input AnonAccountCreation) (account *AnonymousAccount, hexEncodedToken string, _ error) {
 	//create and hash a truly random token
-	token := [DISPOSABLE_TOKEN_ID_LENGTH]byte{}
+	token := [ANON_ACCOUNT_TOKEN_ID_LENGTH]byte{}
 	_, err := rand.Read(token[:])
 	if err != nil {
 		return nil, "", err

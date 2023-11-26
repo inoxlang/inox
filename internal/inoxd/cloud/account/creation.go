@@ -34,7 +34,7 @@ var (
 	ErrAccountCreationFailedChallValueDoesNotMatch = fmt.Errorf("%w: challenge value does not match", ErrAccountCreationFailed)
 )
 
-// CreateAnonymousAccountInteractively communicates with conn to create a disposable account interactively.
+// CreateAnonymousAccountInteractively communicates with conn to create an anonymous account interactively.
 func CreateAnonymousAccountInteractively(ctx *core.Context, hosterName string, conn *Connection, db *AnonymousAccountDatabase) error {
 	hoster, err := getProofHosterByName(hosterName)
 	if err != nil {
@@ -181,7 +181,7 @@ func CreateAnonymousAccountInteractively(ctx *core.Context, hosterName string, c
 		userIdOnHoster = strconv.Itoa(apiResponse.Namespace.Id)
 	}
 
-	account, hexEncodedToken, err := NewDisposableAccount(DisposableAccountCreation{
+	account, hexEncodedToken, err := NewAnonAccount(AnonAccountCreation{
 		Hoster:         hoster,
 		UserIdOnHoster: userIdOnHoster,
 	})
