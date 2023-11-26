@@ -1,6 +1,6 @@
 ---
 name: Major Bug Report
-about: Create a report about a major bug. Major vulnerabilities should be reported here https://github.com/inoxlang/inox/security/advisories/new
+about: Create a report about a major bug
 title: ''
 labels: major bug
 assignees: ''
@@ -8,6 +8,7 @@ assignees: ''
 ---
 
 👉 Before posting search in existing issues, thanks !
+⚠️ Major security vulnerabilities should be privately reported here: https://github.com/inoxlang/inox/security/advisories/new.
 
 **Describe the bug**
 A clear and concise description of what the bug is.
