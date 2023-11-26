@@ -18,6 +18,7 @@ import (
 func TestCreation(t *testing.T) {
 	t.Skip("manual test")
 	username := "<Github username>"
+	hoster := Github
 
 	fls := fs_ns.NewMemFilesystem(1_000_000)
 	ctx := core.NewContexWithEmptyState(core.ContextConfig{
@@ -52,12 +53,12 @@ func TestCreation(t *testing.T) {
 				err = utils.ConvertPanicValueToError(e)
 			}
 		}()
-		err = CreateAnonymousAccountInteractively(ctx, Github.String(), conn, db)
+		err = CreateAnonymousAccountInteractively(ctx, hoster.String(), conn, db)
 	}()
 
 	select {
 	case challengeExplanation := <-printChan:
-		if !assert.Regexp(t, "explanation:.*create a public repository.*", challengeExplanation) {
+		if !assert.Regexp(t, "explanation:.*(r|R)epository.*", challengeExplanation) {
 			return
 		}
 		fmt.Println(challengeExplanation)

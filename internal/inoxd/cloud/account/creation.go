@@ -47,14 +47,30 @@ func CreateAnonymousAccountInteractively(ctx *core.Context, hosterName string, c
 		return err
 	}
 
-	explanationTemplate := PROOF_HOSTER_CHALLENGE_EXPLANATION_TEMPLATES[hoster]
 	buf := bytes.NewBuffer(nil)
-	if err := explanationTemplate.Execute(buf, challengeTemplateContext{ChallValue: challValue}); err != nil {
-		return fmt.Errorf("%w: %w", ErrAccountCreationFailed, err)
+	var repoName string
+	{
+		repoNameTemplate := PROOF_REPOSITORY_NAME_TEMPLATES[hoster]
+
+		buf.Reset()
+		if err := repoNameTemplate.Execute(buf, ProofRepoNameTemplateContext{ChallValue: challValue}); err != nil {
+			return fmt.Errorf("%w: %w", ErrAccountCreationFailed, err)
+		}
+		repoName = buf.String()
 	}
 
-	explanation := buf.String()
-	conn.PrintFn("explanation:" + explanation)
+	var explanation string
+	{
+		explanationTemplate := PROOF_HOSTER_CHALLENGE_EXPLANATION_TEMPLATES[hoster]
+
+		buf.Reset()
+		if err := explanationTemplate.Execute(buf, challengeTemplateContext{RepoName: repoName, ChallValue: challValue}); err != nil {
+			return fmt.Errorf("%w: %w", ErrAccountCreationFailed, err)
+		}
+
+		explanation = buf.String()
+		conn.PrintFn("explanation:" + explanation)
+	}
 
 	var username string
 
@@ -70,7 +86,8 @@ func CreateAnonymousAccountInteractively(ctx *core.Context, hosterName string, c
 	//compute the proof's location
 	buf.Reset()
 	err = PROOF_LOCATION_TEMPLATES[hoster].Execute(buf, proofLocationTemplateContext{
-		Username: username,
+		Username: username, //we assume case differences in some letters do not matter.
+		RepoName: repoName,
 	})
 	if err != nil {
 		return ErrAccountCreationFailedInternalError
@@ -93,6 +110,9 @@ func CreateAnonymousAccountInteractively(ctx *core.Context, hosterName string, c
 	}
 	if err != nil {
 		return fmt.Errorf("%w: error while getting the proof from %s: %w", ErrAccountCreationFailed, hosterName, err)
+	}
+	if resp.StatusCode >= 400 {
+		return fmt.Errorf("%w: error while getting the proof from %s: HTTP status %d", ErrAccountCreationFailed, hosterName, resp.StatusCode)
 	}
 
 	body := io.LimitReader(resp.Body, MAX_HOSTER_API_RESPONSE_SIZE) //prevent large reads.
@@ -124,25 +144,46 @@ func CreateAnonymousAccountInteractively(ctx *core.Context, hosterName string, c
 		}
 
 		if apiResponse.Owner.Type != "User" {
-			return fmt.Errorf("%w: repository should be owned by a user, not %q", ErrAccountCreationFailed, apiResponse.Owner.Type)
+			return fmt.Errorf("%w: repository should be owned by a user, not a(n) %q", ErrAccountCreationFailed, apiResponse.Owner.Type)
 		}
 
-		if apiResponse.Owner.Login != username {
+		//check the usernames are the same (case insensitive).
+		if !strings.EqualFold(apiResponse.Owner.Login, strings.ToLower(username)) {
 			return ErrAccountCreationFailedUsernameDoesNotMatch
 		}
 
-		description := strings.TrimSpace(apiResponse.Description)
-		if description != challValue {
-			return ErrAccountCreationFailedChallValueDoesNotMatch
+		userIdOnHoster = strconv.Itoa(apiResponse.Owner.Id)
+	case Gitlab:
+		//note: the challenge value is already in the name of the repository.
+
+		var apiResponse struct {
+			Namespace struct {
+				Id   int    `json:"id"`
+				Kind string `json:"kind"`
+				Name string `json:"name"`
+			} `json:"namespace"`
 		}
 
-		userIdOnHoster = strconv.Itoa(apiResponse.Owner.Id)
+		err = json.Unmarshal(content, &apiResponse)
+		if err != nil {
+			return fmt.Errorf("%w: failed to parse API response from hoster: %w", ErrAccountCreationFailed, err)
+		}
+
+		if apiResponse.Namespace.Kind != "user" {
+			return fmt.Errorf("%w: repository should be owned by a user, not a(n) %q", ErrAccountCreationFailed, apiResponse.Namespace.Kind)
+		}
+
+		//check the usernames are the same (case insensitive).
+		if !strings.EqualFold(apiResponse.Namespace.Name, strings.ToLower(username)) {
+			return ErrAccountCreationFailedUsernameDoesNotMatch
+		}
+
+		userIdOnHoster = strconv.Itoa(apiResponse.Namespace.Id)
 	}
 
 	account, hexEncodedToken, err := NewDisposableAccount(DisposableAccountCreation{
-		Hoster:           hoster,
-		UserIdOnHoster:   userIdOnHoster,
-		UsernameOnHoster: username,
+		Hoster:         hoster,
+		UserIdOnHoster: userIdOnHoster,
 	})
 
 	if err != nil {

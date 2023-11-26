@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
+	"strings"
 
 	"github.com/alexedwards/argon2id"
 	"github.com/oklog/ulid/v2"
@@ -34,9 +35,8 @@ type AnonymousAccount struct {
 }
 
 type DisposableAccountCreation struct {
-	Hoster           ProofHoster
-	UserIdOnHoster   string
-	UsernameOnHoster string
+	Hoster         ProofHoster
+	UserIdOnHoster string
 }
 
 func NewDisposableAccount(input DisposableAccountCreation) (account *AnonymousAccount, hexEncodedToken string, _ error) {
@@ -54,7 +54,7 @@ func NewDisposableAccount(input DisposableAccountCreation) (account *AnonymousAc
 	}
 
 	//compute the information hash
-	concatenatedInfo := input.UserIdOnHoster + "$" + input.UsernameOnHoster
+	concatenatedInfo := input.UserIdOnHoster + "$" + strings.ToLower(input.Hoster.String())
 	infoHash, err := argon2id.CreateHash(concatenatedInfo, &INFO_HASH_PARAMS)
 	if err != nil {
 		return nil, "", err
