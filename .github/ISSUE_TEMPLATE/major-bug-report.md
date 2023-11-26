@@ -1,6 +1,6 @@
 ---
 name: Major Bug Report
-about: Create a report about a major bug or security issue
+about: Create a report about a major bug. Major vulnerabilities should be reported here https://github.com/inoxlang/inox/security/advisories/new
 title: ''
 labels: major bug
 assignees: ''
