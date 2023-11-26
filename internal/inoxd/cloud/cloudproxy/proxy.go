@@ -24,9 +24,12 @@ import (
 )
 
 const (
-	CLOUD_PROXY_SUBCMD_NAME                = "cloud-proxy"
-	ACCOUNT_TOKEN_HEADER_NAME              = "X-Account-Token"
-	ACCOUT_MANAGEMENT_LOG_SRC              = "account"
+	CLOUD_PROXY_SUBCMD_NAME   = "cloud-proxy"
+	ACCOUNT_TOKEN_HEADER_NAME = "X-Account-Token"
+
+	ACCOUT_MANAGEMENT_LOG_SRC = "/account"
+	PROXY_LOG_SRC             = "/cloud-proxy"
+
 	ACCOUNT_REGISTRATION_URL_PATH          = "/register-account"
 	ACCOUNT_REGISTRATION_HOSTER_PARAM_NAME = "hoster"
 )
@@ -91,25 +94,45 @@ func Run(args CloudProxyArgs) error {
 		})
 	}
 
-	wsServer, err := net_ns.NewWebsocketServer(ctx)
-
-	if err != nil {
-		return err
-	}
-
 	accountDB, err := account.OpenAnonymousAccountDatabase(ctx, dbPath, fls)
 
 	if err != nil {
 		return err
 	}
-
 	fmt.Fprintf(outW, "anonymous account database opened (file %s)\n", dbPath)
-	accountManagementLogger := ctx.Logger().With().Str(core.SOURCE_LOG_FIELD_NAME, ACCOUT_MANAGEMENT_LOG_SRC).Logger()
+
+	proxy := &cloudProxy{
+		ctx:       ctx,
+		topCtx:    topCtx,
+		accountDB: accountDB,
+		addr:      addr,
+	}
+
+	return proxy.run()
+}
+
+type cloudProxy struct {
+	ctx, topCtx   *core.Context
+	addr          string
+	accountDB     *account.AnonymousAccountDatabase
+	accountLogger zerolog.Logger
+	proxyLogger   zerolog.Logger
+}
+
+func (p *cloudProxy) run() error {
+	wsServer, err := net_ns.NewWebsocketServer(p.ctx)
+
+	if err != nil {
+		return err
+	}
+
+	p.accountLogger = p.ctx.Logger().With().Str(core.SOURCE_LOG_FIELD_NAME, ACCOUT_MANAGEMENT_LOG_SRC).Logger()
+	p.proxyLogger = p.ctx.Logger().With().Str(core.SOURCE_LOG_FIELD_NAME, PROXY_LOG_SRC).Logger()
 
 	//create a http server, register teardown callbacks and start listening.
 
-	httpServer, err := http_ns.NewGolangHttpServer(ctx, http_ns.GolangHttpServerConfig{
-		Addr: addr,
+	httpServer, err := http_ns.NewGolangHttpServer(p.ctx, http_ns.GolangHttpServerConfig{
+		Addr: p.addr,
 		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 			if r.URL.Path == ACCOUNT_REGISTRATION_URL_PATH {
@@ -119,13 +142,13 @@ func Run(args CloudProxyArgs) error {
 					return
 				}
 
-				socket, err := wsServer.UpgradeGoValues(w, r, allowConnection)
+				socket, err := wsServer.UpgradeGoValues(w, r, p.allowConnection)
 
 				if err != nil {
 					w.WriteHeader(http.StatusInternalServerError)
 					return
 				}
-				go registerAccount(ctx, socket, hoster, accountDB, accountManagementLogger)
+				go p.registerAccount(socket, hoster)
 				return
 			}
 
@@ -141,19 +164,19 @@ func Run(args CloudProxyArgs) error {
 				return
 			}
 
-			account, err := accountDB.GetAccount(ctx, tokenHeaderValues[0])
+			account, err := p.accountDB.GetAccount(p.ctx, tokenHeaderValues[0])
 			if err != nil {
 				w.WriteHeader(http.StatusUnauthorized)
 				return
 			}
 
-			accountManagementLogger.Info().Msg("account successfully connected: " + account.ULID)
+			p.accountLogger.Info().Msg("account successfully connected: " + account.ULID)
 
 			id := account.ULID
 			_ = id
 			//TODO: connect to account-specific project server.
 
-			_, err = wsServer.UpgradeGoValues(w, r, allowConnection)
+			_, err = wsServer.UpgradeGoValues(w, r, p.allowConnection)
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
 			}
@@ -164,15 +187,15 @@ func Run(args CloudProxyArgs) error {
 		return err
 	}
 
-	ctx.OnGracefulTearDown(func(ctx *core.Context) error {
+	p.ctx.OnGracefulTearDown(func(ctx *core.Context) error {
 		return httpServer.Shutdown(ctx)
 	})
 
-	ctx.OnDone(func(timeoutCtx context.Context) error {
+	p.ctx.OnDone(func(timeoutCtx context.Context) error {
 		return httpServer.Close()
 	})
 
-	fmt.Fprintf(outW, "start cloud proxy HTTPS server listening on %s\n", addr)
+	p.proxyLogger.Info().Msgf("start cloud proxy HTTPS server listening on %s", p.addr)
 
 	err = httpServer.ListenAndServeTLS("", "")
 	if err != nil {
@@ -182,17 +205,11 @@ func Run(args CloudProxyArgs) error {
 	return nil
 }
 
-func allowConnection(remoteAddrPort nettypes.RemoteAddrWithPort, remoteAddr nettypes.RemoteIpAddr, currentConns []*net_ns.WebsocketConnection) error {
+func (p *cloudProxy) allowConnection(remoteAddrPort nettypes.RemoteAddrWithPort, remoteAddr nettypes.RemoteIpAddr, currentConns []*net_ns.WebsocketConnection) error {
 	return nil
 }
 
-func registerAccount(
-	ctx *core.Context,
-	socket *net_ns.WebsocketConnection,
-	hoster string,
-	accountDB *account.AnonymousAccountDatabase,
-	logger zerolog.Logger,
-) {
+func (p *cloudProxy) registerAccount(socket *net_ns.WebsocketConnection, hoster string) {
 	defer utils.Recover()
 	defer socket.Close()
 
@@ -200,13 +217,13 @@ func registerAccount(
 	//CreateAnonymousAccountInteractively will show information to the user and the user will send several inputs.
 	conn := &account.Connection{
 		PrintFn: func(text string) {
-			socket.WriteMessage(ctx, net_ns.WebsocketTextMessage, []byte(text))
+			socket.WriteMessage(p.ctx, net_ns.WebsocketTextMessage, []byte(text))
 		},
 		ReadChan: make(chan string, 5),
 	}
 
 	receivedMsgChan := make(chan net_ns.WebsocketMessageChanItem, 10)
-	err := socket.StartReadingAllMessagesIntoChan(ctx, receivedMsgChan)
+	err := socket.StartReadingAllMessagesIntoChan(p.ctx, receivedMsgChan)
 	if err != nil {
 		//TODO: log errors (make sure to not write logs locally in order to not run ouf space).
 		return
@@ -233,8 +250,8 @@ func registerAccount(
 		}
 	}()
 
-	err = account.CreateAnonymousAccountInteractively(ctx, hoster, conn, accountDB)
+	err = account.CreateAnonymousAccountInteractively(p.ctx, hoster, conn, p.accountDB)
 	if err != nil {
-		logger.Err(err).Send()
+		p.accountLogger.Err(err).Send()
 	}
 }
