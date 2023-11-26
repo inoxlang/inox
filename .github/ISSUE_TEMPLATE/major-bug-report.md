@@ -1,6 +1,6 @@
 ---
 name: Major Bug Report
-about: Create a report about a major bug
+about: Create a report about a major bug or security issue
 title: ''
 labels: major bug
 assignees: ''
@@ -26,7 +26,7 @@ A clear and concise description of what you expected to happen.
 If applicable, add screenshots to help explain your problem.
 
 **Platforms & Versions**
- - OS: [e.g. iOS]
+ - OS: [e.g. Debian 12]
  - Browser [e.g. chrome, safari]
  - Inox Version [e.g. 0.12]
 

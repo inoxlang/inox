@@ -1,6 +1,6 @@
 ---
 name: '"Must Have" Feature request'
-about: Suggest a feature that you think must be added
+about: Suggest a feature that you think must be added, it can be a small feature
 title: ''
 labels: must-have feature
 assignees: ''
@@ -21,4 +21,5 @@ A clear and concise description of any alternative solutions or features you've 
 **Additional context**
 Add any other context or screenshots about the feature request here.
 
+> If a very small number of people need this feature it will probably not be implemented.
 > Inox is 100% free and open-source, consider becoming a sponsor to get support: https://github.com/sponsors/GraphR00t.
