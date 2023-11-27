@@ -1214,6 +1214,7 @@ func runStartupScript(startupScriptPath string, processTempDirPerms []core.Permi
 		state := core.NewGlobalState(parsingCtx)
 		state.Out = outW
 		state.Logger = zerolog.New(outW)
+		state.OutputFieldsInitialized.Store(true)
 	}
 	defer parsingCtx.CancelGracefully()
 
