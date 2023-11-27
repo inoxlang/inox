@@ -8,6 +8,8 @@ import (
 	"github.com/inoxlang/inox/internal/config"
 	"github.com/inoxlang/inox/internal/core"
 	_ "github.com/inoxlang/inox/internal/globals"
+	"github.com/posener/complete/v2"
+	"github.com/posener/complete/v2/predict"
 
 	// ====================== INOX IMPORTS ============================
 
@@ -95,6 +97,64 @@ var (
 	}
 
 	INOX_CMD_HELP = "commands:\n"
+
+	cmd = &complete.Command{
+		Sub: map[string]*complete.Command{
+			"shell": {
+				Flags: map[string]complete.Predictor{
+					"c": predict.Files("*.ix"),
+				},
+			},
+			"eval": {
+				Flags: map[string]complete.Predictor{
+					"c": predict.Files("*.ix"),
+				},
+			},
+			"e": {
+				Flags: map[string]complete.Predictor{
+					"c": predict.Files("*.ix"),
+				},
+			},
+			"check": {},
+			"help":  {},
+			"run": {
+				Flags: map[string]complete.Predictor{
+					"test":                     predict.Nothing,
+					"test-trusted":             predict.Nothing,
+					"fully-trusted":            predict.Nothing,
+					"show-bytecode":            predict.Nothing,
+					"no-optimization":          predict.Nothing,
+					"allow-browser-automation": predict.Nothing,
+					"t":                        predict.Nothing,
+				},
+				Args: predict.Nothing,
+			},
+			"add-service": {
+				Flags: map[string]complete.Predictor{
+					"inox-cloud":               predict.Nothing,
+					"tunnel-provider":          predict.Set{"cloudflare"},
+					"expose-project-servers":   predict.Nothing,
+					"expose-wev-servers":       predict.Nothing,
+					"allow-browser-automation": predict.Nothing,
+				},
+			},
+			"remove-service": {
+				Flags: map[string]complete.Predictor{
+					"remove-tunnel-configs":  predict.Nothing,
+					"remove-inoxd-user":      predict.Nothing,
+					"remove-inoxd-homedir":   predict.Nothing,
+					"remove-env-file":        predict.Nothing,
+					"remove-data-dir":        predict.Nothing,
+					"dangerously-remove-all": predict.Nothing,
+				},
+			},
+			"project-server": {
+				Flags: map[string]complete.Predictor{
+					"config": predict.Set{`'{"port":8305}'`},
+				},
+			},
+		},
+	}
 )
 
 func init() {
@@ -105,7 +165,11 @@ func init() {
 }
 
 func main() {
+	//handle completions
+	cmd.Complete("inox")
+
 	debug.SetMaxStack(MAX_STACK_SIZE)
+
 	statusCode := _main(os.Args, os.Stdout, os.Stderr)
 	if statusCode != 0 {
 		os.Exit(statusCode)

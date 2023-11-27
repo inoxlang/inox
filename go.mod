@@ -33,6 +33,7 @@ require (
 	github.com/oklog/ulid/v2 v2.1.0
 	github.com/orcaman/concurrent-map/v2 v2.0.1
 	github.com/pb33f/libopenapi v0.13.9
+	github.com/posener/complete/v2 v2.1.0
 	github.com/rs/zerolog v1.31.0
 	github.com/santhosh-tekuri/jsonschema/v5 v5.3.1
 	github.com/shirou/gopsutil/v3 v3.23.10
@@ -45,7 +46,6 @@ require (
 	github.com/tidwall/match v1.1.1
 	github.com/tidwall/rtred v0.1.2
 	github.com/tink-crypto/tink-go v0.0.0-20230613075026-d6de17e3f164
-	github.com/tink-crypto/tink-go/v2 v2.0.0
 	github.com/ysmood/fetchup v0.2.3
 	go.uber.org/zap v1.26.0
 	golang.org/x/exp v0.0.0-20231110203233-9a3e6036ecaa
@@ -96,6 +96,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/opencontainers/runtime-spec v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/posener/script v1.2.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
 	github.com/rivo/uniseg v0.4.4 // indirect
 	github.com/rogpeppe/go-internal v1.9.0 // indirect
