@@ -444,11 +444,12 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 			Homedir:  homedir,
 			UID:      uid,
 
-			InoxCloud:            inoxCloud,
-			EnvFilePath:          envFilePath,
-			TunnelProviderName:   tunnelProvider,
-			ExposeProjectServers: exposeProjectServers,
-			ExposeWebServers:     exposeWebServers,
+			InoxCloud:              inoxCloud,
+			EnvFilePath:            envFilePath,
+			TunnelProviderName:     tunnelProvider,
+			ExposeProjectServers:   exposeProjectServers,
+			ExposeWebServers:       exposeWebServers,
+			AllowBrowserAutomation: allowBrowserAutomation,
 		})
 
 		alreadyExists := errors.Is(err, systemd.ErrUnitFileExists)
