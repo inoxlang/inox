@@ -19,6 +19,7 @@
 - Cluster management using only the **inox** binary (small scale only)
 - WebAssembly support using https://github.com/tetratelabs/wazero.
 - Internal plugin system or hooks (Inox | WASM)
+- Support at least another init system
 
 ## Planned Improvements
 
@@ -35,11 +36,12 @@
 ## Won't Have Or Provide 
 
 - Interactivity with native code (FFIs ...)
+- Windows support
 - Integration with Docker or Kubernetes
 - Integration with Terraform or Pulumi
 - Integration with external monitoring systems (e.g. Prometheus)
 
-## Goals (Zen)
+## Goals
 
 - Zero config (or dead simple)
 - Zero boilerplate
