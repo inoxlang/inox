@@ -65,7 +65,13 @@ func Inoxd(args InoxdArgs) {
 
 	logger.Info().Msgf("master keyset successfully loaded, it contains %d key(s)", len(masterKeySet.KeysetInfo().KeyInfo))
 
+	daemon := &Daemon{
+		goCtx:  goCtx,
+		logger: logger,
+	}
+
 	if !config.InoxCloud {
+		//TODO: restart the process each time it crashes.
 		project_server.ExecuteProjectServerCmd(project_server.ProjectServerCmdParams{
 			GoCtx:          goCtx,
 			Config:         serverConfig,
@@ -74,6 +80,8 @@ func Inoxd(args InoxdArgs) {
 		})
 		return
 	}
+
+	// ========== CLOUD MODE ==========
 
 	serverConfig.BehindCloudProxy = true
 
@@ -88,7 +96,8 @@ func Inoxd(args InoxdArgs) {
 		}
 	}
 
-	//launch proxy
+	//get proxy configuration
+
 	proxyConfig := cloudproxy.CloudProxyConfig{
 		CloudDataDir: consts.CLOUD_DATA_DIR,
 		Port:         project_server.DEFAULT_PROJECT_SERVER_PORT_INT,
@@ -97,6 +106,10 @@ func Inoxd(args InoxdArgs) {
 	if args.TestOnlyProxyConfig != nil {
 		proxyConfig = *args.TestOnlyProxyConfig
 	}
+
+	daemon.proxyConfig = &proxyConfig
+
+	//launch proxy
 
 	proxyProcessedFinished := make(chan struct{}, 1)
 	var longWait atomic.Bool
@@ -147,87 +160,10 @@ func Inoxd(args InoxdArgs) {
 		}
 	}()
 
-	//connection with the proxy.
+	//create a websocket connection with the proxy.
+
 	inoxdconn.RegisterTypesInGob()
-
-	for !utils.IsContextDone(goCtx) {
-
-		func() {
-			defer func() {
-				e := recover()
-				if e != nil {
-					err := utils.ConvertPanicValueToError(e)
-					err = fmt.Errorf("%w: %s", err, debug.Stack())
-					logger.Err(err).Send()
-				}
-			}()
-
-			select {
-			case <-proxyProcessedFinished:
-				//wait for the proxy to restart or for the creation loop to tell if a long wait is needed.
-				time.Sleep(100 * time.Millisecond)
-
-				for longWait.Load() {
-					time.Sleep(time.Second)
-				}
-			default:
-			}
-
-			//create websocket connection to the proxy.
-			dialer := *websocket.DefaultDialer
-			dialer.Proxy = nil
-			dialer.HandshakeTimeout = 10 * time.Millisecond
-			dialer.TLSClientConfig = &tls.Config{
-				InsecureSkipVerify: true,
-			}
-			socket, _, err := dialer.Dial("wss://localhost:"+strconv.Itoa(proxyConfig.Port)+consts.PROXY__INOXD_WEBSOCKET_ENDPOINT, nil)
-			if err != nil {
-				logger.Err(err).Send()
-				return
-			}
-			defer socket.Close()
-
-			//send hello message.
-			helloMsg := inoxdconn.Message{
-				ULID:  ulid.Make(),
-				Inner: inoxdconn.Hello{},
-			}
-
-			err = socket.WriteMessage(websocket.BinaryMessage, inoxdconn.MustEncodeMessage(helloMsg))
-			if err != nil {
-				logger.Err(err).Send()
-				return
-			}
-
-			//message handling loop.
-			for !utils.IsContextDone(goCtx) {
-
-				msgType, payload, err := socket.ReadMessage()
-
-				if err != nil {
-					logger.Err(err).Send()
-					return
-				}
-
-				if msgType != websocket.BinaryMessage {
-					continue
-				}
-
-				var msg inoxdconn.Message
-				err = inoxdconn.DecodeMessage(payload, &msg)
-				if err != nil {
-					logger.Err(err).Send()
-					return
-				}
-
-				switch m := msg.Inner.(type) {
-				case inoxdconn.Ack:
-					logger.Debug().Msg("ack received on connection to cloud-proxy for message " + m.AcknowledgedMessage.String())
-				}
-				//TODO
-			}
-		}()
-	}
+	daemon.cloudProxyConnLoop(proxyProcessedFinished, &longWait)
 }
 
 type cloudProxyCmdParams struct {
@@ -252,4 +188,97 @@ func makeCloudProxyCommand(args cloudProxyCmdParams) *exec.Cmd {
 		WriteFn: args.logger.Write,
 	}
 	return cmd
+}
+
+type Daemon struct {
+	goCtx  context.Context
+	logger zerolog.Logger
+
+	//only set in cloud mode
+	proxyConfig *cloudproxy.CloudProxyConfig
+}
+
+func (d *Daemon) cloudProxyConnLoop(proxyProcessedFinished <-chan struct{}, longWait *atomic.Bool) {
+	for !utils.IsContextDone(d.goCtx) {
+		func() {
+			defer func() {
+				e := recover()
+				if e != nil {
+					err := utils.ConvertPanicValueToError(e)
+					err = fmt.Errorf("%w: %s", err, debug.Stack())
+					d.logger.Err(err).Send()
+				}
+			}()
+
+			select {
+			case <-proxyProcessedFinished:
+				//wait for the proxy to restart or for the creation loop to tell if a long wait is needed.
+				time.Sleep(100 * time.Millisecond)
+
+				for longWait.Load() {
+					time.Sleep(time.Second)
+				}
+			default:
+			}
+
+			//create websocket connection to the proxy.
+			dialer := *websocket.DefaultDialer
+			dialer.Proxy = nil
+			dialer.HandshakeTimeout = 10 * time.Millisecond
+			dialer.TLSClientConfig = &tls.Config{
+				InsecureSkipVerify: true,
+			}
+			socket, _, err := dialer.Dial("wss://localhost:"+strconv.Itoa(d.proxyConfig.Port)+consts.PROXY__INOXD_WEBSOCKET_ENDPOINT, nil)
+			if err != nil {
+				d.logger.Err(err).Send()
+				return
+			}
+			defer socket.Close()
+
+			d.handleSingleConnection(socket)
+		}()
+	}
+}
+
+func (d *Daemon) handleSingleConnection(socket *websocket.Conn) {
+
+	//send hello message.
+	helloMsg := inoxdconn.Message{
+		ULID:  ulid.Make(),
+		Inner: inoxdconn.Hello{},
+	}
+
+	err := socket.WriteMessage(websocket.BinaryMessage, inoxdconn.MustEncodeMessage(helloMsg))
+	if err != nil {
+		d.logger.Err(err).Send()
+		return
+	}
+
+	//message handling loop.
+	for !utils.IsContextDone(d.goCtx) {
+
+		msgType, payload, err := socket.ReadMessage()
+
+		if err != nil {
+			d.logger.Err(err).Send()
+			return
+		}
+
+		if msgType != websocket.BinaryMessage {
+			continue
+		}
+
+		var msg inoxdconn.Message
+		err = inoxdconn.DecodeMessage(payload, &msg)
+		if err != nil {
+			d.logger.Err(err).Send()
+			return
+		}
+
+		switch m := msg.Inner.(type) {
+		case inoxdconn.Ack:
+			d.logger.Debug().Msg("ack received on connection to cloud-proxy for message " + m.AcknowledgedMessage.String())
+		}
+		//TODO
+	}
 }

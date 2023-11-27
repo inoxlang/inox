@@ -46,6 +46,7 @@ func TestDaemonCloudMode(t *testing.T) {
 	var helloAckReceived atomic.Bool
 
 	hook := zerolog.HookFunc(func(e *zerolog.Event, level zerolog.Level, message string) {
+		//fmt.Println(message)
 		if strings.Contains(message, "ack received on connection to cloud-proxy") {
 			helloAckReceived.Store(true)
 		}
