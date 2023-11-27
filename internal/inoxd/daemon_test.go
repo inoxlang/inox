@@ -267,12 +267,6 @@ func TestDaemonSingleProjectServerMode(t *testing.T) {
 		if !assert.True(t, sessionCreatedOnServer.Load()) {
 			return
 		}
-
-		if t.Failed() {
-			fmt.Printf("end: test %s did fail\n", t.Name())
-		} else {
-			fmt.Printf("end: test %s did not fail\n", t.Name())
-		}
 	})
 
 	t.Run("killing the project-server process once should not cause any issue", func(t *testing.T) {
@@ -387,12 +381,6 @@ func TestDaemonSingleProjectServerMode(t *testing.T) {
 		time.Sleep(10 * time.Millisecond)
 		if !assert.EqualValues(t, 2, sessionCreatedOnServer.Load()) {
 			return
-		}
-
-		if t.Failed() {
-			fmt.Printf("end: test %s did fail\n", t.Name())
-		} else {
-			fmt.Printf("end: test %s did not fail\n", t.Name())
 		}
 	})
 }
