@@ -1,18 +1,9 @@
 package main
 
 import (
-	// ====================== IMPORTANT SIDE EFFECTS ============================
-
-	"unicode"
-
+	// ====================== INOX IMPORTS ============================
 	"github.com/inoxlang/inox/internal/config"
 	"github.com/inoxlang/inox/internal/core"
-	_ "github.com/inoxlang/inox/internal/globals"
-	"github.com/posener/complete/v2"
-	"github.com/posener/complete/v2/predict"
-
-	// ====================== INOX IMPORTS ============================
-
 	metricsperf "github.com/inoxlang/inox/internal/metrics-perf"
 
 	"github.com/inoxlang/inox/internal/inoxd"
@@ -38,12 +29,7 @@ import (
 	"github.com/inoxlang/inox/internal/project_server/jsonrpc"
 
 	// ====================== STDLIB ============================
-
 	"context"
-	"runtime/debug"
-	"slices"
-	"strconv"
-
 	"encoding/gob"
 	"encoding/hex"
 	"encoding/json"
@@ -57,11 +43,17 @@ import (
 	"os/signal"
 	"os/user"
 	"path/filepath"
+	"runtime/debug"
+	"slices"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
+	"unicode"
 
 	// ====================== THIRD PARTY ============================
+	"github.com/posener/complete/v2"
+	"github.com/posener/complete/v2/predict"
 	"github.com/rs/zerolog"
 )
 
