@@ -80,7 +80,7 @@ const (
 )
 
 var (
-	CLI_SUBCOMMANDS = []string{"add-service", "remove-service", "run", "check", "shell", "eval", "e", "lsp", "lsp", "project-server", "help"}
+	CLI_SUBCOMMANDS = []string{"add-service", "remove-service", "run", "check", "shell", "eval", "e" /*"lsp",*/, "project-server", "help"}
 	SUBCOMMANDS     = append(slices.Clone(CLI_SUBCOMMANDS), inoxd.DAEMON_SUBCMD, inoxprocess.CONTROLLED_SUBCMD, cloudproxy.CLOUD_PROXY_SUBCMD_NAME)
 
 	CLI_SUBCOMMAND_DESCRIPTIONS = map[string]string{
@@ -91,8 +91,8 @@ var (
 		"shell":          "start the shell",
 		"eval":           "evaluate a single statement",
 		"e":              "alias for eval",
-		"lsp":            "start the language server (LSP)",
-		"project-server": "start the project server",
+		//"lsp":            "start the language server (LSP)",
+		"project-server": "start the project server (LSP + custom methods)",
 		"help":           "show the general help or command-specific help",
 	}
 
@@ -633,6 +633,8 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 			}
 		}
 	case "lsp":
+		panic(errors.New("disabled"))
+
 		//read and check arguments
 
 		flags := flag.NewFlagSet(mainSubCommand, flag.ExitOnError)
