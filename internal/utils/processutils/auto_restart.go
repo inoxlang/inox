@@ -21,7 +21,7 @@ const (
 
 type AutoRestartArgs struct {
 	GoCtx       context.Context
-	MakeCommand func() *exec.Cmd
+	MakeCommand func(goCtx context.Context) *exec.Cmd
 
 	Logger            zerolog.Logger
 	ProcessNameInLogs string
@@ -29,8 +29,11 @@ type AutoRestartArgs struct {
 	//defaults to DEFAULT_MAX_TRY_COUNT
 	MaxTryCount int
 
-	//an item is written to this channel each time a created process exits.
+	//optional, an item is written to this channel each time a created process exits.
 	ExitEventChan chan struct{}
+
+	//optional, each time a process is started its PID is written to the channel.
+	StartEventChan chan int32
 
 	//duration of the pause following a burst of failed starts, defaults to DEFAULT_POST_START_BURST_PAUSE_DURATION.
 	PostStartBurstPauseDuration time.Duration
@@ -39,7 +42,9 @@ type AutoRestartArgs struct {
 	PostStartBurstPause *atomic.Bool
 }
 
-func AutoRestart(args AutoRestartArgs) {
+// AutoRestart starts a restart loop in the calling goroutine,
+// during a single step args.MakeCommand is called and the returned command is started.
+func AutoRestart(args AutoRestartArgs) error {
 	if args.MaxTryCount <= 0 {
 		args.MaxTryCount = DEFAULT_MAX_TRY_COUNT
 	}
@@ -52,8 +57,16 @@ func AutoRestart(args AutoRestartArgs) {
 		args.PostStartBurstPause = &atomic.Bool{}
 	}
 
+	if args.StartEventChan != nil {
+		defer close(args.StartEventChan)
+	}
+
+	if args.ExitEventChan != nil {
+		defer close(args.ExitEventChan)
+	}
+
 	for {
-		func() {
+		ctxErr := func() error {
 			defer func() {
 				e := recover()
 				if e != nil {
@@ -62,12 +75,16 @@ func AutoRestart(args AutoRestartArgs) {
 					args.Logger.Err(err).Send()
 				}
 			}()
-			autoRestart(args)
+			return autoRestart(args)
 		}()
+
+		if ctxErr != nil {
+			return ctxErr
+		}
 	}
 }
 
-func autoRestart(args AutoRestartArgs) {
+func autoRestart(args AutoRestartArgs) (ctxError error) {
 	logger := args.Logger
 	maxTryCount := args.MaxTryCount
 	processName := args.ProcessNameInLogs
@@ -90,23 +107,36 @@ func autoRestart(args AutoRestartArgs) {
 		tryCount++
 		lastLaunchTime = time.Now()
 
-		cmd := args.MakeCommand()
+		cmd := args.MakeCommand(args.GoCtx)
 
 		logger.Info().Msg("create a new process (" + processName + ")")
 
 		err := cmd.Start()
 		if err == nil {
 			logger.Info().Int(NEW_PROCESS_PID_LOG_FIELD_NAME, cmd.Process.Pid).Send()
+			if args.StartEventChan != nil {
+				select {
+				case args.StartEventChan <- int32(cmd.Process.Pid):
+				default:
+					//drop event
+				}
+			}
 			err = cmd.Wait()
 		}
 
 		if err == nil {
-			logger.Error().Msg(processName + "proxy process returned with au unexpected status of 0")
+			logger.Error().Msg(processName + " process exited with an unexpected status of 0")
 		} else {
-			logger.Error().Err(err).Msg(processName + "process returned")
+			logger.Error().Err(err).Msg(processName + " process exited")
 		}
 
-		args.ExitEventChan <- struct{}{}
+		if args.ExitEventChan != nil {
+			select {
+			case args.ExitEventChan <- struct{}{}:
+			default:
+				//drop event
+			}
+		}
 
 		if time.Since(lastLaunchTime) < 10*time.Second {
 			tryCount++
@@ -114,4 +144,8 @@ func autoRestart(args AutoRestartArgs) {
 			tryCount = 1
 		}
 	}
+
+	//context is done
+
+	return args.GoCtx.Err()
 }

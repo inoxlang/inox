@@ -16,7 +16,7 @@ type ProjectServerCmdParams struct {
 	Logger         zerolog.Logger
 }
 
-func ExecuteProjectServerCmd(args ProjectServerCmdParams) {
+func MakeProjectServerCmd(args ProjectServerCmdParams) *exec.Cmd {
 	projectServerConfig := "-config=" + string(utils.Must(json.Marshal(args.Config)))
 
 	cmd := exec.CommandContext(args.GoCtx, args.InoxBinaryPath, "project-server", projectServerConfig)
@@ -31,9 +31,5 @@ func ExecuteProjectServerCmd(args ProjectServerCmdParams) {
 		WriteFn: args.Logger.Write,
 	}
 
-	args.Logger.Info().Msg("create a new inox process (project server)")
-
-	if err := cmd.Run(); err != nil {
-		args.Logger.Error().Err(err).Send()
-	}
+	return cmd
 }

@@ -72,13 +72,23 @@ func Inoxd(args InoxdArgs) {
 	}
 
 	if !config.InoxCloud {
-		//TODO: restart the process each time it crashes.
-		project_server.ExecuteProjectServerCmd(project_server.ProjectServerCmdParams{
-			GoCtx:          goCtx,
-			Config:         serverConfig,
-			InoxBinaryPath: config.InoxBinaryPath,
-			Logger:         logger,
+		ctxErr := processutils.AutoRestart(processutils.AutoRestartArgs{
+			GoCtx: goCtx,
+			MakeCommand: func(context.Context) *exec.Cmd {
+				return project_server.MakeProjectServerCmd(project_server.ProjectServerCmdParams{
+					GoCtx:          goCtx,
+					Config:         serverConfig,
+					InoxBinaryPath: config.InoxBinaryPath,
+					Logger:         logger,
+				})
+			},
+			Logger:                      logger,
+			ProcessNameInLogs:           "project server",
+			MaxTryCount:                 3,
+			PostStartBurstPauseDuration: 5 * time.Minute,
 		})
+
+		logger.Fatal().Err(ctxErr).Send()
 		return
 	}
 
@@ -117,7 +127,7 @@ func Inoxd(args InoxdArgs) {
 
 	go processutils.AutoRestart(processutils.AutoRestartArgs{
 		GoCtx: goCtx,
-		MakeCommand: func() *exec.Cmd {
+		MakeCommand: func(context.Context) *exec.Cmd {
 			return makeCloudProxyCommand(cloudProxyCmdParams{
 				goCtx:          goCtx,
 				inoxBinaryPath: config.InoxBinaryPath,
