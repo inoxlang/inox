@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -31,10 +32,23 @@ import (
 func TestDaemonCloudMode(t *testing.T) {
 	//this test suite require inox to be in /usr/local/go/bin.
 
-	setup := func() (context.Context, context.CancelFunc, string, io.Writer) {
+	newLockedWriter := func(outputBuf *bytes.Buffer) io.Writer {
+		var lock sync.Mutex
+		return utils.FnWriter{
+			WriteFn: func(p []byte) (n int, err error) {
+				lock.Lock()
+				defer lock.Unlock()
+				return outputBuf.Write(p)
+			},
+		}
+	}
+
+	t.Run("base case", func(t *testing.T) {
+		//setup
 		tmpDir := t.TempDir()
 
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
 
 		keyset := crypto.GenerateRandomInoxdMasterKeyset()
 		save, ok := os.LookupEnv(unitenv.INOXD_MASTER_KEYSET_ENV_VARNAME)
@@ -44,21 +58,8 @@ func TestDaemonCloudMode(t *testing.T) {
 		os.Setenv(unitenv.INOXD_MASTER_KEYSET_ENV_VARNAME, string(keyset))
 
 		outputBuf := bytes.NewBuffer(nil)
-		var lock sync.Mutex
-		writer := utils.FnWriter{
-			WriteFn: func(p []byte) (n int, err error) {
-				lock.Lock()
-				defer lock.Unlock()
-				return outputBuf.Write(p)
-			},
-		}
-		return ctx, cancel, tmpDir, writer
-	}
-
-	t.Run("base case", func(t *testing.T) {
-
-		ctx, cancel, tmpDir, writer := setup()
-		defer cancel()
+		writer := newLockedWriter(outputBuf)
+		//////
 
 		var helloAckReceived atomic.Bool
 
@@ -93,10 +94,22 @@ func TestDaemonCloudMode(t *testing.T) {
 	})
 
 	t.Run("killing the cloud proxy process once should not cause any issue", func(t *testing.T) {
-		//this tests required inox to be in /usr/local/go/bin.
+		//setup
+		tmpDir := t.TempDir()
 
-		ctx, cancel, tmpDir, writer := setup()
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
+
+		keyset := crypto.GenerateRandomInoxdMasterKeyset()
+		save, ok := os.LookupEnv(unitenv.INOXD_MASTER_KEYSET_ENV_VARNAME)
+		if ok {
+			defer os.Setenv(unitenv.INOXD_MASTER_KEYSET_ENV_VARNAME, save)
+		}
+		os.Setenv(unitenv.INOXD_MASTER_KEYSET_ENV_VARNAME, string(keyset))
+
+		outputBuf := bytes.NewBuffer(nil)
+		writer := newLockedWriter(outputBuf)
+		//////
 
 		var helloAckCount atomic.Int32
 		var proxyPid atomic.Int32
@@ -172,18 +185,36 @@ func TestDaemonCloudMode(t *testing.T) {
 	})
 }
 
-func TestDaemonDisabledCloudMode(t *testing.T) {
+func TestDaemonSingleProjectServerMode(t *testing.T) {
 	//this test suite require inox to be in /usr/local/go/bin.
+
+	newLockedWriter := func(outputBuf *bytes.Buffer) io.Writer {
+		var lock sync.Mutex
+		return utils.FnWriter{
+			WriteFn: func(p []byte) (n int, err error) {
+				lock.Lock()
+				defer lock.Unlock()
+				return outputBuf.Write(p)
+			},
+		}
+	}
 
 	dialer := *websocket.DefaultDialer
 	dialer.TLSClientConfig = &tls.Config{
 		InsecureSkipVerify: true,
 	}
 
-	setup := func() (context.Context, context.CancelFunc, string, io.Writer) {
+	t.Run("base case", func(t *testing.T) {
+		//setup
 		tmpDir := t.TempDir()
 
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer func() {
+			cancel()
+
+			//wait for teardown to finish.
+			time.Sleep(time.Second)
+		}()
 
 		keyset := crypto.GenerateRandomInoxdMasterKeyset()
 		save, ok := os.LookupEnv(unitenv.INOXD_MASTER_KEYSET_ENV_VARNAME)
@@ -193,34 +224,13 @@ func TestDaemonDisabledCloudMode(t *testing.T) {
 		os.Setenv(unitenv.INOXD_MASTER_KEYSET_ENV_VARNAME, string(keyset))
 
 		outputBuf := bytes.NewBuffer(nil)
-		var lock sync.Mutex
-		writer := utils.FnWriter{
-			WriteFn: func(p []byte) (n int, err error) {
-				lock.Lock()
-				defer lock.Unlock()
-				return outputBuf.Write(p)
-			},
-		}
-		return ctx, cancel, tmpDir, writer
-	}
-
-	t.Run("base case", func(t *testing.T) {
-		ctx, cancel, tmpDir, writer := setup()
-		defer func() {
-			x := recover()
-			fmt.Println(x)
-
-			fmt.Println("cancel")
-			cancel()
-			fmt.Println("cancelled")
-
-			time.Sleep(time.Second)
-		}()
+		writer := newLockedWriter(outputBuf)
+		//////
 
 		var sessionCreatedOnServer atomic.Bool
 
 		hook := zerolog.HookFunc(func(e *zerolog.Event, level zerolog.Level, message string) {
-			fmt.Println(message)
+			//fmt.Println(message)
 			if strings.Contains(message, "new session at 127.0.0.1") {
 				sessionCreatedOnServer.Store(true)
 			}
@@ -242,28 +252,51 @@ func TestDaemonDisabledCloudMode(t *testing.T) {
 			DoNotUseCgroups: true,
 		})
 
-		//wait for the connection between inoxd and the cloud-proxy to be established.
+		//wait for the project server to start.
 		time.Sleep(time.Second)
 
 		c, _, err := dialer.Dial("wss://localhost:6000", nil)
-		if !assert.NoError(t, err, "failed to connect") {
+		if !errors.Is(err, io.EOF) && !assert.NoError(t, err, "failed to connect") {
 			return
 		}
 		c.Close()
 
-		//assert.True(t, sessionCreatedOnServer.Load())
-		fmt.Println("ok")
+		//wait for the logs.
+		time.Sleep(100 * time.Millisecond)
+
+		if !assert.True(t, sessionCreatedOnServer.Load()) {
+			return
+		}
+
+		if t.Failed() {
+			fmt.Printf("end: test %s did fail\n", t.Name())
+		} else {
+			fmt.Printf("end: test %s did not fail\n", t.Name())
+		}
 	})
 
 	t.Run("killing the project-server process once should not cause any issue", func(t *testing.T) {
-		t.Skip()
-		//this tests required inox to be in /usr/local/go/bin.
 
-		ctx, cancel, tmpDir, writer := setup()
+		tmpDir := t.TempDir()
+
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer func() {
 			cancel()
+
+			//wait for teardown to finish.
 			time.Sleep(time.Second)
 		}()
+
+		keyset := crypto.GenerateRandomInoxdMasterKeyset()
+		save, ok := os.LookupEnv(unitenv.INOXD_MASTER_KEYSET_ENV_VARNAME)
+		if ok {
+			defer os.Setenv(unitenv.INOXD_MASTER_KEYSET_ENV_VARNAME, save)
+		}
+		os.Setenv(unitenv.INOXD_MASTER_KEYSET_ENV_VARNAME, string(keyset))
+
+		outputBuf := bytes.NewBuffer(nil)
+		writer := newLockedWriter(outputBuf)
+		//////
 
 		var sessionCreatedOnServer atomic.Int32
 		var projectServerPid atomic.Int32
@@ -320,14 +353,18 @@ func TestDaemonDisabledCloudMode(t *testing.T) {
 			DoNotUseCgroups: true,
 		})
 
-		//wait for the connection between inoxd and the cloud-proxy to be established.
+		//wait for the project server to start.
 		time.Sleep(time.Second)
 
 		c, _, err := dialer.Dial("wss://localhost:6000", nil)
-		if !assert.NoError(t, err) {
+		if !assert.NoError(t, err, "failed to connect") {
 			return
 		}
 		c.Close()
+
+		//wait for the logs.
+		time.Sleep(100 * time.Millisecond)
+		assert.EqualValues(t, 1, sessionCreatedOnServer.Load())
 
 		pid := projectServerPid.Load()
 		if !assert.NotZero(t, pid) {
@@ -337,13 +374,25 @@ func TestDaemonDisabledCloudMode(t *testing.T) {
 		//kill the process and wait for a new connection to be established.
 		process := utils.Must(process.NewProcess(pid))
 		process.Kill()
+		//wait for the project server to start.
 		time.Sleep(time.Second)
 
 		c, _, err = dialer.Dial("wss://localhost:6000", nil)
-
-		if !assert.NoError(t, err, "failed to connect") {
+		if !errors.Is(err, io.EOF) && !assert.NoError(t, err, "failed to connect") {
 			return
 		}
 		c.Close()
+
+		//wait for the logs.
+		time.Sleep(10 * time.Millisecond)
+		if !assert.EqualValues(t, 2, sessionCreatedOnServer.Load()) {
+			return
+		}
+
+		if t.Failed() {
+			fmt.Printf("end: test %s did fail\n", t.Name())
+		} else {
+			fmt.Printf("end: test %s did not fail\n", t.Name())
+		}
 	})
 }

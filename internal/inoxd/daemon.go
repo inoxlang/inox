@@ -88,7 +88,7 @@ func Inoxd(args InoxdArgs) {
 			PostStartBurstPauseDuration: 5 * time.Minute,
 		})
 
-		logger.Fatal().Err(ctxErr).Send()
+		logger.Error().Err(ctxErr).Send()
 		return
 	}
 

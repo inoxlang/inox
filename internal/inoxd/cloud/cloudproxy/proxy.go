@@ -255,7 +255,7 @@ func (p *cloudProxy) inoxdConnectionLoop() {
 		if e != nil {
 			err := utils.ConvertPanicValueToError(e)
 			err = fmt.Errorf("%w: %s", err, debug.Stack())
-			p.inoxdConnLogger.Fatal().Err(err).Send()
+			p.inoxdConnLogger.Error().Err(err).Send()
 
 			//TODO: wait for the log to be persisted before exiting.
 		}
