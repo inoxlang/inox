@@ -6,9 +6,6 @@ const(
 )
 
 manifest {
-    host-resolution: :{
-        ldb://mydb : /tmp/mydb/
-    }
     permissions: {
         read: {
             %/...
@@ -17,7 +14,6 @@ manifest {
             HTTPS_LOCALHOST_8000
             LOCALHOST_1200
             HOME
-            %/tmp/mydb/...
             tcp: ://example.com:80
             dns: %://**
             env: "*"
@@ -50,12 +46,9 @@ manifest {
             HTTPS_LOCALHOST_8000
             LOCALHOST_1200
             HOME
-            %/tmp/mydb/...
             threads: {}
         }
-        write: {
-            %/tmp/mydb/...
-        }
+        write: {}
         update: {
             globals: "*"
             %https://**
