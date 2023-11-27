@@ -13,6 +13,8 @@ The `--expose-web-servers` flag makes web (application) servers listen on ⚠️
 sudo inox add-service --expose-project-servers --expose-web-servers
 ```
 
+Browser automation can be allowed by adding the `--allow-browser-automation` switch.
+
 **This installation is not recommended for production environments.**
 
 ## Installation B - Inoxd + Cloudflare Tunnel
@@ -34,3 +36,5 @@ subgraph YourMachine["Your machine"]
         Cloudflared -.- ProjectServer(Project Server)
 end
 ```
+
+Browser automation can be allowed by adding the `--allow-browser-automation` switch.

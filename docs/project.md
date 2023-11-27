@@ -26,6 +26,8 @@ inox project-server
 This server is listening on `localhost:8305` by default. The listening port can
 be changed with the **-config** flag: `-config='{"port":8305}'`.
 
+Browser automation can be allowed by adding the `--allow-browser-automation` switch.
+
 ### Remote Linux Server
 
 You can start the **project server** with the following command:
@@ -36,6 +38,8 @@ inox project-server
 
 This server is listening on `localhost:8305` by default. The listening port can
 be changed with the **-config** flag: `-config='{"port":8305}'`.
+
+Browser automation can be allowed by adding the `--allow-browser-automation` switch.
 
 **It is recommended to add the [inox daemon](./inox-daemon.md) in order to start the project server automatically and to expose it.**
 
