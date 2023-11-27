@@ -291,16 +291,14 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 			var assertionErr *core.AssertionError
 			var errString string
 
-			isTestAssertionError := false
-
 			if errors.As(err, &assertionErr) {
-				isTestAssertionError = assertionErr.IsTestAssertion()
 				errString = assertionErr.PrettySPrint(prettyPrintConfig)
-			}
 
-			//if the error is about a test assertion we only print the pretty version.
-			if !isTestAssertionError {
-				errString += "\n" + utils.StripANSISequences(err.Error())
+				if !assertionErr.IsTestAssertion() {
+					errString += "\n" + utils.StripANSISequences(err.Error())
+				}
+			} else {
+				errString = utils.StripANSISequences(err.Error())
 			}
 
 			//print
