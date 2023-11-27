@@ -2,23 +2,100 @@ package cloudproxy
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
 
+	"github.com/gorilla/websocket"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/globals/net_ns"
+	"github.com/inoxlang/inox/internal/inoxd/cloud/cloudproxy/inoxdconn"
+	"github.com/inoxlang/inox/internal/inoxd/consts"
 	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/project_server"
+	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCloudProxy(t *testing.T) {
+func TestInoxdConnection(t *testing.T) {
+	inoxdconn.RegisterTypesInGob()
+
+	fls := fs_ns.NewMemFilesystem(1_000_000)
+	goCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	port := 6000
+
+	go func() {
+		Run(CloudProxyArgs{
+			Config: CloudProxyConfig{
+				CloudDataDir:                 "/",
+				AnonymousAccountDatabasePath: "/anon-db.kv",
+				Port:                         port,
+			},
+			Filesystem: fls,
+			OutW:       os.Stdout,
+			ErrW:       os.Stdout,
+			GoContext:  goCtx,
+		})
+	}()
+
+	//wait for the cloud proxy to start
+	time.Sleep(time.Second)
+
+	dialer := *websocket.DefaultDialer
+	dialer.TLSClientConfig = &tls.Config{
+		InsecureSkipVerify: true,
+	}
+
+	socket, _, err := dialer.Dial("wss://localhost:"+strconv.Itoa(port)+consts.PROXY__INOXD_WEBSOCKET_ENDPOINT, nil)
+	if !assert.NoError(t, err) {
+		return
+	}
+	defer socket.Close()
+
+	//send hello message.
+	helloMsg := inoxdconn.Message{
+		ULID:  ulid.Make(),
+		Inner: inoxdconn.Hello{},
+	}
+
+	err = socket.WriteMessage(websocket.BinaryMessage, inoxdconn.MustEncodeMessage(helloMsg))
+	if !assert.NoError(t, err) {
+		return
+	}
+
+	//wait for the cloud proxy to answer.
+	time.Sleep(100 * time.Millisecond)
+
+	msgType, payload, err := socket.ReadMessage()
+	if !assert.NoError(t, err) {
+		return
+	}
+	if !assert.Equal(t, websocket.BinaryMessage, msgType) {
+		return
+	}
+
+	var ackMsg inoxdconn.Message
+	if !assert.NoError(t, inoxdconn.DecodeMessage(payload, &ackMsg)) {
+		return
+	}
+
+	if !assert.IsType(t, ackMsg.Inner, inoxdconn.Ack{}) {
+		return
+	}
+	ack := ackMsg.Inner.(inoxdconn.Ack)
+	assert.Equal(t, helloMsg.ULID, ack.AcknowledgedMessage)
+}
+
+func TestAccountCreation(t *testing.T) {
 	t.Skip("manual test")
 	username := "<Github username>"
 

@@ -1,14 +1,13 @@
 package inoxd
 
 import (
-	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 
 	"github.com/containerd/cgroups/v3"
 	"github.com/containerd/cgroups/v3/cgroup2"
 	"github.com/inoxlang/inox/internal/utils"
+	"github.com/rs/zerolog"
 )
 
 const (
@@ -31,35 +30,35 @@ func getCgroupMode() (cgroups.CGMode, string) {
 }
 
 // createInoxCgroup creates the inox cgroup, it's a subgroup of the unit group (inox.service).
-func createInoxCgroup(outW, errW io.Writer) bool {
+func createInoxCgroup(logger zerolog.Logger) bool {
 
 	pid := os.Getpid()
 
 	unitGroupPath, err := cgroup2.PidGroupPath(pid)
 	if err != nil {
-		fmt.Fprintln(errW, err.Error())
+		logger.Err(err).Send()
 		return false
 	}
 
 	fullUnitGroupPath := filepath.Join(CGROUPV2_PATH, unitGroupPath)
 
-	fmt.Fprintln(outW, "unit cgroup =", fullUnitGroupPath)
+	logger.Info().Msg("unit cgroup = " + fullUnitGroupPath)
 
 	//the inox group is a subgroup of the unit group (inox.service).
 	inoxGroupPath := filepath.Join(unitGroupPath, "inox")
 	fullInoxGroupPath := filepath.Join(fullUnitGroupPath, "inox")
 
-	fmt.Fprintln(outW, "mkdir", inoxGroupPath)
+	logger.Info().Msg("mkdir " + inoxGroupPath)
 
 	if err != nil {
-		fmt.Fprintln(errW, err.Error())
+		logger.Err(err).Send()
 		return false
 	}
 
 	//we create the inox subgroup.
 	err = os.Mkdir(fullInoxGroupPath, 0o770)
 	if err != nil {
-		fmt.Fprintln(errW, err.Error())
+		logger.Err(err).Send()
 		return false
 
 	}
@@ -67,7 +66,7 @@ func createInoxCgroup(outW, errW io.Writer) bool {
 	inoxController, err := cgroup2.Load(inoxGroupPath)
 
 	if err != nil {
-		fmt.Fprintln(errW, err.Error())
+		logger.Err(err).Send()
 		return false
 
 	}
@@ -79,7 +78,7 @@ func createInoxCgroup(outW, errW io.Writer) bool {
 
 	err = inoxController.AddProc(uint64(pid))
 	if err != nil {
-		fmt.Fprintln(errW, err.Error())
+		logger.Err(err).Send()
 		return false
 
 	}
@@ -88,14 +87,14 @@ func createInoxCgroup(outW, errW io.Writer) bool {
 	{
 		f, err := os.OpenFile(fullUnitGroupPath+"/cgroup.subtree_control", os.O_WRONLY, 0)
 		if err != nil {
-			fmt.Fprintln(errW, err.Error())
+			logger.Err(err).Send()
 			return false
 		}
 
 		_, err = f.Write([]byte("+cpuset +cpu +io +memory +pids"))
 
 		if err != nil {
-			fmt.Fprintln(errW, err.Error())
+			logger.Err(err).Send()
 			f.Close()
 			return false
 
@@ -110,7 +109,7 @@ func createInoxCgroup(outW, errW io.Writer) bool {
 	})
 
 	if err != nil {
-		fmt.Fprintln(errW, err.Error())
+		logger.Err(err).Send()
 		return false
 
 	}

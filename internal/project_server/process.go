@@ -1,30 +1,39 @@
 package project_server
 
 import (
+	"context"
 	"encoding/json"
-	"fmt"
-	"io"
 	"os/exec"
 
 	"github.com/inoxlang/inox/internal/utils"
+	"github.com/rs/zerolog"
 )
 
 type ProjectServerCmdParams struct {
+	GoCtx          context.Context
 	Config         IndividualServerConfig
 	InoxBinaryPath string
-	Stderr, Stdout io.Writer
+	Logger         zerolog.Logger
 }
 
 func ExecuteProjectServerCmd(args ProjectServerCmdParams) {
 	projectServerConfig := "-config=" + string(utils.Must(json.Marshal(args.Config)))
 
-	cmd := exec.Command(args.InoxBinaryPath, "project-server", projectServerConfig)
-	cmd.Stderr = args.Stderr
-	cmd.Stdout = args.Stdout
+	cmd := exec.CommandContext(args.GoCtx, args.InoxBinaryPath, "project-server", projectServerConfig)
 
-	fmt.Fprintln(args.Stdout, "create a new inox process (project server)")
+	cmd.Stderr = utils.FnWriter{
+		WriteFn: func(p []byte) (n int, err error) {
+			args.Logger.Error().Msg(string(p))
+			return len(p), nil
+		},
+	}
+	cmd.Stdout = utils.FnWriter{
+		WriteFn: args.Logger.Write,
+	}
+
+	args.Logger.Info().Msg("create a new inox process (project server)")
 
 	if err := cmd.Run(); err != nil {
-		fmt.Fprintln(args.Stderr, err.Error())
+		args.Logger.Error().Err(err).Send()
 	}
 }

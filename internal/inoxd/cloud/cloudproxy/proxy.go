@@ -7,8 +7,12 @@ import (
 	"io"
 	"net/http"
 	"path/filepath"
+	"runtime/debug"
 	"strconv"
 	"strings"
+	"sync"
+	"sync/atomic"
+	"time"
 
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core"
@@ -16,10 +20,12 @@ import (
 	"github.com/inoxlang/inox/internal/globals/http_ns"
 	"github.com/inoxlang/inox/internal/globals/net_ns"
 	"github.com/inoxlang/inox/internal/inoxd/cloud/account"
+	"github.com/inoxlang/inox/internal/inoxd/cloud/cloudproxy/inoxdconn"
 	"github.com/inoxlang/inox/internal/inoxd/consts"
 	"github.com/inoxlang/inox/internal/inoxprocess"
 	nettypes "github.com/inoxlang/inox/internal/net_types"
 	"github.com/inoxlang/inox/internal/utils"
+	"github.com/oklog/ulid/v2"
 	"github.com/rs/zerolog"
 )
 
@@ -29,6 +35,7 @@ const (
 
 	ACCOUT_MANAGEMENT_LOG_SRC = "/account"
 	PROXY_LOG_SRC             = "/cloud-proxy"
+	INOXD_CONN_LOG_SRC        = "/cloud-proxy/inoxd-conn"
 
 	ACCOUNT_REGISTRATION_URL_PATH          = "/register-account"
 	ACCOUNT_REGISTRATION_HOSTER_PARAM_NAME = "hoster"
@@ -85,7 +92,7 @@ func Run(args CloudProxyArgs) error {
 	addr := "localhost:" + strconv.Itoa(args.Config.Port)
 	host := core.Host("wss://" + addr)
 
-	ctx, topCtx := createContext(host, args)
+	ctx, topCtx := createContexts(host, args)
 	defer topCtx.CancelGracefully()
 
 	if args.RestrictProcessAccess {
@@ -112,11 +119,17 @@ func Run(args CloudProxyArgs) error {
 }
 
 type cloudProxy struct {
-	ctx, topCtx   *core.Context
-	addr          string
-	accountDB     *account.AnonymousAccountDatabase
-	accountLogger zerolog.Logger
-	proxyLogger   zerolog.Logger
+	ctx, topCtx     *core.Context
+	addr            string
+	accountDB       *account.AnonymousAccountDatabase
+	accountLogger   zerolog.Logger
+	proxyLogger     zerolog.Logger
+	inoxdConnLogger zerolog.Logger
+
+	inoxdWebsocket     *net_ns.WebsocketConnection //connection to the inoxd process
+	inoxdWebsocketLock sync.Mutex
+
+	httpServerClosed atomic.Bool
 }
 
 func (p *cloudProxy) run() error {
@@ -128,6 +141,7 @@ func (p *cloudProxy) run() error {
 
 	p.accountLogger = p.ctx.Logger().With().Str(core.SOURCE_LOG_FIELD_NAME, ACCOUT_MANAGEMENT_LOG_SRC).Logger()
 	p.proxyLogger = p.ctx.Logger().With().Str(core.SOURCE_LOG_FIELD_NAME, PROXY_LOG_SRC).Logger()
+	p.inoxdConnLogger = p.ctx.Logger().With().Str(core.SOURCE_LOG_FIELD_NAME, INOXD_CONN_LOG_SRC).Logger()
 
 	//create a http server, register teardown callbacks and start listening.
 
@@ -135,7 +149,8 @@ func (p *cloudProxy) run() error {
 		Addr: p.addr,
 		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-			if r.URL.Path == ACCOUNT_REGISTRATION_URL_PATH {
+			switch r.URL.Path {
+			case ACCOUNT_REGISTRATION_URL_PATH:
 				hoster := r.URL.Query().Get("hoster")
 				if hoster == "" {
 					w.WriteHeader(http.StatusBadRequest)
@@ -150,36 +165,62 @@ func (p *cloudProxy) run() error {
 				}
 				go p.registerAccount(socket, hoster)
 				return
-			}
+			case consts.PROXY__INOXD_WEBSOCKET_ENDPOINT:
+				if !strings.HasPrefix(r.RemoteAddr, "127.0.0.1") {
+					w.WriteHeader(http.StatusNotFound)
+					return
+				}
+				p.inoxdWebsocketLock.Lock()
+				defer p.inoxdWebsocketLock.Unlock()
 
-			if r.URL.Path != "/" {
+				if p.inoxdWebsocket != nil && !p.inoxdWebsocket.IsClosedOrClosing() {
+					//a single connection to the inoxd processed is allowed.
+
+					w.WriteHeader(http.StatusBadRequest)
+					return
+				}
+
+				p.inoxdWebsocket = nil
+
+				socket, err := wsServer.UpgradeGoValues(w, r, p.allowConnection)
+
+				if err != nil {
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+
+				p.inoxdWebsocket = socket
 				return
+			case "/":
+
+				//else we check the account token and connect to the project server.
+
+				tokenHeaderValues, ok := r.Header[ACCOUNT_TOKEN_HEADER_NAME]
+				if !ok || len(tokenHeaderValues) == 0 {
+					w.WriteHeader(http.StatusUnauthorized)
+					return
+				}
+
+				account, err := p.accountDB.GetAccount(p.ctx, tokenHeaderValues[0])
+				if err != nil {
+					w.WriteHeader(http.StatusUnauthorized)
+					return
+				}
+
+				p.accountLogger.Info().Msg("account successfully connected: " + account.ULID)
+
+				id := account.ULID
+				_ = id
+				//TODO: connect to account-specific project server.
+
+				_, err = wsServer.UpgradeGoValues(w, r, p.allowConnection)
+				if err != nil {
+					w.WriteHeader(http.StatusInternalServerError)
+				}
+			default:
+				w.WriteHeader(http.StatusNotFound)
 			}
 
-			//else we check the account token and connect to the project server.
-
-			tokenHeaderValues, ok := r.Header[ACCOUNT_TOKEN_HEADER_NAME]
-			if !ok || len(tokenHeaderValues) == 0 {
-				w.WriteHeader(http.StatusUnauthorized)
-				return
-			}
-
-			account, err := p.accountDB.GetAccount(p.ctx, tokenHeaderValues[0])
-			if err != nil {
-				w.WriteHeader(http.StatusUnauthorized)
-				return
-			}
-
-			p.accountLogger.Info().Msg("account successfully connected: " + account.ULID)
-
-			id := account.ULID
-			_ = id
-			//TODO: connect to account-specific project server.
-
-			_, err = wsServer.UpgradeGoValues(w, r, p.allowConnection)
-			if err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
-			}
 		}),
 	})
 
@@ -195,18 +236,79 @@ func (p *cloudProxy) run() error {
 		return httpServer.Close()
 	})
 
+	go p.inoxdConnectionLoop()
+
 	p.proxyLogger.Info().Msgf("start cloud proxy HTTPS server listening on %s", p.addr)
-
 	err = httpServer.ListenAndServeTLS("", "")
-	if err != nil {
-		return fmt.Errorf("failed to create HTTPS server for cloud proxy: %w", err)
-	}
 
-	return nil
+	p.httpServerClosed.Store(true)
+	return fmt.Errorf("error from cloud proxy's HTTPS server: %w", err)
 }
 
 func (p *cloudProxy) allowConnection(remoteAddrPort nettypes.RemoteAddrWithPort, remoteAddr nettypes.RemoteIpAddr, currentConns []*net_ns.WebsocketConnection) error {
 	return nil
+}
+
+func (p *cloudProxy) inoxdConnectionLoop() {
+	defer func() {
+		e := recover()
+		if e != nil {
+			err := utils.ConvertPanicValueToError(e)
+			err = fmt.Errorf("%w: %s", err, debug.Stack())
+			p.inoxdConnLogger.Fatal().Err(err).Send()
+
+			//TODO: wait for the log to be persisted before exiting.
+		}
+	}()
+
+	inoxdconn.RegisterTypesInGob()
+
+	for !p.httpServerClosed.Load() {
+
+		p.inoxdWebsocketLock.Lock()
+		conn := p.inoxdWebsocket
+		p.inoxdWebsocketLock.Unlock()
+
+		if conn == nil || conn.IsClosedOrClosing() {
+			//wait for the inoxd process to reconnect to the proxy.
+			time.Sleep(5 * time.Millisecond)
+			continue
+		}
+
+		msgType, payload, err := conn.ReadMessage(p.ctx)
+		if msgType != net_ns.WebsocketBinaryMessage || err != nil {
+			//prevent panic due to repeated read
+			conn.Close()
+			p.inoxdWebsocketLock.Lock()
+			p.inoxdWebsocket = nil
+			p.inoxdWebsocketLock.Unlock()
+			continue
+		}
+
+		var msg inoxdconn.Message
+		if err := inoxdconn.DecodeMessage(payload, &msg); err != nil {
+			p.inoxdConnLogger.Error().Err(err).Send()
+			continue
+		}
+
+		switch msg.Inner.(type) {
+		case inoxdconn.Hello:
+			p.inoxdConnLogger.Debug().Msg("hello from inoxd")
+
+			//send Ack message to inoxd.
+			ack := inoxdconn.Message{
+				ULID:  ulid.Make(),
+				Inner: inoxdconn.Ack{AcknowledgedMessage: msg.ULID},
+			}
+
+			err := conn.WriteMessage(p.ctx, net_ns.WebsocketBinaryMessage, inoxdconn.MustEncodeMessage(ack))
+			if err != nil {
+				p.inoxdConnLogger.Error().Err(err).Send()
+				continue
+			}
+			continue
+		}
+	}
 }
 
 func (p *cloudProxy) registerAccount(socket *net_ns.WebsocketConnection, hoster string) {

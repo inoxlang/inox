@@ -855,7 +855,11 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 
 		daemonConfig.InoxBinaryPath = systemd.DEFAULT_INOX_PATH
 
-		inoxd.Inoxd(daemonConfig, errW, outW)
+		inoxd.Inoxd(inoxd.InoxdArgs{
+			Config: daemonConfig,
+			GoCtx:  context.Background(),
+			Logger: zerolog.New(errW),
+		})
 
 	case cloudproxy.CLOUD_PROXY_SUBCMD_NAME:
 		//read & check arguments

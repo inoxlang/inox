@@ -7,7 +7,7 @@ import (
 	"github.com/inoxlang/inox/internal/permkind"
 )
 
-func createContext(host core.Host, proxyArgs CloudProxyArgs) (ctx, topCtx *core.Context) {
+func createContexts(host core.Host, proxyArgs CloudProxyArgs) (ctx, topCtx *core.Context) {
 	databaseDir := core.DirPathFrom(filepath.Dir(proxyArgs.Config.AnonymousAccountDatabasePath))
 	databaseDirPattern := databaseDir.ToPrefixPattern()
 
