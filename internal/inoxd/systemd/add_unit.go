@@ -39,11 +39,12 @@ type InoxUnitParams struct {
 	UID               int
 	Log               io.Writer
 
-	InoxCloud            bool
-	EnvFilePath          string //optional
-	ExposeProjectServers bool
-	ExposeWebServers     bool
-	TunnelProviderName   string //optional
+	InoxCloud              bool
+	EnvFilePath            string //optional
+	ExposeProjectServers   bool
+	ExposeWebServers       bool
+	TunnelProviderName     string //optional
+	AllowBrowserAutomation bool
 }
 
 func CheckFileDoesNotExist() error {
@@ -106,8 +107,9 @@ func WriteInoxUnitFile(args InoxUnitParams) (unitName string, _ error) {
 	daemonConfig := inoxd.DaemonConfig{
 		InoxCloud: args.InoxCloud,
 		Server: project_server.IndividualServerConfig{
-			BehindCloudProxy:    args.InoxCloud,
-			BindToAllInterfaces: args.ExposeProjectServers,
+			BehindCloudProxy:       args.InoxCloud,
+			BindToAllInterfaces:    args.ExposeProjectServers,
+			AllowBrowserAutomation: args.AllowBrowserAutomation,
 		},
 		ExposeWebServers: args.ExposeProjectServers,
 		TunnelProvider:   args.TunnelProviderName,

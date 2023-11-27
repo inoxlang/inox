@@ -177,12 +177,14 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 		var showBytecode bool
 		var disableOptimization bool
 		var fullyTrusted bool
+		var allowBrowserAutomation bool
 
 		flags.BoolVar(&enableTestingMode, "test", false, "enable testing mode")
 		flags.BoolVar(&useTreeWalking, "t", false, "use tree walking interpreter")
 		flags.BoolVar(&showBytecode, "show-bytecode", false, "show emitted bytecode before evaluating the script")
 		flags.BoolVar(&disableOptimization, "no-optimization", false, "disable bytecode optimization")
 		flags.BoolVar(&fullyTrusted, "fully-trusted", false, "does not show confirmation prompt if the risk score is high")
+		flags.BoolVar(&allowBrowserAutomation, "allow-browser-automation", false, "allow creating and controlling a browser")
 
 		fileArgIndex := -1
 
@@ -256,6 +258,10 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 			}
 		}
 
+		if allowBrowserAutomation {
+			chrome_ns.AllowBrowserAutomation()
+		}
+
 		res, scriptState, _, _, err := mod.RunLocalScript(mod.RunScriptArgs{
 			Fpath:                     fpath,
 			PassedCLIArgs:             moduleArgs,
@@ -299,11 +305,16 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 
 			//print
 			errString = utils.AddCarriageReturnAfterNewlines(errString)
-			fmt.Fprint(errW, errString, "\n\r")
+			fmt.Fprint(errW, errString, "\r\n")
+
+			if errors.Is(err, chrome_ns.ErrBrowserAutomationNotAllowed) {
+				fmt.Fprintf(errW, "did you forget to add the --allow-browser-automation switch ?\r\n")
+			}
+
 		} else {
 			if list, ok := res.(*core.List); (!ok && res != nil) || list.Len() != 0 {
 				core.PrettyPrint(res, outW, prettyPrintConfig, 0, 0)
-				outW.Write([]byte("\n\r"))
+				outW.Write([]byte("\r\n"))
 			}
 		}
 
@@ -344,11 +355,13 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 		var tunnelProvider string
 		var exposeProjectServers bool
 		var exposeWebServers bool
+		var allowBrowserAutomation bool
 
 		flags.BoolVar(&inoxCloud, "inox-cloud", false, "enable inox cloud")
 		flags.StringVar(&tunnelProvider, "tunnel-provider", "", "name of the tunnel provider, only 'cloudflare' is supported for now")
 		flags.BoolVar(&exposeProjectServers, "expose-project-servers", false, "allow project servers to bind on all interfaces")
 		flags.BoolVar(&exposeWebServers, "expose-web-servers", false, "allow web servers to bind on all interfaces")
+		flags.BoolVar(&allowBrowserAutomation, "allow-browser-automation", false, "allow project code to create and control a browser, and allow project servers to download a chromium binary if no browser is installed")
 
 		if showHelp(flags, mainSubCommandArgs, outW) { //only show help
 			return
@@ -689,34 +702,38 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 			fs_ns.DeleteDeadProcessTempDirs(logger, TEMP_DIR_CLEANUP_TIMEOUT)
 		}()
 
-		//download a chrome browser if not present.
-		//this is done synchronously because Landlock is invoked further in the code.
-		func() {
-			defer utils.Recover()
+		if projectServerConfig.AllowBrowserAutomation {
+			chrome_ns.AllowBrowserAutomation()
 
-			logger := zerolog.New(out).With().Str(core.SOURCE_LOG_FIELD_NAME, "browser-installation").Logger()
-			downloadCtx, cancel := context.WithTimeout(context.Background(), BROWSER_DOWNLOAD_TIMEOUT)
-			defer cancel()
+			//download a chrome browser if not present.
+			//this is done synchronously because Landlock is invoked further in the code.
+			func() {
+				defer utils.Recover()
 
-			if !projectServerConfig.IgnoreInstalledBrowser {
-				path, ok := chrome_ns.LookPath()
-				if ok {
-					logger.Info().Msgf("chrome browser found at %q\n", path)
-					chrome_ns.SetBrowserBinPath(path)
+				logger := zerolog.New(out).With().Str(core.SOURCE_LOG_FIELD_NAME, "browser-installation").Logger()
+				downloadCtx, cancel := context.WithTimeout(context.Background(), BROWSER_DOWNLOAD_TIMEOUT)
+				defer cancel()
+
+				if !projectServerConfig.IgnoreInstalledBrowser {
+					path, ok := chrome_ns.LookPath()
+					if ok {
+						logger.Info().Msgf("chrome browser found at %q\n", path)
+						chrome_ns.SetBrowserBinPath(path)
+						return
+					}
+				} else {
+					logger.Info().Msgf("any browser not installed by the project server will be ignored")
+				}
+
+				binpath, err := chrome_ns.DownloadBrowser(downloadCtx, logger)
+				if err != nil {
+					logger.Err(err).Msg("failed to download a browser")
 					return
 				}
-			} else {
-				logger.Info().Msgf("any browser not installed by the project server will be ignored")
-			}
-
-			binpath, err := chrome_ns.DownloadBrowser(downloadCtx, logger)
-			if err != nil {
-				logger.Err(err).Msg("failed to download a browser")
-				return
-			}
-			logger.Info().Msgf("set browser binary path to %s", binpath)
-			chrome_ns.SetBrowserBinPath(binpath)
-		}()
+				logger.Info().Msgf("set browser binary path to %s", binpath)
+				chrome_ns.SetBrowserBinPath(binpath)
+			}()
+		}
 
 		//create context & state
 		perms := []core.Permission{
@@ -802,10 +819,12 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 			}
 		}
 
-		err = chrome_ns.StartSharedProxy(ctx)
-		if err != nil {
-			fmt.Fprintln(errW, "failed to start shared browser proxy:", err)
-			return ERROR_STATUS_CODE
+		if projectServerConfig.AllowBrowserAutomation {
+			err = chrome_ns.StartSharedProxy(ctx)
+			if err != nil {
+				fmt.Fprintln(errW, "failed to start shared browser proxy:", err)
+				return ERROR_STATUS_CODE
+			}
 		}
 
 		if err := project_server.StartLSPServer(ctx, opts); err != nil {

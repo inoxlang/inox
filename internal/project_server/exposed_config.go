@@ -7,4 +7,5 @@ type IndividualServerConfig struct {
 	BehindCloudProxy       bool   `json:"behindCloudProxy,omitempty"`
 	Port                   int    `json:"port,omitempty"`
 	BindToAllInterfaces    bool   `json:"bindToAllInterfaces,omitempty"`
+	AllowBrowserAutomation bool   `json:"allowBrowserAutomation,omitempty"`
 }

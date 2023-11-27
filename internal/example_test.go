@@ -21,6 +21,7 @@ import (
 	"github.com/inoxlang/inox/internal/mod"
 	"github.com/inoxlang/inox/internal/project"
 
+	"github.com/inoxlang/inox/internal/globals/chrome_ns"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 
 	"github.com/inoxlang/inox/internal/permkind"
@@ -44,6 +45,11 @@ var (
 
 // TestExamples tests the scripts located in ./examples/ .
 func TestExamples(t *testing.T) {
+	if !chrome_ns.IsBrowserAutomationAllowed() {
+		defer chrome_ns.DisallowBrowserAutomation()
+	}
+
+	chrome_ns.AllowBrowserAutomation()
 
 	//we set the working directory to the project's root
 	dir, _ := os.Getwd()

@@ -38,6 +38,10 @@ var (
 // StartSharedProxy starts an HTTP proxy in another goroutine, the proxy is used by all browser instances
 // controlled by the current package.
 func StartSharedProxy(ctx *core.Context) error {
+	if !browserAutomationAllowed.Load() {
+		return ErrBrowserAutomationNotAllowed
+	}
+
 	//https://chromium.googlesource.com/chromium/src/+/HEAD/net/docs/proxy.md#HTTP-proxy-scheme
 
 	if !proxyStarted.CompareAndSwap(false, true) {

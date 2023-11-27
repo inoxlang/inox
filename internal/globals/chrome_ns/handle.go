@@ -2,6 +2,8 @@ package chrome_ns
 
 import (
 	"context"
+	"errors"
+	"sync/atomic"
 	"time"
 
 	"github.com/inoxlang/inox/internal/core"
@@ -16,7 +18,22 @@ const (
 
 var (
 	HANDLE_PROPNAMES = []string{"nav", "wait_visible", "click", "screenshot_page", "html_node", "close"}
+
+	ErrBrowserAutomationNotAllowed = errors.New("browser automation is not allowed")
+	browserAutomationAllowed       atomic.Bool
 )
+
+func IsBrowserAutomationAllowed() bool {
+	return browserAutomationAllowed.Load()
+}
+
+func AllowBrowserAutomation() {
+	browserAutomationAllowed.Store(true)
+}
+
+func DisallowBrowserAutomation() {
+	browserAutomationAllowed.Store(false)
+}
 
 type Handle struct {
 	id string
@@ -29,6 +46,11 @@ type Handle struct {
 }
 
 func NewHandle(ctx *core.Context) (*Handle, error) {
+
+	if !browserAutomationAllowed.Load() {
+		return nil, ErrBrowserAutomationNotAllowed
+	}
+
 	handle, err := newHandle(ctx)
 	if err != nil {
 		return nil, err
