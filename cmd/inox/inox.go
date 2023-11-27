@@ -174,16 +174,18 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 		flags := flag.NewFlagSet(mainSubCommand, flag.ExitOnError)
 		var useTreeWalking bool
 		var enableTestingMode bool
+		var enableTestingModeAndTrust bool
 		var showBytecode bool
 		var disableOptimization bool
 		var fullyTrusted bool
 		var allowBrowserAutomation bool
 
 		flags.BoolVar(&enableTestingMode, "test", false, "enable testing mode")
+		flags.BoolVar(&enableTestingModeAndTrust, "test-trusted", false, "enable testing mode and do not show confirmation prompt if the risk score is high")
 		flags.BoolVar(&useTreeWalking, "t", false, "use tree walking interpreter")
 		flags.BoolVar(&showBytecode, "show-bytecode", false, "show emitted bytecode before evaluating the script")
 		flags.BoolVar(&disableOptimization, "no-optimization", false, "disable bytecode optimization")
-		flags.BoolVar(&fullyTrusted, "fully-trusted", false, "does not show confirmation prompt if the risk score is high")
+		flags.BoolVar(&fullyTrusted, "fully-trusted", false, "do not show confirmation prompt if the risk score is high")
 		flags.BoolVar(&allowBrowserAutomation, "allow-browser-automation", false, "allow creating and controlling a browser")
 
 		fileArgIndex := -1
@@ -220,6 +222,11 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 			fmt.Fprintf(errW, "missing script path\n")
 			showHelp(flags, mainSubCommandArgs, outW)
 			return ERROR_STATUS_CODE
+		}
+
+		if enableTestingModeAndTrust {
+			fullyTrusted = true
+			enableTestingMode = true
 		}
 
 		//run script
