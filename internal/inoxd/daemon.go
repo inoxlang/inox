@@ -20,6 +20,7 @@ import (
 	inoxdcrypto "github.com/inoxlang/inox/internal/inoxd/crypto"
 	"github.com/inoxlang/inox/internal/project_server"
 	"github.com/inoxlang/inox/internal/utils"
+	"github.com/inoxlang/inox/internal/utils/processutils"
 	"github.com/oklog/ulid/v2"
 	"github.com/rs/zerolog"
 )
@@ -111,59 +112,31 @@ func Inoxd(args InoxdArgs) {
 
 	//launch proxy
 
-	proxyProcessedFinished := make(chan struct{}, 1)
-	var longWait atomic.Bool
+	proxyExitChan := make(chan struct{}, 1)
+	var restartPaused atomic.Bool
 
-	go func() {
-		const MAX_TRY_COUNT = 3
-		tryCount := 0
-		var lastLaunchTime time.Time
-
-		for !utils.IsContextDone(goCtx) {
-
-			if tryCount >= MAX_TRY_COUNT {
-
-				logger.Error().Msgf("cloud proxy process exited unexpectedly %d or more times in a short timeframe; wait 5 minutes\n", MAX_TRY_COUNT)
-				longWait.Store(true)
-
-				time.Sleep(5 * time.Minute)
-				longWait.Store(false)
-				tryCount = 0
-			}
-
-			tryCount++
-			lastLaunchTime = time.Now()
-
-			cmd := makeCloudProxyCommand(cloudProxyCmdParams{
+	go processutils.AutoRestart(processutils.AutoRestartArgs{
+		GoCtx: goCtx,
+		MakeCommand: func() *exec.Cmd {
+			return makeCloudProxyCommand(cloudProxyCmdParams{
 				goCtx:          goCtx,
 				inoxBinaryPath: config.InoxBinaryPath,
 				config:         proxyConfig,
 				logger:         logger,
 			})
-
-			logger.Info().Msg("create a new inox process (cloud proxy)")
-			err = cmd.Run()
-
-			if err == nil {
-				logger.Error().Msg("cloud proxy process returned with au unexpected status of 0")
-			} else {
-				logger.Error().Err(err).Msg("cloud proxy process returned")
-			}
-
-			proxyProcessedFinished <- struct{}{}
-
-			if time.Since(lastLaunchTime) < 10*time.Second {
-				tryCount++
-			} else {
-				tryCount = 1
-			}
-		}
-	}()
+		},
+		Logger:                      logger,
+		ProcessNameInLogs:           "cloud proxy",
+		MaxTryCount:                 3,
+		PostStartBurstPause:         &restartPaused,
+		PostStartBurstPauseDuration: 5 * time.Minute,
+		ExitEventChan:               proxyExitChan,
+	})
 
 	//create a websocket connection with the proxy.
 
 	inoxdconn.RegisterTypesInGob()
-	daemon.cloudProxyConnLoop(proxyProcessedFinished, &longWait)
+	daemon.cloudProxyConnLoop(proxyExitChan, &restartPaused)
 }
 
 type cloudProxyCmdParams struct {
@@ -198,7 +171,7 @@ type Daemon struct {
 	proxyConfig *cloudproxy.CloudProxyConfig
 }
 
-func (d *Daemon) cloudProxyConnLoop(proxyProcessedFinished <-chan struct{}, longWait *atomic.Bool) {
+func (d *Daemon) cloudProxyConnLoop(proxyProcessedFinished <-chan struct{}, restartPaused *atomic.Bool) {
 	for !utils.IsContextDone(d.goCtx) {
 		func() {
 			defer func() {
@@ -215,7 +188,7 @@ func (d *Daemon) cloudProxyConnLoop(proxyProcessedFinished <-chan struct{}, long
 				//wait for the proxy to restart or for the creation loop to tell if a long wait is needed.
 				time.Sleep(100 * time.Millisecond)
 
-				for longWait.Load() {
+				for restartPaused.Load() {
 					time.Sleep(time.Second)
 				}
 			default:
