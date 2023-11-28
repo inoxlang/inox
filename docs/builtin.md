@@ -16,6 +16,7 @@
  - [Functional Programming](#functional-programming)
  - [HTML](#html)
  - [HTTP](#http)
+ - [Printing](#printing)
  - [rand](#rand)
  - [Resource Manipulation](#resource-manipulation)
  - [TCP](#tcp)
@@ -808,6 +809,15 @@ the http.CSP function creates a Content Security Policy with the passed directiv
 http.CSP{default-src: "'self'"}
 ```
 
+## Printing
+
+### print
+
+the print function prints its arguments with a space ' ' separation. A '\n' character is added at the end.
+### fprint
+
+the fprint function writes to the provided writer its arguments with a space ' ' separation. A '\n' character is added at the end.
+
 ## rand
 
 ### rand
@@ -952,6 +962,9 @@ ago(1h)
 ### now
 
 The now function returns the current datetime.
+### time_since
+
+The time_since function returns the time elapsed (duration) since the provided datetime.
 ### sleep
 
 The sleep function pauses the execution for the given duration.
