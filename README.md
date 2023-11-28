@@ -1,7 +1,5 @@
 > You can [sponsor me](https://github.com/sponsors/GraphR00t) to help me continue working full-time on Inox.
 
-___
-
 # Inox
 
 <img src="https://avatars.githubusercontent.com/u/122291844?s=200&v=4" alt="a shield"></img>
@@ -15,7 +13,7 @@ HTTP server.
 
 _Dead simple config. Zero boilerplate. Secure by Default._
 
-**Main Dev Features**
+**Main Language & Development Features**
 
 - [XML Expressions (HTML)](#xml-expressions)
 - [HTTP Server - Filesystem Routing](#http-server---filesystem-routing)
@@ -39,7 +37,7 @@ _Dead simple config. Zero boilerplate. Secure by Default._
 - [Rate Limiting](#rate-limiting-wip)
 - [Injection Prevention](#injection-prevention-wip)
 
-**Other Dev Features**
+**Other Language Features**
 
 - [Concurrency](#concurrency)
   - [Lightweight Threads](#lighweight-threads)
@@ -112,7 +110,7 @@ namespace and a JSX-like syntax:
 ```
 manifest {}
 
-return html<div> Hello world ! </div>
+element = html<div> Hello world ! </div>
 ```
 
 ### HTTP Server - Filesystem Routing
