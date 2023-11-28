@@ -71,7 +71,7 @@ const (
 	TORSTREAM_FN  = "torstream"
 	TOJSON_FN     = "tojson"
 	TOPJSON_FN    = "topjson"
-	REPR_FN       = "repr"
+	REPR_FN       = "torepr"
 	PARSE_REPR_FN = "parse_repr"
 	PARSE_FN      = "parse"
 	SPLIT_FN      = "split"

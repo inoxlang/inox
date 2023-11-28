@@ -6,7 +6,7 @@ date = 2020y-1mt-1d-UTC # first of January
 datetime = 2020y-10mt-5d-5h-4m-CET
 
 for datelike in [year, date, now(), datetime] {
-    print repr(datelike)
+    print torepr(datelike)
 }
 
 # the two same years in different locations are not equal.
