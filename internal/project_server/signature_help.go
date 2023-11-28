@@ -109,6 +109,14 @@ func getSignatureHelp(fpath string, line, column int32, handlingCtx *core.Contex
 
 		signatureInformation.Parameters = &parameterInfos
 	case *symbolic.Function:
+		goFunc, ok := val.OriginGoFunction()
+		if ok {
+			markdown, ok := help.HelpForSymbolicGoFunc(goFunc, help.HelpMessageConfig{Format: help.MarkdownFormat})
+			if ok {
+				signatureInformation.Documentation = markdown
+			}
+		}
+
 		params := val.NonVariadicParameters()
 		paramCount = len(params)
 
