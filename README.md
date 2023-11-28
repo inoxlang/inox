@@ -254,8 +254,8 @@ subgraph VSCode
   VSCodeVFS(Virtual Filesystem)
 end
 
-VSCodeVFS --> ProjImage
-VSCode -->|Invocation & Debug| Runtime(Inox Runtime)
+VSCodeVFS ---> ProjImage
+VSCode --->|Invocation & Debug| Runtime(Inox Runtime)
 ProjectServer[Project Server]
 
 subgraph ProjectServer
@@ -263,8 +263,8 @@ subgraph ProjectServer
   ProjImage(Project Image)
 end
 
-ProjectServer -->|Manages| Infrastructure
-ProjectServer -->|Get/Set| Secrets
+ProjectServer --->|Manages| Infrastructure
+ProjectServer --->|Get/Set| Secrets
 ```
 
 In project mode Inox applications are executed inside a **virtual filesystem** (container) for better
