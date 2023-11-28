@@ -165,8 +165,17 @@ func init() {
 		_parse, func(ctx *symbolic.Context, arg symbolic.Readable, p symbolic.Pattern) (symbolic.Value, *symbolic.Error) {
 			return p.SymbolicValue(), nil
 		},
-		_split, func(ctx *symbolic.Context, arg symbolic.Readable, sep *symbolic.String, p symbolic.Pattern) (symbolic.Value, *symbolic.Error) {
-			return symbolic.NewListOf(p.SymbolicValue().(symbolic.Serializable)), nil
+		_split, func(ctx *symbolic.Context, arg symbolic.Readable, sep *symbolic.String, p *symbolic.OptionalParam[symbolic.Pattern]) (symbolic.Value, *symbolic.Error) {
+			if p.Value == nil {
+				return symbolic.STRLIKE_LIST, nil
+			}
+
+			serializable, ok := (*p.Value).SymbolicValue().(symbolic.Serializable)
+			if !ok {
+				serializable = symbolic.ANY_SERIALIZABLE
+			}
+
+			return symbolic.NewListOf(serializable), nil
 		},
 
 		_idt, func(ctx *symbolic.Context, arg symbolic.Value) symbolic.Value {

@@ -204,30 +204,41 @@ func _parse(ctx *core.Context, r core.Readable, p core.Pattern) (core.Value, err
 	return strPatt.Parse(ctx, utils.BytesAsString(bytes.Bytes))
 }
 
-func _split(ctx *core.Context, r core.Readable, sep core.Str, p core.Pattern) (core.Value, error) {
+func _split(ctx *core.Context, r core.Readable, sep core.Str, p *core.OptionalParam[core.Pattern]) (core.Value, error) {
 	bytes, err := r.Reader().ReadAll()
 	if err != nil {
 		return nil, err
 	}
 
-	strPatt, ok := p.(core.StringPattern)
+	var strPatt core.StringPattern
+	if p != nil {
+		var ok bool
+		strPatt, ok = p.Value.(core.StringPattern)
 
-	if !ok {
-		strPatt, ok = p.StringPattern()
-	}
+		if !ok {
+			strPatt, ok = p.Value.StringPattern()
+		}
 
-	if !ok {
-		return nil, errors.New("failed to parse: passed pattern has no associated string pattern")
+		if !ok {
+			return nil, errors.New("passed pattern has no associated string pattern")
+		}
 	}
 
 	substrings := strings.Split(utils.BytesAsString(bytes.Bytes), string(sep))
 	values := make([]core.Serializable, len(substrings))
-	for i, substring := range substrings {
-		v, err := strPatt.Parse(ctx, substring)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse one of the substring: %w", err)
+
+	if strPatt != nil {
+		for i, substring := range substrings {
+			v, err := strPatt.Parse(ctx, substring)
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse one of the substring: %w", err)
+			}
+			values[i] = v
 		}
-		values[i] = v
+	} else {
+		for i, substring := range substrings {
+			values[i] = core.Str(substring)
+		}
 	}
 
 	return core.NewWrappedValueList(values...), nil

@@ -33,6 +33,8 @@ var (
 	EMPTY_READONLY_LIST   = NewReadonlyList()
 	EMPTY_TUPLE           = NewTuple()
 
+	STRLIKE_LIST = NewListOf(ANY_STR_LIKE)
+
 	_ = []Indexable{
 		(*String)(nil), (*Array)(nil), (*List)(nil), (*Tuple)(nil), (*RuneSlice)(nil), (*ByteSlice)(nil), (*Object)(nil), (*IntRange)(nil),
 		(*AnyStringLike)(nil), (*AnyIndexable)(nil),
