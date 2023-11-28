@@ -4,6 +4,7 @@ import (
 	// ====================== INOX IMPORTS ============================
 	"github.com/inoxlang/inox/internal/config"
 	"github.com/inoxlang/inox/internal/core"
+	_ "github.com/inoxlang/inox/internal/globals"
 	metricsperf "github.com/inoxlang/inox/internal/metrics-perf"
 
 	"github.com/inoxlang/inox/internal/inoxd"
