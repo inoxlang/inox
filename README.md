@@ -285,7 +285,7 @@ It's impossible for applications running inside its filesystem to access an arbi
 ```mermaid
 graph LR
 
-subgraph InoxBinary(Inox Binary)
+subgraph InoxBinary[Inox Binary]
   Runtime1 --> MetaFS(Meta Filesystem)
   Runtime2 --> InMemFS(In-Memory Filesystem)
   Runtime3 --> OsFS(OS Filesystem)
