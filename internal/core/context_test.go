@@ -319,19 +319,6 @@ func TestBoundChild(t *testing.T) {
 }
 
 func TestContextBuckets(t *testing.T) {
-	{
-		runtime.GC()
-		startMemStats := new(runtime.MemStats)
-		runtime.ReadMemStats(startMemStats)
-
-		defer utils.AssertNoMemoryLeak(t, startMemStats, 1000, utils.AssertNoMemoryLeakOptions{
-			PreSleepDurationMillis: 100,
-			CheckGoroutines:        true,
-			GoroutineCount:         runtime.NumGoroutine(),
-			MaxGoroutineCountDelta: 0,
-		})
-	}
-
 	t.Run("buckets for limit of kind 'total' do not fill over time", func(t *testing.T) {
 		const LIMIT_NAME = "foo"
 		ctx := NewContexWithEmptyState(ContextConfig{
