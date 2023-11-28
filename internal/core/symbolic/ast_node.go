@@ -42,6 +42,7 @@ func (n *AstNode) Test(v Value, state RecTestCallState) bool {
 func (n *AstNode) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if n.Node == nil {
 		w.WriteName("ast-node")
+		return
 	}
 
 	w.WriteNameF("ast-node(%T)", n.Node)
