@@ -21,6 +21,7 @@ import (
 	"github.com/inoxlang/inox/internal/globals/http_ns"
 	"github.com/inoxlang/inox/internal/globals/inox_ns"
 	"github.com/inoxlang/inox/internal/globals/inoxlsp_ns"
+	"github.com/inoxlang/inox/internal/globals/log_ns"
 	"github.com/inoxlang/inox/internal/globals/strmanip_ns"
 	"github.com/inoxlang/inox/internal/help"
 
@@ -176,6 +177,7 @@ func NewDefaultGlobalState(ctx *core.Context, conf core.DefaultGlobalStateConfig
 		globalnames.STRMANIP_NS: strmanip_ns.NewStrManipNnamespace(),
 		globalnames.RSA_NS:      newRSANamespace(),
 		globalnames.INSECURE_NS: newInsecure(),
+		globalnames.LOG_NS:      log_ns.NewLogNamespace(),
 
 		globalnames.LS_FN: core.WrapGoFunction(fs_ns.ListFiles),
 
@@ -243,7 +245,6 @@ func NewDefaultGlobalState(ctx *core.Context, conf core.DefaultGlobalStateConfig
 		globalnames.SLEEP_FN: core.ValOf(core.Sleep),
 
 		// printing
-		globalnames.LOG_FN:    core.ValOf(_log),
 		globalnames.PRINT_FN:  core.ValOf(_print),
 		globalnames.FPRINT_FN: core.ValOf(_fprint),
 		globalnames.FMT_FN:    core.ValOf(core.Fmt),

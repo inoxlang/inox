@@ -17,6 +17,7 @@ const (
 	STRMANIP_NS = "strmanip"
 	RSA_NS      = "rsa"
 	INSECURE_NS = "insecure"
+	LOG_NS      = "log"
 
 	LS_FN = "ls"
 
@@ -82,10 +83,10 @@ const (
 	SLEEP_FN = "sleep"
 
 	// printing
-	LOG_FN           = "log"
-	PRINT_FN         = "print"
-	FPRINT_FN        = "fprint"
-	FMT_FN           = "fmt"
+	LOG_FN    = "log"
+	PRINT_FN  = "print"
+	FPRINT_FN = "fprint"
+	FMT_FN    = "fmt"
 
 	// bytes & string
 	MKBYTES_FN       = "mkbytes"

@@ -30,27 +30,6 @@ func _get_current_tx(ctx *core.Context) *core.Transaction {
 	return ctx.GetTx()
 }
 
-func _log(ctx *core.Context, args ...core.Value) {
-	buff := &bytes.Buffer{}
-	w := bufio.NewWriterSize(buff, BUFF_WRITER_SIZE)
-
-	for i, e := range args {
-		if i != 0 {
-			buff.WriteRune(' ')
-		}
-
-		err := core.PrettyPrint(e, w, config.DEFAULT_LOG_PRINT_CONFIG.WithContext(ctx), 0, 0)
-		if err != nil {
-			panic(err)
-		}
-	}
-
-	buff.WriteRune('\n')
-	s := utils.StripANSISequences(buff.String())
-
-	ctx.GetClosestState().Logger.Print(s)
-}
-
 func __fprint(ctx *core.Context, out io.Writer, args ...core.Value) {
 	buff := &bytes.Buffer{}
 	w := bufio.NewWriterSize(buff, BUFF_WRITER_SIZE)

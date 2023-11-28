@@ -40,7 +40,6 @@ func init() {
 			return symbolic.ANY
 		},
 
-		_log, func(ctx *symbolic.Context, arg ...symbolic.Value) {},
 		_print, func(ctx *symbolic.Context, arg ...symbolic.Value) {},
 		_fprint, func(ctx *symbolic.Context, out symbolic.Writable, arg ...symbolic.Value) {},
 		_Error, func(ctx *symbolic.Context, s *symbolic.String, args ...symbolic.Serializable) *symbolic.Error {
