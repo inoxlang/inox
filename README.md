@@ -778,7 +778,7 @@ cancel_exec()
 
 - clone this repository
 - `cd` into the directory
-- run `go build cmd/inox/inox.go`
+- run `go build ./cmd/inox`
 
 ## Early Sponsors
 
