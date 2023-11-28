@@ -171,6 +171,25 @@ encoding:
   - topic: unhex
     text: the unhex function decodes a byte sequence from hexadecimal.
 
+conversion:
+  title: Conversion
+  elements:
+  - topic: tostr
+    text: > 
+      The tostr function converts its argument to a string. Only the following types
+      are supported: bool, int, str, byte-slice, rune-slice, path, host, url.
+
+  - topic: torune
+    text: The torune function converts an integral value to a rune.
+
+  - topic: tobyte
+    text: The tobyte function converts an integer to a byte.
+
+  - topic: tofloat
+    text: The tofloat function converts an integer to a float.
+
+  - topic: toint
+    text: The toint function converts a float or byte to an integer. An error is thrown if precision has been lost.
 
 html:
   namespace: true

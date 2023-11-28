@@ -8,6 +8,7 @@
  - [Errors](#errors)
  - [Browser Automation](#browser-automation)
  - [Data Containers](#data-containers)
+ - [Conversion](#conversion)
  - [Cryptography](#cryptography)
  - [DNS](#dns)
  - [Encodings](#encodings)
@@ -199,6 +200,24 @@ the Thread function creates a thread from an iterable.
 ```inox
 Thread([{message: "hello", author-id: "5958"}])
 ```
+
+## Conversion
+
+### tostr
+
+The tostr function converts its argument to a string. Only the following types are supported: bool, int, str, byte-slice, rune-slice, path, host, url.
+### torune
+
+The torune function converts an integral value to a rune.
+### tobyte
+
+The tobyte function converts an integer to a byte.
+### tofloat
+
+The tofloat function converts an integer to a float.
+### toint
+
+The toint function converts a float or byte to an integer. An error is thrown if precision has been lost.
 
 ## Cryptography
 
@@ -622,7 +641,7 @@ http.get https://example.com/
 ```
 ### http.read
 
-The http.read function behaves exactly like the read function but only works on HTTP resources. The type of content is determined by looking at the Content-Type header. You can specify a content type by adding a mimetype value such as mime"json".
+The http.read function behaves exactly like the read function but only works on HTTP resources. By default the type of content is determined by looking at the Content-Type header. You can specify a content type by adding a mimetype value such as mime"json".
 
 **examples**
 

@@ -32,6 +32,20 @@ func registerHelp() {
 		globalnames.HEX_FN:   encodeHex,
 		globalnames.UNHEX_FN: decodeHex,
 
+		// conversion
+		globalnames.TOSTR_FN:   _tostr,
+		globalnames.TORUNE_FN:  _torune,
+		globalnames.TOBYTE_FN:  _tobyte,
+		globalnames.TOFLOAT_FN: _tofloat,
+		globalnames.TOINT_FN:   _toint,
+		// globalnames.TORSTREAM_FN:  _torstream,
+		// globalnames.TOJSON_FN:     core.ToJSON,
+		// globalnames.TOPJSON_FN:    core.ToPrettyJSON,
+		// globalnames.REPR_FN:       _repr,
+		// globalnames.PARSE_REPR_FN: _parse_repr,
+		// globalnames.PARSE_FN:      _parse,
+		// globalnames.SPLIT_FN:      _split,
+
 		//others
 		globalnames.ERROR_FN: _Error,
 	})
