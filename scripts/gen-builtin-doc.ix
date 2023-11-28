@@ -94,7 +94,7 @@ for i, group_name in group_names {
     title = (group.?title ?? group_name)
     fragment = strmanip.lowercase(replace!(" ", "-", title)) 
 
-    builtin = `{{builtin}} - [{{title}}](#{{fragment}})\n`
+    builtin = `${builtin} - [${title}](#${fragment})\n`
 }
 
 # topics
@@ -134,7 +134,7 @@ output = `
 
 # Built-in
 
-{{builtin}}
+${builtin}
 `
 
 if fs.exists(OUTPUT_FILE) {

@@ -11110,7 +11110,7 @@ func TestSymbolicEval(t *testing.T) {
 			n, state := MakeTestStateAndChunk(replace(`
 				pattern sql = %str( %|.*| )
 				unsanitized_id = "5"
-				return %sql|SELECT * FROM users WHERE id = {{int:$unsanitized_id}}|
+				return %sql|SELECT * FROM users WHERE id = ${int:$unsanitized_id}|
 			`))
 
 			templateLit := n.Statements[2].(*parse.ReturnStatement).Expr
@@ -11127,7 +11127,7 @@ func TestSymbolicEval(t *testing.T) {
 			n, state := MakeTestStateAndChunk(replace(`
 				pnamespace sql. = {stmt: %str( %|.*| )}
 				unsanitized_id = "5"
-				return %sql.stmt|SELECT * FROM users WHERE id = {{int:$unsanitized_id}}|
+				return %sql.stmt|SELECT * FROM users WHERE id = ${int:$unsanitized_id}|
 			`))
 
 			templateLit := n.Statements[2].(*parse.ReturnStatement).Expr.(*parse.StringTemplateLiteral)
@@ -11147,7 +11147,7 @@ func TestSymbolicEval(t *testing.T) {
 					int: %str( '0'..'9'+ )
 				}
 				unsanitized_id = {}
-				return %sql.stmt|SELECT * FROM users WHERE id = {{int:$unsanitized_id}}|
+				return %sql.stmt|SELECT * FROM users WHERE id = ${int:$unsanitized_id}|
 			`))
 
 			templateLit := n.Statements[2].(*parse.ReturnStatement).Expr.(*parse.StringTemplateLiteral)
@@ -11163,7 +11163,7 @@ func TestSymbolicEval(t *testing.T) {
 		t.Run("no pattern, leading interpolation", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(replace(`
 				s = "1"
-				return |{{s}}2|
+				return |${s}2|
 			`))
 
 			res, err := symbolicEval(n, state)
@@ -11175,7 +11175,7 @@ func TestSymbolicEval(t *testing.T) {
 		t.Run("no pattern, trailing interpolation", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(replace(`
 				s = "2"
-				return |int{{s}}|
+				return |int${s}|
 			`))
 
 			res, err := symbolicEval(n, state)
@@ -11191,7 +11191,7 @@ func TestSymbolicEval(t *testing.T) {
 					elem = concat elem "b"
 				}
 				# at this point elem is a %string | %string-concatenation
-				return [elem,` + "`x{{elem}}`" + `]
+				return [elem,` + "`x${elem}`" + `]
 			`)
 
 			state.setGlobal("g", ANY_BOOL, GlobalConst)

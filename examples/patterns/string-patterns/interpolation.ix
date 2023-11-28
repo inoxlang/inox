@@ -6,6 +6,6 @@ manifest {}
 
 #  # at runtime unsanitized_id will be matched against %sql.int.
 #  # if it does not match the program will panic.
-#  stmt = %sql.query`SELECT * FROM users WHERE id = {{int:unsanitized_id}}`
+#  stmt = %sql.query`SELECT * FROM users WHERE id = ${int:unsanitized_id}`
 
 #  print(stmt)

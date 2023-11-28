@@ -337,10 +337,10 @@ concat #[1] #[2]
 ### Regular Strings
 
 ```
-`Hello {{name}}`
+`Hello ${name}`
 
 `Hello ! 
-I am {{name}}`
+I am ${name}`
 ```
 
 ### Checked Strings
@@ -360,7 +360,7 @@ pnamespace math. = {
 one = "1"
 two = "2"
 
-checked_string = %math.expr`{{int:one}}+{{int:two}}`
+checked_string = %math.expr`${int:one}+${int:two}`
 ```
 
 ### URL Expressions
@@ -499,7 +499,7 @@ Function expression properties can access the current object using `self`.
 object = {
     name: "foo"
     print: fn(){
-        print(`hello I am {{self.name}}`)
+        print(`hello I am ${self.name}`)
     }
 }
 

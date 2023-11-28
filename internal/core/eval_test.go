@@ -10312,7 +10312,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					int: %str( '0'..'9'+ )
 				}
 				unsanitized_id = "5"
-				return %sql.stmt|SELECT * FROM users WHERE id = {{int:$unsanitized_id}}|
+				return %sql.stmt|SELECT * FROM users WHERE id = ${int:$unsanitized_id}|
 			`)
 
 			state := NewGlobalState(NewDefaultTestContext())
@@ -10329,7 +10329,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		t.Run("valid interpolation with conversion", func(t *testing.T) {
 			code := replace(`
-				return %ns.any_str|integer = {{int_str.from:5}}|
+				return %ns.any_str|integer = ${int_str.from:5}|
 			`)
 
 			state := NewGlobalState(NewDefaultTestContext())
@@ -10357,7 +10357,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					int: %str( '0'..'9'+ )
 				}
 				unsanitized_id = "e5"
-				return %sql.stmt|SELECT * FROM users WHERE id = {{int:$unsanitized_id}}|
+				return %sql.stmt|SELECT * FROM users WHERE id = ${int:$unsanitized_id}|
 			`)
 
 			state := NewGlobalState(NewDefaultTestContext())
@@ -10375,7 +10375,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					int: %str( '0'..'9'+ )
 				}
 				unsanitized_id = "5"
-				return %sql.stmt|SELECT * FROM users WHERE id = {{int:$unsanitized_id}}|
+				return %sql.stmt|SELECT * FROM users WHERE id = ${int:$unsanitized_id}|
 			`)
 
 			state := NewGlobalState(NewDefaultTestContext())
@@ -10389,7 +10389,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("no pattern, leading interpolation", func(t *testing.T) {
 			code := replace(`
 				s = "1"
-				return |{{s}}2|
+				return |${s}2|
 			`)
 
 			state := NewGlobalState(NewDefaultTestContext())
@@ -10403,7 +10403,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("no pattern, trailing interpolation", func(t *testing.T) {
 			code := replace(`
 				s = "2"
-				return |1{{s}}|
+				return |1${s}|
 			`)
 
 			state := NewGlobalState(NewDefaultTestContext())
@@ -10417,7 +10417,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("no pattern, interpolation & escaped n (\\n)", func(t *testing.T) {
 			code := replace(`
 				s = "1"
-				return |{{s}}\n2|
+				return |${s}\n2|
 			`)
 
 			state := NewGlobalState(NewDefaultTestContext())
@@ -10429,7 +10429,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		})
 
 		t.Run("no pattern, interpolation & linefeed", func(t *testing.T) {
-			code := replace("s = \"1\"; return |{{s}}\n2|")
+			code := replace("s = \"1\"; return |${s}\n2|")
 
 			state := NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()

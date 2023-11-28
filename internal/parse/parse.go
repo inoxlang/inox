@@ -4463,8 +4463,8 @@ func (p *parser) parseStringTemplateLiteralOrMultilineStringLiteral(pattern Node
 	for p.i < p.len && (p.s[p.i] != '`' || utils.CountPrevBackslashes(p.s, p.i)%2 == 1) {
 
 		//interpolation
-		if p.s[p.i] == '{' && p.s[p.i-1] == '{' {
-			p.tokens = append(p.tokens, Token{Type: STR_INTERP_OPENING_BRACKETS, Span: NodeSpan{p.i - 1, p.i + 1}})
+		if p.s[p.i] == '{' && p.s[p.i-1] == '$' {
+			p.tokens = append(p.tokens, Token{Type: STR_INTERP_OPENING, Span: NodeSpan{p.i - 1, p.i + 1}})
 
 			// add previous slice
 			raw := string(p.s[sliceStart : p.i-1])
@@ -4482,9 +4482,9 @@ func (p *parser) parseStringTemplateLiteralOrMultilineStringLiteral(pattern Node
 			inInterpolation = true
 			p.i++
 			interpolationStart = p.i
-		} else if inInterpolation && p.s[p.i] == '}' && p.s[p.i-1] == '}' { //end of interpolation
-			p.tokens = append(p.tokens, Token{Type: STR_INTERP_CLOSING_BRACKETS, Span: NodeSpan{p.i - 1, p.i + 1}})
-			interpolationExclEnd := p.i - 1
+		} else if inInterpolation && p.s[p.i] == '}' { //end of interpolation
+			p.tokens = append(p.tokens, Token{Type: STR_INTERP_CLOSING_BRACKET, Span: NodeSpan{p.i, p.i + 1}})
+			interpolationExclEnd := p.i
 			inInterpolation = false
 			p.i++
 			sliceStart = p.i
