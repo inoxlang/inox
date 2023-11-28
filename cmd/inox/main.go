@@ -54,6 +54,7 @@ import (
 
 	// ====================== THIRD PARTY ============================
 
+	"github.com/posener/complete/v2/install"
 	"github.com/rs/zerolog"
 )
 
@@ -66,12 +67,13 @@ const (
 	BROWSER_DOWNLOAD_TIMEOUT             = 300 * time.Second
 	TEMP_DIR_CLEANUP_TIMEOUT             = time.Second / 2
 
-	LINE_SEP = "\n-----------------------------------------"
+	COMMAND_NAME = "inox"
+	LINE_SEP     = "\n-----------------------------------------"
 )
 
 func main() {
 	//handle completions
-	cmd.Complete("inox")
+	cmd.Complete(COMMAND_NAME)
 
 	debug.SetMaxStack(MAX_STACK_SIZE)
 
@@ -136,6 +138,22 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 	switch mainSubCommand {
 	case "help", "--help", "-h":
 		fmt.Fprint(outW, INOX_CMD_HELP)
+		return
+	case "install-completions":
+		err := install.Install(COMMAND_NAME)
+		if err != nil {
+			fmt.Fprintln(errW, err)
+		} else {
+			fmt.Fprintln(outW, "installed")
+		}
+		return
+	case "uninstall-completions":
+		err := install.Uninstall(COMMAND_NAME)
+		if err != nil {
+			fmt.Fprintln(errW, err)
+		} else {
+			fmt.Fprintln(outW, "uninstalled")
+		}
 		return
 	case "run":
 		//read and check arguments

@@ -14,21 +14,31 @@ import (
 )
 
 var (
-	CLI_SUBCOMMANDS = []string{"add-service", "remove-service", "run", "check", "shell", "eval", "e" /*"lsp",*/, "project-server", "help"}
-	SUBCOMMANDS     = append(slices.Clone(CLI_SUBCOMMANDS), inoxd.DAEMON_SUBCMD, inoxprocess.CONTROLLED_SUBCMD, cloudproxy.CLOUD_PROXY_SUBCMD_NAME)
-
-	CLI_SUBCOMMAND_DESCRIPTIONS = map[string]string{
-		"add-service":    "[root] add the 'inox' unit (systemd) and create the " + inoxd.INOXD_USERNAME + " user",
-		"remove-service": "[root] stop inoxd and remove the 'inox' unit (systemd)",
-		"run":            "run a script",
-		"check":          "check a script",
-		"shell":          "start the shell",
-		"eval":           "evaluate a single statement",
-		"e":              "alias for eval",
-		//"lsp":            "start the language server (LSP)",
-		"project-server": "start the project server (LSP + custom methods)",
-		"help":           "show the general help or command-specific help",
+	CLI_SUBCOMMANDS = []string{
+		"add-service", "remove-service", //root
+		"run", "check", "shell", "eval", "e" /*"lsp",*/, "project-server", "help",
+		"install-completions", "uninstall-completions",
 	}
+	SUBCOMMANDS = append(slices.Clone(CLI_SUBCOMMANDS), inoxd.DAEMON_SUBCMD, inoxprocess.CONTROLLED_SUBCMD, cloudproxy.CLOUD_PROXY_SUBCMD_NAME)
+
+	CLI_SUBCOMMAND_DESCRIPTIONS = [][2]string{
+		{"add-service", "[root] add the 'inox' unit (systemd) and create the " + inoxd.INOXD_USERNAME + " user"},
+		{"remove-service", "[root] stop inoxd and remove the 'inox' unit (systemd)"},
+		{"project-server", "start the project server (LSP + custom methods)"},
+
+		{"run", "run a script"},
+		{"check", "check a script"},
+		{"shell", "start the shell"},
+		{"eval", "evaluate a single statement"},
+		{"e", "alias for eval"},
+		//{"lsp",           "start the language server (LSP)"},
+
+		{"install-completions", "install CLI completions by addding the completion command to the detected rc file (supported shells are bash, zsh and fish)"},
+		{"uninstall-completions", "uninstall CLI completions by removing the completion command from the detected rc file"},
+		{"help", "show the general help or command-specific help"},
+	}
+
+	CLI_SUBCOMMAND_DESCRIPTION_MAP = map[string]string{}
 
 	INOX_CMD_HELP = "commands:\n"
 
@@ -87,12 +97,16 @@ var (
 					"config": predict.Set{`'{"port":8305}'`},
 				},
 			},
+			"install-completions":   {},
+			"uninstall-completions": {},
 		},
 	}
 )
 
 func init() {
-	for cmd, desc := range CLI_SUBCOMMAND_DESCRIPTIONS {
+	for _, entry := range CLI_SUBCOMMAND_DESCRIPTIONS {
+		cmd, desc := entry[0], entry[1]
+		CLI_SUBCOMMAND_DESCRIPTION_MAP[cmd] = desc
 		INOX_CMD_HELP += "\t" + cmd + " - " + desc + "\n"
 	}
 	INOX_CMD_HELP += "\nType `inox help <command>` to get command-specific help.\n"
@@ -119,7 +133,7 @@ func showHelp(flags *flag.FlagSet, args []string, out io.Writer) bool {
 	if slices.Contains(args, "-h") || slices.Contains(args, "--help") {
 
 		cmd := flags.Name()
-		if desc, ok := CLI_SUBCOMMAND_DESCRIPTIONS[cmd]; ok {
+		if desc, ok := CLI_SUBCOMMAND_DESCRIPTION_MAP[cmd]; ok {
 			fmt.Fprintln(out, desc)
 		}
 
