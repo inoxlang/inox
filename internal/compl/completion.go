@@ -6,6 +6,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/globalnames"
 	"github.com/inoxlang/inox/internal/permkind"
 
 	"github.com/inoxlang/inox/internal/project_server/lsp/defines"
@@ -25,6 +26,8 @@ type Completion struct {
 
 var (
 	CONTEXT_INDEPENDENT_STMT_STARTING_KEYWORDS = []string{"if", "drop-perms", "for", "assign", "switch", "match", "return", "assert"}
+
+	GLOBALNAMES_WITHOUT_IDENT_CONVERSION_TO_VAR_IN_CMD_LIKE_CALL = []string{globalnames.HELP_FN}
 )
 
 type CompletionSearchArgs struct {
@@ -692,7 +695,10 @@ after_subcommand_completions:
 				detail, _ := core.GetStringifiedSymbolicValue(state.Global.Ctx, varVal, false)
 
 				if isCommandLikeCallArgument {
-					name = "$$" + name
+					ident, ok := callExpr.Callee.(*parse.IdentifierLiteral)
+					if !ok || !slices.Contains(GLOBALNAMES_WITHOUT_IDENT_CONVERSION_TO_VAR_IN_CMD_LIKE_CALL, ident.Name) {
+						name = "$$" + name
+					}
 				}
 
 				completions = append(completions, Completion{
@@ -712,7 +718,10 @@ after_subcommand_completions:
 
 				name := varData.Name
 				if isCommandLikeCallArgument {
-					name = "$$" + name
+					ident, ok := callExpr.Callee.(*parse.IdentifierLiteral)
+					if !ok || !slices.Contains(GLOBALNAMES_WITHOUT_IDENT_CONVERSION_TO_VAR_IN_CMD_LIKE_CALL, ident.Name) {
+						name = "$$" + name
+					}
 				}
 
 				completions = append(completions, Completion{
