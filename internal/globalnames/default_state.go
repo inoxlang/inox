@@ -82,7 +82,6 @@ const (
 	SLEEP_FN = "sleep"
 
 	// printing
-	LOGVALS_FN       = "logvals"
 	LOG_FN           = "log"
 	PRINT_FN         = "print"
 	FPRINT_FN        = "fprint"

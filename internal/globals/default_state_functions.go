@@ -31,16 +31,6 @@ func _get_current_tx(ctx *core.Context) *core.Transaction {
 	return ctx.GetTx()
 }
 
-func _logvals(ctx *core.Context, args ...core.Value) {
-	buff := bytes.NewBuffer(nil)
-	for _, arg := range args {
-		buff.WriteString(fmt.Sprintf("%#v", arg))
-	}
-
-	s := utils.StripANSISequences(buff.String())
-	ctx.GetClosestState().Logger.Print(s)
-}
-
 func _log(ctx *core.Context, args ...core.Value) {
 	buff := &bytes.Buffer{}
 	w := bufio.NewWriterSize(buff, BUFF_WRITER_SIZE)
