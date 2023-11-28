@@ -5128,6 +5128,7 @@ func TestSymbolicEval(t *testing.T) {
 				parameters:              []Value{NewIdentifier("a")},
 				parameterNames:          []string{"arg"},
 				results:                 []Value{ANY_INT},
+				originGoFunction:        goFunc,
 			}, calleeData) {
 				return
 			}
@@ -5199,6 +5200,7 @@ func TestSymbolicEval(t *testing.T) {
 				parameters:              []Value{NewIdentifier("a")},
 				parameterNames:          []string{"arg"},
 				results:                 []Value{ANY_INT},
+				originGoFunction:        goFunc,
 			}, calleeData) {
 				return
 			}
@@ -5241,6 +5243,7 @@ func TestSymbolicEval(t *testing.T) {
 				parameterNames:          []string{"ints"},
 				results:                 []Value{ANY_INT},
 				variadic:                true,
+				originGoFunction:        goFunc,
 			}, calleeData) {
 				return
 			}
@@ -5284,6 +5287,7 @@ func TestSymbolicEval(t *testing.T) {
 				parameterNames:          []string{"ints"},
 				results:                 []Value{ANY_INT},
 				variadic:                true,
+				originGoFunction:        goFunc,
 			}, calleeData) {
 				return
 			}
@@ -5329,6 +5333,7 @@ func TestSymbolicEval(t *testing.T) {
 				parameterNames:          []string{"ints"},
 				results:                 []Value{ANY_INT},
 				variadic:                true,
+				originGoFunction:        goFunc,
 			}, calleeData) {
 				return
 			}

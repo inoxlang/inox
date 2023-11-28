@@ -819,6 +819,8 @@ type Function struct {
 	variadic                bool
 
 	pattern *FunctionPattern
+
+	originGoFunction *GoFunction //can be nil
 }
 
 func NewFunction(
@@ -867,6 +869,10 @@ func (fn *Function) VariadicParamElem() Value {
 		panic(errors.New("function is not variadic"))
 	}
 	return fn.parameters[len(fn.parameters)-1]
+}
+
+func (fn *Function) OriginGoFunction() (*GoFunction, bool) {
+	return fn.originGoFunction, fn.originGoFunction != nil
 }
 
 func (f *Function) Test(v Value, state RecTestCallState) bool {

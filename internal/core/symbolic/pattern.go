@@ -3137,7 +3137,7 @@ func (fn *FunctionPattern) IteratorElementValue() Value {
 }
 
 func (fn *FunctionPattern) SymbolicValue() Value {
-	return &Function{fn.parameters, fn.firstOptionalParamIndex, fn.parameterNames, nil, fn.isVariadic, fn}
+	return &Function{fn.parameters, fn.firstOptionalParamIndex, fn.parameterNames, nil, fn.isVariadic, fn, nil}
 }
 
 func (p *FunctionPattern) StringPattern() (StringPattern, bool) {

@@ -276,6 +276,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 		}
 
 		function := NewFunction(params, paramNames, firstOptionalParamIndex, f.isVariadic, results)
+		function.originGoFunction = f
 
 		//update the symbolic data of the callee with the *Function.
 		state.symbolicData.PushNodeValue(calleeNode, function)
