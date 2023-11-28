@@ -16,6 +16,9 @@ func init() {
 	core.RegisterSymbolicGoFunction(_now, func(ctx *symbolic.Context, args ...symbolic.Value) *symbolic.DateTime {
 		return symbolic.ANY_DATETIME
 	})
+	core.RegisterSymbolicGoFunction(_time_since, func(ctx *symbolic.Context, args ...symbolic.Value) *symbolic.Duration {
+		return symbolic.ANY_DURATION
+	})
 	core.RegisterSymbolicGoFunction(core.Sleep, func(ctx *symbolic.Context, d *symbolic.Duration) {})
 
 }
@@ -45,4 +48,8 @@ func _now(ctx *core.Context, args ...core.Value) core.Value {
 		return core.DateTime(now)
 	}
 	return core.Str(now.Format(format))
+}
+
+func _time_since(ctx *core.Context, d core.DateTime) core.Duration {
+	return core.Duration(time.Since(time.Time(d)))
 }

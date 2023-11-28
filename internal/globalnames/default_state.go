@@ -78,9 +78,10 @@ const (
 	SPLIT_FN      = "split"
 
 	// time
-	AGO_FN   = "ago"
-	NOW_FN   = "now"
-	SLEEP_FN = "sleep"
+	AGO_FN        = "ago"
+	NOW_FN        = "now"
+	TIME_SINCE_FN = "time_since"
+	SLEEP_FN      = "sleep"
 
 	// printing
 	LOG_FN    = "log"

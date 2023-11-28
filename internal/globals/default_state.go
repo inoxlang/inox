@@ -240,9 +240,10 @@ func NewDefaultGlobalState(ctx *core.Context, conf core.DefaultGlobalStateConfig
 		globalnames.SPLIT_FN:      core.ValOf(_split),
 
 		// time
-		globalnames.AGO_FN:   core.ValOf(_ago),
-		globalnames.NOW_FN:   core.ValOf(_now),
-		globalnames.SLEEP_FN: core.ValOf(core.Sleep),
+		globalnames.AGO_FN:        core.ValOf(_ago),
+		globalnames.NOW_FN:        core.ValOf(_now),
+		globalnames.SLEEP_FN:      core.ValOf(core.Sleep),
+		globalnames.TIME_SINCE_FN: core.ValOf(_time_since),
 
 		// printing
 		globalnames.PRINT_FN:  core.ValOf(_print),
