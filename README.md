@@ -1,3 +1,7 @@
+> You can [sponsor me](https://github.com/sponsors/GraphR00t) to help me continue working full-time on Inox.
+
+___
+
 # Inox
 
 <img src="https://avatars.githubusercontent.com/u/122291844?s=200&v=4" alt="a shield"></img>
@@ -278,12 +282,12 @@ You can't, but executing programs compiled to WebAssembly will be soon possible.
 
 In project mode Inox applications run inside a **meta filesystem** that persists data on disk.
 Files in this filesystem are regular files, metadata and directory structure are stored in a single file named `metadata.kv`.
-It's impossible for applications running its filesystem to access an arbitrary file on the disk.
+It's impossible for applications running inside its filesystem to access an arbitrary file on the disk.
 
 ```mermaid
 graph LR
 
-subgraph InoxBinary
+subgraph InoxBinary(Inox Binary)
   Runtime1 --> MetaFS(Meta Filesystem)
   Runtime2 --> InMemFS(In-Memory Filesystem)
   Runtime3 --> OsFS(OS Filesystem)
