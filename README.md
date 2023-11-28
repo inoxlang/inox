@@ -9,14 +9,15 @@ full-stack development.\
 Inox deeply integrates with its built-in database engine, testing engine and
 HTTP server.
 
-_Zero config. Zero boilerplate. Secure by Default._
+_Dead simple config. Zero boilerplate. Secure by Default._
 
 **Main Dev Features**
 
 - [XML Expressions (HTML)](#xml-expressions)
 - [HTTP Server - Filesystem Routing](#http-server---filesystem-routing)
 - [Built-in Database](#built-in-database)
-- [Project and Virtual Filesystem](#project-and-virtual-filesystem)
+- [Project Server (LSP)](#project-server-lsp)
+- [Virtual Filesystems](#virtual-filesystems)
 - [Advanced Testing Engine](#advanced-testing-engine)
 - [Built-in Browser Automation](#built-in-browser-automation)
 
@@ -239,31 +240,71 @@ task2 = Task{name: "1"}
 array = Array(task1, task2)
 ```
 
-### Project and Virtual Filesystem
+### Project Server (LSP)
 
-The Inox binary provides a **project server** that the developer connects to
-with VsCode.\
-It enables the developer to develop, test, deploy & manage secrets, all from
-VsCode.\
-The project server will also provide automatic infrastructure management in the
-near future.
+The Inox binary comes with a **project server** that your IDE connects to.
+This server is a LSP server with additional methods, it enables the developer to develop, debug, test, deploy & manage secrets, all from VsCode.
+
+The project server will also provide automatic infrastructure management in the **near future**.
 
 ```mermaid
-graph TD
-    A(Project Server) <-->|Development| B(VsCode)
-    A -->|Manages| C(Infrastructure)
+graph LR
 
-subgraph A[Project Server]
-  A1(LSP Server) -->|Invocation & Debug| A2(Inox Runtime)
-  A1 --> A3(Project)
+subgraph VSCode
+  VSCodeVFS(Virtual Filesystem)
+end
+
+VSCodeVFS --> ProjImage
+VSCode -->|Invocation & Debug| Runtime(Inox Runtime)
+ProjectServer[Project Server]
+
+subgraph ProjectServer
+  Runtime
+  ProjImage(Project Image)
+end
+
+ProjectServer -->|Manages| Infrastructure
+ProjectServer -->|Get/Set| Secrets
+```
+
+In project mode Inox applications are executed inside a **virtual filesystem** (container) for better
+security & reproducibility. Note that this virtual filesystem only exists
+in-process, there is no FUSE filesystem and Docker is not used.
+
+**How can I execute binaries if the filesystem only exists inside a process ?**\
+You can't, but executing programs compiled to WebAssembly will be soon possible.
+
+### Virtual Filesystems
+
+In project mode Inox applications run inside a **meta filesystem** that persists data on disk.
+Files in this filesystem are regular files, metadata and directory structure are stored in a single file named `metadata.kv`.
+It's impossible for applications running its filesystem to access an arbitrary file on the disk.
+
+```mermaid
+graph LR
+
+subgraph InoxBinary
+  Runtime1 --> MetaFS(Meta Filesystem)
+  Runtime2 --> InMemFS(In-Memory Filesystem)
+  Runtime3 --> OsFS(OS Filesystem)
+end
+
+MetaFS -.-> MetadataKV
+MetaFS -.-> DFile1
+MetaFS -.-> DFile2
+OsFS -.-> Disk
+
+
+subgraph Disk
+
+  subgraph SingleFolder[Single Folder]
+    MetadataKV("metadata.kv")
+    DFile1("File 01HG3BE...")
+    DFile2("File 01HFHVY...")
+  end
 end
 ```
 
-_[Link to the Inox Runtime Architecture](./internal/core/README.md#inox-runtime-architecture)_
-
-An Inox project lives in a **virtual filesystem** (container) for better
-security & reproducibility. Note that this virtual filesystem only exists
-in-process, there is no FUSE filesystem and Docker is not used.
 
 ### Advanced Testing Engine
 
@@ -282,7 +323,8 @@ snapshot = fs.new_snapshot{
 }
 
 testsuite ({
-    # a filesystem will be created from the snapshot for each nested suite and test case.
+    # a filesystem will be created from the snapshot 
+    # for each nested suite and test case.
     fs: snapshot
 }) {
 
@@ -499,7 +541,7 @@ Let's take an example, here is an Inox object:
 ```
 {
   non_sensitive: 1, 
-  x: example@mail.com,  # email address type
+  x: EmailAddress"example@mail.com"
   age: 30, 
   passwordHash: "x"
 }
