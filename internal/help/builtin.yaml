@@ -224,6 +224,23 @@ conversion:
     - code: 'split!("first line\nsecond line", "\n")'
       explanation: 'returns ["first line", "second line"]'
 
+
+time:
+  title: Time
+  elements:
+  - topic: ago
+    text: The ago function returns the current datetime minus the provided duration.
+    examples:
+    - code: 'ago(1h)'
+
+  - topic: now
+    text: The now function returns the current datetime.
+
+  - topic: sleep
+    text: The sleep function pauses the execution for the given duration.
+    examples:
+    - code: 'sleep(1s)'
+
 html:
   namespace: true
   title: HTML

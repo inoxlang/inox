@@ -43,8 +43,13 @@ func registerHelp() {
 		globalnames.TOPJSON_FN:    core.ToPrettyJSON,
 		globalnames.REPR_FN:       _repr,
 		globalnames.PARSE_REPR_FN: _parse_repr,
-		// globalnames.PARSE_FN:      _parse,
-		// globalnames.SPLIT_FN:      _split,
+		globalnames.PARSE_FN:      _parse,
+		globalnames.SPLIT_FN:      _split,
+
+		//time
+		globalnames.AGO_FN:   _ago,
+		globalnames.NOW_FN:   _now,
+		globalnames.SLEEP_FN: core.Sleep,
 
 		//others
 		globalnames.ERROR_FN: _Error,

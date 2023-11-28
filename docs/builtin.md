@@ -19,6 +19,7 @@
  - [rand](#rand)
  - [Resource Manipulation](#resource-manipulation)
  - [TCP](#tcp)
+ - [Time](#time)
 ## Errors
 
 ### Error
@@ -218,6 +219,45 @@ The tofloat function converts an integer to a float.
 ### toint
 
 The toint function converts a float or byte to an integer. An error is thrown if precision has been lost.
+### torstream
+
+The torstream function creates a readable stream from a value. If the value is readable (string, byte-slice, ...) a byte stream is returned. If the value is indexable a stream containing the elements is returned.
+### tojson
+
+The tojson function converts a value to JSON (string).
+### topjson
+
+The topjson function converts a value to formatted JSON (string).
+### torepr
+
+The torepr function converts a value to its IXON representation (Inox Object Notation).
+### parse_repr
+
+The parse_repr function parses an IXON string and returns the unmarshalled value.
+### parse
+
+The parse function parses a string based on the specified pattern.
+
+**examples**
+
+```inox
+parse!("1", %int)
+```
+### split
+
+The split function slices a string into all substrings separated by sep. If a pattern is given as a second argument each substring is parsed based on it.
+
+**examples**
+
+```inox
+split!("a,b", ",")
+```
+```inox
+split!("1,2", ",", %int)
+```
+```inox
+split!("first line\nsecond line", "\n")
+```
 
 ## Cryptography
 
@@ -896,5 +936,29 @@ print tostr(conn.read!())
 conn.close()
 
 
+```
+
+## Time
+
+### ago
+
+The ago function returns the current datetime minus the provided duration.
+
+**examples**
+
+```inox
+ago(1h)
+```
+### now
+
+The now function returns the current datetime.
+### sleep
+
+The sleep function pauses the execution for the given duration.
+
+**examples**
+
+```inox
+sleep(1s)
 ```
 
