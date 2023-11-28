@@ -149,6 +149,17 @@ func (s *String) Concretize(ctx ConcreteContext) any {
 	return extData.ConcreteValueFactories.CreateString(s.value)
 }
 
+func (s *String) HasValue() bool {
+	return s.IsConcretizable()
+}
+
+func (s *String) Value() string {
+	if !s.IsConcretizable() {
+		panic(ErrNotConcretizable)
+	}
+	return s.value
+}
+
 func (s *String) Static() Pattern {
 	return _ANY_STR_TYPE_PATTERN
 }

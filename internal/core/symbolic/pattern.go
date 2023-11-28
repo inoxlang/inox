@@ -2401,6 +2401,21 @@ func NewUnionPattern(cases []Pattern, disjoint bool) (*UnionPattern, error) {
 	return &UnionPattern{cases: cases, disjoint: disjoint}, nil
 }
 
+func NewDisjointStringUnionPattern(cases ...string) (*UnionPattern, error) {
+	patterns := make([]Pattern, len(cases))
+	for i, v := range cases {
+		for j, other := range cases {
+			if i != j && v == other {
+				return nil, fmt.Errorf("duplicate case %q", v)
+			}
+		}
+
+		patterns[i] = NewExactStringPattern(NewString(v))
+	}
+
+	return NewUnionPattern(patterns, true)
+}
+
 func flattenUnionPatternCases(cases []Pattern, disjoint bool, depth int) (results []Pattern, _ error) {
 	if depth > MAX_UNION_PATTERN_FLATTENING_DEPTH {
 		return nil, errors.New("maximum flattening depth exceeded")

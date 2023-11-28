@@ -216,6 +216,10 @@ func (ctx *Context) AddSymbolicGoFunctionError(msg string) {
 	ctx.associatedState.addSymbolicGoFunctionError(msg)
 }
 
+func (ctx *Context) AddSymbolicGoFunctionErrorf(fmtS string, args ...any) {
+	ctx.associatedState.addSymbolicGoFunctionError(fmt.Sprintf(fmtS, args...))
+}
+
 func (ctx *Context) AddSymbolicGoFunctionWarning(msg string) {
 	ctx.associatedState.addSymbolicGoFunctionWarning(msg)
 }

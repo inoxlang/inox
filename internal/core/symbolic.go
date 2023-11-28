@@ -908,6 +908,11 @@ func (p *TypePattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symb
 	if r, ok := encountered[ptr]; ok {
 		return r, nil
 	}
+
+	return p.ToSymbolicVal(), nil
+}
+
+func (p *TypePattern) ToSymbolicVal() symbolic.Pattern {
 	for _, patt := range DEFAULT_NAMED_PATTERNS {
 		switch patt.(type) {
 		case *TypePattern:
@@ -917,7 +922,7 @@ func (p *TypePattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symb
 					p.SymbolicCallImpl,
 					p.symbolicStringPattern,
 					p,
-				), nil
+				)
 			}
 		}
 	}
@@ -931,7 +936,7 @@ func (p *TypePattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symb
 						p.SymbolicCallImpl,
 						p.symbolicStringPattern,
 						p,
-					), nil
+					)
 				}
 			}
 		}
@@ -945,11 +950,11 @@ func (p *TypePattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symb
 					p.SymbolicCallImpl,
 					p.symbolicStringPattern,
 					p,
-				), nil
+				)
 			}
 		}
 	}
-	return symbolic.ANY_PATTERN, nil
+	return symbolic.ANY_PATTERN
 }
 
 func (p NamedSegmentPathPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {

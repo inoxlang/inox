@@ -35,6 +35,15 @@ func NewMultivalue(values ...Value) *Multivalue {
 	return &Multivalue{values: values}
 }
 
+func NewStringMultivalue(strings ...string) *Multivalue {
+	values := make([]Value, len(strings))
+	for i, s := range strings {
+		values[i] = NewString(s)
+	}
+
+	return NewMultivalue(values...)
+}
+
 func (mv *Multivalue) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
