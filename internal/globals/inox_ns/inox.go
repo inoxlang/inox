@@ -1,6 +1,7 @@
 package inox_ns
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
@@ -52,6 +53,9 @@ func init() {
 		_parse_in_memory_module, func(ctx *symbolic.Context, name, code *symbolic.String) (*symbolic.Module, *symbolic.Error) {
 			return symbolic.ANY_MODULE, nil
 		},
+		_print_source, func(ctx *symbolic.Context, n *symbolic.AstNode) symbolic.StringLike {
+			return symbolic.ANY_STR_LIKE
+		},
 		_prepare_local_script, func(ctx *symbolic.Context, p *symbolic.Path) (*symbolic.Module, *symbolic.GlobalState, *symbolic.Record, *symbolic.Error) {
 			return symbolic.ANY_MODULE, symbolic.ANY_GLOBAL_STATE, SYMB_PREPARATION_ERRORS_RECORD, nil
 		},
@@ -66,6 +70,7 @@ func NewInoxNamespace() *core.Namespace {
 		"parse_chunk":            core.WrapGoFunction(_parse_chunk),
 		"parse_expr":             core.WrapGoFunction(_parse_expr),
 		"parse_local_script":     core.WrapGoFunction(_parse_local_script),
+		"print_source":           core.WrapGoFunction(_print_source),
 		"parse_in_memory_module": core.WrapGoFunction(_parse_in_memory_module),
 		"prepare_local_script":   core.WrapGoFunction(_prepare_local_script),
 		"run_local_script":       core.WrapGoFunction(_run_local_script),
@@ -291,4 +296,13 @@ func GetCheckData(fpath string, compilationCtx *core.Context, out io.Writer) map
 	}
 
 	return data
+}
+
+func _print_source(ctx *core.Context, arg core.AstNode) core.Str {
+	buf := bytes.Buffer{}
+	_, err := parse.Print(arg.Node, arg.Chunk().Node, &buf, parse.PrintConfig{TrimStart: true})
+	if err != nil {
+		panic(err)
+	}
+	return core.Str(buf.String())
 }

@@ -243,11 +243,10 @@ func NewDefaultGlobalState(ctx *core.Context, conf core.DefaultGlobalStateConfig
 		globalnames.SLEEP_FN: core.ValOf(core.Sleep),
 
 		// printing
-		globalnames.LOG_FN:           core.ValOf(_log),
-		globalnames.PRINT_FN:         core.ValOf(_print),
-		globalnames.FPRINT_FN:        core.ValOf(_fprint),
-		globalnames.STRINGIFY_AST_FN: core.ValOf(_stringify_ast),
-		globalnames.FMT_FN:           core.ValOf(core.Fmt),
+		globalnames.LOG_FN:    core.ValOf(_log),
+		globalnames.PRINT_FN:  core.ValOf(_print),
+		globalnames.FPRINT_FN: core.ValOf(_fprint),
+		globalnames.FMT_FN:    core.ValOf(core.Fmt),
 
 		// bytes & string
 		globalnames.MKBYTES_FN:       core.ValOf(_mkbytes),

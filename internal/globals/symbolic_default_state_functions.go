@@ -43,7 +43,6 @@ func init() {
 		_log, func(ctx *symbolic.Context, arg ...symbolic.Value) {},
 		_print, func(ctx *symbolic.Context, arg ...symbolic.Value) {},
 		_fprint, func(ctx *symbolic.Context, out symbolic.Writable, arg ...symbolic.Value) {},
-		_stringify_ast, func(ctx *symbolic.Context, arg *symbolic.AstNode) {},
 		_Error, func(ctx *symbolic.Context, s *symbolic.String, args ...symbolic.Serializable) *symbolic.Error {
 			if len(args) > 1 {
 				ctx.AddSymbolicGoFunctionError("at most two arguments were expected")

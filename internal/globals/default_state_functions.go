@@ -19,7 +19,6 @@ import (
 
 	"github.com/inoxlang/inox/internal/globals/inoxsh_ns"
 
-	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/permkind"
 
 	"github.com/inoxlang/inox/internal/utils"
@@ -80,15 +79,6 @@ func _print(ctx *core.Context, args ...core.Value) {
 
 func _fprint(ctx *core.Context, out core.Writable, args ...core.Value) {
 	__fprint(ctx, out.Writer(), args...)
-}
-
-func _stringify_ast(ctx *core.Context, arg core.AstNode) core.Str {
-	buf := bytes.Buffer{}
-	_, err := parse.Print(arg.Node, arg.Chunk().Node, &buf, parse.PrintConfig{TrimStart: true})
-	if err != nil {
-		panic(err)
-	}
-	return core.Str(buf.String())
 }
 
 func _Error(ctx *core.Context, text core.Str, args ...core.Serializable) core.Error {

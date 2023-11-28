@@ -85,7 +85,6 @@ const (
 	LOG_FN           = "log"
 	PRINT_FN         = "print"
 	FPRINT_FN        = "fprint"
-	STRINGIFY_AST_FN = "stringify_ast"
 	FMT_FN           = "fmt"
 
 	// bytes & string
