@@ -19,7 +19,7 @@
 - Cluster management using only the **inox** binary (small scale only)
 - WebAssembly support using https://github.com/tetratelabs/wazero.
 - Internal plugin system or hooks (Inox | WASM)
-- Support at least another init system
+- Support other init systems in addition to Systemd
 
 ## Planned Improvements
 
@@ -39,7 +39,6 @@
 - Windows support
 - Integration with Docker or Kubernetes
 - Integration with Terraform or Pulumi
-- Integration with external monitoring systems (e.g. Prometheus)
 
 ## Goals
 
