@@ -55,7 +55,6 @@ func init() {
 				if core.IsIndexKey(k) {
 					hasImplicitProp = true
 				}
-
 				return nil
 			})
 

@@ -236,10 +236,23 @@ time:
   - topic: now
     text: The now function returns the current datetime.
 
+  - topic: time_since
+    text: The time_since function returns the time elapsed (duration) since the provided datetime. 
+
   - topic: sleep
     text: The sleep function pauses the execution for the given duration.
     examples:
     - code: 'sleep(1s)'
+
+printing:
+  title: Printing
+  elements:
+  - topic: print
+    text: "the print function prints its arguments with a space ' ' separation. A '\\n' character is added at the end."
+
+  - topic: fprint
+    text: "the fprint function writes to the provided writer its arguments with a space ' ' separation. A '\\n' character is added at the end."
+
 
 html:
   namespace: true

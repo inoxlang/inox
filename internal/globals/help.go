@@ -51,6 +51,10 @@ func registerHelp() {
 		globalnames.NOW_FN:   _now,
 		globalnames.SLEEP_FN: core.Sleep,
 
+		//printing
+		globalnames.PRINT_FN:  _print,
+		globalnames.FPRINT_FN: _fprint,
+
 		//others
 		globalnames.ERROR_FN: _Error,
 	})
