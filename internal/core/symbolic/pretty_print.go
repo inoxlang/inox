@@ -11,19 +11,29 @@ import (
 )
 
 const (
-	prettyprint_BUFF_WRITER_SIZE = 100
+	PRETTY_PRINT_BUFF_WRITER_SIZE = 100
+)
+
+var (
+	STRINGIFY_PRETTY_PRINT_CONFIG = &pprint.PrettyPrintConfig{
+		MaxDepth: 7,
+		Colorize: false,
+		Compact:  true,
+	}
 )
 
 // Stringify calls PrettyPrint on the passed value
 func Stringify(v Value) string {
 	buff := &bytes.Buffer{}
-	w := bufio.NewWriterSize(buff, prettyprint_BUFF_WRITER_SIZE)
+	w := bufio.NewWriterSize(buff, PRETTY_PRINT_BUFF_WRITER_SIZE)
 
-	err := PrettyPrint(v, w, &pprint.PrettyPrintConfig{
-		MaxDepth: 7,
-		Colorize: false,
-		Compact:  true,
-	}, 0, 0)
+	_, err := PrettyPrint(PrettyPrintArgs{
+		Value:             v,
+		Writer:            w,
+		Config:            STRINGIFY_PRETTY_PRINT_CONFIG,
+		Depth:             0,
+		ParentIndentCount: 0,
+	})
 
 	if err != nil {
 		panic(err)
@@ -33,10 +43,42 @@ func Stringify(v Value) string {
 	return buff.String()
 }
 
-func PrettyPrint(v Value, w io.Writer, config *pprint.PrettyPrintConfig, depth, parentIndentCount int) (err error) {
+func StringifyGetRegions(v Value) (string, pprint.Regions) {
+	buff := &bytes.Buffer{}
+	w := bufio.NewWriterSize(buff, PRETTY_PRINT_BUFF_WRITER_SIZE)
+
+	regions, err := PrettyPrint(PrettyPrintArgs{
+		Value:             v,
+		Writer:            w,
+		Config:            STRINGIFY_PRETTY_PRINT_CONFIG,
+		Depth:             0,
+		ParentIndentCount: 0,
+		EnableRegions:     true,
+	})
+
+	if err != nil {
+		panic(err)
+	}
+
+	w.Flush()
+	return buff.String(), regions
+}
+
+type PrettyPrintArgs struct {
+	Value                    Value
+	Writer                   io.Writer
+	Config                   *pprint.PrettyPrintConfig
+	Depth, ParentIndentCount int
+	EnableRegions            bool //if false the returned region list is empty
+}
+
+func PrettyPrint(args PrettyPrintArgs) (regions pprint.Regions, err error) {
+	v := args.Value
+	w := args.Writer
+
 	buffered, ok := w.(*bufio.Writer)
 	if !ok {
-		buffered = bufio.NewWriterSize(w, prettyprint_BUFF_WRITER_SIZE)
+		buffered = bufio.NewWriterSize(w, PRETTY_PRINT_BUFF_WRITER_SIZE)
 	}
 
 	defer func() {
@@ -50,10 +92,18 @@ func PrettyPrint(v Value, w io.Writer, config *pprint.PrettyPrintConfig, depth, 
 		}
 	}()
 
-	prettyPrintWriter := pprint.NewWriter(buffered)
-	prettyPrintWriter.Depth = depth
-	prettyPrintWriter.ParentIndentCount = parentIndentCount
+	prettyPrintWriter := pprint.NewWriter(buffered, args.EnableRegions)
+	prettyPrintWriter.Depth = args.Depth
+	prettyPrintWriter.ParentIndentCount = args.ParentIndentCount
 
-	v.PrettyPrint(prettyPrintWriter, config)
-	return buffered.Flush()
+	v.PrettyPrint(prettyPrintWriter, args.Config)
+	err = buffered.Flush()
+	if err != nil {
+		return nil, err
+	}
+
+	if args.EnableRegions {
+		return prettyPrintWriter.Regions(), nil
+	}
+	return nil, nil
 }

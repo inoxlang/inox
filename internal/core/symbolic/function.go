@@ -210,13 +210,17 @@ func (fn *InoxFunction) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.P
 		if i != 0 {
 			w.WriteString(", ")
 		}
+		paramRegion := w.EnterRegion(pprint.ParamNameTypeRegion)
+
 		w.WriteString(fn.parameterNames[i])
 		w.WriteString(" ")
 
 		if fn.IsVariadic() && i == len(fn.parameters)-1 {
 			w.WriteString("...")
 		}
-		param.PrettyPrint(w.ZeroDepthIndent(), config)
+		param.PrettyPrint(w.ZeroDepthIndent().EnterPattern(), config)
+
+		w.LeaveRegion(paramRegion)
 	}
 
 	w.WriteString(") ")
@@ -360,6 +364,12 @@ func (fn *GoFunction) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.Pre
 		if i != start {
 			w.WriteString(", ")
 		}
+		w.WriteAnsiReset()
+
+		//write parameter's name and type.
+
+		paramRegion := w.EnterRegion(pprint.ParamNameTypeRegion)
+
 		w.WriteString("_ ")
 
 		reflectParamType := fnValType.In(i)
@@ -388,6 +398,7 @@ func (fn *GoFunction) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.Pre
 			}
 		}
 
+		w.LeaveRegion(paramRegion)
 	}
 
 	w.WriteString(") ")
@@ -980,6 +991,7 @@ func (f *Function) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.Pretty
 		if i != 0 {
 			w.WriteString(", ")
 		}
+		paramRegion := w.EnterRegion(pprint.ParamNameTypeRegion)
 
 		isVariadicParam := f.variadic && i == len(f.parameters)-1
 		if isVariadicParam {
@@ -996,6 +1008,7 @@ func (f *Function) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.Pretty
 		}
 
 		param.PrettyPrint(w.ZeroDepthIndent().EnterPattern(), config)
+		w.LeaveRegion(paramRegion)
 	}
 
 	w.WriteString(") ")

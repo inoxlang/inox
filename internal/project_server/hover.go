@@ -88,12 +88,24 @@ func getHoverContent(fpath string, line, column int32, handlingCtx *core.Context
 
 	//try getting the hovered node's value
 	{
-		utils.PanicIfErr(symbolic.PrettyPrint(mostSpecificVal, w, HOVER_PRETTY_PRINT_CONFIG, 0, 0))
+		utils.Must(symbolic.PrettyPrint(symbolic.PrettyPrintArgs{
+			Value:             mostSpecificVal,
+			Writer:            w,
+			Config:            HOVER_PRETTY_PRINT_CONFIG,
+			Depth:             0,
+			ParentIndentCount: 0,
+		}))
 		var ok bool
 		lessSpecificVal, ok = state.SymbolicData.GetLessSpecificNodeValue(hoveredNode)
 		if ok {
 			w.Write(utils.StringAsBytes("\n\n# less specific\n"))
-			utils.PanicIfErr(symbolic.PrettyPrint(lessSpecificVal, w, HOVER_PRETTY_PRINT_CONFIG, 0, 0))
+			utils.Must(symbolic.PrettyPrint(symbolic.PrettyPrintArgs{
+				Value:             lessSpecificVal,
+				Writer:            w,
+				Config:            HOVER_PRETTY_PRINT_CONFIG,
+				Depth:             0,
+				ParentIndentCount: 0,
+			}))
 		}
 
 		w.Flush()
