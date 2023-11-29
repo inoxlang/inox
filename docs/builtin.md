@@ -25,7 +25,7 @@
 
 ### Error
 
-the Error function creates an error from the provided string and an optional data argument.
+The Error function creates an error from the provided string and an optional data argument.
 
 **examples**
 
@@ -60,7 +60,7 @@ chrome.Handle!()
 ```
 ### chrome.Handle/nav
 
-the nav method makes the browser navigate to a page. All HTTP requests made by the browser are checked against the permission system, so make sure to add the necessary permissions.
+The nav method makes the browser navigate to a page. All HTTP requests made by the browser are checked against the permission system, so make sure to add the necessary permissions.
 
 **examples**
 
@@ -69,7 +69,7 @@ handle.nav https://go.dev/
 ```
 ### chrome.Handle/wait_visible
 
-the wait_visible method waits until the DOM element matching the selector is visible.
+The wait_visible method waits until the DOM element matching the selector is visible.
 
 **examples**
 
@@ -78,7 +78,7 @@ handle.wait_visible "div.title"
 ```
 ### chrome.Handle/click
 
-the click method makes the browser click on the first DOM element matching the selector.
+The click method makes the browser click on the first DOM element matching the selector.
 
 **examples**
 
@@ -87,7 +87,7 @@ handle.click "button.menu-item"
 ```
 ### chrome.Handle/screenshot
 
-the screenshot method takes a screenshot of the first DOM element matching the selector.
+The screenshot method takes a screenshot of the first DOM element matching the selector.
 
 **examples**
 
@@ -96,7 +96,7 @@ png_bytes = handle.screenshot!("#content")
 ```
 ### chrome.Handle/screenshot_page
 
-the screenshot_page method takes a screenshot of the entire browser viewport.
+The screenshot_page method takes a screenshot of the entire browser viewport.
 
 **examples**
 
@@ -105,7 +105,7 @@ png_bytes = handle.screenshot_page!()
 ```
 ### chrome.Handle/html_node
 
-the screenshot method gets the HTML of the first DOM element matching the selector, the result is %html.node not a string.
+The screenshot method gets the HTML of the first DOM element matching the selector, the result is %html.node not a string.
 
 **examples**
 
@@ -120,10 +120,10 @@ this method should be called when you are finished using the Chrome handle.
 
 ### Graph
 
-the Graph function creates a directed Graph.
+The Graph function creates a directed Graph.
 ### Tree
 
-the Tree function creates a tree from a udata value.
+The Tree function creates a tree from a udata value.
 
 **examples**
 
@@ -144,7 +144,7 @@ Stack([1])
 ```
 ### Queue
 
-the Queue function creates a queue from an iterable.
+The Queue function creates a queue from an iterable.
 
 **examples**
 
@@ -156,7 +156,7 @@ Queue([1])
 ```
 ### Set
 
-the Set function creates a set from an iterable, by default only representable (serializable) values are allowed. A configuration is accepted as a second argument.
+The Set function creates a set from an iterable, by default only representable (serializable) values are allowed. A configuration is accepted as a second argument.
 
 **examples**
 
@@ -174,7 +174,7 @@ Set([{name: "A"}, {name: "B"}], {uniqueness: .name})
 ```
 ### Map
 
-the Map function creates a map from a flat list of entries.
+The Map function creates a map from a flat list of entries.
 
 **examples**
 
@@ -183,7 +183,7 @@ Map(["key1", 10, "key2", 20]
 ```
 ### Ranking
 
-the Ranking function creates a ranking from a flat list of entries. An entry is composed of a value and a floating-point score.  The value with the highest score has the first rank (0), values with the same score have the same rank.
+The Ranking function creates a ranking from a flat list of entries. An entry is composed of a value and a floating-point score.  The value with the highest score has the first rank (0), values with the same score have the same rank.
 
 **examples**
 
@@ -195,7 +195,7 @@ Ranking(["best player", 10.0, "other player", 10.0])
 ```
 ### Thread
 
-the Thread function creates a thread from an iterable.
+The Thread function creates a thread from an iterable.
 
 **examples**
 
@@ -264,7 +264,7 @@ split!("first line\nsecond line", "\n")
 
 ### hash_password
 
-the hash_password function hashes a password string using the Argon2id algorithm, it returns a string containing: the hash, a random salt and parameters. You can find the implementation in this file: https://github.com/inoxlang/inox/blob/master/internal/globals/crypto.go.
+The hash_password function hashes a password string using the Argon2id algorithm, it returns a string containing: the hash, a random salt and parameters. You can find the implementation in this file: https://github.com/inoxlang/inox/blob/master/internal/globals/crypto.go.
 
 **examples**
 
@@ -275,7 +275,7 @@ $argon2id$v=19$m=65536,t=1,p=1$xDLqbPJUrCURnSiVYuy/Qg$OhEJCObGgJ2EbcH0a7oE2sfD1+
 ```
 ### check_password
 
-the check_password verifies that a password matches a Argon2id hash.
+The check_password verifies that a password matches a Argon2id hash.
 
 **examples**
 
@@ -286,7 +286,7 @@ true
 ```
 ### sha256
 
-the sha256 function hashes a string or a byte sequence with the SHA-256 algorithm.
+The sha256 function hashes a string or a byte sequence with the SHA-256 algorithm.
 
 **examples**
 
@@ -297,7 +297,7 @@ sha256("string")
 ```
 ### sha384
 
-the sha384 function hashes a string or a byte sequence with the SHA-384 algorithm.
+The sha384 function hashes a string or a byte sequence with the SHA-384 algorithm.
 
 **examples**
 
@@ -308,7 +308,7 @@ sha384("string")
 ```
 ### sha512
 
-the sha512 function hashes a string or a byte sequence with the SHA-512 algorithm.
+The sha512 function hashes a string or a byte sequence with the SHA-512 algorithm.
 
 **examples**
 
@@ -319,10 +319,10 @@ sha512("string")
 ```
 ### rsa
 
-the rsa namespace contains functions to generate a key pair & encrypt/decrypt using OAEP.
+The rsa namespace contains functions to generate a key pair & encrypt/decrypt using OAEP.
 #### rsa.gen_key
 
-the rsa.gen_key function generates a public/private key pair.
+The rsa.gen_key function generates a public/private key pair.
 
 **examples**
 
@@ -333,7 +333,7 @@ rsa.gen_key()
 ```
 #### rsa.encrypt_oaep
 
-the rsa.encrypt_oaep function encrypts a string or byte sequence using a public key.
+The rsa.encrypt_oaep function encrypts a string or byte sequence using a public key.
 
 **examples**
 
@@ -342,7 +342,7 @@ rsa.encrypt_oaep("message", public_key)
 ```
 #### rsa.decrypt_oaep
 
-the rsa.decrypt_oaep function decrypts a string or byte sequence using a private key.
+The rsa.decrypt_oaep function decrypts a string or byte sequence using a private key.
 
 **examples**
 
@@ -354,7 +354,7 @@ rsa.encrypt_oaep(bytes, private_key)
 
 ### dns.resolve
 
-the dns.resolve function retrieves DNS records of the given type.
+The dns.resolve function retrieves DNS records of the given type.
 
 **examples**
 
@@ -366,22 +366,22 @@ dns.resolve!("github.com" "A")
 
 ### b64
 
-the b64 function encodes a string or byte sequence to Base64.
+The b64 function encodes a string or byte sequence to Base64.
 ### db64
 
-the db64 function decodes a byte sequence from Base64.
+The db64 function decodes a byte sequence from Base64.
 ### hex
 
-the hex function encodes a string or byte sequence to hexadecimal.
+The hex function encodes a string or byte sequence to hexadecimal.
 ### unhex
 
-the unhex function decodes a byte sequence from hexadecimal.
+The unhex function decodes a byte sequence from hexadecimal.
 
 ## Filesystem
 
 ### fs
 
-the fs namespace contains functions to interact with the filesystem.
+The fs namespace contains functions to interact with the filesystem.
 ### fs.mkfile
 
 The fs.mkfile function takes a file path as first argument. It accepts a --readonly switch that causes  the created file to not have the write permission ; and a %readable argument that is the content of the file to create.
@@ -396,7 +396,7 @@ fs.mkfile ./file.txt "content"
 ```
 ### fs.mkdir
 
-the fs.mkdir function takes a directory path as first argument & and optional dictionary literal as a second argument. The second argument recursively describes the content of the directory.
+The fs.mkdir function takes a directory path as first argument & and optional dictionary literal as a second argument. The second argument recursively describes the content of the directory.
 
 **examples**
 
@@ -424,7 +424,7 @@ The fs.read function behaves exactly like the read function but only works on fi
 The fs.read function behaves exactly like the read function but only works on files. The content is parsed by default, to disable parsing use --raw after the path: a byte slice will be returned instead. The type of content is determined by looking at the extension.
 ### fs.ls
 
-the fs.ls function takes a directory path or a path pattern as first argument and returns a list of entries, if no argument is provided the ./ directory is used.
+The fs.ls function takes a directory path or a path pattern as first argument and returns a list of entries, if no argument is provided the ./ directory is used.
 
 **examples**
 
@@ -439,10 +439,10 @@ fs.ls %./*.json
 ```
 ### fs.rename
 
-the fs.rename (fs.mv) function renames a file, it takes two path arguments.  An error is returned if a file already exists at the target path.
+The fs.rename (fs.mv) function renames a file, it takes two path arguments.  An error is returned if a file already exists at the target path.
 ### fs.cp
 
-the fs.cp function copies a file/dir at a destination or a list of files in a destination directory, the copy is recursive by default. As you can see this behaviour is not exactly the same as the cp command on Unix. An error is returned if a file or a directory already exists at one of the target paths (recursive).
+The fs.cp function copies a file/dir at a destination or a list of files in a destination directory, the copy is recursive by default. As you can see this behaviour is not exactly the same as the cp command on Unix. An error is returned if a file or a directory already exists at one of the target paths (recursive).
 
 **examples**
 
@@ -472,7 +472,7 @@ the fs.remove function removes a file or a directory recursively.
 the fs.glob function takes a globbing path pattern argument (%./a/... will not work) and returns a list of paths matching this pattern.
 ### fs.find
 
-the fs.find function takes a directory path argument followed by one or more globbing path patterns,  it returns a directory entry for each file matching at least one of the pattern.
+The fs.find function takes a directory path argument followed by one or more globbing path patterns,  it returns a directory entry for each file matching at least one of the pattern.
 
 **examples**
 
@@ -481,7 +481,7 @@ fs.find ./ %./**/*.json
 ```
 ### fs.get_tree_data
 
-the fs.get_tree_data function takes a directory path argument and returns a %udata value  thats contains the file hiearachy of the passed directory.
+The fs.get_tree_data function takes a directory path argument and returns a %udata value  thats contains the file hiearachy of the passed directory.
 
 **examples**
 
@@ -493,7 +493,7 @@ fs.get_tree_data(./)
 
 ### map
 
-the map function creates a list by applying an operation on each element of an iterable.
+The map function creates a list by applying an operation on each element of an iterable.
 
 **examples**
 
@@ -524,7 +524,7 @@ map([0, 1, 2], @($ + 1))
 ```
 ### filter
 
-the filter function creates a list by iterating over an iterable and keeping elements that pass a condition.
+The filter function creates a list by iterating over an iterable and keeping elements that pass a condition.
 
 **examples**
 
@@ -540,7 +540,7 @@ filter([0, 1, 2], @($ >= 1))
 ```
 ### get_at_most
 
-the get_at_most function gets at most the specified number of elements from an iterable.
+The get_at_most function gets at most the specified number of elements from an iterable.
 
 **examples**
 
@@ -561,7 +561,7 @@ get_at_most(2, ["a", "b", "c"])
 ```
 ### some
 
-the some function returns true if and only if at least one element of an iterable passes a condition. For an empty iterable the result is always true.
+The some function returns true if and only if at least one element of an iterable passes a condition. For an empty iterable the result is always true.
 
 **examples**
 
@@ -577,7 +577,7 @@ false
 ```
 ### all
 
-the all function returns true if and only if all elements of an iterable pass a condition. For an empty iterable the result is always true.
+The all function returns true if and only if all elements of an iterable pass a condition. For an empty iterable the result is always true.
 
 **examples**
 
@@ -593,7 +593,7 @@ true
 ```
 ### none
 
-the none function returns true if and only if no elements of an iterable pass a condition. For an empty iterable the result is always true.
+The none function returns true if and only if no elements of an iterable pass a condition. For an empty iterable the result is always true.
 
 **examples**
 
@@ -609,7 +609,7 @@ true
 ```
 ### sort
 
-the sort function creates a new list by sorting a list of strings or integers, the second argument is an identifier describing the order. For strings the available orderings are #lex (lexicographic) and #revlex (same but reversed). For integers the available orderings are #asc (ascending) and #desc (descending).
+The sort function creates a new list by sorting a list of strings or integers, the second argument is an identifier describing the order. For strings the available orderings are #lex (lexicographic) and #revlex (same but reversed). For integers the available orderings are #asc (ascending) and #desc (descending).
 
 **examples**
 
@@ -625,7 +625,7 @@ sort(["b", "a"], #lex)
 ```
 ### find
 
-the find function searches for items matching a pattern at a given location (a string, an iterable, a directory).
+The find function searches for items matching a pattern at a given location (a string, an iterable, a directory).
 
 **examples**
 
@@ -646,34 +646,34 @@ find %int ['1', 2, "3"]
 ```
 ### idt
 
-the idt (identity) function takes a single argument and returns it.
+The idt (identity) function takes a single argument and returns it.
 
 ## HTML
 
 ### html
 
-the html namespace contains functions to create & manipulate HTML nodes.
+The html namespace contains functions to create & manipulate HTML nodes.
 ### html.h1
 
-the html.h1 function creates a h1 HTML element.
+The html.h1 function creates a h1 HTML element.
 ### html.h2
 
-the html.h2 function creates a h2 HTML element.
+The html.h2 function creates a h2 HTML element.
 ### html.h3
 
-the html.h3 function creates a h3 HTML element.
+The html.h3 function creates a h3 HTML element.
 ### html.h4
 
-the html.h4 function creates a h4 HTML element.
+The html.h4 function creates a h4 HTML element.
 
 ## HTTP
 
 ### http
 
-the http namespace contains functions to read, modify & delete HTTP resources. Most functions accept the --insecure option to ignore certificate errors & the --client option to specify an HTTP client to use.
+The http namespace contains functions to read, modify & delete HTTP resources. Most functions accept the --insecure option to ignore certificate errors & the --client option to specify an HTTP client to use.
 ### http.get
 
-the http.get function takes a URL (or host) as first argument and returns an HTTP response. The --insecure options causes the function to ignore certificate errors.
+The http.get function takes a URL (or host) as first argument and returns an HTTP response. The --insecure options causes the function to ignore certificate errors.
 
 **examples**
 
@@ -694,7 +694,7 @@ http.read https://jsonplaceholder.typicode.com/posts/1
 the http.exists takes a URL (or host) as argument, it sends a HEAD request and returns true if the status code is less than 400.
 ### http.post
 
-the http.post sends a POST request to the specified URL (or host) with the given body value, the body value can be any %readable or serializable object/list. A %mimetype value can be specified to change the value of the Content-Type header.
+The http.post sends a POST request to the specified URL (or host) with the given body value, the body value can be any %readable or serializable object/list. A %mimetype value can be specified to change the value of the Content-Type header.
 
 **examples**
 
@@ -712,13 +712,13 @@ http.post https://example.com/posts mime"json" '{"title":"hello"}'
 ```
 ### http.patch
 
-the http.patch function works like http.post but sends an HTTP PATCH request instead.
+The http.patch function works like http.post but sends an HTTP PATCH request instead.
 ### http.delete
 
-the http.delete function sends an HTTP DELETE request to the specified URL.
+The http.delete function sends an HTTP DELETE request to the specified URL.
 ### http.Client
 
-the http.Client function creates an HTTP client that can be used in most http.* functions with the --client flag.
+The http.Client function creates an HTTP client that can be used in most http.* functions with the --client flag.
 
 **examples**
 
@@ -740,7 +740,7 @@ http.Client{
 ```
 ### http.Server
 
-the http.Server function creates a listening HTTP server with a given host & handler. The handler can be an function or a Mapping that routes requests. When you send a request to a server listening to https://localhost add the --insecure flag to ignore certificate errors.
+The http.Server function creates a listening HTTP server with a given host & handler. The handler can be an function or a Mapping that routes requests. When you send a request to a server listening to https://localhost add the --insecure flag to ignore certificate errors.
 
 **examples**
 
@@ -781,7 +781,7 @@ server = http.Server!(https://localhost:8080, handle)
 ```
 ### http.FileServer
 
-the http.FileServer creates an HTTP server that serves static file from a given directory.
+The http.FileServer creates an HTTP server that serves static file from a given directory.
 
 **examples**
 
@@ -822,7 +822,7 @@ the fprint function writes to the provided writer its arguments with a space ' '
 
 ### rand
 
-the rand function generates/picks a random value in a cryptographically secure way. If the argument is a pattern a matching value is returned, if the argument is an indexable an element is picked.
+The rand function generates/picks a random value in a cryptographically secure way. If the argument is a pattern a matching value is returned, if the argument is an indexable an element is picked.
 
 **examples**
 
@@ -933,7 +933,7 @@ delete <url>
 
 ### tcp.connect
 
-the tcp.connect function creates a TCP connection to a given host.
+The tcp.connect function creates a TCP connection to a given host.
 
 **examples**
 

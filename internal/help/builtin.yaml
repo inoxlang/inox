@@ -3,7 +3,7 @@ functional:
   elements:
   - topic: map
     related-topics: [filter, get_at_most, some, all, none]
-    text: the map function creates a list by applying an operation on each element of an iterable
+    text: The map function creates a list by applying an operation on each element of an iterable
     examples:
     - code: 'map([{name: "foo"}], .name)'
       output: '["foo"]'
@@ -18,7 +18,7 @@ functional:
 
   - topic: filter
     related-topics: [map, get_at_most, some, all, none]
-    text: the filter function creates a list by iterating over an iterable and keeping elements that pass a condition
+    text: The filter function creates a list by iterating over an iterable and keeping elements that pass a condition
     examples:
     - code: 'filter(["a", "0", 1], %int)'
       output: '[1]'
@@ -27,7 +27,7 @@ functional:
 
   - topic: get_at_most
     related-topics: [filter, map, some, all, none]
-    text: the get_at_most function gets at most the specified number of elements from an iterable
+    text: The get_at_most function gets at most the specified number of elements from an iterable
     examples:
     - code: 'get_at_most(1, [])'
       output: '[]'
@@ -38,7 +38,7 @@ functional:
 
   - topic: some
     related-topics: [map, filter, all, none]
-    text: the some function returns true if and only if at least one element of an iterable passes a condition. For an empty iterable the result is always true.
+    text: The some function returns true if and only if at least one element of an iterable passes a condition. For an empty iterable the result is always true.
     examples:
     - code: 'some(["a", "0", 1], %int)'
       output: 'true'
@@ -47,7 +47,7 @@ functional:
 
   - topic: all
     related-topics: [map, filter, some, none]
-    text: the all function returns true if and only if all elements of an iterable pass a condition. For an empty iterable the result is always true.
+    text: The all function returns true if and only if all elements of an iterable pass a condition. For an empty iterable the result is always true.
     examples:
     - code: 'all([0, 1, "a"], %int)'
       output: 'false'
@@ -56,7 +56,7 @@ functional:
       
   - topic: none
     related-topics: [map, filter, some, all]
-    text: the none function returns true if and only if no elements of an iterable pass a condition. For an empty iterable the result is always true.
+    text: The none function returns true if and only if no elements of an iterable pass a condition. For an empty iterable the result is always true.
     examples:
     - code: 'none([0, 1, "a"], %int)'
       output: 'false'
@@ -65,7 +65,7 @@ functional:
 
   - topic: sort
     text: >
-      the sort function creates a new list by sorting a list of strings or integers, the second argument is an identifier describing
+      The sort function creates a new list by sorting a list of strings or integers, the second argument is an identifier describing
       the order. For strings the available orderings are #lex (lexicographic) and #revlex (same but reversed). For integers the available
       orderings are #asc (ascending) and #desc (descending).
     examples:
@@ -75,7 +75,7 @@ functional:
       output: '["a", "b"]'
 
   - topic: find
-    text: the find function searches for items matching a pattern at a given location (a string, an iterable, a directory)
+    text: The find function searches for items matching a pattern at a given location (a string, an iterable, a directory)
     examples:
     - code: 'find %`a+` "a-aa-aaa"'
       output: '["a", "aa", "aaa"]'
@@ -85,14 +85,14 @@ functional:
       output: '[2]'
   
   - topic: idt
-    text: the idt (identity) function takes a single argument and returns it.
+    text: The idt (identity) function takes a single argument and returns it.
 
 rand:
   elements:
   - topic: rand
     related-topics: [pseudo_rand]
     text: >
-      the rand function generates/picks a random value in a cryptographically secure way.
+      The rand function generates/picks a random value in a cryptographically secure way.
       If the argument is a pattern a matching value is returned, if the argument is an indexable an element is picked.
     examples:
     - code: 'rand(%int(0..10))'
@@ -107,54 +107,54 @@ crypto:
   elements:
   - topic: hash_password
     text: >
-      the hash_password function hashes a password string using the Argon2id algorithm, it returns a string
+      The hash_password function hashes a password string using the Argon2id algorithm, it returns a string
       containing: the hash, a random salt and parameters. You can find the implementation in this file: https://github.com/inoxlang/inox/blob/master/internal/globals/crypto.go 
     examples:
     - code: 'hash_password("password")'
       output: '$argon2id$v=19$m=65536,t=1,p=1$xDLqbPJUrCURnSiVYuy/Qg$OhEJCObGgJ2EbcH0a7oE2sfD1+5T2BPRs8SRWkreE00'
 
   - topic: check_password
-    text: the check_password verifies that a password matches a Argon2id hash.
+    text: The check_password verifies that a password matches a Argon2id hash.
     related-topics: [hash_password]
     examples:
     - code: 'check_password("password", "$argon2id$v=19$m=65536,t=1,p=1$xDLqbPJUrCURnSiVYuy/Qg$OhEJCObGgJ2EbcH0a7oE2sfD1+5T2BPRs8SRWkreE00")'
       output: 'true'
 
   - topic: sha256
-    text: the sha256 function hashes a string or a byte sequence with the SHA-256 algorithm
+    text: The sha256 function hashes a string or a byte sequence with the SHA-256 algorithm
     examples:
     - code: sha256("string")
       output: '0x[473287f8298dba7163a897908958f7c0eae733e25d2e027992ea2edc9bed2fa8]'
 
   - topic: sha384
-    text: the sha384 function hashes a string or a byte sequence with the SHA-384 algorithm
+    text: The sha384 function hashes a string or a byte sequence with the SHA-384 algorithm
     examples:
     - code: sha384("string")
       output: '0x[36396a7e4de3fa1c2156ad291350adf507d11a8f8be8b124a028c5db40785803ca35a7fc97a6748d85b253babab7953e]'
 
   - topic: sha512
-    text: the sha512 function hashes a string or a byte sequence with the SHA-512 algorithm
+    text: The sha512 function hashes a string or a byte sequence with the SHA-512 algorithm
     examples:
     - code: sha512("string")
       output: '0x[2757cb3cafc39af451abb2697be79b4ab61d63d74d85b0418629de8c26811b529f3f3780d0150063ff55a2beee74c4ec102a2a2731a1f1f7f10d473ad18a6a87]'
 
   - topic: rsa
     namespace: true
-    text: the rsa namespace contains functions to generate a key pair & encrypt/decrypt using OAEP.
+    text: The rsa namespace contains functions to generate a key pair & encrypt/decrypt using OAEP.
     subtopics:
     - topic: rsa.gen_key
-      text: the rsa.gen_key function generates a public/private key pair
+      text: The rsa.gen_key function generates a public/private key pair
       examples:
       - code: 'rsa.gen_key()'
         output: '#{public: "<key>", private: "<secret key>"}'
 
     - topic: rsa.encrypt_oaep
-      text: the rsa.encrypt_oaep function encrypts a string or byte sequence using a public key
+      text: The rsa.encrypt_oaep function encrypts a string or byte sequence using a public key
       examples:
       - code: 'rsa.encrypt_oaep("message", public_key)'
 
     - topic: rsa.decrypt_oaep
-      text: the rsa.decrypt_oaep function decrypts a string or byte sequence using a private key
+      text: The rsa.decrypt_oaep function decrypts a string or byte sequence using a private key
       examples:
       - code: 'rsa.encrypt_oaep(bytes, private_key)'
 
@@ -162,14 +162,14 @@ encoding:
   title: Encodings
   elements:
   - topic: b64
-    text: the b64 function encodes a string or byte sequence to Base64.
+    text: The b64 function encodes a string or byte sequence to Base64.
   - topic: db64
-    text: the db64 function decodes a byte sequence from Base64.
+    text: The db64 function decodes a byte sequence from Base64.
 
   - topic: hex
-    text: the hex function encodes a string or byte sequence to hexadecimal.
+    text: The hex function encodes a string or byte sequence to hexadecimal.
   - topic: unhex
-    text: the unhex function decodes a byte sequence from hexadecimal.
+    text: The unhex function decodes a byte sequence from hexadecimal.
 
 conversion:
   title: Conversion
@@ -259,19 +259,19 @@ html:
   title: HTML
   elements:
   - topic: html
-    text: the html namespace contains functions to create & manipulate HTML nodes
+    text: The html namespace contains functions to create & manipulate HTML nodes
 
   - topic: html.h1
-    text: the html.h1 function creates a h1 HTML element
+    text: The html.h1 function creates a h1 HTML element
 
   - topic: html.h2
-    text: the html.h2 function creates a h2 HTML element
+    text: The html.h2 function creates a h2 HTML element
 
   - topic: html.h3
-    text: the html.h3 function creates a h3 HTML element
+    text: The html.h3 function creates a h3 HTML element
 
   - topic: html.h4
-    text: the html.h4 function creates a h4 HTML element
+    text: The html.h4 function creates a h4 HTML element
 
 chrome:
   namespace: true
@@ -301,33 +301,33 @@ chrome:
 
   - topic: chrome.Handle/nav
     text: >
-      the nav method makes the browser navigate to a page. All HTTP requests made by the browser are checked against the permission system,
+      The nav method makes the browser navigate to a page. All HTTP requests made by the browser are checked against the permission system,
       so make sure to add the necessary permissions.
     examples:
     - code: 'handle.nav https://go.dev/'
 
   - topic: chrome.Handle/wait_visible
-    text: the wait_visible method waits until the DOM element matching the selector is visible.
+    text: The wait_visible method waits until the DOM element matching the selector is visible.
     examples:
     - code: 'handle.wait_visible "div.title"'
 
   - topic: chrome.Handle/click
-    text: the click method makes the browser click on the first DOM element matching the selector.
+    text: The click method makes the browser click on the first DOM element matching the selector.
     examples:
     - code: 'handle.click "button.menu-item"'
 
   - topic: chrome.Handle/screenshot
-    text: the screenshot method takes a screenshot of the first DOM element matching the selector.
+    text: The screenshot method takes a screenshot of the first DOM element matching the selector.
     examples:
     - code: 'png_bytes = handle.screenshot!("#content")'
 
   - topic: chrome.Handle/screenshot_page
-    text: the screenshot_page method takes a screenshot of the entire browser viewport.
+    text: The screenshot_page method takes a screenshot of the entire browser viewport.
     examples:
     - code: 'png_bytes = handle.screenshot_page!()'
 
   - topic: chrome.Handle/html_node
-    text: the screenshot method gets the HTML of the first DOM element matching the selector, the result is %html.node not a string.
+    text: The screenshot method gets the HTML of the first DOM element matching the selector, the result is %html.node not a string.
     examples:
     - code: 'png_bytes = handle.screenshot_page!()'
 
@@ -339,11 +339,11 @@ containers:
   elements:
   - topic: Graph
     related-topics: [Tree]
-    text: the Graph function creates a directed Graph
+    text: The Graph function creates a directed Graph
 
   - topic: Tree
     related-topics: [Graph]
-    text: the Tree function creates a tree from a udata value
+    text: The Tree function creates a tree from a udata value
     examples:
     - code: 'Tree(udata "root")'
       explanation: creates a Tree with a single node
@@ -358,7 +358,7 @@ containers:
       explanation: "creates a stack with an element 1"
 
   - topic: Queue
-    text: the Queue function creates a queue from an iterable
+    text: The Queue function creates a queue from an iterable
     examples:
     - code: 'Queue([])'
       explanation: creates an empty queue
@@ -367,7 +367,7 @@ containers:
 
   - topic: Set
     text: >
-      the Set function creates a set from an iterable, by default only representable (serializable) values are allowed.
+      The Set function creates a set from an iterable, by default only representable (serializable) values are allowed.
       A configuration is accepted as a second argument.
 
     examples:
@@ -381,14 +381,14 @@ containers:
       explanation: creates a set of values where the identity is defined by the .name property
 
   - topic: Map
-    text: the Map function creates a map from a flat list of entries
+    text: The Map function creates a map from a flat list of entries
     examples:
     - code: 'Map(["key1", 10, "key2", 20]'
       explanation: creates a Map with the entries "key1" -> 10, "key2" -> 20`
 
   - topic: Ranking
     text: >
-      the Ranking function creates a ranking from a flat list of entries.
+      The Ranking function creates a ranking from a flat list of entries.
       An entry is composed of a value and a floating-point score. 
       The value with the highest score has the first rank (0), values with the same score have the same rank.
     examples:
@@ -398,7 +398,7 @@ containers:
       explanation: 'creates a Ranking with the following ranks: rank(0) -> "best player" & "other player"'
       
   - topic: Thread
-    text: the Thread function creates a thread from an iterable.
+    text: The Thread function creates a thread from an iterable.
     examples:
     - code: 'Thread([{message: "hello", author-id: "5958"}])'
 
@@ -407,7 +407,7 @@ dns:
   title: DNS
   elements:
   - topic: dns.resolve
-    text: the dns.resolve function retrieves DNS records of the given type.
+    text: The dns.resolve function retrieves DNS records of the given type.
     examples:
     - code: 'dns.resolve!("github.com" "A")'
       explanation: retrieves "A" records for github.com
@@ -417,7 +417,7 @@ tcp:
   title: TCP
   elements:
   - topic: tcp.connect
-    text: the tcp.connect function creates a TCP connection to a given host.
+    text: The tcp.connect function creates a TCP connection to a given host.
     examples:
     - code: |
         conn = tcp.connect!(://example.com:80)
@@ -489,7 +489,7 @@ fs:
   title: Filesystem
   elements:
   - topic: fs
-    text: the fs namespace contains functions to interact with the filesystem.
+    text: The fs namespace contains functions to interact with the filesystem.
 
   - topic: fs.mkfile
     text: >
@@ -500,7 +500,7 @@ fs:
     - code: fs.mkfile ./file.txt "content"
 
   - topic: fs.mkdir
-    text: the fs.mkdir function takes a directory path as first argument & and optional dictionary literal as a second argument.
+    text: The fs.mkdir function takes a directory path as first argument & and optional dictionary literal as a second argument.
       The second argument recursively describes the content of the directory.
     examples:
     - code: fs.mkdir ./dir_a/
@@ -530,7 +530,7 @@ fs:
 
   - topic: fs.ls
     text: >
-      the fs.ls function takes a directory path or a path pattern as first argument and returns a list of entries, if no argument is provided
+      The fs.ls function takes a directory path or a path pattern as first argument and returns a list of entries, if no argument is provided
       the ./ directory is used.
     examples:
     - code: 'fs.ls()'
@@ -540,12 +540,12 @@ fs:
   - topic: fs.rename
     alias: fs.mv
     text: >
-      the fs.rename (fs.mv) function renames a file, it takes two path arguments. 
+      The fs.rename (fs.mv) function renames a file, it takes two path arguments. 
       An error is returned if a file already exists at the target path.
 
   - topic: fs.cp
     text: >
-      the fs.cp function copies a file/dir at a destination or a list of files in a destination directory, the copy is recursive by default.
+      The fs.cp function copies a file/dir at a destination or a list of files in a destination directory, the copy is recursive by default.
       As you can see this behaviour is not exactly the same as the cp command on Unix.
       An error is returned if a file or a directory already exists at one of the target paths (recursive).
     examples:
@@ -575,7 +575,7 @@ fs:
 
   - topic: fs.find
     text: >
-      the fs.find function takes a directory path argument followed by one or more globbing path patterns, 
+      The fs.find function takes a directory path argument followed by one or more globbing path patterns, 
       it returns a directory entry for each file matching at least one of the pattern.
 
     examples:
@@ -583,7 +583,7 @@ fs:
 
   - topic: fs.get_tree_data
     text: > 
-      the fs.get_tree_data function takes a directory path argument and returns a %udata value 
+      The fs.get_tree_data function takes a directory path argument and returns a %udata value 
       thats contains the file hiearachy of the passed directory.
     examples:
     - code: fs.get_tree_data(./)
@@ -594,12 +594,12 @@ http:
   elements:
   - topic: http
     text: >
-      the http namespace contains functions to read, modify & delete HTTP resources.
+      The http namespace contains functions to read, modify & delete HTTP resources.
       Most functions accept the --insecure option to ignore certificate errors & the --client option
       to specify an HTTP client to use.
   - topic: http.get
     text: >
-      the http.get function takes a URL (or host) as first argument and returns an HTTP response.
+      The http.get function takes a URL (or host) as first argument and returns an HTTP response.
       The --insecure options causes the function to ignore certificate errors.
     examples:
     - code: 'http.get https://example.com/'
@@ -616,7 +616,7 @@ http:
     text: 'the http.exists takes a URL (or host) as argument, it sends a HEAD request and returns true if the status code is less than 400.'
   - topic: http.post
     text: > 
-      the http.post sends a POST request to the specified URL (or host) with the given body value, the body value can be any %readable or serializable object/list.
+      The http.post sends a POST request to the specified URL (or host) with the given body value, the body value can be any %readable or serializable object/list.
       A %mimetype value can be specified to change the value of the Content-Type header.
     examples:
     - code: http.post https://example.com/posts '{"title":"hello"}'
@@ -626,14 +626,14 @@ http:
 
 
   - topic: http.patch
-    text: the http.patch function works like http.post but sends an HTTP PATCH request instead
+    text: The http.patch function works like http.post but sends an HTTP PATCH request instead
     related-topics: [http.post]
 
   - topic: http.delete
-    text: the http.delete function sends an HTTP DELETE request to the specified URL
+    text: The http.delete function sends an HTTP DELETE request to the specified URL
 
   - topic: http.Client
-    text: the http.Client function creates an HTTP client that can be used in most http.* functions with the --client flag.
+    text: The http.Client function creates an HTTP client that can be used in most http.* functions with the --client flag.
 
     examples:
     - code: 'http.Client{ save-cookies: true }'
@@ -653,7 +653,7 @@ http:
       explanation: add X-API-KEY header to all requests sent to https://example.com
   - topic: http.Server
     text: >
-      the http.Server function creates a listening HTTP server with a given host & handler. The handler can be an function
+      The http.Server function creates a listening HTTP server with a given host & handler. The handler can be an function
       or a Mapping that routes requests. When you send a request to a server listening to https://localhost add the --insecure flag to ignore certificate errors.
 
     examples:
@@ -699,7 +699,7 @@ http:
         and a 404 status for other paths.
 
   - topic: http.FileServer
-    text: the http.FileServer creates an HTTP server that serves static file from a given directory.
+    text: The http.FileServer creates an HTTP server that serves static file from a given directory.
     examples:
     - code: http.FileServer!(https://localhost:8080, ./examples/static/)
       explanation: https://localhost:8080/index.html will return the content of the file ./examples/static/index.html
@@ -723,7 +723,7 @@ Errors:
   namespace: false
   elements:
   - topic: Error
-    text: the Error function creates an error from the provided string and an optional data argument.
+    text: The Error function creates an error from the provided string and an optional data argument.
     examples:
     - code: 'Error("failed to create user")'
     - code: 'Error("failed to create user", {user_id: 100})'
