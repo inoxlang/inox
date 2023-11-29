@@ -994,6 +994,7 @@ func (f *Function) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.Pretty
 			w.WriteString(", ")
 		}
 		paramRegion := w.EnterRegion(pprint.ParamNameTypeRegion)
+		w.WriteString("_ ")
 
 		isVariadicParam := f.variadic && i == len(f.parameters)-1
 		if isVariadicParam {
