@@ -248,11 +248,37 @@ printing:
   title: Printing
   elements:
   - topic: print
-    text: "the print function prints its arguments with a space ' ' separation. A '\\n' character is added at the end."
+    text: "The print function prints its arguments with a space ' ' separation. A '\\n' character is added at the end."
 
   - topic: fprint
-    text: "the fprint function writes to the provided writer its arguments with a space ' ' separation. A '\\n' character is added at the end."
+    text: "The fprint function writes to the provided writer its arguments with a space ' ' separation. A '\\n' character is added at the end."
 
+log:
+  namespace: true
+  title: Logging
+  elements:
+  - topic: log
+    text: The log namespace contains functions for structured logging.
+  - topic: log.add
+    text: >
+      The log.add function logs an event that is created from the provided record. The log level is specified with the 'lvl' property,
+      it defaults to 'debug'. The message can be either provided by setting the 'msg' property or by adding properties with implicit keys:
+      each implicit-key property will be a single part of the message. ⚠️ It is recommended to use the default level (debug) for high frequency events.
+    examples:
+    - code: |
+        # add a log event of level 'debug' with the message 'user created'
+        log.add #{"user created"}
+    - code: |
+        # add a log event of level 'debug' with the message 'user created'
+        log.add #{msg: "user created"}
+    - code: |
+        # add a log event of level 'info' with the message 'user created'
+        log.add #{lvl: "info", msg: "user created"}
+    - code: |
+        id = 100
+        # add a log event of level 'debug' with the message 'user 100 created'
+        # and a field `id: 100`
+        log.add #{"user", id, "created", id: 100}
 
 html:
   namespace: true

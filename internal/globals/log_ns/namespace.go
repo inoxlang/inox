@@ -8,6 +8,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/config"
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/help"
 	"github.com/rs/zerolog"
 
 	"github.com/inoxlang/inox/internal/core/symbolic"
@@ -62,6 +63,10 @@ func init() {
 				ctx.AddSymbolicGoFunctionErrorf("the %q field should not be present if there are implicit properties", zerolog.MessageFieldName)
 			}
 		},
+	})
+
+	help.RegisterHelpValues(map[string]any{
+		"log.add": _add,
 	})
 }
 

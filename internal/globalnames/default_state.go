@@ -84,7 +84,6 @@ const (
 	SLEEP_FN      = "sleep"
 
 	// printing
-	LOG_FN    = "log"
 	PRINT_FN  = "print"
 	FPRINT_FN = "fprint"
 	FMT_FN    = "fmt"
