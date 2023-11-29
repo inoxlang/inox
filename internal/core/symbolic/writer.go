@@ -82,7 +82,7 @@ func (w *Writer) Prop(name string) Value {
 func (w *Writer) GetGoMethod(name string) (*GoFunction, bool) {
 	switch name {
 	case "write":
-		return &GoFunction{fn: w.write}, true
+		return WrapGoMethod(w.write), true
 	}
 	return nil, false
 }

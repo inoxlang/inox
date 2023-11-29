@@ -36,13 +36,13 @@ func (RingBuffer *RingBuffer) Prop(name string) Value {
 
 func (RingBuffer *RingBuffer) GetGoMethod(name string) (*GoFunction, bool) {
 	switch name {
-	case "read":
-		return WrapGoMethod(func(ctx *Context, s *ByteSlice) (n *Int, err *Error) {
+	case "write":
+		return WrapGoMethod(func(ctx *Context, readable Readable) (*Int, *Error) {
 			return ANY_INT, nil
 		}), true
-	case "write":
-		return WrapGoMethod(func(ctx *Context, readable Readable) (*ByteSlice, *Error) {
-			return &ByteSlice{}, nil
+	case "read":
+		return WrapGoMethod(func(ctx *Context, s *ByteSlice) (n *ByteSlice, err *Error) {
+			return ANY_BYTE_SLICE, nil
 		}), true
 	}
 	return nil, false
