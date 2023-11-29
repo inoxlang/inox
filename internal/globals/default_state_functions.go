@@ -221,7 +221,7 @@ func _len_range(ctx *core.Context, p core.StringPattern) core.IntRange {
 	return p.LengthRange()
 }
 
-func _mkbytes(ctx *core.Context, size core.Int) *core.ByteSlice {
+func _mkbytes(ctx *core.Context, size core.ByteCount) *core.ByteSlice {
 	return &core.ByteSlice{Bytes: make([]byte, size), IsDataMutable: true}
 }
 

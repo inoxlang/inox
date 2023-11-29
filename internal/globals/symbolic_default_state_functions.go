@@ -195,7 +195,7 @@ func init() {
 			return symbolic.ANY_INT_RANGE
 		},
 
-		_mkbytes, func(ctx *symbolic.Context, size *symbolic.Int) *symbolic.ByteSlice {
+		_mkbytes, func(ctx *symbolic.Context, size *symbolic.ByteCount) *symbolic.ByteSlice {
 			return symbolic.ANY_BYTE_SLICE
 		},
 		_Runes, func(ctx *symbolic.Context, arg symbolic.Readable) *symbolic.RuneSlice {
