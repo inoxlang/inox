@@ -523,6 +523,13 @@ name = object.(property_name)
 ⚠️ Accessing properties dynamically may cause security issues, this feature will
 be made more secure in the near future.
 
+### Optional Member Expressions
+
+```
+# if obj has a `name` property the name variable receives the property's value, nil otherwise.
+name = obj.?name
+```
+
 ## Records
 
 <details>
@@ -1061,6 +1068,23 @@ int = g!()
 
 > If you find an error in the documentation or a bug in the runtime, please
 > create an issue.
+
+## Readonly Parameters (WIP)
+
+Putting `readonly` in front of a pattern prevents the mutation of values matching it.
+For now this is only supported for parameter patterns (parameter types). 
+
+```
+fn f(integers readonly []int){
+    # error
+    integers.append(1)
+
+    # error
+    integers[0] = 1
+}
+```
+
+⚠️ This feature is still in development.
 
 # Patterns
 
