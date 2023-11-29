@@ -7,6 +7,7 @@ import (
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/globalnames"
+	"github.com/inoxlang/inox/internal/help"
 	"github.com/inoxlang/inox/internal/permkind"
 
 	"github.com/inoxlang/inox/internal/project_server/lsp/defines"
@@ -724,12 +725,22 @@ after_subcommand_completions:
 					}
 				}
 
-				completions = append(completions, Completion{
+				completion := Completion{
 					ShownString: name,
 					Value:       name,
 					Kind:        defines.CompletionItemKindVariable,
 					LabelDetail: symbolic.Stringify(varData.Value),
-				})
+				}
+
+				symbolicFunc, ok := varData.Value.(*symbolic.GoFunction)
+				if ok {
+					help, ok := help.HelpForSymbolicGoFunc(symbolicFunc, helpMessageConfig)
+					if ok {
+						completion.MarkdownDocumentation = help
+					}
+				}
+
+				completions = append(completions, completion)
 			}
 		}
 	}
@@ -1094,6 +1105,7 @@ func suggestPropertyNames(
 	var propNames []string
 	var propLabelDetails []string
 	var optionalProps []bool
+	var markdownDocumentations []string
 
 	//we get all property names
 	switch v := curr.(type) {
@@ -1102,13 +1114,32 @@ func suggestPropertyNames(
 		propLabelDetails = utils.MapSlice(propNames, func(name string) string {
 			propVal := v.Prop(state.Ctx, name)
 			detail, _ := core.GetStringifiedSymbolicValue(state.Ctx, propVal, false)
+
+			//add markdown documentation if help is found.
+			var markdownDocumentation string
+			goFunc, ok := propVal.(*core.GoFunction)
+			if ok {
+				markdownDocumentation, _ = help.HelpForGoFunc(goFunc, helpMessageConfig)
+			}
+			markdownDocumentations = append(markdownDocumentations, markdownDocumentation)
+
 			return detail
 		})
 	case symbolic.IProps:
 		propNames = symbolic.GetAllPropertyNames(v)
 		propLabelDetails = utils.MapSlice(propNames, func(name string) string {
 			propVal := v.Prop(name)
-			return symbolic.Stringify(propVal)
+			stringified := symbolic.Stringify(propVal)
+
+			//add markdown documentation if help is found.
+			var markdownDocumentation string
+			goFunc, ok := propVal.(*symbolic.GoFunction)
+			if ok {
+				markdownDocumentation, _ = help.HelpForSymbolicGoFunc(goFunc, helpMessageConfig)
+			}
+			markdownDocumentations = append(markdownDocumentations, markdownDocumentation)
+
+			return stringified
 		})
 		optionalProps = utils.MapSlice(propNames, func(name string) bool {
 			return symbolic.IsPropertyOptional(v, name)
@@ -1125,11 +1156,12 @@ func suggestPropertyNames(
 			}
 
 			completions = append(completions, Completion{
-				ShownString:   op + propName,
-				Value:         op + propName,
-				Kind:          defines.CompletionItemKindProperty,
-				LabelDetail:   propLabelDetails[i],
-				ReplacedRange: replacedRange,
+				ShownString:           op + propName,
+				Value:                 op + propName,
+				Kind:                  defines.CompletionItemKindProperty,
+				LabelDetail:           propLabelDetails[i],
+				ReplacedRange:         replacedRange,
+				MarkdownDocumentation: markdownDocumentations[i],
 			})
 		}
 	} else {
@@ -1149,11 +1181,12 @@ func suggestPropertyNames(
 			}
 
 			completions = append(completions, Completion{
-				ShownString:   op + propName,
-				Value:         op + propName,
-				Kind:          defines.CompletionItemKindProperty,
-				LabelDetail:   propLabelDetails[i],
-				ReplacedRange: replacedRange,
+				ShownString:           op + propName,
+				Value:                 op + propName,
+				Kind:                  defines.CompletionItemKindProperty,
+				LabelDetail:           propLabelDetails[i],
+				ReplacedRange:         replacedRange,
+				MarkdownDocumentation: markdownDocumentations[i],
 			})
 		}
 	}

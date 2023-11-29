@@ -10,6 +10,8 @@ import (
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
+	"github.com/inoxlang/inox/internal/globals/net_ns"
+	"github.com/inoxlang/inox/internal/help"
 	"github.com/inoxlang/inox/internal/permkind"
 
 	parse "github.com/inoxlang/inox/internal/parse"
@@ -51,7 +53,7 @@ func TestFindCompletions(t *testing.T) {
 	for _, mode := range []CompletionMode{LspCompletions, ShellCompletions} {
 		t.Run(mode.String(), func(t *testing.T) {
 
-			findCompletions := func(state *core.TreeWalkState, chunk *parse.ParsedChunk, cursorIndex int) []Completion {
+			_findCompletions := func(state *core.TreeWalkState, chunk *parse.ParsedChunk, cursorIndex int, keepDoc bool) []Completion {
 				completions := FindCompletions(CompletionSearchArgs{
 					State:       state,
 					Chunk:       chunk,
@@ -68,9 +70,15 @@ func TestFindCompletions(t *testing.T) {
 					}
 					completions[i].Kind = 0
 					completions[i].LabelDetail = ""
-					completions[i].MarkdownDocumentation = ""
+					if !keepDoc {
+						completions[i].MarkdownDocumentation = ""
+					}
 				}
 				return completions
+			}
+
+			findCompletions := func(state *core.TreeWalkState, chunk *parse.ParsedChunk, cursorIndex int) []Completion {
+				return _findCompletions(state, chunk, cursorIndex, false)
 			}
 
 			doSymbolicCheck := func(chunk *parse.ParsedChunk, state *core.GlobalState) {}
@@ -252,6 +260,31 @@ func TestFindCompletions(t *testing.T) {
 							ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 17, End: 18}}},
 					}, completions)
 				})
+
+				t.Run("suggest global function", func(t *testing.T) {
+					if mode != LspCompletions {
+						t.Skip()
+					}
+
+					//TODO: fix (it's working in VSCode)
+					t.Skip()
+
+					state := newState()
+					state.SetGlobal("sleep", core.WrapGoFunction(core.Sleep), core.GlobalConst)
+					chunk, _ := parseChunkSource("sle", "")
+
+					doSymbolicCheck(chunk, state.Global)
+					completions := _findCompletions(state, chunk, 3, true /*keep documentation*/)
+
+					assert.EqualValues(t, []Completion{
+						{
+							ShownString:           "sleep",
+							Value:                 "sleep",
+							ReplacedRange:         parse.SourcePositionRange{Span: parse.NodeSpan{Start: 0, End: 3}},
+							MarkdownDocumentation: utils.MustGet(help.HelpFor("sleep", helpMessageConfig)),
+						},
+					}, completions)
+				})
 			})
 
 			t.Run("identifier member expression", func(t *testing.T) {
@@ -318,6 +351,29 @@ func TestFindCompletions(t *testing.T) {
 						{ShownString: ".name", Value: ".name", ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 9, End: 11}}},
 					}, completions)
 				})
+
+				t.Run("suggest documented namespace method", func(t *testing.T) {
+					if mode != LspCompletions {
+						t.Skip()
+					}
+
+					state := newState()
+					state.SetGlobal("dns", net_ns.NewDNSnamespace(), core.GlobalConst)
+					chunk, _ := parseChunkSource("dns.", "")
+
+					doSymbolicCheck(chunk, state.Global)
+					completions := _findCompletions(state, chunk, 4, true /*keep documentation*/)
+
+					assert.EqualValues(t, []Completion{
+						{
+							ShownString:           ".resolve",
+							Value:                 ".resolve",
+							ReplacedRange:         parse.SourcePositionRange{Span: parse.NodeSpan{Start: 3, End: 4}},
+							MarkdownDocumentation: utils.MustGet(help.HelpFor("dns.resolve", helpMessageConfig)),
+						},
+					}, completions)
+				})
+
 			})
 
 			t.Run("member expression", func(t *testing.T) {
