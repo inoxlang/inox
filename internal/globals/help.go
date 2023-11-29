@@ -38,6 +38,7 @@ func registerHelp() {
 		globalnames.TOBYTE_FN:     _tobyte,
 		globalnames.TOFLOAT_FN:    _tofloat,
 		globalnames.TOINT_FN:      _toint,
+		globalnames.TOBYTECOUNT:   _tobytecount,
 		globalnames.TORSTREAM_FN:  _torstream,
 		globalnames.TOJSON_FN:     core.ToJSON,
 		globalnames.TOPJSON_FN:    core.ToPrettyJSON,
@@ -54,6 +55,14 @@ func registerHelp() {
 		//printing
 		globalnames.PRINT_FN:  _print,
 		globalnames.FPRINT_FN: _fprint,
+
+		//bytes & runes
+		globalnames.MKBYTES_FN:    _mkbytes,
+		globalnames.RUNES_FN:      _Runes,
+		globalnames.BYTES_FN:      _Bytes,
+		globalnames.IS_SPACE_FN:   _is_space,
+		globalnames.READER_FN:     _Reader,
+		globalnames.RINGBUFFER_FN: core.NewRingBuffer,
 
 		//others
 		globalnames.ERROR_FN: _Error,

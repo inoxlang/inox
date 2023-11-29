@@ -6,6 +6,7 @@
 # Built-in
 
  - [Errors](#errors)
+ - [Bytes & Runes](#bytes-&-runes)
  - [Browser Automation](#browser-automation)
  - [Data Containers](#data-containers)
  - [Conversion](#conversion)
@@ -16,6 +17,7 @@
  - [Functional Programming](#functional-programming)
  - [HTML](#html)
  - [HTTP](#http)
+ - [Structured Logging](#structured-logging)
  - [Printing](#printing)
  - [rand](#rand)
  - [Resource Manipulation](#resource-manipulation)
@@ -35,6 +37,27 @@ Error("failed to create user")
 ```inox
 Error("failed to create user", {user_id: 100})
 ```
+
+## Bytes & Runes
+
+### mkbytes
+
+The mkbytes function allocates a byte-slice of the provided size.
+### Bytes
+
+The Bytes function reads a readable (string, byte-slice, ...) and returns a byte-slice.
+### Runes
+
+The Runes function reads a readable (string, byte-slice, ...) and returns a rune-slice. A rune is a Unicode code point (character). See https://go.dev/blog/strings for more details.
+### is_space
+
+The is_space function returns whether a given rune is a space character (Unicode's White Space property).
+### Reader
+
+The Reader function creates a reader from a readable (string, byte-slice, ...).
+### RingBuffer
+
+The RingBuffer function creates a ring-buffer with a given capacity.
 
 ## Browser Automation
 
@@ -220,6 +243,9 @@ The tofloat function converts an integer to a float.
 ### toint
 
 The toint function converts a float or byte to an integer. An error is thrown if precision has been lost.
+### tobytecount
+
+The tobytecount function converts an integer to a byte count. An error is thrown if the provided value is negative.
 ### torstream
 
 The torstream function creates a readable stream from a value. If the value is readable (string, byte-slice, ...) a byte stream is returned. If the value is indexable a stream containing the elements is returned.
@@ -809,14 +835,50 @@ the http.CSP function creates a Content Security Policy with the passed directiv
 http.CSP{default-src: "'self'"}
 ```
 
+## Structured Logging
+
+### log
+
+The log namespace contains functions for structured logging.
+### log.add
+
+The log.add function logs an event that is created from the provided record. The log level is specified with the 'lvl' property, it defaults to 'debug'. The message can be either provided by setting the 'msg' property or by adding properties with implicit keys: each implicit-key property will be a single part of the message. ⚠️ It is recommended to use the default level (debug) for high frequency events.
+
+**examples**
+
+```inox
+# add a log event of level 'debug' with the message 'user created'
+log.add #{"user created"}
+
+```
+```inox
+# add a log event of level 'debug' with the message 'user created'
+log.add #{msg: "user created"}
+
+```
+```inox
+# add a log event of level 'info' with the message 'user created'
+log.add #{lvl: "info", msg: "user created"}
+
+```
+```inox
+id = 100
+# add a log event of level 'debug' with the message 'user 100 created'
+# and a field `id: 100`
+log.add #{"user", id, "created", id: 100}
+
+
+
+```
+
 ## Printing
 
 ### print
 
-the print function prints its arguments with a space ' ' separation. A '\n' character is added at the end.
+The print function prints its arguments with a space ' ' separation. A '\n' character is added at the end.
 ### fprint
 
-the fprint function writes to the provided writer its arguments with a space ' ' separation. A '\n' character is added at the end.
+The fprint function writes to the provided writer its arguments with a space ' ' separation. A '\n' character is added at the end.
 
 ## rand
 

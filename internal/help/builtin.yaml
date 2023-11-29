@@ -191,6 +191,9 @@ conversion:
   - topic: toint
     text: The toint function converts a float or byte to an integer. An error is thrown if precision has been lost.
 
+  - topic: tobytecount
+    text: The tobytecount function converts an integer to a byte count. An error is thrown if the provided value is negative.
+
   - topic: torstream
     text: >
       The torstream function creates a readable stream from a value. If the value is readable (string, byte-slice, ...)
@@ -255,7 +258,7 @@ printing:
 
 log:
   namespace: true
-  title: Logging
+  title: Structured Logging
   elements:
   - topic: log
     text: The log namespace contains functions for structured logging.
@@ -279,6 +282,30 @@ log:
         # add a log event of level 'debug' with the message 'user 100 created'
         # and a field `id: 100`
         log.add #{"user", id, "created", id: 100}
+
+
+bytes-runes:
+  title: Bytes & Runes
+  elements:
+  - topic: mkbytes
+    text: The mkbytes function allocates a byte-slice of the provided size.
+
+  - topic: Bytes
+    text: The Bytes function reads a readable (string, byte-slice, ...) and returns a byte-slice.
+
+  - topic: Runes
+    text: >
+      The Runes function reads a readable (string, byte-slice, ...) and returns a rune-slice. A rune is a Unicode code point (character).
+      See https://go.dev/blog/strings for more details.
+
+  - topic: is_space
+    text: The is_space function returns whether a given rune is a space character (Unicode's White Space property).
+
+  - topic: Reader
+    text: The Reader function creates a reader from a readable (string, byte-slice, ...).
+
+  - topic: RingBuffer
+    text: The RingBuffer function creates a ring-buffer with a given capacity.
 
 html:
   namespace: true
