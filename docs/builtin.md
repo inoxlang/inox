@@ -439,8 +439,6 @@ dir_content = :{
 }
 
 fs.mkdir ./dir_b/ $dir_content
-
-
 ```
 ### fs.read
 
@@ -762,7 +760,6 @@ http.Client{
     }
   } 
 }
-
 ```
 ### http.Server
 
@@ -777,7 +774,6 @@ server = http.Server!(https://localhost:8080, {
         dynamic: /routes/
     }
 })
-
 ```
 ```inox
 fn handle(rw http.resp-writer, r http.req){
@@ -788,7 +784,6 @@ server = http.Server!(https://localhost:8080, Mapping {
     /hello => "hello"
     %/... => handle
 })
-
 ```
 ```inox
 fn handle(rw http.resp-writer, r http.req){
@@ -803,7 +798,6 @@ fn handle(rw http.resp-writer, r http.req){
 }
 
 server = http.Server!(https://localhost:8080, handle)
-
 ```
 ### http.FileServer
 
@@ -849,26 +843,20 @@ The log.add function logs an event that is created from the provided record. The
 ```inox
 # add a log event of level 'debug' with the message 'user created'
 log.add #{"user created"}
-
 ```
 ```inox
 # add a log event of level 'debug' with the message 'user created'
 log.add #{msg: "user created"}
-
 ```
 ```inox
 # add a log event of level 'info' with the message 'user created'
 log.add #{lvl: "info", msg: "user created"}
-
 ```
 ```inox
 id = 100
 # add a log event of level 'debug' with the message 'user 100 created'
 # and a field `id: 100`
 log.add #{"user", id, "created", id: 100}
-
-
-
 ```
 
 ## Printing
@@ -1006,8 +994,6 @@ conn.write!("GET / HTTP/1.1\nHost: example.com\n\n")
 print tostr(conn.read!())
 
 conn.close()
-
-
 ```
 
 ## Time

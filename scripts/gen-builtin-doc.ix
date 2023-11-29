@@ -47,6 +47,7 @@ fn fmt_topic_markdown(topic leaf-topic-data, is_leaf bool){
             ...map((topic.?examples ?? []), fn(example example) %str { # todo: return type should not be necessary
                 code = example.?code
                 if code? {
+                    code = strmanip.trim_space(code)
                     output = example.?output
                     if output? {
                         output = concat "\n# output: \n" output
