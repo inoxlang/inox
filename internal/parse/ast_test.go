@@ -220,3 +220,97 @@ func TestFindPreviousStatement(t *testing.T) {
 	})
 
 }
+
+func TestFindClosestMaxDistance(t *testing.T) {
+
+	t.Run("a maximum distance of zero should be ignored", func(t *testing.T) {
+		ancestors := []Node{(*Chunk)(nil), (*Manifest)(nil), (*ObjectLiteral)(nil)}
+		node, index, ok := FindClosestMaxDistance(ancestors, (*ObjectLiteral)(nil), 0)
+
+		if !assert.True(t, ok) {
+			return
+		}
+		assert.Same(t, ancestors[2], node)
+		assert.Equal(t, 2, index)
+
+		manifest, index, ok := FindClosestMaxDistance(ancestors, (*Manifest)(nil), 0)
+
+		if !assert.True(t, ok) {
+			return
+		}
+		assert.Same(t, ancestors[1], manifest)
+		assert.Equal(t, 1, index)
+
+		chunk, index, ok := FindClosestMaxDistance(ancestors, (*Chunk)(nil), 0)
+
+		if !assert.True(t, ok) {
+			return
+		}
+		assert.Same(t, ancestors[0], chunk)
+		assert.Equal(t, 0, index)
+	})
+
+	t.Run("maximum distance of one", func(t *testing.T) {
+		ancestors := []Node{(*Chunk)(nil), (*Manifest)(nil), (*ObjectLiteral)(nil)}
+
+		objLit, index, ok := FindClosestMaxDistance(ancestors, (*ObjectLiteral)(nil), 1)
+
+		if !assert.True(t, ok) {
+			return
+		}
+		assert.Same(t, ancestors[2], objLit)
+		assert.Equal(t, 2, index)
+
+		manifest, index, ok := FindClosestMaxDistance(ancestors, (*Manifest)(nil), 1)
+
+		if !assert.True(t, ok) {
+			return
+		}
+		assert.Same(t, ancestors[1], manifest)
+		assert.Equal(t, 1, index)
+
+		chunk, index, ok := FindClosestMaxDistance(ancestors, (*Chunk)(nil), 1)
+
+		if !assert.False(t, ok) {
+			return
+		}
+		assert.Nil(t, chunk)
+		assert.EqualValues(t, -1, index)
+	})
+
+	t.Run("maximum distance of two", func(t *testing.T) {
+		ancestors := []Node{(*Chunk)(nil), (*Manifest)(nil), (*ObjectLiteral)(nil), (*ObjectProperty)(nil)}
+
+		objProp, index, ok := FindClosestMaxDistance(ancestors, (*ObjectProperty)(nil), 2)
+
+		if !assert.True(t, ok) {
+			return
+		}
+		assert.Same(t, ancestors[3], objProp)
+		assert.Equal(t, 3, index)
+
+		objLit, index, ok := FindClosestMaxDistance(ancestors, (*ObjectLiteral)(nil), 2)
+
+		if !assert.True(t, ok) {
+			return
+		}
+		assert.Same(t, ancestors[2], objLit)
+		assert.Equal(t, 2, index)
+
+		manifest, index, ok := FindClosestMaxDistance(ancestors, (*Manifest)(nil), 2)
+
+		if !assert.True(t, ok) {
+			return
+		}
+		assert.Same(t, ancestors[1], manifest)
+		assert.Equal(t, 1, index)
+
+		chunk, index, ok := FindClosestMaxDistance(ancestors, (*Chunk)(nil), 2)
+
+		if !assert.False(t, ok) {
+			return
+		}
+		assert.Nil(t, chunk)
+		assert.EqualValues(t, -1, index)
+	})
+}

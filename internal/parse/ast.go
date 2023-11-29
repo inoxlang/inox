@@ -2970,7 +2970,7 @@ func FindClosestMaxDistance[T Node](ancestorChain []Node, typ T, maxDistance int
 
 	lastI := 0
 	if maxDistance > 0 {
-		lastI = max(0, len(ancestorChain)-lastI)
+		lastI = max(0, len(ancestorChain)-maxDistance-1)
 	}
 
 	for i := len(ancestorChain) - 1; i >= lastI; i-- {
