@@ -95,5 +95,5 @@ func (ApiIL *ApiIL) Close(*Context) *Error {
 }
 
 func (r *ApiIL) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
-	w.WriteName("%api")
+	w.WriteName("api")
 }

@@ -82,7 +82,7 @@ func (*AnySerializable) Test(v Value, state RecTestCallState) bool {
 // IsWidenable implements SymbolicValue.
 
 func (*AnySerializable) PrettyPrint(w pprint.PrettyPrintWriter, config *internal.PrettyPrintConfig) {
-	w.WriteString("%serializable")
+	w.WriteName("serializable")
 }
 
 func (*AnySerializable) WidestOfType() Value {
