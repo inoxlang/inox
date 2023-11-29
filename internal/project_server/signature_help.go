@@ -147,7 +147,7 @@ func getSignatureHelpAt(line, column int32, chunk *parse.ParsedChunk, state *cor
 		ActiveSignature: &zero,
 	}
 
-	//find the argument node
+	//determine the active parameter
 	var argNode parse.Node
 
 	if closestCallExpr == ancestors[len(ancestors)-1] {
