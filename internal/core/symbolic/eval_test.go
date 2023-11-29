@@ -8564,6 +8564,10 @@ func TestSymbolicEval(t *testing.T) {
 				entries: map[string]Pattern{},
 				inexact: true,
 			}, res)
+
+			assert.NotPanics(t, func() {
+				res.(*ObjectPattern).SymbolicValue()
+			})
 		})
 
 		t.Run("spread object pattern", func(t *testing.T) {
@@ -8584,6 +8588,10 @@ func TestSymbolicEval(t *testing.T) {
 				entries: map[string]Pattern{},
 				inexact: true,
 			}, res)
+
+			assert.NotPanics(t, func() {
+				res.(*ObjectPattern).SymbolicValue()
+			})
 		})
 
 		t.Run("spread object pattern matching all objects", func(t *testing.T) {
@@ -8604,6 +8612,10 @@ func TestSymbolicEval(t *testing.T) {
 				entries: map[string]Pattern{},
 				inexact: true,
 			}, res)
+
+			assert.NotPanics(t, func() {
+				res.(*ObjectPattern).SymbolicValue()
+			})
 		})
 
 		t.Run("spread valid object pattern", func(t *testing.T) {
@@ -8618,6 +8630,10 @@ func TestSymbolicEval(t *testing.T) {
 				entries: map[string]Pattern{"name": state.ctx.ResolveNamedPattern("str")},
 				inexact: true,
 			}, res)
+
+			assert.NotPanics(t, func() {
+				res.(*ObjectPattern).SymbolicValue()
+			})
 		})
 
 		t.Run("spread properties should be unique among spread patterns", func(t *testing.T) {
@@ -8637,6 +8653,10 @@ func TestSymbolicEval(t *testing.T) {
 				entries: map[string]Pattern{"name": state.ctx.ResolveNamedPattern("str")},
 				inexact: true,
 			}, res)
+
+			assert.NotPanics(t, func() {
+				res.(*ObjectPattern).SymbolicValue()
+			})
 		})
 
 		t.Run("visible properties should have higher priority that spread properties", func(t *testing.T) {
@@ -8651,6 +8671,10 @@ func TestSymbolicEval(t *testing.T) {
 				entries: map[string]Pattern{"name": state.ctx.ResolveNamedPattern("int")},
 				inexact: true,
 			}, res)
+
+			assert.NotPanics(t, func() {
+				res.(*ObjectPattern).SymbolicValue()
+			})
 		})
 
 		t.Run("pattern call", func(t *testing.T) {
@@ -8668,6 +8692,10 @@ func TestSymbolicEval(t *testing.T) {
 				entries: map[string]Pattern{"a": patt},
 				inexact: true,
 			}, res)
+
+			assert.NotPanics(t, func() {
+				res.(*ObjectPattern).SymbolicValue()
+			})
 		})
 
 		t.Run("pattern call: invalid/missing arguments", func(t *testing.T) {
@@ -8683,9 +8711,13 @@ func TestSymbolicEval(t *testing.T) {
 				makeSymbolicEvalError(patternCallExpr, state, "missing argument"),
 			}, state.errors())
 			assert.Equal(t, &ObjectPattern{
-				entries: map[string]Pattern{"a": ANY_PATTERN},
+				entries: map[string]Pattern{"a": &TypePattern{val: ANY_SERIALIZABLE}},
 				inexact: true,
 			}, res)
+
+			assert.NotPanics(t, func() {
+				res.(*ObjectPattern).SymbolicValue()
+			})
 		})
 
 		t.Run("pattern namespace's member", func(t *testing.T) {
@@ -8700,6 +8732,10 @@ func TestSymbolicEval(t *testing.T) {
 				entries: map[string]Pattern{"a": state.ctx.ResolveNamedPattern("int")},
 				inexact: true,
 			}, res)
+
+			assert.NotPanics(t, func() {
+				res.(*ObjectPattern).SymbolicValue()
+			})
 		})
 
 		t.Run("deep object pattern", func(t *testing.T) {
@@ -8755,6 +8791,10 @@ func TestSymbolicEval(t *testing.T) {
 				entries: map[string]Pattern{},
 				inexact: false,
 			}, res)
+
+			assert.NotPanics(t, func() {
+				res.(*ObjectPattern).SymbolicValue()
+			})
 		})
 
 		t.Run("missing property pattern", func(t *testing.T) {
@@ -8773,6 +8813,28 @@ func TestSymbolicEval(t *testing.T) {
 				entries: map[string]Pattern{"a": &TypePattern{val: ANY_SERIALIZABLE}},
 				inexact: true,
 			}, res)
+
+			assert.NotPanics(t, func() {
+				res.(*ObjectPattern).SymbolicValue()
+			})
+		})
+
+		t.Run("undefined named pattern as property pattern", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				return %{a: undefined}
+			`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.NotEmpty(t, state.errors())
+			assert.Equal(t, &ObjectPattern{
+				entries: map[string]Pattern{"a": &TypePattern{val: ANY_SERIALIZABLE}},
+				inexact: true,
+			}, res)
+
+			assert.NotPanics(t, func() {
+				res.(*ObjectPattern).SymbolicValue()
+			})
 		})
 	})
 

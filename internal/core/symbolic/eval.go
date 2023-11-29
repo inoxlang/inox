@@ -4291,9 +4291,24 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 			if p.Value == nil {
 				propertyValuePattern = &TypePattern{val: ANY_SERIALIZABLE}
 			} else {
+				prevErrCount := len(state.errors())
+
 				propertyValuePattern, err = symbolicallyEvalPatternNode(p.Value, state)
 				if err != nil {
 					return nil, err
+				}
+
+				//check that the pattern has serializable values
+				_, ok := AsSerializable(propertyValuePattern.SymbolicValue()).(Serializable)
+
+				if !ok {
+					if len(state.errors()) > prevErrCount {
+						//don't add an irrelevant error
+
+						propertyValuePattern = &TypePattern{val: ANY_SERIALIZABLE}
+					} else {
+						state.addError(makeSymbolicEvalError(p.Value, state, PROPERTY_PATTERNS_IN_OBJECT_PATTERNS_MUST_HAVE_SERIALIZABLE_VALUEs))
+					}
 				}
 			}
 

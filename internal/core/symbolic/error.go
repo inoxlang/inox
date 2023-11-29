@@ -24,11 +24,16 @@ const (
 	ERROR_IS_ALWAYS_RETURNED_THIS_WILL_CAUSE_A_PANIC = "error is always returned, this will cause a panic"
 
 	STR_TEMPL_LITS_WITH_INTERP_SHOULD_BE_PRECEDED_BY_PATTERN_WICH_NAME_HAS_PREFIX = "string template literals with interpolations should be preceded by a pattern which name has a prefix"
-	CANNOT_SPREAD_OBJ_PATTERN_THAT_MATCHES_ANY_OBJECT                             = "cannot spread an object pattern that matches any object"
-	CANNOT_SPREAD_REC_PATTERN_THAT_MATCHES_ANY_RECORD                             = "cannot spread an record pattern that matches any record"
-	CANNOT_SPREAD_OBJ_PATTERN_THAT_IS_INEXACT                                     = "cannot spread an object pattern that is inexact"
-	SPREAD_ELEMENT_SHOULD_BE_A_LIST                                               = "spread element should be a list"
-	SPREAD_ELEMENT_SHOULD_BE_A_TUPLE                                              = "spread element should be a tuple"
+
+	//spread
+	CANNOT_SPREAD_OBJ_PATTERN_THAT_MATCHES_ANY_OBJECT = "cannot spread an object pattern that matches any object"
+	CANNOT_SPREAD_REC_PATTERN_THAT_MATCHES_ANY_RECORD = "cannot spread an record pattern that matches any record"
+	CANNOT_SPREAD_OBJ_PATTERN_THAT_IS_INEXACT         = "cannot spread an object pattern that is inexact"
+	SPREAD_ELEMENT_SHOULD_BE_A_LIST                   = "spread element should be a list"
+	SPREAD_ELEMENT_SHOULD_BE_A_TUPLE                  = "spread element should be a tuple"
+
+	//object pattern
+	PROPERTY_PATTERNS_IN_OBJECT_PATTERNS_MUST_HAVE_SERIALIZABLE_VALUEs = "property patterns in object patterns must have serializable values"
 
 	CANNOT_ADD_NEW_PROPERTY_TO_AN_EXACT_OBJECT = "cannot add new property to an exact object"
 
