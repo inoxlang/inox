@@ -131,7 +131,13 @@ func _toint(ctx *core.Context, v core.Value) core.Int {
 	default:
 		panic(core.ErrUnreachable)
 	}
+}
 
+func _tobytecount(ctx *core.Context, v core.Int) core.ByteCount {
+	if v < 0 {
+		panic(fmt.Errorf("negative value %d", v))
+	}
+	return core.ByteCount(v)
 }
 
 func _torstream(ctx *core.Context, v core.Value) core.ReadableStream {

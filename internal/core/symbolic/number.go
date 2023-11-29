@@ -159,6 +159,17 @@ func (i *Int) Concretize(ctx ConcreteContext) any {
 	return extData.ConcreteValueFactories.CreateInt(i.value)
 }
 
+func (i *Int) HasValue() bool {
+	return i.IsConcretizable()
+}
+
+func (i *Int) Value() int64 {
+	if !i.IsConcretizable() {
+		panic(ErrNotConcretizable)
+	}
+	return i.value
+}
+
 func (i *Int) Static() Pattern {
 	return &TypePattern{val: ANY_INT}
 }

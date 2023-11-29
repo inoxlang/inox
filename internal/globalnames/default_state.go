@@ -69,6 +69,7 @@ const (
 	TOBYTE_FN     = "tobyte"
 	TOFLOAT_FN    = "tofloat"
 	TOINT_FN      = "toint"
+	TOBYTECOUNT   = "tobytecount"
 	TORSTREAM_FN  = "torstream"
 	TOJSON_FN     = "tojson"
 	TOPJSON_FN    = "topjson"
@@ -88,14 +89,16 @@ const (
 	FPRINT_FN = "fprint"
 	FMT_FN    = "fmt"
 
-	// bytes & string
+	// bytes & runes
 	MKBYTES_FN       = "mkbytes"
 	RUNES_FN         = "Runes"
-	EMAIL_ADDRESS_FN = "EmailAddress"
 	BYTES_FN         = "Bytes"
 	IS_RUNE_SPACE_FN = "is_rune"
 	READER_FN        = "Reader"
-	RINGBUFFER_FN    = "RingBugger"
+	RINGBUFFER_FN    = "RingBuffer"
+
+	//types?
+	EMAIL_ADDRESS_FN = "EmailAddress"
 
 	// functional
 	IDENTITY_FN    = "idt"

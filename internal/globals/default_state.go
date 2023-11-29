@@ -231,6 +231,7 @@ func NewDefaultGlobalState(ctx *core.Context, conf core.DefaultGlobalStateConfig
 		globalnames.TOBYTE_FN:     core.ValOf(_tobyte),
 		globalnames.TOFLOAT_FN:    core.ValOf(_tofloat),
 		globalnames.TOINT_FN:      core.ValOf(_toint),
+		globalnames.TOBYTECOUNT:   core.ValOf(_tobytecount),
 		globalnames.TORSTREAM_FN:  core.ValOf(_torstream),
 		globalnames.TOJSON_FN:     core.ValOf(core.ToJSON),
 		globalnames.TOPJSON_FN:    core.ValOf(core.ToPrettyJSON),
@@ -250,14 +251,16 @@ func NewDefaultGlobalState(ctx *core.Context, conf core.DefaultGlobalStateConfig
 		globalnames.FPRINT_FN: core.ValOf(_fprint),
 		globalnames.FMT_FN:    core.ValOf(core.Fmt),
 
-		// bytes & string
+		// bytes & runes
 		globalnames.MKBYTES_FN:       core.ValOf(_mkbytes),
 		globalnames.RUNES_FN:         core.ValOf(_Runes),
-		globalnames.EMAIL_ADDRESS_FN: core.ValOf(_EmailAddress),
 		globalnames.BYTES_FN:         core.ValOf(_Bytes),
 		globalnames.IS_RUNE_SPACE_FN: core.ValOf(_is_rune_space),
 		globalnames.READER_FN:        core.ValOf(_Reader),
 		globalnames.RINGBUFFER_FN:    core.ValOf(core.NewRingBuffer),
+
+		//string types
+		globalnames.EMAIL_ADDRESS_FN: core.ValOf(_EmailAddress),
 
 		// functional
 		globalnames.IDENTITY_FN:    core.WrapGoFunction(_idt),

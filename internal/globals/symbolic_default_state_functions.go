@@ -140,6 +140,16 @@ func init() {
 			}
 			return symbolic.ANY_INT
 		},
+		_tobytecount, func(ctx *symbolic.Context, v *symbolic.Int) *symbolic.ByteCount {
+			if v.HasValue() {
+				if v.Value() < 0 {
+					ctx.AddFormattedSymbolicGoFunctionError("only positives values are allowed")
+				}
+				return symbolic.NewByteCount(v.Value())
+			}
+
+			return symbolic.ANY_BYTECOUNT
+		},
 		_torstream, func(ctx *symbolic.Context, arg symbolic.Value) *symbolic.ReadableStream {
 			return symbolic.NewReadableStream(symbolic.ANY)
 		},
