@@ -33,7 +33,7 @@ const (
 	SPREAD_ELEMENT_SHOULD_BE_A_TUPLE                  = "spread element should be a tuple"
 
 	//object pattern
-	PROPERTY_PATTERNS_IN_OBJECT_PATTERNS_MUST_HAVE_SERIALIZABLE_VALUEs = "property patterns in object patterns must have serializable values"
+	PROPERTY_PATTERNS_IN_OBJECT_AND_REC_PATTERNS_MUST_HAVE_SERIALIZABLE_VALUEs = "property patterns in object and record patterns must have serializable values"
 
 	CANNOT_ADD_NEW_PROPERTY_TO_AN_EXACT_OBJECT = "cannot add new property to an exact object"
 

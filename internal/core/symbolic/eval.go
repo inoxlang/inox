@@ -4307,7 +4307,8 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 
 						propertyValuePattern = &TypePattern{val: ANY_SERIALIZABLE}
 					} else {
-						state.addError(makeSymbolicEvalError(p.Value, state, PROPERTY_PATTERNS_IN_OBJECT_PATTERNS_MUST_HAVE_SERIALIZABLE_VALUEs))
+						state.addError(makeSymbolicEvalError(p.Value, state, PROPERTY_PATTERNS_IN_OBJECT_AND_REC_PATTERNS_MUST_HAVE_SERIALIZABLE_VALUEs))
+						propertyValuePattern = &TypePattern{val: ANY_SERIALIZABLE}
 					}
 				}
 			}
@@ -4370,7 +4371,9 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 					return nil, err
 				}
 
-				if _, ok := entryPattern.(*AnyPattern); ok && len(state.errors()) > prevErrCount {
+				errorDuringEval := len(state.errors()) > prevErrCount
+
+				if _, ok := entryPattern.(*AnyPattern); ok && errorDuringEval {
 					//AnyPattern may be present due to an issue (invalid pattern call) so
 					//we handle this case separately
 					pattern.entries[name] = &TypePattern{val: ANY_SERIALIZABLE}
@@ -4378,6 +4381,20 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 					state.addError(makeSymbolicEvalError(p.Value, state, fmtEntriesOfRecordPatternShouldMatchOnlyImmutableValues(name)))
 					pattern.entries[name] = &TypePattern{val: ANY_SERIALIZABLE}
 				} else {
+					//check that the pattern has serializable values
+					_, ok := AsSerializable(entryPattern.SymbolicValue()).(Serializable)
+
+					if !ok {
+						if errorDuringEval {
+							//don't add an irrelevant error
+
+							entryPattern = &TypePattern{val: ANY_SERIALIZABLE}
+						} else {
+							state.addError(makeSymbolicEvalError(p.Value, state, PROPERTY_PATTERNS_IN_OBJECT_AND_REC_PATTERNS_MUST_HAVE_SERIALIZABLE_VALUEs))
+							entryPattern = &TypePattern{val: ANY_SERIALIZABLE}
+						}
+					}
+
 					pattern.entries[name] = entryPattern
 				}
 			}

@@ -8823,10 +8823,38 @@ func TestSymbolicEval(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				return %{a: undefined}
 			`)
+			ident := parse.FindNode(n, (*parse.PatternIdentifierLiteral)(nil), nil)
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
-			assert.NotEmpty(t, state.errors())
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(ident, state, fmtPatternIsNotDeclared("undefined")),
+			}, state.errors())
+
+			assert.Equal(t, &ObjectPattern{
+				entries: map[string]Pattern{"a": &TypePattern{val: ANY_SERIALIZABLE}},
+				inexact: true,
+			}, res)
+
+			assert.NotPanics(t, func() {
+				res.(*ObjectPattern).SymbolicValue()
+			})
+		})
+
+		t.Run("pattern with non-serializable values as property pattern", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				return %{a: nonserializable}
+			`)
+			ident := parse.FindNode(n, (*parse.PatternIdentifierLiteral)(nil), nil)
+
+			state.ctx.AddNamedPattern("nonserializable", &TypePattern{val: ANY_LTHREAD}, false)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(ident, state, PROPERTY_PATTERNS_IN_OBJECT_AND_REC_PATTERNS_MUST_HAVE_SERIALIZABLE_VALUEs),
+			}, state.errors())
+
 			assert.Equal(t, &ObjectPattern{
 				entries: map[string]Pattern{"a": &TypePattern{val: ANY_SERIALIZABLE}},
 				inexact: true,
@@ -9080,6 +9108,58 @@ func TestSymbolicEval(t *testing.T) {
 				entries: map[string]Pattern{"a": &TypePattern{val: ANY_SERIALIZABLE}},
 				inexact: true,
 			}, res.(*ObjectPattern).entries["x"])
+		})
+
+		t.Run("undefined named pattern as property pattern", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				pattern p = #{a: undefined}
+				return %p
+			`)
+			ident := parse.FindNode(n, (*parse.PatternIdentifierLiteral)(nil), func(n *parse.PatternIdentifierLiteral, isUnique bool) bool {
+				return n.Name == "undefined"
+			})
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(ident, state, fmtPatternIsNotDeclared("undefined")),
+			}, state.errors())
+
+			assert.Equal(t, &RecordPattern{
+				entries: map[string]Pattern{"a": &TypePattern{val: ANY_SERIALIZABLE}},
+				inexact: true,
+			}, res)
+
+			assert.NotPanics(t, func() {
+				res.(*RecordPattern).SymbolicValue()
+			})
+		})
+
+		t.Run("pattern with non-serializable values as property pattern", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				pattern p = #{a: mutable_nonserializable}
+				return %p
+			`)
+			ident := parse.FindNode(n, (*parse.PatternIdentifierLiteral)(nil), func(n *parse.PatternIdentifierLiteral, isUnique bool) bool {
+				return n.Name == "mutable_nonserializable"
+			})
+
+			state.ctx.AddNamedPattern("mutable_nonserializable", &TypePattern{val: ANY_TEST_CASE}, false)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(ident, state, PROPERTY_PATTERNS_IN_OBJECT_AND_REC_PATTERNS_MUST_HAVE_SERIALIZABLE_VALUEs),
+			}, state.errors())
+
+			assert.Equal(t, &RecordPattern{
+				entries: map[string]Pattern{"a": &TypePattern{val: ANY_SERIALIZABLE}},
+				inexact: true,
+			}, res)
+
+			assert.NotPanics(t, func() {
+				res.(*RecordPattern).SymbolicValue()
+			})
 		})
 	})
 
