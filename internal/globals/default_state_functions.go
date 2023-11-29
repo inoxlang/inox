@@ -315,7 +315,7 @@ func _run(ctx *core.Context, src core.Path, args ...core.Value) error {
 	return err
 }
 
-func _is_rune_space(r core.Rune) core.Bool {
+func _is_space(r core.Rune) core.Bool {
 	return core.Bool(unicode.IsSpace(rune(r)))
 }
 

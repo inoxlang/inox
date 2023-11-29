@@ -90,12 +90,12 @@ const (
 	FMT_FN    = "fmt"
 
 	// bytes & runes
-	MKBYTES_FN       = "mkbytes"
-	RUNES_FN         = "Runes"
-	BYTES_FN         = "Bytes"
-	IS_RUNE_SPACE_FN = "is_rune"
-	READER_FN        = "Reader"
-	RINGBUFFER_FN    = "RingBuffer"
+	MKBYTES_FN    = "mkbytes"
+	RUNES_FN      = "Runes"
+	BYTES_FN      = "Bytes"
+	IS_SPACE_FN   = "is_space"
+	READER_FN     = "Reader"
+	RINGBUFFER_FN = "RingBuffer"
 
 	//types?
 	EMAIL_ADDRESS_FN = "EmailAddress"

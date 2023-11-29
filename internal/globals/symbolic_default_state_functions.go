@@ -217,7 +217,7 @@ func init() {
 		_run, func(ctx *symbolic.Context, src *symbolic.Path, args ...symbolic.Value) *symbolic.Error {
 			return nil
 		},
-		_is_rune_space, func(ctx *symbolic.Context, s *symbolic.Rune) *symbolic.Bool {
+		_is_space, func(ctx *symbolic.Context, s *symbolic.Rune) *symbolic.Bool {
 			return &symbolic.Bool{}
 		},
 		_is_even, func(ctx *symbolic.Context, i *symbolic.Int) *symbolic.Bool {

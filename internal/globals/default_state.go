@@ -255,7 +255,7 @@ func NewDefaultGlobalState(ctx *core.Context, conf core.DefaultGlobalStateConfig
 		globalnames.MKBYTES_FN:       core.ValOf(_mkbytes),
 		globalnames.RUNES_FN:         core.ValOf(_Runes),
 		globalnames.BYTES_FN:         core.ValOf(_Bytes),
-		globalnames.IS_RUNE_SPACE_FN: core.ValOf(_is_rune_space),
+		globalnames.IS_SPACE_FN: core.ValOf(_is_space),
 		globalnames.READER_FN:        core.ValOf(_Reader),
 		globalnames.RINGBUFFER_FN:    core.ValOf(core.NewRingBuffer),
 
