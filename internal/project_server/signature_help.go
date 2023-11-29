@@ -102,7 +102,10 @@ func getSignatureHelpAt(line, column int32, chunk *parse.ParsedChunk, state *cor
 	case *symbolic.GoFunction:
 		markdown, ok := help.HelpForSymbolicGoFunc(val, help.HelpMessageConfig{Format: help.MarkdownFormat})
 		if ok {
-			signatureInformation.Documentation = markdown
+			signatureInformation.Documentation = defines.MarkupContent{
+				Kind:  defines.MarkupKindMarkdown,
+				Value: markdown,
+			}
 		}
 
 		params := val.ParametersExceptCtx()
@@ -112,7 +115,10 @@ func getSignatureHelpAt(line, column int32, chunk *parse.ParsedChunk, state *cor
 		if ok {
 			markdown, ok := help.HelpForSymbolicGoFunc(goFunc, help.HelpMessageConfig{Format: help.MarkdownFormat})
 			if ok {
-				signatureInformation.Documentation = markdown
+				signatureInformation.Documentation = defines.MarkupContent{
+					Kind:  defines.MarkupKindMarkdown,
+					Value: markdown,
+				}
 			}
 		}
 
