@@ -6,7 +6,7 @@
 # Built-in
 
  - [Errors](#errors)
- - [Bytes & Runes](#bytes-&-runes)
+ - [Bytes and Runes](#bytes-and-runes)
  - [Browser Automation](#browser-automation)
  - [Data Containers](#data-containers)
  - [Conversion](#conversion)
@@ -38,7 +38,7 @@ Error("failed to create user")
 Error("failed to create user", {user_id: 100})
 ```
 
-## Bytes & Runes
+## Bytes and Runes
 
 ### mkbytes
 

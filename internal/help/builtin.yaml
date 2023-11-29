@@ -285,7 +285,7 @@ log:
 
 
 bytes-runes:
-  title: Bytes & Runes
+  title: Bytes and Runes
   elements:
   - topic: mkbytes
     text: The mkbytes function allocates a byte-slice of the provided size.
