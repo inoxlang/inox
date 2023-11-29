@@ -364,7 +364,9 @@ func (fn *GoFunction) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.Pre
 		if i != start {
 			w.WriteString(", ")
 		}
-		w.WriteAnsiReset()
+		if config.Colorize {
+			w.WriteAnsiReset()
+		}
 
 		//write parameter's name and type.
 
