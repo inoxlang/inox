@@ -5,6 +5,7 @@ import (
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/help"
 	"github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/prettyprint"
 	"github.com/inoxlang/inox/internal/project_server/jsonrpc"
 	"github.com/inoxlang/inox/internal/project_server/logs"
 	"github.com/inoxlang/inox/internal/project_server/lsp/defines"
@@ -35,17 +36,25 @@ func getSignatureHelp(fpath string, line, column int32, handlingCtx *core.Contex
 		}()
 	}
 
-	if state == nil || state.SymbolicData == nil {
+	signatureHelp, ok := getSignatureHelpAt(line, column, chunk, state)
+	if !ok {
 		logs.Println(NO_DATA_MSG)
 		return &defines.SignatureHelp{}, nil
+	}
+
+	return signatureHelp, nil
+}
+
+func getSignatureHelpAt(line, column int32, chunk *parse.ParsedChunk, state *core.GlobalState) (*defines.SignatureHelp, bool) {
+	if state == nil || state.SymbolicData == nil {
+		return nil, false
 	}
 
 	cursorSpan := chunk.GetLineColumnSingeCharSpan(line, column)
 	node, ancestors, ok := chunk.GetNodeAndChainAtSpan(cursorSpan)
 
 	if !ok || node == nil {
-		logs.Println(NO_DATA_MSG)
-		return &defines.SignatureHelp{}, nil
+		return nil, false
 	}
 
 	var (
@@ -64,27 +73,26 @@ func getSignatureHelp(fpath string, line, column int32, handlingCtx *core.Contex
 	}
 
 	if closestCallExpr == nil {
-		logs.Println(NO_DATA_MSG)
-		return &defines.SignatureHelp{}, nil
+		return nil, false
 	}
 
 	callee := closestCallExpr.Callee
 	if callee == nil {
-		logs.Println(NO_DATA_MSG)
-		return &defines.SignatureHelp{}, nil
+		return nil, false
 	}
 
 	//get signature information
 	calleeValue, ok := state.SymbolicData.GetMostSpecificNodeValue(callee)
 	if !ok {
 		if calleeValue == nil {
-			logs.Println(NO_DATA_MSG)
-			return &defines.SignatureHelp{}, nil
+			return nil, false
 		}
 	}
 
+	stringifiedCallee, stringifiedCalleeRegions := symbolic.StringifyGetRegions(calleeValue)
+
 	signatureInformation := defines.SignatureInformation{
-		Label: symbolic.Stringify(calleeValue),
+		Label: stringifiedCallee,
 	}
 
 	//number of parameters including the variadic parameter
@@ -99,15 +107,6 @@ func getSignatureHelp(fpath string, line, column int32, handlingCtx *core.Contex
 
 		params := val.ParametersExceptCtx()
 		paramCount = len(params)
-		var parameterInfos []defines.ParameterInformation
-
-		for _, param := range params {
-			parameterInfos = append(parameterInfos, defines.ParameterInformation{
-				Label: symbolic.Stringify(param),
-			})
-		}
-
-		signatureInformation.Parameters = &parameterInfos
 	case *symbolic.Function:
 		goFunc, ok := val.OriginGoFunction()
 		if ok {
@@ -119,43 +118,28 @@ func getSignatureHelp(fpath string, line, column int32, handlingCtx *core.Contex
 
 		params := val.NonVariadicParameters()
 		paramCount = len(params)
-
-		var parameterInfos []defines.ParameterInformation
-
-		for _, param := range params {
-			parameterInfos = append(parameterInfos, defines.ParameterInformation{
-				Label: symbolic.Stringify(param),
-			})
-		}
-
-		if val.IsVariadic() {
-			variadicParam := val.VariadicParamElem()
-			parameterInfos = append(parameterInfos, defines.ParameterInformation{
-				Label: "..." + symbolic.Stringify(variadicParam),
-			})
-		}
-
-		signatureInformation.Parameters = &parameterInfos
 	case *symbolic.InoxFunction:
 		params := val.Parameters()
 		paramCount = len(params)
-
-		var parameterInfos []defines.ParameterInformation
-
-		for i, param := range params {
-			label := symbolic.Stringify(param)
-
-			if val.IsVariadic() && i == len(params)-1 {
-				label = "..." + label
-			}
-
-			parameterInfos = append(parameterInfos, defines.ParameterInformation{
-				Label: label,
-			})
-		}
-
-		signatureInformation.Parameters = &parameterInfos
 	}
+
+	//get the parameter labels
+
+	var parameterInfos []defines.ParameterInformation
+
+	filter := prettyprint.RegionFilter{
+		ExactDepth: 0,
+		Kind:       prettyprint.ParamNameTypeRegion,
+	}
+	stringifiedCalleeRegions.FilteredForEach(filter, func(r prettyprint.Region) error {
+		parameterInfos = append(parameterInfos, defines.ParameterInformation{
+			Label: r.SubString(stringifiedCallee),
+		})
+		return nil
+	})
+	signatureInformation.Parameters = &parameterInfos
+
+	//create the signature help with signatureInformation as the only signature
 
 	zero := uint(0)
 	signatureHelp := &defines.SignatureHelp{
@@ -206,5 +190,5 @@ func getSignatureHelp(fpath string, line, column int32, handlingCtx *core.Contex
 		signatureHelp.ActiveParameter = &index
 	}
 
-	return signatureHelp, nil
+	return signatureHelp, true
 }
