@@ -122,6 +122,12 @@ func (w PrettyPrintWriter) WithDepthIndent(depth, indent int) PrettyPrintWriter 
 	return new
 }
 
+func (w PrettyPrintWriter) EnterPattern() PrettyPrintWriter {
+	new := w
+	new.RemovePercentPrefix = true
+	return new
+}
+
 // Stringify calls PrettyPrint on the passed value
 func Stringify(v Value) string {
 	buff := &bytes.Buffer{}
