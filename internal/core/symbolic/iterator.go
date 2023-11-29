@@ -1,7 +1,7 @@
 package symbolic
 
 import (
-	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	pprint "github.com/inoxlang/inox/internal/prettyprint"
 )
 
 var (
@@ -41,7 +41,7 @@ func (*AnyIterable) Test(v Value, state RecTestCallState) bool {
 	return ok
 }
 
-func (*AnyIterable) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (*AnyIterable) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("iterable")
 }
 
@@ -73,7 +73,7 @@ func (r *AnySerializableIterable) Test(v Value, state RecTestCallState) bool {
 	return isIterable && isSerializable
 }
 
-func (r *AnySerializableIterable) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (r *AnySerializableIterable) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("serializable-iterable")
 }
 
@@ -109,7 +109,7 @@ func (r *Iterator) Test(v Value, state RecTestCallState) bool {
 	return r.ElementValue.Test(it.ElementValue, state)
 }
 
-func (r *Iterator) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (r *Iterator) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("iterator")
 	return
 }

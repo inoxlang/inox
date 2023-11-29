@@ -1,7 +1,7 @@
 package symbolic
 
 import (
-	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	pprint "github.com/inoxlang/inox/internal/prettyprint"
 )
 
 var (
@@ -33,6 +33,6 @@ func (t *FilesystemSnapshotIL) WidestOfType() Value {
 	return ANY_FS_SNAPSHOT_IL
 }
 
-func (t *FilesystemSnapshotIL) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (t *FilesystemSnapshotIL) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("fs-snapshot")
 }

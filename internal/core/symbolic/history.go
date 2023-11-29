@@ -4,7 +4,7 @@ import (
 	"errors"
 
 	"github.com/inoxlang/inox/internal/commonfmt"
-	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	pprint "github.com/inoxlang/inox/internal/prettyprint"
 )
 
 var (
@@ -94,7 +94,7 @@ func (*ValueHistory) PropertyNames() []string {
 	return VALUE_HISTORY_PROPNAMES
 }
 
-func (h *ValueHistory) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (h *ValueHistory) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("value-history")
 	return
 }

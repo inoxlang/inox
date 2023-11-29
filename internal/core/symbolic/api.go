@@ -3,7 +3,7 @@ package symbolic
 import (
 	"fmt"
 
-	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	pprint "github.com/inoxlang/inox/internal/prettyprint"
 	"github.com/inoxlang/inox/internal/utils"
 	"golang.org/x/exp/slices"
 )
@@ -94,6 +94,6 @@ func (ApiIL *ApiIL) Close(*Context) *Error {
 	return nil
 }
 
-func (r *ApiIL) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (r *ApiIL) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("%api")
 }

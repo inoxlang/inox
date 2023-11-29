@@ -4,7 +4,7 @@ import (
 	"errors"
 
 	"github.com/inoxlang/inox/internal/commonfmt"
-	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	pprint "github.com/inoxlang/inox/internal/prettyprint"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
@@ -164,7 +164,7 @@ func (s *String) Static() Pattern {
 	return _ANY_STR_TYPE_PATTERN
 }
 
-func (s *String) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (s *String) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if s.hasValue {
 		jsonString := utils.Must(utils.MarshalJsonNoHTMLEspace(s.value))
 		w.WriteBytes(jsonString)
@@ -311,7 +311,7 @@ func (r *Rune) Static() Pattern {
 	return &TypePattern{val: ANY_RUNE}
 }
 
-func (r *Rune) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (r *Rune) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if r.hasValue {
 		w.WriteString(commonfmt.FmtRune(r.value))
 		return
@@ -353,7 +353,7 @@ func (s *CheckedString) Test(v Value, state RecTestCallState) bool {
 	return ok
 }
 
-func (s *CheckedString) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (s *CheckedString) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("checked-string")
 }
 
@@ -405,7 +405,7 @@ func (s *RuneSlice) Concretize(ctx ConcreteContext) any {
 	panic(ErrNotConcretizable)
 }
 
-func (s *RuneSlice) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (s *RuneSlice) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("rune-slice")
 }
 
@@ -536,7 +536,7 @@ func (c *StringConcatenation) Concretize(ctx ConcreteContext) any {
 	panic(ErrNotConcretizable)
 }
 
-func (c *StringConcatenation) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (c *StringConcatenation) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("string-concatenation")
 }
 
@@ -634,7 +634,7 @@ func (s *AnyStringLike) Test(v Value, state RecTestCallState) bool {
 	return ok
 }
 
-func (s *AnyStringLike) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (s *AnyStringLike) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("string-like")
 }
 

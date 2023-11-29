@@ -2,7 +2,8 @@ package containers
 
 import (
 	"github.com/inoxlang/inox/internal/core/symbolic"
-	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	"github.com/inoxlang/inox/internal/prettyprint"
+	pprint "github.com/inoxlang/inox/internal/prettyprint"
 )
 
 var _ = []symbolic.Iterable{(*Thread)(nil)}
@@ -40,7 +41,7 @@ func (*Thread) Push(ctx *symbolic.Context, elems ...symbolic.Value) {
 
 }
 
-func (*Thread) PrettyPrint(w symbolic.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (*Thread) PrettyPrint(w prettyprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("thread")
 }
 

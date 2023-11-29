@@ -1,7 +1,7 @@
 package symbolic
 
 import (
-	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	pprint "github.com/inoxlang/inox/internal/prettyprint"
 )
 
 var (
@@ -28,7 +28,7 @@ func (e *Error) Test(v Value, state RecTestCallState) bool {
 	return ok && e.data.Test(otherError.data, state)
 }
 
-func (e *Error) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (e *Error) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("error")
 }
 

@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	pprint "github.com/inoxlang/inox/internal/prettyprint"
 )
 
 var (
@@ -82,7 +82,7 @@ func (f *Float) Static() Pattern {
 	return &TypePattern{val: ANY_FLOAT}
 }
 
-func (f *Float) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (f *Float) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("float")
 	if f.hasValue {
 		w.WriteByte('(')
@@ -163,7 +163,7 @@ func (i *Int) Static() Pattern {
 	return &TypePattern{val: ANY_INT}
 }
 
-func (i *Int) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (i *Int) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("int")
 	if i.hasValue {
 		w.WriteByte('(')
@@ -198,7 +198,7 @@ func (*AnyIntegral) Test(v Value, state RecTestCallState) bool {
 	return ok
 }
 
-func (*AnyIntegral) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (*AnyIntegral) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("integral")
 }
 

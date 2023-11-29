@@ -12,15 +12,15 @@ import (
 
 	"github.com/inoxlang/inox/internal/commonfmt"
 	parse "github.com/inoxlang/inox/internal/parse"
-	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	pprint "github.com/inoxlang/inox/internal/prettyprint"
 	"github.com/inoxlang/inox/internal/utils"
 
 	"github.com/muesli/termenv"
 )
 
 const (
-	PRETTY_PRINT_BUFF_WRITER_SIZE = 100
-	MAX_VALUE_PRINT_DEPTH         = 10
+	prettyprint_BUFF_WRITER_SIZE = 100
+	MAX_VALUE_PRINT_DEPTH        = 10
 )
 
 var (
@@ -76,7 +76,7 @@ func Stringify(v Value, ctx *Context) string {
 // Stringify calls PrettyPrint on the passed value
 func StringifyWithConfig(v Value, config *PrettyPrintConfig) string {
 	buff := &bytes.Buffer{}
-	w := bufio.NewWriterSize(buff, PRETTY_PRINT_BUFF_WRITER_SIZE)
+	w := bufio.NewWriterSize(buff, prettyprint_BUFF_WRITER_SIZE)
 
 	err := PrettyPrint(v, w, config, 0, 0)
 
@@ -91,7 +91,7 @@ func StringifyWithConfig(v Value, config *PrettyPrintConfig) string {
 func PrettyPrint(v Value, w io.Writer, config *PrettyPrintConfig, depth, parentIndentCount int) (err error) {
 	buffered, ok := w.(*bufio.Writer)
 	if !ok {
-		buffered = bufio.NewWriterSize(w, PRETTY_PRINT_BUFF_WRITER_SIZE)
+		buffered = bufio.NewWriterSize(w, prettyprint_BUFF_WRITER_SIZE)
 	}
 
 	defer func() {

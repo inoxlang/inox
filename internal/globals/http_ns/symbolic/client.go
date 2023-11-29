@@ -2,7 +2,8 @@ package http_ns
 
 import (
 	"github.com/inoxlang/inox/internal/core/symbolic"
-	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	"github.com/inoxlang/inox/internal/prettyprint"
+	pprint "github.com/inoxlang/inox/internal/prettyprint"
 )
 
 var (
@@ -44,7 +45,7 @@ func (*HttpClient) Schemes() []string {
 	return []string{"http", "https"}
 }
 
-func (c *HttpClient) PrettyPrint(w symbolic.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (c *HttpClient) PrettyPrint(w prettyprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("http-client")
 }
 

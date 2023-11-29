@@ -3,7 +3,8 @@ package net_ns
 import (
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	http_symbolic "github.com/inoxlang/inox/internal/globals/http_ns/symbolic"
-	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	"github.com/inoxlang/inox/internal/prettyprint"
+	pprint "github.com/inoxlang/inox/internal/prettyprint"
 )
 
 type WebsocketServer struct {
@@ -45,7 +46,7 @@ func (s *WebsocketServer) Close(ctx *symbolic.Context) *symbolic.Error {
 	return nil
 }
 
-func (s *WebsocketServer) PrettyPrint(w symbolic.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (s *WebsocketServer) PrettyPrint(w prettyprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("websocket-server")
 }
 

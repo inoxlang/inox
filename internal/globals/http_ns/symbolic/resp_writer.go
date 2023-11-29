@@ -2,7 +2,8 @@ package http_ns
 
 import (
 	"github.com/inoxlang/inox/internal/core/symbolic"
-	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	"github.com/inoxlang/inox/internal/prettyprint"
+	pprint "github.com/inoxlang/inox/internal/prettyprint"
 )
 
 var (
@@ -58,7 +59,7 @@ func (*HttpResponseWriter) PropertyNames() []string {
 	return HTTP_RESP_WRITER_PROPNAMES
 }
 
-func (r *HttpResponseWriter) PrettyPrint(w symbolic.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (r *HttpResponseWriter) PrettyPrint(w prettyprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("http-response-writer")
 }
 

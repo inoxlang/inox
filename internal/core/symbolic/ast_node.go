@@ -2,7 +2,7 @@ package symbolic
 
 import (
 	parse "github.com/inoxlang/inox/internal/parse"
-	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	pprint "github.com/inoxlang/inox/internal/prettyprint"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
@@ -39,7 +39,7 @@ func (n *AstNode) Test(v Value, state RecTestCallState) bool {
 	}
 }
 
-func (n *AstNode) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (n *AstNode) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if n.Node == nil {
 		w.WriteName("ast-node")
 		return
@@ -86,7 +86,7 @@ func (n *Token) Test(v Value, state RecTestCallState) bool {
 	return ok
 }
 
-func (t *Token) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (t *Token) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("ast-token")
 }
 

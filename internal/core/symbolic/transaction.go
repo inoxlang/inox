@@ -1,7 +1,7 @@
 package symbolic
 
 import (
-	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	pprint "github.com/inoxlang/inox/internal/prettyprint"
 )
 
 // A Transaction represents a symbolic Transaction.
@@ -58,7 +58,7 @@ func (tx *Transaction) GetGoMethod(name string) (*GoFunction, bool) {
 	return nil, false
 }
 
-func (tx *Transaction) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (tx *Transaction) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("transaction")
 	return
 }

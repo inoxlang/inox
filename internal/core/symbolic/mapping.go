@@ -3,7 +3,7 @@ package symbolic
 import (
 	"errors"
 
-	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	pprint "github.com/inoxlang/inox/internal/prettyprint"
 )
 
 var (
@@ -31,7 +31,7 @@ func (m *Mapping) Test(v Value, state RecTestCallState) bool {
 	return ok
 }
 
-func (m *Mapping) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (m *Mapping) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("mapping")
 	return
 }

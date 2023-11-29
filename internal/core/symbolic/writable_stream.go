@@ -1,7 +1,7 @@
 package symbolic
 
 import (
-	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	pprint "github.com/inoxlang/inox/internal/prettyprint"
 )
 
 var (
@@ -30,7 +30,7 @@ func (r *AnyStreamSink) Test(v Value, state RecTestCallState) bool {
 	return ok
 }
 
-func (r *AnyStreamSink) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (r *AnyStreamSink) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("stream-sink")
 }
 
@@ -71,7 +71,7 @@ func (r *WritableStream) Test(v Value, state RecTestCallState) bool {
 	return r.element.Test(it.element, state)
 }
 
-func (r *WritableStream) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (r *WritableStream) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("writable-stream")
 	return
 }

@@ -5,7 +5,7 @@ import (
 	"sort"
 
 	parse "github.com/inoxlang/inox/internal/parse"
-	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	pprint "github.com/inoxlang/inox/internal/prettyprint"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
@@ -235,7 +235,7 @@ func (d *Data) Test(v Value, state RecTestCallState) bool {
 	return ok
 }
 
-func (d *Data) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (d *Data) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("symbolic-data")
 }
 

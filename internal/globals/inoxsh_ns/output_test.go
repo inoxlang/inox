@@ -5,7 +5,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/core"
 	parse "github.com/inoxlang/inox/internal/parse"
-	internal "github.com/inoxlang/inox/internal/pretty_print"
+	internal "github.com/inoxlang/inox/internal/prettyprint"
 
 	"github.com/stretchr/testify/assert"
 )

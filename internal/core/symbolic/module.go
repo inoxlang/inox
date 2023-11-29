@@ -6,7 +6,7 @@ import (
 	"strconv"
 
 	parse "github.com/inoxlang/inox/internal/parse"
-	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	pprint "github.com/inoxlang/inox/internal/prettyprint"
 )
 
 var (
@@ -62,7 +62,7 @@ func (m *Module) Test(v Value, state RecTestCallState) bool {
 	return m.mainChunk == otherMod.mainChunk && reflect.ValueOf(m.inclusionStatementMap).Pointer() == reflect.ValueOf(otherMod.inclusionStatementMap).Pointer()
 }
 
-func (m *Module) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (m *Module) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("module")
 }
 

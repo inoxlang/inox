@@ -3,7 +3,7 @@ package core
 import (
 	"errors"
 
-	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	pprint "github.com/inoxlang/inox/internal/prettyprint"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/muesli/termenv"
 )

@@ -2,7 +2,8 @@ package symbolic
 
 import (
 	"github.com/inoxlang/inox/internal/core/symbolic"
-	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	"github.com/inoxlang/inox/internal/prettyprint"
+	pprint "github.com/inoxlang/inox/internal/prettyprint"
 )
 
 var (
@@ -68,6 +69,6 @@ func (r *Shell) IsMutable() bool {
 	return true
 }
 
-func (r *Shell) PrettyPrint(w symbolic.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (r *Shell) PrettyPrint(w prettyprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("inox-shell")
 }

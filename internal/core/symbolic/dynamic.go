@@ -3,7 +3,7 @@ package symbolic
 import (
 	"errors"
 
-	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	pprint "github.com/inoxlang/inox/internal/prettyprint"
 )
 
 // An DynamicValue represents a symbolic DynamicValue.
@@ -42,7 +42,7 @@ func (d *DynamicValue) PropertyNames() []string {
 	return d.val.(IProps).PropertyNames()
 }
 
-func (d *DynamicValue) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (d *DynamicValue) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("dyn")
 }
 

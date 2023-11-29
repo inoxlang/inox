@@ -3,7 +3,7 @@ package symbolic
 import (
 	"fmt"
 
-	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	pprint "github.com/inoxlang/inox/internal/prettyprint"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
@@ -37,7 +37,7 @@ func (r *Secret) Test(v Value, state RecTestCallState) bool {
 	return ok
 }
 
-func (r *Secret) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (r *Secret) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("secret")
 }
 
@@ -89,7 +89,7 @@ func (pattern *SecretPattern) HasUnderlyingPattern() bool {
 	return pattern.stringPattern.HasUnderlyingPattern()
 }
 
-func (pattern *SecretPattern) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (pattern *SecretPattern) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("secret-pattern(")
 	pattern.stringPattern.PrettyPrint(w.ZeroDepthIndent(), config)
 	w.WriteString(")")

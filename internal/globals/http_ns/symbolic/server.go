@@ -2,7 +2,8 @@ package http_ns
 
 import (
 	"github.com/inoxlang/inox/internal/core/symbolic"
-	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	"github.com/inoxlang/inox/internal/prettyprint"
+	pprint "github.com/inoxlang/inox/internal/prettyprint"
 )
 
 var (
@@ -46,7 +47,7 @@ func (serv *HttpServer) wait_closed(ctx *symbolic.Context) {
 func (serv *HttpServer) close(ctx *symbolic.Context) {
 }
 
-func (r *HttpServer) PrettyPrint(w symbolic.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (r *HttpServer) PrettyPrint(w prettyprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("http-server")
 }
 

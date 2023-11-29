@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/inoxlang/inox/internal/commonfmt"
-	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	pprint "github.com/inoxlang/inox/internal/prettyprint"
 )
 
 // A Year represents a symbolic Year.
@@ -46,7 +46,7 @@ func (d *Year) Concretize(ctx ConcreteContext) any {
 	return extData.ConcreteValueFactories.CreateYear(d.value)
 }
 
-func (d *Year) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (d *Year) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if d.hasValue {
 		w.WriteString(commonfmt.FmtInoxYear(d.value))
 	} else {
@@ -97,7 +97,7 @@ func (d *Date) Concretize(ctx ConcreteContext) any {
 	return extData.ConcreteValueFactories.CreateDate(d.value)
 }
 
-func (d *Date) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (d *Date) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("date")
 	if d.hasValue {
 		w.WriteByte('(')
@@ -149,7 +149,7 @@ func (d *DateTime) Concretize(ctx ConcreteContext) any {
 	return extData.ConcreteValueFactories.CreateDateTime(d.value)
 }
 
-func (d *DateTime) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (d *DateTime) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("datetime")
 	if d.hasValue {
 		w.WriteByte('(')
@@ -205,7 +205,7 @@ func (d *Duration) Static() Pattern {
 	return &TypePattern{val: d.WidestOfType()}
 }
 
-func (d *Duration) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (d *Duration) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("duration")
 	if d.hasValue {
 		w.WriteByte('(')

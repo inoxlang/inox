@@ -1,4 +1,4 @@
-package internal
+package prettyprint
 
 import "github.com/muesli/termenv"
 

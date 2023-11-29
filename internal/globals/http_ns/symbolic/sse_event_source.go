@@ -2,7 +2,8 @@ package http_ns
 
 import (
 	"github.com/inoxlang/inox/internal/core/symbolic"
-	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	"github.com/inoxlang/inox/internal/prettyprint"
+	pprint "github.com/inoxlang/inox/internal/prettyprint"
 )
 
 var (
@@ -41,7 +42,7 @@ func (*ServerSentEventSource) PropertyNames() []string {
 func (serv *ServerSentEventSource) close(ctx *symbolic.Context) {
 }
 
-func (r *ServerSentEventSource) PrettyPrint(w symbolic.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (r *ServerSentEventSource) PrettyPrint(w prettyprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("event-source")
 }
 

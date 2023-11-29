@@ -4,7 +4,7 @@ import (
 	"errors"
 	"reflect"
 
-	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	pprint "github.com/inoxlang/inox/internal/prettyprint"
 )
 
 var (
@@ -206,7 +206,7 @@ func (mv *Multivalue) WidenSimpleValues() Value {
 	return mv
 }
 
-func (mv *Multivalue) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (mv *Multivalue) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteByte('(')
 
 	for i, val := range mv.values {

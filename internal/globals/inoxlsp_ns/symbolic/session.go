@@ -3,8 +3,9 @@ package fs_ns
 import (
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/prettyprint"
 
-	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	pprint "github.com/inoxlang/inox/internal/prettyprint"
 )
 
 var (
@@ -72,7 +73,7 @@ func (*LSPSession) PropertyNames() []string {
 	return LSP_SESSION_PROPNAMES
 }
 
-func (r *LSPSession) PrettyPrint(w symbolic.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (r *LSPSession) PrettyPrint(w prettyprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("lsp-session")
 }
 

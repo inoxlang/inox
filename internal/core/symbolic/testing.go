@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	parse "github.com/inoxlang/inox/internal/parse"
-	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	pprint "github.com/inoxlang/inox/internal/prettyprint"
 )
 
 const (
@@ -104,7 +104,7 @@ func (*TestSuite) PropertyNames() []string {
 	return []string{"run"}
 }
 
-func (s *TestSuite) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (s *TestSuite) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("test-suite")
 	return
 }
@@ -147,7 +147,7 @@ func (*TestCase) PropertyNames() []string {
 	return nil
 }
 
-func (s *TestCase) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (s *TestCase) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("test-case")
 }
 
@@ -299,7 +299,7 @@ func (*CurrentTest) PropertyNames() []string {
 	return CURRENT_TEST_PROPNAMES
 }
 
-func (t *CurrentTest) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (t *CurrentTest) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("current-test")
 }
 
@@ -359,6 +359,6 @@ func (t *TestedProgram) Cancel(*Context) {
 
 }
 
-func (t *TestedProgram) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (t *TestedProgram) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("tested-program")
 }

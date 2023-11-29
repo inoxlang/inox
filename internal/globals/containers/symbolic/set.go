@@ -4,7 +4,8 @@ import (
 	"github.com/inoxlang/inox/internal/commonfmt"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	containers_common "github.com/inoxlang/inox/internal/globals/containers/common"
-	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	"github.com/inoxlang/inox/internal/prettyprint"
+	pprint "github.com/inoxlang/inox/internal/prettyprint"
 
 	"github.com/inoxlang/inox/internal/utils"
 )
@@ -156,7 +157,7 @@ func (s *Set) Get(ctx *symbolic.Context, k symbolic.StringLike) (symbolic.Value,
 	return s.element, symbolic.ANY_BOOL
 }
 
-func (s *Set) PrettyPrint(w symbolic.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (s *Set) PrettyPrint(w prettyprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("Set(")
 	s.element.PrettyPrint(w, config)
 	if s.uniqueness != nil {
@@ -246,7 +247,7 @@ func (p *SetPattern) SymbolicValue() symbolic.Value {
 	return NewSetWithPattern(p.elementPattern, p.uniqueness)
 }
 
-func (p *SetPattern) PrettyPrint(w symbolic.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (p *SetPattern) PrettyPrint(w prettyprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("set-pattern(")
 	p.elementPattern.SymbolicValue().PrettyPrint(w, config)
 	if p.uniqueness != nil {

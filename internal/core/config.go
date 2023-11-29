@@ -41,11 +41,19 @@ func SetNewDefaultGlobalStateFn(fn NewDefaultGlobalStateFn) {
 	NewDefaultGlobalState = fn
 }
 
+func UnsetNewDefaultGlobalStateFn() {
+	NewDefaultGlobalState = nil
+}
+
 func SetNewDefaultContext(fn NewDefaultContextFn) {
 	if NewDefaultContext != nil {
 		panic(errors.New("newDefaultContext is already set"))
 	}
 	NewDefaultContext = fn
+}
+
+func UnsetNewDefaultContext() {
+	NewDefaultContext = nil
 }
 
 func SetDefaultScriptLimits(limits []Limit) {

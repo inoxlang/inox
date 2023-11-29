@@ -1,7 +1,7 @@
 package symbolic
 
 import (
-	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	pprint "github.com/inoxlang/inox/internal/prettyprint"
 )
 
 type RingBuffer struct {
@@ -56,7 +56,7 @@ func (RingBuffer) PropertyNames() []string {
 	return RING_BUFFER_PROPNAMES
 }
 
-func (r *RingBuffer) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (r *RingBuffer) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("ring-buffer")
 }
 

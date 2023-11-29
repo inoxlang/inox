@@ -7,7 +7,7 @@ import (
 	"github.com/muesli/termenv"
 
 	"github.com/inoxlang/inox/internal/core"
-	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	pprint "github.com/inoxlang/inox/internal/prettyprint"
 )
 
 type REPLConfiguration struct {

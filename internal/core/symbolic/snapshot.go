@@ -3,7 +3,7 @@ package symbolic
 import (
 	"errors"
 
-	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	pprint "github.com/inoxlang/inox/internal/prettyprint"
 )
 
 var (
@@ -37,7 +37,7 @@ func (m *Snapshot) Test(v Value, state RecTestCallState) bool {
 	return ok
 }
 
-func (m *Snapshot) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (m *Snapshot) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("snapshot")
 	return
 }
@@ -74,7 +74,7 @@ func (s *AnyInMemorySnapshotable) Test(v Value, state RecTestCallState) bool {
 	return ok
 }
 
-func (s *AnyInMemorySnapshotable) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (s *AnyInMemorySnapshotable) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("in-memory-snapshotable")
 	return
 }

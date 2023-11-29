@@ -11,7 +11,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/inoxconsts"
-	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	pprint "github.com/inoxlang/inox/internal/prettyprint"
 	"github.com/inoxlang/inox/internal/utils"
 
 	_ "embed"

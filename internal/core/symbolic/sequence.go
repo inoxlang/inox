@@ -1,7 +1,7 @@
 package symbolic
 
 import (
-	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	pprint "github.com/inoxlang/inox/internal/prettyprint"
 )
 
 var (
@@ -63,7 +63,7 @@ func (*AnySequenceOf) KnownLen() int {
 	panic(ErrUnreachable)
 }
 
-func (s *AnySequenceOf) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (s *AnySequenceOf) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("sequence(")
 	s.elem.PrettyPrint(w.ZeroIndent(), config)
 	w.WriteByte(')')

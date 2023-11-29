@@ -2,7 +2,8 @@ package containers
 
 import (
 	"github.com/inoxlang/inox/internal/core/symbolic"
-	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	"github.com/inoxlang/inox/internal/prettyprint"
+	pprint "github.com/inoxlang/inox/internal/prettyprint"
 )
 
 var _ = []symbolic.Iterable{&Map{}}
@@ -58,7 +59,7 @@ func (*Map) Get(ctx *symbolic.Context, k symbolic.Value) symbolic.Value {
 	return &symbolic.Any{}
 }
 
-func (*Map) PrettyPrint(w symbolic.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (*Map) PrettyPrint(w prettyprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("map")
 	return
 }

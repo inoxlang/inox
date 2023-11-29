@@ -2,7 +2,8 @@ package http_ns
 
 import (
 	"github.com/inoxlang/inox/internal/core/symbolic"
-	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	"github.com/inoxlang/inox/internal/prettyprint"
+	pprint "github.com/inoxlang/inox/internal/prettyprint"
 )
 
 var (
@@ -29,7 +30,7 @@ func (n *ContentSecurityPolicy) Test(v symbolic.Value, state symbolic.RecTestCal
 	return true
 }
 
-func (r *ContentSecurityPolicy) PrettyPrint(w symbolic.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (r *ContentSecurityPolicy) PrettyPrint(w prettyprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("content-security-policy")
 }
 

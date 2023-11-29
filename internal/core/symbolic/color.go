@@ -1,7 +1,7 @@
 package symbolic
 
 import (
-	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	pprint "github.com/inoxlang/inox/internal/prettyprint"
 )
 
 var (
@@ -40,7 +40,7 @@ func (*Color) PropertyNames() []string {
 	return []string{}
 }
 
-func (c *Color) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (c *Color) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("color")
 	return
 }

@@ -1,7 +1,8 @@
 package symbolic
 
 import (
-	internal "github.com/inoxlang/inox/internal/pretty_print"
+	internal "github.com/inoxlang/inox/internal/prettyprint"
+	pprint "github.com/inoxlang/inox/internal/prettyprint"
 )
 
 var (
@@ -80,7 +81,7 @@ func (*AnySerializable) Test(v Value, state RecTestCallState) bool {
 
 // IsWidenable implements SymbolicValue.
 
-func (*AnySerializable) PrettyPrint(w PrettyPrintWriter, config *internal.PrettyPrintConfig) {
+func (*AnySerializable) PrettyPrint(w pprint.PrettyPrintWriter, config *internal.PrettyPrintConfig) {
 	w.WriteString("%serializable")
 }
 

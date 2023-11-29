@@ -1,7 +1,7 @@
 package symbolic
 
 import (
-	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	pprint "github.com/inoxlang/inox/internal/prettyprint"
 )
 
 var (
@@ -58,7 +58,7 @@ func (s *ByteSlice) Concretize(ctx ConcreteContext) any {
 	panic(ErrNotConcretizable)
 }
 
-func (s *ByteSlice) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (s *ByteSlice) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("byte-slice")
 }
 
@@ -159,7 +159,7 @@ func (b *Byte) Static() Pattern {
 	return &TypePattern{val: ANY_BYTE}
 }
 
-func (b *Byte) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (b *Byte) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("byte")
 }
 
@@ -220,7 +220,7 @@ func (c *AnyBytesLike) SetSlice(ctx *Context, start, end *Int, v Sequence) {
 
 }
 
-func (b *AnyBytesLike) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (b *AnyBytesLike) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("bytes-like")
 }
 
@@ -289,7 +289,7 @@ func (c *BytesConcatenation) slice(start, end *Int) Sequence {
 	return ANY_BYTE_SLICE
 }
 
-func (c *BytesConcatenation) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (c *BytesConcatenation) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("bytes-concatenation")
 }
 

@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	parse "github.com/inoxlang/inox/internal/parse"
-	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	pprint "github.com/inoxlang/inox/internal/prettyprint"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
@@ -38,7 +38,7 @@ func (p *AnyStringPattern) Test(v Value, state RecTestCallState) bool {
 	return ok
 }
 
-func (p *AnyStringPattern) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (p *AnyStringPattern) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("string-pattern")
 }
 
@@ -117,7 +117,7 @@ func (p *ExactStringPattern) IsConcretizable() bool {
 	return IsConcretizable(p.value)
 }
 
-func (p *ExactStringPattern) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (p *ExactStringPattern) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("exact-string-pattern")
 
 	if p.value != nil {
@@ -208,7 +208,7 @@ func (p *LengthCheckingStringPattern) Test(v Value, state RecTestCallState) bool
 	return p.minLength == -1 || (otherPattern.minLength >= p.minLength && otherPattern.maxLength <= p.maxLength)
 }
 
-func (p *LengthCheckingStringPattern) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (p *LengthCheckingStringPattern) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if p.minLength == -1 {
 		w.WriteName("length-checking-string-pattern")
 	} else {
@@ -318,7 +318,7 @@ func (p *SequenceStringPattern) Test(v Value, state RecTestCallState) bool {
 	return p.node == otherPatt.node
 }
 
-func (p *SequenceStringPattern) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (p *SequenceStringPattern) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("sequence-string-pattern")
 	if p.node != nil {
 		w.WriteString("(")
@@ -387,7 +387,7 @@ func (p *ParserBasedPattern) Test(v Value, state RecTestCallState) bool {
 	return ok
 }
 
-func (p *ParserBasedPattern) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (p *ParserBasedPattern) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("parser-based-pattern")
 }
 

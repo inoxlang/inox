@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"errors"
 
-	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	pprint "github.com/inoxlang/inox/internal/prettyprint"
 	"github.com/oklog/ulid/v2"
 )
 
@@ -82,7 +82,7 @@ func (s *Struct) WithExistingPropReplaced(name string, value Value) (IProps, err
 	panic(ErrNotImplementedYet)
 }
 
-func (s *Struct) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (s *Struct) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if s.structType != nil {
 		w.WriteName("struct")
 		w.WriteString(s.structType.name)
@@ -118,11 +118,11 @@ func (s *Struct) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConf
 		w.WriteString(name)
 
 		if config.Colorize {
-			w.WriteBytes(ANSI_RESET_SEQUENCE)
+			w.WriteAnsiReset()
 		}
 
 		//colon
-		w.WriteBytes(COLON_SPACE)
+		w.WriteColonSpace()
 
 		//value
 		v := s.Prop(name)
@@ -132,7 +132,7 @@ func (s *Struct) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConf
 		isLastEntry := i == len(propertyNames)-1
 
 		if !isLastEntry {
-			w.WriteBytes(COMMA_SPACE)
+			w.WriteCommaSpace()
 		}
 	}
 
@@ -212,7 +212,7 @@ func (s *StructPattern) indexOfField(name string) (int, bool) {
 	return -1, false
 }
 
-func (s *StructPattern) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (s *StructPattern) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("struct-type ")
 	w.WriteString(s.name)
 	w.WriteString(" {")

@@ -5,7 +5,8 @@ import (
 
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	html_ns "github.com/inoxlang/inox/internal/globals/html_ns/symbolic"
-	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	"github.com/inoxlang/inox/internal/prettyprint"
+	pprint "github.com/inoxlang/inox/internal/prettyprint"
 )
 
 var (
@@ -25,7 +26,7 @@ func (r *Handle) Test(v symbolic.Value, state symbolic.RecTestCallState) bool {
 	return ok
 }
 
-func (r *Handle) PrettyPrint(w symbolic.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (r *Handle) PrettyPrint(w prettyprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("browser-handle")
 }
 

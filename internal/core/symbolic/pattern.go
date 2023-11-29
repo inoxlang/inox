@@ -12,7 +12,7 @@ import (
 	"strconv"
 
 	parse "github.com/inoxlang/inox/internal/parse"
-	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	pprint "github.com/inoxlang/inox/internal/prettyprint"
 	"github.com/inoxlang/inox/internal/utils"
 	"golang.org/x/exp/maps"
 )
@@ -162,7 +162,7 @@ func (p *AnyPattern) Test(v Value, state RecTestCallState) bool {
 	return ok
 }
 
-func (p *AnyPattern) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (p *AnyPattern) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("pattern")
 }
 
@@ -214,7 +214,7 @@ func (p *AnySerializablePattern) Test(v Value, state RecTestCallState) bool {
 	return ok
 }
 
-func (p *AnySerializablePattern) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (p *AnySerializablePattern) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("pattern")
 }
 
@@ -361,7 +361,7 @@ func (p *PathPattern) TestValue(v Value, state RecTestCallState) bool {
 	return p.absoluteness == UnspecifiedPathAbsoluteness && p.dirConstraint == UnspecifiedDirOrFilePath
 }
 
-func (p *PathPattern) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (p *PathPattern) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 
 	if p.hasValue {
 		w.WriteString("%" + p.value)
@@ -504,7 +504,7 @@ func (p *URLPattern) Static() Pattern {
 	return &TypePattern{val: p.WidestOfType()}
 }
 
-func (p *URLPattern) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (p *URLPattern) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if p.hasValue {
 		w.WriteString("%" + p.value)
 		return
@@ -666,7 +666,7 @@ func (p *HostPattern) Static() Pattern {
 	return &TypePattern{val: p.WidestOfType()}
 }
 
-func (p *HostPattern) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (p *HostPattern) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if p.hasValue {
 		w.WriteString("%" + p.value)
 		return
@@ -791,7 +791,7 @@ func (p *NamedSegmentPathPattern) Test(v Value, state RecTestCallState) bool {
 	return p.node == nil || p.node == otherPattern.node
 }
 
-func (p *NamedSegmentPathPattern) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (p *NamedSegmentPathPattern) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if p.node == nil {
 		w.WriteName("named-segment-path-pattern")
 		return
@@ -912,7 +912,7 @@ func (p *ExactValuePattern) IsConcretizable() bool {
 	return IsConcretizable(p.value)
 }
 
-func (p *ExactValuePattern) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (p *ExactValuePattern) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("exact-value-pattern(\n")
 	innerIndentCount := w.ParentIndentCount + 2
 	innerIndent := bytes.Repeat(config.Indent, innerIndentCount)
@@ -992,7 +992,7 @@ func (p *RegexPattern) Test(v Value, state RecTestCallState) bool {
 	return p.regex == nil || (otherPatt.regex != nil && p.syntax.Equal(otherPatt.syntax))
 }
 
-func (p *RegexPattern) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (p *RegexPattern) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if p.regex != nil {
 		w.WriteString("%`" + p.regex.String() + "`")
 		return
@@ -1318,7 +1318,7 @@ func (patt *ObjectPattern) ForEachEntry(fn func(propName string, propPattern Pat
 	return nil
 }
 
-func (p *ObjectPattern) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (p *ObjectPattern) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if p.readonly {
 		w.WriteName("readonly ")
 	}
@@ -1354,7 +1354,7 @@ func (p *ObjectPattern) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPr
 			w.WriteBytes(utils.Must(utils.MarshalJsonNoHTMLEspace(k)))
 
 			if config.Colorize {
-				w.WriteBytes(ANSI_RESET_SEQUENCE)
+				w.WriteAnsiReset()
 			}
 
 			if _, ok := p.optionalEntries[k]; ok {
@@ -1362,7 +1362,7 @@ func (p *ObjectPattern) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPr
 			}
 
 			//colon
-			w.WriteBytes(COLON_SPACE)
+			w.WriteColonSpace()
 
 			//value
 			v := p.entries[k]
@@ -1372,7 +1372,7 @@ func (p *ObjectPattern) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPr
 			isLastEntry := i == len(keys)-1
 
 			if !isLastEntry /* /*p.inexact*/ {
-				w.WriteBytes(COMMA_SPACE)
+				w.WriteCommaSpace()
 			}
 		}
 
@@ -1582,7 +1582,7 @@ func (p *RecordPattern) Concretize(ctx ConcreteContext) any {
 	return extData.ConcreteValueFactories.CreateRecordPattern(p.inexact, concretePropertyPatterns, maps.Clone(p.optionalEntries))
 }
 
-func (p *RecordPattern) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (p *RecordPattern) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if p.entries != nil {
 		if w.Depth > config.MaxDepth && len(p.entries) > 0 {
 			w.WriteName("record(%{(...)})")
@@ -1615,7 +1615,7 @@ func (p *RecordPattern) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPr
 			w.WriteBytes(utils.Must(utils.MarshalJsonNoHTMLEspace(k)))
 
 			if config.Colorize {
-				w.WriteBytes(ANSI_RESET_SEQUENCE)
+				w.WriteAnsiReset()
 			}
 
 			if _, ok := p.optionalEntries[k]; ok {
@@ -1623,7 +1623,7 @@ func (p *RecordPattern) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPr
 			}
 
 			//colon
-			w.WriteBytes(COLON_SPACE)
+			w.WriteColonSpace()
 
 			//value
 			v := p.entries[k]
@@ -1633,7 +1633,7 @@ func (p *RecordPattern) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPr
 			isLastEntry := i == len(keys)-1
 
 			if !isLastEntry || p.inexact {
-				w.WriteBytes(COMMA_SPACE)
+				w.WriteCommaSpace()
 
 			}
 		}
@@ -1652,7 +1652,7 @@ func (p *RecordPattern) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPr
 		}
 
 		w.WriteBytes(bytes.Repeat(config.Indent, w.Depth))
-		w.WriteBytes(CLOSING_CURLY_BRACKET_CLOSING_PAREN)
+		w.WriteClosingBracketClosingParen()
 		return
 	}
 	w.WriteName("record-pattern")
@@ -1950,7 +1950,7 @@ func (p *ListPattern) ToReadonlyPattern() (PotentiallyReadonlyPattern, error) {
 }
 
 func prettyPrintListPattern(
-	w PrettyPrintWriter, tuplePattern bool,
+	w pprint.PrettyPrintWriter, tuplePattern bool,
 	generalElementPattern Pattern, elementPatterns []Pattern,
 	config *pprint.PrettyPrintConfig,
 
@@ -2009,10 +2009,10 @@ func prettyPrintListPattern(
 				}
 				w.WriteString(strconv.FormatInt(int64(i), 10))
 				w.WriteBytes(config.Colors.DiscreteColor)
-				w.WriteBytes(COLON_SPACE)
+				w.WriteColonSpace()
 
 				if config.Colorize {
-					w.WriteBytes(ANSI_RESET_SEQUENCE)
+					w.WriteAnsiReset()
 				}
 			}
 		}
@@ -2024,7 +2024,7 @@ func prettyPrintListPattern(
 		isLastEntry := i == len(elementPatterns)-1
 
 		if !isLastEntry {
-			w.WriteBytes(COMMA_SPACE)
+			w.WriteCommaSpace()
 		}
 
 	}
@@ -2035,13 +2035,13 @@ func prettyPrintListPattern(
 	}
 
 	if tuplePattern {
-		w.WriteBytes(CLOSING_BRACKET_CLOSING_PAREN)
+		w.WriteClosingbracketClosingParen()
 	} else {
 		w.WriteByte(']')
 	}
 }
 
-func (p *ListPattern) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (p *ListPattern) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if p.readonly {
 		w.WriteName("readonly ")
 	}
@@ -2260,7 +2260,7 @@ func (p *TuplePattern) Concretize(ctx ConcreteContext) any {
 	return extData.ConcreteValueFactories.CreateTuplePattern(nil, concreteElementPatterns)
 }
 
-func (p *TuplePattern) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (p *TuplePattern) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if p.elements != nil {
 		prettyPrintListPattern(w, true, p.generalElement, p.elements, config)
 		return
@@ -2478,7 +2478,7 @@ func (p *UnionPattern) Test(v Value, state RecTestCallState) bool {
 	return true
 }
 
-func (p *UnionPattern) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (p *UnionPattern) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteString("(%| ")
 
 	if p.disjoint {
@@ -2652,7 +2652,7 @@ func (p *IntersectionPattern) TestValue(v Value, state RecTestCallState) bool {
 	return true
 }
 
-func (p *IntersectionPattern) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (p *IntersectionPattern) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteString("(%& ")
 	indentCount := w.ParentIndentCount + 1
 	indent := bytes.Repeat(config.Indent, indentCount)
@@ -2719,7 +2719,7 @@ func (p *OptionPattern) Test(v Value, state RecTestCallState) bool {
 	return p.pattern.Test(other.pattern, state)
 }
 
-func (p *OptionPattern) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (p *OptionPattern) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("option-pattern(")
 	if p.name != "" {
 		NewString(p.name).PrettyPrint(w.ZeroIndent(), config)
@@ -2857,7 +2857,7 @@ func (patt *TypePattern) Concretize(ctx ConcreteContext) any {
 	return patt.concreteTypePattern
 }
 
-func (p *TypePattern) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (p *TypePattern) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("type-pattern(")
 	p.val.PrettyPrint(w.IncrDepth(), config)
 	w.WriteString(")")
@@ -2935,7 +2935,7 @@ func (p *DifferencePattern) Test(v Value, state RecTestCallState) bool {
 	return ok && p.Base.Test(other.Base, state) && other.Removed.Test(other.Removed, state)
 }
 
-func (p *DifferencePattern) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (p *DifferencePattern) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteString("(")
 	p.Base.PrettyPrint(w.IncrDepth(), config)
 	w.WriteString(" \\ ")
@@ -2995,7 +2995,7 @@ func (p *OptionalPattern) Test(v Value, state RecTestCallState) bool {
 	return ok && p.pattern.Test(other.pattern, state)
 }
 
-func (p *OptionalPattern) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (p *OptionalPattern) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	p.pattern.PrettyPrint(w, config)
 	w.WriteByte('?')
 }
@@ -3144,7 +3144,7 @@ func (p *FunctionPattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
 
-func (fn *FunctionPattern) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (fn *FunctionPattern) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if fn.node == nil {
 		w.WriteName("function-pattern")
 		return
@@ -3182,7 +3182,7 @@ func (p *IntRangePattern) Test(v Value, state RecTestCallState) bool {
 	return p.intRange.Test(otherPattern.intRange, state)
 }
 
-func (p *IntRangePattern) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (p *IntRangePattern) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("int-range-pattern")
 	if !p.intRange.hasValue {
 		return
@@ -3266,7 +3266,7 @@ func (p *FloatRangePattern) Test(v Value, state RecTestCallState) bool {
 	return p.floatRange.Test(otherPattern.floatRange, state)
 }
 
-func (p *FloatRangePattern) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (p *FloatRangePattern) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("float-range-pattern")
 	if !p.floatRange.hasValue {
 		return
@@ -3352,7 +3352,7 @@ func (p *EventPattern) Test(v Value, state RecTestCallState) bool {
 	return ok && p.ValuePattern.Test(other.ValuePattern, state)
 }
 
-func (p *EventPattern) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (p *EventPattern) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("event-pattern(")
 	p.ValuePattern.PrettyPrint(w.ZeroIndent(), config)
 	w.WriteByte(')')
@@ -3418,7 +3418,7 @@ func (p *MutationPattern) Test(v Value, state RecTestCallState) bool {
 	return ok && p.kind.Test(other.kind, state) && p.data0Pattern.Test(other.data0Pattern, state)
 }
 
-func (p *MutationPattern) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (p *MutationPattern) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("mutation(?, ")
 	p.data0Pattern.PrettyPrint(w.ZeroIndent(), config)
 	w.WriteByte(')')
@@ -3506,7 +3506,7 @@ func (ns *PatternNamespace) Test(v Value, state RecTestCallState) bool {
 	return true
 }
 
-func (ns *PatternNamespace) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (ns *PatternNamespace) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if ns.entries != nil {
 		if w.Depth > config.MaxDepth && len(ns.entries) > 0 {
 			w.WriteString("(..pattern-namespace..)")
@@ -3535,11 +3535,11 @@ func (ns *PatternNamespace) PrettyPrint(w PrettyPrintWriter, config *pprint.Pret
 			w.WriteBytes(utils.Must(utils.MarshalJsonNoHTMLEspace(k)))
 
 			if config.Colorize {
-				w.WriteBytes(ANSI_RESET_SEQUENCE)
+				w.WriteAnsiReset()
 			}
 
 			//colon
-			w.WriteBytes(COLON_SPACE)
+			w.WriteColonSpace()
 
 			//value
 			v := ns.entries[k]
@@ -3549,7 +3549,7 @@ func (ns *PatternNamespace) PrettyPrint(w PrettyPrintWriter, config *pprint.Pret
 			isLastEntry := i == len(keys)-1
 
 			if !isLastEntry {
-				w.WriteBytes(COMMA_SPACE)
+				w.WriteCommaSpace()
 			}
 		}
 

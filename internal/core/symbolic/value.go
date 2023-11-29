@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/inoxlang/inox/internal/commonfmt"
-	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	pprint "github.com/inoxlang/inox/internal/prettyprint"
 	"github.com/inoxlang/inox/internal/utils"
 	"golang.org/x/exp/slices"
 )
@@ -63,7 +63,7 @@ type Value interface {
 
 	WidestOfType() Value
 
-	PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig)
+	PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig)
 }
 
 func IsAny(val Value) bool {
@@ -125,7 +125,7 @@ func (a *Any) Test(v Value, state RecTestCallState) bool {
 	return true
 }
 
-func (a *Any) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (a *Any) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("any")
 	return
 }
@@ -147,7 +147,7 @@ func (*Never) Test(v Value, state RecTestCallState) bool {
 	return ok
 }
 
-func (*Never) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (*Never) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("never")
 }
 
@@ -178,7 +178,7 @@ func (*NilT) Concretize(ctx ConcreteContext) any {
 	return extData.ConcreteValueFactories.CreateNil()
 }
 
-func (n *NilT) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (n *NilT) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteString("nil")
 }
 
@@ -229,7 +229,7 @@ func (b *Bool) Static() Pattern {
 	return &TypePattern{val: b.WidestOfType()}
 }
 
-func (b *Bool) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (b *Bool) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if b.hasValue {
 		if b.value {
 			w.WriteString("true")
@@ -277,7 +277,7 @@ func (e *EmailAddress) Static() Pattern {
 	return &TypePattern{val: e.WidestOfType()}
 }
 
-func (e *EmailAddress) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (e *EmailAddress) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("email-address")
 	if e.hasValue {
 		w.WriteByte('(')
@@ -349,7 +349,7 @@ func (i *Identifier) Static() Pattern {
 	return &TypePattern{val: i.WidestOfType()}
 }
 
-func (i *Identifier) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (i *Identifier) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if i.name == "" {
 		w.WriteName("identifier")
 		return
@@ -405,7 +405,7 @@ func (p *PropertyName) Static() Pattern {
 	return &TypePattern{val: p.WidestOfType()}
 }
 
-func (p *PropertyName) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (p *PropertyName) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if p.name == "" {
 		w.WriteName("property-name")
 		return
@@ -454,7 +454,7 @@ func (m *Mimetype) Static() Pattern {
 	return &TypePattern{val: m.WidestOfType()}
 }
 
-func (m *Mimetype) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (m *Mimetype) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("mimetype")
 	if m.hasValue {
 		w.WriteByte('(')
@@ -523,7 +523,7 @@ func (o *Option) Concretize(ctx ConcreteContext) any {
 	return extData.ConcreteValueFactories.CreateOption(o.name, concreteValue)
 }
 
-func (o *Option) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (o *Option) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("option(")
 	if o.name != "" {
 		NewString(o.name).PrettyPrint(w.ZeroIndent(), config)
@@ -554,7 +554,7 @@ func (m *FileMode) Static() Pattern {
 	return &TypePattern{val: m.WidestOfType()}
 }
 
-func (m *FileMode) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (m *FileMode) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("filemode")
 }
 
@@ -618,7 +618,7 @@ func (f *FileInfo) Static() Pattern {
 	return &TypePattern{val: f.WidestOfType()}
 }
 
-func (f *FileInfo) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (f *FileInfo) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("file-info")
 }
 
@@ -650,7 +650,7 @@ func (t *Type) Test(v Value, state RecTestCallState) bool {
 	return utils.SamePointer(t.Type, other.Type)
 }
 
-func (t *Type) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (t *Type) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if t.Type == nil {
 		w.WriteName("t")
 		return
@@ -772,7 +772,7 @@ func (b *Bytecode) Test(v Value, state RecTestCallState) bool {
 	return utils.SamePointer(b.Bytecode, other.Bytecode)
 }
 
-func (b *Bytecode) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (b *Bytecode) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if b.Bytecode == nil {
 		w.WriteName("bytecode")
 		return
@@ -819,7 +819,7 @@ func (r QuantityRange) Contains(value Serializable) (yes bool, possible bool) {
 	return false, true
 }
 
-func (r *QuantityRange) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (r *QuantityRange) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("quantity-range")
 }
 
@@ -915,7 +915,7 @@ func (r *IntRange) Static() Pattern {
 	return &TypePattern{val: r.WidestOfType()}
 }
 
-func (r *IntRange) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (r *IntRange) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if !r.hasValue {
 		w.WriteName("int-range")
 		return
@@ -1078,7 +1078,7 @@ func (r *FloatRange) Static() Pattern {
 	return &TypePattern{val: r.WidestOfType()}
 }
 
-func (r *FloatRange) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (r *FloatRange) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if !r.hasValue {
 		w.WriteName("float-range")
 		return
@@ -1160,7 +1160,7 @@ func (r *RuneRange) Static() Pattern {
 	return &TypePattern{val: r.WidestOfType()}
 }
 
-func (r *RuneRange) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (r *RuneRange) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("rune-range")
 }
 
@@ -1241,7 +1241,7 @@ func (c *ByteCount) Static() Pattern {
 	return &TypePattern{val: c.WidestOfType()}
 }
 
-func (c *ByteCount) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (c *ByteCount) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("byte-count")
 	if c.hasValue {
 		w.WriteByte('(')
@@ -1299,7 +1299,7 @@ func (r *ByteRate) Static() Pattern {
 	return &TypePattern{val: r.WidestOfType()}
 }
 
-func (r *ByteRate) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (r *ByteRate) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("byte-rate")
 	if r.hasValue {
 		w.WriteByte('(')
@@ -1357,7 +1357,7 @@ func (c *LineCount) Static() Pattern {
 	return &TypePattern{val: c.WidestOfType()}
 }
 
-func (c *LineCount) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (c *LineCount) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("line-count")
 	if c.hasValue {
 		w.WriteByte('(')
@@ -1408,7 +1408,7 @@ func (c *RuneCount) Static() Pattern {
 	return &TypePattern{val: c.WidestOfType()}
 }
 
-func (c *RuneCount) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (c *RuneCount) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("rune-count")
 	if c.hasValue {
 		w.WriteByte('(')
@@ -1466,7 +1466,7 @@ func (r *SimpleRate) Static() Pattern {
 	return &TypePattern{val: r.WidestOfType()}
 }
 
-func (r *SimpleRate) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (r *SimpleRate) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("simple-rate")
 	if r.hasValue {
 		w.WriteByte('(')
@@ -1501,7 +1501,7 @@ func (r *AnyResourceName) Test(v Value, state RecTestCallState) bool {
 	}
 }
 
-func (r *AnyResourceName) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (r *AnyResourceName) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("resource-name")
 }
 
@@ -1537,7 +1537,7 @@ func (p *Port) Static() Pattern {
 	return &TypePattern{val: p.WidestOfType()}
 }
 
-func (p *Port) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (p *Port) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("port")
 }
 
@@ -1567,7 +1567,7 @@ func (*UData) WalkerNodeMeta() Value {
 	return Nil
 }
 
-func (i *UData) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (i *UData) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("udata")
 }
 
@@ -1588,7 +1588,7 @@ func (i *UDataHiearchyEntry) Test(v Value, state RecTestCallState) bool {
 	return ok
 }
 
-func (i *UDataHiearchyEntry) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (i *UDataHiearchyEntry) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("udata-hiearchy-entry")
 }
 

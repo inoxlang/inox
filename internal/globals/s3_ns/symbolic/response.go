@@ -2,7 +2,8 @@ package s3_ns
 
 import (
 	"github.com/inoxlang/inox/internal/core/symbolic"
-	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	"github.com/inoxlang/inox/internal/prettyprint"
+	pprint "github.com/inoxlang/inox/internal/prettyprint"
 )
 
 type GetObjectResponse struct {
@@ -35,7 +36,7 @@ func (*GetObjectResponse) PropertyNames() []string {
 	return []string{"body"}
 }
 
-func (r *GetObjectResponse) PrettyPrint(w symbolic.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (r *GetObjectResponse) PrettyPrint(w prettyprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("get-object-response")
 }
 
@@ -73,7 +74,7 @@ func (*PutObjectResponse) PropertyNames() []string {
 	return []string{"body"}
 }
 
-func (r *PutObjectResponse) PrettyPrint(w symbolic.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (r *PutObjectResponse) PrettyPrint(w prettyprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("put-object-response")
 }
 
@@ -111,7 +112,7 @@ func (*GetBucketPolicyResponse) PropertyNames() []string {
 	return []string{"body"}
 }
 
-func (r *GetBucketPolicyResponse) PrettyPrint(w symbolic.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (r *GetBucketPolicyResponse) PrettyPrint(w prettyprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("get-bucket-policy-response")
 }
 

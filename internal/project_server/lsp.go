@@ -9,7 +9,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core"
-	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	pprint "github.com/inoxlang/inox/internal/prettyprint"
 	"github.com/inoxlang/inox/internal/project_server/jsonrpc"
 	"github.com/inoxlang/inox/internal/project_server/logs"
 	"github.com/inoxlang/inox/internal/project_server/lsp"

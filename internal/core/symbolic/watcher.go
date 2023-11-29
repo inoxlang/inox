@@ -1,7 +1,7 @@
 package symbolic
 
 import (
-	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	pprint "github.com/inoxlang/inox/internal/prettyprint"
 )
 
 var (
@@ -37,7 +37,7 @@ func (r *AnyWatchable) Test(v Value, state RecTestCallState) bool {
 	return ok
 }
 
-func (r *AnyWatchable) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (r *AnyWatchable) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("watchable")
 }
 
@@ -75,7 +75,7 @@ func (r *Watcher) Test(v Value, state RecTestCallState) bool {
 	return r.filter.Test(it.filter, state)
 }
 
-func (r *Watcher) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (r *Watcher) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("watcher")
 }
 

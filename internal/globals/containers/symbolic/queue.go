@@ -2,7 +2,8 @@ package containers
 
 import (
 	"github.com/inoxlang/inox/internal/core/symbolic"
-	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	"github.com/inoxlang/inox/internal/prettyprint"
+	pprint "github.com/inoxlang/inox/internal/prettyprint"
 )
 
 var _ = []symbolic.Iterable{(*Queue)(nil)}
@@ -52,7 +53,7 @@ func (*Queue) Peek(ctx *symbolic.Context) (symbolic.Value, *symbolic.Bool) {
 	return &symbolic.Any{}, nil
 }
 
-func (*Queue) PrettyPrint(w symbolic.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (*Queue) PrettyPrint(w prettyprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("queue")
 	return
 }

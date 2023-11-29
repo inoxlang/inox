@@ -12,7 +12,8 @@ import (
 	jsoniter "github.com/inoxlang/inox/internal/jsoniter"
 	"github.com/inoxlang/inox/internal/parse"
 	permkind "github.com/inoxlang/inox/internal/permkind"
-	internal "github.com/inoxlang/inox/internal/pretty_print"
+	"github.com/inoxlang/inox/internal/prettyprint"
+	internal "github.com/inoxlang/inox/internal/prettyprint"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -825,7 +826,7 @@ func (*symbolicLoadableTestValue) IsMutable() bool {
 	return false
 }
 
-func (*symbolicLoadableTestValue) PrettyPrint(w symbolic.PrettyPrintWriter, config *internal.PrettyPrintConfig) {
+func (*symbolicLoadableTestValue) PrettyPrint(w prettyprint.PrettyPrintWriter, config *internal.PrettyPrintConfig) {
 	w.WriteString("symbolicLoadableTestValue")
 }
 
@@ -872,7 +873,7 @@ func (*symbolicLoadableTestValuePattern) IteratorElementValue() symbolic.Value {
 	return symbolic.ANY
 }
 
-func (*symbolicLoadableTestValuePattern) PrettyPrint(w symbolic.PrettyPrintWriter, config *internal.PrettyPrintConfig) {
+func (*symbolicLoadableTestValuePattern) PrettyPrint(w prettyprint.PrettyPrintWriter, config *internal.PrettyPrintConfig) {
 	w.WriteString("symbolicLoadableTestValuePattern")
 }
 

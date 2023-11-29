@@ -3,7 +3,7 @@ package symbolic
 import (
 	"errors"
 
-	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	pprint "github.com/inoxlang/inox/internal/prettyprint"
 )
 
 var (
@@ -32,7 +32,7 @@ func (p *AnyFormat) Test(v Value, state RecTestCallState) bool {
 	return ok
 }
 
-func (p *AnyFormat) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (p *AnyFormat) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("format")
 }
 

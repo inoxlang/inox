@@ -8,7 +8,7 @@ import (
 	"strconv"
 
 	"github.com/inoxlang/inox/internal/commonfmt"
-	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	pprint "github.com/inoxlang/inox/internal/prettyprint"
 	"github.com/inoxlang/inox/internal/utils"
 	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
@@ -116,7 +116,7 @@ func (a *Array) Test(v Value, state RecTestCallState) bool {
 	return true
 }
 
-func (a *Array) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (a *Array) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if a.elements != nil {
 		length := a.KnownLen()
 
@@ -147,9 +147,9 @@ func (a *Array) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfi
 						w.WriteByte(' ')
 					}
 					w.WriteString(strconv.FormatInt(int64(i), 10))
-					w.WriteBytes(COLON_SPACE)
+					w.WriteColonSpace()
 					if config.Colorize {
-						w.WriteBytes(ANSI_RESET_SEQUENCE)
+						w.WriteAnsiReset()
 					}
 				}
 			}
@@ -161,7 +161,7 @@ func (a *Array) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfi
 			isLastEntry := i == length-1
 
 			if !isLastEntry {
-				w.WriteBytes(COMMA_SPACE)
+				w.WriteCommaSpace()
 			}
 
 		}
@@ -388,7 +388,7 @@ func (list *List) PropertyNames() []string {
 	return LIST_PROPNAMES
 }
 
-func (list *List) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (list *List) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if list.readonly {
 		w.WriteName("readonly ")
 	}
@@ -423,9 +423,9 @@ func (list *List) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintCon
 						w.WriteByte(' ')
 					}
 					w.WriteBytes(utils.StringAsBytes(strconv.FormatInt(int64(i), 10)))
-					w.WriteBytes(COLON_SPACE)
+					w.WriteColonSpace()
 					if config.Colorize {
-						w.WriteBytes(ANSI_RESET_SEQUENCE)
+						w.WriteAnsiReset()
 					}
 				}
 			}
@@ -437,7 +437,7 @@ func (list *List) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintCon
 			isLastEntry := i == length-1
 
 			if !isLastEntry {
-				w.WriteBytes(COMMA_SPACE)
+				w.WriteCommaSpace()
 			}
 
 		}
@@ -716,7 +716,7 @@ func (t *Tuple) Static() Pattern {
 	return NewListPatternOf(&TypePattern{val: elem})
 }
 
-func (t *Tuple) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (t *Tuple) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if t.elements != nil {
 		lst := NewList(t.elements...)
 		w.WriteByte('#')
@@ -857,20 +857,20 @@ func (list *KeyList) Concretize(ctx ConcreteContext) any {
 	return extData.ConcreteValueFactories.CreateKeyList(slices.Clone(list.Keys))
 }
 
-func (list *KeyList) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (list *KeyList) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if list.Keys != nil {
 		if w.Depth > config.MaxDepth && len(list.Keys) > 0 {
 			w.WriteString(".{(...)]}")
 			return
 		}
 
-		w.WriteBytes(DOT_OPENING_CURLY_BRACKET)
+		w.WriteDotOpeningCurlyBracket()
 
 		first := true
 
 		for _, k := range list.Keys {
 			if !first {
-				w.WriteBytes(COMMA_SPACE)
+				w.WriteCommaSpace()
 			}
 			first = false
 
@@ -1082,7 +1082,7 @@ func (dict *Dictionary) WatcherElement() Value {
 	return ANY
 }
 
-func (dict *Dictionary) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (dict *Dictionary) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if dict.entries != nil {
 		if w.Depth > config.MaxDepth && len(dict.entries) > 0 {
 			w.WriteString(":{(...)}")
@@ -1115,11 +1115,11 @@ func (dict *Dictionary) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPr
 			w.WriteString(k)
 
 			if config.Colorize {
-				w.WriteBytes(ANSI_RESET_SEQUENCE)
+				w.WriteAnsiReset()
 			}
 
 			//colon
-			w.WriteBytes(COLON_SPACE)
+			w.WriteColonSpace()
 
 			//value
 			v := dict.entries[k]
@@ -1796,7 +1796,7 @@ func (obj *Object) Static() Pattern {
 	return NewInexactObjectPattern(entries, obj.optionalEntries)
 }
 
-func (obj *Object) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (obj *Object) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if obj.readonly {
 		w.WriteName("readonly ")
 	}
@@ -1829,7 +1829,7 @@ func (obj *Object) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintCo
 			w.WriteBytes(utils.Must(utils.MarshalJsonNoHTMLEspace(k)))
 
 			if config.Colorize {
-				w.WriteBytes(ANSI_RESET_SEQUENCE)
+				w.WriteAnsiReset()
 			}
 
 			if _, isOptional := obj.optionalEntries[k]; isOptional {
@@ -1837,7 +1837,7 @@ func (obj *Object) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintCo
 			}
 
 			//colon
-			w.WriteBytes(COLON_SPACE)
+			w.WriteColonSpace()
 
 			//value
 			v := obj.entries[k]
@@ -1847,7 +1847,7 @@ func (obj *Object) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintCo
 			isLastEntry := i == len(keys)-1
 
 			if !isLastEntry {
-				w.WriteBytes(COMMA_SPACE)
+				w.WriteCommaSpace()
 			}
 		}
 
@@ -2111,7 +2111,7 @@ func (rec *Record) Static() Pattern {
 	return NewInexactObjectPattern(entries, rec.optionalEntries)
 }
 
-func (rec *Record) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (rec *Record) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if rec.entries != nil {
 		if w.Depth > config.MaxDepth && len(rec.entries) > 0 {
 			w.WriteString("#{(...)}")
@@ -2140,7 +2140,7 @@ func (rec *Record) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintCo
 			w.WriteBytes(utils.Must(utils.MarshalJsonNoHTMLEspace(k)))
 
 			if config.Colorize {
-				w.WriteBytes(ANSI_RESET_SEQUENCE)
+				w.WriteAnsiReset()
 			}
 
 			if _, isOptional := rec.optionalEntries[k]; isOptional {
@@ -2148,7 +2148,7 @@ func (rec *Record) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintCo
 			}
 
 			//colon
-			w.WriteBytes(COLON_SPACE)
+			w.WriteColonSpace()
 
 			//value
 			v := rec.entries[k]
@@ -2158,7 +2158,7 @@ func (rec *Record) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintCo
 			isLastEntry := i == len(keys)-1
 
 			if !isLastEntry {
-				w.WriteBytes(COMMA_SPACE)
+				w.WriteCommaSpace()
 			}
 		}
 
@@ -2220,7 +2220,7 @@ func (i *AnyIndexable) HasKnownLen() bool {
 	return false
 }
 
-func (r *AnyIndexable) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (r *AnyIndexable) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("indexable")
 }
 

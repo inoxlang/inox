@@ -1,7 +1,7 @@
 package symbolic
 
 import (
-	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	pprint "github.com/inoxlang/inox/internal/prettyprint"
 )
 
 var (
@@ -31,7 +31,7 @@ func (r *AnyWritable) Test(v Value, state RecTestCallState) bool {
 	}
 }
 
-func (r *AnyWritable) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (r *AnyWritable) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("writable")
 	return
 }
@@ -95,7 +95,7 @@ func (Writer) PropertyNames() []string {
 	return []string{"write"}
 }
 
-func (*Writer) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (*Writer) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("writer")
 	return
 }

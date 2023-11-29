@@ -1,7 +1,7 @@
 package symbolic
 
 import (
-	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	pprint "github.com/inoxlang/inox/internal/prettyprint"
 )
 
 // A LifetimeJob represents a symbolic LifetimeJob.
@@ -49,7 +49,7 @@ func (*LifetimeJob) PropertyNames() []string {
 	return []string{}
 }
 
-func (r *LifetimeJob) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (r *LifetimeJob) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if IsAny(r.subjectPattern) {
 		w.WriteName("lifetime-job")
 		return

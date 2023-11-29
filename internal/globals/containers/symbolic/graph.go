@@ -2,7 +2,8 @@ package containers
 
 import (
 	"github.com/inoxlang/inox/internal/core/symbolic"
-	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	"github.com/inoxlang/inox/internal/prettyprint"
+	pprint "github.com/inoxlang/inox/internal/prettyprint"
 )
 
 var (
@@ -62,7 +63,7 @@ func (f *Graph) Get(ctx *symbolic.Context, k symbolic.Value) symbolic.Value {
 	return symbolic.ANY
 }
 
-func (r *Graph) PrettyPrint(w symbolic.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (r *Graph) PrettyPrint(w prettyprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("graph")
 }
 
@@ -121,7 +122,7 @@ func (*GraphNode) PropertyNames() []string {
 	return []string{"data", "children", "parents"}
 }
 
-func (r *GraphNode) PrettyPrint(w symbolic.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (r *GraphNode) PrettyPrint(w prettyprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("graph-node")
 }
 

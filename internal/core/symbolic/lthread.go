@@ -1,7 +1,7 @@
 package symbolic
 
 import (
-	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	pprint "github.com/inoxlang/inox/internal/prettyprint"
 )
 
 const (
@@ -77,7 +77,7 @@ func (t *LThread) Cancel(*Context) {
 
 }
 
-func (t *LThread) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (t *LThread) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("lthread")
 }
 
@@ -133,7 +133,7 @@ func (g *LThreadGroup) CancelAll(*Context) {
 
 }
 
-func (g *LThreadGroup) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (g *LThreadGroup) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("lthread-group")
 }
 
@@ -193,6 +193,6 @@ func (s *ExecutedStep) WaitResult(ctx *Context) (Value, *Error) {
 func (s *ExecutedStep) Cancel(*Context) {
 }
 
-func (s *ExecutedStep) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (s *ExecutedStep) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("executed-step")
 }

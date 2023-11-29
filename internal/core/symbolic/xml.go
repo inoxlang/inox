@@ -4,7 +4,7 @@ import (
 	"reflect"
 
 	parse "github.com/inoxlang/inox/internal/parse"
-	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	pprint "github.com/inoxlang/inox/internal/prettyprint"
 )
 
 const (
@@ -64,7 +64,7 @@ func (r *XMLElement) Test(v Value, state RecTestCallState) bool {
 	}
 }
 
-func (r *XMLElement) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (r *XMLElement) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("xml-element")
 	return
 }

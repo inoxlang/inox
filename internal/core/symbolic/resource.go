@@ -4,7 +4,7 @@ import (
 	"errors"
 	"net/url"
 
-	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	pprint "github.com/inoxlang/inox/internal/prettyprint"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
@@ -121,7 +121,7 @@ func (p *Path) Static() Pattern {
 	return ANY_PATH_PATTERN
 }
 
-func (p *Path) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (p *Path) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if p.hasValue {
 		w.WriteString(p.value)
 		return
@@ -296,7 +296,7 @@ func (u *URL) Static() Pattern {
 	return ANY_URL_PATTERN
 }
 
-func (u *URL) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (u *URL) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if u.hasValue {
 		w.WriteString(u.value)
 		return
@@ -411,7 +411,7 @@ func (s *Scheme) Static() Pattern {
 	return &TypePattern{val: ANY_SCHEME}
 }
 
-func (s *Scheme) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (s *Scheme) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if s.hasValue {
 		w.WriteString(s.value)
 	} else {
@@ -504,7 +504,7 @@ func (h *Host) Static() Pattern {
 	return ANY_HOST_PATTERN
 }
 
-func (h *Host) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (h *Host) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if h.hasValue {
 		w.WriteString(h.value)
 		return

@@ -7,12 +7,12 @@ import (
 	"runtime"
 
 	parse "github.com/inoxlang/inox/internal/parse"
-	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	pprint "github.com/inoxlang/inox/internal/prettyprint"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
 const (
-	PRETTY_PRINT_OPTIONAL_PARAM_PREFIX = "optional "
+	prettyprint_OPTIONAL_PARAM_PREFIX = "optional "
 )
 
 var (
@@ -67,6 +67,10 @@ func (fn *InoxFunction) IsVariadic() bool {
 
 func (fn *InoxFunction) Parameters() []Value {
 	return fn.parameters
+}
+
+func (fn *InoxFunction) ParameterNames() []string {
+	return fn.parameterNames
 }
 
 func (fn *InoxFunction) Result() Value {
@@ -191,7 +195,7 @@ func (fn *InoxFunction) WatcherElement() Value {
 	return ANY
 }
 
-func (fn *InoxFunction) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (fn *InoxFunction) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if fn.visitCheckNode != nil {
 		w.WriteString("[restricted stmts] ")
 	}
@@ -212,7 +216,7 @@ func (fn *InoxFunction) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPr
 		if fn.IsVariadic() && i == len(fn.parameters)-1 {
 			w.WriteString("...")
 		}
-		param.PrettyPrint(w.ZeroDepthIndent().EnterPattern(), config)
+		param.PrettyPrint(w.ZeroDepthIndent(), config)
 	}
 
 	w.WriteString(") ")
@@ -335,7 +339,7 @@ func (fn *GoFunction) IsShared() bool {
 	return fn.originState != nil
 }
 
-func (fn *GoFunction) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (fn *GoFunction) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if fn.fn == nil {
 		w.WriteString("fn")
 	}
@@ -378,7 +382,7 @@ func (fn *GoFunction) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrin
 				w.WriteString("???" + err.Error())
 			} else {
 				if isOptionalParam {
-					w.WriteString(PRETTY_PRINT_OPTIONAL_PARAM_PREFIX)
+					w.WriteString(prettyprint_OPTIONAL_PARAM_PREFIX)
 				}
 				param.PrettyPrint(w.ZeroDepthIndent().EnterPattern(), config)
 			}
@@ -964,7 +968,7 @@ func (f *Function) Test(v Value, state RecTestCallState) bool {
 	}
 }
 
-func (f *Function) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (f *Function) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if f.pattern != nil {
 		w.WriteString("function(???)")
 		return
@@ -988,7 +992,7 @@ func (f *Function) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintCo
 		}
 
 		if !isVariadicParam && f.HasOptionalParams() && i >= f.firstOptionalParamIndex {
-			w.WriteString(PRETTY_PRINT_OPTIONAL_PARAM_PREFIX)
+			w.WriteString(prettyprint_OPTIONAL_PARAM_PREFIX)
 		}
 
 		param.PrettyPrint(w.ZeroDepthIndent().EnterPattern(), config)

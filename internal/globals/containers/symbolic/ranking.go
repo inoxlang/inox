@@ -2,7 +2,8 @@ package containers
 
 import (
 	"github.com/inoxlang/inox/internal/core/symbolic"
-	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	"github.com/inoxlang/inox/internal/prettyprint"
+	pprint "github.com/inoxlang/inox/internal/prettyprint"
 )
 
 var _ = []symbolic.Iterable{(*Ranking)(nil), (*Rank)(nil)}
@@ -46,7 +47,7 @@ func (f *Ranking) Remove(ctx *symbolic.Context, v symbolic.Serializable) {
 
 }
 
-func (r *Ranking) PrettyPrint(w symbolic.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (r *Ranking) PrettyPrint(w prettyprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("ranking")
 }
 
@@ -91,7 +92,7 @@ func (*Rank) PropertyNames() []string {
 	return []string{"values"}
 }
 
-func (r *Rank) PrettyPrint(w symbolic.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (r *Rank) PrettyPrint(w prettyprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("rank")
 }
 

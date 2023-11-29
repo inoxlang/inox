@@ -2,7 +2,8 @@ package html_ns
 
 import (
 	"github.com/inoxlang/inox/internal/core/symbolic"
-	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	"github.com/inoxlang/inox/internal/prettyprint"
+	pprint "github.com/inoxlang/inox/internal/prettyprint"
 )
 
 var (
@@ -59,7 +60,7 @@ func (n *HTMLNode) WatcherElement() symbolic.Value {
 	return symbolic.ANY
 }
 
-func (n *HTMLNode) PrettyPrint(w symbolic.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (n *HTMLNode) PrettyPrint(w prettyprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("html-node")
 }
 

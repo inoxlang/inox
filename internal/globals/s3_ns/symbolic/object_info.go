@@ -2,7 +2,8 @@ package s3_ns
 
 import (
 	"github.com/inoxlang/inox/internal/core/symbolic"
-	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	"github.com/inoxlang/inox/internal/prettyprint"
+	pprint "github.com/inoxlang/inox/internal/prettyprint"
 )
 
 type ObjectInfo struct {
@@ -35,7 +36,7 @@ func (*ObjectInfo) PropertyNames() []string {
 	return []string{"key"}
 }
 
-func (r *ObjectInfo) PrettyPrint(w symbolic.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (r *ObjectInfo) PrettyPrint(w prettyprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("object-info")
 }
 

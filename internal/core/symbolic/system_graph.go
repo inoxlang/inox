@@ -3,7 +3,7 @@ package symbolic
 import (
 	"errors"
 
-	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	pprint "github.com/inoxlang/inox/internal/prettyprint"
 )
 
 var (
@@ -91,7 +91,7 @@ func (g *SystemGraph) IsShared() bool {
 	return true
 }
 
-func (g *SystemGraph) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (g *SystemGraph) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("system-graph")
 	return
 }
@@ -140,7 +140,7 @@ func (d *SystemGraphNodes) IteratorElementValue() Value {
 	return ANY_SYSTEM_GRAPH_NODE
 }
 
-func (d *SystemGraphNodes) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (d *SystemGraphNodes) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("system-graph-nodes")
 	return
 }
@@ -206,7 +206,7 @@ func (n *SystemGraphNode) IsShared() bool {
 	return true
 }
 
-func (n *SystemGraphNode) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (n *SystemGraphNode) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("system-graph-node")
 	return
 }
@@ -271,7 +271,7 @@ func (n *SystemGraphEvent) IsShared() bool {
 	return true
 }
 
-func (n *SystemGraphEvent) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (n *SystemGraphEvent) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("system-graph-event")
 	return
 }
@@ -324,7 +324,7 @@ func (e *SystemGraphEdge) PropertyNames() []string {
 	return SYSTEM_GRAP_EDGE_PROPNAMES
 }
 
-func (e *SystemGraphEdge) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (e *SystemGraphEdge) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("system-graph-edge")
 	return
 }

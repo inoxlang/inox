@@ -1,7 +1,7 @@
 package symbolic
 
 import (
-	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	pprint "github.com/inoxlang/inox/internal/prettyprint"
 )
 
 // A RandomnessSource represents a symbolic RandomnessSource.
@@ -50,7 +50,7 @@ func (r *RandomnessSource) GetGoMethod(name string) (*GoFunction, bool) {
 	return nil, false
 }
 
-func (r *RandomnessSource) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (r *RandomnessSource) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("random-source")
 	return
 }

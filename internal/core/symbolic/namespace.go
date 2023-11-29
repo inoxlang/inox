@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sort"
 
-	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	pprint "github.com/inoxlang/inox/internal/prettyprint"
 	"github.com/inoxlang/inox/internal/utils"
 	"golang.org/x/exp/maps"
 )
@@ -98,7 +98,7 @@ func (ns *Namespace) PropertyNames() []string {
 	return maps.Keys(ns.entries)
 }
 
-func (ns *Namespace) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (ns *Namespace) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if ns.entries != nil {
 		if w.Depth > config.MaxDepth && len(ns.entries) > 0 {
 			w.WriteString("(..namespace..)")
@@ -127,11 +127,11 @@ func (ns *Namespace) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrint
 			w.WriteBytes(utils.Must(utils.MarshalJsonNoHTMLEspace(k)))
 
 			if config.Colorize {
-				w.WriteBytes(ANSI_RESET_SEQUENCE)
+				w.WriteAnsiReset()
 			}
 
 			//colon
-			w.WriteBytes(COLON_SPACE)
+			w.WriteColonSpace()
 
 			//value
 			v := ns.entries[k]
@@ -141,7 +141,7 @@ func (ns *Namespace) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrint
 			isLastEntry := i == len(keys)-1
 
 			if !isLastEntry {
-				w.WriteBytes(COMMA_SPACE)
+				w.WriteCommaSpace()
 			}
 		}
 

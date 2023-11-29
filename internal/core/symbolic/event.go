@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	pprint "github.com/inoxlang/inox/internal/prettyprint"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
@@ -61,7 +61,7 @@ func (*EventSource) PropertyNames() []string {
 func (s *EventSource) Close() {
 }
 
-func (s *EventSource) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (s *EventSource) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("event-source")
 }
 
@@ -112,7 +112,7 @@ func (e *Event) Prop(name string) Value {
 	}
 }
 
-func (r *Event) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (r *Event) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("event")
 }
 

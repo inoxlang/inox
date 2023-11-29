@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/inoxlang/inox/internal/parse"
-	pprint "github.com/inoxlang/inox/internal/pretty_print"
+	pprint "github.com/inoxlang/inox/internal/prettyprint"
 	"github.com/inoxlang/inox/internal/utils"
 	"golang.org/x/exp/slices"
 )
@@ -285,7 +285,7 @@ func (db *DatabaseIL) Close(*Context) *Error {
 	return nil
 }
 
-func (db *DatabaseIL) PrettyPrint(w PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (db *DatabaseIL) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("database ")
 	db.schema.PrettyPrint(w, config)
 }
