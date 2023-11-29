@@ -4095,7 +4095,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 			}
 
 			state.addError(makeSymbolicEvalError(node, state, msg))
-			return &AnyPattern{}, nil
+			return ANY_PATTERN, nil
 		} else {
 			return patt, nil
 		}
@@ -4188,13 +4188,21 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 		namespace := state.ctx.ResolvePatternNamespace(n.Name)
 		if namespace == nil {
 			state.addError(makeSymbolicEvalError(node, state, fmtPatternNamespaceIsNotDeclared(n.Name)))
-			return ANY, nil
+			return ANY_PATTERN_NAMESPACE, nil
 		}
 		return namespace, nil
 	case *parse.PatternNamespaceMemberExpression:
+		prevErrCount := len(state.errors())
+
 		v, err := symbolicEval(n.Namespace, state)
 		if err != nil {
 			return nil, err
+		}
+
+		//if there was an error during the evaluation of the pattern namespace identifier,
+		//don't add a useless error.
+		if len(state.errors()) > prevErrCount && v == ANY_PATTERN_NAMESPACE {
+			return ANY_PATTERN, nil
 		}
 
 		namespace := v.(*PatternNamespace)
@@ -4204,21 +4212,16 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 				state.symbolicData.SetMostSpecificNodeValue(n.MemberName, result)
 			}
 		}()
+		namespaceName := n.Namespace.Name
+		memberName := n.MemberName.Name
 
-		if namespace == nil {
-			state.addError(makeSymbolicEvalError(node, state, fmtPatternNamespaceIsNotDeclared(n.Namespace.Name)))
+		patt := namespace.entries[memberName] //it's not an issue if namespace.entries is nil
+
+		if patt == nil {
+			state.addError(makeSymbolicEvalError(n.MemberName, state, fmtPatternNamespaceHasNotMember(namespaceName, memberName)))
 			return ANY_PATTERN, nil
-		} else {
-			if namespace.entries == nil {
-				return ANY_PATTERN, nil
-			}
-			patt := namespace.entries[n.MemberName.Name]
-
-			if patt == nil {
-				return ANY_PATTERN, nil
-			}
-			return patt, nil
 		}
+		return patt, nil
 	case *parse.OptionalPatternExpression:
 		v, err := symbolicEval(n.Pattern, state)
 		if err != nil {

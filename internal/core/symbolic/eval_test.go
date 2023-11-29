@@ -9623,21 +9623,55 @@ func TestSymbolicEval(t *testing.T) {
 		t.Run("non existing", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`%nonexisting`)
 
-			_, err := symbolicEval(n, state)
+			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
 				makeSymbolicEvalError(n.Statements[0], state, fmtPatternIsNotDeclared("nonexisting")),
 			}, state.errors())
+			assert.Equal(t, ANY_PATTERN, res)
 		})
 
 		t.Run("non existing: name close to an existing patern", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`%in`)
 
-			_, err := symbolicEval(n, state)
+			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
 				makeSymbolicEvalError(n.Statements[0], state, fmtPatternIsNotDeclaredYouProbablyMeant("in", "int")),
 			}, state.errors())
+			assert.Equal(t, ANY_PATTERN, res)
+		})
+	})
+
+	t.Run("pattern namespace's member", func(t *testing.T) {
+		t.Run("undeclared namespace", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				return %nonexisting.int
+			`)
+
+			patternIdent := parse.FindNode(n, (*parse.PatternNamespaceIdentifierLiteral)(nil), nil)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(patternIdent, state, fmtPatternNamespaceIsNotDeclared("nonexisting")),
+			}, state.errors())
+			assert.Equal(t, ANY_PATTERN, res)
+		})
+
+		t.Run("non existing member", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				return %myns.nonexisting
+			`)
+
+			memberIdent := parse.FindNode(n, (*parse.IdentifierLiteral)(nil), nil)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(memberIdent, state, fmtPatternNamespaceHasNotMember("myns", "nonexisting")),
+			}, state.errors())
+			assert.Equal(t, ANY_PATTERN, res)
 		})
 	})
 

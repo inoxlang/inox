@@ -98,6 +98,8 @@ var (
 	ANY_INT_RANGE_PATTERN   = NewIntRangePattern(ANY_INT_RANGE)
 	ANY_FLOAT_RANGE_PATTERN = NewFloatRangePattern(ANY_FLOAT_RANGE)
 
+	ANY_PATTERN_NAMESPACE = &PatternNamespace{}
+
 	ErrPatternNotCallable                        = errors.New("pattern is not callable")
 	ErrValueAlreadyInitialized                   = errors.New("value already initialized")
 	ErrValueInExactPatternValueShouldBeImmutable = errors.New("the value in an exact value pattern should be immutable")
@@ -3564,5 +3566,5 @@ func (ns *PatternNamespace) PrettyPrint(w pprint.PrettyPrintWriter, config *ppri
 }
 
 func (ns *PatternNamespace) WidestOfType() Value {
-	return &PatternNamespace{}
+	return ANY_PATTERN_NAMESPACE
 }
