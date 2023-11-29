@@ -460,7 +460,7 @@ func fmtPropOfDoesNotExist(name string, v Value, suggestion string) string {
 	if suggestion != "" {
 		suggestion = " maybe you meant ." + suggestion
 	}
-	return fmt.Sprintf("property .%s does not exist in %s (%T)%s", name, Stringify(v), v, suggestion)
+	return fmt.Sprintf("property .%s does not exist in %s%s", name, Stringify(v), suggestion)
 }
 
 func fmtPropertyIsOptionalUseOptionalMembExpr(name string) string {
