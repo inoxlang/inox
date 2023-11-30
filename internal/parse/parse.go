@@ -10554,12 +10554,14 @@ func (p *parser) parseAssignment(left Node) (result Node) {
 	}()
 
 	var assignmentTokenType TokenType
+	var assignmentSubTokenType TokenSubType
 	var assignmentOperator AssignmentOperator
 
 	{
 		switch p.s[p.i] {
 		case '=':
 			assignmentTokenType = EQUAL
+			assignmentSubTokenType = ASSIGN_EQUAL
 			assignmentOperator = Assign
 		case '+':
 			assignmentTokenType = PLUS_EQUAL
@@ -10578,7 +10580,7 @@ func (p *parser) parseAssignment(left Node) (result Node) {
 			assignmentOperator = DivAssign
 			p.i++
 		}
-		p.tokens = append(p.tokens, Token{Type: assignmentTokenType, Span: NodeSpan{p.i, p.i + 1}})
+		p.tokens = append(p.tokens, Token{Type: assignmentTokenType, SubType: assignmentSubTokenType, Span: NodeSpan{p.i, p.i + 1}})
 	}
 
 	p.i++

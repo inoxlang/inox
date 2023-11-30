@@ -768,8 +768,9 @@ func GetTokens(node Node, chunk *Chunk, addMeta bool) []Token {
 				Raw:  namePart,
 			})
 			tokens = append(tokens, Token{
-				Type: EQUAL,
-				Span: NodeSpan{nameEnd, nameEnd + 1},
+				Type:    EQUAL,
+				SubType: FLAG_EQUAL,
+				Span:    NodeSpan{nameEnd, nameEnd + 1},
 			})
 		case *OptionPatternLiteral:
 			namePart := "%-"
@@ -791,8 +792,9 @@ func GetTokens(node Node, chunk *Chunk, addMeta bool) []Token {
 				Raw:  namePart,
 			})
 			tokens = append(tokens, Token{
-				Type: EQUAL,
-				Span: NodeSpan{nameEnd, nameEnd + 1},
+				Type:    EQUAL,
+				SubType: FLAG_EQUAL,
+				Span:    NodeSpan{nameEnd, nameEnd + 1},
 			})
 		}
 

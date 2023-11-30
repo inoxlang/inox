@@ -26,6 +26,11 @@ func TestGetTokenAtPosition(t *testing.T) {
 		{"[1 2]", 1, Token{Type: INT_LITERAL, Span: NodeSpan{1, 2}, Raw: "1"}},
 
 		{":{./a:1}", 2, Token{Type: RELATIVE_PATH_LITERAL, Span: NodeSpan{2, 5}, Raw: "./a"}},
+
+		{"-a=1", 2, Token{Type: EQUAL, SubType: FLAG_EQUAL, Span: NodeSpan{2, 3}, Raw: "="}},
+		{"%-a=1", 3, Token{Type: EQUAL, SubType: FLAG_EQUAL, Span: NodeSpan{3, 4}, Raw: "="}},
+
+		{"a=1", 1, Token{Type: EQUAL, SubType: ASSIGN_EQUAL, Span: NodeSpan{1, 2}, Raw: "="}},
 	}
 
 	for _, testCase := range testCases {
