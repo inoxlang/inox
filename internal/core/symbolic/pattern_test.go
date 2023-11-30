@@ -680,7 +680,7 @@ func TestSymbolicObjectPattern(t *testing.T) {
 			}, RecTestCallState{}))
 		})
 
-		t.Run("an infinite recursion should cause raise the error "+ErrMaximumSymbolicTestCallDepthReached.Error(), func(t *testing.T) {
+		t.Run("an infinite recursion should raise the error "+ErrMaximumSymbolicTestCallDepthReached.Error(), func(t *testing.T) {
 			pattern := &ObjectPattern{}
 			pattern.entries = map[string]Pattern{
 				"self": pattern,
@@ -1785,7 +1785,7 @@ func TestSymbolicObjectPattern(t *testing.T) {
 			}
 		})
 
-		t.Run("an infinite recursion should cause raise the error "+ErrMaximumSymbolicTestCallDepthReached.Error(), func(t *testing.T) {
+		t.Run("an infinite recursion should raise the error "+ErrMaximumSymbolicTestCallDepthReached.Error(), func(t *testing.T) {
 			//TODO
 		})
 	})

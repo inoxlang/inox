@@ -137,7 +137,7 @@ func TestSymbolicObject(t *testing.T) {
 		})
 	}
 
-	t.Run("an infinite recursion should cause raise the error "+ErrMaximumSymbolicTestCallDepthReached.Error(), func(t *testing.T) {
+	t.Run("an infinite recursion should raise the error "+ErrMaximumSymbolicTestCallDepthReached.Error(), func(t *testing.T) {
 		obj := &Object{}
 		obj.entries = map[string]Serializable{
 			"self": obj,
@@ -357,7 +357,7 @@ func TestSymbolicRecord(t *testing.T) {
 			})
 		}
 
-		t.Run("an infinite recursion should cause raise the error "+ErrMaximumSymbolicTestCallDepthReached.Error(), func(t *testing.T) {
+		t.Run("an infinite recursion should raise the error "+ErrMaximumSymbolicTestCallDepthReached.Error(), func(t *testing.T) {
 			rec := &Record{}
 			rec.entries = map[string]Serializable{
 				"self": rec,
@@ -456,7 +456,7 @@ func TestSymbolicList(t *testing.T) {
 			})
 		}
 
-		t.Run("an infinite recursion should cause raise the error "+ErrMaximumSymbolicTestCallDepthReached.Error(), func(t *testing.T) {
+		t.Run("an infinite recursion should raise the error "+ErrMaximumSymbolicTestCallDepthReached.Error(), func(t *testing.T) {
 			list1 := &List{}
 			list1.elements = []Serializable{list1}
 			assert.PanicsWithError(t, ErrMaximumSymbolicTestCallDepthReached.Error(), func() {
@@ -660,7 +660,7 @@ func TestSymbolicTuple(t *testing.T) {
 			})
 		}
 
-		t.Run("an infinite recursion should cause raise the error "+ErrMaximumSymbolicTestCallDepthReached.Error(), func(t *testing.T) {
+		t.Run("an infinite recursion should raise the error "+ErrMaximumSymbolicTestCallDepthReached.Error(), func(t *testing.T) {
 			tuple1 := &Tuple{}
 			tuple1.elements = []Serializable{tuple1}
 			assert.PanicsWithError(t, ErrMaximumSymbolicTestCallDepthReached.Error(), func() {
@@ -811,7 +811,7 @@ func TestSymbolicDictionary(t *testing.T) {
 			})
 		}
 
-		t.Run("an infinite recursion should cause raise the error "+ErrMaximumSymbolicTestCallDepthReached.Error(), func(t *testing.T) {
+		t.Run("an infinite recursion should raise the error "+ErrMaximumSymbolicTestCallDepthReached.Error(), func(t *testing.T) {
 			dict := &Dictionary{}
 
 			dict.entries = map[string]Serializable{
