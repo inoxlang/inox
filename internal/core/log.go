@@ -56,7 +56,7 @@ type LogLevels struct {
 type NewDefaultLogsArgs struct {
 	DefaultLevel            zerolog.Level
 	ByPath                  map[Path]zerolog.Level //nil is accepted
-	EnableInternalDebugLogs bool
+	EnableInternalDebugLogs bool                   //ignored if DefaultLevel != debug
 }
 
 func NewLogLevels(args NewDefaultLogsArgs) *LogLevels {
@@ -71,7 +71,7 @@ func NewLogLevels(args NewDefaultLogsArgs) *LogLevels {
 	return &LogLevels{
 		defaultLevel:  args.DefaultLevel,
 		levelByPath:   byPath,
-		internalDebug: args.EnableInternalDebugLogs,
+		internalDebug: args.EnableInternalDebugLogs && args.DefaultLevel == zerolog.DebugLevel,
 	}
 }
 
