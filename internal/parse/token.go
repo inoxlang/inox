@@ -25,11 +25,11 @@ var (
 )
 
 type Token struct {
-	Type     TokenType
-	Meta     TokenMeta
-	UserMeta uint32
-	Span     NodeSpan
-	Raw      string
+	Type    TokenType
+	SubType TokenSubType
+	Meta    TokenMeta
+	Span    NodeSpan
+	Raw     string
 }
 
 func (t Token) Str() string {
@@ -138,10 +138,7 @@ const (
 	OPENING_TUPLE_BRACKET
 	OPENING_PARENTHESIS
 	CLOSING_PARENTHESIS
-	SINGLE_INTERP_OPENING_BRACE
-	SINGLE_INTERP_CLOSING_BRACE
 	PATTERN_UNION_OPENING_PIPE
-	PATTERN_UNION_PIPE
 	ARROW
 	PIPE
 	COMMA
@@ -229,9 +226,32 @@ const (
 	OCCURRENCE_MODIFIER
 )
 
+type TokenSubType uint16
+
+const (
+	PATH_INTERP_OPENING_BRACE TokenSubType = iota + 1
+	PATH_INTERP_CLOSING_BRACE
+
+	HOST_INTERP_OPENING_BRACE
+	HOST_INTERP_CLOSING_BRACE
+
+	QUERY_PARAM_INTERP_OPENING_BRACE
+	QUERY_PARAM_INTERP_CLOSING_BRACE
+
+	UNPREFIXED_PATTERN_UNION_PIPE
+	STRING_PATTERN_UNION_PIPE
+	CALL_PIPE
+
+	ASSIGN_EQUAL
+	FLAG_EQUAL
+	XML_ATTR_EQUAL
+)
+
 type TokenMeta uint16
 
 const (
+	//one bit per meta type
+
 	Callee TokenMeta = 1 << iota
 	ParamName
 	PropName
@@ -336,10 +356,7 @@ var tokenStrings = [...]string{
 	OPENING_LIST_PATTERN_BRACKET:   "%[",
 	OPENING_PARENTHESIS:            "(",
 	CLOSING_PARENTHESIS:            ")",
-	SINGLE_INTERP_OPENING_BRACE:    "{",
-	SINGLE_INTERP_CLOSING_BRACE:    "}",
 	PATTERN_UNION_OPENING_PIPE:     "%|",
-	PATTERN_UNION_PIPE:             "|",
 	ARROW:                          "=>",
 	PIPE:                           "|",
 	COMMA:                          ",",
@@ -513,10 +530,7 @@ var tokenTypenames = [...]string{
 	OPENING_TUPLE_BRACKET:          "OPENING_TUPLE_BRACKET",
 	OPENING_PARENTHESIS:            "OPENING_PARENTHESIS",
 	CLOSING_PARENTHESIS:            "CLOSING_PARENTHESIS",
-	SINGLE_INTERP_OPENING_BRACE:    "SINGLE_INTERP_OPENING_BRACE",
-	SINGLE_INTERP_CLOSING_BRACE:    "SINGLE_INTERP_CLOSING_BRACE",
 	PATTERN_UNION_OPENING_PIPE:     "PATTERN_UNION_OPENING_PIPE",
-	PATTERN_UNION_PIPE:             "PATTERN_UNION_PIPE",
 	ARROW:                          "ARROW",
 	PIPE:                           "PIPE",
 	COMMA:                          "COMMA",

@@ -851,8 +851,9 @@ func (p *parser) parsePathExpressionSlices(start int32, exclEnd int32) []Node {
 					missingClosingBrace = true
 				} else {
 					p.tokens = append(p.tokens, Token{
-						Type: SINGLE_INTERP_CLOSING_BRACE,
-						Span: NodeSpan{index, index + 1},
+						Type:    CLOSING_CURLY_BRACKET,
+						SubType: PATH_INTERP_CLOSING_BRACE,
+						Span:    NodeSpan{index, index + 1},
 					})
 				}
 
@@ -950,8 +951,9 @@ func (p *parser) parsePathExpressionSlices(start int32, exclEnd int32) []Node {
 
 				if j < exclEnd { // '}'
 					p.tokens = append(p.tokens, Token{
-						Type: SINGLE_INTERP_CLOSING_BRACE,
-						Span: NodeSpan{j, j + 1},
+						Type:    CLOSING_CURLY_BRACKET,
+						SubType: PATH_INTERP_CLOSING_BRACE,
+						Span:    NodeSpan{j, j + 1},
 					})
 					j++
 				}
@@ -966,8 +968,9 @@ func (p *parser) parsePathExpressionSlices(start int32, exclEnd int32) []Node {
 			slice := string(p.s[sliceStart:index]) //previous cannot be an interpolation
 
 			p.tokens = append(p.tokens, Token{
-				Type: SINGLE_INTERP_OPENING_BRACE,
-				Span: NodeSpan{index, index + 1},
+				Type:    OPENING_CURLY_BRACKET,
+				SubType: PATH_INTERP_OPENING_BRACE,
+				Span:    NodeSpan{index, index + 1},
 			})
 
 			slices = append(slices, &PathSlice{
@@ -1038,8 +1041,9 @@ func (p *parser) parseQueryParameterValueSlices(start int32, exclEnd int32) []No
 					missingClosingBrace = true
 				} else {
 					p.tokens = append(p.tokens, Token{
-						Type: SINGLE_INTERP_CLOSING_BRACE,
-						Span: NodeSpan{index, index + 1},
+						Type:    CLOSING_CURLY_BRACKET,
+						SubType: QUERY_PARAM_INTERP_CLOSING_BRACE,
+						Span:    NodeSpan{index, index + 1},
 					})
 				}
 
@@ -1099,8 +1103,9 @@ func (p *parser) parseQueryParameterValueSlices(start int32, exclEnd int32) []No
 
 				if j < exclEnd { // '}'
 					p.tokens = append(p.tokens, Token{
-						Type: SINGLE_INTERP_CLOSING_BRACE,
-						Span: NodeSpan{j, j + 1},
+						Type:    CLOSING_CURLY_BRACKET,
+						SubType: QUERY_PARAM_INTERP_CLOSING_BRACE,
+						Span:    NodeSpan{j, j + 1},
 					})
 					j++
 				}
@@ -1113,8 +1118,9 @@ func (p *parser) parseQueryParameterValueSlices(start int32, exclEnd int32) []No
 
 		} else if p.s[index] == '{' { //start of interpolation
 			p.tokens = append(p.tokens, Token{
-				Type: SINGLE_INTERP_OPENING_BRACE,
-				Span: NodeSpan{index, index + 1},
+				Type:    OPENING_CURLY_BRACKET,
+				SubType: QUERY_PARAM_INTERP_OPENING_BRACE,
+				Span:    NodeSpan{index, index + 1},
 			})
 
 			slice := string(p.s[sliceStart:index]) //previous cannot be an interpolation
@@ -1336,7 +1342,7 @@ func (p *parser) parseDashStartingExpression(precededByOpeningParen bool) Node {
 		return p.parseOptionPatternLiteral(__start, name, singleDash)
 	}
 
-	p.tokens = append(p.tokens, Token{Type: EQUAL, Span: NodeSpan{p.i, p.i + 1}})
+	p.tokens = append(p.tokens, Token{Type: EQUAL, SubType: FLAG_EQUAL, Span: NodeSpan{p.i, p.i + 1}})
 	p.i++
 
 	if p.i >= p.len {
@@ -1442,7 +1448,7 @@ func (p *parser) parseLazyAndHostAliasStuff() Node {
 				end = right.Base().Span.End
 			}
 
-			p.tokens = append(p.tokens, Token{Type: EQUAL, Span: NodeSpan{equalPos, equalPos + 1}})
+			p.tokens = append(p.tokens, Token{Type: EQUAL, SubType: ASSIGN_EQUAL, Span: NodeSpan{equalPos, equalPos + 1}})
 
 			return &HostAliasDefinition{
 				NodeBase: NodeBase{
@@ -1966,8 +1972,9 @@ func (p *parser) parseURLLike(start int32) Node {
 
 		if !startsWithAtHost && p.s[afterSchemeIndex] == '{' { //host interpolation
 			p.tokens = append(p.tokens, Token{
-				Type: SINGLE_INTERP_OPENING_BRACE,
-				Span: NodeSpan{afterSchemeIndex, afterSchemeIndex + 1},
+				Type:    OPENING_CURLY_BRACKET,
+				SubType: HOST_INTERP_OPENING_BRACE,
+				Span:    NodeSpan{afterSchemeIndex, afterSchemeIndex + 1},
 			})
 
 			hostInterpolationStart = pathStart
@@ -1979,8 +1986,9 @@ func (p *parser) parseURLLike(start int32) Node {
 			//there is necessarily a '}' because it's in the regex
 
 			p.tokens = append(p.tokens, Token{
-				Type: SINGLE_INTERP_CLOSING_BRACE,
-				Span: NodeSpan{pathStart, pathStart + 1},
+				Type:    CLOSING_CURLY_BRACKET,
+				SubType: HOST_INTERP_CLOSING_BRACE,
+				Span:    NodeSpan{pathStart, pathStart + 1},
 			})
 			pathStart++
 
@@ -2633,7 +2641,7 @@ func (p *parser) parsePatternUnion(start int32, isPercentPrefixed bool) *Pattern
 	if isPercentPrefixed {
 		p.tokens = append(p.tokens, Token{Type: PATTERN_UNION_OPENING_PIPE, Span: NodeSpan{p.i - 1, p.i + 1}})
 	} else {
-		p.tokens = append(p.tokens, Token{Type: PATTERN_UNION_PIPE, Span: NodeSpan{p.i, p.i + 1}})
+		p.tokens = append(p.tokens, Token{Type: PIPE, SubType: UNPREFIXED_PATTERN_UNION_PIPE, Span: NodeSpan{p.i, p.i + 1}})
 	}
 
 	p.i++
@@ -2656,7 +2664,7 @@ func (p *parser) parsePatternUnion(start int32, isPercentPrefixed bool) *Pattern
 				Cases: cases,
 			}
 		}
-		p.tokens = append(p.tokens, Token{Type: PATTERN_UNION_PIPE, Span: NodeSpan{p.i, p.i + 1}})
+		p.tokens = append(p.tokens, Token{Type: PIPE, SubType: UNPREFIXED_PATTERN_UNION_PIPE, Span: NodeSpan{p.i, p.i + 1}})
 		p.i++
 
 		p.eatSpace()
@@ -2706,7 +2714,7 @@ func (p *parser) parseComplexStringPatternUnion(start int32) *PatternUnion {
 				Cases: cases,
 			}
 		}
-		p.tokens = append(p.tokens, Token{Type: PATTERN_UNION_PIPE, Span: NodeSpan{p.i, p.i + 1}})
+		p.tokens = append(p.tokens, Token{Type: PIPE, SubType: STRING_PATTERN_UNION_PIPE, Span: NodeSpan{p.i, p.i + 1}})
 		p.i++
 
 		p.eatSpace()
@@ -7242,7 +7250,7 @@ func (p *parser) parseSingleGlobalConstDeclaration(declarations *[]*GlobalConsta
 	p.eatSpace()
 
 	rhs, _ := p.parseExpression()
-	p.tokens = append(p.tokens, Token{Type: EQUAL, Span: NodeSpan{equalSignIndex, equalSignIndex + 1}})
+	p.tokens = append(p.tokens, Token{Type: EQUAL, SubType: ASSIGN_EQUAL, Span: NodeSpan{equalSignIndex, equalSignIndex + 1}})
 
 	*declarations = append(*declarations, &GlobalConstantDeclaration{
 		NodeBase: NodeBase{
@@ -7399,7 +7407,7 @@ func (p *parser) parseSingleLocalVarDeclaration(declarations *[]*LocalVariableDe
 	p.eatSpace()
 
 	rhs, _ := p.parseExpression()
-	p.tokens = append(p.tokens, Token{Type: EQUAL, Span: NodeSpan{equalSignIndex, equalSignIndex + 1}})
+	p.tokens = append(p.tokens, Token{Type: EQUAL, SubType: ASSIGN_EQUAL, Span: NodeSpan{equalSignIndex, equalSignIndex + 1}})
 
 	*declarations = append(*declarations, &LocalVariableDeclaration{
 		NodeBase: NodeBase{
@@ -7551,7 +7559,7 @@ func (p *parser) parseSingleGlobalVarDeclaration(declarations *[]*GlobalVariable
 	p.eatSpace()
 
 	rhs, _ := p.parseExpression()
-	p.tokens = append(p.tokens, Token{Type: EQUAL, Span: NodeSpan{equalSignIndex, equalSignIndex + 1}})
+	p.tokens = append(p.tokens, Token{Type: EQUAL, SubType: ASSIGN_EQUAL, Span: NodeSpan{equalSignIndex, equalSignIndex + 1}})
 
 	*declarations = append(*declarations, &GlobalVariableDeclaration{
 		NodeBase: NodeBase{
@@ -8570,7 +8578,7 @@ func (p *parser) parseXMLElement(start int32) *XMLElement {
 		}
 
 		if p.i < p.len && p.s[p.i] == '=' {
-			p.tokens = append(p.tokens, Token{Type: EQUAL, Span: NodeSpan{p.i, p.i + 1}})
+			p.tokens = append(p.tokens, Token{Type: EQUAL, SubType: XML_ATTR_EQUAL, Span: NodeSpan{p.i, p.i + 1}})
 			p.i++
 
 			value, isMissingExpr := p.parseExpression()
@@ -10485,7 +10493,7 @@ func (p *parser) parseMultiAssignmentStatement(assignIdent *IdentifierLiteral) *
 		keywordLHSError = &ParsingError{UnspecifiedParsingError, UNTERMINATED_MULTI_ASSIGN_MISSING_EQL_SIGN}
 		end = p.i
 	} else {
-		p.tokens = append(p.tokens, Token{Type: EQUAL, Span: NodeSpan{p.i, p.i + 1}})
+		p.tokens = append(p.tokens, Token{Type: EQUAL, SubType: ASSIGN_EQUAL, Span: NodeSpan{p.i, p.i + 1}})
 		p.i++
 		p.eatSpace()
 		right, _ = p.parseExpression()
@@ -10797,7 +10805,7 @@ func (p *parser) parsePatternDefinition(patternIdent *IdentifierLiteral) *Patter
 		if p.i >= p.len || p.s[p.i] != '=' {
 			patternDef.Err = &ParsingError{UnterminatedPatternDefinition, UNTERMINATED_PATT_DEF_MISSING_EQUAL_SYMBOL_AFTER_PATTERN_NAME}
 		} else {
-			p.tokens = append(p.tokens, Token{Type: EQUAL, Span: NodeSpan{p.i, p.i + 1}})
+			p.tokens = append(p.tokens, Token{Type: EQUAL, SubType: ASSIGN_EQUAL, Span: NodeSpan{p.i, p.i + 1}})
 			p.i++
 			patternDef.Span.End = p.i
 
@@ -10865,7 +10873,7 @@ func (p *parser) parsePatternNamespaceDefinition(patternIdent *IdentifierLiteral
 		if p.i >= p.len || p.s[p.i] != '=' {
 			namespaceDef.Err = &ParsingError{UnterminatedPatternNamespaceDefinition, UNTERMINATED_PATT_NS_DEF_MISSING_EQUAL_SYMBOL_AFTER_PATTERN_NAME}
 		} else {
-			p.tokens = append(p.tokens, Token{Type: EQUAL, Span: NodeSpan{p.i, p.i + 1}})
+			p.tokens = append(p.tokens, Token{Type: EQUAL, SubType: ASSIGN_EQUAL, Span: NodeSpan{p.i, p.i + 1}})
 			p.i++
 			namespaceDef.Span.End = p.i
 
