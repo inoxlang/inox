@@ -140,8 +140,12 @@ func NewDefaultGlobalState(ctx *core.Context, conf core.DefaultGlobalStateConfig
 	}
 
 	logLevel := DEFAULT_MODULE_LOG_LEVEL
+	var logLevels *core.LogLevels
 	if conf.LogLevels != nil {
+		logLevels = conf.LogLevels
 		logLevel = conf.LogLevels.LevelFor(core.Path(conf.AbsoluteModulePath))
+	} else {
+		logLevels = core.NewLogLevels(core.NewDefaultLogsArgs{DefaultLevel: logLevel})
 	}
 
 	logger = core.
@@ -349,7 +353,7 @@ func NewDefaultGlobalState(ctx *core.Context, conf core.DefaultGlobalStateConfig
 	state := core.NewGlobalState(ctx, constants)
 	state.Out = conf.Out
 	state.Logger = logger
-	state.LogLevels = conf.LogLevels
+	state.LogLevels = logLevels
 	state.GetBaseGlobalsForImportedModule = func(ctx *core.Context, manifest *core.Manifest) (core.GlobalVariables, error) {
 		importedModuleGlobals := maps.Clone(baseGlobals)
 		env, err := env_ns.NewEnvNamespace(ctx, nil, conf.AllowMissingEnvVars)
