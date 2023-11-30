@@ -25,6 +25,8 @@ const (
 
 	FS_ROUTING_BODY_PARAM   = "_body"
 	FS_ROUTING_METHOD_PARAM = "_method"
+
+	FS_ROUTING_LOG_SRC = "fs-routing"
 )
 
 var (
@@ -214,7 +216,9 @@ func createHandleDynamic(server *HttpsServer, routingDirPath core.Path) handlerF
 		//TODO: check the file is not writable
 
 		preparationStart := time.Now()
-		logger := handlerGlobalState.Logger.With().Str("handler-module", modulePath).Logger()
+		fsRoutingLogger := core.ChildLoggerWithSource(handlerGlobalState.Logger, FS_ROUTING_LOG_SRC)
+		fsRoutingLogger = fsRoutingLogger.With().Str("handler", modulePath).Logger()
+		moduleLogger := handlerGlobalState.Logger
 
 		state, _, _, err := core.PrepareLocalScript(core.ScriptPreparationArgs{
 			Fpath:                 modulePath,
@@ -225,7 +229,8 @@ func createHandleDynamic(server *HttpsServer, routingDirPath core.Path) handlerF
 
 			ParsingCompilationContext: handlerCtx,
 			Out:                       handlerGlobalState.Out,
-			LogOut:                    logger,
+			Logger:                    moduleLogger,
+			LogLevels:                 server.state.LogLevels,
 
 			FullAccessToDatabases: false, //databases should be passed by parent state
 			PreinitFilesystem:     handlerCtx.GetFileSystem(),
@@ -264,7 +269,7 @@ func createHandleDynamic(server *HttpsServer, routingDirPath core.Path) handlerF
 		})
 
 		if err != nil {
-			logger.Err(err).Send()
+			fsRoutingLogger.Err(err).Send()
 			if !rw.isStatusSet() {
 				rw.writeStatus(http.StatusInternalServerError)
 			}
@@ -277,7 +282,7 @@ func createHandleDynamic(server *HttpsServer, routingDirPath core.Path) handlerF
 			return
 		}
 
-		logger.Debug().Dur("preparation-time", time.Since(preparationStart)).Send()
+		fsRoutingLogger.Debug().Dur("preparation-time", time.Since(preparationStart)).Send()
 
 		var debugger *core.Debugger
 
