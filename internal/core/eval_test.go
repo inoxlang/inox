@@ -5461,6 +5461,81 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			assert.EqualValues(t, Int(1), res)
 		})
 
+		t.Run("logs from an imported module should have the correct source", func(t *testing.T) {
+
+			fls := newMemFilesystem()
+			err := util.WriteFile(fls, "/mod.ix", []byte(`
+				manifest {}
+				import mod /imported_mod.ix {}
+			`), 0600)
+
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			err = util.WriteFile(fls, "/imported_mod.ix", []byte(`
+				manifest {}
+				log("hello")
+			`), 0600)
+
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			parsingCtx := NewContexWithEmptyState(ContextConfig{
+				Permissions: []Permission{
+					CreateFsReadPerm(PathPattern("/...")),
+					CreateHttpReadPerm(ANY_HTTPS_HOST_PATTERN),
+				},
+				Filesystem: fls,
+			}, nil)
+			defer parsingCtx.CancelGracefully()
+
+			mod, err := ParseLocalModule("/mod.ix", ModuleParsingConfig{
+				Context: parsingCtx,
+			})
+
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			logBuf := bytes.NewBuffer(nil)
+
+			ctx := NewContext(ContextConfig{
+				Permissions: append(
+					GetDefaultGlobalVarPermissions(),
+					FilesystemPermission{permkind.Read, PathPattern("/...")},
+					LThreadPermission{permkind.Create},
+				),
+				Filesystem: newOsFilesystem(),
+				Limits:     []Limit{permissiveLthreadLimit},
+			})
+			state := NewGlobalState(ctx)
+			state.Out = io.Discard
+			state.Logger = zerolog.New(logBuf)
+			state.OutputFieldsInitialized.Store(true)
+
+			state.Globals.Set("log", WrapGoFunction(func(ctx *Context, msg Str) {
+				ctx.Logger().Debug().Msg(string(msg))
+			}))
+
+			state.Module = &Module{
+				MainChunk: &parse.ParsedChunk{
+					Source: parse.SourceFile{Resource: "/mod.ix", ResourceDir: "/", NameString: "/mod.ix"},
+				},
+			}
+			state.GetBaseGlobalsForImportedModule = func(ctx *Context, manifest *Manifest) (GlobalVariables, error) {
+				return state.Globals, nil
+			}
+			state.GetBasePatternsForImportedModule = func() (map[string]Pattern, map[string]*PatternNamespace) {
+				return nil, nil
+			}
+
+			_, err = Eval(mod, state, false)
+			assert.NoError(t, err)
+			assert.Contains(t, logBuf.String(), `"src":"/imported_mod.ix","msg":"hello"`)
+		})
+
 	})
 
 	t.Run("spawn expression", func(t *testing.T) {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"reflect"
 	"slices"
 	"sync"
 	"sync/atomic"
@@ -13,6 +14,7 @@ import (
 	parse "github.com/inoxlang/inox/internal/parse"
 	permkind "github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
+	"github.com/rs/zerolog"
 )
 
 const (
@@ -56,10 +58,11 @@ type LthreadSpawnArgs struct {
 	Globals      GlobalVariables
 	NewGlobals   []string //listed globals are not shared nor cloned.
 
-	Module       *Module
-	Manifest     *Manifest
-	LthreadCtx   *Context
-	PreinitState *GlobalState
+	Module     *Module
+	Manifest   *Manifest
+	LthreadCtx *Context
+
+	Logger zerolog.Logger //defaults to spawner's logger
 
 	IsTestingEnabled bool
 	TestFilters      TestFilters
@@ -136,11 +139,16 @@ func SpawnLThread(args LthreadSpawnArgs) (*LThread, error) {
 		return nil, err
 	}
 
+	logger := args.Logger
+	if reflect.ValueOf(logger).IsZero() {
+		logger = args.SpawnerState.Logger
+	}
+
 	modState.Module = args.Module
 	modState.Manifest = args.Manifest
 	modState.MainState = args.SpawnerState.MainState
 	modState.Bytecode = args.Bytecode
-	modState.Logger = args.SpawnerState.Logger
+	modState.Logger = logger
 	modState.Out = args.SpawnerState.Out
 	modState.StaticCheckData = staticCheckData
 	modState.GetBaseGlobalsForImportedModule = args.SpawnerState.GetBaseGlobalsForImportedModule

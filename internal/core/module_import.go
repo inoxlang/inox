@@ -226,12 +226,17 @@ func ImportModule(config ImportConfig) (*LThread, error) {
 		globals.Set(MOD_ARGS_VARNAME, Nil)
 	}
 
+	logger := ChildLoggerForSource(config.ParentState.Logger, importedMod.Name())
+
 	lthread, err := SpawnLThread(LthreadSpawnArgs{
 		SpawnerState: config.ParentState,
 		Globals:      globals,
 		Module:       importedMod,
 		Manifest:     manifest,
 		LthreadCtx:   routineCtx,
+
+		Logger: logger,
+
 		//Bytecode: //TODO
 		//AbsScriptDir: absScriptDir,
 		Timeout:                      time.Until(deadline),
