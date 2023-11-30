@@ -305,19 +305,23 @@ func registerDebugMethodHandlers(
 
 			debugSession, err := getDebugSession(session, params.SessionId)
 
-			if err != nil {
+			makeDAPErrorResponse := func(msg string) dap.LaunchResponse {
 				return dap.LaunchResponse{
 					Response: dap.Response{
 						RequestSeq: dapRequest.Seq,
 						Success:    false,
 						ProtocolMessage: dap.ProtocolMessage{
-							Seq:  0,
+							Seq:  debugSession.NextSeq(),
 							Type: "response",
 						},
 						Command: dapRequest.Command,
-						Message: err.Error(),
+						Message: msg,
 					},
-				}, nil
+				}
+			}
+
+			if err != nil {
+				return makeDAPErrorResponse(err.Error()), nil
 			}
 
 			fls, ok := getLspFilesystem(session)
@@ -329,35 +333,13 @@ func registerDebugMethodHandlers(
 			//check the configuration is done
 
 			if !debugSession.configurationDone.Load() {
-				return dap.LaunchResponse{
-					Response: dap.Response{
-						RequestSeq: dapRequest.Seq,
-						Success:    false,
-						ProtocolMessage: dap.ProtocolMessage{
-							Seq:  debugSession.NextSeq(),
-							Type: "response",
-						},
-						Message: "failed to launch: configuration is not done",
-						Command: dapRequest.Command,
-					},
-				}, nil
+				return makeDAPErrorResponse("failed to launch: configuration is not done"), nil
 			}
 
 			//check the program is not already running
 
 			if debugSession.programDoneChan != nil {
-				return dap.LaunchResponse{
-					Response: dap.Response{
-						RequestSeq: dapRequest.Seq,
-						Success:    false,
-						ProtocolMessage: dap.ProtocolMessage{
-							Seq:  debugSession.NextSeq(),
-							Type: "response",
-						},
-						Message: "program is already running",
-						Command: dapRequest.Command,
-					},
-				}, nil
+				return makeDAPErrorResponse("program is already running"), nil
 			}
 
 			//unmarshal user arguments
@@ -376,44 +358,39 @@ func registerDebugMethodHandlers(
 			//check user arguments
 
 			if launchArgs.Program == "" {
-				if err != nil {
-					removeDebugSession(debugSession, session)
-
-					return dap.LaunchResponse{
-						Response: dap.Response{
-							RequestSeq: dapRequest.Seq,
-							Success:    false,
-							ProtocolMessage: dap.ProtocolMessage{
-								Seq:  debugSession.NextSeq(),
-								Type: "response",
-							},
-							Message: "missing program in launch arguments",
-							Command: dapRequest.Command,
-						},
-					}, nil
-				}
+				removeDebugSession(debugSession, session)
+				return makeDAPErrorResponse("missing program in launch arguments"), nil
 			}
 
-			var logLevel zerolog.Level = DEFAULT_LOG_LEVEL
+			var defaultLogLevel zerolog.Level = DEFAULT_LOG_LEVEL
+			logLevelByPath := map[core.Path]zerolog.Level{}
+
 			if launchArgs.LogLevel != nil {
-				defaultLevel := launchArgs.LogLevel["default"]
-				logLevel, err = zerolog.ParseLevel(defaultLevel)
+				defaultLevel, ok := launchArgs.LogLevel["default"]
+				if !ok {
+					removeDebugSession(debugSession, session)
+					return makeDAPErrorResponse("missing default log level"), nil
+				}
+
+				defaultLogLevel, err = zerolog.ParseLevel(defaultLevel)
 
 				if err != nil {
 					removeDebugSession(debugSession, session)
+					return makeDAPErrorResponse(fmt.Sprintf("invalid default log level: %q", defaultLevel)), nil
+				}
 
-					return dap.LaunchResponse{
-						Response: dap.Response{
-							RequestSeq: dapRequest.Seq,
-							Success:    false,
-							ProtocolMessage: dap.ProtocolMessage{
-								Seq:  debugSession.NextSeq(),
-								Type: "response",
-							},
-							Message: fmt.Sprintf("invalid default log level: %q", defaultLevel),
-							Command: dapRequest.Command,
-						},
-					}, nil
+				for key, level := range launchArgs.LogLevel {
+					if key == "" || key[0] != '/' {
+						continue
+					}
+
+					parsedLogLevel, err := zerolog.ParseLevel(level)
+
+					if err != nil {
+						removeDebugSession(debugSession, session)
+						return makeDAPErrorResponse(fmt.Sprintf("invalid default log level: %q", level)), nil
+					}
+					logLevelByPath[core.NonDirPathFrom(key)] = parsedLogLevel
 				}
 			}
 
@@ -449,7 +426,7 @@ func registerDebugMethodHandlers(
 
 			go launchDebuggedProgram(debuggedProgramLaunch{
 				programPath:  programPath,
-				logLevel:     logLevel,
+				logLevels:    core.NewLogLevels(defaultLogLevel, logLevelByPath),
 				session:      session,
 				debugSession: debugSession,
 				fls:          fls,
@@ -459,18 +436,7 @@ func registerDebugMethodHandlers(
 			if err != nil {
 				removeDebugSession(debugSession, session)
 
-				return dap.LaunchResponse{
-					Response: dap.Response{
-						RequestSeq: dapRequest.Seq,
-						Success:    false,
-						ProtocolMessage: dap.ProtocolMessage{
-							Seq:  debugSession.NextSeq(),
-							Type: "response",
-						},
-						Message: "program: " + err.Error(),
-						Command: dapRequest.Command,
-					},
-				}, nil
+				return makeDAPErrorResponse("program: " + err.Error()), nil
 			}
 
 			startDebugEventSenders(debugSession, session)

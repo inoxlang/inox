@@ -16,7 +16,7 @@ import (
 
 type debuggedProgramLaunch struct {
 	programPath  string
-	logLevel     zerolog.Level
+	logLevels    *core.LogLevels
 	session      *jsonrpc.Session
 	debugSession *DebugSession
 	fls          *Filesystem
@@ -24,7 +24,7 @@ type debuggedProgramLaunch struct {
 
 func launchDebuggedProgram(args debuggedProgramLaunch) {
 	programPath := args.programPath
-	logLevel := args.logLevel
+	logLevels := args.logLevels
 	session := args.session
 	sessionCtx := session.Context()
 	debugSession := args.debugSession
@@ -136,7 +136,7 @@ func launchDebuggedProgram(args debuggedProgramLaunch) {
 
 		Out:       programOut,
 		Logger:    logger,
-		LogLevels: core.NewLogLevels(logLevel, nil),
+		LogLevels: logLevels,
 
 		Debugger:     debugSession.debugger,
 		PreparedChan: debugSession.programPreparedOrFailedToChan,
