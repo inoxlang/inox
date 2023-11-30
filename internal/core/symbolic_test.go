@@ -107,20 +107,12 @@ func TestSymbolicEvalCheck(t *testing.T) {
 	})
 
 	t.Run("spawn expression within embedded module (missing permission)", func(t *testing.T) {
-		code := `go {allow: {}} do { 
-			go do {}
-		}`
+		code := `go {allow: {}} do {   go do {}  }`
 
 		chunk := utils.Must(parse.ParseChunkSource(parse.InMemorySource{
 			NameString: "symbolic-core-test",
 			CodeString: code,
 		}))
-
-		innerSpanwExpr := parse.FindNode(chunk.Node, (*parse.SpawnExpression)(nil), func(e *parse.SpawnExpression, _ bool) bool {
-			return e.Meta == nil
-		})
-
-		innerSpanwExprPos := chunk.GetSourcePosition(innerSpanwExpr.Span)
 
 		mod := &Module{MainChunk: chunk}
 
@@ -140,7 +132,14 @@ func TestSymbolicEvalCheck(t *testing.T) {
 		}
 		warning := data.Warnings()[0]
 		assert.Contains(t, symbolic.POSSIBLE_MISSING_PERM_TO_CREATE_A_LTHREAD, warning.Message)
-		assert.Equal(t, innerSpanwExprPos, warning.Location[0])
+		assert.Equal(t, parse.SourcePositionRange{
+			SourceName:  chunk.Source.Name(),
+			StartLine:   1,
+			StartColumn: 23,
+			EndLine:     1,
+			EndColumn:   25,
+			Span:        parse.NodeSpan{Start: 22, End: 24},
+		}, warning.Location[0])
 	})
 }
 
