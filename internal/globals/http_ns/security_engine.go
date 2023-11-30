@@ -39,7 +39,7 @@ type securityEngine struct {
 }
 
 func newSecurityEngine(baseLogger zerolog.Logger, serverLogSrc string) *securityEngine {
-	logger := baseLogger.With().Str(core.SOURCE_LOG_FIELD_NAME, serverLogSrc+"/sec").Logger()
+	logger := core.ChildLoggerWithSource(baseLogger, serverLogSrc+"/sec")
 
 	return &securityEngine{
 		logger:                 logger,

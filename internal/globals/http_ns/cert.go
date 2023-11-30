@@ -30,6 +30,8 @@ const (
 
 	MISSING_URL_ARG           = "missing core.URL argument"
 	OPTION_DOES_NOT_EXIST_FMT = "option '%s' does not exist"
+
+	CERT_MAGIG_LOG_SRC = "http/certmagic"
 )
 
 var DEFAULT_HTTP_REQUEST_OPTIONS = &HttpRequestOptions{
@@ -121,7 +123,7 @@ func generateSelfSignedCertAndKeyValues(ctx *core.Context) (core.Str, *core.Secr
 func GetTLSConfig(ctx *core.Context, pemEncodedCert string, pemEncodedKey string) (*tls.Config, error) {
 	var zapLogger *zap.Logger
 	{
-		zeroLog := ctx.Logger().With().Str(core.SOURCE_LOG_FIELD_NAME, "/http/certmagic").Logger()
+		zeroLog := core.ChildLoggerWithSource(*ctx.Logger(), CERT_MAGIG_LOG_SRC)
 
 		core := zapcore.NewCore(
 			zapcore.NewConsoleEncoder(zap.NewProductionEncoderConfig()),

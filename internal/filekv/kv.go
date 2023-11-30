@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	KV_STORE_SRC_NAME = "/kv"
+	KV_STORE_LOG_SRC_NAME = "kv"
 )
 
 var (
@@ -68,7 +68,8 @@ func (kv *SingleFileKV) Close(ctx *core.Context) (buntDBError error) {
 		buntDBError = kv.db.Close()
 	}()
 
-	logger := ctx.Logger().With().Str(core.SOURCE_LOG_FIELD_NAME, KV_STORE_SRC_NAME).Logger()
+	logger := core.ChildLoggerWithSource(*ctx.Logger(), KV_STORE_LOG_SRC_NAME)
+
 	//before closing the buntdb database all the transactions must be closed or a deadlock will occur.
 
 	logger.Print("close KV store")

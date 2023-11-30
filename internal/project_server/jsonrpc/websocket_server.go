@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	JSON_RPC_SERVER_LOGC_SRC                = "/json-rpc"
+	JSON_RPC_SERVER_LOG_SRC                 = "json-rpc"
 	DEFAULT_MAX_IP_WS_CONNS                 = 3
 	DEFAULT_MAX_IP_WS_CONNS_IF_BEHIND_PROXY = 10_000
 )
@@ -45,7 +45,7 @@ type JsonRpcWebsocketServerConfig struct {
 func NewJsonRpcWebsocketServer(ctx *core.Context, config JsonRpcWebsocketServerConfig) (*JsonRpcWebsocketServer, error) {
 
 	logger := *ctx.Logger()
-	logger = logger.With().Str(core.SOURCE_LOG_FIELD_NAME, JSON_RPC_SERVER_LOGC_SRC).Logger()
+	logger = core.ChildLoggerWithSource(logger, JSON_RPC_SERVER_LOG_SRC)
 
 	wsServer, err := net_ns.NewWebsocketServer(ctx)
 	if err != nil {

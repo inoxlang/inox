@@ -13,7 +13,7 @@ import (
 const (
 	DEFAULT_SINGLE_ACTION_TIMEOUT = 15 * time.Second
 
-	SRC_PATH = "/chrome"
+	LOG_SRC = "chrome"
 )
 
 var (

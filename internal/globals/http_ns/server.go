@@ -46,7 +46,7 @@ const (
 	HANDLING_DESC_DEFAULT_LIMITS_PROPNAME = "default-limits"
 	HANDLING_DESC_MAX_LIMITS_PROPNAME     = "max-limits"
 
-	HTTP_SERVER_SRC_PATH = "/http/server"
+	HTTP_SERVER_SRC = "http/server"
 )
 
 var (
@@ -140,8 +140,9 @@ func NewHttpsServer(ctx *core.Context, host core.Host, args ...core.Value) (*Htt
 
 	//create logger and security engine
 	{
-		logSrc := HTTP_SERVER_SRC_PATH + "/" + addr
-		_server.serverLogger = ctxLogger.With().Str(core.SOURCE_LOG_FIELD_NAME, logSrc).Logger()
+		logSrc := HTTP_SERVER_SRC + "/" + addr
+
+		_server.serverLogger = core.ChildLoggerWithSource(ctxLogger, logSrc)
 		_server.securityEngine = newSecurityEngine(ctxLogger, logSrc)
 	}
 
@@ -263,8 +264,8 @@ func NewHttpsServer(ctx *core.Context, host core.Host, args ...core.Value) (*Htt
 
 	//create a stdlib http Server
 	config := GolangHttpServerConfig{
-		Addr:    addr,
-		Handler: topHandler,
+		Addr:                    addr,
+		Handler:                 topHandler,
 		PersistCreatedLocalCert: true,
 	}
 	if userProvidedCert != "" {

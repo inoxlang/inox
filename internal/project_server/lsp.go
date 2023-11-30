@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	LSP_LOG_SRC                 = "/lsp"
+	LSP_LOG_SRC                 = "lsp"
 	DEFAULT_PROJECT_SERVER_PORT = "8305"
 )
 
@@ -61,8 +61,8 @@ type WebsocketServerConfiguration struct {
 func StartLSPServer(ctx *core.Context, serverConfig LSPServerConfiguration) (finalErr error) {
 	//setup logs
 
-	logOut := ctx.Logger().With().Str(core.SOURCE_LOG_FIELD_NAME, LSP_LOG_SRC).Logger()
-	logger := log.New(logOut, "", 0)
+	zerologLogger := core.ChildLoggerWithSource(*ctx.Logger(), LSP_LOG_SRC)
+	logger := log.New(zerologLogger, "", 0)
 	logs.Init(logger)
 
 	defer func() {
