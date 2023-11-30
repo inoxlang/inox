@@ -43,21 +43,72 @@ Error("failed to create user", {user_id: 100})
 ### mkbytes
 
 The mkbytes function allocates a byte-slice of the provided size.
+
+**examples**
+
+```inox
+mkbytes(1kB)
+```
 ### Bytes
 
 The Bytes function reads a readable (string, byte-slice, ...) and returns a byte-slice.
+
+**examples**
+
+```inox
+bytes = Bytes("abc")
+```
 ### Runes
 
 The Runes function reads a readable (string, byte-slice, ...) and returns a rune-slice. A rune is a Unicode code point (character). See https://go.dev/blog/strings for more details.
+
+**examples**
+
+```inox
+runes = Runes("abc")
+```
 ### is_space
 
 The is_space function returns whether a given rune is a space character (Unicode's White Space property).
+
+**examples**
+
+```inox
+is_space(' ') # true
+```
 ### Reader
 
 The Reader function creates a reader from a readable (string, byte-slice, ...).
+
+**examples**
+
+```inox
+reader = Reader("abc")
+bytes = reader.read_all!()
+
+# abc
+print(tostr(bytes))
+```
 ### RingBuffer
 
 The RingBuffer function creates a ring-buffer with a given capacity.
+
+**examples**
+
+```inox
+buffer = RingBuffer(100B)
+buffer.write!("abc")
+
+# allocate a byte-slice to read from the buffer.
+buf = mkbytes(100B)
+
+# The read method writes to buf and returns the written slice of buf.
+# Make sure to not modify the returned slice since doing so would mutate buf.
+slice = buffer.read!(buf)
+
+# abc
+s = tostr(slice)
+```
 
 ## Browser Automation
 
