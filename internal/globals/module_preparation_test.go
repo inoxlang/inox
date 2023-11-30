@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"io"
@@ -17,6 +18,7 @@ import (
 	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/project"
 	"github.com/inoxlang/inox/internal/utils"
+	"github.com/rs/zerolog"
 
 	_ "github.com/inoxlang/inox/internal/obs_db"
 
@@ -98,7 +100,6 @@ func TestPrepareLocalScript(t *testing.T) {
 			Filesystem:  fs_ns.GetOsFilesystem(),
 		})
 		core.NewGlobalState(ctx)
-		defer ctx.CancelGracefully()
 		defer ctx.CancelGracefully()
 
 		state, mod, _, err := core.PrepareLocalScript(core.ScriptPreparationArgs{
@@ -310,6 +311,60 @@ func TestPrepareLocalScript(t *testing.T) {
 		assert.Nil(t, state2)
 	})
 
+	t.Run("specified log level", func(t *testing.T) {
+		dir := t.TempDir()
+		file := filepath.Join(dir, "script.ix")
+		compilationCtx := createCompilationCtx(dir)
+		defer compilationCtx.CancelGracefully()
+
+		os.WriteFile(file, []byte(`
+			manifest {
+				permissions: {
+					read: %/...
+				}
+			}
+		
+		`), 0o600)
+
+		ctx := core.NewContext(core.ContextConfig{
+			Permissions: append(core.GetDefaultGlobalVarPermissions(), core.CreateFsReadPerm(core.PathPattern("/..."))),
+			Filesystem:  fs_ns.GetOsFilesystem(),
+		})
+		core.NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
+
+		outBuf := bytes.NewBuffer(nil)
+		logLevel := zerolog.WarnLevel
+
+		state, mod, _, err := core.PrepareLocalScript(core.ScriptPreparationArgs{
+			Fpath:                     file,
+			ParsingCompilationContext: compilationCtx,
+			ParentContext:             ctx,
+			ParentContextRequired:     true,
+			Out:                       outBuf,
+			LogLevel:                  &logLevel,
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		// the module should be present
+		if !assert.NotNil(t, mod) {
+			return
+		}
+
+		infoLevelMsg := "this message should not be logged"
+		warnLevelMsg := "this message should  be logged"
+
+		state.Logger.Info().Msg(infoLevelMsg)
+		state.Logger.Warn().Msg(warnLevelMsg)
+		output := outBuf.String()
+
+		assert.NotContains(t, output, infoLevelMsg)
+		assert.Contains(t, output, warnLevelMsg)
+	})
+
 	t.Run("preinit block defines a pattern used in the manifest", func(t *testing.T) {
 
 		dir := t.TempDir()
@@ -335,7 +390,6 @@ func TestPrepareLocalScript(t *testing.T) {
 			Filesystem:  fs_ns.GetOsFilesystem(),
 		})
 		core.NewGlobalState(ctx)
-		defer ctx.CancelGracefully()
 		defer ctx.CancelGracefully()
 
 		state, mod, _, err2 := core.PrepareLocalScript(core.ScriptPreparationArgs{

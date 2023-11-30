@@ -85,9 +85,9 @@ type ScriptPreparationArgs struct {
 	Out io.Writer
 
 	//defaults to Out, ignored if .Logger is set
-	LogOut io.Writer
-
-	Logger zerolog.Logger
+	LogOut   io.Writer
+	Logger   zerolog.Logger
+	LogLevel *zerolog.Level
 
 	//used during the preinit
 	PreinitFilesystem afs.Filesystem
@@ -278,6 +278,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *GlobalState, mod *Mo
 		Out:                 out,
 		LogOut:              args.LogOut,
 		Logger:              args.Logger,
+		LogLevel:            args.LogLevel,
 	})
 
 	if err != nil {

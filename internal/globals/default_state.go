@@ -36,6 +36,10 @@ import (
 	"github.com/rs/zerolog"
 )
 
+const (
+	DEFAULT_MODULE_LOG_LEVEL = zerolog.InfoLevel
+)
+
 var (
 	DEFAULT_SCRIPT_LIMITS = []core.Limit{
 		{Name: fs_ns.FS_READ_LIMIT_NAME, Kind: core.ByteRateLimit, Value: 100_000_000},
@@ -135,7 +139,11 @@ func NewDefaultGlobalState(ctx *core.Context, conf core.DefaultGlobalStateConfig
 		}
 	}
 
-	logger = logger.With().Timestamp().Logger().Level(zerolog.InfoLevel)
+	logLevel := DEFAULT_MODULE_LOG_LEVEL
+	if conf.LogLevel != nil {
+		logLevel = *conf.LogLevel
+	}
+	logger = logger.With().Timestamp().Logger().Level(logLevel)
 
 	//create env namespace
 
@@ -252,12 +260,12 @@ func NewDefaultGlobalState(ctx *core.Context, conf core.DefaultGlobalStateConfig
 		globalnames.FMT_FN:    core.ValOf(core.Fmt),
 
 		// bytes & runes
-		globalnames.MKBYTES_FN:       core.ValOf(_mkbytes),
-		globalnames.RUNES_FN:         core.ValOf(_Runes),
-		globalnames.BYTES_FN:         core.ValOf(_Bytes),
-		globalnames.IS_SPACE_FN: core.ValOf(_is_space),
-		globalnames.READER_FN:        core.ValOf(_Reader),
-		globalnames.RINGBUFFER_FN:    core.ValOf(core.NewRingBuffer),
+		globalnames.MKBYTES_FN:    core.ValOf(_mkbytes),
+		globalnames.RUNES_FN:      core.ValOf(_Runes),
+		globalnames.BYTES_FN:      core.ValOf(_Bytes),
+		globalnames.IS_SPACE_FN:   core.ValOf(_is_space),
+		globalnames.READER_FN:     core.ValOf(_Reader),
+		globalnames.RINGBUFFER_FN: core.ValOf(core.NewRingBuffer),
 
 		//string types
 		globalnames.EMAIL_ADDRESS_FN: core.ValOf(_EmailAddress),
