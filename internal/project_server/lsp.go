@@ -61,7 +61,7 @@ type WebsocketServerConfiguration struct {
 func StartLSPServer(ctx *core.Context, serverConfig LSPServerConfiguration) (finalErr error) {
 	//setup logs
 
-	zerologLogger := core.ChildLoggerWithSource(*ctx.Logger(), LSP_LOG_SRC)
+	zerologLogger := ctx.NewChildLoggerForInternalSource(LSP_LOG_SRC)
 	logger := log.New(zerologLogger, "", 0)
 	logs.Init(logger)
 

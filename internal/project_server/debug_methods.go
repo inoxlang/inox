@@ -364,6 +364,7 @@ func registerDebugMethodHandlers(
 
 			var defaultLogLevel zerolog.Level = DEFAULT_LOG_LEVEL
 			logLevelByPath := map[core.Path]zerolog.Level{}
+			enableInternalDebugLogs := false
 
 			if launchArgs.LogLevel != nil {
 				defaultLevel, ok := launchArgs.LogLevel["default"]
@@ -424,9 +425,10 @@ func registerDebugMethodHandlers(
 				}
 			}()
 
+
 			go launchDebuggedProgram(debuggedProgramLaunch{
 				programPath:  programPath,
-				logLevels:    core.NewLogLevels(defaultLogLevel, logLevelByPath),
+				logLevels:    core.NewLogLevels(defaultLogLevel, logLevelByPath, enableInternalDebugLogs),
 				session:      session,
 				debugSession: debugSession,
 				fls:          fls,

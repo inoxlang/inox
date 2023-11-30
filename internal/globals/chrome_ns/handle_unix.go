@@ -46,7 +46,7 @@ func newHandle(ctx *core.Context) (*Handle, error) {
 	//start the shared proxy if necessary
 	StartSharedProxy(ctx)
 
-	logger := core.ChildLoggerWithSource(*ctx.Logger(), LOG_SRC)
+	logger := ctx.NewChildLoggerForInternalSource(LOG_SRC)
 
 	opts := append(chromedp.DefaultExecAllocatorOptions[:],
 		//execution

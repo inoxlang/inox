@@ -4,7 +4,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/inoxlang/inox/internal/core"
 	nettypes "github.com/inoxlang/inox/internal/net_types"
 	ratelimit "github.com/inoxlang/inox/internal/rate_limit"
 	cmap "github.com/orcaman/concurrent-map/v2"
@@ -38,8 +37,7 @@ type securityEngine struct {
 	//captchaValidationClient *http.Client
 }
 
-func newSecurityEngine(baseLogger zerolog.Logger, serverLogSrc string) *securityEngine {
-	logger := core.ChildLoggerWithSource(baseLogger, serverLogSrc+"/sec")
+func newSecurityEngine(logger zerolog.Logger) *securityEngine {
 
 	return &securityEngine{
 		logger:                 logger,

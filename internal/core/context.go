@@ -559,6 +559,11 @@ func (ctx *Context) Logger() *zerolog.Logger {
 	return &ctx.getClosestStateNoDoneCheck().Logger
 }
 
+func (ctx *Context) NewChildLoggerForInternalSource(src string) zerolog.Logger {
+	logLevels := ctx.GetClosestState().LogLevels
+	return childLoggerForInternalSource(*ctx.Logger(), src, logLevels)
+}
+
 func (ctx *Context) SetClosestState(state *GlobalState) {
 	ctx.lock.Lock()
 	defer ctx.lock.Unlock()

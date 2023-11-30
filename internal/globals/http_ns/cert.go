@@ -123,7 +123,7 @@ func generateSelfSignedCertAndKeyValues(ctx *core.Context) (core.Str, *core.Secr
 func GetTLSConfig(ctx *core.Context, pemEncodedCert string, pemEncodedKey string) (*tls.Config, error) {
 	var zapLogger *zap.Logger
 	{
-		zeroLog := core.ChildLoggerWithSource(*ctx.Logger(), CERT_MAGIG_LOG_SRC)
+		zeroLog := ctx.NewChildLoggerForInternalSource(CERT_MAGIG_LOG_SRC)
 
 		core := zapcore.NewCore(
 			zapcore.NewConsoleEncoder(zap.NewProductionEncoderConfig()),

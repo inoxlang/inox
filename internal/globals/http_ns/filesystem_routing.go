@@ -216,7 +216,8 @@ func createHandleDynamic(server *HttpsServer, routingDirPath core.Path) handlerF
 		//TODO: check the file is not writable
 
 		preparationStart := time.Now()
-		fsRoutingLogger := core.ChildLoggerWithSource(handlerGlobalState.Logger, FS_ROUTING_LOG_SRC)
+
+		fsRoutingLogger := handlerGlobalState.Ctx.NewChildLoggerForInternalSource(FS_ROUTING_LOG_SRC)
 		fsRoutingLogger = fsRoutingLogger.With().Str("handler", modulePath).Logger()
 		moduleLogger := handlerGlobalState.Logger
 

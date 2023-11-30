@@ -130,7 +130,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *GlobalState, mod *Mo
 	}
 
 	//the src field is not added to the logger because it is very likely present.
-	logger := args.ParsingCompilationContext.Logger()
+	preparationLogger := args.ParsingCompilationContext.NewChildLoggerForInternalSource(MOD_PREP_LOG_SRC)
 
 	// parse module or use cache
 
@@ -146,7 +146,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *GlobalState, mod *Mo
 			Context:                             args.ParsingCompilationContext,
 			RecoverFromNonExistingIncludedFiles: args.DataExtractionMode,
 		})
-		logger.Debug().Dur("parsing", time.Since(start)).Send()
+		preparationLogger.Debug().Dur("parsing", time.Since(start)).Send()
 
 		mod = module
 
@@ -196,7 +196,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *GlobalState, mod *Mo
 			AdditionalGlobalsTestOnly: args.AdditionalGlobalsTestOnly,
 			Project:                   args.Project,
 		})
-		logger.Debug().Dur("preinit-dur", time.Since(preinitStart)).Send()
+		preparationLogger.Debug().Dur("preinit-dur", time.Since(preinitStart)).Send()
 
 		if (!args.DataExtractionMode && preinitErr != nil) || errors.Is(preinitErr, ErrParsingErrorInManifestOrPreinit) {
 			finalErr = preinitErr
@@ -402,7 +402,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *GlobalState, mod *Mo
 			}
 		}
 	}
-	logger.Debug().Dur("db-openings-dur", time.Since(dbOpeningStart)).Send()
+	preparationLogger.Debug().Dur("db-openings-dur", time.Since(dbOpeningStart)).Send()
 
 	//add project-secrets global
 	if args.Project != nil && !reflect.ValueOf(args.Project).IsNil() {
@@ -505,7 +505,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *GlobalState, mod *Mo
 		Patterns:          state.Ctx.GetNamedPatterns(),
 		PatternNamespaces: state.Ctx.GetPatternNamespaces(),
 	})
-	logger.Debug().Dur("static-check-dur", time.Since(staticCheckStart)).Send()
+	preparationLogger.Debug().Dur("static-check-dur", time.Since(staticCheckStart)).Send()
 
 	state.StaticCheckData = staticCheckData
 
@@ -577,7 +577,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *GlobalState, mod *Mo
 
 		Context: symbolicCtx,
 	})
-	logger.Debug().Dur("symb-check-dur", time.Since(symbolicCheckStart)).Send()
+	preparationLogger.Debug().Dur("symb-check-dur", time.Since(symbolicCheckStart)).Send()
 
 	isCriticalSymbolicCheckError := symbolicCheckError != nil && symbolicData == nil
 

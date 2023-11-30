@@ -43,9 +43,7 @@ type JsonRpcWebsocketServerConfig struct {
 }
 
 func NewJsonRpcWebsocketServer(ctx *core.Context, config JsonRpcWebsocketServerConfig) (*JsonRpcWebsocketServer, error) {
-
-	logger := *ctx.Logger()
-	logger = core.ChildLoggerWithSource(logger, JSON_RPC_SERVER_LOG_SRC)
+	logger := ctx.NewChildLoggerForInternalSource(JSON_RPC_SERVER_LOG_SRC)
 
 	wsServer, err := net_ns.NewWebsocketServer(ctx)
 	if err != nil {

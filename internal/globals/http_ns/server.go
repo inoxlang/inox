@@ -118,7 +118,6 @@ type HttpsServer struct {
 // The server's defaultLimits are constructed by merging the default request handling limits with the default-limits in arguments.
 // The server's maxLimits are constructed by merging the default max request handling limits with the max-limits in arguments.
 func NewHttpsServer(ctx *core.Context, host core.Host, args ...core.Value) (*HttpsServer, error) {
-	ctxLogger := *ctx.Logger()
 	_server := &HttpsServer{
 		state:      ctx.GetClosestState(),
 		defaultCSP: DEFAULT_CSP,
@@ -141,9 +140,10 @@ func NewHttpsServer(ctx *core.Context, host core.Host, args ...core.Value) (*Htt
 	//create logger and security engine
 	{
 		logSrc := HTTP_SERVER_SRC + "/" + addr
+		_server.serverLogger = ctx.NewChildLoggerForInternalSource(logSrc)
 
-		_server.serverLogger = core.ChildLoggerWithSource(ctxLogger, logSrc)
-		_server.securityEngine = newSecurityEngine(ctxLogger, logSrc)
+		securityLogSrc := ctx.NewChildLoggerForInternalSource(logSrc + "/sec")
+		_server.securityEngine = newSecurityEngine(securityLogSrc)
 	}
 
 	//create middleware functions + last handler function
@@ -232,6 +232,7 @@ func NewHttpsServer(ctx *core.Context, host core.Host, args ...core.Value) (*Htt
 
 		handlerGlobalState := core.NewGlobalState(handlerCtx)
 		handlerGlobalState.Logger = _server.state.Logger
+		handlerGlobalState.LogLevels = _server.state.LogLevels
 		handlerGlobalState.Out = _server.state.Out
 		handlerGlobalState.Module = _server.state.Module
 		handlerGlobalState.MainState = _server.state.MainState

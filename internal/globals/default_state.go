@@ -145,7 +145,7 @@ func NewDefaultGlobalState(ctx *core.Context, conf core.DefaultGlobalStateConfig
 	}
 
 	logger = core.
-		ChildLoggerWithSource(logger, conf.AbsoluteModulePath).
+		ChildLoggerForSource(logger, conf.AbsoluteModulePath).
 		With().Timestamp().
 		Logger().Level(logLevel)
 
