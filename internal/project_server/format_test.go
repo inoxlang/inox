@@ -495,6 +495,29 @@ func TestFormat(t *testing.T) {
 				"a = 1",
 			},
 		},
+
+		//xml attributes
+
+		{
+			{
+				"manifest {}",
+				"html<div a=1/>",
+			},
+			{
+				"manifest {}",
+				"html<div a=1/>",
+			},
+		},
+		{
+			{
+				"manifest {}",
+				"html<div a=1></div>",
+			},
+			{
+				"manifest {}",
+				"html<div a=1></div>",
+			},
+		},
 	}
 
 	for _, testCase := range cases {

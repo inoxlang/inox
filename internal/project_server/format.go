@@ -133,6 +133,7 @@ func format(chunk *parse.ParsedChunk, options defines.FormattingOptions) (result
 		if doesNodeIncreaseDepth(node) {
 			depth--
 		}
+
 		tokens := parse.GetTokens(node, chunk.Node, false)
 		for _, token := range tokens {
 
@@ -153,7 +154,9 @@ func format(chunk *parse.ParsedChunk, options defines.FormattingOptions) (result
 			case parse.ARROW:
 				replaceSurroundingSpaces(token.Span, 1, 1)
 			case parse.EQUAL:
-				replaceSurroundingSpaces(token.Span, 1, 1)
+				if token.SubType == parse.ASSIGN_EQUAL {
+					replaceSurroundingSpaces(token.Span, 1, 1)
+				}
 			}
 		}
 		return parse.ContinueTraversal, nil
