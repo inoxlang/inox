@@ -244,8 +244,8 @@ func TestBidirectionalSymbolicConversion(t *testing.T) {
 			v, err := ToSymbolicValue(nil, record, false)
 			assert.NoError(t, err)
 
-			assert.IsType(t, (*symbolic.Object)(nil), v)
-			symbolicObj := v.(*symbolic.Object)
+			assert.IsType(t, (*symbolic.Record)(nil), v)
+			symbolicObj := v.(*symbolic.Record)
 
 			entries := symbolicObj.ValueEntryMap()
 			assert.Equal(t, map[string]symbolic.Value{"a": symbolic.INT_1}, entries)
