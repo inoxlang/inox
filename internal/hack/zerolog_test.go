@@ -109,3 +109,39 @@ func TestReplaceLoggerStringField(t *testing.T) {
 		assert.Contains(t, buf.String(), `{"level":"info","c":"a","a":"c","d":"e","message":"hello"}`)
 	})
 }
+
+func TestGetLogEventStringFieldValue(t *testing.T) {
+	buf := bytes.NewBuffer(nil)
+	callCount := 0
+	logger := zerolog.New(buf).Hook(zerolog.HookFunc(func(e *zerolog.Event, level zerolog.Level, message string) {
+		src, ok := GetLogEventStringFieldValue(e, `"src"`)
+		callCount++
+
+		if !assert.True(t, ok) {
+			return
+		}
+		assert.Equal(t, "mysrc", src)
+	}))
+
+	logger.Debug().Str("src", "mysrc").Send()
+
+	if !assert.EqualValues(t, 1, callCount) {
+		return
+	}
+
+	logger.Debug().Str("src", "mysrc").Msg("hello")
+
+	if !assert.EqualValues(t, 2, callCount) {
+		return
+	}
+
+	logger.Debug().Str("src", "mysrc").Str("x", "src").Msg("hello")
+
+	if !assert.EqualValues(t, 3, callCount) {
+		return
+	}
+
+	logger.Debug().Str("x", "src").Str("src", "mysrc").Msg("hello")
+
+	assert.EqualValues(t, 4, callCount)
+}
