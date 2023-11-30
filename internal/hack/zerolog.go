@@ -2,6 +2,7 @@ package hack
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"reflect"
 
@@ -9,9 +10,13 @@ import (
 	"github.com/rs/zerolog"
 )
 
-func ReplaceLoggerStringField(logger zerolog.Logger, key string, newValue string) {
+// AddReplaceLoggerStringFieldValue replaces the value of the key field in logger if present, otherwise it
+// adds the field by doing logger.With().Str(key, newValue).Logger().
+func AddReplaceLoggerStringFieldValue(logger zerolog.Logger, key string, newValue string) zerolog.Logger {
 	field := reflect.ValueOf(&logger).Elem().FieldByName("context")
 	context := getUnexportedField(field).([]byte)
+
+	quotedKey := utils.Must(json.Marshal(key))
 
 	i := 1
 	for i < len(context) {
@@ -20,10 +25,10 @@ func ReplaceLoggerStringField(logger zerolog.Logger, key string, newValue string
 		if b == '"' &&
 			//make sure we found a key
 			context[i-1] != ':' &&
-			//check that the found key starts with <key>
-			i < len(context)-len(key)-3 && bytes.HasPrefix(context[i+1:], utils.StringAsBytes(key)) {
+			i < len(context)-len(quotedKey)-2 && bytes.HasPrefix(context[i:], quotedKey) {
 
-			i += ( /*move to start of key*/ 1 + /*move to closing quote*/ len(key))
+			//move to closing quote
+			i += len(quotedKey) - 1
 
 			if context[i] != '"' {
 				//the found key has no the same name
@@ -42,10 +47,11 @@ func ReplaceLoggerStringField(logger zerolog.Logger, key string, newValue string
 
 			//find the end index of the old value
 
-			ind := oldValueStart
+			ind := oldValueStart + 1
 			for ind < len(context) {
 				b := context[ind]
 				if b != '"' {
+					ind++
 					continue
 				}
 				prevBackslashes := utils.CountPrevBackslashes(context, int32(ind))
@@ -53,6 +59,7 @@ func ReplaceLoggerStringField(logger zerolog.Logger, key string, newValue string
 					oldValueEnd = ind + 1
 					break
 				}
+				ind++
 			}
 
 			//replace the old value with the new one
@@ -62,17 +69,23 @@ func ReplaceLoggerStringField(logger zerolog.Logger, key string, newValue string
 
 			var newContext []byte
 			newContext = append(newContext, context[:oldValueStart]...)
+			newContext = append(newContext, '"')
 			newContext = append(newContext, newValue...)
+			newContext = append(newContext, '"')
 
 			if oldValueEnd < len(context) {
 				newContext = append(newContext, context[oldValueEnd:]...)
 			}
 
 			setUnexportedField(field, newContext)
-			return
+			//return passed logger
+			return logger
 		}
 
 		i++
 	}
 
+	//the field was not found so we add it
+
+	return logger.With().Str(key, newValue).Logger()
 }
