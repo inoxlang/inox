@@ -5445,8 +5445,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				Limits:     []Limit{permissiveLthreadLimit},
 			})
 			ctx.AddNamedPattern("int", INT_PATTERN)
-			state := NewGlobalState(ctx)
+			defer ctx.CancelGracefully()
 
+			state := NewGlobalState(ctx)
 			state.Module = &Module{
 				MainChunk: &parse.ParsedChunk{
 					Source: parse.SourceFile{Resource: "/mytest", ResourceDir: "/", NameString: "/mytest"},
@@ -5510,6 +5511,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				Filesystem: newOsFilesystem(),
 				Limits:     []Limit{permissiveLthreadLimit},
 			})
+			defer ctx.CancelGracefully()
+
 			state := NewGlobalState(ctx)
 			state.Out = io.Discard
 			state.Logger = zerolog.New(logBuf)
