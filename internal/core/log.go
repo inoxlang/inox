@@ -7,6 +7,11 @@ import (
 	"github.com/rs/zerolog"
 )
 
+const (
+	SOURCE_LOG_FIELD_NAME        = "src"
+	QUOTED_SOURCE_LOG_FIELD_NAME = `"src"`
+)
+
 func init() {
 	zerolog.DurationFieldInteger = false
 	zerolog.DurationFieldUnit = time.Millisecond
@@ -14,8 +19,6 @@ func init() {
 	zerolog.LevelFieldName = "lvl"
 	zerolog.TimestampFieldName = "tm"
 }
-
-const SOURCE_LOG_FIELD_NAME = "src"
 
 func ChildLoggerWithSource(logger zerolog.Logger, src string) zerolog.Logger {
 	logger = logger.With().Logger() //copy the logger

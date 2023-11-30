@@ -7,15 +7,11 @@ import (
 	"fmt"
 	"path/filepath"
 	"runtime/debug"
-	"slices"
 	"strings"
-	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/google/go-dap"
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/mod"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/project_server/jsonrpc"
 	"github.com/inoxlang/inox/internal/project_server/logs"
@@ -29,6 +25,7 @@ const (
 	EXCEPTION_ERROR_FILTER        = "exception"
 
 	DEFAULT_MAX_SESSION_COUNT = 2
+	DEFAULT_LOG_LEVEL         = zerolog.DebugLevel
 )
 
 var (
@@ -108,7 +105,8 @@ type DebugSetExceptionBreakpointsParams struct {
 }
 
 type DebugLaunchArgs struct {
-	Program string `json:"program"`
+	Program  string                                     `json:"program"`
+	LogLevel map[ /*'default' or a path*/ string]string `json:"logLevel,omitempty"`
 }
 
 type DebugDisconnectParams struct {
@@ -119,109 +117,6 @@ type DebugDisconnectParams struct {
 type DebugSecondaryEvent struct {
 	dap.Event
 	Body any `json:"body"`
-}
-
-type DebugSessions struct {
-	sessions        []*DebugSession
-	sessionListLock sync.Mutex
-}
-
-// TODO: limit running sessions to 2.
-func (sessions *DebugSessions) AddSession(s *DebugSession) {
-	sessions.sessionListLock.Lock()
-	defer sessions.sessionListLock.Unlock()
-	sessions.sessions = append(sessions.sessions, s)
-}
-
-func (sessions *DebugSessions) GetSession(sessionId string) (*DebugSession, bool) {
-	sessions.sessionListLock.Lock()
-	defer sessions.sessionListLock.Unlock()
-
-	for _, s := range sessions.sessions {
-		if s.id == sessionId {
-			return s, true
-		}
-	}
-	return nil, false
-}
-
-func (sessions *DebugSessions) RemoveSession(s *DebugSession) {
-	sessions.sessionListLock.Lock()
-	defer sessions.sessionListLock.Unlock()
-	sessions.sessions = slices.DeleteFunc(sessions.sessions, func(ds *DebugSession) bool {
-		return ds == s
-	})
-}
-
-type DebugSession struct {
-	id                             string
-	programPath                    string
-	columnsStartAt1, lineStartsAt1 bool
-	configurationDone              atomic.Bool
-
-	//initial breakpoints
-	//this field is set to nil during launch to remove some unecessary references
-	sourcePathToInitialBreakpoints map[string][]core.BreakpointInfo
-	initialExceptionBreakpointsId  int32
-	nextInitialBreakpointId        int32
-	initialBreakpointsLock         sync.Mutex
-
-	debugger                *core.Debugger //set during or shorty after the 'debug/launch' call
-	debuggerSet             atomic.Bool
-	nextSeq                 atomic.Int32
-	variablesReferences     map[core.StateId]*variablesReferences
-	variablesReference      atomic.Int32
-	variablesReferencesLock sync.Mutex
-
-	programDoneChan               chan error //ok if error is nil
-	programPreparedOrFailedToChan chan error
-	wasAttached                   bool //debugger was attached to a running debuggee
-	finished                      atomic.Bool
-}
-
-type variablesReferences struct {
-	//set at creation, access does not require locking
-	localScope  int
-	globalScope int
-
-	//
-	lock sync.Mutex
-}
-
-func (s *DebugSession) NextSeq() int {
-	next := s.nextSeq.Add(1)
-
-	return int(next - 1)
-}
-
-func (s *DebugSession) getThreadVariablesReferences(id core.StateId) *variablesReferences {
-	s.variablesReferencesLock.Lock()
-	defer s.variablesReferencesLock.Unlock()
-
-	refs := s.variablesReferences[id]
-	if refs == nil {
-		refs = &variablesReferences{
-			localScope:  int(s.variablesReference.Add(1)),
-			globalScope: int(s.variablesReference.Add(1)),
-		}
-		s.variablesReferences[id] = refs
-	}
-
-	return refs
-}
-
-func (s *DebugSession) getThreadOfVariablesReference(varsRef int) (core.StateId, *variablesReferences, bool) {
-	s.variablesReferencesLock.Lock()
-	defer s.variablesReferencesLock.Unlock()
-
-	for threadId, refs := range s.variablesReferences {
-
-		if refs.localScope == varsRef || refs.globalScope == varsRef {
-			return threadId, refs, true
-		}
-
-	}
-	return 0, nil, false
 }
 
 func registerDebugMethodHandlers(
@@ -431,6 +326,8 @@ func registerDebugMethodHandlers(
 				return nil, errors.New(string(FsNoFilesystem))
 			}
 
+			//check the configuration is done
+
 			if !debugSession.configurationDone.Load() {
 				return dap.LaunchResponse{
 					Response: dap.Response{
@@ -446,8 +343,27 @@ func registerDebugMethodHandlers(
 				}, nil
 			}
 
+			//check the program is not already running
+
+			if debugSession.programDoneChan != nil {
+				return dap.LaunchResponse{
+					Response: dap.Response{
+						RequestSeq: dapRequest.Seq,
+						Success:    false,
+						ProtocolMessage: dap.ProtocolMessage{
+							Seq:  debugSession.NextSeq(),
+							Type: "response",
+						},
+						Message: "program is already running",
+						Command: dapRequest.Command,
+					},
+				}, nil
+			}
+
+			//unmarshal user arguments
+
 			var launchArgs DebugLaunchArgs
-			err = json.Unmarshal(utils.Must(dapRequest.Arguments.MarshalJSON()), &launchArgs)
+			err = json.Unmarshal(([]byte(dapRequest.Arguments)), &launchArgs)
 			if err != nil {
 				removeDebugSession(debugSession, session)
 
@@ -456,6 +372,8 @@ func registerDebugMethodHandlers(
 					Message: err.Error(),
 				}
 			}
+
+			//check user arguments
 
 			if launchArgs.Program == "" {
 				if err != nil {
@@ -476,23 +394,33 @@ func registerDebugMethodHandlers(
 				}
 			}
 
+			var logLevel zerolog.Level = DEFAULT_LOG_LEVEL
+			if launchArgs.LogLevel != nil {
+				defaultLevel := launchArgs.LogLevel["default"]
+				logLevel, err = zerolog.ParseLevel(defaultLevel)
+
+				if err != nil {
+					removeDebugSession(debugSession, session)
+
+					return dap.LaunchResponse{
+						Response: dap.Response{
+							RequestSeq: dapRequest.Seq,
+							Success:    false,
+							ProtocolMessage: dap.ProtocolMessage{
+								Seq:  debugSession.NextSeq(),
+								Type: "response",
+							},
+							Message: fmt.Sprintf("invalid default log level: %q", defaultLevel),
+							Command: dapRequest.Command,
+						},
+					}, nil
+				}
+			}
+
+			// update the debug session
+
 			logs.Println("program: ", launchArgs.Program)
 			programPath := filepath.Clean(launchArgs.Program)
-
-			if debugSession.programDoneChan != nil {
-				return dap.LaunchResponse{
-					Response: dap.Response{
-						RequestSeq: dapRequest.Seq,
-						Success:    false,
-						ProtocolMessage: dap.ProtocolMessage{
-							Seq:  debugSession.NextSeq(),
-							Type: "response",
-						},
-						Message: "program is already running",
-						Command: dapRequest.Command,
-					},
-				}, nil
-			}
 
 			debugSession.programPath = programPath
 			debugSession.programDoneChan = make(chan error, 1)
@@ -519,7 +447,13 @@ func registerDebugMethodHandlers(
 				}
 			}()
 
-			go launchDebuggedProgram(programPath, session, debugSession, fls)
+			go launchDebuggedProgram(debuggedProgramLaunch{
+				programPath:  programPath,
+				logLevel:     logLevel,
+				session:      session,
+				debugSession: debugSession,
+				fls:          fls,
+			})
 
 			err = <-debugSession.programPreparedOrFailedToChan
 			if err != nil {
@@ -1563,98 +1497,63 @@ func registerDebugMethodHandlers(
 
 }
 
-func launchDebuggedProgram(programPath string, session *jsonrpc.Session, debugSession *DebugSession, fls *Filesystem) {
-	sessionCtx := session.Context()
+func stopReasonToDapStopReason(reason core.ProgramStopReason) string {
+	switch reason {
+	case core.PauseStop:
+		return "pause"
+	case core.NextStepStop, core.StepInStop, core.StepOutStop:
+		return "step"
+	case core.BreakpointStop:
+		return "breakpoint"
+	case core.ExceptionBreakpointStop:
+		return "exception"
+	default:
+		panic(core.ErrUnreachable)
+	}
+}
 
-	defer func() {
-		e := recover()
+func breakpointInfoToDebugAdapterProtocolBreakpoint(breakpoint core.BreakpointInfo, columnsStartAt1 bool) dap.Breakpoint {
+	dapBreakpoint := dap.Breakpoint{
+		Verified: breakpoint.Verified(),
+		Id:       int(breakpoint.Id),
+		Line:     int(breakpoint.StartLine),
+		Column:   int(breakpoint.StartColumn),
+	}
 
-		var err error
-		switch val := e.(type) {
-		case nil:
-		case error:
-			err = fmt.Errorf("%w: %s", val, string(debug.Stack()))
-			debugSession.programDoneChan <- err
-		default:
-			err = fmt.Errorf("%#v: %s", val, string(debug.Stack()))
-			debugSession.programDoneChan <- err
+	if !columnsStartAt1 {
+		dapBreakpoint.Column -= 1
+	}
+
+	src, ok := breakpoint.Chunk.Source.(parse.SourceFile)
+	if ok && !src.IsResourceURL {
+		dapBreakpoint.Source = &dap.Source{
+			Name: src.Name(),
+			Path: INOX_FS_SCHEME + "://" + src.Resource,
 		}
+	}
 
-		debugSession.finished.Store(true)
+	return dapBreakpoint
+}
 
-		session.Notify(jsonrpc.NotificationMessage{
-			Method: "debug/terminatedEvent",
-		})
-
-		session.Notify(jsonrpc.NotificationMessage{
-			Method: "debug/exitedEvent",
-		})
-	}()
-
-	ctx := sessionCtx.BoundChildWithOptions(core.BoundChildContextOptions{
-		Filesystem: fls,
-	})
-
-	project, _ := getProject(session)
-
-	programOut := utils.FnWriter{
-		WriteFn: func(p []byte) (n int, err error) {
-			notifyOutputEvent(string(p), "stdout", debugSession, session)
-			return len(p), nil
+func notifyOutputEvent(msg string, category string, debugSession *DebugSession, session *jsonrpc.Session) {
+	outputEvent := dap.OutputEvent{
+		Event: dap.Event{
+			ProtocolMessage: dap.ProtocolMessage{
+				Seq:  debugSession.NextSeq(),
+				Type: "event",
+			},
+			Event: "output",
+		},
+		Body: dap.OutputEventBody{
+			Output:   msg,
+			Category: category,
 		},
 	}
 
-	debuggerOut := utils.FnWriter{
-		WriteFn: func(p []byte) (n int, err error) {
-			notifyOutputEvent(string(p), "console", debugSession, session)
-			return len(p), nil
-		},
-	}
-
-	//create debugger
-
-	var initialBreakpoints []core.BreakpointInfo
-	debugSession.initialBreakpointsLock.Lock()
-	for _, breakpoints := range debugSession.sourcePathToInitialBreakpoints {
-		initialBreakpoints = append(initialBreakpoints, breakpoints...)
-	}
-	debugSession.sourcePathToInitialBreakpoints = nil
-	exceptionBreakpointsId := debugSession.initialExceptionBreakpointsId
-	debugSession.initialBreakpointsLock.Unlock()
-
-	debugSession.debugger = core.NewDebugger(core.DebuggerArgs{
-		Logger: zerolog.New(zerolog.NewConsoleWriter(func(w *zerolog.ConsoleWriter) {
-			w.Out = debuggerOut
-			w.NoColor = true
-			w.PartsExclude = []string{zerolog.LevelFieldName}
-			w.FieldsExclude = []string{"src"}
-		})),
-		InitialBreakpoints:    initialBreakpoints,
-		ExceptionBreakpointId: exceptionBreakpointsId,
+	session.Notify(jsonrpc.NotificationMessage{
+		Method: "debug/outputEvent",
+		Params: utils.Must(json.Marshal(outputEvent)),
 	})
-	debugSession.debuggerSet.Store(true)
-
-	_, _, _, preparationOk, err := mod.RunLocalScript(mod.RunScriptArgs{
-		Fpath:                     programPath,
-		ParsingCompilationContext: ctx,
-		ParentContext:             ctx,
-		ParentContextRequired:     true,
-		PreinitFilesystem:         fls,
-		AllowMissingEnvVars:       false,
-		IgnoreHighRiskScore:       true,
-		FullAccessToDatabases:     true,
-		Project:                   project,
-		Out:                       programOut,
-
-		Debugger:     debugSession.debugger,
-		PreparedChan: debugSession.programPreparedOrFailedToChan,
-	})
-
-	if preparationOk {
-		debugSession.programDoneChan <- err
-	} else {
-		debugSession.debugger.Closed()
-	}
 }
 
 func startDebugEventSenders(debugSession *DebugSession, session *jsonrpc.Session) {
@@ -1775,63 +1674,4 @@ func startDebugEventSenders(debugSession *DebugSession, session *jsonrpc.Session
 		}
 	}()
 
-}
-
-func stopReasonToDapStopReason(reason core.ProgramStopReason) string {
-	switch reason {
-	case core.PauseStop:
-		return "pause"
-	case core.NextStepStop, core.StepInStop, core.StepOutStop:
-		return "step"
-	case core.BreakpointStop:
-		return "breakpoint"
-	case core.ExceptionBreakpointStop:
-		return "exception"
-	default:
-		panic(core.ErrUnreachable)
-	}
-}
-
-func breakpointInfoToDebugAdapterProtocolBreakpoint(breakpoint core.BreakpointInfo, columnsStartAt1 bool) dap.Breakpoint {
-	dapBreakpoint := dap.Breakpoint{
-		Verified: breakpoint.Verified(),
-		Id:       int(breakpoint.Id),
-		Line:     int(breakpoint.StartLine),
-		Column:   int(breakpoint.StartColumn),
-	}
-
-	if !columnsStartAt1 {
-		dapBreakpoint.Column -= 1
-	}
-
-	src, ok := breakpoint.Chunk.Source.(parse.SourceFile)
-	if ok && !src.IsResourceURL {
-		dapBreakpoint.Source = &dap.Source{
-			Name: src.Name(),
-			Path: INOX_FS_SCHEME + "://" + src.Resource,
-		}
-	}
-
-	return dapBreakpoint
-}
-
-func notifyOutputEvent(msg string, category string, debugSession *DebugSession, session *jsonrpc.Session) {
-	outputEvent := dap.OutputEvent{
-		Event: dap.Event{
-			ProtocolMessage: dap.ProtocolMessage{
-				Seq:  debugSession.NextSeq(),
-				Type: "event",
-			},
-			Event: "output",
-		},
-		Body: dap.OutputEventBody{
-			Output:   msg,
-			Category: category,
-		},
-	}
-
-	session.Notify(jsonrpc.NotificationMessage{
-		Method: "debug/outputEvent",
-		Params: utils.Must(json.Marshal(outputEvent)),
-	})
 }
