@@ -143,7 +143,11 @@ func NewDefaultGlobalState(ctx *core.Context, conf core.DefaultGlobalStateConfig
 	if conf.LogLevel != nil {
 		logLevel = *conf.LogLevel
 	}
-	logger = logger.With().Timestamp().Logger().Level(logLevel)
+
+	logger = core.
+		ChildLoggerWithSource(logger, conf.AbsoluteModulePath).
+		With().Timestamp().
+		Logger().Level(logLevel)
 
 	//create env namespace
 
