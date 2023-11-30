@@ -11,6 +11,7 @@ import (
 	"github.com/inoxlang/inox/internal/config"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/project"
+	"github.com/rs/zerolog"
 )
 
 const (
@@ -62,7 +63,10 @@ type RunScriptArgs struct {
 	//output for execution, if nil os.Stdout is used
 	Out io.Writer
 
+	//ignored if .Logger is set
 	LogOut io.Writer
+
+	Logger zerolog.Logger
 
 	//PreparedChan signals when the script is prepared (nil error) or failed to be prepared (non-nil error),
 	//the channel should be buffered.
@@ -93,8 +97,10 @@ func RunLocalScript(args RunScriptArgs) (
 		AdditionalPermissions:     args.AdditionalPermissions,
 		ScriptContextFileSystem:   args.ScriptContextFileSystem,
 
-		Out:                   args.Out,
-		LogOut:                args.LogOut,
+		Out:    args.Out,
+		LogOut: args.LogOut,
+		Logger: args.Logger,
+
 		AllowMissingEnvVars:   args.AllowMissingEnvVars,
 		PreinitFilesystem:     args.PreinitFilesystem,
 		FullAccessToDatabases: args.FullAccessToDatabases,
