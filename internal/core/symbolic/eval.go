@@ -1748,8 +1748,10 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 		var globals any
 		var permListingNode *parse.ObjectLiteral
 
+		//check permissions
 		if !state.ctx.HasAPermissionWithKindAndType(permkind.Create, permkind.LTHREAD_PERM_TYPENAME) {
-			state.addWarning(makeSymbolicEvalWarning(n, state, POSSIBLE_MISSING_PERM_TO_CREATE_A_LTHREAD))
+			warningSpan := parse.NodeSpan{Start: n.Span.Start, End: n.Span.Start + 2}
+			state.addWarning(makeSymbolicEvalWarningWithSpan(warningSpan, state, POSSIBLE_MISSING_PERM_TO_CREATE_A_LTHREAD))
 		}
 
 		if n.Meta != nil {
@@ -5509,8 +5511,12 @@ func makeSymbolicEvalError(node parse.Node, state *State, msg string) SymbolicEv
 }
 
 func makeSymbolicEvalWarning(node parse.Node, state *State, msg string) SymbolicEvaluationWarning {
+	return makeSymbolicEvalWarningWithSpan(node.Base().Span, state, msg)
+}
+
+func makeSymbolicEvalWarningWithSpan(nodeSpan parse.NodeSpan, state *State, msg string) SymbolicEvaluationWarning {
 	locatedMsg := msg
-	location := state.getErrorMesssageLocation(node)
+	location := state.getErrorMesssageLocationOfSpan(nodeSpan)
 	if state.Module != nil {
 		locatedMsg = fmt.Sprintf("check(symbolic): warning: %s: %s", location, msg)
 	}

@@ -86,8 +86,12 @@ func newSymbolicState(ctx *Context, chunk *parse.ParsedChunk) *State {
 }
 
 func (state *State) getErrorMesssageLocation(node parse.Node) parse.SourcePositionStack {
+	return state.getErrorMesssageLocationOfSpan(node.Base().Span)
+}
+
+func (state *State) getErrorMesssageLocationOfSpan(span parse.NodeSpan) parse.SourcePositionStack {
 	sourcePositionStack := slices.Clone(state.importPositions)
-	sourcePositionStack = append(sourcePositionStack, state.currentChunk().GetSourcePosition(node.Base().Span))
+	sourcePositionStack = append(sourcePositionStack, state.currentChunk().GetSourcePosition(span))
 	return sourcePositionStack
 }
 
