@@ -342,7 +342,7 @@ func TestPrepareLocalScript(t *testing.T) {
 			ParentContext:             ctx,
 			ParentContextRequired:     true,
 			Out:                       outBuf,
-			LogLevel:                  &logLevel,
+			LogLevels:                 core.NewLogLevels(logLevel, nil),
 		})
 
 		if !assert.NoError(t, err) {
