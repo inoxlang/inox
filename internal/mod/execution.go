@@ -64,9 +64,9 @@ type RunScriptArgs struct {
 	Out io.Writer
 
 	//ignored if .Logger is set
-	LogOut   io.Writer
-	Logger   zerolog.Logger
-	LogLevel *zerolog.Level
+	LogOut    io.Writer
+	Logger    zerolog.Logger
+	LogLevels *core.LogLevels
 
 	//PreparedChan signals when the script is prepared (nil error) or failed to be prepared (non-nil error),
 	//the channel should be buffered.
@@ -97,10 +97,10 @@ func RunLocalScript(args RunScriptArgs) (
 		AdditionalPermissions:     args.AdditionalPermissions,
 		ScriptContextFileSystem:   args.ScriptContextFileSystem,
 
-		Out:      args.Out,
-		LogOut:   args.LogOut,
-		Logger:   args.Logger,
-		LogLevel: args.LogLevel,
+		Out:       args.Out,
+		LogOut:    args.LogOut,
+		Logger:    args.Logger,
+		LogLevels: args.LogLevels,
 
 		AllowMissingEnvVars:   args.AllowMissingEnvVars,
 		PreinitFilesystem:     args.PreinitFilesystem,

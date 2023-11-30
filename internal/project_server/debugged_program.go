@@ -134,9 +134,9 @@ func launchDebuggedProgram(args debuggedProgramLaunch) {
 		FullAccessToDatabases:     true,
 		Project:                   project,
 
-		Out:      programOut,
-		Logger:   logger,
-		LogLevel: &logLevel,
+		Out:       programOut,
+		Logger:    logger,
+		LogLevels: core.NewLogLevels(logLevel, nil),
 
 		Debugger:     debugSession.debugger,
 		PreparedChan: debugSession.programPreparedOrFailedToChan,

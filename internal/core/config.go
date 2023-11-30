@@ -31,7 +31,7 @@ type DefaultGlobalStateConfig struct {
 	LogOut io.Writer //ignore if .Logger is set
 	Logger zerolog.Logger
 
-	LogLevel *zerolog.Level
+	LogLevels *LogLevels
 }
 
 type NewDefaultGlobalStateFn func(ctx *Context, conf DefaultGlobalStateConfig) (*GlobalState, error)

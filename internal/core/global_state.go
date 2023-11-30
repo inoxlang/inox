@@ -34,8 +34,9 @@ type GlobalState struct {
 	OutputFieldsInitialized atomic.Bool
 
 	//output fields
-	Out    io.Writer      //io.Discard by default
-	Logger zerolog.Logger //zerolog.Nop() by default
+	Out       io.Writer      //io.Discard by default
+	Logger    zerolog.Logger //zerolog.Nop() by default
+	LogLevels *LogLevels
 
 	MainState *GlobalState //never nil (should be set by user of GlobalState)
 	Project   Project      //can be nil

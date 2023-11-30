@@ -1,6 +1,9 @@
 package core
 
 import (
+	"errors"
+	"maps"
+	"sync"
 	"time"
 
 	"github.com/inoxlang/inox/internal/hack"
@@ -23,4 +26,38 @@ func init() {
 func ChildLoggerWithSource(logger zerolog.Logger, src string) zerolog.Logger {
 	logger = logger.With().Logger() //copy the logger
 	return hack.AddReplaceLoggerStringFieldValue(logger, SOURCE_LOG_FIELD_NAME, src)
+}
+
+type LogLevels struct {
+	lock         sync.Mutex
+	defaultLevel zerolog.Level
+	levelByPath  map[Path]zerolog.Level
+}
+
+func NewLogLevels(defaultLevel zerolog.Level, byPath map[Path]zerolog.Level) *LogLevels {
+	if byPath == nil {
+		byPath = map[Path]zerolog.Level{}
+	} else {
+		byPath = maps.Clone(byPath)
+	}
+
+	return &LogLevels{
+		defaultLevel: defaultLevel,
+		levelByPath:  byPath,
+	}
+}
+
+func (l *LogLevels) LevelFor(path Path) zerolog.Level {
+	if path.IsDirPath() {
+		panic(errors.New("unexpected directory path"))
+	}
+
+	l.lock.Lock()
+	defer l.lock.Unlock()
+
+	level, ok := l.levelByPath[path]
+	if ok {
+		return level
+	}
+	return l.defaultLevel
 }
