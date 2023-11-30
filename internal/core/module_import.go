@@ -226,7 +226,13 @@ func ImportModule(config ImportConfig) (*LThread, error) {
 		globals.Set(MOD_ARGS_VARNAME, Nil)
 	}
 
+	logLevels := config.ParentState.LogLevels
 	logger := ChildLoggerForSource(config.ParentState.Logger, importedMod.Name())
+
+	resourceName, ok := importedMod.AbsoluteSource()
+	if ok {
+		logger = logger.Level(logLevels.LevelFor(resourceName))
+	}
 
 	lthread, err := SpawnLThread(LthreadSpawnArgs{
 		SpawnerState: config.ParentState,

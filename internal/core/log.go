@@ -15,6 +15,10 @@ const (
 	QUOTED_SOURCE_LOG_FIELD_NAME = `"src"`
 )
 
+var (
+	DEFAULT_LOG_LEVELS = NewLogLevels(NewDefaultLogsArgs{DefaultLevel: zerolog.InfoLevel})
+)
+
 func init() {
 	zerolog.DurationFieldInteger = false
 	zerolog.DurationFieldUnit = time.Millisecond
@@ -39,13 +43,25 @@ func childLoggerForInternalSource(logger zerolog.Logger, src string, logLevels *
 }
 
 type LogLevels struct {
-	lock          sync.Mutex
-	defaultLevel  zerolog.Level
-	levelByPath   map[Path]zerolog.Level
+	lock         sync.Mutex
+	defaultLevel zerolog.Level
+	levelByPath  map[Path]zerolog.Level
+
+	//TODO: support levelByURL
+	//TODO: support updates + add readonly field to prevent the mutation of DEFAULT_LOG_LEVELS
+
 	internalDebug bool
 }
 
-func NewLogLevels(defaultLevel zerolog.Level, byPath map[Path]zerolog.Level, enableInternalDebugLogs bool) *LogLevels {
+type NewDefaultLogsArgs struct {
+	DefaultLevel            zerolog.Level
+	ByPath                  map[Path]zerolog.Level //nil is accepted
+	EnableInternalDebugLogs bool
+}
+
+func NewLogLevels(args NewDefaultLogsArgs) *LogLevels {
+	byPath := args.ByPath
+
 	if byPath == nil {
 		byPath = map[Path]zerolog.Level{}
 	} else {
@@ -53,24 +69,29 @@ func NewLogLevels(defaultLevel zerolog.Level, byPath map[Path]zerolog.Level, ena
 	}
 
 	return &LogLevels{
-		defaultLevel:  defaultLevel,
+		defaultLevel:  args.DefaultLevel,
 		levelByPath:   byPath,
-		internalDebug: enableInternalDebugLogs,
+		internalDebug: args.EnableInternalDebugLogs,
 	}
 }
 
-func (l *LogLevels) LevelFor(path Path) zerolog.Level {
-	if path.IsDirPath() {
-		panic(errors.New("unexpected directory path"))
-	}
-
+func (l *LogLevels) LevelFor(resourceName ResourceName) zerolog.Level {
 	l.lock.Lock()
 	defer l.lock.Unlock()
 
-	level, ok := l.levelByPath[path]
-	if ok {
-		return level
+	if path, ok := resourceName.(Path); ok {
+		if path.IsDirPath() {
+			panic(errors.New("unexpected directory path"))
+		}
+
+		level, ok := l.levelByPath[path]
+		if ok {
+			return level
+		}
+	} else if _, ok := resourceName.(URL); ok {
+		return l.defaultLevel
 	}
+
 	return l.defaultLevel
 }
 

@@ -149,6 +149,7 @@ func SpawnLThread(args LthreadSpawnArgs) (*LThread, error) {
 	modState.MainState = args.SpawnerState.MainState
 	modState.Bytecode = args.Bytecode
 	modState.Logger = logger
+	modState.LogLevels = args.SpawnerState.LogLevels
 	modState.Out = args.SpawnerState.Out
 	modState.StaticCheckData = staticCheckData
 	modState.GetBaseGlobalsForImportedModule = args.SpawnerState.GetBaseGlobalsForImportedModule

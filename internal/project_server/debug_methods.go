@@ -425,10 +425,13 @@ func registerDebugMethodHandlers(
 				}
 			}()
 
-
 			go launchDebuggedProgram(debuggedProgramLaunch{
-				programPath:  programPath,
-				logLevels:    core.NewLogLevels(defaultLogLevel, logLevelByPath, enableInternalDebugLogs),
+				programPath: programPath,
+				logLevels: core.NewLogLevels(core.NewDefaultLogsArgs{
+					DefaultLevel:            defaultLogLevel,
+					ByPath:                  logLevelByPath,
+					EnableInternalDebugLogs: enableInternalDebugLogs,
+				}),
 				session:      session,
 				debugSession: debugSession,
 				fls:          fls,

@@ -36,7 +36,7 @@ type GlobalState struct {
 	//output fields
 	Out       io.Writer      //io.Discard by default
 	Logger    zerolog.Logger //zerolog.Nop() by default
-	LogLevels *LogLevels
+	LogLevels *LogLevels     //DEFAULT_LOG_LEVELS by default
 
 	MainState *GlobalState //never nil (should be set by user of GlobalState)
 	Project   Project      //can be nil
@@ -93,8 +93,9 @@ func NewGlobalState(ctx *Context, constants ...map[string]Value) *GlobalState {
 		SymbolicData:     &SymbolicData{Data: symbolic.NewSymbolicData()},
 		descendantStates: make(map[ResourceName]*GlobalState, 0),
 
-		Out:    io.Discard,
-		Logger: zerolog.Nop(),
+		Out:       io.Discard,
+		Logger:    zerolog.Nop(),
+		LogLevels: DEFAULT_LOG_LEVELS,
 
 		GetBasePatternsForImportedModule: func() (map[string]Pattern, map[string]*PatternNamespace) {
 			return nil, nil
