@@ -980,6 +980,24 @@ func (ctx *Context) Limits() []Limit {
 	return slices.Clone(ctx.limits)
 }
 
+type LockedContextData struct {
+	NamedPatterns     map[string]Pattern
+	PatternNamespaces map[string]*PatternNamespace
+	HostAliases       map[string]Host
+}
+
+// Update locks the context (Lock) and calls fn. fn is allowed to modify the context data.
+func (ctx *Context) Update(fn func(ctxData LockedContextData) error) error {
+	ctx.lock.RLock()
+	defer ctx.lock.RUnlock()
+
+	return fn(LockedContextData{
+		NamedPatterns:     ctx.namedPatterns,
+		PatternNamespaces: ctx.patternNamespaces,
+		HostAliases:       ctx.hostAliases,
+	})
+}
+
 // ResolveHostAlias returns the Host associated with the passed alias name, if the alias does not exist nil is returned.
 func (ctx *Context) ResolveHostAlias(alias string) Host {
 	ctx.lock.RLock()

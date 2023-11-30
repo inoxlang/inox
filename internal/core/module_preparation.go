@@ -425,21 +425,32 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *GlobalState, mod *Mo
 
 	//pass patterns & host aliases of the preinit state to the state
 	if preinitState != nil {
-		for name, patt := range preinitState.Global.Ctx.GetNamedPatterns() {
-			if _, ok := DEFAULT_NAMED_PATTERNS[name]; ok {
-				continue
-			}
-			state.Ctx.AddNamedPattern(name, patt)
-		}
-		for name, ns := range preinitState.Global.Ctx.GetPatternNamespaces() {
-			if _, ok := DEFAULT_PATTERN_NAMESPACES[name]; ok {
-				continue
-			}
-			state.Ctx.AddPatternNamespace(name, ns)
-		}
-		for name, val := range preinitState.Global.Ctx.GetHostAliases() {
-			state.Ctx.AddHostAlias(name, val)
-		}
+		state.Ctx.Update(func(ctxData LockedContextData) error {
+			preinitCtx := preinitState.Global.Ctx
+
+			preinitCtx.ForEachNamedPattern(func(name string, pattern Pattern) error {
+				if _, ok := DEFAULT_NAMED_PATTERNS[name]; ok {
+					return nil
+				}
+				ctxData.NamedPatterns[name] = pattern
+				return nil
+			})
+
+			preinitCtx.ForEachPatternNamespace(func(name string, namespace *PatternNamespace) error {
+				if _, ok := DEFAULT_PATTERN_NAMESPACES[name]; ok {
+					return nil
+				}
+				ctxData.PatternNamespaces[name] = namespace
+				return nil
+			})
+
+			preinitCtx.ForEachHostAlias(func(name string, value Host) error {
+				ctxData.HostAliases[name] = value
+				return nil
+			})
+
+			return nil
+		})
 	}
 
 	// CLI arguments | arguments of imported/invoked module
