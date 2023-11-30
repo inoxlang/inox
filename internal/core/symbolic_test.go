@@ -144,23 +144,218 @@ func TestSymbolicEvalCheck(t *testing.T) {
 	})
 }
 
-func TestToSymbolicValue(t *testing.T) {
+func TestBidirectionalSymbolicConversion(t *testing.T) {
+
+	t.Run("object", func(t *testing.T) {
+		t.Run("empty", func(t *testing.T) {
+			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			defer ctx.CancelGracefully()
+
+			obj := NewObject()
+			v, err := ToSymbolicValue(nil, obj, false)
+			assert.NoError(t, err)
+
+			assert.IsType(t, (*symbolic.Object)(nil), v)
+			symbolicObj := v.(*symbolic.Object)
+
+			entries := symbolicObj.ValueEntryMap()
+			assert.Empty(t, entries)
+
+			concreteValue, err := symbolic.Concretize(v, ctx)
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			assert.Equal(t, obj, concreteValue)
+		})
+
+		t.Run("single property", func(t *testing.T) {
+			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			defer ctx.CancelGracefully()
+
+			obj := NewObjectFromMapNoInit(ValMap{"a": Int(1)})
+			v, err := ToSymbolicValue(nil, obj, false)
+			assert.NoError(t, err)
+
+			assert.IsType(t, (*symbolic.Object)(nil), v)
+			symbolicObj := v.(*symbolic.Object)
+
+			entries := symbolicObj.ValueEntryMap()
+			assert.Equal(t, map[string]symbolic.Value{"a": symbolic.INT_1}, entries)
+
+			concreteValue, err := symbolic.Concretize(v, ctx)
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			assert.Equal(t, obj, concreteValue)
+		})
+
+		t.Run("two properties", func(t *testing.T) {
+			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			defer ctx.CancelGracefully()
+
+			obj := NewObjectFromMapNoInit(ValMap{"a": Int(1), "b": Str("a")})
+			v, err := ToSymbolicValue(nil, obj, false)
+			assert.NoError(t, err)
+
+			assert.IsType(t, (*symbolic.Object)(nil), v)
+			symbolicObj := v.(*symbolic.Object)
+
+			entries := symbolicObj.ValueEntryMap()
+			assert.Equal(t, map[string]symbolic.Value{"a": symbolic.INT_1, "b": symbolic.NewString("a")}, entries)
+
+			concreteValue, err := symbolic.Concretize(v, ctx)
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			assert.Equal(t, obj, concreteValue)
+		})
+	})
+
+	t.Run("record", func(t *testing.T) {
+		t.Run("empty", func(t *testing.T) {
+			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			defer ctx.CancelGracefully()
+
+			record := NewEmptyRecord()
+			v, err := ToSymbolicValue(nil, record, false)
+			assert.NoError(t, err)
+
+			assert.IsType(t, (*symbolic.Record)(nil), v)
+			symbolicObj := v.(*symbolic.Record)
+
+			entries := symbolicObj.ValueEntryMap()
+			assert.Empty(t, entries)
+
+			concreteValue, err := symbolic.Concretize(v, ctx)
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			assert.Equal(t, record, concreteValue)
+		})
+
+		t.Run("single property", func(t *testing.T) {
+			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			defer ctx.CancelGracefully()
+
+			record := NewRecordFromMap(ValMap{"a": Int(1)})
+			v, err := ToSymbolicValue(nil, record, false)
+			assert.NoError(t, err)
+
+			assert.IsType(t, (*symbolic.Object)(nil), v)
+			symbolicObj := v.(*symbolic.Object)
+
+			entries := symbolicObj.ValueEntryMap()
+			assert.Equal(t, map[string]symbolic.Value{"a": symbolic.INT_1}, entries)
+
+			concreteValue, err := symbolic.Concretize(v, ctx)
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			assert.Equal(t, record, concreteValue)
+		})
+
+		t.Run("two properties", func(t *testing.T) {
+			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			defer ctx.CancelGracefully()
+
+			record := NewRecordFromMap(ValMap{"a": Int(1), "b": Str("a")})
+			v, err := ToSymbolicValue(nil, record, false)
+			assert.NoError(t, err)
+
+			assert.IsType(t, (*symbolic.Record)(nil), v)
+			symbolicObj := v.(*symbolic.Record)
+
+			entries := symbolicObj.ValueEntryMap()
+			assert.Equal(t, map[string]symbolic.Value{"a": symbolic.INT_1, "b": symbolic.NewString("a")}, entries)
+
+			concreteValue, err := symbolic.Concretize(v, ctx)
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			assert.Equal(t, record, concreteValue)
+		})
+	})
 
 	t.Run("dictionary", func(t *testing.T) {
-		dict := NewDictionary(map[string]Serializable{`"name"`: Str("foo"), `./file`: True})
-		v, err := ToSymbolicValue(nil, dict, false)
-		assert.NoError(t, err)
+		t.Run("empty", func(t *testing.T) {
+			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			defer ctx.CancelGracefully()
 
-		assert.IsType(t, &symbolic.Dictionary{}, v)
-		symbolicDict := v.(*symbolic.Dictionary)
-		assert.Len(t, symbolicDict.Entries(), len(dict.entries))
+			dict := NewDictionary(map[string]Serializable{})
+			v, err := ToSymbolicValue(nil, dict, false)
+			assert.NoError(t, err)
 
-		assert.Equal(t, map[string]symbolic.Serializable{`"name"`: symbolic.NewString("foo"), `./file`: symbolic.TRUE}, symbolicDict.Entries())
-		assert.Equal(t, map[string]symbolic.Serializable{`"name"`: symbolic.NewString("name"), `./file`: symbolic.NewPath("./file")}, symbolicDict.Keys())
+			assert.IsType(t, (*symbolic.Dictionary)(nil), v)
+			symbolicDict := v.(*symbolic.Dictionary)
+			assert.Len(t, symbolicDict.Entries(), len(dict.entries))
+
+			assert.Empty(t, symbolicDict.Entries())
+			assert.Empty(t, symbolicDict.Keys())
+
+			concreteValue, err := symbolic.Concretize(v, ctx)
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			assert.Equal(t, dict, concreteValue)
+		})
+
+		t.Run("single entry", func(t *testing.T) {
+			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			defer ctx.CancelGracefully()
+
+			dict := NewDictionary(map[string]Serializable{`"name"`: Str("foo")})
+			v, err := ToSymbolicValue(nil, dict, false)
+			assert.NoError(t, err)
+
+			assert.IsType(t, (*symbolic.Dictionary)(nil), v)
+			symbolicDict := v.(*symbolic.Dictionary)
+			assert.Len(t, symbolicDict.Entries(), len(dict.entries))
+
+			assert.Equal(t, map[string]symbolic.Serializable{`"name"`: symbolic.NewString("foo")}, symbolicDict.Entries())
+			assert.Equal(t, map[string]symbolic.Serializable{`"name"`: symbolic.NewString("name")}, symbolicDict.Keys())
+
+			concreteValue, err := symbolic.Concretize(v, ctx)
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			assert.Equal(t, dict, concreteValue)
+		})
+
+		t.Run("two entries", func(t *testing.T) {
+			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			defer ctx.CancelGracefully()
+
+			dict := NewDictionary(map[string]Serializable{`"name"`: Str("foo"), `./file`: True})
+			v, err := ToSymbolicValue(nil, dict, false)
+			assert.NoError(t, err)
+
+			assert.IsType(t, (*symbolic.Dictionary)(nil), v)
+			symbolicDict := v.(*symbolic.Dictionary)
+			assert.Len(t, symbolicDict.Entries(), len(dict.entries))
+
+			assert.Equal(t, map[string]symbolic.Serializable{`"name"`: symbolic.NewString("foo"), `./file`: symbolic.TRUE}, symbolicDict.Entries())
+			assert.Equal(t, map[string]symbolic.Serializable{`"name"`: symbolic.NewString("name"), `./file`: symbolic.NewPath("./file")}, symbolicDict.Keys())
+
+			concreteValue, err := symbolic.Concretize(v, ctx)
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			assert.Equal(t, dict, concreteValue)
+		})
 	})
 
 	t.Run("object pattern", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
 
 		patt := NewInexactObjectPattern(map[string]Pattern{"a": INT_PATTERN})
 		symb, err := patt.ToSymbolicValue(ctx, map[uintptr]symbolic.Value{})
@@ -175,19 +370,30 @@ func TestToSymbolicValue(t *testing.T) {
 
 		patt = NewInexactObjectPatternWithOptionalProps(map[string]Pattern{"a": INT_PATTERN}, map[string]struct{}{"a": {}})
 		symb, err = patt.ToSymbolicValue(ctx, map[uintptr]symbolic.Value{})
-		if assert.NoError(t, err) {
-			expected := symbolic.NewInexactObjectPattern(
-				map[string]symbolic.Pattern{
-					"a": utils.Must(INT_PATTERN.ToSymbolicValue(ctx, map[uintptr]symbolic.Value{})).(symbolic.Pattern),
-				}, map[string]struct{}{"a": {}})
+		if !assert.NoError(t, err) {
+			return
 
-			assert.Equal(t, symbolic.Stringify(expected), symbolic.Stringify(symb))
 		}
+
+		expected := symbolic.NewInexactObjectPattern(
+			map[string]symbolic.Pattern{
+				"a": utils.Must(INT_PATTERN.ToSymbolicValue(ctx, map[uintptr]symbolic.Value{})).(symbolic.Pattern),
+			}, map[string]struct{}{"a": {}})
+
+		assert.Equal(t, symbolic.Stringify(expected), symbolic.Stringify(symb))
+
+		concreteValue, err := symbolic.Concretize(symb, ctx)
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		assert.Equal(t, patt, concreteValue)
 	})
 
 	t.Run("cycles", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
 
 		obj := &Object{}
 		pattern := &ExactValuePattern{value: obj}

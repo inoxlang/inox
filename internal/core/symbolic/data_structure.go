@@ -996,6 +996,7 @@ func (dict *Dictionary) Concretize(ctx ConcreteContext) any {
 
 		concreteValues[i] = concreteValue
 		concreteKeys[i] = concreteKey
+		i++
 	}
 	return extData.ConcreteValueFactories.CreateDictionary(concreteKeys, concreteValues, ctx)
 }
@@ -1999,7 +2000,7 @@ func (rec *Record) Concretize(ctx ConcreteContext) any {
 	for k, v := range rec.entries {
 		concreteProperties[k] = utils.Must(Concretize(v, ctx))
 	}
-	return extData.ConcreteValueFactories.CreateObject(concreteProperties)
+	return extData.ConcreteValueFactories.CreateRecord(concreteProperties)
 }
 
 func (rec *Record) Prop(name string) Value {
