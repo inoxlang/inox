@@ -105,8 +105,8 @@ type DebugSetExceptionBreakpointsParams struct {
 }
 
 type DebugLaunchArgs struct {
-	Program  string                                     `json:"program"`
-	LogLevel map[ /*'default' or a path*/ string]string `json:"logLevel,omitempty"`
+	Program   string                                                       `json:"program"`
+	LogLevels map[ /*'default' | 'enableInternalDebug' | path*/ string]any `json:"logLevels,omitempty"`
 }
 
 type DebugDisconnectParams struct {
@@ -362,38 +362,15 @@ func registerDebugMethodHandlers(
 				return makeDAPErrorResponse("missing program in launch arguments"), nil
 			}
 
-			var defaultLogLevel zerolog.Level = DEFAULT_LOG_LEVEL
-			logLevelByPath := map[core.Path]zerolog.Level{}
-			enableInternalDebugLogs := false
-
-			if launchArgs.LogLevel != nil {
-				defaultLevel, ok := launchArgs.LogLevel["default"]
-				if !ok {
-					removeDebugSession(debugSession, session)
-					return makeDAPErrorResponse("missing default log level"), nil
-				}
-
-				defaultLogLevel, err = zerolog.ParseLevel(defaultLevel)
-
-				if err != nil {
-					removeDebugSession(debugSession, session)
-					return makeDAPErrorResponse(fmt.Sprintf("invalid default log level: %q", defaultLevel)), nil
-				}
-
-				for key, level := range launchArgs.LogLevel {
-					if key == "" || key[0] != '/' {
-						continue
-					}
-
-					parsedLogLevel, err := zerolog.ParseLevel(level)
-
-					if err != nil {
-						removeDebugSession(debugSession, session)
-						return makeDAPErrorResponse(fmt.Sprintf("invalid default log level: %q", level)), nil
-					}
-					logLevelByPath[core.NonDirPathFrom(key)] = parsedLogLevel
-				}
+			logLevels, err := readLogLevelSettings(launchArgs)
+			if err != nil {
+				removeDebugSession(debugSession, session)
+				return makeDAPErrorResponse(err.Error()), nil
 			}
+
+			// inform the user about the log level configuration
+			logLevelConfigMessage := "log level config from your IDE: " + string(utils.Must(json.Marshal(launchArgs.LogLevels))) + "\n"
+			notifyOutputEvent(logLevelConfigMessage, ConsoleDebugEvent, debugSession, session)
 
 			// update the debug session
 
@@ -420,18 +397,14 @@ func registerDebugMethodHandlers(
 					return
 				case err := <-debugSession.programDoneChan:
 					if err != nil {
-						notifyOutputEvent("program failed: "+err.Error(), "important", debugSession, session)
+						notifyOutputEvent("program failed: "+err.Error(), ImportantDebugEvent, debugSession, session)
 					}
 				}
 			}()
 
 			go launchDebuggedProgram(debuggedProgramLaunch{
-				programPath: programPath,
-				logLevels: core.NewLogLevels(core.NewDefaultLogsArgs{
-					DefaultLevel:            defaultLogLevel,
-					ByPath:                  logLevelByPath,
-					EnableInternalDebugLogs: enableInternalDebugLogs,
-				}),
+				programPath:  programPath,
+				logLevels:    logLevels,
 				session:      session,
 				debugSession: debugSession,
 				fls:          fls,
@@ -1506,7 +1479,15 @@ func breakpointInfoToDebugAdapterProtocolBreakpoint(breakpoint core.BreakpointIn
 	return dapBreakpoint
 }
 
-func notifyOutputEvent(msg string, category string, debugSession *DebugSession, session *jsonrpc.Session) {
+type DebugEventCategory string
+
+const (
+	ImportantDebugEvent = "important"
+	StdoutDebugEvent    = "stdout"
+	ConsoleDebugEvent   = "console"
+)
+
+func notifyOutputEvent(msg string, category DebugEventCategory, debugSession *DebugSession, session *jsonrpc.Session) {
 	outputEvent := dap.OutputEvent{
 		Event: dap.Event{
 			ProtocolMessage: dap.ProtocolMessage{
@@ -1517,7 +1498,7 @@ func notifyOutputEvent(msg string, category string, debugSession *DebugSession, 
 		},
 		Body: dap.OutputEventBody{
 			Output:   msg,
-			Category: category,
+			Category: string(category),
 		},
 	}
 
