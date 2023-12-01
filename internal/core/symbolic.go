@@ -289,6 +289,9 @@ func init() {
 			CreateTuple: func(elements []any) any {
 				return NewTuple(utils.MapSlice(elements, ToSerializableAsserted))
 			},
+			CreateOrderedPair: func(first, second any) any {
+				return NewOrderedPair(first.(Serializable), second.(Serializable))
+			},
 			CreateKeyList: func(names []string) any {
 				return KeyList(slices.Clone(names))
 			},
@@ -569,6 +572,27 @@ func (l KeyList) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.
 func (t Tuple) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	//TODO
 	return symbolic.NewTupleOf(symbolic.ANY_SERIALIZABLE), nil
+}
+
+func (p *OrderedPair) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
+	ptr := reflect.ValueOf(p).Pointer()
+	if r, ok := encountered[ptr]; ok {
+		return r, nil
+	}
+
+	symbPair := symbolic.NewUnitializedOrderedPair()
+	encountered[ptr] = symbPair
+
+	first, err := p[0].ToSymbolicValue(ctx, encountered)
+	if err != nil {
+		return nil, err
+	}
+	second, err := p[1].ToSymbolicValue(ctx, encountered)
+	if err != nil {
+		return nil, err
+	}
+	symbolic.InitializeOrderedPair(symbPair, first.(symbolic.Serializable), second.(symbolic.Serializable))
+	return symbPair, nil
 }
 
 func (obj *Object) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {

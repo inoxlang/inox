@@ -280,6 +280,27 @@ func TestBidirectionalSymbolicConversion(t *testing.T) {
 			assert.Equal(t, record, concreteValue)
 		})
 	})
+	t.Run("ordered pair", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
+		pair := NewOrderedPair(Int(1), Int(2))
+		v, err := ToSymbolicValue(nil, pair, false)
+		assert.NoError(t, err)
+
+		assert.IsType(t, (*symbolic.OrderedPair)(nil), v)
+		symbolicOrderedPair := v.(*symbolic.OrderedPair)
+
+		assert.True(t, symbolicOrderedPair.HasKnownLen())
+		assert.Equal(t, 2, symbolicOrderedPair.KnownLen())
+
+		concreteValue, err := symbolic.Concretize(v, ctx)
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		assert.Equal(t, pair, concreteValue)
+	})
 
 	t.Run("dictionary", func(t *testing.T) {
 		t.Run("empty", func(t *testing.T) {

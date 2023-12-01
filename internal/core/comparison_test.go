@@ -127,8 +127,11 @@ func TestCompareDictionaries(t *testing.T) {
 }
 
 func TestCompareValueLists(t *testing.T) {
-	ctx := NewContext(ContextConfig{})
+	ctx := NewContext(ContextConfig{
+		DoNotSpawnDoneGoroutine: true,
+	})
 	NewGlobalState(ctx)
+	defer ctx.CancelGracefully()
 
 	t.Run("same list", func(t *testing.T) {
 		s := &ValueList{elements: []Serializable{Str("a")}}
@@ -265,4 +268,27 @@ func TestCompareStrings(t *testing.T) {
 		assert.False(t, s2.Equal(ctx, s1, map[uintptr]uintptr{}, 0))
 	})
 
+}
+
+func TestCompareOrderedPairs(t *testing.T) {
+	ctx := NewContext(ContextConfig{})
+	NewGlobalState(ctx)
+	defer ctx.CancelGracefully()
+
+	intPairA := &OrderedPair{Int(1), Int(2)}
+	intPairB := &OrderedPair{Int(2), Int(1)}
+
+	assertEqualInoxValues(t, intPairA, intPairA, ctx)
+	assertNotEqualInoxValues(t, intPairA, intPairB, ctx)
+	assertNotEqualInoxValues(t, intPairB, intPairA, ctx)
+}
+
+func assertEqualInoxValues(t *testing.T, a, b Value, ctx *Context) {
+	t.Helper()
+	assert.True(t, a.Equal(ctx, b, map[uintptr]uintptr{}, 0))
+}
+
+func assertNotEqualInoxValues(t *testing.T, a, b Value, ctx *Context) {
+	t.Helper()
+	assert.False(t, a.Equal(ctx, b, map[uintptr]uintptr{}, 0))
 }

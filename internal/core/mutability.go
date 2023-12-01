@@ -86,6 +86,10 @@ func (tuple *Tuple) IsMutable() bool {
 	return false
 }
 
+func (tuple *OrderedPair) IsMutable() bool {
+	return false
+}
+
 func (*Array) IsMutable() bool {
 	return true
 }

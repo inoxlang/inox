@@ -217,6 +217,15 @@ func NewOrderedPair(first, second Serializable) *OrderedPair {
 	}
 }
 
+func NewUnitializedOrderedPair() *OrderedPair {
+	return &OrderedPair{}
+}
+
+func InitializeOrderedPair(pair *OrderedPair, first, second Serializable) {
+	pair.elements[0] = first
+	pair.elements[1] = second
+}
+
 func (p *OrderedPair) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()

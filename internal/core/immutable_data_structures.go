@@ -1,6 +1,7 @@
 package core
 
 import (
+	"errors"
 	"fmt"
 	"slices"
 	"strconv"
@@ -194,6 +195,32 @@ func (tuple *Tuple) Concat(other *Tuple) *Tuple {
 	copy(elements[len(tuple.elements):], other.elements)
 
 	return NewTuple(elements)
+}
+
+// OrderedPair is the immutable equivalent of a List, OrderedPair implements Value.
+type OrderedPair [2]Serializable
+
+func NewOrderedPair(first, second Serializable) *OrderedPair {
+	if first.IsMutable() {
+		panic(errors.New("first value is mutable"))
+	}
+	if second.IsMutable() {
+		panic(errors.New("first value is mutable"))
+	}
+	return &OrderedPair{first, second}
+}
+
+func (p *OrderedPair) GetOrBuildElements(ctx *Context) []Serializable {
+	slice := p[:]
+	return slices.Clone(slice)
+}
+
+func (p *OrderedPair) Len() int {
+	return 2
+}
+
+func (p *OrderedPair) At(ctx *Context, i int) Value {
+	return p[i]
 }
 
 // Treedata is used to represent any hiearchical data, Treedata implements Value and is immutable.

@@ -726,6 +726,12 @@ func (tuple Tuple) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth
 	lst.PrettyPrint(w, config, depth, parentIndentCount)
 }
 
+func (p OrderedPair) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("ordered-pair")))
+	lst := &List{underlyingList: &ValueList{elements: p[:]}}
+	lst.PrettyPrint(w, config, depth, parentIndentCount)
+}
+
 func (a *Array) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 	//TODO: prevent modification of the array while this function is running
 	length := a.Len()

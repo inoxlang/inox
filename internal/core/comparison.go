@@ -561,6 +561,41 @@ func (tuple *Tuple) Equal(ctx *Context, other Value, alreadyCompared map[uintptr
 	return true
 }
 
+func (p *OrderedPair) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	if depth > MAX_COMPARISON_DEPTH {
+		return false
+	}
+
+	otherPair, ok := other.(*OrderedPair)
+	if !ok {
+		return false
+	}
+
+	addr := reflect.ValueOf(p).Pointer()
+	otherAddr := reflect.ValueOf(otherPair).Pointer()
+
+	if alreadyCompared[addr] == otherAddr || alreadyCompared[otherAddr] == addr {
+		//we return true to prevent cycling
+		return true
+	}
+
+	alreadyCompared[addr] = otherAddr
+	alreadyCompared[otherAddr] = addr
+
+	if addr == otherAddr {
+		return true
+	}
+
+	//check that all elements are equal
+	for i, v := range p {
+		if !v.Equal(ctx, otherPair[i], alreadyCompared, depth+1) {
+			return false
+		}
+	}
+
+	return true
+}
+
 func (s *Struct) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
 	if depth > MAX_COMPARISON_DEPTH {
 		return false
