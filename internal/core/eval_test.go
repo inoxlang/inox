@@ -1217,6 +1217,18 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		}
 	})
 
+	t.Run("binary pair expression", func(t *testing.T) {
+		code := `(1,2)`
+		state := NewGlobalState(NewDefaultTestContext())
+		defer state.Ctx.CancelGracefully()
+
+		res, err := Eval(code, state, false)
+		if !assert.NoError(t, err) {
+			return
+		}
+		assert.Equal(t, NewOrderedPair(Int(1), Int(2)), res)
+	})
+
 	t.Run("binary expression chain", func(t *testing.T) {
 		testCases := []struct {
 			code   string

@@ -202,6 +202,8 @@ func (c *compiler) Compile(node parse.Node) error {
 			c.emit(node, OpDoSetDifference)
 		case parse.NilCoalescing:
 			c.emit(node, OpNilCoalesce)
+		case parse.PairComma:
+			c.emit(node, OpCreateOrderedPair)
 		default:
 			return c.NewError(node, makeInvalidBinaryOperator(node.Operator))
 		}

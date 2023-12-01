@@ -2083,6 +2083,8 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 				return left, nil
 			}
 			return right, nil
+		case parse.PairComma:
+			return NewOrderedPair(left.(Serializable), right.(Serializable)), nil
 		default:
 			return nil, errors.New("invalid binary operator " + strconv.Itoa(int(n.Operator)))
 		}
