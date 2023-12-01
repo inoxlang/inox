@@ -7,7 +7,10 @@ on:
       - '.legal/**'
       - 'README.md'
       - 'CONTRIBUTING.md'
+      - 'FUTURE.md'
+      - 'SECURITY.md'
       - 'CLA.md'
+      - 'jsconfig.json'
 permissions: write-all
 
 jobs:
