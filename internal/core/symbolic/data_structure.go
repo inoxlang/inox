@@ -9,6 +9,7 @@ var (
 	ANY_INDEXABLE    = &AnyIndexable{}
 	ANY_ARRAY        = NewArrayOf(ANY_SERIALIZABLE)
 	ANY_TUPLE        = NewTupleOf(ANY_SERIALIZABLE)
+	ANY_ORDERED_PAIR = NewOrderedPair(ANY_SERIALIZABLE, ANY_SERIALIZABLE)
 	ANY_OBJ          = &Object{}
 	ANY_READONLY_OBJ = &Object{readonly: true}
 	ANY_REC          = &Record{}
@@ -25,7 +26,12 @@ var (
 
 	_ = []Indexable{
 		(*String)(nil), (*Array)(nil), (*List)(nil), (*Tuple)(nil), (*RuneSlice)(nil), (*ByteSlice)(nil), (*Object)(nil), (*IntRange)(nil),
-		(*AnyStringLike)(nil), (*AnyIndexable)(nil),
+		(*AnyStringLike)(nil), (*AnyIndexable)(nil), (*OrderedPair)(nil),
+	}
+
+	_ = []Iterable{
+		(*String)(nil), (*Array)(nil), (*List)(nil), (*Tuple)(nil), (*RuneSlice)(nil), (*ByteSlice)(nil), (*Object)(nil), (*IntRange)(nil),
+		(*AnyStringLike)(nil), (*AnyIndexable)(nil), (*OrderedPair)(nil),
 	}
 
 	_ = []Sequence{

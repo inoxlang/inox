@@ -204,6 +204,121 @@ func (t *Tuple) slice(start, end *Int) Sequence {
 	}
 }
 
+// A OrderedPair represents a symbolic OrderedPair.
+type OrderedPair struct {
+	elements [2]Serializable
+
+	SerializableMixin
+}
+
+func NewOrderedPair(first, second Serializable) *OrderedPair {
+	return &OrderedPair{
+		elements: [2]Serializable{first, second},
+	}
+}
+
+func (p *OrderedPair) Test(v Value, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
+	otherPair, ok := v.(*OrderedPair)
+	if !ok {
+		return false
+	}
+
+	return p.elements[0].Test(otherPair.elements[0], state) &&
+		p.elements[1].Test(otherPair.elements[1], state)
+}
+
+func (p *OrderedPair) IsConcretizable() bool {
+	return IsConcretizable(p.elements[0]) && IsConcretizable(p.elements[1])
+}
+
+func (t *OrderedPair) Concretize(ctx ConcreteContext) any {
+	if !t.IsConcretizable() {
+		panic(ErrNotConcretizable)
+	}
+
+	first := utils.Must(Concretize(t.elements[0], ctx))
+	second := utils.Must(Concretize(t.elements[1], ctx))
+
+	return extData.ConcreteValueFactories.CreateOrderedPair(first, second)
+}
+
+func (t *OrderedPair) Static() Pattern {
+	var elements []Value
+	for _, e := range t.elements {
+		elements = append(elements, getStatic(e).SymbolicValue())
+	}
+
+	if len(elements) == 0 {
+		return NewListPatternOf(&TypePattern{val: ANY_SERIALIZABLE})
+	}
+
+	elem := AsSerializableChecked(joinValues(elements))
+	return NewListPatternOf(&TypePattern{val: elem})
+}
+
+func (t *OrderedPair) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("ordered-pair")
+	if t.elements[0] == nil || t.elements[1] == nil {
+		return
+	}
+
+	w.WriteString("(\n")
+	t.elements[0].PrettyPrint(w.IncrDepth(), config)
+	t.elements[1].PrettyPrint(w.IncrDepth(), config)
+}
+
+func (t *OrderedPair) HasKnownLen() bool {
+	return true
+}
+
+func (t *OrderedPair) KnownLen() int {
+	return 2
+}
+
+func (t *OrderedPair) element() Value {
+	return joinValues([]Value{t.elements[0], t.elements[1]})
+}
+
+func (t *OrderedPair) elementAt(i int) Value {
+	switch i {
+	case 0:
+		return t.elements[0]
+	case 1:
+		return t.elements[1]
+	default:
+		return NEVER
+	}
+}
+
+func (p *OrderedPair) Contains(value Serializable) (bool, bool) {
+	possible := false
+
+	for _, e := range p.elements {
+		if e.Test(value, RecTestCallState{}) {
+			possible = true
+			if value.Test(e, RecTestCallState{}) && IsConcretizable(value) {
+				return true, true
+			}
+		}
+	}
+	return false, possible
+}
+
+func (t *OrderedPair) IteratorElementKey() Value {
+	return ANY_INT
+}
+
+func (t *OrderedPair) IteratorElementValue() Value {
+	return t.element()
+}
+
+func (t *OrderedPair) WidestOfType() Value {
+	return ANY_ORDERED_PAIR
+}
+
 // A KeyList represents a symbolic KeyList.
 type KeyList struct {
 	Keys []string //if nil, matches any

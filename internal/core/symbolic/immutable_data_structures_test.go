@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestSymbolicRecord(t *testing.T) {
+func TestRecord(t *testing.T) {
 
 	t.Run("Test()", func(t *testing.T) {
 
@@ -145,7 +145,7 @@ func TestSymbolicRecord(t *testing.T) {
 
 }
 
-func TestSymbolicTuple(t *testing.T) {
+func TestTuple(t *testing.T) {
 
 	t.Run("Test()", func(t *testing.T) {
 		cases := []struct {
@@ -228,7 +228,76 @@ func TestSymbolicTuple(t *testing.T) {
 
 }
 
-func TestSymbolicKeyList(t *testing.T) {
+func TestOrderedPair(t *testing.T) {
+
+	t.Run("Test()", func(t *testing.T) {
+		cases := []struct {
+			pair1 *OrderedPair
+			pair2 *OrderedPair
+			ok    bool
+		}{
+			{
+				&OrderedPair{elements: [2]Serializable{ANY_SERIALIZABLE, ANY_SERIALIZABLE}},
+				&OrderedPair{elements: [2]Serializable{ANY_SERIALIZABLE, ANY_SERIALIZABLE}},
+				true,
+			},
+			{
+				&OrderedPair{elements: [2]Serializable{ANY_SERIALIZABLE, ANY_SERIALIZABLE}},
+				&OrderedPair{elements: [2]Serializable{ANY_INT, ANY_SERIALIZABLE}},
+				true,
+			},
+			{
+				&OrderedPair{elements: [2]Serializable{ANY_SERIALIZABLE, ANY_SERIALIZABLE}},
+				&OrderedPair{elements: [2]Serializable{ANY_SERIALIZABLE, ANY_INT}},
+				true,
+			},
+			{
+				&OrderedPair{elements: [2]Serializable{ANY_SERIALIZABLE, ANY_SERIALIZABLE}},
+				&OrderedPair{elements: [2]Serializable{ANY_INT, ANY_INT}},
+				true,
+			},
+
+			//
+			{
+				&OrderedPair{elements: [2]Serializable{ANY_INT, ANY_SERIALIZABLE}},
+				&OrderedPair{elements: [2]Serializable{ANY_INT, ANY_SERIALIZABLE}},
+				true,
+			},
+			{
+				&OrderedPair{elements: [2]Serializable{ANY_INT, ANY_SERIALIZABLE}},
+				&OrderedPair{elements: [2]Serializable{ANY_INT, ANY_INT}},
+				true,
+			},
+			{
+				&OrderedPair{elements: [2]Serializable{ANY_INT, ANY_SERIALIZABLE}},
+				&OrderedPair{elements: [2]Serializable{ANY_SERIALIZABLE, ANY_SERIALIZABLE}},
+				false,
+			},
+			{
+				&OrderedPair{elements: [2]Serializable{ANY_INT, ANY_SERIALIZABLE}},
+				&OrderedPair{elements: [2]Serializable{ANY_SERIALIZABLE, ANY_INT}},
+				false,
+			},
+		}
+
+		for _, testCase := range cases {
+			t.Run(fmt.Sprint(testCase.pair1, "_", testCase.pair2), func(t *testing.T) {
+				assert.Equal(t, testCase.ok, testCase.pair1.Test(testCase.pair2, RecTestCallState{}))
+			})
+		}
+
+		t.Run("an infinite recursion should raise the error "+ErrMaximumSymbolicTestCallDepthReached.Error(), func(t *testing.T) {
+			pair1 := &OrderedPair{}
+			pair1.elements = [2]Serializable{pair1, ANY_INT}
+			assert.PanicsWithError(t, ErrMaximumSymbolicTestCallDepthReached.Error(), func() {
+				pair1.Test(pair1, RecTestCallState{})
+			})
+		})
+	})
+
+}
+
+func TestKeyList(t *testing.T) {
 
 	t.Run("Test()", func(t *testing.T) {
 		cases := []struct {

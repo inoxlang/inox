@@ -70,12 +70,13 @@ type ConcreteValueFactories struct {
 	CreateByteSlice func([]byte) any
 	CreateRuneSlice func([]rune) any
 
-	CreateObject     func(concreteProperties map[string]any) any
-	CreateRecord     func(concreteProperties map[string]any) any
-	CreateList       func(elements []any) any
-	CreateTuple      func(elements []any) any
-	CreateKeyList    func(names []string) any
-	CreateDictionary func(keys, values []any, ctx ConcreteContext) any
+	CreateObject      func(concreteProperties map[string]any) any
+	CreateRecord      func(concreteProperties map[string]any) any
+	CreateList        func(elements []any) any
+	CreateTuple       func(elements []any) any
+	CreateOrderedPair func(first, second any) any
+	CreateKeyList     func(names []string) any
+	CreateDictionary  func(keys, values []any, ctx ConcreteContext) any
 
 	CreatePathPattern func(string) any
 	CreateURLPattern  func(string) any

@@ -160,6 +160,10 @@ func (tuple *Tuple) IsMutable() bool {
 	return false
 }
 
+func (tuple *OrderedPair) IsMutable() bool {
+	return false
+}
+
 func (s *Struct) IsMutable() bool {
 	return true
 }
