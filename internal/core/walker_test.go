@@ -6,15 +6,15 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestUdataWalker(t *testing.T) {
+func TestTreedataWalker(t *testing.T) {
 
 	t.Run("single node", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
-		udata := &UData{
+		treedata := &Treedata{
 			Root: Int(0),
 		}
 
-		walker, err := udata.Walker(ctx)
+		walker, err := treedata.Walker(ctx)
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -41,9 +41,9 @@ func TestUdataWalker(t *testing.T) {
 
 	t.Run("root + child", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
-		udata := &UData{
+		treedata := &Treedata{
 			Root: Int(0),
-			HiearchyEntries: []UDataHiearchyEntry{
+			HiearchyEntries: []TreedataHiearchyEntry{
 				{
 					Value: Int(1),
 				},
@@ -51,7 +51,7 @@ func TestUdataWalker(t *testing.T) {
 		}
 
 		//root
-		walker, err := udata.Walker(ctx)
+		walker, err := treedata.Walker(ctx)
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -94,9 +94,9 @@ func TestUdataWalker(t *testing.T) {
 
 	t.Run("root + two children", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
-		udata := &UData{
+		treedata := &Treedata{
 			Root: Int(0),
-			HiearchyEntries: []UDataHiearchyEntry{
+			HiearchyEntries: []TreedataHiearchyEntry{
 				{
 					Value: Int(1),
 				},
@@ -107,7 +107,7 @@ func TestUdataWalker(t *testing.T) {
 		}
 
 		//root
-		walker, err := udata.Walker(ctx)
+		walker, err := treedata.Walker(ctx)
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -164,12 +164,12 @@ func TestUdataWalker(t *testing.T) {
 
 	t.Run("root + child + grand child", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
-		udata := &UData{
+		treedata := &Treedata{
 			Root: Int(0),
-			HiearchyEntries: []UDataHiearchyEntry{
+			HiearchyEntries: []TreedataHiearchyEntry{
 				{
 					Value: Int(1),
-					Children: []UDataHiearchyEntry{
+					Children: []TreedataHiearchyEntry{
 						{
 							Value: Int(2),
 						},
@@ -179,7 +179,7 @@ func TestUdataWalker(t *testing.T) {
 		}
 
 		//root
-		walker, err := udata.Walker(ctx)
+		walker, err := treedata.Walker(ctx)
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -236,12 +236,12 @@ func TestUdataWalker(t *testing.T) {
 
 	t.Run("root + child + child with grandchild", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
-		udata := &UData{
+		treedata := &Treedata{
 			Root: Int(0),
-			HiearchyEntries: []UDataHiearchyEntry{
+			HiearchyEntries: []TreedataHiearchyEntry{
 				{
 					Value: Int(1),
-					Children: []UDataHiearchyEntry{
+					Children: []TreedataHiearchyEntry{
 						{
 							Value: Int(2),
 						},
@@ -254,7 +254,7 @@ func TestUdataWalker(t *testing.T) {
 		}
 
 		//root
-		walker, err := udata.Walker(ctx)
+		walker, err := treedata.Walker(ctx)
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -325,15 +325,15 @@ func TestUdataWalker(t *testing.T) {
 
 	t.Run("root + child + child with grandchild", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
-		udata := &UData{
+		treedata := &Treedata{
 			Root: Int(0),
-			HiearchyEntries: []UDataHiearchyEntry{
+			HiearchyEntries: []TreedataHiearchyEntry{
 				{
 					Value: Int(1),
 				},
 				{
 					Value: Int(2),
-					Children: []UDataHiearchyEntry{
+					Children: []TreedataHiearchyEntry{
 						{
 							Value: Int(3),
 						},
@@ -343,7 +343,7 @@ func TestUdataWalker(t *testing.T) {
 		}
 
 		//root
-		walker, err := udata.Walker(ctx)
+		walker, err := treedata.Walker(ctx)
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -414,12 +414,12 @@ func TestUdataWalker(t *testing.T) {
 
 	t.Run("root + both children with grandchild", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
-		udata := &UData{
+		treedata := &Treedata{
 			Root: Int(0),
-			HiearchyEntries: []UDataHiearchyEntry{
+			HiearchyEntries: []TreedataHiearchyEntry{
 				{
 					Value: Int(1),
-					Children: []UDataHiearchyEntry{
+					Children: []TreedataHiearchyEntry{
 						{
 							Value: Int(2),
 						},
@@ -427,7 +427,7 @@ func TestUdataWalker(t *testing.T) {
 				},
 				{
 					Value: Int(3),
-					Children: []UDataHiearchyEntry{
+					Children: []TreedataHiearchyEntry{
 						{
 							Value: Int(4),
 						},
@@ -437,7 +437,7 @@ func TestUdataWalker(t *testing.T) {
 		}
 
 		//root
-		walker, err := udata.Walker(ctx)
+		walker, err := treedata.Walker(ctx)
 		if !assert.NoError(t, err) {
 			return
 		}

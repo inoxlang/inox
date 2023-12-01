@@ -979,7 +979,7 @@ func TestFindCompletions(t *testing.T) {
 				}
 			})
 
-			t.Run("udata", func(t *testing.T) {
+			t.Run("treedata", func(t *testing.T) {
 
 				t.Run("in top level module", func(t *testing.T) {
 					state := newState()
@@ -988,7 +988,7 @@ func TestFindCompletions(t *testing.T) {
 					doSymbolicCheck(chunk, state.Global)
 					completions := findCompletions(state, chunk, 1)
 					assert.EqualValues(t, []Completion{
-						{ShownString: "udata", Value: "udata", ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 0, End: 1}}},
+						{ShownString: "treedata", Value: "treedata", ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 0, End: 1}}},
 					}, completions)
 				})
 
@@ -999,7 +999,7 @@ func TestFindCompletions(t *testing.T) {
 					doSymbolicCheck(chunk, state.Global)
 					completions := findCompletions(state, chunk, 3)
 					assert.EqualValues(t, []Completion{
-						{ShownString: "udata", Value: "udata", ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 2, End: 3}}},
+						{ShownString: "treedata", Value: "treedata", ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 2, End: 3}}},
 					}, completions)
 				})
 

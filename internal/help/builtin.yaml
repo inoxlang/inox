@@ -424,9 +424,9 @@ containers:
 
   - topic: Tree
     related-topics: [Graph]
-    text: The Tree function creates a tree from a udata value
+    text: The Tree function creates a tree from a treedata value
     examples:
-    - code: 'Tree(udata "root")'
+    - code: 'Tree(treedata "root")'
       explanation: creates a Tree with a single node
 
   - topic: Stack
@@ -664,7 +664,7 @@ fs:
 
   - topic: fs.get_tree_data
     text: > 
-      The fs.get_tree_data function takes a directory path argument and returns a %udata value 
+      The fs.get_tree_data function takes a directory path argument and returns a %treedata value 
       thats contains the file hiearachy of the passed directory.
     examples:
     - code: fs.get_tree_data(./)

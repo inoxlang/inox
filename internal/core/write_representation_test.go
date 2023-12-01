@@ -1111,78 +1111,78 @@ func TestFloatRangeRepresentation(t *testing.T) {
 	})
 }
 
-func TestUdataRepresentation(t *testing.T) {
+func TestTreedataRepresentation(t *testing.T) {
 	t.Run("only root", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
-		udata := &UData{Root: Int(1)}
+		treedata := &Treedata{Root: Int(1)}
 
-		assert.Equal(t, `udata 1{}`, getReprAllVisible(t, udata, ctx))
-		node := assertParseExpression(t, `udata 1{}`)
+		assert.Equal(t, `treedata 1{}`, getReprAllVisible(t, treedata, ctx))
+		node := assertParseExpression(t, `treedata 1{}`)
 
 		state := NewTreeWalkState(NewContext(ContextConfig{}))
-		assert.Equal(t, udata, utils.Must(TreeWalkEval(node, state)))
+		assert.Equal(t, treedata, utils.Must(TreeWalkEval(node, state)))
 	})
 
 	t.Run("single hiearchy entry with no children", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
-		udata := &UData{Root: Int(1), HiearchyEntries: []UDataHiearchyEntry{{Value: Int(2)}}}
+		treedata := &Treedata{Root: Int(1), HiearchyEntries: []TreedataHiearchyEntry{{Value: Int(2)}}}
 
-		expectedRepr := `udata 1{2}`
-		assert.Equal(t, expectedRepr, getReprAllVisible(t, udata, ctx))
+		expectedRepr := `treedata 1{2}`
+		assert.Equal(t, expectedRepr, getReprAllVisible(t, treedata, ctx))
 		node := assertParseExpression(t, expectedRepr)
 
 		state := NewTreeWalkState(NewContext(ContextConfig{}))
-		assert.Equal(t, udata, utils.Must(TreeWalkEval(node, state)))
+		assert.Equal(t, treedata, utils.Must(TreeWalkEval(node, state)))
 	})
 
 	t.Run("two hiearchy entries with no children", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
-		udata := &UData{
+		treedata := &Treedata{
 			Root: Int(1),
-			HiearchyEntries: []UDataHiearchyEntry{
+			HiearchyEntries: []TreedataHiearchyEntry{
 				{Value: Int(2)},
 				{Value: Int(3)},
 			},
 		}
 
-		expectedRepr := `udata 1{2,3}`
-		repr := getReprAllVisible(t, udata, ctx)
+		expectedRepr := `treedata 1{2,3}`
+		repr := getReprAllVisible(t, treedata, ctx)
 		assert.Equal(t, expectedRepr, repr)
 		node := assertParseExpression(t, expectedRepr)
 
 		state := NewTreeWalkState(NewContext(ContextConfig{}))
-		assert.Equal(t, udata, utils.Must(TreeWalkEval(node, state)))
+		assert.Equal(t, treedata, utils.Must(TreeWalkEval(node, state)))
 	})
 
 	t.Run("deep", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
-		udata := &UData{
+		treedata := &Treedata{
 			Root: Int(1),
-			HiearchyEntries: []UDataHiearchyEntry{
+			HiearchyEntries: []TreedataHiearchyEntry{
 				{Value: Int(2)},
 				{
 					Value: Int(3),
-					Children: []UDataHiearchyEntry{
+					Children: []TreedataHiearchyEntry{
 						{Value: Int(4)},
 					},
 				},
 			},
 		}
 
-		expectedRepr := `udata 1{2,3{4}}`
-		assert.Equal(t, expectedRepr, getReprAllVisible(t, udata, ctx))
+		expectedRepr := `treedata 1{2,3{4}}`
+		assert.Equal(t, expectedRepr, getReprAllVisible(t, treedata, ctx))
 		node := assertParseExpression(t, expectedRepr)
 
 		state := NewTreeWalkState(NewContext(ContextConfig{}))
-		assert.Equal(t, udata, utils.Must(TreeWalkEval(node, state)))
+		assert.Equal(t, treedata, utils.Must(TreeWalkEval(node, state)))
 	})
 
 }

@@ -1887,7 +1887,7 @@ func (c *compiler) Compile(node parse.Node) error {
 			Node:  node,
 			chunk: c.currentChunk(),
 		}))
-	case *parse.UDataLiteral:
+	case *parse.TreedataLiteral:
 
 		if err := c.Compile(node.Root); err != nil {
 			return err
@@ -1899,8 +1899,8 @@ func (c *compiler) Compile(node parse.Node) error {
 			}
 		}
 
-		c.emit(node, OpCreateUData, len(node.Children))
-	case *parse.UDataEntry:
+		c.emit(node, OpCreateTreedata, len(node.Children))
+	case *parse.TreeDataEntry:
 		if err := c.Compile(node.Value); err != nil {
 			return err
 		}
@@ -1911,7 +1911,7 @@ func (c *compiler) Compile(node parse.Node) error {
 			}
 		}
 
-		c.emit(node, OpCreateUdataHiearchyEntry, len(node.Children))
+		c.emit(node, OpCreateTreedataHiearchyEntry, len(node.Children))
 
 	case *parse.ConcatenationExpression:
 		spreadElemSet := make([]Bool, len(node.Elements))

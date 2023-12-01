@@ -279,19 +279,19 @@ func TestList(t *testing.T) {
 	})
 }
 
-func TestUdata(t *testing.T) {
+func TestTreedata(t *testing.T) {
 
 	t.Run("getEntryAtIndexes", func(t *testing.T) {
-		udata := &UData{
+		treedata := &Treedata{
 			Root: Int(1),
-			HiearchyEntries: []UDataHiearchyEntry{
+			HiearchyEntries: []TreedataHiearchyEntry{
 				{
 					Value: Int(2),
-					Children: []UDataHiearchyEntry{
+					Children: []TreedataHiearchyEntry{
 						{Value: Int(3)},
 						{
 							Value: Int(4),
-							Children: []UDataHiearchyEntry{
+							Children: []TreedataHiearchyEntry{
 								{
 									Value: Int(5),
 								},
@@ -303,31 +303,31 @@ func TestUdata(t *testing.T) {
 			},
 		}
 
-		entry, ok := udata.getEntryAtIndexes(0)
+		entry, ok := treedata.getEntryAtIndexes(0)
 		if !assert.True(t, ok) {
 			return
 		}
 		assert.Equal(t, Int(2), entry.Value)
 
-		entry, ok = udata.getEntryAtIndexes(0, 0)
+		entry, ok = treedata.getEntryAtIndexes(0, 0)
 		if !assert.True(t, ok) {
 			return
 		}
 		assert.Equal(t, Int(3), entry.Value)
 
-		entry, ok = udata.getEntryAtIndexes(0, 1)
+		entry, ok = treedata.getEntryAtIndexes(0, 1)
 		if !assert.True(t, ok) {
 			return
 		}
 		assert.Equal(t, Int(4), entry.Value)
 
-		entry, ok = udata.getEntryAtIndexes(0, 1, 0)
+		entry, ok = treedata.getEntryAtIndexes(0, 1, 0)
 		if !assert.True(t, ok) {
 			return
 		}
 		assert.Equal(t, Int(5), entry.Value)
 
-		entry, ok = udata.getEntryAtIndexes(1)
+		entry, ok = treedata.getEntryAtIndexes(1)
 		if !assert.True(t, ok) {
 			return
 		}

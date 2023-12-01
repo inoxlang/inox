@@ -1545,55 +1545,55 @@ func (p *Port) WidestOfType() Value {
 	return ANY_PORT
 }
 
-// A Udata represents a symbolic UData.
-type UData struct {
+// A Treedata represents a symbolic Treedata.
+type Treedata struct {
 	_ int
 	SerializableMixin
 }
 
-func (i *UData) Test(v Value, state RecTestCallState) bool {
+func (i *Treedata) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
-	_, ok := v.(*UData)
+	_, ok := v.(*Treedata)
 	return ok
 }
 
-func (*UData) WalkerElement() Value {
+func (*Treedata) WalkerElement() Value {
 	return ANY
 }
 
-func (*UData) WalkerNodeMeta() Value {
+func (*Treedata) WalkerNodeMeta() Value {
 	return Nil
 }
 
-func (i *UData) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
-	w.WriteName("udata")
+func (i *Treedata) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("treedata")
 }
 
-func (i *UData) WidestOfType() Value {
-	return &UData{}
+func (i *Treedata) WidestOfType() Value {
+	return &Treedata{}
 }
 
-// A UDataHiearchyEntry represents a symbolic UData.
-type UDataHiearchyEntry struct {
+// A TreedataHiearchyEntry represents a symbolic Treedata.
+type TreedataHiearchyEntry struct {
 	_ int
 }
 
-func (i *UDataHiearchyEntry) Test(v Value, state RecTestCallState) bool {
+func (i *TreedataHiearchyEntry) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
-	_, ok := v.(*UDataHiearchyEntry)
+	_, ok := v.(*TreedataHiearchyEntry)
 	return ok
 }
 
-func (i *UDataHiearchyEntry) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
-	w.WriteName("udata-hiearchy-entry")
+func (i *TreedataHiearchyEntry) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("treedata-hiearchy-entry")
 }
 
-func (i *UDataHiearchyEntry) WidestOfType() Value {
-	return &UDataHiearchyEntry{}
+func (i *TreedataHiearchyEntry) WidestOfType() Value {
+	return &TreedataHiearchyEntry{}
 }
 
 func IsSimpleSymbolicInoxVal(v Value) bool {

@@ -128,92 +128,92 @@ func TestTraverse(t *testing.T) {
 		assert.Equal(t, 1, callCount)
 	})
 
-	t.Run("udata with only a root", func(t *testing.T) {
-		udata := &UData{Root: Int(1)}
+	t.Run("treedata with only a root", func(t *testing.T) {
+		treedata := &Treedata{Root: Int(1)}
 
 		var visited []Value
 
-		err := Traverse(udata, func(v Value) (parse.TraversalAction, error) {
+		err := Traverse(treedata, func(v Value) (parse.TraversalAction, error) {
 			visited = append(visited, v)
 			return parse.ContinueTraversal, nil
 		}, TraversalConfiguration{MaxDepth: 10})
 
 		assert.NoError(t, err)
 		if assert.Len(t, visited, 2) {
-			assert.Equal(t, []Value{udata, udata.Root}, visited)
+			assert.Equal(t, []Value{treedata, treedata.Root}, visited)
 		}
 	})
 
-	t.Run("udata with a root and a childless entry", func(t *testing.T) {
-		udata := &UData{
+	t.Run("treedata with a root and a childless entry", func(t *testing.T) {
+		treedata := &Treedata{
 			Root: Int(1),
-			HiearchyEntries: []UDataHiearchyEntry{
+			HiearchyEntries: []TreedataHiearchyEntry{
 				{Value: Int(2)},
 			},
 		}
 
 		var visited []Value
 
-		err := Traverse(udata, func(v Value) (parse.TraversalAction, error) {
+		err := Traverse(treedata, func(v Value) (parse.TraversalAction, error) {
 			visited = append(visited, v)
 			return parse.ContinueTraversal, nil
 		}, TraversalConfiguration{MaxDepth: 10})
 
 		assert.NoError(t, err)
 		if assert.Len(t, visited, 3) {
-			assert.Equal(t, []Value{udata, udata.Root, Int(2)}, visited)
+			assert.Equal(t, []Value{treedata, treedata.Root, Int(2)}, visited)
 		}
 	})
 
-	t.Run("udata with a root and a single-child entry", func(t *testing.T) {
-		udata := &UData{
+	t.Run("treedata with a root and a single-child entry", func(t *testing.T) {
+		treedata := &Treedata{
 			Root: Int(1),
-			HiearchyEntries: []UDataHiearchyEntry{
+			HiearchyEntries: []TreedataHiearchyEntry{
 				{
 					Value:    Int(2),
-					Children: []UDataHiearchyEntry{{Value: Int(3)}},
+					Children: []TreedataHiearchyEntry{{Value: Int(3)}},
 				},
 			},
 		}
 
 		var visited []Value
 
-		err := Traverse(udata, func(v Value) (parse.TraversalAction, error) {
+		err := Traverse(treedata, func(v Value) (parse.TraversalAction, error) {
 			visited = append(visited, v)
 			return parse.ContinueTraversal, nil
 		}, TraversalConfiguration{MaxDepth: 10})
 
 		assert.NoError(t, err)
 		if assert.Len(t, visited, 4) {
-			assert.Equal(t, []Value{udata, udata.Root, Int(2), Int(3)}, visited)
+			assert.Equal(t, []Value{treedata, treedata.Root, Int(2), Int(3)}, visited)
 		}
 	})
 
-	t.Run("udata with binary tree structure of depth 2", func(t *testing.T) {
-		udata := &UData{
+	t.Run("treedata with binary tree structure of depth 2", func(t *testing.T) {
+		treedata := &Treedata{
 			Root: Int(1),
-			HiearchyEntries: []UDataHiearchyEntry{
+			HiearchyEntries: []TreedataHiearchyEntry{
 				{
 					Value:    Int(2),
-					Children: []UDataHiearchyEntry{{Value: Int(3)}},
+					Children: []TreedataHiearchyEntry{{Value: Int(3)}},
 				},
 				{
 					Value:    Int(4),
-					Children: []UDataHiearchyEntry{{Value: Int(5)}},
+					Children: []TreedataHiearchyEntry{{Value: Int(5)}},
 				},
 			},
 		}
 
 		var visited []Value
 
-		err := Traverse(udata, func(v Value) (parse.TraversalAction, error) {
+		err := Traverse(treedata, func(v Value) (parse.TraversalAction, error) {
 			visited = append(visited, v)
 			return parse.ContinueTraversal, nil
 		}, TraversalConfiguration{MaxDepth: 10})
 
 		assert.NoError(t, err)
 		if assert.Len(t, visited, 6) {
-			assert.Equal(t, []Value{udata, udata.Root, Int(2), Int(3), Int(4), Int(5)}, visited)
+			assert.Equal(t, []Value{treedata, treedata.Root, Int(2), Int(3), Int(4), Int(5)}, visited)
 		}
 	})
 

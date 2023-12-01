@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	_                           = []Walkable{Path(""), (*UData)(nil)}
+	_                           = []Walkable{Path(""), (*Treedata)(nil)}
 	FS_TREE_DATA_ITEM_PROPNAMES = []string{"path", "path_rel_to_parent"}
 )
 
@@ -67,13 +67,13 @@ func GetWalkEntries(fls afs.Filesystem, walkedDirPath Path) (entries [][]fs.DirE
 	return entries, paths
 }
 
-func GetDirTreeData(fls afs.Filesystem, walkedDirPath Path) *UData {
-	udata := &UData{
+func GetDirTreeData(fls afs.Filesystem, walkedDirPath Path) *Treedata {
+	treedata := &Treedata{
 		Root: walkedDirPath,
 	}
 
 	baseDepth := strings.Count(string(walkedDirPath), "/")
-	var dirStack []*UDataHiearchyEntry
+	var dirStack []*TreedataHiearchyEntry
 
 	makeTreeDataItem := func(path, pathRelToOParent Path) *Record {
 		return NewRecordFromKeyValLists(FS_TREE_DATA_ITEM_PROPNAMES, []Serializable{path, pathRelToOParent})
@@ -96,11 +96,11 @@ func GetDirTreeData(fls afs.Filesystem, walkedDirPath Path) *UData {
 			value := makeTreeDataItem(path, relativePath)
 
 			if len(dirStack) == 0 {
-				udata.HiearchyEntries = append(udata.HiearchyEntries, UDataHiearchyEntry{Value: value})
-				dirStack = []*UDataHiearchyEntry{&udata.HiearchyEntries[len(udata.HiearchyEntries)-1]}
+				treedata.HiearchyEntries = append(treedata.HiearchyEntries, TreedataHiearchyEntry{Value: value})
+				dirStack = []*TreedataHiearchyEntry{&treedata.HiearchyEntries[len(treedata.HiearchyEntries)-1]}
 			} else {
 				parentDir := dirStack[len(dirStack)-1]
-				parentDir.Children = append(parentDir.Children, UDataHiearchyEntry{Value: value})
+				parentDir.Children = append(parentDir.Children, TreedataHiearchyEntry{Value: value})
 				dirStack = append(dirStack, &parentDir.Children[len(parentDir.Children)-1])
 			}
 		} else {
@@ -110,15 +110,15 @@ func GetDirTreeData(fls afs.Filesystem, walkedDirPath Path) *UData {
 			dirStack = dirStack[:depth]
 
 			if len(dirStack) == 0 {
-				udata.HiearchyEntries = append(udata.HiearchyEntries, UDataHiearchyEntry{Value: value})
+				treedata.HiearchyEntries = append(treedata.HiearchyEntries, TreedataHiearchyEntry{Value: value})
 			} else {
-				dirStack[len(dirStack)-1].Children = append(dirStack[len(dirStack)-1].Children, UDataHiearchyEntry{Value: value})
+				dirStack[len(dirStack)-1].Children = append(dirStack[len(dirStack)-1].Children, TreedataHiearchyEntry{Value: value})
 			}
 		}
 		return nil
 	})
 
-	return udata
+	return treedata
 }
 
 // DirWalker is a Walker, it iterates over a list of known entries.
@@ -276,25 +276,25 @@ func (p Path) Walker(ctx *Context) (Walker, error) {
 	return NewDirWalker(ctx.GetFileSystem(), p), nil
 }
 
-type UdataWalker struct {
-	chain      []UDataHiearchyEntry
+type TreedataWalker struct {
+	chain      []TreedataHiearchyEntry
 	indexChain []int
 	nextIndex  int
 }
 
-func (d *UData) Walker(*Context) (Walker, error) {
-	rootPseudoEntry := UDataHiearchyEntry{
+func (d *Treedata) Walker(*Context) (Walker, error) {
+	rootPseudoEntry := TreedataHiearchyEntry{
 		Value:    d.Root,
 		Children: d.HiearchyEntries,
 	}
 
-	return &UdataWalker{
-		chain:      []UDataHiearchyEntry{rootPseudoEntry},
+	return &TreedataWalker{
+		chain:      []TreedataHiearchyEntry{rootPseudoEntry},
 		indexChain: []int{0},
 	}, nil
 }
 
-func (it *UdataWalker) HasNext(ctx *Context) bool {
+func (it *TreedataWalker) HasNext(ctx *Context) bool {
 	if it.nextIndex == 0 {
 		return true
 	}
@@ -330,7 +330,7 @@ func (it *UdataWalker) HasNext(ctx *Context) bool {
 	return false
 }
 
-func (it *UdataWalker) Next(ctx *Context) bool {
+func (it *TreedataWalker) Next(ctx *Context) bool {
 	if !it.HasNext(ctx) {
 		return false
 	}
@@ -376,19 +376,19 @@ func (it *UdataWalker) Next(ctx *Context) bool {
 	return false
 }
 
-func (it *UdataWalker) Prune(ctx *Context) {
+func (it *TreedataWalker) Prune(ctx *Context) {
 
 }
 
-func (it *UdataWalker) Key(*Context) Value {
+func (it *TreedataWalker) Key(*Context) Value {
 	return Int(it.nextIndex - 1)
 }
 
-func (it *UdataWalker) Value(*Context) Value {
+func (it *TreedataWalker) Value(*Context) Value {
 	return it.chain[len(it.chain)-1].Value
 }
 
-func (it *UdataWalker) NodeMeta(*Context) WalkableNodeMeta {
+func (it *TreedataWalker) NodeMeta(*Context) WalkableNodeMeta {
 	if it.nextIndex == 1 {
 		return NewWalkableNodeMeta(nil, Nil)
 	}

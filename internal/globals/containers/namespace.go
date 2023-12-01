@@ -87,7 +87,7 @@ func init() {
 		NewGraph, func(ctx *symbolic.Context, nodes, edges *symbolic.List) *coll_symbolic.Graph {
 			return &coll_symbolic.Graph{}
 		},
-		NewTree, func(ctx *symbolic.Context, data *symbolic.UData, args ...symbolic.Value) *coll_symbolic.Tree {
+		NewTree, func(ctx *symbolic.Context, data *symbolic.Treedata, args ...symbolic.Value) *coll_symbolic.Tree {
 			return &coll_symbolic.Tree{}
 		},
 		NewRanking, func(ctx *symbolic.Context, flatEntries *symbolic.List) *coll_symbolic.Ranking {

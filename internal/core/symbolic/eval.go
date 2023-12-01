@@ -1973,8 +1973,8 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 		}
 
 		return mapping, nil
-	case *parse.UDataLiteral:
-		return &UData{}, nil
+	case *parse.TreedataLiteral:
+		return &Treedata{}, nil
 	case *parse.ComputeExpression:
 		fork := state.fork()
 

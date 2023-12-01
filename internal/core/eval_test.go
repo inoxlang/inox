@@ -6422,21 +6422,21 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 	})
 
-	t.Run("udata literal", func(t *testing.T) {
+	t.Run("treedata literal", func(t *testing.T) {
 
 		t.Run("not empty", func(t *testing.T) {
-			code := `udata 0 { 1 {2} 3 }`
+			code := `treedata 0 { 1 {2} 3 }`
 			state := NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, &UData{
+			assert.Equal(t, &Treedata{
 				Root: Int(0),
-				HiearchyEntries: []UDataHiearchyEntry{
+				HiearchyEntries: []TreedataHiearchyEntry{
 					{
 						Value: Int(1),
-						Children: []UDataHiearchyEntry{
+						Children: []TreedataHiearchyEntry{
 							{Value: Int(2)},
 						},
 					},

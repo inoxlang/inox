@@ -41,7 +41,7 @@ var (
 
 		(*AnySerializable)(nil),
 
-		(*UData)(nil),
+		(*Treedata)(nil),
 	}
 )
 

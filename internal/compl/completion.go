@@ -799,7 +799,7 @@ after_subcommand_completions:
 
 	//suggest some expression-starting keywords
 
-	for _, keyword := range []string{"udata", "Mapping", "concat"} {
+	for _, keyword := range []string{"treedata", "Mapping", "concat"} {
 		if hasPrefixCaseInsensitive(keyword, ident.Name) {
 			completions = append(completions, Completion{
 				ShownString: keyword,

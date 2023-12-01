@@ -75,7 +75,7 @@ type Tree struct {
 	jobs *core.ValueLifetimeJobs
 }
 
-func NewTree(ctx *core.Context, udata *core.UData, args ...core.Value) *Tree {
+func NewTree(ctx *core.Context, treedata *core.Treedata, args ...core.Value) *Tree {
 
 	//read arguments
 
@@ -95,16 +95,16 @@ func NewTree(ctx *core.Context, udata *core.UData, args ...core.Value) *Tree {
 
 	tree := &Tree{
 		root: &TreeNode{
-			data: udata.Root,
+			data: treedata.Root,
 		},
 	}
 
 	tree.root.tree = tree
-	tree.root.children = make([]*TreeNode, len(udata.HiearchyEntries))
+	tree.root.children = make([]*TreeNode, len(treedata.HiearchyEntries))
 	stack := []*TreeNode{tree.root}
 	ancestorChainLen := 0
 
-	udata.WalkEntriesDF(func(e core.UDataHiearchyEntry, index int, ancestorChain *[]core.UDataHiearchyEntry) error {
+	treedata.WalkEntriesDF(func(e core.TreedataHiearchyEntry, index int, ancestorChain *[]core.TreedataHiearchyEntry) error {
 		if len(*ancestorChain) < ancestorChainLen {
 			ancestorChainLen = len(*ancestorChain)
 			stack = stack[:ancestorChainLen+1]

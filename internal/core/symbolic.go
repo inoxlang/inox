@@ -1232,7 +1232,7 @@ func (it *DirWalker) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbo
 	return nil, symbolic.ErrNoSymbolicValue
 }
 
-func (it *UdataWalker) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
+func (it *TreedataWalker) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return nil, symbolic.ErrNoSymbolicValue
 }
 
@@ -1318,12 +1318,12 @@ func (port Port) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.
 	return symbolic.ANY_PORT, nil
 }
 
-func (u *UData) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
-	return &symbolic.UData{}, nil
+func (u *Treedata) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
+	return &symbolic.Treedata{}, nil
 }
 
-func (e UDataHiearchyEntry) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
-	return &symbolic.UDataHiearchyEntry{}, nil
+func (e TreedataHiearchyEntry) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
+	return &symbolic.TreedataHiearchyEntry{}, nil
 }
 
 func (c *StringConcatenation) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {

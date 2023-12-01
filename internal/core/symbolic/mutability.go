@@ -432,11 +432,11 @@ func (port Port) IsMutable() bool {
 	return false
 }
 
-func (u *UData) IsMutable() bool {
+func (u *Treedata) IsMutable() bool {
 	return false
 }
 
-func (e UDataHiearchyEntry) IsMutable() bool {
+func (e TreedataHiearchyEntry) IsMutable() bool {
 	return false
 }
 

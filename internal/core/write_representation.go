@@ -1328,19 +1328,19 @@ func (port Port) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConf
 	return err
 }
 
-func (udata *UData) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
+func (treedata *Treedata) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	//TODO: prevent modification of the Object while this function is running
 	if depth > MAX_REPR_WRITING_DEPTH {
 		return ErrMaximumReprWritingDepthReached
 	}
 
-	_, err := w.Write([]byte{'u', 'd', 'a', 't', 'a', ' '})
+	_, err := w.Write(utils.StringAsBytes("treedata "))
 	if err != nil {
 		return err
 	}
 
-	if udata.Root != nil {
-		err = udata.Root.WriteRepresentation(ctx, w, config, depth+1)
+	if treedata.Root != nil {
+		err = treedata.Root.WriteRepresentation(ctx, w, config, depth+1)
 		if err != nil {
 			return err
 		}
@@ -1349,7 +1349,7 @@ func (udata *UData) WriteRepresentation(ctx *Context, w io.Writer, config *ReprC
 
 	first := true
 
-	for _, entry := range udata.HiearchyEntries {
+	for _, entry := range treedata.HiearchyEntries {
 		if !first {
 			w.Write([]byte{','})
 		}
@@ -1367,7 +1367,7 @@ func (udata *UData) WriteRepresentation(ctx *Context, w io.Writer, config *ReprC
 	return nil
 }
 
-func (entry UDataHiearchyEntry) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
+func (entry TreedataHiearchyEntry) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	if depth > MAX_REPR_WRITING_DEPTH {
 		return ErrMaximumReprWritingDepthReached
 	}

@@ -82,10 +82,10 @@ const (
 	INVALID_PATH_PATT_UNBALANCED_DELIMITERS                       = "invalid path pattern literal: unbalanced delimiters"
 	UNTERMINATED_QUOTED_PATH_PATTERN_LIT_MISSING_CLOSING_BACTICK  = "unterminated quoted path pattern literal: missing closing backtick"
 	UNTERMINATED_QUOTED_PATH_PATTERN_EXPR_MISSING_CLOSING_BACTICK = "unterminated quoted path pattern expression : missing closing backtick"
-	QUOTED_PATH_PATTERN_EXPRS_ARE_NOT_SUPPORTED_YET          = "quoted path pattern expressions are not supported yet"
+	QUOTED_PATH_PATTERN_EXPRS_ARE_NOT_SUPPORTED_YET               = "quoted path pattern expressions are not supported yet"
 
 	INVALID_NAMED_SEGMENT_PATH_PATTERN_COLON_SHOULD_BE_FOLLOWED_BY_A_NAME = "invalid named-segment path pattern: colon should be followed by a name"
-	QUOTED_NAMED_SEGMENT_PATH_PATTERNS_ARE_NOT_SUPPORTED_YET                  = "quoted named-segment path patterns are not supported yet"
+	QUOTED_NAMED_SEGMENT_PATH_PATTERNS_ARE_NOT_SUPPORTED_YET              = "quoted named-segment path patterns are not supported yet"
 
 	// URL query parameter
 	INVALID_QUERY                                         = "invalid query"
@@ -223,11 +223,11 @@ const (
 	INVALID_DYNAMIC_MAPPING_ENTRY_GROUP_MATCHING_VAR_EXPECTED = "invalid dynamic mapping entry: group matching variable expected"
 	UNTERMINATED_MAPPING_ENTRY_MISSING_ARROW_VALUE            = "unterminated mapping entry: missing '=> <value>' after key"
 
-	//udata literal
-	UNTERMINATED_UDATA_LIT_MISSING_OPENING_BRACE   = "unterminated udata literal: missing opening brace"
-	UNTERMINATED_UDATA_LIT_MISSING_CLOSING_BRACE   = "unterminated udata literal: missing closing brace"
-	UNTERMINATED_UDATA_ENTRY_MISSING_CLOSING_BRACE = "unterminated udata entry: missing closing brace"
-	UNTERMINATED_UDATA_ENTRY                       = "unterminated udata entry"
+	//treedata literal
+	UNTERMINATED_TREEDATA_LIT_MISSING_OPENING_BRACE   = "unterminated treedata literal: missing opening brace"
+	UNTERMINATED_TREEDATA_LIT_MISSING_CLOSING_BRACE   = "unterminated treedata literal: missing closing brace"
+	UNTERMINATED_TREEDATA_ENTRY_MISSING_CLOSING_BRACE = "unterminated treedata entry: missing closing brace"
+	UNTERMINATED_TREEDATA_ENTRY                       = "unterminated treedata entry"
 
 	//test suite
 	UNTERMINATED_TESTSUITE_EXPRESSION_MISSING_BLOCK = "unterminated test suite expression: missing block"
@@ -681,8 +681,8 @@ func fmtUnexpectedCharInMappingExpression(r rune) string {
 	return fmt.Sprintf("unexpected char %s in mapping expression", fmtRuneInfo(r))
 }
 
-func fmtUnexpectedCharInUdataLiteral(r rune) string {
-	return fmt.Sprintf("unexpected char %s in udata literal", fmtRuneInfo(r))
+func fmtUnexpectedCharInTreedataLiteral(r rune) string {
+	return fmt.Sprintf("unexpected char %s in treedata literal", fmtRuneInfo(r))
 }
 
 func fmtUnexpectedCharInHexadecimalByteSliceLiteral(r rune) string {

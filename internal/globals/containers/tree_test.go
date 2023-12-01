@@ -17,7 +17,7 @@ func TestCreateTree(t *testing.T) {
 		ctx := core.NewContext(core.ContextConfig{})
 		core.NewGlobalState(ctx)
 
-		tree := NewTree(ctx, &core.UData{Root: core.Str("root")})
+		tree := NewTree(ctx, &core.Treedata{Root: core.Str("root")})
 
 		assert.NotNil(t, tree.root)
 		root := tree.root
@@ -29,9 +29,9 @@ func TestCreateTree(t *testing.T) {
 		ctx := core.NewContext(core.ContextConfig{})
 		core.NewGlobalState(ctx)
 
-		tree := NewTree(ctx, &core.UData{
+		tree := NewTree(ctx, &core.Treedata{
 			Root: core.Str("root"),
-			HiearchyEntries: []core.UDataHiearchyEntry{
+			HiearchyEntries: []core.TreedataHiearchyEntry{
 				{Value: core.Str("child")},
 			},
 		})
@@ -50,9 +50,9 @@ func TestCreateTree(t *testing.T) {
 		ctx := core.NewContext(core.ContextConfig{})
 		core.NewGlobalState(ctx)
 
-		tree := NewTree(ctx, &core.UData{
+		tree := NewTree(ctx, &core.Treedata{
 			Root: core.Str("root"),
-			HiearchyEntries: []core.UDataHiearchyEntry{
+			HiearchyEntries: []core.TreedataHiearchyEntry{
 				{Value: core.Str("child1")},
 				{Value: core.Str("child2")},
 			},
@@ -76,13 +76,13 @@ func TestCreateTree(t *testing.T) {
 		ctx := core.NewContext(core.ContextConfig{})
 		core.NewGlobalState(ctx)
 
-		tree := NewTree(ctx, &core.UData{
+		tree := NewTree(ctx, &core.Treedata{
 			Root: core.Str("root"),
-			HiearchyEntries: []core.UDataHiearchyEntry{
+			HiearchyEntries: []core.TreedataHiearchyEntry{
 				{Value: core.Str("child1")},
 				{
 					Value: core.Str("child2"),
-					Children: []core.UDataHiearchyEntry{
+					Children: []core.TreedataHiearchyEntry{
 						{Value: core.Str("leaf")},
 					},
 				},
@@ -111,22 +111,22 @@ func TestCreateTree(t *testing.T) {
 		ctx := core.NewContext(core.ContextConfig{})
 		core.NewGlobalState(ctx)
 
-		tree := NewTree(ctx, &core.UData{
+		tree := NewTree(ctx, &core.Treedata{
 			Root: core.Str("root"),
-			HiearchyEntries: []core.UDataHiearchyEntry{
+			HiearchyEntries: []core.TreedataHiearchyEntry{
 				{Value: core.Str("child1")},
 				{
 					Value: core.Str("child2"),
-					Children: []core.UDataHiearchyEntry{
+					Children: []core.TreedataHiearchyEntry{
 						{Value: core.Str("leaf1")},
 					},
 				},
 				{
 					Value: core.Str("child3"),
-					Children: []core.UDataHiearchyEntry{
+					Children: []core.TreedataHiearchyEntry{
 						{
 							Value: core.Str("grandchild1"),
-							Children: []core.UDataHiearchyEntry{
+							Children: []core.TreedataHiearchyEntry{
 								{Value: core.Str("leaf2")},
 							},
 						},
@@ -180,27 +180,27 @@ func TestCreateTree(t *testing.T) {
 		ctx := core.NewContext(core.ContextConfig{})
 		core.NewGlobalState(ctx)
 
-		tree := NewTree(ctx, &core.UData{
+		tree := NewTree(ctx, &core.Treedata{
 			Root: core.Str("root"),
-			HiearchyEntries: []core.UDataHiearchyEntry{
+			HiearchyEntries: []core.TreedataHiearchyEntry{
 				{Value: core.Str("child1")},
 				{
 					Value: core.Str("child2"),
-					Children: []core.UDataHiearchyEntry{
+					Children: []core.TreedataHiearchyEntry{
 						{Value: core.Str("leaf1")},
 					},
 				},
 				{
 					Value: core.Str("child3"),
-					Children: []core.UDataHiearchyEntry{
+					Children: []core.TreedataHiearchyEntry{
 						{
 							Value: core.Str("grandchild1"),
-							Children: []core.UDataHiearchyEntry{
+							Children: []core.TreedataHiearchyEntry{
 								{Value: core.Str("leaf2")},
 								{Value: core.Str("leaf3")},
 								{
 									Value: core.Str("greatgrandchild1"),
-									Children: []core.UDataHiearchyEntry{
+									Children: []core.TreedataHiearchyEntry{
 										{Value: core.Str("leaf4")},
 										{Value: core.Str("leaf5")},
 									},
@@ -209,7 +209,7 @@ func TestCreateTree(t *testing.T) {
 						},
 						{
 							Value: core.Str("grandchild2"),
-							Children: []core.UDataHiearchyEntry{
+							Children: []core.TreedataHiearchyEntry{
 								{Value: core.Str("leaf6")},
 								{Value: core.Str("leaf7")},
 							},
@@ -295,13 +295,13 @@ func TestTreeNode(t *testing.T) {
 	ctx := core.NewContext(core.ContextConfig{})
 	core.NewGlobalState(ctx)
 
-	tree := NewTree(ctx, &core.UData{
+	tree := NewTree(ctx, &core.Treedata{
 		Root: core.Str("root"),
-		HiearchyEntries: []core.UDataHiearchyEntry{
+		HiearchyEntries: []core.TreedataHiearchyEntry{
 			{Value: core.Str("child1")},
 			{
 				Value: core.Str("child2"),
-				Children: []core.UDataHiearchyEntry{
+				Children: []core.TreedataHiearchyEntry{
 					{Value: core.Str("child3")},
 				},
 			},

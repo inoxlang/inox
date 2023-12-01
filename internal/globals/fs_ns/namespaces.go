@@ -71,8 +71,8 @@ func init() {
 		Glob, func(ctx *symbolic.Context, patt ...*symbolic.PathPattern) *symbolic.List {
 			return symbolic.NewListOf(&symbolic.Path{})
 		},
-		GetTreeData, func(ctx *symbolic.Context, pth *symbolic.Path) *symbolic.UData {
-			return &symbolic.UData{}
+		GetTreeData, func(ctx *symbolic.Context, pth *symbolic.Path) *symbolic.Treedata {
+			return &symbolic.Treedata{}
 		},
 		NewMemFilesystemIL, func(ctx *symbolic.Context, maxTotalStorageSize *symbolic.ByteCount) *fs_symbolic.Filesystem {
 			return fs_symbolic.ANY_FILESYSTEM

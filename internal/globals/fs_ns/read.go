@@ -295,7 +295,7 @@ func Exists(ctx *core.Context, pth core.Path) core.Bool {
 	return core.Bool(!os.IsNotExist(err))
 }
 
-func GetTreeData(ctx *core.Context, path core.Path) *core.UData {
+func GetTreeData(ctx *core.Context, path core.Path) *core.Treedata {
 	if !path.IsDirPath() {
 		//TODO: improve error
 		panic(core.FmtErrInvalidArgumentAtPos(path, 0))

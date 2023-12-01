@@ -1318,13 +1318,13 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			return nil, err
 		}
 		return state.entryComputeFn(key)
-	case *parse.UDataLiteral:
+	case *parse.TreedataLiteral:
 		rootVal, err := TreeWalkEval(n.Root, state)
 		if err != nil {
 			return nil, err
 		}
 
-		var children []UDataHiearchyEntry
+		var children []TreedataHiearchyEntry
 
 		for _, entry := range n.Children {
 			child, err := TreeWalkEval(entry, state)
@@ -1332,22 +1332,22 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 				return nil, err
 			}
 
-			children = append(children, child.(UDataHiearchyEntry))
+			children = append(children, child.(TreedataHiearchyEntry))
 		}
 
-		udata := &UData{
+		treedata := &Treedata{
 			Root:            rootVal.(Serializable),
 			HiearchyEntries: children,
 		}
 
-		return udata, nil
-	case *parse.UDataEntry:
+		return treedata, nil
+	case *parse.TreeDataEntry:
 		nodeVal, err := TreeWalkEval(n.Value, state)
 		if err != nil {
 			return nil, err
 		}
 
-		var children []UDataHiearchyEntry
+		var children []TreedataHiearchyEntry
 
 		for _, entry := range n.Children {
 			child, err := TreeWalkEval(entry, state)
@@ -1355,10 +1355,10 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 				return nil, err
 			}
 
-			children = append(children, child.(UDataHiearchyEntry))
+			children = append(children, child.(TreedataHiearchyEntry))
 		}
 
-		return UDataHiearchyEntry{
+		return TreedataHiearchyEntry{
 			Value:    nodeVal.(Serializable),
 			Children: children,
 		}, nil

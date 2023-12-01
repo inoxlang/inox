@@ -13,7 +13,7 @@ type TraversalConfiguration struct {
 }
 
 // Traverse traverses a graph of values starting from v.
-// Only objects, records, dictionaries, lists, tuples and udata are considered source nodes, the other ones are sinks (leaves).
+// Only objects, records, dictionaries, lists, tuples and treedata are considered source nodes, the other ones are sinks (leaves).
 // A list of encountered source nodes is used to prevent cycling.
 func Traverse(v Value, fn traverseVisitFn, config TraversalConfiguration) (terror error) {
 	depth := 0
@@ -66,7 +66,7 @@ func traverse(v Value, fn traverseVisitFn, config TraversalConfiguration, visite
 		}
 
 		visited[ptr] = 0
-	case *UData:
+	case *Treedata:
 		ptr := reflect.ValueOf(eV).Pointer()
 		if _, ok := visited[ptr]; ok {
 			return nil
@@ -128,7 +128,7 @@ func traverse(v Value, fn traverseVisitFn, config TraversalConfiguration, visite
 				return err
 			}
 		}
-	case *UData:
+	case *Treedata:
 		const (
 			stackShrinkDivider       = 4
 			minShrinkableStackLength = 10 * stackShrinkDivider
@@ -145,7 +145,7 @@ func traverse(v Value, fn traverseVisitFn, config TraversalConfiguration, visite
 
 			//if the stack is too small compared to its capacity we shrink the stack
 			if len(stack) >= minShrinkableStackLength && len(stack) <= cap(stack)/stackShrinkDivider {
-				newStack := make([]UDataHiearchyEntry, len(stack))
+				newStack := make([]TreedataHiearchyEntry, len(stack))
 				copy(newStack, stack)
 				stack = newStack
 			}

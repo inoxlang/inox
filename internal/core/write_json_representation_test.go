@@ -877,7 +877,7 @@ func TestFloatRangeJSONRepresentation(t *testing.T) {
 	})
 }
 
-func TestUdataJSONRepresentation(t *testing.T) {
+func TestTreedataJSONRepresentation(t *testing.T) {
 	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 

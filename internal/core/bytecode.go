@@ -164,8 +164,8 @@ const (
 	OpCreateRecord
 	OpCreateDict
 	OpCreateMapping
-	OpCreateUData
-	OpCreateUdataHiearchyEntry
+	OpCreateTreedata
+	OpCreateTreedataHiearchyEntry
 	OpCreateStruct
 	OpSpreadObject
 	OpExtractProps
@@ -300,8 +300,8 @@ var OpcodeNames = [...]string{
 	OpCreateRecord:                 "CRT_REC",
 	OpCreateDict:                   "CRT_DICT",
 	OpCreateMapping:                "CRT_MPG",
-	OpCreateUData:                  "CRT_UDAT",
-	OpCreateUdataHiearchyEntry:     "CRT_UDHE",
+	OpCreateTreedata:               "CRT_UDAT",
+	OpCreateTreedataHiearchyEntry:  "CRT_UDHE",
 	OpCreateStruct:                 "CRT_STRUCT",
 	OpSpreadObject:                 "SPREAD_OBJ",
 	OpExtractProps:                 "EXTR_PROPS",
@@ -437,8 +437,8 @@ var OpcodeOperands = [...][]int{
 	OpCreateRecord:                 {2, 2},
 	OpCreateDict:                   {2},
 	OpCreateMapping:                {2},
-	OpCreateUData:                  {2},
-	OpCreateUdataHiearchyEntry:     {2},
+	OpCreateTreedata:               {2},
+	OpCreateTreedataHiearchyEntry:  {2},
 	OpCreateStruct:                 {2, 1},
 	OpSpreadObject:                 {},
 	OpExtractProps:                 {2},
@@ -571,8 +571,8 @@ var OpcodeConstantIndexes = [...][]bool{
 	OpCreateRecord:                 {false, false},
 	OpCreateDict:                   {false},
 	OpCreateMapping:                {true},
-	OpCreateUData:                  {false},
-	OpCreateUdataHiearchyEntry:     {false},
+	OpCreateTreedata:               {false},
+	OpCreateTreedataHiearchyEntry:  {false},
 	OpCreateStruct:                 {true, false},
 	OpSpreadObject:                 {},
 	OpExtractProps:                 {true},

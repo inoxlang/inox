@@ -39,7 +39,7 @@ var (
 
 		(*Option)(nil),
 
-		(*UData)(nil),
+		(*Treedata)(nil),
 	}
 )
 

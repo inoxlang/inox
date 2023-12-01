@@ -18,111 +18,111 @@ func TestParseRepr(t *testing.T) {
 		errIndex int
 		value    Value
 	}{
-		//udata
+		//treedata
 		{
-			"udata 0 {}", -1, &UData{Root: Int(0)},
+			"treedata 0 {}", -1, &Treedata{Root: Int(0)},
 		},
 		{
-			"udata 0 {\n}", -1, &UData{Root: Int(0)},
+			"treedata 0 {\n}", -1, &Treedata{Root: Int(0)},
 		},
 		{
-			"udata 0 {1}", -1, &UData{
+			"treedata 0 {1}", -1, &Treedata{
 				Root: Int(0),
-				HiearchyEntries: []UDataHiearchyEntry{
+				HiearchyEntries: []TreedataHiearchyEntry{
 					{Value: Int(1)},
 				},
 			},
 		},
 		{
-			"udata 0 {1,\n}", -1, &UData{
+			"treedata 0 {1,\n}", -1, &Treedata{
 				Root: Int(0),
-				HiearchyEntries: []UDataHiearchyEntry{
+				HiearchyEntries: []TreedataHiearchyEntry{
 					{Value: Int(1)},
 				},
 			},
 		},
 		{
-			"udata 0 {1,2}", -1, &UData{
+			"treedata 0 {1,2}", -1, &Treedata{
 				Root: Int(0),
-				HiearchyEntries: []UDataHiearchyEntry{
-					{Value: Int(1)},
-					{Value: Int(2)},
-				},
-			},
-		},
-		{
-			"udata 0 {1,\n2}", -1, &UData{
-				Root: Int(0),
-				HiearchyEntries: []UDataHiearchyEntry{
+				HiearchyEntries: []TreedataHiearchyEntry{
 					{Value: Int(1)},
 					{Value: Int(2)},
 				},
 			},
 		},
 		{
-			"udata 0 {1{2}}", -1, &UData{
+			"treedata 0 {1,\n2}", -1, &Treedata{
 				Root: Int(0),
-				HiearchyEntries: []UDataHiearchyEntry{
+				HiearchyEntries: []TreedataHiearchyEntry{
+					{Value: Int(1)},
+					{Value: Int(2)},
+				},
+			},
+		},
+		{
+			"treedata 0 {1{2}}", -1, &Treedata{
+				Root: Int(0),
+				HiearchyEntries: []TreedataHiearchyEntry{
 					{
 						Value:    Int(1),
-						Children: []UDataHiearchyEntry{{Value: Int(2)}},
+						Children: []TreedataHiearchyEntry{{Value: Int(2)}},
 					},
 				},
 			},
 		},
 
 		{
-			"udata 0 {1 {2}}", -1, &UData{
+			"treedata 0 {1 {2}}", -1, &Treedata{
 				Root: Int(0),
-				HiearchyEntries: []UDataHiearchyEntry{
+				HiearchyEntries: []TreedataHiearchyEntry{
 					{
 						Value:    Int(1),
-						Children: []UDataHiearchyEntry{{Value: Int(2)}},
+						Children: []TreedataHiearchyEntry{{Value: Int(2)}},
 					},
 				},
 			},
 		},
 
 		{
-			"udata 0 {1{\n2}}", -1, &UData{
+			"treedata 0 {1{\n2}}", -1, &Treedata{
 				Root: Int(0),
-				HiearchyEntries: []UDataHiearchyEntry{
+				HiearchyEntries: []TreedataHiearchyEntry{
 					{
 						Value:    Int(1),
-						Children: []UDataHiearchyEntry{{Value: Int(2)}},
+						Children: []TreedataHiearchyEntry{{Value: Int(2)}},
 					},
 				},
 			},
 		},
 		{
-			"udata 0 {1{2,\n}}", -1, &UData{
+			"treedata 0 {1{2,\n}}", -1, &Treedata{
 				Root: Int(0),
-				HiearchyEntries: []UDataHiearchyEntry{
+				HiearchyEntries: []TreedataHiearchyEntry{
 					{
 						Value:    Int(1),
-						Children: []UDataHiearchyEntry{{Value: Int(2)}},
+						Children: []TreedataHiearchyEntry{{Value: Int(2)}},
 					},
 				},
 			},
 		},
 		{
-			"udata 0 {1{2},\n}", -1, &UData{
+			"treedata 0 {1{2},\n}", -1, &Treedata{
 				Root: Int(0),
-				HiearchyEntries: []UDataHiearchyEntry{
+				HiearchyEntries: []TreedataHiearchyEntry{
 					{
 						Value:    Int(1),
-						Children: []UDataHiearchyEntry{{Value: Int(2)}},
+						Children: []TreedataHiearchyEntry{{Value: Int(2)}},
 					},
 				},
 			},
 		},
 		{
-			"udata 0 {1{2,3}}", -1, &UData{
+			"treedata 0 {1{2,3}}", -1, &Treedata{
 				Root: Int(0),
-				HiearchyEntries: []UDataHiearchyEntry{
+				HiearchyEntries: []TreedataHiearchyEntry{
 					{
 						Value: Int(1),
-						Children: []UDataHiearchyEntry{
+						Children: []TreedataHiearchyEntry{
 							{Value: Int(2)},
 							{Value: Int(3)},
 						},
@@ -131,31 +131,31 @@ func TestParseRepr(t *testing.T) {
 			},
 		},
 		{
-			"udata 0 {1{2}, 3{4}}", -1, &UData{
+			"treedata 0 {1{2}, 3{4}}", -1, &Treedata{
 				Root: Int(0),
-				HiearchyEntries: []UDataHiearchyEntry{
+				HiearchyEntries: []TreedataHiearchyEntry{
 					{
 						Value:    Int(1),
-						Children: []UDataHiearchyEntry{{Value: Int(2)}},
+						Children: []TreedataHiearchyEntry{{Value: Int(2)}},
 					},
 					{
 						Value:    Int(3),
-						Children: []UDataHiearchyEntry{{Value: Int(4)}},
+						Children: []TreedataHiearchyEntry{{Value: Int(4)}},
 					},
 				},
 			},
 		},
 		{
-			"udata 0 {1{2},\n3{4}}", -1, &UData{
+			"treedata 0 {1{2},\n3{4}}", -1, &Treedata{
 				Root: Int(0),
-				HiearchyEntries: []UDataHiearchyEntry{
+				HiearchyEntries: []TreedataHiearchyEntry{
 					{
 						Value:    Int(1),
-						Children: []UDataHiearchyEntry{{Value: Int(2)}},
+						Children: []TreedataHiearchyEntry{{Value: Int(2)}},
 					},
 					{
 						Value:    Int(3),
-						Children: []UDataHiearchyEntry{{Value: Int(4)}},
+						Children: []TreedataHiearchyEntry{{Value: Int(4)}},
 					},
 				},
 			},
@@ -936,7 +936,7 @@ func TestParseRepr(t *testing.T) {
 		{`-v .{}`, 2, nil},
 		{`-v {}`, 2, nil},
 		{`-v :{}`, 3, nil}, //TODO: index should be 2
-		{`-v udata {}`, 2, nil},
+		{`-v treedata {}`, 2, nil},
 
 		{`""1`, 2, nil},
 		{`""/`, 2, nil},
@@ -982,12 +982,12 @@ func TestParseRepr(t *testing.T) {
 		{`:{} /`, 4, nil},
 		{`:{} ""`, 4, nil},
 
-		{`udata{}1`, 7, nil},
-		{`udata{}/`, 7, nil},
-		{`udata{}""`, 7, nil},
-		{`udata{} 1`, 8, nil},
-		{`udata{} /`, 8, nil},
-		{`udata{} ""`, 8, nil},
+		{`treedata{}1`, 10, nil},
+		{`treedata{}/`, 10, nil},
+		{`treedata{}""`, 10, nil},
+		{`treedata{} 1`, 11, nil},
+		{`treedata{} /`, 11, nil},
+		{`treedata{} ""`, 11, nil},
 
 		//atoms can be preceded by comments
 		{"# \n1", -1, Int(1)},

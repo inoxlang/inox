@@ -420,7 +420,7 @@ func (w *DirWalker) IsMutable() bool {
 	return true
 }
 
-func (w *UdataWalker) IsMutable() bool {
+func (w *TreedataWalker) IsMutable() bool {
 	return true
 }
 
@@ -468,11 +468,11 @@ func (port Port) IsMutable() bool {
 	return false
 }
 
-func (u *UData) IsMutable() bool {
+func (u *Treedata) IsMutable() bool {
 	return false
 }
 
-func (e UDataHiearchyEntry) IsMutable() bool {
+func (e TreedataHiearchyEntry) IsMutable() bool {
 	return false
 }
 

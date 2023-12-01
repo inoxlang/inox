@@ -1168,43 +1168,43 @@ func (tuple *Tuple) Concat(other *Tuple) *Tuple {
 	return NewTuple(elements)
 }
 
-// UData is used to represent any hiearchical data, UData implements Value and is immutable.
-type UData struct {
+// Treedata is used to represent any hiearchical data, Treedata implements Value and is immutable.
+type Treedata struct {
 	Root            Serializable
-	HiearchyEntries []UDataHiearchyEntry
+	HiearchyEntries []TreedataHiearchyEntry
 }
 
-// UDataHiearchyEntry represents a hiearchical entry in a Udata,
-// UDataHiearchyEntry implements Value but is never accessible by Inox code.
-type UDataHiearchyEntry struct {
+// TreedataHiearchyEntry represents a hiearchical entry in a Treedata,
+// TreedataHiearchyEntry implements Value but is never accessible by Inox code.
+type TreedataHiearchyEntry struct {
 	Value    Serializable
-	Children []UDataHiearchyEntry
+	Children []TreedataHiearchyEntry
 }
 
-func (d *UData) getEntryAtIndexes(indexesAfterRoot ...int32) (UDataHiearchyEntry, bool) {
+func (d *Treedata) getEntryAtIndexes(indexesAfterRoot ...int32) (TreedataHiearchyEntry, bool) {
 
 	if len(indexesAfterRoot) == 0 {
-		return UDataHiearchyEntry{}, false
+		return TreedataHiearchyEntry{}, false
 	}
 
 	firstIndex := int(indexesAfterRoot[0])
 	if firstIndex >= len(d.HiearchyEntries) {
-		return UDataHiearchyEntry{}, false
+		return TreedataHiearchyEntry{}, false
 	}
 
 	entry := d.HiearchyEntries[firstIndex]
 
 	for _, index := range indexesAfterRoot[1:] {
 		if int(index) >= len(entry.Children) {
-			return UDataHiearchyEntry{}, false
+			return TreedataHiearchyEntry{}, false
 		}
 		entry = entry.Children[index]
 	}
 	return entry, true
 }
 
-func (d *UData) WalkEntriesDF(fn func(e UDataHiearchyEntry, index int, ancestorChain *[]UDataHiearchyEntry) error) error {
-	var ancestorChain []UDataHiearchyEntry
+func (d *Treedata) WalkEntriesDF(fn func(e TreedataHiearchyEntry, index int, ancestorChain *[]TreedataHiearchyEntry) error) error {
+	var ancestorChain []TreedataHiearchyEntry
 	for i, child := range d.HiearchyEntries {
 		if err := child.walkEntries(&ancestorChain, i, fn); err != nil {
 			return err
@@ -1213,7 +1213,7 @@ func (d *UData) WalkEntriesDF(fn func(e UDataHiearchyEntry, index int, ancestorC
 	return nil
 }
 
-func (e UDataHiearchyEntry) walkEntries(ancestorChain *[]UDataHiearchyEntry, index int, fn func(e UDataHiearchyEntry, index int, ancestorChain *[]UDataHiearchyEntry) error) error {
+func (e TreedataHiearchyEntry) walkEntries(ancestorChain *[]TreedataHiearchyEntry, index int, fn func(e TreedataHiearchyEntry, index int, ancestorChain *[]TreedataHiearchyEntry) error) error {
 	fn(e, index, ancestorChain)
 
 	*ancestorChain = append(*ancestorChain, e)

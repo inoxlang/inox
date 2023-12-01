@@ -84,7 +84,7 @@ const (
 	SELF_KEYWORD
 	MAPPING_KEYWORD
 	COMP_KEYWORD
-	UDATA_KEYWORD
+	TREEDATA_KEYWORD
 	CONCAT_KEYWORD
 	TESTSUITE_KEYWORD
 	TESTCASE_KEYWORD
@@ -311,7 +311,7 @@ var tokenStrings = [...]string{
 	SELF_KEYWORD:                   "self",
 	MAPPING_KEYWORD:                "Mapping",
 	COMP_KEYWORD:                   "comp",
-	UDATA_KEYWORD:                  "udata",
+	TREEDATA_KEYWORD:               "treedata",
 	CONCAT_KEYWORD:                 "concat",
 	TESTSUITE_KEYWORD:              "testsuite",
 	TESTCASE_KEYWORD:               "testcase",
@@ -477,7 +477,7 @@ var tokenTypenames = [...]string{
 	SELF_KEYWORD:                   "SELF_KEYWORD",
 	MAPPING_KEYWORD:                "MAPPING_KEYWORD",
 	COMP_KEYWORD:                   "COMP_KEYWORD",
-	UDATA_KEYWORD:                  "UDATA_KEYWORD",
+	TREEDATA_KEYWORD:               "TREEDATA_KEYWORD",
 	CONCAT_KEYWORD:                 "CONCAT_KEYWORD",
 	TESTSUITE_KEYWORD:              "TESTSUITE_KEYWORD",
 	TESTCASE_KEYWORD:               "TESTCASE_KEYWORD",

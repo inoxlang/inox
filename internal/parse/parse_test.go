@@ -20136,25 +20136,20 @@ func testParse(
 		})
 	})
 
-	t.Run("udata expression", func(t *testing.T) {
+	t.Run("treedata expression", func(t *testing.T) {
 		t.Run("empty", func(t *testing.T) {
-			n := mustparseChunk(t, `udata 0 {}`)
+			n := mustparseChunk(t, `treedata 0 {}`)
 			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{NodeSpan{0, 10}, nil, false},
+				NodeBase: NodeBase{NodeSpan{0, 13}, nil, false},
 				Statements: []Node{
-					&UDataLiteral{
+					&TreedataLiteral{
 						NodeBase: NodeBase{
-							NodeSpan{0, 10},
+							NodeSpan{0, 13},
 							nil,
 							false,
-							/*[]Token{
-								{Type: UDATA_KEYWORD, Span: NodeSpan{0, 5}},
-								{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{8, 9}},
-								{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{9, 10}},
-							},*/
 						},
 						Root: &IntLiteral{
-							NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
+							NodeBase: NodeBase{NodeSpan{9, 10}, nil, false},
 							Raw:      "0",
 							Value:    0,
 						},
@@ -20164,23 +20159,19 @@ func testParse(
 		})
 
 		t.Run("empty, missing closing brace", func(t *testing.T) {
-			n, err := parseChunk(t, `udata 0 {`, "")
+			n, err := parseChunk(t, `treedata 0 {`, "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{NodeSpan{0, 9}, nil, false},
+				NodeBase: NodeBase{NodeSpan{0, 12}, nil, false},
 				Statements: []Node{
-					&UDataLiteral{
+					&TreedataLiteral{
 						NodeBase: NodeBase{
-							NodeSpan{0, 9},
-							&ParsingError{UnspecifiedParsingError, UNTERMINATED_UDATA_LIT_MISSING_CLOSING_BRACE},
+							NodeSpan{0, 12},
+							&ParsingError{UnspecifiedParsingError, UNTERMINATED_TREEDATA_LIT_MISSING_CLOSING_BRACE},
 							false,
-							/*[]Token{
-								{Type: UDATA_KEYWORD, Span: NodeSpan{0, 5}},
-								{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{8, 9}},
-							},*/
 						},
 						Root: &IntLiteral{
-							NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
+							NodeBase: NodeBase{NodeSpan{9, 10}, nil, false},
 							Raw:      "0",
 							Value:    0,
 						},
@@ -20190,39 +20181,30 @@ func testParse(
 		})
 
 		t.Run("single entry", func(t *testing.T) {
-			n := mustparseChunk(t, "udata 0 { 0 {} }")
+			n := mustparseChunk(t, "treedata 0 { 0 {} }")
 			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{NodeSpan{0, 16}, nil, false},
+				NodeBase: NodeBase{NodeSpan{0, 19}, nil, false},
 				Statements: []Node{
-					&UDataLiteral{
+					&TreedataLiteral{
 						NodeBase: NodeBase{
-							NodeSpan{0, 16},
+							NodeSpan{0, 19},
 							nil,
 							false,
-							/*[]Token{
-								{Type: UDATA_KEYWORD, Span: NodeSpan{0, 5}},
-								{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{8, 9}},
-								{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{15, 16}},
-							},*/
 						},
 						Root: &IntLiteral{
-							NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
+							NodeBase: NodeBase{NodeSpan{9, 10}, nil, false},
 							Raw:      "0",
 							Value:    0,
 						},
-						Children: []*UDataEntry{
+						Children: []*TreeDataEntry{
 							{
 								NodeBase: NodeBase{
-									NodeSpan{10, 14},
+									NodeSpan{13, 17},
 									nil,
 									false,
-									/*[]Token{
-										{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{12, 13}},
-										{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{13, 14}},
-									},*/
 								},
 								Value: &IntLiteral{
-									NodeBase: NodeBase{NodeSpan{10, 11}, nil, false},
+									NodeBase: NodeBase{NodeSpan{13, 14}, nil, false},
 									Raw:      "0",
 									Value:    0,
 								},
@@ -20234,31 +20216,26 @@ func testParse(
 		})
 
 		t.Run("single entry without braces", func(t *testing.T) {
-			n := mustparseChunk(t, "udata 0 { 0 }")
+			n := mustparseChunk(t, "treedata 0 { 0 }")
 			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{NodeSpan{0, 13}, nil, false},
+				NodeBase: NodeBase{NodeSpan{0, 16}, nil, false},
 				Statements: []Node{
-					&UDataLiteral{
+					&TreedataLiteral{
 						NodeBase: NodeBase{
-							NodeSpan{0, 13},
+							NodeSpan{0, 16},
 							nil,
 							false,
-							/*[]Token{
-								{Type: UDATA_KEYWORD, Span: NodeSpan{0, 5}},
-								{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{8, 9}},
-								{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{12, 13}},
-							},*/
 						},
 						Root: &IntLiteral{
-							NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
+							NodeBase: NodeBase{NodeSpan{9, 10}, nil, false},
 							Raw:      "0",
 							Value:    0,
 						},
-						Children: []*UDataEntry{
+						Children: []*TreeDataEntry{
 							{
-								NodeBase: NodeBase{NodeSpan{10, 12}, nil, false},
+								NodeBase: NodeBase{NodeSpan{13, 15}, nil, false},
 								Value: &IntLiteral{
-									NodeBase: NodeBase{NodeSpan{10, 11}, nil, false},
+									NodeBase: NodeBase{NodeSpan{13, 14}, nil, false},
 									Raw:      "0",
 									Value:    0,
 								},
@@ -20270,55 +20247,42 @@ func testParse(
 		})
 
 		t.Run("two entries", func(t *testing.T) {
-			n := mustparseChunk(t, "udata 0 { 0 {} 1 {} }")
+			n := mustparseChunk(t, "treedata 0 { 0 {} 1 {} }")
 			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{NodeSpan{0, 21}, nil, false},
+				NodeBase: NodeBase{NodeSpan{0, 24}, nil, false},
 				Statements: []Node{
-					&UDataLiteral{
+					&TreedataLiteral{
 						NodeBase: NodeBase{
-							NodeSpan{0, 21},
+							NodeSpan{0, 24},
 							nil,
 							false,
-							/*[]Token{
-								{Type: UDATA_KEYWORD, Span: NodeSpan{0, 5}},
-								{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{8, 9}},
-								{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{20, 21}},
-							},*/
 						},
 						Root: &IntLiteral{
-							NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
+							NodeBase: NodeBase{NodeSpan{9, 10}, nil, false},
 							Raw:      "0",
 							Value:    0,
 						},
-						Children: []*UDataEntry{
+						Children: []*TreeDataEntry{
 							{
 								NodeBase: NodeBase{
-									NodeSpan{10, 14},
+									NodeSpan{13, 17},
 									nil,
 									false,
-									/*[]Token{
-										{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{12, 13}},
-										{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{13, 14}},
-									},*/
 								},
 								Value: &IntLiteral{
-									NodeBase: NodeBase{NodeSpan{10, 11}, nil, false},
+									NodeBase: NodeBase{NodeSpan{13, 14}, nil, false},
 									Raw:      "0",
 									Value:    0,
 								},
 							},
 							{
 								NodeBase: NodeBase{
-									NodeSpan{15, 19},
+									NodeSpan{18, 22},
 									nil,
 									false,
-									/*[]Token{
-										{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{17, 18}},
-										{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{18, 19}},
-									},*/
 								},
 								Value: &IntLiteral{
-									NodeBase: NodeBase{NodeSpan{15, 16}, nil, false},
+									NodeBase: NodeBase{NodeSpan{18, 19}, nil, false},
 									Raw:      "1",
 									Value:    1,
 								},
@@ -20330,47 +20294,37 @@ func testParse(
 		})
 
 		t.Run("two entries separated by a comma", func(t *testing.T) {
-			n := mustparseChunk(t, "udata 0 { 0 {}, 1 {} }")
+			n := mustparseChunk(t, "treedata 0 { 0 {}, 1 {} }")
 			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{NodeSpan{0, 22}, nil, false},
+				NodeBase: NodeBase{NodeSpan{0, 25}, nil, false},
 				Statements: []Node{
-					&UDataLiteral{
+					&TreedataLiteral{
 						NodeBase: NodeBase{
-							NodeSpan{0, 22},
+							NodeSpan{0, 25},
 							nil,
 							false,
-							/*[]Token{
-								{Type: UDATA_KEYWORD, Span: NodeSpan{0, 5}},
-								{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{8, 9}},
-								{Type: COMMA, Span: NodeSpan{14, 15}},
-								{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{21, 22}},
-							},*/
 						},
 						Root: &IntLiteral{
-							NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
+							NodeBase: NodeBase{NodeSpan{9, 10}, nil, false},
 							Raw:      "0",
 							Value:    0,
 						},
-						Children: []*UDataEntry{
+						Children: []*TreeDataEntry{
 							{
 								NodeBase: NodeBase{
-									NodeSpan{10, 14},
+									NodeSpan{13, 17},
 									nil,
 									false,
-									/*[]Token{
-										{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{12, 13}},
-										{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{13, 14}},
-									},*/
 								},
 								Value: &IntLiteral{
-									NodeBase: NodeBase{NodeSpan{10, 11}, nil, false},
+									NodeBase: NodeBase{NodeSpan{13, 14}, nil, false},
 									Raw:      "0",
 									Value:    0,
 								},
 							},
 							{
 								NodeBase: NodeBase{
-									NodeSpan{16, 20},
+									NodeSpan{19, 23},
 									nil,
 									false,
 									/*[]Token{
@@ -20379,7 +20333,7 @@ func testParse(
 									},*/
 								},
 								Value: &IntLiteral{
-									NodeBase: NodeBase{NodeSpan{16, 17}, nil, false},
+									NodeBase: NodeBase{NodeSpan{19, 20}, nil, false},
 									Raw:      "1",
 									Value:    1,
 								},
@@ -20391,39 +20345,34 @@ func testParse(
 		})
 
 		t.Run("two entries without braces", func(t *testing.T) {
-			n := mustparseChunk(t, "udata 0 { 0 1 }")
+			n := mustparseChunk(t, "treedata 0 { 0 1 }")
 			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{NodeSpan{0, 15}, nil, false},
+				NodeBase: NodeBase{NodeSpan{0, 18}, nil, false},
 				Statements: []Node{
-					&UDataLiteral{
+					&TreedataLiteral{
 						NodeBase: NodeBase{
-							NodeSpan{0, 15},
+							NodeSpan{0, 18},
 							nil,
 							false,
-							/*[]Token{
-								{Type: UDATA_KEYWORD, Span: NodeSpan{0, 5}},
-								{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{8, 9}},
-								{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{14, 15}},
-							},*/
 						},
 						Root: &IntLiteral{
-							NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
+							NodeBase: NodeBase{NodeSpan{9, 10}, nil, false},
 							Raw:      "0",
 							Value:    0,
 						},
-						Children: []*UDataEntry{
+						Children: []*TreeDataEntry{
 							{
-								NodeBase: NodeBase{NodeSpan{10, 12}, nil, false},
+								NodeBase: NodeBase{NodeSpan{13, 15}, nil, false},
 								Value: &IntLiteral{
-									NodeBase: NodeBase{NodeSpan{10, 11}, nil, false},
+									NodeBase: NodeBase{NodeSpan{13, 14}, nil, false},
 									Raw:      "0",
 									Value:    0,
 								},
 							},
 							{
-								NodeBase: NodeBase{NodeSpan{12, 14}, nil, false},
+								NodeBase: NodeBase{NodeSpan{15, 17}, nil, false},
 								Value: &IntLiteral{
-									NodeBase: NodeBase{NodeSpan{12, 13}, nil, false},
+									NodeBase: NodeBase{NodeSpan{15, 16}, nil, false},
 									Raw:      "1",
 									Value:    1,
 								},

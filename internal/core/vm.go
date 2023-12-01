@@ -928,27 +928,27 @@ func (v *VM) run() {
 			}
 			v.stack[v.sp] = mapping
 			v.sp++
-		case OpCreateUData:
+		case OpCreateTreedata:
 			v.ip += 2
 			numHiearchyEntries := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
-			udata := &UData{}
+			treedata := &Treedata{}
 
 			for i := v.sp - numHiearchyEntries; i < v.sp; i++ {
 				entry := v.stack[i]
-				udata.HiearchyEntries = append(udata.HiearchyEntries, entry.(UDataHiearchyEntry))
+				treedata.HiearchyEntries = append(treedata.HiearchyEntries, entry.(TreedataHiearchyEntry))
 			}
 
 			v.sp -= numHiearchyEntries
-			udata.Root = v.stack[v.sp-1].(Serializable)
-			v.stack[v.sp-1] = udata
-		case OpCreateUdataHiearchyEntry:
+			treedata.Root = v.stack[v.sp-1].(Serializable)
+			v.stack[v.sp-1] = treedata
+		case OpCreateTreedataHiearchyEntry:
 			v.ip += 2
 			numChildren := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
-			entry := UDataHiearchyEntry{}
+			entry := TreedataHiearchyEntry{}
 
 			for i := v.sp - numChildren; i < v.sp; i++ {
 				child := v.stack[i]
-				entry.Children = append(entry.Children, child.(UDataHiearchyEntry))
+				entry.Children = append(entry.Children, child.(TreedataHiearchyEntry))
 			}
 
 			v.sp -= numChildren

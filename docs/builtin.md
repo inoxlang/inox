@@ -197,12 +197,12 @@ this method should be called when you are finished using the Chrome handle.
 The Graph function creates a directed Graph.
 ### Tree
 
-The Tree function creates a tree from a udata value.
+The Tree function creates a tree from a treedata value.
 
 **examples**
 
 ```inox
-Tree(udata "root")
+Tree(treedata "root")
 ```
 ### Stack
 
@@ -556,7 +556,7 @@ fs.find ./ %./**/*.json
 ```
 ### fs.get_tree_data
 
-The fs.get_tree_data function takes a directory path argument and returns a %udata value  thats contains the file hiearachy of the passed directory.
+The fs.get_tree_data function takes a directory path argument and returns a %treedata value  thats contains the file hiearachy of the passed directory.
 
 **examples**
 

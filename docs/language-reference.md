@@ -20,7 +20,7 @@
   - [Objects](#objects)
   - [Tuples](#tuples)
   - [Records](#records)
-  - [Udata](#udata)
+  - [Treedata](#treedata)
   - [Mappings](#mappings)
   - [Dictionaries](#dictionaries)
 - [Control flow](#Control-flow)
@@ -570,17 +570,17 @@ tuple = #[1, [2, 3]] # error ! a list is mutable, it's not a valid element for a
 
 </details>
 
-## Udata
+## Treedata
 
 <details>
 
 <summary>Click to expand</summary>
 
-A udata value allows you to represent immutable data that has the shape of a
+A treedata value allows you to represent immutable data that has the shape of a
 tree.
 
 ```
-udata "root" { 
+treedata "root" { 
     "first child" { 
         "grand child" 
     }   
@@ -590,7 +590,7 @@ udata "root" {
 }
 ```
 
-<!-- In the shell execute the following command to see an example of udata value ``fs.get_tree_data ./docs/`` -->
+<!-- In the shell execute the following command to see an example of treedata value ``fs.get_tree_data ./docs/`` -->
 
 </details>
 
@@ -862,10 +862,10 @@ output:
 ./tempdir/b/
 ```
 
-Walking over a [**udata**](#udata) value:
+Walking over a [**treedata**](#treedata) value:
 
 ```
-tree = udata "root" {
+tree = treedata "root" {
     "child 1" {
         "grandchild"
     } 

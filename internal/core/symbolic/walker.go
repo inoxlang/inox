@@ -8,7 +8,7 @@ var (
 	ANY_WALKABLE = &AnyWalkable{}
 	ANY_WALKER   = &Walker{}
 
-	_ = []Walkable{(*Path)(nil), (*UData)(nil)}
+	_ = []Walkable{(*Path)(nil), (*Treedata)(nil)}
 )
 
 // An Walkable represents a symbolic Walkable.

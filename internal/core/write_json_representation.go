@@ -452,7 +452,7 @@ func (d *Dictionary) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, c
 	return ErrNotImplementedYet
 }
 
-func (u *UData) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+func (u *Treedata) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	if depth > MAX_JSON_REPR_WRITING_DEPTH {
 		return ErrMaximumJSONReprWritingDepthReached
 	}
@@ -460,7 +460,7 @@ func (u *UData) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config
 	return ErrNotImplementedYet
 }
 
-func (u *UDataHiearchyEntry) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+func (u *TreedataHiearchyEntry) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	if depth > MAX_JSON_REPR_WRITING_DEPTH {
 		return ErrMaximumJSONReprWritingDepthReached
 	}

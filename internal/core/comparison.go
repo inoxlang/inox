@@ -1592,8 +1592,8 @@ func (w *DirWalker) Equal(ctx *Context, other Value, alreadyCompared map[uintptr
 	return otherWalker == w
 }
 
-func (w *UdataWalker) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
-	otherWalker, ok := other.(*UdataWalker)
+func (w *TreedataWalker) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	otherWalker, ok := other.(*TreedataWalker)
 	if !ok {
 		return false
 	}
@@ -1688,8 +1688,8 @@ func (port Port) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]ui
 	return otherPort == port
 }
 
-func (u *UData) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
-	otherData, ok := other.(*UData)
+func (u *Treedata) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	otherData, ok := other.(*Treedata)
 	if !ok {
 		return false
 	}
@@ -1711,8 +1711,8 @@ func (u *UData) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uin
 	return true
 }
 
-func (e UDataHiearchyEntry) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
-	otherEntry, ok := other.(UDataHiearchyEntry)
+func (e TreedataHiearchyEntry) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	otherEntry, ok := other.(TreedataHiearchyEntry)
 	if !ok {
 		return false
 	}

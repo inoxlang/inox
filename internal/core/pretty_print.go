@@ -141,7 +141,7 @@ func GetNodeColorizations(chunk *parse.Chunk, lightMode bool) []ColorizationInfo
 				ColorSequence: colors.ControlKeyword,
 			})
 		//other keywords
-		case parse.AND_KEYWORD, parse.OR_KEYWORD, parse.MAPPING_KEYWORD, parse.UDATA_KEYWORD,
+		case parse.AND_KEYWORD, parse.OR_KEYWORD, parse.MAPPING_KEYWORD, parse.TREEDATA_KEYWORD,
 			parse.FN_KEYWORD, parse.CONST_KEYWORD, parse.VAR_KEYWORD, parse.ASSIGN_KEYWORD, parse.CONCAT_KEYWORD,
 			parse.SENDVAL_KEYWORD, parse.SYNCHRONIZED_KEYWORD, parse.EXTEND_KEYWORD, parse.PATTERN_KEYWORD,
 			parse.PNAMESPACE_KEYWORD:
@@ -1654,7 +1654,7 @@ func (it *DirWalker) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, dep
 	InspectPrint(w, it)
 }
 
-func (it *UdataWalker) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (it *TreedataWalker) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, it)
 }
 
@@ -1710,10 +1710,10 @@ func (port Port) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth i
 
 }
 
-func (u *UData) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (u *Treedata) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 
 	if config.Colorize {
-		for _, b := range [][]byte{config.Colors.OtherKeyword, utils.StringAsBytes("udata"), ANSI_RESET_SEQUENCE} {
+		for _, b := range [][]byte{config.Colors.OtherKeyword, utils.StringAsBytes("treedata"), ANSI_RESET_SEQUENCE} {
 			utils.Must(w.Write(b))
 		}
 	}
@@ -1756,7 +1756,7 @@ func (u *UData) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth in
 	utils.PanicIfErr(w.WriteByte('}'))
 }
 
-func (e UDataHiearchyEntry) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (e TreedataHiearchyEntry) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 	indentCount := parentIndentCount + 1
 	indent := bytes.Repeat(config.Indent, indentCount)
 
