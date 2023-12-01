@@ -39,12 +39,12 @@ pattern group-data = {
 
 fn fmt_topic_markdown(topic leaf-topic-data, is_leaf bool){
     markdown = ""
-    var examples %str = ""
+    var examples str = ""
     if topic.?examples? {
         examples = (concat ""
             "\n**examples**\n\n"
 
-            ...map((topic.?examples ?? []), fn(example example) %str { # todo: return type should not be necessary
+            ...map((topic.?examples ?? []), fn(example example) str { # todo: return type should not be necessary
                 code = example.?code
                 if code? {
                     code = strmanip.trim_space(code)
@@ -60,7 +60,7 @@ fn fmt_topic_markdown(topic leaf-topic-data, is_leaf bool){
     }
 
     # make sure the text ends with '.'
-    var text %str = strmanip.trim_space((topic.?text ?? ""))
+    var text str = strmanip.trim_space((topic.?text ?? ""))
     if ((text != "") and !(text match %`.+\.$`)){
         text = concat text "."
     }
@@ -78,19 +78,19 @@ fn fmt_topic_markdown(topic leaf-topic-data, is_leaf bool){
 }
 
 help_data = read!(DATA_FILE)
-assert (help_data match %[%object])
+assert (help_data match [object])
 
 
 groups = help_data[0]
 group_names = sort(propnames(groups), #lex)
 
-var builtin %str = ""
+var builtin str = ""
 
 # outline
 
 for i, group_name in group_names {
     group = groups.(group_name)
-    assert (group match %group-data)
+    assert (group match group-data)
 
     title = (group.?title ?? group_name)
     fragment = strmanip.lowercase(replace!(" ", "-", title)) 
@@ -102,7 +102,7 @@ for i, group_name in group_names {
 
 for i, group_name in group_names {
     group = groups.(group_name)
-    assert (group match %group-data)
+    assert (group match group-data)
 
     title = (group.?title ?? group_name)
 
@@ -116,7 +116,7 @@ for i, group_name in group_names {
     )
 
     for topic in group.elements {
-        assert (topic match %topic-data)
+        assert (topic match topic-data)
 
         topic_markdown = fmt_topic_markdown(topic, false)
         builtin = concat builtin topic_markdown
