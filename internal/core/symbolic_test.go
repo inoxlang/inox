@@ -280,6 +280,31 @@ func TestBidirectionalSymbolicConversion(t *testing.T) {
 			assert.Equal(t, record, concreteValue)
 		})
 	})
+
+	t.Run("tuple", func(t *testing.T) {
+		t.Run("empty", func(t *testing.T) {
+			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			defer ctx.CancelGracefully()
+
+			tuple := NewTuple([]Serializable{})
+			v, err := ToSymbolicValue(nil, tuple, false)
+			assert.NoError(t, err)
+
+			assert.IsType(t, (*symbolic.Tuple)(nil), v)
+			symbolicTuple := v.(*symbolic.Tuple)
+
+			assert.True(t, symbolicTuple.HasKnownLen())
+			assert.Equal(t, 0, symbolicTuple.KnownLen())
+
+			concreteValue, err := symbolic.Concretize(v, ctx)
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			assert.Equal(t, tuple, concreteValue)
+		})
+	})
+
 	t.Run("ordered pair", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()

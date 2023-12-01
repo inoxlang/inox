@@ -570,8 +570,19 @@ func (l KeyList) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.
 }
 
 func (t Tuple) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
-	//TODO
-	return symbolic.NewTupleOf(symbolic.ANY_SERIALIZABLE), nil
+	//TODO: support constraints
+
+	symbolicElements := make([]symbolic.Serializable, len(t.elements))
+
+	for i, e := range t.elements {
+		symbolicElement, err := e.ToSymbolicValue(ctx, encountered)
+		if err != nil {
+			return nil, err
+		}
+		symbolicElements[i] = symbolicElement.(symbolic.Serializable)
+	}
+
+	return symbolic.NewTuple(symbolicElements...), nil
 }
 
 func (p *OrderedPair) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {

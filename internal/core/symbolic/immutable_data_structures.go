@@ -90,7 +90,7 @@ func (t *Tuple) Concretize(ctx ConcreteContext) any {
 	for i, e := range t.elements {
 		concreteElements[i] = utils.Must(Concretize(e, ctx))
 	}
-	return extData.ConcreteValueFactories.CreateList(concreteElements)
+	return extData.ConcreteValueFactories.CreateTuple(concreteElements)
 }
 
 func (t *Tuple) Static() Pattern {
