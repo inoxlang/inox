@@ -4729,7 +4729,7 @@ func (p *parser) parseUnaryBinaryAndParenthesizedExpression(openingParenIndex in
 		//firstParenTokenIndex = len(p.tokens)
 		p.tokens = append(p.tokens, Token{Type: OPENING_PARENTHESIS, Span: NodeSpan{openingParenIndex, openingParenIndex + 1}})
 	}
-	p.eatSpaceNewlineCommaComment()
+	p.eatSpaceNewlineComment()
 
 	left, isMissingExpr := p.parseExpression(true)
 
@@ -4737,7 +4737,7 @@ func (p *parser) parseUnaryBinaryAndParenthesizedExpression(openingParenIndex in
 		return p.parseIfExpression(openingParenIndex, ident)
 	}
 
-	p.eatSpaceNewlineCommaComment()
+	p.eatSpaceNewlineComment()
 
 	if isMissingExpr {
 		if p.i >= p.len {
@@ -5102,6 +5102,10 @@ _switch:
 	case '.':
 		operator = Dot
 		operatorType = DOT
+		p.i++
+	case ',':
+		operator = PairComma
+		operatorType = COMMA
 		p.i++
 	case '$', '"', '\'', '`', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9': //start of right operand
 		parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_BIN_EXPR_MISSING_OPERATOR}

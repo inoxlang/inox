@@ -228,6 +228,10 @@ func TestPrint(t *testing.T) {
 		"(a < b or)",
 		"(a < b or c)",
 		"(a or b or c < d)",
+		"(a,d)",
+		"(a, d)",
+		"(a ,d)",
+		"(a , d)",
 		//lists
 		"[]",
 		"[,]",

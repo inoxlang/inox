@@ -1555,6 +1555,7 @@ const (
 	Substrof
 	SetDifference
 	NilCoalescing
+	PairComma
 )
 
 var BINARY_OPERATOR_STRINGS = [...]string{
@@ -1592,6 +1593,7 @@ var BINARY_OPERATOR_STRINGS = [...]string{
 	Substrof:          "substrof",
 	SetDifference:     "\\",
 	NilCoalescing:     "??",
+	PairComma:         ",",
 }
 
 func (operator BinaryOperator) String() string {

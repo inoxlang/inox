@@ -15458,6 +15458,126 @@ func testParse(
 			}, n)
 		})
 
+		t.Run("pair comma: space around operator", func(t *testing.T) {
+			n := mustparseChunk(t, "($a , $b)")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 9}, nil, false},
+				Statements: []Node{
+					&BinaryExpression{
+						NodeBase: NodeBase{
+							NodeSpan{0, 9},
+							nil,
+							true,
+							/*[]Token{
+								{Type: OPENING_PARENTHESIS, Span: NodeSpan{0, 1}},
+								{Type: PLUS, Span: NodeSpan{4, 5}},
+								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{8, 9}},
+							},*/
+						},
+						Operator: PairComma,
+						Left: &Variable{
+							NodeBase: NodeBase{NodeSpan{1, 3}, nil, false},
+							Name:     "a",
+						},
+						Right: &Variable{
+							NodeBase: NodeBase{NodeSpan{6, 8}, nil, false},
+							Name:     "b",
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("pair comma: space only before operator", func(t *testing.T) {
+			n := mustparseChunk(t, "($a ,$b)")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 8}, nil, false},
+				Statements: []Node{
+					&BinaryExpression{
+						NodeBase: NodeBase{
+							NodeSpan{0, 8},
+							nil,
+							true,
+							/*[]Token{
+								{Type: OPENING_PARENTHESIS, Span: NodeSpan{0, 1}},
+								{Type: PLUS, Span: NodeSpan{4, 5}},
+								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{8, 9}},
+							},*/
+						},
+						Operator: PairComma,
+						Left: &Variable{
+							NodeBase: NodeBase{NodeSpan{1, 3}, nil, false},
+							Name:     "a",
+						},
+						Right: &Variable{
+							NodeBase: NodeBase{NodeSpan{5, 7}, nil, false},
+							Name:     "b",
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("pair comma: space only after operator", func(t *testing.T) {
+			n := mustparseChunk(t, "($a, $b)")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 8}, nil, false},
+				Statements: []Node{
+					&BinaryExpression{
+						NodeBase: NodeBase{
+							NodeSpan{0, 8},
+							nil,
+							true,
+							/*[]Token{
+								{Type: OPENING_PARENTHESIS, Span: NodeSpan{0, 1}},
+								{Type: PLUS, Span: NodeSpan{4, 5}},
+								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{8, 9}},
+							},*/
+						},
+						Operator: PairComma,
+						Left: &Variable{
+							NodeBase: NodeBase{NodeSpan{1, 3}, nil, false},
+							Name:     "a",
+						},
+						Right: &Variable{
+							NodeBase: NodeBase{NodeSpan{5, 7}, nil, false},
+							Name:     "b",
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("pair comma: no space around operator", func(t *testing.T) {
+			n := mustparseChunk(t, "($a,$b)")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 7}, nil, false},
+				Statements: []Node{
+					&BinaryExpression{
+						NodeBase: NodeBase{
+							NodeSpan{0, 7},
+							nil,
+							true,
+							/*[]Token{
+								{Type: OPENING_PARENTHESIS, Span: NodeSpan{0, 1}},
+								{Type: PLUS, Span: NodeSpan{4, 5}},
+								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{8, 9}},
+							},*/
+						},
+						Operator: PairComma,
+						Left: &Variable{
+							NodeBase: NodeBase{NodeSpan{1, 3}, nil, false},
+							Name:     "a",
+						},
+						Right: &Variable{
+							NodeBase: NodeBase{NodeSpan{4, 6}, nil, false},
+							Name:     "b",
+						},
+					},
+				},
+			}, n)
+		})
+
 		t.Run("missing right operand", func(t *testing.T) {
 			n, err := parseChunk(t, "($a +)", "")
 			assert.Error(t, err)
