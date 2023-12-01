@@ -3306,6 +3306,26 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 			}, nil
 		case parse.NilCoalescing:
 			return joinValues([]Value{narrowOut(Nil, left), right}), nil
+		case parse.PairComma:
+			leftSerializable, ok := AsSerializable(left).(Serializable)
+			if !ok {
+				state.addError(makeSymbolicEvalError(n.Left, state, fmtLeftOperandOfBinaryShouldBe(n.Operator, "serializable", Stringify(left))))
+				leftSerializable = ANY_SERIALIZABLE
+			} else if leftSerializable.IsMutable() {
+				state.addError(makeSymbolicEvalError(n.Left, state, fmtLeftOperandOfBinaryShouldBeImmutable(n.Operator)))
+				leftSerializable = ANY_SERIALIZABLE
+			}
+
+			rightSerializable, ok := AsSerializable(right).(Serializable)
+			if !ok {
+				state.addError(makeSymbolicEvalError(n.Right, state, fmtRightOperandOfBinaryShouldBe(n.Operator, "serializable", Stringify(right))))
+				rightSerializable = ANY_SERIALIZABLE
+			} else if rightSerializable.IsMutable() {
+				state.addError(makeSymbolicEvalError(n.Right, state, fmtRightOperandOfBinaryShouldBeImmutable(n.Operator)))
+				rightSerializable = ANY_SERIALIZABLE
+			}
+
+			return NewOrderedPair(leftSerializable, rightSerializable), nil
 		default:
 			return nil, fmt.Errorf(fmtInvalidBinaryOperator(n.Operator))
 		}

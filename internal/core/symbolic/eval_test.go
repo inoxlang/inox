@@ -2809,6 +2809,59 @@ func TestSymbolicEval(t *testing.T) {
 				})
 			}
 		})
+
+		t.Run("pair: left operand should be be serializable", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`(go do {} , 1)`)
+			res, err := symbolicEval(n, state)
+
+			expr := n.Statements[0].(*parse.BinaryExpression)
+
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(expr.Left, state, fmtLeftOperandOfBinaryShouldBe(parse.PairComma, "serializable", "%lthread")),
+			}, state.errors())
+			assert.Equal(t, NewOrderedPair(ANY_SERIALIZABLE, INT_1), res)
+		})
+
+		t.Run("pair: right operand should be be serializable", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`(1 , go do {})`)
+			res, err := symbolicEval(n, state)
+
+			expr := n.Statements[0].(*parse.BinaryExpression)
+
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(expr.Right, state, fmtRightOperandOfBinaryShouldBe(parse.PairComma, "serializable", "%lthread")),
+			}, state.errors())
+			assert.Equal(t, NewOrderedPair(INT_1, ANY_SERIALIZABLE), res)
+		})
+
+		t.Run("pair: left operand should be be immutable", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`({} , 1)`)
+			res, err := symbolicEval(n, state)
+
+			expr := n.Statements[0].(*parse.BinaryExpression)
+
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(expr.Left, state, fmtLeftOperandOfBinaryShouldBeImmutable(parse.PairComma)),
+			}, state.errors())
+			assert.Equal(t, NewOrderedPair(ANY_SERIALIZABLE, INT_1), res)
+		})
+
+		t.Run("pair: right operand should be be immutable", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`(1 , {})`)
+			res, err := symbolicEval(n, state)
+
+			expr := n.Statements[0].(*parse.BinaryExpression)
+
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(expr.Right, state, fmtRightOperandOfBinaryShouldBeImmutable(parse.PairComma)),
+			}, state.errors())
+			assert.Equal(t, NewOrderedPair(INT_1, ANY_SERIALIZABLE), res)
+		})
+
 	})
 
 	t.Run("unary expression: !: operand is a string", func(t *testing.T) {

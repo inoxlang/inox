@@ -186,8 +186,16 @@ func fmtLeftOperandOfBinaryShouldBe(operator parse.BinaryOperator, expectedType 
 	return fmt.Sprintf("left operand of binary '%s' should be a(n) %s but is %s", operator.String(), expectedType, actual)
 }
 
+func fmtLeftOperandOfBinaryShouldBeImmutable(operator parse.BinaryOperator) string {
+	return fmt.Sprintf("left operand of binary '%s' should be immutable", operator.String())
+}
+
 func fmtRightOperandOfBinaryShouldBe(operator parse.BinaryOperator, expectedType string, actual string) string {
 	return fmt.Sprintf("right operand of binary '%s' should be a(n) %s but is %s", operator.String(), expectedType, actual)
+}
+
+func fmtRightOperandOfBinaryShouldBeImmutable(operator parse.BinaryOperator) string {
+	return fmt.Sprintf("right operand of binary '%s' should be immutable", operator.String())
 }
 
 func fmtRightOperandOfBinaryShouldBeLikeLeftOperand(operator parse.BinaryOperator, expectedType string, actual string) string {
