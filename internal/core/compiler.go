@@ -1900,7 +1900,7 @@ func (c *compiler) Compile(node parse.Node) error {
 		}
 
 		c.emit(node, OpCreateTreedata, len(node.Children))
-	case *parse.TreeDataEntry:
+	case *parse.TreedataEntry:
 		if err := c.Compile(node.Value); err != nil {
 			return err
 		}

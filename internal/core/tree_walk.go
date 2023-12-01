@@ -1341,7 +1341,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		}
 
 		return treedata, nil
-	case *parse.TreeDataEntry:
+	case *parse.TreedataEntry:
 		nodeVal, err := TreeWalkEval(n.Value, state)
 		if err != nil {
 			return nil, err

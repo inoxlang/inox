@@ -8034,7 +8034,7 @@ func (p *parser) parseTreedataLiteral(treedataIdent Node) *TreedataLiteral {
 
 	p.i++
 	p.eatSpaceNewlineCommaComment()
-	var children []*TreeDataEntry
+	var children []*TreedataEntry
 
 	for p.i < p.len && p.s[p.i] != '}' { //
 		entry, cont := p.parseTreeStructureEntry()
@@ -8071,7 +8071,7 @@ func (p *parser) parseTreedataLiteral(treedataIdent Node) *TreedataLiteral {
 	}
 }
 
-func (p *parser) parseTreeStructureEntry() (entry *TreeDataEntry, cont bool) {
+func (p *parser) parseTreeStructureEntry() (entry *TreedataEntry, cont bool) {
 	p.panicIfContextDone()
 
 	start := p.i
@@ -8089,7 +8089,7 @@ func (p *parser) parseTreeStructureEntry() (entry *TreeDataEntry, cont bool) {
 			},
 		}
 		p.i++
-		return &TreeDataEntry{
+		return &TreedataEntry{
 			NodeBase: NodeBase{
 				Span: NodeSpan{start, p.i},
 			},
@@ -8098,7 +8098,7 @@ func (p *parser) parseTreeStructureEntry() (entry *TreeDataEntry, cont bool) {
 	}
 
 	if p.i >= p.len {
-		return &TreeDataEntry{
+		return &TreedataEntry{
 			NodeBase: NodeBase{
 				Span: NodeSpan{start, p.i},
 				Err:  &ParsingError{UnspecifiedParsingError, UNTERMINATED_TREEDATA_ENTRY},
@@ -8108,7 +8108,29 @@ func (p *parser) parseTreeStructureEntry() (entry *TreeDataEntry, cont bool) {
 	}
 
 	if p.s[p.i] != '{' { //leaf
-		return &TreeDataEntry{
+		if p.s[p.i] == ':' { //pair
+			p.tokens = append(p.tokens, Token{Type: COLON, Span: NodeSpan{p.i, p.i + 1}})
+			p.i++
+			p.eatSpace()
+
+			key := node
+			value, _ := p.parseExpression()
+			end := p.i
+			p.eatSpace()
+
+			base := NodeBase{Span: NodeSpan{start, end}}
+
+			return &TreedataEntry{
+				NodeBase: base,
+				Value: &TreedataPair{
+					NodeBase: base,
+					Key:      key,
+					Value:    value,
+				},
+			}, true
+		}
+
+		return &TreedataEntry{
 			NodeBase: NodeBase{
 				Span: NodeSpan{start, p.i},
 			},
@@ -8118,7 +8140,7 @@ func (p *parser) parseTreeStructureEntry() (entry *TreeDataEntry, cont bool) {
 
 	p.i++
 	p.tokens = append(p.tokens, Token{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{p.i - 1, p.i}})
-	var children []*TreeDataEntry
+	var children []*TreedataEntry
 
 	p.eatSpaceNewlineComment()
 
@@ -8127,7 +8149,7 @@ func (p *parser) parseTreeStructureEntry() (entry *TreeDataEntry, cont bool) {
 		children = append(children, entry)
 
 		if !cont {
-			return &TreeDataEntry{
+			return &TreedataEntry{
 				NodeBase: NodeBase{
 					Span: NodeSpan{start, p.i},
 				},
@@ -8146,7 +8168,7 @@ func (p *parser) parseTreeStructureEntry() (entry *TreeDataEntry, cont bool) {
 		p.tokens = append(p.tokens, Token{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{p.i, p.i + 1}})
 		p.i++
 	}
-	return &TreeDataEntry{
+	return &TreedataEntry{
 		NodeBase: NodeBase{
 			Span: NodeSpan{start, p.i},
 			Err:  parsingErr,

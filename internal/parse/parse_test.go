@@ -20180,7 +20180,7 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("single entry", func(t *testing.T) {
+		t.Run("single entry with children", func(t *testing.T) {
 			n := mustparseChunk(t, "treedata 0 { 0 {} }")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 19}, nil, false},
@@ -20196,7 +20196,7 @@ func testParse(
 							Raw:      "0",
 							Value:    0,
 						},
-						Children: []*TreeDataEntry{
+						Children: []*TreedataEntry{
 							{
 								NodeBase: NodeBase{
 									NodeSpan{13, 17},
@@ -20215,7 +20215,7 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("single entry without braces", func(t *testing.T) {
+		t.Run("single entry without children", func(t *testing.T) {
 			n := mustparseChunk(t, "treedata 0 { 0 }")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 16}, nil, false},
@@ -20231,13 +20231,130 @@ func testParse(
 							Raw:      "0",
 							Value:    0,
 						},
-						Children: []*TreeDataEntry{
+						Children: []*TreedataEntry{
 							{
 								NodeBase: NodeBase{NodeSpan{13, 15}, nil, false},
 								Value: &IntLiteral{
 									NodeBase: NodeBase{NodeSpan{13, 14}, nil, false},
 									Raw:      "0",
 									Value:    0,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("single pair entry: space around colon", func(t *testing.T) {
+			n := mustparseChunk(t, "treedata 0 { 0 : 1 }")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 20}, nil, false},
+				Statements: []Node{
+					&TreedataLiteral{
+						NodeBase: NodeBase{
+							NodeSpan{0, 20},
+							nil,
+							false,
+						},
+						Root: &IntLiteral{
+							NodeBase: NodeBase{NodeSpan{9, 10}, nil, false},
+							Raw:      "0",
+							Value:    0,
+						},
+						Children: []*TreedataEntry{
+							{
+								NodeBase: NodeBase{NodeSpan{13, 18}, nil, false},
+								Value: &TreedataPair{
+									NodeBase: NodeBase{NodeSpan{13, 18}, nil, false},
+									Key: &IntLiteral{
+										NodeBase: NodeBase{NodeSpan{13, 14}, nil, false},
+										Raw:      "0",
+										Value:    0,
+									},
+									Value: &IntLiteral{
+										NodeBase: NodeBase{NodeSpan{17, 18}, nil, false},
+										Raw:      "1",
+										Value:    1,
+									},
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("single pair entry: no space around colon", func(t *testing.T) {
+			n := mustparseChunk(t, "treedata 0 { 0:1 }")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 18}, nil, false},
+				Statements: []Node{
+					&TreedataLiteral{
+						NodeBase: NodeBase{
+							NodeSpan{0, 18},
+							nil,
+							false,
+						},
+						Root: &IntLiteral{
+							NodeBase: NodeBase{NodeSpan{9, 10}, nil, false},
+							Raw:      "0",
+							Value:    0,
+						},
+						Children: []*TreedataEntry{
+							{
+								NodeBase: NodeBase{NodeSpan{13, 16}, nil, false},
+								Value: &TreedataPair{
+									NodeBase: NodeBase{NodeSpan{13, 16}, nil, false},
+									Key: &IntLiteral{
+										NodeBase: NodeBase{NodeSpan{13, 14}, nil, false},
+										Raw:      "0",
+										Value:    0,
+									},
+									Value: &IntLiteral{
+										NodeBase: NodeBase{NodeSpan{15, 16}, nil, false},
+										Raw:      "1",
+										Value:    1,
+									},
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("single pair entry: space before colon", func(t *testing.T) {
+			n := mustparseChunk(t, "treedata 0 { 0 :1 }")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 19}, nil, false},
+				Statements: []Node{
+					&TreedataLiteral{
+						NodeBase: NodeBase{
+							NodeSpan{0, 19},
+							nil,
+							false,
+						},
+						Root: &IntLiteral{
+							NodeBase: NodeBase{NodeSpan{9, 10}, nil, false},
+							Raw:      "0",
+							Value:    0,
+						},
+						Children: []*TreedataEntry{
+							{
+								NodeBase: NodeBase{NodeSpan{13, 17}, nil, false},
+								Value: &TreedataPair{
+									NodeBase: NodeBase{NodeSpan{13, 17}, nil, false},
+									Key: &IntLiteral{
+										NodeBase: NodeBase{NodeSpan{13, 14}, nil, false},
+										Raw:      "0",
+										Value:    0,
+									},
+									Value: &IntLiteral{
+										NodeBase: NodeBase{NodeSpan{16, 17}, nil, false},
+										Raw:      "1",
+										Value:    1,
+									},
 								},
 							},
 						},
@@ -20262,7 +20379,7 @@ func testParse(
 							Raw:      "0",
 							Value:    0,
 						},
-						Children: []*TreeDataEntry{
+						Children: []*TreedataEntry{
 							{
 								NodeBase: NodeBase{
 									NodeSpan{13, 17},
@@ -20309,7 +20426,7 @@ func testParse(
 							Raw:      "0",
 							Value:    0,
 						},
-						Children: []*TreeDataEntry{
+						Children: []*TreedataEntry{
 							{
 								NodeBase: NodeBase{
 									NodeSpan{13, 17},
@@ -20360,7 +20477,7 @@ func testParse(
 							Raw:      "0",
 							Value:    0,
 						},
-						Children: []*TreeDataEntry{
+						Children: []*TreedataEntry{
 							{
 								NodeBase: NodeBase{NodeSpan{13, 15}, nil, false},
 								Value: &IntLiteral{

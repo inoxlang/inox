@@ -1947,17 +1947,27 @@ func (ComputeExpression) Kind() NodeKind {
 type TreedataLiteral struct {
 	NodeBase
 	Root     Node
-	Children []*TreeDataEntry
+	Children []*TreedataEntry
 }
 
 func (TreedataLiteral) Kind() NodeKind {
 	return Expr
 }
 
-type TreeDataEntry struct {
+type TreedataEntry struct {
 	NodeBase
 	Value    Node
-	Children []*TreeDataEntry
+	Children []*TreedataEntry
+}
+
+type TreedataPair struct {
+	NodeBase
+	Key   Node
+	Value Node
+}
+
+func (TreedataPair) Kind() NodeKind {
+	return Expr
 }
 
 type PipelineStatement struct {
@@ -2446,11 +2456,14 @@ func walk(node, parent Node, ancestorChain *[]Node, fn, afterFn NodeHandler) {
 		for _, entry := range n.Children {
 			walk(entry, node, ancestorChain, fn, afterFn)
 		}
-	case *TreeDataEntry:
+	case *TreedataEntry:
 		walk(n.Value, node, ancestorChain, fn, afterFn)
 		for _, entry := range n.Children {
 			walk(entry, node, ancestorChain, fn, afterFn)
 		}
+	case *TreedataPair:
+		walk(n.Key, node, ancestorChain, fn, afterFn)
+		walk(n.Value, node, ancestorChain, fn, afterFn)
 	case *ListLiteral:
 		walk(n.TypeAnnotation, node, ancestorChain, fn, afterFn)
 		for _, element := range n.Elements {
