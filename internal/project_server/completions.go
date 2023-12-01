@@ -36,6 +36,10 @@ func getCompletions(fpath string, line, column int32, session *jsonrpc.Session) 
 		}()
 	}
 
+	if state == nil {
+		return nil
+	}
+
 	pos := chunk.GetLineColumnPosition(line, column)
 
 	return compl.FindCompletions(compl.CompletionSearchArgs{
