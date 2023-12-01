@@ -1912,7 +1912,14 @@ func (c *compiler) Compile(node parse.Node) error {
 		}
 
 		c.emit(node, OpCreateTreedataHiearchyEntry, len(node.Children))
-
+	case *parse.TreedataPair:
+		if err := c.Compile(node.Key); err != nil {
+			return err
+		}
+		if err := c.Compile(node.Value); err != nil {
+			return err
+		}
+		c.emit(node, OpCreateOrderedPair)
 	case *parse.ConcatenationExpression:
 		spreadElemSet := make([]Bool, len(node.Elements))
 

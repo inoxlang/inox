@@ -954,6 +954,11 @@ func (v *VM) run() {
 			v.sp -= numChildren
 			entry.Value = v.stack[v.sp-1].(Serializable)
 			v.stack[v.sp-1] = entry
+		case OpCreateOrderedPair:
+			first := v.stack[v.sp-2]
+			second := v.stack[v.sp-1]
+			v.stack[v.sp-2] = NewOrderedPair(first.(Serializable), second.(Serializable))
+			v.sp--
 		case OpCreateStruct:
 			v.ip += 3
 			structTypeIndex := int(v.curInsts[v.ip-1]) | int(v.curInsts[v.ip-2])<<8

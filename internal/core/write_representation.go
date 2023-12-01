@@ -651,6 +651,10 @@ func (tuple *Tuple) WriteRepresentation(ctx *Context, w io.Writer, config *ReprC
 	return err
 }
 
+func (p *OrderedPair) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
+	return ErrNotImplemented
+}
+
 func (slice *ByteSlice) write(w io.Writer) (int, error) {
 	totalN, err := w.Write([]byte{'0', 'x', '['})
 	if err != nil {

@@ -1362,6 +1362,16 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			Value:    nodeVal.(Serializable),
 			Children: children,
 		}, nil
+	case *parse.TreedataPair:
+		firstVal, err := TreeWalkEval(n.Key, state)
+		if err != nil {
+			return nil, err
+		}
+		secondVal, err := TreeWalkEval(n.Value, state)
+		if err != nil {
+			return nil, err
+		}
+		return NewOrderedPair(firstVal.(Serializable), secondVal.(Serializable)), nil
 	case *parse.ObjectLiteral:
 		finalObj := &Object{}
 

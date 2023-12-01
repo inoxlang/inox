@@ -444,6 +444,10 @@ func (tuple *Tuple) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, co
 	return write(w)
 }
 
+func (p *OrderedPair) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+	return ErrNotImplemented
+}
+
 func (d *Dictionary) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	if depth > MAX_JSON_REPR_WRITING_DEPTH {
 		return ErrMaximumJSONReprWritingDepthReached

@@ -6446,6 +6446,23 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				},
 			}, res)
 		})
+
+		t.Run("pair", func(t *testing.T) {
+			code := `treedata 0 { 1: 2 }`
+			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
+			res, err := Eval(code, state, false)
+
+			assert.NoError(t, err)
+			assert.Equal(t, &Treedata{
+				Root: Int(0),
+				HiearchyEntries: []TreedataHiearchyEntry{
+					{
+						Value: NewOrderedPair(Int(1), Int(2)),
+					},
+				},
+			}, res)
+		})
 	})
 
 	t.Run("Mapping", func(t *testing.T) {

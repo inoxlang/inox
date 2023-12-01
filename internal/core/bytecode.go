@@ -166,6 +166,7 @@ const (
 	OpCreateMapping
 	OpCreateTreedata
 	OpCreateTreedataHiearchyEntry
+	OpCreateOrderedPair
 	OpCreateStruct
 	OpSpreadObject
 	OpExtractProps
@@ -302,6 +303,7 @@ var OpcodeNames = [...]string{
 	OpCreateMapping:                "CRT_MPG",
 	OpCreateTreedata:               "CRT_UDAT",
 	OpCreateTreedataHiearchyEntry:  "CRT_UDHE",
+	OpCreateOrderedPair:            "CRT_OPAIR",
 	OpCreateStruct:                 "CRT_STRUCT",
 	OpSpreadObject:                 "SPREAD_OBJ",
 	OpExtractProps:                 "EXTR_PROPS",
@@ -439,6 +441,7 @@ var OpcodeOperands = [...][]int{
 	OpCreateMapping:                {2},
 	OpCreateTreedata:               {2},
 	OpCreateTreedataHiearchyEntry:  {2},
+	OpCreateOrderedPair:            {},
 	OpCreateStruct:                 {2, 1},
 	OpSpreadObject:                 {},
 	OpExtractProps:                 {2},
@@ -573,6 +576,7 @@ var OpcodeConstantIndexes = [...][]bool{
 	OpCreateMapping:                {true},
 	OpCreateTreedata:               {false},
 	OpCreateTreedataHiearchyEntry:  {false},
+	OpCreateOrderedPair:            {},
 	OpCreateStruct:                 {true, false},
 	OpSpreadObject:                 {},
 	OpExtractProps:                 {true},
