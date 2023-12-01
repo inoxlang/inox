@@ -1660,7 +1660,11 @@ switch_:
 		}
 
 		if !c.varExists(node.Name, ancestorChain) {
-			c.addError(node, fmtVarIsNotDeclared(node.Name))
+			if node.Name == "const" {
+				c.addError(node, VAR_CONST_NOT_DECLARED_IF_YOU_MEANT_TO_DECLARE_CONSTANTS_GLOBAL_CONST_DECLS_ONLY_SUPPORTED_AT_THE_START_OF_THE_MODULE)
+			} else {
+				c.addError(node, fmtVarIsNotDeclared(node.Name))
+			}
 			return parse.ContinueTraversal
 		}
 

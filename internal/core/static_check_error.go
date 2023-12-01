@@ -11,6 +11,10 @@ import (
 const (
 	MODULE_IMPORTS_NOT_ALLOWED_IN_INCLUDED_CHUNK = "modules imports are not allowed in included chunks"
 
+	//global constant declarations
+	VAR_CONST_NOT_DECLARED_IF_YOU_MEANT_TO_DECLARE_CONSTANTS_GLOBAL_CONST_DECLS_ONLY_SUPPORTED_AT_THE_START_OF_THE_MODULE = //
+	"variable 'const' is not declared, if you meant to declare constants note that a single global constant declaration section at the start of the module is supported for now"
+
 	//manifest
 	NO_SPREAD_IN_MANIFEST                           = "objects & lists in the manifest cannot contain spread elements"
 	IMPLICIT_KEY_PROPS_NOT_ALLOWED_IN_MANIFEST      = "implicit key properties are not allowed in the manifest object"
