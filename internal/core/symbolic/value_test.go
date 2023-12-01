@@ -252,8 +252,8 @@ func TestSymbolicIntRange(t *testing.T) {
 
 	t.Run("Contains()", func(t *testing.T) {
 		anyIntRange := &IntRange{}
-		assertMayContain(t, anyIntRange, INT_0)
-		assertMayContain(t, anyIntRange, INT_1)
+		assertMayContainButNotCertain(t, anyIntRange, INT_0)
+		assertMayContainButNotCertain(t, anyIntRange, INT_1)
 
 		intRange1_2 := NewIncludedEndIntRange(INT_1, INT_2)
 		assertContains(t, intRange1_2, INT_1)
@@ -269,8 +269,8 @@ func TestSymbolicIntRange(t *testing.T) {
 
 		intRangeUnsupportedStep := NewIncludedEndIntRange(INT_1, INT_2)
 		intRangeUnsupportedStep.isStepNotOne = true
-		assertMayContain(t, intRangeUnsupportedStep, INT_1)
-		assertMayContain(t, intRangeUnsupportedStep, INT_2)
+		assertMayContainButNotCertain(t, intRangeUnsupportedStep, INT_1)
+		assertMayContainButNotCertain(t, intRangeUnsupportedStep, INT_2)
 		assertCannotPossiblyContain(t, intRange1_2, INT_0)
 		assertCannotPossiblyContain(t, intRange1_2, INT_3)
 	})
@@ -306,8 +306,8 @@ func TestSymbolicFloatRange(t *testing.T) {
 
 	t.Run("Contains()", func(t *testing.T) {
 		anyFloatRange := &FloatRange{}
-		assertMayContain(t, anyFloatRange, FLOAT_0)
-		assertMayContain(t, anyFloatRange, FLOAT_1)
+		assertMayContainButNotCertain(t, anyFloatRange, FLOAT_0)
+		assertMayContainButNotCertain(t, anyFloatRange, FLOAT_1)
 
 		floatRange1_2 := NewIncludedEndFloatRange(FLOAT_1, FLOAT_2)
 		assertContains(t, floatRange1_2, FLOAT_1)

@@ -226,6 +226,25 @@ func TestTuple(t *testing.T) {
 		})
 	})
 
+	t.Run("Contains()", func(t *testing.T) {
+		any := ANY_TUPLE
+
+		assertMayContainButNotCertain(t, any, ANY_SERIALIZABLE)
+		assertMayContainButNotCertain(t, any, INT_1)
+
+		anyIntPair := NewTuple(ANY_INT, ANY_INT)
+		assertMayContainButNotCertain(t, anyIntPair, ANY_SERIALIZABLE)
+		assertMayContainButNotCertain(t, anyIntPair, ANY_INT)
+		assertMayContainButNotCertain(t, anyIntPair, INT_1)
+
+		concretizableIntPair := NewTuple(INT_1, INT_2)
+		assertContains(t, concretizableIntPair, INT_1)
+		assertContains(t, concretizableIntPair, INT_2)
+		assertMayContainButNotCertain(t, concretizableIntPair, ANY_SERIALIZABLE)
+		assertMayContainButNotCertain(t, concretizableIntPair, ANY_INT)
+		assertCannotPossiblyContain(t, concretizableIntPair, INT_3)
+	})
+
 }
 
 func TestOrderedPair(t *testing.T) {
@@ -293,6 +312,25 @@ func TestOrderedPair(t *testing.T) {
 				pair1.Test(pair1, RecTestCallState{})
 			})
 		})
+	})
+
+	t.Run("Contains()", func(t *testing.T) {
+		any := &OrderedPair{elements: [2]Serializable{ANY_SERIALIZABLE, ANY_SERIALIZABLE}}
+
+		assertMayContainButNotCertain(t, any, ANY_SERIALIZABLE)
+		assertMayContainButNotCertain(t, any, INT_1)
+
+		anyIntPair := &OrderedPair{elements: [2]Serializable{ANY_INT, ANY_INT}}
+		assertMayContainButNotCertain(t, anyIntPair, ANY_SERIALIZABLE)
+		assertMayContainButNotCertain(t, anyIntPair, ANY_INT)
+		assertMayContainButNotCertain(t, anyIntPair, INT_1)
+
+		concretizableIntPair := &OrderedPair{elements: [2]Serializable{INT_1, INT_2}}
+		assertContains(t, concretizableIntPair, INT_1)
+		assertContains(t, concretizableIntPair, INT_2)
+		assertMayContainButNotCertain(t, concretizableIntPair, ANY_SERIALIZABLE)
+		assertMayContainButNotCertain(t, concretizableIntPair, ANY_INT)
+		assertCannotPossiblyContain(t, concretizableIntPair, INT_3)
 	})
 
 }

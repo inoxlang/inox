@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestSymbolicObject(t *testing.T) {
+func TestObject(t *testing.T) {
 	cases := []struct {
 		object1 *Object
 		object2 *Object
@@ -230,9 +230,45 @@ func TestSymbolicObject(t *testing.T) {
 			assert.Equal(t, singlePropInexact, must(singlePropInexact.SpecificIntersection(emptyInexact, 0)))
 		})
 	})
+
+	t.Run("Contains()", func(t *testing.T) {
+		assertMayContainButNotCertain(t, ANY_OBJ, ANY_SERIALIZABLE)
+		assertMayContainButNotCertain(t, ANY_OBJ, ANY_INT)
+		assertMayContainButNotCertain(t, ANY_OBJ, INT_1)
+
+		assertMayContainButNotCertain(t, ANY_READONLY_OBJ, ANY_SERIALIZABLE)
+		assertMayContainButNotCertain(t, ANY_READONLY_OBJ, ANY_INT)
+		assertMayContainButNotCertain(t, ANY_READONLY_OBJ, INT_1)
+
+		inexactObject := NewInexactObject2(map[string]Serializable{
+			"a": ANY_INT,
+		})
+
+		assertMayContainButNotCertain(t, inexactObject, ANY_SERIALIZABLE)
+		assertMayContainButNotCertain(t, inexactObject, ANY_INT)
+		assertMayContainButNotCertain(t, inexactObject, INT_1)
+
+		inexactObjectWithConcretizableValue := NewInexactObject2(map[string]Serializable{
+			"a": INT_1,
+		})
+
+		assertContains(t, inexactObjectWithConcretizableValue, INT_1)
+		assertMayContainButNotCertain(t, inexactObjectWithConcretizableValue, ANY_SERIALIZABLE)
+		assertMayContainButNotCertain(t, inexactObjectWithConcretizableValue, ANY_INT)
+		assertMayContainButNotCertain(t, inexactObjectWithConcretizableValue, INT_2)
+
+		croncretizableExactObject := NewExactObject2(map[string]Serializable{
+			"a": INT_1,
+		})
+
+		assertContains(t, croncretizableExactObject, INT_1)
+		assertMayContainButNotCertain(t, croncretizableExactObject, ANY_SERIALIZABLE)
+		assertMayContainButNotCertain(t, croncretizableExactObject, ANY_INT)
+		assertCannotPossiblyContain(t, croncretizableExactObject, INT_2)
+	})
 }
 
-func TestSymbolicList(t *testing.T) {
+func TestList(t *testing.T) {
 
 	t.Run("Test()", func(t *testing.T) {
 		cases := []struct {
@@ -453,6 +489,33 @@ func TestSymbolicList(t *testing.T) {
 
 			assert.Nil(t, result)
 		})
+	})
+
+	t.Run("Contains()", func(t *testing.T) {
+		intList := NewListOf(ANY_INT)
+		assertMayContainButNotCertain(t, intList, ANY_SERIALIZABLE)
+		assertMayContainButNotCertain(t, intList, ANY_INT)
+		assertMayContainButNotCertain(t, intList, INT_1)
+		assertMayContainButNotCertain(t, intList, INT_2)
+
+		listWithConcreteValue := NewListOf(INT_1)
+		assertContains(t, listWithConcreteValue, INT_1)
+		assertMayContainButNotCertain(t, listWithConcreteValue, ANY_SERIALIZABLE)
+		assertMayContainButNotCertain(t, listWithConcreteValue, ANY_INT)
+		assertCannotPossiblyContain(t, listWithConcreteValue, INT_2)
+
+		anyIntPair := NewList(ANY_INT, ANY_INT)
+		assertMayContainButNotCertain(t, anyIntPair, ANY_SERIALIZABLE)
+		assertMayContainButNotCertain(t, anyIntPair, ANY_INT)
+		assertMayContainButNotCertain(t, anyIntPair, INT_1)
+		assertMayContainButNotCertain(t, anyIntPair, INT_2)
+
+		concretizableList := NewList(INT_1, INT_2)
+		assertContains(t, concretizableList, INT_1)
+		assertContains(t, concretizableList, INT_2)
+		assertMayContainButNotCertain(t, concretizableList, ANY_SERIALIZABLE)
+		assertMayContainButNotCertain(t, concretizableList, ANY_INT)
+		assertCannotPossiblyContain(t, concretizableList, INT_3)
 	})
 }
 

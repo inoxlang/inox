@@ -171,13 +171,16 @@ func (t *Tuple) Contains(value Serializable) (bool, bool) {
 	}
 
 	possible := false
+	isValueConcretizable := IsConcretizable(value)
 
 	for _, e := range t.elements {
 		if e.Test(value, RecTestCallState{}) {
 			possible = true
-			if value.Test(e, RecTestCallState{}) {
+			if isValueConcretizable && value.Test(e, RecTestCallState{}) {
 				return true, true
 			}
+		} else if !possible && value.Test(e, RecTestCallState{}) {
+			possible = true
 		}
 	}
 	return false, possible
@@ -304,13 +307,16 @@ func (t *OrderedPair) elementAt(i int) Value {
 
 func (p *OrderedPair) Contains(value Serializable) (bool, bool) {
 	possible := false
+	isValueConcretizable := IsConcretizable(value)
 
 	for _, e := range p.elements {
 		if e.Test(value, RecTestCallState{}) {
 			possible = true
-			if value.Test(e, RecTestCallState{}) && IsConcretizable(value) {
+			if isValueConcretizable && value.Test(e, RecTestCallState{}) {
 				return true, true
 			}
+		} else if !possible && value.Test(e, RecTestCallState{}) {
+			possible = true
 		}
 	}
 	return false, possible
@@ -626,13 +632,16 @@ func (r *Record) Contains(value Serializable) (bool, bool) {
 	}
 
 	possible := false
+	isValueConcretizable := IsConcretizable(value)
 
 	for _, e := range r.entries {
 		if e.Test(value, RecTestCallState{}) {
 			possible = true
-			if value.Test(e, RecTestCallState{}) {
+			if isValueConcretizable && value.Test(e, RecTestCallState{}) {
 				return true, true
 			}
+		} else if !possible && value.Test(e, RecTestCallState{}) {
+			possible = true
 		}
 	}
 	return false, possible

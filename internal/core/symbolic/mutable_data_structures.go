@@ -438,11 +438,20 @@ func (l *List) elementAt(i int) Value {
 }
 
 func (l *List) Contains(value Serializable) (bool, bool) {
+	isValueConcretizable := IsConcretizable(value)
+
 	if l.elements == nil {
 		if l.generalElement.Test(value, RecTestCallState{}) {
+			if isValueConcretizable && value.Test(l.generalElement, RecTestCallState{}) {
+				return true, true
+			}
 			return false, true
 		}
-		return false, false
+		return false, value.Test(l.generalElement, RecTestCallState{})
+	}
+
+	if deeplyMatch(value, ANY_SERIALIZABLE) {
+		return false, true
 	}
 
 	possible := false
@@ -450,9 +459,11 @@ func (l *List) Contains(value Serializable) (bool, bool) {
 	for _, e := range l.elements {
 		if e.Test(value, RecTestCallState{}) {
 			possible = true
-			if value.Test(e, RecTestCallState{}) {
+			if isValueConcretizable && value.Test(e, RecTestCallState{}) {
 				return true, true
 			}
+		} else if !possible && value.Test(e, RecTestCallState{}) {
+			possible = true
 		}
 	}
 	return false, possible
@@ -874,6 +885,10 @@ func NewInexactObject2(entries map[string]Serializable) *Object {
 
 func NewExactObject(entries map[string]Serializable, optionalEntries map[string]struct{}, static map[string]Pattern) *Object {
 	return NewObject(true, entries, optionalEntries, static)
+}
+
+func NewExactObject2(entries map[string]Serializable) *Object {
+	return NewObject(true, entries, nil, nil)
 }
 
 func NewUnitializedObject() *Object {
@@ -1429,14 +1444,21 @@ func (o *Object) Contains(value Serializable) (bool, bool) {
 		return false, true
 	}
 
-	possible := false
+	if deeplyMatch(value, ANY_SERIALIZABLE) {
+		return false, true
+	}
+
+	possible := o.IsInexact() //if the object can have additional properties its always possible.
+	isValueConcretizable := IsConcretizable(value)
 
 	for _, e := range o.entries {
 		if e.Test(value, RecTestCallState{}) {
 			possible = true
-			if value.Test(e, RecTestCallState{}) {
+			if isValueConcretizable && value.Test(e, RecTestCallState{}) {
 				return true, true
 			}
+		} else if !possible && value.Test(e, RecTestCallState{}) {
+			possible = true
 		}
 	}
 	return false, possible

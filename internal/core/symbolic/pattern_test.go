@@ -3400,16 +3400,20 @@ func assertContains(t *testing.T, a Container, b Serializable) bool {
 	return assert.True(t, yes)
 }
 
-func assertCannotPossiblyContain(t *testing.T, a Container, b Serializable) bool {
+func assertMayContainButNotCertain(t *testing.T, a Container, b Serializable) bool {
 	t.Helper()
-	_, possible := a.Contains(b)
-
-	return assert.False(t, possible)
+	yes, possible := a.Contains(b)
+	if !assert.False(t, yes) {
+		return false
+	}
+	return assert.True(t, possible)
 }
 
-func assertMayContain(t *testing.T, a Container, b Serializable) bool {
+func assertCannotPossiblyContain(t *testing.T, a Container, b Serializable) bool {
 	t.Helper()
-	_, possible := a.Contains(b)
-
-	return assert.True(t, possible)
+	yes, possible := a.Contains(b)
+	if !assert.False(t, yes) {
+		return false
+	}
+	return assert.False(t, possible)
 }
