@@ -79,7 +79,7 @@ func TestPreInit(t *testing.T) {
 	type testCase struct {
 		//input
 		name                string
-		moduleKind          ModuleKind //ok if not set
+		moduleKind          ModuleKind //ok if not set, should not be set if expectedModuleKind is set
 		module              string
 		setup               func() error
 		teardown            func()
@@ -88,6 +88,7 @@ func TestPreInit(t *testing.T) {
 		parentModuleAbsPath string
 
 		//output
+		expectedModuleKind           *ModuleKind
 		expectedPermissions          []Permission
 		expectedLimits               []Limit
 		expectedParameters           []ModuleParameter
@@ -119,6 +120,45 @@ func TestPreInit(t *testing.T) {
 			error:                true,
 			expectedParsingError: true,
 			errorIs:              ErrParsingErrorInManifestOrPreinit,
+		},
+		{
+			name: "kind: application",
+			module: `
+				manifest {
+					kind: "application"
+				}`,
+			expectedLimits:     []Limit{minLimitA, minLimitB, threadLimit},
+			expectedModuleKind: utils.New(ApplicationModule),
+		},
+		{
+			name: "kind: module kind should be a string literal",
+			module: `
+				manifest {
+					kind: true
+				}`,
+			expectedLimits:            []Limit{minLimitA, minLimitB, threadLimit},
+			error:                     true,
+			expectedStaticCheckErrors: []string{KIND_SECTION_SHOULD_BE_A_STRING_LITERAL},
+		},
+		{
+			name: "kind: embedded module kinds are not allowed",
+			module: `
+				manifest {
+					kind: "userlthread"
+				}`,
+			expectedLimits:            []Limit{minLimitA, minLimitB, threadLimit},
+			error:                     true,
+			expectedStaticCheckErrors: []string{INVALID_KIND_SECTION_EMBEDDED_MOD_KINDS_NOT_ALLOWED},
+		},
+		{
+			name: "kind: invalid module kind",
+			module: `
+				manifest {
+					kind: "?"
+				}`,
+			expectedLimits:            []Limit{minLimitA, minLimitB, threadLimit},
+			error:                     true,
+			expectedStaticCheckErrors: []string{ErrInvalidModuleKind.Error()},
 		},
 		{
 			name: "parameters: non positional with named pattern",
@@ -1701,6 +1741,9 @@ func TestPreInit(t *testing.T) {
 					assert.EqualValues(t, testCase.expectedParameters, params)
 				}
 
+				if testCase.expectedModuleKind != nil {
+					assert.EqualValues(t, *testCase.expectedModuleKind, manifest.ModuleKind)
+				}
 				assert.EqualValues(t, testCase.expectedPermissions, manifest.RequiredPermissions)
 				assert.ElementsMatch(t, testCase.expectedLimits, manifest.Limits)
 				assert.EqualValues(t, testCase.expectedResolutions, manifest.HostResolutions)

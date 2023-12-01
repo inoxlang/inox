@@ -13,6 +13,10 @@ import (
 const (
 	CURRENT_PROJECT_CTX_KEY = core.Identifier("current-project")
 	LSP_FS_CTX_KEY          = core.Identifier("current-filesystem")
+
+	OPEN_PROJECT_METHOD   = "project/open"
+	CREATE_PROJECT_METHOD = "project/create"
+	DEPLOY_PROD_METHOD    = "project/deployService"
 )
 
 type CreateProjectParams struct {
@@ -40,7 +44,7 @@ func registerProjectMethodHandlers(server *lsp.Server, opts LSPServerConfigurati
 	}
 
 	server.OnCustom(jsonrpc.MethodInfo{
-		Name:          "project/create",
+		Name:          CREATE_PROJECT_METHOD,
 		SensitiveData: true,
 		NewRequest: func() interface{} {
 			return &CreateProjectParams{}
@@ -69,7 +73,7 @@ func registerProjectMethodHandlers(server *lsp.Server, opts LSPServerConfigurati
 	})
 
 	server.OnCustom(jsonrpc.MethodInfo{
-		Name:          "project/open",
+		Name:          OPEN_PROJECT_METHOD,
 		SensitiveData: true,
 		NewRequest: func() interface{} {
 			return &OpenProjectParams{}

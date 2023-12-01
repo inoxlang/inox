@@ -2218,6 +2218,30 @@ func checkManifestObject(args manifestStaticCheckArguments) {
 		}
 
 		switch sectionName {
+		case MANIFEST_KIND_SECTION_NAME:
+			var kindName string
+
+			switch node := p.Value.(type) {
+			case *parse.QuotedStringLiteral:
+				kindName = node.Value
+			case *parse.MultilineStringLiteral:
+				kindName = node.Value
+			case *parse.UnquotedStringLiteral:
+				kindName = node.Value
+			default:
+				onError(p.Key, KIND_SECTION_SHOULD_BE_A_STRING_LITERAL)
+				continue
+			}
+
+			kind, err := ParseModuleKind(kindName)
+			if err != nil {
+				onError(p.Key, ErrInvalidModuleKind.Error())
+				continue
+			}
+			if kind.IsEmbedded() {
+				onError(p.Key, INVALID_KIND_SECTION_EMBEDDED_MOD_KINDS_NOT_ALLOWED)
+				continue
+			}
 		case MANIFEST_PERMS_SECTION_NAME:
 			if obj, ok := p.Value.(*parse.ObjectLiteral); ok {
 				checkPermissionListingObject(obj, onError)

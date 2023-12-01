@@ -23,6 +23,7 @@ const (
 	// -------- sections --------
 
 	//section names
+	MANIFEST_KIND_SECTION_NAME            = "kind"
 	MANIFEST_ENV_SECTION_NAME             = "env"
 	MANIFEST_PARAMS_SECTION_NAME          = "parameters"
 	MANIFEST_PERMS_SECTION_NAME           = "permissions"
@@ -59,7 +60,7 @@ var (
 	INITIAL_WORKING_DIR_PATH_PATTERN PathPattern
 
 	MANIFEST_SECTION_NAMES = []string{
-		MANIFEST_ENV_SECTION_NAME, MANIFEST_PARAMS_SECTION_NAME,
+		MANIFEST_KIND_SECTION_NAME, MANIFEST_ENV_SECTION_NAME, MANIFEST_PARAMS_SECTION_NAME,
 		MANIFEST_PERMS_SECTION_NAME, MANIFEST_LIMITS_SECTION_NAME,
 		MANIFEST_HOST_RESOLUTION_SECTION_NAME, MANIFEST_PREINIT_FILES_SECTION_NAME,
 		MANIFEST_DATABASES_SECTION_NAME, MANIFEST_INVOCATION_SECTION_NAME,
@@ -92,6 +93,7 @@ func SetInitialWorkingDir(getWd func() (string, error)) {
 
 // A Manifest contains most of the user-defined metadata about a Module.
 type Manifest struct {
+	ModuleKind ModuleKind
 	//note: permissions required for reading the preinit files are in .PreinitFiles.
 	RequiredPermissions []Permission
 	Limits              []Limit
@@ -732,9 +734,24 @@ func (m *Module) createManifest(ctx *Context, object *Object, config manifestObj
 	limits := make(map[string]Limit, 0)
 	hostResolutions := make(map[Host]Value, 0)
 	specifiedGlobalPermKinds := map[PermissionKind]bool{}
+	kind := UnspecifiedModuleKind
 
 	for k, v := range object.EntryMap(nil) {
 		switch k {
+		case MANIFEST_KIND_SECTION_NAME:
+			kindName, ok := v.(StringLike)
+			if !ok {
+				return nil, fmt.Errorf("invalid manifest, the " + k + " section should have a value of type string")
+			}
+
+			var err error
+			kind, err = ParseModuleKind(kindName.GetOrBuildString())
+			if err != nil {
+				return nil, err
+			}
+			if kind.IsEmbedded() {
+				return nil, errors.New(INVALID_KIND_SECTION_EMBEDDED_MOD_KINDS_NOT_ALLOWED)
+			}
 		case MANIFEST_LIMITS_SECTION_NAME:
 			l, err := getLimits(v)
 			if err != nil {
@@ -882,6 +899,7 @@ func (m *Module) createManifest(ctx *Context, object *Object, config manifestObj
 	}
 
 	return &Manifest{
+		ModuleKind:          kind,
 		RequiredPermissions: perms,
 		Limits:              maps.Values(limits),
 		HostResolutions:     hostResolutions,

@@ -36,10 +36,21 @@ var (
 	MODULE_PROP_NAMES           = []string{"parsing_errors", "main_chunk_node"}
 	SOURCE_POS_RECORD_PROPNAMES = []string{"source", "line", "column", "start", "end"}
 
+	MODULE_KIND_NAMES = [...]string{
+		UnspecifiedModuleKind: "unspecified",
+		SpecModule:            "spec",
+		UserLThreadModule:     "userlthread",
+		TestSuiteModule:       "testsuite",
+		TestCaseModule:        "testcase",
+		LifetimeJobModule:     "lifetimejob",
+		ApplicationModule:     "application",
+	}
+
 	ErrFileToIncludeDoesNotExist       = errors.New("file to include does not exist")
 	ErrFileToIncludeIsAFolder          = errors.New("file to include is a folder")
 	ErrMissingManifest                 = errors.New("missing manifest")
 	ErrParsingErrorInManifestOrPreinit = errors.New("parsing error in manifest or preinit")
+	ErrInvalidModuleKind               = errors.New("invalid module kind")
 )
 
 // A Module represents an Inox module, it does not hold any state and should NOT be modified. Module implements Value.
@@ -81,13 +92,29 @@ type Module struct {
 type ModuleKind int
 
 const (
+	//file module kinds
+
 	UnspecifiedModuleKind ModuleKind = iota
 	SpecModule                       //.spec.ix file
+	ApplicationModule
+
+	//embedded module kinds
+
 	UserLThreadModule
 	TestSuiteModule
 	TestCaseModule
 	LifetimeJobModule
 )
+
+func ParseModuleKind(s string) (ModuleKind, error) {
+	for kind, name := range MODULE_KIND_NAMES {
+		if name == s {
+			return ModuleKind(kind), nil
+		}
+	}
+
+	return -1, ErrInvalidModuleKind
+}
 
 func (k ModuleKind) IsTestModule() bool {
 	return k == TestSuiteModule || k == TestCaseModule
