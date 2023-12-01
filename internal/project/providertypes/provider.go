@@ -1,4 +1,4 @@
-package project
+package providertypes
 
 type Provider interface {
 }

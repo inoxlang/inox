@@ -1,4 +1,4 @@
-package project
+package cloudflareprovider
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 
 	cloudflare "github.com/cloudflare/cloudflare-go"
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/project/providertypes"
 )
 
 var (
@@ -14,10 +15,10 @@ var (
 
 type HighPermsCloudflareTokens struct {
 	//permissions: list/create/delete buckets + any object operations
-	R2Token *TempToken `json:"r2Token,omitempty"`
+	R2Token *providertypes.TempToken `json:"r2Token,omitempty"`
 }
 
-func (c *Cloudflare) getUpToDateTempTokens(ctx context.Context) (HighPermsCloudflareTokens, error) {
+func (c *Cloudflare) GetUpToDateTempTokens(ctx context.Context) (HighPermsCloudflareTokens, error) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
@@ -44,7 +45,7 @@ func (c *Cloudflare) getUpToDateTempTokensNoLock(ctx context.Context) (HighPerms
 	if tokenId == existingTokenId {
 		updatedTokens.R2Token = c.highPermsTokens.R2Token
 	} else {
-		updatedTokens.R2Token = &TempToken{
+		updatedTokens.R2Token = &providertypes.TempToken{
 			Id:    tokenId,
 			Value: tokenValue,
 		}
@@ -87,7 +88,7 @@ func (c *Cloudflare) deleteHighPermsTokens(ctx context.Context) error {
 }
 
 func (c *Cloudflare) GetHighPermsS3Credentials(ctx *core.Context) (accessKey, secretKey string, resultOk bool) {
-	tokens, err := c.getUpToDateTempTokens(ctx)
+	tokens, err := c.GetUpToDateTempTokens(ctx)
 	if err != nil {
 		return "", "", false
 	}

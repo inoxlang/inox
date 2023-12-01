@@ -1,19 +1,12 @@
 package project
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
-
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/project/cloudflareprovider"
 )
 
-type TempToken struct {
-	Id    string `json:"id"`
-	Value string `json:"value"`
-}
-
 type TempProjectTokens struct {
-	Cloudflare *HighPermsCloudflareTokens `json:"cloudflare,omitempty"`
+	Cloudflare *cloudflareprovider.HighPermsCloudflareTokens `json:"cloudflare,omitempty"`
 }
 
 func (p *Project) TempProjectTokens(ctx *core.Context) (tokens TempProjectTokens, _ error) {
@@ -26,7 +19,7 @@ func (p *Project) TempProjectTokens(ctx *core.Context) (tokens TempProjectTokens
 
 func (p *Project) TempProjectTokensNoLock(ctx *core.Context) (TempProjectTokens, error) {
 	if p.cloudflare != nil {
-		upToDateCloudflareTokens, err := p.cloudflare.getUpToDateTempTokens(ctx)
+		upToDateCloudflareTokens, err := p.cloudflare.GetUpToDateTempTokens(ctx)
 		if err != nil {
 			return TempProjectTokens{}, err
 		}
@@ -39,13 +32,4 @@ func (p *Project) TempProjectTokensNoLock(ctx *core.Context) (TempProjectTokens,
 	}
 
 	return TempProjectTokens{}, nil
-}
-
-func ConvertR2TokenToS3Credentials(tokenId string, tokenValue string) (accessKey, secretKey string) {
-	// https://github.com/cloudflare/cloudflare-go/issues/981#issuecomment-1484963748
-	accessKey = tokenId
-	secretKeyBytes := sha256.Sum256([]byte(tokenValue))
-	secretKey = hex.EncodeToString(secretKeyBytes[:])
-
-	return
 }

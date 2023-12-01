@@ -1,7 +1,9 @@
 package project
 
 import (
+	"context"
 	"os"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -9,12 +11,20 @@ import (
 	cloudflare "github.com/cloudflare/cloudflare-go"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
+	"github.com/inoxlang/inox/internal/globals/s3_ns"
+	"github.com/inoxlang/inox/internal/project/cloudflareprovider"
 	"github.com/stretchr/testify/assert"
 )
 
 var (
 	CLOUDFLARE_ACCOUNT_ID                  = os.Getenv("CLOUDFLARE_ACCOUNT_ID")
 	CLOUDFLARE_ADDITIONAL_TOKENS_API_TOKEN = os.Getenv("CLOUDFLARE_ADDITIONAL_TOKENS_API_TOKEN")
+
+	objectStorageLimit = core.Limit{
+		Name:  s3_ns.OBJECT_STORAGE_REQUEST_RATE_LIMIT_NAME,
+		Kind:  core.SimpleRateLimit,
+		Value: 100,
+	}
 )
 
 func TestUpsertListSecrets(t *testing.T) {
@@ -46,7 +56,7 @@ func TestUpsertListSecrets(t *testing.T) {
 		project, err := registry.OpenProject(ctx, OpenProjectParams{
 			Id: id,
 			DevSideConfig: DevSideProjectConfig{
-				Cloudflare: &DevSideCloudflareConfig{
+				Cloudflare: &cloudflareprovider.DevSideConfig{
 					AdditionalTokensApiToken: CLOUDFLARE_ADDITIONAL_TOKENS_API_TOKEN,
 					AccountID:                CLOUDFLARE_ACCOUNT_ID,
 				},
@@ -110,7 +120,7 @@ func TestUpsertListSecrets(t *testing.T) {
 		project, err := registry.OpenProject(ctx, OpenProjectParams{
 			Id: id,
 			DevSideConfig: DevSideProjectConfig{
-				Cloudflare: &DevSideCloudflareConfig{
+				Cloudflare: &cloudflareprovider.DevSideConfig{
 					AdditionalTokensApiToken: CLOUDFLARE_ADDITIONAL_TOKENS_API_TOKEN,
 					AccountID:                CLOUDFLARE_ACCOUNT_ID,
 				},
@@ -178,7 +188,7 @@ func TestUpsertListSecrets(t *testing.T) {
 		project, err := registry.OpenProject(ctx, OpenProjectParams{
 			Id: id,
 			DevSideConfig: DevSideProjectConfig{
-				Cloudflare: &DevSideCloudflareConfig{
+				Cloudflare: &cloudflareprovider.DevSideConfig{
 					AdditionalTokensApiToken: CLOUDFLARE_ADDITIONAL_TOKENS_API_TOKEN,
 					AccountID:                CLOUDFLARE_ACCOUNT_ID,
 				},
@@ -257,7 +267,7 @@ func TestUpsertListSecrets(t *testing.T) {
 		project, err := registry.OpenProject(ctx, OpenProjectParams{
 			Id: id,
 			DevSideConfig: DevSideProjectConfig{
-				Cloudflare: &DevSideCloudflareConfig{
+				Cloudflare: &cloudflareprovider.DevSideConfig{
 					AdditionalTokensApiToken: CLOUDFLARE_ADDITIONAL_TOKENS_API_TOKEN,
 					AccountID:                CLOUDFLARE_ACCOUNT_ID,
 				},
@@ -349,7 +359,7 @@ func TestUpsertListSecrets(t *testing.T) {
 		project, err := registry.OpenProject(ctx, OpenProjectParams{
 			Id: id,
 			DevSideConfig: DevSideProjectConfig{
-				Cloudflare: &DevSideCloudflareConfig{
+				Cloudflare: &cloudflareprovider.DevSideConfig{
 					AdditionalTokensApiToken: CLOUDFLARE_ADDITIONAL_TOKENS_API_TOKEN,
 					AccountID:                CLOUDFLARE_ACCOUNT_ID,
 				},
@@ -414,4 +424,21 @@ func TestUpsertListSecrets(t *testing.T) {
 		wg.Wait()
 	})
 
+}
+
+func deleteTestRelatedTokens(t *testing.T, ctx context.Context, api *cloudflare.API, projectId core.ProjectID) {
+	apiTokens, err := api.APITokens(ctx)
+	if err != nil {
+		assert.Fail(t, err.Error())
+		return
+	}
+
+	for _, token := range apiTokens {
+		if strings.Contains(token.Name, string(projectId)) {
+			err := api.DeleteAPIToken(ctx, token.ID)
+			if err != nil {
+				t.Log(err)
+			}
+		}
+	}
 }

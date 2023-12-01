@@ -1,7 +1,9 @@
-package project
+package cloudflareprovider
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"strings"
@@ -24,6 +26,11 @@ var (
 	ErrNoR2Token = errors.New("no R2 token")
 )
 
+type DevSideConfig struct {
+	AdditionalTokensApiToken string `json:"additional-tokens-api-token"`
+	AccountID                string `json:"account-id"`
+}
+
 // TODO: explanaton
 type Cloudflare struct {
 	lock            sync.Mutex
@@ -43,13 +50,13 @@ type Cloudflare struct {
 
 	//const
 	projectId core.ProjectID
-	config    *DevSideCloudflareConfig
+	config    *DevSideConfig
 	accountId *cloudflare.ResourceContainer
 
 	//note: cloudflare.API.UserDetails().Account[0].ID is zero
 }
 
-func newCloudflare(projectId core.ProjectID, config *DevSideCloudflareConfig) (*Cloudflare, error) {
+func New(projectId core.ProjectID, config *DevSideConfig) (*Cloudflare, error) {
 	if config == nil {
 		panic(errors.New("cloudflare config should not be nil"))
 	}
@@ -285,6 +292,18 @@ type singleR2BucketCredentials struct {
 	accessKey, secretKey string
 }
 
+func (creds singleR2BucketCredentials) AccessKey() string {
+	return creds.accessKey
+}
+
+func (creds singleR2BucketCredentials) SecretKey() string {
+	return creds.secretKey
+}
+
+func (creds singleR2BucketCredentials) S3Endpoint() core.Host {
+	return creds.s3Endpoint
+}
+
 // GetCreateS3CredentialsForSingleBucket creates the bucket bucketName if it does not exist & returns credentials to access the
 // bucket.
 func (c *Cloudflare) GetCreateS3CredentialsForSingleBucket(
@@ -362,4 +381,13 @@ func getHighPermsR2TokenName(projectId core.ProjectID) string {
 
 func getSingleBucketR2TokenName(bucketName string, projectId core.ProjectID) string {
 	return "R2-" + bucketName + "-" + string(projectId)
+}
+
+func ConvertR2TokenToS3Credentials(tokenId string, tokenValue string) (accessKey, secretKey string) {
+	// https://github.com/cloudflare/cloudflare-go/issues/981#issuecomment-1484963748
+	accessKey = tokenId
+	secretKeyBytes := sha256.Sum256([]byte(tokenValue))
+	secretKey = hex.EncodeToString(secretKeyBytes[:])
+
+	return
 }

@@ -1,4 +1,4 @@
-package project
+package cloudflareprovider
 
 import (
 	"context"
@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	cloudflareConfig = DevSideCloudflareConfig{
+	cloudflareConfig = DevSideConfig{
 		AdditionalTokensApiToken: os.Getenv("CLOUDFLARE_ADDITIONAL_TOKENS_API_TOKEN"),
 		AccountID:                os.Getenv("CLOUDFLARE_ACCOUNT_ID"),
 	}
@@ -28,7 +28,7 @@ func TestGetUpToDateTempCloudflareTokens(t *testing.T) {
 
 	ctx := context.Background()
 
-	cf, err := newCloudflare(projectId, &cloudflareConfig)
+	cf, err := New(projectId, &cloudflareConfig)
 	if !assert.NoError(t, err) {
 		return
 	}
@@ -46,7 +46,7 @@ func TestGetUpToDateTempCloudflareTokens(t *testing.T) {
 
 	tokenCountBeforeTest := len(apiTokens)
 
-	prevTokens, err := cf.getUpToDateTempTokens(ctx)
+	prevTokens, err := cf.GetUpToDateTempTokens(ctx)
 
 	if !assert.NoError(t, err) {
 		return
@@ -65,7 +65,7 @@ func TestGetUpToDateTempCloudflareTokens(t *testing.T) {
 	}
 
 	//if the R2 API token is already present no tokens should be created
-	upToToDateTokens, err := cf.getUpToDateTempTokens(ctx)
+	upToToDateTokens, err := cf.GetUpToDateTempTokens(ctx)
 	r2Token := upToToDateTokens.R2Token
 
 	if !assert.NoError(t, err) {
@@ -87,7 +87,7 @@ func TestGetUpToDateTempCloudflareTokens(t *testing.T) {
 	cf.forgetHighPermsTokens(ctx)
 
 	//if the R2 API token is not present but the token already exists it should be updated
-	upToToDateTokens, err = cf.getUpToDateTempTokens(ctx)
+	upToToDateTokens, err = cf.GetUpToDateTempTokens(ctx)
 	r2Token = upToToDateTokens.R2Token
 
 	if !assert.NoError(t, err) {

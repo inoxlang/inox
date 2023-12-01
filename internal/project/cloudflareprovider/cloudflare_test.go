@@ -1,4 +1,4 @@
-package project
+package cloudflareprovider
 
 import (
 	"strings"
@@ -31,7 +31,7 @@ func TestCreateS3CredentialsForSingleBucket(t *testing.T) {
 	}, nil)
 	defer ctx.CancelGracefully()
 
-	cf, err := newCloudflare(projectId, &cloudflareConfig)
+	cf, err := New(projectId, &cloudflareConfig)
 	if !assert.NoError(t, err) {
 		return
 	}
@@ -41,7 +41,7 @@ func TestCreateS3CredentialsForSingleBucket(t *testing.T) {
 		return
 	}
 
-	tokens, err := cf.getUpToDateTempTokens(ctx)
+	tokens, err := cf.GetUpToDateTempTokens(ctx)
 	if !assert.NoError(t, err) {
 		return
 	}

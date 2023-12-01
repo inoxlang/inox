@@ -10,6 +10,7 @@ import (
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/inoxconsts"
+	"github.com/inoxlang/inox/internal/project/cloudflareprovider"
 
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/globals/s3_ns"
@@ -55,7 +56,7 @@ type Project struct {
 
 	//providers
 
-	cloudflare     *Cloudflare //can be nil
+	cloudflare     *cloudflareprovider.Cloudflare //can be nil
 	creationParams CreateProjectParams
 }
 
@@ -141,12 +142,7 @@ type OpenProjectParams struct {
 }
 
 type DevSideProjectConfig struct {
-	Cloudflare *DevSideCloudflareConfig `json:"cloudflare,omitempty"`
-}
-
-type DevSideCloudflareConfig struct {
-	AdditionalTokensApiToken string `json:"additional-tokens-api-token"`
-	AccountID                string `json:"account-id"`
+	Cloudflare *cloudflareprovider.DevSideConfig `json:"cloudflare,omitempty"`
 }
 
 // NewDummyProject creates a project without any providers or tokens,
@@ -201,7 +197,7 @@ func (r *Registry) OpenProject(ctx *core.Context, params OpenProjectParams) (*Pr
 	}
 
 	if params.DevSideConfig.Cloudflare != nil {
-		cf, err := newCloudflare(project.id, params.DevSideConfig.Cloudflare)
+		cf, err := cloudflareprovider.New(project.id, params.DevSideConfig.Cloudflare)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create clouflare helper: %w", err)
 		}
@@ -237,11 +233,11 @@ func (p *Project) GetS3CredentialsForBucket(
 
 	creds, err := p.cloudflare.GetCreateS3CredentialsForSingleBucket(ctx, bucketName, p.Id())
 	if err != nil {
-		return "", "", "", fmt.Errorf("%w: %w", ErrNoR2Token, err)
+		return "", "", "", fmt.Errorf("%w: %w", cloudflareprovider.ErrNoR2Token, err)
 	}
-	accessKey = creds.accessKey
-	secretKey = creds.secretKey
-	s3Endpoint = creds.s3Endpoint
+	accessKey = creds.AccessKey()
+	secretKey = creds.SecretKey()
+	s3Endpoint = creds.S3Endpoint()
 	return
 }
 
