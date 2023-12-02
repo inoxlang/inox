@@ -39,8 +39,11 @@ type InoxUnitParams struct {
 	UID               int
 	Log               io.Writer
 
-	InoxCloud              bool
-	EnvFilePath            string //optional
+	InoxCloud   bool
+	EnvFilePath string //optional
+	ProjectsDir string
+	ProdDir     string //optional
+
 	ExposeProjectServers   bool
 	ExposeWebServers       bool
 	TunnelProviderName     string //optional
@@ -110,6 +113,8 @@ func WriteInoxUnitFile(args InoxUnitParams) (unitName string, _ error) {
 			BehindCloudProxy:       args.InoxCloud,
 			BindToAllInterfaces:    args.ExposeProjectServers,
 			AllowBrowserAutomation: args.AllowBrowserAutomation,
+			ProjectsDir:            args.ProjectsDir,
+			ProdDir:                args.ProdDir,
 		},
 		ExposeWebServers: args.ExposeProjectServers,
 		TunnelProvider:   args.TunnelProviderName,

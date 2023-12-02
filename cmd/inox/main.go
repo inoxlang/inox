@@ -436,7 +436,11 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 			Homedir:  homedir,
 			UID:      uid,
 
-			InoxCloud:              inoxCloud,
+			ProjectsDir: inoxdconsts.PROJECTS_DIR,
+			ProdDir:     inoxdconsts.PROD_DIR,
+
+			InoxCloud: inoxCloud,
+
 			EnvFilePath:            envFilePath,
 			TunnelProviderName:     tunnelProvider,
 			ExposeProjectServers:   exposeProjectServers,
@@ -457,11 +461,16 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 			utils.PrintSmallLineSeparator(outW)
 		}
 
-		//create a directory to store data
-		fmt.Fprintf(outW, "create directory %s and change its owner to %q\n", inoxdconsts.DATA_DIR, username)
-		os.MkdirAll(inoxdconsts.DATA_DIR, 0700)
-		os.Chown(inoxdconsts.DATA_DIR, uid, -1)
-		utils.PrintSmallLineSeparator(outW)
+		mkDir := func(dir string) {
+			fmt.Fprintf(outW, "create directory %s and change its owner to %q\n", dir, username)
+			os.MkdirAll(dir, 0700)
+			os.Chown(dir, uid, -1)
+			utils.PrintSmallLineSeparator(outW)
+		}
+
+		mkDir(inoxdconsts.DATA_DIR)
+		mkDir(inoxdconsts.PROJECTS_DIR)
+		mkDir(inoxdconsts.PROD_DIR)
 
 		//enable & start inoxd
 		if !alreadyExists {
