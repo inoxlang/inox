@@ -4,13 +4,13 @@ import (
 	"errors"
 
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/globals/chrome_ns"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/shoenig/go-landlock"
 )
 
 type ProcessRestrictionConfig struct {
 	AllowBrowserAccess bool
+	BrowserBinPath     string
 	ForceAllowDNS      bool
 }
 
@@ -31,9 +31,9 @@ func RestrictProcessAccess(ctx *core.Context, config ProcessRestrictionConfig) {
 
 	var additionalPaths []*landlock.Path
 
-	if config.AllowBrowserAccess && chrome_ns.BROWSER_BINPATH != "" {
+	if config.AllowBrowserAccess && config.BrowserBinPath != "" {
 		additionalPaths = append(additionalPaths, landlock.File(
-			chrome_ns.BROWSER_BINPATH,
+			config.BrowserBinPath,
 			"rx",
 		))
 	}

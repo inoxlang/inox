@@ -266,7 +266,10 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 			TestFilters:           testFilters,
 
 			OnPrepared: func(state *core.GlobalState) error {
-				inoxprocess.RestrictProcessAccess(state.Ctx, inoxprocess.ProcessRestrictionConfig{AllowBrowserAccess: true})
+				inoxprocess.RestrictProcessAccess(state.Ctx, inoxprocess.ProcessRestrictionConfig{
+					AllowBrowserAccess: true,
+					BrowserBinPath:     chrome_ns.BROWSER_BINPATH,
+				})
 				return nil
 			},
 		})
@@ -773,7 +776,10 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 		state.OutputFieldsInitialized.Store(true)
 
 		//restrict filesystem access at the process level.
-		inoxprocess.RestrictProcessAccess(ctx, inoxprocess.ProcessRestrictionConfig{AllowBrowserAccess: true})
+		inoxprocess.RestrictProcessAccess(ctx, inoxprocess.ProcessRestrictionConfig{
+			AllowBrowserAccess: true,
+			BrowserBinPath:     chrome_ns.BROWSER_BINPATH,
+		})
 
 		//configure server
 
@@ -996,7 +1002,10 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 		state.Logger = zerolog.New(state.Out)
 		state.OutputFieldsInitialized.Store(true)
 
-		inoxprocess.RestrictProcessAccess(ctx, inoxprocess.ProcessRestrictionConfig{AllowBrowserAccess: true})
+		inoxprocess.RestrictProcessAccess(ctx, inoxprocess.ProcessRestrictionConfig{
+			AllowBrowserAccess: true,
+			BrowserBinPath:     chrome_ns.BROWSER_BINPATH,
+		})
 
 		client, err := inoxprocess.ConnectToProcessControlServer(ctx, u, token)
 		if err != nil {
@@ -1043,7 +1052,10 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 			return
 		}
 
-		inoxprocess.RestrictProcessAccess(state.Ctx, inoxprocess.ProcessRestrictionConfig{AllowBrowserAccess: true})
+		inoxprocess.RestrictProcessAccess(state.Ctx, inoxprocess.ProcessRestrictionConfig{
+			AllowBrowserAccess: true,
+			BrowserBinPath:     chrome_ns.BROWSER_BINPATH,
+		})
 
 		//start the shell
 
