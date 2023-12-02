@@ -10,6 +10,7 @@ import (
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core"
 	pprint "github.com/inoxlang/inox/internal/prettyprint"
+	"github.com/inoxlang/inox/internal/project"
 	"github.com/inoxlang/inox/internal/project_server/jsonrpc"
 	"github.com/inoxlang/inox/internal/project_server/logs"
 	"github.com/inoxlang/inox/internal/project_server/lsp"
@@ -40,6 +41,7 @@ type LSPServerConfiguration struct {
 
 	ProjectMode           bool
 	ProjectsDir           core.Path
+	ProdDir               core.Path //if empty deployment in producation is not allowed
 	ProjectsDirFilesystem afs.Filesystem
 
 	OnSession jsonrpc.SessionCreationCallbackFn
@@ -75,6 +77,8 @@ func StartLSPServer(ctx *core.Context, serverConfig LSPServerConfiguration) (fin
 			logs.Println(e, "at", string(debug.Stack()))
 		}
 	}()
+
+	//configure the LSP server
 
 	options := &lsp.Config{
 		OnSession: serverConfig.OnSession,
@@ -114,8 +118,24 @@ func StartLSPServer(ctx *core.Context, serverConfig LSPServerConfiguration) (fin
 		options.MessageReaderWriter = serverConfig.MessageReaderWriter
 	}
 
+	if serverConfig.ProdDir != "" {
+		ctx.Logger().Debug().Msgf("prod dir is %s", serverConfig.ProdDir)
+	}
+
+	//open the project registry
+
+	projDir := string(serverConfig.ProjectsDir)
+	ctx.Logger().Debug().Msgf("open project registry at %s", projDir)
+	projectRegistry, err := project.OpenRegistry(projDir, serverConfig.ProjectsDirFilesystem, ctx)
+
+	if err != nil {
+		return err
+	}
+
+	//create and start the LSP server
+
 	server := lsp.NewServer(ctx, options)
-	registerHandlers(server, serverConfig)
+	registerHandlers(server, serverConfig, projectRegistry)
 
 	logs.Println("LSP server configured, start listening")
 	return server.Run()

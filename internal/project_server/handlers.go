@@ -97,12 +97,12 @@ func getSessionData(session *jsonrpc.Session) *additionalSessionData {
 	return sessionData
 }
 
-func registerHandlers(server *lsp.Server, serverConfig LSPServerConfiguration) {
+func registerHandlers(server *lsp.Server, serverConfig LSPServerConfiguration, projectRegistry *project.Registry) {
 	projectMode := serverConfig.ProjectMode
 
 	if projectMode {
 		registerFilesystemMethodHandlers(server)
-		registerProjectMethodHandlers(server, serverConfig)
+		registerProjectMethodHandlers(server, serverConfig, projectRegistry)
 		registerSecretsMethodHandlers(server, serverConfig)
 		registerDebugMethodHandlers(server, serverConfig)
 		registerLearningMethodHandlers(server)

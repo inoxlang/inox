@@ -673,6 +673,11 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 			projectsDir = filepath.Join(config.USER_HOME, "inox-projects") + "/"
 		}
 
+		var prodDir core.Path
+		if projectServerConfig.ProdDir != "" {
+			prodDir = core.DirPathFrom(projectServerConfig.ProdDir)
+		}
+
 		websocketAddr := ""
 
 		if projectServerConfig.BindToAllInterfaces {
@@ -778,9 +783,11 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 				MaxWebsocketPerIp: projectServerConfig.MaxWebSocketPerIp,
 				BehindCloudProxy:  projectServerConfig.BehindCloudProxy,
 			},
-			UseContextLogger:      true,
-			ProjectMode:           true,
-			ProjectsDir:           core.DirPathFrom(projectsDir),
+			UseContextLogger: true,
+			ProjectMode:      true,
+			ProjectsDir:      core.DirPathFrom(projectsDir),
+			ProdDir:          prodDir,
+
 			ProjectsDirFilesystem: ctx.GetFileSystem(),
 			OnSession: func(rpcCtx *core.Context, s *jsonrpc.Session) error {
 				sessionCtx := core.NewContext(core.ContextConfig{
