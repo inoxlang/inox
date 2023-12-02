@@ -22,7 +22,7 @@ func TestControlServer(t *testing.T) {
 			core.WebsocketPermission{Kind_: permkind.Provide},
 		},
 		Filesystem: fs_ns.NewMemFilesystem(10_000),
-	}, nil)
+	}, /*os.Stdout*/ nil)
 
 	defer ctx.CancelGracefully()
 

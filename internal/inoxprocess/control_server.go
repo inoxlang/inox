@@ -230,14 +230,7 @@ func (s *ControlServer) CreateControlledProcess(grantedPerms, forbiddenPerms []c
 
 	s.addControlledProcess(process)
 
-	//start the command
-
-	if err := cmd.Start(); err != nil {
-		s.removeControlledProcess(process)
-		return nil, fmt.Errorf("failed to start controller process: %w", err)
-	}
-
-	//log stdout & stderr
+	//connect stdout & stderr to the logger
 	logger := s.logger.With().Str("controlled process", process.id).Logger()
 
 	go func() {
@@ -249,6 +242,13 @@ func (s *ControlServer) CreateControlledProcess(grantedPerms, forbiddenPerms []c
 		defer utils.Recover()
 		io.Copy(logger, stdout)
 	}()
+
+	//start the command
+
+	if err := cmd.Start(); err != nil {
+		s.removeControlledProcess(process)
+		return nil, fmt.Errorf("failed to start controller process: %w", err)
+	}
 
 	//wait for the process to connect to the server
 	t := time.NewTimer(MAX_CONTROLLED_PROCESS_CONNECTION_WAITING_TIME)

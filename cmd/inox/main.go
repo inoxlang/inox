@@ -988,6 +988,8 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions:          grantedPerms,
 			ForbiddenPermissions: forbiddenPerms,
+			Filesystem:           fs_ns.GetOsFilesystem(),
+			Limits:               core.GetDefaultScriptLimits(),
 		})
 		state := core.NewGlobalState(ctx)
 		state.Out = os.Stdout
