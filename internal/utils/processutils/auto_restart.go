@@ -38,7 +38,7 @@ type AutoRestartArgs struct {
 	//duration of the pause following a burst of failed starts, defaults to DEFAULT_POST_START_BURST_PAUSE_DURATION.
 	PostStartBurstPauseDuration time.Duration
 
-	//optional
+	//optional, the value is set to true when the autorestart is paused
 	PostStartBurstPause *atomic.Bool
 }
 
