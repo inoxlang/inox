@@ -505,8 +505,8 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 		flags.BoolVar(&removeInoxdUser, "remove-inoxd-user", false, " remove the inoxd user, the homedir is not removed")
 		flags.BoolVar(&removeInoxdHomedir, "remove-inoxd-homedir", false, "if --remove-inoxd-user is present the homedir is also removed")
 		flags.BoolVar(&removeEnvFile, "remove-env-file", false, "remove the environment file specified in the unit file")
-		flags.BoolVar(&removeDataDir, "remove-data-dir", false, "remove the data directory ("+inoxdconsts.DATA_DIR+")")
-		flags.BoolVar(&removeAll, "dangerously-remove-all", false, "enable all --remove-xxx flags")
+		flags.BoolVar(&removeDataDir, "dangerously-remove-data-dir", false, "DANGER: remove the data directory "+inoxdconsts.DATA_DIR+", it contains projects and production data")
+		flags.BoolVar(&removeAll, "dangerously-remove-all", false, "DANGER: enable all --remove-xxx flags and --dangerously-remove-data-dir")
 
 		if showHelp(flags, mainSubCommandArgs, outW) { //only show help
 			return
