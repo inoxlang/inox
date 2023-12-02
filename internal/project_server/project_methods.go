@@ -35,14 +35,7 @@ type OpenProjectResponse struct {
 	project.TempProjectTokens `json:"tempTokens"`
 }
 
-func registerProjectMethodHandlers(server *lsp.Server, opts LSPServerConfiguration) {
-	projDir := string(opts.ProjectsDir)
-	projectRegistry, err := project.OpenRegistry(projDir, opts.ProjectsDirFilesystem, server.Context())
-
-	if err != nil {
-		panic(err)
-	}
-
+func registerProjectMethodHandlers(server *lsp.Server, opts LSPServerConfiguration, projectRegistry *project.Registry) {
 	server.OnCustom(jsonrpc.MethodInfo{
 		Name:          CREATE_PROJECT_METHOD,
 		SensitiveData: true,
