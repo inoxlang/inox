@@ -17,6 +17,7 @@ import (
 	"github.com/inoxlang/inox/internal/globalnames"
 	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/project"
+	"github.com/inoxlang/inox/internal/project/cloudflareprovider"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/rs/zerolog"
 
@@ -1403,7 +1404,7 @@ func TestPrepareLocalScript(t *testing.T) {
 			p, err := registry.OpenProject(tempCtx, project.OpenProjectParams{
 				Id: id,
 				DevSideConfig: project.DevSideProjectConfig{
-					Cloudflare: &project.DevSideCloudflareConfig{
+					Cloudflare: &cloudflareprovider.DevSideConfig{
 						AdditionalTokensApiToken: CLOUDFLARE_ADDITIONAL_TOKENS_API_TOKEN,
 						AccountID:                CLOUDFLARE_ACCOUNT_ID,
 					},
@@ -1531,7 +1532,7 @@ func TestPrepareLocalScript(t *testing.T) {
 			p, err := registry.OpenProject(tempCtx, project.OpenProjectParams{
 				Id: id,
 				DevSideConfig: project.DevSideProjectConfig{
-					Cloudflare: &project.DevSideCloudflareConfig{
+					Cloudflare: &cloudflareprovider.DevSideConfig{
 						AdditionalTokensApiToken: CLOUDFLARE_ADDITIONAL_TOKENS_API_TOKEN,
 						AccountID:                CLOUDFLARE_ACCOUNT_ID,
 					},
