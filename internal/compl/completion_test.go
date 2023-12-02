@@ -205,7 +205,7 @@ func TestFindCompletions(t *testing.T) {
 						}
 						
 						import test ./test.ix {}
-						t
+						te
 					`, "")
 
 					idents := parse.FindNodes(chunk.Node, (*parse.IdentifierLiteral)(nil), nil)
@@ -983,7 +983,7 @@ func TestFindCompletions(t *testing.T) {
 
 				t.Run("in top level module", func(t *testing.T) {
 					state := newState()
-					chunk, _ := parseChunkSource("u", "")
+					chunk, _ := parseChunkSource("t", "")
 
 					doSymbolicCheck(chunk, state.Global)
 					completions := findCompletions(state, chunk, 1)
@@ -994,7 +994,7 @@ func TestFindCompletions(t *testing.T) {
 
 				t.Run("in call", func(t *testing.T) {
 					state := newState()
-					chunk, _ := parseChunkSource("f(u)", "")
+					chunk, _ := parseChunkSource("f(t)", "")
 
 					doSymbolicCheck(chunk, state.Global)
 					completions := findCompletions(state, chunk, 3)
