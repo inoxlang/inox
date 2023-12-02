@@ -1,6 +1,7 @@
 package inoxprocess
 
 import (
+	"context"
 	"crypto/tls"
 	"encoding/json"
 	"errors"
@@ -9,25 +10,35 @@ import (
 	"net/http"
 	"net/url"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/net_ns"
+	"github.com/inoxlang/inox/internal/inoxd/cloud/cloudproxy/inoxdconn"
 	"github.com/inoxlang/inox/internal/utils"
+	"github.com/oklog/ulid/v2"
 )
 
 const (
 	HEARTBEAT_INTERVAL = 100 * time.Millisecond
 )
 
+var (
+	ErrControlLoopEnd = errors.New("control loop end")
+)
+
 type ControlClient struct {
+	lock sync.Mutex
+
 	conn             *net_ns.WebsocketConnection
 	ctx              *core.Context
 	token            ControlledProcessToken
 	controlServerURL core.URL
 
-	lock sync.Mutex
+	executionContext context.Context
+	executing        atomic.Bool
 }
 
 func ConnectToProcessControlServer(ctx *core.Context, u *url.URL, token ControlledProcessToken) (*ControlClient, error) {
@@ -88,29 +99,34 @@ func (c *ControlClient) connect() error {
 	return nil
 }
 
-func (c *ControlClient) StartControl() {
+func (c *ControlClient) StartControl() error {
 	defer func() { //teardown
 		if conn := c.Conn(); conn != nil {
 			conn.Close()
 		}
 	}()
 
+	hearbeatCtx := c.ctx.BoundChild()
+	defer hearbeatCtx.CancelGracefully()
+
+	//send hearbeats
 	go func() {
-		ctx := c.ctx.BoundChild()
+		defer utils.Recover()
+
 		ticker := time.NewTicker(HEARTBEAT_INTERVAL)
 		defer ticker.Stop()
 
 		for t := range ticker.C {
 
 			select {
-			case <-ctx.Done():
+			case <-hearbeatCtx.Done():
 				return
 			default:
 			}
 
 			conn := c.Conn()
 
-			if conn.IsClosedOrClosing() {
+			if conn == nil || conn.IsClosedOrClosing() {
 				time.Sleep(10 * time.Millisecond)
 				continue
 			}
@@ -124,49 +140,127 @@ func (c *ControlClient) StartControl() {
 				continue
 			}
 
-			logger := ctx.Logger()
+			logger := hearbeatCtx.Logger()
 			logger.Print("send hearbeat to control server ", t)
-			err = conn.WriteMessage(ctx, websocket.PingMessage, data)
+			err = conn.WriteMessage(hearbeatCtx, websocket.PingMessage, data)
 			if err != nil {
 				logger.Err(err).Send()
 			}
 		}
 	}()
 
+	//handle messages from the control server
 	for {
-		conn := c.Conn()
-		if conn.IsClosedOrClosing() {
-			return
-		}
-
 		select {
 		case <-c.ctx.Done():
-			return
-		default:
-			msgType, p, err := conn.ReadMessage(c.ctx)
-			isEof := errors.Is(err, io.EOF)
-			isWebsocketUnexpectedClose := websocket.IsUnexpectedCloseError(err)
-			isClosedWebsocket := errors.Is(err, net_ns.ErrClosingOrClosedWebsocketConn)
-			isNetReaderr := utils.Implements[*net.OpError](err) && err.(*net.OpError).Op == "read"
-
-			if isEof || isWebsocketUnexpectedClose || isClosedWebsocket || isNetReaderr {
-				c.connect()
-				continue
+			if c.conn != nil {
+				c.conn.Close()
 			}
+			return c.ctx.Err()
+		default:
+		}
 
-			c.handleMessage(msgType, p, err)
+		conn := c.Conn()
+		if conn == nil || conn.IsClosedOrClosing() {
+			time.Sleep(10 * time.Millisecond)
+			continue
+		}
+
+		msgType, p, err := conn.ReadMessage(c.ctx)
+		isEof := errors.Is(err, io.EOF)
+		isWebsocketUnexpectedClose := websocket.IsUnexpectedCloseError(err)
+		isClosedWebsocket := errors.Is(err, net_ns.ErrClosingOrClosedWebsocketConn)
+		isNetReaderr := utils.Implements[*net.OpError](err) && err.(*net.OpError).Op == "read"
+
+		if isEof || isWebsocketUnexpectedClose || isClosedWebsocket || isNetReaderr {
+			c.connect()
+			continue
+		}
+
+		resp, sendResp, endLoop := c.handleMessage(msgType, p, err)
+		if sendResp {
+			msg := Message{
+				ULID:  ulid.Make(),
+				Inner: resp,
+			}
+			conn.WriteMessage(c.ctx, net_ns.WebsocketBinaryMessage, MustEncodeMessage(msg))
+		}
+		if endLoop {
+			return ErrControlLoopEnd
 		}
 	}
 }
 
-func (c *ControlClient) handleMessage(messageType net_ns.WebsocketMessageType, p []byte, err error) {
+func (c *ControlClient) handleMessage(messageType net_ns.WebsocketMessageType, p []byte, err error) (response any, sendResp bool, endLoop bool) {
+	//TODO: log errors
+
 	switch messageType {
 	case net_ns.WebsocketBinaryMessage:
+		if err != nil {
+			return
+		}
+
+		var msg Message
+		if err := DecodeMessage(p, &msg); err != nil {
+			return
+		}
+
+		if err = c.sendAck(msg.ULID); err != nil {
+			return
+		}
+
+		switch m := msg.Inner.(type) {
+		case LaunchApplicationRequest:
+			if c.executing.Load() {
+				response = LaunchAppResponse{
+					Request: msg.ULID,
+					Error:   ErrAlreadyExecuting,
+				}
+				sendResp = true
+				endLoop = true
+				return
+			}
+			go c.executeApplication(m.AppDir)
+		case StopAllRequest:
+			if !c.executing.Load() {
+				response = StopAllResponse{
+					AlreadyStopped: true,
+				}
+				sendResp = true
+				endLoop = true
+				return
+			}
+			//TODO
+		}
+
 	case net_ns.WebsocketTextMessage:
 	case net_ns.WebsocketPingMessage:
 		c.conn.WriteMessage(c.ctx, net_ns.WebsocketPongMessage, nil)
 	case net_ns.WebsocketPongMessage:
 	}
+
+	return
+}
+
+func (c *ControlClient) sendAck(msgULID ulid.ULID) error {
+	//send Ack message to control server
+	ack := inoxdconn.Message{
+		ULID:  ulid.Make(),
+		Inner: AckMsg{AcknowledgedMessage: msgULID},
+	}
+
+	err := c.conn.WriteMessage(c.ctx, net_ns.WebsocketBinaryMessage, inoxdconn.MustEncodeMessage(ack))
+	if err != nil {
+		//TODO: log errors
+		return err
+	}
+	return nil
+}
+
+func (c *ControlClient) executeApplication(appDir string) {
+	defer utils.Recover()
+
+	//TODO
 }
 
 type heartbeat struct {

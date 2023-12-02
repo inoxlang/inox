@@ -223,6 +223,7 @@ func (s *ControlServer) CreateControlledProcess(grantedPerms, forbiddenPerms []c
 
 	process := &ControlledProcess{
 		cmd:       cmd,
+		logger:    s.logger.With().Int("pid", cmd.Process.Pid).Logger(),
 		token:     token,
 		id:        ulid.Make().String(),
 		connected: make(chan struct{}, 1),
