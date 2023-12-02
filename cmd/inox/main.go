@@ -115,31 +115,19 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 	}
 
 	//abort execution if the command is not allowed to be runned as root.
-	if mainSubCommand != "add-service" && mainSubCommand != "remove-service" && mainSubCommand != "help" &&
+	if mainSubCommand != ADD_SERVICE_SUBCMD && mainSubCommand != REMOVE_SERVICE_SUBCMD && mainSubCommand != "help" &&
 		mainSubCommand != "--help" && mainSubCommand != "-h" &&
 		!checkNotRunningAsRoot(errW) {
 		return ERROR_STATUS_CODE
 	}
 
-	//create a temp directory for the process.
-	processTempDir := fs_ns.GetCreateProcessTempDir()
-	defer func() {
-		fs_ns.GetOsFilesystem().RemoveAll(processTempDir.UnderlyingString())
-	}()
-
-	processTempDirPrefix := core.AppendTrailingSlashIfNotPresent(core.PathPattern(processTempDir)) + "..."
-
-	processTempDirPerms := []core.Permission{
-		core.FilesystemPermission{Kind_: permkind.Read, Entity: processTempDirPrefix},
-		core.FilesystemPermission{Kind_: permkind.Write, Entity: processTempDirPrefix},
-		core.FilesystemPermission{Kind_: permkind.Delete, Entity: processTempDirPrefix},
-	}
+	//TODO: better handle signals so that deferred temp dir removals are executed.
 
 	switch mainSubCommand {
-	case "help", "--help", "-h":
+	case HELP_SUBCMD, "--help", "-h":
 		fmt.Fprint(outW, INOX_CMD_HELP)
 		return
-	case "install-completions":
+	case INSTALL_COMPLETIONS_SUBCMD:
 		err := install.Install(COMMAND_NAME)
 		if err != nil {
 			fmt.Fprintln(errW, err)
@@ -147,7 +135,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 			fmt.Fprintln(outW, "installed")
 		}
 		return
-	case "uninstall-completions":
+	case UNINSTALL_COMPLETIONS_SUBCMD:
 		err := install.Uninstall(COMMAND_NAME)
 		if err != nil {
 			fmt.Fprintln(errW, err)
@@ -155,7 +143,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 			fmt.Fprintln(outW, "uninstalled")
 		}
 		return
-	case "run":
+	case RUN_SUBCMD:
 		//read and check arguments
 
 		flags := flag.NewFlagSet(mainSubCommand, flag.ExitOnError)
@@ -215,6 +203,10 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 			fullyTrusted = true
 			enableTestingMode = true
 		}
+
+		//create a temporary directory for the whole process
+		_, processTempDirPerms, removeTempDir := CreateTempDir()
+		defer removeTempDir()
 
 		//run script
 
@@ -325,7 +317,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 			msg := utils.AddCarriageReturnAfterNewlines(suiteResult.MostAdaptedMessage(colorized, backgroundIsDark))
 			fmt.Fprint(outW, msg)
 		}
-	case "check":
+	case CHECK_SUBCMD:
 		if len(mainSubCommandArgs) == 0 {
 			fmt.Fprintf(errW, "missing script path\n")
 			return ERROR_STATUS_CODE
@@ -339,7 +331,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 
 		data := inox_ns.GetCheckData(fpath, compilationCtx, outW)
 		fmt.Fprintf(outW, "%s\n\r", utils.Must(json.Marshal(data)))
-	case "add-service":
+	case ADD_SERVICE_SUBCMD:
 		//read and check arguments
 
 		flags := flag.NewFlagSet(mainSubCommand, flag.ExitOnError)
@@ -490,7 +482,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 			return
 		}
 		fmt.Fprintln(outW, "")
-	case "remove-service":
+	case REMOVE_SERVICE_SUBCMD:
 		//read and check arguments
 
 		flags := flag.NewFlagSet(mainSubCommand, flag.ExitOnError)
@@ -635,7 +627,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 		if err := project_server.StartLSPServer(ctx, opts); err != nil {
 			fmt.Fprintln(errW, "failed to start LSP server:", err)
 		}
-	case "project-server":
+	case PROJECT_SERVER_SUBCMD:
 		//read & check arguments
 		flags := flag.NewFlagSet(mainSubCommand, flag.ExitOnError)
 		var configOrConfigFile string
@@ -705,6 +697,10 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 			logger := zerolog.New(out).With().Str(core.SOURCE_LOG_FIELD_NAME, "temp-dir-cleanup").Logger()
 			fs_ns.DeleteDeadProcessTempDirs(logger, TEMP_DIR_CLEANUP_TIMEOUT)
 		}()
+
+		//create a temporary directory for the whole process
+		_, _, removeTempDir := CreateTempDir()
+		defer removeTempDir()
 
 		if projectServerConfig.AllowBrowserAutomation {
 			chrome_ns.AllowBrowserAutomation()
@@ -1000,7 +996,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 		}
 
 		client.StartControl()
-	case "shell":
+	case SHELL_SUBCMD:
 		//read & check arguments
 		flags := flag.NewFlagSet(mainSubCommand, flag.ExitOnError)
 		startupScriptPath, err := config.GetStartupScriptPath()
@@ -1022,6 +1018,10 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 			return
 		}
 
+		//create a temporary directory for the whole process
+		_, processTempDirPerms, removeTempDir := CreateTempDir()
+		defer removeTempDir()
+
 		//Run the startup script to get the shell configuration.
 		//The global state of the startup script is re-used by the shell
 		//in order to keep the permissions and access the defined globals.
@@ -1039,7 +1039,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 		//start the shell
 
 		inoxsh_ns.StartShell(state, config)
-	case "eval", "e":
+	case EVAL_SUBCMD, EVAL_ALIAS_SUBCMD:
 		if len(mainSubCommandArgs) == 0 {
 			fmt.Fprintf(errW, "missing code string\n")
 			return ERROR_STATUS_CODE

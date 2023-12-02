@@ -13,29 +13,43 @@ import (
 	"github.com/posener/complete/v2/predict"
 )
 
+const (
+	ADD_SERVICE_SUBCMD           = "add-service"
+	REMOVE_SERVICE_SUBCMD        = "remove-service"
+	RUN_SUBCMD                   = "run"
+	CHECK_SUBCMD                 = "check"
+	SHELL_SUBCMD                 = "shell"
+	EVAL_SUBCMD                  = "eval"
+	EVAL_ALIAS_SUBCMD            = "e"
+	PROJECT_SERVER_SUBCMD        = "project-server"
+	INSTALL_COMPLETIONS_SUBCMD   = "install-completions"
+	UNINSTALL_COMPLETIONS_SUBCMD = "uninstall-completions"
+	HELP_SUBCMD                  = "help"
+)
+
 var (
 	CLI_SUBCOMMANDS = []string{
-		"add-service", "remove-service", //root
-		"run", "check", "shell", "eval", "e" /*"lsp",*/, "project-server", "help",
-		"install-completions", "uninstall-completions",
+		ADD_SERVICE_SUBCMD, REMOVE_SERVICE_SUBCMD, //root
+		RUN_SUBCMD, CHECK_SUBCMD, SHELL_SUBCMD, EVAL_SUBCMD, EVAL_ALIAS_SUBCMD /*"lsp",*/, PROJECT_SERVER_SUBCMD, HELP_SUBCMD,
+		INSTALL_COMPLETIONS_SUBCMD, UNINSTALL_COMPLETIONS_SUBCMD,
 	}
 	SUBCOMMANDS = append(slices.Clone(CLI_SUBCOMMANDS), inoxd.DAEMON_SUBCMD, inoxprocess.CONTROLLED_SUBCMD, cloudproxy.CLOUD_PROXY_SUBCMD_NAME)
 
 	CLI_SUBCOMMAND_DESCRIPTIONS = [][2]string{
-		{"add-service", "[root] add the 'inox' unit (systemd) and create the " + inoxd.INOXD_USERNAME + " user"},
-		{"remove-service", "[root] stop inoxd and remove the 'inox' unit (systemd)"},
-		{"project-server", "start the project server (LSP + custom methods)"},
+		{ADD_SERVICE_SUBCMD, "[root] add the 'inox' unit (systemd) and create the " + inoxd.INOXD_USERNAME + " user"},
+		{REMOVE_SERVICE_SUBCMD, "[root] stop inoxd and remove the 'inox' unit (systemd)"},
+		{PROJECT_SERVER_SUBCMD, "start the project server (LSP + custom methods)"},
 
-		{"run", "run a script"},
-		{"check", "check a script"},
-		{"shell", "start the shell"},
-		{"eval", "evaluate a single statement"},
-		{"e", "alias for eval"},
+		{RUN_SUBCMD, "run a script"},
+		{CHECK_SUBCMD, "check a script"},
+		{SHELL_SUBCMD, "start the shell"},
+		{EVAL_SUBCMD, "evaluate a single statement"},
+		{EVAL_ALIAS_SUBCMD, "alias for eval"},
 		//{"lsp",           "start the language server (LSP)"},
 
-		{"install-completions", "install CLI completions by addding the completion command to the detected rc file (supported shells are bash, zsh and fish)"},
-		{"uninstall-completions", "uninstall CLI completions by removing the completion command from the detected rc file"},
-		{"help", "show the general help or command-specific help"},
+		{INSTALL_COMPLETIONS_SUBCMD, "install CLI completions by addding the completion command to the detected rc file (supported shells are bash, zsh and fish)"},
+		{UNINSTALL_COMPLETIONS_SUBCMD, "uninstall CLI completions by removing the completion command from the detected rc file"},
+		{HELP_SUBCMD, "show the general help or command-specific help"},
 	}
 
 	CLI_SUBCOMMAND_DESCRIPTION_MAP = map[string]string{}
@@ -44,24 +58,24 @@ var (
 
 	cmd = &complete.Command{
 		Sub: map[string]*complete.Command{
-			"shell": {
+			SHELL_SUBCMD: {
 				Flags: map[string]complete.Predictor{
 					"c": predict.Files("*.ix"),
 				},
 			},
-			"eval": {
+			EVAL_SUBCMD: {
 				Flags: map[string]complete.Predictor{
 					"c": predict.Files("*.ix"),
 				},
 			},
-			"e": {
+			EVAL_ALIAS_SUBCMD: {
 				Flags: map[string]complete.Predictor{
 					"c": predict.Files("*.ix"),
 				},
 			},
-			"check": {},
-			"help":  {},
-			"run": {
+			CHECK_SUBCMD: {},
+			HELP_SUBCMD:  {},
+			RUN_SUBCMD: {
 				Flags: map[string]complete.Predictor{
 					"test":                     predict.Nothing,
 					"test-trusted":             predict.Nothing,
@@ -73,7 +87,7 @@ var (
 				},
 				Args: predict.Nothing,
 			},
-			"add-service": {
+			ADD_SERVICE_SUBCMD: {
 				Flags: map[string]complete.Predictor{
 					"inox-cloud":               predict.Nothing,
 					"tunnel-provider":          predict.Set{"cloudflare"},
@@ -82,7 +96,7 @@ var (
 					"allow-browser-automation": predict.Nothing,
 				},
 			},
-			"remove-service": {
+			REMOVE_SERVICE_SUBCMD: {
 				Flags: map[string]complete.Predictor{
 					"remove-tunnel-configs":  predict.Nothing,
 					"remove-inoxd-user":      predict.Nothing,
@@ -92,13 +106,13 @@ var (
 					"dangerously-remove-all": predict.Nothing,
 				},
 			},
-			"project-server": {
+			PROJECT_SERVER_SUBCMD: {
 				Flags: map[string]complete.Predictor{
 					"config": predict.Set{`'{"port":8305}'`},
 				},
 			},
-			"install-completions":   {},
-			"uninstall-completions": {},
+			INSTALL_COMPLETIONS_SUBCMD:   {},
+			UNINSTALL_COMPLETIONS_SUBCMD: {},
 		},
 	}
 )
