@@ -68,11 +68,11 @@ var (
 
 	MODULE_KIND_TO_ALLOWED_SECTION_NAMES = map[ModuleKind][]string{
 		UnspecifiedModuleKind: MANIFEST_SECTION_NAMES,
+		ApplicationModule:     MANIFEST_SECTION_NAMES,
 		SpecModule:            {MANIFEST_KIND_SECTION_NAME, MANIFEST_PERMS_SECTION_NAME, MANIFEST_LIMITS_SECTION_NAME},
 		LifetimeJobModule:     {MANIFEST_PERMS_SECTION_NAME, MANIFEST_LIMITS_SECTION_NAME},
 		TestSuiteModule:       {MANIFEST_PERMS_SECTION_NAME, MANIFEST_LIMITS_SECTION_NAME},
 		TestCaseModule:        {MANIFEST_PERMS_SECTION_NAME, MANIFEST_LIMITS_SECTION_NAME},
-		ApplicationModule:     {MANIFEST_KIND_SECTION_NAME},
 	}
 
 	ErrURLNotCorrespondingToDefinedDB = errors.New("URL does not correspond to a defined database")
