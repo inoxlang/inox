@@ -9,8 +9,11 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"os"
+	"os/signal"
 	"sync"
 	"sync/atomic"
+	"syscall"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -30,6 +33,7 @@ const (
 var (
 	ErrControlLoopEnd           = errors.New("control loop end")
 	ErrTooManyReconnectAttempts = errors.New("too many reconnect attemps")
+	ErrOrphanProcess            = errors.New("orphan process")
 )
 
 type ControlClient struct {
@@ -124,6 +128,7 @@ func (c *ControlClient) StartControl() error {
 
 	heartbeatCtx := c.ctx.BoundChild()
 	defer heartbeatCtx.CancelGracefully()
+	defer c.stopApplication()
 
 	//send hearbeats
 	go func() {
@@ -165,6 +170,9 @@ func (c *ControlClient) StartControl() error {
 		}
 	}()
 
+	sigchildChan := make(chan os.Signal, 1)
+	signal.Notify(sigchildChan, syscall.SIGCHLD)
+
 	//handle messages from the control server
 	for {
 		select {
@@ -173,6 +181,8 @@ func (c *ControlClient) StartControl() error {
 				c.conn.Close()
 			}
 			return c.ctx.Err()
+		case <-sigchildChan:
+			return ErrOrphanProcess
 		default:
 		}
 
@@ -280,6 +290,11 @@ func (c *ControlClient) sendAck(msgULID ulid.ULID) error {
 
 func (c *ControlClient) executeApplication(appDir string) {
 	defer utils.Recover()
+
+	//TODO
+}
+
+func (c *ControlClient) stopApplication() {
 
 	//TODO
 }
