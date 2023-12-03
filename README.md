@@ -246,8 +246,9 @@ array = Array(task1, task2)
 
 The Inox binary comes with a **project server** that your IDE connects to.
 This server is a LSP server with additional methods, it enables the developer to develop, debug, test, deploy & manage secrets, all from VsCode.
-
 The project server will also provide automatic infrastructure management in the **near future**.
+
+__There is no local development environment.__ Code files are cached on the IDE for readonly access though.
 
 ```mermaid
 graph LR
@@ -280,7 +281,7 @@ You can't, but executing programs compiled to WebAssembly will be soon possible.
 
 In project mode Inox applications run inside a **meta filesystem** that persists data on disk.
 Files in this filesystem are regular files, metadata and directory structure are stored in a single file named `metadata.kv`.
-It's impossible for applications running inside its filesystem to access an arbitrary file on the disk.
+It's impossible for applications running inside this filesystem to access an arbitrary file on the disk.
 
 ```mermaid
 graph LR
