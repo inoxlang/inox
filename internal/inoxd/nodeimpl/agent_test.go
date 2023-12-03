@@ -1,4 +1,4 @@
-package node
+package nodeimpl
 
 import (
 	"math/rand"
@@ -56,7 +56,7 @@ func TestNewAgent(t *testing.T) {
 			return
 		}
 
-		app, err := agent.getOrCreateApplication(APP_NAME)
+		app, err := agent.GetOrCreateApplication(APP_NAME)
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -65,7 +65,7 @@ func TestNewAgent(t *testing.T) {
 			return
 		}
 
-		existing, err := agent.getOrCreateApplication(APP_NAME)
+		existing, err := agent.GetOrCreateApplication(APP_NAME)
 		if !assert.NoError(t, err) {
 			return
 		}

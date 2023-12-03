@@ -1,4 +1,4 @@
-package node
+package nodeimpl
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/inoxd/node"
 	"github.com/inoxlang/inox/internal/inoxprocess"
 	"github.com/rs/zerolog"
 )
@@ -22,7 +23,7 @@ type Agent struct {
 	goCtx        context.Context
 	logger       zerolog.Logger
 	config       AgentConfig
-	applications map[ApplicationName]*Application
+	applications map[node.ApplicationName]*Application
 
 	controlServer *inoxprocess.ControlServer
 }
@@ -56,7 +57,7 @@ func NewAgent(args AgentParameters) (*Agent, error) {
 		config:       args.Config,
 		goCtx:        args.GoCtx,
 		logger:       args.Logger,
-		applications: map[ApplicationName]*Application{},
+		applications: map[node.ApplicationName]*Application{},
 	}
 
 	return agent, nil

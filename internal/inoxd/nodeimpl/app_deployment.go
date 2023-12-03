@@ -1,4 +1,4 @@
-package node
+package nodeimpl
 
 import (
 	"errors"
@@ -6,6 +6,7 @@ import (
 	"sync/atomic"
 
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/inoxd/node"
 	"github.com/oklog/ulid/v2"
 )
 
@@ -15,7 +16,7 @@ var (
 )
 
 type ApplicationDeployment struct {
-	appName ApplicationName
+	appName node.ApplicationName
 	ulid    ulid.ULID
 
 	appModule *core.Module
@@ -26,15 +27,7 @@ type ApplicationDeployment struct {
 	finished  atomic.Bool
 }
 
-type ApplicationDeploymentParams struct {
-	AppName string
-	AppMod  *core.Module
-	BaseImg core.Image
-
-	UpdateRunningApp bool
-}
-
-func (app *Application) PrepareDeployment(args ApplicationDeploymentParams) (*ApplicationDeployment, error) {
+func (app *Application) PrepareDeployment(args node.ApplicationDeploymentParams) (node.ApplicationDeployment, error) {
 	appMod := args.AppMod
 
 	if appMod.ModuleKind != core.ApplicationModule {
@@ -42,13 +35,13 @@ func (app *Application) PrepareDeployment(args ApplicationDeploymentParams) (*Ap
 	}
 
 	switch app.Status() {
-	case DeployedApp:
+	case node.DeployedApp:
 		if !args.UpdateRunningApp {
 			return nil, ErrAppAlreadyDeployed
 		}
 	}
 
-	appName, err := ApplicationNameFrom(args.AppName)
+	appName, err := node.ApplicationNameFrom(args.AppName)
 	if err != nil {
 		return nil, err
 	}
@@ -68,13 +61,15 @@ func (app *Application) PrepareDeployment(args ApplicationDeploymentParams) (*Ap
 	}, nil
 }
 
-func (d *ApplicationDeployment) Begin() {
+func (d *ApplicationDeployment) Begin() error {
 	switch d.app.Status() {
-	case UndeployedApp:
-	case DeployingApp:
-	case DeployedApp:
-	case GracefullyStoppingApp:
-	case GracefullyStoppedApp:
-	case ErroneouslyStoppedApp:
+	case node.UndeployedApp:
+	case node.DeployingApp:
+	case node.DeployedApp:
+	case node.GracefullyStoppingApp:
+	case node.GracefullyStoppedApp:
+	case node.ErroneouslyStoppedApp:
 	}
+
+	return nil
 }

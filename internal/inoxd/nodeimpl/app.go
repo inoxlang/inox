@@ -1,39 +1,33 @@
-package node
+package nodeimpl
 
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io/fs"
 	"os"
 	"os/exec"
-	"regexp"
 	"sync"
 	"sync/atomic"
 
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
+	"github.com/inoxlang/inox/internal/inoxd/node"
 	"github.com/inoxlang/inox/internal/inoxprocess"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/rs/zerolog"
 )
 
 const (
-	APP_NAME_PATTERN = "^[a-z][a-z0-9-]$"
-	APP_DIR_FPERMS   = fs.FileMode(0o770)
+	APP_DIR_FPERMS = fs.FileMode(0o770)
 
 	APP_LOG_SRC_PREFIX = "apps/"
-)
-
-var (
-	ErrInvalidAppName = errors.New("invalid application name")
 )
 
 type Application struct {
 	lock   sync.Mutex
 	logger zerolog.Logger
 
-	name     ApplicationName
+	name     node.ApplicationName
 	agent    *Agent
 	osAppDir core.Path
 
@@ -45,7 +39,7 @@ type Application struct {
 	process           *inoxprocess.ControlledProcess
 }
 
-func (a *Agent) getOrCreateApplication(name ApplicationName) (*Application, error) {
+func (a *Agent) GetOrCreateApplication(name node.ApplicationName) (node.Application, error) {
 	a.lock.Lock()
 	defer a.lock.Unlock()
 
@@ -68,15 +62,15 @@ func (a *Agent) getOrCreateApplication(name ApplicationName) (*Application, erro
 			agent:    a,
 			osAppDir: appDir,
 		}
-		app.status.Store(UndeployedApp)
+		app.status.Store(node.UndeployedApp)
 		a.applications[name] = app
 	}
 
 	return app, nil
 }
 
-func (app *Application) Status() ApplicationStatus {
-	return app.status.Load().(ApplicationStatus)
+func (app *Application) Status() node.ApplicationStatus {
+	return app.status.Load().(node.ApplicationStatus)
 }
 
 func (app *Application) Stop(goCtx context.Context) {
@@ -108,25 +102,3 @@ func (app *Application) AutorestartLoop(goCtx context.Context) {
 		_ = process
 	}
 }
-
-type ApplicationName string
-
-func ApplicationNameFrom(s string) (ApplicationName, error) {
-	ok, err := regexp.MatchString(APP_NAME_PATTERN, s)
-	if !ok || err != nil {
-		return "", fmt.Errorf("%w: %q", ErrInvalidAppName, s)
-	}
-
-	return ApplicationName(s), nil
-}
-
-type ApplicationStatus int
-
-const (
-	UndeployedApp = iota + 1
-	DeployingApp
-	DeployedApp
-	GracefullyStoppingApp
-	GracefullyStoppedApp
-	ErroneouslyStoppedApp
-)
