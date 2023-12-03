@@ -482,7 +482,7 @@ func ParseModuleFromSource(src parse.ChunkSource, resource ResourceName, config 
 	}
 
 	// add error if manifest is missing
-	if code.Node.Manifest == nil {
+	if code.Node.Manifest == nil || code.Node.Manifest.Object == nil || !utils.Implements[*parse.ObjectLiteral](code.Node.Manifest.Object) {
 		err := NewError(fmt.Errorf("missing manifest in module %s: the file should start with 'manifest {}'", src.Name()), resource)
 		mod.ParsingErrors = append(mod.ParsingErrors, err)
 		mod.ParsingErrorPositions = append(mod.ParsingErrorPositions, parse.SourcePositionRange{
@@ -493,6 +493,19 @@ func ParseModuleFromSource(src parse.ChunkSource, resource ResourceName, config 
 			EndColumn:   2,
 			Span:        parse.NodeSpan{Start: 0, End: 1},
 		})
+	} else {
+		//attempt to determine the module kind, we don't report errors because the static checker will.
+		objLit := code.Node.Manifest.Object.(*parse.ObjectLiteral)
+		node, ok := objLit.PropValue(MANIFEST_KIND_SECTION_NAME)
+		if ok {
+			kindName, ok := getUncheckedModuleKindNameFromNode(node)
+			if ok {
+				kind, err := ParseModuleKind(kindName)
+				if err == nil {
+					mod.ModuleKind = kind
+				}
+			}
+		}
 	}
 
 	ctx := config.Context
@@ -826,4 +839,21 @@ func ReadFileInFS(fls billy.Basic, name string, maxSize int32) ([]byte, error) {
 			return data, err
 		}
 	}
+}
+
+func getUncheckedModuleKindNameFromNode(n parse.Node) (name string, found bool) {
+	var kindName string
+
+	switch node := n.(type) {
+	case *parse.QuotedStringLiteral:
+		kindName = node.Value
+	case *parse.MultilineStringLiteral:
+		kindName = node.Value
+	case *parse.UnquotedStringLiteral:
+		kindName = node.Value
+	default:
+		return "", false
+	}
+
+	return kindName, true
 }

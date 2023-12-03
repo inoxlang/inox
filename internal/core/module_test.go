@@ -43,6 +43,60 @@ func TestParseModuleFromSource(t *testing.T) {
 		}
 	})
 
+	t.Run("application kind", func(t *testing.T) {
+		fls := newMemFilesystem()
+		ctx := NewContexWithEmptyState(ContextConfig{
+			Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
+			Filesystem:  fls,
+		}, nil)
+		defer ctx.CancelGracefully()
+
+		mod, err := ParseModuleFromSource(parse.SourceFile{
+			NameString:  "/mod.ix",
+			Resource:    "/mod.ix",
+			ResourceDir: "/",
+			CodeString:  `manifest {kind:"application"}`,
+		}, Path("/mod.ix"), ModuleParsingConfig{
+			Context: ctx,
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+		if !assert.NotNil(t, mod) {
+			return
+		}
+
+		assert.Equal(t, ApplicationModule, mod.ModuleKind)
+	})
+
+	t.Run("spec.ix file", func(t *testing.T) {
+		fls := newMemFilesystem()
+		ctx := NewContexWithEmptyState(ContextConfig{
+			Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
+			Filesystem:  fls,
+		}, nil)
+		defer ctx.CancelGracefully()
+
+		mod, err := ParseModuleFromSource(parse.SourceFile{
+			NameString:  "/mod.spec.ix",
+			Resource:    "/mod.spec.ix",
+			ResourceDir: "/",
+			CodeString:  `manifest {}`,
+		}, Path("/mod.spec.ix"), ModuleParsingConfig{
+			Context: ctx,
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+		if !assert.NotNil(t, mod) {
+			return
+		}
+
+		assert.Equal(t, SpecModule, mod.ModuleKind)
+	})
+
 	t.Run("module import", func(t *testing.T) {
 		t.Run("absolute path", func(t *testing.T) {
 			fls := newMemFilesystem()

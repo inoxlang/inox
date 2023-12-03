@@ -68,10 +68,11 @@ var (
 
 	MODULE_KIND_TO_ALLOWED_SECTION_NAMES = map[ModuleKind][]string{
 		UnspecifiedModuleKind: MANIFEST_SECTION_NAMES,
-		SpecModule:            {MANIFEST_PERMS_SECTION_NAME, MANIFEST_LIMITS_SECTION_NAME},
+		SpecModule:            {MANIFEST_KIND_SECTION_NAME, MANIFEST_PERMS_SECTION_NAME, MANIFEST_LIMITS_SECTION_NAME},
 		LifetimeJobModule:     {MANIFEST_PERMS_SECTION_NAME, MANIFEST_LIMITS_SECTION_NAME},
 		TestSuiteModule:       {MANIFEST_PERMS_SECTION_NAME, MANIFEST_LIMITS_SECTION_NAME},
 		TestCaseModule:        {MANIFEST_PERMS_SECTION_NAME, MANIFEST_LIMITS_SECTION_NAME},
+		ApplicationModule:     {MANIFEST_KIND_SECTION_NAME},
 	}
 
 	ErrURLNotCorrespondingToDefinedDB = errors.New("URL does not correspond to a defined database")
@@ -93,7 +94,7 @@ func SetInitialWorkingDir(getWd func() (string, error)) {
 
 // A Manifest contains most of the user-defined metadata about a Module.
 type Manifest struct {
-	ModuleKind ModuleKind
+	explicitModuleKind ModuleKind
 	//note: permissions required for reading the preinit files are in .PreinitFiles.
 	RequiredPermissions []Permission
 	Limits              []Limit
@@ -734,7 +735,8 @@ func (m *Module) createManifest(ctx *Context, object *Object, config manifestObj
 	limits := make(map[string]Limit, 0)
 	hostResolutions := make(map[Host]Value, 0)
 	specifiedGlobalPermKinds := map[PermissionKind]bool{}
-	kind := UnspecifiedModuleKind
+	actualModuleKind := m.ModuleKind
+	manifestModuleKind := UnspecifiedModuleKind
 
 	for k, v := range object.EntryMap(nil) {
 		switch k {
@@ -745,13 +747,17 @@ func (m *Module) createManifest(ctx *Context, object *Object, config manifestObj
 			}
 
 			var err error
-			kind, err = ParseModuleKind(kindName.GetOrBuildString())
+			parsedKind, err := ParseModuleKind(kindName.GetOrBuildString())
 			if err != nil {
 				return nil, err
 			}
-			if kind.IsEmbedded() {
+			if actualModuleKind != UnspecifiedModuleKind && actualModuleKind != parsedKind {
+				return nil, errors.New("unexpected state: module kind not equal to the kind determined during parsing")
+			}
+			if actualModuleKind.IsEmbedded() {
 				return nil, errors.New(INVALID_KIND_SECTION_EMBEDDED_MOD_KINDS_NOT_ALLOWED)
 			}
+			manifestModuleKind = parsedKind
 		case MANIFEST_LIMITS_SECTION_NAME:
 			l, err := getLimits(v)
 			if err != nil {
@@ -899,7 +905,7 @@ func (m *Module) createManifest(ctx *Context, object *Object, config manifestObj
 	}
 
 	return &Manifest{
-		ModuleKind:          kind,
+		explicitModuleKind:  manifestModuleKind,
 		RequiredPermissions: perms,
 		Limits:              maps.Values(limits),
 		HostResolutions:     hostResolutions,

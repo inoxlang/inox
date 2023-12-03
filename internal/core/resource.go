@@ -32,6 +32,7 @@ const (
 	MAX_TESTED_HOST_PATTERN_BYTE_LENGTH = 100
 
 	PREFIX_PATH_PATTERN_SUFFIX = "/..."
+	ROOT_PREFIX_PATH_PATTERN   = PathPattern("/...")
 )
 
 var (

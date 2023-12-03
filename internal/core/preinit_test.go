@@ -79,7 +79,7 @@ func TestPreInit(t *testing.T) {
 	type testCase struct {
 		//input
 		name                string
-		moduleKind          ModuleKind //ok if not set, should not be set if expectedModuleKind is set
+		moduleKind          ModuleKind //ok if not set, should be set to the same vale as expectedModuleKind if expectedModuleKind is set
 		module              string
 		setup               func() error
 		teardown            func()
@@ -129,6 +129,7 @@ func TestPreInit(t *testing.T) {
 				}`,
 			expectedLimits:     []Limit{minLimitA, minLimitB, threadLimit},
 			expectedModuleKind: utils.New(ApplicationModule),
+			moduleKind:         ApplicationModule,
 		},
 		{
 			name: "kind: module kind should be a string literal",
@@ -1742,7 +1743,7 @@ func TestPreInit(t *testing.T) {
 				}
 
 				if testCase.expectedModuleKind != nil {
-					assert.EqualValues(t, *testCase.expectedModuleKind, manifest.ModuleKind)
+					assert.EqualValues(t, *testCase.expectedModuleKind, manifest.explicitModuleKind)
 				}
 				assert.EqualValues(t, testCase.expectedPermissions, manifest.RequiredPermissions)
 				assert.ElementsMatch(t, testCase.expectedLimits, manifest.Limits)

@@ -2219,16 +2219,8 @@ func checkManifestObject(args manifestStaticCheckArguments) {
 
 		switch sectionName {
 		case MANIFEST_KIND_SECTION_NAME:
-			var kindName string
-
-			switch node := p.Value.(type) {
-			case *parse.QuotedStringLiteral:
-				kindName = node.Value
-			case *parse.MultilineStringLiteral:
-				kindName = node.Value
-			case *parse.UnquotedStringLiteral:
-				kindName = node.Value
-			default:
+			kindName, ok := getUncheckedModuleKindNameFromNode(p.Value)
+			if !ok {
 				onError(p.Key, KIND_SECTION_SHOULD_BE_A_STRING_LITERAL)
 				continue
 			}
