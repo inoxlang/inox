@@ -63,7 +63,7 @@ type ScriptPreparationArgs struct {
 	// if set the result of the function is used instead of .Args
 	GetArguments func(*Manifest) (*Struct, error)
 
-	ParsingCompilationContext *Context
+	ParsingCompilationContext *Context //always necessary even if .CachedModule is set
 	ParentContext             *Context
 	ParentContextRequired     bool
 	UseParentStateAsMainState bool

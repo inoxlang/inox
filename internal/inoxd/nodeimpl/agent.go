@@ -35,7 +35,8 @@ type AgentParameters struct {
 }
 
 type AgentConfig struct {
-	OsProdDir core.Path
+	OsProdDir                       core.Path
+	TemporaryOptionRunInSameProcess bool
 }
 
 func NewAgent(args AgentParameters) (*Agent, error) {

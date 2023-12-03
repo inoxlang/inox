@@ -18,7 +18,8 @@ func TestNewAgent(t *testing.T) {
 		_, err := NewAgent(AgentParameters{
 			GoCtx: ctx,
 			Config: AgentConfig{
-				OsProdDir: core.DirPathFrom(tmpDir),
+				OsProdDir:                       core.DirPathFrom(tmpDir),
+				TemporaryOptionRunInSameProcess: true,
 			},
 		})
 
@@ -48,7 +49,8 @@ func TestNewAgent(t *testing.T) {
 		agent, err := NewAgent(AgentParameters{
 			GoCtx: ctx,
 			Config: AgentConfig{
-				OsProdDir: core.DirPathFrom(tmpDir),
+				OsProdDir:                       core.DirPathFrom(tmpDir),
+				TemporaryOptionRunInSameProcess: true,
 			},
 		})
 

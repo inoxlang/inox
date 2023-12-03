@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"time"
 
 	"github.com/inoxlang/inox/internal/core"
 )
@@ -15,7 +16,14 @@ const (
 var (
 	agent Agent
 
-	ErrInvalidAppName = errors.New("invalid application name")
+	ErrInvalidAppName                 = errors.New("invalid application name")
+	ErrAppAlreadyDeployed             = errors.New("application is already deployed")
+	ErrAppAlreadyBeingDeployed        = errors.New("application is already being deployed")
+	ErrAppStillStopping               = errors.New("application is still stopping")
+	ErrFailedAppModulePreparation     = errors.New("failed to prepare application module")
+	ErrFailedToDeployApplication      = errors.New("failed to deploy application")
+	ErrDeploymentIsBeingPerformed     = errors.New("deployment is being performed")
+	ErrDeploymentAlreadyBeenPerformed = errors.New("deployment has already been performed")
 )
 
 func GetAgent() Agent {
@@ -38,19 +46,30 @@ type Agent interface {
 }
 
 type ApplicationDeploymentParams struct {
-	AppName string
 	AppMod  *core.Module
 	BaseImg core.Image
+	Project core.Project //temporary solution
 
 	UpdateRunningApp bool
 }
 
 type Application interface {
+	Status() ApplicationStatus
+	TimedStatus() TimedApplicationStatus
+
 	PrepareDeployment(ApplicationDeploymentParams) (ApplicationDeployment, error)
+
+	//Stop gracefully stops the application.
+	Stop()
+
+	//UnsafelyStop unsafely stops the application.
+	UnsafelyStop()
 }
 
+// An application deployment is a stateful representation of a deployment
 type ApplicationDeployment interface {
-	Begin() error
+	Perform() error
+	Status() DeploymentStatus
 }
 
 type ApplicationName string
@@ -67,10 +86,25 @@ func ApplicationNameFrom(s string) (ApplicationName, error) {
 type ApplicationStatus int
 
 const (
-	UndeployedApp = iota + 1
+	UndeployedApp ApplicationStatus = iota + 1
 	DeployingApp
 	DeployedApp
 	GracefullyStoppingApp
 	GracefullyStoppedApp
-	ErroneouslyStoppedApp
+	ErroneouslyStoppedApp //execution error or error during stop
+	FailedToPrepareApp
 )
+
+type DeploymentStatus int
+
+const (
+	NotStartedDeployment DeploymentStatus = iota //default
+	ActiveDeployment
+	FailedDeployment
+	SuccessfulDeployment
+)
+
+type TimedApplicationStatus struct {
+	Status     ApplicationStatus
+	ChangeTime time.Time
+}

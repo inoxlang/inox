@@ -150,9 +150,10 @@ type RunPreparedScriptArgs struct {
 
 	IgnoreHighRiskScore bool
 
-	UseBytecode      bool
-	OptimizeBytecode bool
-	ShowBytecode     bool
+	UseBytecode             bool
+	OptimizeBytecode        bool
+	ShowBytecode            bool
+	DoNotCancelWhenFinished bool
 
 	Debugger *core.Debugger
 }
@@ -214,7 +215,9 @@ func RunPreparedScript(args RunPreparedScriptArgs) (
 
 	state.InitSystemGraph()
 
-	defer state.Ctx.CancelGracefully()
+	if !args.DoNotCancelWhenFinished {
+		defer state.Ctx.CancelGracefully()
+	}
 
 	//execute the script
 
