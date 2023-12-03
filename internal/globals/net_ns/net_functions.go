@@ -51,11 +51,12 @@ func websocketConnect(ctx *core.Context, u core.URL, options ...core.Option) (*W
 }
 
 type WebsocketConnectParams struct {
-	Ctx            *core.Context
-	URL            core.URL
-	Insecure       bool
-	RequestHeader  http.Header
-	MessageTimeout time.Duration //if 0 defaults to DEFAULT_WS_MESSAGE_TIMEOUT
+	Ctx              *core.Context
+	URL              core.URL
+	Insecure         bool
+	RequestHeader    http.Header
+	MessageTimeout   time.Duration //if 0 defaults to DEFAULT_WS_MESSAGE_TIMEOUT
+	HandshakeTimeout time.Duration //if 0 defaults to DEFAULT_WS_HANDSHAKE_TIMEOUT
 }
 
 func WebsocketConnect(args WebsocketConnectParams) (*WebsocketConnection, error) {
@@ -64,6 +65,7 @@ func WebsocketConnect(args WebsocketConnectParams) (*WebsocketConnection, error)
 	insecure := args.Insecure
 	requestHeader := args.RequestHeader
 	messageTimeout := utils.DefaultIfZero(args.MessageTimeout, DEFAULT_WS_MESSAGE_TIMEOUT)
+	handshakeTimeout := utils.DefaultIfZero(args.HandshakeTimeout, DEFAULT_WS_HANDSHAKE_TIMEOUT)
 
 	//check that a websocket read or write-stream permission is granted
 	perm := core.WebsocketPermission{
@@ -82,6 +84,7 @@ func WebsocketConnect(args WebsocketConnectParams) (*WebsocketConnection, error)
 	ctx.Take(WS_SIMUL_CONN_TOTAL_LIMIT_NAME, 1)
 
 	dialer := *websocket.DefaultDialer
+	dialer.HandshakeTimeout = handshakeTimeout
 	dialer.TLSClientConfig = &tls.Config{
 		InsecureSkipVerify: insecure,
 	}

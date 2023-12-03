@@ -30,6 +30,7 @@ const (
 
 	DEFAULT_WS_MESSAGE_TIMEOUT      = 10 * time.Second
 	DEFAULT_WS_WAIT_MESSAGE_TIMEOUT = 30 * time.Second
+	DEFAULT_WS_HANDSHAKE_TIMEOUT    = 20 * time.Second
 )
 
 var (
