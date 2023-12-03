@@ -40,7 +40,9 @@ type Application struct {
 	agent    *Agent
 	osAppDir core.Path
 
-	status atomic.Value //ApplicationStatus
+	status                      atomic.Value //ApplicationStatus
+	lastAppPreparationError     error
+	lastAppPreparationErrorLock sync.Mutex
 
 	currentDeployment *ApplicationDeployment //can be nil
 	currentModule     *core.Module
@@ -131,6 +133,7 @@ func (a *Agent) GetOrCreateApplication(name node.ApplicationName) (node.Applicat
 			state:    state,
 		}
 		app.setStatus(node.UndeployedApp)
+		app.setLastPreparationError(nil)
 		a.applications[name] = app
 	}
 
@@ -150,6 +153,20 @@ func (app *Application) setStatus(status node.ApplicationStatus) {
 		Status:     status,
 		ChangeTime: time.Now(),
 	})
+}
+
+func (app *Application) setLastPreparationError(err error) {
+	app.lastAppPreparationErrorLock.Lock()
+	defer app.lastAppPreparationErrorLock.Unlock()
+
+	app.lastAppPreparationError = err
+}
+
+func (app *Application) lastPreparationError() error {
+	app.lastAppPreparationErrorLock.Lock()
+	defer app.lastAppPreparationErrorLock.Unlock()
+
+	return app.lastAppPreparationError
 }
 
 func (app *Application) Stop() {
@@ -201,13 +218,24 @@ func (app *Application) AutorestartLoop( /*temporary solution*/ project core.Pro
 	}
 
 	for {
+		prepared := false
+
 		defer func() {
-			app.setStatus(node.FailedToPrepareApp)
 			e := recover()
+			if e == nil {
+				return
+			}
 
 			err := utils.ConvertPanicValueToError(e)
 			err = fmt.Errorf("%w: %s", err, debug.Stack())
 			app.logger.Debug().Err(err).Send()
+
+			if !prepared {
+				app.setLastPreparationError(err)
+				app.setStatus(node.FailedToPrepareApp)
+			} else {
+				app.setStatus(node.ErroneouslyStoppedApp)
+			}
 		}()
 
 		filesystem := app.ctx.GetFileSystem()
@@ -234,17 +262,18 @@ func (app *Application) AutorestartLoop( /*temporary solution*/ project core.Pro
 
 		if err != nil {
 			app.logger.Debug().Err(err).Send()
-
-			//critical error
-			if state == nil || state.SymbolicData == nil {
-				app.setStatus(node.FailedToPrepareApp)
-				return
-			}
+			app.setLastPreparationError(err)
+			app.setStatus(node.FailedToPrepareApp)
+			return
 		}
+		app.setLastPreparationError(nil)
+		prepared = true
 
 		app.lock.Lock()
 		app.currentExecutionCtx = state.Ctx
 		app.lock.Unlock()
+
+		//register callbacks to update the status on teardown and cancellation.
 
 		state.Ctx.OnGracefulTearDown(func(ctx *core.Context) error {
 			app.setStatus(node.GracefullyStoppingApp)
@@ -267,14 +296,17 @@ func (app *Application) AutorestartLoop( /*temporary solution*/ project core.Pro
 
 		var appStopped atomic.Bool
 
+		//set the status to deployed if the app is still running in one second (TODO: change delay ?)
 		go func() {
 			defer utils.Recover()
 
 			time.Sleep(time.Second)
-			if !appStopped.Load() {
+			if !appStopped.Load() && !utils.IsContextDone(state.Ctx) {
 				app.setStatus(node.DeployedApp)
 			}
 		}()
+
+		defer appStopped.Store(true)
 
 		_, _, _, _, err = mod.RunPreparedScript(mod.RunPreparedScriptArgs{
 			State:                     state,
@@ -293,13 +325,13 @@ func (app *Application) AutorestartLoop( /*temporary solution*/ project core.Pro
 		} else if err != nil {
 			app.logger.Debug().Err(err).Send()
 			app.setStatus(node.ErroneouslyStoppedApp)
+			continue
 		}
 
 		//TODO: only set the status to GracefullyStoppedApp if ALL the descendant state teardowns
 		//		and childprocess teardowns happened successfully.
 		//TODO: include ALL modules in descendant states and allow having two descendant states with the same path.
 
-		appStopped.Store(true)
 		app.setStatus(node.GracefullyStoppedApp)
 	}
 

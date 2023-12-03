@@ -132,7 +132,8 @@ func (d *ApplicationDeployment) Perform() error {
 		switch timedStatus.Status {
 		case node.FailedToPrepareApp:
 			if timedStatus.ChangeTime.After(datetimeBeforeBegin) {
-				return fmt.Errorf("%w: %w", node.ErrFailedToDeployApplication, node.ErrFailedAppModulePreparation)
+				err := d.app.lastPreparationError()
+				return fmt.Errorf("%w: %w: %w", node.ErrFailedToDeployApplication, node.ErrFailedAppModulePreparation, err)
 			}
 			fallthrough
 		case node.DeployedApp:

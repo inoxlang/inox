@@ -3,7 +3,6 @@ package nodeimpl
 import (
 	"context"
 	"io"
-	"os"
 	"testing"
 
 	"github.com/go-git/go-billy/v5/util"
@@ -27,7 +26,7 @@ func TestApplicationDeployment(t *testing.T) {
 		return project.NewDummyProject("myproject", fls)
 	}
 
-	makeMod := func(proj core.Project, mainix string) *core.Module {
+	makeMod := func(proj core.Project, mainix string, ignoreError bool) *core.Module {
 		fls := proj.(*project.Project).LiveFilesystem()
 		utils.PanicIfErr(util.WriteFile(fls, "/main.ix", []byte(mainix), 0600))
 
@@ -51,9 +50,11 @@ func TestApplicationDeployment(t *testing.T) {
 			Project:                   proj,
 		})
 
-		if !assert.NoError(t, err) {
-			//we don't leave the test to make sure teardown logic is executed
-			return nil
+		if !ignoreError {
+			if !assert.NoError(t, err) {
+				//we don't leave the test to make sure teardown logic is executed
+				return nil
+			}
 		}
 
 		if !assert.NotNil(t, mod) {
@@ -75,7 +76,7 @@ func TestApplicationDeployment(t *testing.T) {
 				OsProdDir:                       core.DirPathFrom(tmpDir),
 				TemporaryOptionRunInSameProcess: true,
 			},
-			Logger: zerolog.New(os.Stdout),
+			Logger: zerolog.Nop(),
 		})
 
 		if !assert.NoError(t, err) {
@@ -88,7 +89,7 @@ func TestApplicationDeployment(t *testing.T) {
 		project := makeProject()
 		mod := makeMod(project, `
 			manifest {kind:"application"}
-		`)
+		`, false)
 
 		if project == nil || mod == nil {
 			return
@@ -116,6 +117,59 @@ func TestApplicationDeployment(t *testing.T) {
 		assert.Equal(t, node.DeployedApp, app.Status())
 	})
 
+	t.Run("expected preparation error + initial status: undeployed application", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
+		agent, err := NewAgent(AgentParameters{
+			GoCtx: ctx,
+			Config: AgentConfig{
+				OsProdDir:                       core.DirPathFrom(tmpDir),
+				TemporaryOptionRunInSameProcess: true,
+			},
+			Logger: zerolog.Nop(),
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		app := utils.Must(agent.GetOrCreateApplication(APP_NAME))
+		defer app.UnsafelyStop()
+
+		project := makeProject()
+		mod := makeMod(project, `
+			manifest {kind:"application"}
+			a = # error
+		`, true)
+
+		if project == nil || mod == nil {
+			return
+		}
+
+		deployment, err := app.PrepareDeployment(node.ApplicationDeploymentParams{
+			AppMod:           mod,
+			BaseImg:          utils.Must(project.BaseImage()),
+			Project:          project,
+			UpdateRunningApp: false,
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		assert.Equal(t, node.NotStartedDeployment, deployment.Status())
+
+		err = deployment.Perform()
+		if !assert.Error(t, err) {
+			return
+		}
+
+		assert.Equal(t, node.FailedDeployment, deployment.Status())
+		assert.Equal(t, node.FailedToPrepareApp, app.Status())
+	})
+
 	t.Run("initial status: deployed application", func(t *testing.T) {
 		tmpDir := t.TempDir()
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
@@ -127,7 +181,7 @@ func TestApplicationDeployment(t *testing.T) {
 				OsProdDir:                       core.DirPathFrom(tmpDir),
 				TemporaryOptionRunInSameProcess: true,
 			},
-			Logger: zerolog.New(os.Stdout),
+			Logger: zerolog.Nop(),
 		})
 
 		if !assert.NoError(t, err) {
@@ -140,7 +194,7 @@ func TestApplicationDeployment(t *testing.T) {
 		project := makeProject()
 		modV1 := makeMod(project, `
 			manifest {kind: "application"}
-		`)
+		`, false)
 
 		if project == nil || modV1 == nil {
 			return
@@ -170,7 +224,7 @@ func TestApplicationDeployment(t *testing.T) {
 			manifest {kind: "application"}
 
 			a = 1
-		`)
+		`, false)
 
 		if modV2 == nil {
 			return
