@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	APP_NAME_PATTERN = "^[a-z][a-z0-9-]$"
+	APP_NAME_PATTERN = "^[a-z][a-z0-9-]*$"
 )
 
 var (
@@ -43,6 +43,7 @@ func SetAgent(a Agent) {
 // Node agent, the implementation can be executed in-process or in another process on the same machine.
 type Agent interface {
 	GetOrCreateApplication(name ApplicationName) (Application, error)
+	GetApplication(name ApplicationName) (Application, bool)
 }
 
 type ApplicationDeploymentParams struct {

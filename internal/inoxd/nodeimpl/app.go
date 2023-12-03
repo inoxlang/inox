@@ -57,6 +57,14 @@ type Application struct {
 	cmd     *exec.Cmd
 }
 
+func (a *Agent) GetApplication(name node.ApplicationName) (node.Application, bool) {
+	a.lock.Lock()
+	defer a.lock.Unlock()
+
+	app, ok := a.applications[name]
+	return app, ok
+}
+
 func (a *Agent) GetOrCreateApplication(name node.ApplicationName) (node.Application, error) {
 	a.lock.Lock()
 	defer a.lock.Unlock()
