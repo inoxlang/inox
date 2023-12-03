@@ -33,9 +33,9 @@ const (
 	CLOUD_PROXY_SUBCMD_NAME   = "cloud-proxy"
 	ACCOUNT_TOKEN_HEADER_NAME = "X-Account-Token"
 
-	ACCOUT_MANAGEMENT_LOG_SRC = "/account"
-	PROXY_LOG_SRC             = "/cloud-proxy"
-	INOXD_CONN_LOG_SRC        = "/cloud-proxy/inoxd-conn"
+	ACCOUT_MANAGEMENT_LOG_SRC = "cloud-proxy/account"
+	PROXY_LOG_SRC             = "cloud-proxy"
+	INOXD_CONN_LOG_SRC        = "cloud-proxy/inoxd-conn"
 
 	ACCOUNT_REGISTRATION_URL_PATH          = "/register-account"
 	ACCOUNT_REGISTRATION_HOSTER_PARAM_NAME = "hoster"

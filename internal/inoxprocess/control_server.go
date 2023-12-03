@@ -27,9 +27,9 @@ import (
 )
 
 const (
-	CONTROL_SERVER_LOG_SRC_KEY = "/control-server"
-	PROCESS_TOKEN_HEADER       = "Process-Token"
-	PROCESS_TOKEN_BYTE_LENGTH  = 32
+	CONTROL_SERVER_LOG_SRC    = "control-server"
+	PROCESS_TOKEN_HEADER      = "Process-Token"
+	PROCESS_TOKEN_BYTE_LENGTH = 32
 
 	CONTROLLED_SUBCMD = "controlled"
 
@@ -84,7 +84,7 @@ func NewControlServer(ctx *core.Context, config ControlServerConfig) (*ControlSe
 	}
 
 	s.logger = ctx.Logger().With().
-		Str(core.SOURCE_LOG_FIELD_NAME, CONTROL_SERVER_LOG_SRC_KEY+"/"+s.port).Logger()
+		Str(core.SOURCE_LOG_FIELD_NAME, CONTROL_SERVER_LOG_SRC+"/"+s.port).Logger()
 
 	websocketServer, err := net_ns.NewWebsocketServer(ctx)
 	if err != nil {
