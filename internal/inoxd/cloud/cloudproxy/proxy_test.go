@@ -147,7 +147,11 @@ func TestAccountCreation(t *testing.T) {
 
 	//register account
 	{
-		socket, err := net_ns.WebsocketConnect(ctx, registrationEndpointWithQuery, insecure, nil)
+		socket, err := net_ns.WebsocketConnect(net_ns.WebsocketConnectParams{
+			Ctx:      ctx,
+			URL:      registrationEndpointWithQuery,
+			Insecure: insecure,
+		})
 
 		if !assert.NoError(t, err) {
 			return
@@ -187,7 +191,11 @@ func TestAccountCreation(t *testing.T) {
 
 	{
 		//connection without account token should not work
-		socket, err := net_ns.WebsocketConnect(ctx, host.URLWithPath("/"), insecure, nil)
+		socket, err := net_ns.WebsocketConnect(net_ns.WebsocketConnectParams{
+			Ctx:      ctx,
+			URL:      host.URLWithPath("/"),
+			Insecure: insecure,
+		})
 
 		if !assert.Error(t, err) {
 			socket.Close()
@@ -197,8 +205,13 @@ func TestAccountCreation(t *testing.T) {
 
 	{
 		//connection with the account token should work
-		socket, err := net_ns.WebsocketConnect(ctx, host.URLWithPath("/"), insecure, http.Header{
-			ACCOUNT_TOKEN_HEADER_NAME: []string{accountToken},
+		socket, err := net_ns.WebsocketConnect(net_ns.WebsocketConnectParams{
+			Ctx:      ctx,
+			URL:      host.URLWithPath("/"),
+			Insecure: insecure,
+			RequestHeader: http.Header{
+				ACCOUNT_TOKEN_HEADER_NAME: []string{accountToken},
+			},
 		})
 
 		if !assert.NoError(t, err) {

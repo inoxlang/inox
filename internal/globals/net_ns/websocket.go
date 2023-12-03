@@ -213,6 +213,8 @@ func (conn *WebsocketConnection) checkReadAndConfig(ctx *core.Context) error {
 		}
 	}
 
+	//TODO: find out why the deadline cannot be overriden here after a call to WriteMessage invoked SetReadDeadline.
+	//setting a custom timeout here has no effect, why ?
 	conn.conn.SetReadDeadline(time.Now().Add(conn.messageTimeout))
 	return nil
 }

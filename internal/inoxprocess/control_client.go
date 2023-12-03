@@ -87,8 +87,13 @@ func (c *ControlClient) connect() error {
 	c.ctx.Logger().Print("(re)connect to control server")
 
 	insecure := true
-	conn, err := net_ns.WebsocketConnect(c.ctx, c.controlServerURL, insecure, http.Header{
-		PROCESS_TOKEN_HEADER: []string{string(c.token)},
+	conn, err := net_ns.WebsocketConnect(net_ns.WebsocketConnectParams{
+		Ctx:      c.ctx,
+		URL:      c.controlServerURL,
+		Insecure: insecure,
+		RequestHeader: http.Header{
+			PROCESS_TOKEN_HEADER: []string{string(c.token)},
+		},
 	})
 
 	if err != nil {

@@ -12,6 +12,7 @@ import (
 	"github.com/inoxlang/inox/internal/commonfmt"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/permkind"
+	"github.com/inoxlang/inox/internal/utils"
 	"github.com/miekg/dns"
 )
 
@@ -42,10 +43,28 @@ func websocketConnect(ctx *core.Context, u core.URL, options ...core.Option) (*W
 		}
 	}
 
-	return WebsocketConnect(ctx, u, insecure, nil)
+	return WebsocketConnect(WebsocketConnectParams{
+		Ctx:      ctx,
+		URL:      u,
+		Insecure: insecure,
+	})
 }
 
-func WebsocketConnect(ctx *core.Context, u core.URL, insecure bool, requestHeader http.Header) (*WebsocketConnection, error) {
+type WebsocketConnectParams struct {
+	Ctx            *core.Context
+	URL            core.URL
+	Insecure       bool
+	RequestHeader  http.Header
+	MessageTimeout time.Duration //if 0 defaults to DEFAULT_WS_MESSAGE_TIMEOUT
+}
+
+func WebsocketConnect(args WebsocketConnectParams) (*WebsocketConnection, error) {
+	ctx := args.Ctx
+	u := args.URL
+	insecure := args.Insecure
+	requestHeader := args.RequestHeader
+	messageTimeout := utils.DefaultIfZero(args.MessageTimeout, DEFAULT_WS_MESSAGE_TIMEOUT)
+
 	//check that a websocket read or write-stream permission is granted
 	perm := core.WebsocketPermission{
 		Kind_:    permkind.WriteStream,
@@ -81,7 +100,7 @@ func WebsocketConnect(ctx *core.Context, u core.URL, insecure bool, requestHeade
 	return &WebsocketConnection{
 		conn:           c,
 		endpoint:       u,
-		messageTimeout: DEFAULT_WS_MESSAGE_TIMEOUT,
+		messageTimeout: messageTimeout,
 		serverContext:  ctx,
 	}, nil
 }
