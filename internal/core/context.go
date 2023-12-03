@@ -43,7 +43,8 @@ var (
 	ErrDoubleUserDataDefinition                = errors.New("cannot define a user data entry more than once")
 	ErrTypeExtensionAlreadyRegistered          = errors.New("type extension is already registered")
 
-	ErrLimitNotPresentInContext = errors.New("limit not present in context")
+	ErrLimitNotPresentInContext   = errors.New("limit not present in context")
+	ErrOnDoneMicrotasksNotAllowed = errors.New("'on done' microtasks are not allowed")
 )
 
 type Context struct {
@@ -67,8 +68,9 @@ type Context struct {
 	onGracefulTearDownTasks []GracefulTearDownTaskFn
 	gracefulTearDownStatus  atomic.Int64 //see GracefulTeardownStatus
 
-	tearedDown       atomic.Bool //true when the context is done and the 'done' microtasks have been called.
-	onDoneMicrotasks []ContextDoneMicrotaskFn
+	tearedDown               atomic.Bool //true when the context is done and the 'done' microtasks have been called.
+	disallowOnDoneMicrotasks bool
+	onDoneMicrotasks         []ContextDoneMicrotaskFn
 
 	//permissions & limits
 	grantedPermissions   []Permission
@@ -372,6 +374,7 @@ func NewContext(config ContextConfig) *Context {
 	ctx.gracefulTearDownStatus.Store(int64(NeverStartedGracefulTeardown))
 
 	if config.DoNotSpawnDoneGoroutine {
+		ctx.disallowOnDoneMicrotasks = true
 		return ctx
 	}
 
@@ -486,8 +489,12 @@ func (ctx *Context) IsDoneSlowCheck() bool {
 }
 
 func (ctx *Context) OnDone(microtask ContextDoneMicrotaskFn) {
+	if ctx.disallowOnDoneMicrotasks {
+		panic(ErrOnDoneMicrotasksNotAllowed)
+	}
 	ctx.lock.Lock()
 	defer ctx.lock.Unlock()
+
 	ctx.onDoneMicrotasks = append(ctx.onDoneMicrotasks, microtask)
 }
 
