@@ -22,17 +22,22 @@ import (
 )
 
 const (
-	HEARTBEAT_INTERVAL = 100 * time.Millisecond
+	HEARTBEAT_INTERVAL          = 100 * time.Millisecond
+	MAX_RECONNECT_ATTEMPT_COUNT = 10
+	LOCAL_WS_HANDSHAKE_TIMEOUT  = time.Second
 )
 
 var (
-	ErrControlLoopEnd = errors.New("control loop end")
+	ErrControlLoopEnd           = errors.New("control loop end")
+	ErrTooManyReconnectAttempts = errors.New("too many reconnect attemps")
 )
 
 type ControlClient struct {
 	lock sync.Mutex
 
 	conn             *net_ns.WebsocketConnection
+	reconnectAttemps atomic.Int32
+
 	ctx              *core.Context
 	token            ControlledProcessToken
 	controlServerURL core.URL
@@ -94,13 +99,19 @@ func (c *ControlClient) connect() error {
 		RequestHeader: http.Header{
 			PROCESS_TOKEN_HEADER: []string{string(c.token)},
 		},
+		HandshakeTimeout: LOCAL_WS_HANDSHAKE_TIMEOUT,
 	})
 
 	if err != nil {
+		c.reconnectAttemps.Add(1)
 		return err
 	}
 
 	c.conn = conn
+	if !conn.IsClosedOrClosing() {
+		c.reconnectAttemps.Store(0)
+	}
+
 	return nil
 }
 
@@ -111,8 +122,8 @@ func (c *ControlClient) StartControl() error {
 		}
 	}()
 
-	hearbeatCtx := c.ctx.BoundChild()
-	defer hearbeatCtx.CancelGracefully()
+	heartbeatCtx := c.ctx.BoundChild()
+	defer heartbeatCtx.CancelGracefully()
 
 	//send hearbeats
 	go func() {
@@ -124,7 +135,7 @@ func (c *ControlClient) StartControl() error {
 		for t := range ticker.C {
 
 			select {
-			case <-hearbeatCtx.Done():
+			case <-heartbeatCtx.Done():
 				return
 			default:
 			}
@@ -145,9 +156,9 @@ func (c *ControlClient) StartControl() error {
 				continue
 			}
 
-			logger := hearbeatCtx.Logger()
+			logger := heartbeatCtx.Logger()
 			logger.Print("send hearbeat to control server ", t)
-			err = conn.WriteMessage(hearbeatCtx, websocket.PingMessage, data)
+			err = conn.WriteMessage(heartbeatCtx, websocket.PingMessage, data)
 			if err != nil {
 				logger.Err(err).Send()
 			}
@@ -165,9 +176,14 @@ func (c *ControlClient) StartControl() error {
 		default:
 		}
 
+		if c.reconnectAttemps.Load() > MAX_RECONNECT_ATTEMPT_COUNT {
+			return ErrTooManyReconnectAttempts
+		}
+
 		conn := c.Conn()
 		if conn == nil || conn.IsClosedOrClosing() {
 			time.Sleep(10 * time.Millisecond)
+			c.connect()
 			continue
 		}
 

@@ -32,7 +32,9 @@ type ControlledProcess struct {
 	lock                 sync.Mutex
 	connected            chan struct{}
 	connectedAtLeastOnce atomic.Bool
-	killedOrBeingKilled  atomic.Bool
+
+	stoppedOrBeingStopped atomic.Bool
+	killedOrBeingKilled   atomic.Bool
 }
 
 func (p *ControlledProcess) isAlreadyConnected() bool {
@@ -66,8 +68,12 @@ func (p *ControlledProcess) setSocket(socket *net_ns.WebsocketConnection) error 
 	return nil
 }
 
-// Stop gracefully stops the process if process or kills it, Stop does not wait for the process to exit.
+// Stop gracefully stops the process or directly kills it, Stop does not wait for the process to exit.
 func (p *ControlledProcess) Stop(ctx *core.Context) {
+	if !p.stoppedOrBeingStopped.CompareAndSwap(false, true) {
+		return
+	}
+
 	p.lock.Lock()
 	defer p.lock.Unlock()
 
@@ -78,10 +84,17 @@ func (p *ControlledProcess) Stop(ctx *core.Context) {
 	}
 	defer p.kill()
 
+	gracefulCancellationDeadline := time.Now().Add(GRACEFUL_CANCELLATION_TIMEOUT)
 	stopAllRequest := Message{
 		ULID:  ulid.Make(),
 		Inner: StopAllRequest{},
 	}
+
+	ctx.OnGracefulTearDown(func(ctx *core.Context) error {
+		p.socket.Close()
+		p.kill()
+		return nil
+	})
 
 	err := p.socket.WriteMessage(ctx, net_ns.WebsocketBinaryMessage, MustEncodeMessage(stopAllRequest))
 	if err != nil {
@@ -89,9 +102,13 @@ func (p *ControlledProcess) Stop(ctx *core.Context) {
 		return
 	}
 
-	gracefulCancellationDeadline := time.Now().Add(GRACEFUL_CANCELLATION_TIMEOUT)
-
 	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+		}
+
 		if time.Now().After(gracefulCancellationDeadline) {
 			return
 		}

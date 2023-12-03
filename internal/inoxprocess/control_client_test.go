@@ -23,6 +23,7 @@ import (
 
 func TestControlClient(t *testing.T) {
 	RegisterTypesInGob()
+	permissiveSocketCountLimit := core.MustMakeNotDecrementingLimit(net_ns.WS_SIMUL_CONN_TOTAL_LIMIT_NAME, 10_000)
 
 	var lock sync.Mutex
 	var receivedMessagePayloads [][]byte
@@ -42,8 +43,6 @@ func TestControlClient(t *testing.T) {
 		controlChan = make(chan Message, 10)
 		lock.Unlock()
 
-		permissiveSocketCountLimit := core.MustMakeNotDecrementingLimit(net_ns.WS_SIMUL_CONN_TOTAL_LIMIT_NAME, 10_000)
-
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{
 			Permissions: []core.Permission{
 				core.WebsocketPermission{Kind_: permkind.Provide},
@@ -52,7 +51,7 @@ func TestControlClient(t *testing.T) {
 			},
 			Filesystem: fs_ns.NewMemFilesystem(10_000),
 			Limits:     []core.Limit{permissiveSocketCountLimit},
-		}, os.Stdout)
+		}, nil /*os.Stdout*/)
 
 		server, err := net_ns.NewWebsocketServer(ctx)
 
@@ -129,6 +128,11 @@ func TestControlClient(t *testing.T) {
 					lock.Unlock()
 				}
 			}),
+		})
+
+		ctx.OnGracefulTearDown(func(ctx *core.Context) error {
+			server.Close(ctx)
+			return nil
 		})
 
 		if !assert.NoError(t, err) {
@@ -215,12 +219,52 @@ func TestControlClient(t *testing.T) {
 				Inner: StopAllRequest{},
 			}
 
-			//stop the control loop to prevent the test to hang
-			time.Sleep(2 * time.Second)
+			//stop the control loop to prevent the test to hang if there is an issue
+			time.Sleep(time.Second)
 			ctx.CancelGracefully()
 		}()
 
 		err = client.StartControl()
 		assert.ErrorIs(t, err, ErrControlLoopEnd)
+	})
+
+	t.Run("the control loop should stop after too many reconnection attemps", func(t *testing.T) {
+		serverCtx, token, httpServer := setup()
+		if httpServer == nil {
+			return
+		}
+		defer serverCtx.CancelGracefully()
+		defer httpServer.Close()
+
+		go httpServer.ListenAndServeTLS("", "")
+
+		clientCtx := core.NewContexWithEmptyState(core.ContextConfig{
+			Permissions: []core.Permission{
+				core.WebsocketPermission{Kind_: permkind.Read, Endpoint: core.Host("wss://localhost:8310")},
+				core.WebsocketPermission{Kind_: permkind.Write, Endpoint: core.Host("wss://localhost:8310")},
+			},
+			Filesystem: fs_ns.NewMemFilesystem(10_000),
+			Limits:     []core.Limit{permissiveSocketCountLimit},
+		}, os.Stdout)
+
+		client, err := ConnectToProcessControlServer(clientCtx, controlServerURL, token)
+		if !assert.NoError(t, err) {
+			return
+		}
+		defer client.Conn().Close()
+
+		serverStopDelay := 200 * time.Millisecond
+		go func() {
+			time.Sleep(serverStopDelay)
+			serverCtx.CancelGracefully()
+		}()
+
+		start := time.Now()
+		err = client.StartControl()
+		assert.ErrorIs(t, err, ErrTooManyReconnectAttempts)
+
+		//the loop should end pretty quickly for local connections.
+		assert.True(t, time.Since(start) > serverStopDelay)
+		assert.True(t, time.Since(start) < 10*time.Second)
 	})
 }

@@ -124,6 +124,10 @@ func (k ModuleKind) IsEmbedded() bool {
 	return k >= UserLThreadModule && k <= LifetimeJobModule
 }
 
+func (k ModuleKind) String() string {
+	return MODULE_KIND_NAMES[k]
+}
+
 // AbsoluteSource returns the absolute resource name (URL or absolute path) of the module.
 // If the module is embedded or has an in-memory source then (nil, false) is returned.
 func (mod *Module) AbsoluteSource() (ResourceName, bool) {
