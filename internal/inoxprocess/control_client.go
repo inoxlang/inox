@@ -5,15 +5,11 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"errors"
-	"io"
-	"net"
 	"net/http"
 	"net/url"
 	"os"
-	"os/signal"
 	"sync"
 	"sync/atomic"
-	"syscall"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -28,6 +24,7 @@ const (
 	HEARTBEAT_INTERVAL          = 100 * time.Millisecond
 	MAX_RECONNECT_ATTEMPT_COUNT = 10
 	LOCAL_WS_HANDSHAKE_TIMEOUT  = time.Second
+	INIT_PROCESS_PID            = 1
 )
 
 var (
@@ -170,9 +167,6 @@ func (c *ControlClient) StartControl() error {
 		}
 	}()
 
-	sigchildChan := make(chan os.Signal, 1)
-	signal.Notify(sigchildChan, syscall.SIGCHLD)
-
 	//handle messages from the control server
 	for {
 		select {
@@ -181,13 +175,15 @@ func (c *ControlClient) StartControl() error {
 				c.conn.Close()
 			}
 			return c.ctx.Err()
-		case <-sigchildChan:
-			return ErrOrphanProcess
 		default:
 		}
 
 		if c.reconnectAttemps.Load() > MAX_RECONNECT_ATTEMPT_COUNT {
 			return ErrTooManyReconnectAttempts
+		}
+
+		if os.Getppid() == INIT_PROCESS_PID {
+			return ErrOrphanProcess
 		}
 
 		conn := c.Conn()
@@ -198,12 +194,9 @@ func (c *ControlClient) StartControl() error {
 		}
 
 		msgType, p, err := conn.ReadMessage(c.ctx)
-		isEof := errors.Is(err, io.EOF)
-		isWebsocketUnexpectedClose := websocket.IsUnexpectedCloseError(err)
-		isClosedWebsocket := errors.Is(err, net_ns.ErrClosingOrClosedWebsocketConn)
-		isNetReaderr := utils.Implements[*net.OpError](err) && err.(*net.OpError).Op == "read"
 
-		if isEof || isWebsocketUnexpectedClose || isClosedWebsocket || isNetReaderr {
+		if err != nil {
+			//TODO: investigate exit status -13 after parent process is done.
 			c.connect()
 			continue
 		}
