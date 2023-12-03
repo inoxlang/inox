@@ -317,11 +317,7 @@ func ParseLocalModule(fpath string, config ModuleParsingConfig) (*Module, error)
 	}
 
 	ctx := config.Context
-	fls := config.Filesystem
-
-	if fls == nil {
-		fls = ctx.GetFileSystem()
-	}
+	fls := ctx.GetFileSystem()
 
 	absPath, err := fls.Absolute(fpath)
 	if err != nil {
@@ -394,8 +390,7 @@ func ParseLocalModule(fpath string, config ModuleParsingConfig) (*Module, error)
 }
 
 type ModuleParsingConfig struct {
-	Context    *Context //this context is used for checking permissions + getting the filesystem if .Filesystem is not set
-	Filesystem afs.Filesystem
+	Context *Context //this context is used for checking permissions + getting the filesystem
 
 	RecoverFromNonExistingIncludedFiles bool
 	IgnoreBadlyConfiguredModuleImports  bool

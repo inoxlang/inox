@@ -212,7 +212,7 @@ func (s *TestSuite) Run(ctx *Context, options ...Option) (*LThread, error) {
 		parentTestSuite = spawnerState.TestItem.(*TestSuite)
 	}
 
-	fls, err := getTestItemFilesystem(s, parentTestSuite, spawnerState)
+	fsProvider, err := getTestItemFilesystemProvider(s, parentTestSuite, spawnerState)
 	if err != nil {
 		return nil, err
 	}
@@ -223,7 +223,7 @@ func (s *TestSuite) Run(ctx *Context, options ...Option) (*LThread, error) {
 		return nil, fmt.Errorf("testing: following permission is required for running tests: %w", err)
 	}
 
-	return runTestItem(ctx, spawnerState, s, s.module, fls, timeout, parentTestSuite, "", nil, nil, nil, nil, nil)
+	return runTestItem(ctx, spawnerState, s, s.module, fsProvider, timeout, parentTestSuite, "", nil, nil, nil, nil, nil)
 }
 
 func (s *TestSuite) GetGoMethod(name string) (*GoFunction, bool) {
@@ -431,7 +431,7 @@ func (c *TestCase) Run(ctx *Context, options ...Option) (*LThread, error) {
 	}
 	parentTestSuite := spawnerState.TestItem.(*TestSuite)
 
-	fls, err := getTestItemFilesystem(c, parentTestSuite, spawnerState)
+	fls, err := getTestItemFilesystemProvider(c, parentTestSuite, spawnerState)
 	if err != nil {
 		return nil, err
 	}
@@ -513,7 +513,7 @@ func runTestItem(
 	spawnerState *GlobalState,
 	testItem TestItem,
 	testItemModule *Module,
-	testItemFS afs.Filesystem,
+	testItemFSProvider *fsProvider,
 	timeout time.Duration,
 	parentTestSuite *TestSuite,
 
@@ -561,6 +561,8 @@ func runTestItem(
 		}
 	}
 
+	var fls afs.Filesystem
+
 	// if the test item is a test suite with a program to test we parse it for later use by sub suites & test cases.
 	if programToExecute == "" && isTestSuite && suite.testedProgramPath != "" {
 
@@ -571,14 +573,19 @@ func runTestItem(
 			}
 			testedProgramModule = spawnerState.TestedProgram
 		} else {
+			ctxWithFilesystem, isTempContext := testItemFSProvider.getMakeContextOnlyOnce()
+			if isTempContext {
+				defer ctxWithFilesystem.CancelGracefully()
+			}
+
 			mod, err := ParseLocalModule(string(suite.testedProgramPath), ModuleParsingConfig{
-				Context:    parentCtx,
-				Filesystem: testItemFS,
+				Context: ctxWithFilesystem,
 			})
 			if err != nil {
 				return nil, fmt.Errorf("testing: failed to parse the program to test for caching (%q): %w", suite.testedProgramPath, err)
 			}
 			testedProgramModule = mod
+			fls = ctxWithFilesystem.GetFileSystem()
 		}
 
 		//read the manifest to determine the database resource names
@@ -629,6 +636,10 @@ func runTestItem(
 	permissions = append(permissions, createLthreadPerm)
 	permissions = append(permissions, implicitlyAddedPermissions...)
 
+	if fls == nil {
+		fls = testItemFSProvider.getFilesystemOnlyOnce()
+	}
+
 	lthreadCtx := NewContext(ContextConfig{
 		Kind:            TestingContext,
 		ParentContext:   parentCtx,
@@ -636,7 +647,7 @@ func runTestItem(
 		Limits:          manifest.Limits,
 		HostResolutions: manifest.HostResolutions,
 
-		Filesystem: testItemFS,
+		Filesystem: fls,
 	})
 
 	//inherit patterns and host aliases.
@@ -672,8 +683,8 @@ func runTestItem(
 			ParentContext:             lthreadCtx, //TODO: gracefully stops the program
 			DefaultLimits:             GetDefaultScriptLimits(),
 
-			ScriptContextFileSystem: testItemFS,
-			PreinitFilesystem:       testItemFS,
+			ScriptContextFileSystem: fls,
+			PreinitFilesystem:       fls,
 
 			Out:    spawnerState.Out,
 			Logger: spawnerState.Logger,
@@ -763,18 +774,35 @@ func runTestItem(
 	return lthread, nil
 }
 
-// getTestItemFilesystem retrieves or create the filesystem for a test item.
+// getTestItemFilesystemProvider retrieves or create the filesystem for a test item and returns a testItemFSProvider providing it.
 //   - if the test item has a filesystem snapshot then a filesystem is created from it.
 //   - else if the parent test suite is nil then the parent state's filesystem is returned.
 //   - else if the parent test suite is configured to pass a shapshot of its live filesystem
 //     then its filesystem is snapshoted and a filesystem is created from it.
 //   - else if the parent test suite has a filesystem snapshot then a filesystem is created from it.
 //   - else the parent state's filesystem is returned.
-func getTestItemFilesystem(test TestItem, parentTestSuite *TestSuite, spawnerState *GlobalState) (afs.Filesystem, error) {
+func getTestItemFilesystemProvider(test TestItem, parentTestSuite *TestSuite, spawnerState *GlobalState) (*fsProvider, error) {
 	if snapshot, ok := test.FilesystemSnapshot(); ok {
-		return snapshot.NewAdaptedFilesystem(TEST__MAX_FS_STORAGE_HINT)
+		fls, err := snapshot.NewAdaptedFilesystem(TEST__MAX_FS_STORAGE_HINT)
+		if err != nil {
+			return nil, err
+		}
+
+		return &fsProvider{
+			filesystem: fls,
+			makeContext: func() *Context {
+				return spawnerState.Ctx.BoundChildWithOptions(BoundChildContextOptions{
+					Filesystem: fls,
+				})
+			},
+		}, nil
 	} else if parentTestSuite == nil {
-		return spawnerState.Ctx.GetFileSystem(), nil
+		return &fsProvider{
+			filesystem: spawnerState.Ctx.GetFileSystem(),
+			getContext: func() *Context {
+				return spawnerState.Ctx
+			},
+		}, nil
 	} else if parentTestSuite.passLiveFilesystemCopyToSubTests {
 		parentFls := spawnerState.Ctx.GetFileSystem()
 
@@ -794,7 +822,15 @@ func getTestItemFilesystem(test TestItem, parentTestSuite *TestSuite, spawnerSta
 			if err != nil {
 				return nil, fmt.Errorf("failed to create filesystem from the live filesystem of the parent test suite")
 			}
-			return filesystem, nil
+
+			return &fsProvider{
+				filesystem: filesystem,
+				makeContext: func() *Context {
+					return spawnerState.Ctx.BoundChildWithOptions(BoundChildContextOptions{
+						Filesystem: filesystem,
+					})
+				},
+			}, nil
 		} else {
 			return nil, fmt.Errorf("failed to create filesystem: the filesystem of the parent test suite is not snapshotable")
 		}
@@ -805,9 +841,21 @@ func getTestItemFilesystem(test TestItem, parentTestSuite *TestSuite, spawnerSta
 			if err != nil {
 				return nil, fmt.Errorf("failed to create filesystem from the filesystem snapshot of the parent test suite")
 			}
-			return filesystem, nil
+			return &fsProvider{
+				filesystem: filesystem,
+				makeContext: func() *Context {
+					return spawnerState.Ctx.BoundChildWithOptions(BoundChildContextOptions{
+						Filesystem: filesystem,
+					})
+				},
+			}, nil
 		} else {
-			return spawnerState.Ctx.GetFileSystem(), nil
+			return &fsProvider{
+				filesystem: spawnerState.Ctx.GetFileSystem(),
+				getContext: func() *Context {
+					return spawnerState.Ctx
+				},
+			}, nil
 		}
 	}
 }
@@ -1007,4 +1055,30 @@ func (*TestedProgram) SetProp(ctx *Context, name string, value Value) error {
 
 func (*TestedProgram) PropertyNames(ctx *Context) []string {
 	return symbolic.TESTED_PROGRAM_PROPNAMES
+}
+
+type fsProvider struct {
+	makeContext func() *Context //creates a context containing .filesystem
+	getContext  func() *Context //returns a context containing .filesystem
+	filesystem  afs.Filesystem
+	used        bool
+}
+
+func (p *fsProvider) getFilesystemOnlyOnce() afs.Filesystem {
+	if p.used {
+		panic(errors.New("already used"))
+	}
+	p.used = true
+	return p.filesystem
+}
+
+func (p *fsProvider) getMakeContextOnlyOnce() (ctx *Context, isTempContext bool) {
+	if p.used {
+		panic(errors.New("already used"))
+	}
+	p.used = true
+	if p.getContext != nil {
+		return p.getContext(), false
+	}
+	return p.makeContext(), true
 }
