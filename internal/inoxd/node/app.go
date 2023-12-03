@@ -10,12 +10,11 @@ import (
 	"regexp"
 	"sync"
 	"sync/atomic"
-	"time"
 
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
+	"github.com/inoxlang/inox/internal/inoxprocess"
 	"github.com/inoxlang/inox/internal/utils"
-	"github.com/inoxlang/inox/internal/utils/processutils"
 	"github.com/rs/zerolog"
 )
 
@@ -31,18 +30,19 @@ var (
 )
 
 type Application struct {
-	lock       sync.Mutex
-	currentCtx context.Context
-	logger     zerolog.Logger
+	lock   sync.Mutex
+	logger zerolog.Logger
 
 	name     ApplicationName
 	agent    *Agent
 	osAppDir core.Path
 
-	status            atomic.Value           //ApplicationStatus
+	status atomic.Value //ApplicationStatus
+	cmd    *exec.Cmd
+
 	currentDeployment *ApplicationDeployment //can be nil
-	cmd               *exec.Cmd
 	currentModule     *core.Module
+	process           *inoxprocess.ControlledProcess
 }
 
 func (a *Agent) getOrCreateApplication(name ApplicationName) (*Application, error) {
@@ -63,11 +63,10 @@ func (a *Agent) getOrCreateApplication(name ApplicationName) (*Application, erro
 		}
 
 		app = &Application{
-			name:       name,
-			currentCtx: a.goCtx,
-			logger:     core.ChildLoggerForSource(a.logger, APP_LOG_SRC_PREFIX+string(name)),
-			agent:      a,
-			osAppDir:   appDir,
+			name:     name,
+			logger:   core.ChildLoggerForSource(a.logger, APP_LOG_SRC_PREFIX+string(name)),
+			agent:    a,
+			osAppDir: appDir,
 		}
 		app.status.Store(UndeployedApp)
 		a.applications[name] = app
@@ -80,19 +79,34 @@ func (app *Application) Status() ApplicationStatus {
 	return app.status.Load().(ApplicationStatus)
 }
 
+func (app *Application) Stop(goCtx context.Context) {
+	app.lock.Lock()
+	defer app.lock.Unlock()
+
+	panic("WIP")
+
+	for !utils.IsContextDone(app.agent.goCtx) {
+		process, err := app.agent.controlServer.CreateControlledProcess(nil, nil)
+		if err != nil {
+			app.lock.Lock()
+		}
+		_ = process
+	}
+}
+
 func (app *Application) AutorestartLoop(goCtx context.Context) {
 	defer utils.Recover()
 
-	processutils.AutoRestart(processutils.AutoRestartArgs{
-		GoCtx: app.currentCtx,
-		MakeCommand: func(goCtx context.Context) *exec.Cmd {
-			panic("!")
-		},
-		Logger:                      app.logger,
-		ProcessNameInLogs:           string(app.name),
-		MaxTryCount:                 3,
-		PostStartBurstPauseDuration: 2 * time.Minute,
-	})
+	panic("WIP")
+
+	for !utils.IsContextDone(app.agent.goCtx) {
+
+		process, err := app.agent.controlServer.CreateControlledProcess(nil, nil)
+		if err != nil {
+			app.lock.Lock()
+		}
+		_ = process
+	}
 }
 
 type ApplicationName string

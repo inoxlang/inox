@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/inoxprocess"
 	"github.com/rs/zerolog"
 )
 
@@ -22,6 +23,8 @@ type Agent struct {
 	logger       zerolog.Logger
 	config       AgentConfig
 	applications map[ApplicationName]*Application
+
+	controlServer *inoxprocess.ControlServer
 }
 
 type AgentParameters struct {
