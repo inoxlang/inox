@@ -207,7 +207,7 @@ func newS3WriteFile(ctx *core.Context, input newS3WriteFileInput) (*s3WriteFile,
 
 	file.content = fs_ns.NewInMemFileContent(input.filename, content, ignoredTime, input.maxStorage, input.storageSize)
 
-	file.ctx.OnDone(func(timeoutCtx context.Context) error {
+	file.ctx.OnDone(func(timeoutCtx context.Context, teardownStatus core.GracefulTeardownStatus) error {
 		file.closed.Store(true)
 
 		go func() {

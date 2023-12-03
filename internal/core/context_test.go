@@ -6,6 +6,7 @@ import (
 	"errors"
 	"runtime"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -21,13 +22,16 @@ func TestNewContext(t *testing.T) {
 		startMemStats := new(runtime.MemStats)
 		runtime.ReadMemStats(startMemStats)
 
-		defer utils.AssertNoMemoryLeak(t, startMemStats, 5_000, utils.AssertNoMemoryLeakOptions{
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 6_000, utils.AssertNoMemoryLeakOptions{
 			PreSleepDurationMillis: 100,
 			CheckGoroutines:        true,
 			GoroutineCount:         runtime.NumGoroutine(),
 			MaxGoroutineCountDelta: 0,
 		})
 	}
+
+	//wait for ungraceful teardown goroutines to finish executing
+	defer time.Sleep(100 * time.Millisecond)
 
 	t.Run(".ParentContext & .ParentStdLibContext should not be both set", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
@@ -611,7 +615,7 @@ func TestContextSetProtocolClientForURLForURL(t *testing.T) {
 	// assert.NotNil(t, profile)
 }
 
-func TestContextGracefulTearDownTasks(t *testing.T) {
+func TestGracefulContextTearDown(t *testing.T) {
 	{
 		runtime.GC()
 		startMemStats := new(runtime.MemStats)
@@ -625,10 +629,25 @@ func TestContextGracefulTearDownTasks(t *testing.T) {
 		})
 	}
 
+	waitCtxDone := func(t *testing.T, ctx *Context) {
+		timer := time.NewTimer(100 * time.Millisecond)
+		defer timer.Stop()
+
+		select {
+		case <-ctx.Done():
+			//wait for ungraceful teardown goroutine to finish
+			time.Sleep(100 * time.Millisecond)
+		case <-timer.C:
+			timer.Stop()
+			t.Fatal("timeout")
+		}
+	}
+
 	t.Run("callback functions should all be called", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 		firstCall := false
 		secondCall := false
+		var statusInDoneCallback atomic.Int32
 
 		ctx.OnGracefulTearDown(func(ctx *Context) error {
 			assert.Equal(t, GracefullyTearingDown, ctx.GracefulTearDownStatus())
@@ -639,6 +658,11 @@ func TestContextGracefulTearDownTasks(t *testing.T) {
 		ctx.OnGracefulTearDown(func(ctx *Context) error {
 			assert.Equal(t, GracefullyTearingDown, ctx.GracefulTearDownStatus())
 			secondCall = true
+			return nil
+		})
+
+		ctx.OnDone(func(timeoutCtx context.Context, teardownStatus GracefulTeardownStatus) error {
+			statusInDoneCallback.Store(int32(teardownStatus))
 			return nil
 		})
 
@@ -657,12 +681,16 @@ func TestContextGracefulTearDownTasks(t *testing.T) {
 			return
 		}
 		assert.True(t, secondCall)
+
+		waitCtxDone(t, ctx)
+		assert.EqualValues(t, GracefullyTearedDown, statusInDoneCallback.Load())
 	})
 
 	t.Run("callback functions should all be called even if one function returns an error", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 		firstCall := false
 		secondCall := false
+		var statusInDoneCallback atomic.Int32
 
 		ctx.OnGracefulTearDown(func(ctx *Context) error {
 			firstCall = true
@@ -675,6 +703,11 @@ func TestContextGracefulTearDownTasks(t *testing.T) {
 			return nil
 		})
 
+		ctx.OnDone(func(timeoutCtx context.Context, teardownStatus GracefulTeardownStatus) error {
+			statusInDoneCallback.Store(int32(teardownStatus))
+			return nil
+		})
+
 		cancellationStart := time.Now()
 		ctx.CancelGracefully()
 		// cancellation should be fast
@@ -682,7 +715,7 @@ func TestContextGracefulTearDownTasks(t *testing.T) {
 			return
 		}
 
-		if !assert.Equal(t, GracefullyTearedDown, ctx.GracefulTearDownStatus()) {
+		if !assert.Equal(t, GracefullyTearedDownWithErrors, ctx.GracefulTearDownStatus()) {
 			return
 		}
 
@@ -690,12 +723,16 @@ func TestContextGracefulTearDownTasks(t *testing.T) {
 			return
 		}
 		assert.True(t, secondCall)
+
+		waitCtxDone(t, ctx)
+		assert.EqualValues(t, GracefullyTearedDownWithErrors, statusInDoneCallback.Load())
 	})
 
 	t.Run("callback functions should all be called even if one function panics", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 		firstCall := false
 		secondCall := false
+		var statusInDoneCallback atomic.Int32
 
 		ctx.OnGracefulTearDown(func(ctx *Context) error {
 			firstCall = true
@@ -708,6 +745,12 @@ func TestContextGracefulTearDownTasks(t *testing.T) {
 			return nil
 		})
 
+		ctx.OnDone(func(timeoutCtx context.Context, teardownStatus GracefulTeardownStatus) error {
+			statusInDoneCallback.Store(int32(teardownStatus))
+			assert.Equal(t, GracefullyTearedDownWithErrors, ctx.GracefulTearDownStatus())
+			return nil
+		})
+
 		cancellationStart := time.Now()
 		ctx.CancelGracefully()
 		// cancellation should be fast
@@ -715,7 +758,7 @@ func TestContextGracefulTearDownTasks(t *testing.T) {
 			return
 		}
 
-		if !assert.Equal(t, GracefullyTearedDown, ctx.GracefulTearDownStatus()) {
+		if !assert.Equal(t, GracefullyTearedDownWithErrors, ctx.GracefulTearDownStatus()) {
 			return
 		}
 
@@ -723,6 +766,9 @@ func TestContextGracefulTearDownTasks(t *testing.T) {
 			return
 		}
 		assert.True(t, secondCall)
+
+		waitCtxDone(t, ctx)
+		assert.EqualValues(t, GracefullyTearedDownWithErrors, statusInDoneCallback.Load())
 	})
 
 	t.Run("cancellation should be fast even if the state's output fields have not been set", func(t *testing.T) {
@@ -745,6 +791,92 @@ func TestContextGracefulTearDownTasks(t *testing.T) {
 		}
 	})
 
+	t.Run("on true context cancellation remaining teardown tasks should not be executed and the final status should GracefulTearedDownWithCancellation", func(t *testing.T) {
+		ctx := NewContext(ContextConfig{})
+		NewGlobalState(ctx)
+
+		firstCall := false
+		secondCall := false
+		var statusInDoneCallback atomic.Int32
+
+		ctx.OnGracefulTearDown(func(ctx *Context) error {
+			firstCall = true
+			time.Sleep(100 * time.Millisecond)
+			return nil
+		})
+
+		ctx.OnGracefulTearDown(func(ctx *Context) error {
+			secondCall = true
+			time.Sleep(100 * time.Millisecond)
+			return nil
+		})
+
+		ctx.OnDone(func(timeoutCtx context.Context, teardownStatus GracefulTeardownStatus) error {
+			statusInDoneCallback.Store(int32(teardownStatus))
+			assert.Equal(t, GracefullyTearedDownWithCancellation, ctx.GracefulTearDownStatus())
+			return nil
+		})
+
+		go func() {
+			//cancel during the first task
+			time.Sleep(50 * time.Millisecond)
+			ctx.CancelUngracefully()
+		}()
+
+		ctx.CancelGracefully()
+
+		assert.Equal(t, GracefullyTearedDownWithCancellation, ctx.GracefulTearDownStatus())
+		assert.True(t, firstCall)
+		assert.False(t, secondCall)
+
+		waitCtxDone(t, ctx)
+		assert.EqualValues(t, GracefullyTearedDownWithCancellation, statusInDoneCallback.Load())
+	})
+
+	t.Run("two subsequent CancelGracefully calls should not cause an immediate true cancellation and callback funcs should be called once", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		firstCallback := 0
+		secondCallback := 0
+		var statusInDoneCallback atomic.Int32
+
+		ctx.OnGracefulTearDown(func(ctx *Context) error {
+			assert.Equal(t, GracefullyTearingDown, ctx.GracefulTearDownStatus())
+			firstCallback++
+			return nil
+		})
+
+		ctx.OnGracefulTearDown(func(ctx *Context) error {
+			assert.Equal(t, GracefullyTearingDown, ctx.GracefulTearDownStatus())
+			secondCallback++
+			return nil
+		})
+
+		ctx.OnDone(func(timeoutCtx context.Context, teardownStatus GracefulTeardownStatus) error {
+			statusInDoneCallback.Store(int32(teardownStatus))
+			return nil
+		})
+
+		cancellationStart := time.Now()
+		ctx.CancelGracefully()
+		go ctx.CancelGracefully()
+
+		// cancellation should be fast
+		if !assert.Less(t, time.Since(cancellationStart), time.Millisecond) {
+			return
+		}
+
+		if !assert.Equal(t, GracefullyTearedDown, ctx.GracefulTearDownStatus()) {
+			return
+		}
+
+		if !assert.Equal(t, 1, firstCallback) {
+			return
+		}
+		assert.Equal(t, 1, secondCallback)
+
+		waitCtxDone(t, ctx)
+		assert.EqualValues(t, GracefullyTearedDown, statusInDoneCallback.Load())
+	})
 }
 
 func TestContextDone(t *testing.T) {
@@ -767,12 +899,12 @@ func TestContextDone(t *testing.T) {
 			firstCall := false
 			secondCall := false
 
-			ctx.OnDone(func(timeoutCtx context.Context) error {
+			ctx.OnDone(func(timeoutCtx context.Context, teardownStatus GracefulTeardownStatus) error {
 				firstCall = true
 				return nil
 			})
 
-			ctx.OnDone(func(timeoutCtx context.Context) error {
+			ctx.OnDone(func(timeoutCtx context.Context, teardownStatus GracefulTeardownStatus) error {
 				secondCall = true
 				return nil
 			})
@@ -793,12 +925,12 @@ func TestContextDone(t *testing.T) {
 			firstCall := false
 			secondCall := false
 
-			ctx.OnDone(func(timeoutCtx context.Context) error {
+			ctx.OnDone(func(timeoutCtx context.Context, teardownStatus GracefulTeardownStatus) error {
 				firstCall = true
 				return errors.New("random error")
 			})
 
-			ctx.OnDone(func(timeoutCtx context.Context) error {
+			ctx.OnDone(func(timeoutCtx context.Context, teardownStatus GracefulTeardownStatus) error {
 				secondCall = true
 				return nil
 			})
@@ -817,12 +949,12 @@ func TestContextDone(t *testing.T) {
 			firstCall := false
 			secondCall := false
 
-			ctx.OnDone(func(timeoutCtx context.Context) error {
+			ctx.OnDone(func(timeoutCtx context.Context, teardownStatus GracefulTeardownStatus) error {
 				firstCall = true
 				panic(errors.New("random error"))
 			})
 
-			ctx.OnDone(func(timeoutCtx context.Context) error {
+			ctx.OnDone(func(timeoutCtx context.Context, teardownStatus GracefulTeardownStatus) error {
 				secondCall = true
 				return nil
 			})

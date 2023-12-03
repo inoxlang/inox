@@ -232,7 +232,7 @@ func (p *cloudProxy) run() error {
 		return httpServer.Shutdown(ctx)
 	})
 
-	p.ctx.OnDone(func(timeoutCtx context.Context) error {
+	p.ctx.OnDone(func(timeoutCtx context.Context, teardownStatus core.GracefulTeardownStatus) error {
 		return httpServer.Close()
 	})
 

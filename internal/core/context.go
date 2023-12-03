@@ -105,6 +105,8 @@ const (
 	NeverStartedGracefulTeardown GracefulTeardownStatus = iota
 	GracefullyTearingDown
 	GracefullyTearedDown
+	GracefullyTearedDownWithErrors       //errors during teardown
+	GracefullyTearedDownWithCancellation //context cancellation before the end of the teardown
 )
 
 // A GracefulTearDownTaskFn should ideally run for a relative short time (less than 500ms),
@@ -113,7 +115,7 @@ type GracefulTearDownTaskFn func(ctx *Context) error
 
 // A ContextDoneMicrotaskFn should run for a short time (less than 1ms),
 // the calling context should not be access because it is locked.
-type ContextDoneMicrotaskFn func(timeoutCtx context.Context) error
+type ContextDoneMicrotaskFn func(timeoutCtx context.Context, teardownStatus GracefulTeardownStatus) error
 
 type ContextConfig struct {
 	Kind                    ContextKind
@@ -377,6 +379,11 @@ func NewContext(config ContextConfig) *Context {
 	go func() {
 		<-ctx.Done()
 		ctx.done.Store(true)
+
+		if ctx.GracefulTearDownStatus() == GracefullyTearingDown {
+			ctx.gracefulTearDownStatus.Store(int64(GracefullyTearedDownWithCancellation))
+		}
+
 		defer ctx.tearedDown.Store(true)
 
 		ctx.lock.Lock()
@@ -432,7 +439,7 @@ func NewContext(config ContextConfig) *Context {
 					}
 				}()
 
-				err := microtaskFn(deadlineCtx)
+				err := microtaskFn(deadlineCtx, ctx.GracefulTearDownStatus())
 				if err != nil {
 					logger.Err(err).Msg("error returned by a context done microtask")
 				}
@@ -1322,15 +1329,28 @@ func (ctx *Context) IsLongLived() bool {
 // then the context is truly cancelled.
 // TODO: add cancellation cause
 func (ctx *Context) CancelGracefully() {
-	ctx.gracefullyTearDown()
+	ignore := ctx.gracefullyTearDown()
+	if ignore {
+		return
+	}
 
 	if ctx.done.CompareAndSwap(false, true) {
 		ctx.lock.Lock()
 		defer ctx.lock.Unlock()
+		ctx.cancel() // TODO: prevent deadlock
+	}
+}
 
-		if ctx.cancel != nil {
-			ctx.cancel() // TODO: prevent deadlock
+// CancelUngracefully directly cancels the go context, CancelGracefully should always be called instead.
+func (ctx *Context) CancelUngracefully() {
+	if ctx.done.CompareAndSwap(false, true) {
+		ctx.lock.Lock()
+		defer ctx.lock.Unlock()
+
+		if ctx.GracefulTearDownStatus() == GracefullyTearingDown {
+			ctx.gracefulTearDownStatus.Store(int64(GracefullyTearedDownWithCancellation))
 		}
+		ctx.cancel() // TODO: prevent deadlock
 	}
 }
 
@@ -1340,14 +1360,30 @@ func (ctx *Context) CancelIfShortLived() {
 	}
 }
 
-func (ctx *Context) gracefullyTearDown() {
+func (ctx *Context) gracefullyTearDown() (ignore bool) {
+	if ctx.done.Load() {
+		ignore = true
+		return
+	}
+
 	if !ctx.gracefulTearDownStatus.CompareAndSwap(int64(NeverStartedGracefulTeardown), int64(GracefullyTearingDown)) {
+		ignore = true
 		return
 	}
 
 	ctx.gracefulTearDownCallLocation.Store(string(debug.Stack()))
+	errorDuringTeardown := false
+	cancellationDuringTeardown := false
 
-	defer ctx.gracefulTearDownStatus.Store(int64(GracefullyTearedDown))
+	defer func() {
+		status := GracefullyTearedDown
+		if cancellationDuringTeardown {
+			status = GracefullyTearedDownWithCancellation
+		} else if errorDuringTeardown {
+			status = GracefullyTearedDownWithErrors
+		}
+		defer ctx.gracefulTearDownStatus.Store(int64(status))
+	}()
 
 	var logger zerolog.Logger = zerolog.Nop()
 	{
@@ -1375,10 +1411,17 @@ func (ctx *Context) gracefullyTearDown() {
 	}()
 
 	for _, taskFn := range ctx.onGracefulTearDownTasks {
+		if utils.IsContextDone(ctx) {
+			cancellationDuringTeardown = true
+			break
+		}
+
 		func() {
 			defer func() {
 				if e := recover(); e != nil {
+					errorDuringTeardown = true
 					defer utils.Recover()
+
 					err := fmt.Errorf("%w: %s", utils.ConvertPanicValueToError(e), string(debug.Stack()))
 					logger.Err(err).Msg("error while calling a context teardown task")
 				}
@@ -1387,9 +1430,12 @@ func (ctx *Context) gracefullyTearDown() {
 			err := taskFn(ctx)
 			if err != nil {
 				logger.Err(err).Msg("error returned by a context teardown task")
+				errorDuringTeardown = true
 			}
 		}()
 	}
+
+	return
 }
 
 func (ctx *Context) ToSymbolicValue() (*symbolic.Context, error) {

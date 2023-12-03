@@ -154,7 +154,7 @@ func (s *ControlServer) Start() error {
 		return s.httpServer.Shutdown(ctx)
 	})
 
-	s.ctx.OnDone(func(timeoutCtx context.Context) error {
+	s.ctx.OnDone(func(timeoutCtx context.Context, teardownStatus core.GracefulTeardownStatus) error {
 		return s.httpServer.Close()
 	})
 
