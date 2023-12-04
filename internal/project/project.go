@@ -56,8 +56,8 @@ type Project struct {
 
 	//providers
 
-	cloudflare     *cloudflareprovider.Cloudflare //can be nil
-	creationParams CreateProjectParams
+	cloudflare *cloudflareprovider.Cloudflare //can be nil
+	data       projectData
 }
 
 func (p *Project) Id() core.ProjectID {
@@ -65,7 +65,7 @@ func (p *Project) Id() core.ProjectID {
 }
 
 func (p *Project) CreationParams() CreateProjectParams {
-	return p.creationParams
+	return p.data.creationParams
 }
 
 func (p *Project) HasProviders() bool {
@@ -95,16 +95,10 @@ func (r *Registry) CreateProject(ctx *core.Context, params CreateProjectParams) 
 		return "", fmt.Errorf("failed to create directory to store projects: %w", err)
 	}
 
-	// persist metadata
-	projectMetadata := core.NewRecordFromMap(core.ValMap{
-		CREATION_PARAMS_METADATA_KEY: core.NewRecordFromMap(core.ValMap{
-			CREATION_PARAMS_NAME_METADATA_KEY:          core.Str(params.Name),
-			CREATION_PARAMS_ADD_TUT_FILE_METADATA_KEY:  core.Bool(params.AddTutFile),
-			CREATION_PARAMS_ADD_MAIN_FILE_METADATA_KEY: core.Bool(params.AddMainFile),
-		}),
-	})
+	// persist data
+	projectData := projectData{creationParams: params}
 
-	r.metadata.Insert(ctx, getProjectKvKey(id), projectMetadata, r)
+	r.metadata.Insert(ctx, getProjectKvKey(id), projectData.toRecord(), r)
 
 	// create the project's directory
 	projectDir := r.filesystem.Join(r.projectsDir, string(id))
@@ -154,7 +148,6 @@ func NewDummyProject(name string, fls core.SnapshotableFilesystem) *Project {
 	}
 }
 
-// OpenProject
 func (r *Registry) OpenProject(ctx *core.Context, params OpenProjectParams) (*Project, error) {
 	if project, ok := r.openProjects[params.Id]; ok {
 		return project, nil
@@ -170,10 +163,7 @@ func (r *Registry) OpenProject(ctx *core.Context, params OpenProjectParams) (*Pr
 		return nil, ErrProjectNotFound
 	}
 
-	creationParams := metadata.(*core.Record).Prop(ctx, CREATION_PARAMS_METADATA_KEY).(*core.Record)
-	name := creationParams.Prop(ctx, CREATION_PARAMS_NAME_METADATA_KEY).(core.Str)
-	addTutFile := creationParams.Prop(ctx, CREATION_PARAMS_ADD_TUT_FILE_METADATA_KEY).(core.Bool)
-	addMainFile := creationParams.Prop(ctx, CREATION_PARAMS_ADD_MAIN_FILE_METADATA_KEY).(core.Bool)
+	persistedMetadata := getProjectDataFromRecord(ctx, metadata.(*core.Record))
 
 	projectDir := r.filesystem.Join(r.projectsDir, string(params.Id))
 	projectFS, err := fs_ns.OpenMetaFilesystem(r.openProjectsContext, r.filesystem, fs_ns.MetaFilesystemParams{
@@ -188,12 +178,7 @@ func (r *Registry) OpenProject(ctx *core.Context, params OpenProjectParams) (*Pr
 		id:             params.Id,
 		liveFilesystem: projectFS,
 		tempTokens:     params.TempTokens,
-
-		creationParams: CreateProjectParams{
-			Name:        name.GetOrBuildString(),
-			AddTutFile:  bool(addTutFile),
-			AddMainFile: bool(addMainFile),
-		},
+		data:           persistedMetadata,
 	}
 
 	if params.DevSideConfig.Cloudflare != nil {
@@ -311,4 +296,34 @@ func (p *Project) ForceLock() {
 
 func (p *Project) ForceUnlock() {
 	p.lock.ForceUnlock()
+}
+
+// persisted data
+type projectData struct {
+	creationParams CreateProjectParams
+}
+
+func getProjectDataFromRecord(ctx *core.Context, record *core.Record) projectData {
+	creationParams := record.Prop(ctx, CREATION_PARAMS_METADATA_KEY).(*core.Record)
+	name := creationParams.Prop(ctx, CREATION_PARAMS_NAME_METADATA_KEY).(core.Str)
+	addTutFile := creationParams.Prop(ctx, CREATION_PARAMS_ADD_TUT_FILE_METADATA_KEY).(core.Bool)
+	addMainFile := creationParams.Prop(ctx, CREATION_PARAMS_ADD_MAIN_FILE_METADATA_KEY).(core.Bool)
+
+	return projectData{
+		creationParams: CreateProjectParams{
+			Name:        name.GetOrBuildString(),
+			AddMainFile: bool(addMainFile),
+			AddTutFile:  bool(addTutFile),
+		},
+	}
+}
+
+func (d projectData) toRecord() *core.Record {
+	return core.NewRecordFromMap(core.ValMap{
+		CREATION_PARAMS_METADATA_KEY: core.NewRecordFromMap(core.ValMap{
+			CREATION_PARAMS_NAME_METADATA_KEY:          core.Str(d.creationParams.Name),
+			CREATION_PARAMS_ADD_TUT_FILE_METADATA_KEY:  core.Bool(d.creationParams.AddTutFile),
+			CREATION_PARAMS_ADD_MAIN_FILE_METADATA_KEY: core.Bool(d.creationParams.AddMainFile),
+		}),
+	})
 }

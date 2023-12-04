@@ -102,7 +102,7 @@ func TestOpenProject(t *testing.T) {
 
 		assert.NotNil(t, project)
 		assert.Equal(t, id, project.id)
-		assert.Equal(t, params, project.creationParams)
+		assert.Equal(t, params, project.data.creationParams)
 	})
 
 	t.Run("re opening a project should not change the returned value", func(t *testing.T) {
@@ -144,18 +144,18 @@ func TestOpenProject(t *testing.T) {
 		}
 
 		assert.Same(t, project1, project2)
-		assert.Equal(t, params, project1.creationParams)
+		assert.Equal(t, params, project1.data.creationParams)
 	})
 
 	t.Run("after closing the ctx that opened the project, re-opening with another ctx should be okay and the FS should be working", func(t *testing.T) {
-		ctx1 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
-		defer ctx1.CancelGracefully()
-
 		projectRegistryCtx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 		defer projectRegistryCtx.CancelGracefully()
 
 		reg := utils.Must(OpenRegistry("/projects", fs_ns.NewMemFilesystem(1_000), projectRegistryCtx))
-		defer reg.Close(ctx1)
+		defer reg.Close(projectRegistryCtx)
+
+		ctx1 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		defer ctx1.CancelGracefully()
 
 		id := utils.Must(reg.CreateProject(ctx1, CreateProjectParams{
 			Name:        "myproject",
