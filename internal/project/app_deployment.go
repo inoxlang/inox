@@ -69,5 +69,6 @@ func (p *Project) PrepareApplicationDeployment(args ApplicationDeploymentPrepara
 		AppMod:           mod,
 		BaseImg:          baseImg,
 		UpdateRunningApp: args.UpdateRunningApp,
+		Project:          p,
 	})
 }
