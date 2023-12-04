@@ -79,7 +79,12 @@ in the [release assets](https://github.com/inoxlang/inox/releases)
   ```
   sudo install ./inox -o root -m 0755 /usr/local/bin/inox
   ```
-- (optional) add the [inoxd daemon](./docs/inox-daemon.md) to automatically start the project server on your local machine or VPS
+- __\[recommended\]__ add the [inoxd daemon](./docs/inox-daemon.md) to automatically start the project server on your local machine or VPS.
+
+- __\[optional\]__ install command completions for the current user
+  ```
+  inox install-completions
+  ```
 
 If you want to compile the language yourself go [here](#compile-from-source).
 
