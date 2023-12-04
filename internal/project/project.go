@@ -2,6 +2,7 @@ package project
 
 import (
 	"bufio"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"regexp"
@@ -10,7 +11,9 @@ import (
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/inoxconsts"
+	"github.com/inoxlang/inox/internal/inoxd/node"
 	"github.com/inoxlang/inox/internal/project/cloudflareprovider"
+	"github.com/inoxlang/inox/internal/utils"
 
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/globals/s3_ns"
@@ -22,10 +25,12 @@ const (
 	DEFAULT_MAIN_FILENAME = "main" + inoxconsts.INOXLANG_FILE_EXTENSION
 	DEFAULT_TUT_FILENAME  = "learn.tut" + inoxconsts.INOXLANG_FILE_EXTENSION
 
-	CREATION_PARAMS_METADATA_KEY               = "creation-params"
-	CREATION_PARAMS_NAME_METADATA_KEY          = "name"
-	CREATION_PARAMS_ADD_TUT_FILE_METADATA_KEY  = "add-tut-file"
-	CREATION_PARAMS_ADD_MAIN_FILE_METADATA_KEY = "add-main-file"
+	CREATION_PARAMS_KEY               = "creation-params"
+	CREATION_PARAMS_NAME_KEY          = "name"
+	CREATION_PARAMS_ADD_TUT_FILE_KEY  = "add-tut-file"
+	CREATION_PARAMS_ADD_MAIN_FILE_KEY = "add-main-file"
+
+	APPS_KEY = "applications"
 
 	PROJECT_NAME_REGEX = "^[a-zA-Z][a-zA-Z0-9_-]+$"
 )
@@ -65,7 +70,7 @@ func (p *Project) Id() core.ProjectID {
 }
 
 func (p *Project) CreationParams() CreateProjectParams {
-	return p.data.creationParams
+	return p.data.CreationParams
 }
 
 func (p *Project) HasProviders() bool {
@@ -77,9 +82,9 @@ func getProjectKvKey(id core.ProjectID) core.Path {
 }
 
 type CreateProjectParams struct {
-	Name        string
-	AddMainFile bool
-	AddTutFile  bool
+	Name        string `json:"name"`
+	AddMainFile bool   `json:"addMainFile,omitempty"`
+	AddTutFile  bool   `json:"addTutFile,omitempty"`
 }
 
 // CreateProject
@@ -96,9 +101,10 @@ func (r *Registry) CreateProject(ctx *core.Context, params CreateProjectParams) 
 	}
 
 	// persist data
-	projectData := projectData{creationParams: params}
+	projectData := projectData{CreationParams: params}
+	serializedData := string(utils.Must(json.Marshal(projectData)))
 
-	r.metadata.Insert(ctx, getProjectKvKey(id), projectData.toRecord(), r)
+	r.metadata.InsertSerialized(ctx, getProjectKvKey(id), serializedData, r)
 
 	// create the project's directory
 	projectDir := r.filesystem.Join(r.projectsDir, string(id))
@@ -153,7 +159,7 @@ func (r *Registry) OpenProject(ctx *core.Context, params OpenProjectParams) (*Pr
 		return project, nil
 	}
 
-	metadata, found, err := r.metadata.Get(ctx, getProjectKvKey(params.Id), r)
+	serializedProjectData, found, err := r.metadata.GetSerialized(ctx, getProjectKvKey(params.Id), r)
 
 	if err != nil {
 		return nil, fmt.Errorf("error while reading KV: %w", err)
@@ -163,7 +169,11 @@ func (r *Registry) OpenProject(ctx *core.Context, params OpenProjectParams) (*Pr
 		return nil, ErrProjectNotFound
 	}
 
-	persistedMetadata := getProjectDataFromRecord(ctx, metadata.(*core.Record))
+	var projectData projectData
+	err = json.Unmarshal([]byte(serializedProjectData), &projectData)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal project's data: %w", err)
+	}
 
 	projectDir := r.filesystem.Join(r.projectsDir, string(params.Id))
 	projectFS, err := fs_ns.OpenMetaFilesystem(r.openProjectsContext, r.filesystem, fs_ns.MetaFilesystemParams{
@@ -178,7 +188,7 @@ func (r *Registry) OpenProject(ctx *core.Context, params OpenProjectParams) (*Pr
 		id:             params.Id,
 		liveFilesystem: projectFS,
 		tempTokens:     params.TempTokens,
-		data:           persistedMetadata,
+		data:           projectData,
 	}
 
 	if params.DevSideConfig.Cloudflare != nil {
@@ -300,30 +310,6 @@ func (p *Project) ForceUnlock() {
 
 // persisted data
 type projectData struct {
-	creationParams CreateProjectParams
-}
-
-func getProjectDataFromRecord(ctx *core.Context, record *core.Record) projectData {
-	creationParams := record.Prop(ctx, CREATION_PARAMS_METADATA_KEY).(*core.Record)
-	name := creationParams.Prop(ctx, CREATION_PARAMS_NAME_METADATA_KEY).(core.Str)
-	addTutFile := creationParams.Prop(ctx, CREATION_PARAMS_ADD_TUT_FILE_METADATA_KEY).(core.Bool)
-	addMainFile := creationParams.Prop(ctx, CREATION_PARAMS_ADD_MAIN_FILE_METADATA_KEY).(core.Bool)
-
-	return projectData{
-		creationParams: CreateProjectParams{
-			Name:        name.GetOrBuildString(),
-			AddMainFile: bool(addMainFile),
-			AddTutFile:  bool(addTutFile),
-		},
-	}
-}
-
-func (d projectData) toRecord() *core.Record {
-	return core.NewRecordFromMap(core.ValMap{
-		CREATION_PARAMS_METADATA_KEY: core.NewRecordFromMap(core.ValMap{
-			CREATION_PARAMS_NAME_METADATA_KEY:          core.Str(d.creationParams.Name),
-			CREATION_PARAMS_ADD_TUT_FILE_METADATA_KEY:  core.Bool(d.creationParams.AddTutFile),
-			CREATION_PARAMS_ADD_MAIN_FILE_METADATA_KEY: core.Bool(d.creationParams.AddMainFile),
-		}),
-	})
+	CreationParams CreateProjectParams                         `json:"creationParams"`
+	Applications   map[node.ApplicationName]*applicationConfig `json:"applications,omitempty"`
 }
