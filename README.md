@@ -54,7 +54,7 @@ _Dead simple config. Zero boilerplate. Secure by Default._
 - Database with persistence in S3 and on-disk cache
 - Log persistence in S3
 - WebAssembly support using https://github.com/tetratelabs/wazero.
-- Team management and access conntrol
+- Team management and access control
 - ... [other planned features](./FUTURE.md)
 
 ⚠️ The language is not production ready yet.\
@@ -79,13 +79,14 @@ in the [release assets](https://github.com/inoxlang/inox/releases)
   ```
   sudo install ./inox -o root -m 0755 /usr/local/bin/inox
   ```
+- (optional) add the [inoxd daemon](./docs/inox-daemon.md) to automatically start the project server on your local machine or VPS
 
 If you want to compile the language yourself go [here](#compile-from-source).
 
 ### Editor Support
 
 - [VSCode & VSCodium](https://marketplace.visualstudio.com/items?itemName=graphr00t.inox)
-  : LSP, Debug, colorization, snippets
+  : LSP, debug, colorization, snippets, formatting.
 
 ## Learning Inox
 

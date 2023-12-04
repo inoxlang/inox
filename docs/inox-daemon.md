@@ -3,9 +3,28 @@
 **Inoxd** creates and manages one or more project server processes (command `inox project-server`).\
 Inoxd can be installed on any Linux distribution that uses **systemd**.
 
-## Installation A - Inoxd + Publicly Exposed Servers
+- The project server listens on the port 8305 by default
+- Data of production* deployments is stored in `/var/lib/inoxd/prod`
+- Projects are stored in `/var/lib/inoxd/projects`
 
-The command below will add a new systemd service and create a new user named `inoxd`.\
+_\* bear in mind that Inox is not production ready yet._
+
+## Installation
+
+### On Your Local Machine
+
+The command below adds a new systemd service and create a new user named `inoxd`.
+The project server will only listen on `localhost:8305`.
+
+```
+sudo inox add-service
+```
+
+Browser automation can be allowed by adding the `--allow-browser-automation` switch.
+
+### On a VPS - Publicly Exposed Servers
+
+The command below adds a new systemd service and creates a new user named `inoxd`.\
 The `--expose-project-servers` flag makes project servers listen on ⚠️ ALL interfaces.\
 The `--expose-web-servers` flag makes web (application) servers listen on ⚠️ ALL interfaces.
 
@@ -17,9 +36,12 @@ Browser automation can be allowed by adding the `--allow-browser-automation` swi
 
 **This installation is not recommended for production environments.**
 
-## Installation B - Inoxd + Cloudflare Tunnel
+### On a VPS - Cloudflare Tunnel 
 
-The following command will add a new systemd service, create a new user named `inoxd` and download the latest [Cloudflared](https://github.com/cloudflare/cloudflared) binary. 
+A Cloudflare account is required.
+> For now this installation also requires that you create and configure a Cloudflare tunnel yourself.
+
+The following command adds a new systemd service, creates a new user named `inoxd` and downloads the latest [Cloudflared](https://github.com/cloudflare/cloudflared) binary. 
 
 ```
 sudo inox add-service --tunnel-provider=cloudflare
