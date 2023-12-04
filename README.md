@@ -47,16 +47,24 @@ _Dead simple config. Zero boilerplate. Secure by Default._
 - [Easy declaration of CLI Parameters](#declaration-of-cli-parameters--environment-variables)
 - [Transactions & Effects (WIP)](#transactions--effects-wip)
 
-[Planned Features](./FUTURE.md)
+**Planned Features**
+
+- Version Control System (Git) for projects using https://github.com/go-git/go-git 
+- Database backup in S3 (compatible) storage
+- Database with persistence in S3 and on-disk cache
+- Log persistence in S3
+- WebAssembly support using https://github.com/tetratelabs/wazero.
+- Team management and access conntrol
+- ... [other planned features](./FUTURE.md)
+
+⚠️ The language is not production ready yet.\
+I am working full-time on Inox, please consider donating through [GitHub](https://github.com/sponsors/GraphR00t) (preferred) or [Patreon](https://patreon.com/GraphR00t). Thanks !
 
 ---
 
 👥 Discord Server: https://discord.gg/53YGx8GzgE
 
 📖 Language Reference: [docs/language-reference.md](docs/language-reference.md)
-
-⚠️ The language is not production ready yet.\
-I am working full-time on Inox, please consider donating. Thanks !
 
 ## Installation
 
@@ -691,6 +699,7 @@ Inox comes with many built-in functions for:
 - browser automation
 - file manipulation
 - HTTP resource manipulation
+- structured logging
 - data container constructors (Graph, Tree, ...)
 
 **[List of Built-in Functions](./docs/builtin.md)**
@@ -790,3 +799,5 @@ cancel_exec()
    width="120" alt="Datamix.io"/><br />Datamix.io</a></td>
   </tr>
 </table>
+
+I am working full-time on Inox, please consider donating through [GitHub](https://github.com/sponsors/GraphR00t) (preferred) or [Patreon](https://patreon.com/GraphR00t). Thanks !

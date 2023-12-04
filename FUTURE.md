@@ -1,15 +1,17 @@
 ## Planned Features
 
 - Version Control System for Inox projects:
-    - Git subset with storage in S3 Buckets and Git-compatible services (Github, Gitlab).
+    - Git subset using https://github.com/go-git/go-git with storage in S3 Buckets and Git-compatible services (Github, Gitlab).
     - Simplified VCS for non-professional developers.
 - Teams
     - creation & management of members
     - access control
-- Improved Database
+- Improved Database Engine
     - smart pre-fetching and caching
+- Improved Local Database
     - (short term) ability to store hundreds of gigabytes of data
-    - (long term)  ability to store terabytes of data 
+    - (long term)  ability to store terabytes of data
+- Database with persistence in S3 and on-disk cache
 - Monitoring with persistence in S3.
 - Log persistence in S3.
 - Limited IaaC (infrastructure as code) capabilities:
