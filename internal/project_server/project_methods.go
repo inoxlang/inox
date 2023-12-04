@@ -16,7 +16,6 @@ const (
 
 	OPEN_PROJECT_METHOD   = "project/open"
 	CREATE_PROJECT_METHOD = "project/create"
-	DEPLOY_PROD_METHOD    = "project/deployService"
 )
 
 type CreateProjectParams struct {

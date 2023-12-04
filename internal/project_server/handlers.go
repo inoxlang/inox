@@ -103,6 +103,7 @@ func registerHandlers(server *lsp.Server, serverConfig LSPServerConfiguration, p
 	if projectMode {
 		registerFilesystemMethodHandlers(server)
 		registerProjectMethodHandlers(server, serverConfig, projectRegistry)
+		registerProdMethodHandlers(server, serverConfig, projectRegistry)
 		registerSecretsMethodHandlers(server, serverConfig)
 		registerDebugMethodHandlers(server, serverConfig)
 		registerLearningMethodHandlers(server)
