@@ -13,7 +13,6 @@ import (
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/inoxd/node"
 	"github.com/inoxlang/inox/internal/project/cloudflareprovider"
-	"github.com/inoxlang/inox/internal/utils"
 
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/globals/s3_ns"
@@ -36,9 +35,10 @@ const (
 )
 
 var (
-	ErrInvalidProjectName   = errors.New("invalid project name")
-	ErrProjectNotFound      = errors.New("project not found")
-	ErrNoCloudflareProvider = errors.New("cloudflare provider not present")
+	ErrInvalidProjectName             = errors.New("invalid project name")
+	ErrProjectNotFound                = errors.New("project not found")
+	ErrNoCloudflareProvider           = errors.New("cloudflare provider not present")
+	ErrProjectPersistenceNotAvailable = errors.New("project persistence is not available")
 
 	_ core.Value               = (*Project)(nil)
 	_ core.PotentiallySharable = (*Project)(nil)
@@ -63,6 +63,8 @@ type Project struct {
 
 	cloudflare *cloudflareprovider.Cloudflare //can be nil
 	data       projectData
+
+	persistFn func(ctx *core.Context, id core.ProjectID, data projectData) error //optional
 }
 
 func (p *Project) Id() core.ProjectID {
@@ -101,10 +103,8 @@ func (r *Registry) CreateProject(ctx *core.Context, params CreateProjectParams) 
 	}
 
 	// persist data
-	projectData := projectData{CreationParams: params}
-	serializedData := string(utils.Must(json.Marshal(projectData)))
 
-	r.metadata.InsertSerialized(ctx, getProjectKvKey(id), serializedData, r)
+	r.persistProjectData(ctx, id, projectData{CreationParams: params})
 
 	// create the project's directory
 	projectDir := r.filesystem.Join(r.projectsDir, string(id))
@@ -169,11 +169,19 @@ func (r *Registry) OpenProject(ctx *core.Context, params OpenProjectParams) (*Pr
 		return nil, ErrProjectNotFound
 	}
 
+	// get project data from the database
+
 	var projectData projectData
 	err = json.Unmarshal([]byte(serializedProjectData), &projectData)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal project's data: %w", err)
 	}
+
+	if projectData.Applications == nil {
+		projectData.Applications = map[node.ApplicationName]*applicationData{}
+	}
+
+	// open the project's filesystem
 
 	projectDir := r.filesystem.Join(r.projectsDir, string(params.Id))
 	projectFS, err := fs_ns.OpenMetaFilesystem(r.openProjectsContext, r.filesystem, fs_ns.MetaFilesystemParams{
@@ -189,6 +197,7 @@ func (r *Registry) OpenProject(ctx *core.Context, params OpenProjectParams) (*Pr
 		liveFilesystem: projectFS,
 		tempTokens:     params.TempTokens,
 		data:           projectData,
+		persistFn:      r.persistProjectData,
 	}
 
 	if params.DevSideConfig.Cloudflare != nil {
@@ -203,6 +212,23 @@ func (r *Registry) OpenProject(ctx *core.Context, params OpenProjectParams) (*Pr
 	r.openProjects[project.id] = project
 
 	return project, nil
+}
+
+func (r *Registry) persistProjectData(ctx *core.Context, id core.ProjectID, data projectData) error {
+	serialized, err := json.Marshal(data)
+	if err != nil {
+		return fmt.Errorf("failed to marshal project data: %w", err)
+	}
+
+	r.metadata.SetSerialized(ctx, getProjectKvKey(id), string(serialized), r)
+	return nil
+}
+
+func (p *Project) persistNoLock(ctx *core.Context) error {
+	if p.persistFn == nil {
+		return ErrProjectPersistenceNotAvailable
+	}
+	return p.persistFn(ctx, p.id, p.data)
 }
 
 func (p *Project) DeleteSecretsBucket(ctx *core.Context) error {
@@ -310,6 +336,6 @@ func (p *Project) ForceUnlock() {
 
 // persisted data
 type projectData struct {
-	CreationParams CreateProjectParams                         `json:"creationParams"`
-	Applications   map[node.ApplicationName]*applicationConfig `json:"applications,omitempty"`
+	CreationParams CreateProjectParams                       `json:"creationParams"`
+	Applications   map[node.ApplicationName]*applicationData `json:"applications,omitempty"`
 }
