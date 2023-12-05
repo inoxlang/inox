@@ -13,3 +13,63 @@ Subpackages:
 - **jsonrpc**
 - **logs**
 - **lsp**: language-agnostic logic & types
+
+## Architecture
+
+### Current (temporary)
+
+```mermaid
+graph TB
+
+Spawner(inoxd or user) --> |$ inox project-server -config='...'| InoxBinary
+
+
+subgraph InoxBinary[Inox Binary]
+    direction TB
+
+    ProjectServer
+    NodeAgent
+
+
+    ProjectServer --> |asks to deploy/stop apps| NodeAgent
+
+    NodeAgent --> InoxRuntime1
+    NodeAgent --> InoxRuntime2
+
+end
+
+ProjectServer[Project Server] --> |stores data in| ProjectsDir
+InoxRuntime1[Inox Runtime - App 1] --> |stores data in| ProdDir
+InoxRuntime2[Inox Runtime - App 2] --> |stores data in| ProdDir
+
+
+ProjectsDir(/var/lib/inoxd/projects)
+ProdDir(/var/lib/inoxd/prod)
+
+```
+
+**The next version is way more secure and resilient.**
+
+### Next
+
+In this version every important component runs in a separate `inox` process.
+
+```mermaid
+graph TB
+
+Inoxd(inoxd) --> |$ inox project-server -config='...'| ProjectServer
+Inoxd --> |spawns| NodeAgent
+NodeAgent("Node Agent \n [uses cgroups]") --> |creates process| DeployedApp1(Deployed Application 1)
+NodeAgent --> |creates process| DeployedApp2(Deployed Application 2)
+DeployedApp1 --> |stores data in| ProdDir
+DeployedApp2 --> |stores data in| ProdDir
+
+
+ProjectServer[Project Server] --> |stores data in| ProjectsDir
+ProjectServer --> |asks to deploy/stop apps| NodeAgent
+
+ProjectsDir(/var/lib/inoxd/projects)
+ProdDir(/var/lib/inoxd/prod)
+```
+
+_The next version may be slightly different from what is planned here._
