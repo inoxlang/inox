@@ -6,8 +6,11 @@
 
 🛡️ The Inox platform is your **shield** against complexity.
 
-It is released as a **single binary** that will contain all you need to **develop**, **test** and **deploy** web apps that
-primarily rendered server-side. 
+It is released as a **single binary** that will contain all you need to develop, test and deploy web apps that
+are primarily rendered server-side. 
+
+Applications are developped using Inoxlang, a programming language that 
+deeply integrates with Inox's built-in database engine, testing engine and HTTP server.
 
 **Goals**:
 
@@ -15,6 +18,7 @@ primarily rendered server-side.
 - Secure by default
 - Low maintenance
 - Dead simple configuration
+- A programming language as simple as possible
 
 **Main Language & Development Features**
 
@@ -68,6 +72,8 @@ I am working full-time on Inox, please consider donating through [GitHub](https:
 👥 Discord Server: https://discord.gg/53YGx8GzgE
 
 📖 Language Reference: [docs/language-reference.md](docs/language-reference.md)
+
+❔ [Frequently Asked Questions](#❔-frequently-asked-questions)
 
 ## Installation
 
@@ -808,6 +814,7 @@ cancel_exec()
 - `cd` into the directory
 - run `go build ./cmd/inox`
 
+
 ## Early Sponsors
 
 <table>
@@ -819,3 +826,5 @@ cancel_exec()
 </table>
 
 I am working full-time on Inox, please consider donating through [GitHub](https://github.com/sponsors/GraphR00t) (preferred) or [Patreon](https://patreon.com/GraphR00t). Thanks !
+
+## ❔ Frequently Asked Questions
