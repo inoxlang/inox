@@ -21,7 +21,8 @@
     - CDN configuration
 - Cluster management using only the **inox** binary (small scale only)
 - WebAssembly support using https://github.com/tetratelabs/wazero.
-- Execution of modules when certain events occur (e.g. new user in database).
+- Execution of modules when certain events occur (e.g. new user in database)
+- Progressive web app support
 - Internal plugin system or hooks (Inox | WASM)
 - Support other init systems in addition to Systemd
 
@@ -46,12 +47,10 @@
 
 ## Goals
 
-- Zero config (or dead simple)
 - Zero boilerplate
-- Low maintenance
 - Secure by default
-- Minimal number of dependencies
-
+- Low maintenance
+- Dead simple configuration
 ___
 
 [README.md](./README.md)

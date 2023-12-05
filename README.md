@@ -4,14 +4,17 @@
 
 <img src="https://avatars.githubusercontent.com/u/122291844?s=200&v=4" alt="a shield"></img>
 
-🛡️ The Inox programming language is your **shield** against complexity.
+🛡️ The Inox platform is your **shield** against complexity.
 
-Inox is released as a **single binary** that contains all you need to do
-full-stack development.\
-Inox deeply integrates with its built-in database engine, testing engine and
-HTTP server.
+It is released as a **single binary** that will contain all you need to **develop**, **test** and **deploy** web apps that
+primarily rendered server-side. 
 
-_Dead simple config. Zero boilerplate. Secure by Default._
+**Goals**:
+
+- Zero boilerplate
+- Secure by default
+- Low maintenance
+- Dead simple configuration
 
 **Main Language & Development Features**
 
@@ -34,7 +37,6 @@ _Dead simple config. Zero boilerplate. Secure by Default._
 - [Sensitive Data Protection](#sensitive-data-protection)
   - [Secrets](#secrets)
   - [Visibility during Serialization](#visibility-wip)
-- [Rate Limiting](#rate-limiting-wip)
 - [Injection Prevention](#injection-prevention-wip)
 
 **Other Language Features**
@@ -593,22 +595,29 @@ metaproperty.
 ℹ️ In the near future the visibility will be configurable directly in patterns &
 database schemas.
 
-### Rate Limiting (WIP)
-
-Inox's HTTP Server has an embedded rate limiting engine. It is pretty basic at
-the moment, but it will make decisions based on logs & access patterns in the
-near future.
-
 ### Injection Prevention (WIP)
 
 In Inox interpolations are always restricted in order to prevent **injections**
 and regular strings are **never trusted**. URLs & paths are first-class values
 and must be used to perform network or filesystem operations.
 
+
+#### Path Interpolations
+
+```
+filepath = ./go
+/home/user/{filepath} # /home/user/go
+
+filepath = ../../etc/shadow # malicious user input
+/home/user/{filepath} 
+# error: result of a path interpolation should not contain any of the following substrings: '..', '\', '*', '?'
+```
+
+> Allowing specific dangerous substrings may be supported in the future.
+
 #### **URL Interpolations**
 
-When you dynamically create URLs the interpolations are restricted based on
-their location (path, query).
+URL interpolations are restricted based on their location (path, query).
 
 ```
 https://example.com/{path}?a={param}
