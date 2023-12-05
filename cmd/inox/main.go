@@ -11,6 +11,8 @@ import (
 	"github.com/inoxlang/inox/internal/inoxd/cloud/cloudproxy"
 	"github.com/inoxlang/inox/internal/inoxd/cloudflared"
 	inoxdconsts "github.com/inoxlang/inox/internal/inoxd/consts"
+	"github.com/inoxlang/inox/internal/inoxd/node"
+	"github.com/inoxlang/inox/internal/inoxd/nodeimpl"
 	"github.com/inoxlang/inox/internal/inoxd/systemd"
 
 	"github.com/inoxlang/inox/internal/globals/chrome_ns"
@@ -832,6 +834,26 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 			}
 		}
 
+		if prodDir != "" && !projectServerConfig.BehindCloudProxy {
+			// start the node agent in the same process (temporary solution)
+			nodeAgent, err := nodeimpl.NewAgent(nodeimpl.AgentParameters{
+				GoCtx:  ctx,
+				Logger: zerolog.New(out).With().Str(core.SOURCE_LOG_FIELD_NAME, "node-agent").Logger(),
+				Config: nodeimpl.AgentConfig{
+					OsProdDir: prodDir,
+				},
+			})
+
+			if err != nil {
+				fmt.Fprintln(errW, "failed to start node agent:", err)
+				return ERROR_STATUS_CODE
+			}
+
+			node.SetAgent(nodeAgent)
+		}
+
+		//start the browser proxy
+
 		if projectServerConfig.AllowBrowserAutomation {
 			err = chrome_ns.StartSharedProxy(ctx)
 			if err != nil {
@@ -839,6 +861,8 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 				return ERROR_STATUS_CODE
 			}
 		}
+
+		//start server
 
 		if err := project_server.StartLSPServer(ctx, opts); err != nil {
 			fmt.Fprintln(errW, "failed to start LSP server:", err)
