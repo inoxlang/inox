@@ -79,3 +79,26 @@ func (p *Project) PrepareApplicationDeployment(args ApplicationDeploymentPrepara
 		Project:          p,
 	})
 }
+
+type StopApplicationParams struct {
+	AppName string
+}
+
+func (p *Project) StopApplication(args StopApplicationParams) error {
+	if !p.IsApplicationRegistered(args.AppName) {
+		return ErrAppNotRegistered
+	}
+
+	appName, err := node.ApplicationNameFrom(args.AppName)
+	if err != nil {
+		return err
+	}
+
+	app, ok := node.GetAgent().GetApplication(appName)
+	if !ok {
+		return ErrAppNotFound
+	}
+
+	app.Stop()
+	return nil
+}

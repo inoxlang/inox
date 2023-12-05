@@ -13,6 +13,7 @@ import (
 
 var (
 	ErrAppAlreadyExists = errors.New("application already exists")
+	ErrAppNotFound      = errors.New("application not found")
 	ErrAppNotRegistered = errors.New("application is not registered")
 )
 
