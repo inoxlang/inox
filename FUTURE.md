@@ -1,5 +1,6 @@
 ## Planned Features
 
+- Encryption of secrets and database data
 - Version Control System for Inox projects:
     - Git subset using https://github.com/go-git/go-git with storage in S3 Buckets and Git-compatible services (Github, Gitlab).
     - Simplified VCS for non-professional developers.
@@ -20,6 +21,7 @@
     - CDN configuration
 - Cluster management using only the **inox** binary (small scale only)
 - WebAssembly support using https://github.com/tetratelabs/wazero.
+- Execution of modules when certain events occur (e.g. new user in database).
 - Internal plugin system or hooks (Inox | WASM)
 - Support other init systems in addition to Systemd
 

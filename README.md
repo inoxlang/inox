@@ -49,6 +49,7 @@ _Dead simple config. Zero boilerplate. Secure by Default._
 
 **Planned Features**
 
+- Encryption of secrets and database data
 - Version Control System (Git) for projects using https://github.com/go-git/go-git 
 - Database backup in S3 (compatible) storage
 - Database with persistence in S3 and on-disk cache
@@ -291,7 +292,7 @@ in-process, there is no FUSE filesystem and Docker is not used.
 **How can I execute binaries if the filesystem only exists inside a process ?**\
 You can't, but executing programs compiled to WebAssembly will be soon possible.
 
-[Implementation](../internal/project_server/README.md)
+[Implementation](./internal/project_server/README.md)
 
 ### Virtual Filesystems
 
