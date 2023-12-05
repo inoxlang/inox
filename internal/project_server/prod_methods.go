@@ -3,7 +3,6 @@ package project_server
 import (
 	"context"
 
-	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/project"
 	"github.com/inoxlang/inox/internal/project_server/jsonrpc"
 	"github.com/inoxlang/inox/internal/project_server/lsp"
@@ -12,7 +11,6 @@ import (
 const DEPLOY_PROD_APP_METHOD = "prod/deployApplication"
 
 type DeployAppParams struct {
-	AppModule        string `json:"module"`
 	AppName          string `json:"name"`
 	UpdateRunningApp bool   `json:"updateRunningApp"`
 }
@@ -43,7 +41,6 @@ func registerProdMethodHandlers(server *lsp.Server, opts LSPServerConfiguration,
 			}
 
 			deployment, err := proj.PrepareApplicationDeployment(project.ApplicationDeploymentPreparationParams{
-				ModulePath:       core.Path(params.AppModule),
 				AppName:          params.AppName,
 				UpdateRunningApp: params.UpdateRunningApp,
 			})

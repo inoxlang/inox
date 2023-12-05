@@ -64,7 +64,7 @@ func (p *Project) IsApplicationRegistered(name string) bool {
 }
 
 // ApplicationModulePath returns the path of the application module.
-func (p *Project) ApplicationModulePath(ctx *core.Context, name string) (string, error) {
+func (p *Project) ApplicationModulePath(name string) (core.Path, error) {
 	//we assume this functions is never called by inox code
 
 	appName, err := node.ApplicationNameFrom(name)
@@ -80,7 +80,7 @@ func (p *Project) ApplicationModulePath(ctx *core.Context, name string) (string,
 		return "", ErrAppNotRegistered
 	}
 
-	return data.ModulePath, nil
+	return core.PathFrom(data.ModulePath), nil
 }
 
 // ApplicationNames returns registered applications.

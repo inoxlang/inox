@@ -10,7 +10,6 @@ import (
 )
 
 type ApplicationDeploymentPreparationParams struct {
-	ModulePath       core.Path
 	AppName          string
 	UpdateRunningApp bool
 }
@@ -20,14 +19,18 @@ func (p *Project) PrepareApplicationDeployment(args ApplicationDeploymentPrepara
 		return nil, ErrAppNotRegistered
 	}
 
-	modulePath := args.ModulePath
-	if modulePath.IsDirPath() {
-		return nil, fmt.Errorf("unexpected directory path: %s", modulePath)
-	}
-
 	appName, err := node.ApplicationNameFrom(args.AppName)
 	if err != nil {
 		return nil, err
+	}
+
+	modulePath, err := p.ApplicationModulePath(args.AppName)
+	if err != nil {
+		return nil, err
+	}
+
+	if modulePath.IsDirPath() {
+		return nil, fmt.Errorf("unexpected directory path: %s", modulePath)
 	}
 
 	baseImg, err := p.BaseImage()
