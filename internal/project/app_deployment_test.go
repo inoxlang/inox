@@ -109,7 +109,7 @@ func TestSameProcessDeployment(t *testing.T) {
 
 	//register the application
 
-	err = proj.RegisterApplication(ctx, APP_NAME)
+	err = proj.RegisterApplication(ctx, APP_NAME, modPath)
 
 	if !assert.NoError(t, err) {
 		return

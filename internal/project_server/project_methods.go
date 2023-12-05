@@ -38,7 +38,8 @@ type OpenProjectResponse struct {
 }
 
 type RegisterApplicationParams struct {
-	Name string `json:"name"`
+	Name       string `json:"name"`
+	ModulePath string `json:"modulePath"`
 }
 
 type RegisterApplicationResponse struct {
@@ -155,7 +156,7 @@ func registerProjectMethodHandlers(server *lsp.Server, opts LSPServerConfigurati
 				}
 			}
 
-			err := proj.RegisterApplication(session.Context(), params.Name)
+			err := proj.RegisterApplication(session.Context(), params.Name, params.ModulePath)
 
 			if err != nil {
 				return RegisterApplicationResponse{

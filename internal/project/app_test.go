@@ -12,6 +12,7 @@ import (
 
 func TestRegisterApplication(t *testing.T) {
 	const APP_NAME = "myapp"
+	const MODULE_PATH = "/main.ix"
 
 	ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
@@ -37,7 +38,7 @@ func TestRegisterApplication(t *testing.T) {
 		return
 	}
 
-	err = project.RegisterApplication(ctx, APP_NAME)
+	err = project.RegisterApplication(ctx, APP_NAME, MODULE_PATH)
 
 	if !assert.NoError(t, err) {
 		return
@@ -63,4 +64,10 @@ func TestRegisterApplication(t *testing.T) {
 
 	appNames = project.ApplicationNames(ctx)
 	assert.EqualValues(t, []node.ApplicationName{APP_NAME}, appNames)
+
+	modPath, err := project.ApplicationModulePath(ctx, APP_NAME)
+	if !assert.NoError(t, err) {
+		return
+	}
+	assert.Equal(t, MODULE_PATH, modPath)
 }

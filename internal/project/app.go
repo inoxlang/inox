@@ -3,8 +3,10 @@ package project
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/inoxd/node"
 	"golang.org/x/exp/maps"
 )
@@ -16,9 +18,10 @@ var (
 
 // persisted data about an application.
 type applicationData struct {
+	ModulePath string `json:"modulePath"`
 }
 
-func (p *Project) RegisterApplication(ctx *core.Context, name string) error {
+func (p *Project) RegisterApplication(ctx *core.Context, name string, modulePath string) error {
 	//we assume this functions is never called by inox code
 
 	p.lock.ForceLock()
@@ -29,29 +32,55 @@ func (p *Project) RegisterApplication(ctx *core.Context, name string) error {
 		return fmt.Errorf("invalid app name: %w", err)
 	}
 
+	if modulePath == "" || modulePath[0] != '/' || !strings.HasSuffix(modulePath, inoxconsts.INOXLANG_FILE_EXTENSION) {
+		return fmt.Errorf("invalid module path: %s", modulePath)
+	}
+
 	_, ok := p.data.Applications[appName]
 	if ok {
 		return ErrAppAlreadyExists
 	}
 
-	p.data.Applications[appName] = &applicationData{}
+	p.data.Applications[appName] = &applicationData{
+		ModulePath: modulePath,
+	}
 
 	return p.persistNoLock(ctx)
 }
 
 func (p *Project) IsApplicationRegistered(name string) bool {
+
+	//we assume this functions is never called by inox co
 	appName, err := node.ApplicationNameFrom(name)
 	if err != nil {
 		return false
 	}
-
-	//we assume this functions is never called by inox code
 
 	p.lock.ForceLock()
 	defer p.lock.ForceUnlock()
 
 	_, ok := p.data.Applications[appName]
 	return ok
+}
+
+// ApplicationModulePath returns the path of the application module.
+func (p *Project) ApplicationModulePath(ctx *core.Context, name string) (string, error) {
+	//we assume this functions is never called by inox code
+
+	appName, err := node.ApplicationNameFrom(name)
+	if err != nil {
+		return "", err
+	}
+
+	p.lock.ForceLock()
+	defer p.lock.ForceUnlock()
+
+	data, ok := p.data.Applications[appName]
+	if !ok {
+		return "", ErrAppNotRegistered
+	}
+
+	return data.ModulePath, nil
 }
 
 // ApplicationNames returns registered applications.
