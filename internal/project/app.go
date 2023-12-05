@@ -73,6 +73,8 @@ func (p *Project) ApplicationStatuses(ctx *core.Context) map[node.ApplicationNam
 		app, ok := nodeAgent.GetApplication(name)
 		if ok {
 			statuses[name] = app.Status()
+		} else {
+			statuses[name] = node.UndeployedApp
 		}
 	}
 

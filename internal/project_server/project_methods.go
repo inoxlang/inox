@@ -5,6 +5,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
+	"github.com/inoxlang/inox/internal/inoxd/node"
 	"github.com/inoxlang/inox/internal/project"
 	"github.com/inoxlang/inox/internal/project_server/jsonrpc"
 	"github.com/inoxlang/inox/internal/project_server/lsp"
@@ -14,8 +15,10 @@ const (
 	CURRENT_PROJECT_CTX_KEY = core.Identifier("current-project")
 	LSP_FS_CTX_KEY          = core.Identifier("current-filesystem")
 
-	OPEN_PROJECT_METHOD   = "project/open"
-	CREATE_PROJECT_METHOD = "project/create"
+	OPEN_PROJECT_METHOD              = "project/open"
+	CREATE_PROJECT_METHOD            = "project/create"
+	REGISTER_APPLICATION_METHOD      = "project/registerApplication"
+	LIST_APPLICATION_STATUSES_METHOD = "project/listApplicationStatuses"
 )
 
 type CreateProjectParams struct {
@@ -32,6 +35,21 @@ type OpenProjectParams struct {
 
 type OpenProjectResponse struct {
 	project.TempProjectTokens `json:"tempTokens"`
+}
+
+type RegisterApplicationParams struct {
+	Name string `json:"name"`
+}
+
+type RegisterApplicationResponse struct {
+	Error string `json:"error,omitempty"`
+}
+
+type ListApplicationStatusesParams struct {
+}
+
+type ListApplicationStatusesResponse struct {
+	Statuses map[node.ApplicationName]string `json:"statuses"`
 }
 
 func registerProjectMethodHandlers(server *lsp.Server, opts LSPServerConfiguration, projectRegistry *project.Registry) {
@@ -115,6 +133,60 @@ func registerProjectMethodHandlers(server *lsp.Server, opts LSPServerConfigurati
 			sessionData.project = project
 
 			return OpenProjectResponse{TempProjectTokens: tokens}, nil
+		},
+	})
+
+	server.OnCustom(jsonrpc.MethodInfo{
+		Name:          REGISTER_APPLICATION_METHOD,
+		SensitiveData: true,
+		NewRequest: func() interface{} {
+			return &RegisterApplicationParams{}
+		},
+		RateLimits: []int{0, 0, 2},
+		Handler: func(ctx context.Context, req interface{}) (interface{}, error) {
+			session := jsonrpc.GetSession(ctx)
+			params := req.(*RegisterApplicationParams)
+
+			proj, ok := getProject(session)
+			if !ok {
+				return nil, jsonrpc.ResponseError{
+					Code:    jsonrpc.InternalError.Code,
+					Message: "project not open",
+				}
+			}
+
+			err := proj.RegisterApplication(session.Context(), params.Name)
+
+			if err != nil {
+				return RegisterApplicationResponse{
+					Error: err.Error(),
+				}, nil
+			}
+
+			return RegisterApplicationResponse{}, nil
+		},
+	})
+
+	server.OnCustom(jsonrpc.MethodInfo{
+		Name: LIST_APPLICATION_STATUSES_METHOD,
+		NewRequest: func() interface{} {
+			return &ListApplicationStatusesParams{}
+		},
+		RateLimits: []int{2, 5, 25},
+		Handler: func(ctx context.Context, req interface{}) (interface{}, error) {
+			session := jsonrpc.GetSession(ctx)
+			params := req.(*ListApplicationStatusesParams)
+			_ = params
+
+			proj, ok := getProject(session)
+			if !ok {
+				return nil, jsonrpc.ResponseError{
+					Code:    jsonrpc.InternalError.Code,
+					Message: "project not open",
+				}
+			}
+
+			return ListApplicationStatusesResponse{Statuses: proj.ApplicationStatusNames(session.Context())}, nil
 		},
 	})
 }
