@@ -840,7 +840,8 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 				GoCtx:  ctx,
 				Logger: zerolog.New(out).With().Str(core.SOURCE_LOG_FIELD_NAME, "node-agent").Logger(),
 				Config: nodeimpl.AgentConfig{
-					OsProdDir: prodDir,
+					OsProdDir:                       prodDir,
+					TemporaryOptionRunInSameProcess: true,
 				},
 			})
 
