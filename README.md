@@ -291,6 +291,8 @@ in-process, there is no FUSE filesystem and Docker is not used.
 **How can I execute binaries if the filesystem only exists inside a process ?**\
 You can't, but executing programs compiled to WebAssembly will be soon possible.
 
+[Implementation](../internal/project_server/README.md)
+
 ### Virtual Filesystems
 
 In project mode Inox applications run inside a **meta filesystem** that persists data on disk.
