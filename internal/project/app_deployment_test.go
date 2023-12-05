@@ -95,6 +95,26 @@ func TestSameProcessDeployment(t *testing.T) {
 		server.wait_closed()
 	`), 0600)
 
+	// preparing the deployment without having registered the app is not allowed
+
+	_, err = proj.PrepareApplicationDeployment(project.ApplicationDeploymentPreparationParams{
+		ModulePath:       core.PathFrom(modPath),
+		AppName:          APP_NAME,
+		UpdateRunningApp: false,
+	})
+
+	if !assert.ErrorIs(t, err, project.ErrAppNotRegistered) {
+		return
+	}
+
+	//register the application
+
+	err = proj.RegisterApplication(ctx, APP_NAME)
+
+	if !assert.NoError(t, err) {
+		return
+	}
+
 	// prepare the deployment and deploy
 
 	deployment, err := proj.PrepareApplicationDeployment(project.ApplicationDeploymentPreparationParams{
@@ -116,6 +136,8 @@ func TestSameProcessDeployment(t *testing.T) {
 	// check the status of the deployment and the application
 
 	assert.Equal(t, node.SuccessfulDeployment, deployment.Status())
+	assert.Equal(t, map[node.ApplicationName]node.ApplicationStatus{APP_NAME: node.DeployedApp}, proj.ApplicationStatuses(ctx))
+	assert.Equal(t, map[node.ApplicationName]string{APP_NAME: node.DeployedApp.String()}, proj.ApplicationStatusNames(ctx))
 
 	app, ok := node.GetAgent().GetApplication(APP_NAME)
 	if !assert.True(t, ok) {

@@ -24,6 +24,16 @@ var (
 	ErrFailedToDeployApplication      = errors.New("failed to deploy application")
 	ErrDeploymentIsBeingPerformed     = errors.New("deployment is being performed")
 	ErrDeploymentAlreadyBeenPerformed = errors.New("deployment has already been performed")
+
+	APPLICATION_STATUS_NAMES = map[ApplicationStatus]string{
+		UndeployedApp:         "undeployed",
+		DeployingApp:          "deploying",
+		DeployedApp:           "deployed",
+		GracefullyStoppingApp: "gracefully-stopping",
+		GracefullyStoppedApp:  "gracefully-stopped",
+		ErroneouslyStoppedApp: "erroneously-stopped",
+		FailedToPrepareApp:    "failed-to-prepare",
+	}
 )
 
 func GetAgent() Agent {
@@ -95,6 +105,14 @@ const (
 	ErroneouslyStoppedApp //execution error or error during stop
 	FailedToPrepareApp
 )
+
+func (s ApplicationStatus) String() string {
+	name, ok := APPLICATION_STATUS_NAMES[s]
+	if !ok {
+		panic(fmt.Errorf("invalid application status (%d)", s))
+	}
+	return name
+}
 
 type DeploymentStatus int
 

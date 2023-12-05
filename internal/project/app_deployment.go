@@ -16,6 +16,10 @@ type ApplicationDeploymentPreparationParams struct {
 }
 
 func (p *Project) PrepareApplicationDeployment(args ApplicationDeploymentPreparationParams) (node.ApplicationDeployment, error) {
+	if !p.IsApplicationRegistered(args.AppName) {
+		return nil, ErrAppNotRegistered
+	}
+
 	modulePath := args.ModulePath
 	if modulePath.IsDirPath() {
 		return nil, fmt.Errorf("unexpected directory path: %s", modulePath)
