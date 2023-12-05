@@ -173,7 +173,7 @@ func registerProjectMethodHandlers(server *lsp.Server, opts LSPServerConfigurati
 		NewRequest: func() interface{} {
 			return &ListApplicationStatusesParams{}
 		},
-		RateLimits: []int{2, 5, 25},
+		RateLimits: []int{3, 10, 50},
 		Handler: func(ctx context.Context, req interface{}) (interface{}, error) {
 			session := jsonrpc.GetSession(ctx)
 			params := req.(*ListApplicationStatusesParams)

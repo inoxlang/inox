@@ -76,7 +76,7 @@ func registerProdMethodHandlers(server *lsp.Server, opts LSPServerConfiguration,
 		NewRequest: func() interface{} {
 			return &StopAppParams{}
 		},
-		RateLimits: []int{0, 3, 10},
+		RateLimits: []int{0, 5, 20},
 		Handler: func(ctx context.Context, req interface{}) (interface{}, error) {
 			session := jsonrpc.GetSession(ctx)
 			params := req.(*StopAppParams)
