@@ -2,8 +2,7 @@
 
 **Contributing to Inox requires that you agree to the Contributor License Agreement.**
 
-Definition of Contributor License Agreement:\
-https://yahoo.github.io/oss-guide/docs/resources/what-is-cla.html.
+[Why ?](../../QUESTIONS.md)
 
 If you want to agree to the Contributor License Agreement located in **CLA.md**, do the following:
 - Copy `example_user.txt` in this folder and rename the file to `your_Github_username.txt`
