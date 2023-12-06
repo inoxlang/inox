@@ -11,3 +11,9 @@ This Contributor License Agreement ("Agreement") is agreed to by the party signi
 3. **Contributor Representations**: Contributor represents that Contributor is legally entitled to grant the above licenses. If the employer(s) of the Contributor has rights to intellectual property that the Contributor creates, the Contributor represents that the employer has waived such rights for the Contributions to the [Inox project](https://github.com/inoxlang).
 
 4. **Disclaimer**: Contributions are provided on an "as is" basis, without warranties or conditions of any kind, either express or implied, including, without limitation, any warranties or conditions of title, non-infringement, merchantability, or fitness for a particular purpose.
+
+5. **Relicensing**: Contributor does NOT grant the right to include significant Contributions in any relicensing of the project. Contributor grants the right to include non-significant Contributions such as: 
+    - work on messages in the codebase (e.g. error messages)
+    - work on documentation
+    - work on translation and localization
+    - all its work in the codebase if the combination of all the work consists of fewer than 100 lines
