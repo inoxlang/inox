@@ -9,7 +9,7 @@
 It is released as a **single binary** that will contain all you need to develop, test and deploy web apps that
 are primarily rendered server-side. 
 
-Applications are developped using **Inoxlang**, a programming language that 
+Applications are developped using **Inoxlang**, a sandboxed programming language that 
 deeply integrates with Inox's built-in database engine, testing engine and HTTP server.
 
 **Goals**:
@@ -305,10 +305,12 @@ in-process, there is no FUSE filesystem and Docker is not used.
 **How can I execute binaries if the filesystem only exists inside a process ?**\
 You can't, but executing programs compiled to WebAssembly will be soon possible.
 
+[Why isn't Inox using a container runtime such as Docker ?](./QUESTIONS.md)
+
 ### Virtual Filesystems
 
 In project mode Inox applications run inside a **meta filesystem** that persists data on disk.
-Files in this filesystem are regular files, metadata and directory structure are stored in a single file named `metadata.kv`.
+Files in this filesystem are regular files, (most) metadata and directory structure are stored in a single file named `metadata.kv`.
 It's impossible for applications running inside this filesystem to access an arbitrary file on the disk.
 
 ```mermaid
@@ -829,3 +831,6 @@ cancel_exec()
 </table>
 
 I am working full-time on Inox, please consider donating through [GitHub](https://github.com/sponsors/GraphR00t) (preferred) or [Patreon](https://patreon.com/GraphR00t). Thanks !
+
+
+[Questions you may have](./QUESTIONS.md)
