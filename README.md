@@ -9,7 +9,7 @@
 It is released as a **single binary** that will contain all you need to develop, test and deploy web apps that
 are primarily rendered server-side. 
 
-Applications are developped using Inoxlang, a programming language that 
+Applications are developped using **Inoxlang**, a programming language that 
 deeply integrates with Inox's built-in database engine, testing engine and HTTP server.
 
 **Goals**:
@@ -17,6 +17,7 @@ deeply integrates with Inox's built-in database engine, testing engine and HTTP 
 - Zero boilerplate
 - Secure by default
 - Low maintenance
+- Super stable (_once version 1.0 is reached_)
 - Dead simple configuration
 - A programming language as simple as possible
 
@@ -56,6 +57,7 @@ deeply integrates with Inox's built-in database engine, testing engine and HTTP 
 **Planned Features**
 
 - Encryption of secrets and database data
+- Storage of secrets in key management services (e.g. GCP KMS, AWS KMS)
 - Version Control System (Git) for projects using https://github.com/go-git/go-git 
 - Database backup in S3 (compatible) storage
 - Database with persistence in S3 and on-disk cache
@@ -73,7 +75,7 @@ I am working full-time on Inox, please consider donating through [GitHub](https:
 
 📖 Language Reference: [docs/language-reference.md](docs/language-reference.md)
 
-❔ [Frequently Asked Questions](#❔-frequently-asked-questions)
+❔ [Questions you may have](./QUESTIONS.md)
 
 ## Installation
 
@@ -214,25 +216,11 @@ dbs.main.update_schema(%{
 
 Objects can be directly added to and retrieved from the database.\
 This is made possible by the fact that most Inox types are constrained to be
-[serializable](#serializability).
+serializable.
 
-```
-new_user = {name: "John"}
-dbs.main.users.add(new_user)
+<details>
 
-# true
-dbs.main.users.has(new_user)
-```
-
-You can learn more [here](./docs/language-reference.md#databases).
-
-> The database currently uses a single-file key-value store, it obviously cannot
-> handle hundreds of Gigabytes.\
-> The improvement of the database engine is a main focus point. The goal is to
-> have a DB engine that is aware of the code accessing it (HTTP request
-> handlers) in order to smartly pre-fetch and cache data.
-
-### Serializability
+**<summary>Details about serializability</summary>**
 
 Most Inox types (objects, lists, Sets) are serializable so they cannot contain
 transient values.
@@ -264,6 +252,23 @@ task2 = Task{name: "1"}
 
 array = Array(task1, task2)
 ```
+</details>
+
+```
+new_user = {name: "John"}
+dbs.main.users.add(new_user)
+
+# true
+dbs.main.users.has(new_user)
+```
+
+You can learn more [here](./docs/language-reference.md#databases).
+
+> The database currently uses a single-file key-value store, it obviously cannot
+> handle hundreds of Gigabytes.\
+> The improvement of the database engine is a main focus point. The goal is to
+> have a DB engine that is aware of the code accessing it (HTTP request
+> handlers) in order to smartly pre-fetch and cache data.
 
 ### Project Server (LSP)
 
@@ -299,8 +304,6 @@ in-process, there is no FUSE filesystem and Docker is not used.
 
 **How can I execute binaries if the filesystem only exists inside a process ?**\
 You can't, but executing programs compiled to WebAssembly will be soon possible.
-
-[Implementation](./internal/project_server/README.md)
 
 ### Virtual Filesystems
 
@@ -826,5 +829,3 @@ cancel_exec()
 </table>
 
 I am working full-time on Inox, please consider donating through [GitHub](https://github.com/sponsors/GraphR00t) (preferred) or [Patreon](https://patreon.com/GraphR00t). Thanks !
-
-## ❔ Frequently Asked Questions

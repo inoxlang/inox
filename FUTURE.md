@@ -1,6 +1,7 @@
 ## Planned Features
 
 - Encryption of secrets and database data
+- Storage of secrets in key management services (e.g. GCP KMS, AWS KMS)
 - Version Control System for Inox projects:
     - Git subset using https://github.com/go-git/go-git with storage in S3 Buckets and Git-compatible services (Github, Gitlab).
     - Simplified VCS for non-professional developers.
