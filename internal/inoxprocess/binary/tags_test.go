@@ -17,6 +17,7 @@ func TestFetchTags(t *testing.T) {
 	for _, tag := range tags {
 		if tag.Name == "dev" {
 			devFound = true
+			assert.Nil(t, tag.Version)
 			break
 		}
 	}

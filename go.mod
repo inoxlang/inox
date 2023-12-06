@@ -56,6 +56,7 @@ require (
 )
 
 require (
+	github.com/Masterminds/semver/v3 v3.2.1 // indirect
 	github.com/andybalholm/cascadia v1.3.1 // indirect
 	github.com/aws/aws-sdk-go v1.44.272 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
