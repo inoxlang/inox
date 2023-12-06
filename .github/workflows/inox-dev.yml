@@ -5,11 +5,7 @@ on:
     paths-ignore:
       - 'docs/**'
       - '.legal/**'
-      - 'README.md'
-      - 'CONTRIBUTING.md'
-      - 'FUTURE.md'
-      - 'SECURITY.md'
-      - 'CLA.md'
+      - '**/*.md'
       - 'jsconfig.json'
 permissions: write-all
 
