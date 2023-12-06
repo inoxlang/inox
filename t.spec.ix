@@ -1,0 +1,10 @@
+manifest {
+    
+}
+
+
+%fn(_ Array(int)){
+    fn(e eee){
+
+    }
+}

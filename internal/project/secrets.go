@@ -4,10 +4,12 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/s3_ns"
 	s3 "github.com/inoxlang/inox/internal/secrets/s3"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 var (
@@ -16,14 +18,40 @@ var (
 	ErrSecretStorageAlreadySet = errors.New("secret storage field already set")
 )
 
+//TODO: encrypt secrets
+
 func (p *Project) ListSecrets(ctx *core.Context) (info []core.ProjectSecretInfo, _ error) {
+	p.lock.ForceLock()
+	defer p.lock.ForceUnlock()
+
+	if p.storeSecretsInProjectData {
+		for _, secret := range p.data.Secrets {
+			info = append(info, core.ProjectSecretInfo{
+				Name:          secret.Name,
+				LastModifDate: secret.LastModifDate,
+			})
+		}
+		return
+	}
+
 	if p.secretStorage == nil {
 		return nil, nil
 	}
+
 	return p.secretStorage.ListSecrets(ctx)
 }
 
 func (p *Project) GetSecrets(ctx *core.Context) (secrets []core.ProjectSecret, _ error) {
+	p.lock.ForceLock()
+	defer p.lock.ForceUnlock()
+
+	if p.storeSecretsInProjectData {
+		for _, secret := range p.data.Secrets {
+			secrets = append(secrets, secret)
+		}
+		return
+	}
+
 	if p.secretStorage == nil {
 		return nil, nil
 	}
@@ -32,6 +60,23 @@ func (p *Project) GetSecrets(ctx *core.Context) (secrets []core.ProjectSecret, _
 }
 
 func (p *Project) UpsertSecret(ctx *core.Context, name, value string) error {
+	secretName, err := core.SecretNameFrom(name)
+	if err != nil {
+		return err
+	}
+
+	p.lock.ForceLock()
+	defer p.lock.ForceUnlock()
+
+	if p.storeSecretsInProjectData {
+		p.data.Secrets[secretName] = core.ProjectSecret{
+			Name:          secretName,
+			LastModifDate: time.Now(),
+			Value:         utils.Must(core.SECRET_STRING_PATTERN.NewSecret(ctx, value)),
+		}
+		return p.persistNoLock(ctx)
+	}
+
 	if p.secretStorage == nil {
 		return ErrNoSecretStorage
 	}
@@ -40,6 +85,19 @@ func (p *Project) UpsertSecret(ctx *core.Context, name, value string) error {
 }
 
 func (p *Project) DeleteSecret(ctx *core.Context, name string) error {
+	secretName, err := core.SecretNameFrom(name)
+	if err != nil {
+		return err
+	}
+
+	p.lock.ForceLock()
+	defer p.lock.ForceUnlock()
+
+	if p.storeSecretsInProjectData {
+		delete(p.data.Secrets, secretName)
+		return p.persistNoLock(ctx)
+	}
+
 	if p.secretStorage == nil {
 		return ErrNoSecretStorage
 	}

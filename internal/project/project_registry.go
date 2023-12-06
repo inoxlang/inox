@@ -144,6 +144,10 @@ func (r *Registry) OpenProject(ctx *core.Context, params OpenProjectParams) (*Pr
 		projectData.Applications = map[node.ApplicationName]*applicationData{}
 	}
 
+	if projectData.Secrets == nil {
+		projectData.Secrets = map[core.SecretName]core.ProjectSecret{}
+	}
+
 	// open the project's filesystem
 
 	projectDir := r.filesystem.Join(r.projectsDir, string(params.Id))
@@ -161,6 +165,8 @@ func (r *Registry) OpenProject(ctx *core.Context, params OpenProjectParams) (*Pr
 		tempTokens:     params.TempTokens,
 		data:           projectData,
 		persistFn:      r.persistProjectData,
+
+		storeSecretsInProjectData: true,
 	}
 
 	if params.DevSideConfig.Cloudflare != nil {

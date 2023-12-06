@@ -49,8 +49,9 @@ type Project struct {
 
 	//tokens and secrets
 
-	tempTokens    *TempProjectTokens
-	secretStorage secrets.SecretStorage
+	tempTokens                *TempProjectTokens
+	storeSecretsInProjectData bool
+	secretStorage             secrets.SecretStorage //can be nil, always nil if storeSecretsInProjectData is true
 
 	//providers
 
@@ -84,8 +85,9 @@ type DevSideProjectConfig struct {
 // the returned project should only be used in test.
 func NewDummyProject(name string, fls core.SnapshotableFilesystem) *Project {
 	return &Project{
-		id:             core.RandomProjectID(name),
-		liveFilesystem: fls,
+		id:                        core.RandomProjectID(name),
+		liveFilesystem:            fls,
+		storeSecretsInProjectData: true,
 	}
 }
 
@@ -206,4 +208,5 @@ func (p *Project) ForceUnlock() {
 type projectData struct {
 	CreationParams CreateProjectParams                       `json:"creationParams"`
 	Applications   map[node.ApplicationName]*applicationData `json:"applications,omitempty"`
+	Secrets        map[core.SecretName]core.ProjectSecret    `json:"secrets,omitempty"`
 }
