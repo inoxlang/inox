@@ -8,6 +8,12 @@ import (
 	"github.com/inoxlang/inox/internal/project_server/lsp"
 )
 
+const (
+	LIST_SECRETS_METHOD  = "secrets/list"
+	UPSERT_SECRET_METHOD = "secrets/upsert"
+	DELETE_SECRET_METHOD = "secrets/delete"
+)
+
 type UpsertSecretParams struct {
 	Name  string
 	Value string
@@ -26,7 +32,7 @@ type DeleteSecretParams struct {
 
 func registerSecretsMethodHandlers(server *lsp.Server, opts LSPServerConfiguration) {
 	server.OnCustom(jsonrpc.MethodInfo{
-		Name: "secrets/upsertSecret",
+		Name: UPSERT_SECRET_METHOD,
 		NewRequest: func() interface{} {
 			return &UpsertSecretParams{}
 		},
@@ -56,7 +62,7 @@ func registerSecretsMethodHandlers(server *lsp.Server, opts LSPServerConfigurati
 	})
 
 	server.OnCustom(jsonrpc.MethodInfo{
-		Name: "secrets/listSecrets",
+		Name: LIST_SECRETS_METHOD,
 		NewRequest: func() interface{} {
 			return &ListSecretsParams{}
 		},
@@ -86,7 +92,7 @@ func registerSecretsMethodHandlers(server *lsp.Server, opts LSPServerConfigurati
 	})
 
 	server.OnCustom(jsonrpc.MethodInfo{
-		Name: "secrets/deleteSecret",
+		Name: DELETE_SECRET_METHOD,
 		NewRequest: func() interface{} {
 			return &DeleteSecretParams{}
 		},
