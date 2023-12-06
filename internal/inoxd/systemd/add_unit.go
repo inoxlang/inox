@@ -14,12 +14,12 @@ import (
 
 	"github.com/coreos/go-systemd/v22/unit"
 	"github.com/inoxlang/inox/internal/inoxd"
+	"github.com/inoxlang/inox/internal/inoxprocess/binary"
 	"github.com/inoxlang/inox/internal/project_server"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
 const (
-	DEFAULT_INOX_PATH        = "/usr/local/bin/inox"
 	SYSTEMD_DIR_PATH         = "/etc/systemd"
 	INOX_SERVICE_UNIT_NAME   = "inox"
 	INOX_SERVICE_UNIT_PATH   = SYSTEMD_DIR_PATH + "/system/" + INOX_SERVICE_UNIT_NAME + ".service"
@@ -128,7 +128,7 @@ func WriteInoxUnitFile(args InoxUnitParams) (unitName string, _ error) {
 			{
 				Name: "ExecStart",
 				//inox daemon '-config=....'
-				Value: DEFAULT_INOX_PATH + " " + inoxd.DAEMON_SUBCMD + " " + configString,
+				Value: binary.DEFAULT_INOX_PATH + " " + inoxd.DAEMON_SUBCMD + " " + configString,
 			},
 			{
 				Name:  "Type",

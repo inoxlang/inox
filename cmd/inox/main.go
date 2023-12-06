@@ -5,6 +5,7 @@ import (
 	"github.com/inoxlang/inox/internal/config"
 	"github.com/inoxlang/inox/internal/core"
 	_ "github.com/inoxlang/inox/internal/globals"
+	"github.com/inoxlang/inox/internal/inoxprocess/binary"
 	metricsperf "github.com/inoxlang/inox/internal/metrics-perf"
 
 	"github.com/inoxlang/inox/internal/inoxd"
@@ -910,7 +911,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 			}
 		}
 
-		daemonConfig.InoxBinaryPath = systemd.DEFAULT_INOX_PATH
+		daemonConfig.InoxBinaryPath = binary.DEFAULT_INOX_PATH
 
 		inoxd.Inoxd(inoxd.InoxdArgs{
 			Config: daemonConfig,
