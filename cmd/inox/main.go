@@ -118,7 +118,8 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 	}
 
 	//abort execution if the command is not allowed to be runned as root.
-	if mainSubCommand != ADD_SERVICE_SUBCMD && mainSubCommand != REMOVE_SERVICE_SUBCMD && mainSubCommand != "help" &&
+	if mainSubCommand != ADD_SERVICE_SUBCMD && mainSubCommand != REMOVE_SERVICE_SUBCMD && mainSubCommand != UPGRADE_INOX_SUBCMD &&
+		mainSubCommand != "help" &&
 		mainSubCommand != "--help" && mainSubCommand != "-h" &&
 		!checkNotRunningAsRoot(errW) {
 		return ERROR_STATUS_CODE
@@ -911,7 +912,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 			}
 		}
 
-		daemonConfig.InoxBinaryPath = binary.DEFAULT_INOX_PATH
+		daemonConfig.InoxBinaryPath = binary.INOX_BINARY_PATH
 
 		inoxd.Inoxd(inoxd.InoxdArgs{
 			Config: daemonConfig,
@@ -1159,6 +1160,12 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 			case *http_ns.HttpsServer:
 				r.WaitClosed(state.Ctx)
 			}
+		}
+	case UPGRADE_INOX_SUBCMD:
+		err := binary.Upgrade(outW)
+		if err != nil {
+			fmt.Fprintln(errW, err)
+			return ERROR_STATUS_CODE
 		}
 	default:
 		fmt.Fprintf(errW, "unknown command '%s'\n", mainSubCommand)

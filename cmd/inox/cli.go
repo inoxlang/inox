@@ -9,6 +9,7 @@ import (
 	"github.com/inoxlang/inox/internal/inoxd"
 	"github.com/inoxlang/inox/internal/inoxd/cloud/cloudproxy"
 	"github.com/inoxlang/inox/internal/inoxprocess"
+	"github.com/inoxlang/inox/internal/inoxprocess/binary"
 	"github.com/posener/complete/v2"
 	"github.com/posener/complete/v2/predict"
 )
@@ -16,6 +17,7 @@ import (
 const (
 	ADD_SERVICE_SUBCMD           = "add-service"
 	REMOVE_SERVICE_SUBCMD        = "remove-service"
+	UPGRADE_INOX_SUBCMD          = "upgrade-inox"
 	RUN_SUBCMD                   = "run"
 	CHECK_SUBCMD                 = "check"
 	SHELL_SUBCMD                 = "shell"
@@ -29,7 +31,7 @@ const (
 
 var (
 	CLI_SUBCOMMANDS = []string{
-		ADD_SERVICE_SUBCMD, REMOVE_SERVICE_SUBCMD, //root
+		ADD_SERVICE_SUBCMD, REMOVE_SERVICE_SUBCMD, UPGRADE_INOX_SUBCMD, //root
 		RUN_SUBCMD, CHECK_SUBCMD, SHELL_SUBCMD, EVAL_SUBCMD, EVAL_ALIAS_SUBCMD /*"lsp",*/, PROJECT_SERVER_SUBCMD, HELP_SUBCMD,
 		INSTALL_COMPLETIONS_SUBCMD, UNINSTALL_COMPLETIONS_SUBCMD,
 	}
@@ -38,6 +40,7 @@ var (
 	CLI_SUBCOMMAND_DESCRIPTIONS = [][2]string{
 		{ADD_SERVICE_SUBCMD, "[root] add the 'inox' unit (systemd) and create the " + inoxd.INOXD_USERNAME + " user"},
 		{REMOVE_SERVICE_SUBCMD, "[root] stop inoxd and remove the 'inox' unit (systemd)"},
+		{UPGRADE_INOX_SUBCMD, "[root] upgrade " + binary.INOX_BINARY_PATH + " to the latest version"},
 		{PROJECT_SERVER_SUBCMD, "start the project server (LSP + custom methods)"},
 
 		{RUN_SUBCMD, "run a script"},
@@ -106,6 +109,7 @@ var (
 					"dangerously-remove-all": predict.Nothing,
 				},
 			},
+			INOX_CMD_HELP: {},
 			PROJECT_SERVER_SUBCMD: {
 				Flags: map[string]complete.Predictor{
 					"config": predict.Set{`'{"port":8305}'`},
