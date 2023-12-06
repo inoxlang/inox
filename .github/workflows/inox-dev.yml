@@ -34,7 +34,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-    - uses: GraphR00t/go-release-action@1.41
+    - uses: GraphR00t/go-release-action@v1.41
       with:
         # same as prod
         github_token: ${{ secrets.GITHUB_TOKEN }}
