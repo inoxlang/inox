@@ -12,14 +12,14 @@ import (
 
 var (
 	//go:embed simple.tar
-	SIMPLE_TAR_BYTES []byte
+	SIMPLE_TARBALL_BYTES []byte
 )
 
 func TestUntar(t *testing.T) {
 	var entries []fs.FileInfo
 	var contents []string
 
-	UntarInMemory(SIMPLE_TAR_BYTES, func(info fs.FileInfo, reader io.Reader) error {
+	UntarInMemory(SIMPLE_TARBALL_BYTES, func(info fs.FileInfo, reader io.Reader) error {
 		entries = append(entries, info)
 		if !info.IsDir() {
 			contents = append(contents, string(utils.Must(io.ReadAll(reader))))

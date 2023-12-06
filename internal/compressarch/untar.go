@@ -7,7 +7,6 @@ import (
 	"io/fs"
 )
 
-
 func UntarInMemory(tarball []byte, entryCallbackFunc func(info fs.FileInfo, reader io.Reader) error) error {
 	tarReader := tar.NewReader(bytes.NewReader(tarball))
 
