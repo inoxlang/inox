@@ -1,5 +1,8 @@
 # Security Policy
 
+**After the version 0.1 is released I will undertake a major cleanup of the codebase and improve tests, so for now only report critical vulnerabilies. Thanks !**
+
+
 Being *Secure by default* is one of the main goal of the Inox project. Security issues will be addressed as soon as possible.
 If you think you have found a vulnerability please **report** it.
 
