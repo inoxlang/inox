@@ -19,7 +19,7 @@ Each application or service will ultimately run in a separate process:
 
 </details>
 
-<!------------------------------------------------>
+_________
 
 <details>
 
@@ -28,23 +28,26 @@ Each application or service will ultimately run in a separate process:
 Inox is not a company. I am working full-time on Inox and releasing the source code under the MIT license.\
 If you want the project to reach 1.0 consider donating through [GitHub](https://github.com/sponsors/GraphR00t) (preferred) or [Patreon](https://patreon.com/GraphR00t).
 
+
 </details>
 
-<!------------------------------------------------>
+_________
 
 <details>
 
-**<summary>Why are contributors required to sign a CLA (Contributor Licensing Agreement) ?</summary>**
+**<summary>Why are contributors required to sign a Contributor Licensing Agreement ?</summary>**
 
 The [CLA](./CLA.md) is present to protect me and the project from legal issues.\
-By signing the CLA you do **NOT GRANT** me the right to include **significant** contributions in any relicensing of the project.
+By signing the CLA you do **NOT GRANT** me the right to include any significant contributions in any relicensing of the project.
 
-**CLA Definition**: https://yahoo.github.io/oss-guide/docs/resources/what-is-cla.html\
+**Definition of CLA**: https://yahoo.github.io/oss-guide/docs/resources/what-is-cla.html
+
 **Additional context**: https://news.ycombinator.com/item?id=28923633 (comments)
 
 </details>
 
-<!------------------------------------------------>
+
+_________
 
 <details>
 
@@ -56,7 +59,18 @@ _production-ready != battle-tested_
 
 </details>
 
-<!------------------------------------------------>
+_________
+
+<details>
+
+**<summary>What is the state of the codebase (quality, documentation, tests) ?</summary>**
+
+As of now, certain parts of the codebase are not optimally written, lack sufficient comments and documentation, and do not have robust test coverage. The first version (0.1) being now released, I will dedicate 20-30% of my working time to improving the overall quality, documentation, and test coverage of the codebase.
+
+</details>
+
+_________
+
 
 Have a question ? Create an [issue](https://github.com/inoxlang/inox/issues/new?assignees=&labels=question&projects=&template=question.md&title=).
 
