@@ -416,7 +416,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *GlobalState, mod *Mo
 		secretValues := make([]Serializable, len(secrets))
 
 		for i, secret := range secrets {
-			secretNames[i] = secret.Name
+			secretNames[i] = string(secret.Name)
 			secretValues[i] = secret.Value
 		}
 

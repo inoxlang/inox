@@ -4,167 +4,47 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"sync"
 
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/s3_ns"
-	"github.com/inoxlang/inox/internal/parse"
-	"github.com/inoxlang/inox/internal/utils"
+	s3 "github.com/inoxlang/inox/internal/secrets/s3"
 )
 
 var (
-	ErrFailedToListSecrets = errors.New("failed to list secrets")
+	ErrFailedToListSecrets     = errors.New("failed to list secrets")
+	ErrNoSecretStorage         = errors.New("no secret storage")
+	ErrSecretStorageAlreadySet = errors.New("secret storage field already set")
 )
 
 func (p *Project) ListSecrets(ctx *core.Context) (info []core.ProjectSecretInfo, _ error) {
-	if !p.HasProviders() {
+	if p.secretStorage == nil {
 		return nil, nil
 	}
-
-	bucket, err := p.getCreateSecretsBucket(ctx, false)
-	if err != nil {
-		return nil, fmt.Errorf("%w: %w", ErrFailedToListSecrets, err)
-	}
-
-	if bucket == nil {
-		return nil, nil
-	}
-
-	objects, err := bucket.ListObjects(ctx, "")
-	if err != nil {
-		return nil, fmt.Errorf("%w: %w", ErrFailedToListSecrets, err)
-	}
-	return utils.MapSlice(objects, func(o *s3_ns.ObjectInfo) core.ProjectSecretInfo {
-		return core.ProjectSecretInfo{
-			Name:          o.Key,
-			LastModifDate: o.LastModified,
-		}
-	}), nil
+	return p.secretStorage.ListSecrets(ctx)
 }
 
 func (p *Project) GetSecrets(ctx *core.Context) (secrets []core.ProjectSecret, _ error) {
-	if !p.HasProviders() {
+	if p.secretStorage == nil {
 		return nil, nil
 	}
 
-	bucket, err := p.getCreateSecretsBucket(ctx, false)
-	if err != nil {
-		return nil, fmt.Errorf("%w: %w", ErrFailedToListSecrets, err)
-	}
-
-	if bucket == nil {
-		return nil, nil
-	}
-
-	objects, err := bucket.ListObjects(ctx, "")
-	if err != nil {
-		return nil, fmt.Errorf("%w: %w", ErrFailedToListSecrets, err)
-	}
-
-	//TODO: investigate why this fix is needed
-	objects = utils.FilterMapSlice(objects, func(s *s3_ns.ObjectInfo) (*s3_ns.ObjectInfo, bool) {
-		if s.Key == "" {
-			return nil, false
-		}
-		return s, true
-	})
-
-	wg := new(sync.WaitGroup)
-	wg.Add(len(objects))
-
-	secrets = make([]core.ProjectSecret, len(objects))
-	errs := make([]error, len(objects))
-
-	var lock sync.Mutex
-
-	for i, obj := range objects {
-		go func(i int, info *s3_ns.ObjectInfo) {
-			defer utils.Recover()
-
-			defer wg.Done()
-			resp, err := bucket.GetObject(ctx, info.Key)
-			if err != nil {
-				lock.Lock()
-				errs[i] = err
-				lock.Unlock()
-				return
-			}
-			content, err := resp.ReadAll()
-			if err != nil {
-				lock.Lock()
-				errs[i] = err
-				lock.Unlock()
-				return
-			}
-
-			secretValue, err := core.SECRET_STRING_PATTERN.NewSecret(ctx, string(content))
-			if err != nil {
-				lock.Lock()
-				errs[i] = err
-				lock.Unlock()
-				return
-			}
-
-			secrets[i] = core.ProjectSecret{
-				Name:          info.Key,
-				Value:         secretValue,
-				LastModifDate: info.LastModified,
-			}
-		}(i, obj)
-	}
-
-	wg.Wait()
-
-	errString := ""
-	for _, err := range errs {
-		if err != nil {
-			if errString != "" {
-				errString += "\n"
-			}
-			errString += err.Error()
-		}
-	}
-
-	if errString != "" {
-		return nil, errors.New(errString)
-	}
-	return secrets, nil
+	return p.secretStorage.GetSecrets(ctx)
 }
 
 func (p *Project) UpsertSecret(ctx *core.Context, name, value string) error {
-	for _, r := range name {
-		if !parse.IsIdentChar(r) {
-			return fmt.Errorf("invalid char found in secret's name: '%c'", r)
-		}
-	}
-	bucket, err := p.getCreateSecretsBucket(ctx, true)
-	if err != nil {
-		return fmt.Errorf("failed to add secret %q: %w", name, err)
+	if p.secretStorage == nil {
+		return ErrNoSecretStorage
 	}
 
-	_, err = bucket.PutObject(ctx, name, strings.NewReader(value))
-	if err != nil {
-		return fmt.Errorf("failed to add secret %q: %w", name, err)
-	}
-	return nil
+	return p.secretStorage.UpsertSecret(ctx, name, value)
 }
 
 func (p *Project) DeleteSecret(ctx *core.Context, name string) error {
-	for _, r := range name {
-		if !parse.IsIdentChar(r) {
-			return fmt.Errorf("invalid char found in secret's name: '%c'", r)
-		}
-	}
-	bucket, err := p.getCreateSecretsBucket(ctx, true)
-	if err != nil {
-		return fmt.Errorf("failed to delete secret %q: %w", name, err)
+	if p.secretStorage == nil {
+		return ErrNoSecretStorage
 	}
 
-	err = bucket.DeleteObject(ctx, name)
-	if err != nil {
-		return fmt.Errorf("failed to delete secret %q: %w", name, err)
-	}
-	return nil
+	return p.secretStorage.DeleteSecret(ctx, name)
 }
 
 func (p *Project) getSecretsBucketName() string {
@@ -179,8 +59,12 @@ func (p *Project) getCreateSecretsBucket(ctx *core.Context, createIfDoesNotExist
 	p.lock.Lock(closestState, p)
 	defer p.lock.Unlock(closestState, p)
 
-	if p.secretsBucket != nil {
-		return p.secretsBucket, nil
+	if storage, ok := p.secretStorage.(*s3.S3SecretStorage); ok {
+		return storage.Bucket(), nil
+	}
+
+	if p.secretStorage != nil {
+		return nil, ErrSecretStorageAlreadySet
 	}
 
 	if p.cloudflare == nil {
@@ -222,6 +106,6 @@ func (p *Project) getCreateSecretsBucket(ctx *core.Context, createIfDoesNotExist
 	if err != nil {
 		return nil, fmt.Errorf("failed to open bucket: %w", err)
 	}
-	p.secretsBucket = bucket
+	p.secretStorage = s3.NewStorageFromBucket(bucket)
 	return bucket, err
 }

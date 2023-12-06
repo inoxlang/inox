@@ -10,8 +10,7 @@ import (
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/inoxd/node"
 	"github.com/inoxlang/inox/internal/project/cloudflareprovider"
-
-	"github.com/inoxlang/inox/internal/globals/s3_ns"
+	"github.com/inoxlang/inox/internal/secrets"
 )
 
 const (
@@ -51,7 +50,7 @@ type Project struct {
 	//tokens and secrets
 
 	tempTokens    *TempProjectTokens
-	secretsBucket *s3_ns.Bucket
+	secretStorage secrets.SecretStorage
 
 	//providers
 
@@ -100,6 +99,9 @@ func (p *Project) persistNoLock(ctx *core.Context) error {
 func (p *Project) DeleteSecretsBucket(ctx *core.Context) error {
 	bucket, err := p.getCreateSecretsBucket(ctx, false)
 	if err != nil {
+		if errors.Is(err, ErrSecretStorageAlreadySet) {
+			return nil
+		}
 		return err
 	}
 	if bucket == nil {

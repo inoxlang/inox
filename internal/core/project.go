@@ -1,8 +1,10 @@
 package core
 
 import (
+	"fmt"
 	"time"
 
+	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/oklog/ulid/v2"
 )
 
@@ -32,12 +34,23 @@ func RandomProjectID(projectName string) ProjectID {
 }
 
 type ProjectSecret struct {
-	Name          string
+	Name          SecretName
 	LastModifDate time.Time
 	Value         *Secret
 }
 
 type ProjectSecretInfo struct {
-	Name          string    `json:"name"`
-	LastModifDate time.Time `json:"lastModificationDate"`
+	Name          SecretName `json:"name"`
+	LastModifDate time.Time  `json:"lastModificationDate"`
+}
+
+type SecretName string
+
+func SecretNameFrom(name string) (SecretName, error) {
+	for _, r := range name {
+		if !parse.IsIdentChar(r) {
+			return "", fmt.Errorf("invalid char found in secret's name: '%c'", r)
+		}
+	}
+	return SecretName(name), nil
 }
