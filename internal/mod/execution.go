@@ -6,11 +6,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"runtime/debug"
 
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/config"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/project"
+	"github.com/inoxlang/inox/internal/utils"
 	"github.com/rs/zerolog"
 )
 
@@ -163,6 +165,18 @@ func RunPreparedScript(args RunPreparedScriptArgs) (
 	scriptResult core.Value, scriptState *core.GlobalState, scriptModule *core.Module,
 	preparationSuccess bool, _err error,
 ) {
+
+	defer func() {
+		if e := recover(); e != nil {
+			err := utils.ConvertPanicValueToError(e)
+			err = fmt.Errorf("%w: %s", err, debug.Stack())
+			scriptResult = nil
+			scriptState = nil
+			scriptModule = nil
+			preparationSuccess = true
+			_err = err
+		}
+	}()
 
 	state := args.State
 	out := state.Out
