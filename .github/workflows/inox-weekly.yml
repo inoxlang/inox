@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-    - uses: GraphR00t/go-release-action@temp
+    - uses: GraphR00t/go-release-action@1.41
       with:
         # ------------------
         github_token: ${{ secrets.GITHUB_TOKEN }}
