@@ -2,13 +2,12 @@ package compressarch
 
 import (
 	"archive/tar"
-	"bytes"
 	"io"
 	"io/fs"
 )
 
-func UntarInMemory(tarball []byte, entryCallbackFunc func(info fs.FileInfo, reader io.Reader) error) error {
-	tarReader := tar.NewReader(bytes.NewReader(tarball))
+func UntarInMemory(tarball io.Reader, entryCallbackFunc func(info fs.FileInfo, reader io.Reader) error) error {
+	tarReader := tar.NewReader(tarball)
 
 	for {
 		header, err := tarReader.Next()

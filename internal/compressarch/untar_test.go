@@ -1,6 +1,7 @@
 package compressarch
 
 import (
+	"bytes"
 	_ "embed"
 	"io"
 	"io/fs"
@@ -19,7 +20,7 @@ func TestUntar(t *testing.T) {
 	var entries []fs.FileInfo
 	var contents []string
 
-	UntarInMemory(SIMPLE_TARBALL_BYTES, func(info fs.FileInfo, reader io.Reader) error {
+	UntarInMemory(bytes.NewReader(SIMPLE_TARBALL_BYTES), func(info fs.FileInfo, reader io.Reader) error {
 		entries = append(entries, info)
 		if !info.IsDir() {
 			contents = append(contents, string(utils.Must(io.ReadAll(reader))))
