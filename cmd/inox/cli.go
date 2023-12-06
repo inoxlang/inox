@@ -109,7 +109,7 @@ var (
 					"dangerously-remove-all": predict.Nothing,
 				},
 			},
-			INOX_CMD_HELP: {},
+			UPGRADE_INOX_SUBCMD: {},
 			PROJECT_SERVER_SUBCMD: {
 				Flags: map[string]complete.Predictor{
 					"config": predict.Set{`'{"port":8305}'`},
