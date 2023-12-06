@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"reflect"
+	"slices"
 	"sync"
 
 	"github.com/inoxlang/inox/internal/utils"
@@ -18,6 +19,8 @@ type releaseInfo struct {
 	Name    string      `json:"name"`
 }
 
+// GetLatestNReleases returns the information about the latest max (or less) releases.
+// The most recent release is the first element.
 func GetLatestNReleases(tags map[string]repoTagInfo, max int) (latestReleases []releaseInfo, err error) {
 	if max <= 0 {
 		return nil, fmt.Errorf("max should be greater than zero")
@@ -33,6 +36,9 @@ func GetLatestNReleases(tags map[string]repoTagInfo, max int) (latestReleases []
 	}
 
 	semver.Sort(releaseTagNames)
+
+	//v0.1, v0.2 --> v0.2, v.0.1
+	slices.Reverse(releaseTagNames)
 
 	count := min(len(releaseTagNames), max)
 	wg := new(sync.WaitGroup)

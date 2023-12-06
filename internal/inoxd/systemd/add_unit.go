@@ -128,7 +128,7 @@ func WriteInoxUnitFile(args InoxUnitParams) (unitName string, _ error) {
 			{
 				Name: "ExecStart",
 				//inox daemon '-config=....'
-				Value: binary.DEFAULT_INOX_PATH + " " + inoxd.DAEMON_SUBCMD + " " + configString,
+				Value: binary.INOX_BINARY_PATH + " " + inoxd.DAEMON_SUBCMD + " " + configString,
 			},
 			{
 				Name:  "Type",
