@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"sync"
 
 	"github.com/go-git/go-billy/v5/util"
 	"github.com/inoxlang/inox/internal/afs"
@@ -25,10 +26,12 @@ var (
 )
 
 type Registry struct {
-	projectsDir         string
-	filesystem          afs.Filesystem
-	metadata            *filekv.SingleFileKV
+	projectsDir string
+	filesystem  afs.Filesystem
+	metadata    *filekv.SingleFileKV
+
 	openProjects        map[core.ProjectID]*Project
+	openProjectsLock    sync.Mutex
 	openProjectsContext *core.Context
 
 	//TODO: close idle projects (no FS access AND no provider-related accesses AND no production program running)
@@ -118,7 +121,12 @@ type OpenProjectParams struct {
 }
 
 func (r *Registry) OpenProject(ctx *core.Context, params OpenProjectParams) (*Project, error) {
-	if project, ok := r.openProjects[params.Id]; ok {
+	r.openProjectsLock.Lock()
+	defer r.openProjectsLock.Unlock()
+
+	openProjects := r.openProjects
+
+	if project, ok := openProjects[params.Id]; ok {
 		return project, nil
 	}
 
@@ -145,7 +153,7 @@ func (r *Registry) OpenProject(ctx *core.Context, params OpenProjectParams) (*Pr
 	}
 
 	if projectData.Secrets == nil {
-		projectData.Secrets = map[core.SecretName]core.ProjectSecret{}
+		projectData.Secrets = map[core.SecretName]localSecret{}
 	}
 
 	// open the project's filesystem

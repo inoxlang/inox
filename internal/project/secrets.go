@@ -18,6 +18,12 @@ var (
 	ErrSecretStorageAlreadySet = errors.New("secret storage field already set")
 )
 
+type localSecret struct {
+	Name          core.SecretName `json:"name"`
+	LastModifDate time.Time       `json:"lastModificationDate"`
+	Value         string          `json:"value"`
+}
+
 //TODO: encrypt secrets
 
 func (p *Project) ListSecrets(ctx *core.Context) (info []core.ProjectSecretInfo, _ error) {
@@ -47,7 +53,11 @@ func (p *Project) GetSecrets(ctx *core.Context) (secrets []core.ProjectSecret, _
 
 	if p.storeSecretsInProjectData {
 		for _, secret := range p.data.Secrets {
-			secrets = append(secrets, secret)
+			secrets = append(secrets, core.ProjectSecret{
+				Name:          secret.Name,
+				LastModifDate: secret.LastModifDate,
+				Value:         utils.Must(core.SECRET_STRING_PATTERN.NewSecret(ctx, secret.Value)),
+			})
 		}
 		return
 	}
@@ -69,11 +79,7 @@ func (p *Project) UpsertSecret(ctx *core.Context, name, value string) error {
 	defer p.lock.ForceUnlock()
 
 	if p.storeSecretsInProjectData {
-		p.data.Secrets[secretName] = core.ProjectSecret{
-			Name:          secretName,
-			LastModifDate: time.Now(),
-			Value:         utils.Must(core.SECRET_STRING_PATTERN.NewSecret(ctx, value)),
-		}
+		p.data.Secrets[secretName] = localSecret{Name: secretName, LastModifDate: time.Now(), Value: value}
 		return p.persistNoLock(ctx)
 	}
 

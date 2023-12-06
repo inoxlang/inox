@@ -208,5 +208,5 @@ func (p *Project) ForceUnlock() {
 type projectData struct {
 	CreationParams CreateProjectParams                       `json:"creationParams"`
 	Applications   map[node.ApplicationName]*applicationData `json:"applications,omitempty"`
-	Secrets        map[core.SecretName]core.ProjectSecret    `json:"secrets,omitempty"`
+	Secrets        map[core.SecretName]localSecret           `json:"secrets,omitempty"`
 }
