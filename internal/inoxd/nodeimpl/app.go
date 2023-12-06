@@ -29,6 +29,8 @@ const (
 	DEFAULT_MAX_APP_FILE_COUNT                   = 1_000_000
 	DEFAULT_MAX_APP_PARALLEL_FILE_CREATION_COUNT = 100
 
+	MAX_DONE_CALLBACK_WAIT_TIME = 100 * time.Millisecond
+
 	APP_LOG_SRC_PREFIX = "apps/"
 )
 
@@ -43,6 +45,7 @@ type Application struct {
 	status                      atomic.Value //ApplicationStatus
 	lastAppPreparationError     error
 	lastAppPreparationErrorLock sync.Mutex
+	stopRequested               atomic.Bool
 
 	currentDeployment *ApplicationDeployment //can be nil
 	currentModule     *core.Module
@@ -179,6 +182,7 @@ func (app *Application) Stop() {
 	}
 
 	if app.Status() == node.DeployedApp {
+		app.stopRequested.Store(true)
 		currentExecutionCtx.CancelGracefully()
 	}
 }
@@ -200,6 +204,7 @@ func (app *Application) UnsafelyStop() {
 	status := app.Status()
 	switch status {
 	case node.DeployedApp, node.GracefullyStoppingApp:
+		app.stopRequested.Store(true)
 		currentExecutionCtx.CancelUngracefully()
 	}
 }
@@ -217,26 +222,37 @@ func (app *Application) AutorestartLoop( /*temporary solution*/ project core.Pro
 		panic(core.ErrUnreachable)
 	}
 
+	var prepared bool
+	var appStopped atomic.Bool
+	appStopped.Store(true)
+	teardownStatusFromDoneCallback := make(chan core.GracefulTeardownStatus, 1)
+
+	defer func() {
+		e := recover()
+		if e == nil {
+			return
+		}
+
+		err := utils.ConvertPanicValueToError(e)
+		err = fmt.Errorf("%w: %s", err, debug.Stack())
+		app.logger.Debug().Err(err).Send()
+
+		if !prepared {
+			app.setLastPreparationError(err)
+			app.setStatus(node.FailedToPrepareApp)
+		} else {
+			app.setStatus(node.ErroneouslyStoppedApp)
+		}
+	}()
+
 	for {
-		prepared := false
+		prepared = false
 
-		defer func() {
-			e := recover()
-			if e == nil {
-				return
-			}
-
-			err := utils.ConvertPanicValueToError(e)
-			err = fmt.Errorf("%w: %s", err, debug.Stack())
-			app.logger.Debug().Err(err).Send()
-
-			if !prepared {
-				app.setLastPreparationError(err)
-				app.setStatus(node.FailedToPrepareApp)
-			} else {
-				app.setStatus(node.ErroneouslyStoppedApp)
-			}
-		}()
+		select {
+		//empty the channel
+		case <-teardownStatusFromDoneCallback:
+		default:
+		}
 
 		filesystem := app.ctx.GetFileSystem()
 
@@ -281,20 +297,9 @@ func (app *Application) AutorestartLoop( /*temporary solution*/ project core.Pro
 		})
 
 		state.Ctx.OnDone(func(ctx context.Context, teardownStatus core.GracefulTeardownStatus) error {
-			switch teardownStatus {
-			case core.GracefullyTearedDown:
-				app.setStatus(node.GracefullyStoppingApp)
-
-			case core.NeverStartedGracefulTeardown,
-				core.GracefullyTearedDownWithCancellation,
-				core.GracefullyTearedDownWithErrors:
-
-				app.setStatus(node.ErroneouslyStoppedApp)
-			}
+			teardownStatusFromDoneCallback <- teardownStatus
 			return nil
 		})
-
-		var appStopped atomic.Bool
 
 		//set the status to deployed if the app is still running in one second (TODO: change delay ?)
 		go func() {
@@ -306,7 +311,7 @@ func (app *Application) AutorestartLoop( /*temporary solution*/ project core.Pro
 			}
 		}()
 
-		defer appStopped.Store(true)
+		appStopped.Store(false)
 
 		_, _, _, _, err = mod.RunPreparedScript(mod.RunPreparedScriptArgs{
 			State:                     state,
@@ -322,17 +327,39 @@ func (app *Application) AutorestartLoop( /*temporary solution*/ project core.Pro
 		if err == nil && !state.Ctx.IsDoneSlowCheck() {
 			//wait until the application is stopped
 			<-state.Ctx.Done()
-		} else if err != nil {
+		} else if err != nil { //unexpected error or expected error due to context cancellation
 			app.logger.Debug().Err(err).Send()
-			app.setStatus(node.ErroneouslyStoppedApp)
-			continue
+
+			//TODO: cancel context
 		}
 
 		//TODO: only set the status to GracefullyStoppedApp if ALL the descendant state teardowns
 		//		and childprocess teardowns happened successfully.
 		//TODO: include ALL modules in descendant states and allow having two descendant states with the same path.
 
-		app.setStatus(node.GracefullyStoppedApp)
+		appStopped.Store(true)
+
+		select {
+		case teardownStatus := <-teardownStatusFromDoneCallback:
+			switch teardownStatus {
+			case core.GracefullyTearedDown:
+				app.setStatus(node.GracefullyStoppedApp)
+
+			case core.NeverStartedGracefulTeardown,
+				core.GracefullyTearedDownWithCancellation,
+				core.GracefullyTearedDownWithErrors:
+
+				app.setStatus(node.ErroneouslyStoppedApp)
+			}
+		case <-time.After(MAX_DONE_CALLBACK_WAIT_TIME):
+			//there is an issue because the done callback was not executed.
+
+			app.setStatus(node.ErroneouslyStoppedApp)
+		}
+
+		if app.stopRequested.CompareAndSwap(true, false) {
+			return
+		}
 	}
 
 	// for !utils.IsContextDone(app.agent.goCtx) {
