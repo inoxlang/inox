@@ -7,7 +7,7 @@ var (
 	LIST_PROPNAMES       = []string{"append"}
 
 	ANY_INDEXABLE    = &AnyIndexable{}
-	ANY_ARRAY        = NewArrayOf(ANY_SERIALIZABLE)
+	ANY_ARRAY        = NewArrayOf(ANY)
 	ANY_TUPLE        = NewTupleOf(ANY_SERIALIZABLE)
 	ANY_ORDERED_PAIR = NewOrderedPair(ANY_SERIALIZABLE, ANY_SERIALIZABLE)
 	ANY_OBJ          = &Object{}

@@ -2968,9 +2968,28 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, &InoxFunction{
 				node:           fnExpr,
 				nodeChunk:      n,
-				parameters:     []Value{NewListOf(ANY_SERIALIZABLE)},
+				parameters:     []Value{ANY_ARRAY},
 				parameterNames: []string{"a"},
-				result:         NewListOf(ANY_SERIALIZABLE),
+				result:         ANY_ARRAY,
+			}, res)
+		})
+
+		t.Run("variadic parameter with specific element tyoe", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				fn f(...integers int){
+					return integers
+				}
+				return f
+			`)
+			fnExpr := n.Statements[0].(*parse.FunctionDeclaration).Function
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, &InoxFunction{
+				node:           fnExpr,
+				nodeChunk:      n,
+				parameters:     []Value{NewArrayOf(ANY_INT)},
+				parameterNames: []string{"integers"},
+				result:         NewArrayOf(ANY_INT),
 			}, res)
 		})
 

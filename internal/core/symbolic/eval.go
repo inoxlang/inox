@@ -3493,10 +3493,23 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 			variadicParam := n.VariadicParameter()
 			paramNames[index] = variadicParam.Var.Name
 
-			param := NewListOf(ANY_SERIALIZABLE)
-			params[index] = param
+			var elemType Value = ANY
 
-			stateFork.setLocal(variadicParam.Var.Name, param, nil, variadicParam.Var)
+			if variadicParam.Type != nil {
+				pattern, err := symbolicallyEvalPatternNode(variadicParam.Type, stateFork)
+				if err != nil {
+					return nil, err
+				}
+				elemType = pattern.SymbolicValue()
+			}
+
+			paramType := ANY_ARRAY
+			if elemType != ANY {
+				paramType = NewArrayOf(elemType)
+			}
+
+			params[index] = paramType
+			stateFork.setLocal(variadicParam.Var.Name, paramType, nil, variadicParam.Var)
 		}
 		stateFork.symbolicData.SetLocalScopeData(n.Body, stateFork.currentLocalScopeData())
 
@@ -3670,14 +3683,27 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 
 		if n.IsVariadic {
 			variadicParam := n.VariadicParameter()
-			paramValue := &List{generalElement: ANY_SERIALIZABLE}
 			name := variadicParam.Var.Name
+			var elemType Value = ANY
 
-			parameterTypes[len(parameterTypes)-1] = paramValue
+			if variadicParam.Type != nil {
+				pattern, err := symbolicallyEvalPatternNode(variadicParam.Type, stateFork)
+				if err != nil {
+					return nil, err
+				}
+				elemType = pattern.SymbolicValue()
+			}
+
+			paramType := ANY_ARRAY
+			if elemType != ANY {
+				paramType = NewArrayOf(elemType)
+			}
+
+			parameterTypes[len(parameterTypes)-1] = paramType
 			parameterNames[len(parameterTypes)-1] = name
 
-			stateFork.setLocal(name, paramValue, nil, variadicParam.Var)
-			state.symbolicData.SetMostSpecificNodeValue(variadicParam.Var, paramValue)
+			stateFork.setLocal(name, paramType, nil, variadicParam.Var)
+			state.symbolicData.SetMostSpecificNodeValue(variadicParam.Var, paramType)
 		}
 
 		//-----------------------------
