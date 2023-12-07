@@ -33,6 +33,8 @@
 - [Functions](#functions)
   - [Definitions](#function-definitions)
   - [Call](#calling-a-function)
+  - ['Must' calls](#must-calls)
+  - [Variadic Functions](#variadic-functions)
 - [Patterns](#patterns)
   - [Named patterns](#named-patterns)
   - [Object patterns](#object-patterns)
@@ -1068,6 +1070,26 @@ int = g!()
 
 > If you find an error in the documentation or a bug in the runtime, please
 > create an issue.
+
+
+## Variadic Functions
+
+```
+fn sum(...integers int){
+    i = 0
+    for int in integers {
+        i += int
+    }
+    return i
+}
+
+print(sum())
+print(sum(1))
+print(sum(1, 2))
+
+# ...[2, 3] is a spread argument
+print(sum(1, ...[2, 3]))
+```
 
 ## Readonly Parameters (WIP)
 
