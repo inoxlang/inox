@@ -1,4 +1,4 @@
-# this script compiles./vscode/parse/main.go to WASM
+# this script compiles ./vscode/parse/main.go to WASM
 
 manifest {
     permissions: {
@@ -10,7 +10,7 @@ manifest {
             }
         }
         # the go compiler requires filesystem access
-        read: %/
+        read: %/...
         write: {
             %/tmp/...
             IWD_PREFIX
