@@ -4,9 +4,11 @@ package inoxprocess
 
 import (
 	"errors"
+	"fmt"
 	"io/fs"
 	"os"
 	"os/exec"
+	"runtime"
 	"strings"
 
 	"github.com/inoxlang/inox/internal/core"
@@ -261,6 +263,12 @@ func restrictProcessAccess(grantedPerms, forbiddenPerms []core.Permission, fls *
 
 	err := locker.Lock(safety)
 	if err != nil {
-		panic(err)
+		if runtime.GOOS == "linux" && errors.Is(err, landlock.ErrLandlockNotAvailable) {
+			msg := landlock.ErrLandlockNotAvailable.Error() +
+				": The kernel version is likely less than 5.13. In a few minor Inox versions the process will stop instead of showing this message."
+			fmt.Println(msg)
+		} else {
+			panic(err)
+		}
 	}
 }
