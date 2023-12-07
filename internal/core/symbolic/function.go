@@ -377,15 +377,16 @@ func (fn *GoFunction) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.Pre
 		reflectParamType := fnValType.In(i)
 
 		if i == fnValType.NumIn()-1 && isVariadic {
-			w.WriteString("...%[]")
+			w.WriteString("...Array(")
 
 			param, _, err := converTypeToSymbolicValue(reflectParamType.Elem(), false)
 			if err != nil {
 				w.WriteString("???" + err.Error())
 			} else {
-				param.PrettyPrint(w.ZeroDepthIndent(), config)
+				param.PrettyPrint(w.ZeroDepthIndent().EnterPattern(), config)
 			}
 
+			w.WriteString(")")
 		} else {
 			allowOptionalParams := i > fn.lastMandatoryParamIndex
 
