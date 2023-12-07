@@ -451,7 +451,9 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 	for i, arg := range args {
 		var paramTypeNode parse.Node
 
-		if i >= nonVariadicParamCount {
+		checkAgainstVariadicParam := i >= nonVariadicParamCount
+
+		if checkAgainstVariadicParam {
 			paramTypeNode = variadicParamNode.Type
 		} else {
 			paramTypeNode = parameterNodes[i].Type
@@ -461,7 +463,14 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 			continue
 		}
 
-		paramType := nonGoParameters[i]
+		var paramType Value
+		if checkAgainstVariadicParam {
+			variadicParamType := nonGoParameters[len(nonGoParameters)-1].(*Array)
+			paramType = variadicParamType.element()
+		} else {
+			paramType = nonGoParameters[i]
+		}
+
 		params = append(params, paramType)
 
 		var argNode parse.Node

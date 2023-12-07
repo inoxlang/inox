@@ -150,7 +150,7 @@ func (a *Array) element() Value {
 		}
 		return joinValues(a.elements)
 	}
-	return ANY
+	return a.generalElement
 }
 
 func (a *Array) elementAt(i int) Value {

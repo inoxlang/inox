@@ -3936,6 +3936,70 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, NewArray(ANY_INT, NewString("2"), TRUE), res)
 		})
 
+		t.Run("single, variadic parameter of element type 'int': single integer argument", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				fn f(...rest int){
+					return $rest
+				}
+	
+				return f(1)
+			`)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, NewArray(INT_1), res)
+		})
+
+		t.Run("single, variadic parameter of element type 'int': single non-integer argument", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				fn f(...rest int){
+					return $rest
+				}
+	
+				return f("a")
+			`)
+			strLit := parse.FindNode(n, (*parse.QuotedStringLiteral)(nil), nil)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(strLit, state, FmtInvalidArg(0, NewString("a"), ANY_INT)),
+			}, state.errors())
+			assert.Equal(t, NewArray(ANY_INT), res)
+		})
+
+		t.Run("single, variadic parameter of element type 'int': two integer arguments", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				fn f(...rest int){
+					return $rest
+				}
+	
+				return f(1, 2)
+			`)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, NewArray(INT_1, INT_2), res)
+		})
+
+		t.Run("single, variadic parameter of element type 'int': integer arg followed by a non-integer argument", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				fn f(...rest int){
+					return $rest
+				}
+	
+				return f(1, "a")
+			`)
+			strLit := parse.FindNode(n, (*parse.QuotedStringLiteral)(nil), nil)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(strLit, state, FmtInvalidArg(1, NewString("a"), ANY_INT)),
+			}, state.errors())
+			assert.Equal(t, NewArray(INT_1, ANY_INT), res)
+		})
+
 		t.Run("non variadic parameter + variadic parameter: spread argument", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				fn f(first, ...rest){
