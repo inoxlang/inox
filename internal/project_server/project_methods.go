@@ -35,6 +35,7 @@ type OpenProjectParams struct {
 
 type OpenProjectResponse struct {
 	project.TempProjectTokens `json:"tempTokens"`
+	CanBeDeployedInProd       bool `json:"canBeDeployedInProd"`
 }
 
 type RegisterApplicationParams struct {
@@ -133,7 +134,10 @@ func registerProjectMethodHandlers(server *lsp.Server, opts LSPServerConfigurati
 			sessionData.filesystem = lspFilesystem
 			sessionData.project = project
 
-			return OpenProjectResponse{TempProjectTokens: tokens}, nil
+			return OpenProjectResponse{
+				TempProjectTokens:   tokens,
+				CanBeDeployedInProd: node.IsAgentSet(),
+			}, nil
 		},
 	})
 

@@ -43,6 +43,10 @@ func GetAgent() Agent {
 	return agent
 }
 
+func IsAgentSet() bool {
+	return agent != nil
+}
+
 func SetAgent(a Agent) {
 	if agent != nil {
 		panic(errors.New("agent already set"))
