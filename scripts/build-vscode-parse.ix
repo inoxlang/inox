@@ -1,11 +1,19 @@
-# this script generates ./vscode-inox/vscode-inox.wasm
+# this script compiles./vscode/parse/main.go to WASM
 
 manifest {
     permissions: {
         use: {
             commands: {
                 "go": {}
+                # allow the go compiler to use tools
+                "%/usr/local/go/pkg/tool/...": {}
             }
+        }
+        # the go compiler requires filesystem access
+        read: %/
+        write: {
+            %/tmp/...
+            IWD_PREFIX
         }
     }
 }
@@ -27,4 +35,5 @@ assign result err = ex(
 if err? {
     print "failed:\n"   
 }
+
 print $result
