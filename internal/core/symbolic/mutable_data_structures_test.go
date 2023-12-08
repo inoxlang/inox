@@ -422,12 +422,27 @@ func TestList(t *testing.T) {
 			assert.False(t, ok)
 		})
 
-		t.Run("adding same type element to list with single element", func(t *testing.T) {
+		t.Run("adding same static type element to list with single element", func(t *testing.T) {
 			ctx := NewSymbolicContext(dummyConcreteContext{context.Background()}, nil, nil)
 			state := newSymbolicState(ctx, nil)
 
 			list := NewList(NewInt(1))
 			list.Append(ctx, NewInt(2))
+
+			updatedSelf, ok := state.consumeUpdatedSelf()
+			if !assert.True(t, ok) {
+				return
+			}
+
+			assert.Equal(t, NewListOf(ANY_INT), updatedSelf)
+		})
+
+		t.Run("adding same static type element to list with two elements", func(t *testing.T) {
+			ctx := NewSymbolicContext(dummyConcreteContext{context.Background()}, nil, nil)
+			state := newSymbolicState(ctx, nil)
+
+			list := NewList(NewInt(1), NewInt(2))
+			list.Append(ctx, NewInt(3))
 
 			updatedSelf, ok := state.consumeUpdatedSelf()
 			if !assert.True(t, ok) {

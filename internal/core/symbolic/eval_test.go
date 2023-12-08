@@ -8266,9 +8266,9 @@ func TestSymbolicEval(t *testing.T) {
 
 			s := Stringify(res)
 			if strings.Index(s, "./a") < strings.Index(s, "./b") {
-				assert.Equal(t, NewMultivalue(AsSerializable(NewMultivalue(NewPath("./a"), NewPath("./b"))), Nil), res)
+				assert.Equal(t, NewMultivalue(NewPath("./a"), NewPath("./b"), Nil), res)
 			} else {
-				assert.Equal(t, NewMultivalue(AsSerializable(NewMultivalue(NewPath("./b"), NewPath("./a"))), Nil), res)
+				assert.Equal(t, NewMultivalue(NewPath("./b"), NewPath("./a"), Nil), res)
 			}
 		})
 
