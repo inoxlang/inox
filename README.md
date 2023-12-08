@@ -85,18 +85,19 @@ You can also setup a local virtual machine running Linux and install Inox on it.
 
 - Download the latest release
   ```
-  wget https://github.com/inoxlang/inox/releases/latest/download/inox-linux-amd64.tar.gz
-  ```
-
-- Extract the binary
-  ```
-  tar -xvf inox-linux-amd64.tar.gz
+  wget -N https://github.com/inoxlang/inox/releases/latest/download/inox-linux-amd64.tar.gz && tar -xvf inox-linux-amd64.tar.gz
   ```
 
 - Install `inox` to `/usr/local/bin`
   ```
   sudo install ./inox -o root -m 0755 /usr/local/bin/inox
   ```
+
+- Delete the files that are no longer needed
+  ```
+  rm ./inox inox-linux-amd64.tar.gz
+  ```
+
 - __\[recommended\]__ add the [inoxd daemon](./docs/inox-daemon.md) to automatically start the project server on your local machine or VPS.
 
 - __\[optional\]__ install command completions for the current user
@@ -840,4 +841,6 @@ cancel_exec()
 I am working full-time on Inox, please consider donating through [GitHub](https://github.com/sponsors/GraphR00t) (preferred) or [Patreon](https://patreon.com/GraphR00t). Thanks !
 
 
-[Questions you may have](./QUESTIONS.md)
+[Questions you may have](./QUESTIONS.md)\
+[Installation](#installation)\
+[Back To Top](#inox)
