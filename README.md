@@ -93,7 +93,7 @@ You can also setup a local virtual machine running Linux and install Inox on it.
   tar -xvf inox-linux-amd64.tar.gz
   ```
 
-- install `inox` to `/usr/local/bin`
+- Install `inox` to `/usr/local/bin`
   ```
   sudo install ./inox -o root -m 0755 /usr/local/bin/inox
   ```
