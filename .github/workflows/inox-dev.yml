@@ -47,7 +47,7 @@ jobs:
         project_path: "./cmd/inox"
         binary_name: "inox"
         asset_name: inox-linux-amd64
-        extra_files: LICENSE README.md docs examples
+        # extra_files: LICENSE README.md docs examples
         md5sum: false
         sha256sum: true
         # -----------------
