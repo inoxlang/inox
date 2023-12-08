@@ -3607,11 +3607,20 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 			goto return_function
 		}
 
+		state.pushInoxCall(inoxCallInfo{
+			calleeFnExpr:       n,
+			isInitialCheckCall: true,
+		})
+
 		if n.IsBodyExpression {
+			//execution of body
+
 			storedReturnType, err = symbolicEval(n.Body, stateFork)
 			if err != nil {
 				return nil, err
 			}
+
+			//check return
 
 			if signatureReturnType != nil {
 				if !signatureReturnType.Test(storedReturnType, RecTestCallState{}) {
@@ -3645,6 +3654,10 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 				storedReturnType = retValue
 			}
 		}
+
+		state.popCall()
+
+		//check that the body does not contain forbidden node types.
 
 		if expectedFunction, ok := findInMultivalue[*InoxFunction](options.expectedValue); ok && expectedFunction.visitCheckNode != nil {
 			visitCheckNode := expectedFunction.visitCheckNode

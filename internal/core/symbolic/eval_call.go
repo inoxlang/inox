@@ -9,6 +9,12 @@ import (
 	"golang.org/x/exp/slices"
 )
 
+type inoxCallInfo struct {
+	calleeFnExpr       *parse.FunctionExpression
+	callNode           *parse.CallExpression //nil if is initial check call
+	isInitialCheckCall bool
+}
+
 func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, state *State, argNodes []parse.Node, must bool, cmdLineSyntax bool) (Value, error) {
 	var (
 		callee          Value
@@ -190,7 +196,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 
 	//execution
 
-	var fn *parse.FunctionExpression
+	var fnExpr *parse.FunctionExpression
 	var capturedLocals map[string]Value
 
 	switch f := callee.(type) {
@@ -204,9 +210,9 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 
 			switch function := f.node.(type) {
 			case *parse.FunctionExpression:
-				fn = function
+				fnExpr = function
 			case *parse.FunctionDeclaration:
-				fn = function.Function
+				fnExpr = function.Function
 			default:
 				state.addError(makeSymbolicEvalError(callNode, state, fmtCannotCallNode(f.node)))
 				return ANY, nil
@@ -382,7 +388,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 
 	if _, ok := callee.(*InoxFunction); ok {
 		nonVariadicParamCount, parameterNodes, variadicParamNode, returnType, isBodyExpression =
-			fn.SignatureInformation()
+			fnExpr.SignatureInformation()
 	} else {
 		nonVariadicParamCount, parameterNodes, variadicParamNode, returnType, isBodyExpression =
 			callee.(*Function).pattern.node.SignatureInformation()
@@ -525,7 +531,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 
 	setAllowedNonPresentProperties(argNodes, nonSpreadArgCount, params, state)
 
-	if fn == nil { // *Function
+	if fnExpr == nil { // *Function
 		patt, err := symbolicEval(returnType, state)
 		if err != nil {
 			return nil, err
@@ -574,16 +580,19 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 		return typ, nil
 	} else { //if return type is not specified we "execute" the function
 
-		if !state.pushCallee(callNode, fn) {
+		if !state.pushInoxCall(inoxCallInfo{
+			callNode:     callNode,
+			calleeFnExpr: fnExpr,
+		}) {
 			return ANY, nil
 		}
 
-		defer state.popCallee()
+		defer state.popCall()
 
 		var ret Value
 
 		if isBodyExpression {
-			ret, err = symbolicEval(fn.Body, state)
+			ret, err = symbolicEval(fnExpr.Body, state)
 			if err != nil {
 				return nil, err
 			}
@@ -600,7 +609,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 
 			//execute body
 
-			_, err = symbolicEval(fn.Body, state)
+			_, err = symbolicEval(fnExpr.Body, state)
 			if err != nil {
 				return nil, err
 			}

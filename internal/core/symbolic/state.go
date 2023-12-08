@@ -23,7 +23,7 @@ type State struct {
 	inPreinit             bool
 	recursiveFunctionName string
 
-	calleeStack           []*parse.FunctionExpression
+	callStack             []inoxCallInfo
 	topLevelSelf          Value // can be nil
 	returnType            Value
 	returnValue           Value
@@ -526,19 +526,19 @@ func (state *State) currentGlobalScopeData() ScopeData {
 	return ScopeData{Variables: vars}
 }
 
-func (state *State) pushCallee(callNode *parse.CallExpression, callee *parse.FunctionExpression) bool {
-	for _, c := range state.calleeStack {
-		if callee == c {
-			state.addError(makeSymbolicEvalError(callNode, state, FUNCS_CALLED_RECU_SHOULD_HAVE_RET_TYPE))
+func (state *State) pushInoxCall(call inoxCallInfo) bool {
+	for _, c := range state.callStack {
+		if call.calleeFnExpr == c.calleeFnExpr {
+			state.addError(makeSymbolicEvalError(call.callNode, state, FUNCS_CALLED_RECU_SHOULD_HAVE_RET_TYPE))
 			return false
 		}
 	}
-	state.calleeStack = append(state.calleeStack, callee)
+	state.callStack = append(state.callStack, call)
 	return true
 }
 
-func (state *State) popCallee() bool {
-	state.calleeStack = state.calleeStack[:len(state.calleeStack)-1]
+func (state *State) popCall() bool {
+	state.callStack = state.callStack[:len(state.callStack)-1]
 	return true
 }
 
@@ -584,9 +584,9 @@ func (state *State) fork() *State {
 		}
 	}
 
-	var calleeStackCopy []*parse.FunctionExpression
-	copy(calleeStackCopy, state.calleeStack)
-	child.calleeStack = calleeStackCopy
+	var callStackCopy []inoxCallInfo
+	copy(callStackCopy, state.callStack)
+	child.callStack = callStackCopy
 
 	child.scopeStack = []*scopeInfo{globalScopeCopy, localScopeCopy}
 
