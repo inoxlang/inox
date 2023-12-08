@@ -6,11 +6,12 @@
 
 🛡️ The Inox platform is your **shield** against complexity.
 
-It is released as a **single binary** that will contain all you need to develop, test and deploy web apps that
-are primarily rendered server-side. 
-
+Inox is released as a **single binary** that will contain all you need to develop, test and deploy web apps that
+are primarily rendered server-side.\
 Applications are developped using **Inoxlang**, a sandboxed programming language that 
 deeply integrates with Inox's built-in database engine, testing engine and HTTP server.
+
+[Installation](#installation)
 
 **Goals**:
 
@@ -79,14 +80,20 @@ I am working full-time on Inox, please consider donating through [GitHub](https:
 
 ## Installation
 
-<!-- **Inox can be used on any operating system by installing the
-[VSCode extension](https://marketplace.visualstudio.com/items?itemName=graphr00t.inox).** -->
+Inox only supports Linux for now. **You can use Inox either by installing it locally on your machine or on a remote machine, such as a Virtual Private Server (VPS).**\
+You can also setup a local virtual machine running Linux and install Inox on it.
 
-If you are using Linux, an archive with a binary and some examples is available
-in the [release assets](https://github.com/inoxlang/inox/releases)
+- Download the latest release
+  ```
+  wget https://github.com/inoxlang/inox/releases/latest/download/inox-linux-amd64.tar.gz
+  ```
 
-- uncompress the archive
-- install the `inox` binary to `/usr/local/bin`
+- Extract the binary
+  ```
+  tar -xvf inox-linux-amd64.tar.gz
+  ```
+
+- install `inox` to `/usr/local/bin`
   ```
   sudo install ./inox -o root -m 0755 /usr/local/bin/inox
   ```
