@@ -19,9 +19,9 @@ type GolangHttpServerConfig struct {
 	Addr    string
 	Handler http.Handler
 
-	PemEncodedCert                          string
-	PemEncodedKey                           string
-	AllowLocalhostCertCreationEvenIfExposed bool
+	PemEncodedCert                           string
+	PemEncodedKey                            string
+	AllowSelfSignedCertCreationEvenIfExposed bool
 	//if true the certificate and key files are persisted on the filesystem for later reuse.
 	PersistCreatedLocalCert bool
 
@@ -38,13 +38,13 @@ func NewGolangHttpServer(ctx *core.Context, config GolangHttpServerConfig) (*htt
 	pemEncodedKey := config.PemEncodedKey
 
 	//if no certificate is provided by the user we create one
-	if config.PemEncodedCert == "" && (isLocalhostOr127001Addr(config.Addr) || config.AllowLocalhostCertCreationEvenIfExposed) {
+	if config.PemEncodedCert == "" && (isLocalhostOr127001Addr(config.Addr) || config.AllowSelfSignedCertCreationEvenIfExposed) {
 		const (
-			CERT_FILEPATH     = "localhost.cert"
-			CERT_KEY_FILEPATH = "localhost.key"
+			CERT_FILEPATH     = "self_signed.cert"
+			CERT_KEY_FILEPATH = "self_signed.key"
 		)
 
-		generateLocalhostCert := false
+		generateCert := false
 
 		if config.PersistCreatedLocalCert {
 
@@ -52,7 +52,7 @@ func NewGolangHttpServer(ctx *core.Context, config GolangHttpServerConfig) (*htt
 			_, err2 := fls.Stat(CERT_KEY_FILEPATH)
 
 			if errors.Is(err1, os.ErrNotExist) || errors.Is(err2, os.ErrNotExist) {
-				generateLocalhostCert = true
+				generateCert = true
 
 				if err1 == nil {
 					fls.Remove(CERT_FILEPATH)
@@ -79,11 +79,14 @@ func NewGolangHttpServer(ctx *core.Context, config GolangHttpServerConfig) (*htt
 				return nil, fmt.Errorf("%w %w", err1, err2)
 			}
 		} else {
-			generateLocalhostCert = true
+			generateCert = true
 		}
 
-		if generateLocalhostCert {
-			cert, key, err := GenerateSelfSignedCertAndKey()
+		if generateCert {
+			cert, key, err := GenerateSelfSignedCertAndKey(SelfSignedCertParams{
+				Localhost:       true,
+				NonLocalhostIPs: config.AllowSelfSignedCertCreationEvenIfExposed,
+			})
 			if err != nil {
 				return nil, err
 			}

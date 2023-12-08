@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"log"
 	"math/big"
+	"net"
 	"time"
 
 	"github.com/caddyserver/certmagic"
@@ -72,7 +73,12 @@ func makePemBlockForKey(privKey interface{}) (*pem.Block, error) {
 	}
 }
 
-func GenerateSelfSignedCertAndKey() (cert *pem.Block, key *pem.Block, err error) {
+type SelfSignedCertParams struct {
+	Localhost       bool
+	NonLocalhostIPs bool
+}
+
+func GenerateSelfSignedCertAndKey(args SelfSignedCertParams) (cert *pem.Block, key *pem.Block, err error) {
 	priv, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
 		return nil, nil, err
@@ -90,24 +96,35 @@ func GenerateSelfSignedCertAndKey() (cert *pem.Block, key *pem.Block, err error)
 		BasicConstraintsValid: true,
 	}
 
-	template.DNSNames = append(template.DNSNames, "localhost")
+	if args.Localhost {
+		template.DNSNames = append(template.DNSNames, "localhost", "127.0.0.1")
+	}
+	if args.NonLocalhostIPs {
+		ips, err := getInterfaceIPs()
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to list interfaces IPs: %w", err)
+		}
+
+		for _, ip := range ips {
+			template.DNSNames = append(template.DNSNames, ip.String())
+		}
+	}
 
 	derBytes, err := x509.CreateCertificate(rand.Reader, &template, &template, getPublicKey(priv), priv)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to create certificate: %s", err)
-
+		return nil, nil, fmt.Errorf("failed to create certificate: %w", err)
 	}
 
 	keyBlock, err := makePemBlockForKey(priv)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to create key: %s", err)
+		return nil, nil, fmt.Errorf("failed to create key: %w", err)
 	}
 
 	return &pem.Block{Type: "CERTIFICATE", Bytes: derBytes}, keyBlock, nil
 }
 
-func generateSelfSignedCertAndKeyValues(ctx *core.Context) (core.Str, *core.Secret, error) {
-	cert, key, err := GenerateSelfSignedCertAndKey()
+func generateSelfSignedCertAndKeyValues(ctx *core.Context, args SelfSignedCertParams) (core.Str, *core.Secret, error) {
+	cert, key, err := GenerateSelfSignedCertAndKey(args)
 	if err != nil {
 		return "", nil, err
 	}
@@ -180,4 +197,22 @@ func GetTLSConfig(ctx *core.Context, pemEncodedCert string, pemEncodedKey string
 	tlsConfig.NextProtos = append([]string{"h2", "http/1.1"}, tlsConfig.NextProtos...)
 
 	return tlsConfig, nil
+}
+
+// getInterfaceIPs returns the IP addresses of interfaces of type IP network (loopback excluded).
+func getInterfaceIPs() ([]net.IP, error) {
+	var ips []net.IP
+	addresses, err := net.InterfaceAddrs()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, addr := range addresses {
+		if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+			if ipnet.IP.To16() != nil /*IPv4 or IPv6*/ {
+				ips = append(ips, ipnet.IP)
+			}
+		}
+	}
+	return ips, nil
 }

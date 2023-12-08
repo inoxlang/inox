@@ -144,8 +144,8 @@ func (s *Server) startWebsocketServer(addr string) error {
 	}
 
 	httpServer, err := http_ns.NewGolangHttpServer(s.ctx, http_ns.GolangHttpServerConfig{
-		Addr:                                    addr,
-		AllowLocalhostCertCreationEvenIfExposed: true,
+		Addr:                                     addr,
+		AllowSelfSignedCertCreationEvenIfExposed: true,
 		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if r.URL.Path == "/" {
 				wsServer.HandleNew(w, r)

@@ -150,7 +150,7 @@ func TestHttpServerHandlingDescription(t *testing.T) {
 			return
 		}
 
-		cert, key, err := generateSelfSignedCertAndKeyValues(ctx)
+		cert, key, err := generateSelfSignedCertAndKeyValues(ctx, SelfSignedCertParams{Localhost: true})
 		if !assert.NoError(t, err) {
 			return
 		}

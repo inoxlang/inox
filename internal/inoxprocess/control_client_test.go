@@ -59,7 +59,7 @@ func TestControlClient(t *testing.T) {
 			return nil, "", nil
 		}
 
-		cert, key, err := http_ns.GenerateSelfSignedCertAndKey()
+		cert, key, err := http_ns.GenerateSelfSignedCertAndKey(http_ns.SelfSignedCertParams{Localhost: true})
 
 		if !assert.NoError(t, err) {
 			return nil, "", nil
