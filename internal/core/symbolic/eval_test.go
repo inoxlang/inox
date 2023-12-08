@@ -11212,6 +11212,122 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 	})
+	t.Run("treedata literal", func(t *testing.T) {
+
+		t.Run("no children", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				treedata "root" {}
+			`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, ANY_TREEDATA, res)
+		})
+
+		t.Run("single child", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				treedata "root" {"child"}
+			`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, ANY_TREEDATA, res)
+		})
+
+		//TODO: properly check errors
+
+		t.Run("mutable value as root", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				treedata ({}) {}
+			`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.NotEmpty(t, state.errors())
+			assert.Equal(t, ANY_TREEDATA, res)
+		})
+
+		t.Run("immutable non-serializable value as root", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				treedata (testsuite {}) {}
+			`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.NotEmpty(t, state.errors())
+			assert.Equal(t, ANY_TREEDATA, res)
+		})
+
+		t.Run("mutable value as child", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				treedata "root" { ({}) }
+			`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.NotEmpty(t, state.errors())
+			assert.Equal(t, ANY_TREEDATA, res)
+		})
+
+		t.Run("immutable non-serializable value as child", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				treedata "root" { (testsuite {}) }
+			`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.NotEmpty(t, state.errors())
+			assert.Equal(t, ANY_TREEDATA, res)
+		})
+
+		t.Run("treedata pair with a mutable key", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				treedata "root" { {}: 1 }
+			`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.NotEmpty(t, state.errors())
+			assert.Equal(t, ANY_TREEDATA, res)
+		})
+
+		t.Run("treedata pair with an immutable non-serializable key", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				suite = testsuite {}
+				return treedata "root" { suite: 1 }
+			`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.NotEmpty(t, state.errors())
+			assert.Equal(t, ANY_TREEDATA, res)
+		})
+
+		t.Run("treedata pair with a mutable value", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				treedata "root" { 1: {} }
+			`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.NotEmpty(t, state.errors())
+			assert.Equal(t, ANY_TREEDATA, res)
+		})
+
+		t.Run("treedata pair with an immutable non-serializable value", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				suite = testsuite {}
+				return treedata "root" { 1: suite }
+			`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.NotEmpty(t, state.errors())
+			assert.Equal(t, ANY_TREEDATA, res)
+		})
+	})
 
 	t.Run("compute expression", func(t *testing.T) {
 

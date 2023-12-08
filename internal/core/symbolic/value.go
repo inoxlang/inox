@@ -36,6 +36,8 @@ var (
 	ANY_QUANTITY_RANGE = &QuantityRange{element: ANY_SERIALIZABLE}
 	ANY_FILEMODE       = &FileMode{}
 
+	ANY_TREEDATA = &Treedata{}
+
 	ANY_YEAR     = &Year{}
 	ANY_DATE     = &Date{}
 	ANY_DATETIME = &DateTime{}
@@ -1572,7 +1574,7 @@ func (i *Treedata) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.Pretty
 }
 
 func (i *Treedata) WidestOfType() Value {
-	return &Treedata{}
+	return ANY_TREEDATA
 }
 
 // A TreedataHiearchyEntry represents a symbolic Treedata.

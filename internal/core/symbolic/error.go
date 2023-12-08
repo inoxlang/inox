@@ -103,6 +103,10 @@ const (
 	LIFETIME_JOBS_NOT_ALLOWED_IN_READONLY_OBJECTS                       = "lifetime jobs are not allowed in readonly objects"
 	PROPERTY_VALUES_OF_READONLY_OBJECTS_SHOULD_BE_READONLY_OR_IMMUTABLE = "property values of readonly objects should be readonly or immutable"
 
+	//treedata
+	VALUES_INSIDE_A_TREEDATA_SHOULD_BE_IMMUTABLE          = "values inside a treedata should be immutable"
+	VALUES_INSIDE_A_TREEDATA_SHOULD_BE_SERIALIZABLE = "values inside a treedata should be serializable"
+
 	DOUBLE_COLON_EXPRS_ONLY_SUPPORT_OBJ_LHS_FOR_NOW = //
 	"double-colon expressions only support object LHS for now"
 

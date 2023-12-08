@@ -1974,7 +1974,83 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 
 		return mapping, nil
 	case *parse.TreedataLiteral:
+		value, err := symbolicEval(n.Root, state)
+		if err != nil {
+			return nil, err
+		}
+
+		if value.IsMutable() {
+			state.addError(makeSymbolicEvalError(n.Root, state, VALUES_INSIDE_A_TREEDATA_SHOULD_BE_IMMUTABLE))
+		} else if _, ok := AsSerializable(value).(Serializable); !ok {
+			state.addError(makeSymbolicEvalError(n.Root, state, VALUES_INSIDE_A_TREEDATA_SHOULD_BE_SERIALIZABLE))
+		}
+
+		for _, child := range n.Children {
+			_, err := symbolicEval(child, state)
+			if err != nil {
+				return nil, err
+			}
+		}
 		return &Treedata{}, nil
+	case *parse.TreedataEntry:
+		value, err := symbolicEval(n.Value, state)
+		if err != nil {
+			return nil, err
+		}
+
+		if value.IsMutable() {
+			state.addError(makeSymbolicEvalError(n.Value, state, VALUES_INSIDE_A_TREEDATA_SHOULD_BE_IMMUTABLE))
+		} else if _, ok := AsSerializable(value).(Serializable); !ok {
+			state.addError(makeSymbolicEvalError(n.Value, state, VALUES_INSIDE_A_TREEDATA_SHOULD_BE_SERIALIZABLE))
+		}
+
+		for _, child := range n.Children {
+			_, err := symbolicEval(child, state)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		return &TreedataHiearchyEntry{}, nil
+	case *parse.TreedataPair:
+		value, err := symbolicEval(n.Key, state)
+		if err != nil {
+			return nil, err
+		}
+
+		var (
+			first  Serializable
+			second Serializable = ANY_SERIALIZABLE
+		)
+
+		if value.IsMutable() {
+			state.addError(makeSymbolicEvalError(n.Key, state, VALUES_INSIDE_A_TREEDATA_SHOULD_BE_IMMUTABLE))
+			first = ANY_SERIALIZABLE
+		} else if serializable, ok := AsSerializable(value).(Serializable); ok {
+			first = serializable
+		} else {
+			state.addError(makeSymbolicEvalError(n.Key, state, VALUES_INSIDE_A_TREEDATA_SHOULD_BE_SERIALIZABLE))
+			first = ANY_SERIALIZABLE
+		}
+
+		if n.Value != nil {
+			value, err := symbolicEval(n.Value, state)
+			if err != nil {
+				return nil, err
+			}
+
+			if value.IsMutable() {
+				state.addError(makeSymbolicEvalError(n.Value, state, VALUES_INSIDE_A_TREEDATA_SHOULD_BE_IMMUTABLE))
+				second = ANY_SERIALIZABLE
+			} else if serializable, ok := AsSerializable(value).(Serializable); ok {
+				second = serializable
+			} else {
+				state.addError(makeSymbolicEvalError(n.Value, state, VALUES_INSIDE_A_TREEDATA_SHOULD_BE_SERIALIZABLE))
+				second = ANY_SERIALIZABLE
+			}
+		}
+
+		return NewOrderedPair(first, second), nil
 	case *parse.ComputeExpression:
 		fork := state.fork()
 
