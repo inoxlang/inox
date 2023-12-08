@@ -93,15 +93,21 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 	if len(args) == 1 { //no subcommand specified
 		mainSubCommand = "shell"
 		mainSubCommandArgs = args[1:]
+	} else if args[1] == HELP_SUBCMD || slices.Contains(HELP_SUBCMD_EQUIVALENTS, args[1]) {
+		mainSubCommand = HELP_SUBCMD
+		mainSubCommandArgs = args[2:]
 	} else {
 		mainSubCommand = args[1]
 		mainSubCommandArgs = args[2:]
 	}
 
+	showCommandSpecificHelp := false
+
 	//if the command has the shape help <subcommand> ... we modify the arguments to ask the subcommand to print its help message.
-	if mainSubCommand == "help" && len(mainSubCommandArgs) > 0 && mainSubCommandArgs[0] != "" && unicode.IsLetter(rune(mainSubCommandArgs[0][0])) {
+	if mainSubCommand == HELP_SUBCMD && len(mainSubCommandArgs) > 0 && mainSubCommandArgs[0] != "" && unicode.IsLetter(rune(mainSubCommandArgs[0][0])) {
 		mainSubCommand = mainSubCommandArgs[0]
 		mainSubCommandArgs = []string{"-h"}
+		showCommandSpecificHelp = true
 	}
 
 	//unknown command
@@ -119,8 +125,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 
 	//abort execution if the command is not allowed to be runned as root.
 	if mainSubCommand != ADD_SERVICE_SUBCMD && mainSubCommand != REMOVE_SERVICE_SUBCMD && mainSubCommand != UPGRADE_INOX_SUBCMD &&
-		mainSubCommand != "help" &&
-		mainSubCommand != "--help" && mainSubCommand != "-h" &&
+		mainSubCommand != HELP_SUBCMD && !showCommandSpecificHelp &&
 		!checkNotRunningAsRoot(errW) {
 		return ERROR_STATUS_CODE
 	}
@@ -128,7 +133,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 	//TODO: better handle signals so that deferred temp dir removals are executed.
 
 	switch mainSubCommand {
-	case HELP_SUBCMD, "--help", "-h":
+	case HELP_SUBCMD:
 		fmt.Fprint(outW, INOX_CMD_HELP)
 		return
 	case INSTALL_COMPLETIONS_SUBCMD:

@@ -37,6 +37,8 @@ var (
 	}
 	SUBCOMMANDS = append(slices.Clone(CLI_SUBCOMMANDS), inoxd.DAEMON_SUBCMD, inoxprocess.CONTROLLED_SUBCMD, cloudproxy.CLOUD_PROXY_SUBCMD_NAME)
 
+	HELP_SUBCMD_EQUIVALENTS = []string{"--help", "-help", "-h"}
+
 	CLI_SUBCOMMAND_DESCRIPTIONS = [][2]string{
 		{ADD_SERVICE_SUBCMD, "[root] add the 'inox' unit (systemd) and create the " + inoxd.INOXD_USERNAME + " user"},
 		{REMOVE_SERVICE_SUBCMD, "[root] stop inoxd and remove the 'inox' unit (systemd)"},
