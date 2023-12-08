@@ -3936,6 +3936,34 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, NewArray(ANY_INT, NewString("2"), TRUE), res)
 		})
 
+		t.Run("single, variadic parametert: no arguments", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				fn f(...rest){
+					return $rest
+				}
+	
+				return f()
+			`)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, NewArray(), res)
+		})
+
+		t.Run("single, variadic parameter of element type 'int': no arguments", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				fn f(...rest int){
+					return $rest
+				}
+	
+				return f()
+			`)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, NewArray(), res)
+		})
+
 		t.Run("single, variadic parameter of element type 'int': single integer argument", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				fn f(...rest int){
