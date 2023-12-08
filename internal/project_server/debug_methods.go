@@ -362,6 +362,12 @@ func registerDebugMethodHandlers(
 				return makeDAPErrorResponse("missing program in launch arguments"), nil
 			}
 
+			if launchArgs.Program[0] == '\\' {
+				//in VSCode launch configurations on Windows, ${file} resolves to a path with '\' as separator.
+				//we convert it to a posix path.
+				launchArgs.Program = strings.ReplaceAll(launchArgs.Program, "\\", "/")
+			}
+
 			logLevels, err := readLogLevelSettings(launchArgs)
 			if err != nil {
 				removeDebugSession(debugSession, session)
