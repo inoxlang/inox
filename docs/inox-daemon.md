@@ -13,7 +13,7 @@ _\* bear in mind that Inox is not production ready yet._
 
 ### On Your Local Machine
 
-The command below adds a new systemd service and create a new user named `inoxd`.
+The command below adds a new systemd service and creates the `inoxd` user.
 The project server will only listen on `localhost:8305`.
 
 ```
@@ -24,7 +24,7 @@ Browser automation can be allowed by adding the `--allow-browser-automation` swi
 
 ### On a VPS - Publicly Exposed Servers
 
-The command below adds a new systemd service and creates a new user named `inoxd`.\
+The command below adds a new systemd service and creates the `inoxd` user.\
 The `--expose-project-servers` flag makes project servers listen on ⚠️ ALL interfaces.\
 The `--expose-web-servers` flag makes web (application) servers listen on ⚠️ ALL interfaces.
 
