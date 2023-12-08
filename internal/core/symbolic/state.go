@@ -542,6 +542,13 @@ func (state *State) popCall() bool {
 	return true
 }
 
+func (state *State) currentInoxCall() (inoxCallInfo, bool) {
+	if len(state.callStack) > 0 {
+		return state.callStack[len(state.callStack)-1], true
+	}
+	return inoxCallInfo{}, false
+}
+
 func (state *State) fork() *State {
 	if len(state.scopeStack) == 0 { // 1 ?
 		panic("cannot fork state with no local scope")

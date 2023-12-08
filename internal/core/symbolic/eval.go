@@ -2916,6 +2916,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 
 		var keyType Value = ANY
 		var valueType Value = ANY
+		evaluateBody := true
 
 		if iterable, ok := asIterable(iteratedValue).(Iterable); ok {
 			if n.Chunked {
@@ -2924,6 +2925,16 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 
 			keyType = iterable.IteratorElementKey()
 			valueType = iterable.IteratorElementValue()
+
+			//If we are not in an initial check call of an Inox function and the iterated value is an empty indexable,
+			//we do not evaluate the body. This is done to not have some irrelevant errors.
+			if indexable, ok := asIndexable(iterable).(Indexable); ok && indexable.HasKnownLen() && indexable.KnownLen() == 0 {
+				call, ok := state.currentInoxCall()
+				if ok && !call.isInitialCheckCall {
+					evaluateBody = false
+				}
+			}
+
 		} else if streamable, ok := asStreamable(iteratedValue).(StreamSource); ok {
 			if n.KeyIndexIdent != nil {
 				state.addError(makeSymbolicEvalError(n.KeyIndexIdent, state, KEY_VAR_SHOULD_BE_PROVIDED_ONLY_WHEN_ITERATING_OVER_AN_ITERABLE))
@@ -2937,7 +2948,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 			state.addError(makeSymbolicEvalError(node, state, fmtXisNotIterable(iteratedValue)))
 		}
 
-		if n.Body != nil {
+		if n.Body != nil && evaluateBody {
 			stateFork := state.fork()
 
 			if n.KeyIndexIdent != nil {
