@@ -53,7 +53,7 @@ _________
 
 **<summary>Why are contributors required to sign a Contributor Licensing Agreement ?</summary>**
 
-The [CLA](./CLA.md) is present to protect me and the project from legal issues.\
+The [CLA](./.legal/CLA/CLA.md) is present to protect me and the project from legal issues.\
 By signing the CLA you do **NOT GRANT** me the right to include any significant contribution in any relicensing of the project.
 
 **Definition of CLA**: https://yahoo.github.io/oss-guide/docs/resources/what-is-cla.html

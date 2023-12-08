@@ -1,4 +1,4 @@
-[this file is an example, make a copy in the same folder and rename it to your Github username]
+[This file is an example. Make a copy in the same folder, rename it to your GitHub username and remove this explanation and unfilled sections.]
 
 Github Username: example
 [Optional] Github User ID: <can be found at https://api.github.com/users/your_username>
