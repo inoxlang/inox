@@ -15,7 +15,7 @@ var (
 
 	_ = []IMultivalue{
 		(*indexableMultivalue)(nil), (*iterableMultivalue)(nil), (*ipropsMultivalue)(nil),
-		(*strLikeMultivalue)(nil),
+		(*strLikeMultivalue)(nil), (*serializableMultivalue)(nil),
 	}
 
 	enableMultivalueCaching = true

@@ -50,11 +50,13 @@ func joinValues(values []Value) Value {
 	flattening:
 		for {
 			for i, val := range values {
-				if multiVal, ok := val.(*Multivalue); ok {
-					updated := make([]Value, len(values)+len(multiVal.values)-1)
+				if multiVal, ok := val.(IMultivalue); ok {
+					multiValues := multiVal.OriginalMultivalue().getValues()
+
+					updated := make([]Value, len(values)+len(multiValues)-1)
 					copy(updated[:i], values[:i])
-					copy(updated[i:i+len(multiVal.values)], multiVal.values)
-					copy(updated[i+len(multiVal.values):], values[i+1:])
+					copy(updated[i:i+len(multiValues)], multiValues)
+					copy(updated[i+len(multiValues):], values[i+1:])
 					values = updated
 					continue flattening
 				}

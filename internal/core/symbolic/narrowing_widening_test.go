@@ -18,6 +18,44 @@ func TestJoinValues(t *testing.T) {
 		{[]Value{ANY_INT, ANY_INT}, ANY_INT},
 		{[]Value{ANY_INT, &String{}}, NewMultivalue(ANY_INT, &String{})},
 		{[]Value{&String{}, ANY_INT}, NewMultivalue(&String{}, ANY_INT)},
+
+		//multivalues should be merged
+		{
+			[]Value{
+				NewMultivalue(INT_0, INT_1),
+				NewMultivalue(INT_2, INT_3),
+			},
+			NewMultivalue(INT_0, INT_1, INT_2, INT_3),
+		},
+
+		//multivalues should be merged even if wrapped to be serializable
+		{
+			[]Value{
+				NewMultivalue(INT_0, INT_1).as(SERIALIZABLE_INTERFACE_TYPE),
+				NewMultivalue(INT_2, INT_3).as(SERIALIZABLE_INTERFACE_TYPE),
+			},
+			NewMultivalue(INT_0, INT_1, INT_2, INT_3),
+		},
+
+		//multivalues should be merged
+		{
+			[]Value{
+				NewMultivalue(INT_0, ANY_BOOL),
+				NewMultivalue(INT_2, ANY_INT),
+			},
+			NewMultivalue(ANY_BOOL, ANY_INT),
+		},
+
+		//multivalues should be merged even if wrapped to be serializable
+		{
+			[]Value{
+				NewMultivalue(INT_0, ANY_BOOL).as(SERIALIZABLE_INTERFACE_TYPE),
+				NewMultivalue(INT_2, ANY_INT).as(SERIALIZABLE_INTERFACE_TYPE),
+			},
+			NewMultivalue(ANY_BOOL, ANY_INT),
+		},
+		//
+
 		{[]Value{&Identifier{name: "foo"}, &Identifier{}}, &Identifier{}},
 		{[]Value{&Identifier{}, &Identifier{name: "foo"}}, &Identifier{}},
 		{
