@@ -44,7 +44,7 @@ func (s *AnySequenceOf) Test(v Value, state RecTestCallState) bool {
 	defer state.FinishCall()
 
 	seq, ok := v.(Sequence)
-	return ok && s.elem.Test(widenToSameStaticTypeInMultivalue(seq.element()), state)
+	return ok && s.elem.Test(mergeValuesWithSameStaticTypeInMultivalue(seq.element()), state)
 }
 
 func (*AnySequenceOf) IteratorElementKey() Value {

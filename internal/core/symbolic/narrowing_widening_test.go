@@ -115,7 +115,7 @@ func TestWidenToSameStaticTypeInMultivalue(t *testing.T) {
 	}
 	for _, testCase := range cases {
 		t.Run(t.Name()+"_"+Stringify(testCase.input), func(t *testing.T) {
-			output := widenToSameStaticTypeInMultivalue(testCase.input)
+			output := mergeValuesWithSameStaticTypeInMultivalue(testCase.input)
 			assert.Equal(t, testCase.output, output, Stringify(output))
 		})
 	}

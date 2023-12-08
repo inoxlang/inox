@@ -108,7 +108,9 @@ func joinValues(values []Value) Value {
 	}
 }
 
-func widenToSameStaticTypeInMultivalue(v Value) Value {
+// (0 | 1) -> int
+// (0 | 1 | true) -> int|true
+func mergeValuesWithSameStaticTypeInMultivalue(v Value) Value {
 	val, ok := v.(IMultivalue)
 	if !ok {
 		return v

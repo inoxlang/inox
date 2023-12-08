@@ -6935,10 +6935,96 @@ func TestSymbolicEval(t *testing.T) {
 
 			t.Run("+= assignment: valid RHS", func(t *testing.T) {
 				n, state := MakeTestStateAndChunk(`
-					$a = 0
+					$a = 2
 					$a += 1
 					return $a
 				`)
+				res, err := symbolicEval(n, state)
+
+				assert.NoError(t, err)
+				assert.Empty(t, state.errors())
+				assert.Equal(t, ANY_INT, res)
+			})
+
+			t.Run("+= assignment: known integer + unknown integer", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					$a = 1
+					$a += int
+					return $a
+				`)
+				res, err := symbolicEval(n, state)
+
+				assert.NoError(t, err)
+				assert.Empty(t, state.errors())
+				assert.Equal(t, ANY_INT, res)
+			})
+
+			t.Run("+= assignment: unknown integer + known integer", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					$a = int
+					$a += 1
+					return $a
+				`)
+				res, err := symbolicEval(n, state)
+
+				assert.NoError(t, err)
+				assert.Empty(t, state.errors())
+				assert.Equal(t, ANY_INT, res)
+			})
+
+			t.Run("+= assignment: known integer + integer multivalue", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					$a = 1
+					$a += multi_int
+					return $a
+				`)
+				state.setGlobal("multi_int", NewMultivalue(INT_1, INT_2), GlobalConst)
+				res, err := symbolicEval(n, state)
+
+				assert.NoError(t, err)
+				assert.Empty(t, state.errors())
+				assert.Equal(t, ANY_INT, res)
+			})
+
+			t.Run("+= assignment: integer multivalue + known integer", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					var a int = multi_int
+					$a += 1
+					return $a
+				`)
+				state.setGlobal("multi_int", NewMultivalue(INT_1, INT_2), GlobalConst)
+				res, err := symbolicEval(n, state)
+
+				assert.NoError(t, err)
+				assert.Empty(t, state.errors())
+				assert.Equal(t, ANY_INT, res)
+			})
+
+			t.Run("+= assignment: inside a loop, RHS is an integer multivalue", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					$a = 10
+					for n in [1, 2, 3] {
+						$a += n
+					}
+					return $a
+				`)
+				res, err := symbolicEval(n, state)
+
+				assert.NoError(t, err)
+				assert.Empty(t, state.errors())
+				assert.Equal(t, ANY_INT, res)
+			})
+
+			t.Run("+= assignment: inside a loop, RHS is an integer multivalue", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					$a = 1
+					for n in list {
+						$a += n
+					}
+					return $a
+				`)
+				state.setGlobal("list", NewListOf(AsSerializableChecked(NewMultivalue(INT_1, INT_2))), GlobalConst)
+
 				res, err := symbolicEval(n, state)
 
 				assert.NoError(t, err)
