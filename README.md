@@ -7,8 +7,7 @@
 🛡️ The Inox platform is your **shield** against complexity.
 
 Inox is released as a **single binary** that will contain all you need to develop, test and deploy web apps that
-are primarily rendered server-side.\
-Applications are developped using **Inoxlang**, a sandboxed programming language that 
+are primarily rendered server-side. Applications are developped using **Inoxlang**, a sandboxed programming language that 
 deeply integrates with Inox's built-in database engine, testing engine and HTTP server.
 
 [Installation](#installation)
@@ -80,8 +79,7 @@ I am working full-time on Inox, please consider donating through [GitHub](https:
 
 ## Installation
 
-Inox only supports Linux for now. **You can use Inox either by installing it locally on your machine or on a remote machine, such as a Virtual Private Server (VPS).**\
-You can also setup a local virtual machine running Linux and install Inox on it.
+Inox only supports Linux for now. **You can use Inox either by installing it locally on your machine or on a remote machine, such as a Virtual Private Server (VPS).**. You can also setup a local virtual machine running Linux and install Inox on it.
 
 - Download the latest release
   ```
@@ -281,29 +279,31 @@ You can learn more [here](./docs/language-reference.md#databases).
 ### Project Server (LSP)
 
 The Inox binary comes with a **project server** that your IDE connects to.
-This server is a LSP server with additional methods, it enables the developer to develop, debug, test, deploy & manage secrets, all from VsCode.
-The project server will also provide automatic infrastructure management in the **near future**.
+This server is a LSP server with additional methods, it enables the developer to develop, debug, test, deploy and manage secrets, all from VsCode. The project server will also provide automatic infrastructure management in the **near future**.
 
-__There is no local development environment.__ Code files are cached on the IDE for readonly access though.
+__There is no local development environment.__ Code files are cached on the IDE for offline access (read-only).
 
 ```mermaid
 graph LR
 
 subgraph VSCode
   VSCodeVFS(Virtual Filesystem)
+  Editor
+  Editor --> |persists edited files in| VSCodeVFS
+  DebugAdapter
 end
 
-VSCodeVFS ---> ProjImage
-VSCode --->|Invocation & Debug| Runtime(Inox Runtime)
-ProjectServer[Project Server]
+Editor(Editor) --> |standard LSP methods| ProjectServer
+VSCodeVFS --> |"custom methods (LSP)"| ProjImage
+DebugAdapter(Debug Adapter) -->|"Debug Adapter Protocol (LSP wrapped)"| Runtime(Inox Runtime)
 
-subgraph ProjectServer
+subgraph ProjectServer[Project Server]
   Runtime
   ProjImage(Project Image)
 end
 
-ProjectServer --->|Manages| Infrastructure
-ProjectServer --->|Get/Set| Secrets
+ProjectServer --->|manages| Infrastructure(Infrastructure)
+ProjectServer --->|get/set| Secrets(Secrets)
 ```
 
 In project mode Inox applications are executed inside a **virtual filesystem** (container) for better
@@ -429,7 +429,13 @@ h.close()
 #### **Required Permissions**
 
 Inox features a fine-grained **permission system** that restricts what a module
-is allowed to do, here are a few examples of permissions:
+is allowed to do (e.g. access to the filesystem, network). Inox modules always start with a **manifest** that describes the required
+permissions.
+
+
+<details>
+
+**<summary>Permission examples</summary>**
 
 - access to the filesystem (read, create, update, write, delete)
 - access to the network (several distinct permissions)
@@ -438,11 +444,10 @@ is allowed to do, here are a few examples of permissions:
   - DNS (read)
   - Raw TCP (read, write)
 - access to environment variables (read, write, delete)
-- create lighweight threads
+- create lightweight threads
 - execute specific commands
 
-Inox modules always start with a **manifest** that describes the required
-permissions.
+</details>
 
 <img src="./docs/img/fs-malicious-input.png"></img>
 
@@ -572,10 +577,7 @@ API_KEY = env.initial.API_KEY
 _This feature is **very much** work in progress._
 
 [**Excessive Data Exposure**](https://apisecurity.io/encyclopedia/content/owasp/api3-excessive-data-exposure.htm)
-occurs when an HTTP API returns more data than needed, potentially exposing
-sensitive information.\
-In order to mitigate this type of vunerability the serialization of Inox values
-involves the concepts of **value visibility** and **property visibility**.
+occurs when an HTTP API returns more data than needed, potentially exposing sensitive information. In order to mitigate this type of vunerability the serialization of Inox values involves the concepts of **value visibility** and **property visibility**.
 
 Let's take an example, here is an Inox object:
 
