@@ -23,6 +23,22 @@ _________
 
 <details>
 
+**<summary>Is Inoxlang sound ?</summary>**
+
+No, Inoxlang is unsound. **BUT**:
+
+- The **any** type does not disable checks like in Typescript. It is more similar to **unknow**.
+- The type system is not overly complex and I don't plan to add classes or true generics*.
+- Type assertions using the `assert` keyword are checked at runtime.
+
+_\*Types like Set are kind of generic but it cannot be said that generics are implemented._
+
+</details>
+
+_________
+
+<details>
+
 **<summary>Is Inox a company ? What is the business model of Inox ?</summary>**
 
 Inox is not a company. I am working full-time on Inox and releasing the source code under the MIT license.\
@@ -38,7 +54,7 @@ _________
 **<summary>Why are contributors required to sign a Contributor Licensing Agreement ?</summary>**
 
 The [CLA](./CLA.md) is present to protect me and the project from legal issues.\
-By signing the CLA you do **NOT GRANT** me the right to include any significant contributions in any relicensing of the project.
+By signing the CLA you do **NOT GRANT** me the right to include any significant contribution in any relicensing of the project.
 
 **Definition of CLA**: https://yahoo.github.io/oss-guide/docs/resources/what-is-cla.html
 
@@ -70,7 +86,6 @@ As of now, certain parts of the codebase are not optimally written, lack suffici
 </details>
 
 _________
-
 
 Have a question ? Create an [issue](https://github.com/inoxlang/inox/issues/new?assignees=&labels=question&projects=&template=question.md&title=).
 

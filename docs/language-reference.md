@@ -934,6 +934,8 @@ fn add(a int, b int) int {
 }
 ```
 
+ℹ️ Parameters that don't have a type annotation defaults to the **any** type. This type is similar to **unknown** in Typescript.
+
 <details>
 
 **<summary>Learn more about type annotations</summary>**
