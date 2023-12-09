@@ -42,9 +42,10 @@ _________
 **<summary>Is Inox a company ? What is the business model of Inox ?</summary>**
 
 Inox is not a company. I am working full-time on Inox and releasing the source code under the MIT license.\
-If you want the project to reach 1.0 consider donating through [GitHub](https://github.com/sponsors/GraphR00t) (preferred) or [Patreon](https://patreon.com/GraphR00t).
+Please consider donating through [GitHub](https://github.com/sponsors/GraphR00t) (preferred) or [Patreon](https://patreon.com/GraphR00t).
 
-
+I may develop closed-source services AROUND the project if I earn almost nothing in sponsorship.
+**Inox will always be licensed under the MIT license.**
 </details>
 
 _________
@@ -53,12 +54,17 @@ _________
 
 **<summary>Why are contributors required to sign a Contributor Licensing Agreement ?</summary>**
 
-The [CLA](./.legal/CLA/CLA.md) is present to protect me and the project from legal issues.\
-By signing the CLA you do **NOT GRANT** me the right to include any significant contribution in any relicensing of the project.
-
-**Definition of CLA**: https://yahoo.github.io/oss-guide/docs/resources/what-is-cla.html
-
+**Definition of CLA**: https://yahoo.github.io/oss-guide/docs/resources/what-is-cla.html\
 **Additional context**: https://news.ycombinator.com/item?id=28923633 (comments)
+
+The [CLA](./.legal/CLA/CLA.md) is present to protect me and the project from legal issues. I know 
+some people are against CLAs or consider having a CLA useless but I prefer to have one because:
+- It requires contributors to know what they are allowed to do, even if it is obvious (e.g. don't include proprietary code).
+- Even if having the CLA only reduces the risks by 50% it's worth it.
+- I may develop closed-source services AROUND the project if I earn almost nothing in sponsorship. **Inox will always be licensed under the MIT license.**
+
+**By signing the CLA you do NOT GRANT me the right to include your contribution if I change the type of license.**\
+**If you want to propose a change to the CLA feel free to create an issue, or contact me on Inox's Discord Server.**
 
 </details>
 
