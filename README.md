@@ -31,8 +31,9 @@ deeply integrates with Inox's built-in database engine, testing engine and HTTP 
 - [Advanced Testing Engine](#advanced-testing-engine)
 - [Built-in Browser Automation](#built-in-browser-automation)
 
-**Security Features**
+<details>
 
+**<summary>Security Features</summary>**
 - [Permission system](#permission-system)
   - [Required permissions](#required-permissions)
   - [Isolation of dependencies](#isolation-of-dependencies)
@@ -44,8 +45,11 @@ deeply integrates with Inox's built-in database engine, testing engine and HTTP 
   - [Visibility during Serialization](#visibility-wip)
 - [Injection Prevention](#injection-prevention-wip)
 
-**Other Language Features**
+</details>
 
+<details>
+
+**<summary>Other Language Features</summary>**
 - [Concurrency](#concurrency)
   - [Lightweight Threads](#lighweight-threads)
   - [LThread Groups](#lthread-groups)
@@ -54,8 +58,11 @@ deeply integrates with Inox's built-in database engine, testing engine and HTTP 
 - [Easy declaration of CLI Parameters](#declaration-of-cli-parameters--environment-variables)
 - [Transactions & Effects (WIP)](#transactions--effects-wip)
 
-**Planned Features**
+</details>
 
+<details>
+
+**<summary>Planned Features</summary>**
 - Encryption of secrets and database data
 - Storage of secrets in key management services (e.g. GCP KMS, AWS KMS)
 - Version Control System (Git) for projects using https://github.com/go-git/go-git 
@@ -69,6 +76,7 @@ deeply integrates with Inox's built-in database engine, testing engine and HTTP 
 ⚠️ The language is not production ready yet.\
 I am working full-time on Inox, please consider donating through [GitHub](https://github.com/sponsors/GraphR00t) (preferred) or [Patreon](https://patreon.com/GraphR00t). Thanks !
 
+</details>
 ---
 
 👥 Discord Server: https://discord.gg/53YGx8GzgE
@@ -79,7 +87,23 @@ I am working full-time on Inox, please consider donating through [GitHub](https:
 
 ## Installation
 
-Inox only supports Linux for now. **You can use Inox either by installing it locally on your machine or on a remote machine, such as a Virtual Private Server (VPS).**. You can also setup a local virtual machine running Linux and install Inox on it.
+
+```mermaid
+graph LR
+
+subgraph VSCode["VSCode (any OS)"]
+  direction LR
+  InoxExtension(Inox Extension)
+end
+
+InoxExtension -->|LSP| ProjectServer
+
+subgraph InoxBinary["Inox (Linux)"]
+  ProjectServer
+end
+```
+
+Inox only supports Linux for now. **You can use Inox either by installing it locally on your machine or on a remote machine, such as a Virtual Private Server (VPS).** You can also setup a local virtual machine running Linux and install Inox on it.
 
 - Download the latest release
   ```
@@ -103,17 +127,15 @@ Inox only supports Linux for now. **You can use Inox either by installing it loc
   inox install-completions
   ```
 
-If you want to compile the language yourself go [here](#compile-from-source).
+- Add Inox support to your IDE
+  - [VSCode & VSCodium](https://marketplace.visualstudio.com/items?itemName=graphr00t.inox) : LSP, debug, colorization, snippets, formatting.
 
-### Editor Support
 
-- [VSCode & VSCodium](https://marketplace.visualstudio.com/items?itemName=graphr00t.inox)
-  : LSP, debug, colorization, snippets, formatting.
+If you want to compile the language from source go [here](#compile-from-source).
 
 ## Learning Inox
 
-You can learn Inox directly in VSCode by creating a file with a name ending with
-`.tut.ix`. This is the recommended way.
+You can learn Inox directly in VSCode by creating a file with a `.tut.ix` extension. This is the recommended way.
 
 ![tutorial-demo](https://github.com/inoxlang/inox-vscode/raw/master/assets/docs/tutorial-demo.gif)
 
