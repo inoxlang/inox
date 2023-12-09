@@ -54,7 +54,7 @@ _________
 
 **<summary>Why are contributors required to sign a Contributor Licensing Agreement ?</summary>**
 
-**Definition of CLA**: https://yahoo.github.io/oss-guide/docs/resources/what-is-cla.html\
+**Definition of CLA**: https://yahoo.github.io/oss-guide/docs/resources/what-is-cla.html \
 **Additional context**: https://news.ycombinator.com/item?id=28923633 (comments)
 
 The [CLA](./.legal/CLA/CLA.md) is present to protect me and the project from legal issues. I know 
