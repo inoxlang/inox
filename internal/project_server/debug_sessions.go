@@ -64,6 +64,7 @@ type DebugSession struct {
 	programPreparedOrFailedToChan chan error
 	wasAttached                   bool //debugger was attached to a running debuggee
 	finished                      atomic.Bool
+	receivedDisconnectRequest     atomic.Bool
 }
 
 type variablesReferences struct {

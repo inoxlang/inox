@@ -26,6 +26,8 @@ const (
 
 	DEFAULT_MAX_SESSION_COUNT = 2
 	DEFAULT_LOG_LEVEL         = zerolog.DebugLevel
+
+	POST_DONE_DEBUGGED_PROGRAM_DELAY = 100 * time.Millisecond
 )
 
 var (
@@ -387,7 +389,7 @@ func registerDebugMethodHandlers(
 			debugSession.programDoneChan = make(chan error, 1)
 			debugSession.programPreparedOrFailedToChan = make(chan error)
 
-			//teardown goroutine
+			//remove the debug session when either the LSP session is finished or the launched program is done.
 			go func() {
 				defer func() {
 					if e := recover(); e != nil {
@@ -402,7 +404,8 @@ func registerDebugMethodHandlers(
 				case <-session.Context().Done():
 					return
 				case err := <-debugSession.programDoneChan:
-					if err != nil {
+					isExpectedCancelError := errors.Is(err, context.Canceled) && debugSession.receivedDisconnectRequest.Load()
+					if err != nil && !isExpectedCancelError {
 						notifyOutputEvent("program failed: "+err.Error(), ImportantDebugEvent, debugSession, session)
 					}
 				}
@@ -1399,8 +1402,8 @@ func registerDebugMethodHandlers(
 				}, nil
 			}
 
+			debugSession.receivedDisconnectRequest.Store(true)
 			debugger := debugSession.debugger
-
 			doneChan := make(chan struct{})
 
 			if debugger != nil && !debugger.Closed() {
@@ -1415,6 +1418,8 @@ func registerDebugMethodHandlers(
 
 				select {
 				case <-doneChan:
+					//wait a bit in order for the last events to be sent.
+					time.Sleep(POST_DONE_DEBUGGED_PROGRAM_DELAY)
 				case <-time.After(DEFAULT_DEBUG_COMMAND_TIMEOUT):
 					return dap.DisconnectResponse{
 						Response: dap.Response{
