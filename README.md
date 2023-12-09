@@ -10,7 +10,9 @@ Inox is released as a **single binary** that will contain all you need to develo
 are primarily rendered server-side. Applications are developped using **Inoxlang**, a sandboxed programming language that 
 deeply integrates with Inox's built-in database engine, testing engine and HTTP server.
 
-[Installation](#installation)
+⬇️ [Installation](#installation)\
+📚 [Learning Inox](#learning-inox)\
+👥 Discord Server: https://discord.gg/53YGx8GzgE
 
 **Goals**:
 
@@ -73,20 +75,15 @@ deeply integrates with Inox's built-in database engine, testing engine and HTTP 
 - Team management and access control
 - ... [other planned features](./FUTURE.md)
 
-⚠️ The language is not production ready yet.\
-I am working full-time on Inox, please consider donating through [GitHub](https://github.com/sponsors/GraphR00t) (preferred) or [Patreon](https://patreon.com/GraphR00t). Thanks !
-
 </details>
----
 
-👥 Discord Server: https://discord.gg/53YGx8GzgE
-
-📖 Language Reference: [docs/language-reference.md](docs/language-reference.md)
+⚠️ The language is not production ready yet. I am working full-time on Inox, please consider donating through [GitHub](https://github.com/sponsors/GraphR00t) (preferred) or [Patreon](https://patreon.com/GraphR00t). Thanks !
 
 ❔ [Questions you may have](./QUESTIONS.md)
 
-## Installation
+---
 
+## Installation
 
 ```mermaid
 graph LR
