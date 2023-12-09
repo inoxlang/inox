@@ -26,7 +26,7 @@ const (
 
 	APPS_KEY = "applications"
 
-	PROJECT_NAME_REGEX = "^[a-zA-Z][a-zA-Z0-9_-]+$"
+	PROJECT_NAME_REGEX = "^[a-zA-Z][a-zA-Z0-9_-]*$"
 )
 
 var (
