@@ -44,7 +44,7 @@ _________
 Inox is not a company. I am working full-time on Inox and releasing the source code under the MIT license.\
 Please consider donating through [GitHub](https://github.com/sponsors/GraphR00t) (preferred) or [Patreon](https://patreon.com/GraphR00t).
 
-I may develop closed-source services AROUND the project if I earn almost nothing in sponsorship.
+I may develop closed-source services that are peripheral to the project if I earn almost nothing from sponsorship.
 **Inox will always be licensed under the MIT license.**
 </details>
 
@@ -61,7 +61,7 @@ The [CLA](./.legal/CLA/CLA.md) is present to protect me and the project from leg
 some people are against CLAs or consider having a CLA useless but I prefer to have one because:
 - It requires contributors to know what they are allowed to do, even if it is obvious (e.g. don't include proprietary code).
 - Even if having the CLA only reduces the risks by 50% it's worth it.
-- I may develop closed-source services AROUND the project if I earn almost nothing in sponsorship. **Inox will always be licensed under the MIT license.**
+- I may develop closed-source services that are peripheral to the project if I earn almost nothing from sponsorship. **Inox will always be licensed under the MIT license.**
 
 **By signing the CLA you do NOT GRANT me the right to include your contribution if I change the type of license.**\
 **If you want to propose a change to the CLA feel free to create an issue, or contact me on Inox's Discord Server.**
