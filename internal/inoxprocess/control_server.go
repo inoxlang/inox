@@ -161,7 +161,7 @@ func (s *ControlServer) Start() error {
 	s.logger.Info().Msg("start HTTPS server")
 	err = httpServer.ListenAndServeTLS("", "")
 	if err != nil {
-		return fmt.Errorf("failed to create HTTPS server: %w", err)
+		return fmt.Errorf("failed to create HTTPS server or HTTPS server was closed: %w", err)
 	}
 	return nil
 }

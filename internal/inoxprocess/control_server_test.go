@@ -1,6 +1,8 @@
 package inoxprocess
 
 import (
+	"errors"
+	"net/http"
 	"os/exec"
 	"testing"
 	"time"
@@ -87,7 +89,7 @@ func TestControlServer(t *testing.T) {
 
 		go func() {
 			err := server.Start()
-			if err != nil {
+			if !errors.Is(err, http.ErrServerClosed) {
 				t.Log(err)
 			}
 		}()
