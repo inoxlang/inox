@@ -19,7 +19,7 @@ func TestEncodingDecoding(t *testing.T) {
 		return
 	}
 
-	var decoded Hello
+	var decoded Message
 	err = DecodeMessage(encoded, &decoded)
 	if !assert.NoError(t, err) {
 		return
