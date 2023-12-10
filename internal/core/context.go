@@ -24,11 +24,13 @@ import (
 
 const (
 	CTX_DONE_MICROTASK_CALLS_TIMEOUT = 5 * time.Millisecond
+	DEFAULT_IWD                      = Path("/")
 )
 
 var (
-	ErrBothCtxFilesystemArgsProvided = errors.New("invalid arguments: both .CreateFilesystem & .Filesystem provided")
-	ErrBothParentCtxArgsProvided     = errors.New("invalid arguments: both .ParentContext & .ParentStdLibContext provided")
+	ErrBothCtxFilesystemArgsProvided      = errors.New("invalid arguments: both .CreateFilesystem & .Filesystem provided")
+	ErrBothParentCtxArgsProvided          = errors.New("invalid arguments: both .ParentContext & .ParentStdLibContext provided")
+	ErrInitialWorkingDirProvidedWithoutFS = errors.New("invalid arguments: .InitialWorkingDirectory is provided but no filesystem is provided")
 
 	ErrNonExistingNamedPattern                 = errors.New("non existing named pattern")
 	ErrNotUniqueAliasDefinition                = errors.New("cannot register a host alias more than once")
@@ -55,8 +57,9 @@ type Context struct {
 	parentCtx *Context
 
 	// associated state, it is set at the creation of the associated state.
-	state *GlobalState
-	fs    afs.Filesystem
+	state                   *GlobalState
+	fs                      afs.Filesystem
+	initialWorkingDirectory Path
 
 	currentTx *Transaction
 
@@ -141,6 +144,7 @@ type ContextConfig struct {
 	// if false the context's filesystem is the result of WithSecondaryContextIfPossible(ContextConfig.Filesystem),
 	// else the context's filesystem is ContextConfig.Filesystem.
 	DoNotSetFilesystemContext bool
+	InitialWorkingDirectory   Path //if not set defaults to '/'
 
 	// if false a goroutine is created to tear down the context after it is done.
 	// if true IsDone() will always return false until CancelGracefully is called.
@@ -220,11 +224,12 @@ func NewContexWithEmptyState(config ContextConfig, out io.Writer) *Context {
 func NewContext(config ContextConfig) *Context {
 
 	var (
-		limiters   map[string]*limiter
-		stdlibCtx  context.Context
-		cancel     context.CancelFunc
-		filesystem afs.Filesystem = config.Filesystem
-		ctx                       = &Context{} //the context is initialized later in the function but we need the address
+		limiters                map[string]*limiter
+		stdlibCtx               context.Context
+		cancel                  context.CancelFunc
+		filesystem              afs.Filesystem = config.Filesystem
+		initialWorkingDirectory Path           = config.InitialWorkingDirectory
+		ctx                                    = &Context{} //the context is initialized later in the function but we need the address
 	)
 
 	if config.CreateFilesystem != nil {
@@ -237,6 +242,14 @@ func NewContext(config ContextConfig) *Context {
 			panic(err)
 		}
 		filesystem = fs
+	}
+
+	if initialWorkingDirectory != "" && config.Filesystem == nil && config.CreateFilesystem == nil {
+		panic(ErrInitialWorkingDirProvidedWithoutFS)
+	}
+
+	if initialWorkingDirectory == "" && (config.Filesystem != nil || config.CreateFilesystem != nil) {
+		initialWorkingDirectory = DEFAULT_IWD
 	}
 
 	//create limiters
@@ -300,6 +313,10 @@ func NewContext(config ContextConfig) *Context {
 		}
 
 		stdlibCtx, cancel = context.WithCancel(parentStdLibContext)
+
+		if initialWorkingDirectory == "" {
+			initialWorkingDirectory = "/"
+		}
 	} else {
 		//if a parent context is passed we check that the parent has all the required permissions
 		if err, ok := config.Check(); !ok {
@@ -331,6 +348,7 @@ func NewContext(config ContextConfig) *Context {
 
 		if filesystem == nil {
 			filesystem = parentCtx.fs
+			initialWorkingDirectory = parentCtx.initialWorkingDirectory
 		}
 	}
 
@@ -345,24 +363,25 @@ func NewContext(config ContextConfig) *Context {
 	}
 
 	*ctx = Context{
-		kind:                 config.Kind,
-		Context:              stdlibCtx,
-		cancel:               cancel,
-		parentCtx:            parentCtx,
-		fs:                   actualFilesystem,
-		executionStartTime:   time.Now(),
-		grantedPermissions:   slices.Clone(config.Permissions),
-		forbiddenPermissions: slices.Clone(config.ForbiddenPermissions),
-		limits:               limits,
-		limiters:             limiters,
-		hostAliases:          map[string]Host{},
-		namedPatterns:        map[string]Pattern{},
-		patternNamespaces:    map[string]*PatternNamespace{},
-		urlProtocolClients:   map[URL]ProtocolClient{},
-		hostProtocolClients:  map[Host]ProtocolClient{},
-		hostResolutionData:   hostResolutions,
-		userData:             map[Identifier]Value{},
-		typeExtensions:       slices.Clone(config.TypeExtensions),
+		kind:                    config.Kind,
+		Context:                 stdlibCtx,
+		cancel:                  cancel,
+		parentCtx:               parentCtx,
+		fs:                      actualFilesystem,
+		initialWorkingDirectory: initialWorkingDirectory,
+		executionStartTime:      time.Now(),
+		grantedPermissions:      slices.Clone(config.Permissions),
+		forbiddenPermissions:    slices.Clone(config.ForbiddenPermissions),
+		limits:                  limits,
+		limiters:                limiters,
+		hostAliases:             map[string]Host{},
+		namedPatterns:           map[string]Pattern{},
+		patternNamespaces:       map[string]*PatternNamespace{},
+		urlProtocolClients:      map[URL]ProtocolClient{},
+		hostProtocolClients:     map[Host]ProtocolClient{},
+		hostResolutionData:      hostResolutions,
+		userData:                map[Identifier]Value{},
+		typeExtensions:          slices.Clone(config.TypeExtensions),
 
 		waitConfirmPrompt: config.WaitConfirmPrompt,
 	}
@@ -637,6 +656,10 @@ func (ctx *Context) GetTempDir() Path {
 
 func (ctx *Context) GetFileSystem() afs.Filesystem {
 	return ctx.fs
+}
+
+func (ctx *Context) InitialWorkingDirectory() Path {
+	return ctx.initialWorkingDirectory
 }
 
 func (ctx *Context) SetWaitConfirmPrompt(fn WaitConfirmPrompt) {

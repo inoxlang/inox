@@ -46,6 +46,42 @@ func TestNewContext(t *testing.T) {
 		}()
 	})
 
+	t.Run("if .InitialWorkingDirectory is set .Filesystem or .GetFileSystem should be set", func(t *testing.T) {
+		ctx := NewContext(ContextConfig{
+			ParentStdLibContext:     context.Background(),
+			InitialWorkingDirectory: "/dir/",
+			Filesystem:              newMemFilesystem(),
+		})
+		defer ctx.CancelGracefully()
+
+		assert.Equal(t, Path("/dir/"), ctx.InitialWorkingDirectory())
+	})
+
+	t.Run("if .InitialWorkingDirectory is not set and .Filesystem is set the initial InitialWorkingDirectory() should return DEFAULT_IWD", func(t *testing.T) {
+		ctx := NewContext(ContextConfig{
+			ParentStdLibContext: context.Background(),
+			Filesystem:          newMemFilesystem(),
+		})
+		defer ctx.CancelGracefully()
+
+		assert.Equal(t, DEFAULT_IWD, ctx.InitialWorkingDirectory())
+	})
+
+	t.Run("if both .InitialWorkingDirectory and .Filesystem are set InitialWorkingDirectory() should return the provided directory ", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
+		func() {
+			stdlibCtx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+
+			childCtx := NewContext(ContextConfig{
+				ParentStdLibContext: stdlibCtx,
+			})
+			defer childCtx.CancelGracefully()
+		}()
+	})
+
 	t.Run("cancelling .ParentStdLibContext should cancel the context", func(t *testing.T) {
 		stdlibCtx, cancel := context.WithCancel(context.Background())
 		defer cancel()
