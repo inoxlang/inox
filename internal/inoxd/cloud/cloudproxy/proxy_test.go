@@ -15,7 +15,7 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
-	"github.com/inoxlang/inox/internal/globals/net_ns"
+	"github.com/inoxlang/inox/internal/globals/ws_ns"
 	"github.com/inoxlang/inox/internal/inoxd/cloud/cloudproxy/inoxdconn"
 	"github.com/inoxlang/inox/internal/inoxd/consts"
 	"github.com/inoxlang/inox/internal/permkind"
@@ -136,7 +136,7 @@ func TestAccountCreation(t *testing.T) {
 			core.WebsocketPermission{Kind_: permkind.Read, Endpoint: host},
 			core.WebsocketPermission{Kind_: permkind.Write, Endpoint: host},
 		},
-		Limits:              []core.Limit{{Name: net_ns.WS_SIMUL_CONN_TOTAL_LIMIT_NAME, Kind: core.TotalLimit, Value: 5}},
+		Limits:              []core.Limit{{Name: ws_ns.WS_SIMUL_CONN_TOTAL_LIMIT_NAME, Kind: core.TotalLimit, Value: 5}},
 		ParentStdLibContext: goctx,
 	}, nil)
 
@@ -147,7 +147,7 @@ func TestAccountCreation(t *testing.T) {
 
 	//register account
 	{
-		socket, err := net_ns.WebsocketConnect(net_ns.WebsocketConnectParams{
+		socket, err := ws_ns.WebsocketConnect(ws_ns.WebsocketConnectParams{
 			Ctx:      ctx,
 			URL:      registrationEndpointWithQuery,
 			Insecure: insecure,
@@ -169,7 +169,7 @@ func TestAccountCreation(t *testing.T) {
 
 		//give human tester enough time to complete the challenge
 		time.Sleep(15 * time.Second)
-		if !assert.NoError(t, socket.WriteMessage(ctx, net_ns.WebsocketTextMessage, []byte(username))) {
+		if !assert.NoError(t, socket.WriteMessage(ctx, ws_ns.WebsocketTextMessage, []byte(username))) {
 			return
 		}
 
@@ -183,7 +183,7 @@ func TestAccountCreation(t *testing.T) {
 		accountToken = strings.TrimPrefix(text, "token:")
 
 		//acknowledge token reception
-		assert.NoError(t, socket.WriteMessage(ctx, net_ns.WebsocketTextMessage, []byte("ack:token")))
+		assert.NoError(t, socket.WriteMessage(ctx, ws_ns.WebsocketTextMessage, []byte("ack:token")))
 
 		//wait for the database to persist the account.
 		time.Sleep(time.Second)
@@ -191,7 +191,7 @@ func TestAccountCreation(t *testing.T) {
 
 	{
 		//connection without account token should not work
-		socket, err := net_ns.WebsocketConnect(net_ns.WebsocketConnectParams{
+		socket, err := ws_ns.WebsocketConnect(ws_ns.WebsocketConnectParams{
 			Ctx:      ctx,
 			URL:      host.URLWithPath("/"),
 			Insecure: insecure,
@@ -205,7 +205,7 @@ func TestAccountCreation(t *testing.T) {
 
 	{
 		//connection with the account token should work
-		socket, err := net_ns.WebsocketConnect(net_ns.WebsocketConnectParams{
+		socket, err := ws_ns.WebsocketConnect(ws_ns.WebsocketConnectParams{
 			Ctx:      ctx,
 			URL:      host.URLWithPath("/"),
 			Insecure: insecure,
