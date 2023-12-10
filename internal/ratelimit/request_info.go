@@ -3,14 +3,14 @@ package ratelimit
 import (
 	"time"
 
-	nettypes "github.com/inoxlang/inox/internal/net_types"
+	netaddr "github.com/inoxlang/inox/internal/netaddr"
 )
 
 type SlidingWindowRequestInfo struct {
 	Id                string
 	Method            string
 	CreationTime      time.Time
-	RemoteAddrAndPort nettypes.RemoteAddrWithPort
-	RemoteIpAddr      nettypes.RemoteIpAddr
+	RemoteAddrAndPort netaddr.RemoteAddrWithPort
+	RemoteIpAddr      netaddr.RemoteIpAddr
 	SentBytes         int
 }

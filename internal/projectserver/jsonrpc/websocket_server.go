@@ -7,7 +7,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/net_ns"
-	nettypes "github.com/inoxlang/inox/internal/net_types"
+	netaddr "github.com/inoxlang/inox/internal/netaddr"
 	"github.com/inoxlang/inox/internal/projectserver/logs"
 	"github.com/rs/zerolog"
 )
@@ -91,8 +91,8 @@ func (server *JsonRpcWebsocketServer) HandleNew(httpRespWriter http.ResponseWrit
 }
 
 func (server *JsonRpcWebsocketServer) allowNewConnection(
-	remoteAddrPort nettypes.RemoteAddrWithPort,
-	remoteAddr nettypes.RemoteIpAddr,
+	remoteAddrPort netaddr.RemoteAddrWithPort,
+	remoteAddr netaddr.RemoteIpAddr,
 	currentConns []*net_ns.WebsocketConnection) error {
 
 	if server.config.BehindCloudProxy {

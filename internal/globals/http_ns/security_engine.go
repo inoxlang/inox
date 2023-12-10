@@ -4,7 +4,7 @@ import (
 	"sync"
 	"time"
 
-	nettypes "github.com/inoxlang/inox/internal/net_types"
+	netaddr "github.com/inoxlang/inox/internal/netaddr"
 	"github.com/inoxlang/inox/internal/ratelimit"
 	cmap "github.com/orcaman/concurrent-map/v2"
 	"github.com/rs/zerolog"
@@ -29,10 +29,10 @@ type securityEngine struct {
 	mutex                  sync.Mutex
 	logger                 zerolog.Logger
 	debugLogger            zerolog.Logger
-	readSlidingWindows     cmap.ConcurrentMap[nettypes.RemoteAddrWithPort, *ratelimit.SlidingWindow]
-	mutationSlidingWindows cmap.ConcurrentMap[nettypes.RemoteAddrWithPort, *ratelimit.SlidingWindow]
+	readSlidingWindows     cmap.ConcurrentMap[netaddr.RemoteAddrWithPort, *ratelimit.SlidingWindow]
+	mutationSlidingWindows cmap.ConcurrentMap[netaddr.RemoteAddrWithPort, *ratelimit.SlidingWindow]
 
-	ipMitigationData cmap.ConcurrentMap[nettypes.RemoteIpAddr, *remoteIpData]
+	ipMitigationData cmap.ConcurrentMap[netaddr.RemoteIpAddr, *remoteIpData]
 	//hcaptchaSecret          string
 	//captchaValidationClient *http.Client
 }
@@ -42,9 +42,9 @@ func newSecurityEngine(logger zerolog.Logger) *securityEngine {
 	return &securityEngine{
 		logger:                 logger,
 		debugLogger:            logger,
-		readSlidingWindows:     cmap.NewStringer[nettypes.RemoteAddrWithPort, *ratelimit.SlidingWindow](),
-		mutationSlidingWindows: cmap.NewStringer[nettypes.RemoteAddrWithPort, *ratelimit.SlidingWindow](),
-		ipMitigationData:       cmap.NewStringer[nettypes.RemoteIpAddr, *remoteIpData](),
+		readSlidingWindows:     cmap.NewStringer[netaddr.RemoteAddrWithPort, *ratelimit.SlidingWindow](),
+		mutationSlidingWindows: cmap.NewStringer[netaddr.RemoteAddrWithPort, *ratelimit.SlidingWindow](),
+		ipMitigationData:       cmap.NewStringer[netaddr.RemoteIpAddr, *remoteIpData](),
 	}
 }
 
@@ -68,7 +68,7 @@ func (engine *securityEngine) getSocketMitigationData(req *HttpRequest) (*rateli
 		RemoteIpAddr:      req.RemoteIpAddr,
 	}
 
-	var slidingWindowMap cmap.ConcurrentMap[nettypes.RemoteAddrWithPort, *ratelimit.SlidingWindow]
+	var slidingWindowMap cmap.ConcurrentMap[netaddr.RemoteAddrWithPort, *ratelimit.SlidingWindow]
 	var maxReqCount int
 
 	if IsMutationMethod(slidingWindowReqInfo.Method) {

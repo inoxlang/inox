@@ -6,7 +6,7 @@ import (
 	"github.com/inoxlang/inox/internal/core"
 	_ "github.com/inoxlang/inox/internal/globals"
 	"github.com/inoxlang/inox/internal/inoxprocess/binary"
-	metricsperf "github.com/inoxlang/inox/internal/metrics-perf"
+	"github.com/inoxlang/inox/internal/metricsperf"
 
 	"github.com/inoxlang/inox/internal/inoxd"
 	"github.com/inoxlang/inox/internal/inoxd/cloud/cloudproxy"

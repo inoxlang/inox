@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	nettypes "github.com/inoxlang/inox/internal/net_types"
+	netaddr "github.com/inoxlang/inox/internal/netaddr"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/rs/zerolog"
 )
@@ -136,7 +136,7 @@ func NewSharedRateLimitingWindow(params WindowParameters) *sharedRateLimitingWin
 func (window *sharedRateLimitingWindow) AllowRequest(req SlidingWindowRequestInfo, logger zerolog.Logger) (ok bool) {
 	//request count for the current socket
 	prevReqCount := 0
-	sockets := make([]nettypes.RemoteAddrWithPort, 0)
+	sockets := make([]netaddr.RemoteAddrWithPort, 0)
 
 	for _, windowReq := range window.SlidingWindow.requests {
 

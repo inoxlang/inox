@@ -11,7 +11,7 @@ import (
 	"github.com/elazarl/goproxy"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/mimeconsts"
-	nettypes "github.com/inoxlang/inox/internal/net_types"
+	netaddr "github.com/inoxlang/inox/internal/netaddr"
 	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/rs/zerolog"
@@ -72,7 +72,7 @@ func MakeHTTPProxy(ctx *core.Context, params HTTPProxyParams) (*http.Server, err
 		}()
 
 		//check the request was sent from localhost.
-		addr, err := nettypes.RemoteAddrWithPortFrom(req.RemoteAddr)
+		addr, err := netaddr.RemoteAddrWithPortFrom(req.RemoteAddr)
 		if err != nil {
 			body := fmt.Sprintf("failed to get the get the IP:port of the sender: %s\n", err.Error())
 			resp := goproxy.NewResponse(req, mimeconsts.HTML_CTYPE, http.StatusInternalServerError, body)

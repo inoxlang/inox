@@ -14,7 +14,7 @@ import (
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/globals/http_ns"
 	"github.com/inoxlang/inox/internal/globals/net_ns"
-	nettypes "github.com/inoxlang/inox/internal/net_types"
+	netaddr "github.com/inoxlang/inox/internal/netaddr"
 	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/oklog/ulid/v2"
@@ -72,7 +72,7 @@ func TestControlClient(t *testing.T) {
 			PemEncodedCert: string(pem.EncodeToMemory(cert)),
 			PemEncodedKey:  string(pem.EncodeToMemory(key)),
 			Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				conn, err := server.UpgradeGoValues(w, r, func(remoteAddrPort nettypes.RemoteAddrWithPort, remoteAddr nettypes.RemoteIpAddr, currentConns []*net_ns.WebsocketConnection) error {
+				conn, err := server.UpgradeGoValues(w, r, func(remoteAddrPort netaddr.RemoteAddrWithPort, remoteAddr netaddr.RemoteIpAddr, currentConns []*net_ns.WebsocketConnection) error {
 					return nil
 				})
 

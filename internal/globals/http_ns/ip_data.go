@@ -3,7 +3,7 @@ package http_ns
 import (
 	"sync"
 
-	nettypes "github.com/inoxlang/inox/internal/net_types"
+	netaddr "github.com/inoxlang/inox/internal/netaddr"
 	"github.com/inoxlang/inox/internal/ratelimit"
 )
 
@@ -19,6 +19,6 @@ type remoteIpData struct {
 }
 
 type persistedRemoteIpData struct {
-	ip                   nettypes.RemoteIpAddr
+	ip                   netaddr.RemoteIpAddr
 	respStatusCodeCounts map[int]int
 }

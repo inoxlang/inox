@@ -1,4 +1,4 @@
-package nettypes
+package netaddr
 
 import (
 	"errors"

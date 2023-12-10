@@ -6,7 +6,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	nettypes "github.com/inoxlang/inox/internal/net_types"
+	netaddr "github.com/inoxlang/inox/internal/netaddr"
 	"github.com/inoxlang/inox/internal/ratelimit"
 	"github.com/rs/zerolog"
 )
@@ -29,7 +29,7 @@ func newRateLimiter(logger zerolog.Logger) *rateLimiter {
 	return r
 }
 
-func (r *rateLimiter) limit(info MethodInfo, reqId string, addrPort nettypes.RemoteAddrWithPort) (rateLimited bool, methodRateLimited bool) {
+func (r *rateLimiter) limit(info MethodInfo, reqId string, addrPort netaddr.RemoteAddrWithPort) (rateLimited bool, methodRateLimited bool) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 

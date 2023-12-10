@@ -19,7 +19,7 @@ import (
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/http_ns"
 	"github.com/inoxlang/inox/internal/globals/net_ns"
-	nettypes "github.com/inoxlang/inox/internal/net_types"
+	netaddr "github.com/inoxlang/inox/internal/netaddr"
 	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/oklog/ulid/v2"
@@ -167,8 +167,8 @@ func (s *ControlServer) Start() error {
 }
 
 func (s *ControlServer) allowConnection(
-	remoteAddrPort nettypes.RemoteAddrWithPort,
-	remoteAddr nettypes.RemoteIpAddr, currentConns []*net_ns.WebsocketConnection) error {
+	remoteAddrPort netaddr.RemoteAddrWithPort,
+	remoteAddr netaddr.RemoteIpAddr, currentConns []*net_ns.WebsocketConnection) error {
 
 	return nil
 }

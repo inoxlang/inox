@@ -23,7 +23,7 @@ import (
 	"github.com/inoxlang/inox/internal/inoxd/cloud/cloudproxy/inoxdconn"
 	"github.com/inoxlang/inox/internal/inoxd/consts"
 	"github.com/inoxlang/inox/internal/inoxprocess"
-	nettypes "github.com/inoxlang/inox/internal/net_types"
+	netaddr "github.com/inoxlang/inox/internal/netaddr"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/oklog/ulid/v2"
 	"github.com/rs/zerolog"
@@ -245,7 +245,7 @@ func (p *cloudProxy) run() error {
 	return fmt.Errorf("error from cloud proxy's HTTPS server: %w", err)
 }
 
-func (p *cloudProxy) allowConnection(remoteAddrPort nettypes.RemoteAddrWithPort, remoteAddr nettypes.RemoteIpAddr, currentConns []*net_ns.WebsocketConnection) error {
+func (p *cloudProxy) allowConnection(remoteAddrPort netaddr.RemoteAddrWithPort, remoteAddr netaddr.RemoteIpAddr, currentConns []*net_ns.WebsocketConnection) error {
 	return nil
 }
 
