@@ -13,7 +13,7 @@ import (
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/globals/http_ns"
-	"github.com/inoxlang/inox/internal/globals/net_ns"
+	"github.com/inoxlang/inox/internal/globals/ws_ns"
 	netaddr "github.com/inoxlang/inox/internal/netaddr"
 	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
@@ -23,11 +23,11 @@ import (
 
 func TestControlClient(t *testing.T) {
 	RegisterTypesInGob()
-	permissiveSocketCountLimit := core.MustMakeNotDecrementingLimit(net_ns.WS_SIMUL_CONN_TOTAL_LIMIT_NAME, 10_000)
+	permissiveSocketCountLimit := core.MustMakeNotDecrementingLimit(ws_ns.WS_SIMUL_CONN_TOTAL_LIMIT_NAME, 10_000)
 
 	var lock sync.Mutex
 	var receivedMessagePayloads [][]byte
-	var receivedMessageTypes []net_ns.WebsocketMessageType
+	var receivedMessageTypes []ws_ns.WebsocketMessageType
 	var errors []error
 
 	//messages read by the server and sent to the controlled process
@@ -53,7 +53,7 @@ func TestControlClient(t *testing.T) {
 			Limits:     []core.Limit{permissiveSocketCountLimit},
 		}, nil /*os.Stdout*/)
 
-		server, err := net_ns.NewWebsocketServer(ctx)
+		server, err := ws_ns.NewWebsocketServer(ctx)
 
 		if !assert.NoError(t, err) {
 			return nil, "", nil
@@ -72,7 +72,7 @@ func TestControlClient(t *testing.T) {
 			PemEncodedCert: string(pem.EncodeToMemory(cert)),
 			PemEncodedKey:  string(pem.EncodeToMemory(key)),
 			Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				conn, err := server.UpgradeGoValues(w, r, func(remoteAddrPort netaddr.RemoteAddrWithPort, remoteAddr netaddr.RemoteIpAddr, currentConns []*net_ns.WebsocketConnection) error {
+				conn, err := server.UpgradeGoValues(w, r, func(remoteAddrPort netaddr.RemoteAddrWithPort, remoteAddr netaddr.RemoteIpAddr, currentConns []*ws_ns.WebsocketConnection) error {
 					return nil
 				})
 
@@ -87,7 +87,7 @@ func TestControlClient(t *testing.T) {
 				conn.SetPingHandler(ctx, func(data string) error {
 					lock.Lock()
 					t.Log("receive ping")
-					receivedMessageTypes = append(receivedMessageTypes, net_ns.WebsocketPingMessage)
+					receivedMessageTypes = append(receivedMessageTypes, ws_ns.WebsocketPingMessage)
 					receivedMessagePayloads = append(receivedMessagePayloads, []byte(data))
 					lock.Unlock()
 					return nil
@@ -103,7 +103,7 @@ func TestControlClient(t *testing.T) {
 						select {
 						case msg := <-channel:
 							payload := MustEncodeMessage(msg)
-							err := conn.WriteMessage(ctx, net_ns.WebsocketBinaryMessage, payload)
+							err := conn.WriteMessage(ctx, ws_ns.WebsocketBinaryMessage, payload)
 							if err != nil {
 								t.Log(err)
 							}
@@ -172,13 +172,13 @@ func TestControlClient(t *testing.T) {
 		}
 
 		firstMsgType := receivedMessageTypes[0]
-		if !assert.Equal(t, net_ns.WebsocketPingMessage, firstMsgType) {
+		if !assert.Equal(t, ws_ns.WebsocketPingMessage, firstMsgType) {
 			return
 		}
 
 		//check heartbeats
 		for i, msgType := range receivedMessageTypes {
-			if msgType != net_ns.WebsocketPingMessage {
+			if msgType != ws_ns.WebsocketPingMessage {
 				continue
 			}
 			msgPayload := receivedMessagePayloads[i]

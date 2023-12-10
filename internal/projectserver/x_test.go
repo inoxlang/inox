@@ -11,8 +11,10 @@ import (
 	"github.com/google/uuid"
 	"github.com/inoxlang/inox/internal/core"
 	fs_ns "github.com/inoxlang/inox/internal/globals/fs_ns"
+	"github.com/inoxlang/inox/internal/globals/http_ns"
 	"github.com/inoxlang/inox/internal/globals/net_ns"
 	"github.com/inoxlang/inox/internal/globals/s3_ns"
+	"github.com/inoxlang/inox/internal/globals/ws_ns"
 	"github.com/inoxlang/inox/internal/memds"
 	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
@@ -32,8 +34,8 @@ func createTestServerAndClient(t *testing.T) (*core.Context, *testClient, bool) 
 			{Name: fs_ns.FS_NEW_FILE_RATE_LIMIT_NAME, Kind: core.SimpleRateLimit, Value: 100},
 			{Name: fs_ns.FS_TOTAL_NEW_FILE_LIMIT_NAME, Kind: core.TotalLimit, Value: 10_000},
 
-			{Name: net_ns.HTTP_REQUEST_RATE_LIMIT_NAME, Kind: core.SimpleRateLimit, Value: 100},
-			{Name: net_ns.WS_SIMUL_CONN_TOTAL_LIMIT_NAME, Kind: core.TotalLimit, Value: 10},
+			{Name: http_ns.HTTP_REQUEST_RATE_LIMIT_NAME, Kind: core.SimpleRateLimit, Value: 100},
+			{Name: ws_ns.WS_SIMUL_CONN_TOTAL_LIMIT_NAME, Kind: core.TotalLimit, Value: 10},
 			{Name: net_ns.TCP_SIMUL_CONN_TOTAL_LIMIT_NAME, Kind: core.TotalLimit, Value: 10},
 
 			{Name: s3_ns.OBJECT_STORAGE_REQUEST_RATE_LIMIT_NAME, Kind: core.SimpleRateLimit, Value: 50},
