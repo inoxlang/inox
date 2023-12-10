@@ -466,6 +466,13 @@ h.close()
 
 [Examples](https://github.com/inoxlang/inox/tree/master/examples/chrome)
 
+
+---
+
+<details>
+
+**<summary>Security Features: permissions, secrets, injection prevention**</summary>
+
 ### Permission System
 
 #### **Required Permissions**
@@ -735,6 +742,10 @@ URL expression: result of a path interpolation should not contain any of the fol
 
 </details>
 
+</details> <!-- security features-->
+
+---
+
 ### Concurrency
 
 #### **Lightweight threads**
@@ -763,11 +774,11 @@ results = group.wait_results!()
 
 Inox comes with many built-in functions for:
 
-- browser automation
-- file manipulation
+- Browser automation
+- File manipulation
 - HTTP resource manipulation
-- structured logging
-- data container constructors (Graph, Tree, ...)
+- Structured logging
+- Data container constructors (Graph, Tree, ...)
 
 **[List of Built-in Functions](./docs/builtin.md)**
 
@@ -811,7 +822,9 @@ args = mod-args
 API_KEY = env.initial.API_KEY
 ```
 
-#### Help Message Generation
+<details>
+
+**<summary>Help message generation</summary>**
 
 ```
 $ inox run test.ix 
@@ -828,6 +841,7 @@ options:
   clean-existing (--clean-existing): boolean
       if true delete <dir> if it already exists
 ```
+</details>
 
 
 ## Compile from Source
