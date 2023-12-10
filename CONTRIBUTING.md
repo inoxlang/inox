@@ -5,26 +5,38 @@ comment in this [issue](https://github.com/inoxlang/inox/issues/4)**.
 
 ## Guidelines
 
-Before working on the codebase make sure you read [FUTURE.md](./FUTURE.md) and
+Please before working on the codebase make sure you read [FUTURE.md](./FUTURE.md) and
 the [CLA Readme](.legal/CLA/README.md).
 
-The following changes will **NOT** be accepted:
-
+It is recommended to avoid the following changes:
 - adding a feature that will be used by only a few Inox projects
 - adding a dependency that is large or has a copyleft license
-- adding a dependency whose features can be easily implemented in the Inox
-  repository
+- adding a dependency whose features can be easily reimplemented in the Inox repository
 - adding code without at least a few tests
-- modifying the **core** package, unless you have a very good reason to do so
+- modifying the **core** package
 
 ## Tests
 
-**The code you add must be tested.**
+**The code you add should be tested.** Try to test all packages that depend on your changes.
 
-Run all tests with:
+### Test a Single Package
 
 ```
-go test -race -count=1 -p=1 ./... -timeout=3m
+go test -race -count=1 -p=1 ./internal/<pkg> -timeout=2m
+```
+
+Run the tests again with the race detector disabled:
+
+```
+go test -count=1 -p=1 ./internal/<pkg> -timeout=2m
+```
+
+### Test All Packages
+
+All tests can be run with the following command with:
+
+```
+go test -race -count=1 -p=1 ./... -timeout=5m
 ```
 
 Run all tests again with the race detector disabled:
