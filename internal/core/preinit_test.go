@@ -1670,6 +1670,7 @@ func TestPreInit(t *testing.T) {
 			start := time.Now()
 			manifest, _, staticCheckErrors, err := mod.PreInit(PreinitArgs{
 				PreinitFilesystem:     fls,
+				Filesystem:            fls,
 				GlobalConsts:          chunk.GlobalConstantDeclarations,
 				PreinitStatement:      chunk.Preinit,
 				RunningState:          nil,

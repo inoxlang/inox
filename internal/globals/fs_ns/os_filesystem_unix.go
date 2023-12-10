@@ -29,6 +29,8 @@ type OsFilesystem struct {
 	ctx *core.Context //used in .DoWithContext
 }
 
+func (fs *OsFilesystem) OsFs() {}
+
 // we override Rename because osfs.OS.Rename is not the same as os.Rename
 func (fs *OsFilesystem) Rename(from, to string) error {
 	if fs.ctx != nil {

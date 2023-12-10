@@ -65,13 +65,4 @@ func TestNewDefaultContext(t *testing.T) {
 		assert.Same(t, fls, ctx.GetFileSystem())
 	})
 
-	t.Run("OS filesystem should be used as a fallback if both .Filesystem & .ParentContext are not set", func(t *testing.T) {
-		ctx, err := NewDefaultContext(core.DefaultContextConfig{})
-
-		if !assert.NoError(t, err) {
-			return
-		}
-
-		assert.Same(t, fs_ns.GetOsFilesystem(), core.WithoutSecondaryContextIfPossible(ctx.GetFileSystem()))
-	})
 }

@@ -72,6 +72,7 @@ func TestPrepareLocalScript(t *testing.T) {
 				StdlibCtx:                 stdlibCtx,
 				ParentContextRequired:     true,
 				Out:                       io.Discard,
+				ScriptContextFileSystem:   fs_ns.GetOsFilesystem(),
 			})
 		})
 
@@ -109,6 +110,7 @@ func TestPrepareLocalScript(t *testing.T) {
 			ParentContext:             ctx,
 			ParentContextRequired:     true,
 			Out:                       io.Discard,
+			ScriptContextFileSystem:   fs_ns.GetOsFilesystem(),
 		})
 
 		if !assert.Error(t, err) {
@@ -168,6 +170,7 @@ func TestPrepareLocalScript(t *testing.T) {
 			ParentContext:             ctx1,
 			ParentContextRequired:     true,
 			Out:                       io.Discard,
+			ScriptContextFileSystem:   fs_ns.GetOsFilesystem(),
 		})
 
 		if !assert.Error(t, err1) {
@@ -196,7 +199,8 @@ func TestPrepareLocalScript(t *testing.T) {
 			ParentContextRequired:     true,
 			Out:                       io.Discard,
 
-			CachedModule: module,
+			CachedModule:            module,
+			ScriptContextFileSystem: fs_ns.GetOsFilesystem(),
 		})
 
 		if !assert.Error(t, err2) {
@@ -268,6 +272,7 @@ func TestPrepareLocalScript(t *testing.T) {
 			ParentContext:             ctx1,
 			ParentContextRequired:     true,
 			Out:                       io.Discard,
+			ScriptContextFileSystem:   fs_ns.GetOsFilesystem(),
 		})
 
 		if !assert.Error(t, err1) {
@@ -344,6 +349,7 @@ func TestPrepareLocalScript(t *testing.T) {
 			ParentContextRequired:     true,
 			Out:                       outBuf,
 			LogLevels:                 core.NewLogLevels(core.NewDefaultLogsArgs{DefaultLevel: logLevel}),
+			ScriptContextFileSystem:   fs_ns.GetOsFilesystem(),
 		})
 
 		if !assert.NoError(t, err) {
@@ -399,6 +405,7 @@ func TestPrepareLocalScript(t *testing.T) {
 			ParentContext:             ctx,
 			ParentContextRequired:     true,
 			Out:                       io.Discard,
+			ScriptContextFileSystem:   fs_ns.GetOsFilesystem(),
 		})
 
 		if !assert.NoError(t, err2) {
@@ -460,6 +467,7 @@ func TestPrepareLocalScript(t *testing.T) {
 			ParentContext:             ctx,
 			ParentContextRequired:     true,
 			Out:                       io.Discard,
+			ScriptContextFileSystem:   fs_ns.GetOsFilesystem(),
 		})
 
 		if !assert.NoError(t, err) {
@@ -526,7 +534,8 @@ func TestPrepareLocalScript(t *testing.T) {
 			ParentContextRequired:     true,
 			Out:                       io.Discard,
 
-			PreinitFilesystem: preinitFs,
+			PreinitFilesystem:       preinitFs,
+			ScriptContextFileSystem: fs_ns.GetOsFilesystem(),
 		})
 
 		if !assert.NoError(t, err) {
@@ -609,6 +618,7 @@ func TestPrepareLocalScript(t *testing.T) {
 			BeforeContextCreation: func(m *core.Manifest) ([]core.Limit, error) {
 				return nil, errInvalidManifest
 			},
+			ScriptContextFileSystem: fs_ns.GetOsFilesystem(),
 		})
 
 		if !assert.ErrorIs(t, err, errInvalidManifest) {
@@ -2292,6 +2302,7 @@ func TestPrepareLocalScript(t *testing.T) {
 			Fpath:                     file,
 			ParsingCompilationContext: compilationCtx,
 			Out:                       io.Discard,
+			ScriptContextFileSystem:   fs_ns.GetOsFilesystem(),
 
 			EnableTesting: true,
 		})
@@ -2357,6 +2368,7 @@ func TestPrepareLocalScript(t *testing.T) {
 			ParsingCompilationContext: compilationCtx,
 			Out:                       io.Discard,
 			Project:                   project.NewDummyProject("project", fls),
+			ScriptContextFileSystem:   fs_ns.GetOsFilesystem(),
 
 			EnableTesting: true,
 		})
@@ -2424,6 +2436,7 @@ func TestPrepareLocalScript(t *testing.T) {
 			Fpath:                     "/main.spec.ix",
 			ParsingCompilationContext: compilationCtx,
 			Out:                       io.Discard,
+			ScriptContextFileSystem:   fs_ns.GetOsFilesystem(),
 
 			EnableTesting: true,
 		})
@@ -2468,6 +2481,7 @@ func TestPrepareLocalScript(t *testing.T) {
 			Fpath:                     file,
 			ParsingCompilationContext: compilationCtx,
 			Out:                       io.Discard,
+			ScriptContextFileSystem:   fs_ns.GetOsFilesystem(),
 
 			EnableTesting: false,
 		})
@@ -2490,7 +2504,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		assert.NotContains(t, perms, core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")})
 	})
 
-	t.Run("if the OS filesystem used the IWD should be current wording directory ", func(t *testing.T) {
+	t.Run("if the OS filesystem used the IWD should be the current working directory", func(t *testing.T) {
 		dir := t.TempDir()
 		file := filepath.Join(dir, "script.ix")
 		compilationCtx := createCompilationCtx(dir)
@@ -2499,7 +2513,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		os.WriteFile(file, []byte(`
 			manifest {
 				permissions: {
-					read: %/...
+					read: IWD
 				}
 			}
 		`), 0o600)
@@ -2530,8 +2544,13 @@ func TestPrepareLocalScript(t *testing.T) {
 		IWD := state.Globals.Get(core.INITIAL_WORKING_DIR_VARNAME)
 		IWD_PREFIX_PATTERN := state.Globals.Get(core.INITIAL_WORKING_DIR_PREFIX_VARNAME)
 
-		assert.EqualValues(t, wd+"/", IWD)
+		if !assert.EqualValues(t, wd+"/", IWD) {
+			return
+		}
 		assert.EqualValues(t, wd+"/...", IWD_PREFIX_PATTERN)
+
+		perms := state.Ctx.GetGrantedPermissions()
+		assert.Contains(t, perms, core.FilesystemPermission{Kind_: permkind.Read, Entity: IWD.(core.Path)})
 	})
 
 }

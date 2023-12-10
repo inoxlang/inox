@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"maps"
+	"os"
 	"reflect"
 	"runtime/debug"
 	"slices"
@@ -28,9 +29,10 @@ const (
 )
 
 var (
-	ErrBothCtxFilesystemArgsProvided      = errors.New("invalid arguments: both .CreateFilesystem & .Filesystem provided")
-	ErrBothParentCtxArgsProvided          = errors.New("invalid arguments: both .ParentContext & .ParentStdLibContext provided")
-	ErrInitialWorkingDirProvidedWithoutFS = errors.New("invalid arguments: .InitialWorkingDirectory is provided but no filesystem is provided")
+	ErrBothCtxFilesystemArgsProvided            = errors.New("invalid arguments: both .CreateFilesystem & .Filesystem provided")
+	ErrBothParentCtxArgsProvided                = errors.New("invalid arguments: both .ParentContext & .ParentStdLibContext provided")
+	ErrInitialWorkingDirProvidedWithoutFS       = errors.New("invalid arguments: .InitialWorkingDirectory is provided but no filesystem is provided")
+	ErrImpossibleToDeterminateInitialWorkingDir = errors.New("impossible to determinate initial working directory")
 
 	ErrNonExistingNamedPattern                 = errors.New("non existing named pattern")
 	ErrNotUniqueAliasDefinition                = errors.New("cannot register a host alias more than once")
@@ -244,12 +246,8 @@ func NewContext(config ContextConfig) *Context {
 		filesystem = fs
 	}
 
-	if initialWorkingDirectory != "" && config.Filesystem == nil && config.CreateFilesystem == nil {
+	if initialWorkingDirectory != "" && filesystem == nil && config.ParentContext == nil {
 		panic(ErrInitialWorkingDirProvidedWithoutFS)
-	}
-
-	if initialWorkingDirectory == "" && (config.Filesystem != nil || config.CreateFilesystem != nil) {
-		initialWorkingDirectory = DEFAULT_IWD
 	}
 
 	//create limiters
@@ -315,7 +313,7 @@ func NewContext(config ContextConfig) *Context {
 		stdlibCtx, cancel = context.WithCancel(parentStdLibContext)
 
 		if initialWorkingDirectory == "" {
-			initialWorkingDirectory = "/"
+			initialWorkingDirectory = DEFAULT_IWD
 		}
 	} else {
 		//if a parent context is passed we check that the parent has all the required permissions
@@ -358,8 +356,21 @@ func NewContext(config ContextConfig) *Context {
 	}
 
 	actualFilesystem := filesystem
+
 	if !config.DoNotSetFilesystemContext {
 		actualFilesystem = WithSecondaryContextIfPossible(ctx, filesystem)
+	}
+
+	if initialWorkingDirectory == "" {
+		if _, ok := filesystem.(afs.OsFS); ok {
+			wd, err := os.Getwd()
+			if err != nil {
+				panic(err)
+			}
+			initialWorkingDirectory = DirPathFrom(wd)
+		} else {
+			initialWorkingDirectory = DEFAULT_IWD
+		}
 	}
 
 	*ctx = Context{

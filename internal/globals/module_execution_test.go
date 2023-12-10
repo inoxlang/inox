@@ -58,6 +58,7 @@ func TestRunLocalScript(t *testing.T) {
 			ParentContext:             ctx,
 			Out:                       io.Discard,
 			IgnoreHighRiskScore:       true,
+			ScriptContextFileSystem:   fs_ns.GetOsFilesystem(),
 		})
 
 		assert.Error(t, err)
@@ -91,6 +92,7 @@ func TestRunLocalScript(t *testing.T) {
 			ParentContext:             ctx,
 			Out:                       io.Discard,
 			IgnoreHighRiskScore:       true,
+			ScriptContextFileSystem:   fs_ns.GetOsFilesystem(),
 		})
 
 		assert.Error(t, err)
@@ -120,6 +122,7 @@ func TestRunLocalScript(t *testing.T) {
 			ParentContext:             ctx,
 			Out:                       io.Discard,
 			IgnoreHighRiskScore:       true,
+			ScriptContextFileSystem:   fs_ns.GetOsFilesystem(),
 		})
 
 		if !assert.ErrorIs(t, err, mod.ErrExecutionAbortedTooManyWarnings) {
@@ -195,6 +198,7 @@ func TestRunLocalScript(t *testing.T) {
 			Out:                       io.Discard,
 			IgnoreHighRiskScore:       false, //<---
 			PreinitFilesystem:         preinitFs,
+			ScriptContextFileSystem:   fs_ns.GetOsFilesystem(),
 		})
 
 		if !assert.ErrorIs(t, err, mod.ErrNoProvidedConfirmExecPrompt) {

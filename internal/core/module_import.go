@@ -152,6 +152,7 @@ func ImportModule(config ImportConfig) (*LThread, error) {
 		GlobalConsts:          importedMod.MainChunk.Node.GlobalConstantDeclarations,
 		PreinitStatement:      importedMod.MainChunk.Node.Preinit,
 		AddDefaultPermissions: true,
+		Filesystem:            parentState.Ctx.GetFileSystem(),
 
 		//TODO: should Project be set ?
 	})
@@ -168,9 +169,10 @@ func ImportModule(config ImportConfig) (*LThread, error) {
 	}
 
 	routineCtx := NewContext(ContextConfig{
-		Permissions:          grantedPerms,
-		ForbiddenPermissions: forbiddenPerms,
-		ParentContext:        config.ParentState.Ctx,
+		Permissions:             grantedPerms,
+		ForbiddenPermissions:    forbiddenPerms,
+		ParentContext:           config.ParentState.Ctx,
+		InitialWorkingDirectory: manifest.InitialWorkingDirectory,
 	})
 
 	// add base patterns

@@ -2,6 +2,7 @@ package core
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/inoxlang/inox/internal/afs"
 	parse "github.com/inoxlang/inox/internal/parse"
@@ -15,6 +16,7 @@ type PreinitArgs struct {
 
 	RunningState *TreeWalkState //optional
 	ParentState  *GlobalState   //optional
+	Filesystem   afs.Filesystem
 
 	//if RunningState is nil .PreinitFilesystem is used to create the temporary context.
 	PreinitFilesystem afs.Filesystem
@@ -56,17 +58,28 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (_ *Manifest, usedRunningState
 		}
 	}()
 
+	initialWorkingDirectory := DEFAULT_IWD
+	if _, ok := preinitArgs.Filesystem.(afs.OsFS); ok {
+		wd, err := os.Getwd()
+		if err != nil {
+			preinitErr = err
+			return
+		}
+		initialWorkingDirectory = DirPathFrom(wd)
+	}
+
 	if m.ManifestTemplate == nil {
 		manifest := NewEmptyManifest()
 		if preinitArgs.AddDefaultPermissions {
 			manifest.RequiredPermissions = append(manifest.RequiredPermissions, GetDefaultGlobalVarPermissions()...)
 		}
+		manifest.InitialWorkingDirectory = initialWorkingDirectory
 		return manifest, nil, nil, nil
 	}
 
 	manifestObjLiteral, ok := m.ManifestTemplate.Object.(*parse.ObjectLiteral)
 	if !ok {
-		return &Manifest{}, nil, nil, nil
+		return &Manifest{InitialWorkingDirectory: initialWorkingDirectory}, nil, nil, nil
 	}
 
 	if parse.HasErrorAtAnyDepth(manifestObjLiteral) ||
@@ -134,7 +147,10 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (_ *Manifest, usedRunningState
 			ctx.AddPatternNamespace(k, v)
 		}
 
-		global := NewGlobalState(ctx, getGlobalsAccessibleFromManifest().ValueEntryMap(nil))
+		global := NewGlobalState(ctx, map[string]Value{
+			INITIAL_WORKING_DIR_VARNAME:        initialWorkingDirectory,
+			INITIAL_WORKING_DIR_PREFIX_VARNAME: initialWorkingDirectory.ToPrefixPattern(),
+		})
 		global.OutputFieldsInitialized.Store(true)
 		global.Module = m
 		state = NewTreeWalkStateWithGlobal(global)
@@ -316,7 +332,8 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (_ *Manifest, usedRunningState
 		envPattern:            envPattern,
 		preinitFileConfigs:    preinitFiles,
 		//addDefaultPermissions: true,
-		ignoreUnkownSections: preinitArgs.IgnoreUnknownSections,
+		ignoreUnkownSections:    preinitArgs.IgnoreUnknownSections,
+		initialWorkingDirectory: initialWorkingDirectory,
 	})
 
 	return manifest, state, nil, err

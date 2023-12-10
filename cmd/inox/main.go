@@ -263,6 +263,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 			PreinitFilesystem:         compilationCtx.GetFileSystem(),
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             nil, //grant all permissions
+			ScriptContextFileSystem:   fs_ns.GetOsFilesystem(),
 			AdditionalPermissions:     processTempDirPerms,
 
 			UseBytecode:      !useTreeWalking,
@@ -622,9 +623,11 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 		}
 
 		filesystem := projectserver.NewDefaultFilesystem()
+		initialWorkingDir := utils.Must(os.Getwd())
 		ctx := core.NewContext(core.ContextConfig{
-			Permissions: perms,
-			Filesystem:  filesystem,
+			Permissions:             perms,
+			Filesystem:              filesystem,
+			InitialWorkingDirectory: core.DirPathFrom(initialWorkingDir),
 		})
 
 		state := core.NewGlobalState(ctx)
@@ -775,8 +778,9 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 
 		filesystem := fs_ns.GetOsFilesystem()
 		ctx := core.NewContext(core.ContextConfig{
-			Permissions: perms,
-			Filesystem:  filesystem,
+			Permissions:             perms,
+			Filesystem:              filesystem,
+			InitialWorkingDirectory: core.DirPathFrom(utils.Must(os.Getwd())),
 		})
 
 		state := core.NewGlobalState(ctx)
@@ -1024,10 +1028,11 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 
 		//connect to the control server
 		ctx := core.NewContext(core.ContextConfig{
-			Permissions:          grantedPerms,
-			ForbiddenPermissions: forbiddenPerms,
-			Filesystem:           fs_ns.GetOsFilesystem(),
-			Limits:               core.GetDefaultScriptLimits(),
+			Permissions:             grantedPerms,
+			ForbiddenPermissions:    forbiddenPerms,
+			Filesystem:              fs_ns.GetOsFilesystem(),
+			InitialWorkingDirectory: core.DirPathFrom(utils.Must(os.Getwd())),
+			Limits:                  core.GetDefaultScriptLimits(),
 		})
 		state := core.NewGlobalState(ctx)
 		state.Out = os.Stdout

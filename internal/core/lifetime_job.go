@@ -95,6 +95,7 @@ func (j *LifetimeJob) Instantiate(ctx *Context, self Value) (*LifetimeJobInstanc
 		RunningState:          NewTreeWalkStateWithGlobal(spawnerState),
 		ParentState:           spawnerState,
 		AddDefaultPermissions: true,
+		Filesystem:            spawnerState.Ctx.GetFileSystem(),
 
 		//TODO: should Project be set ?
 	})
@@ -117,11 +118,12 @@ func (j *LifetimeJob) Instantiate(ctx *Context, self Value) (*LifetimeJobInstanc
 	}
 
 	routineCtx := NewContext(ContextConfig{
-		Kind:            DefaultContext,
-		ParentContext:   ctx,
-		Permissions:     permissions,
-		Limits:          manifest.Limits,
-		HostResolutions: manifest.HostResolutions,
+		Kind:                    DefaultContext,
+		InitialWorkingDirectory: manifest.InitialWorkingDirectory,
+		ParentContext:           ctx,
+		Permissions:             permissions,
+		Limits:                  manifest.Limits,
+		HostResolutions:         manifest.HostResolutions,
 	})
 
 	for k, v := range ctx.GetNamedPatterns() {

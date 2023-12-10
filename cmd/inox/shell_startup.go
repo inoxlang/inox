@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"io"
+	"os"
 	"path/filepath"
 	"slices"
 
@@ -20,6 +21,8 @@ func getScriptDir(fpath string) string {
 }
 
 func runStartupScript(startupScriptPath string, processTempDirPerms []core.Permission, outW io.Writer) (*core.Object, *core.GlobalState) {
+	initialWorkingDir := utils.Must(os.Getwd())
+
 	//we read, parse and evaluate the startup script
 
 	absPath, err := filepath.Abs(startupScriptPath)
@@ -29,8 +32,9 @@ func runStartupScript(startupScriptPath string, processTempDirPerms []core.Permi
 	startupScriptPath = absPath
 
 	parsingCtx := core.NewContext(core.ContextConfig{
-		Permissions: []core.Permission{core.CreateFsReadPerm(core.Path(startupScriptPath))},
-		Filesystem:  fs_ns.GetOsFilesystem(),
+		Permissions:             []core.Permission{core.CreateFsReadPerm(core.Path(startupScriptPath))},
+		Filesystem:              fs_ns.GetOsFilesystem(),
+		InitialWorkingDirectory: core.DirPathFrom(initialWorkingDir),
 	})
 	{
 		state := core.NewGlobalState(parsingCtx)
@@ -57,9 +61,11 @@ func runStartupScript(startupScriptPath string, processTempDirPerms []core.Permi
 	}
 
 	ctx := utils.Must(core.NewDefaultContext(core.DefaultContextConfig{
-		Permissions:     append(slices.Clone(startupManifest.RequiredPermissions), processTempDirPerms...),
-		Limits:          startupManifest.Limits,
-		HostResolutions: startupManifest.HostResolutions,
+		Permissions:             append(slices.Clone(startupManifest.RequiredPermissions), processTempDirPerms...),
+		Limits:                  startupManifest.Limits,
+		HostResolutions:         startupManifest.HostResolutions,
+		InitialWorkingDirectory: core.DirPathFrom(initialWorkingDir),
+		Filesystem:              fs_ns.GetOsFilesystem(),
 	}))
 	state, err := core.NewDefaultGlobalState(ctx, core.DefaultGlobalStateConfig{
 		Out:    outW,

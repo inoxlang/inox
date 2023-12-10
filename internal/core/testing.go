@@ -537,7 +537,6 @@ func runTestItem(
 		RunningState:          NewTreeWalkStateWithGlobal(spawnerState),
 		ParentState:           spawnerState,
 		AddDefaultPermissions: true,
-
 		//TODO: should Project be set ?
 	})
 

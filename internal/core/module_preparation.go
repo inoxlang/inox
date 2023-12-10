@@ -94,7 +94,6 @@ type ScriptPreparationArgs struct {
 
 	//Used to create the context.
 	//If nil the parent context's filesystem is used.
-	//If there is no parent context the OS filesystem is used.
 	ScriptContextFileSystem afs.Filesystem
 
 	AdditionalGlobalsTestOnly map[string]Value
@@ -188,6 +187,7 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *GlobalState, mod *Mo
 			ParentState:           parentState,
 			PreinitStatement:      mod.MainChunk.Node.Preinit,
 			PreinitFilesystem:     args.PreinitFilesystem,
+			Filesystem:            args.ScriptContextFileSystem,
 			DefaultLimits:         args.DefaultLimits,
 			AddDefaultPermissions: true,
 			IgnoreUnknownSections: args.DataExtractionMode,
@@ -243,12 +243,13 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *GlobalState, mod *Mo
 		Permissions:             append(slices.Clone(manifest.RequiredPermissions), args.AdditionalPermissions...),
 		DoNotCheckDatabasePerms: args.EnableTesting,
 
-		Limits:              limits,
-		HostResolutions:     manifest.HostResolutions,
-		ParentContext:       parentContext,
-		ParentStdLibContext: args.StdlibCtx,
-		Filesystem:          args.ScriptContextFileSystem,
-		OwnedDatabases:      manifest.OwnedDatabases(),
+		Limits:                  limits,
+		HostResolutions:         manifest.HostResolutions,
+		ParentContext:           parentContext,
+		ParentStdLibContext:     args.StdlibCtx,
+		Filesystem:              args.ScriptContextFileSystem,
+		InitialWorkingDirectory: manifest.InitialWorkingDirectory,
+		OwnedDatabases:          manifest.OwnedDatabases(),
 	})
 
 	if ctxErr != nil {

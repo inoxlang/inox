@@ -105,6 +105,8 @@ type Manifest struct {
 	PreinitFiles    PreinitFiles
 	Databases       DatabaseConfigs
 	AutoInvocation  *AutoInvocationConfig //can be nil
+
+	InitialWorkingDirectory Path
 }
 
 func NewEmptyManifest() *Manifest {
@@ -112,6 +114,7 @@ func NewEmptyManifest() *Manifest {
 		Parameters: ModuleParameters{
 			structType: ANON_EMPTY_STRUCT_TYPE,
 		},
+		InitialWorkingDirectory: DEFAULT_IWD,
 	}
 }
 
@@ -687,7 +690,7 @@ func EvaluatePermissionListingObjectNode(n *parse.ObjectLiteral, config PreinitA
 	//we create a temporary state to evaluate some parts of the permissions
 	if config.RunningState == nil {
 		ctx := NewContext(ContextConfig{Permissions: []Permission{GlobalVarPermission{permkind.Read, "*"}}})
-		state = NewTreeWalkState(ctx, getGlobalsAccessibleFromManifest().ValueEntryMap(nil))
+		state = NewTreeWalkState(ctx)
 
 		if config.GlobalConsts != nil {
 			for _, decl := range config.GlobalConsts.Declarations {
@@ -710,13 +713,14 @@ func EvaluatePermissionListingObjectNode(n *parse.ObjectLiteral, config PreinitA
 type CustomPermissionTypeHandler func(kind PermissionKind, name string, value Value) (perms []Permission, handled bool, err error)
 
 type manifestObjectConfig struct {
-	defaultLimits         []Limit
-	addDefaultPermissions bool
-	handleCustomType      CustomPermissionTypeHandler //optional
-	envPattern            *ObjectPattern              //pre-evaluated
-	preinitFileConfigs    PreinitFiles                //pre-evaluated
-	ignoreUnkownSections  bool
-	parentState           *GlobalState //optional
+	defaultLimits           []Limit
+	addDefaultPermissions   bool
+	handleCustomType        CustomPermissionTypeHandler //optional
+	envPattern              *ObjectPattern              //pre-evaluated
+	preinitFileConfigs      PreinitFiles                //pre-evaluated
+	ignoreUnkownSections    bool
+	parentState             *GlobalState //optional
+	initialWorkingDirectory Path
 }
 
 // createManifest gets permissions and limits by evaluating an object literal.
@@ -905,15 +909,16 @@ func (m *Module) createManifest(ctx *Context, object *Object, config manifestObj
 	}
 
 	return &Manifest{
-		explicitModuleKind:  manifestModuleKind,
-		RequiredPermissions: perms,
-		Limits:              maps.Values(limits),
-		HostResolutions:     hostResolutions,
-		EnvPattern:          envPattern,
-		Parameters:          moduleParams,
-		PreinitFiles:        config.preinitFileConfigs,
-		Databases:           dbConfigs,
-		AutoInvocation:      autoInvocation,
+		explicitModuleKind:      manifestModuleKind,
+		RequiredPermissions:     perms,
+		Limits:                  maps.Values(limits),
+		HostResolutions:         hostResolutions,
+		EnvPattern:              envPattern,
+		Parameters:              moduleParams,
+		PreinitFiles:            config.preinitFileConfigs,
+		Databases:               dbConfigs,
+		AutoInvocation:          autoInvocation,
+		InitialWorkingDirectory: config.initialWorkingDirectory,
 	}, nil
 }
 
@@ -1802,11 +1807,4 @@ func getVisibilityPerms(desc Value) ([]Permission, error) {
 	}
 
 	return perms, nil
-}
-
-func getGlobalsAccessibleFromManifest() *Object {
-	return objFrom(ValMap{
-		INITIAL_WORKING_DIR_VARNAME:        INITIAL_WORKING_DIR_PATH,
-		INITIAL_WORKING_DIR_PREFIX_VARNAME: INITIAL_WORKING_DIR_PATH_PATTERN,
-	})
 }

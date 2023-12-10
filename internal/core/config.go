@@ -16,6 +16,8 @@ var (
 	defaultScriptLimits            []Limit
 	defaultRequestHandlingLimits   []Limit
 	defaultMaxRequestHandlerLimits []Limit
+
+	ErrNoFilesystemProvided = errors.New("no filesystem provided")
 )
 
 type DefaultGlobalStateConfig struct {
@@ -136,9 +138,8 @@ type DefaultContextConfig struct {
 	ParentStdLibContext context.Context //optional, should not be set if ParentContext is set
 
 	//if nil the parent context's filesystem is used.
-	//if there is not parent context the OS filesystem is used.
 	Filesystem              afs.Filesystem
-	InitialWorkingDirectory Path //if not set should defaults to '/' or the working directory for the OS filesystem
+	InitialWorkingDirectory Path //optional, should be passed without modification to NewContext.
 }
 
 type NewDefaultContextFn func(config DefaultContextConfig) (*Context, error)

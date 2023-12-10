@@ -3,7 +3,6 @@ package internal
 import (
 	"fmt"
 	"io"
-	"os"
 	"path/filepath"
 	"reflect"
 	"time"
@@ -395,13 +394,11 @@ func NewDefaultContext(config core.DefaultContextConfig) (*core.Context, error) 
 		OwnedDatabases:          config.OwnedDatabases,
 	}
 
-	if ctxConfig.Filesystem == nil && ctxConfig.ParentContext == nil {
-		ctxConfig.Filesystem = fs_ns.GetOsFilesystem()
-	}
-
-	//if no initial working directory is provided and the filesystem is the OS FS we set the directory to os.Getwd().
-	if _, ok := config.Filesystem.(*fs_ns.OsFilesystem); ok && ctxConfig.InitialWorkingDirectory == "" {
-		ctxConfig.InitialWorkingDirectory = core.DirPathFrom(utils.Must(os.Getwd()))
+	if ctxConfig.Filesystem == nil {
+		if ctxConfig.ParentContext == nil {
+			return nil, core.ErrNoFilesystemProvided
+		}
+		ctxConfig.Filesystem = config.Filesystem
 	}
 
 	if ctxConfig.ParentContext != nil {
