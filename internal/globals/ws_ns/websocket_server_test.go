@@ -1,4 +1,4 @@
-package net_ns
+package ws_ns
 
 import (
 	"fmt"

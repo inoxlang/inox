@@ -7,7 +7,7 @@ import (
 	"github.com/gorilla/websocket"
 
 	"github.com/inoxlang/inox/internal/core"
-	net_ns "github.com/inoxlang/inox/internal/globals/net_ns"
+	"github.com/inoxlang/inox/internal/globals/ws_ns"
 	"github.com/rs/zerolog"
 )
 
@@ -20,13 +20,13 @@ var (
 )
 
 type JsonRpcWebsocket struct {
-	conn           *net_ns.WebsocketConnection
+	conn           *ws_ns.WebsocketConnection
 	lock           sync.RWMutex
 	logger         zerolog.Logger
 	sessionContext *core.Context //set after session is created.
 }
 
-func NewJsonRpcWebsocket(conn *net_ns.WebsocketConnection, logger zerolog.Logger) *JsonRpcWebsocket {
+func NewJsonRpcWebsocket(conn *ws_ns.WebsocketConnection, logger zerolog.Logger) *JsonRpcWebsocket {
 	return &JsonRpcWebsocket{conn: conn}
 }
 

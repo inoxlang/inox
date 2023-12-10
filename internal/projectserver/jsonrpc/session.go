@@ -18,7 +18,7 @@ import (
 	"github.com/gorilla/websocket"
 
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/globals/net_ns"
+	"github.com/inoxlang/inox/internal/globals/ws_ns"
 	"github.com/inoxlang/inox/internal/projectserver/logs"
 	"github.com/inoxlang/inox/internal/projectserver/lsp/defines"
 	"github.com/inoxlang/inox/internal/utils"
@@ -487,7 +487,7 @@ func (s *Session) handlerError(err error) (continueLoop bool) {
 	continueLoop = true
 	isEof := errors.Is(err, io.EOF)
 	isWebsocketUnexpectedClose := websocket.IsUnexpectedCloseError(err)
-	isClosedWebsocket := errors.Is(err, net_ns.ErrClosingOrClosedWebsocketConn)
+	isClosedWebsocket := errors.Is(err, ws_ns.ErrClosingOrClosedWebsocketConn)
 	isNetReaderr := utils.Implements[*net.OpError](err) && err.(*net.OpError).Op == "read"
 
 	if isEof || isWebsocketUnexpectedClose || isClosedWebsocket || isNetReaderr {

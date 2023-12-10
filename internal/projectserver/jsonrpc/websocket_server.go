@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/globals/net_ns"
+	"github.com/inoxlang/inox/internal/globals/ws_ns"
 	netaddr "github.com/inoxlang/inox/internal/netaddr"
 	"github.com/inoxlang/inox/internal/projectserver/logs"
 	"github.com/rs/zerolog"
@@ -23,7 +23,7 @@ var (
 )
 
 type JsonRpcWebsocketServer struct {
-	wsServer  *net_ns.WebsocketServer
+	wsServer  *ws_ns.WebsocketServer
 	rpcServer *Server
 	logger    *zerolog.Logger
 
@@ -45,7 +45,7 @@ type JsonRpcWebsocketServerConfig struct {
 func NewJsonRpcWebsocketServer(ctx *core.Context, config JsonRpcWebsocketServerConfig) (*JsonRpcWebsocketServer, error) {
 	logger := ctx.NewChildLoggerForInternalSource(JSON_RPC_SERVER_LOG_SRC)
 
-	wsServer, err := net_ns.NewWebsocketServer(ctx)
+	wsServer, err := ws_ns.NewWebsocketServer(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create websocket server: %w", err)
 	}
@@ -93,7 +93,7 @@ func (server *JsonRpcWebsocketServer) HandleNew(httpRespWriter http.ResponseWrit
 func (server *JsonRpcWebsocketServer) allowNewConnection(
 	remoteAddrPort netaddr.RemoteAddrWithPort,
 	remoteAddr netaddr.RemoteIpAddr,
-	currentConns []*net_ns.WebsocketConnection) error {
+	currentConns []*ws_ns.WebsocketConnection) error {
 
 	if server.config.BehindCloudProxy {
 		if remoteAddr != "127.0.0.1" {
@@ -104,5 +104,5 @@ func (server *JsonRpcWebsocketServer) allowNewConnection(
 	if len(currentConns)+1 <= server.config.MaxWebsocketPerIp {
 		return nil
 	}
-	return net_ns.ErrTooManyWsConnectionsOnIp
+	return ws_ns.ErrTooManyWsConnectionsOnIp
 }
