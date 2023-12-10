@@ -934,7 +934,8 @@ fn add(a int, b int) int {
 }
 ```
 
-ℹ️ Parameters that don't have a type annotation defaults to the **any** type. This type is similar to **unknown** in Typescript.
+ℹ️ Parameters that don't have a type annotation defaults to the **any** type.
+This type is similar to **unknown** in Typescript.
 
 <details>
 
@@ -1073,7 +1074,6 @@ int = g!()
 > If you find an error in the documentation or a bug in the runtime, please
 > create an issue.
 
-
 ## Variadic Functions
 
 ```
@@ -1095,8 +1095,9 @@ print(sum(1, ...[2, 3]))
 
 ## Readonly Parameters (WIP)
 
-Putting `readonly` in front of a pattern prevents the mutation of values matching it.
-For now this is only supported for parameter patterns (parameter types). 
+Putting `readonly` in front of a pattern prevents the mutation of values
+matching it. For now this is only supported for parameter patterns (parameter
+types).
 
 ```
 fn f(integers readonly []int){
@@ -1400,22 +1401,44 @@ Supported schemes are: `http, https, ws, wss, ldb, odb, file, mem, s3`.
 URL patterns always have at least a path, a query or a fragment.
 `%https://example.com` is a **host pattern**, not a URL pattern.
 
-A URL pattern that ends with `/...` is a **prefix URL pattern**, it matches any
-URL that contains its prefix.
+- A URL pattern that ends with `/...` is a **prefix URL pattern**.
+  - It matches any URL that contains its prefix
+  - The query and fragment are ignored
+- All other URL patterns are considered **regular**.
+  - The tested URL's fragment is ignored if the pattern has no fragment or an
+    empty one
+  - The tested URL's query must match the pattern's query and additional
+    parameters are not allowed
 
-| pattern                          | value                                    | match ?                            |
-| -------------------------------- | ---------------------------------------- | ---------------------------------- |
-| `%https://example.com/...`       | `https://example.com/`                   | yes                                |
-| `%https://example.com/...`       | `https://example.com/index.html`         | yes                                |
-| `%https://example.com/...`       | `https://example.com/about/`             | yes                                |
-| `%https://example.com/...`       | `https://example.com/about/company.html` | yes                                |
-| `%https://example.com/...`       | `https://example.com:443/`               | no (that may change in the future) |
-| `%https://example.com/...`       | `https://example.com` (Host)             | no                                 |
-| ---                              | ---                                      | ---                                |
-| `%https://example.com/about/...` | `https://example.com/about/`             | yes                                |
-| `%https://example.com/about/...` | `https://example.com/about/company.html` | yes                                |
-| `%https://example.com/about/...` | `https://example.com/about`              | no                                 |
-| ---                              |                                          |                                    |
+| pattern                           | value                                    | match ?                            |
+| --------------------------------- | ---------------------------------------- | ---------------------------------- |
+| `%https://example.com/...`        | `https://example.com/`                   | yes                                |
+| `%https://example.com/...`        | `https://example.com/index.html`         | yes                                |
+| `%https://example.com/...`        | `https://example.com/index.html?x=1`     | yes                                |
+| `%https://example.com/...`        | `https://example.com/index.html#main`    | yes                                |
+| `%https://example.com/...`        | `https://example.com/about/`             | yes                                |
+| `%https://example.com/...`        | `https://example.com/about/company.html` | yes                                |
+| `%https://example.com/...`        | `https://example.com:443/`               | no (that may change in the future) |
+| `%https://example.com/...`        | `https://example.com` (Host)             | no                                 |
+| ---                               | ---                                      | ---                                |
+| `%https://example.com/about/...`  | `https://example.com/about/`             | yes                                |
+| `%https://example.com/about/...`  | `https://example.com/about/company.html` | yes                                |
+| `%https://example.com/about/...`  | `https://example.com/about`              | no                                 |
+| ---                               |                                          |                                    |
+| `%https://example.com/about`      | `https://example.com/about`              | yes                                |
+| `%https://example.com/about`      | `https://example.com/about?`             | yes                                |
+| `%https://example.com/about`      | `https://example.com/about#`             | yes                                |
+| `%https://example.com/about`      | `https://example.com/about?x=1`          | yes                                |
+| `%https://example.com/about`      | `https://example.com/about#main`         | yes                                |
+| `%https://example.com/about`      | `https://example.com/about/`             | no                                 |
+| ---                               |                                          |                                    |
+| `%https://example.com/about?x=1`  | `https://example.com/about?x=1`          | yes                                |
+| `%https://example.com/about?x=1`  | `https://example.com/about?x=1#main`     | yes                                |
+| `%https://example.com/about?x=1`  | `https://example.com/about`              | no                                 |
+| ---                               |                                          |                                    |
+| `%https://example.com/about#main` | `https://example.com/about#main`         | yes                                |
+| `%https://example.com/about#main` | `https://example.com/about`              | no                                 |
+| ---
 
 </details>
 
