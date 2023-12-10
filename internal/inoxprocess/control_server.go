@@ -18,7 +18,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/http_ns"
-	"github.com/inoxlang/inox/internal/globals/net_ns"
+	"github.com/inoxlang/inox/internal/globals/ws_ns"
 	netaddr "github.com/inoxlang/inox/internal/netaddr"
 	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
@@ -48,7 +48,7 @@ type ControlServer struct {
 	ctx             *core.Context
 	config          ControlServerConfig
 	port            string
-	websocketServer *net_ns.WebsocketServer
+	websocketServer *ws_ns.WebsocketServer
 
 	httpServer *http.Server
 	logger     zerolog.Logger
@@ -86,7 +86,7 @@ func NewControlServer(ctx *core.Context, config ControlServerConfig) (*ControlSe
 	s.logger = ctx.Logger().With().
 		Str(core.SOURCE_LOG_FIELD_NAME, CONTROL_SERVER_LOG_SRC+"/"+s.port).Logger()
 
-	websocketServer, err := net_ns.NewWebsocketServer(ctx)
+	websocketServer, err := ws_ns.NewWebsocketServer(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -168,7 +168,7 @@ func (s *ControlServer) Start() error {
 
 func (s *ControlServer) allowConnection(
 	remoteAddrPort netaddr.RemoteAddrWithPort,
-	remoteAddr netaddr.RemoteIpAddr, currentConns []*net_ns.WebsocketConnection) error {
+	remoteAddr netaddr.RemoteIpAddr, currentConns []*ws_ns.WebsocketConnection) error {
 
 	return nil
 }

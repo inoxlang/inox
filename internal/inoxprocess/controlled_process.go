@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/globals/net_ns"
+	"github.com/inoxlang/inox/internal/globals/ws_ns"
 	"github.com/inoxlang/inox/internal/inoxd/cloud/cloudproxy/inoxdconn"
 	"github.com/inoxlang/inox/internal/utils/processutils"
 	"github.com/oklog/ulid/v2"
@@ -27,7 +27,7 @@ type ControlledProcess struct {
 	logger zerolog.Logger
 	token  ControlledProcessToken
 	id     string //TODO: make this ID globally unique
-	socket *net_ns.WebsocketConnection
+	socket *ws_ns.WebsocketConnection
 
 	lock                 sync.Mutex
 	connected            chan struct{}
@@ -44,7 +44,7 @@ func (p *ControlledProcess) isAlreadyConnected() bool {
 	return p.socket != nil && !p.socket.IsClosedOrClosing()
 }
 
-func (p *ControlledProcess) setSocket(socket *net_ns.WebsocketConnection) error {
+func (p *ControlledProcess) setSocket(socket *ws_ns.WebsocketConnection) error {
 
 	p.lock.Lock()
 	defer p.lock.Unlock()
@@ -96,7 +96,7 @@ func (p *ControlledProcess) Stop(ctx *core.Context) {
 		return nil
 	})
 
-	err := p.socket.WriteMessage(ctx, net_ns.WebsocketBinaryMessage, MustEncodeMessage(stopAllRequest))
+	err := p.socket.WriteMessage(ctx, ws_ns.WebsocketBinaryMessage, MustEncodeMessage(stopAllRequest))
 	if err != nil {
 		p.kill()
 		return
@@ -118,7 +118,7 @@ func (p *ControlledProcess) Stop(ctx *core.Context) {
 			return
 		}
 
-		if msgType != net_ns.WebsocketBinaryMessage {
+		if msgType != ws_ns.WebsocketBinaryMessage {
 			continue
 		}
 
@@ -147,7 +147,7 @@ func (p *ControlledProcess) sendAck(ctx *core.Context, msgULID ulid.ULID) error 
 		Inner: AckMsg{AcknowledgedMessage: msgULID},
 	}
 
-	err := p.socket.WriteMessage(ctx, net_ns.WebsocketBinaryMessage, inoxdconn.MustEncodeMessage(ack))
+	err := p.socket.WriteMessage(ctx, ws_ns.WebsocketBinaryMessage, inoxdconn.MustEncodeMessage(ack))
 	if err != nil {
 		//TODO: log errors
 		return err

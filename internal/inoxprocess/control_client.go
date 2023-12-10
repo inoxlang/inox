@@ -14,7 +14,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/globals/net_ns"
+	"github.com/inoxlang/inox/internal/globals/ws_ns"
 	"github.com/inoxlang/inox/internal/inoxd/cloud/cloudproxy/inoxdconn"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/oklog/ulid/v2"
@@ -36,7 +36,7 @@ var (
 type ControlClient struct {
 	lock sync.Mutex
 
-	conn             *net_ns.WebsocketConnection
+	conn             *ws_ns.WebsocketConnection
 	reconnectAttemps atomic.Int32
 
 	ctx              *core.Context
@@ -70,7 +70,7 @@ func ConnectToProcessControlServer(ctx *core.Context, u *url.URL, token Controll
 	return client, nil
 }
 
-func (c *ControlClient) Conn() *net_ns.WebsocketConnection {
+func (c *ControlClient) Conn() *ws_ns.WebsocketConnection {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	return c.conn
@@ -93,7 +93,7 @@ func (c *ControlClient) connect() error {
 	c.ctx.Logger().Print("(re)connect to control server")
 
 	insecure := true
-	conn, err := net_ns.WebsocketConnect(net_ns.WebsocketConnectParams{
+	conn, err := ws_ns.WebsocketConnect(ws_ns.WebsocketConnectParams{
 		Ctx:      c.ctx,
 		URL:      c.controlServerURL,
 		Insecure: insecure,
@@ -207,7 +207,7 @@ func (c *ControlClient) StartControl() error {
 				ULID:  ulid.Make(),
 				Inner: resp,
 			}
-			conn.WriteMessage(c.ctx, net_ns.WebsocketBinaryMessage, MustEncodeMessage(msg))
+			conn.WriteMessage(c.ctx, ws_ns.WebsocketBinaryMessage, MustEncodeMessage(msg))
 		}
 		if endLoop {
 			return ErrControlLoopEnd
@@ -215,11 +215,11 @@ func (c *ControlClient) StartControl() error {
 	}
 }
 
-func (c *ControlClient) handleMessage(messageType net_ns.WebsocketMessageType, p []byte, err error) (response any, sendResp bool, endLoop bool) {
+func (c *ControlClient) handleMessage(messageType ws_ns.WebsocketMessageType, p []byte, err error) (response any, sendResp bool, endLoop bool) {
 	//TODO: log errors
 
 	switch messageType {
-	case net_ns.WebsocketBinaryMessage:
+	case ws_ns.WebsocketBinaryMessage:
 		if err != nil {
 			return
 		}
@@ -257,10 +257,10 @@ func (c *ControlClient) handleMessage(messageType net_ns.WebsocketMessageType, p
 			//TODO
 		}
 
-	case net_ns.WebsocketTextMessage:
-	case net_ns.WebsocketPingMessage:
-		c.conn.WriteMessage(c.ctx, net_ns.WebsocketPongMessage, nil)
-	case net_ns.WebsocketPongMessage:
+	case ws_ns.WebsocketTextMessage:
+	case ws_ns.WebsocketPingMessage:
+		c.conn.WriteMessage(c.ctx, ws_ns.WebsocketPongMessage, nil)
+	case ws_ns.WebsocketPongMessage:
 	}
 
 	return
@@ -273,7 +273,7 @@ func (c *ControlClient) sendAck(msgULID ulid.ULID) error {
 		Inner: AckMsg{AcknowledgedMessage: msgULID},
 	}
 
-	err := c.conn.WriteMessage(c.ctx, net_ns.WebsocketBinaryMessage, inoxdconn.MustEncodeMessage(ack))
+	err := c.conn.WriteMessage(c.ctx, ws_ns.WebsocketBinaryMessage, inoxdconn.MustEncodeMessage(ack))
 	if err != nil {
 		//TODO: log errors
 		return err

@@ -18,7 +18,7 @@ import (
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/globals/http_ns"
-	"github.com/inoxlang/inox/internal/globals/net_ns"
+	"github.com/inoxlang/inox/internal/globals/ws_ns"
 	"github.com/inoxlang/inox/internal/inoxd/cloud/account"
 	"github.com/inoxlang/inox/internal/inoxd/cloud/cloudproxy/inoxdconn"
 	"github.com/inoxlang/inox/internal/inoxd/consts"
@@ -126,14 +126,14 @@ type cloudProxy struct {
 	proxyLogger     zerolog.Logger
 	inoxdConnLogger zerolog.Logger
 
-	inoxdWebsocket     *net_ns.WebsocketConnection //connection to the inoxd process
+	inoxdWebsocket     *ws_ns.WebsocketConnection //connection to the inoxd process
 	inoxdWebsocketLock sync.Mutex
 
 	httpServerClosed atomic.Bool
 }
 
 func (p *cloudProxy) run() error {
-	wsServer, err := net_ns.NewWebsocketServer(p.ctx)
+	wsServer, err := ws_ns.NewWebsocketServer(p.ctx)
 
 	if err != nil {
 		return err
@@ -245,7 +245,7 @@ func (p *cloudProxy) run() error {
 	return fmt.Errorf("error from cloud proxy's HTTPS server: %w", err)
 }
 
-func (p *cloudProxy) allowConnection(remoteAddrPort netaddr.RemoteAddrWithPort, remoteAddr netaddr.RemoteIpAddr, currentConns []*net_ns.WebsocketConnection) error {
+func (p *cloudProxy) allowConnection(remoteAddrPort netaddr.RemoteAddrWithPort, remoteAddr netaddr.RemoteIpAddr, currentConns []*ws_ns.WebsocketConnection) error {
 	return nil
 }
 
@@ -276,7 +276,7 @@ func (p *cloudProxy) inoxdConnectionLoop() {
 		}
 
 		msgType, payload, err := conn.ReadMessage(p.ctx)
-		if msgType != net_ns.WebsocketBinaryMessage || err != nil {
+		if msgType != ws_ns.WebsocketBinaryMessage || err != nil {
 			//prevent panic due to repeated read
 			conn.Close()
 			p.inoxdWebsocketLock.Lock()
@@ -301,7 +301,7 @@ func (p *cloudProxy) inoxdConnectionLoop() {
 				Inner: inoxdconn.Ack{AcknowledgedMessage: msg.ULID},
 			}
 
-			err := conn.WriteMessage(p.ctx, net_ns.WebsocketBinaryMessage, inoxdconn.MustEncodeMessage(ack))
+			err := conn.WriteMessage(p.ctx, ws_ns.WebsocketBinaryMessage, inoxdconn.MustEncodeMessage(ack))
 			if err != nil {
 				p.inoxdConnLogger.Error().Err(err).Send()
 				continue
@@ -311,7 +311,7 @@ func (p *cloudProxy) inoxdConnectionLoop() {
 	}
 }
 
-func (p *cloudProxy) registerAccount(socket *net_ns.WebsocketConnection, hoster string) {
+func (p *cloudProxy) registerAccount(socket *ws_ns.WebsocketConnection, hoster string) {
 	defer utils.Recover()
 	defer socket.Close()
 
@@ -319,12 +319,12 @@ func (p *cloudProxy) registerAccount(socket *net_ns.WebsocketConnection, hoster 
 	//CreateAnonymousAccountInteractively will show information to the user and the user will send several inputs.
 	conn := &account.Connection{
 		PrintFn: func(text string) {
-			socket.WriteMessage(p.ctx, net_ns.WebsocketTextMessage, []byte(text))
+			socket.WriteMessage(p.ctx, ws_ns.WebsocketTextMessage, []byte(text))
 		},
 		ReadChan: make(chan string, 5),
 	}
 
-	receivedMsgChan := make(chan net_ns.WebsocketMessageChanItem, 10)
+	receivedMsgChan := make(chan ws_ns.WebsocketMessageChanItem, 10)
 	err := socket.StartReadingAllMessagesIntoChan(p.ctx, receivedMsgChan)
 	if err != nil {
 		//TODO: log errors (make sure to not write logs locally in order to not run ouf space).
@@ -340,7 +340,7 @@ func (p *cloudProxy) registerAccount(socket *net_ns.WebsocketConnection, hoster 
 			if item.Error != nil {
 				break
 			}
-			if item.Type != net_ns.WebsocketTextMessage {
+			if item.Type != ws_ns.WebsocketTextMessage {
 				continue
 			}
 			select {
