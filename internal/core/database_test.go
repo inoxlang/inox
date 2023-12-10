@@ -26,6 +26,8 @@ func TestDatabaseIL(t *testing.T) {
 	defer func() {
 		utils.AssertNoMemoryLeak(t, startMemStats, 10_000, utils.AssertNoMemoryLeakOptions{
 			PreSleepDurationMillis: 100,
+			CheckGoroutines:        true,
+			GoroutineCount:         runtime.NumGoroutine(),
 		})
 	}()
 

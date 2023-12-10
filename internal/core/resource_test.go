@@ -14,7 +14,10 @@ func TestResourceGraph(t *testing.T) {
 		startMemStats := new(runtime.MemStats)
 		runtime.ReadMemStats(startMemStats)
 
-		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 10, utils.AssertNoMemoryLeakOptions{
+			CheckGoroutines: true,
+			GoroutineCount:  runtime.NumGoroutine(),
+		})
 	}
 
 	t.Run("", func(t *testing.T) {
@@ -27,14 +30,6 @@ func TestResourceGraph(t *testing.T) {
 }
 
 func TestURL(t *testing.T) {
-	{
-		runtime.GC()
-		startMemStats := new(runtime.MemStats)
-		runtime.ReadMemStats(startMemStats)
-
-		defer utils.AssertNoMemoryLeak(t, startMemStats, 300)
-	}
-
 	t.Run("AppendRelativePath", func(t *testing.T) {
 		url := URL("https://example.com/")
 

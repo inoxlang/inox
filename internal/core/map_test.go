@@ -14,7 +14,10 @@ func TestMap(t *testing.T) {
 		startMemStats := new(runtime.MemStats)
 		runtime.ReadMemStats(startMemStats)
 
-		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 10, utils.AssertNoMemoryLeakOptions{
+			CheckGoroutines: true,
+			GoroutineCount:  runtime.NumGoroutine(),
+		})
 	}
 
 	t.Run("property name mapper", func(t *testing.T) {

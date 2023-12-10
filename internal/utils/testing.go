@@ -72,3 +72,13 @@ func AssertNoMemoryLeak(t *testing.T, startStats *runtime.MemStats, maxAllocDelt
 		}
 	}
 }
+
+// AssertNoGoroutineLeak checks
+func AssertNoGoroutineLeak(t *testing.T, startCount int) {
+	runtime.GC()
+
+	delta := runtime.NumGoroutine() - startCount
+	if delta > 0 {
+		assert.FailNowf(t, "goroutine leaks", "%d goroutines leaking", delta)
+	}
+}

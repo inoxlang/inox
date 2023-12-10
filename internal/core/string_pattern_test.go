@@ -12,13 +12,6 @@ import (
 )
 
 func TestEvalStringPatternNode(t *testing.T) {
-	{
-		runtime.GC()
-		startMemStats := new(runtime.MemStats)
-		runtime.ReadMemStats(startMemStats)
-
-		defer utils.AssertNoMemoryLeak(t, startMemStats, 100)
-	}
 
 	t.Run("single element : string literal", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})

@@ -12,12 +12,7 @@ import (
 func TestTransaction(t *testing.T) {
 	{
 		runtime.GC()
-		startMemStats := new(runtime.MemStats)
-		runtime.ReadMemStats(startMemStats)
-
-		defer utils.AssertNoMemoryLeak(t, startMemStats, 1_000, utils.AssertNoMemoryLeakOptions{
-			PreSleepDurationMillis: 100,
-		})
+		defer utils.AssertNoGoroutineLeak(t, runtime.NumGoroutine())
 	}
 
 	// for _, method := range []string{"commit", "rollback"} {

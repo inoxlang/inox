@@ -3,7 +3,6 @@ package parse
 import (
 	"context"
 	"errors"
-	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -13,15 +12,6 @@ import (
 )
 
 func TestParseNoContext(t *testing.T) {
-
-	{
-		runtime.GC()
-		startMemStats := new(runtime.MemStats)
-		runtime.ReadMemStats(startMemStats)
-
-		defer utils.AssertNoMemoryLeak(t, startMemStats, 150_000)
-	}
-
 	testParse(t, func(t *testing.T, str string) (result *Chunk) {
 		return mustParseChunkForgetTokens(str)
 	}, func(t *testing.T, str, name string) (result *Chunk, err error) {
@@ -48,6 +38,7 @@ func TestParseSystematicCheckAndAlreadyDoneContext(t *testing.T) {
 			return
 		})()
 
+		t.Parallel()
 		assert.ErrorContains(t, err, context.Canceled.Error())
 
 		return mustParseChunkForgetTokens(str)

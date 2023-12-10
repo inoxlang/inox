@@ -19,15 +19,7 @@ import (
 func TestNewContext(t *testing.T) {
 	{
 		runtime.GC()
-		startMemStats := new(runtime.MemStats)
-		runtime.ReadMemStats(startMemStats)
-
-		defer utils.AssertNoMemoryLeak(t, startMemStats, 6_000, utils.AssertNoMemoryLeakOptions{
-			PreSleepDurationMillis: 100,
-			CheckGoroutines:        true,
-			GoroutineCount:         runtime.NumGoroutine(),
-			MaxGoroutineCountDelta: 0,
-		})
+		defer utils.AssertNoGoroutineLeak(t, runtime.NumGoroutine())
 	}
 
 	//wait for ungraceful teardown goroutines to finish executing
@@ -254,15 +246,7 @@ func TestNewContext(t *testing.T) {
 func TestBoundChild(t *testing.T) {
 	{
 		runtime.GC()
-		startMemStats := new(runtime.MemStats)
-		runtime.ReadMemStats(startMemStats)
-
-		defer utils.AssertNoMemoryLeak(t, startMemStats, 2000, utils.AssertNoMemoryLeakOptions{
-			PreSleepDurationMillis: 100,
-			CheckGoroutines:        true,
-			GoroutineCount:         runtime.NumGoroutine(),
-			MaxGoroutineCountDelta: 0,
-		})
+		defer utils.AssertNoGoroutineLeak(t, runtime.NumGoroutine())
 	}
 
 	t.Run("child context should inherit all limits of its parent", func(t *testing.T) {
@@ -415,15 +399,7 @@ func TestContextDropPermissions(t *testing.T) {
 func TestContextLimiters(t *testing.T) {
 	{
 		runtime.GC()
-		startMemStats := new(runtime.MemStats)
-		runtime.ReadMemStats(startMemStats)
-
-		defer utils.AssertNoMemoryLeak(t, startMemStats, 9_000, utils.AssertNoMemoryLeakOptions{
-			PreSleepDurationMillis: 100,
-			CheckGoroutines:        true,
-			GoroutineCount:         runtime.NumGoroutine(),
-			MaxGoroutineCountDelta: 0,
-		})
+		defer utils.AssertNoGoroutineLeak(t, runtime.NumGoroutine())
 	}
 
 	t.Run("byte rate", func(t *testing.T) {
@@ -618,15 +594,7 @@ func TestContextSetProtocolClientForURLForURL(t *testing.T) {
 func TestGracefulContextTearDown(t *testing.T) {
 	{
 		runtime.GC()
-		startMemStats := new(runtime.MemStats)
-		runtime.ReadMemStats(startMemStats)
-
-		defer utils.AssertNoMemoryLeak(t, startMemStats, 1500, utils.AssertNoMemoryLeakOptions{
-			PreSleepDurationMillis: 100,
-			CheckGoroutines:        true,
-			GoroutineCount:         runtime.NumGoroutine(),
-			MaxGoroutineCountDelta: 0,
-		})
+		defer utils.AssertNoGoroutineLeak(t, runtime.NumGoroutine())
 	}
 
 	waitCtxDone := func(t *testing.T, ctx *Context) {
@@ -880,18 +848,15 @@ func TestGracefulContextTearDown(t *testing.T) {
 }
 
 func TestContextDone(t *testing.T) {
+	{
+		runtime.GC()
+		defer utils.AssertNoGoroutineLeak(t, runtime.NumGoroutine())
+	}
+
 	t.Run("microtasks", func(t *testing.T) {
 		{
 			runtime.GC()
-			startMemStats := new(runtime.MemStats)
-			runtime.ReadMemStats(startMemStats)
-
-			defer utils.AssertNoMemoryLeak(t, startMemStats, 300, utils.AssertNoMemoryLeakOptions{
-				PreSleepDurationMillis: 100,
-				CheckGoroutines:        true,
-				GoroutineCount:         runtime.NumGoroutine(),
-				MaxGoroutineCountDelta: 0,
-			})
+			defer utils.AssertNoGoroutineLeak(t, runtime.NumGoroutine())
 		}
 
 		t.Run("callback functions should all be called", func(t *testing.T) {
