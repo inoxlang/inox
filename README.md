@@ -469,9 +469,7 @@ h.close()
 
 ---
 
-<details>
-
-**<summary>Security Features: permissions, secrets, injection prevention**</summary>
+[Skip security feature sections](#concurrency)
 
 ### Permission System
 
@@ -741,8 +739,6 @@ URL expression: result of a path interpolation should not contain any of the fol
 ```
 
 </details>
-
-</details> <!-- security features-->
 
 ---
 
