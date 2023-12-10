@@ -1210,7 +1210,7 @@ func TestPreInit(t *testing.T) {
 					parameters: {}
 				}`,
 			error:                     true,
-			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("parameters")},
+			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("parameters", SpecModule)},
 			expectedLimits:            []Limit{},
 		},
 
@@ -1222,19 +1222,19 @@ func TestPreInit(t *testing.T) {
 					parameters: {}
 				}`,
 			error:                     true,
-			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("parameters")},
+			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("parameters", LifetimeJobModule)},
 			expectedLimits:            []Limit{},
 		},
 
 		{
 			name:       "the parameters section is not allowed in lthread modules",
-			moduleKind: LThreadSpawnedEventType,
+			moduleKind: UserLThreadModule,
 			module: `
 				manifest {
 					parameters: {}
 				}`,
 			error:                     true,
-			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("parameters")},
+			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("parameters", UserLThreadModule)},
 			expectedLimits:            []Limit{},
 		},
 
@@ -1246,7 +1246,7 @@ func TestPreInit(t *testing.T) {
 					parameters: {}
 				}`,
 			error:                     true,
-			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("parameters")},
+			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("parameters", TestSuiteModule)},
 			expectedLimits:            []Limit{},
 		},
 		{
@@ -1257,7 +1257,7 @@ func TestPreInit(t *testing.T) {
 					parameters: {}
 				}`,
 			error:                     true,
-			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("parameters")},
+			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("parameters", TestCaseModule)},
 			expectedLimits:            []Limit{},
 		},
 
@@ -1271,7 +1271,7 @@ func TestPreInit(t *testing.T) {
 					databases: {}
 				}`,
 			error:                     true,
-			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("databases")},
+			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("databases", SpecModule)},
 			expectedLimits:            []Limit{},
 		},
 
@@ -1283,19 +1283,19 @@ func TestPreInit(t *testing.T) {
 					databases: {}
 				}`,
 			error:                     true,
-			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("databases")},
+			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("databases", LifetimeJobModule)},
 			expectedLimits:            []Limit{},
 		},
 
 		{
 			name:       "the databases section is not allowed in lthread modules",
-			moduleKind: LThreadSpawnedEventType,
+			moduleKind: UserLThreadModule,
 			module: `
 				manifest {
 					databases: {}
 				}`,
 			error:                     true,
-			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("databases")},
+			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("databases", UserLThreadModule)},
 			expectedLimits:            []Limit{},
 		},
 
@@ -1307,7 +1307,7 @@ func TestPreInit(t *testing.T) {
 					databases: {}
 				}`,
 			error:                     true,
-			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("databases")},
+			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("databases", TestSuiteModule)},
 			expectedLimits:            []Limit{},
 		},
 		{
@@ -1318,7 +1318,7 @@ func TestPreInit(t *testing.T) {
 					databases: {}
 				}`,
 			error:                     true,
-			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("databases")},
+			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("databases", TestCaseModule)},
 			expectedLimits:            []Limit{},
 		},
 
@@ -1332,7 +1332,7 @@ func TestPreInit(t *testing.T) {
 						parameters: {}
 					}`,
 			error:                     true,
-			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("parameters")},
+			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("parameters", SpecModule)},
 			expectedLimits:            []Limit{},
 		},
 
@@ -1344,19 +1344,19 @@ func TestPreInit(t *testing.T) {
 						parameters: {}
 					}`,
 			error:                     true,
-			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("parameters")},
+			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("parameters", LifetimeJobModule)},
 			expectedLimits:            []Limit{},
 		},
 
 		{
 			name:       "the parameters section is not allowed in lthread modules",
-			moduleKind: LThreadSpawnedEventType,
+			moduleKind: UserLThreadModule,
 			module: `
 					manifest {
 						parameters: {}
 					}`,
 			error:                     true,
-			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("parameters")},
+			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("parameters", UserLThreadModule)},
 			expectedLimits:            []Limit{},
 		},
 
@@ -1368,7 +1368,7 @@ func TestPreInit(t *testing.T) {
 						parameters: {}
 					}`,
 			error:                     true,
-			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("parameters")},
+			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("parameters", TestSuiteModule)},
 			expectedLimits:            []Limit{},
 		},
 		{
@@ -1379,7 +1379,7 @@ func TestPreInit(t *testing.T) {
 						parameters: {}
 					}`,
 			error:                     true,
-			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("parameters")},
+			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("parameters", TestCaseModule)},
 			expectedLimits:            []Limit{},
 		},
 
@@ -1393,7 +1393,7 @@ func TestPreInit(t *testing.T) {
 						invocation: {}
 					}`,
 			error:                     true,
-			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("invocation")},
+			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("invocation", SpecModule)},
 			expectedLimits:            []Limit{},
 		},
 
@@ -1405,19 +1405,19 @@ func TestPreInit(t *testing.T) {
 						invocation: {}
 					}`,
 			error:                     true,
-			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("invocation")},
+			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("invocation", LifetimeJobModule)},
 			expectedLimits:            []Limit{},
 		},
 
 		{
 			name:       "the invocation section is not allowed in lthread modules",
-			moduleKind: LThreadSpawnedEventType,
+			moduleKind: UserLThreadModule,
 			module: `
 					manifest {
 						invocation: {}
 					}`,
 			error:                     true,
-			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("invocation")},
+			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("invocation", UserLThreadModule)},
 			expectedLimits:            []Limit{},
 		},
 
@@ -1429,7 +1429,7 @@ func TestPreInit(t *testing.T) {
 						invocation: {}
 					}`,
 			error:                     true,
-			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("invocation")},
+			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("invocation", TestSuiteModule)},
 			expectedLimits:            []Limit{},
 		},
 		{
@@ -1440,7 +1440,7 @@ func TestPreInit(t *testing.T) {
 						invocation: {}
 					}`,
 			error:                     true,
-			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("invocation")},
+			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("invocation", TestCaseModule)},
 			expectedLimits:            []Limit{},
 		},
 
@@ -1454,7 +1454,7 @@ func TestPreInit(t *testing.T) {
 						preinit-files: {}
 					}`,
 			error:                     true,
-			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("preinit-files")},
+			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("preinit-files", SpecModule)},
 			expectedLimits:            []Limit{},
 		},
 
@@ -1466,19 +1466,19 @@ func TestPreInit(t *testing.T) {
 						preinit-files: {}
 					}`,
 			error:                     true,
-			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("preinit-files")},
+			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("preinit-files", LifetimeJobModule)},
 			expectedLimits:            []Limit{},
 		},
 
 		{
 			name:       "the preinit-files section is not allowed in lthread modules",
-			moduleKind: LThreadSpawnedEventType,
+			moduleKind: UserLThreadModule,
 			module: `
 					manifest {
 						preinit-files: {}
 					}`,
 			error:                     true,
-			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("preinit-files")},
+			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("preinit-files", UserLThreadModule)},
 			expectedLimits:            []Limit{},
 		},
 
@@ -1490,7 +1490,7 @@ func TestPreInit(t *testing.T) {
 						preinit-files: {}
 					}`,
 			error:                     true,
-			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("preinit-files")},
+			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("preinit-files", TestSuiteModule)},
 			expectedLimits:            []Limit{},
 		},
 		{
@@ -1501,7 +1501,7 @@ func TestPreInit(t *testing.T) {
 						preinit-files: {}
 					}`,
 			error:                     true,
-			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("preinit-files")},
+			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("preinit-files", TestCaseModule)},
 			expectedLimits:            []Limit{},
 		},
 
@@ -1515,7 +1515,7 @@ func TestPreInit(t *testing.T) {
 							env: {}
 						}`,
 			error:                     true,
-			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("env")},
+			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("env", SpecModule)},
 			expectedLimits:            []Limit{},
 		},
 
@@ -1527,19 +1527,19 @@ func TestPreInit(t *testing.T) {
 							env: {}
 						}`,
 			error:                     true,
-			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("env")},
+			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("env", LifetimeJobModule)},
 			expectedLimits:            []Limit{},
 		},
 
 		{
 			name:       "the env section is not allowed in lthread modules",
-			moduleKind: LThreadSpawnedEventType,
+			moduleKind: UserLThreadModule,
 			module: `
 						manifest {
 							env: {}
 						}`,
 			error:                     true,
-			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("env")},
+			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("env", UserLThreadModule)},
 			expectedLimits:            []Limit{},
 		},
 
@@ -1551,7 +1551,7 @@ func TestPreInit(t *testing.T) {
 							env: {}
 						}`,
 			error:                     true,
-			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("env")},
+			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("env", TestSuiteModule)},
 			expectedLimits:            []Limit{},
 		},
 		{
@@ -1562,7 +1562,7 @@ func TestPreInit(t *testing.T) {
 							env: {}
 						}`,
 			error:                     true,
-			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("env")},
+			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("env", TestCaseModule)},
 			expectedLimits:            []Limit{},
 		},
 

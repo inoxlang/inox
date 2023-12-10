@@ -2213,7 +2213,7 @@ func checkManifestObject(args manifestStaticCheckArguments) {
 		sectionName := p.Name()
 		allowedSectionNames := MODULE_KIND_TO_ALLOWED_SECTION_NAMES[args.moduleKind]
 		if !slices.Contains(allowedSectionNames, sectionName) {
-			onError(p.Key, fmtTheXSectionIsNotAllowedForTheCurrentModuleKind(sectionName))
+			onError(p.Key, fmtTheXSectionIsNotAllowedForTheCurrentModuleKind(sectionName, args.moduleKind))
 			continue
 		}
 
