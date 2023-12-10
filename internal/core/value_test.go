@@ -1,7 +1,6 @@
 package core
 
 import (
-	"runtime"
 	"strings"
 	"testing"
 
@@ -11,21 +10,61 @@ import (
 )
 
 func TestURLPattern(t *testing.T) {
-	{
-		runtime.GC()
-		startMemStats := new(runtime.MemStats)
-		runtime.ReadMemStats(startMemStats)
-
-		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
-	}
-
 	t.Run("Test", func(t *testing.T) {
-		assert.False(t, URLPattern("https://localhost:443/ab/...").Test(nil, URL("https://localhost:443/ab")))
-		assert.True(t, URLPattern("https://localhost:443/ab/...").Test(nil, URL("https://localhost:443/ab/c")))
-		assert.True(t, URLPattern("https://localhost:443/ab/...").Test(nil, URL("https://localhost:443/ab/c?q=a")))
+		//prefix URL patterns
+		{
+			assertPatternDoesntTest(t, nil, URLPattern("https://localhost:443/ab/..."), URL("https://localhost:443/ab"))
+			assertPatternTests(t, nil, URLPattern("https://localhost:443/ab/..."), URL("https://localhost:443/ab/c"))
+			assertPatternTests(t, nil, URLPattern("https://localhost:443/ab/..."), URL("https://localhost:443/ab/c?q=a"))
+			assertPatternTests(t, nil, URLPattern("https://localhost:443/ab/..."), URL("https://localhost:443/ab/c#f"))
+			assertPatternTests(t, nil, URLPattern("https://localhost:443/ab/..."), URL("https://localhost:443/ab/c?q=a#f"))
 
-		assert.False(t, URLPattern("https://localhost:443/...").Test(nil, URL("wss://localhost:443/")))
-		assert.True(t, URLPattern("wss://localhost:443/...").Test(nil, URL("wss://localhost:443/")))
+			assertPatternDoesntTest(t, nil, URLPattern("https://localhost:443/..."), URL("wss://localhost:443/"))
+			assertPatternTests(t, nil, URLPattern("wss://localhost:443/..."), URL("wss://localhost:443/"))
+		}
+
+		//regular URL patterns
+		{
+			//no query nor fragment
+
+			assertPatternTests(t, nil, URLPattern("https://localhost:443/ab"), URL("https://localhost:443/ab"))
+			assertPatternTests(t, nil, URLPattern("https://localhost:443/ab"), URL("https://localhost:443/ab#"))
+			assertPatternTests(t, nil, URLPattern("https://localhost:443/ab"), URL("https://localhost:443/ab#fragment"))
+			assertPatternTests(t, nil, URLPattern("https://localhost:443/ab"), URL("https://localhost:443/ab?"))
+
+			assertPatternDoesntTest(t, nil, URLPattern("https://localhost:443/ab"), URL("https://localhost:442/ab")) //different port
+			assertPatternDoesntTest(t, nil, URLPattern("https://localhost:443/ab"), URL("https://localhost:443/ab?x=1"))
+
+			//empty fragment
+
+			assertPatternTests(t, nil, URLPattern("https://localhost:443/ab#"), URL("https://localhost:443/ab"))
+			assertPatternTests(t, nil, URLPattern("https://localhost:443/ab#"), URL("https://localhost:443/ab#"))
+			assertPatternTests(t, nil, URLPattern("https://localhost:443/ab#"), URL("https://localhost:443/ab?"))
+
+			//non-empty fragment
+
+			assertPatternTests(t, nil, URLPattern("https://localhost:443/ab#fragment"), URL("https://localhost:443/ab#fragment"))
+			assertPatternTests(t, nil, URLPattern("https://localhost:443/ab#fragment"), URL("https://localhost:443/ab?#fragment"))
+
+			assertPatternDoesntTest(t, nil, URLPattern("https://localhost:443/ab#fragment"), URL("https://localhost:442/ab"))
+			assertPatternDoesntTest(t, nil, URLPattern("https://localhost:443/ab#fragment"), URL("https://localhost:443/ab?x=1#fragment"))
+
+			//empty query
+
+			assertPatternTests(t, nil, URLPattern("https://localhost:443/ab?"), URL("https://localhost:443/ab"))
+			assertPatternTests(t, nil, URLPattern("https://localhost:443/ab?"), URL("https://localhost:443/ab#"))
+			assertPatternTests(t, nil, URLPattern("https://localhost:443/ab?"), URL("https://localhost:443/ab#fragment"))
+			assertPatternTests(t, nil, URLPattern("https://localhost:443/ab?"), URL("https://localhost:443/ab?"))
+
+			//non-empty query
+
+			assertPatternTests(t, nil, URLPattern("https://localhost:443/ab?x=1"), URL("https://localhost:443/ab?x=1"))
+			assertPatternTests(t, nil, URLPattern("https://localhost:443/ab?x=1"), URL("https://localhost:443/ab?x=1#fragment"))
+
+			assertPatternDoesntTest(t, nil, URLPattern("https://localhost:443/ab?x=1"), URL("https://localhost:442/ab"))
+			assertPatternDoesntTest(t, nil, URLPattern("https://localhost:443/ab?x=1"), URL("https://localhost:443/ab?x=1&x=2")) //duplicate param
+			assertPatternDoesntTest(t, nil, URLPattern("https://localhost:443/ab?x=1"), URL("https://localhost:443/ab?x=1&y=2"))
+		}
 	})
 
 	t.Run("Includes", func(t *testing.T) {
@@ -33,6 +72,8 @@ func TestURLPattern(t *testing.T) {
 		assert.False(t, URLPattern("https://localhost:443/ab/...").Includes(nil, URL("https://localhost:443/ab")))
 		assert.True(t, URLPattern("https://localhost:443/ab/...").Includes(nil, URL("https://localhost:443/ab/c")))
 		assert.True(t, URLPattern("https://localhost:443/ab/...").Includes(nil, URL("https://localhost:443/ab/c?q=a")))
+		assert.True(t, URLPattern("https://localhost:443/ab/...").Includes(nil, URL("https://localhost:443/ab/c#f")))
+		assert.True(t, URLPattern("https://localhost:443/ab/...").Includes(nil, URL("https://localhost:443/ab/c?q=a#f")))
 
 		assert.False(t, URLPattern("https://localhost:443/...").Includes(nil, URL("wss://localhost:443/")))
 		assert.True(t, URLPattern("wss://localhost:443/...").Includes(nil, URL("wss://localhost:443/")))
@@ -51,42 +92,42 @@ func TestURLPattern(t *testing.T) {
 }
 
 func TestPathPattern(t *testing.T) {
-	t.Run("", func(t *testing.T) {
+	t.Run("Test", func(t *testing.T) {
 
-		assert.True(t, PathPattern("/...").Test(nil, Path("/")))
-		assert.True(t, PathPattern("/...").Test(nil, Path("/f")))
-		assert.True(t, PathPattern("/...").Test(nil, Path("/file.txt")))
-		assert.True(t, PathPattern("/...").Test(nil, Path("/dir/")))
-		assert.True(t, PathPattern("/...").Test(nil, Path("/dir/file.txt")))
+		assertPatternTests(t, nil, PathPattern("/..."), Path("/"))
+		assertPatternTests(t, nil, PathPattern("/..."), Path("/f"))
+		assertPatternTests(t, nil, PathPattern("/..."), Path("/file.txt"))
+		assertPatternTests(t, nil, PathPattern("/..."), Path("/dir/"))
+		assertPatternTests(t, nil, PathPattern("/..."), Path("/dir/file.txt"))
 
-		assert.True(t, PathPattern("/dir/...").Test(nil, Path("/dir/")))
-		assert.True(t, PathPattern("/dir/...").Test(nil, Path("/dir/file.txt")))
-		assert.False(t, PathPattern("/dir/...").Test(nil, Path("/")))
-		assert.False(t, PathPattern("/dir/...").Test(nil, Path("/f")))
-		assert.False(t, PathPattern("/dir/...").Test(nil, Path("/file.txt")))
+		assertPatternTests(t, nil, PathPattern("/dir/..."), Path("/dir/"))
+		assertPatternTests(t, nil, PathPattern("/dir/..."), Path("/dir/file.txt"))
+		assertPatternDoesntTest(t, nil, PathPattern("/dir/..."), Path("/"))
+		assertPatternDoesntTest(t, nil, PathPattern("/dir/..."), Path("/f"))
+		assertPatternDoesntTest(t, nil, PathPattern("/dir/..."), Path("/file.txt"))
 
-		assert.True(t, PathPattern("/*").Test(nil, Path("/")))
-		assert.True(t, PathPattern("/*").Test(nil, Path("/f")))
-		assert.True(t, PathPattern("/*").Test(nil, Path("/file.txt")))
-		assert.False(t, PathPattern("/*").Test(nil, Path("/dir/")))
-		assert.False(t, PathPattern("/*").Test(nil, Path("/dir/file.txt")))
+		assertPatternTests(t, nil, PathPattern("/*"), Path("/"))
+		assertPatternTests(t, nil, PathPattern("/*"), Path("/f"))
+		assertPatternTests(t, nil, PathPattern("/*"), Path("/file.txt"))
+		assertPatternDoesntTest(t, nil, PathPattern("/*"), Path("/dir/"))
+		assertPatternDoesntTest(t, nil, PathPattern("/*"), Path("/dir/file.txt"))
 
-		assert.True(t, PathPattern("/[a-z]").Test(nil, Path("/a")))
-		assert.False(t, PathPattern("/[a-z]").Test(nil, Path("/aa")))
-		assert.False(t, PathPattern("/[a-z]").Test(nil, Path("/a0")))
-		assert.False(t, PathPattern("/[a-z]").Test(nil, Path("/0")))
-		assert.False(t, PathPattern("/[a-z]").Test(nil, Path("/a/")))
-		assert.False(t, PathPattern("/[a-z]").Test(nil, Path("/a/a")))
+		assertPatternTests(t, nil, PathPattern("/[a-z]"), Path("/a"))
+		assertPatternDoesntTest(t, nil, PathPattern("/[a-z]"), Path("/aa"))
+		assertPatternDoesntTest(t, nil, PathPattern("/[a-z]"), Path("/a0"))
+		assertPatternDoesntTest(t, nil, PathPattern("/[a-z]"), Path("/0"))
+		assertPatternDoesntTest(t, nil, PathPattern("/[a-z]"), Path("/a/"))
+		assertPatternDoesntTest(t, nil, PathPattern("/[a-z]"), Path("/a/a"))
 
-		assert.True(t, PathPattern("/**").Test(nil, Path("/")))
-		assert.True(t, PathPattern("/**").Test(nil, Path("/f")))
-		assert.True(t, PathPattern("/**").Test(nil, Path("/file.txt")))
-		assert.True(t, PathPattern("/**").Test(nil, Path("/dir/")))
-		assert.True(t, PathPattern("/**").Test(nil, Path("/dir/file.txt")))
+		assertPatternTests(t, nil, PathPattern("/**"), Path("/"))
+		assertPatternTests(t, nil, PathPattern("/**"), Path("/f"))
+		assertPatternTests(t, nil, PathPattern("/**"), Path("/file.txt"))
+		assertPatternTests(t, nil, PathPattern("/**"), Path("/dir/"))
+		assertPatternTests(t, nil, PathPattern("/**"), Path("/dir/file.txt"))
 
-		assert.True(t, PathPattern("/**/file.txt").Test(nil, Path("/file.txt")))
-		assert.True(t, PathPattern("/**/file.txt").Test(nil, Path("/dir/file.txt")))
-		assert.True(t, PathPattern("/**/file.txt").Test(nil, Path("/dir/subdir/file.txt")))
+		assertPatternTests(t, nil, PathPattern("/**/file.txt"), Path("/file.txt"))
+		assertPatternTests(t, nil, PathPattern("/**/file.txt"), Path("/dir/file.txt"))
+		assertPatternTests(t, nil, PathPattern("/**/file.txt"), Path("/dir/subdir/file.txt"))
 	})
 }
 

@@ -935,81 +935,6 @@ func (HostPattern) SetProp(ctx *Context, name string, value Value) error {
 	return ErrCannotSetProp
 }
 
-type EmailAddress string
-
-// NormalizeEmailAddress checks and normalize the provided address.
-func NormalizeEmailAddress(s string) (EmailAddress, error) {
-	_, err := mail.ParseAddress(s)
-	if err != nil {
-		return "", ErrInvalidEmailAdddres
-
-	}
-	return EmailAddress(defaultEmailNormalizer.Normalize(s)), nil
-}
-
-func (addr EmailAddress) UnderlyingString() string {
-	return string(addr)
-}
-
-func (addr EmailAddress) PropertyNames(ctx *Context) []string {
-	return EMAIL_ADDR_PROPNAMES
-}
-
-func (addr EmailAddress) Prop(ctx *Context, name string) Value {
-	switch name {
-	case "username":
-		return Str(strings.Split(string(addr), "@")[0])
-	case "domain":
-		domain := strings.Split(string(addr), "@")[1]
-		return Host("://" + domain)
-	default:
-		return nil
-	}
-}
-
-func (EmailAddress) SetProp(ctx *Context, name string, value Value) error {
-	return ErrCannotSetProp
-}
-
-type URLPattern string
-
-func (patt URLPattern) UnderlyingString() string {
-	return string(patt)
-}
-
-func (u URLPattern) Scheme() Scheme {
-	url, _ := url.Parse(string(u))
-	return Scheme(url.Scheme)
-}
-
-func (patt URLPattern) IsPrefixPattern() bool {
-	return strings.HasSuffix(string(patt), PREFIX_PATH_PATTERN_SUFFIX)
-}
-
-func (patt URLPattern) Prefix() string {
-	return string(patt[0 : len(patt)-len("...")])
-}
-
-func (patt URLPattern) PropertyNames(ctx *Context) []string {
-	return nil
-}
-
-func (patt URLPattern) Prop(ctx *Context, name string) Value {
-	return nil
-}
-
-func (URLPattern) SetProp(ctx *Context, name string, value Value) error {
-	return ErrCannotSetProp
-}
-
-func (URLPattern) Call(values []Serializable) (Pattern, error) {
-	return nil, ErrPatternNotCallable
-}
-
-func (URLPattern) StringPattern() (StringPattern, bool) {
-	return nil, false
-}
-
 func (patt HostPattern) Scheme() Scheme {
 	return Scheme(strings.Split(string(patt), "://")[0])
 }
@@ -1104,6 +1029,86 @@ func (patt HostPattern) includesPattern(otherPattern HostPattern) bool {
 	return patt == otherPattern
 }
 
+type EmailAddress string
+
+// NormalizeEmailAddress checks and normalize the provided address.
+func NormalizeEmailAddress(s string) (EmailAddress, error) {
+	_, err := mail.ParseAddress(s)
+	if err != nil {
+		return "", ErrInvalidEmailAdddres
+
+	}
+	return EmailAddress(defaultEmailNormalizer.Normalize(s)), nil
+}
+
+func (addr EmailAddress) UnderlyingString() string {
+	return string(addr)
+}
+
+func (addr EmailAddress) PropertyNames(ctx *Context) []string {
+	return EMAIL_ADDR_PROPNAMES
+}
+
+func (addr EmailAddress) Prop(ctx *Context, name string) Value {
+	switch name {
+	case "username":
+		return Str(strings.Split(string(addr), "@")[0])
+	case "domain":
+		domain := strings.Split(string(addr), "@")[1]
+		return Host("://" + domain)
+	default:
+		return nil
+	}
+}
+
+func (EmailAddress) SetProp(ctx *Context, name string, value Value) error {
+	return ErrCannotSetProp
+}
+
+type URLPattern string
+
+func (patt URLPattern) UnderlyingString() string {
+	return string(patt)
+}
+
+func (patt URLPattern) Scheme() Scheme {
+	url, _ := url.Parse(string(patt))
+	return Scheme(url.Scheme)
+}
+
+func (patt URLPattern) IsPrefixPattern() bool {
+	p := string(patt)
+
+	return !strings.ContainsAny(p, "?#") && strings.HasSuffix(p, PREFIX_PATH_PATTERN_SUFFIX)
+}
+
+func (patt URLPattern) Prefix() string {
+	if !patt.IsPrefixPattern() {
+		return string(patt)
+	}
+	return string(patt[0 : len(patt)-len("...")])
+}
+
+func (patt URLPattern) PropertyNames(ctx *Context) []string {
+	return nil
+}
+
+func (patt URLPattern) Prop(ctx *Context, name string) Value {
+	return nil
+}
+
+func (URLPattern) SetProp(ctx *Context, name string, value Value) error {
+	return ErrCannotSetProp
+}
+
+func (URLPattern) Call(values []Serializable) (Pattern, error) {
+	return nil, ErrPatternNotCallable
+}
+
+func (URLPattern) StringPattern() (StringPattern, bool) {
+	return nil, false
+}
+
 func (patt URLPattern) Test(ctx *Context, v Value) bool {
 	u, ok := v.(URL)
 	if !ok {
@@ -1121,15 +1126,75 @@ func (patt URLPattern) Includes(ctx *Context, v Value) bool {
 	case HostPattern, Host:
 		return false
 	case URL:
-		queryIndex := strings.Index(string(other), "?")
-		if queryIndex > 0 {
-			other = other[:queryIndex]
+		if patt.IsPrefixPattern() {
+			// ignore the query and fragment parts
+			queryIndex := strings.Index(string(other), "?")
+			if queryIndex > 0 {
+				other = other[:queryIndex]
+			}
+
+			fragmentIndex := strings.Index(string(other), "#")
+			if fragmentIndex > 0 {
+				other = other[:fragmentIndex]
+			}
+
+			return strings.HasPrefix(string(other), patt.Prefix())
 		}
 
-		return strings.HasPrefix(string(other), patt.Prefix())
-	case URLPattern:
-		//TODO: support globbing URL patterns
+		//else not a prefix pattern
 
+		url := other.mustParse()
+		patternURL := utils.Must(url.Parse(string(patt)))
+
+		//check host and scheme
+		if url.Host != patternURL.Host || url.Scheme != patternURL.Scheme {
+			return false
+		}
+
+		//check fragment if the pattern has a non-empty one
+		if patternURL.Fragment != "" && url.Fragment != patternURL.Fragment {
+			return false
+		}
+
+		//check the path
+
+		pathOfOther := url.Path
+		if pathOfOther == "" {
+			pathOfOther = "/"
+		}
+		pathOfPattern := patternURL.Path
+		if pathOfPattern == "" {
+			pathOfPattern = "/"
+		}
+
+		if pathOfOther != pathOfPattern {
+			return false
+		}
+
+		//check the query
+
+		patternQuery := patternURL.Query()
+
+		for name, values := range url.Query() {
+			if len(values) >= 2 {
+				//never match URLs with duplicate query parameters
+				return false
+			}
+
+			valuePatterns, ok := patternQuery[name]
+			if !ok || len(valuePatterns) != 1 {
+				//never match URLs if the pattern is invalid
+				return false
+			}
+			valuePattern := valuePatterns[0]
+
+			if values[0] != valuePattern {
+				return false
+			}
+		}
+
+		return true
+	case URLPattern:
 		if patt.IsPrefixPattern() {
 			prefix := patt.Prefix()
 

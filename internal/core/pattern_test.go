@@ -393,3 +393,13 @@ func TestSimplifyIntersection(t *testing.T) {
 	})
 
 }
+
+func assertPatternTests(t *testing.T, ctx *Context, p Pattern, v Value) {
+	t.Helper()
+	assert.True(t, p.Test(ctx, v))
+}
+
+func assertPatternDoesntTest(t *testing.T, ctx *Context, p Pattern, v Value) {
+	t.Helper()
+	assert.False(t, p.Test(ctx, v))
+}
