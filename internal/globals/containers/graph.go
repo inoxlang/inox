@@ -7,7 +7,7 @@ import (
 	"sync/atomic"
 
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/in_mem_ds"
+	"github.com/inoxlang/inox/internal/memds"
 )
 
 const (
@@ -30,11 +30,11 @@ var (
 func NewGraph(ctx *core.Context, nodeData *core.List, edges *core.List) *Graph {
 
 	g := &Graph{
-		graph: in_mem_ds.NewDirectedGraph[core.Value, struct{}](in_mem_ds.ThreadSafe),
-		roots: make(map[in_mem_ds.NodeId]bool),
+		graph: memds.NewDirectedGraph[core.Value, struct{}](memds.ThreadSafe),
+		roots: make(map[memds.NodeId]bool),
 	}
 
-	nodeIds := make([]in_mem_ds.NodeId, nodeData.Len())
+	nodeIds := make([]memds.NodeId, nodeData.Len())
 
 	nodeCount := nodeData.Len()
 	for i := 0; i < nodeCount; i++ {
@@ -62,8 +62,8 @@ func NewGraph(ctx *core.Context, nodeData *core.List, edges *core.List) *Graph {
 }
 
 type Graph struct {
-	graph     *in_mem_ds.DirectedGraph[core.Value, struct{}, struct{}]
-	roots     map[in_mem_ds.NodeId]bool
+	graph     *memds.DirectedGraph[core.Value, struct{}, struct{}]
+	roots     map[memds.NodeId]bool
 	rootsLock sync.Mutex
 }
 
@@ -115,7 +115,7 @@ func (g *Graph) Connect(ctx *core.Context, from, to *GraphNode) {
 	g._connect(from.id, to.id)
 }
 
-func (g *Graph) _connect(fromId, toId in_mem_ds.NodeId) {
+func (g *Graph) _connect(fromId, toId memds.NodeId) {
 	if g.roots[toId] {
 		delete(g.roots, toId)
 
@@ -162,9 +162,9 @@ func (g *Graph) Walker(*core.Context) (core.Walker, error) {
 		return newEmptyGraphWalker(), nil
 	}
 
-	visited := make(map[in_mem_ds.NodeId]bool, length)
-	stack := make([]in_mem_ds.NodeId, len(g.roots))
-	current := in_mem_ds.NodeId(-1)
+	visited := make(map[memds.NodeId]bool, length)
+	stack := make([]memds.NodeId, len(g.roots))
+	current := memds.NodeId(-1)
 	firstChildStackIndex := -1 //used for pruning
 
 	if len(g.roots) == 0 { //no roots
@@ -215,7 +215,7 @@ func (g *Graph) Walker(*core.Context) (core.Walker, error) {
 
 			//if the number of nodes is too small compared to the capacity of the stack we shrink the stack
 			if len(stack) >= minNodeShrinkableStackLength && len(stack) <= cap(stack)/nodeStackShrinkDivider {
-				newStack := make([]in_mem_ds.NodeId, len(stack))
+				newStack := make([]memds.NodeId, len(stack))
 				copy(newStack, stack)
 				stack = newStack
 			}
@@ -241,7 +241,7 @@ func (g *Graph) Walker(*core.Context) (core.Walker, error) {
 }
 
 type GraphNode struct {
-	id      in_mem_ds.NodeId
+	id      memds.NodeId
 	graph   *Graph
 	removed atomic.Bool
 }
@@ -262,7 +262,7 @@ func (n *GraphNode) Prop(ctx *core.Context, name string) core.Value {
 		}
 		return data
 	case "children", "parents":
-		var nodes []in_mem_ds.GraphNode[core.Value]
+		var nodes []memds.GraphNode[core.Value]
 		if name == "children" {
 			nodes = n.graph.graph.DestinationNodes(n.id)
 		} else {

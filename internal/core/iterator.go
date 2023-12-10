@@ -10,7 +10,7 @@ import (
 	"sync"
 
 	"github.com/bits-and-blooms/bitset"
-	"github.com/inoxlang/inox/internal/in_mem_ds"
+	"github.com/inoxlang/inox/internal/memds"
 )
 
 var _ = []Iterable{
@@ -1542,7 +1542,7 @@ type EventSourceIterator struct {
 	i        int
 	source   EventSource
 	lock     sync.Mutex
-	queue    *in_mem_ds.ArrayQueue[*Event]
+	queue    *memds.ArrayQueue[*Event]
 	waitNext chan (struct{})
 	current  *Event
 }
@@ -1550,7 +1550,7 @@ type EventSourceIterator struct {
 func NewEventSourceIterator(source EventSource, config IteratorConfiguration) Iterator {
 	it := &EventSourceIterator{
 		source:   source,
-		queue:    in_mem_ds.NewArrayQueue[*Event](),
+		queue:    memds.NewArrayQueue[*Event](),
 		waitNext: make(chan struct{}, 1),
 	}
 	source.OnEvent(func(event *Event) {

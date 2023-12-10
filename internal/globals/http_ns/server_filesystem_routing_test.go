@@ -13,7 +13,7 @@ import (
 	"github.com/inoxlang/inox/internal/globals/containers"
 	containers_common "github.com/inoxlang/inox/internal/globals/containers/common"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
-	"github.com/inoxlang/inox/internal/local_db"
+	"github.com/inoxlang/inox/internal/localdb"
 	"github.com/inoxlang/inox/internal/mimeconsts"
 	"github.com/stretchr/testify/assert"
 )
@@ -833,7 +833,7 @@ func TestFilesystemRouting(t *testing.T) {
 				host := core.Host("ldb://main")
 				dbDir := core.Path("/db/")
 
-				localDb, err := local_db.OpenDatabase(gs.Ctx, host, false)
+				localDb, err := localdb.OpenDatabase(gs.Ctx, host, false)
 				if err != nil {
 					return err
 				}

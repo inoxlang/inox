@@ -19,8 +19,8 @@ import (
 
 	afs "github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core/symbolic"
-	"github.com/inoxlang/inox/internal/in_mem_ds"
 	"github.com/inoxlang/inox/internal/inoxconsts"
+	"github.com/inoxlang/inox/internal/memds"
 	parse "github.com/inoxlang/inox/internal/parse"
 	permkind "github.com/inoxlang/inox/internal/permkind"
 
@@ -265,7 +265,7 @@ type importedModulesFetchConfig struct {
 	timeout                                                   time.Duration
 	insecure                                                  bool
 	subModuleParsing                                          ModuleParsingConfig
-	parentModuleId                                            in_mem_ds.NodeId
+	parentModuleId                                            memds.NodeId
 }
 
 func fetchParseImportedModules(parentMod *Module, ctx *Context, fls afs.Filesystem, config importedModulesFetchConfig) (unrecoverableError error) {
@@ -300,11 +300,11 @@ func fetchParseImportedModules(parentMod *Module, ctx *Context, fls afs.Filesyst
 		}
 
 		//add the module to the graph if necessary
-		var nodeId in_mem_ds.NodeId
-		node, err := subModuleParsing.moduleGraph.GetNode(in_mem_ds.WithData, src.UnderlyingString())
-		if err != nil && !errors.Is(err, in_mem_ds.ErrNodeNotFound) {
+		var nodeId memds.NodeId
+		node, err := subModuleParsing.moduleGraph.GetNode(memds.WithData, src.UnderlyingString())
+		if err != nil && !errors.Is(err, memds.ErrNodeNotFound) {
 			return fmt.Errorf("failed to check if module %q is present in the module graph: %w", src.UnderlyingString(), err)
-		} else if errors.Is(err, in_mem_ds.ErrNodeNotFound) {
+		} else if errors.Is(err, memds.ErrNodeNotFound) {
 			nodeId = subModuleParsing.moduleGraph.AddNode(src.UnderlyingString())
 		} else {
 			nodeId = node.Id
@@ -640,13 +640,13 @@ func (err ModuleRetrievalError) Error() string {
 	return err.message
 }
 
-func checkNoCycleOrLongPathInModuleGraph(moduleGraph *in_mem_ds.DirectedGraph[string, struct{}, map[string]in_mem_ds.NodeId]) error {
+func checkNoCycleOrLongPathInModuleGraph(moduleGraph *memds.DirectedGraph[string, struct{}, map[string]memds.NodeId]) error {
 	longestPath, longestPathLen := moduleGraph.LongestPath()
 	if longestPathLen == -1 {
 		return ErrImportCycleDetected
 	}
 	if longestPathLen > DEFAULT_MAX_MOD_GRAPH_PATH_LEN {
-		moduleNames := utils.MapSlice(longestPath, func(nodeId in_mem_ds.NodeId) string {
+		moduleNames := utils.MapSlice(longestPath, func(nodeId memds.NodeId) string {
 			return utils.MustGet(moduleGraph.Node(nodeId)).Data
 		})
 		return fmt.Errorf("%w: path is %s", ErrMaxModuleImportDepthExceeded, strings.Join(moduleNames, " -> "))

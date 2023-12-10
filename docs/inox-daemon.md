@@ -63,4 +63,4 @@ Browser automation can be allowed by adding the `--allow-browser-automation` swi
 
 ## Implementation
 
-[Project Server](../internal/project_server/README.md)
+[Project Server](../internal/projectserver/README.md)

@@ -18,7 +18,7 @@ import (
 	"github.com/inoxlang/inox/internal/inoxd/cloud/cloudproxy/inoxdconn"
 	"github.com/inoxlang/inox/internal/inoxd/consts"
 	inoxdcrypto "github.com/inoxlang/inox/internal/inoxd/crypto"
-	"github.com/inoxlang/inox/internal/project_server"
+	"github.com/inoxlang/inox/internal/projectserver"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/inoxlang/inox/internal/utils/processutils"
 	"github.com/oklog/ulid/v2"
@@ -31,11 +31,11 @@ const (
 )
 
 type DaemonConfig struct {
-	InoxCloud        bool                                  `json:"inoxCloud,omitempty"`
-	Server           project_server.IndividualServerConfig `json:"projectServerConfig"`
-	ExposeWebServers bool                                  `json:"exposeWebServers,omitempty"`
-	TunnelProvider   string                                `json:"tunnelProvider,omitempty"`
-	InoxBinaryPath   string                                `json:"-"`
+	InoxCloud        bool                                 `json:"inoxCloud,omitempty"`
+	Server           projectserver.IndividualServerConfig `json:"projectServerConfig"`
+	ExposeWebServers bool                                 `json:"exposeWebServers,omitempty"`
+	TunnelProvider   string                               `json:"tunnelProvider,omitempty"`
+	InoxBinaryPath   string                               `json:"-"`
 }
 
 type InoxdArgs struct {
@@ -75,7 +75,7 @@ func Inoxd(args InoxdArgs) {
 		ctxErr := processutils.AutoRestart(processutils.AutoRestartArgs{
 			GoCtx: goCtx,
 			MakeCommand: func(context.Context) *exec.Cmd {
-				return project_server.MakeProjectServerCmd(project_server.ProjectServerCmdParams{
+				return projectserver.MakeProjectServerCmd(projectserver.ProjectServerCmdParams{
 					GoCtx:          goCtx,
 					Config:         serverConfig,
 					InoxBinaryPath: config.InoxBinaryPath,
@@ -111,7 +111,7 @@ func Inoxd(args InoxdArgs) {
 
 	proxyConfig := cloudproxy.CloudProxyConfig{
 		CloudDataDir: consts.CLOUD_DATA_DIR,
-		Port:         project_server.DEFAULT_PROJECT_SERVER_PORT_INT,
+		Port:         projectserver.DEFAULT_PROJECT_SERVER_PORT_INT,
 	}
 
 	if args.TestOnlyProxyConfig != nil {

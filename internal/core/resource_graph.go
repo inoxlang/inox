@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/inoxlang/inox/internal/in_mem_ds"
+	"github.com/inoxlang/inox/internal/memds"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
@@ -17,18 +17,18 @@ const (
 )
 
 type ResourceGraph struct {
-	directed     *in_mem_ds.DirectedGraph[*ResourceNode, ResourceRelationKind, struct{}]
-	resourceToId map[string]in_mem_ds.NodeId
-	roots        map[in_mem_ds.NodeId]struct{}
+	directed     *memds.DirectedGraph[*ResourceNode, ResourceRelationKind, struct{}]
+	resourceToId map[string]memds.NodeId
+	roots        map[memds.NodeId]struct{}
 }
 
 type ResourceRelationKind string
 
 func NewResourceGraph() *ResourceGraph {
 	return &ResourceGraph{
-		directed:     in_mem_ds.NewDirectedGraph[*ResourceNode, ResourceRelationKind](in_mem_ds.ThreadUnsafe),
-		resourceToId: make(map[string]in_mem_ds.NodeId, 0),
-		roots:        make(map[in_mem_ds.NodeId]struct{}, 0),
+		directed:     memds.NewDirectedGraph[*ResourceNode, ResourceRelationKind](memds.ThreadUnsafe),
+		resourceToId: make(map[string]memds.NodeId, 0),
+		roots:        make(map[memds.NodeId]struct{}, 0),
 	}
 }
 
@@ -107,7 +107,7 @@ func AddModuleTreeToResourceGraph(m *Module, g *ResourceGraph, ctx *Context, ign
 type ResourceNode struct {
 	kind string
 	r    ResourceName
-	id   in_mem_ds.NodeId
+	id   memds.NodeId
 }
 
 func (r ResourceNode) Kind() string {
@@ -179,7 +179,7 @@ func (g *ResourceGraph) Roots() (roots []*ResourceNode) {
 	return
 }
 
-func (g *ResourceGraph) GetEdge(from, to ResourceName) (in_mem_ds.GraphEdge[ResourceRelationKind], bool) {
+func (g *ResourceGraph) GetEdge(from, to ResourceName) (memds.GraphEdge[ResourceRelationKind], bool) {
 	fromNode := g.getResourceNode(from)
 	toNode := g.getResourceNode(to)
 

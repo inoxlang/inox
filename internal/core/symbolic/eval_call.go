@@ -3,7 +3,7 @@ package symbolic
 import (
 	"fmt"
 
-	"github.com/inoxlang/inox/internal/globalnames"
+	"github.com/inoxlang/inox/internal/globals/globalnames"
 	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
 	"golang.org/x/exp/slices"

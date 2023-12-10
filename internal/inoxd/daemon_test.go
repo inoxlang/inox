@@ -20,7 +20,7 @@ import (
 	"github.com/inoxlang/inox/internal/inoxd/cloud/cloudproxy"
 	"github.com/inoxlang/inox/internal/inoxd/crypto"
 	"github.com/inoxlang/inox/internal/inoxd/systemd/unitenv"
-	"github.com/inoxlang/inox/internal/project_server"
+	"github.com/inoxlang/inox/internal/projectserver"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/inoxlang/inox/internal/utils/processutils"
 	"github.com/rs/zerolog"
@@ -240,7 +240,7 @@ func TestDaemonSingleProjectServerMode(t *testing.T) {
 			Config: DaemonConfig{
 				InoxCloud:      false,
 				InoxBinaryPath: "inox",
-				Server: project_server.IndividualServerConfig{
+				Server: projectserver.IndividualServerConfig{
 					ProjectsDir: tmpDir,
 					Port:        6000,
 				},
@@ -335,7 +335,7 @@ func TestDaemonSingleProjectServerMode(t *testing.T) {
 			Config: DaemonConfig{
 				InoxCloud:      false,
 				InoxBinaryPath: "inox",
-				Server: project_server.IndividualServerConfig{
+				Server: projectserver.IndividualServerConfig{
 					ProjectsDir: tmpDir,
 					Port:        6000,
 				},

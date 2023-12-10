@@ -16,8 +16,8 @@ import (
 
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core/symbolic"
-	"github.com/inoxlang/inox/internal/in_mem_ds"
 	"github.com/inoxlang/inox/internal/inoxconsts"
+	"github.com/inoxlang/inox/internal/memds"
 	parse "github.com/inoxlang/inox/internal/parse"
 	permkind "github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
@@ -325,10 +325,10 @@ func ParseLocalModule(fpath string, config ModuleParsingConfig) (*Module, error)
 	}
 
 	if config.moduleGraph == nil {
-		config.moduleGraph = in_mem_ds.NewDirectedGraphUniqueString[string, struct{}](in_mem_ds.ThreadSafe)
+		config.moduleGraph = memds.NewDirectedGraphUniqueString[string, struct{}](memds.ThreadSafe)
 	}
 
-	if found, err := config.moduleGraph.HasNode(in_mem_ds.WithData, absPath); err != nil {
+	if found, err := config.moduleGraph.HasNode(memds.WithData, absPath); err != nil {
 		return nil, err
 	} else if !found {
 		config.moduleGraph.AddNode(absPath)
@@ -398,7 +398,7 @@ type ModuleParsingConfig struct {
 	//DefaultLimits          []Limit
 	//CustomPermissionTypeHandler CustomPermissionTypeHandler
 
-	moduleGraph *in_mem_ds.DirectedGraph[string, struct{}, map[string]in_mem_ds.NodeId]
+	moduleGraph *memds.DirectedGraph[string, struct{}, map[string]memds.NodeId]
 }
 
 func ParseModuleFromSource(src parse.ChunkSource, resource ResourceName, config ModuleParsingConfig) (*Module, error) {
@@ -421,15 +421,15 @@ func ParseModuleFromSource(src parse.ChunkSource, resource ResourceName, config 
 	}
 
 	if config.moduleGraph == nil {
-		config.moduleGraph = in_mem_ds.NewDirectedGraphUniqueString[string, struct{}](in_mem_ds.ThreadSafe)
+		config.moduleGraph = memds.NewDirectedGraphUniqueString[string, struct{}](memds.ThreadSafe)
 	}
 
 	//add the module to the graph if necessary
-	var nodeId in_mem_ds.NodeId
-	node, err := config.moduleGraph.GetNode(in_mem_ds.WithData, src.Name())
-	if err != nil && !errors.Is(err, in_mem_ds.ErrNodeNotFound) {
+	var nodeId memds.NodeId
+	node, err := config.moduleGraph.GetNode(memds.WithData, src.Name())
+	if err != nil && !errors.Is(err, memds.ErrNodeNotFound) {
 		return nil, fmt.Errorf("failed to check if module %q is present in the module graph: %w", src.Name(), err)
-	} else if errors.Is(err, in_mem_ds.ErrNodeNotFound) {
+	} else if errors.Is(err, memds.ErrNodeNotFound) {
 		nodeId = config.moduleGraph.AddNode(src.Name())
 	} else {
 		nodeId = node.Id

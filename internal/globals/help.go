@@ -2,7 +2,7 @@ package internal
 
 import (
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/globalnames"
+	"github.com/inoxlang/inox/internal/globals/globalnames"
 	"github.com/inoxlang/inox/internal/help"
 )
 

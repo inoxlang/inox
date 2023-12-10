@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/inoxlang/inox/internal/commonfmt"
-	"github.com/inoxlang/inox/internal/globalnames"
+	"github.com/inoxlang/inox/internal/globals/globalnames"
 	jsoniter "github.com/inoxlang/inox/internal/jsoniter"
 	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"

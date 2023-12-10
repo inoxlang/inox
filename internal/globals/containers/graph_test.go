@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/in_mem_ds"
+	"github.com/inoxlang/inox/internal/memds"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -28,7 +28,7 @@ func TestCreateGraph(t *testing.T) {
 		data, _ := graph.graph.NodeData(0)
 		assert.Equal(t, core.Int(2), data)
 
-		assert.Equal(t, map[in_mem_ds.NodeId]bool{
+		assert.Equal(t, map[memds.NodeId]bool{
 			0: true,
 		}, graph.roots)
 
@@ -46,7 +46,7 @@ func TestCreateGraph(t *testing.T) {
 		data, _ = graph.graph.NodeData(1)
 		assert.Equal(t, core.Int(3), data)
 
-		assert.Equal(t, map[in_mem_ds.NodeId]bool{
+		assert.Equal(t, map[memds.NodeId]bool{
 			0: true,
 			1: true,
 		}, graph.roots)
@@ -68,7 +68,7 @@ func TestCreateGraph(t *testing.T) {
 		data, _ = graph.graph.NodeData(1)
 		assert.Equal(t, core.Int(3), data)
 
-		assert.Equal(t, map[in_mem_ds.NodeId]bool{
+		assert.Equal(t, map[memds.NodeId]bool{
 			0: true,
 		}, graph.roots)
 

@@ -10,7 +10,7 @@ import (
 	"github.com/inoxlang/inox/internal/config"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
-	"github.com/inoxlang/inox/internal/globalnames"
+	"github.com/inoxlang/inox/internal/globals/globalnames"
 	"golang.org/x/exp/maps"
 
 	"github.com/inoxlang/inox/internal/globals/chrome_ns"
@@ -29,8 +29,8 @@ import (
 	"github.com/inoxlang/inox/internal/globals/net_ns"
 	"github.com/inoxlang/inox/internal/globals/s3_ns"
 
-	_ "github.com/inoxlang/inox/internal/local_db"
-	_ "github.com/inoxlang/inox/internal/obs_db"
+	_ "github.com/inoxlang/inox/internal/localdb"
+	_ "github.com/inoxlang/inox/internal/obsdb"
 
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/rs/zerolog"

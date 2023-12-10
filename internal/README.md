@@ -39,11 +39,11 @@ This folder contains most of the code for the `inox` binary.
 
 - single file Key-Value store (BuntDB fork).
 
-**local_db**
+**localdb**
 
 - Local database.
 
-**obs_db (wip)**
+**obsdb (wip)**
 
 - Database based on object storage with on-disk cache.
 
@@ -51,7 +51,7 @@ This folder contains most of the code for the `inox` binary.
 
 **project**
 
-**project_server**
+**projectserver**
 
 **third_party_stable**
 

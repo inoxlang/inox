@@ -2,12 +2,12 @@ package containers
 
 import (
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/in_mem_ds"
+	"github.com/inoxlang/inox/internal/memds"
 )
 
 func NewQueue(ctx *core.Context, elements core.Iterable) *Queue {
 	queue := &Queue{
-		elements: in_mem_ds.NewTSArrayQueue[core.Value](),
+		elements: memds.NewTSArrayQueue[core.Value](),
 	}
 
 	it := elements.Iterator(ctx, core.IteratorConfiguration{})
@@ -20,7 +20,7 @@ func NewQueue(ctx *core.Context, elements core.Iterable) *Queue {
 }
 
 type Queue struct {
-	elements *in_mem_ds.TSArrayQueue[core.Value]
+	elements *memds.TSArrayQueue[core.Value]
 }
 
 func (s *Queue) Enqueue(ctx *core.Context, elem core.Value) {

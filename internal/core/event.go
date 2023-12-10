@@ -8,7 +8,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/inoxlang/inox/internal/in_mem_ds"
+	"github.com/inoxlang/inox/internal/memds"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
@@ -125,7 +125,7 @@ type EventSourceBase struct {
 	eventHandlers []EventHandler
 
 	idleHandlers            []IdleEventSourceHandler
-	lastEvents              *in_mem_ds.TSArrayQueue[*Event]
+	lastEvents              *memds.TSArrayQueue[*Event]
 	lastEventsQueueCreation time.Time
 	isEventAdderRegistered  bool
 }
@@ -221,7 +221,7 @@ func (evs *EventSourceBase) OnIDLE(handler IdleEventSourceHandler) {
 	evs.idleHandlers = append(evs.idleHandlers, handler)
 
 	if evs.lastEvents == nil {
-		evs.lastEvents = in_mem_ds.NewTSArrayQueueWithConfig(in_mem_ds.TSArrayQueueConfig[*Event]{
+		evs.lastEvents = memds.NewTSArrayQueueWithConfig(memds.TSArrayQueueConfig[*Event]{
 			AutoRemoveCondition: func(ev *Event) bool {
 				return ev.Age() > 2*MAX_MINIMUM_LAST_EVENT_AGE
 			},

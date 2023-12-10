@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/in_mem_ds"
+	"github.com/inoxlang/inox/internal/memds"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
@@ -41,7 +41,7 @@ type WatchableVirtualFilesystem interface {
 	//If the filesystem is properly added to the watchedVirtualFilesystems, it is periodically emptied by the watcher managing goroutine.
 	//Wathever it is watched, the filesystem is responsible for removing old Events, especially after a recent event.
 	//Old is specified as being >= OLD_EVENT_MIN_AGE.
-	Events() *in_mem_ds.TSArrayQueue[Event]
+	Events() *memds.TSArrayQueue[Event]
 }
 
 func isOldEvent(v Event) bool {
@@ -78,7 +78,7 @@ func (fls *MemFilesystem) Watcher(evs *FilesystemEventSource) *VirtualFilesystem
 	return watcher
 }
 
-func (fls *MemFilesystem) Events() *in_mem_ds.TSArrayQueue[Event] {
+func (fls *MemFilesystem) Events() *memds.TSArrayQueue[Event] {
 	return fls.s.eventQueue
 }
 
@@ -118,7 +118,7 @@ func (fls *MetaFilesystem) Watcher(evs *FilesystemEventSource) *VirtualFilesyste
 	return watcher
 }
 
-func (fls *MetaFilesystem) Events() *in_mem_ds.TSArrayQueue[Event] {
+func (fls *MetaFilesystem) Events() *memds.TSArrayQueue[Event] {
 	return fls.eventQueue
 }
 

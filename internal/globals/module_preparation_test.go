@@ -14,14 +14,14 @@ import (
 	"github.com/go-git/go-billy/v5/util"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
-	"github.com/inoxlang/inox/internal/globalnames"
+	"github.com/inoxlang/inox/internal/globals/globalnames"
 	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/project"
 	"github.com/inoxlang/inox/internal/project/cloudflareprovider"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/rs/zerolog"
 
-	_ "github.com/inoxlang/inox/internal/obs_db"
+	_ "github.com/inoxlang/inox/internal/obsdb"
 
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 

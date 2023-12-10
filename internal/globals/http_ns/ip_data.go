@@ -4,7 +4,7 @@ import (
 	"sync"
 
 	nettypes "github.com/inoxlang/inox/internal/net_types"
-	ratelimit "github.com/inoxlang/inox/internal/rate_limit"
+	"github.com/inoxlang/inox/internal/ratelimit"
 )
 
 type remoteIpData struct {

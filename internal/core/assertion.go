@@ -6,7 +6,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/inoxlang/inox/internal/globalnames"
+	"github.com/inoxlang/inox/internal/globals/globalnames"
 	parse "github.com/inoxlang/inox/internal/parse"
 	pprint "github.com/inoxlang/inox/internal/prettyprint"
 	"github.com/inoxlang/inox/internal/utils"

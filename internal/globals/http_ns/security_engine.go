@@ -5,7 +5,7 @@ import (
 	"time"
 
 	nettypes "github.com/inoxlang/inox/internal/net_types"
-	ratelimit "github.com/inoxlang/inox/internal/rate_limit"
+	"github.com/inoxlang/inox/internal/ratelimit"
 	cmap "github.com/orcaman/concurrent-map/v2"
 	"github.com/rs/zerolog"
 )

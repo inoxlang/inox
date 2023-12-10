@@ -15,7 +15,7 @@ import (
 	"github.com/coreos/go-systemd/v22/unit"
 	"github.com/inoxlang/inox/internal/inoxd"
 	"github.com/inoxlang/inox/internal/inoxprocess/binary"
-	"github.com/inoxlang/inox/internal/project_server"
+	"github.com/inoxlang/inox/internal/projectserver"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
@@ -109,7 +109,7 @@ func WriteInoxUnitFile(args InoxUnitParams) (unitName string, _ error) {
 
 	daemonConfig := inoxd.DaemonConfig{
 		InoxCloud: args.InoxCloud,
-		Server: project_server.IndividualServerConfig{
+		Server: projectserver.IndividualServerConfig{
 			BehindCloudProxy:       args.InoxCloud,
 			BindToAllInterfaces:    args.ExposeProjectServers,
 			AllowBrowserAutomation: args.AllowBrowserAutomation,

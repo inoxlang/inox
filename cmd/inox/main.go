@@ -29,8 +29,8 @@ import (
 	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
 
-	"github.com/inoxlang/inox/internal/project_server"
-	"github.com/inoxlang/inox/internal/project_server/jsonrpc"
+	"github.com/inoxlang/inox/internal/projectserver"
+	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
 
 	// ====================== STDLIB ============================
 	"context"
@@ -589,7 +589,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 
 		//create the LSP server configuration from the provided arguments.
 
-		opts := project_server.LSPServerConfiguration{}
+		opts := projectserver.LSPServerConfiguration{}
 		var out io.Writer
 
 		if host != "" {
@@ -598,7 +598,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 				return
 			}
 
-			opts.Websocket = &project_server.WebsocketServerConfiguration{Addr: u.Host}
+			opts.Websocket = &projectserver.WebsocketServerConfiguration{Addr: u.Host}
 
 			out = os.Stdout //we can log to stdout since we will not be in Stdio mode
 		} else { //stdio
@@ -621,7 +621,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 			perms = append(perms, core.WebsocketPermission{Kind_: permkind.Provide})
 		}
 
-		filesystem := project_server.NewDefaultFilesystem()
+		filesystem := projectserver.NewDefaultFilesystem()
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: perms,
 			Filesystem:  filesystem,
@@ -636,7 +636,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 
 		inoxprocess.RestrictProcessAccess(ctx, inoxprocess.ProcessRestrictionConfig{AllowBrowserAccess: true})
 
-		if err := project_server.StartLSPServer(ctx, opts); err != nil {
+		if err := projectserver.StartLSPServer(ctx, opts); err != nil {
 			fmt.Fprintln(errW, "failed to start LSP server:", err)
 		}
 	case PROJECT_SERVER_SUBCMD:
@@ -656,7 +656,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 			return
 		}
 
-		var projectServerConfig project_server.IndividualServerConfig
+		var projectServerConfig projectserver.IndividualServerConfig
 
 		configOrConfigFile = strings.TrimSpace(configOrConfigFile)
 		if configOrConfigFile != "" {
@@ -702,7 +702,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 		if projectServerConfig.Port > 0 {
 			websocketAddr += strconv.Itoa(projectServerConfig.Port)
 		} else {
-			websocketAddr += project_server.DEFAULT_PROJECT_SERVER_PORT
+			websocketAddr += projectserver.DEFAULT_PROJECT_SERVER_PORT
 		}
 
 		out := os.Stdout
@@ -792,8 +792,8 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 
 		//configure server
 
-		opts := project_server.LSPServerConfiguration{
-			Websocket: &project_server.WebsocketServerConfiguration{
+		opts := projectserver.LSPServerConfiguration{
+			Websocket: &projectserver.WebsocketServerConfiguration{
 				Addr:              websocketAddr,
 				MaxWebsocketPerIp: projectServerConfig.MaxWebSocketPerIp,
 				BehindCloudProxy:  projectServerConfig.BehindCloudProxy,
@@ -872,7 +872,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 
 		//start server
 
-		if err := project_server.StartLSPServer(ctx, opts); err != nil {
+		if err := projectserver.StartLSPServer(ctx, opts); err != nil {
 			fmt.Fprintln(errW, "failed to start LSP server:", err)
 			return ERROR_STATUS_CODE
 		}

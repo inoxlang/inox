@@ -6,7 +6,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/globals/html_ns"
 	parse "github.com/inoxlang/inox/internal/parse"
-	"github.com/inoxlang/inox/internal/project_server/lsp/defines"
+	"github.com/inoxlang/inox/internal/projectserver/lsp/defines"
 	"github.com/inoxlang/inox/internal/utils"
 )
 

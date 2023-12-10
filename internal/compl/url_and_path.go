@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/project_server/lsp/defines"
+	"github.com/inoxlang/inox/internal/projectserver/lsp/defines"
 
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 

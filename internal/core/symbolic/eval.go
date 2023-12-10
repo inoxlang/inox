@@ -13,9 +13,9 @@ import (
 	"slices"
 
 	"github.com/go-git/go-billy/v5"
-	"github.com/inoxlang/inox/internal/globalnames"
-	"github.com/inoxlang/inox/internal/in_mem_ds"
+	"github.com/inoxlang/inox/internal/globals/globalnames"
 	"github.com/inoxlang/inox/internal/inoxconsts"
+	"github.com/inoxlang/inox/internal/memds"
 	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
@@ -3600,8 +3600,8 @@ func evalObjectLiteral(n *parse.ObjectLiteral, state *State, options evalOptions
 	var (
 		keyArray        [32]string
 		keys            = keyArray[:0]
-		keyToProp       in_mem_ds.Map32[string, *parse.ObjectProperty]
-		dependencyGraph in_mem_ds.Graph32[string]
+		keyToProp       memds.Map32[string, *parse.ObjectProperty]
+		dependencyGraph memds.Graph32[string]
 
 		selfDependentArray [32]string
 		selfDependent      = selfDependentArray[:0]
@@ -3726,11 +3726,11 @@ func evalObjectLiteral(n *parse.ObjectLiteral, state *State, options evalOptions
 
 	// we sort the keys based on the dependency graph
 
-	var dependencyChainCountsCache = make(map[in_mem_ds.NodeId]int, len(keys))
-	var getDependencyChainDepth func(in_mem_ds.NodeId, []in_mem_ds.NodeId) int
+	var dependencyChainCountsCache = make(map[memds.NodeId]int, len(keys))
+	var getDependencyChainDepth func(memds.NodeId, []memds.NodeId) int
 	var cycles [][]string
 
-	getDependencyChainDepth = func(nodeId in_mem_ds.NodeId, chain []in_mem_ds.NodeId) int {
+	getDependencyChainDepth = func(nodeId memds.NodeId, chain []memds.NodeId) int {
 		for _, id := range chain {
 			if nodeId == id && len(chain) >= 1 {
 				cycle := make([]string, 0, len(chain))

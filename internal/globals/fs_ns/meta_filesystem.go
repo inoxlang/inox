@@ -21,8 +21,8 @@ import (
 	"github.com/inoxlang/inox/internal/commonfmt"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/filekv"
-	"github.com/inoxlang/inox/internal/in_mem_ds"
 	"github.com/inoxlang/inox/internal/jsoniter"
+	"github.com/inoxlang/inox/internal/memds"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/oklog/ulid/v2"
 )
@@ -73,7 +73,7 @@ type MetaFilesystem struct {
 	lastModificationTimes     map[ /*normalized path*/ string]core.DateTime
 	lastModificationTimesLock sync.RWMutex
 
-	eventQueue     *in_mem_ds.TSArrayQueue[Event] //periodically emptied
+	eventQueue     *memds.TSArrayQueue[Event] //periodically emptied
 	fsWatchers     []*VirtualFilesystemWatcher
 	fsWatchersLock sync.Mutex
 
@@ -155,7 +155,7 @@ func OpenMetaFilesystem(ctx *core.Context, underlying billy.Basic, opts MetaFile
 		underlying:            underlying,
 		openFiles:             map[string]map[*metaFsFile]struct{}{},
 		lastModificationTimes: map[string]core.DateTime{},
-		eventQueue: in_mem_ds.NewTSArrayQueueWithConfig(in_mem_ds.TSArrayQueueConfig[Event]{
+		eventQueue: memds.NewTSArrayQueueWithConfig(memds.TSArrayQueueConfig[Event]{
 			AutoRemoveCondition: isOldEvent,
 		}),
 

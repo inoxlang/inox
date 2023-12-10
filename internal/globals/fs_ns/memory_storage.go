@@ -17,7 +17,7 @@ import (
 	"time"
 
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/in_mem_ds"
+	"github.com/inoxlang/inox/internal/memds"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
@@ -36,7 +36,7 @@ type inMemStorage struct {
 	totalContentSize atomic.Int64
 	maxStorageSize   int64
 
-	eventQueue *in_mem_ds.TSArrayQueue[Event] //periodically emptied
+	eventQueue *memds.TSArrayQueue[Event] //periodically emptied
 }
 
 func newInMemoryStorage(maxStorageSize core.ByteCount) *inMemStorage {
@@ -53,7 +53,7 @@ func newInMemoryStorage(maxStorageSize core.ByteCount) *inMemStorage {
 		children:       make(map[string]map[string]*InMemfile, 0),
 		maxStorageSize: int64(maxStorageSize),
 
-		eventQueue: in_mem_ds.NewTSArrayQueueWithConfig(in_mem_ds.TSArrayQueueConfig[Event]{
+		eventQueue: memds.NewTSArrayQueueWithConfig(memds.TSArrayQueueConfig[Event]{
 			AutoRemoveCondition: isOldEvent,
 		}),
 	}

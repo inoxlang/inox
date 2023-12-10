@@ -10,7 +10,7 @@ import (
 	"github.com/go-git/go-billy/v5"
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/in_mem_ds"
+	"github.com/inoxlang/inox/internal/memds"
 )
 
 var (
@@ -31,7 +31,7 @@ type InMemfile struct {
 	positionLock sync.Mutex
 
 	//last events of the inMemStorage containing the file.
-	storageLastEvents *in_mem_ds.TSArrayQueue[Event]
+	storageLastEvents *memds.TSArrayQueue[Event]
 }
 
 func (f *InMemfile) Name() string {
