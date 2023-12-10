@@ -12,7 +12,7 @@ deeply integrates with Inox's built-in database engine, testing engine and HTTP 
 
 ⬇️ [Installation](#installation)\
 📚 [Learning Inox](#learning-inox)\
-👥 Discord Server: https://discord.gg/53YGx8GzgE
+👥 [Discord Server](#https://discord.gg/53YGx8GzgE)
 
 **Goals**:
 
@@ -27,6 +27,7 @@ deeply integrates with Inox's built-in database engine, testing engine and HTTP 
 
 - [XML Expressions (HTML)](#xml-expressions)
 - [HTTP Server - Filesystem Routing](#http-server---filesystem-routing)
+- [Transactions & Effects (WIP)](#transactions--effects-wip)
 - [Built-in Database](#built-in-database)
 - [Project Server (LSP)](#project-server-lsp)
 - [Virtual Filesystems](#virtual-filesystems)
@@ -55,10 +56,8 @@ deeply integrates with Inox's built-in database engine, testing engine and HTTP 
 - [Concurrency](#concurrency)
   - [Lightweight Threads](#lighweight-threads)
   - [LThread Groups](#lthread-groups)
-  - [Lifetime jobs](#lifetime-jobs)
 - [Many Built-in Functions](#built-in-functions)
 - [Easy declaration of CLI Parameters](#declaration-of-cli-parameters--environment-variables)
-- [Transactions & Effects (WIP)](#transactions--effects-wip)
 
 </details>
 
@@ -128,7 +127,7 @@ Inox only supports Linux for now. **You can use Inox either by installing it loc
   - [VSCode & VSCodium](https://marketplace.visualstudio.com/items?itemName=graphr00t.inox) : LSP, debug, colorization, snippets, formatting.
 
 
-If you want to compile the language from source go [here](#compile-from-source).
+If you want to compile Inox from source go [here](#compile-from-source).
 
 ## Learning Inox
 
@@ -209,6 +208,30 @@ username = mod-args.name
 ...
 ```
 
+### Transactions & Effects (WIP)
+
+Inox allows you to attach a **transaction** to the current execution context.
+
+This feature is primarly used when handling **HTTP requests**. For each request, a transaction is created by the server. Effects such as database changes are only applied when the transaction is committed.
+
+<details>
+
+**<summary>Manual transaction creation (WIP)</summary>**
+```
+tx = start_tx()
+
+# effect
+fs.mkfile ./file.txt 
+
+# rollback transaction --> delete ./file.txt
+cancel_exec()
+```
+</details>
+
+
+⚠️ I am still working on this feature. For now most effects on databases and some on the filesystem are implemented.
+Filesystem changes are reversed if the transaction is rolled backed.
+
 ### Built-in Database
 
 Inox includes an embedded database engine. Databases are described in the
@@ -222,7 +245,8 @@ manifest {
     }
     databases: {
         main: {
-            resource: ldb://main  #ldb stands for Local Database
+            #ldb stands for Local Database
+            resource: ldb://main  
             resolution-data: /databases/main/
             expected-schema-update: true
         }
@@ -736,20 +760,6 @@ lthread2 = go {group: group} do read!(https://jsonplaceholder.typicode.com/posts
 results = group.wait_results!()
 ```
 
-#### **Lifetime Jobs**
-
-Lifetime jobs are lthreads linked to an object.
-
-```
-object = {
-  lifetimejob #handle-messages {
-    for msg in watch_received_messages(self){
-      # handle messages
-    }
-  }
-}
-```
-
 ### Built-in Functions
 
 Inox comes with many built-in functions for:
@@ -820,34 +830,12 @@ options:
       if true delete <dir> if it already exists
 ```
 
-### Transactions & Effects (WIP)
-
-Inox allows you to attach a **transaction** to the current execution context
-(think SQL transactions). When a **side effect** happens it is recorded in the
-transaction. If the execution is cancelled for whatever reason the transaction
-is automatically **rollbacked** and reversible effects are reversed. Some
-effects such as database changes are only applied when the transaction is
-committed.
-
-```
-tx = start_tx()
-
-# effect
-fs.mkfile ./file.txt 
-
-# rollback transaction --> delete ./file.txt
-cancel_exec()
-```
-
-ℹ️ A transaction is created for each
-[HTTP request](#http-server---filesystem-routing).
 
 ## Compile from Source
 
 - clone this repository
 - `cd` into the directory
 - run `go build ./cmd/inox`
-
 
 ## Early Sponsors
 
@@ -860,7 +848,6 @@ cancel_exec()
 </table>
 
 I am working full-time on Inox, please consider donating through [GitHub](https://github.com/sponsors/GraphR00t) (preferred) or [Patreon](https://patreon.com/GraphR00t). Thanks !
-
 
 [Questions you may have](./QUESTIONS.md)\
 [Installation](#installation)\
