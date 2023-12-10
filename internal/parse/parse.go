@@ -2199,9 +2199,6 @@ func (p *parser) parseURLLikePattern(start int32) Node {
 		parsingErr = &ParsingError{UnspecifiedParsingError, INVALID_URL_PATT}
 	} else {
 		parsingErr = CheckURLPattern(u)
-		if parsingErr == nil && strings.Contains(u, "?") {
-			parsingErr = &ParsingError{UnspecifiedParsingError, URL_PATT_LITS_WITH_QUERY_PART_NOT_SUPPORTED_YET}
-		}
 	}
 
 	return &URLPatternLiteral{

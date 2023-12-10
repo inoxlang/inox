@@ -127,7 +127,6 @@ const (
 	KEY_LIST_CAN_ONLY_CONTAIN_IDENTS                           = "a key list can only contain identifiers"
 	INVALID_SCHEME_LIT_MISSING_SCHEME                          = "invalid scheme literal: '://' should be preceded by a scheme"
 	INVALID_HOST_LIT                                           = "invalid host literal"
-	URL_PATT_LITS_WITH_QUERY_PART_NOT_SUPPORTED_YET            = "URL pattern literals with a query part are not supported yet"
 	INVALID_URL                                                = "invalid URL"
 	INVALID_URL_OR_HOST                                        = "invalid URL or Host"
 	INVALID_HOST_INTERPOLATION                                 = "invalid host interpolation"
