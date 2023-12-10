@@ -39,9 +39,10 @@ func NewGolangHttpServer(ctx *core.Context, config GolangHttpServerConfig) (*htt
 
 	//if no certificate is provided by the user we create one
 	if config.PemEncodedCert == "" && (isLocalhostOr127001Addr(config.Addr) || config.AllowSelfSignedCertCreationEvenIfExposed) {
-		const (
-			CERT_FILEPATH     = "self_signed.cert"
-			CERT_KEY_FILEPATH = "self_signed.key"
+		initialWorkingDir := ctx.InitialWorkingDirectory()
+		var (
+			CERT_FILEPATH     = initialWorkingDir.JoinEntry("self_signed.cert", fls).UnderlyingString()
+			CERT_KEY_FILEPATH = initialWorkingDir.JoinEntry("self_signed.key", fls).UnderlyingString()
 		)
 
 		generateCert := false
@@ -97,6 +98,10 @@ func NewGolangHttpServer(ctx *core.Context, config GolangHttpServerConfig) (*htt
 			if config.PersistCreatedLocalCert {
 				certFile, err := fls.Create(CERT_FILEPATH)
 				if err != nil {
+					//landlock
+					if strings.Contains(err.Error(), "permission denied") {
+						goto ignore_writes
+					}
 					return nil, err
 				}
 				pem.Encode(certFile, cert)
@@ -109,6 +114,7 @@ func NewGolangHttpServer(ctx *core.Context, config GolangHttpServerConfig) (*htt
 				pem.Encode(keyFile, key)
 				keyFile.Close()
 			}
+		ignore_writes:
 		}
 	}
 
