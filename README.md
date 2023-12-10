@@ -54,7 +54,7 @@ deeply integrates with Inox's built-in database engine, testing engine and HTTP 
 
 **<summary>Other Language Features</summary>**
 - [Concurrency](#concurrency)
-  - [Lightweight Threads](#lighweight-threads)
+  - [Lightweight Threads](#lightweight-threads)
   - [LThread Groups](#lthread-groups)
 - [Many Built-in Functions](#built-in-functions)
 - [Easy declaration of CLI Parameters](#declaration-of-cli-parameters--environment-variables)
@@ -99,7 +99,7 @@ subgraph InoxBinary["Inox (Linux)"]
 end
 ```
 
-Inox only supports Linux for now. **You can use Inox either by installing it locally on your machine or on a remote machine, such as a Virtual Private Server (VPS).** You can also setup a local virtual machine running Linux and install Inox on it.
+Inox only supports Linux for now. **You can use Inox either by installing it locally on your machine or on a remote machine, such as a VPS.** You can also setup a local virtual machine running Linux and install Inox on it.
 
 - Download the latest release
   ```
@@ -123,7 +123,7 @@ Inox only supports Linux for now. **You can use Inox either by installing it loc
   inox install-completions
   ```
 
-- Add Inox support to your IDE
+- __Add Inox support to your IDE__
   - [VSCode & VSCodium](https://marketplace.visualstudio.com/items?itemName=graphr00t.inox) : LSP, debug, colorization, snippets, formatting.
 
 
@@ -230,12 +230,11 @@ cancel_exec()
 
 
 ⚠️ I am still working on this feature. For now most effects on databases and some on the filesystem are implemented.
-Filesystem changes are reversed if the transaction is rolled backed.
+Filesystem changes are reversed if the transaction is rolled back.
 
 ### Built-in Database
 
-Inox includes an embedded database engine. Databases are described in the
-manifest at the top of the module:
+Inox includes an embedded database engine. Databases are described in the manifest at the top of the module:
 
 ```
 manifest {
@@ -264,7 +263,7 @@ dbs.main.update_schema(%{
 ```
 
 Objects can be directly added to and retrieved from the database.\
-This is made possible by the fact that most Inox types are constrained to be
+This is enabled by the fact that most Inox types are constrained to be
 serializable.
 
 <details>
@@ -738,11 +737,11 @@ URL expression: result of a path interpolation should not contain any of the fol
 
 ### Concurrency
 
-#### **Lighweight threads**
+#### **Lightweight threads**
 
 ```
 lthread = go {} do {
-  print("hello from goroutine !")
+  print("hello from lightweight thread !")
   return 1
 }
 
