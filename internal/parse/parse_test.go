@@ -38,7 +38,6 @@ func TestParseSystematicCheckAndAlreadyDoneContext(t *testing.T) {
 			return
 		})()
 
-		t.Parallel()
 		assert.ErrorContains(t, err, context.Canceled.Error())
 
 		return mustParseChunkForgetTokens(str)
