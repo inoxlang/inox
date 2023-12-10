@@ -12,7 +12,7 @@ deeply integrates with Inox's built-in database engine, testing engine and HTTP 
 
 ⬇️ [Installation](#installation)\
 📚 [Learning Inox](#learning-inox)\
-👥 [Discord Server](#https://discord.gg/53YGx8GzgE)
+👥 [Discord Server](https://discord.gg/53YGx8GzgE)
 
 **Goals**:
 
