@@ -2490,6 +2490,50 @@ func TestPrepareLocalScript(t *testing.T) {
 		assert.NotContains(t, perms, core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")})
 	})
 
+	t.Run("if the OS filesystem used the IWD should be current wording directory ", func(t *testing.T) {
+		dir := t.TempDir()
+		file := filepath.Join(dir, "script.ix")
+		compilationCtx := createCompilationCtx(dir)
+		defer compilationCtx.CancelGracefully()
+
+		os.WriteFile(file, []byte(`
+			manifest {
+				permissions: {
+					read: %/...
+				}
+			}
+		`), 0o600)
+
+		parsingCompilationCtx := core.NewContext(core.ContextConfig{
+			Permissions: append(core.GetDefaultGlobalVarPermissions(), core.CreateFsReadPerm(core.PathPattern("/..."))),
+			Filesystem:  fs_ns.GetOsFilesystem(),
+		})
+
+		core.NewGlobalState(parsingCompilationCtx)
+		defer parsingCompilationCtx.CancelGracefully()
+
+		state, _, _, err := core.PrepareLocalScript(core.ScriptPreparationArgs{
+			Fpath:                     file,
+			ParsingCompilationContext: compilationCtx,
+			ParentContext:             parsingCompilationCtx,
+			ParentContextRequired:     true,
+			Out:                       io.Discard,
+			ScriptContextFileSystem:   fs_ns.GetOsFilesystem(),
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		wd := utils.Must(os.Getwd())
+
+		IWD := state.Globals.Get(core.INITIAL_WORKING_DIR_VARNAME)
+		IWD_PREFIX_PATTERN := state.Globals.Get(core.INITIAL_WORKING_DIR_PREFIX_VARNAME)
+
+		assert.EqualValues(t, wd+"/", IWD)
+		assert.EqualValues(t, wd+"/...", IWD_PREFIX_PATTERN)
+	})
+
 }
 
 func TestPrepareDevModeIncludableChunkFile(t *testing.T) {

@@ -3,6 +3,7 @@ package internal
 import (
 	"fmt"
 	"io"
+	"os"
 	"path/filepath"
 	"reflect"
 	"time"
@@ -172,11 +173,13 @@ func NewDefaultGlobalState(ctx *core.Context, conf core.DefaultGlobalStateConfig
 	preinitData :=
 		core.NewRecordFromKeyValLists([]string{"files"}, []core.Serializable{core.NewRecordFromKeyValLists(preinitFilesKeys, preinitDataValues)})
 
-	//
+	initialWorkingDir := ctx.InitialWorkingDirectory()
+	initialWorkingDirPattern := initialWorkingDir.ToPrefixPattern()
+
 	constants := map[string]core.Value{
 		// constants
-		core.INITIAL_WORKING_DIR_VARNAME:        core.INITIAL_WORKING_DIR_PATH,
-		core.INITIAL_WORKING_DIR_PREFIX_VARNAME: core.INITIAL_WORKING_DIR_PATH_PATTERN,
+		core.INITIAL_WORKING_DIR_VARNAME:        initialWorkingDir,
+		core.INITIAL_WORKING_DIR_PREFIX_VARNAME: initialWorkingDirPattern,
 
 		// namespaces
 		globalnames.FS_NS:       fs_ns.NewFsNamespace(),
@@ -383,16 +386,22 @@ func NewDefaultContext(config core.DefaultContextConfig) (*core.Context, error) 
 		ForbiddenPermissions:    config.ForbiddenPermissions,
 		DoNotCheckDatabasePerms: config.DoNotCheckDatabasePerms,
 
-		Limits:              config.Limits,
-		HostResolutions:     config.HostResolutions,
-		ParentContext:       config.ParentContext,
-		ParentStdLibContext: config.ParentStdLibContext,
-		Filesystem:          config.Filesystem,
-		OwnedDatabases:      config.OwnedDatabases,
+		Limits:                  config.Limits,
+		HostResolutions:         config.HostResolutions,
+		ParentContext:           config.ParentContext,
+		ParentStdLibContext:     config.ParentStdLibContext,
+		Filesystem:              config.Filesystem,
+		InitialWorkingDirectory: config.InitialWorkingDirectory,
+		OwnedDatabases:          config.OwnedDatabases,
 	}
 
 	if ctxConfig.Filesystem == nil && ctxConfig.ParentContext == nil {
 		ctxConfig.Filesystem = fs_ns.GetOsFilesystem()
+	}
+
+	//if no initial working directory is provided and the filesystem is the OS FS we set the directory to os.Getwd().
+	if _, ok := config.Filesystem.(*fs_ns.OsFilesystem); ok && ctxConfig.InitialWorkingDirectory == "" {
+		ctxConfig.InitialWorkingDirectory = core.DirPathFrom(utils.Must(os.Getwd()))
 	}
 
 	if ctxConfig.ParentContext != nil {

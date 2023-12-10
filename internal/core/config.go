@@ -137,7 +137,8 @@ type DefaultContextConfig struct {
 
 	//if nil the parent context's filesystem is used.
 	//if there is not parent context the OS filesystem is used.
-	Filesystem afs.Filesystem
+	Filesystem              afs.Filesystem
+	InitialWorkingDirectory Path //if not set should defaults to '/' or the working directory for the OS filesystem
 }
 
 type NewDefaultContextFn func(config DefaultContextConfig) (*Context, error)
