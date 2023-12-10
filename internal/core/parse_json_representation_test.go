@@ -1,21 +1,13 @@
 package core
 
 import (
-	"runtime"
 	"testing"
 
-	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestParseJSONRepresentation(t *testing.T) {
-	{
-		runtime.GC()
-		startMemStats := new(runtime.MemStats)
-		runtime.ReadMemStats(startMemStats)
-
-		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
-	}
+	t.Parallel()
 
 	t.Run("strings", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)

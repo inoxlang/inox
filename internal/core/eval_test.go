@@ -211,6 +211,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	})
 
 	t.Run("multiline string literal", func(t *testing.T) {
+		t.Parallel()
+
 		t.Run("single character", func(t *testing.T) {
 			code := "`a`"
 			state := NewGlobalState(NewDefaultTestContext())
@@ -332,6 +334,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	})
 
 	t.Run("path expression", func(t *testing.T) {
+		t.Parallel()
 
 		t.Run("absolute", func(t *testing.T) {
 			t.Run("interpolation value is a string", func(t *testing.T) {
@@ -492,6 +495,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	})
 
 	t.Run("path pattern expression", func(t *testing.T) {
+		t.Parallel()
+
 		t.Run("path pattern expression", func(t *testing.T) {
 			code := `%/home/{username}/...`
 			ctx := NewDefaultTestContext()
@@ -549,6 +554,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	})
 
 	t.Run("URL expression", func(t *testing.T) {
+		t.Parallel()
+
 		t.Run("host interpolation", func(t *testing.T) {
 			code := `https://{host}/`
 			ctx := NewDefaultTestContext()
@@ -942,6 +949,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	})
 
 	t.Run("integer binary expression", func(t *testing.T) {
+		t.Parallel()
+
 		testCases := []struct {
 			code   string
 			result Value
@@ -1006,6 +1015,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	})
 
 	t.Run("floating point binary expression", func(t *testing.T) {
+		t.Parallel()
+
 		NaN := Float(math.NaN())
 
 		testCases := []struct {
@@ -1063,6 +1074,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	})
 
 	t.Run("binary in/not-in", func(t *testing.T) {
+		t.Parallel()
+
 		testCases := []struct {
 			code   string
 			result Bool
@@ -1102,6 +1115,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	})
 
 	t.Run("other binary expressions", func(t *testing.T) {
+		t.Parallel()
+
 		testCases := []struct {
 			code   string
 			result Value
@@ -1157,6 +1172,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	})
 
 	t.Run("integer unary expression", func(t *testing.T) {
+		t.Parallel()
+
 		t.Run("negating the smallest integer should throw an error", func(t *testing.T) {
 			ctx := NewDefaultTestContext()
 			defer ctx.CancelGracefully()
@@ -1186,6 +1203,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	})
 
 	t.Run("range expression", func(t *testing.T) {
+		t.Parallel()
+
 		testCases := []struct {
 			code   string
 			result Value
@@ -1230,6 +1249,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	})
 
 	t.Run("binary expression chain", func(t *testing.T) {
+		t.Parallel()
+
 		testCases := []struct {
 			code   string
 			result Value
@@ -1312,6 +1333,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	})
 
 	t.Run("global variable definition", func(t *testing.T) {
+		t.Parallel()
 
 		t.Run("simple value", func(t *testing.T) {
 			code := `$$a = 1; return a`
@@ -1347,6 +1369,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	})
 
 	t.Run("local variable declaration", func(t *testing.T) {
+		t.Parallel()
 
 		testCases := []struct {
 			input          string
@@ -1394,6 +1417,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	})
 
 	t.Run("global variable declaration", func(t *testing.T) {
+		t.Parallel()
 
 		testCases := []struct {
 			input          string
@@ -1441,6 +1465,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	})
 
 	t.Run("assignment", func(t *testing.T) {
+		t.Parallel()
 
 		testCases := []struct {
 			input          string
@@ -1721,6 +1746,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	})
 
 	t.Run("slice expression", func(t *testing.T) {
+		t.Parallel()
+
 		t.Run("array slice : end index is greater than the length of the array", func(t *testing.T) {
 			code := `
 				a = [0]
@@ -1916,6 +1943,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	})
 
 	t.Run("object literal", func(t *testing.T) {
+		t.Parallel()
+
 		t.Run("empty object", func(t *testing.T) {
 			code := `{}`
 			state := NewGlobalState(NewDefaultTestContext())
@@ -2046,6 +2075,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	})
 
 	t.Run("record literal", func(t *testing.T) {
+		t.Parallel()
+
 		t.Run("empty", func(t *testing.T) {
 			code := `#{}`
 			state := NewGlobalState(NewDefaultTestContext())
@@ -2085,6 +2116,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	})
 
 	t.Run("dictionary literal", func(t *testing.T) {
+		t.Parallel()
+
 		t.Run("literal only keys", func(t *testing.T) {
 			code := `:{"name": "foo", ./path: "bar"}`
 			state := NewGlobalState(NewDefaultTestContext())
@@ -2116,6 +2149,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	})
 
 	t.Run("list literal", func(t *testing.T) {
+		t.Parallel()
+
 		t.Run("empty list literal", func(t *testing.T) {
 			code := `[]`
 			state := NewGlobalState(NewDefaultTestContext())
@@ -2163,6 +2198,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	})
 
 	t.Run("tuple literal", func(t *testing.T) {
+		t.Parallel()
+
 		t.Run("empty", func(t *testing.T) {
 			code := `#[]`
 			state := NewGlobalState(NewDefaultTestContext())
@@ -2210,6 +2247,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	})
 
 	t.Run("multi assignement", func(t *testing.T) {
+		t.Parallel()
+
 		t.Run("variable count == length", func(t *testing.T) {
 			code := `
 				assign a b = [1, 2]
@@ -2247,6 +2286,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	})
 
 	t.Run("if statement", func(t *testing.T) {
+		t.Parallel()
+
 		t.Run("condition is true", func(t *testing.T) {
 			code := `if true { return 1 }`
 			state := NewGlobalState(NewDefaultTestContext())
@@ -2329,6 +2370,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	})
 
 	t.Run("if expression", func(t *testing.T) {
+		t.Parallel()
 
 		t.Run("true condition", func(t *testing.T) {
 			code := `(if true 1)`
@@ -2359,6 +2401,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	})
 
 	t.Run("for statement", func(t *testing.T) {
+		t.Parallel()
+
 		testCases := []struct {
 			input   string
 			result  Value
@@ -2647,6 +2691,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	})
 
 	t.Run("walk statement", func(t *testing.T) {
+		t.Parallel()
+
 		GET_ENTRIES_CODE := `
 			entries = []
 			walk $$dir entry {
@@ -2949,6 +2995,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	})
 
 	t.Run("switch statement", func(t *testing.T) {
+		t.Parallel()
+
 		testCases := []struct {
 			name   string
 			input  string
@@ -3085,6 +3133,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	})
 
 	t.Run("match statement", func(t *testing.T) {
+		t.Parallel()
+
 		testCases := []struct {
 			name   string
 			input  string
@@ -3349,6 +3399,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	})
 
 	t.Run("function expression", func(t *testing.T) {
+		t.Parallel()
+
 		t.Run("empty", func(t *testing.T) {
 			code := `fn(){}`
 			state := NewGlobalState(NewDefaultTestContext())
@@ -3416,6 +3468,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	})
 
 	t.Run("Inox function call", func(t *testing.T) {
+		t.Parallel()
 
 		noargs := func() []Value { return nil }
 
@@ -4002,6 +4055,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	})
 
 	t.Run("Go function call", func(t *testing.T) {
+		t.Parallel()
+
 		testCases := []struct {
 			name            string
 			error           bool
@@ -4745,6 +4800,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	})
 
 	t.Run("pipeline statement", func(t *testing.T) {
+		t.Parallel()
 
 		t.Run("pipeline statement", func(t *testing.T) {
 			code := `get-data | split-lines $`
@@ -4808,6 +4864,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	})
 
 	t.Run("member expression", func(t *testing.T) {
+		t.Parallel()
+
 		testCases := []struct {
 			error           bool
 			input           string
@@ -4890,6 +4948,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	})
 
 	t.Run("dynamic member expression", func(t *testing.T) {
+		t.Parallel()
 
 		testCases := []struct {
 			error       bool
@@ -5029,7 +5088,6 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	})
 
 	t.Run("key list expression", func(t *testing.T) {
-
 		t.Run("empty", func(t *testing.T) {
 			code := `return .{}`
 			state := NewGlobalState(NewDefaultTestContext())
@@ -5074,6 +5132,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	})
 
 	t.Run("inclusion import statement", func(t *testing.T) {
+		t.Parallel()
 
 		t.Run("single included file with no dependecies", func(t *testing.T) {
 			moduleName := "mymod.ix"
@@ -5261,6 +5320,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	})
 
 	t.Run("import statement", func(t *testing.T) {
+		t.Parallel()
+
 		getModule := func(code string) (*Module, error) {
 			fls := newMemFilesystem()
 			err := util.WriteFile(fls, "/mod.ix", []byte(code), 0600)
@@ -5285,6 +5346,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		}
 
 		t.Run("no globals, no required permissions", func(t *testing.T) {
+			t.Parallel()
+
 			mod, err := getModule(strings.ReplaceAll(`
 				manifest {}
 				import importname https://modules.com/return_1.ix {
@@ -5305,6 +5368,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		})
 
 		t.Run("imported module returns the positional 'a' argument", func(t *testing.T) {
+			t.Parallel()
+
 			mod, err := getModule(strings.ReplaceAll(`
 				manifest {}
 				import importname https://modules.com/return_global_a.ix {
@@ -5329,6 +5394,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		})
 
 		t.Run("imported module returns the non-positional 'a' argument", func(t *testing.T) {
+			t.Parallel()
+
 			mod, err := getModule(strings.ReplaceAll(`
 				manifest {}
 				import importname https://modules.com/return_global_a.ix {
@@ -5353,6 +5420,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		})
 
 		t.Run("imported module returns the %two pattern (same pattern is defined in module)", func(t *testing.T) {
+			t.Parallel()
+
 			mod, err := getModule(strings.ReplaceAll(`
 				manifest {}
 				pattern two = 1
@@ -5379,6 +5448,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		})
 
 		t.Run("imported module returns the %two pattern", func(t *testing.T) {
+			t.Parallel()
+
 			mod, err := getModule(strings.ReplaceAll(`
 				manifest {}
 				import two_patt https://modules.com/return_patt_two.ix {
@@ -5403,6 +5474,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		})
 
 		t.Run("imported module returns the %int pattern (base pattern)", func(t *testing.T) {
+			t.Parallel()
+
 			mod, err := getModule(strings.ReplaceAll(`
 				manifest {}
 				import int_pattern https://modules.com/return_patt_int.ix {
@@ -5434,6 +5507,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		})
 
 		t.Run("local module that includes a file", func(t *testing.T) {
+			t.Parallel()
+
 			mod, err := getModule(strings.ReplaceAll(`
 				manifest {}
 				import importname ./return_a.ix  {
@@ -5475,6 +5550,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		})
 
 		t.Run("logs from an imported module should have the correct source and respect the default log level", func(t *testing.T) {
+			t.Parallel()
 
 			fls := newMemFilesystem()
 			err := util.WriteFile(fls, "/mod.ix", []byte(`
@@ -5555,6 +5631,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		})
 
 		t.Run("logs from an imported module should respect the log level configured for its path", func(t *testing.T) {
+			t.Parallel()
 
 			fls := newMemFilesystem()
 			err := util.WriteFile(fls, "/mod.ix", []byte(`
@@ -6301,6 +6378,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	})
 
 	t.Run("mapping expression", func(t *testing.T) {
+		t.Parallel()
+
 		t.Run("empty", func(t *testing.T) {
 			code := `Mapping{}`
 			state := NewGlobalState(NewDefaultTestContext())
@@ -6435,6 +6514,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	})
 
 	t.Run("treedata literal", func(t *testing.T) {
+		t.Parallel()
 
 		t.Run("not empty", func(t *testing.T) {
 			code := `treedata 0 { 1 {2} 3 }`
@@ -6478,6 +6558,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	})
 
 	t.Run("Mapping", func(t *testing.T) {
+		t.Parallel()
+
 		t.Run("compute() with inexisting key", func(t *testing.T) {
 			code := `
 				m = Mapping{}
@@ -6667,6 +6749,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	})
 
 	t.Run("concatenation expression", func(t *testing.T) {
+		t.Parallel()
+
 		t.Run("single string element", func(t *testing.T) {
 			code := `concat "a"`
 			state := NewGlobalState(NewDefaultTestContext())
@@ -6851,6 +6935,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	})
 
 	t.Run("pattern definition", func(t *testing.T) {
+		t.Parallel()
 
 		t.Run("identifier : RHS is a string literal", func(t *testing.T) {
 			code := `pattern s = "s"; return %s`
@@ -6969,7 +7054,6 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	})
 
 	t.Run("pattern namespace definition", func(t *testing.T) {
-
 		t.Run("RHS is an empty object literal", func(t *testing.T) {
 			code := `pnamespace namespace. = {}`
 
@@ -7037,6 +7121,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	})
 
 	t.Run("object pattern literal", func(t *testing.T) {
+		t.Parallel()
+
 		t.Run("empty", func(t *testing.T) {
 			code := `%{}`
 
@@ -7201,6 +7287,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	})
 
 	t.Run("record pattern literal", func(t *testing.T) {
+		t.Parallel()
+
 		t.Run("empty", func(t *testing.T) {
 			code := `pattern p = #{}; return %p`
 
@@ -7369,6 +7457,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	})
 
 	t.Run("list pattern literal", func(t *testing.T) {
+		t.Parallel()
+
 		t.Run("empty", func(t *testing.T) {
 			code := `%[]`
 
@@ -7502,6 +7592,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	})
 
 	t.Run("tuple pattern literal", func(t *testing.T) {
+		t.Parallel()
+
 		t.Run("empty", func(t *testing.T) {
 			code := `pattern p = #[]; return %p`
 
@@ -7698,6 +7790,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	})
 
 	t.Run("testsuite expression", func(t *testing.T) {
+		t.Parallel()
 
 		t.Run("no manifest", func(t *testing.T) {
 			code := `return testsuite "name" {}`
@@ -7840,6 +7933,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	})
 
 	t.Run("testcase expression", func(t *testing.T) {
+		t.Parallel()
 
 		t.Run("no manifest", func(t *testing.T) {
 			code := `return testcase "name" {}`
@@ -7931,6 +8025,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	})
 
 	t.Run("lifetimejob expression", func(t *testing.T) {
+		t.Parallel()
 
 		t.Run("no manifest", func(t *testing.T) {
 			code := `return lifetimejob "name" {}`
@@ -10419,6 +10514,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	})
 
 	t.Run("testcase statement", func(t *testing.T) {
+		t.Parallel()
+
 		allTestsFilter := TestFilters{
 			PositiveTestFilters: []TestFilter{
 				{
@@ -10469,6 +10566,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	})
 
 	t.Run("string template literal", func(t *testing.T) {
+		t.Parallel()
 
 		replace := func(s string) string {
 			return strings.ReplaceAll(s, "|", "`")
@@ -10643,6 +10741,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	})
 
 	t.Run("transaction", func(t *testing.T) {
+		t.Parallel()
 
 		newState := func() (*GlobalState, **Transaction) {
 			_tx := new(*Transaction)
@@ -10735,6 +10834,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	})
 
 	t.Run("map fn", func(t *testing.T) {
+		t.Parallel()
+
 		t.Run("recursive map calls", func(t *testing.T) {
 			code := `
 				fn rec(list %serializable-iterable){
@@ -10837,6 +10938,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	})
 
 	t.Run("XML expression", func(t *testing.T) {
+		t.Parallel()
+
 		__idt := WrapGoFunction(func(ctx *Context, e *XMLElement) *XMLElement {
 			return e
 		})
@@ -11153,6 +11256,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	})
 
 	t.Run("error position stack", func(t *testing.T) {
+		t.Parallel()
 
 		joinLines := func(lines ...string) string {
 			return strings.Join(lines, "\n")

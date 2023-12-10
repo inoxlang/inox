@@ -10,6 +10,8 @@ import (
 )
 
 func TestParseRepr(t *testing.T) {
+	t.Parallel()
+
 	//TODO: add tests: test all combinations of input (up to 10 characters) and use regular parser to know what inputs are valid.
 	//TODO: tests with non printable characters
 

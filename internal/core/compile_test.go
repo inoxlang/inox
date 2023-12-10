@@ -12,6 +12,7 @@ import (
 )
 
 func TestCompileModule(t *testing.T) {
+	t.Parallel()
 
 	joinLines := func(lines ...string) string {
 		return strings.Join(lines, "\n")

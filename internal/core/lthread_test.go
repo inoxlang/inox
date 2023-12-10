@@ -11,6 +11,8 @@ import (
 )
 
 func TestSpawnLThread(t *testing.T) {
+	t.Parallel()
+
 	permissiveLthreadLimit := MustMakeNotDecrementingLimit(THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME, 100_000)
 
 	t.Run("spawning a lthread without the required permission should fail", func(t *testing.T) {

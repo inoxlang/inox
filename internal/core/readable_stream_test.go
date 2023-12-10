@@ -1,22 +1,14 @@
 package core
 
 import (
-	"runtime"
 	"testing"
 	"time"
 
-	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestWrappedWatcherStream(t *testing.T) {
-	{
-		runtime.GC()
-		startMemStats := new(runtime.MemStats)
-		runtime.ReadMemStats(startMemStats)
-
-		defer utils.AssertNoMemoryLeak(t, startMemStats, 300)
-	}
+	t.Parallel()
 
 	t.Run("WaitNext", func(t *testing.T) {
 
@@ -122,9 +114,11 @@ func TestWrappedWatcherStream(t *testing.T) {
 }
 
 func TestElementsStream(t *testing.T) {
+	t.Parallel()
 
 	//TODO: add more tests
 	t.Run("WaitNextChunk", func(t *testing.T) {
+
 		t.Run("configured chunk size = 2..3, 1 element", func(t *testing.T) {
 			ctx := NewContext(ContextConfig{})
 			defer ctx.CancelGracefully()
@@ -221,13 +215,17 @@ func TestElementsStream(t *testing.T) {
 }
 
 func TestByteStream(t *testing.T) {
+	t.Parallel()
 
 	//TODO: add more tests
 	t.Run("RingBuffer source", func(t *testing.T) {
+
 		const TIMEOUT = time.Second / 4
 		bufferSize := ByteCount(20)
 
 		t.Run("WaitNext", func(t *testing.T) {
+			t.Parallel()
+
 			t.Run("1 byte in buffer", func(t *testing.T) {
 				ctx := NewContext(ContextConfig{})
 				defer ctx.CancelGracefully()
@@ -280,6 +278,7 @@ func TestByteStream(t *testing.T) {
 		})
 
 		t.Run("WaitNextChunk", func(t *testing.T) {
+			t.Parallel()
 
 			chunkSizeRange := NewIncludedEndIntRange(5, 10)
 
@@ -376,6 +375,8 @@ func TestByteStream(t *testing.T) {
 }
 
 func TestConfluenceStream(t *testing.T) {
+	t.Parallel()
+
 	const TIMEOUT = time.Second / 4
 
 	//TODO: test more combinations

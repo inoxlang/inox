@@ -9,6 +9,7 @@ import (
 )
 
 func TestMap(t *testing.T) {
+
 	{
 		runtime.GC()
 		startMemStats := new(runtime.MemStats)

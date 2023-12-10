@@ -18,6 +18,8 @@ import (
 )
 
 func TestParseModuleFromSource(t *testing.T) {
+	t.Parallel()
+
 	t.Run("no imports", func(t *testing.T) {
 		fls := newMemFilesystem()
 		ctx := NewContexWithEmptyState(ContextConfig{
@@ -360,6 +362,8 @@ func TestParseModuleFromSource(t *testing.T) {
 }
 
 func TestParseLocalModule(t *testing.T) {
+	t.Parallel()
+
 	moduleName := "mymod.ix"
 
 	t.Run("base case", func(t *testing.T) {

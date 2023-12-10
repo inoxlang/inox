@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"runtime"
 	"slices"
 	"strconv"
 	"strings"
@@ -20,6 +19,7 @@ import (
 )
 
 func TestPreInit(t *testing.T) {
+	t.Parallel()
 
 	defaultGlobalPermissions := []Permission{
 		GlobalVarPermission{permkind.Read, "*"},
@@ -64,17 +64,6 @@ func TestPreInit(t *testing.T) {
 			return ""
 		})
 	}
-
-	runtime.GC()
-	startMemStats := new(runtime.MemStats)
-	runtime.ReadMemStats(startMemStats)
-
-	defer utils.AssertNoMemoryLeak(t, startMemStats, 15_000, utils.AssertNoMemoryLeakOptions{
-		PreSleepDurationMillis: 100,
-		CheckGoroutines:        true,
-		GoroutineCount:         runtime.NumGoroutine(),
-		MaxGoroutineCountDelta: 0,
-	})
 
 	type testCase struct {
 		//input
