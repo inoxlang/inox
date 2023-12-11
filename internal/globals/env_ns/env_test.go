@@ -11,11 +11,16 @@ import (
 
 func TestEnv(t *testing.T) {
 
-	os.Setenv("HOME", "/home/user")
+	home := os.Getenv("HOME")
+	if home == "" {
+		home = "/home/user"
+		os.Setenv("HOME", home)
+	}
+
 	ctx := core.NewContext(core.ContextConfig{})
 	env, _ := NewEnvNamespace(ctx, nil, true)
 
-	assert.Equal(t, core.Path("/home/user/"), env.Prop(nil, "HOME"))
+	assert.Equal(t, core.Path(home), env.Prop(nil, "HOME"))
 
 	newCtxNoPerms := func() *core.Context {
 		ctx := core.NewContext(core.ContextConfig{})
