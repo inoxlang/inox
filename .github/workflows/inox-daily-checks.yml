@@ -1,0 +1,32 @@
+name: Inox Daily Checks
+
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 20 * * *'
+
+jobs:
+
+  tests:
+    name: test the inox binary
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Setup Go
+      uses: actions/setup-go@v4
+      with:
+          go-version: '1.21.x'
+
+    - name: Install dependencies
+      run: go mod download
+
+    - name: Build the inox binary - required by some tests
+      run: go build ./cmd/inox
+
+    - name: Add the current folder in $PATH
+      run: echo "${{ github.workspace }}" >> $GITHUB_PATH
+
+    - name: Run tests
+      run: go test -tags=reqbin -p=1 -parallel=1 -count=1 ./internal/... -timeout=2m
