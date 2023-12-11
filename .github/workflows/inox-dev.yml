@@ -38,6 +38,12 @@ jobs:
       with:
           go-version: '1.21.x'
 
+    - name: Install dependencies
+      run: go get .
+
+    - name: Run most tests
+      run: go test -p=2 --parallel=2 -count=1 ./internal/... -short -timeout=2m
+
     - uses: GraphR00t/go-release-action@v1.41
       with:
         # same as prod
