@@ -1,9 +1,9 @@
 manifest {}
 
 s = "abc"
-pattern two_letters = %str(
+pattern two-letters = %str(
     first_letter:'a'..'z' 
     'a'..'z'
 )
 
-print find!(%two_letters, s)
+print find!(%two-letters, s)
