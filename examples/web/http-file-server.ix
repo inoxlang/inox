@@ -14,4 +14,4 @@ body = http.read!(https://localhost:8080/, --insecure)
 print "response :"
 print(body)
 
-# server.close() # you can replace this line with server.wait_closed() to keep the server running
+server.close() # you can replace this line with server.wait_closed() to keep the server running
