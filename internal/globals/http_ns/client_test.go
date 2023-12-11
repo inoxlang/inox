@@ -35,6 +35,7 @@ func TestHttpClient(t *testing.T) {
 	}
 
 	t.Run("if cookies are disabled the cookie jar should be empty", func(t *testing.T) {
+		t.Parallel()
 
 		server, URL := makeServer()
 		ctx := core.NewContext(core.ContextConfig{
@@ -60,6 +61,7 @@ func TestHttpClient(t *testing.T) {
 	})
 
 	t.Run("if cookies are enabled the cookie jar should not be empty", func(t *testing.T) {
+		t.Parallel()
 
 		server, URL := makeServer()
 		url_, _ := url.Parse(string(URL))
@@ -87,6 +89,7 @@ func TestHttpClient(t *testing.T) {
 	})
 
 	t.Run("set cookies should be sent", func(t *testing.T) {
+		t.Parallel()
 
 		server, URL := makeServer()
 		url_, _ := url.Parse(string(URL))

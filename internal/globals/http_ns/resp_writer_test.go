@@ -63,6 +63,7 @@ func TestHttpResponseWriter(t *testing.T) {
 		}
 
 		for _, testCase := range testCases {
+			testCase := testCase
 			t.Run(fmt.Sprint(testCase.value), func(t *testing.T) {
 				ctx := core.NewContext(core.ContextConfig{})
 				core.NewGlobalState(ctx)
@@ -91,10 +92,6 @@ func TestHttpResponseWriter(t *testing.T) {
 	t.Run("SetCookie()", func(t *testing.T) {
 		t.Parallel()
 
-		ctx := core.NewContext(core.ContextConfig{})
-		core.NewGlobalState(ctx)
-		defer ctx.CancelGracefully()
-
 		testCases := []struct {
 			obj    *core.Object
 			cookie *http.Cookie
@@ -105,30 +102,31 @@ func TestHttpResponseWriter(t *testing.T) {
 				ok:  false,
 			},
 			{
-				obj: core.NewObjectFromMap(core.ValMap{"name": core.Str("mycookie")}, ctx),
+				obj: core.NewObjectFromMapNoInit(core.ValMap{"name": core.Str("mycookie")}),
 				ok:  false,
 			},
 			{
-				obj: core.NewObjectFromMap(core.ValMap{"value": core.Str("0")}, ctx),
+				obj: core.NewObjectFromMapNoInit(core.ValMap{"value": core.Str("0")}),
 				ok:  false,
 			},
 			{
-				obj:    core.NewObjectFromMap(core.ValMap{"name": core.Str("mycookie"), "value": core.Str("0")}, ctx),
+				obj:    core.NewObjectFromMapNoInit(core.ValMap{"name": core.Str("mycookie"), "value": core.Str("0")}),
 				ok:     true,
 				cookie: &http.Cookie{Name: "mycookie", Value: "0"},
 			},
 			{
-				obj: core.NewObjectFromMap(core.ValMap{"name": core.Str("mycookie"), "value": core.Str("0"), "domain": core.Str("localhost")}, ctx),
+				obj: core.NewObjectFromMapNoInit(core.ValMap{"name": core.Str("mycookie"), "value": core.Str("0"), "domain": core.Str("localhost")}),
 				ok:  false,
 			},
 			{
-				obj:    core.NewObjectFromMap(core.ValMap{"name": core.Str("mycookie"), "value": core.Str("0"), "domain": core.Host("://localhost")}, ctx),
+				obj:    core.NewObjectFromMapNoInit(core.ValMap{"name": core.Str("mycookie"), "value": core.Str("0"), "domain": core.Host("://localhost")}),
 				ok:     true,
 				cookie: &http.Cookie{Name: "mycookie", Value: "0", Domain: "localhost"},
 			},
 		}
 
 		for _, testCase := range testCases {
+			testCase := testCase
 			t.Run(fmt.Sprint(testCase.obj), func(t *testing.T) {
 				ctx := core.NewContext(core.ContextConfig{})
 				core.NewGlobalState(ctx)

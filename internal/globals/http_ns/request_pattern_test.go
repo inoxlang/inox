@@ -18,6 +18,8 @@ func TestHttpRequestPattern(t *testing.T) {
 	t.Parallel()
 
 	t.Run("creation", func(t *testing.T) {
+		t.Parallel()
+
 		t.Run("no argument", func(t *testing.T) {
 			pattern, err := CALLABLE_HTTP_REQUEST_PATTERN.Call([]core.Serializable{})
 			if !assert.Error(t, err) {
@@ -103,6 +105,7 @@ func TestHttpRequestPattern(t *testing.T) {
 }
 
 func TestCreationOfSymbolicHttpRequestPattern(t *testing.T) {
+	t.Parallel()
 	ctx := &symbolic.Context{}
 
 	t.Run("no argument", func(t *testing.T) {

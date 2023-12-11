@@ -21,12 +21,16 @@ func TestHttpServerHandlingDescription(t *testing.T) {
 
 	if !core.AreDefaultRequestHandlingLimitsSet() {
 		core.SetDefaultRequestHandlingLimits([]core.Limit{})
-		defer core.UnsetDefaultRequestHandlingLimits()
+		t.Cleanup(func() {
+			core.UnsetDefaultRequestHandlingLimits()
+		})
 	}
 
 	if !core.AreDefaultMaxRequestHandlerLimitsSet() {
 		core.SetDefaultMaxRequestHandlerLimits([]core.Limit{})
-		defer core.UnsetDefaultMaxRequestHandlerLimits()
+		t.Cleanup(func() {
+			core.UnsetDefaultMaxRequestHandlerLimits()
+		})
 	}
 
 	runHandlingDescTestCase := func(t *testing.T, testCase serverTestCase, defaultCreateClientFn func() *http.Client) {
@@ -51,6 +55,7 @@ func TestHttpServerHandlingDescription(t *testing.T) {
 	}
 
 	t.Run("handling description", func(t *testing.T) {
+		t.Parallel()
 
 		t.Run("routing only", func(t *testing.T) {
 			runHandlingDescTestCase(t, serverTestCase{
@@ -169,6 +174,8 @@ func TestHttpServerHandlingDescription(t *testing.T) {
 	})
 
 	t.Run("rate limiting", func(t *testing.T) {
+		t.Parallel()
+
 		const HELLO = `
 			return {
 				routing: Mapping {

@@ -41,8 +41,12 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 		return ctx
 	}
 
-	t.Run("", func(t *testing.T) {
+	t.Run("base cases", func(t *testing.T) {
+		t.Parallel()
+
 		t.Run("root index.ix", func(t *testing.T) {
+			t.Parallel()
+
 			ctx := setup(map[string]string{
 				"/routes/index.ix": `
 					manifest {
@@ -74,6 +78,8 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 		})
 
 		t.Run("non root index.ix", func(t *testing.T) {
+			t.Parallel()
+
 			ctx := setup(map[string]string{
 				"/routes/users/index.ix": `
 					manifest {
@@ -108,6 +114,8 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 		})
 
 		t.Run("root GET.ix", func(t *testing.T) {
+			t.Parallel()
+
 			ctx := setup(map[string]string{
 				"/routes/GET.ix": `
 					manifest {
@@ -130,6 +138,8 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 		})
 
 		t.Run("non root GET.ix", func(t *testing.T) {
+			t.Parallel()
+
 			ctx := setup(map[string]string{
 				"/routes/users/GET.ix": `
 					manifest {
@@ -152,6 +162,8 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 		})
 
 		t.Run("root GET-users.ix", func(t *testing.T) {
+			t.Parallel()
+
 			ctx := setup(map[string]string{
 				"/routes/GET-users.ix": `
 					manifest {
@@ -174,6 +186,8 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 		})
 
 		t.Run("non root GET-users.ix", func(t *testing.T) {
+			t.Parallel()
+
 			ctx := setup(map[string]string{
 				"/routes/GET-users.ix": `
 					manifest {
@@ -196,6 +210,8 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 		})
 
 		t.Run("deep GET.ix", func(t *testing.T) {
+			t.Parallel()
+
 			ctx := setup(map[string]string{
 				"/routes/x/users.ix": `
 					manifest {
@@ -240,6 +256,8 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 		})
 
 		t.Run(".spec.ix files should be ignored", func(t *testing.T) {
+			t.Parallel()
+
 			ctx := setup(map[string]string{
 				"/routes/a.spec.ix": `
 					manifest {
@@ -306,8 +324,11 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 	})
 
 	t.Run("an error is expected if at least two modules handle the same API operation", func(t *testing.T) {
+		t.Parallel()
 
 		t.Run("GET-users.ix + /users/index.ix", func(t *testing.T) {
+			t.Parallel()
+
 			ctx := setup(map[string]string{
 				"/routes/GET.ix": `
 					manifest {
@@ -331,6 +352,8 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 		})
 
 		t.Run("GET-users.ix + /users/index.ix", func(t *testing.T) {
+			t.Parallel()
+
 			ctx := setup(map[string]string{
 				"/routes/GET-users.ix": `
 					manifest {
@@ -354,6 +377,8 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 		})
 
 		t.Run("GET-users.ix + /users/GET.ix", func(t *testing.T) {
+			t.Parallel()
+
 			ctx := setup(map[string]string{
 				"/routes/GET-users.ix": `
 					manifest {
@@ -377,6 +402,8 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 		})
 
 		t.Run("users.ix + /users/GET.ix", func(t *testing.T) {
+			t.Parallel()
+
 			ctx := setup(map[string]string{
 				"/routes/users.ix": `
 					manifest {
@@ -402,7 +429,11 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 	})
 
 	t.Run("GET & OPTIONS handler should not have request body parameters", func(t *testing.T) {
+		t.Parallel()
+
 		t.Run("GET.ix", func(t *testing.T) {
+			t.Parallel()
+
 			ctx := setup(map[string]string{
 				"/routes/GET.ix": `
 					manifest {
@@ -420,6 +451,8 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 		})
 
 		t.Run("GET-users.ix", func(t *testing.T) {
+			t.Parallel()
+
 			ctx := setup(map[string]string{
 				"/routes/GET-users.ix": `
 					manifest {
@@ -437,6 +470,8 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 		})
 
 		t.Run("OPTIONS.ix", func(t *testing.T) {
+			t.Parallel()
+
 			ctx := setup(map[string]string{
 				"/routes/OPTIONS.ix": `
 					manifest {
@@ -454,6 +489,8 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 		})
 
 		t.Run("OPTIONS-users.ix", func(t *testing.T) {
+			t.Parallel()
+
 			ctx := setup(map[string]string{
 				"/routes/OPTIONS-users.ix": `
 					manifest {
@@ -472,7 +509,11 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 	})
 
 	t.Run("parameters", func(t *testing.T) {
+		t.Parallel()
+
 		t.Run("POST with a request body parameter", func(t *testing.T) {
+			t.Parallel()
+
 			ctx := setup(map[string]string{
 				"/routes/POST-users.ix": `
 					manifest {
@@ -519,6 +560,8 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 		})
 
 		t.Run("POST with an injected parameter and no request body parameters", func(t *testing.T) {
+			t.Parallel()
+
 			ctx := setup(map[string]string{
 				"/routes/POST-users.ix": `
 					manifest {
@@ -550,6 +593,8 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 		})
 
 		t.Run("POST with a request body parameter and an injected parameter", func(t *testing.T) {
+			t.Parallel()
+
 			ctx := setup(map[string]string{
 				"/routes/POST-users.ix": `
 					manifest {
@@ -597,6 +642,8 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 		})
 
 		t.Run("POST with two request body parameters", func(t *testing.T) {
+			t.Parallel()
+
 			ctx := setup(map[string]string{
 				"/routes/POST-users.ix": `
 					manifest {

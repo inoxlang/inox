@@ -131,12 +131,16 @@ func TestHttpServerMissingProvidePermission(t *testing.T) {
 
 	if !core.AreDefaultRequestHandlingLimitsSet() {
 		core.SetDefaultRequestHandlingLimits([]core.Limit{})
-		defer core.UnsetDefaultRequestHandlingLimits()
+		t.Cleanup(func() {
+			core.UnsetDefaultRequestHandlingLimits()
+		})
 	}
 
 	if !core.AreDefaultMaxRequestHandlerLimitsSet() {
 		core.SetDefaultMaxRequestHandlerLimits([]core.Limit{})
-		defer core.UnsetDefaultMaxRequestHandlerLimits()
+		t.Cleanup(func() {
+			core.UnsetDefaultMaxRequestHandlerLimits()
+		})
 	}
 
 	host := core.Host("https://localhost:8080")
@@ -155,12 +159,16 @@ func TestHttpServerUserHandler(t *testing.T) {
 
 	if !core.AreDefaultRequestHandlingLimitsSet() {
 		core.SetDefaultRequestHandlingLimits([]core.Limit{})
-		defer core.UnsetDefaultRequestHandlingLimits()
+		t.Cleanup(func() {
+			core.UnsetDefaultRequestHandlingLimits()
+		})
 	}
 
 	if !core.AreDefaultMaxRequestHandlerLimitsSet() {
 		core.SetDefaultMaxRequestHandlerLimits([]core.Limit{})
-		defer core.UnsetDefaultMaxRequestHandlerLimits()
+		t.Cleanup(func() {
+			core.UnsetDefaultMaxRequestHandlerLimits()
+		})
 	}
 
 	//TODO: rework test & add case where handler access a global
@@ -178,13 +186,14 @@ func TestHttpServerUserHandler(t *testing.T) {
 		}
 
 		t.Run(name, func(t *testing.T) {
-
 			ctx := core.NewContext(core.ContextConfig{
 				Permissions: []core.Permission{
 					core.HttpPermission{Kind_: permkind.Provide, Entity: host},
 				},
 				Filesystem: fs_ns.GetOsFilesystem(),
 			})
+			defer ctx.CancelGracefully()
+
 			state := core.NewGlobalState(ctx)
 			state.Module = module
 			state.Logger = zerolog.New(io.Discard)
@@ -220,12 +229,16 @@ func TestHttpServerMapping(t *testing.T) {
 
 	if !core.AreDefaultRequestHandlingLimitsSet() {
 		core.SetDefaultRequestHandlingLimits([]core.Limit{})
-		defer core.UnsetDefaultRequestHandlingLimits()
+		t.Cleanup(func() {
+			core.UnsetDefaultRequestHandlingLimits()
+		})
 	}
 
 	if !core.AreDefaultMaxRequestHandlerLimitsSet() {
 		core.SetDefaultMaxRequestHandlerLimits([]core.Limit{})
-		defer core.UnsetDefaultMaxRequestHandlerLimits()
+		t.Cleanup(func() {
+			core.UnsetDefaultMaxRequestHandlerLimits()
+		})
 	}
 
 	t.Run("CUSTOMMETHOD /x", func(t *testing.T) {
@@ -726,6 +739,7 @@ func setupTestCase(t *testing.T, testCase serverTestCase) (*core.GlobalState, *c
 }
 
 func runServerTest(t *testing.T, testCase serverTestCase, defaultCreateClient func() *http.Client) {
+
 	state, ctx, chunk, host, err := setupTestCase(t, testCase)
 	if !assert.NoError(t, err) {
 		return
@@ -745,11 +759,15 @@ func runServerTest(t *testing.T, testCase serverTestCase, defaultCreateClient fu
 	})
 }
 
+// important note: runAdvancedServerTest calls .Parallel() if testCase.avoidTestParallelization is false.
 func runAdvancedServerTest(
 	t *testing.T, testCase serverTestCase,
 	defaultCreateClient func() *http.Client, setup func() (*HttpsServer, *core.Context, core.Host, error),
 ) {
 
+	if !testCase.avoidTestParallelization {
+		t.Parallel()
+	}
 	server, ctx, host, err := setup()
 	if !assert.NoError(t, err) {
 		return
@@ -984,12 +1002,13 @@ type requestTestInfo struct {
 }
 
 type serverTestCase struct {
-	input          string
-	requests       []requestTestInfo
-	outWriter      io.Writer
-	makeFilesystem func() afs.Filesystem
-	finalizeState  func(*core.GlobalState) error
-	createClientFn func() func() *http.Client
+	input                    string
+	requests                 []requestTestInfo
+	outWriter                io.Writer
+	makeFilesystem           func() afs.Filesystem
+	finalizeState            func(*core.GlobalState) error
+	createClientFn           func() func() *http.Client
+	avoidTestParallelization bool
 }
 
 func createHandlers(t *testing.T, code string) (*core.InoxFunction, *core.InoxFunction, *core.Module) {

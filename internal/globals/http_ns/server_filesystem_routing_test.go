@@ -36,11 +36,17 @@ func TestFilesystemRouting(t *testing.T) {
 		save := core.GetDefaultScriptLimits()
 		core.UnsetDefaultScriptLimits()
 		core.SetDefaultScriptLimits([]core.Limit{threadCountLimit})
-		defer core.SetDefaultScriptLimits(save)
-		defer core.UnsetDefaultScriptLimits()
+
+		t.Cleanup(func() {
+			core.UnsetDefaultScriptLimits()
+			core.SetDefaultScriptLimits(save)
+		})
+
 	} else {
 		core.SetDefaultScriptLimits([]core.Limit{threadCountLimit})
-		defer core.UnsetDefaultScriptLimits()
+		t.Cleanup(func() {
+			core.UnsetDefaultScriptLimits()
+		})
 	}
 
 	//set default request handling limits: cpuTimeLimit
@@ -48,11 +54,16 @@ func TestFilesystemRouting(t *testing.T) {
 		save := core.GetDefaultRequestHandlingLimits()
 		core.UnsetDefaultRequestHandlingLimits()
 		core.SetDefaultRequestHandlingLimits([]core.Limit{cpuTimeLimit})
-		defer core.SetDefaultRequestHandlingLimits(save)
-		defer core.UnsetDefaultRequestHandlingLimits()
+		t.Cleanup(func() {
+			core.UnsetDefaultRequestHandlingLimits()
+			core.SetDefaultRequestHandlingLimits(save)
+		})
+
 	} else {
 		core.SetDefaultRequestHandlingLimits([]core.Limit{cpuTimeLimit})
-		defer core.UnsetDefaultRequestHandlingLimits()
+		t.Cleanup(func() {
+			core.UnsetDefaultRequestHandlingLimits()
+		})
 	}
 
 	//set default max request handler limits
@@ -66,11 +77,16 @@ func TestFilesystemRouting(t *testing.T) {
 		save := core.GetDefaultMaxRequestHandlerLimits()
 		core.UnsetDefaultMaxRequestHandlerLimits()
 		core.SetDefaultMaxRequestHandlerLimits([]core.Limit{maxCpuTimeLimit})
-		defer core.SetDefaultMaxRequestHandlerLimits(save)
-		defer core.UnsetDefaultMaxRequestHandlerLimits()
+		t.Cleanup(func() {
+			core.UnsetDefaultMaxRequestHandlerLimits()
+			core.SetDefaultMaxRequestHandlerLimits(save)
+		})
+
 	} else {
 		core.SetDefaultMaxRequestHandlerLimits([]core.Limit{maxCpuTimeLimit})
-		defer core.UnsetDefaultMaxRequestHandlerLimits()
+		t.Cleanup(func() {
+			core.UnsetDefaultMaxRequestHandlerLimits()
+		})
 	}
 
 	t.Run("GET /x.html should return the content of /static/x.html and the CSP header should be set", func(t *testing.T) {
@@ -590,6 +606,7 @@ func TestFilesystemRouting(t *testing.T) {
 				input: `return {
 						routing: {dynamic: /routes/}
 					}`,
+				avoidTestParallelization: true,
 				makeFilesystem: func() afs.Filesystem {
 					fls := fs_ns.NewMemFilesystem(10_000)
 					fls.MkdirAll("/routes", fs_ns.DEFAULT_DIR_FMODE)
@@ -688,6 +705,7 @@ func TestFilesystemRouting(t *testing.T) {
 				input: `return {
 						routing: {dynamic: /routes/}
 					}`,
+				avoidTestParallelization: true,
 				makeFilesystem: func() afs.Filesystem {
 					fls := fs_ns.NewMemFilesystem(10_000)
 					fls.MkdirAll("/routes", fs_ns.DEFAULT_DIR_FMODE)
@@ -732,6 +750,7 @@ func TestFilesystemRouting(t *testing.T) {
 				input: `return {
 						routing: {dynamic: /routes/}
 					}`,
+				avoidTestParallelization: true,
 				makeFilesystem: func() afs.Filesystem {
 					fls := fs_ns.NewMemFilesystem(10_000)
 					fls.MkdirAll("/routes", fs_ns.DEFAULT_DIR_FMODE)
@@ -771,6 +790,7 @@ func TestFilesystemRouting(t *testing.T) {
 				input: `return {
 						routing: {dynamic: /routes/}
 					}`,
+				avoidTestParallelization: true,
 				makeFilesystem: func() afs.Filesystem {
 					fls := fs_ns.NewMemFilesystem(10_000)
 					fls.MkdirAll("/routes", fs_ns.DEFAULT_DIR_FMODE)
@@ -814,6 +834,8 @@ func TestFilesystemRouting(t *testing.T) {
 	})
 
 	t.Run("request transaction should be commited or rollbacked after request", func(t *testing.T) {
+
+		t.Parallel()
 
 		baseTest := serverTestCase{
 			input: `
