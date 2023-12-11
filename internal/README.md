@@ -31,9 +31,14 @@ This folder contains most of the code for the `inox` binary.
 
 - control server
 - control client
-- ExternalFS
+- inox binary upgrade logic
+- process-level access control using Landlock
+- ExternalFS (WIP)
 
 **inoxd**
+
+- service installation (Systemd)
+- daemon
 
 **filekv**
 
@@ -51,7 +56,14 @@ This folder contains most of the code for the `inox` binary.
 
 **project**
 
+- project registry
+- project type and logic
+
 **projectserver**
+
+- standard LSP method handlers
+- custom LSP method handlers
+- language-agnostic LSP logic & types
 
 **third_party_stable**
 
