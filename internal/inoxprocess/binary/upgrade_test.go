@@ -15,6 +15,10 @@ var (
 )
 
 func TestInstallInoxBinary(t *testing.T) {
+	if testing.Short() {
+		return
+	}
+
 	dir := t.TempDir()
 
 	binaryPath := filepath.Join(dir, "inox")

@@ -7,6 +7,11 @@ import (
 )
 
 func TestFetchTags(t *testing.T) {
+
+	if testing.Short() {
+		return
+	}
+
 	tags, err := FetchTags()
 	if !assert.NoError(t, err) {
 		return
