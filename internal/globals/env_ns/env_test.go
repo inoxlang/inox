@@ -20,7 +20,7 @@ func TestEnv(t *testing.T) {
 	ctx := core.NewContext(core.ContextConfig{})
 	env, _ := NewEnvNamespace(ctx, nil, true)
 
-	assert.Equal(t, core.Path(home), env.Prop(nil, "HOME"))
+	assert.Equal(t, core.Path(home+"/"), env.Prop(nil, "HOME"))
 
 	newCtxNoPerms := func() *core.Context {
 		ctx := core.NewContext(core.ContextConfig{})
