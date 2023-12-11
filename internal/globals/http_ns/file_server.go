@@ -8,14 +8,16 @@ import (
 	"time"
 
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/globals/fs_ns"
+	"github.com/inoxlang/inox/internal/mimeconsts"
 	"github.com/inoxlang/inox/internal/permkind"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 // NewFileServer returns an HttpServer that uses Go's http.FileServer(dir) to handle requests
 func NewFileServer(ctx *core.Context, args ...core.Value) (*HttpsServer, error) {
 	var addr string
 	var dir core.Path
+	fls := ctx.GetFileSystem()
 
 	for _, arg := range args {
 		switch v := arg.(type) {
@@ -62,8 +64,38 @@ func NewFileServer(ctx *core.Context, args ...core.Value) (*HttpsServer, error) 
 
 	server, err := NewGolangHttpServer(ctx, GolangHttpServerConfig{
 		Addr:                    addr,
-		Handler:                 http.FileServer(http.Dir(dir)),
 		PersistCreatedLocalCert: true,
+		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			isDirURL := r.URL.Path[len(r.URL.Path)-1] == '/'
+			filesystemPath := fls.Join(dir.UnderlyingString(), r.URL.Path)
+
+			if isDirURL {
+				//send HTML
+
+				entries, err := fls.ReadDir(filesystemPath)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusNotFound)
+					return
+				}
+
+				w.Header().Add("Content-Type", mimeconsts.HTML_CTYPE)
+				w.WriteHeader(200)
+				w.Write(utils.StringAsBytes(`<html><head></head><body><pre>`))
+				for _, entry := range entries {
+					name := entry.Name()
+					fmt.Fprintf(w, `<a href="%s">%s</a>`+"\n", name, name)
+				}
+
+				w.Write(utils.StringAsBytes(`</pre></body></html>`))
+				return
+			}
+			//send content of the file
+
+			err := serveFileNativeRequest(ctx, w, r, core.PathFrom(filesystemPath))
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+			}
+		}),
 	})
 	if err != nil {
 		return nil, err
@@ -97,7 +129,10 @@ func NewFileServer(ctx *core.Context, args ...core.Value) (*HttpsServer, error) 
 // - failure to get creation & modification time from file info.
 // Note that errors can still happen during the call to http.ServeContent but they are written to the *http.ResponseWriter.
 func serveFile(ctx *core.Context, rw *HttpResponseWriter, r *HttpRequest, pth core.Path) error {
+	return serveFileNativeRequest(ctx, rw.rw, r.Request(), pth)
+}
 
+func serveFileNativeRequest(ctx *core.Context, rw http.ResponseWriter, r *http.Request, pth core.Path) error {
 	fls := ctx.GetFileSystem()
 	{
 		var err error
@@ -125,12 +160,9 @@ func serveFile(ctx *core.Context, rw *HttpResponseWriter, r *HttpRequest, pth co
 		return err
 	}
 
-	_, modif, err := fs_ns.GetCreationAndModifTime(stat)
-	if err != nil {
-		return err
-	}
+	modTime := stat.ModTime()
 
 	//TODO: pass a custom response writer that logs error and return a 404 status code.
-	http.ServeContent(rw.rw, r.Request(), string(pth), modif, f)
+	http.ServeContent(rw, r, string(pth), modTime, f)
 	return nil
 }
