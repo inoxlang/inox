@@ -1,3 +1,5 @@
+//go:build reqbin
+
 package inoxd
 
 import (
