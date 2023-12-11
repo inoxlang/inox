@@ -11,6 +11,8 @@ import (
 //TODO: add equivalent tests for transactions
 
 func TestKvSet(t *testing.T) {
+	t.Parallel()
+
 	t.Run("SetSerialized", func(t *testing.T) {
 		testKvSet(t, true)
 	})
@@ -22,7 +24,9 @@ func TestKvSet(t *testing.T) {
 
 func testKvSet(t *testing.T, UseSetSerialized bool) {
 	for _, txCase := range []string{"no_tx", "tx", "finished_tx"} {
+		txCase := txCase
 		t.Run(txCase, func(t *testing.T) {
+			t.Parallel()
 
 			fls := newMemFilesystem()
 
@@ -38,6 +42,7 @@ func testKvSet(t *testing.T, UseSetSerialized bool) {
 			ctx := core.NewContext(core.ContextConfig{
 				Permissions: []core.Permission{core.CreateFsReadPerm(core.PathPattern("/..."))},
 			})
+			defer ctx.CancelGracefully()
 
 			var tx *core.Transaction
 			if txCase != "no_tx" {
@@ -110,6 +115,7 @@ func testKvSet(t *testing.T, UseSetSerialized bool) {
 }
 
 func TestKvGetSerialized(t *testing.T) {
+	t.Parallel()
 
 	fls := newMemFilesystem()
 
@@ -125,6 +131,7 @@ func TestKvGetSerialized(t *testing.T) {
 	ctx := core.NewContext(core.ContextConfig{
 		Permissions: []core.Permission{core.CreateFsReadPerm(core.PathPattern("/..."))},
 	})
+	defer ctx.CancelGracefully()
 
 	//create item
 	kv.Set(ctx, "/data", core.Int(1), kv)
@@ -154,6 +161,7 @@ func TestKvInsert(t *testing.T) {
 }
 
 func testKvInsert(t *testing.T, UseInsertSerialized bool) {
+	t.Parallel()
 
 	t.Run("simple", func(t *testing.T) {
 		fls := newMemFilesystem()
@@ -170,6 +178,7 @@ func testKvInsert(t *testing.T, UseInsertSerialized bool) {
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{core.CreateFsReadPerm(core.PathPattern("/..."))},
 		})
+		defer ctx.CancelGracefully()
 
 		//create item
 		if UseInsertSerialized {
@@ -207,6 +216,7 @@ func testKvInsert(t *testing.T, UseInsertSerialized bool) {
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{core.CreateFsReadPerm(core.PathPattern("/..."))},
 		})
+		defer ctx.CancelGracefully()
 
 		//first insert
 		if UseInsertSerialized {
@@ -244,6 +254,7 @@ func testKvInsert(t *testing.T, UseInsertSerialized bool) {
 }
 
 func TestKvForEach(t *testing.T) {
+	t.Parallel()
 
 	fls := newMemFilesystem()
 
@@ -259,6 +270,7 @@ func TestKvForEach(t *testing.T) {
 	ctx := core.NewContext(core.ContextConfig{
 		Permissions: []core.Permission{core.CreateFsReadPerm(core.PathPattern("/..."))},
 	})
+	defer ctx.CancelGracefully()
 
 	//create item
 	kv.Set(ctx, "/data", core.Int(1), kv)
@@ -281,6 +293,7 @@ func TestKvForEach(t *testing.T) {
 }
 
 func TestKvDelete(t *testing.T) {
+	t.Parallel()
 
 	fls := newMemFilesystem()
 
@@ -296,6 +309,7 @@ func TestKvDelete(t *testing.T) {
 	ctx := core.NewContext(core.ContextConfig{
 		Permissions: []core.Permission{core.CreateFsReadPerm(core.PathPattern("/..."))},
 	})
+	defer ctx.CancelGracefully()
 
 	//create item
 	kv.Set(ctx, "/data", core.Int(1), kv)

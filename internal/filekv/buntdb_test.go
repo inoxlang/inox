@@ -30,60 +30,9 @@ const (
 
 //TODO: add tests with os filesystem
 
-func testOpen(t testing.TB) *buntDB {
-	// if err := fls.Remove(DEFAULT_FILENAME); err != nil {
-	// 	t.Fatal(err)
-	// }
-	return testReOpen(t, nil)
-}
-
-func testOpenWithFS(t testing.TB, fls afs.Filesystem) *buntDB {
-	db, err := openBuntDBNoPermCheck(DEFAULT_FILENAME, fls)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return db
-}
-
-func testReOpen(t testing.TB, db *buntDB) *buntDB {
-	var fls billy.Basic
-	if db != nil {
-		fls = db.fls
-	} else {
-		fls = newMemFilesystem()
-	}
-	return testReOpenDelay(t, db, 0, fls)
-}
-
-func testReOpenDelay(t testing.TB, db *buntDB, dur time.Duration, fls billy.Basic) *buntDB {
-	if db != nil {
-		if err := db.Close(); err != nil {
-			t.Fatal(err)
-		}
-	}
-
-	if fls == nil {
-		if db != nil {
-			fls = db.fls
-		} else {
-			fls = newMemFilesystem()
-		}
-	}
-
-	time.Sleep(dur)
-	db, err := openBuntDBNoPermCheck(DEFAULT_FILENAME, fls)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return db
-}
-
-func testClose(db *buntDB) {
-	_ = db.Close()
-	_ = db.fls.Remove(DEFAULT_FILENAME)
-}
-
 func TestBackgroudOperations(t *testing.T) {
+	t.Parallel()
+
 	db := testOpen(t)
 	defer testClose(db)
 	for i := 0; i < 1000; i++ {
@@ -130,6 +79,8 @@ func TestBackgroudOperations(t *testing.T) {
 	}
 }
 func TestSaveLoad(t *testing.T) {
+	t.Parallel()
+
 	var fls = newMemFilesystem()
 	db, _ := openBuntDBNoPermCheck(":memory:", fls)
 	defer db.Close()
@@ -187,6 +138,8 @@ func TestSaveLoad(t *testing.T) {
 }
 
 func TestMutatingIterator(t *testing.T) {
+	t.Parallel()
+
 	db := testOpen(t)
 	defer testClose(db)
 	count := 1000
@@ -227,6 +180,8 @@ func TestMutatingIterator(t *testing.T) {
 }
 
 func TestCaseInsensitiveIndex(t *testing.T) {
+	t.Parallel()
+
 	db := testOpen(t)
 	defer testClose(db)
 	count := 1000
@@ -272,6 +227,8 @@ func TestCaseInsensitiveIndex(t *testing.T) {
 }
 
 func TestIndexTransaction(t *testing.T) {
+	t.Parallel()
+
 	db := testOpen(t)
 	defer testClose(db)
 	var errFine = errors.New("this is fine")
@@ -433,6 +390,8 @@ func TestIndexTransaction(t *testing.T) {
 }
 
 func TestDeleteAll(t *testing.T) {
+	t.Parallel()
+
 	db := testOpen(t)
 	defer testClose(db)
 
@@ -537,6 +496,8 @@ func TestDeleteAll(t *testing.T) {
 }
 
 func TestAscendEqual(t *testing.T) {
+	t.Parallel()
+
 	db := testOpen(t)
 	defer testClose(db)
 	if err := db.Update(func(tx *Tx) error {
@@ -588,7 +549,10 @@ func TestAscendEqual(t *testing.T) {
 		t.Fatalf("expected %v, got %v", "key:00125B", res[1])
 	}
 }
+
 func TestDescendEqual(t *testing.T) {
+	t.Parallel()
+
 	db := testOpen(t)
 	defer testClose(db)
 	if err := db.Update(func(tx *Tx) error {
@@ -640,7 +604,10 @@ func TestDescendEqual(t *testing.T) {
 		t.Fatalf("expected %v, got %v", "key:00125A", res[1])
 	}
 }
+
 func TestVariousTx(t *testing.T) {
+	t.Parallel()
+
 	db := testOpen(t)
 	defer testClose(db)
 	if err := db.Update(func(tx *Tx) error {
@@ -1063,6 +1030,8 @@ func TestVariousTx(t *testing.T) {
 }
 
 func TestNearby(t *testing.T) {
+	t.Parallel()
+
 	rand.Seed(time.Now().UnixNano())
 	N := 100000
 	db, _ := openBuntDBNoPermCheck(":memory:", newMemFilesystem())
@@ -1335,6 +1304,8 @@ func TestNoExpiringItem(t *testing.T) {
 	}
 }
 func TestAutoShrink(t *testing.T) {
+	t.Parallel()
+
 	db := testOpen(t)
 	defer testClose(db)
 	for i := 0; i < 1000; i++ {
@@ -1386,6 +1357,8 @@ func TestAutoShrink(t *testing.T) {
 
 // test database format loading
 func TestDatabaseFormat(t *testing.T) {
+	t.Parallel()
+
 	// should succeed
 	func() {
 		resp := strings.Join([]string{
@@ -1491,6 +1464,8 @@ func TestDatabaseFormat(t *testing.T) {
 }
 
 func TestInsertsAndDeleted(t *testing.T) {
+	t.Parallel()
+
 	db := testOpen(t)
 	defer testClose(db)
 	if err := db.CreateIndex("any", "*", IndexString); err != nil {
@@ -1532,6 +1507,8 @@ func TestInsertsAndDeleted(t *testing.T) {
 }
 
 func TestInsertDoesNotMisuseIndex(t *testing.T) {
+	t.Parallel()
+
 	db := testOpen(t)
 	defer testClose(db)
 	fail := func(a, b string) bool { t.Fatal("Misused index"); return false }
@@ -1560,6 +1537,8 @@ func TestInsertDoesNotMisuseIndex(t *testing.T) {
 }
 
 func TestDeleteDoesNotMisuseIndex(t *testing.T) {
+	t.Parallel()
+
 	db := testOpen(t)
 	defer testClose(db)
 	fail := func(a, b string) bool { t.Fatal("Misused index"); return false }
@@ -1666,6 +1645,8 @@ func TestOpeningInvalidDatabaseFile(t *testing.T) {
 
 // test closing a closed database.
 func TestOpeningClosedDatabase(t *testing.T) {
+	t.Parallel()
+
 	var fls = newMemFilesystem()
 
 	db, err := openBuntDBNoPermCheck(DEFAULT_FILENAME, fls)
@@ -1693,6 +1674,8 @@ func TestOpeningClosedDatabase(t *testing.T) {
 
 // test shrinking a database.
 func TestShrink(t *testing.T) {
+	t.Parallel()
+
 	db := testOpen(t)
 	defer testClose(db)
 	if err := db.Shrink(); err != nil {
@@ -1899,6 +1882,8 @@ func test(t *testing.T, a, b bool) {
 }
 
 func TestBasic(t *testing.T) {
+	t.Parallel()
+
 	rand.Seed(time.Now().UnixNano())
 	db := testOpen(t)
 	defer testClose(db)
@@ -2192,6 +2177,8 @@ func TestRectStrings(t *testing.T) {
 // TestTTLReOpen test setting a TTL and then immediately closing the database and
 // then waiting the TTL before reopening. The key should not be accessible.
 func TestTTLReOpen(t *testing.T) {
+	t.Parallel()
+
 	ttl := time.Second * 3
 	db := testOpen(t)
 	defer testClose(db)
@@ -2303,15 +2290,18 @@ func TestConfig(t *testing.T) {
 		t.Fatalf("expecting %v, %v, and %v, got %v, %v, and %v", 100, 200, SyncAlways, c.AutoShrinkMinSize, c.AutoShrinkPercentage, c.SyncPolicy)
 	}
 }
+
 func testUint64Hex(n uint64) string {
 	s := strconv.FormatUint(n, 16)
 	s = "0000000000000000" + s
 	return s[len(s)-16:]
 }
+
 func textHexUint64(s string) uint64 {
 	n, _ := strconv.ParseUint(s, 16, 64)
 	return n
 }
+
 func benchClose(t *testing.B, persist bool, db *buntDB) {
 	if persist {
 		if err := db.fls.Remove(DEFAULT_FILENAME); err != nil {
@@ -2698,6 +2688,8 @@ func TestJSONIndex(t *testing.T) {
 }
 
 func TestOnExpiredSync(t *testing.T) {
+	t.Parallel()
+
 	db := testOpen(t)
 	defer testClose(db)
 
@@ -2874,13 +2866,21 @@ func TestTransactionLeak(t *testing.T) {
 }
 
 func TestReloadNotInvalid(t *testing.T) {
+	t.Parallel()
+
 	rand.Seed(time.Now().UnixNano())
 	//fls.Remove(DEFAULT_FILENAME)
 	//defer fls.Remove(DEFAULT_FILENAME)
 
 	start := time.Now()
 	ii := 0
-	for time.Since(start) < time.Second*5 {
+
+	testDuration := 5 * time.Second
+	if testing.Short() {
+		testDuration = 3 * time.Second
+	}
+
+	for time.Since(start) < testDuration {
 		func() {
 			fls := newMemFilesystem()
 			db, err := openBuntDBNoPermCheck(DEFAULT_FILENAME, fls)
@@ -3017,4 +3017,57 @@ func newMemFilesystem() afs.Filesystem {
 	return afs.AddAbsoluteFeature(fs, func(path string) (string, error) {
 		return "", core.ErrNotImplemented
 	})
+}
+
+func testOpen(t testing.TB) *buntDB {
+	// if err := fls.Remove(DEFAULT_FILENAME); err != nil {
+	// 	t.Fatal(err)
+	// }
+	return testReOpen(t, nil)
+}
+
+func testOpenWithFS(t testing.TB, fls afs.Filesystem) *buntDB {
+	db, err := openBuntDBNoPermCheck(DEFAULT_FILENAME, fls)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return db
+}
+
+func testReOpen(t testing.TB, db *buntDB) *buntDB {
+	var fls billy.Basic
+	if db != nil {
+		fls = db.fls
+	} else {
+		fls = newMemFilesystem()
+	}
+	return testReOpenDelay(t, db, 0, fls)
+}
+
+func testReOpenDelay(t testing.TB, db *buntDB, dur time.Duration, fls billy.Basic) *buntDB {
+	if db != nil {
+		if err := db.Close(); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	if fls == nil {
+		if db != nil {
+			fls = db.fls
+		} else {
+			fls = newMemFilesystem()
+		}
+	}
+
+	time.Sleep(dur)
+	db, err := openBuntDBNoPermCheck(DEFAULT_FILENAME, fls)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return db
+}
+
+func testClose(db *buntDB) {
+	_ = db.Close()
+	_ = db.fls.Remove(DEFAULT_FILENAME)
 }
