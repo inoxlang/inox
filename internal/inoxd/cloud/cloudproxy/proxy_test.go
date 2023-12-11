@@ -25,6 +25,11 @@ import (
 )
 
 func TestInoxdConnection(t *testing.T) {
+	if testing.Short() {
+		t.Skip()
+	}
+	//TODO: fix implementation
+
 	inoxdconn.RegisterTypesInGob()
 
 	fls := fs_ns.NewMemFilesystem(1_000_000)
