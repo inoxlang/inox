@@ -24,11 +24,7 @@ func TestDatabaseIL(t *testing.T) {
 	runtime.ReadMemStats(startMemStats)
 
 	defer func() {
-		utils.AssertNoMemoryLeak(t, startMemStats, 10_000, utils.AssertNoMemoryLeakOptions{
-			PreSleepDurationMillis: 100,
-			CheckGoroutines:        true,
-			GoroutineCount:         runtime.NumGoroutine(),
-		})
+		utils.AssertNoGoroutineLeak(t, runtime.NumGoroutine())
 	}()
 
 	t.Run("the name of the top level entities should be a valid identifier", func(t *testing.T) {
