@@ -7,48 +7,52 @@ This package contains most the code for the Inox Runtime, the type checking logi
 <summary>Code organization</summary>
 
 - Tree Walk Interpreter
-    - **tree_walk.go**
+    - [tree_walk.go](tree_walk.go)
 - Bytecode Interpreter (inspired from https://github.com/d5/tengo.)
-    - **compiler.go**
-    - **vm.go**
+    - [compiler.go](compiler.go)
+    - [vm.go](vm.go)
 - Static Check
-    - **static_check.go**
+    - [static_check.go](static_check.go)
+- Symbolic Evaluation and Typechecking
+    - [symbolic.go](symbolic.go)
+    - [symbolic package](./symbolic/)
 - Core Value Types
-    - **value.go**
-    - **number.go**
-    - **quantity.go**
-    - **mutable_data_structures.go**
-    - **immutable_data_structures.go**
+    - [value.go](value.go)
+    - [number.go](number.go)
+    - [quantity.go](quantity.go)
+    - [mutable_data_structures.go](mutable_data_structures.go)
+    - [immutable_data_structures.go](immutable_data_structures.go)
 - Core Pattern Types
-    - **pattern.go**
-    - **string_pattern.go**
+    - [pattern.go](pattern.go)
+    - [string_pattern.go](string_pattern.go)
 - Module
-    - **module.go**
-    - **module_import.go**
-    - **manifest.go**
+    - [module.go](module.go)
+    - [module_import.go](module_import.go)
+    - [preinit.go](preinit.go)
+    - [manifest.go](manifest.go)
 - Context & Security
-    - **context.go**
-    - **permissions.go**
-    - **limit.go**
-    - **token_bucket.go**
+    - [context.go](context.go)
+    - [permissions.go](permissions.go)
+    - [limit.go](limit.go)
+    - [token_bucket.go](token_bucket.go)
 - Secrets
-    - **secrets.go**
+    - [secrets.go](secrets.go)
 - Mutation
-    - **mutation.go**
-    - **watcher.go**
+    - [mutation.go](mutation.go)
+    - [watcher.go](watcher.go)
 - Database
-    - **database.go**
+    - [database.go](database.go)
 - Debugger
-    - **debug.go**
-    - **debug_types.go**
+    - [debug.go](debug.go)
+    - [debug_types.go](debug_types.go)
 - Testing
-    - **testing.go**
+    - [testing.go](testing.go)
 - Serialization / Deserialization
-    - **write_representation.go**
-    - **write_json_representation.go**
-    - **parse_representation.go**
-    - **parse_json_representation.go**
-    - **json_schema.go**
+    - [write_representation.go](write_representation.go)
+    - [write_json_representation.go](write_json_representation.go)
+    - [parse_representation.go](parse_representation.go)
+    - [parse_json_representation.go](parse_json_representation.go)
+    - [json_schema.go](json_schema.go)
 </details>
 
 ## Module Preparation
