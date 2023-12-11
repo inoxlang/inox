@@ -37,12 +37,16 @@ func TestWebsocketServer(t *testing.T) {
 
 	if !core.AreDefaultRequestHandlingLimitsSet() {
 		core.SetDefaultRequestHandlingLimits([]core.Limit{})
-		defer core.UnsetDefaultRequestHandlingLimits()
+		t.Cleanup(func() {
+			core.UnsetDefaultRequestHandlingLimits()
+		})
 	}
 
 	if !core.AreDefaultMaxRequestHandlerLimitsSet() {
 		core.SetDefaultMaxRequestHandlerLimits([]core.Limit{})
-		defer core.UnsetDefaultMaxRequestHandlerLimits()
+		t.Cleanup(func() {
+			core.UnsetDefaultMaxRequestHandlerLimits()
+		})
 	}
 
 	t.Run("create with required permission", func(t *testing.T) {
@@ -52,6 +56,8 @@ func TestWebsocketServer(t *testing.T) {
 			},
 			Filesystem: fs_ns.GetOsFilesystem(),
 		})
+		defer ctx.CancelGracefully()
+
 		server, err := NewWebsocketServer(ctx)
 		assert.NoError(t, err)
 		assert.NotNil(t, server)
@@ -59,6 +65,8 @@ func TestWebsocketServer(t *testing.T) {
 
 	t.Run("create without required permission", func(t *testing.T) {
 		ctx := core.NewContext(core.ContextConfig{})
+		defer ctx.CancelGracefully()
+
 		server, err := NewWebsocketServer(ctx)
 		assert.ErrorIs(t, err, core.NewNotAllowedError(core.WebsocketPermission{Kind_: permkind.Provide}))
 		assert.Nil(t, server)
@@ -75,6 +83,7 @@ func TestWebsocketServer(t *testing.T) {
 			Filesystem: fs_ns.GetOsFilesystem(),
 			Limits:     []core.Limit{permissiveSocketCountLimit},
 		})
+		defer clientCtx.CancelGracefully()
 
 		serverCtx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
@@ -86,6 +95,7 @@ func TestWebsocketServer(t *testing.T) {
 			},
 			Filesystem: fs_ns.GetOsFilesystem(),
 		})
+		defer serverCtx.CancelGracefully()
 
 		serverState := core.NewGlobalState(serverCtx)
 		serverState.Logger = zerolog.New(io.Discard)
@@ -120,6 +130,7 @@ func TestWebsocketServer(t *testing.T) {
 			Filesystem: fs_ns.GetOsFilesystem(),
 			Limits:     []core.Limit{permissiveSocketCountLimit},
 		})
+		defer clientCtx.CancelGracefully()
 
 		serverCtx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
@@ -131,6 +142,7 @@ func TestWebsocketServer(t *testing.T) {
 			},
 			Filesystem: fs_ns.GetOsFilesystem(),
 		})
+		defer serverCtx.CancelGracefully()
 
 		serverState := core.NewGlobalState(serverCtx)
 		serverState.Logger = zerolog.New(io.Discard)
@@ -177,6 +189,7 @@ func TestWebsocketServer(t *testing.T) {
 			Filesystem: fs_ns.GetOsFilesystem(),
 			Limits:     []core.Limit{permissiveSocketCountLimit},
 		})
+		defer clientCtx.CancelGracefully()
 
 		serverCtx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
@@ -188,6 +201,7 @@ func TestWebsocketServer(t *testing.T) {
 			},
 			Filesystem: fs_ns.GetOsFilesystem(),
 		})
+		defer serverCtx.CancelGracefully()
 
 		serverState := core.NewGlobalState(serverCtx)
 		serverState.Logger = zerolog.New(io.Discard)
@@ -248,6 +262,7 @@ func TestWebsocketServer(t *testing.T) {
 			Filesystem: fs_ns.GetOsFilesystem(),
 			Limits:     []core.Limit{permissiveSocketCountLimit},
 		})
+		defer clientCtx.CancelGracefully()
 
 		serverCtx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
@@ -259,6 +274,7 @@ func TestWebsocketServer(t *testing.T) {
 			},
 			Filesystem: fs_ns.GetOsFilesystem(),
 		})
+		defer serverCtx.CancelGracefully()
 
 		serverState := core.NewGlobalState(serverCtx)
 		serverState.Logger = zerolog.New(io.Discard)
