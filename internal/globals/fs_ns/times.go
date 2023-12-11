@@ -30,5 +30,8 @@ func GetCreationAndModifTime(i fs.FileInfo) (time.Time, time.Time, error) {
 		}
 	}
 	spec := times.Get(i)
+	if !spec.HasBirthTime() {
+		return time.Time{}, time.Time{}, ErrTimeInfoNotAvailable
+	}
 	return spec.BirthTime(), spec.ModTime(), nil
 }
