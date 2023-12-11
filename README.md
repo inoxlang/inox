@@ -323,13 +323,16 @@ You can learn more about databases [here](./docs/language-reference.md#databases
 
 ### Project Server (LSP)
 
-The Inox binary comes with a **project server** that your IDE connects to.
-This server is a LSP server with additional methods, it enables the developer to develop, debug, test, deploy and manage secrets, all from VsCode. The project server will also provide automatic infrastructure management in the **near future**.
+The Inox binary comes with a **project server** that your IDE connects to. This server is a LSP server that implements custom methods. It enables the developer to develop, debug, test, deploy and manage secrets, all from VsCode. The project server will also provide automatic infrastructure management in the **near future**.
 
-__There is no local development environment.__ Code files are cached on the IDE for offline access (read-only).
+__Note that there is no local development environment.__ Code files are cached on the IDE for offline access (read-only).
+
+<details>
+
+**<summary>⚙️ Diagram</summary>**
 
 ```mermaid
-graph LR
+graph TB
 
 subgraph VSCode
   VSCodeVFS(Virtual Filesystem)
@@ -347,9 +350,11 @@ subgraph ProjectServer[Project Server]
   ProjImage(Project Image)
 end
 
-ProjectServer --->|manages| Infrastructure(Infrastructure)
-ProjectServer --->|get/set| Secrets(Secrets)
+ProjectServer -->|manages| Infrastructure(Infrastructure)
+ProjectServer -->|gets/sets| Secrets(Secrets)
 ```
+
+</details>
 
 In project mode Inox applications are executed inside a **virtual filesystem** (container) for better
 security & reproducibility. Note that this virtual filesystem only exists
@@ -365,6 +370,10 @@ You can't, but executing programs compiled to WebAssembly will be soon possible.
 In project mode Inox applications run inside a **meta filesystem** that persists data on disk.
 Files in this filesystem are regular files, (most) metadata and directory structure are stored in a single file named `metadata.kv`.
 It's impossible for applications running inside this filesystem to access an arbitrary file on the disk.
+
+<details>
+
+**<summary>Diagram</summary>**
 
 ```mermaid
 graph LR
@@ -390,6 +399,8 @@ subgraph Disk
   end
 end
 ```
+
+</details>
 
 
 ### Advanced Testing Engine
