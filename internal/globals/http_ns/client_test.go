@@ -3,6 +3,7 @@ package http_ns
 import (
 	"net/http"
 	"net/url"
+	"strconv"
 	"testing"
 	"time"
 
@@ -12,14 +13,14 @@ import (
 )
 
 func TestHttpClient(t *testing.T) {
+	t.Parallel()
 
 	permissiveHttpReqLimit := core.MustMakeNotDecrementingLimit(HTTP_REQUEST_RATE_LIMIT_NAME, 10_000)
 
-	const ADDR = "localhost:8080"
-	const URL = core.URL("http://" + ADDR + "/")
-	url_, _ := url.Parse(string(URL))
+	makeServer := func() (*http.Server, core.URL) {
+		var ADDR = "localhost:" + strconv.Itoa(int(port.Add(1)))
+		var URL = core.URL("http://" + ADDR + "/")
 
-	makeServer := func() *http.Server {
 		server := &http.Server{
 			Addr: ADDR,
 			Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -30,12 +31,12 @@ func TestHttpClient(t *testing.T) {
 
 		go server.ListenAndServe()
 		time.Sleep(time.Millisecond)
-		return server
+		return server, URL
 	}
 
 	t.Run("if cookies are disabled the cookie jar should be empty", func(t *testing.T) {
 
-		server := makeServer()
+		server, URL := makeServer()
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
 				core.HttpPermission{Kind_: permkind.Read, Entity: URL},
@@ -60,7 +61,9 @@ func TestHttpClient(t *testing.T) {
 
 	t.Run("if cookies are enabled the cookie jar should not be empty", func(t *testing.T) {
 
-		server := makeServer()
+		server, URL := makeServer()
+		url_, _ := url.Parse(string(URL))
+
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
 				core.HttpPermission{Kind_: permkind.Read, Entity: URL},
@@ -85,7 +88,9 @@ func TestHttpClient(t *testing.T) {
 
 	t.Run("set cookies should be sent", func(t *testing.T) {
 
-		server := makeServer()
+		server, URL := makeServer()
+		url_, _ := url.Parse(string(URL))
+
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
 				core.HttpPermission{Kind_: permkind.Read, Entity: URL},

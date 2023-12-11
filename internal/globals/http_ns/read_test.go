@@ -2,6 +2,7 @@ package http_ns
 
 import (
 	"net/http"
+	"strconv"
 	"testing"
 	"time"
 
@@ -12,10 +13,12 @@ import (
 )
 
 func TestHttpGet(t *testing.T) {
-	const ADDR = "localhost:8080"
-	const URL = core.URL("http://" + ADDR + "/")
+	t.Parallel()
 
-	makeServer := func() *http.Server {
+	makeServer := func() (*http.Server, core.URL) {
+		var ADDR = "localhost:" + strconv.Itoa(int(port.Add(1)))
+		var URL = core.URL("http://" + ADDR + "/")
+
 		server := &http.Server{
 			Addr: ADDR,
 			Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -25,11 +28,13 @@ func TestHttpGet(t *testing.T) {
 
 		go server.ListenAndServe()
 		time.Sleep(time.Millisecond)
-		return server
+		return server, URL
 	}
 
 	t.Run("missing permission", func(t *testing.T) {
-		server := makeServer()
+		t.Parallel()
+
+		server, URL := makeServer()
 		defer server.Close()
 
 		ctx := core.NewContext(core.ContextConfig{
@@ -48,7 +53,9 @@ func TestHttpGet(t *testing.T) {
 	})
 
 	t.Run("the request rate limit should be met", func(t *testing.T) {
-		server := makeServer()
+		t.Parallel()
+
+		server, URL := makeServer()
 		defer server.Close()
 
 		//create a context that allows up to one request per second
@@ -84,10 +91,12 @@ func TestHttpGet(t *testing.T) {
 }
 
 func TestHttpRead(t *testing.T) {
-	const ADDR = "localhost:8080"
-	const URL = core.URL("http://" + ADDR + "/")
+	t.Parallel()
 
-	makeServer := func() *http.Server {
+	makeServer := func() (*http.Server, core.URL) {
+		var ADDR = "localhost:" + strconv.Itoa(int(port.Add(1)))
+		var URL = core.URL("http://" + ADDR + "/")
+
 		server := &http.Server{
 			Addr: ADDR,
 			Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -100,11 +109,13 @@ func TestHttpRead(t *testing.T) {
 
 		go server.ListenAndServe()
 		time.Sleep(time.Millisecond)
-		return server
+		return server, URL
 	}
 
 	t.Run("missing permission", func(t *testing.T) {
-		server := makeServer()
+		t.Parallel()
+
+		server, URL := makeServer()
 		defer server.Close()
 
 		ctx := core.NewContext(core.ContextConfig{
@@ -127,7 +138,9 @@ func TestHttpRead(t *testing.T) {
 	})
 
 	t.Run("the request rate limit should be met", func(t *testing.T) {
-		server := makeServer()
+		t.Parallel()
+
+		server, URL := makeServer()
 		defer server.Close()
 
 		//create a context that allows up to one request per second
@@ -162,7 +175,9 @@ func TestHttpRead(t *testing.T) {
 	})
 
 	t.Run("by default the content should be parsed based on the Content-type header", func(t *testing.T) {
-		server := makeServer()
+		t.Parallel()
+
+		server, URL := makeServer()
 		defer server.Close()
 
 		ctx := core.NewContext(core.ContextConfig{
@@ -194,7 +209,9 @@ func TestHttpRead(t *testing.T) {
 	})
 
 	t.Run("if a mimetype argument is passed the parsing should be based it", func(t *testing.T) {
-		server := makeServer()
+		t.Parallel()
+
+		server, URL := makeServer()
 		defer server.Close()
 
 		ctx := core.NewContext(core.ContextConfig{

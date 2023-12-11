@@ -42,13 +42,12 @@ const (
 )
 
 var (
-	anyErr = errors.New("any")
-
-	port = atomic.Int32{}
+	errAny = errors.New("any")
+	port   = atomic.Int32{}
 )
 
 func init() {
-	port.Store(8080)
+	port.Store(10_000)
 	if !core.AreDefaultScriptLimitsSet() {
 		core.SetDefaultScriptLimits([]core.Limit{})
 	}
@@ -128,6 +127,7 @@ func init() {
 }
 
 func TestHttpServerMissingProvidePermission(t *testing.T) {
+	t.Parallel()
 
 	if !core.AreDefaultRequestHandlingLimitsSet() {
 		core.SetDefaultRequestHandlingLimits([]core.Limit{})
@@ -152,6 +152,7 @@ func TestHttpServerMissingProvidePermission(t *testing.T) {
 }
 
 func TestHttpServerUserHandler(t *testing.T) {
+
 	if !core.AreDefaultRequestHandlingLimitsSet() {
 		core.SetDefaultRequestHandlingLimits([]core.Limit{})
 		defer core.UnsetDefaultRequestHandlingLimits()
@@ -888,7 +889,7 @@ func runAdvancedServerTest(
 				return
 			}
 
-		} else if info.err != anyErr {
+		} else if info.err != errAny {
 			assert.ErrorIs(t, err, info.err)
 		} else if !assert.Error(t, err) {
 			return

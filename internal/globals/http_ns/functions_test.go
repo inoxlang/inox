@@ -3,6 +3,7 @@ package http_ns
 import (
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 	"time"
 
@@ -13,11 +14,12 @@ import (
 )
 
 func TestHttpPost(t *testing.T) {
+	t.Parallel()
 
-	const ADDR = "localhost:8080"
-	const URL = core.URL("http://" + ADDR + "/")
+	makeServer := func() (*http.Server, core.URL) {
+		var ADDR = "localhost:" + strconv.Itoa(int(port.Add(1)))
+		var URL = core.URL("http://" + ADDR + "/")
 
-	makeServer := func() *http.Server {
 		server := &http.Server{
 			Addr: ADDR,
 			Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -27,10 +29,15 @@ func TestHttpPost(t *testing.T) {
 
 		go server.ListenAndServe()
 		time.Sleep(time.Millisecond)
-		return server
+		return server, URL
 	}
 
 	t.Run("missing URL", func(t *testing.T) {
+		t.Parallel()
+
+		server, URL := makeServer()
+		defer server.Close()
+
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
 				core.HttpPermission{Kind_: permkind.Read, Entity: URL},
@@ -45,6 +52,11 @@ func TestHttpPost(t *testing.T) {
 	})
 
 	t.Run("string provided instead of URL", func(t *testing.T) {
+		t.Parallel()
+
+		server, URL := makeServer()
+		defer server.Close()
+
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
 				core.HttpPermission{Kind_: permkind.Read, Entity: URL},
@@ -59,6 +71,11 @@ func TestHttpPost(t *testing.T) {
 	})
 
 	t.Run("missing body", func(t *testing.T) {
+		t.Parallel()
+
+		server, URL := makeServer()
+		defer server.Close()
+
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
 				core.HttpPermission{Kind_: permkind.Read, Entity: URL},
@@ -73,7 +90,9 @@ func TestHttpPost(t *testing.T) {
 	})
 
 	t.Run("missing permission", func(t *testing.T) {
-		server := makeServer()
+		t.Parallel()
+
+		server, URL := makeServer()
 		defer server.Close()
 
 		ctx := core.NewContext(core.ContextConfig{
@@ -94,11 +113,12 @@ func TestHttpPost(t *testing.T) {
 }
 
 func TestHttpDelete(t *testing.T) {
+	t.Parallel()
 
-	const ADDR = "localhost:8080"
-	const URL = core.URL("http://" + ADDR + "/")
+	makeServer := func() (*http.Server, core.URL) {
+		var ADDR = "localhost:" + strconv.Itoa(int(port.Add(1)))
+		var URL = core.URL("http://" + ADDR + "/")
 
-	makeServer := func() *http.Server {
 		server := &http.Server{
 			Addr: ADDR,
 			Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -108,11 +128,13 @@ func TestHttpDelete(t *testing.T) {
 
 		go server.ListenAndServe()
 		time.Sleep(time.Millisecond)
-		return server
+		return server, URL
 	}
 
 	t.Run("missing permission", func(t *testing.T) {
-		server := makeServer()
+		t.Parallel()
+
+		server, URL := makeServer()
 		defer server.Close()
 
 		ctx := core.NewContext(core.ContextConfig{

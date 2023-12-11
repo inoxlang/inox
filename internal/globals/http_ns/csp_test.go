@@ -21,6 +21,7 @@ func TestCSPWrite(t *testing.T) {
 }
 
 func TestNewCSP(t *testing.T) {
+	t.Parallel()
 
 	t.Run("string value", func(t *testing.T) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)

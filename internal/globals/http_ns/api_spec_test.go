@@ -17,6 +17,8 @@ const (
 )
 
 func TestGetAPIFromOpenAPISpec(t *testing.T) {
+	t.Parallel()
+
 	resp, err := http.Get(OPEN_AI_API_SPEC_BASE_URL_URL)
 	if !assert.NoError(t, err) {
 		return

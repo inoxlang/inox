@@ -14,11 +14,14 @@ import (
 )
 
 func TestHttpResponseWriter(t *testing.T) {
+	t.Parallel()
 
 	list := core.NewWrappedValueList
 	obj := core.NewObjectFromMap
 
 	t.Run("WriteJSON()", func(t *testing.T) {
+		t.Parallel()
+
 		ctx := core.NewContext(core.ContextConfig{})
 		core.NewGlobalState(ctx)
 		defer ctx.CancelGracefully()
@@ -86,6 +89,8 @@ func TestHttpResponseWriter(t *testing.T) {
 	})
 
 	t.Run("SetCookie()", func(t *testing.T) {
+		t.Parallel()
+
 		ctx := core.NewContext(core.ContextConfig{})
 		core.NewGlobalState(ctx)
 		defer ctx.CancelGracefully()

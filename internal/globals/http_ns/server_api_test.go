@@ -12,6 +12,7 @@ import (
 )
 
 func TestGetFilesystemRoutingServerAPI(t *testing.T) {
+	t.Parallel()
 
 	//create a context and a filesystem with the passed file contents.
 	setup := func(files map[string]string) *core.Context {

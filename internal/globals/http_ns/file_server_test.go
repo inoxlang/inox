@@ -11,6 +11,7 @@ import (
 )
 
 func TestFileServer(t *testing.T) {
+	t.Parallel()
 
 	t.Run("missing http permission", func(t *testing.T) {
 		ctx := core.NewContext(core.ContextConfig{
