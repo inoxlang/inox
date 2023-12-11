@@ -12,9 +12,6 @@ import (
 )
 
 func TestWebsocketConnection(t *testing.T) {
-	const HTTPS_HOST = core.Host("https://localhost:8080")
-	const ENDPOINT = core.URL("wss://localhost:8080/")
-
 	if !core.AreDefaultRequestHandlingLimitsSet() {
 		core.SetDefaultRequestHandlingLimits([]core.Limit{})
 		defer func() {
@@ -30,6 +27,9 @@ func TestWebsocketConnection(t *testing.T) {
 	}
 
 	t.Run("connection should be allowed even if the client's context has only a write permission", func(t *testing.T) {
+
+		HTTPS_HOST, ENDPOINT := getNextHostAndEndpoint()
+
 		closeChan := createWebsocketServer(testWebsocketServerConfig{
 			host:           HTTPS_HOST,
 			messageTimeout: time.Second,
@@ -80,6 +80,9 @@ func TestWebsocketConnection(t *testing.T) {
 	})
 
 	t.Run("manually close connection", func(t *testing.T) {
+
+		HTTPS_HOST, ENDPOINT := getNextHostAndEndpoint()
+
 		closeChan := createWebsocketServer(testWebsocketServerConfig{
 			host:           HTTPS_HOST,
 			messageTimeout: time.Second,
@@ -130,6 +133,9 @@ func TestWebsocketConnection(t *testing.T) {
 	})
 
 	t.Run("readJSON should return an error on timeout", func(t *testing.T) {
+
+		HTTPS_HOST, ENDPOINT := getNextHostAndEndpoint()
+
 		//we set a very small timeout duration.
 		closeChan := createWebsocketServer(testWebsocketServerConfig{
 			host:              HTTPS_HOST,
@@ -179,6 +185,9 @@ func TestWebsocketConnection(t *testing.T) {
 	})
 
 	t.Run("ReadMessage should return an error on timeout", func(t *testing.T) {
+
+		HTTPS_HOST, ENDPOINT := getNextHostAndEndpoint()
+
 		// set a very small timeout duration.
 		closeChan := createWebsocketServer(testWebsocketServerConfig{
 			host:              HTTPS_HOST,
@@ -228,7 +237,10 @@ func TestWebsocketConnection(t *testing.T) {
 	})
 
 	t.Run("StartReadingAllMessagesIntoChan", func(t *testing.T) {
+
 		setup := func() (*WebsocketConnection, *core.Context, chan struct{}, bool) {
+			HTTPS_HOST, ENDPOINT := getNextHostAndEndpoint()
+
 			closeChan := createWebsocketServer(testWebsocketServerConfig{
 				host:           HTTPS_HOST,
 				messageTimeout: time.Second,

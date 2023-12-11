@@ -5,6 +5,8 @@ import (
 	"io"
 	"log"
 	"runtime/debug"
+	"strconv"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -16,6 +18,19 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 )
+
+var port atomic.Int32
+
+func init() {
+	port.Store(60_000)
+}
+
+func getNextHostAndEndpoint() (core.Host, core.URL) {
+	port := strconv.Itoa(int(port.Add(1)))
+	var HOST = core.Host("https://localhost:" + port)
+	var ENDPOINT = core.URL("wss://localhost:" + port + "/")
+	return HOST, ENDPOINT
+}
 
 func TestWebsocketServer(t *testing.T) {
 	permissiveSocketCountLimit := core.MustMakeNotDecrementingLimit(WS_SIMUL_CONN_TOTAL_LIMIT_NAME, 100)
@@ -49,12 +64,9 @@ func TestWebsocketServer(t *testing.T) {
 		assert.Nil(t, server)
 	})
 
-	const HOST = core.Host("https://localhost:8080")
-	const ENDPOINT = core.URL("wss://localhost:8080/")
-
 	t.Run("upgrade", func(t *testing.T) {
-		HOST := core.Host("https://localhost:8080")
-		ENDPOINT := core.URL("wss://localhost:8080/")
+
+		HOST, ENDPOINT := getNextHostAndEndpoint()
 
 		clientCtx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
@@ -98,6 +110,9 @@ func TestWebsocketServer(t *testing.T) {
 	})
 
 	t.Run("upgrade should refuse the connection if there are too many connections on the same IP", func(t *testing.T) {
+
+		HOST, ENDPOINT := getNextHostAndEndpoint()
+
 		clientCtx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
 				core.WebsocketPermission{Kind_: permkind.Read, Endpoint: ENDPOINT},
@@ -152,6 +167,9 @@ func TestWebsocketServer(t *testing.T) {
 	})
 
 	t.Run("upgrade should not refuse the connection if there have been many connections at different times on the same IP", func(t *testing.T) {
+
+		HOST, ENDPOINT := getNextHostAndEndpoint()
+
 		clientCtx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
 				core.WebsocketPermission{Kind_: permkind.Read, Endpoint: ENDPOINT},
@@ -220,6 +238,9 @@ func TestWebsocketServer(t *testing.T) {
 	})
 
 	t.Run("Close() should close all connections", func(t *testing.T) {
+
+		HOST, ENDPOINT := getNextHostAndEndpoint()
+
 		clientCtx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
 				core.WebsocketPermission{Kind_: permkind.Read, Endpoint: ENDPOINT},
