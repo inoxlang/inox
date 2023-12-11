@@ -45,6 +45,11 @@ func TestTutorials(t *testing.T) {
 func testTutorial(t *testing.T, series learn.TutorialSeries, tut learn.Tutorial, fpath string, useBytecode bool) {
 	t.Run(series.Name+"--"+tut.Name, func(t *testing.T) {
 
+		//parallelize all tutorials that don't start an HTTP server
+		if !bytes.Contains([]byte(tut.Program), []byte("http.Server")) {
+			t.Parallel()
+		}
+
 		stdlibCtx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 
