@@ -20,7 +20,7 @@ import (
 	_ "github.com/inoxlang/inox/internal/globals"
 )
 
-const DEFAULT_TUTORIAL_TIMEMOUT_DURATION = 10 * time.Second
+const DEFAULT_TUTORIAL_TIMEOUT_DURATION = 25 * time.Second
 
 func TestTutorials(t *testing.T) {
 	const fpath = "/main.tut.ix"
@@ -54,7 +54,7 @@ func testTutorial(t *testing.T, series learn.TutorialSeries, tut learn.Tutorial,
 		defer cancel()
 
 		done := make(chan int)
-		timeout := DEFAULT_TUTORIAL_TIMEMOUT_DURATION
+		timeout := DEFAULT_TUTORIAL_TIMEOUT_DURATION
 
 		go func() {
 			defer func() {

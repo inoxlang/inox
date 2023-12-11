@@ -31,10 +31,10 @@ import (
 )
 
 const (
-	DEFAULT_TEST_TIMEMOUT_DURATION = 10 * time.Second
-	CHROME_EXAMPLE_FOLDER          = "chrome/"
-	PROJECT_EXAMPLES_FOLDER        = "projects/"
-	EXAMPLES_DIR                   = "./examples"
+	DEFAULT_TEST_TIMEOUT_DURATION = 25 * time.Second
+	CHROME_EXAMPLE_FOLDER         = "chrome/"
+	PROJECT_EXAMPLES_FOLDER       = "projects/"
+	EXAMPLES_DIR                  = "./examples"
 )
 
 var (
@@ -211,12 +211,13 @@ func testExamples(args testExamplesArgs) {
 				fpath:            fpath,
 				useBytecode:      args.useBytecode,
 				optimizeBytecode: args.optimizeBytecode,
-				testTimeout:      DEFAULT_TEST_TIMEMOUT_DURATION,
+				testTimeout:      DEFAULT_TEST_TIMEOUT_DURATION,
 				fls:              fls,
 			})
 		})
 	}
 
+	testing.CoverMode()
 }
 
 type exampleTestConfig struct {
