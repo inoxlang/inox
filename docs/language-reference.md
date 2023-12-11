@@ -23,6 +23,7 @@
   - [Treedata](#treedata)
   - [Mappings](#mappings)
   - [Dictionaries](#dictionaries)
+  - [Arrays](#arrays)
 - [Control flow](#Control-flow)
   - [If statement](#if-statement--expression)
   - [Switch statement](#switch-statement)
@@ -437,7 +438,7 @@ path = /../../etc/passwd
 
 ## Lists
 
-A list is a sequence of elements. You can add elements to it and change the
+A list is a sequence of **serializable** elements. You can add elements to it and change the
 value of an element at a given position.
 
 ```
@@ -534,10 +535,6 @@ name = obj.?name
 
 ## Records
 
-<details>
-
-<summary>Click to expand</summary>
-
 Records are the immutable equivalent of objects, their properties can only have
 immutable values.
 
@@ -554,13 +551,7 @@ record = #{
 }
 ```
 
-</details>
-
 ## Tuples
-
-<details>
-
-<summary>Click to expand</summary>
 
 Tuples are the immutable equivalent of lists.
 
@@ -570,13 +561,8 @@ tuple = #[1, #[2, 3]]
 tuple = #[1, [2, 3]] # error ! a list is mutable, it's not a valid element for a tuple.
 ```
 
-</details>
-
 ## Treedata
 
-<details>
-
-<summary>Click to expand</summary>
 
 A treedata value allows you to represent immutable data that has the shape of a
 tree.
@@ -594,13 +580,7 @@ treedata "root" {
 
 <!-- In the shell execute the following command to see an example of treedata value ``fs.get_tree_data ./docs/`` -->
 
-</details>
-
 ## Mappings
-
-<details>
-
-<summary>Click to expand</summary>
 
 <!-- TODO: add explanation about static key entries, ... -->
 
@@ -623,13 +603,7 @@ output:
 path
 ```
 
-</details>
-
 ## Dictionaries
-
-<details>
-
-<summary>Click to expand</summary>
 
 Dictionaries are similar to objects in that they store key-value pairs, but
 unlike objects, they allow keys of any data type as long as they are
@@ -648,7 +622,17 @@ dict = :{
 }
 ```
 
-</details>
+## Arrays
+
+An array is a sequence of fixed size that can contain any value.
+
+```
+serializable = 1
+not_serializable = go do {   }
+
+array = Array(serializable, not_serializable)
+element = array[0]
+```
 
 # Control Flow
 
@@ -1146,7 +1130,7 @@ pattern user = {
 }
 ```
 
-⚠️ Named patterns cannot be reassigned.
+⚠️ Named patterns cannot be reassigned and their values cannot reference other named patterns that are not yet defined.
 
 Some named patterns are callable. For example if you want a pattern that matches
 all integers in the range 0..10, you can do the following:
@@ -2344,6 +2328,44 @@ object = {
 list = [  
   go do { return 1 }
 ]
+```
+
+[Arrays](#arrays) and [Structs](#structs) can contain any value.
+
+### URLs
+
+Objects and many container types are assigned a URL when they are added to a container inside the database.
+
+```
+user = {name: "John"}
+dbs.main.users.add(user)
+
+# user now has a URL of the following format:
+ldb://main/users/<id>
+```
+
+### Cycles and References (WIP)
+
+The serialization of values containing cycles is forbidden. URLs should be used to reference other values inside the database.
+
+```
+pattern user = {
+    name: str
+
+    # ⚠️ not fully implemented yet
+    friends?: Set(%https://ldb/main/users/%ulid, #repr) 
+}
+
+new_friend = {name: "Enzo"}
+user.friends.add(new_friend)
+
+print("friends:")
+
+for friend in user.friends {
+    # The 'friend' variable is a URL. You will soon be able to use double-colon expressions 
+    # to retrieve and mutate the friend's data in a typesafe way.
+    print(friend::name)
+}
 ```
 
 ## Access From Other Modules

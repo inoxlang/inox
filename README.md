@@ -300,6 +300,9 @@ task2 = Task{name: "1"}
 
 array = Array(task1, task2)
 ```
+
+You can learn more about serialization [here](./docs/language-reference.md#serialization).
+
 </details>
 
 ```
@@ -310,7 +313,7 @@ dbs.main.users.add(new_user)
 dbs.main.users.has(new_user)
 ```
 
-You can learn more [here](./docs/language-reference.md#databases).
+You can learn more about databases [here](./docs/language-reference.md#databases).
 
 > The database currently uses a single-file key-value store, it obviously cannot
 > handle hundreds of Gigabytes.\
