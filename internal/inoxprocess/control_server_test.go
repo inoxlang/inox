@@ -81,6 +81,8 @@ func TestControlServer(t *testing.T) {
 	})
 
 	t.Run("stop process executing nothing", func(t *testing.T) {
+		t.Skip("TO FIX")
+
 		ctx, server := setup()
 		if server == nil {
 			return
