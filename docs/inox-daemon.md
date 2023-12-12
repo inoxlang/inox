@@ -9,6 +9,13 @@ Inoxd can be installed on any Linux distribution that uses **systemd**.
 
 _\* bear in mind that Inox is not production ready yet._
 
+Outline:
+
+⬇️ [Installation](#installation)\
+⚙️ [Implementation](#implementation)\
+⚠️ [Removing the Daemon](#removing-the-daemon)
+
+
 ## Installation
 
 ### On Your Local Machine
@@ -64,3 +71,19 @@ Browser automation can be allowed by adding the `--allow-browser-automation` swi
 ## Implementation
 
 [Project Server](../internal/projectserver/README.md)
+
+## Removing the Daemon
+
+### ⚠️ Remove Absolutely EVERYTHING (daemon, inoxd user, production data)
+
+```
+sudo inox remove-service -dangerously-remove-all
+```
+
+### Remove Daemon & User
+
+The `/var/lib/inoxd/` directory and the `/run/inoxd/env` file will **NOT** be removed.
+
+```
+sudo inox remove-service -remove-inoxd-homedir -remove-inoxd-user -remove-tunnel-configs
+```
