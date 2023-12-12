@@ -92,6 +92,11 @@ func restrictProcessAccess(grantedPerms, forbiddenPerms []core.Permission, fls *
 					continue
 				}
 
+				//ignore if the executable does not exist.
+				if _, err := fls.Stat(cmdName.UnderlyingString()); errors.Is(err, fs.ErrNotExist) {
+					continue
+				}
+
 				executablePaths[name] = struct{}{}
 				allowedPath = landlock.File(name, "rx")
 			case core.PathPattern:
@@ -103,8 +108,10 @@ func restrictProcessAccess(grantedPerms, forbiddenPerms []core.Permission, fls *
 			case core.Str:
 				path, err := exec.LookPath(cmdName.UnderlyingString())
 				if err != nil {
-					panic(err)
+					//ignore if the executable does not exist.
+					continue
 				}
+
 				if _, ok := executablePaths[path]; ok {
 					continue
 				}
