@@ -52,27 +52,6 @@ _________
 
 <details>
 
-**<summary>Why are contributors required to sign a Contributor Licensing Agreement ?</summary>**
-
-**Definition of CLA**: https://yahoo.github.io/oss-guide/docs/resources/what-is-cla.html \
-**Additional context**: https://news.ycombinator.com/item?id=28923633 (comments)
-
-The [CLA](./.legal/CLA/CLA.md) is present to protect me and the project from legal issues. I know 
-some people are against CLAs or consider having a CLA useless but I prefer to have one because:
-- It requires contributors to know what they are allowed to do, even if it is obvious (e.g. don't include proprietary code).
-- Even if having the CLA only reduces the risks by 50% it's worth it.
-- I may develop closed-source services that are peripheral to the project if I earn almost nothing from sponsorship. **Inox will always be licensed under the MIT license.**
-
-**By signing the CLA you do NOT GRANT me the right to include your contribution if I change the type of license.**\
-**If you want to propose a change to the CLA feel free to create an issue, or contact me on Inox's Discord Server.**
-
-</details>
-
-
-_________
-
-<details>
-
 **<summary>When will Inox be production-ready ?</summary>**
 
 If I receive enough donations to continue working full time I aim to release a production-ready version of Inox at the **end of 2024** or the beginning of 2025. A few complex features will still be experimental though.

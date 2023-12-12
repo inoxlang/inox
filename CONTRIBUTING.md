@@ -5,8 +5,7 @@ comment in this [issue](https://github.com/inoxlang/inox/issues/4)**.
 
 ## Guidelines
 
-Please before working on the codebase make sure you read [FUTURE.md](./FUTURE.md) and
-the [CLA Readme](.legal/CLA/README.md).
+Please before working on the codebase make sure you read [FUTURE.md](./FUTURE.md).
 
 It is recommended to avoid the following changes:
 - adding a feature that will be used by only a few Inox projects
