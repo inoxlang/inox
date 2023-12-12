@@ -95,11 +95,18 @@ end
 InoxExtension -->|LSP| ProjectServer
 
 subgraph InoxBinary["Inox (Linux)"]
-  ProjectServer
+  ProjectServer(Project Server)
 end
 ```
 
-Inox only supports Linux for now. **You can use Inox either by installing it locally on your machine or on a remote machine, such as a VPS.** You can also setup a local virtual machine running Linux and install Inox on it.
+
+Inox applications can currently only be developed using the Inox extension for VSCode and VSCodium.
+
+- If your local machine is running Linux, you can install Inox and VSCode + the extension on it.
+- If your local machine is not running Linux, you can install VSCode + the extension on it and install Inox on another machine, such as a VPS.\
+ You can also setup a local virtual machine running Linux.
+
+**Installation Instructions**
 
 - Download the latest release
   ```
@@ -118,15 +125,14 @@ Inox only supports Linux for now. **You can use Inox either by installing it loc
 
 - __\[recommended\]__ add the [inoxd daemon](./docs/inox-daemon.md) to automatically start the project server on your local machine or VPS.
 
+- __Add Inox support to your IDE__
+  - [VSCode & VSCodium](https://marketplace.visualstudio.com/items?itemName=graphr00t.inox) : LSP, debug, colorization, snippets, formatting.\
+    **⚠️ Once the extension is installed make sure to read the Requirements and Usage sections in the extension's details.**
+
 - __\[optional\]__ install command completions for the current user
   ```
   inox install-completions
   ```
-
-- __Add Inox support to your IDE__
-  - [VSCode & VSCodium](https://marketplace.visualstudio.com/items?itemName=graphr00t.inox) : LSP, debug, colorization, snippets, formatting.\
-    **Once the extension is installed make sure to read the Requirements and Usage sections in the extension's details.**
-
 
 If you want to compile Inox from source go [here](#compile-from-source).
 
