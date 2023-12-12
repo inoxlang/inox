@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"html"
 	"math"
 	"runtime/debug"
 	"strconv"
@@ -3045,7 +3044,8 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 
 		return NewXmlElement(name, attrs, children), nil
 	case *parse.XMLText:
-		return Str(html.EscapeString(n.Value)), nil
+		//we assume factories will properly escape the string.
+		return Str(n.Value), nil
 	case *parse.XMLInterpolation:
 		val, err := TreeWalkEval(n.Expr, state)
 		if err != nil {

@@ -3,7 +3,6 @@ package core
 import (
 	"errors"
 	"fmt"
-	"html"
 	"io"
 	"math"
 	"reflect"
@@ -2108,7 +2107,8 @@ func (c *compiler) Compile(node parse.Node) error {
 			return err
 		}
 	case *parse.XMLText:
-		str := Str(html.EscapeString(node.Value))
+		//we assume factories will properly escape the string.
+		str := Str(node.Value)
 		c.emit(node, OpPushConstant, c.addConstant(str))
 	case *parse.ExtendStatement:
 		if err := c.Compile(node.ExtendedPattern); err != nil {
