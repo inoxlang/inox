@@ -124,7 +124,8 @@ Inox only supports Linux for now. **You can use Inox either by installing it loc
   ```
 
 - __Add Inox support to your IDE__
-  - [VSCode & VSCodium](https://marketplace.visualstudio.com/items?itemName=graphr00t.inox) : LSP, debug, colorization, snippets, formatting.
+  - [VSCode & VSCodium](https://marketplace.visualstudio.com/items?itemName=graphr00t.inox) : LSP, debug, colorization, snippets, formatting.\
+    **Once the extension is installed make sure to read the Requirements and Usage sections in the extension's details.**
 
 
 If you want to compile Inox from source go [here](#compile-from-source).
@@ -132,6 +133,7 @@ If you want to compile Inox from source go [here](#compile-from-source).
 ## Learning Inox
 
 You can learn Inox directly in VSCode by creating a file with a `.tut.ix` extension. This is the recommended way.
+**Make sure to create this file inside an Inox project.**
 
 ![tutorial-demo](https://github.com/inoxlang/inox-vscode/raw/master/assets/docs/tutorial-demo.gif)
 
