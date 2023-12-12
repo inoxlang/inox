@@ -2,6 +2,9 @@ name: Inox dev
 
 on:
   push:
+    branches:
+      - 'master'
+      # never add another branch because this would update the dev release
     paths-ignore:
       - 'docs/**'
       - '.legal/**'
