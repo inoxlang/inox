@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"reflect"
 	"runtime"
+	"sync"
+	"sync/atomic"
 
 	parse "github.com/inoxlang/inox/internal/parse"
 	pprint "github.com/inoxlang/inox/internal/prettyprint"
@@ -239,7 +241,8 @@ type GoFunction struct {
 
 	//signature fields:
 
-	signatureDataLoaded bool
+	signatureDataLock   sync.Mutex
+	signatureDataLoaded atomic.Bool
 	isVariadic          bool
 	isfirstArgCtx       bool
 
@@ -441,8 +444,15 @@ func (goFunc *GoFunction) Result() Value {
 
 // LoadSignatureData populates the signature fields if they are not already set.
 func (goFunc *GoFunction) LoadSignatureData() (finalErr error) {
-	if goFunc.signatureDataLoaded {
-		return nil
+	if goFunc.signatureDataLoaded.Load() {
+		return
+	}
+
+	goFunc.signatureDataLock.Lock()
+	defer goFunc.signatureDataLock.Unlock()
+
+	if goFunc.signatureDataLoaded.Load() {
+		return
 	}
 
 	if goFunc.fn == nil {
@@ -451,7 +461,7 @@ func (goFunc *GoFunction) LoadSignatureData() (finalErr error) {
 
 	defer func() {
 		if finalErr == nil {
-			goFunc.signatureDataLoaded = true
+			goFunc.signatureDataLoaded.Store(true)
 		}
 	}()
 
