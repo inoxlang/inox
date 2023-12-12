@@ -17,7 +17,7 @@ func TestHttpPost(t *testing.T) {
 	t.Parallel()
 
 	makeServer := func() (*http.Server, core.URL) {
-		var ADDR = "localhost:" + strconv.Itoa(int(port.Add(1)))
+		var ADDR = "localhost:" + nextPort()
 		var URL = core.URL("http://" + ADDR + "/")
 
 		server := &http.Server{

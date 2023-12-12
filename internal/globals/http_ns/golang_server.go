@@ -14,16 +14,24 @@ import (
 	"github.com/inoxlang/inox/internal/utils"
 )
 
+const (
+	DEFAULT_SELF_SIGNED_CERT_VALIDITY_DURATION = time.Hour * 24 * 180
+	SELF_SIGNED_CERT_FILEPATH                  = "self_signed.cert"
+	SELF_SIGNED_CERT_KEY_FILEPATH              = "self_signed.key"
+)
+
 type GolangHttpServerConfig struct {
 	//hostname:port or :port
 	Addr    string
 	Handler http.Handler
 
-	PemEncodedCert                           string
-	PemEncodedKey                            string
+	PemEncodedCert string
+	PemEncodedKey  string
+
 	AllowSelfSignedCertCreationEvenIfExposed bool
 	//if true the certificate and key files are persisted on the filesystem for later reuse.
-	PersistCreatedLocalCert bool
+	PersistCreatedLocalCert        bool
+	SelfSignedCertValidityDuration time.Duration //defaults to DEFAULT_SELF_SIGNED_CERT_VALIDITY_DURATION
 
 	ReadHeaderTimeout time.Duration // defaults to DEFAULT_HTTP_SERVER_READ_HEADER_TIMEOUT
 	ReadTimeout       time.Duration // defaults to DEFAULT_HTTP_SERVER_READ_TIMEOUT
@@ -41,18 +49,20 @@ func NewGolangHttpServer(ctx *core.Context, config GolangHttpServerConfig) (*htt
 	if config.PemEncodedCert == "" && (isLocalhostOr127001Addr(config.Addr) || config.AllowSelfSignedCertCreationEvenIfExposed) {
 		initialWorkingDir := ctx.InitialWorkingDirectory()
 		var (
-			CERT_FILEPATH     = initialWorkingDir.JoinEntry("self_signed.cert", fls).UnderlyingString()
-			CERT_KEY_FILEPATH = initialWorkingDir.JoinEntry("self_signed.key", fls).UnderlyingString()
+			CERT_FILEPATH     = initialWorkingDir.JoinEntry(SELF_SIGNED_CERT_FILEPATH, fls).UnderlyingString()
+			CERT_KEY_FILEPATH = initialWorkingDir.JoinEntry(SELF_SIGNED_CERT_KEY_FILEPATH, fls).UnderlyingString()
 		)
 
+		validityDuration := utils.DefaultIfZero(config.SelfSignedCertValidityDuration, DEFAULT_SELF_SIGNED_CERT_VALIDITY_DURATION)
 		generateCert := false
 
 		if config.PersistCreatedLocalCert {
 
-			_, err1 := fls.Stat(CERT_FILEPATH)
+			certFileStat, err1 := fls.Stat(CERT_FILEPATH)
 			_, err2 := fls.Stat(CERT_KEY_FILEPATH)
 
-			if errors.Is(err1, os.ErrNotExist) || errors.Is(err2, os.ErrNotExist) {
+			if errors.Is(err1, os.ErrNotExist) || errors.Is(err2, os.ErrNotExist) || time.Since(certFileStat.ModTime()) >= validityDuration {
+				//generate a new certificate if at least one of the file does not exist or the certificate is no longer valid.
 				generateCert = true
 
 				if err1 == nil {
@@ -85,8 +95,9 @@ func NewGolangHttpServer(ctx *core.Context, config GolangHttpServerConfig) (*htt
 
 		if generateCert {
 			cert, key, err := GenerateSelfSignedCertAndKey(SelfSignedCertParams{
-				Localhost:       true,
-				NonLocalhostIPs: config.AllowSelfSignedCertCreationEvenIfExposed,
+				Localhost:        true,
+				NonLocalhostIPs:  config.AllowSelfSignedCertCreationEvenIfExposed,
+				ValidityDuration: DEFAULT_SELF_SIGNED_CERT_VALIDITY_DURATION,
 			})
 			if err != nil {
 				return nil, err

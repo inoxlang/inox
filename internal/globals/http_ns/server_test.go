@@ -46,6 +46,10 @@ var (
 	port   = atomic.Int32{}
 )
 
+func nextPort() string {
+	return strconv.Itoa(int(port.Add(1)))
+}
+
 func init() {
 	port.Store(10_000)
 	if !core.AreDefaultScriptLimitsSet() {

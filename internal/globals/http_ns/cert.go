@@ -9,6 +9,7 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"log"
 	"math/big"
@@ -74,22 +75,34 @@ func makePemBlockForKey(privKey interface{}) (*pem.Block, error) {
 }
 
 type SelfSignedCertParams struct {
-	Localhost       bool
-	NonLocalhostIPs bool
+	Localhost        bool
+	NonLocalhostIPs  bool
+	ValidityDuration time.Duration //should be >= 100ms, defaults to DEFAULT_SELF_SIGNED_CERT_VALIDITY_DURATION
 }
 
 func GenerateSelfSignedCertAndKey(args SelfSignedCertParams) (cert *pem.Block, key *pem.Block, err error) {
+	if !args.Localhost && !args.NonLocalhostIPs {
+		return nil, nil, errors.New("invalid arguments: both .Localhost and .NonLocalhostIPs are false")
+	}
+
+	if args.ValidityDuration == 0 {
+		args.ValidityDuration = DEFAULT_SELF_SIGNED_CERT_VALIDITY_DURATION
+	} else if args.ValidityDuration < 100*time.Millisecond {
+		return nil, nil, errors.New("invalid arguments: validity duration is less than 100ms")
+	}
+
 	priv, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
 		return nil, nil, err
 	}
+
 	template := x509.Certificate{
 		SerialNumber: big.NewInt(1),
 		Subject: pkix.Name{
 			Organization: []string{"Acme Co"},
 		},
 		NotBefore: time.Now(),
-		NotAfter:  time.Now().Add(time.Hour * 24 * 180),
+		NotAfter:  time.Now().Add(args.ValidityDuration),
 
 		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
 		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},

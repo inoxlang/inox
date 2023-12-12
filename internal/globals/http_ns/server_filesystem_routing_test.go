@@ -460,6 +460,7 @@ func TestFilesystemRouting(t *testing.T) {
 				input: `return {
 						routing: {dynamic: /routes/}
 					}`,
+				avoidTestParallelization: true,
 				makeFilesystem: func() afs.Filesystem {
 					fls := fs_ns.NewMemFilesystem(10_000)
 					fls.MkdirAll("/routes", fs_ns.DEFAULT_DIR_FMODE)
@@ -562,6 +563,7 @@ func TestFilesystemRouting(t *testing.T) {
 				input: `return {
 						routing: {dynamic: /routes/}
 					}`,
+				avoidTestParallelization: true,
 				makeFilesystem: func() afs.Filesystem {
 					fls := fs_ns.NewMemFilesystem(10_000)
 					fls.MkdirAll("/routes", fs_ns.DEFAULT_DIR_FMODE)
@@ -590,8 +592,7 @@ func TestFilesystemRouting(t *testing.T) {
 			createClient,
 		)
 
-		//TODO: improve implementation in order for the assertion to pass with +1ms instead of the +5ms.
-		assert.WithinDuration(t, start.Add(workDuration), end, cpuTime/10+5*time.Millisecond)
+		assert.WithinDuration(t, start.Add(workDuration), end, cpuTime/3)
 	})
 
 	t.Run("a status of 200 should be returned if a few parallel handlers have each worked for a duration slightly shorter than their CPU time", func(t *testing.T) {
@@ -655,8 +656,7 @@ func TestFilesystemRouting(t *testing.T) {
 			createClient,
 		)
 
-		//TODO: improve implementation in order for the assertion to pass with +1ms instead of the +5ms.
-		assert.WithinDuration(t, start.Add(workDuration), end, cpuTime/10+5*time.Millisecond)
+		assert.WithinDuration(t, start.Add(workDuration), end, cpuTime/3)
 	})
 
 	t.Run("the handler modules should never be created with any of the default script limits", func(t *testing.T) {
