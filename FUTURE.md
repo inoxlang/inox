@@ -51,7 +51,9 @@
 - Zero boilerplate
 - Secure by default
 - Low maintenance
+- Super stable (_once version 1.0 is reached_)
 - Dead simple configuration
+- A programming language as simple as possible
 ___
 
 [README.md](./README.md)
