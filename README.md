@@ -124,9 +124,9 @@ Inox applications can currently only be developed using the Inox extension for V
   ```
 
 - __\[recommended\]__ add the [inoxd daemon](./docs/inox-daemon.md) to automatically start the project server.
-  If you have installed `inox` on your local machine or a local VM, execute the following command to add a systemd service:
+  If you have installed `inox` on your **local machine** or a local VM, execute the following command to add a systemd service:
   ```
-  sudo inox add-service
+  sudo inox add-service # don't run this on a REMOTE machine
   ```
   _If you execute this command inside a VM, don't forget to forward the port 8305 to allow VSCode to connect to the project server._
 
