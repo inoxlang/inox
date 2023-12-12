@@ -3,6 +3,7 @@ package learn
 import (
 	_ "embed"
 	"log"
+	"path/filepath"
 
 	"github.com/goccy/go-yaml"
 	"github.com/inoxlang/inox/internal/utils"
@@ -12,12 +13,30 @@ var (
 	//go:embed tutorials.yaml
 	TUTORIALS_YAML string
 
+	//go:embed simple.min.css
+	MINIFIED_SIMPLE_CSS string
+
+	//go:embed htmx.min.js
+	MINIFIED_HTMX_JS string
+
 	TUTORIAL_SERIES []TutorialSeries
 )
 
 func init() {
 	if err := yaml.Unmarshal(utils.StringAsBytes(TUTORIALS_YAML), &TUTORIAL_SERIES); err != nil {
 		log.Panicf("error while parsing tutorials.yaml: %s", err)
+	}
+
+	for _, series := range TUTORIAL_SERIES {
+		for _, tut := range series.Tutorials {
+			for name := range tut.OtherFiles {
+				basename := filepath.Base(name)
+				switch basename {
+				case "htmx.min.js":
+					tut.OtherFiles[name] = MINIFIED_HTMX_JS
+				}
+			}
+		}
 	}
 }
 
