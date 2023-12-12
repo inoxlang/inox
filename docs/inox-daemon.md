@@ -1,5 +1,9 @@
 # Inox Daemon (inoxd)
 
+⬇️ [Installation](#installation)\
+⚙️ [Implementation](#implementation)\
+⚠️ [Removing the Daemon](#removing-the-daemon)
+
 **Inoxd** creates and manages one or more project server processes (command `inox project-server`).\
 Inoxd can be installed on any Linux distribution that uses **systemd**.
 
@@ -8,13 +12,6 @@ Inoxd can be installed on any Linux distribution that uses **systemd**.
 - Projects are stored in `/var/lib/inoxd/projects`
 
 _\* bear in mind that Inox is not production ready yet._
-
-Outline:
-
-⬇️ [Installation](#installation)\
-⚙️ [Implementation](#implementation)\
-⚠️ [Removing the Daemon](#removing-the-daemon)
-
 
 ## Installation
 
