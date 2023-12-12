@@ -23,13 +23,13 @@ It is recommended to avoid the following changes:
 ### Test a Single Package
 
 ```
-go test -race -count=1 -p=1 ./internal/<pkg> -timeout=2m
+go test -race -count=1 ./internal/<pkg> -timeout=3m
 ```
 
 Run the tests again with the race detector disabled:
 
 ```
-go test -count=1 -p=1 ./internal/<pkg> -timeout=2m
+go test -count=1 ./internal/<pkg> -timeout=2m
 ```
 
 ### Test All Packages
@@ -37,13 +37,13 @@ go test -count=1 -p=1 ./internal/<pkg> -timeout=2m
 All tests can be run with the following command with:
 
 ```
-go test -race -count=1 -p=1 ./... -timeout=5m
+go test -race -count=1 -p=1 ./... -timeout=3m
 ```
 
 Run all tests again with the race detector disabled:
 
 ```
-go test -count=1 -p=1 ./... -timeout=3m
+go test -count=1 -p=1 ./... -timeout=2m
 ```
 
 If you have Chrome installed you can set the env var
