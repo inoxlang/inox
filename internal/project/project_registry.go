@@ -104,7 +104,7 @@ func (r *Registry) CreateProject(ctx *core.Context, params CreateProjectParams) 
 	defer projectFS.Close(ctx)
 
 	if params.AddMainFile {
-		util.WriteFile(projectFS, DEFAULT_MAIN_FILENAME, []byte("manifest {\n\n}"), fs_ns.DEFAULT_FILE_FMODE)
+		util.WriteFile(projectFS, DEFAULT_MAIN_FILENAME, []byte("manifest {\n    kind: \"application\"\n}"), fs_ns.DEFAULT_FILE_FMODE)
 	}
 
 	if params.AddTutFile {
