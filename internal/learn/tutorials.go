@@ -13,9 +13,6 @@ var (
 	//go:embed tutorials.yaml
 	TUTORIALS_YAML string
 
-	//go:embed simple.min.css
-	MINIFIED_SIMPLE_CSS string
-
 	//go:embed htmx.min.js
 	MINIFIED_HTMX_JS string
 
