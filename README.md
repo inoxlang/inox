@@ -123,8 +123,8 @@ Inox applications can currently only be developed using the Inox extension for V
   rm ./inox inox-linux-amd64.tar.gz
   ```
 
-- __\[recommended\]__ add the [inoxd daemon](./docs/inox-daemon.md) to automatically start the project server.
-  If you have installed `inox` on your **local machine** or a local VM, execute the following command to add a systemd service:
+- __\[recommended\]__ add the [inoxd daemon](./docs/inox-daemon.md) (systemd service) to automatically start the project server.
+  If you have installed `inox` on your **local machine** or a local VM, you can execute the following command to add **inoxd**:
   ```
   sudo inox add-service # don't run this on a REMOTE machine
   ```
