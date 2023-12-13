@@ -814,7 +814,7 @@ http.Client{
 ```
 ### http.Server
 
-The http.Server function creates a listening HTTP server with a given host & handler. The handler can be an function or a Mapping that routes requests. When you send a request to a server listening to https://localhost add the --insecure flag to ignore certificate errors.
+The http.Server function creates a listening HTTP server with a given host & handler. The handler can be an function or a Mapping that routes requests. When you send a request to a server listening to https://localhost add the --insecure flag  to ignore certificate errors. When using filesystem routing modules are reloaded each time files are changed in /routes/.
 
 **examples**
 

@@ -735,8 +735,8 @@ http:
   - topic: http.Server
     text: >
       The http.Server function creates a listening HTTP server with a given host & handler. The handler can be an function
-      or a Mapping that routes requests. When you send a request to a server listening to https://localhost add the --insecure flag to ignore certificate errors.
-
+      or a Mapping that routes requests. When you send a request to a server listening to https://localhost add the --insecure flag 
+      to ignore certificate errors. When using filesystem routing modules are reloaded each time files are changed in /routes/.
     examples:
     - code: |
         server = http.Server!(https://localhost:8080, {
@@ -747,7 +747,7 @@ http:
         })
       explanation: >
          creates an HTTP server at https://localhost:8080 with filesystem routing. The server will look for static files in the /static/ folder
-         and dynamic handler modules (.ix files) in the /routes/ folder.
+         and dynamic handler modules (.ix files) in the /routes/ folder. Modules are reloaded each time files are changed in /routes/.
          To learn about filesystem routing see https://github.com/inoxlang/inox/blob/master/docs/web-app-development.md#2-filesystem-routing
     - code: |
         fn handle(rw http.resp-writer, r http.req){
