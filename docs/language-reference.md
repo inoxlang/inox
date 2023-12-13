@@ -73,8 +73,9 @@
 - [Project Images](#project-images)
 - [Structures (not implemented yet)](#structs)
 
-> If you find an error in the documentation or a bug in the runtime, please
-> create an issue.
+> If you find an error in the documentation or a bug in the runtime, please create an issue.\
+> Tip: If you are reading on GitHub, you can display an outline on the side.\
+![image](https://github.com/inoxlang/inox/assets/113632189/c4e90b46-eb9c-4a0f-84ad-3389d2c753d4)
 
 # Literals
 
