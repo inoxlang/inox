@@ -1,0 +1,16 @@
+manifest {
+
+}
+
+return html<html>
+<head>
+    <meta charset="utf-8"/>
+    <title></title>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <link rel="stylesheet" href="/base.css"/>
+    <script src="/htmx.min.js"></script>
+</head>
+<body>
+    <header> Hello from index.ix. </header>
+</body>
+</html>

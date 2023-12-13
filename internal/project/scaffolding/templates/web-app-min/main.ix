@@ -1,0 +1,31 @@
+const (
+    HOST = https://localhost:8080
+)
+
+manifest {
+    permissions: {
+        # allow listening on localhost:8080
+        provide: HOST
+
+        read: %/...
+
+        write: {
+            # allow persisting the self signed certificate that is automatically generated.
+            %/self_signed*
+
+            %/databases/...
+        }
+    }
+}
+
+server = http.Server!(HOST, {
+    routing: {
+        # directory for static resources such as CSS and JS files.
+        static: /static/
+
+        # directory containing handler modules (Inox files).
+        dynamic: /routes/
+    }
+})
+
+server.wait_closed()
