@@ -2,6 +2,10 @@ const (
     HOST = https://localhost:8080
 )
 
+preinit {
+    import ./schema.ix
+}
+
 manifest {
     permissions: {
         # allow listening on localhost:8080
@@ -14,6 +18,14 @@ manifest {
             %/self_signed*
 
             %/databases/...
+        }
+    }
+    databases: {
+        main: {
+            resource: ldb://main
+
+            # location of the data in the project filesystem.
+            resolution-data: /databases/main/   
         }
     }
 }

@@ -1,5 +1,12 @@
 manifest {
-
+    # allow the module to access the main database.
+    databases: /main.ix
+    permissions: {
+        read: {
+            ldb://main
+        }
+        # you can also add the write permission if needed.
+    }
 }
 
 return html<html>
