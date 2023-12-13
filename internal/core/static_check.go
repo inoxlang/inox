@@ -2117,7 +2117,7 @@ func checkPreinitBlock(args preinitBlockCheckParams) {
 			*parse.ComplexStringPatternPiece, *parse.PatternPieceElement,
 			*parse.ObjectPatternLiteral, *parse.RecordPatternLiteral, *parse.ObjectPatternProperty,
 			*parse.PatternCallExpression, *parse.PatternGroupName,
-			*parse.PatternUnion,
+			*parse.PatternUnion, *parse.ListPatternLiteral, *parse.TuplePatternLiteral,
 
 			//host alias
 			*parse.HostAliasDefinition, *parse.AtHostLiteral:
@@ -2153,7 +2153,7 @@ func checkPatternOnlyIncludedChunk(chunk *parse.Chunk, onError func(n parse.Node
 			*parse.ComplexStringPatternPiece, *parse.PatternPieceElement,
 			*parse.ObjectPatternLiteral, *parse.RecordPatternLiteral, *parse.ObjectPatternProperty,
 			*parse.PatternCallExpression, *parse.PatternGroupName,
-			*parse.PatternUnion,
+			*parse.PatternUnion, *parse.ListPatternLiteral, *parse.TuplePatternLiteral,
 
 			//host alias
 			*parse.HostAliasDefinition, *parse.AtHostLiteral:
