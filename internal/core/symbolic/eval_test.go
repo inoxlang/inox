@@ -5406,7 +5406,7 @@ func TestSymbolicEval(t *testing.T) {
 				parameters:              []Value{ANY_INT},
 				parameterNames:          []string{"ints"},
 				results:                 []Value{ANY_INT},
-				variadic:                true,
+				variadic:                false,
 				originGoFunction:        goFunc,
 			}, calleeData) {
 				return
@@ -5414,7 +5414,6 @@ func TestSymbolicEval(t *testing.T) {
 
 			fn := calleeData.(*Function)
 			assert.False(t, fn.HasOptionalParams())
-			assert.Same(t, ANY_INT, fn.VariadicParamElem())
 		})
 
 		t.Run("specific variadic Go function: two arguments (variadic)", func(t *testing.T) {
@@ -5450,7 +5449,7 @@ func TestSymbolicEval(t *testing.T) {
 				parameters:              []Value{ANY_INT},
 				parameterNames:          []string{"ints"},
 				results:                 []Value{ANY_INT},
-				variadic:                true,
+				variadic:                false,
 				originGoFunction:        goFunc,
 			}, calleeData) {
 				return
@@ -5458,7 +5457,6 @@ func TestSymbolicEval(t *testing.T) {
 
 			fn := calleeData.(*Function)
 			assert.False(t, fn.HasOptionalParams())
-			assert.Same(t, ANY_INT, fn.VariadicParamElem())
 		})
 
 		t.Run("specific variadic Go function: spread argument of unknown length", func(t *testing.T) {
@@ -5496,7 +5494,7 @@ func TestSymbolicEval(t *testing.T) {
 				parameters:              []Value{ANY_INT},
 				parameterNames:          []string{"ints"},
 				results:                 []Value{ANY_INT},
-				variadic:                true,
+				variadic:                false,
 				originGoFunction:        goFunc,
 			}, calleeData) {
 				return
@@ -5504,7 +5502,6 @@ func TestSymbolicEval(t *testing.T) {
 
 			fn := calleeData.(*Function)
 			assert.False(t, fn.HasOptionalParams())
-			assert.Same(t, ANY_INT, fn.VariadicParamElem())
 		})
 
 		t.Run("specific Go function with non-empty object parameter, missing property in argument", func(t *testing.T) {

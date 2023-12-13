@@ -40,6 +40,7 @@ type State struct {
 	tempSymbolicGoFunctionWarnings       []string
 	tempSymbolicGoFunctionParameters     *[]Value
 	tempSymbolicGoFunctionParameterNames []string
+	tempSymbolicGoFunctionIsVariadic     bool
 	tempUpdatedSelf                      Value
 
 	lastErrorNode        parse.Node
@@ -658,23 +659,25 @@ func (state *State) consumeSymbolicGoFunctionWarnings(fn func(msg string)) {
 	state.tempSymbolicGoFunctionWarnings = state.tempSymbolicGoFunctionWarnings[:0]
 }
 
-func (state *State) setSymbolicGoFunctionParameters(parameters *[]Value, names []string) {
+func (state *State) setSymbolicGoFunctionParameters(parameters *[]Value, names []string, isVariadic bool) {
 	if state.tempSymbolicGoFunctionParameters != nil {
 		panic(errors.New("a temporary signature is already present"))
 	}
 	state.tempSymbolicGoFunctionParameterNames = names
 	state.tempSymbolicGoFunctionParameters = parameters
+	state.tempSymbolicGoFunctionIsVariadic = isVariadic
 }
 
-func (state *State) consumeSymbolicGoFunctionParameters() ([]Value, []string, bool) {
+func (state *State) consumeSymbolicGoFunctionParameters() (paramTypes []Value, paramNames []string, variadic bool, present bool) {
 	if state.tempSymbolicGoFunctionParameters == nil {
-		return nil, nil, false
+		return nil, nil, false, false
 	}
 	defer func() {
 		state.tempSymbolicGoFunctionParameters = nil
 		state.tempSymbolicGoFunctionParameterNames = nil
+		state.tempSymbolicGoFunctionIsVariadic = false
 	}()
-	return *state.tempSymbolicGoFunctionParameters, state.tempSymbolicGoFunctionParameterNames, true
+	return *state.tempSymbolicGoFunctionParameters, state.tempSymbolicGoFunctionParameterNames, state.tempSymbolicGoFunctionIsVariadic, true
 }
 
 func (state *State) setUpdatedSelf(v Value) {

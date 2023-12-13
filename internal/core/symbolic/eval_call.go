@@ -260,7 +260,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 
 		//create a more specific *Function with the result and the provided parameters.
 		utils.PanicIfErr(f.LoadSignatureData())
-		params, paramNames, hasMoreSpecificParams := state.consumeSymbolicGoFunctionParameters()
+		params, paramNames, isSpecificFuncVariadic, hasMoreSpecificParams := state.consumeSymbolicGoFunctionParameters()
 		if !hasMoreSpecificParams {
 			params = f.ParametersExceptCtx()
 		}
@@ -281,7 +281,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 			}
 		}
 
-		function := NewFunction(params, paramNames, firstOptionalParamIndex, f.isVariadic, results)
+		function := NewFunction(params, paramNames, firstOptionalParamIndex, isSpecificFuncVariadic, results)
 		function.originGoFunction = f
 
 		//update the symbolic data of the callee with the *Function.

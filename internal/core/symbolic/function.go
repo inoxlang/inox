@@ -1005,16 +1005,17 @@ func (f *Function) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.Pretty
 			w.WriteString(", ")
 		}
 		paramRegion := w.EnterRegion(pprint.ParamNameTypeRegion)
-		w.WriteString("_ ")
-
-		isVariadicParam := f.variadic && i == len(f.parameters)-1
-		if isVariadicParam {
-			w.WriteString("...")
-		}
 
 		if len(f.parameterNames) > i {
 			w.WriteString(f.parameterNames[i])
 			w.WriteByte(' ')
+		} else {
+			w.WriteString("_ ")
+		}
+
+		isVariadicParam := f.variadic && i == len(f.parameters)-1
+		if isVariadicParam {
+			w.WriteString("...")
 		}
 
 		if !isVariadicParam && f.HasOptionalParams() && i >= f.firstOptionalParamIndex {

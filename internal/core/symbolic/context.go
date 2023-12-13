@@ -229,7 +229,11 @@ func (ctx *Context) AddFormattedSymbolicGoFunctionError(format string, args ...a
 }
 
 func (ctx *Context) SetSymbolicGoFunctionParameters(parameters *[]Value, names []string) {
-	ctx.associatedState.setSymbolicGoFunctionParameters(parameters, names)
+	ctx.associatedState.setSymbolicGoFunctionParameters(parameters, names, false)
+}
+
+func (ctx *Context) SetSymbolicVariadicGoFunctionParameters(parameters *[]Value, names []string) {
+	ctx.associatedState.setSymbolicGoFunctionParameters(parameters, names, true)
 }
 
 func (ctx *Context) SetUpdatedSelf(v Value) {
