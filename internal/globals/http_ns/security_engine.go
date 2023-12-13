@@ -95,7 +95,7 @@ func (engine *securityEngine) getSocketMitigationData(req *HttpRequest) (*rateli
 		}
 		slidingWindowMap.Set(req.RemoteAddrAndPort, slidingWindow)
 	} else {
-		engine.debugLogger.Log().Str("foundSlidingWindowFor", string(req.RemoteAddrAndPort)).Send()
+		engine.debugLogger.Debug().Str("foundSlidingWindowFor", string(req.RemoteAddrAndPort)).Send()
 	}
 
 	return slidingWindow, slidingWindowReqInfo
