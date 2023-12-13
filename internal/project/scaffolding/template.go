@@ -12,6 +12,10 @@ import (
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 )
 
+const (
+	MINIMAL_WEB_APP_TEMPLATE_NAME = "web-app-min"
+)
+
 //go:embed base.css
 var BASE_CSS_STYLESHEET string
 

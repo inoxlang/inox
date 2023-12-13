@@ -6,6 +6,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
+	"github.com/inoxlang/inox/internal/project/scaffolding"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -16,7 +17,7 @@ func TestOpenRegistry(t *testing.T) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
-		fls := fs_ns.NewMemFilesystem(1_000)
+		fls := fs_ns.NewMemFilesystem(1_000_000)
 
 		r, err := OpenRegistry("/projects", fls, ctx)
 		if !assert.NoError(t, err) {
@@ -30,7 +31,7 @@ func TestOpenRegistry(t *testing.T) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
-		fls := fs_ns.NewMemFilesystem(1_000)
+		fls := fs_ns.NewMemFilesystem(1_000_000)
 
 		r, err := OpenRegistry("/projects", fls, ctx)
 		assert.NoError(t, err)
@@ -53,7 +54,7 @@ func TestCreateProject(t *testing.T) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
-		fls := fs_ns.NewMemFilesystem(1_000)
+		fls := fs_ns.NewMemFilesystem(1_000_000)
 
 		reg := utils.Must(OpenRegistry("/projects", fls, ctx))
 		defer reg.Close(ctx)
@@ -70,7 +71,7 @@ func TestCreateProject(t *testing.T) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
-		fls := fs_ns.NewMemFilesystem(1_000)
+		fls := fs_ns.NewMemFilesystem(1_000_000)
 
 		reg := utils.Must(OpenRegistry("/projects", fls, ctx))
 		defer reg.Close(ctx)
@@ -90,7 +91,7 @@ func TestCreateProject(t *testing.T) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
-		fls := fs_ns.NewMemFilesystem(1_000)
+		fls := fs_ns.NewMemFilesystem(1_000_000)
 
 		reg := utils.Must(OpenRegistry("/projects", fls, ctx))
 		defer reg.Close(ctx)
@@ -115,14 +116,14 @@ func TestOpenProject(t *testing.T) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
-		fls := fs_ns.NewMemFilesystem(1_000)
+		fls := fs_ns.NewMemFilesystem(1_000_000)
 
 		reg := utils.Must(OpenRegistry("/projects", fls, ctx))
 		defer reg.Close(ctx)
 
 		params := CreateProjectParams{
-			Name:        "myproject",
-			AddMainFile: true,
+			Name:     "myproject",
+			Template: scaffolding.MINIMAL_WEB_APP_TEMPLATE_NAME,
 		}
 		id := utils.Must(reg.CreateProject(ctx, params))
 
@@ -146,14 +147,14 @@ func TestOpenProject(t *testing.T) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
-		fls := fs_ns.NewMemFilesystem(1_000)
+		fls := fs_ns.NewMemFilesystem(1_000_000)
 
 		reg := utils.Must(OpenRegistry("/projects", fls, ctx))
 		defer reg.Close(ctx)
 
 		params := CreateProjectParams{
-			Name:        "myproject",
-			AddMainFile: true,
+			Name:     "myproject",
+			Template: scaffolding.MINIMAL_WEB_APP_TEMPLATE_NAME,
 		}
 		id := utils.Must(reg.CreateProject(ctx, params))
 
@@ -188,15 +189,15 @@ func TestOpenProject(t *testing.T) {
 		projectRegistryCtx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 		defer projectRegistryCtx.CancelGracefully()
 
-		reg := utils.Must(OpenRegistry("/projects", fs_ns.NewMemFilesystem(1_000), projectRegistryCtx))
+		reg := utils.Must(OpenRegistry("/projects", fs_ns.NewMemFilesystem(1_000_000), projectRegistryCtx))
 		defer reg.Close(projectRegistryCtx)
 
 		ctx1 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx1.CancelGracefully()
 
 		id := utils.Must(reg.CreateProject(ctx1, CreateProjectParams{
-			Name:        "myproject",
-			AddMainFile: true,
+			Name:     "myproject",
+			Template: scaffolding.MINIMAL_WEB_APP_TEMPLATE_NAME,
 		}))
 
 		assert.NotEmpty(t, id)
@@ -237,7 +238,7 @@ func TestOpenProject(t *testing.T) {
 			return
 		}
 
-		if !assert.Len(t, entries, 1) {
+		if !assert.NotZero(t, entries) {
 			return
 		}
 		assert.Equal(t, DEFAULT_MAIN_FILENAME, entries[0].Name())
@@ -247,13 +248,13 @@ func TestOpenProject(t *testing.T) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
-		fls := fs_ns.NewMemFilesystem(1_000)
+		fls := fs_ns.NewMemFilesystem(1_000_000)
 
 		reg := utils.Must(OpenRegistry("/projects", fls, ctx))
 
 		id := utils.Must(reg.CreateProject(ctx, CreateProjectParams{
-			Name:        "myproject",
-			AddMainFile: true,
+			Name:     "myproject",
+			Template: scaffolding.MINIMAL_WEB_APP_TEMPLATE_NAME,
 		}))
 
 		assert.NotEmpty(t, id)

@@ -14,6 +14,7 @@ import (
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/inoxd/node"
 	"github.com/inoxlang/inox/internal/project/cloudflareprovider"
+	"github.com/inoxlang/inox/internal/project/scaffolding"
 )
 
 const (
@@ -63,9 +64,9 @@ func (r *Registry) Close(ctx *core.Context) {
 }
 
 type CreateProjectParams struct {
-	Name        string `json:"name"`
-	AddMainFile bool   `json:"addMainFile,omitempty"`
-	AddTutFile  bool   `json:"addTutFile,omitempty"`
+	Name       string `json:"name"`
+	Template   string `json:"template,omitempty"`
+	AddTutFile bool   `json:"addTutFile,omitempty"`
 }
 
 // CreateProject
@@ -103,8 +104,10 @@ func (r *Registry) CreateProject(ctx *core.Context, params CreateProjectParams) 
 
 	defer projectFS.Close(ctx)
 
-	if params.AddMainFile {
-		util.WriteFile(projectFS, DEFAULT_MAIN_FILENAME, []byte("manifest {\n    kind: \"application\"\n}"), fs_ns.DEFAULT_FILE_FMODE)
+	if params.Template != "" {
+		if err := scaffolding.WriteTemplate(params.Template, projectFS); err != nil {
+			return "", fmt.Errorf("failed to write template %q to the project filesystem: %w", params.Template, err)
+		}
 	}
 
 	if params.AddTutFile {
