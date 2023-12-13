@@ -80,18 +80,19 @@
 
 Here are the most commonly used literals in Inox:
 
-- numbers with a point (.) are floating point numbers: `1.0, 2.0e3`
-- numbers without a point are integers: `1, -200, 1_000`
+- integers: `1, -200, 1_000`
+- floating point numbers: `1.0, 2.0e3`
 - integer range literals: `1..3, 1..`
-- boolean literals are `true` and `false`
-- nil literal (it represents the absence of value): `nil`
-- single line strings have double quotes: `"hello !"`
+- float range literals: `1.0..3.0, 1.0..`
+- boolean literals are `true` and `false`.
+- the `nil` literal represents the absence of value.
+- single line strings: `"hello !"`
 - multiline strings have backquotes:
   ```
   `first line
   second line`
   ```
-- runes represent a single character, they have single quotes: `'a', '\n'`
+- runes represent a single character: `'a', '\n'`
 - regex literals: `` %`a+` ``
 
 <details>
@@ -102,14 +103,14 @@ Here are the most commonly used literals in Inox:
   - they always start with `./`, `../` or `/`
   - paths ending with `/` are directory paths
   - if the path contains spaces or delimiters such as `[` or `]` it should be
-    quoted: `` /`[ ]` ``
+    quoted: `` /`[ ]` ``.
 - path pattern literals allow you to match paths
   - `%/tmp/...` matches any path starting with `/tmp/`, it's a prefix path
     pattern
   - `%./*.go` matches any file in the `./` directory that ends with `.go`, it's
-    a globbing path pattern
+    a globbing path pattern.
   - ⚠️ They are values, they don't expand like when you do `ls ./*.go`
-  - note: you cannot mix prefix & globbing path patterns
+  - note: you cannot mix prefix & globbing path patterns.
 - URL literals: `https://example.com/index.html, https://google.com?q=inox`
 - URL pattern literals:
   - URL prefix patterns: `%https://example.com/...`
@@ -122,7 +123,7 @@ Here are the most commonly used literals in Inox:
 
 - host literals: `https://example.com, https://127.0.0.1, ://example.com`
 - host pattern literals:
-  - `%https://**.com` matches any domain or subdomain ending in .com
+  - `%https://**.com` matches any domain or subdomain ending in `.com`.
   - `%https://**.example.com` matches any subdomain of `example.com`
 - port literals: `:80, :80/http`
 - year literals: `2020y-UTC`
@@ -809,9 +810,6 @@ aa 2
 
 ## Walk Statement
 
-<details>
-    <summary>Click to expand</summary>
-
 **walk statements** iterate over a **walkable** value. Like in **for
 statements** you can use the **break** & **continue** keywords.
 
@@ -868,8 +866,6 @@ output:
 "grandchild"
 "child 2"
 ```
-
-</details>
 
 ## Pipe Statement
 
