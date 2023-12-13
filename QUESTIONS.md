@@ -41,11 +41,9 @@ _________
 
 **<summary>Is Inox a company ? What is the business model of Inox ?</summary>**
 
-Inox is not a company. I am working full-time on Inox and releasing the source code under the MIT license.\
-Please consider donating through [GitHub](https://github.com/sponsors/GraphR00t) (preferred) or [Patreon](https://patreon.com/GraphR00t).
+Inox is not a company. Please consider donating through [GitHub](https://github.com/sponsors/GraphR00t) (preferred) or [Patreon](https://patreon.com/GraphR00t) to support my work.
 
-I may develop closed-source services that are peripheral to the project if I earn almost nothing from sponsorship.
-**Inox will always be licensed under the MIT license.**
+In the future, if I don't earn a living from sponsorship, I may develop closed-source services that are peripheral to the project. **Inox will ALWAYS be licensed under the MIT license (or similar).**
 </details>
 
 _________
@@ -67,6 +65,17 @@ _________
 **<summary>What is the state of the codebase (quality, documentation, tests) ?</summary>**
 
 As of now, certain parts of the codebase are not optimally written, lack sufficient comments and documentation, and do not have robust test coverage. The first version (0.1) being now released, I will dedicate 20-30% of my working time to improving the overall quality, documentation, and test coverage of the codebase.
+
+</details>
+
+_________
+
+<details>
+
+**<summary>The language is slow, do you plan to improve the performance ?</summary>**
+
+Yes, I plan to improve execution speed and memory usage. Note that some sharable data structures such as **objects** and **sets**
+are lock-protected. [Structs](./docs/language-reference.md#structs) should be used to represent state when performing resource-intensive computations. Objects should be mostly used to persist data.
 
 </details>
 
