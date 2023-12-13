@@ -22,6 +22,12 @@ type DirTestSuite struct {
 	}
 }
 
+//TODO: add test case with steps:
+//1) create /dir_a/ and /dir_b/
+//2) create /dir_b/
+//3) rename /dir_b/ to /dir_a/
+//what should happen ?
+
 func (s *DirTestSuite) TestMkdirAll(c *check.C) {
 	err := s.FS.MkdirAll("empty", os.FileMode(0755))
 	c.Assert(err, check.IsNil)
