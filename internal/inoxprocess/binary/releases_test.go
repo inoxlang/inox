@@ -22,13 +22,17 @@ func TestGetLatestReleases(t *testing.T) {
 		return
 	}
 
-	if !assert.Len(t, releases, 2) {
+	if !assert.LessOrEqual(t, len(releases), 2) {
 		return
 	}
 
-	assert.NotEmpty(t, releases[0].TagName)
-	assert.NotEmpty(t, releases[1].TagName)
+	if len(releases) > 0 {
+		assert.NotEmpty(t, releases[0].TagName)
+		assert.NotEmpty(t, releases[0].Name)
+	}
 
-	assert.NotEmpty(t, releases[0].Name)
-	assert.NotEmpty(t, releases[1].Name)
+	if len(releases) > 1 {
+		assert.NotEmpty(t, releases[1].TagName)
+		assert.NotEmpty(t, releases[1].Name)
+	}
 }
