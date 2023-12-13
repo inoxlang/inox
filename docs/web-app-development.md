@@ -15,9 +15,8 @@
 In this tutorial you will learn how to create a basic **todo** application.
 Before going further create a new empty **todo** [project](./project.md) using Visual Studio Code and open the workspace.
 
-Outline:\
-[1) HTTP Server](#1-http-server)
-[2) Filesystem Routing](#2-filesystem-routing)
+[1) HTTP Server](#1-http-server)\
+[2) Filesystem Routing](#2-filesystem-routing)\
 [3) Database](#3-database)
 
 
@@ -88,9 +87,9 @@ return html<html>
 
 ## 3) Database
 
-### Database Creation
+### 3.1) Database Creation
 
-We need a database in order to store & retrieve Todo items, let's define a database in **/main.ix**
+We need a database in order to store & retrieve Todo items, let's define a database in **/main.ix**:
 ```
 
 # the preinit block is executed before the manifest.
@@ -154,7 +153,7 @@ Execute the code a single time then remove the `update_schema(...)` call and `ex
 
 You should now be able to access the set of users by typing: `dbs.main.users` !
 
-### Access From Other Modules
+### 3.2) Access From Other Modules
 
 The database we created can be accessed by `/main.ix` but not by other modules. 
 Let's fix that by modifying the manifest of `/routes/main.ix`:
