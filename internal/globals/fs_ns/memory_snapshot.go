@@ -2,11 +2,14 @@ package fs_ns
 
 import (
 	"bytes"
+	"errors"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"slices"
 
+	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core"
 )
 
@@ -65,6 +68,45 @@ func (s *InMemorySnapshot) NewAdaptedFilesystem(maxTotalStorageSizeHint core.Byt
 	maxTotalStorageSize := maxTotalStorageSizeHint
 	fls := NewMemFilesystemFromSnapshot(s, maxTotalStorageSize)
 	return fls, nil
+}
+
+func (s *InMemorySnapshot) WriteTo(fls afs.Filesystem, params core.SnapshotWriteToFilesystem) error {
+	return s.ForEachEntry(func(m core.EntrySnapshotMetadata) error {
+		path := string(m.AbsolutePath)
+		_, err := fls.Stat(path)
+		needOverwrite := err == nil
+
+		if err != nil && !errors.Is(err, os.ErrNotExist) {
+			return err
+		}
+
+		if needOverwrite {
+			if !params.Overwrite {
+				return fmt.Errorf("found a file or directory at %q but overwriting is not allowed", path)
+			}
+			err = fls.Remove(m.AbsolutePath.Extension())
+			if err != nil {
+				return err
+			}
+		}
+
+		if m.IsDir() {
+			return fls.MkdirAll(path, m.Mode.FileMode().Perm())
+		} else {
+			content, err := s.Content(path)
+			if err != nil {
+				return err
+			}
+
+			f, err := fls.OpenFile(path, os.O_WRONLY|os.O_CREATE, m.Mode.FileMode().Perm())
+			if err != nil {
+				return err
+			}
+
+			_, err = io.Copy(f, content.Reader())
+			return err
+		}
+	})
 }
 
 type AddressableContentBytes struct {

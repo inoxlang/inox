@@ -1240,6 +1240,10 @@ func (s *memFilesystemSnapshot) NewAdaptedFilesystem(maxTotalStorageSizeHint Byt
 	return &snapshotableMemFilesystem{copyMemFs(s.fls)}, nil
 }
 
+func (s *memFilesystemSnapshot) WriteTo(fls afs.Filesystem, params SnapshotWriteToFilesystem) error {
+	panic("unimplemented")
+}
+
 func (*memFilesystemSnapshot) Content(path string) (AddressableContent, error) {
 	panic("unimplemented")
 }

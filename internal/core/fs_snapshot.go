@@ -72,6 +72,12 @@ type FilesystemSnapshot interface {
 	//NewAdaptedFilesystem creates a filesystem from the snapshot,
 	//it should be adapted to the FilesystemSnapshot implementation.
 	NewAdaptedFilesystem(maxTotalStorageSizeHint ByteCount) (SnapshotableFilesystem, error)
+
+	WriteTo(fls afs.Filesystem, params SnapshotWriteToFilesystem) error
+}
+
+type SnapshotWriteToFilesystem struct {
+	Overwrite bool
 }
 
 type AddressableContent interface {

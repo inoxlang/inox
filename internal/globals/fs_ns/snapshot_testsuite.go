@@ -759,3 +759,7 @@ func testSnapshoting(t *testing.T, createFS func(*testing.T) (*core.Context, cor
 		assert.Equal(t, []string{"a.ix"}, metadata.ChildNames)
 	})
 }
+
+func testSnapshotWriteToFilesystem(t *testing.T, createFS func(*testing.T) (*core.Context, core.SnapshotableFilesystem)) {
+	//TODO
+}
