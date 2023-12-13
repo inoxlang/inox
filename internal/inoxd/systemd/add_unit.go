@@ -10,6 +10,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
+	"strconv"
 	"strings"
 
 	"github.com/coreos/go-systemd/v22/unit"
@@ -26,6 +28,8 @@ const (
 	INOX_SERVICE_UNIT_FPERMS = 0o644
 
 	SYSTEMCTL_CMD_NAME = "systemctl"
+
+	DEFAULT_CPU_QUOTA_PERCENT_PER_CPU = 75 //75%
 )
 
 var (
@@ -122,6 +126,8 @@ func WriteInoxUnitFile(args InoxUnitParams) (unitName string, _ error) {
 
 	configString := fmt.Sprintf(`'-config=%s'`, utils.Must(json.Marshal(daemonConfig)))
 
+	cpuQuota := runtime.NumCPU() * DEFAULT_CPU_QUOTA_PERCENT_PER_CPU
+
 	serviceSection := unit.UnitSection{
 		Section: "Service",
 		Entries: []*unit.UnitEntry{
@@ -168,6 +174,10 @@ func WriteInoxUnitFile(args InoxUnitParams) (unitName string, _ error) {
 			{
 				Name:  "StartLimitBurst",
 				Value: "5",
+			},
+			{
+				Name:  "CPUQuota",
+				Value: strconv.Itoa(cpuQuota) + "%",
 			},
 		},
 	}
