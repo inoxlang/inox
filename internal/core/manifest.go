@@ -1455,9 +1455,9 @@ func getDatabaseConfigurations(v Value, parentState *GlobalState) (DatabaseConfi
 		var provider *GlobalState
 
 		if parentState != nil {
-			if parentState.Module.MainChunk.Source.Name() == path.UnderlyingString() {
+			if parentState.Module != nil && parentState.Module.MainChunk.Source.Name() == path.UnderlyingString() {
 				provider = parentState
-			} else {
+			} else if parentState.MainState != nil {
 				parentState.MainState.descendantStatesLock.Lock()
 				provider = parentState.MainState.descendantStates[path]
 				parentState.MainState.descendantStatesLock.Unlock()
@@ -1465,7 +1465,7 @@ func getDatabaseConfigurations(v Value, parentState *GlobalState) (DatabaseConfi
 		}
 
 		if provider == nil {
-			return nil, fmt.Errorf("state of %s not found", path.UnderlyingString())
+			return nil, fmt.Errorf("failed to get the module providing one or more databases: state of %s not found", path.UnderlyingString())
 		}
 
 		for _, dbConfig := range provider.Manifest.Databases {

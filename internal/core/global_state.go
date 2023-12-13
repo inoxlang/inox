@@ -38,11 +38,11 @@ type GlobalState struct {
 	Logger    zerolog.Logger //zerolog.Nop() by default
 	LogLevels *LogLevels     //DEFAULT_LOG_LEVELS by default
 
-	MainState *GlobalState //never nil (should be set by user of GlobalState)
+	MainState *GlobalState //never nil except for parents of main states,this field should be set by user of GlobalState.
 	Project   Project      //can be nil
 
 	Ctx          *Context
-	Module       *Module   //nil in some cases (shell, mapping entry's state), TODO: check for usage
+	Module       *Module   //nil in some cases (e.g. shell, mapping entry's state), TODO: check for usage
 	Bytecode     *Bytecode //can be nil
 	Manifest     *Manifest
 	Globals      GlobalVariables        //global variables
