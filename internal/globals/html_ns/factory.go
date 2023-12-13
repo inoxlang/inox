@@ -3,6 +3,7 @@ package html_ns
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/utils"
@@ -17,16 +18,26 @@ func CreateHTMLNodeFromXMLElement(ctx *core.Context, arg *core.XMLElement) *HTML
 		createChildNodesFromValue(ctx, child, &childNodes)
 	}
 
-	attributes := make([]html.Attribute, len(arg.Attributes()))
+	attributes := make([]html.Attribute, 0, len(arg.Attributes()))
 
-	for i, attr := range arg.Attributes() {
-		attributes[i].Key = attr.Name()
+	for _, attr := range arg.Attributes() {
+		attrName := attr.Name()
+
+		//handle special 'ix-' attributes
+		if strings.HasPrefix(attrName, INOX_ATTR_PREFIX) {
+			transpileInoxAttribute(attr, &attributes)
+			//TODO: handle errors
+			continue
+		}
+
+		attributes = append(attributes, html.Attribute{Key: attrName})
+		index := len(attributes) - 1
 
 		switch val := attr.Value().(type) {
 		case core.StringLike:
-			attributes[i].Val = val.GetOrBuildString()
+			attributes[index].Val = val.GetOrBuildString()
 		case core.Int:
-			attributes[i].Val = utils.BytesAsString(core.GetRepresentation(val, ctx))
+			attributes[index].Val = utils.BytesAsString(core.GetRepresentation(val, ctx))
 		default:
 			panic(fmt.Errorf("failed to convert value of attribute '%s' to string", attr.Name()))
 		}

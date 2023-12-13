@@ -120,6 +120,7 @@ func GetAllTagAttributes(name string) ([]AttributeData, bool) {
 	data = append(data, tagData.Attributes...)
 	data = append(data, STANDARD_DATA.GlobalAttributes...)
 	data = append(data, HTMX_DATA.GlobalAttributes...)
+	data = append(data, IX_DATA.GlobalAttributes...)
 
 	return data, true
 }
