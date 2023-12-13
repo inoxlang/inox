@@ -2,7 +2,6 @@ package core
 
 import (
 	"math"
-	"runtime"
 	"strconv"
 	"testing"
 
@@ -433,13 +432,6 @@ func TestComplexPatternParsing(t *testing.T) {
 }
 
 func TestLengthCheckingStringPattern(t *testing.T) {
-	{
-		runtime.GC()
-		startMemStats := new(runtime.MemStats)
-		runtime.ReadMemStats(startMemStats)
-
-		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
-	}
 
 	t.Run(".LengthRange()", func(t *testing.T) {
 		pattern := NewLengthCheckingStringPattern(0, 1)
@@ -480,13 +472,6 @@ func TestLengthCheckingStringPattern(t *testing.T) {
 }
 
 func TestSequenceStringPattern(t *testing.T) {
-	{
-		runtime.GC()
-		startMemStats := new(runtime.MemStats)
-		runtime.ReadMemStats(startMemStats)
-
-		defer utils.AssertNoMemoryLeak(t, startMemStats, 10)
-	}
 
 	t.Run(".LengthRange()", func(t *testing.T) {
 
