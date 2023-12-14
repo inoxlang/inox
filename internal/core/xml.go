@@ -19,6 +19,10 @@ func (e *XMLElement) Children() []Value {
 	return e.children[0:len(e.children):len(e.children)]
 }
 
+func (e *XMLElement) RawContent() string {
+	return e.rawContent
+}
+
 // result should not be modified.
 func (e *XMLElement) Attributes() []XMLAttribute {
 	return e.attributes[0:len(e.attributes):len(e.attributes)]
