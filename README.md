@@ -76,7 +76,7 @@ deeply integrates with Inox's built-in database engine, testing engine and HTTP 
 
 </details>
 
-⚠️ The language is not production ready yet. I am working full-time on Inox, please consider donating through [GitHub](https://github.com/sponsors/GraphR00t) (preferred) or [Patreon](https://patreon.com/GraphR00t). Thanks !
+⚠️ The language is not production ready yet. I am working full-time on Inox, please consider donating through [GitHub](https://github.com/sponsors/GraphR00t) (preferred) or [Patreon](https://patreon.com/GraphR00t).
 
 ❔ [Questions you may have](./QUESTIONS.md)
 
@@ -98,7 +98,6 @@ subgraph InoxBinary["Inox (Linux)"]
   ProjectServer(Project Server)
 end
 ```
-
 
 Inox applications can currently only be developed using the Inox extension for VSCode and VSCodium.
 
@@ -221,6 +220,8 @@ username = mod-args.name
 ...
 ```
 
+> Note: The default `Content Security Policy` of the HTTP server (header) is very strict by default. 
+
 ### Transactions & Effects (WIP)
 
 Inox allows you to attach a **transaction** to the current execution context.
@@ -328,11 +329,8 @@ dbs.main.users.has(new_user)
 
 You can learn more about databases [here](./docs/language-reference.md#databases).
 
-> The database currently uses a single-file key-value store, it obviously cannot
-> handle hundreds of Gigabytes.\
-> The improvement of the database engine is a main focus point. The goal is to
-> have a DB engine that is aware of the code accessing it (HTTP request
-> handlers) in order to smartly pre-fetch and cache data.
+> The database currently uses a single-file key-value store and the serialization of most container types is not yet implemented.
+> The improvement of the database engine is a main focus point. The goal is to have a DB engine that is aware of the code accessing it (HTTP request handlers) in order to smartly pre-fetch and cache data.
 
 ### Project Server (LSP)
 
@@ -601,8 +599,7 @@ drop-perms {
 
 #### **Limits (WIP)**
 
-Limits limit intensive operations, there are three kinds of limits: **byte
-rate**, **simple rate** & **total**. They are defined in the manifest and are
+Limits limit intensive operations, there are three kinds of limits: **byte rate**, **simple rate** & **total**. They are defined in the manifest and are
 [shared](./docs/language-reference.md#limits) with the children of the module.
 
 ```
@@ -883,7 +880,7 @@ options:
   </tr>
 </table>
 
-I am working full-time on Inox, please consider donating through [GitHub](https://github.com/sponsors/GraphR00t) (preferred) or [Patreon](https://patreon.com/GraphR00t). Thanks !
+I am working full-time on Inox, please consider donating through [GitHub](https://github.com/sponsors/GraphR00t) (preferred) or [Patreon](https://patreon.com/GraphR00t).
 
 [Questions you may have](./QUESTIONS.md)\
 [Installation](#installation)\
