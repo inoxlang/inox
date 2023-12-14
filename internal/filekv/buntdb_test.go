@@ -1162,7 +1162,7 @@ func ExampleDesc() {
 	//6: {"name":{"first":"Melinda","last":"Prichard"},"age":44}
 }
 
-func ExampleDB_CreateIndex_jSON() {
+func ExamplebuntDB_CreateIndex_json() {
 	db, _ := openBuntDBNoPermCheck(":memory:", newMemFilesystem())
 	db.CreateIndex("last_name", "*", IndexJSON("name.last"))
 	db.CreateIndex("age", "*", IndexJSON("age"))
@@ -1208,7 +1208,7 @@ func ExampleDB_CreateIndex_jSON() {
 	// 2: {"name":{"first":"Janet","last":"Prichard"},"age":47}
 }
 
-func ExampleDB_CreateIndex_strings() {
+func ExamplebuntDB_CreateIndex_strings() {
 	db, _ := openBuntDBNoPermCheck(":memory:", newMemFilesystem())
 	db.CreateIndex("name", "*", IndexString)
 	db.Update(func(tx *Tx) error {
@@ -1237,7 +1237,7 @@ func ExampleDB_CreateIndex_strings() {
 	//1: Tom
 }
 
-func ExampleDB_CreateIndex_ints() {
+func ExamplebuntDB_CreateIndex_ints() {
 	db, _ := openBuntDBNoPermCheck(":memory:", newMemFilesystem())
 	db.CreateIndex("age", "*", IndexInt)
 	db.Update(func(tx *Tx) error {
@@ -1265,7 +1265,8 @@ func ExampleDB_CreateIndex_ints() {
 	//2: 51
 	//4: 76
 }
-func ExampleDB_CreateIndex_multipleFields() {
+
+func ExamplebuntDB_CreateIndex_multipleFields() {
 	db, _ := openBuntDBNoPermCheck(":memory:", newMemFilesystem())
 	db.CreateIndex("last_name_age", "*", IndexJSON("name.last"), IndexJSON("age"))
 	db.Update(func(tx *Tx) error {
