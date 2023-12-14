@@ -1,4 +1,4 @@
-package compl
+package codecompletion
 
 import (
 	"slices"

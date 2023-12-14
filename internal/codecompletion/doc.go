@@ -1,4 +1,4 @@
-package compl
+package codecompletion
 
 import (
 	"github.com/inoxlang/inox/internal/core"

@@ -58,6 +58,7 @@ This folder contains most of the code for the `inox` binary.
 
 - project registry
 - project type and logic
+- scaffolding (e.g templates)
 
 **projectserver**
 

@@ -28,7 +28,7 @@ import (
 
 	"net/url"
 
-	"github.com/inoxlang/inox/internal/compl"
+	"github.com/inoxlang/inox/internal/codecompletion"
 	"github.com/inoxlang/inox/internal/parse"
 )
 
@@ -267,7 +267,7 @@ func registerHandlers(server *lsp.Server, serverConfig LSPServerConfiguration, p
 		completions := getCompletions(fpath, line, column, session)
 		completionIndex := 0
 
-		lspCompletions := utils.MapSlice(completions, func(completion compl.Completion) defines.CompletionItem {
+		lspCompletions := utils.MapSlice(completions, func(completion codecompletion.Completion) defines.CompletionItem {
 			defer func() {
 				completionIndex++
 			}()

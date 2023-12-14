@@ -10,6 +10,8 @@ import (
 var _ billy.Basic = (*GenericBasic)(nil)
 var _ billy.File = (*GenericFile)(nil)
 
+// GenericBasic is an implementation of billy.Basic. All the fields are optional:
+// for example if .CreateFn is not provided the Create method will always return billy.ErrNotSupported.
 type GenericBasic struct {
 	CreateFn   func(filename string) (File, error)
 	OpenFn     func(filename string) (File, error)
@@ -69,6 +71,8 @@ func (i GenericBasic) Join(elem ...string) string {
 	return i.JoinFn(elem...)
 }
 
+// GenericFile is an implementation of billy.File. All the fields are optional:
+// for example if .WriteFn is not provided the Write method will always return billy.ErrNotSupported.
 type GenericFile struct {
 	Filename   string
 	WriteFn    func(p []byte) (n int, err error)

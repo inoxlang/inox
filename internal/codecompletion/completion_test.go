@@ -1,4 +1,4 @@
-package compl
+package codecompletion
 
 import (
 	"os"
@@ -61,12 +61,12 @@ func TestFindCompletions(t *testing.T) {
 					Mode:        mode,
 				})
 				//in order to simplify tests we remove/simplify some information like replaced ranges
-				for i, compl := range completions {
+				for i, codecompletion := range completions {
 					completions[i].ReplacedRange = parse.SourcePositionRange{
 						SourceName:  "",
 						StartLine:   0,
 						StartColumn: 0,
-						Span:        compl.ReplacedRange.Span,
+						Span:        codecompletion.ReplacedRange.Span,
 					}
 					completions[i].Kind = 0
 					completions[i].LabelDetail = ""

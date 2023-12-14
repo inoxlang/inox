@@ -30,7 +30,7 @@ import (
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	symbolic_shell "github.com/inoxlang/inox/internal/globals/inoxsh_ns/symbolic"
 
-	"github.com/inoxlang/inox/internal/compl"
+	"github.com/inoxlang/inox/internal/codecompletion"
 	"github.com/inoxlang/inox/internal/utils"
 
 	parse "github.com/inoxlang/inox/internal/parse"
@@ -1040,11 +1040,11 @@ func (sh *shell) handleAction(action termAction) (stop bool) {
 				CodeString: string(sh.input),
 			})
 			cursorIndex = sh.getCursorIndex()
-			completions = compl.FindCompletions(compl.CompletionSearchArgs{
+			completions = codecompletion.FindCompletions(codecompletion.CompletionSearchArgs{
 				State:       sh.state,
 				Chunk:       chunk,
 				CursorIndex: cursorIndex,
-				Mode:        compl.ShellCompletions,
+				Mode:        codecompletion.ShellCompletions,
 			})
 
 			replacement       string

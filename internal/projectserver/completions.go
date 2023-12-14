@@ -1,13 +1,13 @@
 package projectserver
 
 import (
-	"github.com/inoxlang/inox/internal/compl"
+	"github.com/inoxlang/inox/internal/codecompletion"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
-func getCompletions(fpath string, line, column int32, session *jsonrpc.Session) []compl.Completion {
+func getCompletions(fpath string, line, column int32, session *jsonrpc.Session) []codecompletion.Completion {
 	fls, ok := getLspFilesystem(session)
 	if !ok {
 		return nil
@@ -42,10 +42,10 @@ func getCompletions(fpath string, line, column int32, session *jsonrpc.Session) 
 
 	pos := chunk.GetLineColumnPosition(line, column)
 
-	return compl.FindCompletions(compl.CompletionSearchArgs{
+	return codecompletion.FindCompletions(codecompletion.CompletionSearchArgs{
 		State:       core.NewTreeWalkStateWithGlobal(state),
 		Chunk:       chunk,
 		CursorIndex: int(pos),
-		Mode:        compl.LspCompletions,
+		Mode:        codecompletion.LspCompletions,
 	})
 }
