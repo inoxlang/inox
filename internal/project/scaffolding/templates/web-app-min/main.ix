@@ -15,7 +15,7 @@ manifest {
 
         write: {
             # allow persisting the self signed certificate that is automatically generated.
-            %/self_signed*
+            %/.dev/self_signed*
 
             %/databases/...
         }

@@ -35,7 +35,7 @@ func TestGolangHttpServer(t *testing.T) {
 			return
 		}
 
-		prevCert, err := util.ReadFile(fls, "/"+SELF_SIGNED_CERT_FILEPATH)
+		prevCert, err := util.ReadFile(fls, "/"+RELATIVE_SELF_SIGNED_CERT_FILEPATH)
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -56,7 +56,7 @@ func TestGolangHttpServer(t *testing.T) {
 
 		defer server.Close()
 
-		currentCert, err := util.ReadFile(fls, "/"+SELF_SIGNED_CERT_FILEPATH)
+		currentCert, err := util.ReadFile(fls, "/"+RELATIVE_SELF_SIGNED_CERT_FILEPATH)
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -80,7 +80,7 @@ func TestGolangHttpServer(t *testing.T) {
 
 		defer server.Close()
 
-		currentCert, err = util.ReadFile(fls, "/"+SELF_SIGNED_CERT_FILEPATH)
+		currentCert, err = util.ReadFile(fls, "/"+RELATIVE_SELF_SIGNED_CERT_FILEPATH)
 		if !assert.NoError(t, err) {
 			return
 		}

@@ -37,7 +37,7 @@ manifest {
     permissions: {
         provide: HOST
         read: %/...
-        write: %/self_signed* # permission to persist the generated self-signed certificate.
+        write: %/.dev/self_signed* # permission to persist the generated self-signed certificate.
     }
 }
 
@@ -102,7 +102,7 @@ manifest {
         provide: HOST
         read: %/...
         write: {
-            %/self_signed*
+            %/.dev/self_signed*
             %/databases/main/...    # required by the database
         }
     }

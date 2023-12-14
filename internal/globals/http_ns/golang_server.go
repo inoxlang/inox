@@ -6,18 +6,20 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
 	fsutil "github.com/go-git/go-billy/v5/util"
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
 const (
 	DEFAULT_SELF_SIGNED_CERT_VALIDITY_DURATION = time.Hour * 24 * 180
-	SELF_SIGNED_CERT_FILEPATH                  = "self_signed.cert"
-	SELF_SIGNED_CERT_KEY_FILEPATH              = "self_signed.key"
+	RELATIVE_SELF_SIGNED_CERT_FILEPATH         = "./" + inoxconsts.DEV_DIR_NAME + "/self_signed.cert"
+	RELATIVE_SELF_SIGNED_CERT_KEY_FILEPATH     = "./" + inoxconsts.DEV_DIR_NAME + "/self_signed.key"
 )
 
 type GolangHttpServerConfig struct {
@@ -49,8 +51,8 @@ func NewGolangHttpServer(ctx *core.Context, config GolangHttpServerConfig) (*htt
 	if config.PemEncodedCert == "" && (isLocalhostOr127001Addr(config.Addr) || config.AllowSelfSignedCertCreationEvenIfExposed) {
 		initialWorkingDir := ctx.InitialWorkingDirectory()
 		var (
-			CERT_FILEPATH     = initialWorkingDir.JoinEntry(SELF_SIGNED_CERT_FILEPATH, fls).UnderlyingString()
-			CERT_KEY_FILEPATH = initialWorkingDir.JoinEntry(SELF_SIGNED_CERT_KEY_FILEPATH, fls).UnderlyingString()
+			CERT_FILEPATH     = initialWorkingDir.Join(RELATIVE_SELF_SIGNED_CERT_FILEPATH, fls).UnderlyingString()
+			CERT_KEY_FILEPATH = initialWorkingDir.Join(RELATIVE_SELF_SIGNED_CERT_KEY_FILEPATH, fls).UnderlyingString()
 		)
 
 		validityDuration := utils.DefaultIfZero(config.SelfSignedCertValidityDuration, DEFAULT_SELF_SIGNED_CERT_VALIDITY_DURATION)
@@ -107,20 +109,23 @@ func NewGolangHttpServer(ctx *core.Context, config GolangHttpServerConfig) (*htt
 			pemEncodedKey = string(pem.EncodeToMemory(key))
 
 			if config.PersistCreatedLocalCert {
+				dir := filepath.Dir(CERT_FILEPATH)
+				err := fls.MkdirAll(dir, 0700)
+				if err != nil {
+					goto ignore_writes
+				}
+
 				certFile, err := fls.Create(CERT_FILEPATH)
 				if err != nil {
 					//landlock
-					if strings.Contains(err.Error(), "permission denied") {
-						goto ignore_writes
-					}
-					return nil, err
+					goto ignore_writes
 				}
 				pem.Encode(certFile, cert)
 				certFile.Close()
 
 				keyFile, err := fls.Create(CERT_KEY_FILEPATH)
 				if err != nil {
-					return nil, err
+					goto ignore_writes
 				}
 				pem.Encode(keyFile, key)
 				keyFile.Close()
