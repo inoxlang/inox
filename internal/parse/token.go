@@ -796,6 +796,20 @@ func GetTokens(node Node, chunk *Chunk, addMeta bool) []Token {
 				SubType: FLAG_EQUAL,
 				Span:    NodeSpan{nameEnd, nameEnd + 1},
 			})
+		case *XMLElement:
+			if n.RawElementContent != "" {
+				start := n.Opening.Span.End
+				end := n.Span.End
+				if n.Closing != nil {
+					end = n.Closing.Span.Start
+				}
+
+				tokens = append(tokens, Token{
+					Type: XML_TEXT_SLICE,
+					Span: NodeSpan{start, end},
+					Raw:  n.RawElementContent,
+				})
+			}
 		}
 
 		var tokenType TokenType

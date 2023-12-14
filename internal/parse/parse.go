@@ -8573,9 +8573,13 @@ func (p *parser) parseXMLElement(start int32) *XMLElement {
 		Name: openingIdent,
 	}
 
+	tagName := openingIdent.Name
 	singleBracketInterpolations := true
-	if openingIdent != nil && (openingIdent.Name == SCRIPT_TAG_NAME || openingIdent.Name == STYLE_TAG_NAME) {
+	rawTextElement := false
+
+	if openingIdent != nil && (tagName == SCRIPT_TAG_NAME || tagName == STYLE_TAG_NAME) {
 		singleBracketInterpolations = false
+		rawTextElement = true
 	}
 
 	//attributes
@@ -8687,8 +8691,25 @@ func (p *parser) parseXMLElement(start int32) *XMLElement {
 
 	//children
 
-	children, err := p.parseXMLChildren(singleBracketInterpolations)
-	parsingErr = err
+	var children []Node
+
+	var rawElementText string
+
+	if rawTextElement {
+		rawSart := p.i
+		for p.i < p.len {
+			//closing tag
+			if p.s[p.i] == '<' && p.i < p.len-1 && p.s[p.i+1] == '/' {
+				break
+			}
+			p.i++
+		}
+		rawElementText = string(p.s[rawSart:p.i])
+	} else {
+		var err *ParsingError
+		children, err = p.parseXMLChildren(singleBracketInterpolations)
+		parsingErr = err
+	}
 
 	if p.i >= p.len || p.s[p.i] != '<' {
 		return &XMLElement{
@@ -8697,8 +8718,9 @@ func (p *parser) parseXMLElement(start int32) *XMLElement {
 				&ParsingError{UnspecifiedParsingError, UNTERMINATED_XML_ELEMENT_MISSING_CLOSING_TAG},
 				false,
 			},
-			Opening:  openingElement,
-			Children: children,
+			Opening:           openingElement,
+			Children:          children,
+			RawElementContent: rawElementText,
 		}
 	}
 
@@ -8733,9 +8755,10 @@ func (p *parser) parseXMLElement(start int32) *XMLElement {
 				parsingErr,
 				false,
 			},
-			Opening:  openingElement,
-			Closing:  closingElement,
-			Children: children,
+			Opening:           openingElement,
+			Closing:           closingElement,
+			Children:          children,
+			RawElementContent: rawElementText,
 		}
 	}
 
@@ -8749,9 +8772,10 @@ func (p *parser) parseXMLElement(start int32) *XMLElement {
 			parsingErr,
 			false,
 		},
-		Opening:  openingElement,
-		Closing:  closingElement,
-		Children: children,
+		Opening:           openingElement,
+		Closing:           closingElement,
+		Children:          children,
+		RawElementContent: rawElementText,
 	}
 }
 

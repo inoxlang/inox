@@ -2232,9 +2232,10 @@ func (XMLExpression) Kind() NodeKind {
 
 type XMLElement struct {
 	NodeBase
-	Opening  *XMLOpeningElement
-	Children []Node
-	Closing  *XMLClosingElement //nil if self-closed
+	Opening           *XMLOpeningElement
+	Children          []Node
+	Closing           *XMLClosingElement //nil if self-closed
+	RawElementContent string             //set for script and style tags
 }
 
 type XMLOpeningElement struct {

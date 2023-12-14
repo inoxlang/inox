@@ -26642,13 +26642,7 @@ func testParse(
 									Name:     "script",
 								},
 							},
-							Children: []Node{
-								&XMLText{
-									NodeBase: NodeBase{NodeSpan{9, 13}, nil, false},
-									Raw:      "{1}2",
-									Value:    "{1}2",
-								},
-							},
+							RawElementContent: "{1}2",
 							Closing: &XMLClosingElement{
 								NodeBase: NodeBase{
 									NodeSpan{13, 22},
@@ -26661,6 +26655,48 @@ func testParse(
 								},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{15, 21}, nil, false},
+									Name:     "script",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("content in script tags should be parsed as raw text", func(t *testing.T) {
+			n := mustparseChunk(t, "h<script><a></script>")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 21}, nil, false},
+				Statements: []Node{
+					&XMLExpression{
+						NodeBase: NodeBase{NodeSpan{0, 21}, nil, false},
+						Namespace: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
+							Name:     "h",
+						},
+						Element: &XMLElement{
+							NodeBase: NodeBase{NodeSpan{1, 21}, nil, false},
+							Opening: &XMLOpeningElement{
+								NodeBase: NodeBase{
+									NodeSpan{1, 9},
+									nil,
+									false,
+								},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{2, 8}, nil, false},
+									Name:     "script",
+								},
+							},
+							RawElementContent: "<a>",
+							Closing: &XMLClosingElement{
+								NodeBase: NodeBase{
+									NodeSpan{12, 21},
+									nil,
+									false,
+								},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{14, 20}, nil, false},
 									Name:     "script",
 								},
 							},
@@ -26698,13 +26734,7 @@ func testParse(
 									Name:     "style",
 								},
 							},
-							Children: []Node{
-								&XMLText{
-									NodeBase: NodeBase{NodeSpan{8, 12}, nil, false},
-									Raw:      "{1}2",
-									Value:    "{1}2",
-								},
-							},
+							RawElementContent: "{1}2",
 							Closing: &XMLClosingElement{
 								NodeBase: NodeBase{
 									NodeSpan{12, 20},
@@ -26717,6 +26747,48 @@ func testParse(
 								},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{14, 19}, nil, false},
+									Name:     "style",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("content in style tags should be parsed as raw text", func(t *testing.T) {
+			n := mustparseChunk(t, "h<style><a></style>")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 19}, nil, false},
+				Statements: []Node{
+					&XMLExpression{
+						NodeBase: NodeBase{NodeSpan{0, 19}, nil, false},
+						Namespace: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
+							Name:     "h",
+						},
+						Element: &XMLElement{
+							NodeBase: NodeBase{NodeSpan{1, 19}, nil, false},
+							Opening: &XMLOpeningElement{
+								NodeBase: NodeBase{
+									NodeSpan{1, 8},
+									nil,
+									false,
+								},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{2, 7}, nil, false},
+									Name:     "style",
+								},
+							},
+							RawElementContent: "<a>",
+							Closing: &XMLClosingElement{
+								NodeBase: NodeBase{
+									NodeSpan{11, 19},
+									nil,
+									false,
+								},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{13, 18}, nil, false},
 									Name:     "style",
 								},
 							},
