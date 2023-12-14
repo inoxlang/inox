@@ -1,10 +1,11 @@
-package afs
+package fs_ns
 
 import (
 	"os"
 	"path/filepath"
 
 	"github.com/go-git/go-billy/v5"
+	"github.com/inoxlang/inox/internal/afs"
 )
 
 var _ billy.Basic = (*GenericBasic)(nil)
@@ -13,30 +14,30 @@ var _ billy.File = (*GenericFile)(nil)
 // GenericBasic is an implementation of billy.Basic. All the fields are optional:
 // for example if .CreateFn is not provided the Create method will always return billy.ErrNotSupported.
 type GenericBasic struct {
-	CreateFn   func(filename string) (File, error)
-	OpenFn     func(filename string) (File, error)
-	OpenFileFn func(filename string, flag int, perm os.FileMode) (File, error)
+	CreateFn   func(filename string) (afs.File, error)
+	OpenFn     func(filename string) (afs.File, error)
+	OpenFileFn func(filename string, flag int, perm os.FileMode) (afs.File, error)
 	StatFn     func(filename string) (os.FileInfo, error)
 	RenameFn   func(oldpath, newpath string) error
 	RemoveFn   func(filename string) error
 	JoinFn     func(elem ...string) string
 }
 
-func (i GenericBasic) Create(filename string) (File, error) {
+func (i GenericBasic) Create(filename string) (afs.File, error) {
 	if i.CreateFn == nil {
 		return nil, billy.ErrNotSupported
 	}
 	return i.CreateFn(filename)
 }
 
-func (i GenericBasic) Open(filename string) (File, error) {
+func (i GenericBasic) Open(filename string) (afs.File, error) {
 	if i.OpenFn == nil {
 		return nil, billy.ErrNotSupported
 	}
 	return i.OpenFn(filename)
 }
 
-func (i GenericBasic) OpenFile(filename string, flag int, perm os.FileMode) (File, error) {
+func (i GenericBasic) OpenFile(filename string, flag int, perm os.FileMode) (afs.File, error) {
 	if i.OpenFileFn == nil {
 		return nil, billy.ErrNotSupported
 	}

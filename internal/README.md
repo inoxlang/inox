@@ -7,7 +7,7 @@ This folder contains most of the code for the `inox` binary.
 _From more relevant to less relevant._
 
 [core](./core/README.md)
-- core Inox types
+- Core Inox types
 - Bytecode + tree walking interpreters
 - Code analysis
 - Runtime components (context, global state, module)
@@ -52,11 +52,11 @@ _From more relevant to less relevant._
 [obsdb](./obsdb/database.go)
 - Database based on object storage with on-disk cache.
 
-[mod](./mod/execution.go)
-- Module execution.
-
 [filekv](./filekv/kv.go)
 - Single file Key-Value store (BuntDB fork).
+
+[mod](./mod/execution.go)
+- Module execution
 
 [third_party_stable](./third_party_stable/README.md)
 
@@ -64,7 +64,7 @@ _From more relevant to less relevant._
   stable or don't need updates.
 
 [compressarch](./compressarch/README.md)
-- Wrapper functions for untaring tarballs.
+- Wrapper functions for untarring tarballs.
 - Wrapper functions for unzipping gzip archives.
 
 [jonsiter](./jonsiter/README.md)
@@ -94,11 +94,16 @@ _From more relevant to less relevant._
 [learn](./learn/tutorials.go)
 - Tutorial data
 
-[prettyprint](./prettyprint/README.md)
-- Pretty printing helper type
+[prettyprint](./prettyprint/pretty_print.go)
+- Pretty-printing configuration type
+- Pretty-printing helper type
 
 [commonfmt](./commonfmt/README.md)
 - Functions to format some general messages and values.
+
+[afs (Abstract Filesystem)](./afs/abstract_fs.go)
+- Filesystem interface
+- File interfaces
 
 [netaddr](./netaddr/types.go)
 - Types representing remote IP addresses.

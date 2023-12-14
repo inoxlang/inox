@@ -11,6 +11,7 @@ Most namespaces are defined in their own supackage:
 - **fs_ns**
 - **html_ns**
 - **http_ns**
+- **ws_ns**
 - **net_ns**
 - **s3_ns**
 - **inox_ns**
@@ -18,4 +19,6 @@ Most namespaces are defined in their own supackage:
 - **inoxsh_ns**
 - **strmanip_ns**
 - **chome_ns** 
+- **log_ns** 
+
 
