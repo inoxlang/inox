@@ -10,7 +10,7 @@ import (
 
 	"slices"
 
-	permkind "github.com/inoxlang/inox/internal/permkind"
+	permkind "github.com/inoxlang/inox/internal/core/permkind"
 	"github.com/oklog/ulid/v2"
 	"golang.org/x/exp/maps"
 

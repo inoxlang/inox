@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	permkind "github.com/inoxlang/inox/internal/core/permkind"
 	parse "github.com/inoxlang/inox/internal/parse"
-	permkind "github.com/inoxlang/inox/internal/permkind"
 )
 
 const (

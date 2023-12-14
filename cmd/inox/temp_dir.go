@@ -2,8 +2,8 @@ package main
 
 import (
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core/permkind"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
-	"github.com/inoxlang/inox/internal/permkind"
 )
 
 func CreateTempDir() (processTempDir core.Path, processTempDirPerms []core.Permission, removeDir func()) {

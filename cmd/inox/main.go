@@ -23,10 +23,10 @@ import (
 	"github.com/inoxlang/inox/internal/globals/inoxsh_ns"
 	"github.com/inoxlang/inox/internal/globals/s3_ns"
 
+	"github.com/inoxlang/inox/internal/core/permkind"
 	"github.com/inoxlang/inox/internal/inoxprocess"
 	"github.com/inoxlang/inox/internal/mod"
 	"github.com/inoxlang/inox/internal/parse"
-	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
 
 	"github.com/inoxlang/inox/internal/projectserver"

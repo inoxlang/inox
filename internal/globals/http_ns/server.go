@@ -21,7 +21,7 @@ import (
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	http_ns_symb "github.com/inoxlang/inox/internal/globals/http_ns/symbolic"
 
-	"github.com/inoxlang/inox/internal/permkind"
+	"github.com/inoxlang/inox/internal/core/permkind"
 )
 
 const (

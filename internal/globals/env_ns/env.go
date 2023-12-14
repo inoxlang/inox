@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/permkind"
+	"github.com/inoxlang/inox/internal/core/permkind"
 )
 
 // envHas returns (True, nil) if the environment variable with the provided name exists, a permission is required.

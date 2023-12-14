@@ -9,7 +9,7 @@ import (
 	fsutil "github.com/go-git/go-billy/v5/util"
 
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/permkind"
+	"github.com/inoxlang/inox/internal/core/permkind"
 )
 
 var _ = []core.Effect{&CreateFile{}, &CreateDir{}, &RemoveFile{}}

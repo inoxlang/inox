@@ -12,8 +12,8 @@ import (
 
 	"github.com/go-git/go-billy/v5/util"
 	"github.com/inoxlang/inox/internal/afs"
+	permkind "github.com/inoxlang/inox/internal/core/permkind"
 	parse "github.com/inoxlang/inox/internal/parse"
-	permkind "github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 )

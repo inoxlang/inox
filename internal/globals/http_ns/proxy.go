@@ -10,9 +10,9 @@ import (
 
 	"github.com/elazarl/goproxy"
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core/permkind"
 	"github.com/inoxlang/inox/internal/mimeconsts"
 	netaddr "github.com/inoxlang/inox/internal/netaddr"
-	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/rs/zerolog"
 )

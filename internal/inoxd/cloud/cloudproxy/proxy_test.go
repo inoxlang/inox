@@ -14,11 +14,11 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core/permkind"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/globals/ws_ns"
 	"github.com/inoxlang/inox/internal/inoxd/cloud/cloudproxy/inoxdconn"
 	"github.com/inoxlang/inox/internal/inoxd/consts"
-	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/projectserver"
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/assert"

@@ -11,9 +11,9 @@ import (
 	"github.com/gorilla/websocket"
 
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core/permkind"
 	"github.com/inoxlang/inox/internal/globals/http_ns"
 	netaddr "github.com/inoxlang/inox/internal/netaddr"
-	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
 )
 

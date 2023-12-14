@@ -9,9 +9,9 @@ import (
 	"github.com/gorilla/websocket"
 
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core/permkind"
 	ws_symbolic "github.com/inoxlang/inox/internal/globals/ws_ns/symbolic"
 	netaddr "github.com/inoxlang/inox/internal/netaddr"
-	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
 )
 

@@ -7,7 +7,7 @@ import (
 	"net/url"
 	"strings"
 
-	permkind "github.com/inoxlang/inox/internal/permkind"
+	permkind "github.com/inoxlang/inox/internal/core/permkind"
 )
 
 var (

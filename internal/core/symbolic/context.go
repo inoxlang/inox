@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/inoxlang/inox/internal/core/permkind"
 	parse "github.com/inoxlang/inox/internal/parse"
-	"github.com/inoxlang/inox/internal/permkind"
 	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
 )

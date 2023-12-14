@@ -16,7 +16,7 @@ import (
 	"time"
 
 	"github.com/inoxlang/inox/internal/afs"
-	permkind "github.com/inoxlang/inox/internal/permkind"
+	permkind "github.com/inoxlang/inox/internal/core/permkind"
 	"github.com/rs/zerolog"
 
 	"github.com/inoxlang/inox/internal/core/symbolic"

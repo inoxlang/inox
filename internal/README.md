@@ -2,71 +2,103 @@
 
 This folder contains most of the code for the `inox` binary.
 
-**Relevant Folders and Packages:**
+**Folders and Packages**
 
-**core**
+_From more relevant to less relevant._
 
+[core](./core/README.md)
 - core Inox types
-- bytecode + tree walking interpreters
-- code analysis
-- runtime components (context, global state, module)
+- Bytecode + tree walking interpreters
+- Code analysis
+- Runtime components (context, global state, module)
 
-**parse**
-
+[parse](./parse/README.md)
 - Inoxlang AST Types
 - Inoxlang parser
 - AST utils
 
-**globals**
+[globals](./globals/README.md)
+- Globals (print, sleep, ...)
+- Namespaces (http, fs, ...)
+- Default limits
 
-- globals (print, sleep, ...)
-- namespaces (http, fs, ...)
-- default limits
-
-**mod**
-
-- module execution.
-
-**inoxprocess**
-
-- control server
-- control client
-- inox binary upgrade logic
-- process-level access control using Landlock
+[inoxprocess](./inoxprocess/README.md)
+- Control server
+- Control client
+- Inox binary upgrade logic
+- Process-level access control using Landlock
 - ExternalFS (WIP)
 
-**inoxd**
+[inoxd](./inoxd/README.md)
+- Service installation (Systemd)
+- Daemon
 
-- service installation (Systemd)
-- daemon
+[config](./config/README.md)
+- Process wide configuration
 
-**filekv**
+[project](./project/README.md)
+- Project registry
+- Project type and logic
+- Scaffolding (e.g. templates)
 
-- single file Key-Value store (BuntDB fork).
+[projectserver](./projectserver/README.md)
+- Standard LSP method handlers
+- Custom LSP method handlers
+- Language-agnostic LSP logic & types
 
-**localdb**
-
+[localdb](./localdb/README.md)
 - Local database.
 
-**obsdb (wip)**
-
+[obsdb](./obsdb/database.go)
 - Database based on object storage with on-disk cache.
 
-**config**
+[mod](./mod/execution.go)
+- Module execution.
 
-**project**
+[filekv](./filekv/kv.go)
+- Single file Key-Value store (BuntDB fork).
 
-- project registry
-- project type and logic
-- scaffolding (e.g templates)
-
-**projectserver**
-
-- standard LSP method handlers
-- custom LSP method handlers
-- language-agnostic LSP logic & types
-
-**third_party_stable**
+[third_party_stable](./third_party_stable/README.md)
 
 - This folder contains several third party packages of small size that are
   stable or don't need updates.
+
+[compressarch](./compressarch/README.md)
+- Wrapper functions for untaring tarballs.
+- Wrapper functions for unzipping gzip archives.
+
+[jonsiter](./jonsiter/README.md)
+- JSON stream type
+- JSON iterator type 
+
+[metricsperf](./metricsperf/README.md)
+- Profiling of the CPU, memory, mutexes and goroutines
+
+[ratelimit](./ratelimit/README.md)
+- Rate limiting of network requests
+
+[memds (in-memory data structures)](./memds/README.md)
+- Small zero-allocation bitset type (BitSet32) and generic graph type (Graph32)
+- Generic directed graph types
+- Generic queue types (array queue)
+
+[hack](./hack/zerolog.go)
+- Small reflection hacks to inspect and modify some zerolog types.
+
+[help](./help/README.md)
+- Help on builtins
+- Help on language
+- Functions to retrieve help by topic name or value (Go function)
+- Help message formatting
+
+[learn](./learn/tutorials.go)
+- Tutorial data
+
+[prettyprint](./prettyprint/README.md)
+- Pretty printing helper type
+
+[commonfmt](./commonfmt/README.md)
+- Functions to format some general messages and values.
+
+[netaddr](./netaddr/types.go)
+- Types representing remote IP addresses.

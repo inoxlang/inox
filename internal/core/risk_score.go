@@ -6,7 +6,7 @@ import (
 	"slices"
 	"strconv"
 
-	permkind "github.com/inoxlang/inox/internal/permkind"
+	permkind "github.com/inoxlang/inox/internal/core/permkind"
 	"github.com/inoxlang/inox/internal/utils"
 )
 

@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	permkind "github.com/inoxlang/inox/internal/permkind"
+	permkind "github.com/inoxlang/inox/internal/core/permkind"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"

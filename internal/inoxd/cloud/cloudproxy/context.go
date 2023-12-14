@@ -4,7 +4,7 @@ import (
 	"path/filepath"
 
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/permkind"
+	"github.com/inoxlang/inox/internal/core/permkind"
 )
 
 func createContexts(host core.Host, proxyArgs CloudProxyArgs) (ctx, topCtx *core.Context) {

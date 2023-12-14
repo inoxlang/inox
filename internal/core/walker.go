@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	afs "github.com/inoxlang/inox/internal/afs"
-	permkind "github.com/inoxlang/inox/internal/permkind"
+	permkind "github.com/inoxlang/inox/internal/core/permkind"
 )
 
 var (

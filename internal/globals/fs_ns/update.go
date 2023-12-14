@@ -8,7 +8,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/commonfmt"
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/permkind"
+	"github.com/inoxlang/inox/internal/core/permkind"
 )
 
 // this file contains functions to update files.
