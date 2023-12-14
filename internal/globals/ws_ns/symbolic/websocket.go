@@ -6,6 +6,10 @@ import (
 	pprint "github.com/inoxlang/inox/internal/prettyprint"
 )
 
+var (
+	WEBSOCKET_PROPNAMES = []string{"send_json", "read_json", "close"}
+)
+
 type WebsocketConnection struct {
 	symbolic.UnassignablePropsMixin
 	_ int
@@ -21,9 +25,9 @@ func (r *WebsocketConnection) Test(v symbolic.Value, state symbolic.RecTestCallS
 
 func (conn *WebsocketConnection) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 	switch name {
-	case "sendJSON":
+	case "send_json":
 		return symbolic.WrapGoMethod(conn.sendJSON), true
-	case "readJSON":
+	case "read_json":
 		return symbolic.WrapGoMethod(conn.readJSON), true
 	case "close":
 		return symbolic.WrapGoMethod(conn.close), true
@@ -36,7 +40,7 @@ func (conn *WebsocketConnection) Prop(name string) symbolic.Value {
 }
 
 func (*WebsocketConnection) PropertyNames() []string {
-	return []string{"sendJSON", "readJSON", "close"}
+	return WEBSOCKET_PROPNAMES
 }
 
 func (conn *WebsocketConnection) sendJSON(ctx *symbolic.Context, msg symbolic.Value) *symbolic.Error {

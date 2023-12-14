@@ -25,16 +25,16 @@ fn handle(rw http.resp-writer, r http.req){
     conn = ws_server.upgrade!(rw, r)
 
     # echo
-    msg = conn.readJSON!()
-    conn.sendJSON(msg)
+    msg = conn.read_json!()
+    conn.send_json(msg)
 }
 
 server = http.Server!(https://localhost:8080, handle)
 
 # client
 conn = ws.connect!(WS_URL, --insecure)
-conn.sendJSON!({data: "hello"})
-assign msg err = conn.readJSON()
+conn.send_json!({data: "hello"})
+assign msg err = conn.read_json()
 
 if err? {
     print(err)

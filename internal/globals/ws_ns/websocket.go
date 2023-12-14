@@ -9,6 +9,7 @@ import (
 	"github.com/gorilla/websocket"
 
 	"github.com/inoxlang/inox/internal/core"
+	ws_symbolic "github.com/inoxlang/inox/internal/globals/ws_ns/symbolic"
 	netaddr "github.com/inoxlang/inox/internal/netaddr"
 	"github.com/inoxlang/inox/internal/permkind"
 	"github.com/inoxlang/inox/internal/utils"
@@ -50,9 +51,9 @@ func (conn *WebsocketConnection) RemoteAddrWithPort() netaddr.RemoteAddrWithPort
 
 func (conn *WebsocketConnection) GetGoMethod(name string) (*core.GoFunction, bool) {
 	switch name {
-	case "sendJSON":
+	case "send_json":
 		return core.WrapGoMethod(conn.sendJSON), true
-	case "readJSON":
+	case "read_json":
 		return core.WrapGoMethod(conn.readJSON), true
 	case "close":
 		return core.WrapGoMethod(conn.Close), true
@@ -73,7 +74,7 @@ func (*WebsocketConnection) SetProp(ctx *core.Context, name string, value core.V
 }
 
 func (*WebsocketConnection) PropertyNames(ctx *core.Context) []string {
-	return []string{"sendJSON", "readJSON", "close"}
+	return ws_symbolic.WEBSOCKET_PROPNAMES
 }
 
 func (conn *WebsocketConnection) SetPingHandler(ctx *core.Context, handler func(data string) error) {

@@ -7,6 +7,10 @@ import (
 	pprint "github.com/inoxlang/inox/internal/prettyprint"
 )
 
+var (
+	WEBSOCKET_SERVER_PROPNAMES = []string{"upgrade", "close"}
+)
+
 type WebsocketServer struct {
 	symbolic.UnassignablePropsMixin
 	_ int
@@ -35,7 +39,7 @@ func (s *WebsocketServer) Prop(name string) symbolic.Value {
 }
 
 func (*WebsocketServer) PropertyNames() []string {
-	return []string{"upgrade", "close"}
+	return WEBSOCKET_SERVER_PROPNAMES
 }
 
 func (s *WebsocketServer) Upgrade(ctx *symbolic.Context, rw *http_symbolic.HttpResponseWriter, req *http_symbolic.HttpRequest) (*WebsocketConnection, *symbolic.Error) {

@@ -3,7 +3,7 @@ package ws_ns
 import (
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
-	net_symbolic "github.com/inoxlang/inox/internal/globals/net_ns/symbolic"
+	ws_symbolic "github.com/inoxlang/inox/internal/globals/ws_ns/symbolic"
 )
 
 func init() {
@@ -12,11 +12,11 @@ func init() {
 
 	// register symbolic version of Go Functions
 	core.RegisterSymbolicGoFunctions([]any{
-		websocketConnect, func(ctx *symbolic.Context, u *symbolic.URL, opts ...*symbolic.Option) (*net_symbolic.WebsocketConnection, *symbolic.Error) {
-			return &net_symbolic.WebsocketConnection{}, nil
+		websocketConnect, func(ctx *symbolic.Context, u *symbolic.URL, opts ...*symbolic.Option) (*ws_symbolic.WebsocketConnection, *symbolic.Error) {
+			return &ws_symbolic.WebsocketConnection{}, nil
 		},
-		NewWebsocketServer, func(ctx *symbolic.Context) (*net_symbolic.WebsocketServer, *symbolic.Error) {
-			return &net_symbolic.WebsocketServer{}, nil
+		NewWebsocketServer, func(ctx *symbolic.Context) (*ws_symbolic.WebsocketServer, *symbolic.Error) {
+			return &ws_symbolic.WebsocketServer{}, nil
 		},
 	})
 
