@@ -9,7 +9,7 @@ import (
 var (
 	ANY_RESP = &HttpResponse{}
 
-	HTTP_RESPONSE_PROPNAMES = []string{"body", "status", "statusCode", "cookies"}
+	HTTP_RESPONSE_PROPNAMES = []string{"body", "status", "status_code", "cookies"}
 )
 
 type HttpResponse struct {
@@ -35,7 +35,7 @@ func (resp *HttpResponse) Prop(name string) symbolic.Value {
 		return &symbolic.Reader{}
 	case "status":
 		return &symbolic.String{}
-	case "statusCode":
+	case "status_code":
 		return &symbolic.Int{}
 	case "cookies":
 		return symbolic.NewListOf(NewCookieObject())
