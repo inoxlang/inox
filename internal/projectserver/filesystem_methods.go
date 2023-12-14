@@ -3,20 +3,24 @@ package projectserver
 import (
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"io/fs"
 	"os"
+	"runtime/debug"
 	"sync"
 	"time"
 
+	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core"
 	fs_ns "github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
 	"github.com/inoxlang/inox/internal/projectserver/logs"
 	"github.com/inoxlang/inox/internal/projectserver/lsp"
 	"github.com/inoxlang/inox/internal/projectserver/lsp/defines"
+	"github.com/inoxlang/inox/internal/utils"
 
 	fsutil "github.com/go-git/go-billy/v5/util"
 )
@@ -33,8 +37,12 @@ const (
 	CREATE_DIR_METHOD = "fs/createDir"
 	READ_DIR_METHOD   = "fs/readDir"
 
+	FS_STRUCTURE_EVENT_NOTIF_METHOD = "fs/structureEvent"
+
 	MIN_LAST_CHANGE_AGE_FOR_UNSAVED_DOC_SYNC               = time.Second / 2
 	MIN_LAST_FILE_WRITE_AGE_FOR_UNSAVED_DOC_SYNC_REVERSING = time.Second / 2
+
+	FS_EVENT_BATCH_NOTIF_INTERVAL = time.Second
 )
 
 var (
@@ -176,6 +184,17 @@ const (
 	FsFileIsNotDir FsNonCriticalError = "is-not-dir"
 	FsNoFilesystem FsNonCriticalError = "no-filesystem"
 )
+
+//events
+
+type FsStructureEvent struct {
+	Path     string    `json:"path"`
+	CreateOp bool      `json:"createOp,omitempty"`
+	RemoveOp bool      `json:"removeOp,omitempty"`
+	ChmodOp  bool      `json:"chmodOp,omitempty"`
+	RenameOp bool      `json:"renameOp,omitempty"`
+	DateTime time.Time `json:"datetime,omitempty"`
+}
 
 func registerFilesystemMethodHandlers(server *lsp.Server) {
 	server.OnCustom(jsonrpc.MethodInfo{
@@ -771,4 +790,51 @@ func updateFile(fpath string, contentParts [][]byte, create, overwrite bool, fls
 	}
 
 	return "", nil
+}
+
+func startNotifyingFilesystemStructureEvents(session *jsonrpc.Session, fls afs.Filesystem) error {
+	sessionCtx := session.Context()
+	evs, err := fs_ns.NewEventSourceWithFilesystem(sessionCtx, fls, core.PathPattern("/..."))
+	if err != nil {
+		return fmt.Errorf("failed to create filesystem event source: %s", err)
+	}
+
+	sessionCtx.OnDone(func(timeoutCtx context.Context, teardownStatus core.GracefulTeardownStatus) error {
+		evs.Close()
+		return nil
+	})
+
+	evs.OnEvent(func(event *core.Event) {
+		defer func() {
+			e := recover()
+			if e != nil {
+				err := utils.ConvertPanicValueToError(err)
+				err = fmt.Errorf("%w: %s", err, debug.Stack())
+				logs.Println(err)
+			}
+		}()
+
+		fsEvent := event.SourceValue().(fs_ns.Event)
+		if !fsEvent.IsStructureChange() {
+			return
+		}
+
+		//notify event
+
+		ev := FsStructureEvent{
+			Path:     fsEvent.Path().UnderlyingString(),
+			CreateOp: fsEvent.HasCreateOp(),
+			RemoveOp: fsEvent.HasRemoveOp(),
+			ChmodOp:  fsEvent.HasChmodOp(),
+			RenameOp: fsEvent.HasRenameOp(),
+			DateTime: time.Time(fsEvent.Time()),
+		}
+
+		session.Notify(jsonrpc.NotificationMessage{
+			Method: FS_STRUCTURE_EVENT_NOTIF_METHOD,
+			Params: utils.Must(json.Marshal(ev)),
+		})
+	})
+
+	return nil
 }

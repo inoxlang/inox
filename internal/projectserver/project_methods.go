@@ -134,6 +134,14 @@ func registerProjectMethodHandlers(server *lsp.Server, opts LSPServerConfigurati
 			sessionData.filesystem = lspFilesystem
 			sessionData.project = project
 
+			err = startNotifyingFilesystemStructureEvents(session, project.LiveFilesystem())
+			if err != nil {
+				return nil, jsonrpc.ResponseError{
+					Code:    jsonrpc.InternalError.Code,
+					Message: err.Error(),
+				}
+			}
+
 			return OpenProjectResponse{
 				TempProjectTokens:   tokens,
 				CanBeDeployedInProd: node.IsAgentSet(),
