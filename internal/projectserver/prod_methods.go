@@ -48,6 +48,12 @@ func registerProdMethodHandlers(server *lsp.Server, opts LSPServerConfiguration,
 				}, nil
 			}
 
+			return DeployAppResponse{
+				Error: "Sorry, production deployment will be made available in the next minor release. If you like Inox consider donating and joining the Discord server :)",
+			}, nil
+
+			//TODO: in nodeimpl/app.go return an error on startup burst and add a specific status.
+
 			deployment, err := proj.PrepareApplicationDeployment(project.ApplicationDeploymentPreparationParams{
 				AppName:          params.AppName,
 				UpdateRunningApp: params.UpdateRunningApp,
