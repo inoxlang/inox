@@ -182,9 +182,9 @@ func startWatcherManagingGoroutine() {
 func informWatchersAboutEvents(filesystems map[WatchableVirtualFilesystem]struct{}) {
 	defer utils.Recover()
 
+	//these slices are re-used accross all invocations of manageSingleFs to minimize allocations.
 	var deduplicatedEvents []Event
 	var writtenFiles []core.Path
-	//these slice are re-used accross all invocations of manageSingleFs to minimize allocations.
 
 	manageSingleFS := func(vfs WatchableVirtualFilesystem) {
 		defer utils.Recover()

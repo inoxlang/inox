@@ -408,7 +408,7 @@ func (serv *HttpsServer) onIdleFilesystem(handler idleFilesystemHandler) {
 
 	isRelevantEvent := func(e *core.Event) bool {
 		fsEvent := e.SourceValue().(fs_ns.Event)
-		if !fsEvent.ContentChange() {
+		if !fsEvent.IsStructureOrContentChange() {
 			return false
 		}
 

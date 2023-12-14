@@ -205,9 +205,14 @@ func (e Event) Time() core.DateTime {
 	return e.dateTime
 }
 
-// ContentChange() returns true if e.HasCreateOp() || e.HasRenameOp() || e.HasRemoveOp() || e.HasWriteOp()
-func (e Event) ContentChange() bool {
+// IsStructureOrContentChange() returns true if e.HasCreateOp() || e.HasRenameOp() || e.HasRemoveOp() || e.HasWriteOp()
+func (e Event) IsStructureOrContentChange() bool {
 	return e.createOp || e.renameOp || e.removeOp || e.writeOp
+}
+
+// IsStructureChange() returns true if e.HasCreateOp() || e.HasRenameOp() || e.HasRemoveOp()
+func (e Event) IsStructureChange() bool {
+	return e.createOp || e.renameOp || e.removeOp
 }
 
 func (e Event) HasWriteOp() bool {

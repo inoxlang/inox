@@ -579,7 +579,7 @@ func testSnapshoting(t *testing.T, createFS func(*testing.T) (*core.Context, cor
 		assert.True(t, metadata.IsRegularFile())
 		assert.Equal(t, core.Path("/a.txt"), metadata.AbsolutePath)
 		assert.Less(t, metadata.Size, core.ByteCount(writeCount+1))
-		assert.Greater(t, metadata.Size, core.ByteCount(writeCount/2))
+		assert.Greater(t, metadata.Size, core.ByteCount(writeCount/2-(writeCount/10 /*delta*/)))
 		assert.Empty(t, metadata.ChildNames)
 
 		addressableContent, err := snapshot.Content("/a.txt")

@@ -1,6 +1,7 @@
 package fs_ns
 
 import (
+	"os"
 	"path/filepath"
 	"strconv"
 	"sync"
@@ -342,6 +343,78 @@ func testEvents(t *testing.T, setup func(t *testing.T) (fls afs.Filesystem, temp
 		evs, err := NewEventSource(ctx, core.Path(filepth+"/"))
 		assert.ErrorIs(t, err, core.ErrFilePathShouldNotEndInSlash)
 		assert.Nil(t, evs)
+	})
+
+	t.Run("if virtual FS, no event or a read event should be emitted when opening an file immediately after having created it", func(t *testing.T) {
+		// create a temporary directory & a file in it
+		fls, tempDir := setup(t)
+
+		if utils.Implements[*OsFilesystem](fls) {
+			t.SkipNow()
+		}
+
+		filepth := core.Path(filepath.Join(tempDir, "file.txt"))
+
+		ctx := core.NewContext(core.ContextConfig{
+			Permissions: []core.Permission{
+				core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},
+			},
+			Filesystem: fls,
+		})
+		defer ctx.CancelGracefully()
+
+		// create the event source & add a callback function
+		evs, err := NewEventSource(ctx, core.PathPattern("/..."))
+		if !assert.NoError(t, err) {
+			return
+		}
+		defer evs.Close()
+
+		var callCount atomic.Int32
+
+		err = evs.OnEvent(func(event *core.Event) {
+			count := callCount.Add(1)
+			switch count {
+			case 1:
+				assert.Equal(t, core.NewRecordFromMap(core.ValMap{
+					"path":      filepth,
+					"write_op":  core.False,
+					"create_op": core.True,
+					"remove_op": core.False,
+					"chmod_op":  core.False,
+					"rename_op": core.False,
+				}), event.Value())
+			case 2:
+				assert.Equal(t, core.NewRecordFromMap(core.ValMap{
+					"path":      filepth,
+					"write_op":  core.False,
+					"create_op": core.False,
+					"remove_op": core.False,
+					"chmod_op":  core.False,
+					"rename_op": core.False,
+				}), event.Value())
+			}
+
+		})
+		assert.NoError(t, err)
+
+		f, err := fls.Create(string(filepth))
+		if assert.NoError(t, err) {
+			if capable, ok := f.(afs.SyncCapable); ok {
+				capable.Sync()
+			}
+		}
+		f.Close()
+
+		f, err = fls.OpenFile(string(filepth), os.O_RDONLY, 0)
+		if !assert.NoError(t, err) {
+			return
+		}
+		f.Close()
+
+		time.Sleep(SLEEP_DURATION)
+
+		assert.LessOrEqual(t, int(callCount.Load()), 2)
 	})
 
 	t.Run("if virtual FS, a single event should be emitted for a few same-file writes that are very close in time", func(t *testing.T) {

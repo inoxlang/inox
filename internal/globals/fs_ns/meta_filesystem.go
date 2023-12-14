@@ -767,6 +767,8 @@ func (fls *MetaFilesystem) OpenFile(filename string, flag int, perm os.FileMode)
 		return nil, err
 	}
 
+	created := false
+
 	if !exists {
 		if !IsCreate(flag) {
 			return nil, os.ErrNotExist
@@ -821,7 +823,7 @@ func (fls *MetaFilesystem) OpenFile(filename string, flag int, perm os.FileMode)
 		if err := fls.setFileMetadata(newFileMetadata, nil); err != nil {
 			return nil, err
 		}
-
+		created = true
 		metadata = newFileMetadata
 	} else {
 		if isSymlink(metadata.mode) {
@@ -869,12 +871,14 @@ func (fls *MetaFilesystem) OpenFile(filename string, flag int, perm os.FileMode)
 
 	files[file] = struct{}{}
 
-	//add event and remove old events.
-	fls.eventQueue.EnqueueAutoRemove(Event{
-		path:     core.Path(file.path),
-		createOp: true,
-		dateTime: metadata.creationTime,
-	})
+	if created {
+		//add event and remove old events.
+		fls.eventQueue.EnqueueAutoRemove(Event{
+			path:     core.Path(file.path),
+			createOp: true,
+			dateTime: metadata.creationTime,
+		})
+	}
 
 	return file, nil
 }
