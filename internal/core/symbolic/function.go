@@ -337,8 +337,32 @@ func (fn *GoFunction) Share(originState *State) PotentiallySharable {
 		return fn
 	}
 
-	copy := *fn
-	copy.originState = originState
+	err := fn.LoadSignatureData()
+	if err != nil {
+		panic(err)
+	}
+
+	fn.signatureDataLock.Lock()
+	defer fn.signatureDataLock.Unlock()
+
+	copy := GoFunction{
+		originState: originState,
+
+		fn:                      fn.fn,
+		kind:                    fn.kind,
+		isVariadic:              fn.isVariadic,
+		isfirstArgCtx:           fn.isfirstArgCtx,
+		lastMandatoryParamIndex: fn.lastMandatoryParamIndex,
+		hasOptionalParams:       fn.hasOptionalParams,
+		optionalParams:          fn.optionalParams,
+		nonVariadicParameters:   fn.nonVariadicParameters,
+		parameters:              fn.parameters,
+		variadicElem:            fn.variadicElem,
+		results:                 fn.results,
+		resultList:              fn.resultList,
+		result:                  fn.result,
+	}
+	copy.signatureDataLoaded.Store(true)
 	return &copy
 }
 
