@@ -8,7 +8,9 @@ import (
 	"reflect"
 	"runtime"
 	"slices"
+	"sync"
 	"sync/atomic"
+	"testing"
 	"time"
 
 	"github.com/inoxlang/inox/internal/core/symbolic"
@@ -26,6 +28,8 @@ var (
 
 	// mapping Go function address -> last mandatory param index.
 	functionOptionalParamInfo = map[uintptr]optionalParamInfo{}
+
+	functionOptionalParamInfoLock sync.Mutex //only required in tests
 
 	// mapping symbolic Go function -> reflect.Value of the concrete Go Function.
 	goFunctionMap = map[*symbolic.GoFunction]reflect.Value{}
@@ -377,6 +381,10 @@ func RegisterSymbolicGoFunction(fn any, symbolicFn any) {
 		}
 
 		if optionalParamInfo.lastMandatoryParamIndex != -1 {
+			if testing.Testing() {
+				functionOptionalParamInfoLock.Lock()
+				defer functionOptionalParamInfoLock.Unlock()
+			}
 			functionOptionalParamInfo[ptr] = optionalParamInfo
 		}
 	}

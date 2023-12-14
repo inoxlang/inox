@@ -4057,6 +4057,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	t.Run("Go function call", func(t *testing.T) {
 		t.Parallel()
 
+		var symbolicRegistrationLock sync.Mutex
+
 		testCases := []struct {
 			name            string
 			error           bool
@@ -4256,6 +4258,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 						return 1
 					}
 
+					symbolicRegistrationLock.Lock()
+					defer symbolicRegistrationLock.Unlock()
+
 					if !IsSymbolicEquivalentOfGoFunctionRegistered(goFunc) {
 						RegisterSymbolicGoFunction(goFunc, func(*symbolic.Context, *symbolic.OptionalParam[*symbolic.Int]) *symbolic.Int {
 							return symbolic.ANY_INT
@@ -4281,6 +4286,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 						}
 						return i.Value
 					}
+
+					symbolicRegistrationLock.Lock()
+					defer symbolicRegistrationLock.Unlock()
 
 					if !IsSymbolicEquivalentOfGoFunctionRegistered(goFunc) {
 						RegisterSymbolicGoFunction(goFunc, func(*symbolic.Context, *symbolic.OptionalParam[*symbolic.Int]) *symbolic.Int {
@@ -4312,6 +4320,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 						return 1
 					}
 
+					symbolicRegistrationLock.Lock()
+					defer symbolicRegistrationLock.Unlock()
+
 					if !IsSymbolicEquivalentOfGoFunctionRegistered(goFunc) {
 						RegisterSymbolicGoFunction(goFunc, func(_ *symbolic.Context, a, b *symbolic.OptionalParam[*symbolic.Int]) *symbolic.Int {
 							return symbolic.ANY_INT
@@ -4342,6 +4353,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 						return a.Value
 					}
 
+					symbolicRegistrationLock.Lock()
+					defer symbolicRegistrationLock.Unlock()
+
 					if !IsSymbolicEquivalentOfGoFunctionRegistered(goFunc) {
 						RegisterSymbolicGoFunction(goFunc, func(_ *symbolic.Context, a, b *symbolic.OptionalParam[*symbolic.Int]) *symbolic.Int {
 							return symbolic.ANY_INT
@@ -4371,6 +4385,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 						}
 						return a.Value + b.Value
 					}
+
+					symbolicRegistrationLock.Lock()
+					defer symbolicRegistrationLock.Unlock()
+
 					if !IsSymbolicEquivalentOfGoFunctionRegistered(goFunc) {
 						RegisterSymbolicGoFunction(goFunc, func(_ *symbolic.Context, a, b *symbolic.OptionalParam[*symbolic.Int]) *symbolic.Int {
 							return symbolic.ANY_INT
@@ -4399,6 +4417,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					symbolicGoFunc := func(*symbolic.Context, *symbolic.Int, *symbolic.OptionalParam[*symbolic.Int]) *symbolic.Int {
 						return symbolic.ANY_INT
 					}
+
+					symbolicRegistrationLock.Lock()
+					defer symbolicRegistrationLock.Unlock()
+
 					if !IsSymbolicEquivalentOfGoFunctionRegistered(goFunc) {
 						RegisterSymbolicGoFunction(goFunc, symbolicGoFunc)
 					}
@@ -4425,6 +4447,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					symbolicGoFunc := func(*symbolic.Context, *symbolic.Int, *symbolic.OptionalParam[*symbolic.Int]) *symbolic.Int {
 						return symbolic.ANY_INT
 					}
+
+					symbolicRegistrationLock.Lock()
+					defer symbolicRegistrationLock.Unlock()
+
 					if !IsSymbolicEquivalentOfGoFunctionRegistered(goFunc) {
 						RegisterSymbolicGoFunction(goFunc, symbolicGoFunc)
 					}
@@ -11051,6 +11077,21 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			}
 
 			assert.Equal(t, NewXmlElement("div", nil, []Value{Str("\n")}), val)
+		})
+
+		t.Run("raw text element", func(t *testing.T) {
+			code := "idt<script><a></script>"
+			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
+				"idt": createNamespace(),
+			})
+			defer state.Ctx.CancelGracefully()
+
+			val, err := Eval(code, state, false)
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			assert.Equal(t, NewRawTextXmlElement("script", nil, "<a>"), val)
 		})
 
 		t.Run("empty child", func(t *testing.T) {

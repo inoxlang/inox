@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"sync"
 	"sync/atomic"
+	"testing"
 
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	parse "github.com/inoxlang/inox/internal/parse"
@@ -248,7 +249,15 @@ func (goFunc *GoFunction) Call(args []any, globalState, extState *GlobalState, i
 		args = append([]any{ctx}, args...)
 	}
 
+	if testing.Testing() {
+		functionOptionalParamInfoLock.Lock()
+	}
+
 	optionalParamInfo, ok := functionOptionalParamInfo[fnVal.Pointer()]
+	if testing.Testing() {
+		functionOptionalParamInfoLock.Unlock()
+	}
+
 	if ok {
 		lastMandatoryParamIndex := optionalParamInfo.lastMandatoryParamIndex
 		if len(args) < int(lastMandatoryParamIndex)+1 {

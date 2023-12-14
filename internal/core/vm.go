@@ -2289,9 +2289,11 @@ func (v *VM) run() {
 			v.stack[v.sp-2] = NewSynchronousMessageHandler(v.global.Ctx, handler, pattern)
 			v.sp--
 		case OpCreateXMLelem:
-			v.ip += 4
-			tagNameIndex := int(v.curInsts[v.ip-2]) | int(v.curInsts[v.ip-3])<<8
-			attributeCount := int(v.curInsts[v.ip-1])
+			v.ip += 6
+			tagNameIndex := int(v.curInsts[v.ip-4]) | int(v.curInsts[v.ip-5])<<8
+			attributeCount := int(v.curInsts[v.ip-3])
+			rawContentIndex := int(v.curInsts[v.ip-1]) | int(v.curInsts[v.ip-2])<<8
+			rawContent := v.constants[rawContentIndex]
 			childCount := int(v.curInsts[v.ip])
 			tagName := string(v.constants[tagNameIndex].(Str))
 
@@ -2308,16 +2310,22 @@ func (v *VM) run() {
 				}
 			}
 
-			childrenStart := v.sp - childCount
-			var children []Value
-			if childCount > 0 {
-				children = make([]Value, childCount)
-				copy(children, v.stack[childrenStart:v.sp])
+			var elem *XMLElement
+
+			if rawContent != Nil {
+				elem = NewRawTextXmlElement(tagName, attributes, string(rawContent.(Str)))
+			} else {
+				childrenStart := v.sp - childCount
+				var children []Value
+				if childCount > 0 {
+					children = make([]Value, childCount)
+					copy(children, v.stack[childrenStart:v.sp])
+				}
+				elem = NewXmlElement(tagName, attributes, children)
 			}
 
 			v.sp -= (childCount + 2*attributeCount)
-
-			v.stack[v.sp] = NewXmlElement(tagName, attributes, children)
+			v.stack[v.sp] = elem
 			v.sp++
 		case OpCreateAddTypeExtension:
 			v.ip += 2

@@ -2101,7 +2101,12 @@ func (c *compiler) Compile(node parse.Node) error {
 			}
 		}
 
-		c.emit(node, OpCreateXMLelem, c.addConstant(Str(name)), len(node.Opening.Attributes), len(node.Children))
+		var rawContent Value = Nil
+		if node.RawElementContent != "" {
+			rawContent = Str(node.RawElementContent)
+		}
+
+		c.emit(node, OpCreateXMLelem, c.addConstant(Str(name)), len(node.Opening.Attributes), c.addConstant(rawContent), len(node.Children))
 	case *parse.XMLInterpolation:
 		if err := c.Compile(node.Expr); err != nil {
 			return err

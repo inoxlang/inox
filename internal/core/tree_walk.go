@@ -3034,6 +3034,10 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 
 		var children []Value
 
+		if n.RawElementContent != "" {
+			return NewRawTextXmlElement(name, attrs, n.RawElementContent), nil
+		}
+
 		for _, child := range n.Children {
 			childValue, err := TreeWalkEval(child, state)
 			if err != nil {

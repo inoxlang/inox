@@ -7,6 +7,7 @@ type XMLElement struct {
 	name       string //if "" matches any node value
 	attributes []XMLAttribute
 	children   []Value
+	rawContent string //only set for raw text elements
 }
 
 func (e *XMLElement) Name() string {
@@ -38,4 +39,8 @@ func (a XMLAttribute) Value() Value {
 
 func NewXmlElement(name string, attributes []XMLAttribute, children []Value) *XMLElement {
 	return &XMLElement{name: name, children: children, attributes: attributes}
+}
+
+func NewRawTextXmlElement(name string, attributes []XMLAttribute, rawContent string) *XMLElement {
+	return &XMLElement{name: name, rawContent: rawContent, attributes: attributes}
 }
