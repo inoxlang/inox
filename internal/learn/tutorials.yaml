@@ -876,14 +876,14 @@
         # and functions shared between modules.
         # In order to be includable a file should start with the `includable-chunk` keyword:
 
-        import /tutorial-files/schema.ix
+        import /.tutorial-files/schema.ix
 
         print("CONST_FROM_FILE:", CONST_FROM_FILE)
         print("pattern from the included file:", %user)
         
         function_from_file()
     other-files: 
-        /tutorial-files/schema.ix: |
+        /.tutorial-files/schema.ix: |
             # In order to be includable a file should start with the following keyword.
             includable-chunk
 
@@ -909,11 +909,11 @@
 
         # A module import imports a module: an Inox file that starts with a manifest.
         # ⚠️ Each module import creates a new instance of the imported module.
-        import result ./tutorial-files/return_1.ix {}
+        import result ./.tutorial-files/return_1.ix {}
 
         print(result) 
     other-files: 
-        /tutorial-files/return_1.ix: |
+        /.tutorial-files/return_1.ix: |
             manifest {}
 
             return 1
@@ -927,7 +927,7 @@
         }
 
         # Importing a module
-        import result ./tutorial-files/add.ix {
+        import result ./.tutorial-files/add.ix {
             # import configuration
 
             arguments: {1, 2}
@@ -935,7 +935,7 @@
 
         print(result)
     other-files: 
-        /tutorial-files/add.ix: |
+        /.tutorial-files/add.ix: |
             manifest {
                 parameters: {
                     {
@@ -964,15 +964,15 @@
 
         manifest {
             permissions: {
-                read: %/tutorial-files/databases/main0/...
-                write: %/tutorial-files/databases/main0/...
+                read: %/.tutorial-files/databases/main0/...
+                write: %/.tutorial-files/databases/main0/...
             }
 
             databases: {
-                # define a local database named 'main0' that persists data in /tutorial-files/databases/main0/.
+                # define a local database named 'main0' that persists data in /.tutorial-files/databases/main0/.
                 main0: {
                     resource: ldb://main0
-                    resolution-data: /tutorial-files/databases/main0/
+                    resolution-data: /.tutorial-files/databases/main0/
                 }
             }
         }
@@ -988,15 +988,15 @@
 
         manifest {
             permissions: {
-                read: %/tutorial-files/databases/main1/...
-                write: %/tutorial-files/databases/main1/...
+                read: %/.tutorial-files/databases/main1/...
+                write: %/.tutorial-files/databases/main1/...
             }
 
             databases: {
-                # define a local database named 'main1' that persists data in /tutorial-files/databases/main1/.
+                # define a local database named 'main1' that persists data in /.tutorial-files/databases/main1/.
                 main1: {
                     resource: ldb://main1
-                    resolution-data: /tutorial-files/databases/main1/
+                    resolution-data: /.tutorial-files/databases/main1/
 
                     expected-schema-update: true
                 }
@@ -1024,4 +1024,224 @@
         })
 
         print("schema after update:", db.schema)
+
+- name: HTTP Filesystem Routing
+  id: fs-routing
+
+  tutorials:
+  - name: Filesystem Routing Basics
+    id: fs-routing-basics
+    program: |
+        const (
+            HOST = https://localhost:8080
+        )
+
+        manifest {
+            permissions: {
+                provide: HOST
+
+                read: %/...
+
+                # allow persisting the self signed certificate that is automatically generated.
+                write: %/.dev/self_signed*
+            }
+        }
+
+        server = http.Server!(HOST, {
+            routing: {
+                # directory for static resources such as CSS and JS files.
+                static: /.tutorial-files/static/
+
+                # directory containing handler modules (Inox files).
+                dynamic: /.tutorial-files/fs-routing-basics/
+            }
+        })
+
+        server.wait_closed()
+    other-files:
+        /.tutorial-files/static/htmx.min.js: ""     # automatic content injection
+        /.tutorial-files/static/base.css: |
+            /* reset */
+
+            html {
+                box-sizing: border-box;
+            }
+
+            *, *:before, *:after {
+                box-sizing: inherit;
+            }
+
+            body, h1, h2, h3, h4, h5, h6, p, ol, ul {
+                margin: 0;
+                padding: 0;
+                font-weight: normal;
+            }
+
+            ol, ul {
+                list-style: none;
+            }
+
+            img {
+                max-width: 100%;
+                height: auto;
+            }
+
+            /* HTMX */
+
+            .htmx-indicator {
+                opacity: 0;
+                transition: opacity 200ms ease-in;
+            }
+
+            .htmx-request .htmx-indicator {
+                opacity: 1;
+            }                      
+
+            .htmx-request.htmx-indicator {
+                opacity: 1;
+            }
+
+            /* Application */
+
+            header {
+                font-weight: 700;
+                padding: 7px;
+                font-size: 18px;
+            }
+
+            nav, .forms {
+                border-bottom: 1px solid grey;
+            }
+
+            nav ul {
+                display: flex;
+                flex-direction: column;
+                padding: 7px;
+            }
+
+            .forms, .links, .other {
+                display: flex;
+                flex-direction: column;
+                padding: 5px;
+            }
+
+            .links {
+                border: 1px solid grey;
+                border-radius: 3x;
+            }
+
+            form {
+                padding: 7px;
+                border: 1px solid grey;
+                border-radius: 3px;
+                width: fit-content;
+            }
+
+        /.tutorial-files/fs-routing-basics/index.ix: |
+            manifest {
+
+            }
+
+            return html<html>
+            <head>
+                <meta charset="utf-8"/>
+                <title></title>
+                <meta name="viewport" content="width=device-width, initial-scale=1"/>
+                <link rel="stylesheet" href="/base.css"/>
+                <script src="/htmx.min.js"></script>
+            </head>
+            <body>
+                <header> Hello from index.ix. </header>
+                <nav>
+                    <ul>
+                        <li><a href="/about">about (about.ix) </a></li>
+                        <li><a href="/about2">about2 (about2/index.ix) </a></li>
+                    </ul>      
+                </nav>
+
+                <main>
+                    <div class="forms">
+                        <span>Form sending a POST request to '/users'</span>
+                        <form ix-post="/users" hx-target="this">
+                            <input name="name" type="text" placeholder="name"/>
+                            <button type="submit">Submit</button>
+                        </form>
+                    </div>
+
+
+                    <div class="other">
+                        <span>Lazy loading of /fake-user</span>
+                        <div ix-lazy-load="/fake-user"></div>
+                    </div>
+                </main>
+            </body>
+            </html>
+        /.tutorial-files/fs-routing-basics/about.ix: |
+            manifest {
+
+            }
+
+            return html<html>
+            <head>
+                <meta charset="utf-8"/>
+                <title></title>
+                <meta name="viewport" content="width=device-width, initial-scale=1"/>
+                <link rel="stylesheet" href="/base.css"/>
+                <script src="/htmx.min.js"></script>
+            </head>
+            <body>
+                <header> Hello from about.ix. </header>
+            </body>
+            </html>
+        /.tutorial-files/fs-routing-basics/about2/index.ix: |
+            manifest {
+
+            }
+
+            return html<html>
+            <head>
+                <meta charset="utf-8"/>
+                <title></title>
+                <meta name="viewport" content="width=device-width, initial-scale=1"/>
+                <link rel="stylesheet" href="/base.css"/>
+                <script src="/htmx.min.js"></script>
+            </head>
+            <body>
+                <header> Hello from about2/index.ix. </header>
+            </body>
+            </html>
+        /.tutorial-files/fs-routing-basics/fake-user.ix: |
+            manifest {
+              
+            }
+
+            return html<div> [ Fake user ] Hello from fake-user.ix. </div>
+        /.tutorial-files/fs-routing-basics/users/POST.ix: |
+            manifest {
+                parameters: {
+                    # JSON body
+
+                    name: {
+                        pattern: %str
+                    }
+                }
+            }
+
+            # the module arguments are stored in the `mod-args` variable.
+
+            username = mod-args.name
+
+            return html<html>
+            <head>
+                <meta charset="utf-8"/>
+                <title></title>
+                <meta name="viewport" content="width=device-width, initial-scale=1"/>
+                <link rel="stylesheet" href="/base.css"/>
+                <script src="/htmx.min.js"></script>
+            </head>
+            <body>
+                <header> Hello from users/POST.ix. </header>
+                Received user creation request with name "{username}".
+            </body>
+            </html>
 # ------------------------------------------------------------

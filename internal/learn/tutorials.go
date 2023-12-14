@@ -6,15 +6,13 @@ import (
 	"path/filepath"
 
 	"github.com/goccy/go-yaml"
+	"github.com/inoxlang/inox/internal/project/scaffolding"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
 var (
 	//go:embed tutorials.yaml
 	TUTORIALS_YAML string
-
-	//go:embed htmx.min.js
-	MINIFIED_HTMX_JS string
 
 	TUTORIAL_SERIES []TutorialSeries
 )
@@ -26,11 +24,17 @@ func init() {
 
 	for _, series := range TUTORIAL_SERIES {
 		for _, tut := range series.Tutorials {
-			for name := range tut.OtherFiles {
+			for name, content := range tut.OtherFiles {
+				if content != "" {
+					continue
+				}
+
 				basename := filepath.Base(name)
 				switch basename {
+				case "base.css":
+					tut.OtherFiles[name] = scaffolding.BASE_CSS_STYLESHEET
 				case "htmx.min.js":
-					tut.OtherFiles[name] = MINIFIED_HTMX_JS
+					tut.OtherFiles[name] = scaffolding.HTMX_MIN_JS
 				}
 			}
 		}

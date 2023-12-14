@@ -45,13 +45,21 @@ func TestTutorials(t *testing.T) {
 func testTutorial(t *testing.T, series learn.TutorialSeries, tut learn.Tutorial, fpath string, useBytecode bool) {
 	t.Run(series.Name+"--"+tut.Name, func(t *testing.T) {
 
-		//parallelize all tutorials that don't start an HTTP server
-		if !bytes.Contains([]byte(tut.Program), []byte("http.Server")) {
-			t.Parallel()
-		}
+		hasHttpServer := bytes.Contains([]byte(tut.Program), []byte("http.Server"))
 
-		stdlibCtx, cancel := context.WithCancel(context.Background())
-		defer cancel()
+		var stdlibCtx context.Context
+		var cancel context.CancelFunc
+
+		//parallelize all tutorials that don't start an HTTP server
+		if hasHttpServer {
+			//cancel after 3 seconds.
+			stdlibCtx, cancel = context.WithTimeout(context.Background(), 3*time.Second)
+			defer cancel()
+		} else {
+			t.Parallel()
+			stdlibCtx, cancel = context.WithCancel(context.Background())
+			defer cancel()
+		}
 
 		done := make(chan int)
 		timeout := DEFAULT_TUTORIAL_TIMEOUT_DURATION
@@ -68,10 +76,13 @@ func testTutorial(t *testing.T, series learn.TutorialSeries, tut learn.Tutorial,
 			}()
 
 			//create filesystem
-			fls := fs_ns.NewMemFilesystem(10_000)
+			fls := fs_ns.NewMemFilesystem(1_000_000)
 			util.WriteFile(fls, fpath, []byte(tut.Program), 0500)
 			for filePath, content := range tut.OtherFiles {
-				util.WriteFile(fls, filePath, []byte(content), 0500)
+				err := util.WriteFile(fls, filePath, []byte(content), 0500)
+				if !assert.NoError(t, err) {
+					return
+				}
 			}
 
 			//
@@ -104,14 +115,20 @@ func testTutorial(t *testing.T, series learn.TutorialSeries, tut learn.Tutorial,
 				IgnoreHighRiskScore: true,
 			})
 
-			if assert.NoError(t, err) {
-				output := strings.Split(outputBuff.String(), "\n")
-				output = utils.FilterSlice(output, func(e string) bool {
-					return e != ""
-				})
-				if tut.ExpectedLogOutput != nil {
-					assert.Equal(t, tut.ExpectedOutput, output)
+			if hasHttpServer {
+				if !assert.ErrorIs(t, err, context.DeadlineExceeded) {
+					return
 				}
+			} else if !assert.NoError(t, err) {
+				return
+			}
+
+			output := strings.Split(outputBuff.String(), "\n")
+			output = utils.FilterSlice(output, func(e string) bool {
+				return e != ""
+			})
+			if tut.ExpectedLogOutput != nil {
+				assert.Equal(t, tut.ExpectedOutput, output)
 			}
 		}()
 
