@@ -7,14 +7,23 @@ functional:
     examples:
     - code: 'map([{name: "foo"}], .name)'
       output: '["foo"]'
+      standalone: true
+
     - code: 'map([{a: 1, b: 2, c: 3}], .{a,b})'
       output: '[{a: 1, b: 2}]'
+      standalone: true
+
     - code: 'map([0, 1, 2], Mapping{0 => "0" 1 => "1"})'
       output: '["0", "1", nil]'
+      standalone: true
+
     - code: 'map([97, 98, 99], torune)'
       output: "['a', 'b', 'c']"
+      standalone: true
+
     - code: 'map([0, 1, 2], @($ + 1))'
       output: '[1, 2, 3]'
+      standalone: true
 
   - topic: filter
     related-topics: [map, get_at_most, some, all, none]
@@ -22,8 +31,11 @@ functional:
     examples:
     - code: 'filter(["a", "0", 1], %int)'
       output: '[1]'
+      standalone: true
+
     - code: 'filter([0, 1, 2], @($ >= 1))'
       output: '[1, 2]'
+      standalone: true
 
   - topic: get_at_most
     related-topics: [filter, map, some, all, none]
@@ -31,10 +43,15 @@ functional:
     examples:
     - code: 'get_at_most(1, [])'
       output: '[]'
+      standalone: true
+
     - code: 'get_at_most(3, ["a", "b"])'
       output: '["a", "b"]'
+      standalone: true
+
     - code: 'get_at_most(2, ["a", "b", "c"])'
       output: '["a", "b"]'
+      standalone: true
 
   - topic: some
     related-topics: [map, filter, all, none]
@@ -42,8 +59,11 @@ functional:
     examples:
     - code: 'some(["a", "0", 1], %int)'
       output: 'true'
+      standalone: true
+
     - code: "some([0, 1, 2], @($ == 'a'))"
       output: 'false'
+      standalone: true
 
   - topic: all
     related-topics: [map, filter, some, none]
@@ -51,8 +71,11 @@ functional:
     examples:
     - code: 'all([0, 1, "a"], %int)'
       output: 'false'
+      standalone: true
+
     - code: 'all([0, 1, 2], @($ >= 0))'
       output: 'true'
+      standalone: true
       
   - topic: none
     related-topics: [map, filter, some, all]
@@ -60,8 +83,11 @@ functional:
     examples:
     - code: 'none([0, 1, "a"], %int)'
       output: 'false'
+      standalone: true
+
     - code: 'none([0, 1, 2], @($ < 0))'
       output: 'true'
+      standalone: true
 
   - topic: sort
     text: >
@@ -71,18 +97,25 @@ functional:
     examples:
     - code: 'sort([2, 1], #asc)'
       output: '[1, 2]'
+      standalone: true
+
     - code: 'sort(["b", "a"], #lex)'
       output: '["a", "b"]'
+      standalone: true
 
   - topic: find
     text: The find function searches for items matching a pattern at a given location (a string, an iterable, a directory)
     examples:
     - code: 'find %`a+` "a-aa-aaa"'
       output: '["a", "aa", "aaa"]'
+      standalone: true
+
     - code: 'find %./**/*.json ./'
       output: '[./file.json, ./dir/file.json, ./dir/dir/.file.json]'
+
     - code: find %int ['1', 2, "3"]
       output: '[2]'
+      standalone: true
   
   - topic: idt
     text: The idt (identity) function takes a single argument and returns it.
@@ -97,10 +130,15 @@ rand:
     examples:
     - code: 'rand(%int(0..10))'
       output: '3'
+      standalone: true
+
     - code: 'rand(%str("a"+))'
       output: '"aaaaa"'
+      standalone: true
+
     - code: 'rand(["a", "b"])'
       output: '"b"'
+      standalone: true
 
 crypto:
   title: Cryptography
@@ -112,6 +150,7 @@ crypto:
     examples:
     - code: 'hash_password("password")'
       output: '$argon2id$v=19$m=65536,t=1,p=1$xDLqbPJUrCURnSiVYuy/Qg$OhEJCObGgJ2EbcH0a7oE2sfD1+5T2BPRs8SRWkreE00'
+      standalone: true
 
   - topic: check_password
     text: The check_password verifies that a password matches a Argon2id hash.
@@ -119,24 +158,28 @@ crypto:
     examples:
     - code: 'check_password("password", "$argon2id$v=19$m=65536,t=1,p=1$xDLqbPJUrCURnSiVYuy/Qg$OhEJCObGgJ2EbcH0a7oE2sfD1+5T2BPRs8SRWkreE00")'
       output: 'true'
+      standalone: true
 
   - topic: sha256
     text: The sha256 function hashes a string or a byte sequence with the SHA-256 algorithm
     examples:
     - code: sha256("string")
       output: '0x[473287f8298dba7163a897908958f7c0eae733e25d2e027992ea2edc9bed2fa8]'
+      standalone: true
 
   - topic: sha384
     text: The sha384 function hashes a string or a byte sequence with the SHA-384 algorithm
     examples:
     - code: sha384("string")
       output: '0x[36396a7e4de3fa1c2156ad291350adf507d11a8f8be8b124a028c5db40785803ca35a7fc97a6748d85b253babab7953e]'
+      standalone: true
 
   - topic: sha512
     text: The sha512 function hashes a string or a byte sequence with the SHA-512 algorithm
     examples:
     - code: sha512("string")
       output: '0x[2757cb3cafc39af451abb2697be79b4ab61d63d74d85b0418629de8c26811b529f3f3780d0150063ff55a2beee74c4ec102a2a2731a1f1f7f10d473ad18a6a87]'
+      standalone: true
 
   - topic: rsa
     namespace: true
@@ -147,6 +190,7 @@ crypto:
       examples:
       - code: 'rsa.gen_key()'
         output: '#{public: "<key>", private: "<secret key>"}'
+        standalone: true
 
     - topic: rsa.encrypt_oaep
       text: The rsa.encrypt_oaep function encrypts a string or byte sequence using a public key
@@ -163,11 +207,13 @@ encoding:
   elements:
   - topic: b64
     text: The b64 function encodes a string or byte sequence to Base64.
+
   - topic: db64
     text: The db64 function decodes a byte sequence from Base64.
 
   - topic: hex
     text: The hex function encodes a string or byte sequence to hexadecimal.
+
   - topic: unhex
     text: The unhex function decodes a byte sequence from hexadecimal.
 
@@ -235,6 +281,7 @@ time:
     text: The ago function returns the current datetime minus the provided duration.
     examples:
     - code: 'ago(1h)'
+      standalone: true
 
   - topic: now
     text: The now function returns the current datetime.
@@ -246,6 +293,7 @@ time:
     text: The sleep function pauses the execution for the given duration.
     examples:
     - code: 'sleep(1s)'
+      standalone: true
 
 printing:
   title: Printing
@@ -271,18 +319,24 @@ log:
     - code: |
         # add a log event of level 'debug' with the message 'user created'
         log.add #{"user created"}
+      standalone: true
+
     - code: |
         # add a log event of level 'debug' with the message 'user created'
         log.add #{msg: "user created"}
+      standalone: true
+
     - code: |
         # add a log event of level 'info' with the message 'user created'
         log.add #{lvl: "info", msg: "user created"}
+      standalone: true
+
     - code: |
         id = 100
         # add a log event of level 'debug' with the message 'user 100 created'
         # and a field `id: 100`
         log.add #{"user", id, "created", id: 100}
-
+      standalone: true
 
 bytes-runes:
   title: Bytes and Runes
@@ -291,11 +345,13 @@ bytes-runes:
     text: The mkbytes function allocates a byte-slice of the provided size.
     examples:
     - code: 'mkbytes(1kB)'
+      standalone: true
 
   - topic: Bytes
     text: The Bytes function reads a readable (string, byte-slice, ...) and returns a byte-slice.
     examples:
     - code: 'bytes = Bytes("abc")'
+      standalone: true
 
   - topic: Runes
     text: >
@@ -308,6 +364,7 @@ bytes-runes:
     text: The is_space function returns whether a given rune is a space character (Unicode's White Space property).
     examples:
     - code: "is_space(' ') # true"
+      standalone: true
 
   - topic: Reader
     text: The Reader function creates a reader from a readable (string, byte-slice, ...).
@@ -318,6 +375,7 @@ bytes-runes:
 
         # abc
         print(tostr(bytes))
+      standalone: true
 
   - topic: RingBuffer
     text: The RingBuffer function creates a ring-buffer with a given capacity.
@@ -335,12 +393,54 @@ bytes-runes:
 
         # abc
         s = tostr(slice)
+      standalone: true
+
 html:
   namespace: true
   title: HTML
   elements:
   - topic: html
     text: The html namespace contains functions to create & manipulate HTML nodes
+  - topic: html.find
+    text: The html.find function finds all elements matching the specified CSS selector in the specified element.
+    examples:
+    - code: h1_elems = html.find("h1", html<div> <h1>title</h1> </div>)
+  - topic: html.escape
+    text: >
+      The html.escape function escapes special characters like "<" to become "&lt;".
+      It escapes only five such characters: <, >, &, ' and ".
+    examples:
+    - code: html.escape("<span></span>")
+      output: "&lt;span&gt;&lt;/span&gt;"
+      standalone: true
+
+  - topic: html.Node
+    text: >
+      The html.Node factory function creates a node with a given tag. The first argument is the tag name. The second
+      argument is an object with several optional parameters (properties): id, class, children. Additional parameters
+      depend on the tag: (e.g. href for `<a>`). html.Node is still being developped, for now it only supports additional 
+      parameters for `<a>`. It is recommended to use XML expressions with `html` as the namespace instead of using html.Node: 
+      calling the function and creating the object argument (description) is not efficient.
+    examples:
+    - code: html.Node("a", {})
+      output: "<a></a>"
+      standalone: true
+
+    - code: 'html.Node("a", {id: "link"})'
+      output: '<a id="link"></a>'
+      standalone: true
+
+    - code: 'html.Node("a", {href: /index.html})'
+      output: '<a href="/index.html"></a>'
+      standalone: true
+      
+    - code: 'html.Node("div", {  html<span>text</span> })'
+      output: '<div><span>text</span></div>'
+      standalone: true
+
+    - code: 'html.Node("div", { children: [ html<span>text</span> ] })'
+      output: '<div><span>text</span></div>'
+      standalone: true
 
 chrome:
   namespace: true
@@ -380,6 +480,7 @@ chrome:
     examples:
     - code: 'handle.wait_visible "div.title"'
 
+
   - topic: chrome.Handle/click
     text: The click method makes the browser click on the first DOM element matching the selector.
     examples:
@@ -416,23 +517,29 @@ containers:
     examples:
     - code: 'Tree(treedata "root")'
       explanation: creates a Tree with a single node
+      standalone: true
 
   - topic: Stack
     text:  "the Stack function creates a stack from an iterable"
     examples:
     - code: 'Stack([])'
       explanation: creates an empty stack
+      standalone: true
 
     - code: 'Stack([1])'
       explanation: "creates a stack with an element 1"
+      standalone: true
 
   - topic: Queue
     text: The Queue function creates a queue from an iterable
     examples:
     - code: 'Queue([])'
       explanation: creates an empty queue
+      standalone: true
+
     - code: 'Queue([1])'
       explanation: creates a queue with an element 1
+      standalone: true
 
   - topic: Set
     text: >
@@ -442,18 +549,26 @@ containers:
     examples:
     - code: 'Set([])'
       explanation: creates an empty set
+      standalone: true
+
     - code: 'Set([1])'
       explanation: "creates a queue with an element 1"
+      standalone: true
+
     - code: 'Set([], {element: %int})'
       explanation: creates an empty set of integers
+      standalone: true
+
     - code: 'Set([{name: "A"}, {name: "B"}], {uniqueness: .name})'
       explanation: creates a set of values where the identity is defined by the .name property
+      standalone: true
 
   - topic: Map
     text: The Map function creates a map from a flat list of entries
     examples:
-    - code: 'Map(["key1", 10, "key2", 20]'
+    - code: 'Map(["key1", 10, "key2", 20])'
       explanation: creates a Map with the entries "key1" -> 10, "key2" -> 20`
+      standalone: true
 
   - topic: Ranking
     text: >
@@ -463,13 +578,18 @@ containers:
     examples:
     - code: 'Ranking(["best player", 10.0, "other player", 5.0])'
       explanation: 'creates a Ranking with the following ranks: rank(0) -> "best player", rank(1) -> "other player"'
+      standalone: true
+
     - code: 'Ranking(["best player", 10.0, "other player", 10.0])'
       explanation: 'creates a Ranking with the following ranks: rank(0) -> "best player" & "other player"'
+      standalone: true
       
   - topic: Thread
     text: The Thread function creates a thread from an iterable.
     examples:
     - code: 'Thread([{message: "hello", author-id: "5958"}])'
+      standalone: true
+
 
 dns:
   namespace: true
@@ -480,6 +600,7 @@ dns:
     examples:
     - code: 'dns.resolve!("github.com" "A")'
       explanation: retrieves "A" records for github.com
+      standalone: true
 
 tcp:
   namespace: true
@@ -495,6 +616,7 @@ tcp:
         print tostr(conn.read!())
 
         conn.close()
+      standalone: true
 
 resource:
   namespace: false
@@ -544,14 +666,14 @@ resource:
     - code: 'update ./file.txt append "additional content"'
     - code: update ./file.txt "new content"
     - code: update ./file.txt replace "new content"
-    - code: update <url> tojson({})'
+    - code: 'update https://example.com/users/100 tojson({name: "foo"})'
 
   - topic: delete
     text: 'delete is a general purpose function that deletes a resource, deletion is recursive for directories.'
     examples:
     - code: 'delete ./file.txt'
     - code: 'delete ./dir/'
-    - code: 'delete <url>'
+    - code: 'delete https://example.com/users/100'
 
 fs:
   namespace: true
@@ -688,10 +810,10 @@ http:
       The http.post sends a POST request to the specified URL (or host) with the given body value, the body value can be any %readable or serializable object/list.
       A %mimetype value can be specified to change the value of the Content-Type header.
     examples:
-    - code: http.post https://example.com/posts '{"title":"hello"}'
+    - code: http.post https://example.com/posts `{"title":"hello"}`
     - code: 'http.post https://example.com/posts {title: "hello"}'
     - code: 'http.post https://example.com/posts [ {title: "hello"} ]'
-    - code: http.post https://example.com/posts mime"json" '{"title":"hello"}'
+    - code: 'http.post https://example.com/posts mime"json" {title:"hello"}'
 
 
   - topic: http.patch
@@ -707,9 +829,11 @@ http:
     examples:
     - code: 'http.Client{ save-cookies: true }'
       explanation: saves the cookies received in responses, cookies are not persisted
+      standalone: true
 
     - code: 'http.Client{ insecure: true }'
       explanation: ignore certificate errors
+      standalone: true
 
     - code: |
         http.Client{
@@ -720,6 +844,8 @@ http:
           } 
         }
       explanation: add X-API-KEY header to all requests sent to https://example.com
+      standalone: true
+
   - topic: http.Server
     text: >
       The http.Server function creates a listening HTTP server with a given host & handler. The handler can be an function
@@ -737,6 +863,8 @@ http:
          creates an HTTP server at https://localhost:8080 with filesystem routing. The server will look for static files in the /static/ folder
          and dynamic handler modules (.ix files) in the /routes/ folder. Modules are reloaded each time files are changed in /routes/.
          To learn about filesystem routing see https://github.com/inoxlang/inox/blob/master/docs/web-app-development.md#2-filesystem-routing
+      standalone: true
+
     - code: |
         fn handle(rw http.resp-writer, r http.req){
           rw.write_json({ a: 1 })
@@ -749,6 +877,7 @@ http:
       explanation: >
         creates an HTTP server at https://localhost:8080, requests to /hello will return 'hello' & other requests will
         be handled by the 'handle' function.
+      standalone: true
 
     - code: |
         fn handle(rw http.resp-writer, r http.req){
@@ -766,6 +895,7 @@ http:
       explanation: >
         creates an HTTP server at https://localhost:8080 that returns a JSON body with {a: 1} for the '/' path 
         and a 404 status for other paths.
+      standalone: true
 
   - topic: http.FileServer
     text: The http.FileServer creates an HTTP server that serves static file from a given directory.
@@ -788,6 +918,8 @@ http:
         style-src 'self'
     examples:
     - code: "http.CSP{default-src: \"'self'\"}"
+      standalone: true
+
 Errors:
   namespace: false
   elements:
@@ -795,4 +927,7 @@ Errors:
     text: The Error function creates an error from the provided string and an optional data argument.
     examples:
     - code: 'Error("failed to create user")'
+      standalone: true
+
     - code: 'Error("failed to create user", {user_id: 100})'
+      standalone: true

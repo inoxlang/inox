@@ -255,7 +255,7 @@ The Map function creates a map from a flat list of entries.
 **examples**
 
 ```inox
-Map(["key1", 10, "key2", 20]
+Map(["key1", 10, "key2", 20])
 ```
 ### Ranking
 
@@ -730,6 +730,57 @@ The idt (identity) function takes a single argument and returns it.
 ### html
 
 The html namespace contains functions to create & manipulate HTML nodes.
+### html.find
+
+The html.find function finds all elements matching the specified CSS selector in the specified element.
+
+**examples**
+
+```inox
+h1_elems = html.find("h1", html<div> <h1>title</h1> </div>)
+```
+### html.escape
+
+The html.escape function escapes special characters like "<" to become "&lt;".  It escapes only five such characters: <, >, &, ' and ".
+
+**examples**
+
+```inox
+html.escape("<span></span>")
+# output: 
+&lt;span&gt;&lt;/span&gt;
+```
+### html.Node
+
+The html.Node factory function creates a node with a given tag. The first argument is the tag name. The second argument is an object with several optional parameters (properties): id, class, children. Additional parameters depend on the tag: (e.g. href for `<a>`). html.Node is still being developped, for now it only supports additional  parameters for `<a>`. It is recommended to use XML expressions with `html` as the namespace instead of using html.Node:  calling the function and creating the object argument (description) is not efficient.
+
+**examples**
+
+```inox
+html.Node("a", {})
+# output: 
+<a></a>
+```
+```inox
+html.Node("a", {id: "link"})
+# output: 
+<a id="link"></a>
+```
+```inox
+html.Node("a", {href: /index.html})
+# output: 
+<a href="/index.html"></a>
+```
+```inox
+html.Node("div", {  html<span>text</span> })
+# output: 
+<div><span>text</span></div>
+```
+```inox
+html.Node("div", { children: [html<span>text</span>] })
+# output: 
+<div><span>text</span></div>
+```
 
 ## HTTP
 
@@ -764,7 +815,7 @@ The http.post sends a POST request to the specified URL (or host) with the given
 **examples**
 
 ```inox
-http.post https://example.com/posts '{"title":"hello"}'
+http.post https://example.com/posts `{"title":"hello"}`
 ```
 ```inox
 http.post https://example.com/posts {title: "hello"}
@@ -773,7 +824,7 @@ http.post https://example.com/posts {title: "hello"}
 http.post https://example.com/posts [ {title: "hello"} ]
 ```
 ```inox
-http.post https://example.com/posts mime"json" '{"title":"hello"}'
+http.post https://example.com/posts mime"json" {title:"hello"}
 ```
 ### http.patch
 
@@ -1002,7 +1053,7 @@ update ./file.txt "new content"
 update ./file.txt replace "new content"
 ```
 ```inox
-update <url> tojson({})'
+update https://example.com/users/100 tojson({name: "foo"})
 ```
 ### delete
 
@@ -1017,7 +1068,7 @@ delete ./file.txt
 delete ./dir/
 ```
 ```inox
-delete <url>
+delete https://example.com/users/100
 ```
 
 ## TCP

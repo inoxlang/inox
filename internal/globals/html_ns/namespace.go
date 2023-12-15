@@ -47,7 +47,11 @@ func init() {
 		core.RegisterSymbolicGoFunction(fn, specifcTagFactory)
 	}
 
-	help.RegisterHelpValues(map[string]any{})
+	help.RegisterHelpValues(map[string]any{
+		"html.Node":   NewNode,
+		"html.find":   _html_find,
+		"html.escape": EscapeString,
+	})
 }
 
 func NewHTMLNamespace() *core.Namespace {

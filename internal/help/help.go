@@ -36,8 +36,9 @@ var (
 )
 
 type TopicGroup struct {
-	IsNamespace bool        `yaml:"namespace"`
-	Elements    []TopicHelp `yaml:"elements"`
+	IsNamespace   bool        `yaml:"namespace"`
+	Elements      []TopicHelp `yaml:"elements"`
+	AboutBuiltins bool
 }
 
 func init() {
@@ -47,6 +48,11 @@ func init() {
 
 	if err := yaml.Unmarshal(utils.StringAsBytes(BUILTIN_HELP_YAML), &topicGroups); err != nil {
 		log.Panicf("error while parsing builtins.yaml: %s", err)
+	}
+
+	for name, group := range topicGroups {
+		group.AboutBuiltins = true
+		topicGroups[name] = group
 	}
 
 	var languageTopicGroups map[string]TopicGroup
@@ -144,6 +150,12 @@ func RegisterHelpValues(values map[string]any) {
 	}
 }
 
+func ForeachTopicGroup(fn func(name string, group TopicGroup)) {
+	for name, group := range topicGroups {
+		fn(name, group)
+	}
+}
+
 type TopicHelp struct {
 	Value any
 	//scalar
@@ -164,6 +176,7 @@ type Example struct {
 	Code        string `yaml:"code"`
 	Explanation string `yaml:"explanation"`
 	Output      string `yaml:"output"`
+	Standalone  bool   `yaml:"standalone"` //true if the code can be executed with minor additions
 }
 
 func (h TopicHelp) Print(w io.Writer, config HelpMessageConfig) {
