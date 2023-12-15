@@ -147,7 +147,8 @@ You can learn Inox directly in VSCode by creating a file with a `.tut.ix` extens
 
 ![tutorial-demo](https://github.com/inoxlang/inox-vscode/raw/master/assets/docs/tutorial-demo.gif)
 
-📖 Language Reference: [docs/language-reference.md](docs/language-reference.md)
+📖 [Language reference](docs/language-reference.md)\
+🧰 [Builtins](docs/builtin.md)
 
 <details>
 <summary>Scripting</summary>
