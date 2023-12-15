@@ -22,6 +22,9 @@ var BASE_CSS_STYLESHEET string
 //go:embed htmx-1.9.9.min.js
 var HTMX_MIN_JS string
 
+//go:embed inox.js
+var INOX_JS string
+
 //go:embed templates/**
 var TEMPLATE_FILES embed.FS
 
@@ -46,6 +49,8 @@ func WriteTemplate(name string, fls afs.Filesystem) error {
 				switch filepath.Base(pathInFs) {
 				case "htmx.min.js":
 					content = []byte(HTMX_MIN_JS)
+				case "inox.js":
+					content = []byte(INOX_JS)
 				case "base.css":
 					content = []byte(BASE_CSS_STYLESHEET)
 				}
