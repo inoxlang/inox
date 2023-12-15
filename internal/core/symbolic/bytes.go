@@ -122,7 +122,7 @@ func (s *ByteSlice) insertSequence(ctx *Context, seq Sequence, i *Int) {
 	if seq.HasKnownLen() && seq.KnownLen() == 0 {
 		return
 	}
-	if _, ok := mergeValuesWithSameStaticTypeInMultivalue(seq.element()).(*Byte); !ok {
+	if _, ok := MergeValuesWithSameStaticTypeInMultivalue(seq.element()).(*Byte); !ok {
 		ctx.AddSymbolicGoFunctionError(fmtHasElementsOfType(s, ANY_BYTE))
 	}
 }
@@ -131,7 +131,7 @@ func (s *ByteSlice) appendSequence(ctx *Context, seq Sequence) {
 	if seq.HasKnownLen() && seq.KnownLen() == 0 {
 		return
 	}
-	if _, ok := mergeValuesWithSameStaticTypeInMultivalue(seq.element()).(*Byte); !ok {
+	if _, ok := MergeValuesWithSameStaticTypeInMultivalue(seq.element()).(*Byte); !ok {
 		ctx.AddSymbolicGoFunctionError(fmtHasElementsOfType(s, ANY_BYTE))
 	}
 }

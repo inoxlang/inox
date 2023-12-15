@@ -527,7 +527,7 @@ func (l *List) insertSequence(ctx *Context, seq Sequence, i *Int) {
 		return
 	}
 
-	element := AsSerializable(mergeValuesWithSameStaticTypeInMultivalue(joinValues([]Value{l.element(), seq.element()})))
+	element := AsSerializable(MergeValuesWithSameStaticTypeInMultivalue(joinValues([]Value{l.element(), seq.element()})))
 	if serializable, ok := element.(Serializable); ok {
 		ctx.SetUpdatedSelf(NewListOf(serializable))
 	} else {
@@ -557,7 +557,7 @@ func (l *List) appendSequence(ctx *Context, seq Sequence) {
 		return
 	}
 
-	element := AsSerializable(mergeValuesWithSameStaticTypeInMultivalue(joinValues([]Value{l.element(), seq.element()})))
+	element := AsSerializable(MergeValuesWithSameStaticTypeInMultivalue(joinValues([]Value{l.element(), seq.element()})))
 	if serializable, ok := element.(Serializable); ok {
 		ctx.SetUpdatedSelf(NewListOf(serializable))
 	} else {

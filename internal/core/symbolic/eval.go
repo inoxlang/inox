@@ -1437,7 +1437,7 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 		}
 
 		if node.Operator.Int() {
-			result = mergeValuesWithSameStaticTypeInMultivalue(result)
+			result = MergeValuesWithSameStaticTypeInMultivalue(result)
 
 			// if the operation requires integer operands we check that RHS is an integer
 			if _, ok := result.(*Int); !ok {
@@ -1479,7 +1479,7 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 					return nil, err
 				}
 
-				lhsValue := mergeValuesWithSameStaticTypeInMultivalue(info.value)
+				lhsValue := MergeValuesWithSameStaticTypeInMultivalue(info.value)
 
 				if _, ok := lhsValue.(*Int); !ok {
 					state.addError(makeSymbolicEvalError(node, state, INVALID_ASSIGN_INT_OPER_ASSIGN_LHS_NOT_INT))
@@ -1514,7 +1514,7 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 					return nil, err
 				}
 
-				lhsValue := mergeValuesWithSameStaticTypeInMultivalue(info.value)
+				lhsValue := MergeValuesWithSameStaticTypeInMultivalue(info.value)
 
 				if _, ok := lhsValue.(*Int); !ok {
 					state.addError(makeSymbolicEvalError(node, state, INVALID_ASSIGN_INT_OPER_ASSIGN_LHS_NOT_INT))
@@ -1535,7 +1535,7 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 					return nil, err
 				}
 
-				lhsValue := mergeValuesWithSameStaticTypeInMultivalue(info.value)
+				lhsValue := MergeValuesWithSameStaticTypeInMultivalue(info.value)
 
 				if _, ok := lhsValue.(*Int); !ok {
 					state.addError(makeSymbolicEvalError(node, state, INVALID_ASSIGN_INT_OPER_ASSIGN_LHS_NOT_INT))
@@ -1574,7 +1574,7 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 					return nil, err
 				}
 
-				lhsValue := mergeValuesWithSameStaticTypeInMultivalue(info.value)
+				lhsValue := MergeValuesWithSameStaticTypeInMultivalue(info.value)
 
 				if _, ok := lhsValue.(*Int); !ok {
 					state.addError(makeSymbolicEvalError(node, state, INVALID_ASSIGN_INT_OPER_ASSIGN_LHS_NOT_INT))
@@ -1677,7 +1677,7 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 			}
 
 			if node.Operator.Int() {
-				widenedPrevValue := mergeValuesWithSameStaticTypeInMultivalue(prevValue)
+				widenedPrevValue := MergeValuesWithSameStaticTypeInMultivalue(prevValue)
 
 				if _, ok := widenedPrevValue.(*Int); !ok {
 					state.addError(makeSymbolicEvalError(node, state, INVALID_ASSIGN_INT_OPER_ASSIGN_LHS_NOT_INT))
@@ -1905,7 +1905,7 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 
 			if node.Operator.Int() {
 				if seqElementAtIndex != nil {
-					widenedSeqElementAtIndex := mergeValuesWithSameStaticTypeInMultivalue(seqElementAtIndex)
+					widenedSeqElementAtIndex := MergeValuesWithSameStaticTypeInMultivalue(seqElementAtIndex)
 
 					if !ANY_INT.Test(widenedSeqElementAtIndex, RecTestCallState{}) {
 						state.addError(makeSymbolicEvalError(lhs, state, INVALID_ASSIGN_INT_OPER_ASSIGN_LHS_NOT_INT))
@@ -1913,7 +1913,7 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 					}
 					//note: the element is widened in order to support multivalues such as (1 | 2)
 				} else {
-					widenedSeqElement := mergeValuesWithSameStaticTypeInMultivalue(seq.element())
+					widenedSeqElement := MergeValuesWithSameStaticTypeInMultivalue(seq.element())
 					if !ANY_INT.Test(widenedSeqElement, RecTestCallState{}) {
 						state.addError(makeSymbolicEvalError(lhs, state, INVALID_ASSIGN_INT_OPER_ASSIGN_LHS_NOT_INT))
 						ignoreNextAssignabilityError = true
@@ -1951,7 +1951,7 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 						}
 					} else {
 						staticSeqElement = staticSeq.element()
-						if staticSeqElement.Test(mergeValuesWithSameStaticTypeInMultivalue(__rhs), RecTestCallState{}) {
+						if staticSeqElement.Test(MergeValuesWithSameStaticTypeInMultivalue(__rhs), RecTestCallState{}) {
 							assignable = true
 							narrowPath(lhs.Indexed, setExactValue, staticSeq, state, 0)
 						}
@@ -2119,7 +2119,7 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 				}
 			} else {
 				staticSeqElement := staticSeq.element()
-				if staticSeqElement.Test(mergeValuesWithSameStaticTypeInMultivalue(rightSeqElement), RecTestCallState{}) {
+				if staticSeqElement.Test(MergeValuesWithSameStaticTypeInMultivalue(rightSeqElement), RecTestCallState{}) {
 					assignable = true
 					narrowPath(lhs.Indexed, setExactValue, staticSeq, state, 0)
 				}

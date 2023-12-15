@@ -467,7 +467,7 @@ func (s *RuneSlice) insertSequence(ctx *Context, seq Sequence, i *Int) {
 	if seq.HasKnownLen() && seq.KnownLen() == 0 {
 		return
 	}
-	if _, ok := mergeValuesWithSameStaticTypeInMultivalue(seq.element()).(*Rune); !ok {
+	if _, ok := MergeValuesWithSameStaticTypeInMultivalue(seq.element()).(*Rune); !ok {
 		ctx.AddSymbolicGoFunctionError(fmtHasElementsOfType(s, ANY_RUNE))
 	}
 }
@@ -476,7 +476,7 @@ func (s *RuneSlice) appendSequence(ctx *Context, seq Sequence) {
 	if seq.HasKnownLen() && seq.KnownLen() == 0 {
 		return
 	}
-	if _, ok := mergeValuesWithSameStaticTypeInMultivalue(seq.element()).(*Rune); !ok {
+	if _, ok := MergeValuesWithSameStaticTypeInMultivalue(seq.element()).(*Rune); !ok {
 		ctx.AddSymbolicGoFunctionError(fmtHasElementsOfType(s, ANY_RUNE))
 	}
 }
