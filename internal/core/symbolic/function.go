@@ -151,7 +151,7 @@ func (fn *InoxFunction) Test(v Value, state RecTestCallState) bool {
 
 	for i, paramVal := range fn.parameters {
 		otherParamVal := other.parameters[i]
-		if !deeplyMatch(paramVal, otherParamVal) {
+		if !otherParamVal.Test(paramVal, state) {
 			return false
 		}
 	}
@@ -941,28 +941,28 @@ func (f *Function) Test(v Value, state RecTestCallState) bool {
 		}
 	}
 
-	switch fn := v.(type) {
+	switch tested := v.(type) {
 	case *Function:
-		if fn.pattern != nil || len(f.parameters) != len(fn.parameters) || f.variadic != fn.variadic {
+		if tested.pattern != nil || len(f.parameters) != len(tested.parameters) || f.variadic != tested.variadic {
 			return false
 		}
 
 		for i, param := range f.parameters {
-			if !param.Test(fn.parameters[i], state) || !fn.parameters[i].Test(param, state) {
+			if !tested.parameters[i].Test(param, state) {
 				return false
 			}
 		}
 
 		for i, result := range f.results {
-			if !result.Test(fn.results[i], state) || !fn.results[i].Test(result, state) {
+			if !result.Test(tested.results[i], state) {
 				return false
 			}
 		}
 
 		return true
 	case *GoFunction:
-		goFunc := fn
-		fnNonVariadicParams := fn.NonVariadicParametersExceptCtx()
+		goFunc := tested
+		fnNonVariadicParams := tested.NonVariadicParametersExceptCtx()
 
 		if f.variadic != goFunc.isVariadic || len(fnNonVariadicParams) != len(f.NonVariadicParameters()) ||
 			len(f.results) != len(goFunc.results) {
@@ -970,32 +970,38 @@ func (f *Function) Test(v Value, state RecTestCallState) bool {
 		}
 
 		for i, param := range f.NonVariadicParameters() {
-			if !deeplyMatch(param, fnNonVariadicParams[i]) {
+			testedParamIndex := i
+			if goFunc.isfirstArgCtx {
+				testedParamIndex++
+			}
+
+			if !tested.parameters[testedParamIndex].Test(param, state) {
 				return false
 			}
 		}
 
-		variadicParamElem := f.VariadicParamElem()
-
-		if !deeplyMatch(variadicParamElem, goFunc.variadicElem) {
-			return false
+		if f.IsVariadic() {
+			variadicParamElem := f.VariadicParamElem()
+			if !deeplyMatch(variadicParamElem, goFunc.variadicElem) {
+				return false
+			}
 		}
 
 		for i, result := range f.results {
-			if !deeplyMatch(result, goFunc.results[i]) {
+			if !result.Test(tested.results[i], state) {
 				return false
 			}
 		}
 
 		return true
 	case *InoxFunction:
-		inoxFn := fn
+		inoxFn := tested
 		if inoxFn.result == nil || f.variadic != inoxFn.IsVariadic() || len(f.parameters) != len(inoxFn.parameters) {
 			return false
 		}
 
 		for i, param := range f.parameters {
-			if !deeplyMatch(param, inoxFn.parameters[i]) {
+			if !tested.parameters[i].Test(param, state) {
 				return false
 			}
 		}
@@ -1010,7 +1016,7 @@ func (f *Function) Test(v Value, state RecTestCallState) bool {
 		default:
 			result = NewArray(f.results...)
 		}
-		return deeplyMatch(result, inoxFn.result)
+		return result.Test(inoxFn.result, state)
 	default:
 		return false
 	}
