@@ -23,7 +23,7 @@ func init() {
 
 	// register symbolic version of Go functions
 	core.RegisterSymbolicGoFunctions([]any{
-		_html_find, func(ctx *symbolic.Context, selector *symbolic.String, node symbolic.Value) *symbolic.List {
+		_html_find, func(ctx *symbolic.Context, selector *symbolic.String, node *_html_symbolic.HTMLNode) *symbolic.List {
 			return symbolic.NewListOf(_html_symbolic.NewHTMLNode())
 		},
 		NewNode, symbolicElement,

@@ -44,11 +44,7 @@ var tagnameToSpecificDescPropHandler = map[string]map[string]func(value core.Val
 				if s == "" {
 					panic(commonfmt.FmtInvalidValueForPropXOfArgY(ANCHOR_HREF_KEY, "description", "empty string"))
 				}
-				if s[0] == '#' {
-					href = s
-				} else {
-					href = "#" + s
-				}
+				href = s
 			case core.Path:
 				href = val.UnderlyingString()
 			case core.URL:
