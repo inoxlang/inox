@@ -28,7 +28,7 @@ var (
 	helpMap     = map[uintptr]TopicHelp{}
 	helpByTopic = map[string]TopicHelp{}
 	topicGroups map[string]TopicGroup
-	//go:embed builtin.yaml
+	//go:embed builtins.yaml
 	BUILTIN_HELP_YAML string
 
 	//go:embed language.yaml
@@ -46,7 +46,7 @@ func init() {
 	})
 
 	if err := yaml.Unmarshal(utils.StringAsBytes(BUILTIN_HELP_YAML), &topicGroups); err != nil {
-		log.Panicf("error while parsing builtin.yaml: %s", err)
+		log.Panicf("error while parsing builtins.yaml: %s", err)
 	}
 
 	var languageTopicGroups map[string]TopicGroup

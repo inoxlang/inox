@@ -25,7 +25,6 @@
  - [Resource Manipulation](#resource-manipulation)
  - [TCP](#tcp)
  - [Time](#time)
-
 ## Errors
 
 ### Error
