@@ -100,3 +100,17 @@ func TestURL(t *testing.T) {
 		})
 	})
 }
+
+func TestGetPathSegments(t *testing.T) {
+	assert.Empty(t, GetPathSegments("/"))
+	assert.Empty(t, GetPathSegments("//"))
+	assert.Equal(t, []string{"a"}, GetPathSegments("/a"))
+	assert.Equal(t, []string{"a"}, GetPathSegments("/a/"))
+	assert.Equal(t, []string{"a"}, GetPathSegments("//a"))
+	assert.Equal(t, []string{"a"}, GetPathSegments("//a/"))
+	assert.Equal(t, []string{"dir", "a"}, GetPathSegments("/dir/a"))
+	assert.Equal(t, []string{"dir", "a"}, GetPathSegments("//dir/a"))
+	assert.Equal(t, []string{"dir", "a"}, GetPathSegments("/dir//a"))
+	assert.Equal(t, []string{"dir", "a"}, GetPathSegments("/dir//a/"))
+	assert.Equal(t, []string{"dir", "a"}, GetPathSegments("/dir//a//"))
+}

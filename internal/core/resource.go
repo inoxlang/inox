@@ -1255,6 +1255,7 @@ func ParseOrValidateResourceContent(ctx *Context, resourceContent []byte, ctype 
 	return
 }
 
+// GetPathSegments returns the segments of pth, adjacent '/' characters are treated as a single '/' character.
 func GetPathSegments(pth string) []string {
 	split := strings.Split(string(pth), "/")
 	var segments []string
