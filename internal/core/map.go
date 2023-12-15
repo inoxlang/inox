@@ -13,9 +13,11 @@ func init() {
 	RegisterSymbolicGoFunctions([]any{
 		Map, func(ctx *symbolic.Context, iterable symbolic.Iterable, mapper symbolic.Value) *symbolic.List {
 
+			paramType := symbolic.MergeValuesWithSameStaticTypeInMultivalue(iterable.IteratorElementValue())
+
 			makeParams := func(result symbolic.Value) *[]symbolic.Value {
 				return &[]symbolic.Value{iterable, symbolic.NewFunction(
-					[]symbolic.Value{iterable.IteratorElementValue()}, nil, -1, false,
+					[]symbolic.Value{paramType}, nil, -1, false,
 					[]symbolic.Value{result},
 				)}
 			}
@@ -34,13 +36,23 @@ func init() {
 				return symbolic.NewListOf(obj)
 			case *symbolic.PropertyName:
 			case *symbolic.GoFunction:
-				result := m.Result().(symbolic.Serializable)
+				result, ok := symbolic.AsSerializable(m.Result()).(symbolic.Serializable)
+				if !ok {
+					ctx.AddSymbolicGoFunctionError("provided Go function should always return a serializable value")
+					result = symbolic.ANY_SERIALIZABLE
+				}
+
 				ctx.SetSymbolicGoFunctionParameters(makeParams(result), MAP_PARAM_NAMES)
 				return symbolic.NewListOf(result)
 			case *symbolic.InoxFunction:
-				result := m.Result()
+				result, ok := symbolic.AsSerializable(m.Result()).(symbolic.Serializable)
+				if !ok {
+					ctx.AddSymbolicGoFunctionError("provided Go function should always return a serializable value")
+					result = symbolic.ANY_SERIALIZABLE
+				}
+
 				ctx.SetSymbolicGoFunctionParameters(makeParams(result), MAP_PARAM_NAMES)
-				return symbolic.NewListOf(m.Result().(symbolic.Serializable))
+				return symbolic.NewListOf(result)
 			case *symbolic.AstNode:
 			case *symbolic.Mapping:
 			default:
