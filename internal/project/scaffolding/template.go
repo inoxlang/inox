@@ -16,17 +16,63 @@ const (
 	MINIMAL_WEB_APP_TEMPLATE_NAME = "web-app-min"
 )
 
-//go:embed base.css
-var BASE_CSS_STYLESHEET string
+var (
+	//go:embed templates/**
+	TEMPLATE_FILES embed.FS
 
-//go:embed htmx-1.9.9.min.js
-var HTMX_MIN_JS string
+	//go:embed common/**
+	COMMON_FILES embed.FS
 
-//go:embed inox.js
-var INOX_JS string
+	BASE_CSS_STYLESHEET         string
+	INOX_JS                     string
+	HTMX_MIN_JS                 string
+	PREACT_SIGNALS_JS           string
+	SURREAL_CSS_INLINE_SCOPE_JS string
 
-//go:embed templates/**
-var TEMPLATE_FILES embed.FS
+	FULL_INOX_JS string
+)
+
+func init() {
+	err := fs.WalkDir(COMMON_FILES, "common", func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if d.IsDir() {
+			return nil
+		}
+
+		content, err := COMMON_FILES.ReadFile(path)
+		if err != nil {
+			return err
+		}
+
+		switch filepath.Base(path) {
+		case "inox.js":
+			INOX_JS = string(content)
+		case "preact-signals.js":
+			PREACT_SIGNALS_JS = string(content)
+		case "base.css":
+			BASE_CSS_STYLESHEET = string(content)
+		case "surreal-css-inline-scope.js":
+			SURREAL_CSS_INLINE_SCOPE_JS = string(content)
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		panic(err)
+	}
+
+	parts := []string{
+		"{\n" + INOX_JS + "\n}\n",
+		"{\n" + PREACT_SIGNALS_JS + "\n}\n",
+		SURREAL_CSS_INLINE_SCOPE_JS,
+	}
+
+	FULL_INOX_JS = strings.Join(parts, "\n")
+}
 
 func WriteTemplate(name string, fls afs.Filesystem) error {
 	var DIR = "templates/" + name
@@ -50,7 +96,7 @@ func WriteTemplate(name string, fls afs.Filesystem) error {
 				case "htmx.min.js":
 					content = []byte(HTMX_MIN_JS)
 				case "inox.js":
-					content = []byte(INOX_JS)
+					content = []byte(FULL_INOX_JS)
 				case "base.css":
 					content = []byte(BASE_CSS_STYLESHEET)
 				}

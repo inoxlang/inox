@@ -7,6 +7,7 @@
         "strict": true,
         "strictNullChecks": true,
         "strictFunctionTypes": true,
-        "noEmit": true,
-    }
+        "declaration": true,
+    },
+    "include": ["preact-signals.ts"]
 }
