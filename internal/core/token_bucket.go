@@ -19,13 +19,22 @@ const (
 
 var (
 	ErrDestroyedTokenBucket = errors.New("token bucket is destroyed")
+
+	//token bucket management
+
+	tokenBucketManagerStarted atomic.Bool
+	tokenBuckets              = map[*tokenBucket]struct{}{}
+	tokenBucketsLock          sync.Mutex
+
+	waitChanPool = make(chan (chan (struct{})), MAX_WAIT_CHAN_COUNT)
 )
 
 func init() {
 	startTokenBucketManagerGoroutine()
 }
 
-// A tokenBucket represents a thread-safe token bucket, a single goroutine manages the buckets.
+// A tokenBucket represents a thread-safe token bucket, a single goroutine manages the buckets (see startTokenBucketManagerGoroutine).
+// The most important methods are Take(count) and GiveBack(count). Take may wait for the token to refill if there are not enough tokens.
 type tokenBucket struct {
 	lastDecrementTime time.Time
 
@@ -37,15 +46,17 @@ type tokenBucket struct {
 	decrementFn            TokenDecrementationFn
 	context                *Context
 
-	chanListLock    sync.Mutex
-	waitChans       []chan (struct{})
-	neededTokenList []ScaledTokenCount
+	chanListLock         sync.Mutex
+	waitChans            []chan (struct{})
+	neededTokenCountList []ScaledTokenCount
+	useTokenCountList    []ScaledTokenCount
 
 	cancelContextOnNegativeCount bool
 	shouldBeDestroyed            bool
 	destroyed                    bool
 }
 
+// Token count scaled by TOKEN_BUCKET_CAPACITY_SCALE.
 type ScaledTokenCount int64
 
 func (c ScaledTokenCount) RealCount() int64 {
@@ -57,12 +68,12 @@ type TokenDecrementationFn func(lastDecrementTime time.Time, decrementingStateCo
 type tokenBucketConfig struct {
 	cap                          int64
 	initialAvail                 int64
-	fillRate                     int64
+	fillRate                     int64 //tokens per second
 	decrementFn                  TokenDecrementationFn
 	cancelContextOnNegativeCount bool
 }
 
-// newBucket returns a new token bucket with specified fillrate & capacity, the bucket is created full.
+// newBucket returns a new token bucket with the specified fillrate & capacity, the bucket is created full.
 func newBucket(config tokenBucketConfig) *tokenBucket {
 	if config.cap < 0 {
 		panic(fmt.Sprintf("token bucket: capacity %v should be > 0", config.cap))
@@ -108,15 +119,9 @@ func (tb *tokenBucket) Available() int64 {
 	return tb.available.RealCount()
 }
 
-func (tb *tokenBucket) assertNotDestroyed() {
-	tb.lock.Lock()
-	defer tb.lock.Unlock()
-
-	tb.assertNotDestroyedNoLock()
-}
 func (tb *tokenBucket) assertNotDestroyedNoLock() {
 	if tb.destroyed || tb.shouldBeDestroyed {
-		panic(fmt.Errorf("%w: ", ErrDestroyedTokenBucket))
+		panic(ErrDestroyedTokenBucket)
 	}
 }
 
@@ -154,8 +159,7 @@ func (tb *tokenBucket) ResumeOneStateDecrementation() {
 
 // TakeMaxDuration tasks specified count tokens from the bucket, if there are
 // not enough tokens in the bucket, it will keep waiting until count tokens are
-// available and then take them or just return false when reach the given max
-// duration.
+// available and then take them or just return false when max time has been spent waiting.
 func (tb *tokenBucket) TakeMaxDuration(count int64, max time.Duration) bool {
 	return tb.waitAndTakeMaxDuration(count, count, max)
 }
@@ -166,7 +170,7 @@ func (tb *tokenBucket) Wait(count int64) {
 }
 
 // WaitMaxDuration will keep waiting until count tokens are available in the
-// bucket or just return false when reach the given max duration.
+// bucket or just return false when max time has been spent waiting.
 func (tb *tokenBucket) WaitMaxDuration(count int64, max time.Duration) bool {
 	return tb.waitAndTakeMaxDuration(count, 0, max)
 }
@@ -188,7 +192,7 @@ func (tb *tokenBucket) tryTake(need, use ScaledTokenCount) bool {
 	return false
 }
 
-func (tb *tokenBucket) addWaitChannel(need ScaledTokenCount) chan (struct{}) {
+func (tb *tokenBucket) addWaitChannel(need, use ScaledTokenCount) chan (struct{}) {
 	var channel chan (struct{})
 
 	select {
@@ -200,7 +204,8 @@ func (tb *tokenBucket) addWaitChannel(need ScaledTokenCount) chan (struct{}) {
 
 	tb.chanListLock.Lock()
 	tb.waitChans = append(tb.waitChans, channel)
-	tb.neededTokenList = append(tb.neededTokenList, need)
+	tb.neededTokenCountList = append(tb.neededTokenCountList, need)
+	tb.useTokenCountList = append(tb.useTokenCountList, use)
 	tb.chanListLock.Unlock()
 	return channel
 }
@@ -213,7 +218,7 @@ func (tb *tokenBucket) waitAndTake(need, use int64) {
 		return
 	}
 
-	waitChan := tb.addWaitChannel(needCount)
+	waitChan := tb.addWaitChannel(needCount, useCount)
 	<-waitChan
 }
 
@@ -225,7 +230,7 @@ func (tb *tokenBucket) waitAndTakeMaxDuration(need, use int64, max time.Duration
 		return true
 	}
 
-	waitChan := tb.addWaitChannel(needCount)
+	waitChan := tb.addWaitChannel(needCount, useCount)
 
 	select {
 	case <-waitChan:
@@ -248,14 +253,12 @@ func (tb *tokenBucket) checkCount(count ScaledTokenCount) {
 	}
 }
 
-var (
-	tokenBucketManagerStarted atomic.Bool
-	tokenBuckets              = map[*tokenBucket]struct{}{}
-	tokenBucketsLock          sync.Mutex
-
-	waitChanPool = make(chan (chan (struct{})), MAX_WAIT_CHAN_COUNT)
-)
-
+// startTokenBucketManagerGoroutine starts a goroutine that manages all token buckets.
+// The goroutine periodically iterates over tokenBuckets and performs several operations for each bucket:
+// - add tokens in the bucket if .decrementFn field is nil.
+// - cancel the attached context if there are not tokens left and cancelContextOnNegativeCount field is set to true.
+// - for each goroutine waiting for the bucket to refill: if the needed token count > available then remove the tokens and resume the goroutine.
+// - remove destroyed buckets from tokenBuckets.
 func startTokenBucketManagerGoroutine() {
 	if !tokenBucketManagerStarted.CompareAndSwap(false, true) {
 		return
@@ -292,7 +295,7 @@ func startTokenBucketManagerGoroutine() {
 				delete(tokenBuckets, tb)
 
 				// resume all waiting goroutines
-				// TODO: make sure this could not be used to bypass momentarily the limits.
+				// TODO: make sure this could not be used to momentarily bypass the limits.
 				for _, waitChan := range tb.waitChans {
 					select {
 					case waitChan <- struct{}{}:
@@ -309,16 +312,19 @@ func startTokenBucketManagerGoroutine() {
 				return
 			}
 
-			for len(tb.waitChans) >= 1 { // if at least one goroutine is waiting for the bucket to refill
+			for len(tb.waitChans) >= 1 { // if at least one goroutine is waiting for the bucket to refill.
 				waitChan := tb.waitChans[len(tb.waitChans)-1]
-				neededCount := tb.neededTokenList[len(tb.waitChans)-1]
+				neededCount := tb.neededTokenCountList[len(tb.waitChans)-1]
+				useCount := tb.useTokenCountList[len(tb.waitChans)-1]
 
+				//if there are enough tokens we remove the needed count and resume the goroutine.
 				if tb.available >= neededCount {
 					newLength := len(tb.waitChans) - 1
 					tb.waitChans = tb.waitChans[:newLength]
-					tb.neededTokenList = tb.neededTokenList[:newLength]
+					tb.neededTokenCountList = tb.neededTokenCountList[:newLength]
+					tb.useTokenCountList = tb.useTokenCountList[:newLength]
 
-					tb.available -= neededCount
+					tb.available -= useCount
 
 					//resume the waiting goroutine
 					select {
@@ -333,6 +339,7 @@ func startTokenBucketManagerGoroutine() {
 						close(waitChan)
 					}
 				} else {
+					//not enough tokens.
 					break
 				}
 			}
