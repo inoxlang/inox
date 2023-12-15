@@ -373,7 +373,7 @@ func getHandlerModuleArguments(req *HttpRequest, manifest *core.Manifest, handle
 			return nil, http.StatusBadRequest, fmt.Errorf("failed to get arguments from body: %w", err)
 		}
 
-		v, err := core.ParseJSONRepresentation(handlerCtx, string(bytes.Bytes), handlerModuleParams.jsonBodyPattern)
+		v, err := core.ParseJSONRepresentation(handlerCtx, string(bytes.UnderlyingBytes()), handlerModuleParams.jsonBodyPattern)
 		if err != nil {
 			return nil, http.StatusBadRequest, fmt.Errorf("failed to get arguments from body: %w", err)
 		}

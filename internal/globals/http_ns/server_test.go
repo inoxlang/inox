@@ -1074,7 +1074,7 @@ func doCpuBoundWork(ctx *core.Context, duration core.Duration) {
 }
 
 func mkBytes(ctx *core.Context, size core.Int) *core.ByteSlice {
-	return &core.ByteSlice{Bytes: make([]byte, size), IsDataMutable: true}
+	return core.NewMutableByteSlice(make([]byte, size), "")
 }
 
 func makeEmailAddress(ctx *core.Context, s core.StringLike) core.EmailAddress {
@@ -1097,7 +1097,7 @@ func toStr(ctx *core.Context, arg core.Value) core.StringLike {
 	case core.StringLike:
 		return a
 	case *core.ByteSlice:
-		return core.Str(a.Bytes) //TODO: panic if invalid characters ?
+		return core.Str(a.UnderlyingBytes()) //TODO: panic if invalid characters ?
 	case *core.RuneSlice:
 		return core.Str(a.ElementsDoNotModify())
 	case core.ResourceName:

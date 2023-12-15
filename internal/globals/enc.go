@@ -3,7 +3,7 @@ package internal
 import (
 	"encoding/base64"
 	"encoding/hex"
-	"io/ioutil"
+	"io"
 
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/utils"
@@ -21,7 +21,7 @@ func encodeBase64(_ *core.Context, readable core.Readable) core.Str {
 		if err != nil {
 			panic(err)
 		}
-		src = slice.Bytes
+		src = slice.UnderlyingBytes()
 	}
 
 	return core.Str(base64.StdEncoding.EncodeToString(src))
@@ -37,11 +37,11 @@ func decodeBase64(_ *core.Context, readable core.Readable) (*core.ByteSlice, err
 		buf := make([]byte, encoding.DecodedLen(len(src)))
 
 		n, err := encoding.Decode(buf, src)
-		return &core.ByteSlice{Bytes: buf[:n], IsDataMutable: true}, err
+		return core.NewMutableByteSlice(buf[:n], ""), err
 	} else {
 		decoder := base64.NewDecoder(encoding, reader)
-		b, err := ioutil.ReadAll(decoder)
-		return &core.ByteSlice{Bytes: b, IsDataMutable: true}, err
+		b, err := io.ReadAll(decoder)
+		return core.NewMutableByteSlice(b, ""), err
 	}
 
 }
@@ -58,7 +58,7 @@ func encodeHex(_ *core.Context, readable core.Readable) core.Str {
 		if err != nil {
 			panic(err)
 		}
-		src = slice.Bytes
+		src = slice.UnderlyingBytes()
 	}
 
 	return core.Str(hex.EncodeToString(src))
@@ -72,10 +72,10 @@ func decodeHex(_ *core.Context, readable core.Readable) (*core.ByteSlice, error)
 		src := reader.GetBytesDataToNotModify()
 
 		b, err := hex.DecodeString(utils.BytesAsString(src))
-		return &core.ByteSlice{Bytes: b, IsDataMutable: true}, err
+		return core.NewMutableByteSlice(b, ""), err
 	} else {
 		decoder := hex.NewDecoder(reader)
-		b, err := ioutil.ReadAll(decoder)
-		return &core.ByteSlice{Bytes: b, IsDataMutable: true}, err
+		b, err := io.ReadAll(decoder)
+		return core.NewMutableByteSlice(b, ""), err
 	}
 }

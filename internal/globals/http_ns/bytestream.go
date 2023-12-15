@@ -53,7 +53,7 @@ func pushByteStream(byteStream core.ReadableStream, h handlingArguments) error {
 					return
 				}
 
-				bytes := data.(*core.ByteSlice).Bytes
+				bytes := data.(*core.ByteSlice).UnderlyingBytes()
 
 				if len(bytes) != 0 {
 					b64 := make([]byte, base64.StdEncoding.EncodedLen(len(bytes)))

@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/inoxlang/inox/internal/mimeconsts"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 var (
@@ -33,8 +34,8 @@ type BytesLike interface {
 
 // ByteSlice implements Value.
 type ByteSlice struct {
-	Bytes         []byte
-	IsDataMutable bool
+	bytes         []byte
+	isDataMutable bool
 	contentType   Mimetype
 	constraintId  ConstraintId
 
@@ -48,11 +49,23 @@ func NewByteSlice(bytes []byte, mutable bool, contentType Mimetype) *ByteSlice {
 	if contentType != "" && mutable {
 		panic(ErrAttemptToCreateMutableSpecificTypeByteSlice)
 	}
-	return &ByteSlice{Bytes: bytes, IsDataMutable: mutable, contentType: contentType}
+	return &ByteSlice{bytes: bytes, isDataMutable: mutable, contentType: contentType}
+}
+
+func NewMutableByteSlice(bytes []byte, contentType Mimetype) *ByteSlice {
+	return NewByteSlice(bytes, true, contentType)
+}
+
+func NewImmutableByteSlice(bytes []byte, contentType Mimetype) *ByteSlice {
+	return NewByteSlice(bytes, false, contentType)
 }
 
 func (slice *ByteSlice) UnderlyingBytes() []byte {
-	return slice.Bytes
+	return slice.bytes
+}
+
+func (slice *ByteSlice) UnsafeBytesAsString() string {
+	return utils.BytesAsString(slice.UnderlyingBytes())
 }
 
 func (slice *ByteSlice) GetOrBuildBytes() *ByteSlice {
@@ -60,7 +73,7 @@ func (slice *ByteSlice) GetOrBuildBytes() *ByteSlice {
 }
 
 func (slice *ByteSlice) Mutable() bool {
-	return slice.IsDataMutable
+	return slice.isDataMutable
 }
 
 func (slice *ByteSlice) ContentType() Mimetype {
@@ -72,24 +85,24 @@ func (slice *ByteSlice) ContentType() Mimetype {
 
 func (slice *ByteSlice) slice(start, end int) Sequence {
 	sliceCopy := make([]byte, end-start)
-	copy(sliceCopy, slice.Bytes[start:end])
+	copy(sliceCopy, slice.bytes[start:end])
 
-	return &ByteSlice{Bytes: sliceCopy, IsDataMutable: slice.IsDataMutable}
+	return &ByteSlice{bytes: sliceCopy, isDataMutable: slice.isDataMutable}
 }
 
 func (slice *ByteSlice) Len() int {
-	return len(slice.Bytes)
+	return len(slice.bytes)
 }
 
 func (slice *ByteSlice) At(ctx *Context, i int) Value {
-	return Byte(slice.Bytes[i])
+	return Byte(slice.bytes[i])
 }
 
 func (slice *ByteSlice) set(ctx *Context, i int, v Value) {
-	if !slice.IsDataMutable {
+	if !slice.isDataMutable {
 		panic(ErrAttemptToMutateReadonlyByteSlice)
 	}
-	slice.Bytes[i] = byte(v.(Byte))
+	slice.bytes[i] = byte(v.(Byte))
 
 	mutation := NewSetElemAtIndexMutation(ctx, i, v.(Byte), ShallowWatching, Path("/"+strconv.Itoa(i)))
 
@@ -98,7 +111,7 @@ func (slice *ByteSlice) set(ctx *Context, i int, v Value) {
 }
 
 func (slice *ByteSlice) SetSlice(ctx *Context, start, end int, seq Sequence) {
-	if !slice.IsDataMutable {
+	if !slice.isDataMutable {
 		panic(ErrAttemptToMutateReadonlyByteSlice)
 	}
 
@@ -107,7 +120,7 @@ func (slice *ByteSlice) SetSlice(ctx *Context, start, end int, seq Sequence) {
 	}
 
 	for i := start; i < end; i++ {
-		slice.Bytes[i] = byte(seq.At(ctx, i-start).(Byte))
+		slice.bytes[i] = byte(seq.At(ctx, i-start).(Byte))
 	}
 
 	path := Path("/" + strconv.Itoa(int(start)) + ".." + strconv.Itoa(int(end-1)))
@@ -118,14 +131,14 @@ func (slice *ByteSlice) SetSlice(ctx *Context, start, end int, seq Sequence) {
 }
 
 func (s *ByteSlice) insertElement(ctx *Context, v Value, i Int) {
-	if !s.IsDataMutable {
+	if !s.isDataMutable {
 		panic(ErrAttemptToMutateReadonlyByteSlice)
 	}
 
 	b := v.(Byte)
-	s.Bytes = append(s.Bytes, 0)
-	copy(s.Bytes[i+1:], s.Bytes[i:len(s.Bytes)-1])
-	s.Bytes[i] = byte(b)
+	s.bytes = append(s.bytes, 0)
+	copy(s.bytes[i+1:], s.bytes[i:len(s.bytes)-1])
+	s.bytes[i] = byte(b)
 
 	mutation := NewInsertElemAtIndexMutation(ctx, int(i), b, ShallowWatching, Path("/"+strconv.Itoa(int(i))))
 
@@ -134,19 +147,19 @@ func (s *ByteSlice) insertElement(ctx *Context, v Value, i Int) {
 }
 
 func (s *ByteSlice) removePosition(ctx *Context, i Int) {
-	if !s.IsDataMutable {
+	if !s.isDataMutable {
 		panic(ErrAttemptToMutateReadonlyByteSlice)
 	}
 
-	if int(i) > len(s.Bytes) || i < 0 {
+	if int(i) > len(s.bytes) || i < 0 {
 		panic(ErrIndexOutOfRange)
 	}
 
-	if int(i) == len(s.Bytes)-1 { // remove last position
-		s.Bytes = s.Bytes[:len(s.Bytes)-1]
+	if int(i) == len(s.bytes)-1 { // remove last position
+		s.bytes = s.bytes[:len(s.bytes)-1]
 	} else {
-		copy(s.Bytes[i:], s.Bytes[i+1:])
-		s.Bytes = s.Bytes[:len(s.Bytes)-1]
+		copy(s.bytes[i:], s.bytes[i+1:])
+		s.bytes = s.bytes[:len(s.bytes)-1]
 	}
 
 	mutation := NewRemovePositionMutation(ctx, int(i), ShallowWatching, Path("/"+strconv.Itoa(int(i))))
@@ -156,22 +169,22 @@ func (s *ByteSlice) removePosition(ctx *Context, i Int) {
 }
 
 func (s *ByteSlice) removePositionRange(ctx *Context, r IntRange) {
-	if !s.IsDataMutable {
+	if !s.isDataMutable {
 		panic(ErrAttemptToMutateReadonlyByteSlice)
 	}
 
 	start := int(r.KnownStart())
 	end := int(r.InclusiveEnd())
 
-	if start > len(s.Bytes) || start < 0 || end >= len(s.Bytes) || end < 0 {
+	if start > len(s.bytes) || start < 0 || end >= len(s.bytes) || end < 0 {
 		panic(ErrIndexOutOfRange)
 	}
 
-	if end == len(s.Bytes)-1 { // remove trailing sub slice
-		s.Bytes = s.Bytes[:len(s.Bytes)-r.Len()]
+	if end == len(s.bytes)-1 { // remove trailing sub slice
+		s.bytes = s.bytes[:len(s.bytes)-r.Len()]
 	} else {
-		copy(s.Bytes[start:], s.Bytes[end+1:])
-		s.Bytes = s.Bytes[:len(s.Bytes)-r.Len()]
+		copy(s.bytes[start:], s.bytes[end+1:])
+		s.bytes = s.bytes[:len(s.bytes)-r.Len()]
 	}
 
 	path := Path("/" + strconv.Itoa(int(r.KnownStart())) + ".." + strconv.Itoa(int(r.InclusiveEnd())))
@@ -182,7 +195,7 @@ func (s *ByteSlice) removePositionRange(ctx *Context, r IntRange) {
 }
 
 func (s *ByteSlice) insertSequence(ctx *Context, seq Sequence, i Int) {
-	if !s.IsDataMutable {
+	if !s.isDataMutable {
 		panic(ErrAttemptToMutateReadonlyByteSlice)
 	}
 
@@ -192,17 +205,17 @@ func (s *ByteSlice) insertSequence(ctx *Context, seq Sequence, i Int) {
 		return
 	}
 
-	if cap(s.Bytes)-len(s.Bytes) < seqLen {
-		newSlice := make([]byte, len(s.Bytes)+seqLen)
-		copy(newSlice, s.Bytes)
-		s.Bytes = newSlice
+	if cap(s.bytes)-len(s.bytes) < seqLen {
+		newSlice := make([]byte, len(s.bytes)+seqLen)
+		copy(newSlice, s.bytes)
+		s.bytes = newSlice
 	} else {
-		s.Bytes = s.Bytes[:len(s.Bytes)+seqLen]
+		s.bytes = s.bytes[:len(s.bytes)+seqLen]
 	}
 
-	copy(s.Bytes[int(i)+seqLen:], s.Bytes[i:])
+	copy(s.bytes[int(i)+seqLen:], s.bytes[i:])
 	for ind := 0; ind < seqLen; ind++ {
-		s.Bytes[int(i)+ind] = byte(seq.At(ctx, ind).(Byte))
+		s.bytes[int(i)+ind] = byte(seq.At(ctx, ind).(Byte))
 	}
 
 	path := Path("/" + strconv.Itoa(int(i)))
@@ -235,15 +248,15 @@ func (c *BytesConcatenation) GetOrBuildBytes() *ByteSlice {
 		slice := make([]byte, c.totalLen)
 		pos := 0
 		for _, elem := range c.elements {
-			copy(slice[pos:pos+elem.Len()], elem.GetOrBuildBytes().Bytes)
+			copy(slice[pos:pos+elem.Len()], elem.GetOrBuildBytes().bytes)
 			pos += elem.Len()
 		}
 		c.finalBytes = slice
 		//get rid of elements to allow garbage collection ?
 	}
 	return &ByteSlice{
-		Bytes:         c.finalBytes,
-		IsDataMutable: false,
+		bytes:         c.finalBytes,
+		isDataMutable: false,
 	}
 }
 

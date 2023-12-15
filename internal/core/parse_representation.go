@@ -388,14 +388,14 @@ func _parseRepr(b []byte, ctx *Context) (val Serializable, errorIndex int, speci
 			if len(byteSliceDigits)%2 == 1 {
 				index = len(atomBytes)
 			} else if len(byteSliceDigits) == 0 {
-				v = &ByteSlice{IsDataMutable: true}
+				v = &ByteSlice{isDataMutable: true}
 			} else {
 				decoded := make([]byte, hex.DecodedLen(len(byteSliceDigits)))
 				_, err := hex.Decode(decoded, byteSliceDigits)
 				if err != nil {
 					index = len(atomBytes)
 				} else {
-					v = &ByteSlice{IsDataMutable: true, Bytes: decoded}
+					v = &ByteSlice{isDataMutable: true, bytes: decoded}
 				}
 			}
 			byteSliceDigits = nil

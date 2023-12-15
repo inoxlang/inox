@@ -164,17 +164,17 @@ func TestParseRepr(t *testing.T) {
 		},
 
 		//byte slices
-		{`0x[]`, -1, &ByteSlice{IsDataMutable: true}},
-		/*    */ {`0x[ ]`, -1, &ByteSlice{IsDataMutable: true}},
-		/*    */ {"0x[\r]", -1, &ByteSlice{IsDataMutable: true}},
-		/*    */ {"\n0x[]", -1, &ByteSlice{IsDataMutable: true}},
+		{`0x[]`, -1, &ByteSlice{isDataMutable: true}},
+		/*    */ {`0x[ ]`, -1, &ByteSlice{isDataMutable: true}},
+		/*    */ {"0x[\r]", -1, &ByteSlice{isDataMutable: true}},
+		/*    */ {"\n0x[]", -1, &ByteSlice{isDataMutable: true}},
 		/*    */ {"0x[]\n", 4, nil},
 		/*    */ {"0x[\n]", 3, nil},
 		{"0x[1]", 5, nil},
-		{"0x[12]", -1, &ByteSlice{IsDataMutable: true, Bytes: []byte{0x12}}},
+		{"0x[12]", -1, &ByteSlice{isDataMutable: true, bytes: []byte{0x12}}},
 		{"0x[123]", 7, nil},
-		{"0x[12 34]", -1, &ByteSlice{IsDataMutable: true, Bytes: []byte{0x12, 0x34}}},
-		{"0x[1234]", -1, &ByteSlice{IsDataMutable: true, Bytes: []byte{0x12, 0x34}}},
+		{"0x[12 34]", -1, &ByteSlice{isDataMutable: true, bytes: []byte{0x12, 0x34}}},
+		{"0x[1234]", -1, &ByteSlice{isDataMutable: true, bytes: []byte{0x12, 0x34}}},
 
 		//ports
 		{`:80`, -1, Port{Number: 80, Scheme: NO_SCHEME_SCHEME}},

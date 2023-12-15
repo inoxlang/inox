@@ -1180,7 +1180,7 @@ func TestByteSliceOnMutation(t *testing.T) {
 		slice.insertElement(ctx, Byte('a'), 0)
 
 		assert.True(t, called.Load())
-		assert.Equal(t, []byte("a"), slice.Bytes)
+		assert.Equal(t, []byte("a"), slice.bytes)
 	})
 
 	t.Run("microtask should be called when a sequence is inserted", func(t *testing.T) {
@@ -1213,7 +1213,7 @@ func TestByteSliceOnMutation(t *testing.T) {
 		slice.insertSequence(ctx, insertedSlice, 0)
 
 		assert.True(t, called.Load())
-		assert.Equal(t, []byte("a"), slice.Bytes)
+		assert.Equal(t, []byte("a"), slice.bytes)
 	})
 
 	t.Run("microtask should be called when a slice is set", func(t *testing.T) {
@@ -1246,7 +1246,7 @@ func TestByteSliceOnMutation(t *testing.T) {
 		slice.SetSlice(ctx, 0, 2, setSlice)
 
 		assert.True(t, called.Load())
-		assert.Equal(t, []byte("12c"), slice.Bytes)
+		assert.Equal(t, []byte("12c"), slice.bytes)
 	})
 
 	t.Run("microtask should be called when an element is set", func(t *testing.T) {
@@ -1277,7 +1277,7 @@ func TestByteSliceOnMutation(t *testing.T) {
 		slice.set(ctx, 0, Byte('b'))
 
 		assert.True(t, called.Load())
-		assert.Equal(t, []byte("b"), slice.Bytes)
+		assert.Equal(t, []byte("b"), slice.bytes)
 	})
 
 	t.Run("dynamic map invocation: microtask should NOT be called when an element is inserted if callback has been removed", func(t *testing.T) {

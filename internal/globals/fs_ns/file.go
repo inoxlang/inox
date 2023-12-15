@@ -122,7 +122,7 @@ func (*File) PropertyNames(ctx *core.Context) []string {
 
 func (f *File) read(ctx *core.Context) (*core.ByteSlice, error) {
 	b, err := f.doRead(ctx, false, FS_READ_MIN_CHUNK_SIZE)
-	return &core.ByteSlice{Bytes: b, IsDataMutable: true}, err
+	return core.NewMutableByteSlice(b, ""), err
 }
 
 // doRead reads up to count bytes, if count is -1 all the file is read.
@@ -221,7 +221,7 @@ func (f *File) write(ctx *core.Context, data core.Readable) error {
 		if err != nil {
 			return err
 		}
-		d = slice.Bytes
+		d = slice.UnderlyingBytes()
 	}
 
 	ctx.Take(FS_WRITE_LIMIT_NAME, int64(len(d)))

@@ -214,10 +214,10 @@ func (slice *ByteSlice) clone() (*ByteSlice, error) {
 		return nil, fmt.Errorf("%w: byte slice has constraint", ErrNotClonable)
 	}
 
-	b := make([]byte, len(slice.Bytes))
-	copy(b, slice.Bytes)
+	b := make([]byte, len(slice.bytes))
+	copy(b, slice.bytes)
 
-	return &ByteSlice{Bytes: b, IsDataMutable: slice.IsDataMutable}, nil
+	return &ByteSlice{bytes: b, isDataMutable: slice.isDataMutable}, nil
 }
 
 func (opt Option) PseudoClone(originState *GlobalState, sharableValues *[]PotentiallySharable, clones map[uintptr]Clonable, depth int) (Serializable, error) {

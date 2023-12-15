@@ -146,7 +146,7 @@ func (h *Handle) doScreensotPage(ctx *core.Context) (*core.ByteSlice, error) {
 		return nil, err
 	}
 
-	return &core.ByteSlice{Bytes: b, IsDataMutable: true}, nil
+	return core.NewMutableByteSlice(b, ""), nil
 }
 
 func (h *Handle) doScreenshot(ctx *core.Context, sel core.Str) (*core.ByteSlice, error) {
@@ -157,7 +157,7 @@ func (h *Handle) doScreenshot(ctx *core.Context, sel core.Str) (*core.ByteSlice,
 		return nil, err
 	}
 
-	return &core.ByteSlice{Bytes: b, IsDataMutable: true}, nil
+	return core.NewMutableByteSlice(b, ""), nil
 }
 
 func (h *Handle) doGetHTMLNode(ctx *core.Context, sel core.Str) (*html_ns.HTMLNode, error) {

@@ -65,7 +65,7 @@ func TestFile(t *testing.T) {
 		defer f.close(ctx)
 
 		//we first use all tokens
-		data := &core.ByteSlice{Bytes: bytes.Repeat([]byte{'x'}, int(rate))}
+		data := core.NewImmutableByteSlice(bytes.Repeat([]byte{'x'}, int(rate)), "")
 		err := f.write(ctx, data)
 		assert.NoError(t, err)
 
@@ -121,7 +121,7 @@ func TestFile(t *testing.T) {
 				assert.Fail(t, "")
 			default:
 				slice, err := f.read(ctx)
-				if len(slice.Bytes) != 0 {
+				if len(slice.UnderlyingBytes()) != 0 {
 					successfullReads += 1
 				} else {
 					assert.ErrorIs(t, err, context.Canceled)

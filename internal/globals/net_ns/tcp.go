@@ -66,7 +66,7 @@ func (conn *TcpConn) read(ctx *core.Context) (*core.ByteSlice, error) {
 		conn.close(ctx)
 	}
 
-	return &core.ByteSlice{Bytes: buff[:n], IsDataMutable: true}, err
+	return core.NewMutableByteSlice(buff[:n], ""), err
 }
 
 func (conn *TcpConn) write(ctx *core.Context, data core.Readable) error {

@@ -334,7 +334,8 @@ func (c *compiler) Compile(node parse.Node) error {
 	case *parse.AtHostLiteral:
 		c.emit(node, OpResolveHost, c.addConstant(Str(node.Value)))
 	case *parse.ByteSliceLiteral:
-		c.emit(node, OpPushConstant, c.addConstant(&ByteSlice{Bytes: slices.Clone(node.Value), IsDataMutable: true}))
+		byteSlice := NewMutableByteSlice(slices.Clone(node.Value), "")
+		c.emit(node, OpPushConstant, c.addConstant(byteSlice))
 	case *parse.OptionExpression:
 		if err := c.Compile(node.Value); err != nil {
 			return err

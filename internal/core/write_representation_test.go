@@ -641,7 +641,7 @@ func TestByteSliceRepresentation(t *testing.T) {
 
 	assert.Equal(t, "0x[]", getReprAllVisible(t, &ByteSlice{}, ctx))
 
-	assert.Equal(t, "0x[12]", getReprAllVisible(t, &ByteSlice{Bytes: []byte{0x12}}, ctx))
+	assert.Equal(t, "0x[12]", getReprAllVisible(t, &ByteSlice{bytes: []byte{0x12}}, ctx))
 }
 
 func TestOptionRepresentation(t *testing.T) {

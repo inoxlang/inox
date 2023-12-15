@@ -661,7 +661,7 @@ func (slice *ByteSlice) write(w io.Writer) (int, error) {
 		return totalN, err
 	}
 
-	n, err := hex.NewEncoder(w).Write(slice.Bytes)
+	n, err := hex.NewEncoder(w).Write(slice.bytes)
 	totalN += n
 	if err != nil {
 		return totalN, err

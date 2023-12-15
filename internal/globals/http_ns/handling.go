@@ -301,7 +301,7 @@ loop:
 			//TODO: replace non printable characters
 			escaped := html.EscapeString(v.GetOrBuildString())
 
-			rw.WritePlainText(h.state.Ctx, &core.ByteSlice{Bytes: []byte(escaped)})
+			rw.WritePlainText(h.state.Ctx, core.NewImmutableByteSlice([]byte(escaped), ""))
 		case *core.ByteSlice:
 			contentType := string(v.ContentType())
 			if !req.ParsedAcceptHeader.Match(contentType) {
@@ -315,7 +315,7 @@ loop:
 			}
 
 			rw.WriteContentType(contentType)
-			rw.BodyWriter().Write(v.Bytes)
+			rw.BodyWriter().Write(v.UnderlyingBytes())
 		case core.Renderable:
 
 			if !v.IsRecursivelyRenderable(state.Ctx, renderingConfig) { // get or create view

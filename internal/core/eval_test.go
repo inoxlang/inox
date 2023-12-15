@@ -250,7 +250,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		res, err := Eval(code, state, false)
 		assert.NoError(t, err)
-		assert.Equal(t, &ByteSlice{Bytes: []byte{1}, IsDataMutable: true}, res)
+		assert.Equal(t, &ByteSlice{bytes: []byte{1}, isDataMutable: true}, res)
 	})
 
 	t.Run("property name literal", func(t *testing.T) {
@@ -6810,7 +6810,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, &ByteSlice{IsDataMutable: false, Bytes: []byte{12}}, res)
+			assert.Equal(t, &ByteSlice{isDataMutable: false, bytes: []byte{12}}, res)
 		})
 
 		t.Run("two bytes-like elements", func(t *testing.T) {
@@ -6821,8 +6821,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			assert.NoError(t, err)
 			assert.Equal(t, &BytesConcatenation{
 				elements: []BytesLike{
-					&ByteSlice{IsDataMutable: false, Bytes: []byte{12}},
-					&ByteSlice{IsDataMutable: false, Bytes: []byte{34}},
+					&ByteSlice{isDataMutable: false, bytes: []byte{12}},
+					&ByteSlice{isDataMutable: false, bytes: []byte{34}},
 				},
 				totalLen: 2,
 			}, res)
@@ -6847,8 +6847,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			assert.NoError(t, err)
 			assert.Equal(t, &BytesConcatenation{
 				elements: []BytesLike{
-					&ByteSlice{IsDataMutable: false, Bytes: []byte{12}},
-					&ByteSlice{IsDataMutable: false, Bytes: []byte{34}},
+					&ByteSlice{isDataMutable: false, bytes: []byte{12}},
+					&ByteSlice{isDataMutable: false, bytes: []byte{34}},
 				},
 				totalLen: 2,
 			}, res)

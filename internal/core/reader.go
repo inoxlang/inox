@@ -43,16 +43,16 @@ func (r *Reader) Read(p []byte) (n int, err error) {
 }
 
 func (r *Reader) ReadCtx(ctx *Context, p *ByteSlice) (*ByteSlice, error) {
-	if !p.IsDataMutable {
+	if !p.isDataMutable {
 		return nil, ErrModifyImmutable
 	}
-	n, err := r.Read(p.Bytes)
-	return &ByteSlice{Bytes: p.Bytes[:n], IsDataMutable: true}, err
+	n, err := r.Read(p.bytes)
+	return &ByteSlice{bytes: p.bytes[:n], isDataMutable: true}, err
 }
 
 func (r *Reader) ReadAll() (*ByteSlice, error) {
 	b, err := r.ReadAllBytes()
-	return &ByteSlice{Bytes: b, IsDataMutable: true}, err
+	return &ByteSlice{bytes: b, isDataMutable: true}, err
 }
 
 func (r *Reader) ReadAllBytes() ([]byte, error) {
@@ -129,9 +129,9 @@ func (s Str) Reader() *Reader {
 func (slice *ByteSlice) Reader() *Reader {
 	// only allow if immutable ?
 	return &Reader{
-		wrapped:    bytes.NewReader(slice.Bytes),
+		wrapped:    bytes.NewReader(slice.bytes),
 		hasAllData: true,
-		data:       slice.Bytes,
+		data:       slice.bytes,
 	}
 }
 

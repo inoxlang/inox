@@ -204,7 +204,7 @@ func makeFileHierarchy(ctx *core.Context, args makeFileHieararchyParams) error {
 			if err != nil {
 				return fmt.Errorf("failed to read content of file")
 			}
-			_, err = f.Write(bytes.Bytes)
+			_, err = f.Write(bytes.UnderlyingBytes())
 			if err != nil {
 				return fmt.Errorf("failed to write content of file %q", absKey)
 			}

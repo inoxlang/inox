@@ -84,7 +84,7 @@ func (s *WritableByteStream) WriteChunk(ctx *Context, chunk *DataChunk) error {
 		return ErrInvalidStreamChunkData
 	}
 
-	return s.WriteBytes(ctx, bytes.Bytes)
+	return s.WriteBytes(ctx, bytes.bytes)
 }
 
 func (s *WritableByteStream) WriteBytes(ctx *Context, p []byte) error {

@@ -404,7 +404,7 @@ func ConvertReturnValue(rval reflect.Value) Value {
 		case []rune:
 			return &RuneSlice{elements: v}
 		case []byte:
-			return &ByteSlice{Bytes: v, IsDataMutable: true}
+			return NewMutableByteSlice(v, "")
 		}
 
 		list := &List{underlyingList: &ValueList{}}

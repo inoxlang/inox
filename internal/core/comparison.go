@@ -670,7 +670,7 @@ func (slice *ByteSlice) Equal(ctx *Context, other Value, alreadyCompared map[uin
 		return false
 	}
 
-	if len(slice.Bytes) != len(otherVal.Bytes) {
+	if len(slice.bytes) != len(otherVal.bytes) {
 		return false
 	}
 
@@ -685,7 +685,7 @@ func (slice *ByteSlice) Equal(ctx *Context, other Value, alreadyCompared map[uin
 	alreadyCompared[addr] = otherAddr
 	alreadyCompared[otherAddr] = addr
 
-	return bytes.Equal(slice.Bytes, otherVal.Bytes)
+	return bytes.Equal(slice.bytes, otherVal.bytes)
 }
 
 func (goFunc *GoFunction) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
@@ -1814,7 +1814,7 @@ func (c *BytesConcatenation) Equal(ctx *Context, other Value, alreadyCompared ma
 	case *ByteSlice:
 		i := 0
 		for _, elem := range c.elements {
-			subSlice := val.Bytes[i : i+elem.Len()]
+			subSlice := val.bytes[i : i+elem.Len()]
 			if !elem.Equal(ctx, Str(subSlice), alreadyCompared, depth+1) {
 				return false
 			}
@@ -1824,7 +1824,7 @@ func (c *BytesConcatenation) Equal(ctx *Context, other Value, alreadyCompared ma
 		s := bytesLike.GetOrBuildBytes()
 		i := 0
 		for _, elem := range c.elements {
-			subSlice := s.Bytes[i : i+elem.Len()]
+			subSlice := s.bytes[i : i+elem.Len()]
 			if !elem.Equal(ctx, Str(subSlice), alreadyCompared, depth+1) {
 				return false
 			}

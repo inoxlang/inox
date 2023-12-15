@@ -83,7 +83,7 @@ func (w *Writer) WriteStrings(s ...string) (n int, err error) {
 }
 
 func (w *Writer) writeCtx(ctx *Context, b *ByteSlice) (Int, error) {
-	n, err := w.Write(b.Bytes)
+	n, err := w.Write(b.bytes)
 	return Int(n), err
 }
 

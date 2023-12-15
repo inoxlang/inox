@@ -194,7 +194,7 @@ func _updateResource(ctx *core.Context, resource core.ResourceName, args ...core
 			case mimeconsts.JSON_CTYPE, mimeconsts.HTML_CTYPE, mimeconsts.PLAIN_TEXT_CTYPE:
 				return core.Str(b), nil
 			}
-			return &core.ByteSlice{Bytes: b, IsDataMutable: true}, nil
+			return core.NewMutableByteSlice(b, ""), nil
 		}
 	case core.Path:
 		if res.IsDirPath() {
@@ -250,7 +250,7 @@ func _deleteResource(ctx *core.Context, resource core.ResourceName, args ...core
 				//TODO: return checked strings ?
 				return core.Str(b), nil
 			}
-			return &core.ByteSlice{Bytes: b, IsDataMutable: true}, nil
+			return core.NewMutableByteSlice(b, ""), nil
 		}
 	case core.Path:
 		return nil, fs_ns.Remove(ctx, res)

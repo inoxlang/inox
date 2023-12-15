@@ -274,16 +274,16 @@ func (r *RingBuffer) GetGoMethod(name string) (*GoFunction, bool) {
 				return -1, err
 			}
 
-			n, err := r.write(b.Bytes)
+			n, err := r.write(b.bytes)
 			return Int(n), err
 		}), true
 	case "read":
 		return WrapGoClosure(func(ctx *Context, buf *ByteSlice) (*ByteSlice, error) {
-			if !buf.IsDataMutable {
+			if !buf.isDataMutable {
 				return nil, ErrModifyImmutable
 			}
-			n, err := r.Read(buf.Bytes)
-			return &ByteSlice{Bytes: buf.Bytes[:n], IsDataMutable: true}, err
+			n, err := r.Read(buf.bytes)
+			return NewMutableByteSlice(buf.bytes[:n], ""), err
 		}), true
 	}
 	return nil, false

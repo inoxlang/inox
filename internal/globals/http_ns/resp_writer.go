@@ -115,7 +115,7 @@ func (rw *HttpResponseWriter) WritePlainText(ctx *core.Context, bytes *core.Byte
 	}
 	rw.WriteContentType(mimeconsts.PLAIN_TEXT_CTYPE)
 
-	n, err := rw.rw.Write(bytes.Bytes)
+	n, err := rw.rw.Write(bytes.UnderlyingBytes())
 	return core.Int(n), err
 }
 
@@ -127,7 +127,7 @@ func (rw *HttpResponseWriter) WriteBinary(ctx *core.Context, bytes *core.ByteSli
 	}
 	rw.WriteContentType(mimeconsts.APP_OCTET_STREAM_CTYPE)
 
-	n, err := rw.rw.Write(bytes.Bytes)
+	n, err := rw.rw.Write(bytes.UnderlyingBytes())
 	return core.Int(n), err
 }
 
@@ -152,7 +152,7 @@ func (rw *HttpResponseWriter) WriteHTML(ctx *core.Context, v core.Value) (core.I
 	if err != nil {
 		return -1, err
 	}
-	b = d.Bytes
+	b = d.UnderlyingBytes()
 
 	//TODO: check this is valid HTML
 
@@ -182,7 +182,7 @@ func (rw *HttpResponseWriter) WriteJS(ctx *core.Context, v core.Value) (core.Int
 	if err != nil {
 		return -1, err
 	}
-	b = d.Bytes
+	b = d.UnderlyingBytes()
 
 	//TODO: check this is valid JS
 
@@ -212,7 +212,7 @@ func (rw *HttpResponseWriter) WriteCSS(ctx *core.Context, v core.Value) (core.In
 	if err != nil {
 		return -1, err
 	}
-	b = d.Bytes
+	b = d.UnderlyingBytes()
 
 	//TODO: check this is valid CSS
 
@@ -245,7 +245,7 @@ func (rw *HttpResponseWriter) WriteJSON(ctx *core.Context, v core.Serializable) 
 		if err != nil {
 			return -1, err
 		}
-		b = d.Bytes
+		b = d.UnderlyingBytes()
 	}
 
 	if !json.Valid(b) {

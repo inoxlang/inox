@@ -131,7 +131,7 @@ func _hash(readable core.Readable, algorithm HashingAlgorithm) []byte {
 		if err != nil {
 			panic(err)
 		}
-		b = slice.Bytes
+		b = slice.UnderlyingBytes()
 	}
 
 	switch algorithm {
@@ -174,15 +174,15 @@ func _checkPassword(ctx *core.Context, password core.Str, hash core.Str) core.Bo
 }
 
 func _sha256(_ *core.Context, arg core.Readable) *core.ByteSlice {
-	return &core.ByteSlice{Bytes: _hash(arg, SHA256), IsDataMutable: true}
+	return core.NewMutableByteSlice(_hash(arg, SHA256), "")
 }
 
 func _sha384(_ *core.Context, arg core.Readable) *core.ByteSlice {
-	return &core.ByteSlice{Bytes: _hash(arg, SHA384), IsDataMutable: true}
+	return core.NewMutableByteSlice(_hash(arg, SHA384), "")
 }
 
 func _sha512(_ *core.Context, arg core.Readable) *core.ByteSlice {
-	return &core.ByteSlice{Bytes: _hash(arg, SHA512), IsDataMutable: true}
+	return core.NewMutableByteSlice(_hash(arg, SHA512), "")
 }
 
 func _rsa_gen_key(ctx *core.Context) *core.Record {
@@ -223,7 +223,7 @@ func _rsa_encrypt_oaep(_ *core.Context, arg core.Readable, key core.StringLike) 
 		return nil, fmt.Errorf("failed to read all data to encrypt: %w", err)
 	}
 
-	bytes := slices.Clone(slice.Bytes)
+	bytes := slices.Clone(slice.UnderlyingBytes())
 
 	encrypted, err := rsa.EncryptOAEP(sha256.New(), core.CryptoRandSource, pubKey, bytes, nil)
 	if err != nil {
@@ -251,7 +251,7 @@ func _rsa_decrypt_oaep(_ *core.Context, arg core.Readable, key *core.Secret) (*c
 		return nil, fmt.Errorf("failed to read all data to decrypt: %w", err)
 	}
 
-	bytes := slices.Clone(slice.Bytes)
+	bytes := slices.Clone(slice.UnderlyingBytes())
 
 	decrypted, err := rsa.DecryptOAEP(sha256.New(), core.CryptoRandSource, privKey, bytes, nil)
 	if err != nil {

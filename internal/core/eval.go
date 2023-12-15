@@ -342,7 +342,7 @@ func evalSimpleValueLiteral(n parse.SimpleValueLiteral, global *GlobalState) (Se
 	case *parse.FlagLiteral:
 		return Option{Name: node.Name, Value: Bool(true)}, nil
 	case *parse.ByteSliceLiteral:
-		return &ByteSlice{Bytes: slices.Clone(node.Value), IsDataMutable: true}, nil
+		return NewMutableByteSlice(slices.Clone(node.Value), ""), nil
 	case *parse.NilLiteral:
 		return Nil, nil
 	default:
@@ -383,7 +383,7 @@ func concatValues(ctx *Context, values []Value) (Value, error) {
 				return nil, fmt.Errorf("bytes concatenation: invalid element of type %T", elem)
 			} else {
 				if bytesLike.Mutable() {
-					b := slices.Clone(bytesLike.GetOrBuildBytes().Bytes) // TODO: use Copy On Write
+					b := slices.Clone(bytesLike.GetOrBuildBytes().bytes) // TODO: use Copy On Write
 					elements[i] = NewByteSlice(b, false, "")
 				} else {
 					elements[i] = bytesLike

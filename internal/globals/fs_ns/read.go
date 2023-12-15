@@ -35,7 +35,7 @@ func ReadFile(ctx *core.Context, fpath core.Path) (*core.ByteSlice, error) {
 	}
 
 	b, err := ReadEntireFile(ctx, fpath)
-	return &core.ByteSlice{Bytes: b, IsDataMutable: true}, err
+	return core.NewMutableByteSlice(b, ""), err
 }
 
 func ReadEntireFile(ctx *core.Context, fpath core.Path) ([]byte, error) {

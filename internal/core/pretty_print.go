@@ -849,7 +849,7 @@ func (slice *RuneSlice) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, 
 func (slice *ByteSlice) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 	var bytes []byte
 
-	if depth > config.MaxDepth && len(slice.Bytes) > 2 {
+	if depth > config.MaxDepth && len(slice.bytes) > 2 {
 		//TODO: fix cut
 		bytes = []byte("0x[...]")
 		if !config.Colorize {

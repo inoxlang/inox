@@ -477,7 +477,7 @@ func (s *ReadableByteStream) WaitNextChunk(ctx *Context, filter Pattern, sizeRan
 				if !bytes.IsMutable() {
 					return errors.New("chunk is not mutable")
 				}
-				bytes.Bytes = append(bytes.Bytes, otherBytes.Bytes...)
+				bytes.bytes = append(bytes.bytes, otherBytes.bytes...)
 
 				return nil
 			},

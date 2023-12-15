@@ -92,7 +92,7 @@ func _tostr(ctx *core.Context, arg core.Value) core.StringLike {
 	case core.StringLike:
 		return a
 	case *core.ByteSlice:
-		return core.Str(a.Bytes) //TODO: panic if invalid characters ?
+		return core.Str(a.UnderlyingBytes()) //TODO: panic if invalid characters ?
 	case *core.RuneSlice:
 		return core.Str(a.ElementsDoNotModify())
 	case core.ResourceName:
@@ -153,7 +153,7 @@ func _parse_repr(ctx *core.Context, r core.Readable) (core.Value, error) {
 	if err != nil {
 		return nil, err
 	}
-	return core.ParseRepr(ctx, bytes.Bytes)
+	return core.ParseRepr(ctx, bytes.UnderlyingBytes())
 }
 
 func _parse(ctx *core.Context, r core.Readable, p core.Pattern) (core.Value, error) {
@@ -166,7 +166,7 @@ func _parse(ctx *core.Context, r core.Readable, p core.Pattern) (core.Value, err
 		return nil, errors.New("failed to parse: passed pattern has no associated string pattern")
 	}
 
-	return strPatt.Parse(ctx, utils.BytesAsString(bytes.Bytes))
+	return strPatt.Parse(ctx, utils.BytesAsString(bytes.UnderlyingBytes()))
 }
 
 func _split(ctx *core.Context, r core.Readable, sep core.Str, p *core.OptionalParam[core.Pattern]) (core.Value, error) {
@@ -189,7 +189,7 @@ func _split(ctx *core.Context, r core.Readable, sep core.Str, p *core.OptionalPa
 		}
 	}
 
-	substrings := strings.Split(utils.BytesAsString(bytes.Bytes), string(sep))
+	substrings := strings.Split(string(bytes.UnderlyingBytes()), string(sep))
 	values := make([]core.Serializable, len(substrings))
 
 	if strPatt != nil {
@@ -222,7 +222,7 @@ func _len_range(ctx *core.Context, p core.StringPattern) core.IntRange {
 }
 
 func _mkbytes(ctx *core.Context, size core.ByteCount) *core.ByteSlice {
-	return &core.ByteSlice{Bytes: make([]byte, size), IsDataMutable: true}
+	return core.NewMutableByteSlice(make([]byte, size), "")
 }
 
 func _Runes(ctx *core.Context, v core.Readable) *core.RuneSlice {
@@ -234,7 +234,7 @@ func _Runes(ctx *core.Context, v core.Readable) *core.RuneSlice {
 		if err != nil {
 			panic(err)
 		}
-		b = bytes.Bytes
+		b = bytes.UnderlyingBytes()
 	} else {
 		b = r.GetBytesDataToNotModify()
 	}
@@ -257,7 +257,7 @@ func _Bytes(ctx *core.Context, v core.Readable) *core.ByteSlice {
 		if err != nil {
 			panic(err)
 		}
-		b = bytes.Bytes
+		b = bytes.UnderlyingBytes()
 	} else {
 		b = slices.Clone(r.GetBytesDataToNotModify())
 	}

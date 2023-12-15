@@ -31,7 +31,8 @@ func (n *HTMLNode) Render(ctx *core.Context, w io.Writer, config core.RenderingI
 func Render(ctx *core.Context, v core.Value) *core.ByteSlice {
 	buf := bytes.NewBuffer(nil)
 	renderToWriter(ctx, buf, v)
-	return &core.ByteSlice{Bytes: buf.Bytes(), IsDataMutable: true}
+
+	return core.NewMutableByteSlice(buf.Bytes(), "")
 }
 
 func renderToWriter(ctx *core.Context, w io.Writer, v core.Value) {
@@ -42,5 +43,5 @@ func renderToWriter(ctx *core.Context, w io.Writer, v core.Value) {
 }
 
 func RenderToString(ctx *core.Context, v core.Value) core.Str {
-	return core.Str(Render(ctx, v).Bytes)
+	return core.Str(Render(ctx, v).UnderlyingBytes())
 }

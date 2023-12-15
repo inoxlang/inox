@@ -62,13 +62,13 @@ func TestRuneSliceClone(t *testing.T) {
 }
 
 func TestByteSliceClone(t *testing.T) {
-	clone, err := (&ByteSlice{Bytes: []byte{}, IsDataMutable: true}).PseudoClone(nil, &[]PotentiallySharable{}, nil, 0)
+	clone, err := (&ByteSlice{bytes: []byte{}, isDataMutable: true}).PseudoClone(nil, &[]PotentiallySharable{}, nil, 0)
 	assert.NoError(t, err)
-	assert.Equal(t, &ByteSlice{Bytes: []byte{}, IsDataMutable: true}, clone)
+	assert.Equal(t, &ByteSlice{bytes: []byte{}, isDataMutable: true}, clone)
 
-	clone, err = (&ByteSlice{Bytes: []byte{'a'}, IsDataMutable: true}).PseudoClone(nil, &[]PotentiallySharable{}, nil, 0)
+	clone, err = (&ByteSlice{bytes: []byte{'a'}, isDataMutable: true}).PseudoClone(nil, &[]PotentiallySharable{}, nil, 0)
 	assert.NoError(t, err)
-	assert.Equal(t, &ByteSlice{Bytes: []byte{'a'}, IsDataMutable: true}, clone)
+	assert.Equal(t, &ByteSlice{bytes: []byte{'a'}, isDataMutable: true}, clone)
 }
 
 func TestOptionClone(t *testing.T) {
