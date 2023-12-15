@@ -43,7 +43,13 @@ _________
 
 Inox is not a company. Please consider donating through [GitHub](https://github.com/sponsors/GraphR00t) (preferred) or [Patreon](https://patreon.com/GraphR00t) to support my work.
 
-In the future, if I don't earn a living from sponsorship, I may develop closed-source services that are peripheral to the project. **Inox will ALWAYS be licensed under the MIT license (or similar).**
+I have a ton of work to do on the platform and the ecosystem to make Inox truly usable. In the future I may develop [sponsorware](https://github.com/sponsorware/docs), and services that are **peripheral** to the project. 
+
+**Imporant notes:**
+- **Inox will ALWAYS be licensed under the MIT license (or similar).**
+
+If you have a question feel free to create an issue or contact me on the [Inox Discord Server](https://discord.gg/53YGx8GzgE).
+
 </details>
 
 _________
