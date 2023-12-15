@@ -148,7 +148,7 @@ You can learn Inox directly in VSCode by creating a file with a `.tut.ix` extens
 ![tutorial-demo](https://github.com/inoxlang/inox-vscode/raw/master/assets/docs/tutorial-demo.gif)
 
 📖 [Language reference](docs/language-reference.md)\
-🧰 [Builtins](docs/builtin.md)
+🧰 [Builtins](docs/builtins.md)
 
 <details>
 <summary>Scripting</summary>
@@ -488,7 +488,7 @@ node = h.html_node!(".Hero-blurb")
 h.close()
 ```
 
-[Documentation](https://github.com/inoxlang/inox/blob/master/docs/builtin.md#browser-automation)
+[Documentation](https://github.com/inoxlang/inox/blob/master/docs/builtins.md#browser-automation)
 
 [Examples](https://github.com/inoxlang/inox/tree/master/examples/chrome)
 
@@ -801,7 +801,7 @@ Inox comes with many built-in functions for:
 - Structured logging
 - Data container constructors (Graph, Tree, ...)
 
-**[List of Built-in Functions](./docs/builtin.md)**
+**[List of Built-in Functions](./docs/builtins.md)**
 
 ### Declaration of CLI Parameters & Environment Variables
 

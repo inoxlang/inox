@@ -1,4 +1,4 @@
-[Install Inox](../README.md#installation) | [Language Reference](./language-reference.md) |  [Built-in Functions](./builtin.md) | [Project](./project.md) | [Web App Development](./web-app-development.md) | [Shell Basics](./shell-basics.md)
+[Install Inox](../README.md#installation) | [Language Reference](./language-reference.md) |  [Built-in Functions](./builtins.md) | [Project](./project.md) | [Web App Development](./web-app-development.md) | [Shell Basics](./shell-basics.md)
 
 -----
 
@@ -231,7 +231,7 @@ manifest {
 
 ### Retrieve
 
-The built-in [read](./builtin.md#read) function can read & parse the content of files, directories and HTTP resources.
+The built-in [read](./builtins.md#read) function can read & parse the content of files, directories and HTTP resources.
 You can learn more about resource manipulation [here](./shell-basics.md#resource-manipulation).
 
 Throughout this tutorial, we will work with the mocked API served by https://jsonplaceholder.typicode.com/ :

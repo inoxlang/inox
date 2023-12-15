@@ -1,4 +1,4 @@
-[Install Inox](../README.md#installation) | [Language Reference](./language-reference.md) |  [Built-in Functions](./builtin.md) | [Project](./project.md) | [Shell Basics](./shell-basics.md) | [Scripting Basics](./scripting-basics.md)
+[Install Inox](../README.md#installation) | [Language Reference](./language-reference.md) |  [Built-in Functions](./builtins.md) | [Project](./project.md) | [Shell Basics](./shell-basics.md) | [Scripting Basics](./scripting-basics.md)
 
 <details> 
 <summary> Tip: If you are reading on GitHub, you can display an outline on the side. </summary>

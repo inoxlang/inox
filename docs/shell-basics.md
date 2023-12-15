@@ -1,4 +1,4 @@
-[Install Inox](../README.md#installation) | [Language Reference](./language-reference.md)| [Built-in Functions](./builtin.md) | [Project](./project.md) | [Web App Development](./web-app-development.md) | [Scripting Basics](./scripting-basics.md) 
+[Install Inox](../README.md#installation) | [Language Reference](./language-reference.md)| [Built-in Functions](./builtins.md) | [Project](./project.md) | [Web App Development](./web-app-development.md) | [Scripting Basics](./scripting-basics.md) 
 
 -----
 
@@ -235,7 +235,7 @@ Recursivelly find all JSON files in a directory.
 find %./**/*.json ./
 ```
 
-**You can read more about the built-in functions [here](./builtin.md)**
+**You can read more about the built-in functions [here](./builtins.md)**
 
 ## Configuration
 

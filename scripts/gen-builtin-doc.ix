@@ -1,8 +1,8 @@
-# this script generates docs/builtin.md
+# this script generates docs/builtins.md
 
 const (
-    DATA_FILE = ./internal/help/builtin.yaml
-    OUTPUT_FILE = ./docs/builtin.md
+    DATA_FILE = ./internal/help/builtins.yaml
+    OUTPUT_FILE = ./docs/builtins.md
 )
 
 manifest {
