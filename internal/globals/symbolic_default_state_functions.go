@@ -23,7 +23,7 @@ func init() {
 		_sha1, func(ctx *symbolic.Context, arg symbolic.Readable) *symbolic.ByteSlice {
 			return &symbolic.ByteSlice{}
 		},
-		_sha2, func(ctx *symbolic.Context, arg symbolic.Readable) *symbolic.ByteSlice {
+		_md5, func(ctx *symbolic.Context, arg symbolic.Readable) *symbolic.ByteSlice {
 			return &symbolic.ByteSlice{}
 		},
 		_mkpath, func(ctx *symbolic.Context, arg symbolic.Value) *symbolic.Path {

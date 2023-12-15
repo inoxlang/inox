@@ -12,7 +12,7 @@ func _sha1(_ *core.Context, arg core.Readable) *core.ByteSlice {
 	return core.NewMutableByteSlice(_hash(arg, SHA1), "")
 }
 
-func _sha2(_ *core.Context, arg core.Readable) *core.ByteSlice {
+func _md5(_ *core.Context, arg core.Readable) *core.ByteSlice {
 	return core.NewMutableByteSlice(_hash(arg, MD5), "")
 }
 
@@ -83,7 +83,7 @@ func _mkurl(ctx *core.Context, arg core.Value) core.URL {
 func newInsecure() *core.Namespace {
 	return core.NewNamespace("insecure", map[string]core.Value{
 		"sha1":              core.ValOf(_sha1),
-		"md5":               core.ValOf(_sha2),
+		"md5":               core.ValOf(_md5),
 		"mkpath":            core.ValOf(_mkpath),
 		"make_path_pattern": core.ValOf(_make_path_pattern),
 		"mkurl":             core.ValOf(_mkurl),
