@@ -63,7 +63,6 @@ func NewRecordFromKeyValLists(keys []string, values []Serializable) *Record {
 		if IsIndexKey(k) {
 			maxKeyIndex = max(maxKeyIndex, utils.Must(strconv.Atoi(k)))
 		}
-		keys[i] = k
 		values[i] = v
 		i++
 	}
