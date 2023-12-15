@@ -1,9 +1,0 @@
-manifest {}
-
-div = html.ul{
-    class: "myclass"
-    html.li{ ("a") }
-    html.li{ ("b") }
-}
-
-print html.str_render(div)

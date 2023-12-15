@@ -730,18 +730,6 @@ The idt (identity) function takes a single argument and returns it.
 ### html
 
 The html namespace contains functions to create & manipulate HTML nodes.
-### html.h1
-
-The html.h1 function creates a h1 HTML element.
-### html.h2
-
-The html.h2 function creates a h2 HTML element.
-### html.h3
-
-The html.h3 function creates a h3 HTML element.
-### html.h4
-
-The html.h4 function creates a h4 HTML element.
 
 ## HTTP
 

@@ -342,18 +342,6 @@ html:
   - topic: html
     text: The html namespace contains functions to create & manipulate HTML nodes
 
-  - topic: html.h1
-    text: The html.h1 function creates a h1 HTML element
-
-  - topic: html.h2
-    text: The html.h2 function creates a h2 HTML element
-
-  - topic: html.h3
-    text: The html.h3 function creates a h3 HTML element
-
-  - topic: html.h4
-    text: The html.h4 function creates a h4 HTML element
-
 chrome:
   namespace: true
   title: Browser Automation

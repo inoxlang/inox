@@ -62,50 +62,6 @@ var tagnameToSpecificDescPropHandler = map[string]map[string]func(value core.Val
 	},
 }
 
-func _a(ctx *core.Context, desc *core.Object) *HTMLNode {
-	return NewNode(ctx, "a", desc)
-}
-
-func _div(ctx *core.Context, desc *core.Object) *HTMLNode {
-	return NewNode(ctx, "div", desc)
-}
-
-func _span(ctx *core.Context, desc *core.Object) *HTMLNode {
-	return NewNode(ctx, "span", desc)
-}
-
-func _ul(ctx *core.Context, desc *core.Object) *HTMLNode {
-	return NewNode(ctx, "ul", desc)
-}
-
-func _ol(ctx *core.Context, desc *core.Object) *HTMLNode {
-	return NewNode(ctx, "ol", desc)
-}
-
-func _li(ctx *core.Context, desc *core.Object) *HTMLNode {
-	return NewNode(ctx, "li", desc)
-}
-
-func _svg(ctx *core.Context, desc *core.Object) *HTMLNode {
-	return NewNode(ctx, "svg", desc)
-}
-
-func _h1(ctx *core.Context, desc *core.Object) *HTMLNode {
-	return NewNode(ctx, "h1", desc)
-}
-
-func _h2(ctx *core.Context, desc *core.Object) *HTMLNode {
-	return NewNode(ctx, "h2", desc)
-}
-
-func _h3(ctx *core.Context, desc *core.Object) *HTMLNode {
-	return NewNode(ctx, "h3", desc)
-}
-
-func _h4(ctx *core.Context, desc *core.Object) *HTMLNode {
-	return NewNode(ctx, "h4", desc)
-}
-
 func NewNode(ctx *core.Context, tag core.Str, desc *core.Object) (finalNode *HTMLNode) {
 	var class, id string
 	var children []*HTMLNode
