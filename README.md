@@ -644,6 +644,15 @@ manifest {
 API_KEY = env.initial.API_KEY
 ```
 
+<details>
+
+**<summary>Demo of project secrets</summary>**
+
+![project secrets demo](https://github.com/inoxlang/inox/assets/113632189/c19c5c51-35be-4cfb-a3c4-d53cfd8cfc16)
+
+</details>
+
+
 #### **Visibility (WIP)**
 
 _This feature is **very much** work in progress._
