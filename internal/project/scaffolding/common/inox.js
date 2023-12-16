@@ -1,11 +1,11 @@
 /// <reference types="./preact-signals.d.ts" />
 
 const INTERPOLATION_PATTERN = /\$\(([^)]*)\)/g
+const SIGNAL_SETTLING_TIMEOUT_MILLIS = 100
 
 
 /** @type {WeakMap<Signal, Dependent[]>} */
 const signalsToDependents = new WeakMap()
-
 
 /** @type {WeakMap<Text, Dependent>} */
 const textsWithInterpolations = new WeakMap()
@@ -22,6 +22,7 @@ function initComponent(arg) {
 
 	const signals = arg.signals ?? {}
 	const initialState = getState(signals)
+	const updatedSignalCount = signal(0)
 
 	for (const [name, signal] of Object.entries(signals)) {
 		const dispose = signal.subscribe(() => {
@@ -31,20 +32,7 @@ function initComponent(arg) {
 				return
 			}
 
-			const dependents = signalsToDependents.get(signal) ?? []
-			if (dependents.length == 0) {
-				return
-			}
-
-			//get state
-
-			const state = getState(signals)
-			
-			//rerender dependents
-
-			for (const dependent of dependents) {
-				dependent.rerender(state)
-			}
+			updatedSignalCount.value++
 		})
 	}
 
@@ -62,7 +50,7 @@ function initComponent(arg) {
 			return
 		}
 
-		let interpolations = []
+		const interpolations = []
 
 		while (execArray != null) {
 			interpolations.push(getInterpolation(execArray[0], execArray[1], execArray.index, textNode))
@@ -94,12 +82,87 @@ function initComponent(arg) {
 		}
 	})
 
+	//rendering
+
+	let rendering = false;
+
+	/** @param {number} timeMillis */
+	const sleep = (timeMillis) => {
+		return new Promise((resolve) => {
+			setTimeout(() => resolve(null), timeMillis)
+		})
+	}
+
+	const dispose = updatedSignalCount.subscribe(async (signalCount) => {
+		//dispose the subscription if the component is no longer part of the DOM.
+		if (!componentRoot.isConnected) {
+			dispose()
+			return
+		}
+
+		if (signalCount <= 0) {
+			return
+		}
+
+		if (rendering) {
+			return true
+		}
+
+		const waitStart = Date.now()
+		rendering = true
+
+		wait_for_signal_settling: while (true) {
+			if (Date.now() - waitStart > SIGNAL_SETTLING_TIMEOUT_MILLIS) {
+				console.error('signals take too much to settle, abort render')
+				rendering = false
+				return
+			}
+
+			const newSignalCount = updatedSignalCount.peek()
+			if (newSignalCount > signalCount) {
+				signalCount = newSignalCount
+				await sleep(0)
+				continue wait_for_signal_settling
+			}
+			break
+		}
+
+		const state = getState(signals)
+		const updatedDependents = new Set()
+
+		try {
+			for (const [_, signal] of Object.entries(signals)) {
+				let dependents = signalsToDependents.get(signal) ?? []
+				if (dependents.length == 0) {
+					updatedSignalCount.value = 0
+					continue
+				}
+
+				//remove already updated dependents
+				//TODO: add signal priority.
+				dependents = dependents.filter(d => !updatedDependents.has(d))
+				dependents.forEach(d => {
+					updatedDependents.add(d)
+				})
+				
+				//rerender dependents
+
+				for (const dependent of dependents) {
+					dependent.rerender(state)
+				}
+			}
+		} finally {
+			rendering = false
+			updatedSignalCount.value = 0
+		}
+	})
+
 }
 
 /**
  * @param {Record<string, Signal>} signals 
  */
-function getState(signals){
+function getState(signals) {
 	/** @type {State} */
 	const state = {}
 	for (const name in signals) {
@@ -232,6 +295,10 @@ function makeRenderTextNode(node, interpolations) {
 		}
 		parts.push(interpolation)
 		startPartIndex = interpolation.endIndex
+	}
+	const after = initialText.slice(startPartIndex)
+	if (after != "") {
+		parts.push(after)
 	}
 
 	/**
