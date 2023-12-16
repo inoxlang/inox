@@ -3993,11 +3993,15 @@ func evalRecordLiteral(n *parse.RecordLiteral, state *State, options evalOptions
 				state.addError(makeSymbolicEvalError(p.Value, state, fmtNotAssignableToPropOfType(v, expectedPropVal)))
 			}
 
-			if v.IsMutable() {
+			serializable, ok := v.(Serializable)
+			if !ok {
+				state.addError(makeSymbolicEvalError(p, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_INITIAL_VALUES_OF_SERIALIZABLE))
+				entries[key] = ANY_SERIALIZABLE
+			} else if v.IsMutable() {
 				state.addError(makeSymbolicEvalError(p.Value, state, fmtValuesOfRecordShouldBeImmutablePropHasMutable(key)))
 				entries[key] = ANY_SERIALIZABLE
 			} else {
-				entries[key] = v.(Serializable)
+				entries[key] = serializable
 			}
 		}
 	}

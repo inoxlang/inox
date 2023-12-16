@@ -1998,7 +1998,20 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("non-serializable values not allowed in initialization", func(t *testing.T) {
-			//TODO
+			n, state := MakeTestStateAndChunk(`#{suite: testsuite {}}`)
+			propNode := parse.FindNode(n, (*parse.ObjectProperty)(nil), nil)
+
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(propNode, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_INITIAL_VALUES_OF_SERIALIZABLE),
+			}, state.errors())
+			assert.Equal(t, &Record{
+				entries: map[string]Serializable{
+					"suite": ANY_SERIALIZABLE,
+				},
+			}, res)
 		})
 
 	})
