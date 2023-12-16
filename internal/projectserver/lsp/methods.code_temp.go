@@ -6,7 +6,7 @@ const noRespStructItemTemp = `	on%s func(ctx context.Context, req *%s) %s`
 
 const structTemp = `
 type Methods struct {
-    Opt Options
+    Opt Config
 %s
 }
 `
