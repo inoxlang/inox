@@ -1,7 +1,7 @@
 //@ts-nocheck
 /*
-	- Preact Signal library (MIT licensed): https://github.com/preactjs/signals
 	- Surreal (MIT licensed) - https://github.com/gnat/surreal
+	- CSS Scope Inline (MIT licensed) - https://github.com/gnat/css-scope-inline
 */
 
 // ------ Surreal  ------

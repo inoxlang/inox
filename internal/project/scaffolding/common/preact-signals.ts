@@ -1,3 +1,6 @@
+// Preact Signal library (MIT licensed): https://github.com/preactjs/signals
+// https://github.com/preactjs/signals/blob/a43821fa0f23846d86dd2e186b088e8f5c4f9d30/packages/core/src/index.ts
+
 function cycleDetected(): never {
 	throw new Error("Cycle detected");
 }
