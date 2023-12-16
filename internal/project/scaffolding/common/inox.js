@@ -6,9 +6,8 @@ const INTERPOLATION_PATTERN = /\$\(([^)]*)\)/g
 /** @type {WeakMap<Signal, Dependent[]>} */
 const signalsToDependents = new WeakMap()
 
-//register interpolations
 
-/** @type {WeakMap<Text, Interpolation[]>} */
+/** @type {WeakMap<Text, Dependent>} */
 const textsWithInterpolations = new WeakMap()
 
 /**
@@ -18,6 +17,38 @@ const textsWithInterpolations = new WeakMap()
  */
 function initComponent(arg) {
 	const componentRoot = /** @type {HTMLElement} */(me())
+
+	//register signals
+
+	const signals = arg.signals ?? {}
+	const initialState = getState(signals)
+
+	for (const [name, signal] of Object.entries(signals)) {
+		const dispose = signal.subscribe(() => {
+			//dispose the subscription if the component is no longer part of the DOM.
+			if (!componentRoot.isConnected) {
+				dispose()
+				return
+			}
+
+			const dependents = signalsToDependents.get(signal) ?? []
+			if (dependents.length == 0) {
+				return
+			}
+
+			//get state
+
+			const state = getState(signals)
+			
+			//rerender dependents
+
+			for (const dependent of dependents) {
+				dependent.rerender(state)
+			}
+		})
+	}
+
+	//register interpolations
 
 	walkNode(componentRoot, node => {
 		if (node.nodeType != node.TEXT_NODE) {
@@ -34,56 +65,90 @@ function initComponent(arg) {
 		let interpolations = []
 
 		while (execArray != null) {
-			const rawInterpolation = execArray[1]
-			interpolations.push(getInterpolation(rawInterpolation, textNode))
+			interpolations.push(getInterpolation(execArray[0], execArray[1], execArray.index, textNode))
 
 			execArray = INTERPOLATION_PATTERN.exec(textNode.wholeText)
 		}
 
-		textsWithInterpolations.set(textNode, interpolations)
+		/** @type {TextNodeDependent} */
+		const textDependent = {
+			type: "text",
+			node: textNode,
+			interpolations: interpolations,
+			rerender: makeRenderTextNode(textNode, interpolations)
+		}
+
+		textDependent.rerender(initialState)
+		textsWithInterpolations.set(textNode, textDependent)
+
+		for (const interp of interpolations) {
+			const signal = signals[interp.name]
+			if (signal) {
+				let dependents = signalsToDependents.get(signal)
+				if (dependents === undefined) {
+					dependents = []
+					signalsToDependents.set(signal, dependents)
+				}
+				dependents.push(textDependent)
+			}
+		}
 	})
 
-	for (const [name, signal] of Object.entries(arg.signals ?? {})) {
-		const dispose = signal.subscribe(() => {
-			//dispose the subscription if the component is no longer part of the DOM.
-			if (!componentRoot.isConnected) {
-				dispose()
-				return
-			}
+}
 
-			const dependents = signalsToDependents.get(signal) ?? []
-			for (const dependent of dependents) {
-				if ('node' in dependent) {
-
-				}
-			}
-		})
+/**
+ * @param {Record<string, Signal>} signals 
+ */
+function getState(signals){
+	/** @type {State} */
+	const state = {}
+	for (const name in signals) {
+		state[name] = signals[name].peek()
 	}
+	return state
 }
 
 /** 
  *  @typedef Interpolation
  *  @property {Text} node
  *  @property {string} name
+ *  @property {number} startIndex
+ *  @property {number} endIndex
  *  @property {string} [default]
  *  @property {string} [type]
  */
 
 /** 
- *  @typedef {Interpolation} Dependent
+ *  @typedef {TextNodeDependent} Dependent
+ */
+
+/** 
+ *  @typedef TextNodeDependent
+ *  @property {"text"} type
+ *  @property {Text} node
+ *  @property {Interpolation[]} interpolations
+ *  @property {(state: State) => void} rerender
+ */
+
+/** 
+ *  @typedef {Record<string, string>} State
  */
 
 
 /** 
+ * @param {string} rawInterpolationWithDelims 
  * @param {string} rawInterpolation 
+ * @param {number} delimStartIndex
  * @param {Text} node
  * */
-function getInterpolation(rawInterpolation, node) {
+function getInterpolation(rawInterpolationWithDelims, rawInterpolation, delimStartIndex, node) {
 
 	/** @type {Interpolation} */
 	const interpolation = {
 		name: "???",
-		node: node
+		node: node,
+		startIndex: delimStartIndex,
+		endIndex: delimStartIndex + rawInterpolationWithDelims.length
 	}
 	let partIndex = 0;
 	let partStart = 0;
@@ -151,9 +216,43 @@ function getInterpolation(rawInterpolation, node) {
 
 /**
  * @param {Text} node
+ * @param {Interpolation[]} interpolations
  */
-function rerenderInterpolation(node) {
-	node.replaceWith()
+function makeRenderTextNode(node, interpolations) {
+	const initialText = node.wholeText
+	let startPartIndex = 0
+
+	/** @type {(string | Interpolation)[]} */
+	const parts = []
+
+	for (const interpolation of interpolations) {
+		const before = initialText.slice(startPartIndex, interpolation.startIndex)
+		if (before.length > 0) {
+			parts.push(before)
+		}
+		parts.push(interpolation)
+		startPartIndex = interpolation.endIndex
+	}
+
+	/**
+	 * @param {State} state
+	 */
+	return (state) => {
+		let string = ""
+		for (const part of parts) {
+			if (typeof part == 'string') {
+				string += part
+			} else {
+				const interpolation = part
+				if (interpolation.name in state) {
+					string += state[interpolation.name].toString()
+				} else {
+					string += interpolation.default ?? "???"
+				}
+			}
+		}
+		node.data = string
+	}
 }
 
 /**

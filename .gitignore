@@ -12,6 +12,8 @@ __debug*
 /inox.run
 /inox
 
+internal/project/scaffolding/common/inox.d.ts
+
 node_modules/
 *.wasm
 /*.ix
