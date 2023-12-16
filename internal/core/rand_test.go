@@ -22,6 +22,18 @@ func TestRandomnessSource(t *testing.T) {
 		}
 	})
 
+	t.Run("ReadNBytesAsHex", func(t *testing.T) {
+		outputs := map[string]struct{}{}
+
+		for i := 0; i < RAND_TESTS_COUNT; i++ {
+			output := DefaultRandSource.ReadNBytesAsHex(10)
+			if _, ok := outputs[output]; ok {
+				t.Logf("outputs should not repeat: %s", output)
+				t.FailNow()
+			}
+			outputs[output] = struct{}{}
+		}
+	})
 }
 
 func TestObjectPatternRandom(t *testing.T) {

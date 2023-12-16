@@ -57,6 +57,10 @@ func (s *RandomnessSource) Read(bytes []byte) (int, error) {
 
 func (s *RandomnessSource) ReadNBytesAsHex(n int) string {
 	bytes := make([]byte, n)
+	_, err := s.Read(bytes)
+	if err != nil {
+		panic(err)
+	}
 	return hex.EncodeToString(bytes)
 }
 
