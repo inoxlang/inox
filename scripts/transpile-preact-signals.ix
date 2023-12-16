@@ -4,7 +4,7 @@ const (
     OUTPUT_JS_FILE = ./internal/project/scaffolding/common/preact-signals.js
     OUTPUT_DECLARATION_FILE = ./internal/project/scaffolding/common/preact-signals.d.ts
 
-    EXPORT_PATTERN =  %`^\s*export.*`
+    EXPORT_PATTERN =  %`^\s*(export|Object\.defineProperty\(exports).*`
 )
 
 manifest {

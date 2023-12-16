@@ -23,6 +23,10 @@ img {
     height: auto;
 }
 
+button {
+    border: none;
+}
+
 /* HTMX */
 
 .htmx-indicator {
