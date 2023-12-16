@@ -32,6 +32,7 @@ deeply integrates with Inox's built-in database engine, testing engine and HTTP 
 - [Project Server (LSP)](#project-server-lsp)
 - [Virtual Filesystems](#virtual-filesystems)
 - [Advanced Testing Engine](#advanced-testing-engine)
+- [Structure Logging](#structure-logging)
 - [Built-in Browser Automation](#built-in-browser-automation)
 
 <details>
@@ -477,6 +478,10 @@ testsuite({
 ```
 
 [Learn More About Testing](./docs/language-reference.md#testing)
+
+### Structure Logging
+
+![structured logging demo](./docs/img/structured-logs.png)
 
 ### Built-in Browser Automation
 
