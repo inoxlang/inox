@@ -3,15 +3,16 @@ module github.com/inoxlang/inox
 go 1.21
 
 require (
-	github.com/PuerkitoBio/goquery v1.8.0
+	github.com/Masterminds/semver/v3 v3.2.1
+	github.com/PuerkitoBio/goquery v1.8.1
 	github.com/adrg/xdg v0.4.0
-	github.com/alecthomas/chroma/v2 v2.11.1
+	github.com/alecthomas/chroma/v2 v2.12.0
 	github.com/alexedwards/argon2id v1.0.0
 	github.com/aohorodnyk/mimeheader v0.0.6
-	github.com/bits-and-blooms/bitset v1.8.0
+	github.com/bits-and-blooms/bitset v1.12.0
 	github.com/bmatcuk/doublestar/v4 v4.6.1
-	github.com/caddyserver/certmagic v0.19.2
-	github.com/chromedp/cdproto v0.0.0-20231112213822-7d5b36658e55
+	github.com/caddyserver/certmagic v0.20.0
+	github.com/chromedp/cdproto v0.0.0-20231205062650-00455a960d61
 	github.com/chromedp/chromedp v0.9.3
 	github.com/cloudflare/cloudflare-go v0.81.0
 	github.com/containerd/cgroups/v3 v3.0.2
@@ -26,7 +27,7 @@ require (
 	github.com/google/uuid v1.3.1
 	github.com/gorilla/websocket v1.5.1
 	github.com/johannesboyne/gofakes3 v0.0.0-20230506070712-04da935ef877
-	github.com/miekg/dns v1.1.56
+	github.com/miekg/dns v1.1.57
 	github.com/minio/minio-go/v7 v7.0.58
 	github.com/muesli/cancelreader v0.2.2
 	github.com/muesli/termenv v0.15.1
@@ -49,6 +50,7 @@ require (
 	github.com/ysmood/fetchup v0.2.3
 	go.uber.org/zap v1.26.0
 	golang.org/x/exp v0.0.0-20231110203233-9a3e6036ecaa
+	golang.org/x/mod v0.14.0
 	golang.org/x/net v0.19.0
 	golang.org/x/term v0.15.0
 	gopkg.in/cenkalti/backoff.v1 v1.1.0
@@ -56,8 +58,7 @@ require (
 )
 
 require (
-	github.com/Masterminds/semver/v3 v3.2.1 // indirect
-	github.com/andybalholm/cascadia v1.3.1 // indirect
+	github.com/andybalholm/cascadia v1.3.2 // indirect
 	github.com/aws/aws-sdk-go v1.44.272 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/chromedp/sysutil v1.0.0 // indirect
@@ -115,12 +116,11 @@ require (
 	github.com/zeebo/blake3 v0.2.3 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.16.0 // indirect
-	golang.org/x/mod v0.14.0 // indirect
 	golang.org/x/sync v0.5.0 // indirect
 	golang.org/x/sys v0.15.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/time v0.4.0 // indirect
-	golang.org/x/tools v0.15.0 // indirect
+	golang.org/x/tools v0.16.1 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	google.golang.org/protobuf v1.30.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
