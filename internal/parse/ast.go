@@ -118,8 +118,8 @@ type InvalidObjectElement struct {
 
 type InvalidMemberLike struct {
 	NodeBase `json:"base:invalid-member-like"`
-	Left     Node `json:"left"`
-	Right    Node `json:"right"` //can be nil
+	Left     Node `json:"left,omitempty"`
+	Right    Node `json:"right,omitempty"` //can be nil
 }
 
 type MissingExpression struct {
@@ -153,24 +153,24 @@ func IsScopeContainerNode(node Node) bool {
 
 type Chunk struct {
 	NodeBase                   `json:"base:chunk"`
-	GlobalConstantDeclarations *GlobalConstantDeclarations `json:"globalConstDecls"`    //nil if no const declarations at the top of the module
-	Preinit                    *PreinitStatement           `json:"preinit"`             //nil if no preinit block at the top of the module
-	Manifest                   *Manifest                   `json:"manifest"`            //nil if no manifest at the top of the module
-	IncludableChunkDesc        *IncludableChunkDescription `json:"includableChunkDesc"` //nil if no manifest at the top of the module
-	Statements                 []Node                      `json:"statements"`
+	GlobalConstantDeclarations *GlobalConstantDeclarations `json:"globalConstDecls,omitempty"`    //nil if no const declarations at the top of the module
+	Preinit                    *PreinitStatement           `json:"preinit,omitempty"`             //nil if no preinit block at the top of the module
+	Manifest                   *Manifest                   `json:"manifest,omitempty"`            //nil if no manifest at the top of the module
+	IncludableChunkDesc        *IncludableChunkDescription `json:"includableChunkDesc,omitempty"` //nil if no manifest at the top of the module
+	Statements                 []Node                      `json:"statements,omitempty"`
 	IsShellChunk               bool
 
 	//mostly valueless tokens, sorted by position (ascending).
 	//EmbeddedModule nodes hold references to subslices of .Tokens.
-	Tokens []Token `json:"tokens"`
+	Tokens []Token `json:"tokens,omitempty"`
 }
 
 type EmbeddedModule struct {
 	NodeBase       `json:"base:embedded-module"`
-	Manifest       *Manifest `json:"manifest"` //can be nil
-	Statements     []Node    `json:"statements"`
+	Manifest       *Manifest `json:"manifest,omitempty"` //can be nil
+	Statements     []Node    `json:"statements,omitempty"`
 	SingleCallExpr bool      `json:"isSingleCallExpr"`
-	Tokens         []Token/*slice of the parent chunk .Tokens*/ `json:"tokens"`
+	Tokens         []Token/*slice of the parent chunk .Tokens*/ `json:"tokens,omitempty"`
 }
 
 func (emod *EmbeddedModule) ToChunk() *Chunk {
@@ -1822,7 +1822,7 @@ type PreinitStatement struct {
 
 type Manifest struct {
 	NodeBase `json:"base:manifest"`
-	Object   Node `json:"object"`
+	Object   Node `json:"object,omitempty"`
 }
 
 type IncludableChunkDescription struct {
@@ -1831,7 +1831,7 @@ type IncludableChunkDescription struct {
 
 type PermissionDroppingStatement struct {
 	NodeBase `json:"base:permDroppingStmt"`
-	Object   *ObjectLiteral `json:"object"`
+	Object   *ObjectLiteral `json:"object,omitempty"`
 }
 
 func (PermissionDroppingStatement) Kind() NodeKind {
@@ -1840,9 +1840,9 @@ func (PermissionDroppingStatement) Kind() NodeKind {
 
 type ImportStatement struct {
 	NodeBase      `json:"base:importStmt"`
-	Identifier    *IdentifierLiteral `json:"identifier"`
-	Source        Node               `json:"source"` // *URLLiteral, *RelativePathLiteral, *AbsolutePathLiteral
-	Configuration Node               `json:"configuration"`
+	Identifier    *IdentifierLiteral `json:"identifier,omitempty"`
+	Source        Node               `json:"source,omitempty"` // *URLLiteral, *RelativePathLiteral, *AbsolutePathLiteral
+	Configuration Node               `json:"configuration,omitempty"`
 }
 
 func (stmt *ImportStatement) SourceString() (string, bool) {
@@ -1864,7 +1864,7 @@ func (ImportStatement) Kind() NodeKind {
 
 type InclusionImportStatement struct {
 	NodeBase `json:"base:inclusionImportStmt"`
-	Source   Node `json:"source"`
+	Source   Node `json:"source,omitempty"`
 }
 
 func (InclusionImportStatement) Kind() NodeKind {
@@ -2124,8 +2124,8 @@ func (RuntimeTypeCheckExpression) Kind() NodeKind {
 
 type TestSuiteExpression struct {
 	NodeBase    `json:"base:test-suite-expr"`
-	Meta        Node            `json:"meta"`
-	Module      *EmbeddedModule `json:"embeddedModule"`
+	Meta        Node            `json:"meta,omitempty"`
+	Module      *EmbeddedModule `json:"embeddedModule,omitempty"`
 	IsStatement bool            `json:"isStatement"`
 }
 
@@ -2138,8 +2138,8 @@ func (e TestSuiteExpression) Kind() NodeKind {
 
 type TestCaseExpression struct {
 	NodeBase    `json:"base:test-case-expr"`
-	Meta        Node            `json:"meta"`
-	Module      *EmbeddedModule `json:"embeddedModule"`
+	Meta        Node            `json:"meta,omitempty"`
+	Module      *EmbeddedModule `json:"embeddedModule,omitempty"`
 	IsStatement bool            `json:"isStatement"`
 }
 
