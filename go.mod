@@ -22,15 +22,15 @@ require (
 	github.com/elazarl/goproxy v0.0.0-20231031074852-3ec07828be7a
 	github.com/fsnotify/fsnotify v1.7.0
 	github.com/go-git/go-billy/v5 v5.4.1
-	github.com/goccy/go-yaml v1.11.0
+	github.com/goccy/go-yaml v1.11.2
 	github.com/google/go-dap v0.11.0
-	github.com/google/uuid v1.3.1
+	github.com/google/uuid v1.5.0
 	github.com/gorilla/websocket v1.5.1
 	github.com/johannesboyne/gofakes3 v0.0.0-20230506070712-04da935ef877
 	github.com/miekg/dns v1.1.57
 	github.com/minio/minio-go/v7 v7.0.58
 	github.com/muesli/cancelreader v0.2.2
-	github.com/muesli/termenv v0.15.1
+	github.com/muesli/termenv v0.15.2
 	github.com/oklog/ulid/v2 v2.1.0
 	github.com/orcaman/concurrent-map/v2 v2.0.1
 	github.com/pb33f/libopenapi v0.13.9
@@ -40,8 +40,8 @@ require (
 	github.com/shirou/gopsutil/v3 v3.23.10
 	github.com/shoenig/go-landlock v0.1.7
 	github.com/stretchr/testify v1.8.4
-	github.com/tidwall/btree v1.6.0
-	github.com/tidwall/gjson v1.14.4
+	github.com/tidwall/btree v1.7.0
+	github.com/tidwall/gjson v1.17.0
 	github.com/tidwall/grect v0.1.4
 	github.com/tidwall/lotsa v1.0.3
 	github.com/tidwall/match v1.1.1
@@ -49,7 +49,7 @@ require (
 	github.com/tink-crypto/tink-go v0.0.0-20230613075026-d6de17e3f164
 	github.com/ysmood/fetchup v0.2.3
 	go.uber.org/zap v1.26.0
-	golang.org/x/exp v0.0.0-20231110203233-9a3e6036ecaa
+	golang.org/x/exp v0.0.0-20231214170342-aacd6d4b4611
 	golang.org/x/mod v0.14.0
 	golang.org/x/net v0.19.0
 	golang.org/x/term v0.15.0
@@ -67,7 +67,7 @@ require (
 	github.com/dlclark/regexp2 v1.10.0 // indirect
 	github.com/dprotaso/go-yit v0.0.0-20220510233725-9ba8df137936 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
-	github.com/fatih/color v1.13.0 // indirect
+	github.com/fatih/color v1.16.0 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/gobwas/httphead v0.1.0 // indirect
 	github.com/gobwas/pool v0.2.1 // indirect
@@ -90,7 +90,7 @@ require (
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
-	github.com/mattn/go-runewidth v0.0.14 // indirect
+	github.com/mattn/go-runewidth v0.0.15 // indirect
 	github.com/mholt/acmez v1.2.0 // indirect
 	github.com/minio/md5-simd v1.1.2 // indirect
 	github.com/minio/sha256-simd v1.0.1 // indirect
@@ -107,7 +107,7 @@ require (
 	github.com/shabbyrobe/gocovmerge v0.0.0-20230507112040-c3350d9342df // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
-	github.com/tidwall/pretty v1.2.0 // indirect
+	github.com/tidwall/pretty v1.2.1 // indirect
 	github.com/tidwall/tinyqueue v0.1.1 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
@@ -121,7 +121,7 @@ require (
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/time v0.4.0 // indirect
 	golang.org/x/tools v0.16.1 // indirect
-	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
+	golang.org/x/xerrors v0.0.0-20231012003039-104605ab7028 // indirect
 	google.golang.org/protobuf v1.30.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
