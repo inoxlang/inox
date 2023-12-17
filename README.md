@@ -4,7 +4,7 @@
 
 <img src="https://avatars.githubusercontent.com/u/122291844?s=200&v=4" alt="a shield"></img>
 
-🛡️ The Inox platform is your **shield** against complexity.
+🛡️ The Inox platform is your **shield** against complexity in web development.
 
 Inox is released as a **single binary** that will contain all you need to develop, test and deploy web apps that
 are primarily rendered server-side. Applications are developped using **Inoxlang**, a sandboxed programming language that 
@@ -222,7 +222,7 @@ username = mod-args.name
 ...
 ```
 
-> Note: The default `Content Security Policy` of the HTTP server (header) is very strict by default. 
+> Note: The default [Content Security Policy](./docs/builtins.md#httpcsp) returned by the HTTP server (header) is very strict by default. 
 
 ### Transactions & Effects (WIP)
 
