@@ -1821,7 +1821,7 @@ type PreinitStatement struct {
 }
 
 type Manifest struct {
-	NodeBase `json:"base-manifest"`
+	NodeBase `json:"base:manifest"`
 	Object   Node `json:"object"`
 }
 
@@ -1830,8 +1830,8 @@ type IncludableChunkDescription struct {
 }
 
 type PermissionDroppingStatement struct {
-	NodeBase
-	Object *ObjectLiteral
+	NodeBase `json:"base:permDroppingStmt"`
+	Object   *ObjectLiteral `json:"object"`
 }
 
 func (PermissionDroppingStatement) Kind() NodeKind {
@@ -1839,10 +1839,10 @@ func (PermissionDroppingStatement) Kind() NodeKind {
 }
 
 type ImportStatement struct {
-	NodeBase
-	Identifier    *IdentifierLiteral
-	Source        Node // *URLLiteral, *RelativePathLiteral, *AbsolutePathLiteral
-	Configuration Node
+	NodeBase      `json:"base:importStmt"`
+	Identifier    *IdentifierLiteral `json:"identifier"`
+	Source        Node               `json:"source"` // *URLLiteral, *RelativePathLiteral, *AbsolutePathLiteral
+	Configuration Node               `json:"configuration"`
 }
 
 func (stmt *ImportStatement) SourceString() (string, bool) {
@@ -1863,8 +1863,8 @@ func (ImportStatement) Kind() NodeKind {
 }
 
 type InclusionImportStatement struct {
-	NodeBase
-	Source Node
+	NodeBase `json:"base:inclusionImportStmt"`
+	Source   Node `json:"source"`
 }
 
 func (InclusionImportStatement) Kind() NodeKind {
