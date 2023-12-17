@@ -53,6 +53,32 @@ func main() {
 		return makeResult(nil, errors.New("invalid start or end index"))
 	}))
 
+	exports.Set("get_span_end_line_column", js.FuncOf(func(this js.Value, args []js.Value) any {
+		chunkId := args[0].String()
+		start := args[1].Int()
+		end := args[2].Int()
+
+		if start > math.MaxInt32 {
+			return makeResult(nil, errors.New("start index is too big"))
+		}
+		if end > math.MaxInt32 {
+			return makeResult(nil, errors.New("end index is too big"))
+		}
+
+		for _, chunk := range lastParsedChunks {
+			if chunk.id == chunkId {
+				line, col := chunk.GetEndSpanLineColumn(parse.NodeSpan{
+					Start: int32(start),
+					End:   int32(end),
+				})
+
+				return makeResult([]any{line, col}, nil)
+			}
+		}
+
+		return makeResult(nil, errors.New("invalid start or end index"))
+	}))
+
 	exports.Set("parse_chunk", js.FuncOf(func(this js.Value, args []js.Value) any {
 		fpath := args[0].String()
 
