@@ -14,7 +14,7 @@ require (
 	github.com/caddyserver/certmagic v0.20.0
 	github.com/chromedp/cdproto v0.0.0-20231205062650-00455a960d61
 	github.com/chromedp/chromedp v0.9.3
-	github.com/cloudflare/cloudflare-go v0.81.0
+	github.com/cloudflare/cloudflare-go v0.83.0
 	github.com/containerd/cgroups/v3 v3.0.2
 	github.com/coreos/go-systemd/v22 v22.5.0
 	github.com/dimuska139/go-email-normalizer v1.2.1
@@ -47,7 +47,7 @@ require (
 	github.com/tidwall/match v1.1.1
 	github.com/tidwall/rtred v0.1.2
 	github.com/tink-crypto/tink-go v0.0.0-20230613075026-d6de17e3f164
-	github.com/ysmood/fetchup v0.2.3
+	github.com/ysmood/fetchup v0.2.4
 	go.uber.org/zap v1.26.0
 	golang.org/x/exp v0.0.0-20231214170342-aacd6d4b4611
 	golang.org/x/mod v0.14.0
@@ -77,7 +77,6 @@ require (
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-retryablehttp v0.7.5 // indirect
-	github.com/hashicorp/go-set v0.1.9 // indirect
 	github.com/hashicorp/go-set/v2 v2.1.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
@@ -120,7 +119,7 @@ require (
 	golang.org/x/sync v0.5.0 // indirect
 	golang.org/x/sys v0.15.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
-	golang.org/x/time v0.4.0 // indirect
+	golang.org/x/time v0.5.0 // indirect
 	golang.org/x/tools v0.16.1 // indirect
 	golang.org/x/xerrors v0.0.0-20231012003039-104605ab7028 // indirect
 	google.golang.org/protobuf v1.30.0 // indirect
