@@ -4,10 +4,9 @@
 
 <img src="https://avatars.githubusercontent.com/u/122291844?s=200&v=4" alt="a shield"></img>
 
-🛡️ The Inox platform is your **shield** against complexity in web development.
+🛡️ The Inox platform is your **shield** against complexity in full-stack development.
 
-Inox is released as a **single binary** that will contain all you need to develop, test and deploy web apps that
-are primarily rendered server-side. Applications are developped using **Inoxlang**, a sandboxed programming language that 
+Inox is released as a **single binary** that will contain all you need to develop, test and deploy web apps that are primarily rendered server-side. Applications are developped using **Inoxlang**, a sandboxed programming language that 
 deeply integrates with Inox's built-in database engine, testing engine and HTTP server.
 
 ⬇️ [Installation](#installation)\
@@ -204,7 +203,7 @@ server = http.Server!(HOST, {
 For maximum security, each request is processed in an isolated module:
 
 ```
-# /routes/api/POST-users.ix
+# /routes/users/POST.ix
 
 manifest {
     parameters: {
