@@ -29,7 +29,7 @@
 
 ### Error
 
-The Error function creates an error from the provided string and an optional data argument.
+The Error function creates an error from the provided string and an optional immutable data argument.
 
 **examples**
 
@@ -37,7 +37,7 @@ The Error function creates an error from the provided string and an optional dat
 Error("failed to create user")
 ```
 ```inox
-Error("failed to create user", {user_id: 100})
+Error("failed to create user", #{user_id: 100})
 ```
 
 ## Bytes and Runes
@@ -398,7 +398,7 @@ sha512("string")
 ```
 ### rsa
 
-The rsa namespace contains functions to generate a key pair & encrypt/decrypt using OAEP.
+The rsa namespace contains functions to generate a key pair and encrypt/decrypt using OAEP.
 #### rsa.gen_key
 
 The rsa.gen_key function generates a public/private key pair.
@@ -686,7 +686,7 @@ true
 ```
 ### sort
 
-The sort function creates a new list by sorting a list of strings or integers, the second argument is an identifier describing the order. For strings the available orderings are #lex (lexicographic) and #revlex (same but reversed). For integers the available orderings are #asc (ascending) and #desc (descending).
+The sort function creates a new list by sorting a list of strings or integers, the second argument is an identifier describing the order. For strings the available orderings are `#lex` (lexicographic) and `#revlex` (same but reversed). For integers the available orderings are `#asc` (ascending) and `#desc` (descending).
 
 **examples**
 
@@ -905,15 +905,16 @@ http.FileServer!(https://localhost:8080, ./examples/static/)
 
 ### http.CSP
 
-The http.CSP function creates a Content Security Policy with the passed directives and the following default directives:
-  - __default-src__ 'none';
-  -  __frame-ancestors__ 'none';
-  -  __frame-src 'none__';
-  -  __script-src-elem__ 'self' 'nonce-[page-nonce]>';
-  -  __connect-src__ 'self';
-  -  __font-src__ 'self';
-  -  __img-src__ 'self';
-  -  __style-src-elem__ 'self' 'unsafe-inline'.
+The http.CSP function creates a Content Security Policy with the passed directives and some default directives: 
+all directive types that are not provided in arguments default to the following directives:
+  - `default-src 'none';`
+  - `frame-ancestors 'none';`
+  - `frame-src 'none';`
+  - `script-src-elem 'self' 'nonce-[page-nonce]>';`
+  - `connect-src 'self';`
+  - `font-src 'self';`
+  - `img-src 'self';`
+  - `style-src-elem 'self' 'unsafe-inline';`.
 
 **examples**
 
@@ -928,7 +929,7 @@ http.CSP{default-src: "'self'"}
 The log namespace contains functions for structured logging.
 ### log.add
 
-The log.add function logs an event that is created from the provided record. The log level is specified with the 'lvl' property, it defaults to 'debug'. The message can be either provided by setting the 'msg' property or by adding properties with implicit keys: each implicit-key property will be a single part of the message. ⚠️ It is recommended to use the default level (debug) for high frequency events.
+The log.add function logs an event that is created from the provided record. The log level is specified with the `lvl` property, it defaults to `debug`. The message can be either provided by setting the `msg` property or by adding properties with implicit keys: each implicit-key property will be a single part of the message. ⚠️ It is recommended to use the default level (debug) for high frequency events.
 
 **examples**
 
@@ -955,7 +956,7 @@ log.add #{"user", id, "created", id: 100}
 
 ### print
 
-The print function prints its arguments with a space ' ' separation. A '\n' character is added at the end.
+The print function prints its arguments with a space ' ' separation. A `\n` character is added at the end.
 ### fprint
 
 The fprint function writes to the provided writer its arguments with a space ' ' separation. A '\n' character is added at the end.

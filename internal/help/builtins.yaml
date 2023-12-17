@@ -92,8 +92,8 @@ functional:
   - topic: sort
     text: >
       The sort function creates a new list by sorting a list of strings or integers, the second argument is an identifier describing
-      the order. For strings the available orderings are #lex (lexicographic) and #revlex (same but reversed). For integers the available
-      orderings are #asc (ascending) and #desc (descending).
+      the order. For strings the available orderings are `#lex` (lexicographic) and `#revlex` (same but reversed). For integers the available
+      orderings are `#asc` (ascending) and `#desc` (descending).
     examples:
     - code: 'sort([2, 1], #asc)'
       output: '[1, 2]'
@@ -183,7 +183,7 @@ crypto:
 
   - topic: rsa
     namespace: true
-    text: The rsa namespace contains functions to generate a key pair & encrypt/decrypt using OAEP.
+    text: The rsa namespace contains functions to generate a key pair and encrypt/decrypt using OAEP.
     subtopics:
     - topic: rsa.gen_key
       text: The rsa.gen_key function generates a public/private key pair
@@ -299,7 +299,7 @@ printing:
   title: Printing
   elements:
   - topic: print
-    text: "The print function prints its arguments with a space ' ' separation. A '\\n' character is added at the end."
+    text: "The print function prints its arguments with a space ' ' separation. A `\\n` character is added at the end."
 
   - topic: fprint
     text: "The fprint function writes to the provided writer its arguments with a space ' ' separation. A '\\n' character is added at the end."
@@ -312,8 +312,8 @@ log:
     text: The log namespace contains functions for structured logging.
   - topic: log.add
     text: >
-      The log.add function logs an event that is created from the provided record. The log level is specified with the 'lvl' property,
-      it defaults to 'debug'. The message can be either provided by setting the 'msg' property or by adding properties with implicit keys:
+      The log.add function logs an event that is created from the provided record. The log level is specified with the `lvl` property,
+      it defaults to `debug`. The message can be either provided by setting the `msg` property or by adding properties with implicit keys:
       each implicit-key property will be a single part of the message. ⚠️ It is recommended to use the default level (debug) for high frequency events.
     examples:
     - code: |
@@ -908,15 +908,16 @@ http:
 
   - topic: http.CSP
     text: |
-      The http.CSP function creates a Content Security Policy with the passed directives and the following default directives:
-        - __default-src__ 'none';
-        -  __frame-ancestors__ 'none';
-        -  __frame-src 'none__';
-        -  __script-src-elem__ 'self' 'nonce-[page-nonce]>';
-        -  __connect-src__ 'self';
-        -  __font-src__ 'self';
-        -  __img-src__ 'self';
-        -  __style-src-elem__ 'self' 'unsafe-inline'
+      The http.CSP function creates a Content Security Policy with the passed directives and some default directives: 
+      all directive types that are not provided in arguments default to the following directives:
+        - `default-src 'none';`
+        - `frame-ancestors 'none';`
+        - `frame-src 'none';`
+        - `script-src-elem 'self' 'nonce-[page-nonce]>';`
+        - `connect-src 'self';`
+        - `font-src 'self';`
+        - `img-src 'self';`
+        - `style-src-elem 'self' 'unsafe-inline';`
     examples:
     - code: "http.CSP{default-src: \"'self'\"}"
       standalone: true
@@ -925,10 +926,10 @@ Errors:
   namespace: false
   elements:
   - topic: Error
-    text: The Error function creates an error from the provided string and an optional data argument.
+    text: The Error function creates an error from the provided string and an optional immutable data argument.
     examples:
     - code: 'Error("failed to create user")'
       standalone: true
 
-    - code: 'Error("failed to create user", {user_id: 100})'
+    - code: 'Error("failed to create user", #{user_id: 100})'
       standalone: true
