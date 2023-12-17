@@ -18,15 +18,15 @@ require (
 	github.com/containerd/cgroups/v3 v3.0.2
 	github.com/coreos/go-systemd/v22 v22.5.0
 	github.com/dimuska139/go-email-normalizer v1.2.1
-	github.com/djherbis/times v1.5.0
-	github.com/elazarl/goproxy v0.0.0-20231031074852-3ec07828be7a
+	github.com/djherbis/times v1.6.0
+	github.com/elazarl/goproxy v0.0.0-20231117061959-7cc037d33fb5
 	github.com/fsnotify/fsnotify v1.7.0
 	github.com/go-git/go-billy/v5 v5.4.1
 	github.com/goccy/go-yaml v1.11.2
 	github.com/google/go-dap v0.11.0
 	github.com/google/uuid v1.5.0
 	github.com/gorilla/websocket v1.5.1
-	github.com/johannesboyne/gofakes3 v0.0.0-20230506070712-04da935ef877
+	github.com/johannesboyne/gofakes3 v0.0.0-20230914150226-f005f5cc03aa
 	github.com/miekg/dns v1.1.57
 	github.com/minio/minio-go/v7 v7.0.66
 	github.com/muesli/cancelreader v0.2.2
@@ -59,7 +59,7 @@ require (
 
 require (
 	github.com/andybalholm/cascadia v1.3.2 // indirect
-	github.com/aws/aws-sdk-go v1.44.272 // indirect
+	github.com/aws/aws-sdk-go v1.49.4 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/chromedp/sysutil v1.0.0 // indirect
 	github.com/cilium/ebpf v0.9.1 // indirect
