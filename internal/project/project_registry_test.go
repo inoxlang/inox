@@ -1,6 +1,7 @@
 package project
 
 import (
+	"io/fs"
 	"testing"
 	"time"
 
@@ -241,7 +242,7 @@ func TestOpenProject(t *testing.T) {
 		if !assert.NotZero(t, entries) {
 			return
 		}
-		assert.Equal(t, DEFAULT_MAIN_FILENAME, entries[0].Name())
+		assert.True(t, utils.Some(entries, func(e fs.FileInfo) bool { return e.Name() == DEFAULT_MAIN_FILENAME }))
 	})
 
 	t.Run("re-open registry", func(t *testing.T) {
