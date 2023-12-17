@@ -851,6 +851,7 @@ http:
       The http.Server function creates a listening HTTP server with a given host & handler. The handler can be an function
       or a Mapping that routes requests. When you send a request to a server listening to https://localhost add the --insecure flag 
       to ignore certificate errors. When using filesystem routing modules are reloaded each time files are changed in /routes/.
+      Also for each page render a nonce is added to the `script-src-elem` CSP directive and to all `<script>` elements in the page's HTML.
     examples:
     - code: |
         server = http.Server!(https://localhost:8080, {
@@ -907,15 +908,15 @@ http:
 
   - topic: http.CSP
     text: |
-      the http.CSP function creates a Content Security Policy with the passed directives and the following default directives:
-        default-src 'none';
-        frame-ancestors 'none';
-        frame-src 'none';
-        script-src-elem 'self';
-        connect-src 'self';
-        font-src 'self';
-        img-src 'self';
-        style-src 'self'
+      The http.CSP function creates a Content Security Policy with the passed directives and the following default directives:
+        - __default-src__ 'none';
+        -  __frame-ancestors__ 'none';
+        -  __frame-src 'none__';
+        -  __script-src-elem__ 'self' 'nonce-[page-nonce]>';
+        -  __connect-src__ 'self';
+        -  __font-src__ 'self';
+        -  __img-src__ 'self';
+        -  __style-src-elem__ 'self' 'unsafe-inline'
     examples:
     - code: "http.CSP{default-src: \"'self'\"}"
       standalone: true

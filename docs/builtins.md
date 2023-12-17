@@ -741,7 +741,7 @@ h1_elems = html.find("h1", html<div> <h1>title</h1> </div>)
 ```
 ### html.escape
 
-The html.escape function escapes special characters like "<" to become "&lt;".  It escapes only five such characters: <, >, &, ' and ".
+The html.escape function escapes special characters like "<" to become "&lt;". It escapes only five such characters: <, >, &, ' and ".
 
 **examples**
 
@@ -777,7 +777,7 @@ html.Node("div", {  html<span>text</span> })
 <div><span>text</span></div>
 ```
 ```inox
-html.Node("div", { children: [html<span>text</span>] })
+html.Node("div", { children: [ html<span>text</span> ] })
 # output: 
 <div><span>text</span></div>
 ```
@@ -855,7 +855,7 @@ http.Client{
 ```
 ### http.Server
 
-The http.Server function creates a listening HTTP server with a given host & handler. The handler can be an function or a Mapping that routes requests. When you send a request to a server listening to https://localhost add the --insecure flag  to ignore certificate errors. When using filesystem routing modules are reloaded each time files are changed in /routes/.
+The http.Server function creates a listening HTTP server with a given host & handler. The handler can be an function or a Mapping that routes requests. When you send a request to a server listening to https://localhost add the --insecure flag  to ignore certificate errors. When using filesystem routing modules are reloaded each time files are changed in /routes/. Also for each page render a nonce is added to the `script-src-elem` CSP directive and to all `<script>` elements in the page's HTML.
 
 **examples**
 
@@ -905,15 +905,15 @@ http.FileServer!(https://localhost:8080, ./examples/static/)
 
 ### http.CSP
 
-the http.CSP function creates a Content Security Policy with the passed directives and the following default directives:
-  default-src 'none';
-  frame-ancestors 'none';
-  frame-src 'none';
-  script-src-elem 'self';
-  connect-src 'self';
-  font-src 'self';
-  img-src 'self';
-  style-src 'self'.
+The http.CSP function creates a Content Security Policy with the passed directives and the following default directives:
+  - __default-src__ 'none';
+  -  __frame-ancestors__ 'none';
+  -  __frame-src 'none__';
+  -  __script-src-elem__ 'self' 'nonce-[page-nonce]>';
+  -  __connect-src__ 'self';
+  -  __font-src__ 'self';
+  -  __img-src__ 'self';
+  -  __style-src-elem__ 'self' 'unsafe-inline'.
 
 **examples**
 

@@ -14,7 +14,8 @@ import (
 )
 
 const (
-	CSP_HEADER_NAME = "Content-Security-Policy"
+	CSP_HEADER_NAME          = "Content-Security-Policy"
+	DEFAULT_NONCE_BYTE_COUNT = 16
 )
 
 var (
@@ -27,9 +28,9 @@ var (
 		"script-src-elem": {{raw: "'self'"}},
 		"connect-src":     {{raw: "'self'"}},
 
-		"font-src":  {{raw: "'self'"}},
-		"img-src":   {{raw: "'self'"}},
-		"style-src": {{raw: "'self'"}},
+		"font-src":       {{raw: "'self'"}},
+		"img-src":        {{raw: "'self'"}},
+		"style-src-elem": {{raw: "'self' 'unsafe-inline'"}},
 	}
 
 	_ = []core.Value{&ContentSecurityPolicy{}}
@@ -99,14 +100,7 @@ func (c *ContentSecurityPolicy) Directive(directiveName string) (CSPDirective, b
 	return d, ok
 }
 
-func (c *ContentSecurityPolicy) Write(w io.Writer) (int, error) {
-	buf := bytes.NewBuffer(nil)
-	c.writeToBuf(buf)
-	n, err := buf.WriteTo(w)
-	return int(n), err
-}
-
-func (c *ContentSecurityPolicy) writeToBuf(buf *bytes.Buffer) {
+func (c *ContentSecurityPolicy) writeToBuf(buf *bytes.Buffer, scriptElemsNonce string) {
 	keys := make([]string, len(c.directives))
 	i := 0
 	for k := range c.directives {
@@ -117,10 +111,18 @@ func (c *ContentSecurityPolicy) writeToBuf(buf *bytes.Buffer) {
 
 	for i, k := range keys {
 		buf.WriteString(k)
+
 		for _, v := range c.directives[k].values {
 			buf.WriteString(" ")
 			buf.WriteString(v.raw)
 		}
+
+		if scriptElemsNonce != "" && k == "script-src-elem" {
+			buf.WriteString(" 'nonce-")
+			buf.WriteString(scriptElemsNonce)
+			buf.WriteByte('\'')
+		}
+
 		if i == len(keys)-1 {
 			buf.WriteString(";")
 		} else {
@@ -129,9 +131,19 @@ func (c *ContentSecurityPolicy) writeToBuf(buf *bytes.Buffer) {
 	}
 }
 
-func (c *ContentSecurityPolicy) String() string {
+type CSPHeaderValueParams struct {
+	ScriptsNonce string //optional
+}
+
+func (csp *ContentSecurityPolicy) String() string {
+	nonceExample := "<rand string such as " + randomCSPNonce() + ">"
+
+	return csp.HeaderValue(CSPHeaderValueParams{ScriptsNonce: nonceExample})
+}
+
+func (c *ContentSecurityPolicy) HeaderValue(params CSPHeaderValueParams) string {
 	buf := bytes.NewBuffer(nil)
-	c.writeToBuf(buf)
+	c.writeToBuf(buf, params.ScriptsNonce)
 	return buf.String()
 }
 
@@ -150,4 +162,11 @@ type CSPDirective struct {
 
 type CSPDirectiveValue struct {
 	raw string
+}
+
+// randomCSPNonce returns a random nonce value (unppaded base64), 'nonce-' is NOT part of the returned string.
+func randomCSPNonce() string {
+	//note: the random string should not start with the '-' character because this can cause issues.
+
+	return core.CryptoRandSource.ReadNBytesAsBase64Unpadded(DEFAULT_NONCE_BYTE_COUNT)
 }

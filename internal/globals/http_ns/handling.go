@@ -124,7 +124,15 @@ func addHandlerFunction(handlerValue core.Value, isMiddleware bool, server *Http
 				return
 			}
 
-			respondWithMappingResult(handlingArguments{value, req, rw, handlerGlobalState, server, handlerGlobalState.Logger, isMiddleware})
+			respondWithMappingResult(handlingArguments{
+				value:        value,
+				req:          req,
+				rw:           rw,
+				state:        handlerGlobalState,
+				server:       server,
+				logger:       handlerGlobalState.Logger,
+				isMiddleware: isMiddleware,
+			})
 		}
 		if isMiddleware {
 			server.middlewares = append(server.middlewares, handler)
@@ -146,6 +154,7 @@ type handlingArguments struct {
 	state        *core.GlobalState
 	server       *HttpsServer
 	logger       zerolog.Logger
+	scriptsNonce string //optional
 	isMiddleware bool
 }
 
@@ -311,7 +320,8 @@ loop:
 
 			//TODO: use matching instead of equality
 			if contentType == mimeconsts.HTML_CTYPE {
-				rw.AddHeader(state.Ctx, CSP_HEADER_NAME, core.Str(server.defaultCSP.String()))
+				headerValue := server.defaultCSP.HeaderValue(CSPHeaderValueParams{ScriptsNonce: h.scriptsNonce})
+				rw.AddHeader(state.Ctx, CSP_HEADER_NAME, core.Str(headerValue))
 			}
 
 			rw.WriteContentType(contentType)
@@ -375,7 +385,9 @@ loop:
 				}
 
 				rw.WriteContentType(mimeconsts.HTML_CTYPE)
-				rw.AddHeader(state.Ctx, CSP_HEADER_NAME, core.Str(server.defaultCSP.String()))
+
+				cspHeaderValue := core.Str(server.defaultCSP.HeaderValue(CSPHeaderValueParams{ScriptsNonce: h.scriptsNonce}))
+				rw.AddHeader(state.Ctx, CSP_HEADER_NAME, cspHeaderValue)
 
 				_, err := core.Render(state.Ctx, rw.BodyWriter(), v, renderingConfig)
 				if err != nil {

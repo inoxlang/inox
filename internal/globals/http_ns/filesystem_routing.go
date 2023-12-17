@@ -14,6 +14,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
+	"github.com/inoxlang/inox/internal/globals/html_ns"
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/mimeconsts"
 	"github.com/inoxlang/inox/internal/mod"
@@ -70,7 +71,8 @@ func addFilesystemRoutingHandler(server *HttpsServer, staticDir, dynamicDir core
 
 				//add CSP header if the content is HTML.
 				if mimeconsts.IsMimeTypeExtension(mimeconsts.HTML_CTYPE, fileExtension) {
-					rw.AddHeader(handlerGlobalState.Ctx, CSP_HEADER_NAME, core.Str(server.defaultCSP.String()))
+					headerValue := core.Str(server.defaultCSP.HeaderValue(CSPHeaderValueParams{}))
+					rw.AddHeader(handlerGlobalState.Ctx, CSP_HEADER_NAME, headerValue)
 				}
 
 				err := serveFile(handlerGlobalState.Ctx, rw, req, staticResourcePath)
@@ -325,6 +327,13 @@ func createHandleDynamic(server *HttpsServer, routingDirPath core.Path) handlerF
 			return
 		}
 
+		nonce := randomCSPNonce()
+
+		//add nonce to <script> tags
+		if node, ok := result.(*html_ns.HTMLNode); ok {
+			node.AddNonceToScriptTagsNoEvent(nonce)
+		}
+
 		respondWithMappingResult(handlingArguments{
 			value:        result,
 			req:          req,
@@ -332,6 +341,7 @@ func createHandleDynamic(server *HttpsServer, routingDirPath core.Path) handlerF
 			state:        handlerGlobalState,
 			server:       server,
 			logger:       handlerGlobalState.Logger,
+			scriptsNonce: nonce,
 			isMiddleware: false,
 		})
 	}

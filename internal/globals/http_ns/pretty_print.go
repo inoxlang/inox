@@ -75,8 +75,8 @@ func (evs *ServerSentEventSource) PrettyPrint(w *bufio.Writer, config *core.Pret
 	utils.Must(fmt.Fprintf(w, "%#v", evs))
 }
 
-func (v *ContentSecurityPolicy) PrettyPrint(w *bufio.Writer, config *core.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(fmt.Fprintf(w, "ContentSecurityPolicy(%s)", v.String()))
+func (csp *ContentSecurityPolicy) PrettyPrint(w *bufio.Writer, config *core.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "ContentSecurityPolicy(%s)", csp.String()))
 }
 
 func (p *HttpRequestPattern) PrettyPrint(w *bufio.Writer, config *core.PrettyPrintConfig, depth int, parentIndentCount int) {

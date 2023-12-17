@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/rand"
 
+	"encoding/base64"
 	"encoding/binary"
 	"encoding/hex"
 	"errors"
@@ -62,6 +63,15 @@ func (s *RandomnessSource) ReadNBytesAsHex(n int) string {
 		panic(err)
 	}
 	return hex.EncodeToString(bytes)
+}
+
+func (s *RandomnessSource) ReadNBytesAsBase64Unpadded(n int) string {
+	bytes := make([]byte, n)
+	_, err := s.Read(bytes)
+	if err != nil {
+		panic(err)
+	}
+	return base64.RawStdEncoding.EncodeToString(bytes)
 }
 
 func (r *RandomnessSource) Uint64() uint64 {

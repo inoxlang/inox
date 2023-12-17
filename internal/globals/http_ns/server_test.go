@@ -334,7 +334,7 @@ func TestHttpServerMapping(t *testing.T) {
 		runServerTest(t,
 			serverTestCase{
 				input: `return Mapping {
-					%/... => html.div{}
+					%/... => html<div></div>
 				}`,
 				requests: []requestTestInfo{
 					{acceptedContentType: mimeconsts.HTML_CTYPE, result: `<div></div>`},
@@ -349,7 +349,7 @@ func TestHttpServerMapping(t *testing.T) {
 		runServerTest(t,
 			serverTestCase{
 				input: `return Mapping {
-					%/... => html.div{}
+					%/... => html<div></div>
 				}`,
 				requests: []requestTestInfo{
 					{acceptedContentType: mimeconsts.ANY_CTYPE, result: `<div></div>`},
@@ -364,7 +364,7 @@ func TestHttpServerMapping(t *testing.T) {
 		runServerTest(t,
 			serverTestCase{
 				input: `return Mapping {
-					%/... => html.div{}
+					%/... => html<div></div>
 				}`,
 				requests: []requestTestInfo{
 					{
@@ -964,6 +964,10 @@ func runAdvancedServerTest(
 				if !assert.Regexp(t, info.resultRegex, body, reqInfo) {
 					return
 				}
+			case info.checkResponse != nil:
+				if !info.checkResponse(t, resp, body) {
+					return
+				}
 			default:
 				continue
 			}
@@ -993,8 +997,9 @@ type requestTestInfo struct {
 	requestBody         string
 
 	//expected
-	result                        string // ignore if content type is event stream
-	resultRegex                   string // ignore if content type is event stream
+	result                        string                                                           // ignored if .resultRegex or .checkResponse is set or of content type is event stream
+	resultRegex                   string                                                           // ignored if .result or .checkResponse is set or if content type is event stream
+	checkResponse                 func(t *testing.T, resp *http.Response, body string) (cont bool) //ignored if .result or .resultRegex is set
 	checkIdenticalParallelRequest bool
 	events                        []*core.Event
 	err                           error

@@ -13,11 +13,11 @@ func TestCSPWrite(t *testing.T) {
 	assert.NoError(t, err)
 
 	b := bytes.NewBuffer(nil)
-	csp.writeToBuf(b)
+	csp.writeToBuf(b, "")
 
 	assert.Equal(t,
 		"connect-src 'self'; default-src 'none'; font-src 'self'; frame-ancestors 'none'; frame-src 'none';"+
-			" img-src 'self'; script-src-elem 'self'; style-src 'self';", b.String())
+			" img-src 'self'; script-src-elem 'self'; style-src-elem 'self' 'unsafe-inline';", b.String())
 }
 
 func TestNewCSP(t *testing.T) {
@@ -51,4 +51,18 @@ func TestNewCSP(t *testing.T) {
 		assert.Contains(t, csp.String(), "default-src https://example.com")
 	})
 
+}
+
+func TestRandomNonce(t *testing.T) {
+
+	nonces := map[string]struct{}{}
+
+	for i := 0; i < 100; i++ {
+		nonce := randomCSPNonce()
+		if _, ok := nonces[nonce]; ok {
+			t.Logf("nonces should not repeat: %s", nonce)
+			t.FailNow()
+		}
+		nonces[nonce] = struct{}{}
+	}
 }

@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"reflect"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -108,7 +109,7 @@ func TestFilesystemRouting(t *testing.T) {
 						acceptedContentType: mimeconsts.HTML_CTYPE,
 						result:              `x`,
 						header: http.Header{
-							CSP_HEADER_NAME: []string{DEFAULT_CSP.String()},
+							CSP_HEADER_NAME: []string{DEFAULT_CSP.HeaderValue(CSPHeaderValueParams{})},
 						},
 					},
 				},
@@ -826,6 +827,60 @@ func TestFilesystemRouting(t *testing.T) {
 					{
 						path:   "/x",
 						result: `hello from x`,
+					},
+				},
+			},
+			createClient,
+		)
+	})
+
+	t.Run("a nonce should be added to all <script> elements", func(t *testing.T) {
+		runServerTest(t,
+			serverTestCase{
+				input: `return {
+						routing: {dynamic: /routes/}
+					}`,
+				makeFilesystem: func() afs.Filesystem {
+					fls := fs_ns.NewMemFilesystem(10_000)
+					fls.MkdirAll("/routes", fs_ns.DEFAULT_DIR_FMODE)
+					util.WriteFile(fls, "/routes/x.ix", []byte(`
+							manifest {}
+	
+							return html<html>
+								<head>
+									<script></script>
+									<script src="/index.js"></script>
+									<script></script>
+								</head>
+							</html>
+						`), fs_ns.DEFAULT_FILE_FMODE)
+
+					return fls
+				},
+				requests: []requestTestInfo{
+					{
+						path:                "/x",
+						acceptedContentType: mimeconsts.HTML_CTYPE,
+						checkResponse: func(t *testing.T, resp *http.Response, body string) (cont bool) {
+							resultRegex := `.*<script nonce=".*?"></script>\s*<script src=.*? nonce=".*?"></script>\s*<script nonce=".*?"></script>.*`
+							if !assert.Regexp(t, resultRegex, body) {
+								return false
+							}
+
+							attrStart := `nonce="`
+							nonceAttrIndex := strings.Index(body, attrStart)
+							s := body[nonceAttrIndex+len(attrStart):]
+							endIndex := strings.Index(s, `"`)
+							nonceValue := s[:endIndex]
+
+							cspHeaderValues := resp.Header[CSP_HEADER_NAME]
+
+							if !assert.Len(t, cspHeaderValues, 1) {
+								return false
+							}
+
+							return assert.Contains(t, cspHeaderValues[0], "script-src-elem 'self' 'nonce-"+nonceValue+"'")
+						},
 					},
 				},
 			},
