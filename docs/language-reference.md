@@ -111,10 +111,11 @@ Here are the most commonly used literals in Inox:
   - `%./*.go` matches any file in the `./` directory that ends with `.go`, it's
     a globbing path pattern.
   - ⚠️ They are values, they don't expand like when you do `ls ./*.go`
-  - note: you cannot mix prefix & globbing path patterns.
+  - learn more [here](#path-patterns)
 - URL literals: `https://example.com/index.html, https://google.com?q=inox`
 - URL pattern literals:
   - URL prefix patterns: `%https://example.com/...`
+  - learn more [here](#host-and-url-patterns)
 
 </details>
 

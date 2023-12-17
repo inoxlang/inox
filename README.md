@@ -146,7 +146,7 @@ If you want to compile Inox from source go [here](#compile-from-source).
 You can learn Inox directly in VSCode by creating a file with a `.tut.ix` extension. This is the recommended way.
 **Make sure to create this file inside an Inox project.**
 
-![tutorial-demo](https://github.com/inoxlang/inox-vscode/raw/main/assets/docs/tutorial-demo.gif)
+![tutorial-demo](https://github.com/inoxlang/inox-vscode/raw/master/assets/docs/tutorial-demo.gif)
 
 📖 [Language reference](docs/language-reference.md)\
 🧰 [Builtins](docs/builtins.md)
