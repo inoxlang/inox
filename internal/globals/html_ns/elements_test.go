@@ -209,7 +209,7 @@ func TestElementFunction(t *testing.T) {
 				})
 			} else {
 				expectedResult := testCase.result(ctx)
-				walkHTMLNode(expectedResult.node, func(n *html.Node) {
+				walkHTMLNode(expectedResult.node, func(n *html.Node) error {
 					if n.FirstChild != nil {
 						n.FirstChild.Parent = n
 					}
@@ -224,6 +224,7 @@ func TestElementFunction(t *testing.T) {
 						n.LastChild = n.FirstChild
 					}
 
+					return nil
 				}, 0)
 
 				result := NewNode(ctx, core.Str(testCase.tag), testCase.desc(ctx))

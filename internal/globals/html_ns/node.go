@@ -13,6 +13,10 @@ import (
 	_html_symbolic "github.com/inoxlang/inox/internal/globals/html_ns/symbolic"
 )
 
+const (
+	NONCE_ATTRIBUTE_NAME = "nonce"
+)
+
 var _ = []core.GoValue{&HTMLNode{}}
 
 type HTMLNode struct {
@@ -78,6 +82,10 @@ func (n *HTMLNode) Data() string {
 	return n.node.Data
 }
 
+func (n *HTMLNode) IsElementWithTag(tag string) bool {
+	return isNativeHtmlElementWithTag(n.node, tag)
+}
+
 func (n *HTMLNode) HasParent() bool {
 	return n.node.Parent != nil
 }
@@ -132,6 +140,22 @@ func (n *HTMLNode) Walk(fn func(n *HTMLNode) error) error {
 	}
 
 	return nil
+}
+
+func (n *HTMLNode) AddNonceToScriptTagsNoEvent(nonce string) {
+	n.DiscardCache()
+
+	if n.cloneOnWrite {
+		n.cloneOnWrite = false
+		n.replaceByClone()
+	}
+
+	walkHTMLNode(n.node, func(n *html.Node) error {
+		if isNativeHtmlElementWithTag(n, "script") {
+			n.Attr = append(n.Attr, html.Attribute{Key: NONCE_ATTRIBUTE_NAME, Val: nonce})
+		}
+		return nil
+	}, 0)
 }
 
 func (n *HTMLNode) ReplaceChildHTML(ctx *core.Context, prevHTMLNode *HTMLNode, child *HTMLNode) {

@@ -25,12 +25,13 @@ func computeApproximateRequiredLines(n *html.Node) int64 {
 	//TODO: improve
 
 	lineCount := int64(0)
-	walkHTMLNode(n, func(n *html.Node) {
+	walkHTMLNode(n, func(n *html.Node) error {
 		if n.Type == html.TextNode {
 			lineCount += 1 //obviously wrong, a text node can have many characters
 		} else {
 			lineCount += 3
 		}
+		return nil
 	}, 0)
 
 	return lineCount
@@ -82,4 +83,8 @@ func computeNodeWidth(root *html.Node) int {
 
 	maxWidth = max(maxWidth, levelCount)
 	return maxWidth
+}
+
+func isNativeHtmlElementWithTag(node *html.Node, tag string) bool {
+	return node.Type == html.ElementNode && node.Data == tag
 }
