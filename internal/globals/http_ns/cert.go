@@ -14,6 +14,7 @@ import (
 	"log"
 	"math/big"
 	"net"
+	"strconv"
 	"time"
 
 	"github.com/caddyserver/certmagic"
@@ -96,10 +97,14 @@ func GenerateSelfSignedCertAndKey(args SelfSignedCertParams) (cert *pem.Block, k
 		return nil, nil, err
 	}
 
+	//Generate a random organization name. Re-using the same (org. name, serial number) pair
+	//can cause an error (SEC_ERROR_REUSED_ISSUER_AND_SERIAL) in browsers such as Firefox.
+	orgName := "Acme Co - " + strconv.FormatUint(core.DefaultRandSource.Uint64(), 32)
+
 	template := x509.Certificate{
 		SerialNumber: big.NewInt(1),
 		Subject: pkix.Name{
-			Organization: []string{"Acme Co"},
+			Organization: []string{orgName},
 		},
 		NotBefore: time.Now(),
 		NotAfter:  time.Now().Add(args.ValidityDuration),
