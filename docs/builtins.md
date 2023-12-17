@@ -123,7 +123,7 @@ The Handle function creates a new Chrome handle that provides methods to interac
 You should call its .close() method when you are finished using it. 
 
 The project server downloads a Chromium browser
-if none is present. The list of checked paths can be found here: https://github.com/inoxlang/inox/blob/master/internal/globals/chrome_ns/download.go#L114C1-L114C43.
+if none is present. The list of checked paths can be found here: https://github.com/inoxlang/inox/blob/main/internal/globals/chrome_ns/download.go#L114C1-L114C43.
 If you are not using the project server you have to install Chrome or Chromium.
 
 The browser instance always forwards the HTTP requests to a local proxy server that runs inside an Inox process.
@@ -343,7 +343,7 @@ split!("first line\nsecond line", "\n")
 
 ### hash_password
 
-The hash_password function hashes a password string using the Argon2id algorithm, it returns a string containing: the hash, a random salt and parameters. You can find the implementation in this file: https://github.com/inoxlang/inox/blob/master/internal/globals/crypto.go.
+The hash_password function hashes a password string using the Argon2id algorithm, it returns a string containing: the hash, a random salt and parameters. You can find the implementation in this file: https://github.com/inoxlang/inox/blob/main/internal/globals/crypto.go.
 
 **examples**
 

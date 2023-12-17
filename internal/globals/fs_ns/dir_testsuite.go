@@ -1,4 +1,4 @@
-//slight modification of https://github.com/go-git/go-billy/blob/master/test/dir.go
+//slight modification of https://github.com/go-git/go-billy/blob/main/test/dir.go
 
 package fs_ns
 

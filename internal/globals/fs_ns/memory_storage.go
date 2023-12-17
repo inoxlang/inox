@@ -1,6 +1,6 @@
 package fs_ns
 
-//slight modification of https://github.com/go-git/go-billy/blob/master/memfs/memory.go (Apache 2.0 license)
+//slight modification of https://github.com/go-git/go-billy/blob/main/memfs/memory.go (Apache 2.0 license)
 
 import (
 	"errors"

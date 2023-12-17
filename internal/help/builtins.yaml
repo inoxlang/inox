@@ -146,7 +146,7 @@ crypto:
   - topic: hash_password
     text: >
       The hash_password function hashes a password string using the Argon2id algorithm, it returns a string
-      containing: the hash, a random salt and parameters. You can find the implementation in this file: https://github.com/inoxlang/inox/blob/master/internal/globals/crypto.go 
+      containing: the hash, a random salt and parameters. You can find the implementation in this file: https://github.com/inoxlang/inox/blob/main/internal/globals/crypto.go 
     examples:
     - code: 'hash_password("password")'
       output: '$argon2id$v=19$m=65536,t=1,p=1$xDLqbPJUrCURnSiVYuy/Qg$OhEJCObGgJ2EbcH0a7oE2sfD1+5T2BPRs8SRWkreE00'
@@ -456,7 +456,7 @@ chrome:
       You should call its .close() method when you are finished using it. 
       
       The project server downloads a Chromium browser
-      if none is present. The list of checked paths can be found here: https://github.com/inoxlang/inox/blob/master/internal/globals/chrome_ns/download.go#L114C1-L114C43.
+      if none is present. The list of checked paths can be found here: https://github.com/inoxlang/inox/blob/main/internal/globals/chrome_ns/download.go#L114C1-L114C43.
       If you are not using the project server you have to install Chrome or Chromium.
 
       The browser instance always forwards the HTTP requests to a local proxy server that runs inside an Inox process.
@@ -863,7 +863,7 @@ http:
       explanation: >
          creates an HTTP server at https://localhost:8080 with filesystem routing. The server will look for static files in the /static/ folder
          and dynamic handler modules (.ix files) in the /routes/ folder. Modules are reloaded each time files are changed in /routes/.
-         To learn about filesystem routing see https://github.com/inoxlang/inox/blob/master/docs/web-app-development.md#2-filesystem-routing
+         To learn about filesystem routing see https://github.com/inoxlang/inox/blob/main/docs/web-app-development.md#2-filesystem-routing
       standalone: true
 
     - code: |

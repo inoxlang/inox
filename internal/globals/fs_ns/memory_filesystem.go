@@ -1,6 +1,6 @@
 package fs_ns
 
-//modification of https://github.com/go-git/go-billy/blob/master/memfs/storage.go (Apache 2.0 license)
+//modification of https://github.com/go-git/go-billy/blob/main/memfs/storage.go (Apache 2.0 license)
 
 import (
 	"crypto/sha256"

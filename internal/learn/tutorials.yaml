@@ -116,7 +116,7 @@
       # must call: on error the runtime panics, otherwise nil is returned.
       nil_value = f!(false)      
 
-      # you can learn more about must calls here: https://github.com/inoxlang/inox/blob/master/docs/language-reference.md#must-calls.
+      # you can learn more about must calls here: https://github.com/inoxlang/inox/blob/main/docs/language-reference.md#must-calls.
     output:
     - "decoding error: (hex.InvalidByteError)encoding/hex: invalid byte: U+002E '.'"
     - "error returned by `f`: (*errors.errorString)there is an issue !"
@@ -327,7 +327,7 @@
         print "(/dir/file.json match %/*.json):" (/dir/file.json match %/*.json)
 
         # You can learn more about path patterns in the language reference: 
-        # https://github.com/inoxlang/inox/blob/master/docs/language-reference.md#path-patterns.
+        # https://github.com/inoxlang/inox/blob/main/docs/language-reference.md#path-patterns.
   - name: URLs and URLs patterns
     id: urls-url-patterns
     program: |
@@ -388,7 +388,7 @@
         )
 
         # You can learn more about URL patterns and host patterns in the language reference: 
-        # https://github.com/inoxlang/inox/blob/master/docs/language-reference.md#host-and-url-patterns.
+        # https://github.com/inoxlang/inox/blob/main/docs/language-reference.md#host-and-url-patterns.
 
   - name: Named Patterns and Typing
     id: pattern-decl
