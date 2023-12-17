@@ -28,7 +28,7 @@ require (
 	github.com/gorilla/websocket v1.5.1
 	github.com/johannesboyne/gofakes3 v0.0.0-20230506070712-04da935ef877
 	github.com/miekg/dns v1.1.57
-	github.com/minio/minio-go/v7 v7.0.58
+	github.com/minio/minio-go/v7 v7.0.66
 	github.com/muesli/cancelreader v0.2.2
 	github.com/muesli/termenv v0.15.2
 	github.com/oklog/ulid/v2 v2.1.0
@@ -37,8 +37,8 @@ require (
 	github.com/posener/complete/v2 v2.1.0
 	github.com/rs/zerolog v1.31.0
 	github.com/santhosh-tekuri/jsonschema/v5 v5.3.1
-	github.com/shirou/gopsutil/v3 v3.23.10
-	github.com/shoenig/go-landlock v0.1.7
+	github.com/shirou/gopsutil/v3 v3.23.11
+	github.com/shoenig/go-landlock v1.2.0
 	github.com/stretchr/testify v1.8.4
 	github.com/tidwall/btree v1.7.0
 	github.com/tidwall/gjson v1.17.0
@@ -78,9 +78,10 @@ require (
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-retryablehttp v0.7.5 // indirect
 	github.com/hashicorp/go-set v0.1.9 // indirect
+	github.com/hashicorp/go-set/v2 v2.1.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/klauspost/compress v1.16.6 // indirect
+	github.com/klauspost/compress v1.17.4 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.6 // indirect
 	github.com/kr/pretty v0.3.0 // indirect
 	github.com/kr/text v0.2.0 // indirect
@@ -125,5 +126,5 @@ require (
 	google.golang.org/protobuf v1.30.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	kernel.org/pub/linux/libs/security/libcap/psx v1.2.68 // indirect
+	kernel.org/pub/linux/libs/security/libcap/psx v1.2.69 // indirect
 )
