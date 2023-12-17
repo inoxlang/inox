@@ -94,8 +94,8 @@ func main() {
 
 		var result struct {
 			CompleteErrorMessage string                      `json:"completeErrorMessage"`
-			Errors               []*parse.ParsingError       `json:"errors"`
-			ErrorPositions       []parse.SourcePositionRange `json:"errorPositions"`
+			Errors               []*parse.ParsingError       `json:"errors,omitempty"`
+			ErrorPositions       []parse.SourcePositionRange `json:"errorPositions,omitempty"`
 			Chunk                *parse.Chunk                `json:"chunk,omitempty"`
 			ChunkId              string                      `json:"chunkId,omitempty"`
 		}
