@@ -153,16 +153,16 @@ func IsScopeContainerNode(node Node) bool {
 
 type Chunk struct {
 	NodeBase                   `json:"base:chunk"`
-	GlobalConstantDeclarations *GlobalConstantDeclarations //nil if no const declarations at the top of the module
-	Preinit                    *PreinitStatement           //nil if no preinit block at the top of the module
-	Manifest                   *Manifest                   //nil if no manifest at the top of the module
+	GlobalConstantDeclarations *GlobalConstantDeclarations `json:"globalConstDecls"`    //nil if no const declarations at the top of the module
+	Preinit                    *PreinitStatement           `json:"preinit"`             //nil if no preinit block at the top of the module
+	Manifest                   *Manifest                   `json:"manifest"`            //nil if no manifest at the top of the module
 	IncludableChunkDesc        *IncludableChunkDescription `json:"includableChunkDesc"` //nil if no manifest at the top of the module
 	Statements                 []Node                      `json:"statements"`
 	IsShellChunk               bool
 
 	//mostly valueless tokens, sorted by position (ascending).
 	//EmbeddedModule nodes hold references to subslices of .Tokens.
-	Tokens []Token
+	Tokens []Token `json:"tokens"`
 }
 
 type EmbeddedModule struct {

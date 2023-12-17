@@ -25,11 +25,11 @@ var (
 )
 
 type Token struct {
-	Type    TokenType
-	SubType TokenSubType
-	Meta    TokenMeta
-	Span    NodeSpan
-	Raw     string
+	Type    TokenType    `json:"type"`
+	SubType TokenSubType `json:"subType"`
+	Meta    TokenMeta    `json:"meta"`
+	Span    NodeSpan     `json:"span"`
+	Raw     string       `json:"raw"`
 }
 
 func (t Token) Str() string {
