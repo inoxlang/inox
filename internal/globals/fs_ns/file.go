@@ -18,8 +18,8 @@ import (
 const (
 	FS_WRITE_LIMIT_NAME          = "fs/write"
 	FS_READ_LIMIT_NAME           = "fs/read"
-	FS_TOTAL_NEW_FILE_LIMIT_NAME = "fs/total-new-file"
-	FS_NEW_FILE_RATE_LIMIT_NAME  = "fs/new-file"
+	FS_TOTAL_NEW_FILE_LIMIT_NAME = "fs/total-new-files"
+	FS_NEW_FILE_RATE_LIMIT_NAME  = "fs/create-file"
 
 	FS_WRITE_MIN_CHUNK_SIZE = 100_000
 	FS_READ_MIN_CHUNK_SIZE  = 1_000_000

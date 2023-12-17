@@ -74,14 +74,14 @@ manifest {
     limits: {
         "fs/read": 100MB/s
         "fs/write": 100MB/s
-        "fs/total-new-file": 100000
-        "fs/new-file": 100x/s
+        "fs/total-new-files": 100000
+        "fs/create": 100x/s
 
         "http/request": 100x/s
 
         "threads/simul-instances": 10
 
-        "ws/simul-connection": 2
+        "ws/simul-connections": 2
     }
 }
 

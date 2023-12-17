@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	WS_SIMUL_CONN_TOTAL_LIMIT_NAME = "ws/simul-connection"
+	WS_SIMUL_CONN_TOTAL_LIMIT_NAME = "ws/simul-connections"
 	OPTION_DOES_NOT_EXIST_FMT      = "option '%s' does not exist"
 )
 

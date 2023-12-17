@@ -1926,7 +1926,7 @@ Examples:
 This kind of limit represents a number of operations per second.\
 Examples:
 
-- `fs/new-file`
+- `fs/create-file`
 - `http/request`
 - `object-storage/request`
 
@@ -1937,8 +1937,8 @@ Attempting to make an operation while the counter associated with the limit is
 at zero will cause a panic.\
 Examples:
 
-- `fs/total-new-file` - the counter can only go down.
-- `ws/simul-connection` - simultaneous number of WebSocket connections, the
+- `fs/total-new-files` - the counter can only go down.
+- `ws/simul-connections` - simultaneous number of WebSocket connections, the
   counter can go up & down since connections can be closed.
 - `execution/cpu-time` - the counter decrements on its own, it pauses when an IO
   operation is being performed.

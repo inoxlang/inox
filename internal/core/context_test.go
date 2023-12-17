@@ -527,15 +527,15 @@ func TestContextLimiters(t *testing.T) {
 	t.Run("total", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{
 			Limits: []Limit{
-				{Name: "fs/total-read-file", Kind: TotalLimit, Value: 1},
+				{Name: "fs/total-read-files", Kind: TotalLimit, Value: 1},
 			},
 		}, nil)
 		defer ctx.CancelGracefully()
 
-		ctx.Take("fs/total-read-file", 1)
+		ctx.Take("fs/total-read-files", 1)
 
 		assert.Panics(t, func() {
-			ctx.Take("fs/total-read-file", 1)
+			ctx.Take("fs/total-read-files", 1)
 		})
 	})
 

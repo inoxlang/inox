@@ -13,7 +13,7 @@ manifest {
         }
     }
     limits: {
-        "ws/simul-connection": 1
+        "ws/simul-connections": 1
     }
 }
 
