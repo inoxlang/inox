@@ -292,7 +292,7 @@ func NewHttpsServer(ctx *core.Context, host core.Host, args ...core.Value) (*Htt
 			recover()
 			_server.endChan <- struct{}{}
 		}()
-		_server.serverLogger.Info().Msg("serve " + addr)
+		_server.serverLogger.Info().Msgf("start HTTPS server on %s (%s)", addr, host)
 
 		err := server.ListenAndServeTLS("", "")
 		if err != nil {
