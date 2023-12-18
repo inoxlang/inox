@@ -386,6 +386,12 @@ func registerDebugMethodHandlers(
 			programPath := filepath.Clean(launchArgs.Program)
 
 			debugSession.programPath = programPath
+			debugSession.programURI, err = getFileURI(programPath, opts.ProjectMode)
+			if err != nil {
+				removeDebugSession(debugSession, session)
+				return makeDAPErrorResponse(err.Error()), nil
+			}
+
 			debugSession.programDoneChan = make(chan error, 1)
 			debugSession.programPreparedOrFailedToChan = make(chan error)
 
@@ -398,6 +404,7 @@ func registerDebugMethodHandlers(
 					}
 				}()
 
+				defer notifyDiagnostics(session, debugSession.programURI, opts.ProjectMode, fls)
 				defer removeDebugSession(debugSession, session)
 
 				select {

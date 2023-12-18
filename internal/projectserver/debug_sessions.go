@@ -6,6 +6,7 @@ import (
 	"sync/atomic"
 
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/projectserver/lsp/defines"
 )
 
 type DebugSessions struct {
@@ -43,6 +44,7 @@ func (sessions *DebugSessions) RemoveSession(s *DebugSession) {
 type DebugSession struct {
 	id                             string
 	programPath                    string
+	programURI                     defines.DocumentUri
 	columnsStartAt1, lineStartsAt1 bool
 	configurationDone              atomic.Bool
 

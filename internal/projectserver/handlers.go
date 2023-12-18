@@ -792,6 +792,19 @@ func getFilePath(uri defines.DocumentUri, usingInoxFs bool) (string, error) {
 	return clean, nil
 }
 
+func getFileURI(path string, usingInoxFs bool) (defines.DocumentUri, error) {
+	if path == "" {
+		return "", errors.New("failed to get document URI: empty path")
+	}
+	if path[0] != '/' {
+		return "", fmt.Errorf("failed to get document URI: path is not absolute: %q", path)
+	}
+	if usingInoxFs {
+		return defines.DocumentUri(INOX_FS_SCHEME + "://" + path), nil
+	}
+	return defines.DocumentUri("file://" + path), nil
+}
+
 func getPath(uri defines.URI, usingInoxFS bool) (string, error) {
 	u, err := url.Parse(string(uri))
 	if err != nil {
