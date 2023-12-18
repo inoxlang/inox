@@ -25,12 +25,18 @@ type Project interface {
 	// GetS3CredentialsForBucket creates the bucket bucketName if necessary & returns credentials to access it,
 	// the returned credentials should not work for other buckets.
 	GetS3CredentialsForBucket(ctx *Context, bucketName string, provider string) (accessKey, secretKey string, s3Endpoint Host, _ error)
+
+	Configuration() ProjectConfiguration
 }
 
 type ProjectID string
 
 func RandomProjectID(projectName string) ProjectID {
 	return ProjectID(projectName + "-" + ulid.Make().String())
+}
+
+type ProjectConfiguration interface {
+	AreExposedWebServersAllowed() bool
 }
 
 type ProjectSecret struct {

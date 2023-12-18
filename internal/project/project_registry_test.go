@@ -144,6 +144,39 @@ func TestOpenProject(t *testing.T) {
 		assert.Equal(t, params, project.data.CreationParams)
 	})
 
+	t.Run("with ExposeWebServers: true", func(t *testing.T) {
+		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
+		fls := fs_ns.NewMemFilesystem(1_000_000)
+
+		reg := utils.Must(OpenRegistry("/projects", fls, ctx))
+		defer reg.Close(ctx)
+
+		params := CreateProjectParams{
+			Name:     "myproject",
+			Template: scaffolding.MINIMAL_WEB_APP_TEMPLATE_NAME,
+		}
+		id := utils.Must(reg.CreateProject(ctx, params))
+
+		assert.NotEmpty(t, id)
+
+		//open
+		project, err := reg.OpenProject(ctx, OpenProjectParams{
+			Id:               id,
+			ExposeWebServers: true,
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		assert.NotNil(t, project)
+		assert.Equal(t, id, project.id)
+		assert.Equal(t, params, project.data.CreationParams)
+		assert.True(t, project.Configuration().AreExposedWebServersAllowed())
+	})
+
 	t.Run("re opening a project should not change the returned value", func(t *testing.T) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()

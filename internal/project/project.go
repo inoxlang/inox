@@ -39,8 +39,9 @@ var (
 )
 
 type Project struct {
-	id   core.ProjectID
-	lock core.SmartLock
+	id     core.ProjectID
+	lock   core.SmartLock
+	config ProjectConfiguration
 
 	//filesystems and images
 
@@ -159,6 +160,10 @@ func (p *Project) BaseImage() (core.Image, error) {
 	return &Image{
 		filesystem: snapshot,
 	}, nil
+}
+
+func (p *Project) Configuration() core.ProjectConfiguration {
+	return p.config
 }
 
 func (p *Project) IsMutable() bool {

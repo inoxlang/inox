@@ -118,9 +118,10 @@ func (r *Registry) CreateProject(ctx *core.Context, params CreateProjectParams) 
 }
 
 type OpenProjectParams struct {
-	Id            core.ProjectID
-	DevSideConfig DevSideProjectConfig `json:"config"`
-	TempTokens    *TempProjectTokens   `json:"tempTokens,omitempty"`
+	Id               core.ProjectID
+	DevSideConfig    DevSideProjectConfig `json:"config"`
+	TempTokens       *TempProjectTokens   `json:"tempTokens,omitempty"`
+	ExposeWebServers bool
 }
 
 func (r *Registry) OpenProject(ctx *core.Context, params OpenProjectParams) (*Project, error) {
@@ -141,6 +142,10 @@ func (r *Registry) OpenProject(ctx *core.Context, params OpenProjectParams) (*Pr
 
 	if !found {
 		return nil, ErrProjectNotFound
+	}
+
+	config := ProjectConfiguration{
+		exposeWebServers: params.ExposeWebServers,
 	}
 
 	// get project data from the database
@@ -178,6 +183,8 @@ func (r *Registry) OpenProject(ctx *core.Context, params OpenProjectParams) (*Pr
 		persistFn:      r.persistProjectData,
 
 		storeSecretsInProjectData: true,
+
+		config: config,
 	}
 
 	if params.DevSideConfig.Cloudflare != nil {

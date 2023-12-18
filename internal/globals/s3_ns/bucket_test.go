@@ -126,6 +126,10 @@ func (p *testProject) BaseImage() (core.Image, error) {
 	return nil, core.ErrNotImplemented
 }
 
+func (p *testProject) Configuration() core.ProjectConfiguration {
+	panic("unimplemented")
+}
+
 func (*testProject) GetSecrets(ctx *core.Context) ([]core.ProjectSecret, error) {
 	panic("unimplemented")
 }

@@ -105,9 +105,10 @@ func registerProjectMethodHandlers(server *lsp.Server, opts LSPServerConfigurati
 			}
 
 			project, err := projectRegistry.OpenProject(sessionCtx, project.OpenProjectParams{
-				Id:            params.ProjectId,
-				DevSideConfig: params.DevSideConfig,
-				TempTokens:    params.TempTokens,
+				Id:               params.ProjectId,
+				DevSideConfig:    params.DevSideConfig,
+				TempTokens:       params.TempTokens,
+				ExposeWebServers: opts.ExposeWebServers,
 			})
 
 			if err != nil {

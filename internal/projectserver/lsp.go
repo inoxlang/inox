@@ -43,6 +43,7 @@ type LSPServerConfiguration struct {
 	ProjectsDir           core.Path
 	ProdDir               core.Path //if empty deployment in producation is not allowed
 	ProjectsDirFilesystem afs.Filesystem
+	ExposeWebServers      bool
 
 	OnSession jsonrpc.SessionCreationCallbackFn
 }

@@ -12026,6 +12026,10 @@ func (p *testProjectWithImage) BaseImage() (Image, error) {
 	return p.image, nil
 }
 
+func (p *testProjectWithImage) Configuration() ProjectConfiguration {
+	panic("unimplemented")
+}
+
 func (p *testProjectWithImage) CanProvideS3Credentials(s3Provider string) (bool, error) {
 	panic("unimplemented")
 }

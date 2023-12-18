@@ -901,6 +901,10 @@ func (p *testProject) BaseImage() (core.Image, error) {
 	return nil, core.ErrNotImplemented
 }
 
+func (p *testProject) Configuration() core.ProjectConfiguration {
+	panic("unimplemented")
+}
+
 func (*testProject) GetS3CredentialsForBucket(
 	ctx *core.Context,
 	bucketName string,

@@ -806,6 +806,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 			ProjectMode:      true,
 			ProjectsDir:      core.DirPathFrom(projectsDir),
 			ProdDir:          prodDir,
+			ExposeWebServers: projectServerConfig.ExposeWebServers,
 
 			ProjectsDirFilesystem: ctx.GetFileSystem(),
 			OnSession: func(rpcCtx *core.Context, s *jsonrpc.Session) error {
