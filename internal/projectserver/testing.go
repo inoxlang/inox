@@ -95,7 +95,7 @@ func testFileAsync(path string, filters core.TestFilters, session *jsonrpc.Sessi
 			return
 		}
 
-		if state == nil || len(state.TestSuiteResults) == 0 {
+		if state == nil || len(state.TestingState.SuiteResults) == 0 {
 			return
 		}
 
@@ -104,7 +104,7 @@ func testFileAsync(path string, filters core.TestFilters, session *jsonrpc.Sessi
 		colorized := false
 		backgroundIsDark := true
 
-		for _, suiteResult := range state.TestSuiteResults {
+		for _, suiteResult := range state.TestingState.SuiteResults {
 			msg := utils.AddCarriageReturnAfterNewlines(suiteResult.MostAdaptedMessage(colorized, backgroundIsDark))
 			fmt.Fprint(buf, msg)
 		}

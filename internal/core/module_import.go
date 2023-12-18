@@ -70,14 +70,14 @@ func ImportWaitModule(config ImportConfig) (Value, error) {
 
 	//add test suite results to the parent state.
 	//we only try to lock to avoid blocking if already locked.
-	if parentState.IsTestingEnabled && lthread.state.TestResultsLock.TryLock() {
+	if parentState.TestingState.IsTestingEnabled && lthread.state.TestingState.ResultsLock.TryLock() {
 		func() {
-			defer lthread.state.TestResultsLock.Unlock()
+			defer lthread.state.TestingState.ResultsLock.Unlock()
 
-			parentState.TestResultsLock.Lock()
-			defer parentState.TestResultsLock.Unlock()
+			parentState.TestingState.ResultsLock.Lock()
+			defer parentState.TestingState.ResultsLock.Unlock()
 
-			parentState.TestSuiteResults = append(parentState.TestSuiteResults, lthread.state.TestSuiteResults...)
+			parentState.TestingState.SuiteResults = append(parentState.TestingState.SuiteResults, lthread.state.TestingState.SuiteResults...)
 		}()
 	}
 
@@ -250,8 +250,8 @@ func ImportModule(config ImportConfig) (*LThread, error) {
 		Timeout:                      time.Until(deadline),
 		IgnoreCreateLThreadPermCheck: true,
 
-		IsTestingEnabled: parentState.IsTestingEnabled && parentState.IsImportTestingEnabled,
-		TestFilters:      parentState.TestFilters,
+		IsTestingEnabled: parentState.TestingState.IsTestingEnabled && parentState.TestingState.IsImportTestingEnabled,
+		TestFilters:      parentState.TestingState.Filters,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("import: %s", err.Error())

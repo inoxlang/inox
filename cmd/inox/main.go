@@ -317,7 +317,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 
 		//print test suite results
 
-		if scriptState == nil || len(scriptState.TestSuiteResults) == 0 {
+		if scriptState == nil || len(scriptState.TestingState.SuiteResults) == 0 {
 			return
 		}
 
@@ -326,7 +326,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 		colorized := config.DEFAULT_PRETTY_PRINT_CONFIG.Colorize
 		backgroundIsDark := config.INITIAL_BG_COLOR.IsDarkBackgroundColor()
 
-		for _, suiteResult := range scriptState.TestSuiteResults {
+		for _, suiteResult := range scriptState.TestingState.SuiteResults {
 			msg := utils.AddCarriageReturnAfterNewlines(suiteResult.MostAdaptedMessage(colorized, backgroundIsDark))
 			fmt.Fprint(outW, msg)
 		}

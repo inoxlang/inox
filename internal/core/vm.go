@@ -702,7 +702,7 @@ func (v *VM) run() {
 			v.ip += 2
 			testItem := v.stack[v.sp-1].(TestItem)
 
-			if enabled, _ := v.global.TestFilters.IsTestEnabled(testItem, v.global); !enabled {
+			if enabled, _ := v.global.TestingState.Filters.IsTestEnabled(testItem, v.global); !enabled {
 				pos := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
 
 				v.stack[v.sp-1] = Nil
@@ -1516,23 +1516,23 @@ func (v *VM) run() {
 
 			//create test result and add it to .TestSuiteResults.
 			err := func() error {
-				if !lthread.state.TestResultsLock.TryLock() {
+				if !lthread.state.TestingState.ResultsLock.TryLock() {
 					return errors.New("test results should not be locked")
 				}
-				defer lthread.state.TestResultsLock.Unlock()
+				defer lthread.state.TestingState.ResultsLock.Unlock()
 
-				testCaseResults := lthread.state.TestCaseResults
-				testSuiteResults := lthread.state.TestSuiteResults
+				testCaseResults := lthread.state.TestingState.CaseResults
+				testSuiteResults := lthread.state.TestingState.SuiteResults
 
 				result, err := NewTestSuiteResult(v.global.Ctx, testCaseResults, testSuiteResults, testSuite)
 				if err != nil {
 					return err
 				}
 
-				v.global.TestResultsLock.Lock()
-				defer v.global.TestResultsLock.Unlock()
+				v.global.TestingState.ResultsLock.Lock()
+				defer v.global.TestingState.ResultsLock.Unlock()
 
-				v.global.TestSuiteResults = append(v.global.TestSuiteResults, result)
+				v.global.TestingState.SuiteResults = append(v.global.TestingState.SuiteResults, result)
 				return nil
 			}()
 
@@ -1556,11 +1556,11 @@ func (v *VM) run() {
 			// if v.global.Module.ModuleKind == TestSuiteModule {
 			// 	//create test result and add it to .TestSuiteResults.
 			// 	err := func() error {
-			// 		lthread.state.TestResultsLock.Lock()
-			// 		defer lthread.state.TestResultsLock.Unlock()
+			// 		lthread.state.TestingState.TestResultsLock.Lock()
+			// 		defer lthread.state.TestingState.TestResultsLock.Unlock()
 
-			// 		testCaseResults := lthread.state.TestCaseResults
-			// 		testSuiteResults := lthread.state.TestSuiteResults
+			// 		testCaseResults := lthread.state.TestingState.TestCaseResults
+			// 		testSuiteResults := lthread.state.TestingState.TestSuiteResults
 
 			// 		result, err := NewTestCaseResult(v.global.Ctx, testCase)
 			// 		if err != nil {

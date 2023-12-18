@@ -1106,7 +1106,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			}()
 		}
 
-		if state.Global.IsTestingEnabled && !state.Global.IsImportTestingEnabled && !state.forceDisableTesting {
+		if state.Global.TestingState.IsTestingEnabled && !state.Global.TestingState.IsTestingEnabled && !state.forceDisableTesting {
 			state.forceDisableTesting = true
 			defer func() {
 				state.forceDisableTesting = false
@@ -2700,7 +2700,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 
 		return val, nil
 	case *parse.TestSuiteExpression:
-		if (!state.Global.IsTestingEnabled || state.forceDisableTesting) && n.IsStatement {
+		if (!state.Global.TestingState.IsTestingEnabled || state.forceDisableTesting) && n.IsStatement {
 			return Nil, nil
 		}
 
@@ -2733,11 +2733,11 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 
 		//execute the suite if the node is a statement
 		if n.IsStatement {
-			if !state.Global.IsTestingEnabled {
+			if !state.Global.TestingState.IsTestingEnabled {
 				return Nil, nil
 			}
 
-			if ok, _ := state.Global.TestFilters.IsTestEnabled(suite, state.Global); !ok {
+			if ok, _ := state.Global.TestingState.Filters.IsTestEnabled(suite, state.Global); !ok {
 				return Nil, nil
 			}
 
@@ -2751,23 +2751,23 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			}
 
 			err = func() error {
-				if !lthread.state.TestResultsLock.TryLock() {
+				if !lthread.state.TestingState.ResultsLock.TryLock() {
 					return errors.New("test results should not be locked")
 				}
-				defer lthread.state.TestResultsLock.Unlock()
+				defer lthread.state.TestingState.ResultsLock.Unlock()
 
-				testCaseResults := lthread.state.TestCaseResults
-				testSuiteResults := lthread.state.TestSuiteResults
+				testCaseResults := lthread.state.TestingState.CaseResults
+				testSuiteResults := lthread.state.TestingState.SuiteResults
 
 				result, err := NewTestSuiteResult(state.Global.Ctx, testCaseResults, testSuiteResults, suite)
 				if err != nil {
 					return err
 				}
 
-				state.Global.TestResultsLock.Lock()
-				defer state.Global.TestResultsLock.Unlock()
+				state.Global.TestingState.ResultsLock.Lock()
+				defer state.Global.TestingState.ResultsLock.Unlock()
 
-				state.Global.TestSuiteResults = append(state.Global.TestSuiteResults, result)
+				state.Global.TestingState.SuiteResults = append(state.Global.TestingState.SuiteResults, result)
 				return nil
 			}()
 
@@ -2780,7 +2780,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			return suite, nil
 		}
 	case *parse.TestCaseExpression:
-		if (!state.Global.IsTestingEnabled || state.forceDisableTesting) && n.IsStatement {
+		if (!state.Global.TestingState.IsTestingEnabled || state.forceDisableTesting) && n.IsStatement {
 			return Nil, nil
 		}
 
@@ -2819,7 +2819,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 
 		//execute the test case if the node is a statement
 		if n.IsStatement {
-			if ok, _ := state.Global.TestFilters.IsTestEnabled(testCase, state.Global); !ok {
+			if ok, _ := state.Global.TestingState.Filters.IsTestEnabled(testCase, state.Global); !ok {
 				return Nil, nil
 			}
 
@@ -2835,20 +2835,20 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			}
 
 			err = func() error {
-				if !lthread.state.TestResultsLock.TryLock() {
+				if !lthread.state.TestingState.ResultsLock.TryLock() {
 					return errors.New("test results should not be locked")
 				}
-				defer lthread.state.TestResultsLock.Unlock()
+				defer lthread.state.TestingState.ResultsLock.Unlock()
 
 				testCaseResult, err := NewTestCaseResult(state.Global.Ctx, result, err, testCase)
 				if err != nil {
 					return err
 				}
 
-				state.Global.TestResultsLock.Lock()
-				defer state.Global.TestResultsLock.Unlock()
+				state.Global.TestingState.ResultsLock.Lock()
+				defer state.Global.TestingState.ResultsLock.Unlock()
 
-				state.Global.TestCaseResults = append(state.Global.TestCaseResults, testCaseResult)
+				state.Global.TestingState.CaseResults = append(state.Global.TestingState.CaseResults, testCaseResult)
 				return nil
 			}()
 

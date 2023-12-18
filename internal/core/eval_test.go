@@ -8187,8 +8187,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			assert.NoError(t, err)
 			assert.Equal(t, Nil, res)
-			assert.Empty(t, state.TestCaseResults)
-			assert.Empty(t, state.TestSuiteResults)
+			assert.Empty(t, state.TestingState.CaseResults)
+			assert.Empty(t, state.TestingState.SuiteResults)
 		})
 
 		t.Run("empty: testing disabled: meta should not be evaluted", func(t *testing.T) {
@@ -8213,8 +8213,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			assert.NoError(t, err)
 			assert.Equal(t, Int(0), res)
-			assert.Empty(t, state.TestCaseResults)
-			assert.Empty(t, state.TestSuiteResults)
+			assert.Empty(t, state.TestingState.CaseResults)
+			assert.Empty(t, state.TestingState.SuiteResults)
 		})
 
 		t.Run("should inherit patterns", func(t *testing.T) {
@@ -8227,16 +8227,16 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			`)
 
 			state := NewGlobalState(NewDefaultTestContext())
-			state.IsTestingEnabled = true
-			state.TestFilters = allTestsFilter
+			state.TestingState.IsTestingEnabled = true
+			state.TestingState.Filters = allTestsFilter
 			defer state.Ctx.CancelGracefully()
 
 			res, err := Eval(src, state, false)
 
 			assert.NoError(t, err)
 			assert.Equal(t, Nil, res)
-			assert.Empty(t, state.TestCaseResults)
-			assert.Len(t, state.TestSuiteResults, 1)
+			assert.Empty(t, state.TestingState.CaseResults)
+			assert.Len(t, state.TestingState.SuiteResults, 1)
 		})
 
 		t.Run("should inherit pattern namespaces", func(t *testing.T) {
@@ -8249,16 +8249,16 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			`)
 
 			state := NewGlobalState(NewDefaultTestContext())
-			state.IsTestingEnabled = true
-			state.TestFilters = allTestsFilter
+			state.TestingState.IsTestingEnabled = true
+			state.TestingState.Filters = allTestsFilter
 			defer state.Ctx.CancelGracefully()
 
 			res, err := Eval(src, state, false)
 
 			assert.NoError(t, err)
 			assert.Equal(t, Nil, res)
-			assert.Empty(t, state.TestCaseResults)
-			assert.Len(t, state.TestSuiteResults, 1)
+			assert.Empty(t, state.TestingState.CaseResults)
+			assert.Len(t, state.TestingState.SuiteResults, 1)
 		})
 
 		t.Run("should inherit host aliases", func(t *testing.T) {
@@ -8271,40 +8271,40 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			`)
 
 			state := NewGlobalState(NewDefaultTestContext())
-			state.IsTestingEnabled = true
-			state.TestFilters = allTestsFilter
+			state.TestingState.IsTestingEnabled = true
+			state.TestingState.Filters = allTestsFilter
 			defer state.Ctx.CancelGracefully()
 
 			res, err := Eval(src, state, false)
 
 			assert.NoError(t, err)
 			assert.Equal(t, Nil, res)
-			assert.Empty(t, state.TestCaseResults)
-			assert.Len(t, state.TestSuiteResults, 1)
+			assert.Empty(t, state.TestingState.CaseResults)
+			assert.Len(t, state.TestingState.SuiteResults, 1)
 		})
 
 		t.Run("empty", func(t *testing.T) {
 			src := makeSourceFile(`testsuite "name" {}`)
 
 			state := NewGlobalState(NewDefaultTestContext())
-			state.IsTestingEnabled = true
-			state.TestFilters = allTestsFilter
+			state.TestingState.IsTestingEnabled = true
+			state.TestingState.Filters = allTestsFilter
 			defer state.Ctx.CancelGracefully()
 
 			res, err := Eval(src, state, false)
 
 			assert.NoError(t, err)
 			assert.Equal(t, Nil, res)
-			assert.Empty(t, state.TestCaseResults)
-			assert.Len(t, state.TestSuiteResults, 1)
+			assert.Empty(t, state.TestingState.CaseResults)
+			assert.Len(t, state.TestingState.SuiteResults, 1)
 		})
 
 		t.Run("empty: filtered out", func(t *testing.T) {
 			src := makeSourceFile(`testsuite "name" {}`)
 
 			state := NewGlobalState(NewDefaultTestContext())
-			state.IsTestingEnabled = true
-			state.TestFilters = TestFilters{
+			state.TestingState.IsTestingEnabled = true
+			state.TestingState.Filters = TestFilters{
 				PositiveTestFilters: []TestFilter{
 					{
 						NameRegex: "not this test",
@@ -8317,8 +8317,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			assert.NoError(t, err)
 			assert.Equal(t, Nil, res)
-			assert.Empty(t, state.TestCaseResults)
-			assert.Empty(t, state.TestSuiteResults)
+			assert.Empty(t, state.TestingState.CaseResults)
+			assert.Empty(t, state.TestingState.SuiteResults)
 		})
 
 		t.Run("empty: return statement after test suite", func(t *testing.T) {
@@ -8328,16 +8328,16 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			`)
 
 			state := NewGlobalState(NewDefaultTestContext())
-			state.IsTestingEnabled = true
-			state.TestFilters = allTestsFilter
+			state.TestingState.IsTestingEnabled = true
+			state.TestingState.Filters = allTestsFilter
 			defer state.Ctx.CancelGracefully()
 
 			res, err := Eval(src, state, false)
 
 			assert.NoError(t, err)
 			assert.Equal(t, Int(0), res)
-			assert.Empty(t, state.TestCaseResults)
-			assert.Len(t, state.TestSuiteResults, 1)
+			assert.Empty(t, state.TestingState.CaseResults)
+			assert.Len(t, state.TestingState.SuiteResults, 1)
 		})
 
 		t.Run("empty in imported module", func(t *testing.T) {
@@ -8372,20 +8372,20 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				Limits:     []Limit{permissiveLthreadLimit},
 			})
 			state := NewGlobalState(ctx)
-			state.IsTestingEnabled = true
-			state.IsImportTestingEnabled = true
-			state.TestFilters = allTestsFilter
+			state.TestingState.IsTestingEnabled = true
+			state.TestingState.IsImportTestingEnabled = true
+			state.TestingState.Filters = allTestsFilter
 			defer state.Ctx.CancelGracefully()
 
 			res, err := Eval(mod, state, false)
 
 			assert.NoError(t, err)
 			assert.Equal(t, Nil, res)
-			assert.Empty(t, state.TestCaseResults)
-			if !assert.Len(t, state.TestSuiteResults, 1) {
+			assert.Empty(t, state.TestingState.CaseResults)
+			if !assert.Len(t, state.TestingState.SuiteResults, 1) {
 				return
 			}
-			assert.Empty(t, state.TestSuiteResults[0].caseResults)
+			assert.Empty(t, state.TestingState.SuiteResults[0].caseResults)
 		})
 
 		t.Run("empty in imported module: disabled import testing", func(t *testing.T) {
@@ -8420,17 +8420,17 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				Limits:     []Limit{permissiveLthreadLimit},
 			})
 			state := NewGlobalState(ctx)
-			state.IsTestingEnabled = true
-			state.IsImportTestingEnabled = false
-			state.TestFilters = allTestsFilter
+			state.TestingState.IsTestingEnabled = true
+			state.TestingState.IsImportTestingEnabled = false
+			state.TestingState.Filters = allTestsFilter
 			defer state.Ctx.CancelGracefully()
 
 			res, err := Eval(mod, state, false)
 
 			assert.NoError(t, err)
 			assert.Equal(t, Nil, res)
-			assert.Empty(t, state.TestCaseResults)
-			assert.Empty(t, state.TestSuiteResults)
+			assert.Empty(t, state.TestingState.CaseResults)
+			assert.Empty(t, state.TestingState.SuiteResults)
 		})
 
 		t.Run("empty in included chunk", func(t *testing.T) {
@@ -8459,20 +8459,20 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				Limits:     []Limit{permissiveLthreadLimit},
 			})
 			state := NewGlobalState(ctx)
-			state.IsTestingEnabled = true
-			state.IsImportTestingEnabled = true
-			state.TestFilters = allTestsFilter
+			state.TestingState.IsTestingEnabled = true
+			state.TestingState.IsImportTestingEnabled = true
+			state.TestingState.Filters = allTestsFilter
 			defer state.Ctx.CancelGracefully()
 
 			res, err := Eval(mod, state, false)
 
 			assert.NoError(t, err)
 			assert.Equal(t, Nil, res)
-			assert.Empty(t, state.TestCaseResults)
-			if !assert.Len(t, state.TestSuiteResults, 1) {
+			assert.Empty(t, state.TestingState.CaseResults)
+			if !assert.Len(t, state.TestingState.SuiteResults, 1) {
 				return
 			}
-			assert.Empty(t, state.TestSuiteResults[0].caseResults)
+			assert.Empty(t, state.TestingState.SuiteResults[0].caseResults)
 		})
 
 		t.Run("empty in included chunk: disabled import testing", func(t *testing.T) {
@@ -8501,17 +8501,17 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				Limits:     []Limit{permissiveLthreadLimit},
 			})
 			state := NewGlobalState(ctx)
-			state.IsTestingEnabled = true
-			state.IsImportTestingEnabled = false
-			state.TestFilters = allTestsFilter
+			state.TestingState.IsTestingEnabled = true
+			state.TestingState.IsImportTestingEnabled = false
+			state.TestingState.Filters = allTestsFilter
 			defer state.Ctx.CancelGracefully()
 
 			res, err := Eval(mod, state, false)
 
 			assert.NoError(t, err)
 			assert.Equal(t, Nil, res)
-			assert.Empty(t, state.TestCaseResults)
-			assert.Empty(t, state.TestSuiteResults)
+			assert.Empty(t, state.TestingState.CaseResults)
+			assert.Empty(t, state.TestingState.SuiteResults)
 		})
 
 		t.Run("empty in included chunk (deep)", func(t *testing.T) {
@@ -8545,20 +8545,20 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				Limits:     []Limit{permissiveLthreadLimit},
 			})
 			state := NewGlobalState(ctx)
-			state.IsTestingEnabled = true
-			state.IsImportTestingEnabled = true
-			state.TestFilters = allTestsFilter
+			state.TestingState.IsTestingEnabled = true
+			state.TestingState.IsImportTestingEnabled = true
+			state.TestingState.Filters = allTestsFilter
 			defer state.Ctx.CancelGracefully()
 
 			res, err := Eval(mod, state, false)
 
 			assert.NoError(t, err)
 			assert.Equal(t, Nil, res)
-			assert.Empty(t, state.TestCaseResults)
-			if !assert.Len(t, state.TestSuiteResults, 1) {
+			assert.Empty(t, state.TestingState.CaseResults)
+			if !assert.Len(t, state.TestingState.SuiteResults, 1) {
 				return
 			}
-			assert.Empty(t, state.TestSuiteResults[0].caseResults)
+			assert.Empty(t, state.TestingState.SuiteResults[0].caseResults)
 		})
 
 		t.Run("empty in included chunk (deep): disabled import testing", func(t *testing.T) {
@@ -8592,17 +8592,17 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				Limits:     []Limit{permissiveLthreadLimit},
 			})
 			state := NewGlobalState(ctx)
-			state.IsTestingEnabled = true
-			state.IsImportTestingEnabled = false
-			state.TestFilters = allTestsFilter
+			state.TestingState.IsTestingEnabled = true
+			state.TestingState.IsImportTestingEnabled = false
+			state.TestingState.Filters = allTestsFilter
 			defer state.Ctx.CancelGracefully()
 
 			res, err := Eval(mod, state, false)
 
 			assert.NoError(t, err)
 			assert.Equal(t, Nil, res)
-			assert.Empty(t, state.TestCaseResults)
-			assert.Empty(t, state.TestSuiteResults)
+			assert.Empty(t, state.TestingState.CaseResults)
+			assert.Empty(t, state.TestingState.SuiteResults)
 		})
 
 		t.Run("if a fs snapshot is specified the filesystem should be created from it", func(t *testing.T) {
@@ -8614,8 +8614,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			`)
 
 			state := NewGlobalState(NewDefaultTestContext())
-			state.IsTestingEnabled = true
-			state.TestFilters = allTestsFilter
+			state.TestingState.IsTestingEnabled = true
+			state.TestingState.Filters = allTestsFilter
 			defer state.Ctx.CancelGracefully()
 
 			fls := newMemFilesystem()
@@ -8653,8 +8653,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			}`)
 
 			state := NewGlobalState(NewDefaultTestContext())
-			state.IsTestingEnabled = true
-			state.TestFilters = allTestsFilter
+			state.TestingState.IsTestingEnabled = true
+			state.TestingState.Filters = allTestsFilter
 			defer state.Ctx.CancelGracefully()
 
 			res, err := Eval(src, state, false)
@@ -8697,21 +8697,21 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				Limits:     []Limit{permissiveLthreadLimit},
 			})
 			state := NewGlobalState(ctx)
-			state.IsTestingEnabled = true
-			state.IsImportTestingEnabled = true
-			state.TestFilters = allTestsFilter
+			state.TestingState.IsTestingEnabled = true
+			state.TestingState.IsImportTestingEnabled = true
+			state.TestingState.Filters = allTestsFilter
 			defer state.Ctx.CancelGracefully()
 
 			res, err := Eval(mod, state, false)
 
 			assert.NoError(t, err)
 			assert.Equal(t, Nil, res)
-			assert.Empty(t, state.TestCaseResults)
-			if !assert.Len(t, state.TestSuiteResults, 1) {
+			assert.Empty(t, state.TestingState.CaseResults)
+			if !assert.Len(t, state.TestingState.SuiteResults, 1) {
 				return
 			}
 
-			assert.Len(t, state.TestSuiteResults[0].caseResults, 1)
+			assert.Len(t, state.TestingState.SuiteResults[0].caseResults, 1)
 		})
 
 		t.Run("empty test case: test suite in included chunk", func(t *testing.T) {
@@ -8742,20 +8742,20 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				Limits:     []Limit{permissiveLthreadLimit},
 			})
 			state := NewGlobalState(ctx)
-			state.IsTestingEnabled = true
-			state.IsImportTestingEnabled = true
-			state.TestFilters = allTestsFilter
+			state.TestingState.IsTestingEnabled = true
+			state.TestingState.IsImportTestingEnabled = true
+			state.TestingState.Filters = allTestsFilter
 			defer state.Ctx.CancelGracefully()
 
 			res, err := Eval(mod, state, false)
 
 			assert.NoError(t, err)
 			assert.Equal(t, Nil, res)
-			assert.Empty(t, state.TestCaseResults)
-			if !assert.Len(t, state.TestSuiteResults, 1) {
+			assert.Empty(t, state.TestingState.CaseResults)
+			if !assert.Len(t, state.TestingState.SuiteResults, 1) {
 				return
 			}
-			assert.Len(t, state.TestSuiteResults[0].caseResults, 1)
+			assert.Len(t, state.TestingState.SuiteResults[0].caseResults, 1)
 		})
 
 		t.Run("test cases should inherit the patterns of the parent testsuite", func(t *testing.T) {
@@ -8772,8 +8772,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			`)
 
 			state := NewGlobalState(NewDefaultTestContext())
-			state.IsTestingEnabled = true
-			state.TestFilters = allTestsFilter
+			state.TestingState.IsTestingEnabled = true
+			state.TestingState.Filters = allTestsFilter
 			defer state.Ctx.CancelGracefully()
 
 			res, err := Eval(src, state, false)
@@ -8796,8 +8796,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			`)
 
 			state := NewGlobalState(NewDefaultTestContext())
-			state.IsTestingEnabled = true
-			state.TestFilters = allTestsFilter
+			state.TestingState.IsTestingEnabled = true
+			state.TestingState.Filters = allTestsFilter
 			defer state.Ctx.CancelGracefully()
 
 			res, err := Eval(src, state, false)
@@ -8821,8 +8821,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			`)
 
 			state := NewGlobalState(NewDefaultTestContext())
-			state.IsTestingEnabled = true
-			state.TestFilters = allTestsFilter
+			state.TestingState.IsTestingEnabled = true
+			state.TestingState.Filters = allTestsFilter
 			defer state.Ctx.CancelGracefully()
 
 			res, err := Eval(src, state, false)
@@ -8842,8 +8842,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				Permissions: []Permission{LThreadPermission{Kind_: permkind.Create}},
 				Limits:      []Limit{permissiveLthreadLimit},
 			}))
-			state.IsTestingEnabled = true
-			state.TestFilters = allTestsFilter
+			state.TestingState.IsTestingEnabled = true
+			state.TestingState.Filters = allTestsFilter
 			defer state.Ctx.CancelGracefully()
 
 			res, err := Eval(src, state, false)
@@ -8864,8 +8864,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			}`)
 
 			state := NewGlobalState(NewDefaultTestContext())
-			state.IsTestingEnabled = true
-			state.TestFilters = allTestsFilter
+			state.TestingState.IsTestingEnabled = true
+			state.TestingState.Filters = allTestsFilter
 			defer state.Ctx.CancelGracefully()
 
 			state.Out = os.Stdout
@@ -8878,11 +8878,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			assert.Equal(t, Nil, res)
 
-			if !assert.Len(t, state.TestSuiteResults, 1) {
+			if !assert.Len(t, state.TestingState.SuiteResults, 1) {
 				return
 			}
 
-			testSuitResult := state.TestSuiteResults[0]
+			testSuitResult := state.TestingState.SuiteResults[0]
 			if !assert.Len(t, testSuitResult.caseResults, 1) {
 				return
 			}
@@ -8909,8 +8909,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			}`)
 
 			state := NewGlobalState(NewDefaultTestContext())
-			state.IsTestingEnabled = true
-			state.TestFilters = allTestsFilter
+			state.TestingState.IsTestingEnabled = true
+			state.TestingState.Filters = allTestsFilter
 			defer state.Ctx.CancelGracefully()
 
 			state.Out = os.Stdout
@@ -8923,11 +8923,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			assert.Equal(t, Nil, res)
 
-			if !assert.Len(t, state.TestSuiteResults, 1) {
+			if !assert.Len(t, state.TestingState.SuiteResults, 1) {
 				return
 			}
 
-			testSuitResult := state.TestSuiteResults[0]
+			testSuitResult := state.TestingState.SuiteResults[0]
 			if !assert.Len(t, testSuitResult.caseResults, 1) {
 				return
 			}
@@ -8965,8 +8965,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			}
 
 			assert.Equal(t, Nil, res)
-			assert.Empty(t, state.TestSuiteResults)
-			assert.Empty(t, state.TestCaseResults)
+			assert.Empty(t, state.TestingState.SuiteResults)
+			assert.Empty(t, state.TestingState.CaseResults)
 		})
 
 		t.Run("test case with failing assertion followed by a passing test case", func(t *testing.T) {
@@ -8980,8 +8980,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			}`)
 
 			state := NewGlobalState(NewDefaultTestContext())
-			state.IsTestingEnabled = true
-			state.TestFilters = allTestsFilter
+			state.TestingState.IsTestingEnabled = true
+			state.TestingState.Filters = allTestsFilter
 
 			state.Out = os.Stdout
 			state.Logger = zerolog.New(state.Out)
@@ -8995,11 +8995,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			assert.Equal(t, Nil, res)
 
-			if !assert.Len(t, state.TestSuiteResults, 1) {
+			if !assert.Len(t, state.TestingState.SuiteResults, 1) {
 				return
 			}
 
-			testSuitResult := state.TestSuiteResults[0]
+			testSuitResult := state.TestingState.SuiteResults[0]
 			if !assert.Len(t, testSuitResult.caseResults, 2) {
 				return
 			}
@@ -9034,8 +9034,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			}`)
 
 			state := NewGlobalState(NewDefaultTestContext())
-			state.IsTestingEnabled = true
-			state.TestFilters = allTestsFilter
+			state.TestingState.IsTestingEnabled = true
+			state.TestingState.Filters = allTestsFilter
 			state.Out = os.Stdout
 			state.Logger = zerolog.New(state.Out)
 			defer state.Ctx.CancelGracefully()
@@ -9048,11 +9048,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			assert.Equal(t, Nil, res)
 
-			if !assert.Len(t, state.TestSuiteResults, 1) {
+			if !assert.Len(t, state.TestingState.SuiteResults, 1) {
 				return
 			}
 
-			testSuitResult := state.TestSuiteResults[0]
+			testSuitResult := state.TestingState.SuiteResults[0]
 			if !assert.Len(t, testSuitResult.caseResults, 2) {
 				return
 			}
@@ -9087,8 +9087,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			}`)
 
 			state := NewGlobalState(NewDefaultTestContext())
-			state.IsTestingEnabled = true
-			state.TestFilters = allTestsFilter
+			state.TestingState.IsTestingEnabled = true
+			state.TestingState.Filters = allTestsFilter
 
 			state.Out = os.Stdout
 			state.Logger = zerolog.New(state.Out)
@@ -9102,11 +9102,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			assert.Equal(t, Nil, res)
 
-			if !assert.Len(t, state.TestSuiteResults, 1) {
+			if !assert.Len(t, state.TestingState.SuiteResults, 1) {
 				return
 			}
 
-			testSuitResult := state.TestSuiteResults[0]
+			testSuitResult := state.TestingState.SuiteResults[0]
 			if !assert.Len(t, testSuitResult.caseResults, 2) {
 				return
 			}
@@ -9148,8 +9148,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			}`)
 
 			state := NewGlobalState(NewDefaultTestContext())
-			state.IsTestingEnabled = true
-			state.TestFilters = allTestsFilter
+			state.TestingState.IsTestingEnabled = true
+			state.TestingState.Filters = allTestsFilter
 
 			state.Out = os.Stdout
 			state.Logger = zerolog.New(state.Out)
@@ -9163,11 +9163,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			assert.Equal(t, Nil, res)
 
-			if !assert.Len(t, state.TestSuiteResults, 1) {
+			if !assert.Len(t, state.TestingState.SuiteResults, 1) {
 				return
 			}
 
-			testSuitResult := state.TestSuiteResults[0]
+			testSuitResult := state.TestingState.SuiteResults[0]
 			if !assert.Len(t, testSuitResult.subSuiteResults, 1) {
 				return
 			}
@@ -9199,8 +9199,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			`)
 
 			state := NewGlobalState(NewDefaultTestContext())
-			state.IsTestingEnabled = true
-			state.TestFilters = allTestsFilter
+			state.TestingState.IsTestingEnabled = true
+			state.TestingState.Filters = allTestsFilter
 			defer state.Ctx.CancelGracefully()
 
 			fls := newMemFilesystem()
@@ -9265,8 +9265,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			`)
 
 			state := NewGlobalState(NewDefaultTestContext())
-			state.IsTestingEnabled = true
-			state.TestFilters = allTestsFilter
+			state.TestingState.IsTestingEnabled = true
+			state.TestingState.Filters = allTestsFilter
 			defer state.Ctx.CancelGracefully()
 
 			fls := newMemFilesystem()
@@ -9318,8 +9318,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			}`)
 
 			state := NewGlobalState(NewDefaultTestContext())
-			state.IsTestingEnabled = true
-			state.TestFilters = TestFilters{
+			state.TestingState.IsTestingEnabled = true
+			state.TestingState.Filters = TestFilters{
 				PositiveTestFilters: []TestFilter{
 					{
 						NameRegex: "suite",
@@ -9335,7 +9335,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			}
 			assert.Equal(t, Nil, res)
 
-			testSuitResult := state.TestSuiteResults[0]
+			testSuitResult := state.TestingState.SuiteResults[0]
 			assert.Len(t, testSuitResult.caseResults, 1)
 
 			if !assert.Len(t, testSuitResult.subSuiteResults, 1) {
@@ -9370,8 +9370,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			testcaseNode := chunk.Statements[0].(*parse.TestSuiteExpression).Module.Statements[0].(*parse.TestCaseExpression)
 
 			state := NewGlobalState(NewDefaultTestContext())
-			state.IsTestingEnabled = true
-			state.TestFilters = TestFilters{
+			state.TestingState.IsTestingEnabled = true
+			state.TestingState.Filters = TestFilters{
 				PositiveTestFilters: []TestFilter{
 					{
 						AbsolutePath: "/mod.ix",
@@ -9389,11 +9389,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			}
 			assert.Equal(t, Nil, res)
 
-			if !assert.Len(t, state.TestSuiteResults, 1) {
+			if !assert.Len(t, state.TestingState.SuiteResults, 1) {
 				return
 			}
 
-			testSuitResult := state.TestSuiteResults[0]
+			testSuitResult := state.TestingState.SuiteResults[0]
 			if !assert.Len(t, testSuitResult.caseResults, 1) {
 				return
 			}
@@ -9428,8 +9428,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				Module.Statements[0].(*parse.TestCaseExpression)
 
 			state := NewGlobalState(NewDefaultTestContext())
-			state.IsTestingEnabled = true
-			state.TestFilters = TestFilters{
+			state.TestingState.IsTestingEnabled = true
+			state.TestingState.Filters = TestFilters{
 				PositiveTestFilters: []TestFilter{
 					{
 						AbsolutePath: "/mod.ix",
@@ -9447,7 +9447,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			}
 			assert.Equal(t, Nil, res)
 
-			testSuitResult := state.TestSuiteResults[0]
+			testSuitResult := state.TestingState.SuiteResults[0]
 			assert.Empty(t, testSuitResult.caseResults)
 
 			if !assert.Len(t, testSuitResult.subSuiteResults, 1) {
@@ -9483,8 +9483,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			testsuiteNode := chunk.Statements[0].(*parse.TestSuiteExpression).Module.Statements[1].(*parse.TestSuiteExpression)
 
 			state := NewGlobalState(NewDefaultTestContext())
-			state.IsTestingEnabled = true
-			state.TestFilters = TestFilters{
+			state.TestingState.IsTestingEnabled = true
+			state.TestingState.Filters = TestFilters{
 				PositiveTestFilters: []TestFilter{
 					{
 						AbsolutePath: "/mod.ix",
@@ -9502,7 +9502,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			}
 			assert.Equal(t, Nil, res)
 
-			testSuitResult := state.TestSuiteResults[0]
+			testSuitResult := state.TestingState.SuiteResults[0]
 			assert.Empty(t, testSuitResult.caseResults)
 
 			if !assert.Len(t, testSuitResult.subSuiteResults, 1) {
@@ -9547,9 +9547,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				Limits:     []Limit{permissiveLthreadLimit},
 			})
 			state := NewGlobalState(ctx)
-			state.IsTestingEnabled = true
-			state.IsImportTestingEnabled = true
-			state.TestFilters = TestFilters{
+			state.TestingState.IsTestingEnabled = true
+			state.TestingState.IsImportTestingEnabled = true
+			state.TestingState.Filters = TestFilters{
 				PositiveTestFilters: []TestFilter{
 					{
 						AbsolutePath: "/mod.ix",
@@ -9563,8 +9563,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			assert.NoError(t, err)
 			assert.Equal(t, Nil, res)
-			assert.Empty(t, state.TestCaseResults)
-			assert.Empty(t, state.TestSuiteResults)
+			assert.Empty(t, state.TestingState.CaseResults)
+			assert.Empty(t, state.TestingState.SuiteResults)
 		})
 
 		t.Run("if the test filter specifies the path /imported.ix, the tests in /mod.ix should not be executed", func(t *testing.T) {
@@ -9606,9 +9606,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				Limits:     []Limit{permissiveLthreadLimit},
 			})
 			state := NewGlobalState(ctx)
-			state.IsTestingEnabled = true
-			state.IsImportTestingEnabled = true
-			state.TestFilters = TestFilters{
+			state.TestingState.IsTestingEnabled = true
+			state.TestingState.IsImportTestingEnabled = true
+			state.TestingState.Filters = TestFilters{
 				PositiveTestFilters: []TestFilter{
 					{
 						AbsolutePath: "/imported.ix",
@@ -9622,12 +9622,12 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			assert.NoError(t, err)
 			assert.Equal(t, Nil, res)
-			assert.Empty(t, state.TestCaseResults)
-			if !assert.Len(t, state.TestSuiteResults, 1) {
+			assert.Empty(t, state.TestingState.CaseResults)
+			if !assert.Len(t, state.TestingState.SuiteResults, 1) {
 				return
 			}
 
-			result := state.TestSuiteResults[0]
+			result := state.TestingState.SuiteResults[0]
 			if !assert.Len(t, result.caseResults, 1) {
 				return
 			}
@@ -9662,8 +9662,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			}`)
 
 			state := NewGlobalState(NewDefaultTestContext())
-			state.IsTestingEnabled = true
-			state.TestFilters = TestFilters{
+			state.TestingState.IsTestingEnabled = true
+			state.TestingState.Filters = TestFilters{
 				PositiveTestFilters: []TestFilter{
 					{
 						NameRegex: "suite::my test",
@@ -9679,11 +9679,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			}
 			assert.Equal(t, Nil, res)
 
-			if !assert.Len(t, state.TestSuiteResults, 1) {
+			if !assert.Len(t, state.TestingState.SuiteResults, 1) {
 				return
 			}
 
-			testSuitResult := state.TestSuiteResults[0]
+			testSuitResult := state.TestingState.SuiteResults[0]
 			if !assert.Len(t, testSuitResult.caseResults, 1) {
 				return
 			}
@@ -9718,8 +9718,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			}`)
 
 			state := NewGlobalState(NewDefaultTestContext())
-			state.IsTestingEnabled = true
-			state.TestFilters = TestFilters{
+			state.TestingState.IsTestingEnabled = true
+			state.TestingState.Filters = TestFilters{
 				PositiveTestFilters: []TestFilter{
 					{
 						NameRegex: "suite::sub suite::my test",
@@ -9735,11 +9735,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			}
 			assert.Equal(t, Nil, res)
 
-			if !assert.Len(t, state.TestSuiteResults, 1) {
+			if !assert.Len(t, state.TestingState.SuiteResults, 1) {
 				return
 			}
 
-			testSuitResult := state.TestSuiteResults[0]
+			testSuitResult := state.TestingState.SuiteResults[0]
 			assert.Empty(t, testSuitResult.caseResults)
 			if !assert.Len(t, testSuitResult.subSuiteResults, 1) {
 				return
@@ -9882,9 +9882,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			})
 
 			state := NewGlobalState(ctx)
-			state.IsTestingEnabled = true
-			state.IsImportTestingEnabled = true
-			state.TestFilters = allTestsFilter
+			state.TestingState.IsTestingEnabled = true
+			state.TestingState.IsImportTestingEnabled = true
+			state.TestingState.Filters = allTestsFilter
 			state.Project = &testProjectWithImage{
 				id: RandomProjectID("test"),
 				image: &testImage{
@@ -9900,12 +9900,12 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			assert.NoError(t, err)
 			assert.Equal(t, Nil, res)
-			assert.Empty(t, state.TestCaseResults)
-			if !assert.Len(t, state.TestSuiteResults, 1) {
+			assert.Empty(t, state.TestingState.CaseResults)
+			if !assert.Len(t, state.TestingState.SuiteResults, 1) {
 				return
 			}
 
-			assert.Empty(t, state.TestSuiteResults[0].caseResults, 0)
+			assert.Empty(t, state.TestingState.SuiteResults[0].caseResults, 0)
 		})
 
 		t.Run("program specified by top level suite: empty testcase", func(t *testing.T) {
@@ -9941,9 +9941,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			})
 
 			state := NewGlobalState(ctx)
-			state.IsTestingEnabled = true
-			state.IsImportTestingEnabled = true
-			state.TestFilters = allTestsFilter
+			state.TestingState.IsTestingEnabled = true
+			state.TestingState.IsImportTestingEnabled = true
+			state.TestingState.Filters = allTestsFilter
 			state.Project = &testProjectWithImage{
 				id: RandomProjectID("test"),
 				image: &testImage{
@@ -9959,12 +9959,12 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			assert.NoError(t, err)
 			assert.Equal(t, Nil, res)
-			assert.Empty(t, state.TestCaseResults)
-			if !assert.Len(t, state.TestSuiteResults, 1) {
+			assert.Empty(t, state.TestingState.CaseResults)
+			if !assert.Len(t, state.TestingState.SuiteResults, 1) {
 				return
 			}
 
-			assert.Len(t, state.TestSuiteResults[0].caseResults, 1)
+			assert.Len(t, state.TestingState.SuiteResults[0].caseResults, 1)
 		})
 
 		t.Run("program specified by top level suite: testcase should have access to the program", func(t *testing.T) {
@@ -10004,9 +10004,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			var isNotNil atomic.Bool
 
 			state := NewGlobalState(ctx)
-			state.IsTestingEnabled = true
-			state.IsImportTestingEnabled = true
-			state.TestFilters = allTestsFilter
+			state.TestingState.IsTestingEnabled = true
+			state.TestingState.IsImportTestingEnabled = true
+			state.TestingState.Filters = allTestsFilter
 			state.Project = &testProjectWithImage{
 				id: RandomProjectID("test"),
 				image: &testImage{
@@ -10032,12 +10032,12 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			assert.NoError(t, err)
 			assert.Equal(t, Nil, res)
-			assert.Empty(t, state.TestCaseResults)
-			if !assert.Len(t, state.TestSuiteResults, 1) {
+			assert.Empty(t, state.TestingState.CaseResults)
+			if !assert.Len(t, state.TestingState.SuiteResults, 1) {
 				return
 			}
 
-			assert.Len(t, state.TestSuiteResults[0].caseResults, 1)
+			assert.Len(t, state.TestingState.SuiteResults[0].caseResults, 1)
 			assert.True(t, isNotNil.Load())
 		})
 
@@ -10080,9 +10080,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			var isDone atomic.Bool
 
 			state := NewGlobalState(ctx)
-			state.IsTestingEnabled = true
-			state.IsImportTestingEnabled = true
-			state.TestFilters = allTestsFilter
+			state.TestingState.IsTestingEnabled = true
+			state.TestingState.IsImportTestingEnabled = true
+			state.TestingState.Filters = allTestsFilter
 			state.Project = &testProjectWithImage{
 				id: RandomProjectID("test"),
 				image: &testImage{
@@ -10108,12 +10108,12 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			assert.NoError(t, err)
 			assert.Equal(t, Nil, res)
-			assert.Empty(t, state.TestCaseResults)
-			if !assert.Len(t, state.TestSuiteResults, 1) {
+			assert.Empty(t, state.TestingState.CaseResults)
+			if !assert.Len(t, state.TestingState.SuiteResults, 1) {
 				return
 			}
 
-			assert.Len(t, state.TestSuiteResults[0].caseResults, 1)
+			assert.Len(t, state.TestingState.SuiteResults[0].caseResults, 1)
 			assert.True(t, isDone.Load())
 		})
 
@@ -10160,9 +10160,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			var correctFile atomic.Bool
 
 			state := NewGlobalState(ctx)
-			state.IsTestingEnabled = true
-			state.IsImportTestingEnabled = true
-			state.TestFilters = allTestsFilter
+			state.TestingState.IsTestingEnabled = true
+			state.TestingState.IsImportTestingEnabled = true
+			state.TestingState.Filters = allTestsFilter
 			state.Project = &testProjectWithImage{
 				id: RandomProjectID("test"),
 				image: &testImage{
@@ -10196,12 +10196,12 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			assert.NoError(t, err)
 			assert.Equal(t, Nil, res)
-			assert.Empty(t, state.TestCaseResults)
-			if !assert.Len(t, state.TestSuiteResults, 1) {
+			assert.Empty(t, state.TestingState.CaseResults)
+			if !assert.Len(t, state.TestingState.SuiteResults, 1) {
 				return
 			}
 
-			assert.Len(t, state.TestSuiteResults[0].caseResults, 1)
+			assert.Len(t, state.TestingState.SuiteResults[0].caseResults, 1)
 
 			assert.True(t, correctFile.Load())
 		})
@@ -10251,9 +10251,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			var correctFile atomic.Bool
 
 			state := NewGlobalState(ctx)
-			state.IsTestingEnabled = true
-			state.IsImportTestingEnabled = true
-			state.TestFilters = allTestsFilter
+			state.TestingState.IsTestingEnabled = true
+			state.TestingState.IsImportTestingEnabled = true
+			state.TestingState.Filters = allTestsFilter
 			state.Project = &testProjectWithImage{
 				id: RandomProjectID("test"),
 				image: &testImage{
@@ -10287,16 +10287,16 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			assert.NoError(t, err)
 			assert.Equal(t, Nil, res)
-			assert.Empty(t, state.TestCaseResults)
-			if !assert.Len(t, state.TestSuiteResults, 1) {
+			assert.Empty(t, state.TestingState.CaseResults)
+			if !assert.Len(t, state.TestingState.SuiteResults, 1) {
 				return
 			}
 
 			assert.True(t, correctFile.Load())
-			if !assert.Len(t, state.TestSuiteResults[0].subSuiteResults, 1) {
+			if !assert.Len(t, state.TestingState.SuiteResults[0].subSuiteResults, 1) {
 				return
 			}
-			assert.Len(t, state.TestSuiteResults[0].subSuiteResults[0].caseResults, 1)
+			assert.Len(t, state.TestingState.SuiteResults[0].subSuiteResults[0].caseResults, 1)
 		})
 
 		t.Run("main db schema and migrations specified by top level suite: main database should be initialized in test case", func(t *testing.T) {
@@ -10357,9 +10357,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			var isProperlyInitialized atomic.Bool
 
 			state := NewGlobalState(ctx)
-			state.IsTestingEnabled = true
-			state.IsImportTestingEnabled = true
-			state.TestFilters = allTestsFilter
+			state.TestingState.IsTestingEnabled = true
+			state.TestingState.IsImportTestingEnabled = true
+			state.TestingState.Filters = allTestsFilter
 			state.Project = &testProjectWithImage{
 				id: RandomProjectID("test"),
 				image: &testImage{
@@ -10397,15 +10397,15 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			assert.NoError(t, err)
 			assert.Equal(t, Nil, res)
-			assert.Empty(t, state.TestCaseResults)
-			if !assert.Len(t, state.TestSuiteResults, 1) {
+			assert.Empty(t, state.TestingState.CaseResults)
+			if !assert.Len(t, state.TestingState.SuiteResults, 1) {
 				return
 			}
 
-			if !assert.Len(t, state.TestSuiteResults[0].caseResults, 1) {
+			if !assert.Len(t, state.TestingState.SuiteResults[0].caseResults, 1) {
 				return
 			}
-			result := state.TestSuiteResults[0].caseResults[0]
+			result := state.TestingState.SuiteResults[0].caseResults[0]
 			if !assert.NoError(t, result.error) {
 				return
 			}
@@ -10472,9 +10472,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			var isProperlyInitialized atomic.Bool
 
 			state := NewGlobalState(ctx)
-			state.IsTestingEnabled = true
-			state.IsImportTestingEnabled = true
-			state.TestFilters = allTestsFilter
+			state.TestingState.IsTestingEnabled = true
+			state.TestingState.IsImportTestingEnabled = true
+			state.TestingState.Filters = allTestsFilter
 			state.Project = &testProjectWithImage{
 				id: RandomProjectID("test"),
 				image: &testImage{
@@ -10512,15 +10512,15 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			assert.NoError(t, err)
 			assert.Equal(t, Nil, res)
-			assert.Empty(t, state.TestCaseResults)
-			if !assert.Len(t, state.TestSuiteResults, 1) {
+			assert.Empty(t, state.TestingState.CaseResults)
+			if !assert.Len(t, state.TestingState.SuiteResults, 1) {
 				return
 			}
 
-			if !assert.Len(t, state.TestSuiteResults[0].subSuiteResults, 1) {
+			if !assert.Len(t, state.TestingState.SuiteResults[0].subSuiteResults, 1) {
 				return
 			}
-			subSuiteResult := state.TestSuiteResults[0].subSuiteResults[0]
+			subSuiteResult := state.TestingState.SuiteResults[0].subSuiteResults[0]
 
 			if !assert.Len(t, subSuiteResult.caseResults, 1) {
 				return
@@ -10576,8 +10576,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				Permissions: append(GetDefaultGlobalVarPermissions(), LThreadPermission{Kind_: permkind.Create}),
 				Limits:      []Limit{permissiveLthreadLimit},
 			}))
-			state.IsTestingEnabled = true
-			state.TestFilters = allTestsFilter
+			state.TestingState.IsTestingEnabled = true
+			state.TestingState.Filters = allTestsFilter
 			defer state.Ctx.CancelGracefully()
 
 			res, err := Eval(src, state, false)

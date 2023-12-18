@@ -156,13 +156,13 @@ func SpawnLThread(args LthreadSpawnArgs) (*LThread, error) {
 	modState.GetBasePatternsForImportedModule = args.SpawnerState.GetBasePatternsForImportedModule
 	// TODO: set SymbolicData
 	if args.IsTestingEnabled {
-		modState.IsTestingEnabled = true
-		modState.TestFilters = args.TestFilters
+		modState.TestingState.IsTestingEnabled = true
+		modState.TestingState.Filters = args.TestFilters
 
 		if args.TestItem != nil {
-			modState.TestItem = args.TestItem
-			modState.TestedProgram = args.TestedProgram
-			modState.TestItemFullName = makeTestFullName(args.TestItem, args.SpawnerState)
+			modState.TestingState.Item = args.TestItem
+			modState.TestingState.TestedProgram = args.TestedProgram
+			modState.TestingState.ItemFullName = makeTestFullName(args.TestItem, args.SpawnerState)
 		}
 	}
 	modState.OutputFieldsInitialized.Store(true)

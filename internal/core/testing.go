@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/inoxlang/inox/internal/afs"
@@ -26,6 +27,18 @@ const (
 var (
 	_ = Value((*CurrentTest)(nil))
 )
+
+type TestingState struct {
+	IsTestingEnabled       bool //if true the test suites encountered during executions are run
+	IsImportTestingEnabled bool //if true the test suites in imported modules and included chunks are run
+	Filters                TestFilters
+	ResultsLock            sync.Mutex
+	CaseResults            []*TestCaseResult
+	SuiteResults           []*TestSuiteResult
+	Item                   TestItem //can be nil
+	ItemFullName           string   //can be empty
+	TestedProgram          *Module  //can be nil
+}
 
 // A TestItem is a TestSuite or a TestCase.
 type TestItem interface {
@@ -144,7 +157,7 @@ func NewTestSuite(input TestSuiteCreationInput) (*TestSuite, error) {
 
 	if suite.testedProgramPath == "" {
 		//inherit tested program from parent test suite
-		if parentTestSuite, ok := input.ParentState.TestItem.(*TestSuite); ok && parentTestSuite.testedProgramPath != "" {
+		if parentTestSuite, ok := input.ParentState.TestingState.Item.(*TestSuite); ok && parentTestSuite.testedProgramPath != "" {
 			suite.testedProgramPath = parentTestSuite.testedProgramPath
 			suite.isTestedProgramFromParent = true
 
@@ -208,8 +221,8 @@ func (s *TestSuite) Run(ctx *Context, options ...Option) (*LThread, error) {
 
 	spawnerState := ctx.GetClosestState()
 	var parentTestSuite *TestSuite
-	if spawnerState.TestItem != nil {
-		parentTestSuite = spawnerState.TestItem.(*TestSuite)
+	if spawnerState.TestingState.Item != nil {
+		parentTestSuite = spawnerState.TestingState.Item.(*TestSuite)
 	}
 
 	fsProvider, err := getTestItemFilesystemProvider(s, parentTestSuite, spawnerState)
@@ -426,10 +439,10 @@ func (c *TestCase) Run(ctx *Context, options ...Option) (*LThread, error) {
 	}
 
 	spawnerState := ctx.GetClosestState()
-	if spawnerState.TestItem == nil {
+	if spawnerState.TestingState.Item == nil {
 		panic(ErrUnreachable)
 	}
-	parentTestSuite := spawnerState.TestItem.(*TestSuite)
+	parentTestSuite := spawnerState.TestingState.Item.(*TestSuite)
 
 	fls, err := getTestItemFilesystemProvider(c, parentTestSuite, spawnerState)
 	if err != nil {
@@ -451,11 +464,11 @@ func (c *TestCase) Run(ctx *Context, options ...Option) (*LThread, error) {
 		mainDatabaseSchema = parentTestSuite.mainDatabaseSchema
 		mainDatabaseMigrations = parentTestSuite.mainDatabaseMigrations
 
-		if spawnerState.TestedProgram == nil {
+		if spawnerState.TestingState.TestedProgram == nil {
 			panic(ErrUnreachable)
 		}
 
-		programModuleCache = spawnerState.TestedProgram
+		programModuleCache = spawnerState.TestingState.TestedProgram
 		resourceName, ok := programModuleCache.AbsoluteSource()
 		if !ok || resourceName != programToTest {
 			panic(ErrUnreachable)
@@ -567,10 +580,10 @@ func runTestItem(
 
 		//if the parent test suite has already parsed the module, use the cache.
 		if suite.isTestedProgramFromParent && parentTestSuite != nil && parentTestSuite.testedProgramPath == suite.testedProgramPath {
-			if spawnerState.TestedProgram.sourceName != parentTestSuite.testedProgramPath {
+			if spawnerState.TestingState.TestedProgram.sourceName != parentTestSuite.testedProgramPath {
 				panic(ErrUnreachable)
 			}
-			testedProgramModule = spawnerState.TestedProgram
+			testedProgramModule = spawnerState.TestingState.TestedProgram
 		} else {
 			ctxWithFilesystem, isTempContext := testItemFSProvider.getMakeContextOnlyOnce()
 			if isTempContext {
@@ -752,8 +765,8 @@ func runTestItem(
 		Manifest:     manifest,
 		Timeout:      timeout,
 
-		IsTestingEnabled: spawnerState.IsTestingEnabled,
-		TestFilters:      spawnerState.TestFilters,
+		IsTestingEnabled: spawnerState.TestingState.IsTestingEnabled,
+		TestFilters:      spawnerState.TestingState.Filters,
 		TestItem:         testItem,
 		TestedProgram:    testedProgramModule,
 	})
@@ -834,7 +847,7 @@ func getTestItemFilesystemProvider(test TestItem, parentTestSuite *TestSuite, sp
 			return nil, fmt.Errorf("failed to create filesystem: the filesystem of the parent test suite is not snapshotable")
 		}
 	} else {
-		snapshot, ok := spawnerState.TestItem.FilesystemSnapshot()
+		snapshot, ok := spawnerState.TestingState.Item.FilesystemSnapshot()
 		if ok {
 			filesystem, err := snapshot.NewAdaptedFilesystem(TEST__MAX_FS_STORAGE_HINT)
 			if err != nil {
@@ -864,13 +877,13 @@ func makeTestFullName(item TestItem, parentState *GlobalState) string {
 	if !ok {
 		name = "??"
 	}
-	parentTestItem := parentState.TestItem
+	parentTestItem := parentState.TestingState.Item
 
 	if parentTestItem == nil {
 		return name
 	}
 
-	return parentState.TestItemFullName + TEST_FULL_NAME_PART_SEP + name
+	return parentState.TestingState.ItemFullName + TEST_FULL_NAME_PART_SEP + name
 }
 
 type TestFilters struct {

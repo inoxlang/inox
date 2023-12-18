@@ -144,8 +144,8 @@ func EvalVM(mod *Module, state *GlobalState, config BytecodeEvaluationConfig) (V
 		StaticCheckData:        state.StaticCheckData,
 		TraceWriter:            compilationTracer,
 		Context:                config.CompilationContext,
-		IsTestingEnabled:       state.IsTestingEnabled,
-		IsImportTestingEnabled: state.IsImportTestingEnabled,
+		IsTestingEnabled:       state.TestingState.IsTestingEnabled,
+		IsImportTestingEnabled: state.TestingState.IsImportTestingEnabled,
 	})
 	if err != nil {
 		return nil, err

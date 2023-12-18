@@ -296,8 +296,8 @@ func PrepareLocalScript(args ScriptPreparationArgs) (state *GlobalState, mod *Mo
 	state.Manifest = manifest
 	state.PrenitStaticCheckErrors = preinitStaticCheckErrors
 	state.MainPreinitError = preinitErr
-	state.IsTestingEnabled = args.EnableTesting
-	state.TestFilters = args.TestFilters
+	state.TestingState.IsTestingEnabled = args.EnableTesting
+	state.TestingState.Filters = args.TestFilters
 
 	if args.UseParentStateAsMainState {
 		if parentState == nil {
