@@ -285,6 +285,13 @@ dbs.main.update_schema(%{
 })
 ```
 
+<details>
+  
+**<summary>Schema update demo</summary>**
+![ezgif-5-c31b6a5023](https://github.com/inoxlang/inox/assets/113632189/a6ea49be-9f4c-40a5-a65d-969b291043e4)
+
+</details>
+
 Objects can be directly added to and retrieved from the database.\
 This is enabled by the fact that most Inox types are constrained to be
 serializable.
