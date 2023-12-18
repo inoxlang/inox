@@ -3,6 +3,8 @@ package internal
 import (
 	"net/http"
 	"os"
+	"strconv"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -16,45 +18,34 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const RESOURCE_TEST_HOST = core.Host("https://localhost:8080")
+var port atomic.Int32
 
-func setup(t *testing.T, handler func(ctx *core.Context, rw *http_ns.HttpResponseWriter, req *http_ns.HttpRequest)) *core.Context {
-	permissiveHttpReqLimit := core.MustMakeNotDecrementingLimit(http_ns.HTTP_REQUEST_RATE_LIMIT_NAME, 10_000)
+func init() {
+	port.Store(55_000)
+}
 
-	ctx := core.NewContext(core.ContextConfig{
-		Permissions: []core.Permission{
-			core.HttpPermission{Kind_: permkind.Read, Entity: core.URLPattern("https://localhost:8080/...")},
-			core.HttpPermission{Kind_: permkind.Provide, Entity: RESOURCE_TEST_HOST},
-		},
-		Filesystem: fs_ns.GetOsFilesystem(),
-		Limits:     []core.Limit{permissiveHttpReqLimit},
-	})
-
-	state := core.NewGlobalState(ctx)
-	state.Out = os.Stdout
-	state.Logger = zerolog.New(state.Out)
-
-	_, err := http_ns.NewHttpsServer(ctx, RESOURCE_TEST_HOST, core.WrapGoFunction(handler))
-
-	assert.NoError(t, err)
-
-	time.Sleep(10 * time.Millisecond)
-	return ctx
+func getNextHost() core.Host {
+	port := strconv.Itoa(int(port.Add(1)))
+	return core.Host("https://localhost:" + port)
 }
 
 func TestCreateResource(t *testing.T) {
-
+	//TODO
 }
 
 func TestReadResource(t *testing.T) {
+	t.Parallel()
 
 	insecure := core.Option{Name: "insecure", Value: core.True}
 	raw := core.Option{Name: "raw", Value: core.True}
-	resource := core.URL(string(RESOURCE_TEST_HOST) + "/resource")
 
 	t.Run("http", func(t *testing.T) {
+		t.Parallel()
+
 		t.Run("resource not found", func(t *testing.T) {
-			ctx := setup(t, func(ctx *core.Context, rw *http_ns.HttpResponseWriter, req *http_ns.HttpRequest) {
+			t.Parallel()
+
+			ctx, resource := setup(t, func(ctx *core.Context, rw *http_ns.HttpResponseWriter, req *http_ns.HttpRequest) {
 				rw.WriteStatus(ctx, http.StatusNotFound)
 			})
 			defer ctx.CancelGracefully()
@@ -67,7 +58,9 @@ func TestReadResource(t *testing.T) {
 		})
 
 		t.Run("existing resource", func(t *testing.T) {
-			ctx := setup(t, func(ctx *core.Context, rw *http_ns.HttpResponseWriter, req *http_ns.HttpRequest) {
+			t.Parallel()
+
+			ctx, resource := setup(t, func(ctx *core.Context, rw *http_ns.HttpResponseWriter, req *http_ns.HttpRequest) {
 				rw.WriteJSON(ctx, core.True)
 			})
 			defer ctx.CancelGracefully()
@@ -82,7 +75,9 @@ func TestReadResource(t *testing.T) {
 		})
 
 		t.Run("raw", func(t *testing.T) {
-			ctx := setup(t, func(ctx *core.Context, rw *http_ns.HttpResponseWriter, req *http_ns.HttpRequest) {
+			t.Parallel()
+
+			ctx, resource := setup(t, func(ctx *core.Context, rw *http_ns.HttpResponseWriter, req *http_ns.HttpRequest) {
 				rw.WriteJSON(ctx, core.True)
 			})
 			defer ctx.CancelGracefully()
@@ -97,7 +92,9 @@ func TestReadResource(t *testing.T) {
 		})
 
 		t.Run("an error should be returned if parsing required AND there is no parser for content type", func(t *testing.T) {
-			ctx := setup(t, func(ctx *core.Context, rw *http_ns.HttpResponseWriter, req *http_ns.HttpRequest) {
+			t.Parallel()
+
+			ctx, resource := setup(t, func(ctx *core.Context, rw *http_ns.HttpResponseWriter, req *http_ns.HttpRequest) {
 				rw.WriteContentType("custom/type")
 				rw.BodyWriter().Write([]byte("X;X"))
 			})
@@ -110,7 +107,9 @@ func TestReadResource(t *testing.T) {
 		})
 
 		t.Run("an error should bot be returned if raw data is asked AND there is no parser for content type", func(t *testing.T) {
-			ctx := setup(t, func(ctx *core.Context, rw *http_ns.HttpResponseWriter, req *http_ns.HttpRequest) {
+			t.Parallel()
+
+			ctx, resource := setup(t, func(ctx *core.Context, rw *http_ns.HttpResponseWriter, req *http_ns.HttpRequest) {
 				rw.WriteContentType("custom/type")
 				rw.BodyWriter().Write([]byte("X;X"))
 			})
@@ -129,16 +128,18 @@ func TestReadResource(t *testing.T) {
 }
 
 func TestGetResource(t *testing.T) {
+	t.Parallel()
 
 	insecure := core.Option{Name: "insecure", Value: core.True}
 
 	t.Run("read IXON", func(t *testing.T) {
-		ctx := setup(t, func(ctx *core.Context, rw *http_ns.HttpResponseWriter, req *http_ns.HttpRequest) {
+		t.Parallel()
+
+		ctx, resource := setup(t, func(ctx *core.Context, rw *http_ns.HttpResponseWriter, req *http_ns.HttpRequest) {
 			rw.WriteIXON(ctx, core.NewObjectFromMap(core.ValMap{"a": core.Int(1)}, ctx))
 		})
 		defer ctx.CancelGracefully()
 
-		resource := core.URL(string(RESOURCE_TEST_HOST) + "/resource")
 		res, err := _getResource(ctx, resource, insecure)
 
 		if !assert.NoError(t, err) {
@@ -149,4 +150,30 @@ func TestGetResource(t *testing.T) {
 		obj.SetURLOnce(ctx, resource)
 		assert.Equal(t, obj, res)
 	})
+}
+
+func setup(t *testing.T, handler func(ctx *core.Context, rw *http_ns.HttpResponseWriter, req *http_ns.HttpRequest)) (*core.Context, core.URL) {
+	permissiveHttpReqLimit := core.MustMakeNotDecrementingLimit(http_ns.HTTP_REQUEST_RATE_LIMIT_NAME, 10_000)
+
+	host := getNextHost()
+
+	ctx := core.NewContext(core.ContextConfig{
+		Permissions: []core.Permission{
+			core.HttpPermission{Kind_: permkind.Read, Entity: core.URLPattern(host + "/...")},
+			core.HttpPermission{Kind_: permkind.Provide, Entity: host},
+		},
+		Filesystem: fs_ns.GetOsFilesystem(),
+		Limits:     []core.Limit{permissiveHttpReqLimit},
+	})
+
+	state := core.NewGlobalState(ctx)
+	state.Out = os.Stdout
+	state.Logger = zerolog.New(state.Out)
+
+	_, err := http_ns.NewHttpsServer(ctx, host, core.WrapGoFunction(handler))
+
+	assert.NoError(t, err)
+
+	time.Sleep(10 * time.Millisecond)
+	return ctx, core.URL(string(host) + "/resource")
 }
