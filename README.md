@@ -923,5 +923,6 @@ options:
 I am working full-time on Inox, please consider donating through [GitHub](https://github.com/sponsors/GraphR00t) (preferred) or [Patreon](https://patreon.com/GraphR00t).
 
 [Questions you may have](./QUESTIONS.md)\
+[Customization Model](./CUSTOMIZATION.md)\
 [Installation](#installation)\
 [Back To Top](#inox)

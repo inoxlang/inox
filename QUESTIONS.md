@@ -9,7 +9,7 @@ _'I' refers to [GraphR00t](https://github.com/GraphR00t), the creator and mainta
 **<summary>Why isn't Inox using a container runtime such as Docker ?</summary>**
 
 
-Because the long term goal of Inox is to be a **simple**, single-binary and **super stable** platform for applications written in Inoxlang libs compiled to WASM.\
+Because the long term goal of Inox is to be a **simple**, single-binary and **super stable** platform for applications written in Inoxlang  and using librairies compiled to WASM.\
 Each application or service will ultimately run in a separate process:
 - filesystem isolation is achieved by using virtual filesystems (meta filesystem)
 - process-level access control will be achieved using [Landlock](https://landlock.io/)
@@ -36,6 +36,14 @@ The database currently uses a single-file key-value store ([a BuntDB fork](https
 **Related**:
 - https://github.com/whitfin/s3-concat
 - https://stackoverflow.com/a/64785907
+
+**What about encryption ?**
+
+Inox's database engine will support encryption in the future.
+
+**What about use cases requiring high performance ? JSON is not fast, a binary format is a better fit.**
+
+See [customization](CUSTOMIZATION.md).
 
 </details>
 
