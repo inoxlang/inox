@@ -133,6 +133,10 @@ func (db *DatabaseIL) UpdateSchema(ctx *Context, schema *ObjectPattern, addition
 		return
 	}
 
+	if deeplyMatch(db.schema, schema) {
+		ctx.AddSymbolicGoFunctionWarning(CURRENT_DATABASE_SCHEMA_SAME_AS_PASSED)
+	}
+
 	ops, err := extData.GetTopLevelEntitiesMigrationOperations(ctx.startingConcreteContext, currentConcreteSchema, nextConcreteSchema)
 	if err != nil {
 		ctx.AddSymbolicGoFunctionError(err.Error())

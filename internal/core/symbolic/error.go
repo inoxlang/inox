@@ -132,6 +132,10 @@ const (
 
 	THIS_VAL_IS_AN_OPT_LIT_DID_YOU_FORGET_A_SPACE = "this value is an option literal, did you forget a space between '-' and the variable name ?"
 
+	//database
+	CURRENT_DATABASE_SCHEMA_SAME_AS_PASSED = //
+	"the current database schema is the same as the passed schema, no schema update is needed (make sure to remove `expected-schema-update` from the manifest)"
+
 	//test suites & cases
 	META_VAL_OF_TEST_SUITE_SHOULD_EITHER_BE_A_STRING_OR_A_RECORD    = "the meta value of a test suite should either be a string or an object (e.g. {name: \"my test suite\"})"
 	META_VAL_OF_TEST_CASE_SHOULD_EITHER_BE_A_STRING_OR_A_RECORD     = "the meta value of a test case should either be a string or an object (e.g. {name: \"my test suite\"})"
