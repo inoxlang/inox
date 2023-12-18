@@ -9,13 +9,33 @@ _'I' refers to [GraphR00t](https://github.com/GraphR00t), the creator and mainta
 **<summary>Why isn't Inox using a container runtime such as Docker ?</summary>**
 
 
-Because the long term goal of Inox is to be a **simple**, single-binary and **super stable** platform for applications written in Inoxlang + WASM.\
+Because the long term goal of Inox is to be a **simple**, single-binary and **super stable** platform for applications written in Inoxlang libs compiled to WASM.\
 Each application or service will ultimately run in a separate process:
 - filesystem isolation is achieved by using virtual filesystems (meta filesystem)
 - process-level access control will be achieved using [Landlock](https://landlock.io/)
 - fine-grained module-level access control is already achieved by Inox's permission system
 - process-level resource allocation and limitation will be implemented using cgroups
 - module-level resource allocation and limitation is performed by Inox's limit system
+
+</details>
+
+_________
+
+
+<details>
+
+**<summary>Why isn't Inox using an embedded database engine such as SQLite ?</summary>**
+
+SQLite is a fast embedded database engine with JSON support and virtually no configuration required.
+
+However, implementing a custom database engine gives more control over caching, memory allocation and transactions.
+My goal is to have a DB engine that is aware of the code accessing it (HTTP request handlers) in order to smartly pre-fetch and cache data. It could even support **partial deserialization**: for example if an object is stored as `{"name":"foo","value":1,"other-data":{...}}` in the database and a piece of code only requires the `name` property, only this property could be retrieved by iterating over the marshalled JSON.
+
+The database currently uses a single-file key-value store ([a BuntDB fork](https://github.com/tidwall/buntdb)) and the serialization of most container types is not yet implemented. All data is loaded in memory but I will change that. BuntDB appends changes to the database file when they are commited. I plan to implement a simple continuous backup system on S3 by writing small files containing the changes and periodically concatenate them without any download.
+
+**Related**:
+- https://github.com/whitfin/s3-concat
+- https://stackoverflow.com/a/64785907
 
 </details>
 
