@@ -9,32 +9,32 @@
 - [Literals](#Literals)
 
 - [Variables](#variables)\
-    [Locals](#locals), [Globals](#globals)
+    __\>__ [Locals](#locals), [Globals](#globals)
 
 - [Operations](#operations)\
-    [Binary operations](#binary-operations), [Unary operations](#unary-operations), [Concatenation](#concatenation-operation), [Interpolation](#interpolation)
+    __\>__ [Binary operations](#binary-operations), [Unary operations](#unary-operations), [Concatenation](#concatenation-operation), [Interpolation](#interpolation)
 
 - [Data Structures](#data-structures)\
-    [Lists](#lists), [Objects](#objects), [Tuples](#tuples), [Records](#records), [Treedata](#treedata), [Mappings](#mappings), [Dictionaries](#dictionaries), [Arrays](#arrays)
+    __\>__ [Lists](#lists), [Objects](#objects), [Tuples](#tuples), [Records](#records), [Treedata](#treedata), [Mappings](#mappings), [Dictionaries](#dictionaries), [Arrays](#arrays)
 
 - [Control flow](#Control-flow)\
-    [If statement](#if-statement--expression), [Switch statement](#switch-statement), [Match statement](#match-statement), [For statement](#for-statement), [Walk statement](#walk-statement), [Pipe statement](#pipe-statement)
+    __\>__ [If statement](#if-statement--expression), [Switch statement](#switch-statement), [Match statement](#match-statement), [For statement](#for-statement), [Walk statement](#walk-statement), [Pipe statement](#pipe-statement)
 
 - [Functions](#functions)\
-    [Definitions](#function-definitions), [Call](#calling-a-function), ['Must' calls](#must-calls), [Variadic Functions](#variadic-functions)
+    __\>__ [Definitions](#function-definitions), [Call](#calling-a-function), ['Must' calls](#must-calls), [Variadic Functions](#variadic-functions)
 
 - [Patterns](#patterns)\
-    [Named patterns](#named-patterns), [Object patterns](#object-patterns), [List patterns](#list-patterns), [String patterns](#string-patterns), [Union Patterns](#union-patterns), [Pattern namespaces](#pattern-namespaces), [Path Patterns](#path-patterns), [Host and URL Patterns](#host-and-url-patterns)
+    __\>__ [Named patterns](#named-patterns), [Object patterns](#object-patterns), [List patterns](#list-patterns), [String patterns](#string-patterns), [Union Patterns](#union-patterns), [Pattern namespaces](#pattern-namespaces), [Path Patterns](#path-patterns), [Host and URL Patterns](#host-and-url-patterns)
 
 - [Extensions](#extensions)
 
 - [XML Expressions](#xml-expressions)
 
 - [Concurrency](#concurrency)\
-    [LThreads](#lthreads), [LThread Groups](#lthread-groups), [Data Sharing](#data-sharing)
+    __\>__ [LThreads](#lthreads), [LThread Groups](#lthread-groups), [Data Sharing](#data-sharing)
 
 - [Modules](#modules)\
-    [Module Parameters](#module-parameters), [Permissions](#permissions), [Execution Phases](#execution-phases), [Inclusion Imports](#inclusion-imports), [Module Imports](#module-imports), [Limits](#limits), [Main Module](#main-module)
+    __\>__ [Module Parameters](#module-parameters), [Permissions](#permissions), [Execution Phases](#execution-phases), [Inclusion Imports](#inclusion-imports), [Module Imports](#module-imports), [Limits](#limits), [Main Module](#main-module)
 
 - [Pre-Initialization](#pre-initialization)
 
@@ -43,10 +43,10 @@
 - [Symbolic evaluation](#symbolic-evaluation)
 
 - [Databases](#databases)\
-    [Schema](#database-schema), [Serialization](#serialization), [Access From Other Modules](#access-from-other-modules)
+    __\>__ [Schema](#database-schema), [Serialization](#serialization), [Access From Other Modules](#access-from-other-modules)
 
 - [Testing](#testing)\
-    [Basic](#basic), [Custom Filesystem](#custom-filesystem), [Program Testing](#program-testing)
+    __\>__ [Basic](#basic), [Custom Filesystem](#custom-filesystem), [Program Testing](#program-testing)
 
 - [Project Images](#project-images)
 
