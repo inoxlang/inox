@@ -49,10 +49,11 @@
 ## Goals
 
 - Zero boilerplate
+- Dead simple configuration
+- Super stable (_once version 1.0 is reached_)
+- No rabbit holes
 - Secure by default
 - Low maintenance
-- Super stable (_once version 1.0 is reached_)
-- Dead simple configuration
 - A programming language as simple as possible
 ___
 
