@@ -147,11 +147,13 @@ func TestHttpServerMissingProvidePermission(t *testing.T) {
 		})
 	}
 
-	host := core.Host("https://localhost:8080")
+	host := core.Host("https://localhost:" + nextPort())
 	ctx := core.NewContext(core.ContextConfig{
 		Filesystem: fs_ns.GetOsFilesystem(),
 	})
 	core.NewGlobalState(ctx)
+	defer ctx.CancelGracefully()
+
 	server, err := NewHttpsServer(ctx, host)
 
 	assert.IsType(t, &core.NotAllowedError{}, err)
@@ -177,8 +179,6 @@ func TestHttpServerUserHandler(t *testing.T) {
 
 	//TODO: rework test & add case where handler access a global
 
-	host := core.Host("https://localhost:8080")
-
 	code := "fn(rw, r){ rw.write_json(1) }"
 	nodeFn, compiledFn, module := createHandlers(t, code)
 
@@ -190,6 +190,8 @@ func TestHttpServerUserHandler(t *testing.T) {
 		}
 
 		t.Run(name, func(t *testing.T) {
+			host := core.Host("https://localhost:" + nextPort())
+
 			ctx := core.NewContext(core.ContextConfig{
 				Permissions: []core.Permission{
 					core.HttpPermission{Kind_: permkind.Provide, Entity: host},
