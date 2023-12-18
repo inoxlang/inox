@@ -124,7 +124,7 @@ func launchDebuggedProgram(args debuggedProgramLaunch) {
 		}
 	}))
 
-	_, _, _, preparationOk, err := mod.RunLocalScript(mod.RunScriptArgs{
+	_, _, _, preparationOk, err := mod.RunLocalModule(mod.RunLocalModuleArgs{
 		Fpath:                     programPath,
 		ParsingCompilationContext: ctx,
 		ParentContext:             ctx,

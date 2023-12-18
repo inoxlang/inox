@@ -292,7 +292,7 @@ func testExample(t *testing.T, config exampleTestConfig) {
 			actualFpath = "/main.ix"
 		}
 
-		_, _, _, _, err := mod.RunLocalScript(mod.RunScriptArgs{
+		_, _, _, _, err := mod.RunLocalModule(mod.RunLocalModuleArgs{
 			Fpath:                     actualFpath,
 			PassedArgs:                core.NewEmptyStruct(),
 			UseBytecode:               useBytecode,

@@ -304,7 +304,7 @@ func _dynimport(ctx *core.Context, src core.Value, argObj *core.Object, manifest
 func _run(ctx *core.Context, src core.Path, args ...core.Value) error {
 	closestState := ctx.GetClosestState()
 
-	_, _, _, _, err := mod.RunLocalScript(mod.RunScriptArgs{
+	_, _, _, _, err := mod.RunLocalModule(mod.RunLocalModuleArgs{
 		Fpath:                     string(src),
 		ParsingCompilationContext: ctx,
 		ParentContext:             ctx,

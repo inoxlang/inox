@@ -99,7 +99,7 @@ func testTutorial(t *testing.T, series learn.TutorialSeries, tut learn.Tutorial,
 			outputBuff := bytes.NewBuffer(nil)
 			logOutputBuff := bytes.NewBuffer(nil)
 
-			_, _, _, _, err := mod.RunLocalScript(mod.RunScriptArgs{
+			_, _, _, _, err := mod.RunLocalModule(mod.RunLocalModuleArgs{
 				Fpath:                     fpath,
 				PassedArgs:                core.NewEmptyStruct(),
 				ParsingCompilationContext: parsingCompilationContext,

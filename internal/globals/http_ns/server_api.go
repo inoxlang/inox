@@ -176,7 +176,7 @@ func addFilesysteDirEndpoints(ctx *core.Context, endpoints map[string]*ApiEndpoi
 				//if false there is nothing to do as the parentCtx is already set to ctx.
 			} else if parentState.Module.Name() != path.Value {
 
-				state, _, _, err := core.PrepareLocalScript(core.ScriptPreparationArgs{
+				state, _, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
 					Fpath:                     path.Value,
 					ParsingCompilationContext: ctx,
 
@@ -201,7 +201,7 @@ func addFilesysteDirEndpoints(ctx *core.Context, endpoints map[string]*ApiEndpoi
 			}
 		}
 
-		state, mod, _, err := core.PrepareLocalScript(core.ScriptPreparationArgs{
+		state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
 			Fpath:                     absEntryPath,
 			ParsingCompilationContext: parentCtx,
 

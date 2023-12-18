@@ -35,7 +35,7 @@ var (
 	ErrNonMatchingCachedModulePath  = errors.New("the cached module's path is not the same as the absolute version of the provided path")
 )
 
-type ScriptPreparationArgs struct {
+type ModulePreparationArgs struct {
 	//path of the script in the .ParsingCompilationContext's filesystem.
 	Fpath string
 
@@ -99,8 +99,8 @@ type ScriptPreparationArgs struct {
 	AdditionalGlobalsTestOnly map[string]Value
 }
 
-// PrepareLocalScript parses & checks a script located in the filesystem and initializes its state.
-func PrepareLocalScript(args ScriptPreparationArgs) (state *GlobalState, mod *Module, manif *Manifest, finalErr error) {
+// PrepareLocalModule parses & checks a module located in the filesystem and initializes its state.
+func PrepareLocalModule(args ModulePreparationArgs) (state *GlobalState, mod *Module, manif *Manifest, finalErr error) {
 
 	//check arguments
 

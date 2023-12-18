@@ -52,7 +52,7 @@ func checkTopic(t *testing.T, topic help.TopicHelp, ctx *core.Context) {
 				return
 			}
 
-			state, _, _, _ := core.PrepareLocalScript(core.ScriptPreparationArgs{
+			state, _, _, _ := core.PrepareLocalModule(core.ModulePreparationArgs{
 				Fpath:                     "/main.ix",
 				ParsingCompilationContext: ctx,
 				DataExtractionMode:        true,

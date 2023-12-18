@@ -49,7 +49,7 @@ func TestSignatureHelpAt(t *testing.T) {
 		}, nil)
 		defer parsingCtx.CancelGracefully()
 
-		state, _, _, _ := core.PrepareLocalScript(core.ScriptPreparationArgs{
+		state, _, _, _ := core.PrepareLocalModule(core.ModulePreparationArgs{
 			Fpath:                     "/main.ix",
 			ParsingCompilationContext: parsingCtx,
 			PreinitFilesystem:         fls,

@@ -26,7 +26,7 @@ var (
 	ErrNoProvidedConfirmExecPrompt     = errors.New("risk score too high and no provided way to show confirm prompt")
 )
 
-type RunScriptArgs struct {
+type RunLocalModuleArgs struct {
 	Fpath                     string
 	PassedCLIArgs             []string
 	PassedArgs                *core.Struct
@@ -77,8 +77,8 @@ type RunScriptArgs struct {
 	OnPrepared func(state *core.GlobalState) error
 }
 
-// RunLocalScript runs a script located in the filesystem.
-func RunLocalScript(args RunScriptArgs) (
+// RunLocalModule runs a module located in the filesystem.
+func RunLocalModule(args RunLocalModuleArgs) (
 	scriptResult core.Value, scriptState *core.GlobalState, scriptModule *core.Module,
 	preparationSuccess bool, _err error,
 ) {
@@ -87,7 +87,7 @@ func RunLocalScript(args RunScriptArgs) (
 		return nil, nil, nil, false, errors.New(".ParentContextRequired is set to true but passed .ParentContext is nil")
 	}
 
-	state, mod, _, err := core.PrepareLocalScript(core.ScriptPreparationArgs{
+	state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
 		Fpath:                     args.Fpath,
 		CliArgs:                   args.PassedCLIArgs,
 		Args:                      args.PassedArgs,
@@ -131,7 +131,7 @@ func RunLocalScript(args RunScriptArgs) (
 		}
 	}
 
-	return RunPreparedScript(RunPreparedScriptArgs{
+	return RunPreparedModule(RunPreparedModuleArgs{
 		State:                     state,
 		ParsingCompilationContext: args.ParsingCompilationContext,
 		ParentContext:             args.ParentContext,
@@ -145,11 +145,12 @@ func RunLocalScript(args RunScriptArgs) (
 	})
 }
 
-type RunPreparedScriptArgs struct {
+type RunPreparedModuleArgs struct {
 	State                     *core.GlobalState
 	ParsingCompilationContext *core.Context
 	ParentContext             *core.Context
 
+	//do not show the confirmation prompt to the user if the risk score is high.
 	IgnoreHighRiskScore bool
 
 	UseBytecode             bool
@@ -160,9 +161,9 @@ type RunPreparedScriptArgs struct {
 	Debugger *core.Debugger
 }
 
-// RunPreparedScript runs a script located in the filesystem.
-func RunPreparedScript(args RunPreparedScriptArgs) (
-	scriptResult core.Value, scriptState *core.GlobalState, scriptModule *core.Module,
+// RunPreparedModule runs a prepared module with the configuration specified in RunPreparedModuleArgs (e.g. .UseBytecode).
+func RunPreparedModule(args RunPreparedModuleArgs) (
+	moduleResult core.Value, moduleState *core.GlobalState, module *core.Module,
 	preparationSuccess bool, _err error,
 ) {
 
@@ -170,9 +171,9 @@ func RunPreparedScript(args RunPreparedScriptArgs) (
 		if e := recover(); e != nil {
 			err := utils.ConvertPanicValueToError(e)
 			err = fmt.Errorf("%w: %s", err, debug.Stack())
-			scriptResult = nil
-			scriptState = nil
-			scriptModule = nil
+			moduleResult = nil
+			moduleState = nil
+			module = nil
 			preparationSuccess = true
 			_err = err
 		}

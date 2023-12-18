@@ -21,7 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestRunLocalScript(t *testing.T) {
+func TestRunLocalModule(t *testing.T) {
 
 	createEvaluationCtx := func(dir string) *core.Context {
 		perms := core.GetDefaultGlobalVarPermissions()
@@ -51,7 +51,7 @@ func TestRunLocalScript(t *testing.T) {
 		ctx := createEvaluationCtx(dir)
 		defer ctx.CancelGracefully()
 
-		state, _, _, _, err := mod.RunLocalScript(mod.RunScriptArgs{
+		state, _, _, _, err := mod.RunLocalModule(mod.RunLocalModuleArgs{
 			Fpath:                     file,
 			ParsingCompilationContext: compilationCtx,
 			ParentContextRequired:     true,
@@ -85,7 +85,7 @@ func TestRunLocalScript(t *testing.T) {
 		ctx := createEvaluationCtx(dir)
 		defer ctx.CancelGracefully()
 
-		state, _, _, _, err := mod.RunLocalScript(mod.RunScriptArgs{
+		state, _, _, _, err := mod.RunLocalModule(mod.RunLocalModuleArgs{
 			Fpath:                     file,
 			ParsingCompilationContext: compilationCtx,
 			ParentContextRequired:     true,
@@ -115,7 +115,7 @@ func TestRunLocalScript(t *testing.T) {
 		ctx := createEvaluationCtx(dir)
 		defer ctx.CancelGracefully()
 
-		state, _, _, _, err := mod.RunLocalScript(mod.RunScriptArgs{
+		state, _, _, _, err := mod.RunLocalModule(mod.RunLocalModuleArgs{
 			Fpath:                     file,
 			ParsingCompilationContext: compilationCtx,
 			ParentContextRequired:     true,
@@ -190,7 +190,7 @@ func TestRunLocalScript(t *testing.T) {
 			util.WriteFile(preinitFs, fmt.Sprintf("/file%d.txt", i), nil, 0o600)
 		}
 
-		state, _, _, _, err := mod.RunLocalScript(mod.RunScriptArgs{
+		state, _, _, _, err := mod.RunLocalModule(mod.RunLocalModuleArgs{
 			Fpath:                     file,
 			ParsingCompilationContext: compilationCtx,
 			ParentContextRequired:     true,

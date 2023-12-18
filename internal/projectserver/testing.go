@@ -41,7 +41,7 @@ func testFileAsync(path string, filters core.TestFilters, session *jsonrpc.Sessi
 
 	// data := getLockedSessionData(session)
 
-	state, _, _, err := core.PrepareLocalScript(core.ScriptPreparationArgs{
+	state, _, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
 		Fpath:                     path,
 		ParsingCompilationContext: handlingCtx,
 		ParentContext:             handlingCtx,

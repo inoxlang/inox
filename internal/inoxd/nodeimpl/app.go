@@ -256,7 +256,7 @@ func (app *Application) AutorestartLoop( /*temporary solution*/ project core.Pro
 
 		filesystem := app.ctx.GetFileSystem()
 
-		state, _, _, err := core.PrepareLocalScript(core.ScriptPreparationArgs{
+		state, _, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
 			Fpath:                     modPath.UnderlyingString(),
 			CachedModule:              appMod,
 			ParentContext:             app.ctx,
@@ -313,7 +313,7 @@ func (app *Application) AutorestartLoop( /*temporary solution*/ project core.Pro
 
 		appStopped.Store(false)
 
-		_, _, _, _, err = mod.RunPreparedScript(mod.RunPreparedScriptArgs{
+		_, _, _, _, err = mod.RunPreparedModule(mod.RunPreparedModuleArgs{
 			State:                     state,
 			ParsingCompilationContext: app.ctx,
 			ParentContext:             app.ctx,

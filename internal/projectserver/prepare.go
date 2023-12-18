@@ -174,7 +174,7 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 			}
 		}
 
-		args := core.ScriptPreparationArgs{
+		args := core.ModulePreparationArgs{
 			Fpath:                     fpath,
 			ParsingCompilationContext: ctx,
 
@@ -197,7 +197,7 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 			args.EnableTesting = true
 		}
 
-		state, mod, _, err := core.PrepareLocalScript(args)
+		state, mod, _, err := core.PrepareLocalModule(args)
 
 		if mod == nil {
 			logs.Println("unrecoverable parsing error", err.Error())

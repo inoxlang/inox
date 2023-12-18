@@ -257,7 +257,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 			chrome_ns.AllowBrowserAutomation()
 		}
 
-		res, scriptState, _, _, err := mod.RunLocalScript(mod.RunScriptArgs{
+		res, scriptState, _, _, err := mod.RunLocalModule(mod.RunLocalModuleArgs{
 			Fpath:                     fpath,
 			PassedCLIArgs:             moduleArgs,
 			PreinitFilesystem:         compilationCtx.GetFileSystem(),

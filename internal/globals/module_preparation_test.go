@@ -38,7 +38,7 @@ var (
 	OS_DB_TEST_ENDPOINT               = os.Getenv("OS_DB_TEST_ENDPOINT")
 )
 
-func TestPrepareLocalScript(t *testing.T) {
+func TestPrepareLocalModule(t *testing.T) {
 
 	t.Run(".ParentContext & .StdlibCtx should not be both set", func(t *testing.T) {
 		dir := t.TempDir()
@@ -65,7 +65,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		defer cancel()
 
 		assert.PanicsWithError(t, core.ErrBothParentCtxArgsProvided.Error(), func() {
-			core.PrepareLocalScript(core.ScriptPreparationArgs{
+			core.PrepareLocalModule(core.ModulePreparationArgs{
 				Fpath:                     file,
 				ParsingCompilationContext: compilationCtx,
 				ParentContext:             ctx,
@@ -104,7 +104,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		core.NewGlobalState(ctx)
 		defer ctx.CancelGracefully()
 
-		state, mod, _, err := core.PrepareLocalScript(core.ScriptPreparationArgs{
+		state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
 			Fpath:                     file,
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             ctx,
@@ -164,7 +164,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		defer ctx1.CancelGracefully()
 		defer ctx1.CancelGracefully()
 
-		state1, module, _, err1 := core.PrepareLocalScript(core.ScriptPreparationArgs{
+		state1, module, _, err1 := core.PrepareLocalModule(core.ModulePreparationArgs{
 			Fpath:                     file,
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             ctx1,
@@ -192,7 +192,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		defer ctx2.CancelGracefully()
 		defer ctx2.CancelGracefully()
 
-		state2, module2, _, err2 := core.PrepareLocalScript(core.ScriptPreparationArgs{
+		state2, module2, _, err2 := core.PrepareLocalModule(core.ModulePreparationArgs{
 			Fpath:                     file,
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             ctx2,
@@ -266,7 +266,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		defer ctx1.CancelGracefully()
 		defer ctx1.CancelGracefully()
 
-		_, module, _, err1 := core.PrepareLocalScript(core.ScriptPreparationArgs{
+		_, module, _, err1 := core.PrepareLocalModule(core.ModulePreparationArgs{
 			Fpath:                     file,
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             ctx1,
@@ -294,7 +294,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		defer ctx2.CancelGracefully()
 		defer ctx2.CancelGracefully()
 
-		state2, module2, _, err2 := core.PrepareLocalScript(core.ScriptPreparationArgs{
+		state2, module2, _, err2 := core.PrepareLocalModule(core.ModulePreparationArgs{
 			Fpath:                     otherFile, //path is different
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             ctx2,
@@ -342,7 +342,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		outBuf := bytes.NewBuffer(nil)
 		logLevel := zerolog.WarnLevel
 
-		state, mod, _, err := core.PrepareLocalScript(core.ScriptPreparationArgs{
+		state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
 			Fpath:                     file,
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             ctx,
@@ -399,7 +399,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		core.NewGlobalState(ctx)
 		defer ctx.CancelGracefully()
 
-		state, mod, _, err2 := core.PrepareLocalScript(core.ScriptPreparationArgs{
+		state, mod, _, err2 := core.PrepareLocalModule(core.ModulePreparationArgs{
 			Fpath:                     file,
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             ctx,
@@ -461,7 +461,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		core.NewGlobalState(ctx)
 		defer ctx.CancelGracefully()
 
-		state, mod, _, err := core.PrepareLocalScript(core.ScriptPreparationArgs{
+		state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
 			Fpath:                     file,
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             ctx,
@@ -527,7 +527,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		preinitFs := fs_ns.NewMemFilesystem(100)
 		util.WriteFile(preinitFs, "/file.txt", nil, 0o600)
 
-		state, mod, manifest, err := core.PrepareLocalScript(core.ScriptPreparationArgs{
+		state, mod, manifest, err := core.PrepareLocalModule(core.ModulePreparationArgs{
 			Fpath:                     file,
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             ctx,
@@ -608,7 +608,7 @@ func TestPrepareLocalScript(t *testing.T) {
 
 		var errInvalidManifest = errors.New("invalid manifest")
 
-		state, mod, _, err := core.PrepareLocalScript(core.ScriptPreparationArgs{
+		state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
 			Fpath:                     file,
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             ctx,
@@ -668,7 +668,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		core.NewGlobalState(ctx)
 		defer ctx.CancelGracefully()
 
-		state, mod, _, err := core.PrepareLocalScript(core.ScriptPreparationArgs{
+		state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
 			Fpath:                     file,
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             ctx,
@@ -751,7 +751,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		core.NewGlobalState(ctx)
 		defer ctx.CancelGracefully()
 
-		state, mod, _, err := core.PrepareLocalScript(core.ScriptPreparationArgs{
+		state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
 			Fpath:                     file,
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             ctx,
@@ -818,7 +818,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		core.NewGlobalState(ctx)
 		defer ctx.CancelGracefully()
 
-		state, mod, _, err := core.PrepareLocalScript(core.ScriptPreparationArgs{
+		state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
 			Fpath:                     file,
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             ctx,
@@ -906,7 +906,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		core.NewGlobalState(ctx)
 		defer ctx.CancelGracefully()
 
-		state, mod, _, err := core.PrepareLocalScript(core.ScriptPreparationArgs{
+		state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
 			Fpath:                     file,
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             ctx,
@@ -986,7 +986,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		core.NewGlobalState(ctx)
 		defer ctx.CancelGracefully()
 
-		state, mod, _, err := core.PrepareLocalScript(core.ScriptPreparationArgs{
+		state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
 			Fpath:                     file,
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             ctx,
@@ -1066,7 +1066,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		core.NewGlobalState(ctx)
 		defer ctx.CancelGracefully()
 
-		mainState, _, _, err := core.PrepareLocalScript(core.ScriptPreparationArgs{
+		mainState, _, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
 			Fpath:                     "/main.ix",
 			ParsingCompilationContext: ctx,
 			ParentContext:             ctx,
@@ -1081,7 +1081,7 @@ func TestPrepareLocalScript(t *testing.T) {
 			return
 		}
 
-		state, mod, _, err := core.PrepareLocalScript(core.ScriptPreparationArgs{
+		state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
 			Fpath:                     "/executed.ix",
 			ParsingCompilationContext: mainState.Ctx,
 			ParentContext:             mainState.Ctx,
@@ -1151,7 +1151,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		core.NewGlobalState(ctx)
 		defer ctx.CancelGracefully()
 
-		state, mod, _, err := core.PrepareLocalScript(core.ScriptPreparationArgs{
+		state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
 			Fpath:                     file,
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             ctx,
@@ -1233,7 +1233,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		core.NewGlobalState(ctx)
 		defer ctx.CancelGracefully()
 
-		state, mod, _, err := core.PrepareLocalScript(core.ScriptPreparationArgs{
+		state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
 			Fpath:                     file,
 			Project:                   project.NewDummyProject("test", fs),
 			ParsingCompilationContext: compilationCtx,
@@ -1332,7 +1332,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		core.NewGlobalState(ctx)
 		defer ctx.CancelGracefully()
 
-		state, mod, _, err := core.PrepareLocalScript(core.ScriptPreparationArgs{
+		state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
 			Fpath:                     file,
 			Project:                   project.NewDummyProject("test", fs),
 			ParsingCompilationContext: compilationCtx,
@@ -1474,7 +1474,7 @@ func TestPrepareLocalScript(t *testing.T) {
 			Filesystem:  fs,
 		}, nil)
 
-		state, mod, _, err := core.PrepareLocalScript(core.ScriptPreparationArgs{
+		state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
 			Fpath:                     "/script.ix",
 			ParsingCompilationContext: ctx,
 			ParentContext:             ctx,
@@ -1605,7 +1605,7 @@ func TestPrepareLocalScript(t *testing.T) {
 			Filesystem:  fs,
 		}, nil)
 
-		state, mod, _, err := core.PrepareLocalScript(core.ScriptPreparationArgs{
+		state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
 			Fpath:                     "/script.ix",
 			ParsingCompilationContext: ctx,
 			ParentContext:             ctx,
@@ -1677,7 +1677,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		core.NewGlobalState(ctx)
 		defer ctx.CancelGracefully()
 
-		state, mod, _, err := core.PrepareLocalScript(core.ScriptPreparationArgs{
+		state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
 			Fpath:                     file,
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             ctx,
@@ -1724,7 +1724,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		core.NewGlobalState(ctx)
 		defer ctx.CancelGracefully()
 
-		state, mod, _, err := core.PrepareLocalScript(core.ScriptPreparationArgs{
+		state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
 			Fpath:                     file,
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             ctx,
@@ -1797,7 +1797,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		core.NewGlobalState(ctx)
 		defer ctx.CancelGracefully()
 
-		state, mod, _, err := core.PrepareLocalScript(core.ScriptPreparationArgs{
+		state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
 			Fpath:                     file,
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             ctx,
@@ -1841,7 +1841,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		core.NewGlobalState(ctx)
 		defer ctx.CancelGracefully()
 
-		state, mod, _, err := core.PrepareLocalScript(core.ScriptPreparationArgs{
+		state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
 			Fpath:                     file,
 			CliArgs:                   []string{}, //missing file argument
 			ParsingCompilationContext: compilationCtx,
@@ -1885,7 +1885,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		core.NewGlobalState(ctx)
 		defer ctx.CancelGracefully()
 
-		state, mod, _, err := core.PrepareLocalScript(core.ScriptPreparationArgs{
+		state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
 			Fpath:                     file,
 			CliArgs:                   []string{"true"}, //too many arguments
 			ParsingCompilationContext: compilationCtx,
@@ -1929,7 +1929,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		core.NewGlobalState(ctx)
 		defer ctx.CancelGracefully()
 
-		state, mod, _, err := core.PrepareLocalScript(core.ScriptPreparationArgs{
+		state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
 			Fpath:                     file,
 			CliArgs:                   []string{"-x"}, //unknown argument
 			ParsingCompilationContext: compilationCtx,
@@ -1975,7 +1975,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		core.NewGlobalState(ctx)
 		defer ctx.CancelGracefully()
 
-		state, mod, _, err := core.PrepareLocalScript(core.ScriptPreparationArgs{
+		state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
 			Fpath:                     file,
 			Args:                      core.NewStructFromMap(map[string]core.Value{}),
 			ParsingCompilationContext: compilationCtx,
@@ -2021,7 +2021,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		})
 		core.NewGlobalState(state)
 
-		res, mod, _, err := core.PrepareLocalScript(core.ScriptPreparationArgs{
+		res, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
 			Fpath: file,
 			Args: core.NewStructFromMap(map[string]core.Value{
 				"0": core.Path("./a.txt"),
@@ -2069,7 +2069,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		core.NewGlobalState(ctx)
 		defer ctx.CancelGracefully()
 
-		state, mod, _, err := core.PrepareLocalScript(core.ScriptPreparationArgs{
+		state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
 			Fpath: file,
 			Args: core.NewStructFromMap(map[string]core.Value{
 				"0": core.True,
@@ -2115,7 +2115,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		core.NewGlobalState(ctx)
 		defer ctx.CancelGracefully()
 
-		state, mod, _, err := core.PrepareLocalScript(core.ScriptPreparationArgs{
+		state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
 			Fpath: file,
 			Args: core.NewStructFromMap(map[string]core.Value{
 				"0": core.True,
@@ -2164,7 +2164,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		core.NewGlobalState(ctx)
 		defer ctx.CancelGracefully()
 
-		state, mod, _, err := core.PrepareLocalScript(core.ScriptPreparationArgs{
+		state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
 			Fpath: file,
 			Args: core.NewStructFromMap(map[string]core.Value{
 				"0":      core.Path("./a.txt"),
@@ -2213,7 +2213,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		core.NewGlobalState(ctx)
 		defer ctx.CancelGracefully()
 
-		state, mod, _, err := core.PrepareLocalScript(core.ScriptPreparationArgs{
+		state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
 			Fpath: file,
 			Args: core.NewStructFromMap(map[string]core.Value{
 				"outpu": core.True, //unknown argument
@@ -2259,7 +2259,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		core.NewGlobalState(ctx)
 		defer ctx.CancelGracefully()
 
-		state, mod, _, err := core.PrepareLocalScript(core.ScriptPreparationArgs{
+		state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
 			Fpath: file,
 			Args: core.NewStructFromMap(map[string]core.Value{
 				"x": core.True, //unknown argument
@@ -2298,7 +2298,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		
 		`), 0o600)
 
-		state, mod, _, err := core.PrepareLocalScript(core.ScriptPreparationArgs{
+		state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
 			Fpath:                     file,
 			ParsingCompilationContext: compilationCtx,
 			Out:                       io.Discard,
@@ -2363,7 +2363,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		
 		`), 0o600)
 
-		state, mod, _, err := core.PrepareLocalScript(core.ScriptPreparationArgs{
+		state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
 			Fpath:                     "/main.spec.ix",
 			ParsingCompilationContext: compilationCtx,
 			Out:                       io.Discard,
@@ -2432,7 +2432,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		
 		`), 0o600)
 
-		state, mod, _, err := core.PrepareLocalScript(core.ScriptPreparationArgs{
+		state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
 			Fpath:                     "/main.spec.ix",
 			ParsingCompilationContext: compilationCtx,
 			Out:                       io.Discard,
@@ -2477,7 +2477,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		
 		`), 0o600)
 
-		state, mod, _, err := core.PrepareLocalScript(core.ScriptPreparationArgs{
+		state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
 			Fpath:                     file,
 			ParsingCompilationContext: compilationCtx,
 			Out:                       io.Discard,
@@ -2526,7 +2526,7 @@ func TestPrepareLocalScript(t *testing.T) {
 		core.NewGlobalState(parsingCompilationCtx)
 		defer parsingCompilationCtx.CancelGracefully()
 
-		state, _, _, err := core.PrepareLocalScript(core.ScriptPreparationArgs{
+		state, _, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
 			Fpath:                     file,
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             parsingCompilationCtx,

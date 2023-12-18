@@ -38,7 +38,7 @@ func TestAppStop(t *testing.T) {
 		}, nil)
 		defer ctx.CancelGracefully()
 
-		_, mod, _, err := core.PrepareLocalScript(core.ScriptPreparationArgs{
+		_, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
 			Fpath:                     "/main.ix",
 			DataExtractionMode:        true,
 			StdlibCtx:                 context.Background(),

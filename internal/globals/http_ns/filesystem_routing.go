@@ -223,7 +223,7 @@ func createHandleDynamic(server *HttpsServer, routingDirPath core.Path) handlerF
 		fsRoutingLogger = fsRoutingLogger.With().Str("handler", modulePath).Logger()
 		moduleLogger := handlerGlobalState.Logger
 
-		state, _, _, err := core.PrepareLocalScript(core.ScriptPreparationArgs{
+		state, _, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
 			Fpath:                 modulePath,
 			CachedModule:          module,
 			ParentContext:         handlerCtx,
@@ -298,7 +298,7 @@ func createHandleDynamic(server *HttpsServer, routingDirPath core.Path) handlerF
 
 		handlerCtx.PauseCPUTimeDecrementation()
 
-		result, _, _, _, err := mod.RunPreparedScript(mod.RunPreparedScriptArgs{
+		result, _, _, _, err := mod.RunPreparedModule(mod.RunPreparedModuleArgs{
 			State: state,
 
 			ParentContext:             handlerCtx,

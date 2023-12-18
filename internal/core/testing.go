@@ -683,7 +683,7 @@ func runTestItem(
 	var testedProgramDatabases *Namespace
 
 	if programToExecute != "" {
-		programState, _, _, err := PrepareLocalScript(ScriptPreparationArgs{
+		programState, _, _, err := PrepareLocalModule(ModulePreparationArgs{
 			FullAccessToDatabases:   true,
 			ForceExpectSchemaUpdate: true,
 

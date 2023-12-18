@@ -127,7 +127,7 @@ func _parse_in_memory_module(ctx *core.Context, name core.Str, code core.Str) (*
 }
 
 func _prepare_local_script(ctx *core.Context, src core.Path) (*core.Module, *core.GlobalState, *core.Record, error) {
-	state, mod, _, err := core.PrepareLocalScript(core.ScriptPreparationArgs{
+	state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
 		Fpath:                     string(src),
 		ParsingCompilationContext: ctx,
 		ParentContext:             ctx,
@@ -184,7 +184,7 @@ func _run_local_script(ctx *core.Context, src core.Path, config *core.Object) (c
 		return nil, nil, nil, err
 	}
 
-	runResult, state, mod, _, err := mod.RunLocalScript(mod.RunScriptArgs{
+	runResult, state, mod, _, err := mod.RunLocalModule(mod.RunLocalModuleArgs{
 		Fpath:                     string(src),
 		ParsingCompilationContext: ctx,
 		ParentContext:             ctx,
@@ -236,7 +236,7 @@ func _run_local_script(ctx *core.Context, src core.Path, config *core.Object) (c
 //		symbolicCheckErrors: [ ..., {text: <string>, location: <parse.SourcePosition>}, ... ]
 //	}
 func GetCheckData(fpath string, compilationCtx *core.Context, out io.Writer) map[string]any {
-	state, mod, _, err := core.PrepareLocalScript(core.ScriptPreparationArgs{
+	state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
 		Fpath:                     fpath,
 		Args:                      nil,
 		ParsingCompilationContext: compilationCtx,
