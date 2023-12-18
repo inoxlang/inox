@@ -1106,7 +1106,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			}()
 		}
 
-		if state.Global.TestingState.IsTestingEnabled && !state.Global.TestingState.IsTestingEnabled && !state.forceDisableTesting {
+		if state.Global.TestingState.IsTestingEnabled && !state.Global.TestingState.IsImportTestingEnabled && !state.forceDisableTesting {
 			state.forceDisableTesting = true
 			defer func() {
 				state.forceDisableTesting = false
