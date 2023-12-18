@@ -921,7 +921,7 @@ func (fn *Function) VariadicParamElem() Value {
 	if !fn.variadic {
 		panic(errors.New("function is not variadic"))
 	}
-	return fn.parameters[len(fn.parameters)-1]
+	return fn.parameters[len(fn.parameters)-1].(*Array).element()
 }
 
 func (fn *Function) OriginGoFunction() (*GoFunction, bool) {

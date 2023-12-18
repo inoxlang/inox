@@ -263,6 +263,10 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 		params, paramNames, isSpecificFuncVariadic, hasMoreSpecificParams := state.consumeSymbolicGoFunctionParameters()
 		if !hasMoreSpecificParams {
 			params = f.ParametersExceptCtx()
+			for i := 0; i < len(params); i++ {
+				paramNames = append(paramNames, "_")
+			}
+			isSpecificFuncVariadic = f.isVariadic
 		}
 
 		var results []Value

@@ -5064,6 +5064,7 @@ func TestSymbolicEval(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				return f()
 			`)
+			callExprNode := n.Statements[0].(*parse.ReturnStatement).Expr.(*parse.CallExpression)
 
 			goFunc := &GoFunction{
 				fn: func(args ...*Int) *Int {
@@ -5073,15 +5074,38 @@ func TestSymbolicEval(t *testing.T) {
 			}
 			state.setGlobal("f", goFunc, GlobalConst)
 			res, err := symbolicEval(n, state)
-			assert.NoError(t, err)
+			if !assert.NoError(t, err) {
+				return
+			}
 			assert.Empty(t, state.errors())
 			assert.Equal(t, ANY_INT, res)
+
+			calleeData, ok := state.symbolicData.GetMostSpecificNodeValue(callExprNode.Callee)
+			if !assert.True(t, ok) {
+				return
+			}
+
+			if !assert.Equal(t, &Function{
+				firstOptionalParamIndex: -1,
+				parameters:              []Value{NewArray(ANY_INT)},
+				parameterNames:          []string{"_"},
+				results:                 []Value{ANY_INT},
+				originGoFunction:        goFunc,
+				variadic:                true,
+			}, calleeData) {
+				return
+			}
+
+			fn := calleeData.(*Function)
+			assert.False(t, fn.HasOptionalParams())
+			assert.Equal(t, ANY_INT, fn.VariadicParamElem())
 		})
 
 		t.Run("signature is func(...*Int) *Int: one argument provided", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				return f(1)
 			`)
+			callExprNode := n.Statements[0].(*parse.ReturnStatement).Expr.(*parse.CallExpression)
 
 			goFunc := &GoFunction{
 				fn: func(args ...*Int) *Int {
@@ -5093,15 +5117,38 @@ func TestSymbolicEval(t *testing.T) {
 			}
 			state.setGlobal("f", goFunc, GlobalConst)
 			res, err := symbolicEval(n, state)
-			assert.NoError(t, err)
+			if !assert.NoError(t, err) {
+				return
+			}
 			assert.Empty(t, state.errors())
 			assert.Equal(t, INT_1, res)
+
+			calleeData, ok := state.symbolicData.GetMostSpecificNodeValue(callExprNode.Callee)
+			if !assert.True(t, ok) {
+				return
+			}
+
+			if !assert.Equal(t, &Function{
+				firstOptionalParamIndex: -1,
+				parameters:              []Value{NewArray(ANY_INT)},
+				parameterNames:          []string{"_"},
+				results:                 []Value{INT_1},
+				originGoFunction:        goFunc,
+				variadic:                true,
+			}, calleeData) {
+				return
+			}
+
+			fn := calleeData.(*Function)
+			assert.False(t, fn.HasOptionalParams())
+			assert.Equal(t, ANY_INT, fn.VariadicParamElem())
 		})
 
 		t.Run("signature is func(...*Int) *Int: two arguments provided", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				return f(1, 2)
 			`)
+			callExprNode := n.Statements[0].(*parse.ReturnStatement).Expr.(*parse.CallExpression)
 
 			goFunc := &GoFunction{
 				fn: func(args ...*Int) *Int {
@@ -5113,9 +5160,31 @@ func TestSymbolicEval(t *testing.T) {
 			}
 			state.setGlobal("f", goFunc, GlobalConst)
 			res, err := symbolicEval(n, state)
-			assert.NoError(t, err)
+			if !assert.NoError(t, err) {
+				return
+			}
 			assert.Empty(t, state.errors())
 			assert.Equal(t, INT_3, res)
+
+			calleeData, ok := state.symbolicData.GetMostSpecificNodeValue(callExprNode.Callee)
+			if !assert.True(t, ok) {
+				return
+			}
+
+			if !assert.Equal(t, &Function{
+				firstOptionalParamIndex: -1,
+				parameters:              []Value{NewArray(ANY_INT)},
+				parameterNames:          []string{"_"},
+				results:                 []Value{INT_3},
+				originGoFunction:        goFunc,
+				variadic:                true,
+			}, calleeData) {
+				return
+			}
+
+			fn := calleeData.(*Function)
+			assert.False(t, fn.HasOptionalParams())
+			assert.Equal(t, ANY_INT, fn.VariadicParamElem())
 		})
 
 		t.Run("signature is func(...Value) Value: no argument provided", func(t *testing.T) {
