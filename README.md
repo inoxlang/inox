@@ -259,7 +259,7 @@ Inox includes an embedded database engine. Databases are described in the manife
 manifest {
     permissions: {
         read: %/...
-        write: %/...
+        write: %/databases/...
     }
     databases: {
         main: {
@@ -563,8 +563,7 @@ Attempting to perform a forbidden operation raises an error:\
 
 #### **Isolation of Dependencies**
 
-In imports the importing module specifies the permissions it **grants** to the
-imported module.
+Permissions granted to the imported modules are specified in the import statements.
 
 `./app.ix`
 
@@ -584,7 +583,9 @@ import lib ./malicious-lib.ix {
 }
 ```
 
-`./malicious-lib.ix`
+<details>
+
+**<summary>./malicious-lib.ix</summary>**
 
 ```
 manifest {
@@ -595,6 +596,8 @@ manifest {
 
 data = fs.read!(/etc/passwd)
 ```
+</details>
+
 
 If the imported module asks more permissions than granted an error is thrown:\
 `import: some permissions in the imported module's manifest are not granted: [read path(s) /...]`
@@ -681,7 +684,11 @@ _This feature is **very much** work in progress._
 [**Excessive Data Exposure**](https://apisecurity.io/encyclopedia/content/owasp/api3-excessive-data-exposure.htm)
 occurs when an HTTP API returns more data than needed, potentially exposing sensitive information. In order to mitigate this type of vunerability the serialization of Inox values involves the concepts of **value visibility** and **property visibility**.
 
-Let's take an example, here is an Inox object:
+<details>
+
+**<summary>Example</summary>**
+
+Here is an Inox object:
 
 ```
 {
@@ -717,6 +724,8 @@ metaproperty.
 
 ℹ️ In the near future the visibility will be configurable directly in patterns &
 database schemas.
+
+</details>
 
 ### Injection Prevention (WIP)
 

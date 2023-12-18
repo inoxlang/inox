@@ -36,8 +36,8 @@ Before starting the shell ``inox`` will execute the startup script `~/.config/in
 
 ## Pseudo Commands (quit, clear)
 
-- `quit` pseudo command stops the process.
-- `clear` pseudo command clears the screen.
+- The `quit` pseudo command stops the process.
+- The `clear` pseudo command clears the screen.
 
 ## Syntax
 
@@ -294,12 +294,12 @@ return {
 }
 ```
 
-### Builtin Commands
+### Built-in Commands
 
-Builtin commands are provided by the shell, note that commands do not exist natively in Inox,
+Built-in commands are provided by the shell, note that commands do not exist natively in Inox,
 typing `cd ./dir/` is equivalent to `cd(./dir/)` because **cd** is a function.
 
-There are only a few builtin commands availabe:
+There are only a few built-in commands availabe:
 - cd
 - pwd
 - whoami
