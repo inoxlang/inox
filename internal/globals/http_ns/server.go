@@ -118,49 +118,49 @@ type HttpsServer struct {
 // The server's defaultLimits are constructed by merging the default request handling limits with the default-limits in arguments.
 // The server's maxLimits are constructed by merging the default max request handling limits with the max-limits in arguments.
 func NewHttpsServer(ctx *core.Context, host core.Host, args ...core.Value) (*HttpsServer, error) {
-	_server := &HttpsServer{
+	server := &HttpsServer{
 		state:      ctx.GetClosestState(),
 		defaultCSP: DEFAULT_CSP,
 	}
 
-	if _server.state == nil {
+	if server.state == nil {
 		return nil, errors.New("cannot create server: context's associated state is nil")
 	}
 
 	addr, userProvidedCert, userProvidedKey, userProvidedHandler, handlerValProvided, middlewares,
-		defaultLimits, maxLimits, argErr := readHttpServerArgs(ctx, _server, host, args...)
+		defaultLimits, maxLimits, argErr := readHttpServerArgs(ctx, server, host, args...)
 
 	if argErr != nil {
 		return nil, argErr
 	}
 
-	_server.maxLimits = maxLimits
-	_server.defaultLimits = defaultLimits
+	server.maxLimits = maxLimits
+	server.defaultLimits = defaultLimits
 
 	//create logger and security engine
 	{
 		logSrc := HTTP_SERVER_SRC + "/" + addr
-		_server.serverLogger = ctx.NewChildLoggerForInternalSource(logSrc)
+		server.serverLogger = ctx.NewChildLoggerForInternalSource(logSrc)
 
 		securityLogSrc := ctx.NewChildLoggerForInternalSource(logSrc + "/sec")
-		_server.securityEngine = newSecurityEngine(securityLogSrc)
+		server.securityEngine = newSecurityEngine(securityLogSrc)
 	}
 
 	//create middleware functions + last handler function
 	if handlerValProvided {
-		err := addHandlerFunction(userProvidedHandler, false, _server)
+		err := addHandlerFunction(userProvidedHandler, false, server)
 		if err != nil {
 			return nil, err
 		}
 	} else {
 		//we set a default handler that writes NO_HANDLER_PLACEHOLDER_MESSAGE
-		_server.lastHandlerFn = func(r *HttpRequest, rw *HttpResponseWriter, state *core.GlobalState) {
+		server.lastHandlerFn = func(r *HttpRequest, rw *HttpResponseWriter, state *core.GlobalState) {
 			rw.rw.Write([]byte(NO_HANDLER_PLACEHOLDER_MESSAGE))
 		}
 	}
 
 	for _, val := range middlewares {
-		err := addHandlerFunction(val, true, _server)
+		err := addHandlerFunction(val, true, server)
 		if err != nil {
 			return nil, err
 		}
@@ -168,10 +168,10 @@ func NewHttpsServer(ctx *core.Context, host core.Host, args ...core.Value) (*Htt
 
 	// create the http.HandlerFunc that will call lastHandlerFn & middlewares
 	topHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		serverLogger := _server.serverLogger
+		serverLogger := server.serverLogger
 
 		//create the Inox values for the request and the response writer
-		req, err := NewServerSideRequest(r, serverLogger, _server)
+		req, err := NewServerSideRequest(r, serverLogger, server)
 		if err != nil {
 			serverLogger.Print(err)
 			w.WriteHeader(http.StatusBadRequest)
@@ -180,7 +180,7 @@ func NewHttpsServer(ctx *core.Context, host core.Host, args ...core.Value) (*Htt
 
 		rw := NewResponseWriter(req, w, serverLogger)
 
-		debugger, _ := _server.state.Debugger.Load().(*core.Debugger)
+		debugger, _ := server.state.Debugger.Load().(*core.Debugger)
 		if debugger != nil {
 			debugger.ControlChan() <- core.DebugCommandInformAboutSecondaryEvent{
 				Event: core.IncomingMessageReceivedEvent{
@@ -204,7 +204,7 @@ func NewHttpsServer(ctx *core.Context, host core.Host, args ...core.Value) (*Htt
 
 		// rate limiting & more
 
-		if _server.securityEngine.rateLimitRequest(req, rw) {
+		if server.securityEngine.rateLimitRequest(req, rw) {
 			rw.writeStatus(http.StatusTooManyRequests)
 			return
 		}
@@ -231,14 +231,14 @@ func NewHttpsServer(ctx *core.Context, host core.Host, args ...core.Value) (*Htt
 		//transaction is cleaned up during context cancelation, so no need to defer a rollback
 
 		handlerGlobalState := core.NewGlobalState(handlerCtx)
-		handlerGlobalState.Logger = _server.state.Logger
-		handlerGlobalState.LogLevels = _server.state.LogLevels
-		handlerGlobalState.Out = _server.state.Out
-		handlerGlobalState.Module = _server.state.Module
-		handlerGlobalState.MainState = _server.state.MainState
-		handlerGlobalState.Manifest = _server.state.Manifest
-		handlerGlobalState.Databases = _server.state.Databases
-		handlerGlobalState.SystemGraph = _server.state.SystemGraph
+		handlerGlobalState.Logger = server.state.Logger
+		handlerGlobalState.LogLevels = server.state.LogLevels
+		handlerGlobalState.Out = server.state.Out
+		handlerGlobalState.Module = server.state.Module
+		handlerGlobalState.MainState = server.state.MainState
+		handlerGlobalState.Manifest = server.state.Manifest
+		handlerGlobalState.Databases = server.state.Databases
+		handlerGlobalState.SystemGraph = server.state.SystemGraph
 		handlerGlobalState.OutputFieldsInitialized.Store(true)
 
 		//
@@ -251,7 +251,7 @@ func NewHttpsServer(ctx *core.Context, host core.Host, args ...core.Value) (*Htt
 
 		//call middlewares & handler
 
-		for _, fn := range _server.middlewares {
+		for _, fn := range server.middlewares {
 			fn(req, rw, handlerGlobalState)
 			if rw.finished {
 				return
@@ -260,7 +260,7 @@ func NewHttpsServer(ctx *core.Context, host core.Host, args ...core.Value) (*Htt
 
 		//TODO: make sure memory allocated by + resources acquired by middlewares are released
 
-		_server.lastHandlerFn(req, rw, handlerGlobalState)
+		server.lastHandlerFn(req, rw, handlerGlobalState)
 	})
 
 	//create a stdlib http Server
@@ -277,26 +277,26 @@ func NewHttpsServer(ctx *core.Context, host core.Host, args ...core.Value) (*Htt
 		config.PemEncodedKey = userProvidedKey.StringValue().GetOrBuildString()
 	}
 
-	server, err := NewGolangHttpServer(ctx, config)
+	goServer, err := NewGolangHttpServer(ctx, config)
 	if err != nil {
 		return nil, err
 	}
 
-	_server.wrappedServer = server
-	_server.endChan = make(chan struct{}, 1)
-	_server.initialized.Store(true)
+	server.wrappedServer = goServer
+	server.endChan = make(chan struct{}, 1)
+	server.initialized.Store(true)
 
 	//listen and serve in a goroutine
 	go func() {
 		defer func() {
 			recover()
-			_server.endChan <- struct{}{}
+			server.endChan <- struct{}{}
 		}()
-		_server.serverLogger.Info().Msgf("start HTTPS server on %s (%s)", addr, host)
+		server.serverLogger.Info().Msgf("start HTTPS server on %s (%s)", addr, host)
 
-		err := server.ListenAndServeTLS("", "")
+		err := goServer.ListenAndServeTLS("", "")
 		if err != nil {
-			_server.serverLogger.Print(err)
+			server.serverLogger.Print(err)
 		}
 	}()
 
@@ -304,17 +304,17 @@ func NewHttpsServer(ctx *core.Context, host core.Host, args ...core.Value) (*Htt
 	go func() {
 		defer func() {
 			recover()
-			_server.endChan <- struct{}{}
+			server.endChan <- struct{}{}
 		}()
-		defer _server.serverLogger.Info().Msg("server (" + addr + ") is now closed")
+		defer server.serverLogger.Info().Msg("server (" + addr + ") is now closed")
 
 		<-ctx.Done()
-		_server.ImmediatelyClose(ctx)
+		server.ImmediatelyClose(ctx)
 	}()
 
 	time.Sleep(HTTP_SERVER_STARTING_WAIT_TIME)
 
-	return _server, nil
+	return server, nil
 }
 
 func (serv *HttpsServer) Host(name string) core.Host {

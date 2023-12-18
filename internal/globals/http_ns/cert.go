@@ -11,7 +11,6 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"log"
 	"math/big"
 	"net"
 	"strconv"
@@ -206,7 +205,7 @@ func GetTLSConfig(ctx *core.Context, pemEncodedCert string, pemEncodedKey string
 
 	cert, err := tls.X509KeyPair([]byte(pemEncodedCert), []byte(pemEncodedKey))
 	if err != nil {
-		log.Fatalf("failed to create tls.Certificate: %v", err)
+		return nil, err
 	}
 
 	magic.CacheUnmanagedTLSCertificate(ctx, cert, nil)
