@@ -24,7 +24,6 @@
 - WebAssembly support using https://github.com/tetratelabs/wazero.
 - Execution of modules when certain events occur (e.g. new user in database)
 - Progressive web app support
-- Internal plugin system or hooks (Inox | WASM)
 - Support other init systems in addition to Systemd
 
 ## Planned Improvements
