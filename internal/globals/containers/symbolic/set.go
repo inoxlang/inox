@@ -205,7 +205,7 @@ func (p *SetPattern) Test(v symbolic.Value, state symbolic.RecTestCallState) boo
 		return false
 	}
 
-	return p.uniqueness == nil || p.uniqueness == otherPattern.uniqueness
+	return p.uniqueness == nil || (otherPattern.uniqueness != nil && *p.uniqueness == *otherPattern.uniqueness)
 }
 
 func (p *SetPattern) IsConcretizable() bool {

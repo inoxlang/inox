@@ -39,6 +39,12 @@ type UniquenessConstraint struct {
 	PropertyName core.PropertyName //set if UniquePropertyValue
 }
 
+func NewReprUniqueness() *UniquenessConstraint {
+	return &UniquenessConstraint{
+		Type: UniqueRepr,
+	}
+}
+
 func UniquenessConstraintFromValue(val core.Value) (UniquenessConstraint, bool) {
 	var uniqueness UniquenessConstraint
 	switch u := val.(type) {
