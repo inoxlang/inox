@@ -105,7 +105,9 @@ Inox applications can currently only be developed using the Inox extension for V
 - If your local machine is not running Linux, you can install VSCode + the extension on it and install Inox on another machine, such as a VPS.\
  You can also setup a local virtual machine running Linux.
 
-**Installation Instructions**
+<details>
+
+**<summary>Installation Instructions</summary>**
 
 - Download the latest release
   ```
@@ -137,6 +139,8 @@ Inox applications can currently only be developed using the Inox extension for V
   ```
   inox install-completions
   ```
+
+</details>
 
 If you want to compile Inox from source go [here](#compile-from-source).
 
@@ -259,7 +263,7 @@ manifest {
     }
     databases: {
         main: {
-            #ldb stands for Local Database
+            # ldb stands for Local Database
             resource: ldb://main  
             resolution-data: /databases/main/
             expected-schema-update: true
@@ -274,6 +278,10 @@ pattern user = {
 
 dbs.main.update_schema(%{
     users: Set(user, #url)
+}, {
+    inclusions: :{
+        %/users: []
+    }
 })
 ```
 
