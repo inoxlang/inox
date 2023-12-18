@@ -2,6 +2,10 @@ package jsonrpc
 
 import "context"
 
+const (
+	CANCEL_REQUEST_METHOD = "$/cancelRequest"
+)
+
 // $/cancelRequest
 type cancelParams struct {
 	ID interface{} `json:"id"`
@@ -19,7 +23,7 @@ func cancelRequest(ctx context.Context, req interface{}) (interface{}, error) {
 
 func CancelRequest() MethodInfo {
 	return MethodInfo{
-		Name: "$/cancelRequest",
+		Name: CANCEL_REQUEST_METHOD,
 		NewRequest: func() interface{} {
 			return &cancelParams{}
 		},

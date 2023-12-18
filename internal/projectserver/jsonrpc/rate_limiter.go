@@ -38,6 +38,10 @@ func (r *rateLimiter) limit(info MethodInfo, reqId string, addrPort netaddr.Remo
 	if info.Name == "" {
 		panic(errors.New("unknown method"))
 	}
+	if info.Name == CANCEL_REQUEST_METHOD {
+		return false, false
+	}
+
 	methodLimiter, ok := r.methodToLimiter[info.Name]
 
 	//always allow first invocation
