@@ -9,8 +9,8 @@ preinit {
 manifest {
     kind: "application"
     permissions: {
-        # allow listening on localhost:8080
-        provide: HOST
+        # allow the server to listen (localhost only if the configuration does not allow web servers to be exposed).
+        provide: APP_LISTENING_ADDR
 
         read: %/...
 
