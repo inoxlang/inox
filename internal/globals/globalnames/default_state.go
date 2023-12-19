@@ -152,5 +152,6 @@ const (
 	MODULE_FILEPATH = "__mod-file"
 
 	//other
-	PREINIT_DATA = "preinit-data"
+	PREINIT_DATA       = "preinit-data"
+	APP_LISTENING_ADDR = "APP_LISTENING_ADDR"
 )

@@ -1,6 +1,6 @@
 package globalnames
 
 const (
-	DATABASES       = "dbs"
-	PROJECT_SECRETS = "project-secrets"
+	DATABASES          = "dbs"
+	PROJECT_SECRETS    = "project-secrets"
 )

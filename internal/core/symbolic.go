@@ -1131,6 +1131,9 @@ func (s Scheme) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.V
 }
 
 func (h Host) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
+	if h.HasHttpScheme() {
+		return symbolic.ANY_HTTPS_HOST, nil
+	}
 	return symbolic.ANY_HOST, nil
 }
 

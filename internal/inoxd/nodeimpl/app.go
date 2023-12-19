@@ -16,6 +16,7 @@ import (
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/permkind"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
+	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/inoxd/node"
 	"github.com/inoxlang/inox/internal/inoxprocess"
 	"github.com/inoxlang/inox/internal/mod"
@@ -100,7 +101,7 @@ func (a *Agent) GetOrCreateApplication(name node.ApplicationName) (node.Applicat
 
 				core.WebsocketPermission{Kind_: permkind.Provide},
 				core.HttpPermission{Kind_: permkind.Provide, Entity: core.ANY_HTTPS_HOST_PATTERN},
-				core.HttpPermission{Kind_: permkind.Provide, Entity: core.HostPattern("https://**:8080")},
+				core.HttpPermission{Kind_: permkind.Provide, Entity: core.HostPattern("https://**:" + inoxconsts.DEFAULT_DEV_APP_PORT)},
 
 				core.HttpPermission{Kind_: permkind.Read, AnyEntity: true},
 				core.HttpPermission{Kind_: permkind.Write, AnyEntity: true},

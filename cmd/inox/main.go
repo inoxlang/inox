@@ -5,6 +5,7 @@ import (
 	"github.com/inoxlang/inox/internal/config"
 	"github.com/inoxlang/inox/internal/core"
 	_ "github.com/inoxlang/inox/internal/globals"
+	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/inoxprocess/binary"
 	"github.com/inoxlang/inox/internal/metricsperf"
 
@@ -64,7 +65,6 @@ import (
 const (
 	ERROR_STATUS_CODE = 1
 
-	DEFAULT_ALLOWED_DEV_HOST             = core.Host("https://localhost:8080")
 	PERF_PROFILES_COLLECTION_SAVE_PERIOD = 30 * time.Second
 	MAX_STACK_SIZE                       = 200_000_000
 	BROWSER_DOWNLOAD_TIMEOUT             = 300 * time.Second
@@ -764,7 +764,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 
 			core.WebsocketPermission{Kind_: permkind.Provide},
 			core.HttpPermission{Kind_: permkind.Provide, Entity: core.ANY_HTTPS_HOST_PATTERN},
-			core.HttpPermission{Kind_: permkind.Provide, Entity: core.HostPattern("https://**:8080")},
+			core.HttpPermission{Kind_: permkind.Provide, Entity: core.HostPattern("https://**:" + inoxconsts.DEFAULT_DEV_APP_PORT)},
 			core.HttpPermission{Kind_: permkind.Provide, Entity: core.HostPattern("http://" + chrome_ns.BROWSER_PROXY_ADDR)},
 
 			core.HttpPermission{Kind_: permkind.Read, AnyEntity: true},

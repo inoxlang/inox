@@ -338,6 +338,10 @@ func NewDefaultGlobalState(ctx *core.Context, conf core.DefaultGlobalStateConfig
 		constants[globalnames.MODULE_FILEPATH] = core.PathFrom(conf.AbsoluteModulePath)
 	}
 
+	if conf.ApplicationListeningAddr != "" {
+		constants[globalnames.APP_LISTENING_ADDR] = conf.ApplicationListeningAddr
+	}
+
 	baseGlobals := maps.Clone(constants)
 	constants[globalnames.PREINIT_DATA] = preinitData
 

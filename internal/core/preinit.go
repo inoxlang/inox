@@ -28,7 +28,7 @@ type PreinitArgs struct {
 	IgnoreConstDeclErrors bool
 
 	//used if .RunningState is nil
-	AdditionalGlobalsTestOnly map[string]Value
+	AdditionalGlobals map[string]Value
 
 	Project Project //optional
 }
@@ -299,7 +299,7 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (_ *Manifest, usedRunningState
 			}
 		}
 
-		for k, v := range preinitArgs.AdditionalGlobalsTestOnly {
+		for k, v := range preinitArgs.AdditionalGlobals {
 			state.SetGlobal(k, v, GlobalConst)
 		}
 	} else {

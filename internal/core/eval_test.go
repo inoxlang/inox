@@ -9885,9 +9885,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state.TestingState.IsTestingEnabled = true
 			state.TestingState.IsImportTestingEnabled = true
 			state.TestingState.Filters = allTestsFilter
-			state.Project = &testProjectWithImage{
-				id: RandomProjectID("test"),
-				image: &testImage{
+			state.Project = &TestProject{
+				ID: RandomProjectID("test"),
+				Img: &testImage{
 					snapshot: &memFilesystemSnapshot{
 						fls: copyMemFs(fls),
 					},
@@ -9944,9 +9944,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state.TestingState.IsTestingEnabled = true
 			state.TestingState.IsImportTestingEnabled = true
 			state.TestingState.Filters = allTestsFilter
-			state.Project = &testProjectWithImage{
-				id: RandomProjectID("test"),
-				image: &testImage{
+			state.Project = &TestProject{
+				ID: RandomProjectID("test"),
+				Img: &testImage{
 					snapshot: &memFilesystemSnapshot{
 						fls: copyMemFs(fls),
 					},
@@ -10007,9 +10007,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state.TestingState.IsTestingEnabled = true
 			state.TestingState.IsImportTestingEnabled = true
 			state.TestingState.Filters = allTestsFilter
-			state.Project = &testProjectWithImage{
-				id: RandomProjectID("test"),
-				image: &testImage{
+			state.Project = &TestProject{
+				ID: RandomProjectID("test"),
+				Img: &testImage{
 					snapshot: &memFilesystemSnapshot{
 						fls: copyMemFs(fls),
 					},
@@ -10083,9 +10083,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state.TestingState.IsTestingEnabled = true
 			state.TestingState.IsImportTestingEnabled = true
 			state.TestingState.Filters = allTestsFilter
-			state.Project = &testProjectWithImage{
-				id: RandomProjectID("test"),
-				image: &testImage{
+			state.Project = &TestProject{
+				ID: RandomProjectID("test"),
+				Img: &testImage{
 					snapshot: &memFilesystemSnapshot{
 						fls: copyMemFs(fls),
 					},
@@ -10163,9 +10163,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state.TestingState.IsTestingEnabled = true
 			state.TestingState.IsImportTestingEnabled = true
 			state.TestingState.Filters = allTestsFilter
-			state.Project = &testProjectWithImage{
-				id: RandomProjectID("test"),
-				image: &testImage{
+			state.Project = &TestProject{
+				ID: RandomProjectID("test"),
+				Img: &testImage{
 					snapshot: &memFilesystemSnapshot{
 						fls: copyMemFs(fls),
 					},
@@ -10254,9 +10254,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state.TestingState.IsTestingEnabled = true
 			state.TestingState.IsImportTestingEnabled = true
 			state.TestingState.Filters = allTestsFilter
-			state.Project = &testProjectWithImage{
-				id: RandomProjectID("test"),
-				image: &testImage{
+			state.Project = &TestProject{
+				ID: RandomProjectID("test"),
+				Img: &testImage{
 					snapshot: &memFilesystemSnapshot{
 						fls: copyMemFs(fls),
 					},
@@ -10360,9 +10360,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state.TestingState.IsTestingEnabled = true
 			state.TestingState.IsImportTestingEnabled = true
 			state.TestingState.Filters = allTestsFilter
-			state.Project = &testProjectWithImage{
-				id: RandomProjectID("test"),
-				image: &testImage{
+			state.Project = &TestProject{
+				ID: RandomProjectID("test"),
+				Img: &testImage{
 					snapshot: &memFilesystemSnapshot{
 						fls: copyMemFs(fls),
 					},
@@ -10475,9 +10475,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state.TestingState.IsTestingEnabled = true
 			state.TestingState.IsImportTestingEnabled = true
 			state.TestingState.Filters = allTestsFilter
-			state.Project = &testProjectWithImage{
-				id: RandomProjectID("test"),
-				image: &testImage{
+			state.Project = &TestProject{
+				ID: RandomProjectID("test"),
+				Img: &testImage{
 					snapshot: &memFilesystemSnapshot{
 						fls: copyMemFs(fls),
 					},
@@ -12005,36 +12005,45 @@ func makeTreeWalkEvalFunc(t *testing.T) func(c any, s *GlobalState, doSymbolicCh
 	}
 }
 
-type testProjectWithImage struct {
-	id    ProjectID
-	image Image
+type TestProject struct {
+	ID     ProjectID
+	Img    Image
+	Config testProjectConfig
 }
 
-func (p *testProjectWithImage) Id() ProjectID {
-	return p.id
+func (p *TestProject) Id() ProjectID {
+	return p.ID
 }
 
-func (p *testProjectWithImage) GetSecrets(ctx *Context) ([]ProjectSecret, error) {
+func (p *TestProject) GetSecrets(ctx *Context) ([]ProjectSecret, error) {
 	return nil, nil
 }
 
-func (p *testProjectWithImage) ListSecrets(ctx *Context) ([]ProjectSecretInfo, error) {
+func (p *TestProject) ListSecrets(ctx *Context) ([]ProjectSecretInfo, error) {
 	return nil, nil
 }
 
-func (p *testProjectWithImage) BaseImage() (Image, error) {
-	return p.image, nil
+func (p *TestProject) BaseImage() (Image, error) {
+	return p.Img, nil
 }
 
-func (p *testProjectWithImage) Configuration() ProjectConfiguration {
+type testProjectConfig struct {
+	areExposedWebServersAllowed bool
+}
+
+func (c testProjectConfig) AreExposedWebServersAllowed() bool {
+	return c.areExposedWebServersAllowed
+}
+
+func (p *TestProject) Configuration() ProjectConfiguration {
+	return p.Config
+}
+
+func (p *TestProject) CanProvideS3Credentials(s3Provider string) (bool, error) {
 	panic("unimplemented")
 }
 
-func (p *testProjectWithImage) CanProvideS3Credentials(s3Provider string) (bool, error) {
-	panic("unimplemented")
-}
-
-func (p *testProjectWithImage) GetS3CredentialsForBucket(ctx *Context, bucketName string, provider string) (accessKey string, secretKey string, s3Endpoint Host, _ error) {
+func (p *TestProject) GetS3CredentialsForBucket(ctx *Context, bucketName string, provider string) (accessKey string, secretKey string, s3Endpoint Host, _ error) {
 	panic("unimplemented")
 }
 

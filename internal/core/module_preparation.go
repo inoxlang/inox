@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -177,10 +178,25 @@ func PrepareLocalModule(args ModulePreparationArgs) (state *GlobalState, mod *Mo
 
 	if (project == nil || reflect.ValueOf(project).IsZero()) && args.UseParentStateAsMainState && parentState != nil {
 		project = parentState.Project
+	} else if project != nil && reflect.ValueOf(project).IsZero() {
+		project = nil
+	}
+
+	var applicationListeningAddr Host
+	if project != nil {
+		//TODO: get available port in a range dedicated to dev.
+
+		applicationListeningAddr = Host("https://localhost:" + inoxconsts.DEFAULT_DEV_APP_PORT)
+		if project.Configuration().AreExposedWebServersAllowed() {
+			applicationListeningAddr = Host("https://0.0.0.0:" + inoxconsts.DEFAULT_DEV_APP_PORT)
+		}
 	}
 
 	if mod != nil {
 		preinitStart := time.Now()
+		additionalGlobals := map[string]Value{}
+		maps.Copy(additionalGlobals, args.AdditionalGlobalsTestOnly)
+		additionalGlobals[globalnames.APP_LISTENING_ADDR] = applicationListeningAddr
 
 		manifest, preinitState, preinitStaticCheckErrors, preinitErr = mod.PreInit(PreinitArgs{
 			GlobalConsts:          mod.MainChunk.Node.GlobalConstantDeclarations,
@@ -193,8 +209,8 @@ func PrepareLocalModule(args ModulePreparationArgs) (state *GlobalState, mod *Mo
 			IgnoreUnknownSections: args.DataExtractionMode,
 			IgnoreConstDeclErrors: args.DataExtractionMode,
 
-			AdditionalGlobalsTestOnly: args.AdditionalGlobalsTestOnly,
-			Project:                   args.Project,
+			AdditionalGlobals: additionalGlobals,
+			Project:           args.Project,
 		})
 		preparationLogger.Debug().Dur("preinit-dur", time.Since(preinitStart)).Send()
 
@@ -271,7 +287,8 @@ func PrepareLocalModule(args ModulePreparationArgs) (state *GlobalState, mod *Mo
 	// create the script's state
 
 	globalState, err := NewDefaultGlobalState(ctx, DefaultGlobalStateConfig{
-		AbsoluteModulePath: absPath,
+		AbsoluteModulePath:       absPath,
+		ApplicationListeningAddr: applicationListeningAddr,
 
 		EnvPattern:          manifest.EnvPattern,
 		PreinitFiles:        manifest.PreinitFiles,
