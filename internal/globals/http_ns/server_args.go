@@ -67,7 +67,7 @@ func readHttpServerArgs(ctx *core.Context, server *HttpsServer, providedHost cor
 		if isBindAllAddress(addr) {
 
 			if server.state.Project == nil || !server.state.Project.Configuration().AreExposedWebServersAllowed() {
-				//if exposing web servers is not allowed we only bind on localhost.
+				//if exposing web servers is not allowed we only bind to localhost.
 				addr = "localhost"
 				addr += ":" + port
 				effectiveListeningAddrHost = core.Host("https://" + addr)

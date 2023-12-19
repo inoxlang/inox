@@ -356,8 +356,8 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 
 		flags.BoolVar(&inoxCloud, "inox-cloud", false, "enable inox cloud")
 		flags.StringVar(&tunnelProvider, "tunnel-provider", "", "name of the tunnel provider, only 'cloudflare' is supported for now")
-		flags.BoolVar(&exposeProjectServers, "expose-project-servers", false, "allow project servers to bind on all interfaces")
-		flags.BoolVar(&exposeWebServers, "expose-web-servers", false, "allow web servers to bind on all interfaces")
+		flags.BoolVar(&exposeProjectServers, "expose-project-servers", false, "allow project servers to bind to all interfaces")
+		flags.BoolVar(&exposeWebServers, "expose-web-servers", false, "allow web servers to bind to all interfaces")
 		flags.BoolVar(&allowBrowserAutomation, "allow-browser-automation", false, "allow project code to create and control a browser, and allow project servers to download a chromium binary if no browser is installed")
 
 		if showHelp(flags, mainSubCommandArgs, outW) { //only show help
