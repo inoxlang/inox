@@ -1097,6 +1097,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 
 		//start the shell
 
+		fmt.Fprintln(outW, "(Inox shell); exit by typing `quit`; type `<func>;` (e.g. ls;) to execute a function.")
 		inoxsh_ns.StartShell(state, config)
 	case EVAL_SUBCMD, EVAL_ALIAS_SUBCMD:
 		if len(mainSubCommandArgs) == 0 {
