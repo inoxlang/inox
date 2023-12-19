@@ -231,7 +231,7 @@ function getInterpolation(rawInterpolationWithDelims, rawInterpolation, delimSta
 						partStart = i + 1
 						break
 					case 1:
-						if (rawInterpolation[partStart] == '"') {
+						if (rawInterpolation[partStart] == "'") {
 							interpolation.default = rawInterpolation.slice(partStart + 1, i - 1)
 						}
 
@@ -243,7 +243,7 @@ function getInterpolation(rawInterpolationWithDelims, rawInterpolation, delimSta
 				}
 
 				continue loop
-			case '"':
+			case "'":
 				if (partIndex == 0) {
 					throw new Error(`invalid interpolation \`${rawInterpolation}\`: the first part should be a name not a value, example: $(name:"default")`)
 				}

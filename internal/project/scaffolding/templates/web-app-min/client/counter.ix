@@ -9,7 +9,7 @@ fn Counter(){
     return html<div>
         <div class="status">
             <span>Count:</span>
-            <span> $(count:"0") double: $(double:"0") </span>
+            <span> $(count:'0') double: $(double:'0') </span>
         </div>
 
         <div class="actions">
