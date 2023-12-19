@@ -1,7 +1,7 @@
 # Inox's Customization Model
 
-> ⚠️ The ideas expressed in this document may be totally dumb or unworkable.
-> You are welcome to create an issue to give your opinion on why this could or could not work.
+> ⚠️ The ideas expressed in this document may not be implemented.
+> You are welcome to create an issue to give your opinion.
 
 **High Stability** is a main goal of this project. However this conflicts with the **constant need** to support more use cases,
 have more features and be perfomant. Some issues can be addressed by using WASM modules (they will be supported soon). However there are certain cases such as using an alternative database engine that require a modification of the codebase. Therefore the Inox binary will probably have different **flavors** and provide **customization**, NOT extensibility. Features required by only a few projects should NOT bloat the codebase and giant leaky towers of abstraction are bad.

@@ -1,5 +1,5 @@
-[Install Inox](../README.md#installation) | [Built-in Functions](./builtins.md) |
-[Project](./project.md) | [Web App Development](./web-app-development.md) |
+[Install Inox](../README.md#installation) | [Built-in Functions](./builtins.md)
+| [Project](./project.md) | [Web App Development](./web-app-development.md) |
 [Shell Basics](./shell-basics.md) | [Scripting Basics](./scripting-basics.md)
 
 ---
@@ -9,32 +9,48 @@
 - [Literals](#Literals)
 
 - [Variables](#variables)\
-    __\>__ [Locals](#locals), [Globals](#globals)
+  **\>** [Locals](#locals), [Globals](#globals)
 
 - [Operations](#operations)\
-    __\>__ [Binary operations](#binary-operations), [Unary operations](#unary-operations), [Concatenation](#concatenation-operation), [Interpolation](#interpolation)
+  **\>** [Binary operations](#binary-operations),
+  [Unary operations](#unary-operations),
+  [Concatenation](#concatenation-operation), [Interpolation](#interpolation)
 
 - [Data Structures](#data-structures)\
-    __\>__ [Lists](#lists), [Objects](#objects), [Tuples](#tuples), [Records](#records), [Treedata](#treedata), [Mappings](#mappings), [Dictionaries](#dictionaries), [Arrays](#arrays)
+  **\>** [Lists](#lists), [Objects](#objects), [Tuples](#tuples),
+  [Records](#records), [Treedata](#treedata), [Mappings](#mappings),
+  [Dictionaries](#dictionaries), [Arrays](#arrays)
 
 - [Control flow](#Control-flow)\
-    __\>__ [If statement](#if-statement--expression), [Switch statement](#switch-statement), [Match statement](#match-statement), [For statement](#for-statement), [Walk statement](#walk-statement), [Pipe statement](#pipe-statement)
+  **\>** [If statement](#if-statement--expression),
+  [Switch statement](#switch-statement), [Match statement](#match-statement),
+  [For statement](#for-statement), [Walk statement](#walk-statement),
+  [Pipe statement](#pipe-statement)
 
 - [Functions](#functions)\
-    __\>__ [Definitions](#function-definitions), [Call](#calling-a-function), ['Must' calls](#must-calls), [Variadic Functions](#variadic-functions)
+  **\>** [Definitions](#function-definitions), [Call](#calling-a-function),
+  ['Must' calls](#must-calls), [Variadic Functions](#variadic-functions)
 
 - [Patterns](#patterns)\
-    __\>__ [Named patterns](#named-patterns), [Object patterns](#object-patterns), [List patterns](#list-patterns), [String patterns](#string-patterns), [Union Patterns](#union-patterns), [Pattern namespaces](#pattern-namespaces), [Path Patterns](#path-patterns), [Host and URL Patterns](#host-and-url-patterns)
+  **\>** [Named patterns](#named-patterns), [Object patterns](#object-patterns),
+  [List patterns](#list-patterns), [String patterns](#string-patterns),
+  [Union Patterns](#union-patterns), [Pattern namespaces](#pattern-namespaces),
+  [Path Patterns](#path-patterns),
+  [Host and URL Patterns](#host-and-url-patterns)
 
 - [Extensions](#extensions)
 
 - [XML Expressions](#xml-expressions)
 
 - [Concurrency](#concurrency)\
-    __\>__ [LThreads](#lthreads), [LThread Groups](#lthread-groups), [Data Sharing](#data-sharing)
+  **\>** [LThreads](#lthreads), [LThread Groups](#lthread-groups),
+  [Data Sharing](#data-sharing)
 
 - [Modules](#modules)\
-    __\>__ [Module Parameters](#module-parameters), [Permissions](#permissions), [Execution Phases](#execution-phases), [Inclusion Imports](#inclusion-imports), [Module Imports](#module-imports), [Limits](#limits), [Main Module](#main-module)
+  **\>** [Module Parameters](#module-parameters), [Permissions](#permissions),
+  [Execution Phases](#execution-phases),
+  [Inclusion Imports](#inclusion-imports), [Module Imports](#module-imports),
+  [Limits](#limits), [Main Module](#main-module)
 
 - [Pre-Initialization](#pre-initialization)
 
@@ -43,18 +59,21 @@
 - [Symbolic evaluation](#symbolic-evaluation)
 
 - [Databases](#databases)\
-    __\>__ [Schema](#database-schema), [Serialization](#serialization), [Access From Other Modules](#access-from-other-modules)
+  **\>** [Schema](#database-schema), [Serialization](#serialization),
+  [Access From Other Modules](#access-from-other-modules)
 
 - [Testing](#testing)\
-    __\>__ [Basic](#basic), [Custom Filesystem](#custom-filesystem), [Program Testing](#program-testing)
+  **\>** [Basic](#basic), [Custom Filesystem](#custom-filesystem),
+  [Program Testing](#program-testing)
 
 - [Project Images](#project-images)
 
 - [Structures (not implemented yet)](#structs)
 
-> If you find an error in the documentation or a bug in the runtime, please create an issue.\
+> If you find an error in the documentation or a bug in the runtime, please
+> create an issue.\
 > Tip: If you are reading on GitHub, you can display an outline on the side.\
-![image](https://github.com/inoxlang/inox/assets/113632189/c4e90b46-eb9c-4a0f-84ad-3389d2c753d4)
+> ![image](https://github.com/inoxlang/inox/assets/113632189/c4e90b46-eb9c-4a0f-84ad-3389d2c753d4)
 
 # Literals
 
@@ -300,6 +319,10 @@ concatenation expression.
 # result: "ab"
 concat "a" "b"
 
+list = ["b", "c"]
+# result: "abc"
+concat "a" ...list
+
 # result: 0x[00 11 22]
 concat 0x[00] 0x[11 22]
 
@@ -310,7 +333,8 @@ concat #[1] #[2]
 **Parenthesized** concatenation expressions can span several lines:
 
 ```
-(concat "start"
+(concat 
+    "start"
     "1" # comment
     "2"
     "end"
@@ -420,8 +444,8 @@ path = /../../etc/passwd
 
 ## Lists
 
-A list is a sequence of **serializable** elements. You can add elements to it and change the
-value of an element at a given position.
+A list is a sequence of **serializable** elements. You can add elements to it
+and change the value of an element at a given position.
 
 ```
 list = []
@@ -432,6 +456,9 @@ list[0] = 2
 
 list = [1, 2, 3]
 first_two_elems = list[0:2] # creates a new list containing 1 and 2
+
+# lists can be spread in list literals.
+other_list = [1, ...list]
 ```
 
 ## Objects
@@ -541,10 +568,12 @@ Tuples are the immutable equivalent of lists.
 tuple = #[1, #[2, 3]]
 
 tuple = #[1, [2, 3]] # error ! a list is mutable, it's not a valid element for a tuple.
+
+# tuples can be spread in tuple literals.
+other_tuple = #[1, ...list]
 ```
 
 ## Treedata
-
 
 A treedata value allows you to represent immutable data that has the shape of a
 tree.
@@ -763,7 +792,7 @@ Values & keys can be filtered by putting a pattern in front of the **value** and
 **Value filtering:**
 
 ```
-for int(0..2) elem in ["a", 0, 1, 2, 3] {
+for %int(0..2) elem in ["a", 0, 1, 2, 3] {
     print(elem)
 }
 
@@ -873,8 +902,8 @@ ints = | map [{value: "a"}, {value: 1}] .value | filter $ %int
 
 # Functions
 
-There are 2 kinds of functions in Inox: normal Inox functions & native Golang
-functions (that you cannot define).
+There are 2 kinds of functions in Inox: normal Inox functions that you can
+define, and native Golang functions.
 
 ## Function Definitions
 
@@ -1107,7 +1136,8 @@ pattern user = {
 }
 ```
 
-⚠️ Named patterns cannot be reassigned and their values cannot reference other named patterns that are not yet defined.
+⚠️ Named patterns cannot be reassigned and their values cannot reference other
+named patterns that are not yet defined.
 
 Some named patterns are callable. For example if you want a pattern that matches
 all integers in the range 0..10, you can do the following:
@@ -1246,6 +1276,12 @@ pattern int_or_str = | int | str
 
 # true
 ("a" match int_or_str)
+
+# adding parentheses allows the pattern union to span several lines.
+pattern int_or_str = (
+    | int 
+    | str
+)
 ```
 
 ℹ️ A value is matched by an union pattern if it matches **at least one** of the
@@ -1399,7 +1435,7 @@ URL patterns always have at least a path, a query or a fragment.
 | ---                               |                                          |                                    |
 | `%https://example.com/about#main` | `https://example.com/about#main`         | yes                                |
 | `%https://example.com/about#main` | `https://example.com/about`              | no                                 |
-| ---
+| ---                               |                                          |                                    |
 
 </details>
 
@@ -1520,7 +1556,7 @@ html<html>
 ## LThreads
 
 LThreads (lightweight threads) are mainly used for concurrent work and
-isolation. Each lthread runs an Inox module in a dedicated Goroutine.\
+isolation. Each lthread runs an Inox module in a dedicated goroutine.\
 The main way to create a lthread is by using a spawn expression:
 
 ```
@@ -1618,9 +1654,9 @@ go {globals: {immutable: immutable, lock_protected: lock_protected}} do {
 }
 ```
 
-The most common immutables values are floats, integral values (ints, bytes,
-...), string-like values and records & tuples. The most common lock-protected
-values are objects.
+The most common immutable values are floats, integral values (ints, bytes, ...),
+string-like values and records & tuples. The most common lock-protected values
+are objects.
 
 **Non-sharable** values that are **clonable** are cloned when passed to another
 execution context:
@@ -1671,7 +1707,23 @@ from other execution contexts are paused until the transaction finishes.
 
 # Modules
 
-An Inox module is a code file that starts with a manifest.
+An Inox **file module** is a code file that starts with a manifest.
+
+There are several kinds of **file** modules:
+
+- `unspecified`: the default
+- `spec`: modules with a filename ending with `.spec.ix`
+- `application`: modules with `kind: "application"` in their manifest
+
+There are also **embedded** module kinds:
+
+- `userlthread`: lthread modules created with spawn expressions such as
+  `go do { }`
+- `testsuite`
+- `testcase`
+- `lifetimejob`
+
+Each module runs in a dedicated Golang **goroutine**.
 
 ## Module Parameters
 
@@ -2313,7 +2365,8 @@ list = [
 
 ### URLs
 
-Objects and many container types are assigned a URL when they are added to a container inside the database.
+Objects and many container types are assigned a URL when they are added to a
+container inside the database.
 
 ```
 user = {name: "John"}
@@ -2325,7 +2378,8 @@ ldb://main/users/<id>
 
 ### Cycles and References (WIP)
 
-The serialization of values containing cycles is forbidden. URLs should be used to reference other values inside the database.
+The serialization of values containing cycles is forbidden. URLs should be used
+to reference other values inside the database.
 
 ```
 pattern user = {
@@ -2499,7 +2553,7 @@ testsuite ({
 ## Program Testing
 
 Inox's testing engine is able to launch an Inox program/application. Test suites
-& test cases accept a **program** parameter that is inherited by subtests. The
+and test cases accept a **program** parameter that is inherited by subtests. The
 program is launched for each test case in a short-lived filesystem.
 
 ```
@@ -2583,7 +2637,7 @@ The base image contains:
 ⚠️ This feature is not implemented yet and is subject to change.
 
 Structs are transient values that only exist in the stack on in a temporary
-storage managed by a module.\
+memory region managed by a module.\
 Unlike most core Inox types such as objects & lists, structs are not necessarily
 serializable but will be more memory efficient.\
 Accessing the field of a struct will be faster than accessing a property/element
