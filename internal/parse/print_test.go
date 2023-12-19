@@ -232,6 +232,15 @@ func TestPrint(t *testing.T) {
 		"(a, d)",
 		"(a ,d)",
 		"(a , d)",
+		//concatenations
+		"concat",
+		"concat \"a\"",
+		"(concat)",
+		"(concat \"a\")",
+		"(concat \"a\"",
+		"(concat \"a\" \"b\")",
+		"(concat\n)",
+		"(concat\n\"a\")",
 		//lists
 		"[]",
 		"[,]",

@@ -21594,6 +21594,50 @@ func testParse(
 			}, n)
 		})
 
+		t.Run("parenthesized with a linefeed after the keyword", func(t *testing.T) {
+			n := mustparseChunk(t, "(concat\na)")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 10}, nil, false},
+				Statements: []Node{
+					&ConcatenationExpression{
+						NodeBase: NodeBase{
+							NodeSpan{1, 9},
+							nil,
+							true,
+						},
+						Elements: []Node{
+							&IdentifierLiteral{
+								NodeBase: NodeBase{Span: NodeSpan{8, 9}},
+								Name:     "a",
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("parenthesized with a comment and linefeed after the keyword", func(t *testing.T) {
+			n := mustparseChunk(t, "(concat # comment\na)")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 20}, nil, false},
+				Statements: []Node{
+					&ConcatenationExpression{
+						NodeBase: NodeBase{
+							NodeSpan{1, 19},
+							nil,
+							true,
+						},
+						Elements: []Node{
+							&IdentifierLiteral{
+								NodeBase: NodeBase{Span: NodeSpan{18, 19}},
+								Name:     "a",
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
 		t.Run("spread element", func(t *testing.T) {
 			n := mustparseChunk(t, `concat ...a`)
 			assert.EqualValues(t, &Chunk{

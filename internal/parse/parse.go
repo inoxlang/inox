@@ -8186,7 +8186,11 @@ func (p *parser) parseConcatenationExpression(concatIdent Node, precededByOpenin
 	p.tokens = append(p.tokens, Token{Type: CONCAT_KEYWORD, Span: concatIdent.Base().Span})
 	var elements []Node
 
-	p.eatSpace()
+	if precededByOpeningParen {
+		p.eatSpaceNewlineComment()
+	} else {
+		p.eatSpace()
+	}
 
 	for p.i < p.len && !isUnpairedOrIsClosingDelim(p.s[p.i]) {
 
