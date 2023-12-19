@@ -24251,6 +24251,7 @@ func testParse(
 				},
 			}, n)
 		})
+
 		t.Run("parenthesized, two elements", func(t *testing.T) {
 			n := mustparseChunk(t, `(%| "a" | "b")`)
 			assert.EqualValues(t, &Chunk{
@@ -24278,6 +24279,152 @@ func testParse(
 								NodeBase: NodeBase{NodeSpan{10, 13}, nil, false},
 								Raw:      `"b"`,
 								Value:    "b",
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("parenthesized, linefeed after first pipe", func(t *testing.T) {
+			n := mustparseChunk(t, "(%|\n\"a\" | \"b\")")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 14}, nil, false},
+				Statements: []Node{
+					&PatternUnion{
+						NodeBase: NodeBase{
+							NodeSpan{1, 13},
+							nil,
+							true,
+							/*[]Token{
+								{Type: OPENING_PARENTHESIS, Span: NodeSpan{0, 1}},
+								{Type: PATTERN_UNION_OPENING_PIPE, Span: NodeSpan{1, 3}},
+								{Type: PATTERN_UNION_PIPE, Span: NodeSpan{8, 9}},
+								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{13, 14}},
+							},*/
+						},
+						Cases: []Node{
+							&QuotedStringLiteral{
+								NodeBase: NodeBase{NodeSpan{4, 7}, nil, false},
+								Raw:      `"a"`,
+								Value:    "a",
+							},
+							&QuotedStringLiteral{
+								NodeBase: NodeBase{NodeSpan{10, 13}, nil, false},
+								Raw:      `"b"`,
+								Value:    "b",
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("parenthesized, linefeed before second pipe", func(t *testing.T) {
+			n := mustparseChunk(t, "(%| \"a\"\n| \"b\")")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 14}, nil, false},
+				Statements: []Node{
+					&PatternUnion{
+						NodeBase: NodeBase{
+							NodeSpan{1, 13},
+							nil,
+							true,
+							/*[]Token{
+								{Type: OPENING_PARENTHESIS, Span: NodeSpan{0, 1}},
+								{Type: PATTERN_UNION_OPENING_PIPE, Span: NodeSpan{1, 3}},
+								{Type: PATTERN_UNION_PIPE, Span: NodeSpan{8, 9}},
+								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{13, 14}},
+							},*/
+						},
+						Cases: []Node{
+							&QuotedStringLiteral{
+								NodeBase: NodeBase{NodeSpan{4, 7}, nil, false},
+								Raw:      `"a"`,
+								Value:    "a",
+							},
+							&QuotedStringLiteral{
+								NodeBase: NodeBase{NodeSpan{10, 13}, nil, false},
+								Raw:      `"b"`,
+								Value:    "b",
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("parenthesized and unprefixed, linefeed after first pipe", func(t *testing.T) {
+			n := mustparseChunk(t, "pattern p = (|\n\"a\" | \"b\")")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 25}, nil, false},
+				Statements: []Node{
+					&PatternDefinition{
+						NodeBase: NodeBase{
+							Span:            NodeSpan{0, 25},
+							IsParenthesized: false,
+						},
+						Left: &PatternIdentifierLiteral{
+							NodeBase:   NodeBase{Span: NodeSpan{8, 9}},
+							Name:       "p",
+							Unprefixed: true,
+						},
+						Right: &PatternUnion{
+							NodeBase: NodeBase{
+								NodeSpan{13, 24},
+								nil,
+								true,
+							},
+							Cases: []Node{
+								&QuotedStringLiteral{
+									NodeBase: NodeBase{NodeSpan{15, 18}, nil, false},
+									Raw:      `"a"`,
+									Value:    "a",
+								},
+								&QuotedStringLiteral{
+									NodeBase: NodeBase{NodeSpan{21, 24}, nil, false},
+									Raw:      `"b"`,
+									Value:    "b",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("parenthesized and unprefixed, linefeed before second pipe", func(t *testing.T) {
+			n := mustparseChunk(t, "pattern p = (| \"a\"\n| \"b\")")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 25}, nil, false},
+				Statements: []Node{
+					&PatternDefinition{
+						NodeBase: NodeBase{
+							Span:            NodeSpan{0, 25},
+							IsParenthesized: false,
+						},
+						Left: &PatternIdentifierLiteral{
+							NodeBase:   NodeBase{Span: NodeSpan{8, 9}},
+							Name:       "p",
+							Unprefixed: true,
+						},
+						Right: &PatternUnion{
+							NodeBase: NodeBase{
+								NodeSpan{13, 24},
+								nil,
+								true,
+							},
+							Cases: []Node{
+								&QuotedStringLiteral{
+									NodeBase: NodeBase{NodeSpan{15, 18}, nil, false},
+									Raw:      `"a"`,
+									Value:    "a",
+								},
+								&QuotedStringLiteral{
+									NodeBase: NodeBase{NodeSpan{21, 24}, nil, false},
+									Raw:      `"b"`,
+									Value:    "b",
+								},
 							},
 						},
 					},

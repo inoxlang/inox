@@ -2628,7 +2628,7 @@ func (p *parser) parsePercentAlphaStartingExpr() Node {
 	return left
 }
 
-func (p *parser) parsePatternUnion(start int32, isPercentPrefixed bool) *PatternUnion {
+func (p *parser) parsePatternUnion(start int32, isPercentPrefixed bool, precededByOpeningParen bool) *PatternUnion {
 	p.panicIfContextDone()
 
 	var (
@@ -2642,15 +2642,28 @@ func (p *parser) parsePatternUnion(start int32, isPercentPrefixed bool) *Pattern
 	}
 
 	p.i++
-	p.eatSpace()
+	if precededByOpeningParen {
+		p.eatSpaceNewlineCommaComment()
+	} else {
+		p.eatSpace()
+	}
 
 	case_, _ := p.parseExpression()
 	cases = append(cases, case_)
 
-	p.eatSpace()
+	if precededByOpeningParen {
+		p.eatSpaceNewlineCommaComment()
+	} else {
+		p.eatSpace()
+	}
 
 	for p.i < p.len && (p.s[p.i] == '|' || !isUnpairedOrIsClosingDelim(p.s[p.i])) {
-		p.eatSpace()
+		if precededByOpeningParen {
+			p.eatSpaceNewlineCommaComment()
+		} else {
+			p.eatSpace()
+		}
+
 		if p.s[p.i] != '|' {
 			return &PatternUnion{
 				NodeBase: NodeBase{
@@ -2664,12 +2677,20 @@ func (p *parser) parsePatternUnion(start int32, isPercentPrefixed bool) *Pattern
 		p.tokens = append(p.tokens, Token{Type: PIPE, SubType: UNPREFIXED_PATTERN_UNION_PIPE, Span: NodeSpan{p.i, p.i + 1}})
 		p.i++
 
-		p.eatSpace()
+		if precededByOpeningParen {
+			p.eatSpaceNewlineCommaComment()
+		} else {
+			p.eatSpace()
+		}
 
 		case_, _ := p.parseExpression()
 		cases = append(cases, case_)
 
-		p.eatSpace()
+		if precededByOpeningParen {
+			p.eatSpaceNewlineCommaComment()
+		} else {
+			p.eatSpace()
+		}
 	}
 
 	return &PatternUnion{
@@ -3125,7 +3146,7 @@ object_pattern_top_loop:
 						propParsingErr = &ParsingError{UnspecifiedParsingError, ONLY_EXPLICIT_KEY_CAN_HAVE_A_TYPE_ANNOT}
 					}
 					implicitKey = true
-					type_ = p.parsePercentPrefixedPattern()
+					type_ = p.parsePercentPrefixedPattern(false)
 					propSpanEnd = type_.Base().Span.End
 
 					properties = append(properties, &ObjectPatternProperty{
@@ -3141,7 +3162,7 @@ object_pattern_top_loop:
 				default: //explicit key property
 				}
 
-				type_ = p.parsePercentPrefixedPattern()
+				type_ = p.parsePercentPrefixedPattern(false)
 				propSpanEnd = type_.Base().Span.End
 
 				p.eatSpace()
@@ -3590,7 +3611,7 @@ object_literal_top_loop:
 					propParsingErr = &ParsingError{UnspecifiedParsingError, ONLY_EXPLICIT_KEY_CAN_HAVE_A_TYPE_ANNOT}
 				}
 				implicitKey = true
-				type_ = p.parsePercentPrefixedPattern()
+				type_ = p.parsePercentPrefixedPattern(false)
 				propSpanEnd = type_.Base().Span.End
 
 				properties = append(properties, &ObjectProperty{
@@ -3627,7 +3648,7 @@ object_literal_top_loop:
 			default: //explicit key property
 			}
 
-			type_ = p.parsePercentPrefixedPattern()
+			type_ = p.parsePercentPrefixedPattern(false)
 			propSpanEnd = type_.Base().Span.End
 
 			p.eatSpace()
@@ -3844,7 +3865,7 @@ func (p *parser) parseListOrTupleLiteral(isTuple bool) Node {
 	if p.i < p.len-1 && p.s[p.i] == ']' && p.s[p.i+1] == '%' {
 		p.tokens = append(p.tokens, Token{Type: CLOSING_BRACKET, Span: NodeSpan{p.i, p.i + 1}})
 		p.i++
-		type_ = p.parsePercentPrefixedPattern()
+		type_ = p.parsePercentPrefixedPattern(false)
 		if p.i >= p.len || p.s[p.i] != '[' {
 			parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_LIST_LIT_MISSING_OPENING_BRACKET_AFTER_TYPE}
 		} else {
@@ -4183,7 +4204,7 @@ func (p *parser) parseRuneRuneRange() Node {
 	}
 }
 
-func (p *parser) parsePercentPrefixedPattern() Node {
+func (p *parser) parsePercentPrefixedPattern(precededByOpeningParen bool) Node {
 	p.panicIfContextDone()
 
 	start := p.i
@@ -4211,7 +4232,7 @@ func (p *parser) parsePercentPrefixedPattern() Node {
 		}()
 		p.inPattern = true
 
-		union := p.parsePatternUnion(start, true)
+		union := p.parsePatternUnion(start, true, precededByOpeningParen)
 		p.eatSpace()
 
 		return union
@@ -5377,7 +5398,7 @@ func (p *parser) parseComplexStringPatternElement() Node {
 		}
 		return e
 	case p.s[p.i] == '%':
-		return p.parsePercentPrefixedPattern()
+		return p.parsePercentPrefixedPattern(false)
 	default:
 		for p.i < p.len && !IsDelim(p.s[p.i]) && p.s[p.i] != '"' && p.s[p.i] != '\'' {
 			if parsingErr == nil {
@@ -6657,7 +6678,7 @@ func (p *parser) parseExpression(precededByOpeningParen ...bool) (expr Node, isM
 		return p.parseListOrTupleLiteral(false), false
 	case '|':
 		if p.inPattern {
-			return p.parsePatternUnion(p.i, false), false
+			return p.parsePatternUnion(p.i, false, true), false
 		}
 	case '\'':
 		return p.parseRuneRuneRange(), false
@@ -6715,7 +6736,7 @@ func (p *parser) parseExpression(precededByOpeningParen ...bool) (expr Node, isM
 	case '@':
 		return p.parseLazyAndHostAliasStuff(), false
 	case '%':
-		patt := p.parsePercentPrefixedPattern()
+		patt := p.parsePercentPrefixedPattern(len(precededByOpeningParen) > 0 && precededByOpeningParen[0])
 
 		switch patt.(type) {
 		case *PatternIdentifierLiteral, *PatternNamespaceMemberExpression:
@@ -9635,7 +9656,7 @@ func (p *parser) parseForStatement(forIdent *IdentifierLiteral) *ForStatement {
 	}
 
 	if p.i < p.len && p.s[p.i] == '%' {
-		firstPattern = p.parsePercentPrefixedPattern()
+		firstPattern = p.parsePercentPrefixedPattern(false)
 		p.eatSpace()
 
 		if p.i < p.len && p.s[p.i] == '{' {
@@ -9697,7 +9718,7 @@ func (p *parser) parseForStatement(forIdent *IdentifierLiteral) *ForStatement {
 			}
 
 			if p.s[p.i] == '%' {
-				valuePattern = p.parsePercentPrefixedPattern()
+				valuePattern = p.parsePercentPrefixedPattern(false)
 				p.eatSpace()
 			}
 
