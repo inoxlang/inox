@@ -1,9 +1,9 @@
 package project
 
 type ProjectConfiguration struct {
-	exposeWebServers bool
+	ExposeWebServers bool
 }
 
 func (c ProjectConfiguration) AreExposedWebServersAllowed() bool {
-	return c.exposeWebServers
+	return c.ExposeWebServers
 }

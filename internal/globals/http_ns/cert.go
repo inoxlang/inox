@@ -12,13 +12,13 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
-	"net"
 	"strconv"
 	"time"
 
 	"github.com/caddyserver/certmagic"
 
 	"github.com/inoxlang/inox/internal/core"
+	netaddr "github.com/inoxlang/inox/internal/netaddr"
 	"github.com/inoxlang/inox/internal/utils"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -117,7 +117,7 @@ func GenerateSelfSignedCertAndKey(args SelfSignedCertParams) (cert *pem.Block, k
 		template.DNSNames = append(template.DNSNames, "localhost", "127.0.0.1")
 	}
 	if args.NonLocalhostIPs {
-		ips, err := getInterfaceIPs()
+		ips, err := netaddr.GetGlobalUnicastIPs()
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to list interfaces IPs: %w", err)
 		}
@@ -214,22 +214,4 @@ func GetTLSConfig(ctx *core.Context, pemEncodedCert string, pemEncodedKey string
 	tlsConfig.NextProtos = append([]string{"h2", "http/1.1"}, tlsConfig.NextProtos...)
 
 	return tlsConfig, nil
-}
-
-// getInterfaceIPs returns the IP addresses of interfaces of type IP network (loopback excluded).
-func getInterfaceIPs() ([]net.IP, error) {
-	var ips []net.IP
-	addresses, err := net.InterfaceAddrs()
-	if err != nil {
-		return nil, err
-	}
-
-	for _, addr := range addresses {
-		if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
-			if ipnet.IP.To16() != nil /*IPv4 or IPv6*/ {
-				ips = append(ips, ipnet.IP)
-			}
-		}
-	}
-	return ips, nil
 }

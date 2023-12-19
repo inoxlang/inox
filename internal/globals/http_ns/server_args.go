@@ -13,8 +13,15 @@ import (
 	"github.com/inoxlang/inox/internal/utils"
 )
 
-func readHttpServerArgs(ctx *core.Context, server *HttpsServer, host core.Host, args ...core.Value) (
+const (
+	DEFAULT_HTTPS_PORT = "443"
+)
+
+func readHttpServerArgs(ctx *core.Context, server *HttpsServer, providedHost core.Host, args ...core.Value) (
 	addr string,
+	effectiveListeningAddrHost core.Host,
+	port string,
+	exposingAllowed bool,
 	certificate string,
 	certKey *core.Secret,
 	userProvidedHandler core.Value,
@@ -38,18 +45,42 @@ func readHttpServerArgs(ctx *core.Context, server *HttpsServer, host core.Host, 
 
 	//check host
 	{
-		parsed, _ := url.Parse(string(host))
-		if host.Scheme() != "https" {
-			argErr = fmt.Errorf("invalid scheme '%s', only https is supported", host)
+		parsed, _ := url.Parse(string(providedHost))
+		if providedHost.Scheme() != "https" {
+			argErr = fmt.Errorf("invalid scheme '%s', only https is supported", providedHost)
 			return
 		}
-		server.host = host
-		addr = parsed.Host
 
-		perm := core.HttpPermission{Kind_: permkind.Provide, Entity: host}
+		perm := core.HttpPermission{Kind_: permkind.Provide, Entity: providedHost}
 		if err := ctx.CheckHasPermission(perm); err != nil {
 			argErr = err
 			return
+		}
+
+		addr = parsed.Host
+		originalAddress := addr
+		port = parsed.Port()
+		if port == "" {
+			port = DEFAULT_HTTPS_PORT
+		}
+
+		if isBindAllAddress(addr) {
+
+			if server.state.Project == nil || !server.state.Project.Configuration().AreExposedWebServersAllowed() {
+				//if exposing web servers is not allowed we only bind on localhost.
+				addr = "localhost"
+				addr += ":" + port
+				effectiveListeningAddrHost = core.Host("https://" + addr)
+				server.listeningAddr = effectiveListeningAddrHost
+				server.state.Ctx.Logger().Warn().Msgf("exposing web servers is not allowed, change listening address from %s to %s", originalAddress, addr)
+			} else {
+				server.listeningAddr = effectiveListeningAddrHost
+				effectiveListeningAddrHost = providedHost
+				exposingAllowed = true
+			}
+		} else {
+			server.listeningAddr = effectiveListeningAddrHost
+			effectiveListeningAddrHost = providedHost
 		}
 	}
 

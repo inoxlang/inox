@@ -27,6 +27,8 @@ import (
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/globals/html_ns"
 	"github.com/inoxlang/inox/internal/mimeconsts"
+	netaddr "github.com/inoxlang/inox/internal/netaddr"
+	"github.com/inoxlang/inox/internal/project"
 	"github.com/rs/zerolog"
 	"golang.org/x/net/publicsuffix"
 
@@ -159,6 +161,232 @@ func TestHttpServerMissingProvidePermission(t *testing.T) {
 	assert.IsType(t, &core.NotAllowedError{}, err)
 	assert.Equal(t, core.HttpPermission{Kind_: permkind.Provide, Entity: host}, err.(*core.NotAllowedError).Permission)
 	assert.Nil(t, server)
+}
+
+func TestHttpServerWithoutHandler(t *testing.T) {
+
+	if !core.AreDefaultRequestHandlingLimitsSet() {
+		core.SetDefaultRequestHandlingLimits([]core.Limit{})
+		t.Cleanup(func() {
+			core.UnsetDefaultRequestHandlingLimits()
+		})
+	}
+
+	if !core.AreDefaultMaxRequestHandlerLimitsSet() {
+		core.SetDefaultMaxRequestHandlerLimits([]core.Limit{})
+		t.Cleanup(func() {
+			core.UnsetDefaultMaxRequestHandlerLimits()
+		})
+	}
+
+	t.Run("provided host is https://localhost:port", func(t *testing.T) {
+		host := core.Host("https://localhost:" + nextPort())
+
+		ctx := core.NewContext(core.ContextConfig{
+			Permissions: []core.Permission{
+				core.HttpPermission{Kind_: permkind.Provide, Entity: host},
+			},
+			Filesystem: fs_ns.GetOsFilesystem(),
+		})
+		defer ctx.CancelGracefully()
+
+		state := core.NewGlobalState(ctx)
+		state.Logger = zerolog.New(io.Discard)
+		state.OutputFieldsInitialized.Store(true)
+
+		server, err := NewHttpsServer(ctx, host)
+		if server != nil {
+			defer server.Close(ctx)
+		}
+
+		assert.NotNil(t, server)
+		if !assert.NoError(t, err) {
+			return
+		}
+		assert.Equal(t, host, server.ListeningAddr())
+
+		//we send a request to the server
+		req, _ := http.NewRequest("GET", string(host)+"/x", nil)
+		req.Header.Add("Accept", mimeconsts.JSON_CTYPE)
+
+		client := createClient()
+		resp, err := client.Do(req)
+		if resp != nil {
+			defer resp.Body.Close()
+		}
+		assert.NoError(t, err)
+	})
+
+	t.Run("if the provided host is https://0.0.0.0:port and we are not in project mode the effective address should be localhost:port", func(t *testing.T) {
+		port := nextPort()
+		host := core.Host("https://0.0.0.0:" + port)
+
+		ctx := core.NewContext(core.ContextConfig{
+			Permissions: []core.Permission{
+				core.HttpPermission{Kind_: permkind.Provide, Entity: host},
+			},
+			Filesystem: fs_ns.GetOsFilesystem(),
+		})
+		defer ctx.CancelGracefully()
+
+		state := core.NewGlobalState(ctx)
+		state.Logger = zerolog.New(io.Discard)
+		state.OutputFieldsInitialized.Store(true)
+
+		server, err := NewHttpsServer(ctx, host)
+		if server != nil {
+			defer server.Close(ctx)
+		}
+
+		assert.NotNil(t, server)
+		if !assert.NoError(t, err) {
+			return
+		}
+		assert.EqualValues(t, "https://localhost:"+port, server.ListeningAddr())
+
+		globalUnicastIps, err := netaddr.GetGlobalUnicastIPs()
+		if err != nil {
+			server.serverLogger.Err(err).Send()
+			return
+		}
+
+		client := createClient()
+
+		//check that the server is not listening on any global unicast  interfaces
+
+		for _, ip := range globalUnicastIps {
+			req, _ := http.NewRequest("GET", "https://"+ip.String()+":"+port+"/x", nil)
+			resp, err := client.Do(req)
+			if resp != nil {
+				defer resp.Body.Close()
+			}
+			assert.Error(t, err)
+		}
+
+		//check that the server is listening on localhost
+		req, _ := http.NewRequest("GET", "https://localhost:"+port+"/x", nil)
+		resp, err := client.Do(req)
+		if resp != nil {
+			defer resp.Body.Close()
+		}
+		assert.NoError(t, err)
+	})
+
+	t.Run("if the provided host is https://0.0.0.0:port and the project does not allow exposing web servers the effective address should be localhost:port", func(t *testing.T) {
+		port := nextPort()
+		host := core.Host("https://0.0.0.0:" + port)
+
+		ctx := core.NewContext(core.ContextConfig{
+			Permissions: []core.Permission{
+				core.HttpPermission{Kind_: permkind.Provide, Entity: host},
+			},
+			Filesystem: fs_ns.GetOsFilesystem(),
+		})
+		defer ctx.CancelGracefully()
+
+		state := core.NewGlobalState(ctx)
+		state.Logger = zerolog.New(io.Discard)
+		state.OutputFieldsInitialized.Store(true)
+		state.Project = project.NewDummyProjectWithConfig("proj", fs_ns.NewMemFilesystem(10_000), project.ProjectConfiguration{
+			ExposeWebServers: false,
+		})
+
+		server, err := NewHttpsServer(ctx, host)
+		if server != nil {
+			defer server.Close(ctx)
+		}
+
+		assert.NotNil(t, server)
+		if !assert.NoError(t, err) {
+			return
+		}
+		assert.EqualValues(t, "https://localhost:"+port, server.ListeningAddr())
+
+		globalUnicastIps, err := netaddr.GetGlobalUnicastIPs()
+		if err != nil {
+			server.serverLogger.Err(err).Send()
+			return
+		}
+
+		client := createClient()
+
+		//check that the server is not listening on any global unicast  interfaces
+
+		for _, ip := range globalUnicastIps {
+			req, _ := http.NewRequest("GET", "https://"+ip.String()+":"+port+"/x", nil)
+			resp, err := client.Do(req)
+			if resp != nil {
+				defer resp.Body.Close()
+			}
+			assert.Error(t, err)
+		}
+
+		//check that the server is listening on localhost
+		req, _ := http.NewRequest("GET", "https://localhost:"+port+"/x", nil)
+		resp, err := client.Do(req)
+		if resp != nil {
+			defer resp.Body.Close()
+		}
+		assert.NoError(t, err)
+	})
+
+	t.Run("if the provided host is https://0.0.0.0:port and the project allow exposing web servers the server should listen on all interfaces", func(t *testing.T) {
+		port := nextPort()
+		host := core.Host("https://0.0.0.0:" + port)
+
+		ctx := core.NewContext(core.ContextConfig{
+			Permissions: []core.Permission{
+				core.HttpPermission{Kind_: permkind.Provide, Entity: host},
+			},
+			Filesystem: fs_ns.GetOsFilesystem(),
+		})
+		defer ctx.CancelGracefully()
+
+		state := core.NewGlobalState(ctx)
+		state.Logger = zerolog.New(io.Discard)
+		state.OutputFieldsInitialized.Store(true)
+		state.Project = project.NewDummyProjectWithConfig("proj", fs_ns.NewMemFilesystem(10_000), project.ProjectConfiguration{
+			ExposeWebServers: true,
+		})
+
+		server, err := NewHttpsServer(ctx, host)
+		if server != nil {
+			defer server.Close(ctx)
+		}
+
+		assert.NotNil(t, server)
+		if !assert.NoError(t, err) {
+			return
+		}
+		assert.EqualValues(t, "https://0.0.0.0:"+port, server.ListeningAddr())
+
+		globalUnicastIps, err := netaddr.GetGlobalUnicastIPs()
+		if err != nil {
+			server.serverLogger.Err(err).Send()
+			return
+		}
+
+		client := createClient()
+
+		//check that the server is listening on all global unicast interfaces.
+
+		for _, ip := range globalUnicastIps {
+			req, _ := http.NewRequest("GET", "https://"+ip.String()+":"+port+"/x", nil)
+			resp, err := client.Do(req)
+			if resp != nil {
+				defer resp.Body.Close()
+			}
+			assert.NoError(t, err)
+		}
+
+		//check that the server is listening on localhost.
+		req, _ := http.NewRequest("GET", "https://localhost:"+port+"/x", nil)
+		resp, err := client.Do(req)
+		if resp != nil {
+			defer resp.Body.Close()
+		}
+		assert.NoError(t, err)
+	})
 }
 
 func TestHttpServerUserHandler(t *testing.T) {

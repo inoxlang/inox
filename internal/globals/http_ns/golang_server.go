@@ -48,7 +48,7 @@ func NewGolangHttpServer(ctx *core.Context, config GolangHttpServerConfig) (*htt
 	pemEncodedKey := config.PemEncodedKey
 
 	//if no certificate is provided by the user we create one
-	if config.PemEncodedCert == "" && (isLocalhostOr127001Addr(config.Addr) || config.AllowSelfSignedCertCreationEvenIfExposed) {
+	if config.PemEncodedCert == "" && (isLocalhostOr127001Addr(config.Addr) || (isBindAllAddress(config.Addr) && config.AllowSelfSignedCertCreationEvenIfExposed)) {
 		initialWorkingDir := ctx.InitialWorkingDirectory()
 		var (
 			CERT_FILEPATH     = initialWorkingDir.Join(RELATIVE_SELF_SIGNED_CERT_FILEPATH, fls).UnderlyingString()
@@ -134,6 +134,10 @@ func NewGolangHttpServer(ctx *core.Context, config GolangHttpServerConfig) (*htt
 		}
 	}
 
+	if pemEncodedCert == "" {
+		return nil, errors.New("no certificate was provided and no self-signed certificate was generated")
+	}
+
 	tlsConfig, err := GetTLSConfig(ctx, pemEncodedCert, pemEncodedKey)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get TLS config: %w", err)
@@ -158,4 +162,15 @@ func isLocalhostOr127001Addr[S ~string](addr S) bool {
 		return true
 	}
 	return strings.HasPrefix(string(addr), "localhost:") || strings.HasPrefix(string(addr), "127.0.0.1:")
+}
+
+func isBindAllAddress[S ~string](addr S) bool {
+	if addr == "" {
+		return false
+	}
+
+	if addr == "0.0.0.0" || addr[0] == ':' {
+		return true
+	}
+	return strings.HasPrefix(string(addr), "0.0.0.0:")
 }

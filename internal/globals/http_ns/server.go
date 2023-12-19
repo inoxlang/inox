@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"runtime/debug"
 	"strings"
@@ -14,6 +15,7 @@ import (
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/mimeconsts"
+	"github.com/inoxlang/inox/internal/netaddr"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/rs/zerolog"
 	"golang.org/x/exp/maps"
@@ -88,7 +90,7 @@ var (
 
 // HttpsServer implements the GoValue interface.
 type HttpsServer struct {
-	host          core.Host
+	listeningAddr core.Host
 	wrappedServer *http.Server
 	initialized   atomic.Bool
 	lock          sync.RWMutex
@@ -127,7 +129,8 @@ func NewHttpsServer(ctx *core.Context, host core.Host, args ...core.Value) (*Htt
 		return nil, errors.New("cannot create server: context's associated state is nil")
 	}
 
-	addr, userProvidedCert, userProvidedKey, userProvidedHandler, handlerValProvided, middlewares,
+	effectiveAddr, effectiveListeningAddrHost, port, isExposingAllowed,
+		userProvidedCert, userProvidedKey, userProvidedHandler, handlerValProvided, middlewares,
 		defaultLimits, maxLimits, argErr := readHttpServerArgs(ctx, server, host, args...)
 
 	if argErr != nil {
@@ -136,10 +139,11 @@ func NewHttpsServer(ctx *core.Context, host core.Host, args ...core.Value) (*Htt
 
 	server.maxLimits = maxLimits
 	server.defaultLimits = defaultLimits
+	server.listeningAddr = effectiveListeningAddrHost
 
 	//create logger and security engine
 	{
-		logSrc := HTTP_SERVER_SRC + "/" + addr
+		logSrc := HTTP_SERVER_SRC + "/" + effectiveAddr
 		server.serverLogger = ctx.NewChildLoggerForInternalSource(logSrc)
 
 		securityLogSrc := ctx.NewChildLoggerForInternalSource(logSrc + "/sec")
@@ -265,9 +269,10 @@ func NewHttpsServer(ctx *core.Context, host core.Host, args ...core.Value) (*Htt
 
 	//create a stdlib http Server
 	config := GolangHttpServerConfig{
-		Addr:                    addr,
-		Handler:                 topHandler,
-		PersistCreatedLocalCert: true,
+		Addr:                                     effectiveAddr,
+		Handler:                                  topHandler,
+		PersistCreatedLocalCert:                  true,
+		AllowSelfSignedCertCreationEvenIfExposed: isLocalhostOr127001Addr(effectiveAddr) || (isExposingAllowed && isBindAllAddress(effectiveAddr)),
 	}
 	if userProvidedCert != "" {
 		config.PemEncodedCert = userProvidedCert
@@ -292,9 +297,30 @@ func NewHttpsServer(ctx *core.Context, host core.Host, args ...core.Value) (*Htt
 			recover()
 			server.endChan <- struct{}{}
 		}()
-		server.serverLogger.Info().Msgf("start HTTPS server on %s (%s)", addr, host)
 
-		err := goServer.ListenAndServeTLS("", "")
+		//log
+
+		ips, err := netaddr.GetGlobalUnicastIPs()
+		if err != nil {
+			server.serverLogger.Err(err).Send()
+			return
+		}
+
+		urls := []string{"https://localhost:" + port}
+		if !isLocalhostOr127001Addr(effectiveAddr) {
+			urls = append(urls, utils.FilterMapSlice(ips, func(e net.IP) (string, bool) {
+				if e.To4() == nil {
+					return "", false
+				}
+				return "https://" + e.String() + ":" + port, e.To4() != nil
+			})...)
+		}
+
+		server.serverLogger.Info().Msgf("start HTTPS server on %s (%s)", effectiveAddr, strings.Join(urls, ", "))
+
+		//start listening
+
+		err = goServer.ListenAndServeTLS("", "")
 		if err != nil {
 			server.serverLogger.Print(err)
 		}
@@ -306,7 +332,7 @@ func NewHttpsServer(ctx *core.Context, host core.Host, args ...core.Value) (*Htt
 			recover()
 			server.endChan <- struct{}{}
 		}()
-		defer server.serverLogger.Info().Msg("server (" + addr + ") is now closed")
+		defer server.serverLogger.Info().Msg("server (" + effectiveAddr + ") is now closed")
 
 		<-ctx.Done()
 		server.ImmediatelyClose(ctx)
@@ -317,8 +343,8 @@ func NewHttpsServer(ctx *core.Context, host core.Host, args ...core.Value) (*Htt
 	return server, nil
 }
 
-func (serv *HttpsServer) Host(name string) core.Host {
-	return serv.host
+func (serv *HttpsServer) ListeningAddr() core.Host {
+	return serv.listeningAddr
 }
 
 func (serv *HttpsServer) getOrCreateStream(id string) (*multiSubscriptionSSEStream, *SseServer, error) {

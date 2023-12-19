@@ -1,6 +1,8 @@
 package http_ns
 
 import (
+	"crypto/tls"
+	"io"
 	"net/http"
 	"testing"
 	"time"
@@ -8,6 +10,8 @@ import (
 	"github.com/go-git/go-billy/v5/util"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
+	netaddr "github.com/inoxlang/inox/internal/netaddr"
+	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -16,6 +20,8 @@ func TestGolangHttpServer(t *testing.T) {
 	t.Parallel()
 
 	t.Run("self signed certificate should be regenerated if the file's age is greater than the validation duration", func(t *testing.T) {
+		t.Parallel()
+
 		fls := fs_ns.NewMemFilesystem(1_000_000)
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{
 			Filesystem: fls,
@@ -88,4 +94,57 @@ func TestGolangHttpServer(t *testing.T) {
 		assert.NotEqual(t, prevCert, currentCert)
 	})
 
+	t.Run("listen on 0.0.0.0:port, allow generation of a self signed cert", func(t *testing.T) {
+		t.Parallel()
+
+		fls := fs_ns.NewMemFilesystem(1_000_000)
+		ctx := core.NewContexWithEmptyState(core.ContextConfig{
+			Filesystem: fls,
+		}, nil)
+		defer ctx.CancelGracefully()
+
+		port := nextPort()
+		addr := ":" + port
+		validityDuration := 300 * time.Millisecond
+		randomString := core.DefaultRandSource.ReadNBytesAsHex(4)
+
+		server, err := NewGolangHttpServer(ctx, GolangHttpServerConfig{
+			Addr: addr,
+			Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Write([]byte(randomString))
+			}),
+			SelfSignedCertValidityDuration:           validityDuration,
+			AllowSelfSignedCertCreationEvenIfExposed: true,
+		})
+		if !assert.NoError(t, err) {
+			return
+		}
+		go func() {
+			defer utils.Recover()
+			server.ListenAndServeTLS("", "")
+		}()
+		defer server.Close()
+
+		time.Sleep(10 * time.Millisecond)
+
+		ips := utils.Must(netaddr.GetGlobalUnicastIPs())
+		client := &http.Client{
+			Transport: &http.Transport{
+				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+			},
+		}
+
+		for _, ip := range ips {
+			resp, err := client.Get("https://" + ip.String() + ":" + port)
+			if resp != nil && resp.Body != nil {
+				defer resp.Body.Close()
+			}
+			if err != nil {
+				assert.Fail(t, err.Error())
+			}
+
+			body := utils.Must(io.ReadAll(resp.Body))
+			assert.Equal(t, randomString, string(body))
+		}
+	})
 }

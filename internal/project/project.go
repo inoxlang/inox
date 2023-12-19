@@ -92,6 +92,17 @@ func NewDummyProject(name string, fls core.SnapshotableFilesystem) *Project {
 	}
 }
 
+// NewDummyProjectWithConfig creates a project without any providers or tokens,
+// the returned project should only be used in test.
+func NewDummyProjectWithConfig(name string, fls core.SnapshotableFilesystem, config ProjectConfiguration) *Project {
+	return &Project{
+		id:                        core.RandomProjectID(name),
+		liveFilesystem:            fls,
+		storeSecretsInProjectData: true,
+		config:                    config,
+	}
+}
+
 func (p *Project) persistNoLock(ctx *core.Context) error {
 	if p.persistFn == nil {
 		return ErrProjectPersistenceNotAvailable

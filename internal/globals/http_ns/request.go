@@ -101,7 +101,7 @@ func NewServerSideRequest(r *http.Request, logger zerolog.Logger, server *HttpsS
 		if server == nil {
 			return nil, fmt.Errorf("cannot resolve URL of request")
 		}
-		url = string(server.host) + url
+		url = string(server.listeningAddr) + url
 	}
 
 	//hostname

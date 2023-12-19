@@ -145,7 +145,7 @@ func (r *Registry) OpenProject(ctx *core.Context, params OpenProjectParams) (*Pr
 	}
 
 	config := ProjectConfiguration{
-		exposeWebServers: params.ExposeWebServers,
+		ExposeWebServers: params.ExposeWebServers,
 	}
 
 	// get project data from the database
