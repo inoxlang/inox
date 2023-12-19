@@ -1,6 +1,12 @@
 # Frontend Development
 
-The frontend of an Inox application is built by using the following features and
+
+- [📃 Pages](#pages)
+- [⚙️ Server-Side Components](#server-side-components)
+- [🌐 Client-Side Components](#client-side-components---inoxjs)
+- [⚡ Planned Optmizations](#server-side-optimizations)
+
+The frontend of an Inox application is built using the following features and
 librairies:
 
 - The `filesystem routing` feature of the HTTP server executes modules returning
@@ -52,11 +58,14 @@ return html<html>
     <section>
         <header> Last news </header>
 
-        <div hx-get="/last-news" hx-trigger='load'></div>
+        <!-- on load HTMX fetches the content of /last-news and inserts it in the page -->
+        <div hx-get="/last-news" hx-trigger="load"></div>
     </div>
 </body>
 </html>
 ```
+
+___
 
 ## Server Side Components
 
@@ -70,21 +79,22 @@ return html<ul>
 </ul>
 ```
 
+___
+
 ## Client-Side Components - Inox.js
 
 Each Inox project comes with a `/static/` folder that contains, among other
-things, a small experimental library (`inox.js`) that allow creating client-side
-components with locality of behavior. `inox.js` includes the following
+things, a small experimental library that allow creating client-side
+components with locality of behavior. It updates the component's view when the state changes, and includes the following
 librairies (all MIT licensed):
 
-- Preact Signals: https://github.com/preactjs/signals/tree/main/packages/core (<
-  900 lines)
+- Preact Signals: https://github.com/preactjs/signals/tree/main/packages/core (< 900 lines)
 - CSS Scope Inline: https://github.com/gnat/css-scope-inline (< 20 lines)
 - Surreal: https://github.com/gnat/surreal (< 400 lines)
 
-**It is recommended to use client-side components only for functionalities that
+__It is recommended to use client-side components only for functionalities that
 can't be easily implemented with Server-Side Rendering (SSR) and HTMX. The
-following example is only provided as a demonstration.**
+following example is only provided as a demonstration.__
 
 ```html
 # /client/counter.ix
@@ -94,7 +104,7 @@ fn Counter(){
     return html<div class="counter">
         <div class="status">
             <span>Count:</span>
-            <!-- safe text-only interpolations -->
+            <!-- safe text-only interpolations with default values -->
             <span> $(count:'0') double: $(double:'0') </span>
         </div>
 
@@ -108,10 +118,12 @@ fn Counter(){
             const count = signal(0);
             const double = computed(() => count.value * 2);
 
-            // initComponent is provided by inox.js. This function initializes the component in order to update the view when signals change.
+            // initComponent is provided by inox.js. This function initializes the component in order 
+            // to update the view when signals change.
             initComponent({ signals: {count, double} })
 
-            // The 'me' function is provided by the Surreal library and returns the div element with the .counter class.
+            // The 'me' function is provided by the Surreal library and returns the div element with 
+            // the .counter class.
             me(".increment").on('click', () => {
                count.value++
             })    
@@ -157,7 +169,9 @@ fn Counter(){
 }
 ```
 
-### Planned Features
+### Planned Features
+
+> inox.js will stay minimal: specific features will be provided by extensions.
 
 **Conditional rendering**
 
@@ -170,3 +184,24 @@ fn Counter(){
     <div x-case="count == 100">Max count reached</div>
 </div>
 ```
+
+___
+
+
+## Server-Side Optimizations
+
+**This is not implemented yet.**
+
+### Data Prefetching
+
+During a page or component render `htmx` attributes will be analyzed in order to tell the database
+to pretech some pieces of data.
+
+Let's see an illustration of this. In the following snippet we have the `hx-get` attribute that tells us that the browser will make a request to the `/last-news` endpoint in a very short time. In order to make this future request fast we could tell the database to prefetch
+the data required by `/last-news`.
+
+```html
+<div hx-get="/last-news" hx-trigger="load"></div>
+```
+
+**General access patterns** during application usage could also be measured to enable further optimizations.
