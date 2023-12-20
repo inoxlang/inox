@@ -7,8 +7,22 @@ import (
 
 type Mimetype string
 
+// MimeTypeFrom checks that s is a valid mime type and returns a normalized Mimetype.
+func MimeTypeFrom(s string) (Mimetype, error) {
+	mtype, params, err := mime.ParseMediaType(s)
+	if err != nil {
+		return "", err
+	}
+
+	return Mimetype(mime.FormatMediaType(mtype, params)), nil
+}
+
 func (mt Mimetype) WithoutParams() Mimetype {
-	return Mimetype(strings.Split(string(mt), ";")[0])
+	before, _, found := strings.Cut(string(mt), ";")
+	if !found {
+		return mt
+	}
+	return Mimetype(strings.TrimSpace(before))
 }
 
 func (mt Mimetype) UnderlyingString() string {

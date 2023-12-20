@@ -100,8 +100,8 @@ func HttpRead(ctx *core.Context, u core.URL, args ...core.Value) (result core.Va
 		return nil, fmt.Errorf("http: error while reading body: %w", err)
 	}
 
-	respContentType, err := Mime_(ctx, core.Str(resp.ContentType(ctx)))
-	if err == nil && contentType == "" {
+	respContentType, hasRespContentType, err := resp.ContentType(ctx)
+	if err == nil && contentType == "" && hasRespContentType {
 		contentType = respContentType
 	}
 

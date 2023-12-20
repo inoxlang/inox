@@ -58,8 +58,16 @@ func (*HttpResponse) PropertyNames(ctx *core.Context) []string {
 	return http_ns_symb.HTTP_RESPONSE_PROPNAMES
 }
 
-func (resp *HttpResponse) ContentType(ctx *core.Context) string {
-	return resp.wrapped.Header.Get("Content-Type")
+func (resp *HttpResponse) ContentType(ctx *core.Context) (core.Mimetype, bool, error) {
+	contentType := resp.wrapped.Header.Get("Content-Type")
+	if contentType == "" {
+		return "", false, nil
+	}
+	mtype, err := core.MimeTypeFrom(contentType)
+	if err != nil {
+		return "", false, err
+	}
+	return mtype, true, nil
 }
 
 func (resp *HttpResponse) Body(ctx *core.Context) io.ReadCloser {

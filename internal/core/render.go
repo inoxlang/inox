@@ -134,7 +134,7 @@ func (s *RuneSlice) IsRecursivelyRenderable(ctx *Context, input RenderingInput) 
 }
 
 func (s *RuneSlice) Render(ctx *Context, w io.Writer, config RenderingInput) (int, error) {
-	switch config.Mime {
+	switch config.Mime.WithoutParams() {
 	case mimeconsts.HTML_CTYPE:
 		escaped := html.EscapeString(string(s.elements))
 		return w.Write([]byte("<span>" + escaped + "</span>"))

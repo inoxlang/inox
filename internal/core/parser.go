@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	parsers = map[Mimetype]StatelessParser{}
+	parsers = map[Mimetype] /* no params */ StatelessParser{}
 	_       = []StatelessParser{&jsonParser{}}
 )
 
@@ -34,7 +34,7 @@ func RegisterParser(mime Mimetype, p StatelessParser) {
 }
 
 func GetParser(mime Mimetype) (StatelessParser, bool) {
-	p, ok := parsers[mime]
+	p, ok := parsers[mime.WithoutParams()]
 	return p, ok
 }
 

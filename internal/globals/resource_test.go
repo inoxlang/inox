@@ -13,6 +13,7 @@ import (
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/globals/http_ns"
 	"github.com/inoxlang/inox/internal/mimeconsts"
+	"github.com/inoxlang/inox/internal/utils"
 	"github.com/rs/zerolog"
 
 	"github.com/stretchr/testify/assert"
@@ -79,6 +80,25 @@ func TestReadResource(t *testing.T) {
 
 			ctx, resource := setup(t, func(ctx *core.Context, rw *http_ns.HttpResponseWriter, req *http_ns.HttpRequest) {
 				rw.WriteJSON(ctx, core.True)
+			})
+			defer ctx.CancelGracefully()
+
+			res, err := _readResource(ctx, resource, raw, insecure)
+
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			assert.Equal(t, core.NewByteSlice([]byte("true"), false, mimeconsts.JSON_CTYPE), res)
+		})
+
+		t.Run("content type with parameters", func(t *testing.T) {
+			t.Parallel()
+
+			mimeType := utils.Must(core.MimeTypeFrom("application/json; charset=utf-8"))
+			ctx, resource := setup(t, func(ctx *core.Context, rw *http_ns.HttpResponseWriter, req *http_ns.HttpRequest) {
+				rw.WriteContentType(string(mimeType))
+				rw.BodyWriter().Write([]byte("true"))
 			})
 			defer ctx.CancelGracefully()
 

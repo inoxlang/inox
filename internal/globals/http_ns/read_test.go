@@ -93,16 +93,30 @@ func TestHttpGet(t *testing.T) {
 func TestHttpRead(t *testing.T) {
 	t.Parallel()
 
-	makeServer := func() (*http.Server, core.URL) {
+	type contentType int
+
+	const (
+		json contentType = iota
+		jsonUtf8
+	)
+
+	const JSON_UTF8 = mimeconsts.JSON_CTYPE + " charset=utf-8"
+
+	makeServer := func(contentType contentType) (*http.Server, core.URL) {
 		var ADDR = "localhost:" + strconv.Itoa(int(port.Add(1)))
 		var URL = core.URL("http://" + ADDR + "/")
 
 		server := &http.Server{
 			Addr: ADDR,
 			Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				w.Header().Add("Content-Type", mimeconsts.JSON_CTYPE)
 
-				//note that there are 2 spaces after the colon.
+				switch contentType {
+				case json:
+					w.Header().Add("Content-Type", mimeconsts.JSON_CTYPE)
+				case jsonUtf8:
+					w.Header().Add("Content-Type", JSON_UTF8)
+				}
+
 				w.Write([]byte(`{"a":  1}`))
 			}),
 		}
@@ -115,7 +129,7 @@ func TestHttpRead(t *testing.T) {
 	t.Run("missing permission", func(t *testing.T) {
 		t.Parallel()
 
-		server, URL := makeServer()
+		server, URL := makeServer(json)
 		defer server.Close()
 
 		ctx := core.NewContext(core.ContextConfig{
@@ -140,7 +154,7 @@ func TestHttpRead(t *testing.T) {
 	t.Run("the request rate limit should be met", func(t *testing.T) {
 		t.Parallel()
 
-		server, URL := makeServer()
+		server, URL := makeServer(json)
 		defer server.Close()
 
 		//create a context that allows up to one request per second
@@ -177,7 +191,41 @@ func TestHttpRead(t *testing.T) {
 	t.Run("by default the content should be parsed based on the Content-type header", func(t *testing.T) {
 		t.Parallel()
 
-		server, URL := makeServer()
+		server, URL := makeServer(json)
+		defer server.Close()
+
+		ctx := core.NewContext(core.ContextConfig{
+			Permissions: []core.Permission{
+				core.HttpPermission{Kind_: permkind.Read, Entity: URL},
+			},
+			Limits: []core.Limit{
+				{
+					Name:  HTTP_REQUEST_RATE_LIMIT_NAME,
+					Kind:  core.SimpleRateLimit,
+					Value: 100,
+				},
+			},
+		})
+		core.NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
+
+		val, err := HttpRead(ctx, URL)
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		if !assert.IsType(t, (*core.Object)(nil), val) {
+			return
+		}
+
+		obj := val.(*core.Object)
+		assert.Equal(t, core.Float(1), obj.Prop(ctx, "a"))
+	})
+
+	t.Run("by default the content should be parsed based on the Content-type header: with params", func(t *testing.T) {
+		t.Parallel()
+
+		server, URL := makeServer(jsonUtf8)
 		defer server.Close()
 
 		ctx := core.NewContext(core.ContextConfig{
@@ -211,7 +259,7 @@ func TestHttpRead(t *testing.T) {
 	t.Run("if a mimetype argument is passed the parsing should be based it", func(t *testing.T) {
 		t.Parallel()
 
-		server, URL := makeServer()
+		server, URL := makeServer(json)
 		defer server.Close()
 
 		ctx := core.NewContext(core.ContextConfig{

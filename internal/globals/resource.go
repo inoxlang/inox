@@ -184,16 +184,21 @@ func _updateResource(ctx *core.Context, resource core.ResourceName, args ...core
 		if err != nil {
 			return nil, fmt.Errorf("update: http: %s", err.Error())
 		} else {
-			contentType := resp.ContentType(ctx)
+			contentType, hasContentType, err := resp.ContentType(ctx)
 			b, err := io.ReadAll(resp.Body(ctx))
 			if err != nil {
 				return nil, fmt.Errorf("update: http: body: %s", err.Error())
 			}
 
-			switch contentType {
-			case mimeconsts.JSON_CTYPE, mimeconsts.HTML_CTYPE, mimeconsts.PLAIN_TEXT_CTYPE:
-				return core.Str(b), nil
+			if hasContentType {
+				//TODO: handle non-utf8 encodings.
+
+				switch contentType.WithoutParams() {
+				case mimeconsts.JSON_CTYPE, mimeconsts.HTML_CTYPE, mimeconsts.PLAIN_TEXT_CTYPE:
+					return core.Str(b), nil
+				}
 			}
+
 			return core.NewMutableByteSlice(b, ""), nil
 		}
 	case core.Path:
@@ -239,17 +244,21 @@ func _deleteResource(ctx *core.Context, resource core.ResourceName, args ...core
 		if err != nil {
 			return nil, fmt.Errorf("delete: http: %s", err.Error())
 		} else {
-			contentType := resp.ContentType(ctx)
+			contentType, hasContentType, err := resp.ContentType(ctx)
 			b, err := io.ReadAll(resp.Body(ctx))
 			if err != nil {
 				return nil, fmt.Errorf("delete: http: body: %s", err.Error())
 			}
 
-			switch contentType {
-			case mimeconsts.JSON_CTYPE, mimeconsts.HTML_CTYPE, mimeconsts.PLAIN_TEXT_CTYPE:
-				//TODO: return checked strings ?
-				return core.Str(b), nil
+			if hasContentType {
+				//TODO: handle non-utf8 encodings.
+				switch contentType.WithoutParams() {
+				case mimeconsts.JSON_CTYPE, mimeconsts.HTML_CTYPE, mimeconsts.PLAIN_TEXT_CTYPE:
+					//TODO: return checked strings ?
+					return core.Str(b), nil
+				}
 			}
+
 			return core.NewMutableByteSlice(b, ""), nil
 		}
 	case core.Path:
