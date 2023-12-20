@@ -2,6 +2,7 @@
 
 ⬇️ [Installation](#installation)\
 ⚙️ [Implementation](#implementation)\
+🛑 [Stopping/Starting the Daemon](#stoppingstarting-the-daemon)
 ⚠️ [Removing the Daemon](#removing-the-daemon)
 
 **Inoxd** creates and manages one or more project server processes (command `inox project-server`).\
@@ -67,7 +68,19 @@ Browser automation can be allowed by adding the `--allow-browser-automation` swi
 
 ## Implementation
 
+[Installation](../internal/inoxd/systemd/add_unit.go)
+
+[Daemon](../internal/inoxd/daemon.go)
+
 [Project Server](../internal/projectserver/README.md)
+
+## Stopping/Starting the Daemon
+
+```
+sudo systemctl stop inox    # ⚠️ the daemon will restart during the next reboot
+
+sudo systemctl restart inox
+```
 
 ## Removing the Daemon
 

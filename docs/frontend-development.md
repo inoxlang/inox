@@ -3,11 +3,11 @@ ___
 
 # Frontend Development
 
-- [📄 Pages](#pages)
-- [⚙️ Server-Side Components](#server-side-components)
-- [🌐 Client-Side Components](#client-side-components---inoxjs)
-- [✨ Planned HTMX Integrations](#htmx-integrations)
-- [⚡ Planned Optimizations](#server-side-optimizations)
+- 📄 [Pages](#pages)
+- ⚙️ [Server-Side Components](#server-side-components)
+- 🌐 [Client-Side Components](#client-side-components---inoxjs)
+- ✨ [Planned HTMX Integrations](#htmx-integrations)
+- ⚡ [Planned Optimizations](#server-side-optimizations)
 
 The frontend of an Inox application is built using the following features and
 librairies:
