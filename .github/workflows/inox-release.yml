@@ -1,0 +1,37 @@
+name: Inox release
+
+on:
+  release:
+    types: [created]
+
+permissions: write-all
+
+jobs:
+
+  release-linux-amd64:
+    name: release for linux/amd64
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Setup Go
+      uses: actions/setup-go@v4
+      with:
+          go-version: '1.21.x'
+
+    - name: Install dependencies
+      run: go mod download
+
+    - uses: GraphR00t/go-release-action@v1.41
+      with:
+        # same as prod
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        goos: linux
+        goarch: amd64
+        project_path: "./cmd/inox"
+        binary_name: "inox"
+        asset_name: inox-linux-amd64
+        # extra_files: LICENSE README.md docs examples
+        md5sum: false
+        sha256sum: true
+
