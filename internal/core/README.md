@@ -294,6 +294,9 @@ subgraph ChildCtx["Child Context(s)"]
 end
 ```
 
+
+[Issues with the 'CPU time' limit](https://github.com/inoxlang/inox/issues/19).
+
 ## Database
 
 **Database State Diagram**

@@ -4,7 +4,7 @@ This package defines what is available in the default global scope:
 - global variables, methods & namespaces
 - patterns & pattern namespaces
 
-See [core.go](./core.go).
+See [default_state.go](./default_state.go).
 
 Most namespaces are defined in their own supackage:
 - **env_ns**
