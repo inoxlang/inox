@@ -14,7 +14,8 @@ type method struct {
 
 	// List of the maximum number of calls allowed during sliding windows with increasing durations (1s, 10s, and 100s).
 	// Example: [10, 50, 200] means at most 10 calls in 1s, 50 calls in 50s and 200 calls in 100s.
-	RateLimits []int
+	RateLimits    []int
+	SensitiveData bool
 }
 
 type or []interface{}
@@ -41,9 +42,10 @@ var methods = []method{
 		Args: defines.NoParams{},
 	},
 	{
-		Name:         "DidChangeConfiguration",
-		RegisterName: "workspace/didChangeConfiguration",
-		Args:         defines.DidChangeConfigurationParams{},
+		Name:          "DidChangeConfiguration",
+		RegisterName:  "workspace/didChangeConfiguration",
+		Args:          defines.DidChangeConfigurationParams{},
+		SensitiveData: true,
 	},
 	{
 		Name:         "DidChangeWatchedFiles",
@@ -72,9 +74,10 @@ var methods = []method{
 		Args:         defines.WillSaveTextDocumentParams{},
 	},
 	{
-		Name:         "DidSaveTextDocument",
-		RegisterName: "textDocument/didSave",
-		Args:         defines.DidSaveTextDocumentParams{},
+		Name:          "DidSaveTextDocument",
+		RegisterName:  "textDocument/didSave",
+		Args:          defines.DidSaveTextDocumentParams{},
+		SensitiveData: true,
 	},
 	{
 		Name:          "ExecuteCommand",
@@ -192,34 +195,39 @@ var methods = []method{
 		Result:       defines.CodeLens{},
 	},
 	{
-		Name:         "DocumentFormatting",
-		RegisterName: "textDocument/formatting",
-		Args:         defines.DocumentFormattingParams{},
-		Result:       []defines.TextEdit{},
+		Name:          "DocumentFormatting",
+		RegisterName:  "textDocument/formatting",
+		Args:          defines.DocumentFormattingParams{},
+		Result:        []defines.TextEdit{},
+		SensitiveData: true,
 	},
 	{
-		Name:         "DocumentRangeFormatting",
-		RegisterName: "textDocument/rangeFormatting",
-		Args:         defines.DocumentRangeFormattingParams{},
-		Result:       []defines.TextEdit{},
+		Name:          "DocumentRangeFormatting",
+		RegisterName:  "textDocument/rangeFormatting",
+		Args:          defines.DocumentRangeFormattingParams{},
+		Result:        []defines.TextEdit{},
+		SensitiveData: true,
 	},
 	{
-		Name:         "DocumentOnTypeFormatting",
-		RegisterName: "textDocument/onTypeFormatting",
-		Args:         defines.DocumentOnTypeFormattingParams{},
-		Result:       []defines.TextEdit{},
+		Name:          "DocumentOnTypeFormatting",
+		RegisterName:  "textDocument/onTypeFormatting",
+		Args:          defines.DocumentOnTypeFormattingParams{},
+		Result:        []defines.TextEdit{},
+		SensitiveData: true,
 	},
 	{
-		Name:         "RenameRequest",
-		RegisterName: "textDocument/rename",
-		Args:         defines.RenameParams{},
-		Result:       defines.WorkspaceEdit{},
+		Name:          "RenameRequest",
+		RegisterName:  "textDocument/rename",
+		Args:          defines.RenameParams{},
+		Result:        defines.WorkspaceEdit{},
+		SensitiveData: true,
 	},
 	{
-		Name:         "PrepareRename",
-		RegisterName: "textDocument/rename",
-		Args:         defines.PrepareRenameParams{},
-		Result:       defines.Range{},
+		Name:          "PrepareRename",
+		RegisterName:  "textDocument/rename",
+		Args:          defines.PrepareRenameParams{},
+		Result:        defines.Range{},
+		SensitiveData: true,
 	},
 	{
 		Name:          "DocumentLinks",

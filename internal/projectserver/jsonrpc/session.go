@@ -16,6 +16,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
+	"github.com/rs/zerolog"
 
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/ws_ns"
@@ -81,7 +82,7 @@ func newSession(id int, server *Server) *Session {
 	s := &Session{
 		id:          id,
 		server:      server,
-		rateLimiter: newRateLimiter(*server.ctx.Logger()),
+		rateLimiter: newRateLimiter(zerolog.Nop()),
 	}
 	s.executors = make(map[interface{}]*executor)
 	return s

@@ -75,6 +75,7 @@ func (m *Methods) %sMethodInfo() *jsonrpc.MethodInfo {
 		},
 		Handler: m.%s,
 		RateLimits: []int{%s},
+		SensitiveData: %t,
 	}
 }
 `

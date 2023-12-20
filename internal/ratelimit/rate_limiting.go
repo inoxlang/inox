@@ -72,7 +72,7 @@ func (window *SlidingWindow) AllowRequest(rInfo SlidingWindowRequestInfo, logger
 		}
 	}
 
-	logger.Log().Str(REQUEST_ID_LOG_FIELD_NAME, rInfo.Id).Int("candidateSlots", len(candidateSlotIndexes))
+	logger.Debug().Str(REQUEST_ID_LOG_FIELD_NAME, rInfo.Id).Int("candidateSlots", len(candidateSlotIndexes))
 
 	switch len(candidateSlotIndexes) {
 	case 0:
