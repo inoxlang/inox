@@ -790,7 +790,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 
 		//restrict filesystem access at the process level.
 		inoxprocess.RestrictProcessAccess(ctx, inoxprocess.ProcessRestrictionConfig{
-			AllowBrowserAccess: true,
+			AllowBrowserAccess: projectServerConfig.AllowBrowserAutomation,
 			BrowserBinPath:     chrome_ns.BROWSER_BINPATH,
 		})
 
