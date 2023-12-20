@@ -2,7 +2,7 @@
 
 ⬇️ [Installation](#installation)\
 ⚙️ [Implementation](#implementation)\
-🛑 [Stopping/Starting the Daemon](#stoppingstarting-the-daemon)
+🛑 [Stopping/Starting the Daemon](#stoppingstarting-the-daemon)\
 ⚠️ [Removing the Daemon](#removing-the-daemon)
 
 **Inoxd** creates and manages one or more project server processes (command `inox project-server`).\
