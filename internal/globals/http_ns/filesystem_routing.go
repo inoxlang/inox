@@ -70,7 +70,7 @@ func addFilesystemRoutingHandler(server *HttpsServer, staticDir, dynamicDir core
 			if fs_ns.Exists(handlerGlobalState.Ctx, staticFilePath) {
 
 				//add CSP header if the content is HTML.
-				if mimeconsts.IsMimeTypeExtension(mimeconsts.HTML_CTYPE, fileExtension) {
+				if mimeconsts.IsMimeTypeForExtension(mimeconsts.HTML_CTYPE, fileExtension) {
 					headerValue := core.Str(server.defaultCSP.HeaderValue(CSPHeaderValueParams{}))
 					rw.AddHeader(handlerGlobalState.Ctx, CSP_HEADER_NAME, headerValue)
 				}

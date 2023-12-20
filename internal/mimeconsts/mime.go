@@ -1,5 +1,7 @@
 package mimeconsts
 
+import "mime"
+
 //TODO: support structured syntax suffixes
 
 const (
@@ -18,20 +20,21 @@ const (
 	MULTIPART_FORM_DATA    = "multipart/form-data"
 )
 
-var FILE_EXTENSION_TO_MIMETYPE = map[string]string{
-	".json": JSON_CTYPE,
-	".yaml": APP_YAML_CTYPE,
-	".yml":  APP_YAML_CTYPE,
-	".css":  CSS_CTYPE,
-	".js":   JS_CTYPE,
-	".ix":   INOX_CTYPE,
-	".html": HTML_CTYPE,
-	".htm":  HTML_CTYPE,
-	".txt":  PLAIN_TEXT_CTYPE,
-	".md":   PLAIN_TEXT_CTYPE,
+func init() {
+	mime.AddExtensionType(".txt", PLAIN_TEXT_CTYPE)
 }
 
-// IsMimeTypeExtension returns true if ext corresponds to mimetype.
-func IsMimeTypeExtension(mimetype string, ext string) bool {
-	return FILE_EXTENSION_TO_MIMETYPE[ext] == mimetype
+// IsMimeTypeForExtension returns true if ext corresponds to mimetype.
+func IsMimeTypeForExtension(mimetype string, ext string) bool {
+	actual := TypeByExtensionWithoutParams(mimetype)
+	return mimetype == actual
+}
+
+func TypeByExtensionWithoutParams(ext string) string {
+	mimeType := mime.TypeByExtension(ext)
+	if mimeType == "" {
+		return ""
+	}
+	mimeType, _, _ = mime.ParseMediaType(mimeType)
+	return mimeType
 }

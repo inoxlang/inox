@@ -1,9 +1,8 @@
 package core
 
 import (
+	"mime"
 	"strings"
-
-	"github.com/inoxlang/inox/internal/mimeconsts"
 )
 
 type Mimetype string
@@ -17,9 +16,9 @@ func (mt Mimetype) UnderlyingString() string {
 }
 
 func GetMimeTypeFromExtension(extensionWithDot string) (Mimetype, bool) {
-	m, ok := mimeconsts.FILE_EXTENSION_TO_MIMETYPE[extensionWithDot]
-	if !ok {
+	mimeType := mime.TypeByExtension(extensionWithDot)
+	if mimeType == "" {
 		return "", false
 	}
-	return Mimetype(m), true
+	return Mimetype(mimeType), true
 }

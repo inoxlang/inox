@@ -62,7 +62,11 @@ func (c *FileCompressor) CompressFileContent(args ContentCompressionParams) (_ i
 	path := filepath.Clean(args.Path)
 	ext := filepath.Ext(path)
 	lastMtime := args.LastMtime
-	mimeType := mimeconsts.FILE_EXTENSION_TO_MIMETYPE[ext]
+	mimeType := mimeconsts.TypeByExtensionWithoutParams(ext)
+
+	if mimeType == "" {
+		return nil, false, nil
+	}
 
 	if _, ok := WORTH_COMPRESSING_CONTENT_TYPES[mimeType]; !ok {
 		return nil, false, nil
