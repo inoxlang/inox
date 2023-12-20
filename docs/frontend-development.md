@@ -1,10 +1,13 @@
+[Back to README](../README.md)
+___ 
+
 # Frontend Development
 
-
-- [📃 Pages](#pages)
+- [📄 Pages](#pages)
 - [⚙️ Server-Side Components](#server-side-components)
 - [🌐 Client-Side Components](#client-side-components---inoxjs)
-- [⚡ Planned Optmizations](#server-side-optimizations)
+- [✨ Planned HTMX Integrations](#htmx-integrations)
+- [⚡ Planned Optimizations](#server-side-optimizations)
 
 The frontend of an Inox application is built using the following features and
 librairies:
@@ -15,7 +18,7 @@ librairies:
   enabling dynamic content updates in web applications without the complexity of
   heavy JavaScript frameworks.
 - [Inox.js](#client-side-components---inoxjs) is a **tiny** (experimental)
-  library to develop small client-side components when HTMX is not a good fit.
+  library allowing to develop small client-side components when HTMX is not a good fit. You can use another library if you prefer to.
 
 ```
 client/ ------ client side components
@@ -187,6 +190,25 @@ fn Counter(){
 
 ___
 
+## HTMX Integrations
+
+**This is not implemented yet.**
+
+### Checks
+
+- Validation of `<input>` elements in HTMX forms
+- Validation of URLs for attributes such as `hx-get`
+
+*and more.*
+
+### LSP
+
+- `<form>` completion with `<input>` elements
+- URL completion for attributes such as `hx-get`
+
+*and more.*
+
+___
 
 ## Server-Side Optimizations
 
@@ -205,3 +227,7 @@ the data required by `/last-news`.
 ```
 
 **General access patterns** during application usage could also be measured to enable further optimizations.
+
+___
+
+[Back to README](../README.md)
