@@ -81,9 +81,8 @@ func WriteInoxUnitFile(args InoxUnitParams) (unitName string, _ error) {
 		return "", err
 	}
 
-	if _, err := exec.LookPath(SYSTEMCTL_CMD_NAME); err != nil {
-		return "", fmt.Errorf("%w: the %s command is not present", ErrNoSystemd, SYSTEMCTL_CMD_NAME)
-	} else if err != nil {
+	_, err := getSystemctlPath()
+	if err != nil {
 		return "", err
 	}
 

@@ -7,7 +7,7 @@ import (
 )
 
 var (
-	SYSTEMCTL_ALLOWED_LOCATIONS = []string{"/usr/bin/systemctl"}
+	SYSTEMCTL_ALLOWED_LOCATIONS = []string{"/usr/bin/systemctl", "/usr/sbin/systemctl", "/bin/systemctl", "/sbin/systemctl"}
 )
 
 func getSystemctlPath() (string, error) {
