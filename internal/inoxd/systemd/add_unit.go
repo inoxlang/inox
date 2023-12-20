@@ -119,6 +119,7 @@ func WriteInoxUnitFile(args InoxUnitParams) (unitName string, _ error) {
 			ProjectsDir:            args.ProjectsDir,
 			ProdDir:                args.ProdDir,
 			ExposeWebServers:       args.ExposeWebServers,
+			IgnoreInstalledBrowser: args.AllowBrowserAutomation, //if browser automation is enabled we download a browser by default.
 		},
 		ExposeWebServers: args.ExposeProjectServers,
 		TunnelProvider:   args.TunnelProviderName,
