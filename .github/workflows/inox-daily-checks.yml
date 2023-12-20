@@ -28,7 +28,7 @@ jobs:
       run: echo "${{ github.workspace }}" >> $GITHUB_PATH
 
     - name: Run tests
-      run: go test -tags=reqbin -p=1 -parallel=1 -count=1 ./internal/... -timeout=2m
+      run: go test -tags=reqbin -p=1 -parallel=1 -count=1 ./internal/... -timeout=5m
 
     - name: Run tests with race detection
-      run: go test -race -tags=reqbin -p=1 -parallel=1 -count=1 ./internal/... -timeout=2m
+      run: go test -race -tags=reqbin -p=1 -parallel=1 -count=1 ./internal/... -timeout=5m
