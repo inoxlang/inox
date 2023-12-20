@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/inoxlang/inox/internal/compressarch"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/permkind"
 	"github.com/inoxlang/inox/internal/mimeconsts"
@@ -62,6 +63,7 @@ func NewFileServer(ctx *core.Context, args ...core.Value) (*HttpsServer, error) 
 		return nil, errors.New("no (directory) path required")
 	}
 
+	fileCompressor := compressarch.NewFileCompressor()
 	server, err := NewGolangHttpServer(ctx, GolangHttpServerConfig{
 		Addr:                    addr,
 		PersistCreatedLocalCert: true,
@@ -91,7 +93,13 @@ func NewFileServer(ctx *core.Context, args ...core.Value) (*HttpsServer, error) 
 			}
 			//send content of the file
 
-			err := serveFileNativeRequest(ctx, w, r, core.PathFrom(filesystemPath))
+			err := serveFile(fileServingParams{
+				ctx:            ctx,
+				rw:             w,
+				r:              r,
+				pth:            core.PathFrom(filesystemPath),
+				fileCompressor: fileCompressor,
+			})
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 			}
@@ -122,47 +130,12 @@ func NewFileServer(ctx *core.Context, args ...core.Value) (*HttpsServer, error) 
 	}, nil
 }
 
-// serveFile opens the file with the given path and calls http.ServeContent,
-// an error is returned in the following cases:
-// - permission error (read perm is required).
-// - failure to open the file.
-// - failure to get creation & modification time from file info.
-// Note that errors can still happen during the call to http.ServeContent but they are written to the *http.ResponseWriter.
-func serveFile(ctx *core.Context, rw *HttpResponseWriter, r *HttpRequest, pth core.Path) error {
-	return serveFileNativeRequest(ctx, rw.rw, r.Request(), pth)
-}
-
-func serveFileNativeRequest(ctx *core.Context, rw http.ResponseWriter, r *http.Request, pth core.Path) error {
-	fls := ctx.GetFileSystem()
-	{
-		var err error
-		pth, err = pth.ToAbs(fls)
-		if err != nil {
-			return err
-		}
-	}
-
-	perm := core.FilesystemPermission{Kind_: permkind.Read, Entity: pth}
-
-	if err := ctx.CheckHasPermission(perm); err != nil {
-		return err
-	}
-
-	f, err := fls.Open(string(pth))
-	if err != nil {
-		return err
-	}
-
-	//TODO: add implementation of afs.StatCapable to all file types in fs_ns.
-
-	stat, err := core.FileStat(f, fls)
-	if err != nil {
-		return err
-	}
-
-	modTime := stat.ModTime()
-
-	//TODO: pass a custom response writer that logs error and return a 404 status code.
-	http.ServeContent(rw, r, string(pth), modTime, f)
-	return nil
+// ServeFile is a thin wrapper around serveFileNativeRequest.
+func ServeFile(ctx *core.Context, rw *HttpResponseWriter, r *HttpRequest, pth core.Path) error {
+	return serveFile(fileServingParams{
+		ctx: ctx,
+		rw:  rw.rw,
+		r:   r.request,
+		pth: pth,
+	})
 }

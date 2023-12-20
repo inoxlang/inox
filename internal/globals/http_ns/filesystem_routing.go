@@ -59,15 +59,15 @@ func addFilesystemRoutingHandler(server *HttpsServer, staticDir, dynamicDir core
 	handler := func(req *HttpRequest, rw *HttpResponseWriter, handlerGlobalState *core.GlobalState) {
 
 		if staticDir != "" {
-			staticResourcePath := staticDir.JoinAbsolute(req.Path, handlerGlobalState.Ctx.GetFileSystem())
+			staticFilePath := staticDir.JoinAbsolute(req.Path, handlerGlobalState.Ctx.GetFileSystem())
 
-			if staticResourcePath.IsDirPath() {
-				staticResourcePath += "index.html"
+			if staticFilePath.IsDirPath() {
+				staticFilePath += "index.html"
 			}
 
-			fileExtension := filepath.Ext(string(staticResourcePath))
+			fileExtension := filepath.Ext(string(staticFilePath))
 
-			if fs_ns.Exists(handlerGlobalState.Ctx, staticResourcePath) {
+			if fs_ns.Exists(handlerGlobalState.Ctx, staticFilePath) {
 
 				//add CSP header if the content is HTML.
 				if mimeconsts.IsMimeTypeExtension(mimeconsts.HTML_CTYPE, fileExtension) {
@@ -75,7 +75,14 @@ func addFilesystemRoutingHandler(server *HttpsServer, staticDir, dynamicDir core
 					rw.AddHeader(handlerGlobalState.Ctx, CSP_HEADER_NAME, headerValue)
 				}
 
-				err := serveFile(handlerGlobalState.Ctx, rw, req, staticResourcePath)
+				err := serveFile(fileServingParams{
+					ctx:            handlerGlobalState.Ctx,
+					rw:             rw.rw,
+					r:              req.request,
+					pth:            staticFilePath,
+					fileCompressor: server.fileCompressor,
+				})
+
 				if err != nil {
 					handlerGlobalState.Logger.Err(err).Send()
 					rw.writeStatus(http.StatusNotFound)

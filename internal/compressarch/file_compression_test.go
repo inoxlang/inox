@@ -70,7 +70,7 @@ func TestFileCompressor(t *testing.T) {
 		}
 		assert.Equal(t, secondContent, buf.Bytes())
 
-		// if the file has not change the content reader should not be read.
+		// if the file has not changes the content reader should not be read.
 		contentReader := bytes.NewReader([]byte("xxx"))
 
 		reader, isCompressed, err = compressor.CompressFileContent(ContentCompressionParams{

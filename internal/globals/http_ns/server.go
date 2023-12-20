@@ -12,6 +12,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/inoxlang/inox/internal/compressarch"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/mimeconsts"
@@ -95,10 +96,11 @@ type HttpsServer struct {
 	initialized   atomic.Bool
 	lock          sync.RWMutex
 
-	endChan       chan struct{}
-	state         *core.GlobalState
-	serverLogger  zerolog.Logger
-	fsEventSource *fs_ns.FilesystemEventSource
+	endChan        chan struct{}
+	state          *core.GlobalState
+	serverLogger   zerolog.Logger
+	fsEventSource  *fs_ns.FilesystemEventSource
+	fileCompressor *compressarch.FileCompressor
 
 	lastHandlerFn handlerFn
 	middlewares   []handlerFn
@@ -121,8 +123,9 @@ type HttpsServer struct {
 // The server's maxLimits are constructed by merging the default max request handling limits with the max-limits in arguments.
 func NewHttpsServer(ctx *core.Context, host core.Host, args ...core.Value) (*HttpsServer, error) {
 	server := &HttpsServer{
-		state:      ctx.GetClosestState(),
-		defaultCSP: DEFAULT_CSP,
+		state:          ctx.GetClosestState(),
+		defaultCSP:     DEFAULT_CSP,
+		fileCompressor: compressarch.NewFileCompressor(),
 	}
 
 	if server.state == nil {

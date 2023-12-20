@@ -88,7 +88,7 @@ func init() {
 			}
 			return &http_symbolic.HttpServer{}, nil
 		},
-		serveFile, func(ctx *symbolic.Context, rw *http_symbolic.HttpResponseWriter, r *http_symbolic.HttpRequest, path *symbolic.Path) *symbolic.Error {
+		ServeFile, func(ctx *symbolic.Context, rw *http_symbolic.HttpResponseWriter, r *http_symbolic.HttpRequest, path *symbolic.Path) *symbolic.Error {
 			return nil
 		},
 		Mime_, func(ctx *symbolic.Context, arg *symbolic.String) (*symbolic.Mimetype, *symbolic.Error) {
@@ -154,7 +154,7 @@ func init() {
 		"http.delete":     HttpDelete,
 		"http.Server":     NewHttpsServer,
 		"http.FileServer": NewFileServer,
-		"http.servefile":  serveFile,
+		"http.servefile":  ServeFile,
 		"http.Client":     NewClient,
 		"http.CSP":        NewCSP,
 	})
@@ -170,7 +170,7 @@ func NewHttpNamespace() *core.Namespace {
 		"delete":         core.WrapGoFunction(HttpDelete),
 		"Server":         core.WrapGoFunction(NewHttpsServer),
 		"FileServer":     core.WrapGoFunction(NewFileServer),
-		"servefile":      core.WrapGoFunction(serveFile),
+		"servefile":      core.WrapGoFunction(ServeFile),
 		"Client":         core.WrapGoFunction(NewClient),
 		"percent_encode": core.WrapGoFunction(PercentEncode),
 		"percent_decode": core.WrapGoFunction(PercentDecode),

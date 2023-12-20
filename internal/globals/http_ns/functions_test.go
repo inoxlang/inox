@@ -164,7 +164,7 @@ func TestServeFile(t *testing.T) {
 		resp := &HttpResponseWriter{rw: recorder}
 		req := &HttpRequest{}
 
-		err := serveFile(ctx, resp, req, core.Path("/x"))
+		err := ServeFile(ctx, resp, req, core.Path("/x"))
 		assert.IsType(t, &core.NotAllowedError{}, err)
 	})
 }
