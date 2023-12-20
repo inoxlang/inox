@@ -117,11 +117,14 @@ func MakeHTTPProxy(ctx *core.Context, params HTTPProxyParams) (*http.Server, err
 		perm, err := getPermForRequest(req.Method, core.URL(u.String()))
 		if err != nil {
 			params.Logger.Err(err).Send()
+			ctx.Logger().Err(err).Send()
 			return nil, nil
 		}
 
 		if err := ctx.CheckHasPermission(perm); err != nil {
 			params.Logger.Err(err).Send()
+			ctx.Logger().Err(err).Send()
+
 			resp := goproxy.NewResponse(req, mimeconsts.PLAIN_TEXT_CTYPE, http.StatusInternalServerError, "")
 			resp.Status = err.Error()
 			return req, resp
