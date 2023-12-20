@@ -100,7 +100,7 @@ func TestHttpRead(t *testing.T) {
 		jsonUtf8
 	)
 
-	const JSON_UTF8 = mimeconsts.JSON_CTYPE + " charset=utf-8"
+	const JSON_UTF8 = mimeconsts.JSON_CTYPE + "; charset=utf-8"
 
 	makeServer := func(contentType contentType) (*http.Server, core.URL) {
 		var ADDR = "localhost:" + strconv.Itoa(int(port.Add(1)))
