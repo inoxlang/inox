@@ -50,6 +50,8 @@ func init() {
 		switch filepath.Base(path) {
 		case "inox.js":
 			INOX_JS = string(content)
+		case "htmx-1.9.9.min.js":
+			HTMX_MIN_JS = string(content)
 		case "preact-signals.js":
 			PREACT_SIGNALS_JS = string(content)
 		case "base.css":
