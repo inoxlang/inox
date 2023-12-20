@@ -232,10 +232,9 @@ username = mod-args.name
 
 ### HTMX Integration
 
-Server-side components can currently be written using [HTMX](https://htmx.org/) (see [frontend development](./docs/frontend-development.md)).
-In the near future HTMX will be integrated in order to improve [user experience](./docs/frontend-development.md#htmx-integrations) and [performance](./docs/frontend-development.md#server-side-optimizations).
+Server-side components can be written using [HTMX](https://htmx.org/) since its based on HTML attributes, see [here](./docs/frontend-development.md). In the near future HTMX will be integrated in order to improve [user experience](./docs/frontend-development.md#htmx-integrations) and [allow database optimizations](./docs/frontend-development.md#server-side-optimizations).
 
-Also I am working on a small library to allow easy development of client-side components written in JS (see [frontend development](./docs/frontend-development.md)).
+Also I am working on a library to allow the development of small client-side components written in JS (see [frontend development](./docs/frontend-development.md)).
 
 ### Transactions & Effects (WIP)
 

@@ -197,7 +197,7 @@ ___
 ### Checks
 
 - Validation of `<input>` elements in HTMX forms
-- Validation of URLs for attributes such as `hx-get`
+- Validation of URLs in attributes such as `hx-get`
 
 *and more.*
 
