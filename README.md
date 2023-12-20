@@ -4,7 +4,7 @@
 
 <img src="https://avatars.githubusercontent.com/u/122291844?s=200&v=4" alt="a shield"></img>
 
-🛡️ The Inox platform is your **shield** against complexity in full-stack development.
+🛡️ Inox is your **shield** against complexity in full-stack development.
 
 Inox is released as a **single binary** that will contain all you need to develop, test and deploy web apps that are primarily rendered server-side. Applications are developped using **Inoxlang**, a sandboxed programming language that 
 deeply integrates with Inox's built-in database engine, testing engine and HTTP server.
@@ -523,6 +523,8 @@ h.close()
 
 [Examples](https://github.com/inoxlang/inox/tree/main/examples/chrome)
 
+
+> Browser automation is quite buggy right now, I need to improve the configuration of https://github.com/chromedp/chromedp.
 
 ---
 
