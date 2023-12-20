@@ -54,6 +54,7 @@ return html<html>
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
     <link rel="stylesheet" href="/base.css"/>
     <script src="/htmx.min.js"></script>
+    <script src="/inox.js"></script>
 </head>
 <body>
     <header> index.ix </header>
@@ -79,6 +80,15 @@ manifest {}
 return html<ul>
     <li>News 1</li>
     <li>News 2</li>
+
+    <!-- Local styling enabled by the CSS Scope Inline library (included in inox.js) -->
+    <style>
+        me {
+            display: flex;
+            flex-direction: column;
+            ...
+        }
+    </style>
 </ul>
 ```
 

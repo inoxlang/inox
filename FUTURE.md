@@ -1,5 +1,6 @@
 ## Planned Features
 
+- CSS and JS Bundling
 - Encryption of secrets and database data
 - Storage of secrets in key management services (e.g. GCP KMS, AWS KMS)
 - Version Control System for Inox projects:

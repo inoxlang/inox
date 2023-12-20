@@ -66,6 +66,7 @@ deeply integrates with Inox's built-in database engine, testing engine and HTTP 
 <details>
 
 **<summary>Planned Features</summary>**
+- CSS and JS Bundling
 - Encryption of secrets and database data
 - Storage of secrets in key management services (e.g. GCP KMS, AWS KMS)
 - Version Control System (Git) for projects using https://github.com/go-git/go-git 
