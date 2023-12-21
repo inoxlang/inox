@@ -74,7 +74,7 @@ _From more relevant to less relevant._
 [metricsperf](./metricsperf/README.md)
 - Profiling of the CPU, memory, mutexes and goroutines
 
-[ratelimit](./ratelimit/README.md)
+[reqratelimit](./reqratelimit/README.md)
 - Rate limiting of network requests
 
 [memds (in-memory data structures)](./memds/README.md)
@@ -105,5 +105,6 @@ _From more relevant to less relevant._
 - Filesystem interface
 - File interfaces
 
-[netaddr](./netaddr/types.go)
-- Types representing remote IP addresses.
+[netaddr](./netaddr/README.md)
+- Types representing remote IP addresses
+- Helper functions to filter interface IPs
