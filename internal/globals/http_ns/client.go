@@ -24,7 +24,7 @@ var (
 	DEFAULT_HTTP_PROFILE_CONFIG = HttpClientConfig{
 		SaveCookies: false,
 	}
-	_ = []core.ProtocolClient{&HttpClient{}}
+	_ = []core.ProtocolClient{(*HttpClient)(nil)}
 )
 
 // A HttpClient represents a high level http client, HttpClient implements core.ProtocolClient.

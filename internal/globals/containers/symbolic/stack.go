@@ -6,7 +6,7 @@ import (
 	pprint "github.com/inoxlang/inox/internal/prettyprint"
 )
 
-var _ = []symbolic.Iterable{&Stack{}}
+var _ = []symbolic.Iterable{(*Stack)(nil)}
 
 type Stack struct {
 	symbolic.UnassignablePropsMixin

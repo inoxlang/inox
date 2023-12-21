@@ -12,7 +12,7 @@ import (
 	"github.com/inoxlang/inox/internal/core/permkind"
 )
 
-var _ = []core.Effect{&CreateFile{}, &CreateDir{}, &RemoveFile{}}
+var _ = []core.Effect{(*CreateFile)(nil), (*CreateDir)(nil), (*RemoveFile)(nil)}
 
 //
 

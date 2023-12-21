@@ -17,8 +17,10 @@ const (
 	NONCE_ATTRIBUTE_NAME = "nonce"
 )
 
-var _ = []core.GoValue{&HTMLNode{}}
+var _ = []core.GoValue{(*HTMLNode)(nil)}
 
+// An HTMLNode is a wrapper around a stdlib's html.Node, HTMLNode implements Value.
+// In Inox code XML expressions with the html namespace evaluate to an HTMLNode.
 type HTMLNode struct {
 	node         *html.Node // TODO: make private
 	render       []byte

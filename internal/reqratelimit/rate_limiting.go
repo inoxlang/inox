@@ -1,4 +1,4 @@
-package ratelimit
+package reqratelimit
 
 import (
 	"log"
@@ -16,7 +16,7 @@ const (
 )
 
 type IWindow interface {
-	AllowRequest(rInfo SlidingWindowRequestInfo, logger zerolog.Logger) (ok bool)
+	AllowRequest(rInfo WindowRequestInfo, logger zerolog.Logger) (ok bool)
 	//enrichRequestAfterHandling(reqInfo *IncomingRequestInfo)
 }
 
@@ -25,40 +25,46 @@ type WindowParameters struct {
 	RequestCount int
 }
 
-type SlidingWindow struct {
+// A Window contains a fixed number of request slots (say N). Rate limiting is performed by
+// informing it about all received requests using the AllowRequest method. The window
+// records the last N requests, even the ones that have not been accepted.
+// See the body of the AllowRequest method for details about the algorithm.
+type Window struct {
 	duration      time.Duration
-	requests      []SlidingWindowRequestInfo
+	requests      []WindowRequestInfo
 	ipLevelWindow IWindow
 	mutex         sync.Mutex
 }
 
-func NewSlidingWindow(params WindowParameters) *SlidingWindow {
+func NewWindow(params WindowParameters) *Window {
 
 	if params.RequestCount <= 0 {
-		log.Panicln("cannot create sliding window with request count less or equal to zero")
+		log.Panicln("cannot create window with request count less or equal to zero")
 	}
 
-	window := &SlidingWindow{
+	window := &Window{
 		duration:      params.Duration,
-		requests:      make([]SlidingWindowRequestInfo, params.RequestCount),
+		requests:      make([]WindowRequestInfo, params.RequestCount),
 		ipLevelWindow: nil,
 	}
 
 	return window
 }
 
-func (w *SlidingWindow) SetIpLevelWindow(window IWindow) {
+func (w *Window) SetIpLevelWindow(window IWindow) {
 	w.ipLevelWindow = window
 }
 
 // TODO: treat many HTTP/1.1 connections from same IP as suspicious
-func (window *SlidingWindow) AllowRequest(rInfo SlidingWindowRequestInfo, logger zerolog.Logger) (ok bool) {
+// AllowRequest returns false if the request should be rate limited.
+func (window *Window) AllowRequest(rInfo WindowRequestInfo, logger zerolog.Logger) (ok bool) {
 	window.mutex.Lock()
 	defer window.mutex.Unlock()
 	candidateSlotIndexes := make([]int, 0)
 
 	//if we find an empty slot for the request we accept it immediately
 	//otherwise we search for slots that contain "old" requests.
+	//All requests older than the window duration are considered old.
 	for i, req := range window.requests {
 
 		if req.Id == "" { //empty slot
@@ -67,6 +73,7 @@ func (window *SlidingWindow) AllowRequest(rInfo SlidingWindowRequestInfo, logger
 			return true
 		}
 
+		// if the request in the current request is old we add the slot index as a candidate.
 		if rInfo.CreationTime.Sub(req.CreationTime) > window.duration {
 			candidateSlotIndexes = append(candidateSlotIndexes, i)
 		}
@@ -76,7 +83,7 @@ func (window *SlidingWindow) AllowRequest(rInfo SlidingWindowRequestInfo, logger
 
 	switch len(candidateSlotIndexes) {
 	case 0:
-		//find the oldest slot and store the new request
+		//if there is no candidate slot we replace the oldest request in the window with the new request.
 		oldestRequestTime := window.requests[0].CreationTime
 		oldestRequestSlotIndex := 0
 		for i, req := range window.requests {
@@ -90,6 +97,7 @@ func (window *SlidingWindow) AllowRequest(rInfo SlidingWindowRequestInfo, logger
 		window.requests[oldestRequestSlotIndex] = rInfo
 
 		timeSinceOldestRequest := rInfo.CreationTime.Sub(oldestRequestTime)
+
 		//burst
 		if timeSinceOldestRequest < window.duration/2 {
 			return false
@@ -100,6 +108,7 @@ func (window *SlidingWindow) AllowRequest(rInfo SlidingWindowRequestInfo, logger
 		window.requests[candidateSlotIndexes[0]] = rInfo
 		return true
 	default:
+		//we replace the oldest request among the candidate slots with the new request.
 		oldestRequestTime := window.requests[candidateSlotIndexes[0]].CreationTime
 		oldestRequestSlotIndex := candidateSlotIndexes[0]
 		for _, slotIndex := range candidateSlotIndexes[1:] {
@@ -118,27 +127,27 @@ func (window *SlidingWindow) AllowRequest(rInfo SlidingWindowRequestInfo, logger
 
 // sharedRateLimitingWindow is shared between several sockets.
 type sharedRateLimitingWindow struct {
-	*SlidingWindow
+	*Window
 }
 
 func NewSharedRateLimitingWindow(params WindowParameters) *sharedRateLimitingWindow {
 	if params.RequestCount <= 0 {
-		log.Panicln("cannot create sliding window with request count less or equal to zero")
+		log.Panicln("cannot create window with request count less or equal to zero")
 	}
 
 	window := &sharedRateLimitingWindow{
-		NewSlidingWindow(params),
+		NewWindow(params),
 	}
 
 	return window
 }
 
-func (window *sharedRateLimitingWindow) AllowRequest(req SlidingWindowRequestInfo, logger zerolog.Logger) (ok bool) {
+func (window *sharedRateLimitingWindow) AllowRequest(req WindowRequestInfo, logger zerolog.Logger) (ok bool) {
 	//request count for the current socket
 	prevReqCount := 0
 	sockets := make([]netaddr.RemoteAddrWithPort, 0)
 
-	for _, windowReq := range window.SlidingWindow.requests {
+	for _, windowReq := range window.Window.requests {
 
 		// ignore "old" requests
 		if req.CreationTime.Sub(windowReq.CreationTime) >= window.duration {
@@ -167,7 +176,7 @@ func (window *sharedRateLimitingWindow) AllowRequest(req SlidingWindowRequestInf
 	ok = (len(sockets) == 1 && reqCountF < totalReqCountF*MAX_SOCKET_SHARE_OF_SHARED_WINDOW) ||
 		(len(sockets) != 1 && reqCountF <= maxSocketReqCount)
 
-	if !window.SlidingWindow.AllowRequest(req, logger) {
+	if !window.Window.AllowRequest(req, logger) {
 		ok = false
 	}
 

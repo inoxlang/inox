@@ -32,7 +32,7 @@ var (
 	SSE_EVENT_HEADER = []byte("event:")
 	SSE_RETRY_HEADER = []byte("retry:")
 
-	_ = []core.EventSource{&ServerSentEventSource{}}
+	_ = []core.EventSource{(*ServerSentEventSource)(nil)}
 )
 
 func init() {

@@ -33,7 +33,7 @@ var (
 		"style-src-elem": {{raw: "'self' 'unsafe-inline'"}},
 	}
 
-	_ = []core.Value{&ContentSecurityPolicy{}}
+	_ = []core.Value{(*ContentSecurityPolicy)(nil)}
 )
 
 type ContentSecurityPolicy struct {

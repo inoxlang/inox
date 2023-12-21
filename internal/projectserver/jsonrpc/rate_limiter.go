@@ -7,7 +7,7 @@ import (
 	"time"
 
 	netaddr "github.com/inoxlang/inox/internal/netaddr"
-	"github.com/inoxlang/inox/internal/ratelimit"
+	"github.com/inoxlang/inox/internal/reqratelimit"
 	"github.com/rs/zerolog"
 )
 
@@ -71,7 +71,7 @@ func (r *rateLimiter) limit(info MethodInfo, reqId string, addrPort netaddr.Remo
 			if reqCount == 0 {
 				methodLimiter.windows = append(methodLimiter.windows, nil)
 			} else {
-				methodLimiter.windows = append(methodLimiter.windows, ratelimit.NewSlidingWindow(ratelimit.WindowParameters{
+				methodLimiter.windows = append(methodLimiter.windows, reqratelimit.NewWindow(reqratelimit.WindowParameters{
 					Duration:     windowDuration,
 					RequestCount: reqCount,
 				}))
@@ -88,7 +88,7 @@ func (r *rateLimiter) limit(info MethodInfo, reqId string, addrPort netaddr.Remo
 			continue
 		}
 
-		ok := window.AllowRequest(ratelimit.SlidingWindowRequestInfo{
+		ok := window.AllowRequest(reqratelimit.WindowRequestInfo{
 			Id:                reqId,
 			Method:            info.Name,
 			CreationTime:      now,
@@ -110,7 +110,7 @@ func (r *rateLimiter) limit(info MethodInfo, reqId string, addrPort netaddr.Remo
 type methodRateLimiter struct {
 	info               MethodInfo
 	lastInvocationTime atomic.Value
-	windows            []ratelimit.IWindow
+	windows            []reqratelimit.IWindow
 }
 
 func (l *methodRateLimiter) LastInvocationTime() time.Time {

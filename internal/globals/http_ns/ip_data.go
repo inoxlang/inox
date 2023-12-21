@@ -4,7 +4,7 @@ import (
 	"sync"
 
 	netaddr "github.com/inoxlang/inox/internal/netaddr"
-	"github.com/inoxlang/inox/internal/ratelimit"
+	"github.com/inoxlang/inox/internal/reqratelimit"
 )
 
 type remoteIpData struct {
@@ -13,8 +13,8 @@ type remoteIpData struct {
 	mutex sync.Mutex
 	//resourceDataMap                         concmap.ConcurrentMap
 	currentCaptchProtectedPostResourcePaths []string
-	sharedReadBurstWindow                   ratelimit.IWindow
-	sharedWriteBurstWindow                  ratelimit.IWindow
+	sharedReadBurstWindow                   reqratelimit.IWindow
+	sharedWriteBurstWindow                  reqratelimit.IWindow
 	isBlackListed                           bool
 }
 

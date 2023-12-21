@@ -1,4 +1,4 @@
-package ratelimit
+package reqratelimit
 
 import (
 	"time"
@@ -6,7 +6,7 @@ import (
 	netaddr "github.com/inoxlang/inox/internal/netaddr"
 )
 
-type SlidingWindowRequestInfo struct {
+type WindowRequestInfo struct {
 	Id                string
 	Method            string
 	CreationTime      time.Time

@@ -6,7 +6,7 @@ import (
 	pprint "github.com/inoxlang/inox/internal/prettyprint"
 )
 
-var _ = []symbolic.Iterable{&Map{}}
+var _ = []symbolic.Iterable{(*Map)(nil)}
 
 type Map struct {
 	symbolic.UnassignablePropsMixin
