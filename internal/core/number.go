@@ -28,6 +28,8 @@ func (i Int) Int64() (n int64, signed bool) {
 // Float implements Value.
 type Float float64
 
+// A FloatRange represents a float64 range, FloatRange implements Value.
+// Inox's float range literals (e.g. `1.0..2.0`) evaluate to a FloatRange.
 type FloatRange struct {
 	unknownStart bool //if true .Start depends on the context (not *Context)
 	inclusiveEnd bool
@@ -129,6 +131,8 @@ func intDiv(l, r Int) (Value, error) {
 	return l / r, nil
 }
 
+// An IntRange represents an int64 range, IntRange implements Value.
+// Inox's integer range literals (e.g. `1..2`) evaluate to an IntRange.
 type IntRange struct {
 	unknownStart bool //if true .Start depends on the context (not *Context)
 	inclusiveEnd bool

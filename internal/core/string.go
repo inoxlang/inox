@@ -50,6 +50,7 @@ type StringLike interface {
 	//TODO: EqualStringLike(ctx *Context, s StringLike)
 }
 
+// Inox string type, Str implements Value.
 type Str string
 
 func (s Str) UnderlyingString() string {

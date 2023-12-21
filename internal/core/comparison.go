@@ -967,7 +967,7 @@ func (pattern *OptionalPattern) Equal(ctx *Context, other Value, alreadyCompared
 		return false
 	}
 
-	return pattern.Pattern.Equal(ctx, otherPattern.Pattern, map[uintptr]uintptr{}, 0)
+	return pattern.pattern.Equal(ctx, otherPattern.pattern, map[uintptr]uintptr{}, 0)
 }
 
 func (pattern *FunctionPattern) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {

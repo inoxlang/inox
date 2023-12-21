@@ -1509,7 +1509,7 @@ func (patt *OptionalPattern) Iterator(ctx *Context, config IteratorConfiguration
 		next: func(pi *PatternIterator, ctx *Context) bool {
 			i++
 			if i == 0 {
-				it = patt.Pattern.Iterator(ctx, IteratorConfiguration{})
+				it = patt.pattern.Iterator(ctx, IteratorConfiguration{})
 			}
 			return true
 		},

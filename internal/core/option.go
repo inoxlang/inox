@@ -5,6 +5,8 @@ import (
 	"fmt"
 )
 
+// An Option represents an option with a name and value, Option implements value.
+// Inox's flag literals (e.g. `--verbose`) and option expressions (e.g. `--val=100`) evaluate to an Option.
 type Option struct {
 	Name  string
 	Value Value

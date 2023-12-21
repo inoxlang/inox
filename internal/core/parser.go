@@ -21,8 +21,13 @@ func init() {
 	RegisterParser(mimeconsts.APP_YAML_CTYPE, &yamlParser{})
 }
 
+// A StatelessParser represents a parser for a data format such as JSON or YAML.
+// Implementations are allowed to use caching internally.
 type StatelessParser interface {
 	Validate(ctx *Context, s string) bool
+
+	// Parse parses a string in the data format supported by the parser and returns the resulting value.
+	// Mutable returned values should never be stored to be returned later.
 	Parse(ctx *Context, s string) (Serializable, error)
 }
 

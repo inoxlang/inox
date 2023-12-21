@@ -1036,7 +1036,7 @@ func (p *OptionalPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]
 		return r, nil
 	}
 
-	symbPatt, err := p.Pattern.ToSymbolicValue(ctx, encountered)
+	symbPatt, err := p.pattern.ToSymbolicValue(ctx, encountered)
 	if err != nil {
 		return nil, err
 	}

@@ -307,7 +307,7 @@ func (patt *OptionalPattern) Random(ctx *Context, options ...Option) Value {
 	if source.RandBit() {
 		return Nil
 	}
-	return patt.Pattern.Random(ctx, options...)
+	return patt.pattern.Random(ctx, options...)
 }
 
 func (patt *FunctionPattern) Random(ctx *Context, options ...Option) Value {

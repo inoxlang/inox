@@ -45,6 +45,7 @@ func RegisterDefaultPatternNamespace(s string, ns *PatternNamespace) {
 }
 
 // The Pattern interface is implemented by Inox patterns (e.g. *ObjectPattern, *ListPattern, URLPattern, ....).
+// A pattern should always be immutable.
 type Pattern interface {
 	Serializable
 	Iterable
@@ -70,6 +71,8 @@ type GroupMatchesFindConfig struct {
 	Kind GroupMatchesFindConfigKind
 }
 
+// GroupPattern is implemented by patterns that are able to decompose matched values into groups.
+// A canonical implementation example would be RegexPattern.
 type GroupPattern interface {
 	Pattern
 	MatchGroups(*Context, Serializable) (groups map[string]Serializable, ok bool, err error)
@@ -84,6 +87,7 @@ type DefaultValuePattern interface {
 	DefaultValue(ctx *Context) (Value, error)
 }
 
+// A PatternNamespace represents a group of related Inox patterns, PatternNamespace implements Value.
 type PatternNamespace struct {
 	Patterns map[string]Pattern
 }
@@ -147,7 +151,8 @@ func (patt *ExactValuePattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
 
-// A TypePattern matches values implementing .Type (if .Type is an interface) or having their type equal to .Type
+// A TypePattern matches values implementing .Type (if .Type is an interface) or having their type equal to .Type.
+// TypePattern implements Value.
 type TypePattern struct {
 	Type          reflect.Type
 	Name          string
@@ -323,6 +328,7 @@ func (patt *IntersectionPattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
 
+// An ObjectPattern represents a pattern matching Inox objects (e.g. {a: 1}), ObjectPattern implements Value.
 type ObjectPattern struct {
 	NotCallablePatternMixin
 	entryPatterns           map[string]Pattern
@@ -501,6 +507,7 @@ func (patt *ObjectPattern) Entry(name string) (pattern Pattern, optional bool, y
 	return propPattern, isOptional, true
 }
 
+// A RecordPattern represents a pattern matching Inox records (e.g. #{a: 1}), RecordPattern implements Value.
 type RecordPattern struct {
 	NotCallablePatternMixin
 	entryPatterns   map[string]Pattern
@@ -576,6 +583,7 @@ type ComplexPropertyConstraint struct {
 	Expr       parse.Node
 }
 
+// A ListPattern represents a pattern matching Inox lists (e.g. [1, 2]), ListPattern implements Value.
 type ListPattern struct {
 	NotCallablePatternMixin
 	elementPatterns       []Pattern
@@ -738,6 +746,7 @@ func (patt *ListPattern) ElementPatternAt(i int) (Pattern, bool) {
 	return patt.generalElementPattern, true
 }
 
+// A TuplePattern represents a pattern matching Inox tuples (e.g. #[1, 2]), ListPattern TuplePattern Value.
 type TuplePattern struct {
 	NotCallablePatternMixin
 	elementPatterns       []Pattern
@@ -817,6 +826,8 @@ func (patt *OptionPattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
 
+// A DifferencePattern represents a pattern that matches the same values as a 'base' pattern except
+// all values matched by a 'removed' pattern.
 type DifferencePattern struct {
 	NotCallablePatternMixin
 	base    Pattern
@@ -838,9 +849,11 @@ func (patt *DifferencePattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
 
+// An OptionalPattern represents a pattern that matches the nil value in additional to the same values as an underlying pattern.
+// Optional pattern expressions (e.g. `%int?`) evaluate to an optional pattern.
 type OptionalPattern struct {
 	NotCallablePatternMixin
-	Pattern Pattern
+	pattern Pattern
 }
 
 func NewOptionalPattern(ctx *Context, pattern Pattern) (*OptionalPattern, error) {
@@ -848,7 +861,7 @@ func NewOptionalPattern(ctx *Context, pattern Pattern) (*OptionalPattern, error)
 		return nil, errors.New("cannot create optional pattern with pattern that already matches nil")
 	}
 	return &OptionalPattern{
-		Pattern: pattern,
+		pattern: pattern,
 	}, nil
 }
 
@@ -856,13 +869,16 @@ func (patt *OptionalPattern) Test(ctx *Context, v Value) bool {
 	if _, ok := v.(NilT); ok {
 		return true
 	}
-	return patt.Pattern.Test(ctx, v)
+	return patt.pattern.Test(ctx, v)
 }
 
 func (patt *OptionalPattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
 
+// A FunctionPattern represents a pattern that matches that either matches any function or
+// functions with certain parameters and return types.
+// Inox's function pattern literals (e.g. fn() int) evaluate to a function pattern.
 type FunctionPattern struct {
 	node      *parse.FunctionPatternExpression //if nil, matches any function
 	nodeChunk *parse.Chunk

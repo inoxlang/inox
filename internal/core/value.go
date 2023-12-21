@@ -23,7 +23,8 @@ var (
 	ErrNotResourceName = errors.New("not a resource name")
 )
 
-// Value is the interface implemented by all values accessible to Inox code, it is either definitively mutable or definitively immutable.
+// Value is the interface implemented by all values accessible to Inox code.
+// A value should either be definitively mutable or definitively immutable.
 type Value interface {
 	// IsMutable should return true if the value is definitively mutable and false if it is definitively immutable.
 	IsMutable() bool
@@ -56,6 +57,7 @@ func ResourceNameFrom(s string) ResourceName {
 	panic(fmt.Errorf("%q is not a valid resource name", s))
 }
 
+// NilT implements Value.
 type NilT int
 
 const Nil = NilT(0)
@@ -64,6 +66,7 @@ func (n NilT) String() string {
 	return "nil"
 }
 
+// Bool implements Value.
 type Bool bool
 
 const (
@@ -71,6 +74,7 @@ const (
 	False = Bool(false)
 )
 
+// FileMode implements Value.
 type FileMode fs.FileMode
 
 func (m FileMode) FileMode() fs.FileMode {
@@ -226,6 +230,7 @@ func coerceToBool(val Value) bool {
 	}
 }
 
+// Port implements Value. Inox's port literals (e.g. `:80`, `:80/http`) evaluate to a Port.
 type Port struct {
 	Number uint16
 	Scheme Scheme
