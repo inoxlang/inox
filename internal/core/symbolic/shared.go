@@ -3,7 +3,7 @@ package symbolic
 import (
 	"errors"
 
-	parse "github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
 )
 

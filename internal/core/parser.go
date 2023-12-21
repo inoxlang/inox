@@ -12,7 +12,7 @@ import (
 
 var (
 	parsers = map[Mimetype] /* no params */ StatelessParser{}
-	_       = []StatelessParser{&jsonParser{}}
+	_       = []StatelessParser{(*jsonParser)(nil)}
 )
 
 func init() {

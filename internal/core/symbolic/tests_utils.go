@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	parse "github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/parse"
 )
 
 func _makeStateAndChunk(code string, globals ...map[string]Value) (*parse.Chunk, *State, error) {

@@ -18,7 +18,7 @@ import (
 	emailnormalizer "github.com/dimuska139/go-email-normalizer"
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/mimeconsts"
-	parse "github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
 )
 

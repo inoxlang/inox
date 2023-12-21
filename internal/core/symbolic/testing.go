@@ -3,7 +3,7 @@ package symbolic
 import (
 	"fmt"
 
-	parse "github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/parse"
 	pprint "github.com/inoxlang/inox/internal/prettyprint"
 )
 

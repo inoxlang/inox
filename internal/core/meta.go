@@ -3,7 +3,7 @@ package core
 import (
 	"errors"
 
-	parse "github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/parse"
 )
 
 const (

@@ -1,6 +1,6 @@
 package symbolic
 
-import parse "github.com/inoxlang/inox/internal/parse"
+import "github.com/inoxlang/inox/internal/parse"
 
 type TypeExtension struct {
 	//formatted location of the extend statement that defines the extension.

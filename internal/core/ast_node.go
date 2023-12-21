@@ -3,7 +3,7 @@ package core
 import (
 	"unicode/utf8"
 
-	parse "github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/parse"
 )
 
 var (

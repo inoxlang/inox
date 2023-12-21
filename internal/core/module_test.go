@@ -13,7 +13,7 @@ import (
 	"github.com/go-git/go-billy/v5/util"
 
 	afs "github.com/inoxlang/inox/internal/afs"
-	parse "github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/parse"
 	"github.com/stretchr/testify/assert"
 )
 

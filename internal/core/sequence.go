@@ -1,7 +1,7 @@
 package core
 
 var (
-	_ = []MutableLengthSequence{&List{}, &ByteSlice{}, &RuneSlice{}}
+	_ = []MutableLengthSequence{(*List)(nil), (*ByteSlice)(nil), (*RuneSlice)(nil)}
 )
 
 type Sequence interface {

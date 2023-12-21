@@ -14,7 +14,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/commonfmt"
 	"github.com/inoxlang/inox/internal/core/symbolic"
-	parse "github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
@@ -35,7 +35,7 @@ var (
 	ErrIntNotInPatternRange                             = errors.New("integer is not in the pattern's range")
 	ErrFloatNotInPatternRange                           = errors.New("float is not in the pattern's range")
 
-	//_ = []StringPattern{&ParserBasedPseudoPattern{}}
+	//_ = []StringPattern{(*ParserBasedPseudoPattern)(nil)}
 
 	_ = []ToStringConversionCapableStringPattern{(*IntRangeStringPattern)(nil)}
 

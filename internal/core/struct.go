@@ -5,10 +5,10 @@ import (
 )
 
 var (
+	ANON_EMPTY_STRUCT_TYPE = NewStructPattern("", ulid.Make(), nil, nil)
+
 	_ IProps  = (*Struct)(nil)
 	_ Pattern = (*StructPattern)(nil)
-
-	ANON_EMPTY_STRUCT_TYPE = NewStructPattern("", ulid.Make(), nil, nil)
 )
 
 type Struct struct {

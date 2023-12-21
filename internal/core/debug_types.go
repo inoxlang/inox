@@ -1,7 +1,7 @@
 package core
 
 import (
-	parse "github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/parse"
 )
 
 type BreakpointInfo struct {

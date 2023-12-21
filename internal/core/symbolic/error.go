@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/inoxlang/inox/internal/inoxconsts"
-	parse "github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
 )
 

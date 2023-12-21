@@ -11,7 +11,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/inoxlang/inox/internal/globals/globalnames"
-	parse "github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
 )
 

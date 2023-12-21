@@ -8,7 +8,7 @@ var (
 	ANY_SUBSCRIBER   = &AnySubscriber{}
 	ANY_PUBLICATION  = &Publication{}
 	ANY_SUBSCRIPTION = &Subscription{}
-	_                = []Subscriber{&Object{}}
+	_                = []Subscriber{(*Object)(nil)}
 )
 
 // An Subscriber represents a symbolic Subscriber.

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	parse "github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/parse"
 	"github.com/oklog/ulid/v2"
 )
 

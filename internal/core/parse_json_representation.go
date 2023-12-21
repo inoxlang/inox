@@ -11,7 +11,7 @@ import (
 	"slices"
 
 	jsoniter "github.com/inoxlang/inox/internal/jsoniter"
-	parse "github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/parse"
 )
 
 var (

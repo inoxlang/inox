@@ -3,7 +3,7 @@ package core
 import (
 	"sync"
 
-	parse "github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/parse"
 )
 
 var (

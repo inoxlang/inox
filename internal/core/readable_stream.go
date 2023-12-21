@@ -17,7 +17,7 @@ var (
 	ErrTempDriedUpSource      = errors.New("temporarily dried up source")
 	ErrDefDriedUpSource       = errors.New("definitively dried up source")
 
-	_ = []ReadableStream{&wrappedWatcherStream{}, &ElementsStream{}, &ReadableByteStream{}, &ConfluenceStream{}}
+	_ = []ReadableStream{(*wrappedWatcherStream)(nil), (*ElementsStream)(nil), (*ReadableByteStream)(nil), (*ConfluenceStream)(nil)}
 
 	WRAPPED_WATCHER_STREAM_CHUNK_DATA_TYPE = &ListPattern{generalElementPattern: ANYVAL_PATTERN}
 	ELEMENTS_STREAM_CHUNK_DATA_TYPE        = &ListPattern{generalElementPattern: ANYVAL_PATTERN}

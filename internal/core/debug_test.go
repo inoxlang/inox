@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	parse "github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"

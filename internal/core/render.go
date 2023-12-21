@@ -15,7 +15,7 @@ import (
 	"time"
 
 	"github.com/inoxlang/inox/internal/mimeconsts"
-	parse "github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
 )
 

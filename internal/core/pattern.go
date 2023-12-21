@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/inoxlang/inox/internal/core/symbolic"
-	parse "github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
@@ -27,9 +27,7 @@ var (
 	ErrInconsistentObjectPattern     = errors.New("inconsistent object pattern")
 
 	_ = []GroupPattern{(*NamedSegmentPathPattern)(nil)}
-	_ = []DefaultValuePattern{
-		(*ListPattern)(nil), (*TuplePattern)(nil),
-	}
+	_ = []DefaultValuePattern{(*ListPattern)(nil), (*TuplePattern)(nil)}
 )
 
 func RegisterDefaultPattern(s string, m Pattern) {

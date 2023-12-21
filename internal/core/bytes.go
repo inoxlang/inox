@@ -13,8 +13,9 @@ import (
 var (
 	ErrAttemptToMutateReadonlyByteSlice            = errors.New("attempt to write a readonly byte slice")
 	ErrAttemptToCreateMutableSpecificTypeByteSlice = errors.New("attempt to create a mutable byte slice with specific content type")
-	_                                              = []WrappedBytes{&ByteSlice{}}
-	_                                              = []BytesLike{&ByteSlice{}, &BytesConcatenation{}}
+
+	_ = []WrappedBytes{(*ByteSlice)(nil)}
+	_ = []BytesLike{(*ByteSlice)(nil), (*BytesConcatenation)(nil)}
 )
 
 // A WrappedBytes represents a value that wraps a byte slice ( []byte ).

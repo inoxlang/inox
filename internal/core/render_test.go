@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/inoxlang/inox/internal/mimeconsts"
-	parse "github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/parse"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -22,5 +22,4 @@ func TestNodeRender(t *testing.T) {
 	assert.Equal(t, "<div><span>1</span></div>", renderHTML("1"))
 	assert.Equal(t, "<div><span>f</span></div>", renderHTML("f"))
 	assert.Equal(t, "<div><span>f</span><span>(</span><span>)</span></div>", renderHTML("f()"))
-
 }

@@ -10,7 +10,7 @@ import (
 	"sync/atomic"
 
 	"github.com/inoxlang/inox/internal/afs"
-	parse "github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/rs/zerolog"
 	"golang.org/x/exp/maps"

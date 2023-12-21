@@ -5,7 +5,7 @@ import (
 	"time"
 
 	permkind "github.com/inoxlang/inox/internal/core/permkind"
-	parse "github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 )

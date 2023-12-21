@@ -11,8 +11,8 @@ var (
 	ErrInvalidStreamElement   = errors.New("invalid stream element")
 	ErrInvalidStreamChunkData = errors.New("invalid stream chunk data")
 
-	_ = []StreamSink{&RingBuffer{}}
-	_ = []WritableStream{&WritableByteStream{}}
+	_ = []StreamSink{(*RingBuffer)(nil)}
+	_ = []WritableStream{(*WritableByteStream)(nil)}
 )
 
 type StreamSink interface {

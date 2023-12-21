@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	parse "github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/parse"
 )
 
 // A Bytecode contains the constants and a reference to a *CompiledFunction.

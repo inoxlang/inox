@@ -3,7 +3,7 @@ package symbolic
 import (
 	"testing"
 
-	parse "github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/parse"
 )
 
 func TestPath(t *testing.T) {

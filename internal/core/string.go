@@ -11,19 +11,18 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	parse "github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/parse"
 )
 
 var (
+	STRING_LIKE_PSEUDOPROPS = []string{"replace", "trim_space", "has_prefix", "has_suffix"}
+	RUNE_SLICE_PROPNAMES    = []string{"insert", "remove_position", "remove_position_range"}
+
 	_ = []WrappedString{
 		Str(""), Path(""), PathPattern(""), Host(""), HostPattern(""), EmailAddress(""), Identifier(""),
 		URL(""), URLPattern(""), CheckedString{},
 	}
-
-	_ = []StringLike{Str(""), &StringConcatenation{}}
-
-	STRING_LIKE_PSEUDOPROPS = []string{"replace", "trim_space", "has_prefix", "has_suffix"}
-	RUNE_SLICE_PROPNAMES    = []string{"insert", "remove_position", "remove_position_range"}
+	_ = []StringLike{Str(""), (*StringConcatenation)(nil)}
 )
 
 // A StringLike represents a value that wraps a Go string.

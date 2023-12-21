@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	parse "github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/parse"
 )
 
 const (

@@ -2,7 +2,7 @@ package core
 
 import (
 	"github.com/inoxlang/inox/internal/core/symbolic"
-	parse "github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/parse"
 )
 
 // A type extension represents a set of methods & computed properties for values

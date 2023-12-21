@@ -4,7 +4,7 @@ import (
 	"errors"
 
 	"github.com/go-git/go-billy/v5"
-	parse "github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/parse"
 	"golang.org/x/exp/slices"
 )
 

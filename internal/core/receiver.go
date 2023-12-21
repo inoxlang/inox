@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	_                     = []MessageReceiver{&Object{}}
+	_                     = []MessageReceiver{(*Object)(nil)}
 	ErrMutableMessageData = errors.New("impossible to create a Message with mutable data")
 
 	MSG_PROPNAMES = []string{"data"}
