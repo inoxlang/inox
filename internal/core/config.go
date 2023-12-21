@@ -11,8 +11,8 @@ import (
 )
 
 var (
-	NewDefaultGlobalState          NewDefaultGlobalStateFn
-	NewDefaultContext              NewDefaultContextFn
+	NewDefaultGlobalState          NewDefaultGlobalStateFn //default state factory
+	NewDefaultContext              NewDefaultContextFn     //default context factory
 	defaultScriptLimits            []Limit
 	defaultRequestHandlingLimits   []Limit
 	defaultMaxRequestHandlerLimits []Limit
@@ -20,6 +20,7 @@ var (
 	ErrNoFilesystemProvided = errors.New("no filesystem provided")
 )
 
+// DefaultGlobalStateConfig is the configured passed to the default state factory.
 type DefaultGlobalStateConfig struct {
 	//if set MODULE_DIRPATH_GLOBAL_NAME & MODULE_FILEPATH_GLOBAL_NAME should be defined.
 	AbsoluteModulePath string
@@ -40,6 +41,28 @@ type DefaultGlobalStateConfig struct {
 }
 
 type NewDefaultGlobalStateFn func(ctx *Context, conf DefaultGlobalStateConfig) (*GlobalState, error)
+
+// DefaultContextConfig is the configured passed to the default context factory.
+type DefaultContextConfig struct {
+	Permissions             []Permission
+	ForbiddenPermissions    []Permission
+	DoNotCheckDatabasePerms bool //used for the configuration of the created context.
+
+	Limits              []Limit
+	HostResolutions     map[Host]Value
+	OwnedDatabases      []DatabaseConfig
+	ParentContext       *Context        //optional
+	ParentStdLibContext context.Context //optional, should not be set if ParentContext is set
+
+	//if nil the parent context's filesystem is used.
+	Filesystem              afs.Filesystem
+	InitialWorkingDirectory Path //optional, should be passed without modification to NewContext.
+}
+
+type NewDefaultContextFn func(config DefaultContextConfig) (*Context, error)
+
+
+// setter and getters
 
 func SetNewDefaultGlobalStateFn(fn NewDefaultGlobalStateFn) {
 	if NewDefaultGlobalState != nil {
@@ -128,21 +151,3 @@ func AreDefaultMaxRequestHandlerLimitsSet() bool {
 func UnsetDefaultMaxRequestHandlerLimits() {
 	defaultMaxRequestHandlerLimits = nil
 }
-
-type DefaultContextConfig struct {
-	Permissions             []Permission
-	ForbiddenPermissions    []Permission
-	DoNotCheckDatabasePerms bool //used for the configuration of the created context.
-
-	Limits              []Limit
-	HostResolutions     map[Host]Value
-	OwnedDatabases      []DatabaseConfig
-	ParentContext       *Context        //optional
-	ParentStdLibContext context.Context //optional, should not be set if ParentContext is set
-
-	//if nil the parent context's filesystem is used.
-	Filesystem              afs.Filesystem
-	InitialWorkingDirectory Path //optional, should be passed without modification to NewContext.
-}
-
-type NewDefaultContextFn func(config DefaultContextConfig) (*Context, error)

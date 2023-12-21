@@ -51,6 +51,15 @@ var (
 	ErrOnDoneMicrotasksNotAllowed = errors.New("'on done' microtasks are not allowed")
 )
 
+// A Context is analogous to contexts provided by the context package from Golang's stdlib:
+// when the context is cancelled all descendant contexts are cancelled as well.
+// All *GlobalState instances have a context.
+// An Inox Context have several roles:
+// - It stores named patterns, pattern namespaces, host aliases and other module's data.
+// - It is called by the runtime and native functions to check permissions and enforce limits.
+// - It has a reference to the current transaction.
+// - During graceful teardown it calls functions registered with OnGracefulTearDown.
+// - After cancellation it executes microtasks registered with OnDone.
 type Context struct {
 	context.Context
 
@@ -188,7 +197,7 @@ outer_loop:
 	}
 
 	for _, limit := range c.Limits {
-		if parentLimiter, ok := c.ParentContext.limiters[limit.Name]; ok && !parentLimiter.limit.LessRestrictiveThan(limit) {
+		if parentLimiter, ok := c.ParentContext.limiters[limit.Name]; ok && !parentLimiter.limit.LessOrAsRestrictiveAs(limit) {
 			return fmt.Errorf("parent of context should have less restrictive limits than its child: limit '%s'", limit.Name), false
 		}
 	}

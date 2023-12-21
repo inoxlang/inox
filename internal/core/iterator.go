@@ -20,8 +20,13 @@ var _ = []Iterable{
 	Pattern(nil), EventSource(nil),
 }
 
+// An Iterable is a Value that provides an iterator.
+// Patterns' implementations can either return an empty iterator or an iterator that loops over values matching the pattern.
 type Iterable interface {
 	Value
+
+	//Iterator should return a new iterator that is not affected by mutations of the iterable.
+	//TODO: Update the implementations that currently do not meet this requirement (e.g. *Object).
 	Iterator(*Context, IteratorConfiguration) Iterator
 }
 
@@ -33,7 +38,7 @@ type SerializableIterable interface {
 type IteratorConfiguration struct {
 	KeyFilter     Pattern
 	ValueFilter   Pattern
-	KeysNeverRead bool
+	KeysNeverRead bool //indicates that the Iterator.Key method will not be called.
 }
 
 // CreateIterator wraps an iterator in a filtering iterator if necessary

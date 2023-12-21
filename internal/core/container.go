@@ -14,9 +14,8 @@ var (
 	}
 )
 
-// The Container interface should be implemented by data structures
-// able to tell if they contain a specific value. The data structure
-// can contain a infinite number of values.
+// The Container interface should be implemented by data structures able to tell if they contain a specific value.
+// Implementations can contain an infinite number of values.
 type Container interface {
 	Serializable
 	Iterable

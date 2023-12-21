@@ -34,7 +34,7 @@ func Compile(input CompilationInput) (*Bytecode, error) {
 	return c.compileMainChunk(input.Mod.MainChunk)
 }
 
-// compiler compiles the AST into a bytecode.
+// compiler compiles the AST into bytecode.
 type compiler struct {
 	module                *Module
 	symbolicData          *symbolic.Data
@@ -45,7 +45,7 @@ type compiler struct {
 	scopes                []compilationScope
 	scopeIndex            int
 	chunkStack            []*parse.ParsedChunk //main chunk + included chunks
-	loops                 []*loop
+	loops                 []*loopCompilation
 	loopIndex             int
 	walkIndex             int
 	trace                 io.Writer
@@ -63,8 +63,8 @@ type compilationScope struct {
 	sourceMap    map[int]instructionSourcePosition
 }
 
-// loop is used by the compiler to track the current loop, see LoopKind.
-type loop struct {
+// loopCompilation is used by the compiler to store sate about a loop being compiled, see LoopKind.
+type loopCompilation struct {
 	kind              LoopKind
 	continuePositions []int
 	breakPositions    []int
@@ -2545,8 +2545,8 @@ const (
 	WalkLoop
 )
 
-func (c *compiler) enterLoop(iteratorSymbol *symbol, kind LoopKind) *loop {
-	loop := &loop{iteratorSymbol: iteratorSymbol, kind: kind}
+func (c *compiler) enterLoop(iteratorSymbol *symbol, kind LoopKind) *loopCompilation {
+	loop := &loopCompilation{iteratorSymbol: iteratorSymbol, kind: kind}
 	c.loops = append(c.loops, loop)
 	c.loopIndex++
 	if c.trace != nil {
@@ -2563,15 +2563,15 @@ func (c *compiler) leaveLoop() {
 	c.loopIndex--
 }
 
-func (c *compiler) currentLoop() *loop {
+func (c *compiler) currentLoop() *loopCompilation {
 	if c.loopIndex >= 0 {
 		return c.loops[c.loopIndex]
 	}
 	return nil
 }
 
-func (c *compiler) currentWalkLoop() *loop {
-	var lastWalkLoop *loop
+func (c *compiler) currentWalkLoop() *loopCompilation {
+	var lastWalkLoop *loopCompilation
 	for _, loop := range c.loops {
 		if loop.kind == WalkLoop {
 			lastWalkLoop = loop

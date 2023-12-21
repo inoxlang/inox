@@ -25,31 +25,38 @@ var (
 	previousStateId        atomic.Int64
 )
 
-// A GlobalState represents the global state for the evaluation of a single module or the shell's loop,
-// most exported fields should be set once.
+// A GlobalState represents the global state of a module (or the shell loop), most exported fields should be set once.
+// Patterns, host aliases and host resolution data are stored in the context.
 type GlobalState struct {
-	id StateId
+	id     StateId
+	Module *Module //nil in some cases (e.g. shell, mapping entry's state), TODO: check for usage
 
-	//should be set to true by the state's creator, even if the default values are kept.
-	OutputFieldsInitialized atomic.Bool
+	//output
 
-	//output fields
-	Out       io.Writer      //io.Discard by default
-	Logger    zerolog.Logger //zerolog.Nop() by default
-	LogLevels *LogLevels     //DEFAULT_LOG_LEVELS by default
+	Out                     io.Writer      //io.Discard by default
+	Logger                  zerolog.Logger //zerolog.Nop() by default
+	LogLevels               *LogLevels     //DEFAULT_LOG_LEVELS by default
+	OutputFieldsInitialized atomic.Bool    //should be set to true by the state's creator, even if the default values are kept.
 
-	MainState *GlobalState //never nil except for parents of main states,this field should be set by user of GlobalState.
-	Project   Project      //can be nil
+	// most relevant components
 
 	Ctx          *Context
-	Module       *Module   //nil in some cases (e.g. shell, mapping entry's state), TODO: check for usage
-	Bytecode     *Bytecode //can be nil
 	Manifest     *Manifest
+	Project      Project                //can be nil
+	Bytecode     *Bytecode              //can be nil
 	Globals      GlobalVariables        //global variables
 	LThread      *LThread               //not nil if running in a dedicated LThread
 	Databases    map[string]*DatabaseIL //the map should never change
 	SystemGraph  *SystemGraph
 	lockedValues []PotentiallySharable
+
+	// related states
+
+	MainState            *GlobalState //never nil except for parents of main states,this field should be set by user of GlobalState.
+	descendantStates     map[ResourceName]*GlobalState
+	descendantStatesLock sync.Mutex
+
+	// factories for building the state of any imported module
 
 	GetBaseGlobalsForImportedModule      func(ctx *Context, manifest *Manifest) (GlobalVariables, error) // ok if nil
 	GetBasePatternsForImportedModule     func() (map[string]Pattern, map[string]*PatternNamespace)       // return nil maps by default
@@ -67,13 +74,12 @@ type GlobalState struct {
 	FirstDatabaseOpeningError error
 	StaticCheckData           *StaticCheckData
 	SymbolicData              *SymbolicData
-
-	descendantStates     map[ResourceName]*GlobalState
-	descendantStatesLock sync.Mutex
 }
 
 type StateId int64
 
+// NewGlobalState creates a state with the provided context and constants.
+// The OutputFieldsInitialized field is not initialized and should be set by the caller.
 func NewGlobalState(ctx *Context, constants ...map[string]Value) *GlobalState {
 	if ctx.state != nil {
 		panic(ErrContextInUse)
@@ -111,6 +117,7 @@ func NewGlobalState(ctx *Context, constants ...map[string]Value) *GlobalState {
 	return state
 }
 
+// IsMain returns true if g.MainState == g.
 func (g *GlobalState) IsMain() bool {
 	if g.MainState == nil {
 		panic(ErrUnreachable)
@@ -169,6 +176,8 @@ func (*GlobalState) PropertyNames(ctx *Context) []string {
 	return ROUTINE_GROUP_PROPNAMES
 }
 
+// A GlobalVariables represents the global scope of a module.
+// Global variables captured by shared Inox functions are temporarily added during calls.
 type GlobalVariables struct {
 	//start constants are all the constants set before the code starts its execution,
 	//therefore that include base constants & constants defined before the manifest.

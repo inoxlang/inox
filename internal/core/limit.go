@@ -41,10 +41,10 @@ func init() {
 }
 
 func resetLimitRegistry() {
-	limRegistry.Clear()
-	limRegistry.RegisterLimit(THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME, TotalLimit, 0)
-	limRegistry.RegisterLimit(EXECUTION_TOTAL_LIMIT_NAME, TotalLimit, 0)
-	limRegistry.RegisterLimit(EXECUTION_CPU_TIME_LIMIT_NAME, TotalLimit, 0)
+	limRegistry.clear()
+	limRegistry.registerLimit(THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME, TotalLimit, 0)
+	limRegistry.registerLimit(EXECUTION_TOTAL_LIMIT_NAME, TotalLimit, 0)
+	limRegistry.registerLimit(EXECUTION_CPU_TIME_LIMIT_NAME, TotalLimit, 0)
 }
 
 // A Limit represents a limit for a running piece of code, for example: the maximum rate of http requests.
@@ -57,7 +57,7 @@ type Limit struct {
 	DecrementFn TokenDecrementationFn //optional. Called on each tick of the associated bucket's timer.
 }
 
-func (l Limit) LessRestrictiveThan(other Limit) bool {
+func (l Limit) LessOrAsRestrictiveAs(other Limit) bool {
 	if other.Name != l.Name {
 		panic(errors.New("different name"))
 	}
@@ -87,15 +87,15 @@ const (
 
 type limitRegistry struct {
 	lock          sync.Mutex
-	kinds         map[string]LimitKind
-	minimumLimits map[string]int64
+	kinds         map[ /* name */ string]LimitKind
+	minimumLimits map[ /* name */ string]int64
 }
 
 func RegisterLimit(name string, kind LimitKind, minimumLimit int64) {
-	limRegistry.RegisterLimit(name, kind, minimumLimit)
+	limRegistry.registerLimit(name, kind, minimumLimit)
 }
 
-func (r *limitRegistry) RegisterLimit(name string, kind LimitKind, minimumLimit int64) {
+func (r *limitRegistry) registerLimit(name string, kind LimitKind, minimumLimit int64) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
@@ -123,7 +123,7 @@ func (r *limitRegistry) getLimitInfo(name string) (kind LimitKind, minimum int64
 	return registeredKind, min, true
 }
 
-func (r *limitRegistry) ForEachRegisteredLimit(fn func(name string, kind LimitKind, minimum int64) error) error {
+func (r *limitRegistry) forEachRegisteredLimit(fn func(name string, kind LimitKind, minimum int64) error) error {
 	for name, minimum := range r.minimumLimits {
 		kind, ok := r.kinds[name]
 		if !ok {
@@ -138,7 +138,7 @@ func (r *limitRegistry) ForEachRegisteredLimit(fn func(name string, kind LimitKi
 	return nil
 }
 
-func (r *limitRegistry) Clear() {
+func (r *limitRegistry) clear() {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 	clear(r.kinds)
@@ -196,6 +196,7 @@ func (l *limiter) Available() int64 {
 	return l.bucket.Available()
 }
 
+// Total checks that the limit is of kind total and returns the number of available tokens.
 func (l *limiter) Total() (int64, error) {
 	if l.limit.Kind != TotalLimit {
 		return -1, fmt.Errorf("context: '%s' is not a total limit", l.limit.Name)
@@ -204,8 +205,8 @@ func (l *limiter) Total() (int64, error) {
 	return l.bucket.Available(), nil
 }
 
+// Take takes count tokens from the bucket, it panics for total limits when the available count is less than count.
 func (l *limiter) Take(count int64) {
-
 	available := l.bucket.Available()
 	if l.limit.Kind == TotalLimit && l.limit.Value != 0 && available < count {
 		panic(fmt.Errorf("cannot take %v tokens from bucket (%s), only %v token(s) available", count, l.limit.Name, available))
@@ -217,6 +218,7 @@ func (l *limiter) GiveBack(count int64) {
 	l.bucket.GiveBack(count)
 }
 
+// PauseDecrementation pauses the decrementation 
 func (l *limiter) PauseDecrementation() {
 	if l.stateId == 0 {
 		panic(ErrStateIdNotSet)

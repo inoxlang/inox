@@ -5,6 +5,8 @@ import (
 	"sync/atomic"
 )
 
+// Registration of some core types by the gob package in order to support encoding/decoding them.
+
 var (
 	permTypesGobRegistered        atomic.Bool
 	simpleValueTypesGobRegistered atomic.Bool

@@ -835,7 +835,7 @@ func (m *Module) createManifest(ctx *Context, object *Object, config manifestObj
 	}
 	//add minimal limits.
 	//this piece of code is here to make sure that almost all limits are present.
-	limRegistry.ForEachRegisteredLimit(func(name string, kind LimitKind, minimum int64) error {
+	limRegistry.forEachRegisteredLimit(func(name string, kind LimitKind, minimum int64) error {
 
 		switch name {
 		//ignored because these limits have a .DecrementFn.
