@@ -10,7 +10,7 @@ var (
 	ANY_ULID   = &ULID{}
 	ANY_UUIDv4 = &UUIDv4{}
 
-	_ = []Value{(*UUIDv4)(nil)}
+	_ = []Value{(*ULID)(nil), (*UUIDv4)(nil)}
 )
 
 // An ULID represents a symbolic ULID.
@@ -64,7 +64,7 @@ func (i *ULID) Value() ulid.ULID {
 }
 
 func (i *ULID) Static() Pattern {
-	return &TypePattern{val: ANY_INT}
+	return &TypePattern{val: ANY_ULID}
 }
 
 func (i *ULID) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
@@ -77,7 +77,7 @@ func (i *ULID) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrin
 }
 
 func (i *ULID) WidestOfType() Value {
-	return ANY_UUIDv4
+	return ANY_ULID
 }
 
 // An UUIDv4 represents a symbolic UUIDv4.
@@ -131,7 +131,7 @@ func (i *UUIDv4) Value() uuid.UUID {
 }
 
 func (i *UUIDv4) Static() Pattern {
-	return &TypePattern{val: ANY_INT}
+	return &TypePattern{val: ANY_UUIDv4}
 }
 
 func (i *UUIDv4) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
