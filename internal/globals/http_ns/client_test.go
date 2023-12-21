@@ -15,7 +15,7 @@ import (
 func TestHttpClient(t *testing.T) {
 	t.Parallel()
 
-	permissiveHttpReqLimit := core.MustMakeNotDecrementingLimit(HTTP_REQUEST_RATE_LIMIT_NAME, 10_000)
+	permissiveHttpReqLimit := core.MustMakeNotAutoDepletingCountLimit(HTTP_REQUEST_RATE_LIMIT_NAME, 10_000)
 
 	makeServer := func() (*http.Server, core.URL) {
 		var ADDR = "localhost:" + strconv.Itoa(int(port.Add(1)))

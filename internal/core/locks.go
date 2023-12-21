@@ -53,8 +53,8 @@ func (lock *SmartLock) Lock(state *GlobalState, embedder PotentiallySharable) {
 		return
 	}
 	if state != nil {
-		state.Ctx.PauseCPUTimeDecrementation()
-		defer state.Ctx.ResumeCPUTimeDecrementation()
+		state.Ctx.PauseCPUTimeDepletion()
+		defer state.Ctx.ResumeCPUTimeDepletion()
 	}
 	lock.lock.Lock()
 }
@@ -75,7 +75,7 @@ func (lock *SmartLock) Unlock(state *GlobalState, embedder PotentiallySharable) 
 			}
 		}
 	}
-	//there is no .TryLock method so for performance reasons we avoid pausing the CPU time decrementation
+	//there is no .TryLock method so for performance reasons we avoid pausing the CPU time depletion
 	lock.lock.Unlock()
 }
 

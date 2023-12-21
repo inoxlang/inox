@@ -553,7 +553,7 @@ func TestContextLimiters(t *testing.T) {
 			},
 		})
 		defer ctx.CancelGracefully()
-		NewGlobalState(ctx) //start decrementation
+		NewGlobalState(ctx) //start depletion
 
 		capacity := int64(time.Second)
 
@@ -576,16 +576,16 @@ func TestContextLimiters(t *testing.T) {
 			},
 		})
 		defer ctx.CancelGracefully()
-		NewGlobalState(ctx) //start decrementation
+		NewGlobalState(ctx) //start depletion
 
 		capacity := int64(time.Second)
 		assert.Equal(t, capacity, ctx.limiters["test"].bucket.Available())
 
-		ctx.limiters["test"].bucket.PauseOneStateDecrementation()
+		ctx.limiters["test"].bucket.PauseOneStateDepletion()
 		time.Sleep(time.Second)
 		assert.InDelta(t, capacity, ctx.limiters["test"].bucket.Available(), float64(capacity/100))
 
-		ctx.limiters["test"].bucket.ResumeOneStateDecrementation()
+		ctx.limiters["test"].bucket.ResumeOneStateDepletion()
 		time.Sleep(time.Second)
 		assert.InDelta(t, int64(0), ctx.limiters["test"].bucket.Available(), float64(capacity/20))
 	})

@@ -15,7 +15,7 @@ func TestTokenBucket(t *testing.T) {
 			cap:                          100,
 			initialAvail:                 100,
 			fillRate:                     100,
-			decrementFn:                  nil,
+			depleteFn:                    nil,
 			cancelContextOnNegativeCount: false,
 		})
 
@@ -28,7 +28,7 @@ func TestTokenBucket(t *testing.T) {
 			cap:                          100,
 			initialAvail:                 100,
 			fillRate:                     100,
-			decrementFn:                  nil,
+			depleteFn:                    nil,
 			cancelContextOnNegativeCount: false,
 		})
 
@@ -45,7 +45,7 @@ func TestTokenBucket(t *testing.T) {
 			cap:                          100,
 			initialAvail:                 100,
 			fillRate:                     100,
-			decrementFn:                  nil,
+			depleteFn:                    nil,
 			cancelContextOnNegativeCount: false,
 		})
 
@@ -59,7 +59,7 @@ func TestTokenBucket(t *testing.T) {
 			cap:                          100,
 			initialAvail:                 100,
 			fillRate:                     100,
-			decrementFn:                  nil,
+			depleteFn:                    nil,
 			cancelContextOnNegativeCount: false,
 		})
 
@@ -77,7 +77,7 @@ func TestTokenBucket(t *testing.T) {
 			cap:                          100,
 			initialAvail:                 100,
 			fillRate:                     100,
-			decrementFn:                  nil,
+			depleteFn:                    nil,
 			cancelContextOnNegativeCount: false,
 		})
 

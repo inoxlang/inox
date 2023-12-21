@@ -182,7 +182,7 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 			ParentContext:         parentCtx,
 			ParentContextRequired: parentCtx != nil,
 			DefaultLimits: []core.Limit{
-				core.MustMakeNotDecrementingLimit(fs_ns.FS_READ_LIMIT_NAME, 10_000_000),
+				core.MustMakeNotAutoDepletingCountLimit(fs_ns.FS_READ_LIMIT_NAME, 10_000_000),
 			},
 
 			Out:                     io.Discard,

@@ -183,7 +183,7 @@ func addFilesysteDirEndpoints(ctx *core.Context, endpoints map[string]*ApiEndpoi
 					ParentContext:         ctx,
 					ParentContextRequired: true,
 					DefaultLimits: []core.Limit{
-						core.MustMakeNotDecrementingLimit(fs_ns.FS_READ_LIMIT_NAME, 10_000_000),
+						core.MustMakeNotAutoDepletingCountLimit(fs_ns.FS_READ_LIMIT_NAME, 10_000_000),
 					},
 
 					Out:                     io.Discard,
@@ -208,7 +208,7 @@ func addFilesysteDirEndpoints(ctx *core.Context, endpoints map[string]*ApiEndpoi
 			ParentContext:         parentCtx,
 			ParentContextRequired: true,
 			DefaultLimits: []core.Limit{
-				core.MustMakeNotDecrementingLimit(fs_ns.FS_READ_LIMIT_NAME, 10_000_000),
+				core.MustMakeNotAutoDepletingCountLimit(fs_ns.FS_READ_LIMIT_NAME, 10_000_000),
 			},
 
 			Out:                     io.Discard,

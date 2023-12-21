@@ -23,7 +23,7 @@ import (
 
 func TestControlClient(t *testing.T) {
 	RegisterTypesInGob()
-	permissiveSocketCountLimit := core.MustMakeNotDecrementingLimit(ws_ns.WS_SIMUL_CONN_TOTAL_LIMIT_NAME, 10_000)
+	permissiveSocketCountLimit := core.MustMakeNotAutoDepletingCountLimit(ws_ns.WS_SIMUL_CONN_TOTAL_LIMIT_NAME, 10_000)
 
 	var lock sync.Mutex
 	var receivedMessagePayloads [][]byte

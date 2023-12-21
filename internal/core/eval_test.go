@@ -165,7 +165,7 @@ func bytecodeTest(t *testing.T, optimize bool) {
 // testEval executes the suite of evaluation tests with a given evaluation function
 // that can have any implementation (tree walk, bytecode, ...).
 func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
-	permissiveLthreadLimit := MustMakeNotDecrementingLimit(THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME, 100_000)
+	permissiveLthreadLimit := MustMakeNotAutoDepletingCountLimit(THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME, 100_000)
 
 	if false {
 		runtime.GC()
@@ -11844,7 +11844,7 @@ func NewDefaultTestContext() *Context {
 			LThreadPermission{permkind.Create},
 		},
 		Filesystem: newOsFilesystem(),
-		Limits:     []Limit{MustMakeNotDecrementingLimit(THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME, 100_000)},
+		Limits:     []Limit{MustMakeNotAutoDepletingCountLimit(THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME, 100_000)},
 	})
 }
 

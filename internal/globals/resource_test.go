@@ -173,7 +173,7 @@ func TestGetResource(t *testing.T) {
 }
 
 func setup(t *testing.T, handler func(ctx *core.Context, rw *http_ns.HttpResponseWriter, req *http_ns.HttpRequest)) (*core.Context, core.URL) {
-	permissiveHttpReqLimit := core.MustMakeNotDecrementingLimit(http_ns.HTTP_REQUEST_RATE_LIMIT_NAME, 10_000)
+	permissiveHttpReqLimit := core.MustMakeNotAutoDepletingCountLimit(http_ns.HTTP_REQUEST_RATE_LIMIT_NAME, 10_000)
 
 	host := getNextHost()
 

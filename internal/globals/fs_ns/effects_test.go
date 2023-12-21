@@ -13,8 +13,8 @@ import (
 
 func TestCreateFileEffect(t *testing.T) {
 	var (
-		permissiveTotalLimit       = core.MustMakeNotDecrementingLimit(FS_TOTAL_NEW_FILE_LIMIT_NAME, 100_000)
-		permissiveNewFileRateLimit = core.MustMakeNotDecrementingLimit(FS_NEW_FILE_RATE_LIMIT_NAME, 100_000)
+		permissiveTotalLimit       = core.MustMakeNotAutoDepletingCountLimit(FS_TOTAL_NEW_FILE_LIMIT_NAME, 100_000)
+		permissiveNewFileRateLimit = core.MustMakeNotAutoDepletingCountLimit(FS_NEW_FILE_RATE_LIMIT_NAME, 100_000)
 	)
 
 	fls := GetOsFilesystem()
@@ -80,8 +80,8 @@ func TestCreateFileEffect(t *testing.T) {
 func TestAppendBytesToFileEffect(t *testing.T) {
 	fls := GetOsFilesystem()
 	var (
-		permissiveTotalLimit       = core.MustMakeNotDecrementingLimit(FS_TOTAL_NEW_FILE_LIMIT_NAME, 100_000)
-		permissiveNewFileRateLimit = core.MustMakeNotDecrementingLimit(FS_NEW_FILE_RATE_LIMIT_NAME, 100_000)
+		permissiveTotalLimit       = core.MustMakeNotAutoDepletingCountLimit(FS_TOTAL_NEW_FILE_LIMIT_NAME, 100_000)
+		permissiveNewFileRateLimit = core.MustMakeNotAutoDepletingCountLimit(FS_NEW_FILE_RATE_LIMIT_NAME, 100_000)
 	)
 
 	createEmptyFile := func(t *testing.T, pth core.Path) {
@@ -163,8 +163,8 @@ func TestAppendBytesToFileEffect(t *testing.T) {
 func TestCreateDirEffect(t *testing.T) {
 	fls := GetOsFilesystem()
 	var (
-		permissiveTotalLimit       = core.MustMakeNotDecrementingLimit(FS_TOTAL_NEW_FILE_LIMIT_NAME, 100_000)
-		permissiveNewFileRateLimit = core.MustMakeNotDecrementingLimit(FS_NEW_FILE_RATE_LIMIT_NAME, 100_000)
+		permissiveTotalLimit       = core.MustMakeNotAutoDepletingCountLimit(FS_TOTAL_NEW_FILE_LIMIT_NAME, 100_000)
+		permissiveNewFileRateLimit = core.MustMakeNotAutoDepletingCountLimit(FS_NEW_FILE_RATE_LIMIT_NAME, 100_000)
 	)
 
 	t.Run("Apply", func(t *testing.T) {
@@ -228,8 +228,8 @@ func TestCreateDirEffect(t *testing.T) {
 func TestRemoveFileEffect(t *testing.T) {
 	fls := GetOsFilesystem()
 	var (
-		permissiveTotalLimit       = core.MustMakeNotDecrementingLimit(FS_TOTAL_NEW_FILE_LIMIT_NAME, 100_000)
-		permissiveNewFileRateLimit = core.MustMakeNotDecrementingLimit(FS_NEW_FILE_RATE_LIMIT_NAME, 100_000)
+		permissiveTotalLimit       = core.MustMakeNotAutoDepletingCountLimit(FS_TOTAL_NEW_FILE_LIMIT_NAME, 100_000)
+		permissiveNewFileRateLimit = core.MustMakeNotAutoDepletingCountLimit(FS_NEW_FILE_RATE_LIMIT_NAME, 100_000)
 	)
 
 	t.Run("Apply", func(t *testing.T) {

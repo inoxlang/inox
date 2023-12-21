@@ -18,8 +18,8 @@ const (
 	// the goroutine executing a module is waiting for IO.
 	//
 	// Implementation note:
-	// CPU time decrementation should not be paused during lockings that are both shorts & often successful on the first try
-	// because it would introduce overhead. Pausing the decrementation involves an atomic write.
+	// CPU time token depletion should not be paused during lockings that are both shorts & often successful on the first try
+	// because it would introduce overhead. Pausing the depletion involves an atomic write.
 	EXECUTION_CPU_TIME_LIMIT_NAME = "execution/cpu-time"
 
 	MAX_LIMIT_VALUE = math.MaxInt64 / TOKEN_BUCKET_CAPACITY_SCALE
@@ -31,9 +31,9 @@ var (
 		minimumLimits: make(map[string]int64),
 	}
 
-	ErrTokenDecrementationAlreadyPaused = errors.New("token decrementation already paused")
-	ErrTokenDecrementationNotPaused     = errors.New("token decrementation is not paused")
-	ErrStateIdNotSet                    = errors.New("state id not set")
+	ErrTokenDepletionAlreadyPaused = errors.New("token depletion already paused")
+	ErrTokenDepletionNotPaused     = errors.New("token depletion is not paused")
+	ErrStateIdNotSet               = errors.New("state id not set")
 )
 
 func init() {
@@ -54,7 +54,7 @@ type Limit struct {
 	Kind  LimitKind
 	Value int64
 
-	DecrementFn TokenDecrementationFn //optional. Called on each tick of the associated bucket's timer.
+	DecrementFn TokenDepletionFn //optional. Called on each tick of the associated bucket's timer.
 }
 
 func (l Limit) LessOrAsRestrictiveAs(other Limit) bool {
@@ -147,17 +147,17 @@ func (r *limitRegistry) clear() {
 
 // limiter manages a limit for a single state, it is not thread safe.
 type limiter struct {
-	limit                Limit
-	bucket               *tokenBucket //shared with parent if is child limiter
-	parentLimiter        *limiter
-	stateId              StateId
-	pausedDecrementation bool
+	limit           Limit
+	bucket          *tokenBucket //shared with parent if is child limiter
+	parentLimiter   *limiter
+	stateId         StateId
+	pausedDepletion bool
 
-	// prevent race condition when Destroy & DefinitelyStopDecrementation are called
+	// prevent race condition when Destroy & DefinitelyStopDepletion are called
 	// at the same time.
 	definitelyStopped atomic.Bool
 
-	//TODO: reduce CPU & memory usage by using only an atomic int64 for limits of kind total with no decrementation function.
+	//TODO: reduce CPU & memory usage by using only an atomic int64 for limits of kind total with no decrement function.
 	//the atomic value should be shared with child limiters.
 }
 
@@ -165,7 +165,7 @@ func (l *limiter) SetStateOnce(id StateId) {
 	l.stateId = id
 
 	if l.limit.DecrementFn != nil {
-		l.bucket.ResumeOneStateDecrementation()
+		l.bucket.ResumeOneStateDepletion()
 	}
 }
 
@@ -187,8 +187,8 @@ func (l *limiter) Destroy() {
 	if l.parentLimiter == nil {
 		l.definitelyStopped.Store(true)
 		l.bucket.Destroy()
-	} else if l.definitelyStopped.CompareAndSwap(false, true) && !l.pausedDecrementation {
-		l.bucket.PauseOneStateDecrementation()
+	} else if l.definitelyStopped.CompareAndSwap(false, true) && !l.pausedDepletion {
+		l.bucket.PauseOneStateDepletion()
 	}
 }
 
@@ -218,43 +218,43 @@ func (l *limiter) GiveBack(count int64) {
 	l.bucket.GiveBack(count)
 }
 
-// PauseDecrementation pauses the decrementation 
-func (l *limiter) PauseDecrementation() {
+// PauseDepletion pauses the token depletion.
+func (l *limiter) PauseDepletion() {
 	if l.stateId == 0 {
 		panic(ErrStateIdNotSet)
 	}
-	if l.pausedDecrementation {
-		panic(ErrTokenDecrementationAlreadyPaused)
+	if l.pausedDepletion {
+		panic(ErrTokenDepletionAlreadyPaused)
 	}
-	l.bucket.PauseOneStateDecrementation()
-	l.pausedDecrementation = true
+	l.bucket.PauseOneStateDepletion()
+	l.pausedDepletion = true
 }
 
-func (l *limiter) PauseDecrementationIfNotPaused() {
-	if l.pausedDecrementation {
+func (l *limiter) PauseDepletionIfNotPaused() {
+	if l.pausedDepletion {
 		return
 	}
-	l.PauseDecrementation()
+	l.PauseDepletion()
 }
 
-func (l *limiter) DefinitelyStopDecrementation() {
-	if l.definitelyStopped.CompareAndSwap(false, true) && !l.pausedDecrementation {
-		l.bucket.PauseOneStateDecrementation()
+func (l *limiter) DefinitelyStopDepletion() {
+	if l.definitelyStopped.CompareAndSwap(false, true) && !l.pausedDepletion {
+		l.bucket.PauseOneStateDepletion()
 	}
 }
 
-func (l *limiter) ResumeDecrementation() {
+func (l *limiter) ResumeDepletion() {
 	if l.stateId == 0 {
 		panic(ErrStateIdNotSet)
 	}
-	if !l.pausedDecrementation {
-		panic(ErrTokenDecrementationNotPaused)
+	if !l.pausedDepletion {
+		panic(ErrTokenDepletionNotPaused)
 	}
-	l.bucket.ResumeOneStateDecrementation()
-	l.pausedDecrementation = false
+	l.bucket.ResumeOneStateDepletion()
+	l.pausedDepletion = false
 }
 
-func isLimitWithDecrementingValue(limitName string) bool {
+func isLimitWithAutoDepletion(limitName string) bool {
 	switch limitName {
 	case EXECUTION_TOTAL_LIMIT_NAME, EXECUTION_CPU_TIME_LIMIT_NAME:
 		return true
@@ -262,9 +262,9 @@ func isLimitWithDecrementingValue(limitName string) bool {
 	return false
 }
 
-func MustMakeNotDecrementingLimit(limitName string, value int64) Limit {
-	if isLimitWithDecrementingValue(limitName) {
-		panic(fmt.Errorf("invalid argument: limit %q has auto decrementation", limitName))
+func MustMakeNotAutoDepletingCountLimit(limitName string, value int64) Limit {
+	if isLimitWithAutoDepletion(limitName) {
+		panic(fmt.Errorf("invalid argument: limit %q has auto depletion", limitName))
 	}
 
 	kind, minimum, ok := limRegistry.getLimitInfo(limitName)
@@ -283,10 +283,10 @@ func MustMakeNotDecrementingLimit(limitName string, value int64) Limit {
 	}
 }
 
-func mustGetMinimumNotDecrementingLimit(limitName string) Limit {
+func mustGetMinimumNotAutoDepletingCountLimit(limitName string) Limit {
 
-	if isLimitWithDecrementingValue(limitName) {
-		panic(fmt.Errorf("invalid argument: limit %q has auto decrementation", limitName))
+	if isLimitWithAutoDepletion(limitName) {
+		panic(fmt.Errorf("invalid argument: limit %q has auto depletion", limitName))
 	}
 
 	kind, minimum, ok := limRegistry.getLimitInfo(limitName)
@@ -374,7 +374,7 @@ func GetLimit(ctx *Context, limitName string, limitValue Serializable) (_ Limit,
 		limit.DecrementFn = func(lastDecrementTime time.Time, decrementingStateCount int32) int64 {
 			return time.Since(lastDecrementTime).Nanoseconds() * int64(decrementingStateCount)
 		}
-		//IMPORTANT: make sure to exclude all limits with auto decrementation in mustGetMinimumNotDecrementingLimit.
+		//IMPORTANT: make sure to exclude all limits with auto depletion in mustGetMinimumNotAutoDepletingCountLimit.
 	}
 
 	return limit, nil

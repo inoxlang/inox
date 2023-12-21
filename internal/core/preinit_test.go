@@ -37,7 +37,7 @@ func TestPreInit(t *testing.T) {
 
 	}
 
-	threadLimit := mustGetMinimumNotDecrementingLimit(THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME)
+	threadLimit := mustGetMinimumNotAutoDepletingCountLimit(THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME)
 
 	minLimitA := Limit{
 		Name:  "a",

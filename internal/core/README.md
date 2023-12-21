@@ -216,28 +216,28 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     Module->>Context: I am about to do an HTTP Request (IO)
-    Context->>CPU Time Limiter: Pause the auto decrementation
+    Context->>CPU Time Limiter: Pause the auto depletion
     Context->>HTTP Req. Limiter: Remove 1 token
     Note right of HTTP Req. Limiter: ✅ There is one token left.<br/>I take it and I return immediately.
-    Context->>CPU Time Limiter: Resume the decrementation
+    Context->>CPU Time Limiter: Resume the depletion
 
     Module->>Context: I am starting an IO operation
-    Context->>CPU Time Limiter: Pause the decrementation
+    Context->>CPU Time Limiter: Pause the depletion
 
     Module->>Context: The IO operation is finished
-    Context->>CPU Time Limiter: Resume the decrementation
+    Context->>CPU Time Limiter: Resume the depletion
 
     Module->>Context: I am about to do an HTTP Request
-    Context->>CPU Time Limiter: Pause the decrementation
+    Context->>CPU Time Limiter: Pause the depletion
     Context->>HTTP Req. Limiter: Remove 1 token
     Note right of HTTP Req. Limiter: ⏲️ There are no tokens left.<br/>I wait for the bucket to refill a bit<br/>and I take 1 token.
-    Context->>CPU Time Limiter: Resume the decrementation
+    Context->>CPU Time Limiter: Resume the depletion
 
     Module->>Context: I am starting an IO operation
-    Context->>CPU Time Limiter: Pause the decrementation
+    Context->>CPU Time Limiter: Pause the depletion
 
     Module->>Context: The IO operation is finished
-    Context->>CPU Time Limiter: Resume the decrementation
+    Context->>CPU Time Limiter: Resume the depletion
 ```
 
 
@@ -246,10 +246,10 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     Module->>Context: I am about to establish a Websocket Connection
-    Context->>CPU Time Limiter: Pause the decrementation
+    Context->>CPU Time Limiter: Pause the depletion
     Context->>Websocket Conn. Limiter: Remove 1 token
     Note right of Websocket Conn. Limiter: ✅ There is one token left.<br/>I take it and I return immediately.
-    Context->>CPU Time Limiter: Resume the decrementation
+    Context->>CPU Time Limiter: Resume the depletion
 
     Module->>Context: (After a few minutes) The connection is closed.
     Context->>Websocket Conn. Limiter: Give back 1 token
@@ -258,7 +258,7 @@ sequenceDiagram
     Note right of Context: Same as previously
     Module->>Context: I am about to establish another Websocket Connection
 
-    Context->>CPU Time Limiter: Pause the decrementation
+    Context->>CPU Time Limiter: Pause the depletion
     Context->>Websocket Conn. Limiter: Remove 1 token
     Note right of Websocket Conn. Limiter: ❌ There are no tokens left ! Panic !
     Websocket Conn. Limiter-->>Context: ❌ raising panic

@@ -216,8 +216,8 @@ func (c *HttpClient) MakeRequest(ctx *core.Context, method string, u core.URL, b
 }
 
 func (c *HttpClient) DoRequest(ctx *core.Context, req *HttpRequest) (*HttpResponse, error) {
-	ctx.PauseCPUTimeDecrementation()
-	defer ctx.ResumeCPUTimeDecrementation()
+	ctx.PauseCPUTimeDepletion()
+	defer ctx.ResumeCPUTimeDepletion()
 
 	resp, err := c.client.Do(req.Request())
 	if resp == nil {

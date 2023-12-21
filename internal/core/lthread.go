@@ -271,7 +271,7 @@ func SpawnLthreadWithState(args LthreadWithStateSpawnArgs) (*LThread, error) {
 		}
 
 		defer modState.Ctx.CancelGracefully()
-		defer modState.Ctx.DefinitelyStopCPUDecrementation()
+		defer modState.Ctx.DefinitelyStopCPUTimeDepletion()
 
 		if args.UseBytecode {
 			res, err = EvalBytecode(lthread.state.Bytecode, modState, args.Self)

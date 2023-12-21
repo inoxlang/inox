@@ -38,13 +38,13 @@ func init() {
 type tokenBucket struct {
 	lastDecrementTime time.Time
 
-	lock                   *sync.Mutex
-	capacity               ScaledTokenCount
-	available              ScaledTokenCount
-	increment              ScaledTokenCount
-	decrementingStateCount atomic.Int32
-	decrementFn            TokenDecrementationFn
-	context                *Context
+	lock                *sync.Mutex
+	capacity            ScaledTokenCount
+	available           ScaledTokenCount
+	increment           ScaledTokenCount
+	depletingStateCount atomic.Int32
+	decrementFn         TokenDepletionFn
+	context             *Context
 
 	chanListLock         sync.Mutex
 	waitChans            []chan (struct{})
@@ -63,13 +63,13 @@ func (c ScaledTokenCount) RealCount() int64 {
 	return int64(c) / TOKEN_BUCKET_CAPACITY_SCALE
 }
 
-type TokenDecrementationFn func(lastDecrementTime time.Time, decrementingStateCount int32) int64
+type TokenDepletionFn func(lastDecrementTime time.Time, beingDepletedStateCount int32) int64
 
 type tokenBucketConfig struct {
 	cap                          int64
 	initialAvail                 int64
 	fillRate                     int64 //tokens per second
-	decrementFn                  TokenDecrementationFn
+	depleteFn                    TokenDepletionFn
 	cancelContextOnNegativeCount bool
 }
 
@@ -89,7 +89,7 @@ func newBucket(config tokenBucketConfig) *tokenBucket {
 		capacity:                     ScaledTokenCount(config.cap * TOKEN_BUCKET_CAPACITY_SCALE),
 		available:                    ScaledTokenCount(avail * TOKEN_BUCKET_CAPACITY_SCALE),
 		increment:                    ScaledTokenCount(config.fillRate),
-		decrementFn:                  config.decrementFn,
+		decrementFn:                  config.depleteFn,
 		cancelContextOnNegativeCount: config.cancelContextOnNegativeCount,
 		lastDecrementTime:            time.Now(),
 	}
@@ -149,12 +149,12 @@ func (tb *tokenBucket) GiveBack(count int64) {
 	tb.available = min(tb.capacity, tb.available)
 }
 
-func (tb *tokenBucket) PauseOneStateDecrementation() {
-	tb.decrementingStateCount.Add(-1)
+func (tb *tokenBucket) PauseOneStateDepletion() {
+	tb.depletingStateCount.Add(-1)
 }
 
-func (tb *tokenBucket) ResumeOneStateDecrementation() {
-	tb.decrementingStateCount.Add(1)
+func (tb *tokenBucket) ResumeOneStateDepletion() {
+	tb.depletingStateCount.Add(1)
 }
 
 // TakeMaxDuration tasks specified count tokens from the bucket, if there are
@@ -273,7 +273,7 @@ func startTokenBucketManagerGoroutine() {
 				increment := tb.increment
 				tb.available = tb.available + increment
 			}
-		} else if count := tb.decrementingStateCount.Load(); count > 0 {
+		} else if count := tb.depletingStateCount.Load(); count > 0 {
 			tb.available -= ScaledTokenCount(tb.decrementFn(tb.lastDecrementTime, count) * TOKEN_BUCKET_CAPACITY_SCALE)
 		}
 

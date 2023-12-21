@@ -242,7 +242,7 @@ func GetCheckData(fpath string, compilationCtx *core.Context, out io.Writer) map
 		ParsingCompilationContext: compilationCtx,
 		ParentContext:             nil,
 		DefaultLimits: []core.Limit{
-			core.MustMakeNotDecrementingLimit(fs_ns.FS_READ_LIMIT_NAME, 10_000_000),
+			core.MustMakeNotAutoDepletingCountLimit(fs_ns.FS_READ_LIMIT_NAME, 10_000_000),
 		},
 
 		Out: out,

@@ -33,7 +33,7 @@ func getNextHostAndEndpoint() (core.Host, core.URL) {
 }
 
 func TestWebsocketServer(t *testing.T) {
-	permissiveSocketCountLimit := core.MustMakeNotDecrementingLimit(WS_SIMUL_CONN_TOTAL_LIMIT_NAME, 100)
+	permissiveSocketCountLimit := core.MustMakeNotAutoDepletingCountLimit(WS_SIMUL_CONN_TOTAL_LIMIT_NAME, 100)
 
 	if !core.AreDefaultRequestHandlingLimitsSet() {
 		core.SetDefaultRequestHandlingLimits([]core.Limit{})

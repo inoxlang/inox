@@ -15,8 +15,8 @@ import (
 func TestCreateFile(t *testing.T) {
 
 	var (
-		permissiveTotalLimit       = core.MustMakeNotDecrementingLimit(FS_TOTAL_NEW_FILE_LIMIT_NAME, 100_000)
-		permissiveNewFileRateLimit = core.MustMakeNotDecrementingLimit(FS_NEW_FILE_RATE_LIMIT_NAME, 100_000)
+		permissiveTotalLimit       = core.MustMakeNotAutoDepletingCountLimit(FS_TOTAL_NEW_FILE_LIMIT_NAME, 100_000)
+		permissiveNewFileRateLimit = core.MustMakeNotAutoDepletingCountLimit(FS_NEW_FILE_RATE_LIMIT_NAME, 100_000)
 	)
 
 	//in the following tests token buckets are emptied before calling __createFile
@@ -122,8 +122,8 @@ func TestMkdir(t *testing.T) {
 		tmpDir := t.TempDir()
 
 		var (
-			permissiveTotalLimit       = core.MustMakeNotDecrementingLimit(FS_TOTAL_NEW_FILE_LIMIT_NAME, 100_000)
-			permissiveNewFileRateLimit = core.MustMakeNotDecrementingLimit(FS_NEW_FILE_RATE_LIMIT_NAME, 100_000)
+			permissiveTotalLimit       = core.MustMakeNotAutoDepletingCountLimit(FS_TOTAL_NEW_FILE_LIMIT_NAME, 100_000)
+			permissiveNewFileRateLimit = core.MustMakeNotAutoDepletingCountLimit(FS_NEW_FILE_RATE_LIMIT_NAME, 100_000)
 		)
 
 		ctx := core.NewContext(core.ContextConfig{
@@ -308,8 +308,8 @@ func TestFsMkfile(t *testing.T) {
 	t.Run("provided file's content", func(t *testing.T) {
 		tmpDir := t.TempDir()
 		var (
-			permissiveTotalLimit       = core.MustMakeNotDecrementingLimit(FS_TOTAL_NEW_FILE_LIMIT_NAME, 100_000)
-			permissiveNewFileRateLimit = core.MustMakeNotDecrementingLimit(FS_NEW_FILE_RATE_LIMIT_NAME, 100_000)
+			permissiveTotalLimit       = core.MustMakeNotAutoDepletingCountLimit(FS_TOTAL_NEW_FILE_LIMIT_NAME, 100_000)
+			permissiveNewFileRateLimit = core.MustMakeNotAutoDepletingCountLimit(FS_NEW_FILE_RATE_LIMIT_NAME, 100_000)
 		)
 
 		ctx := core.NewContext(core.ContextConfig{

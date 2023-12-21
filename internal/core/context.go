@@ -140,7 +140,7 @@ type ContextConfig struct {
 	DoNotCheckDatabasePerms bool
 
 	//if (cpu time limit is not present) AND (parent context has it) then the limit is inherited.
-	//The decrementation of total limit's tokens for the created context starts when the associated state is set.
+	//The depletion of total limits' tokens for the created context starts when the associated state is set.
 	Limits []Limit
 
 	HostResolutions     map[Host]Value
@@ -303,7 +303,7 @@ func NewContext(config ContextConfig) *Context {
 				cap:                          cap,
 				initialAvail:                 initialAvail,
 				fillRate:                     fillRate,
-				decrementFn:                  l.DecrementFn,
+				depleteFn:                    l.DecrementFn,
 				cancelContextOnNegativeCount: l.Kind == TotalLimit,
 			}),
 		}
@@ -897,82 +897,82 @@ func (ctx *Context) GiveBack(limitName string, count int64) error {
 	return nil
 }
 
-func (ctx *Context) PauseDecrementation(limitName string) error {
+func (ctx *Context) PauseTokenDepletion(limitName string) error {
 	limiter, ok := ctx.limiters[limitName]
 	if ok {
-		limiter.PauseDecrementation()
+		limiter.PauseDepletion()
 		return nil
 	}
 	return fmt.Errorf("context: non existing limit '%s'", limitName)
 }
 
-func (ctx *Context) PauseCPUDecrementationIfNotPaused() error {
+func (ctx *Context) PauseCPUTimeDepletionIfNotPaused() error {
 	limitName := EXECUTION_CPU_TIME_LIMIT_NAME
 	limiter, ok := ctx.limiters[limitName]
 	if ok {
-		limiter.PauseDecrementationIfNotPaused()
+		limiter.PauseDepletionIfNotPaused()
 		return nil
 	}
 	return fmt.Errorf("context: non existing limit '%s'", limitName)
 }
 
-func (ctx *Context) DefinitelyStopDecrementation(limitName string) error {
+func (ctx *Context) DefinitelyStopTokenDepletion(limitName string) error {
 	limiter, ok := ctx.limiters[limitName]
 	if ok {
-		limiter.DefinitelyStopDecrementation()
+		limiter.DefinitelyStopDepletion()
 		return nil
 	}
 	return fmt.Errorf("context: non existing limit '%s'", limitName)
 }
 
-func (ctx *Context) ResumeDecrementation(limitName string) error {
+func (ctx *Context) ResumeDepletion(limitName string) error {
 	limiter, ok := ctx.limiters[limitName]
 	if ok {
-		limiter.ResumeDecrementation()
+		limiter.ResumeDepletion()
 		return nil
 	}
 	return fmt.Errorf("context: non existing limit '%s'", limitName)
 }
 
-func (ctx *Context) PauseCPUTimeDecrementation() error {
-	return ctx.PauseDecrementation(EXECUTION_CPU_TIME_LIMIT_NAME)
+func (ctx *Context) PauseCPUTimeDepletion() error {
+	return ctx.PauseTokenDepletion(EXECUTION_CPU_TIME_LIMIT_NAME)
 }
 
-func (ctx *Context) ResumeCPUTimeDecrementation() error {
-	return ctx.ResumeDecrementation(EXECUTION_CPU_TIME_LIMIT_NAME)
+func (ctx *Context) ResumeCPUTimeDepletion() error {
+	return ctx.ResumeDepletion(EXECUTION_CPU_TIME_LIMIT_NAME)
 }
 
-func (ctx *Context) DefinitelyStopCPUDecrementation() error {
-	return ctx.DefinitelyStopDecrementation(EXECUTION_CPU_TIME_LIMIT_NAME)
+func (ctx *Context) DefinitelyStopCPUTimeDepletion() error {
+	return ctx.DefinitelyStopTokenDepletion(EXECUTION_CPU_TIME_LIMIT_NAME)
 }
 
 func (ctx *Context) DoIO(fn func() error) error {
-	ctx.PauseCPUTimeDecrementation()
-	defer ctx.ResumeCPUTimeDecrementation()
+	ctx.PauseCPUTimeDepletion()
+	defer ctx.ResumeCPUTimeDepletion()
 
 	//do not recover from panics on purpose
 	return fn()
 }
 
 func DoIO[T any](ctx *Context, fn func() T) T {
-	ctx.PauseCPUTimeDecrementation()
-	defer ctx.ResumeCPUTimeDecrementation()
+	ctx.PauseCPUTimeDepletion()
+	defer ctx.ResumeCPUTimeDepletion()
 
 	//do not recover from panics on purpose
 	return fn()
 }
 
 func DoIO2[T any](ctx *Context, fn func() (T, error)) (T, error) {
-	ctx.PauseCPUTimeDecrementation()
-	defer ctx.ResumeCPUTimeDecrementation()
+	ctx.PauseCPUTimeDepletion()
+	defer ctx.ResumeCPUTimeDepletion()
 
 	//do not recover from panics on purpose
 	return fn()
 }
 
 func (ctx *Context) Sleep(duration time.Duration) {
-	ctx.PauseCPUTimeDecrementation()
-	defer ctx.ResumeCPUTimeDecrementation()
+	ctx.PauseCPUTimeDepletion()
+	defer ctx.ResumeCPUTimeDepletion()
 
 	timer := time.NewTimer(duration)
 	defer timer.Stop()

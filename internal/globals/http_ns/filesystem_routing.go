@@ -301,9 +301,9 @@ func createHandleDynamic(server *HttpsServer, routingDirPath core.Path) handlerF
 		}
 
 		//run the handler module in the current goroutine.
-		//CPU time decrementation is paused because the module will start decrementing its CPU time.
+		//The CPU time depletion of the handler is paused because the same corresponding depletion in the module's limiter is going to start.
 
-		handlerCtx.PauseCPUTimeDecrementation()
+		handlerCtx.PauseCPUTimeDepletion()
 
 		result, _, _, _, err := mod.RunPreparedModule(mod.RunPreparedModuleArgs{
 			State: state,
@@ -314,7 +314,7 @@ func createHandleDynamic(server *HttpsServer, routingDirPath core.Path) handlerF
 			Debugger:                  debugger,
 		})
 
-		handlerCtx.ResumeCPUTimeDecrementation()
+		handlerCtx.ResumeCPUTimeDepletion()
 
 		if err != nil {
 			handlerGlobalState.Logger.Err(err).Send()

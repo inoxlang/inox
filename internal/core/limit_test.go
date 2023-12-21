@@ -17,7 +17,7 @@ import (
 
 func TestExecutionTimeLimitIntegration(t *testing.T) {
 
-	permissiveLthreadLimit := MustMakeNotDecrementingLimit(THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME, 100_000)
+	permissiveLthreadLimit := MustMakeNotAutoDepletingCountLimit(THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME, 100_000)
 
 	t.Run("context should not be cancelled faster in the presence of child threads", func(t *testing.T) {
 		execLimit, err := GetLimit(nil, EXECUTION_TOTAL_LIMIT_NAME, Duration(100*time.Millisecond))
@@ -72,7 +72,7 @@ func TestExecutionTimeLimitIntegration(t *testing.T) {
 }
 
 func TestCPUTimeLimitIntegration(t *testing.T) {
-	permissiveLthreadLimit := MustMakeNotDecrementingLimit(THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME, 100_000)
+	permissiveLthreadLimit := MustMakeNotAutoDepletingCountLimit(THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME, 100_000)
 
 	t.Run("context should be cancelled if all CPU time is spent", func(t *testing.T) {
 		cpuLimit, err := GetLimit(nil, EXECUTION_CPU_TIME_LIMIT_NAME, Duration(50*time.Millisecond))
@@ -325,7 +325,7 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 			}
 		`, state, false)
 
-		state.Ctx.PauseCPUTimeDecrementation()
+		state.Ctx.PauseCPUTimeDepletion()
 
 		if !assert.NoError(t, err) {
 			return
