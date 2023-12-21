@@ -271,8 +271,6 @@ func testExample(t *testing.T, config exampleTestConfig) {
 
 	done := make(chan int)
 
-	
-
 	//execute the example in a goroutine.
 	go func() {
 		defer func() {

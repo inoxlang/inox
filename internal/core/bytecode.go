@@ -16,6 +16,7 @@ type Bytecode struct {
 	main      *CompiledFunction
 }
 
+// Constants returns the constants used during bytecode interpretation, the slice should not be modified.
 func (b *Bytecode) Constants() []Value {
 	return b.constants
 }
@@ -65,6 +66,8 @@ type CompiledFunction struct {
 	IncludedChunk  *parse.ParsedChunk //set if the function is defined in an included chunk
 }
 
+// GetSourcePositionRange returns the position in source code of the instruction at the ip address,
+// several subsequent instructions can have the same position.
 func (fn *CompiledFunction) GetSourcePositionRange(ip int) parse.SourcePositionRange {
 	info := fn.SourceMap[ip]
 	if info.chunk == nil {
@@ -673,14 +676,14 @@ var OpcodeConstantIndexes = [...][]bool{
 	OpSuspendVM:                    {},
 }
 
-// ReadOperands reads operands from the bytecode.
-func ReadOperands(numOperands []int, ins []byte) (operands []int, offset int) {
+// ReadOperands reads the operands of an instruction in bytecode.
+func ReadOperands(numOperands []int, instruction []byte) (operands []int, offset int) {
 	for _, width := range numOperands {
 		switch width {
 		case 1:
-			operands = append(operands, int(ins[offset]))
+			operands = append(operands, int(instruction[offset]))
 		case 2:
-			operands = append(operands, int(ins[offset+1])|int(ins[offset])<<8)
+			operands = append(operands, int(instruction[offset+1])|int(instruction[offset])<<8)
 		}
 		offset += width
 	}
@@ -748,16 +751,24 @@ func FormatInstructions(ctx *Context, b []byte, posOffset int, leftPadding strin
 				posOffset+i, OpcodeNames[b[i]],
 				operands[0], operands[1], operands[2], operands[3]))
 		}
+
 		s := leftPadding + out[len(out)-1]
+
+		//add constants on the same line.
 		if len(consts) >= 1 {
 			s += " : " + strings.Join(consts, " ")
 		}
+
 		out[len(out)-1] = s
 		i += len(instr)
 
 		return nil, nil
 	}
-	MapInstructions(b, constants, fn)
+
+	_, err := MapInstructions(b, constants, fn)
+	if err != nil {
+		panic(err)
+	}
 
 	return out
 }

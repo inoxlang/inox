@@ -7,11 +7,11 @@ import (
 )
 
 func TestDictionaryClone(t *testing.T) {
-	clone, err := NewDictionary(nil).PseudoClone(nil, &[]PotentiallySharable{}, nil, 0)
+	clone, err := NewDictionary(nil).Clone(nil, &[]PotentiallySharable{}, nil, 0)
 	assert.NoError(t, err)
 	assert.Equal(t, NewDictionary(nil), clone)
 
-	clone, err = NewDictionary(map[string]Serializable{"/": Int(1)}).PseudoClone(nil, &[]PotentiallySharable{}, nil, 0)
+	clone, err = NewDictionary(map[string]Serializable{"/": Int(1)}).Clone(nil, &[]PotentiallySharable{}, nil, 0)
 	assert.NoError(t, err)
 	assert.Equal(t, NewDictionary(map[string]Serializable{"/": Int(1)}), clone)
 
@@ -24,17 +24,17 @@ func TestDictionaryClone(t *testing.T) {
 	dict := NewDictionary(nil)
 	dict.entries["\"self\""] = dict
 	dict.keys["\"self\""] = Str("self")
-	clone, err = dict.PseudoClone(nil, &[]PotentiallySharable{}, nil, 0)
-	assert.ErrorIs(t, err, ErrMaximumPseudoCloningDepthReached)
+	clone, err = dict.Clone(nil, &[]PotentiallySharable{}, nil, 0)
+	assert.ErrorIs(t, err, ErrMaximumCloningDepthReached)
 	assert.Nil(t, clone)
 }
 
 func TestValueListClone(t *testing.T) {
-	clone, err := (&ValueList{}).PseudoClone(nil, &[]PotentiallySharable{}, nil, 0)
+	clone, err := (&ValueList{}).Clone(nil, &[]PotentiallySharable{}, nil, 0)
 	assert.NoError(t, err)
 	assert.Equal(t, &ValueList{elements: []Serializable{}}, clone)
 
-	clone, err = (&ValueList{elements: []Serializable{Int(1)}}).PseudoClone(nil, &[]PotentiallySharable{}, nil, 0)
+	clone, err = (&ValueList{elements: []Serializable{Int(1)}}).Clone(nil, &[]PotentiallySharable{}, nil, 0)
 	assert.NoError(t, err)
 	assert.Equal(t, &ValueList{elements: []Serializable{Int(1)}}, clone)
 
@@ -46,37 +46,37 @@ func TestValueListClone(t *testing.T) {
 	//cycle
 	list := &ValueList{elements: []Serializable{Int(0)}}
 	list.elements[0] = list
-	clone, err = list.PseudoClone(nil, &[]PotentiallySharable{}, nil, 0)
-	assert.ErrorIs(t, err, ErrMaximumPseudoCloningDepthReached)
+	clone, err = list.Clone(nil, &[]PotentiallySharable{}, nil, 0)
+	assert.ErrorIs(t, err, ErrMaximumCloningDepthReached)
 	assert.Nil(t, clone)
 }
 
 func TestRuneSliceClone(t *testing.T) {
-	clone, err := (&RuneSlice{elements: []rune{}}).PseudoClone(nil, &[]PotentiallySharable{}, nil, 0)
+	clone, err := (&RuneSlice{elements: []rune{}}).Clone(nil, &[]PotentiallySharable{}, nil, 0)
 	assert.NoError(t, err)
 	assert.Equal(t, (&RuneSlice{elements: []rune{}}), clone)
 
-	clone, err = (&RuneSlice{elements: []rune{'a'}}).PseudoClone(nil, &[]PotentiallySharable{}, nil, 0)
+	clone, err = (&RuneSlice{elements: []rune{'a'}}).Clone(nil, &[]PotentiallySharable{}, nil, 0)
 	assert.NoError(t, err)
 	assert.Equal(t, (&RuneSlice{elements: []rune{'a'}}), clone)
 }
 
 func TestByteSliceClone(t *testing.T) {
-	clone, err := (&ByteSlice{bytes: []byte{}, isDataMutable: true}).PseudoClone(nil, &[]PotentiallySharable{}, nil, 0)
+	clone, err := (&ByteSlice{bytes: []byte{}, isDataMutable: true}).Clone(nil, &[]PotentiallySharable{}, nil, 0)
 	assert.NoError(t, err)
 	assert.Equal(t, &ByteSlice{bytes: []byte{}, isDataMutable: true}, clone)
 
-	clone, err = (&ByteSlice{bytes: []byte{'a'}, isDataMutable: true}).PseudoClone(nil, &[]PotentiallySharable{}, nil, 0)
+	clone, err = (&ByteSlice{bytes: []byte{'a'}, isDataMutable: true}).Clone(nil, &[]PotentiallySharable{}, nil, 0)
 	assert.NoError(t, err)
 	assert.Equal(t, &ByteSlice{bytes: []byte{'a'}, isDataMutable: true}, clone)
 }
 
 func TestOptionClone(t *testing.T) {
-	clone, err := Option{Name: "a", Value: Int(1)}.PseudoClone(nil, &[]PotentiallySharable{}, nil, 0)
+	clone, err := Option{Name: "a", Value: Int(1)}.Clone(nil, &[]PotentiallySharable{}, nil, 0)
 	assert.NoError(t, err)
 	assert.Equal(t, Option{Name: "a", Value: Int(1)}, clone)
 
-	clone, err = Option{Name: "a", Value: objFrom(ValMap{"a": Int(1)})}.PseudoClone(nil, &[]PotentiallySharable{}, nil, 0)
+	clone, err = Option{Name: "a", Value: objFrom(ValMap{"a": Int(1)})}.Clone(nil, &[]PotentiallySharable{}, nil, 0)
 	assert.NoError(t, err)
 
 	expectedObj := objFrom(ValMap{"a": Int(1)})
@@ -84,7 +84,7 @@ func TestOptionClone(t *testing.T) {
 	assert.Equal(t, Option{Name: "a", Value: expectedObj}, clone)
 
 	//not clonable
-	clone, err = Option{Name: "a", Value: &ValueListIterator{}}.PseudoClone(nil, &[]PotentiallySharable{}, nil, 0)
+	clone, err = Option{Name: "a", Value: &ValueListIterator{}}.Clone(nil, &[]PotentiallySharable{}, nil, 0)
 	assert.ErrorIs(t, err, ErrValueNotSharableNorClonable)
 	assert.Nil(t, clone)
 }

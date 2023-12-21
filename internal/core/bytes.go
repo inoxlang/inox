@@ -17,7 +17,7 @@ var (
 	_                                              = []BytesLike{&ByteSlice{}, &BytesConcatenation{}}
 )
 
-// A WrappedBytes represents a value that wraps a byte slice []byte.
+// A WrappedBytes represents a value that wraps a byte slice ( []byte ).
 type WrappedBytes interface {
 	Readable
 	//the returned bytes should NOT be modified
@@ -32,14 +32,15 @@ type BytesLike interface {
 	Mutable() bool
 }
 
-// ByteSlice implements Value.
+// ByteSlice implements Value, its mutability is set at creation.
 type ByteSlice struct {
 	bytes         []byte
 	isDataMutable bool
 	contentType   Mimetype
 	constraintId  ConstraintId
 
-	lock              sync.Mutex // exclusive access for initializing .watchers & .mutationCallbacks
+	// exclusive access for initializing .watchers & .mutationCallbacks only.
+	lock              sync.Mutex
 	watchers          *ValueWatchers
 	mutationCallbacks *MutationCallbacks
 }
@@ -76,6 +77,8 @@ func (slice *ByteSlice) Mutable() bool {
 	return slice.isDataMutable
 }
 
+// ContentType returns the content type specified at creation.
+// If no content type was specified mimeconsts.APP_OCTET_STREAM_CTYPE is returned instead.
 func (slice *ByteSlice) ContentType() Mimetype {
 	if slice.contentType == "" {
 		return mimeconsts.APP_OCTET_STREAM_CTYPE

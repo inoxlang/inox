@@ -7,7 +7,7 @@ import (
 )
 
 type underlyingList interface {
-	PseudoClonable
+	ClonableSerializable
 	MutableLengthSequence
 	Iterable
 	ContainsSimple(ctx *Context, v Serializable) bool

@@ -14,11 +14,12 @@ const (
 )
 
 var (
-	ErrNotClonable                      = errors.New("not clonable")
-	ErrMaximumPseudoCloningDepthReached = errors.New("maximum pseudo cloning depth reached, there is probably a cycle")
+	ErrNotClonable                = errors.New("not clonable")
+	ErrMaximumCloningDepthReached = errors.New("maximum cloning depth reached, there is probably a cycle")
 
-	_ = []PseudoClonable{
+	_ = []ClonableSerializable{
 		(*List)(nil), (*RuneSlice)(nil), (*ByteSlice)(nil), (*Option)(nil), (*Dictionary)(nil),
+		(*BytesConcatenation)(nil),
 	}
 
 	_ = []Clonable{
@@ -26,18 +27,20 @@ var (
 	}
 )
 
-type PseudoClonable interface {
-	Serializable
-
-	//PseudoClone clones the value, properties/elements are cloned by calling CheckSharedOrClone if both originState and sharableValues are nil,
-	//ShareOrClone otherwise
-	PseudoClone(originState *GlobalState, sharableValues *[]PotentiallySharable, clones map[uintptr]Clonable, depth int) (Serializable, error)
-}
-
 type Clonable interface {
 	Value
-	//PseudoClone clones the value, properties/elements are cloned by calling ShareOrClone
+
+	//Clone clones the value, properties and elements are cloned by calling CheckSharedOrClone if both originState and sharableValues are nil,
+	//ShareOrClone otherwise.
 	Clone(originState *GlobalState, sharableValues *[]PotentiallySharable, clones map[uintptr]Clonable, depth int) (Value, error)
+}
+
+type ClonableSerializable interface {
+	Serializable
+
+	//Clone clones the value, properties and elements are cloned by calling CheckSharedOrClone if both originState and sharableValues are nil,
+	//ShareOrClone otherwise.
+	Clone(originState *GlobalState, sharableValues *[]PotentiallySharable, clones map[uintptr]Clonable, depth int) (Serializable, error)
 }
 
 func RepresentationBasedClone(ctx *Context, val Serializable) (Serializable, error) {
@@ -56,9 +59,9 @@ func RepresentationBasedClone(ctx *Context, val Serializable) (Serializable, err
 	return ParseJSONRepresentation(ctx, string(stream.Buffer()), nil)
 }
 
-func (dict *Dictionary) PseudoClone(originState *GlobalState, sharableValues *[]PotentiallySharable, clones map[uintptr]Clonable, depth int) (Serializable, error) {
+func (dict *Dictionary) Clone(originState *GlobalState, sharableValues *[]PotentiallySharable, clones map[uintptr]Clonable, depth int) (Serializable, error) {
 	if depth > MAX_CLONING_DEPTH {
-		return nil, ErrMaximumPseudoCloningDepthReached
+		return nil, ErrMaximumCloningDepthReached
 	}
 
 	clone := &Dictionary{
@@ -92,12 +95,12 @@ func (dict *Dictionary) PseudoClone(originState *GlobalState, sharableValues *[]
 	return clone, nil
 }
 
-func (list *List) PseudoClone(originState *GlobalState, sharableValues *[]PotentiallySharable, clones map[uintptr]Clonable, depth int) (Serializable, error) {
+func (list *List) Clone(originState *GlobalState, sharableValues *[]PotentiallySharable, clones map[uintptr]Clonable, depth int) (Serializable, error) {
 	if depth > MAX_CLONING_DEPTH {
-		return nil, ErrMaximumPseudoCloningDepthReached
+		return nil, ErrMaximumCloningDepthReached
 	}
 
-	underlyingListClone, err := list.underlyingList.PseudoClone(originState, sharableValues, clones, depth)
+	underlyingListClone, err := list.underlyingList.Clone(originState, sharableValues, clones, depth)
 	if err != nil {
 		return nil, err
 	}
@@ -108,9 +111,9 @@ func (list *List) PseudoClone(originState *GlobalState, sharableValues *[]Potent
 	}, nil
 }
 
-func (list *ValueList) PseudoClone(originState *GlobalState, sharableValues *[]PotentiallySharable, clones map[uintptr]Clonable, depth int) (Serializable, error) {
+func (list *ValueList) Clone(originState *GlobalState, sharableValues *[]PotentiallySharable, clones map[uintptr]Clonable, depth int) (Serializable, error) {
 	if depth > MAX_CLONING_DEPTH {
-		return nil, ErrMaximumPseudoCloningDepthReached
+		return nil, ErrMaximumCloningDepthReached
 	}
 
 	if list.constraintId.HasConstraint() {
@@ -142,9 +145,9 @@ func (list *ValueList) PseudoClone(originState *GlobalState, sharableValues *[]P
 	}, nil
 }
 
-func (list *IntList) PseudoClone(originState *GlobalState, sharableValues *[]PotentiallySharable, clones map[uintptr]Clonable, depth int) (Serializable, error) {
+func (list *IntList) Clone(originState *GlobalState, sharableValues *[]PotentiallySharable, clones map[uintptr]Clonable, depth int) (Serializable, error) {
 	if depth > MAX_CLONING_DEPTH {
-		return nil, ErrMaximumPseudoCloningDepthReached
+		return nil, ErrMaximumCloningDepthReached
 	}
 
 	if list.constraintId.HasConstraint() {
@@ -156,9 +159,9 @@ func (list *IntList) PseudoClone(originState *GlobalState, sharableValues *[]Pot
 	}, nil
 }
 
-func (list *BoolList) PseudoClone(originState *GlobalState, sharableValues *[]PotentiallySharable, clones map[uintptr]Clonable, depth int) (Serializable, error) {
+func (list *BoolList) Clone(originState *GlobalState, sharableValues *[]PotentiallySharable, clones map[uintptr]Clonable, depth int) (Serializable, error) {
 	if depth > MAX_CLONING_DEPTH {
-		return nil, ErrMaximumPseudoCloningDepthReached
+		return nil, ErrMaximumCloningDepthReached
 	}
 
 	if list.constraintId.HasConstraint() {
@@ -170,9 +173,9 @@ func (list *BoolList) PseudoClone(originState *GlobalState, sharableValues *[]Po
 	}, nil
 }
 
-func (list *StringList) PseudoClone(originState *GlobalState, sharableValues *[]PotentiallySharable, clones map[uintptr]Clonable, depth int) (Serializable, error) {
+func (list *StringList) Clone(originState *GlobalState, sharableValues *[]PotentiallySharable, clones map[uintptr]Clonable, depth int) (Serializable, error) {
 	if depth > MAX_CLONING_DEPTH {
-		return nil, ErrMaximumPseudoCloningDepthReached
+		return nil, ErrMaximumCloningDepthReached
 	}
 
 	if list.constraintId.HasConstraint() {
@@ -184,9 +187,9 @@ func (list *StringList) PseudoClone(originState *GlobalState, sharableValues *[]
 	}, nil
 }
 
-func (slice *RuneSlice) PseudoClone(originState *GlobalState, sharableValues *[]PotentiallySharable, clones map[uintptr]Clonable, depth int) (Serializable, error) {
+func (slice *RuneSlice) Clone(originState *GlobalState, sharableValues *[]PotentiallySharable, clones map[uintptr]Clonable, depth int) (Serializable, error) {
 	if depth > MAX_CLONING_DEPTH {
-		return nil, ErrMaximumPseudoCloningDepthReached
+		return nil, ErrMaximumCloningDepthReached
 	}
 
 	return slice.clone()
@@ -202,9 +205,9 @@ func (slice *RuneSlice) clone() (*RuneSlice, error) {
 	return &RuneSlice{elements: runes}, nil
 }
 
-func (slice *ByteSlice) PseudoClone(originState *GlobalState, sharableValues *[]PotentiallySharable, clones map[uintptr]Clonable, depth int) (Serializable, error) {
+func (slice *ByteSlice) Clone(originState *GlobalState, sharableValues *[]PotentiallySharable, clones map[uintptr]Clonable, depth int) (Serializable, error) {
 	if depth > MAX_CLONING_DEPTH {
-		return nil, ErrMaximumPseudoCloningDepthReached
+		return nil, ErrMaximumCloningDepthReached
 	}
 	return slice.clone()
 }
@@ -220,9 +223,9 @@ func (slice *ByteSlice) clone() (*ByteSlice, error) {
 	return &ByteSlice{bytes: b, isDataMutable: slice.isDataMutable}, nil
 }
 
-func (opt Option) PseudoClone(originState *GlobalState, sharableValues *[]PotentiallySharable, clones map[uintptr]Clonable, depth int) (Serializable, error) {
+func (opt Option) Clone(originState *GlobalState, sharableValues *[]PotentiallySharable, clones map[uintptr]Clonable, depth int) (Serializable, error) {
 	if depth > MAX_CLONING_DEPTH {
-		return nil, ErrMaximumPseudoCloningDepthReached
+		return nil, ErrMaximumCloningDepthReached
 	}
 
 	var (
@@ -244,9 +247,9 @@ func (opt Option) PseudoClone(originState *GlobalState, sharableValues *[]Potent
 	}, nil
 }
 
-func (c *BytesConcatenation) PseudoClone(originState *GlobalState, sharableValues *[]PotentiallySharable, clones map[uintptr]Clonable, depth int) (Serializable, error) {
+func (c *BytesConcatenation) Clone(originState *GlobalState, sharableValues *[]PotentiallySharable, clones map[uintptr]Clonable, depth int) (Serializable, error) {
 	if depth > MAX_CLONING_DEPTH {
-		return nil, ErrMaximumPseudoCloningDepthReached
+		return nil, ErrMaximumCloningDepthReached
 	}
 
 	return &BytesConcatenation{
@@ -257,7 +260,7 @@ func (c *BytesConcatenation) PseudoClone(originState *GlobalState, sharableValue
 
 func (s *Struct) Clone(originState *GlobalState, sharableValues *[]PotentiallySharable, clones map[uintptr]Clonable, depth int) (Value, error) {
 	if depth > MAX_CLONING_DEPTH {
-		return nil, ErrMaximumPseudoCloningDepthReached
+		return nil, ErrMaximumCloningDepthReached
 	}
 
 	ptr := reflect.ValueOf(s).Pointer()
@@ -277,7 +280,7 @@ func (s *Struct) Clone(originState *GlobalState, sharableValues *[]PotentiallySh
 		var fieldClone Value
 		var err error
 
-		if originState != nil {
+		if originState != nil && sharableValues != nil {
 			fieldClone, err = ShareOrCloneDepth(val, originState, sharableValues, clones, depth+1)
 		} else {
 			fieldClone, err = CheckSharedOrClone(val, clones, depth+1)
@@ -293,7 +296,7 @@ func (s *Struct) Clone(originState *GlobalState, sharableValues *[]PotentiallySh
 
 func (a *Array) Clone(originState *GlobalState, sharableValues *[]PotentiallySharable, clones map[uintptr]Clonable, depth int) (Value, error) {
 	if depth > MAX_CLONING_DEPTH {
-		return nil, ErrMaximumPseudoCloningDepthReached
+		return nil, ErrMaximumCloningDepthReached
 	}
 
 	ptr := reflect.ValueOf(a).Pointer()
@@ -308,7 +311,7 @@ func (a *Array) Clone(originState *GlobalState, sharableValues *[]PotentiallySha
 		var elemClone Value
 		var err error
 
-		if originState != nil {
+		if originState != nil && sharableValues != nil {
 			elemClone, err = ShareOrCloneDepth(e, originState, sharableValues, clones, depth+1)
 		} else {
 			elemClone, err = CheckSharedOrClone(e, clones, depth+1)

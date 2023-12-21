@@ -14,7 +14,7 @@ var (
 
 func (n *HTMLNode) Clone(originState *core.GlobalState, sharableValues *[]core.PotentiallySharable, clones map[uintptr]core.Clonable, depth int) (core.Value, error) {
 	if depth > core.MAX_CLONING_DEPTH {
-		return nil, core.ErrMaximumPseudoCloningDepthReached
+		return nil, core.ErrMaximumCloningDepthReached
 	}
 
 	ptr := reflect.ValueOf(n).Pointer()

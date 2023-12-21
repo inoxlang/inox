@@ -11,12 +11,13 @@ var (
 	TOKEN_PROPNAMES    = []string{"type", "rune_count"}
 )
 
-// An AstNode is a Value wrapping an AST node.
+// An AstNode is an immutable Value wrapping an AST node, it is immutable.
 type AstNode struct {
 	Node  parse.Node
 	chunk *parse.ParsedChunk
 }
 
+// Chunk returns the parsed chunk the node is part of.
 func (n AstNode) Chunk() *parse.ParsedChunk {
 	return n.chunk
 }
@@ -47,7 +48,7 @@ func (AstNode) SetProp(ctx *Context, name string, value Value) error {
 	return ErrCannotSetProp
 }
 
-// A Token is a Value wrapping a token.
+// A Token is an immutable Value wrapping a token.
 type Token struct {
 	value parse.Token
 }
