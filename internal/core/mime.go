@@ -5,6 +5,7 @@ import (
 	"strings"
 )
 
+// A Mimetype represents a MIME type, it can include parameters.
 type Mimetype string
 
 // MimeTypeFrom checks that s is a valid mime type and returns a normalized Mimetype.

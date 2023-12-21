@@ -65,6 +65,7 @@ func init() {
 
 }
 
+// Map is the value of the 'map' global.
 func Map(ctx *Context, iterable Iterable, mapper Value) *List {
 	result := ValueList{}
 
@@ -133,7 +134,7 @@ func Map(ctx *Context, iterable Iterable, mapper Value) *List {
 			if err != nil {
 				panic(err)
 			}
-			if transformed, err := checkTransformMustCallResult(res); err == nil {
+			if transformed, err := checkTransformInoxMustCallResult(res); err == nil {
 				res = transformed
 			} else {
 				panic(err)

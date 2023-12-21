@@ -16,7 +16,7 @@ const (
 )
 
 var (
-	DEFAULT_LOG_LEVELS = NewLogLevels(NewDefaultLogsArgs{DefaultLevel: zerolog.InfoLevel})
+	DEFAULT_LOG_LEVELS = NewLogLevels(LogLevelsInitialization{DefaultLevel: zerolog.InfoLevel})
 )
 
 func init() {
@@ -53,14 +53,14 @@ type LogLevels struct {
 	internalDebug bool
 }
 
-type NewDefaultLogsArgs struct {
+type LogLevelsInitialization struct {
 	DefaultLevel            zerolog.Level
 	ByPath                  map[Path]zerolog.Level //nil is accepted
 	EnableInternalDebugLogs bool                   //ignored if DefaultLevel != debug
 }
 
-func NewLogLevels(args NewDefaultLogsArgs) *LogLevels {
-	byPath := args.ByPath
+func NewLogLevels(init LogLevelsInitialization) *LogLevels {
+	byPath := init.ByPath
 
 	if byPath == nil {
 		byPath = map[Path]zerolog.Level{}
@@ -69,9 +69,9 @@ func NewLogLevels(args NewDefaultLogsArgs) *LogLevels {
 	}
 
 	return &LogLevels{
-		defaultLevel:  args.DefaultLevel,
+		defaultLevel:  init.DefaultLevel,
 		levelByPath:   byPath,
-		internalDebug: args.EnableInternalDebugLogs && args.DefaultLevel == zerolog.DebugLevel,
+		internalDebug: init.EnableInternalDebugLogs && init.DefaultLevel == zerolog.DebugLevel,
 	}
 }
 

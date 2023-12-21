@@ -85,6 +85,7 @@ type AddressableContent interface {
 	Reader() io.Reader
 }
 
+// EntrySnapshotMetadata is the metadata about a single entry in a filesystem snapshot.
 type EntrySnapshotMetadata struct {
 	AbsolutePath     Path
 	Size             ByteCount

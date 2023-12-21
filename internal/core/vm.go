@@ -1792,7 +1792,7 @@ func (v *VM) run() {
 				retVal = v.stack[v.sp-1]
 
 				if v.curFrame.mustCall {
-					if transformed, err := checkTransformMustCallResult(retVal); err == nil {
+					if transformed, err := checkTransformInoxMustCallResult(retVal); err == nil {
 						retVal = transformed
 					} else {
 						v.err = err

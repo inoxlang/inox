@@ -32,6 +32,7 @@ func init() {
 
 }
 
+// Filter is the value of the 'filter' global.
 func Filter(ctx *Context, iterable Iterable, condition Value) *List {
 	result := ValueList{}
 
@@ -92,6 +93,7 @@ func GetAtMost(ctx *Context, maxCount Int, iterable SerializableIterable) *List 
 	return NewWrappedValueListFrom(elements)
 }
 
+// Some is the value  of the 'some' global.
 func Some(ctx *Context, iterable Iterable, condition Value) Bool {
 
 	state := ctx.GetClosestState()
@@ -127,6 +129,7 @@ func Some(ctx *Context, iterable Iterable, condition Value) Bool {
 	return true
 }
 
+// All is the value of the 'all' global.
 func All(ctx *Context, iterable Iterable, condition Value) Bool {
 
 	state := ctx.GetClosestState()
@@ -163,6 +166,7 @@ func All(ctx *Context, iterable Iterable, condition Value) Bool {
 	return true
 }
 
+// None is the value of the 'none' global.
 func None(ctx *Context, iterable Iterable, condition Value) Bool {
 
 	state := ctx.GetClosestState()

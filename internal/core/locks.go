@@ -10,6 +10,7 @@ var (
 	ErrValueNotShared = errors.New("value is not shared")
 )
 
+// A SmartLock is a lock that ignores locking operations until the value it protects is shared.
 type SmartLock struct {
 	valueShared atomic.Bool
 	lock        sync.Mutex

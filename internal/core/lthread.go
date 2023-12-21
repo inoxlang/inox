@@ -29,11 +29,12 @@ var (
 
 func init() {
 	RegisterSymbolicGoFunction(NewLThreadGroup, func(xtx *symbolic.Context) *symbolic.LThreadGroup {
-		return &symbolic.LThreadGroup{}
+		return symbolic.ANY_LTHREAD_GROUP
 	})
 }
 
 // A LThread is similar to a goroutine in Golang, it represents the execution of a single module and can be cancelled at any time.
+// It pauses at each yield statement.
 type LThread struct {
 	useBytecode bool
 	module      *Module

@@ -5630,7 +5630,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state := NewGlobalState(ctx)
 			state.Out = io.Discard
 			state.Logger = zerolog.New(logBuf)
-			state.LogLevels = NewLogLevels(NewDefaultLogsArgs{
+			state.LogLevels = NewLogLevels(LogLevelsInitialization{
 				DefaultLevel: zerolog.DebugLevel,
 			})
 			state.OutputFieldsInitialized.Store(true)
@@ -5712,7 +5712,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state := NewGlobalState(ctx)
 			state.Out = io.Discard
 			state.Logger = zerolog.New(logBuf)
-			state.LogLevels = NewLogLevels(NewDefaultLogsArgs{
+			state.LogLevels = NewLogLevels(LogLevelsInitialization{
 				DefaultLevel: zerolog.DebugLevel,
 				ByPath: map[Path]zerolog.Level{
 					"/imported_mod.ix": zerolog.InfoLevel,

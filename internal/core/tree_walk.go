@@ -3363,7 +3363,7 @@ func TreeWalkCallFunc(call TreeWalkCall) (Value, error) {
 	}
 
 	if must {
-		if transformed, err := checkTransformMustCallResult(ret); err == nil {
+		if transformed, err := checkTransformInoxMustCallResult(ret); err == nil {
 			ret = transformed
 		} else {
 			panic(err)

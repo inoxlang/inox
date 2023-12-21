@@ -348,7 +348,7 @@ func TestPrepareLocalModule(t *testing.T) {
 			ParentContext:             ctx,
 			ParentContextRequired:     true,
 			Out:                       outBuf,
-			LogLevels:                 core.NewLogLevels(core.NewDefaultLogsArgs{DefaultLevel: logLevel}),
+			LogLevels:                 core.NewLogLevels(core.LogLevelsInitialization{DefaultLevel: logLevel}),
 			ScriptContextFileSystem:   fs_ns.GetOsFilesystem(),
 		})
 

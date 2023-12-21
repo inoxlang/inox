@@ -123,7 +123,7 @@ func (a *Agent) GetOrCreateApplication(name node.ApplicationName) (node.Applicat
 		state := core.NewGlobalState(appCtx)
 		state.Out = os.Stdout
 		state.Logger = a.logger
-		state.LogLevels = core.NewLogLevels(core.NewDefaultLogsArgs{
+		state.LogLevels = core.NewLogLevels(core.LogLevelsInitialization{
 			DefaultLevel: zerolog.InfoLevel,
 		})
 		state.OutputFieldsInitialized.Store(true)

@@ -146,7 +146,7 @@ func NewDefaultGlobalState(ctx *core.Context, conf core.DefaultGlobalStateConfig
 		logLevels = conf.LogLevels
 		logLevel = conf.LogLevels.LevelFor(core.Path(conf.AbsoluteModulePath))
 	} else {
-		logLevels = core.NewLogLevels(core.NewDefaultLogsArgs{DefaultLevel: logLevel})
+		logLevels = core.NewLogLevels(core.LogLevelsInitialization{DefaultLevel: logLevel})
 	}
 
 	logger = core.

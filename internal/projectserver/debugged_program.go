@@ -213,7 +213,7 @@ func readLogLevelSettings(launchArgs DebugLaunchArgs) (*core.LogLevels, error) {
 		}
 	}
 
-	return core.NewLogLevels(core.NewDefaultLogsArgs{
+	return core.NewLogLevels(core.LogLevelsInitialization{
 		DefaultLevel:            defaultLogLevel,
 		ByPath:                  logLevelByPath,
 		EnableInternalDebugLogs: enableInternalDebugLogs,
