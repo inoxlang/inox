@@ -8,6 +8,7 @@ var (
 	ErrmaxUnwrappingDepthReached = errors.New("maximum unwrapping depth reached")
 )
 
+// Unwrap unwraps a *DynamicValue's value and calls itself on the resulting value.
 func Unwrap(ctx *Context, v Value) Value {
 	return unwrap(ctx, v, 0)
 }

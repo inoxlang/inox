@@ -13,6 +13,8 @@ var (
 	UnknownYamlNodeType        = errors.New("unknown YAML node type")
 )
 
+// ConvertYamlParsedFileToInoxVal converts the list of documents in f to a list (or tuple) of Inox values.
+// A tuple is returned when immutable is true.
 func ConvertYamlParsedFileToInoxVal(ctx *Context, f *yaml.File, immutable bool) Serializable {
 	values := make([]Serializable, len(f.Docs))
 	for i, doc := range f.Docs {
@@ -25,6 +27,10 @@ func ConvertYamlParsedFileToInoxVal(ctx *Context, f *yaml.File, immutable bool) 
 	return NewWrappedValueListFrom(values)
 }
 
+// ConvertYamlNodeToInoxVal converts a YAML AST Node into an Inox value.
+// Records and tuples are returned insted of objects and lists when immutable is true.
+// ConvertYamlNodeToInoxVal has the following limitations:
+// - uint64 values greater than math.MaxInt64 cannot be converted: the function will panic.
 func ConvertYamlNodeToInoxVal(ctx *Context, n yaml.Node, immutable bool) Serializable {
 	switch n.Type() {
 	case yaml.UnknownNodeType:

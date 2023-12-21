@@ -23,7 +23,7 @@ var (
 	ErrNotResourceName = errors.New("not a resource name")
 )
 
-// Value is the interface implemented by all values accessible to Inox code.
+// Value is the interface implemented by all values accessible to Inox code, it is either definitively mutable or definitively immutable.
 type Value interface {
 	// IsMutable should return true if the value is definitively mutable and false if it is definitively immutable.
 	IsMutable() bool

@@ -11,9 +11,11 @@ var (
 	ErrInvalidStreamElement   = errors.New("invalid stream element")
 	ErrInvalidStreamChunkData = errors.New("invalid stream chunk data")
 
-	_ = []StreamSink{(*RingBuffer)(nil)}
+	_ = []StreamSink{(*RingBuffer)(nil), (*WritableByteStream)(nil)}
 	_ = []WritableStream{(*WritableByteStream)(nil)}
 )
+
+//TODO: specify requirements.
 
 type StreamSink interface {
 	Value
@@ -33,6 +35,7 @@ type WritableStream interface {
 	WriteChunk(ctx *Context, chunk *DataChunk) error
 
 	Stop()
+
 	IsStopped() bool
 }
 

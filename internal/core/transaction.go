@@ -27,7 +27,10 @@ var (
 	ErrRunningTransactionExpected              = errors.New("running transaction expected")
 )
 
-// A Transaction represents a series of effects that are applied atomically.
+// A Transaction is analogous to a database transaction but behaves a little bit differently.
+// A Transaction can be started, commited and rolled back. Effects (reversible or not) such as FS changes are added to it.
+// Actual database transactions or data containers can also register a callback with the OnEnd method, in order to execute logic
+// when the transaction commits or rolls back.
 type Transaction struct {
 	ulid           ulid.ULID
 	ctx            *Context
@@ -44,6 +47,8 @@ type Transaction struct {
 
 type TransactionEndCallbackFn func(tx *Transaction, success bool)
 
+// newTransaction creates a new empty unstarted transaction.
+// ctx will not be aware of it until the transaction is started.
 func newTransaction(ctx *Context, options ...Option) *Transaction {
 	tx := &Transaction{
 		ctx:            ctx,
@@ -74,6 +79,9 @@ func (tx *Transaction) IsFinished() bool {
 	return tx.finished.Load()
 }
 
+// Start attaches tx to the passed context and creates a goroutine that will roll it back on timeout or context cancellation.
+// The passed context must be the same context that created the transaction.
+// ErrFinishedTransaction will be returned if Start is called on a finished transaction.
 func (tx *Transaction) Start(ctx *Context) error {
 	if tx.IsFinished() {
 		return ErrFinishedTransaction

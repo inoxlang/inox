@@ -41,11 +41,12 @@ func init() {
 	})
 }
 
+// A Watchable value is a value that can be watched thanks to a Watcher.
 type Watchable interface {
 	Value
 
 	// Watcher creates a watcher managed by the watched value, callers should only call the .WaitNext & .Stop methods,
-	// if watching depth is unspecified the watched value is free to use any depth as long as it consistent with .OnMutation.
+	// if watching depth is unspecified the watched value is free to use any depth as long as it is consistent with .OnMutation.
 	Watcher(*Context, WatcherConfiguration) Watcher
 
 	//OnMutation registers a microtask to be called on mutations, the mutations should be same as the one returned by the watcher.

@@ -43,7 +43,7 @@ func NewTreeWalkStateWithGlobal(global *GlobalState) *TreeWalkState {
 	}
 }
 
-// A TreeWalkState stores all the data accessed during the tree walking evaluation.
+// A TreeWalkState stores all the data accessed during a tree walking evaluation.
 type TreeWalkState struct {
 	Global          *GlobalState
 	LocalScopeStack []map[string]Value

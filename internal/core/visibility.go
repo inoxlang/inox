@@ -27,6 +27,7 @@ func (v VisibilityId) HasVisibility() bool {
 	return v > 0
 }
 
+// A ValueVisibility specifies what parts of an Inox value are 'visible' during serialization.
 type ValueVisibility struct {
 	publicKeys      []string
 	selfVisibleKeys []string

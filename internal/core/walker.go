@@ -14,7 +14,10 @@ var (
 	FS_TREE_DATA_ITEM_PROPNAMES = []string{"path", "path_rel_to_parent"}
 )
 
+// A Walkable is value that can walked using a walker.
 type Walkable interface {
+
+	//Walker should return a new walker that, when possible, should be not affected by mutations of the walked value.
 	Walker(*Context) (Walker, error)
 }
 
