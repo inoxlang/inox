@@ -283,6 +283,28 @@ func TestCompareOrderedPairs(t *testing.T) {
 	assertNotEqualInoxValues(t, intPairB, intPairA, ctx)
 }
 
+func TestCompareULIDs(t *testing.T) {
+	ulid1 := NewULID()
+	ulid2 := NewULID()
+
+	assertEqualInoxValues(t, ulid1, ulid1, nil)
+	assertEqualInoxValues(t, ulid2, ulid2, nil)
+
+	assertNotEqualInoxValues(t, ulid1, ulid2, nil)
+	assertNotEqualInoxValues(t, ulid2, ulid1, nil)
+}
+
+func TestCompareUUIDs(t *testing.T) {
+	firstUUID := NewUUIDv4()
+	secondUUID := NewUUIDv4()
+
+	assertEqualInoxValues(t, firstUUID, firstUUID, nil)
+	assertEqualInoxValues(t, secondUUID, secondUUID, nil)
+
+	assertNotEqualInoxValues(t, firstUUID, secondUUID, nil)
+	assertNotEqualInoxValues(t, secondUUID, firstUUID, nil)
+}
+
 func assertEqualInoxValues(t *testing.T, a, b Value, ctx *Context) {
 	t.Helper()
 	assert.True(t, a.Equal(ctx, b, map[uintptr]uintptr{}, 0))

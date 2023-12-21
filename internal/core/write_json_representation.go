@@ -1204,6 +1204,24 @@ func (s *FilesystemSnapshotIL) WriteJSONRepresentation(ctx *Context, w *jsoniter
 	return ErrNotImplementedYet
 }
 
+func (id ULID) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+	if depth > MAX_JSON_REPR_WRITING_DEPTH {
+		return ErrMaximumJSONReprWritingDepthReached
+	}
+
+	w.WriteString(id.libValue().String())
+	return nil
+}
+
+func (id UUIDv4) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+	if depth > MAX_JSON_REPR_WRITING_DEPTH {
+		return ErrMaximumJSONReprWritingDepthReached
+	}
+
+	w.WriteString(id.libValue().String())
+	return nil
+}
+
 func noPatternOrAny(p Pattern) bool {
 	return p == nil || p == ANYVAL_PATTERN || p == SERIALIZABLE_PATTERN
 }

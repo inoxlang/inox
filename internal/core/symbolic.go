@@ -1747,3 +1747,11 @@ func (t *CurrentTest) ToSymbolicValue(ctx *Context, encountered map[uintptr]symb
 func (p *TestedProgram) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return symbolic.ANY_TESTED_PROGRAM, nil
 }
+
+func (id ULID) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
+	return symbolic.NewULID(id.libValue()), nil
+}
+
+func (id UUIDv4) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
+	return symbolic.NewUUID(id.libValue()), nil
+}

@@ -2171,3 +2171,15 @@ func (p *TestedProgram) Equal(ctx *Context, other Value, alreadyCompared map[uin
 
 	return ok && p == other
 }
+
+func (id ULID) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	otherULID, ok := other.(ULID)
+
+	return ok && id == otherULID
+}
+
+func (id UUIDv4) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	otherUUID, ok := other.(UUIDv4)
+
+	return ok && id == otherUUID
+}

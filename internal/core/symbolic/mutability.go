@@ -641,3 +641,11 @@ func (*CurrentTest) IsMutable() bool {
 func (*TestedProgram) IsMutable() bool {
 	return true
 }
+
+func (*ULID) IsMutable() bool {
+	return false
+}
+
+func (*UUIDv4) IsMutable() bool {
+	return false
+}

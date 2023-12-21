@@ -28,8 +28,11 @@ const (
 var (
 	ErrMaximumReprWritingDepthReached = errors.New("maximum representation writing depth reached")
 
-	OPENING_BRACKET = []byte{'['}
-	CLOSING_BRACKET = []byte{']'}
+	OPENING_BRACKET     = []byte{'['}
+	CLOSING_BRACKET     = []byte{']'}
+	NIL_LITERAL_BYTES   = []byte{'n', 'i', 'l'}
+	TRUE_LITERAL_BYTES  = []byte{'t', 'r', 'u', 'e'}
+	FALSE_LITERAL_BYTES = []byte{'t', 'r', 'u', 'e'}
 )
 
 type ValueRepresentation []byte
@@ -158,16 +161,16 @@ func (m NamespaceMemberPatternReprMixin) WriteJSONRepresentation(ctx *Context, w
 // implementations
 
 func (Nil NilT) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
-	_, err := w.Write([]byte{'n', 'i', 'l'})
+	_, err := w.Write(NIL_LITERAL_BYTES)
 	return err
 }
 
 func (b Bool) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	if b {
-		_, err := w.Write([]byte{'t', 'r', 'u', 'e'})
+		_, err := w.Write(TRUE_LITERAL_BYTES)
 		return err
 	} else {
-		_, err := w.Write([]byte{'f', 'a', 'l', 's', 'e'})
+		_, err := w.Write(FALSE_LITERAL_BYTES)
 		return err
 	}
 }
@@ -1460,4 +1463,42 @@ func (s *FilesystemSnapshotIL) WriteRepresentation(ctx *Context, w io.Writer, co
 	//TODO: only serialize if size is at most a dozen kilobytes.
 
 	return ErrNotImplementedYet
+}
+
+func (id ULID) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
+	if depth > MAX_REPR_WRITING_DEPTH {
+		return ErrMaximumReprWritingDepthReached
+	}
+
+	jsonStr, err := utils.MarshalJsonNoHTMLEspace(id.libValue().String())
+	if err != nil {
+		return err
+	}
+
+	_, err = w.Write(utils.StringAsBytes(globalnames.ULID_FN))
+	if err != nil {
+		return err
+	}
+
+	_, err = w.Write(jsonStr)
+	return err
+}
+
+func (id UUIDv4) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
+	if depth > MAX_REPR_WRITING_DEPTH {
+		return ErrMaximumReprWritingDepthReached
+	}
+
+	jsonStr, err := utils.MarshalJsonNoHTMLEspace(id.libValue().String())
+	if err != nil {
+		return err
+	}
+
+	_, err = w.Write(utils.StringAsBytes(globalnames.UUIDv4_FN))
+	if err != nil {
+		return err
+	}
+
+	_, err = w.Write(jsonStr)
+	return err
 }

@@ -2045,6 +2045,14 @@ func (p *TestedProgram) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, 
 	InspectPrint(w, p)
 }
 
+func (id ULID) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	w.WriteString(id.libValue().String())
+}
+
+func (id UUIDv4) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.WriteString(id.libValue().String()))
+}
+
 func InspectPrint[T any](w *bufio.Writer, v T) {
 	utils.Must(fmt.Fprintf(w, "%#v", v))
 }

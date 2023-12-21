@@ -97,8 +97,12 @@ const (
 	READER_FN     = "Reader"
 	RINGBUFFER_FN = "RingBuffer"
 
-	//types?
+	//string types
 	EMAIL_ADDRESS_FN = "EmailAddress"
+
+	//id types
+	ULID_FN   = "ULID"
+	UUIDv4_FN = "UUIDv4"
 
 	// functional
 	IDENTITY_FN    = "idt"

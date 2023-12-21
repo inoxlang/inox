@@ -3,6 +3,9 @@ package symbolic
 import (
 	"errors"
 	"time"
+
+	"github.com/google/uuid"
+	"github.com/oklog/ulid/v2"
 )
 
 var (
@@ -93,6 +96,9 @@ type ConcreteValueFactories struct {
 	//CreateFileInfo func() any
 
 	CreateOption func(name string, value any) any
+
+	CreateULID func(ulid.ULID) any
+	CreateUUID func(uuid.UUID) any
 }
 
 type PotentiallyConcretizable interface {
