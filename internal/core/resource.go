@@ -244,7 +244,34 @@ func (pth Path) ToPrefixPattern() PathPattern {
 		panic(errors.New("path should be a directory"))
 	}
 
-	return PathPattern(pth.UnderlyingString() + "...")
+	var escapedPath []byte //set if some characters need to be escaped.
+
+	for i := 0; i < len(pth); i++ {
+		b := pth[i]
+		switch b {
+		case '*', '?', '[':
+			if (countPrevBackslashes(utils.StringAsBytes(pth), i) % 2) == 0 { //the character is not escaped
+				if escapedPath == nil {
+					escapedPath = make([]byte, i)
+					copy(escapedPath, pth[:i])
+				}
+				//escape the character
+				escapedPath = append(escapedPath, '\\', b)
+			}
+		default:
+			if escapedPath != nil {
+				escapedPath = append(escapedPath, b)
+			}
+		}
+	}
+
+	escapedPathString := pth.UnderlyingString()
+
+	if escapedPath != nil {
+		escapedPathString = utils.BytesAsString(escapedPath)
+	}
+
+	return PathPattern(escapedPathString + "...")
 }
 
 func (pth Path) ToGlobbingPattern() PathPattern {

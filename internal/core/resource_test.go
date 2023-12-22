@@ -29,6 +29,25 @@ func TestResourceGraph(t *testing.T) {
 	})
 }
 
+func TestPath(t *testing.T) {
+	t.Run("ToPrefixPattern()", func(t *testing.T) {
+		assert.EqualValues(t, "/...", Path("/").ToPrefixPattern())
+		assert.EqualValues(t, "/\\*/...", Path("/*/").ToPrefixPattern())
+		assert.EqualValues(t, "/\\?/...", Path("/?/").ToPrefixPattern())
+		assert.EqualValues(t, "/\\[x]/...", Path("/[x]/").ToPrefixPattern())
+
+		assert.EqualValues(t, "/\\*/\\*/...", Path("/*/*/").ToPrefixPattern())
+
+		assert.Panics(t, func() {
+			Path("/a").ToPrefixPattern()
+		})
+
+		assert.Panics(t, func() {
+			Path("/*/a").ToPrefixPattern()
+		})
+	})
+}
+
 func TestURL(t *testing.T) {
 	t.Run("AppendRelativePath", func(t *testing.T) {
 		url := URL("https://example.com/")
