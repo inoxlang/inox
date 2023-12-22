@@ -1126,6 +1126,7 @@ func (patt URLPattern) Includes(ctx *Context, v Value) bool {
 	case HostPattern, Host:
 		return false
 	case URL:
+
 		if patt.IsPrefixPattern() {
 			// ignore the query and fragment parts
 			queryIndex := strings.Index(string(other), "?")
@@ -1143,8 +1144,118 @@ func (patt URLPattern) Includes(ctx *Context, v Value) bool {
 
 		//else not a prefix pattern
 
+		const (
+			MAX_SEGMENT_COUNT = 10
+		)
+
+		var patternPositionIndexes [MAX_SEGMENT_COUNT]int
+		var segmentPatterns [MAX_SEGMENT_COUNT]StringPattern // example, for %/a/%int/b -> [nil, nil, %int, nil, ...]
+		var patternCount = 0
+		inPatternSegment := false
+		var pathPattern []byte //only set if there are pattern segments or '*' wildcards.
+
+		pathStartIndex := 0
+		pathEndIndex := -1
+
+		dotSlasSlashIndex := strings.Index(string(patt), "://")
+		patternWithoutPatternPercent := string(patt)
+
+	loop:
+		for i := dotSlasSlashIndex + 3; i < len(patt); i++ {
+			switch patt[i] {
+			case '/':
+				if pathStartIndex == 0 {
+					pathStartIndex = i
+				}
+			case '?', '#':
+				pathEndIndex = i
+				break loop
+			}
+		}
+		if pathEndIndex == -1 {
+			pathEndIndex = len(patt)
+		}
+
+		if pathStartIndex > 0 {
+			patternWithoutPatternPercent = strings.ReplaceAll(string(patt), "/%", "/")
+			segmentIndex := 0
+
+			for i := pathStartIndex; i < pathEndIndex; i++ {
+				switch patt[i] {
+				case '%':
+					if inPatternSegment {
+						panic(fmt.Errorf("invalid pattern segment in URL pattern"))
+					}
+
+					if i != 0 && patt[i-1] == '/' {
+						if patternCount >= MAX_SEGMENT_COUNT {
+							panic(errors.New("too many `/%pattern` segments in URL pattern"))
+						}
+						patternPositionIndexes[patternCount] = i
+						patternCount++
+						patternName := ""
+
+						for j := i + 1; j < len(patt); j++ {
+							if patt[j] == '/' {
+								patternName = string(patt[i+1 : j])
+								break
+							}
+						}
+						if patternName == "" {
+							patternName = string(patt[i+1:])
+						}
+						pattern, ok := DEFAULT_NAMED_PATTERNS[patternName]
+						if !ok {
+							panic(fmt.Errorf("pattern %%%s does not exist or is not a default pattern", patternName))
+						}
+
+						stringPattern, ok := pattern.StringPattern()
+						if !ok {
+							panic(fmt.Errorf("pattern %%%s has not a corresponding string pattern", patternName))
+						}
+						segmentPatterns[segmentIndex] = stringPattern
+
+						inPatternSegment = true
+						if pathPattern == nil {
+							pathPattern = append([]byte(patt[pathStartIndex:i]), '?', '*')
+						}
+					}
+				case '/':
+					inPatternSegment = false
+					if pathPattern != nil {
+						pathPattern = append(pathPattern, patt[i])
+					}
+					segmentIndex++
+					if segmentIndex >= MAX_SEGMENT_COUNT {
+						panic(errors.New("too many segments in URL pattern"))
+					}
+				case '*':
+					if !inPatternSegment {
+						if pathPattern == nil {
+							pathPattern = append([]byte(patt[pathStartIndex:i+1]), '?', '*')
+						} else {
+							pathPattern = append(pathPattern, patt[i], '?', '*')
+						}
+						break
+					}
+					fallthrough //'*' is not allowed in a pattern name
+				default:
+					if inPatternSegment {
+						if !isAlpha(patt[i]) && !isDigit(patt[i]) && patt[i] != '-' {
+							panic(fmt.Errorf("invalid pattern segment in URL pattern"))
+						}
+						//don't add the pattern name's character in the path pattern.
+						continue
+					}
+					if pathPattern != nil {
+						pathPattern = append(pathPattern, patt[i])
+					}
+				}
+			}
+		}
+
 		url := other.mustParse()
-		patternURL := utils.Must(url.Parse(string(patt)))
+		patternURL := utils.Must(url.Parse(patternWithoutPatternPercent))
 
 		//check host and scheme
 		if url.Host != patternURL.Host || url.Scheme != patternURL.Scheme {
@@ -1162,13 +1273,52 @@ func (patt URLPattern) Includes(ctx *Context, v Value) bool {
 		if pathOfOther == "" {
 			pathOfOther = "/"
 		}
-		pathOfPattern := patternURL.Path
-		if pathOfPattern == "" {
-			pathOfPattern = "/"
-		}
 
-		if pathOfOther != pathOfPattern {
-			return false
+		if pathPattern == nil {
+			pathOfPattern := patternURL.Path
+			if pathOfPattern == "" {
+				pathOfPattern = "/"
+			}
+
+			if pathOfOther != pathOfPattern {
+				return false
+			}
+		} else {
+			ok, err := doublestar.Match(string(pathPattern), pathOfOther)
+			if !ok || err != nil {
+				return false
+			}
+
+			//check segments
+			segmentIndex := 0
+			segmentStart := 0
+
+			for i := 0; i < len(pathOfOther); i++ {
+				switch pathOfOther[i] {
+				case '/':
+					stringPattern := segmentPatterns[segmentIndex]
+					if stringPattern != nil {
+						segment := pathOfOther[segmentStart:i]
+						if _, err := stringPattern.Parse(ctx, segment); err != nil {
+							return false
+						}
+					}
+
+					segmentIndex++
+					segmentStart = i + 1
+				}
+			}
+
+			//check last segment.
+			if segmentStart != len(pathOfOther) {
+				stringPattern := segmentPatterns[segmentIndex]
+				if stringPattern != nil {
+					segment := pathOfOther[segmentStart:]
+					if _, err := stringPattern.Parse(ctx, segment); err != nil {
+						return false
+					}
+				}
+			}
 		}
 
 		//check the query
