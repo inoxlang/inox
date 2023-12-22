@@ -542,6 +542,22 @@ be made more secure in the near future.
 name = obj.?name
 ```
 
+### Object Spread
+
+Object spreads require specifying the properties to spread.
+
+```
+object = {b: 2}
+record = #{b: 2}
+
+{a: 1, ...object.{b}}
+
+# same result
+{a: 1, ...record.{b}}
+```
+
+⚠️ Spreading a property that is already present is not allowed.
+
 ## Records
 
 Records are the immutable equivalent of objects, their properties can only have

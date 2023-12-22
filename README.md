@@ -13,16 +13,6 @@ deeply integrates with Inox's built-in database engine, testing engine and HTTP 
 📚 [Learning Inox](#learning-inox)\
 👥 [Discord Server](https://discord.gg/53YGx8GzgE)
 
-**Goals**:
-
-- Zero boilerplate
-- Dead simple configuration
-- Super stable (_once version 1.0 is reached_)
-- No rabbit holes
-- Secure by default
-- Low maintenance
-- A programming language as simple as possible
-
 **Main Language & Development Features**
 
 - [XML Expressions (HTML)](#xml-expressions)
@@ -76,6 +66,21 @@ deeply integrates with Inox's built-in database engine, testing engine and HTTP 
 - WebAssembly support using https://github.com/tetratelabs/wazero.
 - Team management and access control
 - ... [other planned features](./FUTURE.md)
+
+</details>
+
+<details>
+
+**<summary>🎯 Goals</summary>**
+
+- Zero boilerplate
+- Dead simple configuration
+- Super stable (_once version 1.0 is reached_)
+- No rabbit holes
+- Secure by default
+- Low maintenance
+- A programming language as simple as possible
+
 
 </details>
 
