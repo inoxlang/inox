@@ -1,6 +1,7 @@
 package core
 
 import (
+	"math"
 	"runtime"
 	"testing"
 
@@ -295,6 +296,7 @@ func TestIntRangePattern(t *testing.T) {
 
 	t.Run("0..100", func(t *testing.T) {
 		patt := NewIncludedEndIntRangePattern(0, 100, -1)
+
 		assert.True(t, patt.Test(ctx, Int(0)))
 		assert.True(t, patt.Test(ctx, Int(1)))
 		assert.True(t, patt.Test(ctx, Int(2)))
@@ -303,8 +305,20 @@ func TestIntRangePattern(t *testing.T) {
 		assert.True(t, patt.Test(ctx, Int(6)))
 		assert.True(t, patt.Test(ctx, Int(9)))
 		assert.True(t, patt.Test(ctx, Int(99)))
+		assert.True(t, patt.Test(ctx, Int(100)))
 
+		assert.False(t, patt.Test(ctx, Int(101)))
 		assert.False(t, patt.Test(ctx, Int(102)))
+
+		stringPattern, ok := patt.StringPattern()
+		if !assert.True(t, ok) {
+			return
+		}
+
+		assert.True(t, stringPattern.Test(ctx, Str("0")))
+		assert.True(t, stringPattern.Test(ctx, Str("99")))
+		assert.True(t, stringPattern.Test(ctx, Str("100")))
+		assert.False(t, stringPattern.Test(ctx, Str("101")))
 	})
 
 	t.Run("0..100, multiple of 3", func(t *testing.T) {
@@ -319,7 +333,13 @@ func TestIntRangePattern(t *testing.T) {
 		assert.False(t, patt.Test(ctx, Int(1)))
 		assert.False(t, patt.Test(ctx, Int(2)))
 		assert.False(t, patt.Test(ctx, Int(4)))
+		assert.False(t, patt.Test(ctx, Int(101)))
+		assert.False(t, patt.Test(ctx, Int(100)))
 		assert.False(t, patt.Test(ctx, Int(102)))
+
+		//int range patterns with a multiple-of constraint don't have a corresponding string pattern.
+		_, ok := patt.StringPattern()
+		assert.False(t, ok)
 	})
 }
 
@@ -328,11 +348,63 @@ func TestFloatRangePattern(t *testing.T) {
 	NewGlobalState(ctx)
 	defer ctx.CancelGracefully()
 
+	t.Run("-math.MaxFloat64 .. +math.MaxFloat64", func(t *testing.T) {
+		patt := NewFloatRangePattern(NewIncludedEndFloatRange(-math.MaxFloat64, math.MaxFloat64), -1)
+		assert.True(t, patt.Test(ctx, Float(-1000)))
+		assert.True(t, patt.Test(ctx, Float(0)))
+		assert.True(t, patt.Test(ctx, Float(1000)))
+
+		stringPatt, ok := patt.StringPattern()
+		if !assert.True(t, ok) {
+			return
+		}
+
+		assert.True(t, stringPatt.Test(ctx, Str("1000.0")))
+		assert.True(t, stringPatt.Test(ctx, Str("-0.001")))
+		assert.True(t, stringPatt.Test(ctx, Str("0.0")))
+		assert.True(t, stringPatt.Test(ctx, Str("0.001")))
+		assert.True(t, stringPatt.Test(ctx, Str("1000.0")))
+	})
+
+	t.Run("-math.MaxFloat64 .. 0", func(t *testing.T) {
+		patt := NewFloatRangePattern(NewIncludedEndFloatRange(-math.MaxFloat64, 0), -1)
+		assert.True(t, patt.Test(ctx, Float(-1000)))
+		assert.True(t, patt.Test(ctx, Float(-0.001)))
+		assert.True(t, patt.Test(ctx, Float(0)))
+		assert.False(t, patt.Test(ctx, Float(0.001)))
+
+		stringPatt, ok := patt.StringPattern()
+		if !assert.True(t, ok) {
+			return
+		}
+
+		assert.True(t, stringPatt.Test(ctx, Str("-1000.0")))
+		assert.True(t, stringPatt.Test(ctx, Str("-0.001")))
+		assert.True(t, stringPatt.Test(ctx, Str("0.0")))
+		assert.False(t, stringPatt.Test(ctx, Str("0.001")))
+	})
+
+	t.Run("0 .. +math.MaxFloat64", func(t *testing.T) {
+		patt := NewFloatRangePattern(NewIncludedEndFloatRange(0, math.MaxFloat64), -1)
+		assert.True(t, patt.Test(ctx, Float(0)))
+		assert.True(t, patt.Test(ctx, Float(0.001)))
+		assert.False(t, patt.Test(ctx, Float(-0.001)))
+		assert.False(t, patt.Test(ctx, Float(-1000)))
+
+		stringPatt, ok := patt.StringPattern()
+		if !assert.True(t, ok) {
+			return
+		}
+
+		assert.True(t, stringPatt.Test(ctx, Str("0.0")))
+		assert.True(t, stringPatt.Test(ctx, Str("0.001")))
+		assert.True(t, stringPatt.Test(ctx, Str("1000.0")))
+		assert.False(t, stringPatt.Test(ctx, Str("-1000.0")))
+		assert.False(t, stringPatt.Test(ctx, Str("-0.001")))
+	})
+
 	t.Run("0.0..100.0", func(t *testing.T) {
-		patt := NewFloatRangePattern(FloatRange{
-			start: 0,
-			end:   100,
-		}, -1)
+		patt := NewFloatRangePattern(NewIncludedEndFloatRange(0, 100), -1)
 		assert.True(t, patt.Test(ctx, Float(0)))
 		assert.True(t, patt.Test(ctx, Float(1)))
 		assert.True(t, patt.Test(ctx, Float(2)))
@@ -341,15 +413,17 @@ func TestFloatRangePattern(t *testing.T) {
 		assert.True(t, patt.Test(ctx, Float(6)))
 		assert.True(t, patt.Test(ctx, Float(9)))
 		assert.True(t, patt.Test(ctx, Float(99)))
+		assert.True(t, patt.Test(ctx, Float(99)))
+		assert.True(t, patt.Test(ctx, Float(99.9999)))
+		assert.True(t, patt.Test(ctx, Float(100)))
+		assert.False(t, patt.Test(ctx, Float(100.0001)))
 
-		assert.False(t, patt.Test(ctx, Float(102)))
+		_, ok := patt.StringPattern()
+		assert.False(t, ok)
 	})
 
 	t.Run("0.0..100.0, multiple of 3", func(t *testing.T) {
-		patt := NewFloatRangePattern(FloatRange{
-			start: 0,
-			end:   100,
-		}, 3)
+		patt := NewFloatRangePattern(NewIncludedEndFloatRange(0, 100), 3)
 		assert.True(t, patt.Test(ctx, Float(0)))
 		assert.True(t, patt.Test(ctx, Float(3)))
 		assert.True(t, patt.Test(ctx, Float(6)))
@@ -360,7 +434,13 @@ func TestFloatRangePattern(t *testing.T) {
 		assert.False(t, patt.Test(ctx, Float(1)))
 		assert.False(t, patt.Test(ctx, Float(2)))
 		assert.False(t, patt.Test(ctx, Float(4)))
+		assert.False(t, patt.Test(ctx, Float(99.0001)))
+		assert.False(t, patt.Test(ctx, Float(100)))
+		assert.False(t, patt.Test(ctx, Float(100.0001)))
 		assert.False(t, patt.Test(ctx, Float(102)))
+
+		_, ok := patt.StringPattern()
+		assert.False(t, ok)
 	})
 }
 

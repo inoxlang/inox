@@ -1053,7 +1053,7 @@ func (patt *IntRangePattern) Includes(ctx *Context, n Int) bool {
 }
 
 func (patt *IntRangePattern) StringPattern() (StringPattern, bool) {
-	if patt.multipleOf >= 0 {
+	if patt.multipleOf > 0 {
 		return nil, false
 	}
 	return NewIntRangeStringPattern(patt.intRange.start, patt.intRange.InclusiveEnd(), nil), true
@@ -1119,7 +1119,20 @@ func (patt *FloatRangePattern) Test(ctx *Context, v Value) bool {
 }
 
 func (patt *FloatRangePattern) StringPattern() (StringPattern, bool) {
-	return nil, false
+	if patt.multipleOf > 0 {
+		return nil, false
+	}
+
+	start := patt.floatRange.start
+	end := patt.floatRange.InclusiveEnd()
+	switch {
+	case start == -math.MaxFloat64 && end == math.MaxFloat64,
+		start == -math.MaxFloat64 && end == 0,
+		start == 0 && end == math.MaxFloat64:
+		return NewFloatRangeStringPattern(start, end, nil), true
+	default:
+		return nil, false
+	}
 }
 
 type EventPattern struct {
