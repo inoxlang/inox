@@ -3302,7 +3302,7 @@ func (p *FloatRangePattern) SymbolicValue() Value {
 }
 
 func (p *FloatRangePattern) StringPattern() (StringPattern, bool) {
-	return nil, false
+	return NewFloatRangeStringPattern(p), true
 }
 
 func (p *FloatRangePattern) PropertyNames() []string {

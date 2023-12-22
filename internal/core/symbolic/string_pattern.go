@@ -16,6 +16,7 @@ var (
 	ANY_SEQ_STRING_PATTERN             = &SequenceStringPattern{}
 	ANY_LENGTH_CHECKING_STRING_PATTERN = &LengthCheckingStringPattern{minLength: -1}
 	ANY_INT_RANGE_STRING_PATTERN       = &IntRangeStringPattern{}
+	ANY_FLOAT_RANGE_STRING_PATTERN     = &FloatRangeStringPattern{}
 	ANY_PARSED_BASED_STRING_PATTERN    = &ParserBasedPattern{}
 )
 
@@ -504,10 +505,94 @@ func (p *IntRangeStringPattern) IteratorElementValue() Value {
 }
 
 func (p *IntRangeStringPattern) WidestOfType() Value {
-	return ANY_EXACT_STR_PATTERN
+	return ANY_INT_RANGE_STRING_PATTERN
 }
 
 func (p *IntRangeStringPattern) HasRegex() bool {
+	//TODO
+	return true
+}
+
+// An FloatRangeStringPattern represents a symbolic FloatRangeStringPattern.
+type FloatRangeStringPattern struct {
+	NotCallablePatternMixin
+	SerializableMixin
+
+	pattern *FloatRangePattern //if nil any float range string pattern is matched
+}
+
+func NewFloatRangeStringPattern(p *FloatRangePattern) *FloatRangeStringPattern {
+	return &FloatRangeStringPattern{pattern: p}
+}
+
+func (p *FloatRangeStringPattern) Test(v Value, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
+	otherPattern, ok := v.(*FloatRangeStringPattern)
+	if !ok {
+		return false
+	}
+	if p.pattern == nil {
+		return true
+	}
+	if otherPattern.pattern == nil {
+		return false
+	}
+	return p.pattern.Test(otherPattern.pattern, state)
+}
+
+func (p *FloatRangeStringPattern) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("float-range-string-pattern")
+
+	if p.pattern != nil {
+		w.WriteString("(")
+		p.pattern.PrettyPrint(w.IncrDepth(), config)
+		w.WriteString(")")
+	}
+}
+
+func (p *FloatRangeStringPattern) HasUnderlyingPattern() bool {
+	return true
+}
+
+func (p *FloatRangeStringPattern) TestValue(v Value, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
+	stringLike, ok := v.(StringLike)
+	if !ok {
+		return false
+	}
+	str := stringLike.GetOrBuildString()
+	if str.pattern == nil {
+		return false
+	}
+
+	return p.Test(str.pattern, state)
+}
+
+func (p *FloatRangeStringPattern) SymbolicValue() Value {
+	return NewStringMatchingPattern(p)
+}
+
+func (p *FloatRangeStringPattern) StringPattern() (StringPattern, bool) {
+	return nil, false
+}
+
+func (p *FloatRangeStringPattern) IteratorElementKey() Value {
+	return ANY_INT
+}
+
+func (p *FloatRangeStringPattern) IteratorElementValue() Value {
+	return p.SymbolicValue()
+}
+
+func (p *FloatRangeStringPattern) WidestOfType() Value {
+	return ANY_FLOAT_RANGE_STRING_PATTERN
+}
+
+func (p *FloatRangeStringPattern) HasRegex() bool {
 	//TODO
 	return true
 }

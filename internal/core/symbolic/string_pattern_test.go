@@ -366,3 +366,47 @@ func TestIntRangeStringPattern(t *testing.T) {
 	})
 
 }
+
+func TestFloatRangeStringPattern(t *testing.T) {
+	any := ANY_FLOAT_RANGE_STRING_PATTERN
+	anyFloatRange := NewFloatRangeStringPattern(ANY_FLOAT_RANGE_PATTERN)
+	specificFloatRange1 := NewFloatRangeStringPattern(NewFloatRangePattern(NewIncludedEndFloatRange(FLOAT_1, FLOAT_2)))
+	specificFloatRange2 := NewFloatRangeStringPattern(NewFloatRangePattern(NewIncludedEndFloatRange(FLOAT_1, FLOAT_3)))
+
+	t.Run("Test()", func(t *testing.T) {
+		assertTest(t, any, any)
+		assertTest(t, any, anyFloatRange)
+		assertTest(t, any, specificFloatRange1)
+		assertTest(t, any, specificFloatRange2)
+
+		assertTest(t, anyFloatRange, anyFloatRange)
+		assertTest(t, anyFloatRange, specificFloatRange1)
+		assertTest(t, anyFloatRange, specificFloatRange2)
+		assertTestFalse(t, anyFloatRange, any)
+
+		assertTest(t, specificFloatRange1, specificFloatRange1)
+		assertTestFalse(t, specificFloatRange1, specificFloatRange2)
+		assertTestFalse(t, specificFloatRange1, anyFloatRange)
+		assertTestFalse(t, specificFloatRange1, any)
+	})
+
+	t.Run("TestValue()", func(t *testing.T) {
+		//counterpart to Test() cases.
+
+		assertTestValue(t, any, any.SymbolicValue())
+		assertTestValue(t, any, anyFloatRange.SymbolicValue())
+		assertTestValue(t, any, specificFloatRange1.SymbolicValue())
+		assertTestValue(t, any, specificFloatRange2.SymbolicValue())
+
+		assertTestValue(t, anyFloatRange, anyFloatRange.SymbolicValue())
+		assertTestValue(t, anyFloatRange, specificFloatRange1.SymbolicValue())
+		assertTestValue(t, anyFloatRange, specificFloatRange2.SymbolicValue())
+		assertTestValueFalse(t, anyFloatRange, any.SymbolicValue())
+
+		assertTestValue(t, specificFloatRange1, specificFloatRange1.SymbolicValue())
+		assertTestValueFalse(t, specificFloatRange1, specificFloatRange2.SymbolicValue())
+		assertTestValueFalse(t, specificFloatRange1, anyFloatRange.SymbolicValue())
+		assertTestValueFalse(t, specificFloatRange1, any.SymbolicValue())
+	})
+
+}

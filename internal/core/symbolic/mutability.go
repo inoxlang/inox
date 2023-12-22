@@ -340,6 +340,10 @@ func (patt *IntRangeStringPattern) IsMutable() bool {
 	return false
 }
 
+func (patt *FloatRangeStringPattern) IsMutable() bool {
+	return false
+}
+
 func (patt *IntRangePattern) IsMutable() bool {
 	return false
 }
