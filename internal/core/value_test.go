@@ -34,7 +34,116 @@ func TestURLPattern(t *testing.T) {
 			assertPatternDoesntTest(t, nil, URLPattern("https://localhost:443/ab"), URL("https://localhost:442/ab")) //different port
 			assertPatternDoesntTest(t, nil, URLPattern("https://localhost:443/ab"), URL("https://localhost:443/ab?x=1"))
 
-			//pattern in first segment (last)
+			//'*' wildcard as first segment (last)
+
+			assertPatternTests(t, nil, URLPattern("https://localhost:443/*"), URL("https://localhost:443/a"))
+			assertPatternTests(t, nil, URLPattern("https://localhost:443/*"), URL("https://localhost:443/a#"))
+			assertPatternTests(t, nil, URLPattern("https://localhost:443/*"), URL("https://localhost:443/a#fragment"))
+			assertPatternTests(t, nil, URLPattern("https://localhost:443/*"), URL("https://localhost:443/a?"))
+
+			assertPatternTests(t, nil, URLPattern("https://localhost:443/*"), URL("https://localhost:443/aa"))
+			assertPatternTests(t, nil, URLPattern("https://localhost:443/*"), URL("https://localhost:443/aa#"))
+			assertPatternTests(t, nil, URLPattern("https://localhost:443/*"), URL("https://localhost:443/aa#fragment"))
+			assertPatternTests(t, nil, URLPattern("https://localhost:443/*"), URL("https://localhost:443/aa?"))
+
+			assertPatternDoesntTest(t, nil, URLPattern("https://localhost:443/*"), URL("https://localhost:442/"))   //emty segment
+			assertPatternDoesntTest(t, nil, URLPattern("https://localhost:443/*"), URL("https://localhost:442/a/")) //additional slash
+			assertPatternDoesntTest(t, nil, URLPattern("https://localhost:443/*"), URL("https://localhost:442/a"))  //different port
+			assertPatternDoesntTest(t, nil, URLPattern("https://localhost:443/*"), URL("https://localhost:443/a?x=1"))
+
+			//'*' wildcard in first segment (last)
+
+			assertPatternTests(t, nil, URLPattern("https://localhost:443/a*"), URL("https://localhost:443/a"))
+			assertPatternTests(t, nil, URLPattern("https://localhost:443/*"), URL("https://localhost:443/a#"))
+			assertPatternTests(t, nil, URLPattern("https://localhost:443/*"), URL("https://localhost:443/a#fragment"))
+			assertPatternTests(t, nil, URLPattern("https://localhost:443/*"), URL("https://localhost:443/a?"))
+
+			assertPatternTests(t, nil, URLPattern("https://localhost:443/*"), URL("https://localhost:443/aa"))
+			assertPatternTests(t, nil, URLPattern("https://localhost:443/*"), URL("https://localhost:443/aa#"))
+			assertPatternTests(t, nil, URLPattern("https://localhost:443/*"), URL("https://localhost:443/aa#fragment"))
+			assertPatternTests(t, nil, URLPattern("https://localhost:443/*"), URL("https://localhost:443/aa?"))
+
+			assertPatternDoesntTest(t, nil, URLPattern("https://localhost:443/*"), URL("https://localhost:442/"))   //emty segment
+			assertPatternDoesntTest(t, nil, URLPattern("https://localhost:443/*"), URL("https://localhost:442/a/")) //additional slash
+			assertPatternDoesntTest(t, nil, URLPattern("https://localhost:443/*"), URL("https://localhost:442/a"))  //different port
+			assertPatternDoesntTest(t, nil, URLPattern("https://localhost:443/*"), URL("https://localhost:443/a?x=1"))
+
+			//escaped '*' wildcard as first segment (last)
+
+			assertPatternTests(t, nil, URLPattern("https://localhost:443/\\*"), URL("https://localhost:443/*"))
+			assertPatternTests(t, nil, URLPattern("https://localhost:443/\\*"), URL("https://localhost:443/*#"))
+			assertPatternTests(t, nil, URLPattern("https://localhost:443/\\*"), URL("https://localhost:443/*#fragment"))
+			assertPatternTests(t, nil, URLPattern("https://localhost:443/\\*"), URL("https://localhost:443/*?"))
+
+			assertPatternDoesntTest(t, nil, URLPattern("https://localhost:443/\\*"), URL("https://localhost:442/*a")) //additional character
+			assertPatternDoesntTest(t, nil, URLPattern("https://localhost:443/\\*"), URL("https://localhost:442/"))   //emty segment
+			assertPatternDoesntTest(t, nil, URLPattern("https://localhost:443/\\*"), URL("https://localhost:442/*/")) //additional slash
+			assertPatternDoesntTest(t, nil, URLPattern("https://localhost:443/\\*"), URL("https://localhost:442/*"))  //different port
+			assertPatternDoesntTest(t, nil, URLPattern("https://localhost:443/\\*"), URL("https://localhost:443/*?x=1"))
+
+			//'**' wildcard as first segment (last)
+
+			assertPatternTests(t, nil, URLPattern("https://localhost:443/**"), URL("https://localhost:443/a"))
+			assertPatternTests(t, nil, URLPattern("https://localhost:443/**"), URL("https://localhost:443/a#"))
+			assertPatternTests(t, nil, URLPattern("https://localhost:443/**"), URL("https://localhost:443/a#fragment"))
+			assertPatternTests(t, nil, URLPattern("https://localhost:443/**"), URL("https://localhost:443/a?"))
+
+			assertPatternTests(t, nil, URLPattern("https://localhost:443/**"), URL("https://localhost:443/aa"))
+			assertPatternTests(t, nil, URLPattern("https://localhost:443/**"), URL("https://localhost:443/aa#"))
+			assertPatternTests(t, nil, URLPattern("https://localhost:443/**"), URL("https://localhost:443/aa#fragment"))
+			assertPatternTests(t, nil, URLPattern("https://localhost:443/**"), URL("https://localhost:443/aa?"))
+
+			assertPatternTests(t, nil, URLPattern("https://localhost:443/**"), URL("https://localhost:443/a/a"))
+			assertPatternTests(t, nil, URLPattern("https://localhost:443/**"), URL("https://localhost:443/a/a#"))
+			assertPatternTests(t, nil, URLPattern("https://localhost:443/**"), URL("https://localhost:443/a/a#fragment"))
+			assertPatternTests(t, nil, URLPattern("https://localhost:443/**"), URL("https://localhost:443/a/a?"))
+
+			assertPatternDoesntTest(t, nil, URLPattern("https://localhost:443/**"), URL("https://localhost:442/"))   //emty segment
+			assertPatternDoesntTest(t, nil, URLPattern("https://localhost:443/**"), URL("https://localhost:442/a/")) //additional slash
+			assertPatternDoesntTest(t, nil, URLPattern("https://localhost:443/**"), URL("https://localhost:442/a"))  //different port
+			assertPatternDoesntTest(t, nil, URLPattern("https://localhost:443/**"), URL("https://localhost:443/a?x=1"))
+
+			//'*' wildcard as second segment (not last)
+
+			assertPatternTests(t, nil, URLPattern("https://localhost:443/*/a"), URL("https://localhost:443/a/a"))
+			assertPatternTests(t, nil, URLPattern("https://localhost:443/*/a"), URL("https://localhost:443/a/a#"))
+			assertPatternTests(t, nil, URLPattern("https://localhost:443/*/a"), URL("https://localhost:443/a/a#fragment"))
+			assertPatternTests(t, nil, URLPattern("https://localhost:443/*/a"), URL("https://localhost:443/a/a?"))
+
+			assertPatternTests(t, nil, URLPattern("https://localhost:443/*/a"), URL("https://localhost:443/aa/a"))
+			assertPatternTests(t, nil, URLPattern("https://localhost:443/*/a"), URL("https://localhost:443/aa/a#"))
+			assertPatternTests(t, nil, URLPattern("https://localhost:443/*/a"), URL("https://localhost:443/aa/a#fragment"))
+			assertPatternTests(t, nil, URLPattern("https://localhost:443/*/a"), URL("https://localhost:443/aa/a?"))
+
+			assertPatternDoesntTest(t, nil, URLPattern("https://localhost:443/*"), URL("https://localhost:443//a"))     //emty segment
+			assertPatternDoesntTest(t, nil, URLPattern("https://localhost:443/*/a"), URL("https://localhost:443/a/a/")) //additional slash
+			assertPatternDoesntTest(t, nil, URLPattern("https://localhost:443/*/a"), URL("https://localhost:442/a/a"))  //different port
+			assertPatternDoesntTest(t, nil, URLPattern("https://localhost:443/*/a"), URL("https://localhost:443/a/a?x=1"))
+
+			//'**/a*' wildcard at the end
+
+			assertPatternTests(t, nil, URLPattern("https://localhost:443/**"), URL("https://localhost:443/a"))
+			assertPatternTests(t, nil, URLPattern("https://localhost:443/**/a*"), URL("https://localhost:443/a#"))
+			assertPatternTests(t, nil, URLPattern("https://localhost:443/**/a*"), URL("https://localhost:443/a#fragment"))
+			assertPatternTests(t, nil, URLPattern("https://localhost:443/**/a*"), URL("https://localhost:443/a?"))
+
+			assertPatternTests(t, nil, URLPattern("https://localhost:443/**/a*"), URL("https://localhost:443/aa"))
+			assertPatternTests(t, nil, URLPattern("https://localhost:443/**/a*"), URL("https://localhost:443/aa#"))
+			assertPatternTests(t, nil, URLPattern("https://localhost:443/**/a*"), URL("https://localhost:443/aa#fragment"))
+			assertPatternTests(t, nil, URLPattern("https://localhost:443/**/a*"), URL("https://localhost:443/aa?"))
+
+			assertPatternTests(t, nil, URLPattern("https://localhost:443/**/a*"), URL("https://localhost:443/a/a"))
+			assertPatternTests(t, nil, URLPattern("https://localhost:443/**/a*"), URL("https://localhost:443/a/a#"))
+			assertPatternTests(t, nil, URLPattern("https://localhost:443/**/a*"), URL("https://localhost:443/a/a#fragment"))
+			assertPatternTests(t, nil, URLPattern("https://localhost:443/**/a*"), URL("https://localhost:443/a/a?"))
+
+			assertPatternDoesntTest(t, nil, URLPattern("https://localhost:443/**/a*"), URL("https://localhost:443/a/"))  //missing leading 'a'
+			assertPatternDoesntTest(t, nil, URLPattern("https://localhost:443/**/a*"), URL("https://localhost:442/b"))   //emty segment
+			assertPatternDoesntTest(t, nil, URLPattern("https://localhost:443/**/a*"), URL("https://localhost:442/a/b")) //additional slash
+			assertPatternDoesntTest(t, nil, URLPattern("https://localhost:443/**/a*"), URL("https://localhost:442/a"))   //different port
+			assertPatternDoesntTest(t, nil, URLPattern("https://localhost:443/**/a*"), URL("https://localhost:443/a?x=1"))
+
+			//pattern as first segment (last)
 
 			assertPatternTests(t, nil, URLPattern("https://localhost:443/%int"), URL("https://localhost:443/0"))
 			assertPatternTests(t, nil, URLPattern("https://localhost:443/%int"), URL("https://localhost:443/0#"))
@@ -51,7 +160,7 @@ func TestURLPattern(t *testing.T) {
 			assertPatternDoesntTest(t, nil, URLPattern("https://localhost:443/%int"), URL("https://localhost:442/0"))  //different port
 			assertPatternDoesntTest(t, nil, URLPattern("https://localhost:443/%int"), URL("https://localhost:443/0?x=1"))
 
-			//pattern in first segment (not last)
+			//pattern as first segment (not last)
 
 			assertPatternTests(t, nil, URLPattern("https://localhost:443/%int/a"), URL("https://localhost:443/0/a"))
 			assertPatternTests(t, nil, URLPattern("https://localhost:443/%int/a"), URL("https://localhost:443/0/a#"))
@@ -69,41 +178,7 @@ func TestURLPattern(t *testing.T) {
 			assertPatternDoesntTest(t, nil, URLPattern("https://localhost:443/%int/a"), URL("https://localhost:443/0/a?x=1"))
 			assertPatternDoesntTest(t, nil, URLPattern("https://localhost:443/%int/a"), URL("https://localhost:443/a/b"))
 
-			//wildcard in first segment (last)
-
-			assertPatternTests(t, nil, URLPattern("https://localhost:443/*"), URL("https://localhost:443/a"))
-			assertPatternTests(t, nil, URLPattern("https://localhost:443/*"), URL("https://localhost:443/a#"))
-			assertPatternTests(t, nil, URLPattern("https://localhost:443/*"), URL("https://localhost:443/a#fragment"))
-			assertPatternTests(t, nil, URLPattern("https://localhost:443/*"), URL("https://localhost:443/a?"))
-
-			assertPatternTests(t, nil, URLPattern("https://localhost:443/*"), URL("https://localhost:443/aa"))
-			assertPatternTests(t, nil, URLPattern("https://localhost:443/*"), URL("https://localhost:443/aa#"))
-			assertPatternTests(t, nil, URLPattern("https://localhost:443/*"), URL("https://localhost:443/aa#fragment"))
-			assertPatternTests(t, nil, URLPattern("https://localhost:443/*"), URL("https://localhost:443/aa?"))
-
-			assertPatternDoesntTest(t, nil, URLPattern("https://localhost:443/*"), URL("https://localhost:442/"))   //emty segment
-			assertPatternDoesntTest(t, nil, URLPattern("https://localhost:443/*"), URL("https://localhost:442/a/")) //additional slash
-			assertPatternDoesntTest(t, nil, URLPattern("https://localhost:443/*"), URL("https://localhost:442/a"))  //different port
-			assertPatternDoesntTest(t, nil, URLPattern("https://localhost:443/*"), URL("https://localhost:443/a?x=1"))
-
-			//wildcard in second segment (not last)
-
-			assertPatternTests(t, nil, URLPattern("https://localhost:443/*/a"), URL("https://localhost:443/a/a"))
-			assertPatternTests(t, nil, URLPattern("https://localhost:443/*/a"), URL("https://localhost:443/a/a#"))
-			assertPatternTests(t, nil, URLPattern("https://localhost:443/*/a"), URL("https://localhost:443/a/a#fragment"))
-			assertPatternTests(t, nil, URLPattern("https://localhost:443/*/a"), URL("https://localhost:443/a/a?"))
-
-			assertPatternTests(t, nil, URLPattern("https://localhost:443/*/a"), URL("https://localhost:443/aa/a"))
-			assertPatternTests(t, nil, URLPattern("https://localhost:443/*/a"), URL("https://localhost:443/aa/a#"))
-			assertPatternTests(t, nil, URLPattern("https://localhost:443/*/a"), URL("https://localhost:443/aa/a#fragment"))
-			assertPatternTests(t, nil, URLPattern("https://localhost:443/*/a"), URL("https://localhost:443/aa/a?"))
-
-			assertPatternDoesntTest(t, nil, URLPattern("https://localhost:443/*"), URL("https://localhost:443//a"))     //emty segment
-			assertPatternDoesntTest(t, nil, URLPattern("https://localhost:443/*/a"), URL("https://localhost:443/a/a/")) //additional slash
-			assertPatternDoesntTest(t, nil, URLPattern("https://localhost:443/*/a"), URL("https://localhost:442/a/a"))  //different port
-			assertPatternDoesntTest(t, nil, URLPattern("https://localhost:443/*/a"), URL("https://localhost:443/a/a?x=1"))
-
-			//pattern in second segment (last)
+			//pattern as second segment (last)
 
 			assertPatternTests(t, nil, URLPattern("https://localhost:443/a/%int"), URL("https://localhost:443/a/0"))
 			assertPatternTests(t, nil, URLPattern("https://localhost:443/a/%int"), URL("https://localhost:443/a/0#"))
@@ -120,7 +195,7 @@ func TestURLPattern(t *testing.T) {
 			assertPatternDoesntTest(t, nil, URLPattern("https://localhost:443/a/%int"), URL("https://localhost:442/a/0"))  //different port
 			assertPatternDoesntTest(t, nil, URLPattern("https://localhost:443/a/%int"), URL("https://localhost:443/a/0?x=1"))
 
-			//pattern in second segment (not last)
+			//pattern as second segment (not last)
 
 			assertPatternTests(t, nil, URLPattern("https://localhost:443/a/%int/b"), URL("https://localhost:443/a/0/b"))
 			assertPatternTests(t, nil, URLPattern("https://localhost:443/a/%int/b"), URL("https://localhost:443/a/0/b#"))

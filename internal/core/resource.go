@@ -1259,9 +1259,20 @@ func (patt URLPattern) Includes(ctx *Context, v Value) bool {
 				case '*':
 					if !inPatternSegment {
 						if pathPattern == nil {
-							pathPattern = append([]byte(patt[pathStartIndex:i+1]), '?', '*')
+							pathPattern = []byte(patt[pathStartIndex:i])
+						}
+
+						if (countPrevBackslashes(utils.StringAsBytes(patt), i) % 2) == 1 { //if the character is escaped
+							pathPattern = append(pathPattern, patt[i])
+							continue
+						}
+
+						if patt[i-1] == '/' && (i+1 >= pathEndIndex || patt[i+1] == '/') {
+							//if the only character in the segment is the wildcard we add a '?' character
+							//in order to not match empty segments.
+							pathPattern = append(pathPattern, '?', '*')
 						} else {
-							pathPattern = append(pathPattern, patt[i], '?', '*')
+							pathPattern = append(pathPattern, '*')
 						}
 						break
 					}
