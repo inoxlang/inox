@@ -281,6 +281,10 @@ func NewDefaultGlobalState(ctx *core.Context, conf core.DefaultGlobalStateConfig
 		//string types
 		globalnames.EMAIL_ADDRESS_FN: core.ValOf(_EmailAddress),
 
+		//id types
+		globalnames.ULID_FN:   core.ValOf(_ULID),
+		globalnames.UUIDv4_FN: core.ValOf(_UUIDV4),
+
 		// functional
 		globalnames.IDENTITY_FN:    core.WrapGoFunction(_idt),
 		globalnames.MAP_FN:         core.WrapGoFunction(core.Map),

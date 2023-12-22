@@ -204,6 +204,12 @@ func init() {
 		_EmailAddress, func(ctx *symbolic.Context, arg symbolic.Readable) *symbolic.EmailAddress {
 			return symbolic.ANY_EMAIL_ADDR
 		},
+		_ULID, func(ctx *symbolic.Context, arg symbolic.Readable) *symbolic.ULID {
+			return symbolic.ANY_ULID
+		},
+		_UUIDV4, func(ctx *symbolic.Context, arg symbolic.Readable) *symbolic.UUIDv4 {
+			return symbolic.ANY_UUIDv4
+		},
 		_Bytes, func(ctx *symbolic.Context, arg symbolic.Readable) *symbolic.ByteSlice {
 			return symbolic.ANY_BYTE_SLICE
 		},
