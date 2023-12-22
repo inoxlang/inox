@@ -1129,6 +1129,20 @@ func (patt IntersectionPattern) WriteRepresentation(ctx *Context, w io.Writer, c
 	return ErrNotImplementedYet
 }
 
+func (patt ParserBasedPseudoPattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
+	if depth > MAX_JSON_REPR_WRITING_DEPTH {
+		return ErrMaximumJSONReprWritingDepthReached
+	}
+	return ErrNotImplementedYet
+}
+
+func (patt DateFormat) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
+	if depth > MAX_JSON_REPR_WRITING_DEPTH {
+		return ErrMaximumJSONReprWritingDepthReached
+	}
+	return ErrNotImplementedYet
+}
+
 func (patt LengthCheckingStringPattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	return ErrNotImplementedYet
 }

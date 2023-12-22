@@ -986,6 +986,20 @@ func (patt LengthCheckingStringPattern) WriteJSONRepresentation(ctx *Context, w 
 	return ErrNotImplementedYet
 }
 
+func (patt ParserBasedPseudoPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+	if depth > MAX_JSON_REPR_WRITING_DEPTH {
+		return ErrMaximumJSONReprWritingDepthReached
+	}
+	return ErrNotImplementedYet
+}
+
+func (patt DateFormat) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+	if depth > MAX_JSON_REPR_WRITING_DEPTH {
+		return ErrMaximumJSONReprWritingDepthReached
+	}
+	return ErrNotImplementedYet
+}
+
 func (patt SequenceStringPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	if depth > MAX_JSON_REPR_WRITING_DEPTH {
 		return ErrMaximumJSONReprWritingDepthReached

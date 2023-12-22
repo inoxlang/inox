@@ -544,3 +544,11 @@ func (pattern *PathStringPattern) Random(ctx *Context, options ...Option) Value 
 func (patt *StructPattern) Random(ctx *Context, options ...Option) Value {
 	panic(ErrNotImplemented)
 }
+
+func RandULID(options ...Option) Value {
+	return NewULID()
+}
+
+func RandUUIDv4(options ...Option) Value {
+	return NewUUIDv4()
+}

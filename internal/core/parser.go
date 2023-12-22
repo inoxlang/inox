@@ -113,3 +113,43 @@ func (p *yamlParser) Parse(ctx *Context, s string) (Serializable, error) {
 	}
 	return ConvertYamlParsedFileToInoxVal(ctx, yml, false), nil
 }
+
+type ulidParser struct {
+}
+
+func (p *ulidParser) Validate(ctx *Context, s string) bool {
+	if len(s) > DEFAULT_MAX_TESTED_STRING_BYTE_LENGTH {
+		panic(ErrTestedStringTooLarge)
+	}
+
+	_, err := ParseULID(s)
+	return err == nil
+}
+
+func (p *ulidParser) Parse(ctx *Context, s string) (Serializable, error) {
+	if len(s) > DEFAULT_MAX_TESTED_STRING_BYTE_LENGTH {
+		return nil, ErrTestedStringTooLarge
+	}
+
+	return ParseULID(s)
+}
+
+type uuidv4Parser struct {
+}
+
+func (p *uuidv4Parser) Validate(ctx *Context, s string) bool {
+	if len(s) > DEFAULT_MAX_TESTED_STRING_BYTE_LENGTH {
+		panic(ErrTestedStringTooLarge)
+	}
+
+	_, err := ParseUUIDv4(s)
+	return err == nil
+}
+
+func (p *uuidv4Parser) Parse(ctx *Context, s string) (Serializable, error) {
+	if len(s) > DEFAULT_MAX_TESTED_STRING_BYTE_LENGTH {
+		return nil, ErrTestedStringTooLarge
+	}
+
+	return ParseUUIDv4(s)
+}

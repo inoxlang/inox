@@ -794,6 +794,29 @@ var (
 	SECRET_STRING_PATTERN     = NewSecretPattern(NewRegexPattern(".*"), false)
 	SECRET_PEM_STRING_PATTERN = NewSecretPattern(NewPEMRegexPattern(".*"), true)
 
+	ULID_PATTERN = &TypePattern{
+		Type:          ULID_TYPE,
+		Name:          "ulid",
+		RandomImpl:    RandULID,
+		SymbolicValue: symbolic.ANY_ULID,
+		stringPattern: func() (StringPattern, bool) {
+			return ULID_STRING_PATTERN, true
+		},
+	}
+
+	UUIDv4_PATTERN = &TypePattern{
+		Type:          UUIDv4_TYPE,
+		Name:          "uuidv4",
+		RandomImpl:    RandUUIDv4,
+		SymbolicValue: symbolic.ANY_UUIDv4,
+		stringPattern: func() (StringPattern, bool) {
+			return UUIDv4_STRING_PATTERN, true
+		},
+	}
+
+	ULID_STRING_PATTERN   = NewParserBasePattern(&ulidParser{})
+	UUIDv4_STRING_PATTERN = NewParserBasePattern(&uuidv4Parser{})
+
 	DEFAULT_NAMED_PATTERNS = map[string]Pattern{
 		NEVER_PATTERN.Name:    NEVER_PATTERN,
 		NIL_PATTERN.Name:      NIL_PATTERN,
@@ -860,6 +883,8 @@ var (
 		VALUE_HISTORY_PATTERN.Name: VALUE_HISTORY_PATTERN,
 		SYSGRAPH_PATTERN.Name:      SYSGRAPH_PATTERN,
 		VAL_PATTERN.Name:           VAL_PATTERN,
+		ULID_PATTERN.Name:          ULID_PATTERN,
+		UUIDv4_PATTERN.Name:        UUIDv4_PATTERN,
 	}
 
 	DEFAULT_PATTERN_NAMESPACES = map[string]*PatternNamespace{
