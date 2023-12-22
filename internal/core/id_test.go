@@ -20,7 +20,7 @@ func TestULID(t *testing.T) {
 
 func TestUUIDv4(t *testing.T) {
 	uuid1 := NewUUIDv4()
-	parsed, err := ParseULID(uuid1.libValue().String())
+	parsed, err := ParseUUIDv4(uuid1.libValue().String())
 
 	if !assert.NoError(t, err) {
 		return

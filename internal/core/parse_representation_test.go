@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -394,6 +395,16 @@ func TestParseRepr(t *testing.T) {
 		{`Runes"# "`, -1, NewRuneSlice([]rune("# "))},
 		{`Runes"# a"`, -1, NewRuneSlice([]rune("# a"))},
 		{`Runes"a"`, -1, NewRuneSlice([]rune("a"))},
+
+		//ids
+		{`ULID"01ARZ3NDEKTSV4RRFFQ69G5FAV"`, -1, utils.Must(ParseULID("01ARZ3NDEKTSV4RRFFQ69G5FAV"))},
+		/*    */ {"\n" + `ULID"01ARZ3NDEKTSV4RRFFQ69G5FAV"`, -1, utils.Must(ParseULID("01ARZ3NDEKTSV4RRFFQ69G5FAV"))},
+		/*    */ {`ULID"01ARZ3NDEKTSV4RRFFQ69G5FAV"` + "\n", 32, nil},
+		/*    */ {"ULID\"\n01ARZ3NDEKTSV4RRFFQ69G5FAV\"", 5, nil},
+		{`UUIDv4"b946a84c-3b58-4c72-9b9a-97dab1120aa4"`, -1, utils.Must(ParseUUIDv4("b946a84c-3b58-4c72-9b9a-97dab1120aa4"))},
+		/*    */ {"\n" + `UUIDv4"b946a84c-3b58-4c72-9b9a-97dab1120aa4"`, -1, utils.Must(ParseUUIDv4("b946a84c-3b58-4c72-9b9a-97dab1120aa4"))},
+		/*    */ {`UUIDv4"b946a84c-3b58-4c72-9b9a-97dab1120aa4"` + "\n", 44, nil},
+		/*    */ {"UUIDv4\"\nb946a84c-3b58-4c72-9b9a-97dab1120aa4\"", 7, nil},
 
 		//FileMode call
 		{`FileMode(`, 9, nil},

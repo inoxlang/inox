@@ -215,6 +215,8 @@ type InReprCall int
 const (
 	CreateRunesInRepr InReprCall = iota + 1
 	CreateEmailAddrInRepr
+	CreateULIDInRepr
+	CreateUUIDv4InRepr
 )
 
 func _parseRepr(b []byte, ctx *Context) (val Serializable, errorIndex int, specifiedError error) {
@@ -380,6 +382,20 @@ func _parseRepr(b []byte, ctx *Context) (val Serializable, errorIndex int, speci
 					v = NewRuneSlice([]rune(s))
 				case CreateEmailAddrInRepr:
 					v = EmailAddress(s)
+				case CreateULIDInRepr:
+					ulid, err := ParseULID(s)
+					if err != nil {
+						index = len(atomBytes)
+					} else {
+						v = ulid
+					}
+				case CreateUUIDv4InRepr:
+					uuid, err := ParseUUIDv4(s)
+					if err != nil {
+						index = len(atomBytes)
+					} else {
+						v = uuid
+					}
 				default:
 					v = Str(s)
 				}
@@ -2188,13 +2204,29 @@ func _parseRepr(b []byte, ctx *Context) (val Serializable, errorIndex int, speci
 					atomStartIndex = -1
 
 					switch len(ident) {
-					case 5:
+					case len(globalnames.ULID_FN):
+						if bytes.Equal(ident, utils.StringAsBytes(globalnames.ULID_FN)) {
+							call = CreateULIDInRepr
+						} else {
+							return nil, i, nil
+						}
+					case len(globalnames.RUNES_FN):
 						if bytes.Equal(ident, utils.StringAsBytes(globalnames.RUNES_FN)) {
 							call = CreateRunesInRepr
+						} else {
+							return nil, i, nil
 						}
-					case 12:
+					case len(globalnames.UUIDv4_FN):
+						if bytes.Equal(ident, utils.StringAsBytes(globalnames.UUIDv4_FN)) {
+							call = CreateUUIDv4InRepr
+						} else {
+							return nil, i, nil
+						}
+					case len(globalnames.EMAIL_ADDRESS_FN):
 						if bytes.Equal(ident, utils.StringAsBytes(globalnames.EMAIL_ADDRESS_FN)) {
 							call = CreateEmailAddrInRepr
+						} else {
+							return nil, i, nil
 						}
 					default:
 						return nil, i, nil
