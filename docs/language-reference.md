@@ -1418,10 +1418,14 @@ URL patterns always have at least a path, a query or a fragment.
   - It matches any URL that contains its prefix
   - The query and fragment are ignored
 - All other URL patterns are considered **regular**.
-  - The tested URL's fragment is ignored if the pattern has no fragment or an
-    empty one
-  - The tested URL's query must match the pattern's query and additional
-    parameters are not allowed
+    - `/users/*` as the **path part** matches `/users/a, /users/b` but not `/users/`
+    - `/users/*/` matches `/users/a/, /users/b/` but not `/users//`
+    - `/users/a*` matches `/users/a, /users/ab`
+    - `/users/%int` matches `/users/1, /users/12` but not `/users/a`
+    - The tested URL's fragment is ignored if the pattern has no fragment or an
+        empty one
+    - The tested URL's query must match the pattern's query and additional
+        parameters are not allowed
 
 | pattern                           | value                                    | match ?                            |
 | --------------------------------- | ---------------------------------------- | ---------------------------------- |
@@ -1451,6 +1455,22 @@ URL patterns always have at least a path, a query or a fragment.
 | ---                               |                                          |                                    |
 | `%https://example.com/about#main` | `https://example.com/about#main`         | yes                                |
 | `%https://example.com/about#main` | `https://example.com/about`              | no                                 |
+| ---                               |                                          |                                    |
+| `%https://example.com/%int`       | `https://example.com/1`                  | yes                                |
+| `%https://example.com/%int`       | `https://example.com/12`                 | yes                                |
+| `%https://example.com/%int`       | `https://example.com/a`                  | no                                 |
+| `%https://example.com/%int`       | `https://example.com/`                   | no                                 |
+| ---                               |                                          |                                    |
+| `%https://example.com/*`          | `https://example.com/a`                  | yes                                |
+| `%https://example.com/*`          | `https://example.com/aa`                 | yes                                |
+| `%https://example.com/*`          | `https://example.com/`                   | no                                 |
+| ---                               |                                          |                                    |
+| `%https://example.com/a*`         | `https://example.com/a`                  | yes                                |
+| `%https://example.com/a*`         | `https://example.com/aa`                 | yes                                |
+| ---                               |                                          |                                    |
+| `%https://example.com/*/`         | `https://example.com/a/`                 | yes                                |
+| `%https://example.com/*/`         | `https://example.com/aa/`                | yes                                |
+| `%https://example.com/*/`         | `https://example.com/a`                  | no                                 |
 | ---                               |                                          |                                    |
 
 </details>
