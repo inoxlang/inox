@@ -3218,7 +3218,7 @@ func (p *IntRangePattern) SymbolicValue() Value {
 }
 
 func (p *IntRangePattern) StringPattern() (StringPattern, bool) {
-	return nil, false
+	return NewIntRangeStringPattern(p), true
 }
 
 func (p *IntRangePattern) PropertyNames() []string {

@@ -15,6 +15,7 @@ var (
 
 	ANY_SEQ_STRING_PATTERN             = &SequenceStringPattern{}
 	ANY_LENGTH_CHECKING_STRING_PATTERN = &LengthCheckingStringPattern{minLength: -1}
+	ANY_INT_RANGE_STRING_PATTERN       = &IntRangeStringPattern{}
 	ANY_PARSED_BASED_STRING_PATTERN    = &ParserBasedPattern{}
 )
 
@@ -427,4 +428,86 @@ func (p *ParserBasedPattern) WidestOfType() Value {
 	return ANY_PARSED_BASED_STRING_PATTERN
 }
 
-//
+// An IntRangeStringPattern represents a symbolic IntRangeStringPattern.
+type IntRangeStringPattern struct {
+	NotCallablePatternMixin
+	SerializableMixin
+
+	pattern *IntRangePattern //if nil any int range string pattern is matched
+}
+
+func NewIntRangeStringPattern(p *IntRangePattern) *IntRangeStringPattern {
+	return &IntRangeStringPattern{pattern: p}
+}
+
+func (p *IntRangeStringPattern) Test(v Value, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
+	otherPattern, ok := v.(*IntRangeStringPattern)
+	if !ok {
+		return false
+	}
+	if p.pattern == nil {
+		return true
+	}
+	if otherPattern.pattern == nil {
+		return false
+	}
+	return p.pattern.Test(otherPattern.pattern, state)
+}
+
+func (p *IntRangeStringPattern) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("int-range-string-pattern")
+
+	if p.pattern != nil {
+		w.WriteString("(")
+		p.pattern.PrettyPrint(w.IncrDepth(), config)
+		w.WriteString(")")
+	}
+}
+
+func (p *IntRangeStringPattern) HasUnderlyingPattern() bool {
+	return true
+}
+
+func (p *IntRangeStringPattern) TestValue(v Value, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
+	stringLike, ok := v.(StringLike)
+	if !ok {
+		return false
+	}
+	str := stringLike.GetOrBuildString()
+	if str.pattern == nil {
+		return false
+	}
+
+	return p.Test(str.pattern, state)
+}
+
+func (p *IntRangeStringPattern) SymbolicValue() Value {
+	return NewStringMatchingPattern(p)
+}
+
+func (p *IntRangeStringPattern) StringPattern() (StringPattern, bool) {
+	return nil, false
+}
+
+func (p *IntRangeStringPattern) IteratorElementKey() Value {
+	return ANY_INT
+}
+
+func (p *IntRangeStringPattern) IteratorElementValue() Value {
+	return p.SymbolicValue()
+}
+
+func (p *IntRangeStringPattern) WidestOfType() Value {
+	return ANY_EXACT_STR_PATTERN
+}
+
+func (p *IntRangeStringPattern) HasRegex() bool {
+	//TODO
+	return true
+}

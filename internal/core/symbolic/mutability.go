@@ -336,6 +336,10 @@ func (patt *ParserBasedPattern) IsMutable() bool {
 	return false
 }
 
+func (patt *IntRangeStringPattern) IsMutable() bool {
+	return false
+}
+
 func (patt *IntRangePattern) IsMutable() bool {
 	return false
 }
