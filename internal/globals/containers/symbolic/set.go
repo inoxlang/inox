@@ -208,6 +208,19 @@ func (p *SetPattern) Test(v symbolic.Value, state symbolic.RecTestCallState) boo
 	return p.uniqueness == nil || (otherPattern.uniqueness != nil && *p.uniqueness == *otherPattern.uniqueness)
 }
 
+func (p *SetPattern) TestValue(v symbolic.Value, state symbolic.RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
+	set, ok := v.(*Set)
+	if !ok {
+		return false
+	}
+	return p.elementPattern.Test(set.elementPattern, state) &&
+		(p.uniqueness == nil || (set.uniqueness != nil && *p.uniqueness == *set.uniqueness))
+	//TODO: test nodes's value
+}
+
 func (p *SetPattern) IsConcretizable() bool {
 	if p.uniqueness == nil {
 		return false
@@ -223,16 +236,6 @@ func (p *SetPattern) Concretize(ctx symbolic.ConcreteContext) any {
 
 	concreteElementPattern := utils.Must(symbolic.Concretize(p.elementPattern, ctx))
 	return externalData.CreateConcreteSetPattern(*p.uniqueness, concreteElementPattern)
-}
-
-func (p *SetPattern) TestValue(v symbolic.Value, state symbolic.RecTestCallState) bool {
-	state.StartCall()
-	defer state.FinishCall()
-	if otherPatt, ok := v.(*SetPattern); ok {
-		return p.elementPattern.TestValue(otherPatt.elementPattern, state)
-	}
-	return false
-	//TODO: test nodes's value
 }
 
 func (p *SetPattern) HasUnderlyingPattern() bool {
