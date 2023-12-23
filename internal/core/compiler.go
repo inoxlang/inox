@@ -196,6 +196,8 @@ func (c *compiler) Compile(node parse.Node) error {
 			c.emit(node, OpSubstrOf)
 		case parse.Keyof:
 			c.emit(node, OpKeyOf)
+		case parse.Urlof:
+			c.emit(node, OpUrlOf)
 		case parse.SetDifference:
 			c.emit(node, OpToPattern)
 			c.emit(node, OpDoSetDifference)

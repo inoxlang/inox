@@ -1171,6 +1171,41 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		}
 	})
 
+	t.Run("binary urlof", func(t *testing.T) {
+		ctx := NewDefaultTestContext()
+		defer ctx.CancelGracefully()
+
+		state := NewGlobalState(ctx, nil)
+
+		obj := NewObject()
+		obj.SetURLOnce(ctx, "ldb://main/")
+		state.Globals.Set("obj_with_url", obj)
+
+		res, err := Eval("(ldb://main/ urlof obj_with_url)", state, false)
+		if !assert.NoError(t, err) {
+			return
+		}
+		assert.Equal(t, True, res)
+
+		res, err = Eval("(ldb://main/x urlof obj_with_url)", state, false)
+		if !assert.NoError(t, err) {
+			return
+		}
+		assert.Equal(t, False, res)
+
+		res, err = Eval("(ldb://main/x urlof {})", state, false)
+		if !assert.NoError(t, err) {
+			return
+		}
+		assert.Equal(t, False, res)
+
+		res, err = Eval("(ldb://main/x urlof 1)", state, false)
+		if !assert.NoError(t, err) {
+			return
+		}
+		assert.Equal(t, False, res)
+	})
+
 	t.Run("integer unary expression", func(t *testing.T) {
 		t.Parallel()
 

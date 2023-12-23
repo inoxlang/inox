@@ -152,6 +152,7 @@ const (
 	OpIn
 	OpSubstrOf
 	OpKeyOf
+	OpUrlOf
 	OpDoSetDifference
 	OpNilCoalesce
 	OpJumpIfFalse
@@ -289,6 +290,7 @@ var OpcodeNames = [...]string{
 	OpIn:                           "IN",
 	OpSubstrOf:                     "SUBSTR_OF",
 	OpKeyOf:                        "KEY_OF",
+	OpUrlOf:                        "URL_OF",
 	OpDoSetDifference:              "DO_SET_DIFF",
 	OpNilCoalesce:                  "NIL_COALESCE",
 	OpJumpIfFalse:                  "JUMP_IFF",
@@ -425,6 +427,7 @@ var OpcodeOperands = [...][]int{
 	OpIn:                           {},
 	OpSubstrOf:                     {},
 	OpKeyOf:                        {},
+	OpUrlOf:                        {},
 	OpDoSetDifference:              {},
 	OpNilCoalesce:                  {},
 	OpJumpIfFalse:                  {2},
@@ -560,6 +563,7 @@ var OpcodeConstantIndexes = [...][]bool{
 	OpIn:                           {},
 	OpSubstrOf:                     {},
 	OpKeyOf:                        {},
+	OpUrlOf:                        {},
 	OpDoSetDifference:              {},
 	OpNilCoalesce:                  {},
 	OpJumpIfFalse:                  {false},

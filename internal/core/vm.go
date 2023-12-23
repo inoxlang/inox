@@ -650,6 +650,21 @@ func (v *VM) run() {
 
 			v.stack[v.sp] = Bool(right.HasProp(v.global.Ctx, string(left)))
 			v.sp++
+		case OpUrlOf:
+			left := v.stack[v.sp-2].(URL)
+			right, isUrlHolder := v.stack[v.sp-1].(UrlHolder)
+			v.sp -= 2
+
+			var result = false
+			if isUrlHolder {
+				actualURL, ok := right.URL()
+				if ok {
+					result = left.Equal(v.global.Ctx, actualURL, nil, 0)
+				}
+			}
+
+			v.stack[v.sp] = Bool(result)
+			v.sp++
 		case OpDoSetDifference:
 			left := v.stack[v.sp-2]
 			right := v.stack[v.sp-1]

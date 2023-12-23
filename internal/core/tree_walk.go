@@ -2038,6 +2038,23 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			default:
 				return nil, fmt.Errorf("invalid binary expression: cannot check if non object has a key: %T", rightVal)
 			}
+		case parse.Urlof:
+			url, ok := left.(URL)
+			if !ok {
+				return nil, fmt.Errorf("invalid binary expression: keyof: left operand is not a URL, but a %T", left)
+			}
+
+			urlHolder, isUrlHolder := right.(UrlHolder)
+
+			var result = false
+			if isUrlHolder {
+				actualURL, ok := urlHolder.URL()
+				if ok {
+					result = url.Equal(state.Global.Ctx, actualURL, nil, 0)
+				}
+			}
+
+			return Bool(result), nil
 		case parse.Range, parse.ExclEndRange:
 			switch left.(type) {
 			case Int:
