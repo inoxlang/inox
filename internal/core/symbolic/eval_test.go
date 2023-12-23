@@ -12949,9 +12949,9 @@ func TestSymbolicEval(t *testing.T) {
 
 			t.Run("base case", func(t *testing.T) {
 				n, state := MakeTestStateAndChunk(`
-						url = ldb://main/user
-						return url::name
-					`)
+					url = ldb://main/user
+					return url::name
+				`)
 				state.setGlobal(globalnames.DATABASES, NewNamespace(map[string]Value{"main": db}), GlobalConst)
 
 				res, err := symbolicEval(n, state)
@@ -12962,6 +12962,58 @@ func TestSymbolicEval(t *testing.T) {
 				assert.Equal(t, ANY_STR, res)
 
 				doubleColonExpr := parse.FindNode(n, (*parse.DoubleColonExpression)(nil), nil)
+				_, ok := state.symbolicData.GetUsedTypeExtension(doubleColonExpr)
+				assert.False(t, ok)
+
+				value, ok := state.symbolicData.GetURLReferencedEntity(doubleColonExpr)
+				if !assert.True(t, ok) {
+					return
+				}
+				assert.Equal(t, userPattern.SymbolicValue(), value)
+			})
+
+			t.Run("missing property's name", func(t *testing.T) {
+				n, state, _ := _makeStateAndChunk(`
+					url = ldb://main/user
+					return url::
+				`)
+				state.setGlobal(globalnames.DATABASES, NewNamespace(map[string]Value{"main": db}), GlobalConst)
+				doubleColonExpr := parse.FindNode(n, (*parse.DoubleColonExpression)(nil), nil)
+
+				res, err := symbolicEval(n, state)
+				if !assert.NoError(t, err) {
+					return
+				}
+				assert.Empty(t, state.errors())
+				assert.Equal(t, ANY_SERIALIZABLE, res)
+
+				_, ok := state.symbolicData.GetUsedTypeExtension(doubleColonExpr)
+				assert.False(t, ok)
+
+				value, ok := state.symbolicData.GetURLReferencedEntity(doubleColonExpr)
+				if !assert.True(t, ok) {
+					return
+				}
+				assert.Equal(t, userPattern.SymbolicValue(), value)
+			})
+
+			t.Run("inexisting property", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					url = ldb://main/user
+					return url::non_existing_prop
+				`)
+				state.setGlobal(globalnames.DATABASES, NewNamespace(map[string]Value{"main": db}), GlobalConst)
+				doubleColonExpr := parse.FindNode(n, (*parse.DoubleColonExpression)(nil), nil)
+
+				res, err := symbolicEval(n, state)
+				if !assert.NoError(t, err) {
+					return
+				}
+				assert.Equal(t, []SymbolicEvaluationError{
+					makeSymbolicEvalError(doubleColonExpr.Element, state, fmtValueAtURLDoesNotHavePropX(userPattern.SymbolicValue(), "non_existing_prop")),
+				}, state.errors())
+				assert.Equal(t, ANY_SERIALIZABLE, res)
+
 				_, ok := state.symbolicData.GetUsedTypeExtension(doubleColonExpr)
 				assert.False(t, ok)
 

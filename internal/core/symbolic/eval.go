@@ -5311,17 +5311,13 @@ func evalDoubleColonExpression(n *parse.DoubleColonExpression, state *State, opt
 	extensions := state.ctx.GetExtensions(left)
 	state.symbolicData.SetAllTypeExtensions(n, extensions)
 
-	if n.Element == nil {
-		return ANY, nil
-	}
-
-	elementName := n.Element.Name
-
 	obj, isLeftObject := left.(*Object)
 	url, isLeftURL := left.(*URL) //ignore URL multivalues because the property resolution would be too ambiguous.
 
 	switch {
-	case isLeftObject && HasRequiredOrOptionalProperty(obj, elementName):
+	case n.Element != nil && isLeftObject && HasRequiredOrOptionalProperty(obj, n.Element.Name):
+		elementName := n.Element.Name
+
 		//get actual value of the property.
 
 		memb := symbolicMemb(obj, elementName, false, n, state)
@@ -5376,22 +5372,36 @@ func evalDoubleColonExpression(n *parse.DoubleColonExpression, state *State, opt
 
 		iprops, ok := valAtURL.(IProps)
 		if !ok {
-			state.addError(makeSymbolicEvalError(n.Left, state, fmtValueAtURLHasNoProperties(valAtURL)))
+			state.addError(makeSymbolicEvalError(n.Element, state, fmtValueAtURLHasNoProperties(valAtURL)))
 			state.symbolicData.SetMostSpecificNodeValue(n.Element, ANY_SERIALIZABLE)
 			return ANY_SERIALIZABLE, nil
 		}
+		state.symbolicData.SetURLReferencedEntity(n, iprops)
+
+		if n.Element == nil {
+			//parsing error.
+			return ANY_SERIALIZABLE, nil
+		}
+
+		elementName := n.Element.Name
+
 		if !slices.Contains(iprops.PropertyNames(), elementName) {
-			state.addError(makeSymbolicEvalError(n.Left, state, fmtValueAtURLDoesNotHavePropX(valAtURL, elementName)))
+			state.addError(makeSymbolicEvalError(n.Element, state, fmtValueAtURLDoesNotHavePropX(valAtURL, elementName)))
 			state.symbolicData.SetMostSpecificNodeValue(n.Element, ANY_SERIALIZABLE)
 			return ANY_SERIALIZABLE, nil
 		}
 
 		val := iprops.Prop(elementName)
-		state.symbolicData.SetURLReferencedEntity(n, iprops)
 		state.symbolicData.SetMostSpecificNodeValue(n.Element, val)
 
 		return val, nil
 	default:
+		if n.Element == nil {
+			//parsing error.
+			return ANY, nil
+		}
+		elementName := n.Element.Name
+
 		//use extenions
 		var extension *TypeExtension
 		var expr propertyExpression
