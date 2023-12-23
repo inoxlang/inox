@@ -66,6 +66,7 @@ const (
 	IS_KEYWORD
 	IS_NOT_KEYWORD
 	KEYOF_KEYWORD
+	URLOF_KEYWORD
 	SUBSTROF_KEYWORD
 	NOT_MATCH_KEYWORD
 	GO_KEYWORD
@@ -340,6 +341,7 @@ var tokenStrings = [...]string{
 	IS_KEYWORD:                     "is",
 	IS_NOT_KEYWORD:                 "is-not",
 	KEYOF_KEYWORD:                  "keyof",
+	URLOF_KEYWORD:                  "urlof",
 	NOT_MATCH_KEYWORD:              "not-match",
 	SUBSTROF_KEYWORD:               "substrof",
 	SELF_CLOSING_TAG_TERMINATOR:    "/>",
@@ -459,6 +461,7 @@ var tokenTypenames = [...]string{
 	IS_KEYWORD:                     "IS_KEYWORD",
 	IS_NOT_KEYWORD:                 "IS_NOT_KEYWORD",
 	KEYOF_KEYWORD:                  "KEYOF_KEYWORD",
+	URLOF_KEYWORD:                  "URLOF_KEYWORD",
 	NOT_MATCH_KEYWORD:              "NOT_MATCH_KEYWORD",
 	SUBSTROF_KEYWORD:               "SUBSTROF_KEYWORD",
 	GO_KEYWORD:                     "GO_KEYWORD",

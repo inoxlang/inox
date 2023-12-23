@@ -5117,6 +5117,21 @@ _switch:
 		}
 		eatInvalidOperatorToken(operatorStart)
 		parsingErr = makeInvalidOperatorError()
+	case 'u':
+		operatorName := BINARY_OPERATOR_STRINGS[Urlof]
+
+		URLOF_LEN := int32(len(operatorName))
+		if p.len-p.i >= URLOF_LEN &&
+			string(p.s[p.i:p.i+URLOF_LEN]) == operatorName &&
+			(p.len-p.i == URLOF_LEN || !IsIdentChar(p.s[p.i+URLOF_LEN])) {
+			operator = Urlof
+			operatorType = URLOF_KEYWORD
+			p.i += URLOF_LEN
+			break
+		}
+
+		eatInvalidOperatorToken(operatorStart)
+		parsingErr = makeInvalidOperatorError()
 	case '.':
 		operator = Dot
 		operatorType = DOT

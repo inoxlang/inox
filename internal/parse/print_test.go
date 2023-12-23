@@ -216,6 +216,7 @@ func TestPrint(t *testing.T) {
 		"(a in b)",
 		"(a not-in b)",
 		"(a keyof b)",
+		"(a ulrof b)",
 		"(a match b)",
 		"(a match {a: | 1 | 2})",
 		"(a not-match b)",

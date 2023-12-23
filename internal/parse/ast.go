@@ -1545,6 +1545,7 @@ const (
 	In
 	NotIn
 	Keyof
+	Urlof
 	Dot //unused, present for symmetry
 	Range
 	ExclEndRange
@@ -1583,6 +1584,7 @@ var BINARY_OPERATOR_STRINGS = [...]string{
 	In:                "in",
 	NotIn:             "not-in",
 	Keyof:             "keyof",
+	Urlof:             "urlof",
 	Dot:               ".",
 	Range:             "..",
 	ExclEndRange:      "..<",
