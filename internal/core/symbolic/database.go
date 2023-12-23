@@ -137,6 +137,9 @@ func (db *DatabaseIL) getValueAt(pathOrPattern string) (Serializable, error) {
 	if pathOrPattern[0] != '/' {
 		panic(errors.New("path should be absolute"))
 	}
+	if pathOrPattern[len(pathOrPattern)-1] == '/' {
+		return nil, errors.New(PATH_OF_URL_SHOULD_NOT_HAVE_A_TRAILING_SLASH)
+	}
 
 	i := 0
 	var result Serializable

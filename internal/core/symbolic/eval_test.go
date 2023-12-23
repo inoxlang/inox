@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-git/go-billy/v5/memfs"
 	"github.com/go-git/go-billy/v5/util"
+	"github.com/inoxlang/inox/internal/globals/globalnames"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
@@ -12938,6 +12939,77 @@ func TestSymbolicEval(t *testing.T) {
 			})
 
 		})
+
+		t.Run("property of a URL-referenced value", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+					url = ldb://main/user
+					return url::name
+				`)
+			userPattern := NewInexactObjectPattern(map[string]Pattern{"name": &TypePattern{val: ANY_STR}}, nil)
+			db := NewDatabaseIL(DatabaseILParams{
+				Schema: NewExactObjectPattern(map[string]Pattern{"user": userPattern}, nil),
+			})
+			state.setGlobal(globalnames.DATABASES, NewNamespace(map[string]Value{"main": db}), GlobalConst)
+
+			res, err := symbolicEval(n, state)
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.Empty(t, state.errors())
+			assert.Equal(t, ANY_STR, res)
+
+			_, ok := state.symbolicData.GetUsedTypeExtension(parse.FindNode(n, (*parse.DoubleColonExpression)(nil), nil))
+			assert.False(t, ok)
+		})
+
+		t.Run("property of an existing URL-referenced value: trailing slash", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+					url = ldb://main/user/
+					return url::name
+				`)
+			userPattern := NewInexactObjectPattern(map[string]Pattern{"name": &TypePattern{val: ANY_STR}}, nil)
+			db := NewDatabaseIL(DatabaseILParams{
+				Schema: NewExactObjectPattern(map[string]Pattern{"user": userPattern}, nil),
+			})
+			state.setGlobal(globalnames.DATABASES, NewNamespace(map[string]Value{"main": db}), GlobalConst)
+
+			res, err := symbolicEval(n, state)
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			doubleColonExpr := parse.FindNode(n, (*parse.DoubleColonExpression)(nil), nil)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(doubleColonExpr.Left, state, PATH_OF_URL_SHOULD_NOT_HAVE_A_TRAILING_SLASH),
+			}, state.errors())
+			assert.Equal(t, ANY_SERIALIZABLE, res)
+
+			_, ok := state.symbolicData.GetUsedTypeExtension(parse.FindNode(n, (*parse.DoubleColonExpression)(nil), nil))
+			assert.False(t, ok)
+		})
+
+		t.Run("property of an inexisting URL-referenced value", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+					url = ldb://main/userx
+					return url::name
+				`)
+			userPattern := NewInexactObjectPattern(map[string]Pattern{"name": &TypePattern{val: ANY_STR}}, nil)
+			db := NewDatabaseIL(DatabaseILParams{
+				Schema: NewExactObjectPattern(map[string]Pattern{"user": userPattern}, nil),
+			})
+			state.setGlobal(globalnames.DATABASES, NewNamespace(map[string]Value{"main": db}), GlobalConst)
+
+			res, err := symbolicEval(n, state)
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.NotEmpty(t, state.errors())
+			assert.Equal(t, ANY_SERIALIZABLE, res)
+
+			_, ok := state.symbolicData.GetUsedTypeExtension(parse.FindNode(n, (*parse.DoubleColonExpression)(nil), nil))
+			assert.False(t, ok)
+		})
+
 	})
 
 	t.Run("the evaluation should stop if the context context is done AND there is no remaining no-check fuel", func(t *testing.T) {

@@ -136,6 +136,7 @@ const (
 	//database
 	CURRENT_DATABASE_SCHEMA_SAME_AS_PASSED = //
 	"the current database schema is the same as the passed schema, no schema update is needed (make sure to remove `expected-schema-update` from the manifest)"
+	PATH_OF_URL_SHOULD_NOT_HAVE_A_TRAILING_SLASH = "path of URL should not have a trailing slash"
 
 	//test suites & cases
 	META_VAL_OF_TEST_SUITE_SHOULD_EITHER_BE_A_STRING_OR_A_RECORD    = "the meta value of a test suite should either be a string or an object (e.g. {name: \"my test suite\"})"
