@@ -5317,8 +5317,13 @@ func evalDoubleColonExpression(n *parse.DoubleColonExpression, state *State, opt
 
 	elementName := n.Element.Name
 
-	obj, ok := left.(*Object)
-	if ok && HasRequiredOrOptionalProperty(obj, elementName) {
+	obj, isLeftObject := left.(*Object)
+	url, isLeftURL := left.(*URL) //ignore URL multivalues because the property resolution would be too ambiguous.
+
+	switch {
+	case isLeftObject && HasRequiredOrOptionalProperty(obj, elementName):
+		//get actual value of the property.
+
 		memb := symbolicMemb(obj, elementName, false, n, state)
 		state.symbolicData.SetMostSpecificNodeValue(n.Element, memb)
 
@@ -5360,8 +5365,28 @@ func evalDoubleColonExpression(n *parse.DoubleColonExpression, state *State, opt
 			}
 		}
 		return memb, nil
-	} else { //use extensions
+	case isLeftURL && url.hasValue:
+		//resolve
 
+		valAtURL, err := getValueAtURL(url, state)
+		if err != nil {
+			state.addError(makeSymbolicEvalError(n.Left, state, err.Error()))
+			return ANY_SERIALIZABLE, nil
+		}
+
+		iprops, ok := valAtURL.(IProps)
+		if !ok {
+			state.addError(makeSymbolicEvalError(n.Left, state, fmtValueAtURLHasNoProperties(valAtURL)))
+			return ANY_SERIALIZABLE, nil
+		}
+		if !slices.Contains(iprops.PropertyNames(), elementName) {
+			state.addError(makeSymbolicEvalError(n.Left, state, fmtValueAtURLDoesNotHavePropX(valAtURL, elementName)))
+			return ANY_SERIALIZABLE, nil
+		}
+
+		return iprops.Prop(elementName), nil
+	default:
+		//use extenions
 		var extension *TypeExtension
 		var expr propertyExpression
 

@@ -1282,6 +1282,14 @@ func (obj *Object) ValueEntryMap() map[string]Value {
 	return entries
 }
 
+func (obj *Object) SerializableEntryMap() map[string]Serializable {
+	entries := map[string]Serializable{}
+	for k, v := range obj.entries {
+		entries[k] = v
+	}
+	return entries
+}
+
 func (obj *Object) SetProp(name string, value Value) (IProps, error) {
 	if obj.readonly {
 		return nil, ErrReadonlyValueCannotBeMutated

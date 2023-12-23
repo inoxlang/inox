@@ -8,12 +8,13 @@ import (
 
 func TestForEachAbsolutePathSegment(t *testing.T) {
 
-	ForEachAbsolutePathSegment("/", func(string) {
+	ForEachAbsolutePathSegment("/", func(string) error {
 		assert.Fail(t, "")
+		return nil
 	})
 
 	i := 0
-	ForEachAbsolutePathSegment("/a", func(segment string) {
+	ForEachAbsolutePathSegment("/a", func(segment string) error {
 		switch i {
 		case 0:
 			assert.Equal(t, "a", segment)
@@ -21,11 +22,12 @@ func TestForEachAbsolutePathSegment(t *testing.T) {
 			assert.Fail(t, "")
 		}
 		i++
+		return nil
 	})
 
 	i = 0
 
-	ForEachAbsolutePathSegment("/a/", func(segment string) {
+	ForEachAbsolutePathSegment("/a/", func(segment string) error {
 		switch i {
 		case 0:
 			assert.Equal(t, "a", segment)
@@ -33,23 +35,11 @@ func TestForEachAbsolutePathSegment(t *testing.T) {
 			assert.Fail(t, "")
 		}
 		i++
+		return nil
 	})
 
 	i = 0
-	ForEachAbsolutePathSegment("/a/b", func(segment string) {
-		switch i {
-		case 0:
-			assert.Equal(t, "a", segment)
-		case 1:
-			assert.Equal(t, "b", segment)
-		default:
-			assert.Fail(t, "")
-		}
-		i++
-	})
-
-	i = 0
-	ForEachAbsolutePathSegment("/a/b/", func(segment string) {
+	ForEachAbsolutePathSegment("/a/b", func(segment string) error {
 		switch i {
 		case 0:
 			assert.Equal(t, "a", segment)
@@ -59,10 +49,25 @@ func TestForEachAbsolutePathSegment(t *testing.T) {
 			assert.Fail(t, "")
 		}
 		i++
+		return nil
 	})
 
 	i = 0
-	ForEachAbsolutePathSegment("//b/", func(segment string) {
+	ForEachAbsolutePathSegment("/a/b/", func(segment string) error {
+		switch i {
+		case 0:
+			assert.Equal(t, "a", segment)
+		case 1:
+			assert.Equal(t, "b", segment)
+		default:
+			assert.Fail(t, "")
+		}
+		i++
+		return nil
+	})
+
+	i = 0
+	ForEachAbsolutePathSegment("//b/", func(segment string) error {
 		switch i {
 		case 0:
 			assert.Equal(t, "b", segment)
@@ -70,10 +75,11 @@ func TestForEachAbsolutePathSegment(t *testing.T) {
 			assert.Fail(t, "")
 		}
 		i++
+		return nil
 	})
 
 	i = 0
-	ForEachAbsolutePathSegment("/a//", func(segment string) {
+	ForEachAbsolutePathSegment("/a//", func(segment string) error {
 		switch i {
 		case 0:
 			assert.Equal(t, "a", segment)
@@ -81,6 +87,7 @@ func TestForEachAbsolutePathSegment(t *testing.T) {
 			assert.Fail(t, "")
 		}
 		i++
+		return nil
 	})
 }
 

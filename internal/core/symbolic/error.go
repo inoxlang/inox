@@ -115,6 +115,7 @@ const (
 
 	USELESS_MUTATION_IN_CLONED_PROP_VALUE = "useless mutation in a cloned property's value"
 
+	//double colon expression
 	MISPLACED_DOUBLE_COLON_EXPR                               = "misplaced double-colon expression"
 	MISPLACED_DOUBLE_COLON_EXPR_EXT_METHOD_CAN_ONLY_BE_CALLED = "misplaced double-colon expression: extension methods can only be called"
 
@@ -626,4 +627,12 @@ func fmtUselessMutationInClonedPropValue(elementName string) string {
 
 func fmtNotRegularFile(path string) string {
 	return fmt.Sprintf("%q is not a regular file", path)
+}
+
+func fmtValueAtURLHasNoProperties(value Value) string {
+	return fmt.Sprintf("value at url has no properties, type is %s", Stringify(value))
+}
+
+func fmtValueAtURLDoesNotHavePropX(value Value, propName string) string {
+	return fmt.Sprintf("value at url does not have a '%s' property", propName)
 }

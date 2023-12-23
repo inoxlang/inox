@@ -2,11 +2,16 @@ package symbolic
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"net/url"
+	"strings"
 
+	"github.com/inoxlang/inox/internal/globals/globalnames"
 	"github.com/inoxlang/inox/internal/parse"
 	pprint "github.com/inoxlang/inox/internal/prettyprint"
 	"github.com/inoxlang/inox/internal/utils"
+	"github.com/inoxlang/inox/internal/utils/pathutils"
 	"golang.org/x/exp/slices"
 )
 
@@ -27,7 +32,8 @@ var (
 type DatabaseIL struct {
 	UnassignablePropsMixin
 	schema               *ObjectPattern
-	schemaUpdateExpected bool //not used for comparison
+	schemaUpdateExpected bool                    //not used for comparison
+	topLevelEntities     map[string]Serializable //created from the schema
 	propertyNames        []string
 	url                  *URL //can be nil
 
@@ -55,6 +61,7 @@ func NewDatabaseIL(args DatabaseILParams) *DatabaseIL {
 	db := &DatabaseIL{
 		schemaUpdateExpected: args.SchemaUpdateExpected,
 		schema:               args.Schema,
+		topLevelEntities:     args.Schema.SymbolicValue().(*Object).SerializableEntryMap(),
 		propertyNames:        propertyNames,
 
 		url: args.BaseURL,
@@ -121,6 +128,51 @@ func (db *DatabaseIL) Prop(name string) Value {
 
 func (db *DatabaseIL) PropertyNames() []string {
 	return db.propertyNames
+}
+
+func (db *DatabaseIL) getValueAt(pathOrPattern string) (Serializable, error) {
+	if pathOrPattern == "" {
+		panic(errors.New("empty path"))
+	}
+	if pathOrPattern[0] != '/' {
+		panic(errors.New("path should be absolute"))
+	}
+
+	i := 0
+	var result Serializable
+	currentPath := "/"
+
+	err := pathutils.ForEachAbsolutePathSegment(pathOrPattern, func(segment string) error {
+
+		if i == 0 {
+			entity, ok := db.topLevelEntities[segment]
+			if !ok {
+				return fmt.Errorf("top level entity %q does not exist", segment)
+			}
+			result = entity
+		} else {
+			iprops, ok := result.(IProps)
+			if !ok {
+				return fmt.Errorf("value at %s has no properties", segment)
+			}
+			names := iprops.PropertyNames()
+			if !slices.Contains(names, segment) {
+				return fmt.Errorf("value at %s has no %q property", currentPath, segment)
+			}
+			result, ok = iprops.Prop(segment).(Serializable)
+			if !ok {
+				return fmt.Errorf("value at %s is not serializable", currentPath+"/"+segment)
+			}
+		}
+
+		currentPath += "/" + segment
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
 func (db *DatabaseIL) UpdateSchema(ctx *Context, schema *ObjectPattern, additionalArgs ...*Object) {
@@ -307,4 +359,75 @@ func (db *DatabaseIL) Close(*Context) *Error {
 func (db *DatabaseIL) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("database ")
 	db.schema.PrettyPrint(w, config)
+}
+
+func getValueAtURL(u *URL, state *State) (Serializable, error) {
+	if !u.hasValue && (u.pattern == nil || !u.pattern.hasValue) {
+		return nil, errors.New("URL is not specific enough")
+	}
+
+	urlOrPattern := u.value
+
+	if !u.hasValue {
+		urlOrPattern = u.pattern.value
+	}
+
+	if !strings.HasPrefix(urlOrPattern, "ldb://") {
+		return nil, errors.New("only URLs with the scheme ldb:// are supported for now")
+	}
+
+	varInfo, ok := state.getGlobal(globalnames.DATABASES)
+	if !ok {
+		return nil, fmt.Errorf("there is no %q global variable", globalnames.DATABASES)
+	}
+
+	dbs, ok := varInfo.value.(*Namespace)
+	if !ok {
+		return nil, fmt.Errorf("global variable %q should be a namespace", globalnames.DATABASES)
+	}
+
+	hostEnd := len(urlOrPattern)
+	pathStart := -1
+	pathEnd := -1
+
+loop:
+	for i := strings.Index(urlOrPattern, "://") + 3; i < len(urlOrPattern); i++ {
+		switch urlOrPattern[i] {
+		case '/':
+			pathStart = i
+			hostEnd = i
+		case '?', '#':
+			if pathStart > 0 {
+				pathEnd = i
+			} else {
+				hostEnd = i
+			}
+			break loop
+		}
+	}
+
+	if pathStart > 0 && pathEnd < 0 {
+		pathEnd = len(urlOrPattern)
+	}
+
+	host := urlOrPattern[:hostEnd]
+	parsed, err := url.Parse(host)
+	if err != nil {
+		return nil, err
+	}
+
+	hostname := parsed.Hostname()
+
+	entryValue, ok := dbs.entries[hostname]
+	if !ok {
+		return nil, fmt.Errorf("the %q database does not exist", hostname)
+	}
+
+	db, ok := entryValue.(*DatabaseIL)
+	if !ok {
+		return nil, fmt.Errorf("%s.%s is not a database", globalnames.DATABASES, hostname)
+	}
+
+	path := urlOrPattern[pathStart:pathEnd]
+	return db.getValueAt(path)
 }

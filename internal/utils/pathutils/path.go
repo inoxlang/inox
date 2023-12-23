@@ -19,7 +19,7 @@ func GetPathSegments(pth string) []string {
 }
 
 // ForEachAbsolutePathSegment calls fn for each segment of pth, adjacent '/' characters are treated as a single '/' character.
-func ForEachAbsolutePathSegment(pth string, fn func(segment string)) {
+func ForEachAbsolutePathSegment(pth string, fn func(segment string) error) error {
 	if pth == "" {
 		panic(errors.New("empty path"))
 	}
@@ -31,15 +31,19 @@ func ForEachAbsolutePathSegment(pth string, fn func(segment string)) {
 	for i := 1; i < len(pth); i++ {
 		if pth[i] == '/' {
 			if segmentStart != i {
-				fn(pth[segmentStart:i])
+				err := fn(pth[segmentStart:i])
+				if err != nil {
+					return err
+				}
 			}
 			segmentStart = i + 1
 		}
 	}
 
 	if segmentStart < len(pth) {
-		fn(pth[segmentStart:])
+		return fn(pth[segmentStart:])
 	}
+	return nil
 }
 
 func GetLastPathSegment(pth string) string {
