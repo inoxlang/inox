@@ -25,6 +25,7 @@ type Data struct {
 	runtimeTypeCheckPatterns    map[parse.Node]any //concrete Pattern or nil (nil means the check is disabled)
 	usedTypeExtensions          map[*parse.DoubleColonExpression]*TypeExtension
 	typeExtensions              map[*parse.DoubleColonExpression][]*TypeExtension
+	urlReferencedEntities       map[*parse.DoubleColonExpression]Value
 
 	errorMessageSet map[string]bool
 	errors          []SymbolicEvaluationError
@@ -45,6 +46,7 @@ func NewSymbolicData() *Data {
 		runtimeTypeCheckPatterns:    make(map[parse.Node]any, 0),
 		usedTypeExtensions:          make(map[*parse.DoubleColonExpression]*TypeExtension, 0),
 		typeExtensions:              make(map[*parse.DoubleColonExpression][]*TypeExtension, 0),
+		urlReferencedEntities:       make(map[*parse.DoubleColonExpression]Value, 0),
 
 		errorMessageSet:   make(map[string]bool, 0),
 		warningMessageSet: make(map[string]bool, 0),
@@ -220,6 +222,10 @@ func (data *Data) AddData(newData *Data) {
 
 	for k, v := range newData.typeExtensions {
 		data.SetAllTypeExtensions(k, v)
+	}
+
+	for k, v := range newData.urlReferencedEntities {
+		data.SetURLReferencedEntity(k, v)
 	}
 
 	data.errors = append(data.errors, newData.errors...)
@@ -403,6 +409,24 @@ func (d *Data) SetAllTypeExtensions(n *parse.DoubleColonExpression, extensions [
 	}
 
 	d.typeExtensions[n] = extensions
+}
+
+func (d *Data) GetURLReferencedEntity(n *parse.DoubleColonExpression) (Value, bool) {
+	value, ok := d.urlReferencedEntities[n]
+	return value, ok
+}
+
+func (d *Data) SetURLReferencedEntity(n *parse.DoubleColonExpression, value Value) {
+	if d == nil {
+		return
+	}
+
+	_, ok := d.urlReferencedEntities[n]
+	if ok {
+		panic(errors.New("reference entity is already set for this node"))
+	}
+
+	d.urlReferencedEntities[n] = value
 }
 
 func (d *Data) GetVariableDefinitionPosition(node parse.Node, ancestors []parse.Node) (pos parse.SourcePositionRange, found bool) {

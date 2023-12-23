@@ -5377,14 +5377,20 @@ func evalDoubleColonExpression(n *parse.DoubleColonExpression, state *State, opt
 		iprops, ok := valAtURL.(IProps)
 		if !ok {
 			state.addError(makeSymbolicEvalError(n.Left, state, fmtValueAtURLHasNoProperties(valAtURL)))
+			state.symbolicData.SetMostSpecificNodeValue(n.Element, ANY_SERIALIZABLE)
 			return ANY_SERIALIZABLE, nil
 		}
 		if !slices.Contains(iprops.PropertyNames(), elementName) {
 			state.addError(makeSymbolicEvalError(n.Left, state, fmtValueAtURLDoesNotHavePropX(valAtURL, elementName)))
+			state.symbolicData.SetMostSpecificNodeValue(n.Element, ANY_SERIALIZABLE)
 			return ANY_SERIALIZABLE, nil
 		}
 
-		return iprops.Prop(elementName), nil
+		val := iprops.Prop(elementName)
+		state.symbolicData.SetURLReferencedEntity(n, iprops)
+		state.symbolicData.SetMostSpecificNodeValue(n.Element, val)
+
+		return val, nil
 	default:
 		//use extenions
 		var extension *TypeExtension

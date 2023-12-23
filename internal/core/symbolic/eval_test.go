@@ -12940,74 +12940,187 @@ func TestSymbolicEval(t *testing.T) {
 
 		})
 
-		t.Run("property of a URL-referenced value", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`
-					url = ldb://main/user
-					return url::name
-				`)
+		t.Run("retrieval of the property of a URL-referenced entity", func(t *testing.T) {
+
 			userPattern := NewInexactObjectPattern(map[string]Pattern{"name": &TypePattern{val: ANY_STR}}, nil)
 			db := NewDatabaseIL(DatabaseILParams{
 				Schema: NewExactObjectPattern(map[string]Pattern{"user": userPattern}, nil),
 			})
-			state.setGlobal(globalnames.DATABASES, NewNamespace(map[string]Value{"main": db}), GlobalConst)
 
-			res, err := symbolicEval(n, state)
-			if !assert.NoError(t, err) {
-				return
-			}
-			assert.Empty(t, state.errors())
-			assert.Equal(t, ANY_STR, res)
+			t.Run("base case", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+						url = ldb://main/user
+						return url::name
+					`)
+				state.setGlobal(globalnames.DATABASES, NewNamespace(map[string]Value{"main": db}), GlobalConst)
 
-			_, ok := state.symbolicData.GetUsedTypeExtension(parse.FindNode(n, (*parse.DoubleColonExpression)(nil), nil))
-			assert.False(t, ok)
-		})
+				res, err := symbolicEval(n, state)
+				if !assert.NoError(t, err) {
+					return
+				}
+				assert.Empty(t, state.errors())
+				assert.Equal(t, ANY_STR, res)
 
-		t.Run("property of an existing URL-referenced value: trailing slash", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`
+				doubleColonExpr := parse.FindNode(n, (*parse.DoubleColonExpression)(nil), nil)
+				_, ok := state.symbolicData.GetUsedTypeExtension(doubleColonExpr)
+				assert.False(t, ok)
+
+				value, ok := state.symbolicData.GetURLReferencedEntity(doubleColonExpr)
+				if !assert.True(t, ok) {
+					return
+				}
+				assert.Equal(t, userPattern.SymbolicValue(), value)
+			})
+
+			t.Run("trailing slash", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
 					url = ldb://main/user/
 					return url::name
 				`)
-			userPattern := NewInexactObjectPattern(map[string]Pattern{"name": &TypePattern{val: ANY_STR}}, nil)
-			db := NewDatabaseIL(DatabaseILParams{
-				Schema: NewExactObjectPattern(map[string]Pattern{"user": userPattern}, nil),
+				state.setGlobal(globalnames.DATABASES, NewNamespace(map[string]Value{"main": db}), GlobalConst)
+
+				res, err := symbolicEval(n, state)
+				if !assert.NoError(t, err) {
+					return
+				}
+
+				doubleColonExpr := parse.FindNode(n, (*parse.DoubleColonExpression)(nil), nil)
+				assert.Equal(t, []SymbolicEvaluationError{
+					makeSymbolicEvalError(doubleColonExpr.Left, state, PATH_OF_URL_SHOULD_NOT_HAVE_A_TRAILING_SLASH),
+				}, state.errors())
+				assert.Equal(t, ANY_SERIALIZABLE, res)
+
+				_, ok := state.symbolicData.GetUsedTypeExtension(doubleColonExpr)
+				assert.False(t, ok)
+
+				_, ok = state.symbolicData.GetURLReferencedEntity(doubleColonExpr)
+				assert.False(t, ok)
 			})
-			state.setGlobal(globalnames.DATABASES, NewNamespace(map[string]Value{"main": db}), GlobalConst)
 
-			res, err := symbolicEval(n, state)
-			if !assert.NoError(t, err) {
-				return
-			}
-
-			doubleColonExpr := parse.FindNode(n, (*parse.DoubleColonExpression)(nil), nil)
-			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(doubleColonExpr.Left, state, PATH_OF_URL_SHOULD_NOT_HAVE_A_TRAILING_SLASH),
-			}, state.errors())
-			assert.Equal(t, ANY_SERIALIZABLE, res)
-
-			_, ok := state.symbolicData.GetUsedTypeExtension(parse.FindNode(n, (*parse.DoubleColonExpression)(nil), nil))
-			assert.False(t, ok)
-		})
-
-		t.Run("property of an inexisting URL-referenced value", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`
+			t.Run("inexisting entity", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
 					url = ldb://main/userx
 					return url::name
 				`)
-			userPattern := NewInexactObjectPattern(map[string]Pattern{"name": &TypePattern{val: ANY_STR}}, nil)
+				state.setGlobal(globalnames.DATABASES, NewNamespace(map[string]Value{"main": db}), GlobalConst)
+
+				res, err := symbolicEval(n, state)
+				if !assert.NoError(t, err) {
+					return
+				}
+				assert.NotEmpty(t, state.errors())
+				assert.Equal(t, ANY_SERIALIZABLE, res)
+
+				doubleColonExpr := parse.FindNode(n, (*parse.DoubleColonExpression)(nil), nil)
+				_, ok := state.symbolicData.GetUsedTypeExtension(doubleColonExpr)
+				assert.False(t, ok)
+
+				_, ok = state.symbolicData.GetURLReferencedEntity(doubleColonExpr)
+				assert.False(t, ok)
+			})
+
+		})
+
+		t.Run("mutation of a URL-referenced entity", func(t *testing.T) {
+
+			listPropPattern := NewListPatternOf(&TypePattern{val: ANY_INT})
+			userPattern := NewInexactObjectPattern(map[string]Pattern{
+				"name": &TypePattern{val: ANY_STR},
+				"list": listPropPattern,
+			}, nil)
 			db := NewDatabaseIL(DatabaseILParams{
 				Schema: NewExactObjectPattern(map[string]Pattern{"user": userPattern}, nil),
 			})
-			state.setGlobal(globalnames.DATABASES, NewNamespace(map[string]Value{"main": db}), GlobalConst)
 
-			res, err := symbolicEval(n, state)
-			if !assert.NoError(t, err) {
-				return
-			}
-			assert.NotEmpty(t, state.errors())
-			assert.Equal(t, ANY_SERIALIZABLE, res)
+			t.Run("call of a property's method", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					url = ldb://main/user
+					url::list.append(1)
+					return url::list
+				`)
+				state.setGlobal(globalnames.DATABASES, NewNamespace(map[string]Value{"main": db}), GlobalConst)
 
-			_, ok := state.symbolicData.GetUsedTypeExtension(parse.FindNode(n, (*parse.DoubleColonExpression)(nil), nil))
-			assert.False(t, ok)
+				res, err := symbolicEval(n, state)
+				assert.NoError(t, err)
+				assert.Empty(t, state.errors())
+				assert.Equal(t, NewListOf(ANY_INT), res)
+
+				doubleColonExprs := parse.FindNodes(n, (*parse.DoubleColonExpression)(nil), nil)
+				if !assert.Len(t, doubleColonExprs, 2) {
+					return
+				}
+
+				for _, expr := range doubleColonExprs {
+					value, ok := state.symbolicData.GetURLReferencedEntity(expr)
+					if !assert.True(t, ok) {
+						return
+					}
+					assert.Equal(t, userPattern.SymbolicValue(), value)
+				}
+			})
+
+			t.Run("assignment of an index expression", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					url = ldb://main/user
+					url::list[0] = 1
+					return url::list
+				`)
+				state.setGlobal(globalnames.DATABASES, NewNamespace(map[string]Value{"main": db}), GlobalConst)
+
+				res, err := symbolicEval(n, state)
+				assert.NoError(t, err)
+				assert.Empty(t, state.errors())
+				assert.Equal(t, NewListOf(ANY_INT), res)
+
+				doubleColonExprs := parse.FindNodes(n, (*parse.DoubleColonExpression)(nil), nil)
+				if !assert.Len(t, doubleColonExprs, 2) {
+					return
+				}
+
+				for _, expr := range doubleColonExprs {
+					value, ok := state.symbolicData.GetURLReferencedEntity(expr)
+					if !assert.True(t, ok) {
+						return
+					}
+					assert.Equal(t, userPattern.SymbolicValue(), value)
+				}
+			})
+
+			t.Run("assignment of the member of an index expression", func(t *testing.T) {
+				listPropPattern := NewListPatternOf(NewInexactObjectPattern(nil, nil))
+				userPattern := NewInexactObjectPattern(map[string]Pattern{
+					"name": &TypePattern{val: ANY_STR},
+					"list": listPropPattern,
+				}, nil)
+				db := NewDatabaseIL(DatabaseILParams{
+					Schema: NewExactObjectPattern(map[string]Pattern{"user": userPattern}, nil),
+				})
+
+				n, state := MakeTestStateAndChunk(`
+					url = ldb://main/user
+					url::list[0].a = 1
+					return url::list
+				`)
+				state.setGlobal(globalnames.DATABASES, NewNamespace(map[string]Value{"main": db}), GlobalConst)
+
+				res, err := symbolicEval(n, state)
+				assert.NoError(t, err)
+				assert.Empty(t, state.errors())
+				assert.Equal(t, NewListOf(NewInexactObject2(nil)), res)
+
+				doubleColonExprs := parse.FindNodes(n, (*parse.DoubleColonExpression)(nil), nil)
+				if !assert.Len(t, doubleColonExprs, 2) {
+					return
+				}
+
+				for _, expr := range doubleColonExprs {
+					value, ok := state.symbolicData.GetURLReferencedEntity(expr)
+					if !assert.True(t, ok) {
+						return
+					}
+					assert.Equal(t, userPattern.SymbolicValue(), value)
+				}
+			})
 		})
 
 	})
