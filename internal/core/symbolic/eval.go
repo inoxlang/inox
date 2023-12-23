@@ -2707,6 +2707,19 @@ func evalBinaryExpression(n *parse.BinaryExpression, state *State, options evalO
 			state.addError(makeSymbolicEvalError(n.Right, state, fmtInvalidBinExprCannnotCheckNonObjectHasKey(rightVal)))
 		}
 		return ANY_BOOL, nil
+	case parse.Urlof:
+		if !ImplementsOrIsMultivalueWithAllValuesImplementing[*URL](left) {
+			state.addError(makeSymbolicEvalError(n.Left, state, fmtLeftOperandOfBinaryShouldBe(n.Operator, "url", Stringify(left))))
+		}
+
+		switch right.(type) {
+		case *Any, *AnySerializable:
+		default:
+			if !ImplementsOrIsMultivalueWithAllValuesImplementing[UrlHolder](right) {
+				state.addWarning(makeSymbolicEvalWarning(n.Right, state, RIGHT_OPERAND_MAY_NOT_HAVE_A_URL))
+			}
+		}
+		return ANY_BOOL, nil
 	case parse.Range, parse.ExclEndRange:
 		switch left := left.(type) {
 		case *Int:

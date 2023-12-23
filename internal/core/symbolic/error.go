@@ -143,6 +143,8 @@ const (
 	MAIN_DB_SCHEMA_CAN_ONLY_BE_SPECIFIED_WHEN_TESTING_A_PROGRAM     = "main database schema can only be specified when testing a program"
 	MAIN_DB_MIGRATIONS_CAN_ONLY_BE_SPECIFIED_WHEN_TESTING_A_PROGRAM = "main database migrations can only be specified when testing a program"
 	MISSING_MAIN_DB_MIGRATIONS_PROPERTY                             = "missing property: '" + TEST_ITEM_META__MAIN_DB_MIGRATIONS + "'"
+
+	RIGHT_OPERAND_MAY_NOT_HAVE_A_URL = "right operand may not have a URL"
 )
 
 var (
