@@ -1181,27 +1181,8 @@ func (patt URLPattern) Includes(ctx *Context, v Value) bool {
 		inPatternSegment := false
 		var pathPattern []byte //only set if there are pattern segments or '*' wildcards.
 
-		pathStartIndex := 0
-		pathEndIndex := -1
-
-		dotSlasSlashIndex := strings.Index(string(patt), "://")
+		pathStartIndex, pathEndIndex := getPathSpanInURLPattern(string(patt))
 		patternWithoutPatternPercent := string(patt)
-
-	loop:
-		for i := dotSlasSlashIndex + 3; i < len(patt); i++ {
-			switch patt[i] {
-			case '/':
-				if pathStartIndex == 0 {
-					pathStartIndex = i
-				}
-			case '?', '#':
-				pathEndIndex = i
-				break loop
-			}
-		}
-		if pathEndIndex == -1 {
-			pathEndIndex = len(patt)
-		}
 
 		if pathStartIndex > 0 {
 			patternWithoutPatternPercent = strings.ReplaceAll(string(patt), "/%", "/")
@@ -1459,4 +1440,54 @@ func GetPathSegments(pth string) []string {
 func GetLastPathSegment(pth string) string {
 	segments := GetPathSegments(pth)
 	return segments[len(segments)-1]
+}
+
+// getPathSpanInURLPattern returns the start and exclusive end index of the path part in a URL pattern,
+// if there is no path part pathStartIndex is zero.
+func getPathSpanInURLPattern(urlPattern string) (pathStartIndex, pathEndIndex int) {
+	dotSlasSlashIndex := strings.Index(urlPattern, "://")
+	pathStartIndex = 0
+	pathEndIndex = -1
+
+loop:
+	for i := dotSlasSlashIndex + 3; i < len(urlPattern); i++ {
+		switch urlPattern[i] {
+		case '/':
+			if pathStartIndex == 0 {
+				pathStartIndex = i
+			}
+		case '?', '#':
+			pathEndIndex = i
+			break loop
+		}
+	}
+	if pathEndIndex == -1 {
+		pathEndIndex = len(urlPattern)
+	}
+
+	return
+}
+
+func appendPathSegmentToURLPattern(urlPattern, segment string) string {
+	if strings.Contains(segment, "/") {
+		panic(errors.New("segment should not contain the '/' character"))
+	}
+
+	start, end := getPathSpanInURLPattern(urlPattern)
+	if start > 0 {
+		result := urlPattern[:end]
+		if urlPattern[end-1] != '/' {
+			result += "/"
+		}
+
+		result += segment
+		result += urlPattern[end:]
+		return result
+	}
+
+	index := strings.IndexAny(urlPattern, "?#")
+	if index < 0 {
+		return urlPattern + "/" + segment + urlPattern
+	}
+	return urlPattern[:index] + "/" + segment + urlPattern[index:]
 }

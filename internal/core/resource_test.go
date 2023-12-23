@@ -133,3 +133,32 @@ func TestGetPathSegments(t *testing.T) {
 	assert.Equal(t, []string{"dir", "a"}, GetPathSegments("/dir//a/"))
 	assert.Equal(t, []string{"dir", "a"}, GetPathSegments("/dir//a//"))
 }
+
+func TestAppendPathSegmentToURLPattern(t *testing.T) {
+	assert.Equal(t, "ldb://main/users/1", appendPathSegmentToURLPattern("ldb://main/users", "1"))
+	assert.Equal(t, "ldb://main/users/1?", appendPathSegmentToURLPattern("ldb://main/users?", "1"))
+	assert.Equal(t, "ldb://main/users/1#", appendPathSegmentToURLPattern("ldb://main/users#", "1"))
+
+	assert.Equal(t, "ldb://main/users/1", appendPathSegmentToURLPattern("ldb://main/users/", "1"))
+	assert.Equal(t, "ldb://main/users/1?", appendPathSegmentToURLPattern("ldb://main/users/?", "1"))
+	assert.Equal(t, "ldb://main/users/1#", appendPathSegmentToURLPattern("ldb://main/users/#", "1"))
+
+	assert.Equal(t, "ldb://main/users/%int/1", appendPathSegmentToURLPattern("ldb://main/users/%int", "1"))
+	assert.Equal(t, "ldb://main/users/%int/1?", appendPathSegmentToURLPattern("ldb://main/users/%int?", "1"))
+	assert.Equal(t, "ldb://main/users/%int/1#", appendPathSegmentToURLPattern("ldb://main/users/%int#", "1"))
+
+	assert.Equal(t, "ldb://main/1", appendPathSegmentToURLPattern("ldb://main/", "1"))
+	assert.Equal(t, "ldb://main/1?", appendPathSegmentToURLPattern("ldb://main/?", "1"))
+	assert.Equal(t, "ldb://main/1#", appendPathSegmentToURLPattern("ldb://main/#", "1"))
+
+	//assert.Equal(t, "ldb://main/1", appendPathSegmentToURLPattern("ldb://main", "1"))
+	assert.Equal(t, "ldb://main/1?", appendPathSegmentToURLPattern("ldb://main?", "1"))
+	assert.Equal(t, "ldb://main/1#", appendPathSegmentToURLPattern("ldb://main#", "1"))
+
+	assert.Panics(t, func() {
+		appendPathSegmentToURLPattern("ldb://main/users", "1/")
+	})
+	assert.Panics(t, func() {
+		appendPathSegmentToURLPattern("ldb://main/users", "1/2")
+	})
+}
