@@ -27,7 +27,7 @@ var (
 		(*ObjectPattern)(nil), (*RecordPattern)(nil), (*ListPattern)(nil), (*TuplePattern)(nil),
 		(*TypePattern)(nil),
 
-		(*ExactValuePattern)(nil), (*ExactStringPattern)(nil),
+		(*ExactValuePattern)(nil), (*ExactStringPattern)(nil), (*URLPattern)(nil), (*PathPattern)(nil),
 
 		(*InoxFunction)(nil),
 

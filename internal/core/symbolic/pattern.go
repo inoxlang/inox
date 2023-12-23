@@ -318,6 +318,14 @@ func (p *PathPattern) IsConcretizable() bool {
 	return p.hasValue
 }
 
+func (p *PathPattern) Concretize(ctx ConcreteContext) any {
+	if !p.IsConcretizable() {
+		panic(ErrNotConcretizable)
+	}
+
+	return extData.ConcreteValueFactories.CreateURLPattern(p.value)
+}
+
 func (p *PathPattern) Static() Pattern {
 	return &TypePattern{val: p.WidestOfType()}
 }
@@ -508,6 +516,14 @@ func (p *URLPattern) Test(v Value, state RecTestCallState) bool {
 
 func (p *URLPattern) IsConcretizable() bool {
 	return p.hasValue
+}
+
+func (p *URLPattern) Concretize(ctx ConcreteContext) any {
+	if !p.IsConcretizable() {
+		panic(ErrNotConcretizable)
+	}
+
+	return extData.ConcreteValueFactories.CreateURLPattern(p.value)
 }
 
 func (p *URLPattern) Static() Pattern {
