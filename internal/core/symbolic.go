@@ -119,7 +119,7 @@ func init() {
 				parsed.Path = "/"
 			}
 			parsed.Path = AppendTrailingSlashIfNotPresent(parsed.Path)
-			parsed.Path = filepath.Join(parsed.Path)
+			parsed.Path = filepath.Join(parsed.Path, segment)
 			return parsed.String()
 		},
 		AppendPathSegmentToURLPattern: func(u, segment string) string {
@@ -1690,7 +1690,19 @@ func (db *DatabaseIL) ToSymbolicValue(ctx *Context, encountered map[uintptr]symb
 		return nil, fmt.Errorf("failed to convert schema to symbolic: %w", err)
 	}
 
-	return symbolic.NewDatabaseIL(pattern.(*symbolic.ObjectPattern), db.schemaUpdateExpected), nil
+	params := symbolic.DatabaseILParams{
+		Schema:               pattern.(*symbolic.ObjectPattern),
+		SchemaUpdateExpected: db.schemaUpdateExpected,
+	}
+
+	switch r := db.Resource().(type) {
+	case Host:
+		params.BaseURL = symbolic.NewUrl(r.UnderlyingString() + "/")
+	case URL:
+		params.BaseURL = symbolic.NewUrl(r.UnderlyingString())
+	}
+
+	return symbolic.NewDatabaseIL(params), nil
 }
 
 func (api *ApiIL) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {

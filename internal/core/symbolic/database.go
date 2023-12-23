@@ -20,7 +20,7 @@ const (
 var (
 	DATABASE_PROPNAMES = []string{"update_schema", "close", "schema"}
 
-	ANY_DATABASE = NewDatabaseIL(NewAnyObjectPattern(), false)
+	ANY_DATABASE = NewDatabaseIL(DatabaseILParams{Schema: NewAnyObjectPattern(), SchemaUpdateExpected: false})
 )
 
 // A DatabaseIL represents a symbolic DatabaseIL.
@@ -29,6 +29,7 @@ type DatabaseIL struct {
 	schema               *ObjectPattern
 	schemaUpdateExpected bool //not used for comparison
 	propertyNames        []string
+	url                  *URL //can be nil
 
 	//dummy state
 	//We do not set it with the converted owner state of the concrete DatabaseIL in order to avoid issues (duplicate symbolic states, ...),
@@ -36,9 +37,15 @@ type DatabaseIL struct {
 	ownerState *State
 }
 
-func NewDatabaseIL(schema *ObjectPattern, schemaUpdateExpected bool) *DatabaseIL {
+type DatabaseILParams struct {
+	Schema               *ObjectPattern
+	SchemaUpdateExpected bool
+	BaseURL              *URL //optional, should not be set if Host is set
+}
+
+func NewDatabaseIL(args DatabaseILParams) *DatabaseIL {
 	propertyNames := slices.Clone(DATABASE_PROPNAMES)
-	for propName := range schema.entries {
+	for propName := range args.Schema.entries {
 		if utils.SliceContains(DATABASE_PROPNAMES, propName) {
 			panic(fmt.Errorf("name collision with inital property name '%s'", propName))
 		}
@@ -46,9 +53,11 @@ func NewDatabaseIL(schema *ObjectPattern, schemaUpdateExpected bool) *DatabaseIL
 	}
 
 	db := &DatabaseIL{
-		schemaUpdateExpected: schemaUpdateExpected,
-		schema:               schema,
+		schemaUpdateExpected: args.SchemaUpdateExpected,
+		schema:               args.Schema,
 		propertyNames:        propertyNames,
+
+		url: args.BaseURL,
 	}
 
 	chunk := utils.Must(parse.ParseChunkSource(parse.InMemorySource{
@@ -94,7 +103,13 @@ func (db *DatabaseIL) Prop(name string) Value {
 
 	entry, ok := db.schema.entries[name]
 	if ok {
-		return entry.SymbolicValue().(PotentiallySharable).Share(db.ownerState)
+		topLevelEntity := entry.SymbolicValue().(PotentiallySharable).Share(db.ownerState)
+
+		//set the URL if possible
+		if urlHolder, ok := topLevelEntity.(UrlHolder); ok && db.url != nil {
+			return urlHolder.WithURL(db.url.WithAdditionalPathSegment(name))
+		}
+		return topLevelEntity
 	}
 
 	method, ok := db.GetGoMethod(name)

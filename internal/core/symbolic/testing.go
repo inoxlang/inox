@@ -209,7 +209,10 @@ func checkTestItemMeta(node parse.Node, state *State, isTestCase bool) (currentT
 
 			if ok {
 				testedProgram.databases = NewMutableEntriesNamespace(map[string]Value{
-					"main": NewDatabaseIL(schema, false),
+					"main": NewDatabaseIL(DatabaseILParams{
+						Schema:               schema,
+						SchemaUpdateExpected: false,
+					}),
 				})
 			}
 		}
