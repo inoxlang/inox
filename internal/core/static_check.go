@@ -2611,7 +2611,7 @@ func checkDatabasesObject(
 	}, nil)
 
 	for _, p := range obj.Properties {
-		if p.Value == nil {
+		if p.HasImplicitKey() || p.Value == nil {
 			continue
 		}
 		dbName := p.Name()
