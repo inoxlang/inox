@@ -1558,6 +1558,17 @@ user::remove_done_todos()
 user.todos
 ```
 
+**Other example**
+
+```
+extend int {
+    double: (self * 2)
+}
+
+one = 1
+two = one::double
+```
+
 # XML Expressions
 
 An XML expression produces a value by passing a XML-like structure to a
@@ -2420,10 +2431,10 @@ to reference other values inside the database.
 ```
 pattern user = {
     name: str
-
-    # ⚠️ not fully implemented yet
-    friends?: Set(%https://ldb/main/users/%ulid, #repr) 
+    friends: Set(%https://main/users/%ulid, #repr) 
 }
+
+user = ... # get a user from the database
 
 new_friend = {name: "Enzo"}
 user.friends.add(new_friend)
@@ -2431,9 +2442,9 @@ user.friends.add(new_friend)
 print("friends:")
 
 for friend in user.friends {
-    # The 'friend' variable is a URL. You will soon be able to use double-colon expressions 
-    # to retrieve and mutate the friend's data in a typesafe way.
-    print(friend::name)
+    # load the friend's name by using the URL in a double-colon expression:
+    name = friend::name
+    print(name)
 }
 ```
 
