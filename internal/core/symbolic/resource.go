@@ -261,6 +261,18 @@ func NewUrlMatchingPattern(p *URLPattern) *URL {
 	}
 }
 
+func (u *URL) WithAdditionalPathSegment(segment string) *URL {
+	if u.hasValue {
+		return NewUrl(extData.AppendPathSegmentToURL(u.value, segment))
+	}
+
+	if u.pattern != nil && u.pattern.hasValue {
+		return NewUrlMatchingPattern(u.pattern.WithAdditionalPathSegment(segment))
+	}
+
+	return ANY_URL
+}
+
 func (u *URL) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()

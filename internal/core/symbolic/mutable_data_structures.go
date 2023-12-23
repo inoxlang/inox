@@ -847,8 +847,9 @@ type Object struct {
 	exact                      bool
 	readonly                   bool
 
+	url *URL //can be nil
+
 	SerializableMixin
-	UrlHolderMixin
 }
 
 func NewAnyObject() *Object {
@@ -1250,6 +1251,12 @@ func (obj *Object) Prop(name string) Value {
 	v, ok := obj.entries[name]
 	if !ok {
 		panic(fmt.Errorf("object does not have a .%s property", name))
+	}
+
+	if obj.url != nil {
+		if urlHolder, ok := v.(UrlHolder); ok {
+			return urlHolder.WithURL(obj.url.WithAdditionalPathSegment(name))
+		}
 	}
 	return v
 }

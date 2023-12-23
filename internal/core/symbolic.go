@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"net/url"
+	"path/filepath"
 	"reflect"
 	"runtime"
 	"slices"
@@ -107,6 +109,21 @@ func init() {
 		},
 		HostMatch: func(host, pattern string) bool {
 			return HostPattern(pattern).Test(nil, Host(host))
+		},
+		AppendPathSegmentToURL: func(u, segment string) string {
+			parsed, err := url.Parse(u)
+			if err != nil {
+				panic(err)
+			}
+			if parsed.Path == "" {
+				parsed.Path = "/"
+			}
+			parsed.Path = AppendTrailingSlashIfNotPresent(parsed.Path)
+			parsed.Path = filepath.Join(parsed.Path)
+			return parsed.String()
+		},
+		AppendPathSegmentToURLPattern: func(u, segment string) string {
+			return appendPathSegmentToURLPattern(u, segment)
 		},
 		IsIndexKey: IsIndexKey,
 		CheckDatabaseSchema: func(objectPattern any) error {

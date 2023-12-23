@@ -44,6 +44,20 @@ var (
 
 			return utils.Must(regexp.Match(regex, []byte(host)))
 		},
+		AppendPathSegmentToURL: func(url, segment string) string {
+			if url[len(url)-1] != '/' {
+				url += "/"
+			}
+
+			return url + segment
+		},
+		AppendPathSegmentToURLPattern: func(urlPattern, segment string) string {
+			if urlPattern[len(urlPattern)-1] != '/' {
+				urlPattern += "/"
+			}
+
+			return urlPattern + segment
+		},
 	} // default data for tests
 )
 
@@ -59,6 +73,8 @@ type ExternalData struct {
 	PathMatch                              func(path, pattern string) bool
 	URLMatch                               func(url, pattern string) bool
 	HostMatch                              func(host, pattern string) bool
+	AppendPathSegmentToURL                 func(url, segment string) string
+	AppendPathSegmentToURLPattern          func(urlPattern, segment string) string
 	CheckDatabaseSchema                    func(objectPattern any) error
 	GetTopLevelEntitiesMigrationOperations func(concreteCtx context.Context, current, next any) ([]MigrationOp, error)
 	EstimatePermissionsFromListingNode     func(n *parse.ObjectLiteral) (any, error)

@@ -147,6 +147,45 @@ func TestObject(t *testing.T) {
 		})
 	})
 
+	t.Run("Prop", func(t *testing.T) {
+		t.Run("object has a URL witch a concrete value", func(t *testing.T) {
+			inner := NewExactObject2(map[string]Serializable{
+				"b": ANY_INT,
+			})
+
+			obj := NewExactObject2(map[string]Serializable{
+				"a":     ANY_INT,
+				"inner": inner,
+			})
+
+			obj = obj.WithURL(NewUrl("ldb://main/users/1")).(*Object)
+
+			expectedInnerObjURL := NewUrl("ldb://main/users/1/inner")
+
+			assert.Equal(t, ANY_INT, obj.Prop("a"))
+			assert.Equal(t, inner.WithURL(expectedInnerObjURL), obj.Prop("inner"))
+		})
+
+		t.Run("object has a URL matching a pattern with a concrete value", func(t *testing.T) {
+			inner := NewExactObject2(map[string]Serializable{
+				"b": ANY_INT,
+			})
+
+			obj := NewExactObject2(map[string]Serializable{
+				"a":     ANY_INT,
+				"inner": inner,
+			})
+
+			url := NewUrlMatchingPattern(NewUrlPattern("ldb://main/users/%int"))
+			obj = obj.WithURL(url).(*Object)
+
+			expectedInnerObjURL := NewUrlMatchingPattern(NewUrlPattern("ldb://main/users/%int/inner"))
+
+			assert.Equal(t, ANY_INT, obj.Prop("a"))
+			assert.Equal(t, inner.WithURL(expectedInnerObjURL), obj.Prop("inner"))
+		})
+	})
+
 	t.Run("SetProp", func(t *testing.T) {
 		t.Run("should return an error if a new property is set in an  exact object", func(t *testing.T) {
 			obj := NewExactObject(map[string]Serializable{}, nil, nil)

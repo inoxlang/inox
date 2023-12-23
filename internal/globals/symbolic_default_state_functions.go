@@ -243,7 +243,13 @@ func init() {
 		},
 
 		_url_of, func(ctx *symbolic.Context, v symbolic.Value) *symbolic.URL {
-			return &symbolic.URL{}
+			if urlHolder, ok := v.(symbolic.UrlHolder); ok {
+				url, ok := urlHolder.URL()
+				if ok {
+					return url
+				}
+			}
+			return symbolic.ANY_URL
 		},
 		//
 

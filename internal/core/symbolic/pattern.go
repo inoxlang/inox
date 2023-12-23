@@ -477,6 +477,14 @@ func NewUrlPatternFromNode(n parse.Node, chunk *parse.Chunk) *URLPattern {
 	}
 }
 
+func (p *URLPattern) WithAdditionalPathSegment(segment string) *URLPattern {
+	if p.hasValue {
+		return NewUrlPattern(extData.AppendPathSegmentToURLPattern(p.value, segment))
+	}
+
+	return ANY_URL_PATTERN
+}
+
 func (p *URLPattern) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()

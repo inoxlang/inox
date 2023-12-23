@@ -6,12 +6,19 @@ var (
 
 type UrlHolder interface {
 	Serializable
-	_url()
+	WithURL(url *URL) UrlHolder
+	URL() (*URL, bool)
 }
 
-type UrlHolderMixin struct {
+func (o *Object) WithURL(url *URL) UrlHolder {
+	copy := *o
+	copy.url = url
+	return &copy
 }
 
-func (m UrlHolderMixin) _url() {
-
+func (o *Object) URL() (*URL, bool) {
+	if o.url != nil {
+		return o.url, true
+	}
+	return nil, false
 }
