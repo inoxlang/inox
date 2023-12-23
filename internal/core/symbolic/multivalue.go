@@ -190,6 +190,15 @@ func (mv *Multivalue) AllValues(callbackFn func(v Value) bool) bool {
 	return true
 }
 
+// MapValues calls transform on all values in mv, the resulting values are joined.
+func (mv *Multivalue) TransformsValues(transform func(v Value) Value) Value {
+	var newValues []Value
+	for _, val := range mv.values {
+		newValues = append(newValues, transform(val))
+	}
+	return joinValues(newValues)
+}
+
 func (mv *Multivalue) WidenSimpleValues() Value {
 	first := mv.values[0]
 	if IsSimpleSymbolicInoxVal(first) {

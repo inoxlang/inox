@@ -11,12 +11,6 @@ import (
 )
 
 var (
-	_ = []symbolic.Iterable{(*Set)(nil)}
-	_ = []symbolic.Serializable{(*Set)(nil)}
-	_ = []symbolic.PotentiallySharable{(*Set)(nil)}
-	_ = []symbolic.PotentiallyConcretizable{(*SetPattern)(nil)}
-	_ = []symbolic.MigrationInitialValueCapablePattern{(*SetPattern)(nil)}
-
 	SET_PROPNAMES                       = []string{"has", "add", "remove", "get"}
 	SET_CONFIG_ELEMENT_PATTERN_PROP_KEY = "element"
 	SET_CONFIG_UNIQUE_PROP_KEY          = "unique"
@@ -26,6 +20,14 @@ var (
 
 	ANY_SET         = NewSetWithPattern(symbolic.ANY_PATTERN, nil)
 	ANY_SET_PATTERN = NewSetWithPattern(symbolic.ANY_PATTERN, nil)
+
+	_ = []symbolic.Iterable{(*Set)(nil)}
+	_ = []symbolic.Serializable{(*Set)(nil)}
+	_ = []symbolic.PotentiallySharable{(*Set)(nil)}
+	_ = []symbolic.UrlHolder{(*Set)(nil)}
+
+	_ = []symbolic.PotentiallyConcretizable{(*SetPattern)(nil)}
+	_ = []symbolic.MigrationInitialValueCapablePattern{(*SetPattern)(nil)}
 )
 
 type Set struct {
@@ -34,6 +36,7 @@ type Set struct {
 
 	uniqueness *containers_common.UniquenessConstraint
 	shared     bool
+	url        *symbolic.URL //can be nil
 
 	symbolic.UnassignablePropsMixin
 	symbolic.SerializableMixin
@@ -108,6 +111,33 @@ func (s *Set) Share(originState *symbolic.State) symbolic.PotentiallySharable {
 
 func (s *Set) IsShared() bool {
 	return s.shared
+}
+
+func (s *Set) WithURL(url *symbolic.URL) symbolic.UrlHolder {
+	copy := *s
+	copy.url = url
+	mv, ok := copy.element.(*symbolic.Multivalue)
+
+	elementURL := copy.url.WithAdditionalPathPatternSegment("*")
+
+	if ok {
+		copy.element = mv.TransformsValues(func(v symbolic.Value) symbolic.Value {
+			if urlHolder, ok := v.(symbolic.UrlHolder); ok {
+				return urlHolder.WithURL(elementURL)
+			}
+			return v
+		})
+	} else if urlHolder, ok := copy.element.(symbolic.UrlHolder); ok {
+		copy.element = urlHolder.WithURL(elementURL)
+	}
+	return &copy
+}
+
+func (s *Set) URL() (*symbolic.URL, bool) {
+	if s.url != nil {
+		return s.url, true
+	}
+	return nil, false
 }
 
 // it should NOT modify the value and should instead return a copy of the value but shared.

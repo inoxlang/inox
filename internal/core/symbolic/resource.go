@@ -3,6 +3,7 @@ package symbolic
 import (
 	"errors"
 	"net/url"
+	"strings"
 
 	pprint "github.com/inoxlang/inox/internal/prettyprint"
 	"github.com/inoxlang/inox/internal/utils"
@@ -264,6 +265,23 @@ func NewUrlMatchingPattern(p *URLPattern) *URL {
 func (u *URL) WithAdditionalPathSegment(segment string) *URL {
 	if u.hasValue {
 		return NewUrl(extData.AppendPathSegmentToURL(u.value, segment))
+	}
+
+	if u.pattern != nil && u.pattern.hasValue {
+		return NewUrlMatchingPattern(u.pattern.WithAdditionalPathSegment(segment))
+	}
+
+	return ANY_URL
+}
+
+func (u *URL) WithAdditionalPathPatternSegment(segment string) *URL {
+	if u.hasValue {
+		if strings.Contains(u.value, "/%") || strings.Contains(u.value, "*") {
+			return ANY_URL
+		}
+
+		urlPattern := NewUrlPattern(u.value).WithAdditionalPathSegment(segment)
+		return NewUrlMatchingPattern(urlPattern)
 	}
 
 	if u.pattern != nil && u.pattern.hasValue {

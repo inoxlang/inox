@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"math"
 	"net/url"
-	"path/filepath"
 	"reflect"
 	"runtime"
 	"slices"
@@ -115,12 +114,7 @@ func init() {
 			if err != nil {
 				panic(err)
 			}
-			if parsed.Path == "" {
-				parsed.Path = "/"
-			}
-			parsed.Path = AppendTrailingSlashIfNotPresent(parsed.Path)
-			parsed.Path = filepath.Join(parsed.Path, segment)
-			return parsed.String()
+			return parsed.JoinPath(segment).String()
 		},
 		AppendPathSegmentToURLPattern: func(u, segment string) string {
 			return appendPathSegmentToURLPattern(u, segment)

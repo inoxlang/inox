@@ -45,6 +45,12 @@ func NewReprUniqueness() *UniquenessConstraint {
 	}
 }
 
+func NewURLUniqueness() *UniquenessConstraint {
+	return &UniquenessConstraint{
+		Type: UniqueURL,
+	}
+}
+
 func UniquenessConstraintFromValue(val core.Value) (UniquenessConstraint, bool) {
 	var uniqueness UniquenessConstraint
 	switch u := val.(type) {
