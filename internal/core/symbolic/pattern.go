@@ -323,7 +323,7 @@ func (p *PathPattern) Concretize(ctx ConcreteContext) any {
 		panic(ErrNotConcretizable)
 	}
 
-	return extData.ConcreteValueFactories.CreateURLPattern(p.value)
+	return extData.ConcreteValueFactories.CreatePathPattern(p.value)
 }
 
 func (p *PathPattern) Static() Pattern {

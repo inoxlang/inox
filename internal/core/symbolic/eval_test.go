@@ -2888,6 +2888,43 @@ func TestSymbolicEval(t *testing.T) {
 		assert.Equal(t, ANY_BOOL, res)
 	})
 
+	t.Run("unary expression: number negation", func(t *testing.T) {
+		t.Run("invalid operand", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`(- true)`)
+			unaryExpr := parse.FindNode(n, (*parse.UnaryExpression)(nil), nil)
+
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(unaryExpr, state, fmtOperandOfNumberNegateShouldBeIntOrFloat(TRUE)),
+			}, state.errors())
+			assert.Equal(t, ANY, res)
+		})
+
+		t.Run("int multitvalue", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`(- a)`)
+
+			state.setGlobal("a", NewMultivalue(INT_1, INT_2), GlobalConst)
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, ANY_INT, res)
+		})
+
+		t.Run("float multitvalue", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`(- a)`)
+
+			state.setGlobal("a", NewMultivalue(FLOAT_1, FLOAT_2), GlobalConst)
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, ANY_FLOAT, res)
+		})
+	})
+
 	t.Run("function declaration", func(t *testing.T) {
 
 		t.Run("missing body", func(t *testing.T) {
@@ -12535,6 +12572,26 @@ func TestSymbolicEval(t *testing.T) {
 				makeSymbolicEvalError(objProps[4].Key, state, KEYS_OF_EXT_OBJ_MUST_BE_VALID_INOX_IDENTS),
 			}, state.errors())
 		})
+
+		t.Run("properties of the extension object should be type checked", func(t *testing.T) {
+			n, state := MakeTestStateAndChunks(`
+				pattern p = {val: true}
+
+				extend p {
+					negated: - self.val
+				}
+			`, nil)
+
+			unaryExpr := parse.FindNode(n.Statements[1], (*parse.UnaryExpression)(nil), nil)
+
+			_, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(unaryExpr, state, fmtOperandOfNumberNegateShouldBeIntOrFloat(TRUE)),
+			}, state.errors())
+		})
+
 	})
 
 	t.Run("double-colon expression", func(t *testing.T) {

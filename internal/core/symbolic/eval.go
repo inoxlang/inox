@@ -2576,16 +2576,13 @@ func evalUnaryExpression(n *parse.UnaryExpression, state *State, options evalOpt
 	}
 	switch n.Operator {
 	case parse.NumberNegate:
-		switch operand.(type) {
-		case *Int:
+		switch {
+		case ImplementsOrIsMultivalueWithAllValuesImplementing[*Int](operand):
 			return ANY_INT, nil
-		case *Float:
-			return &Float{}, nil
+		case ImplementsOrIsMultivalueWithAllValuesImplementing[*Float](operand):
+			return ANY_FLOAT, nil
 		default:
-			_, ok := operand.(*Bool)
-			if !ok {
-				state.addError(makeSymbolicEvalError(n, state, fmtOperandOfNumberNegateShouldBeIntOrFloat(operand)))
-			}
+			state.addError(makeSymbolicEvalError(n, state, fmtOperandOfNumberNegateShouldBeIntOrFloat(operand)))
 		}
 
 		return ANY, nil
@@ -5482,6 +5479,8 @@ func evalExtendStatement(n *parse.ExtendStatement, state *State, options evalOpt
 		ExtendedPattern: pattern,
 	}
 
+	stateFork := state.fork() //used for evaluating computed properties
+
 	for _, prop := range objLit.Properties {
 		if prop.HasImplicitKey() {
 			state.addError(makeSymbolicEvalError(prop, state, KEYS_OF_EXT_OBJ_MUST_BE_VALID_INOX_IDENTS))
@@ -5530,7 +5529,23 @@ func evalExtendStatement(n *parse.ExtendStatement, state *State, options evalOpt
 			if restoreNextSelf {
 				state.setNextSelf(prevNextSelf)
 			}
-		default:
+		default: //computed property
+			prevNextSelf, restoreSelf := stateFork.getSelf()
+			if restoreSelf {
+				stateFork.unsetSelf()
+			}
+			stateFork.setSelf(extendedValue)
+
+			_, err := symbolicEval(v, stateFork)
+			if err != nil {
+				return nil, err
+			}
+
+			stateFork.unsetSelf()
+			if restoreSelf {
+				stateFork.setSelf(prevNextSelf)
+			}
+
 			extension.PropertyExpressions = append(extension.PropertyExpressions, propertyExpression{
 				Name:       key,
 				Expression: v,
