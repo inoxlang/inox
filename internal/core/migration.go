@@ -10,6 +10,7 @@ import (
 	"github.com/inoxlang/inox/internal/commonfmt"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/utils"
+	"github.com/inoxlang/inox/internal/utils/pathutils"
 )
 
 var (
@@ -376,7 +377,7 @@ func (o *Record) Migrate(ctx *Context, key Path, migration *InstanceMigrationArg
 func migrateObjectOrRecord(
 	ctx *Context, o Value, isObject bool, propKeys *[]string, propValues *[]Serializable,
 	key Path, migration *InstanceMigrationArgs) (Value, error) {
-	depth := len(GetPathSegments(string(key)))
+	depth := len(pathutils.GetPathSegments(string(key)))
 	migrationHanders := migration.MigrationHandlers
 	state := ctx.GetClosestState()
 
@@ -387,7 +388,7 @@ func migrateObjectOrRecord(
 	var nextRecord bool
 
 	for pathPattern, handler := range migrationHanders.Deletions {
-		pathPatternSegments := GetPathSegments(string(pathPattern))
+		pathPatternSegments := pathutils.GetPathSegments(string(pathPattern))
 		pathPatternDepth := len(pathPatternSegments)
 
 		lastSegment := ""
@@ -515,7 +516,7 @@ func migrateObjectOrRecord(
 	}
 
 	handle := func(pathPattern PathPattern, handler *MigrationOpHandler, kind MigrationOpKind) (outerFunctionResult Value, outerFunctionError error) {
-		pathPatternSegments := GetPathSegments(string(pathPattern))
+		pathPatternSegments := pathutils.GetPathSegments(string(pathPattern))
 		pathPatternDepth := len(pathPatternSegments)
 		lastSegment := ""
 		if pathPatternDepth == 0 {
@@ -730,7 +731,7 @@ func (tuple *Tuple) Migrate(ctx *Context, key Path, migration *InstanceMigration
 func migrateListOrTuple(
 	ctx *Context, o Sequence, isList bool,
 	key Path, migration *InstanceMigrationArgs) (Value, error) {
-	depth := len(GetPathSegments(string(key)))
+	depth := len(pathutils.GetPathSegments(string(key)))
 
 	migrationHanders := migration.MigrationHandlers
 	state := ctx.GetClosestState()
@@ -755,7 +756,7 @@ func migrateListOrTuple(
 	}
 
 	for pathPattern, handler := range migrationHanders.Deletions {
-		pathPatternSegments := GetPathSegments(string(pathPattern))
+		pathPatternSegments := pathutils.GetPathSegments(string(pathPattern))
 		pathPatternDepth := len(pathPatternSegments)
 
 		lastSegment := ""
@@ -861,7 +862,7 @@ func migrateListOrTuple(
 	}
 
 	handle := func(pathPattern PathPattern, handler *MigrationOpHandler, kind MigrationOpKind) (outerFunctionResult Value, outerFunctionError error) {
-		pathPatternSegments := GetPathSegments(string(pathPattern))
+		pathPatternSegments := pathutils.GetPathSegments(string(pathPattern))
 		pathPatternDepth := len(pathPatternSegments)
 		lastSegment := ""
 		if pathPatternDepth == 0 {

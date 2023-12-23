@@ -229,3 +229,4 @@ func CountPrevBackslashes[T constraints.Integer](s []T, i int32) int32 {
 
 	return count
 }
+

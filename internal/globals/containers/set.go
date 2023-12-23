@@ -14,6 +14,7 @@ import (
 	"github.com/inoxlang/inox/internal/core"
 	jsoniter "github.com/inoxlang/inox/internal/jsoniter"
 	"github.com/inoxlang/inox/internal/utils"
+	"github.com/inoxlang/inox/internal/utils/pathutils"
 
 	containers_common "github.com/inoxlang/inox/internal/globals/containers/common"
 	coll_symbolic "github.com/inoxlang/inox/internal/globals/containers/symbolic"
@@ -283,12 +284,12 @@ func (s *Set) Migrate(ctx *core.Context, key core.Path, migration *core.Instance
 		panic(core.ErrUnreachable)
 	}
 
-	depth := len(core.GetPathSegments(string(key)))
+	depth := len(pathutils.GetPathSegments(string(key)))
 	migrationHanders := migration.MigrationHandlers
 	state := ctx.GetClosestState()
 
 	for pathPattern, handler := range migrationHanders.Deletions {
-		pathPatternSegments := core.GetPathSegments(string(pathPattern))
+		pathPatternSegments := pathutils.GetPathSegments(string(pathPattern))
 		pathPatternDepth := len(pathPatternSegments)
 
 		lastSegment := ""
@@ -378,7 +379,7 @@ func (s *Set) Migrate(ctx *core.Context, key core.Path, migration *core.Instance
 	}
 
 	handle := func(pathPattern core.PathPattern, handler *core.MigrationOpHandler, kind core.MigrationOpKind) (outerFunctionResult core.Value, outerFunctionError error) {
-		pathPatternSegments := core.GetPathSegments(string(pathPattern))
+		pathPatternSegments := pathutils.GetPathSegments(string(pathPattern))
 		pathPatternDepth := len(pathPatternSegments)
 		lastSegment := ""
 		if pathPatternDepth == 0 {

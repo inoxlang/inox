@@ -20,6 +20,7 @@ import (
 	"github.com/inoxlang/inox/internal/mimeconsts"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
+	"github.com/inoxlang/inox/internal/utils/pathutils"
 )
 
 const (
@@ -358,7 +359,7 @@ func (pth Path) Prop(ctx *Context, name string) Value {
 
 	switch name {
 	case "segments":
-		segments := GetPathSegments(string(pth))
+		segments := pathutils.GetPathSegments(string(pth))
 
 		var valueList []Serializable
 
@@ -724,7 +725,7 @@ func (u URL) Path() Path {
 
 func (u URL) GetLastPathSegment() string {
 	url := u.mustParse()
-	return GetLastPathSegment(url.Path)
+	return pathutils.GetLastPathSegment(url.Path)
 }
 
 func (u URL) RawQuery() Str {
@@ -1422,24 +1423,6 @@ func ParseOrValidateResourceContent(ctx *Context, resourceContent []byte, ctype 
 		}
 	}
 	return
-}
-
-// GetPathSegments returns the segments of pth, adjacent '/' characters are treated as a single '/' character.
-func GetPathSegments(pth string) []string {
-	split := strings.Split(string(pth), "/")
-	var segments []string
-
-	for _, segment := range split {
-		if segment != "" {
-			segments = append(segments, segment)
-		}
-	}
-	return segments
-}
-
-func GetLastPathSegment(pth string) string {
-	segments := GetPathSegments(pth)
-	return segments[len(segments)-1]
 }
 
 // getPathSpanInURLPattern returns the start and exclusive end index of the path part in a URL pattern,
