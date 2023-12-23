@@ -1046,6 +1046,30 @@ func handleDoubleColonExpressionCompletions(n *parse.DoubleColonExpression, stat
 		replacedRange = chunk.GetSourcePosition(n.Element.Span)
 	}
 
+	referencedEntity, _ := state.Global.SymbolicData.GetURLReferencedEntity(n)
+	if referencedEntity != nil {
+		switch referencedEntity := referencedEntity.(type) {
+		case symbolic.IProps:
+			for _, propName := range referencedEntity.PropertyNames() {
+				if n.Element != nil && !hasPrefixCaseInsensitive(propName, n.Element.Name) {
+					continue
+				}
+
+				propValue := referencedEntity.Prop(propName)
+				propDetail := symbolic.Stringify(propValue)
+
+				completions = append(completions, Completion{
+					ShownString:   propName,
+					Value:         propName,
+					Kind:          defines.CompletionItemKindProperty,
+					LabelDetail:   propDetail,
+					ReplacedRange: replacedRange,
+				})
+			}
+		}
+		return completions
+	}
+
 	switch l := leftVal.(type) {
 	case *symbolic.Object:
 		l.ForEachEntry(func(propName string, propValue symbolic.Value) error {

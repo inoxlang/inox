@@ -1,6 +1,7 @@
 package codecompletion
 
 import (
+	"maps"
 	"os"
 	"path/filepath"
 	"testing"
@@ -11,6 +12,7 @@ import (
 	"github.com/inoxlang/inox/internal/core/permkind"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
+	"github.com/inoxlang/inox/internal/globals/globalnames"
 	"github.com/inoxlang/inox/internal/globals/net_ns"
 	"github.com/inoxlang/inox/internal/help"
 
@@ -81,9 +83,18 @@ func TestFindCompletions(t *testing.T) {
 				return _findCompletions(state, chunk, cursorIndex, false)
 			}
 
-			doSymbolicCheck := func(chunk *parse.ParsedChunk, state *core.GlobalState) {}
+			doSymbolicCheck := func(chunk *parse.ParsedChunk, state *core.GlobalState, additionalSymbolicGlobalConsts ...map[string]symbolic.Value) {
+			}
 			if mode == LspCompletions {
-				doSymbolicCheck = func(chunk *parse.ParsedChunk, state *core.GlobalState) {
+				doSymbolicCheck = func(
+					chunk *parse.ParsedChunk,
+					state *core.GlobalState,
+					additionalSymbolicGlobalConsts ...map[string]symbolic.Value) {
+
+					additional := map[string]symbolic.Value{}
+					for _, additionalGlobals := range additionalSymbolicGlobalConsts {
+						maps.Copy(additional, additionalGlobals)
+					}
 
 					globals := map[string]symbolic.ConcreteGlobalValue{}
 					state.Globals.Foreach(func(name string, v core.Value, isConst bool) error {
@@ -95,11 +106,12 @@ func TestFindCompletions(t *testing.T) {
 					})
 
 					data, _ := symbolic.EvalCheck(symbolic.EvalCheckInput{
-						Node:         chunk.Node,
-						Module:       symbolic.NewModule(chunk, nil, nil),
-						Globals:      globals,
-						IsShellChunk: false,
-						Context:      utils.Must(state.Ctx.ToSymbolicValue()),
+						Node:                           chunk.Node,
+						Module:                         symbolic.NewModule(chunk, nil, nil),
+						Globals:                        globals,
+						AdditionalSymbolicGlobalConsts: additional,
+						IsShellChunk:                   false,
+						Context:                        utils.Must(state.Ctx.ToSymbolicValue()),
 					})
 					if data != nil {
 						state.SymbolicData.AddData(data)
@@ -441,7 +453,7 @@ func TestFindCompletions(t *testing.T) {
 				})
 			})
 
-			t.Run("double-colon expression with shared object LHS", func(t *testing.T) {
+			t.Run("double-colon expression with shared object on the left", func(t *testing.T) {
 
 				if mode == ShellCompletions {
 					t.Skip()
@@ -476,7 +488,7 @@ func TestFindCompletions(t *testing.T) {
 				})
 			})
 
-			t.Run("double-colon expression with patternm-matching object LHS", func(t *testing.T) {
+			t.Run("double-colon expression with pattern-matching object on the left", func(t *testing.T) {
 				if mode == ShellCompletions {
 					t.Skip()
 				}
@@ -491,6 +503,52 @@ func TestFindCompletions(t *testing.T) {
 					assert.EqualValues(t, []Completion{
 						{ShownString: "a", Value: "a", ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 78, End: 78}}},
 						{ShownString: "c", Value: "c", ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 78, End: 78}}},
+					}, completions)
+				})
+			})
+
+			t.Run("double-colon expression with url on the left", func(t *testing.T) {
+				if mode == ShellCompletions {
+					t.Skip()
+				}
+
+				userPattern := symbolic.NewInexactObjectPattern(map[string]symbolic.Pattern{
+					"name": symbolic.NewTypePattern(symbolic.ANY_INT, nil, nil, nil),
+					"data": symbolic.NewTypePattern(symbolic.ANY_INT, nil, nil, nil),
+				}, nil)
+
+				db := symbolic.NewDatabaseIL(symbolic.DatabaseILParams{
+					Schema: symbolic.NewInexactObjectPattern(map[string]symbolic.Pattern{
+						"user": userPattern,
+					}, nil),
+				})
+
+				t.Run("empty property name", func(t *testing.T) {
+					state := newState()
+					chunk, _ := parseChunkSource("url = ldb://main/user; url::", "")
+
+					doSymbolicCheck(chunk, state.Global, map[string]symbolic.Value{
+						globalnames.DATABASES: symbolic.NewNamespace(map[string]symbolic.Value{"main": db}),
+					})
+
+					completions := findCompletions(state, chunk, 28)
+					assert.EqualValues(t, []Completion{
+						{ShownString: "data", Value: "data", ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 28, End: 28}}},
+						{ShownString: "name", Value: "name", ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 28, End: 28}}},
+					}, completions)
+				})
+
+				t.Run("suggest property name from first letter", func(t *testing.T) {
+					state := newState()
+					chunk, _ := parseChunkSource("url = ldb://main/user; url::n", "")
+
+					doSymbolicCheck(chunk, state.Global, map[string]symbolic.Value{
+						globalnames.DATABASES: symbolic.NewNamespace(map[string]symbolic.Value{"main": db}),
+					})
+
+					completions := findCompletions(state, chunk, 29)
+					assert.EqualValues(t, []Completion{
+						{ShownString: "name", Value: "name", ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 28, End: 29}}},
 					}, completions)
 				})
 			})
