@@ -12,6 +12,7 @@ type Effect interface {
 	PermissionKind() PermissionKind
 	Reversability(*Context) Reversability
 	IsApplied() bool
+	IsApplying() bool
 	Apply(*Context) error
 	Reverse(*Context) error
 }

@@ -11911,6 +11911,10 @@ func (e *reversibleEffect) IsApplied() bool {
 	return e.applied
 }
 
+func (e *reversibleEffect) IsApplying() bool {
+	return false
+}
+
 func (e *reversibleEffect) Apply(*Context) error {
 	if e.applied {
 		return ErrEffectAlreadyApplied
@@ -11940,6 +11944,10 @@ func (e *irreversibleEffect) Reversability(*Context) Reversability {
 
 func (e *irreversibleEffect) IsApplied() bool {
 	return e.applied
+}
+
+func (e *irreversibleEffect) IsApplying() bool {
+	return false
 }
 
 func (e *irreversibleEffect) Apply(*Context) error {

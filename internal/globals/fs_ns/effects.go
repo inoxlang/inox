@@ -12,15 +12,15 @@ import (
 	"github.com/inoxlang/inox/internal/core/permkind"
 )
 
-var _ = []core.Effect{(*CreateFile)(nil), (*CreateDir)(nil), (*RemoveFile)(nil)}
+var _ = []core.Effect{(*CreateFile)(nil), (*CreateDir)(nil), (*RemoveFile)(nil), (*RenameFile)(nil), (*AppendBytesToFile)(nil)}
 
 //
 
 type CreateFile struct {
-	path    core.Path
-	applied bool
-	content []byte
-	fmode   core.FileMode
+	path              core.Path
+	applying, applied bool
+	content           []byte
+	fmode             core.FileMode
 }
 
 func (e CreateFile) Resources() []core.ResourceName {
@@ -39,12 +39,24 @@ func (e CreateFile) IsApplied() bool {
 	return e.applied
 }
 
+func (e CreateFile) IsApplying() bool {
+	return e.applying
+}
+
 func (e *CreateFile) Apply(ctx *core.Context) error {
-	if e.applied {
+	if e.applied || e.applying {
 		return nil
 	}
-	e.applied = true
-	return __createFile(ctx, e.path, e.content, fs.FileMode(e.fmode))
+	defer func() {
+		e.applying = false
+	}()
+	e.applying = true
+	err := __createFile(ctx, e.path, e.content, fs.FileMode(e.fmode))
+
+	if err == nil {
+		e.applied = true
+	}
+	return err
 }
 
 func (e CreateFile) Reverse(ctx *core.Context) error {
@@ -63,9 +75,13 @@ func (e CreateFile) CheckPermissions(ctx *core.Context) error {
 //
 
 type AppendBytesToFile struct {
-	path    core.Path
-	applied bool
-	content []byte
+	path              core.Path
+	applying, applied bool
+	content           []byte
+}
+
+func (e AppendBytesToFile) Resources() []core.ResourceName {
+	return []core.ResourceName{e.path}
 }
 
 func (e AppendBytesToFile) PermissionKind() core.PermissionKind {
@@ -80,18 +96,24 @@ func (e AppendBytesToFile) IsApplied() bool {
 	return e.applied
 }
 
-func (e *AppendBytesToFile) Apply(ctx *core.Context) error {
+func (e AppendBytesToFile) IsApplying() bool {
+	return e.applying
+}
 
-	if e.applied {
+func (e *AppendBytesToFile) Apply(ctx *core.Context) error {
+	if e.applied || e.applying {
 		return nil
 	}
+	e.applying = true
+	defer func() {
+		e.applying = false
+	}()
 
 	if err := e.CheckPermissions(ctx); err != nil {
 		return err
 	}
 
 	fls := ctx.GetFileSystem()
-	e.applied = true
 
 	f, err := fls.OpenFile(string(e.path), os.O_APPEND|os.O_WRONLY, 0o600)
 	if err != nil {
@@ -105,6 +127,7 @@ func (e *AppendBytesToFile) Apply(ctx *core.Context) error {
 		return fmt.Errorf("failed to append to file: %s", err.Error())
 	}
 
+	e.applied = true
 	return nil
 }
 
@@ -139,9 +162,9 @@ func (e AppendBytesToFile) CheckPermissions(ctx *core.Context) error {
 //
 
 type CreateDir struct {
-	path    core.Path
-	applied bool
-	fmode   core.FileMode
+	path              core.Path
+	applying, applied bool
+	fmode             core.FileMode
 }
 
 func (e CreateDir) Resources() []core.ResourceName {
@@ -160,17 +183,31 @@ func (e CreateDir) IsApplied() bool {
 	return e.applied
 }
 
+func (e CreateDir) IsApplying() bool {
+	return e.applying
+}
+
 func (e *CreateDir) Apply(ctx *core.Context) error {
 	fls := ctx.GetFileSystem()
 
-	if e.applied {
+	if e.applied || e.applying {
 		return nil
 	}
+	e.applying = true
+	defer func() {
+		e.applying = false
+	}()
+
 	if err := ctx.CheckHasPermission(core.FilesystemPermission{Kind_: permkind.Create, Entity: e.path}); err != nil {
 		return err
 	}
-	e.applied = true
-	return fls.MkdirAll(e.path.UnderlyingString(), fs.FileMode(e.fmode))
+
+	err := fls.MkdirAll(e.path.UnderlyingString(), fs.FileMode(e.fmode))
+
+	if err == nil {
+		e.applied = true
+	}
+	return err
 }
 
 func (e CreateDir) Reverse(ctx *core.Context) error {
@@ -190,10 +227,10 @@ func (e CreateDir) CheckPermissions(ctx *core.Context) error {
 
 // RemoveFile is an effect removing a file (regular file, directory, ...).
 type RemoveFile struct {
-	path       core.Path
-	applied    bool
-	reversible bool
-	save       core.Path
+	path              core.Path
+	applying, applied bool
+	reversible        bool
+	save              core.Path
 }
 
 func (e RemoveFile) Resources() []core.ResourceName {
@@ -212,16 +249,30 @@ func (e RemoveFile) IsApplied() bool {
 	return e.applied
 }
 
-func (e *RemoveFile) Apply(ctx *core.Context) error {
-	if e.applied {
+func (e RemoveFile) IsApplying() bool {
+	return e.applying
+}
+
+func (e *RemoveFile) Apply(ctx *core.Context) (finalErr error) {
+	if e.applied || e.applying {
 		return nil
 	}
 	if err := e.CheckPermissions(ctx); err != nil {
 		return err
 	}
 
-	e.applied = true
+	e.applying = true
+	defer func() {
+		e.applying = false
+	}()
+
 	fls := ctx.GetFileSystem()
+
+	defer func() {
+		if finalErr == nil {
+			e.applied = true
+		}
+	}()
 
 	if e.reversible { //if the effect is reversible we move the file instead of deleting it
 		tempDir := ctx.GetTempDir()
@@ -255,8 +306,8 @@ func (e RemoveFile) CheckPermissions(ctx *core.Context) error {
 //
 
 type RenameFile struct {
-	old, new core.Path
-	applied  bool
+	old, new          core.Path
+	applying, applied bool
 }
 
 func (e RenameFile) Resources() []core.ResourceName {
@@ -275,12 +326,18 @@ func (e RenameFile) IsApplied() bool {
 	return e.applied
 }
 
-func (e *RenameFile) Apply(ctx *core.Context) error {
+func (e RenameFile) IsApplying() bool {
+	return e.applying
+}
 
-	if e.applied {
+func (e *RenameFile) Apply(ctx *core.Context) error {
+	if e.applied || e.applying {
 		return nil
 	}
-	e.applied = true
+	e.applying = true
+	defer func() {
+		e.applying = false
+	}()
 
 	fls := ctx.GetFileSystem()
 
@@ -292,7 +349,11 @@ func (e *RenameFile) Apply(ctx *core.Context) error {
 		return fmt.Errorf("rename: a file already exists at %s", e.new.ResourceName())
 	}
 
-	return fls.Rename(string(e.old), string(e.new))
+	err := fls.Rename(string(e.old), string(e.new))
+	if err == nil {
+		e.applied = true
+	}
+	return err
 }
 
 func (e RenameFile) Reverse(ctx *core.Context) error {
