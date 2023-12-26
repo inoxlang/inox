@@ -112,8 +112,8 @@ type bpos struct {
 	end int // one byte past pos
 }
 
-// openWAL a new write ahead log
-func openWAL(path string, fls afs.Filesystem, opts *LogOptions) (*Log, error) {
+// OpenWAL a new write ahead log
+func OpenWAL(path string, fls afs.Filesystem, opts *LogOptions) (*Log, error) {
 	if opts == nil {
 		opts = defaultLogOptions
 	}

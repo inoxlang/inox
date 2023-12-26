@@ -28,7 +28,7 @@ func testLog(t *testing.T, opts *LogOptions, N int) {
 	logPath := "/testlog"
 	fls := newFS()
 
-	l, err := openWAL(logPath, fls, opts)
+	l, err := OpenWAL(logPath, fls, opts)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -179,7 +179,7 @@ func testLog(t *testing.T, opts *LogOptions, N int) {
 	}
 
 	// Open -- reopen log
-	l, err = openWAL(logPath, fls, opts)
+	l, err = OpenWAL(logPath, fls, opts)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -378,7 +378,7 @@ func testLog(t *testing.T, opts *LogOptions, N int) {
 	}
 
 	// Open -- open log after truncating
-	l, err = openWAL(logPath, fls, opts)
+	l, err = OpenWAL(logPath, fls, opts)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -478,7 +478,7 @@ func TestOutliers(t *testing.T) {
 	t.Run("fail-in-memory", func(t *testing.T) {
 		fls := newFS()
 
-		if l, err := openWAL(":memory:", fls, nil); err == nil {
+		if l, err := OpenWAL(":memory:", fls, nil); err == nil {
 			l.Close()
 			t.Fatal("expected error")
 		}
@@ -492,7 +492,7 @@ func TestOutliers(t *testing.T) {
 			t.Fatal(err)
 		} else if err := f.Close(); err != nil {
 			t.Fatal(err)
-		} else if l, err := openWAL("/testlog/file", fls, nil); err == nil {
+		} else if l, err := OpenWAL("/testlog/file", fls, nil); err == nil {
 			l.Close()
 			t.Fatal("expected error")
 		}
@@ -514,7 +514,7 @@ func TestOutliers(t *testing.T) {
 			t.Fatal(err)
 		}
 		f.Close()
-		l, err := openWAL("/testlog/junk", fls, nil)
+		l, err := OpenWAL("/testlog/junk", fls, nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -531,44 +531,44 @@ func TestOutliers(t *testing.T) {
 		util.WriteFile(fls,
 			"/testlog/corrupt-tail/00000000000000000001",
 			[]byte("\n"), 0666)
-		if l, err := openWAL("/testlog/corrupt-tail", fls, opts); err != ErrCorruptLog {
+		if l, err := OpenWAL("/testlog/corrupt-tail", fls, opts); err != ErrCorruptLog {
 			l.Close()
 			t.Fatalf("expected %v, got %v", ErrCorruptLog, err)
 		}
-		if l, err := openWAL("/testlog/corrupt-tail", fls, &optsRecoverTail); err != nil {
+		if l, err := OpenWAL("/testlog/corrupt-tail", fls, &optsRecoverTail); err != nil {
 			l.Close()
 			t.Fatalf("expected %v, got %v", nil, err)
 		}
 		util.WriteFile(fls,
 			"/testlog/corrupt-tail/00000000000000000001",
 			[]byte(`{}`+"\n"), 0666)
-		if l, err := openWAL("/testlog/corrupt-tail", fls, opts); err != ErrCorruptLog {
+		if l, err := OpenWAL("/testlog/corrupt-tail", fls, opts); err != ErrCorruptLog {
 			l.Close()
 			t.Fatalf("expected %v, got %v", ErrCorruptLog, err)
 		}
-		if l, err := openWAL("/testlog/corrupt-tail", fls, &optsRecoverTail); err != nil {
+		if l, err := OpenWAL("/testlog/corrupt-tail", fls, &optsRecoverTail); err != nil {
 			l.Close()
 			t.Fatalf("expected %v, got %v", nil, err)
 		}
 		util.WriteFile(fls,
 			"/testlog/corrupt-tail/00000000000000000001",
 			[]byte(`{"index":"1"}`+"\n"), 0666)
-		if l, err := openWAL("/testlog/corrupt-tail", fls, opts); err != ErrCorruptLog {
+		if l, err := OpenWAL("/testlog/corrupt-tail", fls, opts); err != ErrCorruptLog {
 			l.Close()
 			t.Fatalf("expected %v, got %v", ErrCorruptLog, err)
 		}
-		if l, err := openWAL("/testlog/corrupt-tail", fls, &optsRecoverTail); err != nil {
+		if l, err := OpenWAL("/testlog/corrupt-tail", fls, &optsRecoverTail); err != nil {
 			l.Close()
 			t.Fatalf("expected %v, got %v", nil, err)
 		}
 		util.WriteFile(fls,
 			"/testlog/corrupt-tail/00000000000000000001",
 			[]byte(`{"index":"1","data":"?"}`), 0666)
-		if l, err := openWAL("/testlog/corrupt-tail", fls, opts); err != ErrCorruptLog {
+		if l, err := OpenWAL("/testlog/corrupt-tail", fls, opts); err != ErrCorruptLog {
 			l.Close()
 			t.Fatalf("expected %v, got %v", ErrCorruptLog, err)
 		}
-		if l, err := openWAL("/testlog/corrupt-tail", fls, &optsRecoverTail); err != nil {
+		if l, err := OpenWAL("/testlog/corrupt-tail", fls, &optsRecoverTail); err != nil {
 			l.Close()
 			t.Fatalf("expected %v, got %v", nil, err)
 		}
@@ -579,7 +579,7 @@ func TestOutliers(t *testing.T) {
 
 		lpath := "/testlog/start-marker"
 		opts := makeOpts(512, true)
-		l := must(openWAL(lpath, fls, opts)).(*Log)
+		l := must(OpenWAL(lpath, fls, opts)).(*Log)
 		defer l.Close()
 		for i := uint64(1); i <= 100; i++ {
 			must(nil, l.Write(i, []byte(dataStr(i))))
@@ -589,7 +589,7 @@ func TestOutliers(t *testing.T) {
 		must(nil, l.Close())
 		data := must(util.ReadFile(fls, path)).([]byte)
 		must(nil, util.WriteFile(fls, path+".START", data, 0666))
-		l = must(openWAL(lpath, fls, opts)).(*Log)
+		l = must(OpenWAL(lpath, fls, opts)).(*Log)
 		defer l.Close()
 		testFirstLast(t, l, firstIndex, 100, nil)
 
@@ -642,7 +642,7 @@ func TestIssue1(t *testing.T) {
 		27, 48, 23, 159, 63, 14, 240, 202, 206, 151, 131, 98, 45, 165, 151, 67,
 		38, 180, 54, 23, 138, 238, 246, 16, 0, 0, 0, 0}
 	opts := *defaultLogOptions
-	l, err := openWAL("/testlog", fls, &opts)
+	l, err := OpenWAL("/testlog", fls, &opts)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -667,7 +667,7 @@ func TestSimpleTruncateFront(t *testing.T) {
 		SegmentSize: 100,
 	}
 
-	l, err := openWAL("/testlog", fls, opts)
+	l, err := OpenWAL("/testlog", fls, opts)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -711,7 +711,7 @@ func TestSimpleTruncateFront(t *testing.T) {
 		if err := l.Close(); err != nil {
 			t.Fatal(err)
 		}
-		l, err = openWAL("/testlog", fls, opts)
+		l, err = OpenWAL("/testlog", fls, opts)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -765,7 +765,7 @@ func TestSimpleTruncateBack(t *testing.T) {
 		SegmentSize: 100,
 	}
 
-	l, err := openWAL("/testlog", fls, opts)
+	l, err := OpenWAL("/testlog", fls, opts)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -809,7 +809,7 @@ func TestSimpleTruncateBack(t *testing.T) {
 		if err := l.Close(); err != nil {
 			t.Fatal(err)
 		}
-		l, err = openWAL("/testlog", fls, opts)
+		l, err = OpenWAL("/testlog", fls, opts)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -863,7 +863,7 @@ func TestSimpleTruncateBack(t *testing.T) {
 func TestConcurrency(t *testing.T) {
 	fls := newFS()
 
-	l, err := openWAL("/testlog", fls, &LogOptions{
+	l, err := OpenWAL("/testlog", fls, &LogOptions{
 		NoSync: true,
 		NoCopy: true,
 	})
