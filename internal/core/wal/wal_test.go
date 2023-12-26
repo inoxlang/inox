@@ -15,445 +15,9 @@ import (
 	"github.com/go-git/go-billy/v5"
 	"github.com/go-git/go-billy/v5/memfs"
 	"github.com/go-git/go-billy/v5/util"
+	"github.com/inoxlang/inox/internal/utils"
+	"github.com/stretchr/testify/assert"
 )
-
-func dataStr(index uint64) string {
-	if index%2 == 0 {
-		return fmt.Sprintf("data-\"%d\"", index)
-	}
-	return fmt.Sprintf("data-'%d'", index)
-}
-
-func testLog(t *testing.T, opts *LogOptions, N int) {
-	logPath := "/testlog"
-	fls := newFS()
-
-	l, err := OpenWAL(logPath, fls, opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer l.Close()
-
-	// FirstIndex - should be zero
-	n, err := l.FirstIndex()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if n != 0 {
-		t.Fatalf("expected %d, got %d", 0, n)
-	}
-
-	// LastIndex - should be zero
-	n, err = l.LastIndex()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if n != 0 {
-		t.Fatalf("expected %d, got %d", 0, n)
-	}
-
-	for i := 1; i <= N; i++ {
-		// Write - try to append previous index, should fail
-		err = l.Write(uint64(i-1), nil)
-		if err != ErrLogIndexOutOfOrder {
-			t.Fatalf("expected %v, got %v", ErrLogIndexOutOfOrder, err)
-		}
-		// Write - append next item
-		err = l.Write(uint64(i), []byte(dataStr(uint64(i))))
-		if err != nil {
-			t.Fatalf("expected %v, got %v", nil, err)
-		}
-		// Write - get next item
-		data, err := l.Read(uint64(i))
-		if err != nil {
-			t.Fatalf("expected %v, got %v", nil, err)
-		}
-		if string(data) != dataStr(uint64(i)) {
-			t.Fatalf("expected %s, got %s", dataStr(uint64(i)), data)
-		}
-	}
-
-	// Read -- should fail, not found
-	_, err = l.Read(0)
-	if err != ErrLogEntryNotFound {
-		t.Fatalf("expected %v, got %v", ErrLogEntryNotFound, err)
-	}
-	// Read -- read back all entries
-	for i := 1; i <= N; i++ {
-		data, err := l.Read(uint64(i))
-		if err != nil {
-			t.Fatalf("error while getting %d", i)
-		}
-		if string(data) != dataStr(uint64(i)) {
-			t.Fatalf("expected %s, got %s", dataStr(uint64(i)), data)
-		}
-	}
-	// Read -- read back first half entries
-	for i := 1; i <= N/2; i++ {
-		data, err := l.Read(uint64(i))
-		if err != nil {
-			t.Fatalf("error while getting %d", i)
-		}
-		if string(data) != dataStr(uint64(i)) {
-			t.Fatalf("expected %s, got %s", dataStr(uint64(i)), data)
-		}
-	}
-	// Read -- read second third entries
-	for i := N / 3; i <= N/3+N/3; i++ {
-		data, err := l.Read(uint64(i))
-		if err != nil {
-			t.Fatalf("error while getting %d", i)
-		}
-		if string(data) != dataStr(uint64(i)) {
-			t.Fatalf("expected %s, got %s", dataStr(uint64(i)), data)
-		}
-	}
-
-	// Read -- random access
-	for _, v := range rand.Perm(N) {
-		index := uint64(v + 1)
-		data, err := l.Read(index)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if dataStr(index) != string(data) {
-			t.Fatalf("expected %v, got %v", dataStr(index), string(data))
-		}
-	}
-
-	// FirstIndex/LastIndex -- check valid first and last indexes
-	n, err = l.FirstIndex()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if n != 1 {
-		t.Fatalf("expected %d, got %d", 1, n)
-	}
-	n, err = l.LastIndex()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if n != uint64(N) {
-		t.Fatalf("expected %d, got %d", N, n)
-	}
-
-	// Close -- close the log
-	if err := l.Close(); err != nil {
-		t.Fatal(err)
-	}
-
-	// Write - try while closed
-	err = l.Write(1, nil)
-	if err != ErrLogClosed {
-		t.Fatalf("expected %v, got %v", ErrLogClosed, err)
-	}
-	// WriteBatch - try while closed
-	err = l.WriteBatch(nil)
-	if err != ErrLogClosed {
-		t.Fatalf("expected %v, got %v", ErrLogClosed, err)
-	}
-	// FirstIndex - try while closed
-	_, err = l.FirstIndex()
-	if err != ErrLogClosed {
-		t.Fatalf("expected %v, got %v", ErrLogClosed, err)
-	}
-	// LastIndex - try while closed
-	_, err = l.LastIndex()
-	if err != ErrLogClosed {
-		t.Fatalf("expected %v, got %v", ErrLogClosed, err)
-	}
-	// Get - try while closed
-	_, err = l.Read(0)
-	if err != ErrLogClosed {
-		t.Fatalf("expected %v, got %v", ErrLogClosed, err)
-	}
-	// TruncateFront - try while closed
-	err = l.TruncateFront(0)
-	if err != ErrLogClosed {
-		t.Fatalf("expected %v, got %v", ErrLogClosed, err)
-	}
-	// TruncateBack - try while closed
-	err = l.TruncateBack(0)
-	if err != ErrLogClosed {
-		t.Fatalf("expected %v, got %v", ErrLogClosed, err)
-	}
-
-	// Open -- reopen log
-	l, err = OpenWAL(logPath, fls, opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer l.Close()
-
-	// Read -- read back all entries
-	for i := 1; i <= N; i++ {
-		data, err := l.Read(uint64(i))
-		if err != nil {
-			t.Fatalf("error while getting %d, err=%s", i, err)
-		}
-		if string(data) != dataStr(uint64(i)) {
-			t.Fatalf("expected %s, got %s", dataStr(uint64(i)), data)
-		}
-	}
-	// FirstIndex/LastIndex -- check valid first and last indexes
-	n, err = l.FirstIndex()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if n != 1 {
-		t.Fatalf("expected %d, got %d", 1, n)
-	}
-	n, err = l.LastIndex()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if n != uint64(N) {
-		t.Fatalf("expected %d, got %d", N, n)
-	}
-	// Write -- add 50 more items
-	for i := N + 1; i <= N+50; i++ {
-		index := uint64(i)
-		if err := l.Write(index, []byte(dataStr(index))); err != nil {
-			t.Fatal(err)
-		}
-		data, err := l.Read(index)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if string(data) != dataStr(index) {
-			t.Fatalf("expected %v, got %v", dataStr(index), string(data))
-		}
-	}
-	N += 50
-	// FirstIndex/LastIndex -- check valid first and last indexes
-	n, err = l.FirstIndex()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if n != 1 {
-		t.Fatalf("expected %d, got %d", 1, n)
-	}
-	n, err = l.LastIndex()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if n != uint64(N) {
-		t.Fatalf("expected %d, got %d", N, n)
-	}
-	// Batch -- test batch writes
-	b := new(Batch)
-	b.Write(1, nil)
-	b.Write(2, nil)
-	b.Write(3, nil)
-	// WriteBatch -- should fail out of order
-	err = l.WriteBatch(b)
-	if err != ErrLogIndexOutOfOrder {
-		t.Fatalf("expected %v, got %v", ErrLogIndexOutOfOrder, nil)
-	}
-	// Clear -- clear the batch
-	b.Clear()
-	// WriteBatch -- should succeed
-	err = l.WriteBatch(b)
-	if err != nil {
-		t.Fatal(err)
-	}
-	// Write 100 entries in batches of 10
-	for i := 0; i < 10; i++ {
-		for i := N + 1; i <= N+10; i++ {
-			index := uint64(i)
-			b.Write(index, []byte(dataStr(index)))
-		}
-		err = l.WriteBatch(b)
-		if err != nil {
-			t.Fatal(err)
-		}
-		N += 10
-	}
-	// Read -- read back all entries
-	for i := 1; i <= N; i++ {
-		data, err := l.Read(uint64(i))
-		if err != nil {
-			t.Fatalf("error while getting %d", i)
-		}
-		if string(data) != dataStr(uint64(i)) {
-			t.Fatalf("expected %s, got %s", dataStr(uint64(i)), data)
-		}
-	}
-
-	// Write -- one entry, so the buffer might be activated
-	err = l.Write(uint64(N+1), []byte(dataStr(uint64(N+1))))
-	if err != nil {
-		t.Fatal(err)
-	}
-	N++
-	// Read -- one random read, so there is an opened reader
-	data, err := l.Read(uint64(N / 2))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if string(data) != dataStr(uint64(N/2)) {
-		t.Fatalf("expected %v, got %v", dataStr(uint64(N/2)), string(data))
-	}
-
-	// TruncateFront -- should fail, out of range
-	for _, i := range []int{0, N + 1} {
-		index := uint64(i)
-		if err = l.TruncateFront(index); err != ErrLogIndexOutOfRange {
-			t.Fatalf("expected %v, got %v", ErrLogIndexOutOfRange, err)
-		}
-		testFirstLast(t, l, uint64(1), uint64(N), nil)
-	}
-
-	// TruncateBack -- should fail, out of range
-	err = l.TruncateFront(0)
-	if err != ErrLogIndexOutOfRange {
-		t.Fatalf("expected %v, got %v", ErrLogIndexOutOfRange, err)
-	}
-	testFirstLast(t, l, uint64(1), uint64(N), nil)
-
-	// TruncateFront -- Remove no entries
-	if err = l.TruncateFront(1); err != nil {
-		t.Fatal(err)
-	}
-	testFirstLast(t, l, uint64(1), uint64(N), nil)
-
-	// TruncateFront -- Remove first 80 entries
-	if err = l.TruncateFront(81); err != nil {
-		t.Fatal(err)
-	}
-	testFirstLast(t, l, uint64(81), uint64(N), nil)
-
-	// Write -- one entry, so the buffer might be activated
-	err = l.Write(uint64(N+1), []byte(dataStr(uint64(N+1))))
-	if err != nil {
-		t.Fatal(err)
-	}
-	N++
-	testFirstLast(t, l, uint64(81), uint64(N), nil)
-
-	// Read -- one random read, so there is an opened reader
-	data, err = l.Read(uint64(N / 2))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if string(data) != dataStr(uint64(N/2)) {
-		t.Fatalf("expected %v, got %v", dataStr(uint64(N/2)), string(data))
-	}
-
-	// TruncateBack -- should fail, out of range
-	for _, i := range []int{0, 80} {
-		index := uint64(i)
-		if err = l.TruncateBack(index); err != ErrLogIndexOutOfRange {
-			t.Fatalf("expected %v, got %v", ErrLogIndexOutOfRange, err)
-		}
-		testFirstLast(t, l, uint64(81), uint64(N), nil)
-	}
-
-	// TruncateBack -- Remove no entries
-	if err = l.TruncateBack(uint64(N)); err != nil {
-		t.Fatal(err)
-	}
-	testFirstLast(t, l, uint64(81), uint64(N), nil)
-	// TruncateBack -- Remove last 80 entries
-	if err = l.TruncateBack(uint64(N - 80)); err != nil {
-		t.Fatal(err)
-	}
-	N -= 80
-	testFirstLast(t, l, uint64(81), uint64(N), nil)
-
-	// Read -- read back all entries
-	for i := 81; i <= N; i++ {
-		data, err := l.Read(uint64(i))
-		if err != nil {
-			t.Fatalf("error while getting %d", i)
-		}
-		if string(data) != dataStr(uint64(i)) {
-			t.Fatalf("expected %s, got %s", dataStr(uint64(i)), data)
-		}
-	}
-
-	// Close -- close log after truncating
-	if err = l.Close(); err != nil {
-		t.Fatal(err)
-	}
-
-	// Open -- open log after truncating
-	l, err = OpenWAL(logPath, fls, opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer l.Close()
-
-	testFirstLast(t, l, uint64(81), uint64(N), nil)
-
-	// Read -- read back all entries
-	for i := 81; i <= N; i++ {
-		data, err := l.Read(uint64(i))
-		if err != nil {
-			t.Fatalf("error while getting %d", i)
-		}
-		if string(data) != dataStr(uint64(i)) {
-			t.Fatalf("expected %s, got %s", dataStr(uint64(i)), data)
-		}
-	}
-
-	// TruncateFront -- truncate all entries but one
-	if err = l.TruncateFront(uint64(N)); err != nil {
-		t.Fatal(err)
-	}
-	testFirstLast(t, l, uint64(N), uint64(N), nil)
-
-	// Write -- write on entry
-	err = l.Write(uint64(N+1), []byte(dataStr(uint64(N+1))))
-	if err != nil {
-		t.Fatal(err)
-	}
-	N++
-	testFirstLast(t, l, uint64(N-1), uint64(N), nil)
-
-	// TruncateBack -- truncate all entries but one
-	if err = l.TruncateBack(uint64(N - 1)); err != nil {
-		t.Fatal(err)
-	}
-	N--
-	testFirstLast(t, l, uint64(N), uint64(N), nil)
-
-	if err = l.Write(uint64(N+1), []byte(dataStr(uint64(N+1)))); err != nil {
-		t.Fatal(err)
-	}
-	N++
-
-	l.Sync()
-	testFirstLast(t, l, uint64(N-1), uint64(N), nil)
-}
-
-func testFirstLast(t *testing.T, l *Log, expectFirst, expectLast uint64, data func(index uint64) []byte) {
-	t.Helper()
-	fi, err := l.FirstIndex()
-	if err != nil {
-		t.Fatal(err)
-	}
-	li, err := l.LastIndex()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if fi != expectFirst || li != expectLast {
-		t.Fatalf("expected %v/%v, got %v/%v", expectFirst, expectLast, fi, li)
-	}
-	for i := fi; i <= li; i++ {
-		dt1, err := l.Read(i)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if data != nil {
-			dt2 := data(i)
-			if string(dt1) != string(dt2) {
-				t.Fatalf("mismatch '%s' != '%s'", dt2, dt1)
-			}
-		}
-	}
-
-}
 
 func TestLog(t *testing.T) {
 	t.Run("nil-opts", func(t *testing.T) {
@@ -625,13 +189,6 @@ func TestOutliers(t *testing.T) {
 	// 	testFirstLast(t, l, 1, lastIndex)
 	// })
 
-}
-
-func makeOpts(segSize int, noSync bool) *LogOptions {
-	opts := *defaultLogOptions
-	opts.SegmentSize = segSize
-	opts.NoSync = noSync
-	return &opts
 }
 
 // https://github.com/tidwall/wal/issues/1
@@ -911,6 +468,515 @@ func TestConcurrency(t *testing.T) {
 	if exp := int32(100_000); numReads != exp {
 		t.Fatalf("expected %d reads, but god %d", exp, numReads)
 	}
+}
+
+func dataStr(index uint64) string {
+	if index%2 == 0 {
+		return fmt.Sprintf("data-\"%d\"", index)
+	}
+	return fmt.Sprintf("data-'%d'", index)
+}
+
+func testLog(t *testing.T, opts *LogOptions, N int) {
+	logPath := "/testlog"
+	fls := newFS()
+
+	l, err := OpenWAL(logPath, fls, opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer l.Close()
+
+	// FirstIndex - should be zero
+	n, err := l.FirstIndex()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n != 0 {
+		t.Fatalf("expected %d, got %d", 0, n)
+	}
+
+	// LastIndex - should be zero
+	n, err = l.LastIndex()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n != 0 {
+		t.Fatalf("expected %d, got %d", 0, n)
+	}
+
+	for i := 1; i <= N; i++ {
+		// Write - try to append previous index, should fail
+		err = l.Write(uint64(i-1), nil)
+		if err != ErrLogIndexOutOfOrder {
+			t.Fatalf("expected %v, got %v", ErrLogIndexOutOfOrder, err)
+		}
+		// Write - append next item
+		err = l.Write(uint64(i), []byte(dataStr(uint64(i))))
+		if err != nil {
+			t.Fatalf("expected %v, got %v", nil, err)
+		}
+		// Write - get next item
+		data, err := l.Read(uint64(i))
+		if err != nil {
+			t.Fatalf("expected %v, got %v", nil, err)
+		}
+		if string(data) != dataStr(uint64(i)) {
+			t.Fatalf("expected %s, got %s", dataStr(uint64(i)), data)
+		}
+	}
+
+	// Read -- should fail, not found
+	_, err = l.Read(0)
+	if err != ErrLogEntryNotFound {
+		t.Fatalf("expected %v, got %v", ErrLogEntryNotFound, err)
+	}
+	// Read -- read back all entries
+	for i := 1; i <= N; i++ {
+		data, err := l.Read(uint64(i))
+		if err != nil {
+			t.Fatalf("error while getting %d", i)
+		}
+		if string(data) != dataStr(uint64(i)) {
+			t.Fatalf("expected %s, got %s", dataStr(uint64(i)), data)
+		}
+	}
+	// Read -- read back first half entries
+	for i := 1; i <= N/2; i++ {
+		data, err := l.Read(uint64(i))
+		if err != nil {
+			t.Fatalf("error while getting %d", i)
+		}
+		if string(data) != dataStr(uint64(i)) {
+			t.Fatalf("expected %s, got %s", dataStr(uint64(i)), data)
+		}
+	}
+	// Read -- read second third entries
+	for i := N / 3; i <= N/3+N/3; i++ {
+		data, err := l.Read(uint64(i))
+		if err != nil {
+			t.Fatalf("error while getting %d", i)
+		}
+		if string(data) != dataStr(uint64(i)) {
+			t.Fatalf("expected %s, got %s", dataStr(uint64(i)), data)
+		}
+	}
+
+	// Read -- random access
+	for _, v := range rand.Perm(N) {
+		index := uint64(v + 1)
+		data, err := l.Read(index)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if dataStr(index) != string(data) {
+			t.Fatalf("expected %v, got %v", dataStr(index), string(data))
+		}
+	}
+
+	// FirstIndex/LastIndex -- check valid first and last indexes
+	n, err = l.FirstIndex()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n != 1 {
+		t.Fatalf("expected %d, got %d", 1, n)
+	}
+	n, err = l.LastIndex()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n != uint64(N) {
+		t.Fatalf("expected %d, got %d", N, n)
+	}
+
+	// Close -- close the log
+	if err := l.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	// Write - try while closed
+	err = l.Write(1, nil)
+	if err != ErrLogClosed {
+		t.Fatalf("expected %v, got %v", ErrLogClosed, err)
+	}
+	// WriteBatch - try while closed
+	err = l.WriteBatch(nil)
+	if err != ErrLogClosed {
+		t.Fatalf("expected %v, got %v", ErrLogClosed, err)
+	}
+	// FirstIndex - try while closed
+	_, err = l.FirstIndex()
+	if err != ErrLogClosed {
+		t.Fatalf("expected %v, got %v", ErrLogClosed, err)
+	}
+	// LastIndex - try while closed
+	_, err = l.LastIndex()
+	if err != ErrLogClosed {
+		t.Fatalf("expected %v, got %v", ErrLogClosed, err)
+	}
+	// Get - try while closed
+	_, err = l.Read(0)
+	if err != ErrLogClosed {
+		t.Fatalf("expected %v, got %v", ErrLogClosed, err)
+	}
+	// TruncateFront - try while closed
+	err = l.TruncateFront(0)
+	if err != ErrLogClosed {
+		t.Fatalf("expected %v, got %v", ErrLogClosed, err)
+	}
+	// TruncateBack - try while closed
+	err = l.TruncateBack(0)
+	if err != ErrLogClosed {
+		t.Fatalf("expected %v, got %v", ErrLogClosed, err)
+	}
+
+	// Open -- reopen log
+	l, err = OpenWAL(logPath, fls, opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer l.Close()
+
+	// Read -- read back all entries
+	for i := 1; i <= N; i++ {
+		data, err := l.Read(uint64(i))
+		if err != nil {
+			t.Fatalf("error while getting %d, err=%s", i, err)
+		}
+		if string(data) != dataStr(uint64(i)) {
+			t.Fatalf("expected %s, got %s", dataStr(uint64(i)), data)
+		}
+	}
+	// FirstIndex/LastIndex -- check valid first and last indexes
+	n, err = l.FirstIndex()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n != 1 {
+		t.Fatalf("expected %d, got %d", 1, n)
+	}
+	n, err = l.LastIndex()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n != uint64(N) {
+		t.Fatalf("expected %d, got %d", N, n)
+	}
+	// Write -- add 50 more items
+	for i := N + 1; i <= N+50; i++ {
+		index := uint64(i)
+		if err := l.Write(index, []byte(dataStr(index))); err != nil {
+			t.Fatal(err)
+		}
+		data, err := l.Read(index)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if string(data) != dataStr(index) {
+			t.Fatalf("expected %v, got %v", dataStr(index), string(data))
+		}
+	}
+	N += 50
+	// FirstIndex/LastIndex -- check valid first and last indexes
+	n, err = l.FirstIndex()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n != 1 {
+		t.Fatalf("expected %d, got %d", 1, n)
+	}
+	n, err = l.LastIndex()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n != uint64(N) {
+		t.Fatalf("expected %d, got %d", N, n)
+	}
+	// Batch -- test batch writes
+	b := new(Batch)
+	b.Write(1, nil)
+	b.Write(2, nil)
+	b.Write(3, nil)
+
+	i := utils.Must(l.LastIndex()) + 1
+	b.FinalizeEntry = func(entry []byte, absoluteIndex uint64) {
+		assert.Equal(t, absoluteIndex, i)
+		i++
+	}
+	finalizeBatchCalled := false
+	afterWriteAttemptCalled := false
+	b.FinalizeBatch = func(lastEntryIndex uint64) {
+		finalizeBatchCalled = true
+	}
+	b.AfterWriteAttempt = func(err error) {
+		afterWriteAttemptCalled = true
+		assert.ErrorIs(t, err, ErrLogIndexOutOfOrder)
+	}
+
+	// WriteBatch -- should fail out of order
+	err = l.WriteBatch(b)
+	if err != ErrLogIndexOutOfOrder {
+		t.Fatalf("expected %v, got %v", ErrLogIndexOutOfOrder, nil)
+	}
+
+	assert.True(t, finalizeBatchCalled)
+	assert.True(t, afterWriteAttemptCalled)
+
+	// Clear -- clear the batch
+	b.Clear()
+	b.FinalizeEntry = func(entry []byte, absoluteIndex uint64) {
+		assert.Fail(t, "no entry")
+	}
+	finalizeBatchCalled = false
+	afterWriteAttemptCalled = false
+	b.FinalizeBatch = func(lastEntryIndex uint64) {
+		finalizeBatchCalled = true
+	}
+	b.AfterWriteAttempt = func(err error) {
+		afterWriteAttemptCalled = true
+		assert.NoError(t, err)
+	}
+
+	// WriteBatch -- should succeed
+	err = l.WriteBatch(b)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b.FinalizeBatch = nil
+	b.FinalizeEntry = nil
+	b.AfterWriteAttempt = nil
+
+	assert.True(t, finalizeBatchCalled)
+	assert.True(t, afterWriteAttemptCalled)
+
+	// Write 100 entries in batches of 10
+	for i := 0; i < 10; i++ {
+		for i := N + 1; i <= N+10; i++ {
+			index := uint64(i)
+			b.Write(index, []byte(dataStr(index)))
+		}
+
+		finalizeBatchCalled := false
+		afterWriteAttemptCalled := false
+		{
+			i := utils.Must(l.LastIndex()) + 1
+			b.FinalizeEntry = func(entry []byte, absoluteIndex uint64) {
+				assert.Equal(t, absoluteIndex, i)
+				i++
+			}
+			b.FinalizeBatch = func(lastEntryIndex uint64) {
+				finalizeBatchCalled = true
+			}
+			b.AfterWriteAttempt = func(err error) {
+				afterWriteAttemptCalled = true
+				assert.NoError(t, err)
+			}
+		}
+
+		err = l.WriteBatch(b)
+		if err != nil {
+			t.Fatal(err)
+		}
+		N += 10
+
+		assert.True(t, finalizeBatchCalled)
+		assert.True(t, afterWriteAttemptCalled)
+		b.FinalizeBatch = nil
+		b.FinalizeEntry = nil
+		b.AfterWriteAttempt = nil
+	}
+	// Read -- read back all entries
+	for i := 1; i <= N; i++ {
+		data, err := l.Read(uint64(i))
+		if err != nil {
+			t.Fatalf("error while getting %d", i)
+		}
+		if string(data) != dataStr(uint64(i)) {
+			t.Fatalf("expected %s, got %s", dataStr(uint64(i)), data)
+		}
+	}
+
+	// Write -- one entry, so the buffer might be activated
+	err = l.Write(uint64(N+1), []byte(dataStr(uint64(N+1))))
+	if err != nil {
+		t.Fatal(err)
+	}
+	N++
+	// Read -- one random read, so there is an opened reader
+	data, err := l.Read(uint64(N / 2))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(data) != dataStr(uint64(N/2)) {
+		t.Fatalf("expected %v, got %v", dataStr(uint64(N/2)), string(data))
+	}
+
+	// TruncateFront -- should fail, out of range
+	for _, i := range []int{0, N + 1} {
+		index := uint64(i)
+		if err = l.TruncateFront(index); err != ErrLogIndexOutOfRange {
+			t.Fatalf("expected %v, got %v", ErrLogIndexOutOfRange, err)
+		}
+		testFirstLast(t, l, uint64(1), uint64(N), nil)
+	}
+
+	// TruncateBack -- should fail, out of range
+	err = l.TruncateFront(0)
+	if err != ErrLogIndexOutOfRange {
+		t.Fatalf("expected %v, got %v", ErrLogIndexOutOfRange, err)
+	}
+	testFirstLast(t, l, uint64(1), uint64(N), nil)
+
+	// TruncateFront -- Remove no entries
+	if err = l.TruncateFront(1); err != nil {
+		t.Fatal(err)
+	}
+	testFirstLast(t, l, uint64(1), uint64(N), nil)
+
+	// TruncateFront -- Remove first 80 entries
+	if err = l.TruncateFront(81); err != nil {
+		t.Fatal(err)
+	}
+	testFirstLast(t, l, uint64(81), uint64(N), nil)
+
+	// Write -- one entry, so the buffer might be activated
+	err = l.Write(uint64(N+1), []byte(dataStr(uint64(N+1))))
+	if err != nil {
+		t.Fatal(err)
+	}
+	N++
+	testFirstLast(t, l, uint64(81), uint64(N), nil)
+
+	// Read -- one random read, so there is an opened reader
+	data, err = l.Read(uint64(N / 2))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(data) != dataStr(uint64(N/2)) {
+		t.Fatalf("expected %v, got %v", dataStr(uint64(N/2)), string(data))
+	}
+
+	// TruncateBack -- should fail, out of range
+	for _, i := range []int{0, 80} {
+		index := uint64(i)
+		if err = l.TruncateBack(index); err != ErrLogIndexOutOfRange {
+			t.Fatalf("expected %v, got %v", ErrLogIndexOutOfRange, err)
+		}
+		testFirstLast(t, l, uint64(81), uint64(N), nil)
+	}
+
+	// TruncateBack -- Remove no entries
+	if err = l.TruncateBack(uint64(N)); err != nil {
+		t.Fatal(err)
+	}
+	testFirstLast(t, l, uint64(81), uint64(N), nil)
+	// TruncateBack -- Remove last 80 entries
+	if err = l.TruncateBack(uint64(N - 80)); err != nil {
+		t.Fatal(err)
+	}
+	N -= 80
+	testFirstLast(t, l, uint64(81), uint64(N), nil)
+
+	// Read -- read back all entries
+	for i := 81; i <= N; i++ {
+		data, err := l.Read(uint64(i))
+		if err != nil {
+			t.Fatalf("error while getting %d", i)
+		}
+		if string(data) != dataStr(uint64(i)) {
+			t.Fatalf("expected %s, got %s", dataStr(uint64(i)), data)
+		}
+	}
+
+	// Close -- close log after truncating
+	if err = l.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	// Open -- open log after truncating
+	l, err = OpenWAL(logPath, fls, opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer l.Close()
+
+	testFirstLast(t, l, uint64(81), uint64(N), nil)
+
+	// Read -- read back all entries
+	for i := 81; i <= N; i++ {
+		data, err := l.Read(uint64(i))
+		if err != nil {
+			t.Fatalf("error while getting %d", i)
+		}
+		if string(data) != dataStr(uint64(i)) {
+			t.Fatalf("expected %s, got %s", dataStr(uint64(i)), data)
+		}
+	}
+
+	// TruncateFront -- truncate all entries but one
+	if err = l.TruncateFront(uint64(N)); err != nil {
+		t.Fatal(err)
+	}
+	testFirstLast(t, l, uint64(N), uint64(N), nil)
+
+	// Write -- write on entry
+	err = l.Write(uint64(N+1), []byte(dataStr(uint64(N+1))))
+	if err != nil {
+		t.Fatal(err)
+	}
+	N++
+	testFirstLast(t, l, uint64(N-1), uint64(N), nil)
+
+	// TruncateBack -- truncate all entries but one
+	if err = l.TruncateBack(uint64(N - 1)); err != nil {
+		t.Fatal(err)
+	}
+	N--
+	testFirstLast(t, l, uint64(N), uint64(N), nil)
+
+	if err = l.Write(uint64(N+1), []byte(dataStr(uint64(N+1)))); err != nil {
+		t.Fatal(err)
+	}
+	N++
+
+	l.Sync()
+	testFirstLast(t, l, uint64(N-1), uint64(N), nil)
+}
+
+func testFirstLast(t *testing.T, l *Log, expectFirst, expectLast uint64, data func(index uint64) []byte) {
+	t.Helper()
+	fi, err := l.FirstIndex()
+	if err != nil {
+		t.Fatal(err)
+	}
+	li, err := l.LastIndex()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if fi != expectFirst || li != expectLast {
+		t.Fatalf("expected %v/%v, got %v/%v", expectFirst, expectLast, fi, li)
+	}
+	for i := fi; i <= li; i++ {
+		dt1, err := l.Read(i)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if data != nil {
+			dt2 := data(i)
+			if string(dt1) != string(dt2) {
+				t.Fatalf("mismatch '%s' != '%s'", dt2, dt1)
+			}
+		}
+	}
+
+}
+
+func makeOpts(segSize int, noSync bool) *LogOptions {
+	opts := *defaultLogOptions
+	opts.SegmentSize = segSize
+	opts.NoSync = noSync
+	return &opts
 }
 
 func must(v interface{}, err error) interface{} {

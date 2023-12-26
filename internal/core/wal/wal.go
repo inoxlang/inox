@@ -301,14 +301,36 @@ func (l *Log) Close() error {
 func (l *Log) Write(index uint64, data []byte) error {
 	l.mu.Lock()
 	defer l.mu.Unlock()
+
+	_, err := l.writeNoLock(index, data)
+	return err
+}
+
+// Write an entry to the log and calls fn if there is no error.
+func (l *Log) WriteCall(index uint64, data []byte, fn func() error) (lastIndex uint64, _ error) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	lastIndex, err := l.writeNoLock(index, data)
+	if err == nil {
+		return lastIndex, fn()
+	}
+	return 0, err
+}
+
+func (l *Log) writeNoLock(index uint64, data []byte) (lastIndex uint64, err error) {
 	if l.corrupt {
-		return ErrCorruptLog
+		return 0, ErrCorruptLog
 	} else if l.closed {
-		return ErrLogClosed
+		return 0, ErrLogClosed
 	}
 	l.wbatch.Clear()
 	l.wbatch.Write(index, data)
-	return l.writeBatch(&l.wbatch)
+	err = l.writeBatch(&l.wbatch)
+	if err == nil {
+		lastIndex = l.lastIndex
+	}
+	return
 }
 
 func (l *Log) appendEntry(dst []byte, index uint64, data []byte) (out []byte,
@@ -354,6 +376,19 @@ func appendUvarint(dst, buf []byte, x uint64) []byte {
 type Batch struct {
 	entries []batchEntry
 	datas   []byte
+
+	//Optional. Called once before calling FinalizeEntry.
+	//The call is made while the *Log is locked.
+	//The function should return as quickly as possible.
+	FinalizeBatch func(lastEntryIndex uint64)
+
+	//Optional. Called once, even if write failed.
+	//The function should return as quickly as possible.
+	AfterWriteAttempt func(error)
+
+	//Optional, called for each entry just before writing it.
+	//The call is made while the *Log is locked.
+	FinalizeEntry func(entry []byte, absoluteIndex uint64)
 }
 
 type batchEntry struct {
@@ -371,11 +406,14 @@ func (b *Batch) Write(index uint64, data []byte) {
 func (b *Batch) Clear() {
 	b.entries = b.entries[:0]
 	b.datas = b.datas[:0]
+	b.FinalizeBatch = nil
+	b.FinalizeEntry = nil
+	b.AfterWriteAttempt = nil
 }
 
 // WriteBatch writes the entries in the batch to the log in the order that they
 // were added to the batch. The batch is cleared upon a successful return.
-func (l *Log) WriteBatch(b *Batch) error {
+func (l *Log) WriteBatch(b *Batch) (err error) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	if l.corrupt {
@@ -383,6 +421,18 @@ func (l *Log) WriteBatch(b *Batch) error {
 	} else if l.closed {
 		return ErrLogClosed
 	}
+
+	if b.FinalizeBatch != nil {
+		b.FinalizeBatch(l.lastIndex)
+	}
+
+	afterWriteAttempt := b.AfterWriteAttempt
+	if afterWriteAttempt != nil {
+		defer func() {
+			afterWriteAttempt(err)
+		}()
+	}
+
 	if len(b.entries) == 0 {
 		return nil
 	}
@@ -391,12 +441,25 @@ func (l *Log) WriteBatch(b *Batch) error {
 
 func (l *Log) writeBatch(b *Batch) error {
 	// check that all indexes in batch are sane
+
+	prevEntryEnd := 0
 	for i := 0; i < len(b.entries); i++ {
 		if l.opts.FillID {
 			b.entries[i].index = l.lastIndex + uint64(i+1)
 		} else if b.entries[i].index != l.lastIndex+uint64(i+1) {
 			return ErrLogIndexOutOfOrder
 		}
+
+		absIndex := b.entries[i].index
+		size := b.entries[i].size
+
+		//call finalization handler
+		finalize := b.FinalizeEntry
+		if finalize != nil {
+			finalize(b.datas[prevEntryEnd:prevEntryEnd+size], absIndex)
+		}
+
+		prevEntryEnd += size
 	}
 	// load the tail segment
 	s := l.segments[len(l.segments)-1]
