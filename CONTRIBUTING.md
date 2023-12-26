@@ -67,6 +67,13 @@ go test -p=1 -count=1 ./internal/core -short -race -timeout=100s -run=TestXXXX -
 go vet ./...
 ```
 
+## Vulnerability Checks
+
+```
+go install golang.org/x/vuln/cmd/govulncheck@latest
+govulncheck ./...
+```
+
 ## Check Potentiel Nil Panics
 
 Install https://github.com/uber-go/nilaway.
