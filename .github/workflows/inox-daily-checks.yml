@@ -32,3 +32,10 @@ jobs:
 
     - name: Run tests with race detection
       run: go test -race -tags=reqbin -p=1 -parallel=1 -count=1 ./internal/... -timeout=5m
+
+  govulncheck_job:
+    runs-on: ubuntu-latest
+    name: Run govulncheck
+    steps:
+      - id: govulncheck
+        uses: golang/govulncheck-action@v1
