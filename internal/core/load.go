@@ -33,7 +33,7 @@ func resetLoadInstanceFnRegistry() {
 	RegisterLoadInstanceFn(OBJECT_PATTERN_TYPE, loadObject)
 }
 
-type SerializedValueStorage interface {
+type DataStore interface {
 	BaseURL() URL
 	GetSerialized(ctx *Context, key Path) (string, bool)
 	Has(ctx *Context, key Path) bool
@@ -43,7 +43,7 @@ type SerializedValueStorage interface {
 
 type InstanceLoadArgs struct {
 	Key          Path
-	Storage      SerializedValueStorage
+	Storage      DataStore
 	Pattern      Pattern
 	InitialValue Serializable
 	AllowMissing bool //if true the loading function is allowed to return an empty/default value matching the pattern

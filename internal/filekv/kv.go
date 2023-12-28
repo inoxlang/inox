@@ -21,7 +21,7 @@ var (
 	ErrInvalidPathKey    = errors.New("invalid path used as local database key")
 	ErrKeyAlreadyPresent = errors.New("key already present")
 
-	_ core.SerializedValueStorage = (*SerializedValueStorageAdapter)(nil)
+	_ core.DataStore = (*SerializedValueStorageAdapter)(nil)
 )
 
 // thin wrapper around a buntdb database.

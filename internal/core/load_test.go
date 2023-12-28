@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	_ = SerializedValueStorage((*TestValueStorage)(nil))
+	_ = DataStore((*TestValueStorage)(nil))
 )
 
 func TestLoadObject(t *testing.T) {

@@ -184,7 +184,7 @@ func TestNewSet(t *testing.T) {
 }
 
 func TestPersistLoadSet(t *testing.T) {
-	setup := func() (*core.Context, core.SerializedValueStorage) {
+	setup := func() (*core.Context, core.DataStore) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 		fls := fs_ns.NewMemFilesystem(MAX_MEM_FS_SIZE)
 		kv := utils.Must(filekv.OpenSingleFileKV(filekv.KvStoreConfig{
@@ -543,7 +543,7 @@ func TestPersistLoadSet(t *testing.T) {
 
 func TestSetAddRemove(t *testing.T) {
 
-	setup := func() (*core.Context, core.SerializedValueStorage) {
+	setup := func() (*core.Context, core.DataStore) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 		fls := fs_ns.NewMemFilesystem(MAX_MEM_FS_SIZE)
 		kv := utils.Must(filekv.OpenSingleFileKV(filekv.KvStoreConfig{
@@ -951,7 +951,7 @@ func TestSetAddRemove(t *testing.T) {
 }
 
 func TestInteractWithElementsOfLoadedSet(t *testing.T) {
-	setup := func() (*core.Context, core.SerializedValueStorage) {
+	setup := func() (*core.Context, core.DataStore) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{
 			Permissions: []core.Permission{
 				core.DatabasePermission{

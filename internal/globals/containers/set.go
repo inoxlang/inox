@@ -48,8 +48,8 @@ type Set struct {
 	pattern *SetPattern
 
 	//persistence
-	storage core.SerializedValueStorage //nillable
-	url     core.URL                    //set if .storage set
+	storage core.DataStore //nillable
+	url     core.URL       //set if .storage set
 	path    core.Path
 }
 
@@ -216,7 +216,7 @@ func loadSet(ctx *core.Context, args core.InstanceLoadArgs) (core.UrlHolder, err
 	return set, nil
 }
 
-func persistSet(ctx *core.Context, set *Set, path core.Path, storage core.SerializedValueStorage) error {
+func persistSet(ctx *core.Context, set *Set, path core.Path, storage core.DataStore) error {
 	stream := jsoniter.NewStream(jsoniter.ConfigDefault, nil, 0)
 	set.WriteJSONRepresentation(ctx, stream, core.JSONSerializationConfig{
 		ReprConfig: &core.ReprConfig{
