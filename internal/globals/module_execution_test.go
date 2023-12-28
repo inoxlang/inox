@@ -14,7 +14,7 @@ import (
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/mod"
 
-	_ "github.com/inoxlang/inox/internal/obsdb"
+	//_ "github.com/inoxlang/inox/internal/obsdb"
 
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 

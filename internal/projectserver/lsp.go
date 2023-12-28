@@ -127,7 +127,7 @@ func StartLSPServer(ctx *core.Context, serverConfig LSPServerConfiguration) (fin
 
 	projDir := string(serverConfig.ProjectsDir)
 	ctx.Logger().Debug().Msgf("open project registry at %s", projDir)
-	projectRegistry, err := project.OpenRegistry(projDir, serverConfig.ProjectsDirFilesystem, ctx)
+	projectRegistry, err := project.OpenRegistry(projDir, ctx)
 
 	if err != nil {
 		return err

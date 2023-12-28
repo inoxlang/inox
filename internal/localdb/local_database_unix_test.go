@@ -7,12 +7,12 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/permkind"
 	"github.com/inoxlang/inox/internal/globals/containers"
 	containers_common "github.com/inoxlang/inox/internal/globals/containers/common"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
+	"github.com/inoxlang/inox/internal/project"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -25,7 +25,9 @@ func TestOpenDatabase(t *testing.T) {
 		dir, _ := filepath.Abs(t.TempDir())
 		dir += "/"
 
+		fls := fs_ns.NewMemFilesystem(MEM_FS_STORAGE_SIZE)
 		pattern := core.PathPattern(dir + "...")
+		project := project.NewDummyProject("proj", fls)
 
 		ctxConfig := core.ContextConfig{
 			Permissions: []core.Permission{
@@ -36,10 +38,11 @@ func TestOpenDatabase(t *testing.T) {
 			HostResolutions: map[core.Host]core.Value{
 				core.Host("ldb://main"): core.Path(dir),
 			},
-			Filesystem: fs_ns.NewMemFilesystem(MEM_FS_STORAGE_SIZE),
+			Filesystem: fls,
 		}
 
 		ctx1 := core.NewContexWithEmptyState(ctxConfig, nil)
+		ctx1.GetClosestState().Project = project
 
 		_db, err := OpenDatabase(ctx1, core.Path(dir), false)
 		if !assert.NoError(t, err) {
@@ -48,9 +51,10 @@ func TestOpenDatabase(t *testing.T) {
 		defer _db.Close(ctx1)
 
 		ctx2 := core.NewContexWithEmptyState(ctxConfig, nil)
+		ctx2.GetClosestState().Project = project
 
 		db, err := OpenDatabase(ctx2, core.Path(dir), false)
-		if !assert.NoError(t, err) {
+		if !assert.ErrorIs(t, err, ErrOpenDatabase) {
 			return
 		}
 		assert.NotSame(t, db, _db)
@@ -61,6 +65,8 @@ func TestOpenDatabase(t *testing.T) {
 		dir += "/"
 
 		pattern := core.PathPattern(dir + "...")
+		fls := fs_ns.NewMemFilesystem(MEM_FS_STORAGE_SIZE)
+		project := project.NewDummyProject("proj", fls)
 
 		ctxConfig := core.ContextConfig{
 			Permissions: []core.Permission{
@@ -71,10 +77,11 @@ func TestOpenDatabase(t *testing.T) {
 			HostResolutions: map[core.Host]core.Value{
 				core.Host("ldb://main"): core.Path(dir),
 			},
-			Filesystem: fs_ns.NewMemFilesystem(MEM_FS_STORAGE_SIZE),
+			Filesystem: fls,
 		}
 
 		ctx1 := core.NewContexWithEmptyState(ctxConfig, nil)
+		ctx1.GetClosestState().Project = project
 
 		_db, err := OpenDatabase(ctx1, core.Path(dir), false)
 		if !assert.NoError(t, err) {
@@ -83,6 +90,7 @@ func TestOpenDatabase(t *testing.T) {
 		_db.Close(ctx1)
 
 		ctx2 := core.NewContexWithEmptyState(ctxConfig, nil)
+		ctx2.GetClosestState().Project = project
 
 		db, err := OpenDatabase(ctx2, core.Path(dir), false)
 		if !assert.NoError(t, err) {
@@ -102,6 +110,8 @@ func TestOpenDatabase(t *testing.T) {
 		dir += "/"
 
 		pattern := core.PathPattern(dir + "...")
+		fls := fs_ns.NewMemFilesystem(MEM_FS_STORAGE_SIZE)
+		project := project.NewDummyProject("proj", fls)
 
 		ctxConfig := core.ContextConfig{
 			Permissions: []core.Permission{
@@ -112,7 +122,7 @@ func TestOpenDatabase(t *testing.T) {
 			HostResolutions: map[core.Host]core.Value{
 				core.Host("ldb://main"): core.Path(dir),
 			},
-			Filesystem: fs_ns.NewMemFilesystem(MEM_FS_STORAGE_SIZE),
+			Filesystem: fls,
 		}
 
 		wg := new(sync.WaitGroup)
@@ -135,6 +145,7 @@ func TestOpenDatabase(t *testing.T) {
 
 			//open database in first context
 			ctx1 = core.NewContexWithEmptyState(ctxConfig, nil)
+			ctx1.GetClosestState().Project = project
 
 			_db1, err := OpenDatabase(ctx1, core.Path(dir), false)
 			if !assert.NoError(t, err) {
@@ -147,6 +158,7 @@ func TestOpenDatabase(t *testing.T) {
 			defer wg.Done()
 			//open same database in second context
 			ctx2 = core.NewContexWithEmptyState(ctxConfig, nil)
+			ctx2.GetClosestState().Project = project
 
 			_db2, err := OpenDatabase(ctx2, core.Path(dir), false)
 			if !assert.NoError(t, err) {
@@ -166,6 +178,8 @@ func TestOpenDatabase(t *testing.T) {
 			dir += "/"
 
 			pattern := core.PathPattern(dir + "...")
+			fls := fs_ns.NewMemFilesystem(MEM_FS_STORAGE_SIZE)
+			project := project.NewDummyProject("proj", fls)
 
 			ctxConfig := core.ContextConfig{
 				Permissions: []core.Permission{
@@ -176,12 +190,13 @@ func TestOpenDatabase(t *testing.T) {
 				HostResolutions: map[core.Host]core.Value{
 					core.Host("ldb://main"): core.Path(dir),
 				},
-				Filesystem: fs_ns.NewMemFilesystem(MEM_FS_STORAGE_SIZE),
+				Filesystem: fls,
 			}
 
 			ctx := core.NewContexWithEmptyState(ctxConfig, nil)
 			ctx.AddNamedPattern("Set", containers.SET_PATTERN)
 			ctx.AddNamedPattern("str", containers.SET_PATTERN)
+			ctx.GetClosestState().Project = project
 
 			db, err := OpenDatabase(ctx, core.Path(dir), false)
 			if !assert.NoError(t, err) {
@@ -231,219 +246,206 @@ func TestOpenDatabase(t *testing.T) {
 
 func TestLocalDatabase(t *testing.T) {
 
-	for _, inMemory := range []bool{true, false} {
+	HOST := core.Host("ldb://main")
 
-		name := "in_memory"
-		HOST := core.Host("ldb://main")
+	setup := func(ctxHasTransaction bool) (*LocalDatabase, *core.Context, *core.Transaction) {
+		//core.ResetResourceMap()
 
-		if !inMemory {
-			name = "filesystem"
+		config := LocalDatabaseConfig{}
+
+		osDir, _ := filepath.Abs(t.TempDir())
+		osDir += "/"
+		pattern := core.PathPattern(osDir + "...")
+		fls := fs_ns.NewMemFilesystem(MEM_FS_STORAGE_SIZE)
+		project := project.NewDummyProject("proj", fls)
+
+		ctxConfig := core.ContextConfig{
+			Permissions: []core.Permission{
+				core.FilesystemPermission{Kind_: permkind.Read, Entity: pattern},
+				core.FilesystemPermission{Kind_: permkind.Create, Entity: pattern},
+				core.FilesystemPermission{Kind_: permkind.WriteStream, Entity: pattern},
+			},
+			HostResolutions: map[core.Host]core.Value{
+				HOST: core.Path(osDir),
+			},
+			Filesystem: fls,
+		}
+		config.Host = HOST
+		config.OsFsDir = core.DirPathFrom(osDir)
+
+		ctx := core.NewContexWithEmptyState(ctxConfig, nil)
+		ctx.GetClosestState().Project = project
+
+		var tx *core.Transaction
+		if ctxHasTransaction {
+			tx = core.StartNewTransaction(ctx)
 		}
 
-		setup := func(ctxHasTransaction bool) (*LocalDatabase, *core.Context, *core.Transaction) {
-			//core.ResetResourceMap()
+		ldb, err := openLocalDatabaseWithConfig(ctx, config)
+		assert.NoError(t, err)
 
-			config := LocalDatabaseConfig{
-				InMemory: inMemory,
-			}
-
-			ctxConfig := core.ContextConfig{}
-
-			if !inMemory {
-				dir, _ := filepath.Abs(t.TempDir())
-				dir += "/"
-				pattern := core.PathPattern(dir + "...")
-
-				ctxConfig = core.ContextConfig{
-					Permissions: []core.Permission{
-						core.FilesystemPermission{Kind_: permkind.Read, Entity: pattern},
-						core.FilesystemPermission{Kind_: permkind.Create, Entity: pattern},
-						core.FilesystemPermission{Kind_: permkind.WriteStream, Entity: pattern},
-					},
-					HostResolutions: map[core.Host]core.Value{
-						HOST: core.Path(dir),
-					},
-					Filesystem: fs_ns.NewMemFilesystem(MEM_FS_STORAGE_SIZE),
-				}
-				config.Host = HOST
-				config.Path = core.Path(dir)
-			}
-
-			ctx := core.NewContexWithEmptyState(ctxConfig, nil)
-
-			var tx *core.Transaction
-			if ctxHasTransaction {
-				tx = core.StartNewTransaction(ctx)
-			}
-
-			ldb, err := openLocalDatabaseWithConfig(ctx, config)
-			assert.NoError(t, err)
-
-			return ldb, ctx, tx
-		}
-
-		t.Run(name, func(t *testing.T) {
-			t.Run("context has a transaction", func(t *testing.T) {
-				ctxHasTransactionFromTheSart := true
-
-				t.Run("Get non existing", func(t *testing.T) {
-					ldb, ctx, tx := setup(ctxHasTransactionFromTheSart)
-					defer ldb.Close(ctx)
-
-					v, ok := ldb.Get(ctx, core.Path("/a"))
-					assert.False(t, bool(ok))
-					assert.Equal(t, core.Nil, v)
-
-					assert.NoError(t, tx.Rollback(ctx))
-				})
-
-				t.Run("Set -> Get -> commit", func(t *testing.T) {
-					ldb, ctx, tx := setup(ctxHasTransactionFromTheSart)
-					defer ldb.Close(ctx)
-
-					key := core.Path("/a")
-					//r := ldb.GetFullResourceName(key)
-					ldb.Set(ctx, key, core.Int(1))
-					// if !assert.False(t, core.TryAcquireConcreteResource(r)) {
-					// 	return
-					// }
-
-					v, ok := ldb.Get(ctx, key)
-					assert.True(t, bool(ok))
-					assert.Equal(t, core.Int(1), v)
-					//assert.False(t, core.TryAcquireConcreteResource(r))
-
-					// //we check that the database transaction is not commited yet
-					// ldb.underlying.db.View(func(txn *Tx) error {
-					// 	_, err := txn.Get(string(key))
-					// 	assert.ErrorIs(t, err, errNotFound)
-					// 	return nil
-					// })
-
-					assert.NoError(t, tx.Commit(ctx))
-					// assert.True(t, core.TryAcquireConcreteResource(r))
-					// core.ReleaseConcreteResource(r)
-
-					//we check that the database transaction is commited
-					otherCtx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
-					v, ok, err := ldb.mainKV.Get(otherCtx, key, ldb)
-
-					if !assert.NoError(t, err) {
-						return
-					}
-					assert.True(t, bool(ok))
-					assert.Equal(t, core.Int(1), v)
-				})
-
-				t.Run("Set -> rollback", func(t *testing.T) {
-					ldb, ctx, tx := setup(ctxHasTransactionFromTheSart)
-					defer ldb.Close(ctx)
-
-					key := core.Path("/a")
-					//r := ldb.GetFullResourceName(key)
-					ldb.Set(ctx, key, core.Int(1))
-					// if !assert.False(t, core.TryAcquireConcreteResource(r)) {
-					// 	return
-					// }
-
-					v, ok := ldb.Get(ctx, key)
-					assert.True(t, bool(ok))
-					assert.Equal(t, core.Int(1), v)
-
-					// //we check that the database transaction is not commited yet
-					// ldb.underlying.db.View(func(txn *Tx) error {
-					// 	_, err := txn.Get(string(key))
-					// 	assert.ErrorIs(t, err, errNotFound)
-					// 	return nil
-					// })
-
-					assert.NoError(t, tx.Rollback(ctx))
-					// assert.True(t, core.TryAcquireConcreteResource(r))
-					// core.ReleaseConcreteResource(r)
-
-					// //we check that the database transaction is not commited
-					// ldb.underlying.db.View(func(txn *Tx) error {
-					// 	_, err := txn.Get(string(key))
-					// 	assert.ErrorIs(t, err, errNotFound)
-					// 	return nil
-					// })
-
-					//same
-					v, ok = ldb.Get(ctx, key)
-					//assert.True(t, core.TryAcquireConcreteResource(r))
-					//core.ReleaseConcreteResource(r)
-					assert.Equal(t, core.Nil, v)
-					assert.False(t, bool(ok))
-				})
-
-			})
-
-			t.Run("context has no transaction", func(t *testing.T) {
-				ctxHasTransactionFromTheSart := false
-
-				t.Run("Get non existing", func(t *testing.T) {
-					ldb, ctx, _ := setup(ctxHasTransactionFromTheSart)
-					defer ldb.Close(ctx)
-
-					v, ok := ldb.Get(ctx, core.Path("/a"))
-					assert.False(t, bool(ok))
-					assert.Equal(t, core.Nil, v)
-				})
-
-				t.Run("Set then Get", func(t *testing.T) {
-					ldb, ctx, _ := setup(ctxHasTransactionFromTheSart)
-					defer ldb.Close(ctx)
-
-					key := core.Path("/a")
-					ldb.Set(ctx, key, core.Int(1))
-
-					v, ok := ldb.Get(ctx, key)
-					assert.True(t, bool(ok))
-					assert.Equal(t, core.Int(1), v)
-
-					//we check that the database transaction is commited
-					otherCtx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
-
-					v, ok, err := ldb.mainKV.Get(otherCtx, key, ldb)
-
-					if !assert.NoError(t, err) {
-						return
-					}
-					assert.True(t, bool(ok))
-					assert.Equal(t, core.Int(1), v)
-				})
-			})
-
-			t.Run("context gets transaction in the middle of the execution", func(t *testing.T) {
-				ctxHasTransactionFromTheSart := false
-
-				t.Run("Set with no tx then set with tx", func(t *testing.T) {
-					ldb, ctx, _ := setup(ctxHasTransactionFromTheSart)
-					defer ldb.Close(ctx)
-
-					//first call to Set
-					key := core.Path("/a")
-					ldb.Set(ctx, key, core.Int(1))
-
-					//attach transaction
-					core.StartNewTransaction(ctx)
-
-					//second call to Set
-					ldb.Set(ctx, key, core.Int(2))
-
-					v, ok := ldb.Get(ctx, key)
-					assert.True(t, bool(ok))
-					assert.Equal(t, core.Int(2), v)
-				})
-			})
-		})
+		return ldb, ctx, tx
 	}
+
+	t.Run("context has a transaction", func(t *testing.T) {
+		ctxHasTransactionFromTheSart := true
+
+		t.Run("Get non existing", func(t *testing.T) {
+			ldb, ctx, tx := setup(ctxHasTransactionFromTheSart)
+			defer ldb.Close(ctx)
+
+			v, ok := ldb.Get(ctx, core.Path("/a"))
+			assert.False(t, bool(ok))
+			assert.Equal(t, core.Nil, v)
+
+			assert.NoError(t, tx.Rollback(ctx))
+		})
+
+		t.Run("Set -> Get -> commit", func(t *testing.T) {
+			ldb, ctx, tx := setup(ctxHasTransactionFromTheSart)
+			defer ldb.Close(ctx)
+
+			key := core.Path("/a")
+			//r := ldb.GetFullResourceName(key)
+			ldb.Set(ctx, key, core.Int(1))
+			// if !assert.False(t, core.TryAcquireConcreteResource(r)) {
+			// 	return
+			// }
+
+			v, ok := ldb.Get(ctx, key)
+			assert.True(t, bool(ok))
+			assert.Equal(t, core.Int(1), v)
+			//assert.False(t, core.TryAcquireConcreteResource(r))
+
+			// //we check that the database transaction is not commited yet
+			// ldb.underlying.db.View(func(txn *Tx) error {
+			// 	_, err := txn.Get(string(key))
+			// 	assert.ErrorIs(t, err, errNotFound)
+			// 	return nil
+			// })
+
+			assert.NoError(t, tx.Commit(ctx))
+			// assert.True(t, core.TryAcquireConcreteResource(r))
+			// core.ReleaseConcreteResource(r)
+
+			//we check that the database transaction is commited
+			otherCtx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+			v, ok, err := ldb.mainKV.Get(otherCtx, key, ldb)
+
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.True(t, bool(ok))
+			assert.Equal(t, core.Int(1), v)
+		})
+
+		t.Run("Set -> rollback", func(t *testing.T) {
+			ldb, ctx, tx := setup(ctxHasTransactionFromTheSart)
+			defer ldb.Close(ctx)
+
+			key := core.Path("/a")
+			//r := ldb.GetFullResourceName(key)
+			ldb.Set(ctx, key, core.Int(1))
+			// if !assert.False(t, core.TryAcquireConcreteResource(r)) {
+			// 	return
+			// }
+
+			v, ok := ldb.Get(ctx, key)
+			assert.True(t, bool(ok))
+			assert.Equal(t, core.Int(1), v)
+
+			// //we check that the database transaction is not commited yet
+			// ldb.underlying.db.View(func(txn *Tx) error {
+			// 	_, err := txn.Get(string(key))
+			// 	assert.ErrorIs(t, err, errNotFound)
+			// 	return nil
+			// })
+
+			assert.NoError(t, tx.Rollback(ctx))
+			// assert.True(t, core.TryAcquireConcreteResource(r))
+			// core.ReleaseConcreteResource(r)
+
+			// //we check that the database transaction is not commited
+			// ldb.underlying.db.View(func(txn *Tx) error {
+			// 	_, err := txn.Get(string(key))
+			// 	assert.ErrorIs(t, err, errNotFound)
+			// 	return nil
+			// })
+
+			//same
+			v, ok = ldb.Get(ctx, key)
+			//assert.True(t, core.TryAcquireConcreteResource(r))
+			//core.ReleaseConcreteResource(r)
+			assert.Equal(t, core.Nil, v)
+			assert.False(t, bool(ok))
+		})
+
+	})
+
+	t.Run("context has no transaction", func(t *testing.T) {
+		ctxHasTransactionFromTheSart := false
+
+		t.Run("Get non existing", func(t *testing.T) {
+			ldb, ctx, _ := setup(ctxHasTransactionFromTheSart)
+			defer ldb.Close(ctx)
+
+			v, ok := ldb.Get(ctx, core.Path("/a"))
+			assert.False(t, bool(ok))
+			assert.Equal(t, core.Nil, v)
+		})
+
+		t.Run("Set then Get", func(t *testing.T) {
+			ldb, ctx, _ := setup(ctxHasTransactionFromTheSart)
+			defer ldb.Close(ctx)
+
+			key := core.Path("/a")
+			ldb.Set(ctx, key, core.Int(1))
+
+			v, ok := ldb.Get(ctx, key)
+			assert.True(t, bool(ok))
+			assert.Equal(t, core.Int(1), v)
+
+			//we check that the database transaction is commited
+			otherCtx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+
+			v, ok, err := ldb.mainKV.Get(otherCtx, key, ldb)
+
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.True(t, bool(ok))
+			assert.Equal(t, core.Int(1), v)
+		})
+	})
+
+	t.Run("context gets transaction in the middle of the execution", func(t *testing.T) {
+		ctxHasTransactionFromTheSart := false
+
+		t.Run("Set with no tx then set with tx", func(t *testing.T) {
+			ldb, ctx, _ := setup(ctxHasTransactionFromTheSart)
+			defer ldb.Close(ctx)
+
+			//first call to Set
+			key := core.Path("/a")
+			ldb.Set(ctx, key, core.Int(1))
+
+			//attach transaction
+			core.StartNewTransaction(ctx)
+
+			//second call to Set
+			ldb.Set(ctx, key, core.Int(2))
+
+			v, ok := ldb.Get(ctx, key)
+			assert.True(t, bool(ok))
+			assert.Equal(t, core.Int(2), v)
+		})
+	})
 }
 
 func TestUpdateSchema(t *testing.T) {
 	HOST := core.Host("ldb://main")
 
-	openDB := func(tempdir string, filesystem afs.Filesystem) (*LocalDatabase, *core.Context, bool) {
+	openDB := func(tempdir string, filesystem core.SnapshotableFilesystem) (*LocalDatabase, *core.Context, bool) {
 		//core.ResetResourceMap()
 
 		config := LocalDatabaseConfig{}
@@ -451,6 +453,7 @@ func TestUpdateSchema(t *testing.T) {
 		dir, _ := filepath.Abs(tempdir)
 		dir += "/"
 		pattern := core.PathPattern(dir + "...")
+		project := project.NewDummyProject("proj", filesystem)
 
 		ctxConfig := core.ContextConfig{
 			Permissions: []core.Permission{
@@ -467,12 +470,13 @@ func TestUpdateSchema(t *testing.T) {
 			Filesystem: filesystem,
 		}
 		config.Host = HOST
-		config.Path = core.Path(dir)
+		config.OsFsDir = core.DirPathFrom(filepath.Join(tempdir, "data"))
 
 		ctx := core.NewContexWithEmptyState(ctxConfig, nil)
 		ctx.AddNamedPattern("int", core.INT_PATTERN)
 		ctx.AddNamedPattern("str", core.STR_PATTERN)
 		ctx.AddNamedPattern("Set", containers.SET_PATTERN)
+		ctx.GetClosestState().Project = project
 
 		ldb, err := openLocalDatabaseWithConfig(ctx, config)
 		if !assert.NoError(t, err) {
@@ -757,6 +761,11 @@ func TestUpdateSchema(t *testing.T) {
 		//make sure the updated Set has been saved
 		s, _ := ldb.GetSerialized(ctx, "/users")
 		if !assert.Contains(t, s, "foo") {
+			return
+		}
+
+		err = ldb.Close(ctx)
+		if !assert.NoError(t, err) {
 			return
 		}
 

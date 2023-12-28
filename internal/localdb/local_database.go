@@ -1,13 +1,17 @@
 package localdb
 
 import (
+	"errors"
 	"fmt"
-	"strings"
+	"os"
+	"path/filepath"
+	"reflect"
 	"sync"
 
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/permkind"
 	"github.com/inoxlang/inox/internal/filekv"
+	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/rs/zerolog"
@@ -19,10 +23,14 @@ const (
 	MAIN_KV_FILE   = "main.kv"
 	SCHEMA_KV_FILE = "schema.kv"
 	LDB_SCHEME     = core.Scheme("ldb")
+
+	OS_DB_DIR = 0700
 )
 
 var (
 	LOCAL_DB_PROPNAMES = []string{"update_schema", "close"}
+
+	ErrOpenDatabase = errors.New("database is already open by the current process or another one")
 
 	_ core.Database = (*LocalDatabase)(nil)
 )
@@ -33,10 +41,12 @@ func init() {
 	})
 
 	checkResolutionData := func(node parse.Node, _ core.Project) (errMsg string) {
-		pathLit, ok := node.(*parse.AbsolutePathLiteral)
-		if !ok || !strings.HasSuffix(pathLit.Value, "/") {
-			return "the resolution data of a local database should be an absolute directory path (it should end with '/')"
-		}
+		//ignore for now
+
+		// pathLit, ok := node.(*parse.AbsolutePathLiteral)
+		// if !ok || !strings.HasSuffix(pathLit.Value, "/") {
+		// 	return "the resolution data of a local database should be an absolute directory path (it should end with '/')"
+		// }
 
 		return ""
 	}
@@ -49,7 +59,7 @@ func init() {
 // A LocalDatabase is a database thats stores data on a filesystem.
 type LocalDatabase struct {
 	host     core.Host
-	dirPath  core.Path
+	osFsDir  core.Path
 	mainKV   *filekv.SingleFileKV
 	schemaKV *filekv.SingleFileKV
 	schema   *core.ObjectPattern
@@ -60,8 +70,8 @@ type LocalDatabase struct {
 }
 
 type LocalDatabaseConfig struct {
+	OsFsDir    core.Path
 	Host       core.Host
-	Path       core.Path
 	InMemory   bool
 	Restricted bool
 }
@@ -109,12 +119,18 @@ func OpenDatabase(ctx *core.Context, r core.ResourceName, restrictedAccess bool)
 		return nil, core.ErrCannotFindDatabaseHost
 	}
 
-	if host.Scheme() != LDB_SCHEME {
+	if host.Scheme() != LDB_SCHEME || host.ExplicitPort() >= 0 {
 		return nil, core.ErrInvalidDatabaseHost
 	}
 
+	project := ctx.GetClosestState().Project
+	if project == nil || reflect.ValueOf(project).IsZero() {
+		return nil, errors.New("local databases are only supported in project mode")
+	}
+	dbsDir := project.DatabaseDirOnOsFs()
+
 	db, err := openLocalDatabaseWithConfig(ctx, LocalDatabaseConfig{
-		Path:       pth,
+		OsFsDir:    core.DirPathFrom(filepath.Join(dbsDir, host.Name())),
 		Host:       host,
 		Restricted: restrictedAccess,
 	})
@@ -123,45 +139,43 @@ func OpenDatabase(ctx *core.Context, r core.ResourceName, restrictedAccess bool)
 }
 
 func openLocalDatabaseWithConfig(ctx *core.Context, config LocalDatabaseConfig) (*LocalDatabase, error) {
-	mainKVPath := core.Path("")
-	schemaKVPath := core.Path("")
-
-	fls := ctx.GetFileSystem()
-
-	if config.InMemory {
-		config.Path = ""
-	} else {
-		mainKVPath = config.Path.Join("./"+MAIN_KV_FILE, fls)
-		schemaKVPath = config.Path.Join("./"+SCHEMA_KV_FILE, fls)
-	}
+	osFs := fs_ns.GetOsFilesystem()
+	mainKVPath := config.OsFsDir.Join(core.Path("./"+MAIN_KV_FILE), osFs)
+	schemaKVPath := config.OsFsDir.Join(core.Path("./"+SCHEMA_KV_FILE), osFs)
 
 	localDB := &LocalDatabase{
 		host:    config.Host,
-		dirPath: config.Path,
+		osFsDir: config.OsFsDir,
 	}
 
-	if !config.Restricted {
-		mainKv, err := filekv.OpenSingleFileKV(filekv.KvStoreConfig{
-			Path:       mainKVPath,
-			InMemory:   config.InMemory,
-			Filesystem: fls,
-		})
+	//create the directory for the database
+	osFsDir := config.OsFsDir.UnderlyingString()
 
+	_, err := os.Stat(osFsDir)
+	if os.IsNotExist(err) {
+		err = os.Mkdir(osFsDir, OS_DB_DIR)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to create directory for database %q: %w", config.Host, err)
 		}
-
-		localDB.mainKV = mainKv
-	} else {
-		localDB.mainKV, _ = filekv.OpenSingleFileKV(filekv.KvStoreConfig{
-			InMemory: true,
-		})
+	} else if err != nil {
+		return nil, fmt.Errorf("failed to check if the directory of the %q database exist: %w", config.Host, err)
 	}
+
+	mainKv, err := filekv.OpenSingleFileKV(filekv.KvStoreConfig{
+		Path: mainKVPath,
+	})
+
+	if err != nil {
+		if errors.Is(err, filekv.ErrOpenKvStore) {
+			return nil, ErrOpenDatabase
+		}
+		return nil, err
+	}
+
+	localDB.mainKV = mainKv
 
 	schemaKv, err := filekv.OpenSingleFileKV(filekv.KvStoreConfig{
-		Path:       schemaKVPath,
-		InMemory:   config.InMemory,
-		Filesystem: fls,
+		Path: schemaKVPath,
 	})
 
 	if err != nil {

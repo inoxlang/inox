@@ -21,7 +21,7 @@ import (
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/rs/zerolog"
 
-	_ "github.com/inoxlang/inox/internal/obsdb"
+	//_ "github.com/inoxlang/inox/internal/obsdb"
 
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 
@@ -678,6 +678,7 @@ func TestPrepareLocalModule(t *testing.T) {
 			PreinitFilesystem:       fs,
 			ScriptContextFileSystem: fs,
 			FullAccessToDatabases:   true,
+			Project:                 project.NewDummyProject("proj", fs),
 		})
 
 		if !assert.NoError(t, err) {
@@ -761,6 +762,7 @@ func TestPrepareLocalModule(t *testing.T) {
 			PreinitFilesystem:       fs,
 			ScriptContextFileSystem: fs,
 			FullAccessToDatabases:   true,
+			Project:                 project.NewDummyProject("proj", fs),
 		})
 
 		if !assert.ErrorIs(t, err, core.ErrCurrentSchemaNotEqualToExpectedSchema) {
@@ -830,6 +832,7 @@ func TestPrepareLocalModule(t *testing.T) {
 			FullAccessToDatabases:   true,
 
 			DataExtractionMode: true,
+			Project:               project.NewDummyProject("proj", fs),
 		})
 
 		if !assert.NoError(t, err) {
@@ -916,6 +919,7 @@ func TestPrepareLocalModule(t *testing.T) {
 			PreinitFilesystem:       fs,
 			ScriptContextFileSystem: fs,
 			FullAccessToDatabases:   true,
+			Project:                 project.NewDummyProject("proj", fs),
 		})
 
 		if !assert.NoError(t, err) {
@@ -996,6 +1000,7 @@ func TestPrepareLocalModule(t *testing.T) {
 			PreinitFilesystem:       fs,
 			ScriptContextFileSystem: fs,
 			FullAccessToDatabases:   true,
+			Project:                 project.NewDummyProject("proj", fs),
 		})
 
 		if !assert.NoError(t, err) {
@@ -1075,6 +1080,7 @@ func TestPrepareLocalModule(t *testing.T) {
 
 			PreinitFilesystem:     fls,
 			FullAccessToDatabases: true,
+			Project:               project.NewDummyProject("proj", fls),
 		})
 
 		if !assert.NoError(t, err) {
@@ -1398,7 +1404,7 @@ func TestPrepareLocalModule(t *testing.T) {
 		{
 			tempCtx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 			defer tempCtx.CancelGracefully()
-			registry, err := project.OpenRegistry("/", fs_ns.NewMemFilesystem(100_000_000), tempCtx)
+			registry, err := project.OpenRegistry(t.TempDir(), tempCtx)
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -1526,7 +1532,7 @@ func TestPrepareLocalModule(t *testing.T) {
 		{
 			tempCtx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 			defer tempCtx.CancelGracefully()
-			registry, err := project.OpenRegistry("/", fs_ns.NewMemFilesystem(100_000_000), tempCtx)
+			registry, err := project.OpenRegistry(t.TempDir(), tempCtx)
 			if !assert.NoError(t, err) {
 				return
 			}

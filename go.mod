@@ -115,6 +115,7 @@ require (
 	github.com/vmware-labs/yaml-jsonpath v0.3.2 // indirect
 	github.com/yusufpapurcu/wmi v1.2.3 // indirect
 	github.com/zeebo/blake3 v0.2.3 // indirect
+	go.etcd.io/bbolt v1.3.8 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.16.0 // indirect
 	golang.org/x/sync v0.5.0 // indirect

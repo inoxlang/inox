@@ -1,4 +1,4 @@
-package filekv
+package buntdb
 
 import (
 	"bytes"
@@ -82,7 +82,7 @@ func TestSaveLoad(t *testing.T) {
 	t.Parallel()
 
 	var fls = newMemFilesystem()
-	db, _ := openBuntDBNoPermCheck(":memory:", fls)
+	db, _ := OpenBuntDBNoPermCheck(":memory:", fls)
 	defer db.Close()
 	if err := db.Update(func(tx *Tx) error {
 		for i := 0; i < 20; i++ {
@@ -110,7 +110,7 @@ func TestSaveLoad(t *testing.T) {
 		t.Fatal(err)
 	}
 	db.Close()
-	db, _ = openBuntDBNoPermCheck(":memory:", newMemFilesystem())
+	db, _ = OpenBuntDBNoPermCheck(":memory:", newMemFilesystem())
 	defer db.Close()
 	f, err = fls.Open("temp.kv")
 	if err != nil {
@@ -362,7 +362,7 @@ func TestIndexTransaction(t *testing.T) {
 		if err := ascendEqual(tx, "idx1", []string{"3", "1", "2", "2", "1", "3"}); err != nil {
 			return fmt.Errorf("err: %v", err)
 		}
-		if err := ascendEqual(tx, "idx2", []string{"3", "1", "2", "2", "1", "3"}); err != errNotFound {
+		if err := ascendEqual(tx, "idx2", []string{"3", "1", "2", "2", "1", "3"}); err != ErrNotFound {
 			return fmt.Errorf("err: %v", err)
 		}
 		return nil
@@ -658,19 +658,19 @@ func TestVariousTx(t *testing.T) {
 			t.Fatal("expecting a tx not writable error")
 		}
 		tx.writable = true
-		if _, err := tx.Get("something"); err != errNotFound {
+		if _, err := tx.Get("something"); err != ErrNotFound {
 			t.Fatalf("expecting not found error")
 		}
-		if _, err := tx.Delete("something"); err != errNotFound {
+		if _, err := tx.Delete("something"); err != ErrNotFound {
 			t.Fatalf("expecting not found error")
 		}
 		if _, _, err := tx.Set("var", "val", &SetOptions{Expires: true, TTL: 0}); err != nil {
 			t.Fatal(err)
 		}
-		if _, err := tx.Get("var"); err != errNotFound {
+		if _, err := tx.Get("var"); err != ErrNotFound {
 			t.Fatalf("expecting not found error")
 		}
-		if _, err := tx.Delete("var"); err != errNotFound {
+		if _, err := tx.Delete("var"); err != ErrNotFound {
 			tx.unlock()
 			t.Fatalf("expecting not found error")
 		}
@@ -809,14 +809,14 @@ func TestVariousTx(t *testing.T) {
 	// test scanning
 	if err := db.Update(func(tx *Tx) error {
 		less, err := tx.GetLess("junk")
-		if err != errNotFound {
+		if err != ErrNotFound {
 			t.Fatalf("expecting a not found, got %v", err)
 		}
 		if less != nil {
 			t.Fatal("expecting nil, got a less function")
 		}
 		less, err = tx.GetLess("blank")
-		if err != errNotFound {
+		if err != ErrNotFound {
 			t.Fatalf("expecting a not found, got %v", err)
 		}
 		if less != nil {
@@ -854,7 +854,7 @@ func TestVariousTx(t *testing.T) {
 		}
 		tx.db = db
 		err = tx.Ascend("na", func(key, val string) bool { return true })
-		if err != errNotFound {
+		if err != ErrNotFound {
 			t.Fatal("expecting not found error")
 		}
 		err = tx.Ascend("blank", func(key, val string) bool { return true })
@@ -942,14 +942,14 @@ func TestVariousTx(t *testing.T) {
 			t.Fatal("expecting a rect function, got nil")
 		}
 		rect, err = tx.GetRect("junk")
-		if err != errNotFound {
+		if err != ErrNotFound {
 			t.Fatalf("expecting a not found, got %v", err)
 		}
 		if rect != nil {
 			t.Fatal("expecting nil, got a rect function")
 		}
 		rect, err = tx.GetRect("na")
-		if err != errNotFound {
+		if err != ErrNotFound {
 			t.Fatalf("expecting a not found, got %v", err)
 		}
 		if rect != nil {
@@ -992,7 +992,7 @@ func TestVariousTx(t *testing.T) {
 		err = tx.Intersects("na", "[5 5],[13 13]", func(key, val string) bool {
 			return true
 		})
-		if err != errNotFound {
+		if err != ErrNotFound {
 			t.Fatal("expecting not found error")
 		}
 		err = tx.Intersects("junk", "[5 5],[13 13]", func(key, val string) bool {
@@ -1034,7 +1034,7 @@ func TestNearby(t *testing.T) {
 
 	rand.Seed(time.Now().UnixNano())
 	N := 100000
-	db, _ := openBuntDBNoPermCheck(":memory:", newMemFilesystem())
+	db, _ := OpenBuntDBNoPermCheck(":memory:", newMemFilesystem())
 	db.CreateSpatialIndex("points", "*", IndexRect)
 	db.Update(func(tx *Tx) error {
 		for i := 0; i < N; i++ {
@@ -1072,7 +1072,7 @@ func TestNearby(t *testing.T) {
 }
 
 func Example_descKeys() {
-	db, _ := openBuntDBNoPermCheck(":memory:", newMemFilesystem())
+	db, _ := OpenBuntDBNoPermCheck(":memory:", newMemFilesystem())
 	db.CreateIndex("name", "*", IndexString)
 	db.Update(func(tx *Tx) error {
 		tx.Set("user:100:first", "Tom", nil)
@@ -1134,7 +1134,7 @@ func Example_descKeys() {
 }
 
 func ExampleDesc() {
-	db, _ := openBuntDBNoPermCheck(":memory:", newMemFilesystem())
+	db, _ := OpenBuntDBNoPermCheck(":memory:", newMemFilesystem())
 	db.CreateIndex("last_name_age", "*", IndexJSON("name.last"), Desc(IndexJSON("age")))
 	db.Update(func(tx *Tx) error {
 		tx.Set("1", `{"name":{"first":"Tom","last":"Johnson"},"age":38}`, nil)
@@ -1163,7 +1163,7 @@ func ExampleDesc() {
 }
 
 func ExamplebuntDB_CreateIndex_json() {
-	db, _ := openBuntDBNoPermCheck(":memory:", newMemFilesystem())
+	db, _ := OpenBuntDBNoPermCheck(":memory:", newMemFilesystem())
 	db.CreateIndex("last_name", "*", IndexJSON("name.last"))
 	db.CreateIndex("age", "*", IndexJSON("age"))
 	db.Update(func(tx *Tx) error {
@@ -1209,7 +1209,7 @@ func ExamplebuntDB_CreateIndex_json() {
 }
 
 func ExamplebuntDB_CreateIndex_strings() {
-	db, _ := openBuntDBNoPermCheck(":memory:", newMemFilesystem())
+	db, _ := OpenBuntDBNoPermCheck(":memory:", newMemFilesystem())
 	db.CreateIndex("name", "*", IndexString)
 	db.Update(func(tx *Tx) error {
 		tx.Set("1", "Tom", nil)
@@ -1238,7 +1238,7 @@ func ExamplebuntDB_CreateIndex_strings() {
 }
 
 func ExamplebuntDB_CreateIndex_ints() {
-	db, _ := openBuntDBNoPermCheck(":memory:", newMemFilesystem())
+	db, _ := OpenBuntDBNoPermCheck(":memory:", newMemFilesystem())
 	db.CreateIndex("age", "*", IndexInt)
 	db.Update(func(tx *Tx) error {
 		tx.Set("1", "30", nil)
@@ -1267,7 +1267,7 @@ func ExamplebuntDB_CreateIndex_ints() {
 }
 
 func ExamplebuntDB_CreateIndex_multipleFields() {
-	db, _ := openBuntDBNoPermCheck(":memory:", newMemFilesystem())
+	db, _ := OpenBuntDBNoPermCheck(":memory:", newMemFilesystem())
 	db.CreateIndex("last_name_age", "*", IndexJSON("name.last"), IndexJSON("age"))
 	db.Update(func(tx *Tx) error {
 		tx.Set("1", `{"name":{"first":"Tom","last":"Johnson"},"age":38}`, nil)
@@ -1379,7 +1379,7 @@ func TestDatabaseFormat(t *testing.T) {
 		db := testOpenWithFS(t, fls)
 		defer testClose(db)
 	}()
-	testFormat := func(t *testing.T, expectValid bool, resp string, do func(db *buntDB) error) {
+	testFormat := func(t *testing.T, expectValid bool, resp string, do func(db *DB) error) {
 		t.Helper()
 
 		fls := newMemFilesystem()
@@ -1390,7 +1390,7 @@ func TestDatabaseFormat(t *testing.T) {
 		}
 		//defer os.RemoveAll(DEFAULT_FILENAME)
 
-		db, err := openBuntDBNoPermCheck(DEFAULT_FILENAME, fls)
+		db, err := OpenBuntDBNoPermCheck(DEFAULT_FILENAME, fls)
 		if err == nil {
 			if do != nil {
 				if err := do(db); err != nil {
@@ -1423,7 +1423,7 @@ func TestDatabaseFormat(t *testing.T) {
 	for i := 1; i < len(pcmd); i++ {
 		cmd := "*3\r\n$3\r\nSET\r\n$5\r\nHELLO\r\n$5\r\nJELLO\r\n"
 		testFormat(t, true, cmd+pcmd[:len(pcmd)-i],
-			func(db *buntDB) error {
+			func(db *DB) error {
 				return db.View(func(tx *Tx) error {
 					val, err := tx.Get("HELLO")
 					if err != nil {
@@ -1449,7 +1449,7 @@ func TestDatabaseFormat(t *testing.T) {
 
 	// commands with nuls
 	testFormat(t, true, "\u0000*3\r\n$3\r\nSET\r\n$5\r\nHELLO\r\n$5\r\nWORLD\r\n"+
-		"\u0000\u0000*3\r\n$3\r\nSET\r\n$5\r\nHELLO\r\n$5\r\nJELLO\r\n\u0000", func(db *buntDB) error {
+		"\u0000\u0000*3\r\n$3\r\nSET\r\n$5\r\nHELLO\r\n$5\r\nJELLO\r\n\u0000", func(db *DB) error {
 		return db.View(func(tx *Tx) error {
 			val, err := tx.Get("HELLO")
 			if err != nil {
@@ -1618,7 +1618,7 @@ func TestOpeningAFolder(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer func() { _ = fls.Remove("dir.tmp") }()
-	db, err := openBuntDBNoPermCheck("dir.tmp", fls)
+	db, err := OpenBuntDBNoPermCheck("dir.tmp", fls)
 	if err == nil {
 		if err := db.Close(); err != nil {
 			t.Fatal(err)
@@ -1635,7 +1635,7 @@ func TestOpeningInvalidDatabaseFile(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer func() { _ = fls.Remove(DEFAULT_FILENAME) }()
-	db, err := openBuntDBNoPermCheck(DEFAULT_FILENAME, fls)
+	db, err := OpenBuntDBNoPermCheck(DEFAULT_FILENAME, fls)
 	if err == nil {
 		if err := db.Close(); err != nil {
 			t.Fatal(err)
@@ -1650,7 +1650,7 @@ func TestOpeningClosedDatabase(t *testing.T) {
 
 	var fls = newMemFilesystem()
 
-	db, err := openBuntDBNoPermCheck(DEFAULT_FILENAME, fls)
+	db, err := OpenBuntDBNoPermCheck(DEFAULT_FILENAME, fls)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1661,7 +1661,7 @@ func TestOpeningClosedDatabase(t *testing.T) {
 	if err := db.Close(); err != errDatabaseClosed {
 		t.Fatal("should not be able to close a closed database")
 	}
-	db, err = openBuntDBNoPermCheck(":memory:", newMemFilesystem())
+	db, err = OpenBuntDBNoPermCheck(":memory:", newMemFilesystem())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1740,7 +1740,7 @@ func TestShrink(t *testing.T) {
 		t.Fatal("shrink on a closed databse should not be allowed")
 	}
 	// Now we will openBuntDB a db that does not persist
-	db, err = openBuntDBNoPermCheck(":memory:", newMemFilesystem())
+	db, err = OpenBuntDBNoPermCheck(":memory:", newMemFilesystem())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2210,7 +2210,7 @@ func TestTTLReOpen(t *testing.T) {
 	defer testClose(db)
 	err = db.View(func(tx *Tx) error {
 		val, err := tx.Get("key1")
-		if err == nil || err != errNotFound || val != "" {
+		if err == nil || err != ErrNotFound || val != "" {
 			t.Fatal("expecting not found")
 		}
 
@@ -2262,28 +2262,28 @@ func TestConfig(t *testing.T) {
 	db := testOpen(t)
 	defer testClose(db)
 
-	err := db.SetConfig(buntDbConfig{SyncPolicy: SyncPolicy(-1)})
+	err := db.SetConfig(Config{SyncPolicy: SyncPolicy(-1)})
 	if err == nil {
 		t.Fatal("expecting a config syncpolicy error")
 	}
-	err = db.SetConfig(buntDbConfig{SyncPolicy: SyncPolicy(3)})
+	err = db.SetConfig(Config{SyncPolicy: SyncPolicy(3)})
 	if err == nil {
 		t.Fatal("expecting a config syncpolicy error")
 	}
-	err = db.SetConfig(buntDbConfig{SyncPolicy: SyncNever})
+	err = db.SetConfig(Config{SyncPolicy: SyncNever})
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = db.SetConfig(buntDbConfig{SyncPolicy: SyncEverySecond})
+	err = db.SetConfig(Config{SyncPolicy: SyncEverySecond})
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = db.SetConfig(buntDbConfig{AutoShrinkMinSize: 100, AutoShrinkPercentage: 200, SyncPolicy: SyncAlways})
+	err = db.SetConfig(Config{AutoShrinkMinSize: 100, AutoShrinkPercentage: 200, SyncPolicy: SyncAlways})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	var c buntDbConfig
+	var c Config
 	if err := db.ReadConfig(&c); err != nil {
 		t.Fatal(err)
 	}
@@ -2303,7 +2303,7 @@ func textHexUint64(s string) uint64 {
 	return n
 }
 
-func benchClose(t *testing.B, persist bool, db *buntDB) {
+func benchClose(t *testing.B, persist bool, db *DB) {
 	if persist {
 		if err := db.fls.Remove(DEFAULT_FILENAME); err != nil {
 			t.Fatal(err)
@@ -2317,7 +2317,7 @@ func benchClose(t *testing.B, persist bool, db *buntDB) {
 func benchOpenFillData(t *testing.B, N int,
 	set, persist, random bool,
 	geo bool,
-	batch int) (db *buntDB, keys, vals []string) {
+	batch int) (db *DB, keys, vals []string) {
 	///
 	t.StopTimer()
 	rand.Seed(time.Now().UnixNano())
@@ -2326,9 +2326,9 @@ func benchOpenFillData(t *testing.B, N int,
 		if err := db.fls.Remove(DEFAULT_FILENAME); err != nil {
 			t.Fatal(err)
 		}
-		db, err = openBuntDBNoPermCheck(DEFAULT_FILENAME, newMemFilesystem())
+		db, err = OpenBuntDBNoPermCheck(DEFAULT_FILENAME, newMemFilesystem())
 	} else {
-		db, err = openBuntDBNoPermCheck(":memory:", newMemFilesystem())
+		db, err = OpenBuntDBNoPermCheck(":memory:", newMemFilesystem())
 	}
 	if err != nil {
 		t.Fatal(err)
@@ -2550,7 +2550,7 @@ func TestCoverConfigClosed(t *testing.T) {
 	db := testOpen(t)
 	defer testClose(db)
 	_ = db.Close()
-	var config buntDbConfig
+	var config Config
 	if err := db.ReadConfig(&config); err != errDatabaseClosed {
 		t.Fatal("expecting database closed error")
 	}
@@ -2694,7 +2694,7 @@ func TestOnExpiredSync(t *testing.T) {
 	db := testOpen(t)
 	defer testClose(db)
 
-	var config buntDbConfig
+	var config Config
 	if err := db.ReadConfig(&config); err != nil {
 		t.Fatal(err)
 	}
@@ -2707,7 +2707,7 @@ func TestOnExpiredSync(t *testing.T) {
 		defer func() { hits <- n }()
 		if n >= 2 {
 			_, err = tx.Delete(key)
-			if err != errNotFound {
+			if err != ErrNotFound {
 				return err
 			}
 			return nil
@@ -2789,7 +2789,7 @@ func TestTransactionLeak(t *testing.T) {
 	// This tests an bug identified in Issue #69. When inside a Update
 	// transaction, a Set after a Delete for a key that previously exists will
 	// remove the key when the transaction was rolledback.
-	buntDB, err := openBuntDBNoPermCheck(":memory:", newMemFilesystem())
+	buntDB, err := OpenBuntDBNoPermCheck(":memory:", newMemFilesystem())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2823,7 +2823,7 @@ func TestTransactionLeak(t *testing.T) {
 			return errors.New("mismatch")
 		}
 		val, err = tx.Get("a")
-		if err != errNotFound {
+		if err != ErrNotFound {
 			return fmt.Errorf("expected NotFound, got %v", err)
 		}
 		if val != "" {
@@ -2884,7 +2884,7 @@ func TestReloadNotInvalid(t *testing.T) {
 	for time.Since(start) < testDuration {
 		func() {
 			fls := newMemFilesystem()
-			db, err := openBuntDBNoPermCheck(DEFAULT_FILENAME, fls)
+			db, err := OpenBuntDBNoPermCheck(DEFAULT_FILENAME, fls)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -3020,22 +3020,22 @@ func newMemFilesystem() afs.Filesystem {
 	})
 }
 
-func testOpen(t testing.TB) *buntDB {
+func testOpen(t testing.TB) *DB {
 	// if err := fls.Remove(DEFAULT_FILENAME); err != nil {
 	// 	t.Fatal(err)
 	// }
 	return testReOpen(t, nil)
 }
 
-func testOpenWithFS(t testing.TB, fls afs.Filesystem) *buntDB {
-	db, err := openBuntDBNoPermCheck(DEFAULT_FILENAME, fls)
+func testOpenWithFS(t testing.TB, fls afs.Filesystem) *DB {
+	db, err := OpenBuntDBNoPermCheck(DEFAULT_FILENAME, fls)
 	if err != nil {
 		t.Fatal(err)
 	}
 	return db
 }
 
-func testReOpen(t testing.TB, db *buntDB) *buntDB {
+func testReOpen(t testing.TB, db *DB) *DB {
 	var fls billy.Basic
 	if db != nil {
 		fls = db.fls
@@ -3045,7 +3045,7 @@ func testReOpen(t testing.TB, db *buntDB) *buntDB {
 	return testReOpenDelay(t, db, 0, fls)
 }
 
-func testReOpenDelay(t testing.TB, db *buntDB, dur time.Duration, fls billy.Basic) *buntDB {
+func testReOpenDelay(t testing.TB, db *DB, dur time.Duration, fls billy.Basic) *DB {
 	if db != nil {
 		if err := db.Close(); err != nil {
 			t.Fatal(err)
@@ -3061,14 +3061,14 @@ func testReOpenDelay(t testing.TB, db *buntDB, dur time.Duration, fls billy.Basi
 	}
 
 	time.Sleep(dur)
-	db, err := openBuntDBNoPermCheck(DEFAULT_FILENAME, fls)
+	db, err := OpenBuntDBNoPermCheck(DEFAULT_FILENAME, fls)
 	if err != nil {
 		t.Fatal(err)
 	}
 	return db
 }
 
-func testClose(db *buntDB) {
+func testClose(db *DB) {
 	_ = db.Close()
 	_ = db.fls.Remove(DEFAULT_FILENAME)
 }

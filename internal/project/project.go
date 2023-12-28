@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"os"
+	"sync/atomic"
 
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
@@ -14,7 +16,8 @@ import (
 )
 
 const (
-	PROJECTS_KV_PREFIX = "/projects"
+	PROJECTS_KV_PREFIX                       = "/projects"
+	DATABASES_FOLDER_NAME_IN_PROCESS_TEMPDIR = "databases"
 
 	DEFAULT_MAIN_FILENAME = "main" + inoxconsts.INOXLANG_FILE_EXTENSION
 	DEFAULT_TUT_FILENAME  = "learn.tut" + inoxconsts.INOXLANG_FILE_EXTENSION
@@ -48,6 +51,8 @@ type Project struct {
 	//TODO: add base filesystem (VCS ?)
 	liveFilesystem core.SnapshotableFilesystem
 
+	databaseDirOnOsFs atomic.Value //string
+
 	//tokens and secrets
 
 	tempTokens                *TempProjectTokens
@@ -74,8 +79,8 @@ func (p *Project) HasProviders() bool {
 	return p.cloudflare != nil
 }
 
-func getProjectKvKey(id core.ProjectID) core.Path {
-	return core.PathFrom(PROJECTS_KV_PREFIX + "/" + string(id))
+func getProjectKvKey(id core.ProjectID) string {
+	return PROJECTS_KV_PREFIX + "/" + string(id)
 }
 
 type DevSideProjectConfig struct {
@@ -175,6 +180,18 @@ func (p *Project) BaseImage() (core.Image, error) {
 
 func (p *Project) Configuration() core.ProjectConfiguration {
 	return p.config
+}
+
+func (p *Project) DatabaseDirOnOsFs() string {
+	//temporary solution: create a dir in the OsFs's /tmp/ dir
+
+	path := "/tmp/" + string(p.Id()) + "--" + DATABASES_FOLDER_NAME_IN_PROCESS_TEMPDIR
+	_, err := os.Stat(path)
+	if err != nil {
+		os.Mkdir(path, 0700)
+	}
+
+	return path
 }
 
 func (p *Project) IsMutable() bool {

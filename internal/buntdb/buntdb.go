@@ -2,7 +2,7 @@
 //This file contains a slightly modified version.
 //The primary change is the introduction of a filesystem parameter when creating the database.
 
-package filekv
+package buntdb
 
 import (
 	"bufio"
@@ -27,7 +27,7 @@ import (
 )
 
 var (
-	defaultBuntdbConfig = buntDbConfig{
+	defaultBuntdbConfig = Config{
 		SyncPolicy:           SyncAlways,
 		AutoShrinkPercentage: 100,
 		AutoShrinkMinSize:    32 * 1024 * 1024,
@@ -41,8 +41,8 @@ var (
 	// that has already been committed or rolled back.
 	errTxClosed = errors.New("tx closed")
 
-	// errNotFound is returned when an item or index is not in the database.
-	errNotFound = errors.New("not found")
+	// ErrNotFound is returned when an item or index is not in the database.
+	ErrNotFound = errors.New("not found")
 
 	// errInvalid is returned when the database file is an invalid format.
 	errInvalid = errors.New("invalid database")
@@ -74,9 +74,9 @@ const (
 	useAbsEx = true
 )
 
-// buntDB represents a collection of key-value pairs that persist on disk.
-// Transactions are used for all forms of data access to the buntDB.
-type buntDB struct {
+// DB represents a collection of key-value pairs that persist on disk.
+// Transactions are used for all forms of data access to the DB.
+type DB struct {
 	path      string
 	fls       billy.Basic
 	mu        sync.RWMutex      // the gatekeeper for all fields
@@ -88,7 +88,7 @@ type buntDB struct {
 	insIdxs   []*index          // a reuse buffer for gathering indexes
 	flushes   int               // a count of the number of disk flushes
 	closed    atomic.Bool       // set when the database has been closed (the database may be in the process of syncing)
-	config    buntDbConfig      // the database configuration
+	config    Config            // the database configuration
 	persist   bool              // do we write to disk
 	shrinking bool              // when an aof shrink is in-process.
 	lastaofsz int               // the size of the last shrink aof size
@@ -111,9 +111,9 @@ const (
 	SyncAlways = 2
 )
 
-// buntDbConfig represents database configuration options. These
+// Config represents database configuration options. These
 // options are used to change various behaviors of the database.
-type buntDbConfig struct {
+type Config struct {
 	// SyncPolicy adjusts how often the data is synced to disk.
 	// This value can be Never, EverySecond, or Always.
 	// The default is EverySecond.
@@ -148,13 +148,13 @@ type buntDbConfig struct {
 
 // exctx is a simple b-tree context for ordering by expiration.
 type exctx struct {
-	db *buntDB
+	db *DB
 }
 
-// openBuntDBNoPermCheck opens a database at the provided path.
+// OpenBuntDBNoPermCheck opens a database at the provided path.
 // If the file does not exist then it will be created automatically.
-func openBuntDBNoPermCheck(path string, fls billy.Basic, config ...buntDbConfig) (*buntDB, error) {
-	db := &buntDB{fls: fls, path: path}
+func OpenBuntDBNoPermCheck(path string, fls billy.Basic, config ...Config) (*DB, error) {
+	db := &DB{fls: fls, path: path}
 	// initialize trees and indexes
 	db.keys = btreeNew(lessCtx(nil))
 	db.exps = btreeNew(lessCtx(&exctx{db}))
@@ -192,7 +192,7 @@ func openBuntDBNoPermCheck(path string, fls billy.Basic, config ...buntDbConfig)
 	return db, nil
 }
 
-func (db *buntDB) syncFileIfCapable() error {
+func (db *DB) syncFileIfCapable() error {
 	if file, ok := db.file.(afs.SyncCapable); ok {
 		// do a sync but ignore the error
 		return file.Sync()
@@ -203,13 +203,13 @@ func (db *buntDB) syncFileIfCapable() error {
 	return nil
 }
 
-func (db *buntDB) isClosed() bool {
+func (db *DB) isClosed() bool {
 	return db.closed.Load()
 }
 
 // Close releases all database resources.
 // All transactions must be closed before closing the database.
-func (db *buntDB) Close() error {
+func (db *DB) Close() error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 	if !db.closed.CompareAndSwap(false, true) {
@@ -231,7 +231,7 @@ func (db *buntDB) Close() error {
 // writes, but not reads. This can be used for snapshots and backups for pure
 // in-memory databases using the ":memory:". Database that persist to disk
 // can be snapshotted by simply copying the database file.
-func (db *buntDB) Save(wr io.Writer) error {
+func (db *DB) Save(wr io.Writer) error {
 	var err error
 	db.mu.RLock()
 	defer db.mu.RUnlock()
@@ -268,7 +268,7 @@ func (db *buntDB) Save(wr io.Writer) error {
 // Load loads commands from reader. This operation blocks all reads and writes.
 // Note that this can only work for fully in-memory databases opened with
 // Open(":memory:").
-func (db *buntDB) Load(rd io.Reader) error {
+func (db *DB) Load(rd io.Reader) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 	if db.persist {
@@ -288,7 +288,7 @@ type index struct {
 	pattern string                                 // a required key pattern
 	less    func(a, b string) bool                 // less comparison function
 	rect    func(item string) (min, max []float64) // rect from string function
-	db      *buntDB                                // the origin database
+	db      *DB                                    // the origin database
 	opts    IndexOptions                           // index options
 }
 
@@ -370,7 +370,7 @@ func (idx *index) rebuild() {
 // less function to handle the content format and comparison.
 // There are some default less function that can be used such as
 // IndexString, IndexBinary, etc.
-func (db *buntDB) CreateIndex(name, pattern string,
+func (db *DB) CreateIndex(name, pattern string,
 	less ...func(a, b string) bool) error {
 	return db.Update(func(tx *Tx) error {
 		return tx.CreateIndex(name, pattern, less...)
@@ -381,7 +381,7 @@ func (db *buntDB) CreateIndex(name, pattern string,
 // The items are ordered in an b-tree and can be retrieved using the
 // Ascend* and Descend* methods.
 // If a previous index with the same name exists, that index will be deleted.
-func (db *buntDB) ReplaceIndex(name, pattern string,
+func (db *DB) ReplaceIndex(name, pattern string,
 	less ...func(a, b string) bool) error {
 	return db.Update(func(tx *Tx) error {
 		err := tx.CreateIndex(name, pattern, less...)
@@ -413,7 +413,7 @@ func (db *buntDB) ReplaceIndex(name, pattern string,
 // Thus min[0] must be less-than-or-equal-to max[0].
 // The IndexRect is a default function that can be used for the rect
 // parameter.
-func (db *buntDB) CreateSpatialIndex(name, pattern string,
+func (db *DB) CreateSpatialIndex(name, pattern string,
 	rect func(item string) (min, max []float64)) error {
 	return db.Update(func(tx *Tx) error {
 		return tx.CreateSpatialIndex(name, pattern, rect)
@@ -424,7 +424,7 @@ func (db *buntDB) CreateSpatialIndex(name, pattern string,
 // The items are organized in an r-tree and can be retrieved using the
 // Intersects method.
 // If a previous index with the same name exists, that index will be deleted.
-func (db *buntDB) ReplaceSpatialIndex(name, pattern string,
+func (db *DB) ReplaceSpatialIndex(name, pattern string,
 	rect func(item string) (min, max []float64)) error {
 	return db.Update(func(tx *Tx) error {
 		err := tx.CreateSpatialIndex(name, pattern, rect)
@@ -443,14 +443,14 @@ func (db *buntDB) ReplaceSpatialIndex(name, pattern string,
 }
 
 // DropIndex removes an index.
-func (db *buntDB) DropIndex(name string) error {
+func (db *DB) DropIndex(name string) error {
 	return db.Update(func(tx *Tx) error {
 		return tx.DropIndex(name)
 	})
 }
 
 // Indexes returns a list of index names.
-func (db *buntDB) Indexes() ([]string, error) {
+func (db *DB) Indexes() ([]string, error) {
 	var names []string
 	var err = db.View(func(tx *Tx) error {
 		var err error
@@ -461,7 +461,7 @@ func (db *buntDB) Indexes() ([]string, error) {
 }
 
 // ReadConfig returns the database configuration.
-func (db *buntDB) ReadConfig(config *buntDbConfig) error {
+func (db *DB) ReadConfig(config *Config) error {
 	db.mu.RLock()
 	defer db.mu.RUnlock()
 	if db.closed.Load() {
@@ -472,7 +472,7 @@ func (db *buntDB) ReadConfig(config *buntDbConfig) error {
 }
 
 // SetConfig updates the database configuration.
-func (db *buntDB) SetConfig(config buntDbConfig) error {
+func (db *DB) SetConfig(config Config) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 	if db.closed.Load() {
@@ -490,7 +490,7 @@ func (db *buntDB) SetConfig(config buntDbConfig) error {
 // insertIntoDatabase performs inserts an item in to the database and updates
 // all indexes. If a previous item with the same key already exists, that item
 // will be replaced with the new one, and return the previous item.
-func (db *buntDB) insertIntoDatabase(item *dbItem) *dbItem {
+func (db *DB) insertIntoDatabase(item *dbItem) *dbItem {
 	var pdbi *dbItem
 	// Generate a list of indexes that this item will be inserted in to.
 	idxs := db.insIdxs
@@ -548,7 +548,7 @@ func (db *buntDB) insertIntoDatabase(item *dbItem) *dbItem {
 // with the matching key was found in the database, it will be removed and
 // returned to the caller. A nil return value means that the item was not
 // found in the database
-func (db *buntDB) deleteFromDatabase(item *dbItem) *dbItem {
+func (db *DB) deleteFromDatabase(item *dbItem) *dbItem {
 	var pdbi *dbItem
 	prev := db.keys.Delete(item)
 	if prev != nil {
@@ -576,7 +576,7 @@ func (db *buntDB) deleteFromDatabase(item *dbItem) *dbItem {
 
 // backgroundManager runs continuously in the background and performs various
 // operations such as removing expired items and syncing to disk.
-func (db *buntDB) backgroundManager() {
+func (db *DB) backgroundManager() {
 	flushes := 0
 	t := time.NewTicker(time.Second)
 	defer t.Stop()
@@ -617,7 +617,7 @@ func (db *buntDB) backgroundManager() {
 						// it's ok to get a "not found" because the
 						// 'Delete' method reports "not found" for
 						// expired items.
-						if err != errNotFound {
+						if err != ErrNotFound {
 							return err
 						}
 					}
@@ -666,7 +666,7 @@ func (db *buntDB) backgroundManager() {
 
 // Shrink will make the database file smaller by removing redundant
 // log entries. This operation does not block the database.
-func (db *buntDB) Shrink() error {
+func (db *DB) Shrink() error {
 	db.mu.Lock()
 	if db.closed.Load() {
 		db.mu.Unlock()
@@ -811,7 +811,7 @@ func panicErr(err error) error {
 // modTime is the modified time of the reader, should be no greater than
 // the current time.Now().
 // Returns the number of bytes of the last command read and the error if any.
-func (db *buntDB) readLoad(rd io.Reader, modTime time.Time) (n int64, err error) {
+func (db *DB) readLoad(rd io.Reader, modTime time.Time) (n int64, err error) {
 	defer func() {
 		if err == io.EOF {
 			err = io.ErrUnexpectedEOF
@@ -985,7 +985,7 @@ func (db *buntDB) readLoad(rd io.Reader, modTime time.Time) (n int64, err error)
 // of RESP commands. For more information on RESP please read
 // http://redis.io/topics/protocol. The only supported RESP commands are DEL and
 // SET.
-func (db *buntDB) load() error {
+func (db *DB) load() error {
 	var fi os.FileInfo
 	var err error
 
@@ -1029,7 +1029,7 @@ func (db *buntDB) load() error {
 
 // managed calls a block of code that is fully contained in a transaction.
 // This method is intended to be wrapped by Update and View
-func (db *buntDB) managed(writable bool, fn func(tx *Tx) error) (err error) {
+func (db *DB) managed(writable bool, fn func(tx *Tx) error) (err error) {
 	var tx *Tx
 	tx, err = db.Begin(writable)
 	if err != nil {
@@ -1063,7 +1063,7 @@ func (db *buntDB) managed(writable bool, fn func(tx *Tx) error) (err error) {
 //
 // Executing a manual commit or rollback from inside the function will result
 // in a panic.
-func (db *buntDB) View(fn func(tx *Tx) error) error {
+func (db *DB) View(fn func(tx *Tx) error) error {
 	return db.managed(false, fn)
 }
 
@@ -1075,12 +1075,12 @@ func (db *buntDB) View(fn func(tx *Tx) error) error {
 //
 // Executing a manual commit or rollback from inside the function will result
 // in a panic.
-func (db *buntDB) Update(fn func(tx *Tx) error) error {
+func (db *DB) Update(fn func(tx *Tx) error) error {
 	return db.managed(true, fn)
 }
 
 // get return an item or nil if not found.
-func (db *buntDB) get(key string) *dbItem {
+func (db *DB) get(key string) *dbItem {
 	item := db.keys.Get(&dbItem{key: key})
 	if item != nil {
 		return item.(*dbItem)
@@ -1095,7 +1095,7 @@ func (db *buntDB) get(key string) *dbItem {
 //
 // All transactions must be committed or rolled-back when done.
 type Tx struct {
-	db       *buntDB         // the underlying database.
+	db       *DB             // the underlying database.
 	writable bool            // when false mutable operations fail.
 	funcd    bool            // when true Commit and Rollback panic.
 	wc       *txWriteContext // context for writable transactions.
@@ -1154,7 +1154,7 @@ func (tx *Tx) DeleteAll() error {
 // the current read/write transaction is completed.
 //
 // All transactions must be closed by calling Commit() or Rollback() when done.
-func (db *buntDB) Begin(writable bool) (*Tx, error) {
+func (db *DB) Begin(writable bool) (*Tx, error) {
 	tx := &Tx{
 		db:       db,
 		writable: writable,
@@ -1505,7 +1505,7 @@ func (tx *Tx) GetLess(index string) (func(a, b string) bool, error) {
 	}
 	idx, ok := tx.db.idxs[index]
 	if !ok || idx.less == nil {
-		return nil, errNotFound
+		return nil, ErrNotFound
 	}
 	return idx.less, nil
 }
@@ -1521,7 +1521,7 @@ func (tx *Tx) GetRect(index string) (func(s string) (min, max []float64),
 	}
 	idx, ok := tx.db.idxs[index]
 	if !ok || idx.rect == nil {
-		return nil, errNotFound
+		return nil, ErrNotFound
 	}
 	return idx.rect, nil
 }
@@ -1603,7 +1603,7 @@ func (tx *Tx) Get(key string, ignoreExpired ...bool) (val string, err error) {
 	if item == nil || (item.expired() && !ignore) {
 		// The item does not exists or has expired. Let's assume that
 		// the caller is only interested in items that have not expired.
-		return "", errNotFound
+		return "", ErrNotFound
 	}
 	return item.val, nil
 }
@@ -1623,7 +1623,7 @@ func (tx *Tx) Delete(key string) (val string, err error) {
 	}
 	item := tx.db.deleteFromDatabase(&dbItem{key: key})
 	if item == nil {
-		return "", errNotFound
+		return "", ErrNotFound
 	}
 	// create a rollback entry if there has not been a deleteAll call.
 	if tx.wc.rbkeys == nil {
@@ -1639,7 +1639,7 @@ func (tx *Tx) Delete(key string) (val string, err error) {
 	if item.expired() {
 		// The item exists in the tree, but has expired. Let's assume that
 		// the caller is only interested in items that have not expired.
-		return "", errNotFound
+		return "", ErrNotFound
 	}
 	return item.val, nil
 }
@@ -1653,13 +1653,13 @@ func (tx *Tx) TTL(key string) (time.Duration, error) {
 	}
 	item := tx.db.get(key)
 	if item == nil {
-		return 0, errNotFound
+		return 0, ErrNotFound
 	} else if item.opts == nil || !item.opts.ex {
 		return -1, nil
 	}
 	dur := time.Until(item.opts.exat)
 	if dur < 0 {
-		return 0, errNotFound
+		return 0, ErrNotFound
 	}
 	return dur, nil
 }
@@ -1692,7 +1692,7 @@ func (tx *Tx) scan(desc, gt, lt bool, index, start, stop string,
 		idx := tx.db.idxs[index]
 		if idx == nil {
 			// index was not found. return error
-			return errNotFound
+			return ErrNotFound
 		}
 		tr = idx.btr
 		if tr == nil {
@@ -2005,7 +2005,7 @@ func (tx *Tx) Nearby(index, bounds string,
 	idx := tx.db.idxs[index]
 	if idx == nil {
 		// index was not found. return error
-		return errNotFound
+		return ErrNotFound
 	}
 	if idx.rtr == nil {
 		// not an r-tree index. just return nil
@@ -2043,7 +2043,7 @@ func (tx *Tx) Intersects(index, bounds string,
 	idx := tx.db.idxs[index]
 	if idx == nil {
 		// index was not found. return error
-		return errNotFound
+		return ErrNotFound
 	}
 	if idx.rtr == nil {
 		// not an r-tree index. just return nil
@@ -2219,7 +2219,7 @@ func (tx *Tx) DropIndex(name string) error {
 	}
 	idx, ok := tx.db.idxs[name]
 	if !ok {
-		return errNotFound
+		return ErrNotFound
 	}
 	// delete from the map.
 	// this is all that is needed to delete an index.

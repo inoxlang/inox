@@ -18,9 +18,9 @@ import (
 	"github.com/go-git/go-billy/v5"
 	"github.com/go-git/go-billy/v5/util"
 	"github.com/inoxlang/inox/internal/afs"
+	"github.com/inoxlang/inox/internal/buntdb"
 	"github.com/inoxlang/inox/internal/commonfmt"
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/filekv"
 	"github.com/inoxlang/inox/internal/jsoniter"
 	"github.com/inoxlang/inox/internal/memds"
 	"github.com/inoxlang/inox/internal/utils"
@@ -78,7 +78,7 @@ type MetaFilesystem struct {
 	fsWatchersLock sync.Mutex
 
 	//all the metadata about files is stored in this Key value store.
-	metadata *filekv.SingleFileKV
+	metadata *buntdb.DB
 	ctx      *core.Context
 
 	lock        sync.RWMutex
@@ -125,9 +125,7 @@ func OpenMetaFilesystem(ctx *core.Context, underlying billy.Basic, opts MetaFile
 		maxParallelCreationCount = METAFS_DEFAULT_MAX_PARALLEL_FILE_CREATION_COUNT
 	}
 
-	kvConfig := filekv.KvStoreConfig{
-		Filesystem: underlying,
-	}
+	var buntDBPath string
 
 	if opts.Dir != "" {
 		fls, ok := underlying.(afs.Filesystem)
@@ -139,12 +137,12 @@ func OpenMetaFilesystem(ctx *core.Context, underlying billy.Basic, opts MetaFile
 		if err := fls.MkdirAll(opts.Dir, 0700); err != nil {
 			return nil, fmt.Errorf("failed to create directory for meta filesystem: %w", err)
 		}
-		kvConfig.Path = core.PathFrom(underlying.Join(opts.Dir, METAFS_KV_FILENAME))
+		buntDBPath = underlying.Join(opts.Dir, METAFS_KV_FILENAME)
 	} else {
-		kvConfig.Path = "/" + METAFS_KV_FILENAME
+		buntDBPath = "/" + METAFS_KV_FILENAME
 	}
 
-	kv, err := filekv.OpenSingleFileKV(kvConfig)
+	kv, err := buntdb.OpenBuntDBNoPermCheck(buntDBPath, underlying)
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to open/create single-file KV store for storing metadata of meta filesystem: %w", err)
@@ -271,7 +269,7 @@ func (fls *MetaFilesystem) Close(ctx *core.Context) error {
 	}
 
 	//close the key-value store
-	return fls.metadata.Close(ctx)
+	return fls.metadata.Close()
 }
 
 func (fls *MetaFilesystem) Chroot(path string) (billy.Filesystem, error) {
@@ -297,7 +295,7 @@ func (fls *MetaFilesystem) Absolute(path string) (string, error) {
 	return "", core.ErrNotImplemented
 }
 
-func (fls *MetaFilesystem) getFileMetadata(pth core.Path, usedTx *filekv.DatabaseTx) (*metaFsFileMetadata, bool, error) {
+func (fls *MetaFilesystem) getFileMetadata(pth core.Path, usedTx *buntdb.Tx) (*metaFsFileMetadata, bool, error) {
 	if !pth.IsAbsolute() {
 		return nil, false, errors.New("file's path should be absolute")
 	}
@@ -318,24 +316,30 @@ func (fls *MetaFilesystem) getFileMetadata(pth core.Path, usedTx *filekv.Databas
 
 	var (
 		serializedMetadata string
-		ok                 core.Bool
 		err                error
 	)
 
 	metadata := metaFsFileMetadata{path: pth}
 
 	if usedTx == nil {
-		serializedMetadata, ok, err = fls.metadata.GetSerialized(fls.ctx, key, fls)
-	} else {
-		serializedMetadata, ok, err = usedTx.GetSerialized(fls.ctx, key)
+		//create a temporary transaction
+		usedTx, err = fls.metadata.Begin(false)
+		if err != nil {
+			return nil, false, err
+		}
+		defer func() {
+			// Read-only transactions can only be rolled back, not committed.
+			usedTx.Rollback()
+		}()
 	}
+
+	serializedMetadata, err = usedTx.Get(key.UnderlyingString())
 
 	if err != nil {
+		if errors.Is(err, buntdb.ErrNotFound) {
+			return nil, false, nil
+		}
 		return nil, false, fmtFailedToGetFileMetadataError(pth, err)
-	}
-
-	if !ok {
-		return nil, false, nil
 	}
 
 	err = metadata.initFromJSON(serializedMetadata, hasLastModifTime, lastModificationTime)
@@ -346,7 +350,7 @@ func (fls *MetaFilesystem) getFileMetadata(pth core.Path, usedTx *filekv.Databas
 	return &metadata, true, nil
 }
 
-func (fls *MetaFilesystem) setFileMetadata(metadata *metaFsFileMetadata, usedTx *filekv.DatabaseTx) error {
+func (fls *MetaFilesystem) setFileMetadata(metadata *metaFsFileMetadata, tx *buntdb.Tx) error {
 	if !metadata.path.IsAbsolute() {
 		return errors.New("file's path should be absolute")
 	}
@@ -354,24 +358,49 @@ func (fls *MetaFilesystem) setFileMetadata(metadata *metaFsFileMetadata, usedTx 
 	json := metadata.marshalJSON()
 	key := getKvKeyFromPath(metadata.path)
 
-	if usedTx == nil {
-		fls.metadata.SetSerialized(fls.ctx, key, json, fls)
-	} else {
-		return usedTx.SetSerialized(fls.ctx, key, json)
+	var noIssue bool
+	if tx == nil {
+		//create a temporary transaction
+		var err error
+		tx, err = fls.metadata.Begin(true)
+		if err != nil {
+			return err
+		}
+		defer func() {
+			if noIssue {
+				tx.Commit()
+			} else {
+				tx.Rollback()
+			}
+		}()
 	}
-
-	return nil
+	_, _, err := tx.Set(string(key), json, nil)
+	noIssue = err == nil
+	return err
 }
 
-func (fls *MetaFilesystem) deleteFileMetadata(pth core.Path, usedTx *filekv.DatabaseTx) error {
+func (fls *MetaFilesystem) deleteFileMetadata(pth core.Path, tx *buntdb.Tx) error {
 	key := getKvKeyFromPath(pth)
 
-	if usedTx == nil {
-		fls.metadata.Delete(fls.ctx, key, fls)
-	} else {
-		return usedTx.Delete(fls.ctx, key)
+	var noIssue bool
+	if tx == nil {
+		//create a temporary transaction
+		var err error
+		tx, err = fls.metadata.Begin(true)
+		if err != nil {
+			return err
+		}
+		defer func() {
+			if noIssue {
+				tx.Commit()
+			} else {
+				tx.Rollback()
+			}
+		}()
 	}
 
+	_, err := tx.Delete(string(key))
+	noIssue = err == nil
 	return nil
 }
 
@@ -1011,7 +1040,7 @@ func (fls *MetaFilesystem) MkdirAllNoLock(path string, perm os.FileMode) error {
 	return fls.MkdirAllNoLock_(path, perm, nil)
 }
 
-func (fls *MetaFilesystem) MkdirAllNoLock_(path string, perm os.FileMode, tx *filekv.DatabaseTx) error {
+func (fls *MetaFilesystem) MkdirAllNoLock_(path string, perm os.FileMode, tx *buntdb.Tx) error {
 	if fls.closed.Load() {
 		return ErrClosedFilesystem
 	}
@@ -1130,23 +1159,38 @@ func (fls *MetaFilesystem) Rename(from, to string) error {
 	//TODO: use a single transaction to search for move operations & do the update
 
 	//iterate the metadata database to find all files & directories to move.
-	err = fls.metadata.ForEach(fls.ctx, func(key core.Path, getVal func() core.Value) error {
+
+	noIssue := false
+	tx, err := fls.metadata.Begin(true)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if noIssue {
+			tx.Commit()
+		} else {
+			tx.Rollback()
+		}
+	}()
+
+	err = tx.Ascend("", func(key, value string) (_continue bool) {
+		_continue = true
 		path := strings.TrimPrefix(string(key), filesPrefix)
 
 		if path == string(key) { //prefix not present
-			return nil
+			return
 		}
 
 		if path == from || !filepath.HasPrefix(path, from) {
-			return nil
+			return
 		}
 
 		rel, _ := filepath.Rel(from, path)
 		pathTo := filepath.Join(to, rel)
 
 		move = append(move, [2]core.Path{core.PathFrom(path), core.PathFrom(pathTo)})
-		return nil
-	}, fls)
+		return
+	})
 
 	if err != nil {
 		return err
@@ -1154,127 +1198,124 @@ func (fls *MetaFilesystem) Rename(from, to string) error {
 
 	noCheckFuel := 10
 
-	err = fls.metadata.UpdateNoCtx(func(dbTx *filekv.DatabaseTx) error {
-		fromDir := filepath.Dir(from)
-		// get metadata of previous parent directory
-		fromDirPath := core.DirPathFrom(fromDir)
+	fromDir := filepath.Dir(from)
+	// get metadata of previous parent directory
+	fromDirPath := core.DirPathFrom(fromDir)
 
-		fromDirMetadata, found, err := fls.getFileMetadata(fromDirPath, dbTx)
+	fromDirMetadata, found, err := fls.getFileMetadata(fromDirPath, tx)
+	if err != nil {
+		return err
+	}
+
+	if !found {
+		panic(core.ErrUnreachable)
+	}
+
+	// remove moved file from children of previous parent
+	indexFound := false
+	for index, child := range fromDirMetadata.children {
+		if child == fromPath.Basename() {
+			indexFound = true
+			fromDirMetadata.children = utils.RemoveIndexOfSlice(fromDirMetadata.children, index)
+			break
+		}
+	}
+
+	if !indexFound {
+		return fmt.Errorf("failed to remove %s from children of %s", fromPath.Basename(), fromDirPath)
+	}
+
+	fromDirMetadata.modificationTime = core.DateTime(time.Now())
+	if err := fls.setFileMetadata(fromDirMetadata, tx); err != nil {
+		return err
+	}
+
+	//make sure the parent of the the destination exists
+	toDir := filepath.Dir(to)
+	if err := fls.MkdirAllNoLock_(toDir, METAFS_AUTO_CREATED_DIR_PERM, tx); err != nil {
+		return err
+	}
+
+	//add file in children of new parent
+	toDirPath := core.DirPathFrom(toDir)
+
+	toDirMetadata, found, err := fls.getFileMetadata(toDirPath, tx)
+	if err != nil {
+		return err
+	}
+
+	if !found {
+		panic(core.ErrUnreachable)
+	}
+
+	toDirMetadata.children = append(toDirMetadata.children, toPath.Basename())
+	toDirMetadata.modificationTime = core.DateTime(time.Now())
+
+	if err := fls.setFileMetadata(toDirMetadata, tx); err != nil {
+		return err
+	}
+
+	//update metadata of moved files & directories
+
+	for opIndex, ops := range move {
+
+		if noCheckFuel <= 0 { //check context
+			select {
+			case <-fls.ctx.Done():
+				return fls.ctx.Err()
+			default:
+			}
+			noCheckFuel = 10
+		} else {
+			noCheckFuel--
+		}
+
+		from := ops[0]
+		to := ops[1]
+
+		//get current metadata
+		metadata, exists, err := fls.getFileMetadata(from, tx)
+		if err != nil {
+			return err
+		}
+		if !exists {
+			panic(core.ErrUnreachable)
+		}
+
+		//update the metadata.
+		//note that we do not need to update the underlying file since it
+		//only contains the content.
+		metadata.path = to
+
+		err = fls.setFileMetadata(metadata, tx)
 		if err != nil {
 			return err
 		}
 
-		if !found {
-			panic(core.ErrUnreachable)
-		}
-
-		// remove moved file from children of previous parent
-		indexFound := false
-		for index, child := range fromDirMetadata.children {
-			if child == fromPath.Basename() {
-				indexFound = true
-				fromDirMetadata.children = utils.RemoveIndexOfSlice(fromDirMetadata.children, index)
-				break
-			}
-		}
-
-		if !indexFound {
-			return fmt.Errorf("failed to remove %s from children of %s", fromPath.Basename(), fromDirPath)
-		}
-
-		fromDirMetadata.modificationTime = core.DateTime(time.Now())
-		if err := fls.setFileMetadata(fromDirMetadata, dbTx); err != nil {
+		//delete previous metadata
+		if err := fls.deleteFileMetadata(from, tx); err != nil {
 			return err
 		}
 
-		//make sure the parent of the the destination exists
-		toDir := filepath.Dir(to)
-		if err := fls.MkdirAllNoLock_(toDir, METAFS_AUTO_CREATED_DIR_PERM, dbTx); err != nil {
-			return err
+		//add event
+		if opIndex == 0 {
+			event := Event{
+				path:     core.Path(metadata.path),
+				renameOp: true,
+				dateTime: core.DateTime(time.Now()),
+			}
+
+			//TODO: remove if unecessary
+			if metadata.mode.IsDir() {
+				event.path = core.AppendTrailingSlashIfNotPresent(event.path)
+			}
+
+			//add event and remove old events.
+			fls.eventQueue.EnqueueAutoRemove(event)
 		}
-
-		//add file in children of new parent
-		toDirPath := core.DirPathFrom(toDir)
-
-		toDirMetadata, found, err := fls.getFileMetadata(toDirPath, dbTx)
-		if err != nil {
-			return err
-		}
-
-		if !found {
-			panic(core.ErrUnreachable)
-		}
-
-		toDirMetadata.children = append(toDirMetadata.children, toPath.Basename())
-		toDirMetadata.modificationTime = core.DateTime(time.Now())
-
-		if err := fls.setFileMetadata(toDirMetadata, dbTx); err != nil {
-			return err
-		}
-
-		//update metadata of moved files & directories
-
-		for opIndex, ops := range move {
-
-			if noCheckFuel <= 0 { //check context
-				select {
-				case <-fls.ctx.Done():
-					return fls.ctx.Err()
-				default:
-				}
-				noCheckFuel = 10
-			} else {
-				noCheckFuel--
-			}
-
-			from := ops[0]
-			to := ops[1]
-
-			//get current metadata
-			metadata, exists, err := fls.getFileMetadata(from, dbTx)
-			if err != nil {
-				return err
-			}
-			if !exists {
-				panic(core.ErrUnreachable)
-			}
-
-			//update the metadata.
-			//note that we do not need to update the underlying file since it
-			//only contains the content.
-			metadata.path = to
-
-			err = fls.setFileMetadata(metadata, dbTx)
-			if err != nil {
-				return err
-			}
-
-			//delete previous metadata
-			if err := fls.deleteFileMetadata(from, dbTx); err != nil {
-				return err
-			}
-
-			//add event
-			if opIndex == 0 {
-				event := Event{
-					path:     core.Path(metadata.path),
-					renameOp: true,
-					dateTime: core.DateTime(time.Now()),
-				}
-
-				//TODO: remove if unecessary
-				if metadata.mode.IsDir() {
-					event.path = core.AppendTrailingSlashIfNotPresent(event.path)
-				}
-
-				//add event and remove old events.
-				fls.eventQueue.EnqueueAutoRemove(event)
-			}
-		}
-		return nil
-	})
-
-	return err
+	}
+	noIssue = true
+	return nil
 }
 
 func (fls *MetaFilesystem) Remove(filename string) error {
@@ -1324,34 +1365,103 @@ func (fls *MetaFilesystem) Remove(filename string) error {
 		fls.eventQueue.EnqueueAllAutoRemove(events...)
 	}()
 
-	err = fls.metadata.UpdateNoCtx(func(dbTx *filekv.DatabaseTx) error {
-		dir := filepath.Dir(filename)
-		dirPath := core.DirPathFrom(dir)
+	noIssue := false
+	//create a temporary transaction
+	tx, err := fls.metadata.Begin(true)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if noIssue {
+			tx.Commit()
+		} else {
+			tx.Rollback()
+		}
+	}()
 
-		//remove entry from parent
-		parentMetadata, exists, err := fls.getFileMetadata(dirPath, dbTx)
+	dir := filepath.Dir(filename)
+	dirPath := core.DirPathFrom(dir)
+
+	//remove entry from parent
+	parentMetadata, exists, err := fls.getFileMetadata(dirPath, tx)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		panic(core.ErrUnreachable)
+	}
+
+	found := false
+	for index, childName := range parentMetadata.children {
+		if childName == pth.Basename() {
+			found = true
+			parentMetadata.children = utils.RemoveIndexOfSlice(parentMetadata.children, index)
+			break
+		}
+	}
+	if !found {
+		panic(core.ErrUnreachable)
+	}
+
+	parentMetadata.modificationTime = core.DateTime(time.Now())
+	if err := fls.setFileMetadata(parentMetadata, tx); err != nil {
+		return err
+	}
+
+	//remove concrete file (error is ignored for now)
+	if metadata.concreteFile != nil {
+		fls.underlying.Remove((*metadata.concreteFile).UnderlyingString())
+	}
+
+	//delete metadata
+	if err := fls.deleteFileMetadata(metadata.path, tx); err != nil {
+		return err
+	}
+
+	removed = append(removed, metadata.path)
+	removalTimes = append(removalTimes, time.Time(parentMetadata.modificationTime))
+
+	if !metadata.mode.IsDir() {
+		noIssue = true
+		return nil
+	}
+
+	fls.lastModificationTimesLock.Lock()
+	delete(fls.lastModificationTimes, filename)
+	fls.lastModificationTimesLock.Unlock()
+
+	//remove descendants recursively (the code is not used yet because .Remove is not recursive)
+	queue := slices.Clone(metadata.ChildrenPaths())
+
+	for len(queue) > 0 {
+		if noCheckFuel <= 0 { //check context
+			select {
+			case <-fls.ctx.Done():
+				return fls.ctx.Err()
+			default:
+			}
+			noCheckFuel = 10
+		} else {
+			noCheckFuel--
+		}
+
+		current := queue[len(queue)-1]
+		queue = queue[:len(queue)-1]
+
+		currentMetadata, exists, err := fls.getFileMetadata(current, tx)
+
 		if err != nil {
 			return err
 		}
+
 		if !exists {
-			panic(core.ErrUnreachable)
+			//the metadata should exist, continue anyway
+			continue
 		}
 
-		found := false
-		for index, childName := range parentMetadata.children {
-			if childName == pth.Basename() {
-				found = true
-				parentMetadata.children = utils.RemoveIndexOfSlice(parentMetadata.children, index)
-				break
-			}
-		}
-		if !found {
-			panic(core.ErrUnreachable)
-		}
-
-		parentMetadata.modificationTime = core.DateTime(time.Now())
-		if err := fls.setFileMetadata(parentMetadata, dbTx); err != nil {
-			return err
+		//delete current descendant & add its own descendants to the queue
+		if currentMetadata.mode.IsDir() {
+			queue = append(queue, currentMetadata.ChildrenPaths()...)
 		}
 
 		//remove concrete file (error is ignored for now)
@@ -1359,72 +1469,14 @@ func (fls *MetaFilesystem) Remove(filename string) error {
 			fls.underlying.Remove((*metadata.concreteFile).UnderlyingString())
 		}
 
-		//delete metadata
-		if err := fls.deleteFileMetadata(metadata.path, dbTx); err != nil {
+		if err := fls.deleteFileMetadata(current, tx); err != nil {
 			return err
 		}
 
 		removed = append(removed, metadata.path)
-		removalTimes = append(removalTimes, time.Time(parentMetadata.modificationTime))
-
-		if !metadata.mode.IsDir() {
-			return nil
-		}
-
-		fls.lastModificationTimesLock.Lock()
-		delete(fls.lastModificationTimes, filename)
-		fls.lastModificationTimesLock.Unlock()
-
-		//remove descendants recursively (the code is not used yet because .Remove is not recursive)
-		queue := slices.Clone(metadata.ChildrenPaths())
-
-		for len(queue) > 0 {
-			if noCheckFuel <= 0 { //check context
-				select {
-				case <-fls.ctx.Done():
-					return fls.ctx.Err()
-				default:
-				}
-				noCheckFuel = 10
-			} else {
-				noCheckFuel--
-			}
-
-			current := queue[len(queue)-1]
-			queue = queue[:len(queue)-1]
-
-			currentMetadata, exists, err := fls.getFileMetadata(current, dbTx)
-
-			if err != nil {
-				return err
-			}
-
-			if !exists {
-				//the metadata should exist, continue anyway
-				continue
-			}
-
-			//delete current descendant & add its own descendants to the queue
-			if currentMetadata.mode.IsDir() {
-				queue = append(queue, currentMetadata.ChildrenPaths()...)
-			}
-
-			//remove concrete file (error is ignored for now)
-			if metadata.concreteFile != nil {
-				fls.underlying.Remove((*metadata.concreteFile).UnderlyingString())
-			}
-
-			if err := fls.deleteFileMetadata(current, dbTx); err != nil {
-				return err
-			}
-
-			removed = append(removed, metadata.path)
-			removalTimes = append(removalTimes, time.Now())
-		}
-
-		return nil
-	})
-
+		removalTimes = append(removalTimes, time.Now())
+	}
+	noIssue = err == nil
 	return err
 }
 

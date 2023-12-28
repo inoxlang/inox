@@ -890,6 +890,11 @@ func (host Host) HostWithoutPort() Host {
 	return Host(string(originalHost.Scheme()) + "://" + hostPart)
 }
 
+func (host Host) Name() string {
+	parsed := utils.Must(url.Parse(string(host)))
+	return parsed.Hostname()
+}
+
 func (host Host) WithoutScheme() string {
 	return strings.Split(string(host), "://")[1]
 }

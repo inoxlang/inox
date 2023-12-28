@@ -2,6 +2,7 @@ package containers
 
 import (
 	"io"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -15,7 +16,6 @@ import (
 
 	containers_common "github.com/inoxlang/inox/internal/globals/containers/common"
 	coll_symbolic "github.com/inoxlang/inox/internal/globals/containers/symbolic"
-	"github.com/inoxlang/inox/internal/globals/fs_ns"
 )
 
 const (
@@ -186,10 +186,8 @@ func TestNewSet(t *testing.T) {
 func TestPersistLoadSet(t *testing.T) {
 	setup := func() (*core.Context, core.DataStore) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
-		fls := fs_ns.NewMemFilesystem(MAX_MEM_FS_SIZE)
 		kv := utils.Must(filekv.OpenSingleFileKV(filekv.KvStoreConfig{
-			Filesystem: fls,
-			Path:       "/kv",
+			Path: core.PathFrom(filepath.Join(t.TempDir(), "data.kv")),
 		}))
 		storage := filekv.NewSerializedValueStorage(kv, "ldb://main/")
 		return ctx, storage
@@ -545,10 +543,8 @@ func TestSetAddRemove(t *testing.T) {
 
 	setup := func() (*core.Context, core.DataStore) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
-		fls := fs_ns.NewMemFilesystem(MAX_MEM_FS_SIZE)
 		kv := utils.Must(filekv.OpenSingleFileKV(filekv.KvStoreConfig{
-			Filesystem: fls,
-			Path:       "/kv",
+			Path: core.PathFrom(filepath.Join(t.TempDir(), "kv")),
 		}))
 		storage := filekv.NewSerializedValueStorage(kv, "ldb://main/")
 		return ctx, storage
@@ -964,10 +960,8 @@ func TestInteractWithElementsOfLoadedSet(t *testing.T) {
 				},
 			},
 		}, nil)
-		fls := fs_ns.NewMemFilesystem(MAX_MEM_FS_SIZE)
 		kv := utils.Must(filekv.OpenSingleFileKV(filekv.KvStoreConfig{
-			Filesystem: fls,
-			Path:       "/kv",
+			Path: core.PathFrom(filepath.Join(t.TempDir(), "kv")),
 		}))
 		storage := filekv.NewSerializedValueStorage(kv, "ldb://main/")
 		return ctx, storage

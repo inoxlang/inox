@@ -34,6 +34,7 @@ const (
 	DEFAULT_TEST_TIMEOUT_DURATION = 25 * time.Second
 	CHROME_EXAMPLE_FOLDER         = "chrome/"
 	PROJECT_EXAMPLES_FOLDER       = "projects/"
+	LOCALDB_EXAMPLES_FOLDER       = "local_database/"
 	EXAMPLES_DIR                  = "./examples"
 )
 

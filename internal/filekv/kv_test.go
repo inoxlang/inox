@@ -1,11 +1,13 @@
 package filekv
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
+	"go.etcd.io/bbolt"
 )
 
 //TODO: add equivalent tests for transactions
@@ -28,11 +30,8 @@ func testKvSet(t *testing.T, UseSetSerialized bool) {
 		t.Run(txCase, func(t *testing.T) {
 			t.Parallel()
 
-			fls := newMemFilesystem()
-
 			kv, err := OpenSingleFileKV(KvStoreConfig{
-				Path:       "/data.kv",
-				Filesystem: fls,
+				Path: core.PathFrom(filepath.Join(t.TempDir(), "data.kv")),
 			})
 
 			if !assert.NoError(t, err) {
@@ -74,10 +73,10 @@ func testKvSet(t *testing.T, UseSetSerialized bool) {
 
 			//check item is persisted
 			if txCase != "tx" {
-				kv.db.View(func(tx *Tx) error {
-					val, err := tx.Get("/data")
-					if assert.NoError(t, err) {
-						assert.Equal(t, "1", val)
+				kv.db.View(func(tx *bbolt.Tx) error {
+					val := tx.Bucket(BBOLT_DATA_BUCKET).Get([]byte("/data"))
+					if val != nil {
+						assert.Equal(t, "1", string(val))
 					}
 					return nil
 				})
@@ -101,10 +100,10 @@ func testKvSet(t *testing.T, UseSetSerialized bool) {
 
 				//check item is persisted
 				if txCase != "tx" {
-					kv.db.View(func(tx *Tx) error {
-						val, err := tx.Get("/data")
-						if assert.NoError(t, err) {
-							assert.Equal(t, "1", val)
+					kv.db.View(func(tx *bbolt.Tx) error {
+						val := tx.Bucket(BBOLT_DATA_BUCKET).Get([]byte("/data"))
+						if val != nil {
+							assert.Equal(t, "1", string(val))
 						}
 						return nil
 					})
@@ -117,11 +116,8 @@ func testKvSet(t *testing.T, UseSetSerialized bool) {
 func TestKvGetSerialized(t *testing.T) {
 	t.Parallel()
 
-	fls := newMemFilesystem()
-
 	kv, err := OpenSingleFileKV(KvStoreConfig{
-		Path:       "/data.kv",
-		Filesystem: fls,
+		Path: core.PathFrom(filepath.Join(t.TempDir(), "data.kv")),
 	})
 
 	if !assert.NoError(t, err) {
@@ -164,11 +160,9 @@ func testKvInsert(t *testing.T, UseInsertSerialized bool) {
 	t.Parallel()
 
 	t.Run("simple", func(t *testing.T) {
-		fls := newMemFilesystem()
 
 		kv, err := OpenSingleFileKV(KvStoreConfig{
-			Path:       "/data.kv",
-			Filesystem: fls,
+			Path: core.PathFrom(filepath.Join(t.TempDir(), "data.kv")),
 		})
 
 		if !assert.NoError(t, err) {
@@ -202,11 +196,8 @@ func testKvInsert(t *testing.T, UseInsertSerialized bool) {
 	})
 
 	t.Run("double insert", func(t *testing.T) {
-		fls := newMemFilesystem()
-
 		kv, err := OpenSingleFileKV(KvStoreConfig{
-			Path:       "/data.kv",
-			Filesystem: fls,
+			Path: core.PathFrom(filepath.Join(t.TempDir(), "data.kv")),
 		})
 
 		if !assert.NoError(t, err) {
@@ -256,11 +247,8 @@ func testKvInsert(t *testing.T, UseInsertSerialized bool) {
 func TestKvForEach(t *testing.T) {
 	t.Parallel()
 
-	fls := newMemFilesystem()
-
 	kv, err := OpenSingleFileKV(KvStoreConfig{
-		Path:       "/data.kv",
-		Filesystem: fls,
+		Path: core.PathFrom(filepath.Join(t.TempDir(), "data.kv")),
 	})
 
 	if !assert.NoError(t, err) {
@@ -295,11 +283,8 @@ func TestKvForEach(t *testing.T) {
 func TestKvDelete(t *testing.T) {
 	t.Parallel()
 
-	fls := newMemFilesystem()
-
 	kv, err := OpenSingleFileKV(KvStoreConfig{
-		Path:       "/data.kv",
-		Filesystem: fls,
+		Path: core.PathFrom(filepath.Join(t.TempDir(), "data.kv")),
 	})
 
 	if !assert.NoError(t, err) {

@@ -36,9 +36,11 @@ func OpenAnonymousAccountDatabase(ctx *core.Context, path core.Path, fls afs.Fil
 		return nil, err
 	}
 
+	//TODO: find a unique location on disk
+
 	store, err := filekv.OpenSingleFileKV(filekv.KvStoreConfig{
-		Path:       path,
-		Filesystem: fls,
+		Path: path,
+		//Filesystem: fls,
 	})
 
 	if err != nil {

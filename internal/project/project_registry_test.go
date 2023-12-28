@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/project/scaffolding"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
@@ -18,9 +17,7 @@ func TestOpenRegistry(t *testing.T) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
-		fls := fs_ns.NewMemFilesystem(1_000_000)
-
-		r, err := OpenRegistry("/projects", fls, ctx)
+		r, err := OpenRegistry(t.TempDir(), ctx)
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -32,14 +29,14 @@ func TestOpenRegistry(t *testing.T) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
-		fls := fs_ns.NewMemFilesystem(1_000_000)
+		tempDir := t.TempDir()
 
-		r, err := OpenRegistry("/projects", fls, ctx)
+		r, err := OpenRegistry(tempDir, ctx)
 		assert.NoError(t, err)
 
 		r.Close(ctx)
 
-		r, err = OpenRegistry("/projects", fls, ctx)
+		r, err = OpenRegistry(tempDir, ctx)
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -55,9 +52,7 @@ func TestCreateProject(t *testing.T) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
-		fls := fs_ns.NewMemFilesystem(1_000_000)
-
-		reg := utils.Must(OpenRegistry("/projects", fls, ctx))
+		reg := utils.Must(OpenRegistry(t.TempDir(), ctx))
 		defer reg.Close(ctx)
 
 		id, err := reg.CreateProject(ctx, CreateProjectParams{
@@ -72,9 +67,7 @@ func TestCreateProject(t *testing.T) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
-		fls := fs_ns.NewMemFilesystem(1_000_000)
-
-		reg := utils.Must(OpenRegistry("/projects", fls, ctx))
+		reg := utils.Must(OpenRegistry(t.TempDir(), ctx))
 		defer reg.Close(ctx)
 
 		id, err := reg.CreateProject(ctx, CreateProjectParams{
@@ -89,12 +82,12 @@ func TestCreateProject(t *testing.T) {
 		//TODO
 		t.SkipNow()
 
+		tempDir := t.TempDir()
+
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
-		fls := fs_ns.NewMemFilesystem(1_000_000)
-
-		reg := utils.Must(OpenRegistry("/projects", fls, ctx))
+		reg := utils.Must(OpenRegistry(tempDir, ctx))
 		defer reg.Close(ctx)
 
 		reg.CreateProject(ctx, CreateProjectParams{
@@ -117,9 +110,7 @@ func TestOpenProject(t *testing.T) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
-		fls := fs_ns.NewMemFilesystem(1_000_000)
-
-		reg := utils.Must(OpenRegistry("/projects", fls, ctx))
+		reg := utils.Must(OpenRegistry(t.TempDir(), ctx))
 		defer reg.Close(ctx)
 
 		params := CreateProjectParams{
@@ -148,9 +139,7 @@ func TestOpenProject(t *testing.T) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
-		fls := fs_ns.NewMemFilesystem(1_000_000)
-
-		reg := utils.Must(OpenRegistry("/projects", fls, ctx))
+		reg := utils.Must(OpenRegistry(t.TempDir(), ctx))
 		defer reg.Close(ctx)
 
 		params := CreateProjectParams{
@@ -181,9 +170,7 @@ func TestOpenProject(t *testing.T) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
-		fls := fs_ns.NewMemFilesystem(1_000_000)
-
-		reg := utils.Must(OpenRegistry("/projects", fls, ctx))
+		reg := utils.Must(OpenRegistry(t.TempDir(), ctx))
 		defer reg.Close(ctx)
 
 		params := CreateProjectParams{
@@ -223,7 +210,7 @@ func TestOpenProject(t *testing.T) {
 		projectRegistryCtx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 		defer projectRegistryCtx.CancelGracefully()
 
-		reg := utils.Must(OpenRegistry("/projects", fs_ns.NewMemFilesystem(1_000_000), projectRegistryCtx))
+		reg := utils.Must(OpenRegistry(t.TempDir(), projectRegistryCtx))
 		defer reg.Close(projectRegistryCtx)
 
 		ctx1 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
@@ -279,12 +266,11 @@ func TestOpenProject(t *testing.T) {
 	})
 
 	t.Run("re-open registry", func(t *testing.T) {
+		tempDir := t.TempDir()
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
-		fls := fs_ns.NewMemFilesystem(1_000_000)
-
-		reg := utils.Must(OpenRegistry("/projects", fls, ctx))
+		reg := utils.Must(OpenRegistry(tempDir, ctx))
 
 		id := utils.Must(reg.CreateProject(ctx, CreateProjectParams{
 			Name:     "myproject",
@@ -294,7 +280,7 @@ func TestOpenProject(t *testing.T) {
 		assert.NotEmpty(t, id)
 		//re-open registry
 		reg.Close(ctx)
-		reg = utils.Must(OpenRegistry("/projects", fls, ctx))
+		reg = utils.Must(OpenRegistry(tempDir, ctx))
 
 		//open
 		project, err := reg.OpenProject(ctx, OpenProjectParams{

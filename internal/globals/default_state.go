@@ -31,7 +31,7 @@ import (
 	"github.com/inoxlang/inox/internal/globals/s3_ns"
 
 	_ "github.com/inoxlang/inox/internal/localdb"
-	_ "github.com/inoxlang/inox/internal/obsdb"
+	//_ "github.com/inoxlang/inox/internal/obsdb"
 
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/rs/zerolog"

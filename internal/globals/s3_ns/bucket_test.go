@@ -130,6 +130,10 @@ func (p *testProject) Configuration() core.ProjectConfiguration {
 	panic("unimplemented")
 }
 
+func (p *testProject) DatabaseDirOnOsFs() string {
+	panic("unimplemented")
+}
+
 func (*testProject) GetSecrets(ctx *core.Context) ([]core.ProjectSecret, error) {
 	panic("unimplemented")
 }

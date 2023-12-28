@@ -6,61 +6,86 @@ import (
 	"maps"
 	"runtime/debug"
 	"sync"
+	"time"
 
-	"github.com/go-git/go-billy/v5"
 	"github.com/inoxlang/inox/internal/core"
+	"go.etcd.io/bbolt"
 
 	"github.com/inoxlang/inox/internal/utils"
 )
 
 const (
-	KV_STORE_LOG_SRC = "kv"
+	KV_STORE_LOG_SRC  = "kv"
+	BBOLT_FILE_FPERMS = 0700
 )
 
 var (
 	ErrInvalidPathKey    = errors.New("invalid path used as local database key")
 	ErrKeyAlreadyPresent = errors.New("key already present")
+	ErrClosedKvStore     = errors.New("closed KV store")
+	ErrEntryNotFound     = errors.New("entry not found")
+	ErrOpenKvStore       = errors.New("KV store is already open")
+
+	BBOLT_DATA_BUCKET = []byte("data")
 
 	_ core.DataStore = (*SerializedValueStorageAdapter)(nil)
+
+	bboltOptions = &bbolt.Options{
+		Timeout:      time.Second,
+		NoGrowSync:   false,
+		FreelistType: bbolt.FreelistArrayType,
+	}
 )
 
 // thin wrapper around a buntdb database.
 type SingleFileKV struct {
-	db   *buntDB
+	db *bbolt.DB
+
 	path core.Path
 	host core.Host
 
 	transactionMapLock sync.Mutex
-	transactions       map[*core.Transaction]*Tx
+	transactions       map[*core.Transaction]*bbolt.Tx
 }
 
 type KvStoreConfig struct {
-	Path       core.Path
-	InMemory   bool
-	Filesystem billy.Basic
+	Path core.Path
 }
 
 func OpenSingleFileKV(config KvStoreConfig) (_ *SingleFileKV, finalErr error) {
 	path := string(config.Path)
-	if config.InMemory {
-		path = ":memory:"
+
+	kv := &SingleFileKV{
+		path: config.Path,
+
+		transactions: map[*core.Transaction]*bbolt.Tx{},
 	}
 
-	fls := config.Filesystem
-	buntDBconfig := defaultBuntdbConfig
+	db, err := bbolt.Open(path, BBOLT_FILE_FPERMS, bboltOptions)
 
-	db, err := openBuntDBNoPermCheck(path, fls, buntDBconfig)
+	if errors.Is(err, bbolt.ErrTimeout) {
+		finalErr = ErrOpenKvStore
+		return
+	}
+
+	if err != nil {
+		finalErr = err
+		return
+	}
+	kv.db = db
+
+	//create data bucket
+
+	err = kv.db.Update(func(tx *bbolt.Tx) error {
+		_, err := tx.CreateBucketIfNotExists(BBOLT_DATA_BUCKET)
+		return err
+	})
 	if err != nil {
 		finalErr = err
 		return
 	}
 
-	return &SingleFileKV{
-		db:   db,
-		path: config.Path,
-
-		transactions: map[*core.Transaction]*Tx{},
-	}, nil
+	return kv, nil
 }
 
 func (kv *SingleFileKV) Close(ctx *core.Context) (buntDBError error) {
@@ -80,7 +105,7 @@ func (kv *SingleFileKV) Close(ctx *core.Context) (buntDBError error) {
 
 	logger.Print("number of transactions to close: ", len(transactions))
 
-	for tx, dbTx := range transactions {
+	for tx, bboltTx := range transactions {
 		func() {
 			defer utils.Recover()
 			//will be ignored if the transaction already finished.
@@ -89,19 +114,18 @@ func (kv *SingleFileKV) Close(ctx *core.Context) (buntDBError error) {
 
 		func() {
 			defer utils.Recover()
-			if dbTx.db != nil { //still not finished.
-				dbTx.unlock()
-			}
+			bboltTx.Rollback()
 		}()
 	}
 
-	logger.Print("close bluntDB")
+	logger.Print("KV stored is now closed")
 	//see the deferred call at the top
 	return
 }
 
 func (kv *SingleFileKV) isClosed() bool {
-	return kv.db.isClosed()
+	err := kv.db.View(func(tx *bbolt.Tx) error { return nil })
+	return errors.Is(err, bbolt.ErrDatabaseNotOpen)
 }
 
 func (kv *SingleFileKV) Get(ctx *core.Context, key core.Path, db any) (core.Value, core.Bool, error) {
@@ -121,7 +145,7 @@ func (kv *SingleFileKV) Get(ctx *core.Context, key core.Path, db any) (core.Valu
 
 func (kv *SingleFileKV) GetSerialized(ctx *core.Context, key core.Path, db any) (string, core.Bool, error) {
 	if kv.isClosed() {
-		return "", false, errDatabaseClosed
+		return "", false, ErrClosedKvStore
 	}
 
 	if !key.IsAbsolute() {
@@ -135,15 +159,15 @@ func (kv *SingleFileKV) GetSerialized(ctx *core.Context, key core.Path, db any) 
 	)
 
 	if dbtx == nil {
-		err := kv.db.View(func(txn *Tx) error {
-			item, err := txn.Get(string(key))
-			if err == errNotFound {
+		err := kv.db.View(func(txn *bbolt.Tx) error {
+			bucket := txn.Bucket(BBOLT_DATA_BUCKET)
+
+			item := bucket.Get([]byte(key))
+			if item == nil {
 				valueFound = core.False
 				return nil
-			} else if err != nil {
-				return err
 			}
-			serialized = item
+			serialized = string(item)
 			return nil
 		})
 
@@ -170,7 +194,7 @@ func (kv *SingleFileKV) GetSerialized(ctx *core.Context, key core.Path, db any) 
 // returns the value at the time of the iteration.
 func (kv *SingleFileKV) ForEach(ctx *core.Context, fn func(key core.Path, getVal func() core.Value) error, db any) error {
 	if kv.isClosed() {
-		return errDatabaseClosed
+		return ErrClosedKvStore
 	}
 
 	if fn == nil {
@@ -197,31 +221,43 @@ func (kv *SingleFileKV) ForEach(ctx *core.Context, fn func(key core.Path, getVal
 		return err == nil
 	}
 
-	iterWithTx := func(dbTx *Tx) error {
-		return dbTx.Ascend("", func(key, value string) bool {
-			return handleItem(key, value)
+	iterWithTx := func(txn *bbolt.Tx) error {
+		bucket := txn.Bucket(BBOLT_DATA_BUCKET)
+		stopIteration := errors.New("")
+
+		err := bucket.ForEach(func(k, v []byte) error {
+			cont := handleItem(string(k), string(v))
+			if !cont {
+				return stopIteration
+			}
+			return nil
 		})
+
+		if errors.Is(err, stopIteration) {
+			return nil
+		}
+		return err
 	}
 
-	dbTx := kv.getCreateDatabaseTxn(db, ctx.GetTx())
+	kvTx := kv.getCreateDatabaseTxn(db, ctx.GetTx())
 
-	if dbTx == nil {
+	if kvTx == nil {
 		return kv.db.View(iterWithTx)
 	} else {
-		return iterWithTx(dbTx.tx)
+		return iterWithTx(kvTx.tx)
 	}
 }
 
-func (kv *SingleFileKV) UpdateNoCtx(fn func(dbTx *DatabaseTx) error) error {
+func (kv *SingleFileKV) UpdateNoCtx(fn func(dbTx *KVTx) error) error {
 	if kv.isClosed() {
-		return errDatabaseClosed
+		return ErrClosedKvStore
 	}
 
 	if fn == nil {
 		return errors.New("iteration function is nil")
 	}
 
-	return kv.db.Update(func(dbTx *Tx) (finalErr error) {
+	return kv.db.Update(func(dbTx *bbolt.Tx) (finalErr error) {
 		defer func() {
 			e := recover()
 			switch v := e.(type) {
@@ -238,7 +274,7 @@ func (kv *SingleFileKV) UpdateNoCtx(fn func(dbTx *DatabaseTx) error) error {
 
 func (kv *SingleFileKV) Has(ctx *core.Context, key core.Path, db any) core.Bool {
 	if kv.isClosed() {
-		panic(errDatabaseClosed)
+		panic(ErrClosedKvStore)
 	}
 
 	if !key.IsAbsolute() {
@@ -251,13 +287,15 @@ func (kv *SingleFileKV) Has(ctx *core.Context, key core.Path, db any) core.Bool 
 	)
 
 	if dbTx == nil {
-		err := kv.db.View(func(txn *Tx) error {
-			_, err := txn.Get(string(key))
-			if err == errNotFound {
+		err := kv.db.View(func(txn *bbolt.Tx) error {
+			bucket := txn.Bucket(BBOLT_DATA_BUCKET)
+
+			item := bucket.Get([]byte(key))
+			if item == nil {
 				valueFound = core.False
 				return nil
 			}
-			return err
+			return nil
 		})
 
 		if err != nil {
@@ -284,8 +322,8 @@ func (kv *SingleFileKV) Insert(ctx *core.Context, key core.Path, value core.Seri
 func (kv *SingleFileKV) InsertSerialized(ctx *core.Context, key core.Path, serialized string, db any) {
 	//TODO: check valid representation
 
-	if kv.db.isClosed() {
-		panic(errDatabaseClosed)
+	if kv.isClosed() {
+		panic(ErrClosedKvStore)
 	}
 
 	if !key.IsAbsolute() {
@@ -295,12 +333,16 @@ func (kv *SingleFileKV) InsertSerialized(ctx *core.Context, key core.Path, seria
 	dbTx := kv.getCreateDatabaseTxn(db, ctx.GetTx())
 
 	if dbTx == nil {
-		err := kv.db.Update(func(txn *Tx) error {
-			_, replaced, err := txn.Set(string(key), serialized, nil)
-			if replaced {
+		err := kv.db.Update(func(txn *bbolt.Tx) error {
+			bucket := txn.Bucket(BBOLT_DATA_BUCKET)
+			k := []byte(key)
+
+			//return an error if the entry already exists.
+			if bucket.Get(k) != nil {
 				return fmt.Errorf("%w: %s", ErrKeyAlreadyPresent, key)
 			}
-			return err
+
+			return bucket.Put([]byte(key), []byte(serialized))
 		})
 
 		if err != nil {
@@ -324,8 +366,8 @@ func (kv *SingleFileKV) Set(ctx *core.Context, key core.Path, value core.Seriali
 func (kv *SingleFileKV) SetSerialized(ctx *core.Context, key core.Path, serialized string, db any) {
 	//TODO: check valid representation
 
-	if kv.db.isClosed() {
-		panic(errDatabaseClosed)
+	if kv.isClosed() {
+		panic(ErrClosedKvStore)
 	}
 
 	if !key.IsAbsolute() {
@@ -335,9 +377,10 @@ func (kv *SingleFileKV) SetSerialized(ctx *core.Context, key core.Path, serializ
 	dbtx := kv.getCreateDatabaseTxn(db, ctx.GetTx())
 
 	if dbtx == nil {
-		err := kv.db.Update(func(txn *Tx) error {
-			_, _, err := txn.Set(string(key), serialized, nil)
-			return err
+		err := kv.db.Update(func(txn *bbolt.Tx) error {
+			bucket := txn.Bucket(BBOLT_DATA_BUCKET)
+
+			return bucket.Put([]byte(key), []byte(serialized))
 		})
 
 		if err != nil {
@@ -354,8 +397,8 @@ func (kv *SingleFileKV) SetSerialized(ctx *core.Context, key core.Path, serializ
 }
 
 func (kv *SingleFileKV) Delete(ctx *core.Context, key core.Path, db any) {
-	if kv.db.isClosed() {
-		panic(errDatabaseClosed)
+	if kv.isClosed() {
+		panic(ErrClosedKvStore)
 	}
 
 	if !key.IsAbsolute() {
@@ -365,9 +408,10 @@ func (kv *SingleFileKV) Delete(ctx *core.Context, key core.Path, db any) {
 	dbTx := kv.getCreateDatabaseTxn(db, ctx.GetTx())
 
 	if dbTx == nil {
-		err := kv.db.Update(func(dbTx *Tx) error {
-			_, err := dbTx.Delete(string(key))
-			return err
+		err := kv.db.Update(func(txn *bbolt.Tx) error {
+			bucket := txn.Bucket(BBOLT_DATA_BUCKET)
+
+			return bucket.Delete([]byte(key))
 		})
 
 		if err != nil {
@@ -384,7 +428,7 @@ func (kv *SingleFileKV) Delete(ctx *core.Context, key core.Path, db any) {
 
 // getCreateDatabaseTxn gets or creates a DatabaseTx associated with tx, if tx is nil or is already finished
 // and no DatabaseTx is associated with it nil is returned.
-func (kv *SingleFileKV) getCreateDatabaseTxn(db any, tx *core.Transaction) *DatabaseTx {
+func (kv *SingleFileKV) getCreateDatabaseTxn(db any, tx *core.Transaction) *KVTx {
 	if tx == nil {
 		return nil
 	}
@@ -418,7 +462,7 @@ func (kv *SingleFileKV) getCreateDatabaseTxn(db any, tx *core.Transaction) *Data
 	return NewDatabaseTxIL(dbTx)
 }
 
-func makeTxEndcallbackFn(dbtx *Tx, tx *core.Transaction, kv *SingleFileKV) func(t *core.Transaction, success bool) {
+func makeTxEndcallbackFn(dbtx *bbolt.Tx, tx *core.Transaction, kv *SingleFileKV) func(t *core.Transaction, success bool) {
 	return func(t *core.Transaction, success bool) {
 		kv.transactionMapLock.Lock()
 		if _, ok := kv.transactions[tx]; !ok {
@@ -435,109 +479,4 @@ func makeTxEndcallbackFn(dbtx *Tx, tx *core.Transaction, kv *SingleFileKV) func(
 			panic(err)
 		}
 	}
-}
-
-type DatabaseTx struct {
-	tx *Tx
-}
-
-func NewDatabaseTxIL(tx *Tx) *DatabaseTx {
-	return &DatabaseTx{
-		tx: tx,
-	}
-}
-
-func (tx *DatabaseTx) Get(ctx *core.Context, key core.Path) (result core.Value, valueFound core.Bool, finalErr error) {
-	serialized, found, err := tx.GetSerialized(ctx, key)
-	if err != nil {
-		return nil, false, err
-	}
-
-	if !found {
-		return nil, found, nil
-	}
-
-	result, err = core.ParseRepr(ctx, utils.StringAsBytes(serialized))
-
-	if err != nil {
-		return nil, true, err
-	}
-
-	return result, true, nil
-}
-
-func (tx *DatabaseTx) GetSerialized(ctx *core.Context, key core.Path) (result string, valueFound core.Bool, finalErr error) {
-	item, err := tx.tx.Get(string(key))
-	if err == errNotFound {
-		valueFound = false
-	} else if err != nil {
-		panic(err)
-	} else {
-		valueFound = true
-		result = item
-		return
-	}
-	return
-}
-
-func (tx *DatabaseTx) Set(ctx *core.Context, key core.Path, value core.Serializable) error {
-	repr := core.GetRepresentation(value, ctx)
-	return tx.SetSerialized(ctx, key, string(repr))
-}
-
-func (tx *DatabaseTx) SetSerialized(ctx *core.Context, key core.Path, serialized string) error {
-	_, _, err := tx.tx.Set(string(key), serialized, nil)
-
-	return err
-}
-
-func (tx *DatabaseTx) Insert(ctx *core.Context, key core.Path, value core.Serializable) error {
-	repr := core.GetRepresentation(value, ctx)
-	return tx.InsertSerialized(ctx, key, string(repr))
-}
-
-func (tx *DatabaseTx) InsertSerialized(ctx *core.Context, key core.Path, serialized string) error {
-	_, replaced, err := tx.tx.Set(string(key), serialized, nil)
-
-	if replaced {
-		return fmt.Errorf("%w: %s", ErrKeyAlreadyPresent, key)
-	}
-
-	return err
-}
-
-func (tx *DatabaseTx) Delete(ctx *core.Context, key core.Path) error {
-	_, err := tx.tx.Delete(string(key))
-	return err
-}
-
-type SerializedValueStorageAdapter struct {
-	kv  *SingleFileKV
-	url core.URL
-}
-
-func NewSerializedValueStorage(kv *SingleFileKV, url core.URL) *SerializedValueStorageAdapter {
-	return &SerializedValueStorageAdapter{kv: kv, url: url}
-}
-
-func (a *SerializedValueStorageAdapter) BaseURL() core.URL {
-	return a.url
-}
-
-func (a *SerializedValueStorageAdapter) GetSerialized(ctx *core.Context, key core.Path) (string, bool) {
-	serialized, ok := utils.Must2(a.kv.GetSerialized(ctx, key, a))
-	return serialized, bool(ok)
-}
-
-func (a SerializedValueStorageAdapter) Has(ctx *core.Context, key core.Path) bool {
-	return bool(a.kv.Has(ctx, key, a))
-}
-
-func (a *SerializedValueStorageAdapter) InsertSerialized(ctx *core.Context, key core.Path, serialized string) {
-	a.kv.InsertSerialized(ctx, key, serialized, a)
-}
-
-// SetSerialized implements core.SerializedValueStorage.
-func (a *SerializedValueStorageAdapter) SetSerialized(ctx *core.Context, key core.Path, serialized string) {
-	a.kv.SetSerialized(ctx, key, serialized, a)
 }

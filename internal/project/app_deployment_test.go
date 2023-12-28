@@ -58,8 +58,7 @@ func TestSameProcessDeployment(t *testing.T) {
 	}, nil)
 	defer ctx.CancelGracefully()
 
-	fls := fs_ns.NewMemFilesystem(1_000)
-	reg := utils.Must(project.OpenRegistry("/projects", fls, ctx))
+	reg := utils.Must(project.OpenRegistry(t.TempDir(), ctx))
 	defer reg.Close(ctx)
 
 	id, err := reg.CreateProject(ctx, project.CreateProjectParams{

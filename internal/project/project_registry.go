@@ -4,13 +4,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"path/filepath"
 	"regexp"
 	"sync"
 
 	"github.com/go-git/go-billy/v5/util"
 	"github.com/inoxlang/inox/internal/afs"
+	"github.com/inoxlang/inox/internal/buntdb"
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/filekv"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/inoxd/node"
 	"github.com/inoxlang/inox/internal/project/cloudflareprovider"
@@ -27,9 +28,9 @@ var (
 )
 
 type Registry struct {
-	projectsDir string
+	projectsDir string //projects directory on the OS filesystem
 	filesystem  afs.Filesystem
-	metadata    *filekv.SingleFileKV
+	metadata    *buntdb.DB
 
 	openProjects        map[core.ProjectID]*Project
 	openProjectsLock    sync.Mutex
@@ -38,13 +39,11 @@ type Registry struct {
 	//TODO: close idle projects (no FS access AND no provider-related accesses AND no production program running)
 }
 
-func OpenRegistry(projectsDir string, fls afs.Filesystem, openProjectsContext *core.Context) (*Registry, error) {
-	kvPath := fls.Join(projectsDir, KV_FILENAME)
+// OpenRegistry opens a project registry located on the OS filesystem.
+func OpenRegistry(projectsDir string, openProjectsContext *core.Context) (*Registry, error) {
+	kvPath := filepath.Join(projectsDir, KV_FILENAME)
 
-	kv, err := filekv.OpenSingleFileKV(filekv.KvStoreConfig{
-		Path:       core.PathFrom(kvPath),
-		Filesystem: fls,
-	})
+	kv, err := buntdb.OpenBuntDBNoPermCheck(kvPath, fs_ns.GetOsFilesystem())
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database of projects: %w", err)
@@ -52,15 +51,15 @@ func OpenRegistry(projectsDir string, fls afs.Filesystem, openProjectsContext *c
 
 	return &Registry{
 		projectsDir:         projectsDir,
-		filesystem:          fls,
 		metadata:            kv,
+		filesystem:          fs_ns.GetOsFilesystem(),
 		openProjects:        map[core.ProjectID]*Project{},
 		openProjectsContext: openProjectsContext,
 	}, nil
 }
 
 func (r *Registry) Close(ctx *core.Context) {
-	r.metadata.Close(ctx)
+	r.metadata.Close()
 }
 
 type CreateProjectParams struct {
@@ -134,7 +133,22 @@ func (r *Registry) OpenProject(ctx *core.Context, params OpenProjectParams) (*Pr
 		return project, nil
 	}
 
-	serializedProjectData, found, err := r.metadata.GetSerialized(ctx, getProjectKvKey(params.Id), r)
+	var serializedProjectData string
+	var found bool
+
+	err := r.metadata.View(func(tx *buntdb.Tx) error {
+		projectKey := getProjectKvKey(params.Id)
+		data, err := tx.Get(string(projectKey))
+		if errors.Is(err, buntdb.ErrNotFound) {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		serializedProjectData = data
+		found = true
+		return nil
+	})
 
 	if err != nil {
 		return nil, fmt.Errorf("error while reading KV: %w", err)
@@ -207,6 +221,9 @@ func (r *Registry) persistProjectData(ctx *core.Context, id core.ProjectID, data
 		return fmt.Errorf("failed to marshal project data: %w", err)
 	}
 
-	r.metadata.SetSerialized(ctx, getProjectKvKey(id), string(serialized), r)
-	return nil
+	return r.metadata.Update(func(tx *buntdb.Tx) error {
+		key := getProjectKvKey(id)
+		_, _, err := tx.Set(string(key), string(serialized), nil)
+		return err
+	})
 }

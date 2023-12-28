@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/inoxd/node"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
@@ -14,12 +13,12 @@ func TestRegisterApplication(t *testing.T) {
 	const APP_NAME = "myapp"
 	const MODULE_PATH = "/main.ix"
 
+	tempDir := t.TempDir()
+
 	ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
-	fls := fs_ns.NewMemFilesystem(1_000)
-
-	reg := utils.Must(OpenRegistry("/projects", fls, ctx))
+	reg := utils.Must(OpenRegistry(tempDir, ctx))
 	defer reg.Close(ctx)
 
 	id, err := reg.CreateProject(ctx, CreateProjectParams{
@@ -52,7 +51,7 @@ func TestRegisterApplication(t *testing.T) {
 	//reopen the projet and check again
 
 	reg.Close(ctx)
-	reg = utils.Must(OpenRegistry("/projects", fls, ctx))
+	reg = utils.Must(OpenRegistry(tempDir, ctx))
 
 	project, err = reg.OpenProject(ctx, OpenProjectParams{
 		Id: id,

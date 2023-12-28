@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -19,7 +18,7 @@ func TestLocalSecretStorage(t *testing.T) {
 		}, nil)
 		defer ctx.CancelGracefully()
 
-		registry, err := OpenRegistry("/", fs_ns.NewMemFilesystem(100_000_000), ctx)
+		registry, err := OpenRegistry(t.TempDir(), ctx)
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -65,7 +64,7 @@ func TestLocalSecretStorage(t *testing.T) {
 
 		defer ctx.CancelGracefully()
 
-		registry, err := OpenRegistry("/", fs_ns.NewMemFilesystem(100_000_000), ctx)
+		registry, err := OpenRegistry(t.TempDir(), ctx)
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -114,7 +113,7 @@ func TestLocalSecretStorage(t *testing.T) {
 		}, nil)
 		defer ctx.CancelGracefully()
 
-		registry, err := OpenRegistry("/", fs_ns.NewMemFilesystem(100_000_000), ctx)
+		registry, err := OpenRegistry(t.TempDir(), ctx)
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -175,7 +174,7 @@ func TestLocalSecretStorage(t *testing.T) {
 		}, nil)
 		defer ctx.CancelGracefully()
 
-		registry, err := OpenRegistry("/", fs_ns.NewMemFilesystem(100_000_000), ctx)
+		registry, err := OpenRegistry(t.TempDir(), ctx)
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -248,9 +247,9 @@ func TestLocalSecretStorage(t *testing.T) {
 		}, nil)
 		defer ctx.CancelGracefully()
 
-		fls := fs_ns.NewMemFilesystem(100_000_000)
+		osTempDir := t.TempDir()
 
-		registry, err := OpenRegistry("/", fls, ctx)
+		registry, err := OpenRegistry(osTempDir, ctx)
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -298,7 +297,7 @@ func TestLocalSecretStorage(t *testing.T) {
 		// reopen project
 		registry.Close(ctx)
 
-		registry, err = OpenRegistry("/", fls, ctx)
+		registry, err = OpenRegistry(osTempDir, ctx)
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -357,7 +356,7 @@ func TestLocalSecretStorage(t *testing.T) {
 		// reopen project
 
 		registry.Close(ctx)
-		registry, err = OpenRegistry("/", fls, ctx)
+		registry, err = OpenRegistry(osTempDir, ctx)
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -396,7 +395,7 @@ func TestLocalSecretStorage(t *testing.T) {
 		}, nil)
 		defer ctx.CancelGracefully()
 
-		registry, err := OpenRegistry("/", fs_ns.NewMemFilesystem(100_000_000), ctx)
+		registry, err := OpenRegistry(t.TempDir(), ctx)
 		if !assert.NoError(t, err) {
 			return
 		}

@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/go-git/go-billy/v5/util"
-	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/mimeconsts"
@@ -110,7 +109,7 @@ func TestHttpServerHandlingDescription(t *testing.T) {
 				input: `return {
 					routing: {dynamic: /routes/}
 				}`,
-				makeFilesystem: func() afs.Filesystem {
+				makeFilesystem: func() core.SnapshotableFilesystem {
 					fls := fs_ns.NewMemFilesystem(10_000)
 					fls.MkdirAll("/routes", fs_ns.DEFAULT_DIR_FMODE)
 					util.WriteFile(fls, "/routes/x.ix", []byte(`

@@ -4271,6 +4271,10 @@ func (*testProject) Configuration() ProjectConfiguration {
 	panic("unimplemented")
 }
 
+func (*testProject) DatabaseDirOnOsFs() string {
+	panic("unimplemented")
+}
+
 func (*testProject) CanProvideS3Credentials(s3Provider string) (bool, error) {
 	panic("unimplemented")
 }

@@ -27,6 +27,9 @@ type Project interface {
 	GetS3CredentialsForBucket(ctx *Context, bucketName string, provider string) (accessKey, secretKey string, s3Endpoint Host, _ error)
 
 	Configuration() ProjectConfiguration
+
+	//DatabaseDirOnOsFs returns the directory where the project's databases are stored.
+	DatabaseDirOnOsFs() string
 }
 
 type ProjectID string

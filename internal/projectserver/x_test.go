@@ -45,7 +45,7 @@ func createTestServerAndClient(t *testing.T) (*core.Context, *testClient, bool) 
 	}
 
 	projectsDirFilesystem := fs_ns.NewMemFilesystem(10_000_000)
-	projectsDir := core.Path("/")
+	projectsOsDir := fs_ns.CreateDirInProcessTempDir(t.Name())
 
 	//create context & state
 	perms := []core.Permission{
@@ -84,7 +84,7 @@ func createTestServerAndClient(t *testing.T) (*core.Context, *testClient, bool) 
 	conf := LSPServerConfiguration{
 		UseContextLogger:      true,
 		ProjectMode:           true,
-		ProjectsDir:           projectsDir,
+		ProjectsDir:           projectsOsDir,
 		ProjectsDirFilesystem: projectsDirFilesystem,
 		MessageReaderWriter:   client.msgReaderWriter,
 		OnSession: func(rpcCtx *core.Context, session *jsonrpc.Session) error {

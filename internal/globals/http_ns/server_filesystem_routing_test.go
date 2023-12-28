@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/go-git/go-billy/v5/util"
-	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/containers"
 	containers_common "github.com/inoxlang/inox/internal/globals/containers/common"
@@ -96,7 +95,7 @@ func TestFilesystemRouting(t *testing.T) {
 				input: `return {
 						routing: {static: /static/}
 					}`,
-				makeFilesystem: func() afs.Filesystem {
+				makeFilesystem: func() core.SnapshotableFilesystem {
 					fls := fs_ns.NewMemFilesystem(10_000)
 					fls.MkdirAll("/static", fs_ns.DEFAULT_DIR_FMODE)
 					util.WriteFile(fls, "/static/x.html", []byte(`x`), fs_ns.DEFAULT_FILE_FMODE)
@@ -124,7 +123,7 @@ func TestFilesystemRouting(t *testing.T) {
 				input: `return {
 						routing: {dynamic: /routes/}
 					}`,
-				makeFilesystem: func() afs.Filesystem {
+				makeFilesystem: func() core.SnapshotableFilesystem {
 					fls := fs_ns.NewMemFilesystem(10_000)
 					fls.MkdirAll("/routes", fs_ns.DEFAULT_DIR_FMODE)
 					util.WriteFile(fls, "/routes/x.ix", []byte(`
@@ -153,7 +152,7 @@ func TestFilesystemRouting(t *testing.T) {
 				input: `return {
 						routing: {dynamic: /routes/}
 					}`,
-				makeFilesystem: func() afs.Filesystem {
+				makeFilesystem: func() core.SnapshotableFilesystem {
 					fls := fs_ns.NewMemFilesystem(10_000)
 					fls.MkdirAll("/routes/x", fs_ns.DEFAULT_DIR_FMODE)
 					util.WriteFile(fls, "/routes/x/index.ix", []byte(`
@@ -182,7 +181,7 @@ func TestFilesystemRouting(t *testing.T) {
 				input: `return {
 						routing: {dynamic: /routes/}
 					}`,
-				makeFilesystem: func() afs.Filesystem {
+				makeFilesystem: func() core.SnapshotableFilesystem {
 					fls := fs_ns.NewMemFilesystem(10_000)
 					fls.MkdirAll("/routes", fs_ns.DEFAULT_DIR_FMODE)
 					util.WriteFile(fls, "/routes/x.ix", []byte(`
@@ -229,7 +228,7 @@ func TestFilesystemRouting(t *testing.T) {
 				input: `return {
 						routing: {dynamic: /routes/}
 					}`,
-				makeFilesystem: func() afs.Filesystem {
+				makeFilesystem: func() core.SnapshotableFilesystem {
 					fls := fs_ns.NewMemFilesystem(10_000)
 					fls.MkdirAll("/routes", fs_ns.DEFAULT_DIR_FMODE)
 					util.WriteFile(fls, "/routes/x.ix", []byte(`
@@ -277,7 +276,7 @@ func TestFilesystemRouting(t *testing.T) {
 				input: `return {
 						routing: {dynamic: /routes/}
 					}`,
-				makeFilesystem: func() afs.Filesystem {
+				makeFilesystem: func() core.SnapshotableFilesystem {
 					fls := fs_ns.NewMemFilesystem(10_000)
 					fls.MkdirAll("/routes", fs_ns.DEFAULT_DIR_FMODE)
 					util.WriteFile(fls, "/routes/x.ix", []byte(`
@@ -312,7 +311,7 @@ func TestFilesystemRouting(t *testing.T) {
 				input: `return {
 						routing: {dynamic: /routes/}
 					}`,
-				makeFilesystem: func() afs.Filesystem {
+				makeFilesystem: func() core.SnapshotableFilesystem {
 					fls := fs_ns.NewMemFilesystem(10_000)
 					fls.MkdirAll("/routes", fs_ns.DEFAULT_DIR_FMODE)
 					util.WriteFile(fls, "/routes/POST-x.ix", []byte(`
@@ -347,7 +346,7 @@ func TestFilesystemRouting(t *testing.T) {
 				input: `return {
 						routing: {dynamic: /routes/}
 					}`,
-				makeFilesystem: func() afs.Filesystem {
+				makeFilesystem: func() core.SnapshotableFilesystem {
 					fls := fs_ns.NewMemFilesystem(10_000)
 					fls.MkdirAll("/routes", fs_ns.DEFAULT_DIR_FMODE)
 					util.WriteFile(fls, "/routes/x.ix", []byte(`
@@ -389,7 +388,7 @@ func TestFilesystemRouting(t *testing.T) {
 			input: `return {
 					routing: {dynamic: /routes/}
 				}`,
-			makeFilesystem: func() afs.Filesystem {
+			makeFilesystem: func() core.SnapshotableFilesystem {
 				fls := fs_ns.NewMemFilesystem(10_000)
 				fls.MkdirAll("/routes", fs_ns.DEFAULT_DIR_FMODE)
 				util.WriteFile(fls, "/routes/x.ix", []byte(`
@@ -425,7 +424,7 @@ func TestFilesystemRouting(t *testing.T) {
 				input: `return {
 						routing: {dynamic: /routes/}
 					}`,
-				makeFilesystem: func() afs.Filesystem {
+				makeFilesystem: func() core.SnapshotableFilesystem {
 					fls := fs_ns.NewMemFilesystem(10_000)
 					fls.MkdirAll("/routes", fs_ns.DEFAULT_DIR_FMODE)
 					util.WriteFile(fls, "/routes/x.ix", []byte(`
@@ -462,7 +461,7 @@ func TestFilesystemRouting(t *testing.T) {
 						routing: {dynamic: /routes/}
 					}`,
 				avoidTestParallelization: true,
-				makeFilesystem: func() afs.Filesystem {
+				makeFilesystem: func() core.SnapshotableFilesystem {
 					fls := fs_ns.NewMemFilesystem(10_000)
 					fls.MkdirAll("/routes", fs_ns.DEFAULT_DIR_FMODE)
 					util.WriteFile(fls, "/routes/compute.ix", []byte(`
@@ -529,7 +528,7 @@ func TestFilesystemRouting(t *testing.T) {
 				input: `return {
 						routing: {dynamic: /routes/}
 					}`,
-				makeFilesystem: func() afs.Filesystem {
+				makeFilesystem: func() core.SnapshotableFilesystem {
 					fls := fs_ns.NewMemFilesystem(10_000)
 					fls.MkdirAll("/routes", fs_ns.DEFAULT_DIR_FMODE)
 					util.WriteFile(fls, "/routes/x.ix", []byte(`
@@ -565,7 +564,7 @@ func TestFilesystemRouting(t *testing.T) {
 						routing: {dynamic: /routes/}
 					}`,
 				avoidTestParallelization: true,
-				makeFilesystem: func() afs.Filesystem {
+				makeFilesystem: func() core.SnapshotableFilesystem {
 					fls := fs_ns.NewMemFilesystem(10_000)
 					fls.MkdirAll("/routes", fs_ns.DEFAULT_DIR_FMODE)
 					util.WriteFile(fls, "/routes/x.ix", []byte(`
@@ -609,7 +608,7 @@ func TestFilesystemRouting(t *testing.T) {
 						routing: {dynamic: /routes/}
 					}`,
 				avoidTestParallelization: true,
-				makeFilesystem: func() afs.Filesystem {
+				makeFilesystem: func() core.SnapshotableFilesystem {
 					fls := fs_ns.NewMemFilesystem(10_000)
 					fls.MkdirAll("/routes", fs_ns.DEFAULT_DIR_FMODE)
 					util.WriteFile(fls, "/routes/x.ix", []byte(`
@@ -669,7 +668,7 @@ func TestFilesystemRouting(t *testing.T) {
 				input: `return {
 						routing: {dynamic: /routes/}
 					}`,
-				makeFilesystem: func() afs.Filesystem {
+				makeFilesystem: func() core.SnapshotableFilesystem {
 					fls := fs_ns.NewMemFilesystem(10_000)
 					fls.MkdirAll("/routes", fs_ns.DEFAULT_DIR_FMODE)
 					util.WriteFile(fls, "/routes/x.ix", []byte(`
@@ -707,7 +706,7 @@ func TestFilesystemRouting(t *testing.T) {
 						routing: {dynamic: /routes/}
 					}`,
 				avoidTestParallelization: true,
-				makeFilesystem: func() afs.Filesystem {
+				makeFilesystem: func() core.SnapshotableFilesystem {
 					fls := fs_ns.NewMemFilesystem(10_000)
 					fls.MkdirAll("/routes", fs_ns.DEFAULT_DIR_FMODE)
 					util.WriteFile(fls, "/routes/x.ix", []byte(`
@@ -752,7 +751,7 @@ func TestFilesystemRouting(t *testing.T) {
 						routing: {dynamic: /routes/}
 					}`,
 				avoidTestParallelization: true,
-				makeFilesystem: func() afs.Filesystem {
+				makeFilesystem: func() core.SnapshotableFilesystem {
 					fls := fs_ns.NewMemFilesystem(10_000)
 					fls.MkdirAll("/routes", fs_ns.DEFAULT_DIR_FMODE)
 					util.WriteFile(fls, "/routes/x.ix", []byte(`
@@ -792,7 +791,7 @@ func TestFilesystemRouting(t *testing.T) {
 						routing: {dynamic: /routes/}
 					}`,
 				avoidTestParallelization: true,
-				makeFilesystem: func() afs.Filesystem {
+				makeFilesystem: func() core.SnapshotableFilesystem {
 					fls := fs_ns.NewMemFilesystem(10_000)
 					fls.MkdirAll("/routes", fs_ns.DEFAULT_DIR_FMODE)
 					util.WriteFile(fls, "/routes/x.ix", []byte(`
@@ -840,7 +839,7 @@ func TestFilesystemRouting(t *testing.T) {
 				input: `return {
 						routing: {dynamic: /routes/}
 					}`,
-				makeFilesystem: func() afs.Filesystem {
+				makeFilesystem: func() core.SnapshotableFilesystem {
 					fls := fs_ns.NewMemFilesystem(10_000)
 					fls.MkdirAll("/routes", fs_ns.DEFAULT_DIR_FMODE)
 					util.WriteFile(fls, "/routes/x.ix", []byte(`
@@ -967,7 +966,7 @@ func TestFilesystemRouting(t *testing.T) {
 
 		t.Run("GET /x text/plain", func(t *testing.T) {
 			test := baseTest
-			test.makeFilesystem = func() afs.Filesystem {
+			test.makeFilesystem = func() core.SnapshotableFilesystem {
 				fls := fs_ns.NewMemFilesystem(10_000)
 				fls.MkdirAll("/routes", fs_ns.DEFAULT_DIR_FMODE)
 				fls.MkdirAll("/db", fs_ns.DEFAULT_DIR_FMODE)
@@ -1009,7 +1008,7 @@ func TestFilesystemRouting(t *testing.T) {
 
 		t.Run("GET /x */*", func(t *testing.T) {
 			test := baseTest
-			test.makeFilesystem = func() afs.Filesystem {
+			test.makeFilesystem = func() core.SnapshotableFilesystem {
 				fls := fs_ns.NewMemFilesystem(10_000)
 				fls.MkdirAll("/routes", fs_ns.DEFAULT_DIR_FMODE)
 				fls.MkdirAll("/db", fs_ns.DEFAULT_DIR_FMODE)
@@ -1053,7 +1052,7 @@ func TestFilesystemRouting(t *testing.T) {
 			//TODO: make the test work with shorter pauses between requests
 
 			test := baseTest
-			test.makeFilesystem = func() afs.Filesystem {
+			test.makeFilesystem = func() core.SnapshotableFilesystem {
 				fls := fs_ns.NewMemFilesystem(10_000)
 				fls.MkdirAll("/routes", fs_ns.DEFAULT_DIR_FMODE)
 				fls.MkdirAll("/db", fs_ns.DEFAULT_DIR_FMODE)

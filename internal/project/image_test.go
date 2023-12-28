@@ -13,9 +13,8 @@ import (
 func TestBaseImage(t *testing.T) {
 	ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
-	fls := fs_ns.NewMemFilesystem(1_000_000)
 
-	reg := utils.Must(OpenRegistry("/projects", fls, ctx))
+	reg := utils.Must(OpenRegistry(t.TempDir(), ctx))
 	defer reg.Close(ctx)
 
 	createProject := func() *Project {

@@ -20,7 +20,6 @@ import (
 	"slices"
 
 	"github.com/go-git/go-billy/v5/util"
-	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/permkind"
 	"github.com/inoxlang/inox/internal/core/symbolic"
@@ -874,7 +873,7 @@ func TestHttpServerMapping(t *testing.T) {
 func setupTestCase(t *testing.T, testCase serverTestCase) (*core.GlobalState, *core.Context, *parse.Chunk, core.Host, error) {
 	host := core.Host("https://localhost:" + strconv.Itoa(int(port.Add(1))))
 
-	var fls afs.Filesystem = fs_ns.NewMemFilesystem(1_000_000)
+	var fls core.SnapshotableFilesystem = fs_ns.NewMemFilesystem(1_000_000)
 
 	if testCase.makeFilesystem != nil {
 		fls = testCase.makeFilesystem()
@@ -938,6 +937,7 @@ func setupTestCase(t *testing.T, testCase serverTestCase) (*core.GlobalState, *c
 	})
 
 	state.Module = module
+	state.Project = project.NewDummyProject("proj", fls)
 
 	// create logger
 	out := testCase.outWriter
@@ -1244,7 +1244,7 @@ type serverTestCase struct {
 	input                    string
 	requests                 []requestTestInfo
 	outWriter                io.Writer
-	makeFilesystem           func() afs.Filesystem
+	makeFilesystem           func() core.SnapshotableFilesystem
 	finalizeState            func(*core.GlobalState) error
 	createClientFn           func() func() *http.Client
 	avoidTestParallelization bool

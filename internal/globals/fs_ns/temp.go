@@ -29,6 +29,7 @@ var (
 func CreateDirInProcessTempDir(namePrefix string) core.Path {
 	fls := GetOsFilesystem()
 
+	namePrefix = strings.ReplaceAll(namePrefix, "/", "-")
 	tempDir := GetCreateProcessTempDir()
 	path := core.Path(fmt.Sprintf("%s/%s-%d-%s", tempDir, namePrefix, rand.Int(), time.Now().Format(time.RFC3339Nano)))
 
