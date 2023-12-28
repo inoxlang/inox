@@ -53,7 +53,11 @@ _From more relevant to less relevant._
 - Database based on object storage with on-disk cache.
 
 [filekv](./filekv/kv.go)
-- Single file Key-Value store (BuntDB fork).
+- Single file Key-Value store, it's a thin wrapper around https://github.com/etcd-io/bbolt
+
+[buntdb](./buntdb/buntdb.go)
+- BuntDB fork (https://github.com/tidwall/buntdb)
+
 
 [mod](./mod/execution.go)
 - Module execution

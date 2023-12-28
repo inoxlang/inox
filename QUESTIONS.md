@@ -31,7 +31,7 @@ SQLite is a fast embedded database engine with JSON support and virtually no con
 However, implementing a custom database engine gives more control over caching, memory allocation and transactions.
 My goal is to have a DB engine that is aware of the code accessing it (HTTP request handlers) in order to smartly pre-fetch and cache data. It could even support **partial deserialization**: for example if an object is stored as `{"name":"foo","value":1,"other-data":{...}}` in the database and a piece of code only requires the `name` property, only this property could be retrieved by iterating over the marshalled JSON.
 
-The database currently uses a single-file key-value store ([a BuntDB fork](https://github.com/tidwall/buntdb)) and the serialization of most container types is not yet implemented. All data is loaded in memory but I will change that. BuntDB appends changes to the database file when they are commited. I plan to implement a simple continuous backup system on S3 by writing small files containing the changes and periodically concatenate them without any download.
+The database currently uses the [Bbolt](https://github.com/etcd-io/bbolt) key-value store under the hood.
 
 **Related**:
 - https://github.com/whitfin/s3-concat

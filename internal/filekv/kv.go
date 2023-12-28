@@ -37,7 +37,7 @@ var (
 	}
 )
 
-// thin wrapper around a buntdb database.
+// thin wrapper around a Bbolt database.
 type SingleFileKV struct {
 	db *bbolt.DB
 
@@ -88,14 +88,14 @@ func OpenSingleFileKV(config KvStoreConfig) (_ *SingleFileKV, finalErr error) {
 	return kv, nil
 }
 
-func (kv *SingleFileKV) Close(ctx *core.Context) (buntDBError error) {
+func (kv *SingleFileKV) Close(ctx *core.Context) (bboltError error) {
 	defer func() {
-		buntDBError = kv.db.Close()
+		bboltError = kv.db.Close()
 	}()
 
 	logger := ctx.NewChildLoggerForInternalSource(KV_STORE_LOG_SRC)
 
-	//before closing the buntdb database all the transactions must be closed or a deadlock will occur.
+	//before closing the BBolt database all the transactions are closed
 
 	logger.Print("close KV store")
 
