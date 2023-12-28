@@ -12082,7 +12082,7 @@ func (p *TestProject) Configuration() ProjectConfiguration {
 	return p.Config
 }
 
-func (p *TestProject) DatabaseDirOnOsFs() string {
+func (p *TestProject) DevDatabasesDirOnOsFs() string {
 	panic("unimplemented")
 }
 

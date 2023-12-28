@@ -16,8 +16,8 @@ import (
 )
 
 const (
-	PROJECTS_KV_PREFIX                       = "/projects"
-	DATABASES_FOLDER_NAME_IN_PROCESS_TEMPDIR = "databases"
+	PROJECTS_KV_PREFIX                           = "/projects"
+	DEV_DATABASES_FOLDER_NAME_IN_PROCESS_TEMPDIR = "dev-databases"
 
 	DEFAULT_MAIN_FILENAME = "main" + inoxconsts.INOXLANG_FILE_EXTENSION
 	DEFAULT_TUT_FILENAME  = "learn.tut" + inoxconsts.INOXLANG_FILE_EXTENSION
@@ -51,7 +51,7 @@ type Project struct {
 	//TODO: add base filesystem (VCS ?)
 	liveFilesystem core.SnapshotableFilesystem
 
-	databaseDirOnOsFs atomic.Value //string
+	devDatabasesDirOnOsFs atomic.Value //string
 
 	//tokens and secrets
 
@@ -182,16 +182,22 @@ func (p *Project) Configuration() core.ProjectConfiguration {
 	return p.config
 }
 
-func (p *Project) DatabaseDirOnOsFs() string {
-	//temporary solution: create a dir in the OsFs's /tmp/ dir
-
-	path := "/tmp/" + string(p.Id()) + "--" + DATABASES_FOLDER_NAME_IN_PROCESS_TEMPDIR
-	_, err := os.Stat(path)
-	if err != nil {
-		os.Mkdir(path, 0700)
+func (p *Project) DevDatabasesDirOnOsFs() string {
+	val := p.devDatabasesDirOnOsFs.Load()
+	var dir string
+	if val == nil {
+		//fallback: create a temporary dir in the OsFs's /tmp/ dir
+		dir = "/tmp/" + string(p.Id()) + "--" + DEV_DATABASES_FOLDER_NAME_IN_PROCESS_TEMPDIR
+		_, err := os.Stat(dir)
+		if err != nil {
+			os.Mkdir(dir, 0700)
+		}
+		p.devDatabasesDirOnOsFs.Store(dir)
+	} else {
+		dir = val.(string)
 	}
 
-	return path
+	return dir
 }
 
 func (p *Project) IsMutable() bool {

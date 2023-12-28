@@ -9,7 +9,6 @@ import (
 	"sync"
 
 	"github.com/go-git/go-billy/v5/util"
-	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/buntdb"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
@@ -20,6 +19,9 @@ import (
 
 const (
 	KV_FILENAME = "projects.kv"
+
+	DEV_DIR           = "dev"
+	DEV_DATABASES_DIR = "databases"
 )
 
 var (
@@ -29,7 +31,7 @@ var (
 
 type Registry struct {
 	projectsDir string //projects directory on the OS filesystem
-	filesystem  afs.Filesystem
+	filesystem  *fs_ns.OsFilesystem
 	metadata    *buntdb.DB
 
 	openProjects        map[core.ProjectID]*Project
@@ -113,7 +115,34 @@ func (r *Registry) CreateProject(ctx *core.Context, params CreateProjectParams) 
 		util.WriteFile(projectFS, DEFAULT_TUT_FILENAME, []byte(nil), fs_ns.DEFAULT_DIR_FMODE)
 	}
 
+	//create a directory for storing the project's dev databases
+
+	_, err = r.getCreateDevDatabasesDir(id)
+	if err != nil {
+		return "", err
+	}
+
 	return id, nil
+}
+
+func (r *Registry) getCreateDevDatabasesDir(id core.ProjectID) (projectDevDatabasesDir string, err error) {
+	//create the dev dir that will store the dev databases
+
+	devDir := filepath.Join(r.projectsDir, DEV_DIR)
+	err = r.filesystem.MkdirAll(devDir, fs_ns.DEFAULT_DIR_FMODE)
+	if err != nil {
+		return
+	}
+
+	//create the <dev dir>/<project id>/databases dir
+	projectDevDatabasesDir = filepath.Join(devDir, string(id), DEV_DATABASES_DIR)
+	err = r.filesystem.MkdirAll(projectDevDatabasesDir, fs_ns.DEFAULT_DIR_FMODE)
+	if err != nil {
+		projectDevDatabasesDir = ""
+		return
+	}
+
+	return projectDevDatabasesDir, nil
 }
 
 type OpenProjectParams struct {
@@ -211,6 +240,13 @@ func (r *Registry) OpenProject(ctx *core.Context, params OpenProjectParams) (*Pr
 
 	project.Share(nil)
 	r.openProjects[project.id] = project
+
+	projectDevDatabasesDir, err := r.getCreateDevDatabasesDir(project.id)
+	if err != nil {
+		return nil, err
+	}
+
+	project.devDatabasesDirOnOsFs.Store(projectDevDatabasesDir)
 
 	return project, nil
 }

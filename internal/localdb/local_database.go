@@ -127,7 +127,7 @@ func OpenDatabase(ctx *core.Context, r core.ResourceName, restrictedAccess bool)
 	if project == nil || reflect.ValueOf(project).IsZero() {
 		return nil, errors.New("local databases are only supported in project mode")
 	}
-	dbsDir := project.DatabaseDirOnOsFs()
+	dbsDir := project.DevDatabasesDirOnOsFs()
 
 	db, err := openLocalDatabaseWithConfig(ctx, LocalDatabaseConfig{
 		OsFsDir:    core.DirPathFrom(filepath.Join(dbsDir, host.Name())),

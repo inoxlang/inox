@@ -133,6 +133,7 @@ func TestOpenProject(t *testing.T) {
 		assert.NotNil(t, project)
 		assert.Equal(t, id, project.id)
 		assert.Equal(t, params, project.data.CreationParams)
+		assert.NotContains(t, project.DevDatabasesDirOnOsFs(), DEV_DATABASES_FOLDER_NAME_IN_PROCESS_TEMPDIR)
 	})
 
 	t.Run("with ExposeWebServers: true", func(t *testing.T) {

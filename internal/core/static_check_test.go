@@ -4271,7 +4271,7 @@ func (*testProject) Configuration() ProjectConfiguration {
 	panic("unimplemented")
 }
 
-func (*testProject) DatabaseDirOnOsFs() string {
+func (*testProject) DevDatabasesDirOnOsFs() string {
 	panic("unimplemented")
 }
 

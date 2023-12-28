@@ -28,8 +28,8 @@ type Project interface {
 
 	Configuration() ProjectConfiguration
 
-	//DatabaseDirOnOsFs returns the directory where the project's databases are stored.
-	DatabaseDirOnOsFs() string
+	//DevDatabasesDirOnOsFs returns the directory where the project's databases are stored.
+	DevDatabasesDirOnOsFs() string
 }
 
 type ProjectID string
