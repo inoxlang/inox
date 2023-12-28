@@ -272,15 +272,12 @@ Inox includes an embedded database engine. Databases are described in the manife
 
 ```
 manifest {
-    permissions: {
-        read: %/...
-        write: %/databases/...
-    }
+    permissions: {}
     databases: {
         main: {
             # ldb stands for Local Database
             resource: ldb://main  
-            resolution-data: /databases/main/
+            resolution-data: nil
             expected-schema-update: true
         }
     }

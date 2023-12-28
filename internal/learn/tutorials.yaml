@@ -963,16 +963,13 @@
         # Databases are defined in the manifest:
 
         manifest {
-            permissions: {
-                read: %/.tutorial-files/databases/main0/...
-                write: %/.tutorial-files/databases/main0/...
-            }
+            permissions: {}
 
             databases: {
-                # define a local database named 'main0' that persists data in /.tutorial-files/databases/main0/.
+                # define a local database named 'main0'
                 main0: {
                     resource: ldb://main0
-                    resolution-data: /.tutorial-files/databases/main0/
+                    resolution-data: nil
                 }
             }
         }
@@ -987,16 +984,13 @@
         # Databases are defined in the manifest:
 
         manifest {
-            permissions: {
-                read: %/.tutorial-files/databases/main1/...
-                write: %/.tutorial-files/databases/main1/...
-            }
+            permissions: {}
 
             databases: {
-                # define a local database named 'main1' that persists data in /.tutorial-files/databases/main1/.
+                # define a local database named 'main1'
                 main1: {
                     resource: ldb://main1
-                    resolution-data: /.tutorial-files/databases/main1/
+                    resolution-data: nil
 
                     expected-schema-update: true
                 }

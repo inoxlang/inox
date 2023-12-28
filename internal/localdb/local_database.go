@@ -9,7 +9,6 @@ import (
 	"sync"
 
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/core/permkind"
 	"github.com/inoxlang/inox/internal/filekv"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/parse"
@@ -41,12 +40,10 @@ func init() {
 	})
 
 	checkResolutionData := func(node parse.Node, _ core.Project) (errMsg string) {
-		//ignore for now
-
-		// pathLit, ok := node.(*parse.AbsolutePathLiteral)
-		// if !ok || !strings.HasSuffix(pathLit.Value, "/") {
-		// 	return "the resolution data of a local database should be an absolute directory path (it should end with '/')"
-		// }
+		_, ok := node.(*parse.NilLiteral)
+		if !ok {
+			return "the resolution data of a local database should be nil"
+		}
 
 		return ""
 	}
@@ -79,44 +76,25 @@ type LocalDatabaseConfig struct {
 // OpenDatabase opens a local database, read, create & write permissions are required.
 func OpenDatabase(ctx *core.Context, r core.ResourceName, restrictedAccess bool) (*LocalDatabase, error) {
 
-	var pth core.Path
-
+	var host core.Host
 	switch resource := r.(type) {
 	case core.Host:
 		if resource.Scheme() != LDB_SCHEME {
 			return nil, core.ErrCannotResolveDatabase
 		}
-		data, ok := ctx.GetHostResolutionData(resource).(core.Path)
-		if !ok {
+		switch data := ctx.GetHostResolutionData(resource).(type) {
+		case core.Host:
+			//no data
+
+			host = data
+		case nil, core.NilT:
+			host = resource
+		default:
+			//local databases do not require resolution data
 			return nil, core.ErrCannotResolveDatabase
-		}
-		pth = data
-	case core.Path:
-		var err error
-		pth, err = resource.ToAbs(ctx.GetFileSystem())
-		if err != nil {
-			return nil, err
 		}
 	default:
 		return nil, core.ErrCannotResolveDatabase
-	}
-
-	if !pth.IsDirPath() {
-		return nil, core.ErrInvalidDatabaseDirpath
-	}
-
-	patt := core.PathPattern(pth + "...")
-
-	for _, kind := range []core.PermissionKind{permkind.Read, permkind.Create, permkind.WriteStream} {
-		perm := core.FilesystemPermission{Kind_: kind, Entity: patt}
-		if err := ctx.CheckHasPermission(perm); err != nil {
-			return nil, err
-		}
-	}
-
-	host, ok := ctx.GetHostFromResolutionData(pth)
-	if !ok {
-		return nil, core.ErrCannotFindDatabaseHost
 	}
 
 	if host.Scheme() != LDB_SCHEME || host.ExplicitPort() >= 0 {

@@ -898,9 +898,6 @@ func TestFilesystemRouting(t *testing.T) {
 						read: ldb://main
 						write: ldb://main
 					}
-					host-resolution: :{
-						ldb://main : /db/
-					}
 				}
 				return {
 					routing: {dynamic: /routes/}
@@ -908,7 +905,6 @@ func TestFilesystemRouting(t *testing.T) {
 			`,
 			finalizeState: func(gs *core.GlobalState) error {
 				host := core.Host("ldb://main")
-				dbDir := core.Path("/db/")
 
 				localDb, err := localdb.OpenDatabase(gs.Ctx, host, false)
 				if err != nil {
@@ -948,7 +944,7 @@ func TestFilesystemRouting(t *testing.T) {
 						{
 							Name:                 "main",
 							Resource:             host,
-							ResolutionData:       dbDir,
+							ResolutionData:       core.Nil,
 							ExpectedSchemaUpdate: false,
 							Owned:                true,
 							Provided:             db,

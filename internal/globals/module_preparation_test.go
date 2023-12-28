@@ -649,7 +649,7 @@ func TestPrepareLocalModule(t *testing.T) {
 				databases: {
 					local: {
 						resource: ldb://main
-						resolution-data: /
+						resolution-data: nil
 					}
 				}
 			}
@@ -732,7 +732,7 @@ func TestPrepareLocalModule(t *testing.T) {
 				databases: {
 					local: {
 						resource: ldb://main
-						resolution-data: /
+						resolution-data: nil
 						assert-schema: %expected-schema
 					}
 				}
@@ -800,7 +800,7 @@ func TestPrepareLocalModule(t *testing.T) {
 				databases: {
 					local: {
 						resource: ldb://main
-						resolution-data: /
+						resolution-data: nil
 						assert-schema: %expected-schema
 					}
 				}
@@ -832,7 +832,7 @@ func TestPrepareLocalModule(t *testing.T) {
 			FullAccessToDatabases:   true,
 
 			DataExtractionMode: true,
-			Project:               project.NewDummyProject("proj", fs),
+			Project:            project.NewDummyProject("proj", fs),
 		})
 
 		if !assert.NoError(t, err) {
@@ -889,7 +889,7 @@ func TestPrepareLocalModule(t *testing.T) {
 				databases: {
 					local: {
 						resource: ldb://main
-						resolution-data: /
+						resolution-data: nil
 						assert-schema: %expected-schema
 					}
 				}
@@ -968,7 +968,7 @@ func TestPrepareLocalModule(t *testing.T) {
 				databases: {
 					local: {
 						resource: ldb://main
-						resolution-data: /
+						resolution-data: nil
 						expected-schema-update: true
 					}
 				}
@@ -1048,7 +1048,7 @@ func TestPrepareLocalModule(t *testing.T) {
 				databases: {
 					local: {
 						resource: ldb://main
-						resolution-data: /
+						resolution-data: nil
 					}
 				}
 			}

@@ -2273,16 +2273,12 @@ manifest:
 
 ```
 manifest {
-    # permissions required by the database
-    permissions: {
-        read: %/databases/...
-        write: %/databases/...
-    }
+    permissions: {}
     databases: {
         main: {
             #ldb stands for Local Database
             resource: ldb://main 
-            resolution-data: /databases/main/
+            resolution-data: nil
         }
     }
 }
@@ -2324,14 +2320,11 @@ preinit {
 }
 
 manifest {
-    permissions: {
-        read: %/databases/...
-        write: %/databases/...
-    }
+    permissions: {}
     databases: {
         main: {
             resource: ldb://main 
-            resolution-data: /databases/main/
+            resolution-data: nil
             assert-schema: %schema
         }
     }

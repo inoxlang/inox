@@ -2658,7 +2658,8 @@ func checkDatabasesObject(
 				resolutionDataFound = true
 
 				switch prop.Value.(type) {
-				case *parse.HostLiteral, *parse.RelativePathLiteral, *parse.AbsolutePathLiteral, *parse.AbsolutePathExpression, *parse.RelativePathExpression:
+				case *parse.NilLiteral, *parse.HostLiteral, *parse.RelativePathLiteral, *parse.AbsolutePathLiteral,
+					*parse.AbsolutePathExpression, *parse.RelativePathExpression:
 					if scheme == "" {
 						break
 					}
@@ -2672,7 +2673,7 @@ func checkDatabasesObject(
 					}
 				default:
 					isValidDescription = false
-					onError(p, DATABASES__DB_RESOLUTION_DATA_ONLY_PATHS_SUPPORTED)
+					onError(p, DATABASES__DB_RESOLUTION_DATA_ONLY_NIL_AND_PATHS_SUPPORTED)
 				}
 			case MANIFEST_DATABASE__EXPECTED_SCHEMA_UPDATE_PROP_NAME:
 				switch prop.Value.(type) {

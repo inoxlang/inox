@@ -769,7 +769,7 @@ func TestPreInit(t *testing.T) {
 					databases: {
 						main: {
 							resource: ldb://main
-							resolution-data: /tmp/mydb/
+							resolution-data: nil
 						}
 					}
 				}`,
@@ -789,7 +789,7 @@ func TestPreInit(t *testing.T) {
 					Name:           "main",
 					Owned:          true,
 					Resource:       Host("ldb://main"),
-					ResolutionData: Path("/tmp/mydb/"),
+					ResolutionData: Nil,
 				},
 			},
 			expectedResolutions: nil,
@@ -801,7 +801,7 @@ func TestPreInit(t *testing.T) {
 					databases: {
 						main: {
 							resource: ldb://main
-							resolution-data: /tmp/mydb/
+							resolution-data: nil
 							expected-schema-update: true
 						}
 					}
@@ -822,7 +822,7 @@ func TestPreInit(t *testing.T) {
 					Name:                 "main",
 					Owned:                true,
 					Resource:             Host("ldb://main"),
-					ResolutionData:       Path("/tmp/mydb/"),
+					ResolutionData:       Nil,
 					ExpectedSchemaUpdate: true,
 				},
 			},
@@ -840,7 +840,7 @@ func TestPreInit(t *testing.T) {
 					databases: {
 						main: {
 							resource: ldb://main
-							resolution-data: /tmp/mydb/
+							resolution-data: nil
 							assert-schema: %expected-schema
 						}
 					}
@@ -861,7 +861,7 @@ func TestPreInit(t *testing.T) {
 					Name:           "main",
 					Owned:          true,
 					Resource:       Host("ldb://main"),
-					ResolutionData: Path("/tmp/mydb/"),
+					ResolutionData: Nil,
 					ExpectedSchema: NewInexactObjectPattern(map[string]Pattern{
 						"user": NewInexactObjectPattern(map[string]Pattern{
 							"name": NewExactStringPattern("foo"),
@@ -894,7 +894,7 @@ func TestPreInit(t *testing.T) {
 					}
 				}`,
 			error:                     true,
-			expectedStaticCheckErrors: []string{DATABASES__DB_RESOLUTION_DATA_ONLY_PATHS_SUPPORTED},
+			expectedStaticCheckErrors: []string{DATABASES__DB_RESOLUTION_DATA_ONLY_NIL_AND_PATHS_SUPPORTED},
 		},
 		{
 			name: "database_with_invalid_expected_schema_udapte_value",
@@ -902,7 +902,7 @@ func TestPreInit(t *testing.T) {
 					databases: {
 						main: {
 							resource: ldb://main
-							resolution-data: /db/
+							resolution-data: nil
 							expected-schema-update: 1
 						}
 					}
@@ -915,7 +915,7 @@ func TestPreInit(t *testing.T) {
 			module: `manifest {
 					databases: {
 						main: {
-							resolution-data: /db/
+							resolution-data: nil
 						}
 					}
 				}`,
@@ -959,7 +959,7 @@ func TestPreInit(t *testing.T) {
 				databases: {
 					main: {
 						resource: ldb://main
-						resolution-data: /tmp/mydb/
+						resolution-data: nil
 					}
 				}
 			}`,
@@ -973,7 +973,7 @@ func TestPreInit(t *testing.T) {
 				{
 					Name:           "main",
 					Resource:       Host("ldb://main"),
-					ResolutionData: Path("/tmp/mydb/"),
+					ResolutionData: Nil,
 				},
 			},
 			expectedResolutions: nil,
@@ -1034,7 +1034,7 @@ func TestPreInit(t *testing.T) {
 				databases: {
 					main: {
 						resource: ldb://main
-						resolution-data: /tmp/mydb/
+						resolution-data: nil
 					}
 				}
 			}`,
@@ -1051,7 +1051,7 @@ func TestPreInit(t *testing.T) {
 				{
 					Name:           "main",
 					Resource:       Host("ldb://main"),
-					ResolutionData: Path("/tmp/mydb/"),
+					ResolutionData: Nil,
 				},
 			},
 			expectedAutoInvocationConfig: &AutoInvocationConfig{
@@ -1077,7 +1077,7 @@ func TestPreInit(t *testing.T) {
 				databases: {
 					main: {
 						resource: ldb://main
-						resolution-data: /tmp/mydb/
+						resolution-data: nil
 					}
 				}
 			}`,
@@ -1114,7 +1114,7 @@ func TestPreInit(t *testing.T) {
 				databases: {
 					main: {
 						resource: ldb://main
-						resolution-data: /tmp/mydb/
+						resolution-data: nil
 					}
 				}
 			}`,
@@ -1150,7 +1150,7 @@ func TestPreInit(t *testing.T) {
 				databases: {
 					main: {
 						resource: ldb://main
-						resolution-data: /tmp/mydb/
+						resolution-data: nil
 					}
 				}
 			}`,
@@ -1168,7 +1168,7 @@ func TestPreInit(t *testing.T) {
 				{
 					Name:           "main",
 					Resource:       Host("ldb://main"),
-					ResolutionData: Path("/tmp/mydb/"),
+					ResolutionData: Nil,
 				},
 			},
 			expectedAutoInvocationConfig: &AutoInvocationConfig{

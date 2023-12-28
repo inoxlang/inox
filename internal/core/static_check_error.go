@@ -61,7 +61,7 @@ const (
 	DATABASES__DB_EXPECTED_SCHEMA_UPDATE_SHOULD_BE_BOOL_LIT      = "the ." + MANIFEST_DATABASE__EXPECTED_SCHEMA_UPDATE_PROP_NAME + " property of database descriptions in the '" + MANIFEST_DATABASES_SECTION_NAME + "' section (manifest) should be a boolean literal (the property is optional)"
 	DATABASES__DB_ASSERT_SCHEMA_SHOULD_BE_PATT_IDENT_OR_OBJ_PATT = "the ." + MANIFEST_DATABASE__ASSERT_SCHEMA_UPDATE_PROP_NAME + " property of database descriptions in the '" + MANIFEST_DATABASES_SECTION_NAME + "' section (manifest) should be a pattern identifier or an object pattern literal (the property is optional)"
 	DATABASES_SECTION_NOT_AVAILABLE_IN_EMBEDDED_MODULE_MANIFESTS = "the '" + MANIFEST_DATABASES_SECTION_NAME + "' section is not available in embedded module manifests"
-	DATABASES__DB_RESOLUTION_DATA_ONLY_PATHS_SUPPORTED           = "paths are the only supported values for ." + MANIFEST_DATABASE__RESOLUTION_DATA_PROP_NAME + " in a database description"
+	DATABASES__DB_RESOLUTION_DATA_ONLY_NIL_AND_PATHS_SUPPORTED   = "nil and paths are the only supported values for ." + MANIFEST_DATABASE__RESOLUTION_DATA_PROP_NAME + " in a database description"
 
 	//invocation section
 	INVOCATION_SECTION_SHOULD_BE_AN_OBJECT                        = "the '" + MANIFEST_INVOCATION_SECTION_NAME + "' section of the manifest should be an object literal"

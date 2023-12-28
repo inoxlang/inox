@@ -346,7 +346,13 @@ func PrepareLocalModule(args ModulePreparationArgs) (state *GlobalState, mod *Mo
 		}
 
 		if host, ok := config.Resource.(Host); ok {
-			ctx.AddHostResolutionData(host, config.ResolutionData)
+			resourceName, ok := config.ResolutionData.(ResourceName)
+			if ok {
+				ctx.AddHostResolutionData(host, resourceName)
+			} else {
+				//no data
+				ctx.AddHostResolutionData(host, host)
+			}
 		}
 
 		openDB, ok := GetOpenDbFn(config.Resource.Scheme())

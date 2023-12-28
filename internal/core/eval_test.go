@@ -10365,7 +10365,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 						databases: {
 							main: {
 								resource: ldb://main
-								resolution-data: /databases/main/
+								resolution-data: nil
 							}
 						}
 					}
@@ -10480,7 +10480,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 						databases: {
 							main: {
 								resource: ldb://main
-								resolution-data: /databases/main/
+								resolution-data: nil
 							}
 						}
 					}

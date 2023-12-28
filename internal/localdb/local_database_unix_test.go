@@ -20,6 +20,7 @@ import (
 const MEM_FS_STORAGE_SIZE = 100_000_000
 
 func TestOpenDatabase(t *testing.T) {
+	const HOST = core.Host("ldb://main")
 
 	t.Run("opening the same database is forbidden", func(t *testing.T) {
 		dir, _ := filepath.Abs(t.TempDir())
@@ -36,7 +37,7 @@ func TestOpenDatabase(t *testing.T) {
 				core.FilesystemPermission{Kind_: permkind.WriteStream, Entity: pattern},
 			},
 			HostResolutions: map[core.Host]core.Value{
-				core.Host("ldb://main"): core.Path(dir),
+				core.Host("ldb://main"): HOST,
 			},
 			Filesystem: fls,
 		}
@@ -44,7 +45,7 @@ func TestOpenDatabase(t *testing.T) {
 		ctx1 := core.NewContexWithEmptyState(ctxConfig, nil)
 		ctx1.GetClosestState().Project = project
 
-		_db, err := OpenDatabase(ctx1, core.Path(dir), false)
+		_db, err := OpenDatabase(ctx1, HOST, false)
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -53,7 +54,7 @@ func TestOpenDatabase(t *testing.T) {
 		ctx2 := core.NewContexWithEmptyState(ctxConfig, nil)
 		ctx2.GetClosestState().Project = project
 
-		db, err := OpenDatabase(ctx2, core.Path(dir), false)
+		db, err := OpenDatabase(ctx2, HOST, false)
 		if !assert.ErrorIs(t, err, ErrOpenDatabase) {
 			return
 		}
@@ -75,7 +76,7 @@ func TestOpenDatabase(t *testing.T) {
 				core.FilesystemPermission{Kind_: permkind.WriteStream, Entity: pattern},
 			},
 			HostResolutions: map[core.Host]core.Value{
-				core.Host("ldb://main"): core.Path(dir),
+				core.Host("ldb://main"): HOST,
 			},
 			Filesystem: fls,
 		}
@@ -83,7 +84,7 @@ func TestOpenDatabase(t *testing.T) {
 		ctx1 := core.NewContexWithEmptyState(ctxConfig, nil)
 		ctx1.GetClosestState().Project = project
 
-		_db, err := OpenDatabase(ctx1, core.Path(dir), false)
+		_db, err := OpenDatabase(ctx1, HOST, false)
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -92,7 +93,7 @@ func TestOpenDatabase(t *testing.T) {
 		ctx2 := core.NewContexWithEmptyState(ctxConfig, nil)
 		ctx2.GetClosestState().Project = project
 
-		db, err := OpenDatabase(ctx2, core.Path(dir), false)
+		db, err := OpenDatabase(ctx2, HOST, false)
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -120,7 +121,7 @@ func TestOpenDatabase(t *testing.T) {
 				core.FilesystemPermission{Kind_: permkind.WriteStream, Entity: pattern},
 			},
 			HostResolutions: map[core.Host]core.Value{
-				core.Host("ldb://main"): core.Path(dir),
+				core.Host("ldb://main"): HOST,
 			},
 			Filesystem: fls,
 		}
@@ -147,7 +148,7 @@ func TestOpenDatabase(t *testing.T) {
 			ctx1 = core.NewContexWithEmptyState(ctxConfig, nil)
 			ctx1.GetClosestState().Project = project
 
-			_db1, err := OpenDatabase(ctx1, core.Path(dir), false)
+			_db1, err := OpenDatabase(ctx1, HOST, false)
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -160,7 +161,7 @@ func TestOpenDatabase(t *testing.T) {
 			ctx2 = core.NewContexWithEmptyState(ctxConfig, nil)
 			ctx2.GetClosestState().Project = project
 
-			_db2, err := OpenDatabase(ctx2, core.Path(dir), false)
+			_db2, err := OpenDatabase(ctx2, HOST, false)
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -188,7 +189,7 @@ func TestOpenDatabase(t *testing.T) {
 					core.FilesystemPermission{Kind_: permkind.WriteStream, Entity: pattern},
 				},
 				HostResolutions: map[core.Host]core.Value{
-					core.Host("ldb://main"): core.Path(dir),
+					core.Host("ldb://main"): HOST,
 				},
 				Filesystem: fls,
 			}
@@ -198,7 +199,7 @@ func TestOpenDatabase(t *testing.T) {
 			ctx.AddNamedPattern("str", containers.SET_PATTERN)
 			ctx.GetClosestState().Project = project
 
-			db, err := OpenDatabase(ctx, core.Path(dir), false)
+			db, err := OpenDatabase(ctx, HOST, false)
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -224,7 +225,7 @@ func TestOpenDatabase(t *testing.T) {
 
 			//re-open
 
-			db, err = OpenDatabase(ctx, core.Path(dir), false)
+			db, err = OpenDatabase(ctx, HOST, false)
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -465,7 +466,7 @@ func TestUpdateSchema(t *testing.T) {
 				core.DatabasePermission{Kind_: permkind.Write, Entity: HOST},
 			},
 			HostResolutions: map[core.Host]core.Value{
-				HOST: core.Path(dir),
+				HOST: HOST,
 			},
 			Filesystem: filesystem,
 		}

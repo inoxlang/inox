@@ -85,13 +85,12 @@ module:
           # ℹ️ scroll to the example further below to learn how to connect 
           # to databases defined by other modules.
 
-          # example databases section to connect to a local database 
-          # storing its data in the folder /databases/main/.
-          # the database will be created if it does not exist.
+          # Example databases section to connect to a local database.
+          # The database will be created if it does not exist.
           {
             main:  {
               resource: ldb://main
-              resolution-data: /databases/main/
+              resolution-data: nil
             }
           }
           ...

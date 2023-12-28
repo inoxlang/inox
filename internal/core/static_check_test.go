@@ -4013,7 +4013,7 @@ func TestCheckDatabasesObject(t *testing.T) {
 			{
 				main: {
 					resource: ldb://main
-					resolution-data: /tmp/mydb/
+					resolution-data: nil
 				}
 			}
 		`)
@@ -4027,7 +4027,7 @@ func TestCheckDatabasesObject(t *testing.T) {
 		objLiteral := parseObject(`
 			{
 				main: {
-					resolution-data: /db/
+					resolution-data: nil
 				}
 			}
 		`)
@@ -4047,7 +4047,7 @@ func TestCheckDatabasesObject(t *testing.T) {
 			{
 				main: {
 					resource: 1
-					resolution-data: /db/
+					resolution-data: nil
 				}
 			}
 		`)
@@ -4065,7 +4065,7 @@ func TestCheckDatabasesObject(t *testing.T) {
 			{
 				main: {
 					resource: ldb://main
-					resolution-data: /{DB_DIR}/
+					resolution-data: nil
 				}
 			}
 		`)
@@ -4080,7 +4080,7 @@ func TestCheckDatabasesObject(t *testing.T) {
 			{
 				main: {
 					resource: ldb://main
-					resolution-data: 1
+					resolution-data: 0
 				}
 			}
 		`)
@@ -4088,7 +4088,7 @@ func TestCheckDatabasesObject(t *testing.T) {
 
 		checkDatabasesObject(objLiteral, func(n parse.Node, msg string) {
 			err = true
-			assert.Equal(t, DATABASES__DB_RESOLUTION_DATA_ONLY_PATHS_SUPPORTED, msg)
+			assert.Equal(t, DATABASES__DB_RESOLUTION_DATA_ONLY_NIL_AND_PATHS_SUPPORTED, msg)
 		}, nil, nil)
 
 		assert.True(t, err)
@@ -4106,7 +4106,7 @@ func TestCheckDatabasesObject(t *testing.T) {
 			{
 				main: {
 					resource: ldb://main
-					resolution-data: /file
+					resolution-data: nil
 				}
 			}
 		`)
@@ -4140,7 +4140,7 @@ func TestCheckDatabasesObject(t *testing.T) {
 			{
 				main: {
 					resource: ldb://main
-					resolution-data: /file
+					resolution-data: nil
 				}
 			}
 		`)

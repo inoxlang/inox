@@ -17,16 +17,12 @@ manifest {
         write: {
             # allow persisting the self signed certificate that is automatically generated.
             %/.dev/self_signed*
-
-            %/databases/...
         }
     }
     databases: {
         main: {
             resource: ldb://main
-
-            # location of the data in the project filesystem.
-            resolution-data: /databases/main/   
+            resolution-data: nil
         }
     }
 }

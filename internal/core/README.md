@@ -311,7 +311,7 @@ manifest {
     databases: {
         main: {
             resource: ldb://main
-            resolution-data: /databases/main/
+            resolution-data: nil
             expected-schema-update: true
         }
     }

@@ -103,15 +103,12 @@ manifest {
         read: %/...
         write: {
             %/.dev/self_signed*
-            %/databases/main/...    # required by the database
         }
     }
     databases: {
         main: {
             resource: ldb://main
-
-            # location of the data in the project filesystem
-            resolution-data: /databases/main/   
+            resolution-data: nil
 
             expected-scheme-update: true
         }

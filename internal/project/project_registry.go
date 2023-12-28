@@ -20,8 +20,8 @@ import (
 const (
 	KV_FILENAME = "projects.kv"
 
-	DEV_DIR           = "dev"
-	DEV_DATABASES_DIR = "databases"
+	DEV_OS_DIR           = "dev"
+	DEV_DATABASES_OS_DIR = "databases"
 )
 
 var (
@@ -128,14 +128,14 @@ func (r *Registry) CreateProject(ctx *core.Context, params CreateProjectParams) 
 func (r *Registry) getCreateDevDatabasesDir(id core.ProjectID) (projectDevDatabasesDir string, err error) {
 	//create the dev dir that will store the dev databases
 
-	devDir := filepath.Join(r.projectsDir, DEV_DIR)
+	devDir := filepath.Join(r.projectsDir, DEV_OS_DIR)
 	err = r.filesystem.MkdirAll(devDir, fs_ns.DEFAULT_DIR_FMODE)
 	if err != nil {
 		return
 	}
 
 	//create the <dev dir>/<project id>/databases dir
-	projectDevDatabasesDir = filepath.Join(devDir, string(id), DEV_DATABASES_DIR)
+	projectDevDatabasesDir = filepath.Join(devDir, string(id), DEV_DATABASES_OS_DIR)
 	err = r.filesystem.MkdirAll(projectDevDatabasesDir, fs_ns.DEFAULT_DIR_FMODE)
 	if err != nil {
 		projectDevDatabasesDir = ""
