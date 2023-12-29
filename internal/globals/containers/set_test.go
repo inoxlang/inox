@@ -214,7 +214,7 @@ func TestPersistLoadSet(t *testing.T) {
 			assert.Equal(t, "[]", serialized)
 		}
 
-		loadedSet, err := loadSet(ctx, core.InstanceLoadArgs{
+		loadedSet, err := loadSet(ctx, core.FreeEntityLoadingParams{
 			Key: "/set", Storage: storage, Pattern: pattern,
 		})
 		if !assert.NoError(t, err) {
@@ -252,7 +252,7 @@ func TestPersistLoadSet(t *testing.T) {
 			assert.Equal(t, `[{"int__value":1}]`, serialized)
 		}
 
-		loadedSet, err := loadSet(ctx, core.InstanceLoadArgs{
+		loadedSet, err := loadSet(ctx, core.FreeEntityLoadingParams{
 			Key: "/set", Storage: storage, Pattern: pattern,
 		})
 		if !assert.NoError(t, err) {
@@ -291,7 +291,7 @@ func TestPersistLoadSet(t *testing.T) {
 			assert.Regexp(t, `(\[{"int__value":1},{"int__value":2}]|\[{"int__value":2},{"int__value":1}])`, serialized)
 		}
 
-		loadedSet, err := loadSet(ctx, core.InstanceLoadArgs{
+		loadedSet, err := loadSet(ctx, core.FreeEntityLoadingParams{
 			Key: "/set", Storage: storage, Pattern: pattern,
 		})
 		if !assert.NoError(t, err) {
@@ -319,7 +319,7 @@ func TestPersistLoadSet(t *testing.T) {
 		//a mutable object is not considered to have a unique representation.
 
 		storage.SetSerialized(ctx, "/set", `[{"object__value":{}}]`)
-		set, err := loadSet(ctx, core.InstanceLoadArgs{
+		set, err := loadSet(ctx, core.FreeEntityLoadingParams{
 			Key: "/set", Storage: storage, Pattern: pattern,
 		})
 		if !assert.ErrorIs(t, err, core.ErrReprOfMutableValueCanChange) {
@@ -340,7 +340,7 @@ func TestPersistLoadSet(t *testing.T) {
 		}, core.CallBasedPatternReprMixin{})
 
 		storage.SetSerialized(ctx, "/set", `[{"object__value":{}}]`)
-		set, err := loadSet(ctx, core.InstanceLoadArgs{
+		set, err := loadSet(ctx, core.FreeEntityLoadingParams{
 			Key: "/set", Storage: storage, Pattern: pattern,
 		})
 		if !assert.ErrorIs(t, err, common.ErrFailedGetUniqueKeyPropMissing) {
@@ -374,7 +374,7 @@ func TestPersistLoadSet(t *testing.T) {
 			assert.Equal(t, `[{"object__value":{"id":"a"}}]`, serialized)
 		}
 
-		loadedSet, err := loadSet(ctx, core.InstanceLoadArgs{
+		loadedSet, err := loadSet(ctx, core.FreeEntityLoadingParams{
 			Key: "/set", Storage: storage, Pattern: pattern,
 		})
 		if !assert.NoError(t, err) {
@@ -418,7 +418,7 @@ func TestPersistLoadSet(t *testing.T) {
 			}
 		}
 
-		loadedSet, err := loadSet(ctx, core.InstanceLoadArgs{
+		loadedSet, err := loadSet(ctx, core.FreeEntityLoadingParams{
 			Key: "/set", Storage: storage, Pattern: pattern,
 		})
 		if !assert.NoError(t, err) {
@@ -444,7 +444,7 @@ func TestPersistLoadSet(t *testing.T) {
 		}, core.CallBasedPatternReprMixin{})
 
 		storage.SetSerialized(ctx, "/set", `[{"object__value":{"id": "a"}}, {"object__value":{"id": "a"}}]`)
-		set, err := loadSet(ctx, core.InstanceLoadArgs{
+		set, err := loadSet(ctx, core.FreeEntityLoadingParams{
 			Key: "/set", Storage: storage, Pattern: pattern,
 		})
 		if !assert.ErrorIs(t, err, ErrValueWithSameKeyAlreadyPresent) {
@@ -466,12 +466,12 @@ func TestPersistLoadSet(t *testing.T) {
 			},
 		}, core.CallBasedPatternReprMixin{})
 
-		val, err := loadSet(ctx, core.InstanceLoadArgs{
+		val, err := loadSet(ctx, core.FreeEntityLoadingParams{
 			Key:          "/x",
 			Storage:      storage,
 			Pattern:      pattern,
 			AllowMissing: false,
-			Migration: &core.InstanceMigrationArgs{
+			Migration: &core.FreeEntityMigrationArgs{
 				MigrationHandlers: core.MigrationOpHandlers{
 					Deletions: map[core.PathPattern]*core.MigrationOpHandler{
 						"/x": nil,
@@ -500,12 +500,12 @@ func TestPersistLoadSet(t *testing.T) {
 		}, core.CallBasedPatternReprMixin{})
 		nextPattern := core.NewInexactObjectPattern(map[string]core.Pattern{"a": core.INT_PATTERN})
 
-		val, err := loadSet(ctx, core.InstanceLoadArgs{
+		val, err := loadSet(ctx, core.FreeEntityLoadingParams{
 			Key:          "/x",
 			Storage:      storage,
 			Pattern:      pattern,
 			AllowMissing: false,
-			Migration: &core.InstanceMigrationArgs{
+			Migration: &core.FreeEntityMigrationArgs{
 				NextPattern: nextPattern,
 				MigrationHandlers: core.MigrationOpHandlers{
 					Replacements: map[core.PathPattern]*core.MigrationOpHandler{
@@ -697,7 +697,7 @@ func TestSetAddRemove(t *testing.T) {
 		}, core.CallBasedPatternReprMixin{})
 
 		storage.SetSerialized(ctx, "/set", `[]`)
-		set, err := loadSet(ctx, core.InstanceLoadArgs{
+		set, err := loadSet(ctx, core.FreeEntityLoadingParams{
 			Key: "/set", Storage: storage, Pattern: pattern,
 		})
 
@@ -711,7 +711,7 @@ func TestSetAddRemove(t *testing.T) {
 
 		//check that the Set is persisted
 
-		persisted, err := loadSet(ctx, core.InstanceLoadArgs{
+		persisted, err := loadSet(ctx, core.FreeEntityLoadingParams{
 			Key: "/set", Storage: storage, Pattern: pattern,
 		})
 
@@ -743,7 +743,7 @@ func TestSetAddRemove(t *testing.T) {
 		}, core.CallBasedPatternReprMixin{})
 
 		storage.SetSerialized(ctx, "/set", `[]`)
-		set, err := loadSet(ctx, core.InstanceLoadArgs{
+		set, err := loadSet(ctx, core.FreeEntityLoadingParams{
 			Key: "/set", Storage: storage, Pattern: pattern,
 		})
 
@@ -757,7 +757,7 @@ func TestSetAddRemove(t *testing.T) {
 
 		//check that the Set is not persised
 
-		persisted, err := loadSet(ctx, core.InstanceLoadArgs{
+		persisted, err := loadSet(ctx, core.FreeEntityLoadingParams{
 			Key: "/set", Storage: storage, Pattern: pattern,
 		})
 
@@ -772,7 +772,7 @@ func TestSetAddRemove(t *testing.T) {
 
 		//check that the Set is not persised
 
-		persisted, err = loadSet(ctx, core.InstanceLoadArgs{
+		persisted, err = loadSet(ctx, core.FreeEntityLoadingParams{
 			Key: "/set", Storage: storage, Pattern: pattern,
 		})
 
@@ -798,7 +798,7 @@ func TestSetAddRemove(t *testing.T) {
 		}, core.CallBasedPatternReprMixin{})
 
 		storage.SetSerialized(ctx1, "/set", `[]`)
-		val, err := loadSet(ctx1, core.InstanceLoadArgs{
+		val, err := loadSet(ctx1, core.FreeEntityLoadingParams{
 			Key: "/set", Storage: storage, Pattern: pattern,
 		})
 
@@ -830,7 +830,7 @@ func TestSetAddRemove(t *testing.T) {
 		}, core.CallBasedPatternReprMixin{})
 
 		storage.SetSerialized(ctx, "/set", `[{"int__value":"1"}]`)
-		val, err := loadSet(ctx, core.InstanceLoadArgs{
+		val, err := loadSet(ctx, core.FreeEntityLoadingParams{
 			Key: "/set", Storage: storage, Pattern: pattern,
 		})
 
@@ -845,7 +845,7 @@ func TestSetAddRemove(t *testing.T) {
 
 		//check that the Set is persised
 
-		persisted, err := loadSet(ctx, core.InstanceLoadArgs{
+		persisted, err := loadSet(ctx, core.FreeEntityLoadingParams{
 			Key: "/set", Storage: storage, Pattern: pattern,
 		})
 
@@ -871,7 +871,7 @@ func TestSetAddRemove(t *testing.T) {
 		}, core.CallBasedPatternReprMixin{})
 
 		storage.SetSerialized(ctx, "/set", `[{"int__value":"1"}]`)
-		val, err := loadSet(ctx, core.InstanceLoadArgs{
+		val, err := loadSet(ctx, core.FreeEntityLoadingParams{
 			Key: "/set", Storage: storage, Pattern: pattern,
 		})
 
@@ -886,7 +886,7 @@ func TestSetAddRemove(t *testing.T) {
 
 		//check that the Set is not persised
 
-		persisted, err := loadSet(ctx, core.InstanceLoadArgs{
+		persisted, err := loadSet(ctx, core.FreeEntityLoadingParams{
 			Key: "/set", Storage: storage, Pattern: pattern,
 		})
 
@@ -901,7 +901,7 @@ func TestSetAddRemove(t *testing.T) {
 
 		//check that the Set is not persised
 
-		persisted, err = loadSet(ctx, core.InstanceLoadArgs{
+		persisted, err = loadSet(ctx, core.FreeEntityLoadingParams{
 			Key: "/set", Storage: storage, Pattern: pattern,
 		})
 
@@ -922,7 +922,7 @@ func TestSetAddRemove(t *testing.T) {
 		}, core.CallBasedPatternReprMixin{})
 
 		storage.SetSerialized(ctx, "/set", `[]`)
-		val, err := loadSet(ctx, core.InstanceLoadArgs{
+		val, err := loadSet(ctx, core.FreeEntityLoadingParams{
 			Key: "/set", Storage: storage, Pattern: pattern,
 		})
 
@@ -977,7 +977,7 @@ func TestInteractWithElementsOfLoadedSet(t *testing.T) {
 		}, core.CallBasedPatternReprMixin{})
 
 		storage.SetSerialized(ctx, "/set", `[]`)
-		set, err := loadSet(ctx, core.InstanceLoadArgs{
+		set, err := loadSet(ctx, core.FreeEntityLoadingParams{
 			Key: "/set", Storage: storage, Pattern: pattern,
 		})
 
@@ -992,7 +992,7 @@ func TestInteractWithElementsOfLoadedSet(t *testing.T) {
 
 		//load again
 
-		loadedSet, err := loadSet(ctx, core.InstanceLoadArgs{
+		loadedSet, err := loadSet(ctx, core.FreeEntityLoadingParams{
 			Key: "/set", Storage: storage, Pattern: pattern,
 		})
 
@@ -1010,7 +1010,7 @@ func TestInteractWithElementsOfLoadedSet(t *testing.T) {
 
 		//load again
 
-		loadedSet, err = loadSet(ctx, core.InstanceLoadArgs{
+		loadedSet, err = loadSet(ctx, core.FreeEntityLoadingParams{
 			Key: "/set", Storage: storage, Pattern: pattern,
 		})
 		if !assert.NoError(t, err) {
@@ -1038,7 +1038,7 @@ func TestSetMigrate(t *testing.T) {
 	t.Run("delete Set: / key", func(t *testing.T) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 		set := NewSetWithConfig(ctx, nil, config)
-		val, err := set.Migrate(ctx, "/", &core.InstanceMigrationArgs{
+		val, err := set.Migrate(ctx, "/", &core.FreeEntityMigrationArgs{
 			NextPattern: nil,
 			MigrationHandlers: core.MigrationOpHandlers{
 				Deletions: map[core.PathPattern]*core.MigrationOpHandler{
@@ -1056,7 +1056,7 @@ func TestSetMigrate(t *testing.T) {
 	t.Run("delete Set: /x key", func(t *testing.T) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 		set := NewSetWithConfig(ctx, nil, config)
-		val, err := set.Migrate(ctx, "/x", &core.InstanceMigrationArgs{
+		val, err := set.Migrate(ctx, "/x", &core.FreeEntityMigrationArgs{
 			NextPattern: nil,
 			MigrationHandlers: core.MigrationOpHandlers{
 				Deletions: map[core.PathPattern]*core.MigrationOpHandler{
@@ -1074,7 +1074,7 @@ func TestSetMigrate(t *testing.T) {
 	t.Run("delete element", func(t *testing.T) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 		set := NewSetWithConfig(ctx, core.NewWrappedValueList(core.Int(0)), config)
-		val, err := set.Migrate(ctx, "/", &core.InstanceMigrationArgs{
+		val, err := set.Migrate(ctx, "/", &core.FreeEntityMigrationArgs{
 			NextPattern: nil,
 			MigrationHandlers: core.MigrationOpHandlers{
 				Deletions: map[core.PathPattern]*core.MigrationOpHandler{
@@ -1093,7 +1093,7 @@ func TestSetMigrate(t *testing.T) {
 	t.Run("delete all elements", func(t *testing.T) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 		set := NewSetWithConfig(ctx, core.NewWrappedValueList(core.Int(0), core.Int(1)), config)
-		val, err := set.Migrate(ctx, "/", &core.InstanceMigrationArgs{
+		val, err := set.Migrate(ctx, "/", &core.FreeEntityMigrationArgs{
 			NextPattern: nil,
 			MigrationHandlers: core.MigrationOpHandlers{
 				Deletions: map[core.PathPattern]*core.MigrationOpHandler{
@@ -1115,7 +1115,7 @@ func TestSetMigrate(t *testing.T) {
 
 		pathPattern := "/" + core.PathPattern(common.GetElementPathKeyFromKey("1", common.UniqueRepr))
 
-		val, err := set.Migrate(ctx, "/", &core.InstanceMigrationArgs{
+		val, err := set.Migrate(ctx, "/", &core.FreeEntityMigrationArgs{
 			NextPattern: nil,
 			MigrationHandlers: core.MigrationOpHandlers{
 				Deletions: map[core.PathPattern]*core.MigrationOpHandler{
@@ -1137,7 +1137,7 @@ func TestSetMigrate(t *testing.T) {
 
 		pathPattern := "/" + core.PathPattern(common.GetElementPathKeyFromKey("#{\"b\":0}", common.UniqueRepr)) + "/b"
 
-		val, err := set.Migrate(ctx, "/", &core.InstanceMigrationArgs{
+		val, err := set.Migrate(ctx, "/", &core.FreeEntityMigrationArgs{
 			NextPattern: nil,
 			MigrationHandlers: core.MigrationOpHandlers{
 				Deletions: map[core.PathPattern]*core.MigrationOpHandler{
@@ -1159,7 +1159,7 @@ func TestSetMigrate(t *testing.T) {
 		set := NewSetWithConfig(ctx, core.NewWrappedValueList(), config)
 		replacement := core.NewWrappedValueList()
 
-		val, err := set.Migrate(ctx, "/", &core.InstanceMigrationArgs{
+		val, err := set.Migrate(ctx, "/", &core.FreeEntityMigrationArgs{
 			NextPattern: NewSetPattern(config, core.CallBasedPatternReprMixin{}),
 			MigrationHandlers: core.MigrationOpHandlers{
 				Replacements: map[core.PathPattern]*core.MigrationOpHandler{
@@ -1182,7 +1182,7 @@ func TestSetMigrate(t *testing.T) {
 		set := NewSetWithConfig(ctx, core.NewWrappedValueList(), config)
 		replacement := core.NewWrappedValueList()
 
-		val, err := set.Migrate(ctx, "/x", &core.InstanceMigrationArgs{
+		val, err := set.Migrate(ctx, "/x", &core.FreeEntityMigrationArgs{
 			NextPattern: core.NewListPatternOf(core.ANYVAL_PATTERN),
 			MigrationHandlers: core.MigrationOpHandlers{
 				Replacements: map[core.PathPattern]*core.MigrationOpHandler{
@@ -1208,7 +1208,7 @@ func TestSetMigrate(t *testing.T) {
 		)
 
 		set := NewSetWithConfig(ctx, elements, config)
-		val, err := set.Migrate(ctx, "/", &core.InstanceMigrationArgs{
+		val, err := set.Migrate(ctx, "/", &core.FreeEntityMigrationArgs{
 			NextPattern: nil,
 			MigrationHandlers: core.MigrationOpHandlers{
 				Replacements: map[core.PathPattern]*core.MigrationOpHandler{
@@ -1235,7 +1235,7 @@ func TestSetMigrate(t *testing.T) {
 		set := NewSetWithConfig(ctx, nil, config)
 
 		assert.PanicsWithError(t, core.ErrUnreachable.Error(), func() {
-			set.Migrate(ctx, "/", &core.InstanceMigrationArgs{
+			set.Migrate(ctx, "/", &core.FreeEntityMigrationArgs{
 				NextPattern: nil,
 				MigrationHandlers: core.MigrationOpHandlers{
 					Inclusions: map[core.PathPattern]*core.MigrationOpHandler{

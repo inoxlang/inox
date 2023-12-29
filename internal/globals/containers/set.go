@@ -26,7 +26,7 @@ var (
 )
 
 func init() {
-	core.RegisterLoadInstanceFn(reflect.TypeOf((*SetPattern)(nil)), loadSet)
+	core.RegisterLoadFreeEntityFn(reflect.TypeOf((*SetPattern)(nil)), loadSet)
 }
 
 type Set struct {

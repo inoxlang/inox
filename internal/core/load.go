@@ -8,12 +8,12 @@ import (
 )
 
 var (
-	loadInstanceFnregistry     = map[reflect.Type] /*pattern type*/ LoadInstanceFn{}
-	loadInstanceFnRegistryLock sync.Mutex
+	loadFreeEntityFnRegistry     = map[reflect.Type] /*pattern type*/ LoadSelfManagedEntityFn{}
+	loadFreeEntityFnRegistryLock sync.Mutex
 
-	ErrNonUniqueLoadInstanceFnRegistration            = errors.New("non unique loading function registration")
+	ErrNonUniqueLoadFreeEntityFnRegistration          = errors.New("non unique loading function registration")
 	ErrNonUniqueGetSymbolicInitialFactoryRegistration = errors.New("non unique symbolic initial value factory registration")
-	ErrNoLoadInstanceFnRegistered                     = errors.New("no loading function registered for given type")
+	ErrNoLoadFreeEntityFnRegistered                   = errors.New("no loading function registered for given type")
 	ErrLoadingRequireTransaction                      = errors.New("loading a value requires a transaction")
 	ErrTransactionsNotSupportedYet                    = errors.New("transactions not supported yet")
 	ErrFailedToLoadNonExistingValue                   = errors.New("failed to load non-existing value")
@@ -22,15 +22,15 @@ var (
 )
 
 func init() {
-	resetLoadInstanceFnRegistry()
+	resetLoadFreeEntityFnRegistry()
 }
 
-func resetLoadInstanceFnRegistry() {
-	loadInstanceFnRegistryLock.Lock()
-	clear(loadInstanceFnregistry)
-	loadInstanceFnRegistryLock.Unlock()
+func resetLoadFreeEntityFnRegistry() {
+	loadFreeEntityFnRegistryLock.Lock()
+	clear(loadFreeEntityFnRegistry)
+	loadFreeEntityFnRegistryLock.Unlock()
 
-	RegisterLoadInstanceFn(OBJECT_PATTERN_TYPE, loadObject)
+	RegisterLoadFreeEntityFn(OBJECT_PATTERN_TYPE, loadObject)
 }
 
 type DataStore interface {
@@ -41,16 +41,16 @@ type DataStore interface {
 	InsertSerialized(ctx *Context, key Path, serialized string)
 }
 
-type InstanceLoadArgs struct {
+type FreeEntityLoadingParams struct {
 	Key          Path
 	Storage      DataStore
 	Pattern      Pattern
 	InitialValue Serializable
 	AllowMissing bool //if true the loading function is allowed to return an empty/default value matching the pattern
-	Migration    *InstanceMigrationArgs
+	Migration    *FreeEntityMigrationArgs
 }
 
-func (a InstanceLoadArgs) IsDeletion(ctx *Context) bool {
+func (a FreeEntityLoadingParams) IsDeletion(ctx *Context) bool {
 	if a.Migration == nil {
 		return false
 	}
@@ -63,55 +63,57 @@ func (a InstanceLoadArgs) IsDeletion(ctx *Context) bool {
 	return false
 }
 
-type InstanceMigrationArgs struct {
+type FreeEntityMigrationArgs struct {
 	NextPattern       Pattern //can be nil
 	MigrationHandlers MigrationOpHandlers
 }
 
-// LoadInstanceFn should load the associated value & call the corresponding migration handlers, in the case
-// of a deletion (nil, nil) should be returned.
-// If the value changes due to a migration this function should call LoadInstance with the new value passed in .InitialValue.
-type LoadInstanceFn func(ctx *Context, args InstanceLoadArgs) (UrlHolder, error)
+// LoadSelfManagedEntityFn should load a self-managed entity and should call the corresponding migration handlers.
+// In the case of a deletion (nil, nil) should be returned.
+// If the entity changes due to a migration this function should call LoadSelfManagedEntityFn
+// with the new value passed in .InitialValue.
+type LoadSelfManagedEntityFn func(ctx *Context, args FreeEntityLoadingParams) (UrlHolder, error)
 
-func RegisterLoadInstanceFn(patternType reflect.Type, fn LoadInstanceFn) {
-	loadInstanceFnRegistryLock.Lock()
-	defer loadInstanceFnRegistryLock.Unlock()
+func RegisterLoadFreeEntityFn(patternType reflect.Type, fn LoadSelfManagedEntityFn) {
+	loadFreeEntityFnRegistryLock.Lock()
+	defer loadFreeEntityFnRegistryLock.Unlock()
 
-	_, ok := loadInstanceFnregistry[patternType]
+	_, ok := loadFreeEntityFnRegistry[patternType]
 	if ok {
-		panic(ErrNonUniqueLoadInstanceFnRegistration)
+		panic(ErrNonUniqueLoadFreeEntityFnRegistration)
 	}
 
-	loadInstanceFnregistry[patternType] = fn
+	loadFreeEntityFnRegistry[patternType] = fn
 }
 
 func hasTypeLoadingFunction(pattern Pattern) bool {
-	loadInstanceFnRegistryLock.Lock()
-	defer loadInstanceFnRegistryLock.Unlock()
+	loadFreeEntityFnRegistryLock.Lock()
+	defer loadFreeEntityFnRegistryLock.Unlock()
 
-	_, ok := loadInstanceFnregistry[reflect.TypeOf(pattern)]
+	_, ok := loadFreeEntityFnRegistry[reflect.TypeOf(pattern)]
 	return ok
 }
 
-func LoadInstance(ctx *Context, args InstanceLoadArgs) (UrlHolder, error) {
-	loadInstanceFnRegistryLock.Lock()
+// See documentation of LoadFreeEntityFn.
+func LoadFreeEntity(ctx *Context, args FreeEntityLoadingParams) (UrlHolder, error) {
+	loadFreeEntityFnRegistryLock.Lock()
 
 	patternType := reflect.TypeOf(args.Pattern)
-	fn, ok := loadInstanceFnregistry[patternType]
-	loadInstanceFnRegistryLock.Unlock()
+	fn, ok := loadFreeEntityFnRegistry[patternType]
+	loadFreeEntityFnRegistryLock.Unlock()
 
 	if !ok {
-		panic(ErrNoLoadInstanceFnRegistered)
+		panic(ErrNoLoadFreeEntityFnRegistered)
 	}
 
 	if args.Key[len(args.Key)-1] == '/' {
-		return nil, errors.New("instance key should not end with '/'")
+		return nil, errors.New("free entity's key should not end with '/'")
 	}
 
 	return fn(ctx, args)
 }
 
-func loadObject(ctx *Context, args InstanceLoadArgs) (UrlHolder, error) {
+func loadObject(ctx *Context, args FreeEntityLoadingParams) (UrlHolder, error) {
 	path := args.Key
 	pattern := args.Pattern
 	storage := args.Storage
@@ -171,7 +173,7 @@ func loadObject(ctx *Context, args InstanceLoadArgs) (UrlHolder, error) {
 
 		nextObject, ok := next.(*Object)
 		if !ok || object != nextObject {
-			return LoadInstance(ctx, InstanceLoadArgs{
+			return LoadFreeEntity(ctx, FreeEntityLoadingParams{
 				Key:          args.Key,
 				Storage:      args.Storage,
 				Pattern:      args.Migration.NextPattern,

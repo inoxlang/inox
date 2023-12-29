@@ -91,7 +91,7 @@ func checkDatabaseSchema(pattern *ObjectPattern) error {
 		}
 
 		if !hasTypeLoadingFunction(propPattern) {
-			return fmt.Errorf("invalid pattern for top level entity .%s: %w", propName, ErrNoLoadInstanceFnRegistered)
+			return fmt.Errorf("invalid pattern for top level entity .%s: %w", propName, ErrNoLoadFreeEntityFnRegistered)
 		}
 		if isOptional {
 			return fmt.Errorf("unexpected optional property .%s in schema", propName)
@@ -557,7 +557,7 @@ func (db *DatabaseIL) UpdateSchema(ctx *Context, nextSchema *ObjectPattern, migr
 
 	err := nextSchema.ForEachEntry(func(propName string, propPattern Pattern, isOptional bool) error {
 		if !hasTypeLoadingFunction(propPattern) {
-			return fmt.Errorf("failed to update schema: pattern of .%s has no loading function: %w", propName, ErrNoLoadInstanceFnRegistered)
+			return fmt.Errorf("failed to update schema: pattern of .%s has no loading function: %w", propName, ErrNoLoadFreeEntityFnRegistered)
 		}
 		return nil
 	})

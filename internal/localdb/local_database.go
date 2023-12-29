@@ -296,7 +296,7 @@ func (ldb *LocalDatabase) load(ctx *core.Context, migrationNextPattern *core.Obj
 
 	err := ldb.schema.ForEachEntry(func(propName string, propPattern core.Pattern, isOptional bool) error {
 		path := core.PathFrom("/" + propName)
-		args := core.InstanceLoadArgs{
+		args := core.FreeEntityLoadingParams{
 			Pattern:      propPattern,
 			Key:          path,
 			Storage:      ldb,
@@ -305,7 +305,7 @@ func (ldb *LocalDatabase) load(ctx *core.Context, migrationNextPattern *core.Obj
 
 		//replacement or migration of the top-level entity
 		if migrationNextPattern != nil {
-			args.Migration = &core.InstanceMigrationArgs{
+			args.Migration = &core.FreeEntityMigrationArgs{
 				MigrationHandlers: handlers.FilterByPrefix(path),
 			}
 			if propPattern, _, ok := migrationNextPattern.Entry(propName); ok {
@@ -313,7 +313,7 @@ func (ldb *LocalDatabase) load(ctx *core.Context, migrationNextPattern *core.Obj
 			}
 		}
 
-		value, err := core.LoadInstance(ctx, args)
+		value, err := core.LoadFreeEntity(ctx, args)
 		if err != nil {
 			return fmt.Errorf("failed to load %s: %w", path, err)
 		}
@@ -355,14 +355,14 @@ func (ldb *LocalDatabase) load(ctx *core.Context, migrationNextPattern *core.Obj
 				panic(core.ErrUnreachable)
 			}
 
-			args := core.InstanceLoadArgs{
+			args := core.FreeEntityLoadingParams{
 				Pattern:      pattern_,
 				Key:          path,
 				InitialValue: initialValue.(core.Serializable),
 				Storage:      ldb,
 				AllowMissing: true,
 			}
-			value, err := core.LoadInstance(ctx, args)
+			value, err := core.LoadFreeEntity(ctx, args)
 			if err != nil {
 				return fmt.Errorf("failed to load %s: %w", path, err)
 			}

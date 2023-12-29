@@ -39,7 +39,7 @@ type MigrationCapable interface {
 	//Migrate recursively perfoms a migration, it calls the passed handlers,
 	//if a migration operation is a deletion of the MigrationCapable nil should be returned.
 	//This method should be called before any change to the MigrationCapable.
-	Migrate(ctx *Context, key Path, migration *InstanceMigrationArgs) (Value, error)
+	Migrate(ctx *Context, key Path, migration *FreeEntityMigrationArgs) (Value, error)
 }
 
 type MigrationOp interface {
@@ -342,7 +342,7 @@ func GetMigrationOperations(ctx *Context, current, next Pattern, pseudoPath stri
 	return m1.GetMigrationOperations(ctx, next, pseudoPath)
 }
 
-func (o *Object) Migrate(ctx *Context, key Path, migration *InstanceMigrationArgs) (Value, error) {
+func (o *Object) Migrate(ctx *Context, key Path, migration *FreeEntityMigrationArgs) (Value, error) {
 	if o.IsShared() {
 		panic(ErrUnreachable)
 	}
@@ -366,7 +366,7 @@ func (o *Object) Migrate(ctx *Context, key Path, migration *InstanceMigrationArg
 	return migrateObjectOrRecord(ctx, o, true, &o.keys, &o.values, key, migration)
 }
 
-func (o *Record) Migrate(ctx *Context, key Path, migration *InstanceMigrationArgs) (Value, error) {
+func (o *Record) Migrate(ctx *Context, key Path, migration *FreeEntityMigrationArgs) (Value, error) {
 	if ctx.GetTx() != nil {
 		panic(ErrUnreachable)
 	}
@@ -376,7 +376,7 @@ func (o *Record) Migrate(ctx *Context, key Path, migration *InstanceMigrationArg
 
 func migrateObjectOrRecord(
 	ctx *Context, o Value, isObject bool, propKeys *[]string, propValues *[]Serializable,
-	key Path, migration *InstanceMigrationArgs) (Value, error) {
+	key Path, migration *FreeEntityMigrationArgs) (Value, error) {
 	depth := len(pathutils.GetPathSegments(string(key)))
 	migrationHanders := migration.MigrationHandlers
 	state := ctx.GetClosestState()
@@ -493,7 +493,7 @@ func migrateObjectOrRecord(
 			}
 
 			propertyValuePath := "/" + Path(strings.Join(pathPatternSegments[:depth+1], ""))
-			nextPropValue, err := migrationCapable.Migrate(ctx, propertyValuePath, &InstanceMigrationArgs{
+			nextPropValue, err := migrationCapable.Migrate(ctx, propertyValuePath, &FreeEntityMigrationArgs{
 				NextPattern:       nil,
 				MigrationHandlers: migrationHanders.FilterByPrefix(propertyValuePath),
 			})
@@ -648,7 +648,7 @@ func migrateObjectOrRecord(
 			}
 
 			propertyValuePath := Path("/" + strings.Join(propertyPathPatternSegments, ""))
-			nextPropValue, err := migrationCapable.Migrate(ctx, propertyValuePath, &InstanceMigrationArgs{
+			nextPropValue, err := migrationCapable.Migrate(ctx, propertyValuePath, &FreeEntityMigrationArgs{
 				NextPattern:       nil,
 				MigrationHandlers: migrationHanders.FilterByPrefix(propertyValuePath),
 			})
@@ -708,7 +708,7 @@ func migrateObjectOrRecord(
 	return o, nil
 }
 
-func (list *List) Migrate(ctx *Context, key Path, migration *InstanceMigrationArgs) (Value, error) {
+func (list *List) Migrate(ctx *Context, key Path, migration *FreeEntityMigrationArgs) (Value, error) {
 	if list.mutationCallbacks != nil {
 		panic(ErrUnreachable)
 	}
@@ -720,7 +720,7 @@ func (list *List) Migrate(ctx *Context, key Path, migration *InstanceMigrationAr
 	return migrateListOrTuple(ctx, list, true, key, migration)
 }
 
-func (tuple *Tuple) Migrate(ctx *Context, key Path, migration *InstanceMigrationArgs) (Value, error) {
+func (tuple *Tuple) Migrate(ctx *Context, key Path, migration *FreeEntityMigrationArgs) (Value, error) {
 	if ctx.GetTx() != nil {
 		panic(ErrUnreachable)
 	}
@@ -730,7 +730,7 @@ func (tuple *Tuple) Migrate(ctx *Context, key Path, migration *InstanceMigration
 
 func migrateListOrTuple(
 	ctx *Context, o Sequence, isList bool,
-	key Path, migration *InstanceMigrationArgs) (Value, error) {
+	key Path, migration *FreeEntityMigrationArgs) (Value, error) {
 	depth := len(pathutils.GetPathSegments(string(key)))
 
 	migrationHanders := migration.MigrationHandlers
@@ -840,7 +840,7 @@ func migrateListOrTuple(
 			}
 
 			elementValuePath := "/" + Path(strings.Join(elementPathPattern, ""))
-			nextElementValue, err := migrationCapable.Migrate(ctx, elementValuePath, &InstanceMigrationArgs{
+			nextElementValue, err := migrationCapable.Migrate(ctx, elementValuePath, &FreeEntityMigrationArgs{
 				NextPattern:       nil,
 				MigrationHandlers: migrationHanders.FilterByPrefix(elementValuePath),
 			})
@@ -952,7 +952,7 @@ func migrateListOrTuple(
 			}
 
 			propertyValuePath := Path("/" + strings.Join(elementPathSegments, ""))
-			nextElementValue, err := migrationCapable.Migrate(ctx, propertyValuePath, &InstanceMigrationArgs{
+			nextElementValue, err := migrationCapable.Migrate(ctx, propertyValuePath, &FreeEntityMigrationArgs{
 				NextPattern:       nil,
 				MigrationHandlers: migrationHanders.FilterByPrefix(propertyValuePath),
 			})

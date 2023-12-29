@@ -15,7 +15,7 @@ import (
 	"github.com/inoxlang/inox/internal/utils/pathutils"
 )
 
-func loadSet(ctx *core.Context, args core.InstanceLoadArgs) (core.UrlHolder, error) {
+func loadSet(ctx *core.Context, args core.FreeEntityLoadingParams) (core.UrlHolder, error) {
 	path := args.Key
 	pattern := args.Pattern
 	storage := args.Storage
@@ -115,7 +115,7 @@ func loadSet(ctx *core.Context, args core.InstanceLoadArgs) (core.UrlHolder, err
 
 		nextSet, ok := next.(*Set)
 		if !ok || set != nextSet {
-			return core.LoadInstance(ctx, core.InstanceLoadArgs{
+			return core.LoadFreeEntity(ctx, core.FreeEntityLoadingParams{
 				Key:          args.Key,
 				Storage:      args.Storage,
 				Pattern:      args.Migration.NextPattern,
@@ -201,7 +201,7 @@ func (set *Set) WriteJSONRepresentation(ctx *core.Context, w *jsoniter.Stream, c
 	return nil
 }
 
-func (s *Set) Migrate(ctx *core.Context, key core.Path, migration *core.InstanceMigrationArgs) (core.Value, error) {
+func (s *Set) Migrate(ctx *core.Context, key core.Path, migration *core.FreeEntityMigrationArgs) (core.Value, error) {
 	if len(s.pendingInclusions) > 0 || len(s.pendingRemovals) > 0 {
 		panic(core.ErrUnreachable)
 	}
@@ -290,7 +290,7 @@ func (s *Set) Migrate(ctx *core.Context, key core.Path, migration *core.Instance
 			}
 
 			propertyValuePath := "/" + core.Path(strings.Join(elementPathPattern, ""))
-			nextElementValue, err := migrationCapable.Migrate(ctx, propertyValuePath, &core.InstanceMigrationArgs{
+			nextElementValue, err := migrationCapable.Migrate(ctx, propertyValuePath, &core.FreeEntityMigrationArgs{
 				NextPattern:       nil,
 				MigrationHandlers: migrationHanders.FilterByPrefix(propertyValuePath),
 			})
@@ -350,7 +350,7 @@ func (s *Set) Migrate(ctx *core.Context, key core.Path, migration *core.Instance
 					}
 
 					elementValuePath := core.Path("/" + strings.Join(elementPathPatternSegments, ""))
-					nextElementValue, err := migrationCapable.Migrate(ctx, elementValuePath, &core.InstanceMigrationArgs{
+					nextElementValue, err := migrationCapable.Migrate(ctx, elementValuePath, &core.FreeEntityMigrationArgs{
 						NextPattern:       nil,
 						MigrationHandlers: migrationHanders.FilterByPrefix(elementValuePath),
 					})

@@ -31,7 +31,7 @@ func TestLoadObject(t *testing.T) {
 		storage := &TestValueStorage{BaseURL_: "ldb://main"}
 		pattern := NewInexactObjectPattern(map[string]Pattern{})
 
-		val, err := loadObject(ctx, InstanceLoadArgs{
+		val, err := loadObject(ctx, FreeEntityLoadingParams{
 			Key:          "/user",
 			Storage:      storage,
 			Pattern:      pattern,
@@ -52,7 +52,7 @@ func TestLoadObject(t *testing.T) {
 		storage := &TestValueStorage{BaseURL_: "ldb://main"}
 		pattern := NewInexactObjectPattern(map[string]Pattern{})
 
-		val, err := loadObject(ctx, InstanceLoadArgs{
+		val, err := loadObject(ctx, FreeEntityLoadingParams{
 			Key:          "/user",
 			Storage:      storage,
 			Pattern:      pattern,
@@ -76,7 +76,7 @@ func TestLoadObject(t *testing.T) {
 		}
 		pattern := NewInexactObjectPattern(map[string]Pattern{"a": INT_PATTERN})
 
-		val, err := loadObject(ctx, InstanceLoadArgs{
+		val, err := loadObject(ctx, FreeEntityLoadingParams{
 			Key:          "/user",
 			Storage:      storage,
 			Pattern:      pattern,
@@ -119,7 +119,7 @@ func TestLoadObject(t *testing.T) {
 		}
 		pattern := NewInexactObjectPattern(map[string]Pattern{"inner": NewInexactObjectPattern(map[string]Pattern{"a": INT_PATTERN})})
 
-		val, err := loadObject(ctx, InstanceLoadArgs{
+		val, err := loadObject(ctx, FreeEntityLoadingParams{
 			Key:          "/user",
 			Storage:      storage,
 			Pattern:      pattern,
@@ -167,7 +167,7 @@ func TestLoadObject(t *testing.T) {
 			"inner": NewListPatternOf(INT_PATTERN),
 		})
 
-		val, err := loadObject(ctx, InstanceLoadArgs{
+		val, err := loadObject(ctx, FreeEntityLoadingParams{
 			Key:          "/user",
 			Storage:      storage,
 			Pattern:      pattern,
@@ -209,12 +209,12 @@ func TestLoadObject(t *testing.T) {
 		}
 		pattern := NewInexactObjectPattern(map[string]Pattern{})
 
-		val, err := loadObject(ctx, InstanceLoadArgs{
+		val, err := loadObject(ctx, FreeEntityLoadingParams{
 			Key:          "/user",
 			Storage:      storage,
 			Pattern:      pattern,
 			AllowMissing: false,
-			Migration: &InstanceMigrationArgs{
+			Migration: &FreeEntityMigrationArgs{
 				MigrationHandlers: MigrationOpHandlers{
 					Deletions: map[PathPattern]*MigrationOpHandler{
 						"/user": nil,
@@ -241,12 +241,12 @@ func TestLoadObject(t *testing.T) {
 		pattern := NewInexactObjectPattern(map[string]Pattern{})
 		nextPattern := NewInexactObjectPattern(map[string]Pattern{"a": INT_PATTERN})
 
-		val, err := loadObject(ctx, InstanceLoadArgs{
+		val, err := loadObject(ctx, FreeEntityLoadingParams{
 			Key:          "/user",
 			Storage:      storage,
 			Pattern:      pattern,
 			AllowMissing: false,
-			Migration: &InstanceMigrationArgs{
+			Migration: &FreeEntityMigrationArgs{
 				NextPattern: nextPattern,
 				MigrationHandlers: MigrationOpHandlers{
 					Replacements: map[PathPattern]*MigrationOpHandler{
@@ -290,12 +290,12 @@ func TestLoadObject(t *testing.T) {
 		pattern := NewInexactObjectPattern(map[string]Pattern{"a": INT_PATTERN})
 		nextPattern := NewInexactObjectPattern(map[string]Pattern{"a": INT_PATTERN, "b": INT_PATTERN})
 
-		val, err := loadObject(ctx, InstanceLoadArgs{
+		val, err := loadObject(ctx, FreeEntityLoadingParams{
 			Key:          "/user",
 			Storage:      storage,
 			Pattern:      pattern,
 			AllowMissing: false,
-			Migration: &InstanceMigrationArgs{
+			Migration: &FreeEntityMigrationArgs{
 				NextPattern: nextPattern,
 				MigrationHandlers: MigrationOpHandlers{
 					Inclusions: map[PathPattern]*MigrationOpHandler{
@@ -339,12 +339,12 @@ func TestLoadObject(t *testing.T) {
 		pattern := NewInexactObjectPattern(map[string]Pattern{"a": INT_PATTERN})
 		nextPattern := NewInexactObjectPattern(map[string]Pattern{"a": INT_PATTERN, "b": INT_PATTERN})
 
-		val, err := loadObject(ctx, InstanceLoadArgs{
+		val, err := loadObject(ctx, FreeEntityLoadingParams{
 			Key:          "/user",
 			Storage:      storage,
 			Pattern:      pattern,
 			AllowMissing: true,
-			Migration: &InstanceMigrationArgs{
+			Migration: &FreeEntityMigrationArgs{
 				NextPattern: nextPattern,
 				MigrationHandlers: MigrationOpHandlers{
 					Inclusions: map[PathPattern]*MigrationOpHandler{

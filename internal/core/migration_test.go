@@ -653,7 +653,7 @@ func TestObjectMigrate(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		object := NewObjectFromMap(nil, ctx)
-		val, err := object.Migrate(ctx, "/", &InstanceMigrationArgs{
+		val, err := object.Migrate(ctx, "/", &FreeEntityMigrationArgs{
 			NextPattern: nil,
 			MigrationHandlers: MigrationOpHandlers{
 				Deletions: map[PathPattern]*MigrationOpHandler{
@@ -673,7 +673,7 @@ func TestObjectMigrate(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		object := NewObjectFromMap(nil, ctx)
-		val, err := object.Migrate(ctx, "/x", &InstanceMigrationArgs{
+		val, err := object.Migrate(ctx, "/x", &FreeEntityMigrationArgs{
 			NextPattern: nil,
 			MigrationHandlers: MigrationOpHandlers{
 				Deletions: map[PathPattern]*MigrationOpHandler{
@@ -693,7 +693,7 @@ func TestObjectMigrate(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		object := NewObjectFromMap(ValMap{"x": Int(0)}, ctx)
-		val, err := object.Migrate(ctx, "/", &InstanceMigrationArgs{
+		val, err := object.Migrate(ctx, "/", &FreeEntityMigrationArgs{
 			NextPattern: nil,
 			MigrationHandlers: MigrationOpHandlers{
 				Deletions: map[PathPattern]*MigrationOpHandler{
@@ -714,7 +714,7 @@ func TestObjectMigrate(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		object := NewObjectFromMap(ValMap{}, ctx)
-		val, err := object.Migrate(ctx, "/", &InstanceMigrationArgs{
+		val, err := object.Migrate(ctx, "/", &FreeEntityMigrationArgs{
 			NextPattern: nil,
 			MigrationHandlers: MigrationOpHandlers{
 				Deletions: map[PathPattern]*MigrationOpHandler{
@@ -734,7 +734,7 @@ func TestObjectMigrate(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		object := NewObjectFromMap(ValMap{"a": NewObjectFromMap(ValMap{"b": Int(0)}, ctx)}, ctx)
-		val, err := object.Migrate(ctx, "/", &InstanceMigrationArgs{
+		val, err := object.Migrate(ctx, "/", &FreeEntityMigrationArgs{
 			NextPattern: nil,
 			MigrationHandlers: MigrationOpHandlers{
 				Deletions: map[PathPattern]*MigrationOpHandler{
@@ -759,7 +759,7 @@ func TestObjectMigrate(t *testing.T) {
 
 		replacement := NewObjectFromMap(nil, ctx)
 
-		val, err := object.Migrate(ctx, "/", &InstanceMigrationArgs{
+		val, err := object.Migrate(ctx, "/", &FreeEntityMigrationArgs{
 			NextPattern: nil,
 			MigrationHandlers: MigrationOpHandlers{
 				Replacements: map[PathPattern]*MigrationOpHandler{
@@ -783,7 +783,7 @@ func TestObjectMigrate(t *testing.T) {
 
 		replacement := NewObjectFromMap(nil, ctx)
 
-		val, err := object.Migrate(ctx, "/x", &InstanceMigrationArgs{
+		val, err := object.Migrate(ctx, "/x", &FreeEntityMigrationArgs{
 			NextPattern: nil,
 			MigrationHandlers: MigrationOpHandlers{
 				Replacements: map[PathPattern]*MigrationOpHandler{
@@ -807,7 +807,7 @@ func TestObjectMigrate(t *testing.T) {
 		replacement := NewObjectFromMap(nil, ctx)
 
 		object := NewObjectFromMap(ValMap{"a": NewObjectFromMap(ValMap{"b": Int(0)}, ctx)}, ctx)
-		val, err := object.Migrate(ctx, "/", &InstanceMigrationArgs{
+		val, err := object.Migrate(ctx, "/", &FreeEntityMigrationArgs{
 			NextPattern: nil,
 			MigrationHandlers: MigrationOpHandlers{
 				Replacements: map[PathPattern]*MigrationOpHandler{
@@ -835,7 +835,7 @@ func TestObjectMigrate(t *testing.T) {
 		replacement := NewObjectFromMap(nil, ctx)
 
 		object := NewObjectFromMap(ValMap{}, ctx)
-		val, err := object.Migrate(ctx, "/", &InstanceMigrationArgs{
+		val, err := object.Migrate(ctx, "/", &FreeEntityMigrationArgs{
 			NextPattern: nil,
 			MigrationHandlers: MigrationOpHandlers{
 				Replacements: map[PathPattern]*MigrationOpHandler{
@@ -854,7 +854,7 @@ func TestObjectMigrate(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 
 		object := NewObjectFromMap(ValMap{"a": NewObjectFromMap(ValMap{"b": Int(0)}, ctx)}, ctx)
-		val, err := object.Migrate(ctx, "/", &InstanceMigrationArgs{
+		val, err := object.Migrate(ctx, "/", &FreeEntityMigrationArgs{
 			NextPattern: nil,
 			MigrationHandlers: MigrationOpHandlers{
 				Replacements: map[PathPattern]*MigrationOpHandler{
@@ -877,7 +877,7 @@ func TestObjectMigrate(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 
 		object := NewObjectFromMap(ValMap{"a": NewRecordFromMap(ValMap{"b": Int(0)})}, ctx)
-		val, err := object.Migrate(ctx, "/", &InstanceMigrationArgs{
+		val, err := object.Migrate(ctx, "/", &FreeEntityMigrationArgs{
 			NextPattern: nil,
 			MigrationHandlers: MigrationOpHandlers{
 				Replacements: map[PathPattern]*MigrationOpHandler{
@@ -900,7 +900,7 @@ func TestObjectMigrate(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 
 		object := NewObjectFromMap(ValMap{}, ctx)
-		val, err := object.Migrate(ctx, "/", &InstanceMigrationArgs{
+		val, err := object.Migrate(ctx, "/", &FreeEntityMigrationArgs{
 			NextPattern: nil,
 			MigrationHandlers: MigrationOpHandlers{
 				Inclusions: map[PathPattern]*MigrationOpHandler{
@@ -925,7 +925,7 @@ func TestRecordMigrate(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		record := NewRecordFromMap(nil)
-		val, err := record.Migrate(ctx, "/", &InstanceMigrationArgs{
+		val, err := record.Migrate(ctx, "/", &FreeEntityMigrationArgs{
 			NextPattern: nil,
 			MigrationHandlers: MigrationOpHandlers{
 				Deletions: map[PathPattern]*MigrationOpHandler{
@@ -945,7 +945,7 @@ func TestRecordMigrate(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		record := NewEmptyRecord()
-		val, err := record.Migrate(ctx, "/x", &InstanceMigrationArgs{
+		val, err := record.Migrate(ctx, "/x", &FreeEntityMigrationArgs{
 			NextPattern: nil,
 			MigrationHandlers: MigrationOpHandlers{
 				Deletions: map[PathPattern]*MigrationOpHandler{
@@ -965,7 +965,7 @@ func TestRecordMigrate(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		record := NewRecordFromMap(ValMap{"x": Int(0)})
-		val, err := record.Migrate(ctx, "/", &InstanceMigrationArgs{
+		val, err := record.Migrate(ctx, "/", &FreeEntityMigrationArgs{
 			NextPattern: nil,
 			MigrationHandlers: MigrationOpHandlers{
 				Deletions: map[PathPattern]*MigrationOpHandler{
@@ -988,7 +988,7 @@ func TestRecordMigrate(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		record := NewRecordFromMap(ValMap{})
-		val, err := record.Migrate(ctx, "/", &InstanceMigrationArgs{
+		val, err := record.Migrate(ctx, "/", &FreeEntityMigrationArgs{
 			NextPattern: nil,
 			MigrationHandlers: MigrationOpHandlers{
 				Deletions: map[PathPattern]*MigrationOpHandler{
@@ -1008,7 +1008,7 @@ func TestRecordMigrate(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		record := NewRecordFromMap(ValMap{"a": NewRecordFromMap(ValMap{"b": Int(0)})})
-		val, err := record.Migrate(ctx, "/", &InstanceMigrationArgs{
+		val, err := record.Migrate(ctx, "/", &FreeEntityMigrationArgs{
 			NextPattern: nil,
 			MigrationHandlers: MigrationOpHandlers{
 				Deletions: map[PathPattern]*MigrationOpHandler{
@@ -1034,7 +1034,7 @@ func TestRecordMigrate(t *testing.T) {
 		record := NewEmptyRecord()
 		replacement := NewEmptyRecord()
 
-		val, err := record.Migrate(ctx, "/", &InstanceMigrationArgs{
+		val, err := record.Migrate(ctx, "/", &FreeEntityMigrationArgs{
 			NextPattern: nil,
 			MigrationHandlers: MigrationOpHandlers{
 				Replacements: map[PathPattern]*MigrationOpHandler{
@@ -1060,7 +1060,7 @@ func TestRecordMigrate(t *testing.T) {
 
 		replacement := NewEmptyRecord()
 
-		val, err := record.Migrate(ctx, "/x", &InstanceMigrationArgs{
+		val, err := record.Migrate(ctx, "/x", &FreeEntityMigrationArgs{
 			NextPattern: nil,
 			MigrationHandlers: MigrationOpHandlers{
 				Replacements: map[PathPattern]*MigrationOpHandler{
@@ -1085,7 +1085,7 @@ func TestRecordMigrate(t *testing.T) {
 		replacement := NewEmptyRecord()
 
 		record := NewRecordFromMap(ValMap{"a": NewRecordFromMap(ValMap{"b": Int(0)})})
-		val, err := record.Migrate(ctx, "/", &InstanceMigrationArgs{
+		val, err := record.Migrate(ctx, "/", &FreeEntityMigrationArgs{
 			NextPattern: nil,
 			MigrationHandlers: MigrationOpHandlers{
 				Replacements: map[PathPattern]*MigrationOpHandler{
@@ -1116,7 +1116,7 @@ func TestRecordMigrate(t *testing.T) {
 		replacement := NewEmptyRecord()
 
 		record := NewRecordFromMap(ValMap{})
-		val, err := record.Migrate(ctx, "/", &InstanceMigrationArgs{
+		val, err := record.Migrate(ctx, "/", &FreeEntityMigrationArgs{
 			NextPattern: nil,
 			MigrationHandlers: MigrationOpHandlers{
 				Replacements: map[PathPattern]*MigrationOpHandler{
@@ -1136,7 +1136,7 @@ func TestRecordMigrate(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		record := NewRecordFromMap(ValMap{"a": NewRecordFromMap(ValMap{"b": Int(0)})})
-		val, err := record.Migrate(ctx, "/", &InstanceMigrationArgs{
+		val, err := record.Migrate(ctx, "/", &FreeEntityMigrationArgs{
 			NextPattern: nil,
 			MigrationHandlers: MigrationOpHandlers{
 				Replacements: map[PathPattern]*MigrationOpHandler{
@@ -1162,7 +1162,7 @@ func TestRecordMigrate(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		record := NewRecordFromMap(ValMap{})
-		val, err := record.Migrate(ctx, "/", &InstanceMigrationArgs{
+		val, err := record.Migrate(ctx, "/", &FreeEntityMigrationArgs{
 			NextPattern: nil,
 			MigrationHandlers: MigrationOpHandlers{
 				Inclusions: map[PathPattern]*MigrationOpHandler{
@@ -1189,7 +1189,7 @@ func TestListMigrate(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		list := NewWrappedValueList(nil)
-		val, err := list.Migrate(ctx, "/", &InstanceMigrationArgs{
+		val, err := list.Migrate(ctx, "/", &FreeEntityMigrationArgs{
 			NextPattern: nil,
 			MigrationHandlers: MigrationOpHandlers{
 				Deletions: map[PathPattern]*MigrationOpHandler{
@@ -1209,7 +1209,7 @@ func TestListMigrate(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		list := NewWrappedValueList()
-		val, err := list.Migrate(ctx, "/x", &InstanceMigrationArgs{
+		val, err := list.Migrate(ctx, "/x", &FreeEntityMigrationArgs{
 			NextPattern: nil,
 			MigrationHandlers: MigrationOpHandlers{
 				Deletions: map[PathPattern]*MigrationOpHandler{
@@ -1229,7 +1229,7 @@ func TestListMigrate(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		list := NewWrappedValueList(Int(0))
-		val, err := list.Migrate(ctx, "/", &InstanceMigrationArgs{
+		val, err := list.Migrate(ctx, "/", &FreeEntityMigrationArgs{
 			NextPattern: nil,
 			MigrationHandlers: MigrationOpHandlers{
 				Deletions: map[PathPattern]*MigrationOpHandler{
@@ -1250,7 +1250,7 @@ func TestListMigrate(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		list := NewWrappedValueList(Int(0))
-		val, err := list.Migrate(ctx, "/", &InstanceMigrationArgs{
+		val, err := list.Migrate(ctx, "/", &FreeEntityMigrationArgs{
 			NextPattern: nil,
 			MigrationHandlers: MigrationOpHandlers{
 				Deletions: map[PathPattern]*MigrationOpHandler{
@@ -1270,7 +1270,7 @@ func TestListMigrate(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		list := NewWrappedValueList(Int(0))
-		val, err := list.Migrate(ctx, "/", &InstanceMigrationArgs{
+		val, err := list.Migrate(ctx, "/", &FreeEntityMigrationArgs{
 			NextPattern: nil,
 			MigrationHandlers: MigrationOpHandlers{
 				Deletions: map[PathPattern]*MigrationOpHandler{
@@ -1290,7 +1290,7 @@ func TestListMigrate(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		list := NewWrappedValueList(NewObjectFromMap(ValMap{"b": Int(0)}, ctx))
-		val, err := list.Migrate(ctx, "/", &InstanceMigrationArgs{
+		val, err := list.Migrate(ctx, "/", &FreeEntityMigrationArgs{
 			NextPattern: nil,
 			MigrationHandlers: MigrationOpHandlers{
 				Deletions: map[PathPattern]*MigrationOpHandler{
@@ -1316,7 +1316,7 @@ func TestListMigrate(t *testing.T) {
 		list := NewWrappedValueList()
 		replacement := NewWrappedValueList()
 
-		val, err := list.Migrate(ctx, "/", &InstanceMigrationArgs{
+		val, err := list.Migrate(ctx, "/", &FreeEntityMigrationArgs{
 			NextPattern: nil,
 			MigrationHandlers: MigrationOpHandlers{
 				Replacements: map[PathPattern]*MigrationOpHandler{
@@ -1341,7 +1341,7 @@ func TestListMigrate(t *testing.T) {
 		list := NewWrappedValueList()
 		replacement := NewWrappedValueList()
 
-		val, err := list.Migrate(ctx, "/x", &InstanceMigrationArgs{
+		val, err := list.Migrate(ctx, "/x", &FreeEntityMigrationArgs{
 			NextPattern: nil,
 			MigrationHandlers: MigrationOpHandlers{
 				Replacements: map[PathPattern]*MigrationOpHandler{
@@ -1366,7 +1366,7 @@ func TestListMigrate(t *testing.T) {
 		replacement := NewObjectFromMap(nil, ctx)
 
 		list := NewWrappedValueList(NewObjectFromMap(ValMap{"b": Int(0)}, ctx))
-		val, err := list.Migrate(ctx, "/", &InstanceMigrationArgs{
+		val, err := list.Migrate(ctx, "/", &FreeEntityMigrationArgs{
 			NextPattern: nil,
 			MigrationHandlers: MigrationOpHandlers{
 				Replacements: map[PathPattern]*MigrationOpHandler{
@@ -1395,7 +1395,7 @@ func TestListMigrate(t *testing.T) {
 		replacement := NewWrappedValueList()
 		list := NewWrappedValueList()
 
-		val, err := list.Migrate(ctx, "/", &InstanceMigrationArgs{
+		val, err := list.Migrate(ctx, "/", &FreeEntityMigrationArgs{
 			NextPattern: nil,
 			MigrationHandlers: MigrationOpHandlers{
 				Replacements: map[PathPattern]*MigrationOpHandler{
@@ -1417,7 +1417,7 @@ func TestListMigrate(t *testing.T) {
 		replacement := NewWrappedValueList()
 		list := NewWrappedValueList()
 
-		val, err := list.Migrate(ctx, "/", &InstanceMigrationArgs{
+		val, err := list.Migrate(ctx, "/", &FreeEntityMigrationArgs{
 			NextPattern: nil,
 			MigrationHandlers: MigrationOpHandlers{
 				Replacements: map[PathPattern]*MigrationOpHandler{
@@ -1437,7 +1437,7 @@ func TestListMigrate(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		list := NewWrappedValueList(NewObjectFromMap(ValMap{"b": Int(0)}, ctx))
-		val, err := list.Migrate(ctx, "/", &InstanceMigrationArgs{
+		val, err := list.Migrate(ctx, "/", &FreeEntityMigrationArgs{
 			NextPattern: nil,
 			MigrationHandlers: MigrationOpHandlers{
 				Replacements: map[PathPattern]*MigrationOpHandler{
@@ -1461,7 +1461,7 @@ func TestListMigrate(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		list := NewWrappedValueList(NewRecordFromMap(ValMap{"b": Int(0)}))
-		val, err := list.Migrate(ctx, "/", &InstanceMigrationArgs{
+		val, err := list.Migrate(ctx, "/", &FreeEntityMigrationArgs{
 			NextPattern: nil,
 			MigrationHandlers: MigrationOpHandlers{
 				Replacements: map[PathPattern]*MigrationOpHandler{
@@ -1487,7 +1487,7 @@ func TestListMigrate(t *testing.T) {
 		list := NewWrappedValueList()
 
 		assert.PanicsWithError(t, ErrUnreachable.Error(), func() {
-			list.Migrate(ctx, "/", &InstanceMigrationArgs{
+			list.Migrate(ctx, "/", &FreeEntityMigrationArgs{
 				NextPattern: nil,
 				MigrationHandlers: MigrationOpHandlers{
 					Inclusions: map[PathPattern]*MigrationOpHandler{
@@ -1507,7 +1507,7 @@ func TestTupleMigrate(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		tuple := NewTuple(nil)
-		val, err := tuple.Migrate(ctx, "/", &InstanceMigrationArgs{
+		val, err := tuple.Migrate(ctx, "/", &FreeEntityMigrationArgs{
 			NextPattern: nil,
 			MigrationHandlers: MigrationOpHandlers{
 				Deletions: map[PathPattern]*MigrationOpHandler{
@@ -1527,7 +1527,7 @@ func TestTupleMigrate(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		tuple := NewTuple(nil)
-		val, err := tuple.Migrate(ctx, "/x", &InstanceMigrationArgs{
+		val, err := tuple.Migrate(ctx, "/x", &FreeEntityMigrationArgs{
 			NextPattern: nil,
 			MigrationHandlers: MigrationOpHandlers{
 				Deletions: map[PathPattern]*MigrationOpHandler{
@@ -1547,7 +1547,7 @@ func TestTupleMigrate(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		tuple := NewTuple([]Serializable{Int(0)})
-		val, err := tuple.Migrate(ctx, "/", &InstanceMigrationArgs{
+		val, err := tuple.Migrate(ctx, "/", &FreeEntityMigrationArgs{
 			NextPattern: nil,
 			MigrationHandlers: MigrationOpHandlers{
 				Deletions: map[PathPattern]*MigrationOpHandler{
@@ -1570,7 +1570,7 @@ func TestTupleMigrate(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		tuple := NewTuple([]Serializable{Int(0)})
-		val, err := tuple.Migrate(ctx, "/", &InstanceMigrationArgs{
+		val, err := tuple.Migrate(ctx, "/", &FreeEntityMigrationArgs{
 			NextPattern: nil,
 			MigrationHandlers: MigrationOpHandlers{
 				Deletions: map[PathPattern]*MigrationOpHandler{
@@ -1592,7 +1592,7 @@ func TestTupleMigrate(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		tuple := NewTuple([]Serializable{Int(0)})
-		val, err := tuple.Migrate(ctx, "/", &InstanceMigrationArgs{
+		val, err := tuple.Migrate(ctx, "/", &FreeEntityMigrationArgs{
 			NextPattern: nil,
 			MigrationHandlers: MigrationOpHandlers{
 				Deletions: map[PathPattern]*MigrationOpHandler{
@@ -1614,7 +1614,7 @@ func TestTupleMigrate(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		tuple := NewTuple([]Serializable{NewRecordFromMap(ValMap{"b": Int(0)})})
-		val, err := tuple.Migrate(ctx, "/", &InstanceMigrationArgs{
+		val, err := tuple.Migrate(ctx, "/", &FreeEntityMigrationArgs{
 			NextPattern: nil,
 			MigrationHandlers: MigrationOpHandlers{
 				Deletions: map[PathPattern]*MigrationOpHandler{
@@ -1640,7 +1640,7 @@ func TestTupleMigrate(t *testing.T) {
 		tuple := NewTuple(nil)
 		replacement := NewTuple(nil)
 
-		val, err := tuple.Migrate(ctx, "/", &InstanceMigrationArgs{
+		val, err := tuple.Migrate(ctx, "/", &FreeEntityMigrationArgs{
 			NextPattern: nil,
 			MigrationHandlers: MigrationOpHandlers{
 				Replacements: map[PathPattern]*MigrationOpHandler{
@@ -1665,7 +1665,7 @@ func TestTupleMigrate(t *testing.T) {
 		tuple := NewTuple(nil)
 		replacement := NewTuple(nil)
 
-		val, err := tuple.Migrate(ctx, "/x", &InstanceMigrationArgs{
+		val, err := tuple.Migrate(ctx, "/x", &FreeEntityMigrationArgs{
 			NextPattern: nil,
 			MigrationHandlers: MigrationOpHandlers{
 				Replacements: map[PathPattern]*MigrationOpHandler{
@@ -1690,7 +1690,7 @@ func TestTupleMigrate(t *testing.T) {
 		replacement := NewRecordFromMap(nil)
 
 		tuple := NewTuple([]Serializable{NewRecordFromMap(ValMap{"b": Int(0)})})
-		val, err := tuple.Migrate(ctx, "/", &InstanceMigrationArgs{
+		val, err := tuple.Migrate(ctx, "/", &FreeEntityMigrationArgs{
 			NextPattern: nil,
 			MigrationHandlers: MigrationOpHandlers{
 				Replacements: map[PathPattern]*MigrationOpHandler{
@@ -1722,7 +1722,7 @@ func TestTupleMigrate(t *testing.T) {
 		replacement := NewWrappedValueList()
 		tuple := NewTuple(nil)
 
-		val, err := tuple.Migrate(ctx, "/", &InstanceMigrationArgs{
+		val, err := tuple.Migrate(ctx, "/", &FreeEntityMigrationArgs{
 			NextPattern: nil,
 			MigrationHandlers: MigrationOpHandlers{
 				Replacements: map[PathPattern]*MigrationOpHandler{
@@ -1744,7 +1744,7 @@ func TestTupleMigrate(t *testing.T) {
 		replacement := NewTuple(nil)
 		tuple := NewTuple(nil)
 
-		val, err := tuple.Migrate(ctx, "/", &InstanceMigrationArgs{
+		val, err := tuple.Migrate(ctx, "/", &FreeEntityMigrationArgs{
 			NextPattern: nil,
 			MigrationHandlers: MigrationOpHandlers{
 				Replacements: map[PathPattern]*MigrationOpHandler{
@@ -1764,7 +1764,7 @@ func TestTupleMigrate(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		tuple := NewTuple([]Serializable{NewRecordFromMap(ValMap{"b": Int(0)})})
-		val, err := tuple.Migrate(ctx, "/", &InstanceMigrationArgs{
+		val, err := tuple.Migrate(ctx, "/", &FreeEntityMigrationArgs{
 			NextPattern: nil,
 			MigrationHandlers: MigrationOpHandlers{
 				Replacements: map[PathPattern]*MigrationOpHandler{
@@ -1792,7 +1792,7 @@ func TestTupleMigrate(t *testing.T) {
 		tuple := NewTuple(nil)
 
 		assert.PanicsWithError(t, ErrUnreachable.Error(), func() {
-			tuple.Migrate(ctx, "/", &InstanceMigrationArgs{
+			tuple.Migrate(ctx, "/", &FreeEntityMigrationArgs{
 				NextPattern: nil,
 				MigrationHandlers: MigrationOpHandlers{
 					Inclusions: map[PathPattern]*MigrationOpHandler{

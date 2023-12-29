@@ -28,8 +28,8 @@ func TestDatabaseIL(t *testing.T) {
 	}()
 
 	t.Run("the name of the top level entities should be a valid identifier", func(t *testing.T) {
-		resetLoadInstanceFnRegistry()
-		defer resetLoadInstanceFnRegistry()
+		resetLoadFreeEntityFnRegistry()
+		defer resetLoadFreeEntityFnRegistry()
 
 		ctx := NewContexWithEmptyState(ContextConfig{
 			Permissions: []Permission{
@@ -90,8 +90,8 @@ func TestDatabaseIL(t *testing.T) {
 	})
 
 	t.Run("top-level entity patterns should have a loading function", func(t *testing.T) {
-		resetLoadInstanceFnRegistry()
-		defer resetLoadInstanceFnRegistry()
+		resetLoadFreeEntityFnRegistry()
+		defer resetLoadFreeEntityFnRegistry()
 
 		ctx := NewContexWithEmptyState(ContextConfig{
 			Permissions: []Permission{
@@ -152,10 +152,10 @@ func TestDatabaseIL(t *testing.T) {
 	})
 
 	t.Run("base case", func(t *testing.T) {
-		resetLoadInstanceFnRegistry()
-		defer resetLoadInstanceFnRegistry()
+		resetLoadFreeEntityFnRegistry()
+		defer resetLoadFreeEntityFnRegistry()
 
-		RegisterLoadInstanceFn(reflect.TypeOf(LOADABLE_TEST_VALUE_PATTERN), func(ctx *Context, args InstanceLoadArgs) (UrlHolder, error) {
+		RegisterLoadFreeEntityFn(reflect.TypeOf(LOADABLE_TEST_VALUE_PATTERN), func(ctx *Context, args FreeEntityLoadingParams) (UrlHolder, error) {
 			assert.Fail(t, "should never be called")
 			return nil, nil
 		})
@@ -293,10 +293,10 @@ func TestDatabaseIL(t *testing.T) {
 	})
 
 	t.Run("if a schema update is expected top level entities should not be loaded after call to SetOwnerStateOnceAndLoadIfNecessary", func(t *testing.T) {
-		resetLoadInstanceFnRegistry()
-		defer resetLoadInstanceFnRegistry()
+		resetLoadFreeEntityFnRegistry()
+		defer resetLoadFreeEntityFnRegistry()
 
-		RegisterLoadInstanceFn(reflect.TypeOf(LOADABLE_TEST_VALUE_PATTERN), func(ctx *Context, args InstanceLoadArgs) (UrlHolder, error) {
+		RegisterLoadFreeEntityFn(reflect.TypeOf(LOADABLE_TEST_VALUE_PATTERN), func(ctx *Context, args FreeEntityLoadingParams) (UrlHolder, error) {
 			assert.Fail(t, "should never be called")
 			return nil, nil
 		})
@@ -330,10 +330,10 @@ func TestDatabaseIL(t *testing.T) {
 	})
 
 	t.Run("if dev mode is enabled top level entities should not be loaded after call to SetOwnerStateOnceAndLoadIfNecessary", func(t *testing.T) {
-		resetLoadInstanceFnRegistry()
-		defer resetLoadInstanceFnRegistry()
+		resetLoadFreeEntityFnRegistry()
+		defer resetLoadFreeEntityFnRegistry()
 
-		RegisterLoadInstanceFn(reflect.TypeOf(LOADABLE_TEST_VALUE_PATTERN), func(ctx *Context, args InstanceLoadArgs) (UrlHolder, error) {
+		RegisterLoadFreeEntityFn(reflect.TypeOf(LOADABLE_TEST_VALUE_PATTERN), func(ctx *Context, args FreeEntityLoadingParams) (UrlHolder, error) {
 			assert.Fail(t, "should never be called")
 			return nil, nil
 		})
@@ -370,10 +370,10 @@ func TestDatabaseIL(t *testing.T) {
 	})
 
 	t.Run("top level entities should not be loaded after call to SetOwnerStateOnceAndLoadIfNecessary if no settings are set", func(t *testing.T) {
-		resetLoadInstanceFnRegistry()
-		defer resetLoadInstanceFnRegistry()
+		resetLoadFreeEntityFnRegistry()
+		defer resetLoadFreeEntityFnRegistry()
 
-		RegisterLoadInstanceFn(reflect.TypeOf(LOADABLE_TEST_VALUE_PATTERN), func(ctx *Context, args InstanceLoadArgs) (UrlHolder, error) {
+		RegisterLoadFreeEntityFn(reflect.TypeOf(LOADABLE_TEST_VALUE_PATTERN), func(ctx *Context, args FreeEntityLoadingParams) (UrlHolder, error) {
 			assert.Fail(t, "should never be called")
 			return nil, nil
 		})
@@ -528,10 +528,10 @@ func TestDatabaseIL(t *testing.T) {
 	})
 
 	t.Run("accessing the database after its schema is updated should work", func(t *testing.T) {
-		resetLoadInstanceFnRegistry()
-		defer resetLoadInstanceFnRegistry()
+		resetLoadFreeEntityFnRegistry()
+		defer resetLoadFreeEntityFnRegistry()
 
-		RegisterLoadInstanceFn(reflect.TypeOf(LOADABLE_TEST_VALUE_PATTERN), func(ctx *Context, args InstanceLoadArgs) (UrlHolder, error) {
+		RegisterLoadFreeEntityFn(reflect.TypeOf(LOADABLE_TEST_VALUE_PATTERN), func(ctx *Context, args FreeEntityLoadingParams) (UrlHolder, error) {
 			assert.Fail(t, "should never be called")
 			return nil, nil
 		})
@@ -591,10 +591,10 @@ func TestDatabaseIL(t *testing.T) {
 	})
 
 	t.Run("updating the database to a schema not equal to the expected schema should cause an error", func(t *testing.T) {
-		resetLoadInstanceFnRegistry()
-		defer resetLoadInstanceFnRegistry()
+		resetLoadFreeEntityFnRegistry()
+		defer resetLoadFreeEntityFnRegistry()
 
-		RegisterLoadInstanceFn(reflect.TypeOf(LOADABLE_TEST_VALUE_PATTERN), func(ctx *Context, args InstanceLoadArgs) (UrlHolder, error) {
+		RegisterLoadFreeEntityFn(reflect.TypeOf(LOADABLE_TEST_VALUE_PATTERN), func(ctx *Context, args FreeEntityLoadingParams) (UrlHolder, error) {
 			assert.Fail(t, "should never be called")
 			return nil, nil
 		})
