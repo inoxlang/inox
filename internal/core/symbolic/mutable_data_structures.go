@@ -1365,6 +1365,7 @@ func (obj *Object) PropertyNames() []string {
 		props[i] = k
 		i++
 	}
+	sort.Strings(props)
 	return props
 }
 

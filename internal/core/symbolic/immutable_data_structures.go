@@ -574,6 +574,7 @@ func (rec *Record) PropertyNames() []string {
 		props[i] = k
 		i++
 	}
+	sort.Strings(props)
 	return props
 }
 
