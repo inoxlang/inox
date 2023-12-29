@@ -228,10 +228,18 @@ func NewHttpsServer(ctx *core.Context, host core.Host, args ...core.Value) (*Htt
 		defer handlerCtx.CancelIfShortLived()
 
 		if !req.ParsedAcceptHeader.Match(mimeconsts.EVENT_STREAM_CTYPE) {
-			tx := core.StartNewTransaction(handlerCtx, core.Option{
+			options := []core.Option{{
 				Name:  core.TX_TIMEOUT_OPTION_NAME,
 				Value: core.Duration(DEFAULT_HTTP_SERVER_TX_TIMEOUT),
-			})
+			}}
+
+			var tx *core.Transaction
+			if req.IsGetOrHead() {
+				tx = core.StartNewReadonlyTransaction(handlerCtx, options...)
+			} else {
+				tx = core.StartNewTransaction(handlerCtx, options...)
+			}
+
 			defer tx.Commit(ctx)
 		}
 

@@ -101,6 +101,7 @@ func init() {
 				"tostr":             core.WrapGoFunction(toStr),
 				"cancel_exec":       core.WrapGoFunction(cancelExec),
 				"do_cpu_bound_work": core.WrapGoFunction(doCpuBoundWork),
+				"add_effect":        core.WrapGoFunction(addEffect),
 				"EmailAddress":      core.WrapGoFunction(makeEmailAddress),
 			})
 
@@ -114,6 +115,8 @@ func init() {
 
 	core.RegisterSymbolicGoFunction(cancelExec, func(ctx *symbolic.Context) {})
 	core.RegisterSymbolicGoFunction(doCpuBoundWork, func(ctx *symbolic.Context, _ *symbolic.Duration) {})
+	core.RegisterSymbolicGoFunction(addEffect, func(ctx *symbolic.Context) *symbolic.Error { return nil })
+
 	core.RegisterSymbolicGoFunction(mkBytes, func(ctx *symbolic.Context, i *symbolic.Int) *symbolic.ByteSlice {
 		return symbolic.ANY_BYTE_SLICE
 	})
@@ -1308,6 +1311,14 @@ func doCpuBoundWork(ctx *core.Context, duration core.Duration) {
 	}
 }
 
+func addEffect(ctx *core.Context) error {
+	tx := ctx.GetTx()
+	if tx == nil {
+		return errors.New("a transaction was expected")
+	}
+	return tx.AddEffect(ctx, &dummyEffect{})
+}
+
 func mkBytes(ctx *core.Context, size core.Int) *core.ByteSlice {
 	return core.NewMutableByteSlice(make([]byte, size), "")
 }
@@ -1340,4 +1351,37 @@ func toStr(ctx *core.Context, arg core.Value) core.StringLike {
 	default:
 		panic(fmt.Errorf("cannot convert value of type %T to string", a))
 	}
+}
+
+var _ = core.Effect((*dummyEffect)(nil))
+
+type dummyEffect struct {
+}
+
+func (*dummyEffect) Apply(*core.Context) error {
+	panic("unimplemented")
+}
+
+func (*dummyEffect) IsApplied() bool {
+	panic("unimplemented")
+}
+
+func (*dummyEffect) IsApplying() bool {
+	panic("unimplemented")
+}
+
+func (*dummyEffect) PermissionKind() permkind.PermissionKind {
+	panic("unimplemented")
+}
+
+func (*dummyEffect) Resources() []core.ResourceName {
+	panic("unimplemented")
+}
+
+func (*dummyEffect) Reversability(*core.Context) core.Reversability {
+	panic("unimplemented")
+}
+
+func (*dummyEffect) Reverse(*core.Context) error {
+	panic("unimplemented")
 }

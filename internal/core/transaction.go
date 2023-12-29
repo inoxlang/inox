@@ -78,8 +78,8 @@ func StartNewTransaction(ctx *Context, options ...Option) *Transaction {
 }
 
 // StartNewReadonlyTransaction creates a new readonly transaction and starts it immediately.
-func StartNewReadonlyTransaction(ctx *Context) *Transaction {
-	tx := newTransaction(ctx, true)
+func StartNewReadonlyTransaction(ctx *Context, options ...Option) *Transaction {
+	tx := newTransaction(ctx, true, options...)
 	tx.Start(ctx)
 	return tx
 }

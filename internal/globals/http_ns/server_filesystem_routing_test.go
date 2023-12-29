@@ -887,6 +887,79 @@ func TestFilesystemRouting(t *testing.T) {
 		)
 	})
 
+	t.Run("GET requests are not allowed to have effects", func(t *testing.T) {
+		runServerTest(t,
+			serverTestCase{
+				input: `return {
+						routing: {dynamic: /routes/}
+					}`,
+				makeFilesystem: func() core.SnapshotableFilesystem {
+					fls := fs_ns.NewMemFilesystem(10_000)
+					fls.MkdirAll("/routes", fs_ns.DEFAULT_DIR_FMODE)
+					util.WriteFile(fls, "/routes/x.ix", []byte(`
+							manifest {}
+	
+							err = add_effect()
+
+							if err? {
+								return err.text
+							}
+							return "ok"
+						`), fs_ns.DEFAULT_FILE_FMODE)
+
+					return fls
+				},
+				requests: []requestTestInfo{
+					{
+						path:                "/x",
+						acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
+						result:              core.ErrEffectsNotAllowedInReadonlyTransaction.Error(),
+					},
+				},
+			},
+			createClient,
+		)
+	})
+
+	t.Run("HEAD requests are not allowed to have effects", func(t *testing.T) {
+		//TODO: check that the error is ErrEffectsNotAllowedInReadonlyTransaction.
+		// A specific status code or text, or a header could be set.
+
+		runServerTest(t,
+			serverTestCase{
+				input: `return {
+						routing: {dynamic: /routes/}
+					}`,
+				makeFilesystem: func() core.SnapshotableFilesystem {
+					fls := fs_ns.NewMemFilesystem(10_000)
+					fls.MkdirAll("/routes", fs_ns.DEFAULT_DIR_FMODE)
+					util.WriteFile(fls, "/routes/x.ix", []byte(`
+							manifest {}
+	
+							err = add_effect()
+
+							if err? {
+								cancel_exec()
+								return err.text
+							}
+							return "ok"
+						`), fs_ns.DEFAULT_FILE_FMODE)
+
+					return fls
+				},
+				requests: []requestTestInfo{
+					{
+						path:                "/x",
+						method:              "HEAD",
+						acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
+						status:              http.StatusNotFound,
+					},
+				},
+			},
+			createClient,
+		)
+	})
+
 	t.Run("request transaction should be commited or rollbacked after request", func(t *testing.T) {
 
 		t.Parallel()

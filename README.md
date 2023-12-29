@@ -235,6 +235,7 @@ username = mod-args.name
 
 > Note: The default [Content Security Policy](./docs/builtins.md#httpcsp) returned by the HTTP server (header) is very strict by default. 
 
+> GET/HEAD requests cannot cause changes in the filesystem or in databases.
 
 ### HTMX Integration
 
