@@ -25,6 +25,7 @@ var (
 	ErrFinishedTransaction                     = errors.New("transaction is finished")
 	ErrAlreadySetTransactionEndCallback        = errors.New("transaction end callback is already set")
 	ErrRunningTransactionExpected              = errors.New("running transaction expected")
+	ErrEffectsNotAllowedInReadonlyTransaction  = errors.New("effects are not allowed in a readonly transaction")
 )
 
 // A Transaction is analogous to a database transaction but behaves a little bit differently.
@@ -49,9 +50,10 @@ type TransactionEndCallbackFn func(tx *Transaction, success bool)
 
 // newTransaction creates a new empty unstarted transaction.
 // ctx will not be aware of it until the transaction is started.
-func newTransaction(ctx *Context, options ...Option) *Transaction {
+func newTransaction(ctx *Context, readonly bool, options ...Option) *Transaction {
 	tx := &Transaction{
 		ctx:            ctx,
+		isReadonly:     readonly,
 		ulid:           ulid.Make(),
 		values:         make(map[any]any),
 		endCallbackFns: make(map[any]TransactionEndCallbackFn),
@@ -70,7 +72,14 @@ func newTransaction(ctx *Context, options ...Option) *Transaction {
 
 // StartNewTransaction creates a new transaction and starts it immediately.
 func StartNewTransaction(ctx *Context, options ...Option) *Transaction {
-	tx := newTransaction(ctx, options...)
+	tx := newTransaction(ctx, false, options...)
+	tx.Start(ctx)
+	return tx
+}
+
+// StartNewReadonlyTransaction creates a new readonly transaction and starts it immediately.
+func StartNewReadonlyTransaction(ctx *Context) *Transaction {
+	tx := newTransaction(ctx, true)
 	tx.Start(ctx)
 	return tx
 }
@@ -144,6 +153,10 @@ func (tx *Transaction) OnEnd(k any, fn TransactionEndCallbackFn) error {
 func (tx *Transaction) AddEffect(ctx *Context, effect Effect) error {
 	if tx.IsFinished() {
 		return ErrFinishedTransaction
+	}
+
+	if tx.isReadonly {
+		return ErrEffectsNotAllowedInReadonlyTransaction
 	}
 
 	tx.lock.Lock()

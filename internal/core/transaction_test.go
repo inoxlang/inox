@@ -18,7 +18,7 @@ func TestTransaction(t *testing.T) {
 	// for _, method := range []string{"commit", "rollback"} {
 	// 	t.Run("after call to "+method+" all acquired resources should be released", func(t *testing.T) {
 	// 		ctx := NewContext(ContextConfig{})
-	// 		tx := newTransaction(ctx)
+	// 		tx := newTransaction(ctx, false)
 	// 		tx.Start(ctx)
 
 	// 		resource := Path("/a" + strconv.Itoa(rand.Int()))
@@ -61,7 +61,7 @@ func TestTransaction(t *testing.T) {
 			ctx := NewContext(ContextConfig{})
 			defer ctx.CancelGracefully()
 
-			tx := newTransaction(ctx)
+			tx := newTransaction(ctx, false)
 			tx.Start(ctx)
 			assert.NoError(t, tx.Commit(ctx))
 
@@ -72,7 +72,7 @@ func TestTransaction(t *testing.T) {
 			ctx := NewContext(ContextConfig{})
 			defer ctx.CancelGracefully()
 
-			tx := newTransaction(ctx)
+			tx := newTransaction(ctx, false)
 			tx.Start(ctx)
 			assert.NoError(t, tx.Commit(ctx))
 
@@ -83,7 +83,7 @@ func TestTransaction(t *testing.T) {
 			ctx := NewContext(ContextConfig{})
 			defer ctx.CancelGracefully()
 
-			tx := newTransaction(ctx)
+			tx := newTransaction(ctx, false)
 			tx.Start(ctx)
 			assert.NoError(t, tx.Commit(ctx))
 
@@ -98,7 +98,7 @@ func TestTransaction(t *testing.T) {
 			ctx := NewContext(ContextConfig{})
 			defer ctx.CancelGracefully()
 
-			tx := newTransaction(ctx)
+			tx := newTransaction(ctx, false)
 			tx.Start(ctx)
 			assert.NoError(t, tx.Rollback(ctx))
 
@@ -109,7 +109,7 @@ func TestTransaction(t *testing.T) {
 			ctx := NewContext(ContextConfig{})
 			defer ctx.CancelGracefully()
 
-			tx := newTransaction(ctx)
+			tx := newTransaction(ctx, false)
 			tx.Start(ctx)
 			assert.NoError(t, tx.Rollback(ctx))
 
@@ -120,7 +120,7 @@ func TestTransaction(t *testing.T) {
 			ctx := NewContext(ContextConfig{})
 			defer ctx.CancelGracefully()
 
-			tx := newTransaction(ctx)
+			tx := newTransaction(ctx, false)
 			tx.Start(ctx)
 			assert.NoError(t, tx.Rollback(ctx))
 
@@ -134,7 +134,7 @@ func TestTransaction(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		NewGlobalState(ctx)
-		tx := newTransaction(ctx, Option{TX_TIMEOUT_OPTION_NAME, Duration(time.Millisecond)})
+		tx := newTransaction(ctx, false, Option{TX_TIMEOUT_OPTION_NAME, Duration(time.Millisecond)})
 		tx.Start(ctx)
 
 		time.Sleep(2 * time.Millisecond)
@@ -146,7 +146,7 @@ func TestTransaction(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		NewGlobalState(ctx)
-		tx := newTransaction(ctx)
+		tx := newTransaction(ctx, false)
 		tx.Start(ctx)
 
 		callCount := 0
@@ -186,7 +186,7 @@ func TestTransaction(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		NewGlobalState(ctx)
-		tx := newTransaction(ctx)
+		tx := newTransaction(ctx, false)
 		tx.Start(ctx)
 
 		callCount := 0
