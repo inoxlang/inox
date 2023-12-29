@@ -95,7 +95,9 @@ func (ns *Namespace) Prop(name string) Value {
 }
 
 func (ns *Namespace) PropertyNames() []string {
-	return maps.Keys(ns.entries)
+	keys := maps.Keys(ns.entries)
+	sort.Strings(keys)
+	return keys
 }
 
 func (ns *Namespace) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
