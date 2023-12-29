@@ -26,7 +26,7 @@ func TestNewSet(t *testing.T) {
 
 	t.Run("no elements", func(t *testing.T) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, io.Discard)
-		set := NewSet(ctx, core.NewWrappedValueList())
+		set := NewSet(ctx, core.NewWrappedValueList(), nil)
 
 		assert.Equal(t, SetConfig{
 			Uniqueness: containers_common.UniquenessConstraint{
@@ -38,7 +38,7 @@ func TestNewSet(t *testing.T) {
 
 	t.Run("single element", func(t *testing.T) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, io.Discard)
-		set := NewSet(ctx, core.NewWrappedValueList(core.Int(1)))
+		set := NewSet(ctx, core.NewWrappedValueList(core.Int(1)), nil)
 
 		assert.Equal(t, SetConfig{
 			Uniqueness: containers_common.UniquenessConstraint{
@@ -57,7 +57,7 @@ func TestNewSet(t *testing.T) {
 			defer func() {
 				assert.ErrorContains(t, recover().(error), "failed to get representation")
 			}()
-			NewSet(ctx, core.NewWrappedValueList(node))
+			NewSet(ctx, core.NewWrappedValueList(node), nil)
 		}()
 	})
 
@@ -70,7 +70,7 @@ func TestNewSet(t *testing.T) {
 			defer func() {
 				assert.ErrorContains(t, recover().(error), core.ErrReprOfMutableValueCanChange.Error())
 			}()
-			NewSet(ctx, core.NewWrappedValueList(obj))
+			NewSet(ctx, core.NewWrappedValueList(obj), nil)
 		}()
 	})
 
@@ -81,7 +81,7 @@ func TestNewSet(t *testing.T) {
 			coll_symbolic.SET_CONFIG_UNIQUE_PROP_KEY: core.Identifier("url"),
 		}, ctx)
 
-		set := NewSet(ctx, core.NewWrappedValueList(), config)
+		set := NewSet(ctx, core.NewWrappedValueList(), core.ToOptionalParam(config))
 
 		assert.Equal(t, SetConfig{
 			Uniqueness: containers_common.UniquenessConstraint{
@@ -102,7 +102,7 @@ func TestNewSet(t *testing.T) {
 			defer func() {
 				assert.ErrorContains(t, recover().(error), containers_common.ErrContainerShouldHaveURL.Error())
 			}()
-			NewSet(ctx, core.NewWrappedValueList(core.NewObjectFromMap(nil, ctx)), config)
+			NewSet(ctx, core.NewWrappedValueList(core.NewObjectFromMap(nil, ctx)), core.ToOptionalParam(config))
 		}()
 
 	})
@@ -114,7 +114,7 @@ func TestNewSet(t *testing.T) {
 			coll_symbolic.SET_CONFIG_UNIQUE_PROP_KEY: core.PropertyName("id"),
 		}, ctx)
 
-		set := NewSet(ctx, core.NewWrappedValueList(), config)
+		set := NewSet(ctx, core.NewWrappedValueList(), core.ToOptionalParam(config))
 
 		assert.Equal(t, SetConfig{
 			Uniqueness: containers_common.UniquenessConstraint{
@@ -136,7 +136,7 @@ func TestNewSet(t *testing.T) {
 			defer func() {
 				assert.ErrorContains(t, recover().(error), containers_common.ErrFailedGetUniqueKeyNoProps.Error())
 			}()
-			NewSet(ctx, core.NewWrappedValueList(core.Int(1)), config)
+			NewSet(ctx, core.NewWrappedValueList(core.Int(1)), core.ToOptionalParam(config))
 		}()
 	})
 
@@ -151,7 +151,7 @@ func TestNewSet(t *testing.T) {
 			coll_symbolic.SET_CONFIG_ELEMENT_PATTERN_PROP_KEY: elementPattern,
 		}, ctx)
 
-		set := NewSet(ctx, core.NewWrappedValueList(), config)
+		set := NewSet(ctx, core.NewWrappedValueList(), core.ToOptionalParam(config))
 
 		assert.Equal(t, SetConfig{
 			Uniqueness: containers_common.UniquenessConstraint{
@@ -178,7 +178,7 @@ func TestNewSet(t *testing.T) {
 			}()
 			obj := core.NewObjectFromMap(core.ValMap{"a": core.True}, ctx)
 
-			NewSet(ctx, core.NewWrappedValueList(obj), config)
+			NewSet(ctx, core.NewWrappedValueList(obj), core.ToOptionalParam(config))
 		}()
 	})
 }

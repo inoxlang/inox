@@ -53,7 +53,7 @@ type Set struct {
 	path    core.Path
 }
 
-func NewSet(ctx *core.Context, elements core.Iterable, configObject ...*core.Object) *Set {
+func NewSet(ctx *core.Context, elements core.Iterable, configParam *core.OptionalParam[*core.Object]) *Set {
 	config := SetConfig{
 		Uniqueness: containers_common.UniquenessConstraint{
 			Type: containers_common.UniqueRepr,
@@ -61,8 +61,10 @@ func NewSet(ctx *core.Context, elements core.Iterable, configObject ...*core.Obj
 		Element: core.SERIALIZABLE_PATTERN,
 	}
 
-	if len(configObject) > 0 {
-		obj := configObject[0]
+	if configParam != nil {
+		//iterate over the properties of the provided object
+
+		obj := configParam.Value
 		obj.ForEachEntry(func(k string, v core.Serializable) error {
 			switch k {
 			case coll_symbolic.SET_CONFIG_ELEMENT_PATTERN_PROP_KEY:

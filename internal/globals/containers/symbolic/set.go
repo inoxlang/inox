@@ -42,14 +42,14 @@ type Set struct {
 	symbolic.SerializableMixin
 }
 
-func NewSet(ctx *symbolic.Context, elements symbolic.Iterable, config ...*symbolic.Object) *Set {
+func NewSet(ctx *symbolic.Context, elements symbolic.Iterable, config *symbolic.OptionalParam[*symbolic.Object]) *Set {
 	var patt symbolic.Pattern = symbolic.ANY_PATTERN
 	var uniqueness *containers_common.UniquenessConstraint = &containers_common.UniquenessConstraint{
 		Type: containers_common.UniqueRepr,
 	}
 
-	if len(config) > 0 {
-		configObject := config[0]
+	if config.Value != nil {
+		configObject := *config.Value
 
 		val, _, hasElemPattern := configObject.GetProperty(SET_CONFIG_ELEMENT_PATTERN_PROP_KEY)
 
