@@ -11,7 +11,7 @@ import (
 	"github.com/go-git/go-billy/v5/util"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/containers"
-	containers_common "github.com/inoxlang/inox/internal/globals/containers/common"
+	"github.com/inoxlang/inox/internal/globals/containers/common"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/localdb"
 	"github.com/inoxlang/inox/internal/mimeconsts"
@@ -925,7 +925,7 @@ func TestFilesystemRouting(t *testing.T) {
 
 				setPattern, err := containers.SET_PATTERN.CallImpl(containers.SET_PATTERN, []core.Serializable{
 					core.SERIALIZABLE_PATTERN,
-					containers_common.REPR_UNIQUENESS_IDENT,
+					common.REPR_UNIQUENESS_IDENT,
 				})
 
 				if err != nil {

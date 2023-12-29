@@ -5,7 +5,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
-	containers_common "github.com/inoxlang/inox/internal/globals/containers/common"
+	"github.com/inoxlang/inox/internal/globals/containers/common"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 
@@ -16,11 +16,11 @@ func TestSetPattern(t *testing.T) {
 
 	t.Run("", func(t *testing.T) {
 		//
-		patt, err := SET_PATTERN.Call([]core.Serializable{core.INT_PATTERN, containers_common.REPR_UNIQUENESS_IDENT})
+		patt, err := SET_PATTERN.Call([]core.Serializable{core.INT_PATTERN, common.REPR_UNIQUENESS_IDENT})
 
 		if assert.NoError(t, err) {
-			uniqueness := containers_common.UniquenessConstraint{
-				Type: containers_common.UniqueRepr,
+			uniqueness := common.UniquenessConstraint{
+				Type: common.UniqueRepr,
 			}
 
 			expectedPattern := NewSetPattern(SetConfig{
@@ -39,11 +39,11 @@ func TestSetPattern(t *testing.T) {
 		})
 
 		//
-		patt, err = SET_PATTERN.Call([]core.Serializable{objectPattern, containers_common.URL_UNIQUENESS_IDENT})
+		patt, err = SET_PATTERN.Call([]core.Serializable{objectPattern, common.URL_UNIQUENESS_IDENT})
 
 		if assert.NoError(t, err) {
-			uniqueness := containers_common.UniquenessConstraint{
-				Type: containers_common.UniqueURL,
+			uniqueness := common.UniquenessConstraint{
+				Type: common.UniqueURL,
 			}
 
 			expectedPattern := NewSetPattern(SetConfig{
@@ -61,8 +61,8 @@ func TestSetPattern(t *testing.T) {
 		patt, err = SET_PATTERN.Call([]core.Serializable{objectPattern, core.PropertyName("a")})
 
 		if assert.NoError(t, err) {
-			uniqueness := containers_common.UniquenessConstraint{
-				Type:         containers_common.UniquePropertyValue,
+			uniqueness := common.UniquenessConstraint{
+				Type:         common.UniquePropertyValue,
 				PropertyName: core.PropertyName("a"),
 			}
 
@@ -82,8 +82,8 @@ func TestSetPattern(t *testing.T) {
 
 		t.Run("uniqueness change", func(t *testing.T) {
 			ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
-			patt1, err1 := SET_PATTERN.Call([]core.Serializable{core.INT_PATTERN, containers_common.REPR_UNIQUENESS_IDENT})
-			patt2, err2 := SET_PATTERN.Call([]core.Serializable{core.INT_PATTERN, containers_common.URL_UNIQUENESS_IDENT})
+			patt1, err1 := SET_PATTERN.Call([]core.Serializable{core.INT_PATTERN, common.REPR_UNIQUENESS_IDENT})
+			patt2, err2 := SET_PATTERN.Call([]core.Serializable{core.INT_PATTERN, common.URL_UNIQUENESS_IDENT})
 
 			if !assert.NoError(t, err1) {
 				return
@@ -110,8 +110,8 @@ func TestSetPattern(t *testing.T) {
 
 		t.Run("element pattern replaced with different type", func(t *testing.T) {
 			ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
-			patt1, err1 := SET_PATTERN.Call([]core.Serializable{core.INT_PATTERN, containers_common.REPR_UNIQUENESS_IDENT})
-			patt2, err2 := SET_PATTERN.Call([]core.Serializable{core.STR_PATTERN, containers_common.REPR_UNIQUENESS_IDENT})
+			patt1, err1 := SET_PATTERN.Call([]core.Serializable{core.INT_PATTERN, common.REPR_UNIQUENESS_IDENT})
+			patt2, err2 := SET_PATTERN.Call([]core.Serializable{core.STR_PATTERN, common.REPR_UNIQUENESS_IDENT})
 
 			if !assert.NoError(t, err1) {
 				return
@@ -138,8 +138,8 @@ func TestSetPattern(t *testing.T) {
 
 		t.Run("element pattern replaced with super type", func(t *testing.T) {
 			ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
-			patt1, err1 := SET_PATTERN.Call([]core.Serializable{core.INT_PATTERN, containers_common.REPR_UNIQUENESS_IDENT})
-			patt2, err2 := SET_PATTERN.Call([]core.Serializable{core.SERIALIZABLE_PATTERN, containers_common.REPR_UNIQUENESS_IDENT})
+			patt1, err1 := SET_PATTERN.Call([]core.Serializable{core.INT_PATTERN, common.REPR_UNIQUENESS_IDENT})
+			patt2, err2 := SET_PATTERN.Call([]core.Serializable{core.SERIALIZABLE_PATTERN, common.REPR_UNIQUENESS_IDENT})
 
 			if !assert.NoError(t, err1) {
 				return
@@ -160,8 +160,8 @@ func TestSetPattern(t *testing.T) {
 
 		t.Run("element pattern replaced with sub type", func(t *testing.T) {
 			ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
-			patt1, err1 := SET_PATTERN.Call([]core.Serializable{core.SERIALIZABLE_PATTERN, containers_common.REPR_UNIQUENESS_IDENT})
-			patt2, err2 := SET_PATTERN.Call([]core.Serializable{core.INT_PATTERN, containers_common.REPR_UNIQUENESS_IDENT})
+			patt1, err1 := SET_PATTERN.Call([]core.Serializable{core.SERIALIZABLE_PATTERN, common.REPR_UNIQUENESS_IDENT})
+			patt2, err2 := SET_PATTERN.Call([]core.Serializable{core.INT_PATTERN, common.REPR_UNIQUENESS_IDENT})
 
 			if !assert.NoError(t, err1) {
 				return
@@ -199,8 +199,8 @@ func TestSymbolicSetPattern(t *testing.T) {
 			[]symbolic.Value{intPattern, symbolic.NewIdentifier("repr")})
 
 		if assert.NoError(t, err) {
-			uniqueness := containers_common.UniquenessConstraint{
-				Type: containers_common.UniqueRepr,
+			uniqueness := common.UniquenessConstraint{
+				Type: common.UniqueRepr,
 			}
 
 			expectedPattern :=
@@ -213,7 +213,7 @@ func TestSymbolicSetPattern(t *testing.T) {
 	t.Run("invalid", func(t *testing.T) {
 		mutableValuePattern := symbolic.NewInexactObjectPattern(map[string]symbolic.Pattern{}, nil)
 		patt, err := SET_PATTERN.SymbolicCallImpl(symbolicCtx,
-			[]symbolic.Value{mutableValuePattern, containers_common.REPR_UNIQUENESS_SYMB_IDENT})
+			[]symbolic.Value{mutableValuePattern, common.REPR_UNIQUENESS_SYMB_IDENT})
 
 		if !assert.Error(t, err) {
 			return

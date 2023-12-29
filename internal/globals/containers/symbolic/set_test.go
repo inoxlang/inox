@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/inoxlang/inox/internal/core/symbolic"
-	containers_common "github.com/inoxlang/inox/internal/globals/containers/common"
+	"github.com/inoxlang/inox/internal/globals/containers/common"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -14,9 +14,9 @@ func TestSet(t *testing.T) {
 		intType := symbolic.NewTypePattern(symbolic.ANY_INT, nil, nil, nil)
 		specificIntType := symbolic.NewTypePattern(symbolic.INT_1, nil, nil, nil)
 
-		intSet1 := NewSetPatternWithElementPatternAndUniqueness(intType, containers_common.NewReprUniqueness())
-		intSet2 := NewSetPatternWithElementPatternAndUniqueness(intType, containers_common.NewReprUniqueness())
-		int1Set := NewSetPatternWithElementPatternAndUniqueness(specificIntType, containers_common.NewReprUniqueness())
+		intSet1 := NewSetPatternWithElementPatternAndUniqueness(intType, common.NewReprUniqueness())
+		intSet2 := NewSetPatternWithElementPatternAndUniqueness(intType, common.NewReprUniqueness())
+		int1Set := NewSetPatternWithElementPatternAndUniqueness(specificIntType, common.NewReprUniqueness())
 
 		assert.True(t, intSet1.Test(intSet1, symbolic.RecTestCallState{}))
 		assert.True(t, intSet1.Test(intSet2, symbolic.RecTestCallState{}))
@@ -29,9 +29,9 @@ func TestSet(t *testing.T) {
 		intType := symbolic.NewTypePattern(symbolic.ANY_INT, nil, nil, nil)
 		specificIntType := symbolic.NewTypePattern(symbolic.INT_1, nil, nil, nil)
 
-		intSetPattern := NewSetPatternWithElementPatternAndUniqueness(intType, containers_common.NewReprUniqueness())
-		intSet := NewSetWithPattern(intType, containers_common.NewReprUniqueness())
-		int1Set := NewSetWithPattern(specificIntType, containers_common.NewReprUniqueness())
+		intSetPattern := NewSetPatternWithElementPatternAndUniqueness(intType, common.NewReprUniqueness())
+		intSet := NewSetWithPattern(intType, common.NewReprUniqueness())
+		int1Set := NewSetWithPattern(specificIntType, common.NewReprUniqueness())
 
 		assert.True(t, intSetPattern.TestValue(intSet, symbolic.RecTestCallState{}))
 		assert.True(t, intSetPattern.TestValue(int1Set, symbolic.RecTestCallState{}))
@@ -42,7 +42,7 @@ func TestSet(t *testing.T) {
 		t.Run("base case", func(t *testing.T) {
 			objPattern := symbolic.NewInexactObjectPattern(map[string]symbolic.Pattern{}, nil)
 			obj := objPattern.SymbolicValue().(*symbolic.Object)
-			set := NewSetWithPattern(objPattern, containers_common.NewURLUniqueness())
+			set := NewSetWithPattern(objPattern, common.NewURLUniqueness())
 			set = set.WithURL(symbolic.NewUrl("ldb://main/users")).(*Set)
 
 			elem, _ := set.Get(nil, symbolic.ANY_STR)
@@ -62,7 +62,7 @@ func TestSet(t *testing.T) {
 			multiValue := symbolic.NewMultivalue(obj1, obj2)
 			elementPattern := symbolic.NewTypePattern(multiValue, nil, nil, nil)
 
-			set := NewSetWithPattern(elementPattern, containers_common.NewURLUniqueness())
+			set := NewSetWithPattern(elementPattern, common.NewURLUniqueness())
 			set = set.WithURL(symbolic.NewUrl("ldb://main/users")).(*Set)
 
 			elem, _ := set.Get(nil, symbolic.ANY_STR)

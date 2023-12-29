@@ -3,7 +3,7 @@ package containers
 import (
 	"github.com/inoxlang/inox/internal/commonfmt"
 	"github.com/inoxlang/inox/internal/core/symbolic"
-	containers_common "github.com/inoxlang/inox/internal/globals/containers/common"
+	"github.com/inoxlang/inox/internal/globals/containers/common"
 	"github.com/inoxlang/inox/internal/prettyprint"
 	pprint "github.com/inoxlang/inox/internal/prettyprint"
 
@@ -34,7 +34,7 @@ type Set struct {
 	elementPattern symbolic.Pattern
 	element        symbolic.Value //cache
 
-	uniqueness *containers_common.UniquenessConstraint
+	uniqueness *common.UniquenessConstraint
 	shared     bool
 	url        *symbolic.URL //can be nil
 
@@ -44,8 +44,8 @@ type Set struct {
 
 func NewSet(ctx *symbolic.Context, elements symbolic.Iterable, config *symbolic.OptionalParam[*symbolic.Object]) *Set {
 	var patt symbolic.Pattern = symbolic.ANY_PATTERN
-	var uniqueness *containers_common.UniquenessConstraint = &containers_common.UniquenessConstraint{
-		Type: containers_common.UniqueRepr,
+	var uniqueness *common.UniquenessConstraint = &common.UniquenessConstraint{
+		Type: common.UniqueRepr,
 	}
 
 	if config.Value != nil {
@@ -65,7 +65,7 @@ func NewSet(ctx *symbolic.Context, elements symbolic.Iterable, config *symbolic.
 
 		val, _, hasUniquenessConstraint := configObject.GetProperty(SET_CONFIG_UNIQUE_PROP_KEY)
 		if hasUniquenessConstraint {
-			u, err := containers_common.UniquenessConstraintFromSymbolicValue(val, patt)
+			u, err := common.UniquenessConstraintFromSymbolicValue(val, patt)
 			if err != nil {
 				err := commonfmt.FmtInvalidValueForPropXOfArgY(SET_CONFIG_UNIQUE_PROP_KEY, "configuration", err.Error())
 				ctx.AddSymbolicGoFunctionError(err.Error())
@@ -78,7 +78,7 @@ func NewSet(ctx *symbolic.Context, elements symbolic.Iterable, config *symbolic.
 	return NewSetWithPattern(patt, uniqueness)
 }
 
-func NewSetWithPattern(elementPattern symbolic.Pattern, uniqueness *containers_common.UniquenessConstraint) *Set {
+func NewSetWithPattern(elementPattern symbolic.Pattern, uniqueness *common.UniquenessConstraint) *Set {
 	set := &Set{elementPattern: elementPattern, uniqueness: uniqueness}
 	set.element = elementPattern.SymbolicValue()
 	return set
@@ -212,13 +212,13 @@ func (*Set) WidestOfType() symbolic.Value {
 type SetPattern struct {
 	symbolic.UnassignablePropsMixin
 	elementPattern symbolic.Pattern
-	uniqueness     *containers_common.UniquenessConstraint
+	uniqueness     *common.UniquenessConstraint
 
 	symbolic.NotCallablePatternMixin
 	symbolic.SerializableMixin
 }
 
-func NewSetPatternWithElementPatternAndUniqueness(elementPattern symbolic.Pattern, uniqueness *containers_common.UniquenessConstraint) *SetPattern {
+func NewSetPatternWithElementPatternAndUniqueness(elementPattern symbolic.Pattern, uniqueness *common.UniquenessConstraint) *SetPattern {
 	return &SetPattern{elementPattern: elementPattern, uniqueness: uniqueness}
 }
 

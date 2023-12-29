@@ -3,14 +3,14 @@ package containers
 import (
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
-	containers_common "github.com/inoxlang/inox/internal/globals/containers/common"
+	"github.com/inoxlang/inox/internal/globals/containers/common"
 	coll_symbolic "github.com/inoxlang/inox/internal/globals/containers/symbolic"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
 func init() {
 	coll_symbolic.SetExternalData(coll_symbolic.ExternalData{
-		CreateConcreteSetPattern: func(uniqueness containers_common.UniquenessConstraint, elementPattern any) any {
+		CreateConcreteSetPattern: func(uniqueness common.UniquenessConstraint, elementPattern any) any {
 			return utils.Must(SET_PATTERN.Call([]core.Serializable{elementPattern.(core.Pattern), uniqueness.ToValue()}))
 		},
 	})

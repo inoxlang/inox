@@ -11,7 +11,7 @@ package obsdb
 // 	"github.com/inoxlang/inox/internal/core"
 // 	"github.com/inoxlang/inox/internal/core/permkind"
 // 	"github.com/inoxlang/inox/internal/globals/containers"
-// 	containers_common "github.com/inoxlang/inox/internal/globals/containers/common"
+// 	"github.com/inoxlang/inox/internal/globals/containers/common"
 // 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 // 	"github.com/inoxlang/inox/internal/utils"
 // 	"github.com/stretchr/testify/assert"
@@ -271,7 +271,7 @@ package obsdb
 // 				utils.Must(containers.SET_PATTERN.CallImpl(
 // 					containers.SET_PATTERN,
 // 					[]core.Serializable{
-// 						core.NewInexactObjectPattern(map[string]core.Pattern{"name": core.STR_PATTERN}), containers_common.URL_UNIQUENESS_IDENT,
+// 						core.NewInexactObjectPattern(map[string]core.Pattern{"name": core.STR_PATTERN}), common.URL_UNIQUENESS_IDENT,
 // 					}),
 // 				)
 
@@ -565,7 +565,7 @@ package obsdb
 
 // 		setPattern :=
 // 			utils.Must(containers.SET_PATTERN.CallImpl(containers.SET_PATTERN,
-// 				[]core.Serializable{core.NewInexactObjectPattern(map[string]core.Pattern{"name": core.STR_PATTERN}), containers_common.URL_UNIQUENESS_IDENT}))
+// 				[]core.Serializable{core.NewInexactObjectPattern(map[string]core.Pattern{"name": core.STR_PATTERN}), common.URL_UNIQUENESS_IDENT}))
 
 // 		schema := core.NewInexactObjectPattern(map[string]core.Pattern{
 // 			"users": setPattern,
@@ -607,7 +607,7 @@ package obsdb
 // 			utils.Must(containers.SET_PATTERN.CallImpl(
 // 				containers.SET_PATTERN,
 // 				[]core.Serializable{
-// 					core.NewInexactObjectPattern(map[string]core.Pattern{"name": core.STR_PATTERN}), containers_common.URL_UNIQUENESS_IDENT,
+// 					core.NewInexactObjectPattern(map[string]core.Pattern{"name": core.STR_PATTERN}), common.URL_UNIQUENESS_IDENT,
 // 				}))
 
 // 		schema := core.NewInexactObjectPattern(map[string]core.Pattern{
@@ -634,7 +634,7 @@ package obsdb
 // 				containers.SET_PATTERN,
 // 				[]core.Serializable{
 // 					core.NewInexactObjectPattern(map[string]core.Pattern{"name": core.STR_PATTERN}),
-// 					containers_common.URL_UNIQUENESS_IDENT,
+// 					common.URL_UNIQUENESS_IDENT,
 // 				}),
 // 			)
 
@@ -684,7 +684,7 @@ package obsdb
 // 				containers.SET_PATTERN,
 // 				[]core.Serializable{
 // 					core.NewInexactObjectPattern(map[string]core.Pattern{"name": core.STR_PATTERN}),
-// 					containers_common.URL_UNIQUENESS_IDENT,
+// 					common.URL_UNIQUENESS_IDENT,
 // 				}),
 // 			)
 
@@ -735,7 +735,7 @@ package obsdb
 // 				containers.SET_PATTERN,
 // 				[]core.Serializable{
 // 					core.NewInexactObjectPattern(map[string]core.Pattern{"name": core.STR_PATTERN}),
-// 					containers_common.URL_UNIQUENESS_IDENT,
+// 					common.URL_UNIQUENESS_IDENT,
 // 				}),
 // 			)
 
@@ -788,7 +788,7 @@ package obsdb
 // 				containers.SET_PATTERN,
 // 				[]core.Serializable{
 // 					core.NewInexactObjectPattern(map[string]core.Pattern{"name": core.STR_PATTERN}),
-// 					containers_common.URL_UNIQUENESS_IDENT,
+// 					common.URL_UNIQUENESS_IDENT,
 // 				}),
 // 			)
 
@@ -848,7 +848,7 @@ package obsdb
 // 		setPattern2 :=
 // 			utils.Must(containers.SET_PATTERN.CallImpl(
 // 				containers.SET_PATTERN,
-// 				[]core.Serializable{core.INT_PATTERN, containers_common.URL_UNIQUENESS_IDENT}),
+// 				[]core.Serializable{core.INT_PATTERN, common.URL_UNIQUENESS_IDENT}),
 // 			)
 
 // 		nextSchema2 := core.NewInexactObjectPattern(map[string]core.Pattern{

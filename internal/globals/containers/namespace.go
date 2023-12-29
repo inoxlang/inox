@@ -7,7 +7,7 @@ import (
 	"github.com/inoxlang/inox/internal/commonfmt"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
-	containers_common "github.com/inoxlang/inox/internal/globals/containers/common"
+	"github.com/inoxlang/inox/internal/globals/containers/common"
 	coll_symbolic "github.com/inoxlang/inox/internal/globals/containers/symbolic"
 
 	"github.com/inoxlang/inox/internal/help"
@@ -31,7 +31,7 @@ var (
 				return nil, core.FmtErrInvalidArgumentAtPos(elementPattern, 0)
 			}
 
-			uniqueness, ok := containers_common.UniquenessConstraintFromValue(values[1])
+			uniqueness, ok := common.UniquenessConstraintFromValue(values[1])
 			if !ok {
 				return nil, core.FmtErrInvalidArgumentAtPos(elementPattern, 1)
 			}
@@ -57,7 +57,7 @@ var (
 				return nil, commonfmt.FmtErrInvalidArgumentAtPos(0, "a pattern is expected")
 			}
 
-			uniqueness, err := containers_common.UniquenessConstraintFromSymbolicValue(values[1], elementPattern)
+			uniqueness, err := common.UniquenessConstraintFromSymbolicValue(values[1], elementPattern)
 			if err != nil {
 				return nil, commonfmt.FmtErrInvalidArgumentAtPos(1, err.Error())
 			}

@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/inoxlang/inox/internal/core"
-	containers_common "github.com/inoxlang/inox/internal/globals/containers/common"
+	"github.com/inoxlang/inox/internal/globals/containers/common"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -153,8 +153,8 @@ func TestSetIteration(t *testing.T) {
 
 		set := NewSetWithConfig(ctx, nil, SetConfig{
 			Element: core.ANYVAL_PATTERN,
-			Uniqueness: containers_common.UniquenessConstraint{
-				Type: containers_common.UniqueRepr,
+			Uniqueness: common.UniquenessConstraint{
+				Type: common.UniqueRepr,
 			},
 		})
 
@@ -172,8 +172,8 @@ func TestSetIteration(t *testing.T) {
 
 		set := NewSetWithConfig(ctx, core.NewWrappedValueList(core.Int(1)), SetConfig{
 			Element: core.ANYVAL_PATTERN,
-			Uniqueness: containers_common.UniquenessConstraint{
-				Type: containers_common.UniqueRepr,
+			Uniqueness: common.UniquenessConstraint{
+				Type: common.UniqueRepr,
 			},
 		})
 
@@ -196,8 +196,8 @@ func TestSetIteration(t *testing.T) {
 
 		set := NewSetWithConfig(ctx, core.NewWrappedValueList(core.Int(1), core.Int(2)), SetConfig{
 			Element: core.ANYVAL_PATTERN,
-			Uniqueness: containers_common.UniquenessConstraint{
-				Type: containers_common.UniqueRepr,
+			Uniqueness: common.UniquenessConstraint{
+				Type: common.UniqueRepr,
 			},
 		})
 
@@ -241,8 +241,8 @@ func TestSetIteration(t *testing.T) {
 
 			set := NewSetWithConfig(ctx, tuple, SetConfig{
 				Element: core.ANYVAL_PATTERN,
-				Uniqueness: containers_common.UniquenessConstraint{
-					Type: containers_common.UniqueRepr,
+				Uniqueness: common.UniquenessConstraint{
+					Type: common.UniqueRepr,
 				},
 			})
 
@@ -261,8 +261,8 @@ func TestSetIteration(t *testing.T) {
 
 		set := NewSetWithConfig(ctx, tuple, SetConfig{
 			Element: core.ANYVAL_PATTERN,
-			Uniqueness: containers_common.UniquenessConstraint{
-				Type: containers_common.UniqueRepr,
+			Uniqueness: common.UniquenessConstraint{
+				Type: common.UniqueRepr,
 			},
 		})
 
@@ -291,8 +291,8 @@ func TestSetIteration(t *testing.T) {
 
 			set := NewSetWithConfig(ctx, tuple, SetConfig{
 				Element: core.ANYVAL_PATTERN,
-				Uniqueness: containers_common.UniquenessConstraint{
-					Type: containers_common.UniqueRepr,
+				Uniqueness: common.UniquenessConstraint{
+					Type: common.UniqueRepr,
 				},
 			})
 
@@ -310,8 +310,8 @@ func TestSetIteration(t *testing.T) {
 
 			set := NewSetWithConfig(ctx, tuple, SetConfig{
 				Element: core.ANYVAL_PATTERN,
-				Uniqueness: containers_common.UniquenessConstraint{
-					Type: containers_common.UniqueRepr,
+				Uniqueness: common.UniquenessConstraint{
+					Type: common.UniqueRepr,
 				},
 			})
 
