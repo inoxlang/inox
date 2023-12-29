@@ -4,8 +4,8 @@ package localdb
 
 import (
 	"path/filepath"
-	"sync"
 	"testing"
+	"time"
 
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/permkind"
@@ -103,9 +103,6 @@ func TestOpenDatabase(t *testing.T) {
 	})
 
 	t.Run("open same database in parallel should result in at least one error", func(t *testing.T) {
-		//TODO when implemented.
-
-		t.SkipNow()
 
 		dir, _ := filepath.Abs(t.TempDir())
 		dir += "/"
@@ -126,8 +123,7 @@ func TestOpenDatabase(t *testing.T) {
 			Filesystem: fls,
 		}
 
-		wg := new(sync.WaitGroup)
-		wg.Add(2)
+		db1Open := make(chan struct{})
 
 		var ctx1, ctx2 *core.Context
 		var db1, db2 *LocalDatabase
@@ -142,7 +138,9 @@ func TestOpenDatabase(t *testing.T) {
 		}()
 
 		go func() {
-			defer wg.Done()
+			defer func() {
+				db1Open <- struct{}{}
+			}()
 
 			//open database in first context
 			ctx1 = core.NewContexWithEmptyState(ctxConfig, nil)
@@ -155,21 +153,105 @@ func TestOpenDatabase(t *testing.T) {
 			db1 = _db1
 		}()
 
-		go func() {
-			defer wg.Done()
-			//open same database in second context
-			ctx2 = core.NewContexWithEmptyState(ctxConfig, nil)
-			ctx2.GetClosestState().Project = project
+		select {
+		case <-db1Open:
+		case <-time.After(time.Second):
+			assert.Fail(t, "timeout")
+			return
+		}
 
-			_db2, err := OpenDatabase(ctx2, HOST, false)
+		//open same database in second context
+		ctx2 = core.NewContexWithEmptyState(ctxConfig, nil)
+		ctx2.GetClosestState().Project = project
+
+		_db2, err := OpenDatabase(ctx2, HOST, false)
+		if !assert.ErrorIs(t, err, ErrOpenDatabase) {
+			return
+		}
+		db2 = _db2
+	})
+
+	t.Run("open same database in parallel with different access mode", func(t *testing.T) {
+
+		dir, _ := filepath.Abs(t.TempDir())
+		dir += "/"
+
+		pattern := core.PathPattern(dir + "...")
+		fls := fs_ns.NewMemFilesystem(MEM_FS_STORAGE_SIZE)
+		project := project.NewDummyProject("proj", fls)
+
+		ctxConfig := core.ContextConfig{
+			Permissions: []core.Permission{
+				core.FilesystemPermission{Kind_: permkind.Read, Entity: pattern},
+				core.FilesystemPermission{Kind_: permkind.Create, Entity: pattern},
+				core.FilesystemPermission{Kind_: permkind.WriteStream, Entity: pattern},
+			},
+			HostResolutions: map[core.Host]core.Value{
+				core.Host("ldb://main"): HOST,
+			},
+			Filesystem: fls,
+		}
+
+		db1Open := make(chan struct{})
+
+		var ctx1, ctx2 *core.Context
+		var db1, db2 *LocalDatabase
+
+		defer func() {
+			if db1 != nil {
+				db1.Close(ctx1)
+			}
+			if db2 != nil {
+				db2.Close(ctx2)
+			}
+		}()
+
+		schema := core.NewInexactObjectPattern(map[string]core.Pattern{"a": core.INT_PATTERN})
+
+		go func() {
+			defer func() {
+				db1Open <- struct{}{}
+			}()
+
+			//open database in first context
+			ctx1 = core.NewContexWithEmptyState(ctxConfig, nil)
+			ctx1.GetClosestState().Project = project
+			ctx1.AddNamedPattern("int", core.INT_PATTERN)
+
+			_db1, err := OpenDatabase(ctx1, HOST, false)
 			if !assert.NoError(t, err) {
 				return
 			}
-			db2 = _db2
-		}()
-		wg.Wait()
 
-		assert.Same(t, db1, db2)
+			//set schema
+			_db1.UpdateSchema(ctx1, schema, core.MigrationOpHandlers{})
+
+			db1 = _db1
+		}()
+
+		select {
+		case <-db1Open:
+		case <-time.After(time.Second):
+			assert.Fail(t, "timeout")
+			return
+		}
+
+		//open same database in second context but in restricted mode
+		ctx2 = core.NewContexWithEmptyState(ctxConfig, nil)
+		ctx2.GetClosestState().Project = project
+		ctx2.AddNamedPattern("int", core.INT_PATTERN)
+
+		_db2, err := OpenDatabase(ctx2, HOST, true /*restricted access*/)
+		if !assert.NoError(t, err) {
+			return
+		}
+		db2 = _db2
+		if !assert.NotSame(t, db1, db2) {
+			return
+		}
+
+		schemaVisibleByDB2 := db2.Schema()
+		assert.True(t, schemaVisibleByDB2.Equal(ctx2, schema, map[uintptr]uintptr{}, 0))
 	})
 
 	t.Run("re-open with a schema", func(t *testing.T) {

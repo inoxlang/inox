@@ -1,13 +1,16 @@
 package localdb
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"reflect"
 	"sync"
 
+	"github.com/inoxlang/inox/internal/buntdb"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/filekv"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
@@ -19,9 +22,9 @@ import (
 const (
 	SCHEMA_KEY = "/_schema_"
 
-	MAIN_KV_FILE   = "main.kv"
-	SCHEMA_KV_FILE = "schema.kv"
-	LDB_SCHEME     = core.Scheme("ldb")
+	DB_KV_FILE   = "db.bbolt"
+	META_KV_FILE = "meta.buntdb"
+	LDB_SCHEME   = core.Scheme("ldb")
 
 	OS_DB_DIR = 0700
 )
@@ -55,12 +58,12 @@ func init() {
 
 // A LocalDatabase is a database thats stores data on a filesystem.
 type LocalDatabase struct {
-	host     core.Host
-	osFsDir  core.Path
-	mainKV   *filekv.SingleFileKV
-	schemaKV *filekv.SingleFileKV
-	schema   *core.ObjectPattern
-	logger   zerolog.Logger
+	host    core.Host
+	osFsDir core.Path
+	mainKV  *filekv.SingleFileKV
+	metaKV  *buntdb.DB
+	schema  *core.ObjectPattern
+	logger  zerolog.Logger
 
 	topLevelValues     map[string]core.Serializable
 	topLevelValuesLock sync.Mutex
@@ -118,8 +121,8 @@ func OpenDatabase(ctx *core.Context, r core.ResourceName, restrictedAccess bool)
 
 func openLocalDatabaseWithConfig(ctx *core.Context, config LocalDatabaseConfig) (*LocalDatabase, error) {
 	osFs := fs_ns.GetOsFilesystem()
-	mainKVPath := config.OsFsDir.Join(core.Path("./"+MAIN_KV_FILE), osFs)
-	schemaKVPath := config.OsFsDir.Join(core.Path("./"+SCHEMA_KV_FILE), osFs)
+	mainKVPath := config.OsFsDir.Join(core.Path("./"+DB_KV_FILE), osFs)
+	metaKVPath := config.OsFsDir.Join(core.Path("./"+META_KV_FILE), osFs)
 
 	localDB := &LocalDatabase{
 		host:    config.Host,
@@ -139,34 +142,78 @@ func openLocalDatabaseWithConfig(ctx *core.Context, config LocalDatabaseConfig) 
 		return nil, fmt.Errorf("failed to check if the directory of the %q database exist: %w", config.Host, err)
 	}
 
-	mainKv, err := filekv.OpenSingleFileKV(filekv.KvStoreConfig{
-		Path: mainKVPath,
-	})
+	if !config.Restricted {
+		mainKv, err := filekv.OpenSingleFileKV(filekv.KvStoreConfig{
+			Path: mainKVPath,
+		})
 
-	if err != nil {
-		if errors.Is(err, filekv.ErrOpenKvStore) {
-			return nil, ErrOpenDatabase
+		if err != nil {
+			if errors.Is(err, filekv.ErrOpenKvStore) {
+				return nil, ErrOpenDatabase
+			}
+			return nil, err
 		}
-		return nil, err
+
+		localDB.mainKV = mainKv
+
+		//open meta KV
+
+		metaKV, err := buntdb.OpenBuntDBNoPermCheck(metaKVPath.UnderlyingString(), fs_ns.GetOsFilesystem())
+		if err != nil {
+			return nil, err
+		}
+
+		localDB.metaKV = metaKV
+	} else {
+		//in restricted mode we load the meta KV data inside an in-memory KV
+
+		content, err := os.ReadFile(string(metaKVPath))
+		if os.IsNotExist(err) {
+			err = nil
+		} else if err != nil {
+			return nil, fmt.Errorf("failed to read the content of the local database's meta file: %w", err)
+		}
+
+		metaKV, err := buntdb.OpenBuntDBNoPermCheck(":memory:", nil)
+		if err != nil {
+			return nil, err
+		}
+
+		localDB.metaKV = metaKV
+
+		err = metaKV.Load(bytes.NewReader(content))
+
+		// The db file is allowed to have ended mid-command.
+
+		if err != nil && errors.Is(err, io.ErrUnexpectedEOF) {
+			return nil, err
+		}
 	}
 
-	localDB.mainKV = mainKv
-
-	schemaKv, err := filekv.OpenSingleFileKV(filekv.KvStoreConfig{
-		Path: schemaKVPath,
+	//get schema
+	var serializedSchema string
+	err = localDB.metaKV.View(func(tx *buntdb.Tx) error {
+		serialized, err := tx.Get(SCHEMA_KEY, true)
+		if err != nil {
+			return err
+		}
+		serializedSchema = serialized
+		return nil
 	})
 
-	if err != nil {
-		return nil, err
-	}
+	schemaFound := err == nil
 
-	localDB.schemaKV = schemaKv
-
-	schema, ok, err := schemaKv.Get(ctx, "/", localDB)
-	if err != nil {
+	if err != nil && !errors.Is(err, buntdb.ErrNotFound) {
 		return nil, fmt.Errorf("failed to read schema: %w", err)
 	}
-	if ok {
+
+	if schemaFound {
+		schema, err := core.ParseRepr(ctx, []byte(serializedSchema))
+
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse database schema: %w", err)
+		}
+
 		patt, ok := schema.(*core.ObjectPattern)
 		if !ok {
 			err := localDB.Close(ctx)
@@ -223,11 +270,23 @@ func (ldb *LocalDatabase) UpdateSchema(ctx *core.Context, schema *core.ObjectPat
 		return
 	}
 
+	//load data and perform migrations
+
 	if err := ldb.load(ctx, schema, handlers); err != nil {
 		panic(err)
 	}
 
-	ldb.schemaKV.Set(ctx, "/", schema, ldb)
+	// store the new schema
+
+	repr := string(core.GetRepresentation(schema, ctx))
+
+	err := ldb.metaKV.Update(func(tx *buntdb.Tx) error {
+		_, _, err := tx.Set(SCHEMA_KEY, repr, nil)
+		return err
+	})
+	if err != nil {
+		panic(err)
+	}
 	ldb.schema = schema
 }
 
@@ -318,7 +377,7 @@ func (ldb *LocalDatabase) Close(ctx *core.Context) error {
 	if ldb.mainKV != nil {
 		ldb.mainKV.Close(ctx)
 	}
-	ldb.schemaKV.Close(ctx)
+	ldb.metaKV.Close()
 	return nil
 }
 
