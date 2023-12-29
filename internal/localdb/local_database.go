@@ -185,7 +185,7 @@ func openLocalDatabaseWithConfig(ctx *core.Context, config LocalDatabaseConfig) 
 
 		// The db file is allowed to have ended mid-command.
 
-		if err != nil && errors.Is(err, io.ErrUnexpectedEOF) {
+		if err != nil && !errors.Is(err, io.ErrUnexpectedEOF) {
 			return nil, err
 		}
 	}
