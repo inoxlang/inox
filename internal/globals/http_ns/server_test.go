@@ -25,6 +25,7 @@ import (
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/globals/html_ns"
+	http_ns "github.com/inoxlang/inox/internal/globals/http_ns/symbolic"
 	"github.com/inoxlang/inox/internal/mimeconsts"
 	netaddr "github.com/inoxlang/inox/internal/netaddr"
 	"github.com/inoxlang/inox/internal/project"
@@ -103,6 +104,8 @@ func init() {
 				"do_cpu_bound_work": core.WrapGoFunction(doCpuBoundWork),
 				"add_effect":        core.WrapGoFunction(addEffect),
 				"EmailAddress":      core.WrapGoFunction(makeEmailAddress),
+				"statuses":          STATUS_NAMESPACE,
+				"Status":            core.WrapGoFunction(makeStatus),
 			})
 
 			return state, nil
@@ -122,6 +125,9 @@ func init() {
 	})
 	core.RegisterSymbolicGoFunction(makeEmailAddress, func(ctx *symbolic.Context, s symbolic.StringLike) *symbolic.EmailAddress {
 		return symbolic.ANY_EMAIL_ADDR
+	})
+	core.RegisterSymbolicGoFunction(makeStatus, func(ctx *symbolic.Context, s *http_ns.StatusCode) *http_ns.Status {
+		return http_ns.ANY_STATUS
 	})
 
 	core.RegisterSymbolicGoFunction(toRstream, func(ctx *symbolic.Context, v symbolic.Value) *symbolic.ReadableStream {
@@ -937,6 +943,7 @@ func setupTestCase(t *testing.T, testCase serverTestCase) (*core.GlobalState, *c
 		"tostr":        core.WrapGoFunction(toStr),
 		"cancel_exec":  core.WrapGoFunction(cancelExec),
 		"EmailAddress": core.WrapGoFunction(makeEmailAddress),
+		"Status":       core.WrapGoFunction(makeStatus),
 	})
 
 	state.Module = module
@@ -1325,6 +1332,10 @@ func mkBytes(ctx *core.Context, size core.Int) *core.ByteSlice {
 
 func makeEmailAddress(ctx *core.Context, s core.StringLike) core.EmailAddress {
 	return utils.Must(core.NormalizeEmailAddress(s.GetOrBuildString()))
+}
+
+func makeStatus(ctx *core.Context, code StatusCode) Status {
+	return utils.Must(MakeStatus(code))
 }
 
 func toRstream(ctx *core.Context, v core.Value) core.ReadableStream {

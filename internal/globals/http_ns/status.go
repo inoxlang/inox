@@ -3,6 +3,7 @@ package http_ns
 import (
 	"errors"
 	"fmt"
+	"net/http"
 	"strconv"
 	"strings"
 
@@ -36,6 +37,13 @@ func ParseStatus(str string) (Status, error) {
 		text:         str,
 		reasonPhrase: secondPart,
 	}, nil
+}
+
+func MakeStatus(code StatusCode) (Status, error) {
+	if !code.inBounds() {
+		return Status{}, ErrOutOfBoundsStatusCode
+	}
+	return Status{code: code, reasonPhrase: http.StatusText(int(code))}, nil
 }
 
 func (s Status) Code() StatusCode {
@@ -81,7 +89,11 @@ func (Status) SetProp(ctx *core.Context, name string, value core.Value) error {
 type StatusCode uint16
 
 func (c StatusCode) assertInBounds() {
-	if c < 100 || c > 599 {
+	if !c.inBounds() {
 		panic(ErrOutOfBoundsStatusCode)
 	}
+}
+
+func (c StatusCode) inBounds() bool {
+	return c >= 100 && c <= 599
 }

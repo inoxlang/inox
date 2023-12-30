@@ -960,6 +960,72 @@ func TestFilesystemRouting(t *testing.T) {
 		)
 	})
 
+	t.Run("returned status code should be used as the response's status", func(t *testing.T) {
+		//TODO: check that the error is ErrEffectsNotAllowedInReadonlyTransaction.
+		// A specific status code or text, or a header could be set.
+
+		runServerTest(t,
+			serverTestCase{
+				input: `return {
+						routing: {dynamic: /routes/}
+					}`,
+				makeFilesystem: func() core.SnapshotableFilesystem {
+					fls := fs_ns.NewMemFilesystem(10_000)
+					fls.MkdirAll("/routes", fs_ns.DEFAULT_DIR_FMODE)
+					util.WriteFile(fls, "/routes/x.ix", []byte(`
+							manifest {}
+
+							return statuses.UNAUTHORIZED
+						`), fs_ns.DEFAULT_FILE_FMODE)
+
+					return fls
+				},
+				requests: []requestTestInfo{
+					{
+						path:                "/x",
+						method:              "HEAD",
+						acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
+						status:              http.StatusUnauthorized,
+					},
+				},
+			},
+			createClient,
+		)
+	})
+
+	t.Run("returned status should be used as the response's status", func(t *testing.T) {
+		//TODO: check that the error is ErrEffectsNotAllowedInReadonlyTransaction.
+		// A specific status code or text, or a header could be set.
+
+		runServerTest(t,
+			serverTestCase{
+				input: `return {
+						routing: {dynamic: /routes/}
+					}`,
+				makeFilesystem: func() core.SnapshotableFilesystem {
+					fls := fs_ns.NewMemFilesystem(10_000)
+					fls.MkdirAll("/routes", fs_ns.DEFAULT_DIR_FMODE)
+					util.WriteFile(fls, "/routes/x.ix", []byte(`
+							manifest {}
+
+							return Status(statuses.UNAUTHORIZED)
+						`), fs_ns.DEFAULT_FILE_FMODE)
+
+					return fls
+				},
+				requests: []requestTestInfo{
+					{
+						path:                "/x",
+						method:              "HEAD",
+						acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
+						status:              http.StatusUnauthorized,
+					},
+				},
+			},
+			createClient,
+		)
+	})
+
 	t.Run("request transaction should be commited or rollbacked after request", func(t *testing.T) {
 
 		t.Parallel()

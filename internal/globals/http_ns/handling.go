@@ -178,6 +178,12 @@ func respondWithMappingResult(h handlingArguments) {
 			logger.Print("error when calling returned inox function:", err)
 		}
 		return
+	case Status:
+		rw.writeStatus(core.Int(v.code))
+		return
+	case StatusCode:
+		rw.writeStatus(core.Int(v))
+		return
 	case core.Identifier:
 		switch v {
 		case "notfound":
