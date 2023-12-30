@@ -22,10 +22,11 @@ func findXmlTagNameCompletions(ident *parse.IdentifierLiteral, ancestors []parse
 		for _, tag := range html_ns.STANDARD_DATA.Tags {
 			if strings.HasPrefix(tag.Name, tagName) {
 				completions = append(completions, Completion{
-					ShownString: tag.Name,
-					Value:       tag.Name,
-					Kind:        defines.CompletionItemKindProperty,
-					LabelDetail: tag.DescriptionText(),
+					ShownString:           tag.Name,
+					Value:                 tag.Name,
+					Kind:                  defines.CompletionItemKindProperty,
+					LabelDetail:           tag.DescriptionText(),
+					MarkdownDocumentation: tag.DescriptionContent(),
 				})
 			}
 		}
@@ -103,10 +104,11 @@ func findHtmlAttributeNameCompletions(ident *parse.IdentifierLiteral, parent *pa
 		}
 
 		completions = append(completions, Completion{
-			ShownString: attr.Name,
-			Value:       attr.Name,
-			Kind:        defines.CompletionItemKindProperty,
-			LabelDetail: attr.DescriptionText(),
+			ShownString:           attr.Name,
+			Value:                 attr.Name,
+			Kind:                  defines.CompletionItemKindProperty,
+			LabelDetail:           attr.DescriptionText(),
+			MarkdownDocumentation: attr.DescriptionContent(),
 		})
 	}
 

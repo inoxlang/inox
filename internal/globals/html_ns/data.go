@@ -173,7 +173,6 @@ func getDescriptionContent(d any) string {
 
 	markupContent, ok := d.(map[string]any)
 	if ok {
-		//TODO: remove markdown formatting
 		return markupContent["value"].(string)
 	}
 
