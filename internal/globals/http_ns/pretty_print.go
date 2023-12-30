@@ -3,10 +3,12 @@ package http_ns
 import (
 	"bufio"
 	"fmt"
+	"reflect"
 	"strconv"
 	"strings"
 
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/prettyprint"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
@@ -31,11 +33,7 @@ func (r *HttpResponse) PrettyPrint(w *bufio.Writer, config *core.PrettyPrintConf
 		codeString := fmt.Sprintf("%d", code)
 
 		if config.Colorize {
-			if code < 400 {
-				utils.Must(w.Write(config.Colors.SuccessColor))
-			} else {
-				utils.Must(w.Write(config.Colors.ErrorColor))
-			}
+			utils.Must(w.Write(getStatusCodeColor(code, config.Colors)))
 			utils.Must(w.Write(utils.StringAsBytes(codeString)))
 		}
 		text := utils.StripANSISequences(r.Status(ctx))
@@ -74,11 +72,7 @@ func (r *HttpResponse) PrettyPrint(w *bufio.Writer, config *core.PrettyPrintConf
 
 func (s Status) PrettyPrint(w *bufio.Writer, config *core.PrettyPrintConfig, depth int, parentIndentCount int) {
 	if config.Colorize {
-		if s.code < 400 {
-			utils.Must(w.Write(config.Colors.SuccessColor))
-		} else {
-			utils.Must(w.Write(config.Colors.ErrorColor))
-		}
+		utils.Must(w.Write(getStatusCodeColor(s.code, config.Colors)))
 	}
 	utils.Must(w.WriteString(strconv.Itoa(int(s.code))))
 	utils.PanicIfErr(w.WriteByte(' '))
@@ -90,11 +84,7 @@ func (s Status) PrettyPrint(w *bufio.Writer, config *core.PrettyPrintConfig, dep
 
 func (c StatusCode) PrettyPrint(w *bufio.Writer, config *core.PrettyPrintConfig, depth int, parentIndentCount int) {
 	if config.Colorize {
-		if c < 400 {
-			utils.Must(w.Write(config.Colors.SuccessColor))
-		} else {
-			utils.Must(w.Write(config.Colors.ErrorColor))
-		}
+		utils.Must(w.Write(getStatusCodeColor(c, config.Colors)))
 	}
 	utils.Must(w.WriteString(strconv.Itoa(int(c))))
 	if config.Colorize {
@@ -116,4 +106,24 @@ func (csp *ContentSecurityPolicy) PrettyPrint(w *bufio.Writer, config *core.Pret
 
 func (p *HttpRequestPattern) PrettyPrint(w *bufio.Writer, config *core.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(fmt.Fprintf(w, "%#v", p))
+}
+
+func getStatusCodeColor(code any, colors *prettyprint.PrettyPrintColors) []byte {
+	val := reflect.ValueOf(code)
+
+	var integer int64
+
+	if val.CanInt() {
+		integer = val.Int()
+	} else {
+		integer = int64(val.Uint())
+	}
+
+	if integer <= 399 {
+		return colors.SuccessColor
+	}
+	if integer <= 499 {
+		return colors.WarnColor
+	}
+	return colors.ErrorColor
 }

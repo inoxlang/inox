@@ -1,6 +1,7 @@
 package http_ns
 
 import (
+	"net/http"
 	"reflect"
 
 	"github.com/inoxlang/inox/internal/core"
@@ -16,6 +17,33 @@ const (
 	HTTP_WRITE_PERM_MIGHT_BE_MISSING   = "http write permission might be missing"
 	HTTP_DELETE_PERM_MIGHT_BE_MISSING  = "http delete permission might be missing"
 	HTTP_PROVIDE_PERM_MIGHT_BE_MISSING = "http provide permission might be missing"
+)
+
+var (
+	STATUS_NAMESPACE = core.NewNamespace("status", map[string]core.Value{
+		//200-299 range
+		"OK": StatusCode(http.StatusOK),
+
+		//300-399 range
+		"MOVED_PERMANENTLY":  StatusCode(http.StatusMovedPermanently),
+		"SEE_OTHER":          StatusCode(http.StatusSeeOther),
+		"TEMPORARY_REDIRECT": StatusCode(http.StatusTemporaryRedirect),
+		"PERMANENT_REDIRECT": StatusCode(http.StatusPermanentRedirect),
+
+		//400-499 range
+		"BAD_REQUEST":        StatusCode(http.StatusBadRequest),
+		"UNAUTHORIZED":       StatusCode(http.StatusUnauthorized),
+		"FORBIDDEN":          StatusCode(http.StatusForbidden),
+		"NOT_FOUND":          StatusCode(http.StatusNotFound),
+		"METHOD_NOT_ALLOWED": StatusCode(http.StatusMethodNotAllowed),
+		"NOT_ACCEPTABLE":     StatusCode(http.StatusNotAcceptable),
+
+		//500-599 range
+		"INTERNAL_SERVER_ERROR":      StatusCode(http.StatusInternalServerError),
+		"BAD_GATEWAY":                StatusCode(http.StatusBadGateway),
+		"GATEWAY_TIMEOUT":            StatusCode(http.StatusGatewayTimeout),
+		"HTTP_VERSION_NOT_SUPPORTED": StatusCode(http.StatusHTTPVersionNotSupported),
+	})
 )
 
 func init() {
@@ -175,5 +203,6 @@ func NewHttpNamespace() *core.Namespace {
 		"percent_encode": core.WrapGoFunction(PercentEncode),
 		"percent_decode": core.WrapGoFunction(PercentDecode),
 		"CSP":            core.WrapGoFunction(NewCSP),
+		"status":         STATUS_NAMESPACE,
 	})
 }
