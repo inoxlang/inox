@@ -319,10 +319,11 @@ func NewDefaultGlobalState(ctx *core.Context, conf core.DefaultGlobalStateConfig
 		globalnames.ARRAY_FN: core.ValOf(core.NewArray),
 		globalnames.LIST_FN:  core.ValOf(_List),
 
-		globalnames.TYPEOF_FN:    core.ValOf(_typeof),
-		globalnames.URL_OF_FN:    core.ValOf(_url_of),
-		globalnames.LEN_FN:       core.ValOf(_len),
-		globalnames.LEN_RANGE_FN: core.ValOf(_len_range),
+		globalnames.TYPEOF_FN:     core.ValOf(_typeof),
+		globalnames.URL_OF_FN:     core.ValOf(_url_of),
+		globalnames.LEN_FN:        core.ValOf(_len),
+		globalnames.LEN_RANGE_FN:  core.ValOf(_len_range),
+		globalnames.IS_MUTABLE_FN: core.ValOf(_is_mutable),
 
 		globalnames.SUM_OPTIONS_FN: core.ValOf(core.SumOptions),
 		globalnames.MIME_FN:        core.ValOf(http_ns.Mime_),

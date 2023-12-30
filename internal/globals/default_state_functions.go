@@ -221,6 +221,10 @@ func _len_range(ctx *core.Context, p core.StringPattern) core.IntRange {
 	return p.LengthRange()
 }
 
+func _is_mutable(ctx *core.Context, v core.Value) core.Bool {
+	return core.Bool(v.IsMutable())
+}
+
 func _mkbytes(ctx *core.Context, size core.ByteCount) *core.ByteSlice {
 	return core.NewMutableByteSlice(make([]byte, size), "")
 }

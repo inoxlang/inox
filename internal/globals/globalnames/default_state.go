@@ -138,10 +138,11 @@ const (
 	ARRAY_FN = "Array"
 	LIST_FN  = "List"
 
-	TYPEOF_FN    = "typeof"
-	URL_OF_FN    = "url_of"
-	LEN_FN       = "len"
-	LEN_RANGE_FN = "len_range"
+	TYPEOF_FN     = "typeof"
+	URL_OF_FN     = "url_of"
+	LEN_FN        = "len"
+	LEN_RANGE_FN  = "len_range"
+	IS_MUTABLE_FN = "is_mutable"
 
 	SUM_OPTIONS_FN = "sum_options"
 	MIME_FN        = "mime"

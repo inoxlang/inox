@@ -194,6 +194,9 @@ func init() {
 		_len_range, func(ctx *symbolic.Context, arg symbolic.StringPattern) *symbolic.IntRange {
 			return symbolic.ANY_INT_RANGE
 		},
+		_is_mutable, func(ctx *symbolic.Context, arg symbolic.Value) *symbolic.Bool {
+			return symbolic.ANY_BOOL
+		},
 
 		_mkbytes, func(ctx *symbolic.Context, size *symbolic.ByteCount) *symbolic.ByteSlice {
 			return symbolic.ANY_BYTE_SLICE
