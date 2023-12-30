@@ -1,0 +1,15 @@
+{
+    "version": 0.1,
+    "tags": [],
+    "globalAttributes": [
+      {
+        "name": "hx-lazy-load",
+        "description": "The `hx-lazy-load` pseudo-attribute transpiles to `hx-trigger='load' hx-get='<value>'`."
+      },
+      {
+        "name": "hx-post-json",
+        "description": "The `hx-post-json` pseudo-attribute transpiles to `hx-post='<value>' hx-ext='json-enc'`."
+      }
+    ],
+    "valueSets": []
+  }

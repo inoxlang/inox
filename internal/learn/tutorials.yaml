@@ -1156,7 +1156,7 @@
                 <main>
                     <div class="forms">
                         <span>Form sending a POST request to '/users'</span>
-                        <form ix-post="/users" hx-target="this">
+                        <form hx-post-json="/users" hx-target="this">
                             <input name="name" type="text" placeholder="name"/>
                             <button type="submit">Submit</button>
                         </form>
@@ -1165,7 +1165,7 @@
 
                     <div class="other">
                         <span>Lazy loading of /fake-user</span>
-                        <div ix-lazy-load="/fake-user"></div>
+                        <div hx-lazy-load="/fake-user"></div>
                     </div>
                 </main>
             </body>

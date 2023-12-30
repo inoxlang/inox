@@ -33,6 +33,13 @@ type XMLAttribute struct {
 	value Value
 }
 
+func NewXMLAttribute(name string, value Value) XMLAttribute {
+	return XMLAttribute{
+		name:  name,
+		value: value,
+	}
+}
+
 func (a XMLAttribute) Name() string {
 	return a.name
 }

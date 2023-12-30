@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/inoxlang/inox/internal/core"
@@ -11,28 +12,42 @@ import (
 	"golang.org/x/net/html"
 )
 
-const (
-	INOX_ATTR_PREFIX = "ix-"
-)
-
 var (
-	//go:embed ix-data.json
-	IX_DATA_JSON []byte
-	IX_DATA      Ixdata
+	//go:embed pseudo-htmx-data.json
+	PSEUDO_HTMX_DATA_JSON              []byte
+	PSEUDO_HTMX_DATA                   PseudoHtmxData
+	PSEUDO_HTMX_ATTR_NAMES             []string
+	SHORTEST_PSEUDO_HTMX_ATTR_NAME_LEN int = 100
 )
 
-type Ixdata struct {
+type PseudoHtmxData struct {
 	Version          float64             `json:"version"`
 	GlobalAttributes []AttributeData     `json:"globalAttributes"`
 	ValueSets        []AttributeValueSet `json:"valueSets"`
 }
 
 func init() {
-	utils.PanicIfErr(json.Unmarshal(IX_DATA_JSON, &IX_DATA))
+	utils.PanicIfErr(json.Unmarshal(PSEUDO_HTMX_DATA_JSON, &PSEUDO_HTMX_DATA))
+	for _, attr := range PSEUDO_HTMX_DATA.GlobalAttributes {
+		PSEUDO_HTMX_ATTR_NAMES = append(PSEUDO_HTMX_ATTR_NAMES, attr.Name)
+		if SHORTEST_PSEUDO_HTMX_ATTR_NAME_LEN > len(attr.Name) {
+			SHORTEST_PSEUDO_HTMX_ATTR_NAME_LEN = len(attr.Name)
+		}
+	}
+	sort.Strings(PSEUDO_HTMX_ATTR_NAMES)
+
 }
 
-func transpileInoxAttribute(attr core.XMLAttribute, currentOutput *[]html.Attribute) error {
-	trimmedName := strings.TrimPrefix(attr.Name(), INOX_ATTR_PREFIX)
+func isPseudoHtmxAttribute(name string) bool {
+	if len(name) < SHORTEST_PSEUDO_HTMX_ATTR_NAME_LEN {
+		return false
+	}
+	index := sort.SearchStrings(PSEUDO_HTMX_ATTR_NAMES, name)
+	return index < len(PSEUDO_HTMX_ATTR_NAMES) && PSEUDO_HTMX_ATTR_NAMES[index] == name
+}
+
+func transpilePseudoHtmxAttribute(attr core.XMLAttribute, currentOutput *[]html.Attribute) error {
+	trimmedName := strings.TrimPrefix(attr.Name(), "hx-")
 
 	switch trimmedName {
 	case "lazy-load":

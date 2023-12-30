@@ -3,7 +3,6 @@ package html_ns
 import (
 	"fmt"
 	"strconv"
-	"strings"
 
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/utils"
@@ -28,9 +27,9 @@ func CreateHTMLNodeFromXMLElement(ctx *core.Context, arg *core.XMLElement) *HTML
 	for _, attr := range arg.Attributes() {
 		attrName := attr.Name()
 
-		//handle special 'ix-' attributes
-		if strings.HasPrefix(attrName, INOX_ATTR_PREFIX) {
-			transpileInoxAttribute(attr, &attributes)
+		//handle pseudo htmx attributes
+		if isPseudoHtmxAttribute(attrName) {
+			transpilePseudoHtmxAttribute(attr, &attributes)
 			//TODO: handle errors
 			continue
 		}
