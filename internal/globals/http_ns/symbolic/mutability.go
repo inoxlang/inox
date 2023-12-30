@@ -16,6 +16,14 @@ func (resp *HttpResponse) IsMutable() bool {
 	return true
 }
 
+func (s *Status) IsMutable() bool {
+	return false
+}
+
+func (c *StatusCode) IsMutable() bool {
+	return false
+}
+
 func (c *HttpClient) IsMutable() bool {
 	return true
 }

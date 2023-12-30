@@ -24,9 +24,9 @@ func (resp *HttpResponse) Prop(ctx *core.Context, name string) core.Value {
 		return core.WrapReader(resp.wrapped.Body, nil)
 	case "status":
 		return core.Str(resp.wrapped.Status)
-	case "status_code":
+	case "status-code":
 		//TOOD: use checked "int" ?
-		return core.Int(resp.wrapped.StatusCode)
+		return StatusCode(resp.wrapped.StatusCode)
 	case "cookies":
 		// TODO: make cookies immutable ?
 

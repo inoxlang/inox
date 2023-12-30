@@ -3,6 +3,7 @@ package http_ns
 import (
 	"bufio"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/inoxlang/inox/internal/core"
@@ -23,23 +24,27 @@ func (rw *HttpResponseWriter) PrettyPrint(w *bufio.Writer, config *core.PrettyPr
 
 func (r *HttpResponse) PrettyPrint(w *bufio.Writer, config *core.PrettyPrintConfig, depth int, parentIndentCount int) {
 	ctx := config.Context
-	code := r.StatusCode(ctx)
-	codeString := fmt.Sprintf("%d", code)
 
-	if config.Colorize {
-		if code < 400 {
-			utils.Must(w.Write(config.Colors.SuccessColor))
-		} else {
-			utils.Must(w.Write(config.Colors.ErrorColor))
+	//write status
+	{
+		code := r.StatusCode(ctx)
+		codeString := fmt.Sprintf("%d", code)
+
+		if config.Colorize {
+			if code < 400 {
+				utils.Must(w.Write(config.Colors.SuccessColor))
+			} else {
+				utils.Must(w.Write(config.Colors.ErrorColor))
+			}
+			utils.Must(w.Write(utils.StringAsBytes(codeString)))
 		}
-		utils.Must(w.Write(utils.StringAsBytes(codeString)))
-	}
-	text := utils.StripANSISequences(r.Status(ctx))
+		text := utils.StripANSISequences(r.Status(ctx))
 
-	text = strings.TrimSpace(strings.TrimPrefix(text, codeString))
-	if text != "" {
-		utils.PanicIfErr(w.WriteByte(' '))
-		utils.Must(w.Write(utils.StringAsBytes(text)))
+		text = strings.TrimSpace(strings.TrimPrefix(text, codeString))
+		if text != "" {
+			utils.PanicIfErr(w.WriteByte(' '))
+			utils.Must(w.Write(utils.StringAsBytes(text)))
+		}
 	}
 
 	if config.Colorize {
@@ -62,6 +67,36 @@ func (r *HttpResponse) PrettyPrint(w *bufio.Writer, config *core.PrettyPrintConf
 	utils.PanicIfErr(w.WriteByte(' '))
 	utils.Must(w.Write(utils.StringAsBytes(utils.StripANSISequences(contentType))))
 
+	if config.Colorize {
+		utils.Must(w.Write(core.ANSI_RESET_SEQUENCE))
+	}
+}
+
+func (s Status) PrettyPrint(w *bufio.Writer, config *core.PrettyPrintConfig, depth int, parentIndentCount int) {
+	if config.Colorize {
+		if s.code < 400 {
+			utils.Must(w.Write(config.Colors.SuccessColor))
+		} else {
+			utils.Must(w.Write(config.Colors.ErrorColor))
+		}
+	}
+	utils.Must(w.WriteString(strconv.Itoa(int(s.code))))
+	utils.PanicIfErr(w.WriteByte(' '))
+	utils.Must(w.WriteString(s.reasonPhrase))
+	if config.Colorize {
+		utils.Must(w.Write(core.ANSI_RESET_SEQUENCE))
+	}
+}
+
+func (c StatusCode) PrettyPrint(w *bufio.Writer, config *core.PrettyPrintConfig, depth int, parentIndentCount int) {
+	if config.Colorize {
+		if c < 400 {
+			utils.Must(w.Write(config.Colors.SuccessColor))
+		} else {
+			utils.Must(w.Write(config.Colors.ErrorColor))
+		}
+	}
+	utils.Must(w.WriteString(strconv.Itoa(int(c))))
 	if config.Colorize {
 		utils.Must(w.Write(core.ANSI_RESET_SEQUENCE))
 	}

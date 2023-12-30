@@ -30,6 +30,22 @@ func (r *HttpResponse) Equal(ctx *core.Context, other core.Value, alreadyCompare
 	return ok && r == otherResp
 }
 
+func (s Status) Equal(ctx *core.Context, other core.Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	otherStatus, ok := other.(Status)
+	if !ok {
+		return false
+	}
+	return s.code == otherStatus.code
+}
+
+func (c StatusCode) Equal(ctx *core.Context, other core.Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	otherCode, ok := other.(StatusCode)
+	if !ok {
+		return false
+	}
+	return c == otherCode
+}
+
 func (c *HttpClient) Equal(ctx *core.Context, other core.Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
 	otherClient, ok := other.(*HttpClient)
 	return ok && c == otherClient
