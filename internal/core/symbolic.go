@@ -791,11 +791,11 @@ func (p *FloatRangePattern) ToSymbolicValue(ctx *Context, encountered map[uintpt
 }
 
 func (p *UnionStringPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
-	return &symbolic.AnyStringPattern{}, nil
+	return symbolic.ANY_STR_PATTERN, nil
 }
 
 func (p *RepeatedPatternElement) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
-	return &symbolic.AnyStringPattern{}, nil
+	return symbolic.ANY_STR_PATTERN, nil
 }
 
 func (p *LengthCheckingStringPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
@@ -1016,7 +1016,7 @@ func (p NamedSegmentPathPattern) ToSymbolicValue(ctx *Context, encountered map[u
 }
 
 func (p *DynamicStringPatternElement) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
-	return &symbolic.AnyStringPattern{}, nil
+	return symbolic.ANY_STR_PATTERN, nil
 }
 
 func (p *DifferencePattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
@@ -1384,11 +1384,11 @@ func (e TreedataHiearchyEntry) ToSymbolicValue(ctx *Context, encountered map[uin
 }
 
 func (c *StringConcatenation) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
-	return &symbolic.StringConcatenation{}, nil
+	return symbolic.ANY_STR_CONCAT, nil
 }
 
 func (c *BytesConcatenation) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
-	return &symbolic.BytesConcatenation{}, nil
+	return symbolic.ANY_BYTES_CONCAT, nil
 }
 
 func (s *TestSuite) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
@@ -1553,15 +1553,15 @@ func (s *WritableByteStream) ToSymbolicValue(ctx *Context, encountered map[uintp
 }
 
 func (s *ConfluenceStream) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
-	return symbolic.NewWritableStream(&symbolic.Any{}), nil
+	return symbolic.NewWritableStream(symbolic.ANY), nil
 }
 
 func (c Color) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
-	return &symbolic.Color{}, nil
+	return symbolic.ANY_COLOR, nil
 }
 
 func (r *RingBuffer) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
-	return &symbolic.RingBuffer{}, nil
+	return symbolic.ANY_RING_BUFFER, nil
 }
 
 func (c *DataChunk) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {

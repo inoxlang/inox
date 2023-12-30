@@ -50,10 +50,10 @@ var (
 func init() {
 	core.RegisterSymbolicGoFunctions([]any{
 		_hashPassword, func(ctx *symbolic.Context, arg *symbolic.String, args ...symbolic.Value) *symbolic.String {
-			return &symbolic.String{}
+			return symbolic.ANY_STR
 		},
 		_checkPassword, func(ctx *symbolic.Context, pass *symbolic.String, hash *symbolic.String) *symbolic.Bool {
-			return &symbolic.Bool{}
+			return symbolic.ANY_BOOL
 		},
 		_sha256, func(ctx *symbolic.Context, arg symbolic.Readable) *symbolic.ByteSlice {
 			return &symbolic.ByteSlice{}

@@ -31,7 +31,7 @@ func init() {
 			return &symbolic.ByteSlice{}
 		},
 		RenderToString, func(ctx *symbolic.Context, arg symbolic.Value) *symbolic.String {
-			return &symbolic.String{}
+			return symbolic.ANY_STR
 		},
 		EscapeString, func(ctx *symbolic.Context, s symbolic.StringLike) *symbolic.String {
 			return symbolic.ANY_STR
@@ -40,7 +40,7 @@ func init() {
 	})
 
 	specifcTagFactory := func(ctx *symbolic.Context, desc *symbolic.Object) *_html_symbolic.HTMLNode {
-		return symbolicElement(ctx, &symbolic.String{}, desc)
+		return symbolicElement(ctx, symbolic.ANY_STR, desc)
 	}
 
 	for _, fn := range []any{} {

@@ -68,19 +68,19 @@ func (r *HttpResponseWriter) WidestOfType() symbolic.Value {
 }
 
 func (resp *HttpResponseWriter) WritePlainText(ctx *symbolic.Context, v *symbolic.ByteSlice) (*symbolic.Int, *symbolic.Error) {
-	return &symbolic.Int{}, nil
+	return symbolic.ANY_INT, nil
 }
 
 func (resp *HttpResponseWriter) WriteBinary(ctx *symbolic.Context, v *symbolic.ByteSlice) (*symbolic.Int, *symbolic.Error) {
-	return &symbolic.Int{}, nil
+	return symbolic.ANY_INT, nil
 }
 
 func (resp *HttpResponseWriter) WriteHTML(ctx *symbolic.Context, v symbolic.Value) (*symbolic.Int, *symbolic.Error) {
-	return &symbolic.Int{}, nil
+	return symbolic.ANY_INT, nil
 }
 
 func (resp *HttpResponseWriter) WriteJSON(ctx *symbolic.Context, v symbolic.Serializable) (*symbolic.Int, *symbolic.Error) {
-	return &symbolic.Int{}, nil
+	return symbolic.ANY_INT, nil
 }
 
 func (resp *HttpResponseWriter) WriteIXON(ctx *symbolic.Context, v symbolic.Serializable) *symbolic.Error {

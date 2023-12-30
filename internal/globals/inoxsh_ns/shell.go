@@ -73,10 +73,10 @@ func init() {
 		return &symbolic.Path{}
 	})
 	core.RegisterSymbolicGoFunction(_whoami, func(ctx *symbolic.Context) *symbolic.String {
-		return &symbolic.String{}
+		return symbolic.ANY_STR
 	})
 	core.RegisterSymbolicGoFunction(_hostname, func(ctx *symbolic.Context) *symbolic.String {
-		return &symbolic.String{}
+		return symbolic.ANY_STR
 	})
 }
 
@@ -471,7 +471,7 @@ func (sh *shell) applyConfiguration(prevTermState *term.State) {
 		if !core.IsSymbolicEquivalentOfGoFunctionRegistered(executeCmdFn) {
 			core.RegisterSymbolicGoFunction(executeCmdFn,
 				func(ctx *symbolic.Context, args ...symbolic.Value) (symbolic.Value, *symbolic.Error) {
-					return &symbolic.Any{}, nil
+					return symbolic.ANY, nil
 				},
 			)
 		}

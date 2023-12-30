@@ -46,11 +46,11 @@ func (*Thread) PrettyPrint(w prettyprint.PrettyPrintWriter, config *pprint.Prett
 }
 
 func (t *Thread) IteratorElementKey() symbolic.Value {
-	return &symbolic.Any{}
+	return symbolic.ANY
 }
 
 func (*Thread) IteratorElementValue() symbolic.Value {
-	return &symbolic.Any{}
+	return symbolic.ANY
 }
 
 func (*Thread) WidestOfType() symbolic.Value {

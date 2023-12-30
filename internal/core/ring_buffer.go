@@ -18,7 +18,7 @@ var (
 
 func init() {
 	RegisterSymbolicGoFunction(NewRingBuffer, func(ctx *symbolic.Context, size *symbolic.ByteCount) *symbolic.RingBuffer {
-		return &symbolic.RingBuffer{}
+		return symbolic.ANY_RING_BUFFER
 	})
 }
 

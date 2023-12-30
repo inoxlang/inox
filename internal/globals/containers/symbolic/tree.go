@@ -65,7 +65,7 @@ func (t *Tree) Connect(ctx *symbolic.Context, n1, n2 *TreeNode) {
 }
 
 func (t *Tree) Get(ctx *symbolic.Context, k symbolic.Value) symbolic.Value {
-	return &symbolic.Any{}
+	return symbolic.ANY
 }
 
 func (t *Tree) PrettyPrint(w prettyprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
@@ -142,7 +142,7 @@ func (f *TreeNode) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 func (t *TreeNode) Prop(name string) symbolic.Value {
 	switch name {
 	case "data":
-		return &symbolic.Any{}
+		return symbolic.ANY
 	case "children":
 		return &symbolic.Iterator{ElementValue: t}
 	case "add_child":
@@ -164,7 +164,7 @@ func (n *TreeNode) AddChild(ctx *symbolic.Context, data symbolic.Value) {
 }
 
 func (n *TreeNode) IteratorElementKey() symbolic.Value {
-	return &symbolic.Any{}
+	return symbolic.ANY
 }
 
 func (n *TreeNode) IteratorElementValue() symbolic.Value {
@@ -226,7 +226,7 @@ func (p *TreeNodePattern) StringPattern() (symbolic.StringPattern, bool) {
 }
 
 func (p *TreeNodePattern) IteratorElementKey() symbolic.Value {
-	return &symbolic.Int{}
+	return symbolic.ANY_INT
 }
 
 func (p *TreeNodePattern) IteratorElementValue() symbolic.Value {

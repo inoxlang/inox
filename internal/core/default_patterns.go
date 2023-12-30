@@ -615,7 +615,7 @@ var (
 			}
 			return patt, nil
 		},
-		SymbolicValue: utils.Must(symbolic.NewEvent(&symbolic.Any{})),
+		SymbolicValue: utils.Must(symbolic.NewEvent(symbolic.ANY)),
 	}
 	MUTATION_PATTERN = &TypePattern{
 		Type:          MUTATION_TYPE,

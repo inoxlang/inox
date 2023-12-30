@@ -50,7 +50,7 @@ func (*Stack) Pop(ctx *symbolic.Context) {
 }
 
 func (*Stack) Peek(ctx *symbolic.Context) symbolic.Value {
-	return &symbolic.Any{}
+	return symbolic.ANY
 }
 
 func (*Stack) PrettyPrint(w prettyprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
@@ -58,11 +58,11 @@ func (*Stack) PrettyPrint(w prettyprint.PrettyPrintWriter, config *pprint.Pretty
 }
 
 func (*Stack) IteratorElementKey() symbolic.Value {
-	return &symbolic.Any{}
+	return symbolic.ANY
 }
 
 func (*Stack) IteratorElementValue() symbolic.Value {
-	return &symbolic.Any{}
+	return symbolic.ANY
 }
 
 func (*Stack) WidestOfType() symbolic.Value {

@@ -20,10 +20,10 @@ func init() {
 	// register symbolic version of Go Functions
 	core.RegisterSymbolicGoFunctions([]any{
 		envHas, func(ctx *symbolic.Context, arg *symbolic.String) (*symbolic.Bool, *symbolic.Error) {
-			return &symbolic.Bool{}, nil
+			return symbolic.ANY_BOOL, nil
 		},
 		envGet, func(ctx *symbolic.Context, arg *symbolic.String) (*symbolic.String, *symbolic.Error) {
-			return &symbolic.String{}, nil
+			return symbolic.ANY_STR, nil
 		},
 		envSet, func(ctx *symbolic.Context, name *symbolic.String, val *symbolic.String) *symbolic.Error {
 			return nil

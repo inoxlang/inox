@@ -4,6 +4,10 @@ import (
 	pprint "github.com/inoxlang/inox/internal/prettyprint"
 )
 
+var (
+	ANY_RING_BUFFER = &RingBuffer{}
+)
+
 type RingBuffer struct {
 	UnassignablePropsMixin
 	shared bool
@@ -61,7 +65,7 @@ func (r *RingBuffer) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.Pret
 }
 
 func (r *RingBuffer) WidestOfType() Value {
-	return &RingBuffer{}
+	return ANY_RING_BUFFER
 }
 
 func (r *RingBuffer) IsSharable() (bool, string) {

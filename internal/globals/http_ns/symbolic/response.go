@@ -34,7 +34,7 @@ func (resp *HttpResponse) Prop(name string) symbolic.Value {
 	case "body":
 		return &symbolic.Reader{}
 	case "status":
-		return &symbolic.String{}
+		return symbolic.ANY_STR
 	case "status-code":
 		return ANY_STATUS_CODE
 	case "cookies":

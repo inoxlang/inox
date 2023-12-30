@@ -18,7 +18,7 @@ func init() {
 			return &symbolic.Transaction{}
 		},
 		_execute, func(ctx *symbolic.Context, args ...symbolic.Value) (*symbolic.String, *symbolic.Error) {
-			return &symbolic.String{}, nil
+			return symbolic.ANY_STR, nil
 		},
 		_sha1, func(ctx *symbolic.Context, arg symbolic.Readable) *symbolic.ByteSlice {
 			return &symbolic.ByteSlice{}
@@ -27,13 +27,13 @@ func init() {
 			return &symbolic.ByteSlice{}
 		},
 		_mkpath, func(ctx *symbolic.Context, arg symbolic.Value) *symbolic.Path {
-			return &symbolic.Path{}
+			return symbolic.ANY_PATH
 		},
 		_make_path_pattern, func(ctx *symbolic.Context, arg symbolic.Value) *symbolic.PathPattern {
-			return &symbolic.PathPattern{}
+			return symbolic.ANY_PATH_PATTERN
 		},
 		_mkurl, func(ctx *symbolic.Context, arg symbolic.Value) *symbolic.URL {
-			return &symbolic.URL{}
+			return symbolic.ANY_URL
 		},
 
 		_rand, func(ctx *symbolic.Context, arg symbolic.Value) symbolic.Value {
@@ -157,14 +157,14 @@ func init() {
 		//
 
 		core.ToJSON, func(ctx *symbolic.Context, arg symbolic.Value) *symbolic.String {
-			return &symbolic.String{}
+			return symbolic.ANY_STR
 		},
 		core.ToPrettyJSON, func(ctx *symbolic.Context, arg symbolic.Value) *symbolic.String {
-			return &symbolic.String{}
+			return symbolic.ANY_STR
 		},
 
 		_repr, func(ctx *symbolic.Context, arg symbolic.Serializable) *symbolic.String {
-			return &symbolic.String{}
+			return symbolic.ANY_STR
 		},
 		_parse_repr, func(ctx *symbolic.Context, arg symbolic.Readable) (symbolic.Value, *symbolic.Error) {
 			return symbolic.ANY, nil
@@ -224,13 +224,13 @@ func init() {
 			return nil
 		},
 		_is_space, func(ctx *symbolic.Context, s *symbolic.Rune) *symbolic.Bool {
-			return &symbolic.Bool{}
+			return symbolic.ANY_BOOL
 		},
 		_is_even, func(ctx *symbolic.Context, i *symbolic.Int) *symbolic.Bool {
-			return &symbolic.Bool{}
+			return symbolic.ANY_BOOL
 		},
 		_is_odd, func(ctx *symbolic.Context, i *symbolic.Int) *symbolic.Bool {
-			return &symbolic.Bool{}
+			return symbolic.ANY_BOOL
 		},
 		//
 

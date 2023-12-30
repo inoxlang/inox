@@ -46,11 +46,11 @@ func (*Queue) Enqueue(ctx *symbolic.Context, elems symbolic.Value) {
 }
 
 func (*Queue) Dequeue(ctx *symbolic.Context) (symbolic.Value, *symbolic.Bool) {
-	return &symbolic.Any{}, nil
+	return symbolic.ANY, nil
 }
 
 func (*Queue) Peek(ctx *symbolic.Context) (symbolic.Value, *symbolic.Bool) {
-	return &symbolic.Any{}, nil
+	return symbolic.ANY, nil
 }
 
 func (*Queue) PrettyPrint(w prettyprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
@@ -59,11 +59,11 @@ func (*Queue) PrettyPrint(w prettyprint.PrettyPrintWriter, config *pprint.Pretty
 }
 
 func (*Queue) IteratorElementKey() symbolic.Value {
-	return &symbolic.Any{}
+	return symbolic.ANY
 }
 
 func (*Queue) IteratorElementValue() symbolic.Value {
-	return &symbolic.Any{}
+	return symbolic.ANY
 }
 
 func (*Queue) WidestOfType() symbolic.Value {

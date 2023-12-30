@@ -54,13 +54,13 @@ func init() {
 			return nil
 		},
 		IsDir, func(ctx *symbolic.Context, pth *symbolic.Path) *symbolic.Bool {
-			return &symbolic.Bool{}
+			return symbolic.ANY_BOOL
 		},
 		IsFile, func(ctx *symbolic.Context, pth *symbolic.Path) *symbolic.Bool {
-			return &symbolic.Bool{}
+			return symbolic.ANY_BOOL
 		},
 		Exists, func(ctx *symbolic.Context, pth *symbolic.Path) *symbolic.Bool {
-			return &symbolic.Bool{}
+			return symbolic.ANY_BOOL
 		},
 		Find, func(ctx *symbolic.Context, pth *symbolic.Path, filters ...symbolic.Pattern) (*symbolic.List, *symbolic.Error) {
 			return &symbolic.List{}, nil

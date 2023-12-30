@@ -52,11 +52,11 @@ func (r *Ranking) PrettyPrint(w prettyprint.PrettyPrintWriter, config *pprint.Pr
 }
 
 func (r *Ranking) IteratorElementKey() symbolic.Value {
-	return &symbolic.Any{}
+	return symbolic.ANY
 }
 
 func (r *Ranking) IteratorElementValue() symbolic.Value {
-	return &symbolic.Any{}
+	return symbolic.ANY
 }
 
 func (r *Ranking) WidestOfType() symbolic.Value {
@@ -97,11 +97,11 @@ func (r *Rank) PrettyPrint(w prettyprint.PrettyPrintWriter, config *pprint.Prett
 }
 
 func (r *Rank) IteratorElementKey() symbolic.Value {
-	return &symbolic.Any{}
+	return symbolic.ANY
 }
 
 func (r *Rank) IteratorElementValue() symbolic.Value {
-	return &symbolic.Any{}
+	return symbolic.ANY
 }
 
 func (r *Rank) WidestOfType() symbolic.Value {

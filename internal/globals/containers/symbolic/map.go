@@ -56,20 +56,19 @@ func (*Map) Remove(ctx *symbolic.Context, k symbolic.Value) {
 }
 
 func (*Map) Get(ctx *symbolic.Context, k symbolic.Value) symbolic.Value {
-	return &symbolic.Any{}
+	return symbolic.ANY
 }
 
 func (*Map) PrettyPrint(w prettyprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("map")
-	return
 }
 
 func (m *Map) IteratorElementKey() symbolic.Value {
-	return &symbolic.Any{}
+	return symbolic.ANY
 }
 
 func (*Map) IteratorElementValue() symbolic.Value {
-	return &symbolic.Any{}
+	return symbolic.ANY
 }
 
 func (*Map) WidestOfType() symbolic.Value {

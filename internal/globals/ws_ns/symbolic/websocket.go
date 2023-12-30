@@ -48,7 +48,7 @@ func (conn *WebsocketConnection) sendJSON(ctx *symbolic.Context, msg symbolic.Va
 }
 
 func (conn *WebsocketConnection) readJSON(ctx *symbolic.Context) (symbolic.Value, *symbolic.Error) {
-	return &symbolic.Any{}, nil
+	return symbolic.ANY, nil
 }
 
 func (conn *WebsocketConnection) close(ctx *symbolic.Context) *symbolic.Error {
