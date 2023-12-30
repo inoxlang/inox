@@ -56,13 +56,18 @@ func init() {
 		Patterns: map[string]core.Pattern{
 			"resp-writer": &core.TypePattern{
 				Name:          "http.resp-writer",
-				Type:          reflect.TypeOf(&HttpResponseWriter{}),
-				SymbolicValue: &http_symbolic.HttpResponseWriter{},
+				Type:          reflect.TypeOf((*HttpResponseWriter)(nil)),
+				SymbolicValue: http_symbolic.ANY_HTTP_RESP_WRITER,
 			},
 			"req": CALLABLE_HTTP_REQUEST_PATTERN,
 			"method": core.NewUnionPattern(utils.MapSlice(METHODS, func(s string) core.Pattern {
 				return core.NewExactValuePattern(core.Identifier(s))
 			}), nil),
+			"status-code": &core.TypePattern{
+				Name:          "http.status-code",
+				Type:          reflect.TypeOf(StatusCode(100)),
+				SymbolicValue: http_symbolic.ANY_STATUS_CODE,
+			},
 		},
 	})
 
@@ -134,6 +139,10 @@ func init() {
 		PercentDecode, func(ctx *symbolic.Context, s symbolic.StringLike) (symbolic.StringLike, *symbolic.Error) {
 			return symbolic.ANY_STR_LIKE, nil
 		},
+		MakeStatusCode, func(ctx *symbolic.Context, code *symbolic.Int) *http_symbolic.StatusCode {
+			ctx.SetSymbolicGoFunctionParameters(&[]symbolic.Value{http_symbolic.STATUS_CODE_INT_RANGE}, []string{"code"})
+			return http_symbolic.ANY_STATUS_CODE
+		},
 		NewCSP, func(ctx *symbolic.Context, desc *symbolic.Object) (*http_symbolic.ContentSecurityPolicy, *symbolic.Error) {
 			ctx.SetSymbolicGoFunctionParameters(&[]symbolic.Value{
 				symbolic.NewInexactObject(map[string]symbolic.Serializable{
@@ -204,5 +213,6 @@ func NewHttpNamespace() *core.Namespace {
 		"percent_decode": core.WrapGoFunction(PercentDecode),
 		"CSP":            core.WrapGoFunction(NewCSP),
 		"status":         STATUS_NAMESPACE,
+		"to_status_code": core.WrapGoFunction(MakeStatusCode),
 	})
 }

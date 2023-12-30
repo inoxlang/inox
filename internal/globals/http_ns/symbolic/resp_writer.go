@@ -11,6 +11,8 @@ var (
 		"write_text", "write_binary", "write_html", "write_json", "write_ixon", "set_cookie", "write_status", "write_error",
 		"add_header",
 	}
+
+	ANY_HTTP_RESP_WRITER = &HttpResponseWriter{}
 )
 
 type HttpResponseWriter struct {
@@ -64,7 +66,7 @@ func (r *HttpResponseWriter) PrettyPrint(w prettyprint.PrettyPrintWriter, config
 }
 
 func (r *HttpResponseWriter) WidestOfType() symbolic.Value {
-	return &HttpResponseWriter{}
+	return ANY_HTTP_RESP_WRITER
 }
 
 func (resp *HttpResponseWriter) WritePlainText(ctx *symbolic.Context, v *symbolic.ByteSlice) (*symbolic.Int, *symbolic.Error) {

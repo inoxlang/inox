@@ -3,6 +3,7 @@ package http_ns
 import (
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
 	"strconv"
 	"strings"
@@ -87,6 +88,13 @@ func (Status) SetProp(ctx *core.Context, name string, value core.Value) error {
 }
 
 type StatusCode uint16
+
+func MakeStatusCode(_ *core.Context, n core.Int) (StatusCode, error) {
+	if n < 0 || n > math.MaxUint16 || !StatusCode(int(n)).inBounds() {
+		return 0, fmt.Errorf("%w: %d", ErrOutOfBoundsStatusCode, n)
+	}
+	return StatusCode(int(n)), nil
+}
 
 func (c StatusCode) assertInBounds() {
 	if !c.inBounds() {
