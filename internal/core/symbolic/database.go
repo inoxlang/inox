@@ -5,12 +5,14 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"strconv"
 	"strings"
 
 	"github.com/inoxlang/inox/internal/globals/globalnames"
 	"github.com/inoxlang/inox/internal/parse"
 	pprint "github.com/inoxlang/inox/internal/prettyprint"
 	"github.com/inoxlang/inox/internal/utils"
+	"github.com/inoxlang/inox/internal/utils/intconv"
 	"github.com/inoxlang/inox/internal/utils/pathutils"
 	"golang.org/x/exp/slices"
 )
@@ -141,6 +143,12 @@ func (db *DatabaseIL) getValueAt(pathOrPattern string) (Serializable, error) {
 	currentPath := "/"
 
 	err := pathutils.ForEachAbsolutePathSegment(pathOrPattern, func(segment string, _, _ int) error {
+		nextPath := currentPath
+		if currentPath == "/" {
+			nextPath += segment
+		} else {
+			nextPath += "/" + segment
+		}
 
 		if i == 0 {
 			entity, ok := db.topLevelEntities[segment]
@@ -148,22 +156,58 @@ func (db *DatabaseIL) getValueAt(pathOrPattern string) (Serializable, error) {
 				return fmt.Errorf("top level entity %q does not exist", segment)
 			}
 			result = entity
+			i++
+		} else if collection, ok := result.(Collection); ok {
+			result = collection.IteratorElementValue().(Serializable)
 		} else {
+			indexable, ok := result.(Indexable)
+			if ok && '0' <= segment[0] && segment[0] <= '9' {
+				index, err := strconv.ParseInt(segment, 10, 32)
+				if err != nil {
+					goto not_an_index
+				}
+				intIndex := intconv.MustI64ToI(index)
+
+				if indexable.HasKnownLen() {
+					if intIndex >= indexable.KnownLen() || intIndex < 0 {
+						return fmt.Errorf("there is no element at %s: "+INDEX_IS_OUT_OF_RANGE, nextPath)
+					}
+
+					elem, ok := indexable.elementAt(intIndex).(Serializable)
+					if !ok {
+						return fmt.Errorf("element at %s is not serializable", nextPath)
+					}
+					result = elem
+				} else {
+					elem, ok := indexable.elementAt(intIndex).(Serializable)
+					if !ok {
+						return fmt.Errorf("elements of %s are not serializable", currentPath)
+					}
+					result = elem
+				}
+				return nil
+			}
+
+		not_an_index:
 			iprops, ok := result.(IProps)
 			if !ok {
-				return fmt.Errorf("value at %s has no properties", segment)
+				return errors.New(fmtValueAtXHasNoProperties(currentPath))
 			}
 			names := iprops.PropertyNames()
 			if !slices.Contains(names, segment) {
-				return fmt.Errorf("value at %s has no %q property", currentPath, segment)
+				return errors.New(fmtValueAtXDoesNotHavePropX(currentPath, segment))
 			}
 			result, ok = iprops.Prop(segment).(Serializable)
 			if !ok {
-				return fmt.Errorf("value at %s is not serializable", currentPath+"/"+segment)
+				return errors.New(fmtValueAtXIsNotSerializable(nextPath))
+			}
+			switch result.(type) {
+			case *InoxFunction:
+				return errors.New(fmtRetrievalOfMethodAtXIsNotAllowed(nextPath))
 			}
 		}
 
-		currentPath += "/" + segment
+		currentPath = nextPath
 		return nil
 	})
 
