@@ -13,7 +13,7 @@ import (
 	jsoniter "github.com/inoxlang/inox/internal/jsoniter"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/prettyprint"
-	internal "github.com/inoxlang/inox/internal/prettyprint"
+	pprint "github.com/inoxlang/inox/internal/prettyprint"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -717,6 +717,111 @@ func TestDatabaseIL(t *testing.T) {
 
 }
 
+func TestDatabaseILGetOrLoad(t *testing.T) {
+	resetLoadFreeEntityFnRegistry()
+	defer resetLoadFreeEntityFnRegistry()
+
+	ctx := NewContexWithEmptyState(ContextConfig{
+		Permissions: []Permission{
+			DatabasePermission{
+				Kind_:  permkind.Read,
+				Entity: Host("ldb://main"),
+			},
+		},
+	}, nil)
+	defer ctx.CancelGracefully()
+
+	var LIST = NewWrappedValueList(
+		NewObjectFromMapNoInit(ValMap{
+			"a": Str("b"),
+		}),
+	)
+
+	db := &dummyDatabase{
+		resource: Host("ldb://main"),
+		topLevelEntities: map[string]Serializable{
+			"users": &testCollection{NewWrappedValueList(
+				NewObjectFromMapNoInit(ValMap{
+					"name": Str("username"),
+				}),
+			)},
+			"object": NewObjectFromMapNoInit(ValMap{
+				"list": LIST,
+			}),
+		},
+	}
+
+	dbIL := utils.Must(WrapDatabase(ctx, DatabaseWrappingArgs{
+		Inner:                        db,
+		OwnerState:                   ctx.state,
+		Name:                         "main",
+		ForceLoadBeforeOwnerStateSet: true,
+	}))
+
+	//root
+	_, err := dbIL.GetOrLoad(ctx, "/")
+	if !assert.ErrorContains(t, err, symbolic.ROOT_PATH_NOT_ALLOWED_REFERS_TO_DB) {
+		return
+	}
+
+	//top-levle entity
+
+	users, err := dbIL.GetOrLoad(ctx, "/users")
+	if !assert.NoError(t, err) {
+		return
+	}
+	assert.Equal(t, db.topLevelEntities["users"], users)
+
+	{
+
+		//inexisting user
+		_, err = dbIL.GetOrLoad(ctx, "/users/1")
+		if !assert.ErrorIs(t, err, ErrCollectionElemNotFound) {
+			return
+		}
+
+		firstUser, err := dbIL.GetOrLoad(ctx, "/users/0")
+		if !assert.NoError(t, err) {
+			return
+		}
+		if !assert.Equal(t, db.topLevelEntities["users"].(*testCollection).At(nil, 0), firstUser) {
+			return
+		}
+
+		firstUserName, err := dbIL.GetOrLoad(ctx, "/users/0/name")
+		if !assert.NoError(t, err) {
+			return
+		}
+		assert.Equal(t, Str("username"), firstUserName)
+
+		//inexisting user's property
+
+		_, err = dbIL.GetOrLoad(ctx, "/users/0/inexisting")
+		if !assert.Error(t, err) {
+			return
+		}
+	}
+
+	object, err := dbIL.GetOrLoad(ctx, "/object")
+	if !assert.NoError(t, err) {
+		return
+	}
+	assert.Equal(t, db.topLevelEntities["object"], object)
+
+	//element of indexable
+	elem, err := dbIL.GetOrLoad(ctx, "/object/list/0")
+	if !assert.NoError(t, err) {
+		return
+	}
+	assert.Equal(t, LIST.At(nil, 0), elem)
+
+	//inexisting element of indexable
+	_, err = dbIL.GetOrLoad(ctx, "/object/list/1")
+	if !assert.Error(t, err) {
+		return
+	}
+}
+
 var (
 	_ UrlHolder        = (*loadableTestValue)(nil)
 	_ Pattern          = (*loadableTestValuePattern)(nil)
@@ -824,7 +929,7 @@ func (*symbolicLoadableTestValue) IsMutable() bool {
 	return false
 }
 
-func (*symbolicLoadableTestValue) PrettyPrint(w prettyprint.PrettyPrintWriter, config *internal.PrettyPrintConfig) {
+func (*symbolicLoadableTestValue) PrettyPrint(w prettyprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteString("symbolicLoadableTestValue")
 }
 
@@ -871,7 +976,7 @@ func (*symbolicLoadableTestValuePattern) IteratorElementValue() symbolic.Value {
 	return symbolic.ANY
 }
 
-func (*symbolicLoadableTestValuePattern) PrettyPrint(w prettyprint.PrettyPrintWriter, config *internal.PrettyPrintConfig) {
+func (*symbolicLoadableTestValuePattern) PrettyPrint(w prettyprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteString("symbolicLoadableTestValuePattern")
 }
 
@@ -898,4 +1003,16 @@ func (*symbolicLoadableTestValuePattern) TestValue(v symbolic.Value, state symbo
 
 func (*symbolicLoadableTestValuePattern) WidestOfType() symbolic.Value {
 	return &symbolicLoadableTestValuePattern{}
+}
+
+var _ = Collection((*testCollection)(nil))
+
+type testCollection struct{ *List }
+
+func (c *testCollection) GetElementByKey(key ElementKey) (Serializable, error) {
+	index, err := strconv.Atoi(string(key))
+	if err != nil || index < 0 || index >= c.Len() {
+		return nil, ErrCollectionElemNotFound
+	}
+	return c.At(nil, index).(Serializable), nil
 }

@@ -140,7 +140,7 @@ func (db *DatabaseIL) getValueAt(pathOrPattern string) (Serializable, error) {
 	var result Serializable
 	currentPath := "/"
 
-	err := pathutils.ForEachAbsolutePathSegment(pathOrPattern, func(segment string) error {
+	err := pathutils.ForEachAbsolutePathSegment(pathOrPattern, func(segment string, _, _ int) error {
 
 		if i == 0 {
 			entity, ok := db.topLevelEntities[segment]

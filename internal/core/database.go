@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"runtime/debug"
 	"slices"
+	"strconv"
 	"sync"
 	"sync/atomic"
 
@@ -13,6 +14,8 @@ import (
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
+	iconv "github.com/inoxlang/inox/internal/utils/intconv"
+	"github.com/inoxlang/inox/internal/utils/pathutils"
 )
 
 var (
@@ -88,36 +91,6 @@ func checkDatabaseSchema(pattern *ObjectPattern) error {
 		}
 		return nil
 	})
-}
-
-// An element key is a a string that:
-// is at most 100-character long
-// is not empty
-// can only contain identifier chars (parse.IsIdentChar)
-type ElementKey string
-
-func ElementKeyFrom(key string) (ElementKey, error) {
-	fmtErr := func(msg string) error {
-		return fmt.Errorf("provided key %q is not a valid element key: %s", key, msg)
-	}
-	if len(key) == 0 {
-		return "", fmtErr("empty")
-	}
-
-	if len(key) > 100 {
-		return "", fmtErr("too long")
-	}
-
-	for _, r := range key {
-		if !parse.IsIdentChar(r) {
-			return "", fmtErr("invalid char found")
-		}
-	}
-	return ElementKey(key), nil
-}
-
-func MustElementKeyFrom(key string) ElementKey {
-	return utils.Must(ElementKeyFrom(key))
 }
 
 type Database interface {
@@ -432,6 +405,88 @@ func (db *DatabaseIL) UpdateSchema(ctx *Context, nextSchema *ObjectPattern, migr
 	db.newSchema = nextSchema
 	db.newSchemaSet.Store(true)
 	db.setDatabasePermissions()
+}
+
+// GetOrLoad retrieves an entity or value stored inside the database.
+func (db *DatabaseIL) GetOrLoad(ctx *Context, path Path) (Serializable, error) {
+	first := true
+	var current Serializable
+
+	err := symbolic.ValidatePathOfValueInDatabase(path)
+	if err != nil {
+		return nil, err
+	}
+
+	err = pathutils.ForEachAbsolutePathSegment(path, func(segment string, startIndex, endIndex int) (err error) {
+		defer func() {
+			if e := recover(); e != nil {
+				err = fmt.Errorf("failed to get value or entity at %s: %w", path[:endIndex], utils.ConvertPanicValueToError(e))
+			}
+		}()
+
+		if first {
+			topLevelEntity, ok := db.topLevelEntities[segment]
+			if !ok {
+				return fmt.Errorf("top level entity /%s does not exist", segment)
+			}
+			current = topLevelEntity
+			first = false
+			return nil
+		}
+		collection, ok := current.(Collection)
+
+		if ok {
+			key, err := ElementKeyFrom(segment)
+			if err != nil {
+				return fmt.Errorf("invalid path segment %q: %w", segment, err)
+			}
+
+			elem, err := collection.GetElementByKey(key)
+			if errors.Is(err, ErrCollectionElemNotFound) {
+				return fmt.Errorf("there is no entity at %s: %w", path[:endIndex], err)
+			}
+			if err != nil {
+				return fmt.Errorf("failed to retrieve the entity at %s: %w", path[:endIndex], err)
+			}
+			current = elem
+		} else {
+			indexable, ok := current.(Indexable)
+			if ok {
+				index, err := strconv.ParseInt(segment, 10, 32)
+				if err != nil {
+					goto not_an_index
+				}
+				intIndex := iconv.MustI64ToI(index)
+
+				if intIndex >= indexable.Len() || intIndex < 0 {
+					return fmt.Errorf("there is no element at %s: index is out of range", path[:endIndex])
+				}
+				current = indexable.At(ctx, intIndex).(Serializable)
+				return nil
+			}
+
+		not_an_index:
+			iprops, ok := current.(IProps)
+			if !ok {
+				return fmt.Errorf("there is no element at %s", path[:endIndex])
+			}
+			current = iprops.Prop(ctx, segment).(Serializable)
+		}
+
+		return nil
+	})
+
+	urlHolder, ok := current.(UrlHolder)
+	if ok {
+		if url, ok := urlHolder.URL(); ok && url.Path() != path {
+			//TODO: allow URL holders without URLs ?
+			//should we set their URL ? what is the performance impact ?
+
+			return nil, fmt.Errorf("an entity has been found at %s but it's URL'path is not equal to the specified path", path)
+		}
+	}
+
+	return current, err
 }
 
 func (db *DatabaseIL) Close(ctx *Context) error {
