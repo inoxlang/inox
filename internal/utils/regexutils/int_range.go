@@ -1,12 +1,13 @@
-package utils
+package regexutils
 
 import (
 	"fmt"
 	"math"
-	"regexp/syntax"
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 type IntegerRangeRegexConfig struct {
@@ -92,9 +93,9 @@ func RegexForRange(min, max int64, conf ...IntegerRangeRegexConfig) string {
 	if min < 0 {
 		absMin := int64(1)
 		if max < 0 {
-			absMin = Abs(max)
+			absMin = utils.Abs(max)
 		}
-		absMax := Abs(min)
+		absMax := utils.Abs(min)
 
 		negativeSubpatterns = splitToPatterns(absMin, absMax)
 	}
@@ -122,13 +123,13 @@ func RegexForRange(min, max int64, conf ...IntegerRangeRegexConfig) string {
 		intersectedPrefix = config.IntersectedPrefix
 	}
 
-	negativeOnlySubpatterns := MapSlice(getSharedUnsharedElements(negativeSubpatterns, positiveSubpatterns, false), func(s string) string {
+	negativeOnlySubpatterns := utils.MapSlice(getSharedUnsharedElements(negativeSubpatterns, positiveSubpatterns, false), func(s string) string {
 		return negativeOnlyPrefix + s
 	})
-	positiveOnlySubpatterns := MapSlice(getSharedUnsharedElements(positiveSubpatterns, negativeSubpatterns, false), func(s string) string {
+	positiveOnlySubpatterns := utils.MapSlice(getSharedUnsharedElements(positiveSubpatterns, negativeSubpatterns, false), func(s string) string {
 		return positiveOnlyPrefix + s
 	})
-	intersectedSubpatterns := MapSlice(getSharedUnsharedElements(negativeSubpatterns, positiveSubpatterns, true), func(s string) string {
+	intersectedSubpatterns := utils.MapSlice(getSharedUnsharedElements(negativeSubpatterns, positiveSubpatterns, true), func(s string) string {
 		return intersectedPrefix + s
 	})
 
@@ -221,52 +222,4 @@ func replaceEndWithNines(integer int64, ninesCount int) int64 {
 
 func replaceEndWithZeros(integer int64, zerosCount int) int64 {
 	return integer - integer%int64(math.Pow10(zerosCount))
-}
-
-func TurnCapturingGroupsIntoNonCapturing(regex *syntax.Regexp) *syntax.Regexp {
-	newRegex := new(syntax.Regexp)
-
-	if regex.Op != syntax.OpCapture {
-		newRegex.Op = regex.Op
-		newRegex.Flags = regex.Flags
-	}
-
-	switch regex.Op {
-	case syntax.OpConcat:
-		newRegex.Sub = make([]*syntax.Regexp, len(regex.Sub))
-		for i, sub := range regex.Sub {
-			newRegex.Sub[i] = TurnCapturingGroupsIntoNonCapturing(sub)
-		}
-
-	case syntax.OpLiteral:
-		newRegex.Rune = regex.Rune
-
-	case syntax.OpCharClass:
-		newRegex.Rune = regex.Rune
-
-	case syntax.OpQuest, syntax.OpPlus, syntax.OpStar:
-		newRegex.Sub = []*syntax.Regexp{TurnCapturingGroupsIntoNonCapturing(regex.Sub[0])}
-
-	case syntax.OpRepeat:
-		newRegex.Min = regex.Min
-		newRegex.Max = regex.Max
-		newRegex.Sub = []*syntax.Regexp{TurnCapturingGroupsIntoNonCapturing(regex.Sub[0])}
-
-	case syntax.OpCapture:
-		return TurnCapturingGroupsIntoNonCapturing(regex.Sub[0])
-
-	case syntax.OpAlternate:
-		newRegex.Sub = make([]*syntax.Regexp, len(regex.Sub))
-		for i, sub := range regex.Sub {
-			newRegex.Sub[i] = TurnCapturingGroupsIntoNonCapturing(sub)
-		}
-
-	case syntax.OpAnyChar, syntax.OpAnyCharNotNL, syntax.OpEmptyMatch, syntax.OpNoWordBoundary, syntax.OpWordBoundary:
-	case syntax.OpEndText, syntax.OpBeginText:
-
-	default:
-		panic(fmt.Errorf("unknown syntax operator %s", regex.Op.String()))
-	}
-
-	return newRegex
 }

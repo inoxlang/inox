@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strings"
 	"time"
+	"unsafe"
 
 	"github.com/inoxlang/inox/internal/third_party_stable/golang-levenshtein/levenshtein"
 	"golang.org/x/exp/constraints"
@@ -15,6 +16,17 @@ import (
 var (
 	MATCHALL_REGEX = regexp.MustCompile(".*")
 )
+
+func BytesAsString(b []byte) string {
+	if len(b) == 0 {
+		return ""
+	}
+	return unsafe.String(unsafe.SliceData(b), len(b))
+}
+
+func StringAsBytes[T ~string](s T) []byte {
+	return unsafe.Slice(unsafe.StringData(string(s)), len(s))
+}
 
 func AddCarriageReturnAfterNewlines(s string) string {
 	return strings.ReplaceAll(s, "\n", "\n\r")
@@ -229,4 +241,3 @@ func CountPrevBackslashes[T constraints.Integer](s []T, i int32) int32 {
 
 	return count
 }
-

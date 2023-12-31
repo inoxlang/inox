@@ -14,6 +14,7 @@ import (
 	"github.com/inoxlang/inox/internal/parse"
 	pprint "github.com/inoxlang/inox/internal/prettyprint"
 	"github.com/inoxlang/inox/internal/utils"
+	"github.com/inoxlang/inox/internal/utils/regexutils"
 	"golang.org/x/exp/maps"
 )
 
@@ -999,7 +1000,7 @@ type RegexPattern struct {
 func NewRegexPattern(s string) *RegexPattern {
 	regexp := regexp.MustCompile(s) //compiles with syntax.Perl flag
 	syntaxRegexp := utils.Must(syntax.Parse(s, REGEX_SYNTAX))
-	syntaxRegexp = utils.TurnCapturingGroupsIntoNonCapturing(syntaxRegexp)
+	syntaxRegexp = regexutils.TurnCapturingGroupsIntoNonCapturing(syntaxRegexp)
 
 	return &RegexPattern{
 		regex:  regexp,

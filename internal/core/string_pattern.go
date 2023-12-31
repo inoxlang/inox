@@ -16,6 +16,7 @@ import (
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
+	"github.com/inoxlang/inox/internal/utils/regexutils"
 )
 
 const (
@@ -289,7 +290,7 @@ func NewSequenceStringPattern(
 				subpatternRegexBuff.WriteRune('(')
 
 				elementRegex := utils.Must(syntax.Parse(repeatedElement.element.Regex(), symbolic.REGEX_SYNTAX))
-				elementRegex = utils.TurnCapturingGroupsIntoNonCapturing(elementRegex)
+				elementRegex = regexutils.TurnCapturingGroupsIntoNonCapturing(elementRegex)
 
 				subpatternRegexBuff.WriteString("(?:")
 				subpatternRegexBuff.WriteString(elementRegex.String())
@@ -312,7 +313,7 @@ func NewSequenceStringPattern(
 				repeatedElement.regexp = regexp.MustCompile(subpatternRegexBuff.String())
 			} else {
 				subpattRegex := utils.Must(syntax.Parse(subpatt.Regex(), symbolic.REGEX_SYNTAX))
-				subpattRegex = utils.TurnCapturingGroupsIntoNonCapturing(subpattRegex)
+				subpattRegex = regexutils.TurnCapturingGroupsIntoNonCapturing(subpattRegex)
 
 				subpatternRegexBuff.WriteRune('(')
 				subpatternRegexBuff.WriteString(subpattRegex.String())
@@ -831,7 +832,7 @@ type IntRangeStringPattern struct {
 }
 
 func NewIntRangeStringPattern(lower, upperIncluded int64, node parse.Node) *IntRangeStringPattern {
-	entireRegex := "^" + utils.RegexForRange(lower, upperIncluded, utils.IntegerRangeRegexConfig{
+	entireRegex := "^" + regexutils.RegexForRange(lower, upperIncluded, regexutils.IntegerRangeRegexConfig{
 		CapturingGroup:     false,
 		NegativeOnlyPrefix: "-",
 		PositiveOnlyPrefix: "\\b",
@@ -1474,7 +1475,7 @@ type RegexPattern struct {
 func NewRegexPattern(s string) *RegexPattern {
 	regexp := regexp.MustCompile(s) //compiles with syntax.Perl flag
 	syntaxRegexp := utils.Must(syntax.Parse(s, symbolic.REGEX_SYNTAX))
-	syntaxRegexp = utils.TurnCapturingGroupsIntoNonCapturing(syntaxRegexp)
+	syntaxRegexp = regexutils.TurnCapturingGroupsIntoNonCapturing(syntaxRegexp)
 
 	return &RegexPattern{
 		regexp:      regexp,

@@ -1,4 +1,4 @@
-package utils
+package regexutils
 
 import (
 	"math"
@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -227,7 +228,7 @@ func TestValueExistsInBoth(t *testing.T) {
 
 func TestTurnCapturingGroupsIntoNonCapturing(t *testing.T) {
 	turn := func(s string) string {
-		regex := Must(syntax.Parse(s, syntax.Perl))
+		regex := utils.Must(syntax.Parse(s, syntax.Perl))
 		return TurnCapturingGroupsIntoNonCapturing(regex).String()
 	}
 

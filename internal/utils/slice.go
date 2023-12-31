@@ -2,7 +2,6 @@ package utils
 
 import (
 	"reflect"
-	"unsafe"
 
 	"golang.org/x/exp/constraints"
 )
@@ -120,15 +119,4 @@ func EmptySliceIfNil[T any](slice []T) []T {
 
 func RemoveIndexOfSlice[T any](s []T, index int) []T {
 	return append(s[:index], s[index+1:]...)
-}
-
-func BytesAsString(b []byte) string {
-	if len(b) == 0 {
-		return ""
-	}
-	return unsafe.String(unsafe.SliceData(b), len(b))
-}
-
-func StringAsBytes[T ~string](s T) []byte {
-	return unsafe.Slice(unsafe.StringData(string(s)), len(s))
 }
