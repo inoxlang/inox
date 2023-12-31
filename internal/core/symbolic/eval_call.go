@@ -52,8 +52,13 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 			self, _ = state.symbolicData.GetMostSpecificNodeValue(_c.Left)
 			selfPartialNode = _c.Left
 		case *parse.DoubleColonExpression:
-			self, _ = state.symbolicData.GetMostSpecificNodeValue(_c.Left)
-			selfPartialNode = _c.Left
+			entity, ok := state.symbolicData.GetURLReferencedEntity(_c)
+			if ok {
+				self = entity
+			} else {
+				self, _ = state.symbolicData.GetMostSpecificNodeValue(_c.Left)
+				selfPartialNode = _c.Left
+			}
 		default:
 			selfPartialNode = c
 		}
