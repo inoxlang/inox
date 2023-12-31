@@ -731,22 +731,25 @@ func TestDatabaseILGetOrLoad(t *testing.T) {
 	}, nil)
 	defer ctx.CancelGracefully()
 
-	var LIST = NewWrappedValueList(
+	var INDEXABLE = NewWrappedValueList(
 		NewObjectFromMapNoInit(ValMap{
 			"a": Str("b"),
 		}),
 	)
 
+	var COLLECTION = &testCollection{NewWrappedValueList(
+		NewObjectFromMapNoInit(ValMap{
+			"name":      Str("username"),
+			"my_method": &InoxFunction{},
+		}),
+	)}
+
 	db := &dummyDatabase{
 		resource: Host("ldb://main"),
 		topLevelEntities: map[string]Serializable{
-			"users": &testCollection{NewWrappedValueList(
-				NewObjectFromMapNoInit(ValMap{
-					"name": Str("username"),
-				}),
-			)},
+			"users": COLLECTION,
 			"object": NewObjectFromMapNoInit(ValMap{
-				"list": LIST,
+				"list": INDEXABLE,
 			}),
 		},
 	}
@@ -764,7 +767,7 @@ func TestDatabaseILGetOrLoad(t *testing.T) {
 		return
 	}
 
-	//top-levle entity
+	//top-level entity (collection)
 
 	users, err := dbIL.GetOrLoad(ctx, "/users")
 	if !assert.NoError(t, err) {
@@ -774,12 +777,20 @@ func TestDatabaseILGetOrLoad(t *testing.T) {
 
 	{
 
-		//inexisting user
+		//inexisting element of the collection
 		_, err = dbIL.GetOrLoad(ctx, "/users/1")
 		if !assert.ErrorIs(t, err, ErrCollectionElemNotFound) {
 			return
 		}
 
+		//name of one the collection's properties
+		_ = COLLECTION.Prop(nil, "len")
+		_, err = dbIL.GetOrLoad(ctx, "/users/len")
+		if !assert.ErrorIs(t, err, ErrCollectionElemNotFound) {
+			return
+		}
+
+		//existing element of the collection
 		firstUser, err := dbIL.GetOrLoad(ctx, "/users/0")
 		if !assert.NoError(t, err) {
 			return
@@ -795,9 +806,14 @@ func TestDatabaseILGetOrLoad(t *testing.T) {
 		assert.Equal(t, Str("username"), firstUserName)
 
 		//inexisting user's property
-
 		_, err = dbIL.GetOrLoad(ctx, "/users/0/inexisting")
 		if !assert.Error(t, err) {
+			return
+		}
+
+		//user's method
+		_, err = dbIL.GetOrLoad(ctx, "/users/0/my_method")
+		if !assert.ErrorIs(t, err, ErrInvalidDBValuePropRetrieval) {
 			return
 		}
 	}
@@ -808,16 +824,22 @@ func TestDatabaseILGetOrLoad(t *testing.T) {
 	}
 	assert.Equal(t, db.topLevelEntities["object"], object)
 
-	//element of indexable
+	//element of the indexable
 	elem, err := dbIL.GetOrLoad(ctx, "/object/list/0")
 	if !assert.NoError(t, err) {
 		return
 	}
-	assert.Equal(t, LIST.At(nil, 0), elem)
+	assert.Equal(t, INDEXABLE.At(nil, 0), elem)
 
-	//inexisting element of indexable
+	//inexisting element of the indexable
 	_, err = dbIL.GetOrLoad(ctx, "/object/list/1")
 	if !assert.Error(t, err) {
+		return
+	}
+
+	//method of the indexable
+	_, err = dbIL.GetOrLoad(ctx, "/object/list/append")
+	if !assert.ErrorIs(t, err, ErrInvalidDBValuePropRetrieval) {
 		return
 	}
 }
@@ -1015,4 +1037,13 @@ func (c *testCollection) GetElementByKey(key ElementKey) (Serializable, error) {
 		return nil, ErrCollectionElemNotFound
 	}
 	return c.At(nil, index).(Serializable), nil
+}
+
+func (c *testCollection) Prop(ctx *Context, name string) Value {
+	switch name {
+	case "len":
+		return Int(c.Len())
+	}
+
+	return c.List.Prop(ctx, name)
 }

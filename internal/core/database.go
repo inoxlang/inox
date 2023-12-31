@@ -37,6 +37,7 @@ var (
 	ErrCannotResolveDatabase                           = errors.New("cannot resolve database")
 	ErrCannotFindDatabaseHost                          = errors.New("cannot find corresponding host of database")
 	ErrInvalidDatabaseHost                             = errors.New("host of database is invalid")
+	ErrInvalidDBValuePropRetrieval                     = errors.New("invalid property retrieval: value should be serializablr and should not be that a method or dynamic value")
 
 	DATABASE_PROPNAMES = []string{"update_schema", "close", "schema"}
 
@@ -433,9 +434,8 @@ func (db *DatabaseIL) GetOrLoad(ctx *Context, path Path) (Serializable, error) {
 			first = false
 			return nil
 		}
-		collection, ok := current.(Collection)
 
-		if ok {
+		if collection, ok := current.(Collection); ok {
 			key, err := ElementKeyFrom(segment)
 			if err != nil {
 				return fmt.Errorf("invalid path segment %q: %w", segment, err)
@@ -470,11 +470,23 @@ func (db *DatabaseIL) GetOrLoad(ctx *Context, path Path) (Serializable, error) {
 			if !ok {
 				return fmt.Errorf("there is no element at %s", path[:endIndex])
 			}
-			current = iprops.Prop(ctx, segment).(Serializable)
+			propVal, isSerializable := iprops.Prop(ctx, segment).(Serializable)
+			if !isSerializable {
+				return ErrInvalidDBValuePropRetrieval
+			}
+			switch propVal.(type) {
+			case *InoxFunction, *DynamicValue:
+				return ErrInvalidDBValuePropRetrieval
+			}
+			current = propVal
 		}
 
 		return nil
 	})
+
+	if err != nil {
+		return nil, err
+	}
 
 	urlHolder, ok := current.(UrlHolder)
 	if ok {
