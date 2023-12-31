@@ -31,7 +31,7 @@ func TestLoadObject(t *testing.T) {
 		storage := &TestValueStorage{BaseURL_: "ldb://main"}
 		pattern := NewInexactObjectPattern(map[string]Pattern{})
 
-		val, err := loadObject(ctx, FreeEntityLoadingParams{
+		val, err := loadFreeObject(ctx, FreeEntityLoadingParams{
 			Key:          "/user",
 			Storage:      storage,
 			Pattern:      pattern,
@@ -52,7 +52,7 @@ func TestLoadObject(t *testing.T) {
 		storage := &TestValueStorage{BaseURL_: "ldb://main"}
 		pattern := NewInexactObjectPattern(map[string]Pattern{})
 
-		val, err := loadObject(ctx, FreeEntityLoadingParams{
+		val, err := loadFreeObject(ctx, FreeEntityLoadingParams{
 			Key:          "/user",
 			Storage:      storage,
 			Pattern:      pattern,
@@ -76,7 +76,7 @@ func TestLoadObject(t *testing.T) {
 		}
 		pattern := NewInexactObjectPattern(map[string]Pattern{"a": INT_PATTERN})
 
-		val, err := loadObject(ctx, FreeEntityLoadingParams{
+		val, err := loadFreeObject(ctx, FreeEntityLoadingParams{
 			Key:          "/user",
 			Storage:      storage,
 			Pattern:      pattern,
@@ -119,7 +119,7 @@ func TestLoadObject(t *testing.T) {
 		}
 		pattern := NewInexactObjectPattern(map[string]Pattern{"inner": NewInexactObjectPattern(map[string]Pattern{"a": INT_PATTERN})})
 
-		val, err := loadObject(ctx, FreeEntityLoadingParams{
+		val, err := loadFreeObject(ctx, FreeEntityLoadingParams{
 			Key:          "/user",
 			Storage:      storage,
 			Pattern:      pattern,
@@ -167,7 +167,7 @@ func TestLoadObject(t *testing.T) {
 			"inner": NewListPatternOf(INT_PATTERN),
 		})
 
-		val, err := loadObject(ctx, FreeEntityLoadingParams{
+		val, err := loadFreeObject(ctx, FreeEntityLoadingParams{
 			Key:          "/user",
 			Storage:      storage,
 			Pattern:      pattern,
@@ -209,7 +209,7 @@ func TestLoadObject(t *testing.T) {
 		}
 		pattern := NewInexactObjectPattern(map[string]Pattern{})
 
-		val, err := loadObject(ctx, FreeEntityLoadingParams{
+		val, err := loadFreeObject(ctx, FreeEntityLoadingParams{
 			Key:          "/user",
 			Storage:      storage,
 			Pattern:      pattern,
@@ -241,7 +241,7 @@ func TestLoadObject(t *testing.T) {
 		pattern := NewInexactObjectPattern(map[string]Pattern{})
 		nextPattern := NewInexactObjectPattern(map[string]Pattern{"a": INT_PATTERN})
 
-		val, err := loadObject(ctx, FreeEntityLoadingParams{
+		val, err := loadFreeObject(ctx, FreeEntityLoadingParams{
 			Key:          "/user",
 			Storage:      storage,
 			Pattern:      pattern,
@@ -290,7 +290,7 @@ func TestLoadObject(t *testing.T) {
 		pattern := NewInexactObjectPattern(map[string]Pattern{"a": INT_PATTERN})
 		nextPattern := NewInexactObjectPattern(map[string]Pattern{"a": INT_PATTERN, "b": INT_PATTERN})
 
-		val, err := loadObject(ctx, FreeEntityLoadingParams{
+		val, err := loadFreeObject(ctx, FreeEntityLoadingParams{
 			Key:          "/user",
 			Storage:      storage,
 			Pattern:      pattern,
@@ -339,7 +339,7 @@ func TestLoadObject(t *testing.T) {
 		pattern := NewInexactObjectPattern(map[string]Pattern{"a": INT_PATTERN})
 		nextPattern := NewInexactObjectPattern(map[string]Pattern{"a": INT_PATTERN, "b": INT_PATTERN})
 
-		val, err := loadObject(ctx, FreeEntityLoadingParams{
+		val, err := loadFreeObject(ctx, FreeEntityLoadingParams{
 			Key:          "/user",
 			Storage:      storage,
 			Pattern:      pattern,

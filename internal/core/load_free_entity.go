@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	loadFreeEntityFnRegistry     = map[reflect.Type] /*pattern type*/ LoadSelfManagedEntityFn{}
+	loadFreeEntityFnRegistry     = map[ /*pattern type*/ reflect.Type]LoadSelfManagedEntityFn{}
 	loadFreeEntityFnRegistryLock sync.Mutex
 
 	ErrNonUniqueLoadFreeEntityFnRegistration          = errors.New("non unique loading function registration")
@@ -30,7 +30,7 @@ func resetLoadFreeEntityFnRegistry() {
 	clear(loadFreeEntityFnRegistry)
 	loadFreeEntityFnRegistryLock.Unlock()
 
-	RegisterLoadFreeEntityFn(OBJECT_PATTERN_TYPE, loadObject)
+	RegisterLoadFreeEntityFn(OBJECT_PATTERN_TYPE, loadFreeObject)
 }
 
 type DataStore interface {
@@ -113,7 +113,7 @@ func LoadFreeEntity(ctx *Context, args FreeEntityLoadingParams) (UrlHolder, erro
 	return fn(ctx, args)
 }
 
-func loadObject(ctx *Context, args FreeEntityLoadingParams) (UrlHolder, error) {
+func loadFreeObject(ctx *Context, args FreeEntityLoadingParams) (UrlHolder, error) {
 	path := args.Key
 	pattern := args.Pattern
 	storage := args.Storage

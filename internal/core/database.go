@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"runtime/debug"
 	"slices"
-	"strings"
 	"sync"
 	"sync/atomic"
 
@@ -17,13 +16,6 @@ import (
 )
 
 var (
-	openDbFnRegistry     = map[Scheme]OpenDBFn{}
-	openDbFnRegistryLock sync.Mutex
-
-	staticallyCheckDbResolutionDataFnRegistry     = map[Scheme]StaticallyCheckDbResolutionDataFn{}
-	staticallyCheckDbResolutionDataFnRegistryLock sync.Mutex
-
-	ErrNonUniqueDbOpenFnRegistration                   = errors.New("non unique open DB function registration")
 	ErrOwnerStateAlreadySet                            = errors.New("owner state already set")
 	ErrOwnerStateNotSet                                = errors.New("owner state not set")
 	ErrNameCollisionWithInitialDatabasePropertyName    = errors.New("name collision with initial database property name")
@@ -47,9 +39,7 @@ var (
 
 	ElementKeyEncoding = base32.StdEncoding.WithPadding(base32.NoPadding)
 
-	_ Value    = (*DatabaseIL)(nil)
-	_ Database = (*FailedToOpenDatabase)(nil)
-	_ Database = (*dummyDatabase)(nil)
+	_ Value = (*DatabaseIL)(nil)
 )
 
 type DatabaseIL struct {
@@ -129,10 +119,6 @@ func ElementKeyFrom(key string) (ElementKey, error) {
 func MustElementKeyFrom(key string) ElementKey {
 	return utils.Must(ElementKeyFrom(key))
 }
-
-type OpenDBFn func(ctx *Context, config DbOpenConfiguration) (Database, error)
-
-type StaticallyCheckDbResolutionDataFn func(node parse.Node, optProject Project) (errorMsg string)
 
 type Database interface {
 	Resource() SchemeHolder
@@ -238,63 +224,6 @@ return_:
 	return db, errInDevMode
 }
 
-func RegisterOpenDbFn(scheme Scheme, fn OpenDBFn) {
-	openDbFnRegistryLock.Lock()
-	defer openDbFnRegistryLock.Unlock()
-
-	_, ok := openDbFnRegistry[scheme]
-	if ok {
-		panic(ErrNonUniqueDbOpenFnRegistration)
-	}
-
-	openDbFnRegistry[scheme] = fn
-}
-
-func GetOpenDbFn(scheme Scheme) (OpenDBFn, bool) {
-	openDbFnRegistryLock.Lock()
-	defer openDbFnRegistryLock.Unlock()
-
-	//TODO: prevent re-opening database (same resolution data)
-	fn, ok := openDbFnRegistry[scheme]
-
-	return fn, ok
-}
-
-func IsStaticallyCheckDBFunctionRegistered(scheme Scheme) bool {
-	staticallyCheckDbResolutionDataFnRegistryLock.Lock()
-	defer staticallyCheckDbResolutionDataFnRegistryLock.Unlock()
-
-	_, ok := staticallyCheckDbResolutionDataFnRegistry[scheme]
-	return ok
-}
-
-func resetStaticallyCheckDbResolutionDataFnRegistry() {
-	staticallyCheckDbResolutionDataFnRegistryLock.Lock()
-	defer staticallyCheckDbResolutionDataFnRegistryLock.Unlock()
-	clear(staticallyCheckDbResolutionDataFnRegistry)
-}
-
-func RegisterStaticallyCheckDbResolutionDataFn(scheme Scheme, fn StaticallyCheckDbResolutionDataFn) {
-	staticallyCheckDbResolutionDataFnRegistryLock.Lock()
-	defer staticallyCheckDbResolutionDataFnRegistryLock.Unlock()
-
-	_, ok := staticallyCheckDbResolutionDataFnRegistry[scheme]
-	if ok {
-		panic(ErrNonUniqueDbOpenFnRegistration)
-	}
-
-	staticallyCheckDbResolutionDataFnRegistry[scheme] = fn
-}
-
-func GetStaticallyCheckDbResolutionDataFn(scheme Scheme) (StaticallyCheckDbResolutionDataFn, bool) {
-	staticallyCheckDbResolutionDataFnRegistryLock.Lock()
-	defer staticallyCheckDbResolutionDataFnRegistryLock.Unlock()
-
-	fn, ok := staticallyCheckDbResolutionDataFnRegistry[scheme]
-
-	return fn, ok
-}
-
 func (db *DatabaseIL) TopLevelEntitiesLoaded() bool {
 	return db.topLevelEntitiesLoaded.Load()
 }
@@ -359,161 +288,6 @@ func (db *DatabaseIL) setDatabasePermissions() {
 
 func (db *DatabaseIL) Resource() SchemeHolder {
 	return db.inner.Resource()
-}
-
-type MigrationOpHandlers struct {
-	Deletions       map[PathPattern]*MigrationOpHandler //handler can be nil
-	Inclusions      map[PathPattern]*MigrationOpHandler
-	Replacements    map[PathPattern]*MigrationOpHandler
-	Initializations map[PathPattern]*MigrationOpHandler
-}
-
-func (handlers MigrationOpHandlers) FilterTopLevel() MigrationOpHandlers {
-	filtered := MigrationOpHandlers{}
-
-	for pattern, handler := range handlers.Deletions {
-		if strings.Count(string(pattern), "/") > 1 {
-			continue
-		}
-		if filtered.Deletions == nil {
-			filtered.Deletions = map[PathPattern]*MigrationOpHandler{}
-		}
-		filtered.Deletions[pattern] = handler
-	}
-
-	for pattern, handler := range handlers.Inclusions {
-		if strings.Count(string(pattern), "/") > 1 {
-			continue
-		}
-		if filtered.Inclusions == nil {
-			filtered.Inclusions = map[PathPattern]*MigrationOpHandler{}
-		}
-		filtered.Inclusions[pattern] = handler
-	}
-
-	for pattern, handler := range handlers.Replacements {
-		if strings.Count(string(pattern), "/") > 1 {
-			continue
-		}
-		if filtered.Replacements == nil {
-			filtered.Replacements = map[PathPattern]*MigrationOpHandler{}
-		}
-		filtered.Replacements[pattern] = handler
-	}
-
-	for pattern, handler := range handlers.Initializations {
-		if strings.Count(string(pattern), "/") > 1 {
-			continue
-		}
-		if filtered.Initializations == nil {
-			filtered.Initializations = map[PathPattern]*MigrationOpHandler{}
-		}
-		filtered.Initializations[pattern] = handler
-	}
-
-	return filtered
-}
-
-func (handlers MigrationOpHandlers) FilterByPrefix(path Path) MigrationOpHandlers {
-	filtered := MigrationOpHandlers{}
-
-	prefix := string(path)
-	prefixSlash := string(prefix)
-	prefixNoSlash := string(prefix)
-
-	if prefixSlash[len(prefixSlash)-1] != '/' {
-		prefixSlash += "/"
-	} else if prefixNoSlash != "/" {
-		prefixNoSlash = prefixNoSlash[:len(prefixNoSlash)-1]
-	}
-
-	// if prefix is /users:
-	// /users will match
-	// /users/x will match
-	// /users-x will not match
-	matchedBy := func(pattern PathPattern) bool {
-		if pattern.IsPrefixPattern() {
-			panic(ErrUnreachable)
-		}
-
-		patternString := string(pattern)
-
-		prefixPattern := patternString
-		//remove trailing slash
-		if prefixPattern != "/" && prefixPattern[len(prefixPattern)-1] == '/' {
-			prefixPattern = prefixPattern[:len(prefixPattern)-1]
-		}
-
-		slashCount := strings.Count(prefixNoSlash, "/")
-		patternSlashCount := strings.Count(prefixPattern, "/")
-
-		if patternSlashCount < slashCount {
-			return false
-		}
-
-		for i := 0; i < patternSlashCount-slashCount; i++ {
-			index := strings.LastIndex(prefixPattern, "/")
-			prefixPattern = prefixPattern[:index]
-		}
-
-		if prefixNoSlash == prefixPattern || strings.HasPrefix(prefixPattern, prefixSlash) {
-			return true
-		}
-		return PathPattern(prefixPattern).Test(nil, path)
-	}
-
-	for pattern, handler := range handlers.Deletions {
-
-		if matchedBy(pattern) {
-			if filtered.Deletions == nil {
-				filtered.Deletions = map[PathPattern]*MigrationOpHandler{}
-			}
-			filtered.Deletions[pattern] = handler
-		}
-	}
-
-	for pattern, handler := range handlers.Inclusions {
-		if matchedBy(pattern) {
-			if filtered.Inclusions == nil {
-				filtered.Inclusions = map[PathPattern]*MigrationOpHandler{}
-			}
-			filtered.Inclusions[pattern] = handler
-		}
-	}
-
-	for pattern, handler := range handlers.Replacements {
-		if matchedBy(pattern) {
-			if filtered.Replacements == nil {
-				filtered.Replacements = map[PathPattern]*MigrationOpHandler{}
-			}
-			filtered.Replacements[pattern] = handler
-		}
-	}
-
-	for pattern, handler := range handlers.Initializations {
-		if matchedBy(pattern) {
-			if filtered.Initializations == nil {
-				filtered.Initializations = map[PathPattern]*MigrationOpHandler{}
-			}
-			filtered.Initializations[pattern] = handler
-		}
-	}
-
-	return filtered
-}
-
-type MigrationOpHandler struct {
-	//ignored if InitialValue is set
-	Function     *InoxFunction
-	InitialValue Serializable
-}
-
-func (h MigrationOpHandler) GetResult(ctx *Context, state *GlobalState) Value {
-	if h.Function != nil {
-		return utils.Must(h.Function.Call(state, nil, []Value{}, nil))
-	} else {
-		return utils.Must(RepresentationBasedClone(ctx, h.InitialValue))
-	}
 }
 
 func (db *DatabaseIL) UpdateSchema(ctx *Context, nextSchema *ObjectPattern, migrations ...*Object) {
@@ -719,91 +493,4 @@ func (*DatabaseIL) SetProp(ctx *Context, name string, value Value) error {
 
 func (db *DatabaseIL) PropertyNames(ctx *Context) []string {
 	return db.propertyNames
-}
-
-type FailedToOpenDatabase struct {
-	resource SchemeHolder
-}
-
-func NewFailedToOpenDatabase(resource SchemeHolder) *FailedToOpenDatabase {
-	return &FailedToOpenDatabase{resource: resource}
-}
-
-func (db *FailedToOpenDatabase) Resource() SchemeHolder {
-	return db.resource
-}
-
-func (db *FailedToOpenDatabase) Schema() *ObjectPattern {
-	return EMPTY_INEXACT_OBJECT_PATTERN
-}
-
-func (db *FailedToOpenDatabase) UpdateSchema(ctx *Context, schema *ObjectPattern, handlers MigrationOpHandlers) {
-	panic(ErrNotImplemented)
-}
-
-func (db *FailedToOpenDatabase) LoadTopLevelEntities(_ *Context) (map[string]Serializable, error) {
-	return nil, nil
-}
-
-func (db *FailedToOpenDatabase) Close(ctx *Context) error {
-	return ErrNotImplemented
-}
-
-type dummyDatabase struct {
-	resource         SchemeHolder
-	schemaUpdated    bool
-	currentSchema    *ObjectPattern //if nil EMPTY_INEXACT_OBJECT_PATTERN is the schema.
-	topLevelEntities map[string]Serializable
-	closed           atomic.Bool
-}
-
-func (db *dummyDatabase) Resource() SchemeHolder {
-	return db.resource
-}
-
-func (db *dummyDatabase) Schema() *ObjectPattern {
-	if db.closed.Load() {
-		panic(ErrDatabaseClosed)
-	}
-	if db.currentSchema != nil {
-		return db.currentSchema
-	}
-	return EMPTY_INEXACT_OBJECT_PATTERN
-}
-
-func (db *dummyDatabase) UpdateSchema(ctx *Context, schema *ObjectPattern, handlers MigrationOpHandlers) {
-	if db.schemaUpdated {
-		panic(ErrDatabaseSchemaAlreadyUpdatedOrNotAllowed)
-	}
-	if db.closed.Load() {
-		panic(ErrDatabaseClosed)
-	}
-	db.schemaUpdated = true
-	db.currentSchema = schema
-
-	state := ctx.GetClosestState()
-
-	if len(handlers.Deletions)+len(handlers.Initializations)+len(handlers.Replacements) > 0 {
-		panic(errors.New("only inclusion handlers are supported"))
-	}
-
-	for pattern, handler := range handlers.Inclusions {
-		if strings.Count(string(pattern), "/") != 1 {
-			panic(errors.New("only shallow inclusion handlers are supported"))
-		}
-		result := handler.GetResult(ctx, state)
-		db.topLevelEntities[string(pattern[1:])] = result.(Serializable)
-	}
-}
-
-func (db *dummyDatabase) LoadTopLevelEntities(_ *Context) (map[string]Serializable, error) {
-	if db.closed.Load() {
-		return nil, ErrDatabaseClosed
-	}
-	return db.topLevelEntities, nil
-}
-
-func (db *dummyDatabase) Close(ctx *Context) error {
-	db.closed.Store(true)
-	return nil
 }
