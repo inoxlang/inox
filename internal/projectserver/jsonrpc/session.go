@@ -305,7 +305,7 @@ func (s *Session) execute(mtdInfo MethodInfo, req RequestMessage, args interface
 		if isNil(resp) && isNil(err) && isNil(req.ID) {
 			return
 		}
-		err = s.handlerResponse(req.ID, resp, err, mtdInfo.SensitiveData)
+		err = s.handlerResponse(req.ID, resp, err, mtdInfo.SensitiveData || mtdInfo.AvoidLogging)
 		if err != nil {
 			s.handlerError(err)
 		}
@@ -328,7 +328,7 @@ func (s *Session) handlerRequest(req RequestMessage) error {
 		return MethodNotFound
 	}
 
-	if mtdInfo.SensitiveData {
+	if mtdInfo.SensitiveData || mtdInfo.AvoidLogging {
 		logs.Printf("Request: [%v] [%s], content: ...\n", stringifiedID, req.Method)
 	} else {
 		params := req.Params
@@ -371,7 +371,7 @@ func (s *Session) handlerRequest(req RequestMessage) error {
 	return nil
 }
 
-func (s *Session) write(resp ResponseMessage, sensitiveMethod bool) error {
+func (s *Session) write(resp ResponseMessage, dontLogContent bool) error {
 	s.writeLock.Lock()
 	defer s.writeLock.Unlock()
 
@@ -380,7 +380,7 @@ func (s *Session) write(resp ResponseMessage, sensitiveMethod bool) error {
 		return err
 	}
 
-	if sensitiveMethod {
+	if dontLogContent {
 		logs.Printf("Response: [%v] res: ...\n", resp.ID)
 	} else {
 		logs.Printf("Response: [%v] res: [%v]\n", resp.ID, string(res))
@@ -463,7 +463,7 @@ func (s *Session) mustWrite(data []byte) error {
 	return nil
 }
 
-func (s *Session) handlerResponse(id interface{}, result interface{}, err error, sensitiveDataMethod bool) error {
+func (s *Session) handlerResponse(id interface{}, result interface{}, err error, dontLogContent bool) error {
 	resp := ResponseMessage{
 		ID: id,
 		BaseMessage: BaseMessage{
@@ -481,7 +481,7 @@ func (s *Session) handlerResponse(id interface{}, result interface{}, err error,
 		}
 	}
 	resp.Result = result
-	return s.write(resp, sensitiveDataMethod)
+	return s.write(resp, dontLogContent)
 }
 
 func (s *Session) handlerError(err error) (continueLoop bool) {

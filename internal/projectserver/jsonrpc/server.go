@@ -12,6 +12,7 @@ type MethodInfo struct {
 	NewRequest    func() interface{}
 	Handler       func(ctx context.Context, req interface{}) (interface{}, error)
 	SensitiveData bool
+	AvoidLogging  bool
 
 	// List of the maximum number of calls allowed during windows with increasing durations (1s, 10s, and 100s).
 	// Example: [10, 50, 200] means at most 10 calls in 1s, 50 calls in 50s and 200 calls in 100s.

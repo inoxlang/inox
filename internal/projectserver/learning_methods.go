@@ -32,6 +32,7 @@ func registerLearningMethodHandlers(server *lsp.Server) {
 		NewRequest: func() interface{} {
 			return &GetTutorialSeriesParamss{}
 		},
+		AvoidLogging: true,
 		Handler: func(ctx context.Context, req interface{}) (interface{}, error) {
 			return TutorialSeriesList{
 				TutorialSeries: learn.TUTORIAL_SERIES,
