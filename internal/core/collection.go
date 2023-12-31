@@ -18,13 +18,13 @@ type Collection interface {
 	//GetElementByKey should retrieve the element with the associated key.
 	//ErrCollectionElemNotFound should be returned in the case of an error.
 	//Implementation-specific errors are allowed.
-	GetElementByKey(key ElementKey) (Serializable, error)
+	GetElementByKey(ctx *Context, key ElementKey) (Serializable, error)
 }
 
-// An element key is a a string that:
-// is at most 100-character long
-// is not empty
-// can only contain identifier chars (parse.IsIdentChar)
+// An element key is a string with the following specifications:
+// - at most 100 characters
+// - not empty
+// - can only contain identifier chars (parse.IsIdentChar)
 type ElementKey string
 
 func ElementKeyFrom(key string) (ElementKey, error) {

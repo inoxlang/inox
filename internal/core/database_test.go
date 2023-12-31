@@ -1031,7 +1031,7 @@ var _ = Collection((*testCollection)(nil))
 
 type testCollection struct{ *List }
 
-func (c *testCollection) GetElementByKey(key ElementKey) (Serializable, error) {
+func (c *testCollection) GetElementByKey(ctx *Context, key ElementKey) (Serializable, error) {
 	index, err := strconv.Atoi(string(key))
 	if err != nil || index < 0 || index >= c.Len() {
 		return nil, ErrCollectionElemNotFound

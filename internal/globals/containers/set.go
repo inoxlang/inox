@@ -18,6 +18,7 @@ var (
 	ErrValueDoesMatchElementPattern         = errors.New("provided value does not match the element pattern")
 	ErrValueWithSameKeyAlreadyPresent       = errors.New("provided value has the same key as an already present element")
 
+	_ core.Collection            = (*Set)(nil)
 	_ core.DefaultValuePattern   = (*SetPattern)(nil)
 	_ core.MigrationAwarePattern = (*SetPattern)(nil)
 	_ core.PotentiallySharable   = (*Set)(nil)
@@ -164,6 +165,36 @@ func (set *Set) GetElementPathKeyFromKey(key string) core.ElementKey {
 
 func (set *Set) SetURLOnce(ctx *core.Context, url core.URL) error {
 	return core.ErrValueDoesNotAcceptURL
+}
+
+func (set *Set) GetElementByKey(ctx *core.Context, pathKey core.ElementKey) (core.Serializable, error) {
+	key := set.pathKeyToKey[pathKey]
+
+	tx := ctx.GetTx()
+
+	if tx != nil {
+		pendingRemovals := set.pendingRemovals[tx]
+		_, removed := pendingRemovals[key]
+		if removed {
+			return nil, core.ErrCollectionElemNotFound
+		}
+
+		pendingInclusions := set.pendingInclusions[tx]
+		elem, added := pendingInclusions[key]
+		if added {
+			return elem, nil
+		}
+	}
+
+	elem, ok := set.elements[key]
+	if !ok {
+		return nil, core.ErrCollectionElemNotFound
+	}
+	return elem, nil
+}
+
+func (set *Set) Contains(ctx *core.Context, value core.Serializable) bool {
+	return bool(set.Has(ctx, value))
 }
 
 func (set *Set) Has(ctx *core.Context, elem core.Serializable) core.Bool {

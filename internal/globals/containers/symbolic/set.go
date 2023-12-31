@@ -22,6 +22,7 @@ var (
 	ANY_SET_PATTERN = NewSetWithPattern(symbolic.ANY_PATTERN, nil)
 
 	_ = []symbolic.Iterable{(*Set)(nil)}
+	_ = []symbolic.Collection{(*Set)(nil)}
 	_ = []symbolic.Serializable{(*Set)(nil)}
 	_ = []symbolic.PotentiallySharable{(*Set)(nil)}
 	_ = []symbolic.UrlHolder{(*Set)(nil)}
@@ -40,6 +41,7 @@ type Set struct {
 
 	symbolic.UnassignablePropsMixin
 	symbolic.SerializableMixin
+	symbolic.CollectionMixin
 }
 
 func NewSet(ctx *symbolic.Context, elements symbolic.Iterable, config *symbolic.OptionalParam[*symbolic.Object]) *Set {
@@ -169,6 +171,10 @@ func (s *Set) Has(ctx *symbolic.Context, v symbolic.Serializable) *symbolic.Bool
 		s.element,
 	}, SET_ADD_METHOD_PARAM_NAMES)
 	return symbolic.ANY_BOOL
+}
+
+func (s *Set) Contains(value symbolic.Serializable) (yes bool, possible bool) {
+	return false, s.element.Test(value, symbolic.RecTestCallState{})
 }
 
 func (s *Set) Add(ctx *symbolic.Context, v symbolic.Serializable) {

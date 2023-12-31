@@ -239,7 +239,8 @@ func TestPersistLoadSet(t *testing.T) {
 		}, core.CallBasedPatternReprMixin{})
 		set := NewSetWithConfig(ctx, nil, pattern.config)
 
-		set.Add(ctx, core.Int(1))
+		int1 := core.Int(1)
+		set.Add(ctx, int1)
 
 		//persist
 		{
@@ -252,19 +253,31 @@ func TestPersistLoadSet(t *testing.T) {
 			assert.Equal(t, `[{"int__value":1}]`, serialized)
 		}
 
-		loadedSet, err := loadSet(ctx, core.FreeEntityLoadingParams{
+		loaded, err := loadSet(ctx, core.FreeEntityLoadingParams{
 			Key: "/set", Storage: storage, Pattern: pattern,
 		})
 		if !assert.NoError(t, err) {
 			return
 		}
 
+		loadedSet := loaded.(*Set)
+
 		//set should be shared
-		if !assert.True(t, loadedSet.(*Set).IsShared()) {
+		if !assert.True(t, loadedSet.IsShared()) {
 			return
 		}
 
-		assert.True(t, bool(loadedSet.(*Set).Has(ctx, core.Int(1))))
+		//check elements
+		assert.True(t, bool(loadedSet.Has(ctx, int1)))
+		assert.True(t, bool(loadedSet.Contains(ctx, int1)))
+
+		elemKey := loadedSet.GetElementPathKeyFromKey("1")
+		elem, err := loadedSet.GetElementByKey(ctx, elemKey)
+		if !assert.NoError(t, err, core.ErrCollectionElemNotFound) {
+			return
+		}
+		assert.Equal(t, int1, elem)
+
 	})
 
 	t.Run("unique repr: two elements", func(t *testing.T) {
@@ -277,8 +290,11 @@ func TestPersistLoadSet(t *testing.T) {
 		}, core.CallBasedPatternReprMixin{})
 		set := NewSetWithConfig(ctx, nil, pattern.config)
 
-		set.Add(ctx, core.Int(1))
-		set.Add(ctx, core.Int(2))
+		int1 := core.Int(1)
+		int2 := core.Int(2)
+
+		set.Add(ctx, int1)
+		set.Add(ctx, int2)
 
 		//persist
 		{
@@ -291,20 +307,40 @@ func TestPersistLoadSet(t *testing.T) {
 			assert.Regexp(t, `(\[{"int__value":1},{"int__value":2}]|\[{"int__value":2},{"int__value":1}])`, serialized)
 		}
 
-		loadedSet, err := loadSet(ctx, core.FreeEntityLoadingParams{
+		loaded, err := loadSet(ctx, core.FreeEntityLoadingParams{
 			Key: "/set", Storage: storage, Pattern: pattern,
 		})
 		if !assert.NoError(t, err) {
 			return
 		}
 
+		loadedSet := loaded.(*Set)
+
 		//set should be shared
-		if !assert.True(t, loadedSet.(*Set).IsShared()) {
+		if !assert.True(t, loadedSet.IsShared()) {
 			return
 		}
 
-		assert.True(t, bool(loadedSet.(*Set).Has(ctx, core.Int(1))))
-		assert.True(t, bool(loadedSet.(*Set).Has(ctx, core.Int(2))))
+		//check elements
+		assert.True(t, bool(loadedSet.Has(ctx, int1)))
+		assert.True(t, bool(loadedSet.Contains(ctx, int1)))
+
+		assert.True(t, bool(loadedSet.Has(ctx, int2)))
+		assert.True(t, bool(loadedSet.Contains(ctx, int2)))
+
+		elem1Key := loadedSet.GetElementPathKeyFromKey("1")
+		elem1, err := loadedSet.GetElementByKey(ctx, elem1Key)
+		if !assert.NoError(t, err) {
+			return
+		}
+		assert.Equal(t, int1, elem1)
+
+		elem2Key := loadedSet.GetElementPathKeyFromKey("2")
+		elem2, err := loadedSet.GetElementByKey(ctx, elem2Key)
+		if !assert.NoError(t, err) {
+			return
+		}
+		assert.Equal(t, int2, elem2)
 	})
 
 	t.Run("unique repr: element with non-unique repr", func(t *testing.T) {
@@ -785,6 +821,8 @@ func TestSetAddRemove(t *testing.T) {
 	})
 
 	t.Run("transient Set should be updated if .Add was called transactionnaly", func(t *testing.T) {
+		int1 := core.Int(1)
+
 		ctx1, storage := setup()
 		tx1 := core.StartNewTransaction(ctx1)
 
@@ -809,15 +847,16 @@ func TestSetAddRemove(t *testing.T) {
 		set := val.(*Set)
 		set.Share(ctx1.GetClosestState())
 
-		set.Add(ctx1, core.Int(1))
+		set.Add(ctx1, int1)
 
 		//check that the Set is not updated from the other ctx's POV
-		assert.False(t, bool(set.Has(ctx2, core.Int(1))))
+		assert.False(t, bool(set.Has(ctx2, int1)))
 
+		//commit the transaction associated with ctx1
 		utils.PanicIfErr(tx1.Commit(ctx1))
 
 		//check that the Set is updated from the other ctx's POV
-		assert.True(t, bool(set.Has(ctx2, core.Int(1))))
+		assert.True(t, bool(set.Has(ctx2, int1)))
 	})
 
 	t.Run("Set should be persisted during call to .Remove", func(t *testing.T) {

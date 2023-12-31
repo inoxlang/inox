@@ -441,7 +441,7 @@ func (db *DatabaseIL) GetOrLoad(ctx *Context, path Path) (Serializable, error) {
 				return fmt.Errorf("invalid path segment %q: %w", segment, err)
 			}
 
-			elem, err := collection.GetElementByKey(key)
+			elem, err := collection.GetElementByKey(ctx, key)
 			if errors.Is(err, ErrCollectionElemNotFound) {
 				return fmt.Errorf("there is no entity at %s: %w", path[:endIndex], err)
 			}
