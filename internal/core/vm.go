@@ -2480,6 +2480,16 @@ func (v *VM) run() {
 			}
 			v.stack[v.sp] = result
 			v.sp++
+		case OpLoadDBVal:
+			url := v.stack[v.sp-1].(URL)
+
+			value, err := getOrLoadValueAtURL(v.global.Ctx, url, v.global)
+			if err != nil {
+				v.err = err
+				return
+			}
+
+			v.stack[v.sp-1] = value
 		case OpBlockLock:
 			v.ip++
 			numValues := int(v.curInsts[v.ip])

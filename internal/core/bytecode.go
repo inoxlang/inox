@@ -259,6 +259,7 @@ const (
 	OpAt
 	OpSafeAt
 	OpSlice
+	OpLoadDBVal
 	OpAssert
 	OpBlockLock
 	OpBlockUnlock
@@ -397,6 +398,7 @@ var OpcodeNames = [...]string{
 	OpAt:                           "AT",
 	OpSafeAt:                       "SAFE_AT",
 	OpSlice:                        "SLICE",
+	OpLoadDBVal:                    "LOAD_DB_VAL",
 	OpAssert:                       "ASSERT",
 	OpBlockLock:                    "BLOCK_LOCK",
 	OpBlockUnlock:                  "BLOCK_LOCK",
@@ -533,6 +535,7 @@ var OpcodeOperands = [...][]int{
 	OpAt:                           {},
 	OpSafeAt:                       {},
 	OpSlice:                        {},
+	OpLoadDBVal:                    {},
 	OpAssert:                       {2},
 	OpBlockLock:                    {1},
 	OpBlockUnlock:                  {},
@@ -670,6 +673,7 @@ var OpcodeConstantIndexes = [...][]bool{
 	OpAt:                           {},
 	OpSafeAt:                       {},
 	OpSlice:                        {},
+	OpLoadDBVal:                    {},
 	OpAssert:                       {true},
 	OpBlockLock:                    {false},
 	OpBlockUnlock:                  {},

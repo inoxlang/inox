@@ -534,6 +534,12 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			if err != nil {
 				return nil, err
 			}
+
+			_, ok := state.Global.SymbolicData.GetURLReferencedEntity(c)
+			if ok {
+				return nil, errors.New(symbolic.DIRECTLY_CALLING_METHOD_OF_URL_REF_ENTITY_NOT_ALLOWED)
+			}
+
 			self = extendedValue
 
 			symbolicExtension, ok := state.Global.SymbolicData.GetUsedTypeExtension(c)
@@ -2272,6 +2278,27 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		}
 
 		elementName := n.Element.Name
+
+		_, ok := state.Global.SymbolicData.GetURLReferencedEntity(n)
+		if ok { //load entity or value
+			url, ok := left.(URL)
+			if !ok {
+				panic(ErrUnreachable)
+			}
+
+			value, err := getOrLoadValueAtURL(state.Global.Ctx, url, state.Global)
+			if err != nil {
+				return nil, err
+			}
+
+			//return property
+			iprops, ok := value.(IProps)
+			if !ok {
+				return nil, fmt.Errorf("value/entity at %s has no properties", url)
+			}
+			return iprops.Prop(state.Global.Ctx, elementName), nil
+		}
+
 		symbolicExtension, ok := state.Global.SymbolicData.GetUsedTypeExtension(n)
 
 		if ok {

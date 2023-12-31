@@ -7,11 +7,13 @@ import (
 	"runtime/debug"
 	"slices"
 	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 
 	"github.com/inoxlang/inox/internal/core/permkind"
 	"github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
 	iconv "github.com/inoxlang/inox/internal/utils/intconv"
@@ -470,7 +472,10 @@ func (db *DatabaseIL) GetOrLoad(ctx *Context, path Path) (Serializable, error) {
 			if !ok {
 				return fmt.Errorf("there is no element at %s", path[:endIndex])
 			}
+
 			propVal, isSerializable := iprops.Prop(ctx, segment).(Serializable)
+			//for objects the returned value may be a cloned value, that's okay.
+
 			if !isSerializable {
 				return ErrInvalidDBValuePropRetrieval
 			}
@@ -560,4 +565,21 @@ func (*DatabaseIL) SetProp(ctx *Context, name string, value Value) error {
 
 func (db *DatabaseIL) PropertyNames(ctx *Context) []string {
 	return db.propertyNames
+}
+
+func getOrLoadValueAtURL(ctx *Context, u URL, state *GlobalState) (Serializable, error) {
+	if !strings.HasPrefix(string(u), inoxconsts.LDB_SCHEME_NAME+"://") {
+		return nil, fmt.Errorf("only URLs with the scheme %s:// are supported for now", inoxconsts.LDB_SCHEME_NAME)
+	}
+
+	url := u.mustParse()
+	dbName := url.Hostname()
+
+	db, ok := state.Databases[dbName]
+
+	if !ok {
+		return nil, fmt.Errorf("database %s does not exist", dbName)
+	}
+
+	return db.GetOrLoad(ctx, u.Path())
 }

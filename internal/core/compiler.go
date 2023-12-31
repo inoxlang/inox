@@ -1123,6 +1123,14 @@ func (c *compiler) Compile(node parse.Node) error {
 
 		c.emit(node, op, c.addConstant(Str(node.PropertyName.Name)))
 	case *parse.DoubleColonExpression:
+		_, ok := c.symbolicData.GetURLReferencedEntity(node)
+		if ok {
+			//load entity or value
+			c.emit(node.Left, OpLoadDBVal)
+			c.emit(node.Element, OpMemb, c.addConstant(Str(node.Element.Name)))
+			break
+		}
+
 		symbolicExtension, ok := c.symbolicData.GetUsedTypeExtension(node)
 		if ok {
 			c.emit(node, OpGetSelf) //push current self on the stack
@@ -1147,6 +1155,7 @@ func (c *compiler) Compile(node parse.Node) error {
 			c.emit(node, OpSwap)    //move saved self at the top of the stack
 			c.emit(node, OpSetSelf) //restore self
 		} else {
+
 			if err := c.Compile(node.Left); err != nil {
 				return err
 			}
@@ -1591,6 +1600,11 @@ func (c *compiler) Compile(node parse.Node) error {
 			c.emit(callee, OpCopyTop)
 			c.emit(callee, OpMemb, c.addConstant(Str(callee.PropertyName.Name)))
 		case *parse.DoubleColonExpression:
+			_, ok := c.symbolicData.GetURLReferencedEntity(callee)
+			if ok {
+				return errors.New(symbolic.DIRECTLY_CALLING_METHOD_OF_URL_REF_ENTITY_NOT_ALLOWED)
+			}
+
 			symbolicExtension, ok := c.symbolicData.GetUsedTypeExtension(callee)
 			if ok {
 				c.emit(callee, OpGetSelf) //push current self on the stack
@@ -1601,6 +1615,7 @@ func (c *compiler) Compile(node parse.Node) error {
 				c.emit(callee, OpMoveThirdTop) //move saved self at the top of the stack
 				c.emit(callee, OpSetSelf)      //restore self
 			} else {
+
 				if err := c.Compile(callee.Left); err != nil {
 					return err
 				}

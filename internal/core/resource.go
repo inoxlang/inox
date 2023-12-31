@@ -720,6 +720,9 @@ func (u URL) Host() Host {
 
 func (u URL) Path() Path {
 	url := u.mustParse()
+	if url.Path == "" {
+		panic(errors.New("no path in URL"))
+	}
 	return Path(url.Path)
 }
 
