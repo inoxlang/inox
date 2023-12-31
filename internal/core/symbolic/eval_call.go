@@ -52,9 +52,9 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 			self, _ = state.symbolicData.GetMostSpecificNodeValue(_c.Left)
 			selfPartialNode = _c.Left
 		case *parse.DoubleColonExpression:
-			entity, ok := state.symbolicData.GetURLReferencedEntity(_c)
+			_, ok := state.symbolicData.GetURLReferencedEntity(_c)
 			if ok {
-				self = entity
+				state.addError(makeSymbolicEvalError(_c.Element, state, DIRECTLY_CALLING_METHOD_OF_URL_REF_ENTITY_NOT_ALLOWED))
 			} else {
 				self, _ = state.symbolicData.GetMostSpecificNodeValue(_c.Left)
 				selfPartialNode = _c.Left

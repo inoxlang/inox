@@ -13098,6 +13098,35 @@ func TestSymbolicEval(t *testing.T) {
 
 		})
 
+		t.Run("directly calling the method of a URL-referenced value is not allowed", func(t *testing.T) {
+			listPropPattern := NewListPatternOf(&TypePattern{val: ANY_INT})
+			userPattern := NewInexactObjectPattern(map[string]Pattern{
+				"list": listPropPattern,
+			}, nil)
+			db := NewDatabaseIL(DatabaseILParams{
+				Schema: NewExactObjectPattern(map[string]Pattern{"user": userPattern}, nil),
+			})
+
+			n, state := MakeTestStateAndChunk(`
+					url = ldb://main/user/list
+					url::append(1)
+				`)
+			state.setGlobal(globalnames.DATABASES, NewNamespace(map[string]Value{"main": db}), GlobalConst)
+			doubleColonExpr := parse.FindNode(n, (*parse.DoubleColonExpression)(nil), nil)
+
+			_, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(doubleColonExpr.Element, state, DIRECTLY_CALLING_METHOD_OF_URL_REF_ENTITY_NOT_ALLOWED),
+			}, state.errors())
+
+			value, ok := state.symbolicData.GetURLReferencedEntity(doubleColonExpr)
+			if !assert.True(t, ok) {
+				return
+			}
+			assert.Equal(t, listPropPattern.SymbolicValue(), value)
+		})
+
 		t.Run("mutation of a URL-referenced entity", func(t *testing.T) {
 
 			listPropPattern := NewListPatternOf(&TypePattern{val: ANY_INT})

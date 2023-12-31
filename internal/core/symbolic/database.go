@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/inoxlang/inox/internal/globals/globalnames"
+	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/parse"
 	pprint "github.com/inoxlang/inox/internal/prettyprint"
 	"github.com/inoxlang/inox/internal/utils"
@@ -414,8 +415,8 @@ func getValueAtURL(u *URL, state *State) (Serializable, error) {
 		urlOrPattern = u.pattern.value
 	}
 
-	if !strings.HasPrefix(urlOrPattern, "ldb://") {
-		return nil, errors.New("only URLs with the scheme ldb:// are supported for now")
+	if !strings.HasPrefix(urlOrPattern, inoxconsts.LDB_SCHEME_NAME) {
+		return nil, fmt.Errorf("only URLs with the scheme %s:// are supported for now", inoxconsts.LDB_SCHEME_NAME)
 	}
 
 	varInfo, ok := state.getGlobal(globalnames.DATABASES)

@@ -118,6 +118,7 @@ const (
 	//double colon expression
 	MISPLACED_DOUBLE_COLON_EXPR                               = "misplaced double-colon expression"
 	MISPLACED_DOUBLE_COLON_EXPR_EXT_METHOD_CAN_ONLY_BE_CALLED = "misplaced double-colon expression: extension methods can only be called"
+	DIRECTLY_CALLING_METHOD_OF_URL_REF_ENTITY_NOT_ALLOWED     = "directly calling the method of a URL-referenced entity is not allowed"
 
 	OPERANDS_OF_BINARY_RANGE_EXPRS_SHOULD_BE_SERIALIZABLE = "operands of binary range expressions should be serializable"
 	VARIABLE_DECL_ANNOTATION_MUST_BE_A_PATTERN            = "variable declaration annotation must be a pattern"
