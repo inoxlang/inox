@@ -3295,44 +3295,50 @@ func evalSpawnExpression(node *parse.SpawnExpression, state *State) (_ Value, fi
 		state.addWarning(makeSymbolicEvalWarningWithSpan(warningSpan, state, POSSIBLE_MISSING_PERM_TO_CREATE_A_LTHREAD))
 	}
 
-	if node.Meta != nil {
-		meta = map[string]Value{}
-		if objLit, ok := node.Meta.(*parse.ObjectLiteral); ok {
+	meta = map[string]Value{}
+	if objLit, ok := node.Meta.(*parse.ObjectLiteral); ok { //$ok will be false if node.Meta is nil
 
-			for _, property := range objLit.Properties {
-				propertyName := property.Name() //okay since implicit-key properties are not allowed
-
-				if propertyName == LTHREAD_META_GLOBALS_SECTION {
-					globalsObjectLit, ok := property.Value.(*parse.ObjectLiteral)
-					//handle description separately if it's an object literal because non-serializable value are not accepted.
-					if ok {
-						globalMap := map[string]Value{}
-						globals = globalMap
-
-						for _, prop := range globalsObjectLit.Properties {
-							globalName := prop.Name() //okay since implicit-key properties are not allowed
-							globalVal, err := symbolicEval(prop.Value, state)
-							if err != nil {
-								return nil, err
-							}
-							pattern, ok := state.getStaticOfNode(prop.Value)
-							if ok {
-								globalVal = pattern.SymbolicValue()
-							}
-							globalMap[globalName] = globalVal
-						}
-						continue
-					}
-				} else if propertyName == LTHREAD_META_ALLOW_SECTION && utils.Implements[*parse.ObjectLiteral](property.Value) {
-					permListingNode = property.Value.(*parse.ObjectLiteral)
-				}
-
-				propertyVal, err := symbolicEval(property.Value, state)
-				if err != nil {
-					return nil, err
-				}
-				meta[propertyName] = propertyVal
+		for _, sectionProp := range objLit.Properties {
+			if sectionProp.HasImplicitKey() {
+				//okay because there sould be a static check error
+				continue
 			}
+			sectionName := sectionProp.Name()
+
+			if sectionName == LTHREAD_META_GLOBALS_SECTION {
+				globalsObjectLit, ok := sectionProp.Value.(*parse.ObjectLiteral)
+				//handle description separately if it's an object literal because non-serializable value are not accepted.
+				if ok {
+					globalMap := map[string]Value{}
+					globals = globalMap
+
+					for _, prop := range globalsObjectLit.Properties {
+						if prop.HasImplicitKey() {
+							//okay because there sould be a static check error
+							continue
+						}
+						globalName := prop.Name() //okay since implicit-key properties are not allowed
+						globalVal, err := symbolicEval(prop.Value, state)
+						if err != nil {
+							return nil, err
+						}
+						pattern, ok := state.getStaticOfNode(prop.Value)
+						if ok {
+							globalVal = pattern.SymbolicValue()
+						}
+						globalMap[globalName] = globalVal
+					}
+					continue
+				}
+			} else if sectionName == LTHREAD_META_ALLOW_SECTION && utils.Implements[*parse.ObjectLiteral](sectionProp.Value) {
+				permListingNode = sectionProp.Value.(*parse.ObjectLiteral)
+			}
+
+			propertyVal, err := symbolicEval(sectionProp.Value, state)
+			if err != nil {
+				return nil, err
+			}
+			meta[sectionName] = propertyVal
 		}
 	}
 

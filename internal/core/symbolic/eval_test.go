@@ -11346,6 +11346,34 @@ func TestSymbolicEval(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
 		})
+
+		t.Run("no error should be reported if the meta object has an implicit property", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				lthread = go {globals: {a: 1}, 2} do {
+					b = a
+				}
+			`)
+
+			_, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+		})
+
+		t.Run("no error should be reported if the 'globals' object has an implicit property", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				lthread = go {
+					globals: {a: 1, 2}
+				} do {
+					b = a
+				}
+			`)
+
+			_, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+		})
 	})
 
 	t.Run("reception handler expression", func(t *testing.T) {
