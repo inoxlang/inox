@@ -13049,6 +13049,31 @@ func TestSymbolicEval(t *testing.T) {
 				assert.False(t, ok)
 			})
 
+			t.Run("root", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					url = ldb://main/
+					return url::name
+				`)
+				state.setGlobal(globalnames.DATABASES, NewNamespace(map[string]Value{"main": db}), GlobalConst)
+
+				res, err := symbolicEval(n, state)
+				if !assert.NoError(t, err) {
+					return
+				}
+
+				doubleColonExpr := parse.FindNode(n, (*parse.DoubleColonExpression)(nil), nil)
+				assert.Equal(t, []SymbolicEvaluationError{
+					makeSymbolicEvalError(doubleColonExpr.Left, state, ROOT_PATH_NOT_ALLOWED_REFERS_TO_DB),
+				}, state.errors())
+				assert.Equal(t, ANY_SERIALIZABLE, res)
+
+				_, ok := state.symbolicData.GetUsedTypeExtension(doubleColonExpr)
+				assert.False(t, ok)
+
+				_, ok = state.symbolicData.GetURLReferencedEntity(doubleColonExpr)
+				assert.False(t, ok)
+			})
+
 			t.Run("inexisting entity", func(t *testing.T) {
 				n, state := MakeTestStateAndChunk(`
 					url = ldb://main/userx

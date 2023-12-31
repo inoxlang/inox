@@ -131,14 +131,9 @@ func (db *DatabaseIL) PropertyNames() []string {
 }
 
 func (db *DatabaseIL) getValueAt(pathOrPattern string) (Serializable, error) {
-	if pathOrPattern == "" {
-		panic(errors.New("empty path"))
-	}
-	if pathOrPattern[0] != '/' {
-		panic(errors.New("path should be absolute"))
-	}
-	if pathOrPattern[len(pathOrPattern)-1] == '/' {
-		return nil, errors.New(PATH_OF_URL_SHOULD_NOT_HAVE_A_TRAILING_SLASH)
+
+	if err := ValidatePathOfValueInDatabase(pathOrPattern); err != nil {
+		return nil, err
 	}
 
 	i := 0
@@ -397,8 +392,10 @@ loop:
 	for i := strings.Index(urlOrPattern, "://") + 3; i < len(urlOrPattern); i++ {
 		switch urlOrPattern[i] {
 		case '/':
-			pathStart = i
-			hostEnd = i
+			if pathStart < 0 {
+				pathStart = i
+				hostEnd = i
+			}
 		case '?', '#':
 			if pathStart > 0 {
 				pathEnd = i
@@ -433,4 +430,33 @@ loop:
 
 	path := urlOrPattern[pathStart:pathEnd]
 	return db.getValueAt(path)
+}
+
+// Validates the path (or path pattern) of a value/entity located in a database.
+func ValidatePathOfValueInDatabase[T ~string](pathOrPattern T) error {
+	if pathOrPattern == "" {
+		return errors.New("unexpected empty path")
+	}
+
+	if pathOrPattern[0] != '/' {
+		return fmt.Errorf("unexpected relative path %q", pathOrPattern)
+	}
+
+	if pathOrPattern == "/" {
+		return fmt.Errorf(ROOT_PATH_NOT_ALLOWED_REFERS_TO_DB)
+	}
+
+	if strings.Contains(string(pathOrPattern), "//") {
+		return fmt.Errorf("unexpected empty segment(s) in path %q", pathOrPattern)
+	}
+
+	if pathutils.ContainsRelativePathSegments(pathOrPattern) {
+		return fmt.Errorf("unexpected relative path segment(s) in path %q", pathOrPattern)
+	}
+
+	if pathOrPattern != "/" && pathOrPattern[len(pathOrPattern)-1] == '/' {
+		return errors.New(PATH_OF_URL_SHOULD_NOT_HAVE_A_TRAILING_SLASH)
+	}
+
+	return nil
 }
