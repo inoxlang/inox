@@ -11,6 +11,7 @@ import (
 	"slices"
 
 	permkind "github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/oklog/ulid/v2"
 	"golang.org/x/exp/maps"
 
@@ -1245,7 +1246,7 @@ func getSingleKindNamedPermPermissions(
 func getPermissionFromSingleKindPermissionItem(e Value, permKind PermissionKind) (Permission, error) {
 	switch v := e.(type) {
 	case URL:
-		switch v.Scheme() {
+		switch string(v.Scheme()) {
 		case "wss", "ws":
 			return WebsocketPermission{
 				Kind_:    permKind,
@@ -1256,7 +1257,7 @@ func getPermissionFromSingleKindPermissionItem(e Value, permKind PermissionKind)
 				Kind_:  permKind,
 				Entity: v,
 			}, nil
-		case "ldb", "odb":
+		case inoxconsts.LDB_SCHEME_NAME, inoxconsts.ODB_SCHEME_NAME:
 			return DatabasePermission{
 				Kind_:  permKind,
 				Entity: v,
@@ -1266,20 +1267,20 @@ func getPermissionFromSingleKindPermissionItem(e Value, permKind PermissionKind)
 		}
 
 	case URLPattern:
-		switch v.Scheme() {
+		switch string(v.Scheme()) {
 		case "http", "https":
 			return HttpPermission{
 				Kind_:  permKind,
 				Entity: v,
 			}, nil
-		case "ldb", "odb":
+		case inoxconsts.LDB_SCHEME_NAME, inoxconsts.ODB_SCHEME_NAME:
 			return DatabasePermission{
 				Kind_:  permKind,
 				Entity: v,
 			}, nil
 		}
 	case Host:
-		switch v.Scheme() {
+		switch string(v.Scheme()) {
 		case "wss", "ws":
 			return WebsocketPermission{
 				Kind_:    permKind,
@@ -1290,7 +1291,7 @@ func getPermissionFromSingleKindPermissionItem(e Value, permKind PermissionKind)
 				Kind_:  permKind,
 				Entity: v,
 			}, nil
-		case "ldb", "odb":
+		case inoxconsts.LDB_SCHEME_NAME, inoxconsts.ODB_SCHEME_NAME:
 			return DatabasePermission{
 				Kind_:  permKind,
 				Entity: v,

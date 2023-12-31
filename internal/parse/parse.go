@@ -59,7 +59,7 @@ var (
 	INCLUDABLE_CHUNK_KEYWORD_STR = tokenStrings[INCLUDABLE_CHUNK_KEYWORD]
 	CONST_KEYWORD_STR            = tokenStrings[CONST_KEYWORD]
 	READONLY_KEYWORD_STR         = tokenStrings[READONLY_KEYWORD]
-	SCHEMES                      = []string{"http", "https", "ws", "wss", "ldb", "odb", "file", "mem", "s3"}
+	SCHEMES                      = []string{"http", "https", "ws", "wss", inoxconsts.LDB_SCHEME_NAME, inoxconsts.ODB_SCHEME_NAME, "file", "mem", "s3"}
 
 	//URL & host regexes
 

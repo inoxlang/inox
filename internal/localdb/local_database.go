@@ -14,6 +14,7 @@ import (
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/filekv"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
+	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/rs/zerolog"
@@ -24,7 +25,7 @@ const (
 
 	DB_KV_FILE   = "db.bbolt"
 	META_KV_FILE = "meta.buntdb"
-	LDB_SCHEME   = core.Scheme("ldb")
+	LDB_SCHEME   = core.Scheme(inoxconsts.LDB_SCHEME_NAME)
 
 	OS_DB_DIR = 0700
 )

@@ -19,7 +19,7 @@ package obsdb
 
 // 	MAIN_KV_FILE   = "main.kv"
 // 	SCHEMA_KV_FILE = "schema.kv"
-// 	ODB_SCHEME     = core.Scheme("odb")
+// 	ODB_SCHEME     = core.Scheme(inoxconsts.ODB_SCHEME_NAME)
 // )
 
 // var (
