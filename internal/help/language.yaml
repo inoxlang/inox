@@ -124,7 +124,7 @@ module:
       - topic: manifest/databases-section/resource
         text: 'The resource name to use for the database. Example: `ldb://main` for a local database named `main`).'
       - topic: manifest/databases-section/resolution-data
-        text: Data used to resolve and access the database, it should be nil for local databases.
+        text: Data used to resolve and access the database, the value should be `nil` for local databases.
       - topic: manifest/databases-section/expected-schema-update
         text: __[optional]__ This property should be set to `true` if and only if a schema update (`.update_schema` call) is expected.'
       - topic: manifest/databases-section/assert-schema

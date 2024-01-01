@@ -441,69 +441,133 @@ func handleIdentifierAndKeywordCompletions(
 
 after_subcommand_completions:
 
-	//if in object
-	if len(ancestors) > 2 &&
-		utils.Implements[*parse.ObjectProperty](ancestors[len(ancestors)-1]) &&
-		utils.Implements[*parse.ObjectLiteral](ancestors[len(ancestors)-2]) {
+	ancestorCount := len(ancestors)
 
-		prop := ancestors[len(ancestors)-1].(*parse.ObjectProperty)
-		objectLiteral := ancestors[len(ancestors)-2].(*parse.ObjectLiteral)
+	//if the identifier is the name of an object's property
+	if ancestorCount > 2 &&
+		utils.Implements[*parse.ObjectProperty](ancestors[ancestorCount-1]) &&
+		utils.Implements[*parse.ObjectLiteral](ancestors[ancestorCount-2]) &&
+		utils.Implements[*parse.ObjectProperty](parent) {
+
+		prop := parent.(*parse.ObjectProperty)
+		objectLiteral := ancestors[ancestorCount-2].(*parse.ObjectLiteral)
 
 		//suggest sections of manifest
-		if utils.Implements[*parse.Manifest](ancestors[len(ancestors)-3]) {
+		if utils.Implements[*parse.Manifest](ancestors[ancestorCount-3]) {
+			manifestObject := objectLiteral
+
 			for _, sectionName := range core.MANIFEST_SECTION_NAMES {
-				if hasPrefixCaseInsensitive(sectionName, ident.Name) {
-					suffix := ""
-					if prop.HasImplicitKey() {
-						suffix = ": "
-
-						valueCompletion, ok := MANIFEST_SECTION_DEFAULT_VALUE_COMPLETIONS[sectionName]
-						if ok {
-							suffix += valueCompletion
-						}
-					}
-
-					completions = append(completions, Completion{
-						ShownString:           sectionName + suffix,
-						Value:                 sectionName + suffix,
-						MarkdownDocumentation: MANIFEST_SECTION_DOC[sectionName],
-						Kind:                  defines.CompletionItemKindVariable,
-					})
+				if manifestObject.HasNamedProp(sectionName) {
+					//ignore properties that are already present.
+					continue
 				}
+
+				if !hasPrefixCaseInsensitive(sectionName, ident.Name) {
+					//ignore properties that don't have ident.Name as prefix.
+					continue
+				}
+
+				suffix := ""
+				if prop.HasImplicitKey() {
+					suffix = ": "
+
+					valueCompletion, ok := MANIFEST_SECTION_DEFAULT_VALUE_COMPLETIONS[sectionName]
+					if ok {
+						suffix += valueCompletion
+					}
+				}
+
+				completions = append(completions, Completion{
+					ShownString:           sectionName + suffix,
+					Value:                 sectionName + suffix,
+					MarkdownDocumentation: MANIFEST_SECTION_DOC[sectionName],
+					Kind:                  defines.CompletionItemKindVariable,
+				})
+			}
+			return completions
+		}
+
+		//suggest properties of database descriptions
+		if ancestorCount >= 7 && utils.Implements[*parse.Manifest](ancestors[ancestorCount-7]) &&
+			utils.Implements[*parse.ObjectLiteral](ancestors[ancestorCount-6]) &&
+			utils.Implements[*parse.ObjectProperty](ancestors[ancestorCount-5]) &&
+			ancestors[ancestorCount-5].(*parse.ObjectProperty).HasNameEqualTo(core.MANIFEST_DATABASES_SECTION_NAME) &&
+			utils.Implements[*parse.ObjectLiteral](ancestors[ancestorCount-4]) &&
+			utils.Implements[*parse.ObjectProperty](ancestors[ancestorCount-3]) &&
+			utils.Implements[*parse.ObjectLiteral](ancestors[ancestorCount-2]) {
+
+			dbDesc := objectLiteral
+
+			for _, descPropName := range core.MANIFEST_DATABASE_PROPNAMES {
+				if dbDesc.HasNamedProp(descPropName) {
+					//ignore properties that are already present.
+					continue
+				}
+
+				if !hasPrefixCaseInsensitive(descPropName, ident.Name) {
+					//ignore properties that don't have ident.Name as prefix.
+					continue
+				}
+
+				suffix := ""
+				if prop.HasImplicitKey() {
+					suffix = ": "
+
+					valueCompletion, ok := MANIFEST_DB_DESC_DEFAULT_VALUE_COMPLETIONS[descPropName]
+					if ok {
+						suffix += valueCompletion
+					}
+				}
+
+				completions = append(completions, Completion{
+					ShownString:           descPropName + suffix,
+					Value:                 descPropName + suffix,
+					Kind:                  defines.CompletionItemKindVariable,
+					MarkdownDocumentation: MANIFEST_DB_DESC_DOC[descPropName],
+				})
 			}
 			return completions
 		}
 
 		//suggest sections of module import configuration
-		if utils.Implements[*parse.ImportStatement](ancestors[len(ancestors)-3]) {
+		if utils.Implements[*parse.ImportStatement](ancestors[ancestorCount-3]) {
+			configObject := objectLiteral
+
 			for _, sectionName := range core.IMPORT_CONFIG_SECTION_NAMES {
-				if hasPrefixCaseInsensitive(sectionName, ident.Name) {
-
-					suffix := ""
-					if prop.HasImplicitKey() {
-						suffix = ": "
-
-						valueCompletion, ok := MODULE_IMPORT_SECTION_DEFAULT_VALUE_COMPLETIONS[sectionName]
-						if ok {
-							suffix += valueCompletion
-						}
-					}
-
-					completions = append(completions, Completion{
-						ShownString:           sectionName + suffix,
-						Value:                 sectionName + suffix,
-						LabelDetail:           MODULE_IMPORT_SECTION_LABEL_DETAILS[sectionName],
-						MarkdownDocumentation: MODULE_IMPORT_SECTION_DOC[sectionName],
-						Kind:                  defines.CompletionItemKindVariable,
-					})
+				if configObject.HasNamedProp(sectionName) {
+					//ignore properties that are already present.
+					continue
 				}
+
+				if !hasPrefixCaseInsensitive(sectionName, ident.Name) {
+					//ignore properties that don't have ident.Name as prefix.
+					continue
+				}
+
+				suffix := ""
+				if prop.HasImplicitKey() {
+					suffix = ": "
+
+					valueCompletion, ok := MODULE_IMPORT_SECTION_DEFAULT_VALUE_COMPLETIONS[sectionName]
+					if ok {
+						suffix += valueCompletion
+					}
+				}
+
+				completions = append(completions, Completion{
+					ShownString:           sectionName + suffix,
+					Value:                 sectionName + suffix,
+					LabelDetail:           MODULE_IMPORT_SECTION_LABEL_DETAILS[sectionName],
+					MarkdownDocumentation: MODULE_IMPORT_SECTION_DOC[sectionName],
+					Kind:                  defines.CompletionItemKindVariable,
+				})
 			}
 			return completions
 		}
 
 		//suggest sections of lthread meta
-		if len(ancestors) > 3 && utils.Implements[*parse.SpawnExpression](ancestors[len(ancestors)-3]) &&
-			objectLiteral == ancestors[len(ancestors)-3].(*parse.SpawnExpression).Meta {
+		if ancestorCount > 3 && utils.Implements[*parse.SpawnExpression](ancestors[ancestorCount-3]) &&
+			objectLiteral == ancestors[ancestorCount-3].(*parse.SpawnExpression).Meta {
 			for _, sectionName := range symbolic.LTHREAD_SECTION_NAMES {
 				if hasPrefixCaseInsensitive(sectionName, ident.Name) {
 
@@ -533,10 +597,10 @@ after_subcommand_completions:
 		case *parse.ObjectProperty:
 
 			//case: the current property is a property of the permissions section of the manifest.
-			if len(ancestors) >= 6 && utils.Implements[*parse.ObjectLiteral](ancestors[len(ancestors)-2]) &&
-				utils.Implements[*parse.ObjectProperty](ancestors[len(ancestors)-3]) &&
-				ancestors[len(ancestors)-3].(*parse.ObjectProperty).HasNameEqualTo(core.MANIFEST_PERMS_SECTION_NAME) &&
-				utils.Implements[*parse.Manifest](ancestors[len(ancestors)-5]) {
+			if ancestorCount >= 6 && utils.Implements[*parse.ObjectLiteral](ancestors[ancestorCount-2]) &&
+				utils.Implements[*parse.ObjectProperty](ancestors[ancestorCount-3]) &&
+				ancestors[ancestorCount-3].(*parse.ObjectProperty).HasNameEqualTo(core.MANIFEST_PERMS_SECTION_NAME) &&
+				utils.Implements[*parse.Manifest](ancestors[ancestorCount-5]) {
 
 				for _, info := range permkind.PERMISSION_KINDS {
 					if !hasPrefixCaseInsensitive(info.Name, ident.Name) {
@@ -561,10 +625,10 @@ after_subcommand_completions:
 			}
 
 			//case: the current property is in the 'allow' object in a module import statement.
-			if len(ancestors) >= 6 && utils.Implements[*parse.ObjectLiteral](ancestors[len(ancestors)-2]) &&
-				utils.Implements[*parse.ObjectProperty](ancestors[len(ancestors)-3]) &&
-				ancestors[len(ancestors)-3].(*parse.ObjectProperty).HasNameEqualTo(core.IMPORT_CONFIG__ALLOW_PROPNAME) &&
-				utils.Implements[*parse.ImportStatement](ancestors[len(ancestors)-5]) {
+			if ancestorCount >= 6 && utils.Implements[*parse.ObjectLiteral](ancestors[ancestorCount-2]) &&
+				utils.Implements[*parse.ObjectProperty](ancestors[ancestorCount-3]) &&
+				ancestors[ancestorCount-3].(*parse.ObjectProperty).HasNameEqualTo(core.IMPORT_CONFIG__ALLOW_PROPNAME) &&
+				utils.Implements[*parse.ImportStatement](ancestors[ancestorCount-5]) {
 
 				for _, info := range permkind.PERMISSION_KINDS {
 					if !hasPrefixCaseInsensitive(info.Name, ident.Name) {
@@ -1432,8 +1496,6 @@ func findObjectInteriorCompletions(
 			}
 		}
 
-		//grandParent := ancestors[len(ancestors)-2]
-
 		switch greatGrandParent := ancestors[len(ancestors)-3].(type) {
 		case *parse.Manifest:
 			switch parent.Name() {
@@ -1463,6 +1525,60 @@ func findObjectInteriorCompletions(
 			_ = greatGrandParent
 		}
 
+		if len(ancestors) < 5 {
+			break
+		}
+
+		manifestSectionName := ""
+		var sectionProperty *parse.ObjectProperty
+
+		ancestorCount := len(ancestors)
+
+		if utils.Implements[*parse.Manifest](ancestors[ancestorCount-5]) &&
+			utils.Implements[*parse.ObjectLiteral](ancestors[ancestorCount-4]) &&
+			utils.Implements[*parse.ObjectProperty](ancestors[ancestorCount-3]) &&
+			ancestors[ancestorCount-3].(*parse.ObjectProperty).Key != nil {
+			sectionProperty = ancestors[ancestorCount-3].(*parse.ObjectProperty)
+			manifestSectionName = sectionProperty.Name()
+		}
+
+		if sectionProperty == nil || sectionProperty.Value == nil {
+			break
+		}
+
+		//the cursor is located in the span of an object inside a manifest section.
+
+		switch manifestSectionName {
+		case core.MANIFEST_DATABASES_SECTION_NAME:
+			//suggest database description's properties
+
+			_, ok := sectionProperty.Value.(*parse.ObjectLiteral)
+			if !ok {
+				break
+			}
+			dbDescription := n
+
+			for _, descPropName := range core.MANIFEST_DATABASE_PROPNAMES {
+				//ignore properties that are already present.
+				if dbDescription.HasNamedProp(descPropName) {
+					continue
+				}
+
+				suffix := ": "
+				valueCompletion, ok := MANIFEST_DB_DESC_DEFAULT_VALUE_COMPLETIONS[descPropName]
+				if ok {
+					suffix += valueCompletion
+				}
+
+				completions = append(completions, Completion{
+					ShownString:           descPropName + suffix,
+					Value:                 descPropName + suffix,
+					Kind:                  defines.CompletionItemKindVariable,
+					MarkdownDocumentation: MANIFEST_DB_DESC_DOC[descPropName],
+					ReplacedRange:         pos,
+				})
+			}
+		}
 	}
 
 	return

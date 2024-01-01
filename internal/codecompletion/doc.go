@@ -30,6 +30,20 @@ var (
 		core.MANIFEST_DATABASES_SECTION_NAME: utils.MustGet(help.HelpFor("manifest/databases-section", helpMessageConfig)),
 	}
 
+	MANIFEST_DB_DESC_DEFAULT_VALUE_COMPLETIONS = map[string]string{
+		core.MANIFEST_DATABASE__RESOURCE_PROP_NAME:               "ldb://main  # (example) local database named 'main'",
+		core.MANIFEST_DATABASE__RESOLUTION_DATA_PROP_NAME:        "nil",
+		core.MANIFEST_DATABASE__EXPECTED_SCHEMA_UPDATE_PROP_NAME: "false  # should be set to true if the module performs a schema update (update_schema call)",
+		core.MANIFEST_DATABASE__ASSERT_SCHEMA_UPDATE_PROP_NAME:   "# object pattern to check the actual schema against",
+	}
+
+	MANIFEST_DB_DESC_DOC = map[string]string{
+		core.MANIFEST_DATABASE__RESOURCE_PROP_NAME:               utils.MustGet(help.HelpFor("manifest/databases-section/resource", helpMessageConfig)),
+		core.MANIFEST_DATABASE__RESOLUTION_DATA_PROP_NAME:        utils.MustGet(help.HelpFor("manifest/databases-section/resolution-data", helpMessageConfig)),
+		core.MANIFEST_DATABASE__EXPECTED_SCHEMA_UPDATE_PROP_NAME: utils.MustGet(help.HelpFor("manifest/databases-section/expected-schema-update", helpMessageConfig)),
+		core.MANIFEST_DATABASE__ASSERT_SCHEMA_UPDATE_PROP_NAME:   utils.MustGet(help.HelpFor("manifest/databases-section/assert-schema", helpMessageConfig)),
+	}
+
 	MODULE_IMPORT_SECTION_DEFAULT_VALUE_COMPLETIONS = map[string]string{
 		core.IMPORT_CONFIG__ALLOW_PROPNAME:     "{}",
 		core.IMPORT_CONFIG__ARGUMENTS_PROPNAME: "{}",

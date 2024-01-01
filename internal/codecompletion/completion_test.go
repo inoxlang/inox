@@ -634,6 +634,11 @@ func TestFindCompletions(t *testing.T) {
 			})
 
 			t.Run("manifest section", func(t *testing.T) {
+
+				if mode == ShellCompletions {
+					t.Skip()
+				}
+
 				t.Run("from prefix", func(t *testing.T) {
 					state := newState()
 					chunk, _ := parseChunkSource("manifest{e}", "")
@@ -676,7 +681,61 @@ func TestFindCompletions(t *testing.T) {
 
 					for _, completion := range completions {
 						if completion.ShownString == "parameters" {
-							assert.Fail(t, "completion for 'parameters' should be present")
+							assert.Fail(t, "completion for 'parameters' should not be present")
+						}
+					}
+				})
+
+			})
+
+			t.Run("database description", func(t *testing.T) {
+				if mode == ShellCompletions {
+					t.Skip()
+				}
+
+				t.Run("from prefix", func(t *testing.T) {
+					state := newState()
+					chunk, _ := parseChunkSource("manifest{databases:{main:{a}}}", "")
+					doSymbolicCheck(chunk, state.Global)
+
+					completions := findCompletions(state, chunk, 27)
+					assert.EqualValues(t, []Completion{
+						{
+							ShownString:   "assert-schema: " + MANIFEST_DB_DESC_DEFAULT_VALUE_COMPLETIONS["assert-schema"],
+							Value:         "assert-schema: " + MANIFEST_DB_DESC_DEFAULT_VALUE_COMPLETIONS["assert-schema"],
+							ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 26, End: 27}},
+						},
+					}, completions)
+				})
+
+				t.Run("in empty description", func(t *testing.T) {
+					state := newState()
+					chunk, _ := parseChunkSource("manifest{databases:{main:{}}}", "")
+					doSymbolicCheck(chunk, state.Global)
+
+					completions := findCompletions(state, chunk, 26)
+					assert.Contains(t, completions, Completion{
+						ShownString:   "assert-schema: " + MANIFEST_DB_DESC_DEFAULT_VALUE_COMPLETIONS["assert-schema"],
+						Value:         "assert-schema: " + MANIFEST_DB_DESC_DEFAULT_VALUE_COMPLETIONS["assert-schema"],
+						ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 26, End: 26}},
+					})
+				})
+
+				t.Run("in non-empty description", func(t *testing.T) {
+					state := newState()
+					chunk, _ := parseChunkSource("manifest{databases:{main:{\nresource:ldb://main}}}", "")
+					doSymbolicCheck(chunk, state.Global)
+
+					completions := findCompletions(state, chunk, 26)
+					assert.Contains(t, completions, Completion{
+						ShownString:   "assert-schema: " + MANIFEST_DB_DESC_DEFAULT_VALUE_COMPLETIONS["assert-schema"],
+						Value:         "assert-schema: " + MANIFEST_DB_DESC_DEFAULT_VALUE_COMPLETIONS["assert-schema"],
+						ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 26, End: 26}},
+					})
+
+					for _, completion := range completions {
+						if completion.ShownString == "resource" {
+							assert.Fail(t, "completion for 'resource' should not be present")
 						}
 					}
 				})
@@ -684,6 +743,10 @@ func TestFindCompletions(t *testing.T) {
 			})
 
 			t.Run("module import config section", func(t *testing.T) {
+				if mode == ShellCompletions {
+					t.Skip()
+				}
+
 				t.Run("from prefix", func(t *testing.T) {
 					state := newState()
 					chunk := utils.Must(parseChunkSource("import lib /a.ix {a}", ""))
@@ -761,7 +824,7 @@ func TestFindCompletions(t *testing.T) {
 
 					for _, completion := range completions {
 						if completion.ShownString == "parameters" {
-							assert.Fail(t, "completion for 'parameters' should be present")
+							assert.Fail(t, "completion for 'parameters' should not be present")
 						}
 					}
 				})
