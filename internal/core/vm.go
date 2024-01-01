@@ -416,6 +416,7 @@ func (v *VM) run() {
 		ip = v.ip
 
 		switch v.curInsts[ip] {
+		//STACK OPERATIONS AND CONSTANTS
 		case OpPushConstant:
 			v.ip += 2
 			cidx := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
@@ -425,6 +426,135 @@ func (v *VM) run() {
 		case OpPushNil:
 			v.stack[v.sp] = Nil
 			v.sp++
+		case OpPop:
+			v.sp--
+		case OpCopyTop:
+			v.stack[v.sp] = v.stack[v.sp-1]
+			v.sp++
+		case OpSwap:
+			temp := v.stack[v.sp-1]
+			v.stack[v.sp-1] = v.stack[v.sp-2]
+			v.stack[v.sp-2] = temp
+		case OpMoveThirdTop:
+			third := v.stack[v.sp-3]
+			second := v.stack[v.sp-2]
+			top := v.stack[v.sp-1]
+
+			v.stack[v.sp-1] = third
+			v.stack[v.sp-2] = top
+			v.stack[v.sp-3] = second
+		case OpPushTrue:
+			v.stack[v.sp] = True
+			v.sp++
+		case OpPushFalse:
+			v.stack[v.sp] = False
+			v.sp++
+		//CONTROL FLOW
+		case OpJumpIfFalse:
+			v.ip += 2
+			v.sp--
+			if !v.stack[v.sp].(Bool) {
+				pos := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
+				v.ip = pos - 1
+			}
+		case OpAndJump:
+			v.ip += 2
+			if !v.stack[v.sp-1].(Bool) {
+				pos := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
+				v.ip = pos - 1
+			} else {
+				v.sp--
+			}
+		case OpOrJump:
+			v.ip += 2
+			if !v.stack[v.sp-1].(Bool) {
+				v.sp--
+			} else {
+				pos := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
+				v.ip = pos - 1
+			}
+		case OpJump:
+			pos := int(v.curInsts[v.ip+2]) | int(v.curInsts[v.ip+1])<<8
+			v.ip = pos - 1
+		case OpCall:
+			callIp := v.ip
+
+			numArgs := int(v.curInsts[v.ip+1])
+			spread := int(v.curInsts[v.ip+2])
+			must := int(v.curInsts[v.ip+3])
+			v.ip += 3
+
+			if !v.fnCall(numArgs, spread == 1, must == 1, callIp) {
+				return
+			}
+		case OpReturn:
+			v.ip++
+			var retVal Value
+			isValOnStack := int(v.curInsts[v.ip]) == 1
+			if isValOnStack {
+				retVal = v.stack[v.sp-1]
+
+				if v.curFrame.mustCall {
+					if transformed, err := checkTransformInoxMustCallResult(retVal); err == nil {
+						retVal = transformed
+					} else {
+						v.err = err
+						return
+					}
+				}
+			} else {
+				retVal = Nil
+			}
+
+			topLevelFnEval := v.runFn && v.framesIndex == 2
+
+			if v.framesIndex == 1 { //top level return in module
+				if isValOnStack {
+					v.stack[v.sp-1] = retVal
+				} else {
+					v.stack[v.sp] = retVal
+					v.sp++
+				}
+				return
+			}
+
+			if v.curFrame.popCapturedGlobals {
+				v.curFrame.popCapturedGlobals = false
+				v.global.Globals.PopCapturedGlobals()
+			}
+
+			if v.curFrame.externalFunc {
+				shared, err := ShareOrClone(retVal, v.global)
+				if err != nil {
+					v.err = fmt.Errorf("failed to share a return value: %w", err)
+					return
+				}
+				retVal = shared
+				v.constants = v.curFrame.originalConstants
+				v.curFrame.originalConstants = nil
+			}
+
+			if !topLevelFnEval {
+				v.framesIndex--
+				v.curFrame = &v.frames[v.framesIndex-1]
+				v.curInsts = v.curFrame.fn.Instructions
+				v.ip = v.curFrame.ip
+				v.sp = v.frames[v.framesIndex].basePointer
+
+				if !v.runFn {
+					v.curFrame.currentNodeSpan = parse.NodeSpan{}
+					v.chunkStack[len(v.chunkStack)-1].CurrentNodeSpan = parse.NodeSpan{}
+				} else {
+					//TODO: support isolated function call
+				}
+			}
+
+			v.stack[v.sp-1] = retVal
+
+			if topLevelFnEval {
+				return
+			}
+		//ARITHMETIC
 		case OpIntBin:
 			doIntBinOp()
 			if v.err != nil {
@@ -444,6 +574,28 @@ func (v *VM) run() {
 			if v.err != nil {
 				return
 			}
+		case OpMinus:
+			operand := v.stack[v.sp-1]
+			v.sp--
+
+			switch x := operand.(type) {
+			case Int:
+				if x == -x && x != 0 {
+					v.err = ErrNegationWithOverflow
+					return
+				}
+				var res Value = -x
+				v.stack[v.sp] = res
+				v.sp++
+			case Float:
+				var res Value = -x
+				v.stack[v.sp] = res
+				v.sp++
+			default:
+				v.err = fmt.Errorf("invalid operation: -%s", Stringify(operand, v.global.Ctx))
+				return
+			}
+		//CONCATENATION
 		case OpStrConcat:
 			right := v.stack[v.sp-1]
 			left := v.stack[v.sp-2]
@@ -451,13 +603,50 @@ func (v *VM) run() {
 
 			v.stack[v.sp-2] = res
 			v.sp--
-		case OptStrQueryParamVal:
-			val, err := stringifyQueryParamValue(v.stack[v.sp-1])
+		case OpConcat:
+			v.ip += 3
+			numElements := int(v.curInsts[v.ip-2])
+			spreadElemSetConstantIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
+			spreadElemSet := v.constants[spreadElemSetConstantIndex].(*List).underlyingList.(*BoolList)
+
+			values := make([]Value, numElements)
+			copy(values, v.stack[v.sp-numElements:v.sp])
+
+			if spreadElemSet.elements.Any() {
+				index := 0
+				valuesAfterIndex := make([]Value, numElements)
+
+				// TODO: if iterables are all indexable & not shared we can pre allocate a list of the right size
+
+				ctx := v.global.Ctx
+
+				for i := 0; i < numElements; i++ {
+					if !spreadElemSet.BoolAt(i) {
+						index++
+						continue
+					}
+					copiedCount := copy(valuesAfterIndex, values[index+1:]) //save values after current index
+					iterable := values[index].(Iterable)
+					values = values[:index]
+
+					it := iterable.Iterator(ctx, IteratorConfiguration{})
+					for it.Next(ctx) {
+						values = append(values, it.Value(ctx))
+					}
+
+					index = len(values)
+					values = append(values, valuesAfterIndex[:copiedCount]...)
+				}
+			}
+
+			v.sp -= numElements
+			result, err := concatValues(v.global.Ctx, values)
 			if err != nil {
 				v.err = err
 				return
 			}
-			v.stack[v.sp-1] = Str(val)
+			v.stack[v.sp] = result
+			v.sp++
 		case OpRange:
 			right := v.stack[v.sp-1]
 			left := v.stack[v.sp-2]
@@ -490,6 +679,7 @@ func (v *VM) run() {
 			}
 			v.stack[v.sp-2] = res
 			v.sp--
+		//BINARY OPERATIONS
 		case OpNotEqual, OpEqual:
 			op := v.curInsts[v.ip]
 
@@ -517,29 +707,6 @@ func (v *VM) run() {
 				v.stack[v.sp] = False
 			}
 			v.sp++
-		case OpPop:
-			v.sp--
-		case OpCopyTop:
-			v.stack[v.sp] = v.stack[v.sp-1]
-			v.sp++
-		case OpSwap:
-			temp := v.stack[v.sp-1]
-			v.stack[v.sp-1] = v.stack[v.sp-2]
-			v.stack[v.sp-2] = temp
-		case OpMoveThirdTop:
-			third := v.stack[v.sp-3]
-			second := v.stack[v.sp-2]
-			top := v.stack[v.sp-1]
-
-			v.stack[v.sp-1] = third
-			v.stack[v.sp-2] = top
-			v.stack[v.sp-3] = second
-		case OpPushTrue:
-			v.stack[v.sp] = True
-			v.sp++
-		case OpPushFalse:
-			v.stack[v.sp] = False
-			v.sp++
 		case OpBooleanNot:
 			operand := v.stack[v.sp-1]
 			v.sp--
@@ -549,27 +716,6 @@ func (v *VM) run() {
 				v.stack[v.sp] = True
 			}
 			v.sp++
-		case OpMinus:
-			operand := v.stack[v.sp-1]
-			v.sp--
-
-			switch x := operand.(type) {
-			case Int:
-				if x == -x && x != 0 {
-					v.err = ErrNegationWithOverflow
-					return
-				}
-				var res Value = -x
-				v.stack[v.sp] = res
-				v.sp++
-			case Float:
-				var res Value = -x
-				v.stack[v.sp] = res
-				v.sp++
-			default:
-				v.err = fmt.Errorf("invalid operation: -%s", Stringify(operand, v.global.Ctx))
-				return
-			}
 		case OpMatch:
 			left := v.stack[v.sp-2]
 			right := v.stack[v.sp-1]
@@ -587,29 +733,6 @@ func (v *VM) run() {
 				} else {
 					v.stack[v.sp] = False
 				}
-			}
-
-			v.sp++
-		case OpGroupMatch:
-			v.ip += 2
-			localIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
-
-			left := v.stack[v.sp-2]
-			right := v.stack[v.sp-1]
-			v.sp -= 2
-
-			pattern := right.(GroupPattern)
-			groups, ok, err := pattern.MatchGroups(v.global.Ctx, left.(Serializable))
-			if err != nil {
-				v.err = err
-				return
-			}
-
-			if ok {
-				v.stack[v.sp] = True
-				v.stack[v.curFrame.basePointer+localIndex] = objFrom(groups)
-			} else {
-				v.stack[v.sp] = False
 			}
 
 			v.sp++
@@ -665,16 +788,6 @@ func (v *VM) run() {
 
 			v.stack[v.sp] = Bool(result)
 			v.sp++
-		case OpDoSetDifference:
-			left := v.stack[v.sp-2]
-			right := v.stack[v.sp-1]
-			v.sp -= 2
-
-			if _, ok := right.(Pattern); !ok {
-				right = NewExactValuePattern(right.(Serializable))
-			}
-			v.stack[v.sp] = &DifferencePattern{base: left.(Pattern), removed: right.(Pattern)}
-			v.sp++
 		case OpNilCoalesce:
 			left := v.stack[v.sp-2]
 			right := v.stack[v.sp-1]
@@ -687,43 +800,24 @@ func (v *VM) run() {
 			}
 			v.stack[v.sp] = val
 			v.sp++
-		case OpJumpIfFalse:
-			v.ip += 2
+		//VARIABLES
+		case OpSetLocal:
+			v.ip++
+			localIndex := int(v.curInsts[v.ip])
+			sp := v.curFrame.basePointer + localIndex
+
+			// local variables can be mutated by other actions
+			// so always store the copy of popped value
+			//true for Inox ?
+			val := v.stack[v.sp-1]
 			v.sp--
-			if !v.stack[v.sp].(Bool) {
-				pos := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
-				v.ip = pos - 1
-			}
-		case OpAndJump:
-			v.ip += 2
-			if !v.stack[v.sp-1].(Bool) {
-				pos := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
-				v.ip = pos - 1
-			} else {
-				v.sp--
-			}
-		case OpOrJump:
-			v.ip += 2
-			if !v.stack[v.sp-1].(Bool) {
-				v.sp--
-			} else {
-				pos := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
-				v.ip = pos - 1
-			}
-		case OpJump:
-			pos := int(v.curInsts[v.ip+2]) | int(v.curInsts[v.ip+1])<<8
-			v.ip = pos - 1
-		case OpPopJumpIfTestDisabled:
-			v.ip += 2
-			testItem := v.stack[v.sp-1].(TestItem)
-
-			if enabled, _ := v.global.TestingState.Filters.IsTestEnabled(testItem, v.global); !enabled {
-				pos := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
-
-				v.stack[v.sp-1] = Nil
-				v.sp--
-				v.ip = pos
-			}
+			v.stack[sp] = val
+		case OpGetLocal:
+			v.ip++
+			localIndex := int(v.curInsts[v.ip])
+			val := v.stack[v.curFrame.basePointer+localIndex]
+			v.stack[v.sp] = val
+			v.sp++
 		case OpSetGlobal:
 			v.ip += 2
 			v.sp--
@@ -749,6 +843,20 @@ func (v *VM) run() {
 			if watchable, ok := val.(SystemGraphNodeValue); ok {
 				v.global.ProposeSystemGraph(watchable, string(globalName))
 			}
+		case OpGetGlobal:
+			v.ip += 2
+			globalNameIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
+			globalName := v.constants[globalNameIndex].(Str)
+
+			val := v.global.Globals.Get(string(globalName))
+
+			if val == nil {
+				v.err = fmt.Errorf("global '%s' is not defined", globalName)
+				return
+			}
+			v.stack[v.sp] = val
+			v.sp++
+		//MEMBER AND ELEMENT
 		case OpSetMember:
 			v.ip += 2
 			v.sp--
@@ -787,19 +895,128 @@ func (v *VM) run() {
 			}
 
 			slice.SetSlice(v.global.Ctx, int(startIndex), int(endIndex), val.(Sequence))
-		case OpGetGlobal:
+		case OpOptionalMemb:
+			object := v.stack[v.sp-1]
 			v.ip += 2
-			globalNameIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
-			globalName := v.constants[globalNameIndex].(Str)
+			memberNameIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
+			memberName := string(v.constants[memberNameIndex].(Str))
 
-			val := v.global.Globals.Get(string(globalName))
+			iprops := object.(IProps)
 
-			if val == nil {
-				v.err = fmt.Errorf("global '%s' is not defined", globalName)
-				return
+			var memb Value
+			if !utils.SliceContains(iprops.PropertyNames(v.global.Ctx), memberName) {
+				memb = Nil
+			} else {
+				memb = iprops.Prop(v.global.Ctx, memberName)
 			}
+
+			v.stack[v.sp-1] = memb
+		case OpComputedMemb:
+			object := v.stack[v.sp-2]
+			propNameVal := v.stack[v.sp-1]
+			propName := propNameVal.(StringLike).GetOrBuildString()
+
+			memb := object.(IProps).Prop(v.global.Ctx, propName)
+			v.stack[v.sp-2] = memb
+			v.sp--
+		case OpAt:
+			index := v.stack[v.sp-1]
+			left := v.stack[v.sp-2]
+			v.sp -= 2
+
+			val := left.(Indexable).At(v.global.Ctx, int(index.(Int)))
+			if val == nil {
+				val = Nil
+			}
+
 			v.stack[v.sp] = val
 			v.sp++
+		case OpSafeAt:
+			index := v.stack[v.sp-1]
+			left := v.stack[v.sp-2]
+			v.sp -= 2
+
+			var val Value
+			indexable := left.(Indexable)
+			_index := int(index.(Int))
+			if _index >= indexable.Len() {
+				val = Nil
+			} else {
+				val = indexable.At(v.global.Ctx, _index)
+			}
+
+			v.stack[v.sp] = val
+			v.sp++
+		case OpSlice:
+			high := v.stack[v.sp-1]
+			low := v.stack[v.sp-2]
+			left := v.stack[v.sp-3]
+			v.sp -= 3
+			slice := left.(Sequence)
+
+			var lowIdx int = 0
+			if low != Nil {
+				lowIdx = int(low.(Int))
+			}
+
+			if lowIdx < 0 {
+				v.err = ErrNegativeLowerIndex
+				return
+			}
+
+			var highIdx int = math.MaxInt
+			if high != Nil {
+				highIdx = int(high.(Int))
+			}
+			highIdx = min(highIdx, int(slice.Len()))
+
+			val := slice.slice(lowIdx, highIdx)
+
+			v.stack[v.sp] = val
+			v.sp++
+		case OpMemb:
+			object := v.stack[v.sp-1]
+			v.ip += 2
+			memberNameIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
+			memberName := string(v.constants[memberNameIndex].(Str))
+
+			memb := object.(IProps).Prop(v.global.Ctx, memberName)
+			v.stack[v.sp-1] = memb
+		case OpObjPropNotStored:
+			val := v.stack[v.sp-1]
+			v.ip += 2
+			memberNameIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
+			memberName := string(v.constants[memberNameIndex].(Str))
+
+			object := val.(*Object)
+			memb := object.PropNotStored(v.global.Ctx, memberName)
+			v.stack[v.sp-1] = memb
+		case OpExtensionMethod:
+			v.ip += 4
+			extensionIdIndex := int(v.curInsts[v.ip-2]) | int(v.curInsts[v.ip-3])<<8
+			extensionId := v.constants[extensionIdIndex].(Str).GetOrBuildString()
+
+			memberNameIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
+			memberName := string(v.constants[memberNameIndex].(Str))
+
+			extension := v.global.Ctx.GetTypeExtension(extensionId)
+			var method *InoxFunction
+
+			for _, propExpr := range extension.propertyExpressions {
+				if propExpr.name == memberName {
+					method = propExpr.method
+					break
+				}
+			}
+
+			if method == nil {
+				v.err = fmt.Errorf("%w: extension method should have been found", ErrUnreachable)
+				return
+			}
+
+			v.stack[v.sp] = method
+			v.sp++
+		//DATA STRUCTURE CREATION
 		case OpCreateList:
 			v.ip += 2
 			numElements := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
@@ -833,18 +1050,6 @@ func (v *VM) run() {
 			var arr Value = &Tuple{elements: elements}
 
 			v.stack[v.sp] = arr
-			v.sp++
-		case OpCreateKeyList:
-			v.ip += 2
-			numElements := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
-			keyList := make(KeyList, 0, numElements)
-
-			for i := v.sp - numElements; i < v.sp; i++ {
-				keyList = append(keyList, string(v.stack[i].(Identifier)))
-			}
-			v.sp -= numElements
-
-			v.stack[v.sp] = keyList
 			v.sp++
 		case OpCreateObject:
 			v.ip += 6
@@ -1006,71 +1211,6 @@ func (v *VM) run() {
 
 			v.stack[v.sp] = object
 			v.sp++
-		case OpSpreadObjectPattern:
-			patt := v.stack[v.sp-2].(*ObjectPattern)
-			spreadObjectPatt := v.stack[v.sp-1].(*ObjectPattern)
-
-			for k, v := range spreadObjectPatt.entryPatterns {
-				//priority to property pattern defined earlier
-				if _, alreadyPresent := patt.entryPatterns[k]; alreadyPresent {
-					continue
-				}
-
-				patt.entryPatterns[k] = v
-				if _, ok := spreadObjectPatt.optionalEntries[k]; !ok {
-					continue
-				}
-				//set as optional
-				if patt.optionalEntries == nil {
-					patt.optionalEntries = map[string]struct{}{}
-				}
-				patt.optionalEntries[k] = struct{}{}
-			}
-			v.sp--
-		case OpSpreadRecordPattern:
-			patt := v.stack[v.sp-2].(*RecordPattern)
-			spreadObjectPatt := v.stack[v.sp-1].(*RecordPattern)
-
-			for k, v := range spreadObjectPatt.entryPatterns {
-				//priority to property pattern defined earlier
-				if _, alreadyPresent := patt.entryPatterns[k]; alreadyPresent {
-					continue
-				}
-
-				patt.entryPatterns[k] = v
-				if _, ok := spreadObjectPatt.optionalEntries[k]; !ok {
-					continue
-				}
-				//set as optional
-				if patt.optionalEntries == nil {
-					patt.optionalEntries = map[string]struct{}{}
-				}
-				patt.optionalEntries[k] = struct{}{}
-			}
-			v.sp--
-		case BindCapturedLocals:
-			v.ip++
-			numCaptured := int(v.curInsts[v.ip])
-
-			fn := v.stack[v.sp-numCaptured-1].(*InoxFunction)
-			newFn := &InoxFunction{
-				Node:             fn.Node,
-				Chunk:            fn.Chunk,
-				compiledFunction: fn.compiledFunction,
-			}
-
-			for i := v.sp - numCaptured; i < v.sp; i++ {
-				localVal := v.stack[i]
-				shared, err := ShareOrClone(localVal, v.global)
-				if err != nil {
-					v.err = fmt.Errorf("failed to share a capture local: %w", err)
-					return
-				}
-				newFn.capturedLocals = append(newFn.capturedLocals, shared)
-			}
-
-			v.sp -= numCaptured
-			v.stack[v.sp-1] = newFn
 		case OpExtractProps:
 			v.ip += 2
 			object := v.stack[v.sp-1].(*Object)
@@ -1097,182 +1237,6 @@ func (v *VM) run() {
 			destTuple.elements = append(destTuple.elements, spreadTuple.elements...)
 			v.stack[v.sp-2] = destTuple
 			v.sp--
-		case OpCreateListPattern:
-			v.ip += 3
-			numElements := int(v.curInsts[v.ip-1]) | int(v.curInsts[v.ip-2])<<8
-			hasGeneralElem := int(v.curInsts[v.ip])
-
-			patt := &ListPattern{}
-			if hasGeneralElem == 1 {
-				patt.generalElementPattern = v.stack[v.sp-1].(Pattern)
-				v.stack[v.sp-1] = patt
-			} else {
-				patt.elementPatterns = make([]Pattern, 0, numElements)
-				for i := v.sp - numElements; i < v.sp; i++ {
-					patt.elementPatterns = append(patt.elementPatterns, v.stack[i].(Pattern))
-				}
-				v.sp -= numElements
-				v.stack[v.sp] = patt
-				v.sp++
-			}
-		case OpCreateTuplePattern:
-			v.ip += 3
-			numElements := int(v.curInsts[v.ip-1]) | int(v.curInsts[v.ip-2])<<8
-			hasGeneralElem := int(v.curInsts[v.ip])
-
-			patt := &TuplePattern{}
-			if hasGeneralElem == 1 {
-				patt.generalElementPattern = v.stack[v.sp-1].(Pattern)
-				v.stack[v.sp-1] = patt
-			} else {
-				patt.elementPatterns = make([]Pattern, 0, numElements)
-				for i := v.sp - numElements; i < v.sp; i++ {
-					patt.elementPatterns = append(patt.elementPatterns, v.stack[i].(Pattern))
-				}
-				v.sp -= numElements
-				v.stack[v.sp] = patt
-				v.sp++
-			}
-		case OpCreateObjectPattern, OpCreateRecordPattern:
-			op := v.curInsts[v.ip]
-			v.ip += 3
-			numElements := int(v.curInsts[v.ip-1]) | int(v.curInsts[v.ip-2])<<8
-			isInexact := int(v.curInsts[v.ip])
-
-			entryPatterns := make(map[string]Pattern)
-			var optionalEntries map[string]struct{}
-
-			for i := v.sp - numElements; i < v.sp; i += 3 {
-				key := v.stack[i].(Str)
-				value := v.stack[i+1].(Pattern)
-				isOptional := v.stack[i+2].(Bool)
-				entryPatterns[string(key)] = value
-				if isOptional {
-					if optionalEntries == nil {
-						optionalEntries = make(map[string]struct{}, 1)
-					}
-					optionalEntries[string(key)] = struct{}{}
-				}
-			}
-
-			var pattern Pattern
-			if op == OpCreateObjectPattern {
-				pattern = &ObjectPattern{
-					entryPatterns:   entryPatterns,
-					optionalEntries: optionalEntries,
-					inexact:         isInexact == 1,
-				}
-			} else {
-				pattern = &RecordPattern{
-					entryPatterns:   entryPatterns,
-					optionalEntries: optionalEntries,
-					inexact:         isInexact == 1,
-				}
-			}
-
-			v.sp -= numElements
-			v.stack[v.sp] = pattern
-			v.sp++
-		case OpCreateOptionPattern:
-			v.ip += 2
-			nameIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
-			name := v.constants[nameIndex].(Str)
-
-			value := v.stack[v.sp-1].(Pattern)
-			v.stack[v.sp-1] = &OptionPattern{name: string(name), value: value}
-		case OpCreateUnionPattern:
-			v.ip += 2
-			numElements := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
-
-			var cases []Pattern
-
-			for i := v.sp - numElements; i < v.sp; i++ {
-				cases = append(cases, v.stack[i].(Pattern))
-			}
-			v.sp -= numElements
-			patt := &UnionPattern{
-				node:  nil,
-				cases: cases,
-			}
-
-			v.stack[v.sp] = patt
-			v.sp++
-		case OpCreateStringUnionPattern:
-			v.ip += 2
-			numElements := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
-
-			var cases []StringPattern
-
-			for i := v.sp - numElements; i < v.sp; i++ {
-				cases = append(cases, v.stack[i].(StringPattern))
-			}
-			v.sp -= numElements
-			patt, err := NewUnionStringPattern(nil, cases)
-			if err != nil {
-				v.err = err
-				return
-			}
-
-			v.stack[v.sp] = patt
-			v.sp++
-		case OpCreateRepeatedPatternElement:
-			v.ip += 2
-			occurence := parse.OcurrenceCountModifier(v.curInsts[v.ip-1])
-			exactOccurenceCount := int(v.curInsts[v.ip])
-
-			patternElement := v.stack[v.sp-1].(StringPattern)
-
-			v.stack[v.sp-1] = &RepeatedPatternElement{
-				//regexp:            regexp.MustCompile(subpatternRegex),
-				ocurrenceModifier: occurence,
-				exactCount:        exactOccurenceCount,
-				element:           patternElement,
-			}
-		case OpCreateSequenceStringPattern:
-			v.ip += 5
-			numElements := int(v.curInsts[v.ip-4])
-			nameListIndex := int(v.curInsts[v.ip-2]) | int(v.curInsts[v.ip-3])<<8
-			nameList := v.constants[nameListIndex].(KeyList)
-			nodeIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
-			node := v.constants[nodeIndex].(AstNode)
-
-			var subpatterns []StringPattern
-
-			for i := v.sp - numElements; i < v.sp; i++ {
-				subpatterns = append(subpatterns, v.stack[i].(StringPattern))
-			}
-			v.sp -= numElements
-
-			val, err := NewSequenceStringPattern(node.Node.(*parse.ComplexStringPatternPiece), node.chunk.Node, subpatterns, nameList)
-			if err != nil {
-				v.err = err
-				return
-			}
-			v.stack[v.sp] = val
-			v.sp++
-		case OpCreatePatternNamespace:
-			init := v.stack[v.sp-1]
-
-			val, err := CreatePatternNamespace(v.global.Ctx, init)
-			if err != nil {
-				v.err = err
-				return
-			}
-			v.stack[v.sp-1] = val
-		case OpCreateOptionalPattern:
-			patt := v.stack[v.sp-1].(Pattern)
-			val, err := NewOptionalPattern(v.global.Ctx, patt)
-			if v.err != nil {
-				v.err = err
-				return
-			}
-			v.stack[v.sp-1] = val
-		case OpToPattern:
-			val := v.stack[v.sp-1].(Serializable)
-
-			if _, ok := val.(Pattern); !ok {
-				v.stack[v.sp-1] = NewMostAdaptedExactPattern(val)
-			}
 		case OpToBool:
 			val := v.stack[v.sp-1]
 			boolVal := Bool(coerceToBool(val))
@@ -1307,637 +1271,14 @@ func (v *VM) run() {
 			}
 			v.stack[v.sp] = val
 			v.sp++
-		case OpCreateOption:
-			v.ip += 2
-			nameIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
-			name := v.constants[nameIndex].(Str)
-
-			value := v.stack[v.sp-1]
-			v.stack[v.sp-1] = Option{Name: string(name), Value: value}
-		case OpCreatePath:
-			v.ip += 3
-			argCount := int(v.curInsts[v.ip-2])
-			listIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
-
-			var args []Value
-
-			var isStaticPathSliceList []bool
-			_isStaticPathSliceList := v.constants[listIndex].(*List)
-			for _, e := range _isStaticPathSliceList.GetOrBuildElements(v.global.Ctx) {
-				isStaticPathSliceList = append(isStaticPathSliceList, bool(e.(Bool)))
-			}
-
-			for i := v.sp - argCount; i < v.sp; i++ {
-				args = append(args, v.stack[i])
-			}
-			v.sp -= argCount
-
-			val, err := NewPath(args, isStaticPathSliceList)
-			if err != nil {
-				v.err = err
-				return
-			}
-			v.stack[v.sp] = val
-			v.sp++
-		case OpCreatePathPattern:
-			v.ip += 3
-			argCount := int(v.curInsts[v.ip-2])
-			listIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
-
-			var args []Value
-
-			var isStaticPathSliceList []bool
-			_isStaticPathSliceList := v.constants[listIndex].(*List)
-			for _, e := range _isStaticPathSliceList.GetOrBuildElements(v.global.Ctx) {
-				isStaticPathSliceList = append(isStaticPathSliceList, bool(e.(Bool)))
-			}
-
-			for i := v.sp - argCount; i < v.sp; i++ {
-				args = append(args, v.stack[i])
-			}
-			v.sp -= argCount
-
-			val, err := NewPathPattern(args, isStaticPathSliceList)
-			if err != nil {
-				v.err = err
-				return
-			}
-			v.stack[v.sp] = val
-			v.sp++
-		case OpCreateURL:
-			v.ip += 2
-			infoIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
-			info := v.constants[infoIndex].(*Record)
-			pathSliceCount := int(info.Prop(v.global.Ctx, "path-slice-count").(Int))
-			queryParamInfo := info.Prop(v.global.Ctx, "query-params").(*Tuple)
-			staticPathSlices := info.Prop(v.global.Ctx, "static-path-slices").(*Tuple)
-
-			var pathSlices []Value
-			var isStaticPathSliceList []bool
-			var queryParamNames []Value
-			var queryValues []Value
-
-			//query
-			queryParamCount := queryParamInfo.Len() / 2
-
-			for i := 0; i < queryParamCount; i++ {
-				queryParamNames = append(queryParamNames, queryParamInfo.At(v.global.Ctx, 2*i).(Str))
-			}
-
-			for i := v.sp - queryParamCount; i < v.sp; i++ {
-				queryValues = append(queryValues, v.stack[i])
-			}
-			v.sp -= queryParamCount
-
-			///path
-			for _, e := range staticPathSlices.elements {
-				isStaticPathSliceList = append(isStaticPathSliceList, bool(e.(Bool)))
-			}
-
-			for i := v.sp - pathSliceCount; i < v.sp; i++ {
-				pathSlices = append(pathSlices, v.stack[i])
-			}
-			v.sp -= pathSliceCount
-			v.sp--
-
-			//host
-			host := v.stack[v.sp]
-
-			val, err := NewURL(host, pathSlices, isStaticPathSliceList, queryParamNames, queryValues)
-			if err != nil {
-				v.err = err
-				return
-			}
-			v.stack[v.sp] = val
-			v.sp++
-		case OpCreateHost:
-			v.ip += 2
-			schemeIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
-			scheme := v.constants[schemeIndex].(Str)
-
-			hostnamePort := v.stack[v.sp-1].(Str)
-			val, err := NewHost(hostnamePort, string(scheme))
-			if err != nil {
-				v.err = err
-				return
-			}
-			v.stack[v.sp-1] = val
-		case OpCreateRuneRange:
-			lower := v.stack[v.sp-2].(Rune)
-			upper := v.stack[v.sp-1].(Rune)
-			v.stack[v.sp-2] = RuneRange{Start: rune(lower), End: rune(upper)}
-			v.sp--
-		case OpCreateIntRange:
-			lower := int64(v.stack[v.sp-2].(Int))
-			upper := int64(v.stack[v.sp-1].(Int))
-			v.stack[v.sp-2] = IntRange{
-				unknownStart: false,
-				inclusiveEnd: true,
-				start:        lower,
-				end:          upper,
-				step:         1,
-			}
-			v.sp--
-		case OpCreateFloatRange:
-			lower := float64(v.stack[v.sp-2].(Float))
-			upper := float64(v.stack[v.sp-1].(Float))
-			v.stack[v.sp-2] = FloatRange{
-				unknownStart: false,
-				inclusiveEnd: true,
-				start:        lower,
-				end:          upper,
-			}
-			v.sp--
-		case OpCreateUpperBoundRange:
-			upperBound := v.stack[v.sp-1]
-
-			switch val := upperBound.(type) {
-			case Int:
-				v.stack[v.sp-1] = IntRange{
-					unknownStart: true,
-					inclusiveEnd: true,
-					end:          int64(val),
-					step:         1,
-				}
-			case Float:
-				v.stack[v.sp-1] = FloatRange{
-					unknownStart: true,
-					inclusiveEnd: true,
-					end:          float64(val),
-				}
-			default:
-				v.stack[v.sp-1] = QuantityRange{
-					unknownStart: true,
-					inclusiveEnd: true,
-					end:          val.(Serializable),
-				}
-			}
-		case OpCreateTestSuite:
-			v.ip += 4
-			nodeIndex := int(v.curInsts[v.ip-2]) | int(v.curInsts[v.ip-3])<<8
-			node := v.constants[nodeIndex].(AstNode)
-			parentChunk := node.chunk
-
-			embeddedChunkNodeIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
-			embeddedChunkNode := v.constants[embeddedChunkNodeIndex].(AstNode)
-
-			embeddedModChunk := embeddedChunkNode.Node.(*parse.Chunk)
-			meta := v.stack[v.sp-1]
-
-			suite, err := NewTestSuite(TestSuiteCreationInput{
-				Meta:             meta,
-				Node:             node.Node.(*parse.TestSuiteExpression),
-				EmbeddedModChunk: embeddedModChunk,
-				ParentChunk:      parentChunk,
-				ParentState:      v.global,
-			})
-			if err != nil {
-				v.err = err
-				return
-			}
-			v.stack[v.sp-1] = suite
-		case OpCreateTestCase:
-			v.ip += 4
-			nodeIndex := int(v.curInsts[v.ip-2]) | int(v.curInsts[v.ip-3])<<8
-			node := v.constants[nodeIndex].(AstNode)
-
-			modNodeIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
-			modNode := v.constants[modNodeIndex].(AstNode)
-
-			embeddedModChunk := modNode.Node.(*parse.Chunk)
-			parentChunk := node.chunk
-			meta := v.stack[v.sp-1]
-
-			//TODO: add location to test case
-			suite, err := NewTestCase(TestCaseCreationInput{
-				Meta: meta,
-				Node: node.Node.(*parse.TestCaseExpression),
-
-				ModChunk:          embeddedModChunk,
-				ParentState:       v.global,
-				ParentChunk:       parentChunk,
-				PositionStack:     nil,
-				FormattedLocation: "",
-			})
-			if err != nil {
-				v.err = err
-				return
-			}
-			v.stack[v.sp-1] = suite
-		case OpAddTestSuiteResult:
-			lthread := v.stack[v.sp-2].(*LThread)
-			testSuite := v.stack[v.sp-3].(*TestSuite)
-			//v.stack[v.sp-1] : result (unused)
-
-			//create test result and add it to .TestSuiteResults.
-			err := func() error {
-				if !lthread.state.TestingState.ResultsLock.TryLock() {
-					return errors.New("test results should not be locked")
-				}
-				defer lthread.state.TestingState.ResultsLock.Unlock()
-
-				testCaseResults := lthread.state.TestingState.CaseResults
-				testSuiteResults := lthread.state.TestingState.SuiteResults
-
-				result, err := NewTestSuiteResult(v.global.Ctx, testCaseResults, testSuiteResults, testSuite)
-				if err != nil {
-					return err
-				}
-
-				v.global.TestingState.ResultsLock.Lock()
-				defer v.global.TestingState.ResultsLock.Unlock()
-
-				v.global.TestingState.SuiteResults = append(v.global.TestingState.SuiteResults, result)
-				return nil
-			}()
-
-			if err != nil {
-				v.err = err
-				return
-			}
-
-			v.stack[v.sp-1] = Nil
-			v.stack[v.sp-2] = Nil
-			v.stack[v.sp-3] = Nil
-			v.sp -= 3
-		case OpAddTestCaseResult:
-			v.err = ErrNotImplementedYet
-			return
-			//TODO
-			// lthread := v.stack[v.sp-2].(*LThread)
-			// testCase := v.stack[v.sp-3].(*TestCase)
-			// //v.stack[v.sp-1] : result (unused)
-
-			// if v.global.Module.ModuleKind == TestSuiteModule {
-			// 	//create test result and add it to .TestSuiteResults.
-			// 	err := func() error {
-			// 		lthread.state.TestingState.TestResultsLock.Lock()
-			// 		defer lthread.state.TestingState.TestResultsLock.Unlock()
-
-			// 		testCaseResults := lthread.state.TestingState.TestCaseResults
-			// 		testSuiteResults := lthread.state.TestingState.TestSuiteResults
-
-			// 		result, err := NewTestCaseResult(v.global.Ctx, testCase)
-			// 		if err != nil {
-			// 			return err
-			// 		}
-
-			// 		v.global.TestSuiteResults = append(v.global.TestSuiteResults, result)
-			// 		return nil
-			// 	}()
-
-			// 	if err != nil {
-			// 		v.err = err
-			// 		return
-			// 	}
-			// }
-
-			// v.sp -= 3
-		case OpResolvePattern:
-			v.ip += 2
-			nameIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
-			name := v.constants[nameIndex].(Str)
-
-			val := v.global.Ctx.ResolveNamedPattern(string(name))
-			if val == nil {
-				val = &DynamicStringPatternElement{name: string(name), ctx: v.global.Ctx}
-			}
-			v.stack[v.sp] = val
-			v.sp++
-		case OpAddPattern:
-			v.ip += 2
-			nameIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
-			name := v.constants[nameIndex].(Str)
-
-			val := v.stack[v.sp-1].(Pattern)
-			v.global.Ctx.AddNamedPattern(string(name), val)
-			v.sp--
-		case OpResolvePatternNamespace:
-			v.ip += 2
-			nameIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
-			name := v.constants[nameIndex].(Str)
-
-			val := v.global.Ctx.ResolvePatternNamespace(string(name))
-			if val == nil {
-				v.err = fmt.Errorf("pattern namespace %%%s is not defined", name)
-				return
-			}
-			v.stack[v.sp] = val
-			v.sp++
-		case OpAddPatternNamespace:
-			v.ip += 2
-			nameIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
-			name := v.constants[nameIndex].(Str)
-
-			val := v.stack[v.sp-1].(*PatternNamespace)
-			v.global.Ctx.AddPatternNamespace(string(name), val)
-			v.sp--
-		case OpPatternNamespaceMemb:
-			v.ip += 4
-			namespaceNameIndex := int(v.curInsts[v.ip-2]) | int(v.curInsts[v.ip-3])<<8
-			namespaceName := string(v.constants[namespaceNameIndex].(Str))
-
-			memberNameIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
-			memberName := string(v.constants[memberNameIndex].(Str))
-
-			namespace := v.global.Ctx.ResolvePatternNamespace(namespaceName)
-			if namespace == nil {
-				v.err = fmt.Errorf("pattern namespace %%%s is not defined", namespaceName)
-				return
-			}
-
-			patt, ok := namespace.Patterns[memberName]
-			if !ok {
-				v.err = fmt.Errorf("pattern namespace %s has not a pattern named %s", namespaceName, memberName)
-				return
-			}
-
-			v.stack[v.sp] = patt
-			v.sp++
-		case OpAt:
-			index := v.stack[v.sp-1]
-			left := v.stack[v.sp-2]
-			v.sp -= 2
-
-			val := left.(Indexable).At(v.global.Ctx, int(index.(Int)))
-			if val == nil {
-				val = Nil
-			}
-
-			v.stack[v.sp] = val
-			v.sp++
-		case OpSafeAt:
-			index := v.stack[v.sp-1]
-			left := v.stack[v.sp-2]
-			v.sp -= 2
-
-			var val Value
-			indexable := left.(Indexable)
-			_index := int(index.(Int))
-			if _index >= indexable.Len() {
-				val = Nil
-			} else {
-				val = indexable.At(v.global.Ctx, _index)
-			}
-
-			v.stack[v.sp] = val
-			v.sp++
-		case OpSlice:
-			high := v.stack[v.sp-1]
-			low := v.stack[v.sp-2]
-			left := v.stack[v.sp-3]
-			v.sp -= 3
-			slice := left.(Sequence)
-
-			var lowIdx int = 0
-			if low != Nil {
-				lowIdx = int(low.(Int))
-			}
-
-			if lowIdx < 0 {
-				v.err = ErrNegativeLowerIndex
-				return
-			}
-
-			var highIdx int = math.MaxInt
-			if high != Nil {
-				highIdx = int(high.(Int))
-			}
-			highIdx = min(highIdx, int(slice.Len()))
-
-			val := slice.slice(lowIdx, highIdx)
-
-			v.stack[v.sp] = val
-			v.sp++
-
-		case OpMemb:
-			object := v.stack[v.sp-1]
-			v.ip += 2
-			memberNameIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
-			memberName := string(v.constants[memberNameIndex].(Str))
-
-			memb := object.(IProps).Prop(v.global.Ctx, memberName)
-			v.stack[v.sp-1] = memb
-		case OpObjPropNotStored:
-			val := v.stack[v.sp-1]
-			v.ip += 2
-			memberNameIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
-			memberName := string(v.constants[memberNameIndex].(Str))
-
-			object := val.(*Object)
-			memb := object.PropNotStored(v.global.Ctx, memberName)
-			v.stack[v.sp-1] = memb
-		case OpExtensionMethod:
-			v.ip += 4
-			extensionIdIndex := int(v.curInsts[v.ip-2]) | int(v.curInsts[v.ip-3])<<8
-			extensionId := v.constants[extensionIdIndex].(Str).GetOrBuildString()
-
-			memberNameIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
-			memberName := string(v.constants[memberNameIndex].(Str))
-
-			extension := v.global.Ctx.GetTypeExtension(extensionId)
-			var method *InoxFunction
-
-			for _, propExpr := range extension.propertyExpressions {
-				if propExpr.name == memberName {
-					method = propExpr.method
-					break
-				}
-			}
-
-			if method == nil {
-				v.err = fmt.Errorf("%w: extension method should have been found", ErrUnreachable)
-				return
-			}
-
-			v.stack[v.sp] = method
-			v.sp++
-		case OpOptionalMemb:
-			object := v.stack[v.sp-1]
-			v.ip += 2
-			memberNameIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
-			memberName := string(v.constants[memberNameIndex].(Str))
-
-			iprops := object.(IProps)
-
-			var memb Value
-			if !utils.SliceContains(iprops.PropertyNames(v.global.Ctx), memberName) {
-				memb = Nil
-			} else {
-				memb = iprops.Prop(v.global.Ctx, memberName)
-			}
-
-			v.stack[v.sp-1] = memb
-		case OpComputedMemb:
-			object := v.stack[v.sp-2]
-			propNameVal := v.stack[v.sp-1]
-			propName := propNameVal.(StringLike).GetOrBuildString()
-
-			memb := object.(IProps).Prop(v.global.Ctx, propName)
-			v.stack[v.sp-2] = memb
-			v.sp--
-		case OpDynMemb:
-			object := v.stack[v.sp-1]
-			v.ip += 2
-			memberNameIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
-			memberName := string(v.constants[memberNameIndex].(Str))
-
-			val, err := NewDynamicMemberValue(v.global.Ctx, object, string(memberName))
-			if err != nil {
-				v.err = err
-				return
-			}
-			v.stack[v.sp-1] = val
-		case OpCall:
-			callIp := v.ip
-
-			numArgs := int(v.curInsts[v.ip+1])
-			spread := int(v.curInsts[v.ip+2])
-			must := int(v.curInsts[v.ip+3])
-			v.ip += 3
-
-			if !v.fnCall(numArgs, spread == 1, must == 1, callIp) {
-				return
-			}
-		case OpReturn:
-			v.ip++
-			var retVal Value
-			isValOnStack := int(v.curInsts[v.ip]) == 1
-			if isValOnStack {
-				retVal = v.stack[v.sp-1]
-
-				if v.curFrame.mustCall {
-					if transformed, err := checkTransformInoxMustCallResult(retVal); err == nil {
-						retVal = transformed
-					} else {
-						v.err = err
-						return
-					}
-				}
-			} else {
-				retVal = Nil
-			}
-
-			topLevelFnEval := v.runFn && v.framesIndex == 2
-
-			if v.framesIndex == 1 { //top level return in module
-				if isValOnStack {
-					v.stack[v.sp-1] = retVal
-				} else {
-					v.stack[v.sp] = retVal
-					v.sp++
-				}
-				return
-			}
-
-			if v.curFrame.popCapturedGlobals {
-				v.curFrame.popCapturedGlobals = false
-				v.global.Globals.PopCapturedGlobals()
-			}
-
-			if v.curFrame.externalFunc {
-				shared, err := ShareOrClone(retVal, v.global)
-				if err != nil {
-					v.err = fmt.Errorf("failed to share a return value: %w", err)
-					return
-				}
-				retVal = shared
-				v.constants = v.curFrame.originalConstants
-				v.curFrame.originalConstants = nil
-			}
-
-			if !topLevelFnEval {
-				v.framesIndex--
-				v.curFrame = &v.frames[v.framesIndex-1]
-				v.curInsts = v.curFrame.fn.Instructions
-				v.ip = v.curFrame.ip
-				v.sp = v.frames[v.framesIndex].basePointer
-
-				if !v.runFn {
-					v.curFrame.currentNodeSpan = parse.NodeSpan{}
-					v.chunkStack[len(v.chunkStack)-1].CurrentNodeSpan = parse.NodeSpan{}
-				} else {
-					//TODO: support isolated function call
-				}
-			}
-
-			v.stack[v.sp-1] = retVal
-
-			if topLevelFnEval {
-				return
-			}
-		case OpCallFromXMLFactory:
-			xmlElem := v.stack[v.sp-2].(*XMLElement)
-
-			ns := v.stack[v.sp-1].(*Namespace)
-			factory := ns.Prop(v.global.Ctx, symbolic.FROM_XML_FACTORY_NAME).(*GoFunction)
-
-			v.sp--
-
-			result, err := factory.Call([]any{xmlElem}, v.global, nil, false, false)
-			if err != nil {
-				v.err = err
-				return
-			}
-
-			v.stack[v.sp-1] = result
-		case OpYield:
-			v.ip++
-			var retVal Value
-			isValOnStack := int(v.curInsts[v.ip]) == 1
-			if isValOnStack {
-				retVal = v.stack[v.sp-1]
-				v.sp--
-			} else {
-				retVal = Nil
-			}
-
-			if v.global.LThread == nil {
-				v.err = errors.New("failed to yield: no associated lthread")
-				return
-			}
-			v.global.LThread.yield(v.global.Ctx, retVal)
-		case OpCallPattern:
-			numArgs := int(v.curInsts[v.ip+1])
-			v.ip += 1
-
-			args := make([]Serializable, numArgs)
-			for i, arg := range v.stack[v.sp-numArgs : v.sp] {
-				args[i] = arg.(Serializable)
-			}
-			v.sp -= numArgs
-
-			callee := v.stack[v.sp-1].(Pattern)
-
-			patt, err := callee.Call(args)
-			if err != nil {
-				v.err = err
-				return
-			}
-			v.stack[v.sp-1] = patt
-		case OpSetLocal:
-			v.ip++
-			localIndex := int(v.curInsts[v.ip])
-			sp := v.curFrame.basePointer + localIndex
-
-			// local variables can be mutated by other actions
-			// so always store the copy of popped value
-			//true for Inox ?
-			val := v.stack[v.sp-1]
-			v.sp--
-			v.stack[sp] = val
-		case OpGetLocal:
-			v.ip++
-			localIndex := int(v.curInsts[v.ip])
-			val := v.stack[v.curFrame.basePointer+localIndex]
-			v.stack[v.sp] = val
-			v.sp++
+		//SELF
 		case OpGetSelf:
 			v.stack[v.sp] = v.curFrame.self
 			v.sp++
 		case OpSetSelf:
 			v.curFrame.self = v.stack[v.sp-1]
 			v.sp--
+		//ITERATION AND WALKING
 		case OpIterInit:
 			v.ip++
 			hasConfig := v.curInsts[v.ip]
@@ -1964,7 +1305,6 @@ func (v *VM) run() {
 			default:
 				panic(ErrUnreachable)
 			}
-
 		case OpIterNext:
 			v.ip++
 			streamElemIndex := int(v.curInsts[v.ip])
@@ -2061,7 +1401,6 @@ func (v *VM) run() {
 			default:
 				panic(ErrUnreachable)
 			}
-
 		case OpIterKey:
 			switch val := v.stack[v.sp-1].(type) {
 			case Iterator:
@@ -2069,7 +1408,6 @@ func (v *VM) run() {
 			default:
 				panic(ErrUnreachable)
 			}
-
 		case OpIterValue:
 			v.ip++
 			streamElemIndex := int(v.curInsts[v.ip])
@@ -2099,493 +1437,1190 @@ func (v *VM) run() {
 			iteratorIndex := int(v.curInsts[v.ip])
 			iterator := v.stack[v.curFrame.basePointer+iteratorIndex]
 			iterator.(Walker).Prune(v.global.Ctx)
-		case OpResolveHost:
+		//OTHER
+		case OpGroupMatch:
 			v.ip += 2
-			aliasIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
-			aliasName := string(v.constants[aliasIndex].(Str))[1:]
-			val := v.global.Ctx.ResolveHostAlias(aliasName)
-			v.stack[v.sp] = val
-			v.sp++
-		case OpAddHostAlias:
-			v.ip += 2
-			aliasIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
-			aliasName := string(v.constants[aliasIndex].(Str))[1:]
-			val := v.stack[v.sp-1].(Host)
-			v.sp--
+			localIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
 
-			v.global.Ctx.AddHostAlias(aliasName, val)
-		case OpDropPerms:
-			permListing := v.stack[v.sp-1].(*Object)
-			v.sp--
-
-			//TODO: check listing ?
-
-			perms, err := getPermissionsFromListing(v.global.Ctx, permListing, nil, nil, false)
-			if err != nil {
-				v.err = err
-				return
-			}
-
-			v.global.Ctx.DropPermissions(perms)
-		case OpImport:
-			v.ip += 2
-			globalNameIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
-			globalName := v.constants[globalNameIndex].(Str)
-
-			source := v.stack[v.sp-2]
-			configObject := v.stack[v.sp-1].(*Object)
-
-			varPerm := GlobalVarPermission{permkind.Create, string(globalName)}
-			if err := v.global.Ctx.CheckHasPermission(varPerm); err != nil {
-				v.err = fmt.Errorf("import: %s", err.Error())
-				return
-			}
-
-			config, err := buildImportConfig(configObject, source.(ResourceName), v.global)
-			if err != nil {
-				v.err = err
-				return
-			}
-
-			result, err := ImportWaitModule(config)
-			if err != nil {
-				v.err = err
-				return
-			}
-
+			left := v.stack[v.sp-2]
+			right := v.stack[v.sp-1]
 			v.sp -= 2
-			v.global.Globals.Set(string(globalName), result)
-		case OpSpawnLThread:
-			v.ip += 7
-			isSingleExpr := v.curInsts[v.ip-6]
-			calleeNameindex := int(v.curInsts[v.ip-4]) | int(v.curInsts[v.ip-5])<<8
-			caleeName := v.constants[calleeNameindex].(Str)
 
-			lthreadModConstantIndex := int(v.curInsts[v.ip-2]) | int(v.curInsts[v.ip-3])<<8
-			lthreadMod := v.constants[lthreadModConstantIndex].(*Module)
-
-			lthreadBytecodeConstantIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
-			lthreadBytecode := v.constants[lthreadBytecodeConstantIndex].(*Bytecode)
-
-			meta := v.stack[v.sp-2]
-			singleExprCallee := v.stack[v.sp-1]
-
-			var (
-				group       *LThreadGroup
-				globalsDesc Value
-				permListing *Object
-			)
-
-			if meta != nil && meta != Nil {
-				metaMap := meta.(*Struct).ValueMap()
-
-				group, globalsDesc, permListing, v.err = readLThreadMeta(metaMap, v.global.Ctx)
-				if v.err != nil {
-					return
-				}
-			}
-			actualGlobals := make(map[string]Value)
-			var startConstants []string
-
-			//pass constant globals
-
-			v.global.Globals.Foreach(func(name string, v Value, isConstant bool) error {
-				if isConstant {
-					actualGlobals[name] = v
-					startConstants = append(startConstants, name)
-				}
-				return nil
-			})
-
-			var ctx *Context
-
-			// pass global variables
-
-			switch g := globalsDesc.(type) {
-			case *Struct:
-				for i, v := range g.values {
-					k := g.structType.keys[i]
-					actualGlobals[k] = v
-				}
-			case KeyList:
-				for _, name := range g {
-					actualGlobals[name] = v.global.Globals.Get(name)
-				}
-			case NilT:
-				break
-			case nil:
-			default:
-				v.err = fmt.Errorf("spawn expression: globals: only objects and keylists are supported, not %T", g)
-				return
-			}
-
-			if isSingleExpr == 1 {
-				actualGlobals[string(caleeName)] = singleExprCallee
-			}
-
-			//create context
-			if permListing != nil {
-				perms, err := getPermissionsFromListing(v.global.Ctx, permListing, nil, nil, true)
-				if err != nil {
-					v.err = fmt.Errorf("spawn expression: %w", err)
-					return
-				}
-
-				for _, perm := range perms {
-					if err := v.global.Ctx.CheckHasPermission(perm); err != nil {
-						v.err = fmt.Errorf("spawn: cannot allow permission: %w", err)
-						return
-					}
-				}
-				ctx = NewContext(ContextConfig{
-					Permissions:          perms,
-					ForbiddenPermissions: v.global.Ctx.forbiddenPermissions,
-					ParentContext:        v.global.Ctx,
-				})
-			} else {
-				removedPerms := IMPLICITLY_REMOVED_ROUTINE_PERMS
-				remainingPerms := RemovePerms(v.global.Ctx.GetGrantedPermissions(), IMPLICITLY_REMOVED_ROUTINE_PERMS)
-
-				ctx = NewContext(ContextConfig{
-					ParentContext:        v.global.Ctx,
-					Permissions:          remainingPerms,
-					ForbiddenPermissions: removedPerms,
-				})
-			}
-
-			lthread, err := SpawnLThread(LthreadSpawnArgs{
-				SpawnerState: v.global,
-				Globals:      GlobalVariablesFromMap(actualGlobals, startConstants),
-				Module:       lthreadMod,
-				Bytecode:     lthreadBytecode,
-				LthreadCtx:   ctx,
-				UseBytecode:  true,
-			})
-
+			pattern := right.(GroupPattern)
+			groups, ok, err := pattern.MatchGroups(v.global.Ctx, left.(Serializable))
 			if err != nil {
 				v.err = err
-				return
-			}
-
-			if group != nil {
-				group.Add(lthread)
-			}
-
-			v.sp -= 1
-			v.stack[v.sp-1] = lthread
-			// isCall := v.curInsts[v.ip] == 1
-
-			// groupVal := v.stack[v.sp-4]
-			// globalDesc := v.stack[v.sp-3]
-
-			// upper := v.stack[v.sp-1].(Rune)
-		case OpCreateLifetimeJob:
-			v.ip += 4
-			modIndex := int(v.curInsts[v.ip-2]) | int(v.curInsts[v.ip-3])<<8
-			mod := v.constants[modIndex].(*Module)
-
-			bytecodeIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
-			bytecode := v.constants[bytecodeIndex].(*Bytecode)
-
-			meta := v.stack[v.sp-2]
-			subject, _ := v.stack[v.sp-1].(Pattern)
-
-			job, err := NewLifetimeJob(meta, subject, mod, bytecode, v.global)
-			if err != nil {
-				v.err = err
-				return
-			}
-			v.stack[v.sp-2] = job
-			v.sp--
-		case OpCreateReceptionHandler:
-			pattern := v.stack[v.sp-2].(Pattern)
-			handler, _ := v.stack[v.sp-1].(*InoxFunction)
-
-			v.stack[v.sp-2] = NewSynchronousMessageHandler(v.global.Ctx, handler, pattern)
-			v.sp--
-		case OpCreateXMLelem:
-			v.ip += 6
-			tagNameIndex := int(v.curInsts[v.ip-4]) | int(v.curInsts[v.ip-5])<<8
-			attributeCount := int(v.curInsts[v.ip-3])
-			rawContentIndex := int(v.curInsts[v.ip-1]) | int(v.curInsts[v.ip-2])<<8
-			rawContent := v.constants[rawContentIndex]
-			childCount := int(v.curInsts[v.ip])
-			tagName := string(v.constants[tagNameIndex].(Str))
-
-			var attributes []XMLAttribute
-			if attributeCount > 0 {
-				attributes = make([]XMLAttribute, attributeCount)
-
-				attributesStart := v.sp - childCount - 2*attributeCount
-				for i := 0; i < 2*attributeCount; i += 2 {
-					attributes[i/2] = XMLAttribute{
-						name:  string(v.stack[attributesStart+i].(Str)),
-						value: v.stack[attributesStart+i+1],
-					}
-				}
-			}
-
-			var elem *XMLElement
-
-			if rawContent != Nil {
-				elem = NewRawTextXmlElement(tagName, attributes, string(rawContent.(Str)))
-			} else {
-				childrenStart := v.sp - childCount
-				var children []Value
-				if childCount > 0 {
-					children = make([]Value, childCount)
-					copy(children, v.stack[childrenStart:v.sp])
-				}
-				elem = NewXmlElement(tagName, attributes, children)
-			}
-
-			v.sp -= (childCount + 2*attributeCount)
-			v.stack[v.sp] = elem
-			v.sp++
-		case OpCreateAddTypeExtension:
-			v.ip += 2
-			extendStmtIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
-			extendStmt := v.constants[extendStmtIndex].(AstNode).Node.(*parse.ExtendStatement)
-
-			extendedPattern := v.stack[v.sp-2].(Pattern)
-			methodList := v.stack[v.sp-1].(*List)
-
-			lastCtxData, ok := v.global.SymbolicData.GetContextData(extendStmt, nil)
-			if !ok {
-				panic(ErrUnreachable)
-			}
-			symbolicExtension := lastCtxData.Extensions[len(lastCtxData.Extensions)-1]
-
-			if symbolicExtension.Statement != extendStmt {
-				panic(ErrUnreachable)
-			}
-
-			extension := &TypeExtension{
-				extendedPattern:   extendedPattern,
-				symbolicExtension: symbolicExtension,
-			}
-
-			for _, symbolicPropExpr := range symbolicExtension.PropertyExpressions {
-				if symbolicPropExpr.Expression != nil {
-					extension.propertyExpressions = append(extension.propertyExpressions, propertyExpression{
-						name:       symbolicPropExpr.Name,
-						expression: symbolicPropExpr.Expression,
-					})
-				}
-			}
-
-			methodIndex := 0
-			for _, prop := range extendStmt.Extension.(*parse.ObjectLiteral).Properties {
-				_, ok := prop.Value.(*parse.FunctionExpression)
-
-				if !ok {
-					continue
-				}
-
-				extension.propertyExpressions = append(extension.propertyExpressions, propertyExpression{
-					name:   prop.Name(),
-					method: methodList.At(v.global.Ctx, methodIndex).(*InoxFunction),
-				})
-				methodIndex++
-			}
-
-			v.global.Ctx.AddTypeExtension(extension)
-			v.sp -= 2
-		case OpSendValue:
-			value := v.stack[v.sp-2]
-			receiver, ok := v.stack[v.sp-1].(MessageReceiver)
-
-			if v.curFrame.self == nil {
-				v.err = ErrSelfNotDefined
 				return
 			}
 
 			if ok {
-				if err := SendVal(v.global.Ctx, value, receiver, v.curFrame.self); err != nil {
-					v.err = err
-					return
-				}
-			}
-			v.sp -= 1
-			v.stack[v.sp-1] = Nil
-		case OpAssert:
-			v.ip += 2
-			nodeIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
-			stmt := v.constants[nodeIndex].(AstNode).Node.(*parse.AssertionStatement)
-
-			ok := v.stack[v.sp-1].(Bool)
-			v.sp--
-
-			modKind := v.global.Module.ModuleKind
-			isTestAssertion := modKind == TestSuiteModule || modKind == TestCaseModule
-			var testModule *Module
-			if isTestAssertion {
-				testModule = v.global.Module
+				v.stack[v.sp] = True
+				v.stack[v.curFrame.basePointer+localIndex] = objFrom(groups)
+			} else {
+				v.stack[v.sp] = False
 			}
 
-			if !ok {
-				data := &AssertionData{
-					assertionStatement: stmt,
-					intermediaryValues: map[parse.Node]Value{},
-				}
-				v.err = &AssertionError{
-					msg:             "assertion is false",
-					data:            data,
-					isTestAssertion: isTestAssertion,
-					testModule:      testModule,
-				}
-				return
-			}
-		case OpConcat:
-			v.ip += 3
-			numElements := int(v.curInsts[v.ip-2])
-			spreadElemSetConstantIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
-			spreadElemSet := v.constants[spreadElemSetConstantIndex].(*List).underlyingList.(*BoolList)
-
-			values := make([]Value, numElements)
-			copy(values, v.stack[v.sp-numElements:v.sp])
-
-			if spreadElemSet.elements.Any() {
-				index := 0
-				valuesAfterIndex := make([]Value, numElements)
-
-				// TODO: if iterables are all indexable & not shared we can pre allocate a list of the right size
-
-				ctx := v.global.Ctx
-
-				for i := 0; i < numElements; i++ {
-					if !spreadElemSet.BoolAt(i) {
-						index++
-						continue
-					}
-					copiedCount := copy(valuesAfterIndex, values[index+1:]) //save values after current index
-					iterable := values[index].(Iterable)
-					values = values[:index]
-
-					it := iterable.Iterator(ctx, IteratorConfiguration{})
-					for it.Next(ctx) {
-						values = append(values, it.Value(ctx))
-					}
-
-					index = len(values)
-					values = append(values, valuesAfterIndex[:copiedCount]...)
-				}
-			}
-
-			v.sp -= numElements
-			result, err := concatValues(v.global.Ctx, values)
-			if err != nil {
-				v.err = err
-				return
-			}
-			v.stack[v.sp] = result
 			v.sp++
-		case OpLoadDBVal:
-			url := v.stack[v.sp-1].(URL)
-
-			value, err := getOrLoadValueAtURL(v.global.Ctx, url, v.global)
-			if err != nil {
-				v.err = err
-				return
-			}
-
-			v.stack[v.sp-1] = value
-		case OpBlockLock:
+		case BindCapturedLocals:
 			v.ip++
-			numValues := int(v.curInsts[v.ip])
-			for _, val := range v.stack[v.sp-numValues : v.sp] {
-				if !val.IsMutable() {
-					continue
-				}
-				potentiallySharable := val.(PotentiallySharable)
-				if !utils.Ret0(potentiallySharable.IsSharable(v.global)) {
-					v.err = ErrCannotLockUnsharableValue
+			numCaptured := int(v.curInsts[v.ip])
+
+			fn := v.stack[v.sp-numCaptured-1].(*InoxFunction)
+			newFn := &InoxFunction{
+				Node:             fn.Node,
+				Chunk:            fn.Chunk,
+				compiledFunction: fn.compiledFunction,
+			}
+
+			for i := v.sp - numCaptured; i < v.sp; i++ {
+				localVal := v.stack[i]
+				shared, err := ShareOrClone(localVal, v.global)
+				if err != nil {
+					v.err = fmt.Errorf("failed to share a capture local: %w", err)
 					return
 				}
-
-				for _, locked := range v.global.lockedValues {
-					if potentiallySharable == locked {
-						continue
-					}
-				}
-
-				potentiallySharable.Share(v.global)
-				potentiallySharable.ForceLock()
-
-				// update list of locked values
-				v.global.lockedValues = append(v.global.lockedValues, potentiallySharable)
-				v.curFrame.lockedValues = append(v.curFrame.lockedValues, potentiallySharable)
-			}
-			v.sp -= numValues
-		case OpBlockUnlock:
-			lockedValues := v.curFrame.lockedValues
-			v.curFrame.lockedValues = nil
-
-			for i := len(lockedValues) - 1; i >= 0; i-- {
-				locked := lockedValues[i]
-				locked.ForceUnlock()
+				newFn.capturedLocals = append(newFn.capturedLocals, shared)
 			}
 
-			var newLockedValues []PotentiallySharable
-			// update list of locked values
-		loop:
-			for _, lockedVal := range v.global.lockedValues {
-				for _, unlockedVal := range lockedValues {
-					if lockedVal == unlockedVal {
-						continue loop
-					}
-				}
-				newLockedValues = append(newLockedValues, lockedVal)
-			}
-			v.global.lockedValues = newLockedValues
-		case OpRuntimeTypecheck:
-			v.ip += 2
-			astNodeIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
-			astNode := v.constants[astNodeIndex].(AstNode).Node.(*parse.RuntimeTypeCheckExpression)
-
-			pattern, ok := v.global.SymbolicData.GetRuntimeTypecheckPattern(astNode)
-			if !ok {
-				v.err = ErrMissinggRuntimeTypecheckSymbData
-				return
-			}
-			if pattern != nil { //enabled
-				patt := pattern.(Pattern)
-				val := v.stack[v.sp-1]
-
-				if !patt.Test(v.global.Ctx, val) {
-					v.err = FormatRuntimeTypeCheckFailed(patt, v.global.Ctx)
-					return
-				}
-			}
-
-			//keep the value on top of the stack
-		case OpPushIncludedChunk:
-			importIp := v.ip
-			v.ip += 2
-			inclusionStmtIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
-			inclusionStmt := v.constants[inclusionStmtIndex].(AstNode).Node.(*parse.InclusionImportStatement)
-
-			chunk, ok := v.module.InclusionStatementMap[inclusionStmt]
-			if !ok {
-				panic(ErrUnreachable)
-			}
-			v.chunkStack[len(v.chunkStack)-1].CurrentNodeSpan = v.curFrame.fn.GetSourcePositionRange(importIp).Span
-			v.chunkStack = append(v.chunkStack, &parse.ChunkStackItem{
-				Chunk: chunk.ParsedChunk,
-			})
-		case OpPopIncludedChunk:
-			v.chunkStack = v.chunkStack[:len(v.chunkStack)-1]
-			v.chunkStack[len(v.chunkStack)-1].CurrentNodeSpan = parse.NodeSpan{}
+			v.sp -= numCaptured
+			v.stack[v.sp-1] = newFn
 		case OpNoOp:
 		case OpSuspendVM:
 			return
 		default:
-			v.err = fmt.Errorf("unknown opcode: %d (at %d)", v.curInsts[v.ip], v.ip)
-			return
+			if !v.handleOtherOpcodes(v.curInsts[ip]) {
+				if v.err == nil {
+					panic(ErrUnreachable)
+				}
+				return
+			}
 		}
 	}
 }
 
+//go:noinline
+func (v *VM) handleOtherOpcodes(op byte) (_continue bool) {
+
+	switch op {
+	//PATTERN CREATION AND RESOLUTION
+	case OpToPattern:
+		val := v.stack[v.sp-1].(Serializable)
+
+		if _, ok := val.(Pattern); !ok {
+			v.stack[v.sp-1] = NewMostAdaptedExactPattern(val)
+		}
+	case OpDoSetDifference:
+		left := v.stack[v.sp-2]
+		right := v.stack[v.sp-1]
+		v.sp -= 2
+
+		if _, ok := right.(Pattern); !ok {
+			right = NewExactValuePattern(right.(Serializable))
+		}
+		v.stack[v.sp] = &DifferencePattern{base: left.(Pattern), removed: right.(Pattern)}
+		v.sp++
+	case OpResolvePattern:
+		v.ip += 2
+		nameIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
+		name := v.constants[nameIndex].(Str)
+
+		val := v.global.Ctx.ResolveNamedPattern(string(name))
+		if val == nil {
+			val = &DynamicStringPatternElement{name: string(name), ctx: v.global.Ctx}
+		}
+		v.stack[v.sp] = val
+		v.sp++
+	case OpAddPattern:
+		v.ip += 2
+		nameIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
+		name := v.constants[nameIndex].(Str)
+
+		val := v.stack[v.sp-1].(Pattern)
+		v.global.Ctx.AddNamedPattern(string(name), val)
+		v.sp--
+	case OpResolvePatternNamespace:
+		v.ip += 2
+		nameIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
+		name := v.constants[nameIndex].(Str)
+
+		val := v.global.Ctx.ResolvePatternNamespace(string(name))
+		if val == nil {
+			v.err = fmt.Errorf("pattern namespace %%%s is not defined", name)
+			return
+		}
+		v.stack[v.sp] = val
+		v.sp++
+	case OpAddPatternNamespace:
+		v.ip += 2
+		nameIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
+		name := v.constants[nameIndex].(Str)
+
+		val := v.stack[v.sp-1].(*PatternNamespace)
+		v.global.Ctx.AddPatternNamespace(string(name), val)
+		v.sp--
+	case OpPatternNamespaceMemb:
+		v.ip += 4
+		namespaceNameIndex := int(v.curInsts[v.ip-2]) | int(v.curInsts[v.ip-3])<<8
+		namespaceName := string(v.constants[namespaceNameIndex].(Str))
+
+		memberNameIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
+		memberName := string(v.constants[memberNameIndex].(Str))
+
+		namespace := v.global.Ctx.ResolvePatternNamespace(namespaceName)
+		if namespace == nil {
+			v.err = fmt.Errorf("pattern namespace %%%s is not defined", namespaceName)
+			return
+		}
+
+		patt, ok := namespace.Patterns[memberName]
+		if !ok {
+			v.err = fmt.Errorf("pattern namespace %s has not a pattern named %s", namespaceName, memberName)
+			return
+		}
+
+		v.stack[v.sp] = patt
+		v.sp++
+	case OpCallPattern:
+		numArgs := int(v.curInsts[v.ip+1])
+		v.ip += 1
+
+		args := make([]Serializable, numArgs)
+		for i, arg := range v.stack[v.sp-numArgs : v.sp] {
+			args[i] = arg.(Serializable)
+		}
+		v.sp -= numArgs
+
+		callee := v.stack[v.sp-1].(Pattern)
+
+		patt, err := callee.Call(args)
+		if err != nil {
+			v.err = err
+			return
+		}
+		v.stack[v.sp-1] = patt
+	case OpCreateListPattern:
+		v.ip += 3
+		numElements := int(v.curInsts[v.ip-1]) | int(v.curInsts[v.ip-2])<<8
+		hasGeneralElem := int(v.curInsts[v.ip])
+
+		patt := &ListPattern{}
+		if hasGeneralElem == 1 {
+			patt.generalElementPattern = v.stack[v.sp-1].(Pattern)
+			v.stack[v.sp-1] = patt
+		} else {
+			patt.elementPatterns = make([]Pattern, 0, numElements)
+			for i := v.sp - numElements; i < v.sp; i++ {
+				patt.elementPatterns = append(patt.elementPatterns, v.stack[i].(Pattern))
+			}
+			v.sp -= numElements
+			v.stack[v.sp] = patt
+			v.sp++
+		}
+	case OpCreateTuplePattern:
+		v.ip += 3
+		numElements := int(v.curInsts[v.ip-1]) | int(v.curInsts[v.ip-2])<<8
+		hasGeneralElem := int(v.curInsts[v.ip])
+
+		patt := &TuplePattern{}
+		if hasGeneralElem == 1 {
+			patt.generalElementPattern = v.stack[v.sp-1].(Pattern)
+			v.stack[v.sp-1] = patt
+		} else {
+			patt.elementPatterns = make([]Pattern, 0, numElements)
+			for i := v.sp - numElements; i < v.sp; i++ {
+				patt.elementPatterns = append(patt.elementPatterns, v.stack[i].(Pattern))
+			}
+			v.sp -= numElements
+			v.stack[v.sp] = patt
+			v.sp++
+		}
+	case OpCreateObjectPattern, OpCreateRecordPattern:
+		op := v.curInsts[v.ip]
+		v.ip += 3
+		numElements := int(v.curInsts[v.ip-1]) | int(v.curInsts[v.ip-2])<<8
+		isInexact := int(v.curInsts[v.ip])
+
+		entryPatterns := make(map[string]Pattern)
+		var optionalEntries map[string]struct{}
+
+		for i := v.sp - numElements; i < v.sp; i += 3 {
+			key := v.stack[i].(Str)
+			value := v.stack[i+1].(Pattern)
+			isOptional := v.stack[i+2].(Bool)
+			entryPatterns[string(key)] = value
+			if isOptional {
+				if optionalEntries == nil {
+					optionalEntries = make(map[string]struct{}, 1)
+				}
+				optionalEntries[string(key)] = struct{}{}
+			}
+		}
+
+		var pattern Pattern
+		if op == OpCreateObjectPattern {
+			pattern = &ObjectPattern{
+				entryPatterns:   entryPatterns,
+				optionalEntries: optionalEntries,
+				inexact:         isInexact == 1,
+			}
+		} else {
+			pattern = &RecordPattern{
+				entryPatterns:   entryPatterns,
+				optionalEntries: optionalEntries,
+				inexact:         isInexact == 1,
+			}
+		}
+
+		v.sp -= numElements
+		v.stack[v.sp] = pattern
+		v.sp++
+	case OpCreateOptionPattern:
+		v.ip += 2
+		nameIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
+		name := v.constants[nameIndex].(Str)
+
+		value := v.stack[v.sp-1].(Pattern)
+		v.stack[v.sp-1] = &OptionPattern{name: string(name), value: value}
+	case OpCreateUnionPattern:
+		v.ip += 2
+		numElements := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
+
+		var cases []Pattern
+
+		for i := v.sp - numElements; i < v.sp; i++ {
+			cases = append(cases, v.stack[i].(Pattern))
+		}
+		v.sp -= numElements
+		patt := &UnionPattern{
+			node:  nil,
+			cases: cases,
+		}
+
+		v.stack[v.sp] = patt
+		v.sp++
+	case OpCreateStringUnionPattern:
+		v.ip += 2
+		numElements := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
+
+		var cases []StringPattern
+
+		for i := v.sp - numElements; i < v.sp; i++ {
+			cases = append(cases, v.stack[i].(StringPattern))
+		}
+		v.sp -= numElements
+		patt, err := NewUnionStringPattern(nil, cases)
+		if err != nil {
+			v.err = err
+			return
+		}
+
+		v.stack[v.sp] = patt
+		v.sp++
+	case OpCreateRepeatedPatternElement:
+		v.ip += 2
+		occurence := parse.OcurrenceCountModifier(v.curInsts[v.ip-1])
+		exactOccurenceCount := int(v.curInsts[v.ip])
+
+		patternElement := v.stack[v.sp-1].(StringPattern)
+
+		v.stack[v.sp-1] = &RepeatedPatternElement{
+			//regexp:            regexp.MustCompile(subpatternRegex),
+			ocurrenceModifier: occurence,
+			exactCount:        exactOccurenceCount,
+			element:           patternElement,
+		}
+	case OpCreateSequenceStringPattern:
+		v.ip += 5
+		numElements := int(v.curInsts[v.ip-4])
+		nameListIndex := int(v.curInsts[v.ip-2]) | int(v.curInsts[v.ip-3])<<8
+		nameList := v.constants[nameListIndex].(KeyList)
+		nodeIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
+		node := v.constants[nodeIndex].(AstNode)
+
+		var subpatterns []StringPattern
+
+		for i := v.sp - numElements; i < v.sp; i++ {
+			subpatterns = append(subpatterns, v.stack[i].(StringPattern))
+		}
+		v.sp -= numElements
+
+		val, err := NewSequenceStringPattern(node.Node.(*parse.ComplexStringPatternPiece), node.chunk.Node, subpatterns, nameList)
+		if err != nil {
+			v.err = err
+			return
+		}
+		v.stack[v.sp] = val
+		v.sp++
+	case OpCreatePatternNamespace:
+		init := v.stack[v.sp-1]
+
+		val, err := CreatePatternNamespace(v.global.Ctx, init)
+		if err != nil {
+			v.err = err
+			return
+		}
+		v.stack[v.sp-1] = val
+	case OpCreateOptionalPattern:
+		patt := v.stack[v.sp-1].(Pattern)
+		val, err := NewOptionalPattern(v.global.Ctx, patt)
+		if v.err != nil {
+			v.err = err
+			return
+		}
+		v.stack[v.sp-1] = val
+	case OpSpreadObjectPattern:
+		patt := v.stack[v.sp-2].(*ObjectPattern)
+		spreadObjectPatt := v.stack[v.sp-1].(*ObjectPattern)
+
+		for k, v := range spreadObjectPatt.entryPatterns {
+			//priority to property pattern defined earlier
+			if _, alreadyPresent := patt.entryPatterns[k]; alreadyPresent {
+				continue
+			}
+
+			patt.entryPatterns[k] = v
+			if _, ok := spreadObjectPatt.optionalEntries[k]; !ok {
+				continue
+			}
+			//set as optional
+			if patt.optionalEntries == nil {
+				patt.optionalEntries = map[string]struct{}{}
+			}
+			patt.optionalEntries[k] = struct{}{}
+		}
+		v.sp--
+	case OpSpreadRecordPattern:
+		patt := v.stack[v.sp-2].(*RecordPattern)
+		spreadObjectPatt := v.stack[v.sp-1].(*RecordPattern)
+
+		for k, v := range spreadObjectPatt.entryPatterns {
+			//priority to property pattern defined earlier
+			if _, alreadyPresent := patt.entryPatterns[k]; alreadyPresent {
+				continue
+			}
+
+			patt.entryPatterns[k] = v
+			if _, ok := spreadObjectPatt.optionalEntries[k]; !ok {
+				continue
+			}
+			//set as optional
+			if patt.optionalEntries == nil {
+				patt.optionalEntries = map[string]struct{}{}
+			}
+			patt.optionalEntries[k] = struct{}{}
+		}
+		v.sp--
+	//MESSAGING
+	case OpCreateReceptionHandler:
+		pattern := v.stack[v.sp-2].(Pattern)
+		handler, _ := v.stack[v.sp-1].(*InoxFunction)
+
+		v.stack[v.sp-2] = NewSynchronousMessageHandler(v.global.Ctx, handler, pattern)
+		v.sp--
+	case OpSendValue:
+		value := v.stack[v.sp-2]
+		receiver, ok := v.stack[v.sp-1].(MessageReceiver)
+
+		if v.curFrame.self == nil {
+			v.err = ErrSelfNotDefined
+			return
+		}
+
+		if ok {
+			if err := SendVal(v.global.Ctx, value, receiver, v.curFrame.self); err != nil {
+				v.err = err
+				return
+			}
+		}
+		v.sp -= 1
+		v.stack[v.sp-1] = Nil
+	//CHILD CHUNK
+	case OpPushIncludedChunk:
+		importIp := v.ip
+		v.ip += 2
+		inclusionStmtIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
+		inclusionStmt := v.constants[inclusionStmtIndex].(AstNode).Node.(*parse.InclusionImportStatement)
+
+		chunk, ok := v.module.InclusionStatementMap[inclusionStmt]
+		if !ok {
+			panic(ErrUnreachable)
+		}
+		v.chunkStack[len(v.chunkStack)-1].CurrentNodeSpan = v.curFrame.fn.GetSourcePositionRange(importIp).Span
+		v.chunkStack = append(v.chunkStack, &parse.ChunkStackItem{
+			Chunk: chunk.ParsedChunk,
+		})
+	case OpPopIncludedChunk:
+		v.chunkStack = v.chunkStack[:len(v.chunkStack)-1]
+		v.chunkStack[len(v.chunkStack)-1].CurrentNodeSpan = parse.NodeSpan{}
+	//XML
+	case OpCreateXMLelem:
+		v.ip += 6
+		tagNameIndex := int(v.curInsts[v.ip-4]) | int(v.curInsts[v.ip-5])<<8
+		attributeCount := int(v.curInsts[v.ip-3])
+		rawContentIndex := int(v.curInsts[v.ip-1]) | int(v.curInsts[v.ip-2])<<8
+		rawContent := v.constants[rawContentIndex]
+		childCount := int(v.curInsts[v.ip])
+		tagName := string(v.constants[tagNameIndex].(Str))
+
+		var attributes []XMLAttribute
+		if attributeCount > 0 {
+			attributes = make([]XMLAttribute, attributeCount)
+
+			attributesStart := v.sp - childCount - 2*attributeCount
+			for i := 0; i < 2*attributeCount; i += 2 {
+				attributes[i/2] = XMLAttribute{
+					name:  string(v.stack[attributesStart+i].(Str)),
+					value: v.stack[attributesStart+i+1],
+				}
+			}
+		}
+
+		var elem *XMLElement
+
+		if rawContent != Nil {
+			elem = NewRawTextXmlElement(tagName, attributes, string(rawContent.(Str)))
+		} else {
+			childrenStart := v.sp - childCount
+			var children []Value
+			if childCount > 0 {
+				children = make([]Value, childCount)
+				copy(children, v.stack[childrenStart:v.sp])
+			}
+			elem = NewXmlElement(tagName, attributes, children)
+		}
+
+		v.sp -= (childCount + 2*attributeCount)
+		v.stack[v.sp] = elem
+		v.sp++
+	case OpCallFromXMLFactory:
+		xmlElem := v.stack[v.sp-2].(*XMLElement)
+
+		ns := v.stack[v.sp-1].(*Namespace)
+		factory := ns.Prop(v.global.Ctx, symbolic.FROM_XML_FACTORY_NAME).(*GoFunction)
+
+		v.sp--
+
+		result, err := factory.Call([]any{xmlElem}, v.global, nil, false, false)
+		if err != nil {
+			v.err = err
+			return
+		}
+
+		v.stack[v.sp-1] = result
+	//RESOURCE NAMES
+	case OpCreatePath:
+		v.ip += 3
+		argCount := int(v.curInsts[v.ip-2])
+		listIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
+
+		var args []Value
+
+		var isStaticPathSliceList []bool
+		_isStaticPathSliceList := v.constants[listIndex].(*List)
+		for _, e := range _isStaticPathSliceList.GetOrBuildElements(v.global.Ctx) {
+			isStaticPathSliceList = append(isStaticPathSliceList, bool(e.(Bool)))
+		}
+
+		for i := v.sp - argCount; i < v.sp; i++ {
+			args = append(args, v.stack[i])
+		}
+		v.sp -= argCount
+
+		val, err := NewPath(args, isStaticPathSliceList)
+		if err != nil {
+			v.err = err
+			return
+		}
+		v.stack[v.sp] = val
+		v.sp++
+	case OpCreatePathPattern:
+		v.ip += 3
+		argCount := int(v.curInsts[v.ip-2])
+		listIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
+
+		var args []Value
+
+		var isStaticPathSliceList []bool
+		_isStaticPathSliceList := v.constants[listIndex].(*List)
+		for _, e := range _isStaticPathSliceList.GetOrBuildElements(v.global.Ctx) {
+			isStaticPathSliceList = append(isStaticPathSliceList, bool(e.(Bool)))
+		}
+
+		for i := v.sp - argCount; i < v.sp; i++ {
+			args = append(args, v.stack[i])
+		}
+		v.sp -= argCount
+
+		val, err := NewPathPattern(args, isStaticPathSliceList)
+		if err != nil {
+			v.err = err
+			return
+		}
+		v.stack[v.sp] = val
+		v.sp++
+	case OpCreateURL:
+		v.ip += 2
+		infoIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
+		info := v.constants[infoIndex].(*Record)
+		pathSliceCount := int(info.Prop(v.global.Ctx, "path-slice-count").(Int))
+		queryParamInfo := info.Prop(v.global.Ctx, "query-params").(*Tuple)
+		staticPathSlices := info.Prop(v.global.Ctx, "static-path-slices").(*Tuple)
+
+		var pathSlices []Value
+		var isStaticPathSliceList []bool
+		var queryParamNames []Value
+		var queryValues []Value
+
+		//query
+		queryParamCount := queryParamInfo.Len() / 2
+
+		for i := 0; i < queryParamCount; i++ {
+			queryParamNames = append(queryParamNames, queryParamInfo.At(v.global.Ctx, 2*i).(Str))
+		}
+
+		for i := v.sp - queryParamCount; i < v.sp; i++ {
+			queryValues = append(queryValues, v.stack[i])
+		}
+		v.sp -= queryParamCount
+
+		///path
+		for _, e := range staticPathSlices.elements {
+			isStaticPathSliceList = append(isStaticPathSliceList, bool(e.(Bool)))
+		}
+
+		for i := v.sp - pathSliceCount; i < v.sp; i++ {
+			pathSlices = append(pathSlices, v.stack[i])
+		}
+		v.sp -= pathSliceCount
+		v.sp--
+
+		//host
+		host := v.stack[v.sp]
+
+		val, err := NewURL(host, pathSlices, isStaticPathSliceList, queryParamNames, queryValues)
+		if err != nil {
+			v.err = err
+			return
+		}
+		v.stack[v.sp] = val
+		v.sp++
+	case OpCreateHost:
+		v.ip += 2
+		schemeIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
+		scheme := v.constants[schemeIndex].(Str)
+
+		hostnamePort := v.stack[v.sp-1].(Str)
+		val, err := NewHost(hostnamePort, string(scheme))
+		if err != nil {
+			v.err = err
+			return
+		}
+		v.stack[v.sp-1] = val
+	//RANGES
+	case OpCreateRuneRange:
+		lower := v.stack[v.sp-2].(Rune)
+		upper := v.stack[v.sp-1].(Rune)
+		v.stack[v.sp-2] = RuneRange{Start: rune(lower), End: rune(upper)}
+		v.sp--
+	case OpCreateIntRange:
+		lower := int64(v.stack[v.sp-2].(Int))
+		upper := int64(v.stack[v.sp-1].(Int))
+		v.stack[v.sp-2] = IntRange{
+			unknownStart: false,
+			inclusiveEnd: true,
+			start:        lower,
+			end:          upper,
+			step:         1,
+		}
+		v.sp--
+	case OpCreateFloatRange:
+		lower := float64(v.stack[v.sp-2].(Float))
+		upper := float64(v.stack[v.sp-1].(Float))
+		v.stack[v.sp-2] = FloatRange{
+			unknownStart: false,
+			inclusiveEnd: true,
+			start:        lower,
+			end:          upper,
+		}
+		v.sp--
+	case OpCreateUpperBoundRange:
+		upperBound := v.stack[v.sp-1]
+
+		switch val := upperBound.(type) {
+		case Int:
+			v.stack[v.sp-1] = IntRange{
+				unknownStart: true,
+				inclusiveEnd: true,
+				end:          int64(val),
+				step:         1,
+			}
+		case Float:
+			v.stack[v.sp-1] = FloatRange{
+				unknownStart: true,
+				inclusiveEnd: true,
+				end:          float64(val),
+			}
+		default:
+			v.stack[v.sp-1] = QuantityRange{
+				unknownStart: true,
+				inclusiveEnd: true,
+				end:          val.(Serializable),
+			}
+		}
+	//TESTING
+	case OpPopJumpIfTestDisabled:
+		v.ip += 2
+		testItem := v.stack[v.sp-1].(TestItem)
+
+		if enabled, _ := v.global.TestingState.Filters.IsTestEnabled(testItem, v.global); !enabled {
+			pos := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
+
+			v.stack[v.sp-1] = Nil
+			v.sp--
+			v.ip = pos
+		}
+	case OpCreateTestSuite:
+		v.ip += 4
+		nodeIndex := int(v.curInsts[v.ip-2]) | int(v.curInsts[v.ip-3])<<8
+		node := v.constants[nodeIndex].(AstNode)
+		parentChunk := node.chunk
+
+		embeddedChunkNodeIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
+		embeddedChunkNode := v.constants[embeddedChunkNodeIndex].(AstNode)
+
+		embeddedModChunk := embeddedChunkNode.Node.(*parse.Chunk)
+		meta := v.stack[v.sp-1]
+
+		suite, err := NewTestSuite(TestSuiteCreationInput{
+			Meta:             meta,
+			Node:             node.Node.(*parse.TestSuiteExpression),
+			EmbeddedModChunk: embeddedModChunk,
+			ParentChunk:      parentChunk,
+			ParentState:      v.global,
+		})
+		if err != nil {
+			v.err = err
+			return
+		}
+		v.stack[v.sp-1] = suite
+	case OpCreateTestCase:
+		v.ip += 4
+		nodeIndex := int(v.curInsts[v.ip-2]) | int(v.curInsts[v.ip-3])<<8
+		node := v.constants[nodeIndex].(AstNode)
+
+		modNodeIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
+		modNode := v.constants[modNodeIndex].(AstNode)
+
+		embeddedModChunk := modNode.Node.(*parse.Chunk)
+		parentChunk := node.chunk
+		meta := v.stack[v.sp-1]
+
+		//TODO: add location to test case
+		suite, err := NewTestCase(TestCaseCreationInput{
+			Meta: meta,
+			Node: node.Node.(*parse.TestCaseExpression),
+
+			ModChunk:          embeddedModChunk,
+			ParentState:       v.global,
+			ParentChunk:       parentChunk,
+			PositionStack:     nil,
+			FormattedLocation: "",
+		})
+		if err != nil {
+			v.err = err
+			return
+		}
+		v.stack[v.sp-1] = suite
+	case OpAddTestSuiteResult:
+		lthread := v.stack[v.sp-2].(*LThread)
+		testSuite := v.stack[v.sp-3].(*TestSuite)
+		//v.stack[v.sp-1] : result (unused)
+
+		//create test result and add it to .TestSuiteResults.
+		err := func() error {
+			if !lthread.state.TestingState.ResultsLock.TryLock() {
+				return errors.New("test results should not be locked")
+			}
+			defer lthread.state.TestingState.ResultsLock.Unlock()
+
+			testCaseResults := lthread.state.TestingState.CaseResults
+			testSuiteResults := lthread.state.TestingState.SuiteResults
+
+			result, err := NewTestSuiteResult(v.global.Ctx, testCaseResults, testSuiteResults, testSuite)
+			if err != nil {
+				return err
+			}
+
+			v.global.TestingState.ResultsLock.Lock()
+			defer v.global.TestingState.ResultsLock.Unlock()
+
+			v.global.TestingState.SuiteResults = append(v.global.TestingState.SuiteResults, result)
+			return nil
+		}()
+
+		if err != nil {
+			v.err = err
+			return
+		}
+
+		v.stack[v.sp-1] = Nil
+		v.stack[v.sp-2] = Nil
+		v.stack[v.sp-3] = Nil
+		v.sp -= 3
+	case OpAddTestCaseResult:
+		v.err = ErrNotImplementedYet
+		return
+		{
+			//TODO
+			// lthread := v.stack[v.sp-2].(*LThread)
+			// testCase := v.stack[v.sp-3].(*TestCase)
+			// //v.stack[v.sp-1] : result (unused)
+
+			// if v.global.Module.ModuleKind == TestSuiteModule {
+			// 	//create test result and add it to .TestSuiteResults.
+			// 	err := func() error {
+			// 		lthread.state.TestingState.TestResultsLock.Lock()
+			// 		defer lthread.state.TestingState.TestResultsLock.Unlock()
+
+			// 		testCaseResults := lthread.state.TestingState.TestCaseResults
+			// 		testSuiteResults := lthread.state.TestingState.TestSuiteResults
+
+			// 		result, err := NewTestCaseResult(v.global.Ctx, testCase)
+			// 		if err != nil {
+			// 			return err
+			// 		}
+
+			// 		v.global.TestSuiteResults = append(v.global.TestSuiteResults, result)
+			// 		return nil
+			// 	}()
+
+			// 	if err != nil {
+			// 		v.err = err
+			// 		return
+			// 	}
+			// }
+
+			// v.sp -= 3
+		}
+	//HOST ALIAS
+	case OpResolveHost:
+		v.ip += 2
+		aliasIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
+		aliasName := string(v.constants[aliasIndex].(Str))[1:]
+		val := v.global.Ctx.ResolveHostAlias(aliasName)
+		v.stack[v.sp] = val
+		v.sp++
+	case OpAddHostAlias:
+		v.ip += 2
+		aliasIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
+		aliasName := string(v.constants[aliasIndex].(Str))[1:]
+		val := v.stack[v.sp-1].(Host)
+		v.sp--
+
+		v.global.Ctx.AddHostAlias(aliasName, val)
+	//CHILD MODULE
+	case OpImport:
+		v.ip += 2
+		globalNameIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
+		globalName := v.constants[globalNameIndex].(Str)
+
+		source := v.stack[v.sp-2]
+		configObject := v.stack[v.sp-1].(*Object)
+
+		varPerm := GlobalVarPermission{permkind.Create, string(globalName)}
+		if err := v.global.Ctx.CheckHasPermission(varPerm); err != nil {
+			v.err = fmt.Errorf("import: %s", err.Error())
+			return
+		}
+
+		config, err := buildImportConfig(configObject, source.(ResourceName), v.global)
+		if err != nil {
+			v.err = err
+			return
+		}
+
+		result, err := ImportWaitModule(config)
+		if err != nil {
+			v.err = err
+			return
+		}
+
+		v.sp -= 2
+		v.global.Globals.Set(string(globalName), result)
+	case OpCreateLifetimeJob:
+		v.ip += 4
+		modIndex := int(v.curInsts[v.ip-2]) | int(v.curInsts[v.ip-3])<<8
+		mod := v.constants[modIndex].(*Module)
+
+		bytecodeIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
+		bytecode := v.constants[bytecodeIndex].(*Bytecode)
+
+		meta := v.stack[v.sp-2]
+		subject, _ := v.stack[v.sp-1].(Pattern)
+
+		job, err := NewLifetimeJob(meta, subject, mod, bytecode, v.global)
+		if err != nil {
+			v.err = err
+			return
+		}
+		v.stack[v.sp-2] = job
+		v.sp--
+	case OpSpawnLThread:
+		v.ip += 7
+		isSingleExpr := v.curInsts[v.ip-6]
+		calleeNameindex := int(v.curInsts[v.ip-4]) | int(v.curInsts[v.ip-5])<<8
+		caleeName := v.constants[calleeNameindex].(Str)
+
+		lthreadModConstantIndex := int(v.curInsts[v.ip-2]) | int(v.curInsts[v.ip-3])<<8
+		lthreadMod := v.constants[lthreadModConstantIndex].(*Module)
+
+		lthreadBytecodeConstantIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
+		lthreadBytecode := v.constants[lthreadBytecodeConstantIndex].(*Bytecode)
+
+		meta := v.stack[v.sp-2]
+		singleExprCallee := v.stack[v.sp-1]
+
+		var (
+			group       *LThreadGroup
+			globalsDesc Value
+			permListing *Object
+		)
+
+		if meta != nil && meta != Nil {
+			metaMap := meta.(*Struct).ValueMap()
+
+			group, globalsDesc, permListing, v.err = readLThreadMeta(metaMap, v.global.Ctx)
+			if v.err != nil {
+				return
+			}
+		}
+		actualGlobals := make(map[string]Value)
+		var startConstants []string
+
+		//pass constant globals
+
+		v.global.Globals.Foreach(func(name string, v Value, isConstant bool) error {
+			if isConstant {
+				actualGlobals[name] = v
+				startConstants = append(startConstants, name)
+			}
+			return nil
+		})
+
+		var ctx *Context
+
+		// pass global variables
+
+		switch g := globalsDesc.(type) {
+		case *Struct:
+			for i, v := range g.values {
+				k := g.structType.keys[i]
+				actualGlobals[k] = v
+			}
+		case KeyList:
+			for _, name := range g {
+				actualGlobals[name] = v.global.Globals.Get(name)
+			}
+		case NilT:
+			break
+		case nil:
+		default:
+			v.err = fmt.Errorf("spawn expression: globals: only objects and keylists are supported, not %T", g)
+			return
+		}
+
+		if isSingleExpr == 1 {
+			actualGlobals[string(caleeName)] = singleExprCallee
+		}
+
+		//create context
+		if permListing != nil {
+			perms, err := getPermissionsFromListing(v.global.Ctx, permListing, nil, nil, true)
+			if err != nil {
+				v.err = fmt.Errorf("spawn expression: %w", err)
+				return
+			}
+
+			for _, perm := range perms {
+				if err := v.global.Ctx.CheckHasPermission(perm); err != nil {
+					v.err = fmt.Errorf("spawn: cannot allow permission: %w", err)
+					return
+				}
+			}
+			ctx = NewContext(ContextConfig{
+				Permissions:          perms,
+				ForbiddenPermissions: v.global.Ctx.forbiddenPermissions,
+				ParentContext:        v.global.Ctx,
+			})
+		} else {
+			removedPerms := IMPLICITLY_REMOVED_ROUTINE_PERMS
+			remainingPerms := RemovePerms(v.global.Ctx.GetGrantedPermissions(), IMPLICITLY_REMOVED_ROUTINE_PERMS)
+
+			ctx = NewContext(ContextConfig{
+				ParentContext:        v.global.Ctx,
+				Permissions:          remainingPerms,
+				ForbiddenPermissions: removedPerms,
+			})
+		}
+
+		lthread, err := SpawnLThread(LthreadSpawnArgs{
+			SpawnerState: v.global,
+			Globals:      GlobalVariablesFromMap(actualGlobals, startConstants),
+			Module:       lthreadMod,
+			Bytecode:     lthreadBytecode,
+			LthreadCtx:   ctx,
+			UseBytecode:  true,
+		})
+
+		if err != nil {
+			v.err = err
+			return
+		}
+
+		if group != nil {
+			group.Add(lthread)
+		}
+
+		v.sp -= 1
+		v.stack[v.sp-1] = lthread
+		// isCall := v.curInsts[v.ip] == 1
+
+		// groupVal := v.stack[v.sp-4]
+		// globalDesc := v.stack[v.sp-3]
+
+		// upper := v.stack[v.sp-1].(Rune)
+	//MISCELLANEOUS
+	case OpLoadDBVal:
+		url := v.stack[v.sp-1].(URL)
+
+		value, err := getOrLoadValueAtURL(v.global.Ctx, url, v.global)
+		if err != nil {
+			v.err = err
+			return
+		}
+
+		v.stack[v.sp-1] = value
+	case OpCreateKeyList:
+		v.ip += 2
+		numElements := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
+		keyList := make(KeyList, 0, numElements)
+
+		for i := v.sp - numElements; i < v.sp; i++ {
+			keyList = append(keyList, string(v.stack[i].(Identifier)))
+		}
+		v.sp -= numElements
+
+		v.stack[v.sp] = keyList
+		v.sp++
+	case OptStrQueryParamVal:
+		val, err := stringifyQueryParamValue(v.stack[v.sp-1])
+		if err != nil {
+			v.err = err
+			return
+		}
+		v.stack[v.sp-1] = Str(val)
+	case OpCreateAddTypeExtension:
+		v.ip += 2
+		extendStmtIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
+		extendStmt := v.constants[extendStmtIndex].(AstNode).Node.(*parse.ExtendStatement)
+
+		extendedPattern := v.stack[v.sp-2].(Pattern)
+		methodList := v.stack[v.sp-1].(*List)
+
+		lastCtxData, ok := v.global.SymbolicData.GetContextData(extendStmt, nil)
+		if !ok {
+			panic(ErrUnreachable)
+		}
+		symbolicExtension := lastCtxData.Extensions[len(lastCtxData.Extensions)-1]
+
+		if symbolicExtension.Statement != extendStmt {
+			panic(ErrUnreachable)
+		}
+
+		extension := &TypeExtension{
+			extendedPattern:   extendedPattern,
+			symbolicExtension: symbolicExtension,
+		}
+
+		for _, symbolicPropExpr := range symbolicExtension.PropertyExpressions {
+			if symbolicPropExpr.Expression != nil {
+				extension.propertyExpressions = append(extension.propertyExpressions, propertyExpression{
+					name:       symbolicPropExpr.Name,
+					expression: symbolicPropExpr.Expression,
+				})
+			}
+		}
+
+		methodIndex := 0
+		for _, prop := range extendStmt.Extension.(*parse.ObjectLiteral).Properties {
+			_, ok := prop.Value.(*parse.FunctionExpression)
+
+			if !ok {
+				continue
+			}
+
+			extension.propertyExpressions = append(extension.propertyExpressions, propertyExpression{
+				name:   prop.Name(),
+				method: methodList.At(v.global.Ctx, methodIndex).(*InoxFunction),
+			})
+			methodIndex++
+		}
+
+		v.global.Ctx.AddTypeExtension(extension)
+		v.sp -= 2
+	case OpRuntimeTypecheck:
+		v.ip += 2
+		astNodeIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
+		astNode := v.constants[astNodeIndex].(AstNode).Node.(*parse.RuntimeTypeCheckExpression)
+
+		pattern, ok := v.global.SymbolicData.GetRuntimeTypecheckPattern(astNode)
+		if !ok {
+			v.err = ErrMissinggRuntimeTypecheckSymbData
+			return
+		}
+		if pattern != nil { //enabled
+			patt := pattern.(Pattern)
+			val := v.stack[v.sp-1]
+
+			if !patt.Test(v.global.Ctx, val) {
+				v.err = FormatRuntimeTypeCheckFailed(patt, v.global.Ctx)
+				return
+			}
+		}
+		//keep the value on top of the stack
+	case OpAssert:
+		v.ip += 2
+		nodeIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
+		stmt := v.constants[nodeIndex].(AstNode).Node.(*parse.AssertionStatement)
+
+		ok := v.stack[v.sp-1].(Bool)
+		v.sp--
+
+		modKind := v.global.Module.ModuleKind
+		isTestAssertion := modKind == TestSuiteModule || modKind == TestCaseModule
+		var testModule *Module
+		if isTestAssertion {
+			testModule = v.global.Module
+		}
+
+		if !ok {
+			data := &AssertionData{
+				assertionStatement: stmt,
+				intermediaryValues: map[parse.Node]Value{},
+			}
+			v.err = &AssertionError{
+				msg:             "assertion is false",
+				data:            data,
+				isTestAssertion: isTestAssertion,
+				testModule:      testModule,
+			}
+			return
+		}
+	case OpCreateOption:
+		v.ip += 2
+		nameIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
+		name := v.constants[nameIndex].(Str)
+
+		value := v.stack[v.sp-1]
+		v.stack[v.sp-1] = Option{Name: string(name), Value: value}
+	case OpDynMemb:
+		object := v.stack[v.sp-1]
+		v.ip += 2
+		memberNameIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
+		memberName := string(v.constants[memberNameIndex].(Str))
+
+		val, err := NewDynamicMemberValue(v.global.Ctx, object, string(memberName))
+		if err != nil {
+			v.err = err
+			return
+		}
+		v.stack[v.sp-1] = val
+	case OpYield:
+		v.ip++
+		var retVal Value
+		isValOnStack := int(v.curInsts[v.ip]) == 1
+		if isValOnStack {
+			retVal = v.stack[v.sp-1]
+			v.sp--
+		} else {
+			retVal = Nil
+		}
+
+		if v.global.LThread == nil {
+			v.err = errors.New("failed to yield: no associated lthread")
+			return
+		}
+		v.global.LThread.yield(v.global.Ctx, retVal)
+	case OpBlockLock:
+		v.ip++
+		numValues := int(v.curInsts[v.ip])
+		for _, val := range v.stack[v.sp-numValues : v.sp] {
+			if !val.IsMutable() {
+				continue
+			}
+			potentiallySharable := val.(PotentiallySharable)
+			if !utils.Ret0(potentiallySharable.IsSharable(v.global)) {
+				v.err = ErrCannotLockUnsharableValue
+				return
+			}
+
+			for _, locked := range v.global.lockedValues {
+				if potentiallySharable == locked {
+					continue
+				}
+			}
+
+			potentiallySharable.Share(v.global)
+			potentiallySharable.ForceLock()
+
+			// update list of locked values
+			v.global.lockedValues = append(v.global.lockedValues, potentiallySharable)
+			v.curFrame.lockedValues = append(v.curFrame.lockedValues, potentiallySharable)
+		}
+		v.sp -= numValues
+	case OpBlockUnlock:
+		lockedValues := v.curFrame.lockedValues
+		v.curFrame.lockedValues = nil
+
+		for i := len(lockedValues) - 1; i >= 0; i-- {
+			locked := lockedValues[i]
+			locked.ForceUnlock()
+		}
+
+		var newLockedValues []PotentiallySharable
+		// update list of locked values
+	loop:
+		for _, lockedVal := range v.global.lockedValues {
+			for _, unlockedVal := range lockedValues {
+				if lockedVal == unlockedVal {
+					continue loop
+				}
+			}
+			newLockedValues = append(newLockedValues, lockedVal)
+		}
+		v.global.lockedValues = newLockedValues
+	case OpDropPerms:
+		permListing := v.stack[v.sp-1].(*Object)
+		v.sp--
+
+		//TODO: check listing ?
+
+		perms, err := getPermissionsFromListing(v.global.Ctx, permListing, nil, nil, false)
+		if err != nil {
+			v.err = err
+			return
+		}
+
+		v.global.Ctx.DropPermissions(perms)
+	default:
+		v.err = fmt.Errorf("unknown opcode: %d (at %d)", v.curInsts[v.ip], v.ip)
+		return
+	}
+	_continue = true
+	return
+}
+
+//go:noinline
 func (v *VM) fnCall(numArgs int, spread, must bool, callIp int) bool {
 	var (
 		objectVal       = v.stack[v.sp-2]
