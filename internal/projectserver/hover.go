@@ -233,19 +233,21 @@ func getXmlElementInfo(node parse.Node, ancestors []parse.Node) (string, bool) {
 }
 
 func getSectionHelp(n parse.Node, ancestors []parse.Node) (string, bool) {
+	ancestorCount := len(ancestors)
+
 	if len(ancestors) < 4 {
 		return "", false
 	}
 
 	//check the hovered node is the key of an object property
-	objProp, ok := ancestors[len(ancestors)-1].(*parse.ObjectProperty)
-	if !ok || objProp.Key != n || !utils.Implements[*parse.ObjectLiteral](ancestors[len(ancestors)-2]) {
+	objProp, ok := ancestors[ancestorCount-1].(*parse.ObjectProperty)
+	if !ok || objProp.Key != n || !utils.Implements[*parse.ObjectLiteral](ancestors[ancestorCount-2]) {
 		return "", false
 	}
 
-	object := ancestors[len(ancestors)-2].(*parse.ObjectLiteral)
+	object := ancestors[ancestorCount-2].(*parse.ObjectLiteral)
 	propName := objProp.Name()
-	grandparent := ancestors[len(ancestors)-3]
+	grandparent := ancestors[ancestorCount-3]
 
 	switch gp := grandparent.(type) {
 	case *parse.Manifest:
@@ -275,6 +277,26 @@ func getSectionHelp(n parse.Node, ancestors []parse.Node) (string, bool) {
 			help, ok := help.HelpFor(fmt.Sprintf("lthreads/%s-section", sectionName), help.HelpMessageConfig{
 				Format: help.MarkdownFormat,
 			})
+			if ok {
+				return help, true
+			}
+		}
+	case *parse.ObjectProperty:
+		//hovered node is a property name of a database description
+		if ancestorCount == 7 && utils.Implements[*parse.Manifest](ancestors[ancestorCount-7]) &&
+			utils.Implements[*parse.ObjectLiteral](ancestors[ancestorCount-6]) &&
+			utils.Implements[*parse.ObjectProperty](ancestors[ancestorCount-5]) &&
+			ancestors[ancestorCount-5].(*parse.ObjectProperty).HasNameEqualTo(core.MANIFEST_DATABASES_SECTION_NAME) &&
+			utils.Implements[*parse.ObjectLiteral](ancestors[ancestorCount-4]) &&
+			utils.Implements[*parse.ObjectProperty](ancestors[ancestorCount-3]) &&
+			utils.Implements[*parse.ObjectLiteral](ancestors[ancestorCount-2]) {
+
+			descPropName := propName
+
+			help, ok := help.HelpFor("manifest/databases-section/"+descPropName, help.HelpMessageConfig{
+				Format: help.MarkdownFormat,
+			})
+
 			if ok {
 				return help, true
 			}
