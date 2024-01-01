@@ -3,7 +3,6 @@ package core
 import (
 	"errors"
 	"sync"
-	"sync/atomic"
 )
 
 var (
@@ -12,24 +11,26 @@ var (
 
 // A SmartLock is a lock that ignores locking operations until the value it protects is shared.
 type SmartLock struct {
-	valueShared atomic.Bool
+	valueShared bool
 	lock        sync.Mutex
 }
 
 func (lock *SmartLock) IsValueShared() bool {
-	return lock.valueShared.Load()
+	return lock.valueShared
 }
 
 func (lock *SmartLock) AssertValueShared() {
-	if !lock.valueShared.Load() {
+	if !lock.valueShared {
 		panic(ErrValueNotShared)
 	}
 }
 
 func (lock *SmartLock) Share(originState *GlobalState, fn func()) {
-	if lock.valueShared.CompareAndSwap(false, true) {
-		fn()
+	if lock.valueShared {
+		return
 	}
+	lock.valueShared = true
+	fn()
 }
 
 func (lock *SmartLock) Lock(state *GlobalState, embedder PotentiallySharable) {
@@ -37,7 +38,7 @@ func (lock *SmartLock) Lock(state *GlobalState, embedder PotentiallySharable) {
 	//Locking/unlocking of SmartLock should be cheap because there are potentially thousands of operations per second.
 	//No channel or goroutine should be created.
 
-	if !lock.valueShared.Load() {
+	if !lock.valueShared {
 		return
 	}
 	//TODO: extract logic for reuse ?
@@ -65,7 +66,7 @@ func (lock *SmartLock) Unlock(state *GlobalState, embedder PotentiallySharable) 
 	//Locking/unlocking of SmartLock should be cheap because there are potentially thousands of operations per second.
 	//No channel or goroutine should be created.
 
-	if !lock.valueShared.Load() {
+	if !lock.valueShared {
 		return
 	}
 
@@ -81,7 +82,7 @@ func (lock *SmartLock) Unlock(state *GlobalState, embedder PotentiallySharable) 
 }
 
 func (lock *SmartLock) ForceLock() {
-	if !lock.valueShared.Load() {
+	if !lock.valueShared {
 		return
 	}
 
@@ -89,7 +90,7 @@ func (lock *SmartLock) ForceLock() {
 }
 
 func (lock *SmartLock) ForceUnlock() {
-	if !lock.valueShared.Load() {
+	if !lock.valueShared {
 		return
 	}
 
