@@ -283,7 +283,7 @@ func getSectionHelp(n parse.Node, ancestors []parse.Node) (string, bool) {
 		}
 	case *parse.ObjectProperty:
 		//hovered node is a property name of a database description
-		if ancestorCount == 7 && utils.Implements[*parse.Manifest](ancestors[ancestorCount-7]) &&
+		if ancestorCount >= 7 && utils.Implements[*parse.Manifest](ancestors[ancestorCount-7]) &&
 			utils.Implements[*parse.ObjectLiteral](ancestors[ancestorCount-6]) &&
 			utils.Implements[*parse.ObjectProperty](ancestors[ancestorCount-5]) &&
 			ancestors[ancestorCount-5].(*parse.ObjectProperty).HasNameEqualTo(core.MANIFEST_DATABASES_SECTION_NAME) &&
