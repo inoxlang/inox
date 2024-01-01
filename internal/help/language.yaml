@@ -122,15 +122,15 @@ module:
           # ⚠️ Permissions still need to be granted in the import statement.
       subtopics:
       - topic: manifest/databases-section/resource
-        text: 'The resource name to use for the database. Example: `ldb://main` for a local database named `main`).'
+        text: 'The resource name to use for the database. Example: `ldb://main` for a local database named `main`.'
       - topic: manifest/databases-section/resolution-data
         text: Data used to resolve and access the database, the value should be `nil` for local databases.
       - topic: manifest/databases-section/expected-schema-update
-        text: __[optional]__ This property should be set to `true` if and only if a schema update (`.update_schema` call) is expected.'
+        text: __[optional]__ This property should be set to `true` if and only if a schema update (`.update_schema` call) is expected.
       - topic: manifest/databases-section/assert-schema
         text: >
-          __[optional]__ Database schema the actual database's schema will be checked against.
-          The execution of the module will stop if the two schemas do not match. If this property is present 
+          __[optional]__ Object pattern the actual database's schema will be checked against.
+          The execution of the module will stop if the two patterns do not match. If this property is present 
           the typesystem will use the specified pattern instead of the actual schema.
     - topic: manifest/permissions-section
       text: >
