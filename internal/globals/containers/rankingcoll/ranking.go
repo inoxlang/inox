@@ -1,14 +1,9 @@
 package rankingcoll
 
 import (
-	"bufio"
 	"errors"
-	"fmt"
 
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/core/symbolic"
-	coll_symbolic "github.com/inoxlang/inox/internal/globals/containers/symbolic"
-	"github.com/inoxlang/inox/internal/utils"
 )
 
 var (
@@ -46,6 +41,11 @@ func NewRanking(ctx *core.Context, flatEntries *core.List) *Ranking {
 type Ranking struct {
 	map_      map[core.TransientID]core.Serializable
 	rankItems []RankItem
+}
+
+type RankItem struct {
+	valueIds []core.TransientID
+	score    float64
 }
 
 func (r *Ranking) Add(ctx *core.Context, value core.Serializable, score core.Float) {
@@ -101,104 +101,4 @@ func (r *Ranking) Add(ctx *core.Context, value core.Serializable, score core.Flo
 
 func (r *Ranking) Remove(ctx *core.Context, removedVal core.Serializable) {
 	panic(errors.New("removal not implemented yet"))
-}
-
-func (f *Ranking) GetGoMethod(name string) (*core.GoFunction, bool) {
-	switch name {
-	case "add":
-		return core.WrapGoMethod(f.Add), true
-	case "remove":
-		return core.WrapGoMethod(f.Remove), true
-	}
-	return nil, false
-}
-
-func (r *Ranking) Prop(ctx *core.Context, name string) core.Value {
-	method, ok := r.GetGoMethod(name)
-	if !ok {
-		panic(core.FormatErrPropertyDoesNotExist(name, r))
-	}
-	return method
-}
-
-func (*Ranking) PropertyNames(ctx *core.Context) []string {
-	return coll_symbolic.RANKING_PROPNAMES
-}
-
-func (*Ranking) SetProp(ctx *core.Context, name string, value core.Value) error {
-	return core.ErrCannotSetProp
-}
-
-type RankItem struct {
-	valueIds []core.TransientID
-	score    float64
-}
-
-type Rank struct {
-	ranking *Ranking
-	rank    int
-}
-
-func (r *Rank) GetGoMethod(name string) (*core.GoFunction, bool) {
-	return nil, false
-}
-
-func (r *Rank) Prop(ctx *core.Context, name string) core.Value {
-	switch name {
-	case "values":
-		valueIds := r.ranking.rankItems[r.rank].valueIds
-		values := make([]core.Serializable, len(valueIds))
-		for i, valueId := range valueIds {
-			values[i] = r.ranking.map_[valueId]
-		}
-
-		return core.NewWrappedValueList(values...)
-	}
-	method, ok := r.GetGoMethod(name)
-	if !ok {
-		panic(core.FormatErrPropertyDoesNotExist(name, r))
-	}
-	return method
-}
-
-func (*Rank) SetProp(ctx *core.Context, name string, value core.Value) error {
-	return core.ErrCannotSetProp
-}
-
-func (*Rank) PropertyNames(ctx *core.Context) []string {
-	return coll_symbolic.RANK_PROPNAMES
-}
-
-func (r *Ranking) Equal(ctx *core.Context, other core.Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
-	otherRanking, ok := other.(*Ranking)
-	return ok && r == otherRanking
-}
-
-func (r *Rank) Equal(ctx *core.Context, other core.Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
-	otherRank, ok := other.(*Rank)
-	return ok && r == otherRank
-}
-
-func (r *Ranking) IsMutable() bool {
-	return true
-}
-
-func (r *Rank) IsMutable() bool {
-	return true
-}
-
-func (r *Ranking) ToSymbolicValue(ctx *core.Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
-	return &coll_symbolic.Ranking{}, nil
-}
-
-func (r *Rank) ToSymbolicValue(ctx *core.Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
-	return &coll_symbolic.Rank{}, nil
-}
-
-func (r *Ranking) PrettyPrint(w *bufio.Writer, config *core.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(fmt.Fprintf(w, "%#v", r))
-}
-
-func (r *Rank) PrettyPrint(w *bufio.Writer, config *core.PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(fmt.Fprintf(w, "%#v", r))
 }

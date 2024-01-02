@@ -7,7 +7,7 @@ import (
 )
 
 var (
-	MAP_PROPNAMES = []string{"insert", "update", "remove", "get"}
+	MAP_PROPNAMES = []string{"insert", "set", "remove", "get"}
 	_             = []symbolic.Iterable{(*Map)(nil)}
 )
 
@@ -28,8 +28,8 @@ func (m *Map) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 	switch name {
 	case "insert":
 		return symbolic.WrapGoMethod(m.Insert), true
-	case "update":
-		return symbolic.WrapGoMethod(m.Update), true
+	case "set":
+		return symbolic.WrapGoMethod(m.Set), true
 	case "remove":
 		return symbolic.WrapGoMethod(m.Remove), true
 	case "get":
@@ -50,7 +50,7 @@ func (*Map) Insert(ctx *symbolic.Context, k, v symbolic.Value) {
 
 }
 
-func (*Map) Update(ctx *symbolic.Context, k, v symbolic.Value) {
+func (*Map) Set(ctx *symbolic.Context, k, v symbolic.Value) {
 
 }
 
