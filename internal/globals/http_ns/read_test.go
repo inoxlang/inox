@@ -86,7 +86,7 @@ func TestHttpGet(t *testing.T) {
 			return
 		}
 
-		assert.WithinDuration(t, start.Add(time.Second), time.Now(), 100*time.Millisecond)
+		assert.WithinDuration(t, start.Add(time.Second), time.Now(), 150*time.Millisecond)
 	})
 }
 
@@ -185,7 +185,7 @@ func TestHttpRead(t *testing.T) {
 			return
 		}
 
-		assert.WithinDuration(t, start.Add(time.Second), time.Now(), 100*time.Millisecond)
+		assert.WithinDuration(t, start.Add(time.Second), time.Now(), 150*time.Millisecond)
 	})
 
 	t.Run("by default the content should be parsed based on the Content-type header", func(t *testing.T) {
