@@ -64,6 +64,9 @@ var (
 			return coll_symbolic.NewSetPatternWithElementPatternAndUniqueness(elementPattern, &uniqueness), nil
 		},
 	}
+
+	_ core.DefaultValuePattern   = (*SetPattern)(nil)
+	_ core.MigrationAwarePattern = (*SetPattern)(nil)
 )
 
 type SetPattern struct {

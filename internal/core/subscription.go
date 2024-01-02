@@ -40,12 +40,12 @@ func (s *Subscriptions) ReceivePublications(ctx *Context, pub *Publication) {
 
 type subscriptionStore struct {
 	lock                      sync.Mutex
-	publisherToSubscriptions  map[FastId]*Subscriptions
-	subscriberToSubscriptions map[FastId]*Subscriptions
+	publisherToSubscriptions  map[TransientID]*Subscriptions
+	subscriberToSubscriptions map[TransientID]*Subscriptions
 }
 
 func (s *subscriptionStore) getSubscriberSubscriptions(ctx *Context, subscriber Subscriber) (*Subscriptions, bool, error) {
-	subscriberFastId, ok := FastIdOf(ctx, subscriber)
+	subscriberFastId, ok := TransientIdOf(subscriber)
 	if !ok {
 		return nil, false, fmt.Errorf("failed to get subscriptions: %w", ErrPublisherNotUniquelyIdentifiable)
 	}
@@ -62,7 +62,7 @@ func (s *subscriptionStore) getSubscriberSubscriptions(ctx *Context, subscriber 
 }
 
 func (s *subscriptionStore) getPublisherSubscriptions(ctx *Context, publisher Value) (*Subscriptions, bool, error) {
-	publisherFastId, ok := FastIdOf(ctx, publisher)
+	publisherFastId, ok := TransientIdOf(publisher)
 	if !ok {
 		return nil, false, fmt.Errorf("failed to get subscriptions: %w", ErrSubscriberNotUniquelyIdentifiable)
 	}
@@ -82,12 +82,12 @@ func (s *subscriptionStore) addSubscription(ctx *Context, sub *Subscription) err
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
-	publisherFastId, ok := FastIdOf(ctx, sub.publisher)
+	publisherFastId, ok := TransientIdOf(sub.publisher)
 	if !ok {
 		return fmt.Errorf("failed to add subscription: %w", ErrPublisherNotUniquelyIdentifiable)
 	}
 
-	subscriberFastId, ok := FastIdOf(ctx, sub.subscriber)
+	subscriberFastId, ok := TransientIdOf(sub.subscriber)
 	if !ok {
 		return fmt.Errorf("failed to add subscription: %w", ErrSubscriberNotUniquelyIdentifiable)
 	}

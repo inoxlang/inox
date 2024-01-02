@@ -7,7 +7,7 @@ import (
 
 func (s *Map) Iterator(ctx *core.Context, config core.IteratorConfiguration) core.Iterator {
 	i := -1
-	var ids []core.FastId
+	var ids []core.TransientID
 	for k := range s.values {
 		ids = append(ids, k)
 	}

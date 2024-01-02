@@ -19,8 +19,8 @@ var (
 func NewMap(ctx *core.Context, flatEntries *core.List) *Map {
 
 	map_ := &Map{
-		values: make(map[core.FastId]core.Value),
-		keys:   make(map[core.FastId]core.Value),
+		values: make(map[core.TransientID]core.Value),
+		keys:   make(map[core.TransientID]core.Value),
 	}
 
 	if flatEntries.Len()%2 != 0 {
@@ -33,7 +33,7 @@ func NewMap(ctx *core.Context, flatEntries *core.List) *Map {
 		key := flatEntries.At(ctx, i)
 		value := flatEntries.At(ctx, i+1)
 
-		id, ok := core.FastIdOf(ctx, key)
+		id, ok := core.TransientIdOf(key)
 		if !ok {
 			panic(ErrMapCanOnlyContainKeysWithFastId)
 		}
@@ -45,12 +45,12 @@ func NewMap(ctx *core.Context, flatEntries *core.List) *Map {
 }
 
 type Map struct {
-	values map[core.FastId]core.Value
-	keys   map[core.FastId]core.Value
+	values map[core.TransientID]core.Value
+	keys   map[core.TransientID]core.Value
 }
 
 func (m *Map) Insert(ctx *core.Context, k, v core.Value) {
-	id, ok := core.FastIdOf(ctx, k)
+	id, ok := core.TransientIdOf(k)
 	if !ok {
 		panic(ErrMapCanOnlyContainKeysWithFastId)
 	}
@@ -61,7 +61,7 @@ func (m *Map) Insert(ctx *core.Context, k, v core.Value) {
 }
 
 func (m *Map) Update(ctx *core.Context, k, v core.Value) {
-	id, ok := core.FastIdOf(ctx, k)
+	id, ok := core.TransientIdOf(k)
 	if !ok {
 		panic(ErrMapCanOnlyContainKeysWithFastId)
 	}
@@ -72,7 +72,7 @@ func (m *Map) Update(ctx *core.Context, k, v core.Value) {
 }
 
 func (m *Map) Remove(ctx *core.Context, k core.Value) {
-	id, ok := core.FastIdOf(ctx, k)
+	id, ok := core.TransientIdOf(k)
 	if !ok {
 		panic(ErrMapCanOnlyContainKeysWithFastId)
 	}
@@ -80,7 +80,7 @@ func (m *Map) Remove(ctx *core.Context, k core.Value) {
 }
 
 func (m *Map) Get(ctx *core.Context, k core.Value) core.Value {
-	id, ok := core.FastIdOf(ctx, k)
+	id, ok := core.TransientIdOf(k)
 	if !ok {
 		panic(ErrMapCanOnlyContainKeysWithFastId)
 	}

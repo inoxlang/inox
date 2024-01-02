@@ -22,7 +22,7 @@ var (
 func NewRanking(ctx *core.Context, flatEntries *core.List) *Ranking {
 
 	ranking := &Ranking{
-		map_: map[core.FastId]core.Serializable{},
+		map_: map[core.TransientID]core.Serializable{},
 	}
 
 	if flatEntries.Len()%2 != 0 {
@@ -44,12 +44,12 @@ func NewRanking(ctx *core.Context, flatEntries *core.List) *Ranking {
 }
 
 type Ranking struct {
-	map_      map[core.FastId]core.Serializable
+	map_      map[core.TransientID]core.Serializable
 	rankItems []RankItem
 }
 
 func (r *Ranking) Add(ctx *core.Context, value core.Serializable, score core.Float) {
-	id, ok := core.FastIdOf(ctx, value)
+	id, ok := core.TransientIdOf(value)
 	if !ok {
 		panic(ErrRankingCanOnlyContainValuesWithFastId)
 	}
@@ -76,7 +76,7 @@ func (r *Ranking) Add(ctx *core.Context, value core.Serializable, score core.Flo
 		} else {
 			r.rankItems = append([]RankItem{{
 				score:    float64(score),
-				valueIds: []core.FastId{id},
+				valueIds: []core.TransientID{id},
 			}}, r.rankItems...)
 			return
 		}
@@ -85,7 +85,7 @@ func (r *Ranking) Add(ctx *core.Context, value core.Serializable, score core.Flo
 	if prevRank < 0 {
 		r.rankItems = append(r.rankItems, RankItem{
 			score:    float64(score),
-			valueIds: []core.FastId{id},
+			valueIds: []core.TransientID{id},
 		})
 	} else {
 		r.rankItems = append(r.rankItems, RankItem{})
@@ -94,7 +94,7 @@ func (r *Ranking) Add(ctx *core.Context, value core.Serializable, score core.Flo
 
 		r.rankItems[prevRank+1] = RankItem{
 			score:    float64(score),
-			valueIds: []core.FastId{id},
+			valueIds: []core.TransientID{id},
 		}
 	}
 }
@@ -130,7 +130,7 @@ func (*Ranking) SetProp(ctx *core.Context, name string, value core.Value) error 
 }
 
 type RankItem struct {
-	valueIds []core.FastId
+	valueIds []core.TransientID
 	score    float64
 }
 
