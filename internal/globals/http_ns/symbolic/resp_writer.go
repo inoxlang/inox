@@ -8,7 +8,7 @@ import (
 
 var (
 	HTTP_RESP_WRITER_PROPNAMES = []string{
-		"write_text", "write_binary", "write_html", "write_json", "write_ixon", "set_cookie", "write_status", "write_error",
+		"write_text", "write_binary", "write_html", "write_json", "set_cookie", "write_headers", "write_error",
 		"add_header",
 	}
 
@@ -38,12 +38,10 @@ func (resp *HttpResponseWriter) GetGoMethod(name string) (*symbolic.GoFunction, 
 		return symbolic.WrapGoMethod(resp.WriteHTML), true
 	case "write_json":
 		return symbolic.WrapGoMethod(resp.WriteJSON), true
-	case "write_ixon":
-		return symbolic.WrapGoMethod(resp.WriteIXON), true
 	case "set_cookie":
 		return symbolic.WrapGoMethod(resp.SetCookie), true
-	case "write_status":
-		return symbolic.WrapGoMethod(resp.WriteStatus), true
+	case "write_headers":
+		return symbolic.WrapGoMethod(resp.WriteHeaders), true
 	case "write_error":
 		return symbolic.WrapGoMethod(resp.WriteError), true
 	case "add_header":
@@ -85,15 +83,11 @@ func (resp *HttpResponseWriter) WriteJSON(ctx *symbolic.Context, v symbolic.Seri
 	return symbolic.ANY_INT, nil
 }
 
-func (resp *HttpResponseWriter) WriteIXON(ctx *symbolic.Context, v symbolic.Serializable) *symbolic.Error {
-	return nil
-}
-
 func (resp *HttpResponseWriter) SetCookie(ctx *symbolic.Context, obj *symbolic.Object) *symbolic.Error {
 	return nil
 }
 
-func (resp *HttpResponseWriter) WriteStatus(ctx *symbolic.Context, status *symbolic.Int) {
+func (resp *HttpResponseWriter) WriteHeaders(ctx *symbolic.Context, status *symbolic.OptionalParam[*symbolic.Int]) {
 }
 
 func (resp *HttpResponseWriter) WriteError(ctx *symbolic.Context, err *symbolic.Error, status *symbolic.Int) {

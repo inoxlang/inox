@@ -97,7 +97,7 @@ type eventPushConfig struct {
 
 // PushSubscriptionEvents writes the headers required for event streaming & push events.
 func (s *SseServer) PushSubscriptionEvents(config eventPushConfig) {
-	w := config.writer.rw
+	w := config.writer.DetachRespWriter()
 	stream := config.stream
 
 	flusher, ok := w.(http.Flusher)

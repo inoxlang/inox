@@ -77,7 +77,7 @@ func addFilesystemRoutingHandler(server *HttpsServer, staticDir, dynamicDir core
 
 				err := serveFile(fileServingParams{
 					ctx:            handlerGlobalState.Ctx,
-					rw:             rw.rw,
+					rw:             rw.DetachRespWriter(),
 					r:              req.request,
 					pth:            staticFilePath,
 					fileCompressor: server.fileCompressor,
@@ -85,7 +85,7 @@ func addFilesystemRoutingHandler(server *HttpsServer, staticDir, dynamicDir core
 
 				if err != nil {
 					handlerGlobalState.Logger.Err(err).Send()
-					rw.writeStatus(http.StatusNotFound)
+					rw.writeHeaders(http.StatusNotFound)
 					return
 				}
 				return
@@ -97,7 +97,7 @@ func addFilesystemRoutingHandler(server *HttpsServer, staticDir, dynamicDir core
 		}
 
 		if staticDir == "" && dynamicDir == "" {
-			rw.rw.Write([]byte(NO_HANDLER_PLACEHOLDER_MESSAGE))
+			rw.DetachRespWriter().Write([]byte(NO_HANDLER_PLACEHOLDER_MESSAGE))
 		}
 	}
 
@@ -165,18 +165,18 @@ func createHandleDynamic(server *HttpsServer, routingDirPath core.Path) handlerF
 		}
 
 		if path.IsDirPath() && path != "/" {
-			rw.writeStatus(http.StatusNotFound)
+			rw.writeHeaders(http.StatusNotFound)
 			return
 		}
 
 		if slices.Contains(strings.Split(path.UnderlyingString(), "/"), "..") {
-			rw.writeStatus(http.StatusNotFound)
+			rw.writeHeaders(http.StatusNotFound)
 			return
 		}
 
 		// -----
 		if strings.Contains(method, "/") {
-			rw.writeStatus(http.StatusNotFound)
+			rw.writeHeaders(http.StatusNotFound)
 			return
 		}
 
@@ -192,7 +192,7 @@ func createHandleDynamic(server *HttpsServer, routingDirPath core.Path) handlerF
 
 		endpt, err := api.GetEndpoint(string(path))
 		if errors.Is(err, ErrEndpointNotFound) {
-			rw.writeStatus(http.StatusNotFound)
+			rw.writeHeaders(http.StatusNotFound)
 			return
 		}
 
@@ -216,7 +216,7 @@ func createHandleDynamic(server *HttpsServer, routingDirPath core.Path) handlerF
 		}
 
 		if module == nil {
-			rw.writeStatus(http.StatusNotFound)
+			rw.writeHeaders(http.StatusNotFound)
 			return
 		}
 		modulePath := module.Name()
@@ -247,7 +247,7 @@ func createHandleDynamic(server *HttpsServer, routingDirPath core.Path) handlerF
 			GetArguments: func(manifest *core.Manifest) (*core.Struct, error) {
 				args, errStatusCode, err := getHandlerModuleArguments(req, manifest, handlerCtx, methodSpecificModule)
 				if err != nil {
-					rw.writeStatus(errStatusCode)
+					rw.writeHeaders(errStatusCode)
 				}
 				return args, err
 			},
@@ -280,8 +280,8 @@ func createHandleDynamic(server *HttpsServer, routingDirPath core.Path) handlerF
 
 		if err != nil {
 			fsRoutingLogger.Err(err).Send()
-			if !rw.isStatusSet() {
-				rw.writeStatus(http.StatusInternalServerError)
+			if !rw.IsStatusSent() {
+				rw.writeHeaders(http.StatusInternalServerError)
 			}
 			if !handlerCtx.IsDoneSlowCheck() {
 				tx := handlerCtx.GetTx()
@@ -320,16 +320,16 @@ func createHandleDynamic(server *HttpsServer, routingDirPath core.Path) handlerF
 			handlerGlobalState.Logger.Err(err).Send()
 
 			if !handlerCtx.IsDoneSlowCheck() {
-				if !rw.isStatusSet() {
-					rw.writeStatus(http.StatusNotFound)
+				if !rw.IsStatusSent() {
+					rw.writeHeaders(http.StatusNotFound)
 				}
 
 				tx := handlerCtx.GetTx()
 				if tx != nil {
 					tx.Rollback(handlerCtx)
 				}
-			} else if !rw.isStatusSet() { //context is done
-				rw.writeStatus(http.StatusInternalServerError)
+			} else if !rw.IsStatusSent() { //context is done
+				rw.writeHeaders(http.StatusInternalServerError)
 			}
 			return
 		}

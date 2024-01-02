@@ -13,7 +13,7 @@ fn handle(rw http.resp-writer, r http.req){
     match r.path {
         /users/1 {
             if (r.method == "GET") {
-                rw.write_ixon({ name: "foo" })
+                rw.write_json({ name: "foo" })
             }
         }
     }

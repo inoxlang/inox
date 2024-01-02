@@ -122,7 +122,7 @@ func addHandlerFunction(handlerValue core.Value, isMiddleware bool, server *Http
 			value := routing.Compute(handlerGlobalState.Ctx, path)
 			if value == nil {
 				handlerGlobalState.Logger.Print("routing mapping returned Go nil")
-				rw.writeStatus(http.StatusNotFound)
+				rw.writeHeaders(http.StatusNotFound)
 				return
 			}
 
@@ -183,13 +183,13 @@ func respondWithMappingResult(h handlingArguments) {
 		}
 		return
 	case Status:
-		rw.writeStatus(int(v.code))
+		rw.writeHeaders(int(v.code))
 		return
 	case StatusCode:
-		rw.writeStatus(int(v))
+		rw.writeHeaders(int(v))
 		return
 	case *HttpResult:
-		maps.Copy(rw.rw.Header(), v.headers)
+		maps.Copy(rw.headers(), v.headers)
 		statusIfAccepted = int(v.status)
 
 		//use the value inside the result
@@ -197,17 +197,17 @@ func respondWithMappingResult(h handlingArguments) {
 	case core.Identifier:
 		switch v {
 		case "notfound":
-			rw.writeStatus(http.StatusNotFound)
+			rw.writeHeaders(http.StatusNotFound)
 			return
 		case "continue":
 			if h.isMiddleware {
 				return
 			}
-			rw.writeStatus(http.StatusNotFound)
+			rw.writeHeaders(http.StatusNotFound)
 			return
 		default:
 			logger.Print("unknwon identifier " + string(v))
-			rw.writeStatus(http.StatusNotFound)
+			rw.writeHeaders(http.StatusNotFound)
 			return
 		}
 	}
@@ -221,15 +221,15 @@ func respondWithMappingResult(h handlingArguments) {
 
 		serializable, ok := value.(core.Serializable)
 		if !ok {
-			rw.writeStatus(http.StatusNotAcceptable)
+			rw.writeHeaders(http.StatusNotAcceptable)
 			return
 		}
 
 		//finalize and send headers
-		rw.WriteContentType(mimeconsts.IXON_CTYPE)
-		rw.writeStatus(statusIfAccepted)
+		rw.SetContentType(mimeconsts.IXON_CTYPE)
+		rw.writeHeaders(statusIfAccepted)
 
-		serializable.WriteRepresentation(state.Ctx, rw.BodyWriter(), config, 0)
+		serializable.WriteRepresentation(state.Ctx, rw.DetachBodyWriter(), config, 0)
 		return
 	case req.ParsedAcceptHeader.Match(mimeconsts.JSON_CTYPE):
 		config := core.JSONSerializationConfig{
@@ -238,16 +238,16 @@ func respondWithMappingResult(h handlingArguments) {
 
 		serializable, ok := value.(core.Serializable)
 		if !ok {
-			rw.writeStatus(http.StatusNotAcceptable)
+			rw.writeHeaders(http.StatusNotAcceptable)
 			return
 		}
 
 		//finalize and send headers
-		rw.WriteContentType(mimeconsts.JSON_CTYPE)
-		rw.writeStatus(statusIfAccepted)
+		rw.SetContentType(mimeconsts.JSON_CTYPE)
+		rw.writeHeaders(statusIfAccepted)
 
 		//write value as JSON
-		stream := jsoniter.NewStream(jsoniter.ConfigDefault, rw.BodyWriter(), 0)
+		stream := jsoniter.NewStream(jsoniter.ConfigDefault, rw.DetachBodyWriter(), 0)
 		serializable.WriteJSONRepresentation(state.Ctx, stream, config, 0)
 		stream.Flush()
 		return
@@ -264,7 +264,7 @@ func respondWithMappingResult(h handlingArguments) {
 
 				if err != nil {
 					logger.Print("failed to read request's body", err)
-					rw.writeStatus(http.StatusInternalServerError)
+					rw.writeHeaders(http.StatusInternalServerError)
 					return nil, false
 				}
 
@@ -274,7 +274,7 @@ func respondWithMappingResult(h handlingArguments) {
 			if sink, ok := value.(core.StreamSink); ok {
 				stream, ok := sink.WritableStream(state.Ctx, nil).(*core.WritableByteStream)
 				if !ok {
-					rw.writeStatus(http.StatusBadRequest)
+					rw.writeHeaders(http.StatusBadRequest)
 					return
 				}
 
@@ -285,7 +285,7 @@ func respondWithMappingResult(h handlingArguments) {
 
 				if err := stream.WriteBytes(state.Ctx, b); err != nil {
 					logger.Print("failed to write body to stream", err)
-					rw.writeStatus(http.StatusInternalServerError)
+					rw.writeHeaders(http.StatusInternalServerError)
 					return
 				}
 			} else if v, ok := value.(core.Writable); ok {
@@ -296,11 +296,11 @@ func respondWithMappingResult(h handlingArguments) {
 
 				if _, err := v.Writer().Write(b); err != nil {
 					logger.Print("failed to write body to writable", err)
-					rw.writeStatus(http.StatusInternalServerError)
+					rw.writeHeaders(http.StatusInternalServerError)
 				}
 
 			} else {
-				rw.writeStatus(http.StatusBadRequest)
+				rw.writeHeaders(http.StatusBadRequest)
 				return
 			}
 
@@ -311,7 +311,7 @@ func respondWithMappingResult(h handlingArguments) {
 		// https://developer.mozilla.org/en-US/docs/web/http/status/405:
 		// The server must generate an Allow header field in a 405 status code response.
 		// The field must contain a list of methods that the target resource currently supports.
-		rw.writeStatus(http.StatusMethodNotAllowed)
+		rw.writeHeaders(http.StatusMethodNotAllowed)
 		return
 	}
 
@@ -321,12 +321,12 @@ loop:
 		switch v := value.(type) {
 		case core.NilT, nil:
 			logger.Print("nil result")
-			rw.writeStatus(http.StatusNotFound)
+			rw.writeHeaders(http.StatusNotFound)
 			return
 
 		case core.StringLike:
 			if !req.ParsedAcceptHeader.Match(mimeconsts.PLAIN_TEXT_CTYPE) {
-				rw.writeStatus(http.StatusNotAcceptable)
+				rw.writeHeaders(http.StatusNotAcceptable)
 				return
 			}
 
@@ -334,15 +334,15 @@ loop:
 			escaped := html.EscapeString(v.GetOrBuildString())
 
 			//finalize and send headers
-			rw.WriteContentType(mimeconsts.PLAIN_TEXT_CTYPE)
-			rw.writeStatus(statusIfAccepted)
+			rw.SetContentType(mimeconsts.PLAIN_TEXT_CTYPE)
+			rw.writeHeaders(statusIfAccepted)
 
 			//write body
-			rw.BodyWriter().Write(utils.StringAsBytes(escaped))
+			rw.DetachBodyWriter().Write(utils.StringAsBytes(escaped))
 		case *core.ByteSlice:
 			contentType := string(v.ContentType())
 			if !req.ParsedAcceptHeader.Match(contentType) {
-				rw.writeStatus(http.StatusNotAcceptable)
+				rw.writeHeaders(http.StatusNotAcceptable)
 				return
 			}
 			//finalize and send headers
@@ -350,11 +350,11 @@ loop:
 				headerValue := server.defaultCSP.HeaderValue(CSPHeaderValueParams{ScriptsNonce: h.scriptsNonce})
 				rw.AddHeader(state.Ctx, CSP_HEADER_NAME, core.Str(headerValue))
 			}
-			rw.WriteContentType(contentType)
-			rw.writeStatus(statusIfAccepted)
+			rw.SetContentType(contentType)
+			rw.writeHeaders(statusIfAccepted)
 
 			//write body
-			rw.BodyWriter().Write(v.UnderlyingBytes())
+			rw.DetachBodyWriter().Write(v.UnderlyingBytes())
 		case core.Renderable:
 
 			if !v.IsRecursivelyRenderable(state.Ctx, renderingConfig) { // get or create view
@@ -367,12 +367,12 @@ loop:
 						continue
 					}
 
-					rw.writeStatus(http.StatusNotFound)
+					rw.writeHeaders(http.StatusNotFound)
 					break loop
 				}
 
 				if !req.ParsedAcceptHeader.Match(mimeconsts.HTML_CTYPE) && !req.ParsedAcceptHeader.Match(mimeconsts.EVENT_STREAM_CTYPE) {
-					rw.writeStatus(http.StatusNotAcceptable)
+					rw.writeHeaders(http.StatusNotAcceptable)
 					return
 				}
 
@@ -393,14 +393,14 @@ loop:
 						continue
 					}
 
-					rw.writeStatus(http.StatusNotFound)
+					rw.writeHeaders(http.StatusNotFound)
 					break loop
 				}
 
 				result, err := fn.Call(state, model, nil, nil)
 				if err != nil {
 					logger.Print("failed to create new view(): ", err.Error())
-					rw.writeStatus(http.StatusInternalServerError)
+					rw.writeHeaders(http.StatusInternalServerError)
 					return
 				} else {
 					//TODO: prevent recursion
@@ -409,19 +409,19 @@ loop:
 				}
 			} else {
 				if !req.ParsedAcceptHeader.Match(mimeconsts.HTML_CTYPE) {
-					rw.writeStatus(http.StatusNotAcceptable)
+					rw.writeHeaders(http.StatusNotAcceptable)
 					return
 				}
 
 				//finalize and send headers
-				rw.WriteContentType(mimeconsts.HTML_CTYPE)
+				rw.SetContentType(mimeconsts.HTML_CTYPE)
 
 				cspHeaderValue := core.Str(server.defaultCSP.HeaderValue(CSPHeaderValueParams{ScriptsNonce: h.scriptsNonce}))
 				rw.AddHeader(state.Ctx, CSP_HEADER_NAME, cspHeaderValue)
-				rw.writeStatus(statusIfAccepted)
+				rw.writeHeaders(statusIfAccepted)
 
 				//write body
-				_, err := core.Render(state.Ctx, rw.BodyWriter(), v, renderingConfig)
+				_, err := core.Render(state.Ctx, rw.DetachBodyWriter(), v, renderingConfig)
 				if err != nil {
 					logger.Print(err.Error())
 				}
@@ -429,7 +429,7 @@ loop:
 		case core.StreamSource, core.ReadableStream:
 
 			if req.AcceptAny() || !req.ParsedAcceptHeader.Match(mimeconsts.EVENT_STREAM_CTYPE) {
-				rw.writeStatus(http.StatusNotAcceptable)
+				rw.writeHeaders(http.StatusNotAcceptable)
 				return
 			}
 
@@ -443,7 +443,7 @@ loop:
 
 			if !stream.ChunkDataType().Equal(state.Ctx, core.BYTESLICE_PATTERN, map[uintptr]uintptr{}, 0) {
 				logger.Print("only byte streams can be streamed for now")
-				rw.writeStatus(http.StatusNotAcceptable)
+				rw.writeHeaders(http.StatusNotAcceptable)
 				return
 			}
 
@@ -451,12 +451,14 @@ loop:
 
 			if err := pushByteStream(stream, h); err != nil {
 				logger.Print(err)
-				rw.writeStatus(http.StatusInternalServerError) //TODO: cancel context
+				if !rw.isStatusSent {
+					rw.writeHeaders(http.StatusInternalServerError) //TODO: cancel context
+				}
 				return
 			}
 		default:
 			logger.Printf("routing mapping returned invalid value of type %T : %#v", v, v)
-			rw.writeStatus(http.StatusInternalServerError)
+			rw.writeHeaders(http.StatusInternalServerError)
 		}
 		break
 	}

@@ -135,7 +135,7 @@ func (engine *securityEngine) postHandle(req *HttpRequest, rw *HttpResponseWrite
 	mitigationData := engine.getIpLevelMitigationData(req)
 	window, _ := engine.getSocketMitigationData(req)
 
-	status := rw.Status()
+	status := rw.SentStatus()
 
 	//TODO:
 

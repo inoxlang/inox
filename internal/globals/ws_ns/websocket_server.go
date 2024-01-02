@@ -131,7 +131,7 @@ func (*WebsocketServer) PropertyNames(ctx *core.Context) []string {
 }
 
 func (s *WebsocketServer) Upgrade(rw *http_ns.HttpResponseWriter, r *http_ns.HttpRequest) (*WebsocketConnection, error) {
-	conn, err := s.UpgradeGoValues(rw.RespWriter(), r.Request(), nil)
+	conn, err := s.UpgradeGoValues(rw.DetachRespWriter(), r.Request(), nil)
 	if err != nil {
 		return nil, err
 	}

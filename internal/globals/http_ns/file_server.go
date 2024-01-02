@@ -134,7 +134,7 @@ func NewFileServer(ctx *core.Context, args ...core.Value) (*HttpsServer, error) 
 func ServeFile(ctx *core.Context, rw *HttpResponseWriter, r *HttpRequest, pth core.Path) error {
 	return serveFile(fileServingParams{
 		ctx: ctx,
-		rw:  rw.rw,
+		rw:  rw.DetachRespWriter(),
 		r:   r.request,
 		pth: pth,
 	})

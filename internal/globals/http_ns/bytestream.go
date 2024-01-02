@@ -3,7 +3,6 @@ package http_ns
 import (
 	"encoding/base64"
 	"errors"
-	"net/http"
 	"time"
 
 	"github.com/inoxlang/inox/internal/core"
@@ -82,7 +81,7 @@ func pushByteStream(byteStream core.ReadableStream, h handlingArguments) error {
 		}
 	}()
 
-	http.NewResponseController(h.rw.rw).SetWriteDeadline(time.Now().Add(SSE_STREAM_WRITE_TIMEOUT))
+	h.rw.SetWriteDeadline(SSE_STREAM_WRITE_TIMEOUT)
 
 	sseServer.PushSubscriptionEvents(eventPushConfig{
 		ctx:     ctx,

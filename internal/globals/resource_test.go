@@ -47,7 +47,7 @@ func TestReadResource(t *testing.T) {
 			t.Parallel()
 
 			ctx, resource := setup(t, func(ctx *core.Context, rw *http_ns.HttpResponseWriter, req *http_ns.HttpRequest) {
-				rw.WriteStatus(ctx, http.StatusNotFound)
+				rw.WriteHeaders(ctx, core.ToOptionalParam(core.Int(http.StatusNotFound)))
 			})
 			defer ctx.CancelGracefully()
 
@@ -97,8 +97,8 @@ func TestReadResource(t *testing.T) {
 
 			mimeType := utils.Must(core.MimeTypeFrom("application/json; charset=utf-8"))
 			ctx, resource := setup(t, func(ctx *core.Context, rw *http_ns.HttpResponseWriter, req *http_ns.HttpRequest) {
-				rw.WriteContentType(string(mimeType))
-				rw.BodyWriter().Write([]byte("true"))
+				rw.SetContentType(string(mimeType))
+				rw.DetachBodyWriter().Write([]byte("true"))
 			})
 			defer ctx.CancelGracefully()
 
@@ -115,8 +115,8 @@ func TestReadResource(t *testing.T) {
 			t.Parallel()
 
 			ctx, resource := setup(t, func(ctx *core.Context, rw *http_ns.HttpResponseWriter, req *http_ns.HttpRequest) {
-				rw.WriteContentType("custom/type")
-				rw.BodyWriter().Write([]byte("X;X"))
+				rw.SetContentType("custom/type")
+				rw.DetachRespWriter().Write([]byte("X;X"))
 			})
 			defer ctx.CancelGracefully()
 
@@ -130,8 +130,8 @@ func TestReadResource(t *testing.T) {
 			t.Parallel()
 
 			ctx, resource := setup(t, func(ctx *core.Context, rw *http_ns.HttpResponseWriter, req *http_ns.HttpRequest) {
-				rw.WriteContentType("custom/type")
-				rw.BodyWriter().Write([]byte("X;X"))
+				rw.SetContentType("custom/type")
+				rw.DetachBodyWriter().Write([]byte("X;X"))
 			})
 			defer ctx.CancelGracefully()
 

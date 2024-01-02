@@ -162,7 +162,7 @@ func NewHttpsServer(ctx *core.Context, host core.Host, args ...core.Value) (*Htt
 	} else {
 		//we set a default handler that writes NO_HANDLER_PLACEHOLDER_MESSAGE
 		server.lastHandlerFn = func(r *HttpRequest, rw *HttpResponseWriter, state *core.GlobalState) {
-			rw.rw.Write([]byte(NO_HANDLER_PLACEHOLDER_MESSAGE))
+			rw.DetachRespWriter().Write([]byte(NO_HANDLER_PLACEHOLDER_MESSAGE))
 		}
 	}
 
@@ -204,7 +204,7 @@ func NewHttpsServer(ctx *core.Context, host core.Host, args ...core.Value) (*Htt
 
 		for _, ent := range strings.FieldsFunc(r.URL.Path, isSlashRune) {
 			if ent == ".." {
-				rw.writeStatus(http.StatusBadRequest)
+				rw.writeHeaders(http.StatusBadRequest)
 				return
 			}
 		}
@@ -212,7 +212,7 @@ func NewHttpsServer(ctx *core.Context, host core.Host, args ...core.Value) (*Htt
 		// rate limiting & more
 
 		if server.securityEngine.rateLimitRequest(req, rw) {
-			rw.writeStatus(http.StatusTooManyRequests)
+			rw.writeHeaders(http.StatusTooManyRequests)
 			return
 		}
 
