@@ -69,41 +69,6 @@ func TestHttpServerHandlingDescription(t *testing.T) {
 			}, createClient)
 		})
 
-		t.Run("empty middleware list", func(t *testing.T) {
-			runHandlingDescTestCase(t, serverTestCase{
-				input: `return {
-					middlewares: []
-					routing: Mapping {
-						%/... => "hello"
-					}
-				}`,
-				requests: []requestTestInfo{
-					{acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE, result: `hello`},
-				},
-			}, createClient)
-		})
-
-		t.Run("a middleware filtering based on path", func(t *testing.T) {
-			runHandlingDescTestCase(t, serverTestCase{
-				input: ` return {
-					middlewares: [
-						Mapping {
-							/a => #notfound
-							/b => #continue
-						}
-					]
-					routing: Mapping {
-						/a => "a"
-						/b => "b"
-					}
-				}`,
-				requests: []requestTestInfo{
-					{acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE, path: "/a", status: 404},
-					{acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE, path: "/b", result: `b`, status: 200},
-				},
-			}, createClient)
-		})
-
 		t.Run("filesystem routing", func(t *testing.T) {
 			runHandlingDescTestCase(t, serverTestCase{
 				input: `return {

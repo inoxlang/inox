@@ -26,7 +26,6 @@ func readHttpServerArgs(ctx *core.Context, server *HttpsServer, providedHost cor
 	certKey *core.Secret,
 	userProvidedHandler core.Value,
 	handlerValProvided bool,
-	middlewares []core.Value,
 	defaultLimits map[string]core.Limit,
 	maxLimits map[string]core.Limit,
 	argErr error,
@@ -133,34 +132,8 @@ func readHttpServerArgs(ctx *core.Context, server *HttpsServer, providedHost cor
 			}
 			handlerValProvided = true
 
-			// extract routing handler, middlewares, ... from description
 			for propKey, propVal := range v.EntryMap(ctx) {
 				switch propKey {
-				case HANDLING_DESC_MIDDLEWARES_PROPNAME:
-					iterable, ok := propVal.(core.Iterable)
-					if !ok {
-						argErr = core.FmtPropOfArgXShouldBeOfTypeY(propKey, HANDLING_ARG_NAME, "iterable", propVal)
-						return
-					}
-
-					it := iterable.Iterator(ctx, core.IteratorConfiguration{})
-					for it.Next(ctx) {
-						e := it.Value(ctx)
-						if !isValidHandlerValue(e) {
-							s := fmt.Sprintf("%s is not a middleware", core.Stringify(e, ctx))
-							argErr = commonfmt.FmtUnexpectedElementInPropIterableOfArgX(propKey, HANDLING_ARG_NAME, s)
-							return
-						}
-
-						if psharable, ok := e.(core.PotentiallySharable); ok && utils.Ret0(psharable.IsSharable(server.state)) {
-							psharable.Share(server.state)
-						} else {
-							s := fmt.Sprintf("%s is not sharable", core.Stringify(e, ctx))
-							argErr = commonfmt.FmtUnexpectedElementInPropIterableOfArgX(propKey, HANDLING_ARG_NAME, s)
-							return
-						}
-						middlewares = append(middlewares, e)
-					}
 				case HANDLING_DESC_ROUTING_PROPNAME:
 					if !isValidHandlerValue(propVal) {
 						argErr = core.FmtUnexpectedValueAtKeyofArgShowVal(propVal, propKey, HANDLING_ARG_NAME)

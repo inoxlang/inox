@@ -40,7 +40,6 @@ const (
 
 	NO_HANDLER_PLACEHOLDER_MESSAGE = "hello"
 
-	HANDLING_DESC_MIDDLEWARES_PROPNAME = "middlewares"
 	HANDLING_DESC_ROUTING_PROPNAME     = "routing"
 	HANDLING_DESC_DEFAULT_CSP_PROPNAME = "default-csp"
 	HANDLING_DESC_CERTIFICATE_PROPNAME = "certificate"
@@ -69,7 +68,6 @@ var (
 			symbolic.NewMapping(),
 			HTTP_ROUTING_SYMB_OBJ,
 		)),
-		HANDLING_DESC_MIDDLEWARES_PROPNAME:    symbolic.ANY_SERIALIZABLE_ITERABLE,
 		HANDLING_DESC_DEFAULT_CSP_PROPNAME:    http_ns_symb.ANY_CSP,
 		HANDLING_DESC_CERTIFICATE_PROPNAME:    symbolic.ANY_STR_LIKE,
 		HANDLING_DESC_KEY_PROPNAME:            symbolic.ANY_SECRET,
@@ -77,7 +75,6 @@ var (
 		HANDLING_DESC_MAX_LIMITS_PROPNAME:     symbolic.ANY_OBJ,
 	}, map[string]struct{}{
 		//optional entries
-		HANDLING_DESC_MIDDLEWARES_PROPNAME:    {},
 		HANDLING_DESC_DEFAULT_CSP_PROPNAME:    {},
 		HANDLING_DESC_CERTIFICATE_PROPNAME:    {},
 		HANDLING_DESC_KEY_PROPNAME:            {},
@@ -133,7 +130,7 @@ func NewHttpsServer(ctx *core.Context, host core.Host, args ...core.Value) (*Htt
 	}
 
 	effectiveAddr, effectiveListeningAddrHost, port, isExposingAllowed,
-		userProvidedCert, userProvidedKey, userProvidedHandler, handlerValProvided, middlewares,
+		userProvidedCert, userProvidedKey, userProvidedHandler, handlerValProvided,
 		defaultLimits, maxLimits, argErr := readHttpServerArgs(ctx, server, host, args...)
 
 	if argErr != nil {
@@ -153,7 +150,7 @@ func NewHttpsServer(ctx *core.Context, host core.Host, args ...core.Value) (*Htt
 		server.securityEngine = newSecurityEngine(securityLogSrc)
 	}
 
-	//create middleware functions + last handler function
+	//last handler function
 	if handlerValProvided {
 		err := addHandlerFunction(userProvidedHandler, false, server)
 		if err != nil {
@@ -163,13 +160,6 @@ func NewHttpsServer(ctx *core.Context, host core.Host, args ...core.Value) (*Htt
 		//we set a default handler that writes NO_HANDLER_PLACEHOLDER_MESSAGE
 		server.lastHandlerFn = func(r *HttpRequest, rw *HttpResponseWriter, state *core.GlobalState) {
 			rw.DetachRespWriter().Write([]byte(NO_HANDLER_PLACEHOLDER_MESSAGE))
-		}
-	}
-
-	for _, val := range middlewares {
-		err := addHandlerFunction(val, true, server)
-		if err != nil {
-			return nil, err
 		}
 	}
 
