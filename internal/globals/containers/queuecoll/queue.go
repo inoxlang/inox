@@ -1,9 +1,14 @@
-package containers
+package queuecoll
 
 import (
+	"bufio"
+	"fmt"
+
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core/symbolic"
 	coll_symbolic "github.com/inoxlang/inox/internal/globals/containers/symbolic"
 	"github.com/inoxlang/inox/internal/memds"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 func NewQueue(ctx *core.Context, elements core.Iterable) *Queue {
@@ -64,4 +69,20 @@ func (*Queue) SetProp(ctx *core.Context, name string, value core.Value) error {
 
 func (*Queue) PropertyNames(ctx *core.Context) []string {
 	return coll_symbolic.QUEUE_PROPNAMES
+}
+
+func (q *Queue) Equal(ctx *core.Context, other core.Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	otherQueue, ok := other.(*Queue)
+	return ok && q == otherQueue
+}
+
+func (q *Queue) IsMutable() bool {
+	return true
+}
+func (q *Queue) PrettyPrint(w *bufio.Writer, config *core.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", q))
+}
+
+func (q *Queue) ToSymbolicValue(ctx *core.Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
+	return &coll_symbolic.Queue{}, nil
 }

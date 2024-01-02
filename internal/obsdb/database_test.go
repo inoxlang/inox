@@ -259,8 +259,8 @@ package obsdb
 // 			project := &testProject{id: core.RandomProjectID("odb-test")}
 
 // 			ctx := core.NewContexWithEmptyState(ctxConfig, nil)
-// 			ctx.AddNamedPattern("Set", containers.SET_PATTERN)
-// 			ctx.AddNamedPattern("str", containers.SET_PATTERN)
+// 			ctx.AddNamedPattern("Set", setcoll.SET_PATTERN)
+// 			ctx.AddNamedPattern("str", setcoll.SET_PATTERN)
 
 // 			db, err := openDatabase(ctx, DB_HOST, false, project)
 // 			if !assert.NoError(t, err) {
@@ -268,8 +268,8 @@ package obsdb
 // 			}
 
 // 			setPattern :=
-// 				utils.Must(containers.SET_PATTERN.CallImpl(
-// 					containers.SET_PATTERN,
+// 				utils.Must(setcoll.SET_PATTERN.CallImpl(
+// 					setcoll.SET_PATTERN,
 // 					[]core.Serializable{
 // 						core.NewInexactObjectPattern(map[string]core.Pattern{"name": core.STR_PATTERN}), common.URL_UNIQUENESS_IDENT,
 // 					}),
@@ -542,7 +542,7 @@ package obsdb
 // 		ctx := core.NewContexWithEmptyState(ctxConfig, nil)
 // 		ctx.AddNamedPattern("int", core.INT_PATTERN)
 // 		ctx.AddNamedPattern("str", core.STR_PATTERN)
-// 		ctx.AddNamedPattern("Set", containers.SET_PATTERN)
+// 		ctx.AddNamedPattern("Set", setcoll.SET_PATTERN)
 
 // 		odb, err := openDatabase(ctx, DB_HOST, false, project)
 // 		if !assert.NoError(t, err) {
@@ -564,7 +564,7 @@ package obsdb
 // 		defer odb.Close(ctx)
 
 // 		setPattern :=
-// 			utils.Must(containers.SET_PATTERN.CallImpl(containers.SET_PATTERN,
+// 			utils.Must(setcoll.SET_PATTERN.CallImpl(setcoll.SET_PATTERN,
 // 				[]core.Serializable{core.NewInexactObjectPattern(map[string]core.Pattern{"name": core.STR_PATTERN}), common.URL_UNIQUENESS_IDENT}))
 
 // 		schema := core.NewInexactObjectPattern(map[string]core.Pattern{
@@ -604,8 +604,8 @@ package obsdb
 // 		assert.Empty(t, topLevelValues)
 
 // 		setPattern :=
-// 			utils.Must(containers.SET_PATTERN.CallImpl(
-// 				containers.SET_PATTERN,
+// 			utils.Must(setcoll.SET_PATTERN.CallImpl(
+// 				setcoll.SET_PATTERN,
 // 				[]core.Serializable{
 // 					core.NewInexactObjectPattern(map[string]core.Pattern{"name": core.STR_PATTERN}), common.URL_UNIQUENESS_IDENT,
 // 				}))
@@ -630,8 +630,8 @@ package obsdb
 // 		}
 
 // 		setPattern :=
-// 			utils.Must(containers.SET_PATTERN.CallImpl(
-// 				containers.SET_PATTERN,
+// 			utils.Must(setcoll.SET_PATTERN.CallImpl(
+// 				setcoll.SET_PATTERN,
 // 				[]core.Serializable{
 // 					core.NewInexactObjectPattern(map[string]core.Pattern{"name": core.STR_PATTERN}),
 // 					common.URL_UNIQUENESS_IDENT,
@@ -680,8 +680,8 @@ package obsdb
 // 		}
 
 // 		setPattern :=
-// 			utils.Must(containers.SET_PATTERN.CallImpl(
-// 				containers.SET_PATTERN,
+// 			utils.Must(setcoll.SET_PATTERN.CallImpl(
+// 				setcoll.SET_PATTERN,
 // 				[]core.Serializable{
 // 					core.NewInexactObjectPattern(map[string]core.Pattern{"name": core.STR_PATTERN}),
 // 					common.URL_UNIQUENESS_IDENT,
@@ -731,8 +731,8 @@ package obsdb
 // 		}
 
 // 		setPattern :=
-// 			utils.Must(containers.SET_PATTERN.CallImpl(
-// 				containers.SET_PATTERN,
+// 			utils.Must(setcoll.SET_PATTERN.CallImpl(
+// 				setcoll.SET_PATTERN,
 // 				[]core.Serializable{
 // 					core.NewInexactObjectPattern(map[string]core.Pattern{"name": core.STR_PATTERN}),
 // 					common.URL_UNIQUENESS_IDENT,
@@ -784,8 +784,8 @@ package obsdb
 // 		}
 
 // 		setPattern :=
-// 			utils.Must(containers.SET_PATTERN.CallImpl(
-// 				containers.SET_PATTERN,
+// 			utils.Must(setcoll.SET_PATTERN.CallImpl(
+// 				setcoll.SET_PATTERN,
 // 				[]core.Serializable{
 // 					core.NewInexactObjectPattern(map[string]core.Pattern{"name": core.STR_PATTERN}),
 // 					common.URL_UNIQUENESS_IDENT,
@@ -846,8 +846,8 @@ package obsdb
 // 		defer odb.Close(ctx)
 
 // 		setPattern2 :=
-// 			utils.Must(containers.SET_PATTERN.CallImpl(
-// 				containers.SET_PATTERN,
+// 			utils.Must(setcoll.SET_PATTERN.CallImpl(
+// 				setcoll.SET_PATTERN,
 // 				[]core.Serializable{core.INT_PATTERN, common.URL_UNIQUENESS_IDENT}),
 // 			)
 

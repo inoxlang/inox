@@ -1,4 +1,4 @@
-package containers
+package setcoll
 
 import (
 	"testing"

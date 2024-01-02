@@ -9,8 +9,8 @@ import (
 
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/permkind"
-	"github.com/inoxlang/inox/internal/globals/containers"
 	"github.com/inoxlang/inox/internal/globals/containers/common"
+	"github.com/inoxlang/inox/internal/globals/containers/setcoll"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/project"
 	"github.com/inoxlang/inox/internal/utils"
@@ -277,8 +277,8 @@ func TestOpenDatabase(t *testing.T) {
 			}
 
 			ctx := core.NewContexWithEmptyState(ctxConfig, nil)
-			ctx.AddNamedPattern("Set", containers.SET_PATTERN)
-			ctx.AddNamedPattern("str", containers.SET_PATTERN)
+			ctx.AddNamedPattern("Set", setcoll.SET_PATTERN)
+			ctx.AddNamedPattern("str", setcoll.SET_PATTERN)
 			ctx.GetClosestState().Project = project
 
 			db, err := OpenDatabase(ctx, HOST, false)
@@ -287,8 +287,8 @@ func TestOpenDatabase(t *testing.T) {
 			}
 
 			setPattern :=
-				utils.Must(containers.SET_PATTERN.CallImpl(
-					containers.SET_PATTERN,
+				utils.Must(setcoll.SET_PATTERN.CallImpl(
+					setcoll.SET_PATTERN,
 					[]core.Serializable{
 						core.NewInexactObjectPattern(map[string]core.Pattern{"name": core.STR_PATTERN}), common.URL_UNIQUENESS_IDENT,
 					}),
@@ -321,7 +321,7 @@ func TestOpenDatabase(t *testing.T) {
 			}
 
 			userSet := entities["users"]
-			assert.IsType(t, (*containers.Set)(nil), userSet)
+			assert.IsType(t, (*setcoll.Set)(nil), userSet)
 		})
 
 	})
@@ -558,7 +558,7 @@ func TestUpdateSchema(t *testing.T) {
 		ctx := core.NewContexWithEmptyState(ctxConfig, nil)
 		ctx.AddNamedPattern("int", core.INT_PATTERN)
 		ctx.AddNamedPattern("str", core.STR_PATTERN)
-		ctx.AddNamedPattern("Set", containers.SET_PATTERN)
+		ctx.AddNamedPattern("Set", setcoll.SET_PATTERN)
 		ctx.GetClosestState().Project = project
 
 		ldb, err := openLocalDatabaseWithConfig(ctx, config)
@@ -580,7 +580,7 @@ func TestUpdateSchema(t *testing.T) {
 		defer ldb.Close(ctx)
 
 		setPattern :=
-			utils.Must(containers.SET_PATTERN.CallImpl(containers.SET_PATTERN,
+			utils.Must(setcoll.SET_PATTERN.CallImpl(setcoll.SET_PATTERN,
 				[]core.Serializable{core.NewInexactObjectPattern(map[string]core.Pattern{"name": core.STR_PATTERN}), common.URL_UNIQUENESS_IDENT}))
 
 		schema := core.NewInexactObjectPattern(map[string]core.Pattern{
@@ -602,7 +602,7 @@ func TestUpdateSchema(t *testing.T) {
 		}
 
 		userSet := topLevelValues["users"]
-		assert.IsType(t, (*containers.Set)(nil), userSet)
+		assert.IsType(t, (*setcoll.Set)(nil), userSet)
 	})
 
 	t.Run("call after TopLevelEntities() call", func(t *testing.T) {
@@ -619,8 +619,8 @@ func TestUpdateSchema(t *testing.T) {
 		assert.Empty(t, topLevelValues)
 
 		setPattern :=
-			utils.Must(containers.SET_PATTERN.CallImpl(
-				containers.SET_PATTERN,
+			utils.Must(setcoll.SET_PATTERN.CallImpl(
+				setcoll.SET_PATTERN,
 				[]core.Serializable{
 					core.NewInexactObjectPattern(map[string]core.Pattern{"name": core.STR_PATTERN}), common.URL_UNIQUENESS_IDENT,
 				}))
@@ -645,8 +645,8 @@ func TestUpdateSchema(t *testing.T) {
 		}
 
 		setPattern :=
-			utils.Must(containers.SET_PATTERN.CallImpl(
-				containers.SET_PATTERN,
+			utils.Must(setcoll.SET_PATTERN.CallImpl(
+				setcoll.SET_PATTERN,
 				[]core.Serializable{
 					core.NewInexactObjectPattern(map[string]core.Pattern{"name": core.STR_PATTERN}),
 					common.URL_UNIQUENESS_IDENT,
@@ -694,8 +694,8 @@ func TestUpdateSchema(t *testing.T) {
 		}
 
 		setPattern :=
-			utils.Must(containers.SET_PATTERN.CallImpl(
-				containers.SET_PATTERN,
+			utils.Must(setcoll.SET_PATTERN.CallImpl(
+				setcoll.SET_PATTERN,
 				[]core.Serializable{
 					core.NewInexactObjectPattern(map[string]core.Pattern{"name": core.STR_PATTERN}),
 					common.URL_UNIQUENESS_IDENT,
@@ -744,8 +744,8 @@ func TestUpdateSchema(t *testing.T) {
 		}
 
 		setPattern :=
-			utils.Must(containers.SET_PATTERN.CallImpl(
-				containers.SET_PATTERN,
+			utils.Must(setcoll.SET_PATTERN.CallImpl(
+				setcoll.SET_PATTERN,
 				[]core.Serializable{
 					core.NewInexactObjectPattern(map[string]core.Pattern{"name": core.STR_PATTERN}),
 					common.URL_UNIQUENESS_IDENT,
@@ -796,8 +796,8 @@ func TestUpdateSchema(t *testing.T) {
 		}
 
 		setPattern :=
-			utils.Must(containers.SET_PATTERN.CallImpl(
-				containers.SET_PATTERN,
+			utils.Must(setcoll.SET_PATTERN.CallImpl(
+				setcoll.SET_PATTERN,
 				[]core.Serializable{
 					core.NewInexactObjectPattern(map[string]core.Pattern{"name": core.STR_PATTERN}),
 					common.URL_UNIQUENESS_IDENT,
@@ -838,7 +838,7 @@ func TestUpdateSchema(t *testing.T) {
 		if !assert.Contains(t, topLevelValues, "users") {
 			return
 		}
-		users := topLevelValues["users"].(*containers.Set)
+		users := topLevelValues["users"].(*setcoll.Set)
 		users.Add(ctx, core.NewObjectFromMap(core.ValMap{"name": core.Str("foo")}, ctx))
 
 		//make sure the updated Set has been saved
@@ -861,8 +861,8 @@ func TestUpdateSchema(t *testing.T) {
 		defer ldb.Close(ctx)
 
 		setPattern2 :=
-			utils.Must(containers.SET_PATTERN.CallImpl(
-				containers.SET_PATTERN,
+			utils.Must(setcoll.SET_PATTERN.CallImpl(
+				setcoll.SET_PATTERN,
 				[]core.Serializable{core.INT_PATTERN, common.URL_UNIQUENESS_IDENT}),
 			)
 

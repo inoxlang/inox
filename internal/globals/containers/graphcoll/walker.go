@@ -1,6 +1,13 @@
-package containers
+package graphcoll
 
-import "github.com/inoxlang/inox/internal/core"
+import (
+	"bufio"
+	"fmt"
+
+	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/utils"
+)
 
 var (
 	_ = []core.Walkable{(*Graph)(nil)}
@@ -40,6 +47,23 @@ func (wk *GraphWalker) Value(ctx *core.Context) core.Value {
 
 func (wk *GraphWalker) NodeMeta(*core.Context) core.WalkableNodeMeta {
 	panic(core.ErrNotImplementedYet)
+}
+
+func (wk *GraphWalker) Equal(ctx *core.Context, other core.Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	otherWk, ok := other.(*GraphWalker)
+	return ok && wk == otherWk
+}
+
+func (wk *GraphWalker) PrettyPrint(w *bufio.Writer, config *core.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", wk))
+}
+
+func (it *GraphWalker) ToSymbolicValue(ctx *core.Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
+	return nil, symbolic.ErrNoSymbolicValue
+}
+
+func (wk *GraphWalker) IsMutable() bool {
+	return true
 }
 
 func newEmptyGraphWalker() *GraphWalker {

@@ -1,11 +1,14 @@
-package containers
+package mapcoll
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
 
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core/symbolic"
 	coll_symbolic "github.com/inoxlang/inox/internal/globals/containers/symbolic"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 var (
@@ -116,4 +119,21 @@ func (*Map) SetProp(ctx *core.Context, name string, value core.Value) error {
 
 func (*Map) PropertyNames(ctx *core.Context) []string {
 	return coll_symbolic.MAP_PROPNAMES
+}
+
+func (m *Map) IsMutable() bool {
+	return true
+}
+
+func (m *Map) Equal(ctx *core.Context, other core.Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	otherMap, ok := other.(*Map)
+	return ok && m == otherMap
+}
+
+func (m *Map) PrettyPrint(w *bufio.Writer, config *core.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", m))
+}
+
+func (m *Map) ToSymbolicValue(ctx *core.Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
+	return &coll_symbolic.Map{}, nil
 }

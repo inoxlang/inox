@@ -1,9 +1,14 @@
-package containers
+package threadcoll
 
 import (
+	"bufio"
+	"fmt"
 	"time"
 
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core/symbolic"
+	coll_symbolic "github.com/inoxlang/inox/internal/globals/containers/symbolic"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 type Thread struct {
@@ -63,4 +68,21 @@ func (*Thread) SetProp(ctx *core.Context, name string, value core.Value) error {
 
 func (*Thread) PropertyNames(ctx *core.Context) []string {
 	return []string{"push"}
+}
+
+func (t *Thread) IsMutable() bool {
+	return true
+}
+
+func (t *Thread) Equal(ctx *core.Context, other core.Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	otherThread, ok := other.(*Thread)
+	return ok && t == otherThread
+}
+
+func (t *Thread) PrettyPrint(w *bufio.Writer, config *core.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", t))
+}
+
+func (t *Thread) ToSymbolicValue(ctx *core.Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
+	return &coll_symbolic.Thread{}, nil
 }

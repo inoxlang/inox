@@ -1,4 +1,4 @@
-package containers
+package treecoll
 
 import (
 	"testing"

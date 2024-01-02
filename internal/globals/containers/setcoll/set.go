@@ -1,8 +1,7 @@
-package containers
+package setcoll
 
 import (
 	"errors"
-	"path/filepath"
 	"reflect"
 	"strings"
 
@@ -134,6 +133,15 @@ func NewSetWithConfig(ctx *core.Context, elements core.Iterable, config SetConfi
 	}
 
 	return set
+}
+
+func (s *Set) Equal(ctx *core.Context, other core.Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	otherSet, ok := other.(*Set)
+	return ok && s == otherSet
+}
+
+func (s *Set) IsMutable() bool {
+	return true
 }
 
 func (s *Set) IsSharable(originState *core.GlobalState) (bool, string) {
@@ -514,59 +522,4 @@ func (*Set) SetProp(ctx *core.Context, name string, value core.Value) error {
 
 func (*Set) PropertyNames(ctx *core.Context) []string {
 	return coll_symbolic.SET_PROPNAMES
-}
-
-type SetPattern struct {
-	config SetConfig
-
-	core.CallBasedPatternReprMixin
-
-	core.NotCallablePatternMixin
-}
-
-func NewSetPattern(config SetConfig, callData core.CallBasedPatternReprMixin) *SetPattern {
-	if config.Element == nil {
-		config.Element = core.SERIALIZABLE_PATTERN
-	}
-	return &SetPattern{
-		config:                    config,
-		CallBasedPatternReprMixin: callData,
-	}
-}
-
-func (patt *SetPattern) Test(ctx *core.Context, v core.Value) bool {
-	set, ok := v.(*Set)
-	if !ok {
-		return false
-	}
-
-	return patt.config.Equal(ctx, set.config, map[uintptr]uintptr{}, 0)
-}
-func (p *SetPattern) Iterator(ctx *core.Context, config core.IteratorConfiguration) core.Iterator {
-	return core.NewEmptyPatternIterator()
-}
-
-func (p *SetPattern) Random(ctx *core.Context, options ...core.Option) core.Value {
-	panic(core.ErrNotImplementedYet)
-}
-
-func (p *SetPattern) StringPattern() (core.StringPattern, bool) {
-	return nil, false
-}
-
-func (p *SetPattern) DefaultValue(ctx *core.Context) (core.Value, error) {
-	return NewSetWithConfig(ctx, nil, p.config), nil
-}
-
-func (p *SetPattern) GetMigrationOperations(ctx *core.Context, next core.Pattern, pseudoPath string) ([]core.MigrationOp, error) {
-	nextSet, ok := next.(*SetPattern)
-	if !ok || nextSet.config.Uniqueness != p.config.Uniqueness {
-		return []core.MigrationOp{core.ReplacementMigrationOp{
-			Current:        p,
-			Next:           next,
-			MigrationMixin: core.MigrationMixin{PseudoPath: pseudoPath},
-		}}, nil
-	}
-
-	return core.GetMigrationOperations(ctx, p.config.Element, nextSet.config.Element, filepath.Join(pseudoPath, "*"))
 }

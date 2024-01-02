@@ -1,16 +1,14 @@
-package containers
+package treecoll
 
 import (
 	"errors"
 	"fmt"
 	"reflect"
-	"slices"
 
 	"github.com/inoxlang/inox/internal/commonfmt"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	coll_symbolic "github.com/inoxlang/inox/internal/globals/containers/symbolic"
-	"github.com/inoxlang/inox/internal/utils"
 )
 
 var (
@@ -231,138 +229,15 @@ func (*Tree) PropertyNames(ctx *core.Context) []string {
 	return coll_symbolic.TREE_PROPNAMES
 }
 
-// TODO: store tree nodes in a pool
-type TreeNode struct {
-	data     core.Value
-	children []*TreeNode // TODO: use pool + make copy on write if tree is shared (see .Prop & tree node + tree iterator)
-	tree     *Tree
+func (t *Tree) IsMutable() bool {
+	return true
 }
 
-func (n *TreeNode) AddChild(ctx *core.Context, childData core.Value) {
-	state := ctx.GetClosestState()
-
-	n.tree.Lock(state)
-	defer n.tree.Unlock(state)
-
-	if !utils.Ret0(core.IsSharable(childData, state)) {
-		panic(core.ErrCannotAddNonSharableToSharedContainer)
-	}
-
-	child := &TreeNode{
-		data:     childData,
-		children: nil,
-		tree:     n.tree,
-	}
-	n.children = append(n.children, child)
+func (it *TreeIterator) IsMutable() bool {
+	return true
 }
 
-func (n *TreeNode) GetGoMethod(name string) (*core.GoFunction, bool) {
-	switch name {
-	case "add_child":
-		return core.WrapGoMethod(n.AddChild), true
-	}
-	return nil, false
-}
-
-func (n *TreeNode) Prop(ctx *core.Context, name string) core.Value {
-	state := ctx.GetClosestState()
-	n.tree.Lock(state)
-	defer n.tree.Unlock(state)
-
-	switch name {
-	case "data":
-		return n.data
-	case "children":
-		i := -1
-
-		children := n.children
-
-		if n.tree.IsShared() {
-			children = slices.Clone(n.children)
-		}
-
-		return &CollectionIterator{
-			hasNext: func(ci *CollectionIterator, ctx *core.Context) bool {
-				return i < len(children)-1
-			},
-			next: func(ci *CollectionIterator, ctx *core.Context) bool {
-				i++
-				return true
-			},
-			key: func(ci *CollectionIterator, ctx *core.Context) core.Value {
-				return core.Int(i)
-			},
-			value: func(ci *CollectionIterator, ctx *core.Context) core.Value {
-				return children[i]
-			},
-		}
-	}
-	return core.GetGoMethodOrPanic(name, n)
-}
-
-func (*TreeNode) SetProp(ctx *core.Context, name string, value core.Value) error {
-	return core.ErrCannotSetProp
-}
-
-func (*TreeNode) PropertyNames(ctx *core.Context) []string {
-	return coll_symbolic.TREE_NODE_PROPNAMES
-}
-
-func (n *TreeNode) IsSharable(originState *core.GlobalState) (bool, string) {
-	return n.tree.IsShared(), ""
-}
-
-func (n *TreeNode) Share(originState *core.GlobalState) {
-	if n.tree.IsShared() {
-		return
-	}
-	panic(errors.New("tree node cannot pass in shared mode by itself, this should be done on the tree"))
-}
-
-func (n *TreeNode) IsShared() bool {
-	return n.tree.IsShared()
-}
-
-func (n *TreeNode) Lock(state *core.GlobalState) {
-	n.tree.lock.Lock(state, n.tree)
-}
-
-func (n *TreeNode) Unlock(state *core.GlobalState) {
-	n.tree.lock.Unlock(state, n.tree)
-}
-
-func (n *TreeNode) ForceLock() {
-	n.tree.lock.ForceLock()
-}
-
-func (n *TreeNode) ForceUnlock() {
-	n.tree.lock.ForceUnlock()
-}
-
-type TreeNodePattern struct {
-	valuePattern core.Pattern
-	core.CallBasedPatternReprMixin
-
-	core.NotCallablePatternMixin
-}
-
-func (patt *TreeNodePattern) Test(ctx *core.Context, v core.Value) bool {
-	node, ok := v.(*TreeNode)
-	if !ok {
-		return false
-	}
-
-	return patt.valuePattern.Test(ctx, node.data)
-}
-
-func (patt *TreeNodePattern) Random(ctx *core.Context, options ...core.Option) core.Value {
-	panic(errors.New("cannot created random tree node"))
-}
-
-func (patt *TreeNodePattern) Iterator(ctx *core.Context, config core.IteratorConfiguration) core.Iterator {
-	return core.NewEmptyPatternIterator()
-}
-
-func (patt *TreeNodePattern) StringPattern() (core.StringPattern, bool) {
-	return nil, false
+func (t *Tree) Equal(ctx *core.Context, other core.Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	otherTree, ok := other.(*Tree)
+	return ok && t == otherTree
 }

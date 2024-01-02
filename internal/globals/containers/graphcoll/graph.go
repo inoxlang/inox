@@ -1,13 +1,15 @@
-package containers
+package graphcoll
 
 import (
 	"errors"
 	"fmt"
 	"sync"
-	"sync/atomic"
 
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/memds"
+
+	coll_symbolic "github.com/inoxlang/inox/internal/globals/containers/symbolic"
 )
 
 const (
@@ -22,9 +24,6 @@ var (
 
 	_ = core.Value((*Graph)(nil))
 	_ = core.IProps((*Graph)(nil))
-
-	_ = core.Value((*GraphNode)(nil))
-	_ = core.IProps((*GraphNode)(nil))
 )
 
 func NewGraph(ctx *core.Context, nodeData *core.List, edges *core.List) *Graph {
@@ -45,7 +44,7 @@ func NewGraph(ctx *core.Context, nodeData *core.List, edges *core.List) *Graph {
 	}
 
 	if edges.Len()%2 != 0 {
-		panic(ErrMapEntryListShouldHaveEvenLength)
+		panic(ErrEdgeListShouldHaveEvenLength)
 	}
 
 	halfEdgeCount := edges.Len() / 2
@@ -240,72 +239,15 @@ func (g *Graph) Walker(*core.Context) (core.Walker, error) {
 	}, nil
 }
 
-type GraphNode struct {
-	id      memds.NodeId
-	graph   *Graph
-	removed atomic.Bool
+func (g *Graph) IsMutable() bool {
+	return true
 }
 
-func (n *GraphNode) GetGoMethod(name string) (*core.GoFunction, bool) {
-	return nil, false
+func (g *Graph) Equal(ctx *core.Context, other core.Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	otherGraph, ok := other.(*Graph)
+	return ok && g == otherGraph
 }
 
-func (n *GraphNode) Prop(ctx *core.Context, name string) core.Value {
-	if n.removed.Load() {
-		panic(ErrNodeNotInGraph)
-	}
-	switch name {
-	case "data":
-		data, ok := n.graph.graph.NodeData(n.id)
-		if !ok {
-			panic(ErrNodeNotInGraph)
-		}
-		return data
-	case "children", "parents":
-		var nodes []memds.GraphNode[core.Value]
-		if name == "children" {
-			nodes = n.graph.graph.DestinationNodes(n.id)
-		} else {
-			nodes = n.graph.graph.SourceNodes(n.id)
-		}
-
-		i := -1
-
-		return &CollectionIterator{
-			hasNext: func(ci *CollectionIterator, ctx *core.Context) bool {
-				if i < len(nodes)-1 {
-					return true
-				}
-				nodes = nil
-				return false
-			},
-			next: func(ci *CollectionIterator, ctx *core.Context) bool {
-				if i >= len(nodes)-1 {
-					nodes = nil
-					return false
-				}
-				i++
-				return true
-			},
-			key: func(ci *CollectionIterator, ctx *core.Context) core.Value {
-				return core.Int(i)
-			},
-			value: func(ci *CollectionIterator, ctx *core.Context) core.Value {
-				return &GraphNode{id: nodes[i].Id, graph: n.graph}
-			},
-		}
-	}
-	method, ok := n.GetGoMethod(name)
-	if !ok {
-		panic(core.FormatErrPropertyDoesNotExist(name, n))
-	}
-	return method
-}
-
-func (*GraphNode) SetProp(ctx *core.Context, name string, value core.Value) error {
-	return core.ErrCannotSetProp
-}
-
-func (*GraphNode) PropertyNames(ctx *core.Context) []string {
-	return []string{"data"}
+func (g *Graph) ToSymbolicValue(ctx *core.Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
+	return &coll_symbolic.Graph{}, nil
 }
