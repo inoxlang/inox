@@ -279,7 +279,6 @@ func TestPersistLoadSet(t *testing.T) {
 			return
 		}
 		assert.Equal(t, int1, elem)
-
 	})
 
 	t.Run("unique repr: two elements", func(t *testing.T) {
@@ -607,6 +606,26 @@ func TestUnsharedSetAddRemove(t *testing.T) {
 		assert.PanicsWithError(t, ErrValueDoesMatchElementPattern.Error(), func() {
 			set.Add(ctx, core.True)
 		})
+	})
+
+	t.Run("representation uniquenesss: element with sensitive data", func(t *testing.T) {
+		set := NewSetWithConfig(ctx, nil, SetConfig{
+			Element: core.RECORD_PATTERN,
+			Uniqueness: common.UniquenessConstraint{
+				Type: common.UniqueRepr,
+			},
+		})
+
+		record := core.NewRecordFromMap(core.ValMap{"password": core.Str("x"), "email-address": core.EmailAddress("a@mail.com")})
+		set.Add(ctx, record)
+
+		val, ok := set.Get(ctx, core.Str(`{"email-address":{"emailaddr__value":"a@mail.com"},"password":"x"}`))
+
+		if !assert.True(t, bool(ok)) {
+			return
+		}
+
+		assert.Same(t, record, val)
 	})
 
 	t.Run("property value uniqueness", func(t *testing.T) {

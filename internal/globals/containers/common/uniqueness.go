@@ -192,6 +192,8 @@ type KeyRetrievalParams struct {
 	JSONSerializationConfig core.JSONSerializationConfig
 }
 
+// GetUniqueKey computes the key of the provided value. For UniqueRepr and UniquePropertyValue uniqueness
+// the key is written to the provided stream, so the returned string should be cloned before being stored.
 func GetUniqueKey(ctx *core.Context, args KeyRetrievalParams) string {
 	config := args.Config
 	container := args.Container

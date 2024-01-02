@@ -37,7 +37,9 @@ func init() {
 }
 
 type Set struct {
-	keyBuf       *jsoniter.Stream //used to write JSON representation of elements or key fields
+	keyBuf              *jsoniter.Stream //used to write JSON representation of elements or key fields
+	serializationConfig core.JSONSerializationConfig
+
 	elements     map[string]core.Serializable
 	pathKeyToKey map[core.ElementKey]string //nil on start, will be initialized during the first GetElementByKey call.
 
@@ -113,7 +115,9 @@ func (c SetConfig) Equal(ctx *core.Context, otherConfig SetConfig, alreadyCompar
 
 func NewSetWithConfig(ctx *core.Context, elements core.Iterable, config SetConfig) *Set {
 	set := &Set{
-		keyBuf:                         jsoniter.NewStream(jsoniter.ConfigDefault, nil, INITIAL_SET_KEY_BUF),
+		keyBuf:              jsoniter.NewStream(jsoniter.ConfigDefault, nil, INITIAL_SET_KEY_BUF),
+		serializationConfig: core.JSONSerializationConfig{Pattern: config.Element, ReprConfig: &core.ReprConfig{AllVisible: true}},
+
 		elements:                       make(map[string]core.Serializable),
 		pendingInclusions:              make(map[*core.Transaction]map[string]core.Serializable, 0),
 		pendingRemovals:                make(map[*core.Transaction]map[string]struct{}, 0),
@@ -417,7 +421,7 @@ func (set *Set) getUniqueKey(ctx *core.Context, v core.Serializable) string {
 		Value:                   v,
 		Config:                  set.config.Uniqueness,
 		Container:               set,
-		JSONSerializationConfig: core.JSONSerializationConfig{Pattern: set.config.Element},
+		JSONSerializationConfig: set.serializationConfig,
 		Stream:                  set.keyBuf,
 	})
 	return key
