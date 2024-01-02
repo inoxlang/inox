@@ -602,6 +602,11 @@ func TestUnsharedSetAddRemove(t *testing.T) {
 
 		set.Remove(ctx, int1)
 		assert.False(t, bool(set.Has(ctx, int1)))
+
+		//invalid element
+		assert.PanicsWithError(t, ErrValueDoesMatchElementPattern.Error(), func() {
+			set.Add(ctx, core.True)
+		})
 	})
 
 	t.Run("property value uniqueness", func(t *testing.T) {
@@ -622,6 +627,11 @@ func TestUnsharedSetAddRemove(t *testing.T) {
 
 		set.Remove(ctx, record1)
 		assert.False(t, bool(set.Has(ctx, record1)))
+
+		//invalid element
+		assert.PanicsWithError(t, ErrValueDoesMatchElementPattern.Error(), func() {
+			set.Add(ctx, core.True)
+		})
 	})
 }
 

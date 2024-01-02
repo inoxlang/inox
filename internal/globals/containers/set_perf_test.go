@@ -20,10 +20,18 @@ func BenchmarkAddElemToUnsharedSet(b *testing.B) {
 				},
 			})
 
+			records := make([]*core.Record, b.N)
+			for i := range records {
+				records[i] = core.NewRecordFromMap(core.ValMap{
+					"a": core.Str(strings.Repeat("x", 10)),
+					"i": core.Int(i),
+				})
+			}
+
 			b.ResetTimer()
 
 			for i := 0; i < b.N; i++ {
-				set.Add(ctx, core.Int(i))
+				set.Add(ctx, records[i])
 			}
 		})
 
