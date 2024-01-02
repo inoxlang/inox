@@ -44,6 +44,9 @@ var (
 		"GATEWAY_TIMEOUT":            StatusCode(http.StatusGatewayTimeout),
 		"HTTP_VERSION_NOT_SUPPORTED": StatusCode(http.StatusHTTPVersionNotSupported),
 	})
+
+	MAKE_STATUS_CODE_PARAMS      = &[]symbolic.Value{http_symbolic.STATUS_CODE_INT_VALUE}
+	MAKE_STATUS_CODE_PARAM_NAMES = []string{"code"}
 )
 
 func init() {
@@ -141,7 +144,7 @@ func init() {
 			return symbolic.ANY_STR_LIKE, nil
 		},
 		MakeStatusCode, func(ctx *symbolic.Context, code *symbolic.Int) *http_symbolic.StatusCode {
-			ctx.SetSymbolicGoFunctionParameters(&[]symbolic.Value{http_symbolic.STATUS_CODE_INT_RANGE}, []string{"code"})
+			ctx.SetSymbolicGoFunctionParameters(MAKE_STATUS_CODE_PARAMS, MAKE_STATUS_CODE_PARAM_NAMES)
 			return http_symbolic.ANY_STATUS_CODE
 		},
 		NewCSP, func(ctx *symbolic.Context, desc *symbolic.Object) (*http_symbolic.ContentSecurityPolicy, *symbolic.Error) {

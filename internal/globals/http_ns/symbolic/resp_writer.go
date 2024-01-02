@@ -9,7 +9,7 @@ import (
 var (
 	HTTP_RESP_WRITER_PROPNAMES = []string{
 		"write_text", "write_binary", "write_html", "write_json", "set_cookie", "write_headers", "write_error",
-		"add_header",
+		"add_header", "set_status",
 	}
 
 	ANY_HTTP_RESP_WRITER = &HttpResponseWriter{}
@@ -28,31 +28,33 @@ func (r *HttpResponseWriter) Test(v symbolic.Value, state symbolic.RecTestCallSt
 	return ok
 }
 
-func (resp *HttpResponseWriter) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
+func (rw *HttpResponseWriter) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 	switch name {
 	case "write_text":
-		return symbolic.WrapGoMethod(resp.WritePlainText), true
+		return symbolic.WrapGoMethod(rw.WritePlainText), true
 	case "write_binary":
-		return symbolic.WrapGoMethod(resp.WriteBinary), true
+		return symbolic.WrapGoMethod(rw.WriteBinary), true
 	case "write_html":
-		return symbolic.WrapGoMethod(resp.WriteHTML), true
+		return symbolic.WrapGoMethod(rw.WriteHTML), true
 	case "write_json":
-		return symbolic.WrapGoMethod(resp.WriteJSON), true
+		return symbolic.WrapGoMethod(rw.WriteJSON), true
 	case "set_cookie":
-		return symbolic.WrapGoMethod(resp.SetCookie), true
+		return symbolic.WrapGoMethod(rw.SetCookie), true
+	case "set_status":
+		return symbolic.WrapGoMethod(rw.SetStatus), true
 	case "write_headers":
-		return symbolic.WrapGoMethod(resp.WriteHeaders), true
+		return symbolic.WrapGoMethod(rw.WriteHeaders), true
 	case "write_error":
-		return symbolic.WrapGoMethod(resp.WriteError), true
+		return symbolic.WrapGoMethod(rw.WriteError), true
 	case "add_header":
-		return symbolic.WrapGoMethod(resp.AddHeader), true
+		return symbolic.WrapGoMethod(rw.AddHeader), true
 	default:
 		return nil, false
 	}
 }
 
-func (resp *HttpResponseWriter) Prop(name string) symbolic.Value {
-	return symbolic.GetGoMethodOrPanic(name, resp)
+func (rw *HttpResponseWriter) Prop(name string) symbolic.Value {
+	return symbolic.GetGoMethodOrPanic(name, rw)
 }
 
 func (*HttpResponseWriter) PropertyNames() []string {
@@ -67,33 +69,37 @@ func (r *HttpResponseWriter) WidestOfType() symbolic.Value {
 	return ANY_HTTP_RESP_WRITER
 }
 
-func (resp *HttpResponseWriter) WritePlainText(ctx *symbolic.Context, v *symbolic.ByteSlice) (*symbolic.Int, *symbolic.Error) {
+func (rw *HttpResponseWriter) WritePlainText(ctx *symbolic.Context, v *symbolic.ByteSlice) (*symbolic.Int, *symbolic.Error) {
 	return symbolic.ANY_INT, nil
 }
 
-func (resp *HttpResponseWriter) WriteBinary(ctx *symbolic.Context, v *symbolic.ByteSlice) (*symbolic.Int, *symbolic.Error) {
+func (rw *HttpResponseWriter) WriteBinary(ctx *symbolic.Context, v *symbolic.ByteSlice) (*symbolic.Int, *symbolic.Error) {
 	return symbolic.ANY_INT, nil
 }
 
-func (resp *HttpResponseWriter) WriteHTML(ctx *symbolic.Context, v symbolic.Value) (*symbolic.Int, *symbolic.Error) {
+func (rw *HttpResponseWriter) WriteHTML(ctx *symbolic.Context, v symbolic.Value) (*symbolic.Int, *symbolic.Error) {
 	return symbolic.ANY_INT, nil
 }
 
-func (resp *HttpResponseWriter) WriteJSON(ctx *symbolic.Context, v symbolic.Serializable) (*symbolic.Int, *symbolic.Error) {
+func (rw *HttpResponseWriter) WriteJSON(ctx *symbolic.Context, v symbolic.Serializable) (*symbolic.Int, *symbolic.Error) {
 	return symbolic.ANY_INT, nil
 }
 
-func (resp *HttpResponseWriter) SetCookie(ctx *symbolic.Context, obj *symbolic.Object) *symbolic.Error {
+func (rw *HttpResponseWriter) SetCookie(ctx *symbolic.Context, obj *symbolic.Object) *symbolic.Error {
 	return nil
 }
 
-func (resp *HttpResponseWriter) WriteHeaders(ctx *symbolic.Context, status *symbolic.OptionalParam[*symbolic.Int]) {
+func (rw *HttpResponseWriter) SetStatus(ctx *symbolic.Context, status *symbolic.Int) {
 }
 
-func (resp *HttpResponseWriter) WriteError(ctx *symbolic.Context, err *symbolic.Error, status *symbolic.Int) {
+func (rw *HttpResponseWriter) WriteHeaders(ctx *symbolic.Context, status *symbolic.OptionalParam[*symbolic.Int]) {
 }
 
-func (resp *HttpResponseWriter) AddHeader(ctx *symbolic.Context, k, v *symbolic.String) {
+func (rw *HttpResponseWriter) WriteError(ctx *symbolic.Context, err *symbolic.Error, status *symbolic.Int) {
 }
-func (resp *HttpResponseWriter) Finish(ctx *symbolic.Context) {
+
+func (rw *HttpResponseWriter) AddHeader(ctx *symbolic.Context, k, v *symbolic.String) {
+}
+
+func (rw *HttpResponseWriter) Finish(ctx *symbolic.Context) {
 }
