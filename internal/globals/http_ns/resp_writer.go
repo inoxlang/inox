@@ -342,7 +342,7 @@ func (rw *HttpResponseWriter) SetCookie(ctx *core.Context, obj *core.Object) err
 	return nil
 }
 
-func (rw *HttpResponseWriter) SetStatus(ctx *core.Context, status core.Int) {
+func (rw *HttpResponseWriter) SetStatus(ctx *core.Context, status StatusCode) {
 	rw.setStatus(ctx, int(status))
 }
 
@@ -353,7 +353,7 @@ func (rw *HttpResponseWriter) setStatus(ctx *core.Context, status int) {
 	rw.plannedStatus = int(status)
 }
 
-func (rw *HttpResponseWriter) WriteHeaders(ctx *core.Context, status *core.OptionalParam[core.Int]) {
+func (rw *HttpResponseWriter) WriteHeaders(ctx *core.Context, status *core.OptionalParam[StatusCode]) {
 	rw.assertIsNotFinished()
 	rw.assertStatusNotSent()
 
@@ -379,7 +379,7 @@ func (rw *HttpResponseWriter) writeHeadersWithPlannedStatus() {
 	rw.writeHeaders(rw.PlannedStatus())
 }
 
-func (rw *HttpResponseWriter) WriteError(ctx *core.Context, err core.Error, code core.Int) {
+func (rw *HttpResponseWriter) WriteError(ctx *core.Context, err core.Error, code StatusCode) {
 	rw.assertIsNotFinished()
 	rw.assertStatusNotSent()
 

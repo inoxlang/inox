@@ -89,13 +89,13 @@ func (rw *HttpResponseWriter) SetCookie(ctx *symbolic.Context, obj *symbolic.Obj
 	return nil
 }
 
-func (rw *HttpResponseWriter) SetStatus(ctx *symbolic.Context, status *symbolic.Int) {
+func (rw *HttpResponseWriter) SetStatus(ctx *symbolic.Context, status *StatusCode) {
 }
 
-func (rw *HttpResponseWriter) WriteHeaders(ctx *symbolic.Context, status *symbolic.OptionalParam[*symbolic.Int]) {
+func (rw *HttpResponseWriter) WriteHeaders(ctx *symbolic.Context, status *symbolic.OptionalParam[*StatusCode]) {
 }
 
-func (rw *HttpResponseWriter) WriteError(ctx *symbolic.Context, err *symbolic.Error, status *symbolic.Int) {
+func (rw *HttpResponseWriter) WriteError(ctx *symbolic.Context, err *symbolic.Error, status *StatusCode) {
 }
 
 func (rw *HttpResponseWriter) AddHeader(ctx *symbolic.Context, k, v *symbolic.String) {
