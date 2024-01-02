@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/inoxlang/inox/internal/core"
+	coll_symbolic "github.com/inoxlang/inox/internal/globals/containers/symbolic"
 )
 
 var (
@@ -117,7 +118,7 @@ func (r *Ranking) Prop(ctx *core.Context, name string) core.Value {
 }
 
 func (*Ranking) PropertyNames(ctx *core.Context) []string {
-	return []string{"add", "remove"}
+	return coll_symbolic.RANKING_PROPNAMES
 }
 
 func (*Ranking) SetProp(ctx *core.Context, name string, value core.Value) error {
@@ -161,5 +162,5 @@ func (*Rank) SetProp(ctx *core.Context, name string, value core.Value) error {
 }
 
 func (*Rank) PropertyNames(ctx *core.Context) []string {
-	return []string{"values"}
+	return coll_symbolic.RANK_PROPNAMES
 }

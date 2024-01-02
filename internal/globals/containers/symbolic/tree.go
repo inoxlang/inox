@@ -9,6 +9,9 @@ import (
 )
 
 var (
+	TREE_PROPNAMES      = []string{"root"}
+	TREE_NODE_PROPNAMES = []string{"data", "children", "add_child"}
+
 	_ = []symbolic.Iterable{(*Tree)(nil), (*TreeNode)(nil)}
 	_ = []symbolic.PotentiallySharable{(*Tree)(nil), (*TreeNode)(nil)}
 
@@ -49,7 +52,7 @@ func (t *Tree) Prop(name string) symbolic.Value {
 }
 
 func (*Tree) PropertyNames() []string {
-	return []string{"root"}
+	return TREE_PROPNAMES
 }
 
 func (t *Tree) InsertNode(ctx *symbolic.Context, v symbolic.Value) *TreeNode {
@@ -152,7 +155,7 @@ func (t *TreeNode) Prop(name string) symbolic.Value {
 }
 
 func (*TreeNode) PropertyNames() []string {
-	return []string{"data", "children", "add_child"}
+	return TREE_NODE_PROPNAMES
 }
 
 func (n *TreeNode) AddChild(ctx *symbolic.Context, data symbolic.Value) {

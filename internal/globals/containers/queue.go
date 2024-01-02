@@ -2,6 +2,7 @@ package containers
 
 import (
 	"github.com/inoxlang/inox/internal/core"
+	coll_symbolic "github.com/inoxlang/inox/internal/globals/containers/symbolic"
 	"github.com/inoxlang/inox/internal/memds"
 )
 
@@ -62,5 +63,5 @@ func (*Queue) SetProp(ctx *core.Context, name string, value core.Value) error {
 }
 
 func (*Queue) PropertyNames(ctx *core.Context) []string {
-	return []string{"enqueue", "dequeue", "peek"}
+	return coll_symbolic.QUEUE_PROPNAMES
 }

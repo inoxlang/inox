@@ -6,7 +6,10 @@ import (
 	pprint "github.com/inoxlang/inox/internal/prettyprint"
 )
 
-var _ = []symbolic.Iterable{(*Queue)(nil)}
+var (
+	QUEUE_PROPNAMES = []string{"enqueue", "dequeue", "peek"}
+	_               = []symbolic.Iterable{(*Queue)(nil)}
+)
 
 type Queue struct {
 	symbolic.UnassignablePropsMixin
@@ -38,7 +41,7 @@ func (q *Queue) Prop(name string) symbolic.Value {
 }
 
 func (*Queue) PropertyNames() []string {
-	return []string{"enqueue", "dequeue", "peek"}
+	return QUEUE_PROPNAMES
 }
 
 func (*Queue) Enqueue(ctx *symbolic.Context, elems symbolic.Value) {
@@ -55,7 +58,6 @@ func (*Queue) Peek(ctx *symbolic.Context) (symbolic.Value, *symbolic.Bool) {
 
 func (*Queue) PrettyPrint(w prettyprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("queue")
-	return
 }
 
 func (*Queue) IteratorElementKey() symbolic.Value {

@@ -6,7 +6,10 @@ import (
 	pprint "github.com/inoxlang/inox/internal/prettyprint"
 )
 
-var _ = []symbolic.Iterable{(*Map)(nil)}
+var (
+	MAP_PROPNAMES = []string{"insert", "update", "remove", "get"}
+	_             = []symbolic.Iterable{(*Map)(nil)}
+)
 
 type Map struct {
 	symbolic.UnassignablePropsMixin
@@ -40,7 +43,7 @@ func (m *Map) Prop(name string) symbolic.Value {
 }
 
 func (*Map) PropertyNames() []string {
-	return []string{"insert", "update", "remove", "get"}
+	return MAP_PROPNAMES
 }
 
 func (*Map) Insert(ctx *symbolic.Context, k, v symbolic.Value) {

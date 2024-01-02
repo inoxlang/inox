@@ -6,7 +6,10 @@ import (
 	pprint "github.com/inoxlang/inox/internal/prettyprint"
 )
 
-var _ = []symbolic.Iterable{(*Stack)(nil)}
+var (
+	STACK_PROPNAMES = []string{"push", "pop", "peek"}
+	_               = []symbolic.Iterable{(*Stack)(nil)}
+)
 
 type Stack struct {
 	symbolic.UnassignablePropsMixin
@@ -38,7 +41,7 @@ func (s *Stack) Prop(name string) symbolic.Value {
 }
 
 func (*Stack) PropertyNames() []string {
-	return []string{"push", "pop", "peek"}
+	return STACK_PROPNAMES
 }
 
 func (*Stack) Push(ctx *symbolic.Context, elems ...symbolic.Value) {

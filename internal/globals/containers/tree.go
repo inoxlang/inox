@@ -14,9 +14,7 @@ import (
 )
 
 var (
-	TREE_PROPNAMES      = []string{"root"}
-	TREE_NODE_PROPNAMES = []string{"data", "children", "add_child"}
-	_                   = []core.PotentiallySharable{(*Tree)(nil)}
+	_ = []core.PotentiallySharable{(*Tree)(nil)}
 )
 
 func init() {
@@ -230,7 +228,7 @@ func (*Tree) SetProp(ctx *core.Context, name string, value core.Value) error {
 }
 
 func (*Tree) PropertyNames(ctx *core.Context) []string {
-	return TREE_PROPNAMES
+	return coll_symbolic.TREE_PROPNAMES
 }
 
 // TODO: store tree nodes in a pool
@@ -307,7 +305,7 @@ func (*TreeNode) SetProp(ctx *core.Context, name string, value core.Value) error
 }
 
 func (*TreeNode) PropertyNames(ctx *core.Context) []string {
-	return TREE_NODE_PROPNAMES
+	return coll_symbolic.TREE_NODE_PROPNAMES
 }
 
 func (n *TreeNode) IsSharable(originState *core.GlobalState) (bool, string) {

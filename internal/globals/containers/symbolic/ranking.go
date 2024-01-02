@@ -6,7 +6,11 @@ import (
 	pprint "github.com/inoxlang/inox/internal/prettyprint"
 )
 
-var _ = []symbolic.Iterable{(*Ranking)(nil), (*Rank)(nil)}
+var (
+	RANKING_PROPNAMES = []string{"add", "remove"}
+	RANK_PROPNAMES    = []string{"values"}
+	_                 = []symbolic.Iterable{(*Ranking)(nil), (*Rank)(nil)}
+)
 
 type Ranking struct {
 	symbolic.UnassignablePropsMixin
@@ -36,7 +40,7 @@ func (r *Ranking) Prop(name string) symbolic.Value {
 }
 
 func (*Ranking) PropertyNames() []string {
-	return []string{"add", "remove"}
+	return RANKING_PROPNAMES
 }
 
 func (f *Ranking) Add(ctx *symbolic.Context, v symbolic.Serializable, score *symbolic.Float) {
@@ -89,7 +93,7 @@ func (r *Rank) Prop(name string) symbolic.Value {
 }
 
 func (*Rank) PropertyNames() []string {
-	return []string{"values"}
+	return RANK_PROPNAMES
 }
 
 func (r *Rank) PrettyPrint(w prettyprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {

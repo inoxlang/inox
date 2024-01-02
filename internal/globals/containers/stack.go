@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/inoxlang/inox/internal/core"
+	coll_symbolic "github.com/inoxlang/inox/internal/globals/containers/symbolic"
 )
 
 const (
@@ -83,5 +84,5 @@ func (*Stack) SetProp(ctx *core.Context, name string, value core.Value) error {
 }
 
 func (*Stack) PropertyNames(ctx *core.Context) []string {
-	return []string{"push", "pop", "peek"}
+	return coll_symbolic.STACK_PROPNAMES
 }
