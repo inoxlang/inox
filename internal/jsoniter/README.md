@@ -12,4 +12,4 @@ This package is a modified extract of https://github.com/json-iterator/go (MIT L
 
 This package only provides a subset of the original features:
 - JSON iterator without reflection related features
-- JSON stream without reflection related features
+- JSON stream without reflection related features nor indention logic

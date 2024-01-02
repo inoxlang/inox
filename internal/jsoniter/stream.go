@@ -11,7 +11,6 @@ type Stream struct {
 	out        io.Writer
 	buf        []byte
 	Error      error
-	indention  int
 	Attachment interface{} // open for customized encoder
 }
 
@@ -21,11 +20,10 @@ type Stream struct {
 // bufSize is the initial size for the internal buffer in bytes.
 func NewStream(cfg API, out io.Writer, bufSize int) *Stream {
 	return &Stream{
-		cfg:       cfg.(*frozenConfig),
-		out:       out,
-		buf:       make([]byte, 0, bufSize),
-		Error:     nil,
-		indention: 0,
+		cfg:   cfg.(*frozenConfig),
+		out:   out,
+		buf:   make([]byte, 0, bufSize),
+		Error: nil,
 	}
 }
 
@@ -145,25 +143,17 @@ func (stream *Stream) WriteBool(val bool) {
 
 // WriteObjectStart write { with possible indention
 func (stream *Stream) WriteObjectStart() {
-	stream.indention += stream.cfg.indentionStep
 	stream.writeByte('{')
-	stream.writeIndention(0)
 }
 
 // WriteObjectField write "field": with possible indention
 func (stream *Stream) WriteObjectField(field string) {
 	stream.WriteString(field)
-	if stream.indention > 0 {
-		stream.writeTwoBytes(':', ' ')
-	} else {
-		stream.writeByte(':')
-	}
+	stream.writeByte(':')
 }
 
 // WriteObjectEnd write } with possible indention
 func (stream *Stream) WriteObjectEnd() {
-	stream.writeIndention(stream.cfg.indentionStep)
-	stream.indention -= stream.cfg.indentionStep
 	stream.writeByte('}')
 }
 
@@ -176,14 +166,11 @@ func (stream *Stream) WriteEmptyObject() {
 // WriteMore write , with possible indention
 func (stream *Stream) WriteMore() {
 	stream.writeByte(',')
-	stream.writeIndention(0)
 }
 
 // WriteArrayStart write [ with possible indention
 func (stream *Stream) WriteArrayStart() {
-	stream.indention += stream.cfg.indentionStep
 	stream.writeByte('[')
-	stream.writeIndention(0)
 }
 
 // WriteEmptyArray write []
@@ -193,18 +180,5 @@ func (stream *Stream) WriteEmptyArray() {
 
 // WriteArrayEnd write ] with possible indention
 func (stream *Stream) WriteArrayEnd() {
-	stream.writeIndention(stream.cfg.indentionStep)
-	stream.indention -= stream.cfg.indentionStep
 	stream.writeByte(']')
-}
-
-func (stream *Stream) writeIndention(delta int) {
-	if stream.indention == 0 {
-		return
-	}
-	stream.writeByte('\n')
-	toWrite := stream.indention - delta
-	for i := 0; i < toWrite; i++ {
-		stream.buf = append(stream.buf, ' ')
-	}
 }

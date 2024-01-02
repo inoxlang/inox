@@ -23,16 +23,13 @@ var ConfigDefault = Config{}.Froze()
 
 type frozenConfig struct {
 	configBeforeFrozen Config
-	indentionStep      int
 	streamPool         *sync.Pool
 	iteratorPool       *sync.Pool
 }
 
 // Froze forge API from config
 func (cfg Config) Froze() API {
-	api := &frozenConfig{
-		indentionStep: cfg.IndentionStep,
-	}
+	api := &frozenConfig{}
 	api.streamPool = &sync.Pool{
 		New: func() interface{} {
 			return NewStream(api, nil, 512)
