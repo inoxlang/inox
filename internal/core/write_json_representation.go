@@ -199,10 +199,7 @@ func (rec *Record) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, con
 			entryPatterns = recPatt.entryPatterns
 		}
 
-		_, err := w.Write([]byte{'{'})
-		if err != nil {
-			return err
-		}
+		w.WriteObjectStart()
 
 		keys := rec.keys
 		first := true
@@ -221,7 +218,7 @@ func (rec *Record) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, con
 			first = false
 			w.WriteObjectField(k)
 
-			err = v.WriteJSONRepresentation(ctx, w, JSONSerializationConfig{
+			err := v.WriteJSONRepresentation(ctx, w, JSONSerializationConfig{
 				ReprConfig: config.ReprConfig,
 				Pattern:    entryPatterns[k],
 			}, depth+1)
@@ -230,10 +227,7 @@ func (rec *Record) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, con
 			}
 		}
 
-		_, err = w.Write([]byte{'}'})
-		if err != nil {
-			return err
-		}
+		w.WriteObjectEnd()
 		return nil
 	}
 

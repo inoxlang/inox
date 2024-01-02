@@ -120,3 +120,11 @@ func EmptySliceIfNil[T any](slice []T) []T {
 func RemoveIndexOfSlice[T any](s []T, index int) []T {
 	return append(s[:index], s[index+1:]...)
 }
+
+func Repeat[T any](n int, fn func(index int) T) []T {
+	slice := make([]T, n)
+	for i := 0; i < n; i++ {
+		slice[i] = fn(i)
+	}
+	return slice
+}
