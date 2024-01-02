@@ -37,6 +37,14 @@ func TestUniquenessConstraint(t *testing.T) {
 			}),
 		)
 
+		assert.True(t,
+			(UniquenessConstraint{
+				Type: UniqueTransientID,
+			}).Equal(UniquenessConstraint{
+				Type: UniqueTransientID,
+			}),
+		)
+
 		assert.False(t,
 			(UniquenessConstraint{
 				Type: UniqueURL,
@@ -65,9 +73,25 @@ func TestUniquenessConstraint(t *testing.T) {
 
 		assert.False(t,
 			(UniquenessConstraint{
+				Type: UniqueURL,
+			}).Equal(UniquenessConstraint{
+				Type: UniqueTransientID,
+			}),
+		)
+
+		assert.False(t,
+			(UniquenessConstraint{
 				Type: UniqueRepr,
 			}).Equal(UniquenessConstraint{
 				Type: UniqueURL,
+			}),
+		)
+
+		assert.False(t,
+			(UniquenessConstraint{
+				Type: UniqueRepr,
+			}).Equal(UniquenessConstraint{
+				Type: UniqueTransientID,
 			}),
 		)
 

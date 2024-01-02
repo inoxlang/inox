@@ -14,25 +14,32 @@ import (
 )
 
 const (
-	URL_UNIQUENESS_IDENT  = core.Identifier("url")
-	REPR_UNIQUENESS_IDENT = core.Identifier("repr")
+	URL_UNIQUENESS_IDENT          = core.Identifier("url")
+	REPR_UNIQUENESS_IDENT         = core.Identifier("repr")
+	TRANSIENT_ID_UNIQUENESS_IDENT = core.Identifier("transient-id")
 )
 
 var (
-	ErrFailedGetUniqueKeyNoURL                               = errors.New("failed to get unique key for value since it has no URL")
-	ErrFailedGetUniqueKeyNoProps                             = errors.New("failed to get unique key for value since it has no properties")
-	ErrFailedGetUniqueKeyPropMissing                         = errors.New("failed to get unique key for value since the property is missing")
-	ErrPropertyBasedUniquenessRequireValuesToHaveTheProperty = errors.New("property-based uniqueness requires values to have the property")
-	ErrReprBasedUniquenessRequireValuesToBeImmutable         = errors.New("representation-based uniqueness requires values to be immutable")
-	ErrUrlBasedUniquenessRequireValuesToBeUrlHolders         = errors.New("URL-based uniqueness requires values to be URL holders")
-	ErrContainerShouldHaveURL                                = errors.New("container should have a URL")
+	ErrFailedGetUniqueKeyNoURL                                  = errors.New("failed to get unique key for value since it has no URL")
+	ErrFailedGetUniqueKeyNoProps                                = errors.New("failed to get unique key for value since it has no properties")
+	ErrFailedGetUniqueKeyPropMissing                            = errors.New("failed to get unique key for value since the property is missing")
+	ErrPropertyBasedUniquenessRequireValuesToHaveTheProperty    = errors.New("property-based uniqueness requires values to have the property")
+	ErrReprBasedUniquenessRequireValuesToBeImmutable            = errors.New("representation-based uniqueness requires values to be immutable")
+	ErrTransientIDBasedUniquenessRequireValuesToHaveTransientID = errors.New("transient id-based uniqueness requires values to have a transient id")
+	ErrUrlBasedUniquenessRequireValuesToBeUrlHolders            = errors.New("URL-based uniqueness requires values to be URL holders")
+	ErrContainerShouldHaveURL                                   = errors.New("container should have a URL")
 
 	UniqueKeyReprConfig = &core.ReprConfig{AllVisible: true}
 
-	URL_UNIQUENESS_SYMB_IDENT  = symbolic.NewIdentifier(URL_UNIQUENESS_IDENT.UnderlyingString())
-	REPR_UNIQUENESS_SYMB_IDENT = symbolic.NewIdentifier(REPR_UNIQUENESS_IDENT.UnderlyingString())
+	URL_UNIQUENESS_SYMB_IDENT          = symbolic.NewIdentifier(URL_UNIQUENESS_IDENT.UnderlyingString())
+	REPR_UNIQUENESS_SYMB_IDENT         = symbolic.NewIdentifier(REPR_UNIQUENESS_IDENT.UnderlyingString())
+	TRANSIENT_ID_UNIQUENESS_SYMB_IDENT = symbolic.NewIdentifier(TRANSIENT_ID_UNIQUENESS_IDENT.UnderlyingString())
 
-	EXPECTED_SYMB_VALUE_FOR_UNIQUENESS = "#url, #repr or a property name is expected"
+	EXPECTED_SYMB_VALUE_FOR_UNIQUENESS = fmt.Sprintf("#%s, #%s, #%s or a property name is expected",
+		URL_UNIQUENESS_IDENT,
+		REPR_UNIQUENESS_IDENT,
+		TRANSIENT_ID_UNIQUENESS_IDENT,
+	)
 )
 
 type UniquenessConstraint struct {
@@ -43,6 +50,12 @@ type UniquenessConstraint struct {
 func NewReprUniqueness() *UniquenessConstraint {
 	return &UniquenessConstraint{
 		Type: UniqueRepr,
+	}
+}
+
+func NewTransientIdUniqueness() *UniquenessConstraint {
+	return &UniquenessConstraint{
+		Type: UniqueTransientID,
 	}
 }
 
@@ -61,6 +74,8 @@ func UniquenessConstraintFromValue(val core.Value) (UniquenessConstraint, bool) 
 			uniqueness.Type = UniqueURL
 		case REPR_UNIQUENESS_IDENT:
 			uniqueness.Type = UniqueRepr
+		case TRANSIENT_ID_UNIQUENESS_IDENT:
+			uniqueness.Type = UniqueTransientID
 		default:
 			return UniquenessConstraint{}, false
 		}
@@ -92,23 +107,28 @@ func UniquenessConstraintFromSymbolicValue(val symbolic.Value, elementPattern sy
 			PropertyName: core.PropertyName(propertyName),
 		}, nil
 	case *symbolic.Identifier:
-		if !val.HasConcreteName() || (val.Name() != "url" && val.Name() != "repr") {
+		if !val.HasConcreteName() {
 			return UniquenessConstraint{}, errors.New(EXPECTED_SYMB_VALUE_FOR_UNIQUENESS)
 		}
 
 		switch val.Name() {
-		case URL_UNIQUENESS_IDENT.UnderlyingString():
+		case string(URL_UNIQUENESS_IDENT):
 			_, ok := elem.(symbolic.UrlHolder)
 			if !ok {
 				return UniquenessConstraint{}, ErrUrlBasedUniquenessRequireValuesToBeUrlHolders
 			}
 
 			return UniquenessConstraint{Type: UniqueURL}, nil
-		case REPR_UNIQUENESS_IDENT.UnderlyingString():
+		case string(REPR_UNIQUENESS_IDENT):
 			if elementPattern.SymbolicValue().IsMutable() {
 				return UniquenessConstraint{}, ErrReprBasedUniquenessRequireValuesToBeImmutable
 			}
 			return UniquenessConstraint{Type: UniqueRepr}, nil
+
+		case string(TRANSIENT_ID_UNIQUENESS_IDENT):
+			return UniquenessConstraint{Type: UniqueTransientID}, nil
+		default:
+			return UniquenessConstraint{}, errors.New(EXPECTED_SYMB_VALUE_FOR_UNIQUENESS)
 		}
 	}
 	return UniquenessConstraint{}, errors.New(EXPECTED_SYMB_VALUE_FOR_UNIQUENESS)
@@ -120,6 +140,8 @@ func (c UniquenessConstraint) ToValue() core.Serializable {
 		return REPR_UNIQUENESS_IDENT
 	case UniqueURL:
 		return URL_UNIQUENESS_IDENT
+	case UniqueTransientID:
+		return TRANSIENT_ID_UNIQUENESS_IDENT
 	case UniquePropertyValue:
 		return c.PropertyName
 	default:
@@ -129,6 +151,8 @@ func (c UniquenessConstraint) ToValue() core.Serializable {
 
 func (c UniquenessConstraint) ToSymbolicValue() symbolic.Value {
 	switch c.Type {
+	case UniqueTransientID:
+		return TRANSIENT_ID_UNIQUENESS_SYMB_IDENT
 	case UniqueRepr:
 		return REPR_UNIQUENESS_SYMB_IDENT
 	case UniqueURL:
@@ -182,6 +206,7 @@ const (
 	UniqueRepr UniquenessConstraintType = iota + 1
 	UniqueURL
 	UniquePropertyValue
+	UniqueTransientID
 )
 
 type KeyRetrievalParams struct {
@@ -194,12 +219,15 @@ type KeyRetrievalParams struct {
 
 // GetUniqueKey computes the key of the provided value. For UniqueRepr and UniquePropertyValue uniqueness
 // the key is written to the provided stream, so the returned string should be cloned before being stored.
+// GetUniqueKey does not support retrieving the key for UniqueAddress uniqueness.
 func GetUniqueKey(ctx *core.Context, args KeyRetrievalParams) string {
 	config := args.Config
 	container := args.Container
 	v := args.Value
 
 	switch config.Type {
+	case UniqueTransientID:
+		panic(errors.New("transient id based uniqueness does not use keys"))
 	case UniqueRepr:
 		if v.IsMutable() {
 			panic(core.ErrReprOfMutableValueCanChange)

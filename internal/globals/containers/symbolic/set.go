@@ -71,6 +71,8 @@ func NewSet(ctx *symbolic.Context, elements symbolic.Iterable, config *symbolic.
 			if err != nil {
 				err := commonfmt.FmtInvalidValueForPropXOfArgY(SET_CONFIG_UNIQUE_PROP_KEY, "configuration", err.Error())
 				ctx.AddSymbolicGoFunctionError(err.Error())
+			} else if u.Type == common.UniqueTransientID {
+				ctx.AddSymbolicGoFunctionError("uniqueness based on transient ID is not supported by Set")
 			} else {
 				uniqueness = &u
 			}
