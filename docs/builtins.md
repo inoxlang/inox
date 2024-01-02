@@ -884,7 +884,7 @@ fn handle(rw http.resp-writer, r http.req){
           rw.write_json({ a: 1 })
       }
       %/... {
-        rw.write_headers(404)
+        rw.write_headers(http.status.NOT_FOUND)
       }
     }
 }
