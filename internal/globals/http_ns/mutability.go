@@ -18,6 +18,10 @@ func (resp *HttpResponse) IsMutable() bool {
 	return true
 }
 
+func (resp *HttpResult) IsMutable() bool {
+	return true
+}
+
 func (s Status) IsMutable() bool {
 	return false
 }

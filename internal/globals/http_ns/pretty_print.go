@@ -70,6 +70,10 @@ func (r *HttpResponse) PrettyPrint(w *bufio.Writer, config *core.PrettyPrintConf
 	}
 }
 
+func (r *HttpResult) PrettyPrint(w *bufio.Writer, config *core.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "HttpResult(%d)", r.status))
+}
+
 func (s Status) PrettyPrint(w *bufio.Writer, config *core.PrettyPrintConfig, depth int, parentIndentCount int) {
 	if config.Colorize {
 		utils.Must(w.Write(getStatusCodeColor(s.code, config.Colors)))

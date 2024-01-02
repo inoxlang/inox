@@ -106,6 +106,7 @@ func init() {
 				"EmailAddress":      core.WrapGoFunction(makeEmailAddress),
 				"statuses":          STATUS_NAMESPACE,
 				"Status":            core.WrapGoFunction(makeStatus),
+				"Result":            core.WrapGoFunction(NewResult),
 			})
 
 			return state, nil
@@ -1167,7 +1168,7 @@ func runAdvancedServerTest(
 				continue
 			}
 
-			//check response
+			//check status
 
 			reqInfo := "request" + strconv.Itoa(i) + " " + info.method + " " + info.path
 
@@ -1191,6 +1192,13 @@ func runAdvancedServerTest(
 					return
 				}
 			}
+
+			//check headers
+
+			for headerName, expectedValues := range info.expectedHeaderSubset {
+				assert.Equal(t, expectedValues, resp.Header.Values(headerName))
+			}
+
 		check_body:
 
 			body := string(utils.Must(io.ReadAll(resp.Body)))
@@ -1244,6 +1252,7 @@ type requestTestInfo struct {
 	events                        []*core.Event
 	err                           error
 	status                        int //defaults to 200
+	expectedHeaderSubset          http.Header
 	okayIf429                     bool
 
 	onStartSending   func()

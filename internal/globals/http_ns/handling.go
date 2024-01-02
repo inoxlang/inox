@@ -2,6 +2,7 @@ package http_ns
 
 import (
 	"html"
+	"maps"
 	"net/http"
 
 	"slices"
@@ -9,6 +10,7 @@ import (
 	"github.com/inoxlang/inox/internal/core"
 	jsoniter "github.com/inoxlang/inox/internal/jsoniter"
 	"github.com/inoxlang/inox/internal/mimeconsts"
+	"github.com/inoxlang/inox/internal/utils"
 	"github.com/rs/zerolog"
 )
 
@@ -169,6 +171,8 @@ func respondWithMappingResult(h handlingArguments) {
 	server := h.server
 	renderingConfig := core.RenderingInput{Mime: mimeconsts.HTML_CTYPE}
 
+	statusIfAccepted := http.StatusOK
+
 	switch v := value.(type) {
 	case *core.InoxFunction: // if inox handler we call it and return
 		args := []core.Value{core.ValOf(rw), core.ValOf(req)}
@@ -179,11 +183,17 @@ func respondWithMappingResult(h handlingArguments) {
 		}
 		return
 	case Status:
-		rw.writeStatus(core.Int(v.code))
+		rw.writeStatus(int(v.code))
 		return
 	case StatusCode:
-		rw.writeStatus(core.Int(v))
+		rw.writeStatus(int(v))
 		return
+	case *HttpResult:
+		maps.Copy(rw.rw.Header(), v.headers)
+		statusIfAccepted = int(v.status)
+
+		//use the value inside the result
+		value = v.value
 	case core.Identifier:
 		switch v {
 		case "notfound":
@@ -215,7 +225,10 @@ func respondWithMappingResult(h handlingArguments) {
 			return
 		}
 
+		//finalize and send headers
 		rw.WriteContentType(mimeconsts.IXON_CTYPE)
+		rw.writeStatus(statusIfAccepted)
+
 		serializable.WriteRepresentation(state.Ctx, rw.BodyWriter(), config, 0)
 		return
 	case req.ParsedAcceptHeader.Match(mimeconsts.JSON_CTYPE):
@@ -229,7 +242,11 @@ func respondWithMappingResult(h handlingArguments) {
 			return
 		}
 
+		//finalize and send headers
 		rw.WriteContentType(mimeconsts.JSON_CTYPE)
+		rw.writeStatus(statusIfAccepted)
+
+		//write value as JSON
 		stream := jsoniter.NewStream(jsoniter.ConfigDefault, rw.BodyWriter(), 0)
 		serializable.WriteJSONRepresentation(state.Ctx, stream, config, 0)
 		stream.Flush()
@@ -316,21 +333,27 @@ loop:
 			//TODO: replace non printable characters
 			escaped := html.EscapeString(v.GetOrBuildString())
 
-			rw.WritePlainText(h.state.Ctx, core.NewImmutableByteSlice([]byte(escaped), ""))
+			//finalize and send headers
+			rw.WriteContentType(mimeconsts.PLAIN_TEXT_CTYPE)
+			rw.writeStatus(statusIfAccepted)
+
+			//write body
+			rw.BodyWriter().Write(utils.StringAsBytes(escaped))
 		case *core.ByteSlice:
 			contentType := string(v.ContentType())
 			if !req.ParsedAcceptHeader.Match(contentType) {
 				rw.writeStatus(http.StatusNotAcceptable)
 				return
 			}
-
-			//TODO: use matching instead of equality
-			if contentType == mimeconsts.HTML_CTYPE {
+			//finalize and send headers
+			if contentType == mimeconsts.HTML_CTYPE { //TODO: use matching instead of equality
 				headerValue := server.defaultCSP.HeaderValue(CSPHeaderValueParams{ScriptsNonce: h.scriptsNonce})
 				rw.AddHeader(state.Ctx, CSP_HEADER_NAME, core.Str(headerValue))
 			}
-
 			rw.WriteContentType(contentType)
+			rw.writeStatus(statusIfAccepted)
+
+			//write body
 			rw.BodyWriter().Write(v.UnderlyingBytes())
 		case core.Renderable:
 
@@ -390,11 +413,14 @@ loop:
 					return
 				}
 
+				//finalize and send headers
 				rw.WriteContentType(mimeconsts.HTML_CTYPE)
 
 				cspHeaderValue := core.Str(server.defaultCSP.HeaderValue(CSPHeaderValueParams{ScriptsNonce: h.scriptsNonce}))
 				rw.AddHeader(state.Ctx, CSP_HEADER_NAME, cspHeaderValue)
+				rw.writeStatus(statusIfAccepted)
 
+				//write body
 				_, err := core.Render(state.Ctx, rw.BodyWriter(), v, renderingConfig)
 				if err != nil {
 					logger.Print(err.Error())

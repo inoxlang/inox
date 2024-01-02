@@ -124,6 +124,7 @@ func init() {
 		ServeFile, func(ctx *symbolic.Context, rw *http_symbolic.HttpResponseWriter, r *http_symbolic.HttpRequest, path *symbolic.Path) *symbolic.Error {
 			return nil
 		},
+		NewResult, symbolicNewResult,
 		Mime_, func(ctx *symbolic.Context, arg *symbolic.String) (*symbolic.Mimetype, *symbolic.Error) {
 			return &symbolic.Mimetype{}, nil
 		},
@@ -209,6 +210,7 @@ func NewHttpNamespace() *core.Namespace {
 		"FileServer":     core.WrapGoFunction(NewFileServer),
 		"servefile":      core.WrapGoFunction(ServeFile),
 		"Client":         core.WrapGoFunction(NewClient),
+		"Result":         core.WrapGoFunction(NewResult),
 		"percent_encode": core.WrapGoFunction(PercentEncode),
 		"percent_decode": core.WrapGoFunction(PercentDecode),
 		"CSP":            core.WrapGoFunction(NewCSP),

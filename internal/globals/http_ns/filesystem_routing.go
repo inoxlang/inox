@@ -247,7 +247,7 @@ func createHandleDynamic(server *HttpsServer, routingDirPath core.Path) handlerF
 			GetArguments: func(manifest *core.Manifest) (*core.Struct, error) {
 				args, errStatusCode, err := getHandlerModuleArguments(req, manifest, handlerCtx, methodSpecificModule)
 				if err != nil {
-					rw.writeStatus(core.Int(errStatusCode))
+					rw.writeStatus(errStatusCode)
 				}
 				return args, err
 			},

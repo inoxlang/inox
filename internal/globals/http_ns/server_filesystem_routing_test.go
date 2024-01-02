@@ -961,9 +961,6 @@ func TestFilesystemRouting(t *testing.T) {
 	})
 
 	t.Run("returned status code should be used as the response's status", func(t *testing.T) {
-		//TODO: check that the error is ErrEffectsNotAllowedInReadonlyTransaction.
-		// A specific status code or text, or a header could be set.
-
 		runServerTest(t,
 			serverTestCase{
 				input: `return {
@@ -993,10 +990,7 @@ func TestFilesystemRouting(t *testing.T) {
 		)
 	})
 
-	t.Run("returned status should be used as the response's status", func(t *testing.T) {
-		//TODO: check that the error is ErrEffectsNotAllowedInReadonlyTransaction.
-		// A specific status code or text, or a header could be set.
-
+	t.Run("returned result should be used to make the response", func(t *testing.T) {
 		runServerTest(t,
 			serverTestCase{
 				input: `return {
@@ -1008,17 +1002,25 @@ func TestFilesystemRouting(t *testing.T) {
 					util.WriteFile(fls, "/routes/x.ix", []byte(`
 							manifest {}
 
-							return Status(statuses.UNAUTHORIZED)
+							return Result{
+								status: statuses.UNAUTHORIZED
+								body: "NOT.AUTHORIZED"
+								headers: {
+									X-Y: "a"
+								}
+							}
 						`), fs_ns.DEFAULT_FILE_FMODE)
 
 					return fls
 				},
 				requests: []requestTestInfo{
 					{
-						path:                "/x",
-						method:              "HEAD",
-						acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
-						status:              http.StatusUnauthorized,
+						path:                 "/x",
+						method:               "GET",
+						acceptedContentType:  mimeconsts.PLAIN_TEXT_CTYPE,
+						result:               "NOT.AUTHORIZED",
+						status:               http.StatusUnauthorized,
+						expectedHeaderSubset: http.Header{"X-Y": []string{"a"}},
 					},
 				},
 			},

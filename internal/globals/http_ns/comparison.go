@@ -30,6 +30,11 @@ func (r *HttpResponse) Equal(ctx *core.Context, other core.Value, alreadyCompare
 	return ok && r == otherResp
 }
 
+func (r *HttpResult) Equal(ctx *core.Context, other core.Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	otherResult, ok := other.(*HttpResult)
+	return ok && r == otherResult
+}
+
 func (s Status) Equal(ctx *core.Context, other core.Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
 	otherStatus, ok := other.(Status)
 	if !ok {

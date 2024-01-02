@@ -9,7 +9,8 @@ import (
 var (
 	HTML_NODE_PROPNAMES = []string{"first-child", "data"}
 
-	_ symbolic.Watchable = (*HTMLNode)(nil)
+	_             symbolic.Watchable = (*HTMLNode)(nil)
+	ANY_HTML_NODE                    = &HTMLNode{}
 )
 
 type HTMLNode struct {

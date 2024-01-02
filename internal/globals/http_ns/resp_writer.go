@@ -293,7 +293,7 @@ func (rw *HttpResponseWriter) SetCookie(ctx *core.Context, obj *core.Object) err
 	return nil
 }
 
-func (rw *HttpResponseWriter) writeStatus(status core.Int) {
+func (rw *HttpResponseWriter) writeStatus(status int) {
 	rw.assertIsNotFinished()
 	rw.assertStatusNotSet()
 
@@ -305,7 +305,7 @@ func (rw *HttpResponseWriter) writeStatus(status core.Int) {
 }
 
 func (rw *HttpResponseWriter) WriteStatus(ctx *core.Context, status core.Int) {
-	rw.writeStatus(status)
+	rw.writeStatus(int(status))
 }
 
 func (rw *HttpResponseWriter) WriteError(ctx *core.Context, err core.Error, code core.Int) {

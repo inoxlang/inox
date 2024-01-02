@@ -3,6 +3,7 @@ package http_ns
 import (
 	"errors"
 	"fmt"
+	"io"
 	"math"
 	"net/http"
 	"strconv"
@@ -10,11 +11,12 @@ import (
 
 	"github.com/inoxlang/inox/internal/core"
 	http_ns_symb "github.com/inoxlang/inox/internal/globals/http_ns/symbolic"
+	jsoniter "github.com/inoxlang/inox/internal/jsoniter"
 )
 
 var (
 	ErrOutOfBoundsStatusCode = errors.New("out of bounds status code")
-	_                        = []core.Value{Status{}, StatusCode(100)}
+	_                        = []core.Serializable{Status{}, StatusCode(100)}
 )
 
 type Status struct {
@@ -87,6 +89,15 @@ func (Status) SetProp(ctx *core.Context, name string, value core.Value) error {
 	return core.ErrCannotSetProp
 }
 
+func (Status) WriteRepresentation(ctx *core.Context, w io.Writer, config *core.ReprConfig, depth int) error {
+	return core.ErrNotImplementedYet
+}
+
+func (s Status) WriteJSONRepresentation(ctx *core.Context, w *jsoniter.Stream, config core.JSONSerializationConfig, depth int) error {
+	w.WriteString(s.FullText())
+	return nil
+}
+
 type StatusCode uint16
 
 func MakeStatusCode(_ *core.Context, n core.Int) (StatusCode, error) {
@@ -104,4 +115,13 @@ func (c StatusCode) assertInBounds() {
 
 func (c StatusCode) inBounds() bool {
 	return c >= 100 && c <= 599
+}
+
+func (StatusCode) WriteRepresentation(ctx *core.Context, w io.Writer, config *core.ReprConfig, depth int) error {
+	return core.ErrNotImplementedYet
+}
+
+func (c StatusCode) WriteJSONRepresentation(ctx *core.Context, w *jsoniter.Stream, config core.JSONSerializationConfig, depth int) error {
+	w.WriteUint(uint(c))
+	return nil
 }

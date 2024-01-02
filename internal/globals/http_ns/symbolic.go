@@ -22,6 +22,10 @@ func (resp *HttpResponse) ToSymbolicValue(ctx *core.Context, encountered map[uin
 	return &http_symbolic.HttpResponse{}, nil
 }
 
+func (res *HttpResult) ToSymbolicValue(ctx *core.Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
+	return http_symbolic.ANY_RESULT, nil
+}
+
 func (s Status) ToSymbolicValue(ctx *core.Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return http_symbolic.ANY_STATUS, nil
 }
