@@ -4,13 +4,19 @@ import (
 	"errors"
 	"path/filepath"
 	"reflect"
+	"strings"
 
 	"github.com/inoxlang/inox/internal/commonfmt"
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/jsoniter"
 	"github.com/inoxlang/inox/internal/utils"
 
 	"github.com/inoxlang/inox/internal/globals/containers/common"
 	coll_symbolic "github.com/inoxlang/inox/internal/globals/containers/symbolic"
+)
+
+const (
+	INITIAL_SET_KEY_BUF = 2000
 )
 
 var (
@@ -31,8 +37,10 @@ func init() {
 }
 
 type Set struct {
-	elements                       map[string]core.Serializable
-	pathKeyToKey                   map[core.ElementKey]string
+	keyBuf       *jsoniter.Stream //used to write JSON representation of elements or key fields
+	elements     map[string]core.Serializable
+	pathKeyToKey map[core.ElementKey]string //nil on start, will be initialized during the first GetElementByKey call.
+
 	pendingInclusions              map[*core.Transaction]map[string]core.Serializable
 	pendingRemovals                map[*core.Transaction]map[string]struct{}
 	transactionsWithSetEndCallback map[*core.Transaction]struct{}
@@ -105,8 +113,8 @@ func (c SetConfig) Equal(ctx *core.Context, otherConfig SetConfig, alreadyCompar
 
 func NewSetWithConfig(ctx *core.Context, elements core.Iterable, config SetConfig) *Set {
 	set := &Set{
+		keyBuf:                         jsoniter.NewStream(jsoniter.ConfigDefault, nil, INITIAL_SET_KEY_BUF),
 		elements:                       make(map[string]core.Serializable),
-		pathKeyToKey:                   make(map[core.ElementKey]string),
 		pendingInclusions:              make(map[*core.Transaction]map[string]core.Serializable, 0),
 		pendingRemovals:                make(map[*core.Transaction]map[string]struct{}, 0),
 		transactionsWithSetEndCallback: make(map[*core.Transaction]struct{}, 0),
@@ -159,7 +167,7 @@ func (set *Set) URL() (core.URL, bool) {
 	return "", false
 }
 
-func (set *Set) GetElementPathKeyFromKey(key string) core.ElementKey {
+func (set *Set) getElementPathKeyFromKey(key string) core.ElementKey {
 	return common.GetElementPathKeyFromKey(key, set.config.Uniqueness.Type)
 }
 
@@ -168,6 +176,7 @@ func (set *Set) SetURLOnce(ctx *core.Context, url core.URL) error {
 }
 
 func (set *Set) GetElementByKey(ctx *core.Context, pathKey core.ElementKey) (core.Serializable, error) {
+	set.initPathKeyMap()
 	key := set.pathKeyToKey[pathKey]
 
 	tx := ctx.GetTx()
@@ -210,7 +219,8 @@ func (set *Set) hasNoLock(ctx *core.Context, elem core.Serializable) core.Bool {
 		panic(ErrValueDoesMatchElementPattern)
 	}
 
-	key := common.GetUniqueKey(ctx, elem, set.config.Uniqueness, set)
+	key := set.getUniqueKey(ctx, elem)
+	//we don't clone the key because it will not be stored.
 
 	tx := ctx.GetTx()
 
@@ -260,7 +270,30 @@ func (set *Set) Get(ctx *core.Context, keyVal core.StringLike) (core.Value, core
 }
 
 func (set *Set) Add(ctx *core.Context, elem core.Serializable) {
-	set.addNoPersist(ctx, elem)
+	if !set.lock.IsValueShared() {
+		if set.config.Element != nil && !set.config.Element.Test(ctx, elem) {
+			panic(ErrValueDoesMatchElementPattern)
+		}
+
+		set.config.Uniqueness.AddUrlIfNecessary(ctx, set, elem)
+		key := set.getUniqueKey(ctx, elem)
+
+		_, ok := set.elements[key]
+		if ok {
+			//no need to clone the key.
+			return
+		}
+
+		key = strings.Clone(key)
+		set.elements[key] = elem
+
+		if set.pathKeyToKey != nil {
+			set.pathKeyToKey[set.getElementPathKeyFromKey(key)] = key
+		}
+		return
+	}
+
+	set.addToSharedSetNoPersist(ctx, elem)
 
 	tx := ctx.GetTx()
 
@@ -278,7 +311,7 @@ func (set *Set) Add(ctx *core.Context, elem core.Serializable) {
 	}
 }
 
-func (set *Set) addNoPersist(ctx *core.Context, elem core.Serializable) {
+func (set *Set) addToSharedSetNoPersist(ctx *core.Context, elem core.Serializable) {
 	if set.config.Element != nil && !set.config.Element.Test(ctx, elem) {
 		panic(ErrValueDoesMatchElementPattern)
 	}
@@ -287,12 +320,15 @@ func (set *Set) addNoPersist(ctx *core.Context, elem core.Serializable) {
 	elem = utils.Must(core.ShareOrClone(elem, closestState)).(core.Serializable)
 
 	set.config.Uniqueness.AddUrlIfNecessary(ctx, set, elem)
-	key := common.GetUniqueKey(ctx, elem, set.config.Uniqueness, set)
+	key := strings.Clone(set.getUniqueKey(ctx, elem))
 
 	set.lock.Lock(closestState, set)
 	defer set.lock.Unlock(closestState, set)
 
-	set.pathKeyToKey[set.GetElementPathKeyFromKey(key)] = key
+	if set.pathKeyToKey != nil {
+		set.pathKeyToKey[set.getElementPathKeyFromKey(key)] = key
+	}
+
 	//TODO: from time to time .pathKeyToKey should be (safely !) cleaned up
 
 	tx := ctx.GetTx()
@@ -335,7 +371,7 @@ func (set *Set) addNoPersist(ctx *core.Context, elem core.Serializable) {
 }
 
 func (set *Set) Remove(ctx *core.Context, elem core.Serializable) {
-	key := common.GetUniqueKey(ctx, elem, set.config.Uniqueness, set)
+	key := strings.Clone(set.getUniqueKey(ctx, elem))
 
 	closestState := ctx.GetClosestState()
 	set.lock.Lock(closestState, set)
@@ -362,6 +398,29 @@ func (set *Set) Remove(ctx *core.Context, elem core.Serializable) {
 			set.transactionsWithSetEndCallback[tx] = struct{}{}
 		}
 	}
+}
+
+func (set *Set) initPathKeyMap() {
+	if set.pathKeyToKey != nil {
+		//already initialized
+		return
+	}
+	set.pathKeyToKey = make(map[core.ElementKey]string, len(set.elements))
+	for elemKey := range set.elements {
+		set.pathKeyToKey[set.getElementPathKeyFromKey(elemKey)] = elemKey
+	}
+}
+
+// getUniqueKey returns a key that should be cloned if it is stored.
+func (set *Set) getUniqueKey(ctx *core.Context, v core.Serializable) string {
+	key := common.GetUniqueKey(ctx, common.KeyRetrievalParams{
+		Value:                   v,
+		Config:                  set.config.Uniqueness,
+		Container:               set,
+		JSONSerializationConfig: core.JSONSerializationConfig{Pattern: set.config.Element},
+		Stream:                  set.keyBuf,
+	})
+	return key
 }
 
 func (set *Set) makeTransactionEndCallback(ctx *core.Context, closestState *core.GlobalState) core.TransactionEndCallbackFn {

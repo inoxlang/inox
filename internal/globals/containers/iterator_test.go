@@ -171,7 +171,7 @@ func TestSetIteration(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		set := NewSetWithConfig(ctx, core.NewWrappedValueList(core.Int(1)), SetConfig{
-			Element: core.ANYVAL_PATTERN,
+			Element: core.INT_PATTERN,
 			Uniqueness: common.UniquenessConstraint{
 				Type: common.UniqueRepr,
 			},
@@ -195,7 +195,7 @@ func TestSetIteration(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		set := NewSetWithConfig(ctx, core.NewWrappedValueList(core.Int(1), core.Int(2)), SetConfig{
-			Element: core.ANYVAL_PATTERN,
+			Element: core.INT_PATTERN,
 			Uniqueness: common.UniquenessConstraint{
 				Type: common.UniqueRepr,
 			},
@@ -240,7 +240,7 @@ func TestSetIteration(t *testing.T) {
 			defer ctx.CancelGracefully()
 
 			set := NewSetWithConfig(ctx, tuple, SetConfig{
-				Element: core.ANYVAL_PATTERN,
+				Element: core.INT_PATTERN,
 				Uniqueness: common.UniquenessConstraint{
 					Type: common.UniqueRepr,
 				},
@@ -260,7 +260,7 @@ func TestSetIteration(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		set := NewSetWithConfig(ctx, tuple, SetConfig{
-			Element: core.ANYVAL_PATTERN,
+			Element: core.INT_PATTERN,
 			Uniqueness: common.UniquenessConstraint{
 				Type: common.UniqueRepr,
 			},
@@ -271,8 +271,12 @@ func TestSetIteration(t *testing.T) {
 		i := 0
 		for it.HasNext(ctx) {
 			assert.True(t, it.Next(ctx))
-			val := core.Str(strconv.Itoa(int(it.Value(ctx).(core.Int))))
-			assert.Equal(t, it.Key(ctx), val)
+			val := it.Value(ctx).(core.Int)
+			stringifiedVal := core.Str(strconv.Itoa(int(val)))
+
+			if !assert.Equal(t, it.Key(ctx), stringifiedVal) {
+				return
+			}
 			i++
 		}
 		assert.Equal(t, 100_000, i)
@@ -290,7 +294,7 @@ func TestSetIteration(t *testing.T) {
 			defer ctx.CancelGracefully()
 
 			set := NewSetWithConfig(ctx, tuple, SetConfig{
-				Element: core.ANYVAL_PATTERN,
+				Element: core.INT_PATTERN,
 				Uniqueness: common.UniquenessConstraint{
 					Type: common.UniqueRepr,
 				},
@@ -309,7 +313,7 @@ func TestSetIteration(t *testing.T) {
 			defer ctx.CancelGracefully()
 
 			set := NewSetWithConfig(ctx, tuple, SetConfig{
-				Element: core.ANYVAL_PATTERN,
+				Element: core.INT_PATTERN,
 				Uniqueness: common.UniquenessConstraint{
 					Type: common.UniqueRepr,
 				},
@@ -322,8 +326,11 @@ func TestSetIteration(t *testing.T) {
 				if !assert.True(t, it.Next(ctx)) {
 					return
 				}
-				val := core.Str(strconv.Itoa(int(it.Value(ctx).(core.Int))))
-				if !assert.Equal(t, it.Key(ctx), val) {
+
+				val := it.Value(ctx).(core.Int)
+				stringifiedVal := core.Str(strconv.Itoa(int(val)))
+
+				if !assert.Equal(t, it.Key(ctx), stringifiedVal) {
 					return
 				}
 				i++

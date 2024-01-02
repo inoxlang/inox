@@ -48,14 +48,14 @@ func TestNewSet(t *testing.T) {
 		}, set.config)
 	})
 
-	t.Run("element with no representation", func(t *testing.T) {
+	t.Run("element with no representation yet", func(t *testing.T) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, io.Discard)
 
 		node := core.AstNode{Node: parse.MustParseChunk("")}
 
 		func() {
 			defer func() {
-				assert.ErrorContains(t, recover().(error), "failed to get representation")
+				assert.ErrorContains(t, recover().(error), "not implemented yet")
 			}()
 			NewSet(ctx, core.NewWrappedValueList(node), nil)
 		}()
@@ -176,9 +176,9 @@ func TestNewSet(t *testing.T) {
 			defer func() {
 				assert.ErrorContains(t, recover().(error), ErrValueDoesMatchElementPattern.Error())
 			}()
-			obj := core.NewObjectFromMap(core.ValMap{"a": core.True}, ctx)
+			record := core.NewRecordFromMap(core.ValMap{"a": core.True})
 
-			NewSet(ctx, core.NewWrappedValueList(obj), core.ToOptionalParam(config))
+			NewSet(ctx, core.NewWrappedValueList(record), core.ToOptionalParam(config))
 		}()
 	})
 }
@@ -195,6 +195,7 @@ func TestPersistLoadSet(t *testing.T) {
 
 	t.Run("empty", func(t *testing.T) {
 		ctx, storage := setup()
+		defer ctx.CancelGracefully()
 
 		pattern := NewSetPattern(SetConfig{
 			Uniqueness: common.UniquenessConstraint{
@@ -231,6 +232,7 @@ func TestPersistLoadSet(t *testing.T) {
 
 	t.Run("unique repr: single element", func(t *testing.T) {
 		ctx, storage := setup()
+		defer ctx.CancelGracefully()
 
 		pattern := NewSetPattern(SetConfig{
 			Uniqueness: common.UniquenessConstraint{
@@ -271,7 +273,7 @@ func TestPersistLoadSet(t *testing.T) {
 		assert.True(t, bool(loadedSet.Has(ctx, int1)))
 		assert.True(t, bool(loadedSet.Contains(ctx, int1)))
 
-		elemKey := loadedSet.GetElementPathKeyFromKey("1")
+		elemKey := loadedSet.getElementPathKeyFromKey(`{"int__value":1}`)
 		elem, err := loadedSet.GetElementByKey(ctx, elemKey)
 		if !assert.NoError(t, err, core.ErrCollectionElemNotFound) {
 			return
@@ -282,11 +284,13 @@ func TestPersistLoadSet(t *testing.T) {
 
 	t.Run("unique repr: two elements", func(t *testing.T) {
 		ctx, storage := setup()
+		defer ctx.CancelGracefully()
 
 		pattern := NewSetPattern(SetConfig{
 			Uniqueness: common.UniquenessConstraint{
 				Type: common.UniqueRepr,
 			},
+			Element: core.SERIALIZABLE_PATTERN,
 		}, core.CallBasedPatternReprMixin{})
 		set := NewSetWithConfig(ctx, nil, pattern.config)
 
@@ -328,14 +332,14 @@ func TestPersistLoadSet(t *testing.T) {
 		assert.True(t, bool(loadedSet.Has(ctx, int2)))
 		assert.True(t, bool(loadedSet.Contains(ctx, int2)))
 
-		elem1Key := loadedSet.GetElementPathKeyFromKey("1")
+		elem1Key := loadedSet.getElementPathKeyFromKey(`{"int__value":1}`)
 		elem1, err := loadedSet.GetElementByKey(ctx, elem1Key)
 		if !assert.NoError(t, err) {
 			return
 		}
 		assert.Equal(t, int1, elem1)
 
-		elem2Key := loadedSet.GetElementPathKeyFromKey("2")
+		elem2Key := loadedSet.getElementPathKeyFromKey(`{"int__value":2}`)
 		elem2, err := loadedSet.GetElementByKey(ctx, elem2Key)
 		if !assert.NoError(t, err) {
 			return
@@ -345,6 +349,7 @@ func TestPersistLoadSet(t *testing.T) {
 
 	t.Run("unique repr: element with non-unique repr", func(t *testing.T) {
 		ctx, storage := setup()
+		defer ctx.CancelGracefully()
 
 		pattern := NewSetPattern(SetConfig{
 			Uniqueness: common.UniquenessConstraint{
@@ -367,6 +372,7 @@ func TestPersistLoadSet(t *testing.T) {
 
 	t.Run("unique property value: element with missing property", func(t *testing.T) {
 		ctx, storage := setup()
+		defer ctx.CancelGracefully()
 
 		pattern := NewSetPattern(SetConfig{
 			Uniqueness: common.UniquenessConstraint{
@@ -388,6 +394,7 @@ func TestPersistLoadSet(t *testing.T) {
 
 	t.Run("unique property value: one element", func(t *testing.T) {
 		ctx, storage := setup()
+		defer ctx.CancelGracefully()
 
 		pattern := NewSetPattern(SetConfig{
 			Uniqueness: common.UniquenessConstraint{
@@ -427,6 +434,7 @@ func TestPersistLoadSet(t *testing.T) {
 
 	t.Run("unique property value: two elements", func(t *testing.T) {
 		ctx, storage := setup()
+		defer ctx.CancelGracefully()
 
 		pattern := NewSetPattern(SetConfig{
 			Uniqueness: common.UniquenessConstraint{
@@ -471,6 +479,7 @@ func TestPersistLoadSet(t *testing.T) {
 
 	t.Run("unique property value: two elements with same unique prop", func(t *testing.T) {
 		ctx, storage := setup()
+		defer ctx.CancelGracefully()
 
 		pattern := NewSetPattern(SetConfig{
 			Uniqueness: common.UniquenessConstraint{
@@ -575,7 +584,48 @@ func TestPersistLoadSet(t *testing.T) {
 	})
 }
 
-func TestSetAddRemove(t *testing.T) {
+func TestUnsharedSetAddRemove(t *testing.T) {
+	ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+
+	t.Run("representation uniqueness", func(t *testing.T) {
+		set := NewSetWithConfig(ctx, nil, SetConfig{
+			Element: core.INT_PATTERN,
+			Uniqueness: common.UniquenessConstraint{
+				Type: common.UniqueRepr,
+			},
+		})
+
+		int1 := core.Int(1)
+		set.Add(ctx, int1)
+		assert.True(t, bool(set.Has(ctx, int1)))
+		assert.False(t, bool(set.Has(ctx, core.Int(2))))
+
+		set.Remove(ctx, int1)
+		assert.False(t, bool(set.Has(ctx, int1)))
+	})
+
+	t.Run("property value uniqueness", func(t *testing.T) {
+		set := NewSetWithConfig(ctx, nil, SetConfig{
+			Element: core.RECORD_PATTERN,
+			Uniqueness: common.UniquenessConstraint{
+				Type:         common.UniquePropertyValue,
+				PropertyName: "x",
+			},
+		})
+
+		record1 := core.NewRecordFromMap(core.ValMap{"x": core.Int(1)})
+		record2 := core.NewRecordFromMap(core.ValMap{"x": core.Int(2)})
+
+		set.Add(ctx, record1)
+		assert.True(t, bool(set.Has(ctx, record1)))
+		assert.False(t, bool(set.Has(ctx, record2)))
+
+		set.Remove(ctx, record1)
+		assert.False(t, bool(set.Has(ctx, record1)))
+	})
+}
+
+func TestSharedSetAddRemove(t *testing.T) {
 
 	setup := func() (*core.Context, core.DataStore) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
@@ -726,6 +776,8 @@ func TestSetAddRemove(t *testing.T) {
 		ctx, storage := setup()
 		defer ctx.CancelGracefully()
 
+		defer ctx.CancelGracefully()
+
 		pattern := NewSetPattern(SetConfig{
 			Uniqueness: common.UniquenessConstraint{
 				Type: common.UniqueRepr,
@@ -770,6 +822,8 @@ func TestSetAddRemove(t *testing.T) {
 	t.Run("Set should be persisted at end of transaction if .Add was called transactionnaly", func(t *testing.T) {
 
 		ctx, storage := setup()
+		defer ctx.CancelGracefully()
+
 		tx := core.StartNewTransaction(ctx)
 
 		pattern := NewSetPattern(SetConfig{
@@ -861,6 +915,7 @@ func TestSetAddRemove(t *testing.T) {
 
 	t.Run("Set should be persisted during call to .Remove", func(t *testing.T) {
 		ctx, storage := setup()
+		defer ctx.CancelGracefully()
 
 		pattern := NewSetPattern(SetConfig{
 			Uniqueness: common.UniquenessConstraint{
@@ -901,6 +956,8 @@ func TestSetAddRemove(t *testing.T) {
 	t.Run("Set should be persisted at end of transaction if .Remove was called transactionnaly", func(t *testing.T) {
 
 		ctx, storage := setup()
+		defer ctx.CancelGracefully()
+
 		tx := core.StartNewTransaction(ctx)
 
 		pattern := NewSetPattern(SetConfig{
@@ -953,6 +1010,7 @@ func TestSetAddRemove(t *testing.T) {
 	})
 	t.Run("url holder with no URL should get one if Set is persistent", func(t *testing.T) {
 		ctx, storage := setup()
+		defer ctx.CancelGracefully()
 
 		pattern := NewSetPattern(SetConfig{
 			Uniqueness: common.UniquenessConstraint{
@@ -984,7 +1042,6 @@ func TestSetAddRemove(t *testing.T) {
 	})
 
 }
-
 func TestInteractWithElementsOfLoadedSet(t *testing.T) {
 	setup := func() (*core.Context, core.DataStore) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{
@@ -1008,6 +1065,7 @@ func TestInteractWithElementsOfLoadedSet(t *testing.T) {
 
 	t.Run("adding a simple value property to an element should trigger a persistence", func(t *testing.T) {
 		ctx, storage := setup()
+		defer ctx.CancelGracefully()
 
 		pattern := NewSetPattern(SetConfig{
 			Uniqueness: common.UniquenessConstraint{
@@ -1069,12 +1127,12 @@ func TestInteractWithElementsOfLoadedSet(t *testing.T) {
 
 func TestSetMigrate(t *testing.T) {
 
-	config := SetConfig{
-		Element:    core.SERIALIZABLE_PATTERN,
-		Uniqueness: common.UniquenessConstraint{Type: common.UniqueRepr},
-	}
-
 	t.Run("delete Set: / key", func(t *testing.T) {
+		config := SetConfig{
+			Element:    core.SERIALIZABLE_PATTERN,
+			Uniqueness: common.UniquenessConstraint{Type: common.UniqueRepr},
+		}
+
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 		set := NewSetWithConfig(ctx, nil, config)
 		val, err := set.Migrate(ctx, "/", &core.FreeEntityMigrationArgs{
@@ -1093,6 +1151,11 @@ func TestSetMigrate(t *testing.T) {
 	})
 
 	t.Run("delete Set: /x key", func(t *testing.T) {
+		config := SetConfig{
+			Element:    core.SERIALIZABLE_PATTERN,
+			Uniqueness: common.UniquenessConstraint{Type: common.UniqueRepr},
+		}
+
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 		set := NewSetWithConfig(ctx, nil, config)
 		val, err := set.Migrate(ctx, "/x", &core.FreeEntityMigrationArgs{
@@ -1111,8 +1174,15 @@ func TestSetMigrate(t *testing.T) {
 	})
 
 	t.Run("delete element", func(t *testing.T) {
+		config := SetConfig{
+			Element:    core.INT_PATTERN,
+			Uniqueness: common.UniquenessConstraint{Type: common.UniqueRepr},
+		}
+
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
-		set := NewSetWithConfig(ctx, core.NewWrappedValueList(core.Int(0)), config)
+		element := core.Int(0)
+		set := NewSetWithConfig(ctx, core.NewWrappedValueList(element), config)
+
 		val, err := set.Migrate(ctx, "/", &core.FreeEntityMigrationArgs{
 			NextPattern: nil,
 			MigrationHandlers: core.MigrationOpHandlers{
@@ -1130,8 +1200,14 @@ func TestSetMigrate(t *testing.T) {
 	})
 
 	t.Run("delete all elements", func(t *testing.T) {
+		config := SetConfig{
+			Element:    core.INT_PATTERN,
+			Uniqueness: common.UniquenessConstraint{Type: common.UniqueRepr},
+		}
+
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 		set := NewSetWithConfig(ctx, core.NewWrappedValueList(core.Int(0), core.Int(1)), config)
+
 		val, err := set.Migrate(ctx, "/", &core.FreeEntityMigrationArgs{
 			NextPattern: nil,
 			MigrationHandlers: core.MigrationOpHandlers{
@@ -1149,6 +1225,11 @@ func TestSetMigrate(t *testing.T) {
 	})
 
 	t.Run("delete inexisting element", func(t *testing.T) {
+		config := SetConfig{
+			Element:    core.INT_PATTERN,
+			Uniqueness: common.UniquenessConstraint{Type: common.UniqueRepr},
+		}
+
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 		set := NewSetWithConfig(ctx, core.NewWrappedValueList(core.Int(0)), config)
 
@@ -1170,11 +1251,16 @@ func TestSetMigrate(t *testing.T) {
 	})
 
 	t.Run("delete property of element", func(t *testing.T) {
+		config := SetConfig{
+			Element:    core.RECORD_PATTERN,
+			Uniqueness: common.UniquenessConstraint{Type: common.UniqueRepr},
+		}
+
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 		elements := core.NewWrappedValueList(core.NewRecordFromMap(core.ValMap{"b": core.Int(0)}))
 		set := NewSetWithConfig(ctx, elements, config)
 
-		pathPattern := "/" + core.PathPattern(common.GetElementPathKeyFromKey("#{\"b\":0}", common.UniqueRepr)) + "/b"
+		pathPattern := "/" + core.PathPattern(common.GetElementPathKeyFromKey(`{"b":{"int__value":0}}`, common.UniqueRepr)) + "/b"
 
 		val, err := set.Migrate(ctx, "/", &core.FreeEntityMigrationArgs{
 			NextPattern: nil,
@@ -1190,10 +1276,15 @@ func TestSetMigrate(t *testing.T) {
 		}
 		assert.Same(t, set, val)
 		expectedElement := core.NewRecordFromMap(core.ValMap{})
-		assert.Equal(t, map[string]core.Serializable{"#{}": expectedElement}, set.elements)
+		assert.Equal(t, map[string]core.Serializable{"{}": expectedElement}, set.elements)
 	})
 
 	t.Run("replace Set: / key", func(t *testing.T) {
+		config := SetConfig{
+			Element:    core.SERIALIZABLE_PATTERN,
+			Uniqueness: common.UniquenessConstraint{Type: common.UniqueRepr},
+		}
+
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 		set := NewSetWithConfig(ctx, core.NewWrappedValueList(), config)
 		replacement := core.NewWrappedValueList()
@@ -1217,6 +1308,11 @@ func TestSetMigrate(t *testing.T) {
 	})
 
 	t.Run("replace Set: /x key", func(t *testing.T) {
+		config := SetConfig{
+			Element:    core.SERIALIZABLE_PATTERN,
+			Uniqueness: common.UniquenessConstraint{Type: common.UniqueRepr},
+		}
+
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 		set := NewSetWithConfig(ctx, core.NewWrappedValueList(), config)
 		replacement := core.NewWrappedValueList()
@@ -1240,6 +1336,11 @@ func TestSetMigrate(t *testing.T) {
 	})
 
 	t.Run("replace property of immutable elements", func(t *testing.T) {
+		config := SetConfig{
+			Element:    core.SERIALIZABLE_PATTERN,
+			Uniqueness: common.UniquenessConstraint{Type: common.UniqueRepr},
+		}
+
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 		elements := core.NewWrappedValueList(
 			core.NewRecordFromMap(core.ValMap{"a": core.Int(1), "b": core.Int(1)}),
@@ -1262,13 +1363,22 @@ func TestSetMigrate(t *testing.T) {
 		if !assert.Same(t, set, val) {
 			return
 		}
+
+		expectedRecord1 := core.NewRecordFromMap(core.ValMap{"a": core.Int(1), "b": core.Int(3)})
+		expectedRecord2 := core.NewRecordFromMap(core.ValMap{"a": core.Int(2), "b": core.Int(3)})
+
 		assert.Equal(t, map[string]core.Serializable{
-			`#{"a":1,"b":3}`: core.NewRecordFromMap(core.ValMap{"a": core.Int(1), "b": core.Int(3)}),
-			`#{"a":2,"b":3}`: core.NewRecordFromMap(core.ValMap{"a": core.Int(2), "b": core.Int(3)}),
+			string(core.ToJSON(ctx, expectedRecord1)): expectedRecord1,
+			string(core.ToJSON(ctx, expectedRecord2)): expectedRecord2,
 		}, set.elements)
 	})
 
 	t.Run("element inclusion should panic", func(t *testing.T) {
+		config := SetConfig{
+			Element:    core.SERIALIZABLE_PATTERN,
+			Uniqueness: common.UniquenessConstraint{Type: common.UniqueRepr},
+		}
+
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 
 		set := NewSetWithConfig(ctx, nil, config)

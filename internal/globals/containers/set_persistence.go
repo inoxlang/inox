@@ -10,7 +10,6 @@ import (
 
 	"github.com/inoxlang/inox/internal/commonfmt"
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/globals/containers/common"
 	"github.com/inoxlang/inox/internal/jsoniter"
 	"github.com/inoxlang/inox/internal/utils/pathutils"
 )
@@ -83,7 +82,7 @@ func loadSet(ctx *core.Context, args core.FreeEntityLoadingParams) (core.UrlHold
 					finalErr = fmt.Errorf("%#v", e)
 				}
 			}()
-			set.addNoPersist(ctx, val)
+			set.addToSharedSetNoPersist(ctx, val)
 			if val.IsMutable() {
 				_, ok := val.(core.Watchable)
 				if !ok {
@@ -214,6 +213,8 @@ func (s *Set) Migrate(ctx *core.Context, key core.Path, migration *core.FreeEnti
 	migrationHanders := migration.MigrationHandlers
 	state := ctx.GetClosestState()
 
+	s.initPathKeyMap()
+
 	for pathPattern, handler := range migrationHanders.Deletions {
 		pathPatternSegments := pathutils.GetPathSegments(string(pathPattern))
 		pathPatternDepth := len(pathPatternSegments)
@@ -298,8 +299,9 @@ func (s *Set) Migrate(ctx *core.Context, key core.Path, migration *core.FreeEnti
 			if err != nil {
 				return nil, err
 			}
-			nextElementKey := common.GetUniqueKey(ctx, nextElementValue.(core.Serializable), s.config.Uniqueness, s)
-			s.pathKeyToKey[s.GetElementPathKeyFromKey(nextElementKey)] = nextElementKey
+			nextElementKey := s.getUniqueKey(ctx, nextElementValue.(core.Serializable))
+			nextElementKey = strings.Clone(nextElementKey)
+			s.pathKeyToKey[s.getElementPathKeyFromKey(nextElementKey)] = nextElementKey
 			s.elements[nextElementKey] = nextElementValue.(core.Serializable)
 		}
 	}
@@ -357,7 +359,8 @@ func (s *Set) Migrate(ctx *core.Context, key core.Path, migration *core.FreeEnti
 					if err != nil {
 						return nil, err
 					}
-					nextElementKey := common.GetUniqueKey(ctx, nextElementValue.(core.Serializable), s.config.Uniqueness, s)
+					nextElementKey := s.getUniqueKey(ctx, nextElementValue.(core.Serializable))
+					nextElementKey = strings.Clone(nextElementKey)
 					s.elements[nextElementKey] = nextElementValue.(core.Serializable)
 				}
 			} else {

@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"errors"
 	"io"
 	"testing"
 )
@@ -76,4 +77,24 @@ func WriteMany[W io.Writer](w W, slices ...[]byte) error {
 
 func MustWriteMany[W io.Writer](w W, slices ...[]byte) {
 	PanicIfErr(WriteMany(w, slices...))
+}
+
+var ErrOutOfSpace = errors.New("out of space")
+
+// FixedBufferWriter writes data in the wrapper byte slice, it never allocates a new slice.
+// ErrOutOfSpace is returned if there not enough space.
+type FixedBufferWriter []byte
+
+func (w *FixedBufferWriter) Write(p []byte) (int, error) {
+	currentLen := len(*w)
+	available := cap(*w) - currentLen
+	availableStart := currentLen
+
+	if available < len(p) {
+		return 0, ErrOutOfSpace
+	}
+	n := copy((*w)[availableStart:], p)
+	newLen := currentLen + n
+	*w = (*w)[:newLen]
+	return n, nil
 }

@@ -8,6 +8,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/jsoniter"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/oklog/ulid/v2"
 )
@@ -183,15 +184,34 @@ const (
 	UniquePropertyValue
 )
 
-func GetUniqueKey(ctx *core.Context, v core.Serializable, config UniquenessConstraint, container core.Value) string {
-	var key string
+type KeyRetrievalParams struct {
+	Value                   core.Serializable
+	Config                  UniquenessConstraint
+	Container               core.Value
+	Stream                  *jsoniter.Stream
+	JSONSerializationConfig core.JSONSerializationConfig
+}
+
+func GetUniqueKey(ctx *core.Context, args KeyRetrievalParams) string {
+	config := args.Config
+	container := args.Container
+	v := args.Value
+
 	switch config.Type {
 	case UniqueRepr:
 		if v.IsMutable() {
 			panic(core.ErrReprOfMutableValueCanChange)
 		}
+
+		bufLen := len(args.Stream.Buffer())
+
 		// representation is context-dependent -> possible issues
-		key = string(core.MustGetRepresentationWithConfig(v, UniqueKeyReprConfig, ctx))
+		err := v.WriteJSONRepresentation(ctx, args.Stream, args.JSONSerializationConfig, 0)
+		if err != nil {
+			panic(err)
+		}
+
+		return utils.BytesAsString(args.Stream.Buffer()[bufLen:])
 	case UniqueURL:
 		url, err := core.UrlOf(ctx, v)
 		if err != nil {
@@ -227,10 +247,18 @@ func GetUniqueKey(ctx *core.Context, v core.Serializable, config UniquenessConst
 		}
 		//ToC / Tos ??
 		propVal := iprops.Prop(ctx, config.PropertyName.UnderlyingString())
-		repr := core.MustGetRepresentationWithConfig(propVal.(core.Serializable), UniqueKeyReprConfig, ctx)
-		key = string(repr)
+
+		bufLen := len(args.Stream.Buffer())
+		// representation is context-dependent -> possible issues
+		err := propVal.(core.Serializable).WriteJSONRepresentation(ctx, args.Stream, args.JSONSerializationConfig, 0)
+		if err != nil {
+			panic(err)
+		}
+
+		return utils.BytesAsString(args.Stream.Buffer()[bufLen:])
+	default:
+		panic(core.ErrUnreachable)
 	}
-	return key
 }
 
 func GetElementPathKeyFromKey(key string, uniqueness UniquenessConstraintType) core.ElementKey {
