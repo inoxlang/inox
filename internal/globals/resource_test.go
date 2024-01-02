@@ -47,7 +47,7 @@ func TestReadResource(t *testing.T) {
 			t.Parallel()
 
 			ctx, resource := setup(t, func(ctx *core.Context, rw *http_ns.HttpResponseWriter, req *http_ns.HttpRequest) {
-				rw.WriteHeaders(ctx, core.ToOptionalParam(core.Int(http.StatusNotFound)))
+				rw.WriteHeaders(ctx, core.ToOptionalParam(http_ns.StatusCode(http.StatusNotFound)))
 			})
 			defer ctx.CancelGracefully()
 
