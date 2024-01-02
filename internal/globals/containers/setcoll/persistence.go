@@ -126,7 +126,7 @@ func loadSet(ctx *core.Context, args core.FreeEntityLoadingParams) (core.UrlHold
 	}
 
 	//add mutation handlers
-	for _, elem := range set.elements {
+	for _, elem := range set.elementByKey {
 		if elem.IsMutable() {
 			callbackFn := set.makePersistOnMutationCallback(elem)
 			_, err := elem.(core.Watchable).OnMutation(ctx, callbackFn, core.MutationWatchingConfiguration{Depth: core.DeepWatching})
@@ -162,7 +162,7 @@ func (set *Set) WriteRepresentation(ctx *core.Context, w io.Writer, config *core
 	buff := bytes.NewBufferString("[")
 
 	first := true
-	for _, e := range set.elements {
+	for _, e := range set.elementByKey {
 		if !first {
 			buff.WriteByte(',')
 		}
@@ -182,7 +182,7 @@ func (set *Set) WriteJSONRepresentation(ctx *core.Context, w *jsoniter.Stream, c
 	w.WriteArrayStart()
 
 	first := true
-	for _, e := range set.elements {
+	for _, e := range set.elementByKey {
 		if !first {
 			w.WriteMore()
 		}
@@ -253,12 +253,12 @@ func (s *Set) Migrate(ctx *core.Context, key core.Path, migration *core.FreeEnti
 					}
 				}
 
-				clear(s.elements)
+				clear(s.elementByKey)
 				return s, nil
 			} else {
 				elementPathKey := core.MustElementKeyFrom(lastSegment)
 				elementKey := s.pathKeyToKey[elementPathKey]
-				elemToRemove, ok := s.elements[elementKey]
+				elemToRemove, ok := s.elementByKey[elementKey]
 				if !ok {
 					return nil, commonfmt.FmtValueAtPathSegmentsDoesNotExist(pathPatternSegments)
 				}
@@ -272,18 +272,18 @@ func (s *Set) Migrate(ctx *core.Context, key core.Path, migration *core.FreeEnti
 						panic(core.ErrUnreachable)
 					}
 				}
-				delete(s.elements, elementKey)
+				delete(s.elementByKey, elementKey)
 				delete(s.pathKeyToKey, elementPathKey)
 			}
 		case pathPatternDepth > 1+depth: //deletion inside element
 			elementPathPattern := pathPatternSegments[:depth+1]
 			elementPathKey := core.MustElementKeyFrom(elementPathPattern[len(elementPathPattern)-1])
 			elementKey := s.pathKeyToKey[elementPathKey]
-			element, ok := s.elements[elementKey]
+			element, ok := s.elementByKey[elementKey]
 			if !ok {
 				return nil, commonfmt.FmtValueAtPathSegmentsDoesNotExist(elementPathPattern)
 			}
-			delete(s.elements, elementKey)
+			delete(s.elementByKey, elementKey)
 
 			migrationCapable, ok := element.(core.MigrationCapable)
 			if !ok {
@@ -302,7 +302,7 @@ func (s *Set) Migrate(ctx *core.Context, key core.Path, migration *core.FreeEnti
 			nextElementKey := s.getUniqueKey(ctx, nextElementValue.(core.Serializable))
 			nextElementKey = strings.Clone(nextElementKey)
 			s.pathKeyToKey[s.getElementPathKeyFromKey(nextElementKey)] = nextElementKey
-			s.elements[nextElementKey] = nextElementValue.(core.Serializable)
+			s.elementByKey[nextElementKey] = nextElementValue.(core.Serializable)
 		}
 	}
 
@@ -342,9 +342,9 @@ func (s *Set) Migrate(ctx *core.Context, key core.Path, migration *core.FreeEnti
 			elementKey := pathPatternSegments[depth]
 
 			if elementKey == "*" {
-				for elemKey, elem := range s.elements {
+				for elemKey, elem := range s.elementByKey {
 					elementPathPatternSegments := append(slices.Clone(pathPatternSegments[:depth]), elemKey)
-					delete(s.elements, elemKey)
+					delete(s.elementByKey, elemKey)
 
 					migrationCapable, ok := elem.(core.MigrationCapable)
 					if !ok {
@@ -361,7 +361,7 @@ func (s *Set) Migrate(ctx *core.Context, key core.Path, migration *core.FreeEnti
 					}
 					nextElementKey := s.getUniqueKey(ctx, nextElementValue.(core.Serializable))
 					nextElementKey = strings.Clone(nextElementKey)
-					s.elements[nextElementKey] = nextElementValue.(core.Serializable)
+					s.elementByKey[nextElementKey] = nextElementValue.(core.Serializable)
 				}
 			} else {
 				panic(core.ErrUnreachable)

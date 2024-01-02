@@ -14,10 +14,10 @@ func (s *Set) Iterator(ctx *core.Context, config core.IteratorConfiguration) cor
 	s.lock.Lock(closestState, s)
 	defer s.lock.Unlock(closestState, s)
 
-	elements := maps.Clone(s.elements)
+	elements := maps.Clone(s.elementByKey)
 
 	var keys []string
-	for k := range s.elements {
+	for k := range s.elementByKey {
 		keys = append(keys, k)
 	}
 

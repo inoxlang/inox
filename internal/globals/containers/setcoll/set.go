@@ -23,12 +23,10 @@ var (
 	ErrValueDoesMatchElementPattern         = errors.New("provided value does not match the element pattern")
 	ErrValueWithSameKeyAlreadyPresent       = errors.New("provided value has the same key as an already present element")
 
-	_ core.Collection            = (*Set)(nil)
-	_ core.DefaultValuePattern   = (*SetPattern)(nil)
-	_ core.MigrationAwarePattern = (*SetPattern)(nil)
-	_ core.PotentiallySharable   = (*Set)(nil)
-	_ core.SerializableIterable  = (*Set)(nil)
-	_ core.MigrationCapable      = (*Set)(nil)
+	_ core.Collection           = (*Set)(nil)
+	_ core.PotentiallySharable  = (*Set)(nil)
+	_ core.SerializableIterable = (*Set)(nil)
+	_ core.MigrationCapable     = (*Set)(nil)
 )
 
 func init() {
@@ -36,19 +34,22 @@ func init() {
 }
 
 type Set struct {
+	config  SetConfig
+	pattern *SetPattern
+
+	//elements and keys
+
+	elementByKey        map[string]core.Serializable
 	keyBuf              *jsoniter.Stream //used to write JSON representation of elements or key fields
 	serializationConfig core.JSONSerializationConfig
+	pathKeyToKey        map[core.ElementKey]string //nil on start, will be initialized during the first GetElementByKey call.
 
-	elements     map[string]core.Serializable
-	pathKeyToKey map[core.ElementKey]string //nil on start, will be initialized during the first GetElementByKey call.
+	//transactions
 
 	pendingInclusions              map[*core.Transaction]map[string]core.Serializable
 	pendingRemovals                map[*core.Transaction]map[string]struct{}
 	transactionsWithSetEndCallback map[*core.Transaction]struct{}
 	lock                           core.SmartLock
-
-	config  SetConfig
-	pattern *SetPattern
 
 	//persistence
 	storage core.DataStore //nillable
@@ -114,10 +115,11 @@ func (c SetConfig) Equal(ctx *core.Context, otherConfig SetConfig, alreadyCompar
 
 func NewSetWithConfig(ctx *core.Context, elements core.Iterable, config SetConfig) *Set {
 	set := &Set{
+		elementByKey: make(map[string]core.Serializable),
+
 		keyBuf:              jsoniter.NewStream(jsoniter.ConfigDefault, nil, INITIAL_SET_KEY_BUF),
 		serializationConfig: core.JSONSerializationConfig{Pattern: config.Element, ReprConfig: &core.ReprConfig{AllVisible: true}},
 
-		elements:                       make(map[string]core.Serializable),
 		pendingInclusions:              make(map[*core.Transaction]map[string]core.Serializable, 0),
 		pendingRemovals:                make(map[*core.Transaction]map[string]struct{}, 0),
 		transactionsWithSetEndCallback: make(map[*core.Transaction]struct{}, 0),
@@ -207,7 +209,7 @@ func (set *Set) GetElementByKey(ctx *core.Context, pathKey core.ElementKey) (cor
 		}
 	}
 
-	elem, ok := set.elements[key]
+	elem, ok := set.elementByKey[key]
 	if !ok {
 		return nil, core.ErrCollectionElemNotFound
 	}
@@ -250,7 +252,7 @@ func (set *Set) hasNoLock(ctx *core.Context, elem core.Serializable) core.Bool {
 		}
 	}
 
-	_, ok := set.elements[key]
+	_, ok := set.elementByKey[key]
 	return core.Bool(ok)
 }
 
@@ -273,7 +275,7 @@ func (set *Set) Get(ctx *core.Context, keyVal core.StringLike) (core.Value, core
 		}
 	}
 
-	elem, ok := set.elements[key]
+	elem, ok := set.elementByKey[key]
 	if !ok {
 		return nil, false
 	}
@@ -283,6 +285,8 @@ func (set *Set) Get(ctx *core.Context, keyVal core.StringLike) (core.Value, core
 
 func (set *Set) Add(ctx *core.Context, elem core.Serializable) {
 	if !set.lock.IsValueShared() {
+		// no locking required
+
 		if set.config.Element != nil && !set.config.Element.Test(ctx, elem) {
 			panic(ErrValueDoesMatchElementPattern)
 		}
@@ -290,14 +294,14 @@ func (set *Set) Add(ctx *core.Context, elem core.Serializable) {
 		set.config.Uniqueness.AddUrlIfNecessary(ctx, set, elem)
 		key := set.getUniqueKey(ctx, elem)
 
-		_, ok := set.elements[key]
+		_, ok := set.elementByKey[key]
 		if ok {
 			//no need to clone the key.
 			return
 		}
 
 		key = strings.Clone(key)
-		set.elements[key] = elem
+		set.elementByKey[key] = elem
 
 		if set.pathKeyToKey != nil {
 			set.pathKeyToKey[set.getElementPathKeyFromKey(key)] = key
@@ -306,6 +310,8 @@ func (set *Set) Add(ctx *core.Context, elem core.Serializable) {
 	}
 
 	set.addToSharedSetNoPersist(ctx, elem)
+
+	//determine when to persist the Set and make the changes visible to other transactions
 
 	tx := ctx.GetTx()
 
@@ -324,6 +330,7 @@ func (set *Set) Add(ctx *core.Context, elem core.Serializable) {
 }
 
 func (set *Set) addToSharedSetNoPersist(ctx *core.Context, elem core.Serializable) {
+
 	if set.config.Element != nil && !set.config.Element.Test(ctx, elem) {
 		panic(ErrValueDoesMatchElementPattern)
 	}
@@ -346,10 +353,10 @@ func (set *Set) addToSharedSetNoPersist(ctx *core.Context, elem core.Serializabl
 	tx := ctx.GetTx()
 
 	if tx == nil {
-		if _, ok := set.elements[key]; ok {
+		if _, ok := set.elementByKey[key]; ok {
 			panic(ErrValueWithSameKeyAlreadyPresent)
 		}
-		set.elements[key] = elem
+		set.elementByKey[key] = elem
 	} else {
 		pendingInclusions := set.pendingInclusions[tx]
 		_, added := pendingInclusions[key]
@@ -357,7 +364,7 @@ func (set *Set) addToSharedSetNoPersist(ctx *core.Context, elem core.Serializabl
 			panic(ErrValueWithSameKeyAlreadyPresent)
 		}
 
-		curr, ok := set.elements[key]
+		curr, ok := set.elementByKey[key]
 		if ok && elem != curr {
 			panic(ErrValueWithSameKeyAlreadyPresent)
 		}
@@ -366,7 +373,7 @@ func (set *Set) addToSharedSetNoPersist(ctx *core.Context, elem core.Serializabl
 		_, removed := pendingRemovals[key]
 		if removed {
 			delete(pendingRemovals, key)
-		} else if _, ok := set.elements[key]; ok {
+		} else if _, ok := set.elementByKey[key]; ok {
 			panic(ErrValueWithSameKeyAlreadyPresent)
 		}
 
@@ -383,20 +390,27 @@ func (set *Set) addToSharedSetNoPersist(ctx *core.Context, elem core.Serializabl
 }
 
 func (set *Set) Remove(ctx *core.Context, elem core.Serializable) {
-	key := strings.Clone(set.getUniqueKey(ctx, elem))
-
+	key := set.getUniqueKey(ctx, elem)
 	closestState := ctx.GetClosestState()
+
 	set.lock.Lock(closestState, set)
 	defer set.lock.Unlock(closestState, set)
 
 	tx := ctx.GetTx()
 
 	if tx == nil {
-		delete(set.elements, key)
+		_, ok := set.elementByKey[key]
+		if !ok {
+			return
+		}
+
+		delete(set.elementByKey, key)
 		if set.storage != nil {
 			utils.PanicIfErr(persistSet(ctx, set, set.path, set.storage))
 		}
 	} else {
+		key = strings.Clone(key)
+
 		pendingRemovals, ok := set.pendingRemovals[tx]
 		if !ok {
 			pendingRemovals = make(map[string]struct{})
@@ -417,8 +431,8 @@ func (set *Set) initPathKeyMap() {
 		//already initialized
 		return
 	}
-	set.pathKeyToKey = make(map[core.ElementKey]string, len(set.elements))
-	for elemKey := range set.elements {
+	set.pathKeyToKey = make(map[core.ElementKey]string, len(set.elementByKey))
+	for elemKey := range set.elementByKey {
 		set.pathKeyToKey[set.getElementPathKeyFromKey(elemKey)] = elemKey
 	}
 }
@@ -456,11 +470,11 @@ func (set *Set) makeTransactionEndCallback(ctx *core.Context, closestState *core
 		}
 
 		for key, value := range set.pendingInclusions[tx] {
-			set.elements[key] = value
+			set.elementByKey[key] = value
 		}
 
 		for key := range set.pendingRemovals[tx] {
-			delete(set.elements, key)
+			delete(set.elementByKey, key)
 		}
 
 		if set.storage != nil {
