@@ -23,6 +23,7 @@ func init() {
 	core.RegisterSymbolicGoFunctions([]any{
 		setcoll.NewSet, coll_symbolic.NewSet,
 		queuecoll.NewQueue, func(ctx *symbolic.Context, elements symbolic.Iterable) *coll_symbolic.Queue {
+			ctx.AddSymbolicGoFunctionError("NOT AVAILABLE YET (WIP)")
 			return &coll_symbolic.Queue{}
 		},
 		threadcoll.NewThread, func(ctx *symbolic.Context, elements symbolic.Iterable) *coll_symbolic.Thread {
@@ -38,6 +39,7 @@ func init() {
 			return &coll_symbolic.Tree{}
 		},
 		rankingcoll.NewRanking, func(ctx *symbolic.Context, flatEntries *symbolic.List) *coll_symbolic.Ranking {
+			ctx.AddSymbolicGoFunctionError("NOT AVAILABLE YET (WIP)")
 			return &coll_symbolic.Ranking{}
 		},
 	})

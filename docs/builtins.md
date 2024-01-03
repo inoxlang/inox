@@ -206,18 +206,7 @@ The Tree function creates a tree from a treedata value.
 ```inox
 Tree(treedata "root")
 ```
-### Stack
 
-the Stack function creates a stack from an iterable.
-
-**examples**
-
-```inox
-Stack([])
-```
-```inox
-Stack([1])
-```
 ### Queue
 
 The Queue function creates a queue from an iterable.
