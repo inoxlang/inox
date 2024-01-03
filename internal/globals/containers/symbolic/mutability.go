@@ -8,10 +8,6 @@ func (p *SetPattern) IsMutable() bool {
 	return false
 }
 
-func (s *Stack) IsMutable() bool {
-	return true
-}
-
 func (q *Queue) IsMutable() bool {
 	return true
 }

@@ -144,8 +144,6 @@ func (s *Set) URL() (*symbolic.URL, bool) {
 	return nil, false
 }
 
-// it should NOT modify the value and should instead return a copy of the value but shared.
-
 func (s *Set) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 	switch name {
 	case "has":
