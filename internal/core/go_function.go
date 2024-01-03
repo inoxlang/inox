@@ -102,7 +102,14 @@ func (*GoFunction) PropertyNames(ctx *Context) []string {
 	return nil
 }
 
+// Call calls the underlying native function using reflection, the global state .goCallArgPrepBuf and .goCallArgsBuf
+// buffers are used. The reflect package makes 2 small allocations during the call.
 func (goFunc *GoFunction) Call(args []any, globalState, extState *GlobalState, isExt, must bool) (Value, error) {
+	defer func() {
+		clear(globalState.goCallArgPrepBuf)
+		clear(globalState.goCallArgsBuf)
+	}()
+
 	fnVal := reflect.ValueOf(goFunc.fn)
 	fnValType := fnVal.Type()
 
@@ -110,6 +117,8 @@ func (goFunc *GoFunction) Call(args []any, globalState, extState *GlobalState, i
 		log.Panicf("cannot call Go value of kind %s: %#v (%T)\n", fnVal.Kind(), goFunc.fn, goFunc.fn)
 	}
 
+	//If the function comes from an other state we need to use its context
+	//in order to execute the function with its permissions.
 	var ctx *Context = globalState.Ctx
 	if isExt {
 		ctx = extState.Ctx
@@ -121,7 +130,10 @@ func (goFunc *GoFunction) Call(args []any, globalState, extState *GlobalState, i
 	if numIn == 0 || !CTX_PTR_TYPE.AssignableTo(fnValType.In(0)) {
 		//ok
 	} else {
-		args = append([]any{ctx}, args...)
+		//add context as the first argument
+		copy(globalState.goCallArgPrepBuf[1:], args)
+		globalState.goCallArgPrepBuf[0] = ctx
+		args = globalState.goCallArgPrepBuf[:len(args)+1]
 	}
 
 	if testing.Testing() {
@@ -162,7 +174,7 @@ func (goFunc *GoFunction) Call(args []any, globalState, extState *GlobalState, i
 		}
 	}
 
-	argValues := make([]reflect.Value, len(args))
+	argValues := globalState.goCallArgsBuf[:len(args)]
 
 	//get the reflect.Value of every argument
 	for i, arg := range args {

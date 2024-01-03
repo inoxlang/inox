@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"reflect"
 	"sync"
 	"sync/atomic"
 
@@ -49,6 +50,10 @@ type GlobalState struct {
 	Databases    map[string]*DatabaseIL //the map should never change
 	SystemGraph  *SystemGraph
 	lockedValues []PotentiallySharable
+
+	//
+	goCallArgPrepBuf []any
+	goCallArgsBuf    []reflect.Value
 
 	// related states
 
@@ -98,6 +103,9 @@ func NewGlobalState(ctx *Context, constants ...map[string]Value) *GlobalState {
 		GetBasePatternsForImportedModule: func() (map[string]Pattern, map[string]*PatternNamespace) {
 			return nil, nil
 		},
+
+		goCallArgPrepBuf: make([]any, 10),
+		goCallArgsBuf:    make([]reflect.Value, 10),
 	}
 	ctx.SetClosestState(state)
 
