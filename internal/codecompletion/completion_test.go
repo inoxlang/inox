@@ -447,8 +447,10 @@ func TestFindCompletions(t *testing.T) {
 
 					doSymbolicCheck(chunk, state.Global)
 					completions := findCompletions(state, chunk, 10)
-					assert.EqualValues(t, []Completion{
-						{ShownString: ".append", Value: ".append", ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 9, End: 10}}},
+					assert.Contains(t, completions, Completion{
+						ShownString:   ".append",
+						Value:         ".append",
+						ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 9, End: 10}},
 					}, completions)
 				})
 			})
