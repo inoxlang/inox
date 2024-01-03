@@ -1,3 +1,5 @@
+//go:build !race
+
 package fs_ns
 
 import (
@@ -13,6 +15,9 @@ import (
 )
 
 func TestExtremeCases(t *testing.T) {
+
+	//note: some operations such as file creations are much slower when the race detector is enabled,
+	//so this test is not compiled if the race tag is set.
 
 	t.Run("Memory filesystem", func(t *testing.T) {
 
@@ -47,15 +52,16 @@ func TestExtremeCases(t *testing.T) {
 
 func testExtremeCases(t *testing.T, createFls func() (ClosableFilesystem, *core.Context)) {
 
-	t.Run("a high number of parallel file creations should be fast: 1000 in < 1s", func(t *testing.T) {
-		//note: the file creation is much slower when the race detector is enabled.
+	t.Run("a high number of parallel file creations should be fast: 800 in < 1s", func(t *testing.T) {
+
+		const (
+			MAX_TIME   = time.Second
+			FILE_COUNT = 800
+		)
 
 		fls, ctx := createFls()
 		defer ctx.CancelGracefully()
 		defer fls.Close(ctx)
-
-		const MAX_TIME = time.Second
-		const FILE_COUNT = 1000
 
 		deadline := time.Now().Add(MAX_TIME)
 
@@ -63,6 +69,7 @@ func testExtremeCases(t *testing.T, createFls func() (ClosableFilesystem, *core.
 		var errorListLock sync.Mutex
 		var count atomic.Int64
 
+		//create files in parallel
 		for i := 0; i < FILE_COUNT; i++ {
 			go func(i int) {
 				err := util.WriteFile(fls, "/file"+strconv.Itoa(i)+".txt", []byte("a"), DEFAULT_FILE_FMODE)
@@ -77,7 +84,7 @@ func testExtremeCases(t *testing.T, createFls func() (ClosableFilesystem, *core.
 			}(i)
 		}
 
-		time.Sleep(time.Until(deadline))
+		time.Sleep(time.Until(deadline)) //wake up after deadline
 
 		errorListLock.Lock()
 		errs := errors

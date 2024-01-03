@@ -785,7 +785,12 @@ func (fls *MetaFilesystem) OpenFile(filename string, flag int, perm os.FileMode)
 	}
 
 	fls.lock.Lock()
-	defer fls.lock.Unlock()
+	locked := true
+	defer func() {
+		if locked {
+			fls.lock.Unlock()
+		}
+	}()
 
 	originalPath := filename
 	filename = NormalizeAsAbsolute(filename)
@@ -803,10 +808,30 @@ func (fls *MetaFilesystem) OpenFile(filename string, flag int, perm os.FileMode)
 			return nil, os.ErrNotExist
 		}
 
+		//create file
+
+		//create a read-write transaction
+		tx, err := fls.metadata.Begin(true)
+		if err != nil {
+			return nil, err
+		}
+		txCommited := false
+		defer func() {
+			if !txCommited {
+				tx.Rollback()
+			}
+		}()
+
+		//return an error if the file has been created in the meantime
+		_, exists, _ := fls.getFileMetadata(pth, tx)
+		if exists {
+			return nil, errors.New("file was created in the meantime")
+		}
+
 		dir := filepath.Dir(filename)
 		if dir != "/" {
 			//make sure parent exists
-			err := fls.MkdirAllNoLock(dir, METAFS_AUTO_CREATED_DIR_PERM)
+			err := fls.MkdirAllNoLock_(dir, METAFS_AUTO_CREATED_DIR_PERM, tx)
 			if err != nil {
 				return nil, fmt.Errorf("failed to create %s", dir)
 			}
@@ -814,7 +839,7 @@ func (fls *MetaFilesystem) OpenFile(filename string, flag int, perm os.FileMode)
 
 		//get & update metadata of parent directory
 		dirPath := filepath.Dir(string(pth))
-		dirMetadata, found, err := fls.getFileMetadata(core.DirPathFrom(dirPath), nil)
+		dirMetadata, found, err := fls.getFileMetadata(core.DirPathFrom(dirPath), tx)
 		if err != nil {
 			return nil, err
 		}
@@ -824,7 +849,7 @@ func (fls *MetaFilesystem) OpenFile(filename string, flag int, perm os.FileMode)
 		}
 		dirMetadata.children = append(dirMetadata.children, pth.Basename())
 		dirMetadata.modificationTime = core.DateTime(time.Now())
-		if err := fls.setFileMetadata(dirMetadata, nil); err != nil {
+		if err := fls.setFileMetadata(dirMetadata, tx); err != nil {
 			return nil, err
 		}
 
@@ -849,12 +874,22 @@ func (fls *MetaFilesystem) OpenFile(filename string, flag int, perm os.FileMode)
 			modificationTime: creationTime,
 		}
 
-		if err := fls.setFileMetadata(newFileMetadata, nil); err != nil {
+		if err := fls.setFileMetadata(newFileMetadata, tx); err != nil {
 			return nil, err
 		}
 		created = true
 		metadata = newFileMetadata
+
+		//commit metada changes
+		txCommited = true
+		err = tx.Commit()
+
+		if err != nil {
+			return nil, err
+		}
 	} else {
+		//file exists
+
 		if isSymlink(metadata.mode) {
 			//
 			return nil, errors.New("symlinks not supported")
@@ -899,6 +934,10 @@ func (fls *MetaFilesystem) OpenFile(filename string, flag int, perm os.FileMode)
 	}
 
 	files[file] = struct{}{}
+
+	//we unlock because adding an event to fls.eventQueue is thread safe.
+	fls.lock.Unlock()
+	locked = false
 
 	if created {
 		//add event and remove old events.
