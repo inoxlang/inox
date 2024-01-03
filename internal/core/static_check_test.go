@@ -1595,7 +1595,8 @@ func TestCheck(t *testing.T) {
 		t.Run("parameter shadows a global", func(t *testing.T) {
 			n, src := mustParseCode(`
 				$$a = 1
-				%fn(a){return a}
+				pattern one = 1
+				%fn(a %one){return a}
 			`)
 			fn := parse.FindNode(n, (*parse.FunctionPatternExpression)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
