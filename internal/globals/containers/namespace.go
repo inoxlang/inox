@@ -8,7 +8,6 @@ import (
 	"github.com/inoxlang/inox/internal/globals/containers/queuecoll"
 	"github.com/inoxlang/inox/internal/globals/containers/rankingcoll"
 	"github.com/inoxlang/inox/internal/globals/containers/setcoll"
-	"github.com/inoxlang/inox/internal/globals/containers/stackcoll"
 	coll_symbolic "github.com/inoxlang/inox/internal/globals/containers/symbolic"
 	"github.com/inoxlang/inox/internal/globals/containers/threadcoll"
 	"github.com/inoxlang/inox/internal/globals/containers/treecoll"
@@ -23,9 +22,6 @@ func init() {
 
 	core.RegisterSymbolicGoFunctions([]any{
 		setcoll.NewSet, coll_symbolic.NewSet,
-		stackcoll.NewStack, func(ctx *symbolic.Context, elements symbolic.Iterable) *coll_symbolic.Stack {
-			return &coll_symbolic.Stack{}
-		},
 		queuecoll.NewQueue, func(ctx *symbolic.Context, elements symbolic.Iterable) *coll_symbolic.Queue {
 			return &coll_symbolic.Queue{}
 		},
@@ -51,7 +47,6 @@ func init() {
 		"Graph":   graphcoll.NewGraph,
 		"Map":     mapcoll.NewMap,
 		"Set":     setcoll.NewSet,
-		"Stack":   stackcoll.NewStack,
 		"Ranking": rankingcoll.NewRanking,
 		"Queue":   queuecoll.NewQueue,
 		"Thread":  threadcoll.NewThread,
@@ -61,7 +56,6 @@ func init() {
 func NewContainersNamespace() map[string]core.Value {
 	return map[string]core.Value{
 		"Set":     core.ValOf(setcoll.NewSet),
-		"Stack":   core.ValOf(stackcoll.NewStack),
 		"Queue":   core.ValOf(queuecoll.NewQueue),
 		"Thread":  core.ValOf(threadcoll.NewThread),
 		"Map":     core.ValOf(mapcoll.NewMap),

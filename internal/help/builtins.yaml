@@ -519,17 +519,6 @@ containers:
       explanation: creates a Tree with a single node
       standalone: true
 
-  - topic: Stack
-    text:  "the Stack function creates a stack from an iterable"
-    examples:
-    - code: 'Stack([])'
-      explanation: creates an empty stack
-      standalone: true
-
-    - code: 'Stack([1])'
-      explanation: "creates a stack with an element 1"
-      standalone: true
-
   - topic: Queue
     text: The Queue function creates a queue from an iterable
     examples:
