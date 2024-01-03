@@ -9374,6 +9374,9 @@ func (p *parser) parseFunctionPattern(start int32, percentPrefixed bool) Node {
 	var parameters []*FunctionParameter
 	isVariadic := false
 
+	inPatternSave := p.inPattern
+	p.inPattern = true
+
 	//we parse the parameters
 	for p.i < p.len && p.s[p.i] != ')' {
 		p.eatSpaceNewlineComma()
@@ -9392,7 +9395,7 @@ func (p *parser) parseFunctionPattern(start int32, percentPrefixed bool) Node {
 			p.i += 3
 		}
 
-		varNode, isMissingExpr := p.parseExpression()
+		firstNodeInParam, isMissingExpr := p.parseExpression()
 
 		var typ Node
 		if isMissingExpr {
@@ -9409,29 +9412,51 @@ func (p *parser) parseFunctionPattern(start int32, percentPrefixed bool) Node {
 			})
 
 		} else {
-			switch varNode := varNode.(type) {
-			case *IdentifierLiteral:
+			switch firstNodeInParam := firstNodeInParam.(type) {
+			case *IdentifierLiteral: //keyword
+				var varNode *IdentifierLiteral = firstNodeInParam
+
 				p.eatSpace()
-
-				if paramErr == nil && isKeyword(varNode.Name) {
-					paramErr = &ParsingError{UnspecifiedParsingError, KEYWORDS_SHOULD_NOT_BE_USED_AS_PARAM_NAMES}
-				}
-
-				{
-					prev := p.inPattern
-					p.inPattern = true
-
-					typ, isMissingExpr = p.parseExpression()
-
-					p.inPattern = prev
-				}
+				typ, isMissingExpr = p.parseExpression()
 
 				if isMissingExpr {
 					typ = nil
 				}
 
-				span := varNode.Base().Span
+				span := firstNodeInParam.Base().Span
 				if typ != nil {
+					span.End = typ.Base().Span.End
+				}
+
+				parameters = append(parameters, &FunctionParameter{
+					NodeBase: NodeBase{
+						span,
+						&ParsingError{UnspecifiedParsingError, KEYWORDS_SHOULD_NOT_BE_USED_AS_PARAM_NAMES},
+						false,
+					},
+					Var:        varNode,
+					Type:       typ,
+					IsVariadic: isVariadic,
+				})
+			case *PatternIdentifierLiteral: //parameter name or parameter type
+				p.eatSpace()
+
+				typ, isMissingExpr = p.parseExpression()
+				var varNode *IdentifierLiteral
+
+				if !isMissingExpr {
+					//If there is someting after the first node is the name of the paramter.
+
+					varNode = &IdentifierLiteral{NodeBase: firstNodeInParam.Base(), Name: firstNodeInParam.Name}
+					if paramErr == nil && isKeyword(firstNodeInParam.Name) {
+						paramErr = &ParsingError{UnspecifiedParsingError, KEYWORDS_SHOULD_NOT_BE_USED_AS_PARAM_NAMES}
+					}
+				} else {
+					typ = firstNodeInParam
+				}
+
+				span := firstNodeInParam.Base().Span
+				if varNode != nil {
 					span.End = typ.Base().Span.End
 				}
 
@@ -9445,11 +9470,11 @@ func (p *parser) parseFunctionPattern(start int32, percentPrefixed bool) Node {
 					Type:       typ,
 					IsVariadic: isVariadic,
 				})
-			case *PatternCallExpression, *PatternNamespaceMemberExpression, *PatternIdentifierLiteral,
+			case *PatternCallExpression, *PatternNamespaceMemberExpression,
 				*ObjectPatternLiteral, *ListPatternLiteral, *RecordPatternLiteral,
 				*ComplexStringPatternPiece, *RegularExpressionLiteral:
 
-				typ = varNode
+				typ = firstNodeInParam
 
 				parameters = append(parameters, &FunctionParameter{
 					NodeBase: NodeBase{
@@ -9462,8 +9487,8 @@ func (p *parser) parseFunctionPattern(start int32, percentPrefixed bool) Node {
 				})
 
 			default:
-				varNode.BasePtr().Err = &ParsingError{UnspecifiedParsingError, PARAM_LIST_OF_FUNC_PATT_SHOULD_CONTAIN_PARAMETERS_SEP_BY_COMMAS}
-				additionalInvalidNodes = append(additionalInvalidNodes, varNode)
+				firstNodeInParam.BasePtr().Err = &ParsingError{UnspecifiedParsingError, PARAM_LIST_OF_FUNC_PATT_SHOULD_CONTAIN_PARAMETERS_SEP_BY_COMMAS}
+				additionalInvalidNodes = append(additionalInvalidNodes, firstNodeInParam)
 
 				if typ != nil {
 					typ.BasePtr().Err = &ParsingError{UnspecifiedParsingError, PARAM_LIST_OF_FUNC_SHOULD_CONTAIN_PARAMETERS_SEP_BY_COMMAS}
@@ -9475,6 +9500,8 @@ func (p *parser) parseFunctionPattern(start int32, percentPrefixed bool) Node {
 
 		p.eatSpaceNewlineComma()
 	}
+
+	p.inPattern = inPatternSave
 
 	var (
 		returnType       Node
@@ -9496,12 +9523,12 @@ func (p *parser) parseFunctionPattern(start int32, percentPrefixed bool) Node {
 		p.eatSpace()
 
 		if p.i < p.len && isAcceptedReturnTypeStart(p.s, p.i) {
-			prev := p.inPattern
+			inPatternSave := p.inPattern
 			p.inPattern = true
 
 			returnType, _ = p.parseExpression()
 
-			p.inPattern = prev
+			p.inPattern = inPatternSave
 		}
 
 		p.eatSpace()

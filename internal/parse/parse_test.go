@@ -17341,9 +17341,10 @@ func testParse(
 						Parameters: []*FunctionParameter{
 							{
 								NodeBase: NodeBase{NodeSpan{4, 5}, nil, false},
-								Var: &IdentifierLiteral{
-									NodeBase: NodeBase{NodeSpan{4, 5}, nil, false},
-									Name:     "x",
+								Type: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{4, 5}, nil, false},
+									Name:       "x",
+									Unprefixed: true,
 								},
 							},
 						},
@@ -17572,16 +17573,18 @@ func testParse(
 						Parameters: []*FunctionParameter{
 							{
 								NodeBase: NodeBase{NodeSpan{4, 5}, nil, false},
-								Var: &IdentifierLiteral{
-									NodeBase: NodeBase{NodeSpan{4, 5}, nil, false},
-									Name:     "x",
+								Type: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{4, 5}, nil, false},
+									Name:       "x",
+									Unprefixed: true,
 								},
 							},
 							{
 								NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
-								Var: &IdentifierLiteral{
-									NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
-									Name:     "n",
+								Type: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{6, 7}, nil, false},
+									Name:       "n",
+									Unprefixed: true,
 								},
 							},
 						},
@@ -17622,9 +17625,10 @@ func testParse(
 						Parameters: []*FunctionParameter{
 							{
 								NodeBase: NodeBase{NodeSpan{4, 5}, nil, false},
-								Var: &IdentifierLiteral{
-									NodeBase: NodeBase{NodeSpan{4, 5}, nil, false},
-									Name:     "x",
+								Type: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{4, 5}, nil, false},
+									Name:       "x",
+									Unprefixed: true,
 								},
 							},
 						},
@@ -17704,16 +17708,18 @@ func testParse(
 						Parameters: []*FunctionParameter{
 							{
 								NodeBase: NodeBase{NodeSpan{4, 5}, nil, false},
-								Var: &IdentifierLiteral{
-									NodeBase: NodeBase{NodeSpan{4, 5}, nil, false},
-									Name:     "a",
+								Type: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{4, 5}, nil, false},
+									Name:       "a",
+									Unprefixed: true,
 								},
 							},
 							{
 								NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
-								Var: &IdentifierLiteral{
-									NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
-									Name:     "b",
+								Type: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{6, 7}, nil, false},
+									Name:       "b",
+									Unprefixed: true,
 								},
 							},
 						},
@@ -17773,14 +17779,14 @@ func testParse(
 		})
 
 		t.Run("parameter name should not be a keyword ", func(t *testing.T) {
-			n, err := parseChunk(t, "%fn(manifest){}", "")
+			n, err := parseChunk(t, "%fn(manifest int){}", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{NodeSpan{0, 15}, nil, false},
+				NodeBase: NodeBase{NodeSpan{0, 19}, nil, false},
 				Statements: []Node{
 					&FunctionPatternExpression{
 						NodeBase: NodeBase{
-							NodeSpan{0, 15},
+							NodeSpan{0, 19},
 							nil,
 							false,
 							/*[]Token{
@@ -17792,7 +17798,7 @@ func testParse(
 						Parameters: []*FunctionParameter{
 							{
 								NodeBase: NodeBase{
-									NodeSpan{4, 12},
+									NodeSpan{4, 16},
 									&ParsingError{UnspecifiedParsingError, KEYWORDS_SHOULD_NOT_BE_USED_AS_PARAM_NAMES},
 									false,
 								},
@@ -17800,11 +17806,16 @@ func testParse(
 									NodeBase: NodeBase{NodeSpan{4, 12}, nil, false},
 									Name:     "manifest",
 								},
+								Type: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{13, 16}, nil, false},
+									Name:       "int",
+									Unprefixed: true,
+								},
 							},
 						},
 						Body: &Block{
 							NodeBase: NodeBase{
-								NodeSpan{13, 15},
+								NodeSpan{17, 19},
 								nil,
 								false,
 								/*[]Token{
