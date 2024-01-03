@@ -35,7 +35,7 @@ type BytesLike interface {
 type ByteSlice struct {
 	_ int
 	SerializableMixin
-	PseudoClonableMixin
+	ClonableSerializableMixin
 }
 
 func NewByteSlice() *ByteSlice {

@@ -59,7 +59,7 @@ func IsSharableOrClonable(v Value) (bool, string) {
 	if s, ok := v.(PotentiallySharable); ok {
 		return s.IsSharable()
 	}
-	_, ok := v.(PseudoClonable)
+	_, ok := v.(ClonableSerializable)
 	return ok, ""
 }
 

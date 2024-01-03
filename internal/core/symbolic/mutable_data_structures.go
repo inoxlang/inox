@@ -190,7 +190,7 @@ type List struct {
 	readonly       bool
 
 	SerializableMixin
-	PseudoClonableMixin
+	ClonableSerializableMixin
 	UnassignablePropsMixin
 }
 
@@ -603,7 +603,7 @@ type Dictionary struct {
 	keys map[string]Serializable
 
 	SerializableMixin
-	PseudoClonableMixin
+	ClonableSerializableMixin
 
 	UnassignablePropsMixin
 }

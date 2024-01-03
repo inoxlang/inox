@@ -1,19 +1,19 @@
 package symbolic
 
 var (
-	_ = []PseudoClonable{
+	_ = []ClonableSerializable{
 		(*List)(nil), (*RuneSlice)(nil), (*ByteSlice)(nil), (*Option)(nil), (*Dictionary)(nil),
 	}
 )
 
-type PseudoClonable interface {
+type ClonableSerializable interface {
 	Serializable
-	_pseudoClonable()
+	_clonableSerializable()
 }
 
-type PseudoClonableMixin struct {
+type ClonableSerializableMixin struct {
 }
 
-func (m PseudoClonableMixin) _pseudoClonable() {
+func (m ClonableSerializableMixin) _clonableSerializable() {
 
 }

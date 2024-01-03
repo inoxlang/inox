@@ -474,7 +474,7 @@ type Option struct {
 	name  string //if "", any name is matched
 	value Value
 	SerializableMixin
-	PseudoClonableMixin
+	ClonableSerializableMixin
 }
 
 func NewOption(name string, value Value) *Option {

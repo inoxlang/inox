@@ -382,7 +382,7 @@ func (s *CheckedString) WidestOfType() Value {
 
 type RuneSlice struct {
 	SerializableMixin
-	PseudoClonableMixin
+	ClonableSerializableMixin
 }
 
 func NewRuneSlice() *RuneSlice {
