@@ -9535,6 +9535,13 @@ func (p *parser) parseFunctionPattern(start int32, percentPrefixed bool) Node {
 
 		//optional body
 
+		inPatternSave := p.inPattern
+		p.inPattern = false
+
+		defer func() {
+			p.inPattern = inPatternSave
+		}()
+
 		var error = &ParsingError{InvalidNext, PARAM_LIST_OF_FUNC_PATT_SHOULD_BE_FOLLOWED_BY_BLOCK_OR_ARROW}
 		if returnType != nil {
 			error = &ParsingError{UnspecifiedParsingError, RETURN_TYPE_OF_FUNC_SHOULD_BE_FOLLOWED_BY_BLOCK_OR_ARROW}
