@@ -3062,7 +3062,11 @@ func evalFunctionPatternExpression(n *parse.FunctionPatternExpression, state *St
 
 	// declare arguments
 	for paramIndex, p := range n.Parameters[:n.NonVariadicParamCount()] {
-		name := p.Var.Name
+		name := "_"
+		if p.Var != nil {
+			name = p.Var.Name
+		}
+
 		var paramType Value = ANY
 
 		if p.Type != nil {
@@ -3076,8 +3080,10 @@ func evalFunctionPatternExpression(n *parse.FunctionPatternExpression, state *St
 		parameterTypes[paramIndex] = paramType
 		parameterNames[paramIndex] = name
 
-		stateFork.setLocal(name, paramType, nil, p.Var)
-		state.symbolicData.SetMostSpecificNodeValue(p.Var, paramType)
+		if p.Var != nil {
+			stateFork.setLocal(name, paramType, nil, p.Var)
+			state.symbolicData.SetMostSpecificNodeValue(p.Var, paramType)
+		}
 	}
 
 	if n.IsVariadic {

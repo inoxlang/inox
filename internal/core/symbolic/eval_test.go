@@ -3316,7 +3316,7 @@ func TestSymbolicEval(t *testing.T) {
 
 		t.Run("single parameter", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
-				return %fn(a){}
+				return %fn(a %int){}
 			`)
 			fnPatt := n.Statements[0].(*parse.ReturnStatement).Expr.(*parse.FunctionPatternExpression)
 			res, err := symbolicEval(n, state)
@@ -3325,7 +3325,7 @@ func TestSymbolicEval(t *testing.T) {
 				node:                    fnPatt,
 				nodeChunk:               n,
 				returnType:              Nil,
-				parameters:              []Value{ANY},
+				parameters:              []Value{ANY_INT},
 				parameterNames:          []string{"a"},
 				firstOptionalParamIndex: -1,
 			}, res)
@@ -3379,6 +3379,40 @@ func TestSymbolicEval(t *testing.T) {
 			}, res)
 		})
 
+		t.Run("parameter with no name and a prefixed named pattern as type", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				return %fn(%int){}
+			`)
+			fnPatt := n.Statements[0].(*parse.ReturnStatement).Expr.(*parse.FunctionPatternExpression)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, &FunctionPattern{
+				node:                    fnPatt,
+				nodeChunk:               n,
+				returnType:              Nil,
+				parameters:              []Value{ANY_INT},
+				parameterNames:          []string{"_"},
+				firstOptionalParamIndex: -1,
+			}, res)
+		})
+
+		t.Run("parameter with no name and a unprefixed named pattern as type", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				pattern f = fn(int){}
+				return %f
+			`)
+			fnPatt := n.Statements[0].(*parse.PatternDefinition).Right.(*parse.FunctionPatternExpression)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, &FunctionPattern{
+				node:                    fnPatt,
+				nodeChunk:               n,
+				returnType:              Nil,
+				parameters:              []Value{ANY_INT},
+				parameterNames:          []string{"_"},
+				firstOptionalParamIndex: -1,
+			}, res)
+		})
 	})
 
 	t.Run("methods", func(t *testing.T) {
