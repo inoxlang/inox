@@ -60,6 +60,16 @@ func (q *ArrayQueue[T]) Values() []T {
 	return slices.Clone(q.elements)
 }
 
+func (q *ArrayQueue[T]) ForEachElem(fn func(i int, e T) error) error {
+	for i, e := range q.elements {
+		err := fn(i, e)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // thread unsafe array queue iterator
 type ArrayQueueIterator[T any] struct {
 	index    int

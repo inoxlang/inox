@@ -11,6 +11,7 @@ import (
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/globals/globalnames"
+	"github.com/inoxlang/inox/internal/globals/transientcontainers"
 	"github.com/inoxlang/inox/internal/globals/ws_ns"
 	"golang.org/x/exp/maps"
 
@@ -335,6 +336,10 @@ func NewDefaultGlobalState(ctx *core.Context, conf core.DefaultGlobalStateConfig
 	}
 
 	for k, v := range containers.NewContainersNamespace() {
+		constants[k] = v
+	}
+
+	for k, v := range transientcontainers.NewTransientContainersNamespace() {
 		constants[k] = v
 	}
 
