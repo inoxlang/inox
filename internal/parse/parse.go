@@ -9279,7 +9279,7 @@ func (p *parser) parseFunction(start int32) Node {
 				body = p.parseBlock()
 				end = body.Base().Span.End
 			case '=':
-				if p.i >= p.len+1 || p.s[p.i+1] != '>' {
+				if p.i >= p.len-1 || p.s[p.i+1] != '>' {
 					error.Kind = MissingFnBody
 					parsingErr = error
 					end = p.i
@@ -9521,7 +9521,7 @@ func (p *parser) parseFunctionPattern(start int32, percentPrefixed bool) Node {
 				body = p.parseBlock()
 				end = body.Base().Span.End
 			case '=':
-				if p.i >= p.len+1 || p.s[p.i+1] != '>' {
+				if p.i >= p.len-1 || p.s[p.i+1] != '>' {
 					parsingErr = error
 					end = p.i
 				} else {
@@ -10692,7 +10692,7 @@ func (p *parser) parseAssignment(left Node) (result Node) {
 		}
 	}
 
-	if p.i >= p.len {
+	if p.i >= p.len || p.s[p.i] == '\n' {
 		return &Assignment{
 			NodeBase: NodeBase{
 				Span: NodeSpan{left.Base().Span.Start, p.i},

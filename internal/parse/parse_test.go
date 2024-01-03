@@ -8153,6 +8153,74 @@ func testParse(
 			}, n)
 		})
 
+		t.Run("missing RHS: '=' followed by EOF", func(t *testing.T) {
+			n, err := parseChunk(t, "$a =", "")
+			assert.Error(t, err)
+
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 4}, nil, false},
+				Statements: []Node{
+					&Assignment{
+						NodeBase: NodeBase{
+							NodeSpan{0, 4},
+							&ParsingError{UnspecifiedParsingError, UNTERMINATED_ASSIGNMENT_MISSING_VALUE_AFTER_EQL_SIGN},
+							false,
+						},
+						Left: &Variable{
+							NodeBase: NodeBase{NodeSpan{0, 2}, nil, false},
+							Name:     "a",
+						},
+						Operator: Assign,
+					},
+				},
+			}, n)
+		})
+
+		t.Run("missing RHS: '=' followed by space + EOF", func(t *testing.T) {
+			n, err := parseChunk(t, "$a = ", "")
+			assert.Error(t, err)
+
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 5}, nil, false},
+				Statements: []Node{
+					&Assignment{
+						NodeBase: NodeBase{
+							NodeSpan{0, 5},
+							&ParsingError{UnspecifiedParsingError, UNTERMINATED_ASSIGNMENT_MISSING_VALUE_AFTER_EQL_SIGN},
+							false,
+						},
+						Left: &Variable{
+							NodeBase: NodeBase{NodeSpan{0, 2}, nil, false},
+							Name:     "a",
+						},
+						Operator: Assign,
+					},
+				},
+			}, n)
+		})
+
+		t.Run("missing RHS: '=' followed by linefeed", func(t *testing.T) {
+			n, err := parseChunk(t, "$a =\n", "")
+			assert.Error(t, err)
+
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 5}, nil, false},
+				Statements: []Node{
+					&Assignment{
+						NodeBase: NodeBase{
+							NodeSpan{0, 4},
+							&ParsingError{UnspecifiedParsingError, UNTERMINATED_ASSIGNMENT_MISSING_VALUE_AFTER_EQL_SIGN},
+							false,
+						},
+						Left: &Variable{
+							NodeBase: NodeBase{NodeSpan{0, 2}, nil, false},
+							Name:     "a",
+						},
+						Operator: Assign,
+					},
+				},
+			}, n)
+		})
 	})
 
 	t.Run("multi assignement statement", func(t *testing.T) {
@@ -17113,6 +17181,13 @@ func testParse(
 				},
 			}, n)
 		})
+
+		t.Run("unterminated arrow", func(t *testing.T) {
+			//The error should be recoverable.
+			n, err := parseChunk(t, "fn(x) =", "")
+			assert.Error(t, err)
+			assert.NotNil(t, n)
+		})
 	})
 
 	t.Run("function declaration", func(t *testing.T) {
@@ -17742,6 +17817,13 @@ func testParse(
 					},
 				},
 			}, n)
+		})
+
+		t.Run("unterminated arrow", func(t *testing.T) {
+			//The error should be recoverable
+			n, err := parseChunk(t, "%fn(x) =", "")
+			assert.Error(t, err)
+			assert.NotNil(t, n)
 		})
 	})
 
