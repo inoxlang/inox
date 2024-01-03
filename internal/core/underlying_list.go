@@ -4,6 +4,12 @@ import (
 	"errors"
 
 	"github.com/bits-and-blooms/bitset"
+	"github.com/inoxlang/inox/internal/utils"
+)
+
+const (
+	LIST_SHRINK_DIVIDER        = 2
+	MIN_SHRINKABLE_LIST_LENGTH = 10 * LIST_SHRINK_DIVIDER
 )
 
 type underlyingList interface {
@@ -98,10 +104,11 @@ func (l *ValueList) insertElement(ctx *Context, v Value, i Int) {
 }
 
 func (l *ValueList) removePosition(ctx *Context, i Int) {
-	if int(i) <= len(l.elements)-1 {
+	if int(i) != len(l.elements)-1 {
 		copy(l.elements[i:], l.elements[i+1:])
 	}
 	l.elements = l.elements[:len(l.elements)-1]
+	l.elements = utils.ShrinkSliceIfWastedCapacity(l.elements, MIN_SHRINKABLE_LIST_LENGTH, LIST_SHRINK_DIVIDER)
 }
 
 func (l *ValueList) removePositionRange(ctx *Context, r IntRange) {
@@ -112,6 +119,7 @@ func (l *ValueList) removePositionRange(ctx *Context, r IntRange) {
 		copy(l.elements[start:], l.elements[end+1:])
 	}
 	l.elements = l.elements[:len(l.elements)-r.Len()]
+	l.elements = utils.ShrinkSliceIfWastedCapacity(l.elements, MIN_SHRINKABLE_LIST_LENGTH, LIST_SHRINK_DIVIDER)
 }
 
 func (l *ValueList) insertSequence(ctx *Context, seq Sequence, i Int) {
@@ -229,10 +237,11 @@ func (l *IntList) insertElement(ctx *Context, v Value, i Int) {
 }
 
 func (l *IntList) removePosition(ctx *Context, i Int) {
-	if int(i) <= len(l.elements)-1 {
+	if int(i) != len(l.elements)-1 {
 		copy(l.elements[i:], l.elements[i+1:])
 	}
 	l.elements = l.elements[:len(l.elements)-1]
+	l.elements = utils.ShrinkSliceIfWastedCapacity(l.elements, MIN_SHRINKABLE_LIST_LENGTH, LIST_SHRINK_DIVIDER)
 }
 
 func (l *IntList) removePositionRange(ctx *Context, r IntRange) {
@@ -243,6 +252,7 @@ func (l *IntList) removePositionRange(ctx *Context, r IntRange) {
 		copy(l.elements[start:], l.elements[end+1:])
 	}
 	l.elements = l.elements[:len(l.elements)-r.Len()]
+	l.elements = utils.ShrinkSliceIfWastedCapacity(l.elements, MIN_SHRINKABLE_LIST_LENGTH, LIST_SHRINK_DIVIDER)
 }
 
 func (l *IntList) insertSequence(ctx *Context, seq Sequence, i Int) {
@@ -360,10 +370,11 @@ func (l *StringList) insertElement(ctx *Context, v Value, i Int) {
 }
 
 func (l *StringList) removePosition(ctx *Context, i Int) {
-	if int(i) <= len(l.elements)-1 {
+	if int(i) != len(l.elements)-1 {
 		copy(l.elements[i:], l.elements[i+1:])
 	}
 	l.elements = l.elements[:len(l.elements)-1]
+	l.elements = utils.ShrinkSliceIfWastedCapacity(l.elements, MIN_SHRINKABLE_LIST_LENGTH, LIST_SHRINK_DIVIDER)
 }
 
 func (l *StringList) removePositionRange(ctx *Context, r IntRange) {
@@ -374,6 +385,7 @@ func (l *StringList) removePositionRange(ctx *Context, r IntRange) {
 		copy(l.elements[start:], l.elements[end+1:])
 	}
 	l.elements = l.elements[:len(l.elements)-r.Len()]
+	l.elements = utils.ShrinkSliceIfWastedCapacity(l.elements, MIN_SHRINKABLE_LIST_LENGTH, LIST_SHRINK_DIVIDER)
 }
 
 func (l *StringList) insertSequence(ctx *Context, seq Sequence, i Int) {
@@ -498,6 +510,9 @@ func (l *BoolList) insertElement(ctx *Context, v Value, i Int) {
 }
 
 func (l *BoolList) removePosition(ctx *Context, i Int) {
+	if i < 0 || i >= Int(l.elements.Len()) {
+		panic(ErrIndexOutOfRange)
+	}
 	l.elements.DeleteAt(uint(i))
 }
 

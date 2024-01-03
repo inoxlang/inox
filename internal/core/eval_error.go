@@ -27,6 +27,9 @@ var (
 	ErrNegativeLowerIndex       = errors.New("negative lower index")
 	ErrUnreachable              = errors.New("unreachable")
 
+	ErrCannotSetValOfIndexKeyProp = errors.New("cannot set value of index key property")
+	ErrCannotPopFromEmptyList     = errors.New("cannot pop from an empty list")
+
 	//integer
 	ErrIntOverflow          = errors.New("integer overflow")
 	ErrIntUnderflow         = errors.New("integer underflow")

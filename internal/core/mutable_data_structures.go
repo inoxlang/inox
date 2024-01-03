@@ -21,9 +21,6 @@ var (
 	_ = []IProps{(*Object)(nil), (*Record)(nil), (*Namespace)(nil), (*Dictionary)(nil), (*List)(nil)}
 
 	_ Sequence = (*Array)(nil)
-
-	ErrCannotSetValOfIndexKeyProp = errors.New("cannot set value of index key property")
-	ErrCannotPopFromEmptyList     = errors.New("cannot pop from an empty list")
 )
 
 func init() {
