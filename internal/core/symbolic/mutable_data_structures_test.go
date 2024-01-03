@@ -492,6 +492,80 @@ func TestList(t *testing.T) {
 		})
 	})
 
+	t.Run("Pop()", func(t *testing.T) {
+		t.Run("empty list", func(t *testing.T) {
+			ctx := NewSymbolicContext(dummyConcreteContext{context.Background()}, nil, nil)
+			state := newSymbolicState(ctx, nil)
+
+			list := NewList()
+			list.Pop(ctx)
+
+			err := false
+			state.consumeSymbolicGoFunctionErrors(func(msg string) {
+				err = true
+				assert.Equal(t, CANNOT_POP_FROM_EMPTY_LIST, msg)
+			})
+
+			assert.True(t, err)
+			_, ok := state.consumeUpdatedSelf()
+			assert.False(t, ok)
+		})
+
+		t.Run("list of known length 1", func(t *testing.T) {
+			ctx := NewSymbolicContext(dummyConcreteContext{context.Background()}, nil, nil)
+			state := newSymbolicState(ctx, nil)
+
+			list := NewList(INT_1)
+			list.Pop(ctx)
+
+			updatedSelf, ok := state.consumeUpdatedSelf()
+			if !assert.True(t, ok) {
+				return
+			}
+
+			assert.Equal(t, NewList(), updatedSelf)
+
+			state.consumeSymbolicGoFunctionErrors(func(msg string) {
+				assert.Fail(t, "unexcepted error: "+msg)
+			})
+		})
+
+		t.Run("list of known length 2", func(t *testing.T) {
+			ctx := NewSymbolicContext(dummyConcreteContext{context.Background()}, nil, nil)
+			state := newSymbolicState(ctx, nil)
+
+			list := NewList(INT_1, INT_2)
+			list.Pop(ctx)
+
+			updatedSelf, ok := state.consumeUpdatedSelf()
+			if !assert.True(t, ok) {
+				return
+			}
+
+			assert.Equal(t, NewList(INT_1), updatedSelf)
+
+			state.consumeSymbolicGoFunctionErrors(func(msg string) {
+				assert.Fail(t, "unexcepted error: "+msg)
+			})
+		})
+
+		t.Run("list of unknown length", func(t *testing.T) {
+			ctx := NewSymbolicContext(dummyConcreteContext{context.Background()}, nil, nil)
+			state := newSymbolicState(ctx, nil)
+
+			list := NewListOf(ANY_INT)
+			list.Pop(ctx)
+
+			_, ok := state.consumeUpdatedSelf()
+			assert.False(t, ok)
+
+			state.consumeSymbolicGoFunctionErrors(func(msg string) {
+				assert.Fail(t, "unexcepted error: "+msg)
+			})
+		})
+
+	})
+
 	t.Run("ToReadonly()", func(t *testing.T) {
 
 		t.Run("already readonly", func(t *testing.T) {

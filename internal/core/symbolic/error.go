@@ -150,6 +150,8 @@ const (
 	MISSING_MAIN_DB_MIGRATIONS_PROPERTY                             = "missing property: '" + TEST_ITEM_META__MAIN_DB_MIGRATIONS + "'"
 
 	RIGHT_OPERAND_MAY_NOT_HAVE_A_URL = "right operand may not have a URL"
+
+	CANNOT_POP_FROM_EMPTY_LIST = "cannot pop() from an empty list"
 )
 
 var (

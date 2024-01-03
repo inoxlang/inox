@@ -14,6 +14,10 @@ import (
 	"golang.org/x/exp/slices"
 )
 
+var (
+	LIST_APPEND_PARAM_NAMES = []string{"values"}
+)
+
 // An Array represents a symbolic Array.
 type Array struct {
 	elements       []Value
@@ -328,6 +332,8 @@ func (list *List) Prop(name string) Value {
 	switch name {
 	case "append":
 		return WrapGoMethod(list.Append)
+	case "pop":
+		return WrapGoMethod(list.Pop)
 	default:
 		panic(FormatErrPropertyDoesNotExist(name, list))
 	}
@@ -567,9 +573,20 @@ func (l *List) appendSequence(ctx *Context, seq Sequence) {
 
 func (l *List) Append(ctx *Context, elements ...Serializable) {
 	if l.generalElement != nil {
-		ctx.SetSymbolicGoFunctionParameters(&[]Value{l.element()}, []string{"values"})
+		ctx.SetSymbolicGoFunctionParameters(&[]Value{l.element()}, LIST_APPEND_PARAM_NAMES)
 	}
 	l.appendSequence(ctx, NewList(elements...))
+}
+
+func (l *List) Pop(ctx *Context) {
+	if l.generalElement == nil && l.HasKnownLen() {
+		if l.KnownLen() == 0 {
+			ctx.AddSymbolicGoFunctionError(CANNOT_POP_FROM_EMPTY_LIST)
+		} else {
+			elements := l.elements[:len(l.elements)-1]
+			ctx.SetUpdatedSelf(NewList(elements...))
+		}
+	}
 }
 
 func (l *List) WatcherElement() Value {

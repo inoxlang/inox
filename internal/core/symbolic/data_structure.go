@@ -4,7 +4,7 @@ import pprint "github.com/inoxlang/inox/internal/prettyprint"
 
 var (
 	DICTIONARY_PROPNAMES = []string{"get", "set"}
-	LIST_PROPNAMES       = []string{"append"}
+	LIST_PROPNAMES       = []string{"append", "pop"}
 
 	ANY_INDEXABLE    = &AnyIndexable{}
 	ANY_ARRAY        = NewArrayOf(ANY)
