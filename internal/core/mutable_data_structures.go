@@ -23,6 +23,7 @@ var (
 	_ Sequence = (*Array)(nil)
 
 	ErrCannotSetValOfIndexKeyProp = errors.New("cannot set value of index key property")
+	ErrCannotPopFromEmptyList     = errors.New("cannot pop from an empty list")
 )
 
 func init() {
@@ -832,6 +833,8 @@ func (l *List) Prop(ctx *Context, name string) Value {
 	switch name {
 	case "append":
 		return WrapGoMethod(l.append)
+	case "pop":
+		return WrapGoMethod(l.Pop)
 	default:
 		panic(FormatErrPropertyDoesNotExist(name, l))
 	}
@@ -959,6 +962,16 @@ func (l *List) removePosition(ctx *Context, i Int) {
 	//inform watchers & microtasks about the update
 	l.watchers.InformAboutAsync(ctx, mutation, mutation.Depth, true)
 	l.mutationCallbacks.CallMicrotasks(ctx, mutation)
+}
+
+func (l *List) Pop(ctx *Context) Serializable {
+	lastIndex := l.Len() - 1
+	if lastIndex < 0 {
+		panic(ErrCannotPopFromEmptyList)
+	}
+	elem := l.At(ctx, lastIndex)
+	l.underlyingList.removePosition(ctx, Int(lastIndex))
+	return elem.(Serializable)
 }
 
 func (l *List) removePositionRange(ctx *Context, r IntRange) {

@@ -578,15 +578,18 @@ func (l *List) Append(ctx *Context, elements ...Serializable) {
 	l.appendSequence(ctx, NewList(elements...))
 }
 
-func (l *List) Pop(ctx *Context) {
+func (l *List) Pop(ctx *Context) Serializable {
 	if l.generalElement == nil && l.HasKnownLen() {
 		if l.KnownLen() == 0 {
 			ctx.AddSymbolicGoFunctionError(CANNOT_POP_FROM_EMPTY_LIST)
+			return ANY_SERIALIZABLE
 		} else {
 			elements := l.elements[:len(l.elements)-1]
 			ctx.SetUpdatedSelf(NewList(elements...))
 		}
+		return l.elementAt(l.KnownLen() - 1).(Serializable)
 	}
+	return l.element().(Serializable)
 }
 
 func (l *List) WatcherElement() Value {
