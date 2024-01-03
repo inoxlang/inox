@@ -4,7 +4,6 @@ import (
 	"github.com/inoxlang/inox/internal/commonfmt"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/globals/containers/common"
-	"github.com/inoxlang/inox/internal/prettyprint"
 	pprint "github.com/inoxlang/inox/internal/prettyprint"
 
 	"github.com/inoxlang/inox/internal/utils"
@@ -16,10 +15,11 @@ var (
 	SET_CONFIG_UNIQUE_PROP_KEY          = "unique"
 
 	SET_ADD_METHOD_PARAM_NAMES = []string{"element"}
+	SET_HAS_METHOD_PARAM_NAMES = []string{"element"}
 	SET_GET_METHOD_PARAM_NAMES = []string{"key"}
 
 	ANY_SET         = NewSetWithPattern(symbolic.ANY_PATTERN, nil)
-	ANY_SET_PATTERN = NewSetWithPattern(symbolic.ANY_PATTERN, nil)
+	ANY_SET_PATTERN = NewSetPatternWithElementPatternAndUniqueness(symbolic.ANY_PATTERN, nil)
 
 	_ = []symbolic.Iterable{(*Set)(nil)}
 	_ = []symbolic.Collection{(*Set)(nil)}
@@ -35,7 +35,7 @@ type Set struct {
 	elementPattern symbolic.Pattern
 	element        symbolic.Value //cache
 
-	uniqueness *common.UniquenessConstraint
+	uniqueness *common.UniquenessConstraint //if nil any uniqueness is matched
 	shared     bool
 	url        *symbolic.URL //can be nil
 
@@ -97,7 +97,7 @@ func (s *Set) Test(v symbolic.Value, state symbolic.RecTestCallState) bool {
 		return false
 	}
 
-	return s.uniqueness == nil || s.uniqueness == otherSet.uniqueness
+	return s.uniqueness == nil || (otherSet.uniqueness != nil && *s.uniqueness == *otherSet.uniqueness)
 }
 
 func (s *Set) IsSharable() (bool, string) {
@@ -171,7 +171,7 @@ func (*Set) PropertyNames() []string {
 func (s *Set) Has(ctx *symbolic.Context, v symbolic.Serializable) *symbolic.Bool {
 	ctx.SetSymbolicGoFunctionParameters(&[]symbolic.Value{
 		s.element,
-	}, SET_ADD_METHOD_PARAM_NAMES)
+	}, SET_HAS_METHOD_PARAM_NAMES)
 	return symbolic.ANY_BOOL
 }
 
@@ -195,7 +195,7 @@ func (s *Set) Get(ctx *symbolic.Context, k symbolic.StringLike) (symbolic.Value,
 	return s.element, symbolic.ANY_BOOL
 }
 
-func (s *Set) PrettyPrint(w prettyprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (s *Set) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("Set(")
 	s.element.PrettyPrint(w, config)
 	if s.uniqueness != nil {
@@ -220,7 +220,7 @@ func (*Set) WidestOfType() symbolic.Value {
 type SetPattern struct {
 	symbolic.UnassignablePropsMixin
 	elementPattern symbolic.Pattern
-	uniqueness     *common.UniquenessConstraint
+	uniqueness     *common.UniquenessConstraint //if nil any uniqueness is matched
 
 	symbolic.NotCallablePatternMixin
 	symbolic.SerializableMixin
@@ -288,7 +288,7 @@ func (p *SetPattern) SymbolicValue() symbolic.Value {
 	return NewSetWithPattern(p.elementPattern, p.uniqueness)
 }
 
-func (p *SetPattern) PrettyPrint(w prettyprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (p *SetPattern) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("set-pattern(")
 	p.elementPattern.SymbolicValue().PrettyPrint(w, config)
 	if p.uniqueness != nil {
@@ -307,5 +307,5 @@ func (*SetPattern) IteratorElementValue() symbolic.Value {
 }
 
 func (*SetPattern) WidestOfType() symbolic.Value {
-	return ANY_SET
+	return ANY_SET_PATTERN
 }
