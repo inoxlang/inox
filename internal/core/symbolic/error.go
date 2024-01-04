@@ -41,7 +41,6 @@ const (
 
 	MISSING_RETURN_IN_FUNCTION                                                   = "missing return in function"
 	MISSING_UNCONDITIONAL_RETURN_IN_FUNCTION                                     = "missing unconditional return in function"
-	MISSING_RETURN_IN_FUNCTION_PATT                                              = "missing return in function pattern"
 	INVALID_ASSIGN_INT_OPER_ASSIGN_LHS_NOT_INT                                   = "invalid assignment: left hand side is not an integer"
 	INVALID_ASSIGN_INT_OPER_ASSIGN_RHS_NOT_INT                                   = "invalid assignment: right hand side is not an integer"
 	INVALID_ASSIGN_NON_SERIALIZABLE_VALUE_NOT_ALLOWED_AS_PROPS_OF_SERIALIZABLE   = "invalid assignment: non-serializable values are not allowed as properties of serializable values"

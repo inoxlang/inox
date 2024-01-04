@@ -19,6 +19,7 @@ const (
 
 var (
 	ANY_INOX_FUNC = &InoxFunction{}
+	ANY_FUNC      = &Function{}
 )
 
 // An InoxFunction represents a symbolic InoxFunction.
@@ -864,16 +865,17 @@ func (goFunc *GoFunction) Call(input goFunctionCallInput) (finalResult Value, mu
 
 // An Function represents a symbolic function we do not know the concrete type.
 type Function struct {
-	//if pattern is nil this function matches any function with the following parameters & results
 	parameters              []Value
 	firstOptionalParamIndex int //-1 if no optional parameters
 	parameterNames          []string
-	results                 []Value
+	results                 []Value //if nil any function is matched
 	variadic                bool
 
-	pattern *FunctionPattern
-
 	originGoFunction *GoFunction //can be nil
+
+	patternNode                  *parse.FunctionPatternExpression //can be nil
+	patternNodeChunk             *parse.Chunk                     //can be nil
+	formattedPatternNodeLocation string                           //can be empty
 }
 
 func NewFunction(
@@ -888,6 +890,10 @@ func NewFunction(
 
 	if firstOptionalParamIndex < 0 {
 		firstOptionalParamIndex = -1
+	}
+
+	if len(results) == 0 {
+		results = []Value{Nil}
 	}
 
 	fn := &Function{
@@ -932,18 +938,13 @@ func (f *Function) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
-	if f.pattern != nil {
-		switch v.(type) {
-		case *Function, *GoFunction, *InoxFunction:
-			return f.pattern.TestValue(v, state)
-		default:
-			return false
-		}
-	}
-
 	switch tested := v.(type) {
 	case *Function:
-		if tested.pattern != nil || len(f.parameters) != len(tested.parameters) || f.variadic != tested.variadic {
+		if f.results == nil {
+			return true
+		}
+
+		if tested.results == nil || len(f.parameters) != len(tested.parameters) || f.variadic != tested.variadic {
 			return false
 		}
 
@@ -961,6 +962,10 @@ func (f *Function) Test(v Value, state RecTestCallState) bool {
 
 		return true
 	case *GoFunction:
+		if f.results == nil {
+			return true
+		}
+
 		goFunc := tested
 		fnNonVariadicParams := tested.NonVariadicParametersExceptCtx()
 
@@ -995,6 +1000,10 @@ func (f *Function) Test(v Value, state RecTestCallState) bool {
 
 		return true
 	case *InoxFunction:
+		if f.results == nil {
+			return true
+		}
+
 		inoxFn := tested
 		if inoxFn.result == nil || f.variadic != inoxFn.IsVariadic() || len(f.parameters) != len(inoxFn.parameters) {
 			return false
@@ -1023,8 +1032,8 @@ func (f *Function) Test(v Value, state RecTestCallState) bool {
 }
 
 func (f *Function) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
-	if f.pattern != nil {
-		w.WriteString("function(???)")
+	if f.results == nil {
+		w.WriteString("fn")
 		return
 	}
 
@@ -1056,18 +1065,22 @@ func (f *Function) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.Pretty
 		w.LeaveRegion(paramRegion)
 	}
 
-	w.WriteString(") ")
 	switch len(f.results) {
 	case 0:
+		w.WriteString(")")
 	case 1:
+		w.WriteString(") ")
 		f.results[0].PrettyPrint(w.ZeroDepthIndent().EnterPattern(), config)
 	default:
+		w.WriteString(") ")
 		NewArray(f.results...).PrettyPrint(w.ZeroDepthIndent().EnterPattern(), config)
+	}
+
+	if f.patternNode != nil {
+		w.WriteStringF(" <%s>", f.formattedPatternNodeLocation)
 	}
 }
 
 func (f *Function) WidestOfType() Value {
-	return &Function{
-		pattern: (&FunctionPattern{}).WidestOfType().(*FunctionPattern),
-	}
+	return ANY_FUNC
 }

@@ -569,7 +569,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("in a function that is a value of an object pattern", func(t *testing.T) {
-			n, src := mustParseCode(`%{f: fn() => self}`)
+			n, src := mustParseCode(`%{f: %(fn() => self)}`)
 
 			selfExpr := parse.FindNode(n, (*parse.SelfExpression)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
@@ -668,7 +668,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("in a function that is a value of an object pattern", func(t *testing.T) {
-			n, src := mustParseCode(`%{f: fn() => sendval 1 to {}}`)
+			n, src := mustParseCode(`%{f: %(fn() => sendval 1 to {})}`)
 
 			sendValExpr := parse.FindNode(n, (*parse.SendValueExpression)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
@@ -1596,7 +1596,7 @@ func TestCheck(t *testing.T) {
 			n, src := mustParseCode(`
 				$$a = 1
 				pattern one = 1
-				%fn(a %one){return a}
+				%fn(a %one)
 			`)
 			fn := parse.FindNode(n, (*parse.FunctionPatternExpression)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
@@ -3556,7 +3556,7 @@ func TestCheck(t *testing.T) {
 		})
 
 		t.Run("as type of function pattern parameter", func(t *testing.T) {
-			n, src := mustParseCode(`%fn(arg readonly int){}`)
+			n, src := mustParseCode(`%fn(arg readonly int)`)
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{
 				Node:     n,
 				Chunk:    src,

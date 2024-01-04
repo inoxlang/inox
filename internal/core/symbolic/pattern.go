@@ -99,6 +99,8 @@ var (
 	ANY_INT_RANGE_PATTERN   = NewIntRangePattern(ANY_INT_RANGE)
 	ANY_FLOAT_RANGE_PATTERN = NewFloatRangePattern(ANY_FLOAT_RANGE)
 
+	ANY_FUNCTION_PATTERN = &FunctionPattern{}
+
 	ANY_PATTERN_NAMESPACE = &PatternNamespace{}
 
 	ErrPatternNotCallable                        = errors.New("pattern is not callable")
@@ -3064,14 +3066,7 @@ func (p *OptionalPattern) WidestOfType() Value {
 }
 
 type FunctionPattern struct {
-	parameters              []Value
-	parameterNames          []string
-	firstOptionalParamIndex int //-1 if no optional parameters
-	isVariadic              bool
-
-	node       *parse.FunctionPatternExpression //if nil, any function is matched
-	nodeChunk  *parse.Chunk
-	returnType Value
+	function *Function //if nil any function is matched
 
 	NotCallablePatternMixin
 	SerializableMixin
@@ -3085,15 +3080,16 @@ func (fn *FunctionPattern) Test(v Value, state RecTestCallState) bool {
 	if !ok {
 		return false
 	}
-	if fn.node == nil {
+
+	if fn.function == nil {
 		return true
 	}
 
-	if other.node == nil {
+	if other.function == nil {
 		return false
 	}
 
-	return utils.SamePointer(fn.node, other.node)
+	return fn.function.Test(other.function, state)
 }
 
 func (pattern *FunctionPattern) TestValue(v Value, state RecTestCallState) bool {
@@ -3102,12 +3098,13 @@ func (pattern *FunctionPattern) TestValue(v Value, state RecTestCallState) bool 
 
 	switch fn := v.(type) {
 	case *Function:
-		if pattern.node == nil {
+		if pattern.function == nil {
 			return true
 		}
-		return pattern.Test(fn.pattern, state)
+
+		return pattern.function.Test(fn, state)
 	case *GoFunction:
-		if pattern.node == nil {
+		if pattern.function == nil {
 			return true
 		}
 
@@ -3116,35 +3113,12 @@ func (pattern *FunctionPattern) TestValue(v Value, state RecTestCallState) bool 
 		}
 
 		panic(errors.New("testing a go function against a function pattern is not supported yet"))
-
 	case *InoxFunction:
-		if pattern.node == nil {
+		if pattern.function == nil {
 			return true
 		}
 
-		fnExpr := fn.FuncExpr()
-		if fnExpr == nil {
-			return false
-		}
-
-		if len(fnExpr.Parameters) != len(pattern.node.Parameters) || fnExpr.NonVariadicParamCount() != pattern.node.NonVariadicParamCount() {
-			return false
-		}
-
-		for i, param := range pattern.node.Parameters {
-			actualParam := fnExpr.Parameters[i]
-
-			if (param.Type == nil) != (actualParam.Type == nil) {
-				return false
-			}
-
-			printConfig := parse.PrintConfig{TrimStart: true}
-			if parse.SPrint(param.Type, pattern.nodeChunk, printConfig) != parse.SPrint(actualParam.Type, fn.nodeChunk, printConfig) {
-				return false
-			}
-		}
-
-		return pattern.returnType.Test(fn.result, state)
+		return pattern.function.Test(fn, state)
 	default:
 		return false
 	}
@@ -3160,11 +3134,11 @@ func (p *FunctionPattern) IteratorElementKey() Value {
 
 func (fn *FunctionPattern) IteratorElementValue() Value {
 	//TODO
-	return &Function{pattern: fn}
+	return fn.function
 }
 
 func (fn *FunctionPattern) SymbolicValue() Value {
-	return &Function{fn.parameters, fn.firstOptionalParamIndex, fn.parameterNames, nil, fn.isVariadic, fn, nil}
+	return fn.function
 }
 
 func (p *FunctionPattern) StringPattern() (StringPattern, bool) {
@@ -3172,15 +3146,17 @@ func (p *FunctionPattern) StringPattern() (StringPattern, bool) {
 }
 
 func (fn *FunctionPattern) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
-	if fn.node == nil {
+	if fn.function == nil {
 		w.WriteName("function-pattern")
 		return
 	}
-	w.WriteNameF("function-pattern(%v)", fn.node)
+	w.WriteName("function-pattern(")
+	fn.function.PrettyPrint(w.WithDepthIndent(w.Depth+1, 0), config)
+	w.WriteString(")")
 }
 
 func (fn *FunctionPattern) WidestOfType() Value {
-	return &FunctionPattern{firstOptionalParamIndex: -1}
+	return ANY_FUNCTION_PATTERN
 }
 
 // A IntRangePattern represents a symbolic IntRangePattern.

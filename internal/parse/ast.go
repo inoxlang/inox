@@ -1698,7 +1698,7 @@ type FunctionExpression struct {
 	CaptureList            []Node
 	Parameters             []*FunctionParameter
 	AdditionalInvalidNodes []Node
-	ReturnType             Node
+	ReturnType             Node //can be nil
 	IsVariadic             bool
 	Body                   Node
 	IsBodyExpression       bool
@@ -1768,8 +1768,6 @@ type FunctionPatternExpression struct {
 	AdditionalInvalidNodes []Node
 	ReturnType             Node //optional if .Body is present
 	IsVariadic             bool
-	Body                   Node //optional if .ReturnType is present
-	IsBodyExpression       bool
 }
 
 func (expr FunctionPatternExpression) NonVariadicParamCount() int {
@@ -1799,7 +1797,6 @@ func (expr FunctionPatternExpression) SignatureInformation() (
 	}
 
 	returnType = expr.ReturnType
-	isBodyExpr = expr.IsBodyExpression
 
 	return
 }
@@ -2520,7 +2517,6 @@ func walk(node, parent Node, ancestorChain *[]Node, fn, afterFn NodeHandler) {
 		}
 
 		walk(n.ReturnType, node, ancestorChain, fn, afterFn)
-		walk(n.Body, node, ancestorChain, fn, afterFn)
 		for _, n := range n.AdditionalInvalidNodes {
 			walk(n, node, ancestorChain, fn, afterFn)
 		}

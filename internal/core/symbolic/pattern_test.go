@@ -3276,9 +3276,7 @@ func TestFunctionPattern(t *testing.T) {
 			anyFnPatt := &FunctionPattern{}
 
 			assertTest(t, anyFnPatt, anyFnPatt)
-			assert.True(t, anyFnPatt.Test(&FunctionPattern{
-				node: &parse.FunctionPatternExpression{},
-			}, RecTestCallState{}))
+			assert.True(t, anyFnPatt.Test(&FunctionPattern{}, RecTestCallState{}))
 			assertTestFalse(t, anyFnPatt, ANY_INT)
 			assertTestFalse(t, anyFnPatt, ANY_STR)
 		})
@@ -3286,7 +3284,7 @@ func TestFunctionPattern(t *testing.T) {
 		t.Run("TestValue()", func(t *testing.T) {
 			anyFnPatt := &FunctionPattern{}
 
-			assertTestValue(t, anyFnPatt, &Function{pattern: anyFnPatt})
+			assertTestValue(t, anyFnPatt, &Function{})
 			assert.True(t, anyFnPatt.TestValue(&InoxFunction{
 				node: &parse.FunctionPatternExpression{},
 			}, RecTestCallState{}))
@@ -3299,8 +3297,8 @@ func TestFunctionPattern(t *testing.T) {
 		matchingFnExprs    []string
 		notMatchingFnExprs []string
 	}{
-		"%fn(){}": {
-			[]string{"fn(){}"},
+		"%fn()": {
+			[]string{"fn(){}", "fn(){ return nil }"},
 			[]string{"fn() %int { return 1 }", "fn() { return 1 }"},
 		},
 		"%fn() %int": {
@@ -3332,12 +3330,6 @@ func TestFunctionPattern(t *testing.T) {
 				fnPatt := utils.Must(symbolicEval(node, makeState())).(*FunctionPattern)
 
 				assertTest(t, fnPatt, fnPatt)
-				assert.True(t, fnPatt.Test(&FunctionPattern{
-					node: node.(*parse.FunctionPatternExpression),
-				}, RecTestCallState{}))
-				assert.False(t, fnPatt.Test(&FunctionPattern{
-					node: &parse.FunctionPatternExpression{},
-				}, RecTestCallState{}))
 				assertTestFalse(t, fnPatt, anyFnPatt)
 				assertTestFalse(t, fnPatt, ANY_INT)
 				assertTestFalse(t, fnPatt, ANY_STR)

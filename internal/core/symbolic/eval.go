@@ -2877,13 +2877,29 @@ func evalFunctionExpression(n *parse.FunctionExpression, state *State, options e
 		paramNames[i] = name
 	}
 
+	var signatureReturnType Value
+
+	if n.ReturnType != nil {
+		pattern, err := symbolicallyEvalPatternNode(n.ReturnType, stateFork)
+		if err != nil {
+			return nil, err
+		}
+		signatureReturnType = pattern.SymbolicValue()
+	}
+
 	if state.recursiveFunctionName != "" {
+		//set a temporary value for the function
+
 		tempFn := &InoxFunction{
 			node:           n,
 			nodeChunk:      state.currentChunk().Node,
 			parameters:     params,
 			parameterNames: paramNames,
 			result:         ANY_SERIALIZABLE,
+		}
+
+		if signatureReturnType != nil {
+			tempFn.result = signatureReturnType
 		}
 
 		state.overrideGlobal(state.recursiveFunctionName, tempFn)
@@ -2937,17 +2953,8 @@ func evalFunctionExpression(n *parse.FunctionExpression, state *State, options e
 
 	//-----------------------------
 
-	var signatureReturnType Value
 	var storedReturnType Value
 	var err error
-
-	if n.ReturnType != nil {
-		pattern, err := symbolicallyEvalPatternNode(n.ReturnType, stateFork)
-		if err != nil {
-			return nil, err
-		}
-		signatureReturnType = pattern.SymbolicValue()
-	}
 
 	if n.Body == nil {
 		goto return_function
@@ -3113,9 +3120,7 @@ func evalFunctionPatternExpression(n *parse.FunctionPatternExpression, state *St
 
 	//-----------------------------
 
-	var signatureReturnType Value
-	var storedReturnType Value
-	var err error
+	var returnType Value = Nil
 
 	if n.ReturnType != nil {
 		pattern, err := symbolicallyEvalPatternNode(n.ReturnType, stateFork)
@@ -3123,56 +3128,18 @@ func evalFunctionPatternExpression(n *parse.FunctionPatternExpression, state *St
 			return nil, err
 		}
 		typ := pattern.SymbolicValue()
-		signatureReturnType = typ
+		returnType = typ
 	}
 
-	if n.IsBodyExpression {
-		storedReturnType, err = symbolicEval(n.Body, stateFork)
-		if err != nil {
-			return nil, err
-		}
+	//TODO: update firstOptionalParamIndex when function patterns support optional paramters
 
-		if signatureReturnType != nil {
-			storedReturnType = signatureReturnType
-			if !signatureReturnType.Test(storedReturnType, RecTestCallState{}) {
-				state.addError(makeSymbolicEvalError(n, state, fmtInvalidReturnValue(storedReturnType, signatureReturnType)))
-			}
-		}
-	} else {
-		stateFork.returnType = signatureReturnType
-
-		//execution of body
-		if n.Body != nil {
-			_, err := symbolicEval(n.Body, stateFork)
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		//check return
-		retValuePtr := stateFork.returnValue
-
-		if signatureReturnType != nil {
-			storedReturnType = signatureReturnType
-			if retValuePtr == nil && n.Body != nil {
-				stateFork.addError(makeSymbolicEvalError(n, stateFork, MISSING_RETURN_IN_FUNCTION_PATT))
-			}
-		} else if retValuePtr == nil {
-			storedReturnType = Nil
-		} else {
-			storedReturnType = retValuePtr
-		}
-	}
+	function := NewFunction(parameterTypes, parameterNames, -1, isVariadic, []Value{returnType})
+	function.patternNode = n
+	function.patternNodeChunk = state.currentChunk().Node
+	function.formattedPatternNodeLocation = state.currentChunk().GetFormattedNodeLocation(n)
 
 	return &FunctionPattern{
-		node:      n,
-		nodeChunk: state.currentChunk().Node,
-		//TODO: update firstOptionalParamIndex when inox functions support optional paramters
-		firstOptionalParamIndex: -1,
-		returnType:              storedReturnType,
-		parameters:              parameterTypes,
-		parameterNames:          parameterNames,
-		isVariadic:              isVariadic,
+		function: function,
 	}, nil
 }
 

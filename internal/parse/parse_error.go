@@ -287,7 +287,6 @@ const (
 
 	PERCENT_FN_SHOULD_BE_FOLLOWED_BY_PARAMETERS                     = "'%fn' should be followed by parameters "
 	PARAM_LIST_OF_FUNC_PATT_SHOULD_CONTAIN_PARAMETERS_SEP_BY_COMMAS = "the parameter list of a function pattern should contain parameters (a parameter is a type preceded (or not) by an identifier) separated by commas"
-	PARAM_LIST_OF_FUNC_PATT_SHOULD_BE_FOLLOWED_BY_BLOCK_OR_ARROW    = "function pattern: parameter list should be followed by a block or an arrow"
 
 	UNTERMINATED_PARAM_LIST_MISSING_CLOSING_PAREN            = "unterminated parameter list: missing closing parenthesis"
 	INVALID_FUNC_SYNTAX                                      = "invalid function syntax"

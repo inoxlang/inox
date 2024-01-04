@@ -3299,118 +3299,85 @@ func TestSymbolicEval(t *testing.T) {
 
 		t.Run("empty", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
-				return %fn(){}
+				return %fn()
 			`)
 			fnPatt := n.Statements[0].(*parse.ReturnStatement).Expr.(*parse.FunctionPatternExpression)
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Equal(t, &FunctionPattern{
-				node:                    fnPatt,
-				nodeChunk:               n,
-				returnType:              Nil,
-				parameters:              []Value{},
-				parameterNames:          []string{},
-				firstOptionalParamIndex: -1,
+				function: &Function{
+					patternNode:                  fnPatt,
+					patternNodeChunk:             n,
+					formattedPatternNodeLocation: ":2:12:",
+
+					results:                 []Value{Nil},
+					parameters:              []Value{},
+					parameterNames:          []string{},
+					firstOptionalParamIndex: -1,
+				},
 			}, res)
 		})
 
 		t.Run("single parameter", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
-				return %fn(a %int){}
+				return %fn(a %int)
 			`)
 			fnPatt := n.Statements[0].(*parse.ReturnStatement).Expr.(*parse.FunctionPatternExpression)
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Equal(t, &FunctionPattern{
-				node:                    fnPatt,
-				nodeChunk:               n,
-				returnType:              Nil,
-				parameters:              []Value{ANY_INT},
-				parameterNames:          []string{"a"},
-				firstOptionalParamIndex: -1,
-			}, res)
-		})
-
-		t.Run("missing return", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`
-				return %fn() %int {
-					
-				}
-			`)
-			fnPatt := n.Statements[0].(*parse.ReturnStatement).Expr.(*parse.FunctionPatternExpression)
-			res, err := symbolicEval(n, state)
-
-			assert.NoError(t, err)
-			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(fnPatt, state, MISSING_RETURN_IN_FUNCTION_PATT),
-			}, state.errors())
-			assert.Equal(t, &FunctionPattern{
-				node:                    fnPatt,
-				nodeChunk:               n,
-				returnType:              ANY_INT,
-				parameters:              []Value{},
-				parameterNames:          []string{},
-				firstOptionalParamIndex: -1,
-			}, res)
-		})
-
-		t.Run("invalid return value", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`
-				return %fn() %int {
-					return "a"
-				}
-			`)
-
-			fnPatt := parse.FindNode(n, (*parse.FunctionPatternExpression)(nil), nil)
-			innerReturnStmt := parse.FindNodes(n, (*parse.ReturnStatement)(nil), nil)[1]
-			res, err := symbolicEval(n, state)
-
-			assert.NoError(t, err)
-			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(innerReturnStmt, state, fmtInvalidReturnValue(NewString("a"), ANY_INT)),
-			}, state.errors())
-			assert.Equal(t, &FunctionPattern{
-				node:                    fnPatt,
-				nodeChunk:               n,
-				returnType:              ANY_INT,
-				parameters:              []Value{},
-				parameterNames:          []string{},
-				firstOptionalParamIndex: -1,
+				function: &Function{
+					patternNode:                  fnPatt,
+					patternNodeChunk:             n,
+					formattedPatternNodeLocation: ":2:12:",
+					results:                      []Value{Nil},
+					parameters:                   []Value{ANY_INT},
+					parameterNames:               []string{"a"},
+					firstOptionalParamIndex:      -1,
+				},
 			}, res)
 		})
 
 		t.Run("parameter with no name and a prefixed named pattern as type", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
-				return %fn(%int){}
+				return %fn(%int)
 			`)
 			fnPatt := n.Statements[0].(*parse.ReturnStatement).Expr.(*parse.FunctionPatternExpression)
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Equal(t, &FunctionPattern{
-				node:                    fnPatt,
-				nodeChunk:               n,
-				returnType:              Nil,
-				parameters:              []Value{ANY_INT},
-				parameterNames:          []string{"_"},
-				firstOptionalParamIndex: -1,
+				function: &Function{
+					patternNode:                  fnPatt,
+					patternNodeChunk:             n,
+					formattedPatternNodeLocation: ":2:12:",
+
+					results:                 []Value{Nil},
+					parameters:              []Value{ANY_INT},
+					parameterNames:          []string{"_"},
+					firstOptionalParamIndex: -1,
+				},
 			}, res)
 		})
 
 		t.Run("parameter with no name and a unprefixed named pattern as type", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
-				pattern f = fn(int){}
+				pattern f = fn(int)
 				return %f
 			`)
 			fnPatt := n.Statements[0].(*parse.PatternDefinition).Right.(*parse.FunctionPatternExpression)
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Equal(t, &FunctionPattern{
-				node:                    fnPatt,
-				nodeChunk:               n,
-				returnType:              Nil,
-				parameters:              []Value{ANY_INT},
-				parameterNames:          []string{"_"},
-				firstOptionalParamIndex: -1,
+				function: &Function{
+					patternNode:                  fnPatt,
+					patternNodeChunk:             n,
+					formattedPatternNodeLocation: ":2:17:",
+
+					results:                 []Value{Nil},
+					parameters:              []Value{ANY_INT},
+					parameterNames:          []string{"_"},
+					firstOptionalParamIndex: -1,
+				},
 			}, res)
 		})
 	})
@@ -5950,24 +5917,20 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Empty(t, state.errors())
 
 			fnExpr := n.Statements[0].(*parse.FunctionDeclaration).Function
-			fnPatt := n.Statements[0].(*parse.FunctionDeclaration).Function.Parameters[0].Type
+			fnPatt := parse.FindNode(n, (*parse.FunctionPatternExpression)(nil), nil)
 
 			expectedFn := &InoxFunction{
 				node:      fnExpr,
 				nodeChunk: n,
 				parameters: []Value{
 					&Function{
-						pattern: &FunctionPattern{
-							node:                    fnPatt.(*parse.FunctionPatternExpression),
-							nodeChunk:               n,
-							returnType:              ANY_INT,
-							parameters:              []Value{},
-							parameterNames:          []string{},
-							firstOptionalParamIndex: -1,
-						},
-						parameters:              []Value{},
-						parameterNames:          []string{},
-						firstOptionalParamIndex: -1,
+						patternNode:                  fnPatt,
+						patternNodeChunk:             n,
+						formattedPatternNodeLocation: ":2:15:",
+						parameters:                   []Value{},
+						parameterNames:               []string{},
+						firstOptionalParamIndex:      -1,
+						results:                      []Value{ANY_INT},
 					},
 				},
 				parameterNames: []string{"func"},

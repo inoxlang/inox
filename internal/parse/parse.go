@@ -9504,10 +9504,8 @@ func (p *parser) parseFunctionPattern(start int32, percentPrefixed bool) Node {
 	p.inPattern = inPatternSave
 
 	var (
-		returnType       Node
-		body             Node
-		isBodyExpression bool
-		end              int32
+		returnType Node
+		end        int32
 	)
 
 	if p.i >= p.len {
@@ -9530,48 +9528,7 @@ func (p *parser) parseFunctionPattern(start int32, percentPrefixed bool) Node {
 
 			p.inPattern = inPatternSave
 		}
-
-		p.eatSpace()
-
-		//optional body
-
-		inPatternSave := p.inPattern
-		p.inPattern = false
-
-		defer func() {
-			p.inPattern = inPatternSave
-		}()
-
-		var error = &ParsingError{InvalidNext, PARAM_LIST_OF_FUNC_PATT_SHOULD_BE_FOLLOWED_BY_BLOCK_OR_ARROW}
-		if returnType != nil {
-			error = &ParsingError{UnspecifiedParsingError, RETURN_TYPE_OF_FUNC_SHOULD_BE_FOLLOWED_BY_BLOCK_OR_ARROW}
-		}
-
 		end = p.i
-
-		if p.i < p.len && p.s[p.i] != '\n' {
-			switch p.s[p.i] {
-			case '{':
-				body = p.parseBlock()
-				end = body.Base().Span.End
-			case '=':
-				if p.i >= p.len-1 || p.s[p.i+1] != '>' {
-					parsingErr = error
-					end = p.i
-				} else {
-					p.tokens = append(p.tokens, Token{Type: ARROW, Span: NodeSpan{p.i, p.i + 2}})
-					p.i += 2
-					p.eatSpace()
-					body, _ = p.parseExpression()
-					end = body.Base().Span.End
-					isBodyExpression = true
-				}
-			default:
-				if !isUnpairedOrIsClosingDelim(p.s[p.i]) {
-					parsingErr = error
-				}
-			}
-		}
 	}
 
 	fn := FunctionPatternExpression{
@@ -9583,8 +9540,6 @@ func (p *parser) parseFunctionPattern(start int32, percentPrefixed bool) Node {
 		AdditionalInvalidNodes: additionalInvalidNodes,
 		ReturnType:             returnType,
 		IsVariadic:             isVariadic,
-		Body:                   body,
-		IsBodyExpression:       isBodyExpression,
 	}
 
 	return &fn

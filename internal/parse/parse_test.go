@@ -17200,14 +17200,14 @@ func testParse(
 	})
 
 	t.Run("function pattern expression", func(t *testing.T) {
-		t.Run("no parameters, no manifest, empty body", func(t *testing.T) {
-			n := mustparseChunk(t, "%fn(){}")
+		t.Run("no parameters", func(t *testing.T) {
+			n := mustparseChunk(t, "%fn()")
 			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{NodeSpan{0, 7}, nil, false},
+				NodeBase: NodeBase{NodeSpan{0, 5}, nil, false},
 				Statements: []Node{
 					&FunctionPatternExpression{
 						NodeBase: NodeBase{
-							NodeSpan{0, 7},
+							NodeSpan{0, 5},
 							nil,
 							false,
 							/*[]Token{
@@ -17217,31 +17217,19 @@ func testParse(
 							},*/
 						},
 						Parameters: nil,
-						Body: &Block{
-							NodeBase: NodeBase{
-								NodeSpan{5, 7},
-								nil,
-								false,
-								/*[]Token{
-									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{5, 6}},
-									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{6, 7}},
-								},*/
-							},
-							Statements: nil,
-						},
 					},
 				},
 			}, n)
 		})
 
-		t.Run("no parameters, empty body, return type", func(t *testing.T) {
-			n := mustparseChunk(t, "%fn() %int {}")
+		t.Run("no parameters, return type", func(t *testing.T) {
+			n := mustparseChunk(t, "%fn() %int")
 			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{NodeSpan{0, 13}, nil, false},
+				NodeBase: NodeBase{NodeSpan{0, 10}, nil, false},
 				Statements: []Node{
 					&FunctionPatternExpression{
 						NodeBase: NodeBase{
-							NodeSpan{0, 13},
+							NodeSpan{0, 10},
 							nil,
 							false,
 							/*[]Token{
@@ -17255,31 +17243,19 @@ func testParse(
 							NodeBase: NodeBase{NodeSpan{6, 10}, nil, false},
 							Name:     "int",
 						},
-						Body: &Block{
-							NodeBase: NodeBase{
-								NodeSpan{11, 13},
-								nil,
-								false,
-								/*[]Token{
-									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{11, 12}},
-									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{12, 13}},
-								},*/
-							},
-							Statements: nil,
-						},
 					},
 				},
 			}, n)
 		})
 
 		t.Run("no parameters, empty body, unprefixed return type", func(t *testing.T) {
-			n := mustparseChunk(t, "%fn() int {}")
+			n := mustparseChunk(t, "%fn() int")
 			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{NodeSpan{0, 12}, nil, false},
+				NodeBase: NodeBase{NodeSpan{0, 9}, nil, false},
 				Statements: []Node{
 					&FunctionPatternExpression{
 						NodeBase: NodeBase{
-							NodeSpan{0, 12},
+							NodeSpan{0, 9},
 							nil,
 							false,
 							/*[]Token{
@@ -17293,18 +17269,6 @@ func testParse(
 							NodeBase:   NodeBase{NodeSpan{6, 9}, nil, false},
 							Name:       "int",
 							Unprefixed: true,
-						},
-						Body: &Block{
-							NodeBase: NodeBase{
-								NodeSpan{10, 12},
-								nil,
-								false,
-								/*[]Token{
-									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{10, 11}},
-									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{11, 12}},
-								},*/
-							},
-							Statements: nil,
 						},
 					},
 				},
@@ -17323,13 +17287,13 @@ func testParse(
 		})
 
 		t.Run("single parameter, empty body ", func(t *testing.T) {
-			n := mustparseChunk(t, "%fn(x){}")
+			n := mustparseChunk(t, "%fn(x)")
 			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{NodeSpan{0, 8}, nil, false},
+				NodeBase: NodeBase{NodeSpan{0, 6}, nil, false},
 				Statements: []Node{
 					&FunctionPatternExpression{
 						NodeBase: NodeBase{
-							NodeSpan{0, 8},
+							NodeSpan{0, 6},
 							nil,
 							false,
 							/*[]Token{
@@ -17348,31 +17312,19 @@ func testParse(
 								},
 							},
 						},
-						Body: &Block{
-							NodeBase: NodeBase{
-								NodeSpan{6, 8},
-								nil,
-								false,
-								/*[]Token{
-									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{6, 7}},
-									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{7, 8}},
-								},*/
-							},
-							Statements: nil,
-						},
 					},
 				},
 			}, n)
 		})
 
 		t.Run("single typed parameter, empty body ", func(t *testing.T) {
-			n := mustparseChunk(t, "%fn(x %int){}")
+			n := mustparseChunk(t, "%fn(x %int)")
 			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{NodeSpan{0, 13}, nil, false},
+				NodeBase: NodeBase{NodeSpan{0, 11}, nil, false},
 				Statements: []Node{
 					&FunctionPatternExpression{
 						NodeBase: NodeBase{
-							NodeSpan{0, 13},
+							NodeSpan{0, 11},
 							nil,
 							false,
 							/*[]Token{
@@ -17394,31 +17346,19 @@ func testParse(
 								},
 							},
 						},
-						Body: &Block{
-							NodeBase: NodeBase{
-								NodeSpan{11, 13},
-								nil,
-								false,
-								/*[]Token{
-									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{11, 12}},
-									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{12, 13}},
-								},*/
-							},
-							Statements: nil,
-						},
 					},
 				},
 			}, n)
 		})
 
 		t.Run("single readonly typed parameter, empty body ", func(t *testing.T) {
-			n := mustparseChunk(t, "%fn(x readonly %int){}")
+			n := mustparseChunk(t, "%fn(x readonly %int)")
 			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{NodeSpan{0, 22}, nil, false},
+				NodeBase: NodeBase{NodeSpan{0, 20}, nil, false},
 				Statements: []Node{
 					&FunctionPatternExpression{
 						NodeBase: NodeBase{
-							NodeSpan{0, 22},
+							NodeSpan{0, 20},
 							nil,
 							false,
 							/*[]Token{
@@ -17447,31 +17387,19 @@ func testParse(
 								},
 							},
 						},
-						Body: &Block{
-							NodeBase: NodeBase{
-								NodeSpan{20, 22},
-								nil,
-								false,
-								/*[]Token{
-									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{20, 21}},
-									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{21, 22}},
-								},*/
-							},
-							Statements: nil,
-						},
 					},
 				},
 			}, n)
 		})
 
 		t.Run("single typed parameter with unprefixed type, empty body ", func(t *testing.T) {
-			n := mustparseChunk(t, "%fn(x int){}")
+			n := mustparseChunk(t, "%fn(x int)")
 			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{NodeSpan{0, 12}, nil, false},
+				NodeBase: NodeBase{NodeSpan{0, 10}, nil, false},
 				Statements: []Node{
 					&FunctionPatternExpression{
 						NodeBase: NodeBase{
-							NodeSpan{0, 12},
+							NodeSpan{0, 10},
 							nil,
 							false,
 							/*[]Token{
@@ -17494,31 +17422,19 @@ func testParse(
 								},
 							},
 						},
-						Body: &Block{
-							NodeBase: NodeBase{
-								NodeSpan{10, 12},
-								nil,
-								false,
-								/*[]Token{
-									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{10, 11}},
-									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{11, 12}},
-								},*/
-							},
-							Statements: nil,
-						},
 					},
 				},
 			}, n)
 		})
 
 		t.Run("single parameter with no name, empty body ", func(t *testing.T) {
-			n := mustparseChunk(t, "%fn(%int){}")
+			n := mustparseChunk(t, "%fn(%int)")
 			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{NodeSpan{0, 11}, nil, false},
+				NodeBase: NodeBase{NodeSpan{0, 9}, nil, false},
 				Statements: []Node{
 					&FunctionPatternExpression{
 						NodeBase: NodeBase{
-							NodeSpan{0, 11},
+							NodeSpan{0, 9},
 							nil,
 							false,
 							/*[]Token{
@@ -17536,31 +17452,19 @@ func testParse(
 								},
 							},
 						},
-						Body: &Block{
-							NodeBase: NodeBase{
-								NodeSpan{9, 11},
-								nil,
-								false,
-								/*[]Token{
-									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{9, 10}},
-									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{10, 11}},
-								},*/
-							},
-							Statements: nil,
-						},
 					},
 				},
 			}, n)
 		})
 
 		t.Run("two parameters, empty body ", func(t *testing.T) {
-			n := mustparseChunk(t, "%fn(x,n){}")
+			n := mustparseChunk(t, "%fn(x,n)")
 			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{NodeSpan{0, 10}, nil, false},
+				NodeBase: NodeBase{NodeSpan{0, 8}, nil, false},
 				Statements: []Node{
 					&FunctionPatternExpression{
 						NodeBase: NodeBase{
-							NodeSpan{0, 10},
+							NodeSpan{0, 8},
 							nil,
 							false,
 							/*[]Token{
@@ -17588,70 +17492,21 @@ func testParse(
 								},
 							},
 						},
-						Body: &Block{
-							NodeBase: NodeBase{
-								NodeSpan{8, 10},
-								nil,
-								false,
-								/*[]Token{
-									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{8, 9}},
-									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{9, 10}},
-								},*/
-							},
-							Statements: nil,
-						},
-					},
-				},
-			}, n)
-		})
-
-		t.Run("single parameter, body is an expression", func(t *testing.T) {
-			n := mustparseChunk(t, "%fn(x) => x")
-			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{NodeSpan{0, 11}, nil, false},
-				Statements: []Node{
-					&FunctionPatternExpression{
-						NodeBase: NodeBase{
-							NodeSpan{0, 11},
-							nil,
-							false,
-							/*[]Token{
-								{Type: PERCENT_FN, Span: NodeSpan{0, 3}},
-								{Type: OPENING_PARENTHESIS, Span: NodeSpan{3, 4}},
-								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{5, 6}},
-								{Type: ARROW, Span: NodeSpan{7, 9}},
-							},*/
-						},
-						Parameters: []*FunctionParameter{
-							{
-								NodeBase: NodeBase{NodeSpan{4, 5}, nil, false},
-								Type: &PatternIdentifierLiteral{
-									NodeBase:   NodeBase{NodeSpan{4, 5}, nil, false},
-									Name:       "x",
-									Unprefixed: true,
-								},
-							},
-						},
-						IsBodyExpression: true,
-						Body: &IdentifierLiteral{
-							NodeBase: NodeBase{NodeSpan{10, 11}, nil, false},
-							Name:     "x",
-						},
 					},
 				},
 			}, n)
 		})
 
 		t.Run("unexpected char in empty parameter list", func(t *testing.T) {
-			n, err := parseChunk(t, "%fn(:){}", "")
+			n, err := parseChunk(t, "%fn(:)", "")
 
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{NodeSpan{0, 8}, nil, false},
+				NodeBase: NodeBase{NodeSpan{0, 6}, nil, false},
 				Statements: []Node{
 					&FunctionPatternExpression{
 						NodeBase: NodeBase{
-							NodeSpan{0, 8},
+							NodeSpan{0, 6},
 							nil,
 							false,
 							/*[]Token{
@@ -17670,33 +17525,21 @@ func testParse(
 								},
 							},
 						},
-						Body: &Block{
-							NodeBase: NodeBase{
-								NodeSpan{6, 8},
-								nil,
-								false,
-								/*[]Token{
-									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{6, 7}},
-									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{7, 8}},
-								},*/
-							},
-							Statements: nil,
-						},
 					},
 				},
 			}, n)
 		})
 
 		t.Run("unexpected char in non-empty parameter list", func(t *testing.T) {
-			n, err := parseChunk(t, "%fn(a:b){}", "")
+			n, err := parseChunk(t, "%fn(a:b)", "")
 
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{NodeSpan{0, 10}, nil, false},
+				NodeBase: NodeBase{NodeSpan{0, 8}, nil, false},
 				Statements: []Node{
 					&FunctionPatternExpression{
 						NodeBase: NodeBase{
-							NodeSpan{0, 10},
+							NodeSpan{0, 8},
 							nil,
 							false,
 							/*[]Token{
@@ -17732,61 +17575,20 @@ func testParse(
 								},
 							},
 						},
-						Body: &Block{
-							NodeBase: NodeBase{
-								NodeSpan{8, 10},
-								nil,
-								false,
-								/*[]Token{
-									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{8, 9}},
-									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{9, 10}},
-								},*/
-							},
-							Statements: nil,
-						},
-					},
-				},
-			}, n)
-		})
-
-		t.Run("parameter list not followed by a block", func(t *testing.T) {
-			n, err := parseChunk(t, "%fn()1", "")
-			assert.Error(t, err)
-			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{NodeSpan{0, 6}, nil, false},
-				Statements: []Node{
-					&FunctionPatternExpression{
-						NodeBase: NodeBase{
-							NodeSpan{0, 5},
-							&ParsingError{InvalidNext, PARAM_LIST_OF_FUNC_PATT_SHOULD_BE_FOLLOWED_BY_BLOCK_OR_ARROW},
-							false,
-							/*[]Token{
-								{Type: PERCENT_FN, Span: NodeSpan{0, 3}},
-								{Type: OPENING_PARENTHESIS, Span: NodeSpan{3, 4}},
-								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{4, 5}},
-							},*/
-						},
-						Parameters: nil,
-						Body:       nil,
-					},
-					&IntLiteral{
-						NodeBase: NodeBase{NodeSpan{5, 6}, nil, false},
-						Raw:      "1",
-						Value:    1,
 					},
 				},
 			}, n)
 		})
 
 		t.Run("parameter name should not be a keyword ", func(t *testing.T) {
-			n, err := parseChunk(t, "%fn(manifest int){}", "")
+			n, err := parseChunk(t, "%fn(manifest int)", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{NodeSpan{0, 19}, nil, false},
+				NodeBase: NodeBase{NodeSpan{0, 17}, nil, false},
 				Statements: []Node{
 					&FunctionPatternExpression{
 						NodeBase: NodeBase{
-							NodeSpan{0, 19},
+							NodeSpan{0, 17},
 							nil,
 							false,
 							/*[]Token{
@@ -17812,18 +17614,6 @@ func testParse(
 									Unprefixed: true,
 								},
 							},
-						},
-						Body: &Block{
-							NodeBase: NodeBase{
-								NodeSpan{17, 19},
-								nil,
-								false,
-								/*[]Token{
-									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{13, 14}},
-									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{14, 15}},
-								},*/
-							},
-							Statements: nil,
 						},
 					},
 				},

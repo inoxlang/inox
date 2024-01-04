@@ -388,22 +388,36 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 	//inox function | unknown type function
 	var (
 		nonVariadicParamCount int
-		parameterNodes        []*parse.FunctionParameter
-		variadicParamNode     *parse.FunctionParameter
-		returnType            parse.Node
-		isBodyExpression      bool
+		returnType            Value
 		isVariadic            bool
+
+		//only used for Inox functions.
+		isBodyExpression        bool
+		hasReturnTypeAnnotation bool
+		parameterNodes          []*parse.FunctionParameter
+		variadicParamNode       *parse.FunctionParameter
 	)
 
-	if _, ok := callee.(*InoxFunction); ok {
-		nonVariadicParamCount, parameterNodes, variadicParamNode, returnType, isBodyExpression =
-			fnExpr.SignatureInformation()
-	} else {
-		nonVariadicParamCount, parameterNodes, variadicParamNode, returnType, isBodyExpression =
-			callee.(*Function).pattern.node.SignatureInformation()
-	}
+	if inoxFn, ok := callee.(*InoxFunction); ok {
+		funcExpr := inoxFn.FuncExpr()
+		parameterNodes = funcExpr.Parameters
+		nonVariadicParamCount = funcExpr.NonVariadicParamCount()
+		isVariadic = inoxFn.IsVariadic()
+		if isVariadic {
+			variadicParamNode = funcExpr.VariadicParameter()
+		}
 
-	isVariadic = variadicParamNode != nil
+		hasReturnTypeAnnotation = funcExpr.ReturnType != nil
+		isBodyExpression = funcExpr.IsBodyExpression
+
+		returnType = inoxFn.Result()
+	} else {
+		function := callee.(*Function)
+		nonVariadicParamCount = len(function.NonVariadicParameters())
+		isVariadic = function.IsVariadic()
+
+		returnType = function.results[0]
+	}
 
 	if isVariadic {
 		if nonSpreadArgCount < nonVariadicParamCount {
@@ -411,50 +425,23 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 			//if they are not enough arguments we use the parameter types to set their value
 
 			for i := len(args); i < nonVariadicParamCount; i++ {
-				var paramType Value
-
-				paramTypeNode := parameterNodes[i].Type
-				if paramTypeNode == nil {
-					paramType = ANY
-				} else {
-					pattern, err := symbolicallyEvalPatternNode(paramTypeNode, state)
-					if err != nil {
-						return nil, err
-					}
-					paramType = pattern.SymbolicValue()
-				}
-
-				args = append(args, paramType)
+				args = append(args, nonGoParameters[i])
 			}
 		}
-	} else if hasSpreadArg || len(args) != len(parameterNodes) {
-
+	} else if hasSpreadArg || len(args) != len(nonGoParameters) {
 		if hasSpreadArg {
 			state.addError(makeSymbolicEvalError(callNode, state, SPREAD_ARGS_NOT_SUPPORTED_FOR_NON_VARIADIC_FUNCS))
 		} else {
-			state.addError(makeSymbolicEvalError(callNode, state, fmtInvalidNumberOfArgs(len(args), len(parameterNodes))))
+			state.addError(makeSymbolicEvalError(callNode, state, fmtInvalidNumberOfArgs(len(args), len(nonGoParameters))))
 		}
 
-		if len(args) > len(parameterNodes) {
+		if len(args) > len(nonGoParameters) {
 			//if they are too many arguments we just ignore them
-			args = args[:len(parameterNodes)]
+			args = args[:len(nonGoParameters)]
 		} else {
 			//if they are not enough arguments we use the parameter types to set their value
-			for i := len(args); i < len(parameterNodes); i++ {
-				var paramType Value
-
-				paramTypeNode := parameterNodes[i].Type
-				if paramTypeNode == nil {
-					paramType = ANY
-				} else {
-					pattern, err := symbolicallyEvalPatternNode(paramTypeNode, state)
-					if err != nil {
-						return nil, err
-					}
-					paramType = pattern.SymbolicValue()
-				}
-
-				args = append(args, paramType)
+			for i := len(args); i < len(nonGoParameters); i++ {
+				args = append(args, nonGoParameters[i])
 			}
 		}
 	}
@@ -464,19 +451,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 	var params []Value
 
 	for i, arg := range args {
-		var paramTypeNode parse.Node
-
 		checkAgainstVariadicParam := i >= nonVariadicParamCount
-
-		if checkAgainstVariadicParam {
-			paramTypeNode = variadicParamNode.Type
-		} else {
-			paramTypeNode = parameterNodes[i].Type
-		}
-
-		if paramTypeNode == nil {
-			continue
-		}
 
 		var paramType Value
 		if checkAgainstVariadicParam {
@@ -541,11 +516,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 	setAllowedNonPresentProperties(argNodes, nonSpreadArgCount, params, state)
 
 	if fnExpr == nil { // *Function
-		patt, err := symbolicEval(returnType, state)
-		if err != nil {
-			return nil, err
-		}
-		ret := patt.(Pattern).SymbolicValue()
+		ret := returnType
 
 		if must {
 			ret = checkTransformMustCallReturnValue(ret, callNode, state)
@@ -580,13 +551,8 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 	}
 
 	//---------
-	if returnType != nil { //if a return type is specified we return the value representing the return type
-		pattern, err := symbolicallyEvalPatternNode(returnType, state)
-		if err != nil {
-			return nil, err
-		}
-		typ := pattern.SymbolicValue()
-		return typ, nil
+	if hasReturnTypeAnnotation { //if a return type is specified we return the value representing the return type
+		return returnType, nil
 	} else { //if return type is not specified we "execute" the function
 
 		if !state.pushInoxCall(inoxCallInfo{

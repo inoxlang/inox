@@ -903,7 +903,6 @@ func (patt *FunctionPattern) Test(ctx *Context, v Value) bool {
 
 	case *InoxFunction:
 
-		//TO KEEP IN SYNC WITH CONCRETE FUNCTION PATTERN
 		if patt.node == nil {
 			return true
 		}
@@ -915,20 +914,6 @@ func (patt *FunctionPattern) Test(ctx *Context, v Value) bool {
 
 		if len(fnExpr.Parameters) != len(patt.node.Parameters) || fnExpr.NonVariadicParamCount() != patt.node.NonVariadicParamCount() {
 			return false
-		}
-
-		for i, param := range patt.node.Parameters {
-			actualParam := fnExpr.Parameters[i]
-
-			if (param.Type == nil) != (actualParam.Type == nil) {
-				return false
-			}
-
-			printConfig := parse.PrintConfig{TrimStart: true}
-			if param.Type != nil && parse.SPrint(param.Type, patt.nodeChunk, printConfig) !=
-				parse.SPrint(actualParam.Type, fn.Chunk.Node, printConfig) {
-				return false
-			}
 		}
 
 		symbolicFn := fn.symbolicValue
