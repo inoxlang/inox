@@ -15,6 +15,7 @@ const (
 	UnterminatedExtendStmt
 	UnterminatedPatternDefinition
 	UnterminatedPatternNamespaceDefinition
+	UnterminatedStructDefinition
 	MissingBlock
 	MissingFnBody
 	MissingEqualsSignInDeclaration
@@ -460,6 +461,13 @@ const (
 	UNTERMINATED_EXTEND_STMT_MISSING_OBJECT_LITERAL_AFTER_EXTENDED_PATTERN = "unterminated extend statement: missing object literal (extension) after pattern"
 	A_PATTERN_NAME_WAS_EXPECTED                                            = "a pattern name was expected"
 	INVALID_EXTENSION_VALUE_AN_OBJECT_LITERAL_WAS_EXPECTED                 = "invalid extension value: an object literal was expected"
+
+	//struct definition
+	UNTERMINATED_STRUCT_DEF_MISSING_NAME_AFTER_KEYWORD           = "unterminated struct definition: missing name after keyword 'struct'"
+	A_NAME_WAS_EXPECTED                                          = "a name was expected"
+	UNTERMINATED_STRUCT_DEF_MISSING_BODY                         = "unterminated struct definition: missing body"
+	UNTERMINATED_STRUCT_BODY_MISSING_CLOSING_BRACE               = "unterminated struct body: missing closing brace"
+	ONLY_FIELD_AND_METHOD_DEFINITIONS_ARE_ALLOWED_IN_STRUCT_BODY = "only field and method definitions are allowed inside a struct body"
 )
 
 func fmtInvalidRegexLiteral(err string) string {
@@ -701,6 +709,10 @@ func fmtInvalidByteInDecimalByteSliceLiteral(s []byte) string {
 
 func fmtUnexpectedCharInSynchronizedValueList(r rune) string {
 	return fmt.Sprintf("unexpected char %s in synchronized value list", fmtRuneInfo(r))
+}
+
+func fmtUnexpectedCharInStructBody(r rune) string {
+	return fmt.Sprintf("unexpected char %s in struct body", fmtRuneInfo(r))
 }
 
 func fmtInvalidSpreadElemExprShouldBeExtrExprNot(expr Node) string {

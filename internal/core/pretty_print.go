@@ -144,7 +144,7 @@ func GetNodeColorizations(chunk *parse.Chunk, lightMode bool) []ColorizationInfo
 		case parse.AND_KEYWORD, parse.OR_KEYWORD, parse.MAPPING_KEYWORD, parse.TREEDATA_KEYWORD,
 			parse.FN_KEYWORD, parse.CONST_KEYWORD, parse.VAR_KEYWORD, parse.ASSIGN_KEYWORD, parse.CONCAT_KEYWORD,
 			parse.SENDVAL_KEYWORD, parse.SYNCHRONIZED_KEYWORD, parse.EXTEND_KEYWORD, parse.PATTERN_KEYWORD,
-			parse.PNAMESPACE_KEYWORD:
+			parse.PNAMESPACE_KEYWORD, parse.STRUCT_KEYWORD:
 			colorizations = append(colorizations, ColorizationInfo{
 				Span:          token.Span,
 				ColorSequence: colors.OtherKeyword,

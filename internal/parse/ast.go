@@ -1805,6 +1805,23 @@ func (FunctionPatternExpression) Kind() NodeKind {
 	return Expr
 }
 
+type StructDefinition struct {
+	NodeBase
+	Name Node //*IdentifierLiteral
+	Body *StructBody
+}
+
+type StructBody struct {
+	NodeBase
+	Definitions []Node //*StructFieldDefinition and *FunctionDeclaration
+}
+
+type StructFieldDefinition struct {
+	NodeBase
+	Name *IdentifierLiteral
+	Type Node
+}
+
 type PatternConversionExpression struct {
 	NodeBase
 	Value Node
@@ -2524,6 +2541,19 @@ func walk(node, parent Node, ancestorChain *[]Node, fn, afterFn NodeHandler) {
 		walk(n.Pattern, node, ancestorChain, fn, afterFn)
 	case *FunctionParameter:
 		walk(n.Var, node, ancestorChain, fn, afterFn)
+		walk(n.Type, node, ancestorChain, fn, afterFn)
+	case *StructDefinition:
+		walk(n.Name, node, ancestorChain, fn, afterFn)
+		walk(n.Body, node, ancestorChain, fn, afterFn)
+	case *StructBody:
+		for _, def := range n.Definitions {
+			walk(def, node, ancestorChain, fn, afterFn)
+		}
+		for _, def := range n.Definitions {
+			walk(def, node, ancestorChain, fn, afterFn)
+		}
+	case *StructFieldDefinition:
+		walk(n.Name, node, ancestorChain, fn, afterFn)
 		walk(n.Type, node, ancestorChain, fn, afterFn)
 	case *PatternConversionExpression:
 		walk(n.Value, node, ancestorChain, fn, afterFn)

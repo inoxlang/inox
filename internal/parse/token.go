@@ -17,6 +17,7 @@ const (
 	OTHERPROPS_KEYWORD_STRING = "otherprops"
 	ASSERT_KEYWORD_STRING     = "assert"
 	IF_KEYWORD_STRING         = "if"
+	STRUCT_KEYWORD_STRING     = "struct"
 )
 
 var (
@@ -99,6 +100,7 @@ const (
 	PATTERN_KEYWORD
 	PNAMESPACE_KEYWORD
 	EXTEND_KEYWORD
+	STRUCT_KEYWORD
 	TO_KEYWORD
 	OTHERPROPS_KEYWORD
 	AND_KEYWORD
@@ -326,6 +328,7 @@ var tokenStrings = [...]string{
 	PATTERN_KEYWORD:                "pattern",
 	PNAMESPACE_KEYWORD:             "pnamespace",
 	EXTEND_KEYWORD:                 "extend",
+	STRUCT_KEYWORD:                 STRUCT_KEYWORD_STRING,
 	TO_KEYWORD:                     "to",
 	OTHERPROPS_KEYWORD:             OTHERPROPS_KEYWORD_STRING,
 	AND_KEYWORD:                    "and",
@@ -494,6 +497,7 @@ var tokenTypenames = [...]string{
 	PATTERN_KEYWORD:                "PATTERN_KEYWORD",
 	PNAMESPACE_KEYWORD:             "PNAMESPACE_KEYWORD",
 	EXTEND_KEYWORD:                 "EXTEND_KEYWORD",
+	STRUCT_KEYWORD:                 "STRUCT_KEYWORD",
 	TO_KEYWORD:                     "TO_KEYWORD",
 	OTHERPROPS_KEYWORD:             "OTHERPROPS_KEYWORD",
 	AND_KEYWORD:                    "AND_KEYWORD",

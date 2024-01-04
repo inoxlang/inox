@@ -27705,6 +27705,289 @@ func testParse(
 			}, n)
 		})
 	})
+
+	t.Run("struct definition", func(t *testing.T) {
+		t.Run("empty body", func(t *testing.T) {
+			n := mustparseChunk(t, "struct Lexer {}")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 15}, nil, false},
+				Statements: []Node{
+					&StructDefinition{
+						NodeBase: NodeBase{NodeSpan{0, 15}, nil, false},
+						Name: &IdentifierLiteral{
+							NodeBase: NodeBase{Span: NodeSpan{7, 12}},
+							Name:     "Lexer",
+						},
+						Body: &StructBody{
+							NodeBase: NodeBase{Span: NodeSpan{13, 15}},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("body only containing empty lines", func(t *testing.T) {
+			n := mustparseChunk(t, "struct Lexer {\n\n}")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 17}, nil, false},
+				Statements: []Node{
+					&StructDefinition{
+						NodeBase: NodeBase{
+							NodeSpan{0, 17}, nil, false,
+						},
+						Name: &IdentifierLiteral{
+							NodeBase: NodeBase{Span: NodeSpan{7, 12}},
+							Name:     "Lexer",
+						},
+						Body: &StructBody{
+							NodeBase: NodeBase{Span: NodeSpan{13, 17}},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("unterminated empty body: EOF", func(t *testing.T) {
+			n, err := parseChunk(t, "struct Lexer {", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 14}, nil, false},
+				Statements: []Node{
+					&StructDefinition{
+						NodeBase: NodeBase{
+							NodeSpan{0, 14},
+							&ParsingError{UnterminatedStructDefinition, UNTERMINATED_STRUCT_BODY_MISSING_CLOSING_BRACE},
+							false,
+						},
+						Name: &IdentifierLiteral{
+							NodeBase: NodeBase{Span: NodeSpan{7, 12}},
+							Name:     "Lexer",
+						},
+						Body: &StructBody{
+							NodeBase: NodeBase{Span: NodeSpan{13, 14}},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("one field", func(t *testing.T) {
+			n := mustparseChunk(t, "struct Lexer {\nindex int\n}")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 26}, nil, false},
+				Statements: []Node{
+					&StructDefinition{
+						NodeBase: NodeBase{Span: NodeSpan{0, 26}},
+						Name: &IdentifierLiteral{
+							NodeBase: NodeBase{Span: NodeSpan{7, 12}},
+							Name:     "Lexer",
+						},
+						Body: &StructBody{
+							NodeBase: NodeBase{Span: NodeSpan{13, 26}},
+							Definitions: []Node{
+								&StructFieldDefinition{
+									NodeBase: NodeBase{Span: NodeSpan{15, 24}},
+									Name: &IdentifierLiteral{
+										NodeBase: NodeBase{Span: NodeSpan{15, 20}},
+										Name:     "index",
+									},
+									Type: &PatternIdentifierLiteral{
+										NodeBase:   NodeBase{Span: NodeSpan{21, 24}},
+										Unprefixed: true,
+										Name:       "int",
+									},
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("one field followed by EOF", func(t *testing.T) {
+			n, err := parseChunk(t, "struct Lexer {\nindex int", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 24}, nil, false},
+				Statements: []Node{
+					&StructDefinition{
+						NodeBase: NodeBase{
+							NodeSpan{0, 24},
+							&ParsingError{UnterminatedStructDefinition, UNTERMINATED_STRUCT_BODY_MISSING_CLOSING_BRACE},
+							false,
+						},
+						Name: &IdentifierLiteral{
+							NodeBase: NodeBase{Span: NodeSpan{7, 12}},
+							Name:     "Lexer",
+						},
+						Body: &StructBody{
+							NodeBase: NodeBase{Span: NodeSpan{13, 24}},
+							Definitions: []Node{
+								&StructFieldDefinition{
+									NodeBase: NodeBase{Span: NodeSpan{15, 24}},
+									Name: &IdentifierLiteral{
+										NodeBase: NodeBase{Span: NodeSpan{15, 20}},
+										Name:     "index",
+									},
+									Type: &PatternIdentifierLiteral{
+										NodeBase:   NodeBase{Span: NodeSpan{21, 24}},
+										Unprefixed: true,
+										Name:       "int",
+									},
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("one method", func(t *testing.T) {
+			n := mustparseChunk(t, "struct Lexer {\nfn init(){}\n}")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 28}, nil, false},
+				Statements: []Node{
+					&StructDefinition{
+						NodeBase: NodeBase{Span: NodeSpan{0, 28}},
+						Name: &IdentifierLiteral{
+							NodeBase: NodeBase{Span: NodeSpan{7, 12}},
+							Name:     "Lexer",
+						},
+						Body: &StructBody{
+							NodeBase: NodeBase{Span: NodeSpan{13, 28}},
+							Definitions: []Node{
+								&FunctionDeclaration{
+									NodeBase: NodeBase{Span: NodeSpan{15, 26}},
+									Name: &IdentifierLiteral{
+										NodeBase: NodeBase{Span: NodeSpan{18, 22}},
+										Name:     "init",
+									},
+									Function: &FunctionExpression{
+										NodeBase: NodeBase{Span: NodeSpan{15, 26}},
+										Body: &Block{
+											NodeBase: NodeBase{Span: NodeSpan{24, 26}},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("unexpected char inside body", func(t *testing.T) {
+			n, err := parseChunk(t, "struct Lexer {]}", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 16}, nil, false},
+				Statements: []Node{
+					&StructDefinition{
+						NodeBase: NodeBase{Span: NodeSpan{0, 16}},
+						Name: &IdentifierLiteral{
+							NodeBase: NodeBase{Span: NodeSpan{7, 12}},
+							Name:     "Lexer",
+						},
+						Body: &StructBody{
+							NodeBase: NodeBase{Span: NodeSpan{13, 16}},
+							Definitions: []Node{
+								&UnknownNode{
+									NodeBase: NodeBase{
+										NodeSpan{14, 15},
+										&ParsingError{UnspecifiedParsingError, fmtUnexpectedCharInStructBody(']')},
+										false,
+									},
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("unexpected char followed by a field", func(t *testing.T) {
+			n, err := parseChunk(t, "struct Lexer {] index int}", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 26}, nil, false},
+				Statements: []Node{
+					&StructDefinition{
+						NodeBase: NodeBase{Span: NodeSpan{0, 26}},
+						Name: &IdentifierLiteral{
+							NodeBase: NodeBase{Span: NodeSpan{7, 12}},
+							Name:     "Lexer",
+						},
+						Body: &StructBody{
+							NodeBase: NodeBase{Span: NodeSpan{13, 26}},
+							Definitions: []Node{
+								&UnknownNode{
+									NodeBase: NodeBase{
+										NodeSpan{14, 15},
+										&ParsingError{UnspecifiedParsingError, fmtUnexpectedCharInStructBody(']')},
+										false,
+									},
+								},
+								&StructFieldDefinition{
+									NodeBase: NodeBase{Span: NodeSpan{16, 25}},
+									Name: &IdentifierLiteral{
+										NodeBase: NodeBase{Span: NodeSpan{16, 21}},
+										Name:     "index",
+									},
+									Type: &PatternIdentifierLiteral{
+										NodeBase:   NodeBase{Span: NodeSpan{22, 25}},
+										Unprefixed: true,
+										Name:       "int",
+									},
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("missing body: EOF", func(t *testing.T) {
+			n, err := parseChunk(t, "struct Lexer", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 12}, nil, false},
+				Statements: []Node{
+					&StructDefinition{
+						NodeBase: NodeBase{
+							NodeSpan{0, 12},
+							&ParsingError{UnterminatedStructDefinition, UNTERMINATED_STRUCT_DEF_MISSING_BODY},
+							false,
+						},
+						Name: &IdentifierLiteral{
+							NodeBase: NodeBase{Span: NodeSpan{7, 12}},
+							Name:     "Lexer",
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("missing body: linefeed", func(t *testing.T) {
+			n, err := parseChunk(t, "struct Lexer\n", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 13}, nil, false},
+				Statements: []Node{
+					&StructDefinition{
+						NodeBase: NodeBase{
+							NodeSpan{0, 12},
+							&ParsingError{UnterminatedStructDefinition, UNTERMINATED_STRUCT_DEF_MISSING_BODY},
+							false,
+						},
+						Name: &IdentifierLiteral{
+							NodeBase: NodeBase{Span: NodeSpan{7, 12}},
+							Name:     "Lexer",
+						},
+					},
+				},
+			}, n)
+		})
+	})
 }
 
 func TestParsePath(t *testing.T) {
