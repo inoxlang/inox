@@ -144,6 +144,7 @@ func IsScopeContainerNode(node Node) bool {
 	case *Chunk, *EmbeddedModule, *FunctionExpression, *FunctionPatternExpression, *LazyExpression,
 		*InitializationBlock, *MappingExpression, *StaticMappingEntry, *DynamicMappingEntry, *TestSuiteExpression, *TestCaseExpression,
 		*ExtendStatement,       //ExtendStatement being a scope container is not 100% incorrect
+		*StructDefinition,      //same
 		*LifetimejobExpression: // <-- remove ?
 		return true
 	default:
@@ -2546,9 +2547,6 @@ func walk(node, parent Node, ancestorChain *[]Node, fn, afterFn NodeHandler) {
 		walk(n.Name, node, ancestorChain, fn, afterFn)
 		walk(n.Body, node, ancestorChain, fn, afterFn)
 	case *StructBody:
-		for _, def := range n.Definitions {
-			walk(def, node, ancestorChain, fn, afterFn)
-		}
 		for _, def := range n.Definitions {
 			walk(def, node, ancestorChain, fn, afterFn)
 		}

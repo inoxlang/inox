@@ -88,12 +88,13 @@ const (
 	INVALID_FN_DECL_SHOULD_BE_TOP_LEVEL_STMT                       = "invalid function declaration: a function declaration should be a top level statement in a module (embedded or not)"
 	INVALID_BREAK_OR_CONTINUE_STMT_SHOULD_BE_IN_A_FOR_OR_WALK_STMT = "invalid break/continue statement: should be in a for or walk statement"
 	INVALID_PRUNE_STMT_SHOULD_BE_IN_WALK_STMT                      = "invalid prune statement: should be in a walk statement"
-	SELF_ACCESSIBILITY_EXPLANATION                                 = "'self' is only accessible within" +
-		"functions that are object properties, metaproperty initialization blocks, lifetime jobs and object extension properties"
-	CANNOT_CHECK_OBJECT_PROP_WITHOUT_PARENT     = "checking an ObjectProperty node requires the parent ObjectLiteral node"
-	CANNOT_CHECK_OBJECT_METAPROP_WITHOUT_PARENT = "checking an ObjectMetaProperty node requires the parent ObjectLiteral node"
-	OBJ_REC_LIT_CANNOT_HAVE_METAPROP_KEYS       = "object-like literals cannot have metaproperty keys, metaproperty keys have a (single) starting underscore '_' and a (single) trailing underscore"
-	CANNOT_CHECK_MANIFEST_WITHOUT_PARENT        = "checking a Manifest node requires the parent node"
+	SELF_ACCESSIBILITY_EXPLANATION                                 = "'self' is only accessible within " +
+		"functions that are object properties, object extension properties, struct methods, metaproperty initialization blocks, and lifetime jobs"
+	CANNOT_CHECK_OBJECT_PROP_WITHOUT_PARENT       = "checking an ObjectProperty node requires the parent ObjectLiteral node"
+	CANNOT_CHECK_OBJECT_METAPROP_WITHOUT_PARENT   = "checking an ObjectMetaProperty node requires the parent ObjectLiteral node"
+	OBJ_REC_LIT_CANNOT_HAVE_METAPROP_KEYS         = "object-like literals cannot have metaproperty keys, metaproperty keys have a (single) starting underscore '_' and a (single) trailing underscore"
+	CANNOT_CHECK_MANIFEST_WITHOUT_PARENT          = "checking a Manifest node requires the parent node"
+	CANNOT_CHECK_STRUCT_METHOD_DEF_WITHOUT_PARENT = "checking the definition of a struct method requires the parent node"
 
 	//object pattern literals
 	UNEXPECTED_OTHER_PROPS_EXPR_OTHERPROPS_NO_IS_PRESENT = "unexpected otherprops expression: no other properties are allowed since otherprops(no) is present"
@@ -114,6 +115,7 @@ const (
 	MISPLACED_HOST_ALIAS_DEF_STATEMENT_TOP_LEVEL_STMT              = "misplaced host alias definition statement: it should be located at the top level"
 	MISPLACED_READONLY_PATTERN_EXPRESSION                          = "misplaced readonly pattern expression: they are only allowed as the type of function parameters"
 	MISPLACED_EXTEND_STATEMENT_TOP_LEVEL_STMT                      = "misplaced extend statement: it should be located at the top level"
+	MISPLACED_STRUCT_DEF_TOP_LEVEL_STMT                            = "misplaced struct definition: it should be located at the top level"
 
 	INVALID_MEM_HOST_ONLY_VALID_VALUE                                 = "invalid mem:// host, only valid value is " + MEM_HOSTNAME
 	LOWER_BOUND_OF_INT_RANGE_LIT_SHOULD_BE_SMALLER_THAN_UPPER_BOUND   = "the lower bound of an integer range literal should be smaller than the upper bound"
@@ -132,8 +134,10 @@ const (
 
 	OPTIONAL_DYN_MEMB_EXPR_NOT_SUPPORTED_YET = "optional dynamic member expression are not supported yet"
 
-	VARS_NOT_ALLOWED_IN_EXTENDED_PATTERN_AND_EXTENSION_OBJECT_PROPERTIES = "variables are not allowed in the extended pattern and " +
+	VARS_NOT_ALLOWED_IN_PATTERN_AND_EXTENSION_OBJECT_PROPERTIES = "variables are not allowed in the extended pattern and " +
 		"in the extension object's properties"
+
+	VARS_CANNOT_BE_USED_IN_STRUCT_FIELD_DEFS = "variables cannot be used in struct field definitions"
 
 	//test suites & cases
 	TEST_CASES_NOT_ALLOWED_IF_SUBSUITES_ARE_PRESENT     = "test cases are not allowed if sub suites are presents"

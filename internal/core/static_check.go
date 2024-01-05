@@ -448,7 +448,7 @@ func (c *checker) checkSingleNode(n, parent, scopeNode parse.Node, ancestorChain
 
 	//actually check the node
 
-switch_:
+top_switch:
 	switch node := n.(type) {
 	case *parse.IntegerRangeLiteral:
 		if upperBound, ok := node.UpperBound.(*parse.IntLiteral); ok && node.LowerBound.Value > upperBound.Value {
@@ -1350,6 +1350,8 @@ switch_:
 
 			fns[node.Name.Name] = 0
 			globVars[node.Name.Name] = globalVarInfo{isConst: true, fnExpr: node.Function}
+		case *parse.StructBody:
+			//struct method
 		default:
 			c.addError(node, INVALID_FN_DECL_SHOULD_BE_TOP_LEVEL_STMT)
 			return parse.ContinueTraversal
@@ -1517,7 +1519,12 @@ switch_:
 		}
 
 		if _, ok := scopeNode.(*parse.ExtendStatement); ok {
-			c.addError(node, VARS_NOT_ALLOWED_IN_EXTENDED_PATTERN_AND_EXTENSION_OBJECT_PROPERTIES)
+			c.addError(node, VARS_NOT_ALLOWED_IN_PATTERN_AND_EXTENSION_OBJECT_PROPERTIES)
+			return parse.ContinueTraversal
+		}
+
+		if _, ok := scopeNode.(*parse.StructDefinition); ok {
+			c.addError(node, VARS_CANNOT_BE_USED_IN_STRUCT_FIELD_DEFS)
 			return parse.ContinueTraversal
 		}
 
@@ -1549,7 +1556,12 @@ switch_:
 		globalVarInfo, exist := globalVars[node.Name]
 
 		if _, ok := scopeNode.(*parse.ExtendStatement); ok {
-			c.addError(node, VARS_NOT_ALLOWED_IN_EXTENDED_PATTERN_AND_EXTENSION_OBJECT_PROPERTIES)
+			c.addError(node, VARS_NOT_ALLOWED_IN_PATTERN_AND_EXTENSION_OBJECT_PROPERTIES)
+			return parse.ContinueTraversal
+		}
+
+		if _, ok := scopeNode.(*parse.StructDefinition); ok {
+			c.addError(node, VARS_CANNOT_BE_USED_IN_STRUCT_FIELD_DEFS)
 			return parse.ContinueTraversal
 		}
 
@@ -1605,57 +1617,70 @@ switch_:
 		switch p := parent.(type) {
 		case *parse.CallExpression:
 			if p.CommandLikeSyntax && !node.IncludedIn(p.Callee) {
-				break switch_
+				break top_switch
 			}
 		case *parse.ObjectProperty:
 			if p.Key == node {
-				break switch_
+				break top_switch
 			}
 		case *parse.ObjectPatternProperty:
 			if p.Key == node {
-				break switch_
+				break top_switch
 			}
 		case *parse.ObjectMetaProperty:
 			if p.Key == node {
-				break switch_
+				break top_switch
+			}
+		case *parse.StructDefinition:
+			if p.Name == node {
+				break top_switch
+			}
+		case *parse.StructFieldDefinition:
+			if p.Name == node {
+				break top_switch
 			}
 		case *parse.IdentifierMemberExpression:
 			if node != p.Left {
-				break switch_
+				break top_switch
 			}
 		case *parse.DynamicMemberExpression:
 			if node != p.Left {
-				break switch_
+				break top_switch
 			}
 		case *parse.PatternNamespaceMemberExpression:
-			break switch_
+			break top_switch
 		case *parse.DoubleColonExpression:
 			if node == p.Element {
-				break switch_
+				break top_switch
 			}
 		case *parse.DynamicMappingEntry:
 			if node == p.KeyVar || node == p.GroupMatchingVariable {
-				break switch_
+				break top_switch
 			}
 		case *parse.ForStatement, *parse.WalkStatement, *parse.ObjectLiteral, *parse.FunctionDeclaration, *parse.MemberExpression, *parse.QuantityLiteral, *parse.RateLiteral,
 			*parse.KeyListExpression:
-			break switch_
+			break top_switch
 		case *parse.XMLOpeningElement:
 			if node == p.Name {
-				break switch_
+				break top_switch
 			}
 		case *parse.XMLClosingElement:
 			if node == p.Name {
-				break switch_
+				break top_switch
 			}
 		case *parse.XMLAttribute:
 			if node == p.Name {
-				break switch_
+				break top_switch
 			}
 		}
 
 		if _, ok := scopeNode.(*parse.ExtendStatement); ok {
-			c.addError(node, VARS_NOT_ALLOWED_IN_EXTENDED_PATTERN_AND_EXTENSION_OBJECT_PROPERTIES)
+			c.addError(node, VARS_NOT_ALLOWED_IN_PATTERN_AND_EXTENSION_OBJECT_PROPERTIES)
+			return parse.ContinueTraversal
+		}
+
+		if _, ok := scopeNode.(*parse.StructDefinition); ok {
+			c.addError(node, VARS_CANNOT_BE_USED_IN_STRUCT_FIELD_DEFS)
 			return parse.ContinueTraversal
 		}
 
@@ -1711,6 +1736,7 @@ switch_:
 		var objectLiteral *parse.ObjectLiteral
 		var misplacementErr = SELF_ACCESSIBILITY_EXPLANATION
 		isSelfInExtensionObjectMethod := false
+		isSelfInStructMethod := false
 
 		switch node.(type) {
 		case *parse.SendValueExpression:
@@ -1745,35 +1771,45 @@ switch_:
 				}
 				break loop
 			case *parse.FunctionExpression:
+				//Determine if the function is the method of an object, extension or struct.
+
 				j := i - 1
-				switch j {
-				case -1:
-				default:
 
-					if _, ok := ancestorChain[j].(*parse.ReceptionHandlerExpression); ok {
-						j--
-					}
-
-					switch ancestorChain[j].(type) {
-					case *parse.ObjectProperty:
-						if j == 0 {
-							c.addError(node, CANNOT_CHECK_OBJECT_PROP_WITHOUT_PARENT)
-							break loop
-						}
-						j--
-						switch ancestor := ancestorChain[j].(type) {
-						case *parse.ObjectLiteral:
-							objectLiteral = ancestor
-							if j-1 >= 0 {
-								isSelfInExtensionObjectMethod =
-									utils.Implements[*parse.ExtendStatement](ancestorChain[j-1]) &&
-										ancestorChain[j-1].(*parse.ExtendStatement).Extension == objectLiteral
-							}
-						default:
-						}
-					}
-
+				if j == -1 {
+					break loop
 				}
+
+				if _, ok := ancestorChain[j].(*parse.ReceptionHandlerExpression); ok {
+					j--
+				}
+
+				switch ancestorChain[j].(type) {
+				case *parse.ObjectProperty:
+					if j == 0 {
+						c.addError(node, CANNOT_CHECK_OBJECT_PROP_WITHOUT_PARENT)
+						break loop
+					}
+					j--
+
+					switch ancestor := ancestorChain[j].(type) {
+					case *parse.ObjectLiteral:
+						objectLiteral = ancestor
+						if j-1 >= 0 {
+							isSelfInExtensionObjectMethod =
+								utils.Implements[*parse.ExtendStatement](ancestorChain[j-1]) &&
+									ancestorChain[j-1].(*parse.ExtendStatement).Extension == objectLiteral
+						}
+					default:
+					}
+				case *parse.FunctionDeclaration:
+					if j == 0 {
+						c.addError(node, CANNOT_CHECK_STRUCT_METHOD_DEF_WITHOUT_PARENT)
+						break loop
+					}
+					_, ok := ancestorChain[j-1].(*parse.StructBody)
+					isSelfInStructMethod = ok && isSelfExpr
+				}
+
 				break loop
 			case *parse.EmbeddedModule: //ok if lifetime job
 				if i == 0 || !utils.Implements[*parse.LifetimejobExpression](ancestorChain[i-1]) {
@@ -1791,20 +1827,21 @@ switch_:
 			}
 		}
 
-		if objectLiteral == nil {
-			c.addError(node, misplacementErr)
-			return parse.ContinueTraversal
-		}
+		if !isSelfInStructMethod {
+			if objectLiteral == nil {
+				c.addError(node, misplacementErr)
+				return parse.ContinueTraversal
+			}
 
-		propInfo := c.getPropertyInfo(objectLiteral)
+			propInfo := c.getPropertyInfo(objectLiteral)
 
-		switch p := parent.(type) {
-		case *parse.MemberExpression:
-			if !propInfo.known[p.PropertyName.Name] && !isSelfInExtensionObjectMethod {
-				c.addError(p, fmtObjectDoesNotHaveProp(p.PropertyName.Name))
+			switch p := parent.(type) {
+			case *parse.MemberExpression:
+				if !propInfo.known[p.PropertyName.Name] && !isSelfInExtensionObjectMethod {
+					c.addError(p, fmtObjectDoesNotHaveProp(p.PropertyName.Name))
+				}
 			}
 		}
-
 	case *parse.HostAliasDefinition:
 		switch parent.(type) {
 		case *parse.Chunk, *parse.EmbeddedModule:
@@ -1872,12 +1909,12 @@ switch_:
 	case *parse.PatternIdentifierLiteral:
 
 		if _, ok := parent.(*parse.OtherPropsExpr); ok && node.Name == parse.NO_OTHERPROPS_PATTERN_NAME {
-			break switch_
+			break top_switch
 		}
 
 		for _, a := range ancestorChain {
 			if def, ok := a.(*parse.PatternDefinition); ok && def.IsLazy {
-				break switch_
+				break top_switch
 			}
 		}
 
@@ -1890,7 +1927,7 @@ switch_:
 		case *parse.CallExpression:
 			for _, arg := range p.Arguments {
 				if n == arg {
-					break switch_ //ok
+					break top_switch //ok
 				}
 			}
 
@@ -1905,6 +1942,11 @@ switch_:
 	case *parse.ExtendStatement:
 		if _, ok := parent.(*parse.Chunk); !ok {
 			c.addError(node, MISPLACED_EXTEND_STATEMENT_TOP_LEVEL_STMT)
+			return parse.ContinueTraversal
+		}
+	case *parse.StructDefinition:
+		if _, ok := parent.(*parse.Chunk); !ok {
+			c.addError(node, MISPLACED_STRUCT_DEF_TOP_LEVEL_STMT)
 			return parse.ContinueTraversal
 		}
 	case *parse.TestSuiteExpression:

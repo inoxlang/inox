@@ -3807,7 +3807,7 @@ func TestCheck(t *testing.T) {
 				}
 			`)
 
-			globals := GlobalVariablesFromMap(map[string]Value{"html": Nil}, nil)
+			globals := GlobalVariablesFromMap(map[string]Value{}, nil)
 			extendStmt := parse.FindNode(n, (*parse.ExtendStatement)(nil), nil)
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src, Globals: globals})
@@ -3825,7 +3825,7 @@ func TestCheck(t *testing.T) {
 				}
 			`)
 
-			globals := GlobalVariablesFromMap(map[string]Value{"html": Nil}, nil)
+			globals := GlobalVariablesFromMap(map[string]Value{}, nil)
 			extendStmt := parse.FindNode(n, (*parse.ExtendStatement)(nil), nil)
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src, Globals: globals})
@@ -3844,7 +3844,7 @@ func TestCheck(t *testing.T) {
 				}
 			`)
 
-			globals := GlobalVariablesFromMap(map[string]Value{"html": Nil}, nil)
+			globals := GlobalVariablesFromMap(map[string]Value{}, nil)
 			extendStmt := parse.FindNode(n, (*parse.ExtendStatement)(nil), nil)
 			ident := parse.FindNode(extendStmt, (*parse.IdentifierLiteral)(nil), func(n *parse.IdentifierLiteral, isUnique bool) bool {
 				return n.Name == "a"
@@ -3852,7 +3852,7 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src, Globals: globals})
 			expectedErr := utils.CombineErrors(
-				makeError(ident, src, VARS_NOT_ALLOWED_IN_EXTENDED_PATTERN_AND_EXTENSION_OBJECT_PROPERTIES),
+				makeError(ident, src, VARS_NOT_ALLOWED_IN_PATTERN_AND_EXTENSION_OBJECT_PROPERTIES),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -3866,7 +3866,7 @@ func TestCheck(t *testing.T) {
 				}
 			`)
 
-			globals := GlobalVariablesFromMap(map[string]Value{"html": Nil}, nil)
+			globals := GlobalVariablesFromMap(map[string]Value{}, nil)
 			extendStmt := parse.FindNode(n, (*parse.ExtendStatement)(nil), nil)
 			ident := parse.FindNode(extendStmt, (*parse.IdentifierLiteral)(nil), func(n *parse.IdentifierLiteral, isUnique bool) bool {
 				return n.Name == "a"
@@ -3874,7 +3874,7 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src, Globals: globals})
 			expectedErr := utils.CombineErrors(
-				makeError(ident, src, VARS_NOT_ALLOWED_IN_EXTENDED_PATTERN_AND_EXTENSION_OBJECT_PROPERTIES),
+				makeError(ident, src, VARS_NOT_ALLOWED_IN_PATTERN_AND_EXTENSION_OBJECT_PROPERTIES),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -3888,7 +3888,7 @@ func TestCheck(t *testing.T) {
 				}
 			`)
 
-			globals := GlobalVariablesFromMap(map[string]Value{"html": Nil}, nil)
+			globals := GlobalVariablesFromMap(map[string]Value{}, nil)
 			extendStmt := parse.FindNode(n, (*parse.ExtendStatement)(nil), nil)
 			globalVar := parse.FindNode(extendStmt, (*parse.GlobalVariable)(nil), func(n *parse.GlobalVariable, isUnique bool) bool {
 				return n.Name == "a"
@@ -3896,7 +3896,7 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src, Globals: globals})
 			expectedErr := utils.CombineErrors(
-				makeError(globalVar, src, VARS_NOT_ALLOWED_IN_EXTENDED_PATTERN_AND_EXTENSION_OBJECT_PROPERTIES),
+				makeError(globalVar, src, VARS_NOT_ALLOWED_IN_PATTERN_AND_EXTENSION_OBJECT_PROPERTIES),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -3910,7 +3910,7 @@ func TestCheck(t *testing.T) {
 				}
 			`)
 
-			globals := GlobalVariablesFromMap(map[string]Value{"html": Nil}, nil)
+			globals := GlobalVariablesFromMap(map[string]Value{}, nil)
 			extendStmt := parse.FindNode(n, (*parse.ExtendStatement)(nil), nil)
 			variable := parse.FindNode(extendStmt, (*parse.Variable)(nil), func(n *parse.Variable, isUnique bool) bool {
 				return n.Name == "a"
@@ -3918,9 +3918,179 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src, Globals: globals})
 			expectedErr := utils.CombineErrors(
-				makeError(variable, src, VARS_NOT_ALLOWED_IN_EXTENDED_PATTERN_AND_EXTENSION_OBJECT_PROPERTIES),
+				makeError(variable, src, VARS_NOT_ALLOWED_IN_PATTERN_AND_EXTENSION_OBJECT_PROPERTIES),
 			)
 			assert.Equal(t, expectedErr, err)
+		})
+	})
+	t.Run("struct definition statement", func(t *testing.T) {
+		t.Run("should be located at the top level: in function declaration", func(t *testing.T) {
+			n, src := mustParseCode(`
+				fn f(){
+					struct MyStruct {}
+				}
+			`)
+
+			globals := GlobalVariablesFromMap(map[string]Value{}, nil)
+			def := parse.FindNode(n, (*parse.StructDefinition)(nil), nil)
+
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src, Globals: globals})
+			expectedErr := utils.CombineErrors(
+				makeError(def, src, MISPLACED_STRUCT_DEF_TOP_LEVEL_STMT),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("should be located at the top level: in if statement's block", func(t *testing.T) {
+			n, src := mustParseCode(`
+				if true {
+					struct MyStruct {}
+				}
+			`)
+
+			globals := GlobalVariablesFromMap(map[string]Value{}, nil)
+			def := parse.FindNode(n, (*parse.StructDefinition)(nil), nil)
+
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src, Globals: globals})
+			expectedErr := utils.CombineErrors(
+				makeError(def, src, MISPLACED_STRUCT_DEF_TOP_LEVEL_STMT),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("should not have variables in field definitions: identifier referring to a global variable", func(t *testing.T) {
+			n, src := mustParseCode(`
+				$$a = 1
+				struct MyStruct {
+					value %(a)
+				}
+			`)
+
+			globals := GlobalVariablesFromMap(map[string]Value{}, nil)
+			def := parse.FindNode(n, (*parse.StructDefinition)(nil), nil)
+			ident := parse.FindNode(def, (*parse.IdentifierLiteral)(nil), func(n *parse.IdentifierLiteral, isUnique bool) bool {
+				return n.Name == "a"
+			})
+
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src, Globals: globals})
+			expectedErr := utils.CombineErrors(
+				makeError(ident, src, VARS_CANNOT_BE_USED_IN_STRUCT_FIELD_DEFS),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("should not have variables in field definitions: identifier referring to a local variable", func(t *testing.T) {
+			n, src := mustParseCode(`
+				$a = 1
+				struct MyStruct {
+					value %(a)
+				}
+			`)
+
+			globals := GlobalVariablesFromMap(map[string]Value{}, nil)
+			def := parse.FindNode(n, (*parse.StructDefinition)(nil), nil)
+			ident := parse.FindNode(def, (*parse.IdentifierLiteral)(nil), func(n *parse.IdentifierLiteral, isUnique bool) bool {
+				return n.Name == "a"
+			})
+
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src, Globals: globals})
+			expectedErr := utils.CombineErrors(
+				makeError(ident, src, VARS_CANNOT_BE_USED_IN_STRUCT_FIELD_DEFS),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("should not have variables in field definitions: global variable", func(t *testing.T) {
+			n, src := mustParseCode(`
+				$a = 1
+				struct MyStruct {
+					value %($$a)
+				}
+			`)
+
+			globals := GlobalVariablesFromMap(map[string]Value{}, nil)
+			def := parse.FindNode(n, (*parse.StructDefinition)(nil), nil)
+			globalVar := parse.FindNode(def, (*parse.GlobalVariable)(nil), func(n *parse.GlobalVariable, isUnique bool) bool {
+				return n.Name == "a"
+			})
+
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src, Globals: globals})
+			expectedErr := utils.CombineErrors(
+				makeError(globalVar, src, VARS_CANNOT_BE_USED_IN_STRUCT_FIELD_DEFS),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("should not have variables in field definitions: local variable", func(t *testing.T) {
+			n, src := mustParseCode(`
+				$a = 1
+				struct MyStruct {
+					value %($a)
+				}
+			`)
+
+			globals := GlobalVariablesFromMap(map[string]Value{}, nil)
+			def := parse.FindNode(n, (*parse.StructDefinition)(nil), nil)
+			variable := parse.FindNode(def, (*parse.Variable)(nil), func(n *parse.Variable, isUnique bool) bool {
+				return n.Name == "a"
+			})
+
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src, Globals: globals})
+			expectedErr := utils.CombineErrors(
+				makeError(variable, src, VARS_CANNOT_BE_USED_IN_STRUCT_FIELD_DEFS),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("should not have references to self in field definitions", func(t *testing.T) {
+			n, src := mustParseCode(`
+				struct MyStruct {
+					value %(self)
+				}
+			`)
+
+			globals := GlobalVariablesFromMap(map[string]Value{}, nil)
+			def := parse.FindNode(n, (*parse.StructDefinition)(nil), nil)
+			selfExpr := parse.FindNode(def, (*parse.SelfExpression)(nil), nil)
+
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src, Globals: globals})
+			expectedErr := utils.CombineErrors(
+				makeError(selfExpr, src, SELF_ACCESSIBILITY_EXPLANATION),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("should not have sendval expressions in methods", func(t *testing.T) {
+			n, src := mustParseCode(`
+				struct MyStruct {
+					fn f(){
+						sendval 1 to {}
+					}
+				}
+			`)
+
+			globals := GlobalVariablesFromMap(map[string]Value{}, nil)
+			def := parse.FindNode(n, (*parse.StructDefinition)(nil), nil)
+			sendValExpr := parse.FindNode(def, (*parse.SendValueExpression)(nil), nil)
+
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src, Globals: globals})
+			expectedErr := utils.CombineErrors(
+				makeError(sendValExpr, src, MISPLACED_SENDVAL_EXPR),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("can have references to self in methods", func(t *testing.T) {
+			n, src := mustParseCode(`
+				struct MyStruct {
+					fn f(){
+						self
+					}
+				}
+			`)
+
+			globals := GlobalVariablesFromMap(map[string]Value{}, nil)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src, Globals: globals}))
 		})
 	})
 }
