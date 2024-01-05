@@ -8121,6 +8121,34 @@ func testParse(
 			}, n)
 		})
 
+		t.Run("var = new <type>", func(t *testing.T) {
+			n := mustparseChunk(t, "$a = new Lexer")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 14}, nil, false},
+				Statements: []Node{
+					&Assignment{
+						NodeBase: NodeBase{
+							NodeSpan{0, 14},
+							nil,
+							false,
+						},
+						Left: &Variable{
+							NodeBase: NodeBase{NodeSpan{0, 2}, nil, false},
+							Name:     "a",
+						},
+						Right: &NewExpression{
+							NodeBase: NodeBase{NodeSpan{5, 14}, nil, false},
+							Type: &IdentifierLiteral{
+								NodeBase: NodeBase{NodeSpan{9, 14}, nil, false},
+								Name:     "Lexer",
+							},
+						},
+						Operator: Assign,
+					},
+				},
+			}, n)
+		})
+
 		t.Run("missing terminator", func(t *testing.T) {
 			n, err := parseChunk(t, "$a = $b 2", "")
 			assert.Error(t, err)

@@ -6569,6 +6569,7 @@ func (p *parser) parseExpression(precededByOpeningParen ...bool) (expr Node, isM
 					return p.parseFunctionPattern(identStartingExpr.Base().Span.Start, false), false
 				}
 				return p.parseFunction(identStartingExpr.Base().Span.Start), false
+
 			case "s":
 				if p.i < p.len && p.s[p.i] == '!' {
 					p.i++
@@ -6596,6 +6597,8 @@ func (p *parser) parseExpression(precededByOpeningParen ...bool) (expr Node, isM
 				if p.inPattern {
 					return p.parseReadonlyPatternExpression(v), false
 				}
+			case NEW_KEYWORD_STRING:
+				return p.parseNewExpression(v), false
 			}
 			if isKeyword(name) {
 				return v, false
@@ -11137,15 +11140,15 @@ func (p *parser) parseStructDefinition(extendIdent *IdentifierLiteral) *StructDe
 	return def
 }
 
-func (p *parser) parseNewExpression(extendIdent *IdentifierLiteral) *NewExpression {
+func (p *parser) parseNewExpression(newIdent *IdentifierLiteral) *NewExpression {
 	p.panicIfContextDone()
-	p.tokens = append(p.tokens, Token{Type: NEW_KEYWORD, Span: extendIdent.Span})
+	p.tokens = append(p.tokens, Token{Type: NEW_KEYWORD, Span: newIdent.Span})
 
 	p.eatSpace()
 
 	newExpr := &NewExpression{
 		NodeBase: NodeBase{
-			Span: NodeSpan{extendIdent.Span.Start, p.i},
+			Span: NodeSpan{newIdent.Span.Start, p.i},
 		},
 	}
 
@@ -11416,8 +11419,6 @@ func (p *parser) parseStatement() Node {
 			return p.parseExtendStatement(ev)
 		case STRUCT_KEYWORD_STRING:
 			return p.parseStructDefinition(ev)
-		case NEW_KEYWORD_STRING:
-			return p.parseNewExpression(ev)
 		}
 
 	}

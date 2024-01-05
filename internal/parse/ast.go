@@ -1812,6 +1812,14 @@ type StructDefinition struct {
 	Body *StructBody
 }
 
+func (d *StructDefinition) GetName() (string, bool) {
+	ident, ok := d.Name.(*IdentifierLiteral)
+	if ok {
+		return ident.Name, true
+	}
+	return "", false
+}
+
 type StructBody struct {
 	NodeBase
 	Definitions []Node //*StructFieldDefinition and *FunctionDeclaration
