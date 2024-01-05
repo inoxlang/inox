@@ -36,7 +36,9 @@
   [List patterns](#list-patterns), [String patterns](#string-patterns),
   [Union Patterns](#union-patterns), [Pattern namespaces](#pattern-namespaces),
   [Path Patterns](#path-patterns),
-  [Host and URL Patterns](#host-and-url-patterns)
+  [Host and URL Patterns](#host-and-url-patterns),
+  [Function Pattern](#function-patterns),
+
 
 - [Extensions](#extensions)
 
@@ -1403,7 +1405,7 @@ https://en.wikipedia.org/wiki/Glob_(programming)
 > If you find an error in the documentation or a bug in the runtime, please
 > create an issue.
 
-# Host and URL Patterns
+## Host and URL Patterns
 
 Supported schemes are: `http, https, ws, wss, ldb, odb, file, mem, s3`.
 
@@ -1513,6 +1515,22 @@ URL patterns always have at least a path, a query or a fragment.
 
 > If you find an error in the documentation or a bug in the runtime, please
 > create an issue.
+
+## Function Patterns
+
+```
+# pattern matching all functions with a single (integer) parameter and nil as return type
+%fn(int)
+
+# same pattern
+%fn(arg int)
+
+# same pattern but with an int return type
+%fn(arg int) int
+
+# like for most patterns the '%' prefix is not required in pattern definitions.
+pattern int-fn = fn(int) int
+```
 
 # Extensions
 
