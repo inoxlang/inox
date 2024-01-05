@@ -13,7 +13,6 @@ import (
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
-	"github.com/oklog/ulid/v2"
 )
 
 type CompilationInput struct {
@@ -1775,13 +1774,13 @@ func (c *compiler) Compile(node parse.Node) error {
 						}
 					}
 
-					anonGlobalsStructType := NewStructPattern("", ulid.Make(), globalNames, globalTypes)
+					anonGlobalsStructType := NewModuleParamsPattern(globalNames, globalTypes)
 					globalCount := len(globalsLit.Properties)
 					c.emit(globalsLit, OpCreateStruct, c.addConstant(anonGlobalsStructType), globalCount)
 				}
 			}
 
-			anonStructType := NewStructPattern("", ulid.Make(), keys, types)
+			anonStructType := NewModuleParamsPattern(keys, types)
 			propCount := len(objLit.Properties)
 
 			c.emit(node.Meta, OpCreateStruct, c.addConstant(anonStructType), propCount)

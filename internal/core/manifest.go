@@ -12,7 +12,6 @@ import (
 
 	permkind "github.com/inoxlang/inox/internal/core/permkind"
 	"github.com/inoxlang/inox/internal/inoxconsts"
-	"github.com/oklog/ulid/v2"
 	"golang.org/x/exp/maps"
 
 	"github.com/inoxlang/inox/internal/core/symbolic"
@@ -120,7 +119,7 @@ type Manifest struct {
 func NewEmptyManifest() *Manifest {
 	return &Manifest{
 		Parameters: ModuleParameters{
-			structType: ANON_EMPTY_STRUCT_TYPE,
+			paramsPattern: EMPTY_MODULE_ARGS_TYPE,
 		},
 		InitialWorkingDirectory: DEFAULT_IWD,
 	}
@@ -132,7 +131,7 @@ type ModuleParameters struct {
 	hasRequiredParams bool //true if at least one positional parameter or one required non-positional parameter
 	hasOptions        bool //true if at least one optional non-positional parameter
 
-	structType *StructPattern
+	paramsPattern *ModuleParamsPattern
 }
 
 func (p ModuleParameters) NoParameters() bool {
@@ -183,7 +182,7 @@ func (p *ModuleParameters) NonPositionalParameters() []ModuleParameter {
 	return slices.Clone(p.others)
 }
 
-func (p *ModuleParameters) GetArgumentsFromObject(ctx *Context, argObj *Object) (*Struct, error) {
+func (p *ModuleParameters) GetArgumentsFromObject(ctx *Context, argObj *Object) (*ModuleArgs, error) {
 	positionalArgs := argObj.Indexed()
 	resultEntries := map[string]Value{}
 
@@ -238,7 +237,7 @@ func (p *ModuleParameters) GetArgumentsFromObject(ctx *Context, argObj *Object) 
 	return p.getArguments(ctx, resultEntries)
 }
 
-func (p *ModuleParameters) GetArgumentsFromStruct(ctx *Context, argStruct *Struct) (*Struct, error) {
+func (p *ModuleParameters) GetArgumentsFromStruct(ctx *Context, argStruct *ModuleArgs) (*ModuleArgs, error) {
 	resultEntries := map[string]Value{}
 
 	propertyNames := argStruct.PropertyNames(ctx)
@@ -292,29 +291,29 @@ func (p *ModuleParameters) GetArgumentsFromStruct(ctx *Context, argStruct *Struc
 	return p.getArguments(ctx, resultEntries)
 }
 
-func (p *ModuleParameters) getArguments(ctx *Context, entries map[string]Value) (*Struct, error) {
+func (p *ModuleParameters) getArguments(ctx *Context, entries map[string]Value) (*ModuleArgs, error) {
 	for _, param := range p.others {
 		if _, ok := entries[string(param.name)]; !ok {
 			return nil, fmt.Errorf("missing value for non positional argument %s", param.name)
 		}
 	}
 
-	structValues := make([]Value, len(p.structType.keys))
+	structValues := make([]Value, len(p.paramsPattern.keys))
 	for name, value := range entries {
-		index, ok := p.structType.indexOfField(name)
+		index, ok := p.paramsPattern.indexOfField(name)
 		if !ok {
 			panic(ErrUnreachable)
 		}
 		structValues[index] = value
 	}
 
-	return &Struct{
-		structType: p.structType,
+	return &ModuleArgs{
+		structType: p.paramsPattern,
 		values:     structValues,
 	}, nil
 }
 
-func (p *ModuleParameters) GetArgumentsFromCliArgs(ctx *Context, cliArgs []string) (*Struct, error) {
+func (p *ModuleParameters) GetArgumentsFromCliArgs(ctx *Context, cliArgs []string) (*ModuleArgs, error) {
 	var positionalArgs []string
 	entries := map[string]Serializable{}
 
@@ -388,22 +387,22 @@ outer:
 		return nil, errors.New(fmtTooManyPositionalArgs(len(positionalArgs), len(p.positional)))
 	}
 
-	structValues := make([]Value, len(p.structType.keys))
+	structValues := make([]Value, len(p.paramsPattern.keys))
 	for name, value := range entries {
-		index, ok := p.structType.indexOfField(name)
+		index, ok := p.paramsPattern.indexOfField(name)
 		if !ok {
 			panic(ErrUnreachable)
 		}
 		structValues[index] = value
 	}
 
-	return &Struct{
-		structType: p.structType,
+	return &ModuleArgs{
+		structType: p.paramsPattern,
 		values:     structValues,
 	}, nil
 }
 
-func (p *ModuleParameters) GetSymbolicArguments(ctx *Context) *symbolic.Struct {
+func (p *ModuleParameters) GetSymbolicArguments(ctx *Context) *symbolic.ModuleArgs {
 	resultEntries := map[string]symbolic.Value{}
 	encountered := map[uintptr]symbolic.Value{}
 
@@ -417,8 +416,8 @@ func (p *ModuleParameters) GetSymbolicArguments(ctx *Context) *symbolic.Struct {
 		resultEntries[string(param.name)] = symbolicPatt.SymbolicValue()
 	}
 
-	symbolicStructType := utils.Must(p.structType.ToSymbolicValue(ctx, encountered)).(*symbolic.StructPattern)
-	return symbolic.NewStruct(symbolicStructType, resultEntries)
+	symbolicStructType := utils.Must(p.paramsPattern.ToSymbolicValue(ctx, encountered)).(*symbolic.ModuleParamsPattern)
+	return symbolic.NewModuleArgs(symbolicStructType, resultEntries)
 }
 
 type ModuleParameter struct {
@@ -738,7 +737,7 @@ func (m *Module) createManifest(ctx *Context, object *Object, config manifestObj
 		perms        []Permission
 		envPattern   *ObjectPattern
 		moduleParams = ModuleParameters{
-			structType: ANON_EMPTY_STRUCT_TYPE,
+			paramsPattern: EMPTY_MODULE_ARGS_TYPE,
 		}
 		dbConfigs      DatabaseConfigs
 		autoInvocation *AutoInvocationConfig
@@ -1452,7 +1451,7 @@ func getModuleParameters(ctx *Context, v Value) (ModuleParameters, error) {
 		paramPatterns = append(paramPatterns, param.Pattern())
 	}
 
-	params.structType = NewStructPattern("", ulid.Make(), paramNames, paramPatterns)
+	params.paramsPattern = NewModuleParamsPattern(paramNames, paramPatterns)
 	return params, nil
 }
 

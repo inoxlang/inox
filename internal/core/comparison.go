@@ -598,12 +598,12 @@ func (p *OrderedPair) Equal(ctx *Context, other Value, alreadyCompared map[uintp
 	return true
 }
 
-func (s *Struct) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+func (s *ModuleArgs) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
 	if depth > MAX_COMPARISON_DEPTH {
 		return false
 	}
 
-	otherStruct, ok := other.(*Struct)
+	otherStruct, ok := other.(*ModuleArgs)
 	if !ok || s.structType != otherStruct.structType {
 		return false
 	}
@@ -2142,12 +2142,12 @@ func (ns *Namespace) Equal(ctx *Context, other Value, alreadyCompared map[uintpt
 	return ok && ns == otherNS
 }
 
-func (p *StructPattern) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+func (p *ModuleParamsPattern) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
 	if depth > MAX_COMPARISON_DEPTH {
 		return false
 	}
 
-	otherPatt, ok := other.(*StructPattern)
+	otherPatt, ok := other.(*ModuleParamsPattern)
 	return ok && p == otherPatt
 }
 

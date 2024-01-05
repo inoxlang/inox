@@ -244,7 +244,7 @@ func createHandleDynamic(server *HttpsServer, routingDirPath core.Path) handlerF
 
 			FullAccessToDatabases: false, //databases should be passed by parent state
 			PreinitFilesystem:     handlerCtx.GetFileSystem(),
-			GetArguments: func(manifest *core.Manifest) (*core.Struct, error) {
+			GetArguments: func(manifest *core.Manifest) (*core.ModuleArgs, error) {
 				args, errStatusCode, err := getHandlerModuleArguments(req, manifest, handlerCtx, methodSpecificModule)
 				if err != nil {
 					rw.writeHeaders(errStatusCode)
@@ -355,7 +355,7 @@ func createHandleDynamic(server *HttpsServer, routingDirPath core.Path) handlerF
 }
 
 func getHandlerModuleArguments(req *HttpRequest, manifest *core.Manifest, handlerCtx *core.Context, methodSpecificModule bool) (
-	_ *core.Struct,
+	_ *core.ModuleArgs,
 	errStatusCode int,
 	_ error,
 ) {

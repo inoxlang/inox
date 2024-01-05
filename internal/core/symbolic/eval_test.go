@@ -12165,20 +12165,20 @@ func TestSymbolicEval(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Empty(t, state.errors())
 
-		if !assert.IsType(t, (*Struct)(nil), res) {
+		if !assert.IsType(t, (*ModuleArgs)(nil), res) {
 			return
 		}
 
-		structVal := res.(*Struct)
-		structType := structVal.structType
+		structVal := res.(*ModuleArgs)
+		structType := structVal.typ
 
-		assert.Equal(t, NewStructPattern("", structType.tempId, []string{"a", "b", "c"}, []Pattern{
+		assert.Equal(t, NewModuleParamsPattern([]string{"a", "b", "c"}, []Pattern{
 			state.ctx.ResolveNamedPattern("bool"),
 			state.ctx.ResolveNamedPattern("str"),
 			state.ctx.ResolveNamedPattern("int"),
 		}), structType)
 
-		assert.Equal(t, NewStruct(structType, map[string]Value{
+		assert.Equal(t, NewModuleArgs(structType, map[string]Value{
 			"a": ANY_BOOL,
 			"b": ANY_STR_LIKE,
 			"c": ANY_INT,

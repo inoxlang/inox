@@ -29,7 +29,7 @@ var (
 type RunLocalModuleArgs struct {
 	Fpath                     string
 	PassedCLIArgs             []string
-	PassedArgs                *core.Struct
+	PassedArgs                *core.ModuleArgs
 	ParsingCompilationContext *core.Context
 
 	ParentContext         *core.Context

@@ -23,7 +23,7 @@ var (
 	}
 
 	_ = []Clonable{
-		(*Struct)(nil), (*Array)(nil),
+		(*ModuleArgs)(nil), (*Array)(nil),
 	}
 )
 
@@ -258,7 +258,7 @@ func (c *BytesConcatenation) Clone(originState *GlobalState, sharableValues *[]P
 	}, nil
 }
 
-func (s *Struct) Clone(originState *GlobalState, sharableValues *[]PotentiallySharable, clones map[uintptr]Clonable, depth int) (Value, error) {
+func (s *ModuleArgs) Clone(originState *GlobalState, sharableValues *[]PotentiallySharable, clones map[uintptr]Clonable, depth int) (Value, error) {
 	if depth > MAX_CLONING_DEPTH {
 		return nil, ErrMaximumCloningDepthReached
 	}
@@ -269,7 +269,7 @@ func (s *Struct) Clone(originState *GlobalState, sharableValues *[]PotentiallySh
 		return clone, nil
 	}
 
-	structClone := &Struct{
+	structClone := &ModuleArgs{
 		structType: s.structType,
 		values:     make([]Value, len(s.values)),
 	}

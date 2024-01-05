@@ -13,7 +13,6 @@ import (
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
-	"github.com/oklog/ulid/v2"
 )
 
 func NewTreeWalkState(ctx *Context, constants ...map[string]Value) *TreeWalkState {
@@ -1166,7 +1165,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 						globalsObjectLit, ok := property.Value.(*parse.ObjectLiteral)
 						//handle description separately if it's an object literal because non-serializable value are not accepted.
 						if ok {
-							globals := &Struct{}
+							globals := &ModuleArgs{}
 							var keys []string
 							var types []Pattern
 
@@ -1181,7 +1180,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 								globals.values = append(globals.values, globalVal)
 								types = append(types, ANYVAL_PATTERN)
 							}
-							globals.structType = NewStructPattern("", ulid.Make(), keys, types)
+							globals.structType = NewModuleParamsPattern(keys, types)
 							meta[propertyName] = globals
 							continue
 						}
@@ -1217,7 +1216,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		})
 
 		switch g := globalsDesc.(type) {
-		case *Struct:
+		case *ModuleArgs:
 			for k, v := range g.ValueMap() {
 				actualGlobals[k] = v
 			}

@@ -60,9 +60,9 @@ type ModulePreparationArgs struct {
 	BeforeContextCreation func(*Manifest) ([]Limit, error)
 
 	CliArgs []string
-	Args    *Struct
+	Args    *ModuleArgs
 	// if set the result of the function is used instead of .Args
-	GetArguments func(*Manifest) (*Struct, error)
+	GetArguments func(*Manifest) (*ModuleArgs, error)
 
 	ParsingCompilationContext *Context //always necessary even if .CachedModule is set
 	ParentContext             *Context
@@ -479,7 +479,7 @@ func PrepareLocalModule(args ModulePreparationArgs) (state *GlobalState, mod *Mo
 	}
 
 	// CLI arguments | arguments of imported/invoked module
-	var modArgs *Struct
+	var modArgs *ModuleArgs
 	var modArgsError error
 
 	if args.GetArguments != nil {

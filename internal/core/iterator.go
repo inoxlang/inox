@@ -1728,7 +1728,7 @@ func (patt *SecretPattern) Iterator(ctx *Context, config IteratorConfiguration) 
 	return NewEmptyPatternIterator()
 }
 
-func (patt *StructPattern) Iterator(ctx *Context, config IteratorConfiguration) Iterator {
+func (patt *ModuleParamsPattern) Iterator(ctx *Context, config IteratorConfiguration) Iterator {
 	return NewEmptyPatternIterator()
 }
 

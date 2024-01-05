@@ -94,7 +94,7 @@ func (*Array) IsMutable() bool {
 	return true
 }
 
-func (s *Struct) IsMutable() bool {
+func (s *ModuleArgs) IsMutable() bool {
 	return true
 }
 
@@ -650,7 +650,7 @@ func (ns *Namespace) IsMutable() bool {
 	return ns.mutableEntries
 }
 
-func (*StructPattern) IsMutable() bool {
+func (*ModuleParamsPattern) IsMutable() bool {
 	return false
 }
 

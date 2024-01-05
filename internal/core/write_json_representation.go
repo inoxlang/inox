@@ -1195,7 +1195,7 @@ func (n AstNode) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, confi
 	return ErrNotImplementedYet
 }
 
-func (p *StructPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+func (p *ModuleParamsPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	if depth > MAX_JSON_REPR_WRITING_DEPTH {
 		return ErrMaximumJSONReprWritingDepthReached
 	}

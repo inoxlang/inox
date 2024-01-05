@@ -705,21 +705,21 @@ func (dict *Dictionary) ToSymbolicValue(ctx *Context, encountered map[uintptr]sy
 	return symbolicDict, nil
 }
 
-func (s *Struct) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
-	ptr := reflect.ValueOf(s).Pointer()
+func (args *ModuleArgs) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
+	ptr := reflect.ValueOf(args).Pointer()
 	if r, ok := encountered[ptr]; ok {
 		return r, nil
 	}
 
-	structPattern, err := s.structType.ToSymbolicValue(ctx, encountered)
+	moduleParamsPattern, err := args.structType.ToSymbolicValue(ctx, encountered)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert type of struct to symbolic: %w", err)
 	}
 
-	symbolicStruct := symbolic.NewStruct(structPattern.(*symbolic.StructPattern), nil)
-	encountered[ptr] = symbolicStruct
+	symbolicModuleArgs := symbolic.NewModuleArgs(moduleParamsPattern.(*symbolic.ModuleParamsPattern), nil)
+	encountered[ptr] = symbolicModuleArgs
 
-	return symbolicStruct, nil
+	return symbolicModuleArgs, nil
 }
 
 func (p *UnionPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
@@ -1735,7 +1735,7 @@ func (ns *Namespace) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbo
 	return result, nil
 }
 
-func (s *StructPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
+func (s *ModuleParamsPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	ptr := reflect.ValueOf(s).Pointer()
 	if r, ok := encountered[ptr]; ok {
 		return r, nil
@@ -1744,8 +1744,8 @@ func (s *StructPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]sy
 	keys := slices.Clone(s.keys)
 	types := make([]symbolic.Pattern, len(keys))
 
-	symbolicStructPattern := new(symbolic.StructPattern)
-	encountered[ptr] = symbolicStructPattern
+	symbolicModuleParamsPattern := new(symbolic.ModuleParamsPattern)
+	encountered[ptr] = symbolicModuleParamsPattern
 
 	for i, t := range s.types {
 		symbolicPattern, err := t.ToSymbolicValue(ctx, encountered)
@@ -1755,8 +1755,8 @@ func (s *StructPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]sy
 		types[i] = symbolicPattern.(symbolic.Pattern)
 	}
 
-	*symbolicStructPattern = symbolic.CreateStructPattern(s.name, s.tempId, keys, types)
-	return symbolicStructPattern, nil
+	*symbolicModuleParamsPattern = symbolic.CreateModuleParamsPattern(keys, types)
+	return symbolicModuleParamsPattern, nil
 }
 
 func (s *FilesystemSnapshotIL) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {

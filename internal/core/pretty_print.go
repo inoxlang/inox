@@ -792,10 +792,8 @@ func (a *Array) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth in
 	utils.Must(w.Write(end))
 }
 
-func (s *Struct) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("struct ")))
-	utils.Must(w.Write(utils.StringAsBytes(s.structType.name)))
-	utils.PanicIfErr(w.WriteByte('{'))
+func (s *ModuleArgs) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("module-arguments{")))
 
 	indentCount := parentIndentCount + 1
 	indent := bytes.Repeat(config.Indent, indentCount)
@@ -2024,8 +2022,8 @@ func (ns *Namespace) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, dep
 	utils.MustWriteMany(w, bytes.Repeat(config.Indent, depth), []byte{'}'})
 }
 
-func (p *StructPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write(utils.StringAsBytes("struct-type {")))
+func (p *ModuleParamsPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("module-parameters{")))
 
 	//TODO
 	utils.Must(w.Write(utils.StringAsBytes("...")))

@@ -1066,7 +1066,7 @@ func (v *VM) run() {
 			structTypeIndex := int(v.curInsts[v.ip-1]) | int(v.curInsts[v.ip-2])<<8
 			numElements := int(v.curInsts[v.ip])
 
-			structType := v.constants[structTypeIndex].(*StructPattern)
+			structType := v.constants[structTypeIndex].(*ModuleParamsPattern)
 
 			values := make([]Value, numElements)
 			fieldIndex := 0
@@ -1076,7 +1076,7 @@ func (v *VM) run() {
 			}
 
 			v.sp -= numElements
-			v.stack[v.sp] = &Struct{
+			v.stack[v.sp] = &ModuleArgs{
 				structType: structType,
 				values:     values,
 			}
@@ -2287,7 +2287,7 @@ func (v *VM) handleOtherOpcodes(op byte) (_continue bool) {
 		)
 
 		if meta != nil && meta != Nil {
-			metaMap := meta.(*Struct).ValueMap()
+			metaMap := meta.(*ModuleArgs).ValueMap()
 
 			group, globalsDesc, permListing, v.err = readLThreadMeta(metaMap, v.global.Ctx)
 			if v.err != nil {
@@ -2312,7 +2312,7 @@ func (v *VM) handleOtherOpcodes(op byte) (_continue bool) {
 		// pass global variables
 
 		switch g := globalsDesc.(type) {
-		case *Struct:
+		case *ModuleArgs:
 			for i, v := range g.values {
 				k := g.structType.keys[i]
 				actualGlobals[k] = v

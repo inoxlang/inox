@@ -1469,7 +1469,7 @@ func (n AstNode) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConf
 	return ErrNotImplementedYet
 }
 
-func (p *StructPattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
+func (p *ModuleParamsPattern) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	return ErrNotImplementedYet
 }
 

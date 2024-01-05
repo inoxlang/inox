@@ -164,7 +164,7 @@ func (tuple *OrderedPair) IsMutable() bool {
 	return false
 }
 
-func (s *Struct) IsMutable() bool {
+func (s *ModuleArgs) IsMutable() bool {
 	return true
 }
 
@@ -634,7 +634,7 @@ func (ns *Namespace) IsMutable() bool {
 	return true
 }
 
-func (*StructPattern) IsMutable() bool {
+func (*ModuleParamsPattern) IsMutable() bool {
 	return false
 }
 

@@ -19,7 +19,6 @@ import (
 	"github.com/inoxlang/inox/internal/memds"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
-	"github.com/oklog/ulid/v2"
 	"golang.org/x/exp/maps"
 )
 
@@ -1121,9 +1120,9 @@ func evalChunk(n *parse.Chunk, state *State) (_ Value, finalErr error) {
 				args[param.name] = param.pattern.SymbolicValue()
 			}
 
-			structType := NewStructPattern("", ulid.Make(), paramNames, paramPatterns)
+			paramsPattern := NewModuleParamsPattern(paramNames, paramPatterns)
 
-			if !state.setGlobal(extData.MOD_ARGS_VARNAME, NewStruct(structType, args), GlobalConst) {
+			if !state.setGlobal(extData.MOD_ARGS_VARNAME, NewModuleArgs(paramsPattern, args), GlobalConst) {
 				panic(ErrUnreachable)
 			}
 		}
