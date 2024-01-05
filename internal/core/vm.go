@@ -283,124 +283,6 @@ func (v *VM) run() {
 
 	}()
 
-	doIntBinOp := func() {
-		right := v.stack[v.sp-1].(Int)
-		left := v.stack[v.sp-2].(Int)
-		v.ip++
-
-		operator := parse.BinaryOperator(v.curInsts[v.ip])
-
-		var res Value
-		switch operator {
-		case parse.Add:
-			res, v.err = intAdd(left, right)
-			if v.err != nil {
-				return
-			}
-		case parse.Sub:
-			res, v.err = intSub(left, right)
-			if v.err != nil {
-				return
-			}
-		case parse.Mul:
-			if right > 0 {
-				if left > math.MaxInt64/right || left < math.MinInt64/right {
-					v.err = ErrIntOverflow
-					return
-				}
-			} else if right < 0 {
-				if right == -1 {
-					if left == math.MinInt64 {
-						v.err = ErrIntOverflow
-						return
-					}
-				} else if left < math.MaxInt64/right || left > math.MinInt64/right {
-					v.err = ErrIntUnderflow
-					return
-				}
-			}
-			res = left * right
-		case parse.Div:
-			if right == 0 {
-				v.err = ErrIntDivisionByZero
-				return
-			}
-			if left == math.MinInt64 && right == -1 {
-				v.err = ErrIntOverflow
-				return
-			}
-			res = left / right
-		case parse.LessThan:
-			res = Bool(left < right)
-		case parse.LessOrEqual:
-			res = Bool(left <= right)
-		case parse.GreaterThan:
-			res = Bool(left > right)
-		case parse.GreaterOrEqual:
-			res = Bool(left >= right)
-		default:
-			v.err = fmt.Errorf("invalid binary operator")
-			return
-		}
-
-		v.stack[v.sp-2] = res
-		v.sp--
-	}
-
-	doFloatBinOp := func() {
-		right := v.stack[v.sp-1].(Float)
-		left := v.stack[v.sp-2].(Float)
-		v.ip++
-
-		if math.IsNaN(float64(left)) || math.IsInf(float64(left), 0) {
-			v.err = ErrNaNinfinityOperand
-			return
-		}
-
-		if math.IsNaN(float64(right)) || math.IsInf(float64(right), 0) {
-			v.err = ErrNaNinfinityOperand
-			return
-		}
-
-		operator := parse.BinaryOperator(v.curInsts[v.ip])
-
-		var res Value
-		switch operator {
-		case parse.Add:
-			res = left + right
-		case parse.Sub:
-			res = left - right
-		case parse.Mul:
-			f := left * right
-			res = f
-			if math.IsNaN(float64(f)) || math.IsInf(float64(f), 0) {
-				v.err = ErrNaNinfinityResult
-				return
-			}
-		case parse.Div:
-			f := left / right
-			res = f
-			if math.IsNaN(float64(f)) || math.IsInf(float64(f), 0) {
-				v.err = ErrNaNinfinityResult
-				return
-			}
-		case parse.LessThan:
-			res = Bool(left < right)
-		case parse.LessOrEqual:
-			res = Bool(left <= right)
-		case parse.GreaterThan:
-			res = Bool(left > right)
-		case parse.GreaterOrEqual:
-			res = Bool(left >= right)
-		default:
-			v.err = fmt.Errorf("invalid binary operator")
-			return
-		}
-
-		v.stack[v.sp-2] = res
-		v.sp--
-	}
-
 	// main evaluation loop
 	// While we are not aborting we increment the instruction pointer and we execute the current instruction.
 	for atomic.LoadInt64(&v.aborting) == 0 {
@@ -556,20 +438,20 @@ func (v *VM) run() {
 			}
 		//ARITHMETIC
 		case OpIntBin:
-			doIntBinOp()
+			v.doSafeIntBinOp()
 			if v.err != nil {
 				return
 			}
 		case OpFloatBin:
-			doFloatBinOp()
+			v.doSafeFloatBinOp()
 			if v.err != nil {
 				return
 			}
 		case OpNumBin:
 			if _, ok := v.stack[v.sp-2].(Int); ok {
-				doIntBinOp()
+				v.doSafeIntBinOp()
 			} else {
-				doFloatBinOp()
+				v.doSafeFloatBinOp()
 			}
 			if v.err != nil {
 				return
@@ -1496,6 +1378,124 @@ func (v *VM) run() {
 			}
 		}
 	}
+}
+
+func (v *VM) doSafeIntBinOp() {
+	right := v.stack[v.sp-1].(Int)
+	left := v.stack[v.sp-2].(Int)
+	v.ip++
+
+	operator := parse.BinaryOperator(v.curInsts[v.ip])
+
+	var res Value
+	switch operator {
+	case parse.Add:
+		res, v.err = intAdd(left, right)
+		if v.err != nil {
+			return
+		}
+	case parse.Sub:
+		res, v.err = intSub(left, right)
+		if v.err != nil {
+			return
+		}
+	case parse.Mul:
+		if right > 0 {
+			if left > math.MaxInt64/right || left < math.MinInt64/right {
+				v.err = ErrIntOverflow
+				return
+			}
+		} else if right < 0 {
+			if right == -1 {
+				if left == math.MinInt64 {
+					v.err = ErrIntOverflow
+					return
+				}
+			} else if left < math.MaxInt64/right || left > math.MinInt64/right {
+				v.err = ErrIntUnderflow
+				return
+			}
+		}
+		res = left * right
+	case parse.Div:
+		if right == 0 {
+			v.err = ErrIntDivisionByZero
+			return
+		}
+		if left == math.MinInt64 && right == -1 {
+			v.err = ErrIntOverflow
+			return
+		}
+		res = left / right
+	case parse.LessThan:
+		res = Bool(left < right)
+	case parse.LessOrEqual:
+		res = Bool(left <= right)
+	case parse.GreaterThan:
+		res = Bool(left > right)
+	case parse.GreaterOrEqual:
+		res = Bool(left >= right)
+	default:
+		v.err = fmt.Errorf("invalid binary operator")
+		return
+	}
+
+	v.stack[v.sp-2] = res
+	v.sp--
+}
+
+func (v *VM) doSafeFloatBinOp() {
+	right := v.stack[v.sp-1].(Float)
+	left := v.stack[v.sp-2].(Float)
+	v.ip++
+
+	if math.IsNaN(float64(left)) || math.IsInf(float64(left), 0) {
+		v.err = ErrNaNinfinityOperand
+		return
+	}
+
+	if math.IsNaN(float64(right)) || math.IsInf(float64(right), 0) {
+		v.err = ErrNaNinfinityOperand
+		return
+	}
+
+	operator := parse.BinaryOperator(v.curInsts[v.ip])
+
+	var res Value
+	switch operator {
+	case parse.Add:
+		res = left + right
+	case parse.Sub:
+		res = left - right
+	case parse.Mul:
+		f := left * right
+		res = f
+		if math.IsNaN(float64(f)) || math.IsInf(float64(f), 0) {
+			v.err = ErrNaNinfinityResult
+			return
+		}
+	case parse.Div:
+		f := left / right
+		res = f
+		if math.IsNaN(float64(f)) || math.IsInf(float64(f), 0) {
+			v.err = ErrNaNinfinityResult
+			return
+		}
+	case parse.LessThan:
+		res = Bool(left < right)
+	case parse.LessOrEqual:
+		res = Bool(left <= right)
+	case parse.GreaterThan:
+		res = Bool(left > right)
+	case parse.GreaterOrEqual:
+		res = Bool(left >= right)
+	default:
+		v.err = fmt.Errorf("invalid binary operator")
+		return
+	}
+
+	v.stack[v.sp-2] = res
+	v.sp--
 }
 
 //go:noinline
