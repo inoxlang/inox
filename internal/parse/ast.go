@@ -1823,6 +1823,23 @@ type StructFieldDefinition struct {
 	Type Node
 }
 
+type NewExpression struct {
+	NodeBase
+	Type           Node //*IdentifierLiteral for structs
+	Initialization Node
+}
+
+type StructInitializationLiteral struct {
+	NodeBase
+	Fields []Node //*StructFieldInitialization
+}
+
+type StructFieldInitialization struct {
+	NodeBase
+	Name  *IdentifierLiteral
+	Value Node
+}
+
 type PatternConversionExpression struct {
 	NodeBase
 	Value Node
@@ -2553,6 +2570,16 @@ func walk(node, parent Node, ancestorChain *[]Node, fn, afterFn NodeHandler) {
 	case *StructFieldDefinition:
 		walk(n.Name, node, ancestorChain, fn, afterFn)
 		walk(n.Type, node, ancestorChain, fn, afterFn)
+	case *NewExpression:
+		walk(n.Type, node, ancestorChain, fn, afterFn)
+		walk(n.Initialization, node, ancestorChain, fn, afterFn)
+	case *StructInitializationLiteral:
+		for _, fieldInit := range n.Fields {
+			walk(fieldInit, node, ancestorChain, fn, afterFn)
+		}
+	case *StructFieldInitialization:
+		walk(n.Name, node, ancestorChain, fn, afterFn)
+		walk(n.Value, node, ancestorChain, fn, afterFn)
 	case *PatternConversionExpression:
 		walk(n.Value, node, ancestorChain, fn, afterFn)
 	case *GlobalConstantDeclarations:

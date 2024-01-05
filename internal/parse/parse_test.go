@@ -27988,6 +27988,231 @@ func testParse(
 			}, n)
 		})
 	})
+
+	t.Run("new expression with struct type", func(t *testing.T) {
+		t.Run("empty initialization literal", func(t *testing.T) {
+			n := mustparseChunk(t, "new Lexer {}")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 12}, nil, false},
+				Statements: []Node{
+					&NewExpression{
+						NodeBase: NodeBase{NodeSpan{0, 12}, nil, false},
+						Type: &IdentifierLiteral{
+							NodeBase: NodeBase{Span: NodeSpan{4, 9}},
+							Name:     "Lexer",
+						},
+						Initialization: &StructInitializationLiteral{
+							NodeBase: NodeBase{Span: NodeSpan{10, 12}},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("body only containing empty lines", func(t *testing.T) {
+			n := mustparseChunk(t, "new Lexer {\n\n}")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 14}, nil, false},
+				Statements: []Node{
+					&NewExpression{
+						NodeBase: NodeBase{NodeSpan{0, 14}, nil, false},
+						Type: &IdentifierLiteral{
+							NodeBase: NodeBase{Span: NodeSpan{4, 9}},
+							Name:     "Lexer",
+						},
+						Initialization: &StructInitializationLiteral{
+							NodeBase: NodeBase{Span: NodeSpan{10, 14}},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("unterminated empty body: EOF", func(t *testing.T) {
+			n, err := parseChunk(t, "new Lexer {", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 11}, nil, false},
+				Statements: []Node{
+					&NewExpression{
+						NodeBase: NodeBase{NodeSpan{0, 11}, nil, false},
+						Type: &IdentifierLiteral{
+							NodeBase: NodeBase{Span: NodeSpan{4, 9}},
+							Name:     "Lexer",
+						},
+						Initialization: &StructInitializationLiteral{
+							NodeBase: NodeBase{
+								NodeSpan{10, 11},
+								&ParsingError{UnterminatedStructDefinition, UNTERMINATED_STRUCT_INIT_LIT_MISSING_CLOSING_BRACE},
+								false,
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("one field", func(t *testing.T) {
+			n := mustparseChunk(t, "new Lexer {index: 0}")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 20}, nil, false},
+				Statements: []Node{
+					&NewExpression{
+						NodeBase: NodeBase{Span: NodeSpan{0, 20}},
+						Type: &IdentifierLiteral{
+							NodeBase: NodeBase{Span: NodeSpan{4, 9}},
+							Name:     "Lexer",
+						},
+						Initialization: &StructInitializationLiteral{
+							NodeBase: NodeBase{Span: NodeSpan{10, 20}},
+							Fields: []Node{
+								&StructFieldInitialization{
+									NodeBase: NodeBase{Span: NodeSpan{11, 19}},
+									Name: &IdentifierLiteral{
+										NodeBase: NodeBase{Span: NodeSpan{11, 16}},
+										Name:     "index",
+									},
+									Value: &IntLiteral{
+										NodeBase: NodeBase{Span: NodeSpan{18, 19}},
+										Raw:      "0",
+										Value:    0,
+									},
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("one field followed by EOF", func(t *testing.T) {
+			n, err := parseChunk(t, "new Lexer {index: 0", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 19}, nil, false},
+				Statements: []Node{
+					&NewExpression{
+						NodeBase: NodeBase{Span: NodeSpan{0, 19}},
+						Type: &IdentifierLiteral{
+							NodeBase: NodeBase{Span: NodeSpan{4, 9}},
+							Name:     "Lexer",
+						},
+						Initialization: &StructInitializationLiteral{
+							NodeBase: NodeBase{
+								NodeSpan{10, 19},
+								&ParsingError{UnterminatedStructDefinition, UNTERMINATED_STRUCT_INIT_LIT_MISSING_CLOSING_BRACE},
+								false,
+							},
+							Fields: []Node{
+								&StructFieldInitialization{
+									NodeBase: NodeBase{Span: NodeSpan{11, 19}},
+									Name: &IdentifierLiteral{
+										NodeBase: NodeBase{Span: NodeSpan{11, 16}},
+										Name:     "index",
+									},
+									Value: &IntLiteral{
+										NodeBase: NodeBase{Span: NodeSpan{18, 19}},
+										Raw:      "0",
+										Value:    0,
+									},
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("two fields on the same line", func(t *testing.T) {
+			n := mustparseChunk(t, "new Lexer {index: 0, id: 0}")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 27}, nil, false},
+				Statements: []Node{
+					&NewExpression{
+						NodeBase: NodeBase{Span: NodeSpan{0, 27}},
+						Type: &IdentifierLiteral{
+							NodeBase: NodeBase{Span: NodeSpan{4, 9}},
+							Name:     "Lexer",
+						},
+						Initialization: &StructInitializationLiteral{
+							NodeBase: NodeBase{Span: NodeSpan{10, 27}},
+							Fields: []Node{
+								&StructFieldInitialization{
+									NodeBase: NodeBase{Span: NodeSpan{11, 19}},
+									Name: &IdentifierLiteral{
+										NodeBase: NodeBase{Span: NodeSpan{11, 16}},
+										Name:     "index",
+									},
+									Value: &IntLiteral{
+										NodeBase: NodeBase{Span: NodeSpan{18, 19}},
+										Raw:      "0",
+										Value:    0,
+									},
+								},
+								&StructFieldInitialization{
+									NodeBase: NodeBase{Span: NodeSpan{21, 26}},
+									Name: &IdentifierLiteral{
+										NodeBase: NodeBase{Span: NodeSpan{21, 23}},
+										Name:     "id",
+									},
+									Value: &IntLiteral{
+										NodeBase: NodeBase{Span: NodeSpan{25, 26}},
+										Raw:      "0",
+										Value:    0,
+									},
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("two fields on separate lines", func(t *testing.T) {
+			n := mustparseChunk(t, "new Lexer {index: 0\nid: 0}")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 26}, nil, false},
+				Statements: []Node{
+					&NewExpression{
+						NodeBase: NodeBase{Span: NodeSpan{0, 26}},
+						Type: &IdentifierLiteral{
+							NodeBase: NodeBase{Span: NodeSpan{4, 9}},
+							Name:     "Lexer",
+						},
+						Initialization: &StructInitializationLiteral{
+							NodeBase: NodeBase{Span: NodeSpan{10, 26}},
+							Fields: []Node{
+								&StructFieldInitialization{
+									NodeBase: NodeBase{Span: NodeSpan{11, 19}},
+									Name: &IdentifierLiteral{
+										NodeBase: NodeBase{Span: NodeSpan{11, 16}},
+										Name:     "index",
+									},
+									Value: &IntLiteral{
+										NodeBase: NodeBase{Span: NodeSpan{18, 19}},
+										Raw:      "0",
+										Value:    0,
+									},
+								},
+								&StructFieldInitialization{
+									NodeBase: NodeBase{Span: NodeSpan{20, 25}},
+									Name: &IdentifierLiteral{
+										NodeBase: NodeBase{Span: NodeSpan{20, 22}},
+										Name:     "id",
+									},
+									Value: &IntLiteral{
+										NodeBase: NodeBase{Span: NodeSpan{24, 25}},
+										Raw:      "0",
+										Value:    0,
+									},
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+	})
 }
 
 func TestParsePath(t *testing.T) {

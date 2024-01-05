@@ -468,6 +468,14 @@ const (
 	UNTERMINATED_STRUCT_DEF_MISSING_BODY                         = "unterminated struct definition: missing body"
 	UNTERMINATED_STRUCT_BODY_MISSING_CLOSING_BRACE               = "unterminated struct body: missing closing brace"
 	ONLY_FIELD_AND_METHOD_DEFINITIONS_ARE_ALLOWED_IN_STRUCT_BODY = "only field and method definitions are allowed inside a struct body"
+
+	//new expression
+	UNTERMINATED_NEW_EXPR_MISSING_TYPE_AFTER_KEYWORD   = "unterminated 'new' expression: missing type after keyword 'new'"
+	UNTERMINATED_STRUCT_INIT_LIT_MISSING_CLOSING_BRACE = "unterminated struct initialization literal: missing closing brace"
+
+	//struct initalization literal
+	ONLY_FIELD_INIT_PAIRS_ALLOWED  = "only field initialization pairs are allowed"
+	MISSING_COLON_AFTER_FIELD_NAME = "missing colon after field name"
 )
 
 func fmtInvalidRegexLiteral(err string) string {
@@ -713,6 +721,10 @@ func fmtUnexpectedCharInSynchronizedValueList(r rune) string {
 
 func fmtUnexpectedCharInStructBody(r rune) string {
 	return fmt.Sprintf("unexpected char %s in struct body", fmtRuneInfo(r))
+}
+
+func fmtUnexpectedCharInStructInitLiteral(r rune) string {
+	return fmt.Sprintf("unexpected char %s in struct initialization literal", fmtRuneInfo(r))
 }
 
 func fmtInvalidSpreadElemExprShouldBeExtrExprNot(expr Node) string {

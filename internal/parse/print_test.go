@@ -478,6 +478,16 @@ func TestPrint(t *testing.T) {
 		"import res /a",
 		"import res /a {}",
 		"import /a",
+		//structs
+		"struct Lexer",
+		"struct Lexer {}",
+		"struct Lexer {index: 0}",
+		//new
+		"new Lexer",
+		"new Lexer {}",
+		"new Lexer {",
+		"new Lexer {index: 0}",
+		"new Lexer {index: 0",
 		//others
 		"@(1)",
 	}
