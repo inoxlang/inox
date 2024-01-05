@@ -143,6 +143,9 @@ const (
 	TEST_CASES_NOT_ALLOWED_IF_SUBSUITES_ARE_PRESENT     = "test cases are not allowed if sub suites are presents"
 	TEST_CASE_STMTS_NOT_ALLOWED_OUTSIDE_OF_TEST_SUITES  = "test case statements are not allowed outside of test suites"
 	TEST_SUITE_STMTS_NOT_ALLOWED_INSIDE_TEST_CASE_STMTS = "test suite statements are not allowed in test case statements"
+
+	//new expressions
+	A_STRUCT_TYPE_NAME_IS_EXPECTED = "a struct type name is expected"
 )
 
 func fmtNotValidPermissionKindName(name string) string {
@@ -235,6 +238,10 @@ func fmtDuplicateKey(k string) string {
 	return fmt.Sprintf("duplicate key '%s'", k)
 }
 
+func fmtDuplicateFieldName(k string) string {
+	return fmt.Sprintf("duplicate field name '%s'", k)
+}
+
 func fmtDuplicateDictKey(k string) string {
 	return fmt.Sprintf("duplicate dictionary key '%s'", k)
 }
@@ -299,6 +306,10 @@ func fmtInvalidFnDeclGlobVarExist(name string) string {
 	return fmt.Sprintf("invalid function declaration: a global variable named '%s' exists", name)
 }
 
+func fmtInvalidStructDefAlreadyDeclared(name string) string {
+	return fmt.Sprintf("invalid struct definition: %s is already declared", name)
+}
+
 func fmtHostAliasAlreadyDeclared(name string) string {
 	return fmt.Sprintf("host alias @%s is already declared", name)
 }
@@ -309,6 +320,10 @@ func fmtPatternAlreadyDeclared(name string) string {
 
 func fmtPatternNamespaceAlreadyDeclared(name string) string {
 	return fmt.Sprintf("pattern namespace %%%s is already declared", name)
+}
+
+func fmtStructTypeIsNotDefined(name string) string {
+	return fmt.Sprintf("struct type '%s' is not defined", name)
 }
 
 func fmtCannotPassGlobalThatIsNotDeclaredToLThread(name string) string {

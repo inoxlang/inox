@@ -4092,6 +4092,106 @@ func TestCheck(t *testing.T) {
 			globals := GlobalVariablesFromMap(map[string]Value{}, nil)
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src, Globals: globals}))
 		})
+
+		t.Run("duplicate definition", func(t *testing.T) {
+			n, src := mustParseCode(`
+				struct MyStruct {
+
+				}
+				struct MyStruct {
+
+				}
+			`)
+
+			globals := GlobalVariablesFromMap(map[string]Value{}, nil)
+			duplicateDef := parse.FindNodes(n, (*parse.StructDefinition)(nil), nil)[1]
+
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src, Globals: globals})
+			expectedErr := utils.CombineErrors(
+				makeError(duplicateDef, src, fmtInvalidStructDefAlreadyDeclared("MyStruct")),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("duplicate definition, first definition in included chunk", func(t *testing.T) {
+			moduleName := "mymod.ix"
+			modpath := writeModuleAndIncludedFiles(t, moduleName, `
+				manifest {}
+				import ./dep.ix
+				struct MyStruct {
+
+				}
+			`, map[string]string{"./dep.ix": "includable-chunk\n struct MyStruct {}"})
+
+			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
+			assert.NoError(t, err)
+
+			err = staticCheckNoData(StaticCheckInput{
+				Module: mod,
+				Node:   mod.MainChunk.Node,
+				Chunk:  mod.MainChunk,
+			})
+
+			duplicateDef := parse.FindNode(mod.MainChunk.Node, (*parse.StructDefinition)(nil), nil)
+
+			expectedErr := utils.CombineErrors(
+				makeError(duplicateDef, mod.MainChunk, fmtInvalidStructDefAlreadyDeclared("MyStruct")),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+	})
+
+	t.Run("new expression", func(t *testing.T) {
+		t.Run("defined struct type", func(t *testing.T) {
+			n, src := mustParseCode(`
+				struct Lexer {}
+				lexer = new Lexer
+			`)
+
+			globals := GlobalVariablesFromMap(map[string]Value{}, nil)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src, Globals: globals}))
+		})
+
+		t.Run("initialization", func(t *testing.T) {
+			n, src := mustParseCode(`
+				struct Lexer {}
+				lexer = new Lexer {index: 0}
+			`)
+
+			globals := GlobalVariablesFromMap(map[string]Value{}, nil)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src, Globals: globals}))
+		})
+
+		t.Run("duplicate field in initialization", func(t *testing.T) {
+			n, src := mustParseCode(`
+				struct Lexer {}
+				lexer = new Lexer {index: 0, index: 1}
+			`)
+
+			globals := GlobalVariablesFromMap(map[string]Value{}, nil)
+			inits := parse.FindNodes(n, (*parse.StructFieldInitialization)(nil), nil)
+
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src, Globals: globals})
+			expectedErr := utils.CombineErrors(
+				makeError(inits[1].Name, src, fmtDuplicateFieldName("index")),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("undefined struct type", func(t *testing.T) {
+			n, src := mustParseCode(`
+				lexer = new Lexer
+			`)
+
+			globals := GlobalVariablesFromMap(map[string]Value{}, nil)
+			newExpr := parse.FindNode(n, (*parse.NewExpression)(nil), nil)
+
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src, Globals: globals})
+			expectedErr := utils.CombineErrors(
+				makeError(newExpr, src, fmtStructTypeIsNotDefined("Lexer")),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
 	})
 }
 

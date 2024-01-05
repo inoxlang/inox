@@ -80,6 +80,7 @@ func StaticCheck(input StaticCheckInput) (*StaticCheckData, error) {
 	checker := &checker{
 		checkInput:        input,
 		fnDecls:           make(map[parse.Node]map[string]int),
+		structDefs:        make(map[parse.Node]map[string]int),
 		globalVars:        globals,
 		localVars:         localVars,
 		shellLocalVars:    shellLocalVars,
@@ -114,6 +115,9 @@ type checker struct {
 
 	//key: *parse.Chunk|*parse.EmbeddedModule
 	fnDecls map[parse.Node]map[string]int
+
+	//key: *parse.Chunk|*parse.EmbeddedModule
+	structDefs map[parse.Node]map[string]int
 
 	//key: *parse.Chunk|*parse.EmbeddedModule
 	globalVars map[parse.Node]map[string]globalVarInfo
@@ -315,6 +319,15 @@ func (checker *checker) getModFunctionDecls(mod parse.Node) map[string]int {
 		checker.fnDecls[mod] = fns
 	}
 	return fns
+}
+
+func (checker *checker) getModStructDefs(mod parse.Node) map[string]int {
+	defs, ok := checker.structDefs[mod]
+	if !ok {
+		defs = make(map[string]int)
+		checker.structDefs[mod] = defs
+	}
+	return defs
 }
 
 func (checker *checker) getModHostAliases(mod parse.Node) map[string]int {
@@ -901,6 +914,7 @@ top_switch:
 			parentChecker:            c,
 			checkInput:               c.checkInput,
 			fnDecls:                  make(map[parse.Node]map[string]int),
+			structDefs:               make(map[parse.Node]map[string]int),
 			globalVars:               globals,
 			localVars:                make(map[parse.Node]map[string]localVarInfo),
 			properties:               make(map[*parse.ObjectLiteral]*propertyInfo),
@@ -943,6 +957,15 @@ top_switch:
 				// handled in next loop
 			} else {
 				fnDecls[k] = v
+			}
+		}
+
+		for k, v := range chunkChecker.structDefs[includedChunk.Node] {
+			structDefs := c.getModStructDefs(closestModule)
+			if _, ok := structDefs[k]; ok {
+				// handled in next loop
+			} else {
+				structDefs[k] = v
 			}
 		}
 
@@ -1635,7 +1658,16 @@ top_switch:
 			if p.Name == node {
 				break top_switch
 			}
+
 		case *parse.StructFieldDefinition:
+			if p.Name == node {
+				break top_switch
+			}
+		case *parse.NewExpression:
+			if p.Type == node {
+				break top_switch
+			}
+		case *parse.StructFieldInitialization:
 			if p.Name == node {
 				break top_switch
 			}
@@ -1948,6 +1980,48 @@ top_switch:
 		if _, ok := parent.(*parse.Chunk); !ok {
 			c.addError(node, MISPLACED_STRUCT_DEF_TOP_LEVEL_STMT)
 			return parse.ContinueTraversal
+
+		}
+		name, ok := node.GetName()
+		if ok {
+			defs := c.getModStructDefs(closestModule)
+			_, alreadyDefined := defs[name]
+			if alreadyDefined {
+				c.addError(node, fmtInvalidStructDefAlreadyDeclared(name))
+			} else {
+				defs[name] = 0
+			}
+		}
+	case *parse.NewExpression:
+		typ := node.Type
+		switch t := typ.(type) {
+		case *parse.IdentifierLiteral:
+			defs := c.getModStructDefs(closestModule)
+			_, ok := defs[t.Name]
+			if !ok {
+				c.addError(node, fmtStructTypeIsNotDefined(t.Name))
+			}
+		//TODO: support slices
+		case nil:
+			return parse.ContinueTraversal
+		default:
+			c.addError(node.Type, A_STRUCT_TYPE_NAME_IS_EXPECTED)
+			return parse.ContinueTraversal
+		}
+	case *parse.StructInitializationLiteral:
+		// look for duplicate field names
+		fieldNames := make([]string, 0, len(node.Fields))
+
+		for _, field := range node.Fields {
+			fieldInit, ok := field.(*parse.StructFieldInitialization)
+			if ok {
+				name := fieldInit.Name.Name
+				if slices.Contains(fieldNames, name) {
+					c.addError(fieldInit.Name, fmtDuplicateFieldName(name))
+				} else {
+					fieldNames = append(fieldNames, name)
+				}
+			}
 		}
 	case *parse.TestSuiteExpression:
 		hasSubsuiteStmt := false
