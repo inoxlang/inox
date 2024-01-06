@@ -28333,6 +28333,70 @@ func testParse(
 			}, n)
 		})
 
+		t.Run("as a local variable's type", func(t *testing.T) {
+			n := mustparseChunk(t, "var i *int = nil")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 16}, nil, false},
+				Statements: []Node{
+					&LocalVariableDeclarations{
+						NodeBase: NodeBase{Span: NodeSpan{0, 16}},
+						Declarations: []*LocalVariableDeclaration{
+							{
+								NodeBase: NodeBase{Span: NodeSpan{4, 16}},
+								Left: &IdentifierLiteral{
+									NodeBase: NodeBase{Span: NodeSpan{4, 5}},
+									Name:     "i",
+								},
+								Type: &PointerType{
+									NodeBase: NodeBase{Span: NodeSpan{6, 10}},
+									ValueType: &PatternIdentifierLiteral{
+										NodeBase:   NodeBase{NodeSpan{7, 10}, nil, false},
+										Unprefixed: true,
+										Name:       "int",
+									},
+								},
+								Right: &NilLiteral{
+									NodeBase: NodeBase{Span: NodeSpan{13, 16}},
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("as a global variable's type", func(t *testing.T) {
+			n := mustparseChunk(t, "globalvar i *int = nil")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 22}, nil, false},
+				Statements: []Node{
+					&GlobalVariableDeclarations{
+						NodeBase: NodeBase{Span: NodeSpan{0, 22}},
+						Declarations: []*GlobalVariableDeclaration{
+							{
+								NodeBase: NodeBase{Span: NodeSpan{10, 22}},
+								Left: &IdentifierLiteral{
+									NodeBase: NodeBase{Span: NodeSpan{10, 11}},
+									Name:     "i",
+								},
+								Type: &PointerType{
+									NodeBase: NodeBase{Span: NodeSpan{12, 16}},
+									ValueType: &PatternIdentifierLiteral{
+										NodeBase:   NodeBase{NodeSpan{13, 16}, nil, false},
+										Unprefixed: true,
+										Name:       "int",
+									},
+								},
+								Right: &NilLiteral{
+									NodeBase: NodeBase{Span: NodeSpan{19, 22}},
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
 		t.Run("as a struct field's type", func(t *testing.T) {
 			n := mustparseChunk(t, "struct I{v *int}")
 			assert.EqualValues(t, &Chunk{

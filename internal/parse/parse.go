@@ -11872,7 +11872,7 @@ func isAcceptedReturnTypeStart(runes []rune, i int32) bool {
 }
 
 func isAcceptedFirstVariableTypeAnnotationChar(r rune) bool {
-	return r == '%' || r == '#' || IsFirstIdentChar(r) || isOpeningDelim(r)
+	return r == '%' || r == '#' || r == '*' || IsFirstIdentChar(r) || isOpeningDelim(r)
 }
 
 func IsAnyVariableIdentifier(node Node) bool {
