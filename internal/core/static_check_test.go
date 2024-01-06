@@ -4400,6 +4400,30 @@ func TestCheck(t *testing.T) {
 			)
 			assert.Equal(t, expectedErr, err)
 		})
+
+		t.Run("allowed as declaration type of local variable", func(t *testing.T) {
+			n, src := mustParseCode(`
+				struct MyStruct { }
+				var s *MyStruct = nil
+			`)
+
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
+		t.Run("not allowed as declaration type of global variable", func(t *testing.T) {
+			n, src, _ := parseCode(`
+				struct MyStruct { }
+				globalvar s *MyStruct
+			`)
+
+			pointerType := parse.FindNode(n, (*parse.PointerType)(nil), nil)
+
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(pointerType, src, MISPLACED_POINTER_TYPE),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
 	})
 
 	t.Run("dereference expression", func(t *testing.T) {
@@ -4419,6 +4443,36 @@ func TestCheck(t *testing.T) {
 			n, src := mustParseCode(`
 				struct MyStruct { }
 				%{a: MyStruct}
+			`)
+
+			patternIdentLiteral := parse.FindNodes(n, (*parse.PatternIdentifierLiteral)(nil), nil)[1]
+
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(patternIdentLiteral, src, MISPLACED_STRUCT_TYPE_NAME),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("not allowed as declaration type of local variable", func(t *testing.T) {
+			n, src, _ := parseCode(`
+				struct MyStruct { }
+				var s MyStruct
+			`)
+
+			patternIdentLiteral := parse.FindNodes(n, (*parse.PatternIdentifierLiteral)(nil), nil)[1]
+
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(patternIdentLiteral, src, MISPLACED_STRUCT_TYPE_NAME),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("not allowed as declaration type of global variable", func(t *testing.T) {
+			n, src, _ := parseCode(`
+				struct MyStruct { }
+				var s MyStruct
 			`)
 
 			patternIdentLiteral := parse.FindNodes(n, (*parse.PatternIdentifierLiteral)(nil), nil)[1]

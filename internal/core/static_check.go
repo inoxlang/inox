@@ -2137,6 +2137,10 @@ top_switch:
 				if node != parent.ReturnType {
 					c.addError(node, MISPLACED_POINTER_TYPE)
 				}
+			case *parse.LocalVariableDeclaration:
+				if node != parent.Type {
+					c.addError(node, MISPLACED_POINTER_TYPE)
+				}
 			default:
 				c.addError(node, MISPLACED_POINTER_TYPE)
 			}
