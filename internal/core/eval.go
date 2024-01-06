@@ -29,7 +29,6 @@ var (
 	ERROR_INTERFACE_TYPE                 = reflect.TypeOf((*error)(nil)).Elem()
 	READABLE_INTERFACE_TYPE              = reflect.TypeOf((*Readable)(nil)).Elem()
 	RESOURCE_NAME_INTERFACE_TYPE         = reflect.TypeOf((*ResourceName)(nil)).Elem()
-	STRLIKE_INTERFACE_TYPE               = reflect.TypeOf((*StringLike)(nil)).Elem()
 	PATTERN_INTERFACE_TYPE               = reflect.TypeOf((*Pattern)(nil)).Elem()
 	ITERABLE_INTERFACE_TYPE              = reflect.TypeOf((*Iterable)(nil)).Elem()
 	SERIALIZABLE_ITERABLE_INTERFACE_TYPE = reflect.TypeOf((*SerializableIterable)(nil)).Elem()

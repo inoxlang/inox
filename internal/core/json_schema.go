@@ -17,7 +17,7 @@ var (
 	ErrJSONSchemaMixingIntFloatNotSupported = errors.New("JSON schemas mixing integers and floats are not supported")
 
 	JSON_SCHEMA_TYPE_TO_PATTERN = map[string]Pattern{
-		"string":  STRLIKE_PATTERN,
+		"string":  STR_PATTERN,
 		"number":  FLOAT_PATTERN,
 		"integer": INT_PATTERN,
 		"object":  OBJECT_PATTERN,
@@ -494,7 +494,7 @@ func convertJsonSchemaToPattern(schema *jsonschema.Schema, baseSchema *jsonschem
 			if hasLengthRange {
 				pattern = NewLengthCheckingStringPattern(lengthRange.start, lengthRange.InclusiveEnd())
 			} else {
-				pattern = STRLIKE_PATTERN
+				pattern = STR_PATTERN
 			}
 		}
 
@@ -732,7 +732,7 @@ func convertJsonSchemaToPattern(schema *jsonschema.Schema, baseSchema *jsonschem
 				unionCases = append(unionCases, NewDifferencePattern(ANYVAL_PATTERN, FLOAT_PATTERN))
 				return NewDisjointUnionPattern(unionCases, nil), nil
 			} else if ignoreNonString {
-				unionCases = append(unionCases, NewDifferencePattern(ANYVAL_PATTERN, STRLIKE_PATTERN))
+				unionCases = append(unionCases, NewDifferencePattern(ANYVAL_PATTERN, STR_PATTERN))
 				return NewDisjointUnionPattern(unionCases, nil), nil
 			}
 		}

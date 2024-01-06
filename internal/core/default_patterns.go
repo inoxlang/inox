@@ -139,14 +139,14 @@ var (
 			return symbolic.ANY_STR_PATTERN, true
 		},
 	}
+	STRING_PATTERN = &TypePattern{
+		Type:          STR_TYPE,
+		Name:          "string",
+		SymbolicValue: symbolic.ANY_STR,
+	}
 	STR_PATTERN = &TypePattern{
 		Type:          STR_LIKE_INTERFACE_TYPE,
 		Name:          "str",
-		SymbolicValue: symbolic.ANY_STR_LIKE,
-	}
-	STRLIKE_PATTERN = &TypePattern{
-		Type:          STRLIKE_INTERFACE_TYPE,
-		Name:          "strlike",
 		SymbolicValue: symbolic.ANY_STR_LIKE,
 	}
 	URL_PATTERN = &TypePattern{
@@ -818,14 +818,14 @@ var (
 	UUIDv4_STRING_PATTERN = NewParserBasePattern(&uuidv4Parser{})
 
 	DEFAULT_NAMED_PATTERNS = map[string]Pattern{
-		NEVER_PATTERN.Name:    NEVER_PATTERN,
-		NIL_PATTERN.Name:      NIL_PATTERN,
-		IDENT_PATTERN.Name:    IDENT_PATTERN,
-		PROPNAME_PATTERN.Name: PROPNAME_PATTERN,
-		RUNE_PATTERN.Name:     RUNE_PATTERN,
-		BYTE_PATTERN.Name:     BYTE_PATTERN,
-		STR_PATTERN.Name:      STR_PATTERN,
-		//STRLIKE_PATTERN.Name:               STRLIKE_PATTERN,
+		NEVER_PATTERN.Name:        NEVER_PATTERN,
+		NIL_PATTERN.Name:          NIL_PATTERN,
+		IDENT_PATTERN.Name:        IDENT_PATTERN,
+		PROPNAME_PATTERN.Name:     PROPNAME_PATTERN,
+		RUNE_PATTERN.Name:         RUNE_PATTERN,
+		BYTE_PATTERN.Name:         BYTE_PATTERN,
+		STRING_PATTERN.Name:       STRING_PATTERN,
+		STR_PATTERN.Name:          STR_PATTERN,
 		PATH_PATTERN.Name:         PATH_PATTERN,
 		URL_PATTERN.Name:          URL_PATTERN,
 		SCHEME_PATTERN.Name:       SCHEME_PATTERN,

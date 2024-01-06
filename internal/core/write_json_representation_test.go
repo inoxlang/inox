@@ -115,7 +115,7 @@ func TestStrJSONRepresentation(t *testing.T) {
 		Pattern: STR_PATTERN,
 	}))
 	assert.Equal(t, expectedRepr, getJSONRepr(t, s, ctx, JSONSerializationConfig{
-		Pattern: STRLIKE_PATTERN,
+		Pattern: STR_PATTERN,
 	}))
 }
 

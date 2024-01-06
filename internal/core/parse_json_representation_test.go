@@ -674,7 +674,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		t.Run("integers & strings", func(t *testing.T) {
-			pattern := NewUnionPattern([]Pattern{INT_PATTERN, STRLIKE_PATTERN}, nil)
+			pattern := NewUnionPattern([]Pattern{INT_PATTERN, STR_PATTERN}, nil)
 
 			val, err := ParseJSONRepresentation(ctx, `1`, pattern)
 			if !assert.NoError(t, err) {
@@ -765,7 +765,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		t.Run("integers & strings", func(t *testing.T) {
-			pattern1 := NewUnionPattern([]Pattern{INT_PATTERN, STRLIKE_PATTERN}, nil)
+			pattern1 := NewUnionPattern([]Pattern{INT_PATTERN, STR_PATTERN}, nil)
 
 			val, err := ParseJSONRepresentation(ctx, `1`, pattern1)
 			if !assert.NoError(t, err) {

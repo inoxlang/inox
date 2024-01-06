@@ -193,7 +193,7 @@ func ParseNextJSONRepresentation(ctx *Context, it *jsoniter.Iterator, pattern Pa
 				return nil, ErrJsonNotMatchingSchema
 			}
 			return Nil, nil
-		case STR_PATTERN, STRLIKE_PATTERN:
+		case STR_PATTERN, STRING_PATTERN:
 			if it.WhatIsNext() != jsoniter.StringValue {
 				if try {
 					return nil, ErrTriedToParseJSONRepr
@@ -952,7 +952,7 @@ func parseListJSONrepresentation(ctx *Context, it *jsoniter.Iterator, pattern *L
 				return
 			}
 			return NewWrappedBoolList(elements...), nil
-		} else if _, ok := generalElementPattern.(StringPattern); ok || generalElementPattern == STRLIKE_PATTERN || generalElementPattern == STR_PATTERN {
+		} else if _, ok := generalElementPattern.(StringPattern); ok || generalElementPattern == STRING_PATTERN || generalElementPattern == STR_PATTERN {
 			elements := parseSameTypeListJSONRepr[StringLike](ctx, it, pattern, try, &finalErr)
 			if finalErr != nil {
 				return nil, finalErr

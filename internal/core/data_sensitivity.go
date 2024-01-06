@@ -5,19 +5,19 @@ var (
 		patterns []Pattern
 	}{
 		"password": {
-			patterns: []Pattern{STRLIKE_PATTERN, BYTESLICE_PATTERN},
+			patterns: []Pattern{STR_PATTERN, BYTESLICE_PATTERN},
 		},
 		"passwordHash": {
-			patterns: []Pattern{STRLIKE_PATTERN, BYTESLICE_PATTERN},
+			patterns: []Pattern{STR_PATTERN, BYTESLICE_PATTERN},
 		},
 		"email": {
-			patterns: []Pattern{STRLIKE_PATTERN},
+			patterns: []Pattern{STR_PATTERN},
 		},
 		"emailAddress": {
-			patterns: []Pattern{STRLIKE_PATTERN},
+			patterns: []Pattern{STR_PATTERN},
 		},
 		"address": {
-			patterns: []Pattern{STRLIKE_PATTERN},
+			patterns: []Pattern{STR_PATTERN},
 		},
 		"age":    {},
 		"gender": {},

@@ -10424,7 +10424,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 				isProperlyInitialized.Store(true)
 			}))
-			state.Ctx.AddNamedPattern("str", STRLIKE_PATTERN)
+			state.Ctx.AddNamedPattern("str", STR_PATTERN)
 
 			defer state.Ctx.CancelGracefully()
 
@@ -10539,7 +10539,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 				isProperlyInitialized.Store(true)
 			}))
-			state.Ctx.AddNamedPattern("str", STRLIKE_PATTERN)
+			state.Ctx.AddNamedPattern("str", STR_PATTERN)
 
 			defer state.Ctx.CancelGracefully()
 
