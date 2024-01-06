@@ -28310,6 +28310,29 @@ func testParse(
 			}, n)
 		})
 
+		t.Run("as return type", func(t *testing.T) {
+			n := mustparseChunk(t, "fn() *int {}")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 12}, nil, false},
+				Statements: []Node{
+					&FunctionExpression{
+						NodeBase: NodeBase{Span: NodeSpan{0, 12}},
+						ReturnType: &PointerType{
+							NodeBase: NodeBase{NodeSpan{5, 9}, nil, false},
+							ValueType: &PatternIdentifierLiteral{
+								NodeBase:   NodeBase{NodeSpan{6, 9}, nil, false},
+								Unprefixed: true,
+								Name:       "int",
+							},
+						},
+						Body: &Block{
+							NodeBase: NodeBase{Span: NodeSpan{10, 12}},
+						},
+					},
+				},
+			}, n)
+		})
+
 		t.Run("as a struct field's type", func(t *testing.T) {
 			n := mustparseChunk(t, "struct I{v *int}")
 			assert.EqualValues(t, &Chunk{
@@ -28349,19 +28372,37 @@ func testParse(
 	})
 
 	t.Run("dereference expression", func(t *testing.T) {
-		n := mustparseChunk(t, "*x")
-		assert.EqualValues(t, &Chunk{
-			NodeBase: NodeBase{NodeSpan{0, 2}, nil, false},
-			Statements: []Node{
-				&DereferenceExpression{
-					NodeBase: NodeBase{NodeSpan{0, 2}, nil, false},
-					Pointer: &IdentifierLiteral{
-						NodeBase: NodeBase{NodeSpan{1, 2}, nil, false},
-						Name:     "x",
+		t.Run("base case", func(t *testing.T) {
+			n := mustparseChunk(t, "*x")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 2}, nil, false},
+				Statements: []Node{
+					&DereferenceExpression{
+						NodeBase: NodeBase{NodeSpan{0, 2}, nil, false},
+						Pointer: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{1, 2}, nil, false},
+							Name:     "x",
+						},
 					},
 				},
-			},
-		}, n)
+			}, n)
+		})
+
+		t.Run("parenthsized", func(t *testing.T) {
+			n := mustparseChunk(t, "(*x)")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 4}, nil, false},
+				Statements: []Node{
+					&DereferenceExpression{
+						NodeBase: NodeBase{NodeSpan{1, 3}, nil, true},
+						Pointer: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{2, 3}, nil, false},
+							Name:     "x",
+						},
+					},
+				},
+			}, n)
+		})
 	})
 }
 
