@@ -1808,12 +1808,12 @@ func (FunctionPatternExpression) Kind() NodeKind {
 
 type StructDefinition struct {
 	NodeBase
-	Name Node //*IdentifierLiteral
+	Name Node //*PatternIdentifierLiteral
 	Body *StructBody
 }
 
 func (d *StructDefinition) GetName() (string, bool) {
-	ident, ok := d.Name.(*IdentifierLiteral)
+	ident, ok := d.Name.(*PatternIdentifierLiteral)
 	if ok {
 		return ident.Name, true
 	}
@@ -1846,6 +1846,16 @@ type StructFieldInitialization struct {
 	NodeBase
 	Name  *IdentifierLiteral
 	Value Node
+}
+
+type PointerType struct {
+	NodeBase
+	ValueType Node
+}
+
+type DereferenceExpression struct {
+	NodeBase
+	Pointer Node
 }
 
 type PatternConversionExpression struct {
@@ -2588,6 +2598,10 @@ func walk(node, parent Node, ancestorChain *[]Node, fn, afterFn NodeHandler) {
 	case *StructFieldInitialization:
 		walk(n.Name, node, ancestorChain, fn, afterFn)
 		walk(n.Value, node, ancestorChain, fn, afterFn)
+	case *PointerType:
+		walk(n.ValueType, node, ancestorChain, fn, afterFn)
+	case *DereferenceExpression:
+		walk(n.Pointer, node, ancestorChain, fn, afterFn)
 	case *PatternConversionExpression:
 		walk(n.Value, node, ancestorChain, fn, afterFn)
 	case *GlobalConstantDeclarations:

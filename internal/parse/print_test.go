@@ -488,6 +488,12 @@ func TestPrint(t *testing.T) {
 		"new Lexer {",
 		"new Lexer {index: 0}",
 		"new Lexer {index: 0",
+		//pointer types
+		"fn(x *x){}",
+		"fn(l *Lexer){}",
+		//dereference expressions
+		"*x",
+		"*xy",
 		//others
 		"@(1)",
 	}

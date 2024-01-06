@@ -1230,7 +1230,8 @@ func (p *parser) parseDotStartingExpression() Node {
 	}
 }
 
-// parseDashStartingExpression parses all expressions that start with a dash: numbers, numbers ranges, options and unquoted strings
+// parseDashStartingExpression parses all expressions that start with a dash: numbers, numbers ranges, options, unquoted strings
+// and number negations (unary expressions).
 func (p *parser) parseDashStartingExpression(precededByOpeningParen bool) Node {
 	p.panicIfContextDone()
 
@@ -6753,6 +6754,24 @@ func (p *parser) parseExpression(precededByOpeningParen ...bool) (expr Node, isM
 		}, false
 	case '@':
 		return p.parseLazyAndHostAliasStuff(), false
+	case '*':
+		start := p.i
+		p.tokens = append(p.tokens, Token{Type: ASTERISK, Span: NodeSpan{p.i, p.i + 1}})
+		p.i++
+
+		if p.inPattern {
+			typ, _ := p.parseExpression()
+			return &PointerType{
+				NodeBase:  NodeBase{Span: NodeSpan{start, typ.Base().Span.End}},
+				ValueType: typ,
+			}, false
+		} else {
+			pointer, _ := p.parseExpression()
+			return &DereferenceExpression{
+				NodeBase: NodeBase{Span: NodeSpan{start, pointer.Base().Span.End}},
+				Pointer:  pointer,
+			}, false
+		}
 	case '%':
 		patt := p.parsePercentPrefixedPattern(len(precededByOpeningParen) > 0 && precededByOpeningParen[0])
 
@@ -11038,13 +11057,21 @@ func (p *parser) parseStructDefinition(extendIdent *IdentifierLiteral) *StructDe
 		return def
 	}
 
-	def.Name, _ = p.parseExpression()
-	def.NodeBase.Span.End = def.Name.Base().Span.End
-
-	if _, ok := def.Name.(*IdentifierLiteral); !ok {
-		def.Err = &ParsingError{UnspecifiedParsingError, A_NAME_WAS_EXPECTED}
-		return def
+	name := &PatternIdentifierLiteral{
+		NodeBase:   NodeBase{Span: NodeSpan{p.i, p.i + 1}},
+		Unprefixed: true,
 	}
+
+	nameStart := p.i
+	for p.i < p.len && isAlphaOrUndescore(p.s[p.i]) {
+		p.i++
+		name.Span.End = p.i
+	}
+
+	name.Name = string(p.s[nameStart:p.i])
+
+	def.Name = name
+	def.NodeBase.Span.End = def.Name.Base().Span.End
 
 	p.eatSpace()
 

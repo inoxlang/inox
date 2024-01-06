@@ -27742,9 +27742,10 @@ func testParse(
 				Statements: []Node{
 					&StructDefinition{
 						NodeBase: NodeBase{NodeSpan{0, 15}, nil, false},
-						Name: &IdentifierLiteral{
-							NodeBase: NodeBase{Span: NodeSpan{7, 12}},
-							Name:     "Lexer",
+						Name: &PatternIdentifierLiteral{
+							NodeBase:   NodeBase{Span: NodeSpan{7, 12}},
+							Name:       "Lexer",
+							Unprefixed: true,
 						},
 						Body: &StructBody{
 							NodeBase: NodeBase{Span: NodeSpan{13, 15}},
@@ -27763,9 +27764,10 @@ func testParse(
 						NodeBase: NodeBase{
 							NodeSpan{0, 17}, nil, false,
 						},
-						Name: &IdentifierLiteral{
-							NodeBase: NodeBase{Span: NodeSpan{7, 12}},
-							Name:     "Lexer",
+						Name: &PatternIdentifierLiteral{
+							NodeBase:   NodeBase{Span: NodeSpan{7, 12}},
+							Name:       "Lexer",
+							Unprefixed: true,
 						},
 						Body: &StructBody{
 							NodeBase: NodeBase{Span: NodeSpan{13, 17}},
@@ -27787,9 +27789,10 @@ func testParse(
 							&ParsingError{UnterminatedStructDefinition, UNTERMINATED_STRUCT_BODY_MISSING_CLOSING_BRACE},
 							false,
 						},
-						Name: &IdentifierLiteral{
-							NodeBase: NodeBase{Span: NodeSpan{7, 12}},
-							Name:     "Lexer",
+						Name: &PatternIdentifierLiteral{
+							NodeBase:   NodeBase{Span: NodeSpan{7, 12}},
+							Name:       "Lexer",
+							Unprefixed: true,
 						},
 						Body: &StructBody{
 							NodeBase: NodeBase{Span: NodeSpan{13, 14}},
@@ -27806,9 +27809,10 @@ func testParse(
 				Statements: []Node{
 					&StructDefinition{
 						NodeBase: NodeBase{Span: NodeSpan{0, 26}},
-						Name: &IdentifierLiteral{
-							NodeBase: NodeBase{Span: NodeSpan{7, 12}},
-							Name:     "Lexer",
+						Name: &PatternIdentifierLiteral{
+							NodeBase:   NodeBase{Span: NodeSpan{7, 12}},
+							Name:       "Lexer",
+							Unprefixed: true,
 						},
 						Body: &StructBody{
 							NodeBase: NodeBase{Span: NodeSpan{13, 26}},
@@ -27844,9 +27848,10 @@ func testParse(
 							&ParsingError{UnterminatedStructDefinition, UNTERMINATED_STRUCT_BODY_MISSING_CLOSING_BRACE},
 							false,
 						},
-						Name: &IdentifierLiteral{
-							NodeBase: NodeBase{Span: NodeSpan{7, 12}},
-							Name:     "Lexer",
+						Name: &PatternIdentifierLiteral{
+							NodeBase:   NodeBase{Span: NodeSpan{7, 12}},
+							Name:       "Lexer",
+							Unprefixed: true,
 						},
 						Body: &StructBody{
 							NodeBase: NodeBase{Span: NodeSpan{13, 24}},
@@ -27877,9 +27882,10 @@ func testParse(
 				Statements: []Node{
 					&StructDefinition{
 						NodeBase: NodeBase{Span: NodeSpan{0, 28}},
-						Name: &IdentifierLiteral{
-							NodeBase: NodeBase{Span: NodeSpan{7, 12}},
-							Name:     "Lexer",
+						Name: &PatternIdentifierLiteral{
+							NodeBase:   NodeBase{Span: NodeSpan{7, 12}},
+							Name:       "Lexer",
+							Unprefixed: true,
 						},
 						Body: &StructBody{
 							NodeBase: NodeBase{Span: NodeSpan{13, 28}},
@@ -27912,9 +27918,10 @@ func testParse(
 				Statements: []Node{
 					&StructDefinition{
 						NodeBase: NodeBase{Span: NodeSpan{0, 16}},
-						Name: &IdentifierLiteral{
-							NodeBase: NodeBase{Span: NodeSpan{7, 12}},
-							Name:     "Lexer",
+						Name: &PatternIdentifierLiteral{
+							NodeBase:   NodeBase{Span: NodeSpan{7, 12}},
+							Name:       "Lexer",
+							Unprefixed: true,
 						},
 						Body: &StructBody{
 							NodeBase: NodeBase{Span: NodeSpan{13, 16}},
@@ -27941,9 +27948,10 @@ func testParse(
 				Statements: []Node{
 					&StructDefinition{
 						NodeBase: NodeBase{Span: NodeSpan{0, 26}},
-						Name: &IdentifierLiteral{
-							NodeBase: NodeBase{Span: NodeSpan{7, 12}},
-							Name:     "Lexer",
+						Name: &PatternIdentifierLiteral{
+							NodeBase:   NodeBase{Span: NodeSpan{7, 12}},
+							Name:       "Lexer",
+							Unprefixed: true,
 						},
 						Body: &StructBody{
 							NodeBase: NodeBase{Span: NodeSpan{13, 26}},
@@ -27986,9 +27994,10 @@ func testParse(
 							&ParsingError{UnterminatedStructDefinition, UNTERMINATED_STRUCT_DEF_MISSING_BODY},
 							false,
 						},
-						Name: &IdentifierLiteral{
-							NodeBase: NodeBase{Span: NodeSpan{7, 12}},
-							Name:     "Lexer",
+						Name: &PatternIdentifierLiteral{
+							NodeBase:   NodeBase{Span: NodeSpan{7, 12}},
+							Name:       "Lexer",
+							Unprefixed: true,
 						},
 					},
 				},
@@ -28007,9 +28016,10 @@ func testParse(
 							&ParsingError{UnterminatedStructDefinition, UNTERMINATED_STRUCT_DEF_MISSING_BODY},
 							false,
 						},
-						Name: &IdentifierLiteral{
-							NodeBase: NodeBase{Span: NodeSpan{7, 12}},
-							Name:     "Lexer",
+						Name: &PatternIdentifierLiteral{
+							NodeBase:   NodeBase{Span: NodeSpan{7, 12}},
+							Name:       "Lexer",
+							Unprefixed: true,
 						},
 					},
 				},
@@ -28240,6 +28250,118 @@ func testParse(
 				},
 			}, n)
 		})
+	})
+
+	t.Run("pointer type", func(t *testing.T) {
+		t.Run("in pattern definition", func(t *testing.T) {
+			n := mustparseChunk(t, "pattern p = *Lexer")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 18}, nil, false},
+				Statements: []Node{
+					&PatternDefinition{
+						NodeBase: NodeBase{Span: NodeSpan{0, 18}},
+						Left: &PatternIdentifierLiteral{
+							NodeBase:   NodeBase{NodeSpan{8, 9}, nil, false},
+							Name:       "p",
+							Unprefixed: true,
+						},
+						Right: &PointerType{
+							NodeBase: NodeBase{NodeSpan{12, 18}, nil, false},
+							ValueType: &PatternIdentifierLiteral{
+								NodeBase:   NodeBase{NodeSpan{13, 18}, nil, false},
+								Unprefixed: true,
+								Name:       "Lexer",
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("as parameter type", func(t *testing.T) {
+			n := mustparseChunk(t, "fn(x *int){}")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 12}, nil, false},
+				Statements: []Node{
+					&FunctionExpression{
+						NodeBase: NodeBase{Span: NodeSpan{0, 12}},
+						Parameters: []*FunctionParameter{
+							{
+								NodeBase: NodeBase{Span: NodeSpan{3, 9}},
+								Var: &IdentifierLiteral{
+									NodeBase: NodeBase{Span: NodeSpan{3, 4}},
+									Name:     "x",
+								},
+								Type: &PointerType{
+									NodeBase: NodeBase{NodeSpan{5, 9}, nil, false},
+									ValueType: &PatternIdentifierLiteral{
+										NodeBase:   NodeBase{NodeSpan{6, 9}, nil, false},
+										Unprefixed: true,
+										Name:       "int",
+									},
+								},
+							},
+						},
+						Body: &Block{
+							NodeBase: NodeBase{Span: NodeSpan{10, 12}},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("as a struct field's type", func(t *testing.T) {
+			n := mustparseChunk(t, "struct I{v *int}")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 16}, nil, false},
+				Statements: []Node{
+					&StructDefinition{
+						NodeBase: NodeBase{Span: NodeSpan{0, 16}},
+						Name: &PatternIdentifierLiteral{
+							NodeBase:   NodeBase{Span: NodeSpan{7, 8}},
+							Unprefixed: true,
+							Name:       "I",
+						},
+						Body: &StructBody{
+							NodeBase: NodeBase{Span: NodeSpan{8, 16}},
+							Definitions: []Node{
+								&StructFieldDefinition{
+									NodeBase: NodeBase{Span: NodeSpan{9, 15}},
+									Name: &IdentifierLiteral{
+										NodeBase: NodeBase{Span: NodeSpan{9, 10}},
+										Name:     "v",
+									},
+									Type: &PointerType{
+										NodeBase: NodeBase{NodeSpan{11, 15}, nil, false},
+										ValueType: &PatternIdentifierLiteral{
+											NodeBase:   NodeBase{NodeSpan{12, 15}, nil, false},
+											Unprefixed: true,
+											Name:       "int",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+	})
+
+	t.Run("dereference expression", func(t *testing.T) {
+		n := mustparseChunk(t, "*x")
+		assert.EqualValues(t, &Chunk{
+			NodeBase: NodeBase{NodeSpan{0, 2}, nil, false},
+			Statements: []Node{
+				&DereferenceExpression{
+					NodeBase: NodeBase{NodeSpan{0, 2}, nil, false},
+					Pointer: &IdentifierLiteral{
+						NodeBase: NodeBase{NodeSpan{1, 2}, nil, false},
+						Name:     "x",
+					},
+				},
+			},
+		}, n)
 	})
 }
 
