@@ -319,6 +319,10 @@ func fmtInvalidStructDefAlreadyDeclared(name string) string {
 	return fmt.Sprintf("invalid struct definition: %s is already declared", name)
 }
 
+func fmtAnXFieldOrMethodIsAlreadyDefined(name string) string {
+	return fmt.Sprintf("a field or method named '%s' is already defined ", name)
+}
+
 func fmtHostAliasAlreadyDeclared(name string) string {
 	return fmt.Sprintf("host alias @%s is already declared", name)
 }

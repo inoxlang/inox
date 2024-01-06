@@ -3931,10 +3931,9 @@ func TestCheck(t *testing.T) {
 				}
 			`)
 
-			globals := GlobalVariablesFromMap(map[string]Value{}, nil)
 			def := parse.FindNode(n, (*parse.StructDefinition)(nil), nil)
 
-			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src, Globals: globals})
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
 				makeError(def, src, MISPLACED_STRUCT_DEF_TOP_LEVEL_STMT),
 			)
@@ -3948,10 +3947,9 @@ func TestCheck(t *testing.T) {
 				}
 			`)
 
-			globals := GlobalVariablesFromMap(map[string]Value{}, nil)
 			def := parse.FindNode(n, (*parse.StructDefinition)(nil), nil)
 
-			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src, Globals: globals})
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
 				makeError(def, src, MISPLACED_STRUCT_DEF_TOP_LEVEL_STMT),
 			)
@@ -3966,13 +3964,12 @@ func TestCheck(t *testing.T) {
 				}
 			`)
 
-			globals := GlobalVariablesFromMap(map[string]Value{}, nil)
 			def := parse.FindNode(n, (*parse.StructDefinition)(nil), nil)
 			ident := parse.FindNode(def, (*parse.IdentifierLiteral)(nil), func(n *parse.IdentifierLiteral, isUnique bool) bool {
 				return n.Name == "a"
 			})
 
-			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src, Globals: globals})
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
 				makeError(ident, src, VARS_CANNOT_BE_USED_IN_STRUCT_FIELD_DEFS),
 			)
@@ -3987,13 +3984,12 @@ func TestCheck(t *testing.T) {
 				}
 			`)
 
-			globals := GlobalVariablesFromMap(map[string]Value{}, nil)
 			def := parse.FindNode(n, (*parse.StructDefinition)(nil), nil)
 			ident := parse.FindNode(def, (*parse.IdentifierLiteral)(nil), func(n *parse.IdentifierLiteral, isUnique bool) bool {
 				return n.Name == "a"
 			})
 
-			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src, Globals: globals})
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
 				makeError(ident, src, VARS_CANNOT_BE_USED_IN_STRUCT_FIELD_DEFS),
 			)
@@ -4008,13 +4004,12 @@ func TestCheck(t *testing.T) {
 				}
 			`)
 
-			globals := GlobalVariablesFromMap(map[string]Value{}, nil)
 			def := parse.FindNode(n, (*parse.StructDefinition)(nil), nil)
 			globalVar := parse.FindNode(def, (*parse.GlobalVariable)(nil), func(n *parse.GlobalVariable, isUnique bool) bool {
 				return n.Name == "a"
 			})
 
-			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src, Globals: globals})
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
 				makeError(globalVar, src, VARS_CANNOT_BE_USED_IN_STRUCT_FIELD_DEFS),
 			)
@@ -4029,13 +4024,12 @@ func TestCheck(t *testing.T) {
 				}
 			`)
 
-			globals := GlobalVariablesFromMap(map[string]Value{}, nil)
 			def := parse.FindNode(n, (*parse.StructDefinition)(nil), nil)
 			variable := parse.FindNode(def, (*parse.Variable)(nil), func(n *parse.Variable, isUnique bool) bool {
 				return n.Name == "a"
 			})
 
-			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src, Globals: globals})
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
 				makeError(variable, src, VARS_CANNOT_BE_USED_IN_STRUCT_FIELD_DEFS),
 			)
@@ -4049,11 +4043,10 @@ func TestCheck(t *testing.T) {
 				}
 			`)
 
-			globals := GlobalVariablesFromMap(map[string]Value{}, nil)
 			def := parse.FindNode(n, (*parse.StructDefinition)(nil), nil)
 			selfExpr := parse.FindNode(def, (*parse.SelfExpression)(nil), nil)
 
-			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src, Globals: globals})
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
 				makeError(selfExpr, src, SELF_ACCESSIBILITY_EXPLANATION),
 			)
@@ -4069,11 +4062,10 @@ func TestCheck(t *testing.T) {
 				}
 			`)
 
-			globals := GlobalVariablesFromMap(map[string]Value{}, nil)
 			def := parse.FindNode(n, (*parse.StructDefinition)(nil), nil)
 			sendValExpr := parse.FindNode(def, (*parse.SendValueExpression)(nil), nil)
 
-			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src, Globals: globals})
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
 				makeError(sendValExpr, src, MISPLACED_SENDVAL_EXPR),
 			)
@@ -4089,8 +4081,7 @@ func TestCheck(t *testing.T) {
 				}
 			`)
 
-			globals := GlobalVariablesFromMap(map[string]Value{}, nil)
-			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src, Globals: globals}))
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 
 		t.Run("duplicate definition", func(t *testing.T) {
@@ -4103,10 +4094,9 @@ func TestCheck(t *testing.T) {
 				}
 			`)
 
-			globals := GlobalVariablesFromMap(map[string]Value{}, nil)
 			duplicateDef := parse.FindNodes(n, (*parse.StructDefinition)(nil), nil)[1]
 
-			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src, Globals: globals})
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
 				makeError(duplicateDef.Name, src, fmtInvalidStructDefAlreadyDeclared("MyStruct")),
 			)
@@ -4178,6 +4168,91 @@ func TestCheck(t *testing.T) {
 			`)
 
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
+		t.Run("duplicate field definition", func(t *testing.T) {
+			n, src := mustParseCode(`
+				struct MyStruct {
+					a int
+					a bool
+				}
+			`)
+
+			secondStructDef := parse.FindNodes(n, (*parse.StructFieldDefinition)(nil), nil)[1]
+
+			err := staticCheckNoData(StaticCheckInput{
+				Node:     n,
+				Chunk:    src,
+				Patterns: map[string]Pattern{"int": INT_PATTERN, "bool": BOOL_PATTERN},
+			})
+			expectedErr := utils.CombineErrors(
+				makeError(secondStructDef.Name, src, fmtAnXFieldOrMethodIsAlreadyDefined("a")),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("duplicate method definition", func(t *testing.T) {
+			n, src := mustParseCode(`
+				struct MyStruct {
+					fn m(){
+
+					}
+
+					fn m(){
+
+					}
+				}
+			`)
+
+			secondMethodDecl := parse.FindNodes(n, (*parse.FunctionDeclaration)(nil), nil)[1]
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+
+			expectedErr := utils.CombineErrors(
+				makeError(secondMethodDecl.Name, src, fmtAnXFieldOrMethodIsAlreadyDefined("m")),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("method definition with name of field", func(t *testing.T) {
+			n, src := mustParseCode(`
+				struct MyStruct {
+					m int
+					fn m(){}
+				}
+			`)
+
+			methodDecl := parse.FindNode(n, (*parse.FunctionDeclaration)(nil), nil)
+			err := staticCheckNoData(StaticCheckInput{
+				Node:     n,
+				Chunk:    src,
+				Patterns: map[string]Pattern{"int": INT_PATTERN},
+			})
+
+			expectedErr := utils.CombineErrors(
+				makeError(methodDecl.Name, src, fmtAnXFieldOrMethodIsAlreadyDefined("m")),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("field definition with name of method", func(t *testing.T) {
+			n, src := mustParseCode(`
+				struct MyStruct {
+					fn m(){}
+					m int
+				}
+			`)
+
+			fieldDef := parse.FindNode(n, (*parse.StructFieldDefinition)(nil), nil)
+			err := staticCheckNoData(StaticCheckInput{
+				Node:     n,
+				Chunk:    src,
+				Patterns: map[string]Pattern{"int": INT_PATTERN},
+			})
+
+			expectedErr := utils.CombineErrors(
+				makeError(fieldDef.Name, src, fmtAnXFieldOrMethodIsAlreadyDefined("m")),
+			)
+			assert.Equal(t, expectedErr, err)
 		})
 	})
 

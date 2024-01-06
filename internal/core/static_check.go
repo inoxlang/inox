@@ -258,6 +258,35 @@ func (c *checker) defineStructs(closestModule parse.Node, statements []parse.Nod
 				defs[name] = 0
 			}
 		}
+
+		if structDef.Body == nil {
+			continue
+		}
+
+		//check for duplicate member definitions.
+		names := make([]string, 0, len(structDef.Body.Definitions))
+
+		for _, memberDefinition := range structDef.Body.Definitions {
+			name := ""
+			var nameNode parse.Node
+
+			switch def := memberDefinition.(type) {
+			case *parse.StructFieldDefinition:
+				name = def.Name.Name
+				nameNode = def.Name
+			case *parse.FunctionDeclaration:
+				name = def.Name.Name
+				nameNode = def.Name
+			default:
+				continue
+			}
+
+			if slices.Contains(names, name) {
+				c.addError(nameNode, fmtAnXFieldOrMethodIsAlreadyDefined(name))
+			} else {
+				names = append(names, name)
+			}
+		}
 	}
 }
 
@@ -2062,21 +2091,8 @@ top_switch:
 			c.addError(node, MISPLACED_STRUCT_DEF_TOP_LEVEL_STMT)
 			return parse.ContinueTraversal
 		}
-		if parent == closestModule {
-			//already defined.
-			return parse.ContinueTraversal
-		}
-
-		name, ok := node.GetName()
-		if ok {
-			defs := c.getModStructDefs(closestModule)
-			_, alreadyDefined := defs[name]
-			if alreadyDefined {
-				c.addError(node, fmtInvalidStructDefAlreadyDeclared(name))
-			} else {
-				defs[name] = 0
-			}
-		}
+		//already defined.
+		return parse.ContinueTraversal
 	case *parse.NewExpression:
 		typ := node.Type
 		switch t := typ.(type) {
