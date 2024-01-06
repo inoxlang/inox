@@ -97,6 +97,17 @@ func StaticCheck(input StaticCheckInput) (*StaticCheckData, error) {
 		},
 	}
 
+	if module != nil {
+		var statements []parse.Node
+		if chunk, ok := module.(*parse.Chunk); ok {
+			statements = chunk.Statements
+		} else {
+			statements = module.(*parse.EmbeddedModule).Statements
+		}
+
+		checker.defineStructs(module, statements)
+	}
+
 	err := checker.check(input.Node)
 	if err != nil {
 		return nil, err
@@ -216,6 +227,38 @@ func (checker *checker) getSourcePositionStack(node parse.Node) parse.SourcePosi
 
 func (checker *checker) addError(node parse.Node, s string) {
 	checker.data.errors = append(checker.data.errors, checker.makeCheckingError(node, s))
+}
+
+func (c *checker) defineStructs(closestModule parse.Node, statements []parse.Node) {
+
+	//Define structs from included chunks.
+	for _, stmt := range statements {
+		inclusionStmt, ok := stmt.(*parse.InclusionImportStatement)
+		if !ok {
+			continue
+		}
+		includedChunk := c.currentModule.InclusionStatementMap[inclusionStmt]
+		c.defineStructs(closestModule, includedChunk.Node.Statements)
+	}
+
+	//Define other structs.
+	for _, stmt := range statements {
+		structDef, ok := stmt.(*parse.StructDefinition)
+		if !ok {
+			continue
+		}
+
+		name, ok := structDef.GetName()
+		if ok {
+			defs := c.getModStructDefs(closestModule)
+			_, alreadyDefined := defs[name]
+			if alreadyDefined {
+				c.addError(structDef.Name, fmtInvalidStructDefAlreadyDeclared(name))
+			} else {
+				defs[name] = 0
+			}
+		}
+	}
 }
 
 func (checker *checker) check(node parse.Node) error {
@@ -791,6 +834,8 @@ top_switch:
 		for name, info := range globals {
 			embeddedModuleGlobals[name] = info
 		}
+
+		c.defineStructs(node.Module, node.Module.Statements)
 	case *parse.LifetimejobExpression:
 		lifetimeJobGlobals := c.getModGlobalVars(node.Module)
 
@@ -960,15 +1005,6 @@ top_switch:
 			}
 		}
 
-		for k, v := range chunkChecker.structDefs[includedChunk.Node] {
-			structDefs := c.getModStructDefs(closestModule)
-			if _, ok := structDefs[k]; ok {
-				// handled in next loop
-			} else {
-				structDefs[k] = v
-			}
-		}
-
 		for k, v := range chunkChecker.globalVars[includedChunk.Node] {
 			if c.checkInput.Globals.Has(k) {
 				continue
@@ -1098,6 +1134,7 @@ top_switch:
 			parentChecker:         c,
 			checkInput:            c.checkInput,
 			fnDecls:               make(map[parse.Node]map[string]int),
+			structDefs:            make(map[parse.Node]map[string]int),
 			globalVars:            globals,
 			localVars:             make(map[parse.Node]map[string]localVarInfo),
 			properties:            make(map[*parse.ObjectLiteral]*propertyInfo),
@@ -1944,15 +1981,59 @@ top_switch:
 			break top_switch
 		}
 
+		if def, ok := parent.(*parse.StructDefinition); ok && def.Name == node {
+			break top_switch
+		}
+
+		//Check if struct type.
+		stuctDefs := c.getModStructDefs(closestModule)
+		_, ok := stuctDefs[node.Name]
+		if ok {
+			//Check that the node is not misplaced.
+			errMsg := ""
+			switch parent := parent.(type) {
+			case *parse.PointerType, *parse.StructFieldDefinition, *parse.NewExpression:
+				//ok
+			case *parse.FunctionParameter:
+				errMsg = STRUCT_TYPES_NOT_ALLOWED_AS_PARAMETER_TYPES
+			case *parse.FunctionExpression:
+				if node == parent.ReturnType {
+					errMsg = STRUCT_TYPES_NOT_ALLOWED_AS_RETURN_TYPES
+				} else {
+					errMsg = MISPLACED_STRUCT_TYPE_NAME
+				}
+			default:
+				errMsg = MISPLACED_STRUCT_TYPE_NAME
+			}
+
+			if errMsg != "" {
+				c.addError(node, errMsg)
+			}
+
+			break top_switch
+		}
+
+		//Ignore the check if the pattern identifier refers to a pattern that is not yet defined.
+
 		for _, a := range ancestorChain {
 			if def, ok := a.(*parse.PatternDefinition); ok && def.IsLazy {
 				break top_switch
 			}
 		}
 
+		//Check that the pattern is declared.
+
+		name := node.Name
 		patterns := c.getModPatterns(closestModule)
-		if _, ok := patterns[node.Name]; !ok {
-			c.addError(node, fmtPatternIsNotDeclared(node.Name))
+		if _, ok := patterns[name]; !ok {
+			errMsg := ""
+			switch parent.(type) {
+			case *parse.PointerType, *parse.NewExpression:
+				errMsg = fmtStructTypeIsNotDefined(name)
+			default:
+				errMsg = fmtPatternIsNotDeclared(name)
+			}
+			c.addError(node, errMsg)
 		}
 	case *parse.RuntimeTypeCheckExpression:
 		switch p := parent.(type) {
@@ -1977,11 +2058,15 @@ top_switch:
 			return parse.ContinueTraversal
 		}
 	case *parse.StructDefinition:
-		if _, ok := parent.(*parse.Chunk); !ok {
+		if parent != closestModule {
 			c.addError(node, MISPLACED_STRUCT_DEF_TOP_LEVEL_STMT)
 			return parse.ContinueTraversal
-
 		}
+		if parent == closestModule {
+			//already defined.
+			return parse.ContinueTraversal
+		}
+
 		name, ok := node.GetName()
 		if ok {
 			defs := c.getModStructDefs(closestModule)
@@ -2023,6 +2108,26 @@ top_switch:
 				}
 			}
 		}
+	case *parse.PointerType:
+		_, ok := node.ValueType.(*parse.PatternIdentifierLiteral)
+		if !ok {
+			c.addError(node.ValueType, A_STRUCT_TYPE_IS_EXPECTED_AFTER_THE_STAR)
+		} else {
+			//Check that the node is not misplaced.
+			switch parent := parent.(type) {
+			case *parse.StructFieldDefinition, *parse.FunctionParameter:
+				//ok
+			case *parse.FunctionExpression:
+				if node != parent.ReturnType {
+					c.addError(node, MISPLACED_POINTER_TYPE)
+				}
+			default:
+				c.addError(node, MISPLACED_POINTER_TYPE)
+			}
+			break top_switch
+		}
+	case *parse.DereferenceExpression:
+		c.addError(node, "dereference expressions are not supported yet")
 	case *parse.TestSuiteExpression:
 		hasSubsuiteStmt := false
 		hasTestCaseStmt := false

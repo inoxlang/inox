@@ -139,6 +139,15 @@ const (
 
 	VARS_CANNOT_BE_USED_IN_STRUCT_FIELD_DEFS = "variables cannot be used in struct field definitions"
 
+	//struct types
+	MISPLACED_STRUCT_TYPE_NAME                  = "misplaced struct type name, note that struct types are not patterns and are not allowed inside patterns"
+	STRUCT_TYPES_NOT_ALLOWED_AS_PARAMETER_TYPES = "struct types are not allowed as parameter types, pointer types are allowed though"
+	STRUCT_TYPES_NOT_ALLOWED_AS_RETURN_TYPES    = "struct types are not allowed as return types, pointer types are allowed though"
+
+	//pointer types
+	A_STRUCT_TYPE_IS_EXPECTED_AFTER_THE_STAR = "a struct type is expected after '*'"
+	MISPLACED_POINTER_TYPE                   = "misplaced pointer type, note that pointer types are not patterns and are not allowed inside patterns"
+
 	//test suites & cases
 	TEST_CASES_NOT_ALLOWED_IF_SUBSUITES_ARE_PRESENT     = "test cases are not allowed if sub suites are presents"
 	TEST_CASE_STMTS_NOT_ALLOWED_OUTSIDE_OF_TEST_SUITES  = "test case statements are not allowed outside of test suites"

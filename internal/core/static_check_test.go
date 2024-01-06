@@ -4108,7 +4108,7 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src, Globals: globals})
 			expectedErr := utils.CombineErrors(
-				makeError(duplicateDef, src, fmtInvalidStructDefAlreadyDeclared("MyStruct")),
+				makeError(duplicateDef.Name, src, fmtInvalidStructDefAlreadyDeclared("MyStruct")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -4135,9 +4135,49 @@ func TestCheck(t *testing.T) {
 			duplicateDef := parse.FindNode(mod.MainChunk.Node, (*parse.StructDefinition)(nil), nil)
 
 			expectedErr := utils.CombineErrors(
-				makeError(duplicateDef, mod.MainChunk, fmtInvalidStructDefAlreadyDeclared("MyStruct")),
+				makeError(duplicateDef.Name, mod.MainChunk, fmtInvalidStructDefAlreadyDeclared("MyStruct")),
 			)
 			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("duplicate definition, first definition in included chunk, import after definition", func(t *testing.T) {
+			moduleName := "mymod.ix"
+			modpath := writeModuleAndIncludedFiles(t, moduleName, `
+				manifest {}
+				# The duplicate definition error should be located here 
+				# even if the definition is before the import.
+				struct MyStruct { 
+
+				}
+				import ./dep.ix
+			`, map[string]string{"./dep.ix": "includable-chunk\n struct MyStruct {}"})
+
+			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
+			assert.NoError(t, err)
+
+			err = staticCheckNoData(StaticCheckInput{
+				Module: mod,
+				Node:   mod.MainChunk.Node,
+				Chunk:  mod.MainChunk,
+			})
+
+			duplicateDef := parse.FindNode(mod.MainChunk.Node, (*parse.StructDefinition)(nil), nil)
+
+			expectedErr := utils.CombineErrors(
+				makeError(duplicateDef.Name, mod.MainChunk, fmtInvalidStructDefAlreadyDeclared("MyStruct")),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("same definition in embedded module", func(t *testing.T) {
+			n, src := mustParseCode(`
+				struct MyStruct {}
+				go do {
+					struct MyStruct {}
+				}
+			`)
+
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 	})
 
@@ -4148,8 +4188,27 @@ func TestCheck(t *testing.T) {
 				lexer = new Lexer
 			`)
 
-			globals := GlobalVariablesFromMap(map[string]Value{}, nil)
-			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src, Globals: globals}))
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
+		t.Run("before struct type definition", func(t *testing.T) {
+			n, src := mustParseCode(`
+				lexer = new Lexer
+				struct Lexer {}
+			`)
+
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
+		t.Run("in an embedded module", func(t *testing.T) {
+			n, src := mustParseCode(`
+				go do {
+					struct Lexer {}
+					lexer = new Lexer
+				}
+			`)
+
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 
 		t.Run("initialization", func(t *testing.T) {
@@ -4168,10 +4227,9 @@ func TestCheck(t *testing.T) {
 				lexer = new Lexer {index: 0, index: 1}
 			`)
 
-			globals := GlobalVariablesFromMap(map[string]Value{}, nil)
 			inits := parse.FindNodes(n, (*parse.StructFieldInitialization)(nil), nil)
 
-			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src, Globals: globals})
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
 				makeError(inits[1].Name, src, fmtDuplicateFieldName("index")),
 			)
@@ -4183,12 +4241,146 @@ func TestCheck(t *testing.T) {
 				lexer = new Lexer
 			`)
 
-			globals := GlobalVariablesFromMap(map[string]Value{}, nil)
 			newExpr := parse.FindNode(n, (*parse.NewExpression)(nil), nil)
 
-			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src, Globals: globals})
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
 				makeError(newExpr, src, fmtStructTypeIsNotDefined("Lexer")),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("undefined struct type in an embedded module", func(t *testing.T) {
+			n, src := mustParseCode(`
+				struct Lexer {}
+				go do {
+					lexer = new Lexer
+				}
+			`)
+
+			newExpr := parse.FindNode(n, (*parse.NewExpression)(nil), nil)
+
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(newExpr, src, fmtStructTypeIsNotDefined("Lexer")),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+	})
+
+	t.Run("pointer type", func(t *testing.T) {
+		t.Run("parameter, struct pointer", func(t *testing.T) {
+			n, src := mustParseCode(`
+				struct Int { value int }
+				fn ptr(i *Int){}
+			`)
+
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{
+				Node:     n,
+				Chunk:    src,
+				Patterns: map[string]Pattern{"int": INT_PATTERN},
+			}))
+		})
+
+		t.Run("struct pointer with undefined struct type", func(t *testing.T) {
+			n, src := mustParseCode(`
+				fn ptr(i *Int){}
+			`)
+
+			ptrType := parse.FindNode(n, (*parse.PointerType)(nil), nil)
+
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(ptrType.ValueType, src, fmtStructTypeIsNotDefined("Int")),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("as return type", func(t *testing.T) {
+			n, src := mustParseCode(`
+				struct Int { value int }
+				fn ptr() *Int {
+
+				}
+			`)
+
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{
+				Node:     n,
+				Chunk:    src,
+				Patterns: map[string]Pattern{"int": INT_PATTERN},
+			}))
+		})
+
+		t.Run("not allowed in patterns", func(t *testing.T) {
+			n, src := mustParseCode(`
+				struct MyStruct { }
+				%{a: *MyStruct}
+			`)
+
+			ptrType := parse.FindNode(n, (*parse.PointerType)(nil), nil)
+
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(ptrType, src, MISPLACED_POINTER_TYPE),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+	})
+
+	t.Run("dereference expression", func(t *testing.T) {
+		n, src := mustParseCode(`
+			fn ptr(i *Int){
+				val = *i
+			}
+		`)
+
+		err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+		assert.Error(t, err)
+	})
+
+	t.Run("struct type name", func(t *testing.T) {
+
+		t.Run("not allowed in patterns", func(t *testing.T) {
+			n, src := mustParseCode(`
+				struct MyStruct { }
+				%{a: MyStruct}
+			`)
+
+			patternIdentLiteral := parse.FindNodes(n, (*parse.PatternIdentifierLiteral)(nil), nil)[1]
+
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(patternIdentLiteral, src, MISPLACED_STRUCT_TYPE_NAME),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("not allowed as parameter type", func(t *testing.T) {
+			n, src := mustParseCode(`
+				struct MyStruct { }
+				fn f(s MyStruct){}
+			`)
+
+			patternIdentLiteral := parse.FindNodes(n, (*parse.PatternIdentifierLiteral)(nil), nil)[1]
+
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(patternIdentLiteral, src, STRUCT_TYPES_NOT_ALLOWED_AS_PARAMETER_TYPES),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("not allowed as return type", func(t *testing.T) {
+			n, src := mustParseCode(`
+				struct MyStruct { }
+				fn f() MyStruct {}
+			`)
+
+			patternIdentLiteral := parse.FindNodes(n, (*parse.PatternIdentifierLiteral)(nil), nil)[1]
+
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(patternIdentLiteral, src, STRUCT_TYPES_NOT_ALLOWED_AS_RETURN_TYPES),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
