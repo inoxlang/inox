@@ -77,6 +77,7 @@ var (
 	SUPPORTED_PARSING_ERRORS = []parse.ParsingErrorKind{
 		parse.UnterminatedMemberExpr, parse.UnterminatedDoubleColonExpr,
 		parse.UnterminatedExtendStmt,
+		parse.UnterminatedStructDefinition,
 		parse.MissingBlock, parse.MissingFnBody,
 		parse.MissingEqualsSignInDeclaration,
 		parse.MissingObjectPropertyValue,
@@ -283,6 +284,8 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 	}
 
 	switch n := node.(type) {
+	case *parse.Chunk:
+		return evalChunk(n, state)
 	case *parse.BooleanLiteral:
 		return NewBool(n.Value), nil
 	case *parse.IntLiteral:
@@ -520,8 +523,6 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 		}
 
 		return nil, nil
-	case *parse.Chunk:
-		return evalChunk(n, state)
 	case *parse.EmbeddedModule:
 		return &AstNode{Node: n.ToChunk()}, nil
 	case *parse.Block:
@@ -694,7 +695,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 		}
 		return nil, err
 	case *parse.ReadonlyPatternExpression:
-		pattern, err := symbolicallyEvalPatternNode(n.Pattern, state)
+		pattern, err := evalPatternNode(n.Pattern, state)
 		if err != nil {
 			return nil, err
 		}
@@ -847,7 +848,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 			return patt, nil
 		}
 	case *parse.PatternDefinition:
-		pattern, err := symbolicallyEvalPatternNode(n.Right, state)
+		pattern, err := evalPatternNode(n.Right, state)
 		if err != nil {
 			return nil, err
 		}
@@ -924,7 +925,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 		patt := &UnionPattern{}
 
 		for _, case_ := range n.Cases {
-			patternElement, err := symbolicallyEvalPatternNode(case_, state)
+			patternElement, err := evalPatternNode(case_, state)
 			if err != nil {
 				return nil, fmt.Errorf("failed to symbolically compile a pattern element: %s", err.Error())
 			}
@@ -942,7 +943,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 	case *parse.TuplePatternLiteral:
 		return evalTuplePatternLiteral(n, state, options)
 	case *parse.OptionPatternLiteral:
-		pattern, err := symbolicallyEvalPatternNode(n.Value, state)
+		pattern, err := evalPatternNode(n.Value, state)
 		if err != nil {
 			return nil, err
 		}
@@ -1039,6 +1040,15 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 		return ANY_STR, nil
 	case *parse.ExtendStatement:
 		return evalExtendStatement(n, state, options)
+	case *parse.StructDefinition:
+		//handled in evalChunk
+		return nil, nil
+	// case *parse.PointerType:
+	// 	//only misplaced PointerType nodes are evaluated using the symbolicEval function.
+	// 	return ANY_PATTERN, nil
+	case *parse.DereferenceExpression:
+		//not supported yet
+		return ANY, nil
 	case *parse.UnknownNode:
 		return ANY, nil
 	default:
@@ -1130,6 +1140,12 @@ func evalChunk(n *parse.Chunk, state *State) (_ Value, finalErr error) {
 
 	state.symbolicData.SetGlobalScopeData(n, state.currentGlobalScopeData())
 	state.symbolicData.SetContextData(n, state.ctx.currentData())
+
+	//register all structs defined in the current module
+
+	if n == state.Module.mainChunk.Node {
+		defineStructs(state.Module.mainChunk, n.Statements, state)
+	}
 
 	//evaluation of statements
 	if len(n.Statements) == 1 {
@@ -2861,7 +2877,7 @@ func evalFunctionExpression(n *parse.FunctionExpression, state *State, options e
 		var paramType Pattern
 
 		if p.Type != nil {
-			pattern, err := symbolicallyEvalPatternNode(p.Type, stateFork)
+			pattern, err := evalPatternNode(p.Type, stateFork)
 			if err != nil {
 				return nil, err
 			}
@@ -2879,7 +2895,7 @@ func evalFunctionExpression(n *parse.FunctionExpression, state *State, options e
 	var signatureReturnType Value
 
 	if n.ReturnType != nil {
-		pattern, err := symbolicallyEvalPatternNode(n.ReturnType, stateFork)
+		pattern, err := evalPatternNode(n.ReturnType, stateFork)
 		if err != nil {
 			return nil, err
 		}
@@ -2933,7 +2949,7 @@ func evalFunctionExpression(n *parse.FunctionExpression, state *State, options e
 		var elemType Value = ANY
 
 		if variadicParam.Type != nil {
-			pattern, err := symbolicallyEvalPatternNode(variadicParam.Type, stateFork)
+			pattern, err := evalPatternNode(variadicParam.Type, stateFork)
 			if err != nil {
 				return nil, err
 			}
@@ -3076,7 +3092,7 @@ func evalFunctionPatternExpression(n *parse.FunctionPatternExpression, state *St
 		var paramType Value = ANY
 
 		if p.Type != nil {
-			pattern, err := symbolicallyEvalPatternNode(p.Type, stateFork)
+			pattern, err := evalPatternNode(p.Type, stateFork)
 			if err != nil {
 				return nil, err
 			}
@@ -3098,7 +3114,7 @@ func evalFunctionPatternExpression(n *parse.FunctionPatternExpression, state *St
 		var elemType Value = ANY
 
 		if variadicParam.Type != nil {
-			pattern, err := symbolicallyEvalPatternNode(variadicParam.Type, stateFork)
+			pattern, err := evalPatternNode(variadicParam.Type, stateFork)
 			if err != nil {
 				return nil, err
 			}
@@ -3122,7 +3138,7 @@ func evalFunctionPatternExpression(n *parse.FunctionPatternExpression, state *St
 	var returnType Value = Nil
 
 	if n.ReturnType != nil {
-		pattern, err := symbolicallyEvalPatternNode(n.ReturnType, stateFork)
+		pattern, err := evalPatternNode(n.ReturnType, stateFork)
 		if err != nil {
 			return nil, err
 		}
@@ -3673,7 +3689,7 @@ func evalObjectLiteral(n *parse.ObjectLiteral, state *State, options evalOptions
 
 		hasMethods = true
 
-		// find method's dependencies
+		// find the method's dependencies
 		parse.Walk(p.Value, func(node, parent, scopeNode parse.Node, ancestorChain []parse.Node, after bool) (parse.TraversalAction, error) {
 
 			if parse.IsScopeContainerNode(node) && node != p.Value {
@@ -4344,7 +4360,7 @@ func evalObjectPatternLiteral(n *parse.ObjectPatternLiteral, state *State, optio
 	}
 
 	for _, el := range n.SpreadElements {
-		compiledElement, err := symbolicallyEvalPatternNode(el.Expr, state)
+		compiledElement, err := evalPatternNode(el.Expr, state)
 		if err != nil {
 			return nil, err
 		}
@@ -4380,7 +4396,7 @@ func evalObjectPatternLiteral(n *parse.ObjectPatternLiteral, state *State, optio
 		} else {
 			prevErrCount := len(state.errors())
 
-			propertyValuePattern, err = symbolicallyEvalPatternNode(p.Value, state)
+			propertyValuePattern, err = evalPatternNode(p.Value, state)
 			if err != nil {
 				return nil, err
 			}
@@ -4425,7 +4441,7 @@ func evalRecordPatternLiteral(n *parse.RecordPatternLiteral, state *State, optio
 		inexact: !n.Exact(),
 	}
 	for _, el := range n.SpreadElements {
-		compiledElement, err := symbolicallyEvalPatternNode(el.Expr, state)
+		compiledElement, err := evalPatternNode(el.Expr, state)
 		if err != nil {
 			return nil, err
 		}
@@ -4455,7 +4471,7 @@ func evalRecordPatternLiteral(n *parse.RecordPatternLiteral, state *State, optio
 		if p.Value == nil {
 			pattern.entries[name] = &TypePattern{val: ANY_SERIALIZABLE}
 		} else {
-			entryPattern, err := symbolicallyEvalPatternNode(p.Value, state)
+			entryPattern, err := evalPatternNode(p.Value, state)
 			if err != nil {
 				return nil, err
 			}
@@ -4509,7 +4525,7 @@ func evalListPatternLiteral(n *parse.ListPatternLiteral, state *State, options e
 
 	if n.GeneralElement != nil {
 		var err error
-		pattern.generalElement, err = symbolicallyEvalPatternNode(n.GeneralElement, state)
+		pattern.generalElement, err = evalPatternNode(n.GeneralElement, state)
 		if err != nil {
 			return nil, err
 		}
@@ -4523,7 +4539,7 @@ func evalListPatternLiteral(n *parse.ListPatternLiteral, state *State, options e
 		pattern.elements = make([]Pattern, 0)
 
 		for _, e := range n.Elements {
-			elemPattern, err := symbolicallyEvalPatternNode(e, state)
+			elemPattern, err := evalPatternNode(e, state)
 			if err != nil {
 				return nil, err
 			}
@@ -4545,7 +4561,7 @@ func evalTuplePatternLiteral(n *parse.TuplePatternLiteral, state *State, options
 
 	if n.GeneralElement != nil {
 		var err error
-		pattern.generalElement, err = symbolicallyEvalPatternNode(n.GeneralElement, state)
+		pattern.generalElement, err = evalPatternNode(n.GeneralElement, state)
 		if err != nil {
 			return nil, err
 		}
@@ -4564,7 +4580,7 @@ func evalTuplePatternLiteral(n *parse.TuplePatternLiteral, state *State, options
 		pattern.elements = make([]Pattern, 0)
 
 		for _, e := range n.Elements {
-			elemPattern, err := symbolicallyEvalPatternNode(e, state)
+			elemPattern, err := evalPatternNode(e, state)
 			if err != nil {
 				return nil, err
 			}
@@ -5467,7 +5483,7 @@ func evalExtendStatement(n *parse.ExtendStatement, state *State, options evalOpt
 		return nil, nil
 	}
 
-	pattern, err := symbolicallyEvalPatternNode(n.ExtendedPattern, state)
+	pattern, err := evalPatternNode(n.ExtendedPattern, state)
 	if err != nil {
 		return nil, err
 	}

@@ -24,7 +24,7 @@ func NewModuleArgs(paramsPattern *ModuleParamsPattern, fieldValues map[string]Va
 	return &ModuleArgs{typ: paramsPattern, fieldValues: fieldValues}
 }
 
-func (s *ModuleArgs) Test(v Value, state RecTestCallState) bool {
+func (args *ModuleArgs) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -33,55 +33,55 @@ func (s *ModuleArgs) Test(v Value, state RecTestCallState) bool {
 		return false
 	}
 
-	if s.typ == nil {
+	if args.typ == nil {
 		return true
 	}
 
-	return s.typ.Test(otherStruct.typ, state)
+	return args.typ.Test(otherStruct.typ, state)
 }
 
-func (s *ModuleArgs) Prop(name string) Value {
-	if s.typ == nil {
+func (args *ModuleArgs) Prop(name string) Value {
+	if args.typ == nil {
 		return ANY
 	}
 
-	fieldValue, ok := s.fieldValues[name]
+	fieldValue, ok := args.fieldValues[name]
 	if ok {
 		return fieldValue
 	}
 
-	if fieldType, ok := s.typ.typeOfField(name); ok {
+	if fieldType, ok := args.typ.typeOfField(name); ok {
 		return fieldType.SymbolicValue()
 	} else {
-		panic(FormatErrPropertyDoesNotExist(name, s))
+		panic(FormatErrPropertyDoesNotExist(name, args))
 	}
 }
 
-func (s *ModuleArgs) PropertyNames() []string {
-	return s.typ.keys
+func (args *ModuleArgs) PropertyNames() []string {
+	return args.typ.keys
 }
 
-func (s *ModuleArgs) SetProp(name string, value Value) (IProps, error) {
-	fieldType, ok := s.typ.typeOfField(name)
+func (args *ModuleArgs) SetProp(name string, value Value) (IProps, error) {
+	fieldType, ok := args.typ.typeOfField(name)
 	if !ok {
-		return nil, FormatErrPropertyDoesNotExist(name, s)
+		return nil, FormatErrPropertyDoesNotExist(name, args)
 	}
 	if !fieldType.TestValue(value, RecTestCallState{}) {
 		return nil, errors.New(fmtNotAssignableToPropOfType(value, fieldType))
 	}
 
-	return s, nil
+	return args, nil
 }
 
-func (s *ModuleArgs) WithExistingPropReplaced(name string, value Value) (IProps, error) {
+func (args *ModuleArgs) WithExistingPropReplaced(name string, value Value) (IProps, error) {
 	panic(ErrNotImplementedYet)
 }
 
-func (s *ModuleArgs) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (args *ModuleArgs) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("module-arguments")
 
 	if w.Depth > config.MaxDepth {
-		if len(s.typ.keys) > 0 {
+		if len(args.typ.keys) > 0 {
 			w.WriteString("{(...)}")
 		} else {
 			w.WriteString("{ }")
@@ -93,7 +93,7 @@ func (s *ModuleArgs) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.Pret
 	indentCount := w.ParentIndentCount + 1
 	indent := bytes.Repeat(config.Indent, indentCount)
 
-	propertyNames := s.PropertyNames()
+	propertyNames := args.PropertyNames()
 	for i, name := range propertyNames {
 
 		if !config.Compact {
@@ -115,7 +115,7 @@ func (s *ModuleArgs) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.Pret
 		w.WriteColonSpace()
 
 		//value
-		v := s.Prop(name)
+		v := args.Prop(name)
 		v.PrettyPrint(w.IncrDepthWithIndent(indentCount), config)
 
 		//comma & indent
@@ -133,7 +133,7 @@ func (s *ModuleArgs) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.Pret
 	w.WriteManyBytes(bytes.Repeat(config.Indent, w.Depth), []byte{'}'})
 }
 
-func (s *ModuleArgs) WidestOfType() Value {
+func (args *ModuleArgs) WidestOfType() Value {
 	return ANY_MODULE_ARGS
 }
 
@@ -194,16 +194,16 @@ func (p *ModuleParamsPattern) Test(v Value, state RecTestCallState) bool {
 	return true
 }
 
-func (s *ModuleParamsPattern) typeOfField(name string) (Pattern, bool) {
-	ind, ok := s.indexOfField(name)
+func (p *ModuleParamsPattern) typeOfField(name string) (Pattern, bool) {
+	ind, ok := p.indexOfField(name)
 	if !ok {
 		return nil, false
 	}
-	return s.types[ind], true
+	return p.types[ind], true
 }
 
-func (s *ModuleParamsPattern) indexOfField(name string) (int, bool) {
-	for index, key := range s.keys {
+func (p *ModuleParamsPattern) indexOfField(name string) (int, bool) {
+	for index, key := range p.keys {
 		if key == name {
 			return index, true
 		}
@@ -211,13 +211,13 @@ func (s *ModuleParamsPattern) indexOfField(name string) (int, bool) {
 	return -1, false
 }
 
-func (s *ModuleParamsPattern) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (p *ModuleParamsPattern) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("module-parameters{")
 
 	w.WriteString("...")
 	w.WriteByte('}')
 }
 
-func (s *ModuleParamsPattern) WidestOfType() Value {
+func (p *ModuleParamsPattern) WidestOfType() Value {
 	return ANY_MODULE_PARAMS
 }

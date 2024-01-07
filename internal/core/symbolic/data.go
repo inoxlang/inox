@@ -11,6 +11,8 @@ import (
 
 var (
 	SYMBOLIC_DATA_PROP_NAMES = []string{"errors"}
+
+	ErrComptimeTypeAlreadyDefined = errors.New("comptile-time type is already defined")
 )
 
 // Data represents the data produced by the symbolic execution of an AST.
@@ -26,6 +28,8 @@ type Data struct {
 	usedTypeExtensions          map[*parse.DoubleColonExpression]*TypeExtension
 	typeExtensions              map[*parse.DoubleColonExpression][]*TypeExtension
 	urlReferencedEntities       map[*parse.DoubleColonExpression]Value
+
+	comptimeTypes map[ /* *Chunk or *EmbeddModule */ parse.Node]*ModuleCompileTimeTypes
 
 	errorMessageSet map[string]bool
 	errors          []SymbolicEvaluationError
@@ -47,6 +51,8 @@ func NewSymbolicData() *Data {
 		usedTypeExtensions:          make(map[*parse.DoubleColonExpression]*TypeExtension, 0),
 		typeExtensions:              make(map[*parse.DoubleColonExpression][]*TypeExtension, 0),
 		urlReferencedEntities:       make(map[*parse.DoubleColonExpression]Value, 0),
+
+		comptimeTypes: make(map[parse.Node]*ModuleCompileTimeTypes, 0),
 
 		errorMessageSet:   make(map[string]bool, 0),
 		warningMessageSet: make(map[string]bool, 0),
@@ -541,6 +547,33 @@ func (d *Data) GetContextData(n parse.Node, ancestorChain []parse.Node) (Context
 			return d.GetContextData(ancestorChain[lastIndex], ancestorChain[:lastIndex])
 		}
 	}
+}
+
+func (d *Data) getModuleComptimeTypes(module parse.Node, create bool) *ModuleCompileTimeTypes {
+	switch module.(type) {
+	case *parse.Chunk, *parse.EmbeddedModule:
+	default:
+		panic(errors.New("invalid node"))
+	}
+
+	types, ok := d.comptimeTypes[module]
+	if create && !ok {
+		types = newModuleCompileTimeTypes()
+
+		d.comptimeTypes[module] = types
+	}
+
+	return types
+
+}
+
+func (d *Data) GetCreateComptimeTypes(module parse.Node) *ModuleCompileTimeTypes {
+	return d.getModuleComptimeTypes(module, true)
+}
+
+func (d *Data) GetComptimeTypes(module parse.Node) (*ModuleCompileTimeTypes, bool) {
+	types := d.getModuleComptimeTypes(module, false)
+	return types, types != nil
 }
 
 type ScopeData struct {

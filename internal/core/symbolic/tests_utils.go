@@ -80,6 +80,10 @@ func MakeTestStateAndChunks(code string, includedFiles map[string]string, global
 			return ok && pathLit.Value == file
 		})
 
+		if importStmt == nil {
+			panic(fmt.Errorf("import statement with source %s not found", file))
+		}
+
 		includedChunk, err := parse.ParseChunkSource(parse.InMemorySource{
 			NameString: file,
 			CodeString: content,

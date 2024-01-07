@@ -151,6 +151,10 @@ const (
 	RIGHT_OPERAND_MAY_NOT_HAVE_A_URL = "right operand may not have a URL"
 
 	CANNOT_POP_FROM_EMPTY_LIST = "cannot pop() from an empty list"
+
+	//struct definition
+	ONLY_COMPILE_TIME_TYPES_CAN_BE_USED_AS_STRUCT_FIELD_TYPES = //
+	"only compile-time types can be used a struct field types (struct types, int, float, bool and string)"
 )
 
 var (
@@ -656,4 +660,8 @@ func fmtValueAtXIsNotSerializable(location string) string {
 
 func fmtRetrievalOfMethodAtXIsNotAllowed(path string) string {
 	return fmt.Sprintf("retrieval of method (%s) is not allowed", path)
+}
+
+func fmtCompileTimeTypeIsNotDefined(name string) string {
+	return fmt.Sprintf("compile-time type '%s' is not defined, note that patterns are not compile-time types", name)
 }

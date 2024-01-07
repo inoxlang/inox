@@ -37,7 +37,7 @@ var (
 	RUNE_SLICE__INSERT_PARAM_NAMES = []string{"rune", "index"}
 )
 
-// An WrappedString represents a symbolic WrappedString.
+// A WrappedString represents a symbolic WrappedString.
 type WrappedString interface {
 	Value
 	underlyingString() *String

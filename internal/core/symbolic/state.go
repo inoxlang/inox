@@ -32,9 +32,13 @@ type State struct {
 	checkXMLInterpolation XMLInterpolationCheckingFunction
 	Module                *Module
 
+	//base globals and patterns
+
 	baseGlobals           map[string]Value
 	basePatterns          map[string]Pattern
 	basePatternNamespaces map[string]*PatternNamespace
+
+	//temporary fields storing information provided by symbolic Go functions during calls
 
 	tempSymbolicGoFunctionErrors         []string
 	tempSymbolicGoFunctionWarnings       []string

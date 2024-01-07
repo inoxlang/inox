@@ -36,7 +36,7 @@ func (m *Message) Test(v Value, state RecTestCallState) bool {
 }
 
 func (m *Message) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
-	w.WriteName("message")
+	w.WriteName("msg")
 	return
 }
 

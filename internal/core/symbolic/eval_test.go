@@ -13256,6 +13256,163 @@ func TestSymbolicEval(t *testing.T) {
 
 	})
 
+	t.Run("struct definition", func(t *testing.T) {
+
+		t.Run("empty", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				struct MyStruct {}
+			`, nil)
+
+			_, err := symbolicEval(n, state)
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.Empty(t, state.errors())
+
+			types, ok := state.symbolicData.GetComptimeTypes(n)
+			if !assert.True(t, ok) {
+				return
+			}
+			typ, ok := types.GetType("MyStruct")
+			if !assert.True(t, ok) {
+				return
+			}
+			_ = typ.(*StructType)
+		})
+
+		t.Run("field with builtin type", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				struct MyStruct {
+					a int
+				}
+			`, nil)
+
+			_, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+
+			types, ok := state.symbolicData.GetComptimeTypes(n)
+			if !assert.True(t, ok) {
+				return
+			}
+			typ, ok := types.GetType("MyStruct")
+			if !assert.True(t, ok) {
+				return
+			}
+			structType := typ.(*StructType)
+			if !assert.Equal(t, 1, structType.FieldCount()) {
+				return
+			}
+			assert.Equal(t, structField{Name: "a", Type: BUILTIN_COMPTIME_TYPES["int"]}, structType.Field(0))
+		})
+
+		t.Run("field with builtin pointer type", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				struct MyStruct {
+					a *int
+				}
+			`, nil)
+
+			_, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+
+			types, ok := state.symbolicData.GetComptimeTypes(n)
+			if !assert.True(t, ok) {
+				return
+			}
+			typ, ok := types.GetType("MyStruct")
+			if !assert.True(t, ok) {
+				return
+			}
+			structType := typ.(*StructType)
+			if !assert.Equal(t, 1, structType.FieldCount()) {
+				return
+			}
+			expectedStructField := structField{Name: "a", Type: newPointerType(BUILTIN_COMPTIME_TYPES["int"])}
+			assert.Equal(t, expectedStructField, structType.Field(0))
+		})
+
+		t.Run("field with struct type", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				struct MyStruct {
+					a Int
+				}
+				struct Int {
+					val int
+				}
+			`, nil)
+
+			_, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+
+			types, ok := state.symbolicData.GetComptimeTypes(n)
+			if !assert.True(t, ok) {
+				return
+			}
+			typ, ok := types.GetType("MyStruct")
+			if !assert.True(t, ok) {
+				return
+			}
+			MyStructType := typ.(*StructType)
+			if !assert.Equal(t, 1, MyStructType.FieldCount()) {
+				return
+			}
+
+			IntStructType, ok := types.GetType("Int")
+			if !assert.True(t, ok) {
+				return
+			}
+
+			expectedFieldType := structField{Name: "a", Type: IntStructType}
+			assert.Equal(t, expectedFieldType, MyStructType.Field(0))
+		})
+
+		t.Run("field with struct type defined in included chunk", func(t *testing.T) {
+			n, state := MakeTestStateAndChunks(`
+				manifest {}
+				import ./dep.ix
+
+				struct MyStruct {
+					a Int
+				}
+			`, map[string]string{
+				"./dep.ix": `
+					includable-chunk
+					struct Int {
+						val int
+					}
+				`,
+			})
+
+			_, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+
+			types, ok := state.symbolicData.GetComptimeTypes(n)
+			if !assert.True(t, ok) {
+				return
+			}
+			typ, ok := types.GetType("MyStruct")
+			if !assert.True(t, ok) {
+				return
+			}
+			MyStructType := typ.(*StructType)
+			if !assert.Equal(t, 1, MyStructType.FieldCount()) {
+				return
+			}
+
+			IntStructType, ok := types.GetType("Int")
+			if !assert.True(t, ok) {
+				return
+			}
+
+			expectedFieldType := structField{Name: "a", Type: IntStructType}
+			assert.Equal(t, expectedFieldType, MyStructType.Field(0))
+		})
+	})
+
 	t.Run("the evaluation should stop if the context context is done AND there is no remaining no-check fuel", func(t *testing.T) {
 		nodeCount := parse.CountNodes(parse.MustParseChunk("[]"))
 

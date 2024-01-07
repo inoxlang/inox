@@ -657,3 +657,11 @@ func (*ULID) IsMutable() bool {
 func (*UUIDv4) IsMutable() bool {
 	return false
 }
+
+func (*Struct) IsMutable() bool {
+	return true
+}
+
+func (*Pointer) IsMutable() bool {
+	return false
+}

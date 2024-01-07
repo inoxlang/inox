@@ -2796,7 +2796,7 @@ func (p *OptionPattern) WidestOfType() Value {
 	return ANY_OPTION_PATTERN
 }
 
-func symbolicallyEvalPatternNode(n parse.Node, state *State) (Pattern, error) {
+func evalPatternNode(n parse.Node, state *State) (Pattern, error) {
 	switch node := n.(type) {
 	case *parse.ObjectPatternLiteral,
 		*parse.RecordPatternLiteral,
