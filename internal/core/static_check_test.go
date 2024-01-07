@@ -513,7 +513,7 @@ func TestCheck(t *testing.T) {
 	})
 
 	t.Run("self expression", func(t *testing.T) {
-		t.Run("in top level", func(t *testing.T) {
+		t.Run("is not defined in the top level", func(t *testing.T) {
 			n, src := mustParseCode(`self`)
 
 			selfExpr := parse.FindNode(n, (*parse.SelfExpression)(nil), nil)
@@ -524,7 +524,7 @@ func TestCheck(t *testing.T) {
 			assert.Equal(t, expectedErr, err)
 		})
 
-		t.Run("value of an object property", func(t *testing.T) {
+		t.Run("is not defined if initial value of an object property", func(t *testing.T) {
 			n, src := mustParseCode(`{a: self}`)
 
 			selfExpr := parse.FindNode(n, (*parse.SelfExpression)(nil), nil)
@@ -535,7 +535,7 @@ func TestCheck(t *testing.T) {
 			assert.Equal(t, expectedErr, err)
 		})
 
-		t.Run("in a function", func(t *testing.T) {
+		t.Run("is not defined in a function", func(t *testing.T) {
 			n, src := mustParseCode(`fn() => self`)
 
 			selfExpr := parse.FindNode(n, (*parse.SelfExpression)(nil), nil)
@@ -546,17 +546,23 @@ func TestCheck(t *testing.T) {
 			assert.Equal(t, expectedErr, err)
 		})
 
-		t.Run("in a method", func(t *testing.T) {
+		t.Run("is not defined in a function that is the initial value of an object property", func(t *testing.T) {
 			n, src := mustParseCode(`{f: fn() => self}`)
-			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+			selfExpr := parse.FindNode(n, (*parse.SelfExpression)(nil), nil)
+
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(selfExpr, src, SELF_ACCESSIBILITY_EXPLANATION),
+			)
+			assert.Equal(t, expectedErr, err)
 		})
 
-		t.Run("in a metaproperty's initialization block", func(t *testing.T) {
+		t.Run("is defined in a metaproperty's initialization block", func(t *testing.T) {
 			n, src := mustParseCode(`{ _url_ { self } }`)
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 
-		t.Run("in a member expression in an extension' object method", func(t *testing.T) {
+		t.Run("is defined in a member expression in an extension' object method", func(t *testing.T) {
 			n, src := mustParseCode(`
 				pattern o = {
 					a: 1
@@ -568,7 +574,7 @@ func TestCheck(t *testing.T) {
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 
-		t.Run("in a function that is a value of an object pattern", func(t *testing.T) {
+		t.Run("is not defined in a function that is a value of an object pattern", func(t *testing.T) {
 			n, src := mustParseCode(`%{f: %(fn() => self)}`)
 
 			selfExpr := parse.FindNode(n, (*parse.SelfExpression)(nil), nil)
@@ -579,14 +585,14 @@ func TestCheck(t *testing.T) {
 			assert.Equal(t, expectedErr, err)
 		})
 
-		t.Run("at top level of a lifetime job", func(t *testing.T) {
+		t.Run("is defined at the top level of a lifetime job", func(t *testing.T) {
 			n, src := mustParseCode(`
 				lifetimejob #job for %{} { self }
 			`)
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 
-		t.Run("in a function expression in a reception handler expression", func(t *testing.T) {
+		t.Run("is defined in reception handlers", func(t *testing.T) {
 			n, src := mustParseCode(`
 				{
 					on received %{} fn(event){
@@ -597,7 +603,7 @@ func TestCheck(t *testing.T) {
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 
-		t.Run("at top level of an embedded module", func(t *testing.T) {
+		t.Run("is not defined at the top level of an embedded module", func(t *testing.T) {
 			n, src := mustParseCode(`go do { self }`)
 
 			selfExpr := parse.FindNode(n, (*parse.SelfExpression)(nil), nil)
@@ -608,7 +614,7 @@ func TestCheck(t *testing.T) {
 			assert.Equal(t, expectedErr, err)
 		})
 
-		t.Run("in the expression of an extension object's property", func(t *testing.T) {
+		t.Run("is defined in the expression of an extension object's property", func(t *testing.T) {
 			n, src := mustParseCode(`
 				pattern p = {
 					a: 1
@@ -624,7 +630,7 @@ func TestCheck(t *testing.T) {
 	})
 
 	t.Run("sendval expression", func(t *testing.T) {
-		t.Run("in top level", func(t *testing.T) {
+		t.Run("is not allowed at the top level", func(t *testing.T) {
 			n, src := mustParseCode(`sendval 1 to {}`)
 
 			sendValExpr := parse.FindNode(n, (*parse.SendValueExpression)(nil), nil)
@@ -635,7 +641,7 @@ func TestCheck(t *testing.T) {
 			assert.Equal(t, expectedErr, err)
 		})
 
-		t.Run("value of an object property", func(t *testing.T) {
+		t.Run("is not allowed inside the initial value expression of an object property", func(t *testing.T) {
 			n, src := mustParseCode(`{a: sendval 1 to {}}`)
 
 			sendValExpr := parse.FindNode(n, (*parse.SendValueExpression)(nil), nil)
@@ -646,7 +652,7 @@ func TestCheck(t *testing.T) {
 			assert.Equal(t, expectedErr, err)
 		})
 
-		t.Run("in a function", func(t *testing.T) {
+		t.Run("is not allowed in a function", func(t *testing.T) {
 			n, src := mustParseCode(`fn() => sendval 1 to {}`)
 
 			sendValExpr := parse.FindNode(n, (*parse.SendValueExpression)(nil), nil)
@@ -657,17 +663,33 @@ func TestCheck(t *testing.T) {
 			assert.Equal(t, expectedErr, err)
 		})
 
-		t.Run("in a method", func(t *testing.T) {
+		t.Run("is not allowed in a function that is the value of an object property", func(t *testing.T) {
 			n, src := mustParseCode(`{f: fn() => sendval 1 to {}}`)
+
+			sendValExpr := parse.FindNode(n, (*parse.SendValueExpression)(nil), nil)
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(sendValExpr, src, MISPLACED_SENDVAL_EXPR),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("is allowed in an extension method", func(t *testing.T) {
+			n, src := mustParseCode(`
+				pattern user = {}
+				extend user { 
+					send: fn(){ sendval 1 to { } } 
+				}
+			`)
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 
-		t.Run("in a metaproperty's initialization block", func(t *testing.T) {
+		t.Run("is allowed in a metaproperty's initialization block", func(t *testing.T) {
 			n, src := mustParseCode(`{ _url_ { sendval 1 to {} } }`)
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 
-		t.Run("in a function that is a value of an object pattern", func(t *testing.T) {
+		t.Run("is not allowed in a function that is a property value of an object pattern", func(t *testing.T) {
 			n, src := mustParseCode(`%{f: %(fn() => sendval 1 to {})}`)
 
 			sendValExpr := parse.FindNode(n, (*parse.SendValueExpression)(nil), nil)
@@ -678,14 +700,14 @@ func TestCheck(t *testing.T) {
 			assert.Equal(t, expectedErr, err)
 		})
 
-		t.Run("at top level of a lifetime job", func(t *testing.T) {
+		t.Run("is allowed at the top level of a lifetime job", func(t *testing.T) {
 			n, src := mustParseCode(`
 				lifetimejob #job for %{} { sendval 1 to {} }
 			`)
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 
-		t.Run("at top level of an embedded module", func(t *testing.T) {
+		t.Run("is not allowed at at the top level of an embedded module", func(t *testing.T) {
 			n, src := mustParseCode(`go do { sendval 1 to {} }`)
 
 			sendValExpr := parse.FindNode(n, (*parse.SendValueExpression)(nil), nil)
@@ -699,25 +721,30 @@ func TestCheck(t *testing.T) {
 
 	t.Run("member expression", func(t *testing.T) {
 		t.Run("existing property of self", func(t *testing.T) {
-			n, src := mustParseCode(`{f: fn() => self.f}`)
+			n, src := mustParseCode(`
+				pattern obj = {a: 1}
+				extend obj {
+					f: fn() => self.a
+				}
+			`)
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 
-		t.Run("existing property of self due to a spread object", func(t *testing.T) {
-			n, src := mustParseCode(`{
-				f: fn() => self.name, 
-				...({name: "foo"}).{name}
-			}`)
-			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
-		})
+		// t.Run("existing property of self due to a spread object", func(t *testing.T) {
+		// 	n, src := mustParseCode(`{
+		// 		f: fn() => self.name,
+		// 		...({name: "foo"}).{name}
+		// 	}`)
+		// 	assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		// })
 
 		t.Run("non existing property of self", func(t *testing.T) {
 			n, src := mustParseCode(`{f: fn() => self.b}`)
 
-			membExpr := parse.FindNode(n, (*parse.MemberExpression)(nil), nil)
+			selfExpr := parse.FindNode(n, (*parse.SelfExpression)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(membExpr, src, fmtObjectDoesNotHaveProp("b")),
+				makeError(selfExpr, src, SELF_ACCESSIBILITY_EXPLANATION),
 			)
 			assert.Equal(t, expectedErr, err)
 		})

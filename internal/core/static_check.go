@@ -1833,7 +1833,8 @@ top_switch:
 
 		var objectLiteral *parse.ObjectLiteral
 		var misplacementErr = SELF_ACCESSIBILITY_EXPLANATION
-		isSelfInExtensionObjectMethod := false
+		isInExtensionMethod := false
+		inReceptionHandler := false
 		isSelfInStructMethod := false
 
 		switch node.(type) {
@@ -1877,8 +1878,11 @@ top_switch:
 					break loop
 				}
 
+				maybeInReceptionHandler := false
+
 				if _, ok := ancestorChain[j].(*parse.ReceptionHandlerExpression); ok {
 					j--
+					maybeInReceptionHandler = true
 				}
 
 				switch ancestorChain[j].(type) {
@@ -1889,15 +1893,21 @@ top_switch:
 					}
 					j--
 
-					switch ancestor := ancestorChain[j].(type) {
-					case *parse.ObjectLiteral:
-						objectLiteral = ancestor
-						if j-1 >= 0 {
-							isSelfInExtensionObjectMethod =
-								utils.Implements[*parse.ExtendStatement](ancestorChain[j-1]) &&
-									ancestorChain[j-1].(*parse.ExtendStatement).Extension == objectLiteral
+					objLit, ok := ancestorChain[j].(*parse.ObjectLiteral)
+					if ok && j-1 >= 0 {
+
+						if maybeInReceptionHandler {
+							inReceptionHandler = true
+							objectLiteral = objLit
 						}
-					default:
+
+						isInExtensionMethod =
+							utils.Implements[*parse.ExtendStatement](ancestorChain[j-1]) &&
+								ancestorChain[j-1].(*parse.ExtendStatement).Extension == objLit
+
+						if isInExtensionMethod {
+							objectLiteral = objLit
+						}
 					}
 				case *parse.FunctionDeclaration:
 					if j == 0 {
@@ -1931,11 +1941,13 @@ top_switch:
 				return parse.ContinueTraversal
 			}
 
+			_ = inReceptionHandler
+
 			propInfo := c.getPropertyInfo(objectLiteral)
 
 			switch p := parent.(type) {
 			case *parse.MemberExpression:
-				if !propInfo.known[p.PropertyName.Name] && !isSelfInExtensionObjectMethod {
+				if !propInfo.known[p.PropertyName.Name] && !isInExtensionMethod {
 					c.addError(p, fmtObjectDoesNotHaveProp(p.PropertyName.Name))
 				}
 			}

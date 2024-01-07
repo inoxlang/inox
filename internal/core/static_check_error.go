@@ -89,7 +89,7 @@ const (
 	INVALID_BREAK_OR_CONTINUE_STMT_SHOULD_BE_IN_A_FOR_OR_WALK_STMT = "invalid break/continue statement: should be in a for or walk statement"
 	INVALID_PRUNE_STMT_SHOULD_BE_IN_WALK_STMT                      = "invalid prune statement: should be in a walk statement"
 	SELF_ACCESSIBILITY_EXPLANATION                                 = "'self' is only accessible within " +
-		"functions that are object properties, object extension properties, struct methods, metaproperty initialization blocks, and lifetime jobs"
+		"extension methods, struct methods, metaproperty initialization blocks, and lifetime jobs"
 	CANNOT_CHECK_OBJECT_PROP_WITHOUT_PARENT       = "checking an ObjectProperty node requires the parent ObjectLiteral node"
 	CANNOT_CHECK_OBJECT_METAPROP_WITHOUT_PARENT   = "checking an ObjectMetaProperty node requires the parent ObjectLiteral node"
 	OBJ_REC_LIT_CANNOT_HAVE_METAPROP_KEYS         = "object-like literals cannot have metaproperty keys, metaproperty keys have a (single) starting underscore '_' and a (single) trailing underscore"
@@ -99,7 +99,7 @@ const (
 	//object pattern literals
 	UNEXPECTED_OTHER_PROPS_EXPR_OTHERPROPS_NO_IS_PRESENT = "unexpected otherprops expression: no other properties are allowed since otherprops(no) is present"
 
-	MISPLACED_SENDVAL_EXPR                 = "sendval expressions are only usable within functions that are object properties, metaproperty initialization blocks and in lifetime jobs"
+	MISPLACED_SENDVAL_EXPR                 = "sendval expressions are only usable within methods of object extensions, metaproperty initialization blocks and in lifetime jobs"
 	MISPLACED_RECEPTION_HANDLER_EXPRESSION = "misplaced reception handler expression is misplaced, it should be an implicit key property of an object literal"
 
 	INVALID_MAPPING_ENTRY_KEY_ONLY_SIMPL_LITS_AND_PATT_IDENTS      = "invalid mapping entry key: only simple value literals and pattern identifiers are supported"
