@@ -16,10 +16,10 @@
   [Unary operations](#unary-operations),
   [Concatenation](#concatenation-operation), [Interpolation](#interpolation)
 
-- [Data Structures](#data-structures)\
+- [Serializable Data Structures](#serializable-data-structures)\
   **\>** [Lists](#lists), [Objects](#objects), [Tuples](#tuples),
   [Records](#records), [Treedata](#treedata), [Mappings](#mappings),
-  [Dictionaries](#dictionaries), [Arrays](#arrays)
+  [Dictionaries](#dictionaries)
 
 - [Control flow](#Control-flow)\
   **\>** [If statement](#if-statement--expression),
@@ -37,8 +37,7 @@
   [Union Patterns](#union-patterns), [Pattern namespaces](#pattern-namespaces),
   [Path Patterns](#path-patterns),
   [Host and URL Patterns](#host-and-url-patterns),
-  [Function Pattern](#function-patterns),
-
+  [Function Patterns](#function-patterns)
 
 - [Extensions](#extensions)
 
@@ -70,7 +69,9 @@
 
 - [Project Images](#project-images)
 
-- [Structures (not implemented yet)](#structs)
+- [Transient Types](#transient-types)\
+  **\>** [Memory Allocation](#memory-allocation), [Structs](#structs), [Arrays](#arrays), [Slices](#slices).
+
 
 > If you find an error in the documentation or a bug in the runtime, please
 > create an issue.\
@@ -442,7 +443,11 @@ path = /../../etc/passwd
 # error: result of a path interpolation should not contain any of the following substrings: '..', '\', '*', '?'
 ```
 
-# Data Structures
+# Serializable Data Structures
+
+**Serializable** data structures are intended to represent **business objects** or part of them (e.g. a `user`). 
+
+Code performing heavy computations should use **transient types** such as [Structs](#structs) and [Arrays](#arrays) instead.
 
 ## Lists
 
@@ -463,10 +468,12 @@ first_two_elems = list[0:2] # creates a new list containing 1 and 2
 other_list = [1, ...list]
 ```
 
+Lists are **clonable** (see [Data Sharing](#data-sharing)).
+
 ## Objects
 
-An object is a data structure containing properties, each property has a name
-and a value.
+An object is a serializable data structure containing properties, each property has a name
+and a value. 
 
 ```
 object = {  
@@ -505,23 +512,11 @@ one = object[0] # 1
 1
 ```
 
+Objects are **lock-protected** (see [Data Sharing](#data-sharing)).
+
 ### Methods
 
-Function expression properties can access the current object using `self`.
-
-```
-object = {
-    name: "foo"
-    print: fn(){
-        print(`hello I am ${self.name}`)
-    }
-}
-
-object.print()
-```
-
-ℹ️ It is recommended to define methods in [extensions](#extensions), not in the
-objects.
+Methods are defined in [extensions](#extensions), not in the objects.
 
 ### Computed Member Expressions
 
@@ -559,6 +554,15 @@ record = #{b: 2}
 ```
 
 ⚠️ Spreading a property that is already present is not allowed.
+
+### Usage and Performance
+
+Accessing the properties of an object is not fast and can even take several milliseconds if
+the object is used by another thread.
+
+Objects are not intended to be used when performing heavy computations.
+Use [Structs](#structs) instead.
+
 
 ## Records
 
@@ -649,18 +653,6 @@ dict = :{
     # integer key
     1: 3
 }
-```
-
-## Arrays
-
-An array is a sequence of fixed size that can contain any value.
-
-```
-serializable = 1
-not_serializable = go do {   }
-
-array = Array(serializable, not_serializable)
-element = array[0]
 ```
 
 # Control Flow
@@ -2690,18 +2682,26 @@ The base image contains:
 - all `.ix` files
 - all files in `/static/`
 
-# Structs
+# Transient Types
 
-⚠️ This feature is not implemented yet and is subject to change.
+A **transient** value is a value that cannot be persisted in the database (not serializable). 
+Transient values are generally more memory-efficient and have better access performance.
 
-Structs are transient values that only exist in the stack on in a temporary
-memory region managed by a module.\
-Unlike most core Inox types such as objects & lists, structs are not necessarily
-serializable but will be more memory efficient.\
-Accessing the field of a struct will be faster than accessing a property/element
-of other Inox types.
+## Memory Allocation
 
-The main usage of structs will be storing and representing temporary state.
+**(Work in progress)**
+
+Memory allocation logic will depend on the expected lifespan of the module performing the allocation.
+For example HTTP handler modules often finish in less than 1 second, so specific optimizations
+could be implemented.
+
+## Structs
+
+⚠️ This feature is not fully implemented yet and is subject to change.
+
+Structs are transient values that only exist in the stack on in the module's heap.
+Accessing the field of a struct is faster than accessing a property/element
+of other Inox types (e.g. objects).
 
 ```
 struct Position2D {
@@ -2709,13 +2709,36 @@ struct Position2D {
     y int
 }
 
-struct LexerState {
+struct Lexer {
     index int
-    tokens Array(Token)
+    input string
+    tokens [.]Token
+
+    fn next() (Token, bool) {
+        ....
+    }
 }
 
 struct Token {
     type TokenType
     value string
 }
+```
+
+## Arrays
+
+⚠️ This feature is not implemented yet and is subject to change.
+
+```
+integers = new([.]int, 100)
+```
+
+## Slices
+
+⚠️ This feature is not implemented yet and is subject to change.
+
+```
+slice = new([:]int, 100)
+
+sub_slice = slice[0:10]
 ```

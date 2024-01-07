@@ -101,17 +101,6 @@ As of now, certain parts of the codebase are not optimally written, lack suffici
 
 _________
 
-<details>
-
-**<summary>The language is slow, do you plan to improve the performance ?</summary>**
-
-Yes, I plan to improve execution speed and memory usage. Note that some sharable data structures such as **objects** and **sets**
-are lock-protected. [Structs](./docs/language-reference.md#structs) should be used to represent state when performing resource-intensive computations. Objects should be mostly used to persist data.
-
-</details>
-
-_________
-
 Have a question ? Create an [issue](https://github.com/inoxlang/inox/issues/new?assignees=&labels=question&projects=&template=question.md&title=).
 
 <details>
