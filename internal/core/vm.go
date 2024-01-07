@@ -2623,7 +2623,7 @@ func (v *VM) handleOtherOpcodes(op byte) (_continue bool) {
 //go:noinline
 func (v *VM) fnCall(numArgs int, spread, must bool, callIp int) bool {
 	var (
-		objectVal       = v.stack[v.sp-2]
+		selfVal         = v.stack[v.sp-2]
 		callee          = v.stack[v.sp-1]
 		extState        *GlobalState
 		extBytecode     *Bytecode
@@ -2769,7 +2769,7 @@ func (v *VM) fnCall(numArgs int, spread, must bool, callIp int) bool {
 		// update call frame
 		v.curFrame.ip = v.ip
 		v.curFrame = &(v.frames[v.framesIndex])
-		v.curFrame.self, _ = objectVal.(*Object)
+		v.curFrame.self = selfVal
 		v.curFrame.externalFunc = isSharedFunction
 		v.curFrame.fn = compiled
 		v.curFrame.basePointer = v.sp - numArgs

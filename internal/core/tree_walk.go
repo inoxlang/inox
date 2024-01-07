@@ -520,11 +520,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 				}
 			}
 
-			if obj, ok := left.(*Object); ok {
-				self = obj
-			} else {
-				self = nil
-			}
+			//we don't update self (self == nil)
 
 			callee = left.(IProps).Prop(state.Global.Ctx, c.PropertyName.Name)
 		case *parse.DoubleColonExpression:

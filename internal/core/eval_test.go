@@ -3874,26 +3874,30 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				result:                NewWrappedValueList(Int(6), Int(3)),
 			},
 			{
-				name: "method calling a recursive function accessing a global",
+				name: "extension method calling a recursive function accessing a global",
 				input: `
 					$$a = 3
-					fn rec(i %int){
+					fn rec(i %int) int {
 						if (i == 0) {
 							return 0
 						}
 						return (a + rec((i - 1)))
 					}
 
-					obj = {
+					obj = {}
+
+					pattern o = {}
+
+					extend o {
 						f: fn(){
 							return [rec(2), a] # we also check that a is still accessible
 						}
 					}
 					
-					return obj.f()
+					return obj::f()
 				`,
-				isolatedCaseArguments: noargs,
-				result:                NewWrappedValueList(Int(6), Int(3)),
+				result:          NewWrappedValueList(Int(6), Int(3)),
+				doSymbolicCheck: true,
 			},
 			{
 				name: "return is in if statement",
@@ -3980,46 +3984,51 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				`, "many_calls", strings.Repeat("f()\n", 10+VM_STACK_SIZE)),
 				result: Nil,
 			},
-			{
-				name: "method call",
-				input: `
-					o = {
-						a: 1
-						getA: fn() => self.a
-					}
-					return o.getA()
-				`,
-				result: Int(1),
-			},
-			{
-				name: "method call within method call",
-				input: `
-					o = {
-						b: {
-							b: 1
-							getB: fn() => self.b
-						}
-						getA: fn() => self.b.getB()
-					}
-					return o.getA()
-				`,
-				result: Int(1),
-			},
-			{
-				name: "several method calls within method call",
-				input: `
-					o = {
-						a: 2
-						b: {
-							b: 1
-							getB: fn() => self.b
-						}
-						getA: fn() => [self.a, self.b.getB(), self.a, self.b.getB()]
-					}
-					return o.getA()
-				`,
-				result: NewWrappedValueList(Int(2), Int(1), Int(2), Int(1)),
-			},
+			// TODO
+			// {
+			// 	name: "extension method call within extension method call",
+			// 	input: `
+			// 		obj = {a: {b: 1}}
+
+			// 		pattern B = {b: int}
+
+			// 		pattern A = {a: B}
+
+			// 		extend A {
+			// 			getA: fn() => self.b::getB()
+			// 		}
+
+			// 		extend B {
+			// 			getB: fn() => self.b
+			// 		}
+
+			// 		return obj::getA()
+			// 	`,
+			// 	result:          Int(1),
+			// 	doSymbolicCheck: true,
+			// },
+			// {
+			// 	name: "several extension method calls within extension method call",
+			// 	input: `
+			// 		obj = {a: {b: 1}}
+
+			// 		pattern B = {b: int}
+
+			// 		pattern A = {a: B}
+
+			// 		extend A {
+			// 			getA: fn() => [self.a, self.b::getB(), self.a, self.b::getB()]
+			// 		}
+
+			// 		extend B {
+			// 			getB: fn() => self.b
+			// 		}
+
+			// 		return obj::getA()
+			// 	`,
+			// 	result:          NewWrappedValueList(Int(2), Int(1), Int(2), Int(1)),
+			// 	doSymbolicCheck: true,
+			//},
 		}
 
 		for _, testCase := range testCases {
@@ -4029,6 +4038,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 				state.Globals.Set("Array", WrapGoFunction(NewArray))
 				state.Globals.Set("an-error", anError)
+
+				state.Ctx.AddNamedPattern("int", INT_PATTERN)
+				state.Ctx.AddNamedPattern("any", ANYVAL_PATTERN)
 
 				res, err := Eval(testCase.input, state, testCase.doSymbolicCheck)
 				if testCase.error {
@@ -4057,6 +4069,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				t.Run("isolated_call_"+testCase.name, func(t *testing.T) {
 					state := NewGlobalState(NewDefaultTestContext())
 					defer state.Ctx.CancelGracefully()
+
 					lastOpeningParenIndex := strings.LastIndexByte(testCase.input, '(')
 					input := testCase.input[:lastOpeningParenIndex]
 

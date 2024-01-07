@@ -562,7 +562,7 @@ func TestCheck(t *testing.T) {
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 
-		t.Run("is defined in a member expression in an extension' object method", func(t *testing.T) {
+		t.Run("is defined in a member expression in an extension method", func(t *testing.T) {
 			n, src := mustParseCode(`
 				pattern o = {
 					a: 1

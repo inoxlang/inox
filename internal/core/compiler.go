@@ -1590,8 +1590,9 @@ func (c *compiler) Compile(node parse.Node) error {
 				c.emit(callee, OpMemb, c.addConstant(Str(p.Name)))
 			}
 
-			c.emit(callee, OpCopyTop)
 			c.emit(callee, OpMemb, c.addConstant(Str(callee.PropertyNames[len(callee.PropertyNames)-1].Name)))
+			c.emit(callee, OpPushNil) //self
+			c.emit(callee, OpSwap)
 		case *parse.MemberExpression:
 			if err := c.Compile(callee.Left); err != nil {
 				return err
