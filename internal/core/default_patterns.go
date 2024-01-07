@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/inoxlang/inox/internal/commonfmt"
+	"github.com/inoxlang/inox/internal/core/patternnames"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/utils"
 )
@@ -30,7 +31,7 @@ var (
 
 	NEVER_PATTERN = &TypePattern{
 		Type:          reflect.TypeOf(struct{ __never int }{}),
-		Name:          "never",
+		Name:          patternnames.NEVER,
 		SymbolicValue: symbolic.NEVER,
 	}
 
@@ -61,12 +62,12 @@ var (
 
 	NIL_PATTERN = &TypePattern{
 		Type:          NIL_TYPE,
-		Name:          "nil",
+		Name:          patternnames.NIL,
 		SymbolicValue: symbolic.Nil,
 	}
 
 	STR_PATTERN_PATTERN = &TypePattern{
-		Name:          "string-pattern",
+		Name:          patternnames.STRING_PATTERN,
 		SymbolicValue: symbolic.NEVER,
 		CallImpl: func(typePattern *TypePattern, values []Serializable) (Pattern, error) {
 			if len(values) != 1 {
@@ -107,29 +108,29 @@ var (
 
 	IDENT_PATTERN = &TypePattern{
 		Type:          IDENTIFIER_TYPE,
-		Name:          "ident",
+		Name:          patternnames.IDENT,
 		SymbolicValue: symbolic.ANY_IDENTIFIER,
 	}
 	PROPNAME_PATTERN = &TypePattern{
 		Type:          PROPNAME_TYPE,
-		Name:          "propname",
+		Name:          patternnames.PROPNAME,
 		SymbolicValue: symbolic.ANY_PROPNAME,
 	}
 	RUNE_PATTERN = &TypePattern{
 		Type:          RUNE_TYPE,
-		Name:          "rune",
+		Name:          patternnames.RUNE,
 		SymbolicValue: symbolic.ANY_RUNE,
 	}
 	BYTE_PATTERN = &TypePattern{
 		Type:          BYTE_TYPE,
-		Name:          "byte",
+		Name:          patternnames.BYTE,
 		SymbolicValue: symbolic.ANY_BYTE,
 	}
 	ANY_PATH_STRING_PATTERN = NewStringPathPattern("")
 
 	PATH_PATTERN = &TypePattern{
 		Type:          PATH_TYPE,
-		Name:          "path",
+		Name:          patternnames.PATH,
 		SymbolicValue: symbolic.ANY_PATH,
 		stringPattern: func() (StringPattern, bool) {
 			return ANY_PATH_STRING_PATTERN, true
@@ -141,45 +142,45 @@ var (
 	}
 	STRING_PATTERN = &TypePattern{
 		Type:          STR_TYPE,
-		Name:          "string",
+		Name:          patternnames.STRING,
 		SymbolicValue: symbolic.ANY_STR,
 	}
 	STR_PATTERN = &TypePattern{
 		Type:          STR_LIKE_INTERFACE_TYPE,
-		Name:          "str",
+		Name:          patternnames.STR,
 		SymbolicValue: symbolic.ANY_STR_LIKE,
 	}
 	URL_PATTERN = &TypePattern{
 		Type:          URL_TYPE,
-		Name:          "url",
+		Name:          patternnames.URL,
 		SymbolicValue: symbolic.ANY_URL,
 	}
 	SCHEME_PATTERN = &TypePattern{
 		Type:          SCHEME_TYPE,
-		Name:          "scheme",
+		Name:          patternnames.SCHEME,
 		SymbolicValue: symbolic.ANY_SCHEME,
 	}
 	HOST_PATTERN = &TypePattern{
 		Type:          HOST_TYPE,
-		Name:          "host",
+		Name:          patternnames.HOST,
 		SymbolicValue: symbolic.ANY_HOST,
 	}
 	EMAIL_ADDR_PATTERN = &TypePattern{
 		Type:          EMAIL_ADDR_TYPE,
-		Name:          "emailaddr",
+		Name:          patternnames.EMAILADDR,
 		SymbolicValue: symbolic.ANY_EMAIL_ADDR,
 	}
 	EMPTY_INEXACT_OBJECT_PATTERN = NewInexactObjectPattern(map[string]Pattern{})
 	OBJECT_PATTERN               = &TypePattern{
 		Type:          OBJECT_TYPE,
-		Name:          "object",
+		Name:          patternnames.OBJECT,
 		SymbolicValue: symbolic.NewAnyObject(),
 	}
 	EMPTY_INEXACT_RECORD_PATTERN = NewInexactRecordPattern(map[string]Pattern{})
 
 	RECORD_PATTERN = &TypePattern{
 		Type: RECORD_TYPE,
-		Name: "record",
+		Name: patternnames.RECORD,
 		CallImpl: func(typePattern *TypePattern, values []Serializable) (Pattern, error) {
 			var recordPattern *RecordPattern
 
@@ -238,7 +239,7 @@ var (
 
 	LIST_PATTERN = &TypePattern{
 		Type:          LIST_PTR_TYPE,
-		Name:          "list",
+		Name:          patternnames.LIST,
 		SymbolicValue: symbolic.NewListOf(symbolic.ANY_SERIALIZABLE),
 	}
 
@@ -246,7 +247,7 @@ var (
 
 	TUPLE_PATTERN = &TypePattern{
 		Type: TUPLE_TYPE,
-		Name: "tuple",
+		Name: patternnames.TUPLE,
 		CallImpl: func(typePattern *TypePattern, values []Serializable) (Pattern, error) {
 			var elemPattern Pattern
 
@@ -284,39 +285,39 @@ var (
 		SymbolicValue: symbolic.ANY_TUPLE,
 	}
 	ORDERED_PAIR_PATTERN = &TypePattern{
-		Type:          TUPLE_TYPE,
-		Name:          "ordered-pair",
+		Type:          ORDERED_PAIR_TYPE,
+		Name:          patternnames.ORDERED_PAIR,
 		SymbolicValue: symbolic.ANY_ORDERED_PAIR,
 	}
 	DICTIONARY_PATTERN = &TypePattern{
 		Type:          DICT_TYPE,
-		Name:          "dict",
+		Name:          patternnames.DICT,
 		SymbolicValue: symbolic.ANY_DICT,
 	}
 	RUNESLICE_PATTERN = &TypePattern{
 		Type:          RUNE_SLICE_TYPE,
-		Name:          "runes",
+		Name:          patternnames.RUNES,
 		SymbolicValue: symbolic.ANY_RUNE_SLICE,
 	}
 	BYTESLICE_PATTERN = &TypePattern{
 		Type:          BYTE_SLICE_TYPE,
-		Name:          "bytes",
+		Name:          patternnames.BYTES,
 		SymbolicValue: symbolic.ANY_BYTE_SLICE,
 	}
 	KEYLIST_PATTERN = &TypePattern{
 		Type:          KEYLIST_TYPE,
-		Name:          "keylist",
+		Name:          patternnames.KEYLIST,
 		SymbolicValue: symbolic.ANY_KEYLIST,
 	}
 	BOOL_PATTERN = &TypePattern{
 		Type:          BOOL_TYPE,
-		Name:          "bool",
+		Name:          patternnames.BOOL,
 		RandomImpl:    RandBool,
 		SymbolicValue: symbolic.ANY_BOOL,
 	}
 	INT_PATTERN = &TypePattern{
 		Type:          INT_TYPE,
-		Name:          "int",
+		Name:          patternnames.INT,
 		RandomImpl:    RandInt,
 		SymbolicValue: symbolic.ANY_INT,
 		CallImpl: func(typePattern *TypePattern, values []Serializable) (Pattern, error) {
@@ -374,7 +375,7 @@ var (
 	}
 	FLOAT_PATTERN = &TypePattern{
 		Type:          FLOAT64_TYPE,
-		Name:          "float",
+		Name:          patternnames.FLOAT,
 		SymbolicValue: symbolic.ANY_FLOAT,
 		RandomImpl:    RandFloat,
 		CallImpl: func(typePattern *TypePattern, values []Serializable) (Pattern, error) {
@@ -433,139 +434,139 @@ var (
 
 	PORT_PATTERN = &TypePattern{
 		Type:          PORT_TYPE,
-		Name:          "port",
+		Name:          patternnames.PORT,
 		SymbolicValue: symbolic.ANY_PORT,
 	}
 
 	BYTECOUNT_PATTERN = &TypePattern{
 		Type:          BYTECOUNT_TYPE,
-		Name:          "byte-count",
+		Name:          patternnames.BYTE_COUNT,
 		SymbolicValue: symbolic.ANY_BYTECOUNT,
 	}
 
 	LINECOUNT_PATTERN = &TypePattern{
 		Type:          LINECOUNT_TYPE,
-		Name:          "line-count",
+		Name:          patternnames.LINE_COUNT,
 		SymbolicValue: symbolic.ANY_LINECOUNT,
 	}
 
 	RUNECOUNT_PATTERN = &TypePattern{
 		Type:          RUNECOUNT_TYPE,
-		Name:          "rune-count",
+		Name:          patternnames.RUNE_COUNT,
 		SymbolicValue: symbolic.ANY_RUNECOUNT,
 	}
 
 	BYTERATE_PATTERN = &TypePattern{
 		Type:          BYTERATE_TYPE,
-		Name:          "byte-rate",
+		Name:          patternnames.BYTE_RATE,
 		SymbolicValue: symbolic.ANY_BYTERATE,
 	}
 
 	SIMPLERATE_PATTERN = &TypePattern{
 		Type:          SIMPLERATE_TYPE,
-		Name:          "simple-rate",
+		Name:          patternnames.SIMPLE_RATE,
 		SymbolicValue: symbolic.ANY_SIMPLERATE,
 	}
 
 	DURATION_PATTERN = &TypePattern{
 		Type:          DURATION_TYPE,
-		Name:          "duration",
+		Name:          patternnames.DURATION,
 		SymbolicValue: symbolic.ANY_DURATION,
 	}
 
 	ASTNODE_PATTERN = &TypePattern{
 		Type:          NODE_TYPE,
-		Name:          "inox.node",
+		Name:          patternnames.INOX_NODE,
 		SymbolicValue: symbolic.ANY_AST_NODE,
 	}
 	MOD_PATTERN = &TypePattern{
 		Type:          MODULE_TYPE,
-		Name:          "inox.module",
+		Name:          patternnames.INOX_MODULE,
 		SymbolicValue: symbolic.ANY_MODULE,
 	}
 	HOSTPATTERN_PATTERN = &TypePattern{
 		Type:          HOST_PATT_TYPE,
-		Name:          "host-pattern",
+		Name:          patternnames.HOST_PATTERN,
 		SymbolicValue: &symbolic.HostPattern{},
 	}
 	PATHPATTERN_PATTERN = &TypePattern{
 		Type:          PATH_PATT_TYPE,
-		Name:          "path-pattern",
+		Name:          patternnames.PATH_PATTERN,
 		SymbolicValue: &symbolic.PathPattern{},
 	}
 	URLPATTERN_PATTERN = &TypePattern{
 		Type:          URL_PATT_TYPE,
-		Name:          "url-pattern",
+		Name:          patternnames.URL_PATTERN,
 		SymbolicValue: &symbolic.URLPattern{},
 	}
 	OPTION_PATTERN = &TypePattern{
 		Type:          OPTION_TYPE,
-		Name:          "opt",
+		Name:          patternnames.OPT,
 		SymbolicValue: symbolic.ANY_OPTION,
 	}
 	FILE_MODE_PATTERN = &TypePattern{
 		Type:          FILE_MODE_TYPE,
-		Name:          "filemode",
+		Name:          patternnames.FILEMODE,
 		SymbolicValue: &symbolic.FileMode{},
 	}
 
 	YEAR_PATTERN = &TypePattern{
 		Type:          YEAR_TYPE,
-		Name:          "year",
+		Name:          patternnames.YEAR,
 		SymbolicValue: symbolic.ANY_YEAR,
 	}
 
 	DATE_PATTERN = &TypePattern{
 		Type:          DATE_TYPE,
-		Name:          "date",
+		Name:          patternnames.DATE,
 		SymbolicValue: symbolic.ANY_DATE,
 	}
 
 	DATETIME_PATTERN = &TypePattern{
 		Type:          DATETIME_TYPE,
-		Name:          "datetime",
+		Name:          patternnames.DATETIME,
 		SymbolicValue: symbolic.ANY_DATETIME,
 	}
 
 	PATTERN_PATTERN = &TypePattern{
 		Type:          PATTERN_INTERFACE_TYPE,
-		Name:          "pattern",
+		Name:          patternnames.PATTERN,
 		SymbolicValue: symbolic.ANY_PATTERN,
 	}
 	READABLE_PATTERN = &TypePattern{
 		Type:          READABLE_INTERFACE_TYPE,
-		Name:          "readable",
+		Name:          patternnames.READABLE,
 		SymbolicValue: symbolic.ANY_READABLE,
 	}
 	READER_PATTERN = &TypePattern{
 		Type:          READER_INTERFACE_TYPE,
-		Name:          "reader",
+		Name:          patternnames.READER,
 		SymbolicValue: symbolic.ANY_READER,
 	}
 	ITERABLE_PATTERN = &TypePattern{
 		Type:          ITERABLE_INTERFACE_TYPE,
-		Name:          "iterable",
+		Name:          patternnames.ITERABLE,
 		SymbolicValue: symbolic.ANY_ITERABLE,
 	}
 	SERIALIZABLE_ITERABLE_PATTERN = &TypePattern{
 		Type:          SERIALIZABLE_ITERABLE_INTERFACE_TYPE,
-		Name:          "serializable-iterable",
+		Name:          patternnames.SERIALIZABLE_ITERABLE,
 		SymbolicValue: symbolic.ANY_SERIALIZABLE_ITERABLE,
 	}
 	INDEXABLE_PATTERN = &TypePattern{
 		Type:          INDEXABLE_INTERFACE_TYPE,
-		Name:          "indexable",
+		Name:          patternnames.INDEXABLE,
 		SymbolicValue: symbolic.ANY_INDEXABLE,
 	}
 	VALUE_RECEIVER_PATTERN = &TypePattern{
 		Type:          VALUE_RECEIVER_INTERFACE_TYPE,
-		Name:          "value-receiver",
+		Name:          patternnames.VALUE_RECEIVER,
 		SymbolicValue: symbolic.ANY_MSG_RECEIVER,
 	}
 
 	EVENT_PATTERN = &TypePattern{
 		Type: EVENT_TYPE,
-		Name: "event",
+		Name: patternnames.EVENT,
 		CallImpl: func(typePattern *TypePattern, args []Serializable) (Pattern, error) {
 			var valuePattern Pattern
 
@@ -619,7 +620,7 @@ var (
 	}
 	MUTATION_PATTERN = &TypePattern{
 		Type:          MUTATION_TYPE,
-		Name:          "mutation",
+		Name:          patternnames.MUTATION,
 		SymbolicValue: symbolic.ANY_MUTATION,
 		CallImpl: func(typePattern *TypePattern, args []Serializable) (Pattern, error) {
 			switch len(args) {
@@ -691,12 +692,12 @@ var (
 	}
 	MSG_PATTERN = &TypePattern{
 		Type:          MSG_TYPE,
-		Name:          "message",
+		Name:          patternnames.MSG,
 		SymbolicValue: symbolic.ANY_MSG,
 	}
 	ERROR_PATTERN = &TypePattern{
 		Type:          ERROR_TYPE,
-		Name:          "error",
+		Name:          patternnames.ERROR,
 		SymbolicValue: symbolic.ANY_ERR,
 	}
 	SOURCE_POS_PATTERN = NewInexactRecordPattern(map[string]Pattern{
@@ -708,37 +709,37 @@ var (
 	})
 	INT_RANGE_PATTERN = &TypePattern{
 		Type:          INT_RANGE_TYPE,
-		Name:          "int-range",
+		Name:          patternnames.INT_RANGE,
 		SymbolicValue: symbolic.ANY_INT_RANGE,
 	}
 	FLOAT_RANGE_PATTERN = &TypePattern{
 		Type:          FLOAT_RANGE_TYPE,
-		Name:          "float-range",
+		Name:          patternnames.FLOAT_RANGE,
 		SymbolicValue: symbolic.ANY_FLOAT_RANGE,
 	}
 	RUNE_RANGE_PATTERN = &TypePattern{
 		Type:          RUNE_RANGE_TYPE,
-		Name:          "rune-range",
+		Name:          patternnames.RUNE_RANGE,
 		SymbolicValue: symbolic.ANY_RUNE_RANGE,
 	}
 	VALUE_HISTORY_PATTERN = &TypePattern{
 		Type:          VALUE_HISTORY_TYPE,
-		Name:          "value-history",
+		Name:          patternnames.VALUE_HISTORY,
 		SymbolicValue: symbolic.ANY_VALUE_HISTORY,
 	}
 	SYSGRAPH_PATTERN = &TypePattern{
 		Type:          SYSGRAPH_TYPE,
-		Name:          "sysgraph",
+		Name:          patternnames.SYSGRAPH,
 		SymbolicValue: symbolic.ANY_SYSTEM_GRAPH,
 	}
 	SYSGRAPH_NODE_PATTERN = &TypePattern{
 		Type:          SYSGRAPH_NODE_TYPE,
-		Name:          "sysgraph.node",
+		Name:          patternnames.SYSGRAPH_NODE,
 		SymbolicValue: symbolic.ANY_SYSTEM_GRAPH_NODE,
 	}
 	SECRET_PATTERN = &TypePattern{
 		Type: SECRET_TYPE,
-		Name: "secret",
+		Name: patternnames.SECRET,
 		CallImpl: func(typePattern *TypePattern, values []Serializable) (Pattern, error) {
 			var stringPattern StringPattern
 
@@ -796,7 +797,7 @@ var (
 
 	ULID_PATTERN = &TypePattern{
 		Type:          ULID_TYPE,
-		Name:          "ulid",
+		Name:          patternnames.ULID,
 		RandomImpl:    RandULID,
 		SymbolicValue: symbolic.ANY_ULID,
 		stringPattern: func() (StringPattern, bool) {
@@ -806,7 +807,7 @@ var (
 
 	UUIDv4_PATTERN = &TypePattern{
 		Type:          UUIDv4_TYPE,
-		Name:          "uuidv4",
+		Name:          patternnames.UUIDv4,
 		RandomImpl:    RandUUIDv4,
 		SymbolicValue: symbolic.ANY_UUIDv4,
 		stringPattern: func() (StringPattern, bool) {
@@ -818,37 +819,37 @@ var (
 	UUIDv4_STRING_PATTERN = NewParserBasePattern(&uuidv4Parser{})
 
 	DEFAULT_NAMED_PATTERNS = map[string]Pattern{
-		NEVER_PATTERN.Name:        NEVER_PATTERN,
-		NIL_PATTERN.Name:          NIL_PATTERN,
-		IDENT_PATTERN.Name:        IDENT_PATTERN,
-		PROPNAME_PATTERN.Name:     PROPNAME_PATTERN,
-		RUNE_PATTERN.Name:         RUNE_PATTERN,
-		BYTE_PATTERN.Name:         BYTE_PATTERN,
-		STRING_PATTERN.Name:       STRING_PATTERN,
-		STR_PATTERN.Name:          STR_PATTERN,
-		PATH_PATTERN.Name:         PATH_PATTERN,
-		URL_PATTERN.Name:          URL_PATTERN,
-		SCHEME_PATTERN.Name:       SCHEME_PATTERN,
-		HOST_PATTERN.Name:         HOST_PATTERN,
-		EMAIL_ADDR_PATTERN.Name:   EMAIL_ADDR_PATTERN,
-		SECRET_PATTERN.Name:       SECRET_PATTERN,
-		"secret-string":           SECRET_STRING_PATTERN,
-		OBJECT_PATTERN.Name:       OBJECT_PATTERN,
-		RECORD_PATTERN.Name:       RECORD_PATTERN,
-		TUPLE_PATTERN.Name:        TUPLE_PATTERN,
-		ORDERED_PAIR_PATTERN.Name: ORDERED_PAIR_PATTERN,
-		LIST_PATTERN.Name:         LIST_PATTERN,
-		DICTIONARY_PATTERN.Name:   DICTIONARY_PATTERN,
-		RUNESLICE_PATTERN.Name:    RUNESLICE_PATTERN,
-		BYTESLICE_PATTERN.Name:    BYTESLICE_PATTERN,
-		KEYLIST_PATTERN.Name:      KEYLIST_PATTERN,
-		BOOL_PATTERN.Name:         BOOL_PATTERN,
-		INT_PATTERN.Name:          INT_PATTERN,
-		LINECOUNT_PATTERN.Name:    LINECOUNT_PATTERN,
-		RUNECOUNT_PATTERN.Name:    RUNECOUNT_PATTERN,
-		BYTECOUNT_PATTERN.Name:    BYTECOUNT_PATTERN,
-		FLOAT_PATTERN.Name:        FLOAT_PATTERN,
-		FILE_MODE_PATTERN.Name:    FILE_MODE_PATTERN,
+		NEVER_PATTERN.Name:         NEVER_PATTERN,
+		NIL_PATTERN.Name:           NIL_PATTERN,
+		IDENT_PATTERN.Name:         IDENT_PATTERN,
+		PROPNAME_PATTERN.Name:      PROPNAME_PATTERN,
+		RUNE_PATTERN.Name:          RUNE_PATTERN,
+		BYTE_PATTERN.Name:          BYTE_PATTERN,
+		STRING_PATTERN.Name:        STRING_PATTERN,
+		STR_PATTERN.Name:           STR_PATTERN,
+		PATH_PATTERN.Name:          PATH_PATTERN,
+		URL_PATTERN.Name:           URL_PATTERN,
+		SCHEME_PATTERN.Name:        SCHEME_PATTERN,
+		HOST_PATTERN.Name:          HOST_PATTERN,
+		EMAIL_ADDR_PATTERN.Name:    EMAIL_ADDR_PATTERN,
+		SECRET_PATTERN.Name:        SECRET_PATTERN,
+		patternnames.SECRET_STRING: SECRET_STRING_PATTERN,
+		OBJECT_PATTERN.Name:        OBJECT_PATTERN,
+		RECORD_PATTERN.Name:        RECORD_PATTERN,
+		TUPLE_PATTERN.Name:         TUPLE_PATTERN,
+		ORDERED_PAIR_PATTERN.Name:  ORDERED_PAIR_PATTERN,
+		LIST_PATTERN.Name:          LIST_PATTERN,
+		DICTIONARY_PATTERN.Name:    DICTIONARY_PATTERN,
+		RUNESLICE_PATTERN.Name:     RUNESLICE_PATTERN,
+		BYTESLICE_PATTERN.Name:     BYTESLICE_PATTERN,
+		KEYLIST_PATTERN.Name:       KEYLIST_PATTERN,
+		BOOL_PATTERN.Name:          BOOL_PATTERN,
+		INT_PATTERN.Name:           INT_PATTERN,
+		LINECOUNT_PATTERN.Name:     LINECOUNT_PATTERN,
+		RUNECOUNT_PATTERN.Name:     RUNECOUNT_PATTERN,
+		BYTECOUNT_PATTERN.Name:     BYTECOUNT_PATTERN,
+		FLOAT_PATTERN.Name:         FLOAT_PATTERN,
+		FILE_MODE_PATTERN.Name:     FILE_MODE_PATTERN,
 
 		YEAR_PATTERN.Name:     YEAR_PATTERN,
 		DATE_PATTERN.Name:     DATE_PATTERN,
@@ -865,7 +866,7 @@ var (
 		PATHPATTERN_PATTERN.Name:           PATHPATTERN_PATTERN,
 		URLPATTERN_PATTERN.Name:            URLPATTERN_PATTERN,
 		OPTION_PATTERN.Name:                OPTION_PATTERN,
-		"dir_entry": &ObjectPattern{
+		patternnames.DIR_ENTRY: &ObjectPattern{
 			entryPatterns: map[string]Pattern{
 				"abs-path": PATH_PATTERN,
 				"is-dir":   BOOL_PATTERN,
@@ -888,21 +889,21 @@ var (
 	}
 
 	DEFAULT_PATTERN_NAMESPACES = map[string]*PatternNamespace{
-		"inox": {
+		patternnames.INOX_NS: {
 			Patterns: map[string]Pattern{
 				"node":            ASTNODE_PATTERN,
 				"module":          MOD_PATTERN,
 				"source_position": SOURCE_POS_PATTERN,
 			},
 		},
-		DATE_FORMAT_PATTERN_NAMESPACE: {
+		patternnames.DATE_FORMAT_NS: {
 			Patterns: map[string]Pattern{
 				"rfc822":    NewDateFormat(time.RFC822, "rfc822"),
 				"date-only": NewDateFormat(time.DateOnly, "date-only"),
 				"time-only": NewDateFormat(time.TimeOnly, "time-only"),
 			},
 		},
-		"sysgraph": {
+		patternnames.SYSGRAPH_NS: {
 			Patterns: map[string]Pattern{
 				"node": SYSGRAPH_NODE_PATTERN,
 			},
