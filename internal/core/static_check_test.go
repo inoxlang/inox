@@ -4343,7 +4343,7 @@ func TestCheck(t *testing.T) {
 		})
 	})
 
-	t.Run("pointer type", func(t *testing.T) {
+	t.Run("struct pointer type", func(t *testing.T) {
 		t.Run("parameter, struct pointer", func(t *testing.T) {
 			n, src := mustParseCode(`
 				struct Int { value int }
@@ -4414,6 +4414,69 @@ func TestCheck(t *testing.T) {
 			n, src, _ := parseCode(`
 				struct MyStruct { }
 				globalvar s *MyStruct
+			`)
+
+			pointerType := parse.FindNode(n, (*parse.PointerType)(nil), nil)
+
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(pointerType, src, MISPLACED_POINTER_TYPE),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+	})
+
+	t.Run("builtin pointer type", func(t *testing.T) {
+		t.Run("parameter, struct pointer", func(t *testing.T) {
+			n, src := mustParseCode(`
+				fn ptr(i *int){}
+			`)
+
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{
+				Node:  n,
+				Chunk: src,
+			}))
+		})
+
+		t.Run("as return type", func(t *testing.T) {
+			n, src := mustParseCode(`
+				fn ptr() *int {
+
+				}
+			`)
+
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{
+				Node:  n,
+				Chunk: src,
+			}))
+		})
+
+		t.Run("not allowed in patterns", func(t *testing.T) {
+			n, src := mustParseCode(`
+				struct MyStruct { }
+				%{a: *int}
+			`)
+
+			ptrType := parse.FindNode(n, (*parse.PointerType)(nil), nil)
+
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(ptrType, src, MISPLACED_POINTER_TYPE),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("allowed as declaration type of local variable", func(t *testing.T) {
+			n, src := mustParseCode(`
+				var s *int = nil
+			`)
+
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
+		t.Run("not allowed as declaration type of global variable", func(t *testing.T) {
+			n, src, _ := parseCode(`
+				globalvar s *int
 			`)
 
 			pointerType := parse.FindNode(n, (*parse.PointerType)(nil), nil)

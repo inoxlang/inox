@@ -2125,7 +2125,7 @@ top_switch:
 			}
 		}
 	case *parse.PointerType:
-		_, ok := node.ValueType.(*parse.PatternIdentifierLiteral)
+		patternIdent, ok := node.ValueType.(*parse.PatternIdentifierLiteral)
 		if !ok {
 			c.addError(node.ValueType, A_STRUCT_TYPE_IS_EXPECTED_AFTER_THE_STAR)
 		} else {
@@ -2144,7 +2144,12 @@ top_switch:
 			default:
 				c.addError(node, MISPLACED_POINTER_TYPE)
 			}
-			break top_switch
+
+			if symbolic.IsNameOfBuiltinComptimeType(patternIdent.Name) {
+				//do not check the pattern identifier.
+				return parse.Prune
+			}
+
 		}
 	case *parse.DereferenceExpression:
 		c.addError(node, "dereference expressions are not supported yet")
