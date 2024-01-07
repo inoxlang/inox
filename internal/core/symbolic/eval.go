@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"reflect"
 	"runtime/debug"
-	"sort"
 	"strconv"
 	"strings"
 
@@ -16,7 +15,6 @@ import (
 	"github.com/inoxlang/inox/internal/core/permkind"
 	"github.com/inoxlang/inox/internal/globals/globalnames"
 	"github.com/inoxlang/inox/internal/inoxconsts"
-	"github.com/inoxlang/inox/internal/memds"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
 	"golang.org/x/exp/maps"
@@ -3602,20 +3600,15 @@ func evalObjectLiteral(n *parse.ObjectLiteral, state *State, options evalOptions
 	indexKey := 0
 
 	var (
-		keyArray        [32]string
-		keys            = keyArray[:0]
-		keyToProp       memds.Map32[string, *parse.ObjectProperty]
-		dependencyGraph memds.Graph32[string]
-
-		selfDependentArray [32]string
-		selfDependent      = selfDependentArray[:0]
-
-		hasMethods      bool
-		hasLifetimeJobs bool
+		keys                   []string
+		props                  []*parse.ObjectProperty
+		hasLifetimeJobs        bool
+		lifetimejobPropIndices []int32
+		lifetimejobKeys        []string
 	)
 
-	//first iteration of the properties: we get all keys
-	for _, p := range n.Properties {
+	//get all keys
+	for i, p := range n.Properties {
 		var key string
 
 		//add the key
@@ -3624,7 +3617,6 @@ func evalObjectLiteral(n *parse.ObjectLiteral, state *State, options evalOptions
 			key = n.Value
 			_, err := strconv.ParseUint(key, 10, 32)
 			if err == nil {
-				//see Check function
 				indexKey++
 			}
 		case *parse.IdentifierLiteral:
@@ -3636,9 +3628,21 @@ func evalObjectLiteral(n *parse.ObjectLiteral, state *State, options evalOptions
 			return nil, fmt.Errorf("invalid key type %T", n)
 		}
 
-		dependencyGraph.AddNode(key)
-		keys = append(keys, key)
-		keyToProp.Set(key, p)
+		_, ok := p.Value.(*parse.LifetimejobExpression)
+		if ok {
+			//if the value is a lifetimejob we move the key at the end
+			lifetimejobPropIndices = append(lifetimejobPropIndices, int32(i))
+			lifetimejobKeys = append(lifetimejobKeys, key)
+		} else {
+			keys = append(keys, key)
+			props = append(props, p)
+		}
+	}
+
+	for i, propIndex := range lifetimejobPropIndices {
+		p := n.Properties[propIndex]
+		keys = append(keys, lifetimejobKeys[i])
+		props = append(props, p)
 	}
 
 	for _, el := range n.SpreadElements {
@@ -3678,134 +3682,16 @@ func evalObjectLiteral(n *parse.ObjectLiteral, state *State, options evalOptions
 		// TODO: implicit prop count
 	}
 
-	//second iteration of the properties: we build a graph of dependencies
-	for i, p := range n.Properties {
-		dependentKey := keys[i]
-		dependentKeyId, _ := dependencyGraph.IdOfNode(dependentKey)
-
-		if _, ok := p.Value.(*parse.FunctionExpression); !ok {
-			continue
-		}
-
-		hasMethods = true
-
-		// find the method's dependencies
-		parse.Walk(p.Value, func(node, parent, scopeNode parse.Node, ancestorChain []parse.Node, after bool) (parse.TraversalAction, error) {
-
-			if parse.IsScopeContainerNode(node) && node != p.Value {
-				return parse.Prune, nil
-			}
-
-			switch node.(type) {
-			case *parse.SelfExpression:
-				dependencyName := ""
-
-				switch p := parent.(type) {
-				case *parse.MemberExpression:
-					dependencyName = p.PropertyName.Name
-				case *parse.DynamicMemberExpression:
-					dependencyName = p.PropertyName.Name
-				}
-
-				if dependencyName == "" {
-					break
-				}
-
-				depId, ok := dependencyGraph.IdOfNode(dependencyName)
-				if !ok {
-					//?
-					return parse.ContinueTraversal, nil
-				}
-
-				if dependentKeyId == depId {
-					selfDependent = append(selfDependent, dependentKey)
-				} else if !dependencyGraph.HasEdgeFromTo(dependentKeyId, depId) {
-					// dependentKey ->- depKey
-					dependencyGraph.AddEdge(dependentKeyId, depId)
-				}
-			}
-			return parse.ContinueTraversal, nil
-		}, nil)
-	}
-
-	// we sort the keys based on the dependency graph
-
-	var dependencyChainCountsCache = make(map[memds.NodeId]int, len(keys))
-	var getDependencyChainDepth func(memds.NodeId, []memds.NodeId) int
-	var cycles [][]string
-
-	getDependencyChainDepth = func(nodeId memds.NodeId, chain []memds.NodeId) int {
-		for _, id := range chain {
-			if nodeId == id && len(chain) >= 1 {
-				cycle := make([]string, 0, len(chain))
-
-				for _, id := range chain {
-					cycle = append(cycle, "."+keys[id])
-				}
-				cycles = append(cycles, cycle)
-				return 0
-			}
-		}
-
-		chain = append(chain, nodeId)
-
-		if v, ok := dependencyChainCountsCache[nodeId]; ok {
-			return v
-		}
-
-		depth_ := 0
-		directDependencies := dependencyGraph.IteratorDirectlyReachableNodes(nodeId)
-
-		for directDependencies.Next() {
-			dep := directDependencies.Node()
-			count := 1 + getDependencyChainDepth(dep.Id(), chain)
-			if count > depth_ {
-				depth_ = count
-			}
-		}
-
-		dependencyChainCountsCache[nodeId] = depth_
-		return depth_
-	}
-
 	expectedObj, ok := findInMultivalue[*Object](options.expectedValue)
 	if !ok {
 		expectedObj = &Object{}
 	}
 
-	sort.Slice(keys, func(i, j int) bool {
-		keyA := keys[i]
-		keyB := keys[j]
-
-		// we move all implicit lifetime jobs at the end
-		p1 := keyToProp.MustGet(keyA)
-		if _, ok := p1.Value.(*parse.LifetimejobExpression); ok {
-			hasLifetimeJobs = true
-			if p1.HasImplicitKey() {
-				return false
-			}
-		}
-		p2 := keyToProp.MustGet(keyB)
-		if _, ok := p2.Value.(*parse.LifetimejobExpression); ok && p2.HasImplicitKey() {
-			return true
-		}
-
-		idA := dependencyGraph.MustGetIdOfNode(keyA)
-		idB := dependencyGraph.MustGetIdOfNode(keyB)
-
-		return getDependencyChainDepth(idA, nil) < getDependencyChainDepth(idB, nil)
-	})
-
-	isExact := options.neverModifiedArgument && len(n.SpreadElements) == 0 && !hasMethods && !hasLifetimeJobs
+	isExact := options.neverModifiedArgument && len(n.SpreadElements) == 0 && !hasLifetimeJobs
 
 	obj := NewObject(isExact, entries, nil, nil)
 	if expectedObj.readonly {
 		obj.readonly = true
-	}
-
-	if len(cycles) > 0 {
-		state.addError(makeSymbolicEvalError(n, state, fmtMethodCyclesDetected(cycles)))
-		return ANY_OBJ, nil
 	}
 
 	prevNextSelf, restoreNextSelf := state.getNextSelf()
@@ -3827,10 +3713,9 @@ func evalObjectLiteral(n *parse.ObjectLiteral, state *State, options evalOptions
 		state.symbolicData.SetAllowedNonPresentProperties(n, properties)
 	}
 
-	//evaluate properties
-	for _, key := range keys {
-		p := keyToProp.MustGet(key)
-
+	//evaluate all properties
+	for i, key := range keys {
+		p := props[i]
 		var static Pattern
 
 		expectedPropVal := expectedObj.entries[key]
@@ -5587,6 +5472,317 @@ func evalExtendStatement(n *parse.ExtendStatement, state *State, options evalOpt
 			})
 		}
 	}
+
+	// entries := map[string]Serializable{}
+	// indexKey := 0
+
+	// var (
+	// 	keyArray        [32]string
+	// 	keys            = keyArray[:0]
+	// 	keyToProp       memds.Map32[string, *parse.ObjectProperty]
+	// 	dependencyGraph memds.Graph32[string]
+
+	// 	selfDependentArray [32]string
+	// 	selfDependent      = selfDependentArray[:0]
+
+	// 	hasMethods      bool
+	// 	hasLifetimeJobs bool
+	// )
+
+	// //first iteration of the properties: we get all keys
+	// for _, p := range n.Properties {
+	// 	var key string
+
+	// 	//add the key
+	// 	switch n := p.Key.(type) {
+	// 	case *parse.QuotedStringLiteral:
+	// 		key = n.Value
+	// 		_, err := strconv.ParseUint(key, 10, 32)
+	// 		if err == nil {
+	// 			//see Check function
+	// 			indexKey++
+	// 		}
+	// 	case *parse.IdentifierLiteral:
+	// 		key = n.Name
+	// 	case nil:
+	// 		key = strconv.Itoa(indexKey)
+	// 		indexKey++
+	// 	default:
+	// 		return nil, fmt.Errorf("invalid key type %T", n)
+	// 	}
+
+	// 	dependencyGraph.AddNode(key)
+	// 	keys = append(keys, key)
+	// 	keyToProp.Set(key, p)
+	// }
+
+	// for _, el := range n.SpreadElements {
+	// 	_, isExtractionExpr := el.Expr.(*parse.ExtractionExpression)
+
+	// 	evaluatedElement, err := symbolicEval(el.Expr, state)
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+
+	// 	if !isExtractionExpr {
+	// 		continue
+	// 	}
+
+	// 	object := evaluatedElement.(*Object)
+
+	// 	for _, key := range el.Expr.(*parse.ExtractionExpression).Keys.Keys {
+	// 		name := key.(*parse.IdentifierLiteral).Name
+	// 		v, _, ok := object.GetProperty(name)
+	// 		if !ok {
+	// 			panic(fmt.Errorf("missing property %s", name))
+	// 		}
+
+	// 		serializable, ok := v.(Serializable)
+	// 		if !ok {
+	// 			state.addError(makeSymbolicEvalError(el, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_INITIAL_VALUES_OF_SERIALIZABLE))
+	// 			serializable = ANY_SERIALIZABLE
+	// 		} else if _, ok := asWatchable(v).(Watchable); !ok && v.IsMutable() {
+	// 			state.addError(makeSymbolicEvalError(el, state, MUTABLE_NON_WATCHABLE_VALUES_NOT_ALLOWED_AS_INITIAL_VALUES_OF_WATCHABLE))
+	// 		}
+
+	// 		entries[name] = serializable
+	// 	}
+	// }
+
+	// if indexKey != 0 {
+	// 	// TODO: implicit prop count
+	// }
+
+	// //second iteration of the properties: we build a graph of dependencies
+	// for i, p := range n.Properties {
+	// 	dependentKey := keys[i]
+	// 	dependentKeyId, _ := dependencyGraph.IdOfNode(dependentKey)
+
+	// 	if _, ok := p.Value.(*parse.FunctionExpression); !ok {
+	// 		continue
+	// 	}
+
+	// 	hasMethods = true
+
+	// 	// find the method's dependencies
+	// 	parse.Walk(p.Value, func(node, parent, scopeNode parse.Node, ancestorChain []parse.Node, after bool) (parse.TraversalAction, error) {
+
+	// 		if parse.IsScopeContainerNode(node) && node != p.Value {
+	// 			return parse.Prune, nil
+	// 		}
+
+	// 		switch node.(type) {
+	// 		case *parse.SelfExpression:
+	// 			dependencyName := ""
+
+	// 			switch p := parent.(type) {
+	// 			case *parse.MemberExpression:
+	// 				dependencyName = p.PropertyName.Name
+	// 			case *parse.DynamicMemberExpression:
+	// 				dependencyName = p.PropertyName.Name
+	// 			}
+
+	// 			if dependencyName == "" {
+	// 				break
+	// 			}
+
+	// 			depId, ok := dependencyGraph.IdOfNode(dependencyName)
+	// 			if !ok {
+	// 				//?
+	// 				return parse.ContinueTraversal, nil
+	// 			}
+
+	// 			if dependentKeyId == depId {
+	// 				selfDependent = append(selfDependent, dependentKey)
+	// 			} else if !dependencyGraph.HasEdgeFromTo(dependentKeyId, depId) {
+	// 				// dependentKey ->- depKey
+	// 				dependencyGraph.AddEdge(dependentKeyId, depId)
+	// 			}
+	// 		}
+	// 		return parse.ContinueTraversal, nil
+	// 	}, nil)
+	// }
+
+	// // we sort the keys based on the dependency graph
+
+	// var dependencyChainCountsCache = make(map[memds.NodeId]int, len(keys))
+	// var getDependencyChainDepth func(memds.NodeId, []memds.NodeId) int
+	// var cycles [][]string
+
+	// getDependencyChainDepth = func(nodeId memds.NodeId, chain []memds.NodeId) int {
+	// 	for _, id := range chain {
+	// 		if nodeId == id && len(chain) >= 1 {
+	// 			cycle := make([]string, 0, len(chain))
+
+	// 			for _, id := range chain {
+	// 				cycle = append(cycle, "."+keys[id])
+	// 			}
+	// 			cycles = append(cycles, cycle)
+	// 			return 0
+	// 		}
+	// 	}
+
+	// 	chain = append(chain, nodeId)
+
+	// 	if v, ok := dependencyChainCountsCache[nodeId]; ok {
+	// 		return v
+	// 	}
+
+	// 	depth_ := 0
+	// 	directDependencies := dependencyGraph.IteratorDirectlyReachableNodes(nodeId)
+
+	// 	for directDependencies.Next() {
+	// 		dep := directDependencies.Node()
+	// 		count := 1 + getDependencyChainDepth(dep.Id(), chain)
+	// 		if count > depth_ {
+	// 			depth_ = count
+	// 		}
+	// 	}
+
+	// 	dependencyChainCountsCache[nodeId] = depth_
+	// 	return depth_
+	// }
+
+	// expectedObj, ok := findInMultivalue[*Object](options.expectedValue)
+	// if !ok {
+	// 	expectedObj = &Object{}
+	// }
+
+	// sort.Slice(keys, func(i, j int) bool {
+	// 	keyA := keys[i]
+	// 	keyB := keys[j]
+
+	// 	// we move all implicit lifetime jobs at the end
+	// 	p1 := keyToProp.MustGet(keyA)
+	// 	if _, ok := p1.Value.(*parse.LifetimejobExpression); ok {
+	// 		hasLifetimeJobs = true
+	// 		if p1.HasImplicitKey() {
+	// 			return false
+	// 		}
+	// 	}
+	// 	p2 := keyToProp.MustGet(keyB)
+	// 	if _, ok := p2.Value.(*parse.LifetimejobExpression); ok && p2.HasImplicitKey() {
+	// 		return true
+	// 	}
+
+	// 	idA := dependencyGraph.MustGetIdOfNode(keyA)
+	// 	idB := dependencyGraph.MustGetIdOfNode(keyB)
+
+	// 	return getDependencyChainDepth(idA, nil) < getDependencyChainDepth(idB, nil)
+	// })
+
+	// isExact := options.neverModifiedArgument && len(n.SpreadElements) == 0 && !hasMethods && !hasLifetimeJobs
+
+	// obj := NewObject(isExact, entries, nil, nil)
+	// if expectedObj.readonly {
+	// 	obj.readonly = true
+	// }
+
+	// if len(cycles) > 0 {
+	// 	state.addError(makeSymbolicEvalError(n, state, fmtMethodCyclesDetected(cycles)))
+	// 	return ANY_OBJ, nil
+	// }
+
+	// prevNextSelf, restoreNextSelf := state.getNextSelf()
+	// if restoreNextSelf {
+	// 	state.unsetNextSelf()
+	// }
+	// state.setNextSelf(obj)
+
+	// //add allowed missing properties
+	// {
+	// 	var properties []string
+	// 	expectedObj.ForEachEntry(func(propName string, propValue Value) error {
+	// 		if slices.Contains(keys, propName) {
+	// 			return nil
+	// 		}
+	// 		properties = append(properties, propName)
+	// 		return nil
+	// 	})
+	// 	state.symbolicData.SetAllowedNonPresentProperties(n, properties)
+	// }
+
+	// //evaluate properties
+	// for _, key := range keys {
+	// 	p := keyToProp.MustGet(key)
+
+	// 	var static Pattern
+
+	// 	expectedPropVal := expectedObj.entries[key]
+	// 	deeperMismatch := false
+
+	// 	if p.Key != nil && expectedObj.exact && expectedPropVal == nil {
+	// 		closest, _, ok := utils.FindClosestString(state.ctx.startingConcreteContext, maps.Keys(expectedObj.entries), p.Name(), 2)
+	// 		options.setActualValueMismatchIfNotNil()
+
+	// 		msg := ""
+	// 		if ok {
+	// 			msg = fmtUnexpectedPropertyDidYouMeanElse(key, closest)
+	// 		} else {
+	// 			msg = fmtUnexpectedProperty(key)
+	// 		}
+
+	// 		state.addError(makeSymbolicEvalError(p.Key, state, msg))
+	// 	}
+
+	// 	var (
+	// 		propVal      Value
+	// 		err          error
+	// 		serializable Serializable
+	// 	)
+
+	// 	if p.Value == nil {
+	// 		propVal = ANY_SERIALIZABLE
+	// 		serializable = ANY_SERIALIZABLE
+	// 	} else {
+	// 		propVal, err = _symbolicEval(p.Value, state, evalOptions{expectedValue: expectedPropVal, actualValueMismatch: &deeperMismatch})
+	// 		if err != nil {
+	// 			return nil, err
+	// 		}
+
+	// 		if p.Type != nil {
+	// 			_propType, err := symbolicEval(p.Type, state)
+	// 			if err != nil {
+	// 				return nil, err
+	// 			}
+	// 			static = _propType.(Pattern)
+	// 			if !static.TestValue(propVal, RecTestCallState{}) {
+	// 				expected := static.SymbolicValue()
+	// 				state.addError(makeSymbolicEvalError(p.Value, state, fmtNotAssignableToPropOfType(propVal, expected)))
+	// 				propVal = expected
+	// 			}
+	// 		} else if deeperMismatch {
+	// 			options.setActualValueMismatchIfNotNil()
+	// 		} else if expectedPropVal != nil && !deeperMismatch && !expectedPropVal.Test(propVal, RecTestCallState{}) {
+	// 			options.setActualValueMismatchIfNotNil()
+	// 			state.addError(makeSymbolicEvalError(p.Value, state, fmtNotAssignableToPropOfType(propVal, expectedPropVal)))
+	// 		}
+
+	// 		serializable, ok = propVal.(Serializable)
+	// 		if !ok {
+	// 			state.addError(makeSymbolicEvalError(p, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_INITIAL_VALUES_OF_SERIALIZABLE))
+	// 			serializable = ANY_SERIALIZABLE
+	// 		} else if _, ok := asWatchable(propVal).(Watchable); !ok && propVal.IsMutable() {
+	// 			state.addError(makeSymbolicEvalError(p, state, MUTABLE_NON_WATCHABLE_VALUES_NOT_ALLOWED_AS_INITIAL_VALUES_OF_WATCHABLE))
+	// 		}
+
+	// 		//additional checks if expected object is readonly
+	// 		if expectedObj.readonly {
+	// 			if _, ok := propVal.(*LifetimeJob); ok {
+	// 				state.addError(makeSymbolicEvalError(p, state, LIFETIME_JOBS_NOT_ALLOWED_IN_READONLY_OBJECTS))
+	// 			} else if !IsReadonlyOrImmutable(propVal) {
+	// 				state.addError(makeSymbolicEvalError(p.Key, state, PROPERTY_VALUES_OF_READONLY_OBJECTS_SHOULD_BE_READONLY_OR_IMMUTABLE))
+	// 			}
+	// 		}
+	// 	}
+
+	// 	obj.initNewProp(key, serializable, static)
+	// 	state.symbolicData.SetMostSpecificNodeValue(p.Key, propVal)
+	// }
+	// state.unsetNextSelf()
+	// if restoreNextSelf {
+	// 	state.setNextSelf(prevNextSelf)
+	// }
 
 	for _, metaProp := range objLit.MetaProperties {
 		state.addError(makeSymbolicEvalError(metaProp, state, META_PROPERTIES_NOT_ALLOWED_IN_EXTENSION_OBJECT))

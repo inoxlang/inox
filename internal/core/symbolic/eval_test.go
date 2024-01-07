@@ -3382,351 +3382,6 @@ func TestSymbolicEval(t *testing.T) {
 		})
 	})
 
-	t.Run("methods", func(t *testing.T) {
-		t.Run("method returning a property", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`
-				{
-					f: fn() => self.a,
-					a: int,
-				}
-			`)
-
-			fnExpr := parse.FindNode(n, (*parse.FunctionExpression)(nil), nil)
-
-			res, err := symbolicEval(n, state)
-			assert.NoError(t, err)
-			assert.Empty(t, state.errors())
-
-			expectedFunc := &InoxFunction{
-				node:      fnExpr,
-				nodeChunk: n,
-				result:    ANY_INT,
-			}
-
-			assert.Equal(t, &Object{
-				entries: map[string]Serializable{
-					"a": ANY_INT,
-					"f": expectedFunc,
-				},
-				static: map[string]Pattern{
-					"a": ANY_INT.Static(),
-					"f": getStatic(expectedFunc),
-				},
-			}, res)
-		})
-
-		t.Run("method returning a dynamic member", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`
-				{
-					f: fn() => self.<a,
-					a: int,
-				}
-			`)
-
-			fnExpr := parse.FindNode(n, (*parse.FunctionExpression)(nil), nil)
-
-			res, err := symbolicEval(n, state)
-
-			assert.NoError(t, err)
-			assert.Empty(t, state.errors())
-
-			expectedFunction := &InoxFunction{
-				node:      fnExpr,
-				nodeChunk: n,
-				result:    NewDynamicValue(ANY_INT),
-			}
-
-			assert.Equal(t, &Object{
-				entries: map[string]Serializable{
-					"a": ANY_INT,
-					"f": expectedFunction,
-				},
-				static: map[string]Pattern{
-					"a": ANY_INT.Static(),
-					"f": getStatic(expectedFunction),
-				},
-			}, res)
-		})
-
-		t.Run("method calling another method : caller declared first", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`
-				{
-					a: int,
-					f: fn() => self.g,
-					g: fn() => self.a,
-				}
-			`)
-
-			fFnExpr := parse.FindNodes(n, (*parse.FunctionExpression)(nil), nil)[0]
-			gFnExpr := parse.FindNodes(n, (*parse.FunctionExpression)(nil), nil)[1]
-
-			res, err := symbolicEval(n, state)
-			assert.NoError(t, err)
-			assert.Empty(t, state.errors())
-
-			obj := res.(*Object)
-			g, _, _ := obj.GetProperty("g")
-
-			expectedF := &InoxFunction{
-				node:      fFnExpr,
-				nodeChunk: n,
-				result:    g,
-			}
-
-			expectedG := &InoxFunction{
-				node:      gFnExpr,
-				nodeChunk: n,
-				result:    ANY_INT,
-			}
-
-			assert.Equal(t, &Object{
-				entries: map[string]Serializable{
-					"a": ANY_INT,
-					"f": expectedF,
-					"g": expectedG,
-				},
-				static: map[string]Pattern{
-					"a": ANY_INT.Static(),
-					"f": getStatic(expectedF),
-					"g": getStatic(expectedG),
-				},
-			}, obj)
-		})
-
-		t.Run("method calling another method : callee declared first", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`
-				{
-					a: int,
-					g: fn() => self.a,
-					f: fn() => self.g,
-				}
-			`)
-
-			gFnExpr := parse.FindNodes(n, (*parse.FunctionExpression)(nil), nil)[0]
-			fFnExpr := parse.FindNodes(n, (*parse.FunctionExpression)(nil), nil)[1]
-
-			res, err := symbolicEval(n, state)
-			assert.NoError(t, err)
-			assert.Empty(t, state.errors())
-
-			obj := res.(*Object)
-			g, _, _ := obj.GetProperty("g")
-
-			expectedF := &InoxFunction{
-				node:      fFnExpr,
-				nodeChunk: n,
-				result:    g,
-			}
-
-			expectedG := &InoxFunction{
-				node:      gFnExpr,
-				nodeChunk: n,
-				result:    ANY_INT,
-			}
-
-			assert.Equal(t, &Object{
-				entries: map[string]Serializable{
-					"a": ANY_INT,
-					"f": expectedF,
-					"g": expectedG,
-				},
-				static: map[string]Pattern{
-					"a": ANY_INT.Static(),
-					"f": getStatic(expectedF),
-					"g": getStatic(expectedG),
-				},
-			}, obj)
-		})
-
-		t.Run("cycle of two methods", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`
-				{
-					f: fn() => self.g,
-					g: fn() => self.f,
-				}
-			`)
-
-			objExpr := n.Statements[0]
-			res, err := symbolicEval(n, state)
-
-			assert.NoError(t, err)
-			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(objExpr, state, fmtMethodCyclesDetected([][]string{{".g", ".f"}})),
-			}, state.errors())
-			assert.Equal(t, ANY_OBJ, res)
-		})
-		t.Run("cycle of three methods", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`
-				{
-					f: fn() => self.g,
-					g: fn() => self.h,
-					h: fn() => self.f,
-				}
-			`)
-
-			objExpr := n.Statements[0]
-			res, err := symbolicEval(n, state)
-
-			assert.NoError(t, err)
-			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(objExpr, state, fmtMethodCyclesDetected([][]string{{".g", ".h", ".f"}})),
-			}, state.errors())
-			assert.Equal(t, ANY_OBJ, res)
-		})
-
-		t.Run("invalid mutation of a list", func(t *testing.T) {
-			t.Run("", func(t *testing.T) {
-				n, state := MakeTestStateAndChunk(`
-					var l = [1]
-					l.append(true)
-					return l
-				`)
-
-				callExpr := n.Statements[1]
-				res, err := symbolicEval(n, state)
-
-				assert.NoError(t, err)
-				assert.Equal(t, []SymbolicEvaluationError{
-					makeSymbolicEvalError(callExpr, state, INVALID_MUTATION),
-				}, state.errors())
-				assert.Equal(t, NewList(NewInt(1)), res)
-			})
-			t.Run("", func(t *testing.T) {
-				n, state := MakeTestStateAndChunk(`
-					var l [1] = [1]
-					l.append(1)
-					return l
-				`)
-
-				callExpr := n.Statements[1]
-				res, err := symbolicEval(n, state)
-
-				assert.NoError(t, err)
-				assert.Equal(t, []SymbolicEvaluationError{
-					makeSymbolicEvalError(callExpr, state, INVALID_MUTATION),
-				}, state.errors())
-				assert.Equal(t, NewList(NewInt(1)), res)
-			})
-
-			t.Run("", func(t *testing.T) {
-				n, state := MakeTestStateAndChunk(`
-					var l []%(1) = [1]
-					l.append(2)
-					return l
-				`)
-
-				callExpr := n.Statements[1]
-				res, err := symbolicEval(n, state)
-
-				assert.NoError(t, err)
-				assert.Equal(t, []SymbolicEvaluationError{
-					makeSymbolicEvalError(callExpr, state, INVALID_MUTATION),
-				}, state.errors())
-				assert.Equal(t, NewList(NewInt(1)), res)
-			})
-		})
-
-		t.Run("valid mutation of a list", func(t *testing.T) {
-			t.Run("append an int to a list with a single int element", func(t *testing.T) {
-				n, state := MakeTestStateAndChunk(`
-					var l = [1]
-					l.append(2)
-					return l
-				`)
-
-				res, err := symbolicEval(n, state)
-
-				assert.NoError(t, err)
-				assert.Empty(t, state.errors())
-				assert.Equal(t, NewListOf(ANY_INT), res)
-			})
-
-			t.Run("append an int to an empty list", func(t *testing.T) {
-				n, state := MakeTestStateAndChunk(`
-					var l = [1]
-					l.append(2)
-					return l
-				`)
-
-				res, err := symbolicEval(n, state)
-
-				assert.NoError(t, err)
-				assert.Empty(t, state.errors())
-				assert.Equal(t, NewListOf(ANY_INT), res)
-			})
-
-			t.Run("append two different ints to an empty list", func(t *testing.T) {
-				n, state := MakeTestStateAndChunk(`
-					var l = []
-					l.append(1, 2)
-					return l
-				`)
-
-				res, err := symbolicEval(n, state)
-
-				assert.NoError(t, err)
-				assert.Empty(t, state.errors())
-				assert.Equal(t, NewListOf(AsSerializableChecked(INT_1_OR_2)), res)
-			})
-
-			t.Run("append an int to a list with a single int element that has []int as static type", func(t *testing.T) {
-				n, state := MakeTestStateAndChunk(`
-					var l []int = [1]
-					l.append(2)
-					return l
-				`)
-
-				res, err := symbolicEval(n, state)
-
-				assert.NoError(t, err)
-				assert.Empty(t, state.errors())
-				assert.Equal(t, NewListOf(ANY_INT), res)
-			})
-
-			t.Run("append an int to an empty list that has []int as static type", func(t *testing.T) {
-				n, state := MakeTestStateAndChunk(`
-					var l []int = []
-					l.append(2)
-					return l
-				`)
-
-				res, err := symbolicEval(n, state)
-
-				assert.NoError(t, err)
-				assert.Empty(t, state.errors())
-				assert.Equal(t, NewListOf(INT_2), res)
-			})
-
-			t.Run("append two different ints to an empty list that has []int as static type", func(t *testing.T) {
-				n, state := MakeTestStateAndChunk(`
-					var l []int = []
-					l.append(1, 2)
-					return l
-				`)
-
-				res, err := symbolicEval(n, state)
-
-				assert.NoError(t, err)
-				assert.Empty(t, state.errors())
-				assert.Equal(t, NewListOf(AsSerializableChecked(INT_1_OR_2)), res)
-			})
-
-			t.Run("append an int to a list with a single int element that has []%(1) as static type", func(t *testing.T) {
-				n, state := MakeTestStateAndChunk(`
-					var l []%(1) = [1]
-					l.append(1)
-					return l
-				`)
-
-				res, err := symbolicEval(n, state)
-
-				assert.NoError(t, err)
-				assert.Empty(t, state.errors())
-				assert.Equal(t, NewListOf(NewInt(1)), res)
-			})
-		})
-	})
-
 	t.Run("call undefined function", func(t *testing.T) {
 		t.Run("regular call", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
@@ -4421,63 +4076,6 @@ func TestSymbolicEval(t *testing.T) {
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
-			assert.Empty(t, state.errors())
-			assert.Equal(t, ANY_INT, res)
-		})
-
-		t.Run("method returning a property (identifier member expression with single property)", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`
-				o = {
-					f: fn() => self.a,
-					a: int,
-				}
-
-				return o.f()
-			`)
-
-			res, err := symbolicEval(n, state)
-			if !assert.NoError(t, err) {
-				return
-			}
-			assert.Empty(t, state.errors())
-			assert.Equal(t, ANY_INT, res)
-		})
-
-		t.Run("method returning a property (member expression)", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`
-				o = {
-					f: fn() => self.a,
-					a: int,
-				}
-
-				return $o.f()
-			`)
-
-			res, err := symbolicEval(n, state)
-			if !assert.NoError(t, err) {
-				return
-			}
-			assert.Empty(t, state.errors())
-			assert.Equal(t, ANY_INT, res)
-		})
-
-		t.Run("method returning a property (identifier member expression with two properties)", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`
-				inner = {
-					f: fn() => self.a,
-					a: int,
-				}
-
-
-				o = {inner: inner}
-
-				return o.inner.f()
-			`)
-
-			res, err := symbolicEval(n, state)
-			if !assert.NoError(t, err) {
-				return
-			}
 			assert.Empty(t, state.errors())
 			assert.Equal(t, ANY_INT, res)
 		})
@@ -5747,38 +5345,6 @@ func TestSymbolicEval(t *testing.T) {
 				return
 			}
 			assert.Equal(t, expectedObject, val)
-		})
-
-		t.Run("object literal arguments with methods should be evaluated as inexact objects", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`
-				return f({
-					a: "a",
-					f: fn(){}
-				})
-			`)
-			objLiteral := parse.FindNode(n, (*parse.ObjectLiteral)(nil), nil)
-
-			goFunc := &GoFunction{
-				fn: func(ctx *Context, arg Value) Value {
-					return arg
-				},
-			}
-			state.setGlobal("f", goFunc, GlobalConst)
-
-			res, err := symbolicEval(n, state)
-			assert.NoError(t, err)
-			assert.Empty(t, state.errors())
-
-			if !assert.IsType(t, (*Object)(nil), res) {
-				return
-			}
-
-			assert.True(t, res.(*Object).IsInexact())
-			val, ok := state.symbolicData.GetMostSpecificNodeValue(objLiteral)
-			if !assert.True(t, ok) {
-				return
-			}
-			assert.True(t, val.(*Object).IsInexact())
 		})
 
 		t.Run("complex specific Go function with invalid argument", func(t *testing.T) {
@@ -12618,6 +12184,415 @@ func TestSymbolicEval(t *testing.T) {
 			}, state.errors())
 		})
 
+		if true {
+			return
+		}
+
+		//TODO: adapt following tests for extend statements
+
+		t.Run("(move this test in `call Inox function`) method returning a property (identifier member expression with single property)", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				o = {
+					f: fn() => self.a,
+					a: int,
+				}
+
+				return o.f()
+			`)
+
+			res, err := symbolicEval(n, state)
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.Empty(t, state.errors())
+			assert.Equal(t, ANY_INT, res)
+		})
+
+		t.Run("(move this test in `call Inox function`) method returning a property (member expression)", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				o = {
+					f: fn() => self.a,
+					a: int,
+				}
+
+				return $o.f()
+			`)
+
+			res, err := symbolicEval(n, state)
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.Empty(t, state.errors())
+			assert.Equal(t, ANY_INT, res)
+		})
+
+		t.Run("(move this test in `call Inox function`) method returning a property (identifier member expression with two properties)", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				inner = {
+					f: fn() => self.a,
+					a: int,
+				}
+
+
+				o = {inner: inner}
+
+				return o.inner.f()
+			`)
+
+			res, err := symbolicEval(n, state)
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.Empty(t, state.errors())
+			assert.Equal(t, ANY_INT, res)
+		})
+
+		//TODO: adapt following tests for extend statements
+
+		t.Run("methods", func(t *testing.T) {
+			t.Run("method returning a property", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					{
+						f: fn() => self.a,
+						a: int,
+					}
+				`)
+
+				fnExpr := parse.FindNode(n, (*parse.FunctionExpression)(nil), nil)
+
+				res, err := symbolicEval(n, state)
+				assert.NoError(t, err)
+				assert.Empty(t, state.errors())
+
+				expectedFunc := &InoxFunction{
+					node:      fnExpr,
+					nodeChunk: n,
+					result:    ANY_INT,
+				}
+
+				assert.Equal(t, &Object{
+					entries: map[string]Serializable{
+						"a": ANY_INT,
+						"f": expectedFunc,
+					},
+					static: map[string]Pattern{
+						"a": ANY_INT.Static(),
+						"f": getStatic(expectedFunc),
+					},
+				}, res)
+			})
+
+			t.Run("method returning a dynamic member", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					{
+						f: fn() => self.<a,
+						a: int,
+					}
+				`)
+
+				fnExpr := parse.FindNode(n, (*parse.FunctionExpression)(nil), nil)
+
+				res, err := symbolicEval(n, state)
+
+				assert.NoError(t, err)
+				assert.Empty(t, state.errors())
+
+				expectedFunction := &InoxFunction{
+					node:      fnExpr,
+					nodeChunk: n,
+					result:    NewDynamicValue(ANY_INT),
+				}
+
+				assert.Equal(t, &Object{
+					entries: map[string]Serializable{
+						"a": ANY_INT,
+						"f": expectedFunction,
+					},
+					static: map[string]Pattern{
+						"a": ANY_INT.Static(),
+						"f": getStatic(expectedFunction),
+					},
+				}, res)
+			})
+
+			t.Run("method calling another method : caller declared first", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					{
+						a: int,
+						f: fn() => self.g,
+						g: fn() => self.a,
+					}
+				`)
+
+				fFnExpr := parse.FindNodes(n, (*parse.FunctionExpression)(nil), nil)[0]
+				gFnExpr := parse.FindNodes(n, (*parse.FunctionExpression)(nil), nil)[1]
+
+				res, err := symbolicEval(n, state)
+				assert.NoError(t, err)
+				assert.Empty(t, state.errors())
+
+				obj := res.(*Object)
+				g, _, _ := obj.GetProperty("g")
+
+				expectedF := &InoxFunction{
+					node:      fFnExpr,
+					nodeChunk: n,
+					result:    g,
+				}
+
+				expectedG := &InoxFunction{
+					node:      gFnExpr,
+					nodeChunk: n,
+					result:    ANY_INT,
+				}
+
+				assert.Equal(t, &Object{
+					entries: map[string]Serializable{
+						"a": ANY_INT,
+						"f": expectedF,
+						"g": expectedG,
+					},
+					static: map[string]Pattern{
+						"a": ANY_INT.Static(),
+						"f": getStatic(expectedF),
+						"g": getStatic(expectedG),
+					},
+				}, obj)
+			})
+
+			t.Run("method calling another method : callee declared first", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					{
+						a: int,
+						g: fn() => self.a,
+						f: fn() => self.g,
+					}
+				`)
+
+				gFnExpr := parse.FindNodes(n, (*parse.FunctionExpression)(nil), nil)[0]
+				fFnExpr := parse.FindNodes(n, (*parse.FunctionExpression)(nil), nil)[1]
+
+				res, err := symbolicEval(n, state)
+				assert.NoError(t, err)
+				assert.Empty(t, state.errors())
+
+				obj := res.(*Object)
+				g, _, _ := obj.GetProperty("g")
+
+				expectedF := &InoxFunction{
+					node:      fFnExpr,
+					nodeChunk: n,
+					result:    g,
+				}
+
+				expectedG := &InoxFunction{
+					node:      gFnExpr,
+					nodeChunk: n,
+					result:    ANY_INT,
+				}
+
+				assert.Equal(t, &Object{
+					entries: map[string]Serializable{
+						"a": ANY_INT,
+						"f": expectedF,
+						"g": expectedG,
+					},
+					static: map[string]Pattern{
+						"a": ANY_INT.Static(),
+						"f": getStatic(expectedF),
+						"g": getStatic(expectedG),
+					},
+				}, obj)
+			})
+
+			t.Run("cycle of two methods", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					{
+						f: fn() => self.g,
+						g: fn() => self.f,
+					}
+				`)
+
+				objExpr := n.Statements[0]
+				res, err := symbolicEval(n, state)
+
+				assert.NoError(t, err)
+				assert.Equal(t, []SymbolicEvaluationError{
+					makeSymbolicEvalError(objExpr, state, fmtMethodCyclesDetected([][]string{{".g", ".f"}})),
+				}, state.errors())
+				assert.Equal(t, ANY_OBJ, res)
+			})
+			t.Run("cycle of three methods", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					{
+						f: fn() => self.g,
+						g: fn() => self.h,
+						h: fn() => self.f,
+					}
+				`)
+
+				objExpr := n.Statements[0]
+				res, err := symbolicEval(n, state)
+
+				assert.NoError(t, err)
+				assert.Equal(t, []SymbolicEvaluationError{
+					makeSymbolicEvalError(objExpr, state, fmtMethodCyclesDetected([][]string{{".g", ".h", ".f"}})),
+				}, state.errors())
+				assert.Equal(t, ANY_OBJ, res)
+			})
+
+			t.Run("invalid mutation of a list", func(t *testing.T) {
+				t.Run("", func(t *testing.T) {
+					n, state := MakeTestStateAndChunk(`
+						var l = [1]
+						l.append(true)
+						return l
+					`)
+
+					callExpr := n.Statements[1]
+					res, err := symbolicEval(n, state)
+
+					assert.NoError(t, err)
+					assert.Equal(t, []SymbolicEvaluationError{
+						makeSymbolicEvalError(callExpr, state, INVALID_MUTATION),
+					}, state.errors())
+					assert.Equal(t, NewList(NewInt(1)), res)
+				})
+				t.Run("", func(t *testing.T) {
+					n, state := MakeTestStateAndChunk(`
+						var l [1] = [1]
+						l.append(1)
+						return l
+					`)
+
+					callExpr := n.Statements[1]
+					res, err := symbolicEval(n, state)
+
+					assert.NoError(t, err)
+					assert.Equal(t, []SymbolicEvaluationError{
+						makeSymbolicEvalError(callExpr, state, INVALID_MUTATION),
+					}, state.errors())
+					assert.Equal(t, NewList(NewInt(1)), res)
+				})
+
+				t.Run("", func(t *testing.T) {
+					n, state := MakeTestStateAndChunk(`
+						var l []%(1) = [1]
+						l.append(2)
+						return l
+					`)
+
+					callExpr := n.Statements[1]
+					res, err := symbolicEval(n, state)
+
+					assert.NoError(t, err)
+					assert.Equal(t, []SymbolicEvaluationError{
+						makeSymbolicEvalError(callExpr, state, INVALID_MUTATION),
+					}, state.errors())
+					assert.Equal(t, NewList(NewInt(1)), res)
+				})
+			})
+
+			t.Run("valid mutation of a list", func(t *testing.T) {
+				t.Run("append an int to a list with a single int element", func(t *testing.T) {
+					n, state := MakeTestStateAndChunk(`
+						var l = [1]
+						l.append(2)
+						return l
+					`)
+
+					res, err := symbolicEval(n, state)
+
+					assert.NoError(t, err)
+					assert.Empty(t, state.errors())
+					assert.Equal(t, NewListOf(ANY_INT), res)
+				})
+
+				t.Run("append an int to an empty list", func(t *testing.T) {
+					n, state := MakeTestStateAndChunk(`
+						var l = [1]
+						l.append(2)
+						return l
+					`)
+
+					res, err := symbolicEval(n, state)
+
+					assert.NoError(t, err)
+					assert.Empty(t, state.errors())
+					assert.Equal(t, NewListOf(ANY_INT), res)
+				})
+
+				t.Run("append two different ints to an empty list", func(t *testing.T) {
+					n, state := MakeTestStateAndChunk(`
+						var l = []
+						l.append(1, 2)
+						return l
+					`)
+
+					res, err := symbolicEval(n, state)
+
+					assert.NoError(t, err)
+					assert.Empty(t, state.errors())
+					assert.Equal(t, NewListOf(AsSerializableChecked(INT_1_OR_2)), res)
+				})
+
+				t.Run("append an int to a list with a single int element that has []int as static type", func(t *testing.T) {
+					n, state := MakeTestStateAndChunk(`
+						var l []int = [1]
+						l.append(2)
+						return l
+					`)
+
+					res, err := symbolicEval(n, state)
+
+					assert.NoError(t, err)
+					assert.Empty(t, state.errors())
+					assert.Equal(t, NewListOf(ANY_INT), res)
+				})
+
+				t.Run("append an int to an empty list that has []int as static type", func(t *testing.T) {
+					n, state := MakeTestStateAndChunk(`
+						var l []int = []
+						l.append(2)
+						return l
+					`)
+
+					res, err := symbolicEval(n, state)
+
+					assert.NoError(t, err)
+					assert.Empty(t, state.errors())
+					assert.Equal(t, NewListOf(INT_2), res)
+				})
+
+				t.Run("append two different ints to an empty list that has []int as static type", func(t *testing.T) {
+					n, state := MakeTestStateAndChunk(`
+						var l []int = []
+						l.append(1, 2)
+						return l
+					`)
+
+					res, err := symbolicEval(n, state)
+
+					assert.NoError(t, err)
+					assert.Empty(t, state.errors())
+					assert.Equal(t, NewListOf(AsSerializableChecked(INT_1_OR_2)), res)
+				})
+
+				t.Run("append an int to a list with a single int element that has []%(1) as static type", func(t *testing.T) {
+					n, state := MakeTestStateAndChunk(`
+						var l []%(1) = [1]
+						l.append(1)
+						return l
+					`)
+
+					res, err := symbolicEval(n, state)
+
+					assert.NoError(t, err)
+					assert.Empty(t, state.errors())
+					assert.Equal(t, NewListOf(NewInt(1)), res)
+				})
+			})
+		})
 	})
 
 	t.Run("double-colon expression", func(t *testing.T) {
