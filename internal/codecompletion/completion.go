@@ -120,229 +120,36 @@ func FindCompletions(args CompletionSearchArgs) []Completion {
 		return nil
 	}
 
-	ctx := state.Global.Ctx
+	search := completionSearch{
+		state:         state,
+		chunk:         chunk,
+		cursorIndex:   cursorIndex,
+		mode:          mode,
+		parent:        _parent,
+		ancestorChain: _ancestorChain,
+	}
 
 	switch n := nodeAtCursor.(type) {
 	case *parse.PatternIdentifierLiteral:
-		if mode == ShellCompletions {
-			for name, patt := range state.Global.Ctx.GetNamedPatterns() {
-				if !hasPrefixCaseInsensitive(name, n.Name) {
-					continue
-				}
-				detail, _ := core.GetStringifiedSymbolicValue(ctx, patt, false)
-
-				hasPercent := parse.GetFirstTokenString(n, chunk.Node)[0] == '%'
-				s := name
-				if hasPercent {
-					s = "%" + s
-				}
-
-				completions = append(completions, Completion{
-					ShownString: s,
-					Value:       s,
-					Kind:        defines.CompletionItemKindInterface,
-					LabelDetail: detail,
-				})
-			}
-			for name, namespace := range state.Global.Ctx.GetPatternNamespaces() {
-				detail, _ := core.GetStringifiedSymbolicValue(ctx, namespace, false)
-
-				if !hasPrefixCaseInsensitive(name, n.Name) {
-					continue
-				}
-
-				hasPercent := parse.GetFirstTokenString(n, chunk.Node)[0] == '%'
-				s := name
-				if hasPercent {
-					s = "%" + s
-				}
-
-				completions = append(completions, Completion{
-					ShownString: s,
-					Value:       s,
-					Kind:        defines.CompletionItemKindInterface,
-					LabelDetail: detail,
-				})
-			}
-		} else {
-			contextData, _ := state.Global.SymbolicData.GetContextData(n, _ancestorChain)
-			for _, patternData := range contextData.Patterns {
-				if !hasPrefixCaseInsensitive(patternData.Name, n.Name) {
-					continue
-				}
-
-				s := patternData.Name
-				if !n.Unprefixed {
-					s = "%" + s
-				}
-				completions = append(completions, Completion{
-					ShownString: s,
-					Value:       s,
-					Kind:        defines.CompletionItemKindInterface,
-					LabelDetail: symbolic.Stringify(patternData.Value),
-				})
-			}
-			for _, namespaceData := range contextData.PatternNamespaces {
-				if !hasPrefixCaseInsensitive(namespaceData.Name, n.Name) {
-					continue
-				}
-
-				s := namespaceData.Name + "."
-				if !n.Unprefixed {
-					s = "%" + s
-				}
-				completions = append(completions, Completion{
-					ShownString: s,
-					Value:       s,
-					Kind:        defines.CompletionItemKindInterface,
-					LabelDetail: symbolic.Stringify(namespaceData.Value),
-				})
-			}
-		}
+		completions = handlePatternIdentCompletions(n, search)
 	case *parse.PatternNamespaceIdentifierLiteral, *parse.PatternNamespaceMemberExpression:
-		var namespaceName string
-		var memberName string
-		var prefixed bool
-
-		switch node := n.(type) {
-		case *parse.PatternNamespaceIdentifierLiteral:
-			namespaceName = node.Name
-			prefixed = !node.Unprefixed
-		case *parse.PatternNamespaceMemberExpression:
-			namespaceName = node.Namespace.Name
-			memberName = node.MemberName.Name
-			prefixed = !node.Namespace.Unprefixed
-		}
-
-		if mode == ShellCompletions {
-			namespace := state.Global.Ctx.ResolvePatternNamespace(namespaceName)
-			if namespace == nil {
-				return nil
-			}
-
-			for patternName, patternValue := range namespace.Patterns {
-				if !hasPrefixCaseInsensitive(patternName, memberName) {
-					continue
-				}
-
-				s := namespaceName + "." + patternName
-				if prefixed {
-					s = "%" + s
-				}
-				detail, _ := core.GetStringifiedSymbolicValue(ctx, patternValue, false)
-
-				completions = append(completions, Completion{
-					ShownString: s,
-					Value:       s,
-					Kind:        defines.CompletionItemKindInterface,
-					LabelDetail: detail,
-				})
-			}
-		} else {
-			contextData, _ := state.Global.SymbolicData.GetContextData(n, _ancestorChain)
-			var namespace *symbolic.PatternNamespace
-			for _, namespaceData := range contextData.PatternNamespaces {
-				if namespaceData.Name == namespaceName {
-					namespace = namespaceData.Value
-					break
-				}
-			}
-			if namespace == nil {
-				return nil
-			}
-
-			namespace.ForEachPattern(func(patternName string, patternValue symbolic.Pattern) error {
-				if !hasPrefixCaseInsensitive(patternName, memberName) {
-					return nil
-				}
-
-				s := namespaceName + "." + patternName
-				if prefixed {
-					s = "%" + s
-				}
-				completions = append(completions, Completion{
-					ShownString: s,
-					Value:       s,
-					Kind:        defines.CompletionItemKindInterface,
-					LabelDetail: symbolic.Stringify(patternValue),
-				})
-
-				return nil
-			})
-		}
+		completions = handlePatternNamespaceCompletions(n, search)
 	case *parse.Variable:
-		var names []string
-		var labelDetails []string
-		if args.Mode == ShellCompletions {
-			for name, varVal := range state.CurrentLocalScope() {
-
-				if hasPrefixCaseInsensitive(name, n.Name) {
-					names = append(names, name)
-
-					detail, _ := core.GetStringifiedSymbolicValue(ctx, varVal, false)
-					labelDetails = append(labelDetails, detail)
-				}
-			}
-		} else {
-			scopeData, _ := state.Global.SymbolicData.GetLocalScopeData(n, _ancestorChain)
-			for _, varData := range scopeData.Variables {
-				if hasPrefixCaseInsensitive(varData.Name, n.Name) {
-					names = append(names, varData.Name)
-
-					labelDetails = append(labelDetails, symbolic.Stringify(varData.Value))
-				}
-			}
-		}
-
-		for i, name := range names {
-			completions = append(completions, Completion{
-				ShownString: name,
-				Value:       "$" + name,
-				Kind:        defines.CompletionItemKindVariable,
-				LabelDetail: labelDetails[i],
-			})
-		}
+		completions = handleLocalVariableCompletions(n, search)
 	case *parse.GlobalVariable:
-		if mode == ShellCompletions {
-			state.Global.Globals.Foreach(func(name string, varVal core.Value, _ bool) error {
-				if hasPrefixCaseInsensitive(name, n.Name) {
-					detail, _ := core.GetStringifiedSymbolicValue(ctx, varVal, false)
-					completions = append(completions, Completion{
-						ShownString: name,
-						Value:       "$$" + name,
-						Kind:        defines.CompletionItemKindVariable,
-						LabelDetail: detail,
-					})
-				}
-				return nil
-			})
-		} else {
-			scopeData, _ := state.Global.SymbolicData.GetGlobalScopeData(n, _ancestorChain)
-
-			for _, varData := range scopeData.Variables {
-				if hasPrefixCaseInsensitive(varData.Name, n.Name) {
-					completions = append(completions, Completion{
-						ShownString: varData.Name,
-						Value:       "$$" + varData.Name,
-						Kind:        defines.CompletionItemKindVariable,
-						LabelDetail: symbolic.Stringify(varData.Value),
-					})
-				}
-			}
-		}
-
+		completions = handleGlobalVariableCompletions(n, search)
 	case *parse.IdentifierLiteral:
-		completions = handleIdentifierAndKeywordCompletions(mode, n, deepestCall, _ancestorChain, _parent, int32(cursorIndex), chunk, state)
+		completions = handleIdentifierAndKeywordCompletions(n, deepestCall, search)
 	case *parse.IdentifierMemberExpression:
-		completions = handleIdentifierMemberCompletions(n, state, chunk, mode)
+		completions = handleIdentifierMemberCompletions(n, search)
 	case *parse.MemberExpression:
-		completions = handleMemberExpressionCompletions(n, state, chunk, mode)
+		completions = handleMemberExpressionCompletions(n, search)
 	case *parse.DoubleColonExpression:
-		completions = handleDoubleColonExpressionCompletions(n, state, chunk, mode)
+		completions = handleDoubleColonExpressionCompletions(n, search)
 	case *parse.CallExpression: //if a call is the deepest node at cursor it means we are not in an argument
-		completions = handleNewCallArgumentCompletions(n, cursorIndex, state, chunk)
+		completions = handleNewCallArgumentCompletions(n, search)
 	case *parse.QuotedStringLiteral:
-		completions = findStringCompletions(n, _parent, _ancestorChain, state, chunk)
+		completions = findStringCompletions(n, search)
 	case *parse.RelativePathLiteral:
 		completions = findPathCompletions(state.Global.Ctx, n.Raw)
 	case *parse.AbsolutePathLiteral:
@@ -358,11 +165,11 @@ func FindCompletions(args CompletionSearchArgs) []Completion {
 			completions = findHostAliasCompletions(state.Global.Ctx, n.Raw[1:], _parent)
 		}
 	case *parse.ObjectLiteral:
-		completions = findObjectInteriorCompletions(n, _ancestorChain, _parent, int32(cursorIndex), chunk, state.Global)
+		completions = findObjectInteriorCompletions(n, search)
 	case *parse.RecordLiteral:
-		completions = findRecordInteriorCompletions(n, _ancestorChain, _parent, int32(cursorIndex), chunk, state.Global)
+		completions = findRecordInteriorCompletions(n, search)
 	case *parse.DictionaryLiteral:
-		completions = findDictionaryInteriorCompletions(n, _ancestorChain, _parent, int32(cursorIndex), chunk, state.Global)
+		completions = findDictionaryInteriorCompletions(n, search)
 	}
 
 	for i, completion := range completions {
@@ -379,10 +186,271 @@ func FindCompletions(args CompletionSearchArgs) []Completion {
 	return completions
 }
 
-func handleIdentifierAndKeywordCompletions(
-	mode CompletionMode, ident *parse.IdentifierLiteral, deepestCall *parse.CallExpression,
-	ancestors []parse.Node, parent parse.Node, cursorIndex int32, chunk *parse.ParsedChunk, state *core.TreeWalkState,
-) []Completion {
+type completionSearch struct {
+	state         *core.TreeWalkState
+	chunk         *parse.ParsedChunk
+	cursorIndex   int
+	mode          CompletionMode
+	parent        parse.Node
+	ancestorChain []parse.Node
+}
+
+func handlePatternIdentCompletions(n *parse.PatternIdentifierLiteral, search completionSearch) []Completion {
+	state := search.state
+	ctx := state.Global.Ctx
+	ancestorChain := search.ancestorChain
+	chunk := search.chunk
+	mode := search.mode
+
+	var completions []Completion
+
+	if mode == ShellCompletions {
+		for name, patt := range state.Global.Ctx.GetNamedPatterns() {
+			if !hasPrefixCaseInsensitive(name, n.Name) {
+				continue
+			}
+			detail, _ := core.GetStringifiedSymbolicValue(ctx, patt, false)
+
+			hasPercent := parse.GetFirstTokenString(n, chunk.Node)[0] == '%'
+			s := name
+			if hasPercent {
+				s = "%" + s
+			}
+
+			completions = append(completions, Completion{
+				ShownString: s,
+				Value:       s,
+				Kind:        defines.CompletionItemKindInterface,
+				LabelDetail: detail,
+			})
+		}
+		for name, namespace := range state.Global.Ctx.GetPatternNamespaces() {
+			detail, _ := core.GetStringifiedSymbolicValue(ctx, namespace, false)
+
+			if !hasPrefixCaseInsensitive(name, n.Name) {
+				continue
+			}
+
+			hasPercent := parse.GetFirstTokenString(n, chunk.Node)[0] == '%'
+			s := name
+			if hasPercent {
+				s = "%" + s
+			}
+
+			completions = append(completions, Completion{
+				ShownString: s,
+				Value:       s,
+				Kind:        defines.CompletionItemKindInterface,
+				LabelDetail: detail,
+			})
+		}
+	} else {
+		contextData, _ := state.Global.SymbolicData.GetContextData(n, ancestorChain)
+		for _, patternData := range contextData.Patterns {
+			if !hasPrefixCaseInsensitive(patternData.Name, n.Name) {
+				continue
+			}
+
+			s := patternData.Name
+			if !n.Unprefixed {
+				s = "%" + s
+			}
+			completions = append(completions, Completion{
+				ShownString: s,
+				Value:       s,
+				Kind:        defines.CompletionItemKindInterface,
+				LabelDetail: symbolic.Stringify(patternData.Value),
+			})
+		}
+		for _, namespaceData := range contextData.PatternNamespaces {
+			if !hasPrefixCaseInsensitive(namespaceData.Name, n.Name) {
+				continue
+			}
+
+			s := namespaceData.Name + "."
+			if !n.Unprefixed {
+				s = "%" + s
+			}
+			completions = append(completions, Completion{
+				ShownString: s,
+				Value:       s,
+				Kind:        defines.CompletionItemKindInterface,
+				LabelDetail: symbolic.Stringify(namespaceData.Value),
+			})
+		}
+	}
+
+	return completions
+}
+
+func handlePatternNamespaceCompletions(n parse.Node, search completionSearch) []Completion {
+	state := search.state
+	ctx := state.Global.Ctx
+	ancestorChain := search.ancestorChain
+	mode := search.mode
+
+	var completions []Completion
+
+	var namespaceName string
+	var memberName string
+	var prefixed bool
+
+	switch node := n.(type) {
+	case *parse.PatternNamespaceIdentifierLiteral:
+		namespaceName = node.Name
+		prefixed = !node.Unprefixed
+	case *parse.PatternNamespaceMemberExpression:
+		namespaceName = node.Namespace.Name
+		memberName = node.MemberName.Name
+		prefixed = !node.Namespace.Unprefixed
+	}
+
+	if mode == ShellCompletions {
+		namespace := state.Global.Ctx.ResolvePatternNamespace(namespaceName)
+		if namespace == nil {
+			return nil
+		}
+
+		for patternName, patternValue := range namespace.Patterns {
+			if !hasPrefixCaseInsensitive(patternName, memberName) {
+				continue
+			}
+
+			s := namespaceName + "." + patternName
+			if prefixed {
+				s = "%" + s
+			}
+			detail, _ := core.GetStringifiedSymbolicValue(ctx, patternValue, false)
+
+			completions = append(completions, Completion{
+				ShownString: s,
+				Value:       s,
+				Kind:        defines.CompletionItemKindInterface,
+				LabelDetail: detail,
+			})
+		}
+	} else {
+		contextData, _ := state.Global.SymbolicData.GetContextData(n, ancestorChain)
+		var namespace *symbolic.PatternNamespace
+		for _, namespaceData := range contextData.PatternNamespaces {
+			if namespaceData.Name == namespaceName {
+				namespace = namespaceData.Value
+				break
+			}
+		}
+		if namespace == nil {
+			return nil
+		}
+
+		namespace.ForEachPattern(func(patternName string, patternValue symbolic.Pattern) error {
+			if !hasPrefixCaseInsensitive(patternName, memberName) {
+				return nil
+			}
+
+			s := namespaceName + "." + patternName
+			if prefixed {
+				s = "%" + s
+			}
+			completions = append(completions, Completion{
+				ShownString: s,
+				Value:       s,
+				Kind:        defines.CompletionItemKindInterface,
+				LabelDetail: symbolic.Stringify(patternValue),
+			})
+
+			return nil
+		})
+	}
+
+	return completions
+}
+
+func handleLocalVariableCompletions(n *parse.Variable, search completionSearch) []Completion {
+	state := search.state
+	ctx := state.Global.Ctx
+	mode := search.mode
+	ancestorChain := search.ancestorChain
+
+	var completions []Completion
+
+	var names []string
+	var labelDetails []string
+	if mode == ShellCompletions {
+		for name, varVal := range state.CurrentLocalScope() {
+
+			if hasPrefixCaseInsensitive(name, n.Name) {
+				names = append(names, name)
+
+				detail, _ := core.GetStringifiedSymbolicValue(ctx, varVal, false)
+				labelDetails = append(labelDetails, detail)
+			}
+		}
+	} else {
+		scopeData, _ := state.Global.SymbolicData.GetLocalScopeData(n, ancestorChain)
+		for _, varData := range scopeData.Variables {
+			if hasPrefixCaseInsensitive(varData.Name, n.Name) {
+				names = append(names, varData.Name)
+
+				labelDetails = append(labelDetails, symbolic.Stringify(varData.Value))
+			}
+		}
+	}
+
+	for i, name := range names {
+		completions = append(completions, Completion{
+			ShownString: name,
+			Value:       "$" + name,
+			Kind:        defines.CompletionItemKindVariable,
+			LabelDetail: labelDetails[i],
+		})
+	}
+	return completions
+}
+
+func handleGlobalVariableCompletions(n *parse.GlobalVariable, search completionSearch) []Completion {
+	state := search.state
+	ctx := state.Global.Ctx
+	mode := search.mode
+	ancestorChain := search.ancestorChain
+
+	var completions []Completion
+
+	if mode == ShellCompletions {
+		state.Global.Globals.Foreach(func(name string, varVal core.Value, _ bool) error {
+			if hasPrefixCaseInsensitive(name, n.Name) {
+				detail, _ := core.GetStringifiedSymbolicValue(ctx, varVal, false)
+				completions = append(completions, Completion{
+					ShownString: name,
+					Value:       "$$" + name,
+					Kind:        defines.CompletionItemKindVariable,
+					LabelDetail: detail,
+				})
+			}
+			return nil
+		})
+	} else {
+		scopeData, _ := state.Global.SymbolicData.GetGlobalScopeData(n, ancestorChain)
+
+		for _, varData := range scopeData.Variables {
+			if hasPrefixCaseInsensitive(varData.Name, n.Name) {
+				completions = append(completions, Completion{
+					ShownString: varData.Name,
+					Value:       "$$" + varData.Name,
+					Kind:        defines.CompletionItemKindVariable,
+					LabelDetail: symbolic.Stringify(varData.Value),
+				})
+			}
+		}
+	}
+
+	return completions
+}
+
+func handleIdentifierAndKeywordCompletions(ident *parse.IdentifierLiteral, deepestCall *parse.CallExpression, search completionSearch) []Completion {
+	ancestors := search.ancestorChain
+	state := search.state
+	parent := search.parent
+	mode := search.mode
 
 	var completions []Completion
 
@@ -876,9 +944,10 @@ after_subcommand_completions:
 	return completions
 }
 
-func handleIdentifierMemberCompletions(
-	n *parse.IdentifierMemberExpression, state *core.TreeWalkState,
-	chunk *parse.ParsedChunk, mode CompletionMode) []Completion {
+func handleIdentifierMemberCompletions(n *parse.IdentifierMemberExpression, search completionSearch) []Completion {
+	state := search.state
+	mode := search.mode
+	chunk := search.chunk
 
 	var curr any
 	var ok bool
@@ -956,9 +1025,11 @@ func handleIdentifierMemberCompletions(
 	return suggestPropertyNames(curr, n.PropertyNames, isLastPropPresent, replacedRange, state.Global, mode)
 }
 
-func handleMemberExpressionCompletions(
-	n *parse.MemberExpression, state *core.TreeWalkState,
-	chunk *parse.ParsedChunk, mode CompletionMode) []Completion {
+func handleMemberExpressionCompletions(n *parse.MemberExpression, search completionSearch) []Completion {
+	state := search.state
+	mode := search.mode
+	chunk := search.chunk
+
 	ok := true
 
 	var exprPropertyNames = []*parse.IdentifierLiteral{n.PropertyName}
@@ -1089,7 +1160,11 @@ loop:
 	return suggestPropertyNames(curr, exprPropertyNames, isLastPropPresent, replacedRange, state.Global, mode)
 }
 
-func handleDoubleColonExpressionCompletions(n *parse.DoubleColonExpression, state *core.TreeWalkState, chunk *parse.ParsedChunk, mode CompletionMode) (completions []Completion) {
+func handleDoubleColonExpressionCompletions(n *parse.DoubleColonExpression, search completionSearch) (completions []Completion) {
+	state := search.state
+	mode := search.mode
+	chunk := search.chunk
+
 	if mode == ShellCompletions {
 		//TODO: support ?
 		return
@@ -1281,7 +1356,11 @@ func suggestPropertyNames(
 	return completions
 }
 
-func handleNewCallArgumentCompletions(n *parse.CallExpression, cursorIndex int, state *core.TreeWalkState, chunk *parse.ParsedChunk) []Completion {
+func handleNewCallArgumentCompletions(n *parse.CallExpression, search completionSearch) []Completion {
+	cursorIndex := search.cursorIndex
+	state := search.state
+	chunk := search.chunk
+
 	var completions []Completion
 	calleeIdent, ok := n.Callee.(*parse.IdentifierLiteral)
 	if !ok {
@@ -1362,10 +1441,11 @@ top_loop:
 	return completions
 }
 
-func findObjectInteriorCompletions(
-	n *parse.ObjectLiteral, ancestors []parse.Node, parent parse.Node, cursorIndex int32,
-	chunk *parse.ParsedChunk, state *core.GlobalState,
-) (completions []Completion) {
+func findObjectInteriorCompletions(n *parse.ObjectLiteral, search completionSearch) (completions []Completion) {
+	chunk := search.chunk
+	cursorIndex := int32(search.cursorIndex)
+	ancestors := search.ancestorChain
+
 	interiorSpan, err := parse.GetInteriorSpan(n, chunk.Node)
 	if err != nil {
 		return nil
@@ -1377,7 +1457,7 @@ func findObjectInteriorCompletions(
 
 	pos := chunk.GetSourcePosition(parse.NodeSpan{Start: cursorIndex, End: cursorIndex})
 
-	properties, ok := state.SymbolicData.GetAllowedNonPresentProperties(n)
+	properties, ok := search.state.Global.SymbolicData.GetAllowedNonPresentProperties(n)
 	if ok {
 		for _, name := range properties {
 			completions = append(completions, Completion{
@@ -1389,7 +1469,7 @@ func findObjectInteriorCompletions(
 		}
 	}
 
-	switch parent := parent.(type) {
+	switch parent := search.parent.(type) {
 	case *parse.Manifest: //suggest sections of the manifest that are not present
 	manifest_sections_loop:
 		for _, sectionName := range core.MANIFEST_SECTION_NAMES {
@@ -1584,10 +1664,10 @@ func findObjectInteriorCompletions(
 	return
 }
 
-func findRecordInteriorCompletions(
-	n *parse.RecordLiteral, ancestors []parse.Node, parent parse.Node, cursorIndex int32,
-	chunk *parse.ParsedChunk, state *core.GlobalState,
-) (completions []Completion) {
+func findRecordInteriorCompletions(n *parse.RecordLiteral, search completionSearch) (completions []Completion) {
+	cursorIndex := int32(search.cursorIndex)
+	chunk := search.chunk
+
 	interiorSpan, err := parse.GetInteriorSpan(n, chunk.Node)
 	if err != nil {
 		return nil
@@ -1599,7 +1679,7 @@ func findRecordInteriorCompletions(
 
 	pos := chunk.GetSourcePosition(parse.NodeSpan{Start: cursorIndex, End: cursorIndex})
 
-	properties, ok := state.SymbolicData.GetAllowedNonPresentProperties(n)
+	properties, ok := search.state.Global.SymbolicData.GetAllowedNonPresentProperties(n)
 	if ok {
 		for _, name := range properties {
 			completions = append(completions, Completion{
@@ -1613,10 +1693,10 @@ func findRecordInteriorCompletions(
 	return
 }
 
-func findDictionaryInteriorCompletions(
-	n *parse.DictionaryLiteral, ancestors []parse.Node, parent parse.Node, cursorIndex int32,
-	chunk *parse.ParsedChunk, state *core.GlobalState,
-) (completions []Completion) {
+func findDictionaryInteriorCompletions(n *parse.DictionaryLiteral, search completionSearch) (completions []Completion) {
+	cursorIndex := int32(search.cursorIndex)
+	chunk := search.chunk
+
 	interiorSpan, err := parse.GetInteriorSpan(n, chunk.Node)
 	if err != nil {
 		return nil
@@ -1628,7 +1708,7 @@ func findDictionaryInteriorCompletions(
 
 	pos := chunk.GetSourcePosition(parse.NodeSpan{Start: cursorIndex, End: cursorIndex})
 
-	properties, ok := state.SymbolicData.GetAllowedNonPresentKeys(n)
+	properties, ok := search.state.Global.SymbolicData.GetAllowedNonPresentKeys(n)
 	if ok {
 		for _, name := range properties {
 			completions = append(completions, Completion{
@@ -1643,15 +1723,12 @@ func findDictionaryInteriorCompletions(
 	return
 }
 
-func findStringCompletions(
-	strLit *parse.QuotedStringLiteral, parent parse.Node,
-	ancestors []parse.Node, state *core.TreeWalkState, chunk *parse.ParsedChunk,
-) (completions []Completion) {
+func findStringCompletions(strLit *parse.QuotedStringLiteral, search completionSearch) (completions []Completion) {
 	// in attribute
-	if attribute, ok := parent.(*parse.XMLAttribute); ok {
+	if attribute, ok := search.parent.(*parse.XMLAttribute); ok {
 		switch {
 		case strLit == attribute.Value:
-			completions = findXMLAttributeValueCompletions(strLit, attribute, ancestors)
+			completions = findXMLAttributeValueCompletions(strLit, attribute, search.ancestorChain)
 		}
 
 		return completions
