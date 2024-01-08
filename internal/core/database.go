@@ -48,6 +48,8 @@ var (
 	_ Value = (*DatabaseIL)(nil)
 )
 
+// DatabaseIL (D.atabase I.nox L.and) is an Inox Value that wraps a Database,
+// it exposes a 'update_schema' Inox property and has an Inox property for each top level entity in the database.
 type DatabaseIL struct {
 	inner         Database
 	initialSchema *ObjectPattern
@@ -96,6 +98,8 @@ func checkDatabaseSchema(pattern *ObjectPattern) error {
 	})
 }
 
+// Database is a high-level interface for a database that stores Inox values.
+// DatabaseIL wraps Database.
 type Database interface {
 	Resource() SchemeHolder
 
@@ -134,7 +138,7 @@ type DatabaseWrappingArgs struct {
 	DevMode bool
 }
 
-// WrapDatabase wraps a Database in a struct that implements Value.
+// WrapDatabase wraps a Database in a *DatabaseIL.
 // In dev mode if the current schema does not match ExpectedSchema a DatbaseIL is returned alongside the error.
 func WrapDatabase(ctx *Context, args DatabaseWrappingArgs) (*DatabaseIL, error) {
 	schema := args.Inner.Schema()
@@ -511,60 +515,6 @@ func (db *DatabaseIL) Close(ctx *Context) error {
 		panic(ErrOwnerStateNotSet)
 	}
 	return db.inner.Close(ctx)
-}
-
-func (db *DatabaseIL) GetGoMethod(name string) (*GoFunction, bool) {
-	switch name {
-	case "update_schema":
-		return WrapGoMethod(db.UpdateSchema), true
-	case "close":
-		return WrapGoMethod(db.Close), true
-	}
-	return nil, false
-}
-
-func (db *DatabaseIL) Prop(ctx *Context, name string) Value {
-	if db.ownerState == nil {
-		panic(ErrOwnerStateNotSet)
-	}
-
-	switch name {
-	case "schema":
-		if db.newSchemaSet.Load() {
-			return db.newSchema
-		}
-		return db.initialSchema
-	case "update_schema", "close":
-	default:
-		if db.schemaUpdateExpected {
-			if !db.schemaUpdated.Load() {
-				panic(ErrInvalidAccessSchemaNotUpdatedYet)
-			}
-		}
-
-		val, ok := db.topLevelEntities[name]
-		if ok {
-			perm := db.topLevelEntitiesAccessPermissions[name]
-			if err := ctx.CheckHasPermission(perm); err != nil {
-				panic(err)
-			}
-			return val
-		}
-	}
-
-	method, ok := db.GetGoMethod(name)
-	if !ok {
-		panic(FormatErrPropertyDoesNotExist(name, db))
-	}
-	return method
-}
-
-func (*DatabaseIL) SetProp(ctx *Context, name string, value Value) error {
-	return ErrCannotSetProp
-}
-
-func (db *DatabaseIL) PropertyNames(ctx *Context) []string {
-	return db.propertyNames
 }
 
 func getOrLoadValueAtURL(ctx *Context, u URL, state *GlobalState) (Serializable, error) {

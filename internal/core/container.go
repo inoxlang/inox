@@ -26,6 +26,8 @@ type Container interface {
 	Contains(ctx *Context, value Serializable) bool
 }
 
+// Implementations of Container for some core types.
+
 func (l *List) Contains(ctx *Context, value Serializable) bool {
 	if urlHolder, ok := value.(UrlHolder); ok {
 		_, ok := urlHolder.URL()

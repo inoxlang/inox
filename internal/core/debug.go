@@ -29,18 +29,11 @@ var (
 	ErrDebuggerAlreadyAttached = errors.New("debugger already attached")
 )
 
-type EvaluationState interface {
-	//AttachDebugger should be called before starting the evaluation.
-	AttachDebugger(*Debugger)
-
-	//DetachDebugger should be called by the evaluation's goroutine.
-	DetachDebugger()
-
-	CurrentLocalScope() map[string]Value
-
-	GetGlobalState() *GlobalState
-}
-
+// A Debugger enables the debugging of a running Inox program by handling debug commands
+// sent to its control channel (ControlChan()). Events should be continuously read from
+// StoppedChan() and SecondaryEventsChan() by the user of Debugger.
+//
+// Commands are handled in a separate goroutine that is created by the AttachAndStart method.
 type Debugger struct {
 	ctx                       *Context
 	controlChan               chan any
@@ -54,7 +47,7 @@ type Debugger struct {
 	shared              *sharedDebuggerFields
 	resumeExecutionChan chan struct{}
 
-	evaluationState EvaluationState
+	evaluationState evaluationState
 	globalState     *GlobalState //evaluationState's GlobalState
 	logger          zerolog.Logger
 
@@ -63,6 +56,20 @@ type Debugger struct {
 	closed atomic.Bool //closed debugger
 }
 
+// evaluationState is implemented by the state of Inox interpreters supporting debugging.
+type evaluationState interface {
+	//AttachDebugger should be called before starting the evaluation.
+	AttachDebugger(*Debugger)
+
+	//DetachDebugger should be called by the evaluation's goroutine.
+	DetachDebugger()
+
+	CurrentLocalScope() map[string]Value
+
+	GetGlobalState() *GlobalState
+}
+
+// sharedDebuggerFields represents the state shared by a debugger and its descendant debuggers.
 type sharedDebuggerFields struct {
 	nextBreakpointId       int32
 	breakpointsLock        sync.Mutex
@@ -204,8 +211,8 @@ func (d *Debugger) ControlChan() chan any {
 	return d.controlChan
 }
 
-// SecondaryEvents returns a channel that sends secondary events received by the debugger.
-func (d *Debugger) SecondaryEvents() chan SecondaryDebugEvent {
+// SecondaryEventsChan returns a channel that sends secondary events received by the debugger.
+func (d *Debugger) SecondaryEventsChan() chan SecondaryDebugEvent {
 	return d.secondaryEventChan
 }
 
@@ -237,7 +244,7 @@ func (d *Debugger) ThreadIfOfStackFrame(stackFrameId int32) (StateId, bool) {
 }
 
 // AttachAndStart attaches the debugger to state & starts the debugging goroutine.
-func (d *Debugger) AttachAndStart(state EvaluationState) {
+func (d *Debugger) AttachAndStart(state evaluationState) {
 	state.AttachDebugger(d)
 	d.globalState = state.GetGlobalState()
 	d.evaluationState = state

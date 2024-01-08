@@ -8,7 +8,7 @@ import (
 	"github.com/inoxlang/inox/internal/utils"
 )
 
-// Core value types' implementations of Value.Equal
+//Implementations of Value.Equal for Core value types.
 
 const (
 	MAX_COMPARISON_DEPTH = 200

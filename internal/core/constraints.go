@@ -8,7 +8,7 @@ import (
 	cmap "github.com/orcaman/concurrent-map/v2"
 )
 
-// A ConstraintId represents an id that is used to retrieve the constraint (pattern) of a Value.
+// A ConstraintId represents an id that is used to retrieve the constraints on a Value.
 type ConstraintId uint64
 
 const (

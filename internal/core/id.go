@@ -12,6 +12,7 @@ var (
 	_ = []Serializable{ULID{}, UUIDv4{}}
 )
 
+// ULID implements Value.
 type ULID ulid.ULID
 
 func NewULID() ULID {
@@ -30,6 +31,7 @@ func (id ULID) libValue() ulid.ULID {
 	return ulid.ULID(id)
 }
 
+// UUIDv4 implements Value.
 type UUIDv4 uuid.UUID
 
 func NewUUIDv4() UUIDv4 {

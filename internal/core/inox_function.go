@@ -138,9 +138,9 @@ func (fn *InoxFunction) ForceUnlock() {
 }
 
 // checkTransformInoxMustCallResult checks the result of an Inox function 'must' call:
-// - if checkTransformInoxMustCallResult finds an error it returns (nil, the error).
-// - if the result is an Array of length > 2, checkTransformInoxMustCallResult returns a slice of the array with one less element.
-// - if the result is an Array of length 2, checkTransformInoxMustCallResult returns the first element.
+// - if the result is an error it returns (nil, the error).
+// - if the result is an Array of length > 2, the function returns a slice of the array with one less element.
+// - if the result is an Array of length 2, the function returns the first element.
 // - if the result is not an error, it is returned unmodified.
 func checkTransformInoxMustCallResult(result Value) (Value, error) {
 	reflectVal := reflect.ValueOf(result)

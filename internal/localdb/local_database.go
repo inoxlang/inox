@@ -57,7 +57,7 @@ func init() {
 	})
 }
 
-// A LocalDatabase is a database thats stores data on a filesystem.
+// A LocalDatabase is a database thats stores data on the OS filesystem.
 type LocalDatabase struct {
 	host    core.Host
 	osFsDir core.Path

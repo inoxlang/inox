@@ -11,7 +11,7 @@ var (
 	TOKEN_PROPNAMES    = []string{"type", "rune_count"}
 )
 
-// An AstNode is an immutable Value wrapping an AST node, it is immutable.
+// An AstNode is an immutable Value wrapping an AST node.
 type AstNode struct {
 	Node  parse.Node
 	chunk *parse.ParsedChunk

@@ -196,7 +196,7 @@ func (tuple *Tuple) Concat(other *Tuple) *Tuple {
 	return NewTuple(elements)
 }
 
-// OrderedPair is the immutable equivalent of a List, OrderedPair implements Value.
+// OrderedPair is an immutable ordered pair, OrderedPair implements Value.
 type OrderedPair [2]Serializable
 
 func NewOrderedPair(first, second Serializable) *OrderedPair {

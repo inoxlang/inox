@@ -62,7 +62,7 @@ type compilationScope struct {
 	sourceMap    map[int]instructionSourcePosition
 }
 
-// loopCompilation is used by the compiler to store sate about a loop being compiled, see LoopKind.
+// loopCompilation is used by the compiler to store state about a loop being compiled, see LoopKind.
 type loopCompilation struct {
 	kind              LoopKind
 	continuePositions []int

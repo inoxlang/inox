@@ -2143,7 +2143,7 @@ func testDebugModeEval(
 
 		go func() {
 			goroutineStarted <- struct{}{}
-			for event := range debugger.SecondaryEvents() {
+			for event := range debugger.SecondaryEventsChan() {
 				eventsLock.Lock()
 				events = append(events, event)
 				eventsLock.Unlock()
@@ -2173,7 +2173,7 @@ func testDebugModeEval(
 			},
 		}, events)
 
-		_, notClosed := <-debugger.SecondaryEvents()
+		_, notClosed := <-debugger.SecondaryEventsChan()
 		assert.False(t, notClosed)
 	})
 
@@ -2221,7 +2221,7 @@ func testDebugModeEval(
 
 				stoppedEvents = append(stoppedEvents, event)
 
-				secondaryEvent := <-debugger.SecondaryEvents()
+				secondaryEvent := <-debugger.SecondaryEventsChan()
 
 				threadId := secondaryEvent.(LThreadSpawnedEvent).StateId
 				lthreadDebugger := debugger.shared.getDebuggerOfThread(threadId)
@@ -2374,7 +2374,7 @@ func testDebugModeEval(
 
 				var threadsList [][]ThreadInfo
 
-				secondaryEvent := <-debugger.SecondaryEvents()
+				secondaryEvent := <-debugger.SecondaryEventsChan()
 
 				routineThreadId := secondaryEvent.(LThreadSpawnedEvent).StateId
 				lthreadDebugger := debugger.shared.getDebuggerOfThread(routineThreadId)
@@ -2513,7 +2513,7 @@ func testDebugModeEval(
 
 				stoppedEvents = append(stoppedEvents, event)
 
-				secondaryEvent := <-debugger.SecondaryEvents()
+				secondaryEvent := <-debugger.SecondaryEventsChan()
 				routineThreadId := secondaryEvent.(LThreadSpawnedEvent).StateId
 				routineDebugger := debugger.shared.getDebuggerOfThread(routineThreadId)
 				routineChunk.Store(routineDebugger.globalState.Module.MainChunk)
@@ -2680,11 +2680,11 @@ func testDebugModeEval(
 
 				stoppedEvents = append(stoppedEvents, event)
 
-				secondaryEvent := <-debugger.SecondaryEvents()
+				secondaryEvent := <-debugger.SecondaryEventsChan()
 				parentThreadId := secondaryEvent.(LThreadSpawnedEvent).StateId
 				parentThreadId_.Store(parentThreadId)
 
-				secondaryEvent = <-debugger.SecondaryEvents()
+				secondaryEvent = <-debugger.SecondaryEventsChan()
 				routineThreadId := secondaryEvent.(LThreadSpawnedEvent).StateId
 				routineDebugger := debugger.shared.getDebuggerOfThread(routineThreadId)
 				routineChunk.Store(routineDebugger.globalState.Module.MainChunk)
@@ -2838,11 +2838,11 @@ func testDebugModeEval(
 
 				stoppedEvents = append(stoppedEvents, event)
 
-				secondaryEvent := <-debugger.SecondaryEvents()
+				secondaryEvent := <-debugger.SecondaryEventsChan()
 				parentThreadId := secondaryEvent.(LThreadSpawnedEvent).StateId
 				parentThreadId_.Store(parentThreadId)
 
-				secondaryEvent = <-debugger.SecondaryEvents()
+				secondaryEvent = <-debugger.SecondaryEventsChan()
 				routineThreadId := secondaryEvent.(LThreadSpawnedEvent).StateId
 				routineDebugger := debugger.shared.getDebuggerOfThread(routineThreadId)
 				routineChunk.Store(routineDebugger.globalState.Module.MainChunk)

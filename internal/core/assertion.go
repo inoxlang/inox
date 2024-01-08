@@ -14,7 +14,7 @@ import (
 
 const ASSERTION_BUFF_WRITER_SIZE = 100
 
-// An AssertionError is raised when an assertion statement fails (negative condition).
+// An AssertionError is raised when an assertion statement fails (false condition).
 type AssertionError struct {
 	msg  string
 	data *AssertionData

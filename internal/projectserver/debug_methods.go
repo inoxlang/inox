@@ -1591,7 +1591,7 @@ func startDebugEventSenders(debugSession *DebugSession, session *jsonrpc.Session
 			}
 		}()
 
-		secondaryEventChan := debugSession.debugger.SecondaryEvents()
+		secondaryEventChan := debugSession.debugger.SecondaryEventsChan()
 		for {
 			select {
 			case debugEvent, ok := <-secondaryEventChan:

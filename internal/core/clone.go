@@ -27,22 +27,25 @@ var (
 	}
 )
 
+// Clonable is implemented by Values that can be at least shallow cloned.
 type Clonable interface {
 	Value
 
-	//Clone clones the value, properties and elements are cloned by calling CheckSharedOrClone if both originState and sharableValues are nil,
+	//Clone clones the value, properties and elements are cloned by calling CheckSharedOrClone if both originState and sharableValues are nil.
 	//ShareOrClone otherwise.
 	Clone(originState *GlobalState, sharableValues *[]PotentiallySharable, clones map[uintptr]Clonable, depth int) (Value, error)
 }
 
+// ClonableSerializable is implemented by Serializables that can be at least shallow cloned.
 type ClonableSerializable interface {
 	Serializable
 
-	//Clone clones the value, properties and elements are cloned by calling CheckSharedOrClone if both originState and sharableValues are nil,
+	//Clone clones the value, properties and elements are cloned by calling CheckSharedOrClone if both originState and sharableValues are nil.
 	//ShareOrClone otherwise.
 	Clone(originState *GlobalState, sharableValues *[]PotentiallySharable, clones map[uintptr]Clonable, depth int) (Serializable, error)
 }
 
+// RepresentationBasedClone clones a Serializable by marshalling it to JSON and then unmarshalling it.
 func RepresentationBasedClone(ctx *Context, val Serializable) (Serializable, error) {
 	if !val.IsMutable() {
 		return val, nil
