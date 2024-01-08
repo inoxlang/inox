@@ -1,7 +1,3 @@
-const (
-    HOST = https://localhost:8080
-)
-
 preinit {
     import ./schema.ix
 }
@@ -27,7 +23,7 @@ manifest {
     }
 }
 
-server = http.Server!(HOST, {
+server = http.Server!(APP_LISTENING_ADDR, {
     routing: {
         # directory for static resources such as CSS and JS files.
         static: /static/
