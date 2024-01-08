@@ -2107,13 +2107,9 @@ top_switch:
 		return parse.ContinueTraversal
 	case *parse.NewExpression:
 		typ := node.Type
-		switch t := typ.(type) {
-		case *parse.IdentifierLiteral:
-			defs := c.getModStructDefs(closestModule)
-			_, ok := defs[t.Name]
-			if !ok {
-				c.addError(node, fmtStructTypeIsNotDefined(t.Name))
-			}
+		switch typ.(type) {
+		case *parse.PatternIdentifierLiteral:
+			//ok, the identifier will be checked next
 		//TODO: support slices
 		case nil:
 			return parse.ContinueTraversal

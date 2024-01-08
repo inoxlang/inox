@@ -4347,7 +4347,7 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(newExpr, src, fmtStructTypeIsNotDefined("Lexer")),
+				makeError(newExpr.Type, src, fmtStructTypeIsNotDefined("Lexer")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -4364,7 +4364,7 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(newExpr, src, fmtStructTypeIsNotDefined("Lexer")),
+				makeError(newExpr.Type, src, fmtStructTypeIsNotDefined("Lexer")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
