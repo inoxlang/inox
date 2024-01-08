@@ -1,6 +1,9 @@
 package symbolic
 
-import "github.com/inoxlang/inox/internal/core/patternnames"
+import (
+	"github.com/inoxlang/inox/internal/core/patternnames"
+	pprint "github.com/inoxlang/inox/internal/prettyprint"
+)
 
 var (
 	BUILTIN_COMPTIME_TYPES = map[string]CompileTimeType{
@@ -38,6 +41,11 @@ func (t *BoolType) SymbolicValue() Value {
 	return t.baseValue
 }
 
+func (t *BoolType) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	//add base value ?
+	w.WriteString("bool-type")
+}
+
 type IntType struct {
 	baseValue Value
 }
@@ -58,6 +66,11 @@ func (t *IntType) TestValue(v Value, state RecTestCallState) bool {
 
 func (t *IntType) SymbolicValue() Value {
 	return t.baseValue
+}
+
+func (t *IntType) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	//add base value ?
+	w.WriteString("int-type")
 }
 
 type FloatType struct {
@@ -82,6 +95,11 @@ func (t *FloatType) SymbolicValue() Value {
 	return t.baseValue
 }
 
+func (t *FloatType) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	//add base value ?
+	w.WriteString("float-type")
+}
+
 type StringType struct {
 	baseValue Value
 }
@@ -102,4 +120,9 @@ func (t *StringType) TestValue(v Value, state RecTestCallState) bool {
 
 func (t *StringType) SymbolicValue() Value {
 	return t.baseValue
+}
+
+func (t *StringType) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	//add base value ?
+	w.WriteString("string-type")
 }

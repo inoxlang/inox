@@ -67,16 +67,32 @@ type structField struct {
 }
 
 type structMethod struct {
-	Name string
-	Type *InoxFunction
+	Name  string
+	Value *InoxFunction
 }
 
 func (t *StructType) FieldCount() int {
 	return len(t.fields)
 }
 
+// Field returns the field at index in the definition order.
 func (t *StructType) Field(index int) structField {
 	return t.fields[index]
+}
+
+// Fields returns the underyling field slice, in definition order.
+// The slice should NOT be modified.
+func (t *StructType) Fields() []structField {
+	return t.fields
+}
+
+func (t *StructType) FieldByName(name string) (structField, bool) {
+	for _, field := range t.fields {
+		if field.Name == name {
+			return field, true
+		}
+	}
+	return structField{}, false
 }
 
 func (t *StructType) Method(index int) structMethod {
@@ -119,8 +135,7 @@ func (t *StructType) SymbolicValue() Value {
 }
 
 func (t *StructType) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
-	w.WriteName("struct-type{")
-
+	w.WriteString("struct-type{")
 	w.WriteString("...")
 	w.WriteByte('}')
 }

@@ -43,6 +43,27 @@ func Stringify(v Value) string {
 	return buff.String()
 }
 
+// Stringify calls PrettyPrint on the passed value
+func StringifyComptimeType(t CompileTimeType) string {
+	buff := &bytes.Buffer{}
+	w := bufio.NewWriterSize(buff, PRETTY_PRINT_BUFF_WRITER_SIZE)
+
+	_, err := PrettyPrint(PrettyPrintArgs{
+		Value:             t,
+		Writer:            w,
+		Config:            STRINGIFY_PRETTY_PRINT_CONFIG,
+		Depth:             0,
+		ParentIndentCount: 0,
+	})
+
+	if err != nil {
+		panic(err)
+	}
+
+	w.Flush()
+	return buff.String()
+}
+
 func StringifyGetRegions(v Value) (string, pprint.Regions) {
 	buff := &bytes.Buffer{}
 	w := bufio.NewWriterSize(buff, PRETTY_PRINT_BUFF_WRITER_SIZE)
@@ -65,7 +86,9 @@ func StringifyGetRegions(v Value) (string, pprint.Regions) {
 }
 
 type PrettyPrintArgs struct {
-	Value                    Value
+	Value interface {
+		PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig)
+	}
 	Writer                   io.Writer
 	Config                   *pprint.PrettyPrintConfig
 	Depth, ParentIndentCount int

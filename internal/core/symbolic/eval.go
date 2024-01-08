@@ -1625,6 +1625,37 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 			return nil, nil
 		}
 
+		//handle IProps and structs LHS separately
+
+		ptr, ok := object.(*Pointer)
+		if ok {
+			strct, ok := ptr.value.(*Struct)
+			if !ok {
+				state.addError(makeSymbolicEvalError(node, state, POINTED_VALUE_HAS_NO_PROPERTIES))
+				return ANY, nil
+			}
+			fieldName := lhs.PropertyName.Name
+			field, ok := strct.typ.FieldByName(fieldName)
+			if !ok {
+				state.addError(makeSymbolicEvalError(node, state, fmtStructDoesnotHaveField(fieldName)))
+				return nil, nil
+			}
+
+			rhs, _, err := getRHS(nil)
+			if err != nil {
+				return nil, err
+			}
+			rhs = MergeValuesWithSameStaticTypeInMultivalue(rhs)
+
+			if node.Operator.Int() && !utils.Implements[*IntType](field.Type) {
+				state.addError(makeSymbolicEvalError(node, state, INVALID_ASSIGN_INT_OPER_ASSIGN_LHS_NOT_INT))
+			} else if !field.Type.TestValue(rhs, RecTestCallState{}) {
+				state.addError(makeSymbolicEvalError(node, state, fmtNotAssignableToFieldOfType(rhs, field.Type)))
+			}
+
+			return nil, nil
+		}
+
 		var iprops IProps
 		isAnySerializable := false
 		{
@@ -1747,6 +1778,39 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 			state.symbolicData.SetMostSpecificNodeValue(ident, v)
 		}
 
+		//handle IProps and structs LHS separately
+
+		lastPropNameNode := lhs.PropertyNames[len(lhs.PropertyNames)-1]
+		lastPropName := lastPropNameNode.Name
+
+		ptr, ok := v.(*Pointer)
+		if ok {
+			strct, ok := ptr.value.(*Struct)
+			if !ok {
+				state.addError(makeSymbolicEvalError(node, state, POINTED_VALUE_HAS_NO_PROPERTIES))
+				return ANY, nil
+			}
+			fieldName := lastPropName
+			field, ok := strct.typ.FieldByName(fieldName)
+			if !ok {
+				state.addError(makeSymbolicEvalError(node, state, fmtStructDoesnotHaveField(fieldName)))
+				return nil, nil
+			}
+
+			rhs, _, err := getRHS(nil)
+			if err != nil {
+				return nil, err
+			}
+			rhs = MergeValuesWithSameStaticTypeInMultivalue(rhs)
+
+			if node.Operator.Int() && !utils.Implements[*IntType](field.Type) {
+				state.addError(makeSymbolicEvalError(node, state, INVALID_ASSIGN_INT_OPER_ASSIGN_LHS_NOT_INT))
+			} else if !field.Type.TestValue(rhs, RecTestCallState{}) {
+				state.addError(makeSymbolicEvalError(node, state, fmtNotAssignableToFieldOfType(rhs, field.Type)))
+			}
+			return nil, nil
+		}
+
 		var iprops IProps
 		isAnySerializable := true
 		{
@@ -1772,8 +1836,6 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 			}
 		}
 
-		lastPropNameNode := lhs.PropertyNames[len(lhs.PropertyNames)-1]
-		lastPropName := lastPropNameNode.Name
 		hasPrevValue := utils.SliceContains(iprops.PropertyNames(), lastPropName)
 
 		var expectedValue Value
@@ -5826,8 +5888,24 @@ func evalNewExpression(n *parse.NewExpression, state *State, options evalOptions
 func symbolicMemb(value Value, name string, optionalMembExpr bool, node parse.Node, state *State) (result Value) {
 	//note: the property of a %serializable is not necessarily serializable (example: Go methods)
 
+	pointer, ok := value.(*Pointer)
+	if ok {
+		strct, ok := pointer.value.(*Struct)
+		if !ok {
+			state.addError(makeSymbolicEvalError(node, state, POINTED_VALUE_HAS_NO_PROPERTIES))
+			return ANY
+		}
+		field, ok := strct.typ.FieldByName(name)
+		if ok {
+			return field.Type.SymbolicValue()
+		}
+		state.addError(makeSymbolicEvalError(node, state, fmtStructDoesnotHaveField(name)))
+		return ANY
+	}
+
 	iprops, ok := AsIprops(value).(IProps)
 	if !ok {
+
 		state.addError(makeSymbolicEvalError(node, state, fmtValueHasNoProperties(value)))
 		return ANY
 	}

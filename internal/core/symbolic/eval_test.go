@@ -1633,7 +1633,7 @@ func TestSymbolicEval(t *testing.T) {
 			}, res)
 		})
 
-		t.Run("+= assignment, LHS has incompatible type", func(t *testing.T) {
+		t.Run("+= assignment, propert LHS (member expression) has incompatible type", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				obj = {name: "foo"}
 				$obj.name += int
@@ -1653,6 +1653,60 @@ func TestSymbolicEval(t *testing.T) {
 					"name": ANY_STR.Static(),
 				},
 			}, res)
+		})
+
+		t.Run("+= assignment, propert LHS (ident member expression) has incompatible type", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				obj = {name: "foo"}
+				obj.name += int
+				return obj
+			`)
+			res, err := symbolicEval(n, state)
+			assignement := n.Statements[1]
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(assignement, state, INVALID_ASSIGN_INT_OPER_ASSIGN_LHS_NOT_INT),
+			}, state.errors())
+			assert.Equal(t, &Object{
+				entries: map[string]Serializable{
+					"name": NewString("foo"),
+				},
+				static: map[string]Pattern{
+					"name": ANY_STR.Static(),
+				},
+			}, res)
+		})
+
+		t.Run("+= assignment, field LHS (ident member expression) has incompatible type", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				struct MyStruct {
+					a bool
+				}
+				ptr = new MyStruct
+				ptr.a += int
+			`)
+			_, err := symbolicEval(n, state)
+			assignement := n.Statements[2]
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(assignement, state, INVALID_ASSIGN_INT_OPER_ASSIGN_LHS_NOT_INT),
+			}, state.errors())
+		})
+
+		t.Run("+= assignment, field LHS (member expression) has incompatible type", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				struct MyStruct {
+					a bool
+				}
+				ptr = new MyStruct
+				$ptr.a += int
+			`)
+			_, err := symbolicEval(n, state)
+			assignement := n.Statements[2]
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(assignement, state, INVALID_ASSIGN_INT_OPER_ASSIGN_LHS_NOT_INT),
+			}, state.errors())
 		})
 
 		t.Run("+= assignment, RHS has incompatible type", func(t *testing.T) {
@@ -2017,7 +2071,7 @@ func TestSymbolicEval(t *testing.T) {
 
 	})
 	t.Run("member expression", func(t *testing.T) {
-		t.Run("object", func(t *testing.T) {
+		t.Run("object property", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				v = {"name": "foo"}
 				return $v.name
@@ -2028,7 +2082,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, NewString("foo"), res)
 		})
 
-		t.Run("record", func(t *testing.T) {
+		t.Run("record property", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				v = #{"name": "foo"}
 				return $v.name
@@ -2037,6 +2091,21 @@ func TestSymbolicEval(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
 			assert.Equal(t, NewString("foo"), res)
+		})
+
+		t.Run("struct field", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				struct MyStruct {
+					a int
+				}
+
+				ptr = new MyStruct
+				return $ptr.a
+			`)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, ANY_INT, res)
 		})
 
 		t.Run("inexisting property", func(t *testing.T) {
@@ -2268,7 +2337,7 @@ func TestSymbolicEval(t *testing.T) {
 	})
 
 	t.Run("identifier member expression", func(t *testing.T) {
-		t.Run("object", func(t *testing.T) {
+		t.Run("object property", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				v = {"name": "foo"}
 				return v.name
@@ -2277,6 +2346,21 @@ func TestSymbolicEval(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
 			assert.Equal(t, NewString("foo"), res)
+		})
+
+		t.Run("struct field", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				struct MyStruct {
+					a int
+				}
+
+				ptr = new MyStruct
+				return ptr.a
+			`)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, ANY_INT, res)
 		})
 
 		t.Run("unterminated (0 property names)", func(t *testing.T) {
@@ -6826,7 +6910,40 @@ func TestSymbolicEval(t *testing.T) {
 				}, state.errors())
 			})
 
-			t.Run("property of shared objec", func(t *testing.T) {
+			t.Run("value not assignable to type of struct field", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					struct MyStruct {
+						a int
+					}
+
+					ptr = new MyStruct
+					$ptr.a = true
+				`)
+				_, err := symbolicEval(n, state)
+				assert.NoError(t, err)
+
+				assignment := parse.FindNode(n, (*parse.Assignment)(nil), nil)
+
+				assert.Equal(t, []SymbolicEvaluationError{
+					makeSymbolicEvalError(assignment, state, fmtNotAssignableToFieldOfType(ANY_BOOL, BUILTIN_COMPTIME_TYPES["int"])),
+				}, state.errors())
+			})
+
+			t.Run("struct field", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					struct MyStruct {
+						a int
+					}
+
+					ptr = new MyStruct
+					$ptr.a = 1
+				`)
+				_, err := symbolicEval(n, state)
+				assert.NoError(t, err)
+				assert.Empty(t, state.errors())
+			})
+
+			t.Run("property of shared object", func(t *testing.T) {
 				n, state := MakeTestStateAndChunk(`
 					$$shared.a = 1
 				`)
@@ -6890,7 +7007,40 @@ func TestSymbolicEval(t *testing.T) {
 				}, state.errors())
 			})
 
-			t.Run("property of shared objec", func(t *testing.T) {
+			t.Run("value not assignable to type of struct field", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					struct MyStruct {
+						a int
+					}
+
+					ptr = new MyStruct
+					ptr.a = true
+				`)
+				_, err := symbolicEval(n, state)
+				assert.NoError(t, err)
+
+				assignment := parse.FindNode(n, (*parse.Assignment)(nil), nil)
+
+				assert.Equal(t, []SymbolicEvaluationError{
+					makeSymbolicEvalError(assignment, state, fmtNotAssignableToFieldOfType(ANY_BOOL, BUILTIN_COMPTIME_TYPES["int"])),
+				}, state.errors())
+			})
+
+			t.Run("struct field", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					struct MyStruct {
+						a int
+					}
+
+					ptr = new MyStruct
+					ptr.a = 1
+				`)
+				_, err := symbolicEval(n, state)
+				assert.NoError(t, err)
+				assert.Empty(t, state.errors())
+			})
+
+			t.Run("property of shared object", func(t *testing.T) {
 				n, state := MakeTestStateAndChunk(`
 					shared.a = 1
 				`)

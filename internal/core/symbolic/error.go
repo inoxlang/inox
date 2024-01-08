@@ -159,8 +159,9 @@ const (
 	//new expression
 	ONLY_COMPILE_TIME_TYPES_CAN_BE_USED_IN_NEW_EXPRS = //
 	"only compile-time types can be used in 'new' expressions (struct types, int, float, bool and string)"
-
 	POINTER_TYPES_CANNOT_BE_USED_IN_NEW_EXPRS_YET = "pointer types cannot be used in 'new' expressions yet"
+
+	POINTED_VALUE_HAS_NO_PROPERTIES = "pointed value has no properties"
 )
 
 var (
@@ -264,6 +265,21 @@ func fmtNotAssignableToPropOfType(a Value, b Value) string {
 	}
 
 	return fmt.Sprintf("a(n) %s is not assignable to a property of type %s%s", Stringify(a), Stringify(b), examplesString)
+}
+
+func fmtNotAssignableToFieldOfType(v Value, typ CompileTimeType) string {
+	examples := GetExamples(typ.SymbolicValue(), ExampleComputationContext{NonMatchingValue: v})
+	examplesString := ""
+	if len(examples) > 0 {
+		examplesString = fmtExpectedValueExamples(examples)
+	}
+
+	val, ok := v.(IToStatic)
+	if ok {
+		v = val.Static().SymbolicValue()
+	}
+
+	return fmt.Sprintf("a(n) %s is not assignable to a field of type %s%s", Stringify(v), StringifyComptimeType(typ), examplesString)
 }
 
 func fmtNotAssignableToEntryOfExpectedValue(a Value, b Value) string {
@@ -559,6 +575,10 @@ func fmtCannotGetDynamicMemberOfValueWithNoProps(v Value) string {
 
 func fmtValueHasNoProperties(value Value) string {
 	return fmt.Sprintf("value has no properties: %s", Stringify(value))
+}
+
+func fmtStructDoesnotHaveField(name string) string {
+	return fmt.Sprintf("struct type does not have a .%s field", name)
 }
 
 func FormatErrPropertyDoesNotExist(name string, v Value) error {

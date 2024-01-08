@@ -275,8 +275,8 @@ func handleStructMethodDefinition(
 	state.symbolicData.SetMostSpecificNodeValue(def.Name, v)
 
 	structType.methods = append(structType.methods, structMethod{
-		Name: name,
-		Type: v.(*InoxFunction),
+		Name:  name,
+		Value: v.(*InoxFunction),
 	})
 
 	return nil

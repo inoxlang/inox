@@ -1,5 +1,7 @@
 package symbolic
 
+import pprint "github.com/inoxlang/inox/internal/prettyprint"
+
 var _ = []CompileTimeType{
 	(*StructType)(nil), (*PointerType)(nil), (*IntType)(nil), (*FloatType)(nil),
 	(*BoolType)(nil), (*StringType)(nil),
@@ -9,6 +11,7 @@ type CompileTimeType interface {
 	Equal(v CompileTimeType, state RecTestCallState) bool
 	TestValue(v Value, state RecTestCallState) bool
 	SymbolicValue() Value
+	PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig)
 }
 
 type ModuleCompileTimeTypes struct {

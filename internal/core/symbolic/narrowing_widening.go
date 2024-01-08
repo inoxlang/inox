@@ -10,7 +10,7 @@ import (
 var (
 	_ = []IToStatic{
 		(*Object)(nil), (*Record)(nil), (*List)(nil), (*Tuple)(nil),
-		(*Int)(nil), (*Float)(nil), (*Byte)(nil), (*Rune)(nil),
+		(*Int)(nil), (*Float)(nil), (*Byte)(nil), (*Rune)(nil), (*Bool)(nil),
 	}
 )
 
