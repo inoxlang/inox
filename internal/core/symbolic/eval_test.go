@@ -13388,6 +13388,67 @@ func TestSymbolicEval(t *testing.T) {
 		})
 	})
 
+	t.Run("new expression", func(t *testing.T) {
+
+		var (
+			INT_TYPE     = BUILTIN_COMPTIME_TYPES["int"]
+			INT_PTR_TYPE = newPointerType(INT_TYPE)
+		)
+
+		t.Run("builtin type", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`new int`, nil)
+
+			res, err := symbolicEval(n, state)
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.Empty(t, state.errors())
+			assert.Equal(t, INT_PTR_TYPE.SymbolicValue(), res)
+		})
+
+		t.Run("struct type", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				struct MyStruct {}
+				return new MyStruct
+			`, nil)
+
+			res, err := symbolicEval(n, state)
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.Empty(t, state.errors())
+
+			types, ok := state.symbolicData.GetComptimeTypes(n)
+			if !assert.True(t, ok) {
+				return
+			}
+
+			MyStructType, ok := types.GetType("MyStruct")
+			if !assert.True(t, ok) {
+				return
+			}
+
+			ptrType := newPointerType(MyStructType)
+
+			assert.Equal(t, ptrType.SymbolicValue(), res)
+		})
+
+		t.Run("pattern name", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				pattern o = {a: 1}
+				return new o
+			`, nil)
+			newExpr := parse.FindNode(n, (*parse.NewExpression)(nil), nil)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(newExpr.Type, state, ONLY_COMPILE_TIME_TYPES_CAN_BE_USED_IN_NEW_EXPRS),
+			}, state.errors())
+			assert.Equal(t, ANY, res)
+		})
+	})
+
 	t.Run("the evaluation should stop if the context context is done AND there is no remaining no-check fuel", func(t *testing.T) {
 		nodeCount := parse.CountNodes(parse.MustParseChunk("[]"))
 

@@ -13,6 +13,13 @@ type Pointer struct {
 	value Value        //only a few value types are allowed
 }
 
+func newPointer(ptrType *PointerType) *Pointer {
+	return &Pointer{
+		typ:   ptrType,
+		value: ptrType.value.SymbolicValue(),
+	}
+}
+
 func (p *Pointer) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
@@ -38,10 +45,16 @@ func (p *Pointer) PrettyPrint(w prettyprint.PrettyPrintWriter, config *prettypri
 
 type PointerType struct {
 	value CompileTimeType
+
+	pointer *Pointer
 }
 
 func newPointerType(valueType CompileTimeType) *PointerType {
-	return &PointerType{value: valueType}
+	t := &PointerType{
+		value: valueType,
+	}
+	t.pointer = newPointer(t)
+	return t
 }
 
 func (t *PointerType) Equal(v CompileTimeType, state RecTestCallState) bool {
@@ -55,4 +68,8 @@ func (t *PointerType) TestValue(v Value, state RecTestCallState) bool {
 
 	ptr, ok := v.(*Pointer)
 	return ok && t.Equal(ptr.typ, state)
+}
+
+func (t *PointerType) SymbolicValue() Value {
+	return t.pointer
 }

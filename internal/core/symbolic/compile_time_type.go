@@ -8,6 +8,7 @@ var _ = []CompileTimeType{
 type CompileTimeType interface {
 	Equal(v CompileTimeType, state RecTestCallState) bool
 	TestValue(v Value, state RecTestCallState) bool
+	SymbolicValue() Value
 }
 
 type ModuleCompileTimeTypes struct {
@@ -46,7 +47,7 @@ func (t *ModuleCompileTimeTypes) GetType(typename string) (CompileTimeType, bool
 	return typ, ok
 }
 
-func (t *ModuleCompileTimeTypes) GetPointerType(valueTypename string) (CompileTimeType, bool) {
+func (t *ModuleCompileTimeTypes) GetPointerType(valueTypename string) (*PointerType, bool) {
 	typ, ok := t.all[valueTypename]
 	if !ok {
 		return nil, false
@@ -54,7 +55,7 @@ func (t *ModuleCompileTimeTypes) GetPointerType(valueTypename string) (CompileTi
 
 	ptrType, ok := t.pointerTypes[valueTypename]
 	if !ok {
-		ptrType = &PointerType{value: typ}
+		ptrType = newPointerType(typ)
 		t.pointerTypes[valueTypename] = ptrType
 	}
 

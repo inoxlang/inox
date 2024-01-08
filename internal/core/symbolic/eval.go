@@ -1044,6 +1044,8 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 	// case *parse.PointerType:
 	// 	//only misplaced PointerType nodes are evaluated using the symbolicEval function.
 	// 	return ANY_PATTERN, nil
+	case *parse.NewExpression:
+		return evalNewExpression(n, state, options)
 	case *parse.DereferenceExpression:
 		//not supported yet
 		return ANY, nil
@@ -5792,6 +5794,33 @@ func evalExtendStatement(n *parse.ExtendStatement, state *State, options evalOpt
 	state.symbolicData.SetContextData(n, state.ctx.currentData())
 
 	return nil, nil
+}
+
+func evalNewExpression(n *parse.NewExpression, state *State, options evalOptions) (Value, error) {
+	comptimeTypes := state.symbolicData.getModuleComptimeTypes(state.Module.mainChunk.Node, false)
+
+	switch typeNode := n.Type.(type) {
+	case *parse.PatternIdentifierLiteral:
+		typeName := typeNode.Name
+		patt := state.ctx.ResolveNamedPattern(typeName)
+		if patt != nil && !IsNameOfBuiltinComptimeType(typeName) {
+			state.addError(makeSymbolicEvalError(typeNode, state, ONLY_COMPILE_TIME_TYPES_CAN_BE_USED_IN_NEW_EXPRS))
+			return ANY, nil
+		}
+
+		comptimeType, ok := comptimeTypes.GetPointerType(typeName)
+		if !ok {
+			state.addError(makeSymbolicEvalError(typeNode, state, fmtCompileTimeTypeIsNotDefined(typeName)))
+			return ANY, nil
+		}
+
+		return comptimeType.SymbolicValue(), nil
+	case *parse.PointerType:
+		state.addError(makeSymbolicEvalError(typeNode, state, POINTER_TYPES_CANNOT_BE_USED_IN_NEW_EXPRS_YET))
+	default:
+		state.addError(makeSymbolicEvalError(typeNode, state, ONLY_COMPILE_TIME_TYPES_CAN_BE_USED_AS_STRUCT_FIELD_TYPES))
+	}
+	return ANY, nil
 }
 
 func symbolicMemb(value Value, name string, optionalMembExpr bool, node parse.Node, state *State) (result Value) {

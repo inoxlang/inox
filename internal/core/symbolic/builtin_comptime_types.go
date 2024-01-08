@@ -4,10 +4,10 @@ import "github.com/inoxlang/inox/internal/core/patternnames"
 
 var (
 	BUILTIN_COMPTIME_TYPES = map[string]CompileTimeType{
-		patternnames.BOOL:   &BoolType{},
-		patternnames.INT:    &IntType{},
-		patternnames.FLOAT:  &FloatType{},
-		patternnames.STRING: &StringType{},
+		patternnames.BOOL:   &BoolType{baseValue: ANY_BOOL},
+		patternnames.INT:    &IntType{baseValue: ANY_INT},
+		patternnames.FLOAT:  &FloatType{baseValue: ANY_FLOAT},
+		patternnames.STRING: &StringType{baseValue: ANY_STR},
 	}
 )
 
@@ -17,6 +17,7 @@ func IsNameOfBuiltinComptimeType(name string) bool {
 }
 
 type BoolType struct {
+	baseValue Value
 }
 
 func (t *BoolType) Equal(v CompileTimeType, state RecTestCallState) bool {
@@ -33,7 +34,12 @@ func (t *BoolType) TestValue(v Value, state RecTestCallState) bool {
 	return ImplementsOrIsMultivalueWithAllValuesImplementing[*Bool](v)
 }
 
+func (t *BoolType) SymbolicValue() Value {
+	return t.baseValue
+}
+
 type IntType struct {
+	baseValue Value
 }
 
 func (t *IntType) Equal(v CompileTimeType, state RecTestCallState) bool {
@@ -50,7 +56,12 @@ func (t *IntType) TestValue(v Value, state RecTestCallState) bool {
 	return ImplementsOrIsMultivalueWithAllValuesImplementing[*Int](v)
 }
 
+func (t *IntType) SymbolicValue() Value {
+	return t.baseValue
+}
+
 type FloatType struct {
+	baseValue Value
 }
 
 func (t *FloatType) Equal(v CompileTimeType, state RecTestCallState) bool {
@@ -67,7 +78,12 @@ func (t *FloatType) TestValue(v Value, state RecTestCallState) bool {
 	return ImplementsOrIsMultivalueWithAllValuesImplementing[*Float](v)
 }
 
+func (t *FloatType) SymbolicValue() Value {
+	return t.baseValue
+}
+
 type StringType struct {
+	baseValue Value
 }
 
 func (t *StringType) Equal(v CompileTimeType, state RecTestCallState) bool {
@@ -82,4 +98,8 @@ func (t *StringType) Equal(v CompileTimeType, state RecTestCallState) bool {
 
 func (t *StringType) TestValue(v Value, state RecTestCallState) bool {
 	return ImplementsOrIsMultivalueWithAllValuesImplementing[*String](v)
+}
+
+func (t *StringType) SymbolicValue() Value {
+	return t.baseValue
 }

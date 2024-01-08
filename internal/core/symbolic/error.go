@@ -155,6 +155,12 @@ const (
 	//struct definition
 	ONLY_COMPILE_TIME_TYPES_CAN_BE_USED_AS_STRUCT_FIELD_TYPES = //
 	"only compile-time types can be used a struct field types (struct types, int, float, bool and string)"
+
+	//new expression
+	ONLY_COMPILE_TIME_TYPES_CAN_BE_USED_IN_NEW_EXPRS = //
+	"only compile-time types can be used in 'new' expressions (struct types, int, float, bool and string)"
+
+	POINTER_TYPES_CANNOT_BE_USED_IN_NEW_EXPRS_YET = "pointer types cannot be used in 'new' expressions yet"
 )
 
 var (

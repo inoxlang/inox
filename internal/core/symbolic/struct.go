@@ -14,6 +14,10 @@ type Struct struct {
 	typ *StructType
 }
 
+func newStruct(t *StructType) *Struct {
+	return &Struct{typ: t}
+}
+
 func (s *Struct) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
@@ -39,9 +43,22 @@ func (s *Struct) WidestOfType() Value {
 
 // StructType represents a struct type, it implements CompileTimeType.
 type StructType struct {
-	name    string
+	name    string        //can be empty
 	fields  []structField //if nil any StructType is matched
 	methods []structMethod
+
+	value *Struct
+}
+
+func newStructType(name string, fields []structField, methods []structMethod) *StructType {
+	t := &StructType{
+		name:    name,
+		fields:  fields,
+		methods: methods,
+	}
+
+	t.value = newStruct(t)
+	return t
 }
 
 type structField struct {
@@ -95,6 +112,10 @@ func (t *StructType) TestValue(v Value, state RecTestCallState) bool {
 		return false
 	}
 	return ok && struct_.typ == t
+}
+
+func (t *StructType) SymbolicValue() Value {
+	return &Struct{typ: t}
 }
 
 func (t *StructType) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
