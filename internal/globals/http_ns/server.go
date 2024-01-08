@@ -129,21 +129,19 @@ func NewHttpsServer(ctx *core.Context, host core.Host, args ...core.Value) (*Htt
 		return nil, errors.New("cannot create server: context's associated state is nil")
 	}
 
-	effectiveAddr, effectiveListeningAddrHost, port, isExposingAllowed,
-		userProvidedCert, userProvidedKey, userProvidedHandler, handlerValProvided,
-		defaultLimits, maxLimits, argErr := readHttpServerArgs(ctx, server, host, args...)
+	params, argErr := determineHttpServerParams(ctx, server, host, args...)
 
 	if argErr != nil {
 		return nil, argErr
 	}
 
-	server.maxLimits = maxLimits
-	server.defaultLimits = defaultLimits
-	server.listeningAddr = effectiveListeningAddrHost
+	server.maxLimits = params.maxLimits
+	server.defaultLimits = params.defaultLimits
+	server.listeningAddr = params.effectiveListeningAddrHost
 
 	//create logger and security engine
 	{
-		logSrc := HTTP_SERVER_SRC + "/" + effectiveAddr
+		logSrc := HTTP_SERVER_SRC + "/" + params.effectiveAddr
 		server.serverLogger = ctx.NewChildLoggerForInternalSource(logSrc)
 
 		securityLogSrc := ctx.NewChildLoggerForInternalSource(logSrc + "/sec")
@@ -151,8 +149,8 @@ func NewHttpsServer(ctx *core.Context, host core.Host, args ...core.Value) (*Htt
 	}
 
 	//last handler function
-	if handlerValProvided {
-		err := addHandlerFunction(userProvidedHandler, false, server)
+	if params.handlerValProvided {
+		err := addHandlerFunction(params.userProvidedHandler, false, server)
 		if err != nil {
 			return nil, err
 		}
@@ -210,7 +208,7 @@ func NewHttpsServer(ctx *core.Context, host core.Host, args ...core.Value) (*Htt
 		handlerCtx := core.NewContext(core.ContextConfig{
 			Permissions:          ctx.GetGrantedPermissions(),
 			ForbiddenPermissions: ctx.GetForbiddenPermissions(),
-			Limits:               maps.Values(defaultLimits),
+			Limits:               maps.Values(params.defaultLimits),
 			ParentContext:        ctx,
 			Filesystem:           ctx.GetFileSystem(),
 		})
@@ -270,17 +268,18 @@ func NewHttpsServer(ctx *core.Context, host core.Host, args ...core.Value) (*Htt
 
 	//create a stdlib http Server
 	config := GolangHttpServerConfig{
-		Addr:                                     effectiveAddr,
-		Handler:                                  topHandler,
-		PersistCreatedLocalCert:                  true,
-		AllowSelfSignedCertCreationEvenIfExposed: isLocalhostOr127001Addr(effectiveAddr) || (isExposingAllowed && isBindAllAddress(effectiveAddr)),
+		Addr:                    params.effectiveAddr,
+		Handler:                 topHandler,
+		PersistCreatedLocalCert: true,
+		AllowSelfSignedCertCreationEvenIfExposed: isLocalhostOr127001Addr(params.effectiveAddr) ||
+			(params.exposingAllowed && isBindAllAddress(params.effectiveAddr)),
 	}
-	if userProvidedCert != "" {
-		config.PemEncodedCert = userProvidedCert
+	if params.certificate != "" {
+		config.PemEncodedCert = params.certificate
 	}
 
-	if userProvidedKey != nil {
-		config.PemEncodedKey = userProvidedKey.StringValue().GetOrBuildString()
+	if params.certKey != nil {
+		config.PemEncodedKey = params.certKey.StringValue().GetOrBuildString()
 	}
 
 	goServer, err := NewGolangHttpServer(ctx, config)
@@ -307,17 +306,17 @@ func NewHttpsServer(ctx *core.Context, host core.Host, args ...core.Value) (*Htt
 			return
 		}
 
-		urls := []string{"https://localhost:" + port}
-		if !isLocalhostOr127001Addr(effectiveAddr) {
+		urls := []string{"https://localhost:" + params.port}
+		if !isLocalhostOr127001Addr(params.effectiveAddr) {
 			urls = append(urls, utils.FilterMapSlice(ips, func(e net.IP) (string, bool) {
 				if e.To4() == nil {
 					return "", false
 				}
-				return "https://" + e.String() + ":" + port, e.To4() != nil
+				return "https://" + e.String() + ":" + params.port, e.To4() != nil
 			})...)
 		}
 
-		server.serverLogger.Info().Msgf("start HTTPS server on %s (%s)", effectiveAddr, strings.Join(urls, ", "))
+		server.serverLogger.Info().Msgf("start HTTPS server on %s (%s)", params.effectiveAddr, strings.Join(urls, ", "))
 
 		//start listening
 
@@ -333,7 +332,7 @@ func NewHttpsServer(ctx *core.Context, host core.Host, args ...core.Value) (*Htt
 			recover()
 			server.endChan <- struct{}{}
 		}()
-		defer server.serverLogger.Info().Msg("server (" + effectiveAddr + ") is now closed")
+		defer server.serverLogger.Info().Msg("server (" + params.effectiveAddr + ") is now closed")
 
 		<-ctx.Done()
 		server.ImmediatelyClose(ctx)
