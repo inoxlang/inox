@@ -35,7 +35,7 @@ func (*Graph) SetProp(ctx *core.Context, name string, value core.Value) error {
 }
 
 func (*Graph) PropertyNames(ctx *core.Context) []string {
-	return []string{"insert_node", "remove_node"}
+	return coll_symbolic.GRAPH_PROPNAMES
 }
 
 func (g *Graph) IsMutable() bool {
@@ -114,7 +114,7 @@ func (*GraphNode) SetProp(ctx *core.Context, name string, value core.Value) erro
 }
 
 func (*GraphNode) PropertyNames(ctx *core.Context) []string {
-	return []string{"data"}
+	return coll_symbolic.GRAPH_NODE_PROPNAMES
 }
 
 func (n *GraphNode) IsMutable() bool {

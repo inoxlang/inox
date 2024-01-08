@@ -106,6 +106,8 @@ var (
 	ErrPatternNotCallable                        = errors.New("pattern is not callable")
 	ErrValueAlreadyInitialized                   = errors.New("value already initialized")
 	ErrValueInExactPatternValueShouldBeImmutable = errors.New("the value in an exact value pattern should be immutable")
+
+	HOST_PATTERN_PROPNAMES = []string{"scheme"}
 )
 
 // A Pattern represents a symbolic Pattern.
@@ -769,11 +771,17 @@ func (p *HostPattern) StringPattern() (StringPattern, bool) {
 }
 
 func (p *HostPattern) PropertyNames() []string {
-	return nil
+	return HOST_PATTERN_PROPNAMES
 }
 
-func (*HostPattern) Prop(name string) Value {
+func (p *HostPattern) Prop(name string) Value {
 	switch name {
+	case "scheme":
+		scheme, ok := p.Scheme()
+		if ok {
+			return scheme
+		}
+		return NewMultivalue(ANY_SCHEME, Nil)
 	default:
 		return nil
 	}

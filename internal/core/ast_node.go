@@ -3,12 +3,8 @@ package core
 import (
 	"unicode/utf8"
 
+	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/parse"
-)
-
-var (
-	AST_NODE_PROPNAMES = []string{"position", "token_at_position"}
-	TOKEN_PROPNAMES    = []string{"type", "rune_count"}
 )
 
 // An AstNode is an immutable Value wrapping an AST node.
@@ -23,7 +19,7 @@ func (n AstNode) Chunk() *parse.ParsedChunk {
 }
 
 func (AstNode) PropertyNames(ctx *Context) []string {
-	return AST_NODE_PROPNAMES
+	return symbolic.AST_NODE_PROPNAMES
 }
 
 func (n AstNode) Prop(ctx *Context, name string) Value {
@@ -31,7 +27,7 @@ func (n AstNode) Prop(ctx *Context, name string) Value {
 	case "position":
 		pos := n.chunk.GetSourcePosition(n.Node.Base().Span)
 		return createRecordFromSourcePosition(pos)
-	case "token_at_position":
+	case "token-at-position":
 		return WrapGoClosure(func(ctx *Context, pos Int) Value {
 			token, ok := parse.GetTokenAtPosition(int(pos), n.Node, n.chunk.Node)
 			if !ok {
@@ -54,14 +50,14 @@ type Token struct {
 }
 
 func (Token) PropertyNames(ctx *Context) []string {
-	return TOKEN_PROPNAMES
+	return symbolic.TOKEN_PROPNAMES
 }
 
 func (t Token) Prop(ctx *Context, name string) Value {
 	switch name {
 	case "type":
 		return Str(t.value.Type.String())
-	case "rune_count":
+	case "rune-count":
 		return Int(utf8.RuneCountInString(t.value.Str()))
 	default:
 		return nil

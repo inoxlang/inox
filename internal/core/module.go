@@ -33,7 +33,6 @@ const (
 )
 
 var (
-	MODULE_PROP_NAMES           = []string{"parsing_errors", "main_chunk_node"}
 	SOURCE_POS_RECORD_PROPNAMES = []string{"source", "line", "column", "start", "end"}
 
 	MODULE_KIND_NAMES = [...]string{
@@ -229,9 +228,9 @@ func (*Module) GetGoMethod(name string) (*GoFunction, bool) {
 
 func (m *Module) Prop(ctx *Context, name string) Value {
 	switch name {
-	case "parsing_errors":
+	case "parsing-errors":
 		return m.ParsingErrorTuple()
-	case "main_chunk_node":
+	case "main-chunk-node":
 		return AstNode{Node: m.MainChunk.Node}
 	}
 
@@ -247,7 +246,7 @@ func (*Module) SetProp(ctx *Context, name string, value Value) error {
 }
 
 func (*Module) PropertyNames(ctx *Context) []string {
-	return MODULE_PROP_NAMES
+	return symbolic.MODULE_PROP_NAMES
 }
 
 type InMemoryModuleParsingConfig struct {

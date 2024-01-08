@@ -2,16 +2,18 @@ package containers
 
 import (
 	"github.com/inoxlang/inox/internal/core/symbolic"
-	"github.com/inoxlang/inox/internal/prettyprint"
 	pprint "github.com/inoxlang/inox/internal/prettyprint"
 )
 
 var (
-	_         = []symbolic.Iterable{(*Graph)(nil)}
 	ANY_GRAPH = &Graph{}
 
+	_ = []symbolic.Iterable{(*Graph)(nil)}
 	_ = symbolic.IProps((*Graph)(nil))
 	_ = symbolic.IProps((*GraphNode)(nil))
+
+	GRAPH_PROPNAMES      = []string{"insert_node", "remove_node", "connect"}
+	GRAPH_NODE_PROPNAMES = []string{"data", "children", "parents"}
 )
 
 type Graph struct {
@@ -44,7 +46,7 @@ func (g *Graph) Prop(name string) symbolic.Value {
 }
 
 func (*Graph) PropertyNames() []string {
-	return []string{"insert_node", "remove_node", "connect"}
+	return GRAPH_PROPNAMES
 }
 
 func (f *Graph) InsertNode(ctx *symbolic.Context, v symbolic.Value) *GraphNode {
@@ -63,7 +65,7 @@ func (f *Graph) Get(ctx *symbolic.Context, k symbolic.Value) symbolic.Value {
 	return symbolic.ANY
 }
 
-func (r *Graph) PrettyPrint(w prettyprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (r *Graph) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("graph")
 }
 
@@ -119,10 +121,10 @@ func (n *GraphNode) Prop(name string) symbolic.Value {
 }
 
 func (*GraphNode) PropertyNames() []string {
-	return []string{"data", "children", "parents"}
+	return GRAPH_NODE_PROPNAMES
 }
 
-func (r *GraphNode) PrettyPrint(w prettyprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (r *GraphNode) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("graph-node")
 }
 

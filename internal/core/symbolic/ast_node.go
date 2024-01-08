@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	AST_NODE_PROPNAMES = []string{"position", "token_at_position"}
+	AST_NODE_PROPNAMES = []string{"position", "token-at-position"}
+	TOKEN_PROPNAMES    = []string{"type", "rune-count"}
 
 	ANY_AST_NODE     = &AstNode{}
 	ANY_TOKEN        = &Token{}
@@ -56,7 +57,7 @@ func (r *AstNode) Prop(name string) Value {
 	switch name {
 	case "position":
 		return extData.DEFAULT_PATTERN_NAMESPACES["inox"].entries["source_position"].SymbolicValue()
-	case "token_at_position":
+	case "token-at-position":
 		return WrapGoClosure(func(ctx *Context, pos *Int) Value {
 			return ANY_TOKEN_OR_NIL
 		})
@@ -98,12 +99,12 @@ func (r *Token) Prop(name string) Value {
 	switch name {
 	case "type":
 		return ANY_STR_LIKE
-	case "rune_count":
+	case "rune-count":
 		return ANY_INT
 	}
 	panic(FormatErrPropertyDoesNotExist(name, r))
 }
 
 func (*Token) PropertyNames() []string {
-	return AST_NODE_PROPNAMES
+	return TOKEN_PROPNAMES
 }

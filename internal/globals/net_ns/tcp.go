@@ -8,6 +8,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/permkind"
+	netns_symbolic "github.com/inoxlang/inox/internal/globals/net_ns/symbolic"
 )
 
 type TcpConn struct {
@@ -42,7 +43,7 @@ func (*TcpConn) SetProp(ctx *core.Context, name string, value core.Value) error 
 }
 
 func (*TcpConn) PropertyNames(ctx *core.Context) []string {
-	return []string{"read", "write", "close"}
+	return netns_symbolic.TCP_CONN_PROPNAMES
 }
 
 func (conn *TcpConn) read(ctx *core.Context) (*core.ByteSlice, error) {

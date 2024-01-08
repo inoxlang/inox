@@ -1049,7 +1049,7 @@ func (p *TestedProgram) GetGoMethod(name string) (*GoFunction, bool) {
 
 func (p *TestedProgram) Prop(ctx *Context, name string) Value {
 	switch name {
-	case "is_done":
+	case "is-done":
 		return Bool(p.lthread.IsDone())
 	case "dbs":
 		return p.databases

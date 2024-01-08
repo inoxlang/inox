@@ -17,6 +17,7 @@ import (
 	"github.com/bmatcuk/doublestar/v4"
 	emailnormalizer "github.com/dimuska139/go-email-normalizer"
 	"github.com/inoxlang/inox/internal/afs"
+	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/mimeconsts"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
@@ -47,12 +48,6 @@ var (
 	ErrTestedURLTooLarge                   = errors.New("tested URL is too large")
 	ErrTestedHostPatternTooLarge           = errors.New("tested host pattern is too large")
 	ErrInvalidEmailAdddres                 = errors.New("invalid email address per RFC 5322")
-
-	PATH_PROPNAMES         = []string{"segments", "extension", "name", "dir", "ends_with_slash", "rel_equiv", "change_extension", "join"}
-	HOST_PROPNAMES         = []string{"scheme", "explicit_port", "without_port"}
-	HOST_PATTERN_PROPNAMES = []string{"scheme"}
-	URL_PROPNAMES          = []string{"scheme", "host", "path", "raw_query"}
-	EMAIL_ADDR_PROPNAMES   = []string{"username", "domain"}
 
 	defaultEmailNormalizer = emailnormalizer.NewNormalizer()
 )
@@ -351,7 +346,7 @@ func (pth Path) JoinAbsolute(absPath Path, fls afs.Filesystem) Path {
 }
 
 func (pth Path) PropertyNames(ctx *Context) []string {
-	return PATH_PROPNAMES
+	return symbolic.PATH_PROPNAMES
 }
 
 func (pth Path) Prop(ctx *Context, name string) Value {
@@ -373,9 +368,9 @@ func (pth Path) Prop(ctx *Context, name string) Value {
 		return pth.Basename()
 	case "dir":
 		return pth.DirPath()
-	case "ends_with_slash":
+	case "ends-with-slash":
 		return Bool(pth.IsDirPath())
-	case "rel_equiv":
+	case "rel-equiv":
 		return pth.RelativeEquiv()
 	case "change_extension":
 		return WrapGoClosure(func(ctx *Context, newExt Str) Path {
@@ -814,7 +809,7 @@ func (u URL) appendPath(path Path) URL {
 }
 
 func (u URL) PropertyNames(ctx *Context) []string {
-	return URL_PROPNAMES
+	return symbolic.URL_PROPNAMES
 }
 
 func (u URL) Prop(ctx *Context, name string) Value {
@@ -825,7 +820,7 @@ func (u URL) Prop(ctx *Context, name string) Value {
 		return u.Host()
 	case "path":
 		return u.Path()
-	case "raw_query":
+	case "raw-query":
 		return u.RawQuery()
 	default:
 		return nil
@@ -928,16 +923,16 @@ func (host Host) ResourceName() string {
 }
 
 func (host Host) PropertyNames(ctx *Context) []string {
-	return HOST_PROPNAMES
+	return symbolic.HOST_PROPNAMES
 }
 
 func (host Host) Prop(ctx *Context, name string) Value {
 	switch name {
 	case "scheme":
 		return Str(host.Scheme())
-	case "explicit_port":
+	case "explicit-port":
 		return Int(host.ExplicitPort())
-	case "without_port":
+	case "without-port":
 		return host.HostWithoutPort()
 	default:
 		return nil
@@ -955,7 +950,7 @@ func (patt HostPattern) UnderlyingString() string {
 }
 
 func (patt HostPattern) PropertyNames(ctx *Context) []string {
-	return HOST_PATTERN_PROPNAMES
+	return symbolic.HOST_PATTERN_PROPNAMES
 }
 
 func (patt HostPattern) Prop(ctx *Context, name string) Value {
@@ -1082,7 +1077,7 @@ func (addr EmailAddress) UnderlyingString() string {
 }
 
 func (addr EmailAddress) PropertyNames(ctx *Context) []string {
-	return EMAIL_ADDR_PROPNAMES
+	return symbolic.EMAIL_ADDR_PROPNAMES
 }
 
 func (addr EmailAddress) Prop(ctx *Context, name string) Value {

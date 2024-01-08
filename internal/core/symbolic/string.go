@@ -30,8 +30,10 @@ var (
 
 	_ANY_STR_TYPE_PATTERN = &TypePattern{val: ANY_STR}
 
-	STRING_LIKE_PSEUDOPROPS = []string{"replace", "trim_space", "has_prefix", "has_suffix"}
-	RUNE_SLICE_PROPNAMES    = []string{"insert", "remove_position", "remove_position_range"}
+	STRING_LIKE_PSEUDOPROPS  = []string{"replace", "trim_space", "has_prefix", "has_suffix"}
+	RUNE_SLICE_PROPNAMES     = []string{"insert", "remove_position", "remove_position_range"}
+	CHECKED_STRING_PROPNAMES = []string{"pattern-name", "pattern"}
+	RUNE_PROPNAMES           = []string{"is-space", "is-printable", "is-letter"}
 
 	RUNE_SLICE__INSERT_PARAMS      = &[]Value{NewMultivalue(ANY_RUNE, NewAnySequenceOf(ANY_RUNE))}
 	RUNE_SLICE__INSERT_PARAM_NAMES = []string{"rune", "index"}
@@ -324,16 +326,16 @@ func (r *Rune) WidestOfType() Value {
 }
 
 func (r *Rune) PropertyNames() []string {
-	return []string{"is_space", "is_printable", "is_letter"}
+	return RUNE_PROPNAMES
 }
 
 func (r *Rune) Prop(name string) Value {
 	switch name {
-	case "is_space":
+	case "is-space":
 		return ANY_BOOL
-	case "is_printable":
+	case "is-printable":
 		return ANY_BOOL
-	case "is_letter":
+	case "is-letter":
 		return ANY_BOOL
 	default:
 		panic(FormatErrPropertyDoesNotExist(name, r))
@@ -358,12 +360,12 @@ func (s *CheckedString) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.P
 }
 
 func (p *CheckedString) PropertyNames() []string {
-	return []string{"pattern_name", "pattern"}
+	return CHECKED_STRING_PROPNAMES
 }
 
 func (s *CheckedString) Prop(name string) Value {
 	switch name {
-	case "pattern_name":
+	case "pattern-name":
 		return ANY_STR
 	case "pattern":
 		return ANY_STR_PATTERN

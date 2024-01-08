@@ -11,6 +11,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/parse"
 )
 
@@ -134,16 +135,16 @@ func (s Str) HasSuffix(ctx *Context, prefix StringLike) Bool {
 type Rune rune
 
 func (r Rune) PropertyNames(ctx *Context) []string {
-	return []string{"is_space", "is_printable", "is_letter"}
+	return symbolic.RUNE_PROPNAMES
 }
 
 func (r Rune) Prop(ctx *Context, name string) Value {
 	switch name {
-	case "is_space":
+	case "is-space":
 		return Bool(unicode.IsSpace(rune(r)))
-	case "is_printable":
+	case "is-printable":
 		return Bool(unicode.IsPrint(rune(r)))
-	case "is_letter":
+	case "is-letter":
 		return Bool(unicode.IsLetter(rune(r)))
 	default:
 		return nil
@@ -329,12 +330,12 @@ func (str CheckedString) UnderlyingString() string {
 }
 
 func (str CheckedString) PropertyNames(ctx *Context) []string {
-	return []string{"pattern_name", "pattern"}
+	return symbolic.CHECKED_STRING_PROPNAMES
 }
 
 func (str CheckedString) Prop(ctx *Context, name string) Value {
 	switch name {
-	case "pattern_name":
+	case "pattern-name":
 		return Str(str.matchingPatternName)
 	case "pattern":
 		return str.matchingPattern

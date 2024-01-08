@@ -2,8 +2,11 @@ package net_ns
 
 import (
 	"github.com/inoxlang/inox/internal/core/symbolic"
-	"github.com/inoxlang/inox/internal/prettyprint"
 	pprint "github.com/inoxlang/inox/internal/prettyprint"
+)
+
+var (
+	TCP_CONN_PROPNAMES = []string{"read", "write", "close"}
 )
 
 type TcpConn struct {
@@ -36,7 +39,7 @@ func (conn *TcpConn) Prop(name string) symbolic.Value {
 }
 
 func (*TcpConn) PropertyNames() []string {
-	return []string{"read", "write", "close"}
+	return TCP_CONN_PROPNAMES
 }
 
 func (conn *TcpConn) read(ctx *symbolic.Context) (*symbolic.ByteSlice, *symbolic.Error) {
@@ -50,7 +53,7 @@ func (conn *TcpConn) write(ctx *symbolic.Context, data symbolic.Readable) *symbo
 func (conn *TcpConn) close(ctx *symbolic.Context) {
 }
 
-func (r *TcpConn) PrettyPrint(w prettyprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (r *TcpConn) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("tcp-conn")
 }
 

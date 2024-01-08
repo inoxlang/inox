@@ -55,7 +55,7 @@ var (
 	ANY_CURRENT_TEST_WITH_PROGRAM = &CurrentTest{testedProgram: ANY_TESTED_PROGRAM}
 
 	CURRENT_TEST_PROPNAMES   = []string{"program"}
-	TESTED_PROGRAM_PROPNAMES = []string{"is_done", "cancel", "dbs"}
+	TESTED_PROGRAM_PROPNAMES = []string{"is-done", "cancel", "dbs"}
 )
 
 // A TestSuite represents a symbolic TestSuite.
@@ -342,7 +342,7 @@ func (t *TestedProgram) GetGoMethod(name string) (*GoFunction, bool) {
 
 func (t *TestedProgram) Prop(name string) Value {
 	switch name {
-	case "is_done":
+	case "is-done":
 		return ANY_BOOL
 	case "dbs":
 		return t.databases

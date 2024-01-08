@@ -54,7 +54,8 @@ var (
 	ANY_FILEINFO   = &FileInfo{}
 	ANY_MIMETYPE   = &Mimetype{}
 
-	FILEINFO_PROPNAMES = []string{"name", "abs-path", "size", "mode", "mod-time", "is-dir"}
+	FILEINFO_PROPNAMES   = []string{"name", "abs-path", "size", "mode", "mod-time", "is-dir"}
+	EMAIL_ADDR_PROPNAMES = []string{"username", "domain"}
 )
 
 // A Value represents a Value during symbolic evaluation, its underlying data should be immutable.
@@ -289,7 +290,7 @@ func (e *EmailAddress) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.Pr
 }
 
 func (e *EmailAddress) PropertyNames() []string {
-	return []string{"username", "domain"}
+	return EMAIL_ADDR_PROPNAMES
 }
 
 func (*EmailAddress) Prop(name string) Value {

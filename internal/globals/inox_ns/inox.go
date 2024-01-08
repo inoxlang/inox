@@ -25,16 +25,16 @@ const (
 
 var (
 	SYMB_PREPARATION_ERRORS_RECORD = symbolic.NewInexactRecord(map[string]symbolic.Serializable{
-		"parsing_errors":        symbolic.NewTupleOf(symbolic.NewError(symbolic.SOURCE_POSITION_RECORD)),
-		"static_check_errors":   symbolic.NewTupleOf(symbolic.NewError(symbolic.SOURCE_POSITION_RECORD)),
-		"symbolic_check_errors": symbolic.NewTupleOf(symbolic.NewError(symbolic.SOURCE_POSITION_RECORD)),
-		"permission_error":      symbolic.AsSerializableChecked(symbolic.NewMultivalue(symbolic.ANY_ERR, symbolic.Nil)),
+		"parsing-errors":        symbolic.NewTupleOf(symbolic.NewError(symbolic.SOURCE_POSITION_RECORD)),
+		"static-check-errors":   symbolic.NewTupleOf(symbolic.NewError(symbolic.SOURCE_POSITION_RECORD)),
+		"symbolic-check-errors": symbolic.NewTupleOf(symbolic.NewError(symbolic.SOURCE_POSITION_RECORD)),
+		"permission-error":      symbolic.AsSerializableChecked(symbolic.NewMultivalue(symbolic.ANY_ERR, symbolic.Nil)),
 	}, nil)
 	SYMB_RUN_ERRORS_RECORD = symbolic.NewInexactRecord(map[string]symbolic.Serializable{
-		"parsing_errors":        symbolic.NewTupleOf(symbolic.NewError(symbolic.SOURCE_POSITION_RECORD)),
-		"static_check_errors":   symbolic.NewTupleOf(symbolic.NewError(symbolic.SOURCE_POSITION_RECORD)),
-		"symbolic_check_errors": symbolic.NewTupleOf(symbolic.NewError(symbolic.SOURCE_POSITION_RECORD)),
-		"permission_error":      symbolic.AsSerializableChecked(symbolic.NewMultivalue(symbolic.ANY_ERR, symbolic.Nil)),
+		"parsing-errors":        symbolic.NewTupleOf(symbolic.NewError(symbolic.SOURCE_POSITION_RECORD)),
+		"static-check-errors":   symbolic.NewTupleOf(symbolic.NewError(symbolic.SOURCE_POSITION_RECORD)),
+		"symbolic-check-errors": symbolic.NewTupleOf(symbolic.NewError(symbolic.SOURCE_POSITION_RECORD)),
+		"permission-error":      symbolic.AsSerializableChecked(symbolic.NewMultivalue(symbolic.ANY_ERR, symbolic.Nil)),
 		"runtime_error":         symbolic.AsSerializableChecked(symbolic.NewMultivalue(symbolic.ANY_ERR, symbolic.Nil)),
 	}, nil)
 )
@@ -139,27 +139,27 @@ func _prepare_local_script(ctx *core.Context, src core.Path) (*core.Module, *cor
 	})
 
 	errorRecord := core.ValMap{
-		"parsing_errors":        core.NewTuple(nil),
-		"static_check_errors":   core.NewTuple(nil),
-		"symbolic_check_errors": core.NewTuple(nil),
-		"permission_error":      core.Nil,
+		"parsing-errors":        core.NewTuple(nil),
+		"static-check-errors":   core.NewTuple(nil),
+		"symbolic-check-errors": core.NewTuple(nil),
+		"permission-error":      core.Nil,
 	}
 
 	if err != nil && state == nil && mod == nil {
 		return nil, nil, core.NewRecordFromMap(errorRecord), err
 	}
 
-	errorRecord["parsing_errors"] = mod.ParsingErrorTuple()
+	errorRecord["parsing-errors"] = mod.ParsingErrorTuple()
 
 	var permissionError *core.NotAllowedError
 
 	if state != nil {
 		if state.StaticCheckData != nil {
-			errorRecord["static_check_errors"] = state.StaticCheckData.ErrorTuple()
-			errorRecord["symbolic_check_errors"] = state.SymbolicData.ErrorTuple()
+			errorRecord["static-check-errors"] = state.StaticCheckData.ErrorTuple()
+			errorRecord["symbolic-check-errors"] = state.SymbolicData.ErrorTuple()
 		}
 	} else if errors.As(err, &permissionError) {
-		errorRecord["permission_error"] = core.NewError(permissionError, core.Nil)
+		errorRecord["permission-error"] = core.NewError(permissionError, core.Nil)
 	}
 
 	return mod, state, core.NewRecordFromMap(errorRecord), err
@@ -197,10 +197,10 @@ func _run_local_script(ctx *core.Context, src core.Path, config *core.Object) (c
 	})
 
 	var errorRecord = core.ValMap{
-		"parsing_errors":        core.NewTuple(nil),
-		"static_check_errors":   core.NewTuple(nil),
-		"symbolic_check_errors": core.NewTuple(nil),
-		"permission_error":      core.Nil,
+		"parsing-errors":        core.NewTuple(nil),
+		"static-check-errors":   core.NewTuple(nil),
+		"symbolic-check-errors": core.NewTuple(nil),
+		"permission-error":      core.Nil,
 		"runtime_error":         core.Nil,
 	}
 
@@ -208,21 +208,21 @@ func _run_local_script(ctx *core.Context, src core.Path, config *core.Object) (c
 		return nil, nil, core.NewRecordFromMap(errorRecord), err
 	}
 
-	errorRecord["parsing_errors"] = mod.ParsingErrorTuple()
+	errorRecord["parsing-errors"] = mod.ParsingErrorTuple()
 
 	var permissionError *core.NotAllowedError
 
 	if state != nil {
 		if state.StaticCheckData != nil {
-			errorRecord["static_check_errors"] = state.StaticCheckData.ErrorTuple()
-			errorRecord["symbolic_check_errors"] = state.SymbolicData.ErrorTuple()
+			errorRecord["static-check-errors"] = state.StaticCheckData.ErrorTuple()
+			errorRecord["symbolic-check-errors"] = state.SymbolicData.ErrorTuple()
 
 			if runResult == nil && state.StaticCheckData.ErrorTuple().Len() == 0 && len(state.SymbolicData.Errors()) == 0 {
 				errorRecord["runtime_error"] = core.NewError(err, core.Nil)
 			}
 		}
 	} else if errors.As(err, &permissionError) {
-		errorRecord["permission_error"] = core.NewError(permissionError, core.Nil)
+		errorRecord["permission-error"] = core.NewError(permissionError, core.Nil)
 	}
 
 	return runResult, state, core.NewRecordFromMap(errorRecord), err

@@ -42,7 +42,9 @@ var (
 	ANY_WS_HOST    = NewHostMatchingPattern(ANY_WS_HOST_PATTERN)
 	ANY_WSS_HOST   = NewHostMatchingPattern(ANY_WSS_HOST_PATTERN)
 
-	PATH_PROPNAMES = []string{"segments", "extension", "name", "dir", "ends_with_slash", "rel_equiv", "change_extension", "join"}
+	PATH_PROPNAMES = []string{"segments", "extension", "name", "dir", "ends-with-slash", "rel-equiv", "change_extension", "join"}
+	URL_PROPNAMES  = []string{"scheme", "host", "path", "raw-query"}
+	HOST_PROPNAMES = []string{"scheme", "explicit-port", "without-port"}
 )
 
 // A Path represents a symbolic Path.
@@ -198,9 +200,9 @@ func (p *Path) Prop(name string) Value {
 		}
 
 		return ANY_DIR_PATH
-	case "ends_with_slash":
+	case "ends-with-slash":
 		return ANY_BOOL
-	case "rel_equiv":
+	case "rel-equiv":
 		return ANY_PATH
 	case "change_extension":
 		return &GoFunction{
@@ -356,7 +358,7 @@ func (u *URL) ResourceName() *String {
 }
 
 func (u *URL) PropertyNames() []string {
-	return []string{"scheme", "host", "path", "raw_query"}
+	return URL_PROPNAMES
 }
 
 func (u *URL) Prop(name string) Value {
@@ -367,7 +369,7 @@ func (u *URL) Prop(name string) Value {
 		return &Host{}
 	case "path":
 		return &Path{}
-	case "raw_query":
+	case "raw-query":
 		return ANY_STR
 	default:
 		return nil
@@ -561,17 +563,17 @@ func (h *Host) ResourceName() *String {
 	return ANY_STR
 }
 
-func (s *Host) PropertyNames() []string {
-	return []string{"scheme", "explicit_port", "without_port"}
+func (h *Host) PropertyNames() []string {
+	return HOST_PROPNAMES
 }
 
 func (*Host) Prop(name string) Value {
 	switch name {
 	case "scheme":
 		return ANY_STR
-	case "explicit_port":
+	case "explicit-port":
 		return &Int{}
-	case "without_port":
+	case "without-port":
 		return ANY_HOST
 	default:
 		return nil

@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	MODULE_PROP_NAMES      = []string{"parsing_errors", "main_chunk_node"}
+	MODULE_PROP_NAMES      = []string{"parsing-errors", "main-chunk-node"}
 	ANY_MODULE             = &Module{}
 	SOURCE_POSITION_RECORD = NewInexactRecord(map[string]Serializable{
 		"source": ANY_STR_LIKE,
@@ -76,10 +76,10 @@ func (m *Module) GetGoMethod(name string) (*GoFunction, bool) {
 
 func (m *Module) Prop(name string) Value {
 	switch name {
-	case "parsing_errors":
+	case "parsing-errors":
 		return NewTupleOf(NewError(SOURCE_POSITION_RECORD))
-	case "main_chunk_node":
-		return &AstNode{}
+	case "main-chunk-node":
+		return ANY_AST_NODE
 	}
 	return GetGoMethodOrPanic(name, m)
 }
