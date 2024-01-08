@@ -11184,8 +11184,16 @@ func (p *parser) parseNewExpression(newIdent *IdentifierLiteral) *NewExpression 
 		return newExpr
 	}
 
-	newExpr.Type, _ = p.parseExpression()
-	newExpr.NodeBase.Span.End = newExpr.Type.Base().Span.End
+	//parse type
+	{
+		inPatternSave := p.inPattern
+		p.inPattern = true
+
+		newExpr.Type, _ = p.parseExpression()
+		newExpr.NodeBase.Span.End = newExpr.Type.Base().Span.End
+
+		p.inPattern = inPatternSave
+	}
 
 	p.eatSpace()
 

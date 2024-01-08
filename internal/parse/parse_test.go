@@ -8138,9 +8138,10 @@ func testParse(
 						},
 						Right: &NewExpression{
 							NodeBase: NodeBase{NodeSpan{5, 14}, nil, false},
-							Type: &IdentifierLiteral{
-								NodeBase: NodeBase{NodeSpan{9, 14}, nil, false},
-								Name:     "Lexer",
+							Type: &PatternIdentifierLiteral{
+								NodeBase:   NodeBase{NodeSpan{9, 14}, nil, false},
+								Name:       "Lexer",
+								Unprefixed: true,
 							},
 						},
 						Operator: Assign,
@@ -28035,9 +28036,10 @@ func testParse(
 				Statements: []Node{
 					&NewExpression{
 						NodeBase: NodeBase{NodeSpan{0, 12}, nil, false},
-						Type: &IdentifierLiteral{
-							NodeBase: NodeBase{Span: NodeSpan{4, 9}},
-							Name:     "Lexer",
+						Type: &PatternIdentifierLiteral{
+							NodeBase:   NodeBase{Span: NodeSpan{4, 9}},
+							Name:       "Lexer",
+							Unprefixed: true,
 						},
 						Initialization: &StructInitializationLiteral{
 							NodeBase: NodeBase{Span: NodeSpan{10, 12}},
@@ -28054,9 +28056,10 @@ func testParse(
 				Statements: []Node{
 					&NewExpression{
 						NodeBase: NodeBase{NodeSpan{0, 14}, nil, false},
-						Type: &IdentifierLiteral{
-							NodeBase: NodeBase{Span: NodeSpan{4, 9}},
-							Name:     "Lexer",
+						Type: &PatternIdentifierLiteral{
+							NodeBase:   NodeBase{Span: NodeSpan{4, 9}},
+							Name:       "Lexer",
+							Unprefixed: true,
 						},
 						Initialization: &StructInitializationLiteral{
 							NodeBase: NodeBase{Span: NodeSpan{10, 14}},
@@ -28074,9 +28077,10 @@ func testParse(
 				Statements: []Node{
 					&NewExpression{
 						NodeBase: NodeBase{NodeSpan{0, 11}, nil, false},
-						Type: &IdentifierLiteral{
-							NodeBase: NodeBase{Span: NodeSpan{4, 9}},
-							Name:     "Lexer",
+						Type: &PatternIdentifierLiteral{
+							NodeBase:   NodeBase{Span: NodeSpan{4, 9}},
+							Name:       "Lexer",
+							Unprefixed: true,
 						},
 						Initialization: &StructInitializationLiteral{
 							NodeBase: NodeBase{
@@ -28097,9 +28101,10 @@ func testParse(
 				Statements: []Node{
 					&NewExpression{
 						NodeBase: NodeBase{Span: NodeSpan{0, 20}},
-						Type: &IdentifierLiteral{
-							NodeBase: NodeBase{Span: NodeSpan{4, 9}},
-							Name:     "Lexer",
+						Type: &PatternIdentifierLiteral{
+							NodeBase:   NodeBase{Span: NodeSpan{4, 9}},
+							Name:       "Lexer",
+							Unprefixed: true,
 						},
 						Initialization: &StructInitializationLiteral{
 							NodeBase: NodeBase{Span: NodeSpan{10, 20}},
@@ -28131,9 +28136,10 @@ func testParse(
 				Statements: []Node{
 					&NewExpression{
 						NodeBase: NodeBase{Span: NodeSpan{0, 19}},
-						Type: &IdentifierLiteral{
-							NodeBase: NodeBase{Span: NodeSpan{4, 9}},
-							Name:     "Lexer",
+						Type: &PatternIdentifierLiteral{
+							NodeBase:   NodeBase{Span: NodeSpan{4, 9}},
+							Name:       "Lexer",
+							Unprefixed: true,
 						},
 						Initialization: &StructInitializationLiteral{
 							NodeBase: NodeBase{
@@ -28168,9 +28174,10 @@ func testParse(
 				Statements: []Node{
 					&NewExpression{
 						NodeBase: NodeBase{Span: NodeSpan{0, 27}},
-						Type: &IdentifierLiteral{
-							NodeBase: NodeBase{Span: NodeSpan{4, 9}},
-							Name:     "Lexer",
+						Type: &PatternIdentifierLiteral{
+							NodeBase:   NodeBase{Span: NodeSpan{4, 9}},
+							Name:       "Lexer",
+							Unprefixed: true,
 						},
 						Initialization: &StructInitializationLiteral{
 							NodeBase: NodeBase{Span: NodeSpan{10, 27}},
@@ -28213,9 +28220,10 @@ func testParse(
 				Statements: []Node{
 					&NewExpression{
 						NodeBase: NodeBase{Span: NodeSpan{0, 26}},
-						Type: &IdentifierLiteral{
-							NodeBase: NodeBase{Span: NodeSpan{4, 9}},
-							Name:     "Lexer",
+						Type: &PatternIdentifierLiteral{
+							NodeBase:   NodeBase{Span: NodeSpan{4, 9}},
+							Name:       "Lexer",
+							Unprefixed: true,
 						},
 						Initialization: &StructInitializationLiteral{
 							NodeBase: NodeBase{Span: NodeSpan{10, 26}},

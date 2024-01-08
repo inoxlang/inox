@@ -1833,7 +1833,7 @@ type StructFieldDefinition struct {
 
 type NewExpression struct {
 	NodeBase
-	Type           Node //*IdentifierLiteral for structs
+	Type           Node //*PatternIdentifierLiteral for structs
 	Initialization Node
 }
 
