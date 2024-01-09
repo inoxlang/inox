@@ -2183,3 +2183,9 @@ func (id UUIDv4) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]ui
 
 	return ok && id == otherUUID
 }
+
+func (ptr *Struct) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	otherPtr, ok := other.(*Struct)
+
+	return ok && ptr == otherPtr
+}

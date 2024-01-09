@@ -15,7 +15,8 @@ import (
 )
 
 const (
-	MINIMAL_STATE_ID = 1
+	MINIMAL_STATE_ID             = 1
+	INITIAL_MODULE_HEAP_CAPACITY = 1000
 )
 
 var (
@@ -48,6 +49,7 @@ type GlobalState struct {
 	Globals      GlobalVariables        //global variables
 	LThread      *LThread               //not nil if running in a dedicated LThread
 	Databases    map[string]*DatabaseIL //the map should never change
+	Heap         *ModuleHeap
 	SystemGraph  *SystemGraph
 	lockedValues []PotentiallySharable
 
@@ -106,6 +108,9 @@ func NewGlobalState(ctx *Context, constants ...map[string]Value) *GlobalState {
 
 		goCallArgPrepBuf: make([]any, 10),
 		goCallArgsBuf:    make([]reflect.Value, 10),
+
+		//TODO: use a heap type suited to the module's type and its expected lifespan.
+		Heap: NewArenaHeap(INITIAL_MODULE_HEAP_CAPACITY),
 	}
 	ctx.SetClosestState(state)
 

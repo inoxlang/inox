@@ -2051,6 +2051,10 @@ func (id UUIDv4) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth i
 	utils.Must(w.WriteString(id.libValue().String()))
 }
 
+func (Struct) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	w.Write(utils.StringAsBytes("struct-pointer"))
+}
+
 func InspectPrint[T any](w *bufio.Writer, v T) {
 	utils.Must(fmt.Fprintf(w, "%#v", v))
 }

@@ -71,6 +71,10 @@ type structMethod struct {
 	Value *InoxFunction
 }
 
+func (t *StructType) Name() (string, bool) {
+	return t.name, t.name != ""
+}
+
 func (t *StructType) FieldCount() int {
 	return len(t.fields)
 }

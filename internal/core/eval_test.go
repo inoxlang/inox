@@ -1509,6 +1509,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			result         Value
 			constants      map[string]Value
 			globalVars     map[string]Value
+			doSymbolicEval bool
 		}{
 			{
 				input: `
@@ -1570,6 +1571,32 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					$a.count = 1
 				`,
 				error: true,
+			},
+			{
+				input: `
+					struct MyStruct {
+						count int
+					}
+					s = new MyStruct
+					s.count = 2
+					s.count += 1
+					return s.count
+				`,
+				result:         Int(3),
+				doSymbolicEval: true,
+			},
+			{
+				input: `
+					struct MyStruct {
+						count int
+					}
+					s = new MyStruct
+					$s.count = 2
+					$s.count += 1
+					return $s.count
+				`,
+				result:         Int(3),
+				doSymbolicEval: true,
 			},
 			{
 				input: `
@@ -1668,7 +1695,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				for k, v := range testCase.globalVars {
 					state.Globals.Set(k, v)
 				}
-				res, err := Eval(testCase.input, state, false)
+				state.Ctx.AddNamedPattern("int", INT_PATTERN)
+
+				res, err := Eval(testCase.input, state, testCase.doSymbolicEval)
 				if testCase.error {
 					assert.Error(t, err)
 					assert.Nil(t, res)

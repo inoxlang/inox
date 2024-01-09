@@ -19,7 +19,7 @@ type ModuleCompileTimeTypes struct {
 	pointerTypes map[ /*value type*/ string]*PointerType
 }
 
-func newModuleCompileTimeTypes() *ModuleCompileTimeTypes {
+func NewModuleCompileTimeTypes() *ModuleCompileTimeTypes {
 	types := &ModuleCompileTimeTypes{
 		all:          make(map[string]CompileTimeType, len(BUILTIN_COMPTIME_TYPES)),
 		pointerTypes: make(map[string]*PointerType, 0),

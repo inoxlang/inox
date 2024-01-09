@@ -141,7 +141,7 @@ var (
 		},
 	}
 	STRING_PATTERN = &TypePattern{
-		Type:          STR_TYPE,
+		Type:          STRING_TYPE,
 		Name:          patternnames.STRING,
 		SymbolicValue: symbolic.ANY_STR,
 	}

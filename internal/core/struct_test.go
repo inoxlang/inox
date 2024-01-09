@@ -11,7 +11,7 @@ func TestStructHelper(t *testing.T) {
 
 	t.Run("set/get int", func(t *testing.T) {
 		memory := make([]byte, 10)
-		structPtr := StructPtr(&memory[1])
+		structPtr := (*Struct)(&memory[1])
 		helper := structHelperFromPtr(structPtr, 8 /*size*/)
 
 		integers := []Int{math.MinInt64, math.MinInt64 + 1, -1, 0, 1, math.MaxInt64 - 1, math.MaxInt64}
@@ -27,7 +27,7 @@ func TestStructHelper(t *testing.T) {
 
 	t.Run("set/get float", func(t *testing.T) {
 		memory := make([]byte, 10)
-		structPtr := StructPtr(&memory[1])
+		structPtr := (*Struct)(&memory[1])
 		helper := structHelperFromPtr(structPtr, 8 /*size*/)
 
 		floats := []Float{-math.MaxFloat64, -1, 0, 1, math.MaxFloat64}
@@ -43,7 +43,7 @@ func TestStructHelper(t *testing.T) {
 
 	t.Run("set/get bool", func(t *testing.T) {
 		memory := make([]byte, 10)
-		structPtr := StructPtr(&memory[1])
+		structPtr := (*Struct)(&memory[1])
 		helper := structHelperFromPtr(structPtr, 8 /*size*/)
 
 		helper.SetTrue(0)
@@ -67,11 +67,24 @@ func TestStructHelper(t *testing.T) {
 		assert.Zero(t, memory[2])
 	})
 
+	t.Run("set/get struct pointer", func(t *testing.T) {
+		memory := make([]byte, 10)
+		structPtr := (*Struct)(&memory[1])
+
+		helper := structHelperFromPtr(structPtr, 8 /*size*/)
+
+		helper.SetStructPointer(0, structPtr)
+
+		assert.Equal(t, structPtr, helper.GetStructPointer(0))
+		assert.Zero(t, memory[0])
+		assert.Zero(t, memory[len(memory)-1])
+	})
+
 }
 
 func BenchmarkStructHelperSetInt(b *testing.B) {
 	memory := make([]byte, 8)
-	structPtr := StructPtr(&memory[0])
+	structPtr := (*Struct)(&memory[0])
 	helper := structHelperFromPtr(structPtr, 8 /*size*/)
 
 	pos := 1
@@ -95,7 +108,7 @@ func BenchmarkStructHelperSetInt(b *testing.B) {
 
 func BenchmarkStructHelperSetInt2(b *testing.B) {
 	memory := make([]byte, 8)
-	structPtr := StructPtr(&memory[0])
+	structPtr := (*Struct)(&memory[0])
 	helper := structHelperFromPtr(structPtr, 8 /*size*/)
 
 	pos := 1
@@ -119,7 +132,7 @@ func BenchmarkStructHelperSetInt2(b *testing.B) {
 
 func BenchmarkStructHelperGetInt(b *testing.B) {
 	memory := make([]byte, 8)
-	structPtr := StructPtr(&memory[0])
+	structPtr := (*Struct)(&memory[0])
 	helper := structHelperFromPtr(structPtr, 8 /*size*/)
 
 	pos := 1
@@ -142,7 +155,7 @@ func BenchmarkStructHelperGetInt(b *testing.B) {
 
 func BenchmarkStructHelperSetFloat(b *testing.B) {
 	memory := make([]byte, 8)
-	structPtr := StructPtr(&memory[0])
+	structPtr := (*Struct)(&memory[0])
 	helper := structHelperFromPtr(structPtr, 8 /*size*/)
 
 	pos := 1
@@ -170,7 +183,7 @@ func BenchmarkStructHelperSetFloat(b *testing.B) {
 
 func BenchmarkStructHelperGetFloat(b *testing.B) {
 	memory := make([]byte, 8)
-	structPtr := StructPtr(&memory[0])
+	structPtr := (*Struct)(&memory[0])
 	helper := structHelperFromPtr(structPtr, 8 /*size*/)
 
 	pos := 1
@@ -193,7 +206,7 @@ func BenchmarkStructHelperGetFloat(b *testing.B) {
 
 func BenchmarkStructHelperSetBool(b *testing.B) {
 	memory := make([]byte, 8)
-	structPtr := StructPtr(&memory[0])
+	structPtr := (*Struct)(&memory[0])
 	helper := structHelperFromPtr(structPtr, 8 /*size*/)
 
 	pos := 1
@@ -219,7 +232,7 @@ func BenchmarkStructHelperSetBool(b *testing.B) {
 
 func BenchmarkStructHelperGetBool(b *testing.B) {
 	memory := make([]byte, 8)
-	structPtr := StructPtr(&memory[0])
+	structPtr := (*Struct)(&memory[0])
 	helper := structHelperFromPtr(structPtr, 8 /*size*/)
 
 	pos := 1

@@ -43,7 +43,7 @@ var (
 	RUNE_TYPE               = reflect.TypeOf(Rune('a'))
 	BYTE_TYPE               = reflect.TypeOf(Byte('a'))
 	REGULAR_STR_TYPE        = reflect.TypeOf("")
-	STR_TYPE                = reflect.TypeOf(Str(""))
+	STRING_TYPE             = reflect.TypeOf(Str(""))
 	STR_LIKE_INTERFACE_TYPE = reflect.TypeOf((*StringLike)(nil)).Elem()
 	CHECKED_STR_TYPE        = reflect.TypeOf(CheckedString{})
 	BOOL_TYPE               = reflect.TypeOf(Bool(true))

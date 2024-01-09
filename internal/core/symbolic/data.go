@@ -558,7 +558,7 @@ func (d *Data) getModuleComptimeTypes(module parse.Node, create bool) *ModuleCom
 
 	types, ok := d.comptimeTypes[module]
 	if create && !ok {
-		types = newModuleCompileTimeTypes()
+		types = NewModuleCompileTimeTypes()
 
 		d.comptimeTypes[module] = types
 	}

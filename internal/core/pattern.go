@@ -1232,7 +1232,7 @@ func isObviousSubType(p Pattern, superType Pattern) bool {
 	case *FloatRangePattern:
 		return isTypePattern(superType, FLOAT64_TYPE)
 	case StringPattern:
-		return isTypePattern(superType, STR_TYPE) || isTypePattern(superType, STR_LIKE_INTERFACE_TYPE)
+		return isTypePattern(superType, STRING_TYPE) || isTypePattern(superType, STR_LIKE_INTERFACE_TYPE)
 	case *ObjectPattern:
 		return isTypePattern(superType, OBJECT_TYPE)
 	case *RecordPattern:
