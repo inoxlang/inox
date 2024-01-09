@@ -245,7 +245,7 @@ func handleStructFieldDefinition(
 		state.addError(makeSymbolicEvalError(typeNode, state, ONLY_COMPILE_TIME_TYPES_CAN_BE_USED_AS_STRUCT_FIELD_TYPES))
 	}
 
-	structType.fields = append(structType.fields, structField{
+	structType.fields = append(structType.fields, StructField{
 		Name: def.Name.Name,
 		Type: fieldType,
 	})
@@ -274,7 +274,7 @@ func handleStructMethodDefinition(
 	}
 	state.symbolicData.SetMostSpecificNodeValue(def.Name, v)
 
-	structType.methods = append(structType.methods, structMethod{
+	structType.methods = append(structType.methods, StructMethod{
 		Name:  name,
 		Value: v.(*InoxFunction),
 	})

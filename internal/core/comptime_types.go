@@ -13,18 +13,22 @@ import (
 
 var (
 	BOOL_COMPTIME_TYPE = &BuiltinType{
+		name:     patternnames.BOOL,
 		symbolic: symbolic.BUILTIN_COMPTIME_TYPES[patternnames.BOOL],
 		goType:   BOOL_TYPE,
 	}
 	INT_COMPTIME_TYPE = &BuiltinType{
+		name:     patternnames.INT,
 		symbolic: symbolic.BUILTIN_COMPTIME_TYPES[patternnames.INT],
 		goType:   INT_TYPE,
 	}
 	FLOAT_COMPTIME_TYPE = &BuiltinType{
+		name:     patternnames.FLOAT,
 		symbolic: symbolic.BUILTIN_COMPTIME_TYPES[patternnames.FLOAT],
 		goType:   FLOAT64_TYPE,
 	}
 	STRING_COMPTIME_TYPE = &BuiltinType{
+		name:     patternnames.STRING,
 		symbolic: symbolic.BUILTIN_COMPTIME_TYPES[patternnames.STRING],
 		goType:   STRING_TYPE,
 	}
@@ -52,11 +56,20 @@ func NewModuleComptimeTypes(symb *symbolic.ModuleCompileTimeTypes) *ModuleCompti
 		symb = symbolic.NewModuleCompileTimeTypes()
 	}
 	types.symbolic = symb
+
 	return types
 }
 
 func (types *ModuleComptimeTypes) getConcreteType(t symbolic.CompileTimeType) (result CompileTimeType) {
 	return types._getConcreteType(t, -1)
+}
+
+func (types *ModuleComptimeTypes) getConcretePointerTypeByName(name string) (*PointerType, bool) {
+	pointerType, ok := types.symbolic.GetPointerType(name)
+	if !ok {
+		return nil, false
+	}
+	return types.getConcreteType(pointerType).(*PointerType), true
 }
 
 func (types *ModuleComptimeTypes) _getConcreteType(t symbolic.CompileTimeType, depth int) (result CompileTimeType) {
@@ -208,6 +221,7 @@ func (t *StructType) GoType() reflect.Type {
 }
 
 type BuiltinType struct {
+	name     string
 	symbolic symbolic.CompileTimeType
 	goType   reflect.Type
 }
@@ -253,5 +267,5 @@ func (t *PointerType) New(heap *ModuleHeap) HeapAddress {
 	if size == 0 {
 		panic(fmt.Errorf("pointed value has a size of 0"))
 	}
-	return Alloc[byte](heap, size)
+	return Alloc[byte](heap, size, t.goPtrType.Align())
 }

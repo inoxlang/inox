@@ -44,13 +44,13 @@ func (s *Struct) WidestOfType() Value {
 // StructType represents a struct type, it implements CompileTimeType.
 type StructType struct {
 	name    string        //can be empty
-	fields  []structField //if nil any StructType is matched
-	methods []structMethod
+	fields  []StructField //if nil any StructType is matched
+	methods []StructMethod
 
 	value *Struct
 }
 
-func newStructType(name string, fields []structField, methods []structMethod) *StructType {
+func NewStructType(name string, fields []StructField, methods []StructMethod) *StructType {
 	t := &StructType{
 		name:    name,
 		fields:  fields,
@@ -61,12 +61,12 @@ func newStructType(name string, fields []structField, methods []structMethod) *S
 	return t
 }
 
-type structField struct {
+type StructField struct {
 	Name string
 	Type CompileTimeType
 }
 
-type structMethod struct {
+type StructMethod struct {
 	Name  string
 	Value *InoxFunction
 }
@@ -80,26 +80,26 @@ func (t *StructType) FieldCount() int {
 }
 
 // Field returns the field at index in the definition order.
-func (t *StructType) Field(index int) structField {
+func (t *StructType) Field(index int) StructField {
 	return t.fields[index]
 }
 
 // Fields returns the underyling field slice, in definition order.
 // The slice should NOT be modified.
-func (t *StructType) Fields() []structField {
+func (t *StructType) Fields() []StructField {
 	return t.fields
 }
 
-func (t *StructType) FieldByName(name string) (structField, bool) {
+func (t *StructType) FieldByName(name string) (StructField, bool) {
 	for _, field := range t.fields {
 		if field.Name == name {
 			return field, true
 		}
 	}
-	return structField{}, false
+	return StructField{}, false
 }
 
-func (t *StructType) Method(index int) structMethod {
+func (t *StructType) Method(index int) StructMethod {
 	return t.methods[index]
 }
 

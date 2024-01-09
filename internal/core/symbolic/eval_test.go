@@ -13428,7 +13428,7 @@ func TestSymbolicEval(t *testing.T) {
 			if !assert.Equal(t, 1, structType.FieldCount()) {
 				return
 			}
-			assert.Equal(t, structField{Name: "a", Type: BUILTIN_COMPTIME_TYPES["int"]}, structType.Field(0))
+			assert.Equal(t, StructField{Name: "a", Type: BUILTIN_COMPTIME_TYPES["int"]}, structType.Field(0))
 		})
 
 		t.Run("field with builtin pointer type", func(t *testing.T) {
@@ -13454,7 +13454,7 @@ func TestSymbolicEval(t *testing.T) {
 			if !assert.Equal(t, 1, structType.FieldCount()) {
 				return
 			}
-			expectedStructField := structField{Name: "a", Type: newPointerType(BUILTIN_COMPTIME_TYPES["int"])}
+			expectedStructField := StructField{Name: "a", Type: newPointerType(BUILTIN_COMPTIME_TYPES["int"])}
 			assert.Equal(t, expectedStructField, structType.Field(0))
 		})
 
@@ -13490,7 +13490,7 @@ func TestSymbolicEval(t *testing.T) {
 				return
 			}
 
-			expectedFieldType := structField{Name: "a", Type: IntStructType}
+			expectedFieldType := StructField{Name: "a", Type: IntStructType}
 			assert.Equal(t, expectedFieldType, MyStructType.Field(0))
 		})
 
@@ -13533,7 +13533,7 @@ func TestSymbolicEval(t *testing.T) {
 				return
 			}
 
-			expectedFieldType := structField{Name: "a", Type: IntStructType}
+			expectedFieldType := StructField{Name: "a", Type: IntStructType}
 			assert.Equal(t, expectedFieldType, MyStructType.Field(0))
 		})
 	})
