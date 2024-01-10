@@ -2209,9 +2209,34 @@ func (c *compiler) Compile(node parse.Node) error {
 		}
 		symbPtrType := val.(*symbolic.Pointer).Type()
 
-		ptrType := c.moduleComptimeTypes.getConcreteType(symbPtrType).(*PointerType)
-		size, alignment := ptrType.GetValueAllocParams()
-		c.emit(node, OpAllocStruct, size, alignment)
+		switch concreteType := c.moduleComptimeTypes.getConcreteType(symbPtrType).(type) {
+		case *PointerType:
+			ptrType := concreteType
+			size, alignment := ptrType.GetValueAllocParams()
+			c.emit(node, OpAllocStruct, size, alignment)
+			structType := ptrType.ValueType().(*StructType)
+
+			structInit, ok := node.Initialization.(*parse.StructInitializationLiteral)
+			if ok {
+				for _, init := range structInit.Fields {
+					structFieldInit := init.(*parse.StructFieldInitialization)
+					fieldName := structFieldInit.Name.Name
+
+					c.emit(node, OpCopyTop)
+
+					if err := c.Compile(structFieldInit.Value); err != nil {
+						return err
+					}
+
+					fieldRetrievalInfo := structType.FieldRetrievalInfo(fieldName)
+
+					op := opCodeForSettingField(fieldRetrievalInfo.typ)
+					c.emit(node, op, size, fieldRetrievalInfo.offset)
+				}
+			}
+		default:
+			return fmt.Errorf("only new <pointer type> expressions are supported for now")
+		}
 	default:
 		return fmt.Errorf("cannot compile %T", node)
 	}

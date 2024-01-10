@@ -115,7 +115,9 @@ func (types *ModuleComptimeTypes) _getConcreteType(t symbolic.CompileTimeType, d
 		concrete = structType
 		types.symbolicToConcrete[t] = concrete
 
-		var fields []reflect.StructField
+		var tempFields []reflect.StructField
+
+		structPkgPath := "struct" + strconv.FormatUint(uint64(uintptr(unsafe.Pointer(structType))), 10)
 
 		for i := 0; i < t.FieldCount(); i++ {
 			symbolicField := t.Field(i)
@@ -124,14 +126,14 @@ func (types *ModuleComptimeTypes) _getConcreteType(t symbolic.CompileTimeType, d
 			field := reflect.StructField{
 				Name:    symbolicField.Name,
 				Type:    fieldType.GoType(),
-				PkgPath: "struct" + strconv.FormatUint(uint64(uintptr(unsafe.Pointer(structType))), 10),
+				PkgPath: structPkgPath,
 				//Tag: ,
 			}
-			fields = append(fields, field)
+			tempFields = append(tempFields, field)
 		}
 
-		if len(fields) == 0 {
-			fields = append(fields, reflect.StructField{
+		if len(tempFields) == 0 {
+			tempFields = append(tempFields, reflect.StructField{
 				Name: "_",
 				Type: BOOL_TYPE,
 			})
@@ -139,9 +141,9 @@ func (types *ModuleComptimeTypes) _getConcreteType(t symbolic.CompileTimeType, d
 
 		//TODO: reorder the fields to minimize padding
 
-		structType.goStructType = reflect.StructOf(fields)
+		structType.goStructType = reflect.StructOf(tempFields)
 
-		for i := 0; i < len(fields); i++ {
+		for i := 0; i < len(tempFields); i++ {
 			structField := structType.goStructType.Field(i)
 
 			info := fieldRetrievalInfo{
@@ -268,7 +270,7 @@ func (t *PointerType) New(heap *ModuleHeap) HeapAddress {
 }
 
 func (t *PointerType) GetValueAllocParams() (size int, alignment int) {
-	size = int(t.goPtrType.Size())
+	size = int(t.valueType.GoType().Size())
 	if size == 0 {
 		panic(fmt.Errorf("pointed value has a size of 0"))
 	}
