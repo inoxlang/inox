@@ -111,7 +111,7 @@ func (types *ModuleComptimeTypes) _getConcreteType(t symbolic.CompileTimeType, d
 
 	switch t := t.(type) {
 	case *symbolic.StructType:
-		structType := &StructType{}
+		structType := &StructType{symbolic: t}
 		concrete = structType
 		types.symbolicToConcrete[t] = concrete
 
