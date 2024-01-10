@@ -1588,12 +1588,48 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			{
 				input: `
 					struct MyStruct {
+						inner *Inner
+					}
+					struct Inner {
+						count int
+					}
+					s = new MyStruct
+					s.inner = new Inner
+
+					s.inner.count = 2
+					s.inner.count += 1
+					return s.inner.count
+				`,
+				result:         Int(3),
+				doSymbolicEval: true,
+			},
+			{
+				input: `
+					struct MyStruct {
 						count int
 					}
 					s = new MyStruct
 					$s.count = 2
 					$s.count += 1
 					return $s.count
+				`,
+				result:         Int(3),
+				doSymbolicEval: true,
+			},
+			{
+				input: `
+					struct MyStruct {
+						inner *Inner
+					}
+					struct Inner {
+						count int
+					}
+					$s = new MyStruct
+					$s.inner = new Inner
+
+					$s.inner.count = 2
+					$s.inner.count += 1
+					return $s.inner.count
 				`,
 				result:         Int(3),
 				doSymbolicEval: true,
@@ -1696,13 +1732,18 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					state.Globals.Set(k, v)
 				}
 				state.Ctx.AddNamedPattern("int", INT_PATTERN)
+				state.Ctx.AddNamedPattern("bool", BOOL_PATTERN)
 
 				res, err := Eval(testCase.input, state, testCase.doSymbolicEval)
 				if testCase.error {
-					assert.Error(t, err)
+					if !assert.Error(t, err) {
+						return
+					}
 					assert.Nil(t, res)
 				} else {
-					assert.NoError(t, err)
+					if !assert.NoError(t, err) {
+						return
+					}
 					assert.Equal(t, testCase.result, res)
 				}
 			})
@@ -11374,26 +11415,82 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	})
 
 	t.Run("new expression", func(t *testing.T) {
-		// t.Run("with init", func(t *testing.T) {
-		// 	code := `
-		// 		type MyStruct {
-		// 			a int
-		// 		}
+		t.Run("without init", func(t *testing.T) {
+			code := `
+				struct MyStruct {
+					a int
+				}
 
-		// 		ptr = new MyStruct {a: 1}
-		// 		return ptr.a
-		// 	`
-		// 	state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
-		// 		"map": WrapGoFunction(Map),
-		// 	})
-		// 	defer state.Ctx.CancelGracefully()
+				return new MyStruct
+			`
+			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
 
-		// 	state.Ctx.AddNamedPattern("serializable-iterable", SERIALIZABLE_ITERABLE_PATTERN)
+			state.Ctx.AddNamedPattern("int", INT_PATTERN)
 
-		// 	res, err := Eval(code, state, true)
-		// 	assert.NoError(t, err)
-		// 	assert.Equal(t, Int(1), res)
-		// })
+			res, err := Eval(code, state, true)
+			assert.NoError(t, err)
+			assert.IsType(t, (*Struct)(nil), res)
+		})
+
+		t.Run("with init of single-field struct", func(t *testing.T) {
+			code := `
+				struct MyStruct {
+					a int
+				}
+
+				ptr = new MyStruct {a: 3}
+				return ptr.a
+			`
+			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
+
+			state.Ctx.AddNamedPattern("int", INT_PATTERN)
+
+			res, err := Eval(code, state, true)
+			assert.NoError(t, err)
+			assert.Equal(t, Int(3), res)
+		})
+
+		t.Run("with init of two-field struct", func(t *testing.T) {
+			code := `
+				struct MyStruct {
+					a int
+					b int
+				}
+
+				ptr = new MyStruct {a: 3, b: 4}
+				return [ptr.a, ptr.b]
+			`
+			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
+
+			state.Ctx.AddNamedPattern("int", INT_PATTERN)
+
+			res, err := Eval(code, state, true)
+			assert.NoError(t, err)
+			assert.Equal(t, NewWrappedValueList(Int(3), Int(4)), res)
+		})
+
+		t.Run("with init of two-field struct: alternate order", func(t *testing.T) {
+			code := `
+				struct MyStruct {
+					a int
+					b int
+				}
+
+				ptr = new MyStruct {b: 4, a: 3}
+				return [ptr.a, ptr.b]
+			`
+			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
+
+			state.Ctx.AddNamedPattern("int", INT_PATTERN)
+
+			res, err := Eval(code, state, true)
+			assert.NoError(t, err)
+			assert.Equal(t, NewWrappedValueList(Int(3), Int(4)), res)
+		})
 	})
 
 	t.Run("error position stack", func(t *testing.T) {

@@ -301,11 +301,17 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			}
 		}
 
-		for _, propNameIdent := range n.PropertyNames {
+		for i, propNameIdent := range n.PropertyNames {
+			var propContainer symbolic.Value
+			if i == 0 {
+				propContainer, _ = state.Global.SymbolicData.GetMostSpecificNodeValue(n.Left)
+			} else {
+				propContainer, _ = state.Global.SymbolicData.GetMostSpecificNodeValue(n.PropertyNames[i-1])
+			}
+
 			structPtr, ok := v.(*Struct)
 			if ok {
-				val := utils.MustGet(state.Global.SymbolicData.GetMostSpecificNodeValue(n.Left))
-				symbType := val.(*symbolic.Pointer).Type()
+				symbType := propContainer.(*symbolic.Pointer).Type()
 				concreteType := state.getConcreteType(symbType).(*PointerType)
 				retrievalInfo := concreteType.StructFieldRetrieval(propNameIdent.Name)
 
@@ -822,11 +828,17 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 				return nil, err
 			}
 
-			for _, propNameIdent := range lhs.PropertyNames[:len(lhs.PropertyNames)-1] {
+			for i, propNameIdent := range lhs.PropertyNames[:len(lhs.PropertyNames)-1] {
+				var symbPropContainer symbolic.Value
+				if i == 0 {
+					symbPropContainer, _ = state.Global.SymbolicData.GetMostSpecificNodeValue(lhs.Left)
+				} else {
+					symbPropContainer, _ = state.Global.SymbolicData.GetMostSpecificNodeValue(lhs.PropertyNames[i-1])
+				}
+
 				structPtr, ok := left.(*Struct)
 				if ok {
-					val := utils.MustGet(state.Global.SymbolicData.GetMostSpecificNodeValue(n.Left))
-					symbType := val.(*symbolic.Pointer).Type()
+					symbType := symbPropContainer.(*symbolic.Pointer).Type()
 					concreteType := state.getConcreteType(symbType).(*PointerType)
 					retrievalInfo := concreteType.StructFieldRetrieval(propNameIdent.Name)
 
@@ -849,8 +861,13 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 
 			structPtr, ok := left.(*Struct)
 			if ok {
-				val := utils.MustGet(state.Global.SymbolicData.GetMostSpecificNodeValue(lhs.Left))
-				symbType := val.(*symbolic.Pointer).Type()
+				propContainerNode := lhs.Left
+				if len(lhs.PropertyNames) > 1 {
+					propContainerNode = lhs.PropertyNames[len(lhs.PropertyNames)-2]
+				}
+
+				symbPropContainer := utils.MustGet(state.Global.SymbolicData.GetMostSpecificNodeValue(propContainerNode))
+				symbType := symbPropContainer.(*symbolic.Pointer).Type()
 				concreteType := state.getConcreteType(symbType).(*PointerType)
 				retrievalInfo := concreteType.StructFieldRetrieval(lastPropName)
 
@@ -3249,7 +3266,26 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 
 		ptrType := state.getConcreteType(symbPtrType).(*PointerType)
 		ptr := ptrType.New(state.Global.Heap)
-		return (*Struct)(unsafe.Pointer(ptr)), nil
+		structPtr := (*Struct)(unsafe.Pointer(ptr))
+
+		initLiteral, ok := n.Initialization.(*parse.StructInitializationLiteral)
+		if ok {
+			//initialize
+			structType := ptrType.ValueType().(*StructType)
+			helper := structHelperFromPtr(structPtr, int(structType.GoType().Size()))
+			for _, init := range initLiteral.Fields {
+				structFieldInit := init.(*parse.StructFieldInitialization)
+				fieldName := structFieldInit.Name.Name
+				initialFieldValue, err := TreeWalkEval(structFieldInit.Value, state)
+				if err != nil {
+					return nil, err
+				}
+				fieldRetrievalInfo := structType.FieldRetrievalInfo(fieldName)
+				helper.SetValue(fieldRetrievalInfo, initialFieldValue)
+			}
+		}
+
+		return structPtr, nil
 	default:
 		return nil, fmt.Errorf("cannot evaluate %#v (%T)\n%s", node, node, debug.Stack())
 	}

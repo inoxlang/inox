@@ -75,10 +75,11 @@ func (s structHelper) SetTrue(offset int) {
 	s.data()[offset] = 1
 }
 
-func (s structHelper) SetFalse(pos int) {
-	s.data()[pos] = 0
+func (s structHelper) SetFalse(offset int) {
+	s.data()[offset] = 0
 }
 
+//go:nocheckptr
 func (s structHelper) GetStructPointer(offset int) *Struct {
 	u64 := binary.LittleEndian.Uint64(s.data()[offset : offset+8])
 	return (*Struct)(unsafe.Pointer(uintptr(u64)))

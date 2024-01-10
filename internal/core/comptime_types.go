@@ -209,7 +209,7 @@ func (t *StructType) FieldRetrievalInfo(name string) fieldRetrievalInfo {
 			return fieldInfo
 		}
 	}
-	panic(fmt.Errorf("field %s does not exist in the struct", name))
+	panic(fmt.Errorf("field '%s' does not exist in the struct", name))
 }
 
 func (t *StructType) Symbolic() symbolic.CompileTimeType {

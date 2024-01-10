@@ -1,6 +1,7 @@
 package core
 
 import (
+	"bytes"
 	"math"
 	"testing"
 
@@ -8,6 +9,8 @@ import (
 )
 
 func TestStructHelper(t *testing.T) {
+
+	EightZeroBytes := bytes.Repeat([]byte{0}, 8)
 
 	t.Run("set/get int", func(t *testing.T) {
 		memory := make([]byte, 10)
@@ -22,6 +25,12 @@ func TestStructHelper(t *testing.T) {
 			assert.Equal(t, integer, helper.GetInt(0))
 			assert.Zero(t, memory[0])
 			assert.Zero(t, memory[len(memory)-1])
+
+			if integer == 0 {
+				assert.Equal(t, EightZeroBytes, memory[1:1+8])
+			} else {
+				assert.NotEqual(t, EightZeroBytes, memory[1:1+8])
+			}
 		}
 	})
 
@@ -38,6 +47,12 @@ func TestStructHelper(t *testing.T) {
 			assert.Equal(t, float, helper.GetFloat(0))
 			assert.Zero(t, memory[0])
 			assert.Zero(t, memory[len(memory)-1])
+
+			if float == 0 {
+				assert.Equal(t, EightZeroBytes, memory[1:1+8])
+			} else {
+				assert.NotEqual(t, EightZeroBytes, memory[1:1+8])
+			}
 		}
 	})
 
@@ -78,6 +93,8 @@ func TestStructHelper(t *testing.T) {
 		assert.Equal(t, structPtr, helper.GetStructPointer(0))
 		assert.Zero(t, memory[0])
 		assert.Zero(t, memory[len(memory)-1])
+
+		assert.NotEqual(t, EightZeroBytes, memory[1:1+8])
 	})
 
 }
