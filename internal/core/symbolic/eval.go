@@ -5895,6 +5895,10 @@ func symbolicMemb(value Value, name string, optionalMembExpr bool, node parse.No
 			state.addError(makeSymbolicEvalError(node, state, POINTED_VALUE_HAS_NO_PROPERTIES))
 			return ANY
 		}
+		if optionalMembExpr {
+			state.addError(makeSymbolicEvalError(node, state, OPTIONAL_MEMBER_EXPRS_NOT_ALLOWED_FOR_STRUCT_FIELDS))
+			return ANY
+		}
 		field, ok := strct.typ.FieldByName(name)
 		if ok {
 			return field.Type.SymbolicValue()

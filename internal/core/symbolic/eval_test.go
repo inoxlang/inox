@@ -2135,6 +2135,25 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, ANY, res)
 		})
 
+		t.Run("optional member expression are not allowed on struct field", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				struct MyStruct {
+					a int
+				}
+
+				ptr = new MyStruct
+				return $ptr.?a
+			`)
+			memberExpr := n.Statements[2].(*parse.ReturnStatement).Expr
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(memberExpr, state, OPTIONAL_MEMBER_EXPRS_NOT_ALLOWED_FOR_STRUCT_FIELDS),
+			}, state.errors())
+			assert.Equal(t, ANY, res)
+		})
+
 		t.Run("optional property", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				fn f(arg %{name?: %str}){

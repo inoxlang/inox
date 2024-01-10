@@ -161,6 +161,9 @@ const (
 	"only compile-time types can be used in 'new' expressions (struct types, int, float, bool and string)"
 	POINTER_TYPES_CANNOT_BE_USED_IN_NEW_EXPRS_YET = "pointer types cannot be used in 'new' expressions yet"
 
+	//struct
+	OPTIONAL_MEMBER_EXPRS_NOT_ALLOWED_FOR_STRUCT_FIELDS = "optional member expressions are not allowed for struct fields"
+
 	POINTED_VALUE_HAS_NO_PROPERTIES = "pointed value has no properties"
 )
 
