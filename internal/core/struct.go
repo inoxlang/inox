@@ -40,54 +40,54 @@ func (s structHelper) data() []byte {
 	return unsafe.Slice(s.ptr, s.size)
 }
 
-func (s structHelper) GetInt(pos int) Int {
-	u64 := binary.LittleEndian.Uint64(s.data()[pos : pos+8])
+func (s structHelper) GetInt(offset int) Int {
+	u64 := binary.LittleEndian.Uint64(s.data()[offset : offset+8])
 	return Int(u64)
 }
 
-func (s structHelper) SetInt(pos int, value Int) {
-	binary.LittleEndian.PutUint64(s.data()[pos:pos+8], uint64(value))
+func (s structHelper) SetInt(offset int, value Int) {
+	binary.LittleEndian.PutUint64(s.data()[offset:offset+8], uint64(value))
 }
 
-func (s structHelper) GetFloat(pos int) Float {
-	u64 := binary.LittleEndian.Uint64(s.data()[pos : pos+8])
+func (s structHelper) GetFloat(offset int) Float {
+	u64 := binary.LittleEndian.Uint64(s.data()[offset : offset+8])
 	return Float(math.Float64frombits(u64))
 }
 
-func (s structHelper) SetFloat(pos int, value Float) {
+func (s structHelper) SetFloat(offset int, value Float) {
 	bits := math.Float64bits(float64(value))
-	binary.LittleEndian.PutUint64(s.data()[pos:pos+8], bits)
+	binary.LittleEndian.PutUint64(s.data()[offset:offset+8], bits)
 }
 
-func (s structHelper) GetBool(pos int) Bool {
-	return s.data()[pos] != 0
+func (s structHelper) GetBool(offset int) Bool {
+	return s.data()[offset] != 0
 }
 
-func (s structHelper) SetBool(pos int, value Bool) {
+func (s structHelper) SetBool(offset int, value Bool) {
 	if value {
-		s.SetTrue(pos)
+		s.SetTrue(offset)
 	} else {
-		s.SetFalse(pos)
+		s.SetFalse(offset)
 	}
 }
 
-func (s structHelper) SetTrue(pos int) {
-	s.data()[pos] = 1
+func (s structHelper) SetTrue(offset int) {
+	s.data()[offset] = 1
 }
 
 func (s structHelper) SetFalse(pos int) {
 	s.data()[pos] = 0
 }
 
-func (s structHelper) GetStructPointer(pos int) *Struct {
-	u64 := binary.LittleEndian.Uint64(s.data()[pos : pos+8])
+func (s structHelper) GetStructPointer(offset int) *Struct {
+	u64 := binary.LittleEndian.Uint64(s.data()[offset : offset+8])
 	return (*Struct)(unsafe.Pointer(uintptr(u64)))
 }
 
-func (s structHelper) SetStructPointer(pos int, ptr *Struct) {
+func (s structHelper) SetStructPointer(offset int, ptr *Struct) {
 	u64 := uint64(uintptr(unsafe.Pointer(ptr)))
 
-	binary.LittleEndian.PutUint64(s.data()[pos:pos+8], u64)
+	binary.LittleEndian.PutUint64(s.data()[offset:offset+8], u64)
 }
 
 func (s structHelper) GetValue(retrievalInfo fieldRetrievalInfo) Value {

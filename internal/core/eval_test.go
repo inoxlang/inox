@@ -11373,6 +11373,29 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		})
 	})
 
+	t.Run("new expression", func(t *testing.T) {
+		// t.Run("with init", func(t *testing.T) {
+		// 	code := `
+		// 		type MyStruct {
+		// 			a int
+		// 		}
+
+		// 		ptr = new MyStruct {a: 1}
+		// 		return ptr.a
+		// 	`
+		// 	state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
+		// 		"map": WrapGoFunction(Map),
+		// 	})
+		// 	defer state.Ctx.CancelGracefully()
+
+		// 	state.Ctx.AddNamedPattern("serializable-iterable", SERIALIZABLE_ITERABLE_PATTERN)
+
+		// 	res, err := Eval(code, state, true)
+		// 	assert.NoError(t, err)
+		// 	assert.Equal(t, Int(1), res)
+		// })
+	})
+
 	t.Run("error position stack", func(t *testing.T) {
 		t.Parallel()
 

@@ -263,9 +263,15 @@ func (t *PointerType) GoType() reflect.Type {
 
 // New allocates the memory needed for the value and returns a pointer to it.
 func (t *PointerType) New(heap *ModuleHeap) HeapAddress {
-	size := int(t.goPtrType.Size())
+	size, alignment := t.GetValueAllocParams()
+	return Alloc[byte](heap, size, alignment)
+}
+
+func (t *PointerType) GetValueAllocParams() (size int, alignment int) {
+	size = int(t.goPtrType.Size())
 	if size == 0 {
 		panic(fmt.Errorf("pointed value has a size of 0"))
 	}
-	return Alloc[byte](heap, size, t.goPtrType.Align())
+	alignment = t.goPtrType.Align()
+	return
 }

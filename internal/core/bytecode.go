@@ -208,6 +208,7 @@ const (
 	OpCreateReceptionHandler
 	OpCreateXMLelem
 	OpCreateAddTypeExtension
+	OpAllocStruct
 	OpSendValue
 	OpSpreadObjectPattern
 	OpSpreadRecordPattern
@@ -236,6 +237,10 @@ const (
 	OpSetMember
 	OpSetIndex
 	OpSetSlice
+	OpSetBoolField
+	OpSetIntField
+	OpSetFloatField
+	OpSetStructPtrField
 	OpIterInit
 	OpIterNext
 	OpIterNextChunk
@@ -251,6 +256,10 @@ const (
 	OpConcat
 	OpRange
 	OpMemb
+	OpGetBoolField
+	OpGetIntField
+	OpGetFloatField
+	OpGetStructPtrField
 	OpObjPropNotStored
 	OpExtensionMethod
 	OpOptionalMemb
@@ -347,6 +356,7 @@ var OpcodeNames = [...]string{
 	OpCreateReceptionHandler:       "CRT_RHANDLER",
 	OpCreateXMLelem:                "CRT_XML_ELEM",
 	OpCreateAddTypeExtension:       "CRT_ADD_TYPE_EXT",
+	OpAllocStruct:                  "ALLOC_STRUCT",
 	OpSendValue:                    "SEND_VAL",
 	OpSpreadObjectPattern:          "SPRD_OBJP",
 	OpSpreadRecordPattern:          "SPRD_RECP",
@@ -356,6 +366,10 @@ var OpcodeNames = [...]string{
 	OpSetMember:                    "SET_MEMBER",
 	OpSetIndex:                     "SET_INDEX",
 	OpSetSlice:                     "SET_SLICE",
+	OpSetBoolField:                 "SET_BOOL_FIELD",
+	OpSetIntField:                  "SET_INT_FIELD",
+	OpSetFloatField:                "SET_FLOAT_FIELD",
+	OpSetStructPtrField:            "SET_STRUCT_PTR_FIELD",
 	OpCall:                         "CALL",
 	OpReturn:                       "RETURN",
 	OpCallFromXMLFactory:           "CALL_FXML_FACTORY",
@@ -390,6 +404,10 @@ var OpcodeNames = [...]string{
 	OpConcat:                       "CONCAT",
 	OpRange:                        "RANGE",
 	OpMemb:                         "MEMB",
+	OpGetBoolField:                 "GET_BOOL_FIELD",
+	OpGetIntField:                  "GET_INT_FIELD",
+	OpGetFloatField:                "GET_FLOAT_FIELD",
+	OpGetStructPtrField:            "GET_STRUCT_PTR_FIELD",
 	OpObjPropNotStored:             "OBJ_PROP_NOT_STORED",
 	OpExtensionMethod:              "EXT_METHOD",
 	OpOptionalMemb:                 "OPT_MEMB",
@@ -487,6 +505,7 @@ var OpcodeOperands = [...][]int{
 	OpCreateReceptionHandler:       {},
 	OpCreateXMLelem:                {2, 1, 2, 1},
 	OpCreateAddTypeExtension:       {2},
+	OpAllocStruct:                  {2, 2},
 	OpSendValue:                    {},
 	OpSpreadObjectPattern:          {},
 	OpSpreadRecordPattern:          {},
@@ -512,6 +531,10 @@ var OpcodeOperands = [...][]int{
 	OpSetMember:                    {2},
 	OpSetIndex:                     {},
 	OpSetSlice:                     {},
+	OpSetBoolField:                 {2, 2},
+	OpSetIntField:                  {2, 2},
+	OpSetFloatField:                {2, 2},
+	OpSetStructPtrField:            {2, 2},
 	OpIterInit:                     {1},
 	OpIterNext:                     {1},
 	OpIterNextChunk:                {1},
@@ -527,6 +550,10 @@ var OpcodeOperands = [...][]int{
 	OpConcat:                       {1, 2},
 	OpRange:                        {1},
 	OpMemb:                         {2},
+	OpGetBoolField:                 {2, 2},
+	OpGetIntField:                  {2, 2},
+	OpGetFloatField:                {2, 2},
+	OpGetStructPtrField:            {2, 2},
 	OpObjPropNotStored:             {2},
 	OpExtensionMethod:              {2, 2},
 	OpOptionalMemb:                 {2},
@@ -624,6 +651,7 @@ var OpcodeConstantIndexes = [...][]bool{
 	OpCreateReceptionHandler:       {},
 	OpCreateXMLelem:                {true, false, true, false},
 	OpCreateAddTypeExtension:       {true},
+	OpAllocStruct:                  {false, false},
 	OpSendValue:                    {},
 	OpSpreadObjectPattern:          {},
 	OpSpreadRecordPattern:          {},
@@ -650,6 +678,10 @@ var OpcodeConstantIndexes = [...][]bool{
 	OpSetMember:                    {true},
 	OpSetIndex:                     {},
 	OpSetSlice:                     {},
+	OpSetBoolField:                 {false, false},
+	OpSetIntField:                  {false, false},
+	OpSetFloatField:                {false, false},
+	OpSetStructPtrField:            {false, false},
 	OpIterInit:                     {false},
 	OpIterNext:                     {false},
 	OpIterNextChunk:                {false},
@@ -665,6 +697,10 @@ var OpcodeConstantIndexes = [...][]bool{
 	OpConcat:                       {false, true},
 	OpRange:                        {false},
 	OpMemb:                         {true},
+	OpGetBoolField:                 {false, false},
+	OpGetIntField:                  {false, false},
+	OpGetFloatField:                {false, false},
+	OpGetStructPtrField:            {false, false},
 	OpObjPropNotStored:             {true},
 	OpExtensionMethod:              {true, true},
 	OpOptionalMemb:                 {true},

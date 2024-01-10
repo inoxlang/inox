@@ -38,6 +38,7 @@ type compiler struct {
 	module                *Module
 	symbolicData          *symbolic.Data
 	staticCheckData       *StaticCheckData
+	moduleComptimeTypes   *ModuleComptimeTypes
 	constants             []Value
 	globalSymbols         *symbolTable
 	localSymbolTableStack []*symbolTable
@@ -106,6 +107,7 @@ func NewCompiler(
 		module:                mod,
 		symbolicData:          symbolicData,
 		staticCheckData:       staticCheckData,
+		moduleComptimeTypes:   NewModuleComptimeTypes(symbolicData.GetCreateComptimeTypes(mod.MainChunk.Node)),
 		globalSymbols:         symbTable,
 		localSymbolTableStack: []*symbolTable{},
 		scopes:                []compilationScope{mainScope},
@@ -1104,8 +1106,26 @@ func (c *compiler) Compile(node parse.Node) error {
 			c.emit(node, OpGetLocal, symbol.Index)
 		}
 
-		for _, p := range node.PropertyNames {
-			c.emit(node, OpMemb, c.addConstant(Str(p.Name)))
+		for i, p := range node.PropertyNames {
+			var propContainer symbolic.Value
+			if i == 0 {
+				propContainer, _ = c.symbolicData.GetMostSpecificNodeValue(node.Left)
+			} else {
+				propContainer, _ = c.symbolicData.GetMostSpecificNodeValue(node.PropertyNames[i-1])
+			}
+			propName := p.Name
+
+			if ptr, ok := propContainer.(*symbolic.Pointer); ok {
+				symbolicStructType := ptr.ValueType().(*symbolic.StructType)
+				structType := c.moduleComptimeTypes.getConcreteType(symbolicStructType).(*StructType)
+				retrievalInfo := structType.FieldRetrievalInfo(propName)
+				structSize := int(structType.GoType().Size())
+
+				op := opCodeForFieldRetrieval(retrievalInfo.typ)
+				c.emit(node, op, structSize, retrievalInfo.offset)
+			} else {
+				c.emit(node, OpMemb, c.addConstant(Str(propName)))
+			}
 		}
 
 	case *parse.SelfExpression:
@@ -1114,6 +1134,19 @@ func (c *compiler) Compile(node parse.Node) error {
 		if err := c.Compile(node.Left); err != nil {
 			return err
 		}
+
+		symbolicVal, _ := c.symbolicData.GetMostSpecificNodeValue(node.Left)
+		if ptr, ok := symbolicVal.(*symbolic.Pointer); ok {
+			symbolicStructType := ptr.ValueType().(*symbolic.StructType)
+			structType := c.moduleComptimeTypes.getConcreteType(symbolicStructType).(*StructType)
+			retrievalInfo := structType.FieldRetrievalInfo(node.PropertyName.Name)
+			structSize := int(structType.GoType().Size())
+
+			op := opCodeForFieldRetrieval(retrievalInfo.typ)
+			c.emit(node, op, structSize, retrievalInfo.offset)
+			break
+		}
+		//else IProps
 
 		op := OpMemb
 		if node.Optional {
@@ -2167,6 +2200,18 @@ func (c *compiler) Compile(node parse.Node) error {
 		}
 		c.emit(node, OpCreateList, methodCount)
 		c.emit(node, OpCreateAddTypeExtension, extendStmtConstIndex)
+	case *parse.StructDefinition:
+		return nil
+	case *parse.NewExpression:
+		val, ok := c.symbolicData.GetMostSpecificNodeValue(node)
+		if !ok {
+			return fmt.Errorf("no symbolic value found")
+		}
+		symbPtrType := val.(*symbolic.Pointer).Type()
+
+		ptrType := c.moduleComptimeTypes.getConcreteType(symbPtrType).(*PointerType)
+		size, alignment := ptrType.GetValueAllocParams()
+		c.emit(node, OpAllocStruct, size, alignment)
 	default:
 		return fmt.Errorf("cannot compile %T", node)
 	}
@@ -2264,26 +2309,93 @@ func (c *compiler) compileAssign(node *parse.Assignment, lhs, rhs parse.Node) er
 			c.emit(node, OpGetLocal, symbol.Index)
 		}
 
-		for _, p := range l.PropertyNames[:len(l.PropertyNames)-1] {
-			c.emit(node, OpMemb, c.addConstant(Str(p.Name)))
+		for i, p := range l.PropertyNames[:len(l.PropertyNames)-1] {
+			var propContainer symbolic.Value
+			if i == 0 {
+				propContainer, _ = c.symbolicData.GetMostSpecificNodeValue(l.Left)
+			} else {
+				propContainer, _ = c.symbolicData.GetMostSpecificNodeValue(l.PropertyNames[i-1])
+			}
+			propName := p.Name
+
+			if ptr, ok := propContainer.(*symbolic.Pointer); ok {
+				symbolicStructType := ptr.ValueType().(*symbolic.StructType)
+				structType := c.moduleComptimeTypes.getConcreteType(symbolicStructType).(*StructType)
+				retrievalInfo := structType.FieldRetrievalInfo(propName)
+				structSize := int(structType.GoType().Size())
+
+				op := opCodeForFieldRetrieval(retrievalInfo.typ)
+				c.emit(node, op, structSize, retrievalInfo.offset)
+			} else {
+				c.emit(node, OpMemb, c.addConstant(Str(propName)))
+			}
+		}
+
+		var lastPropContainer symbolic.Value
+		if len(l.PropertyNames) == 1 {
+			lastPropContainer, _ = c.symbolicData.GetMostSpecificNodeValue(l.Left)
+		} else {
+			lastPropContainer, _ = c.symbolicData.GetMostSpecificNodeValue(l.PropertyNames[len(l.PropertyNames)-2])
 		}
 
 		lastPropName := l.PropertyNames[len(l.PropertyNames)-1].Name
 
-		if node.Operator != parse.Assign {
-			c.emit(node, OpCopyTop)
-			c.emit(node, OpMemb, c.addConstant(Str(lastPropName)))
-		}
+		if ptr, ok := lastPropContainer.(*symbolic.Pointer); ok {
+			symbolicStructType := ptr.ValueType().(*symbolic.StructType)
+			structType := c.moduleComptimeTypes.getConcreteType(symbolicStructType).(*StructType)
+			retrievalInfo := structType.FieldRetrievalInfo(lastPropName)
+			structSize := int(structType.GoType().Size())
 
-		if err := c.compileAssignOperation(node, rhs); err != nil {
-			return err
-		}
+			if node.Operator != parse.Assign {
+				c.emit(node, OpCopyTop)
+				op := opCodeForFieldRetrieval(retrievalInfo.typ)
+				c.emit(node, op, structSize, retrievalInfo.offset)
+			}
 
-		c.emit(node, OpSetMember, c.addConstant(Str(lastPropName)))
+			if err := c.compileAssignOperation(node, rhs); err != nil {
+				return err
+			}
+
+			op := opCodeForSettingField(retrievalInfo.typ)
+			c.emit(node, op, structSize, retrievalInfo.offset)
+		} else { //IProps
+			if node.Operator != parse.Assign {
+				c.emit(node, OpCopyTop)
+				c.emit(node, OpMemb, c.addConstant(Str(lastPropName)))
+			}
+
+			if err := c.compileAssignOperation(node, rhs); err != nil {
+				return err
+			}
+
+			c.emit(node, OpSetMember, c.addConstant(Str(lastPropName)))
+		}
 	case *parse.MemberExpression:
 		if err := c.Compile(l.Left); err != nil {
 			return err
 		}
+
+		symbolicVal, _ := c.symbolicData.GetMostSpecificNodeValue(l.Left)
+		if ptr, ok := symbolicVal.(*symbolic.Pointer); ok {
+			symbolicStructType := ptr.ValueType().(*symbolic.StructType)
+			structType := c.moduleComptimeTypes.getConcreteType(symbolicStructType).(*StructType)
+			retrievalInfo := structType.FieldRetrievalInfo(l.PropertyName.Name)
+			structSize := int(structType.GoType().Size())
+
+			if node.Operator != parse.Assign {
+				c.emit(node, OpCopyTop)
+				op := opCodeForFieldRetrieval(retrievalInfo.typ)
+				c.emit(node, op, structSize, retrievalInfo.offset)
+			}
+
+			if err := c.compileAssignOperation(node, rhs); err != nil {
+				return err
+			}
+
+			op := opCodeForSettingField(retrievalInfo.typ)
+			c.emit(node, op, structSize, retrievalInfo.offset)
+			break
+		} //else IProps
 
 		if node.Operator != parse.Assign {
 			c.emit(node, OpCopyTop)
@@ -2716,4 +2828,38 @@ func (c *compiler) enterTracingBlock(msg string) {
 func (c *compiler) leaveTracingBlock() {
 	c.indent--
 	c.printTrace("}")
+}
+
+func opCodeForFieldRetrieval(typ FieldRetrievalType) Opcode {
+	switch typ {
+	case GetBoolField:
+		return OpGetBoolField
+	case GetIntField:
+		return OpGetIntField
+	case GetFloatField:
+		return OpGetFloatField
+	case GetStringField:
+		panic(ErrNotImplementedYet)
+	case GetStructPointerField:
+		return OpGetStructPtrField
+	default:
+		panic(ErrUnreachable)
+	}
+}
+
+func opCodeForSettingField(typ FieldRetrievalType) Opcode {
+	switch typ {
+	case GetBoolField:
+		return OpSetBoolField
+	case GetIntField:
+		return OpSetIntField
+	case GetFloatField:
+		return OpSetFloatField
+	case GetStringField:
+		panic(ErrNotImplementedYet)
+	case GetStructPointerField:
+		return OpSetStructPtrField
+	default:
+		panic(ErrUnreachable)
+	}
 }

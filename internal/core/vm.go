@@ -7,6 +7,7 @@ import (
 	"runtime/debug"
 	"strings"
 	"sync/atomic"
+	"unsafe"
 
 	permkind "github.com/inoxlang/inox/internal/core/permkind"
 	"github.com/inoxlang/inox/internal/core/symbolic"
@@ -777,6 +778,42 @@ func (v *VM) run() {
 			}
 
 			slice.SetSlice(v.global.Ctx, int(startIndex), int(endIndex), val.(Sequence))
+		case OpSetBoolField:
+			v.ip += 4
+			structSize := int(v.curInsts[v.ip-2]) | int(v.curInsts[v.ip-3])<<8
+			offset := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
+			struct_ := v.stack[v.sp-2].(*Struct)
+			value := v.stack[v.sp-1].(Bool)
+			v.sp -= 2
+
+			structHelperFromPtr(struct_, structSize).SetBool(offset, value)
+		case OpSetIntField:
+			v.ip += 4
+			structSize := int(v.curInsts[v.ip-2]) | int(v.curInsts[v.ip-3])<<8
+			offset := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
+			struct_ := v.stack[v.sp-2].(*Struct)
+			value := v.stack[v.sp-1].(Int)
+			v.sp -= 2
+
+			structHelperFromPtr(struct_, structSize).SetInt(offset, value)
+		case OpSetFloatField:
+			v.ip += 4
+			structSize := int(v.curInsts[v.ip-2]) | int(v.curInsts[v.ip-3])<<8
+			offset := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
+			struct_ := v.stack[v.sp-2].(*Struct)
+			value := v.stack[v.sp-1].(Float)
+			v.sp -= 2
+
+			structHelperFromPtr(struct_, structSize).SetFloat(offset, value)
+		case OpSetStructPtrField:
+			v.ip += 4
+			structSize := int(v.curInsts[v.ip-2]) | int(v.curInsts[v.ip-3])<<8
+			offset := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
+			struct_ := v.stack[v.sp-2].(*Struct)
+			value := v.stack[v.sp-1].(*Struct)
+			v.sp -= 2
+
+			structHelperFromPtr(struct_, structSize).SetStructPointer(offset, value)
 		case OpOptionalMemb:
 			object := v.stack[v.sp-1]
 			v.ip += 2
@@ -864,6 +901,34 @@ func (v *VM) run() {
 
 			memb := object.(IProps).Prop(v.global.Ctx, memberName)
 			v.stack[v.sp-1] = memb
+		case OpGetBoolField:
+			v.ip += 4
+			structSize := int(v.curInsts[v.ip-2]) | int(v.curInsts[v.ip-3])<<8
+			offset := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
+			struct_ := v.stack[v.sp-1].(*Struct)
+
+			v.stack[v.sp-1] = structHelperFromPtr(struct_, structSize).GetBool(offset)
+		case OpGetIntField:
+			v.ip += 4
+			structSize := int(v.curInsts[v.ip-2]) | int(v.curInsts[v.ip-3])<<8
+			offset := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
+			struct_ := v.stack[v.sp-1].(*Struct)
+
+			v.stack[v.sp-1] = structHelperFromPtr(struct_, structSize).GetInt(offset)
+		case OpGetFloatField:
+			v.ip += 4
+			structSize := int(v.curInsts[v.ip-2]) | int(v.curInsts[v.ip-3])<<8
+			offset := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
+			struct_ := v.stack[v.sp-1].(*Struct)
+
+			v.stack[v.sp-1] = structHelperFromPtr(struct_, structSize).GetFloat(offset)
+		case OpGetStructPtrField:
+			v.ip += 4
+			structSize := int(v.curInsts[v.ip-2]) | int(v.curInsts[v.ip-3])<<8
+			offset := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
+			struct_ := v.stack[v.sp-1].(*Struct)
+
+			v.stack[v.sp-1] = structHelperFromPtr(struct_, structSize).GetStructPointer(offset)
 		case OpObjPropNotStored:
 			val := v.stack[v.sp-1]
 			v.ip += 2
@@ -2468,6 +2533,14 @@ func (v *VM) handleOtherOpcodes(op byte) (_continue bool) {
 
 		v.global.Ctx.AddTypeExtension(extension)
 		v.sp -= 2
+	case OpAllocStruct:
+		v.ip += 4
+		size := int(v.curInsts[v.ip-2]) | int(v.curInsts[v.ip-3])<<8
+		alignment := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
+
+		addr := Alloc[byte](v.global.Heap, size, alignment)
+		v.stack[v.sp] = (*Struct)(unsafe.Pointer(addr))
+		v.sp++
 	case OpRuntimeTypecheck:
 		v.ip += 2
 		astNodeIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
