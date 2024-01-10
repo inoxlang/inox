@@ -3,6 +3,7 @@ package core
 import (
 	"errors"
 	"fmt"
+	"unsafe"
 )
 
 var (
@@ -17,6 +18,15 @@ type ModuleHeap struct {
 }
 
 type HeapAddress *byte
+
+func HeapAddressUintptr(addr HeapAddress) uintptr {
+	return uintptr(unsafe.Pointer(addr))
+}
+
+//go:nocheckptr
+func HeapAddressFromUintptr(ptr uintptr) HeapAddress {
+	return (HeapAddress)(unsafe.Pointer(ptr))
+}
 
 // Alloc allocates $size bytes and returns the starting position of the allocated memory segment.
 func Alloc[T any](h *ModuleHeap, size int, alignment int) HeapAddress {
@@ -53,6 +63,7 @@ func NewArenaHeap(initialCapacity int) *ModuleHeap {
 		}
 
 		var chosenSegment []byte
+		var chosenSegmentIndex int //index in segments
 
 		for _, segment := range segments {
 			if cap(segment)-len(segment) >= size+alignment {
@@ -66,9 +77,9 @@ func NewArenaHeap(initialCapacity int) *ModuleHeap {
 			segments = append(segments, chosenSegment)
 		}
 
-		// Round up the start index to the nearest multiple of 8 to achieve 8-byte alignment.
 		startIndex := (len(chosenSegment) + alignment - 1) / alignment * alignment
-		chosenSegment = chosenSegment[:len(chosenSegment)+size]
+		chosenSegment = chosenSegment[:startIndex+size]
+		segments[chosenSegmentIndex] = chosenSegment
 		ptr := &chosenSegment[startIndex]
 		return HeapAddress(ptr)
 	}
