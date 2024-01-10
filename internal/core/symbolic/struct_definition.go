@@ -226,20 +226,18 @@ func handleStructFieldDefinition(
 
 		fieldType = comptimeType
 	case *parse.PointerType:
-		state.addError(makeSymbolicEvalError(typeNode, state, "pointer types are not supported yet"))
-		return nil
 
-		// patternIdent, ok := typeNode.ValueType.(*parse.PatternIdentifierLiteral)
-		// if !ok {
-		// 	//static check error
-		// 	return nil
-		// }
-		// ptrType, ok := comptimeTypes.GetPointerType(patternIdent.Name)
-		// if !ok {
-		// 	state.addError(makeSymbolicEvalError(typeNode, state, fmtCompileTimeTypeIsNotDefined(patternIdent.Name)))
-		// 	return nil
-		// }
-		// fieldType = ptrType
+		patternIdent, ok := typeNode.ValueType.(*parse.PatternIdentifierLiteral)
+		if !ok {
+			//static check error
+			return nil
+		}
+		ptrType, ok := comptimeTypes.GetPointerType(patternIdent.Name)
+		if !ok {
+			state.addError(makeSymbolicEvalError(typeNode, state, fmtCompileTimeTypeIsNotDefined(patternIdent.Name)))
+			return nil
+		}
+		fieldType = ptrType
 	// case *parse.PatternCallExpression: //TODO: support integers in a given range
 	default:
 		state.addError(makeSymbolicEvalError(typeNode, state, ONLY_COMPILE_TIME_TYPES_CAN_BE_USED_AS_STRUCT_FIELD_TYPES))

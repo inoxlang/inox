@@ -13555,6 +13555,42 @@ func TestSymbolicEval(t *testing.T) {
 			expectedFieldType := StructField{Name: "a", Type: IntStructType}
 			assert.Equal(t, expectedFieldType, MyStructType.Field(0))
 		})
+
+		t.Run("field with struct pointer type", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				struct MyStruct {
+					a *Int
+				}
+				struct Int {
+					val int
+				}
+			`, nil)
+
+			_, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+
+			types, ok := state.symbolicData.GetComptimeTypes(n)
+			if !assert.True(t, ok) {
+				return
+			}
+			typ, ok := types.GetType("MyStruct")
+			if !assert.True(t, ok) {
+				return
+			}
+			MyStructType := typ.(*StructType)
+			if !assert.Equal(t, 1, MyStructType.FieldCount()) {
+				return
+			}
+
+			IntStructType, ok := types.GetPointerType("Int")
+			if !assert.True(t, ok) {
+				return
+			}
+
+			expectedFieldType := StructField{Name: "a", Type: IntStructType}
+			assert.Equal(t, expectedFieldType, MyStructType.Field(0))
+		})
 	})
 
 	t.Run("new expression", func(t *testing.T) {

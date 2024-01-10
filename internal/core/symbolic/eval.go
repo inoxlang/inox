@@ -498,9 +498,9 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 
 		return res, nil
 	case *parse.LocalVariableDeclarations:
-		return evalLocalVariableDeclarations(n, state)
+		return nil, evalLocalVariableDeclarations(n, state)
 	case *parse.GlobalVariableDeclarations:
-		return evalGlobalVariableDeclarations(n, state)
+		return nil, evalGlobalVariableDeclarations(n, state)
 	case *parse.Assignment:
 		return evalAssignment(n, state)
 	case *parse.MultiAssignment:
@@ -1303,7 +1303,7 @@ func evalPatternCallExpression(n *parse.PatternCallExpression, state *State) (_ 
 	return ANY_PATTERN, nil
 }
 
-func evalLocalVariableDeclarations(n *parse.LocalVariableDeclarations, state *State) (_ Value, finalErr error) {
+func evalLocalVariableDeclarations(n *parse.LocalVariableDeclarations, state *State) (finalErr error) {
 	for _, decl := range n.Declarations {
 		name := decl.Left.(*parse.IdentifierLiteral).Name
 
@@ -1311,9 +1311,15 @@ func evalLocalVariableDeclarations(n *parse.LocalVariableDeclarations, state *St
 		var staticMatching Value
 
 		if decl.Type != nil {
+			_, ok := decl.Type.(*parse.PointerType)
+			if ok {
+				state.addError(makeSymbolicEvalError(decl.Type, state, "pointer types are not supported in variable declarations yet"))
+				return nil
+			}
+
 			type_, err := symbolicEval(decl.Type, state)
 			if err != nil {
-				return nil, err
+				return err
 			}
 
 			pattern, isPattern := type_.(Pattern)
@@ -1334,7 +1340,7 @@ func evalLocalVariableDeclarations(n *parse.LocalVariableDeclarations, state *St
 			deeperMismatch := false
 			right, err = _symbolicEval(decl.Right, state, evalOptions{expectedValue: staticMatching, actualValueMismatch: &deeperMismatch})
 			if err != nil {
-				return nil, err
+				return err
 			}
 
 			if static != nil {
@@ -1362,10 +1368,10 @@ func evalLocalVariableDeclarations(n *parse.LocalVariableDeclarations, state *St
 		state.symbolicData.SetMostSpecificNodeValue(decl.Left, right)
 	}
 	state.symbolicData.SetLocalScopeData(n, state.currentLocalScopeData())
-	return nil, nil
+	return nil
 }
 
-func evalGlobalVariableDeclarations(n *parse.GlobalVariableDeclarations, state *State) (_ Value, finalErr error) {
+func evalGlobalVariableDeclarations(n *parse.GlobalVariableDeclarations, state *State) (finalErr error) {
 	for _, decl := range n.Declarations {
 		name := decl.Left.(*parse.IdentifierLiteral).Name
 
@@ -1373,9 +1379,15 @@ func evalGlobalVariableDeclarations(n *parse.GlobalVariableDeclarations, state *
 		var staticMatching Value
 
 		if decl.Type != nil {
+			_, ok := decl.Type.(*parse.PointerType)
+			if ok {
+				state.addError(makeSymbolicEvalError(decl.Type, state, "pointer types are not supported in variable declarations yet"))
+				return nil
+			}
+
 			type_, err := symbolicEval(decl.Type, state)
 			if err != nil {
-				return nil, err
+				return err
 			}
 
 			pattern, isPattern := type_.(Pattern)
@@ -1396,7 +1408,7 @@ func evalGlobalVariableDeclarations(n *parse.GlobalVariableDeclarations, state *
 			deeperMismatch := false
 			right, err = _symbolicEval(decl.Right, state, evalOptions{expectedValue: staticMatching, actualValueMismatch: &deeperMismatch})
 			if err != nil {
-				return nil, err
+				return err
 			}
 
 			if static != nil {
@@ -1424,7 +1436,7 @@ func evalGlobalVariableDeclarations(n *parse.GlobalVariableDeclarations, state *
 		state.symbolicData.SetMostSpecificNodeValue(decl.Left, right)
 	}
 	state.symbolicData.SetGlobalScopeData(n, state.currentGlobalScopeData())
-	return nil, nil
+	return nil
 }
 
 func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr error) {

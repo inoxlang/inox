@@ -154,7 +154,7 @@ const (
 
 	//struct definition
 	ONLY_COMPILE_TIME_TYPES_CAN_BE_USED_AS_STRUCT_FIELD_TYPES = //
-	"only compile-time types can be used a struct field types (struct types, int, float, bool and string)"
+	"only compile-time types can be used as struct field types (struct types, int, float, bool and string)"
 
 	//new expression
 	ONLY_COMPILE_TIME_TYPES_CAN_BE_USED_IN_NEW_EXPRS = //
