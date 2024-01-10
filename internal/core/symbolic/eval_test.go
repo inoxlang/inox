@@ -6948,7 +6948,7 @@ func TestSymbolicEval(t *testing.T) {
 				}, state.errors())
 			})
 
-			t.Run("struct field", func(t *testing.T) {
+			t.Run("struct field with builtin type", func(t *testing.T) {
 				n, state := MakeTestStateAndChunk(`
 					struct MyStruct {
 						a int
@@ -6956,6 +6956,24 @@ func TestSymbolicEval(t *testing.T) {
 
 					ptr = new MyStruct
 					$ptr.a = 1
+				`)
+				_, err := symbolicEval(n, state)
+				assert.NoError(t, err)
+				assert.Empty(t, state.errors())
+			})
+
+			t.Run("struct field with struct pointer type", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk(`
+					struct Inner {
+						a int
+					}
+
+					struct MyStruct {
+						inner *Inner
+					}
+
+					ptr = new MyStruct
+					$ptr.inner = new Inner
 				`)
 				_, err := symbolicEval(n, state)
 				assert.NoError(t, err)

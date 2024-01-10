@@ -70,7 +70,7 @@ func newPointerType(valueType CompileTimeType) *PointerType {
 
 func (t *PointerType) Equal(v CompileTimeType, state RecTestCallState) bool {
 	otherPtrType, ok := v.(*PointerType)
-	return ok && t.valueType.Equal(otherPtrType, RecTestCallState{})
+	return ok && t.valueType.Equal(otherPtrType.valueType, RecTestCallState{})
 }
 
 func (t *PointerType) TestValue(v Value, state RecTestCallState) bool {

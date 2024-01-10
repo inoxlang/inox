@@ -30,9 +30,14 @@ func (s *Struct) Test(v Value, state RecTestCallState) bool {
 }
 
 func (s *Struct) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
-	w.WriteName("struct{")
+	w.WriteString("struct{")
 
-	//TODO
+	for _, field := range s.typ.fields {
+		w.WriteString(field.Name)
+		w.WriteByte(' ')
+		field.Type.PrettyPrint(w.WithDepthIndent(w.Depth, 0), config)
+		w.WriteString("; ")
+	}
 
 	w.WriteByte('}')
 }
