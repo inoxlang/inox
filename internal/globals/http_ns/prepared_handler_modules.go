@@ -27,7 +27,7 @@ func (c *preparedModules) prepareFrom(api *API) error {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
-	return api.forEachHandlerModule(func(mod *core.Module) error {
+	return api.ForEachHandlerModule(func(mod *core.Module) error {
 		name := mod.MainChunk.Name()
 		if name == "" || name[0] != '/' {
 			return fmt.Errorf("name of module's main chunk should be an absolute path: %s", name)

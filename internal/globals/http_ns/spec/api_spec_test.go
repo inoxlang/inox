@@ -1,4 +1,4 @@
-package http_ns
+package spec
 
 import (
 	_ "embed"

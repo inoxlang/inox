@@ -1,4 +1,4 @@
-package http_ns
+package spec
 
 import (
 	"errors"
@@ -14,6 +14,7 @@ var (
 	ErrAPINotFinalized     = errors.New("API value is not finalized")
 	ErrAPIAlreadyFinalized = errors.New("API value is already finalized")
 	ErrAPIBeingFinalized   = errors.New("API value is being finalized")
+
 )
 
 // API is a high level type that contains several endpoints, it is immutable.
@@ -23,7 +24,7 @@ type API struct {
 	tree                  *EndpointTreeNode
 }
 
-func newEmptyAPI() *API {
+func NewEmptyAPI() *API {
 	return &API{}
 }
 
@@ -125,6 +126,18 @@ type ApiEndpoint struct {
 	operations []ApiOperation
 }
 
+func (e ApiEndpoint) CatchAll() bool {
+	return e.catchAll
+}
+
+func (e ApiEndpoint) CatchAllHandler() (*core.Module, bool) {
+	return e.catchAllHandler, e.catchAllHandler != nil
+}
+
+func (e ApiEndpoint) Operations() []ApiOperation {
+	return e.operations[0:len(e.operations):len(e.operations)]
+}
+
 type ApiOperation struct {
 	id         string //optional
 	endpoint   *ApiEndpoint
@@ -134,6 +147,14 @@ type ApiOperation struct {
 	jsonResponseBodies map[uint16]core.Pattern
 
 	handlerModule *core.Module //only set if filesystem routing is used
+}
+
+func (op ApiOperation) HttpMethod() string {
+	return op.httpMethod
+}
+
+func (op ApiOperation) HandlerModule() (*core.Module, bool) {
+	return op.handlerModule, op.handlerModule != nil
 }
 
 type EndpointTreeNode struct {
@@ -185,7 +206,7 @@ func (api *API) GetEndpoint(path string) (*ApiEndpoint, error) {
 	return node.endpoint, nil
 }
 
-func (api *API) forEachHandlerModule(visit func(mod *core.Module) error) error {
+func (api *API) ForEachHandlerModule(visit func(mod *core.Module) error) error {
 	for _, endpt := range api.endpoints {
 		for _, oper := range endpt.operations {
 			if oper.handlerModule != nil {

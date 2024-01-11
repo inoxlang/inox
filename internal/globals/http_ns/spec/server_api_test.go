@@ -1,15 +1,81 @@
-package http_ns
+package spec
 
 import (
+	"errors"
 	"path/filepath"
 	"testing"
 
 	"github.com/go-git/go-billy/v5/util"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
+	"github.com/inoxlang/inox/internal/globals/html_ns"
 	"github.com/stretchr/testify/assert"
 )
+
+func init() {
+	if !core.AreDefaultScriptLimitsSet() {
+		core.SetDefaultScriptLimits([]core.Limit{})
+	}
+
+	core.RegisterDefaultPatternNamespace("http", &core.PatternNamespace{
+		Patterns: map[string]core.Pattern{
+			"method": METHOD_PATTERN,
+		},
+	})
+
+	if core.NewDefaultContext == nil {
+		core.SetNewDefaultContext(func(config core.DefaultContextConfig) (*core.Context, error) {
+
+			if len(config.OwnedDatabases) != 0 {
+				panic(errors.New("not supported"))
+			}
+
+			permissions := []core.Permission{
+				core.GlobalVarPermission{Kind_: permkind.Use, Name: "*"},
+				core.GlobalVarPermission{Kind_: permkind.Create, Name: "*"},
+				core.GlobalVarPermission{Kind_: permkind.Read, Name: "*"},
+				core.LThreadPermission{Kind_: permkind.Create},
+				core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},
+			}
+
+			permissions = append(permissions, config.Permissions...)
+
+			ctx := core.NewContext(core.ContextConfig{
+				Permissions:          permissions,
+				ForbiddenPermissions: config.ForbiddenPermissions,
+				HostResolutions:      config.HostResolutions,
+				ParentContext:        config.ParentContext,
+			})
+
+			for k, v := range core.DEFAULT_NAMED_PATTERNS {
+				ctx.AddNamedPattern(k, v)
+			}
+
+			for k, v := range core.DEFAULT_PATTERN_NAMESPACES {
+				ctx.AddPatternNamespace(k, v)
+			}
+
+			return ctx, nil
+		})
+
+		core.SetNewDefaultGlobalStateFn(func(ctx *core.Context, conf core.DefaultGlobalStateConfig) (*core.GlobalState, error) {
+			state := core.NewGlobalState(ctx, map[string]core.Value{
+				"html":  core.ValOf(html_ns.NewHTMLNamespace()),
+				"sleep": core.WrapGoFunction(core.Sleep),
+			})
+
+			return state, nil
+		})
+	}
+
+	if !core.IsSymbolicEquivalentOfGoFunctionRegistered(core.Sleep) {
+		core.RegisterSymbolicGoFunction(core.Sleep, func(ctx *symbolic.Context, _ *symbolic.Duration) {
+
+		})
+	}
+}
 
 func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 	t.Parallel()
@@ -58,7 +124,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			api, err := getFSRoutingServerAPI(ctx, "/routes/")
+			api, err := GetFSRoutingServerAPI(ctx, "/routes/")
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -91,7 +157,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			api, err := getFSRoutingServerAPI(ctx, "/routes/")
+			api, err := GetFSRoutingServerAPI(ctx, "/routes/")
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -127,7 +193,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			api, err := getFSRoutingServerAPI(ctx, "/routes/")
+			api, err := GetFSRoutingServerAPI(ctx, "/routes/")
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -151,7 +217,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			api, err := getFSRoutingServerAPI(ctx, "/routes/")
+			api, err := GetFSRoutingServerAPI(ctx, "/routes/")
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -175,7 +241,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			api, err := getFSRoutingServerAPI(ctx, "/routes/")
+			api, err := GetFSRoutingServerAPI(ctx, "/routes/")
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -199,7 +265,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			api, err := getFSRoutingServerAPI(ctx, "/routes/")
+			api, err := GetFSRoutingServerAPI(ctx, "/routes/")
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -223,7 +289,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			api, err := getFSRoutingServerAPI(ctx, "/routes/")
+			api, err := GetFSRoutingServerAPI(ctx, "/routes/")
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -294,7 +360,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			api, err := getFSRoutingServerAPI(ctx, "/routes/")
+			api, err := GetFSRoutingServerAPI(ctx, "/routes/")
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -347,7 +413,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			_, err := getFSRoutingServerAPI(ctx, "/routes/")
+			_, err := GetFSRoutingServerAPI(ctx, "/routes/")
 			assert.ErrorContains(t, err, "already implemented")
 		})
 
@@ -372,7 +438,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			_, err := getFSRoutingServerAPI(ctx, "/routes/")
+			_, err := GetFSRoutingServerAPI(ctx, "/routes/")
 			assert.ErrorContains(t, err, "already implemented")
 		})
 
@@ -397,7 +463,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			_, err := getFSRoutingServerAPI(ctx, "/routes/")
+			_, err := GetFSRoutingServerAPI(ctx, "/routes/")
 			assert.ErrorContains(t, err, "already implemented")
 		})
 
@@ -422,7 +488,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			_, err := getFSRoutingServerAPI(ctx, "/routes/")
+			_, err := GetFSRoutingServerAPI(ctx, "/routes/")
 			assert.ErrorContains(t, err, "already implemented")
 		})
 
@@ -445,7 +511,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			_, err := getFSRoutingServerAPI(ctx, "/routes/")
+			_, err := GetFSRoutingServerAPI(ctx, "/routes/")
 
 			assert.ErrorIs(t, err, ErrUnexpectedBodyParamsInGETHandler)
 		})
@@ -464,7 +530,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			_, err := getFSRoutingServerAPI(ctx, "/routes/")
+			_, err := GetFSRoutingServerAPI(ctx, "/routes/")
 
 			assert.ErrorIs(t, err, ErrUnexpectedBodyParamsInGETHandler)
 		})
@@ -483,7 +549,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			_, err := getFSRoutingServerAPI(ctx, "/routes/")
+			_, err := GetFSRoutingServerAPI(ctx, "/routes/")
 
 			assert.ErrorIs(t, err, ErrUnexpectedBodyParamsInOPTIONSHandler)
 		})
@@ -502,7 +568,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			_, err := getFSRoutingServerAPI(ctx, "/routes/")
+			_, err := GetFSRoutingServerAPI(ctx, "/routes/")
 
 			assert.ErrorIs(t, err, ErrUnexpectedBodyParamsInOPTIONSHandler)
 		})
@@ -525,7 +591,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			api, err := getFSRoutingServerAPI(ctx, "/routes/")
+			api, err := GetFSRoutingServerAPI(ctx, "/routes/")
 
 			if !assert.NoError(t, err, ErrUnexpectedBodyParamsInGETHandler) {
 				return
@@ -573,7 +639,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			api, err := getFSRoutingServerAPI(ctx, "/routes/")
+			api, err := GetFSRoutingServerAPI(ctx, "/routes/")
 
 			if !assert.NoError(t, err, ErrUnexpectedBodyParamsInGETHandler) {
 				return
@@ -607,7 +673,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			api, err := getFSRoutingServerAPI(ctx, "/routes/")
+			api, err := GetFSRoutingServerAPI(ctx, "/routes/")
 
 			if !assert.NoError(t, err, ErrUnexpectedBodyParamsInGETHandler) {
 				return
@@ -656,7 +722,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			api, err := getFSRoutingServerAPI(ctx, "/routes/")
+			api, err := GetFSRoutingServerAPI(ctx, "/routes/")
 
 			if !assert.NoError(t, err, ErrUnexpectedBodyParamsInGETHandler) {
 				return

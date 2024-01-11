@@ -17,6 +17,7 @@ import (
 	"golang.org/x/net/context"
 	"golang.org/x/net/publicsuffix"
 
+	"github.com/inoxlang/inox/internal/globals/http_ns/spec"
 	http_ns_symb "github.com/inoxlang/inox/internal/globals/http_ns/symbolic"
 )
 
@@ -163,7 +164,7 @@ func (c *HttpClient) MakeRequest(ctx *core.Context, method string, u core.URL, b
 	req, err := http.NewRequest(method, string(u), body)
 
 	if contentType != "" {
-		if utils.SliceContains(METHODS_WITH_NO_BODY, method) {
+		if utils.SliceContains(spec.METHODS_WITH_NO_BODY, method) {
 			req.Header.Add("Accept", string(contentType))
 		} else {
 			req.Header.Add("Content-Type", string(contentType))

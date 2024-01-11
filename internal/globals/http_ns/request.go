@@ -18,15 +18,13 @@ import (
 	"github.com/oklog/ulid/v2"
 	"github.com/rs/zerolog"
 
+	"github.com/inoxlang/inox/internal/globals/http_ns/spec"
 	http_ns_symb "github.com/inoxlang/inox/internal/globals/http_ns/symbolic"
 )
 
 const DEFAULT_ACCEPT_HEADER = "*/*"
 
 var (
-	METHODS_WITH_NO_BODY = []string{"GET", "HEAD", "OPTIONS"}
-	METHODS              = []string{"GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"}
-
 	_ core.Serializable        = (*HttpRequest)(nil)
 	_ core.PotentiallySharable = (*HttpRequest)(nil)
 )
@@ -116,7 +114,7 @@ func NewServerSideRequest(r *http.Request, logger zerolog.Logger, server *HttpsS
 
 	// Content-Type header
 	var contentType mimeheader.MimeType
-	if !utils.SliceContains(METHODS_WITH_NO_BODY, string(method)) {
+	if !utils.SliceContains(spec.METHODS_WITH_NO_BODY, string(method)) {
 		mtype, err := mimeheader.ParseMediaType(r.Header.Get("Content-Type"))
 		if err != nil {
 			return nil, fmt.Errorf("invalid request: %w", err)

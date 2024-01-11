@@ -7,10 +7,13 @@ import (
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/permkind"
 	"github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/globals/http_ns/spec"
 	http_symbolic "github.com/inoxlang/inox/internal/globals/http_ns/symbolic"
 	"github.com/inoxlang/inox/internal/help"
-	"github.com/inoxlang/inox/internal/utils"
 )
+
+type API = spec.API
+type ApiEndpoint = spec.ApiEndpoint
 
 const (
 	HTTP_READ_PERM_MIGHT_BE_MISSING    = "http read permission might be missing"
@@ -62,10 +65,8 @@ func init() {
 				Type:          reflect.TypeOf((*HttpResponseWriter)(nil)),
 				SymbolicValue: http_symbolic.ANY_HTTP_RESP_WRITER,
 			},
-			"req": CALLABLE_HTTP_REQUEST_PATTERN,
-			"method": core.NewUnionPattern(utils.MapSlice(METHODS, func(s string) core.Pattern {
-				return core.NewExactValuePattern(core.Identifier(s))
-			}), nil),
+			"req":    CALLABLE_HTTP_REQUEST_PATTERN,
+			"method": spec.METHOD_PATTERN,
 			"status-code": &core.TypePattern{
 				Name:          "http.status-code",
 				Type:          reflect.TypeOf(StatusCode(100)),

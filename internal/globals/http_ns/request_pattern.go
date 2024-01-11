@@ -10,6 +10,7 @@ import (
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 
+	"github.com/inoxlang/inox/internal/globals/http_ns/spec"
 	http_symbolic "github.com/inoxlang/inox/internal/globals/http_ns/symbolic"
 
 	"slices"
@@ -79,10 +80,10 @@ var (
 			err := objPattern.ForEachEntry(func(propName string, propPattern symbolic.Pattern, isOptional bool) error {
 				switch propName {
 				case "method":
-					var ERR_MSG = fmt.Sprintf("either an identifier with a value among (%s) or a union is expected", strings.Join(METHODS, ", "))
+					var ERR_MSG = fmt.Sprintf("either an identifier with a value among (%s) or a union is expected", strings.Join(spec.METHODS, ", "))
 
 					checkMethod := func(i *symbolic.Identifier) bool {
-						return i.HasConcreteName() && slices.Contains(METHODS, i.Name())
+						return i.HasConcreteName() && slices.Contains(spec.METHODS, i.Name())
 					}
 
 					switch p := propPattern.(type) {

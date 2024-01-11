@@ -25,6 +25,7 @@ import (
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/globals/html_ns"
+	"github.com/inoxlang/inox/internal/globals/http_ns/spec"
 	http_ns "github.com/inoxlang/inox/internal/globals/http_ns/symbolic"
 	"github.com/inoxlang/inox/internal/mimeconsts"
 	netaddr "github.com/inoxlang/inox/internal/netaddr"
@@ -1064,7 +1065,7 @@ func runAdvancedServerTest(
 
 			var body io.Reader
 			if info.requestBody != "" {
-				if slices.Contains(METHODS_WITH_NO_BODY, method) {
+				if slices.Contains(spec.METHODS_WITH_NO_BODY, method) {
 					assert.Fail(t, fmt.Sprintf("body provided but method is %s", method))
 					return
 				}

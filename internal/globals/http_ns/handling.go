@@ -8,6 +8,7 @@ import (
 	"slices"
 
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/globals/http_ns/spec"
 	jsoniter "github.com/inoxlang/inox/internal/jsoniter"
 	"github.com/inoxlang/inox/internal/mimeconsts"
 	"github.com/inoxlang/inox/internal/utils"
@@ -65,7 +66,7 @@ func addHandlerFunction(handlerValue core.Value, isMiddleware bool, server *Http
 			server.middlewares = append(server.middlewares, handler)
 		} else {
 			server.lastHandlerFn = handler
-			server.api = newEmptyAPI()
+			server.api = spec.NewEmptyAPI()
 		}
 	case *core.GoFunction:
 		handler := func(req *HttpRequest, rw *HttpResponseWriter, handlerGlobalState *core.GlobalState) {
@@ -82,7 +83,7 @@ func addHandlerFunction(handlerValue core.Value, isMiddleware bool, server *Http
 			server.middlewares = append(server.middlewares, handler)
 		} else {
 			server.lastHandlerFn = handler
-			server.api = newEmptyAPI()
+			server.api = spec.NewEmptyAPI()
 		}
 	case *core.Object:
 		//filesystem routing
@@ -140,7 +141,7 @@ func addHandlerFunction(handlerValue core.Value, isMiddleware bool, server *Http
 			server.middlewares = append(server.middlewares, handler)
 		} else {
 			server.lastHandlerFn = handler
-			server.api = newEmptyAPI()
+			server.api = spec.NewEmptyAPI()
 		}
 	default:
 		panic(core.ErrUnreachable)

@@ -1,4 +1,4 @@
-package http_ns
+package spec
 
 import (
 	"errors"
@@ -15,13 +15,19 @@ import (
 	"github.com/inoxlang/inox/internal/utils"
 )
 
+const (
+	FS_ROUTING_BODY_PARAM   = "_body"
+	FS_ROUTING_METHOD_PARAM = "_method"
+	FS_ROUTING_INDEX_MODULE = "index" + inoxconsts.INOXLANG_FILE_EXTENSION
+)
+
 var (
 	ErrUnexpectedBodyParamsInGETHandler      = errors.New("unexpected request body parmameters in GET handler")
 	ErrUnexpectedBodyParamsInOPTIONSHandler  = errors.New("unexpected request body parmameters in OPTIONS handler")
 	ErrUnexpectedBodyParamsInCatchAllHandler = errors.New("unexpected request body parmameters in catch-all handler")
 )
 
-func getFSRoutingServerAPI(ctx *core.Context, dir string) (*API, error) {
+func GetFSRoutingServerAPI(ctx *core.Context, dir string) (*API, error) {
 	preparedModuleCache := map[string]*core.GlobalState{}
 	defer func() {
 		for _, state := range preparedModuleCache {
@@ -81,12 +87,12 @@ func addFilesysteDirEndpoints(ctx *core.Context, endpoints map[string]*ApiEndpoi
 			continue
 		}
 
-		//ignore non-Inox files and .spec.ix files
-		if !strings.HasSuffix(entryName, INOX_FILE_EXTENSION) || strings.HasSuffix(entryName, inoxconsts.INOXLANG_SPEC_FILE_SUFFIX) {
+		//ignore non-Inox files and .ix files
+		if !strings.HasSuffix(entryName, inoxconsts.INOXLANG_FILE_EXTENSION) || strings.HasSuffix(entryName, inoxconsts.INOXLANG_SPEC_FILE_SUFFIX) {
 			continue
 		}
 
-		entryNameNoExt := strings.TrimSuffix(entryName, INOX_FILE_EXTENSION)
+		entryNameNoExt := strings.TrimSuffix(entryName, inoxconsts.INOXLANG_FILE_EXTENSION)
 
 		var endpointPath string
 		var method string //if empty the handler module supports several methods

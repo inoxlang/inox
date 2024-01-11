@@ -15,24 +15,22 @@ import (
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/globals/html_ns"
+	"github.com/inoxlang/inox/internal/globals/http_ns/spec"
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/mimeconsts"
 	"github.com/inoxlang/inox/internal/mod"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 const (
-	INOX_FILE_EXTENSION     = inoxconsts.INOXLANG_FILE_EXTENSION
-	FS_ROUTING_INDEX_MODULE = "index" + INOX_FILE_EXTENSION
-
-	FS_ROUTING_BODY_PARAM   = "_body"
-	FS_ROUTING_METHOD_PARAM = "_method"
+	INOX_FILE_EXTENSION = inoxconsts.INOXLANG_FILE_EXTENSION
 
 	FS_ROUTING_LOG_SRC = "fs-routing"
 )
 
 var (
 	//methods allowed in handler module filenames.
-	FS_ROUTING_METHODS = []string{"GET", "OPTIONS", "POST", "PATCH", "PUT", "DELETE"}
+	FS_ROUTING_METHODS = spec.FS_ROUTING_METHODS
 )
 
 func addFilesystemRoutingHandler(server *HttpsServer, staticDir, dynamicDir core.Path, isMiddleware bool) error {
@@ -108,7 +106,7 @@ func addFilesystemRoutingHandler(server *HttpsServer, staticDir, dynamicDir core
 		dynamicDirString = dynamicDir.UnderlyingString()
 	}
 
-	api, err := getFSRoutingServerAPI(server.state.Ctx, dynamicDirString)
+	api, err := spec.GetFSRoutingServerAPI(server.state.Ctx, dynamicDirString)
 	if err != nil {
 		return err
 	}
@@ -126,7 +124,7 @@ func addFilesystemRoutingHandler(server *HttpsServer, staticDir, dynamicDir core
 				default:
 				}
 
-				updatedAPI, err := getFSRoutingServerAPI(serverCtx, dynamicDirString)
+				updatedAPI, err := spec.GetFSRoutingServerAPI(serverCtx, dynamicDirString)
 
 				if err != nil {
 					serverCtx.Logger().Debug().Err(err).Send()
@@ -191,7 +189,7 @@ func createHandleDynamic(server *HttpsServer, routingDirPath core.Path) handlerF
 		server.apiLock.Unlock()
 
 		endpt, err := api.GetEndpoint(string(path))
-		if errors.Is(err, ErrEndpointNotFound) {
+		if errors.Is(err, spec.ErrEndpointNotFound) {
 			rw.writeHeaders(http.StatusNotFound)
 			return
 		}
@@ -203,13 +201,13 @@ func createHandleDynamic(server *HttpsServer, routingDirPath core.Path) handlerF
 		methodSpecificModule := true
 		var module *core.Module
 
-		if endpt.catchAll {
+		if endpt.CatchAll() {
 			methodSpecificModule = false
-			module = endpt.catchAllHandler
+			module, _ = endpt.CatchAllHandler()
 		} else {
-			for _, operation := range endpt.operations {
-				if operation.httpMethod == searchedMethod {
-					module = operation.handlerModule
+			for _, operation := range endpt.Operations() {
+				if operation.HttpMethod() == searchedMethod {
+					module = utils.MustGet(operation.HandlerModule())
 					break
 				}
 			}
@@ -376,11 +374,11 @@ func getHandlerModuleArguments(req *HttpRequest, manifest *core.Manifest, handle
 		if !handlerModuleParams.methodPattern.Test(handlerCtx, method) {
 			return nil, http.StatusBadRequest, errors.New("method is not accepted")
 		}
-		moduleArguments[FS_ROUTING_METHOD_PARAM] = method
+		moduleArguments[spec.FS_ROUTING_METHOD_PARAM] = method
 	}
 
 	if handlerModuleParams.bodyReader {
-		moduleArguments[FS_ROUTING_BODY_PARAM] = req.Body
+		moduleArguments[spec.FS_ROUTING_BODY_PARAM] = req.Body
 	} else if handlerModuleParams.jsonBodyPattern != nil {
 		if !req.ContentType.MatchText(mimeconsts.JSON_CTYPE) {
 			return nil, http.StatusBadRequest, errors.New("unsupported content type")
@@ -430,9 +428,9 @@ func getHandlerModuleParameters(ctx *core.Context, manifest *core.Manifest, meth
 
 		if paramName[0] == '_' {
 			switch paramName {
-			case FS_ROUTING_METHOD_PARAM:
+			case spec.FS_ROUTING_METHOD_PARAM:
 				handlerModuleParams.methodPattern = param.Pattern()
-			case FS_ROUTING_BODY_PARAM:
+			case spec.FS_ROUTING_BODY_PARAM:
 				if param.Pattern() != core.READER_PATTERN {
 					return handlerModuleParameters{}, fmt.Errorf("parameter '%s' should have %%reader as pattern", paramName)
 				}
