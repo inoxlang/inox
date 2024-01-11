@@ -31,21 +31,22 @@ var (
 	GLOBALNAMES_WITHOUT_IDENT_CONVERSION_TO_VAR_IN_CMD_LIKE_CALL = []string{globalnames.HELP_FN}
 )
 
-type CompletionSearchArgs struct {
+type SearchArgs struct {
 	State       *core.TreeWalkState
 	Chunk       *parse.ParsedChunk
 	CursorIndex int
-	Mode        CompletionMode
+	Mode        Mode
+	InputData   InputData
 }
 
-type CompletionMode int
+type Mode int
 
 const (
-	ShellCompletions CompletionMode = iota
+	ShellCompletions Mode = iota
 	LspCompletions
 )
 
-func (m CompletionMode) String() string {
+func (m Mode) String() string {
 	switch m {
 	case ShellCompletions:
 		return "shell-completions"
@@ -56,7 +57,7 @@ func (m CompletionMode) String() string {
 	}
 }
 
-func FindCompletions(args CompletionSearchArgs) []Completion {
+func FindCompletions(args SearchArgs) []Completion {
 
 	state := args.State
 	chunk := args.Chunk
@@ -69,6 +70,7 @@ func FindCompletions(args CompletionSearchArgs) []Completion {
 	var deepestCall *parse.CallExpression
 	var _ancestorChain []parse.Node
 
+	//search node at cursor
 	parse.Walk(chunk.Node, func(node, parent, scopeNode parse.Node, ancestorChain []parse.Node, _ bool) (parse.TraversalAction, error) {
 		span := node.Base().Span
 
@@ -127,6 +129,7 @@ func FindCompletions(args CompletionSearchArgs) []Completion {
 		mode:          mode,
 		parent:        _parent,
 		ancestorChain: _ancestorChain,
+		inputData:     args.InputData,
 	}
 
 	switch n := nodeAtCursor.(type) {
@@ -190,9 +193,10 @@ type completionSearch struct {
 	state         *core.TreeWalkState
 	chunk         *parse.ParsedChunk
 	cursorIndex   int
-	mode          CompletionMode
+	mode          Mode
 	parent        parse.Node
 	ancestorChain []parse.Node
+	inputData     InputData
 }
 
 func handlePatternIdentCompletions(n *parse.PatternIdentifierLiteral, search completionSearch) []Completion {
@@ -771,7 +775,7 @@ after_subcommand_completions:
 		//if tag name
 		switch {
 		case ident == p.Name:
-			completions = findXmlTagNameCompletions(ident, ancestors)
+			completions = findXmlTagAndTagNameCompletions(ident, ancestors)
 		}
 		return completions
 	}
@@ -1262,7 +1266,7 @@ func handleDoubleColonExpressionCompletions(n *parse.DoubleColonExpression, sear
 
 func suggestPropertyNames(
 	curr interface{}, exprPropNames []*parse.IdentifierLiteral, isLastPropPresent bool,
-	replacedRange parse.SourcePositionRange, state *core.GlobalState, mode CompletionMode,
+	replacedRange parse.SourcePositionRange, state *core.GlobalState, mode Mode,
 ) []Completion {
 	var completions []Completion
 	var propNames []string
@@ -1728,7 +1732,7 @@ func findStringCompletions(strLit *parse.QuotedStringLiteral, search completionS
 	if attribute, ok := search.parent.(*parse.XMLAttribute); ok {
 		switch {
 		case strLit == attribute.Value:
-			completions = findXMLAttributeValueCompletions(strLit, attribute, search.ancestorChain)
+			completions = findXMLAttributeValueCompletions(strLit, attribute, search.ancestorChain, search.inputData)
 		}
 
 		return completions

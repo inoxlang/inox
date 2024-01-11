@@ -1,34 +1,29 @@
 package codecompletion
 
 import (
-	"encoding/json"
-	"strings"
-
-	"github.com/inoxlang/inox/internal/globals/html_ns"
 	parse "github.com/inoxlang/inox/internal/parse"
-	"github.com/inoxlang/inox/internal/projectserver/lsp/defines"
-	"github.com/inoxlang/inox/internal/utils"
 )
 
-func findXmlTagNameCompletions(ident *parse.IdentifierLiteral, ancestors []parse.Node) (completions []Completion) {
+func findXmlTagAndTagNameCompletions(ident *parse.IdentifierLiteral, ancestors []parse.Node) (completions []Completion) {
 	tagName, namespace, ok := findTagNameAndNamespace(ancestors)
 	if !ok {
 		return
 	}
 
+	var xmlElem *parse.XMLElement
+	if len(ancestors) >= 2 {
+		xmlElem, _ = ancestors[len(ancestors)-2].(*parse.XMLElement)
+	}
+
+	suggestWholeTags := xmlElem != nil && xmlElem.Children == nil && xmlElem.Closing == nil
+
 	//TODO: use symbolic data in order to support aliases
 	switch namespace.Name {
 	case "html":
-		for _, tag := range html_ns.STANDARD_DATA.Tags {
-			if strings.HasPrefix(tag.Name, tagName) {
-				completions = append(completions, Completion{
-					ShownString:           tag.Name,
-					Value:                 tag.Name,
-					Kind:                  defines.CompletionItemKindProperty,
-					LabelDetail:           tag.DescriptionText(),
-					MarkdownDocumentation: tag.DescriptionContent(),
-				})
-			}
+		completions = getHTMLTagNamesWithPrefix(tagName)
+
+		if suggestWholeTags {
+			completions = append(completions, findWholeHTMLTagCompletions(tagName, ancestors)...)
 		}
 	}
 
@@ -50,7 +45,7 @@ func findXmlAttributeNameCompletions(ident *parse.IdentifierLiteral, parent *par
 	return
 }
 
-func findXMLAttributeValueCompletions(str *parse.QuotedStringLiteral, parent *parse.XMLAttribute, ancestors []parse.Node) (completions []Completion) {
+func findXMLAttributeValueCompletions(str *parse.QuotedStringLiteral, parent *parse.XMLAttribute, ancestors []parse.Node, data InputData) (completions []Completion) {
 	tagName, namespace, ok := findTagNameAndNamespace(ancestors)
 	if !ok {
 		return
@@ -59,7 +54,7 @@ func findXMLAttributeValueCompletions(str *parse.QuotedStringLiteral, parent *pa
 	//TODO: use symbolic data in order to support aliases
 	switch namespace.Name {
 	case "html":
-		return findHtmlAttributeValueCompletions(str, parent, tagName, ancestors)
+		return findHtmlAttributeValueCompletions(str, parent, tagName, ancestors, data)
 	}
 
 	return
@@ -88,60 +83,4 @@ func findTagNameAndNamespace(ancestors []parse.Node) (string, *parse.IdentifierL
 	}
 
 	return tagName, namespace, true
-}
-
-func findHtmlAttributeNameCompletions(ident *parse.IdentifierLiteral, parent *parse.XMLAttribute, tagName string, ancestors []parse.Node) (completions []Completion) {
-	attributes, ok := html_ns.GetAllTagAttributes(tagName)
-	if !ok {
-		return
-	}
-
-	attrName := ident.Name
-
-	for _, attr := range attributes {
-		if !strings.HasPrefix(attr.Name, attrName) {
-			continue
-		}
-
-		completions = append(completions, Completion{
-			ShownString:           attr.Name,
-			Value:                 attr.Name,
-			Kind:                  defines.CompletionItemKindProperty,
-			LabelDetail:           attr.DescriptionText(),
-			MarkdownDocumentation: attr.DescriptionContent(),
-		})
-	}
-
-	return
-}
-
-func findHtmlAttributeValueCompletions(str *parse.QuotedStringLiteral, parent *parse.XMLAttribute, tagName string, ancestors []parse.Node) (completions []Completion) {
-	attrIdent, ok := parent.Name.(*parse.IdentifierLiteral)
-	if !ok {
-		return
-	}
-
-	attrName := attrIdent.Name
-
-	set, ok := html_ns.GetAttributeValueSet(attrName, tagName)
-	if !ok {
-		return
-	}
-
-	for _, attrValueData := range set.Values {
-		if !strings.HasPrefix(attrValueData.Name, str.Value) {
-			continue
-		}
-
-		s := string(utils.Must(json.Marshal(attrValueData.Name)))
-
-		completions = append(completions, Completion{
-			ShownString: s,
-			Value:       s,
-			Kind:        defines.CompletionItemKindProperty,
-			LabelDetail: attrValueData.DescriptionText(),
-		})
-	}
-
-	return
 }

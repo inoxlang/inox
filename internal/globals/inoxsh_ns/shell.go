@@ -1040,7 +1040,7 @@ func (sh *shell) handleAction(action termAction) (stop bool) {
 				CodeString: string(sh.input),
 			})
 			cursorIndex = sh.getCursorIndex()
-			completions = codecompletion.FindCompletions(codecompletion.CompletionSearchArgs{
+			completions = codecompletion.FindCompletions(codecompletion.SearchArgs{
 				State:       sh.state,
 				Chunk:       chunk,
 				CursorIndex: cursorIndex,
