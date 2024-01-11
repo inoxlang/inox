@@ -21,7 +21,7 @@ func (d *StatDirEntry) Type() fs.FileMode          { return d.info.Mode().Type()
 func (d *StatDirEntry) Info() (fs.FileInfo, error) { return d.info, nil }
 
 // /adapted from stdlib path/filepath/path.go
-func walkDir(fls afs.Filesystem, root string, fn fs.WalkDirFunc) error {
+func WalkDirLow(fls afs.Filesystem, root string, fn fs.WalkDirFunc) error {
 	info, err := fls.Lstat(root)
 	if err != nil {
 		err = fn(root, nil, err)

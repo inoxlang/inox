@@ -47,7 +47,7 @@ func NewWalkableNodeMeta(ancestors []Value, parentEdge Value) WalkableNodeMeta {
 // paths: [ [<dir path>, <file path> ] ]
 func GetWalkEntries(fls afs.Filesystem, walkedDirPath Path) (entries [][]fs.DirEntry, paths [][]string) {
 
-	walkDir(fls, string(walkedDirPath), func(path string, d fs.DirEntry, err error) error {
+	WalkDirLow(fls, string(walkedDirPath), func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			panic(err)
 		}
@@ -162,7 +162,7 @@ func WalkDir(fls afs.Filesystem, walkedDirPath Path, fn func(path Path, d fs.Dir
 		pathPrefix = "./"
 	}
 
-	walkDir(fls, string(walkedDirPath), func(path string, d fs.DirEntry, err error) error {
+	WalkDirLow(fls, string(walkedDirPath), func(path string, d fs.DirEntry, err error) error {
 		if d.IsDir() {
 			if path[len(path)-1] != '/' {
 				path += "/"
