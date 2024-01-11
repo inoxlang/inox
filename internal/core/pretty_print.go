@@ -134,7 +134,8 @@ func GetNodeColorizations(chunk *parse.Chunk, lightMode bool) []ColorizationInfo
 		case parse.BREAK_KEYWORD, parse.CONTINUE_KEYWORD, parse.PRUNE_KEYWORD, parse.YIELD_KEYWORD, parse.RETURN_KEYWORD,
 			parse.DEFAULTCASE_KEYWORD, parse.SWITCH_KEYWORD, parse.MATCH_KEYWORD, parse.ASSERT_KEYWORD,
 			parse.GO_KEYWORD, parse.DO_KEYWORD, parse.TESTSUITE_KEYWORD, parse.TESTCASE_KEYWORD, parse.COMP_KEYWORD,
-			parse.LIFETIMEJOB_KEYWORD, parse.FOR_KEYWORD,
+			parse.LIFETIMEJOB_KEYWORD, parse.FOR_KEYWORD, parse.IN_KEYWORD, parse.IF_KEYWORD, parse.ELSE_KEYWORD,
+			parse.PREINIT_KEYWORD, parse.ON_KEYWORD, parse.WALK_KEYWORD,
 			parse.DROP_PERMS_KEYWORD, parse.IMPORT_KEYWORD:
 			colorizations = append(colorizations, ColorizationInfo{
 				Span:          token.Span,
@@ -144,7 +145,9 @@ func GetNodeColorizations(chunk *parse.Chunk, lightMode bool) []ColorizationInfo
 		case parse.AND_KEYWORD, parse.OR_KEYWORD, parse.MAPPING_KEYWORD, parse.TREEDATA_KEYWORD,
 			parse.FN_KEYWORD, parse.CONST_KEYWORD, parse.VAR_KEYWORD, parse.ASSIGN_KEYWORD, parse.CONCAT_KEYWORD,
 			parse.SENDVAL_KEYWORD, parse.SYNCHRONIZED_KEYWORD, parse.EXTEND_KEYWORD, parse.PATTERN_KEYWORD,
-			parse.PNAMESPACE_KEYWORD, parse.STRUCT_KEYWORD:
+			parse.PNAMESPACE_KEYWORD, parse.STRUCT_KEYWORD, parse.NEW_KEYWORD, parse.SELF_KEYWORD, parse.URLOF_KEYWORD,
+			parse.KEYOF_KEYWORD,
+			parse.NOT_IN_KEYWORD, parse.NOT_MATCH_KEYWORD:
 			colorizations = append(colorizations, ColorizationInfo{
 				Span:          token.Span,
 				ColorSequence: colors.OtherKeyword,
