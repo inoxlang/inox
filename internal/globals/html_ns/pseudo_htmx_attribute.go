@@ -66,15 +66,17 @@ func transpilePseudoHtmxAttribute(attr core.XMLAttribute, currentOutput *[]html.
 				Val: attrValue.GetOrBuildString(),
 			},
 		)
-	case "post":
+	case "post-json", "patch-json", "put-json":
 		attrValue, ok := attr.Value().(core.StringLike)
 		if !ok {
 			return fmt.Errorf(`invalid value for attribute %s: a string is expected (e.g. "/users")`, attr.Name())
 		}
 
+		method, _, _ := strings.Cut(trimmedName, "-")
+
 		*currentOutput = append(*currentOutput,
 			html.Attribute{
-				Key: "hx-post",
+				Key: "hx-" + method,
 				Val: attrValue.GetOrBuildString(),
 			},
 			html.Attribute{

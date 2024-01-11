@@ -9,6 +9,14 @@
       {
         "name": "hx-post-json",
         "description": "The `hx-post-json` pseudo-attribute transpiles to `hx-post='<value>' hx-ext='json-enc'`."
+      },
+      {
+        "name": "hx-patch-json",
+        "description": "The `hx-patch-json` pseudo-attribute transpiles to `hx-patch='<value>' hx-ext='json-enc'`."
+      },
+      {
+        "name": "hx-put-json",
+        "description": "The `hx-put-json` pseudo-attribute transpiles to `hx-put='<value>' hx-ext='json-enc'`."
       }
     ],
     "valueSets": []

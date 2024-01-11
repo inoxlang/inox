@@ -22,16 +22,48 @@ func TestCreateHTMLNodeFromXMLElement(t *testing.T) {
 		assert.Equal(t, "<script><a></script>", s)
 	})
 
-	t.Run("pseudo htmx attribute", func(t *testing.T) {
+	t.Run("pseudo htmx attributes", func(t *testing.T) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
-		attributes := []core.XMLAttribute{core.NewXMLAttribute("hx-lazy-load", core.Str("/data"))}
-		element := CreateHTMLNodeFromXMLElement(ctx, core.NewXmlElement("div", attributes, nil))
+		t.Run("hx-lazy-load", func(t *testing.T) {
+			attributes := []core.XMLAttribute{core.NewXMLAttribute("hx-lazy-load", core.Str("/data"))}
+			element := CreateHTMLNodeFromXMLElement(ctx, core.NewXmlElement("div", attributes, nil))
 
-		bytes := Render(ctx, element)
-		s := string(bytes.UnderlyingBytes())
+			bytes := Render(ctx, element)
+			s := string(bytes.UnderlyingBytes())
 
-		assert.Equal(t, `<div hx-trigger="load" hx-get="/data"></div>`, s)
+			assert.Equal(t, `<div hx-trigger="load" hx-get="/data"></div>`, s)
+		})
+
+		t.Run("hx-post-json", func(t *testing.T) {
+			attributes := []core.XMLAttribute{core.NewXMLAttribute("hx-post-json", core.Str("/data"))}
+			element := CreateHTMLNodeFromXMLElement(ctx, core.NewXmlElement("div", attributes, nil))
+
+			bytes := Render(ctx, element)
+			s := string(bytes.UnderlyingBytes())
+
+			assert.Equal(t, `<div hx-post="/data" hx-ext="json-enc"></div>`, s)
+		})
+
+		t.Run("hx-patch-json", func(t *testing.T) {
+			attributes := []core.XMLAttribute{core.NewXMLAttribute("hx-patch-json", core.Str("/data"))}
+			element := CreateHTMLNodeFromXMLElement(ctx, core.NewXmlElement("div", attributes, nil))
+
+			bytes := Render(ctx, element)
+			s := string(bytes.UnderlyingBytes())
+
+			assert.Equal(t, `<div hx-patch="/data" hx-ext="json-enc"></div>`, s)
+		})
+
+		t.Run("hx-put-json", func(t *testing.T) {
+			attributes := []core.XMLAttribute{core.NewXMLAttribute("hx-put-json", core.Str("/data"))}
+			element := CreateHTMLNodeFromXMLElement(ctx, core.NewXmlElement("div", attributes, nil))
+
+			bytes := Render(ctx, element)
+			s := string(bytes.UnderlyingBytes())
+
+			assert.Equal(t, `<div hx-put="/data" hx-ext="json-enc"></div>`, s)
+		})
 	})
 }
