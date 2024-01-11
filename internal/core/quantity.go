@@ -68,7 +68,8 @@ func (r QuantityRange) InclusiveEnd() Serializable {
 	if r.inclusiveEnd {
 		return r.end
 	}
-	return nextInt64Float64(reflect.ValueOf(r.end)).Interface().(Serializable)
+	next := nextInt64Float64(reflect.ValueOf(r.end))
+	return next.Interface().(Serializable)
 }
 
 // evalQuantity computes a quantity value (Duration, ByteCount, ...).
@@ -280,9 +281,9 @@ func nextInt64Float64(v reflect.Value) reflect.Value {
 	ptr.Elem().Set(v)
 
 	if v.Kind() == reflect.Float64 {
-		ptr.SetFloat(math.Nextafter(v.Float(), math.MaxFloat64))
+		ptr.Elem().SetFloat(math.Nextafter(v.Float(), math.MaxFloat64))
 	} else {
-		ptr.SetInt(v.Int() + 1)
+		ptr.Elem().SetInt(v.Int() + 1)
 	}
-	return ptr
+	return ptr.Elem()
 }
