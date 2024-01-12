@@ -1,4 +1,5 @@
-//This extension apply some transformations on form parameters and encodes them to JSON. See transformFormParams.
+//This extension applies some transformations on form parameters and encodes them to JSON. 
+//See transformFormParams for more details.
 htmx.defineExtension('json-form', {
     onEvent: function (name, evt) { 
         if (name === "htmx:configRequest") { 
@@ -17,8 +18,8 @@ htmx.defineExtension('json-form', {
  *   are converted into nested structures (objects and arrays).
  * - Values from number and range inputs are converted to numbers.
  * - Values from 'boolean checkboxes' are converted to boolean.
- *   A boolean checkbox is defined as a pair of two <input type=checkbox> elements 
- *   with values in the list ['yes, 'no', 'true', 'false']
+ *   A boolean checkbox is defined as an <input type=checkbox> element
+ *   with 'true' as value. 
  * - Non-array values from other checkboxes are put in an array if necessary.
  * @param {Record<string, unknown>} params 
  * @param {HTMLFormElement} form
@@ -135,7 +136,6 @@ function convertFormParam(key, value, form){
     }
 
     const firstFoundInput = /** @type {HTMLInputElement} */ (inputs[0])
-    const booleanCheckboxValues = ['yes', 'no', 'true', 'false']
 
     switch(inputs.length){
     case 1:
@@ -143,33 +143,20 @@ function convertFormParam(key, value, form){
         switch(firstFoundInput.type){
         case 'number': case 'range':
             return Number(value)
-        default:
-            return value
-        }
-    case 2:
-        switch(firstFoundInput.type){
-        case 'checkbox':
-            if(inputs.every(input => booleanCheckboxValues.includes(input.value.toLowerCase())))
-                return convertBooleanCheckboxValue(value)
+        case 1:
+            if(firstFoundInput.value == 'true'){
+                return value == 'true'
             }
             return [value]            
         default:
             return value
-    case 3:
+        }
+    default:
         switch(firstFoundInput.type){
         case 'checkbox':
             return [value]            
         default:
             return value
         }
-    }
-}
-
-function convertBooleanCheckboxValue(value){
-    switch(String(value).toLowerCase()){
-    case 'yes': case 'true':
-        return true
-    default:
-        return false
     }
 }
