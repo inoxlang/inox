@@ -8,6 +8,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/html_ns"
+	"github.com/inoxlang/inox/internal/globals/http_ns"
 	"github.com/inoxlang/inox/internal/globals/http_ns/spec"
 	"github.com/inoxlang/inox/internal/mimeconsts"
 	parse "github.com/inoxlang/inox/internal/parse"
@@ -188,12 +189,51 @@ func findHtmlAttributeValueCompletions(
 	return
 }
 
-func findWholeHTMLTagCompletions(tagName string, ancestors []parse.Node) []Completion {
+func findWholeHTMLTagCompletions(tagName string, ancestors []parse.Node, includeAngleBracket bool, inputData InputData) (completions []Completion) {
 	switch tagName {
-	case "form":
-		return nil
+	case "fo", "for", "form":
+		if inputData.ServerAPI == nil {
+			return
+		}
+		api := inputData.ServerAPI
+
+		prefix := ""
+		if includeAngleBracket {
+			prefix = "<"
+		}
+
+		api.ForEachHandlerModule(func(mod *core.Module, endpoint *spec.ApiEndpoint, operation spec.ApiOperation) error {
+			//ignore non-mutating methods.
+			if !endpoint.CatchAll() && !http_ns.IsMutationMethod(operation.HttpMethod()) {
+				return nil
+			}
+
+			method := "post"
+			hxAttribute := "hx-post-json"
+			path := endpoint.PathWithParams()
+
+			if !endpoint.CatchAll() { //if operation is defined
+				method = operation.HttpMethod()
+				switch method {
+				case "DELETE":
+					hxAttribute = "hx-delete"
+				case "PATCH":
+					hxAttribute = "hx-patch-json"
+				case "PUT":
+					hxAttribute = "hx-put-json"
+				}
+			}
+
+			completions = append(completions, Completion{
+				ShownString: prefix + "form " + method + " " + path,
+				Value:       prefix + "form " + hxAttribute + `="` + path + `"><form>`,
+				Kind:        defines.CompletionItemKindProperty,
+			})
+			return nil
+		})
+		return
 	}
-	return nil
+	return
 }
 
 func getForm(prefix string) (completions []Completion) {

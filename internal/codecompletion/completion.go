@@ -173,6 +173,8 @@ func FindCompletions(args SearchArgs) []Completion {
 		completions = findRecordInteriorCompletions(n, search)
 	case *parse.DictionaryLiteral:
 		completions = findDictionaryInteriorCompletions(n, search)
+	case *parse.XMLOpeningElement:
+		completions = findXMLOpeningElementInteriorCompletions(n, search)
 	}
 
 	for i, completion := range completions {
@@ -775,7 +777,7 @@ after_subcommand_completions:
 		//if tag name
 		switch {
 		case ident == p.Name:
-			completions = findXmlTagAndTagNameCompletions(ident, ancestors)
+			completions = findXmlTagAndTagNameCompletions(ident, search)
 		}
 		return completions
 	}

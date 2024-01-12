@@ -1,10 +1,13 @@
 package codecompletion
 
 import (
+	"unicode"
+
 	parse "github.com/inoxlang/inox/internal/parse"
 )
 
-func findXmlTagAndTagNameCompletions(ident *parse.IdentifierLiteral, ancestors []parse.Node) (completions []Completion) {
+func findXmlTagAndTagNameCompletions(ident *parse.IdentifierLiteral, search completionSearch) (completions []Completion) {
+	ancestors := search.ancestorChain
 	tagName, namespace, ok := findTagNameAndNamespace(ancestors)
 	if !ok {
 		return
@@ -15,7 +18,8 @@ func findXmlTagAndTagNameCompletions(ident *parse.IdentifierLiteral, ancestors [
 		xmlElem, _ = ancestors[len(ancestors)-2].(*parse.XMLElement)
 	}
 
-	suggestWholeTags := xmlElem != nil && xmlElem.Children == nil && xmlElem.Closing == nil
+	//we suggest whole tags if only the start of the XML element is present: `<name`.
+	suggestWholeTags := xmlElem != nil && xmlElem.Base().Span.End == ident.Span.End
 
 	//TODO: use symbolic data in order to support aliases
 	switch namespace.Name {
@@ -23,7 +27,42 @@ func findXmlTagAndTagNameCompletions(ident *parse.IdentifierLiteral, ancestors [
 		completions = getHTMLTagNamesWithPrefix(tagName)
 
 		if suggestWholeTags {
-			completions = append(completions, findWholeHTMLTagCompletions(tagName, ancestors)...)
+			completions = append(completions, findWholeHTMLTagCompletions(tagName, ancestors, false, search.inputData)...)
+		}
+	}
+
+	return
+}
+
+func findXMLOpeningElementInteriorCompletions(openingElem *parse.XMLOpeningElement, search completionSearch) (completions []Completion) {
+	ancestors := search.ancestorChain
+	namespace, ok := findXMLNamespace(ancestors)
+	if !ok {
+		return
+	}
+
+	if openingElem.Name == nil {
+		return nil
+	}
+
+	tagName := openingElem.GetName()
+
+	runes := search.chunk.Runes()
+	afterName := runes[openingElem.Name.Base().Span.End:openingElem.Span.End]
+	onlySpaceAfterTagName := true
+
+	for _, r := range afterName {
+		if onlySpaceAfterTagName && !unicode.IsSpace(r) {
+			onlySpaceAfterTagName = false
+		}
+	}
+
+	suggestWholeTags := onlySpaceAfterTagName
+
+	switch namespace.Name {
+	case "html":
+		if suggestWholeTags {
+			completions = append(completions, findWholeHTMLTagCompletions(tagName, ancestors, true, search.inputData)...)
 		}
 	}
 
@@ -58,6 +97,20 @@ func findXMLAttributeValueCompletions(str *parse.QuotedStringLiteral, parent *pa
 	}
 
 	return
+}
+
+func findXMLNamespace(ancestors []parse.Node) (*parse.IdentifierLiteral, bool) {
+	xmlExpr, _, found := parse.FindClosest(ancestors, (*parse.XMLExpression)(nil))
+	if !found {
+		return nil, false
+	}
+
+	namespace, ok := xmlExpr.Namespace.(*parse.IdentifierLiteral)
+	if !ok {
+		return nil, false
+	}
+
+	return namespace, true
 }
 
 func findTagNameAndNamespace(ancestors []parse.Node) (string, *parse.IdentifierLiteral, bool) {
