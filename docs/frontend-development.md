@@ -6,6 +6,7 @@ ___
 - 📄 [Pages](#pages)
 - ⚙️ [Server-Side Components](#server-side-components)
 - 🌐 [Client-Side Components](#client-side-components---inoxjs)
+- 📝 [Forms](#forms)
 - ✨ [Planned HTMX Integrations](#htmx-integrations)
 - ⚡ [Planned Optimizations](#server-side-optimizations)
 
@@ -91,6 +92,8 @@ return html<ul>
     </style>
 </ul>
 ```
+
+**The previous code can also be turned into a function `fn(){ return html<ul>...</ul> }` and used in several places.**
 
 ___
 
@@ -199,6 +202,72 @@ fn Counter(){
 ```
 
 ___
+
+## Forms
+
+For now Inox's HTTP server only accepts JSON as the content type of POST|PATCH|PUT requests. 
+Therefore **forms** making requests to it are required to have specific attributes
+that enable JSON encoding.
+
+```html
+<form hx-post-json="/users">
+    ...
+</form>
+```
+
+**OR (equivalent)**
+
+```html
+<form hx-post="/users" hx-ext="json-form">
+    ...
+</form>
+```
+
+### Encoding
+
+- The values of `number` and `range` inputs are converted to numbers.
+- The values of `checkbox` inputs with a `yes` value are converted to booleans.
+- The values of checked `checkbox` inputs are gathered in an array, even if there is a single element.
+- The values of inputs whose name contains an array index (e.g. `elements[0], elements[1]`) are gathered in an array.
+- The values of inputs whose name contains a property name (e.g. `user.name, user.age`) are put into an object.
+
+```html
+<input name="username" type="text">     
+--> {"username": (string)}
+
+<input name="count" type="number">      
+--> {"count": (number)}
+
+<input name="enable" type="checkbox" value="yes">
+--> {"enable": (boolean)}
+
+<input name="choices" type="checkbox" value="A">
+<input name="choices" type="checkbox" value="B">
+--> {"choices": (array)}
+
+<input name="elements[0]" type="text">
+<input name="elements[1]" type="text">
+--> {"elements": (array)}
+
+<input name="user.name" type="text">
+<input name="user.age" type="number">
+--> {
+    "user": {
+        "name": (string),
+        "age": (number)
+    }
+}
+
+<input name="elements[0].name" type="text">
+<input name="elements[1].name" type="text">
+--> {
+    "elements": [
+        {"name": (string)},
+        {"name": (string)}
+        ...
+    ]
+}
+```
 
 ## HTMX Integrations
 
