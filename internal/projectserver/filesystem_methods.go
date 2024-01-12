@@ -203,39 +203,7 @@ func registerFilesystemMethodHandlers(server *lsp.Server) {
 			return &FsFileStatParams{}
 		},
 		RateLimits: []int{30, 100, 300},
-		Handler: func(ctx context.Context, req interface{}) (interface{}, error) {
-			session := jsonrpc.GetSession(ctx)
-			params := req.(*FsFileStatParams)
-			fls, ok := getLspFilesystem(session)
-			if !ok {
-				return nil, errors.New(string(FsNoFilesystem))
-			}
-
-			fpath, err := getPath(params.FileURI, true)
-			if err != nil {
-				return nil, err
-			}
-
-			stat, err := fls.Stat(fpath)
-			if err != nil {
-				if os.IsNotExist(err) {
-					return FsFileNotFound, nil
-				}
-				return nil, fmtInternalError("failed to get stat for file %s: %s", fpath, err)
-			}
-
-			ctime, mtime, err := fs_ns.GetCreationAndModifTime(stat)
-			if err != nil {
-				return nil, fmt.Errorf("failed to get the creation/modification time for file %s", fpath)
-			}
-
-			return &FsFileStat{
-				CreationTime:     ctime.UnixMilli(),
-				ModificationTime: mtime.UnixMilli(),
-				Size:             stat.Size(),
-				FileType:         FileTypeFromInfo(stat),
-			}, nil
-		},
+		Handler:    handleFileStat,
 	})
 
 	server.OnCustom(jsonrpc.MethodInfo{
@@ -245,29 +213,7 @@ func registerFilesystemMethodHandlers(server *lsp.Server) {
 		},
 		SensitiveData: true,
 		RateLimits:    []int{20, 100, 300},
-		Handler: func(ctx context.Context, req interface{}) (interface{}, error) {
-			session := jsonrpc.GetSession(ctx)
-			params := req.(*FsReadFileParams)
-			fls, ok := getLspFilesystem(session)
-			if !ok {
-				return nil, errors.New(string(FsNoFilesystem))
-			}
-
-			fpath, err := getPath(params.FileURI, true)
-			if err != nil {
-				return nil, err
-			}
-
-			content, err := fsutil.ReadFile(fls, fpath)
-			if err != nil {
-				if os.IsNotExist(err) {
-					return FsFileNotFound, nil
-				}
-				return nil, fmtInternalError("failed to read file %s: %s", fpath, err)
-			}
-
-			return FsFileContentBase64{Content: base64.StdEncoding.EncodeToString(content)}, nil
-		},
+		Handler:       handleReadFile,
 	})
 
 	server.OnCustom(jsonrpc.MethodInfo{
@@ -277,26 +223,7 @@ func registerFilesystemMethodHandlers(server *lsp.Server) {
 		},
 		SensitiveData: true,
 		RateLimits:    []int{20, 100, 300},
-		Handler: func(ctx context.Context, req interface{}) (interface{}, error) {
-			session := jsonrpc.GetSession(ctx)
-			params := req.(*FsWriteFileParams)
-			fls, ok := getLspFilesystem(session)
-			if !ok {
-				return nil, errors.New(string(FsNoFilesystem))
-			}
-
-			fpath, err := getPath(params.FileURI, true)
-			if err != nil {
-				return nil, err
-			}
-
-			content, err := base64.StdEncoding.DecodeString(string(params.ContentBase64))
-			if err != nil {
-				return nil, fmt.Errorf("failed to decode received content for file %s: %w", fpath, err)
-			}
-
-			return updateFile(fpath, [][]byte{content}, params.Create, params.Overwrite, fls, session)
-		},
+		Handler:       handleWriteFile,
 	})
 
 	server.OnCustom(jsonrpc.MethodInfo{
@@ -306,83 +233,7 @@ func registerFilesystemMethodHandlers(server *lsp.Server) {
 			return &FsStartUploadParams{}
 		},
 		SensitiveData: true,
-		Handler: func(ctx context.Context, req interface{}) (interface{}, error) {
-			session := jsonrpc.GetSession(ctx)
-			params := req.(*FsStartUploadParams)
-			fls, ok := getLspFilesystem(session)
-			if !ok {
-				return nil, errors.New(string(FsNoFilesystem))
-			}
-
-			data := getLockedSessionData(session)
-			var projectId core.ProjectID
-			if data.project != nil {
-				projectId = data.project.Id()
-			}
-			data.lock.Unlock()
-
-			if projectId == "" {
-				return nil, jsonrpc.ResponseError{
-					Code:    jsonrpc.InternalError.Code,
-					Message: "the method " + WRITE_UPLOAD_PART_METHOD + " is only supported in project mode for now",
-				}
-			}
-
-			fpath, err := getPath(params.FileURI, true)
-			if err != nil {
-				return nil, err
-			}
-
-			editionState := getCreateProjectEditionState(projectId)
-
-			firstPart, err := base64.StdEncoding.DecodeString(string(params.PartContentBase64))
-			if err != nil {
-				return nil, fmt.Errorf("failed to decode received content for the first part of the file %s: %w", fpath, err)
-			}
-
-			info := uploadInfo{create: params.Create, overwrite: params.Overwrite}
-			uploadId, err := editionState.startFileUpload(fpath, firstPart, info, session)
-
-			if err != nil {
-				return nil, jsonrpc.ResponseError{
-					Code:    jsonrpc.InternalError.Code,
-					Message: err.Error(),
-				}
-			}
-
-			if params.Last {
-				parts, info, err := editionState.finishFileUpload(fpath, nil, uploadId, session)
-
-				if err != nil {
-					return nil, jsonrpc.ResponseError{
-						Code:    jsonrpc.InternalError.Code,
-						Message: err.Error(),
-					}
-				}
-
-				nonCritialErr, err := updateFile(fpath, parts, info.create, info.overwrite, fls, session)
-
-				if err != nil {
-					return nil, jsonrpc.ResponseError{
-						Code:    jsonrpc.InternalError.Code,
-						Message: err.Error(),
-					}
-				}
-
-				if nonCritialErr == "" {
-					return FsStartUploadResponse{
-						UploadId: uploadId,
-						Done:     true,
-					}, nil
-				}
-
-				return nonCritialErr, nil
-			}
-
-			return FsStartUploadResponse{
-				UploadId: uploadId,
-			}, nil
-		},
+		Handler:       handleStartFileUpload,
 	})
 
 	server.OnCustom(jsonrpc.MethodInfo{
@@ -392,64 +243,7 @@ func registerFilesystemMethodHandlers(server *lsp.Server) {
 			return &FsWriteUploadPartParams{}
 		},
 		SensitiveData: true,
-		Handler: func(ctx context.Context, req interface{}) (interface{}, error) {
-			session := jsonrpc.GetSession(ctx)
-			params := req.(*FsWriteUploadPartParams)
-			fls, ok := getLspFilesystem(session)
-			if !ok {
-				return nil, errors.New(string(FsNoFilesystem))
-			}
-
-			data := getLockedSessionData(session)
-			var projectId core.ProjectID
-			if data.project != nil {
-				projectId = data.project.Id()
-			}
-			data.lock.Unlock()
-
-			if projectId == "" {
-				return nil, jsonrpc.ResponseError{
-					Code:    jsonrpc.InternalError.Code,
-					Message: "the method " + WRITE_UPLOAD_PART_METHOD + " is only supported in project mode for now",
-				}
-			}
-
-			fpath, err := getPath(params.FileURI, true)
-			if err != nil {
-				return nil, err
-			}
-
-			editionState := getCreateProjectEditionState(projectId)
-
-			part, err := base64.StdEncoding.DecodeString(string(params.PartContentBase64))
-			if err != nil {
-				return nil, fmt.Errorf("failed to decode received content for a part of the file %s: %w", fpath, err)
-			}
-
-			if params.Last {
-				parts, info, err := editionState.finishFileUpload(fpath, part, params.UploadId, session)
-
-				if err != nil {
-					return nil, jsonrpc.ResponseError{
-						Code:    jsonrpc.InternalError.Code,
-						Message: err.Error(),
-					}
-				}
-
-				return updateFile(fpath, parts, info.create, info.overwrite, fls, session)
-			} else {
-				_, err := editionState.continueFileUpload(fpath, part, params.UploadId, session)
-
-				if err != nil {
-					return nil, jsonrpc.ResponseError{
-						Code:    jsonrpc.InternalError.Code,
-						Message: err.Error(),
-					}
-				}
-			}
-
-			return nil, nil
-		},
+		Handler:       writeFileUploadPart,
 	})
 
 	server.OnCustom(jsonrpc.MethodInfo{
@@ -457,52 +251,7 @@ func registerFilesystemMethodHandlers(server *lsp.Server) {
 		NewRequest: func() interface{} {
 			return &FsRenameFileParams{}
 		},
-		Handler: func(ctx context.Context, req interface{}) (interface{}, error) {
-			session := jsonrpc.GetSession(ctx)
-			params := req.(*FsRenameFileParams)
-			fls, ok := getLspFilesystem(session)
-			if !ok {
-				return nil, errors.New(string(FsNoFilesystem))
-			}
-
-			path, err := getPath(params.FileURI, true)
-			if err != nil {
-				return nil, err
-			}
-
-			newPath, err := getPath(params.NewFileURI, true)
-			if err != nil {
-				return nil, err
-			}
-
-			_, err = fls.Stat(path)
-			if os.IsNotExist(err) {
-				return FsFileNotFound, nil
-			}
-
-			newPathStat, err := fls.Stat(newPath)
-
-			if os.IsNotExist(err) {
-				//there is no file at the desination path so we can rename it.
-				err := fls.Rename(path, newPath)
-				if err != nil {
-					return nil, fmtInternalError(err.Error())
-				}
-				return nil, nil
-			} else { //exists
-				if params.Overwrite {
-					if err == nil && newPathStat.IsDir() {
-						if err := fls.Remove(newPath); err != nil {
-							return nil, fmtInternalError("failed to rename %s to %s: deletion of found dir failed: %s", path, newPath, err)
-						}
-					}
-
-					//TODO: return is-dir error if there is a directory.
-					return nil, fls.Rename(path, newPath)
-				}
-				return nil, fmtInternalError("failed to rename %s to %s: file or dir found at new path and overwrite option is false ", path, newPath)
-			}
-		},
+		Handler: handleRenameFile,
 	})
 
 	server.OnCustom(jsonrpc.MethodInfo{
@@ -511,40 +260,7 @@ func registerFilesystemMethodHandlers(server *lsp.Server) {
 			return &FsDeleteFileParams{}
 		},
 		RateLimits: []int{20, 100, 500},
-		Handler: func(ctx context.Context, req interface{}) (interface{}, error) {
-			session := jsonrpc.GetSession(ctx)
-			params := req.(*FsDeleteFileParams)
-			fls, ok := getLspFilesystem(session)
-			if !ok {
-				return nil, errors.New(string(FsNoFilesystem))
-			}
-
-			path, err := getPath(params.FileURI, true)
-			if err != nil {
-				return nil, err
-			}
-
-			if params.Recursive {
-				//TODO: add implementation of the { RemoveAll(string) error } interface to MetaFilesystem & MemoryFilesystem.
-				err = fsutil.RemoveAll(fls, path)
-
-				if os.IsNotExist(err) {
-					return FsFileNotFound, nil
-				} else if err != nil { //exists
-					return nil, fmtInternalError("failed to recursively delete %s: %s", path, err)
-				}
-			} else {
-				err = fls.Remove(path)
-
-				if os.IsNotExist(err) {
-					return FsFileNotFound, nil
-				} else if err != nil { //exists
-					return nil, fmtInternalError("failed to delete %s: %s", path, err)
-				}
-			}
-
-			return nil, nil
-		},
+		Handler:    handleDeleteFile,
 	})
 
 	server.OnCustom(jsonrpc.MethodInfo{
@@ -553,38 +269,7 @@ func registerFilesystemMethodHandlers(server *lsp.Server) {
 			return &FsReadirParams{}
 		},
 		RateLimits: []int{20, 100, 500},
-		Handler: func(ctx context.Context, req interface{}) (interface{}, error) {
-			session := jsonrpc.GetSession(ctx)
-			params := req.(*FsReadirParams)
-			fls, ok := getLspFilesystem(session)
-			if !ok {
-				return nil, errors.New(string(FsNoFilesystem))
-			}
-
-			dpath, err := getPath(params.DirURI, true)
-			if err != nil {
-				return nil, err
-			}
-
-			entries, err := fls.ReadDir(dpath)
-			if err != nil {
-				if os.IsNotExist(err) {
-					return FsFileNotFound, nil
-				}
-				return nil, fmtInternalError("failed to read dir %s", dpath)
-			}
-
-			fsDirEntries := FsDirEntries{}
-			for _, e := range entries {
-				fsDirEntries = append(fsDirEntries, FsDirEntry{
-					Name:             e.Name(),
-					FileType:         FileTypeFromInfo(e),
-					ModificationTime: e.ModTime().UnixMilli(),
-				})
-			}
-
-			return fsDirEntries, nil
-		},
+		Handler:    handleReadDir,
 	})
 
 	server.OnCustom(jsonrpc.MethodInfo{
@@ -592,26 +277,7 @@ func registerFilesystemMethodHandlers(server *lsp.Server) {
 		NewRequest: func() interface{} {
 			return &FsCreateDirParams{}
 		},
-		Handler: func(ctx context.Context, req interface{}) (interface{}, error) {
-			session := jsonrpc.GetSession(ctx)
-			params := req.(*FsCreateDirParams)
-			fls, ok := getLspFilesystem(session)
-			if !ok {
-				return nil, errors.New(string(FsNoFilesystem))
-			}
-
-			path, err := getPath(params.DirURI, true)
-			if err != nil {
-				return nil, err
-			}
-
-			err = fls.MkdirAll(path, fs_ns.DEFAULT_DIR_FMODE)
-			if err != nil {
-				return nil, fmtInternalError("failed to create dir %s: %s", path, err)
-			}
-
-			return nil, nil
-		},
+		Handler: handleCreateDir,
 	})
 }
 
@@ -837,4 +503,356 @@ func startNotifyingFilesystemStructureEvents(session *jsonrpc.Session, fls afs.F
 	})
 
 	return nil
+}
+
+func handleFileStat(ctx context.Context, req interface{}) (interface{}, error) {
+	session := jsonrpc.GetSession(ctx)
+	params := req.(*FsFileStatParams)
+	fls, ok := getLspFilesystem(session)
+	if !ok {
+		return nil, errors.New(string(FsNoFilesystem))
+	}
+
+	fpath, err := getPath(params.FileURI, true)
+	if err != nil {
+		return nil, err
+	}
+
+	stat, err := fls.Stat(fpath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return FsFileNotFound, nil
+		}
+		return nil, fmtInternalError("failed to get stat for file %s: %s", fpath, err)
+	}
+
+	ctime, mtime, err := fs_ns.GetCreationAndModifTime(stat)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get the creation/modification time for file %s", fpath)
+	}
+
+	return &FsFileStat{
+		CreationTime:     ctime.UnixMilli(),
+		ModificationTime: mtime.UnixMilli(),
+		Size:             stat.Size(),
+		FileType:         FileTypeFromInfo(stat),
+	}, nil
+}
+
+func handleReadFile(ctx context.Context, req interface{}) (interface{}, error) {
+	session := jsonrpc.GetSession(ctx)
+	params := req.(*FsReadFileParams)
+	fls, ok := getLspFilesystem(session)
+	if !ok {
+		return nil, errors.New(string(FsNoFilesystem))
+	}
+
+	fpath, err := getPath(params.FileURI, true)
+	if err != nil {
+		return nil, err
+	}
+
+	content, err := fsutil.ReadFile(fls, fpath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return FsFileNotFound, nil
+		}
+		return nil, fmtInternalError("failed to read file %s: %s", fpath, err)
+	}
+
+	return FsFileContentBase64{Content: base64.StdEncoding.EncodeToString(content)}, nil
+}
+
+func handleWriteFile(ctx context.Context, req interface{}) (interface{}, error) {
+	session := jsonrpc.GetSession(ctx)
+	params := req.(*FsWriteFileParams)
+	fls, ok := getLspFilesystem(session)
+	if !ok {
+		return nil, errors.New(string(FsNoFilesystem))
+	}
+
+	fpath, err := getPath(params.FileURI, true)
+	if err != nil {
+		return nil, err
+	}
+
+	content, err := base64.StdEncoding.DecodeString(string(params.ContentBase64))
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode received content for file %s: %w", fpath, err)
+	}
+
+	return updateFile(fpath, [][]byte{content}, params.Create, params.Overwrite, fls, session)
+}
+
+func handleStartFileUpload(ctx context.Context, req interface{}) (interface{}, error) {
+	session := jsonrpc.GetSession(ctx)
+	params := req.(*FsStartUploadParams)
+	fls, ok := getLspFilesystem(session)
+	if !ok {
+		return nil, errors.New(string(FsNoFilesystem))
+	}
+
+	data := getLockedSessionData(session)
+	var projectId core.ProjectID
+	if data.project != nil {
+		projectId = data.project.Id()
+	}
+	data.lock.Unlock()
+
+	if projectId == "" {
+		return nil, jsonrpc.ResponseError{
+			Code:    jsonrpc.InternalError.Code,
+			Message: "the method " + WRITE_UPLOAD_PART_METHOD + " is only supported in project mode for now",
+		}
+	}
+
+	fpath, err := getPath(params.FileURI, true)
+	if err != nil {
+		return nil, err
+	}
+
+	editionState := getCreateProjectEditionState(projectId)
+
+	firstPart, err := base64.StdEncoding.DecodeString(string(params.PartContentBase64))
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode received content for the first part of the file %s: %w", fpath, err)
+	}
+
+	info := uploadInfo{create: params.Create, overwrite: params.Overwrite}
+	uploadId, err := editionState.startFileUpload(fpath, firstPart, info, session)
+
+	if err != nil {
+		return nil, jsonrpc.ResponseError{
+			Code:    jsonrpc.InternalError.Code,
+			Message: err.Error(),
+		}
+	}
+
+	if params.Last {
+		parts, info, err := editionState.finishFileUpload(fpath, nil, uploadId, session)
+
+		if err != nil {
+			return nil, jsonrpc.ResponseError{
+				Code:    jsonrpc.InternalError.Code,
+				Message: err.Error(),
+			}
+		}
+
+		nonCritialErr, err := updateFile(fpath, parts, info.create, info.overwrite, fls, session)
+
+		if err != nil {
+			return nil, jsonrpc.ResponseError{
+				Code:    jsonrpc.InternalError.Code,
+				Message: err.Error(),
+			}
+		}
+
+		if nonCritialErr == "" {
+			return FsStartUploadResponse{
+				UploadId: uploadId,
+				Done:     true,
+			}, nil
+		}
+
+		return nonCritialErr, nil
+	}
+
+	return FsStartUploadResponse{
+		UploadId: uploadId,
+	}, nil
+}
+
+func writeFileUploadPart(ctx context.Context, req interface{}) (interface{}, error) {
+	session := jsonrpc.GetSession(ctx)
+	params := req.(*FsWriteUploadPartParams)
+	fls, ok := getLspFilesystem(session)
+	if !ok {
+		return nil, errors.New(string(FsNoFilesystem))
+	}
+
+	data := getLockedSessionData(session)
+	var projectId core.ProjectID
+	if data.project != nil {
+		projectId = data.project.Id()
+	}
+	data.lock.Unlock()
+
+	if projectId == "" {
+		return nil, jsonrpc.ResponseError{
+			Code:    jsonrpc.InternalError.Code,
+			Message: "the method " + WRITE_UPLOAD_PART_METHOD + " is only supported in project mode for now",
+		}
+	}
+
+	fpath, err := getPath(params.FileURI, true)
+	if err != nil {
+		return nil, err
+	}
+
+	editionState := getCreateProjectEditionState(projectId)
+
+	part, err := base64.StdEncoding.DecodeString(string(params.PartContentBase64))
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode received content for a part of the file %s: %w", fpath, err)
+	}
+
+	if params.Last {
+		parts, info, err := editionState.finishFileUpload(fpath, part, params.UploadId, session)
+
+		if err != nil {
+			return nil, jsonrpc.ResponseError{
+				Code:    jsonrpc.InternalError.Code,
+				Message: err.Error(),
+			}
+		}
+
+		return updateFile(fpath, parts, info.create, info.overwrite, fls, session)
+	} else {
+		_, err := editionState.continueFileUpload(fpath, part, params.UploadId, session)
+
+		if err != nil {
+			return nil, jsonrpc.ResponseError{
+				Code:    jsonrpc.InternalError.Code,
+				Message: err.Error(),
+			}
+		}
+	}
+
+	return nil, nil
+}
+
+func handleRenameFile(ctx context.Context, req interface{}) (interface{}, error) {
+	session := jsonrpc.GetSession(ctx)
+	params := req.(*FsRenameFileParams)
+	fls, ok := getLspFilesystem(session)
+	if !ok {
+		return nil, errors.New(string(FsNoFilesystem))
+	}
+
+	path, err := getPath(params.FileURI, true)
+	if err != nil {
+		return nil, err
+	}
+
+	newPath, err := getPath(params.NewFileURI, true)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = fls.Stat(path)
+	if os.IsNotExist(err) {
+		return FsFileNotFound, nil
+	}
+
+	newPathStat, err := fls.Stat(newPath)
+
+	if os.IsNotExist(err) {
+		//there is no file at the desination path so we can rename it.
+		err := fls.Rename(path, newPath)
+		if err != nil {
+			return nil, fmtInternalError(err.Error())
+		}
+		return nil, nil
+	} else { //exists
+		if params.Overwrite {
+			if err == nil && newPathStat.IsDir() {
+				if err := fls.Remove(newPath); err != nil {
+					return nil, fmtInternalError("failed to rename %s to %s: deletion of found dir failed: %s", path, newPath, err)
+				}
+			}
+
+			//TODO: return is-dir error if there is a directory.
+			return nil, fls.Rename(path, newPath)
+		}
+		return nil, fmtInternalError("failed to rename %s to %s: file or dir found at new path and overwrite option is false ", path, newPath)
+	}
+}
+
+func handleDeleteFile(ctx context.Context, req interface{}) (interface{}, error) {
+	session := jsonrpc.GetSession(ctx)
+	params := req.(*FsDeleteFileParams)
+	fls, ok := getLspFilesystem(session)
+	if !ok {
+		return nil, errors.New(string(FsNoFilesystem))
+	}
+
+	path, err := getPath(params.FileURI, true)
+	if err != nil {
+		return nil, err
+	}
+
+	if params.Recursive {
+		//TODO: add implementation of the { RemoveAll(string) error } interface to MetaFilesystem & MemoryFilesystem.
+		err = fsutil.RemoveAll(fls, path)
+
+		if os.IsNotExist(err) {
+			return FsFileNotFound, nil
+		} else if err != nil { //exists
+			return nil, fmtInternalError("failed to recursively delete %s: %s", path, err)
+		}
+	} else {
+		err = fls.Remove(path)
+
+		if os.IsNotExist(err) {
+			return FsFileNotFound, nil
+		} else if err != nil { //exists
+			return nil, fmtInternalError("failed to delete %s: %s", path, err)
+		}
+	}
+
+	return nil, nil
+}
+
+func handleReadDir(ctx context.Context, req interface{}) (interface{}, error) {
+	session := jsonrpc.GetSession(ctx)
+	params := req.(*FsReadirParams)
+	fls, ok := getLspFilesystem(session)
+	if !ok {
+		return nil, errors.New(string(FsNoFilesystem))
+	}
+
+	dpath, err := getPath(params.DirURI, true)
+	if err != nil {
+		return nil, err
+	}
+
+	entries, err := fls.ReadDir(dpath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return FsFileNotFound, nil
+		}
+		return nil, fmtInternalError("failed to read dir %s", dpath)
+	}
+
+	fsDirEntries := FsDirEntries{}
+	for _, e := range entries {
+		fsDirEntries = append(fsDirEntries, FsDirEntry{
+			Name:             e.Name(),
+			FileType:         FileTypeFromInfo(e),
+			ModificationTime: e.ModTime().UnixMilli(),
+		})
+	}
+
+	return fsDirEntries, nil
+}
+
+func handleCreateDir(ctx context.Context, req interface{}) (interface{}, error) {
+	session := jsonrpc.GetSession(ctx)
+	params := req.(*FsCreateDirParams)
+	fls, ok := getLspFilesystem(session)
+	if !ok {
+		return nil, errors.New(string(FsNoFilesystem))
+	}
+
+	path, err := getPath(params.DirURI, true)
+	if err != nil {
+		return nil, err
+	}
+
+	err = fls.MkdirAll(path, fs_ns.DEFAULT_DIR_FMODE)
+	if err != nil {
+		return nil, fmtInternalError("failed to create dir %s: %s", path, err)
+	}
+
+	return nil, nil
 }

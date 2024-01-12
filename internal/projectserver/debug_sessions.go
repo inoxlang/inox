@@ -6,8 +6,71 @@ import (
 	"sync/atomic"
 
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
 	"github.com/inoxlang/inox/internal/projectserver/lsp/defines"
 )
+
+func getDebugSession(session *jsonrpc.Session, sessionId string) (*DebugSession, error) {
+	sessionData := getLockedSessionData(session)
+
+	debugSessions := sessionData.debugSessions
+	if debugSessions == nil {
+		debugSessions = &DebugSessions{}
+		sessionData.debugSessions = debugSessions
+	}
+	sessionData.lock.Unlock()
+
+	debugSession, ok := debugSessions.GetSession(sessionId)
+	if !ok {
+		return nil, ErrUnknowSessionId
+	}
+
+	return debugSession, nil
+}
+
+func createDebugSession(session *jsonrpc.Session, sessionId string) (*DebugSession, error) {
+	sessionData := getLockedSessionData(session)
+
+	debugSessions := sessionData.debugSessions
+	if debugSessions == nil {
+		debugSessions = &DebugSessions{}
+		sessionData.debugSessions = debugSessions
+	}
+	sessionData.lock.Unlock()
+
+	if len(debugSessions.sessions) >= DEFAULT_MAX_SESSION_COUNT {
+		return nil, ErrMaxParallelDebugSessionReached
+	}
+
+	var debugSession *DebugSession
+	for _, s := range debugSessions.sessions {
+		if s.id == sessionId {
+			return nil, ErrSessionAlreadyExists
+		}
+	}
+
+	debugSession = &DebugSession{
+		id:                             sessionId,
+		sourcePathToInitialBreakpoints: make(map[string][]core.BreakpointInfo),
+		nextInitialBreakpointId:        core.INITIAL_BREAKPOINT_ID,
+		inProjectMode:                  sessionData.projectMode,
+
+		variablesReferences: make(map[core.StateId]*variablesReferences, 0),
+	}
+	debugSession.nextSeq.Store(1)
+	debugSessions.AddSession(debugSession)
+
+	return debugSession, nil
+}
+
+func removeDebugSession(debugSession *DebugSession, session *jsonrpc.Session) {
+	sessionData := getLockedSessionData(session)
+	debugSessions := sessionData.debugSessions
+	sessionData.lock.Unlock()
+	if debugSessions != nil {
+		debugSessions.RemoveSession(debugSession)
+	}
+}
 
 type DebugSessions struct {
 	sessions        []*DebugSession
@@ -47,6 +110,7 @@ type DebugSession struct {
 	programURI                     defines.DocumentUri
 	columnsStartAt1, lineStartsAt1 bool
 	configurationDone              atomic.Bool
+	inProjectMode                  bool
 
 	//initial breakpoints
 	//this field is set to nil during launch to remove some unecessary references
