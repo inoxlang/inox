@@ -61,6 +61,8 @@ type additionalSessionData struct {
 	projectMode        bool
 	project            *project.Project
 
+	serverAPI *serverAPI //set during project opening
+
 	//testing
 	testRuns map[TestRunId]*TestRun
 
@@ -184,6 +186,10 @@ func registerHandlers(server *lsp.Server, serverConfig LSPServerConfiguration, p
 					defer sessionData.lock.Unlock()
 					sessionData.preparedSourceFilesCache.acknowledgeSessionEnd()
 					sessionData.preparedSourceFilesCache = nil
+
+					if sessionData.serverAPI != nil {
+						sessionData.serverAPI.acknowledgeSessionEnd()
+					}
 				}()
 			}
 		}
@@ -527,6 +533,9 @@ func registerHandlers(server *lsp.Server, serverConfig LSPServerConfiguration, p
 		}
 
 		sessionData.preparedSourceFilesCache.acknowledgeSourceFileChange(fpath)
+		if sessionData.serverAPI != nil {
+			sessionData.serverAPI.acknowledgeSourceFileChange(fpath)
+		}
 
 		if syncFull {
 			fullDocumentText = req.ContentChanges[0].Text.(string)

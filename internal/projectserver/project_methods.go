@@ -134,8 +134,13 @@ func registerProjectMethodHandlers(server *lsp.Server, opts LSPServerConfigurati
 			defer sessionData.lock.Unlock()
 			sessionData.filesystem = lspFilesystem
 			sessionData.project = project
+			sessionData.serverAPI = newServerAPI(lspFilesystem, session)
+			go sessionData.serverAPI.tryUpdateAPI() //use a goroutine to avoid deadlock
 
-			err = startNotifyingFilesystemStructureEvents(session, project.LiveFilesystem())
+			err = startNotifyingFilesystemStructureEvents(session, project.LiveFilesystem(), func(event fs_ns.Event) {
+				sessionData.serverAPI.acknowledgeStructureChangeEvent(event)
+			})
+
 			if err != nil {
 				return nil, jsonrpc.ResponseError{
 					Code:    jsonrpc.InternalError.Code,

@@ -458,7 +458,10 @@ func updateFile(fpath string, contentParts [][]byte, create, overwrite bool, fls
 	return "", nil
 }
 
-func startNotifyingFilesystemStructureEvents(session *jsonrpc.Session, fls afs.Filesystem) error {
+// startNotifyingFilesystemStructureEvents creates an event source from $fls and registers
+// a listener that sends a LSP notification (method fs/structureEvent) for each structure event.
+// $otherListeners are also called on each event.
+func startNotifyingFilesystemStructureEvents(session *jsonrpc.Session, fls afs.Filesystem, otherListeners ...func(fs_ns.Event)) error {
 	sessionCtx := session.Context()
 	evs, err := fs_ns.NewEventSourceWithFilesystem(sessionCtx, fls, core.PathPattern("/..."))
 	if err != nil {
@@ -485,7 +488,7 @@ func startNotifyingFilesystemStructureEvents(session *jsonrpc.Session, fls afs.F
 			return
 		}
 
-		//notify event
+		//notify event to LSP client
 
 		ev := FsStructureEvent{
 			Path:     fsEvent.Path().UnderlyingString(),
@@ -500,6 +503,22 @@ func startNotifyingFilesystemStructureEvents(session *jsonrpc.Session, fls afs.F
 			Method: FS_STRUCTURE_EVENT_NOTIF_METHOD,
 			Params: utils.Must(json.Marshal(ev)),
 		})
+
+		//notify event to listeners
+
+		for _, listener := range otherListeners {
+			func() {
+				defer func() {
+					e := recover()
+					if e != nil {
+						err := utils.ConvertPanicValueToError(e)
+						err = fmt.Errorf("%w: %s", err, debug.Stack())
+						logs.Println(err)
+					}
+				}()
+				listener(fsEvent)
+			}()
+		}
 	})
 
 	return nil

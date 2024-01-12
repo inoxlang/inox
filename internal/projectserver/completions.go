@@ -7,15 +7,22 @@ import (
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/codecompletion"
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/globals/http_ns/spec"
 	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
 func getCompletions(fpath string, line, column int32, session *jsonrpc.Session) []codecompletion.Completion {
-	fls, ok := getLspFilesystem(session)
-	if !ok {
+	sessionData := getLockedSessionData(session)
+
+	fls := sessionData.filesystem
+	if fls == nil {
+		sessionData.lock.Unlock()
 		return nil
 	}
+
+	serverAPI := sessionData.serverAPI
+	sessionData.lock.Unlock()
 
 	handlingCtx := session.Context().BoundChildWithOptions(core.BoundChildContextOptions{
 		Filesystem: fls,
@@ -46,6 +53,10 @@ func getCompletions(fpath string, line, column int32, session *jsonrpc.Session) 
 
 	pos := chunk.GetLineColumnPosition(line, column)
 	staticResourcePaths := getStaticResourcePaths(fls, "/static")
+	var api *spec.API
+	if serverAPI != nil {
+		api = serverAPI.API()
+	}
 
 	return codecompletion.FindCompletions(codecompletion.SearchArgs{
 		State:       core.NewTreeWalkStateWithGlobal(state),
@@ -55,6 +66,7 @@ func getCompletions(fpath string, line, column int32, session *jsonrpc.Session) 
 
 		InputData: codecompletion.InputData{
 			StaticFileURLPaths: staticResourcePaths,
+			ServerAPI:          api,
 		},
 	})
 }
