@@ -118,14 +118,14 @@ func spawnPeriodicWatcherGoroutine() {
 	}
 
 	go func() {
-		lastWatchMoments := make(map[*PeriodicWatcher]time.Time)
+		lastWatchedMoments := make(map[*PeriodicWatcher]time.Time)
 		tickChannels := map[chan struct{}]bool{} //true if available
 		ticks := time.Tick(PERIODIC_WATCHER_GOROUTINE_TICK_INTERVAL)
 
 		for {
 			select {
 			case w := <-periodicWatcherSubscribeChan:
-				lastWatchMoments[w] = time.Now()
+				lastWatchedMoments[w] = time.Now()
 
 				//find or create an available channel for the watcher
 				for channel, available := range tickChannels {
@@ -148,7 +148,7 @@ func spawnPeriodicWatcherGoroutine() {
 				subscriptionAckWaitGroup.Done()
 
 			case w := <-periodicWatcherUnsuscribeChan:
-				delete(lastWatchMoments, w)
+				delete(lastWatchedMoments, w)
 				w.lock.Lock()
 				tick := w.tick
 				w.tick = nil
@@ -162,12 +162,13 @@ func spawnPeriodicWatcherGoroutine() {
 			case now := <-ticks:
 
 				// we iterate over the watchers and we write to the tick channel of watchers having their period ellapsed
-				for watcher, lastWatchMoment := range lastWatchMoments {
+				for watcher, lastWatchedMoment := range lastWatchedMoments {
+					if now.Sub(lastWatchedMoment) >= watcher.period {
+						lastWatchedMoments[watcher] = now
 
-					if now.Sub(lastWatchMoment) >= watcher.period {
-						lastWatchMoments[watcher] = now
-						if len(watcher.tick) == 0 {
-							watcher.tick <- struct{}{}
+						select {
+						case watcher.tick <- struct{}{}:
+						default:
 						}
 					}
 				}
