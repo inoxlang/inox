@@ -73,7 +73,7 @@ func createCookieFromObject(ctx *core.Context, obj *core.Object) (*http.Cookie, 
 	cookie := &http.Cookie{
 		Secure:   true,
 		HttpOnly: true,
-		SameSite: http.SameSiteStrictMode,
+		SameSite: http.SameSiteLaxMode,
 	}
 
 	for k, v := range obj.EntryMap(ctx) {

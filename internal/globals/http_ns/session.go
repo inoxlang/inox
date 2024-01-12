@@ -76,7 +76,7 @@ func addSessionIdCookie(rw *HttpResponseWriter, sessionId string) {
 		Value:    sessionId,
 		Path:     "/",
 		Secure:   true,
-		SameSite: http.SameSiteStrictMode,
+		SameSite: http.SameSiteLaxMode,
 		HttpOnly: true,
 	})
 }
