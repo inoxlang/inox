@@ -137,7 +137,10 @@ func (a *serverAPI) tryUpdateAPI() {
 		return
 	}
 
-	api, err := httpspec.GetFSRoutingServerAPI(state.Ctx, a.dynamicDir)
+	api, err := httpspec.GetFSRoutingServerAPI(state.Ctx, a.dynamicDir, httpspec.ServerApiResolutionConfig{
+		IgnoreModulesWithErrors: true,
+	})
+
 	if err != nil {
 		logs.Println(err)
 		return

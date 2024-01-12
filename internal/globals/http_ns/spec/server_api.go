@@ -27,7 +27,11 @@ var (
 	ErrUnexpectedBodyParamsInCatchAllHandler = errors.New("unexpected request body parmameters in catch-all handler")
 )
 
-func GetFSRoutingServerAPI(ctx *core.Context, dir string) (*API, error) {
+type ServerApiResolutionConfig struct {
+	IgnoreModulesWithErrors bool
+}
+
+func GetFSRoutingServerAPI(ctx *core.Context, dir string, config ServerApiResolutionConfig) (*API, error) {
 	preparedModuleCache := map[string]*core.GlobalState{}
 	defer func() {
 		for _, state := range preparedModuleCache {
@@ -38,7 +42,7 @@ func GetFSRoutingServerAPI(ctx *core.Context, dir string) (*API, error) {
 	endpoints := map[string]*ApiEndpoint{}
 
 	if dir != "" {
-		err := addFilesysteDirEndpoints(ctx, endpoints, dir, "/", preparedModuleCache)
+		err := addFilesysteDirEndpoints(ctx, config, endpoints, dir, "/", preparedModuleCache)
 		if err != nil {
 			return nil, err
 		}
@@ -48,7 +52,14 @@ func GetFSRoutingServerAPI(ctx *core.Context, dir string) (*API, error) {
 }
 
 // addFilesysteDirEndpoints recursively add the endpoints provided by dir and its subdirectories.
-func addFilesysteDirEndpoints(ctx *core.Context, endpoints map[string]*ApiEndpoint, dir, urlDirPath string, preparedModuleCache map[string]*core.GlobalState) error {
+func addFilesysteDirEndpoints(
+	ctx *core.Context,
+	config ServerApiResolutionConfig,
+	endpoints map[string]*ApiEndpoint,
+	dir,
+	urlDirPath string,
+	preparedModuleCache map[string]*core.GlobalState,
+) error {
 	fls := ctx.GetFileSystem()
 	entries, err := fls.ReadDir(dir)
 
@@ -80,7 +91,7 @@ func addFilesysteDirEndpoints(ctx *core.Context, endpoints map[string]*ApiEndpoi
 			subDir := absEntryPath + "/"
 			urlSubDir := filepath.Join(urlDirPath, entryName) + "/"
 
-			err := addFilesysteDirEndpoints(ctx, endpoints, subDir, urlSubDir, preparedModuleCache)
+			err := addFilesysteDirEndpoints(ctx, config, endpoints, subDir, urlSubDir, preparedModuleCache)
 			if err != nil {
 				return err
 			}
@@ -123,6 +134,9 @@ func addFilesysteDirEndpoints(ctx *core.Context, endpoints map[string]*ApiEndpoi
 
 		chunk, err := core.ParseFileChunk(absEntryPath, fls)
 		if err != nil {
+			if config.IgnoreModulesWithErrors {
+				continue
+			}
 			return fmt.Errorf("failed to parse %q: %w", absEntryPath, err)
 		}
 
@@ -199,7 +213,12 @@ func addFilesysteDirEndpoints(ctx *core.Context, endpoints map[string]*ApiEndpoi
 				})
 
 				if err != nil {
-					return err
+					if config.IgnoreModulesWithErrors {
+						delete(endpoints, endpointPath)
+						continue
+					} else {
+						return err
+					}
 				}
 
 				preparedModuleCache[path.Value] = state
@@ -228,7 +247,12 @@ func addFilesysteDirEndpoints(ctx *core.Context, endpoints map[string]*ApiEndpoi
 		}
 
 		if err != nil {
-			return err
+			if config.IgnoreModulesWithErrors {
+				delete(endpoints, endpointPath)
+				continue
+			} else {
+				return err
+			}
 		}
 
 		operation.handlerModule = mod

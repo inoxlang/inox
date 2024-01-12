@@ -124,7 +124,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			api, err := GetFSRoutingServerAPI(ctx, "/routes/")
+			api, err := GetFSRoutingServerAPI(ctx, "/routes/", ServerApiResolutionConfig{})
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -157,7 +157,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			api, err := GetFSRoutingServerAPI(ctx, "/routes/")
+			api, err := GetFSRoutingServerAPI(ctx, "/routes/", ServerApiResolutionConfig{})
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -193,7 +193,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			api, err := GetFSRoutingServerAPI(ctx, "/routes/")
+			api, err := GetFSRoutingServerAPI(ctx, "/routes/", ServerApiResolutionConfig{})
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -217,7 +217,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			api, err := GetFSRoutingServerAPI(ctx, "/routes/")
+			api, err := GetFSRoutingServerAPI(ctx, "/routes/", ServerApiResolutionConfig{})
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -241,7 +241,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			api, err := GetFSRoutingServerAPI(ctx, "/routes/")
+			api, err := GetFSRoutingServerAPI(ctx, "/routes/", ServerApiResolutionConfig{})
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -265,7 +265,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			api, err := GetFSRoutingServerAPI(ctx, "/routes/")
+			api, err := GetFSRoutingServerAPI(ctx, "/routes/", ServerApiResolutionConfig{})
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -289,7 +289,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			api, err := GetFSRoutingServerAPI(ctx, "/routes/")
+			api, err := GetFSRoutingServerAPI(ctx, "/routes/", ServerApiResolutionConfig{})
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -360,7 +360,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			api, err := GetFSRoutingServerAPI(ctx, "/routes/")
+			api, err := GetFSRoutingServerAPI(ctx, "/routes/", ServerApiResolutionConfig{})
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -413,7 +413,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			_, err := GetFSRoutingServerAPI(ctx, "/routes/")
+			_, err := GetFSRoutingServerAPI(ctx, "/routes/", ServerApiResolutionConfig{})
 			assert.ErrorContains(t, err, "already implemented")
 		})
 
@@ -438,7 +438,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			_, err := GetFSRoutingServerAPI(ctx, "/routes/")
+			_, err := GetFSRoutingServerAPI(ctx, "/routes/", ServerApiResolutionConfig{})
 			assert.ErrorContains(t, err, "already implemented")
 		})
 
@@ -463,7 +463,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			_, err := GetFSRoutingServerAPI(ctx, "/routes/")
+			_, err := GetFSRoutingServerAPI(ctx, "/routes/", ServerApiResolutionConfig{})
 			assert.ErrorContains(t, err, "already implemented")
 		})
 
@@ -488,7 +488,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			_, err := GetFSRoutingServerAPI(ctx, "/routes/")
+			_, err := GetFSRoutingServerAPI(ctx, "/routes/", ServerApiResolutionConfig{})
 			assert.ErrorContains(t, err, "already implemented")
 		})
 
@@ -511,7 +511,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			_, err := GetFSRoutingServerAPI(ctx, "/routes/")
+			_, err := GetFSRoutingServerAPI(ctx, "/routes/", ServerApiResolutionConfig{})
 
 			assert.ErrorIs(t, err, ErrUnexpectedBodyParamsInGETHandler)
 		})
@@ -530,7 +530,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			_, err := GetFSRoutingServerAPI(ctx, "/routes/")
+			_, err := GetFSRoutingServerAPI(ctx, "/routes/", ServerApiResolutionConfig{})
 
 			assert.ErrorIs(t, err, ErrUnexpectedBodyParamsInGETHandler)
 		})
@@ -549,7 +549,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			_, err := GetFSRoutingServerAPI(ctx, "/routes/")
+			_, err := GetFSRoutingServerAPI(ctx, "/routes/", ServerApiResolutionConfig{})
 
 			assert.ErrorIs(t, err, ErrUnexpectedBodyParamsInOPTIONSHandler)
 		})
@@ -568,7 +568,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			_, err := GetFSRoutingServerAPI(ctx, "/routes/")
+			_, err := GetFSRoutingServerAPI(ctx, "/routes/", ServerApiResolutionConfig{})
 
 			assert.ErrorIs(t, err, ErrUnexpectedBodyParamsInOPTIONSHandler)
 		})
@@ -591,7 +591,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			api, err := GetFSRoutingServerAPI(ctx, "/routes/")
+			api, err := GetFSRoutingServerAPI(ctx, "/routes/", ServerApiResolutionConfig{})
 
 			if !assert.NoError(t, err, ErrUnexpectedBodyParamsInGETHandler) {
 				return
@@ -639,7 +639,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			api, err := GetFSRoutingServerAPI(ctx, "/routes/")
+			api, err := GetFSRoutingServerAPI(ctx, "/routes/", ServerApiResolutionConfig{})
 
 			if !assert.NoError(t, err, ErrUnexpectedBodyParamsInGETHandler) {
 				return
@@ -673,7 +673,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			api, err := GetFSRoutingServerAPI(ctx, "/routes/")
+			api, err := GetFSRoutingServerAPI(ctx, "/routes/", ServerApiResolutionConfig{})
 
 			if !assert.NoError(t, err, ErrUnexpectedBodyParamsInGETHandler) {
 				return
@@ -722,7 +722,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			api, err := GetFSRoutingServerAPI(ctx, "/routes/")
+			api, err := GetFSRoutingServerAPI(ctx, "/routes/", ServerApiResolutionConfig{})
 
 			if !assert.NoError(t, err, ErrUnexpectedBodyParamsInGETHandler) {
 				return

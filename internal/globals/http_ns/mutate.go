@@ -11,7 +11,7 @@ import (
 )
 
 func IsMutationMethod(method string) bool {
-	switch strings.ToLower(method) {
+	switch strings.ToUpper(method) {
 	case "POST", "PATCH", "PUT", "DELETE":
 		return true
 	}
