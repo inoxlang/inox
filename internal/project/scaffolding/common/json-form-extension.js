@@ -1,5 +1,4 @@
-//This extension encodes form parameters to JSON, array elements are merged and values are conveted to the correct type.
-//For example the value of an <input type=number> is converted to a number.
+//This extension apply some transformations on form parameters and encodes them to JSON. See transformFormParams.
 htmx.defineExtension('json-form', {
     onEvent: function (name, evt) { 
         if (name === "htmx:configRequest") { 
