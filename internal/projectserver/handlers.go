@@ -533,19 +533,21 @@ func registerHandlers(server *lsp.Server, serverConfig LSPServerConfiguration, p
 		}
 
 		sessionData.preparedSourceFilesCache.acknowledgeSourceFileChange(fpath)
-		if sessionData.serverAPI != nil {
-			sessionData.serverAPI.acknowledgeSourceFileChange(fpath)
-		}
 
 		if syncFull {
 			fullDocumentText = req.ContentChanges[0].Text.(string)
 		} else {
-			currentContent, err := fsutil.ReadFile(fls.unsavedDocumentsFS(), fpath)
+			beforeEditContent, err := fsutil.ReadFile(fls.unsavedDocumentsFS(), fpath)
 			if err != nil {
 				return jsonrpc.ResponseError{
 					Code:    jsonrpc.InternalError.Code,
 					Message: fmt.Sprintf("failed to read state of document %s: %s", fpath+":", err),
 				}
+			}
+
+			beforeEditContentString := string(beforeEditContent)
+			if sessionData.serverAPI != nil {
+				sessionData.serverAPI.acknowledgeSourceFileChange(fpath, beforeEditContentString, req.ContentChanges)
 			}
 
 			var (
@@ -555,7 +557,7 @@ func registerHandlers(server *lsp.Server, serverConfig LSPServerConfiguration, p
 			)
 			//TODO: minimize number and size of allocations.
 
-			nextContent := []rune(utils.BytesAsString(currentContent))
+			nextContent := []rune(beforeEditContentString)
 
 			for _, change := range req.ContentChanges {
 				startLine, startColumn := getLineColumn(change.Range.Start)
@@ -563,7 +565,7 @@ func registerHandlers(server *lsp.Server, serverConfig LSPServerConfiguration, p
 
 				chunk, err := parse.ParseChunkSource(parse.InMemorySource{
 					NameString: "script",
-					CodeString: string(currentContent),
+					CodeString: beforeEditContentString,
 				})
 
 				if err != nil && chunk == nil { //critical parsing error

@@ -2,6 +2,7 @@ package projectserver
 
 import (
 	"fmt"
+	"math"
 	"runtime/debug"
 	"strings"
 	"sync"
@@ -13,8 +14,10 @@ import (
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	httpspec "github.com/inoxlang/inox/internal/globals/http_ns/spec"
 	"github.com/inoxlang/inox/internal/inoxconsts"
+	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
 	"github.com/inoxlang/inox/internal/projectserver/logs"
+	"github.com/inoxlang/inox/internal/projectserver/lsp/defines"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
@@ -55,9 +58,46 @@ func (a *serverAPI) API() *httpspec.API {
 	return a.api
 }
 
-func (a *serverAPI) acknowledgeSourceFileChange(fpath string) {
-	//ignore changes in non .ix files and in files not located in the dynamic dir.
-	if !strings.HasSuffix(fpath, inoxconsts.INOXLANG_FILE_EXTENSION) || !strings.HasPrefix(fpath, a.dynamicDir) {
+func (a *serverAPI) isInoxFileInHandlerModulesDir(fpath string) bool {
+	return strings.HasSuffix(fpath, inoxconsts.INOXLANG_FILE_EXTENSION) && strings.HasPrefix(fpath, a.dynamicDir)
+}
+
+func (a *serverAPI) acknowledgeSourceFileChange(fpath string, prevContent string, events []defines.TextDocumentContentChangeEvent) {
+	if !a.isInoxFileInHandlerModulesDir(fpath) {
+		return
+	}
+
+	//Ignore the changes if the file is not a module or if the change is located after the manifest.
+
+	firstChangeLine := int32(math.MaxInt32 / 10)
+
+	for _, event := range events {
+		line, _ := getLineColumn(event.Range.Start)
+		if line < firstChangeLine {
+			firstChangeLine = line
+		}
+	}
+
+	chunk, err := parse.ParseChunk(prevContent, fpath, parse.ParserOptions{Start: true})
+	if err != nil {
+		return
+	}
+
+	if chunk.IncludableChunkDesc != nil || chunk.Manifest == nil {
+		return
+	}
+
+	//Determine if the first change is after the manifest.
+	manifestEndPos := chunk.Manifest.Base().Span.End
+	lastManifestLine := 1
+
+	for _, token := range chunk.Tokens {
+		if token.Type == parse.NEWLINE && token.Span.Start < manifestEndPos {
+			lastManifestLine++
+		}
+	}
+
+	if lastManifestLine < int(firstChangeLine) {
 		return
 	}
 
@@ -70,8 +110,7 @@ func (a *serverAPI) acknowledgeSourceFileChange(fpath string) {
 func (a *serverAPI) acknowledgeStructureChangeEvent(event fs_ns.Event) {
 	path := event.Path().UnderlyingString()
 
-	//ignore changes in non .ix files and in files not located in the dynamic dir.
-	if !strings.HasSuffix(path, inoxconsts.INOXLANG_FILE_EXTENSION) || !strings.HasPrefix(path, a.dynamicDir) {
+	if !a.isInoxFileInHandlerModulesDir(path) {
 		return
 	}
 
