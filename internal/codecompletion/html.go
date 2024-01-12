@@ -6,7 +6,9 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/html_ns"
+	"github.com/inoxlang/inox/internal/globals/http_ns/spec"
 	"github.com/inoxlang/inox/internal/mimeconsts"
 	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/projectserver/lsp/defines"
@@ -134,6 +136,47 @@ func findHtmlAttributeValueCompletions(
 				continue
 			}
 
+			completions = append(completions, Completion{
+				ShownString: path,
+				Value:       `"` + path + `"`,
+				Kind:        defines.CompletionItemKindProperty,
+			})
+		}
+	}
+
+	if inputData.ServerAPI != nil && strings.HasPrefix(attrValue, "/") && (strings.HasPrefix(attrName, "hx-") || attrName == "href") {
+		//local server
+
+		api := inputData.ServerAPI
+
+		var endpointPaths []string
+		api.ForEachHandlerModule(func(mod *core.Module, endpoint *spec.ApiEndpoint, operation spec.ApiOperation) error {
+			addEndpoint := false
+
+			switch attrName {
+			case "href":
+				if tagName == "a" {
+					addEndpoint = endpoint.CatchAll() || operation.HttpMethod() == "GET"
+				}
+			case "hx-get":
+				addEndpoint = endpoint.CatchAll() || operation.HttpMethod() == "GET"
+			case "hx-post-json":
+				addEndpoint = endpoint.CatchAll() || operation.HttpMethod() == "POST"
+			case "hx-patch-json":
+				addEndpoint = endpoint.CatchAll() || operation.HttpMethod() == "PATCH"
+			case "hx-put-json":
+				addEndpoint = endpoint.CatchAll() || operation.HttpMethod() == "PUT"
+			case "hx-delete":
+				addEndpoint = endpoint.CatchAll() || operation.HttpMethod() == "DELETE"
+			}
+
+			if addEndpoint {
+				endpointPaths = append(endpointPaths, endpoint.PathWithParams())
+			}
+			return nil
+		})
+
+		for _, path := range endpointPaths {
 			completions = append(completions, Completion{
 				ShownString: path,
 				Value:       `"` + path + `"`,

@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/go-git/go-billy/v5/util"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/permkind"
 	"github.com/inoxlang/inox/internal/core/symbolic"
@@ -139,6 +140,8 @@ func runSingleModeTests(t *testing.T, mode Mode, wd, dir string) {
 
 		t.Run("local variable in top level module", func(t *testing.T) {
 			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
+			defer state.Global.Ctx.CancelGracefully()
+
 			chunk, _ := parseChunkSource("val = 1; v", "")
 
 			doSymbolicCheck(chunk, state.Global)
@@ -150,6 +153,8 @@ func runSingleModeTests(t *testing.T, mode Mode, wd, dir string) {
 
 		t.Run("local variable in top level module: different letter casse", func(t *testing.T) {
 			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
+			defer state.Global.Ctx.CancelGracefully()
+
 			chunk, _ := parseChunkSource("val = 1; V", "")
 
 			doSymbolicCheck(chunk, state.Global)
@@ -161,6 +166,8 @@ func runSingleModeTests(t *testing.T, mode Mode, wd, dir string) {
 
 		t.Run("local variable within a function", func(t *testing.T) {
 			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
+			defer state.Global.Ctx.CancelGracefully()
+
 			chunk, _ := parseChunkSource("fn(val){v}", "")
 
 			doSymbolicCheck(chunk, state.Global)
@@ -172,6 +179,8 @@ func runSingleModeTests(t *testing.T, mode Mode, wd, dir string) {
 
 		t.Run("local variable in a function call", func(t *testing.T) {
 			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
+			defer state.Global.Ctx.CancelGracefully()
+
 			chunk, _ := parseChunkSource("val = 1; print(v)", "")
 
 			doSymbolicCheck(chunk, state.Global)
@@ -186,6 +195,8 @@ func runSingleModeTests(t *testing.T, mode Mode, wd, dir string) {
 
 		t.Run("local variable in a command-liked function call", func(t *testing.T) {
 			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
+			defer state.Global.Ctx.CancelGracefully()
+
 			chunk, _ := parseChunkSource("val = 1; print v", "")
 
 			doSymbolicCheck(chunk, state.Global)
@@ -200,6 +211,8 @@ func runSingleModeTests(t *testing.T, mode Mode, wd, dir string) {
 
 		t.Run("local variable in a method call", func(t *testing.T) {
 			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
+			defer state.Global.Ctx.CancelGracefully()
+
 			chunk, _ := parseChunkSource("o = {print: fn(arg){}}; val = 1; o.print(v)", "")
 
 			doSymbolicCheck(chunk, state.Global)
@@ -219,6 +232,8 @@ func runSingleModeTests(t *testing.T, mode Mode, wd, dir string) {
 			}
 
 			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
+			defer state.Global.Ctx.CancelGracefully()
+
 			chunk, _ := parseChunkSource(`
 				manifest {
 					permissions: {
@@ -248,6 +263,8 @@ func runSingleModeTests(t *testing.T, mode Mode, wd, dir string) {
 			}
 
 			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
+			defer state.Global.Ctx.CancelGracefully()
+
 			chunk, _ := parseChunkSource(`
 				manifest {
 					permissions: {
@@ -271,6 +288,8 @@ func runSingleModeTests(t *testing.T, mode Mode, wd, dir string) {
 
 		t.Run("global variable in a command-liked function call", func(t *testing.T) {
 			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
+			defer state.Global.Ctx.CancelGracefully()
+
 			chunk, _ := parseChunkSource("$$val = 1; print v", "")
 
 			doSymbolicCheck(chunk, state.Global)
@@ -312,6 +331,8 @@ func runSingleModeTests(t *testing.T, mode Mode, wd, dir string) {
 	t.Run("identifier member expression", func(t *testing.T) {
 		t.Run("suggest object property: object has no property", func(t *testing.T) {
 			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
+			defer state.Global.Ctx.CancelGracefully()
+
 			state.Global.Globals.Set("obj", core.NewObject())
 			chunk, _ := parseChunkSource("obj.", "")
 
@@ -1194,6 +1215,8 @@ func runSingleModeTests(t *testing.T, mode Mode, wd, dir string) {
 	t.Run("html attribute names", func(t *testing.T) {
 		t.Run("local variable in top level module", func(t *testing.T) {
 			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
+			defer state.Global.Ctx.CancelGracefully()
+
 			chunk, _ := parseChunkSource("html<img sr />", "")
 
 			doSymbolicCheck(chunk, state.Global)
@@ -1221,6 +1244,8 @@ func runSingleModeTests(t *testing.T, mode Mode, wd, dir string) {
 
 		t.Run("src in <script>: empty", func(t *testing.T) {
 			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
+			defer state.Global.Ctx.CancelGracefully()
+
 			chunk, _ := parseChunkSource("html<script src=\"\">", "")
 
 			doSymbolicCheck(chunk, state.Global)
@@ -1238,6 +1263,8 @@ func runSingleModeTests(t *testing.T, mode Mode, wd, dir string) {
 
 		t.Run("src in <script>: with prefix", func(t *testing.T) {
 			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
+			defer state.Global.Ctx.CancelGracefully()
+
 			chunk, _ := parseChunkSource("html<script src=\"/i\">", "")
 
 			doSymbolicCheck(chunk, state.Global)
@@ -1255,6 +1282,8 @@ func runSingleModeTests(t *testing.T, mode Mode, wd, dir string) {
 
 		t.Run("href in <link>: empty", func(t *testing.T) {
 			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
+			defer state.Global.Ctx.CancelGracefully()
+
 			chunk, _ := parseChunkSource("html<link href=\"\">", "")
 
 			doSymbolicCheck(chunk, state.Global)
@@ -1272,6 +1301,8 @@ func runSingleModeTests(t *testing.T, mode Mode, wd, dir string) {
 
 		t.Run("href in <link>: with prefix", func(t *testing.T) {
 			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
+			defer state.Global.Ctx.CancelGracefully()
+
 			chunk, _ := parseChunkSource("html<link href=\"/i\">", "")
 
 			doSymbolicCheck(chunk, state.Global)
@@ -1289,6 +1320,8 @@ func runSingleModeTests(t *testing.T, mode Mode, wd, dir string) {
 
 		t.Run("src in <img>: empty", func(t *testing.T) {
 			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
+			defer state.Global.Ctx.CancelGracefully()
+
 			chunk, _ := parseChunkSource("html<img src=\"\">", "")
 
 			doSymbolicCheck(chunk, state.Global)
@@ -1306,6 +1339,8 @@ func runSingleModeTests(t *testing.T, mode Mode, wd, dir string) {
 
 		t.Run("src in <img>: with prefix", func(t *testing.T) {
 			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
+			defer state.Global.Ctx.CancelGracefully()
+
 			chunk, _ := parseChunkSource("html<img src=\"/i\">", "")
 
 			doSymbolicCheck(chunk, state.Global)
@@ -1320,6 +1355,37 @@ func runSingleModeTests(t *testing.T, mode Mode, wd, dir string) {
 				},
 			}, completions)
 		})
+
+		t.Run("hx-post-json in <form>: empty", func(t *testing.T) {
+			t.Skip()
+
+			//create API manually
+
+			// state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
+			// defer state.Global.Ctx.CancelGracefully()
+
+			// chunk, _ := parseChunkSource("html<form hx-post-json=\"\"></form>", "")
+
+			// doSymbolicCheck(chunk, state.Global)
+			// completions := _findCompletions(state, chunk, 16, false, &InputData{ServerAPI: api})
+
+			// assert.EqualValues(t, []Completion{
+			// 	{
+			// 		ShownString:   "/users",
+			// 		Value:         `"/users"`,
+			// 		ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 13, End: 17}},
+			// 	},
+			// }, completions)
+		})
 	})
 
+}
+
+func makeFilesystem() *fs_ns.MemFilesystem {
+	fls := fs_ns.NewMemFilesystem(1_000_000)
+
+	fls.MkdirAll("/routes/", 0700)
+	util.WriteFile(fls, "/routes/POST-users.ix", []byte("manifest {parameters: {}}; return html<div></div>"), 0600)
+
+	return fls
 }

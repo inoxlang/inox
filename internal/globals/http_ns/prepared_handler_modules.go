@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/globals/http_ns/spec"
 )
 
 type preparedModules struct {
@@ -27,7 +28,7 @@ func (c *preparedModules) prepareFrom(api *API) error {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
-	return api.ForEachHandlerModule(func(mod *core.Module) error {
+	return api.ForEachHandlerModule(func(mod *core.Module, endpt *spec.ApiEndpoint, operation spec.ApiOperation) error {
 		name := mod.MainChunk.Name()
 		if name == "" || name[0] != '/' {
 			return fmt.Errorf("name of module's main chunk should be an absolute path: %s", name)

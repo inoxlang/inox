@@ -14,7 +14,6 @@ var (
 	ErrAPINotFinalized     = errors.New("API value is not finalized")
 	ErrAPIAlreadyFinalized = errors.New("API value is already finalized")
 	ErrAPIBeingFinalized   = errors.New("API value is being finalized")
-
 )
 
 // API is a high level type that contains several endpoints, it is immutable.
@@ -119,11 +118,15 @@ type ApiEndpoint struct {
 	path     string //may have parameters
 	catchAll bool
 
-	//only set if filesystem routing is used.
-	//if set .operations is nil.
+	//Only set if filesystem routing is used.
+	//If it is set .operations is nil.
 	catchAllHandler *core.Module
 
 	operations []ApiOperation
+}
+
+func (e ApiEndpoint) PathWithParams() string {
+	return e.path
 }
 
 func (e ApiEndpoint) CatchAll() bool {
@@ -146,7 +149,7 @@ type ApiOperation struct {
 	jsonRequestBody    core.Pattern
 	jsonResponseBodies map[uint16]core.Pattern
 
-	handlerModule *core.Module //only set if filesystem routing is used
+	handlerModule *core.Module //only set if filesystem routing is used.
 }
 
 func (op ApiOperation) HttpMethod() string {
@@ -206,11 +209,24 @@ func (api *API) GetEndpoint(path string) (*ApiEndpoint, error) {
 	return node.endpoint, nil
 }
 
-func (api *API) ForEachHandlerModule(visit func(mod *core.Module) error) error {
+type HandlerModuleVisitFn func(
+	mod *core.Module,
+	endpoint *ApiEndpoint,
+	//not set if $endpoint.CatchAll() is true.
+	operation ApiOperation,
+) error
+
+// ForEachHandlerModule visits all handler modules in the API.
+// If $endpoint.CatchAll() is true the handler handles all operations and $operation is not set.
+func (api *API) ForEachHandlerModule(visit HandlerModuleVisitFn) error {
 	for _, endpt := range api.endpoints {
+		if endpt.catchAllHandler != nil {
+			visit(endpt.catchAllHandler, endpt, ApiOperation{})
+		}
+
 		for _, oper := range endpt.operations {
 			if oper.handlerModule != nil {
-				err := visit(oper.handlerModule)
+				err := visit(oper.handlerModule, endpt, oper)
 				if err != nil {
 					return err
 				}
