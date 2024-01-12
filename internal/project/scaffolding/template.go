@@ -23,13 +23,16 @@ var (
 	//go:embed common/**
 	COMMON_FILES embed.FS
 
-	BASE_CSS_STYLESHEET         string
-	INOX_JS                     string
+	BASE_CSS_STYLESHEET string
+	INOX_JS             string
+
 	HTMX_MIN_JS                 string
+	JSON_FORM_EXTENSION_JS      string
 	PREACT_SIGNALS_JS           string
 	SURREAL_CSS_INLINE_SCOPE_JS string
 
-	FULL_INOX_JS string
+	FULL_HTMX_MIN_JS string
+	FULL_INOX_JS     string
 )
 
 func init() {
@@ -52,6 +55,8 @@ func init() {
 			INOX_JS = string(content)
 		case "htmx-1.9.9.min.js":
 			HTMX_MIN_JS = string(content)
+		case "json-form-extension.js":
+			JSON_FORM_EXTENSION_JS = string(content)
 		case "preact-signals.js":
 			PREACT_SIGNALS_JS = string(content)
 		case "base.css":
@@ -74,6 +79,7 @@ func init() {
 	}
 
 	FULL_INOX_JS = strings.Join(parts, "\n")
+	FULL_HTMX_MIN_JS = HTMX_MIN_JS + "\n" + JSON_FORM_EXTENSION_JS
 }
 
 func WriteTemplate(name string, fls afs.Filesystem) error {
@@ -96,7 +102,7 @@ func WriteTemplate(name string, fls afs.Filesystem) error {
 			if len(content) < 20 && bytes.Contains(content, []byte("[auto]")) {
 				switch filepath.Base(pathInFs) {
 				case "htmx.min.js":
-					content = []byte(HTMX_MIN_JS)
+					content = []byte(FULL_HTMX_MIN_JS)
 				case "inox.js":
 					content = []byte(FULL_INOX_JS)
 				case "base.css":

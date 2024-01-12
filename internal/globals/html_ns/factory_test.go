@@ -43,7 +43,7 @@ func TestCreateHTMLNodeFromXMLElement(t *testing.T) {
 			bytes := Render(ctx, element)
 			s := string(bytes.UnderlyingBytes())
 
-			assert.Equal(t, `<div hx-post="/data" hx-ext="json-enc"></div>`, s)
+			assert.Equal(t, `<div hx-post="/data" hx-ext="json-form"></div>`, s)
 		})
 
 		t.Run("hx-patch-json", func(t *testing.T) {
@@ -53,7 +53,7 @@ func TestCreateHTMLNodeFromXMLElement(t *testing.T) {
 			bytes := Render(ctx, element)
 			s := string(bytes.UnderlyingBytes())
 
-			assert.Equal(t, `<div hx-patch="/data" hx-ext="json-enc"></div>`, s)
+			assert.Equal(t, `<div hx-patch="/data" hx-ext="json-form"></div>`, s)
 		})
 
 		t.Run("hx-put-json", func(t *testing.T) {
@@ -63,7 +63,7 @@ func TestCreateHTMLNodeFromXMLElement(t *testing.T) {
 			bytes := Render(ctx, element)
 			s := string(bytes.UnderlyingBytes())
 
-			assert.Equal(t, `<div hx-put="/data" hx-ext="json-enc"></div>`, s)
+			assert.Equal(t, `<div hx-put="/data" hx-ext="json-form"></div>`, s)
 		})
 	})
 }

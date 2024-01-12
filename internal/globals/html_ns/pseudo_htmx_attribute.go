@@ -81,7 +81,7 @@ func transpilePseudoHtmxAttribute(attr core.XMLAttribute, currentOutput *[]html.
 			},
 			html.Attribute{
 				Key: "hx-ext",
-				Val: "json-enc",
+				Val: "json-form",
 			},
 		)
 	}
