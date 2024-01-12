@@ -217,6 +217,40 @@ func TestCheckEmbddedModuleTokens(t *testing.T) {
 	})
 }
 
+func TestParseChunkStart(t *testing.T) {
+	opts := ParserOptions{Start: true}
+	chunk := MustParseChunk("manifest {}", opts)
+	assert.NotNil(t, chunk.Manifest)
+	assert.Empty(t, chunk.Statements)
+
+	chunk = MustParseChunk("manifest {}\na = 1", opts)
+	assert.NotNil(t, chunk.Manifest)
+	assert.Empty(t, chunk.Statements)
+
+	chunk = MustParseChunk("manifest {};a = 1", opts)
+	assert.NotNil(t, chunk.Manifest)
+	assert.Empty(t, chunk.Statements)
+
+	chunk = MustParseChunk("const(C=1)\nmanifest {}; a = 1", opts)
+	assert.NotNil(t, chunk.Manifest)
+	assert.NotNil(t, chunk.GlobalConstantDeclarations)
+	assert.Empty(t, chunk.Statements)
+
+	chunk = MustParseChunk("includable-chunk", opts)
+	assert.NotNil(t, chunk.IncludableChunkDesc)
+	assert.Empty(t, chunk.Statements)
+
+	chunk = MustParseChunk("includable-chunk\nconst(A = 1)\na = 1", opts)
+	assert.NotNil(t, chunk.IncludableChunkDesc)
+	assert.NotNil(t, chunk.GlobalConstantDeclarations)
+	assert.Empty(t, chunk.Statements)
+
+	chunk = MustParseChunk("includable-chunk;const(A = 1)\na = 1", opts)
+	assert.NotNil(t, chunk.IncludableChunkDesc)
+	assert.NotNil(t, chunk.GlobalConstantDeclarations)
+	assert.Empty(t, chunk.Statements)
+}
+
 //TODO: add more specific tests for testing context checks.
 
 func testParse(

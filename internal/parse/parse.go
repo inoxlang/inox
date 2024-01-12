@@ -78,7 +78,7 @@ var (
 	ContainsSpace = regexp.MustCompile(`\s`).MatchString
 )
 
-// parses a file module, resultErr is either a non-syntax error or an aggregation of syntax errors (*ParsingErrorAggregation).
+// parses a code file, resultErr is either a non-syntax error or an aggregation of syntax errors (*ParsingErrorAggregation).
 // result and resultErr can be both non-nil at the same time because syntax errors are also stored in nodes.
 func ParseChunk(str string, fpath string, opts ...ParserOptions) (result *Chunk, resultErr error) {
 	_, result, resultErr = ParseChunk2(str, fpath, opts...)
@@ -191,10 +191,11 @@ func ParseChunk2(str string, fpath string, opts ...ParserOptions) (runes []rune,
 
 // a parser parses a single Inox module, it can recover from errors
 type parser struct {
-	s         []rune //module's code
-	i         int32  //rune index
-	len       int32
-	inPattern bool
+	s              []rune //module's code
+	i              int32  //rune index
+	len            int32
+	inPattern      bool
+	onlyChunkStart bool
 
 	//mostly valueless tokens, the slice may be not perfectly ordered.
 	tokens []Token
@@ -216,6 +217,12 @@ type ParserOptions struct {
 
 	//defaults to DEFAULT_TIMEOUT
 	Timeout time.Duration
+
+	//Makes the parser stops after the following node type:
+	// - IncludableChunkDescription if no constants are defined.
+	// - GlobalVariableDeclarations if there is no IncludableChunkDescription nor Manifest.
+	// - Manifest
+	Start bool
 }
 
 func newParser(s []rune, opts ...ParserOptions) *parser {
@@ -241,6 +248,9 @@ func newParser(s []rune, opts ...ParserOptions) *parser {
 				timeout = opt.Timeout
 			}
 			ctx = opt.Context
+		}
+		if opt.Start {
+			p.onlyChunkStart = true
 		}
 	}
 
@@ -11532,12 +11542,16 @@ func (p *parser) parseChunk() (*Chunk, error) {
 		manifest = p.parseManifestIfPresent()
 	}
 
+	prevStmtEndIndex := int32(-1)
+	var prevStmtErrKind ParsingErrorKind
+
+	if p.onlyChunkStart {
+		goto finalize_chunk_node
+	}
+
 	p.eatSpaceNewlineSemicolonComment()
 
 	//parse statements
-
-	prevStmtEndIndex := int32(-1)
-	var prevStmtErrKind ParsingErrorKind
 
 	for p.i < p.len {
 		if IsForbiddenSpaceCharacter(p.s[p.i]) {
@@ -11576,6 +11590,8 @@ func (p *parser) parseChunk() (*Chunk, error) {
 
 		p.eatSpaceNewlineSemicolonComment()
 	}
+
+finalize_chunk_node:
 
 	chunk.Preinit = preinit
 	chunk.Manifest = manifest

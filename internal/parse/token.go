@@ -14,11 +14,12 @@ import (
 const (
 	MIN_TOKEN_CACHING_COUNT = 2
 
-	OTHERPROPS_KEYWORD_STRING = "otherprops"
-	ASSERT_KEYWORD_STRING     = "assert"
-	IF_KEYWORD_STRING         = "if"
-	STRUCT_KEYWORD_STRING     = "struct"
-	NEW_KEYWORD_STRING        = "new"
+	OTHERPROPS_KEYWORD_STRING       = "otherprops"
+	ASSERT_KEYWORD_STRING           = "assert"
+	IF_KEYWORD_STRING               = "if"
+	STRUCT_KEYWORD_STRING           = "struct"
+	NEW_KEYWORD_STRING              = "new"
+	INCLUDABLE_CHUNK_KEYWORD_STRING = "includable-chunk"
 )
 
 var (
@@ -291,7 +292,7 @@ var tokenStrings = [...]string{
 	ELSE_KEYWORD:                   "else",
 	PREINIT_KEYWORD:                "preinit",
 	MANIFEST_KEYWORD:               "manifest",
-	INCLUDABLE_CHUNK_KEYWORD:       "includable-chunk",
+	INCLUDABLE_CHUNK_KEYWORD:       INCLUDABLE_CHUNK_KEYWORD_STRING,
 	DROP_PERMS_KEYWORD:             "drop-perms",
 	ASSIGN_KEYWORD:                 "assign",
 	READONLY_KEYWORD:               "readonly",
