@@ -233,7 +233,7 @@ func GetNodeColorizations(chunk *parse.Chunk, lightMode bool) []ColorizationInfo
 				ColorSequence: colors.PathLiteral,
 			})
 		case *parse.IntLiteral, *parse.FloatLiteral, *parse.QuantityLiteral, *parse.PortLiteral,
-			*parse.YearLiteral, *parse.DateLiteral, *parse.DateTimeLiteral:
+			*parse.YearLiteral, *parse.DateLiteral, *parse.DateTimeLiteral, *parse.RateLiteral:
 			colorizations = append(colorizations, ColorizationInfo{
 				Span:          n.Base().Span,
 				ColorSequence: colors.NumberLiteral,
