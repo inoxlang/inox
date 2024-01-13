@@ -37,10 +37,10 @@ var (
 			//if nil, any method is matched.
 			var methods []string
 
-			err := objPattern.ForEachEntry(func(propName string, propPattern core.Pattern, isOptional bool) error {
-				switch propName {
+			err := objPattern.ForEachEntry(func(entry core.ObjectPatternEntry) error {
+				switch entry.Name {
 				case "method":
-					switch p := propPattern.(type) {
+					switch p := entry.Pattern.(type) {
 					case *core.ExactValuePattern:
 						methods = []string{p.Value().(core.Identifier).UnderlyingString()}
 					case *core.UnionPattern:

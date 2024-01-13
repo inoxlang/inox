@@ -1259,17 +1259,15 @@ func _parseRepr(b []byte, ctx *Context) (val Serializable, errorIndex int, speci
 							return nil, errIndex, specifiedError
 						}
 						pattern := compoundValueStack[stackIndex].(*ObjectPattern)
-						if pattern.entryPatterns == nil {
-							pattern.entryPatterns = map[string]Pattern{}
-						}
-						if isOptionalProp {
-							if pattern.optionalEntries == nil {
-								pattern.optionalEntries = map[string]struct{}{}
-							}
-							pattern.optionalEntries[key] = struct{}{}
+
+						entry := ObjectPatternEntry{
+							Name:       key,
+							IsOptional: isOptionalProp,
+							Pattern:    toPattern(val),
 						}
 
-						pattern.entryPatterns[key] = toPattern(val)
+						pattern.entries = append(pattern.entries, entry)
+						pattern.init()
 						objectKeyStack[stackIndex] = ""
 					} else {
 						return nil, i, nil
@@ -1718,18 +1716,15 @@ func _parseRepr(b []byte, ctx *Context) (val Serializable, errorIndex int, speci
 						return nil, errIndex, specifiedError
 					}
 					patt := compoundValueStack[stackIndex].(*ObjectPattern)
-					if patt.entryPatterns == nil {
-						patt.entryPatterns = map[string]Pattern{}
-					}
-					patt.entryPatterns[key] = toPattern(val)
 
-					if isOptionalProp {
-						if patt.optionalEntries == nil {
-							patt.optionalEntries = map[string]struct{}{}
-						}
-						patt.optionalEntries[key] = struct{}{}
+					entry := ObjectPatternEntry{
+						Name:       key,
+						IsOptional: isOptionalProp,
+						Pattern:    toPattern(val),
 					}
 
+					patt.entries = append(patt.entries, entry)
+					patt.init()
 					objectKeyStack[stackIndex] = ""
 					state = rstateObjectPatternComma
 					continue

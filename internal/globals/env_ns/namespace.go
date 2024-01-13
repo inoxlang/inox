@@ -56,37 +56,37 @@ func NewEnvNamespace(ctx *core.Context, envPattern *core.ObjectPattern, allowMis
 		var propNames []string
 		var values []core.Serializable
 
-		err := envPattern.ForEachEntry(func(propName string, propPattern core.Pattern, _ bool) error {
-			propNames = append(propNames, propName)
-			envVal, isPresent := os.LookupEnv(propName)
+		err := envPattern.ForEachEntry(func(entry core.ObjectPatternEntry) error {
+			propNames = append(propNames, entry.Name)
+			envVal, isPresent := os.LookupEnv(entry.Name)
 
 			if !isPresent {
 				if !allowMissingEnvVars {
-					return fmt.Errorf("missing environment variable '%s'", propName)
+					return fmt.Errorf("missing environment variable '%s'", entry.Name)
 				}
 				envVal = ""
 			}
 
-			switch patt := propPattern.(type) {
+			switch patt := entry.Pattern.(type) {
 			case core.StringPattern:
 				val, err := patt.Parse(ctx, envVal)
 				if err != nil {
-					return fmt.Errorf("invalid value provided for environment variable '%s'", propName)
+					return fmt.Errorf("invalid value provided for environment variable '%s'", entry.Name)
 				}
 				values = append(values, val.(core.Serializable))
 			case *core.SecretPattern:
 				val, err := patt.NewSecret(ctx, envVal)
 				if err != nil {
-					return fmt.Errorf("invalid value provided for environment variable '%s'", propName)
+					return fmt.Errorf("invalid value provided for environment variable '%s'", entry.Name)
 				}
 				values = append(values, val)
 			case *core.TypePattern:
 				if patt != core.STR_PATTERN {
-					return fmt.Errorf("invalid pattern type %T for environment variable '%s'", propPattern, propName)
+					return fmt.Errorf("invalid pattern type %T for environment variable '%s'", entry.Pattern, entry.Name)
 				}
 				values = append(values, core.Str(envVal))
 			default:
-				return fmt.Errorf("invalid pattern type %T for environment variable '%s'", propPattern, propName)
+				return fmt.Errorf("invalid pattern type %T for environment variable '%s'", entry.Pattern, entry.Name)
 			}
 
 			return nil

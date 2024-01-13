@@ -79,9 +79,11 @@ func TestDatabaseIL(t *testing.T) {
 				assert.ErrorIs(t, v.(error), ErrTopLevelEntityNamesShouldBeValidInoxIdentifiers)
 			}()
 
-			dbIL.UpdateSchema(ctx, NewInexactObjectPattern(map[string]Pattern{
-				"a-": LOADABLE_TEST_VALUE_PATTERN,
-			}), NewObjectFromMap(ValMap{
+			newSchema := NewInexactObjectPattern([]ObjectPatternEntry{
+				{Name: "a-", Pattern: LOADABLE_TEST_VALUE_PATTERN},
+			})
+
+			dbIL.UpdateSchema(ctx, newSchema, NewObjectFromMap(ValMap{
 				symbolic.DB_MIGRATION__INCLUSIONS_PROP_NAME: NewDictionary(ValMap{
 					"%/a-": handler,
 				}),
@@ -141,9 +143,11 @@ func TestDatabaseIL(t *testing.T) {
 				assert.ErrorContains(t, v.(error), "invalid pattern for top level entity .a")
 			}()
 
-			dbIL.UpdateSchema(ctx, NewInexactObjectPattern(map[string]Pattern{
-				"a": LOADABLE_TEST_VALUE_PATTERN,
-			}), NewObjectFromMap(ValMap{
+			newSchema := NewInexactObjectPattern([]ObjectPatternEntry{
+				{Name: "a", Pattern: LOADABLE_TEST_VALUE_PATTERN},
+			})
+
+			dbIL.UpdateSchema(ctx, newSchema, NewObjectFromMap(ValMap{
 				symbolic.DB_MIGRATION__INCLUSIONS_PROP_NAME: NewDictionary(ValMap{
 					"%/a": handler,
 				}),
@@ -206,9 +210,9 @@ func TestDatabaseIL(t *testing.T) {
 			}},
 		}
 
-		expectedSchema := NewInexactObjectPattern(map[string]Pattern{
-			"a": LOADABLE_TEST_VALUE_PATTERN,
-			"b": LOADABLE_TEST_VALUE_PATTERN,
+		expectedSchema := NewInexactObjectPattern([]ObjectPatternEntry{
+			{Name: "a", Pattern: LOADABLE_TEST_VALUE_PATTERN},
+			{Name: "b", Pattern: LOADABLE_TEST_VALUE_PATTERN},
 		})
 
 		dbIL, err := WrapDatabase(ctx, DatabaseWrappingArgs{
@@ -242,9 +246,9 @@ func TestDatabaseIL(t *testing.T) {
 			}},
 		}
 
-		expectedSchema := NewInexactObjectPattern(map[string]Pattern{
-			"a": LOADABLE_TEST_VALUE_PATTERN,
-			"b": LOADABLE_TEST_VALUE_PATTERN,
+		expectedSchema := NewInexactObjectPattern([]ObjectPatternEntry{
+			{Name: "a", Pattern: LOADABLE_TEST_VALUE_PATTERN},
+			{Name: "b", Pattern: LOADABLE_TEST_VALUE_PATTERN},
 		})
 
 		dbIL, err := WrapDatabase(ctx, DatabaseWrappingArgs{
@@ -434,7 +438,7 @@ func TestDatabaseIL(t *testing.T) {
 		defer ctx2.CancelGracefully()
 
 		assert.PanicsWithValue(t, ErrDatabaseSchemaOnlyUpdatableByOwnerState, func() {
-			dbIL.UpdateSchema(ctx2, NewInexactObjectPattern(map[string]Pattern{}))
+			dbIL.UpdateSchema(ctx2, NewInexactObjectPattern(nil))
 		})
 	})
 
@@ -461,7 +465,7 @@ func TestDatabaseIL(t *testing.T) {
 		}))
 
 		assert.PanicsWithValue(t, ErrNoDatabaseSchemaUpdateExpected, func() {
-			dbIL.UpdateSchema(ctx, NewInexactObjectPattern(map[string]Pattern{}))
+			dbIL.UpdateSchema(ctx, NewInexactObjectPattern(nil))
 		})
 	})
 
@@ -488,12 +492,13 @@ func TestDatabaseIL(t *testing.T) {
 			Name:                 "main",
 		}))
 
-		dbIL.UpdateSchema(ctx, NewInexactObjectPattern(map[string]Pattern{}))
+		dbIL.UpdateSchema(ctx, NewInexactObjectPattern(nil))
 
 		assert.PanicsWithValue(t, ErrDatabaseSchemaAlreadyUpdatedOrNotAllowed, func() {
-			dbIL.UpdateSchema(ctx, NewInexactObjectPattern(map[string]Pattern{
-				"a": LOADABLE_TEST_VALUE_PATTERN,
-			}))
+			newSchema := NewInexactObjectPattern([]ObjectPatternEntry{
+				{Name: "a", Pattern: LOADABLE_TEST_VALUE_PATTERN},
+			})
+			dbIL.UpdateSchema(ctx, newSchema)
 		})
 	})
 
@@ -575,9 +580,10 @@ func TestDatabaseIL(t *testing.T) {
 			staticData:    &FunctionStaticData{},
 		}
 
-		newSchema := NewInexactObjectPattern(map[string]Pattern{
-			"a": LOADABLE_TEST_VALUE_PATTERN,
+		newSchema := NewInexactObjectPattern([]ObjectPatternEntry{
+			{Name: "a", Pattern: LOADABLE_TEST_VALUE_PATTERN},
 		})
+
 		dbIL.UpdateSchema(ctx, newSchema, NewObjectFromMap(ValMap{
 			symbolic.DB_MIGRATION__INCLUSIONS_PROP_NAME: NewDictionary(ValMap{
 				"%/a": handler,
@@ -609,13 +615,13 @@ func TestDatabaseIL(t *testing.T) {
 		}, nil)
 		defer ctx.CancelGracefully()
 
-		newSchema := NewInexactObjectPattern(map[string]Pattern{
-			"a": LOADABLE_TEST_VALUE_PATTERN,
+		newSchema := NewInexactObjectPattern([]ObjectPatternEntry{
+			{Name: "a", Pattern: LOADABLE_TEST_VALUE_PATTERN},
 		})
 
-		expectedSchema := NewInexactObjectPattern(map[string]Pattern{
-			"a": LOADABLE_TEST_VALUE_PATTERN,
-			"b": LOADABLE_TEST_VALUE_PATTERN,
+		expectedSchema := NewInexactObjectPattern([]ObjectPatternEntry{
+			{Name: "a", Pattern: LOADABLE_TEST_VALUE_PATTERN},
+			{Name: "b", Pattern: LOADABLE_TEST_VALUE_PATTERN},
 		})
 
 		db := &dummyDatabase{

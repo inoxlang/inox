@@ -5,7 +5,6 @@ import (
 	"math"
 	"reflect"
 	"slices"
-	"sort"
 	"strconv"
 	"sync"
 
@@ -1173,17 +1172,11 @@ func (patt *RepeatedPatternElement) Iterator(ctx *Context, config IteratorConfig
 }
 
 func (patt ObjectPattern) Iterator(ctx *Context, config IteratorConfiguration) Iterator {
-	var keys []string
-	for k := range patt.entryPatterns {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-
 	var iterators []Iterator
 
-	for _, key := range keys {
-		entryPattern := patt.entryPatterns[key]
-		iterators = append(iterators, entryPattern.Iterator(ctx, IteratorConfiguration{}))
+	entries := slices.Clone(patt.entries)
+	for _, entry := range entries {
+		iterators = append(iterators, entry.Pattern.Iterator(ctx, IteratorConfiguration{}))
 	}
 
 	i := -1
@@ -1226,7 +1219,7 @@ func (patt ObjectPattern) Iterator(ctx *Context, config IteratorConfiguration) I
 					i++
 					if resetNextIterators {
 						for k := j + 1; k < len(iterators); k++ {
-							iterators[k] = patt.entryPatterns[keys[k]].Iterator(ctx, IteratorConfiguration{})
+							iterators[k] = entries[k].Pattern.Iterator(ctx, IteratorConfiguration{})
 							if !iterators[k].Next(ctx) {
 								return false
 							}
@@ -1250,7 +1243,7 @@ func (patt ObjectPattern) Iterator(ctx *Context, config IteratorConfiguration) I
 				values: make([]Serializable, len(iterators)),
 			}
 			for j, it := range iterators {
-				obj.keys[j] = keys[j]
+				obj.keys[j] = entries[j].Name
 				obj.values[j] = it.Value(ctx).(Serializable)
 			}
 			return obj
@@ -1259,17 +1252,11 @@ func (patt ObjectPattern) Iterator(ctx *Context, config IteratorConfiguration) I
 }
 
 func (patt *RecordPattern) Iterator(ctx *Context, config IteratorConfiguration) Iterator {
-	var keys []string
-	for k := range patt.entryPatterns {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-
 	var iterators []Iterator
 
-	for _, key := range keys {
-		entryPattern := patt.entryPatterns[key]
-		iterators = append(iterators, entryPattern.Iterator(ctx, IteratorConfiguration{}))
+	entries := slices.Clone(patt.entries)
+	for _, entry := range entries {
+		iterators = append(iterators, entry.Pattern.Iterator(ctx, IteratorConfiguration{}))
 	}
 
 	i := -1
@@ -1312,7 +1299,7 @@ func (patt *RecordPattern) Iterator(ctx *Context, config IteratorConfiguration) 
 					i++
 					if resetNextIterators {
 						for k := j + 1; k < len(iterators); k++ {
-							iterators[k] = patt.entryPatterns[keys[k]].Iterator(ctx, IteratorConfiguration{})
+							iterators[k] = entries[k].Pattern.Iterator(ctx, IteratorConfiguration{})
 							if !iterators[k].Next(ctx) {
 								return false
 							}
@@ -1336,7 +1323,7 @@ func (patt *RecordPattern) Iterator(ctx *Context, config IteratorConfiguration) 
 				values: make([]Serializable, len(iterators)),
 			}
 			for j, it := range iterators {
-				obj.keys[j] = keys[j]
+				obj.keys[j] = entries[j].Name
 				obj.values[j] = it.Value(ctx).(Serializable)
 			}
 			return obj

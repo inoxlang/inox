@@ -41,26 +41,29 @@ func TestObjectPatternRandom(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
 
-		emptyObj := &ObjectPattern{
-			entryPatterns: map[string]Pattern{},
-		}
+		emptyObj := NewExactObjectPattern(nil)
 
 		assert.Equal(t, NewObject(), emptyObj.Random(ctx))
 
-		singlePropObj := &ObjectPattern{
-			entryPatterns: map[string]Pattern{
-				"a": &ExactValuePattern{value: Int(1)},
+		singlePropObj := NewExactObjectPattern([]ObjectPatternEntry{
+			{
+				Name:    "a",
+				Pattern: &ExactValuePattern{value: Int(1)},
 			},
-		}
+		})
 
 		assert.Equal(t, NewObjectFromMap(ValMap{"a": Int(1)}, ctx), singlePropObj.Random(ctx))
 
-		twoPropObj := &ObjectPattern{
-			entryPatterns: map[string]Pattern{
-				"a": &ExactValuePattern{value: Int(1)},
-				"b": &ExactValuePattern{value: Int(2)},
+		twoPropObj := NewExactObjectPattern([]ObjectPatternEntry{
+			{
+				Name:    "a",
+				Pattern: &ExactValuePattern{value: Int(1)},
 			},
-		}
+			{
+				Name:    "b",
+				Pattern: &ExactValuePattern{value: Int(2)},
+			},
+		})
 
 		assert.Equal(t, NewObjectFromMap(ValMap{
 			"a": Int(1),

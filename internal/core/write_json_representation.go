@@ -120,12 +120,7 @@ func (obj *Object) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, con
 	}
 
 	write := func(w *jsoniter.Stream) error {
-		var entryPatterns map[string]Pattern
-
-		objPatt, ok := config.Pattern.(*ObjectPattern)
-		if ok {
-			entryPatterns = objPatt.entryPatterns
-		}
+		objectPattern, writeWithObjectPattern := config.Pattern.(*ObjectPattern)
 
 		w.WriteObjectStart()
 		var err error
@@ -165,10 +160,18 @@ func (obj *Object) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, con
 			first = false
 			w.WriteObjectField(k)
 
-			err = v.WriteJSONRepresentation(ctx, w, JSONSerializationConfig{
+			config := JSONSerializationConfig{
 				ReprConfig: config.ReprConfig,
-				Pattern:    entryPatterns[k],
-			}, depth+1)
+			}
+
+			if writeWithObjectPattern {
+				pattern, _, ok := objectPattern.Entry(k)
+				if ok {
+					config.Pattern = pattern
+				}
+			}
+
+			err = v.WriteJSONRepresentation(ctx, w, config, depth+1)
 			if err != nil {
 				return err
 			}
@@ -192,12 +195,7 @@ func (rec *Record) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, con
 	}
 
 	write := func(w *jsoniter.Stream) error {
-		var entryPatterns map[string]Pattern
-
-		recPatt, ok := config.Pattern.(*RecordPattern)
-		if ok {
-			entryPatterns = recPatt.entryPatterns
-		}
+		recordPattern, writeWithRecordPattern := config.Pattern.(*RecordPattern)
 
 		w.WriteObjectStart()
 
@@ -218,10 +216,18 @@ func (rec *Record) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, con
 			first = false
 			w.WriteObjectField(k)
 
-			err := v.WriteJSONRepresentation(ctx, w, JSONSerializationConfig{
+			config := JSONSerializationConfig{
 				ReprConfig: config.ReprConfig,
-				Pattern:    entryPatterns[k],
-			}, depth+1)
+			}
+
+			if writeWithRecordPattern {
+				entry, ok := recordPattern.CompleteEntry(k)
+				if ok {
+					config.Pattern = entry.Pattern
+				}
+			}
+
+			err := v.WriteJSONRepresentation(ctx, w, config, depth+1)
 			if err != nil {
 				return err
 			}

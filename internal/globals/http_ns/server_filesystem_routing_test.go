@@ -1072,9 +1072,12 @@ func TestFilesystemRouting(t *testing.T) {
 				if err != nil {
 					return err
 				}
-				db.UpdateSchema(gs.Ctx, core.NewExactObjectPattern(map[string]core.Pattern{
-					"set": setPattern,
-				}), core.NewObjectFromMapNoInit(core.ValMap{
+
+				schema := core.NewExactObjectPattern([]core.ObjectPatternEntry{
+					{Name: "set", Pattern: setPattern},
+				})
+
+				db.UpdateSchema(gs.Ctx, schema, core.NewObjectFromMapNoInit(core.ValMap{
 					"inclusions": core.NewDictionary(core.ValMap{
 						"%/set": core.NewWrappedValueList(),
 					}),

@@ -497,7 +497,7 @@ func TestObjectPatternRepresentation(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
-		patt := NewInexactObjectPattern(map[string]Pattern{})
+		patt := NewInexactObjectPattern(nil)
 
 		assert.Equal(t, `%{}`, getReprAllVisible(t, patt, ctx))
 		node := assertParseExpression(t, `%{}`)
@@ -510,8 +510,11 @@ func TestObjectPatternRepresentation(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
-		patt := NewInexactObjectPattern(map[string]Pattern{
-			"a\nb": NewExactValuePattern(Int(1)),
+		patt := NewInexactObjectPattern([]ObjectPatternEntry{
+			{
+				Name:    "a\nb",
+				Pattern: NewExactValuePattern(Int(1)),
+			},
 		})
 
 		expectedRepr := `%{"a\nb":%(1)}`
@@ -526,9 +529,15 @@ func TestObjectPatternRepresentation(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
-		patt := NewInexactObjectPattern(map[string]Pattern{
-			"a\nb": NewExactValuePattern(Int(1)),
-			"c\nd": NewInexactObjectPattern(map[string]Pattern{}),
+		patt := NewInexactObjectPattern([]ObjectPatternEntry{
+			{
+				Name:    "a\nb",
+				Pattern: NewExactValuePattern(Int(1)),
+			},
+			{
+				Name:    "c\nd",
+				Pattern: NewInexactObjectPattern(nil),
+			},
 		})
 
 		expectedRepr := `%{"a\nb":%(1),"c\nd":%{}}`
@@ -551,11 +560,14 @@ func TestObjectPatternRepresentation(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
-		patt := NewInexactObjectPattern(map[string]Pattern{
-			"a": NewListPattern([]Pattern{
-				NewExactValuePattern(Int(1)),
-				NewExactValuePattern(NewRecordFromMap(ValMap{"b": Int(2)})),
-			}),
+		patt := NewInexactObjectPattern([]ObjectPatternEntry{
+			{
+				Name: "a",
+				Pattern: NewListPattern([]Pattern{
+					NewExactValuePattern(Int(1)),
+					NewExactValuePattern(NewRecordFromMap(ValMap{"b": Int(2)})),
+				}),
+			},
 		})
 
 		expectedRepr := `%{"a":%[%(1),%(#{"b":2})]}`

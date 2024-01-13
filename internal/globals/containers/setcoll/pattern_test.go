@@ -34,8 +34,11 @@ func TestSetPattern(t *testing.T) {
 			assert.Equal(t, expectedPattern, patt)
 		}
 
-		objectPattern := core.NewInexactObjectPattern(map[string]core.Pattern{
-			"a": core.INT_PATTERN,
+		objectPattern := core.NewInexactObjectPattern([]core.ObjectPatternEntry{
+			{
+				Name:    "a",
+				Pattern: core.INT_PATTERN,
+			},
 		})
 
 		//

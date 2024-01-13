@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"maps"
 	"strconv"
 	"strings"
 
@@ -271,18 +270,21 @@ func parseObjectJSONrepresentation(ctx *Context, it *jsoniter.Iterator, pattern 
 		return nil, ErrJsonNotMatchingSchema
 	}
 
-	var entryPatterns map[string]Pattern
-
-	if pattern != nil {
-		entryPatterns = pattern.entryPatterns
-	}
-
 	var parseInTwoIterations = false
 
+	var effectivePatternEntries ObjectPatternEntriesHelper
+
 	if pattern != nil {
-		for _, deps := range pattern.dependencies {
-			if deps.pattern != nil {
+		if pattern.entries != nil {
+			effectivePatternEntries = ObjectPatternEntriesHelper(pattern.entries)
+		}
+
+		for _, entry := range pattern.entries {
+			if entry.Dependencies.Pattern != nil {
+				//Parse in two iterations to update the effective pattern entries
+				//according to present keys.
 				parseInTwoIterations = true
+				effectivePatternEntries = slices.Clone(pattern.entries)
 				break
 			}
 		}
@@ -291,8 +293,6 @@ func parseObjectJSONrepresentation(ctx *Context, it *jsoniter.Iterator, pattern 
 	var currentIt = it
 
 	if parseInTwoIterations {
-		entryPatterns = maps.Clone(entryPatterns)
-
 		objectBytes := it.SkipAndReturnBytes()
 		tempIt := jsoniter.NewIterator(jsoniter.ConfigDefault)
 		tempIt.ResetBytes(objectBytes)
@@ -309,19 +309,30 @@ func parseObjectJSONrepresentation(ctx *Context, it *jsoniter.Iterator, pattern 
 				return true
 			}
 
-			deps := pattern.dependencies[key]
-			//we set the entry pattern based on the dependencies
-			if objPatt, ok := deps.pattern.(*ObjectPattern); ok {
-				for name, conditionalEntryPatt := range objPatt.entryPatterns {
-					p, ok := entryPatterns[name]
+			patternEntry, _ := effectivePatternEntries.CompleteEntry(key)
+
+			//We update the effective entry pattern based on the dependencies.
+			if objPatt, ok := patternEntry.Dependencies.Pattern.(*ObjectPattern); ok {
+				for _, conditionalEntry := range objPatt.entries {
+
+					patternEntry, ok := effectivePatternEntries.CompleteEntry(conditionalEntry.Name)
+
 					if ok {
-						if p == SERIALIZABLE_PATTERN {
-							entryPatterns[name] = conditionalEntryPatt
+						var effectivePattern Pattern
+						if patternEntry.Pattern == SERIALIZABLE_PATTERN {
+							effectivePattern = conditionalEntry.Pattern
 						} else {
-							entryPatterns[name] = NewIntersectionPattern([]Pattern{p, conditionalEntryPatt}, nil)
+							effectivePattern = NewIntersectionPattern([]Pattern{patternEntry.Pattern, conditionalEntry.Pattern}, nil)
 						}
+						effectivePatternEntries = effectivePatternEntries.setEntry(conditionalEntry.Name, ObjectPatternEntry{
+							Name:    conditionalEntry.Name,
+							Pattern: effectivePattern,
+						})
 					} else {
-						entryPatterns[name] = conditionalEntryPatt
+						effectivePatternEntries = effectivePatternEntries.setEntry(conditionalEntry.Name, ObjectPatternEntry{
+							Name:    conditionalEntry.Name,
+							Pattern: conditionalEntry.Pattern,
+						})
 					}
 				}
 			}
@@ -353,7 +364,7 @@ func parseObjectJSONrepresentation(ctx *Context, it *jsoniter.Iterator, pattern 
 		}
 
 		obj.keys = append(obj.keys, key)
-		entryPattern := entryPatterns[key] //no issue if nil
+		entryPattern, _, _ := effectivePatternEntries.Entry(key) //no issue if entryPattenrn is nil
 
 		val, err := ParseNextJSONRepresentation(ctx, currentIt, entryPattern, try)
 		if err != nil {
@@ -370,39 +381,41 @@ func parseObjectJSONrepresentation(ctx *Context, it *jsoniter.Iterator, pattern 
 
 	var missingRequiredProperties []string
 
-	//if exact check that there are no additional properties
+	//If exact, check that there are no additional properties
 	if pattern != nil && !pattern.inexact {
 		for _, key := range obj.keys {
-			if _, ok := pattern.entryPatterns[key]; !ok {
+			if effectivePatternEntries.HasRequiredOrOptionalEntry(key) {
+				continue
+			}
+			//Unexpected additional property.
+			if try {
 				if try {
-					if try {
-						return nil, ErrTriedToParseJSONRepr
-					}
-					return nil, fmt.Errorf("unexpected property %q (exact object pattern)", key)
+					return nil, ErrTriedToParseJSONRepr
 				}
+				return nil, fmt.Errorf("unexpected property %q (exact object pattern)", key)
 			}
 		}
 	}
 
-	//auto fix & see what properties are missing
+	//Auto fix & see what properties are missing.
 	if pattern != nil {
-		pattern.ForEachEntry(func(propName string, propPattern Pattern, isOptional bool) error {
-			if !isOptional && !slices.Contains(obj.keys, propName) {
+		pattern.ForEachEntry(func(entry ObjectPatternEntry) error {
+			if !entry.IsOptional && !slices.Contains(obj.keys, entry.Name) {
 
 				//try auto fix
-				defaultValPattern, ok := propPattern.(DefaultValuePattern)
+				defaultValPattern, ok := entry.Pattern.(DefaultValuePattern)
 				if ok {
 					defaultValue, err := defaultValPattern.DefaultValue(ctx)
 					if err != nil {
 						goto missing
 					}
-					obj.keys = append(obj.keys, propName)
+					obj.keys = append(obj.keys, entry.Name)
 					obj.values = append(obj.values, defaultValue.(Serializable))
 					return nil
 				}
 
 			missing:
-				missingRequiredProperties = append(missingRequiredProperties, propName)
+				missingRequiredProperties = append(missingRequiredProperties, entry.Name)
 			}
 			return nil
 		})
@@ -418,12 +431,14 @@ func parseObjectJSONrepresentation(ctx *Context, it *jsoniter.Iterator, pattern 
 	obj.sortProps()
 
 	//check dependencies
-	if pattern != nil && len(pattern.dependencies) > 0 {
+	if pattern != nil && len(pattern.dependentKeys) > 0 {
 		for _, propName := range obj.keys {
-			deps := pattern.dependencies[propName]
+			entry, _ := effectivePatternEntries.CompleteEntry(propName)
+
+			deps := entry.Dependencies
 
 			//check required keys
-			for _, requiredKey := range deps.requiredKeys {
+			for _, requiredKey := range deps.RequiredKeys {
 				ok := false
 				for _, name := range obj.keys {
 					if name == requiredKey {
@@ -440,7 +455,7 @@ func parseObjectJSONrepresentation(ctx *Context, it *jsoniter.Iterator, pattern 
 				}
 			}
 
-			if deps.pattern != nil && !deps.pattern.Test(ctx, obj) {
+			if deps.Pattern != nil && !deps.Pattern.Test(ctx, obj) {
 				if try {
 					return nil, ErrTriedToParseJSONRepr
 				}
@@ -479,7 +494,7 @@ func parseRecordJSONrepresentation(ctx *Context, it *jsoniter.Iterator, pattern 
 
 		var entryPattern Pattern
 		if pattern != nil {
-			entryPattern = pattern.entryPatterns[key]
+			entryPattern, _, _ = pattern.Entry(key)
 		}
 
 		val, err := ParseNextJSONRepresentation(ctx, it, entryPattern, try)
@@ -497,23 +512,23 @@ func parseRecordJSONrepresentation(ctx *Context, it *jsoniter.Iterator, pattern 
 
 	var missingRequiredProperties []string
 
-	pattern.ForEachEntry(func(propName string, propPattern Pattern, isOptional bool) error {
-		if !isOptional && !slices.Contains(rec.keys, propName) {
+	pattern.ForEachEntry(func(entry RecordPatternEntry) error {
+		if !entry.IsOptional && !slices.Contains(rec.keys, entry.Name) {
 
 			//try auto fix
-			defaultValPattern, ok := propPattern.(DefaultValuePattern)
+			defaultValPattern, ok := entry.Pattern.(DefaultValuePattern)
 			if ok {
 				defaultValue, err := defaultValPattern.DefaultValue(ctx)
 				if err != nil {
 					goto missing
 				}
-				rec.keys = append(rec.keys, propName)
+				rec.keys = append(rec.keys, entry.Name)
 				rec.values = append(rec.values, defaultValue.(Serializable))
 				return nil
 			}
 
 		missing:
-			missingRequiredProperties = append(missingRequiredProperties, propName)
+			missingRequiredProperties = append(missingRequiredProperties, entry.Name)
 		}
 		return nil
 	})

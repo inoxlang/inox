@@ -391,13 +391,13 @@ func (node AstNode) Render(ctx *Context, w io.Writer, config RenderingInput) (n 
 
 	// print all code errors
 
-	positionDataPattern := NewInexactRecordPattern(map[string]Pattern{
-		"line":   INT_PATTERN,
-		"column": INT_PATTERN,
+	positionDataPattern := NewInexactRecordPattern([]RecordPatternEntry{
+		{Name: "line", Pattern: INT_PATTERN},
+		{Name: "column", Pattern: INT_PATTERN},
 	})
 
-	positionStackPattern := NewInexactRecordPattern(map[string]Pattern{
-		"position-stack": NewTuplePatternOf(positionDataPattern),
+	positionStackPattern := NewInexactRecordPattern([]RecordPatternEntry{
+		{Name: "position-stack", Pattern: NewTuplePatternOf(positionDataPattern)},
 	})
 
 	for _, codeError := range codeErrors {

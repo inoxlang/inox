@@ -4,10 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"maps"
 	"math"
 	"reflect"
 	"slices"
+	"sort"
+	"strings"
 	"time"
 
 	"github.com/inoxlang/inox/internal/core/symbolic"
@@ -331,52 +332,72 @@ func (patt *IntersectionPattern) StringPattern() (StringPattern, bool) {
 // An ObjectPattern represents a pattern matching Inox objects (e.g. {a: 1}), ObjectPattern implements Value.
 type ObjectPattern struct {
 	NotCallablePatternMixin
-	entryPatterns           map[string]Pattern
-	optionalEntries         map[string]struct{}
-	dependencies            map[string]propertyDependencies
+	entries                 []ObjectPatternEntry //sorted by name in lexicographic order
+	dependentKeys           []string             //entries with dependencies
+	optionalEntryCount      int32
 	inexact                 bool //if true the matched object can have additional properties
 	complexPropertyPatterns []*ComplexPropertyConstraint
 }
 
-type propertyDependencies struct {
-	requiredKeys []string
-	pattern      Pattern
+type PropertyDependencies struct {
+	RequiredKeys []string
+	Pattern      Pattern //object or record pattern
 }
 
-func NewExactObjectPattern(entries map[string]Pattern) *ObjectPattern {
-	p := &ObjectPattern{entryPatterns: entries}
+type ObjectPatternEntry struct {
+	Name       string
+	Pattern    Pattern
+	IsOptional bool
+
+	//an entry is considered to have dependencies if .RequiredKeys > 0 or .Pattern is not nil.
+	Dependencies PropertyDependencies
+}
+
+func NewInexactObjectPattern(entries []ObjectPatternEntry) *ObjectPattern {
+	p := NewObjectPattern(true, entries)
+	return p
+}
+
+func NewExactObjectPattern(entries []ObjectPatternEntry) *ObjectPattern {
+	return NewObjectPattern(false, entries)
+}
+
+func NewObjectPattern(inexact bool, entries []ObjectPatternEntry) *ObjectPattern {
+	p := &ObjectPattern{inexact: inexact, entries: entries}
+	p.init()
 	p.assertIsConsistent()
 	return p
 }
 
-func NewExactObjectPatternWithOptionalProps(entries map[string]Pattern, optionalProperties map[string]struct{}) *ObjectPattern {
-	p := &ObjectPattern{entryPatterns: entries, optionalEntries: optionalProperties, inexact: false}
-	p.assertIsConsistent()
-	return p
-}
+func (patt *ObjectPattern) init() {
+	entries := patt.entries
+	//Sort entries by lexicographic order.
+	sort.Slice(entries, func(i, j int) bool {
+		return entries[i].Name < entries[j].Name
+	})
 
-func NewInexactObjectPattern(entries map[string]Pattern) *ObjectPattern {
-	p := &ObjectPattern{entryPatterns: entries, inexact: true}
-	p.assertIsConsistent()
-	return p
-}
+	//Find what entries are optional and what entries are dependent on other entries.
+	patt.optionalEntryCount = 0
 
-func NewInexactObjectPatternWithOptionalProps(entries map[string]Pattern, optionalProperties map[string]struct{}) *ObjectPattern {
-	p := &ObjectPattern{entryPatterns: entries, optionalEntries: optionalProperties, inexact: true}
-	p.assertIsConsistent()
-	return p
-}
-
-func NewObjectPatternWithOptionalProps(inexact bool, entries map[string]Pattern, optionalProperties map[string]struct{}) *ObjectPattern {
-	p := &ObjectPattern{entryPatterns: entries, optionalEntries: optionalProperties, inexact: inexact}
-	p.assertIsConsistent()
-	return p
+	var dependentKeys []string
+	for _, entry := range entries {
+		if entry.IsOptional {
+			patt.optionalEntryCount++
+		}
+		if entry.Dependencies.Pattern != nil || len(entry.Dependencies.RequiredKeys) > 0 {
+			dependentKeys = append(dependentKeys, entry.Name)
+		}
+	}
+	//Sort dependent keys by lexicographic order.
+	sort.Strings(dependentKeys)
+	patt.dependentKeys = dependentKeys
 }
 
 func (patt *ObjectPattern) isConsistent() bool {
 	//check that all dependent keys are present in the entries
-	for dependentKey := range patt.dependencies {
-		if _, ok := patt.entryPatterns[dependentKey]; !ok {
+
+	for _, dependentKey := range patt.dependentKeys {
+		if !patt.HasRequiredOrOptionalEntry(dependentKey) {
 			return false
 		}
 	}
@@ -387,12 +408,6 @@ func (patt *ObjectPattern) assertIsConsistent() {
 	if !patt.isConsistent() {
 		panic(ErrInconsistentObjectPattern)
 	}
-}
-
-func (patt *ObjectPattern) WithDependencies(deps map[string]propertyDependencies) *ObjectPattern {
-	newPatt := *patt
-	newPatt.dependencies = deps
-	return &newPatt
 }
 
 func (patt *ObjectPattern) WithConstraints(constraints []*ComplexPropertyConstraint) *ObjectPattern {
@@ -406,42 +421,42 @@ func (patt *ObjectPattern) Test(ctx *Context, v Value) bool {
 	if !ok {
 		return false
 	}
-	if !patt.inexact && len(patt.optionalEntries) == 0 && len(obj.keys) != len(patt.entryPatterns) {
+	if !patt.inexact && patt.optionalEntryCount == 0 && len(obj.keys) != len(patt.entries) {
 		return false
 	}
 
 	propNames := obj.PropertyNames(ctx)
 
 	//check dependencies
-	for _, propName := range propNames {
-		deps := patt.dependencies[propName]
-		for _, dep := range deps.requiredKeys {
+	for _, entry := range patt.entries {
+		deps := entry.Dependencies
+		for _, dep := range deps.RequiredKeys {
 			if !slices.Contains(propNames, dep) {
 				return false
 			}
 		}
-		if deps.pattern != nil && deps.pattern.Test(ctx, v) {
+		if deps.Pattern != nil && deps.Pattern.Test(ctx, v) {
 			return false
 		}
 	}
 
-	for key, valuePattern := range patt.entryPatterns {
-		if !obj.HasProp(ctx, key) {
-			if _, ok := patt.optionalEntries[key]; ok {
+	for _, entry := range patt.entries {
+		if !obj.HasProp(ctx, entry.Name) {
+			if entry.IsOptional {
 				continue
 			}
 			return false
 		}
-		value := obj.Prop(ctx, key)
-		if !valuePattern.Test(ctx, value) {
+		value := obj.Prop(ctx, entry.Name)
+		if !entry.Pattern.Test(ctx, value) {
 			return false
 		}
 	}
 
-	// if pattern is exact check that there are no additional properties
+	//If the pattern is exact check that there are no additional properties.
 	if !patt.inexact {
 		for _, propName := range obj.PropertyNames(ctx) {
-			if _, ok := patt.entryPatterns[propName]; !ok {
+			if !patt.HasRequiredOrOptionalEntry(propName) {
 				return false
 			}
 		}
@@ -487,10 +502,10 @@ func (patt *ObjectPattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
 
-func (patt *ObjectPattern) ForEachEntry(fn func(propName string, propPattern Pattern, isOptional bool) error) error {
-	for propName, propPattern := range patt.entryPatterns {
-		_, isOptional := patt.optionalEntries[propName]
-		if err := fn(propName, propPattern, isOptional); err != nil {
+func (patt *ObjectPattern) ForEachEntry(fn func(entry ObjectPatternEntry) error) error {
+	for _, entry := range patt.entries {
+		err := fn(entry)
+		if err != nil {
 			return err
 		}
 	}
@@ -498,36 +513,104 @@ func (patt *ObjectPattern) ForEachEntry(fn func(propName string, propPattern Pat
 }
 
 func (patt *ObjectPattern) EntryCount() int {
-	return len(patt.entryPatterns)
+	return len(patt.entries)
+}
+
+type ObjectPatternEntriesHelper []ObjectPatternEntry
+
+func (h ObjectPatternEntriesHelper) Entry(name string) (pattern Pattern, optional bool, yes bool) {
+	entry, ok := h.CompleteEntry(name)
+	if !ok {
+		return nil, false, false
+	}
+	return entry.Pattern, entry.IsOptional, true
+}
+
+func (h ObjectPatternEntriesHelper) HasRequiredOrOptionalEntry(name string) bool {
+	_, ok := h.CompleteEntry(name)
+	return ok
+}
+
+func (h ObjectPatternEntriesHelper) CompleteEntry(name string) (ObjectPatternEntry, bool) {
+	index, ok := slices.BinarySearchFunc(h, name, func(ope ObjectPatternEntry, s string) int {
+		return strings.Compare(ope.Name, s)
+	})
+
+	if !ok {
+		return ObjectPatternEntry{}, false
+	}
+	return h[index], true
+}
+
+func (h ObjectPatternEntriesHelper) setEntry(name string, entry ObjectPatternEntry) ObjectPatternEntriesHelper {
+	index, ok := slices.BinarySearchFunc(h, name, func(ope ObjectPatternEntry, s string) int {
+		return strings.Compare(ope.Name, s)
+	})
+
+	if ok {
+		h[index] = entry
+		return h
+	} else {
+		return slices.Insert(h, index, entry)
+	}
 }
 
 func (patt *ObjectPattern) Entry(name string) (pattern Pattern, optional bool, yes bool) {
-	propPattern := patt.entryPatterns[name]
-	_, isOptional := patt.optionalEntries[name]
-	return propPattern, isOptional, true
+	return ObjectPatternEntriesHelper(patt.entries).Entry(name)
+}
+
+func (patt *ObjectPattern) HasRequiredOrOptionalEntry(name string) bool {
+	return ObjectPatternEntriesHelper(patt.entries).HasRequiredOrOptionalEntry(name)
+}
+
+func (patt *ObjectPattern) CompleteEntry(name string) (ObjectPatternEntry, bool) {
+	return ObjectPatternEntriesHelper(patt.entries).CompleteEntry(name)
 }
 
 // A RecordPattern represents a pattern matching Inox records (e.g. #{a: 1}), RecordPattern implements Value.
 type RecordPattern struct {
 	NotCallablePatternMixin
-	entryPatterns   map[string]Pattern
-	optionalEntries map[string]struct{}
-	inexact         bool //if true the matched object can have additional properties
+	entries            []RecordPatternEntry
+	optionalEntryCount int32
+	inexact            bool //if true the matched object can have additional properties
 }
 
-func NewInexactRecordPattern(entries map[string]Pattern) *RecordPattern {
-	return &RecordPattern{
-		entryPatterns: maps.Clone(entries),
-		inexact:       true,
+type RecordPatternEntry struct {
+	Name       string
+	Pattern    Pattern
+	IsOptional bool
+}
+
+func NewInexactRecordPattern(entries []RecordPatternEntry) *RecordPattern {
+	p := NewRecordPattern(true, entries)
+	return p
+}
+
+func NewExactRecordPattern(entries []RecordPatternEntry) *RecordPattern {
+	return NewRecordPattern(false, entries)
+}
+
+func NewRecordPattern(inexact bool, entries []RecordPatternEntry) *RecordPattern {
+	p := &RecordPattern{inexact: inexact, entries: entries}
+	p.init()
+	return p
+}
+
+func (patt *RecordPattern) init() {
+	entries := patt.entries
+
+	//Sort entries by lexicographic order.
+	sort.Slice(entries, func(i, j int) bool {
+		return entries[i].Name < entries[j].Name
+	})
+
+	patt.optionalEntryCount = 0
+
+	for _, entry := range entries {
+		if entry.IsOptional {
+			patt.optionalEntryCount++
+		}
 	}
-}
-
-func NewInexactRecordPatternWithOptionalProps(entries map[string]Pattern, optionalProperties map[string]struct{}) *RecordPattern {
-	return &RecordPattern{entryPatterns: entries, optionalEntries: optionalProperties, inexact: true}
-}
-
-func NewExactRecordPatternWithOptionalProps(entries map[string]Pattern, optionalProperties map[string]struct{}) *RecordPattern {
-	return &RecordPattern{entryPatterns: entries, optionalEntries: optionalProperties, inexact: false}
 }
 
 func (patt *RecordPattern) Test(ctx *Context, v Value) bool {
@@ -535,27 +618,27 @@ func (patt *RecordPattern) Test(ctx *Context, v Value) bool {
 	if !ok {
 		return false
 	}
-	if !patt.inexact && len(patt.optionalEntries) == 0 && len(rec.keys) != len(patt.entryPatterns) {
+	if !patt.inexact && patt.optionalEntryCount == 0 && len(rec.keys) != len(patt.entries) {
 		return false
 	}
 
-	for key, valuePattern := range patt.entryPatterns {
-		if !rec.HasProp(ctx, key) {
-			if _, ok := patt.optionalEntries[key]; ok {
+	for _, entry := range patt.entries {
+		if !rec.HasProp(ctx, entry.Name) {
+			if entry.IsOptional {
 				continue
 			}
 			return false
 		}
-		value := rec.Prop(ctx, key)
-		if !valuePattern.Test(ctx, value) {
+		value := rec.Prop(ctx, entry.Name)
+		if !entry.Pattern.Test(ctx, value) {
 			return false
 		}
 	}
 
-	// if pattern is exact check that there are no additional properties
+	//If the pattern is exact check that there are no additional properties.
 	if !patt.inexact {
 		for _, propName := range rec.PropertyNames(ctx) {
-			if _, ok := patt.entryPatterns[propName]; !ok {
+			if !patt.HasRequiredOrOptionalEntry(propName) {
 				return false
 			}
 		}
@@ -567,14 +650,38 @@ func (patt *RecordPattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
 
-func (patt *RecordPattern) ForEachEntry(fn func(propName string, propPattern Pattern, isOptional bool) error) error {
-	for propName, propPattern := range patt.entryPatterns {
-		_, isOptional := patt.optionalEntries[propName]
-		if err := fn(propName, propPattern, isOptional); err != nil {
+func (patt *RecordPattern) ForEachEntry(fn func(entry RecordPatternEntry) error) error {
+	for _, entry := range patt.entries {
+		err := fn(entry)
+		if err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+func (patt *RecordPattern) HasRequiredOrOptionalEntry(name string) bool {
+	_, ok := patt.CompleteEntry(name)
+	return ok
+}
+
+func (patt *RecordPattern) Entry(name string) (pattern Pattern, optional bool, yes bool) {
+	entry, ok := patt.CompleteEntry(name)
+	if !ok {
+		return nil, false, false
+	}
+	return entry.Pattern, entry.IsOptional, true
+}
+
+func (patt *RecordPattern) CompleteEntry(name string) (RecordPatternEntry, bool) {
+	index, ok := slices.BinarySearchFunc(patt.entries, name, func(ope RecordPatternEntry, s string) int {
+		return strings.Compare(ope.Name, s)
+	})
+
+	if !ok {
+		return RecordPatternEntry{}, false
+	}
+	return patt.entries[index], true
 }
 
 type ComplexPropertyConstraint struct {

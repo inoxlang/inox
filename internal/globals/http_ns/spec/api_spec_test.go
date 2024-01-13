@@ -64,8 +64,8 @@ func TestGetAPIFromOpenAPISpec(t *testing.T) {
 
 	found := false
 
-	pattern.(*core.ObjectPattern).ForEachEntry(func(propName string, propPattern core.Pattern, isOptional bool) error {
-		if propName == "answers" {
+	pattern.(*core.ObjectPattern).ForEachEntry(func(entry core.ObjectPatternEntry) error {
+		if entry.Name == "answers" {
 			found = true
 		}
 		return nil

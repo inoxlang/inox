@@ -225,7 +225,7 @@ func openLocalDatabaseWithConfig(ctx *core.Context, config LocalDatabaseConfig) 
 		}
 		localDB.schema = patt
 	} else {
-		localDB.schema = core.NewInexactObjectPattern(map[string]core.Pattern{})
+		localDB.schema = core.NewInexactObjectPattern([]core.ObjectPatternEntry{})
 	}
 
 	return localDB, nil
@@ -295,10 +295,10 @@ func (ldb *LocalDatabase) load(ctx *core.Context, migrationNextPattern *core.Obj
 	ldb.topLevelValues = make(map[string]core.Serializable, ldb.schema.EntryCount())
 	state := ctx.GetClosestState()
 
-	err := ldb.schema.ForEachEntry(func(propName string, propPattern core.Pattern, isOptional bool) error {
-		path := core.PathFrom("/" + propName)
+	err := ldb.schema.ForEachEntry(func(schemaEntry core.ObjectPatternEntry) error {
+		path := core.PathFrom("/" + schemaEntry.Name)
 		args := core.FreeEntityLoadingParams{
-			Pattern:      propPattern,
+			Pattern:      schemaEntry.Pattern,
 			Key:          path,
 			Storage:      ldb,
 			AllowMissing: true,
@@ -309,7 +309,7 @@ func (ldb *LocalDatabase) load(ctx *core.Context, migrationNextPattern *core.Obj
 			args.Migration = &core.FreeEntityMigrationArgs{
 				MigrationHandlers: handlers.FilterByPrefix(path),
 			}
-			if propPattern, _, ok := migrationNextPattern.Entry(propName); ok {
+			if propPattern, _, ok := migrationNextPattern.Entry(schemaEntry.Name); ok {
 				args.Migration.NextPattern = propPattern
 			}
 		}
@@ -320,7 +320,7 @@ func (ldb *LocalDatabase) load(ctx *core.Context, migrationNextPattern *core.Obj
 		}
 
 		if !args.IsDeletion(ctx) {
-			ldb.topLevelValues[propName] = value
+			ldb.topLevelValues[schemaEntry.Name] = value
 		}
 		return nil
 	})

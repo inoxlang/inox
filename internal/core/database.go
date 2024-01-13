@@ -81,18 +81,18 @@ type DbOpenConfiguration struct {
 }
 
 func checkDatabaseSchema(pattern *ObjectPattern) error {
-	return pattern.ForEachEntry(func(propName string, propPattern Pattern, isOptional bool) error {
-		expr, ok := parse.ParseExpression(propName)
+	return pattern.ForEachEntry(func(entry ObjectPatternEntry) error {
+		expr, ok := parse.ParseExpression(entry.Name)
 		_, isIdent := expr.(*parse.IdentifierLiteral)
 		if !ok || !isIdent {
-			return fmt.Errorf("invalid top-level entity name: %q, %w", propName, ErrTopLevelEntityNamesShouldBeValidInoxIdentifiers)
+			return fmt.Errorf("invalid top-level entity name: %q, %w", entry.Name, ErrTopLevelEntityNamesShouldBeValidInoxIdentifiers)
 		}
 
-		if !hasTypeLoadingFunction(propPattern) {
-			return fmt.Errorf("invalid pattern for top level entity .%s: %w", propName, ErrNoLoadFreeEntityFnRegistered)
+		if !hasTypeLoadingFunction(entry.Pattern) {
+			return fmt.Errorf("invalid pattern for top level entity .%s: %w", entry.Name, ErrNoLoadFreeEntityFnRegistered)
 		}
-		if isOptional {
-			return fmt.Errorf("unexpected optional property .%s in schema", propName)
+		if entry.IsOptional {
+			return fmt.Errorf("unexpected optional property .%s in schema", entry.Name)
 		}
 		return nil
 	})
@@ -144,11 +144,11 @@ func WrapDatabase(ctx *Context, args DatabaseWrappingArgs) (*DatabaseIL, error) 
 	schema := args.Inner.Schema()
 
 	propertyNames := slices.Clone(DATABASE_PROPNAMES)
-	schema.ForEachEntry(func(propName string, propPattern Pattern, isOptional bool) error {
-		if utils.SliceContains(DATABASE_PROPNAMES, propName) {
-			panic(fmt.Errorf("%w: %s", ErrNameCollisionWithInitialDatabasePropertyName, propName))
+	schema.ForEachEntry(func(entry ObjectPatternEntry) error {
+		if utils.SliceContains(DATABASE_PROPNAMES, entry.Name) {
+			panic(fmt.Errorf("%w: %s", ErrNameCollisionWithInitialDatabasePropertyName, entry.Name))
 		}
-		propertyNames = append(propertyNames, propName)
+		propertyNames = append(propertyNames, entry.Name)
 		return nil
 	})
 
@@ -309,9 +309,9 @@ func (db *DatabaseIL) UpdateSchema(ctx *Context, nextSchema *ObjectPattern, migr
 
 	defer db.schemaUpdated.Store(true)
 
-	err := nextSchema.ForEachEntry(func(propName string, propPattern Pattern, isOptional bool) error {
-		if !hasTypeLoadingFunction(propPattern) {
-			return fmt.Errorf("failed to update schema: pattern of .%s has no loading function: %w", propName, ErrNoLoadFreeEntityFnRegistered)
+	err := nextSchema.ForEachEntry(func(entry ObjectPatternEntry) error {
+		if !hasTypeLoadingFunction(entry.Pattern) {
+			return fmt.Errorf("failed to update schema: pattern of .%s has no loading function: %w", entry.Name, ErrNoLoadFreeEntityFnRegistered)
 		}
 		return nil
 	})

@@ -1271,7 +1271,7 @@ func (patt *NamedSegmentPathPattern) PrettyPrint(w *bufio.Writer, config *Pretty
 }
 
 func (patt ObjectPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
-	if depth > config.MaxDepth && len(patt.entryPatterns) > 0 {
+	if depth > config.MaxDepth && len(patt.entries) > 0 {
 		utils.Must(w.Write(utils.StringAsBytes("%{(...)}")))
 		return
 	}
@@ -1281,14 +1281,7 @@ func (patt ObjectPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig
 
 	utils.Must(w.Write([]byte{'%', '{'}))
 
-	var keys []string
-	for k := range patt.entryPatterns {
-		keys = append(keys, k)
-	}
-
-	sort.Strings(keys)
-
-	for i, k := range keys {
+	for i, entry := range patt.entries {
 
 		if !config.Compact {
 			utils.Must(w.Write(LF_CR))
@@ -1299,7 +1292,7 @@ func (patt ObjectPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig
 			utils.Must(w.Write(config.Colors.IdentifierLiteral))
 		}
 
-		utils.Must(w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace(k))))
+		utils.Must(w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace(entry.Name))))
 
 		if config.Colorize {
 			utils.Must(w.Write(ANSI_RESET_SEQUENCE))
@@ -1308,12 +1301,11 @@ func (patt ObjectPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig
 		//colon
 		utils.Must(w.Write(COLON_SPACE))
 
-		//value
-		v := patt.entryPatterns[k]
-		v.PrettyPrint(w, config, depth+1, indentCount)
+		//write entry pattern
+		entry.Pattern.PrettyPrint(w, config, depth+1, indentCount)
 
 		//comma & indent
-		isLastEntry := i == len(keys)-1
+		isLastEntry := i == len(patt.entries)-1
 
 		if !isLastEntry || patt.inexact {
 			utils.Must(w.Write(COMMA_SPACE))
@@ -1329,7 +1321,7 @@ func (patt ObjectPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig
 	// 	utils.Must(w.Write(THREE_DOTS))
 	// }
 
-	if !config.Compact && len(keys) > 0 {
+	if !config.Compact && len(patt.entries) > 0 {
 		utils.Must(w.Write(LF_CR))
 	}
 
@@ -1340,7 +1332,7 @@ func (patt ObjectPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig
 }
 
 func (patt *RecordPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
-	if depth > config.MaxDepth && len(patt.entryPatterns) > 0 {
+	if depth > config.MaxDepth && len(patt.entries) > 0 {
 		utils.Must(w.Write(utils.StringAsBytes("record(%{(...)})")))
 		return
 	}
@@ -1350,14 +1342,7 @@ func (patt *RecordPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfi
 
 	utils.Must(w.Write(utils.StringAsBytes("record(%{")))
 
-	var keys []string
-	for k := range patt.entryPatterns {
-		keys = append(keys, k)
-	}
-
-	sort.Strings(keys)
-
-	for i, k := range keys {
+	for i, entry := range patt.entries {
 
 		if !config.Compact {
 			utils.Must(w.Write(LF_CR))
@@ -1368,7 +1353,7 @@ func (patt *RecordPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfi
 			utils.Must(w.Write(config.Colors.IdentifierLiteral))
 		}
 
-		utils.Must(w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace(k))))
+		utils.Must(w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace(entry.Name))))
 
 		if config.Colorize {
 			utils.Must(w.Write(ANSI_RESET_SEQUENCE))
@@ -1377,12 +1362,11 @@ func (patt *RecordPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfi
 		//colon
 		utils.Must(w.Write(COLON_SPACE))
 
-		//value
-		v := patt.entryPatterns[k]
-		v.PrettyPrint(w, config, depth+1, indentCount)
+		//write entry pattern
+		entry.Pattern.PrettyPrint(w, config, depth+1, indentCount)
 
 		//comma & indent
-		isLastEntry := i == len(keys)-1
+		isLastEntry := i == len(patt.entries)-1
 
 		if !isLastEntry || patt.inexact {
 			utils.Must(w.Write(COMMA_SPACE))
@@ -1399,7 +1383,7 @@ func (patt *RecordPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfi
 		utils.Must(w.Write(THREE_DOTS))
 	}
 
-	if !config.Compact && len(keys) > 0 {
+	if !config.Compact && len(patt.entries) > 0 {
 		utils.Must(w.Write(LF_CR))
 	}
 

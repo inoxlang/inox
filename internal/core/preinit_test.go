@@ -862,10 +862,13 @@ func TestPreInit(t *testing.T) {
 					Owned:          true,
 					Resource:       Host("ldb://main"),
 					ResolutionData: Nil,
-					ExpectedSchema: NewInexactObjectPattern(map[string]Pattern{
-						"user": NewInexactObjectPattern(map[string]Pattern{
-							"name": NewExactStringPattern("foo"),
-						}),
+					ExpectedSchema: NewInexactObjectPattern([]ObjectPatternEntry{
+						{
+							Name: "user",
+							Pattern: NewInexactObjectPattern([]ObjectPatternEntry{
+								{Name: "name", Pattern: NewExactStringPattern("foo")},
+							}),
+						},
 					}),
 				},
 			},

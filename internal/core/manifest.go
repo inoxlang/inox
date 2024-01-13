@@ -941,17 +941,18 @@ func evaluateEnvSection(n *parse.ObjectPatternLiteral, state *TreeWalkState, m *
 	if !ok {
 		return nil, fmt.Errorf("invalid manifest, the " + MANIFEST_ENV_SECTION_NAME + " section should have a value of type object pattern")
 	}
-	err = patt.ForEachEntry(func(propName string, propPattern Pattern, _ bool) error {
-		switch propPattern.(type) {
+	err = patt.ForEachEntry(func(entry ObjectPatternEntry) error {
+		switch entry.Pattern.(type) {
 		case StringPattern, *SecretPattern:
 			return nil
 		case *TypePattern:
-			if propPattern == STR_PATTERN {
+			if entry.Pattern == STR_PATTERN {
 				return nil
 			}
 		default:
 		}
-		return fmt.Errorf("invalid "+MANIFEST_ENV_SECTION_NAME+" section in manifest: invalid pattern type %T for environment variable '%s'", propPattern, propName)
+		return fmt.Errorf("invalid "+MANIFEST_ENV_SECTION_NAME+" section in manifest: invalid pattern type %T for environment variable '%s'",
+			entry.Pattern, entry.Name)
 	})
 	if err != nil {
 		return nil, err

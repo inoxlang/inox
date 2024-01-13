@@ -402,7 +402,12 @@ func TestBidirectionalSymbolicConversion(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
-		patt := NewInexactObjectPattern(map[string]Pattern{"a": INT_PATTERN})
+		patt := NewInexactObjectPattern([]ObjectPatternEntry{
+			{
+				Name:    "a",
+				Pattern: INT_PATTERN,
+			},
+		})
 		symb, err := patt.ToSymbolicValue(ctx, map[uintptr]symbolic.Value{})
 		if assert.NoError(t, err) {
 			expected := symbolic.NewInexactObjectPattern(
@@ -413,17 +418,26 @@ func TestBidirectionalSymbolicConversion(t *testing.T) {
 			assert.Equal(t, symbolic.Stringify(expected), symbolic.Stringify(symb))
 		}
 
-		patt = NewInexactObjectPatternWithOptionalProps(map[string]Pattern{"a": INT_PATTERN}, map[string]struct{}{"a": {}})
+		patt = NewInexactObjectPattern([]ObjectPatternEntry{
+			{
+				Name:       "a",
+				Pattern:    INT_PATTERN,
+				IsOptional: true,
+			},
+		})
+
 		symb, err = patt.ToSymbolicValue(ctx, map[uintptr]symbolic.Value{})
 		if !assert.NoError(t, err) {
 			return
-
 		}
 
 		expected := symbolic.NewInexactObjectPattern(
 			map[string]symbolic.Pattern{
 				"a": utils.Must(INT_PATTERN.ToSymbolicValue(ctx, map[uintptr]symbolic.Value{})).(symbolic.Pattern),
-			}, map[string]struct{}{"a": {}})
+			},
+			//optional entries.
+			map[string]struct{}{"a": {}},
+		)
 
 		assert.Equal(t, symbolic.Stringify(expected), symbolic.Stringify(symb))
 

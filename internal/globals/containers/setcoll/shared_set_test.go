@@ -378,7 +378,9 @@ func TestPersistLoadSet(t *testing.T) {
 				Type: common.UniqueRepr,
 			},
 		}, core.CallBasedPatternReprMixin{})
-		nextPattern := core.NewInexactObjectPattern(map[string]core.Pattern{"a": core.INT_PATTERN})
+		nextPattern := core.NewInexactObjectPattern([]core.ObjectPatternEntry{
+			{Name: "a", Pattern: core.INT_PATTERN},
+		})
 
 		val, err := loadSet(ctx, core.FreeEntityLoadingParams{
 			Key:          "/x",

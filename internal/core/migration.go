@@ -120,69 +120,63 @@ func (patt *ObjectPattern) GetMigrationOperations(ctx *Context, next Pattern, ps
 		return []MigrationOp{ReplacementMigrationOp{Current: patt, Next: next, MigrationMixin: MigrationMixin{PseudoPath: pseudoPath}}}, nil
 	}
 
-	if patt.entryPatterns == nil {
-		return []MigrationOp{ReplacementMigrationOp{Current: patt, Next: next, MigrationMixin: MigrationMixin{PseudoPath: pseudoPath}}}, nil
-	}
-
-	if nextObject.entryPatterns == nil {
+	if len(patt.entries) == 0 && len(nextObject.entries) == 0 {
 		return nil, nil
 	}
 
 	removedPropertyCount := 0
 
-	for propName := range patt.entryPatterns {
-		_, presentInOther := nextObject.entryPatterns[propName]
+	for _, entry := range patt.entries {
+		presentInOther := nextObject.HasRequiredOrOptionalEntry(entry.Name)
 		if !presentInOther {
 			removedPropertyCount++
 		}
 	}
 
-	if removedPropertyCount == len(patt.entryPatterns) && removedPropertyCount > 0 && len(nextObject.entryPatterns) != 0 {
+	if removedPropertyCount == len(patt.entries) && removedPropertyCount > 0 && len(nextObject.entries) != 0 {
 		return []MigrationOp{ReplacementMigrationOp{Current: patt, Next: next, MigrationMixin: MigrationMixin{PseudoPath: pseudoPath}}}, nil
 	}
 
-	for propName, propPattern := range patt.entryPatterns {
-		propPseudoPath := filepath.Join(pseudoPath, propName)
-		_, isOptional := patt.optionalEntries[propName]
-		_, isOptionalInOther := nextObject.optionalEntries[propName]
-
-		nextPropPattern, presentInOther := nextObject.entryPatterns[propName]
+	for _, entry := range patt.entries {
+		propPseudoPath := filepath.Join(pseudoPath, entry.Name)
+		nextEntry, presentInOther := nextObject.CompleteEntry(entry.Name)
 
 		if !presentInOther {
 			migrations = append(migrations, RemovalMigrationOp{
-				Value:          propPattern,
+				Value:          entry.Pattern,
 				MigrationMixin: MigrationMixin{propPseudoPath},
 			})
 			continue
 		}
 
-		list, err := GetMigrationOperations(ctx, propPattern, nextPropPattern, propPseudoPath)
+		isOptionalInOther := nextEntry.IsOptional
+
+		list, err := GetMigrationOperations(ctx, entry.Pattern, nextEntry.Pattern, propPseudoPath)
 		if err != nil {
 			return nil, err
 		}
 
-		if len(list) == 0 && isOptional && !isOptionalInOther {
+		if len(list) == 0 && entry.IsOptional && !isOptionalInOther {
 			list = append(list, NillableInitializationMigrationOp{
-				Value:          propPattern,
+				Value:          entry.Pattern,
 				MigrationMixin: MigrationMixin{propPseudoPath},
 			})
 		}
 		migrations = append(migrations, list...)
 	}
 
-	for propName, nextPropPattern := range nextObject.entryPatterns {
-		_, presentInCurrent := patt.entryPatterns[propName]
+	for _, nextEntry := range nextObject.entries {
+		presentInCurrent := patt.HasRequiredOrOptionalEntry(nextEntry.Name)
 
 		if presentInCurrent {
 			//already handled
 			continue
 		}
-		propPseudoPath := filepath.Join(pseudoPath, propName)
-		_, isOptional := nextObject.optionalEntries[propName]
+		propPseudoPath := filepath.Join(pseudoPath, nextEntry.Name)
 
 		migrations = append(migrations, InclusionMigrationOp{
-			Value:          nextPropPattern,
-			Optional:       isOptional,
+			Value:          nextEntry.Pattern,
+			Optional:       nextEntry.IsOptional,
 			MigrationMixin: MigrationMixin{propPseudoPath},
 		})
 	}
@@ -196,69 +190,63 @@ func (patt *RecordPattern) GetMigrationOperations(ctx *Context, next Pattern, ps
 		return []MigrationOp{ReplacementMigrationOp{Current: patt, Next: next, MigrationMixin: MigrationMixin{PseudoPath: pseudoPath}}}, nil
 	}
 
-	if patt.entryPatterns == nil {
-		return []MigrationOp{ReplacementMigrationOp{Current: patt, Next: next, MigrationMixin: MigrationMixin{PseudoPath: pseudoPath}}}, nil
-	}
-
-	if nextRecord.entryPatterns == nil {
+	if len(patt.entries) == 0 && len(nextRecord.entries) == 0 {
 		return nil, nil
 	}
 
 	removedPropertyCount := 0
 
-	for propName := range patt.entryPatterns {
-		_, presentInOther := nextRecord.entryPatterns[propName]
+	for _, entry := range patt.entries {
+		presentInOther := nextRecord.HasRequiredOrOptionalEntry(entry.Name)
 		if !presentInOther {
 			removedPropertyCount++
 		}
 	}
 
-	if removedPropertyCount == len(patt.entryPatterns) && removedPropertyCount > 0 && len(nextRecord.entryPatterns) != 0 {
+	if removedPropertyCount == len(patt.entries) && removedPropertyCount > 0 && len(nextRecord.entries) != 0 {
 		return []MigrationOp{ReplacementMigrationOp{Current: patt, Next: next, MigrationMixin: MigrationMixin{PseudoPath: pseudoPath}}}, nil
 	}
 
-	for propName, propPattern := range patt.entryPatterns {
-		propPseudoPath := filepath.Join(pseudoPath, propName)
-		_, isOptional := patt.optionalEntries[propName]
-		_, isOptionalInOther := nextRecord.optionalEntries[propName]
-
-		nextPropPattern, presentInOther := nextRecord.entryPatterns[propName]
+	for _, entry := range patt.entries {
+		propPseudoPath := filepath.Join(pseudoPath, entry.Name)
+		nextEntry, presentInOther := nextRecord.CompleteEntry(entry.Name)
 
 		if !presentInOther {
 			migrations = append(migrations, RemovalMigrationOp{
-				Value:          propPattern,
+				Value:          entry.Pattern,
 				MigrationMixin: MigrationMixin{propPseudoPath},
 			})
 			continue
 		}
 
-		list, err := GetMigrationOperations(ctx, propPattern, nextPropPattern, propPseudoPath)
+		isOptionalInOther := nextEntry.IsOptional
+
+		list, err := GetMigrationOperations(ctx, entry.Pattern, nextEntry.Pattern, propPseudoPath)
 		if err != nil {
 			return nil, err
 		}
 
-		if len(list) == 0 && isOptional && !isOptionalInOther {
+		if len(list) == 0 && entry.IsOptional && !isOptionalInOther {
 			list = append(list, NillableInitializationMigrationOp{
-				Value:          propPattern,
+				Value:          entry.Pattern,
 				MigrationMixin: MigrationMixin{propPseudoPath},
 			})
 		}
 		migrations = append(migrations, list...)
 	}
 
-	for propName, nextPropPattern := range nextRecord.entryPatterns {
-		_, presentInCurrent := patt.entryPatterns[propName]
+	for _, nextEntry := range nextRecord.entries {
+		presentInCurrent := patt.HasRequiredOrOptionalEntry(nextEntry.Name)
 
 		if presentInCurrent {
 			//already handled
 			continue
 		}
-		propPseudoPath := filepath.Join(pseudoPath, propName)
-		_, isOptional := nextRecord.optionalEntries[propName]
+		propPseudoPath := filepath.Join(pseudoPath, nextEntry.Name)
 
 		migrations = append(migrations, InclusionMigrationOp{
-			Value:          nextPropPattern,
-			Optional:       isOptional,
+			Value:          nextEntry.Pattern,
+			Optional:       nextEntry.IsOptional,
 			MigrationMixin: MigrationMixin{propPseudoPath},
 		})
 	}

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"slices"
 	"strings"
 
 	"github.com/inoxlang/inox/internal/utils"
@@ -544,8 +545,7 @@ func convertJsonSchemaToPattern(schema *jsonschema.Schema, baseSchema *jsonschem
 			exact = false
 		}
 
-		entries := make(map[string]Pattern)
-		var optionalProperties map[string]struct{}
+		var entries []ObjectPatternEntry
 
 		for name, propSchema := range schema.Properties {
 			anyObject = false
@@ -555,7 +555,10 @@ func convertJsonSchemaToPattern(schema *jsonschema.Schema, baseSchema *jsonschem
 				return nil, err
 			}
 
-			entries[name] = propPattern
+			entry := ObjectPatternEntry{
+				Name:    name,
+				Pattern: propPattern,
+			}
 
 			required := false
 			for _, requiredPropName := range schema.Required {
@@ -565,38 +568,52 @@ func convertJsonSchemaToPattern(schema *jsonschema.Schema, baseSchema *jsonschem
 			}
 
 			if !required {
-				if optionalProperties == nil {
-					optionalProperties = map[string]struct{}{}
-				}
-				optionalProperties[name] = struct{}{}
+				entry.IsOptional = true
 			}
+
+			entries = append(entries, entry)
 		}
 
 		for _, requiredPropName := range schema.Required {
 			anyObject = false
 
-			if _, ok := entries[requiredPropName]; !ok {
-				entries[requiredPropName] = ANYVAL_PATTERN
+			//Add entry if not present.
+			if !slices.ContainsFunc(entries, func(entry ObjectPatternEntry) bool { return entry.Name == requiredPropName }) {
+				entries = append(entries, ObjectPatternEntry{
+					Name:    requiredPropName,
+					Pattern: SERIALIZABLE_PATTERN,
+				})
 			}
 		}
-
-		var dependencies map[string]propertyDependencies
 
 		if len(schema.Dependencies) > 0 {
 			anyObject = false
 
-			dependencies = map[string]propertyDependencies{}
-
 			for dependentKey, deps := range schema.Dependencies {
+				//Make sure the dependent key is present in the entries.
+				if !slices.ContainsFunc(entries, func(entry ObjectPatternEntry) bool { return entry.Name == dependentKey }) {
+					entries = append(entries, ObjectPatternEntry{
+						Name:       dependentKey,
+						Pattern:    SERIALIZABLE_PATTERN,
+						IsOptional: true,
+					})
+				}
+
 				switch d := deps.(type) {
 				case []string:
-					dependencies[dependentKey] = propertyDependencies{requiredKeys: d}
+					for i := range entries {
+						//Add dependencies to the entry.
+						if entries[i].Name == dependentKey {
+							entries[i].Dependencies = PropertyDependencies{RequiredKeys: d}
+							break
+						}
+					}
 				case *jsonschema.Schema:
 					if d.Always != nil {
 						return nil, errors.New("'dependencies' with boolean schemas are not supported")
 					}
 
-					var propDependencies propertyDependencies
+					var propDependencies PropertyDependencies
 
 					if d.Properties == nil || d.AdditionalProperties != nil ||
 						d.RegexProperties || d.UnevaluatedProperties != nil ||
@@ -610,16 +627,14 @@ func convertJsonSchemaToPattern(schema *jsonschema.Schema, baseSchema *jsonschem
 						return nil, fmt.Errorf("failed to convert dependency pattern for property %q", dependentKey)
 					}
 
-					propDependencies.pattern = dependenciesPattern
-					dependencies[dependentKey] = propDependencies
+					propDependencies.Pattern = dependenciesPattern
 
-					//make sure the dependent key is present in the entries
-					if _, ok := entries[dependentKey]; !ok {
-						entries[dependentKey] = SERIALIZABLE_PATTERN
-						if optionalProperties == nil {
-							optionalProperties = map[string]struct{}{}
+					for i := range entries {
+						//Add dependencies to the entry.
+						if entries[i].Name == dependentKey {
+							entries[i].Dependencies = propDependencies
+							break
 						}
-						optionalProperties[dependentKey] = struct{}{}
 					}
 				default:
 				}
@@ -629,10 +644,7 @@ func convertJsonSchemaToPattern(schema *jsonschema.Schema, baseSchema *jsonschem
 		if anyObject {
 			unionCases = append(unionCases, OBJECT_PATTERN)
 		} else {
-			objectPattern := NewObjectPatternWithOptionalProps(!exact, entries, optionalProperties)
-			if len(dependencies) > 0 {
-				objectPattern = objectPattern.WithDependencies(dependencies)
-			}
+			objectPattern := NewObjectPattern(!exact, entries)
 			unionCases = append(unionCases, objectPattern)
 		}
 	}
@@ -754,16 +766,20 @@ func convertJsonSchemaTypeToPattern(typename string) (Pattern, error) {
 func convertConstSchemaValueToPattern(jsonValue any) (_ Pattern, err error) {
 	switch c := jsonValue.(type) {
 	case map[string]any:
-		entries := map[string]Pattern{}
+		var entries []ObjectPatternEntry
 
 		for k, v := range c {
 			if k == "$id" {
 				return nil, errors.New("const values with an $id property are not supported yet")
 			}
-			entries[k], err = convertConstSchemaValueToPattern(v)
+			pattern, err := convertConstSchemaValueToPattern(v)
 			if err != nil {
 				return nil, err
 			}
+			entries = append(entries, ObjectPatternEntry{
+				Name:    k,
+				Pattern: pattern,
+			})
 		}
 
 		return NewExactObjectPattern(entries), nil

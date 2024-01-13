@@ -402,8 +402,8 @@ func getHandlerModuleArguments(req *HttpRequest, manifest *core.Manifest, handle
 			return nil, http.StatusBadRequest, errors.New("request's body does not match module parameters")
 		}
 
-		handlerModuleParams.jsonBodyPattern.ForEachEntry(func(propName string, propPattern core.Pattern, isOptional bool) error {
-			moduleArguments[propName] = obj.Prop(handlerCtx, propName)
+		handlerModuleParams.jsonBodyPattern.ForEachEntry(func(entry core.ObjectPatternEntry) error {
+			moduleArguments[entry.Name] = obj.Prop(handlerCtx, entry.Name)
 			return nil
 		})
 	} else { //body is not required by the handler
@@ -456,17 +456,18 @@ func getHandlerModuleParameters(ctx *core.Context, manifest *core.Manifest, meth
 	}
 
 	if jsonBodyParams != nil {
-		entries := map[string]core.Pattern{}
-		optionalEntries := map[string]struct{}{}
+		var entries []core.ObjectPatternEntry
 
 		for _, param := range jsonBodyParams {
-			entries[param.Name()] = param.Pattern()
-			if !param.Required(ctx) {
-				optionalEntries[param.Name()] = struct{}{}
+			entry := core.ObjectPatternEntry{
+				Name:       param.Name(),
+				Pattern:    param.Pattern(),
+				IsOptional: param.Required(ctx),
 			}
+			entries = append(entries, entry)
 		}
 
-		handlerModuleParams.jsonBodyPattern = core.NewInexactObjectPatternWithOptionalProps(entries, optionalEntries)
+		handlerModuleParams.jsonBodyPattern = core.NewInexactObjectPattern(entries)
 	}
 
 	return handlerModuleParams, nil

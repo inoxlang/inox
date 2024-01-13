@@ -14,8 +14,8 @@ func TestObjectPatternGetMigrationOperations(t *testing.T) {
 	defer ctx.CancelGracefully()
 
 	t.Run("same empty object", func(t *testing.T) {
-		empty1 := NewInexactObjectPattern(map[string]Pattern{})
-		empty2 := NewInexactObjectPattern(map[string]Pattern{})
+		empty1 := NewInexactObjectPattern(nil)
+		empty2 := NewInexactObjectPattern(nil)
 
 		migrations, err := empty1.GetMigrationOperations(ctx, empty2, "/")
 		if !assert.NoError(t, err) {
@@ -26,8 +26,8 @@ func TestObjectPatternGetMigrationOperations(t *testing.T) {
 	})
 
 	t.Run("new property", func(t *testing.T) {
-		empty := NewInexactObjectPattern(map[string]Pattern{})
-		singleProp := NewInexactObjectPattern(map[string]Pattern{"a": INT_PATTERN})
+		empty := NewInexactObjectPattern(nil)
+		singleProp := NewInexactObjectPattern([]ObjectPatternEntry{{Name: "a", Pattern: INT_PATTERN}})
 
 		migrations, err := empty.GetMigrationOperations(ctx, singleProp, "/")
 		if !assert.NoError(t, err) {
@@ -44,8 +44,8 @@ func TestObjectPatternGetMigrationOperations(t *testing.T) {
 	})
 
 	t.Run("same single-prop object", func(t *testing.T) {
-		singleProp1 := NewInexactObjectPattern(map[string]Pattern{"a": INT_PATTERN})
-		singleProp2 := NewInexactObjectPattern(map[string]Pattern{"a": INT_PATTERN})
+		singleProp1 := NewInexactObjectPattern([]ObjectPatternEntry{{Name: "a", Pattern: INT_PATTERN}})
+		singleProp2 := NewInexactObjectPattern([]ObjectPatternEntry{{Name: "a", Pattern: INT_PATTERN}})
 
 		migrations, err := singleProp1.GetMigrationOperations(ctx, singleProp2, "/")
 		if !assert.NoError(t, err) {
@@ -56,8 +56,8 @@ func TestObjectPatternGetMigrationOperations(t *testing.T) {
 	})
 
 	t.Run("new optional property", func(t *testing.T) {
-		empty := NewInexactObjectPattern(map[string]Pattern{})
-		singleOptionalProp := NewInexactObjectPatternWithOptionalProps(map[string]Pattern{"a": INT_PATTERN}, map[string]struct{}{"a": {}})
+		empty := NewInexactObjectPattern(nil)
+		singleOptionalProp := NewInexactObjectPattern([]ObjectPatternEntry{{Name: "a", Pattern: INT_PATTERN, IsOptional: true}})
 
 		migrations, err := empty.GetMigrationOperations(ctx, singleOptionalProp, "/")
 		if !assert.NoError(t, err) {
@@ -74,8 +74,8 @@ func TestObjectPatternGetMigrationOperations(t *testing.T) {
 	})
 
 	t.Run("property removal", func(t *testing.T) {
-		singleProp := NewInexactObjectPattern(map[string]Pattern{"a": INT_PATTERN})
-		empty := NewInexactObjectPattern(map[string]Pattern{})
+		singleProp := NewInexactObjectPattern([]ObjectPatternEntry{{Name: "a", Pattern: INT_PATTERN}})
+		empty := NewInexactObjectPattern(nil)
 
 		migrations, err := singleProp.GetMigrationOperations(ctx, empty, "/")
 		if !assert.NoError(t, err) {
@@ -91,8 +91,8 @@ func TestObjectPatternGetMigrationOperations(t *testing.T) {
 	})
 
 	t.Run("optional property removal", func(t *testing.T) {
-		singleOptionalProp := NewInexactObjectPatternWithOptionalProps(map[string]Pattern{"a": INT_PATTERN}, map[string]struct{}{"a": {}})
-		empty := NewInexactObjectPattern(map[string]Pattern{})
+		singleOptionalProp := NewInexactObjectPattern([]ObjectPatternEntry{{Name: "a", Pattern: INT_PATTERN, IsOptional: true}})
+		empty := NewInexactObjectPattern(nil)
 
 		migrations, err := singleOptionalProp.GetMigrationOperations(ctx, empty, "/")
 		if !assert.NoError(t, err) {
@@ -108,8 +108,8 @@ func TestObjectPatternGetMigrationOperations(t *testing.T) {
 	})
 
 	t.Run("no longer optional prop", func(t *testing.T) {
-		singleOptionalProp := NewInexactObjectPatternWithOptionalProps(map[string]Pattern{"a": INT_PATTERN}, map[string]struct{}{"a": {}})
-		singleRequiredProp := NewInexactObjectPattern(map[string]Pattern{"a": INT_PATTERN})
+		singleOptionalProp := NewInexactObjectPattern([]ObjectPatternEntry{{Name: "a", Pattern: INT_PATTERN, IsOptional: true}})
+		singleRequiredProp := NewInexactObjectPattern([]ObjectPatternEntry{{Name: "a", Pattern: INT_PATTERN}})
 
 		migrations, err := singleOptionalProp.GetMigrationOperations(ctx, singleRequiredProp, "/")
 		if !assert.NoError(t, err) {
@@ -125,8 +125,8 @@ func TestObjectPatternGetMigrationOperations(t *testing.T) {
 	})
 
 	t.Run("no longer required prop", func(t *testing.T) {
-		singleRequiredProp := NewInexactObjectPattern(map[string]Pattern{"a": INT_PATTERN})
-		singleOptionalProp := NewInexactObjectPatternWithOptionalProps(map[string]Pattern{"a": INT_PATTERN}, map[string]struct{}{"a": {}})
+		singleRequiredProp := NewInexactObjectPattern([]ObjectPatternEntry{{Name: "a", Pattern: INT_PATTERN}})
+		singleOptionalProp := NewInexactObjectPattern([]ObjectPatternEntry{{Name: "a", Pattern: INT_PATTERN, IsOptional: true}})
 
 		migrations, err := singleRequiredProp.GetMigrationOperations(ctx, singleOptionalProp, "/")
 		if !assert.NoError(t, err) {
@@ -137,8 +137,8 @@ func TestObjectPatternGetMigrationOperations(t *testing.T) {
 	})
 
 	t.Run("property type update", func(t *testing.T) {
-		singleProp := NewInexactObjectPattern(map[string]Pattern{"a": INT_PATTERN})
-		singleOtherTypeProp := NewInexactObjectPattern(map[string]Pattern{"a": STR_PATTERN})
+		singleProp := NewInexactObjectPattern([]ObjectPatternEntry{{Name: "a", Pattern: INT_PATTERN}})
+		singleOtherTypeProp := NewInexactObjectPattern([]ObjectPatternEntry{{Name: "a", Pattern: STR_PATTERN}})
 
 		migrations, err := singleProp.GetMigrationOperations(ctx, singleOtherTypeProp, "/")
 		if !assert.NoError(t, err) {
@@ -155,8 +155,8 @@ func TestObjectPatternGetMigrationOperations(t *testing.T) {
 	})
 
 	t.Run("optional property type update that is now required", func(t *testing.T) {
-		singleProp := NewInexactObjectPatternWithOptionalProps(map[string]Pattern{"a": INT_PATTERN}, map[string]struct{}{"a": {}})
-		singleOtherTypeProp := NewInexactObjectPattern(map[string]Pattern{"a": STR_PATTERN})
+		singleProp := NewInexactObjectPattern([]ObjectPatternEntry{{Name: "a", Pattern: INT_PATTERN, IsOptional: true}})
+		singleOtherTypeProp := NewInexactObjectPattern([]ObjectPatternEntry{{Name: "a", Pattern: STR_PATTERN}})
 
 		migrations, err := singleProp.GetMigrationOperations(ctx, singleOtherTypeProp, "/")
 		if !assert.NoError(t, err) {
@@ -173,8 +173,8 @@ func TestObjectPatternGetMigrationOperations(t *testing.T) {
 	})
 
 	t.Run("optional property type update + no longer required", func(t *testing.T) {
-		singleProp := NewInexactObjectPattern(map[string]Pattern{"a": INT_PATTERN})
-		singleOtherTypeProp := NewInexactObjectPatternWithOptionalProps(map[string]Pattern{"a": STR_PATTERN}, map[string]struct{}{"a": {}})
+		singleProp := NewInexactObjectPattern([]ObjectPatternEntry{{Name: "a", Pattern: INT_PATTERN}})
+		singleOtherTypeProp := NewInexactObjectPattern([]ObjectPatternEntry{{Name: "a", Pattern: STR_PATTERN, IsOptional: true}})
 
 		migrations, err := singleProp.GetMigrationOperations(ctx, singleOtherTypeProp, "/")
 		if !assert.NoError(t, err) {
@@ -191,9 +191,9 @@ func TestObjectPatternGetMigrationOperations(t *testing.T) {
 	})
 
 	t.Run("new property in inner object", func(t *testing.T) {
-		empty := NewInexactObjectPattern(map[string]Pattern{"a": NewInexactObjectPattern(map[string]Pattern{})})
-		singleProp := NewInexactObjectPattern(map[string]Pattern{
-			"a": NewInexactObjectPattern(map[string]Pattern{"b": INT_PATTERN}),
+		empty := NewInexactObjectPattern([]ObjectPatternEntry{{Name: "a", Pattern: NewInexactObjectPattern(nil)}})
+		singleProp := NewInexactObjectPattern([]ObjectPatternEntry{
+			{Name: "a", Pattern: NewInexactObjectPattern([]ObjectPatternEntry{{Name: "b", Pattern: INT_PATTERN}})},
 		})
 
 		migrations, err := empty.GetMigrationOperations(ctx, singleProp, "/")
@@ -211,8 +211,8 @@ func TestObjectPatternGetMigrationOperations(t *testing.T) {
 	})
 
 	t.Run("new property & all previous properties removed", func(t *testing.T) {
-		singleProp := NewInexactObjectPattern(map[string]Pattern{"a": INT_PATTERN})
-		nextSingleProp := NewInexactObjectPattern(map[string]Pattern{"b": INT_PATTERN})
+		singleProp := NewInexactObjectPattern([]ObjectPatternEntry{{Name: "a", Pattern: INT_PATTERN}})
+		nextSingleProp := NewInexactObjectPattern([]ObjectPatternEntry{{Name: "b", Pattern: INT_PATTERN}})
 
 		migrations, err := singleProp.GetMigrationOperations(ctx, nextSingleProp, "/")
 		if !assert.NoError(t, err) {
@@ -236,8 +236,8 @@ func TestRecordPatternGetMigrationOperations(t *testing.T) {
 	defer ctx.CancelGracefully()
 
 	t.Run("same empty record", func(t *testing.T) {
-		empty1 := NewInexactRecordPattern(map[string]Pattern{})
-		empty2 := NewInexactRecordPattern(map[string]Pattern{})
+		empty1 := NewInexactRecordPattern(nil)
+		empty2 := NewInexactRecordPattern(nil)
 
 		migrations, err := empty1.GetMigrationOperations(ctx, empty2, "/")
 		if !assert.NoError(t, err) {
@@ -248,8 +248,8 @@ func TestRecordPatternGetMigrationOperations(t *testing.T) {
 	})
 
 	t.Run("new property", func(t *testing.T) {
-		empty := NewInexactRecordPattern(map[string]Pattern{})
-		singleProp := NewInexactRecordPattern(map[string]Pattern{"a": INT_PATTERN})
+		empty := NewInexactRecordPattern(nil)
+		singleProp := NewInexactRecordPattern([]RecordPatternEntry{{Name: "a", Pattern: INT_PATTERN}})
 
 		migrations, err := empty.GetMigrationOperations(ctx, singleProp, "/")
 		if !assert.NoError(t, err) {
@@ -266,8 +266,8 @@ func TestRecordPatternGetMigrationOperations(t *testing.T) {
 	})
 
 	t.Run("new optional property", func(t *testing.T) {
-		empty := NewInexactRecordPattern(map[string]Pattern{})
-		singleOptionalProp := NewInexactRecordPatternWithOptionalProps(map[string]Pattern{"a": INT_PATTERN}, map[string]struct{}{"a": {}})
+		empty := NewInexactRecordPattern(nil)
+		singleOptionalProp := NewInexactRecordPattern([]RecordPatternEntry{{Name: "a", Pattern: INT_PATTERN, IsOptional: true}})
 
 		migrations, err := empty.GetMigrationOperations(ctx, singleOptionalProp, "/")
 		if !assert.NoError(t, err) {
@@ -284,8 +284,8 @@ func TestRecordPatternGetMigrationOperations(t *testing.T) {
 	})
 
 	t.Run("same single-prop record", func(t *testing.T) {
-		singleProp1 := NewInexactRecordPattern(map[string]Pattern{"a": INT_PATTERN})
-		singleProp2 := NewInexactRecordPattern(map[string]Pattern{"a": INT_PATTERN})
+		singleProp1 := NewInexactRecordPattern([]RecordPatternEntry{{Name: "a", Pattern: INT_PATTERN}})
+		singleProp2 := NewInexactRecordPattern([]RecordPatternEntry{{Name: "a", Pattern: INT_PATTERN}})
 
 		migrations, err := singleProp1.GetMigrationOperations(ctx, singleProp2, "/")
 		if !assert.NoError(t, err) {
@@ -296,8 +296,8 @@ func TestRecordPatternGetMigrationOperations(t *testing.T) {
 	})
 
 	t.Run("property removal", func(t *testing.T) {
-		singleProp := NewInexactRecordPattern(map[string]Pattern{"a": INT_PATTERN})
-		empty := NewInexactRecordPattern(map[string]Pattern{})
+		singleProp := NewInexactRecordPattern([]RecordPatternEntry{{Name: "a", Pattern: INT_PATTERN}})
+		empty := NewInexactRecordPattern(nil)
 
 		migrations, err := singleProp.GetMigrationOperations(ctx, empty, "/")
 		if !assert.NoError(t, err) {
@@ -313,8 +313,8 @@ func TestRecordPatternGetMigrationOperations(t *testing.T) {
 	})
 
 	t.Run("optional property removal", func(t *testing.T) {
-		singleOptionalProp := NewInexactRecordPatternWithOptionalProps(map[string]Pattern{"a": INT_PATTERN}, map[string]struct{}{"a": {}})
-		empty := NewInexactRecordPattern(map[string]Pattern{})
+		singleOptionalProp := NewInexactRecordPattern([]RecordPatternEntry{{Name: "a", Pattern: INT_PATTERN, IsOptional: true}})
+		empty := NewInexactRecordPattern(nil)
 
 		migrations, err := singleOptionalProp.GetMigrationOperations(ctx, empty, "/")
 		if !assert.NoError(t, err) {
@@ -330,8 +330,8 @@ func TestRecordPatternGetMigrationOperations(t *testing.T) {
 	})
 
 	t.Run("no longer optional prop", func(t *testing.T) {
-		singleOptionalProp := NewInexactRecordPatternWithOptionalProps(map[string]Pattern{"a": INT_PATTERN}, map[string]struct{}{"a": {}})
-		singleRequiredProp := NewInexactRecordPattern(map[string]Pattern{"a": INT_PATTERN})
+		singleOptionalProp := NewInexactRecordPattern([]RecordPatternEntry{{Name: "a", Pattern: INT_PATTERN, IsOptional: true}})
+		singleRequiredProp := NewInexactRecordPattern([]RecordPatternEntry{{Name: "a", Pattern: INT_PATTERN}})
 
 		migrations, err := singleOptionalProp.GetMigrationOperations(ctx, singleRequiredProp, "/")
 		if !assert.NoError(t, err) {
@@ -347,8 +347,8 @@ func TestRecordPatternGetMigrationOperations(t *testing.T) {
 	})
 
 	t.Run("no longer required prop", func(t *testing.T) {
-		singleRequiredProp := NewInexactRecordPattern(map[string]Pattern{"a": INT_PATTERN})
-		singleOptionalProp := NewInexactRecordPatternWithOptionalProps(map[string]Pattern{"a": INT_PATTERN}, map[string]struct{}{"a": {}})
+		singleRequiredProp := NewInexactRecordPattern([]RecordPatternEntry{{Name: "a", Pattern: INT_PATTERN}})
+		singleOptionalProp := NewInexactRecordPattern([]RecordPatternEntry{{Name: "a", Pattern: INT_PATTERN, IsOptional: true}})
 
 		migrations, err := singleRequiredProp.GetMigrationOperations(ctx, singleOptionalProp, "/")
 		if !assert.NoError(t, err) {
@@ -359,8 +359,8 @@ func TestRecordPatternGetMigrationOperations(t *testing.T) {
 	})
 
 	t.Run("property type update", func(t *testing.T) {
-		singleProp := NewInexactRecordPattern(map[string]Pattern{"a": INT_PATTERN})
-		singleOtherTypeProp := NewInexactRecordPattern(map[string]Pattern{"a": STR_PATTERN})
+		singleProp := NewInexactRecordPattern([]RecordPatternEntry{{Name: "a", Pattern: INT_PATTERN}})
+		singleOtherTypeProp := NewInexactRecordPattern([]RecordPatternEntry{{Name: "a", Pattern: STR_PATTERN}})
 
 		migrations, err := singleProp.GetMigrationOperations(ctx, singleOtherTypeProp, "/")
 		if !assert.NoError(t, err) {
@@ -377,8 +377,8 @@ func TestRecordPatternGetMigrationOperations(t *testing.T) {
 	})
 
 	t.Run("optional property type update that is now required", func(t *testing.T) {
-		singleProp := NewInexactRecordPatternWithOptionalProps(map[string]Pattern{"a": INT_PATTERN}, map[string]struct{}{"a": {}})
-		singleOtherTypeProp := NewInexactRecordPattern(map[string]Pattern{"a": STR_PATTERN})
+		singleProp := NewInexactRecordPattern([]RecordPatternEntry{{Name: "a", Pattern: INT_PATTERN, IsOptional: true}})
+		singleOtherTypeProp := NewInexactRecordPattern([]RecordPatternEntry{{Name: "a", Pattern: STR_PATTERN}})
 
 		migrations, err := singleProp.GetMigrationOperations(ctx, singleOtherTypeProp, "/")
 		if !assert.NoError(t, err) {
@@ -395,8 +395,8 @@ func TestRecordPatternGetMigrationOperations(t *testing.T) {
 	})
 
 	t.Run("optional property type update + no longer required", func(t *testing.T) {
-		singleProp := NewInexactRecordPattern(map[string]Pattern{"a": INT_PATTERN})
-		singleOtherTypeProp := NewInexactRecordPatternWithOptionalProps(map[string]Pattern{"a": STR_PATTERN}, map[string]struct{}{"a": {}})
+		singleProp := NewInexactRecordPattern([]RecordPatternEntry{{Name: "a", Pattern: INT_PATTERN}})
+		singleOtherTypeProp := NewInexactRecordPattern([]RecordPatternEntry{{Name: "a", Pattern: STR_PATTERN, IsOptional: true}})
 
 		migrations, err := singleProp.GetMigrationOperations(ctx, singleOtherTypeProp, "/")
 		if !assert.NoError(t, err) {
@@ -413,9 +413,12 @@ func TestRecordPatternGetMigrationOperations(t *testing.T) {
 	})
 
 	t.Run("new property in inner object", func(t *testing.T) {
-		empty := NewInexactRecordPattern(map[string]Pattern{"a": NewInexactRecordPattern(map[string]Pattern{})})
-		singleProp := NewInexactRecordPattern(map[string]Pattern{
-			"a": NewInexactRecordPattern(map[string]Pattern{"b": INT_PATTERN}),
+		empty := NewInexactRecordPattern([]RecordPatternEntry{{Name: "a", Pattern: NewInexactRecordPattern(nil)}})
+		singleProp := NewInexactRecordPattern([]RecordPatternEntry{
+			{
+				Name:    "a",
+				Pattern: NewInexactRecordPattern([]RecordPatternEntry{{Name: "b", Pattern: INT_PATTERN}}),
+			},
 		})
 
 		migrations, err := empty.GetMigrationOperations(ctx, singleProp, "/")
@@ -433,8 +436,8 @@ func TestRecordPatternGetMigrationOperations(t *testing.T) {
 	})
 
 	t.Run("new property & all previous properties removed", func(t *testing.T) {
-		singleProp := NewInexactRecordPattern(map[string]Pattern{"a": INT_PATTERN})
-		nextSingleProp := NewInexactRecordPattern(map[string]Pattern{"b": INT_PATTERN})
+		singleProp := NewInexactRecordPattern([]RecordPatternEntry{{Name: "a", Pattern: INT_PATTERN}})
+		nextSingleProp := NewInexactRecordPattern([]RecordPatternEntry{{Name: "b", Pattern: INT_PATTERN}})
 
 		migrations, err := singleProp.GetMigrationOperations(ctx, nextSingleProp, "/")
 		if !assert.NoError(t, err) {

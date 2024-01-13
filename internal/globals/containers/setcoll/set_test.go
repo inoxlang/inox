@@ -132,8 +132,8 @@ func TestNewSet(t *testing.T) {
 	t.Run("element pattern", func(t *testing.T) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, io.Discard)
 
-		elementPattern := core.NewInexactObjectPattern(map[string]core.Pattern{
-			"a": core.INT_PATTERN,
+		elementPattern := core.NewInexactObjectPattern([]core.ObjectPatternEntry{
+			{Name: "a", Pattern: core.INT_PATTERN},
 		})
 
 		config := core.NewObjectFromMap(core.ValMap{
@@ -153,8 +153,8 @@ func TestNewSet(t *testing.T) {
 	t.Run("element pattern: element does not match", func(t *testing.T) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, io.Discard)
 
-		elementPattern := core.NewInexactObjectPattern(map[string]core.Pattern{
-			"a": core.INT_PATTERN,
+		elementPattern := core.NewInexactObjectPattern([]core.ObjectPatternEntry{
+			{Name: "a", Pattern: core.INT_PATTERN},
 		})
 
 		config := core.NewObjectFromMap(core.ValMap{

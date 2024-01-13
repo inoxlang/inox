@@ -29,7 +29,7 @@ func TestLoadObject(t *testing.T) {
 			Permissions: perms,
 		}, nil)
 		storage := &TestValueStorage{BaseURL_: "ldb://main"}
-		pattern := NewInexactObjectPattern(map[string]Pattern{})
+		pattern := NewInexactObjectPattern(nil)
 
 		val, err := loadFreeObject(ctx, FreeEntityLoadingParams{
 			Key:          "/user",
@@ -50,7 +50,7 @@ func TestLoadObject(t *testing.T) {
 			Permissions: perms,
 		}, nil)
 		storage := &TestValueStorage{BaseURL_: "ldb://main"}
-		pattern := NewInexactObjectPattern(map[string]Pattern{})
+		pattern := NewInexactObjectPattern(nil)
 
 		val, err := loadFreeObject(ctx, FreeEntityLoadingParams{
 			Key:          "/user",
@@ -74,7 +74,7 @@ func TestLoadObject(t *testing.T) {
 			BaseURL_: "ldb://main/",
 			Data:     map[Path]string{"/user": `{"a":1}`},
 		}
-		pattern := NewInexactObjectPattern(map[string]Pattern{"a": INT_PATTERN})
+		pattern := NewInexactObjectPattern([]ObjectPatternEntry{{Name: "a", Pattern: INT_PATTERN}})
 
 		val, err := loadFreeObject(ctx, FreeEntityLoadingParams{
 			Key:          "/user",
@@ -117,7 +117,12 @@ func TestLoadObject(t *testing.T) {
 			BaseURL_: "ldb://main/",
 			Data:     map[Path]string{"/user": `{"inner":{"a": 1}}`},
 		}
-		pattern := NewInexactObjectPattern(map[string]Pattern{"inner": NewInexactObjectPattern(map[string]Pattern{"a": INT_PATTERN})})
+		pattern := NewInexactObjectPattern([]ObjectPatternEntry{
+			{
+				Name:    "inner",
+				Pattern: NewInexactObjectPattern([]ObjectPatternEntry{{Name: "a", Pattern: INT_PATTERN}}),
+			},
+		})
 
 		val, err := loadFreeObject(ctx, FreeEntityLoadingParams{
 			Key:          "/user",
@@ -163,8 +168,11 @@ func TestLoadObject(t *testing.T) {
 			BaseURL_: "ldb://main/",
 			Data:     map[Path]string{"/user": `{"inner":[]}`},
 		}
-		pattern := NewInexactObjectPattern(map[string]Pattern{
-			"inner": NewListPatternOf(INT_PATTERN),
+		pattern := NewInexactObjectPattern([]ObjectPatternEntry{
+			{
+				Name:    "inner",
+				Pattern: NewListPatternOf(INT_PATTERN),
+			},
 		})
 
 		val, err := loadFreeObject(ctx, FreeEntityLoadingParams{
@@ -207,7 +215,7 @@ func TestLoadObject(t *testing.T) {
 			BaseURL_: "ldb://main/",
 			Data:     map[Path]string{"/user": `{}`},
 		}
-		pattern := NewInexactObjectPattern(map[string]Pattern{})
+		pattern := NewInexactObjectPattern(nil)
 
 		val, err := loadFreeObject(ctx, FreeEntityLoadingParams{
 			Key:          "/user",
@@ -238,8 +246,8 @@ func TestLoadObject(t *testing.T) {
 			BaseURL_: "ldb://main/",
 			Data:     map[Path]string{"/user": `{}`},
 		}
-		pattern := NewInexactObjectPattern(map[string]Pattern{})
-		nextPattern := NewInexactObjectPattern(map[string]Pattern{"a": INT_PATTERN})
+		pattern := NewInexactObjectPattern(nil)
+		nextPattern := NewInexactObjectPattern([]ObjectPatternEntry{{Name: "a", Pattern: INT_PATTERN}})
 
 		val, err := loadFreeObject(ctx, FreeEntityLoadingParams{
 			Key:          "/user",
@@ -287,8 +295,11 @@ func TestLoadObject(t *testing.T) {
 			BaseURL_: "ldb://main/",
 			Data:     map[Path]string{"/user": `{"a":1}`},
 		}
-		pattern := NewInexactObjectPattern(map[string]Pattern{"a": INT_PATTERN})
-		nextPattern := NewInexactObjectPattern(map[string]Pattern{"a": INT_PATTERN, "b": INT_PATTERN})
+		pattern := NewInexactObjectPattern([]ObjectPatternEntry{{Name: "a", Pattern: INT_PATTERN}})
+		nextPattern := NewInexactObjectPattern([]ObjectPatternEntry{
+			{Name: "a", Pattern: INT_PATTERN},
+			{Name: "b", Pattern: INT_PATTERN},
+		})
 
 		val, err := loadFreeObject(ctx, FreeEntityLoadingParams{
 			Key:          "/user",
@@ -336,8 +347,11 @@ func TestLoadObject(t *testing.T) {
 			BaseURL_: "ldb://main/",
 			Data:     map[Path]string{},
 		}
-		pattern := NewInexactObjectPattern(map[string]Pattern{"a": INT_PATTERN})
-		nextPattern := NewInexactObjectPattern(map[string]Pattern{"a": INT_PATTERN, "b": INT_PATTERN})
+		pattern := NewInexactObjectPattern([]ObjectPatternEntry{{Name: "a", Pattern: INT_PATTERN}})
+		nextPattern := NewInexactObjectPattern([]ObjectPatternEntry{
+			{Name: "a", Pattern: INT_PATTERN},
+			{Name: "b", Pattern: INT_PATTERN},
+		})
 
 		val, err := loadFreeObject(ctx, FreeEntityLoadingParams{
 			Key:          "/user",

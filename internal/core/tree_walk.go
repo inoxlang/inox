@@ -2602,22 +2602,22 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		}, nil
 	case *parse.ObjectPatternLiteral:
 		pattern := &ObjectPattern{
-			entryPatterns: make(map[string]Pattern),
-			inexact:       !n.Exact(),
+			inexact: !n.Exact(),
 		}
 		for _, p := range n.Properties {
 			name := p.Name()
 			var err error
-			pattern.entryPatterns[name], err = evalPatternNode(p.Value, state)
-			if p.Optional {
-				if pattern.optionalEntries == nil {
-					pattern.optionalEntries = make(map[string]struct{}, 1)
-				}
-				pattern.optionalEntries[name] = struct{}{}
-			}
+
+			entryPatten, err := evalPatternNode(p.Value, state)
 			if err != nil {
-				return nil, fmt.Errorf("failed to compile object pattern literal, error when evaluating value for '%s': %s", name, err.Error())
+				return nil, fmt.Errorf("failed to evaluate object pattern literal, error when evaluating pattern for '%s': %s", name, err.Error())
 			}
+
+			pattern.entries = append(pattern.entries, ObjectPatternEntry{
+				Name:       name,
+				Pattern:    entryPatten.(Pattern),
+				IsOptional: p.Optional,
+			})
 		}
 
 		for _, el := range n.SpreadElements {
@@ -2626,45 +2626,44 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 				return nil, err
 			}
 
-			object := evaluatedElement.(*ObjectPattern)
+			spreadPattern := evaluatedElement.(*ObjectPattern)
 
-			for name, vpattern := range object.entryPatterns {
-				//priority to property pattern defined earlier
-				if _, alreadyPresent := pattern.entryPatterns[name]; alreadyPresent {
+			for _, entry := range spreadPattern.entries {
+				//priority to property pattern defined earlier.
+				if pattern.HasRequiredOrOptionalEntry(entry.Name) {
+					//already present.
 					continue
 				}
 
-				pattern.entryPatterns[name] = vpattern
-				if _, ok := object.optionalEntries[name]; !ok {
-					continue
-				}
-				//set as optional
-				if pattern.optionalEntries == nil {
-					pattern.optionalEntries = map[string]struct{}{}
-				}
-				pattern.optionalEntries[name] = struct{}{}
+				pattern.entries = append(pattern.entries, ObjectPatternEntry{
+					Name:       entry.Name,
+					Pattern:    entry.Pattern,
+					IsOptional: entry.IsOptional,
+					//ignore dependencies
+				})
 			}
 		}
 
+		pattern.init()
 		return pattern, nil
 	case *parse.RecordPatternLiteral:
 		pattern := &RecordPattern{
-			entryPatterns: make(map[string]Pattern),
-			inexact:       !n.Exact(),
+			inexact: !n.Exact(),
 		}
 		for _, p := range n.Properties {
 			name := p.Name()
 			var err error
-			pattern.entryPatterns[name], err = evalPatternNode(p.Value, state)
-			if p.Optional {
-				if pattern.optionalEntries == nil {
-					pattern.optionalEntries = make(map[string]struct{}, 1)
-				}
-				pattern.optionalEntries[name] = struct{}{}
-			}
+
+			entryPatten, err := evalPatternNode(p.Value, state)
 			if err != nil {
-				return nil, fmt.Errorf("failed to compile record pattern literal, error when evaluating value for '%s': %s", name, err.Error())
+				return nil, fmt.Errorf("failed to evaluate record pattern literal, error when evaluating pattern for '%s': %s", name, err.Error())
 			}
+
+			pattern.entries = append(pattern.entries, RecordPatternEntry{
+				Name:       name,
+				Pattern:    entryPatten.(Pattern),
+				IsOptional: p.Optional,
+			})
 		}
 
 		for _, el := range n.SpreadElements {
@@ -2673,25 +2672,24 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 				return nil, err
 			}
 
-			object := evaluatedElement.(*RecordPattern)
+			spreadPattern := evaluatedElement.(*RecordPattern)
 
-			for name, vpattern := range object.entryPatterns {
-				//priority to property pattern defined earlier
-				if _, alreadyPresent := pattern.entryPatterns[name]; alreadyPresent {
+			for _, entry := range spreadPattern.entries {
+				//priority to property pattern defined earlier.
+				if pattern.HasRequiredOrOptionalEntry(entry.Name) {
+					//already present.
 					continue
 				}
-				pattern.entryPatterns[name] = vpattern
-				if _, ok := object.optionalEntries[name]; !ok {
-					continue
-				}
-				//set as optional
-				if pattern.optionalEntries == nil {
-					pattern.optionalEntries = map[string]struct{}{}
-				}
-				pattern.optionalEntries[name] = struct{}{}
+
+				pattern.entries = append(pattern.entries, RecordPatternEntry{
+					Name:       entry.Name,
+					Pattern:    entry.Pattern,
+					IsOptional: entry.IsOptional,
+				})
 			}
 		}
 
+		pattern.init()
 		return pattern, nil
 	case *parse.ListPatternLiteral:
 

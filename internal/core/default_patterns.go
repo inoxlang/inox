@@ -170,13 +170,13 @@ var (
 		Name:          patternnames.EMAILADDR,
 		SymbolicValue: symbolic.ANY_EMAIL_ADDR,
 	}
-	EMPTY_INEXACT_OBJECT_PATTERN = NewInexactObjectPattern(map[string]Pattern{})
+	EMPTY_INEXACT_OBJECT_PATTERN = NewInexactObjectPattern(nil)
 	OBJECT_PATTERN               = &TypePattern{
 		Type:          OBJECT_TYPE,
 		Name:          patternnames.OBJECT,
 		SymbolicValue: symbolic.NewAnyObject(),
 	}
-	EMPTY_INEXACT_RECORD_PATTERN = NewInexactRecordPattern(map[string]Pattern{})
+	EMPTY_INEXACT_RECORD_PATTERN = NewInexactRecordPattern(nil)
 
 	RECORD_PATTERN = &TypePattern{
 		Type: RECORD_TYPE,
@@ -191,9 +191,22 @@ var (
 						return nil, commonfmt.FmtErrArgumentProvidedAtLeastTwice("pattern")
 					}
 
+					recordPatternEntries := make([]RecordPatternEntry, len(v.entries))
+					for i, entry := range v.entries {
+						if entry.Dependencies.Pattern != nil || len(entry.Dependencies.RequiredKeys) > 0 {
+							return nil, fmt.Errorf("input object pattern should not have dependency relations")
+						}
+						recordPatternEntries[i] = RecordPatternEntry{
+							Name:       entry.Name,
+							Pattern:    entry.Pattern,
+							IsOptional: entry.IsOptional,
+						}
+					}
+
 					recordPattern = &RecordPattern{
-						entryPatterns: v.entryPatterns,
-						inexact:       v.inexact,
+						entries:            recordPatternEntries,
+						inexact:            v.inexact,
+						optionalEntryCount: v.optionalEntryCount,
 					}
 				case *RecordPattern:
 					if recordPattern != nil {
@@ -700,12 +713,12 @@ var (
 		Name:          patternnames.ERROR,
 		SymbolicValue: symbolic.ANY_ERR,
 	}
-	SOURCE_POS_PATTERN = NewInexactRecordPattern(map[string]Pattern{
-		"source": STR_PATTERN,
-		"line":   INT_PATTERN,
-		"column": INT_PATTERN,
-		"start":  INT_PATTERN,
-		"end":    INT_PATTERN,
+	SOURCE_POS_PATTERN = NewInexactRecordPattern([]RecordPatternEntry{
+		{Name: "source", Pattern: STR_PATTERN},
+		{Name: "line", Pattern: INT_PATTERN},
+		{Name: "column", Pattern: INT_PATTERN},
+		{Name: "start", Pattern: INT_PATTERN},
+		{Name: "end", Pattern: INT_PATTERN},
 	})
 	INT_RANGE_PATTERN = &TypePattern{
 		Type:          INT_RANGE_TYPE,
@@ -866,16 +879,14 @@ var (
 		PATHPATTERN_PATTERN.Name:           PATHPATTERN_PATTERN,
 		URLPATTERN_PATTERN.Name:            URLPATTERN_PATTERN,
 		OPTION_PATTERN.Name:                OPTION_PATTERN,
-		patternnames.DIR_ENTRY: &ObjectPattern{
-			entryPatterns: map[string]Pattern{
-				"abs-path": PATH_PATTERN,
-				"is-dir":   BOOL_PATTERN,
-				"size":     INT_PATTERN,
-				"mode":     FILE_MODE_PATTERN,
-				"mod-time": DATETIME_PATTERN,
-				"name":     STR_PATTERN,
-			},
-		},
+		patternnames.DIR_ENTRY: NewInexactObjectPattern([]ObjectPatternEntry{
+			{Name: "abs-path", Pattern: PATH_PATTERN},
+			{Name: "is-dir", Pattern: BOOL_PATTERN},
+			{Name: "size", Pattern: INT_PATTERN},
+			{Name: "mode", Pattern: FILE_MODE_PATTERN},
+			{Name: "mod-time", Pattern: DATETIME_PATTERN},
+			{Name: "name", Pattern: STR_PATTERN},
+		}),
 		EVENT_PATTERN.Name:         EVENT_PATTERN,
 		MUTATION_PATTERN.Name:      MUTATION_PATTERN,
 		MSG_PATTERN.Name:           MSG_PATTERN,

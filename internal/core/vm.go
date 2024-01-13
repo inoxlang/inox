@@ -1699,42 +1699,58 @@ func (v *VM) handleOtherOpcodes(op byte) (_continue bool) {
 			v.stack[v.sp] = patt
 			v.sp++
 		}
-	case OpCreateObjectPattern, OpCreateRecordPattern:
-		op := v.curInsts[v.ip]
+	case OpCreateObjectPattern:
 		v.ip += 3
 		numElements := int(v.curInsts[v.ip-1]) | int(v.curInsts[v.ip-2])<<8
 		isInexact := int(v.curInsts[v.ip])
 
-		entryPatterns := make(map[string]Pattern)
-		var optionalEntries map[string]struct{}
+		var entries []ObjectPatternEntry
 
 		for i := v.sp - numElements; i < v.sp; i += 3 {
 			key := v.stack[i].(Str)
 			value := v.stack[i+1].(Pattern)
 			isOptional := v.stack[i+2].(Bool)
-			entryPatterns[string(key)] = value
-			if isOptional {
-				if optionalEntries == nil {
-					optionalEntries = make(map[string]struct{}, 1)
-				}
-				optionalEntries[string(key)] = struct{}{}
-			}
+
+			entries = append(entries, ObjectPatternEntry{
+				Name:       string(key),
+				Pattern:    value,
+				IsOptional: bool(isOptional),
+			})
 		}
 
-		var pattern Pattern
-		if op == OpCreateObjectPattern {
-			pattern = &ObjectPattern{
-				entryPatterns:   entryPatterns,
-				optionalEntries: optionalEntries,
-				inexact:         isInexact == 1,
-			}
-		} else {
-			pattern = &RecordPattern{
-				entryPatterns:   entryPatterns,
-				optionalEntries: optionalEntries,
-				inexact:         isInexact == 1,
-			}
+		pattern := &ObjectPattern{
+			entries: entries,
+			inexact: isInexact == 1,
 		}
+		pattern.init()
+
+		v.sp -= numElements
+		v.stack[v.sp] = pattern
+		v.sp++
+	case OpCreateRecordPattern:
+		v.ip += 3
+		numElements := int(v.curInsts[v.ip-1]) | int(v.curInsts[v.ip-2])<<8
+		isInexact := int(v.curInsts[v.ip])
+
+		var entries []RecordPatternEntry
+
+		for i := v.sp - numElements; i < v.sp; i += 3 {
+			key := v.stack[i].(Str)
+			value := v.stack[i+1].(Pattern)
+			isOptional := v.stack[i+2].(Bool)
+
+			entries = append(entries, RecordPatternEntry{
+				Name:       string(key),
+				Pattern:    value,
+				IsOptional: bool(isOptional),
+			})
+		}
+
+		pattern := &RecordPattern{
+			entries: entries,
+			inexact: isInexact == 1,
+		}
+		pattern.init()
 
 		v.sp -= numElements
 		v.stack[v.sp] = pattern
@@ -1837,43 +1853,40 @@ func (v *VM) handleOtherOpcodes(op byte) (_continue bool) {
 		patt := v.stack[v.sp-2].(*ObjectPattern)
 		spreadObjectPatt := v.stack[v.sp-1].(*ObjectPattern)
 
-		for k, v := range spreadObjectPatt.entryPatterns {
-			//priority to property pattern defined earlier
-			if _, alreadyPresent := patt.entryPatterns[k]; alreadyPresent {
+		for _, entry := range spreadObjectPatt.entries {
+			//priority to property pattern defined earlier.
+			if patt.HasRequiredOrOptionalEntry(entry.Name) {
+				//already present.
 				continue
 			}
 
-			patt.entryPatterns[k] = v
-			if _, ok := spreadObjectPatt.optionalEntries[k]; !ok {
-				continue
-			}
-			//set as optional
-			if patt.optionalEntries == nil {
-				patt.optionalEntries = map[string]struct{}{}
-			}
-			patt.optionalEntries[k] = struct{}{}
+			patt.entries = append(patt.entries, ObjectPatternEntry{
+				Name:       entry.Name,
+				Pattern:    entry.Pattern,
+				IsOptional: entry.IsOptional,
+				//ignore dependencies.
+			})
 		}
+		patt.init()
 		v.sp--
 	case OpSpreadRecordPattern:
 		patt := v.stack[v.sp-2].(*RecordPattern)
-		spreadObjectPatt := v.stack[v.sp-1].(*RecordPattern)
+		spreadRecordPatt := v.stack[v.sp-1].(*RecordPattern)
 
-		for k, v := range spreadObjectPatt.entryPatterns {
-			//priority to property pattern defined earlier
-			if _, alreadyPresent := patt.entryPatterns[k]; alreadyPresent {
+		for _, entry := range spreadRecordPatt.entries {
+			//priority to property pattern defined earlier.
+			if patt.HasRequiredOrOptionalEntry(entry.Name) {
+				//already present.
 				continue
 			}
 
-			patt.entryPatterns[k] = v
-			if _, ok := spreadObjectPatt.optionalEntries[k]; !ok {
-				continue
-			}
-			//set as optional
-			if patt.optionalEntries == nil {
-				patt.optionalEntries = map[string]struct{}{}
-			}
-			patt.optionalEntries[k] = struct{}{}
+			patt.entries = append(patt.entries, RecordPatternEntry{
+				Name:       entry.Name,
+				Pattern:    entry.Pattern,
+				IsOptional: entry.IsOptional,
+			})
 		}
+		patt.init()
 		v.sp--
 	//MESSAGING
 	case OpCreateReceptionHandler:

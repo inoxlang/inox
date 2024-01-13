@@ -154,28 +154,32 @@ func init() {
 		},
 		ConcreteValueFactories: symbolic.ConcreteValueFactories{
 			CreateObjectPattern: func(inexact bool, concretePropertyPatterns map[string]any, optionalProperties map[string]struct{}) any {
-				propertyPatterns := map[string]Pattern{}
+				var entries []ObjectPatternEntry
+
 				for k, v := range concretePropertyPatterns {
-					propertyPatterns[k] = v.(Pattern)
+					_, isOptional := optionalProperties[k]
+					entries = append(entries, ObjectPatternEntry{
+						Name:       k,
+						Pattern:    v.(Pattern),
+						IsOptional: isOptional,
+					})
 				}
 
-				if inexact {
-					return NewInexactObjectPatternWithOptionalProps(propertyPatterns, optionalProperties)
-				}
-
-				return NewExactObjectPatternWithOptionalProps(propertyPatterns, optionalProperties)
+				return NewObjectPattern(inexact, entries)
 			},
 			CreateRecordPattern: func(inexact bool, concretePropertyPatterns map[string]any, optionalProperties map[string]struct{}) any {
-				propertyPatterns := map[string]Pattern{}
+				var entries []RecordPatternEntry
+
 				for k, v := range concretePropertyPatterns {
-					propertyPatterns[k] = v.(Pattern)
+					_, isOptional := optionalProperties[k]
+					entries = append(entries, RecordPatternEntry{
+						Name:       k,
+						Pattern:    v.(Pattern),
+						IsOptional: isOptional,
+					})
 				}
 
-				if inexact {
-					return NewInexactRecordPatternWithOptionalProps(propertyPatterns, optionalProperties)
-				}
-
-				return NewExactRecordPatternWithOptionalProps(propertyPatterns, optionalProperties)
+				return NewRecordPattern(inexact, entries)
 			},
 
 			CreateListPattern: func(generalElementPattern any, elementPatterns []any) any {
@@ -905,18 +909,22 @@ func (p *ObjectPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]sy
 	encountered[ptr] = objPattern
 
 	entries := map[string]symbolic.Pattern{}
+	optionalEntries := map[string]struct{}{}
 
-	for k, v := range p.entryPatterns {
-		val, err := _toSymbolicValue(ctx, v, false, encountered)
+	for _, entry := range p.entries {
+		val, err := _toSymbolicValue(ctx, entry.Pattern, false, encountered)
 		if err != nil {
 			return nil, err
 		}
-		entries[k] = val.(symbolic.Pattern)
+		entries[entry.Name] = val.(symbolic.Pattern)
+		if entry.IsOptional {
+			optionalEntries[entry.Name] = struct{}{}
+		}
 	}
 
 	//TODO: initialize constraints
 
-	symbolic.InitializeObjectPattern(objPattern, entries, p.optionalEntries, p.inexact)
+	symbolic.InitializeObjectPattern(objPattern, entries, optionalEntries, p.inexact)
 	return objPattern, nil
 }
 
@@ -929,18 +937,22 @@ func (p *RecordPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]sy
 	encountered[ptr] = recPattern
 
 	entries := map[string]symbolic.Pattern{}
+	optionalEntries := map[string]struct{}{}
 
-	for k, v := range p.entryPatterns {
-		val, err := _toSymbolicValue(ctx, v, false, encountered)
+	for _, entry := range p.entries {
+		val, err := _toSymbolicValue(ctx, entry.Pattern, false, encountered)
 		if err != nil {
 			return nil, err
 		}
-		entries[k] = val.(symbolic.Pattern)
+		entries[entry.Name] = val.(symbolic.Pattern)
+		if entry.IsOptional {
+			optionalEntries[entry.Name] = struct{}{}
+		}
 	}
 
 	//TODO: initialize constraints
 
-	symbolic.InitializeRecordPattern(recPattern, entries, p.optionalEntries, p.inexact)
+	symbolic.InitializeRecordPattern(recPattern, entries, optionalEntries, p.inexact)
 	return recPattern, nil
 }
 

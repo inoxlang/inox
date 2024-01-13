@@ -206,7 +206,12 @@ func TestOpenDatabase(t *testing.T) {
 			}
 		}()
 
-		schema := core.NewInexactObjectPattern(map[string]core.Pattern{"a": core.INT_PATTERN})
+		schema := core.NewInexactObjectPattern([]core.ObjectPatternEntry{
+			{
+				Name:    "a",
+				Pattern: core.INT_PATTERN,
+			},
+		})
 
 		go func() {
 			defer func() {
@@ -286,17 +291,20 @@ func TestOpenDatabase(t *testing.T) {
 				return
 			}
 
+			namedObjectPattern := core.NewInexactObjectPattern([]core.ObjectPatternEntry{
+				{
+					Name:    "name",
+					Pattern: core.STR_PATTERN,
+				},
+			})
+
 			setPattern :=
 				utils.Must(setcoll.SET_PATTERN.CallImpl(
 					setcoll.SET_PATTERN,
-					[]core.Serializable{
-						core.NewInexactObjectPattern(map[string]core.Pattern{"name": core.STR_PATTERN}), common.URL_UNIQUENESS_IDENT,
-					}),
+					[]core.Serializable{namedObjectPattern, common.URL_UNIQUENESS_IDENT}),
 				)
 
-			schema := core.NewInexactObjectPattern(map[string]core.Pattern{
-				"users": setPattern,
-			})
+			schema := core.NewInexactObjectPattern([]core.ObjectPatternEntry{{Name: "users", Pattern: setPattern}})
 
 			db.UpdateSchema(ctx, schema, core.MigrationOpHandlers{})
 
@@ -579,13 +587,18 @@ func TestUpdateSchema(t *testing.T) {
 		}
 		defer ldb.Close(ctx)
 
+		namedObjectPattern := core.NewInexactObjectPattern([]core.ObjectPatternEntry{
+			{
+				Name:    "name",
+				Pattern: core.STR_PATTERN,
+			},
+		})
+
 		setPattern :=
 			utils.Must(setcoll.SET_PATTERN.CallImpl(setcoll.SET_PATTERN,
-				[]core.Serializable{core.NewInexactObjectPattern(map[string]core.Pattern{"name": core.STR_PATTERN}), common.URL_UNIQUENESS_IDENT}))
+				[]core.Serializable{namedObjectPattern, common.URL_UNIQUENESS_IDENT}))
 
-		schema := core.NewInexactObjectPattern(map[string]core.Pattern{
-			"users": setPattern,
-		})
+		schema := core.NewInexactObjectPattern([]core.ObjectPatternEntry{{Name: "users", Pattern: setPattern}})
 
 		ldb.UpdateSchema(ctx, schema, core.MigrationOpHandlers{
 			Inclusions: map[core.PathPattern]*core.MigrationOpHandler{
@@ -618,16 +631,19 @@ func TestUpdateSchema(t *testing.T) {
 		topLevelValues := utils.Must(ldb.LoadTopLevelEntities(ctx))
 		assert.Empty(t, topLevelValues)
 
+		namedObjectPattern := core.NewInexactObjectPattern([]core.ObjectPatternEntry{
+			{
+				Name:    "name",
+				Pattern: core.STR_PATTERN,
+			},
+		})
+
 		setPattern :=
 			utils.Must(setcoll.SET_PATTERN.CallImpl(
 				setcoll.SET_PATTERN,
-				[]core.Serializable{
-					core.NewInexactObjectPattern(map[string]core.Pattern{"name": core.STR_PATTERN}), common.URL_UNIQUENESS_IDENT,
-				}))
+				[]core.Serializable{namedObjectPattern, common.URL_UNIQUENESS_IDENT}))
 
-		schema := core.NewInexactObjectPattern(map[string]core.Pattern{
-			"users": setPattern,
-		})
+		schema := core.NewInexactObjectPattern([]core.ObjectPatternEntry{{Name: "users", Pattern: setPattern}})
 
 		assert.PanicsWithError(t, core.ErrTopLevelEntitiesAlreadyLoaded.Error(), func() {
 			ldb.UpdateSchema(ctx, schema, core.MigrationOpHandlers{})
@@ -644,18 +660,20 @@ func TestUpdateSchema(t *testing.T) {
 			return
 		}
 
+		namedObjectPattern := core.NewInexactObjectPattern([]core.ObjectPatternEntry{
+			{
+				Name:    "name",
+				Pattern: core.STR_PATTERN,
+			},
+		})
+
 		setPattern :=
 			utils.Must(setcoll.SET_PATTERN.CallImpl(
 				setcoll.SET_PATTERN,
-				[]core.Serializable{
-					core.NewInexactObjectPattern(map[string]core.Pattern{"name": core.STR_PATTERN}),
-					common.URL_UNIQUENESS_IDENT,
-				}),
+				[]core.Serializable{namedObjectPattern, common.URL_UNIQUENESS_IDENT}),
 			)
 
-		initialSchema := core.NewInexactObjectPattern(map[string]core.Pattern{
-			"users": setPattern,
-		})
+		initialSchema := core.NewInexactObjectPattern([]core.ObjectPatternEntry{{Name: "users", Pattern: setPattern}})
 
 		ldb.UpdateSchema(ctx, initialSchema, core.MigrationOpHandlers{})
 
@@ -674,8 +692,11 @@ func TestUpdateSchema(t *testing.T) {
 
 		currentSchema := ldb.schema
 
-		schemaCopy := core.NewInexactObjectPattern(map[string]core.Pattern{
-			"users": setPattern,
+		schemaCopy := core.NewInexactObjectPattern([]core.ObjectPatternEntry{
+			{
+				Name:    "users",
+				Pattern: setPattern,
+			},
 		})
 
 		ldb.UpdateSchema(ctx, schemaCopy, core.MigrationOpHandlers{})
@@ -693,18 +714,20 @@ func TestUpdateSchema(t *testing.T) {
 			return
 		}
 
+		namedObjectPattern := core.NewInexactObjectPattern([]core.ObjectPatternEntry{
+			{
+				Name:    "name",
+				Pattern: core.STR_PATTERN,
+			},
+		})
+
 		setPattern :=
 			utils.Must(setcoll.SET_PATTERN.CallImpl(
 				setcoll.SET_PATTERN,
-				[]core.Serializable{
-					core.NewInexactObjectPattern(map[string]core.Pattern{"name": core.STR_PATTERN}),
-					common.URL_UNIQUENESS_IDENT,
-				}),
+				[]core.Serializable{namedObjectPattern, common.URL_UNIQUENESS_IDENT}),
 			)
 
-		initialSchema := core.NewInexactObjectPattern(map[string]core.Pattern{
-			"users": setPattern,
-		})
+		initialSchema := core.NewInexactObjectPattern([]core.ObjectPatternEntry{{Name: "users", Pattern: setPattern}})
 
 		ldb.UpdateSchema(ctx, initialSchema, core.MigrationOpHandlers{})
 
@@ -721,7 +744,7 @@ func TestUpdateSchema(t *testing.T) {
 		}
 		defer ldb.Close(ctx)
 
-		nextSchema := core.NewInexactObjectPattern(map[string]core.Pattern{})
+		nextSchema := core.NewInexactObjectPattern([]core.ObjectPatternEntry{})
 
 		ldb.UpdateSchema(ctx, nextSchema, core.MigrationOpHandlers{
 			Deletions: map[core.PathPattern]*core.MigrationOpHandler{
@@ -743,16 +766,20 @@ func TestUpdateSchema(t *testing.T) {
 			return
 		}
 
+		namedObjectPattern := core.NewInexactObjectPattern([]core.ObjectPatternEntry{
+			{
+				Name:    "name",
+				Pattern: core.STR_PATTERN,
+			},
+		})
+
 		setPattern :=
 			utils.Must(setcoll.SET_PATTERN.CallImpl(
 				setcoll.SET_PATTERN,
-				[]core.Serializable{
-					core.NewInexactObjectPattern(map[string]core.Pattern{"name": core.STR_PATTERN}),
-					common.URL_UNIQUENESS_IDENT,
-				}),
+				[]core.Serializable{namedObjectPattern, common.URL_UNIQUENESS_IDENT}),
 			)
 
-		initialSchema := core.NewInexactObjectPattern(map[string]core.Pattern{})
+		initialSchema := core.NewInexactObjectPattern([]core.ObjectPatternEntry{})
 
 		ldb.UpdateSchema(ctx, initialSchema, core.MigrationOpHandlers{})
 
@@ -769,9 +796,7 @@ func TestUpdateSchema(t *testing.T) {
 		}
 		defer ldb.Close(ctx)
 
-		nextSchema := core.NewInexactObjectPattern(map[string]core.Pattern{
-			"users": setPattern,
-		})
+		nextSchema := core.NewInexactObjectPattern([]core.ObjectPatternEntry{{Name: "users", Pattern: setPattern}})
 
 		ldb.UpdateSchema(ctx, nextSchema, core.MigrationOpHandlers{
 			Inclusions: map[core.PathPattern]*core.MigrationOpHandler{
@@ -795,16 +820,20 @@ func TestUpdateSchema(t *testing.T) {
 			return
 		}
 
+		namedObjectPattern := core.NewInexactObjectPattern([]core.ObjectPatternEntry{
+			{
+				Name:    "name",
+				Pattern: core.STR_PATTERN,
+			},
+		})
+
 		setPattern :=
 			utils.Must(setcoll.SET_PATTERN.CallImpl(
 				setcoll.SET_PATTERN,
-				[]core.Serializable{
-					core.NewInexactObjectPattern(map[string]core.Pattern{"name": core.STR_PATTERN}),
-					common.URL_UNIQUENESS_IDENT,
-				}),
+				[]core.Serializable{namedObjectPattern, common.URL_UNIQUENESS_IDENT}),
 			)
 
-		initialSchema := core.NewInexactObjectPattern(map[string]core.Pattern{})
+		initialSchema := core.NewInexactObjectPattern([]core.ObjectPatternEntry{})
 
 		ldb.UpdateSchema(ctx, initialSchema, core.MigrationOpHandlers{})
 
@@ -821,9 +850,7 @@ func TestUpdateSchema(t *testing.T) {
 		}
 		defer ldb.Close(ctx)
 
-		nextSchema1 := core.NewInexactObjectPattern(map[string]core.Pattern{
-			"users": setPattern,
-		})
+		nextSchema1 := core.NewInexactObjectPattern([]core.ObjectPatternEntry{{Name: "users", Pattern: setPattern}})
 
 		ldb.UpdateSchema(ctx, nextSchema1, core.MigrationOpHandlers{
 			Inclusions: map[core.PathPattern]*core.MigrationOpHandler{
@@ -866,9 +893,7 @@ func TestUpdateSchema(t *testing.T) {
 				[]core.Serializable{core.INT_PATTERN, common.URL_UNIQUENESS_IDENT}),
 			)
 
-		nextSchema2 := core.NewInexactObjectPattern(map[string]core.Pattern{
-			"users": setPattern2,
-		})
+		nextSchema2 := core.NewInexactObjectPattern([]core.ObjectPatternEntry{{Name: "users", Pattern: setPattern2}})
 
 		ldb.UpdateSchema(ctx, nextSchema2, core.MigrationOpHandlers{
 			Replacements: map[core.PathPattern]*core.MigrationOpHandler{

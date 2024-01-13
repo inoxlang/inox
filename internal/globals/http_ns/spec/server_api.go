@@ -268,18 +268,18 @@ func addFilesysteDirEndpoints(
 				return fmt.Errorf("%w: module %q", ErrUnexpectedBodyParamsInOPTIONSHandler, absEntryPath)
 			}
 
-			paramPatterns := make(map[string]core.Pattern)
-			optionalParams := make(map[string]struct{})
+			var paramEntries []core.ObjectPatternEntry
 
 			for _, param := range bodyParams {
 				name := param.Name()
-				if !param.Required(ctx) {
-					optionalParams[name] = struct{}{}
-				}
-				paramPatterns[name] = param.Pattern()
+				paramEntries = append(paramEntries, core.ObjectPatternEntry{
+					Name:       name,
+					IsOptional: !param.Required(ctx),
+					Pattern:    param.Pattern(),
+				})
 			}
 
-			operation.jsonRequestBody = core.NewInexactObjectPatternWithOptionalProps(paramPatterns, optionalParams)
+			operation.jsonRequestBody = core.NewInexactObjectPattern(paramEntries)
 		}
 	}
 

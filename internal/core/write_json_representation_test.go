@@ -134,7 +134,7 @@ func TestObjectJSONRepresentation(t *testing.T) {
 			Pattern: OBJECT_PATTERN,
 		}))
 		assert.Equal(t, `{}`, getJSONRepr(t, obj, ctx, JSONSerializationConfig{
-			Pattern: NewInexactObjectPattern(map[string]Pattern{}),
+			Pattern: NewInexactObjectPattern(nil),
 		}))
 	})
 
@@ -149,8 +149,11 @@ func TestObjectJSONRepresentation(t *testing.T) {
 			Pattern: OBJECT_PATTERN,
 		}))
 		assert.Equal(t, `{"a\nb":{"path__value":"/"}}`, getJSONRepr(t, obj, ctx, JSONSerializationConfig{
-			Pattern: NewInexactObjectPattern(map[string]Pattern{
-				"a": PATH_PATTERN,
+			Pattern: NewInexactObjectPattern([]ObjectPatternEntry{
+				{
+					Name:    "a",
+					Pattern: PATH_PATTERN,
+				},
 			}),
 		}))
 	})
@@ -162,9 +165,15 @@ func TestObjectJSONRepresentation(t *testing.T) {
 		obj := objFrom(ValMap{"a\nb": Int(1), "c\nd": Int(2)})
 
 		assert.Equal(t, `{"a\nb":1,"c\nd":2}`, getJSONRepr(t, obj, ctx, JSONSerializationConfig{
-			Pattern: NewInexactObjectPattern(map[string]Pattern{
-				"a\nb": INT_PATTERN,
-				"c\nd": INT_PATTERN,
+			Pattern: NewInexactObjectPattern([]ObjectPatternEntry{
+				{
+					Name:    "a\nb",
+					Pattern: INT_PATTERN,
+				},
+				{
+					Name:    "c\nd",
+					Pattern: INT_PATTERN,
+				},
 			}),
 		}))
 	})
@@ -178,13 +187,14 @@ func TestObjectJSONRepresentation(t *testing.T) {
 		})
 
 		assert.Equal(t, `{"a":[1,{"b":2}]}`, getJSONRepr(t, obj, ctx, JSONSerializationConfig{
-			Pattern: NewInexactObjectPattern(map[string]Pattern{
-				"a": NewListPattern([]Pattern{
-					INT_PATTERN,
-					NewInexactObjectPattern(map[string]Pattern{
-						"b": INT_PATTERN,
+			Pattern: NewInexactObjectPattern([]ObjectPatternEntry{
+				{
+					Name: "a",
+					Pattern: NewListPattern([]Pattern{
+						INT_PATTERN,
+						NewInexactObjectPattern([]ObjectPatternEntry{{Name: "b", Pattern: INT_PATTERN}}),
 					}),
-				}),
+				},
 			}),
 		}))
 	})
@@ -299,8 +309,11 @@ func TestRecordJSONRepresentation(t *testing.T) {
 			Pattern: RECORD_PATTERN,
 		}))
 		assert.Equal(t, `{"a\nb":{"path__value":"/"}}`, getJSONRepr(t, obj, ctx, JSONSerializationConfig{
-			Pattern: NewInexactRecordPattern(map[string]Pattern{
-				"a": PATH_PATTERN,
+			Pattern: NewInexactObjectPattern([]ObjectPatternEntry{
+				{
+					Name:    "a",
+					Pattern: PATH_PATTERN,
+				},
 			}),
 		}))
 	})
@@ -327,13 +340,14 @@ func TestRecordJSONRepresentation(t *testing.T) {
 		})
 
 		assert.Equal(t, `{"a":[1,{"b":2}]}`, getJSONRepr(t, rec, ctx, JSONSerializationConfig{
-			Pattern: NewInexactRecordPattern(map[string]Pattern{
-				"a": NewTuplePattern([]Pattern{
-					INT_PATTERN,
-					NewInexactRecordPattern(map[string]Pattern{
-						"b": INT_PATTERN,
+			Pattern: NewInexactRecordPattern([]RecordPatternEntry{
+				{
+					Name: "a",
+					Pattern: NewTuplePattern([]Pattern{
+						INT_PATTERN,
+						NewInexactRecordPattern([]RecordPatternEntry{{Name: "b", Pattern: INT_PATTERN}}),
 					}),
-				}),
+				},
 			}),
 		}))
 	})

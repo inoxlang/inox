@@ -121,8 +121,8 @@ func TestUnionPattern(t *testing.T) {
 
 	t.Run("Test()", func(t *testing.T) {
 		patt := NewUnionPattern([]Pattern{
-			NewInexactObjectPattern(map[string]Pattern{"a": NewExactValuePattern(Int(1))}),
-			NewInexactObjectPattern(map[string]Pattern{"b": NewExactValuePattern(Int(2))}),
+			NewInexactObjectPattern([]ObjectPatternEntry{{Name: "a", Pattern: NewExactValuePattern(Int(1))}}),
+			NewInexactObjectPattern([]ObjectPatternEntry{{Name: "b", Pattern: NewExactValuePattern(Int(2))}}),
 		}, nil)
 
 		assert.True(t, patt.Test(ctx, NewObjectFromMapNoInit(ValMap{"a": Int(1)})))
@@ -130,8 +130,8 @@ func TestUnionPattern(t *testing.T) {
 		assert.True(t, patt.Test(ctx, NewObjectFromMapNoInit(ValMap{"a": Int(1), "b": Int(2)})))
 
 		disjointPatt := NewDisjointUnionPattern([]Pattern{
-			NewInexactObjectPattern(map[string]Pattern{"a": NewExactValuePattern(Int(1))}),
-			NewInexactObjectPattern(map[string]Pattern{"b": NewExactValuePattern(Int(2))}),
+			NewInexactObjectPattern([]ObjectPatternEntry{{Name: "a", Pattern: NewExactValuePattern(Int(1))}}),
+			NewInexactObjectPattern([]ObjectPatternEntry{{Name: "b", Pattern: NewExactValuePattern(Int(2))}}),
 		}, nil)
 
 		assert.True(t, disjointPatt.Test(ctx, NewObjectFromMapNoInit(ValMap{"a": Int(1)})))
@@ -145,14 +145,13 @@ func TestObjectPattern(t *testing.T) {
 	NewGlobalState(ctx)
 	defer ctx.CancelGracefully()
 
-	noProps := NewExactObjectPattern(map[string]Pattern{})
-	inexactNoProps := NewInexactObjectPattern(map[string]Pattern{})
-	singleProp := NewExactObjectPattern(map[string]Pattern{"a": INT_PATTERN})
-	inexactSingleProp := NewInexactObjectPattern(map[string]Pattern{"a": INT_PATTERN})
-	singleOptionalProp := NewExactObjectPatternWithOptionalProps(
-		map[string]Pattern{"a": INT_PATTERN},
-		map[string]struct{}{"a": {}},
-	)
+	noProps := NewExactObjectPattern(nil)
+	inexactNoProps := NewInexactObjectPattern(nil)
+	singleProp := NewExactObjectPattern([]ObjectPatternEntry{{Name: "a", Pattern: INT_PATTERN}})
+	inexactSingleProp := NewInexactObjectPattern([]ObjectPatternEntry{{Name: "a", Pattern: INT_PATTERN}})
+	singleOptionalProp := NewExactObjectPattern([]ObjectPatternEntry{
+		{Name: "a", Pattern: INT_PATTERN, IsOptional: true},
+	})
 
 	assert.True(t, noProps.Test(ctx, objFrom(ValMap{})))
 	assert.False(t, noProps.Test(ctx, objFrom(ValMap{"a": Int(1)})))
@@ -188,13 +187,14 @@ func TestObjectPattern(t *testing.T) {
 			})
 		}
 
-		patternWithPropALessThan5 := NewInexactObjectPattern(map[string]Pattern{"a": INT_PATTERN}).WithConstraints(
-			[]*ComplexPropertyConstraint{
-				{
-					Expr: parse.MustParseExpression("(self.a < 5)"),
+		patternWithPropALessThan5 := NewInexactObjectPattern([]ObjectPatternEntry{{Name: "a", Pattern: INT_PATTERN}}).
+			WithConstraints(
+				[]*ComplexPropertyConstraint{
+					{
+						Expr: parse.MustParseExpression("(self.a < 5)"),
+					},
 				},
-			},
-		)
+			)
 
 		ctx := NewContexWithEmptyState(ContextConfig{
 			DoNotSpawnDoneGoroutine: true,
@@ -242,15 +242,17 @@ func TestRecordPattern(t *testing.T) {
 	NewGlobalState(ctx)
 	defer ctx.CancelGracefully()
 
-	noProps := &RecordPattern{entryPatterns: map[string]Pattern{}, inexact: false}
-	inexactNoProps := &RecordPattern{entryPatterns: map[string]Pattern{}, inexact: true}
-	singleProp := &RecordPattern{entryPatterns: map[string]Pattern{"a": INT_PATTERN}, inexact: false}
-	inexactSingleProp := &RecordPattern{entryPatterns: map[string]Pattern{"a": INT_PATTERN}, inexact: true}
-	singleOptionalProp := &RecordPattern{
-		entryPatterns:   map[string]Pattern{"a": INT_PATTERN},
-		optionalEntries: map[string]struct{}{"a": {}},
-		inexact:         false,
-	}
+	noProps := NewExactRecordPattern(nil)
+	inexactNoProps := NewInexactRecordPattern(nil)
+	singleProp := NewExactRecordPattern([]RecordPatternEntry{
+		{Name: "a", Pattern: INT_PATTERN},
+	})
+	inexactSingleProp := NewInexactRecordPattern([]RecordPatternEntry{
+		{Name: "a", Pattern: INT_PATTERN},
+	})
+	singleOptionalProp := NewExactRecordPattern([]RecordPatternEntry{
+		{Name: "a", Pattern: INT_PATTERN, IsOptional: true},
+	})
 
 	assert.True(t, noProps.Test(ctx, &Record{}))
 	assert.False(t, noProps.Test(ctx, NewRecordFromMap(ValMap{"a": Int(1)})))
@@ -447,8 +449,8 @@ func TestFloatRangePattern(t *testing.T) {
 func TestSimplifyIntersection(t *testing.T) {
 
 	t.Run("object patterns", func(t *testing.T) {
-		emptyExactObject := NewExactObjectPattern(map[string]Pattern{})
-		emptyInexactObject := NewInexactObjectPattern(map[string]Pattern{})
+		emptyExactObject := NewExactObjectPattern(nil)
+		emptyInexactObject := NewInexactObjectPattern(nil)
 
 		result := simplifyIntersection([]Pattern{OBJECT_PATTERN, emptyExactObject})
 		assert.Same(t, emptyExactObject, result)

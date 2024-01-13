@@ -1197,7 +1197,7 @@ func (patt *ObjectPattern) Equal(ctx *Context, other Value, alreadyCompared map[
 		return false
 	}
 
-	if len(patt.entryPatterns) != len(otherPatt.entryPatterns) || patt.inexact != otherPatt.inexact {
+	if len(patt.entries) != len(otherPatt.entries) || patt.optionalEntryCount != otherPatt.optionalEntryCount || patt.inexact != otherPatt.inexact {
 		return false
 	}
 
@@ -1212,8 +1212,8 @@ func (patt *ObjectPattern) Equal(ctx *Context, other Value, alreadyCompared map[
 	alreadyCompared[addr] = otherAddr
 	alreadyCompared[otherAddr] = addr
 
-	for i, v := range patt.entryPatterns {
-		if !v.Equal(ctx, otherPatt.entryPatterns[i], alreadyCompared, depth+1) {
+	for i, entry := range patt.entries {
+		if !entry.Pattern.Equal(ctx, otherPatt.entries[i].Pattern, alreadyCompared, depth+1) {
 			return false
 		}
 	}
@@ -1226,7 +1226,7 @@ func (patt *RecordPattern) Equal(ctx *Context, other Value, alreadyCompared map[
 		return false
 	}
 
-	if len(patt.entryPatterns) != len(otherPatt.entryPatterns) || patt.inexact != otherPatt.inexact {
+	if len(patt.entries) != len(otherPatt.entries) || patt.optionalEntryCount != otherPatt.optionalEntryCount || patt.inexact != otherPatt.inexact {
 		return false
 	}
 
@@ -1241,8 +1241,8 @@ func (patt *RecordPattern) Equal(ctx *Context, other Value, alreadyCompared map[
 	alreadyCompared[addr] = otherAddr
 	alreadyCompared[otherAddr] = addr
 
-	for i, v := range patt.entryPatterns {
-		if !v.Equal(ctx, otherPatt.entryPatterns[i], alreadyCompared, depth+1) {
+	for i, entry := range patt.entries {
+		if !entry.Pattern.Equal(ctx, otherPatt.entries[i].Pattern, alreadyCompared, depth+1) {
 			return false
 		}
 	}

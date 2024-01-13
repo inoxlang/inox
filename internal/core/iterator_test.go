@@ -957,10 +957,7 @@ func TestObjectPatternIteration(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
 
-		it := ObjectPattern{
-			entryPatterns: map[string]Pattern{},
-			inexact:       false,
-		}.Iterator(ctx, IteratorConfiguration{})
+		it := NewExactObjectPattern(nil).Iterator(ctx, IteratorConfiguration{})
 
 		assert.False(t, it.HasNext(ctx))
 		assert.False(t, it.Next(ctx))
@@ -970,12 +967,8 @@ func TestObjectPatternIteration(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
 
-		it := ObjectPattern{
-			entryPatterns: map[string]Pattern{
-				"a": &ExactValuePattern{value: Int(2)},
-			},
-			inexact: false,
-		}.Iterator(ctx, IteratorConfiguration{})
+		it := NewExactObjectPattern([]ObjectPatternEntry{{Name: "a", Pattern: &ExactValuePattern{value: Int(2)}}}).
+			Iterator(ctx, IteratorConfiguration{})
 
 		//next
 		assert.True(t, it.HasNext(ctx))
@@ -992,23 +985,26 @@ func TestObjectPatternIteration(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
 
-		it := ObjectPattern{
-			entryPatterns: map[string]Pattern{
-				"a": &UnionPattern{
-					cases: []Pattern{
-						&ExactValuePattern{value: Int(2)},
-						&ExactValuePattern{value: Int(3)},
-					},
-				},
-				"b": &UnionPattern{
+		it := NewExactObjectPattern([]ObjectPatternEntry{
+			{
+				Name: "a",
+				Pattern: &UnionPattern{
 					cases: []Pattern{
 						&ExactValuePattern{value: Int(2)},
 						&ExactValuePattern{value: Int(3)},
 					},
 				},
 			},
-			inexact: false,
-		}.Iterator(ctx, IteratorConfiguration{})
+			{
+				Name: "b",
+				Pattern: &UnionPattern{
+					cases: []Pattern{
+						&ExactValuePattern{value: Int(2)},
+						&ExactValuePattern{value: Int(3)},
+					},
+				},
+			},
+		}).Iterator(ctx, IteratorConfiguration{})
 
 		//next
 		assert.True(t, it.HasNext(ctx))
@@ -1048,10 +1044,7 @@ func TestRecordPatternIteration(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
 
-		it := (&RecordPattern{
-			entryPatterns: map[string]Pattern{},
-			inexact:       false,
-		}).Iterator(ctx, IteratorConfiguration{})
+		it := NewExactRecordPattern(nil).Iterator(ctx, IteratorConfiguration{})
 
 		assert.False(t, it.HasNext(ctx))
 		assert.False(t, it.Next(ctx))
@@ -1061,12 +1054,8 @@ func TestRecordPatternIteration(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
 
-		it := (&RecordPattern{
-			entryPatterns: map[string]Pattern{
-				"a": &ExactValuePattern{value: Int(2)},
-			},
-			inexact: false,
-		}).Iterator(ctx, IteratorConfiguration{})
+		it := NewExactRecordPattern([]RecordPatternEntry{{Name: "a", Pattern: &ExactValuePattern{value: Int(2)}}}).
+			Iterator(ctx, IteratorConfiguration{})
 
 		//next
 		assert.True(t, it.HasNext(ctx))
@@ -1083,22 +1072,25 @@ func TestRecordPatternIteration(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		NewGlobalState(ctx)
 
-		it := (&RecordPattern{
-			entryPatterns: map[string]Pattern{
-				"a": &UnionPattern{
-					cases: []Pattern{
-						&ExactValuePattern{value: Int(2)},
-						&ExactValuePattern{value: Int(3)},
-					},
-				},
-				"b": &UnionPattern{
+		it := NewExactRecordPattern([]RecordPatternEntry{
+			{
+				Name: "a",
+				Pattern: &UnionPattern{
 					cases: []Pattern{
 						&ExactValuePattern{value: Int(2)},
 						&ExactValuePattern{value: Int(3)},
 					},
 				},
 			},
-			inexact: false,
+			{
+				Name: "b",
+				Pattern: &UnionPattern{
+					cases: []Pattern{
+						&ExactValuePattern{value: Int(2)},
+						&ExactValuePattern{value: Int(3)},
+					},
+				},
+			},
 		}).Iterator(ctx, IteratorConfiguration{})
 
 		//next

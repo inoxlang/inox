@@ -317,7 +317,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 		}
 
 		//{a: int} pattern
-		pattern := NewInexactObjectPattern(map[string]Pattern{"a": INT_PATTERN})
+		pattern := NewInexactObjectPattern([]ObjectPatternEntry{{Name: "a", Pattern: INT_PATTERN}})
 
 		obj, err = ParseJSONRepresentation(ctx, `{}`, pattern)
 		if assert.ErrorContains(t, err, "the following properties are missing: a") {
@@ -335,7 +335,12 @@ func TestParseJSONRepresentation(t *testing.T) {
 		}
 
 		//{a: {b: int}} pattern
-		pattern = NewInexactObjectPattern(map[string]Pattern{"a": NewInexactObjectPattern(map[string]Pattern{"b": INT_PATTERN})})
+		pattern = NewInexactObjectPattern([]ObjectPatternEntry{
+			{
+				Name:    "a",
+				Pattern: NewInexactObjectPattern([]ObjectPatternEntry{{Name: "b", Pattern: INT_PATTERN}}),
+			},
+		})
 
 		obj, err = ParseJSONRepresentation(ctx, `{}`, pattern)
 		if assert.ErrorContains(t, err, "the following properties are missing: a") {
@@ -356,7 +361,12 @@ func TestParseJSONRepresentation(t *testing.T) {
 		}
 
 		//{a: []int} pattern ([]int has a default value)
-		pattern = NewInexactObjectPattern(map[string]Pattern{"a": NewListPatternOf(INT_PATTERN)})
+		pattern = NewInexactObjectPattern([]ObjectPatternEntry{
+			{
+				Name:    "a",
+				Pattern: NewListPatternOf(INT_PATTERN),
+			},
+		})
 
 		obj, err = ParseJSONRepresentation(ctx, `{}`, pattern) //auto fix
 		if assert.NoError(t, err) {
@@ -400,8 +410,13 @@ func TestParseJSONRepresentation(t *testing.T) {
 			assert.Equal(t, map[string]Value{"a": Str("1")}, rec.(*Record).ValueEntryMap())
 		}
 
-		//{a: int} pattern
-		pattern := NewInexactRecordPattern(map[string]Pattern{"a": INT_PATTERN})
+		//#{a: int} pattern
+		pattern := NewInexactRecordPattern([]RecordPatternEntry{
+			{
+				Name:    "a",
+				Pattern: INT_PATTERN,
+			},
+		})
 
 		rec, err = ParseJSONRepresentation(ctx, `{}`, pattern)
 		if assert.ErrorContains(t, err, "the following properties are missing: a") {
@@ -413,8 +428,18 @@ func TestParseJSONRepresentation(t *testing.T) {
 			assert.Equal(t, map[string]Value{"a": Int(1)}, rec.(*Record).ValueEntryMap())
 		}
 
-		//{a: {b: int}} pattern
-		pattern = NewInexactRecordPattern(map[string]Pattern{"a": NewInexactRecordPattern(map[string]Pattern{"b": INT_PATTERN})})
+		//#{a: #{b: int}} pattern
+		pattern = NewInexactRecordPattern([]RecordPatternEntry{
+			{
+				Name: "a",
+				Pattern: NewInexactRecordPattern([]RecordPatternEntry{
+					{
+						Name:    "b",
+						Pattern: INT_PATTERN,
+					},
+				}),
+			},
+		})
 
 		rec, err = ParseJSONRepresentation(ctx, `{}`, pattern)
 		if assert.ErrorContains(t, err, "the following properties are missing: a") {
@@ -434,8 +459,13 @@ func TestParseJSONRepresentation(t *testing.T) {
 			}
 		}
 
-		//{a: #[]int} pattern (#[]int has a default value)
-		pattern = NewInexactRecordPattern(map[string]Pattern{"a": NewTuplePatternOf(INT_PATTERN)})
+		//#{a: #[]int} pattern (#[]int has a default value)
+		pattern = NewInexactRecordPattern([]RecordPatternEntry{
+			{
+				Name:    "a",
+				Pattern: NewTuplePatternOf(INT_PATTERN),
+			},
+		})
 
 		rec, err = ParseJSONRepresentation(ctx, `{}`, pattern) //auto fix
 		if assert.NoError(t, err) {
@@ -717,8 +747,8 @@ func TestParseJSONRepresentation(t *testing.T) {
 
 		t.Run("objects", func(t *testing.T) {
 			pattern := NewUnionPattern([]Pattern{
-				NewInexactObjectPattern(map[string]Pattern{"a": INT_PATTERN}),
-				NewInexactObjectPattern(map[string]Pattern{"b": INT_PATTERN}),
+				NewInexactObjectPattern([]ObjectPatternEntry{{Name: "a", Pattern: INT_PATTERN}}),
+				NewInexactObjectPattern([]ObjectPatternEntry{{Name: "b", Pattern: INT_PATTERN}}),
 			}, nil)
 
 			val, err := ParseJSONRepresentation(ctx, `{"a":1}`, pattern)
@@ -812,8 +842,8 @@ func TestParseJSONRepresentation(t *testing.T) {
 			}
 
 			pattern := NewDisjointUnionPattern([]Pattern{
-				NewInexactObjectPattern(map[string]Pattern{"a": INT_PATTERN}),
-				NewInexactObjectPattern(map[string]Pattern{"b": INT_PATTERN}),
+				NewInexactObjectPattern([]ObjectPatternEntry{{Name: "a", Pattern: INT_PATTERN}}),
+				NewInexactObjectPattern([]ObjectPatternEntry{{Name: "b", Pattern: INT_PATTERN}}),
 			}, nil)
 
 			val, err = ParseJSONRepresentation(ctx, `{"a":1}`, pattern)

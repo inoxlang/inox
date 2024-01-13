@@ -793,30 +793,12 @@ func TestParseRepr(t *testing.T) {
 			/*              */ "b": exact(NewRecordFromMap(ValMap{"b": False})),
 			/*              */})},
 		//
-		{`%{a?:true}`, -1, NewInexactObjectPatternWithOptionalProps(
-			map[string]Pattern{"a": exact(True)},
-			map[string]struct{}{"a": {}},
-		)},
-		{`%{a? :true}`, -1, NewInexactObjectPatternWithOptionalProps(
-			map[string]Pattern{"a": exact(True)},
-			map[string]struct{}{"a": {}},
-		)},
-		{`%{a?: true}`, -1, NewInexactObjectPatternWithOptionalProps(
-			map[string]Pattern{"a": exact(True)},
-			map[string]struct{}{"a": {}},
-		)},
-		{`%{"a"?:true}`, -1, NewInexactObjectPatternWithOptionalProps(
-			map[string]Pattern{"a": exact(True)},
-			map[string]struct{}{"a": {}},
-		)},
-		{`%{"a"? :true}`, -1, NewInexactObjectPatternWithOptionalProps(
-			map[string]Pattern{"a": exact(True)},
-			map[string]struct{}{"a": {}},
-		)},
-		{`%{"a"?: true}`, -1, NewInexactObjectPatternWithOptionalProps(
-			map[string]Pattern{"a": exact(True)},
-			map[string]struct{}{"a": {}},
-		)},
+		{`%{a?:true}`, -1, NewInexactObjectPattern([]ObjectPatternEntry{{Name: "a", Pattern: exact(True), IsOptional: true}})},
+		{`%{a? :true}`, -1, NewInexactObjectPattern([]ObjectPatternEntry{{Name: "a", Pattern: exact(True), IsOptional: true}})},
+		{`%{a?: true}`, -1, NewInexactObjectPattern([]ObjectPatternEntry{{Name: "a", Pattern: exact(True), IsOptional: true}})},
+		{`%{"a"?:true}`, -1, NewInexactObjectPattern([]ObjectPatternEntry{{Name: "a", Pattern: exact(True), IsOptional: true}})},
+		{`%{"a"? :true}`, -1, NewInexactObjectPattern([]ObjectPatternEntry{{Name: "a", Pattern: exact(True), IsOptional: true}})},
+		{`%{"a"?: true}`, -1, NewInexactObjectPattern([]ObjectPatternEntry{{Name: "a", Pattern: exact(True), IsOptional: true}})},
 		{`%{"a":#[]}`, 7, nil},
 		{`%{"a": #[]}`, 8, nil},
 		{`%{"a":#{}}`, 7, nil},
@@ -895,8 +877,11 @@ func TestParseRepr(t *testing.T) {
 		//pattern calls
 		{"%int()", 5, nil},
 		{"%int(1..2)", -1, NewIncludedEndIntRangePattern(1, 2, -1)},
-		{`%{"a":%int(1..2)}`, -1, NewInexactObjectPattern(map[string]Pattern{
-			"a": NewIncludedEndIntRangePattern(1, 2, -1),
+		{`%{"a":%int(1..2)}`, -1, NewInexactObjectPattern([]ObjectPatternEntry{
+			{
+				Name:    "a",
+				Pattern: NewIncludedEndIntRangePattern(1, 2, -1),
+			},
 		})},
 
 		//weird cases
@@ -1106,7 +1091,14 @@ func exact(v Serializable) *ExactValuePattern {
 }
 
 func objPatt(entries map[string]Pattern) *ObjectPattern {
-	return NewInexactObjectPattern(entries)
+	var list []ObjectPatternEntry
+	for k, v := range entries {
+		list = append(list, ObjectPatternEntry{
+			Name:    k,
+			Pattern: v,
+		})
+	}
+	return NewInexactObjectPattern(list)
 }
 
 func listPatt(elements ...Pattern) *ListPattern {

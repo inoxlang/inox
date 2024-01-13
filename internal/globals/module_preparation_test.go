@@ -863,8 +863,16 @@ func TestPrepareLocalModule(t *testing.T) {
 			return
 		}
 
-		schema := core.NewInexactObjectPattern(map[string]core.Pattern{
-			"user": core.NewInexactObjectPattern(map[string]core.Pattern{"name": core.NewExactStringPattern("foo")}),
+		schema := core.NewInexactObjectPattern([]core.ObjectPatternEntry{
+			{
+				Name: "user",
+				Pattern: core.NewInexactObjectPattern([]core.ObjectPatternEntry{
+					{
+						Name:    "name",
+						Pattern: core.NewExactStringPattern("foo"),
+					},
+				}),
+			},
 		})
 
 		assert.Equal(t, schema, state.Databases["local"].Prop(ctx, "schema"))

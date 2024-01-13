@@ -52,8 +52,11 @@ func TestHttpRequestPattern(t *testing.T) {
 		})
 
 		t.Run("description with valid method", func(t *testing.T) {
-			description := core.NewInexactObjectPattern(map[string]core.Pattern{
-				"method": core.NewExactValuePattern(core.Identifier("GET")),
+			description := core.NewInexactObjectPattern([]core.ObjectPatternEntry{
+				{
+					Name:    "method",
+					Pattern: core.NewExactValuePattern(core.Identifier("GET")),
+				},
 			})
 
 			pattern, err := CALLABLE_HTTP_REQUEST_PATTERN.Call([]core.Serializable{description})
@@ -71,8 +74,11 @@ func TestHttpRequestPattern(t *testing.T) {
 		})
 
 		t.Run("description with invalid type for .method", func(t *testing.T) {
-			description := core.NewInexactObjectPattern(map[string]core.Pattern{
-				"method": core.NewExactValuePattern(core.Str("GET_")),
+			description := core.NewInexactObjectPattern([]core.ObjectPatternEntry{
+				{
+					Name:    "method",
+					Pattern: core.NewExactValuePattern(core.Str("GET_")),
+				},
 			})
 
 			assert.Panics(t, func() {
@@ -83,8 +89,11 @@ func TestHttpRequestPattern(t *testing.T) {
 
 	t.Run("Test", func(t *testing.T) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
-		description := core.NewInexactObjectPattern(map[string]core.Pattern{
-			"method": core.NewExactValuePattern(core.Identifier("GET")),
+		description := core.NewInexactObjectPattern([]core.ObjectPatternEntry{
+			{
+				Name:    "method",
+				Pattern: core.NewExactValuePattern(core.Identifier("GET")),
+			},
 		})
 
 		pattern, err := CALLABLE_HTTP_REQUEST_PATTERN.Call([]core.Serializable{description})

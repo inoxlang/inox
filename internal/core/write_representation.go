@@ -16,7 +16,6 @@ import (
 	jsoniter "github.com/inoxlang/inox/internal/jsoniter"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
-	"golang.org/x/exp/maps"
 )
 
 // this file contains the implementation of Value.HasRepresentation & Value.WriteRepresentation for core types.
@@ -1182,13 +1181,8 @@ func (p *ObjectPattern) WriteRepresentation(ctx *Context, w io.Writer, config *R
 		return err
 	}
 
-	keys := maps.Keys(p.entryPatterns)
-	sort.Strings(keys)
-
 	first := true
-	for _, k := range keys {
-		entryPattern := p.entryPatterns[k]
-
+	for _, entry := range p.entries {
 		if !first {
 			w.Write([]byte{','})
 			if err != nil {
@@ -1199,14 +1193,14 @@ func (p *ObjectPattern) WriteRepresentation(ctx *Context, w io.Writer, config *R
 
 		//key
 		{
-			jsonStr, _ := utils.MarshalJsonNoHTMLEspace(k)
+			jsonStr, _ := utils.MarshalJsonNoHTMLEspace(entry.Name)
 			_, err = w.Write(jsonStr)
 			if err != nil {
 				return err
 			}
 
-			if _, ok := p.optionalEntries[k]; ok {
-				w.Write([]byte{'?'})
+			if entry.IsOptional {
+				_, err := w.Write([]byte{'?'})
 				if err != nil {
 					return err
 				}
@@ -1218,8 +1212,8 @@ func (p *ObjectPattern) WriteRepresentation(ctx *Context, w io.Writer, config *R
 			return err
 		}
 
-		//value
-		err = entryPattern.WriteRepresentation(ctx, w, config, depth+1)
+		//write entry's pattern
+		err = entry.Pattern.WriteRepresentation(ctx, w, config, depth+1)
 		if err != nil {
 			return err
 		}

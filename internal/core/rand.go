@@ -220,13 +220,11 @@ func (patt DynamicStringPatternElement) Random(ctx *Context, options ...Option) 
 }
 
 func (patt *ObjectPattern) Random(ctx *Context, options ...Option) Value {
-	obj := newUnitializedObjectWithPropCount(len(patt.entryPatterns))
+	obj := newUnitializedObjectWithPropCount(len(patt.entries))
 
-	i := 0
-	for k, v := range patt.entryPatterns {
-		obj.keys[i] = k
-		obj.values[i] = v.Random(ctx, options...).(Serializable)
-		i++
+	for i, entry := range patt.entries {
+		obj.keys[i] = entry.Name
+		obj.values[i] = entry.Pattern.Random(ctx, options...).(Serializable)
 	}
 	obj.sortProps()
 
@@ -237,15 +235,13 @@ func (patt *ObjectPattern) Random(ctx *Context, options ...Option) Value {
 
 func (patt *RecordPattern) Random(ctx *Context, options ...Option) Value {
 	rec := &Record{
-		keys:   make([]string, len(patt.entryPatterns)),
-		values: make([]Serializable, len(patt.entryPatterns)),
+		keys:   make([]string, len(patt.entries)),
+		values: make([]Serializable, len(patt.entries)),
 	}
 
-	i := 0
-	for k, v := range patt.entryPatterns {
-		rec.keys[i] = k
-		rec.values[i] = v.Random(ctx, options...).(Serializable)
-		i++
+	for i, entry := range patt.entries {
+		rec.keys[i] = entry.Name
+		rec.values[i] = entry.Pattern.Random(ctx, options...).(Serializable)
 	}
 	rec.sortProps()
 

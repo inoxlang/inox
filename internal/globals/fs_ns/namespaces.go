@@ -10,9 +10,15 @@ import (
 func init() {
 	core.RegisterDefaultPatternNamespace("fs", &core.PatternNamespace{
 		Patterns: map[string]core.Pattern{
-			"tree-data-item": core.NewInexactRecordPattern(map[string]core.Pattern{
-				"path":               core.PATH_PATTERN,
-				"path_rel_to_parent": core.PATH_PATTERN,
+			"tree-data-item": core.NewInexactRecordPattern([]core.RecordPatternEntry{
+				{
+					Name:    "path",
+					Pattern: core.PATH_PATTERN,
+				},
+				{
+					Name:    "path_rel_to_parent",
+					Pattern: core.PATH_PATTERN,
+				},
 			}),
 		},
 	})
