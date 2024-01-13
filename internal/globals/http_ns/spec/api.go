@@ -160,6 +160,10 @@ func (op ApiOperation) HandlerModule() (*core.Module, bool) {
 	return op.handlerModule, op.handlerModule != nil
 }
 
+func (op ApiOperation) JSONRequestBodyPattern() (core.Pattern, bool) {
+	return op.jsonRequestBody, op.jsonRequestBody != nil
+}
+
 type EndpointTreeNode struct {
 	path              string
 	segment           string                       //examples: name, group, {id}
