@@ -5,9 +5,11 @@ comment in this [issue](https://github.com/inoxlang/inox/issues/4)**.
 
 ## Guidelines
 
-Please before working on the codebase make sure you read [FUTURE.md](./FUTURE.md).\
-Contributing to Inox requires that you sign the Developer Certificate of Origin in every commit.
-This can be easily automated, here is a guide: https://www.secondstate.io/articles/dco/.
+Please before working on the codebase make sure you read [FUTURE.md](./FUTURE.md).
+
+Contributing to Inox requires that you agree to the [Developer Certificate of Origin](https://developercertificate.org/) by 
+adding `Signed-off-by: username <email address>` in the last line of your commit messages.
+This can be easily automated: https://www.secondstate.io/articles/dco/.
 
 It is recommended to avoid the following changes:
 - adding a feature that will be used by only a few Inox projects
