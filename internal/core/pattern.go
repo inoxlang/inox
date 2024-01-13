@@ -19,6 +19,9 @@ import (
 const (
 	MAX_UNION_PATTERN_FLATTENING_DEPTH      = 5
 	OBJECT_CONSTRAINTS_VERIFICATION_TIMEOUT = 10 * time.Millisecond
+
+	//Default max element count if the number of elements is not exact.
+	DEFAULT_LIST_PATTERN_MAX_ELEM_COUNT = math.MaxInt64
 )
 
 var (
@@ -805,6 +808,16 @@ func (patt ListPattern) Test(ctx *Context, v Value) bool {
 	return containedElementFound
 }
 
+func (patt *ListPattern) ExactElementCount() (int, bool) {
+	if patt.elementPatterns != nil {
+		return len(patt.elementPatterns), true
+	}
+	return 0, false
+}
+
+// MinElementCount returns the minimum number of elements if
+// it is defined. The function panics otherwise. The minimum
+// is not defined for list patterns with an exact number of elements.
 func (patt *ListPattern) MinElementCount() int {
 	if patt.minElemCountPlusOne > 0 {
 		if patt.elementPatterns != nil {
@@ -818,6 +831,9 @@ func (patt *ListPattern) MinElementCount() int {
 	return len(patt.elementPatterns)
 }
 
+// MaxElementCount returns the maximum number of elements if
+// it is defined. The function panics otherwise. The maximum
+// is not defined for most patterns with an exact number of elements.
 func (patt *ListPattern) MaxElementCount() int {
 	if patt.minElemCountPlusOne > 0 {
 		if patt.elementPatterns != nil {
@@ -826,7 +842,7 @@ func (patt *ListPattern) MaxElementCount() int {
 		return patt.maxElemCount
 	}
 	if patt.elementPatterns == nil {
-		return math.MaxInt64
+		return DEFAULT_LIST_PATTERN_MAX_ELEM_COUNT
 	}
 	return len(patt.elementPatterns)
 }
@@ -916,6 +932,13 @@ func (patt *TuplePattern) DefaultValue(ctx *Context) (Value, error) {
 		return NewTuple(nil), nil
 	}
 	return nil, ErrNoDefaultValue
+}
+
+func (patt *TuplePattern) ExactElementCount() (int, bool) {
+	if patt.elementPatterns != nil {
+		return len(patt.elementPatterns), true
+	}
+	return 0, false
 }
 
 type OptionPattern struct {
@@ -1151,6 +1174,14 @@ func (patt *IntRangePattern) StringPattern() (StringPattern, bool) {
 	return NewIntRangeStringPattern(patt.intRange.start, patt.intRange.InclusiveEnd(), nil), true
 }
 
+func (patt *IntRangePattern) Range() IntRange {
+	return patt.intRange
+}
+
+func (patt *IntRangePattern) HasMultipleOfConstraint() bool {
+	return patt.multipleOf > 0 || patt.multipleOfFloat != nil
+}
+
 // An FloatRangePattern represents a pattern matching floats in a given range.
 type FloatRangePattern struct {
 	floatRange FloatRange
@@ -1225,6 +1256,10 @@ func (patt *FloatRangePattern) StringPattern() (StringPattern, bool) {
 	default:
 		return nil, false
 	}
+}
+
+func (patt *FloatRangePattern) Range() FloatRange {
+	return patt.floatRange
 }
 
 type EventPattern struct {

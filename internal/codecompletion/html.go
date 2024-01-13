@@ -1,9 +1,13 @@
 package codecompletion
 
 import (
+	"bytes"
 	"encoding/json"
+	"fmt"
+	"math"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/inoxlang/inox/internal/core"
@@ -212,6 +216,8 @@ func findWholeHTMLTagCompletions(tagName string, ancestors []parse.Node, include
 			hxAttribute := "hx-post-json"
 			path := endpoint.PathWithParams()
 
+			inputsBuf := bytes.NewBuffer(nil)
+
 			if !endpoint.CatchAll() { //if operation is defined
 				method = operation.HttpMethod()
 				switch method {
@@ -222,11 +228,16 @@ func findWholeHTMLTagCompletions(tagName string, ancestors []parse.Node, include
 				case "PUT":
 					hxAttribute = "hx-put-json"
 				}
+
+				bodyPattern, ok := operation.JSONRequestBodyPattern()
+				if ok {
+					writeInputs(inputsBuf, "", bodyPattern)
+				}
 			}
 
 			completions = append(completions, Completion{
 				ShownString: prefix + "form " + method + " " + path,
-				Value:       prefix + "form " + hxAttribute + `="` + path + `"><form>`,
+				Value:       prefix + "form " + hxAttribute + `="` + path + `">` + inputsBuf.String() + `<form>`,
 				Kind:        defines.CompletionItemKindProperty,
 			})
 			return nil
@@ -236,6 +247,220 @@ func findWholeHTMLTagCompletions(tagName string, ancestors []parse.Node, include
 	return
 }
 
-func getForm(prefix string) (completions []Completion) {
-	return nil
+func writeInputs(w *bytes.Buffer, parent string, pattern core.Pattern) {
+	switch p := pattern.(type) {
+	case *core.ObjectPattern:
+		p.ForEachEntry(func(entry core.ObjectPatternEntry) error {
+			name := parent + "." + entry.Name
+			if isTerminalFormParamPattern(p) {
+				writeTerminalInputs(w, name, p)
+			} else {
+				writeInputs(w, parent, entry.Pattern)
+			}
+			return nil
+		})
+	case *core.RecordPattern:
+		p.ForEachEntry(func(entry core.RecordPatternEntry) error {
+			name := parent + "." + entry.Name
+			if isTerminalFormParamPattern(p) {
+				writeTerminalInputs(w, name, p)
+			} else {
+				writeInputs(w, parent, entry.Pattern)
+			}
+			return nil
+		})
+	case *core.ListPattern:
+		exactElemCount, ok := p.ExactElementCount()
+		if ok {
+			for i := 0; i < exactElemCount; i++ {
+				name := parent + "[" + strconv.Itoa(i) + "]"
+				if isTerminalFormParamPattern(p) {
+					writeTerminalInputs(w, name, p)
+				} else {
+					writeInputs(w, parent, utils.MustGet(p.ElementPatternAt(i)))
+				}
+			}
+		} else {
+			minCount := p.MinElementCount()
+			maxCount := p.MaxElementCount()
+			if minCount != 0 || maxCount == core.DEFAULT_LIST_PATTERN_MAX_ELEM_COUNT {
+				w.WriteString("<!-- failed to generate inputs for elements of ")
+				w.WriteString(parent)
+				w.WriteString(" -->")
+				return
+			}
+
+			w.WriteString("<!-- failed to generate inputs for elements of ")
+			w.WriteString(parent)
+			w.WriteString(" -->")
+		}
+	case *core.TuplePattern:
+		exactElemCount, ok := p.ExactElementCount()
+		if ok {
+			for i := 0; i < exactElemCount; i++ {
+				name := parent + "[" + strconv.Itoa(i) + "]"
+				if isTerminalFormParamPattern(p) {
+					writeTerminalInputs(w, name, p)
+				} else {
+					writeInputs(w, parent, utils.MustGet(p.ElementPatternAt(i)))
+				}
+			}
+		} else {
+			w.WriteString("<!-- failed to generate inputs for elements of ")
+			w.WriteString(parent)
+			w.WriteString(" -->")
+		}
+	default:
+		if isTerminalFormParamPattern(p) {
+			writeTerminalInputs(w, parent, p)
+		}
+	}
+}
+
+func isTerminalFormParamPattern(p core.Pattern) bool {
+	switch p.(type) {
+	case *core.IntRangePattern, *core.FloatRangePattern:
+		return true
+	}
+
+	switch p {
+	case core.INT_PATTERN, core.FLOAT_PATTERN, core.BOOL_PATTERN,
+		core.YEAR_PATTERN, core.DATE_PATTERN, core.DATETIME_PATTERN, core.DURATION_PATTERN,
+		core.EMAIL_ADDR_PATTERN:
+		return true
+	}
+	return false
+}
+
+func writeTerminalInputs(w *bytes.Buffer, name string, pattern core.Pattern) (supported bool) {
+	type input struct {
+		//type attribute
+		typ string
+
+		//value attribute
+		value string
+
+		//pattern attribute, it can only be defined for the following types: text, search, url, tel, email, password.
+		pattern string
+
+		//additional attributes
+		//https://developer.mozilla.org/en-US/docs/Web/HTML/Element/Input#attributes
+		additional [][2]string
+
+		//comment added after the <input> element.
+		comment string
+	}
+	var inputs []input
+
+	switch p := pattern.(type) {
+	case *core.IntRangePattern:
+		input := input{}
+		intRange := p.Range()
+
+		if intRange.HasKnownStart() {
+			min := fmt.Sprintf("%d", intRange.KnownStart())
+			input.additional = append(input.additional, [2]string{"min", min})
+		}
+
+		end := intRange.InclusiveEnd()
+		if end < math.MaxInt64 {
+			max := fmt.Sprintf("%d", end)
+			input.additional = append(input.additional, [2]string{"max", max})
+		}
+
+		inputs = append(inputs, input)
+	case *core.FloatRangePattern:
+		input := input{
+			typ: "number",
+		}
+
+		floatRange := p.Range()
+		if floatRange.HasKnownStart() {
+			min := fmt.Sprintf("%f", floatRange.KnownStart())
+			input.additional = append(input.additional, [2]string{"min", min})
+		}
+
+		end := floatRange.InclusiveEnd()
+		if end < math.MaxFloat64 {
+			max := fmt.Sprintf("%f", end)
+			input.additional = append(input.additional, [2]string{"max", max})
+		}
+
+		inputs = append(inputs, input)
+	default:
+		switch p {
+		case core.INT_PATTERN:
+			inputs = append(inputs, input{
+				typ:        "number",
+				additional: [][2]string{{"step", "1"}},
+			})
+		case core.FLOAT_PATTERN:
+			inputs = append(inputs, input{typ: "number"})
+		case core.BOOL_PATTERN:
+			inputs = append(inputs, input{typ: "checkbox", value: "yes"})
+		case core.EMAIL_ADDR_PATTERN:
+			inputs = append(inputs, input{typ: "email"})
+		case core.YEAR_PATTERN:
+			inputs = append(inputs, input{
+				typ:        "number",
+				additional: [][2]string{{"step", "1"}},
+			})
+		case core.DATE_PATTERN:
+			inputs = append(inputs, input{typ: "date"})
+		case core.DATETIME_PATTERN:
+			inputs = append(inputs, input{typ: "datetime-local"})
+		case core.DURATION_PATTERN:
+			inputs = append(inputs, input{typ: "number"})
+		}
+	}
+
+	//write the inputs
+
+	for _, input := range inputs {
+		w.WriteString("<input name=\"")
+		w.WriteString(name) //TODO: encode
+		w.WriteByte('"')
+
+		w.WriteString("<input placeholder=\"")
+		w.WriteString(name) //TODO: encode
+		w.WriteByte('"')
+
+		if input.typ != "" {
+			w.WriteString(" type=\"")
+			w.WriteString(input.typ)
+			w.WriteByte('"')
+		}
+
+		if input.pattern != "" {
+			w.WriteString(" pattern=\"")
+			w.WriteString(input.pattern) //TODO: encode
+			w.WriteByte('"')
+		}
+
+		if input.value != "" {
+			w.WriteString(" value=\"")
+			w.WriteString(input.value) //TODO: encode
+			w.WriteByte('"')
+		}
+
+		for _, additionalAttribute := range input.additional {
+			w.WriteByte(' ')
+			w.WriteString(additionalAttribute[0])
+			w.WriteString(`="`)
+			w.WriteString(additionalAttribute[1]) //TODO: encode
+			w.WriteByte('"')
+		}
+
+		//Close the input with '/>' because Inox's JSX-like syntax
+		//is not aware of self-closing HTML elements.
+		w.WriteString(`/>`)
+
+		if input.comment != "" {
+			w.WriteString(" <!-- ")
+			w.WriteString(input.comment)
+			w.WriteString(" -->")
+		}
+	}
+
+	return true
 }

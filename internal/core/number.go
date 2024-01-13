@@ -52,6 +52,10 @@ func (r FloatRange) Includes(ctx *Context, n Float) bool {
 	return r.start <= float64(n) && float64(n) <= r.InclusiveEnd()
 }
 
+func (r FloatRange) HasKnownStart() bool {
+	return !r.unknownStart
+}
+
 func (r FloatRange) KnownStart() float64 {
 	if r.unknownStart {
 		panic(ErrUnknownStartFloatRange)
@@ -163,12 +167,18 @@ func (r IntRange) At(ctx *Context, i int) Value {
 	return Int(i + int(r.start))
 }
 
+// Len returns the number of integers in the range if the start (lower bound) is known.
+// Len panics otherwise.
 func (r IntRange) Len() int {
 	if r.unknownStart {
 		panic(ErrUnknownStartIntRange)
 	}
 
 	return r.len(r.start)
+}
+
+func (r IntRange) HasKnownStart() bool {
+	return !r.unknownStart
 }
 
 func (r IntRange) KnownStart() int64 {
