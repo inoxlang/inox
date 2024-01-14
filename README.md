@@ -639,7 +639,7 @@ drop-perms {
 
 #### **Limits (WIP)**
 
-Limits limit intensive operations, there are three kinds of limits: **byte rate**, **simple rate** & **total**. They are defined in the manifest and are
+Limits limit intensive operations, there are three kinds of limits: **byte rate**, **frequency** & **total**. They are defined in the manifest and are
 [shared](./docs/language-reference.md#limits) with the children of the module.
 
 ```

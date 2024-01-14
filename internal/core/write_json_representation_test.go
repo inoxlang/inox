@@ -754,19 +754,36 @@ func TestByteRateJSONRepresentation(t *testing.T) {
 	}
 }
 
-func TestSimpleRateJSONRepresentation(t *testing.T) {
+var freqJSONReprTestCases = []struct {
+	value                  Frequency
+	expectedRepresentation string
+}{
+	{3, "3"},
+	{1_000, "1000"},
+	{1_001, "1001"},
+	{999_000, "999000"},
+	{1_000_000, "1000000"},
+	{1_001_000, "1001000"},
+	{999_000_000, "999000000"},
+	{1_000_000_000, "1000000000"},
+	{1_001_000_000, "1001000000"},
+	{1_001_001_000, "1001001000"},
+	{1_001_001_001, "1001001001"},
+}
+
+func TestFrequencyJSONRepresentation(t *testing.T) {
 	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
-	for _, testCase := range simpleRateReprTestCases {
+	for _, testCase := range freqJSONReprTestCases {
 
 		t.Run(strconv.Itoa(int(testCase.value)), func(t *testing.T) {
 			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 			defer ctx.CancelGracefully()
 
-			assert.Equal(t, `{"simple-rate__value":"`+testCase.representation+`"}`, getJSONRepr(t, testCase.value, ctx))
-			assert.Equal(t, `"`+testCase.representation+`"`, getJSONRepr(t, testCase.value, ctx, JSONSerializationConfig{
-				Pattern: SIMPLERATE_PATTERN,
+			assert.Equal(t, `{"frequency__value":`+testCase.expectedRepresentation+`}`, getJSONRepr(t, testCase.value, ctx))
+			assert.Equal(t, testCase.expectedRepresentation, getJSONRepr(t, testCase.value, ctx, JSONSerializationConfig{
+				Pattern: FREQUENCY_PATTERN,
 			}))
 		})
 

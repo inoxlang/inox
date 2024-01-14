@@ -2081,7 +2081,7 @@ application in smaller parts.
 ## Limits
 
 Limits limit intensive operations, there are three kinds of limits:
-**[byte rate](#byte-rate-limits)**, **[simple rate](#simple-rate-limits)** &
+**[byte rate](#byte-rate-limits)**, **[frequency](#frequency-limits)** &
 **[total](#total-limits)**. Limits are defined in module manifests.
 
 ```
@@ -2166,7 +2166,7 @@ Examples:
 - `fs/read`
 - `fs/write`
 
-### Simple Rate Limits
+### Frequency Limits
 
 This kind of limit represents a number of operations per second.\
 Examples:

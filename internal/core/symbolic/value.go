@@ -47,7 +47,7 @@ var (
 	ANY_LINECOUNT  = &LineCount{}
 	ANY_RUNECOUNT  = &RuneCount{}
 	ANY_BYTERATE   = &ByteRate{}
-	ANY_SIMPLERATE = &SimpleRate{}
+	ANY_FREQUENCY  = &Frequency{}
 	ANY_IDENTIFIER = &Identifier{}
 	ANY_PROPNAME   = &PropertyName{}
 	ANY_EMAIL_ADDR = &EmailAddress{}
@@ -1424,25 +1424,25 @@ func (c *RuneCount) WidestOfType() Value {
 	return ANY_RUNECOUNT
 }
 
-// A SimpleRate represents a symbolic SimpleRate.
-type SimpleRate struct {
+// A Frequency represents a symbolic Frequency.
+type Frequency struct {
 	hasValue bool
-	value    int64
+	value    float64
 	SerializableMixin
 }
 
-func NewSimpleRate(v int64) *SimpleRate {
-	return &SimpleRate{
+func NewFrequency(v float64) *Frequency {
+	return &Frequency{
 		hasValue: true,
 		value:    v,
 	}
 }
 
-func (c *SimpleRate) Test(v Value, state RecTestCallState) bool {
+func (c *Frequency) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
-	otherRate, ok := v.(*SimpleRate)
+	otherRate, ok := v.(*Frequency)
 	if !ok {
 		return false
 	}
@@ -1454,33 +1454,33 @@ func (c *SimpleRate) Test(v Value, state RecTestCallState) bool {
 	return otherRate.hasValue && c.value == otherRate.value
 }
 
-func (r *SimpleRate) IsConcretizable() bool {
+func (r *Frequency) IsConcretizable() bool {
 	return r.hasValue
 }
 
-func (r *SimpleRate) Concretize(ctx ConcreteContext) any {
+func (r *Frequency) Concretize(ctx ConcreteContext) any {
 	if !r.IsConcretizable() {
 		panic(ErrNotConcretizable)
 	}
-	return extData.ConcreteValueFactories.CreateSimpleRate(r.value)
+	return extData.ConcreteValueFactories.CreateFrequency(r.value)
 }
 
-func (r *SimpleRate) Static() Pattern {
+func (r *Frequency) Static() Pattern {
 	return &TypePattern{val: r.WidestOfType()}
 }
 
-func (r *SimpleRate) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
-	w.WriteName("simple-rate")
-	if r.hasValue {
+func (f *Frequency) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("frequency")
+	if f.hasValue {
 		w.WriteByte('(')
-		w.WriteString(strconv.FormatInt(r.value, 10))
+		w.WriteString(strconv.FormatFloat(float64(f.value), 'g', -1, 64))
 		w.WriteName("x/s")
 		w.WriteByte(')')
 	}
 }
 
-func (r *SimpleRate) WidestOfType() Value {
-	return ANY_SIMPLERATE
+func (r *Frequency) WidestOfType() Value {
+	return ANY_FREQUENCY
 }
 
 type ResourceName interface {

@@ -21,8 +21,8 @@ var (
 
 	objectStorageLimit = core.Limit{
 		Name:  s3_ns.OBJECT_STORAGE_REQUEST_RATE_LIMIT_NAME,
-		Kind:  core.SimpleRateLimit,
-		Value: 100,
+		Kind:  core.FrequencyLimit,
+		Value: 100 * core.FREQ_LIMIT_SCALE,
 	}
 )
 

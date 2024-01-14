@@ -352,8 +352,12 @@ func TestParseRepr(t *testing.T) {
 		{`10s1.0e2`, 8, nil},
 		{`-1s`, 0, nil},
 
-		//rates
-		{`10x/s`, -1, SimpleRate(10)},
+		//frequencies
+		{`10x/s`, -1, Frequency(10)},
+		{`10kx/s`, -1, Frequency(10_000)},
+		{`0.1x/s`, -1, Frequency(0.1)},
+		{`1.0e-5x/s`, -1, Frequency(1e-5)},
+		{`1.01e-5x/s`, -1, Frequency(1.01e-5)},
 		{`10x/`, 4, nil},
 		{`10x/1`, 4, nil},
 		{`10x/a1`, 5, nil},

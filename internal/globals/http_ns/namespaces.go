@@ -54,7 +54,7 @@ var (
 
 func init() {
 	//register limits
-	core.RegisterLimit(HTTP_REQUEST_RATE_LIMIT_NAME, core.SimpleRateLimit, 0)
+	core.RegisterLimit(HTTP_REQUEST_RATE_LIMIT_NAME, core.FrequencyLimit, 0)
 	core.RegisterLimit(HTTP_UPLOAD_RATE_LIMIT_NAME, core.ByteRateLimit, 0)
 
 	//register patterns

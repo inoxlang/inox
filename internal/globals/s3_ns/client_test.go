@@ -22,7 +22,7 @@ func TestS3Client(t *testing.T) {
 			Limits: []core.Limit{
 				{
 					Name:  OBJECT_STORAGE_REQUEST_RATE_LIMIT_NAME,
-					Kind:  core.SimpleRateLimit,
+					Kind:  core.FrequencyLimit,
 					Value: 1,
 				},
 			},

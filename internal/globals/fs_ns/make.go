@@ -497,7 +497,7 @@ func __createFile(ctx *core.Context, fpath core.Path, b []byte, fmode fs.FileMod
 	}
 
 	ctx.Take(FS_TOTAL_NEW_FILE_LIMIT_NAME, 1)
-	ctx.Take(FS_NEW_FILE_RATE_LIMIT_NAME, 1)
+	ctx.Take(FS_NEW_FILE_RATE_LIMIT_NAME, core.FREQ_LIMIT_SCALE)
 
 	rate, err := ctx.GetByteRate(FS_WRITE_LIMIT_NAME)
 	if err != nil {

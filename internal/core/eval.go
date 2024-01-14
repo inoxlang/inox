@@ -50,7 +50,7 @@ var (
 	INT_TYPE                = reflect.TypeOf(Int(1))
 	PORT_TYPE               = reflect.TypeOf(Port{})
 	BYTERATE_TYPE           = reflect.TypeOf(ByteRate(1))
-	SIMPLERATE_TYPE         = reflect.TypeOf(SimpleRate(1))
+	FREQUENCY_TYPE          = reflect.TypeOf(Frequency(1))
 	LINECOUNT_TYPE          = reflect.TypeOf(LineCount(1))
 	RUNECOUNT_TYPE          = reflect.TypeOf(RuneCount(1))
 	BYTECOUNT_TYPE          = reflect.TypeOf(ByteCount(1))

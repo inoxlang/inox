@@ -61,7 +61,7 @@ func TestCompileModule(t *testing.T) {
 				MakeInstruction(OpPushConstant, 0),
 				MakeInstruction(OpSuspendVM),
 			),
-			[]Value{SimpleRate(1)},
+			[]Value{Frequency(1)},
 		)
 
 	})

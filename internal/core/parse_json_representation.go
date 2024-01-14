@@ -232,8 +232,8 @@ func ParseNextJSONRepresentation(ctx *Context, it *jsoniter.Iterator, pattern Pa
 			return parseByteCountJSONRepresentation(ctx, it, nil, try)
 		case RUNECOUNT_PATTERN:
 			return parseRuneCountJSONRepresentation(ctx, it, nil, try)
-		case SIMPLERATE_PATTERN:
-			//TODO
+		case FREQUENCY_PATTERN:
+			return parseFrequencyJSONRepresentation(ctx, it, nil, try)
 		case BYTERATE_PATTERN:
 			//TODO
 		case PATH_PATTERN:
@@ -710,6 +710,24 @@ func parseRuneCountJSONRepresentation(ctx *Context, it *jsoniter.Iterator, patte
 		return 0, fmt.Errorf("failed to parse rune count: %w", err)
 	}
 	return RuneCount(i), nil
+}
+
+func parseFrequencyJSONRepresentation(ctx *Context, it *jsoniter.Iterator, pattern Pattern, try bool) (_ Frequency, finalErr error) {
+	if it.WhatIsNext() != jsoniter.NumberValue {
+		if try {
+			return 0, ErrTriedToParseJSONRepr
+		}
+		return 0, ErrJsonNotMatchingSchema
+	}
+
+	freq := Frequency(it.ReadFloat64())
+
+	err := freq.Validate()
+	if err != nil {
+		return 0, err
+	}
+
+	return Frequency(freq), nil
 }
 
 func parsePathJSONRepresentation(ctx *Context, it *jsoniter.Iterator, try bool) (_ Path, finalErr error) {

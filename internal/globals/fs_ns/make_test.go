@@ -16,7 +16,7 @@ func TestCreateFile(t *testing.T) {
 
 	var (
 		permissiveTotalLimit       = core.MustMakeNotAutoDepletingCountLimit(FS_TOTAL_NEW_FILE_LIMIT_NAME, 100_000)
-		permissiveNewFileRateLimit = core.MustMakeNotAutoDepletingCountLimit(FS_NEW_FILE_RATE_LIMIT_NAME, 100_000)
+		permissiveNewFileRateLimit = core.MustMakeNotAutoDepletingCountLimit(FS_NEW_FILE_RATE_LIMIT_NAME, 100_000*core.FREQ_LIMIT_SCALE)
 	)
 
 	//in the following tests token buckets are emptied before calling __createFile
@@ -187,7 +187,7 @@ func TestCopy(t *testing.T) {
 			Limits: []core.Limit{
 				{Name: FS_READ_LIMIT_NAME, Kind: core.ByteRateLimit, Value: 1 << 32},
 				{Name: FS_WRITE_LIMIT_NAME, Kind: core.ByteRateLimit, Value: 1 << 32},
-				{Name: FS_NEW_FILE_RATE_LIMIT_NAME, Kind: core.ByteRateLimit, Value: 100},
+				{Name: FS_NEW_FILE_RATE_LIMIT_NAME, Kind: core.FrequencyLimit, Value: 100 * core.FREQ_LIMIT_SCALE},
 				{Name: FS_TOTAL_NEW_FILE_LIMIT_NAME, Kind: core.ByteRateLimit, Value: 1000},
 			},
 			Filesystem: GetOsFilesystem(),

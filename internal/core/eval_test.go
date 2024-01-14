@@ -2008,7 +2008,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			assert.EqualValues(t, ByteRate(10_000), res)
 		})
 
-		t.Run("simple rate", func(t *testing.T) {
+		t.Run("frequency", func(t *testing.T) {
 			code := `10x/s`
 			state := NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
@@ -2016,7 +2016,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 
-			assert.EqualValues(t, SimpleRate(10), res)
+			assert.EqualValues(t, Frequency(10), res)
 		})
 
 	})

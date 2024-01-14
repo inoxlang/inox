@@ -12,13 +12,16 @@ import (
 )
 
 const (
-	LINE_COUNT_UNIT = "ln"
-	RUNE_COUNT_UNIT = "rn"
-	BYTE_COUNT_UNIT = "B"
+	LINE_COUNT_UNIT               = "ln"
+	RUNE_COUNT_UNIT               = "rn"
+	BYTE_COUNT_UNIT               = "B"
+	SIMPLE_RATE_PER_SECOND_SUFFIX = "x/s"
 )
 
 var (
 	ErrUnknownStartQtyRange = errors.New("quantity range has unknown start")
+	ErrNegFrequency         = errors.New("negative frequency")
+	ErrInfFrequency         = errors.New("infinite frequency")
 )
 
 // ByteCount implements Value.
@@ -36,17 +39,29 @@ type Rate interface {
 }
 
 // A ByteRate represents a number of bytes per second, it implements Value.
-type ByteRate int
+type ByteRate int64
 
 func (r ByteRate) QuantityPerSecond() Value {
 	return ByteCount(r)
 }
 
-// A SimpleRate represents a number of 'X' per second implements Value.
-type SimpleRate int
+// A Frequency represents a number of actions per second, it implements Value.
+type Frequency float64
 
-func (r SimpleRate) QuantityPerSecond() Value {
-	return Float(r)
+func (f Frequency) QuantityPerSecond() Value {
+	return Float(f)
+}
+
+func (f Frequency) Validate() error {
+	if f < 0.0 {
+		return ErrNegFrequency
+	}
+
+	if math.IsInf(float64(f), 1) {
+		return ErrInfFrequency
+	}
+
+	return nil
 }
 
 // QuantityRange implements Value.
@@ -192,7 +207,7 @@ func evalRate(q Value, unitName string) (Serializable, error) {
 		if unitName != "s" {
 			return nil, errors.New("invalid unit " + unitName)
 		}
-		return SimpleRate(qv), nil
+		return Frequency(qv), nil
 	}
 
 	return nil, fmt.Errorf("invalid quantity type: %T", q)

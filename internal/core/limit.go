@@ -23,6 +23,10 @@ const (
 	EXECUTION_CPU_TIME_LIMIT_NAME = "execution/cpu-time"
 
 	MAX_LIMIT_VALUE = math.MaxInt64 / TOKEN_BUCKET_CAPACITY_SCALE
+
+	//Token count should be scaled by this value when calling .Take() for a frequency limit.
+	//This is not related to the internal scaling of token buckets.
+	FREQ_LIMIT_SCALE = 1000
 )
 
 var (
@@ -80,7 +84,7 @@ func (l Limit) MoreRestrictiveThan(other Limit) bool {
 type LimitKind int
 
 const (
-	SimpleRateLimit = LimitKind(iota)
+	FrequencyLimit = LimitKind(iota)
 	ByteRateLimit
 	TotalLimit
 )
@@ -312,9 +316,9 @@ func GetLimit(ctx *Context, limitName string, limitValue Serializable) (_ Limit,
 		case ByteRate:
 			limit.Kind = ByteRateLimit
 			limit.Value = int64(r)
-		case SimpleRate:
-			limit.Kind = SimpleRateLimit
-			limit.Value = int64(r)
+		case Frequency:
+			limit.Kind = FrequencyLimit
+			limit.Value = int64(r * FREQ_LIMIT_SCALE)
 		default:
 			resultErr = fmt.Errorf("not a valid rate type %T", r)
 			return

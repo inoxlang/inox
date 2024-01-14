@@ -231,8 +231,8 @@ func init() {
 			CreateRuneCount: func(c int64) any {
 				return RuneCount(c)
 			},
-			CreateSimpleRate: func(r int64) any {
-				return SimpleRate(r)
+			CreateFrequency: func(r float64) any {
+				return Frequency(r)
 			},
 			CreateByteRate: func(r int64) any {
 				return ByteRate(r)
@@ -1229,8 +1229,8 @@ func (r ByteRate) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic
 	return symbolic.NewByteRate(int64(r)), nil
 }
 
-func (r SimpleRate) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
-	return symbolic.NewSimpleRate(int64(r)), nil
+func (f Frequency) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
+	return symbolic.NewFrequency(float64(f)), nil
 }
 
 func (r *Reader) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {

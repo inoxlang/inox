@@ -246,7 +246,7 @@ func (rate ByteRate) IsMutable() bool {
 	return false
 }
 
-func (rate SimpleRate) IsMutable() bool {
+func (f Frequency) IsMutable() bool {
 	return false
 }
 

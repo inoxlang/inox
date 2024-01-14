@@ -1094,12 +1094,12 @@ func (rate ByteRate) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, dep
 	}
 }
 
-func (rate SimpleRate) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (f Frequency) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 	if config.Colorize {
 		utils.Must(w.Write(config.Colors.NumberLiteral))
 	}
 
-	utils.Must(rate.write(w))
+	utils.Must(f.write(w))
 
 	if config.Colorize {
 		utils.Must(w.Write(ANSI_RESET_SEQUENCE))

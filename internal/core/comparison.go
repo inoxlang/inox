@@ -834,12 +834,12 @@ func (rate ByteRate) Equal(ctx *Context, other Value, alreadyCompared map[uintpt
 	return rate == otherRate
 }
 
-func (rate SimpleRate) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
-	otherRate, ok := other.(SimpleRate)
+func (f Frequency) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	otherRate, ok := other.(Frequency)
 	if !ok {
 		return false
 	}
-	return rate == otherRate
+	return f == otherRate
 }
 
 func (d Duration) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {

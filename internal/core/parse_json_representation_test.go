@@ -22,7 +22,6 @@ func TestParseJSONRepresentation(t *testing.T) {
 		if assert.NoError(t, err) {
 			assert.Equal(t, Str("a"), v)
 		}
-
 	})
 
 	t.Run("booleans", func(t *testing.T) {
@@ -892,4 +891,20 @@ func TestParseJSONRepresentation(t *testing.T) {
 	t.Run("exact values", func(t *testing.T) {
 
 	})
+
+	t.Run("frequencies", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
+		v, err := ParseJSONRepresentation(ctx, `{"frequency__value":0.1}`, nil)
+		if assert.NoError(t, err) {
+			assert.Equal(t, Frequency(0.1), v)
+		}
+
+		v, err = ParseJSONRepresentation(ctx, `0.1`, FREQUENCY_PATTERN)
+		if assert.NoError(t, err) {
+			assert.Equal(t, Frequency(0.1), v)
+		}
+	})
+
 }

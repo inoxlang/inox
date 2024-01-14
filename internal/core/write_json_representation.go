@@ -682,13 +682,6 @@ func (count LineCount) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream,
 	return nil
 }
 
-func (count RuneCount) writeJSON(w *jsoniter.Stream) (int, error) {
-	var buff bytes.Buffer
-	count.write(&buff)
-
-	return w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace(buff.String())))
-}
-
 func (count RuneCount) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	var buff bytes.Buffer
 	if count < 0 {
@@ -707,13 +700,6 @@ func (count RuneCount) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream,
 	}
 	w.WriteString(buff.String())
 	return nil
-}
-
-func (rate ByteRate) writeJSON(w *jsoniter.Stream) (int, error) {
-	var buff bytes.Buffer
-	rate.write(&buff)
-
-	return w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace(buff.String())))
 }
 
 func (rate ByteRate) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
@@ -736,23 +722,18 @@ func (rate ByteRate) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, c
 	return nil
 }
 
-func (rate SimpleRate) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
-	var buff bytes.Buffer
-	if rate < 0 {
+func (f Frequency) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+	if f < 0 {
 		return ErrNoRepresentation
 	}
-	if _, err := rate.write(&buff); err != nil {
-		return err
-	}
-
 	if noPatternOrAny(config.Pattern) {
-		writeUntypedValueJSON(SIMPLERATE_PATTERN.Name, func(w *jsoniter.Stream) error {
-			w.WriteString(buff.String())
+		writeUntypedValueJSON(FREQUENCY_PATTERN.Name, func(w *jsoniter.Stream) error {
+			w.WriteFloat64(float64(f))
 			return nil
 		}, w)
 		return nil
 	}
-	w.WriteString(buff.String())
+	w.WriteFloat64(float64(f))
 	return nil
 }
 

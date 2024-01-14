@@ -285,7 +285,7 @@ func NewContext(config ContextConfig) *Context {
 		var fillRate int64 = 1
 
 		switch l.Kind {
-		case ByteRateLimit, SimpleRateLimit:
+		case ByteRateLimit, FrequencyLimit:
 			fillRate = l.Value
 		case TotalLimit:
 			fillRate = 0 //incrementation/decrementation is handled by the limit's DecrementFn

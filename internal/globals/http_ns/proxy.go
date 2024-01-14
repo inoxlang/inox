@@ -130,7 +130,7 @@ func MakeHTTPProxy(ctx *core.Context, params HTTPProxyParams) (*http.Server, err
 			return req, resp
 		}
 
-		ctx.Take(HTTP_REQUEST_RATE_LIMIT_NAME, 1)
+		ctx.Take(HTTP_REQUEST_RATE_LIMIT_NAME, 1*core.FREQ_LIMIT_SCALE)
 
 		return req, nil
 	})

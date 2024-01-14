@@ -66,8 +66,8 @@ func TestHttpGet(t *testing.T) {
 			Limits: []core.Limit{
 				{
 					Name:  HTTP_REQUEST_RATE_LIMIT_NAME,
-					Kind:  core.SimpleRateLimit,
-					Value: 1,
+					Kind:  core.FrequencyLimit,
+					Value: 1 * core.FREQ_LIMIT_SCALE,
 				},
 			},
 		})
@@ -165,8 +165,8 @@ func TestHttpRead(t *testing.T) {
 			Limits: []core.Limit{
 				{
 					Name:  HTTP_REQUEST_RATE_LIMIT_NAME,
-					Kind:  core.SimpleRateLimit,
-					Value: 1,
+					Kind:  core.FrequencyLimit,
+					Value: 1 * core.FREQ_LIMIT_SCALE,
 				},
 			},
 		})
@@ -201,8 +201,8 @@ func TestHttpRead(t *testing.T) {
 			Limits: []core.Limit{
 				{
 					Name:  HTTP_REQUEST_RATE_LIMIT_NAME,
-					Kind:  core.SimpleRateLimit,
-					Value: 100,
+					Kind:  core.FrequencyLimit,
+					Value: 100 * core.FREQ_LIMIT_SCALE,
 				},
 			},
 		})
@@ -235,8 +235,8 @@ func TestHttpRead(t *testing.T) {
 			Limits: []core.Limit{
 				{
 					Name:  HTTP_REQUEST_RATE_LIMIT_NAME,
-					Kind:  core.SimpleRateLimit,
-					Value: 100,
+					Kind:  core.FrequencyLimit,
+					Value: 100 * core.FREQ_LIMIT_SCALE,
 				},
 			},
 		})
@@ -269,8 +269,8 @@ func TestHttpRead(t *testing.T) {
 			Limits: []core.Limit{
 				{
 					Name:  HTTP_REQUEST_RATE_LIMIT_NAME,
-					Kind:  core.SimpleRateLimit,
-					Value: 100,
+					Kind:  core.FrequencyLimit,
+					Value: 100 * core.FREQ_LIMIT_SCALE,
 				},
 			},
 		})

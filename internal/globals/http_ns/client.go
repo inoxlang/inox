@@ -159,7 +159,7 @@ func (c *HttpClient) MakeRequest(ctx *core.Context, method string, u core.URL, b
 		return nil, err
 	}
 
-	ctx.Take(HTTP_REQUEST_RATE_LIMIT_NAME, 1)
+	ctx.Take(HTTP_REQUEST_RATE_LIMIT_NAME, 1*core.FREQ_LIMIT_SCALE)
 
 	req, err := http.NewRequest(method, string(u), body)
 

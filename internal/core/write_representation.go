@@ -32,6 +32,9 @@ var (
 	NIL_LITERAL_BYTES   = []byte{'n', 'i', 'l'}
 	TRUE_LITERAL_BYTES  = []byte{'t', 'r', 'u', 'e'}
 	FALSE_LITERAL_BYTES = []byte{'t', 'r', 'u', 'e'}
+
+	SLASH_SECOND_BYTES = []byte{'/', 's'}
+	DOT_ZERO_BYTES     = []byte{'.', '0'}
 )
 
 type ValueRepresentation []byte
@@ -202,7 +205,7 @@ func (f Float) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig
 		return err
 	}
 	if !strings.Contains(s, ".") {
-		if _, err := w.Write([]byte{'.', '0'}); err != nil {
+		if _, err := w.Write(DOT_ZERO_BYTES); err != nil {
 			return err
 		}
 	}
@@ -882,7 +885,7 @@ func (rate ByteRate) write(w io.Writer) (int, error) {
 	} else {
 		totalN = n
 	}
-	n, err := w.Write([]byte{'/', 's'})
+	n, err := w.Write(SLASH_SECOND_BYTES)
 	totalN += n
 	return totalN, err
 }
@@ -896,35 +899,61 @@ func (rate ByteRate) WriteRepresentation(ctx *Context, w io.Writer, config *Repr
 	return err
 }
 
-func (rate SimpleRate) write(w io.Writer) (int, error) {
-	var format = "%dx/s"
-	var v = int64(rate)
+func (f Frequency) write(w io.Writer) (int, error) {
+	var format = "%gx/s"
 
 	switch {
-	case rate >= 1_000_000_000 && rate%1_000_000_000 == 0:
-		format = "%dGx/s"
-		v /= 1_000_000_000
-	case rate >= 1_000_000 && rate%1_000_000 == 0:
-		format = "%dMx/s"
-		v /= 1_000_000
-	case rate >= 1_000 && rate%1_000 == 0:
-		format = "%dkx/s"
-		v /= 1_000
-	case rate >= 0:
-		break
+	case f >= 1e9:
+		format = "%gGx/s"
+		f /= 1e9
+		if utils.IsWholeInt64(f) && f >= 1000 {
+			format = "%g.0Gx/s"
+		}
+	case f >= 1e6:
+		format = "%gMx/s"
+		f /= 1e6
+		if utils.IsWholeInt64(f) && f >= 1000 {
+			format = "%g.0Mx/s"
+		}
+	case f >= 1e3:
+		format = "%gkx/s"
+		f /= 1e3
+		if utils.IsWholeInt64(f) && f >= 1000 {
+			format = "%g.0kx/s"
+		}
+	case f >= 0:
+		if f < 1.0 {
+			//Add '.0' before exponent if present.
+			//We do this because 'e' would be parsed as an unit.
+			var buf [20]byte
+			res := strconv.AppendFloat(buf[:], float64(f), 'g', -1, 64)
+
+			if !bytes.ContainsAny(res, ".") {
+				exponentIndex := bytes.IndexAny(res, "e")
+
+				//Shift the exponent part to the right.
+				res = res[:len(res)+2]
+				copy(res[exponentIndex+2:], res[exponentIndex:])
+
+				res[exponentIndex] = '.'
+				res[exponentIndex+1] = '0'
+			}
+			res = append(res, "x/s"...)
+			return w.Write(res)
+		}
 	default:
 		return 0, ErrNoRepresentation
 	}
 
-	return fmt.Fprintf(w, format, v)
+	return fmt.Fprintf(w, format, f)
 }
 
-func (rate SimpleRate) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
-	if rate < 0 {
+func (f Frequency) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
+	if f < 0 {
 		return ErrNoRepresentation
 	}
 
-	_, err := rate.write(w)
+	_, err := f.write(w)
 	return err
 }
 

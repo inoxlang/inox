@@ -12,7 +12,7 @@ var (
 	_ = []PotentiallyConcretizable{
 		(*Bool)(nil), (*Int)(nil), (*Float)(nil), Nil,
 
-		(*ByteCount)(nil), (*LineCount)(nil), (*ByteRate)(nil), (*SimpleRate)(nil), (*Duration)(nil), (*DateTime)(nil),
+		(*ByteCount)(nil), (*LineCount)(nil), (*ByteRate)(nil), (*Frequency)(nil), (*Duration)(nil), (*DateTime)(nil),
 
 		(*Rune)(nil), (*String)(nil), (*Path)(nil), (*URL)(nil), (*Host)(nil), (*Scheme)(nil),
 		(*Identifier)(nil),
@@ -46,11 +46,11 @@ type ConcreteValueFactories struct {
 	CreateFloat func(float64) any
 	CreateInt   func(int64) any
 
-	CreateByteCount  func(int64) any
-	CreateLineCount  func(int64) any
-	CreateRuneCount  func(int64) any
-	CreateSimpleRate func(int64) any
-	CreateByteRate   func(int64) any
+	CreateByteCount func(int64) any
+	CreateLineCount func(int64) any
+	CreateRuneCount func(int64) any
+	CreateFrequency func(float64) any
+	CreateByteRate  func(int64) any
 
 	CreateDuration func(time.Duration) any
 	CreateYear     func(time.Time) any

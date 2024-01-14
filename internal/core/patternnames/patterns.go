@@ -31,7 +31,7 @@ const (
 	BYTE_COUNT            = "byte-count"
 	RUNE_COUNT            = "rune-count"
 	LINE_COUNT            = "line-count"
-	SIMPLE_RATE           = "simple-rate"
+	FREQUENCY             = "frequency"
 	BYTE_RATE             = "byte-rate"
 	DURATION              = "duration"
 	HOST_PATTERN          = "host-pattern"

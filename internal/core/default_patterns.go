@@ -475,10 +475,10 @@ var (
 		SymbolicValue: symbolic.ANY_BYTERATE,
 	}
 
-	SIMPLERATE_PATTERN = &TypePattern{
-		Type:          SIMPLERATE_TYPE,
-		Name:          patternnames.SIMPLE_RATE,
-		SymbolicValue: symbolic.ANY_SIMPLERATE,
+	FREQUENCY_PATTERN = &TypePattern{
+		Type:          FREQUENCY_TYPE,
+		Name:          patternnames.FREQUENCY,
+		SymbolicValue: symbolic.ANY_FREQUENCY,
 	}
 
 	DURATION_PATTERN = &TypePattern{
@@ -864,8 +864,8 @@ var (
 		FLOAT_PATTERN.Name:         FLOAT_PATTERN,
 		FILE_MODE_PATTERN.Name:     FILE_MODE_PATTERN,
 
-		SIMPLERATE_PATTERN.Name: SIMPLERATE_PATTERN,
-		BYTERATE_PATTERN.Name:   BYTERATE_PATTERN,
+		FREQUENCY_PATTERN.Name: FREQUENCY_PATTERN,
+		BYTERATE_PATTERN.Name:  BYTERATE_PATTERN,
 
 		DURATION_PATTERN.Name: DURATION_PATTERN,
 		YEAR_PATTERN.Name:     YEAR_PATTERN,

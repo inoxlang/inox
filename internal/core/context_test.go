@@ -121,9 +121,9 @@ func TestNewContext(t *testing.T) {
 					},
 				},
 				{
-					Name:  "my-simple-rate-limit",
-					Kind:  SimpleRateLimit,
-					Value: 100,
+					Name:  "my-frequency-limit",
+					Kind:  FrequencyLimit,
+					Value: 100 * FREQ_LIMIT_SCALE,
 				},
 				{
 					Name:  "my-byterate-limit",
@@ -150,7 +150,7 @@ func TestNewContext(t *testing.T) {
 		childCtx := NewContext(ContextConfig{
 			Limits: []Limit{
 				{
-					Name:  "my-simple-rate-limit-2",
+					Name:  "my-frequency-limit-2",
 					Kind:  ByteRateLimit,
 					Value: 100,
 				},
@@ -167,9 +167,9 @@ func TestNewContext(t *testing.T) {
 			return
 		}
 		assert.Contains(t, childCtx.limiters, "my-total-limit")
-		assert.Contains(t, childCtx.limiters, "my-simple-rate-limit")
+		assert.Contains(t, childCtx.limiters, "my-frequency-limit")
 		assert.Contains(t, childCtx.limiters, "my-byterate-limit")
-		assert.Contains(t, childCtx.limiters, "my-simple-rate-limit-2")
+		assert.Contains(t, childCtx.limiters, "my-frequency-limit-2")
 	})
 
 	t.Run("limits of child context should not be less restrictive than its parent's limits", func(t *testing.T) {
@@ -298,9 +298,9 @@ func TestBoundChild(t *testing.T) {
 					},
 				},
 				{
-					Name:  "my-simple-rate-limit",
-					Kind:  SimpleRateLimit,
-					Value: 100,
+					Name:  "my-frequency-limit",
+					Kind:  FrequencyLimit,
+					Value: 100 * FREQ_LIMIT_SCALE,
 				},
 				{
 					Name:  "my-byterate-limit",
@@ -317,7 +317,7 @@ func TestBoundChild(t *testing.T) {
 			return
 		}
 		assert.Contains(t, childCtx.limiters, "my-total-limit")
-		assert.Contains(t, childCtx.limiters, "my-simple-rate-limit")
+		assert.Contains(t, childCtx.limiters, "my-frequency-limit")
 		assert.Contains(t, childCtx.limiters, "my-byterate-limit")
 
 	})
@@ -505,10 +505,10 @@ func TestContextLimiters(t *testing.T) {
 		}
 	})
 
-	t.Run("simple rate", func(t *testing.T) {
+	t.Run("frequency", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{
 			Limits: []Limit{
-				{Name: "fs/read-file", Kind: SimpleRateLimit, Value: 1},
+				{Name: "fs/read-file", Kind: FrequencyLimit, Value: FREQ_LIMIT_SCALE},
 			},
 		}, nil)
 		defer ctx.CancelGracefully()
@@ -516,11 +516,11 @@ func TestContextLimiters(t *testing.T) {
 		start := time.Now()
 		expectedTime := start.Add(time.Second)
 
-		ctx.Take("fs/read-file", 1)
+		ctx.Take("fs/read-file", 1*FREQ_LIMIT_SCALE)
 		assert.WithinDuration(t, start, time.Now(), time.Millisecond)
 
 		//should cause a wait
-		ctx.Take("fs/read-file", 1)
+		ctx.Take("fs/read-file", 1*FREQ_LIMIT_SCALE)
 		assert.WithinDuration(t, expectedTime, time.Now(), 200*time.Millisecond)
 	})
 
