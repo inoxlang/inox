@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"time"
 
 	jsoniter "github.com/inoxlang/inox/internal/jsoniter"
 	"github.com/inoxlang/inox/internal/utils"
@@ -738,22 +739,20 @@ func (f Frequency) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, con
 }
 
 func (d Duration) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
-	var buff bytes.Buffer
 	if d < 0 {
 		return ErrNoRepresentation
 	}
-	if _, err := d.write(&buff); err != nil {
-		return err
-	}
+
+	float := float64(d) / float64(time.Second)
 
 	if noPatternOrAny(config.Pattern) {
 		writeUntypedValueJSON(DURATION_PATTERN.Name, func(w *jsoniter.Stream) error {
-			w.WriteString(buff.String())
+			w.WriteFloat64(float)
 			return nil
 		}, w)
 		return nil
 	}
-	w.WriteString(buff.String())
+	w.WriteFloat64(float)
 	return nil
 }
 

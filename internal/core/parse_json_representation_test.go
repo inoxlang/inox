@@ -2,6 +2,7 @@ package core
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -907,4 +908,18 @@ func TestParseJSONRepresentation(t *testing.T) {
 		}
 	})
 
+	t.Run("durations", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
+		v, err := ParseJSONRepresentation(ctx, `{"duration__value":0.1}`, nil)
+		if assert.NoError(t, err) {
+			assert.Equal(t, Duration(time.Second/10), v)
+		}
+
+		v, err = ParseJSONRepresentation(ctx, `0.1`, DURATION_PATTERN)
+		if assert.NoError(t, err) {
+			assert.Equal(t, Duration(time.Second/10), v)
+		}
+	})
 }

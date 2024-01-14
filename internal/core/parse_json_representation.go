@@ -6,6 +6,7 @@ import (
 	"io"
 	"strconv"
 	"strings"
+	"time"
 
 	"slices"
 
@@ -236,6 +237,8 @@ func ParseNextJSONRepresentation(ctx *Context, it *jsoniter.Iterator, pattern Pa
 			return parseFrequencyJSONRepresentation(ctx, it, nil, try)
 		case BYTERATE_PATTERN:
 			//TODO
+		case DURATION_PATTERN:
+			return parseDurationJSONRepresentation(ctx, it, nil, try)
 		case PATH_PATTERN:
 			return parsePathJSONRepresentation(ctx, it, try)
 		case SCHEME_PATTERN:
@@ -728,6 +731,24 @@ func parseFrequencyJSONRepresentation(ctx *Context, it *jsoniter.Iterator, patte
 	}
 
 	return Frequency(freq), nil
+}
+
+func parseDurationJSONRepresentation(ctx *Context, it *jsoniter.Iterator, pattern Pattern, try bool) (Duration, error) {
+	if it.WhatIsNext() != jsoniter.NumberValue {
+		if try {
+			return 0, ErrTriedToParseJSONRepr
+		}
+		return 0, ErrJsonNotMatchingSchema
+	}
+
+	d := Duration(it.ReadFloat64() * float64(time.Second))
+
+	err := d.Validate()
+	if err != nil {
+		return 0, err
+	}
+
+	return d, nil
 }
 
 func parsePathJSONRepresentation(ctx *Context, it *jsoniter.Iterator, try bool) (_ Path, finalErr error) {
