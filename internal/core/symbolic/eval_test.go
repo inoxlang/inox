@@ -2721,11 +2721,11 @@ func TestSymbolicEval(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`("a" < int)`)
 			res, err := symbolicEval(n, state)
 
-			leftOperand := n.Statements[0].(*parse.BinaryExpression).Left
+			binExpr := n.Statements[0].(*parse.BinaryExpression)
 
 			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(leftOperand, state, fmtLeftOperandOfBinaryShouldBe(parse.LessThan, "int or float", "\"a\"")),
+				makeSymbolicEvalError(binExpr, state, OPERANDS_NOT_COMPARABLE_BECAUSE_DIFFERENT_TYPES),
 			}, state.errors())
 			assert.Equal(t, ANY_BOOL, res)
 		})
@@ -2747,11 +2747,11 @@ func TestSymbolicEval(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`(int < "a")`)
 			res, err := symbolicEval(n, state)
 
-			RightOperand := n.Statements[0].(*parse.BinaryExpression).Right
+			binExpr := n.Statements[0].(*parse.BinaryExpression)
 
 			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(RightOperand, state, fmtRightOperandOfBinaryShouldBe(parse.LessThan, "int", "\"a\"")),
+				makeSymbolicEvalError(binExpr, state, OPERANDS_NOT_COMPARABLE_BECAUSE_DIFFERENT_TYPES),
 			}, state.errors())
 			assert.Equal(t, ANY_BOOL, res)
 		})
