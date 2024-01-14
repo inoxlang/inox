@@ -734,6 +734,23 @@ func TestLineCountJSONRepresentation(t *testing.T) {
 	}))
 }
 
+var byteRateJSONReprTestCases = []struct {
+	value          ByteRate
+	representation string
+}{
+	{3, "3"},
+	{1_000, "1000"},
+	{1_001, "1001"},
+	{999_000, "999000"},
+	{1_000_000, "1000000"},
+	{1_001_000, "1001000"},
+	{999_000_000, "999000000"},
+	{1_000_000_000, "1000000000"},
+	{1_001_000_000, "1001000000"},
+	{1_001_001_000, "1001001000"},
+	{1_001_001_001, "1001001001"},
+}
+
 func TestByteRateJSONRepresentation(t *testing.T) {
 	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
@@ -741,13 +758,13 @@ func TestByteRateJSONRepresentation(t *testing.T) {
 	negative := ByteRate(-1)
 	assert.ErrorIs(t, negative.WriteRepresentation(ctx, nil, nil, 0), ErrNoRepresentation)
 
-	for _, testCase := range byteRateReprTestCases {
+	for _, testCase := range byteRateJSONReprTestCases {
 		t.Run(strconv.Itoa(int(testCase.value)), func(t *testing.T) {
 			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 			defer ctx.CancelGracefully()
 
-			assert.Equal(t, `{"byte-rate__value":"`+testCase.representation+`"}`, getJSONRepr(t, testCase.value, ctx))
-			assert.Equal(t, `"`+testCase.representation+`"`, getJSONRepr(t, testCase.value, ctx, JSONSerializationConfig{
+			assert.Equal(t, `{"byte-rate__value":`+testCase.representation+"}", getJSONRepr(t, testCase.value, ctx))
+			assert.Equal(t, testCase.representation, getJSONRepr(t, testCase.value, ctx, JSONSerializationConfig{
 				Pattern: BYTERATE_PATTERN,
 			}))
 		})

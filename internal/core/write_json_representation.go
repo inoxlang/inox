@@ -704,22 +704,18 @@ func (count RuneCount) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream,
 }
 
 func (rate ByteRate) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
-	var buff bytes.Buffer
 	if rate < 0 {
 		return ErrNoRepresentation
-	}
-	if _, err := rate.write(&buff); err != nil {
-		return err
 	}
 
 	if noPatternOrAny(config.Pattern) {
 		writeUntypedValueJSON(BYTERATE_PATTERN.Name, func(w *jsoniter.Stream) error {
-			w.WriteString(buff.String())
+			w.WriteInt64(int64(rate))
 			return nil
 		}, w)
 		return nil
 	}
-	w.WriteString(buff.String())
+	w.WriteInt64(int64(rate))
 	return nil
 }
 

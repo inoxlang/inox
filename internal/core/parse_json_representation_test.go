@@ -908,6 +908,21 @@ func TestParseJSONRepresentation(t *testing.T) {
 		}
 	})
 
+	t.Run("byte-rates", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
+		v, err := ParseJSONRepresentation(ctx, `{"byte-rate__value":1}`, nil)
+		if assert.NoError(t, err) {
+			assert.Equal(t, ByteRate(1), v)
+		}
+
+		v, err = ParseJSONRepresentation(ctx, `1`, BYTERATE_PATTERN)
+		if assert.NoError(t, err) {
+			assert.Equal(t, ByteRate(1), v)
+		}
+	})
+
 	t.Run("durations", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()

@@ -22,6 +22,7 @@ var (
 	ErrUnknownStartQtyRange = errors.New("quantity range has unknown start")
 	ErrNegFrequency         = errors.New("negative frequency")
 	ErrInfFrequency         = errors.New("infinite frequency")
+	ErrNegByteRate          = errors.New("negative byte rate")
 )
 
 // ByteCount implements Value.
@@ -43,6 +44,13 @@ type ByteRate int64
 
 func (r ByteRate) QuantityPerSecond() Value {
 	return ByteCount(r)
+}
+
+func (r ByteRate) Validate() error {
+	if r < 0 {
+		return ErrNegByteRate
+	}
+	return nil
 }
 
 // A Frequency represents a number of actions per second, it implements Value.

@@ -236,7 +236,7 @@ func ParseNextJSONRepresentation(ctx *Context, it *jsoniter.Iterator, pattern Pa
 		case FREQUENCY_PATTERN:
 			return parseFrequencyJSONRepresentation(ctx, it, nil, try)
 		case BYTERATE_PATTERN:
-			//TODO
+			return parseByteRateJSONRepresentation(ctx, it, nil, try)
 		case DURATION_PATTERN:
 			return parseDurationJSONRepresentation(ctx, it, nil, try)
 		case PATH_PATTERN:
@@ -731,6 +731,29 @@ func parseFrequencyJSONRepresentation(ctx *Context, it *jsoniter.Iterator, patte
 	}
 
 	return Frequency(freq), nil
+}
+
+func parseByteRateJSONRepresentation(ctx *Context, it *jsoniter.Iterator, pattern Pattern, try bool) (ByteRate, error) {
+	if it.WhatIsNext() != jsoniter.NumberValue {
+		if try {
+			return 0, ErrTriedToParseJSONRepr
+		}
+		return 0, ErrJsonNotMatchingSchema
+	}
+
+	number := it.ReadNumber()
+	n, err := number.Int64()
+	if err != nil {
+		return 0, fmt.Errorf("failed to parse byte rate (integer): %w", err)
+	}
+
+	rate := ByteRate(n)
+	err = rate.Validate()
+	if err != nil {
+		return 0, err
+	}
+
+	return rate, nil
 }
 
 func parseDurationJSONRepresentation(ctx *Context, it *jsoniter.Iterator, pattern Pattern, try bool) (Duration, error) {
