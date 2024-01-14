@@ -288,6 +288,20 @@ object = {a: 1}
 (object match %{a: int}) # equivalent
 ```
 
+### Comparison
+
+The `<, <=, >=, >` comparisons are supported by all **comparable** Inox types.
+Values of different types generally cannot be compared.
+
+```
+(1 < 2)
+(1ms < 1s)
+(ago(1h) < now())
+```
+
+**Comparable Inox types**: int, float, byte, string, byte-count, line-count, rune-count,
+year, date, datetime, duration, frequency, byte-rate, port.
+
 ## Unary Operations
 
 A number negation is always parenthesized. Integers and floats that are
