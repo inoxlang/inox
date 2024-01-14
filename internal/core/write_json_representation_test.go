@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"testing"
+	"time"
 
 	jsoniter "github.com/inoxlang/inox/internal/jsoniter"
 	"github.com/inoxlang/inox/internal/utils"
@@ -807,17 +808,39 @@ func TestFrequencyJSONRepresentation(t *testing.T) {
 	}
 }
 
+var durationJSONReprTestCases = []struct {
+	value          Duration
+	representation string
+}{
+
+	{Duration(time.Millisecond), "0.001"},
+	{Duration(300 * time.Millisecond), "0.3"},
+	{Duration(300 * time.Millisecond), "0.3"},
+	{Duration(999 * time.Millisecond), "0.999"},
+	{Duration(time.Second), "1"},
+	{Duration(time.Second + time.Millisecond), "1.001"},
+	{Duration(59 * time.Second), "59"},
+	{Duration(time.Minute), "60"},
+	{Duration(time.Minute + time.Millisecond), "60.001"},
+	{Duration(time.Minute + time.Second), "61"},
+	{Duration(59 * time.Minute), "3540"},
+	{Duration(time.Hour), "3600"},
+	{Duration(1000 * time.Hour), "3600000"},
+	{Duration(time.Hour + time.Millisecond), "3600.001"},
+	{Duration(time.Hour + time.Second), "3601"},
+}
+
 func TestDurationJSONRepresentation(t *testing.T) {
 	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
-	for _, testCase := range durationReprTestCases {
+	for _, testCase := range durationJSONReprTestCases {
 		t.Run(strconv.Itoa(int(testCase.value)), func(t *testing.T) {
 			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 			defer ctx.CancelGracefully()
 
-			assert.Equal(t, `{"duration__value":"`+testCase.representation+`"}`, getJSONRepr(t, testCase.value, ctx))
-			assert.Equal(t, `"`+testCase.representation+`"`, getJSONRepr(t, testCase.value, ctx, JSONSerializationConfig{
+			assert.Equal(t, `{"duration__value":`+testCase.representation+`}`, getJSONRepr(t, testCase.value, ctx))
+			assert.Equal(t, testCase.representation, getJSONRepr(t, testCase.value, ctx, JSONSerializationConfig{
 				Pattern: DURATION_PATTERN,
 			}))
 		})
