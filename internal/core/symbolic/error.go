@@ -165,6 +165,9 @@ const (
 	OPTIONAL_MEMBER_EXPRS_NOT_ALLOWED_FOR_STRUCT_FIELDS = "optional member expressions are not allowed for struct fields"
 
 	POINTED_VALUE_HAS_NO_PROPERTIES = "pointed value has no properties"
+
+
+	OPERANDS_NOT_COMPARABLE_BECAUSE_DIFFERENT_TYPES = "operands are not comparable because they have different types"
 )
 
 var (

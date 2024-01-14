@@ -2707,7 +2707,13 @@ func evalBinaryExpression(n *parse.BinaryExpression, state *State, options evalO
 	}
 
 	switch n.Operator {
-	case parse.Add, parse.Sub, parse.Mul, parse.Div, parse.GreaterThan, parse.LessThan, parse.LessOrEqual, parse.GreaterOrEqual:
+	case parse.GreaterThan, parse.LessThan, parse.LessOrEqual, parse.GreaterOrEqual:
+		if !haveSameGoTypes(left, right) {
+			state.addError(makeSymbolicEvalError(n.Right, state, OPERANDS_NOT_COMPARABLE_BECAUSE_DIFFERENT_TYPES))
+			return ANY, nil
+		}
+		return ANY_BOOL, nil
+	case parse.Add, parse.Sub, parse.Mul, parse.Div:
 
 		if _, ok := left.(*Int); ok {
 			_, ok = right.(*Int)

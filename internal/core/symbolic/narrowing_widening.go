@@ -1,6 +1,7 @@
 package symbolic
 
 import (
+	"reflect"
 	"slices"
 
 	"github.com/inoxlang/inox/internal/parse"
@@ -281,4 +282,8 @@ func ImplementsOrIsMultivalueWithAllValuesImplementing[T Value](v Value) bool {
 		})
 	}
 	return false
+}
+
+func haveSameGoTypes(a, b Value) bool {
+	return reflect.TypeOf(a) == reflect.TypeOf(b)
 }
