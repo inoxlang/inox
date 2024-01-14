@@ -251,6 +251,10 @@ const (
 	OpIntBin
 	OpFloatBin
 	OpNumBin
+	OpLess
+	OpLessEqual
+	OpGreater
+	OpGreaterEqual
 	OptStrQueryParamVal
 	OpStrConcat
 	OpConcat
@@ -399,6 +403,10 @@ var OpcodeNames = [...]string{
 	OpIntBin:                       "INT_BIN",
 	OpFloatBin:                     "FLOAT_BIN",
 	OpNumBin:                       "NUM_BIN",
+	OpLess:                         "OP_LESS",
+	OpLessEqual:                    "OP_LESS_EQUAL",
+	OpGreater:                      "OP_GREATER",
+	OpGreaterEqual:                 "OP_GREATER_EQUAL",
 	OpStrConcat:                    "STR_CONCAT",
 	OptStrQueryParamVal:            "STRINGIFY_QPARAM",
 	OpConcat:                       "CONCAT",
@@ -545,6 +553,10 @@ var OpcodeOperands = [...][]int{
 	OpIntBin:                       {1},
 	OpFloatBin:                     {1},
 	OpNumBin:                       {1},
+	OpLess:                         {},
+	OpLessEqual:                    {},
+	OpGreater:                      {},
+	OpGreaterEqual:                 {},
 	OpStrConcat:                    {},
 	OptStrQueryParamVal:            {},
 	OpConcat:                       {1, 2},
@@ -692,6 +704,10 @@ var OpcodeConstantIndexes = [...][]bool{
 	OpIntBin:                       {false},
 	OpFloatBin:                     {false},
 	OpNumBin:                       {false},
+	OpLess:                         {},
+	OpLessEqual:                    {},
+	OpGreater:                      {},
+	OpGreaterEqual:                 {},
 	OpStrConcat:                    {},
 	OptStrQueryParamVal:            {},
 	OpConcat:                       {false, true},

@@ -1678,11 +1678,7 @@ func (ns *PatternNamespace) Equal(ctx *Context, other Value, alreadyCompared map
 }
 
 func (port Port) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
-	otherPort, ok := other.(Port)
-	if !ok {
-		return false
-	}
-	return otherPort == port
+	return equalComparable(port, other)
 }
 
 func (u *Treedata) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {

@@ -2028,180 +2028,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			return nil, fmt.Errorf("invalid unary operator %d", n.Operator)
 		}
 	case *parse.BinaryExpression:
-
-		left, err := TreeWalkEval(n.Left, state)
-		if err != nil {
-			return nil, err
-		}
-
-		right, err := TreeWalkEval(n.Right, state)
-		if err != nil {
-			return nil, err
-		}
-
-		switch n.Operator {
-		case parse.Add, parse.Sub, parse.Mul, parse.Div, parse.GreaterThan, parse.GreaterOrEqual, parse.LessThan, parse.LessOrEqual:
-
-			if _, ok := left.(Int); ok {
-				switch n.Operator {
-				case parse.Add:
-					return intAdd(left.(Int), right.(Int))
-				case parse.Sub:
-					return intSub(left.(Int), right.(Int))
-				case parse.Mul:
-					return intMul(left.(Int), right.(Int))
-				case parse.Div:
-					return intDiv(left.(Int), right.(Int))
-				case parse.GreaterThan:
-					return Bool(left.(Int) > right.(Int)), nil
-				case parse.GreaterOrEqual:
-					return Bool(left.(Int) >= right.(Int)), nil
-				case parse.LessThan:
-					return Bool(left.(Int) < right.(Int)), nil
-				case parse.LessOrEqual:
-					return Bool(left.(Int) <= right.(Int)), nil
-				}
-			}
-
-			leftF := left.(Float)
-			rightF := right.(Float)
-
-			if math.IsNaN(float64(leftF)) || math.IsInf(float64(leftF), 0) {
-				return nil, ErrNaNinfinityOperand
-			}
-
-			if math.IsNaN(float64(rightF)) || math.IsInf(float64(rightF), 0) {
-				return nil, ErrNaNinfinityOperand
-			}
-
-			switch n.Operator {
-			case parse.Add:
-				return leftF + rightF, nil
-			case parse.Sub:
-				return leftF - rightF, nil
-			case parse.Mul:
-				f := leftF * rightF
-				if math.IsNaN(float64(f)) || math.IsInf(float64(f), 0) {
-					return nil, ErrNaNinfinityResult
-				}
-				return f, nil
-			case parse.Div:
-				f := leftF / rightF
-				if math.IsNaN(float64(f)) || math.IsInf(float64(f), 0) {
-					return nil, ErrNaNinfinityResult
-				}
-				return f, nil
-			case parse.GreaterThan:
-				return Bool(leftF > rightF), nil
-			case parse.GreaterOrEqual:
-				return Bool(leftF >= rightF), nil
-			case parse.LessThan:
-				return Bool(leftF < rightF), nil
-			case parse.LessOrEqual:
-				return Bool(leftF <= rightF), nil
-			}
-			panic(ErrUnreachable)
-		case parse.Equal:
-			return Bool(left.Equal(state.Global.Ctx, right, map[uintptr]uintptr{}, 0)), nil
-		case parse.NotEqual:
-			return Bool(!left.Equal(state.Global.Ctx, right, map[uintptr]uintptr{}, 0)), nil
-		case parse.Is:
-			return Bool(Same(left, right)), nil
-		case parse.IsNot:
-			return Bool(!Same(left, right)), nil
-		case parse.In:
-			switch rightVal := right.(type) {
-			case Container:
-				return Bool(rightVal.Contains(state.Global.Ctx, left.(Serializable))), nil
-			default:
-				return nil, fmt.Errorf("invalid binary expression: cannot check if value is inside a %T", rightVal)
-			}
-		case parse.NotIn:
-			switch rightVal := right.(type) {
-			case Container:
-				return !Bool(rightVal.Contains(state.Global.Ctx, left.(Serializable))), nil
-			default:
-				return nil, fmt.Errorf("invalid binary expression: cannot check if value is inside a(n) %T", rightVal)
-			}
-
-		case parse.Keyof:
-			key, ok := left.(Str)
-			if !ok {
-				return nil, fmt.Errorf("invalid binary expression: keyof: left operand is not a string, but a %T", left)
-			}
-
-			switch rightVal := right.(type) {
-			case *Object:
-				return Bool(rightVal.HasProp(state.Global.Ctx, string(key))), nil
-			default:
-				return nil, fmt.Errorf("invalid binary expression: cannot check if non object has a key: %T", rightVal)
-			}
-		case parse.Urlof:
-			url, ok := left.(URL)
-			if !ok {
-				return nil, fmt.Errorf("invalid binary expression: keyof: left operand is not a URL, but a %T", left)
-			}
-
-			urlHolder, isUrlHolder := right.(UrlHolder)
-
-			var result = false
-			if isUrlHolder {
-				actualURL, ok := urlHolder.URL()
-				if ok {
-					result = url.Equal(state.Global.Ctx, actualURL, nil, 0)
-				}
-			}
-
-			return Bool(result), nil
-		case parse.Range, parse.ExclEndRange:
-			switch left.(type) {
-			case Int:
-				return IntRange{
-					inclusiveEnd: n.Operator == parse.Range,
-					start:        int64(left.(Int)),
-					end:          int64(right.(Int)),
-					step:         1,
-				}, nil
-			case Float:
-				return FloatRange{
-					inclusiveEnd: n.Operator == parse.Range,
-					start:        float64(left.(Float)),
-					end:          float64(right.(Float)),
-				}, nil
-			default:
-				return QuantityRange{
-					inclusiveEnd: n.Operator == parse.Range,
-					start:        left.(Serializable),
-					end:          right.(Serializable),
-				}, nil
-			}
-		case parse.And:
-			return left.(Bool) && right.(Bool), nil
-		case parse.Or:
-			return left.(Bool) || right.(Bool), nil
-		case parse.Match, parse.NotMatch:
-			ok := right.(Pattern).Test(state.Global.Ctx, left)
-			if n.Operator == parse.NotMatch {
-				ok = !ok
-			}
-			return Bool(ok), nil
-		case parse.Substrof:
-			return Bool(strings.Contains(right.(WrappedString).UnderlyingString(), left.(WrappedString).UnderlyingString())), nil
-		case parse.SetDifference:
-			if _, ok := right.(Pattern); !ok {
-				right = NewExactValuePattern(right.(Serializable))
-			}
-			return &DifferencePattern{base: left.(Pattern), removed: right.(Pattern)}, nil
-		case parse.NilCoalescing:
-			if _, ok := left.(NilT); !ok {
-				return left, nil
-			}
-			return right, nil
-		case parse.PairComma:
-			return NewOrderedPair(left.(Serializable), right.(Serializable)), nil
-		default:
-			return nil, errors.New("invalid binary operator " + strconv.Itoa(int(n.Operator)))
-		}
+		return evalBinaryExpression(n, state)
 	case *parse.UpperBoundRangeExpression:
 		upperBound, err := TreeWalkEval(n.UpperBound, state)
 		if err != nil {
@@ -3654,5 +3481,193 @@ func evalStringPatternNode(node parse.Node, state *TreeWalkState, lazy bool) (St
 		return NewRegexPattern(v.Value), nil
 	default:
 		return nil, fmt.Errorf("cannot evalute string pattern element: %T", v)
+	}
+}
+
+func evalBinaryExpression(n *parse.BinaryExpression, state *TreeWalkState) (Value, error) {
+	left, err := TreeWalkEval(n.Left, state)
+	if err != nil {
+		return nil, err
+	}
+
+	right, err := TreeWalkEval(n.Right, state)
+	if err != nil {
+		return nil, err
+	}
+
+	switch n.Operator {
+	case parse.GreaterThan, parse.GreaterOrEqual, parse.LessThan, parse.LessOrEqual:
+		comparable := left.(Comparable)
+		comparisonResult, ok := comparable.Compare(right)
+		if !ok { //not comparable
+			leftF, ok := left.(Float)
+			if ok && (math.IsNaN(float64(leftF)) || math.IsInf(float64(leftF), 0)) {
+				return nil, ErrNaNinfinityOperand
+			}
+
+			rightF, ok := right.(Float)
+			if ok && (math.IsNaN(float64(rightF)) || math.IsInf(float64(rightF), 0)) {
+				return nil, ErrNaNinfinityOperand
+			}
+
+			return nil, ErrNotComparable
+		}
+
+		switch n.Operator {
+		case parse.GreaterThan:
+			return Bool(comparisonResult > 0), nil
+		case parse.GreaterOrEqual:
+			return Bool(comparisonResult >= 0), nil
+		case parse.LessThan:
+			return Bool(comparisonResult < 0), nil
+		case parse.LessOrEqual:
+			return Bool(comparisonResult <= 0), nil
+		}
+		panic(ErrUnreachable)
+	case parse.Add, parse.Sub, parse.Mul, parse.Div:
+
+		if _, ok := left.(Int); ok {
+			switch n.Operator {
+			case parse.Add:
+				return intAdd(left.(Int), right.(Int))
+			case parse.Sub:
+				return intSub(left.(Int), right.(Int))
+			case parse.Mul:
+				return intMul(left.(Int), right.(Int))
+			case parse.Div:
+				return intDiv(left.(Int), right.(Int))
+			}
+		}
+
+		leftF := left.(Float)
+		rightF := right.(Float)
+
+		if math.IsNaN(float64(leftF)) || math.IsInf(float64(leftF), 0) {
+			return nil, ErrNaNinfinityOperand
+		}
+
+		if math.IsNaN(float64(rightF)) || math.IsInf(float64(rightF), 0) {
+			return nil, ErrNaNinfinityOperand
+		}
+
+		switch n.Operator {
+		case parse.Add:
+			return leftF + rightF, nil
+		case parse.Sub:
+			return leftF - rightF, nil
+		case parse.Mul:
+			f := leftF * rightF
+			if math.IsNaN(float64(f)) || math.IsInf(float64(f), 0) {
+				return nil, ErrNaNinfinityResult
+			}
+			return f, nil
+		case parse.Div:
+			f := leftF / rightF
+			if math.IsNaN(float64(f)) || math.IsInf(float64(f), 0) {
+				return nil, ErrNaNinfinityResult
+			}
+			return f, nil
+		}
+		panic(ErrUnreachable)
+	case parse.Equal:
+		return Bool(left.Equal(state.Global.Ctx, right, map[uintptr]uintptr{}, 0)), nil
+	case parse.NotEqual:
+		return Bool(!left.Equal(state.Global.Ctx, right, map[uintptr]uintptr{}, 0)), nil
+	case parse.Is:
+		return Bool(Same(left, right)), nil
+	case parse.IsNot:
+		return Bool(!Same(left, right)), nil
+	case parse.In:
+		switch rightVal := right.(type) {
+		case Container:
+			return Bool(rightVal.Contains(state.Global.Ctx, left.(Serializable))), nil
+		default:
+			return nil, fmt.Errorf("invalid binary expression: cannot check if value is inside a %T", rightVal)
+		}
+	case parse.NotIn:
+		switch rightVal := right.(type) {
+		case Container:
+			return !Bool(rightVal.Contains(state.Global.Ctx, left.(Serializable))), nil
+		default:
+			return nil, fmt.Errorf("invalid binary expression: cannot check if value is inside a(n) %T", rightVal)
+		}
+
+	case parse.Keyof:
+		key, ok := left.(Str)
+		if !ok {
+			return nil, fmt.Errorf("invalid binary expression: keyof: left operand is not a string, but a %T", left)
+		}
+
+		switch rightVal := right.(type) {
+		case *Object:
+			return Bool(rightVal.HasProp(state.Global.Ctx, string(key))), nil
+		default:
+			return nil, fmt.Errorf("invalid binary expression: cannot check if non object has a key: %T", rightVal)
+		}
+	case parse.Urlof:
+		url, ok := left.(URL)
+		if !ok {
+			return nil, fmt.Errorf("invalid binary expression: keyof: left operand is not a URL, but a %T", left)
+		}
+
+		urlHolder, isUrlHolder := right.(UrlHolder)
+
+		var result = false
+		if isUrlHolder {
+			actualURL, ok := urlHolder.URL()
+			if ok {
+				result = url.Equal(state.Global.Ctx, actualURL, nil, 0)
+			}
+		}
+
+		return Bool(result), nil
+	case parse.Range, parse.ExclEndRange:
+		switch left.(type) {
+		case Int:
+			return IntRange{
+				inclusiveEnd: n.Operator == parse.Range,
+				start:        int64(left.(Int)),
+				end:          int64(right.(Int)),
+				step:         1,
+			}, nil
+		case Float:
+			return FloatRange{
+				inclusiveEnd: n.Operator == parse.Range,
+				start:        float64(left.(Float)),
+				end:          float64(right.(Float)),
+			}, nil
+		default:
+			return QuantityRange{
+				inclusiveEnd: n.Operator == parse.Range,
+				start:        left.(Serializable),
+				end:          right.(Serializable),
+			}, nil
+		}
+	case parse.And:
+		return left.(Bool) && right.(Bool), nil
+	case parse.Or:
+		return left.(Bool) || right.(Bool), nil
+	case parse.Match, parse.NotMatch:
+		ok := right.(Pattern).Test(state.Global.Ctx, left)
+		if n.Operator == parse.NotMatch {
+			ok = !ok
+		}
+		return Bool(ok), nil
+	case parse.Substrof:
+		return Bool(strings.Contains(right.(WrappedString).UnderlyingString(), left.(WrappedString).UnderlyingString())), nil
+	case parse.SetDifference:
+		if _, ok := right.(Pattern); !ok {
+			right = NewExactValuePattern(right.(Serializable))
+		}
+		return &DifferencePattern{base: left.(Pattern), removed: right.(Pattern)}, nil
+	case parse.NilCoalescing:
+		if _, ok := left.(NilT); !ok {
+			return left, nil
+		}
+		return right, nil
+	case parse.PairComma:
+		return NewOrderedPair(left.(Serializable), right.(Serializable)), nil
+	default:
+		return nil, errors.New("invalid binary operator " + strconv.Itoa(int(n.Operator)))
 	}
 }

@@ -437,6 +437,59 @@ func (v *VM) run() {
 			if topLevelFnEval {
 				return
 			}
+		//COMPARISON <, <= , =>, >
+		case OpLess:
+			leftOperand := v.stack[v.sp-2].(Comparable)
+			rightOperand := v.stack[v.sp-1]
+			result, comparable := leftOperand.Compare(rightOperand)
+
+			if !comparable {
+				if !v.checkComparisonOperands(leftOperand, rightOperand) {
+					v.err = ErrNotComparable
+				}
+				return
+			}
+			v.sp--
+			v.stack[v.sp-1] = Bool(result < 0)
+		case OpLessEqual:
+			leftOperand := v.stack[v.sp-2].(Comparable)
+			rightOperand := v.stack[v.sp-1]
+			result, comparable := leftOperand.Compare(rightOperand)
+
+			if !comparable {
+				if !v.checkComparisonOperands(leftOperand, rightOperand) {
+					v.err = ErrNotComparable
+				}
+				return
+			}
+			v.sp--
+			v.stack[v.sp-1] = Bool(result <= 0)
+		case OpGreater:
+			leftOperand := v.stack[v.sp-2].(Comparable)
+			rightOperand := v.stack[v.sp-1]
+			result, comparable := leftOperand.Compare(rightOperand)
+
+			if !comparable {
+				if !v.checkComparisonOperands(leftOperand, rightOperand) {
+					v.err = ErrNotComparable
+				}
+				return
+			}
+			v.sp--
+			v.stack[v.sp-1] = Bool(result > 0)
+		case OpGreaterEqual:
+			leftOperand := v.stack[v.sp-2].(Comparable)
+			rightOperand := v.stack[v.sp-1]
+			result, comparable := leftOperand.Compare(rightOperand)
+
+			if !comparable {
+				if !v.checkComparisonOperands(leftOperand, rightOperand) {
+					v.err = ErrNotComparable
+				}
+				return
+			}
+			v.sp--
+			v.stack[v.sp-1] = Bool(result >= 0)
 		//ARITHMETIC
 		case OpIntBin:
 			v.doSafeIntBinOp()
@@ -1561,6 +1614,23 @@ func (v *VM) doSafeFloatBinOp() {
 
 	v.stack[v.sp-2] = res
 	v.sp--
+}
+
+//go:noinline
+func (v *VM) checkComparisonOperands(leftOperand, rightOperand Value) bool {
+	leftF, ok := leftOperand.(Float)
+	if ok && (math.IsNaN(float64(leftF)) || math.IsInf(float64(leftF), 0)) {
+		v.err = ErrNaNinfinityOperand
+		return false
+	}
+	rightF, ok := leftOperand.(Float)
+
+	if ok && (math.IsNaN(float64(rightF)) || math.IsInf(float64(rightF), 0)) {
+		v.err = ErrNaNinfinityOperand
+		return false
+	}
+
+	return true
 }
 
 //go:noinline

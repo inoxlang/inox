@@ -948,6 +948,61 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 	})
 
+	t.Run("binary comparisons except ==", func(t *testing.T) {
+		t.Parallel()
+
+		testCases := []struct {
+			code   string
+			result Bool
+			err    error
+		}{
+			// <
+			{"(1 < 2)", True, nil},
+			{"(1 < 1)", False, nil},
+			{"(2 < 1)", False, nil},
+			{"(1s < 2s)", True, nil},
+			{"(1s < 1s)", False, nil},
+			{"(2s < 1s)", False, nil},
+			// <=
+			{"(1 <= 2)", True, nil},
+			{"(1 <= 1)", True, nil},
+			{"(2 <= 1)", False, nil},
+			{"(1s <= 2s)", True, nil},
+			{"(1s <= 1s)", True, nil},
+			{"(2s <= 1s)", False, nil},
+			// >
+			{"(2 > 1)", True, nil},
+			{"(1 > 1)", False, nil},
+			{"(1 > 2)", False, nil},
+			{"(2s > 1s)", True, nil},
+			{"(1s > 1s)", False, nil},
+			{"(1s > 2s)", False, nil},
+			// >=
+			{"(2 >= 1)", True, nil},
+			{"(1 >= 1)", True, nil},
+			{"(1 >= 2)", False, nil},
+			{"(2s >= 1s)", True, nil},
+			{"(1s >= 1s)", True, nil},
+			{"(1s >= 2s)", False, nil},
+		}
+
+		for _, testCase := range testCases {
+			t.Run(testCase.code, func(t *testing.T) {
+				ctx := NewDefaultTestContext()
+				defer ctx.CancelGracefully()
+
+				res, err := Eval(testCase.code, NewGlobalState(ctx, nil), false)
+				if testCase.err == nil {
+					assert.NoError(t, err)
+					assert.Equal(t, testCase.result, res)
+				} else {
+					assert.ErrorIs(t, err, testCase.err)
+					assert.Nil(t, res)
+				}
+			})
+		}
+	})
+
 	t.Run("integer binary expression", func(t *testing.T) {
 		t.Parallel()
 
@@ -1015,7 +1070,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	})
 
 	t.Run("floating point binary expression", func(t *testing.T) {
-		t.Parallel()
+		//t.Parallel()
 
 		NaN := Float(math.NaN())
 
