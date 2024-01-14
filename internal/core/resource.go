@@ -13,6 +13,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"unicode"
 
 	"github.com/bmatcuk/doublestar/v4"
 	emailnormalizer "github.com/dimuska139/go-email-normalizer"
@@ -43,11 +44,29 @@ var (
 	ErrResourceHasHardcodedUrlMetaProperty = errors.New("resource has hardcoded _url_ metaproperty")
 	ErrInvalidResourceContent              = errors.New("invalid resource's content")
 	ErrContentTypeParserNotFound           = errors.New("parser not found for content type")
-	ErrEmptyPath                           = errors.New("empty path")
-	ErrTestedPathTooLarge                  = errors.New("tested path is too large")
-	ErrTestedURLTooLarge                   = errors.New("tested URL is too large")
-	ErrTestedHostPatternTooLarge           = errors.New("tested host pattern is too large")
-	ErrInvalidEmailAdddres                 = errors.New("invalid email address per RFC 5322")
+
+	ErrEmptyPath            = errors.New("empty path")
+	ErrPathWithInvalidStart = errors.New("path with invalid start")
+	ErrTestedPathTooLarge   = errors.New("tested path is too large")
+
+	ErrEmptyURL                  = errors.New("empty URL")
+	ErrInvalidURL                = errors.New("invalid URL")
+	ErrUnexpectedSpaceInURL      = errors.New("unexpected space in URL")
+	ErrMissingHostHostNameInHost = errors.New("missing hostname in host")
+	ErrMissingURLHostName        = errors.New("missing hostname in URL")
+	ErrMissingURLSpecificFeature = errors.New("missing URL-specific feature in URL (path, query or fragment)")
+	ErrTestedURLTooLarge         = errors.New("tested URL is too large")
+
+	ErrTestedHostPatternTooLarge = errors.New("tested host pattern is too large")
+
+	ErrEmptyHost   = errors.New("empty host")
+	ErrInvalidHost = errors.New("invalid host")
+
+	ErrEmptyScheme             = errors.New("empty scheme")
+	ErrSchemeWithInvalidStart  = errors.New("scheme with invalid start")
+	ErrUnexpectedCharsInScheme = errors.New("unexpected char(s) in scheme")
+
+	ErrInvalidEmailAdddres = errors.New("invalid email address per RFC 5322")
 
 	defaultEmailNormalizer = emailnormalizer.NewNormalizer()
 )
@@ -160,6 +179,16 @@ func checkPathInterpolationResult(s string) bool {
 		}
 	}
 	return true
+}
+
+func (pth Path) Validate() error {
+	if pth == "" {
+		return ErrEmptyPath
+	}
+	if !parse.HasPathLikeStart(string(pth)) {
+		return ErrPathWithInvalidStart
+	}
+	return nil
 }
 
 func (pth Path) IsDirPath() bool {
@@ -549,6 +578,7 @@ func (PathPattern) SetProp(ctx *Context, name string, value Value) error {
 	return ErrCannotSetProp
 }
 
+// URL represents a non-relative URL, it implements Value.
 type URL string
 
 // createPath creates an URL in a secure way.
@@ -668,11 +698,12 @@ func NewURL(host Value, pathSlices []Value, isStaticPathSliceList []bool, queryP
 
 	hostVal := host.(Host)
 	u := hostVal.UnderlyingString() + string(pth) + queryBuff.String()
-	parsed, err := url.Parse(u)
+	err := URL(u).Validate()
 	if err != nil {
 		return nil, errors.New(ERR_PREFIX + err.Error())
 	}
 
+	parsed, _ := url.Parse(u)
 	if parsed.Host != hostVal.WithoutScheme() {
 		return nil, errors.New(ERR_PREFIX + S_URL_EXPR_UNEXPECTED_HOST_IN_PARSED_URL_AFTER_EVAL)
 	}
@@ -697,6 +728,49 @@ func stringifyQueryParamValue(val Value) (string, error) {
 	default:
 		return "", fmt.Errorf("value of type %T is not stringifiable to a query param value", val)
 	}
+}
+
+func (u URL) Validate() error {
+	if u == "" {
+		return ErrEmptyURL
+	}
+	withoutFragment := string(u.withoutFragment())
+
+	parsed, err := url.ParseRequestURI(withoutFragment)
+	if err != nil {
+		return ErrInvalidURL
+	}
+
+	if parsed.Hostname() == "" {
+		return ErrMissingURLHostName
+	}
+
+	for _, r := range u {
+		if unicode.IsSpace(r) {
+			return ErrUnexpectedSpaceInURL
+		}
+	}
+
+	//Check there is at least one URL-specific feature in order
+	//to differentiate URLs from hosts.
+
+	if len(u) > len(withoutFragment) {
+		return nil
+	}
+
+	afterScheme := withoutFragment[len(parsed.Scheme)+3:]
+	if !strings.ContainsAny(afterScheme, "/#?") {
+		return ErrMissingURLSpecificFeature
+	}
+	return nil
+}
+
+func (u URL) withoutFragment() URL {
+	fragmentIndex := strings.Index(string(u), "#")
+	if fragmentIndex > 0 {
+		return u[:fragmentIndex]
+	}
+	return u
 }
 
 func (u URL) mustParse() *url.URL {
@@ -766,8 +840,7 @@ func (u URL) ToDirURL() URL {
 	if u.Path().IsDirPath() {
 		return u
 	}
-	parsed, _ := url.Parse(string(u))
-
+	parsed := u.mustParse()
 	return URL(parsed.JoinPath("/").String())
 }
 
@@ -796,8 +869,7 @@ func (u URL) appendPath(path Path) URL {
 	if !u.Path().IsDirPath() {
 		panic(errors.New("paths can only be appended to a URL which path ends with /"))
 	}
-	parsed, _ := url.Parse(string(u))
-
+	parsed := u.mustParse()
 	unprefixedPath := string(path)
 	// /a -> a
 	// ./a -> a
@@ -838,6 +910,28 @@ func (s Scheme) UnderlyingString() string {
 	return string(s)
 }
 
+func (s Scheme) Validate() error {
+	if s == "" {
+		return ErrEmptyScheme
+	}
+
+	//scheme        = alpha *( alpha | digit | "+" | "-" | "." )
+	//https://www.rfc-editor.org/rfc/rfc2396#section-3.1
+
+	if s[0] < 'a' || s[0] > 'z' {
+		return ErrSchemeWithInvalidStart
+	}
+
+	for _, r := range s {
+		//'.' is not allowed in Inox schemes.
+		if (r >= 'a' && r <= 'z') || r == '+' || r == '-' {
+			continue
+		}
+		return ErrUnexpectedCharsInScheme
+	}
+	return nil
+}
+
 // A Host is composed of the following parts: [<scheme>] '://' <hostname> [':' <port>].
 type Host string
 
@@ -849,6 +943,24 @@ func NewHost(hostnamePort Value, scheme string) (Value, error) {
 	}
 
 	return Host(host), nil
+}
+
+func (host Host) Validate() error {
+	if host == "" {
+		return ErrEmptyHost
+	}
+	checkedHost := host
+	if strings.HasPrefix(string(host), "://") { //scheme-less host
+		checkedHost = "http" + host
+	}
+	parsed, err := url.ParseRequestURI(string(checkedHost))
+	if err != nil {
+		return ErrInvalidHost
+	}
+	if parsed.Hostname() == "" {
+		return ErrMissingHostHostNameInHost
+	}
+	return nil
 }
 
 func (host Host) Scheme() Scheme {
@@ -873,7 +985,7 @@ func (host Host) HostWithoutPort() Host {
 		host = NO_SCHEME_SCHEME + host
 	}
 
-	u, err := url.Parse(string(host))
+	u, err := url.ParseRequestURI(string(host))
 	if err != nil {
 		panic(err)
 	}
@@ -889,7 +1001,7 @@ func (host Host) HostWithoutPort() Host {
 }
 
 func (host Host) Name() string {
-	parsed := utils.Must(url.Parse(string(host)))
+	parsed := utils.Must(url.ParseRequestURI(string(host)))
 	return parsed.Hostname()
 }
 

@@ -174,61 +174,208 @@ func TestParseJSONRepresentation(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
-		v, err := ParseJSONRepresentation(ctx, `{"path__value":"/"}`, nil)
-		if assert.NoError(t, err) {
-			assert.Equal(t, Path("/"), v)
-		}
+		t.Run("base cases", func(t *testing.T) {
+			v, err := ParseJSONRepresentation(ctx, `{"path__value":"/"}`, nil)
+			if assert.NoError(t, err) {
+				assert.Equal(t, Path("/"), v)
+			}
 
-		v, err = ParseJSONRepresentation(ctx, `"/"`, PATH_PATTERN)
-		if assert.NoError(t, err) {
-			assert.Equal(t, Path("/"), v)
-		}
+			v, err = ParseJSONRepresentation(ctx, `"/"`, PATH_PATTERN)
+			if assert.NoError(t, err) {
+				assert.Equal(t, Path("/"), v)
+			}
+		})
+
+		t.Run("invalid empty", func(t *testing.T) {
+			v, err := ParseJSONRepresentation(ctx, `""`, PATH_PATTERN)
+			assert.ErrorIs(t, err, ErrEmptyPath)
+			assert.Nil(t, v)
+		})
+
+		t.Run("invalid path start", func(t *testing.T) {
+			v, err := ParseJSONRepresentation(ctx, `".bashrc"`, PATH_PATTERN)
+			assert.ErrorIs(t, err, ErrPathWithInvalidStart)
+			assert.Nil(t, v)
+
+			v, err = ParseJSONRepresentation(ctx, `".../a"`, PATH_PATTERN)
+			assert.ErrorIs(t, err, ErrPathWithInvalidStart)
+			assert.Nil(t, v)
+
+			v, err = ParseJSONRepresentation(ctx, `"a"`, PATH_PATTERN)
+			assert.ErrorIs(t, err, ErrPathWithInvalidStart)
+			assert.Nil(t, v)
+
+			v, err = ParseJSONRepresentation(ctx, `"a/b"`, PATH_PATTERN)
+			assert.ErrorIs(t, err, ErrPathWithInvalidStart)
+			assert.Nil(t, v)
+		})
 	})
 
 	t.Run("schemes", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
-		//scheme
-		v, err := ParseJSONRepresentation(ctx, `{"scheme__value":"https"}`, nil)
-		if assert.NoError(t, err) {
-			assert.Equal(t, Scheme("https"), v)
-		}
+		t.Run("base cases", func(t *testing.T) {
+			v, err := ParseJSONRepresentation(ctx, `{"scheme__value":"https"}`, nil)
+			if assert.NoError(t, err) {
+				assert.Equal(t, Scheme("https"), v)
+			}
 
-		v, err = ParseJSONRepresentation(ctx, `"https"`, SCHEME_PATTERN)
-		if assert.NoError(t, err) {
-			assert.Equal(t, Scheme("https"), v)
-		}
+			v, err = ParseJSONRepresentation(ctx, `"https"`, SCHEME_PATTERN)
+			if assert.NoError(t, err) {
+				assert.Equal(t, Scheme("https"), v)
+			}
+		})
+
+		t.Run("empty", func(t *testing.T) {
+			v, err := ParseJSONRepresentation(ctx, `""`, SCHEME_PATTERN)
+			assert.ErrorIs(t, err, ErrEmptyScheme)
+			assert.Nil(t, v)
+		})
+
+		t.Run("invalid first char", func(t *testing.T) {
+			v, err := ParseJSONRepresentation(ctx, `"+http"`, SCHEME_PATTERN)
+			assert.ErrorIs(t, err, ErrSchemeWithInvalidStart)
+			assert.Nil(t, v)
+		})
+
+		t.Run("space is name", func(t *testing.T) {
+			v, err := ParseJSONRepresentation(ctx, `"ht tp""`, SCHEME_PATTERN)
+			assert.ErrorIs(t, err, ErrUnexpectedCharsInScheme)
+			assert.Nil(t, v)
+		})
+
+		t.Run("unexpected char: `.`", func(t *testing.T) {
+			v, err := ParseJSONRepresentation(ctx, `"http.x"`, SCHEME_PATTERN)
+			assert.ErrorIs(t, err, ErrUnexpectedCharsInScheme)
+			assert.Nil(t, v)
+		})
+
+		t.Run("unexpected char: `:`", func(t *testing.T) {
+			v, err := ParseJSONRepresentation(ctx, `"http:"`, SCHEME_PATTERN)
+			assert.ErrorIs(t, err, ErrUnexpectedCharsInScheme)
+			assert.Nil(t, v)
+		})
 	})
 
 	t.Run("hosts", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
-		v, err := ParseJSONRepresentation(ctx, `{"host__value":"https://example.com"}`, nil)
-		if assert.NoError(t, err) {
-			assert.Equal(t, Host("https://example.com"), v)
-		}
+		t.Run("base cases", func(t *testing.T) {
+			v, err := ParseJSONRepresentation(ctx, `{"host__value":"https://example.com"}`, nil)
+			if assert.NoError(t, err) {
+				assert.Equal(t, Host("https://example.com"), v)
+			}
 
-		v, err = ParseJSONRepresentation(ctx, `"https://example.com"`, HOST_PATTERN)
-		if assert.NoError(t, err) {
-			assert.Equal(t, Host("https://example.com"), v)
-		}
+			v, err = ParseJSONRepresentation(ctx, `"https://example.com"`, HOST_PATTERN)
+			if assert.NoError(t, err) {
+				assert.Equal(t, Host("https://example.com"), v)
+			}
+		})
+
+		t.Run("empty", func(t *testing.T) {
+			v, err := ParseJSONRepresentation(ctx, `""`, HOST_PATTERN)
+			assert.ErrorIs(t, err, ErrEmptyHost)
+			assert.Nil(t, v)
+		})
+
+		t.Run("no scheme", func(t *testing.T) {
+			v, err := ParseJSONRepresentation(ctx, `"://example.com"`, HOST_PATTERN)
+			if assert.NoError(t, err) {
+				assert.Equal(t, Host("://example.com"), v)
+			}
+		})
+
+		t.Run("unexpected char in scheme", func(t *testing.T) {
+			v, err := ParseJSONRepresentation(ctx, `"ht}tp://example.com"`, HOST_PATTERN)
+			assert.ErrorIs(t, err, ErrInvalidHost)
+			assert.Nil(t, v)
+		})
+
+		t.Run("missing name after scheme", func(t *testing.T) {
+			v, err := ParseJSONRepresentation(ctx, `"http://"`, HOST_PATTERN)
+			assert.ErrorIs(t, err, ErrMissingHostHostNameInHost)
+			assert.Nil(t, v)
+		})
+
+		t.Run("missing name after scheme (port)", func(t *testing.T) {
+			v, err := ParseJSONRepresentation(ctx, `"http://:80"`, HOST_PATTERN)
+			assert.ErrorIs(t, err, ErrMissingHostHostNameInHost)
+			assert.Nil(t, v)
+		})
+
+		t.Run("unexpected char in name", func(t *testing.T) {
+			v, err := ParseJSONRepresentation(ctx, `"http://example}.com"`, HOST_PATTERN)
+			assert.ErrorIs(t, err, ErrInvalidHost)
+			assert.Nil(t, v)
+		})
+
+		t.Run("space in name", func(t *testing.T) {
+			v, err := ParseJSONRepresentation(ctx, `"http://example .com"`, HOST_PATTERN)
+			assert.ErrorIs(t, err, ErrInvalidHost)
+			assert.Nil(t, v)
+		})
 	})
 
 	t.Run("urls", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
-		v, err := ParseJSONRepresentation(ctx, `{"url__value":"https://example.com/"}`, nil)
-		if assert.NoError(t, err) {
-			assert.Equal(t, URL("https://example.com/"), v)
-		}
+		t.Run("base cases", func(t *testing.T) {
+			v, err := ParseJSONRepresentation(ctx, `{"url__value":"https://example.com/"}`, nil)
+			if assert.NoError(t, err) {
+				assert.Equal(t, URL("https://example.com/"), v)
+			}
 
-		v, err = ParseJSONRepresentation(ctx, `"https://example.com/"`, URL_PATTERN)
-		if assert.NoError(t, err) {
-			assert.Equal(t, URL("https://example.com/"), v)
-		}
+			v, err = ParseJSONRepresentation(ctx, `"https://example.com/"`, URL_PATTERN)
+			if assert.NoError(t, err) {
+				assert.Equal(t, URL("https://example.com/"), v)
+			}
+		})
+
+		t.Run("empty", func(t *testing.T) {
+			v, err := ParseJSONRepresentation(ctx, `""`, URL_PATTERN)
+			assert.ErrorIs(t, err, ErrEmptyURL)
+			assert.Nil(t, v)
+		})
+
+		t.Run("unexpected char in scheme", func(t *testing.T) {
+			v, err := ParseJSONRepresentation(ctx, `"ht}tp://example.com/"`, URL_PATTERN)
+			assert.ErrorIs(t, err, ErrInvalidURL)
+			assert.Nil(t, v)
+		})
+
+		t.Run("no hostname", func(t *testing.T) {
+			v, err := ParseJSONRepresentation(ctx, `"https:///"`, URL_PATTERN)
+			assert.ErrorIs(t, err, ErrMissingURLHostName)
+			assert.Nil(t, v)
+		})
+
+		t.Run("no hostname before port", func(t *testing.T) {
+			v, err := ParseJSONRepresentation(ctx, `"https://:80"`, URL_PATTERN)
+			assert.ErrorIs(t, err, ErrMissingURLHostName)
+			assert.Nil(t, v)
+		})
+
+		t.Run("space in hostname", func(t *testing.T) {
+			v, err := ParseJSONRepresentation(ctx, `"https://examp le/index.html"`, URL_PATTERN)
+			assert.ErrorIs(t, err, ErrInvalidURL)
+			assert.Nil(t, v)
+		})
+
+		t.Run("space in path", func(t *testing.T) {
+			v, err := ParseJSONRepresentation(ctx, `"https://example/ index.html"`, URL_PATTERN)
+			assert.ErrorIs(t, err, ErrUnexpectedSpaceInURL)
+			assert.Nil(t, v)
+		})
+
+		t.Run("no URL-specific feature", func(t *testing.T) {
+			v, err := ParseJSONRepresentation(ctx, `"https://example.com"`, URL_PATTERN)
+			if assert.NoError(t, err) {
+				assert.Equal(t, URL("https://example.com/"), v)
+			}
+		})
 	})
 
 	t.Run("path patterns", func(t *testing.T) {

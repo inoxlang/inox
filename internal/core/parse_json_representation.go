@@ -29,7 +29,13 @@ func ParseJSONRepresentation(ctx *Context, s string, pattern Pattern) (Serializa
 	return ParseNextJSONRepresentation(ctx, it, pattern, false)
 }
 
-func ParseNextJSONRepresentation(ctx *Context, it *jsoniter.Iterator, pattern Pattern, try bool) (_ Serializable, finalErr error) {
+func ParseNextJSONRepresentation(ctx *Context, it *jsoniter.Iterator, pattern Pattern, try bool) (res Serializable, finalErr error) {
+	defer func() {
+		if finalErr != nil {
+			res = nil
+		}
+	}()
+
 	switch p := pattern.(type) {
 	case nil:
 		if it.WhatIsNext() == jsoniter.ObjectValue {
@@ -782,7 +788,11 @@ func parsePathJSONRepresentation(ctx *Context, it *jsoniter.Iterator, try bool) 
 		return "", ErrJsonNotMatchingSchema
 	}
 
-	return Path(it.ReadString()), nil
+	pth := Path(it.ReadString())
+	if err := pth.Validate(); err != nil {
+		return "", err
+	}
+	return pth, nil
 }
 
 func parseSchemeJSONRepresentation(ctx *Context, it *jsoniter.Iterator, try bool) (_ Scheme, finalErr error) {
@@ -793,7 +803,11 @@ func parseSchemeJSONRepresentation(ctx *Context, it *jsoniter.Iterator, try bool
 		return "", ErrJsonNotMatchingSchema
 	}
 
-	return Scheme(it.ReadString()), nil
+	scheme := Scheme(it.ReadString())
+	if err := scheme.Validate(); err != nil {
+		return "", err
+	}
+	return scheme, nil
 }
 
 func parseHostJSONRepresentation(ctx *Context, it *jsoniter.Iterator, try bool) (_ Host, finalErr error) {
@@ -804,7 +818,11 @@ func parseHostJSONRepresentation(ctx *Context, it *jsoniter.Iterator, try bool) 
 		return "", ErrJsonNotMatchingSchema
 	}
 
-	return Host(it.ReadString()), nil
+	host := Host(it.ReadString())
+	if err := host.Validate(); err != nil {
+		return "", err
+	}
+	return host, nil
 }
 
 func parseURLJSONRepresentation(ctx *Context, it *jsoniter.Iterator, try bool) (_ URL, finalErr error) {
@@ -815,7 +833,15 @@ func parseURLJSONRepresentation(ctx *Context, it *jsoniter.Iterator, try bool) (
 		return "", ErrJsonNotMatchingSchema
 	}
 
-	return URL(it.ReadString()), nil
+	url := URL(it.ReadString())
+	if err := url.Validate(); err != nil {
+		if err == ErrMissingURLSpecificFeature {
+			//fix
+			return url + "/", nil
+		}
+		return "", err
+	}
+	return url, nil
 }
 
 func parsePathPatternJSONRepresentation(ctx *Context, it *jsoniter.Iterator, try bool) (_ PathPattern, finalErr error) {
