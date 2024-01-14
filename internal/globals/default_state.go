@@ -308,6 +308,11 @@ func NewDefaultGlobalState(ctx *core.Context, conf core.DefaultGlobalStateConfig
 		globalnames.IS_EVEN_FN: core.ValOf(_is_even),
 		globalnames.IS_ODD_FN:  core.ValOf(_is_odd),
 
+		// comparable
+		globalnames.MINOF_FN:  core.ValOf(core.MinOf),
+		globalnames.MAXOF_FN:  core.ValOf(core.MaxOf),
+		globalnames.MINMAX_FN: core.ValOf(core.MinMaxOf),
+
 		// protocol
 		globalnames.SET_CLIENT_FOR_URL_FN:  core.ValOf(setClientForURL),
 		globalnames.SET_CLIENT_FOR_HOST_FN: core.ValOf(setClientForHost),

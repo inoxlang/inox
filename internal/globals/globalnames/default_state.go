@@ -126,6 +126,11 @@ const (
 	IS_EVEN_FN = "is_even"
 	IS_ODD_FN  = "is_odd"
 
+	// number
+	MINOF_FN  = "minof"
+	MAXOF_FN  = "maxof"
+	MINMAX_FN = "minmax"
+
 	// protocol
 	SET_CLIENT_FOR_URL_FN  = "set_client_for_url"
 	SET_CLIENT_FOR_HOST_FN = "set_client_for_host"

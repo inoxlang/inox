@@ -8,6 +8,6 @@ type Comparable interface {
 type ComparableMixin struct {
 }
 
-func __comparable() {
+func (mixin ComparableMixin) __comparable() {
 
 }

@@ -129,6 +129,14 @@ func Repeat[T any](n int, fn func(index int) T) []T {
 	return slice
 }
 
+func RepeatValue[T any](n int, v T) []T {
+	slice := make([]T, n)
+	for i := 0; i < n; i++ {
+		slice[i] = v
+	}
+	return slice
+}
+
 func ShrinkSliceIfWastedCapacity[E any](slice []E, minShrinkableStackLength int, stackShrinkDivider int) []E {
 	if len(slice) >= minShrinkableStackLength && len(slice) <= cap(slice)/stackShrinkDivider {
 		newSlice := make([]E, len(slice))
