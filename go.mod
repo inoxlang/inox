@@ -28,6 +28,7 @@ require (
 	github.com/google/uuid v1.5.0
 	github.com/gorilla/websocket v1.5.1
 	github.com/johannesboyne/gofakes3 v0.0.0-20230914150226-f005f5cc03aa
+	github.com/maruel/natural v1.1.1
 	github.com/miekg/dns v1.1.57
 	github.com/minio/minio-go/v7 v7.0.66
 	github.com/muesli/cancelreader v0.2.2

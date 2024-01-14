@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCompareObjects(t *testing.T) {
+func TestEqualityCompareObjects(t *testing.T) {
 	ctx := NewContext(ContextConfig{})
 	NewGlobalState(ctx)
 
@@ -65,7 +65,7 @@ func TestCompareObjects(t *testing.T) {
 	})
 }
 
-func TestCompareDictionaries(t *testing.T) {
+func TestEqualityCompareDictionaries(t *testing.T) {
 	ctx := NewContext(ContextConfig{})
 	NewGlobalState(ctx)
 
@@ -126,7 +126,7 @@ func TestCompareDictionaries(t *testing.T) {
 	})
 }
 
-func TestCompareValueLists(t *testing.T) {
+func TestEqualityCompareValueLists(t *testing.T) {
 	ctx := NewContext(ContextConfig{
 		DoNotSpawnDoneGoroutine: true,
 	})
@@ -180,7 +180,7 @@ func TestCompareValueLists(t *testing.T) {
 	})
 }
 
-func TestCompareKeyLists(t *testing.T) {
+func TestEqualityCompareKeyLists(t *testing.T) {
 	ctx := NewContext(ContextConfig{})
 	NewGlobalState(ctx)
 
@@ -215,17 +215,17 @@ func TestCompareKeyLists(t *testing.T) {
 	})
 }
 
-func TestComparePaths(t *testing.T) {
+func TestEqualityComparePaths(t *testing.T) {
 	assert.True(t, Path("./").Equal(nil, Path("./"), map[uintptr]uintptr{}, 0))
 	assert.False(t, Path("./").Equal(nil, Path("./a"), map[uintptr]uintptr{}, 0))
 }
 
-func TestComparePathPatterns(t *testing.T) {
+func TestEqualityComparePathPatterns(t *testing.T) {
 	assert.True(t, PathPattern("./").Equal(nil, PathPattern("./"), map[uintptr]uintptr{}, 0))
 	assert.False(t, PathPattern("./").Equal(nil, PathPattern("./a"), map[uintptr]uintptr{}, 0))
 }
 
-func TestCompareStrings(t *testing.T) {
+func TestEqualityCompareStrings(t *testing.T) {
 	ctx := NewContext(ContextConfig{})
 	NewGlobalState(ctx)
 
@@ -270,7 +270,7 @@ func TestCompareStrings(t *testing.T) {
 
 }
 
-func TestCompareOrderedPairs(t *testing.T) {
+func TestEqualityCompareOrderedPairs(t *testing.T) {
 	ctx := NewContext(ContextConfig{})
 	NewGlobalState(ctx)
 	defer ctx.CancelGracefully()
@@ -283,7 +283,7 @@ func TestCompareOrderedPairs(t *testing.T) {
 	assertNotEqualInoxValues(t, intPairB, intPairA, ctx)
 }
 
-func TestCompareULIDs(t *testing.T) {
+func TestEqualityCompareULIDs(t *testing.T) {
 	ulid1 := NewULID()
 	ulid2 := NewULID()
 
@@ -294,7 +294,7 @@ func TestCompareULIDs(t *testing.T) {
 	assertNotEqualInoxValues(t, ulid2, ulid1, nil)
 }
 
-func TestCompareUUIDs(t *testing.T) {
+func TestEqualityCompareUUIDs(t *testing.T) {
 	firstUUID := NewUUIDv4()
 	secondUUID := NewUUIDv4()
 

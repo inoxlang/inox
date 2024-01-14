@@ -1204,6 +1204,7 @@ type ByteCount struct {
 	hasValue bool
 	value    int64
 	SerializableMixin
+	ComparableMixin
 }
 
 func NewByteCount(v int64) *ByteCount {
@@ -1262,6 +1263,7 @@ type ByteRate struct {
 	hasValue bool
 	value    int64
 	SerializableMixin
+	ComparableMixin
 }
 
 func NewByteRate(v int64) *ByteRate {
@@ -1320,6 +1322,7 @@ type LineCount struct {
 	hasValue bool
 	value    int64
 	SerializableMixin
+	ComparableMixin
 }
 
 func NewLineCount(v int64) *LineCount {
@@ -1378,6 +1381,7 @@ type RuneCount struct {
 	hasValue bool
 	value    int64
 	SerializableMixin
+	ComparableMixin
 }
 
 func NewRuneCount(v int64) *RuneCount {
@@ -1429,6 +1433,7 @@ type Frequency struct {
 	hasValue bool
 	value    float64
 	SerializableMixin
+	ComparableMixin
 }
 
 func NewFrequency(v float64) *Frequency {
@@ -1526,6 +1531,7 @@ func (r *AnyResourceName) WidestOfType() Value {
 // A Port represents a symbolic Port.
 type Port struct {
 	_ int
+	ComparableMixin
 }
 
 func (p *Port) Test(v Value, state RecTestCallState) bool {

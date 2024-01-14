@@ -10,6 +10,8 @@ import (
 // A Year represents a symbolic Year.
 type Year struct {
 	SerializableMixin
+	ComparableMixin
+
 	value    time.Time
 	hasValue bool
 }
@@ -61,6 +63,8 @@ func (d *Year) WidestOfType() Value {
 // A Date represents a symbolic Date.
 type Date struct {
 	SerializableMixin
+	ComparableMixin
+
 	value    time.Time
 	hasValue bool
 }
@@ -113,6 +117,8 @@ func (d *Date) WidestOfType() Value {
 // A DateTime represents a symbolic DateTime.
 type DateTime struct {
 	SerializableMixin
+	ComparableMixin
+
 	value    time.Time
 	hasValue bool
 }
@@ -167,6 +173,7 @@ type Duration struct {
 	SerializableMixin
 	value    time.Duration
 	hasValue bool
+	ComparableMixin
 }
 
 func NewDuration(v time.Duration) *Duration {

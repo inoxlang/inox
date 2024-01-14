@@ -70,23 +70,19 @@ func (boolean Bool) Equal(ctx *Context, other Value, alreadyCompared map[uintptr
 }
 
 func (r Rune) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
-	otherRune, ok := other.(Rune)
-	return ok && otherRune == r
+	return equalComparable(r, other)
 }
 
 func (b Byte) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
-	otherByte, ok := other.(Byte)
-	return ok && otherByte == b
+	return equalComparable(b, other)
 }
 
 func (i Int) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
-	otherInt, ok := other.(Int)
-	return ok && otherInt == i
+	return equalComparable(i, other)
 }
 
 func (f Float) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
-	otherFloat, ok := other.(Float)
-	return ok && otherFloat == f
+	return equalComparable(f, other)
 }
 
 func (s Str) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
@@ -803,75 +799,39 @@ func (str CheckedString) Equal(ctx *Context, other Value, alreadyCompared map[ui
 }
 
 func (count ByteCount) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
-	otherCount, ok := other.(ByteCount)
-	if !ok {
-		return false
-	}
-	return count == otherCount
+	return equalComparable(count, other)
 }
 
 func (count LineCount) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
-	otherCount, ok := other.(LineCount)
-	if !ok {
-		return false
-	}
-	return count == otherCount
+	return equalComparable(count, other)
 }
 
 func (count RuneCount) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
-	otherCount, ok := other.(RuneCount)
-	if !ok {
-		return false
-	}
-	return count == otherCount
+	return equalComparable(count, other)
 }
 
 func (rate ByteRate) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
-	otherRate, ok := other.(ByteRate)
-	if !ok {
-		return false
-	}
-	return rate == otherRate
+	return equalComparable(rate, other)
 }
 
 func (f Frequency) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
-	otherRate, ok := other.(Frequency)
-	if !ok {
-		return false
-	}
-	return f == otherRate
+	return equalComparable(f, other)
 }
 
 func (d Duration) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
-	otherDuration, ok := other.(Duration)
-	if !ok {
-		return false
-	}
-	return d == otherDuration
+	return equalComparable(d, other)
 }
 
 func (y Year) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
-	otherYear, ok := other.(Year)
-	if !ok {
-		return false
-	}
-	return y == otherYear
+	return equalComparable(y, other)
 }
 
 func (d Date) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
-	otherDate, ok := other.(Date)
-	if !ok {
-		return false
-	}
-	return d == otherDate
+	return equalComparable(d, other)
 }
 
 func (d DateTime) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
-	otherDate, ok := other.(DateTime)
-	if !ok {
-		return false
-	}
-	return d == otherDate
+	return equalComparable(d, other)
 }
 
 func (m FileMode) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {

@@ -29,10 +29,10 @@ var (
 type ByteCount int64
 
 // LineCount implements Value.
-type LineCount int
+type LineCount int64
 
 // RuneCount implements Value.
-type RuneCount int
+type RuneCount int64
 
 type Rate interface {
 	Value

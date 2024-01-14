@@ -35,6 +35,8 @@ type Integral interface {
 // A Float represents a symbolic Float.
 type Float struct {
 	SerializableMixin
+	ComparableMixin
+
 	value    float64
 	hasValue bool
 
@@ -106,6 +108,8 @@ func (f *Float) WidestOfType() Value {
 // An Int represents a symbolic Int.
 type Int struct {
 	SerializableMixin
+	ComparableMixin
+
 	value    int64
 	hasValue bool
 

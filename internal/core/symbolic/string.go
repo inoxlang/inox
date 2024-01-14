@@ -67,6 +67,7 @@ type String struct {
 
 	UnassignablePropsMixin
 	SerializableMixin
+	ComparableMixin
 }
 
 func NewString(v string) *String {
@@ -273,6 +274,8 @@ func (s *String) slice(start, end *Int) Sequence {
 type Rune struct {
 	UnassignablePropsMixin
 	SerializableMixin
+	ComparableMixin
+
 	hasValue bool
 	value    rune
 }

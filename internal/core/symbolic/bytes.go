@@ -142,8 +142,8 @@ func (s *ByteSlice) WatcherElement() Value {
 
 // A Byte represents a symbolic Byte.
 type Byte struct {
-	_ int
 	SerializableMixin
+	ComparableMixin
 }
 
 func (b *Byte) Test(v Value, state RecTestCallState) bool {
