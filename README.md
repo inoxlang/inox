@@ -687,7 +687,7 @@ API_KEY = env.initial.API_KEY
 
 **<summary>Demo of project secrets</summary>**
 
-![project secrets demo](https://github.com/inoxlang/inox/assets/113632189/c19c5c51-35be-4cfb-a3c4-d53cfd8cfc16)
+![project secrets demo](https://github.com/inoxlang/inox/assets/113632189/55f23134-e289-4f78-bd26-693bbc75c8ea)
 
 </details>
 
