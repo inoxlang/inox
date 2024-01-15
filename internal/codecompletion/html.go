@@ -231,14 +231,21 @@ func findWholeHTMLTagCompletions(tagName string, ancestors []parse.Node, include
 
 				bodyPattern, ok := operation.JSONRequestBodyPattern()
 				if ok {
-					writeInputs(inputsBuf, "", bodyPattern)
+					writeHtmlInputs(inputsBuf, formInputGeneration{
+						required: true,
+						pattern:  bodyPattern,
+					})
 				}
 			}
 
 			completions = append(completions, Completion{
 				ShownString: prefix + "form " + method + " " + path,
-				Value:       prefix + "form " + hxAttribute + `="` + path + `">` + inputsBuf.String() + `<form>`,
-				Kind:        defines.CompletionItemKindProperty,
+				Value: prefix +
+					"form " + hxAttribute + `="` + path + `">` +
+					inputsBuf.String() +
+					"\n\t<button type=\"submit\">Submit</button>" +
+					"\n</form>",
+				Kind: defines.CompletionItemKindProperty,
 			})
 			return nil
 		})
@@ -247,25 +254,53 @@ func findWholeHTMLTagCompletions(tagName string, ancestors []parse.Node, include
 	return
 }
 
-func writeInputs(w *bytes.Buffer, parent string, pattern core.Pattern) {
-	switch p := pattern.(type) {
+func writeHtmlInputs(w *bytes.Buffer, gen formInputGeneration) {
+	switch p := gen.pattern.(type) {
 	case *core.ObjectPattern:
 		p.ForEachEntry(func(entry core.ObjectPatternEntry) error {
-			name := parent + "." + entry.Name
-			if isTerminalFormParamPattern(p) {
-				writeTerminalInputs(w, name, p)
+			name := entry.Name
+			if gen.parent != "" {
+				name = gen.parent + "." + name
+			}
+
+			required := gen.required && !entry.IsOptional
+
+			if isTerminalFormParamPattern(entry.Pattern) {
+				writeTerminalHtmlInputs(w, formInputGeneration{
+					terminalInputsName: name,
+					required:           required,
+					pattern:            entry.Pattern,
+				})
 			} else {
-				writeInputs(w, parent, entry.Pattern)
+				writeHtmlInputs(w, formInputGeneration{
+					parent:   name,
+					required: required,
+					pattern:  entry.Pattern,
+				})
 			}
 			return nil
 		})
 	case *core.RecordPattern:
 		p.ForEachEntry(func(entry core.RecordPatternEntry) error {
-			name := parent + "." + entry.Name
-			if isTerminalFormParamPattern(p) {
-				writeTerminalInputs(w, name, p)
+			name := entry.Name
+			if gen.parent != "" {
+				name = gen.parent + "." + name
+			}
+
+			required := gen.required && !entry.IsOptional
+
+			if isTerminalFormParamPattern(entry.Pattern) {
+				writeTerminalHtmlInputs(w, formInputGeneration{
+					terminalInputsName: name,
+					required:           required,
+					pattern:            entry.Pattern,
+				})
 			} else {
-				writeInputs(w, parent, entry.Pattern)
+				writeHtmlInputs(w, formInputGeneration{
+					parent:   name,
+					required: required,
+					pattern:  entry.Pattern,
+				})
 			}
 			return nil
 		})
@@ -273,11 +308,21 @@ func writeInputs(w *bytes.Buffer, parent string, pattern core.Pattern) {
 		exactElemCount, ok := p.ExactElementCount()
 		if ok {
 			for i := 0; i < exactElemCount; i++ {
-				name := parent + "[" + strconv.Itoa(i) + "]"
-				if isTerminalFormParamPattern(p) {
-					writeTerminalInputs(w, name, p)
+				name := gen.parent + "[" + strconv.Itoa(i) + "]"
+				elementPattern := utils.MustGet(p.ElementPatternAt(i))
+
+				if isTerminalFormParamPattern(elementPattern) {
+					writeTerminalHtmlInputs(w, formInputGeneration{
+						terminalInputsName: name,
+						required:           gen.required,
+						pattern:            elementPattern,
+					})
 				} else {
-					writeInputs(w, parent, utils.MustGet(p.ElementPatternAt(i)))
+					writeHtmlInputs(w, formInputGeneration{
+						parent:   name,
+						required: gen.required,
+						pattern:  elementPattern,
+					})
 				}
 			}
 		} else {
@@ -285,34 +330,48 @@ func writeInputs(w *bytes.Buffer, parent string, pattern core.Pattern) {
 			maxCount := p.MaxElementCount()
 			if minCount != 0 || maxCount == core.DEFAULT_LIST_PATTERN_MAX_ELEM_COUNT {
 				w.WriteString("<!-- failed to generate inputs for elements of ")
-				w.WriteString(parent)
+				w.WriteString(gen.parent)
 				w.WriteString(" -->")
 				return
 			}
 
 			w.WriteString("<!-- failed to generate inputs for elements of ")
-			w.WriteString(parent)
+			w.WriteString(gen.parent)
 			w.WriteString(" -->")
 		}
 	case *core.TuplePattern:
 		exactElemCount, ok := p.ExactElementCount()
 		if ok {
 			for i := 0; i < exactElemCount; i++ {
-				name := parent + "[" + strconv.Itoa(i) + "]"
-				if isTerminalFormParamPattern(p) {
-					writeTerminalInputs(w, name, p)
+				name := gen.parent + "[" + strconv.Itoa(i) + "]"
+				elementPattern := utils.MustGet(p.ElementPatternAt(i))
+
+				if isTerminalFormParamPattern(elementPattern) {
+					writeTerminalHtmlInputs(w, formInputGeneration{
+						terminalInputsName: name,
+						required:           gen.required,
+						pattern:            elementPattern,
+					})
 				} else {
-					writeInputs(w, parent, utils.MustGet(p.ElementPatternAt(i)))
+					writeHtmlInputs(w, formInputGeneration{
+						parent:   name,
+						required: gen.required,
+						pattern:  elementPattern,
+					})
 				}
 			}
 		} else {
 			w.WriteString("<!-- failed to generate inputs for elements of ")
-			w.WriteString(parent)
+			w.WriteString(gen.parent)
 			w.WriteString(" -->")
 		}
 	default:
 		if isTerminalFormParamPattern(p) {
-			writeTerminalInputs(w, parent, p)
+			writeTerminalHtmlInputs(w, formInputGeneration{
+				parent:   gen.parent,
+				required: gen.required,
+				pattern:  p,
+			})
 		}
 	}
 }
@@ -326,13 +385,21 @@ func isTerminalFormParamPattern(p core.Pattern) bool {
 	switch p {
 	case core.INT_PATTERN, core.FLOAT_PATTERN, core.BOOL_PATTERN,
 		core.YEAR_PATTERN, core.DATE_PATTERN, core.DATETIME_PATTERN, core.DURATION_PATTERN,
-		core.EMAIL_ADDR_PATTERN:
+		core.EMAIL_ADDR_PATTERN, core.STRING_PATTERN, core.STR_PATTERN,
+		core.URL_PATTERN:
 		return true
 	}
 	return false
 }
 
-func writeTerminalInputs(w *bytes.Buffer, name string, pattern core.Pattern) (supported bool) {
+type formInputGeneration struct {
+	terminalInputsName string
+	required           bool
+	pattern            core.Pattern
+	parent             string
+}
+
+func writeTerminalHtmlInputs(w *bytes.Buffer, gen formInputGeneration) (supported bool) {
 	type input struct {
 		//type attribute
 		typ string
@@ -352,7 +419,7 @@ func writeTerminalInputs(w *bytes.Buffer, name string, pattern core.Pattern) (su
 	}
 	var inputs []input
 
-	switch p := pattern.(type) {
+	switch p := gen.pattern.(type) {
 	case *core.IntRangePattern:
 		input := input{}
 		intRange := p.Range()
@@ -411,18 +478,22 @@ func writeTerminalInputs(w *bytes.Buffer, name string, pattern core.Pattern) (su
 			inputs = append(inputs, input{typ: "datetime-local"})
 		case core.DURATION_PATTERN:
 			inputs = append(inputs, input{typ: "number"})
+		case core.STRING_PATTERN, core.STR_PATTERN:
+			inputs = append(inputs, input{typ: "text"})
+		case core.URL_PATTERN:
+			inputs = append(inputs, input{typ: "url"})
 		}
 	}
 
 	//write the inputs
 
 	for _, input := range inputs {
-		w.WriteString("<input name=\"")
-		w.WriteString(name) //TODO: encode
+		w.WriteString("\n\t<input name=\"")
+		w.WriteString(gen.terminalInputsName) //TODO: encode
 		w.WriteByte('"')
 
-		w.WriteString("<input placeholder=\"")
-		w.WriteString(name) //TODO: encode
+		w.WriteString(" placeholder=\"")
+		w.WriteString(gen.terminalInputsName) //TODO: encode
 		w.WriteByte('"')
 
 		if input.typ != "" {
@@ -451,8 +522,12 @@ func writeTerminalInputs(w *bytes.Buffer, name string, pattern core.Pattern) (su
 			w.WriteByte('"')
 		}
 
+		if gen.required {
+			w.WriteString(` required`)
+		}
+
 		//Close the input with '/>' because Inox's JSX-like syntax
-		//is not aware of self-closing HTML elements.
+		//is not aware of void tags.
 		w.WriteString(`/>`)
 
 		if input.comment != "" {
@@ -460,6 +535,7 @@ func writeTerminalInputs(w *bytes.Buffer, name string, pattern core.Pattern) (su
 			w.WriteString(input.comment)
 			w.WriteString(" -->")
 		}
+
 	}
 
 	return true
