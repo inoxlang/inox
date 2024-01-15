@@ -1356,7 +1356,7 @@ func (port Port) repr(quote bool) []byte {
 	}
 	b = append(b, ':')
 	b = strconv.AppendInt(b, int64(port.Number), 10)
-	if port.Scheme != NO_SCHEME_SCHEME && port.Scheme != "" {
+	if port.Scheme != NO_SCHEME_SCHEME_NAME && port.Scheme != "" {
 		b = append(b, '/')
 		b = append(b, port.Scheme...)
 	}

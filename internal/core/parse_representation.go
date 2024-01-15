@@ -2506,18 +2506,17 @@ func _parsePortRepr(b []byte) (val Serializable, errorIndex int) {
 		return nil, len(b)
 	}
 
-	scheme := NO_SCHEME_SCHEME
+	scheme := NO_SCHEME_SCHEME_NAME
 	if slashIndex > 0 {
-		scheme = string(b[slashIndex+1:])
+		scheme = Scheme(b[slashIndex+1:])
 		if scheme == "" {
 			return nil, len(b)
 		}
-		scheme += "://"
 	}
 
 	return Port{
 		Number: uint16(n),
-		Scheme: Scheme(scheme),
+		Scheme: scheme,
 	}, -1
 }
 

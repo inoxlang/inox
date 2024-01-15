@@ -310,21 +310,69 @@ func TestPathPattern(t *testing.T) {
 }
 
 func TestHostPatternTest(t *testing.T) {
-	assert.True(t, HostPattern("https://*.com").Test(nil, Host("https://a.com")))
-	assert.True(t, HostPattern("https://a*.com").Test(nil, Host("https://a.com")))
-	assert.True(t, HostPattern("https://a*.com").Test(nil, Host("https://ab.com")))
-	assert.False(t, HostPattern("https://*.com").Test(nil, Host("https://sub.a.com")))
-	assert.True(t, HostPattern("https://**.com").Test(nil, Host("https://sub.a.com")))
-	assert.True(t, HostPattern("https://a.*").Test(nil, Host("https://a.com")))
-	assert.False(t, HostPattern("https://sub.*").Test(nil, Host("https://sub.a.com")))
-	assert.True(t, HostPattern("https://sub.**").Test(nil, Host("https://sub.a.com")))
-	assert.False(t, HostPattern("https://*.com").Test(nil, Host("://a.com")))
-	assert.False(t, HostPattern("://*.com").Test(nil, Host("https://a.com")))
-	assert.False(t, HostPattern("://*.com:8080").Test(nil, Host("https://a.com")))
-	assert.True(t, HostPattern("://*.com").Test(nil, Host("://a.com")))
 
-	assert.False(t, HostPattern("https://*.com").Test(nil, Host("ws://a.com")))
-	assert.True(t, HostPattern("ws://*.com").Test(nil, Host("ws://a.com")))
+	t.Run("Test()", func(t *testing.T) {
+		assert.True(t, HostPattern("https://*.com").Test(nil, Host("https://a.com")))
+		assert.False(t, HostPattern("https://*.com").Test(nil, Host("://a.com")))
+		assert.False(t, HostPattern("https://*.com").Test(nil, Host("ws://a.com")))
+		assert.True(t, HostPattern("https://a*.com").Test(nil, Host("https://a.com")))
+		assert.True(t, HostPattern("https://a*.com").Test(nil, Host("https://ab.com")))
+		assert.False(t, HostPattern("https://*.com").Test(nil, Host("https://sub.a.com")))
+		assert.True(t, HostPattern("https://**.com").Test(nil, Host("https://sub.a.com")))
+		assert.True(t, HostPattern("https://a.*").Test(nil, Host("https://a.com")))
+		assert.False(t, HostPattern("https://sub.*").Test(nil, Host("https://sub.a.com")))
+		assert.True(t, HostPattern("https://sub.**").Test(nil, Host("https://sub.a.com")))
+		assert.False(t, HostPattern("://*.com").Test(nil, Host("https://a.com")))
+		assert.False(t, HostPattern("://*.com:8080").Test(nil, Host("https://a.com")))
+		assert.True(t, HostPattern("://*.com").Test(nil, Host("://a.com")))
+		assert.True(t, HostPattern("ws://*.com").Test(nil, Host("ws://a.com")))
+	})
+
+	p := HostPattern("https://*.com")
+	assert.Equal(t, Scheme("https"), p.Scheme())
+	assert.True(t, p.HasScheme())
+	assert.Equal(t, "*.com", p.WithoutScheme())
+
+	p = HostPattern("https://*.com:8080")
+	assert.Equal(t, Scheme("https"), p.Scheme())
+	assert.True(t, p.HasScheme())
+	assert.Equal(t, "*.com:8080", p.WithoutScheme())
+
+	p = HostPattern("https://a*.com")
+	assert.Equal(t, Scheme("https"), p.Scheme())
+	assert.True(t, p.HasScheme())
+	assert.Equal(t, "a*.com", p.WithoutScheme())
+
+	p = HostPattern("https://**.com")
+	assert.Equal(t, Scheme("https"), p.Scheme())
+	assert.True(t, p.HasScheme())
+	assert.Equal(t, "**.com", p.WithoutScheme())
+
+	p = HostPattern("https://a*")
+	assert.Equal(t, Scheme("https"), p.Scheme())
+	assert.True(t, p.HasScheme())
+	assert.Equal(t, "a*", p.WithoutScheme())
+
+	p = HostPattern("https://sub.**")
+	assert.Equal(t, Scheme("https"), p.Scheme())
+	assert.True(t, p.HasScheme())
+	assert.Equal(t, "sub.**", p.WithoutScheme())
+
+	p = HostPattern("https://sub.*")
+	assert.Equal(t, Scheme("https"), p.Scheme())
+	assert.True(t, p.HasScheme())
+	assert.Equal(t, "sub.*", p.WithoutScheme())
+
+	p = HostPattern("://*.com")
+	assert.Equal(t, NO_SCHEME_SCHEME_NAME, p.Scheme())
+	assert.False(t, p.HasScheme())
+	assert.Equal(t, "*.com", p.WithoutScheme())
+
+	p = HostPattern("://*.com:8080")
+	assert.Equal(t, NO_SCHEME_SCHEME_NAME, p.Scheme())
+	assert.False(t, p.HasScheme())
+	assert.Equal(t, "*.com:8080", p.WithoutScheme())
+
 }
 
 func TestNamedSegmentPathPatternTest(t *testing.T) {

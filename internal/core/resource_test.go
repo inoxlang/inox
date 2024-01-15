@@ -48,6 +48,43 @@ func TestPath(t *testing.T) {
 	})
 }
 
+func TestHost(t *testing.T) {
+	httpHost := Host("http://example.com")
+	assert.True(t, httpHost.HasScheme())
+	assert.True(t, httpHost.HasHttpScheme())
+	assert.Equal(t, Scheme("http"), httpHost.Scheme())
+	assert.Equal(t, httpHost, httpHost.HostWithoutPort())
+	assert.Equal(t, "example.com", httpHost.WithoutScheme())
+
+	httpHostWithPort := Host("http://example.com:80")
+	assert.True(t, httpHostWithPort.HasScheme())
+	assert.True(t, httpHostWithPort.HasHttpScheme())
+	assert.Equal(t, Scheme("http"), httpHostWithPort.Scheme())
+	assert.Equal(t, Host("http://example.com"), httpHostWithPort.HostWithoutPort())
+	assert.Equal(t, "example.com:80", httpHostWithPort.WithoutScheme())
+
+	ldbHost := Host("ldb://main")
+	assert.True(t, ldbHost.HasScheme())
+	assert.False(t, ldbHost.HasHttpScheme())
+	assert.Equal(t, Scheme("ldb"), ldbHost.Scheme())
+	assert.Equal(t, Host("ldb://main"), ldbHost.HostWithoutPort())
+	assert.Equal(t, "main", ldbHost.WithoutScheme())
+
+	schemelessHost := Host("://example.com")
+	assert.False(t, schemelessHost.HasScheme())
+	assert.False(t, schemelessHost.HasHttpScheme())
+	assert.Equal(t, NO_SCHEME_SCHEME_NAME, schemelessHost.Scheme())
+	assert.Equal(t, Host("://example.com"), schemelessHost.HostWithoutPort())
+	assert.Equal(t, "example.com", schemelessHost.WithoutScheme())
+
+	schemelessHostWithPort := Host("://example.com:80")
+	assert.False(t, schemelessHostWithPort.HasScheme())
+	assert.False(t, schemelessHostWithPort.HasHttpScheme())
+	assert.Equal(t, NO_SCHEME_SCHEME_NAME, schemelessHostWithPort.Scheme())
+	assert.Equal(t, Host("://example.com:80"), schemelessHostWithPort.HostWithoutPort())
+	assert.Equal(t, "example.com:80", schemelessHostWithPort.WithoutScheme())
+}
+
 func TestURL(t *testing.T) {
 	t.Run("AppendRelativePath", func(t *testing.T) {
 		url := URL("https://example.com/")

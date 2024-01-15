@@ -27,6 +27,9 @@ import (
 
 const (
 	ANY_HTTPS_HOST_PATTERN = HostPattern("https://**")
+	NO_SCHEME_SCHEME_NAME  = Scheme("noscheme")
+	NO_SCHEME_SCHEME       = string(NO_SCHEME_SCHEME_NAME + "://")
+
 	// PATH_MAX on linux
 	MAX_TESTED_PATH_BYTE_LENGTH = 4095
 	MAX_TESTED_URL_BYTE_LENGTH  = 8000
@@ -39,6 +42,7 @@ const (
 )
 
 var (
+	ErrNotResourceName                     = errors.New("not a resource name")
 	ErrCannotReleaseUnregisteredResource   = errors.New("cannot release unregistered resource")
 	ErrFailedToAcquireResurce              = errors.New("failed to acquire resource")
 	ErrResourceHasHardcodedUrlMetaProperty = errors.New("resource has hardcoded _url_ metaproperty")
@@ -71,7 +75,23 @@ var (
 	defaultEmailNormalizer = emailnormalizer.NewNormalizer()
 )
 
-func init() {
+// A resource name is a string value that designates a resource, examples: URL, Path & Host are resource names.
+// The meaning of resource is broad and should not be confused with HTTP Resources.
+type ResourceName interface {
+	WrappedString
+	Serializable
+	ResourceName() string
+}
+
+func ResourceNameFrom(s string) ResourceName {
+	n, _ := parse.ParseExpression(s)
+
+	switch n.(type) {
+	case *parse.HostLiteral, *parse.AbsolutePathLiteral, *parse.RelativePathLiteral, *parse.URLLiteral:
+		return utils.Must(evalSimpleValueLiteral(n.(parse.SimpleValueLiteral), nil)).(ResourceName)
+	}
+
+	panic(fmt.Errorf("%q is not a valid resource name", s))
 }
 
 type resourceInfo struct {
@@ -963,26 +983,43 @@ func (host Host) Validate() error {
 	return nil
 }
 
+// Scheme returns the scheme of the host (e.g. 'http')
+// or $NO_SCHEME_SCHEME_NAME if the host has no scheme.
 func (host Host) Scheme() Scheme {
-	return Scheme(strings.Split(string(host), "://")[0])
+	scheme, _ := host.trueScheme()
+
+	if scheme == string(NO_SCHEME_SCHEME_NAME) {
+		panic(errors.New("the noscheme scheme is not allowed"))
+	}
+
+	if scheme == "" {
+		return NO_SCHEME_SCHEME_NAME
+	}
+
+	return Scheme(scheme)
 }
 
-// HasHttpScheme returns true if the scheme is "http" or "https"
+// HasHttpScheme returns true if the scheme is "http" or "https".
 func (host Host) HasHttpScheme() bool {
 	scheme := host.Scheme()
 	return scheme == "http" || scheme == "https"
 }
 
-func (host Host) HasScheme() bool {
-	return host.Scheme() != ""
+func (patt Host) trueScheme() (string, bool) {
+	scheme, _, _ := strings.Cut(string(patt), "://")
+	return scheme, scheme != ""
+}
+
+func (patt Host) HasScheme() bool {
+	_, ok := patt.trueScheme()
+	return ok
 }
 
 func (host Host) HostWithoutPort() Host {
-
 	originalHost := host
 	hasScheme := host.HasScheme()
 	if !hasScheme {
-		host = NO_SCHEME_SCHEME + host
+		host = Host(NO_SCHEME_SCHEME) + host
 	}
 
 	u, err := url.ParseRequestURI(string(host))
@@ -1005,8 +1042,13 @@ func (host Host) Name() string {
 	return parsed.Hostname()
 }
 
+// WithoutScheme returns the part of the host after '://'.
 func (host Host) WithoutScheme() string {
-	return strings.Split(string(host), "://")[1]
+	_, afterScheme, ok := strings.Cut(string(host), "://")
+	if ok {
+		return afterScheme
+	}
+	return string(host)
 }
 
 func (host Host) ExplicitPort() int {
@@ -1078,16 +1120,39 @@ func (HostPattern) SetProp(ctx *Context, name string, value Value) error {
 	return ErrCannotSetProp
 }
 
+// Scheme returns the scheme of the host pattern (e.g. 'http')
+// or $NO_SCHEME_SCHEME_NAME if the pattern has no scheme.
 func (patt HostPattern) Scheme() Scheme {
-	return Scheme(strings.Split(string(patt), "://")[0])
+	scheme, hasScheme := patt.trueScheme()
+
+	if scheme == string(NO_SCHEME_SCHEME_NAME) {
+		panic(errors.New("the noscheme scheme is not allowed"))
+	}
+
+	if !hasScheme {
+		return NO_SCHEME_SCHEME_NAME
+	}
+
+	return Scheme(scheme)
+}
+
+func (patt HostPattern) trueScheme() (string, bool) {
+	scheme, _, _ := strings.Cut(string(patt), "://")
+	return scheme, scheme != ""
 }
 
 func (patt HostPattern) HasScheme() bool {
-	return patt.Scheme() != ""
+	_, ok := patt.trueScheme()
+	return ok
 }
 
-func (patt HostPattern) WithoutScheme() string {
-	return strings.Split(string(patt), "://")[1]
+// WithoutScheme returns the part of the pattern after '://'.
+func (host HostPattern) WithoutScheme() string {
+	_, afterScheme, ok := strings.Cut(string(host), "://")
+	if ok {
+		return afterScheme
+	}
+	return string(host)
 }
 
 func (patt HostPattern) Test(ctx *Context, v Value) bool {
@@ -1102,7 +1167,7 @@ func (patt HostPattern) Includes(ctx *Context, v Value) bool {
 	//TODO: cache built regex
 
 	if !patt.HasScheme() {
-		patt = NO_SCHEME_SCHEME_NAME + patt
+		patt = HostPattern(NO_SCHEME_SCHEME_NAME) + patt
 	}
 	var urlString string
 
@@ -1118,7 +1183,7 @@ func (patt HostPattern) Includes(ctx *Context, v Value) bool {
 	}
 
 	if urlString[0] == ':' { //no scheme
-		urlString = NO_SCHEME_SCHEME_NAME + urlString
+		urlString = string(NO_SCHEME_SCHEME_NAME) + urlString
 	}
 
 	otherURL, err := url.Parse(urlString)
@@ -1129,9 +1194,10 @@ func (patt HostPattern) Includes(ctx *Context, v Value) bool {
 	//we escape the dots so that they are properly matched
 	regex := strings.ReplaceAll(string(patt), ".", "\\.")
 
-	if patt.Scheme() == "https" {
+	scheme, _ := patt.trueScheme()
+	if scheme == "https" {
 		regex = strings.ReplaceAll(regex, ":443", "")
-	} else if patt.Scheme() == "http" {
+	} else if scheme == "http" {
 		regex = strings.ReplaceAll(regex, ":80", "")
 	}
 

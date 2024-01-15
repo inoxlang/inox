@@ -178,9 +178,9 @@ func TestParseRepr(t *testing.T) {
 		{"0x[1234]", -1, &ByteSlice{isDataMutable: true, bytes: []byte{0x12, 0x34}}},
 
 		//ports
-		{`:80`, -1, Port{Number: 80, Scheme: NO_SCHEME_SCHEME}},
+		{`:80`, -1, Port{Number: 80, Scheme: NO_SCHEME_SCHEME_NAME}},
 		/*    */ {":80\n", 3, nil},
-		{`:80/http`, -1, Port{Number: 80, Scheme: "http://"}},
+		{`:80/http`, -1, Port{Number: 80, Scheme: "http"}},
 		/*    */ {":80/\nhttp", 4, nil},
 		{`:80/`, 4, nil},
 

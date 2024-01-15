@@ -2,7 +2,6 @@ package core
 
 import (
 	"bufio"
-	"errors"
 	"fmt"
 	"io/fs"
 	"reflect"
@@ -11,16 +10,6 @@ import (
 
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/parse"
-	"github.com/inoxlang/inox/internal/utils"
-)
-
-const (
-	NO_SCHEME_SCHEME_NAME = "noscheme"
-	NO_SCHEME_SCHEME      = NO_SCHEME_SCHEME_NAME + "://"
-)
-
-var (
-	ErrNotResourceName = errors.New("not a resource name")
 )
 
 // Value is the interface implemented by all values accessible to Inox code.
@@ -36,25 +25,6 @@ type Value interface {
 
 	//ToSymbolicValue should return a symbolic value that represents the value.
 	ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error)
-}
-
-// A resource name is a string value that designates a resource, examples: URL, Path & Host are resource names.
-// The meaning of resource is broad and should not be confused with HTTP Resources.
-type ResourceName interface {
-	WrappedString
-	Serializable
-	ResourceName() string
-}
-
-func ResourceNameFrom(s string) ResourceName {
-	n, _ := parse.ParseExpression(s)
-
-	switch n.(type) {
-	case *parse.HostLiteral, *parse.AbsolutePathLiteral, *parse.RelativePathLiteral, *parse.URLLiteral:
-		return utils.Must(evalSimpleValueLiteral(n.(parse.SimpleValueLiteral), nil)).(ResourceName)
-	}
-
-	panic(fmt.Errorf("%q is not a valid resource name", s))
 }
 
 // NilT implements Value.
@@ -233,7 +203,7 @@ func coerceToBool(val Value) bool {
 // Port implements Value. Inox's port literals (e.g. `:80`, `:80/http`) evaluate to a Port.
 type Port struct {
 	Number uint16
-	Scheme Scheme
+	Scheme Scheme //set to NO_SCHEME_SCHEME_NAME if no scheme is specified.
 }
 
 type Type struct {
