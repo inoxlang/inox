@@ -24,6 +24,7 @@ func checkPreinitBlock(args preinitBlockCheckParams) {
 		switch n := node.(type) {
 		case *parse.Block, *parse.IdentifierLiteral,
 			parse.SimpleValueLiteral, *parse.URLExpression,
+			*parse.IntegerRangeLiteral, *parse.FloatRangeLiteral,
 
 			//patterns
 			*parse.PatternDefinition, *parse.PatternIdentifierLiteral,
@@ -58,8 +59,8 @@ func checkPatternOnlyIncludedChunk(chunk *parse.Chunk, onError func(n parse.Node
 
 		switch n := node.(type) {
 		case *parse.IncludableChunkDescription,
-			//
-			parse.SimpleValueLiteral,
+			parse.SimpleValueLiteral, *parse.URLExpression,
+			*parse.IntegerRangeLiteral, *parse.FloatRangeLiteral,
 
 			//patterns
 			*parse.PatternDefinition, *parse.PatternIdentifierLiteral,
