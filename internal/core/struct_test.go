@@ -188,9 +188,7 @@ func BenchmarkStructHelperSetFloat(b *testing.B) {
 		helper.SetFloat(pos, float)
 		helper.SetFloat(pos, float)
 		helper.SetFloat(pos, float)
-		helper.SetFloat(pos, float)
 
-		helper.SetFloat(pos, float)
 		helper.SetFloat(pos, float)
 		helper.SetFloat(pos, float)
 		helper.SetFloat(pos, float)
