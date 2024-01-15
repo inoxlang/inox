@@ -82,9 +82,9 @@ func (reader *Reader) Prop(name string) Value {
 func (reader *Reader) GetGoMethod(name string) (*GoFunction, bool) {
 	switch name {
 	case "read":
-		return &GoFunction{fn: reader.ReadCtx}, true
+		return WrapGoMethod(reader.ReadCtx), true
 	case "read_all":
-		return &GoFunction{fn: reader.ReadAll}, true
+		return WrapGoMethod(reader.ReadAll), true
 	}
 	return nil, false
 }

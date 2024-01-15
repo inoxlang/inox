@@ -87,7 +87,7 @@ func (s *TestSuite) WidestOfType() Value {
 func (s *TestSuite) GetGoMethod(name string) (*GoFunction, bool) {
 	switch name {
 	case "run":
-		return &GoFunction{fn: s.Run}, true
+		return WrapGoMethod(s.Run), true
 	}
 	return nil, false
 }

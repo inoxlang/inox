@@ -69,7 +69,7 @@ func (m *Mapping) IsShared() bool {
 func (m *Mapping) GetGoMethod(name string) (*GoFunction, bool) {
 	switch name {
 	case "compute":
-		return &GoFunction{fn: m.Compute}, true
+		return WrapGoMethod(m.Compute), true
 	}
 	return nil, false
 }

@@ -33,7 +33,7 @@ func (s *EventSource) Test(v Value, state RecTestCallState) bool {
 func (s *EventSource) GetGoMethod(name string) (*GoFunction, bool) {
 	switch name {
 	case "close":
-		return &GoFunction{fn: s.Close}, true
+		return WrapGoMethod(s.Close), true
 	}
 	return nil, false
 }

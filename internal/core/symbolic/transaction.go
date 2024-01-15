@@ -49,11 +49,11 @@ func (tx *Transaction) PropertyNames() []string {
 func (tx *Transaction) GetGoMethod(name string) (*GoFunction, bool) {
 	switch name {
 	case "start":
-		return &GoFunction{fn: tx.Start}, true
+		return WrapGoMethod(tx.Start), true
 	case "commit":
-		return &GoFunction{fn: tx.Commit}, true
+		return WrapGoMethod(tx.Commit), true
 	case "rollback":
-		return &GoFunction{fn: tx.Rollback}, true
+		return WrapGoMethod(tx.Rollback), true
 	}
 	return nil, false
 }
