@@ -49,85 +49,16 @@ func tryGetMissingPermissionAction(doc defines.TextDocumentIdentifier, diagnosti
 	switch *diagnostic.Severity {
 	case defines.DiagnosticSeverityWarning:
 		if strings.Contains(diagnostic.Message, symbolic.POSSIBLE_MISSING_PERM_TO_CREATE_A_LTHREAD) {
-
-			var textEdit defines.TextEdit
+			var textEdits []defines.TextEdit
 
 			permsObject, ok := getPermissionsObject(chunk)
+
 			if ok {
-				permsSpan := permsObject.Span
-
-				createPropValue, ok := permsObject.PropValue("create")
-				if ok {
-					objLit, ok := createPropValue.(*parse.ObjectLiteral)
-					objSpan := objLit.Span
-					if ok {
-						lastChar := chunk.Runes()[objSpan.End-1]
-						if lastChar != '}' {
-							return
-						}
-
-						line, col := chunk.GetIncludedEndSpanLineColumn(objSpan)
-						endLine, endCol := chunk.GetEndSpanLineColumn(objSpan)
-
-						textEdit.Range = rangeToLspRange(parse.SourcePositionRange{
-							StartLine:   line,
-							StartColumn: col,
-							EndLine:     endLine,
-							EndColumn:   endCol,
-							Span:        parse.NodeSpan{Start: objSpan.End - 1, End: objSpan.End},
-						})
-						textEdit.NewText = "\n" + indentUnit + indentUnit + "threads: {}" + indentUnit + "}\n" + indentUnit
-					} else {
-						return
-					}
-				} else {
-					lastChar := chunk.Runes()[permsSpan.End-1]
-					if lastChar != '}' {
-						return
-					}
-
-					line, col := chunk.GetIncludedEndSpanLineColumn(permsSpan)
-					endLine, endCol := chunk.GetEndSpanLineColumn(permsSpan)
-
-					textEdit.Range = rangeToLspRange(parse.SourcePositionRange{
-						StartLine:   line,
-						StartColumn: col,
-						EndLine:     endLine,
-						EndColumn:   endCol,
-						Span:        parse.NodeSpan{Start: permsSpan.End - 1, End: permsSpan.End},
-					})
-					textEdit.NewText = indentUnit + "create: {threads: {}}\n" + indentUnit + "}"
-				}
-
+				missingPerm := [2]string{"create", "threads: {}"}
+				textEdits = makeTextEditsAddPermsInSection(chunk, permsObject, [][2]string{missingPerm}, indentUnit)
 			} else {
-				editSpanStart := int32(0)
-				textEdit.NewText = fmt.Sprintf("manifest {\n%spermissions: {\n%s%screate: {threads: {}}\n%s}\n}", indentUnit, indentUnit, indentUnit, indentUnit)
-
-				newline := false
-				if chunk.Node.GlobalConstantDeclarations != nil {
-					editSpanStart = chunk.Node.GlobalConstantDeclarations.Span.End
-					newline = true
-				}
-
-				if chunk.Node.Preinit != nil {
-					editSpanStart = chunk.Node.Preinit.Span.End
-					newline = true
-				}
-
-				if newline {
-					textEdit.NewText = "\n\n" + textEdit.NewText
-				}
-
-				editSpan := parse.NodeSpan{Start: editSpanStart, End: editSpanStart}
-				editLine, editCol := chunk.GetSpanLineColumn(editSpan)
-
-				textEdit.Range = rangeToLspRange(parse.SourcePositionRange{
-					StartLine:   editLine,
-					StartColumn: editCol,
-					EndLine:     editLine,
-					EndColumn:   editCol + 1,
-					Span:        editSpan,
-				})
+				missingPerm := "create: {threads: {}}"
+				textEdits = []defines.TextEdit{makeTextEditAddManifest(chunk, []string{missingPerm}, indentUnit)}
 			}
 
 			action = defines.CodeAction{
@@ -135,7 +66,7 @@ func tryGetMissingPermissionAction(doc defines.TextDocumentIdentifier, diagnosti
 				Kind:  &quickfixKind,
 				Edit: &defines.WorkspaceEdit{
 					Changes: &map[string][]defines.TextEdit{
-						string(doc.Uri): {textEdit},
+						string(doc.Uri): textEdits,
 					},
 				},
 			}
@@ -166,4 +97,104 @@ func getPermissionsObject(chunk *parse.ParsedChunk) (*parse.ObjectLiteral, bool)
 	}
 
 	return nil, false
+}
+
+func makeTextEditAddManifest(chunk *parse.ParsedChunk, permissions []string, indentUnit string) (textEdit defines.TextEdit) {
+	joinedPerms := indentUnit + indentUnit + strings.Join(permissions, "\n"+indentUnit+indentUnit)
+
+	editSpanStart := int32(0)
+	textEdit.NewText = fmt.Sprintf("manifest {\n%spermissions: {\n%s\n%s}\n}", indentUnit, joinedPerms, indentUnit)
+
+	newline := false
+	if chunk.Node.GlobalConstantDeclarations != nil {
+		editSpanStart = chunk.Node.GlobalConstantDeclarations.Span.End
+		newline = true
+	}
+
+	if chunk.Node.Preinit != nil {
+		editSpanStart = chunk.Node.Preinit.Span.End
+		newline = true
+	}
+
+	if newline {
+		textEdit.NewText = "\n\n" + textEdit.NewText
+	}
+
+	editSpan := parse.NodeSpan{Start: editSpanStart, End: editSpanStart}
+	editLine, editCol := chunk.GetSpanLineColumn(editSpan)
+
+	textEdit.Range = rangeToLspRange(parse.SourcePositionRange{
+		StartLine:   editLine,
+		StartColumn: editCol,
+		EndLine:     editLine,
+		EndColumn:   editCol + 1,
+		Span:        editSpan,
+	})
+	return
+}
+
+func makeTextEditsAddPermsInSection(
+	chunk *parse.ParsedChunk,
+	section *parse.ObjectLiteral,
+	perms [][2]string,
+	indentUnit string,
+) (textEdits []defines.TextEdit) {
+	permsSpan := section.Span
+
+	for _, perm := range perms {
+		textEdits = append(textEdits, defines.TextEdit{})
+		textEdit := &textEdits[len(textEdits)-1]
+
+		kind := perm[0]
+		desc := perm[1]
+		propValue, ok := section.PropValue(kind)
+
+		if ok {
+			objLit, ok := propValue.(*parse.ObjectLiteral)
+			objSpan := objLit.Span
+			if !ok {
+				//invalid section
+				continue
+			}
+
+			lastChar := chunk.Runes()[objSpan.End-1]
+			if lastChar != '}' {
+				return
+			}
+
+			line, col := chunk.GetIncludedEndSpanLineColumn(objSpan)
+			endLine, endCol := chunk.GetEndSpanLineColumn(objSpan)
+
+			textEdit.Range = rangeToLspRange(parse.SourcePositionRange{
+				StartLine:   line,
+				StartColumn: col,
+				EndLine:     endLine,
+				EndColumn:   endCol,
+				Span:        parse.NodeSpan{Start: objSpan.End - 1, End: objSpan.End},
+			})
+			textEdit.NewText = "\n" + indentUnit + indentUnit + desc + indentUnit + "}\n" + indentUnit
+		} else {
+			//add kind and permission
+
+			lastChar := chunk.Runes()[permsSpan.End-1]
+			if lastChar != '}' {
+				//unterminated permissions section
+				return
+			}
+
+			line, col := chunk.GetIncludedEndSpanLineColumn(permsSpan)
+			endLine, endCol := chunk.GetEndSpanLineColumn(permsSpan)
+
+			textEdit.Range = rangeToLspRange(parse.SourcePositionRange{
+				StartLine:   line,
+				StartColumn: col,
+				EndLine:     endLine,
+				EndColumn:   endCol,
+				Span:        parse.NodeSpan{Start: permsSpan.End - 1, End: permsSpan.End},
+			})
+			textEdit.NewText = indentUnit + indentUnit + kind + ": {" + desc + "}\n" + indentUnit + "}"
+		}
+	}
+
+	return
 }

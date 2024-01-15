@@ -31,7 +31,7 @@ type serverAPI struct {
 	lock     sync.Mutex
 	debounce func(f func())
 
-	api        *httpspec.API //context that will to passed to httpspec.GetFSRoutingServerAPI on each update
+	api        *httpspec.API
 	dynamicDir string
 	appModPath string
 
