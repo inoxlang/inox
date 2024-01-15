@@ -1,29 +1,35 @@
-[Install Inox](../README.md#installation) | [Language Reference](./language-reference.md) |  [Built-in Functions](./builtins.md) | [Project](./project.md) | [Shell Basics](./shell-basics.md) | [Scripting Basics](./scripting-basics.md)
+[Install Inox](../README.md#installation) |
+[Language Reference](./language-reference.md) |
+[Built-in Functions](./builtins.md) | [Project](./project.md) |
+[Shell Basics](./shell-basics.md) | [Scripting Basics](./scripting-basics.md)
 
-<details> 
+<details>
 <summary> Tip: If you are reading on GitHub, you can display an outline on the side. </summary>
 
-![image](https://github.com/inoxlang/inox/assets/113632189/c4e90b46-eb9c-4a0f-84ad-3389d2c753d4) 
+![image](https://github.com/inoxlang/inox/assets/113632189/c4e90b46-eb9c-4a0f-84ad-3389d2c753d4)
+
 </details>
 
------
+---
 
 # Web Application Development
 
 > This tutorial is not finished yet.
 
 In this tutorial you will learn how to create a basic **todo** application.
-Before going further create a new empty **todo** [project](./project.md) using Visual Studio Code and open the workspace.
+Before going further create a new empty **todo** [project](./project.md) using
+Visual Studio Code and open the workspace.
 
 [1) HTTP Server](#1-http-server)\
 [2) Filesystem Routing](#2-filesystem-routing)\
 [3) Database](#3-database)
 
-
 ## 1) HTTP Server
 
 In the **Project Filesystem** (virtual) let's create the following folders:
-- **/static** - this folder will contain the static files of the application (JS, CSS, images)
+
+- **/static** - this folder will contain the static files of the application
+  (JS, CSS, images)
 - **/routes** - this folder will contain the handler files for dynamic content
 
 Now let's create **/main.ix** file with the following content:
@@ -51,21 +57,23 @@ server = http.Server!(HOST, {
 server.wait_closed()
 ```
 
-ℹ️ The `provide: HOST` permission is required by the server and
-the `read %/...` permission is required by the filesystem routing.
+ℹ️ The `provide: HOST` permission is required by the server and the `read %/...`
+permission is required by the filesystem routing.
 
 ## 2) Filesystem Routing
 
-When the server receives a request it determinates what is the handler module (file)
-for the request and invokes the handler. The routing rules are the following:
+When the server receives a request it determinates what is the handler module
+(file) for the request and invokes the handler. The routing rules are the
+following:
 
-| Request's path | HTTP method | Possible handler paths |
-| ----------- | ----------- | ----------- |
-| / | GET | /GET-index.ix , /index.ix |
-| /about | GET | /GET-about.ix , /about.ix , /about/GET.ix , /about/index.ix |
-| /users | POST | /POST-users.ix , /users.ix , /users/POST.ix , /POST/users/index.ix |
+| Request's path | HTTP method | Possible handler paths                                      |
+| -------------- | ----------- | ----------------------------------------------------------- |
+| /              | GET         | /GET-index.ix , /index.ix                                   |
+| /about         | GET         | /GET-about.ix , /about.ix , /about/GET.ix , /about/index.ix |
+| /users         | POST        | /POST-users.ix , /users/POST.ix, /users.ix                  |
 
 Now create the `/routes/index.ix` file to handle the home page:
+
 ```inox
 manifest {
     parameters: {}
@@ -83,15 +91,17 @@ return html<html>
 </html>
 ```
 
-ℹ️ Since the manifest does not contain any parameter the only accepted methods are **GET** and **HEAD**.
+ℹ️ Since the manifest does not contain any parameter the only accepted methods
+are **GET** and **HEAD**.
 
 ## 3) Database
 
 ### 3.1) Database Creation
 
-We need a database in order to store & retrieve Todo items, let's define a database in **/main.ix**:
-```
+We need a database in order to store & retrieve Todo items, let's define a
+database in **/main.ix**:
 
+```
 # the preinit block is executed before the manifest.
 preinit {
     import ./schema.ix
@@ -146,13 +156,14 @@ pattern db-schema = {
 }
 ```
 
-Execute the code a single time then remove the `update_schema(...)` call and `expected-scheme-update: true` from the manifest.
+Execute the code a single time then remove the `update_schema(...)` call and
+`expected-scheme-update: true` from the manifest.
 
 You should now be able to access the set of users by typing: `dbs.main.users` !
 
 ### 3.2) Access From Other Modules
 
-The database we created can be accessed by `/main.ix` but not by other modules. 
+The database we created can be accessed by `/main.ix` but not by other modules.
 Let's fix that by modifying the manifest of `/routes/main.ix`:
 
 ```

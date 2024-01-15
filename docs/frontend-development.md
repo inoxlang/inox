@@ -1,5 +1,6 @@
 [Back to README](../README.md)
-___ 
+
+---
 
 # Frontend Development
 
@@ -19,7 +20,8 @@ librairies:
   enabling dynamic content updates in web applications without the complexity of
   heavy JavaScript frameworks.
 - [Inox.js](#client-side-components---inoxjs) is a **tiny** (experimental)
-  library allowing to develop small client-side components when HTMX is not a good fit. You can use another library if you prefer to.
+  library allowing to develop small client-side components when HTMX is not a
+  good fit. You can use another library if you prefer to.
 
 ```
 client/ ------ client side components
@@ -38,11 +40,11 @@ static/
 
 ## Pages
 
-| Path (URL) | HTTP method | Possible handler paths                                                |
-| ---------- | ----------- | --------------------------------------------------------------------- |
-| `/`        | `GET`       | `/index.ix , /GET-index.ix`                                           |
-| `/about`   | `GET`       | `/about.ix , /about/GET.ix , /about/index.ix , /GET-about.ix`         |
-| `/users`   | `POST`      | `/POST-users.ix , /users/POST.ix ,  /users.ix , /POST/users/index.ix` |
+| Path (URL) | HTTP method | Possible handler paths                                        |
+| ---------- | ----------- | ------------------------------------------------------------- |
+| `/`        | `GET`       | `/index.ix , /GET-index.ix`                                   |
+| `/about`   | `GET`       | `/about.ix , /about/GET.ix , /about/index.ix , /GET-about.ix` |
+| `/users`   | `POST`      | `/POST-users.ix , /users/POST.ix ,  /users.ix`                |
 
 ```html
 # /routes/index.ix
@@ -70,7 +72,7 @@ return html<html>
 </html>
 ```
 
-___
+---
 
 ## Server Side Components
 
@@ -93,24 +95,26 @@ return html<ul>
 </ul>
 ```
 
-**The previous code can also be turned into a function `fn(){ return html<ul>...</ul> }` and used in several places.**
+**The previous code can also be turned into a function
+`fn(){ return html<ul>...</ul> }` and used in several places.**
 
-___
+---
 
 ## Client-Side Components - Inox.js
 
 Each Inox project comes with a `/static/` folder that contains, among other
-things, a small experimental library that allow creating client-side
-components with locality of behavior. It updates the component's view when the state changes, and includes the following
-librairies (all MIT licensed):
+things, a small experimental library that allow creating client-side components
+with locality of behavior. It updates the component's view when the state
+changes, and includes the following librairies (all MIT licensed):
 
-- Preact Signals: https://github.com/preactjs/signals/tree/main/packages/core (< 900 lines)
+- Preact Signals: https://github.com/preactjs/signals/tree/main/packages/core (<
+  900 lines)
 - CSS Scope Inline: https://github.com/gnat/css-scope-inline (< 20 lines)
 - Surreal: https://github.com/gnat/surreal (< 400 lines)
 
-__It is recommended to use client-side components only for functionalities that
+**It is recommended to use client-side components only for functionalities that
 can't be easily implemented with Server-Side Rendering (SSR) and HTMX. The
-following example is only provided as a demonstration.__
+following example is only provided as a demonstration.**
 
 ```html
 # /client/counter.ix
@@ -201,13 +205,13 @@ fn Counter(){
 </div>
 ```
 
-___
+---
 
 ## Forms
 
-For now Inox's HTTP server only accepts JSON as the content type of POST|PATCH|PUT requests. 
-Therefore **forms** making requests to it are required to have specific attributes
-that enable JSON encoding.
+For now Inox's HTTP server only accepts JSON as the content type of
+`POST | PATCH | PUT` requests. Therefore **forms** making requests to it are
+required to have specific attributes that enable JSON encoding.
 
 ```html
 <form hx-post-json="/users">
@@ -227,9 +231,12 @@ that enable JSON encoding.
 
 - The values of `number` and `range` inputs are converted to numbers.
 - The values of `checkbox` inputs with a `yes` value are converted to booleans.
-- The values of checked `checkbox` inputs are gathered in an array, even if there is a single element.
-- The values of inputs whose name contains an array index (e.g. `elements[0], elements[1]`) are gathered in an array.
-- The values of inputs whose name contains a property name (e.g. `user.name, user.age`) are put into an object.
+- The values of checked `checkbox` inputs are gathered in an array, even if
+  there is a single element.
+- The values of inputs whose name contains an array index (e.g.
+  `elements[0], elements[1]`) are gathered in an array.
+- The values of inputs whose name contains a property name (e.g.
+  `user.name, user.age`) are put into an object.
 
 ```html
 <input name="username" type="text">     
@@ -278,16 +285,16 @@ that enable JSON encoding.
 - Validation of `<input>` elements in HTMX forms
 - Validation of URLs in attributes such as `hx-get`
 
-*and more.*
+_and more._
 
 ### LSP
 
 - `<form>` completion with `<input>` elements
 - URL completion for attributes such as `hx-get`
 
-*and more.*
+_and more._
 
-___
+---
 
 ## Server-Side Optimizations
 
@@ -295,18 +302,21 @@ ___
 
 ### Data Prefetching
 
-During a page or component render `htmx` attributes will be analyzed in order to tell the database
-to pretech some pieces of data.
+During a page or component render `htmx` attributes will be analyzed in order to
+tell the database to pretech some pieces of data.
 
-Let's see an illustration of this. In the following snippet we have the `hx-get` attribute that tells us that the browser will make a request to the `/last-news` endpoint in a very short time. In order to make this future request fast we could tell the database to prefetch
-the data required by `/last-news`.
+Let's see an illustration of this. In the following snippet we have the `hx-get`
+attribute that tells us that the browser will make a request to the `/last-news`
+endpoint in a very short time. In order to make this future request fast we
+could tell the database to prefetch the data required by `/last-news`.
 
 ```html
 <div hx-get="/last-news" hx-trigger="load"></div>
 ```
 
-**General access patterns** during application usage could also be measured to enable further optimizations.
+**General access patterns** during application usage could also be measured to
+enable further optimizations.
 
-___
+---
 
 [Back to README](../README.md)
