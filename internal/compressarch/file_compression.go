@@ -22,6 +22,8 @@ var (
 	}
 )
 
+// A FileCompressor is a stateful file content compressor that uses GZip for compression
+// and caches compressed files.
 type FileCompressor struct {
 	cacheLock sync.Mutex
 	cache     map[string]*compressedFile

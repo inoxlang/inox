@@ -40,6 +40,9 @@ const (
 )
 
 var (
+	moduleCache     = map[string]string{}
+	moduleCacheLock sync.Mutex
+
 	ErrInvalidModuleSourceURL                          = errors.New("invalid module source URL")
 	ErrAbsoluteModuleSourcePathUsedInURLImportedModule = errors.New("absolute module source path used in module imported from URL")
 	ErrImportCycleDetected                             = errors.New("import cycle detected")
@@ -50,9 +53,6 @@ var (
 		IMPORT_CONFIG__ALLOW_PROPNAME, IMPORT_CONFIG__ARGUMENTS_PROPNAME, IMPORT_CONFIG__VALIDATION_PROPNAME,
 	}
 )
-
-var moduleCache = map[string]string{}
-var moduleCacheLock sync.Mutex
 
 // ImportWaitModule imports a module and waits for its lthread to return its result.
 // ImportWaitModule also adds the test suite results to the parent state.

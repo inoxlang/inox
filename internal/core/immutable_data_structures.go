@@ -9,7 +9,7 @@ import (
 	"github.com/inoxlang/inox/internal/utils"
 )
 
-// Record is the immutable equivalent of an Object, Record implements Value.
+// Record is the immutable counterpart of an Object, Record implements Value.
 type Record struct {
 	implicitPropCount int //TODO: rename to indexedPropCount ? forbid explicit index keys ?
 	visibilityId      VisibilityId

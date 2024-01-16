@@ -20,6 +20,8 @@ import (
 	"github.com/inoxlang/inox/internal/utils"
 )
 
+// This file contains completion logic for HTML and HTMX.
+
 func getHTMLTagNamesWithPrefix(prefix string) (completions []Completion) {
 	for _, tag := range html_ns.STANDARD_DATA.Tags {
 		if strings.HasPrefix(tag.Name, prefix) {

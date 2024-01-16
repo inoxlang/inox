@@ -16,6 +16,12 @@ import (
 	parse "github.com/inoxlang/inox/internal/parse"
 )
 
+var (
+	CONTEXT_INDEPENDENT_STMT_STARTING_KEYWORDS                   = []string{"if", "drop-perms", "for", "assign", "switch", "match", "return", "assert"}
+	GLOBALNAMES_WITHOUT_IDENT_CONVERSION_TO_VAR_IN_CMD_LIKE_CALL = []string{globalnames.HELP_FN}
+)
+
+// A Completion represents a single completion item.
 type Completion struct {
 	ShownString           string                    `json:"shownString"`
 	Value                 string                    `json:"value"`
@@ -25,20 +31,8 @@ type Completion struct {
 	MarkdownDocumentation string
 }
 
-var (
-	CONTEXT_INDEPENDENT_STMT_STARTING_KEYWORDS = []string{"if", "drop-perms", "for", "assign", "switch", "match", "return", "assert"}
-
-	GLOBALNAMES_WITHOUT_IDENT_CONVERSION_TO_VAR_IN_CMD_LIKE_CALL = []string{globalnames.HELP_FN}
-)
-
-type SearchArgs struct {
-	State       *core.TreeWalkState
-	Chunk       *parse.ParsedChunk
-	CursorIndex int
-	Mode        Mode
-	InputData   InputData
-}
-
+// Mode informs FindCompletions about what environment the completions are intended for
+// and where to get data.
 type Mode int
 
 const (
@@ -55,6 +49,14 @@ func (m Mode) String() string {
 	default:
 		panic(core.ErrUnreachable)
 	}
+}
+
+type SearchArgs struct {
+	State       *core.TreeWalkState
+	Chunk       *parse.ParsedChunk
+	CursorIndex int
+	Mode        Mode
+	InputData   InputData
 }
 
 func FindCompletions(args SearchArgs) []Completion {

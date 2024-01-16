@@ -20,6 +20,8 @@ var (
 )
 
 func init() {
+	//configure zerolog fields
+
 	zerolog.DurationFieldInteger = false
 	zerolog.DurationFieldUnit = time.Millisecond
 	zerolog.MessageFieldName = "msg"

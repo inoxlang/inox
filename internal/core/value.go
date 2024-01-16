@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/inoxlang/inox/internal/commonfmt"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/parse"
 )
@@ -46,6 +47,15 @@ const (
 
 // FileMode implements Value.
 type FileMode fs.FileMode
+
+func FileModeFrom(ctx *Context, firstArg Value) FileMode {
+	integer, ok := firstArg.(Int)
+	if !ok {
+		panic(commonfmt.FmtErrInvalidArgumentAtPos(0, "should be an integer"))
+	}
+
+	return FileMode(integer)
+}
 
 func (m FileMode) FileMode() fs.FileMode {
 	return fs.FileMode(m)

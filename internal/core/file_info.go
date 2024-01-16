@@ -4,7 +4,6 @@ import (
 	"io/fs"
 	"time"
 
-	"github.com/inoxlang/inox/internal/commonfmt"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 )
 
@@ -30,6 +29,7 @@ type ExtendedFileInfo interface {
 	CreationTime() (time.Time, bool)
 }
 
+// A FileInfo is a Value that implements fs.FileInfo and ExtendedFileInfo.
 type FileInfo struct {
 	BaseName_     string
 	AbsPath_      Path
@@ -103,14 +103,5 @@ func (FileInfo) SetProp(ctx *Context, name string, value Value) error {
 }
 
 func (FileInfo) PropertyNames(ctx *Context) []string {
-	return []string{"name", "abs-path", "size", "mode", "mod-time", "is-dir"}
-}
-
-func FileModeFrom(ctx *Context, firstArg Value) FileMode {
-	integer, ok := firstArg.(Int)
-	if !ok {
-		panic(commonfmt.FmtErrInvalidArgumentAtPos(0, "should be an integer"))
-	}
-
-	return FileMode(integer)
+	return symbolic.FILEINFO_PROPNAMES
 }

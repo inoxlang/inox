@@ -71,6 +71,7 @@ func Filter(ctx *Context, iterable Iterable, condition Value) *List {
 	return WrapUnderlyingList(&result)
 }
 
+// GetAtMost is the value of the 'get_at_most' global.
 func GetAtMost(ctx *Context, maxCount Int, iterable SerializableIterable) *List {
 	var elements []Serializable
 	count := 0

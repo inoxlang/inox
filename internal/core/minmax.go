@@ -6,7 +6,6 @@ import (
 )
 
 func init() {
-
 	symbMinOf := func(ctx *symbolic.Context, first symbolic.Value, others ...symbolic.Value) symbolic.Value {
 		first = symbolic.MergeValuesWithSameStaticTypeInMultivalue(first)
 

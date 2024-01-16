@@ -6,6 +6,7 @@ import (
 	parse "github.com/inoxlang/inox/internal/parse"
 )
 
+// findXmlTagAndTagNameCompletions finds tag name and whole tag completions based on the namespace (e.g. html) of the closest Inox XML expression.
 func findXmlTagAndTagNameCompletions(ident *parse.IdentifierLiteral, search completionSearch) (completions []Completion) {
 	ancestors := search.ancestorChain
 	tagName, namespace, ok := findTagNameAndNamespace(ancestors)
@@ -34,6 +35,7 @@ func findXmlTagAndTagNameCompletions(ident *parse.IdentifierLiteral, search comp
 	return
 }
 
+// findXmlTagAndTagNameCompletions finds completions based on the namespace (e.g. html) of the closest Inox XML opening element.
 func findXMLOpeningElementInteriorCompletions(openingElem *parse.XMLOpeningElement, search completionSearch) (completions []Completion) {
 	ancestors := search.ancestorChain
 	namespace, ok := findXMLNamespace(ancestors)
@@ -69,6 +71,8 @@ func findXMLOpeningElementInteriorCompletions(openingElem *parse.XMLOpeningEleme
 	return
 }
 
+// findXmlAttributeNameCompletions finds completions for atribute names inside an Inox XML opening element,
+// this is based on the namespace (e.g. html) of the closest Inox XML expression.
 func findXmlAttributeNameCompletions(ident *parse.IdentifierLiteral, parent *parse.XMLAttribute, ancestors []parse.Node) (completions []Completion) {
 	tagName, namespace, ok := findTagNameAndNamespace(ancestors)
 	if !ok {
@@ -84,6 +88,8 @@ func findXmlAttributeNameCompletions(ident *parse.IdentifierLiteral, parent *par
 	return
 }
 
+// findXMLAttributeValueCompletions finds completions for atribute values inside an Inox XML opening element,
+// this is based on the namespace (e.g. html) of the closest Inox XML expression.
 func findXMLAttributeValueCompletions(str *parse.QuotedStringLiteral, parent *parse.XMLAttribute, ancestors []parse.Node, data InputData) (completions []Completion) {
 	tagName, namespace, ok := findTagNameAndNamespace(ancestors)
 	if !ok {
@@ -99,6 +105,7 @@ func findXMLAttributeValueCompletions(str *parse.QuotedStringLiteral, parent *pa
 	return
 }
 
+// findXMLNamespace finds the namespace of the closest Inox XML expression.
 func findXMLNamespace(ancestors []parse.Node) (*parse.IdentifierLiteral, bool) {
 	xmlExpr, _, found := parse.FindClosest(ancestors, (*parse.XMLExpression)(nil))
 	if !found {
@@ -113,6 +120,7 @@ func findXMLNamespace(ancestors []parse.Node) (*parse.IdentifierLiteral, bool) {
 	return namespace, true
 }
 
+// findXMLNamespace finds the tag name and namespace of the closest Inox XML expression.
 func findTagNameAndNamespace(ancestors []parse.Node) (string, *parse.IdentifierLiteral, bool) {
 	xmlExpr, _, found := parse.FindClosest(ancestors, (*parse.XMLExpression)(nil))
 	if !found {

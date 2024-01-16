@@ -16,6 +16,16 @@ var (
 	_ = Serializable((*FilesystemSnapshotIL)(nil))
 )
 
+type SnapshotableFilesystem interface {
+	afs.Filesystem
+
+	//TakeFilesystemSnapshot takes a snapshot of the filesystem using the provided configuration.
+	//Implementations should use config.IsFileIncluded to determine if a file or dir should be included in the snapshot;
+	//Ancestor hieararchy of included files should always be included.
+	//Implementations should use config.GetContent to reduce memory or disk usage.
+	TakeFilesystemSnapshot(config FilesystemSnapshotConfig) (FilesystemSnapshot, error)
+}
+
 type FilesystemSnapshotConfig struct {
 	GetContent       func(ChecksumSHA256 [32]byte) AddressableContent
 	InclusionFilters []PathPattern
@@ -36,16 +46,6 @@ func (c FilesystemSnapshotConfig) IsFileIncluded(path Path) bool {
 	}
 
 	return false
-}
-
-type SnapshotableFilesystem interface {
-	afs.Filesystem
-
-	//TakeFilesystemSnapshot takes a snapshot of the filesystem using the provided configuration.
-	//Implementations should use config.IsFileIncluded to determine if a file or dir should be included in the snapshot;
-	//Ancestor hieararchy of included files should always be included.
-	//Implementations should use config.GetContent to reduce memory or disk usage.
-	TakeFilesystemSnapshot(config FilesystemSnapshotConfig) (FilesystemSnapshot, error)
 }
 
 // A FilesystemSnapshot represents an immutable snapshot of a filesystem,

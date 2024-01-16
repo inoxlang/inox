@@ -10,6 +10,7 @@ const (
 	DEFAULT_CREATE_FPERM fs.FileMode = 0600
 )
 
+// Filesystem is the base interface implemented by all filesystems (OS, in-memory, meta, ...).
 type Filesystem interface {
 	billy.Filesystem
 

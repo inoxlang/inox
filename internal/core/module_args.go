@@ -7,6 +7,7 @@ var (
 	_ Pattern = (*ModuleParamsPattern)(nil)
 )
 
+// ModuleArgs contains the arguments passed to a module, ModuleArgs implements Value.
 type ModuleArgs struct {
 	structType *ModuleParamsPattern
 	values     []Value
@@ -72,7 +73,7 @@ func (s *ModuleArgs) ForEachField(fn func(fieldName string, fieldValue Value) er
 	return nil
 }
 
-// A ModuleParamsPattern represents a struct type, it is nominal.
+// A ModuleParamsPattern is pattern for ModuleArgs values.
 type ModuleParamsPattern struct {
 	keys  []string
 	types []Pattern

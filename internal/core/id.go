@@ -8,6 +8,8 @@ import (
 	"github.com/oklog/ulid/v2"
 )
 
+// This file contain several Id types.
+
 var (
 	_ = []Serializable{ULID{}, UUIDv4{}}
 )

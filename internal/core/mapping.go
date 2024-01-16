@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sync/atomic"
 
+	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
 )
@@ -331,5 +332,5 @@ func (*Mapping) SetProp(ctx *Context, name string, value Value) error {
 }
 
 func (*Mapping) PropertyNames(ctx *Context) []string {
-	return []string{"compute"}
+	return symbolic.MAPPING_PROPNAMES
 }

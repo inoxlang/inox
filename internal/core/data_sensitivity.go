@@ -1,5 +1,7 @@
 package core
 
+// WORK IN PROGRESS !
+
 var (
 	SELF_SENSITIVE_DATA_NAMES = map[string]struct {
 		patterns []Pattern

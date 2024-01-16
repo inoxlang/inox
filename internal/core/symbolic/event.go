@@ -9,7 +9,8 @@ import (
 )
 
 var (
-	ANY_EVENT = utils.Must(NewEvent(ANY))
+	ANY_EVENT       = utils.Must(NewEvent(ANY))
+	EVENT_PROPNAMES = []string{"time", "value"}
 )
 
 // EventSource represents a symbolic EventSource.
@@ -98,7 +99,7 @@ func (r *Event) Test(v Value, state RecTestCallState) bool {
 }
 
 func (e *Event) PropertyNames() []string {
-	return []string{"time", "value"}
+	return EVENT_PROPNAMES
 }
 
 func (e *Event) Prop(name string) Value {

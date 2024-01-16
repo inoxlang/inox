@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	ANY_MAPPING = &Mapping{}
+	ANY_MAPPING       = &Mapping{}
+	MAPPING_PROPNAMES = []string{"compute"}
 )
 
 //TODO: implement PotentiallySharable interface
@@ -87,7 +88,7 @@ func (m *Mapping) WithExistingPropReplaced(name string, value Value) (IProps, er
 }
 
 func (*Mapping) PropertyNames() []string {
-	return []string{"compute"}
+	return MAPPING_PROPNAMES
 }
 
 func (m *Mapping) Compute(ctx *Context, key Value) Value {
