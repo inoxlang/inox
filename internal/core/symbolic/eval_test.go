@@ -6425,8 +6425,10 @@ func TestSymbolicEval(t *testing.T) {
 				n, state := MakeTestStateAndChunk(`
 					if (a.prop == 1) {
 						var b %int = a.prop
+						var obj {prop: int} = a
 					} else {
 						var b %bool = a.prop
+						var obj {prop: bool} = a
 					}
 				`)
 
@@ -6445,8 +6447,10 @@ func TestSymbolicEval(t *testing.T) {
 				n, state := MakeTestStateAndChunk(`
 					if !(a.prop == 1) {
 						var b %bool = a.prop
+						var obj {prop: bool} = a
 					} else {
 						var b %int = a.prop
+						var obj {prop: int} = a
 					}
 				`)
 
@@ -6464,8 +6468,10 @@ func TestSymbolicEval(t *testing.T) {
 				n, state := MakeTestStateAndChunk(`
 					if (a.prop != 1) {
 						var b %bool = a.prop
+						var obj {prop: bool} = a
 					} else {
 						var b %int = a.prop
+						var obj {prop: int} = a
 					}
 				`)
 
@@ -6483,8 +6489,10 @@ func TestSymbolicEval(t *testing.T) {
 				n, state := MakeTestStateAndChunk(`
 					if !(a.prop != 1) {
 						var b %int = a.prop
+						var obj {prop: int} = a
 					} else {
 						var b %bool = a.prop
+						var obj {prop: bool} = a
 					}
 				`)
 
@@ -6497,6 +6505,102 @@ func TestSymbolicEval(t *testing.T) {
 				assert.NoError(t, err)
 				assert.Empty(t, state.errors())
 			})
+		})
+
+		t.Run("binary == expression narrows the type of a property of a property", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				if (a.inner.prop == 1) {
+					var b %int = a.inner.prop
+					var obj {inner: object} = a
+				} else {
+					var b %bool = a.inner.prop
+					var obj {inner: object} = a
+				}
+			`)
+
+			object := NewInexactObject2(map[string]Serializable{
+				"inner": NewInexactObject2(map[string]Serializable{
+					"prop": AsSerializableChecked(NewMultivalue(NewInt(1), TRUE)),
+				}),
+			})
+
+			state.setGlobal("a", object, GlobalConst)
+
+			_, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+		})
+
+		t.Run("negated binary == expression narrows the type of a property of a property", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				if !(a.inner.prop == 1) {
+					var b %bool = a.inner.prop
+					var obj {inner: object} = a
+				} else {
+					var b %int = a.inner.prop
+					var obj {inner: object} = a
+				}
+			`)
+
+			object := NewInexactObject2(map[string]Serializable{
+				"inner": NewInexactObject2(map[string]Serializable{
+					"prop": AsSerializableChecked(NewMultivalue(NewInt(1), TRUE)),
+				}),
+			})
+
+			state.setGlobal("a", object, GlobalConst)
+
+			_, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+		})
+
+		t.Run("binary != expression narrows the type of a property of a property of a property", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				if (a.inner.prop != 1) {
+					var b %bool = a.inner.prop
+					var obj {inner: object} = a
+				} else {
+					var b %int = a.inner.prop
+					var obj {inner: object} = a
+				}
+			`)
+
+			object := NewInexactObject2(map[string]Serializable{
+				"inner": NewInexactObject2(map[string]Serializable{
+					"prop": AsSerializableChecked(NewMultivalue(NewInt(1), TRUE)),
+				}),
+			})
+
+			state.setGlobal("a", object, GlobalConst)
+
+			_, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+		})
+
+		t.Run("negated binary != expression narrows the type of a property of a property of a property", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				if !(a.inner.prop != 1) {
+					var b %int = a.inner.prop
+					var obj {inner: object} = a
+				} else {
+					var b %bool = a.inner.prop
+					var obj {inner: object} = a
+				}
+			`)
+
+			object := NewInexactObject2(map[string]Serializable{
+				"inner": NewInexactObject2(map[string]Serializable{
+					"prop": AsSerializableChecked(NewMultivalue(NewInt(1), TRUE)),
+				}),
+			})
+
+			state.setGlobal("a", object, GlobalConst)
+
+			_, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
 		})
 	})
 

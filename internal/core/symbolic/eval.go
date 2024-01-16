@@ -971,7 +971,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 				right, _ := state.symbolicData.GetMostSpecificNodeValue(binExpr.Right)
 
 				if pattern, ok := right.(Pattern); ok {
-					narrowPath(binExpr.Left, setExactValue, pattern.SymbolicValue(), state, 0)
+					narrowChain(binExpr.Left, setExactValue, pattern.SymbolicValue(), state, 0)
 				}
 			}
 		}
@@ -1748,7 +1748,7 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 						state.addError(makeSymbolicEvalError(node, state, err.Error()))
 					}
 				} else {
-					narrowPath(lhs.Left, setExactValue, newIprops, state, 0)
+					narrowChain(lhs.Left, setExactValue, newIprops, state, 0)
 				}
 			}
 
@@ -1773,7 +1773,7 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 					state.addError(makeSymbolicEvalError(node, state, err.Error()))
 				}
 			} else {
-				narrowPath(lhs.Left, setExactValue, newIprops, state, 0)
+				narrowChain(lhs.Left, setExactValue, newIprops, state, 0)
 			}
 		}
 
@@ -1897,7 +1897,7 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 						state.addError(makeSymbolicEvalError(node, state, err.Error()))
 					}
 				} else {
-					narrowPath(lhs, setExactValue, newIprops, state, 1)
+					narrowChain(lhs, setExactValue, newIprops, state, 1)
 				}
 			}
 		} else {
@@ -1923,7 +1923,7 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 					state.addError(makeSymbolicEvalError(node, state, err.Error()))
 				}
 			} else {
-				narrowPath(lhs, setExactValue, newIprops, state, 1)
+				narrowChain(lhs, setExactValue, newIprops, state, 1)
 			}
 		}
 	case *parse.IndexExpression:
@@ -2031,7 +2031,7 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 							staticSeqElement = staticSeq.elementAt(int(intIndex.value)).(Serializable)
 							if staticSeqElement.Test(__rhs, RecTestCallState{}) {
 								assignable = true
-								narrowPath(lhs.Indexed, setExactValue, staticSeq, state, 0)
+								narrowChain(lhs.Indexed, setExactValue, staticSeq, state, 0)
 							}
 						} else {
 							state.addError(makeSymbolicEvalError(node.Right, state, IMPOSSIBLE_TO_KNOW_UPDATED_ELEMENT))
@@ -2042,7 +2042,7 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 						staticSeqElement = staticSeq.element()
 						if staticSeqElement.Test(MergeValuesWithSameStaticTypeInMultivalue(__rhs), RecTestCallState{}) {
 							assignable = true
-							narrowPath(lhs.Indexed, setExactValue, staticSeq, state, 0)
+							narrowChain(lhs.Indexed, setExactValue, staticSeq, state, 0)
 						}
 					}
 				}
@@ -2210,7 +2210,7 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 				staticSeqElement := staticSeq.element()
 				if staticSeqElement.Test(MergeValuesWithSameStaticTypeInMultivalue(rightSeqElement), RecTestCallState{}) {
 					assignable = true
-					narrowPath(lhs.Indexed, setExactValue, staticSeq, state, 0)
+					narrowChain(lhs.Indexed, setExactValue, staticSeq, state, 0)
 				}
 			}
 
@@ -2529,7 +2529,7 @@ func evalSwitchStatement(n *parse.SwitchStatement, state *State) (_ Value, final
 
 			blockStateFork := state.fork()
 			forks = append(forks, blockStateFork)
-			narrowPath(n.Discriminant, setExactValue, caseValue, blockStateFork, 0)
+			narrowChain(n.Discriminant, setExactValue, caseValue, blockStateFork, 0)
 
 			_, err = symbolicEval(switchCase.Block, blockStateFork)
 			if err != nil {
@@ -2609,7 +2609,7 @@ func evalMatchStatement(n *parse.MatchStatement, state *State) (_ Value, finalEr
 			patternMatchingValue := pattern.SymbolicValue()
 			possibleValues = append(possibleValues, patternMatchingValue)
 
-			narrowPath(n.Discriminant, setExactValue, patternMatchingValue, blockStateFork, 0)
+			narrowChain(n.Discriminant, setExactValue, patternMatchingValue, blockStateFork, 0)
 
 			if matchCase.GroupMatchingVariable != nil {
 				variable := matchCase.GroupMatchingVariable.(*parse.IdentifierLiteral)
@@ -2644,7 +2644,7 @@ func evalMatchStatement(n *parse.MatchStatement, state *State) (_ Value, finalEr
 		forks = append(forks, blockStateFork)
 
 		for _, val := range possibleValues {
-			narrowPath(n.Discriminant, removePossibleValue, val, blockStateFork, 0)
+			narrowChain(n.Discriminant, removePossibleValue, val, blockStateFork, 0)
 		}
 
 		_, err = symbolicEval(defaultCase.Block, blockStateFork)
@@ -5963,242 +5963,6 @@ func symbolicMemb(value Value, name string, optionalMembExpr bool, node parse.No
 		return ANY
 	}
 	return prop
-}
-
-type pathNarrowing int
-
-const (
-	setExactValue pathNarrowing = iota
-	removePossibleValue
-)
-
-func narrowPath(path parse.Node, action pathNarrowing, value Value, state *State, ignored int) {
-	//TODO: use reEval option in in symbolicEval calls ?
-
-switch_:
-	switch node := path.(type) {
-	case *parse.Variable:
-		switch action {
-		case setExactValue:
-			state.narrowLocal(node.Name, value, path)
-		case removePossibleValue:
-			prev, ok := state.getLocal(node.Name)
-			if ok {
-				state.narrowLocal(node.Name, narrowOut(value, prev.value), path)
-			}
-		}
-	case *parse.GlobalVariable:
-		switch action {
-		case setExactValue:
-			state.narrowGlobal(node.Name, value, path)
-		case removePossibleValue:
-			prev, ok := state.getGlobal(node.Name)
-			if ok {
-				state.narrowGlobal(node.Name, narrowOut(value, prev.value), path)
-			}
-		}
-	case *parse.IdentifierLiteral:
-		switch action {
-		case setExactValue:
-			if state.hasLocal(node.Name) {
-				state.narrowLocal(node.Name, value, path)
-			} else if state.hasGlobal(node.Name) {
-				state.narrowGlobal(node.Name, value, path)
-			}
-		case removePossibleValue:
-			if state.hasLocal(node.Name) {
-				prev, _ := state.getLocal(node.Name)
-				state.narrowLocal(node.Name, narrowOut(value, prev.value), path)
-			} else if state.hasGlobal(node.Name) {
-				prev, _ := state.getGlobal(node.Name)
-				state.narrowGlobal(node.Name, narrowOut(value, prev.value), path)
-			}
-		}
-	case *parse.IdentifierMemberExpression:
-		if ignored > 1 {
-			panic(errors.New("not supported yet"))
-		}
-
-		switch action {
-		case setExactValue:
-			if ignored == 1 && len(node.PropertyNames) == 1 {
-				narrowPath(node.Left, setExactValue, value, state, 0)
-				return
-			}
-
-			left, err := symbolicEval(node.Left, state)
-			if err != nil {
-				panic(err)
-			}
-			propName := node.PropertyNames[0].Name
-			iprops, ok := AsIprops(left).(IProps)
-
-			if !ok || !HasRequiredOrOptionalProperty(iprops, propName) {
-				break
-			}
-
-			movingIprops := iprops
-			ipropsList := []IProps{iprops}
-
-			if len(node.PropertyNames) > 1 {
-				for _, _propName := range node.PropertyNames[:len(node.PropertyNames)-ignored-1] {
-					if !HasRequiredOrOptionalProperty(movingIprops, _propName.Name) {
-						break switch_
-					}
-
-					val := movingIprops.Prop(_propName.Name)
-
-					movingIprops, ok = AsIprops(val).(IProps)
-					if !ok {
-						break switch_
-					}
-					ipropsList = append(ipropsList, movingIprops)
-				}
-				var newValue Value = value
-
-				//update iprops from right to left
-				for i := len(ipropsList) - 1; i >= 0; i-- {
-					currentIprops := ipropsList[i]
-					currentPropertyName := node.PropertyNames[i].Name
-					newValue, err = currentIprops.WithExistingPropReplaced(currentPropertyName, newValue)
-
-					if err == ErrUnassignablePropsMixin {
-						break switch_
-					}
-					if err != nil {
-						panic(err)
-					}
-				}
-
-				narrowPath(node.Left, setExactValue, newValue, state, 0)
-			} else {
-				newPropValue, err := iprops.WithExistingPropReplaced(propName, value)
-				if err == nil {
-					narrowPath(node.Left, setExactValue, newPropValue, state, 0)
-				} else if err != ErrUnassignablePropsMixin {
-					panic(err)
-				}
-			}
-
-		case removePossibleValue:
-			if len(node.PropertyNames) > 1 {
-				panic(errors.New("not supported yet"))
-			}
-			if ignored == 1 {
-				narrowPath(node.Left, removePossibleValue, value, state, 0)
-			} else {
-				left, err := symbolicEval(node.Left, state)
-				if err != nil {
-					panic(err)
-				}
-
-				propName := node.PropertyNames[0].Name
-
-				iprops, ok := AsIprops(left).(IProps)
-				if !ok || !HasRequiredOrOptionalProperty(iprops, propName) {
-					break
-				}
-
-				prevPropValue := iprops.Prop(propName)
-				newPropValue := narrowOut(value, prevPropValue)
-
-				newRecPrevPropValue, err := iprops.WithExistingPropReplaced(node.PropertyNames[0].Name, newPropValue)
-				if err == nil {
-					narrowPath(node.Left, setExactValue, newRecPrevPropValue, state, 0)
-				} else if err != ErrUnassignablePropsMixin {
-					panic(err)
-				}
-			}
-		}
-	case *parse.MemberExpression:
-		switch action {
-		case setExactValue:
-			left, err := symbolicEval(node.Left, state)
-			if err != nil {
-				panic(err)
-			}
-
-			propName := node.PropertyName.Name
-			iprops, ok := AsIprops(left).(IProps)
-			if !ok || !HasRequiredOrOptionalProperty(iprops, propName) {
-				break
-			}
-
-			newPropValue, err := iprops.WithExistingPropReplaced(node.PropertyName.Name, value)
-			if err == nil {
-				narrowPath(node.Left, setExactValue, newPropValue, state, 0)
-			} else if err != ErrUnassignablePropsMixin {
-				panic(err)
-			}
-		case removePossibleValue:
-			left, err := symbolicEval(node.Left, state)
-			if err != nil {
-				panic(err)
-			}
-
-			propName := node.PropertyName.Name
-			iprops, ok := AsIprops(left).(IProps)
-
-			if !ok || !HasRequiredOrOptionalProperty(iprops, propName) {
-				break
-			}
-
-			prevPropValue := iprops.Prop(node.PropertyName.Name)
-			newPropValue := narrowOut(value, prevPropValue)
-
-			newRecPrevPropValue, err := iprops.WithExistingPropReplaced(node.PropertyName.Name, newPropValue)
-			if err == nil {
-				narrowPath(node.Left, setExactValue, newRecPrevPropValue, state, 0)
-			} else if err != ErrUnassignablePropsMixin {
-				panic(err)
-			}
-		}
-	case *parse.DoubleColonExpression:
-		//almost same logic as parse.MemberExpression
-
-		switch action {
-		case setExactValue:
-			left, err := symbolicEval(node.Left, state)
-			if err != nil {
-				panic(err)
-			}
-
-			propName := node.Element.Name
-			iprops, ok := AsIprops(left).(IProps)
-			if !ok || !HasRequiredOrOptionalProperty(iprops, propName) {
-				break
-			}
-
-			newPropValue, err := iprops.WithExistingPropReplaced(node.Element.Name, value)
-			if err == nil {
-				narrowPath(node.Left, setExactValue, newPropValue, state, 0)
-			} else if err != ErrUnassignablePropsMixin {
-				panic(err)
-			}
-		case removePossibleValue:
-			left, err := symbolicEval(node.Left, state)
-			if err != nil {
-				panic(err)
-			}
-
-			propName := node.Element.Name
-			iprops, ok := AsIprops(left).(IProps)
-
-			if !ok || !HasRequiredOrOptionalProperty(iprops, propName) {
-				break
-			}
-
-			prevPropValue := iprops.Prop(node.Element.Name)
-			newPropValue := narrowOut(value, prevPropValue)
-
-			newRecPrevPropValue, err := iprops.WithExistingPropReplaced(node.Element.Name, newPropValue)
-			if err == nil {
-				narrowPath(node.Left, setExactValue, newRecPrevPropValue, state, 0)
-			} else if err != ErrUnassignablePropsMixin {
-				panic(err)
-			}
-		}
-	}
 }
 
 func handleConstraints(obj *Object, block *parse.InitializationBlock, state *State) error {

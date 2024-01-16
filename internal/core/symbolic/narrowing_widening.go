@@ -1,6 +1,7 @@
 package symbolic
 
 import (
+	"errors"
 	"reflect"
 	"slices"
 
@@ -206,7 +207,7 @@ func narrow(positive bool, n parse.Node, state *State, targetState *State) {
 	//TODO: remove all falsy values
 	if boolConvExpr, ok := n.(*parse.BooleanConversionExpression); ok {
 		if positive {
-			narrowPath(boolConvExpr.Expr, removePossibleValue, Nil, targetState, 0)
+			narrowChain(boolConvExpr.Expr, removePossibleValue, Nil, targetState, 0)
 		}
 	}
 
@@ -217,9 +218,9 @@ func narrow(positive bool, n parse.Node, state *State, targetState *State) {
 			if pattern, ok := right.(Pattern); ok {
 				//we narrow the left operand
 				if positive {
-					narrowPath(binExpr.Left, setExactValue, pattern.SymbolicValue(), targetState, 0)
+					narrowChain(binExpr.Left, setExactValue, pattern.SymbolicValue(), targetState, 0)
 				} else {
-					narrowPath(binExpr.Left, removePossibleValue, pattern.SymbolicValue(), targetState, 0)
+					narrowChain(binExpr.Left, removePossibleValue, pattern.SymbolicValue(), targetState, 0)
 				}
 			}
 
@@ -230,9 +231,9 @@ func narrow(positive bool, n parse.Node, state *State, targetState *State) {
 			left, _ := state.symbolicData.GetMostSpecificNodeValue(binExpr.Left)
 			right, _ := state.symbolicData.GetMostSpecificNodeValue(binExpr.Right)
 			if left.Test(right, RecTestCallState{}) {
-				narrowPath(binExpr.Left, setExactValue, right, targetState, 0)
+				narrowChain(binExpr.Left, setExactValue, right, targetState, 0)
 			} else if right.Test(left, RecTestCallState{}) {
-				narrowPath(binExpr.Right, setExactValue, left, targetState, 0)
+				narrowChain(binExpr.Right, setExactValue, left, targetState, 0)
 			} else {
 				state.addError(makeSymbolicEvalError(binExpr, state, fmtVal1Val2HaveNoOverlap(left, right)))
 			}
@@ -244,8 +245,287 @@ func narrow(positive bool, n parse.Node, state *State, targetState *State) {
 			left, _ := state.symbolicData.GetMostSpecificNodeValue(binExpr.Left)
 			right, _ := state.symbolicData.GetMostSpecificNodeValue(binExpr.Right)
 
-			narrowPath(binExpr.Left, removePossibleValue, right, targetState, 0)
-			narrowPath(binExpr.Right, removePossibleValue, left, targetState, 0)
+			narrowChain(binExpr.Left, removePossibleValue, right, targetState, 0)
+			narrowChain(binExpr.Right, removePossibleValue, left, targetState, 0)
+		}
+	}
+}
+
+type chainNarrowing int
+
+const (
+	setExactValue chainNarrowing = iota
+	removePossibleValue
+)
+
+// narrowChain recursively narrows a chain (e.g member expression, double colon expression) by updating the value of the leftmost
+// element (a variable).
+func narrowChain(chain parse.Node, action chainNarrowing, value Value, state *State, ignored int) {
+	//TODO: use reEval option in in symbolicEval calls ?
+
+switch_:
+	switch node := chain.(type) {
+	case *parse.Variable:
+		switch action {
+		case setExactValue:
+			state.narrowLocal(node.Name, value, chain)
+		case removePossibleValue:
+			prev, ok := state.getLocal(node.Name)
+			if ok {
+				state.narrowLocal(node.Name, narrowOut(value, prev.value), chain)
+			}
+		}
+	case *parse.GlobalVariable:
+		switch action {
+		case setExactValue:
+			state.narrowGlobal(node.Name, value, chain)
+		case removePossibleValue:
+			prev, ok := state.getGlobal(node.Name)
+			if ok {
+				state.narrowGlobal(node.Name, narrowOut(value, prev.value), chain)
+			}
+		}
+	case *parse.IdentifierLiteral:
+		switch action {
+		case setExactValue:
+			if state.hasLocal(node.Name) {
+				state.narrowLocal(node.Name, value, chain)
+			} else if state.hasGlobal(node.Name) {
+				state.narrowGlobal(node.Name, value, chain)
+			}
+		case removePossibleValue:
+			if state.hasLocal(node.Name) {
+				prev, _ := state.getLocal(node.Name)
+				state.narrowLocal(node.Name, narrowOut(value, prev.value), chain)
+			} else if state.hasGlobal(node.Name) {
+				prev, _ := state.getGlobal(node.Name)
+				state.narrowGlobal(node.Name, narrowOut(value, prev.value), chain)
+			}
+		}
+	case *parse.IdentifierMemberExpression:
+		if ignored > 1 {
+			panic(errors.New("not supported yet"))
+		}
+
+		switch action {
+		case setExactValue:
+			if ignored == 1 && len(node.PropertyNames) == 1 {
+				narrowChain(node.Left, setExactValue, value, state, 0)
+				return
+			}
+
+			left, err := symbolicEval(node.Left, state)
+			if err != nil {
+				panic(err)
+			}
+			propName := node.PropertyNames[0].Name
+			iprops, ok := AsIprops(left).(IProps)
+
+			if !ok || !HasRequiredOrOptionalProperty(iprops, propName) {
+				break
+			}
+
+			movingIprops := iprops
+			ipropsList := []IProps{iprops}
+
+			if len(node.PropertyNames) > 1 {
+				for _, _propName := range node.PropertyNames[:len(node.PropertyNames)-ignored-1] {
+					if !HasRequiredOrOptionalProperty(movingIprops, _propName.Name) {
+						break switch_
+					}
+
+					val := movingIprops.Prop(_propName.Name)
+
+					movingIprops, ok = AsIprops(val).(IProps)
+					if !ok {
+						break switch_
+					}
+					ipropsList = append(ipropsList, movingIprops)
+				}
+				var newValue Value = value
+
+				//update iprops from right to left
+				for i := len(ipropsList) - 1; i >= 0; i-- {
+					currentIprops := ipropsList[i]
+					currentPropertyName := node.PropertyNames[i].Name
+					newValue, err = currentIprops.WithExistingPropReplaced(currentPropertyName, newValue)
+
+					if err == ErrUnassignablePropsMixin {
+						break switch_
+					}
+					if err != nil {
+						panic(err)
+					}
+				}
+
+				narrowChain(node.Left, setExactValue, newValue, state, 0)
+			} else {
+				newPropValue, err := iprops.WithExistingPropReplaced(propName, value)
+				if err == nil {
+					narrowChain(node.Left, setExactValue, newPropValue, state, 0)
+				} else if err != ErrUnassignablePropsMixin {
+					panic(err)
+				}
+			}
+		case removePossibleValue:
+			if ignored == 1 && len(node.PropertyNames) == 1 {
+				narrowChain(node.Left, removePossibleValue, value, state, 0)
+				return
+			}
+
+			left, err := symbolicEval(node.Left, state)
+			if err != nil {
+				panic(err)
+			}
+			propName := node.PropertyNames[0].Name
+			iprops, ok := AsIprops(left).(IProps)
+
+			if !ok || !HasRequiredOrOptionalProperty(iprops, propName) {
+				break
+			}
+
+			if len(node.PropertyNames) > 1 {
+				movingIprops := iprops
+				ipropsList := []IProps{iprops}
+
+				for _, _propName := range node.PropertyNames[:len(node.PropertyNames)-ignored-1] {
+					if !HasRequiredOrOptionalProperty(movingIprops, _propName.Name) {
+						break switch_
+					}
+
+					val := movingIprops.Prop(_propName.Name)
+
+					movingIprops, ok = AsIprops(val).(IProps)
+					if !ok {
+						break switch_
+					}
+					ipropsList = append(ipropsList, movingIprops)
+				}
+
+				rightmostPropertyName := node.PropertyNames[len(ipropsList)-1].Name
+				prevPropValue := ipropsList[len(ipropsList)-1].Prop(rightmostPropertyName)
+				newPropValue := narrowOut(value, prevPropValue)
+
+				//update iprops from right to left
+				for i := len(ipropsList) - 1; i >= 1; i-- {
+					currentIprops := ipropsList[i]
+					currentPropertyName := node.PropertyNames[i].Name
+
+					newPropValue, err = currentIprops.WithExistingPropReplaced(currentPropertyName, newPropValue)
+
+					if err == ErrUnassignablePropsMixin {
+						break switch_
+					}
+					if err != nil {
+						panic(err)
+					}
+				}
+
+				newLeftmostValue, err := ipropsList[0].WithExistingPropReplaced(node.PropertyNames[0].Name, newPropValue)
+				if err == nil {
+					narrowChain(node.Left, setExactValue, newLeftmostValue, state, 0)
+				} else if err != ErrUnassignablePropsMixin {
+					panic(err)
+				}
+			} else {
+				prevPropValue := iprops.Prop(propName)
+				newPropValue := narrowOut(value, prevPropValue)
+
+				newLeftmostValue, err := iprops.WithExistingPropReplaced(node.PropertyNames[0].Name, newPropValue)
+				if err == nil {
+					narrowChain(node.Left, setExactValue, newLeftmostValue, state, 0)
+				} else if err != ErrUnassignablePropsMixin {
+					panic(err)
+				}
+			}
+		}
+	case *parse.MemberExpression:
+		switch action {
+		case setExactValue:
+			left, err := symbolicEval(node.Left, state)
+			if err != nil {
+				panic(err)
+			}
+
+			propName := node.PropertyName.Name
+			iprops, ok := AsIprops(left).(IProps)
+			if !ok || !HasRequiredOrOptionalProperty(iprops, propName) {
+				break
+			}
+
+			newPropValue, err := iprops.WithExistingPropReplaced(node.PropertyName.Name, value)
+			if err == nil {
+				narrowChain(node.Left, setExactValue, newPropValue, state, 0)
+			} else if err != ErrUnassignablePropsMixin {
+				panic(err)
+			}
+		case removePossibleValue:
+			left, err := symbolicEval(node.Left, state)
+			if err != nil {
+				panic(err)
+			}
+
+			propName := node.PropertyName.Name
+			iprops, ok := AsIprops(left).(IProps)
+
+			if !ok || !HasRequiredOrOptionalProperty(iprops, propName) {
+				break
+			}
+
+			prevPropValue := iprops.Prop(node.PropertyName.Name)
+			newPropValue := narrowOut(value, prevPropValue)
+
+			newRecPrevPropValue, err := iprops.WithExistingPropReplaced(node.PropertyName.Name, newPropValue)
+			if err == nil {
+				narrowChain(node.Left, setExactValue, newRecPrevPropValue, state, 0)
+			} else if err != ErrUnassignablePropsMixin {
+				panic(err)
+			}
+		}
+	case *parse.DoubleColonExpression:
+		//almost same logic as parse.MemberExpression
+
+		switch action {
+		case setExactValue:
+			left, err := symbolicEval(node.Left, state)
+			if err != nil {
+				panic(err)
+			}
+
+			propName := node.Element.Name
+			iprops, ok := AsIprops(left).(IProps)
+			if !ok || !HasRequiredOrOptionalProperty(iprops, propName) {
+				break
+			}
+
+			newPropValue, err := iprops.WithExistingPropReplaced(node.Element.Name, value)
+			if err == nil {
+				narrowChain(node.Left, setExactValue, newPropValue, state, 0)
+			} else if err != ErrUnassignablePropsMixin {
+				panic(err)
+			}
+		case removePossibleValue:
+			left, err := symbolicEval(node.Left, state)
+			if err != nil {
+				panic(err)
+			}
+
+			propName := node.Element.Name
+			iprops, ok := AsIprops(left).(IProps)
+
+			if !ok || !HasRequiredOrOptionalProperty(iprops, propName) {
+				break
+			}
+
+			prevPropValue := iprops.Prop(node.Element.Name)
+			newPropValue := narrowOut(value, prevPropValue)
+
+			newRecPrevPropValue, err := iprops.WithExistingPropReplaced(node.Element.Name, newPropValue)
+			if err == nil {
+				narrowChain(node.Left, setExactValue, newRecPrevPropValue, state, 0)
+			} else if err != ErrUnassignablePropsMixin {
+				panic(err)
+			}
 		}
 	}
 }
