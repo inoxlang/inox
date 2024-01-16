@@ -43,7 +43,7 @@ type TestingState struct {
 // A TestItem is a TestSuite or a TestCase.
 type TestItem interface {
 	ItemName() (string, bool)
-	ParentChunk() *parse.ParsedChunk
+	ParentChunk() *parse.ParsedChunkSource
 	ParentModule() *Module
 	Statement() parse.Node
 	FilesystemSnapshot() (FilesystemSnapshot, bool)
@@ -64,14 +64,14 @@ type TestSuite struct {
 	node         *parse.TestSuiteExpression
 	module       *Module // module executed when running the test suite
 	parentModule *Module
-	parentChunk  *parse.ParsedChunk
+	parentChunk  *parse.ParsedChunkSource
 }
 
 type TestSuiteCreationInput struct {
 	Meta             Value
 	Node             *parse.TestSuiteExpression
 	EmbeddedModChunk *parse.Chunk
-	ParentChunk      *parse.ParsedChunk
+	ParentChunk      *parse.ParsedChunkSource
 	ParentState      *GlobalState
 }
 
@@ -83,7 +83,7 @@ func NewTestSuite(input TestSuiteCreationInput) (*TestSuite, error) {
 	parentChunk := input.ParentChunk
 	parentState := input.ParentState
 
-	parsedChunk := &parse.ParsedChunk{
+	parsedChunk := &parse.ParsedChunkSource{
 		Node:   embeddedModChunk,
 		Source: parentChunk.Source,
 	}
@@ -176,7 +176,7 @@ func (s *TestSuite) ParentModule() *Module {
 }
 
 // Module returns the chunk that contains the test.
-func (s *TestSuite) ParentChunk() *parse.ParsedChunk {
+func (s *TestSuite) ParentChunk() *parse.ParsedChunkSource {
 	return s.parentChunk
 }
 
@@ -278,7 +278,7 @@ type TestCase struct {
 
 	module       *Module // module executed when running the test case
 	parentModule *Module
-	parentChunk  *parse.ParsedChunk
+	parentChunk  *parse.ParsedChunkSource
 
 	positionStack     parse.SourcePositionStack //can be nil
 	formattedPosition string                    //can be empty
@@ -290,7 +290,7 @@ type TestCaseCreationInput struct {
 
 	ModChunk    *parse.Chunk
 	ParentState *GlobalState
-	ParentChunk *parse.ParsedChunk
+	ParentChunk *parse.ParsedChunkSource
 
 	//optional
 	PositionStack     parse.SourcePositionStack
@@ -309,7 +309,7 @@ func NewTestCase(input TestCaseCreationInput) (*TestCase, error) {
 	positionStack := input.PositionStack
 	formattedPosition := input.FormattedLocation
 
-	parsedChunk := &parse.ParsedChunk{
+	parsedChunk := &parse.ParsedChunkSource{
 		Node:   modChunk,
 		Source: parentChunk.Source,
 	}
@@ -395,7 +395,7 @@ func (c *TestCase) ParentModule() *Module {
 }
 
 // Module returns the chunk that contains the test.
-func (c *TestCase) ParentChunk() *parse.ParsedChunk {
+func (c *TestCase) ParentChunk() *parse.ParsedChunkSource {
 	return c.parentChunk
 }
 

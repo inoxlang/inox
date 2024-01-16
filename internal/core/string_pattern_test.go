@@ -17,7 +17,7 @@ func TestEvalStringPatternNode(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		state := NewTreeWalkState(ctx)
-		chunk := &parse.ChunkStackItem{Chunk: &parse.ParsedChunk{Node: &parse.Chunk{}}}
+		chunk := &parse.ChunkStackItem{Chunk: &parse.ParsedChunkSource{Node: &parse.Chunk{}}}
 		state.chunkStack = append(state.chunkStack, chunk)
 		state.fullChunkStack = append(state.fullChunkStack, chunk)
 
@@ -44,7 +44,7 @@ func TestEvalStringPatternNode(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		state := NewTreeWalkState(ctx)
-		chunk := &parse.ChunkStackItem{Chunk: &parse.ParsedChunk{Node: &parse.Chunk{}}}
+		chunk := &parse.ChunkStackItem{Chunk: &parse.ParsedChunkSource{Node: &parse.Chunk{}}}
 		state.chunkStack = append(state.chunkStack, chunk)
 		state.fullChunkStack = append(state.fullChunkStack, chunk)
 
@@ -71,7 +71,7 @@ func TestEvalStringPatternNode(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		state := NewTreeWalkState(ctx)
-		chunk := &parse.ChunkStackItem{Chunk: &parse.ParsedChunk{Node: &parse.Chunk{}}}
+		chunk := &parse.ChunkStackItem{Chunk: &parse.ParsedChunkSource{Node: &parse.Chunk{}}}
 		state.chunkStack = append(state.chunkStack, chunk)
 		state.fullChunkStack = append(state.fullChunkStack, chunk)
 
@@ -97,7 +97,7 @@ func TestEvalStringPatternNode(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		state := NewTreeWalkState(ctx)
-		chunk := &parse.ChunkStackItem{Chunk: &parse.ParsedChunk{Node: &parse.Chunk{}}}
+		chunk := &parse.ChunkStackItem{Chunk: &parse.ParsedChunkSource{Node: &parse.Chunk{}}}
 		state.chunkStack = append(state.chunkStack, chunk)
 		state.fullChunkStack = append(state.fullChunkStack, chunk)
 
@@ -124,7 +124,7 @@ func TestEvalStringPatternNode(t *testing.T) {
 
 		ctx.AddNamedPattern("b", NewExactStringPattern(Str("c")))
 		state := NewTreeWalkState(ctx)
-		chunk := &parse.ChunkStackItem{Chunk: &parse.ParsedChunk{Node: &parse.Chunk{}}}
+		chunk := &parse.ChunkStackItem{Chunk: &parse.ParsedChunkSource{Node: &parse.Chunk{}}}
 		state.chunkStack = append(state.chunkStack, chunk)
 		state.fullChunkStack = append(state.fullChunkStack, chunk)
 
@@ -153,7 +153,7 @@ func TestEvalStringPatternNode(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		state := NewTreeWalkState(ctx)
-		chunk := &parse.ChunkStackItem{Chunk: &parse.ParsedChunk{Node: &parse.Chunk{}}}
+		chunk := &parse.ChunkStackItem{Chunk: &parse.ParsedChunkSource{Node: &parse.Chunk{}}}
 		state.chunkStack = append(state.chunkStack, chunk)
 		state.fullChunkStack = append(state.fullChunkStack, chunk)
 
@@ -177,7 +177,7 @@ func TestEvalStringPatternNode(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		state := NewTreeWalkState(ctx)
-		chunk := &parse.ChunkStackItem{Chunk: &parse.ParsedChunk{Node: &parse.Chunk{}}}
+		chunk := &parse.ChunkStackItem{Chunk: &parse.ParsedChunkSource{Node: &parse.Chunk{}}}
 		state.chunkStack = append(state.chunkStack, chunk)
 		state.fullChunkStack = append(state.fullChunkStack, chunk)
 

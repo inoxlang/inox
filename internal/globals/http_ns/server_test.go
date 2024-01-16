@@ -905,7 +905,7 @@ func setupTestCase(t *testing.T, testCase serverTestCase) (*core.GlobalState, *c
 	// create module
 	chunk := parse.MustParseChunk(testCase.input)
 	module := &core.Module{
-		MainChunk: parse.NewParsedChunk(chunk, parse.SourceFile{
+		MainChunk: parse.NewParsedChunkSource(chunk, parse.SourceFile{
 			NameString:  "/main.ix",
 			Resource:    "/main.ix",
 			ResourceDir: "/",

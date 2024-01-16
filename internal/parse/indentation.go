@@ -1,5 +1,6 @@
 package parse
 
+// EstimateIndentationUnit estimates the indentation unit in $code (e.g. 4 space characters, 2 tabs).
 func EstimateIndentationUnit(code []rune, chunk *Chunk) string {
 	var indents = map[string]int{}
 

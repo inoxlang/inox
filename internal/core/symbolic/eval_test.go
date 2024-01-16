@@ -12076,7 +12076,7 @@ func TestSymbolicEval(t *testing.T) {
 			state.Module.directlyImportedModules = map[*parse.ImportStatement]*Module{importStmt: importedModule}
 			importedModule.inclusionStatementMap = map[*parse.InclusionImportStatement]*IncludedChunk{
 				parse.FindNode(importedModule.mainChunk.Node, (*parse.InclusionImportStatement)(nil), nil): {
-					ParsedChunk: utils.Must(parse.ParseChunkSource(parse.SourceFile{
+					ParsedChunkSource: utils.Must(parse.ParseChunkSource(parse.SourceFile{
 						NameString:  "/included.ix",
 						Resource:    "/included.ix",
 						ResourceDir: "/",

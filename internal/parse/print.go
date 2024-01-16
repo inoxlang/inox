@@ -15,6 +15,7 @@ type PrintConfig struct {
 	CacheResult       bool
 }
 
+// Print prints $node to $w and returns the number of written bytes.
 func Print(node Node, chunk *Chunk, w io.Writer, config PrintConfig) (int, error) {
 	tokens := GetTokens(node, chunk, false)
 	singleSpace := []byte{' '}
@@ -90,6 +91,7 @@ func Print(node Node, chunk *Chunk, w io.Writer, config PrintConfig) (int, error
 	return totalN, nil
 }
 
+// SPrint stringifies $node.
 func SPrint(node Node, chunk *Chunk, config PrintConfig) string {
 	buff := bytes.Buffer{}
 

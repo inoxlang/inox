@@ -21,13 +21,13 @@ var (
 
 // A Module represents a symbolic Module.
 type Module struct {
-	mainChunk               *parse.ParsedChunk // if nil, any module is matched
+	mainChunk               *parse.ParsedChunkSource // if nil, any module is matched
 	inclusionStatementMap   map[*parse.InclusionImportStatement]*IncludedChunk
 	directlyImportedModules map[*parse.ImportStatement]*Module
 }
 
 func NewModule(
-	chunk *parse.ParsedChunk,
+	chunk *parse.ParsedChunkSource,
 	inclusionStatementMap map[*parse.InclusionImportStatement]*IncludedChunk,
 	importedModuleMap map[*parse.ImportStatement]*Module,
 ) *Module {
@@ -97,7 +97,7 @@ func (*Module) PropertyNames() []string {
 }
 
 type IncludedChunk struct {
-	*parse.ParsedChunk
+	*parse.ParsedChunkSource
 }
 
 type moduleParameter struct {

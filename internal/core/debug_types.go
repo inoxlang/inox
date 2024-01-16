@@ -6,7 +6,7 @@ import (
 
 type BreakpointInfo struct {
 	NodeSpan    parse.NodeSpan //zero if the breakpoint is not set
-	Chunk       *parse.ParsedChunk
+	Chunk       *parse.ParsedChunkSource
 	Id          int32 //unique for a given debugger
 	StartLine   int32
 	StartColumn int32
@@ -22,7 +22,7 @@ type StackFrameInfo struct {
 	//can be nil, current *Chunk | *FunctionExpression or statement (current statement if we are stopped at a breakpoint exception)
 	Node parse.Node
 
-	Chunk       *parse.ParsedChunk
+	Chunk       *parse.ParsedChunkSource
 	Id          int32 //set if debugging, unique for a given debugger tree (~ session)
 	StartLine   int32
 	StartColumn int32
@@ -107,7 +107,7 @@ type DebugCommandSetBreakpoints struct {
 	//GetBreakpointsSetByLine is invoked with the resulting breakpoints, some of them can be disabled.
 	BreakPointsByLine []int
 
-	Chunk *parse.ParsedChunk
+	Chunk *parse.ParsedChunkSource
 
 	GetBreakpointsSetByLine func(breakpoints []BreakpointInfo)
 }

@@ -3273,7 +3273,7 @@ func evalInclusionImportStatement(n *parse.InclusionImportStatement, state *Stat
 	if !ok { //included file does not exist or is a folder
 		return nil, nil
 	}
-	state.pushChunk(chunk.ParsedChunk, n)
+	state.pushChunk(chunk.ParsedChunkSource, n)
 	defer state.popChunk()
 
 	_, err := symbolicEval(chunk.Node, state)
@@ -3488,7 +3488,7 @@ func evalSpawnExpression(node *parse.SpawnExpression, state *State) (_ Value, fi
 
 	//TODO: check the allow section to know the permissions
 	modCtx := NewSymbolicContext(state.ctx.startingConcreteContext, concreteCtx, state.ctx)
-	modState := newSymbolicState(modCtx, &parse.ParsedChunk{
+	modState := newSymbolicState(modCtx, &parse.ParsedChunkSource{
 		Node:   embeddedModule,
 		Source: state.currentChunk().Source,
 	})
@@ -4901,7 +4901,7 @@ func evalTestsuiteExpression(n *parse.TestSuiteExpression, state *State, options
 	state.ctx.CopyPatternNamespacesIn(modCtx)
 	state.ctx.CopyHostAliasesIn(modCtx)
 
-	modState := newSymbolicState(modCtx, &parse.ParsedChunk{
+	modState := newSymbolicState(modCtx, &parse.ParsedChunkSource{
 		Node:   embeddedModule,
 		Source: state.currentChunk().Source,
 	})
@@ -4959,7 +4959,7 @@ func evalTestcaseExpression(n *parse.TestCaseExpression, state *State, options e
 	state.ctx.CopyPatternNamespacesIn(modCtx)
 	state.ctx.CopyHostAliasesIn(modCtx)
 
-	modState := newSymbolicState(modCtx, &parse.ParsedChunk{
+	modState := newSymbolicState(modCtx, &parse.ParsedChunkSource{
 		Node:   embeddedModule,
 		Source: state.currentChunk().Source,
 	})
@@ -5037,7 +5037,7 @@ func evalLifetimejobExpression(n *parse.LifetimejobExpression, state *State, opt
 		modCtx.AddPatternNamespace(name, namespace, state.inPreinit, parse.SourcePositionRange{})
 	})
 
-	modState := newSymbolicState(modCtx, &parse.ParsedChunk{
+	modState := newSymbolicState(modCtx, &parse.ParsedChunkSource{
 		Node:   embeddedModule,
 		Source: state.currentChunk().Source,
 	})

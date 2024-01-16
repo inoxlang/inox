@@ -74,7 +74,7 @@ func (f frame) GetCurrentNodeSpan() (parse.NodeSpan, bool) {
 	return f.currentNodeSpan, f.currentNodeSpan != parse.NodeSpan{}
 }
 
-func (f frame) GetChunk() (*parse.ParsedChunk, bool) {
+func (f frame) GetChunk() (*parse.ParsedChunkSource, bool) {
 	if f.fn.IncludedChunk != nil {
 		return f.fn.IncludedChunk, true
 	}
@@ -1995,7 +1995,7 @@ func (v *VM) handleOtherOpcodes(op byte) (_continue bool) {
 		}
 		v.chunkStack[len(v.chunkStack)-1].CurrentNodeSpan = v.curFrame.fn.GetSourcePositionRange(importIp).Span
 		v.chunkStack = append(v.chunkStack, &parse.ChunkStackItem{
-			Chunk: chunk.ParsedChunk,
+			Chunk: chunk.ParsedChunkSource,
 		})
 	case OpPopIncludedChunk:
 		v.chunkStack = v.chunkStack[:len(v.chunkStack)-1]

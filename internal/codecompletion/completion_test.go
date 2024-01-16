@@ -56,12 +56,12 @@ func runSingleModeTests(t *testing.T, mode Mode, wd, dir string) {
 		}))
 	}
 
-	doSymbolicCheck := func(chunk *parse.ParsedChunk, state *core.GlobalState, additionalSymbolicGlobalConsts ...map[string]symbolic.Value) {
+	doSymbolicCheck := func(chunk *parse.ParsedChunkSource, state *core.GlobalState, additionalSymbolicGlobalConsts ...map[string]symbolic.Value) {
 	}
 
 	if mode == LspCompletions {
 		doSymbolicCheck = func(
-			chunk *parse.ParsedChunk,
+			chunk *parse.ParsedChunkSource,
 			state *core.GlobalState,
 			additionalSymbolicGlobalConsts ...map[string]symbolic.Value) {
 
@@ -93,14 +93,14 @@ func runSingleModeTests(t *testing.T, mode Mode, wd, dir string) {
 		}
 	}
 
-	parseChunkSource := func(s, name string) (*parse.ParsedChunk, error) {
+	parseChunkSource := func(s, name string) (*parse.ParsedChunkSource, error) {
 		return parse.ParseChunkSource(parse.InMemorySource{
 			NameString: "test",
 			CodeString: s,
 		})
 	}
 
-	_findCompletions := func(state *core.TreeWalkState, chunk *parse.ParsedChunk, cursorIndex int, keepDoc bool, inputData *InputData) []Completion {
+	_findCompletions := func(state *core.TreeWalkState, chunk *parse.ParsedChunkSource, cursorIndex int, keepDoc bool, inputData *InputData) []Completion {
 		args := SearchArgs{
 			State:       state,
 			Chunk:       chunk,
@@ -128,7 +128,7 @@ func runSingleModeTests(t *testing.T, mode Mode, wd, dir string) {
 		return completions
 	}
 
-	findCompletions := func(state *core.TreeWalkState, chunk *parse.ParsedChunk, cursorIndex int) []Completion {
+	findCompletions := func(state *core.TreeWalkState, chunk *parse.ParsedChunkSource, cursorIndex int) []Completion {
 		return _findCompletions(state, chunk, cursorIndex, false, nil)
 	}
 

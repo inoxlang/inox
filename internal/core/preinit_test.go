@@ -1603,7 +1603,7 @@ func TestPreInit(t *testing.T) {
 				}
 
 				mod := &Module{
-					MainChunk:        parse.NewParsedChunk(chunk, srcFile),
+					MainChunk:        parse.NewParsedChunkSource(chunk, srcFile),
 					ManifestTemplate: chunk.Manifest,
 				}
 
@@ -1642,7 +1642,7 @@ func TestPreInit(t *testing.T) {
 			}
 
 			mod := &Module{
-				MainChunk: parse.NewParsedChunk(chunk,
+				MainChunk: parse.NewParsedChunkSource(chunk,
 					parse.SourceFile{
 						NameString:             "/main.ix",
 						UserFriendlyNameString: "/main.ix",

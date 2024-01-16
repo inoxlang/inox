@@ -10,7 +10,7 @@ import (
 func createTestLifetimeJob(t *testing.T, state *GlobalState, code string) *LifetimeJob {
 	jobMod := &Module{
 		ModuleKind: LifetimeJobModule,
-		MainChunk: parse.NewParsedChunk(parse.MustParseChunk(code), parse.InMemorySource{
+		MainChunk: parse.NewParsedChunkSource(parse.MustParseChunk(code), parse.InMemorySource{
 			NameString: "test",
 			CodeString: code,
 		}),

@@ -63,7 +63,7 @@ type CompiledFunction struct {
 	Bytecode     *Bytecode //bytecode containing the function
 
 	SourceNodeSpan parse.NodeSpan
-	IncludedChunk  *parse.ParsedChunk //set if the function is defined in an included chunk
+	IncludedChunk  *parse.ParsedChunkSource //set if the function is defined in an included chunk
 }
 
 // GetSourcePositionRange returns the position in source code of the instruction at the ip address,
@@ -84,7 +84,7 @@ func (fn *CompiledFunction) GetSourcePositionRange(ip int) parse.SourcePositionR
 }
 
 type instructionSourcePosition struct {
-	chunk *parse.ParsedChunk
+	chunk *parse.ParsedChunkSource
 	span  parse.NodeSpan
 }
 

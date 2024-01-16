@@ -49,7 +49,7 @@ type filePreparationParams struct {
 func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparationParams) (
 	_ *core.GlobalState,
 	_ *core.Module,
-	_ *parse.ParsedChunk,
+	_ *parse.ParsedChunkSource,
 	cachedOrGotCache bool,
 	_ bool,
 ) {
@@ -148,10 +148,10 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 		cached := false
 		if fileCache != nil && !fileCache.clearIfSourceChanged() {
 			cached = true
-			fileCache.update(state, mod, includedChunk.ParsedChunk)
+			fileCache.update(state, mod, includedChunk.ParsedChunkSource)
 		}
 
-		return state, mod, includedChunk.ParsedChunk, cached, true
+		return state, mod, includedChunk.ParsedChunkSource, cached, true
 	} else {
 		var parentCtx *core.Context
 

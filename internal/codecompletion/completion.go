@@ -53,7 +53,7 @@ func (m Mode) String() string {
 
 type SearchArgs struct {
 	State       *core.TreeWalkState
-	Chunk       *parse.ParsedChunk
+	Chunk       *parse.ParsedChunkSource
 	CursorIndex int
 	Mode        Mode
 	InputData   InputData
@@ -195,7 +195,7 @@ func FindCompletions(args SearchArgs) []Completion {
 
 type completionSearch struct {
 	state         *core.TreeWalkState
-	chunk         *parse.ParsedChunk
+	chunk         *parse.ParsedChunkSource
 	cursorIndex   int
 	mode          Mode
 	parent        parse.Node

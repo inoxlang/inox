@@ -93,7 +93,7 @@ func MakeTestStateAndChunks(code string, includedFiles map[string]string, global
 			panic(fmt.Errorf("failed to parse included chunk %s", file))
 		}
 
-		state.Module.inclusionStatementMap[importStmt] = &IncludedChunk{ParsedChunk: includedChunk}
+		state.Module.inclusionStatementMap[importStmt] = &IncludedChunk{ParsedChunkSource: includedChunk}
 	}
 
 	return node, state

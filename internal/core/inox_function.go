@@ -16,7 +16,7 @@ import (
 // stores their bytecode and some other information.
 type InoxFunction struct {
 	Node  parse.Node
-	Chunk *parse.ParsedChunk
+	Chunk *parse.ParsedChunkSource
 
 	originState            *GlobalState
 	shared                 atomic.Bool

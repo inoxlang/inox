@@ -152,6 +152,7 @@ func IsScopeContainerNode(node Node) bool {
 	}
 }
 
+// Chunk represents the root node obtained when parsing an Inox chunk.
 type Chunk struct {
 	NodeBase                   `json:"base:chunk"`
 	GlobalConstantDeclarations *GlobalConstantDeclarations `json:"globalConstDecls,omitempty"`    //nil if no const declarations at the top of the module

@@ -650,7 +650,7 @@ func (d *Debugger) beforeInstruction(n parse.Node, trace []StackFrameInfo, excep
 
 }
 
-func ParseFileChunk(absoluteSourcePath string, fls afs.Filesystem) (*parse.ParsedChunk, error) {
+func ParseFileChunk(absoluteSourcePath string, fls afs.Filesystem) (*parse.ParsedChunkSource, error) {
 	content, err := ReadFileInFS(fls, absoluteSourcePath, -1)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read %s: %w", absoluteSourcePath, err)
@@ -672,7 +672,7 @@ func ParseFileChunk(absoluteSourcePath string, fls afs.Filesystem) (*parse.Parse
 	return chunk, nil
 }
 
-func GetBreakpointsFromLines(lines []int, chunk *parse.ParsedChunk, nextBreakpointId *int32) ([]BreakpointInfo, error) {
+func GetBreakpointsFromLines(lines []int, chunk *parse.ParsedChunkSource, nextBreakpointId *int32) ([]BreakpointInfo, error) {
 	var breakpointsSetByLine []BreakpointInfo
 
 	for _, line := range lines {

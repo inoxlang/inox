@@ -155,7 +155,7 @@ func TestObject(t *testing.T) {
 
 			state := NewGlobalState(ctx)
 			state.Module = &Module{
-				MainChunk: &parse.ParsedChunk{
+				MainChunk: &parse.ParsedChunkSource{
 					Node: parse.MustParseChunk(""),
 				},
 			}

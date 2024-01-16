@@ -40,7 +40,7 @@ func getCodeActions(
 	return &codeActions, nil
 }
 
-func tryGetMissingPermissionAction(doc defines.TextDocumentIdentifier, diagnostic defines.Diagnostic, chunk *parse.ParsedChunk) (action defines.CodeAction, actionOk bool) {
+func tryGetMissingPermissionAction(doc defines.TextDocumentIdentifier, diagnostic defines.Diagnostic, chunk *parse.ParsedChunkSource) (action defines.CodeAction, actionOk bool) {
 	indentUnit := chunk.EstimatedIndentationUnit()
 	if indentUnit == "" {
 		indentUnit = strings.Repeat(" ", 4)
@@ -78,7 +78,7 @@ func tryGetMissingPermissionAction(doc defines.TextDocumentIdentifier, diagnosti
 	return
 }
 
-func getPermissionsObject(chunk *parse.ParsedChunk) (*parse.ObjectLiteral, bool) {
+func getPermissionsObject(chunk *parse.ParsedChunkSource) (*parse.ObjectLiteral, bool) {
 	if chunk.Node.Manifest == nil {
 		return nil, false
 	}
@@ -99,7 +99,7 @@ func getPermissionsObject(chunk *parse.ParsedChunk) (*parse.ObjectLiteral, bool)
 	return nil, false
 }
 
-func makeTextEditAddManifest(chunk *parse.ParsedChunk, permissions []string, indentUnit string) (textEdit defines.TextEdit) {
+func makeTextEditAddManifest(chunk *parse.ParsedChunkSource, permissions []string, indentUnit string) (textEdit defines.TextEdit) {
 	joinedPerms := indentUnit + indentUnit + strings.Join(permissions, "\n"+indentUnit+indentUnit)
 
 	editSpanStart := int32(0)
@@ -134,7 +134,7 @@ func makeTextEditAddManifest(chunk *parse.ParsedChunk, permissions []string, ind
 }
 
 func makeTextEditsAddPermsInSection(
-	chunk *parse.ParsedChunk,
+	chunk *parse.ParsedChunkSource,
 	section *parse.ObjectLiteral,
 	perms [][2]string,
 	indentUnit string,

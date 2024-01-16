@@ -5735,7 +5735,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			state := NewGlobalState(ctx)
 			state.Module = &Module{
-				MainChunk: &parse.ParsedChunk{
+				MainChunk: &parse.ParsedChunkSource{
 					Source: parse.SourceFile{Resource: "/mytest", ResourceDir: "/", NameString: "/mytest"},
 				},
 			}
@@ -5813,7 +5813,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			}))
 
 			state.Module = &Module{
-				MainChunk: &parse.ParsedChunk{
+				MainChunk: &parse.ParsedChunkSource{
 					Source: parse.SourceFile{Resource: "/mod.ix", ResourceDir: "/", NameString: "/mod.ix"},
 				},
 			}
@@ -5901,7 +5901,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			}))
 
 			state.Module = &Module{
-				MainChunk: &parse.ParsedChunk{
+				MainChunk: &parse.ParsedChunkSource{
 					Source: parse.SourceFile{Resource: "/mod.ix", ResourceDir: "/", NameString: "/mod.ix"},
 				},
 			}

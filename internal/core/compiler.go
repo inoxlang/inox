@@ -44,7 +44,7 @@ type compiler struct {
 	localSymbolTableStack []*symbolTable
 	scopes                []compilationScope
 	scopeIndex            int
-	chunkStack            []*parse.ParsedChunk //main chunk + included chunks
+	chunkStack            []*parse.ParsedChunkSource //main chunk + included chunks
 	loops                 []*loopCompilation
 	loopIndex             int
 	walkIndex             int
@@ -1734,7 +1734,7 @@ func (c *compiler) Compile(node parse.Node) error {
 			panic(fmt.Errorf("cannot compile inclusion import statement: provided module is nil"))
 		}
 		chunk := c.module.InclusionStatementMap[node]
-		c.chunkStack = append(c.chunkStack, chunk.ParsedChunk)
+		c.chunkStack = append(c.chunkStack, chunk.ParsedChunkSource)
 		defer func() {
 			c.chunkStack = c.chunkStack[:len(c.chunkStack)-1]
 		}()
@@ -1833,7 +1833,7 @@ func (c *compiler) Compile(node parse.Node) error {
 		routineChunk := node.Module.ToChunk()
 
 		routineMod := &Module{
-			MainChunk:  parse.NewParsedChunk(routineChunk, c.currentChunk().Source),
+			MainChunk:  parse.NewParsedChunkSource(routineChunk, c.currentChunk().Source),
 			ModuleKind: UserLThreadModule,
 		}
 
@@ -1911,7 +1911,7 @@ func (c *compiler) Compile(node parse.Node) error {
 
 		jobMod := &Module{
 			ModuleKind:       LifetimeJobModule,
-			MainChunk:        parse.NewParsedChunk(jobChunk, c.currentChunk().Source),
+			MainChunk:        parse.NewParsedChunkSource(jobChunk, c.currentChunk().Source),
 			ManifestTemplate: node.Module.Manifest,
 		}
 
@@ -2610,7 +2610,7 @@ func (c *compiler) CompileStringPatternNode(node parse.Node) error {
 }
 
 // compileMainChunk compiles the main chunk to bytecode & stores the result in c.module.
-func (c *compiler) compileMainChunk(chunk *parse.ParsedChunk) (*Bytecode, error) {
+func (c *compiler) compileMainChunk(chunk *parse.ParsedChunkSource) (*Bytecode, error) {
 	node := chunk.Node
 
 	//add local scope
@@ -2819,7 +2819,7 @@ func (c *compiler) emit(
 	return pos
 }
 
-func (c *compiler) currentChunk() *parse.ParsedChunk {
+func (c *compiler) currentChunk() *parse.ParsedChunkSource {
 	return c.chunkStack[len(c.chunkStack)-1]
 }
 

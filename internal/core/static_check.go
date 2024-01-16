@@ -31,7 +31,7 @@ type StaticCheckInput struct {
 	State                  *GlobalState //mainly used when checking imported modules
 	Node                   parse.Node
 	Module                 *Module
-	Chunk                  *parse.ParsedChunk
+	Chunk                  *parse.ParsedChunkSource
 	ParentChecker          *checker
 	Globals                GlobalVariables
 	AdditionalGlobalConsts []string
@@ -128,7 +128,7 @@ func StaticCheck(input StaticCheckInput) (*StaticCheckData, error) {
 // see Check function.
 type checker struct {
 	currentModule            *Module //can be nil
-	chunk                    *parse.ParsedChunk
+	chunk                    *parse.ParsedChunkSource
 	inclusionImportStatement *parse.InclusionImportStatement // can be nil
 	moduleImportStatement    *parse.ImportStatement          //can be nil
 	parentChecker            *checker                        //can be nil
@@ -1005,7 +1005,7 @@ top_switch:
 			patterns:                 patterns,
 			patternNamespaces:        patternNamespaces,
 			currentModule:            c.currentModule,
-			chunk:                    includedChunk.ParsedChunk,
+			chunk:                    includedChunk.ParsedChunkSource,
 			inclusionImportStatement: node,
 			store:                    make(map[parse.Node]any),
 			data: &StaticCheckData{

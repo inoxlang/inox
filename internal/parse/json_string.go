@@ -1,9 +1,9 @@
+// The functions in this file are extracted from Golang's stdlib.
+// https://github.com/golang/go/blob/dac9b9ddbd5160c5f4552410f5f8281bd5eed38c/src/encoding/json/decode.go
+
 // Copyright 2010 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-
-//The functions in this file are extracted from Golang's stdlib.
-// https://github.com/golang/go/blob/dac9b9ddbd5160c5f4552410f5f8281bd5eed38c/src/encoding/json/decode.go
 
 package parse
 

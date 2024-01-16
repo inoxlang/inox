@@ -16,7 +16,7 @@ import (
 func TestTreeWalkDebug(t *testing.T) {
 	//TODO: add test with included chunks
 
-	testDebugModeEval(t, func(code string, opts ...debugTestOptions) (any, *Context, *parse.ParsedChunk, *Debugger) {
+	testDebugModeEval(t, func(code string, opts ...debugTestOptions) (any, *Context, *parse.ParsedChunkSource, *Debugger) {
 		state := NewGlobalState(NewDefaultTestContext())
 		treeWalkState := NewTreeWalkStateWithGlobal(state)
 
@@ -60,7 +60,7 @@ type debugTestOptions struct {
 
 func testDebugModeEval(
 	t *testing.T,
-	setup func(code string, opts ...debugTestOptions) (any, *Context, *parse.ParsedChunk, *Debugger),
+	setup func(code string, opts ...debugTestOptions) (any, *Context, *parse.ParsedChunkSource, *Debugger),
 	eval func(n parse.Node, state any) (Value, error),
 ) {
 
@@ -2308,7 +2308,7 @@ func testDebugModeEval(
 					{
 						Name:                 "core-test",
 						Node:                 assignments[2],
-						Chunk:                routineChunk.Load().(*parse.ParsedChunk),
+						Chunk:                routineChunk.Load().(*parse.ParsedChunkSource),
 						Id:                   2,
 						StartLine:            2,
 						StartColumn:          15,
@@ -2320,7 +2320,7 @@ func testDebugModeEval(
 					{
 						Name:                 "core-test",
 						Node:                 assignments[3],
-						Chunk:                routineChunk.Load().(*parse.ParsedChunk),
+						Chunk:                routineChunk.Load().(*parse.ParsedChunkSource),
 						Id:                   2,
 						StartLine:            2,
 						StartColumn:          15,
@@ -2448,7 +2448,7 @@ func testDebugModeEval(
 					{
 						Name:                 "core-test",
 						Node:                 returnStmts[0],
-						Chunk:                routineChunk.Load().(*parse.ParsedChunk),
+						Chunk:                routineChunk.Load().(*parse.ParsedChunkSource),
 						Id:                   2,
 						StartLine:            2,
 						StartColumn:          15,
@@ -2605,7 +2605,7 @@ func testDebugModeEval(
 					{
 						Name:                 "core-test",
 						Node:                 assignments[2],
-						Chunk:                routineChunk.Load().(*parse.ParsedChunk),
+						Chunk:                routineChunk.Load().(*parse.ParsedChunkSource),
 						Id:                   2,
 						StartLine:            2,
 						StartColumn:          15,
@@ -2617,7 +2617,7 @@ func testDebugModeEval(
 					{
 						Name:                 "core-test",
 						Node:                 assignments[3],
-						Chunk:                routineChunk.Load().(*parse.ParsedChunk),
+						Chunk:                routineChunk.Load().(*parse.ParsedChunkSource),
 						Id:                   2,
 						StartLine:            2,
 						StartColumn:          15,
@@ -2767,7 +2767,7 @@ func testDebugModeEval(
 					{
 						Name:                 "core-test",
 						Node:                 assignments[3],
-						Chunk:                routineChunk.Load().(*parse.ParsedChunk),
+						Chunk:                routineChunk.Load().(*parse.ParsedChunkSource),
 						Id:                   3,
 						StartLine:            3,
 						StartColumn:          17,
@@ -2779,7 +2779,7 @@ func testDebugModeEval(
 					{
 						Name:                 "core-test",
 						Node:                 assignments[4],
-						Chunk:                routineChunk.Load().(*parse.ParsedChunk),
+						Chunk:                routineChunk.Load().(*parse.ParsedChunkSource),
 						Id:                   3,
 						StartLine:            3,
 						StartColumn:          17,
@@ -2935,7 +2935,7 @@ func testDebugModeEval(
 					{
 						Name:                 "core-test",
 						Node:                 assignments[3],
-						Chunk:                routineChunk.Load().(*parse.ParsedChunk),
+						Chunk:                routineChunk.Load().(*parse.ParsedChunkSource),
 						Id:                   3,
 						StartLine:            3,
 						StartColumn:          17,
@@ -2947,7 +2947,7 @@ func testDebugModeEval(
 					{
 						Name:                 "core-test",
 						Node:                 assignments[4],
-						Chunk:                routineChunk.Load().(*parse.ParsedChunk),
+						Chunk:                routineChunk.Load().(*parse.ParsedChunkSource),
 						Id:                   3,
 						StartLine:            3,
 						StartColumn:          17,

@@ -45,7 +45,7 @@ func getSignatureHelp(fpath string, line, column int32, handlingCtx *core.Contex
 	return signatureHelp, nil
 }
 
-func getSignatureHelpAt(line, column int32, chunk *parse.ParsedChunk, state *core.GlobalState) (*defines.SignatureHelp, bool) {
+func getSignatureHelpAt(line, column int32, chunk *parse.ParsedChunkSource, state *core.GlobalState) (*defines.SignatureHelp, bool) {
 	if state == nil || state.SymbolicData == nil {
 		return nil, false
 	}

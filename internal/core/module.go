@@ -59,7 +59,7 @@ type Module struct {
 	//no set for modules with an in-memory sourceName
 	sourceName ResourceName
 
-	MainChunk *parse.ParsedChunk
+	MainChunk *parse.ParsedChunkSource
 
 	//inclusion imports (in top level adnd preinit block)
 
@@ -161,7 +161,7 @@ func (mod *Module) ToSymbolic() *symbolic.Module {
 
 	for k, v := range mod.InclusionStatementMap {
 		inclusionStmtMap[k] = &symbolic.IncludedChunk{
-			ParsedChunk: v.ParsedChunk,
+			ParsedChunkSource: v.ParsedChunkSource,
 		}
 	}
 
@@ -570,7 +570,7 @@ func ParseLocalIncludedFiles(mod *Module, ctx *Context, fls afs.Filesystem, reco
 // An IncludedChunk represents an Inox chunk that is included in another chunk,
 // it does not hold any state and should NOT be modified.
 type IncludedChunk struct {
-	*parse.ParsedChunk
+	*parse.ParsedChunkSource
 	IncludedChunkForest   []*IncludedChunk
 	OriginalErrors        []*parse.ParsingError
 	ParsingErrors         []Error
@@ -667,7 +667,7 @@ func ParseLocalSecondaryChunk(config LocalSecondaryChunkParsingConfig) (*Include
 	}
 
 	includedChunk := &IncludedChunk{
-		ParsedChunk: chunk,
+		ParsedChunkSource: chunk,
 	}
 
 	// add parsing errors to the included chunk

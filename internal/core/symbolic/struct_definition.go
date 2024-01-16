@@ -6,7 +6,7 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-func defineStructs(chunk *parse.ParsedChunk, statements []parse.Node, state *State) error {
+func defineStructs(chunk *parse.ParsedChunkSource, statements []parse.Node, state *State) error {
 
 	validDefinitions := predefineStructs(chunk, statements, state)
 	comptimeTypes := state.symbolicData.GetCreateComptimeTypes(chunk.Node)
@@ -133,7 +133,7 @@ type validStructDefinition struct {
 	structType *StructType
 }
 
-func predefineStructs(chunk *parse.ParsedChunk, statements []parse.Node, state *State) (defs []validStructDefinition) {
+func predefineStructs(chunk *parse.ParsedChunkSource, statements []parse.Node, state *State) (defs []validStructDefinition) {
 	structDefs := &[]validStructDefinition{}
 	comptimeTypes := state.symbolicData.GetCreateComptimeTypes(chunk.Node)
 
@@ -142,7 +142,7 @@ func predefineStructs(chunk *parse.ParsedChunk, statements []parse.Node, state *
 }
 
 func _predefineStructs(
-	chunk *parse.ParsedChunk,
+	chunk *parse.ParsedChunkSource,
 	statements []parse.Node,
 	state *State,
 
@@ -160,7 +160,7 @@ func _predefineStructs(
 		if !ok {
 			continue
 		}
-		_predefineStructs(includedChunk.ParsedChunk, includedChunk.Node.Statements, state, defs, comptimeTypes)
+		_predefineStructs(includedChunk.ParsedChunkSource, includedChunk.Node.Statements, state, defs, comptimeTypes)
 	}
 
 	for _, stmt := range statements {

@@ -14,7 +14,7 @@ type State struct {
 	parent *State //can be nil
 
 	ctx        *Context
-	chunkStack []*parse.ParsedChunk
+	chunkStack []*parse.ParsedChunkSource
 	//positions of module/chunk import statements
 	importPositions []parse.SourcePositionRange
 
@@ -68,8 +68,8 @@ type tempSymbolicGoFunctionSignature struct {
 	returnTypes []Value
 }
 
-func newSymbolicState(ctx *Context, chunk *parse.ParsedChunk) *State {
-	chunkStack := []*parse.ParsedChunk{chunk}
+func newSymbolicState(ctx *Context, chunk *parse.ParsedChunkSource) *State {
+	chunkStack := []*parse.ParsedChunkSource{chunk}
 
 	if ctx.associatedState != nil {
 		panic(errors.New("cannot create new state: passed context already has an associated state"))
@@ -100,21 +100,21 @@ func (state *State) getErrorMesssageLocationOfSpan(span parse.NodeSpan) parse.So
 	return sourcePositionStack
 }
 
-func (state *State) topChunk() *parse.ParsedChunk {
+func (state *State) topChunk() *parse.ParsedChunkSource {
 	if len(state.chunkStack) == 0 {
 		return nil
 	}
 	return state.chunkStack[0]
 }
 
-func (state *State) currentChunk() *parse.ParsedChunk {
+func (state *State) currentChunk() *parse.ParsedChunkSource {
 	if len(state.chunkStack) == 0 {
 		state.chunkStack = append(state.chunkStack, state.Module.mainChunk)
 	}
 	return state.chunkStack[len(state.chunkStack)-1]
 }
 
-func (state *State) pushChunk(chunk *parse.ParsedChunk, stmt *parse.InclusionImportStatement) {
+func (state *State) pushChunk(chunk *parse.ParsedChunkSource, stmt *parse.InclusionImportStatement) {
 	state.importPositions = append(state.importPositions, state.currentChunk().GetSourcePosition(stmt.Span))
 	state.chunkStack = append(state.chunkStack, chunk)
 }

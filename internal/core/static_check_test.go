@@ -26,7 +26,7 @@ func TestCheck(t *testing.T) {
 	// 	defer utils.AssertNoMemoryLeak(t, startMemStats, 120_000)
 	// }
 
-	mustParseCode := func(code string) (*parse.Chunk, *parse.ParsedChunk) {
+	mustParseCode := func(code string) (*parse.Chunk, *parse.ParsedChunkSource) {
 		chunk := utils.Must(parse.ParseChunkSource(parse.InMemorySource{
 			NameString: "test",
 			CodeString: code,
@@ -35,7 +35,7 @@ func TestCheck(t *testing.T) {
 		return chunk.Node, chunk
 	}
 
-	parseCode := func(code string) (*parse.Chunk, *parse.ParsedChunk, error) {
+	parseCode := func(code string) (*parse.Chunk, *parse.ParsedChunkSource, error) {
 		chunk, err := parse.ParseChunkSource(parse.InMemorySource{
 			NameString: "test",
 			CodeString: code,
@@ -47,7 +47,7 @@ func TestCheck(t *testing.T) {
 		return chunk.Node, chunk, err
 	}
 
-	makeError := func(node parse.Node, chunk *parse.ParsedChunk, s string) *StaticCheckError {
+	makeError := func(node parse.Node, chunk *parse.ParsedChunkSource, s string) *StaticCheckError {
 		return NewStaticCheckError(s, parse.SourcePositionStack{chunk.GetSourcePosition(node.Base().Span)})
 	}
 
@@ -2665,7 +2665,7 @@ func TestCheck(t *testing.T) {
 						StartColumn: 5,
 					},
 					parse.SourcePositionRange{
-						SourceName:  mod.FlattenedIncludedChunkList[0].ParsedChunk.Name(),
+						SourceName:  mod.FlattenedIncludedChunkList[0].ParsedChunkSource.Name(),
 						StartLine:   2,
 						StartColumn: 6,
 					},

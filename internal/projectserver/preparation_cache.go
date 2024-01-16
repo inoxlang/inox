@@ -94,7 +94,7 @@ type preparedFileCacheEntry struct {
 	fpath                    string
 	state                    *core.GlobalState
 	module                   *core.Module
-	chunk                    *parse.ParsedChunk
+	chunk                    *parse.ParsedChunkSource
 	lastUpdateOrInvalidation time.Time
 
 	sourceChanged atomic.Bool
@@ -172,7 +172,7 @@ func (c *preparedFileCacheEntry) clear() {
 }
 
 // update updates the cache, it is assumed that the cache entry has been locked by the caller.
-func (c *preparedFileCacheEntry) update(state *core.GlobalState, mod *core.Module, chunk *parse.ParsedChunk) {
+func (c *preparedFileCacheEntry) update(state *core.GlobalState, mod *core.Module, chunk *parse.ParsedChunkSource) {
 	logs.Println("update cache for file", c.fpath, "new length", len(mod.MainChunk.Source.Code()))
 
 	now := time.Now()

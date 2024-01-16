@@ -73,7 +73,7 @@ func (state TreeWalkState) currentChunkStackItem() *parse.ChunkStackItem {
 	}
 	return state.chunkStack[len(state.chunkStack)-1]
 }
-func (state TreeWalkState) currentChunk() *parse.ParsedChunk {
+func (state TreeWalkState) currentChunk() *parse.ParsedChunkSource {
 	return state.currentFullChunkStackItem().Chunk
 }
 
@@ -84,7 +84,7 @@ func (state TreeWalkState) currentFullChunkStackItem() *parse.ChunkStackItem {
 	return state.fullChunkStack[len(state.fullChunkStack)-1]
 }
 
-func (state *TreeWalkState) pushImportedChunk(chunk *parse.ParsedChunk, importNode *parse.InclusionImportStatement) {
+func (state *TreeWalkState) pushImportedChunk(chunk *parse.ParsedChunkSource, importNode *parse.InclusionImportStatement) {
 	state.currentFullChunkStackItem().CurrentNodeSpan = importNode.Span
 	pushedChunk := &parse.ChunkStackItem{
 		Chunk: chunk,
@@ -102,7 +102,7 @@ func (state *TreeWalkState) popImportedChunk() {
 	}
 }
 
-func (state *TreeWalkState) pushChunkOfCall(chunk *parse.ParsedChunk, callingNode parse.Node) {
+func (state *TreeWalkState) pushChunkOfCall(chunk *parse.ParsedChunkSource, callingNode parse.Node) {
 	state.currentFullChunkStackItem().CurrentNodeSpan = callingNode.Base().Span
 	pushedChunk := &parse.ChunkStackItem{
 		Chunk: chunk,
@@ -1188,7 +1188,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			panic(fmt.Errorf("cannot evaluate inclusion import statement: global state's module is nil"))
 		}
 		chunk := state.Global.Module.InclusionStatementMap[n]
-		state.pushImportedChunk(chunk.ParsedChunk, n)
+		state.pushImportedChunk(chunk.ParsedChunkSource, n)
 		defer state.popImportedChunk()
 
 		if state.debug != nil {
@@ -1196,7 +1196,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			prevChunk := state.frameInfo[frameCount-1].Chunk
 			prevName := state.frameInfo[frameCount-1].Name
 
-			state.frameInfo[frameCount-1].Chunk = chunk.ParsedChunk
+			state.frameInfo[frameCount-1].Chunk = chunk.ParsedChunkSource
 			state.frameInfo[frameCount-1].Name = chunk.Name()
 			defer func() {
 				state.frameInfo[frameCount-1].Chunk = prevChunk
@@ -1382,7 +1382,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			})
 		}
 
-		parsedChunk := &parse.ParsedChunk{
+		parsedChunk := &parse.ParsedChunkSource{
 			Node:   chunk,
 			Source: state.currentChunk().Source,
 		}
@@ -2854,7 +2854,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 
 		chunk := mod.(AstNode).Node.(*parse.Chunk)
 
-		parsedChunk := &parse.ParsedChunk{
+		parsedChunk := &parse.ParsedChunkSource{
 			Node:   chunk,
 			Source: state.currentChunk().Source,
 		}

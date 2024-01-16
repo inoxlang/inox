@@ -10,11 +10,11 @@ import (
 // An AstNode is an immutable Value wrapping an AST node.
 type AstNode struct {
 	Node  parse.Node
-	chunk *parse.ParsedChunk
+	chunk *parse.ParsedChunkSource
 }
 
 // Chunk returns the parsed chunk the node is part of.
-func (n AstNode) Chunk() *parse.ParsedChunk {
+func (n AstNode) Chunk() *parse.ParsedChunkSource {
 	return n.chunk
 }
 
