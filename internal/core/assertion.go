@@ -151,10 +151,7 @@ func (err AssertionError) stringifyNode(node parse.Node) string {
 			return "the length of " + actual
 		}
 	}
-	return parse.SPrint(node, err.testModule.MainChunk.Node, parse.PrintConfig{
-		TrimStart: true,
-		TrimEnd:   true,
-	})
+	return parse.SPrint(node, err.testModule.MainChunk.Node, parse.PrintConfig{})
 }
 
 func (err AssertionError) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig) {

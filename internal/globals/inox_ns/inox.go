@@ -300,7 +300,7 @@ func GetCheckData(fpath string, compilationCtx *core.Context, out io.Writer) map
 
 func _print_source(ctx *core.Context, arg core.AstNode) core.Str {
 	buf := bytes.Buffer{}
-	_, err := parse.Print(arg.Node, arg.Chunk().Node, &buf, parse.PrintConfig{TrimStart: true})
+	_, err := parse.Print(arg.Node, arg.Chunk().Node, &buf, parse.PrintConfig{KeepTrailingSpace: true})
 	if err != nil {
 		panic(err)
 	}

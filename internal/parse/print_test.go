@@ -505,9 +505,45 @@ func TestPrint(t *testing.T) {
 	for _, testCase := range testCases {
 		t.Run(testCase, func(t *testing.T) {
 			n, _ := ParseChunk(testCase, "")
-			s := SPrint(n, n, PrintConfig{})
+			s := SPrint(n, n, PrintConfig{KeepLeadingSpace: true, KeepTrailingSpace: true})
 			assert.Equal(t, testCase, s)
 		})
 	}
+
+	t.Run("no space kept", func(t *testing.T) {
+		n, _ := ParseChunk("a=1;b=2;c=3", "")
+		s := SPrint(n.Statements[2], n, PrintConfig{})
+		assert.Equal(t, "c=3", s)
+
+		n, _ = ParseChunk("  c=3", "")
+		s = SPrint(n, n, PrintConfig{})
+		assert.Equal(t, "c=3", s)
+
+		n, _ = ParseChunk("\nc=3", "")
+		s = SPrint(n, n, PrintConfig{})
+		assert.Equal(t, "c=3", s)
+	})
+
+	t.Run("keep leading space", func(t *testing.T) {
+		n, _ := ParseChunk("a=1;b=2;c=3", "")
+		s := SPrint(n.Statements[2], n, PrintConfig{KeepLeadingSpace: true})
+		assert.Equal(t, "        c=3", s)
+
+		n, _ = ParseChunk("  c=3", "")
+		s = SPrint(n, n, PrintConfig{KeepLeadingSpace: true})
+		assert.Equal(t, "  c=3", s)
+
+		n, _ = ParseChunk("\nc=3", "")
+		s = SPrint(n, n, PrintConfig{KeepLeadingSpace: true})
+		assert.Equal(t, "\nc=3", s)
+
+		n, _ = ParseChunk("\n c=3", "")
+		s = SPrint(n, n, PrintConfig{KeepLeadingSpace: true})
+		assert.Equal(t, "\n c=3", s)
+
+		n, _ = ParseChunk(" \nc=3", "")
+		s = SPrint(n, n, PrintConfig{KeepLeadingSpace: true})
+		assert.Equal(t, " \nc=3", s)
+	})
 
 }

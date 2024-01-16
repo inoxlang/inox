@@ -282,7 +282,7 @@ func NewPathPattern(v string) *PathPattern {
 }
 
 func NewPathPatternFromNode(n parse.Node, chunk *parse.Chunk) *PathPattern {
-	printConfig := parse.PrintConfig{TrimStart: true, TrimEnd: true}
+	printConfig := parse.PrintConfig{}
 
 	return &PathPattern{
 		node:            n,
@@ -483,7 +483,7 @@ func NewUrlPattern(v string) *URLPattern {
 }
 
 func NewUrlPatternFromNode(n parse.Node, chunk *parse.Chunk) *URLPattern {
-	printConfig := parse.PrintConfig{TrimStart: true, TrimEnd: true}
+	printConfig := parse.PrintConfig{KeepLeadingSpace: true, KeepTrailingSpace: true}
 	return &URLPattern{
 		node:            n,
 		stringifiedNode: parse.SPrint(n, chunk, printConfig),
@@ -644,7 +644,7 @@ func NewHostPattern(v string) *HostPattern {
 }
 
 func NewHostPatternFromNode(n parse.Node, chunk *parse.Chunk) *HostPattern {
-	printConfig := parse.PrintConfig{TrimStart: true, TrimEnd: true}
+	printConfig := parse.PrintConfig{}
 	return &HostPattern{
 		node:            n,
 		stringifiedNode: parse.SPrint(n, chunk, printConfig),

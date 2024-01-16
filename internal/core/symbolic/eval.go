@@ -4275,7 +4275,7 @@ func evalDictionaryLiteral(n *parse.DictionaryLiteral, state *State, options eva
 	}
 
 	for _, entry := range n.Entries {
-		keyRepr := parse.SPrint(entry.Key, state.currentChunk().Node, parse.PrintConfig{TrimStart: true})
+		keyRepr := parse.SPrint(entry.Key, state.currentChunk().Node, parse.PrintConfig{})
 
 		expectedEntryValue, _ := expectedDictionary.get(keyRepr)
 		deeperMismatch := false

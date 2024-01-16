@@ -295,7 +295,7 @@ func NewSequenceStringPattern(node *parse.ComplexStringPatternPiece, chunk *pars
 	if node != nil {
 		var elements []string
 		for _, e := range node.Elements {
-			elements = append(elements, parse.SPrint(e, chunk, parse.PrintConfig{TrimStart: true, TrimEnd: true}))
+			elements = append(elements, parse.SPrint(e, chunk, parse.PrintConfig{}))
 		}
 		stringifiedNode = strings.Join(elements, " ")
 	}

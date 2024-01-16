@@ -1247,7 +1247,7 @@ func handleDoubleColonExpressionCompletions(n *parse.DoubleColonExpression, sear
 				var kind defines.CompletionItemKind
 				if propExpr.Method == nil {
 					kind = defines.CompletionItemKindProperty
-					printConfig := parse.PrintConfig{TrimStart: true, TrimEnd: true}
+					printConfig := parse.PrintConfig{}
 					labelDetail = "computed property(" + parse.SPrint(propExpr.Expression, chunk.Node, printConfig) + ")"
 				} else {
 					kind = defines.CompletionItemKindMethod
