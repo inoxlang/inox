@@ -89,19 +89,19 @@ functional:
       output: 'true'
       standalone: true
 
-  - topic: sort
-    text: >
-      The sort function creates a new list by sorting a list of strings or integers, the second argument is an identifier describing
-      the order. For strings the available orderings are `#lex` (lexicographic) and `#revlex` (same but reversed). For integers the available
-      orderings are `#asc` (ascending) and `#desc` (descending).
-    examples:
-    - code: 'sort([2, 1], #asc)'
-      output: '[1, 2]'
-      standalone: true
+  # - topic: sort
+  #   text: >
+  #     The sort function creates a new list by sorting a list of strings or integers, the second argument is an identifier describing
+  #     the order. For strings the available orderings are `#lex` (lexicographic) and `#revlex` (same but reversed). For integers the available
+  #     orderings are `#asc` (ascending) and `#desc` (descending).
+  #   examples:
+  #   - code: 'sort([2, 1], #asc)'
+  #     output: '[1, 2]'
+  #     standalone: true
 
-    - code: 'sort(["b", "a"], #lex)'
-      output: '["a", "b"]'
-      standalone: true
+  #   - code: 'sort(["b", "a"], #lex)'
+  #     output: '["a", "b"]'
+  #     standalone: true
 
   - topic: find
     text: The find function searches for items matching a pattern at a given location (a string, an iterable, a directory)

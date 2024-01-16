@@ -334,6 +334,8 @@ func (list *List) Prop(name string) Value {
 		return WrapGoMethod(list.Append)
 	case "pop":
 		return WrapGoMethod(list.Pop)
+	case "sorted":
+		return WrapGoMethod(list.Sorted)
 	default:
 		panic(FormatErrPropertyDoesNotExist(name, list))
 	}
@@ -590,6 +592,49 @@ func (l *List) Pop(ctx *Context) Serializable {
 		return l.elementAt(l.KnownLen() - 1).(Serializable)
 	}
 	return l.element().(Serializable)
+}
+
+func (l *List) Sorted(ctx *Context, order *Identifier) *List {
+	if l.HasKnownLen() && l.KnownLen() == 0 {
+		return l
+	}
+
+	orderOk := true
+	if !order.HasConcreteName() {
+		orderOk = false
+		ctx.AddSymbolicGoFunctionError("invalid order identifier")
+	}
+
+	switch MergeValuesWithSameStaticTypeInMultivalue(l.IteratorElementValue()).(type) {
+	case *Int:
+
+		if orderOk {
+			switch order.Name() {
+			case "asc", "desc":
+			default:
+				ctx.AddFormattedSymbolicGoFunctionError("invalid order '%s' for integers, use #asc or #desc", order.Name())
+			}
+		}
+
+	case StringLike:
+
+		if orderOk {
+			switch order.Name() {
+			case "lex", "revlex":
+			default:
+				ctx.AddFormattedSymbolicGoFunctionError("invalid order '%s' for strings, use #lex or #revlex", order.Name())
+			}
+		}
+
+	default:
+		ctx.AddSymbolicGoFunctionError("list should contains only integers or only strings")
+	}
+
+	if l.HasKnownLen() {
+		return NewListOf(l.element().(Serializable))
+	}
+
+	return l
 }
 
 func (l *List) WatcherElement() Value {

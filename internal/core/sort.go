@@ -5,67 +5,21 @@ import (
 	"slices"
 	"sort"
 
-	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
-func init() {
-	RegisterSymbolicGoFunctions([]any{
-		Sort, func(ctx *symbolic.Context, list *symbolic.List, order *symbolic.Identifier) *symbolic.List {
-			if list.HasKnownLen() && list.KnownLen() == 0 {
-				return list
-			}
+func (l *List) Sorted(ctx *Context, order Identifier) *List {
+	const ERR_PREFIX = "sorted:"
 
-			orderOk := true
-			if !order.HasConcreteName() {
-				orderOk = false
-				ctx.AddSymbolicGoFunctionError("invalid order identifier")
-			}
-
-			switch list.IteratorElementValue().(type) {
-			case *symbolic.Int:
-
-				if orderOk {
-					switch order.Name() {
-					case "asc", "desc":
-					default:
-						ctx.AddFormattedSymbolicGoFunctionError("invalid order '%s' for integers, use #asc or #desc", order.Name())
-					}
-				}
-
-			case symbolic.StringLike:
-
-				if orderOk {
-					switch order.Name() {
-					case "lex", "revlex":
-					default:
-						ctx.AddFormattedSymbolicGoFunctionError("invalid order '%s' for strings, use #lex or #revlex", order.Name())
-					}
-				}
-
-			default:
-				ctx.AddSymbolicGoFunctionError("list should contains only integers or only strings")
-			}
-
-			return list
-		},
-	})
-
-}
-
-// TODO: support any iterable
-func Sort(ctx *Context, list *List, order Identifier) *List {
-	const ERR_PREFIX = "sort:"
-
-	if list.Len() <= 1 {
-		return NewWrappedValueListFrom(list.GetOrBuildElements(ctx))
+	if l.Len() <= 1 {
+		return NewWrappedValueListFrom(l.GetOrBuildElements(ctx))
 	}
 
-	elements := list.GetOrBuildElements(ctx)
+	elements := l.GetOrBuildElements(ctx)
 
 	switch firstElem := elements[0].(type) {
 	case StringLike:
-		strings := make([]string, list.Len())
+		strings := make([]string, l.Len())
 		for i, e := range elements {
 			s, ok := e.(StringLike)
 			if !ok {
@@ -88,7 +42,7 @@ func Sort(ctx *Context, list *List, order Identifier) *List {
 			return Str(s)
 		}))
 	case Int:
-		ints := make([]Int, list.Len())
+		ints := make([]Int, l.Len())
 		for i, e := range elements {
 			integer, ok := e.(Int)
 			if !ok {

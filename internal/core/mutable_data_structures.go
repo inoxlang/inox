@@ -832,6 +832,8 @@ func (l *List) Prop(ctx *Context, name string) Value {
 		return WrapGoMethod(l.append)
 	case "pop":
 		return WrapGoMethod(l.Pop)
+	case "sorted":
+		return WrapGoMethod(l.Sorted)
 	default:
 		panic(FormatErrPropertyDoesNotExist(name, l))
 	}

@@ -673,43 +673,7 @@ none([0, 1, 2], @($ < 0))
 # output: 
 true
 ```
-### sort
 
-The sort function creates a new list by sorting a list of strings or integers, the second argument is an identifier describing the order. For strings the available orderings are `#lex` (lexicographic) and `#revlex` (same but reversed). For integers the available orderings are `#asc` (ascending) and `#desc` (descending).
-
-**examples**
-
-```inox
-sort([2, 1], #asc)
-# output: 
-[1, 2]
-```
-```inox
-sort(["b", "a"], #lex)
-# output: 
-["a", "b"]
-```
-### find
-
-The find function searches for items matching a pattern at a given location (a string, an iterable, a directory).
-
-**examples**
-
-```inox
-find %`a+` "a-aa-aaa"
-# output: 
-["a", "aa", "aaa"]
-```
-```inox
-find %./**/*.json ./
-# output: 
-[./file.json, ./dir/file.json, ./dir/dir/.file.json]
-```
-```inox
-find %int ['1', 2, "3"]
-# output: 
-[2]
-```
 ### idt
 
 The idt (identity) function takes a single argument and returns it.

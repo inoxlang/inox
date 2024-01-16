@@ -17,7 +17,6 @@ func registerHelp() {
 		globalnames.NONE_FN:        core.None,
 		globalnames.RAND_FN:        _rand,
 		globalnames.FIND_FN:        _find,
-		globalnames.SORT_FN:        core.Sort,
 
 		//resource manipulation
 		globalnames.CREATE_FN: _createResource,
