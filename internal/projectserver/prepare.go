@@ -70,7 +70,7 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 	//we avoid locking the session data
 	if sessionData.lock.TryLock() || sessionData.lock.TryLock() {
 		if sessionData.preparedSourceFilesCache == nil {
-			sessionData.preparedSourceFilesCache = NewPreparedFileCache()
+			sessionData.preparedSourceFilesCache = newPreparedFileCache()
 		}
 		cache := sessionData.preparedSourceFilesCache
 		sessionData.lock.Unlock()

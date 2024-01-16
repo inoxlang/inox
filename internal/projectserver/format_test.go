@@ -526,7 +526,7 @@ func TestFormat(t *testing.T) {
 			CodeString: strings.Join(testCase[0], "\n"),
 		}))
 
-		formatted := format(chunk, defines.FormattingOptions{})
+		formatted := formatInoxChunk(chunk, defines.FormattingOptions{})
 		assert.Equal(t, strings.Join(testCase[1], "\n"), formatted)
 	}
 }

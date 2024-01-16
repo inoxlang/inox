@@ -17,6 +17,7 @@ import (
 	"github.com/inoxlang/inox/internal/utils"
 )
 
+// getHoverContent gets hover content for a specific position in an Inox code file.
 func getHoverContent(fpath string, line, column int32, handlingCtx *core.Context, session *jsonrpc.Session) (*defines.Hover, error) {
 	state, _, chunk, cachedOrGotCache, ok := prepareSourceFileInExtractionMode(handlingCtx, filePreparationParams{
 		fpath:                              fpath,

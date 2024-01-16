@@ -150,6 +150,8 @@ func launchDebuggedProgram(args debuggedProgramLaunch) {
 	}
 }
 
+// readLogLevelSettings converts loosely-typed log level settings from the launch arguments
+// to a core.LogLevels.
 func readLogLevelSettings(launchArgs DebugLaunchArgs) (*core.LogLevels, error) {
 	const (
 		DEFAULT_FIELD               = "default"

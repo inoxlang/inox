@@ -12,6 +12,8 @@ import (
 	"github.com/inoxlang/inox/internal/utils"
 )
 
+// notifyDiagnostics prepares a source file, constructs a list of defines.Diagnostic from errors at different phases
+// (parsing, static check, and symbolic evaluation) and notifies the LSP client (textDocument/publishDiagnostics).
 func notifyDiagnostics(session *jsonrpc.Session, docURI defines.DocumentUri, usingInoxFS bool, fls *Filesystem) error {
 	sessionCtx := session.Context()
 	ctx := sessionCtx.BoundChildWithOptions(core.BoundChildContextOptions{

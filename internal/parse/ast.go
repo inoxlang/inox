@@ -24,8 +24,8 @@ type Node interface {
 }
 
 type NodeSpan struct {
-	Start int32 `json:"start"`
-	End   int32 `json:"end"` //exclusive
+	Start int32 `json:"start"` //0-indexed
+	End   int32 `json:"end"`   //exclusive end, 0-indexed
 }
 
 func (s NodeSpan) HasPositionEndIncluded(i int32) bool {

@@ -5,6 +5,7 @@ import (
 	"github.com/inoxlang/inox/internal/projectserver/lsp/defines"
 )
 
+// rangeToLspRange converts a position range (1-indexed) to a LSP range (0-indexed).
 func rangeToLspRange(r parse.SourcePositionRange) defines.Range {
 	return defines.Range{
 		Start: defines.Position{
@@ -39,6 +40,7 @@ func getPositionInPositionStackOrFirst(positions parse.SourcePositionStack, fpat
 	return positions[0]
 }
 
+// getLineColumn returns 1-indexed line and column from a LSP position (0-indexed).
 func getLineColumn(pos defines.Position) (int32, int32) {
 	line := int32(pos.Line + 1)
 	column := int32(pos.Character + 1)

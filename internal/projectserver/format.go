@@ -9,7 +9,7 @@ import (
 	"github.com/inoxlang/inox/internal/projectserver/lsp/defines"
 )
 
-func format(chunk *parse.ParsedChunk, options defines.FormattingOptions) (result string) {
+func formatInoxChunk(chunk *parse.ParsedChunk, options defines.FormattingOptions) (result string) {
 	code := slices.Clone(chunk.Runes())
 
 	defer func() {

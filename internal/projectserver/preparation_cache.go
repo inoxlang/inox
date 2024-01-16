@@ -16,7 +16,8 @@ const (
 )
 
 var (
-	preparedFileCaches     = map[*preparedFileCache]struct{}{} //only used to clear unused caches
+	//Used to clear unused caches. A cache is removed when its corresponding LSP session ends.
+	preparedFileCaches     = map[*preparedFileCache]struct{}{}
 	preparedFileCachesLock sync.Mutex
 
 	cacheClearingGoroutineStarted atomic.Bool
@@ -27,12 +28,15 @@ func init() {
 	go clearUnusedCachePeriodically()
 }
 
+// preparedFileCache contains prepared file cache entries for a single LSP session.
 type preparedFileCache struct {
 	lock    sync.RWMutex
-	entries map[string] /* fpath */ *preparedFileCacheEntry
+	entries map[ /* fpath */ string]*preparedFileCacheEntry
 }
 
-func NewPreparedFileCache() *preparedFileCache {
+// newPreparedFileCache creates a new *newPreparedFileCache and puts in the
+// global preparedFileCaches map.
+func newPreparedFileCache() *preparedFileCache {
 	cache := &preparedFileCache{
 		entries: map[string]*preparedFileCacheEntry{},
 	}
@@ -51,7 +55,7 @@ func (c *preparedFileCache) getOrCreate(fpath string) (_ *preparedFileCacheEntry
 	entry, ok := c.entries[fpath]
 	if !ok {
 		ok = true
-		entry = newPreparedFileCache(fpath)
+		entry = newPreparedFileCacheEntry(fpath)
 		c.entries[fpath] = entry
 	}
 	return entry, ok
@@ -97,7 +101,7 @@ type preparedFileCacheEntry struct {
 	lastAccess    atomic.Value //time.Time
 }
 
-func newPreparedFileCache(fpath string) *preparedFileCacheEntry {
+func newPreparedFileCacheEntry(fpath string) *preparedFileCacheEntry {
 	cache := &preparedFileCacheEntry{
 		fpath: fpath,
 	}

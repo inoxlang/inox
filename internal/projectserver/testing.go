@@ -20,7 +20,11 @@ type TestRun struct {
 
 type TestRunId string
 
-func testFileAsync(path string, filters core.TestFilters, session *jsonrpc.Session) (TestFileResponse, error) {
+// testModuleAsync creates a goroutine that executes the module at $path in testing mode, testModuleAsync immediately returns
+// without waiting for the tests to finish. The goroutine notifies the LSP client with TEST_RUN_FINISHED_METHOD when it is done.
+// testModuleAsync should NOT be called while the session data is locked because it acquires the lock in order to
+// store the testRunId in additionalSessionData.testRuns.
+func testModuleAsync(path string, filters core.TestFilters, session *jsonrpc.Session) (TestFileResponse, error) {
 
 	fls, ok := getLspFilesystem(session)
 	if !ok {

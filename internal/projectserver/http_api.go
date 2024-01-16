@@ -26,7 +26,7 @@ const (
 )
 
 // serverAPI stores the API of a FS-routing HTTP Server.
-// It is primarilyt used for code completions.
+// It is primarilyt used for code completion.
 type serverAPI struct {
 	lock     sync.Mutex
 	debounce func(f func())

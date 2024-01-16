@@ -23,6 +23,9 @@ var (
 	projectEditionStatesLock sync.Mutex
 )
 
+// There is one projectEditionState per open project. For now the primary use of projectEditionState
+// is enabling multipart file upload. Parallel editing will be implemented using this struct by
+// tracking the state of all the files being edited in a project.
 type projectEditionState struct {
 	lock sync.Mutex
 

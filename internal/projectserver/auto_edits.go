@@ -8,8 +8,7 @@ import (
 	"github.com/inoxlang/inox/internal/projectserver/lsp/defines"
 )
 
-var ()
-
+// getAutoEditForChange determines a text edit to immediately apply based on a change made by the user.
 func getAutoEditForChange(documentText string, replacement string, rangeStart, rangeExclusiveEnd int32) (edit defines.TextEdit, hasEdit bool) {
 	chunk, _ := parse.ParseChunkSource(parse.InMemorySource{
 		NameString: "script",

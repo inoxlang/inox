@@ -12,6 +12,7 @@ import (
 	"github.com/inoxlang/inox/internal/utils"
 )
 
+// getCompletions gets the completions for a specific position in an Inox code file.
 func getCompletions(fpath string, line, column int32, session *jsonrpc.Session) []codecompletion.Completion {
 	sessionData := getLockedSessionData(session)
 

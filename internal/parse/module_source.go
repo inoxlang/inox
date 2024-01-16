@@ -323,10 +323,10 @@ func (c *ParsedChunk) EstimatedIndentationUnit() string {
 
 type SourcePositionRange struct {
 	SourceName  string   `json:"sourceName"`
-	StartLine   int32    `json:"line"`
-	StartColumn int32    `json:"column"`
-	EndLine     int32    `json:"endLine"`
-	EndColumn   int32    `json:"endColumn"`
+	StartLine   int32    `json:"line"`      //1-indexed
+	StartColumn int32    `json:"column"`    //1-indexed
+	EndLine     int32    `json:"endLine"`   //1-indexed
+	EndColumn   int32    `json:"endColumn"` //1-indexed
 	Span        NodeSpan `json:"span"`
 }
 
