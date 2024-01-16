@@ -1,7 +1,8 @@
 # Parse Package
 
+This package implements the parsing of Inox code files and provides functions/methods to find nodes and print ASTs.
 
-## Most Relevant files
+## Most Relevant Files
 
 - [ast.go](./ast.go)
 	- AST Node types
@@ -20,7 +21,7 @@
 - [parse_chunk.go](./parse_chunk.go) - chunk parsing logic
 - [parse_expression.go](./parse_expression.go) - main expression parsing logic
 - [parse_statement.go](./parse_statement.go) - main statement parsing logic
-- [parse.go](./parse.go) - all other parsing logic (> 9k SLOC)
+- [parse.go](./parse.go) - all other parsing logic (> 8k SLOC)
 - [parse_test.go](./parse_test.go)
 
 
@@ -36,7 +37,7 @@ type parser struct {
 
 	tokens []Token
 
-    // ... other fields
+	// ... other fields
 }
 ```
 
@@ -58,11 +59,11 @@ The complete 'true' list of tokens is not returned by parsing functions
 
 ```go
 type Chunk struct {
-    //mostly valueless tokens, sorted by position (ascending).
+	//Mostly valueless tokens, sorted by position (ascending).
 	//EmbeddedModule nodes hold references to subslices of .Tokens.
 	Tokens []Token
 
-    // ... other fields
+	// ... other fields
 }
 ```
 
