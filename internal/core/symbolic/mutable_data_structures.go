@@ -336,6 +336,8 @@ func (list *List) Prop(name string) Value {
 		return WrapGoMethod(list.Pop)
 	case "sorted":
 		return WrapGoMethod(list.Sorted)
+	case "len":
+		return ANY_INT
 	default:
 		panic(FormatErrPropertyDoesNotExist(name, list))
 	}
