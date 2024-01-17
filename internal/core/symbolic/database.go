@@ -404,7 +404,7 @@ func (db *DatabaseIL) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.Pre
 	db.schema.PrettyPrint(w, config)
 }
 
-func getValueAtURL(u *URL, state *State) (Serializable, error) {
+func GetValueAtURL(u *URL, state *State) (Serializable, error) {
 	if !u.hasValue && (u.pattern == nil || !u.pattern.hasValue) {
 		return nil, errors.New("URL is not specific enough")
 	}
