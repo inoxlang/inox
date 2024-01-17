@@ -11115,7 +11115,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return rec([ [ [], [] ], [ [], [] ]])
 			`
 			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
-				"map": WrapGoFunction(Map),
+				"map": WrapGoFunction(MapIterable),
 			})
 			defer state.Ctx.CancelGracefully()
 
@@ -11143,7 +11143,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return isolated
 			`
 			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
-				"map": WrapGoFunction(Map),
+				"map": WrapGoFunction(MapIterable),
 			})
 			defer state.Ctx.CancelGracefully()
 
@@ -11182,7 +11182,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return obj.isolated
 			`
 			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
-				"map": WrapGoFunction(Map),
+				"map": WrapGoFunction(MapIterable),
 			})
 			defer state.Ctx.CancelGracefully()
 

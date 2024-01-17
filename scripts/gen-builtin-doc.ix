@@ -50,7 +50,7 @@ fn fmt_topic_markdown(topic leaf-topic-data, is_leaf bool){
         examples = (concat ""
             "\n**examples**\n\n"
 
-            ...map((topic.?examples ?? []), fn(example example) str { # todo: return type should not be necessary
+            ...map_iterable((topic.?examples ?? []), fn(example example) str { # todo: return type should not be necessary
                 code = example.?code
                 if code? {
                     code = strmanip.trim_space(code)

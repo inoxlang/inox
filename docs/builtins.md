@@ -559,32 +559,32 @@ fs.get_tree_data(./)
 
 ### map
 
-The map function creates a list by applying an operation on each element of an iterable.
+The map_iterable function creates a list by applying an operation on each element of an iterable.
 
 **examples**
 
 ```inox
-map([{name: "foo"}], .name)
+map_iterable([{name: "foo"}], .name)
 # output: 
 ["foo"]
 ```
 ```inox
-map([{a: 1, b: 2, c: 3}], .{a,b})
+map_iterable([{a: 1, b: 2, c: 3}], .{a,b})
 # output: 
 [{a: 1, b: 2}]
 ```
 ```inox
-map([0, 1, 2], Mapping{0 => "0" 1 => "1"})
+map_iterable([0, 1, 2], Mapping{0 => "0" 1 => "1"})
 # output: 
 ["0", "1", nil]
 ```
 ```inox
-map([97, 98, 99], torune)
+map_iterable([97, 98, 99], torune)
 # output: 
 ['a', 'b', 'c']
 ```
 ```inox
-map([0, 1, 2], @($ + 1))
+map_iterable([0, 1, 2], @($ + 1))
 # output: 
 [1, 2, 3]
 ```

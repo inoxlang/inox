@@ -359,7 +359,7 @@ func (dyn *DynamicValue) Resolve(ctx *Context) Value {
 	case dynMapInvoc:
 		if dyn.opResult == nil {
 			//TODO: this can be quite long and could cause the dynamic value to be locked a long time, try lazy mapping ?
-			dyn.opResult = Map(ctx, dyn.value.(Iterable), dyn.opData0)
+			dyn.opResult = MapIterable(ctx, dyn.value.(Iterable), dyn.opData0)
 		}
 		return dyn.opResult
 	case dynIf, dynCall:

@@ -53,7 +53,7 @@ func TestShell(t *testing.T) {
 			sh.runLoop()
 		}()
 
-		_, err := in.Write([]byte("idt [{title: \"hello\"}] | map ~$ .title\n"))
+		_, err := in.Write([]byte("idt [{title: \"hello\"}] | map_iterable ~$ .title\n"))
 		assert.NoError(t, err)
 
 		time.Sleep(time.Second / 10)

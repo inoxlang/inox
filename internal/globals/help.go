@@ -9,14 +9,14 @@ import (
 func registerHelp() {
 	help.RegisterHelpValues(map[string]any{
 		//functional
-		globalnames.MAP_FN:         core.Map,
-		globalnames.FILTER_FN:      core.Filter,
-		globalnames.GET_AT_MOST_FN: core.GetAtMost,
-		globalnames.SOME_FN:        core.Some,
-		globalnames.ALL_FN:         core.All,
-		globalnames.NONE_FN:        core.None,
-		globalnames.RAND_FN:        _rand,
-		globalnames.FIND_FN:        _find,
+		globalnames.MAP_ITERABLE_FN: core.MapIterable,
+		globalnames.FILTER_FN:       core.Filter,
+		globalnames.GET_AT_MOST_FN:  core.GetAtMost,
+		globalnames.SOME_FN:         core.Some,
+		globalnames.ALL_FN:          core.All,
+		globalnames.NONE_FN:         core.None,
+		globalnames.RAND_FN:         _rand,
+		globalnames.FIND_FN:         _find,
 
 		//resource manipulation
 		globalnames.CREATE_FN: _createResource,

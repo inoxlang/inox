@@ -3315,7 +3315,7 @@ func TestCheck(t *testing.T) {
 
 		t.Run("as argument", func(t *testing.T) {
 			n, src := mustParseCode(`map ~$ .title`)
-			globals := GlobalVariablesFromMap(map[string]Value{"map": ValOf(Map)}, nil)
+			globals := GlobalVariablesFromMap(map[string]Value{"map": ValOf(MapIterable)}, nil)
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src, Globals: globals}))
 		})
 

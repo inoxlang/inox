@@ -909,7 +909,7 @@ returned by functions, not file descriptors.
 Here is an example:
 
 ```
-map [{value: "a"}, {value: 1}] .value | filter $ %int
+map_iterable [{value: "a"}, {value: 1}] .value | filter $ %int
 ```
 
 - in the first call we extract the .value property of several objects using the
@@ -921,7 +921,7 @@ map [{value: "a"}, {value: 1}] .value | filter $ %int
 Pipe expressions allow you to store the final result in a variable:
 
 ```
-ints = | map [{value: "a"}, {value: 1}] .value | filter $ %int
+ints = | map_iterable [{value: "a"}, {value: 1}] .value | filter $ %int
 ```
 
 # Functions
@@ -1793,6 +1793,8 @@ There are also **embedded** module kinds:
 - `testsuite`
 - `testcase`
 - `lifetimejob`
+
+[Issue discussing new module kinds](https://github.com/inoxlang/inox/issues/38).
 
 Each module runs in a dedicated Golang **goroutine**.
 

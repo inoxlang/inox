@@ -31,11 +31,11 @@ func TestMap(t *testing.T) {
 		mapper := PropertyName("name")
 
 		obj := NewObjectFromMap(ValMap{"name": Str("a")}, ctx)
-		result := Map(ctx, NewWrappedValueList(obj), mapper)
+		result := MapIterable(ctx, NewWrappedValueList(obj), mapper)
 		assert.Equal(t, NewWrappedValueList(Str("a")), result)
 
 		fileInfo := FileInfo{BaseName_: "file.txt"}
-		result = Map(ctx, NewWrappedValueList(fileInfo), mapper)
+		result = MapIterable(ctx, NewWrappedValueList(fileInfo), mapper)
 		assert.Equal(t, NewWrappedValueList(Str("file.txt")), result)
 	})
 
@@ -49,13 +49,13 @@ func TestMap(t *testing.T) {
 		mapper := KeyList{"name"}
 
 		obj := NewObjectFromMap(ValMap{"name": Str("a")}, ctx)
-		result := Map(ctx, NewWrappedValueList(obj), mapper)
+		result := MapIterable(ctx, NewWrappedValueList(obj), mapper)
 		assert.Equal(t, NewWrappedValueList(objFrom(ValMap{
 			"name": Str("a"),
 		})), result)
 
 		fileInfo := FileInfo{BaseName_: "file.txt"}
-		result = Map(ctx, NewWrappedValueList(fileInfo), mapper)
+		result = MapIterable(ctx, NewWrappedValueList(fileInfo), mapper)
 		assert.Equal(t, NewWrappedValueList(objFrom(ValMap{
 			"name": Str("file.txt"),
 		})), result)

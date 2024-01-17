@@ -268,22 +268,22 @@ user1_posts = filter(posts, @($.userId == 1.0))
 
 ### Extract
 
-The **map** function creates a list by applying an operation on each element of an iterable.
+The **map_iterable** function creates a list by applying an operation on each element of an iterable.
 Let's call this function to extract the content of each post:
 ```
-contents = map(user1_posts, .body)
+contents = map_iterable(user1_posts, .body)
 ```
 
 Note: **.body** is a property name literal
 
 We can extract several fields of the post by using a **key list**:
 ```
-post_data = map(user1_posts, .{id, body, title})
+post_data = map_iterable(user1_posts, .{id, body, title})
 ```
 
 Lazy expressions are another alternative here:
 ```
-post_data = map(user1_posts, @({ 
+post_data = map_iterable(user1_posts, @({ 
     id: $.id
     title: $.title
     body: $.body
@@ -329,7 +329,7 @@ posts = read!(POSTS_URL)
 assert (posts match iterable)
 
 user1_posts = filter(posts, %{userId: 1.0})
-post_data = map(user1_posts, .{id, body, title})
+post_data = map_iterable(user1_posts, .{id, body, title})
 
 # we group the lthreads together
 request_group = LThreadGroup()
@@ -354,7 +354,7 @@ assert (posts match iterable)
 
 user1_posts = filter(posts, %{userId: 1.0})
 
-post_data = map(user1_posts, .{id, body, title})
+post_data = map_iterable(user1_posts, .{id, body, title})
 ```
 
 We can get rid of the **user1_posts** variable by using a [pipeline statement](./language-reference.md#pipe-statement):
@@ -362,6 +362,6 @@ We can get rid of the **user1_posts** variable by using a [pipeline statement](.
 posts = read!(POSTS_URL)
 assert (posts match iterable)
 
-post_data = | filter $posts %{userId: 1.0} | map $ .{id, body, title}
+post_data = | filter $posts %{userId: 1.0} | map_iterable $ .{id, body, title}
 ```
 ℹ️ In pipeline statements **$** holds the result of the previous call.

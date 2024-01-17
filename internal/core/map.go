@@ -11,7 +11,7 @@ func init() {
 	var MAP_PARAM_NAMES = []string{"iterable", "mapper"}
 
 	RegisterSymbolicGoFunctions([]any{
-		Map, func(ctx *symbolic.Context, iterable symbolic.Iterable, mapper symbolic.Value) *symbolic.List {
+		MapIterable, func(ctx *symbolic.Context, iterable symbolic.Iterable, mapper symbolic.Value) *symbolic.List {
 
 			paramType := symbolic.MergeValuesWithSameStaticTypeInMultivalue(iterable.IteratorElementValue())
 
@@ -65,8 +65,8 @@ func init() {
 
 }
 
-// Map is the value of the 'map' global.
-func Map(ctx *Context, iterable Iterable, mapper Value) *List {
+// MapIterable is the value of the 'map' global.
+func MapIterable(ctx *Context, iterable Iterable, mapper Value) *List {
 	result := ValueList{}
 
 	//TODO: check that mapper has no side effects

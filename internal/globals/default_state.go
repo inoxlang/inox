@@ -287,15 +287,15 @@ func NewDefaultGlobalState(ctx *core.Context, conf core.DefaultGlobalStateConfig
 		globalnames.UUIDv4_FN: core.ValOf(_UUIDV4),
 
 		// functional
-		globalnames.IDENTITY_FN:    core.WrapGoFunction(_idt),
-		globalnames.MAP_FN:         core.WrapGoFunction(core.Map),
-		globalnames.FILTER_FN:      core.WrapGoFunction(core.Filter),
-		globalnames.GET_AT_MOST_FN: core.WrapGoFunction(core.GetAtMost),
-		globalnames.SOME_FN:        core.WrapGoFunction(core.Some),
-		globalnames.ALL_FN:         core.WrapGoFunction(core.All),
-		globalnames.NONE_FN:        core.WrapGoFunction(core.None),
-		globalnames.REPLACE_FN:     core.WrapGoFunction(_replace),
-		globalnames.FIND_FN:        core.WrapGoFunction(_find),
+		globalnames.IDENTITY_FN:     core.WrapGoFunction(_idt),
+		globalnames.MAP_ITERABLE_FN: core.WrapGoFunction(core.MapIterable),
+		globalnames.FILTER_FN:       core.WrapGoFunction(core.Filter),
+		globalnames.GET_AT_MOST_FN:  core.WrapGoFunction(core.GetAtMost),
+		globalnames.SOME_FN:         core.WrapGoFunction(core.Some),
+		globalnames.ALL_FN:          core.WrapGoFunction(core.All),
+		globalnames.NONE_FN:         core.WrapGoFunction(core.None),
+		globalnames.REPLACE_FN:      core.WrapGoFunction(_replace),
+		globalnames.FIND_FN:         core.WrapGoFunction(_find),
 
 		// concurrency & execution
 		globalnames.LTHREADGROUP_FN: core.ValOf(core.NewLThreadGroup),

@@ -6,7 +6,7 @@ users = [
 ]
 
 
-names = map!(users, .name)
+names = map_iterable!(users, .name)
 names = filter!(names, @($ == "Foo"))
 
 print(names)

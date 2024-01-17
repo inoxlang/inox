@@ -87,10 +87,10 @@ Pipe statements are analogous to pipes in Unix but they operate on the values re
 Here is an example:
 
 ```
-map [{value: "a"}, {value: 1}] .value | filter $ %int
+map_iterable [{value: "a"}, {value: 1}] .value | filter $ %int
 ```
 
-- in the first call we extract the .value property of several objects using the `map` function
+- in the first call we extract the .value property of several objects using the `map_iterable` function
 - in the second call we filter the result of the previous call
   - `$` is an anonymous variable that contains the result of the previous call
   - `%int` is a pattern matching integers
@@ -98,7 +98,7 @@ map [{value: "a"}, {value: 1}] .value | filter $ %int
 
 Pipe expressions enable you to save the final result into a variable:
 ```
-ints = | map [{value: "a"}, {value: 1}] .value | filter $ %int
+ints = | map_iterable [{value: "a"}, {value: 1}] .value | filter $ %int
 ```
 
 > You can add '~' in front of **$** if you want to postpone the [type checking](#type-checker) at runtime.
@@ -117,7 +117,7 @@ help find
 The type checker performs various checks before the input code is executed, allowing you to quickly catch errors.
 
 ```
-> map 1 .name
+> map_iterable 1 .name
 
 check(symbolic): shell-input:1:5: : invalid value for argument at position 0: type is %int, but %iterable was expected
 ```
@@ -126,14 +126,14 @@ This is convenient, but there are many cases where you **don't** want such stric
 Let's say you are executing the following command:
 
 ```
-read https://jsonplaceholder.typicode.com/posts | map $ .title
+read https://jsonplaceholder.typicode.com/posts | map_iterable $ .title
 ```
 
 The type checker will complain that `$` is not an %iterable, that's pretty annoying.
 You can postpone the type check of this argument at runtime by prefixing it with '~'.
 
 ```
-read https://jsonplaceholder.typicode.com/posts | map ~$ .title
+read https://jsonplaceholder.typicode.com/posts | map_iterable ~$ .title
 ```
 
 Note: '~' can be added in front of any expression that is an argument in a call.
