@@ -259,6 +259,10 @@ func ParseNextJSONRepresentation(ctx *Context, it *jsoniter.Iterator, pattern Pa
 			return parseHostPatternJSONRepresentation(ctx, it, try)
 		case URLPATTERN_PATTERN:
 			return parseURLPatternJSONRepresentation(ctx, it, try)
+		case PROPNAME_PATTERN:
+			return parsePropNameJSONRepresentation(ctx, it, try)
+		case LONG_VALUEPATH_PATTERN:
+			return parseLongValuePathJSONRepresentation(ctx, it, try)
 		case ANYVAL_PATTERN, SERIALIZABLE_PATTERN:
 			return ParseNextJSONRepresentation(ctx, it, nil, try)
 		default:
@@ -875,6 +879,65 @@ func parseURLPatternJSONRepresentation(ctx *Context, it *jsoniter.Iterator, try 
 	}
 
 	return URLPattern(it.ReadString()), nil
+}
+
+func parsePropNameJSONRepresentation(ctx *Context, it *jsoniter.Iterator, try bool) (_ PropertyName, finalErr error) {
+	if it.WhatIsNext() != jsoniter.StringValue {
+		if try {
+			return "", ErrTriedToParseJSONRepr
+		}
+		return "", ErrJsonNotMatchingSchema
+	}
+
+	name := PropertyName(it.ReadString())
+	if err := name.Validate(); err != nil {
+		return "", err
+	}
+	return name, nil
+}
+
+func parseLongValuePathJSONRepresentation(ctx *Context, it *jsoniter.Iterator, try bool) (_ *LongValuePath, finalErr error) {
+	if it.WhatIsNext() != jsoniter.ArrayValue {
+		if try {
+			return nil, ErrTriedToParseJSONRepr
+		}
+		return nil, ErrJsonNotMatchingSchema
+	}
+
+	var segments []ValuePathSegment
+	index := -1
+
+	it.ReadArrayCB(func(i *jsoniter.Iterator) bool {
+		index++
+
+		val, err := ParseNextJSONRepresentation(ctx, it, nil, try)
+		if err != nil {
+			if try {
+				finalErr = ErrTriedToParseJSONRepr
+				return false
+			}
+
+			finalErr = fmt.Errorf("failed to parse segment of long value path (index %d): %w", index, err)
+			return false
+		}
+		segment, ok := val.(ValuePathSegment)
+		if !ok {
+			finalErr = fmt.Errorf("unexpected non-segment value in long value path (index %d)", index)
+			return false
+		}
+		segments = append(segments, segment)
+		return true
+	})
+
+	if finalErr != nil {
+		return nil, finalErr
+	}
+
+	p := LongValuePath(segments)
+	if err := p.Validate(); err != nil {
+		return nil, err
+	}
+	return &p, nil
 }
 
 func parseSameTypeListJSONRepr[T any](

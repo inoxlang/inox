@@ -422,6 +422,49 @@ func TestParseJSONRepresentation(t *testing.T) {
 			assert.Equal(t, URLPattern("https://example.com/..."), v)
 		}
 	})
+
+	t.Run("property names", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
+		v, err := ParseJSONRepresentation(ctx, `{"propname__value":"len"}`, nil)
+		if assert.NoError(t, err) {
+			assert.Equal(t, PropertyName("len"), v)
+		}
+
+		v, err = ParseJSONRepresentation(ctx, `"len"`, PROPNAME_PATTERN)
+		if assert.NoError(t, err) {
+			assert.Equal(t, PropertyName("len"), v)
+		}
+
+		_, err = ParseJSONRepresentation(ctx, `""`, PROPNAME_PATTERN)
+		assert.ErrorIs(t, err, ErrEmptyPropertyName)
+
+		_, err = ParseJSONRepresentation(ctx, `" "`, PROPNAME_PATTERN)
+		assert.ErrorIs(t, err, ErrUnexpectedCharsInPropertyName)
+	})
+
+	t.Run("long value-paths", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
+		v, err := ParseJSONRepresentation(ctx, `{"long-value-path__value":[{"propname__value":"name"}, {"propname__value":"len"}]}`, nil)
+		if assert.NoError(t, err) {
+			assert.Equal(t, NewLongValuePath([]ValuePathSegment{PropertyName("name"), PropertyName("len")}), v)
+		}
+
+		v, err = ParseJSONRepresentation(ctx, `[{"propname__value":"name"}, {"propname__value":"len"}]`, LONG_VALUEPATH_PATTERN)
+		if assert.NoError(t, err) {
+			assert.Equal(t, NewLongValuePath([]ValuePathSegment{PropertyName("name"), PropertyName("len")}), v)
+		}
+
+		_, err = ParseJSONRepresentation(ctx, `[]`, LONG_VALUEPATH_PATTERN)
+		assert.ErrorIs(t, err, ErrEmptyLongValuePath)
+
+		_, err = ParseJSONRepresentation(ctx, `[{"propname__value":"name"}]`, LONG_VALUEPATH_PATTERN)
+		assert.ErrorIs(t, err, ErrSingleSegmentLongValuePath)
+	})
+
 	t.Run("objects", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()

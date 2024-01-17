@@ -2,9 +2,16 @@ package core
 
 import (
 	"errors"
+
+	"github.com/inoxlang/inox/internal/parse"
 )
 
 var (
+	ErrEmptyPropertyName             = errors.New("empty property name")
+	ErrUnexpectedCharsInPropertyName = errors.New("unexpected char(s) in property name")
+	ErrEmptyLongValuePath            = errors.New("empty long value-path")
+	ErrSingleSegmentLongValuePath    = errors.New("single-segment value-path")
+
 	_ = []ValuePath{PropertyName("x"), &LongValuePath{}}
 	_ = []ValuePathSegment{PropertyName("x")}
 )
@@ -29,6 +36,19 @@ func (n PropertyName) UnderlyingString() string {
 	return string(n)
 }
 
+func (n PropertyName) Validate() error {
+	if n == "" {
+		return ErrEmptyPropertyName
+	}
+
+	for _, r := range n {
+		if !parse.IsIdentChar(r) {
+			return ErrUnexpectedCharsInPropertyName
+		}
+	}
+	return nil
+}
+
 func (n PropertyName) GetFrom(ctx *Context, v Value) Value {
 	return v.(IProps).Prop(ctx, string(n))
 }
@@ -46,6 +66,16 @@ func NewLongValuePath(segments []ValuePathSegment) *LongValuePath {
 	}
 	p := LongValuePath(segments)
 	return &p
+}
+
+func (p *LongValuePath) Validate() error {
+	switch len(*p) {
+	case 0:
+		return ErrEmptyLongValuePath
+	case 1:
+		return ErrSingleSegmentLongValuePath
+	}
+	return nil
 }
 
 func (p *LongValuePath) GetFrom(ctx *Context, v Value) Value {
