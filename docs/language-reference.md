@@ -484,6 +484,41 @@ other_list = [1, ...list]
 
 Lists are **clonable** (see [Data Sharing](#data-sharing)).
 
+### Methods
+
+- **append** 
+    ```
+    list.append(1)
+    list.append(1, 2, 3)
+    ```
+
+- **pop** 
+    ```
+    list = [1, 2]
+    removed_element = list.pop() # 2
+    ```
+
+- **dequeue** 
+    ```
+    list = [1, 2]
+    removed_element = list.dequeue() # 1
+    ```
+- **sorted** 
+    ```
+    list = [3, 2, 1]
+
+    # [1, 2, 3]
+    sorted = l.sorted(#asc)
+    ```
+- **sort_by** 
+    ```
+    list = [{count: 2}, {count: 1}]
+    list.sort_by(.count, #asc)
+
+    # [{count: 1}, {count: 2}]
+    list
+    ```
+
 ## Objects
 
 An object is a serializable data structure containing properties, each property has a name
@@ -2464,6 +2499,9 @@ for friend in user.friends {
     # load the friend's name by using the URL in a double-colon expression:
     name = friend::name
     print(name)
+
+    # the friend's object can be loaded using the built-in get function:
+    loaded_friend = get!(friend)
 }
 ```
 
