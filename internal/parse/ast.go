@@ -1123,6 +1123,27 @@ func (PropertyNameLiteral) Kind() NodeKind {
 	return Expr
 }
 
+type LongValuePathLiteral struct {
+	NodeBase
+	Segments []SimpleValueLiteral
+}
+
+func (l LongValuePathLiteral) ValueString() string {
+	buf := bytes.Buffer{}
+
+	for _, segment := range l.Segments {
+		buf.WriteString(segment.ValueString())
+	}
+
+	return buf.String()
+}
+
+func (LongValuePathLiteral) Kind() NodeKind {
+	return Expr
+}
+
+//TODO: add ValueIndexLiteral
+
 type SelfExpression struct {
 	NodeBase
 }
@@ -2957,6 +2978,10 @@ func walk(node, parent Node, ancestorChain *[]Node, fn, afterFn NodeHandler) {
 	case *ExtendStatement:
 		walk(n.ExtendedPattern, node, ancestorChain, fn, afterFn)
 		walk(n.Extension, node, ancestorChain, fn, afterFn)
+	case *LongValuePathLiteral:
+		for _, segment := range n.Segments {
+			walk(segment, node, ancestorChain, fn, afterFn)
+		}
 	}
 
 	if afterFn != nil {

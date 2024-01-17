@@ -2278,6 +2278,82 @@ func testParse(
 		}, n)
 	})
 
+	t.Run("long value path literal", func(t *testing.T) {
+		t.Run("2 property names", func(t *testing.T) {
+			n := mustparseChunk(t, ".a.b")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 4}, nil, false},
+				Statements: []Node{
+					&LongValuePathLiteral{
+						NodeBase: NodeBase{NodeSpan{0, 4}, nil, false},
+						Segments: []SimpleValueLiteral{
+							&PropertyNameLiteral{
+								NodeBase: NodeBase{NodeSpan{0, 2}, nil, false},
+								Name:     "a",
+							},
+							&PropertyNameLiteral{
+								NodeBase: NodeBase{NodeSpan{2, 4}, nil, false},
+								Name:     "b",
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("3 property names", func(t *testing.T) {
+			n := mustparseChunk(t, ".a.b.c")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 6}, nil, false},
+				Statements: []Node{
+					&LongValuePathLiteral{
+						NodeBase: NodeBase{NodeSpan{0, 6}, nil, false},
+						Segments: []SimpleValueLiteral{
+							&PropertyNameLiteral{
+								NodeBase: NodeBase{NodeSpan{0, 2}, nil, false},
+								Name:     "a",
+							},
+							&PropertyNameLiteral{
+								NodeBase: NodeBase{NodeSpan{2, 4}, nil, false},
+								Name:     "b",
+							},
+							&PropertyNameLiteral{
+								NodeBase: NodeBase{NodeSpan{4, 6}, nil, false},
+								Name:     "c",
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("unterminated", func(t *testing.T) {
+			n, err := parseChunk(t, ".a.", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 3}, nil, false},
+				Statements: []Node{
+					&LongValuePathLiteral{
+						NodeBase: NodeBase{NodeSpan{0, 3}, nil, false},
+						Segments: []SimpleValueLiteral{
+							&PropertyNameLiteral{
+								NodeBase: NodeBase{NodeSpan{0, 2}, nil, false},
+								Name:     "a",
+							},
+							&PropertyNameLiteral{
+								NodeBase: NodeBase{
+									NodeSpan{2, 3},
+									&ParsingError{UnspecifiedParsingError, UNTERMINATED_VALUE_PATH_LITERAL},
+									false,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+	})
+
 	t.Run("flag literal", func(t *testing.T) {
 		t.Run("single hyphen followed by a single letter", func(t *testing.T) {
 			n := mustparseChunk(t, "-a")

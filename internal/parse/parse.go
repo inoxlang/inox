@@ -813,7 +813,7 @@ func (p *parser) parseDotStartingExpression() Node {
 		switch p.s[p.i+1] {
 		case '{':
 			return p.parseKeyList()
-		case '.':
+		case '.': //upper bound range expression.
 			start := p.i
 			p.i += 2
 
@@ -838,21 +838,7 @@ func (p *parser) parseDotStartingExpression() Node {
 		default:
 			r := p.s[p.i+1]
 			if IsIdentChar(r) && !isDecDigit(r) {
-				start := p.i
-
-				p.i++
-				for p.i < p.len && IsIdentChar(p.s[p.i]) {
-					p.i++
-				}
-
-				return &PropertyNameLiteral{
-					NodeBase: NodeBase{
-						NodeSpan{start, p.i},
-						nil,
-						false,
-					},
-					Name: string(p.s[start+1 : p.i]),
-				}
+				return p.parseValuePathLiteral()
 			}
 		}
 	}
@@ -10213,6 +10199,53 @@ loop:
 	structInit.NodeBase.Span.End = p.i
 
 	return structInit
+}
+
+func (p *parser) parseValuePathLiteral() Node {
+
+	var firstSegment SimpleValueLiteral
+	var segments []SimpleValueLiteral
+
+	for p.i < p.len && p.s[p.i] == '.' {
+		start := p.i
+		p.i++
+
+		for p.i < p.len && IsIdentChar(p.s[p.i]) {
+			p.i++
+		}
+
+		node := &PropertyNameLiteral{
+			NodeBase: NodeBase{Span: NodeSpan{start, p.i}},
+			Name:     string(p.s[start+1 : p.i]),
+		}
+
+		if node.Name == "" {
+			node.Err = &ParsingError{UnspecifiedParsingError, UNTERMINATED_VALUE_PATH_LITERAL}
+		}
+
+		if firstSegment == nil {
+			firstSegment = node
+		} else {
+			segments = append(segments, node)
+		}
+	}
+
+	if len(segments) == 0 {
+		return firstSegment
+	}
+
+	segments = append(segments, nil)
+	copy(segments[1:], segments[:len(segments)-1])
+	segments[0] = firstSegment
+
+	start := firstSegment.Base().Span.Start
+	end := segments[len(segments)-1].Base().Span.End
+	return &LongValuePathLiteral{
+		NodeBase: NodeBase{
+			Span: NodeSpan{start, end},
+		},
+		Segments: segments,
+	}
 }
 
 func isKeyword(str string) bool {

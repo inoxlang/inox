@@ -476,6 +476,9 @@ const (
 	//struct initalization literal
 	ONLY_FIELD_INIT_PAIRS_ALLOWED  = "only field initialization pairs are allowed"
 	MISSING_COLON_AFTER_FIELD_NAME = "missing colon after field name"
+
+	//value path literals
+	UNTERMINATED_VALUE_PATH_LITERAL = "unterminated value path literal"
 )
 
 func fmtInvalidRegexLiteral(err string) string {
