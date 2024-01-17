@@ -1531,6 +1531,10 @@ func getDatabaseConfigurations(v Value, parentState *GlobalState) (DatabaseConfi
 				switch val := propVal.(type) {
 				case *ObjectPattern:
 					config.ExpectedSchema = val
+					err := checkDatabaseSchema(val)
+					if err != nil {
+						return err
+					}
 				default:
 					return fmt.Errorf("invalid value found for the .%s of a database description", MANIFEST_DATABASE__ASSERT_SCHEMA_UPDATE_PROP_NAME)
 				}

@@ -874,6 +874,26 @@ func TestPreInit(t *testing.T) {
 			},
 		},
 		{
+			name: "correct database with invalid assert_schema",
+			module: `
+				preinit {
+					pattern expected-schema = %{
+						user: str # no loading function
+					}
+				}
+				manifest {
+					databases: {
+						main: {
+							resource: ldb://main
+							resolution-data: nil
+							assert-schema: %expected-schema
+						}
+					}
+				}`,
+			error:   true,
+			errorIs: ErrNoLoadFreeEntityFnRegistered,
+		},
+		{
 			name: "database_with_invalid_resource",
 			module: `manifest {
 					databases: {
