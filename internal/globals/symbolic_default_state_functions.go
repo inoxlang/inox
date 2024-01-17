@@ -302,6 +302,14 @@ func init() {
 			}
 			return symbolic.NewListOf(symbolic.ANY_STR)
 		},
+		_get, func(ctx *symbolic.Context, url *symbolic.URL) (symbolic.Serializable, *symbolic.Error) {
+			v, err := symbolic.GetValueAtURL(url, ctx.EvalState())
+			if err != nil {
+				ctx.AddSymbolicGoFunctionError(err.Error())
+				return symbolic.ANY_SERIALIZABLE, nil
+			}
+			return v, nil
+		},
 	})
 
 }

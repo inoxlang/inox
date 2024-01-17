@@ -138,6 +138,7 @@ const (
 	ADD_CTX_DATA_FN = "add_ctx_data"
 	CTX_DATA_FN     = "ctx_data"
 	PROPNAMES_FN    = "propnames"
+	GET_FN          = "get"
 
 	ARRAY_FN = "Array"
 	LIST_FN  = "List"

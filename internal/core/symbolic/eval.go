@@ -5338,7 +5338,7 @@ func evalDoubleColonExpression(n *parse.DoubleColonExpression, state *State, opt
 	case isLeftURL && url.hasValue:
 		//resolve
 
-		valAtURL, err := getValueAtURL(url, state)
+		valAtURL, err := GetValueAtURL(url, state)
 		if err != nil {
 			state.addError(makeSymbolicEvalError(n.Left, state, err.Error()))
 			return ANY_SERIALIZABLE, nil

@@ -48,6 +48,10 @@ func NewSymbolicContext(startingConcreteContext, concreteContext ConcreteContext
 	}
 }
 
+func (ctx *Context) EvalState() *State {
+	return ctx.associatedState
+}
+
 func (ctx *Context) AddHostAlias(name string, val *Host, ignoreError bool) {
 	_, ok := ctx.hostAliases[name]
 	if ok && !ignoreError {

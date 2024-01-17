@@ -517,7 +517,7 @@ func (db *DatabaseIL) Close(ctx *Context) error {
 	return db.inner.Close(ctx)
 }
 
-func getOrLoadValueAtURL(ctx *Context, u URL, state *GlobalState) (Serializable, error) {
+func GetOrLoadValueAtURL(ctx *Context, u URL, state *GlobalState) (Serializable, error) {
 	if !strings.HasPrefix(string(u), inoxconsts.LDB_SCHEME_NAME+"://") {
 		return nil, fmt.Errorf("only URLs with the scheme %s:// are supported for now", inoxconsts.LDB_SCHEME_NAME)
 	}

@@ -320,6 +320,7 @@ func NewDefaultGlobalState(ctx *core.Context, conf core.DefaultGlobalStateConfig
 		globalnames.ADD_CTX_DATA_FN: core.ValOf(_add_ctx_data),
 		globalnames.CTX_DATA_FN:     core.ValOf(_ctx_data),
 		globalnames.PROPNAMES_FN:    core.WrapGoFunction(_propnames),
+		globalnames.GET_FN:          core.WrapGoFunction(_get),
 
 		globalnames.ARRAY_FN: core.ValOf(core.NewArray),
 		globalnames.LIST_FN:  core.ValOf(_List),

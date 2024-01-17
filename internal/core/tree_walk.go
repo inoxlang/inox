@@ -2216,7 +2216,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 				panic(ErrUnreachable)
 			}
 
-			value, err := getOrLoadValueAtURL(state.Global.Ctx, url, state.Global)
+			value, err := GetOrLoadValueAtURL(state.Global.Ctx, url, state.Global)
 			if err != nil {
 				return nil, err
 			}

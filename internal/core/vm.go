@@ -2541,7 +2541,7 @@ func (v *VM) handleOtherOpcodes(op byte) (_continue bool) {
 	case OpLoadDBVal:
 		url := v.stack[v.sp-1].(URL)
 
-		value, err := getOrLoadValueAtURL(v.global.Ctx, url, v.global)
+		value, err := GetOrLoadValueAtURL(v.global.Ctx, url, v.global)
 		if err != nil {
 			v.err = err
 			return

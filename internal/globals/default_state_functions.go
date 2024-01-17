@@ -427,3 +427,8 @@ func _propnames(ctx *core.Context, val core.Value) *core.List {
 	values := utils.MapSlice(props, func(s string) core.Serializable { return core.Str(s) })
 	return core.NewWrappedValueListFrom(values)
 }
+
+func _get(ctx *core.Context, u core.URL) (core.Serializable, error) {
+	state := ctx.GetClosestState()
+	return core.GetOrLoadValueAtURL(ctx, u, state)
+}
