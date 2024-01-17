@@ -85,7 +85,7 @@ func (n *PropertyName) GetFrom(v Value) (Value, bool, error) {
 	}
 
 	if slices.Contains(iprops.PropertyNames(), n.name) {
-		return optionalIprops.Prop(n.name), true, nil
+		return iprops.Prop(n.name), true, nil
 	}
 
 	return nil, false, nil
