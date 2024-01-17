@@ -1099,6 +1099,8 @@ func parseListJSONrepresentation(ctx *Context, it *jsoniter.Iterator, pattern *L
 		return NewWrappedValueList(elements...), nil
 	} else {
 		generalElementPattern := pattern.generalElementPattern
+		//TODO: store floats in a FloatList.
+
 		if _, isIntRangePattern := generalElementPattern.(*IntRangePattern); isIntRangePattern || generalElementPattern == INT_PATTERN {
 			elements := parseSameTypeListJSONRepr[Int](ctx, it, pattern, try, &finalErr)
 			if finalErr != nil {

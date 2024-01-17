@@ -338,6 +338,8 @@ func (list *List) Prop(name string) Value {
 		return WrapGoMethod(list.Pop)
 	case "sorted":
 		return WrapGoMethod(list.Sorted)
+	case "sort_by":
+		return WrapGoMethod(list.SortBy)
 	case "len":
 		return ANY_INT
 	default:
@@ -612,40 +614,44 @@ func (l *List) Pop(ctx *Context) Serializable {
 	return l.element().(Serializable)
 }
 
-func (l *List) Sorted(ctx *Context, order *Identifier) *List {
+func (l *List) Sorted(ctx *Context, orderIdent *Identifier) *List {
 	if l.HasKnownLen() && l.KnownLen() == 0 {
 		return l
 	}
 
-	orderOk := true
-	if !order.HasConcreteName() {
-		orderOk = false
+	if !orderIdent.HasConcreteName() {
 		ctx.AddSymbolicGoFunctionError("invalid order identifier")
+		return l
+	}
+
+	order, ok := OrderFromString(orderIdent.Name())
+	if !ok {
+		ctx.AddSymbolicGoFunctionErrorf("unknown order %q", orderIdent.Name())
+		return l
 	}
 
 	switch MergeValuesWithSameStaticTypeInMultivalue(l.IteratorElementValue()).(type) {
 	case *Int:
-
-		if orderOk {
-			switch order.Name() {
-			case "asc", "desc":
-			default:
-				ctx.AddFormattedSymbolicGoFunctionError("invalid order '%s' for integers, use #asc or #desc", order.Name())
-			}
+		switch order {
+		case AscendingOrder, DescendingOrder:
+		default:
+			ctx.AddFormattedSymbolicGoFunctionError("invalid order '%s' for integers, use #asc or #desc", orderIdent.Name())
 		}
 
+	case *Float:
+		switch order {
+		case AscendingOrder, DescendingOrder:
+		default:
+			ctx.AddFormattedSymbolicGoFunctionError("invalid order '%s' for floats, use #asc or #desc", orderIdent.Name())
+		}
 	case StringLike:
-
-		if orderOk {
-			switch order.Name() {
-			case "lex", "revlex":
-			default:
-				ctx.AddFormattedSymbolicGoFunctionError("invalid order '%s' for strings, use #lex or #revlex", order.Name())
-			}
+		switch order {
+		case LexicographicOrder, ReverseLexicographicOrder:
+		default:
+			ctx.AddFormattedSymbolicGoFunctionError("invalid order '%s' for strings, use #lex or #revlex", orderIdent.Name())
 		}
-
 	default:
-		ctx.AddSymbolicGoFunctionError("list should contains only integers or only strings")
+		ctx.AddSymbolicGoFunctionError("list should contain only integers, only floats or only strings")
 	}
 
 	if l.HasKnownLen() {
@@ -653,6 +659,61 @@ func (l *List) Sorted(ctx *Context, order *Identifier) *List {
 	}
 
 	return l
+}
+
+func (l *List) SortBy(ctx *Context, valuePath ValuePath, orderIdent *Identifier) {
+	if l.HasKnownLen() && l.KnownLen() == 0 {
+		return
+	}
+
+	if !orderIdent.HasConcreteName() {
+		ctx.AddSymbolicGoFunctionError("invalid order identifier")
+		return
+	}
+
+	order, ok := OrderFromString(orderIdent.Name())
+	if !ok {
+		ctx.AddSymbolicGoFunctionErrorf("unknown order %q", orderIdent.Name())
+		return
+	}
+
+	elem := MergeValuesWithSameStaticTypeInMultivalue(l.element())
+
+	v, alwaysPresent, err := valuePath.GetFrom(elem)
+	if err != nil {
+		ctx.AddSymbolicGoFunctionError("invalid value path")
+		return
+	}
+
+	if !alwaysPresent {
+		ctx.AddSymbolicGoFunctionError("sorting value is not necessarily present for all elements")
+	}
+
+	switch MergeValuesWithSameStaticTypeInMultivalue(v).(type) {
+	case *Int:
+		switch order {
+		case AscendingOrder, DescendingOrder:
+		default:
+			ctx.AddFormattedSymbolicGoFunctionError("invalid order '%s' for integers, use #asc or #desc", orderIdent.Name())
+		}
+	case *Float:
+		switch order {
+		case AscendingOrder, DescendingOrder:
+		default:
+			ctx.AddFormattedSymbolicGoFunctionError("invalid order '%s' for floats, use #asc or #desc", orderIdent.Name())
+		}
+	case StringLike:
+		ctx.AddSymbolicGoFunctionError("sorting by a nested string is not supported yet")
+		// switch order {
+		// case LexicographicOrder, ReverseLexicographicOrder:
+		// default:
+		// 	ctx.AddFormattedSymbolicGoFunctionError("invalid order '%s' for strings, use #lex or #revlex", orderIdent.Name())
+		// }
+	default:
+		ctx.AddSymbolicGoFunctionError("sorting values should be only integers, only floats or only strings")
+	}
+
+	ctx.SetUpdatedSelf(NewListOf(l.element().(Serializable)))
 }
 
 func (l *List) WatcherElement() Value {

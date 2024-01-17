@@ -710,7 +710,7 @@ func (list *ValueList) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, d
 	PrettyPrintList(list, w, config, depth, parentIndentCount)
 }
 
-func (list *IntList) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (list *NumberList[T]) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 	PrettyPrintList(list, w, config, depth, parentIndentCount)
 }
 
@@ -1659,7 +1659,7 @@ func (it *ValueListIterator) PrettyPrint(w *bufio.Writer, config *PrettyPrintCon
 	InspectPrint(w, it)
 }
 
-func (it *IntListIterator) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (it *NumberListIterator[T]) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, it)
 }
 

@@ -5,6 +5,7 @@ import (
 
 	"github.com/bits-and-blooms/bitset"
 	"github.com/inoxlang/inox/internal/utils"
+	"golang.org/x/exp/constraints"
 )
 
 const (
@@ -147,11 +148,17 @@ func (l *ValueList) appendSequence(ctx *Context, seq Sequence) {
 	l.insertSequence(ctx, seq, Int(l.Len()))
 }
 
-// IntList implements underlyingList
-type IntList struct {
-	elements     []Int
+// NumberList implements underlyingList
+type NumberList[T interface {
+	constraints.Integer | constraints.Float
+	Serializable
+}] struct {
+	elements     []T
 	constraintId ConstraintId
 }
+
+type IntList = NumberList[Int]
+type FloatList = NumberList[Float]
 
 func NewWrappedIntList(elements ...Int) *List {
 	return &List{underlyingList: newIntList(elements...)}
@@ -165,78 +172,90 @@ func newIntList(elements ...Int) *IntList {
 	return &IntList{elements: elements}
 }
 
-func (list *IntList) ConstraintId() ConstraintId {
+func NewWrappedFloatList(elements ...Float) *List {
+	return &List{underlyingList: newFloatList(elements...)}
+}
+
+func NewWrappedFloatListFrom(elements []Float) *List {
+	return &List{underlyingList: &FloatList{elements: elements}}
+}
+
+func newFloatList(elements ...Float) *FloatList {
+	return &FloatList{elements: elements}
+}
+
+func (list *NumberList[T]) ConstraintId() ConstraintId {
 	return list.constraintId
 }
 
-func (list *IntList) ContainsSimple(ctx *Context, v Serializable) bool {
+func (list *NumberList[T]) ContainsSimple(ctx *Context, v Serializable) bool {
 	if !IsSimpleInoxVal(v) {
 		panic("only simple values are expected")
 	}
 
-	integer, ok := v.(Int)
+	number, ok := v.(T)
 	if !ok {
 		return false
 	}
 
 	for _, n := range list.elements {
-		if n == integer {
+		if n == number {
 			return true
 		}
 	}
 	return false
 }
 
-func (list *IntList) set(ctx *Context, i int, v Value) {
-	list.elements[i] = v.(Int)
+func (list *NumberList[T]) set(ctx *Context, i int, v Value) {
+	list.elements[i] = v.(T)
 }
 
-func (list *IntList) SetSlice(ctx *Context, start, end int, seq Sequence) {
+func (list *NumberList[T]) SetSlice(ctx *Context, start, end int, seq Sequence) {
 	if seq.Len() != end-start {
 		panic(errors.New(FormatIndexableShouldHaveLen(end - start)))
 	}
 
 	for i := start; i < end; i++ {
-		list.elements[i] = seq.At(ctx, i-start).(Int)
+		list.elements[i] = seq.At(ctx, i-start).(T)
 	}
 }
 
-func (list *IntList) slice(start, end int) Sequence {
-	sliceCopy := make([]Int, end-start)
+func (list *NumberList[T]) slice(start, end int) Sequence {
+	sliceCopy := make([]T, end-start)
 	copy(sliceCopy, list.elements[start:end])
 
-	return &List{underlyingList: &IntList{elements: sliceCopy}}
+	return &List{underlyingList: &NumberList[T]{elements: sliceCopy}}
 }
 
-func (list *IntList) Len() int {
+func (list *NumberList[T]) Len() int {
 	return len(list.elements)
 }
 
-func (list *IntList) At(ctx *Context, i int) Value {
+func (list *NumberList[T]) At(ctx *Context, i int) Value {
 	return list.elements[i]
 }
 
-func (list *IntList) append(ctx *Context, values ...Serializable) {
+func (list *NumberList[T]) append(ctx *Context, values ...Serializable) {
 	for _, val := range values {
-		list.elements = append(list.elements, val.(Int))
+		list.elements = append(list.elements, val.(T))
 	}
 }
 
-func (l *IntList) insertElement(ctx *Context, v Value, i Int) {
+func (l *NumberList[T]) insertElement(ctx *Context, v Value, i Int) {
 	length := Int(l.Len())
 	if i < 0 || i > length {
 		panic(ErrInsertionIndexOutOfRange)
 	}
 	if i == length {
-		l.elements = append(l.elements, v.(Int))
+		l.elements = append(l.elements, v.(T))
 	} else {
 		l.elements = append(l.elements, 0)
 		copy(l.elements[i+1:], l.elements[i:])
-		l.elements[i] = v.(Int)
+		l.elements[i] = v.(T)
 	}
 }
 
-func (l *IntList) removePosition(ctx *Context, i Int) {
+func (l *NumberList[T]) removePosition(ctx *Context, i Int) {
 	if int(i) != len(l.elements)-1 {
 		copy(l.elements[i:], l.elements[i+1:])
 	}
@@ -244,7 +263,7 @@ func (l *IntList) removePosition(ctx *Context, i Int) {
 	l.elements = utils.ShrinkSliceIfWastedCapacity(l.elements, MIN_SHRINKABLE_LIST_LENGTH, LIST_SHRINK_DIVIDER)
 }
 
-func (l *IntList) removePositionRange(ctx *Context, r IntRange) {
+func (l *NumberList[T]) removePositionRange(ctx *Context, r IntRange) {
 	end := int(r.InclusiveEnd())
 	start := int(r.start)
 
@@ -255,14 +274,14 @@ func (l *IntList) removePositionRange(ctx *Context, r IntRange) {
 	l.elements = utils.ShrinkSliceIfWastedCapacity(l.elements, MIN_SHRINKABLE_LIST_LENGTH, LIST_SHRINK_DIVIDER)
 }
 
-func (l *IntList) insertSequence(ctx *Context, seq Sequence, i Int) {
+func (l *NumberList[T]) insertSequence(ctx *Context, seq Sequence, i Int) {
 	seqLen := seq.Len()
 	if seqLen == 0 {
 		return
 	}
 
 	if cap(l.elements)-len(l.elements) < seqLen {
-		newSlice := make([]Int, len(l.elements)+seqLen)
+		newSlice := make([]T, len(l.elements)+seqLen)
 		copy(newSlice, l.elements)
 		l.elements = newSlice
 	} else {
@@ -272,11 +291,11 @@ func (l *IntList) insertSequence(ctx *Context, seq Sequence, i Int) {
 	copy(l.elements[int(i)+seqLen:], l.elements[i:])
 
 	for ind := 0; ind < seqLen; ind++ {
-		l.elements[int(i)+ind] = seq.At(ctx, ind).(Int)
+		l.elements[int(i)+ind] = seq.At(ctx, ind).(T)
 	}
 }
 
-func (l *IntList) appendSequence(ctx *Context, seq Sequence) {
+func (l *NumberList[T]) appendSequence(ctx *Context, seq Sequence) {
 	l.insertSequence(ctx, seq, Int(l.Len()))
 }
 

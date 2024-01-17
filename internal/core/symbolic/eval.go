@@ -66,6 +66,7 @@ var (
 	STR_PATTERN_ELEMENT_INTERFACE_TYPE = reflect.TypeOf((*StringPattern)(nil)).Elem()
 	FORMAT_INTERFACE_TYPE              = reflect.TypeOf((*Format)(nil)).Elem()
 	IN_MEM_SNAPSHOTABLE                = reflect.TypeOf((*InMemorySnapshotable)(nil)).Elem()
+	VALUEPATH_INTERFACE_TYPE           = reflect.TypeOf((*ValuePath)(nil)).Elem()
 
 	OPTIONAL_PARAM_TYPE = reflect.TypeOf((*optionalParam)(nil)).Elem()
 
@@ -6121,6 +6122,8 @@ func converTypeToSymbolicValue(t reflect.Type, allowOptionalParam bool) (result 
 		result = ANY_IN_MEM_SNAPSHOTABLE
 	case STRLIKE_INTERFACE_TYPE:
 		result = ANY_STR_LIKE
+	case VALUEPATH_INTERFACE_TYPE:
+		result = ANY_VALUE_PATH
 	default:
 		return nil, false, err
 	}

@@ -593,8 +593,18 @@ func (l *ValueList) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbol
 	return symbolic.NewListOf(symbolic.ANY_SERIALIZABLE), nil
 }
 
-func (l *IntList) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
-	return symbolic.NewListOf(symbolic.ANY_INT), nil
+func (l *NumberList[N]) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
+	var sym symbolic.Serializable
+	var n N
+	switch any(n).(type) {
+	case Int:
+		sym = symbolic.ANY_INT
+	case Float:
+		sym = symbolic.ANY_FLOAT
+	default:
+		panic(ErrUnreachable)
+	}
+	return symbolic.NewListOf(sym), nil
 }
 
 func (l *BoolList) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
@@ -1328,7 +1338,7 @@ func (it *ValueListIterator) ToSymbolicValue(ctx *Context, encountered map[uintp
 	return &symbolic.Iterator{}, nil
 }
 
-func (it *IntListIterator) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
+func (it *NumberListIterator[T]) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return &symbolic.Iterator{}, nil
 }
 

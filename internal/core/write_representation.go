@@ -513,7 +513,7 @@ func (list *ValueList) WriteRepresentation(ctx *Context, w io.Writer, config *Re
 	return err
 }
 
-func (list *IntList) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
+func (list *NumberList[T]) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	_, err := w.Write([]byte{'['})
 	if err != nil {
 		return err

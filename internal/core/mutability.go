@@ -70,7 +70,7 @@ func (list *ValueList) IsMutable() bool {
 	return true
 }
 
-func (list *IntList) IsMutable() bool {
+func (list *NumberList[T]) IsMutable() bool {
 	return true
 }
 
@@ -436,7 +436,7 @@ func (it *ValueListIterator) IsMutable() bool {
 	return true
 }
 
-func (it *IntListIterator) IsMutable() bool {
+func (it *NumberListIterator[T]) IsMutable() bool {
 	return true
 }
 

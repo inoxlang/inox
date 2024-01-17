@@ -167,6 +167,16 @@ func _intCompare[I constraints.Integer](i I, other I) int {
 	return 1
 }
 
+func _negatedIntCompare[I constraints.Integer](i I, other I) int {
+	if i < other {
+		return 1
+	}
+	if i == other {
+		return 0
+	}
+	return -1
+}
+
 func float64Compare[F ~float64](f F, other Value) (result int, comparable bool) {
 	otherFloat, ok := other.(F)
 	if !ok ||
@@ -186,6 +196,28 @@ func float64Compare[F ~float64](f F, other Value) (result int, comparable bool) 
 		return //0
 	}
 	result = 1
+	return
+}
+
+func negatedFloat64Compare[F ~float64](f F, other Value) (result int, comparable bool) {
+	otherFloat, ok := other.(F)
+	if !ok ||
+		math.IsNaN(float64(f)) ||
+		math.IsNaN(float64(otherFloat)) ||
+		math.IsInf(float64(f), 0) ||
+		math.IsInf(float64(otherFloat), 0) {
+		//not comparable
+		return
+	}
+	comparable = true
+	if f < otherFloat {
+		result = 1
+		return
+	}
+	if f == otherFloat {
+		return //0
+	}
+	result = -1
 	return
 }
 

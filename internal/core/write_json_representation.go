@@ -315,7 +315,7 @@ func (list *ValueList) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream,
 	return write(w)
 }
 
-func (list *IntList) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+func (list *NumberList[T]) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	listPattern, _ := config.Pattern.(*ListPattern)
 
 	write := func(w *jsoniter.Stream) error {

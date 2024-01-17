@@ -374,6 +374,13 @@ func createBestSuitedList(ctx *Context, values []Serializable, elemType Pattern)
 			}
 			return WrapUnderlyingList(&IntList{elements: integers})
 		}
+		if t.Type == FLOAT64_TYPE {
+			integers := make([]Float, len(values))
+			for i, e := range values {
+				integers[i] = e.(Float)
+			}
+			return WrapUnderlyingList(&FloatList{elements: integers})
+		}
 	}
 
 	//TODO: set constraint

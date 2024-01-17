@@ -148,7 +148,7 @@ func (list *ValueList) Clone(originState *GlobalState, sharableValues *[]Potenti
 	}, nil
 }
 
-func (list *IntList) Clone(originState *GlobalState, sharableValues *[]PotentiallySharable, clones map[uintptr]Clonable, depth int) (Serializable, error) {
+func (list *NumberList[T]) Clone(originState *GlobalState, sharableValues *[]PotentiallySharable, clones map[uintptr]Clonable, depth int) (Serializable, error) {
 	if depth > MAX_CLONING_DEPTH {
 		return nil, ErrMaximumCloningDepthReached
 	}
@@ -157,7 +157,7 @@ func (list *IntList) Clone(originState *GlobalState, sharableValues *[]Potential
 		return nil, fmt.Errorf("%w: list has constraint", ErrNotClonable)
 	}
 
-	return &IntList{
+	return &NumberList[T]{
 		elements: slices.Clone(list.elements),
 	}, nil
 }

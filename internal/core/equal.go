@@ -340,7 +340,7 @@ func (list *ValueList) Equal(ctx *Context, other Value, alreadyCompared map[uint
 	return true
 }
 
-func (list *IntList) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+func (list *NumberList[T]) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
 	if depth > MAX_COMPARISON_DEPTH {
 		return false
 	}
@@ -375,7 +375,7 @@ func (list *IntList) Equal(ctx *Context, other Value, alreadyCompared map[uintpt
 	}
 
 	switch other := otherList.(type) {
-	case *IntList:
+	case *NumberList[T]:
 		//check that all elements are equal
 		for i, v := range list.elements {
 			if v != other.elements[i] {
@@ -389,7 +389,7 @@ func (list *IntList) Equal(ctx *Context, other Value, alreadyCompared map[uintpt
 		for _, v := range list.elements {
 			it.Next(ctx)
 			otherElem := it.Value(ctx)
-			if integer, ok := otherElem.(Int); !ok || v != integer {
+			if number, ok := otherElem.(T); !ok || v != number {
 				return false
 			}
 		}
@@ -1619,8 +1619,8 @@ func (it *ValueListIterator) Equal(ctx *Context, other Value, alreadyCompared ma
 	return otherIt == it
 }
 
-func (it *IntListIterator) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
-	otherIt, ok := other.(*IntListIterator)
+func (it *NumberListIterator[T]) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	otherIt, ok := other.(*NumberListIterator[T])
 	if !ok {
 		return false
 	}

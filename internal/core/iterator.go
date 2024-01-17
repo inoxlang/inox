@@ -10,6 +10,7 @@ import (
 
 	"github.com/bits-and-blooms/bitset"
 	"github.com/inoxlang/inox/internal/memds"
+	"golang.org/x/exp/constraints"
 )
 
 var _ = []Iterable{
@@ -347,16 +348,19 @@ func (list *List) Iterator(ctx *Context, config IteratorConfiguration) Iterator 
 	return list.underlyingList.Iterator(ctx, config)
 }
 
-type IntListIterator struct {
-	list *IntList
+type NumberListIterator[T interface {
+	constraints.Integer | constraints.Float
+	Serializable
+}] struct {
+	list *NumberList[T]
 	i    int
 }
 
-func (it IntListIterator) HasNext(*Context) bool {
+func (it NumberListIterator[T]) HasNext(*Context) bool {
 	return it.i < len(it.list.elements)-1
 }
 
-func (it *IntListIterator) Next(ctx *Context) bool {
+func (it *NumberListIterator[T]) Next(ctx *Context) bool {
 	if !it.HasNext(ctx) {
 		return false
 	}
@@ -365,16 +369,16 @@ func (it *IntListIterator) Next(ctx *Context) bool {
 	return true
 }
 
-func (it *IntListIterator) Key(ctx *Context) Value {
+func (it *NumberListIterator[T]) Key(ctx *Context) Value {
 	return Int(it.i)
 }
 
-func (it *IntListIterator) Value(*Context) Value {
+func (it *NumberListIterator[T]) Value(*Context) Value {
 	return it.list.elements[it.i]
 }
 
-func (list *IntList) Iterator(ctx *Context, config IteratorConfiguration) Iterator {
-	return config.CreateIterator(&IntListIterator{list: list, i: -1})
+func (list *NumberList[T]) Iterator(ctx *Context, config IteratorConfiguration) Iterator {
+	return config.CreateIterator(&NumberListIterator[T]{list: list, i: -1})
 }
 
 type BitSetIterator struct {

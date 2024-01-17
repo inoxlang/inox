@@ -17,7 +17,7 @@ import (
 )
 
 var (
-	_ = []underlyingList{(*ValueList)(nil), (*IntList)(nil)}
+	_ = []underlyingList{(*ValueList)(nil), (*IntList)(nil), (*FloatList)(nil)}
 	_ = []IProps{(*Object)(nil), (*Record)(nil), (*Namespace)(nil), (*Dictionary)(nil), (*List)(nil)}
 
 	_ Sequence = (*Array)(nil)
@@ -836,6 +836,8 @@ func (l *List) Prop(ctx *Context, name string) Value {
 		return WrapGoMethod(l.Pop)
 	case "sorted":
 		return WrapGoMethod(l.Sorted)
+	case "sort_by":
+		return WrapGoMethod(l.SortBy)
 	case "len":
 		return Int(l.Len())
 	default:
