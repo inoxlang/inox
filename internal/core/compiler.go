@@ -270,6 +270,9 @@ func (c *compiler) Compile(node parse.Node) error {
 		c.emit(node, OpPushConstant, c.addConstant(Identifier(node.Name)))
 	case *parse.PropertyNameLiteral:
 		c.emit(node, OpPushConstant, c.addConstant(PropertyName(node.Name)))
+	case *parse.LongValuePathLiteral:
+		value := utils.Must(evalSimpleValueLiteral(node, nil))
+		c.emit(node, OpPushConstant, c.addConstant(value))
 	case *parse.YearLiteral:
 		c.emit(node, OpPushConstant, c.addConstant(Year(node.Value)))
 	case *parse.DateLiteral:

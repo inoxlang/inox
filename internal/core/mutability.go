@@ -150,7 +150,11 @@ func (i Identifier) IsMutable() bool {
 	return false
 }
 
-func (p PropertyName) IsMutable() bool {
+func (n PropertyName) IsMutable() bool {
+	return false
+}
+
+func (p *LongValuePath) IsMutable() bool {
 	return false
 }
 

@@ -263,6 +263,16 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		assert.Equal(t, PropertyName("a"), res)
 	})
 
+	t.Run("long value-path  literal", func(t *testing.T) {
+		code := `.a.b`
+		state := NewGlobalState(NewDefaultTestContext())
+		defer state.Ctx.CancelGracefully()
+
+		res, err := Eval(code, state, false)
+		assert.NoError(t, err)
+		assert.Equal(t, NewLongValuePath([]ValuePathSegment{PropertyName("a"), PropertyName("b")}), res)
+	})
+
 	t.Run("boolean literal", func(t *testing.T) {
 		code := `true`
 		state := NewGlobalState(NewDefaultTestContext())

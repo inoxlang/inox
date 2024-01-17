@@ -1009,16 +1009,22 @@ func (i Identifier) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, dept
 	}
 }
 
-func (p PropertyName) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (n PropertyName) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 	if config.Colorize {
 		utils.Must(w.Write(config.Colors.Constant))
 	}
 
 	utils.PanicIfErr(w.WriteByte('.'))
-	utils.Must(w.Write(utils.StringAsBytes(p)))
+	utils.Must(w.Write(utils.StringAsBytes(n)))
 
 	if config.Colorize {
 		utils.Must(w.Write(ANSI_RESET_SEQUENCE))
+	}
+}
+
+func (p *LongValuePath) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	for _, segment := range *p {
+		segment.PrettyPrint(w, config, depth+1, 0)
 	}
 }
 

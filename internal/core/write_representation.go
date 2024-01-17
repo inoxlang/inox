@@ -817,6 +817,16 @@ func (p PropertyName) WriteRepresentation(ctx *Context, w io.Writer, config *Rep
 	return nil
 }
 
+func (p *LongValuePath) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
+	for _, segment := range *p {
+		err := segment.WriteRepresentation(ctx, w, config, depth+1)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (str CheckedString) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
 	_, err := w.Write([]byte{'%'})
 	if err != nil {

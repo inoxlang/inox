@@ -780,12 +780,26 @@ func (i Identifier) Equal(ctx *Context, otherIdent Value, alreadyCompared map[ui
 	return i == otherIdent
 }
 
-func (p PropertyName) Equal(ctx *Context, otherName Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+func (n PropertyName) Equal(ctx *Context, otherName Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
 	otherName, ok := otherName.(PropertyName)
 	if !ok {
 		return false
 	}
-	return p == otherName
+	return n == otherName
+}
+
+func (p *LongValuePath) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	otherPath, ok := other.(*LongValuePath)
+	if !ok || len(*p) != len(*otherPath) {
+		return false
+	}
+
+	for i, segment := range *p {
+		if !segment.Equal(ctx, (*otherPath)[i], alreadyCompared, depth+1) {
+			return false
+		}
+	}
+	return true
 }
 
 func (str CheckedString) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {

@@ -116,6 +116,11 @@ var (
 		Name:          patternnames.PROPNAME,
 		SymbolicValue: symbolic.ANY_PROPNAME,
 	}
+	LONGVALUEPATH_PATTERN = &TypePattern{
+		Type:          LONG_VALUE_PATH_TYPE,
+		Name:          patternnames.LONG_VALUE_PATH,
+		SymbolicValue: symbolic.ANY_LONG_VALUE_PATH,
+	}
 	RUNE_PATTERN = &TypePattern{
 		Type:          RUNE_TYPE,
 		Name:          patternnames.RUNE,

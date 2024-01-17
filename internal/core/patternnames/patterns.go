@@ -6,6 +6,7 @@ const (
 	STRING_PATTERN        = "string-pattern"
 	IDENT                 = "ident"
 	PROPNAME              = "propname"
+	LONG_VALUE_PATH       = "long-value-path"
 	RUNE                  = "rune"
 	BYTE                  = "byte"
 	PATH                  = "path"

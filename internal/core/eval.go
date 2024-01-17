@@ -67,6 +67,7 @@ var (
 	OPTION_TYPE             = reflect.TypeOf(Option{})
 	IDENTIFIER_TYPE         = reflect.TypeOf(Identifier("a"))
 	PROPNAME_TYPE           = reflect.TypeOf(PropertyName("a"))
+	LONG_VALUE_PATH_TYPE    = reflect.TypeOf((*LongValuePath)(nil))
 	PATH_TYPE               = reflect.TypeOf(Path("/"))
 	PATH_PATT_TYPE          = reflect.TypeOf(PathPattern("/"))
 	URL_TYPE                = reflect.TypeOf(URL(""))
@@ -270,6 +271,16 @@ func evalSimpleValueLiteral(n parse.SimpleValueLiteral, global *GlobalState) (Se
 		return Identifier(node.Name), nil
 	case *parse.PropertyNameLiteral:
 		return PropertyName(node.Name), nil
+	case *parse.LongValuePathLiteral:
+		var segments []ValuePathSegment
+		for _, segmentNode := range node.Segments {
+			segment, err := evalSimpleValueLiteral(segmentNode, global)
+			if err != nil {
+				return nil, err
+			}
+			segments = append(segments, segment.(ValuePathSegment))
+		}
+		return NewLongValuePath(segments), nil
 	case *parse.QuotedStringLiteral:
 		return Str(node.Value), nil
 	case *parse.UnquotedStringLiteral:

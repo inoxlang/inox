@@ -555,11 +555,6 @@ func (i Identifier) UnderlyingString() string {
 	return string(i)
 }
 
-type PropertyName string
-
-func (p PropertyName) UnderlyingString() string {
-	return string(p)
-}
 
 // StringConcatenation is a lazy concatenation of values that can form a string, StringConcatenation implements StringLike and is
 // therefore immutable.

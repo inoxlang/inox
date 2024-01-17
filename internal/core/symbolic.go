@@ -280,6 +280,13 @@ func init() {
 			CreatePropertyName: func(s string) any {
 				return PropertyName(s)
 			},
+			CreateLongValuePath: func(segments ...any) any {
+				pathSegments := make([]ValuePathSegment, len(segments))
+				for i, segment := range segments {
+					pathSegments[i] = segment.(ValuePathSegment)
+				}
+				return NewLongValuePath(pathSegments)
+			},
 
 			CreateByteSlice: func(bytes []byte) any {
 				return NewByteSlice(slices.Clone(bytes), true, "")
@@ -532,6 +539,18 @@ func (i Identifier) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbol
 
 func (p PropertyName) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return symbolic.NewPropertyName(p.UnderlyingString()), nil
+}
+
+func (p *LongValuePath) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
+	var segments []symbolic.ValuePathSegment
+	for _, segment := range *p {
+		val, err := segment.ToSymbolicValue(ctx, encountered)
+		if err != nil {
+			return nil, err
+		}
+		segments = append(segments, val.(symbolic.ValuePathSegment))
+	}
+	return symbolic.NewLongValuePath(segments...), nil
 }
 
 func (p Path) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {

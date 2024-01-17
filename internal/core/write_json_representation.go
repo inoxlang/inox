@@ -642,6 +642,31 @@ func (p PropertyName) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, 
 	return nil
 }
 
+func (p *LongValuePath) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+	write := func() error {
+		w.WriteArrayStart()
+		for i, segment := range *p {
+			if i != 0 {
+				w.WriteMore()
+			}
+			err := segment.WriteJSONRepresentation(ctx, w, config, depth+1)
+			if err != nil {
+				return err
+			}
+		}
+		w.WriteArrayEnd()
+		return nil
+	}
+
+	if noPatternOrAny(config.Pattern) {
+		writeUntypedValueJSON(LONGVALUEPATH_PATTERN.Name, func(w *jsoniter.Stream) error {
+			return write()
+		}, w)
+		return nil
+	}
+	return write()
+}
+
 func (str CheckedString) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	return ErrNoRepresentation
 }
