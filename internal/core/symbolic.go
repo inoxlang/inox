@@ -820,7 +820,14 @@ func (p *IntRangePattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]
 }
 
 func (p *FloatRangePattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
-	return symbolic.ANY_FLOAT_RANGE_PATTERN, nil
+	if p.multipleOf > 0 {
+		return symbolic.ANY_FLOAT_RANGE_PATTERN, nil
+	}
+	floatRange, err := p.floatRange.ToSymbolicValue(ctx, encountered)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert float range of float range pattern to symbolic: %w", err)
+	}
+	return symbolic.NewFloatRangePattern(floatRange.(*symbolic.FloatRange)), nil
 }
 
 func (p *UnionStringPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
@@ -1179,14 +1186,11 @@ func (s *ByteSlice) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbol
 }
 
 func (s Scheme) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
-	return symbolic.ANY_SCHEME, nil
+	return symbolic.GetOrNewScheme(s.UnderlyingString()), nil
 }
 
 func (h Host) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
-	if h.HasHttpScheme() {
-		return symbolic.ANY_HTTPS_HOST, nil
-	}
-	return symbolic.ANY_HOST, nil
+	return symbolic.NewHost(h.UnderlyingString()), nil
 }
 
 func (addr EmailAddress) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
