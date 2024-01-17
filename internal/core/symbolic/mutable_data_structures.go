@@ -332,6 +332,8 @@ func (list *List) Prop(name string) Value {
 	switch name {
 	case "append":
 		return WrapGoMethod(list.Append)
+	case "dequeue":
+		return WrapGoMethod(list.Dequeue)
 	case "pop":
 		return WrapGoMethod(list.Pop)
 	case "sorted":
@@ -580,6 +582,20 @@ func (l *List) Append(ctx *Context, elements ...Serializable) {
 		ctx.SetSymbolicGoFunctionParameters(&[]Value{l.element()}, LIST_APPEND_PARAM_NAMES)
 	}
 	l.appendSequence(ctx, NewList(elements...))
+}
+
+func (l *List) Dequeue(ctx *Context) Serializable {
+	if l.generalElement == nil && l.HasKnownLen() {
+		if l.KnownLen() == 0 {
+			ctx.AddSymbolicGoFunctionError(CANNOT_DEQUEUE_FROM_EMPTY_LIST)
+			return ANY_SERIALIZABLE
+		} else {
+			elements := l.elements[1:len(l.elements)]
+			ctx.SetUpdatedSelf(NewList(elements...))
+		}
+		return l.elementAt(0).(Serializable)
+	}
+	return l.element().(Serializable)
 }
 
 func (l *List) Pop(ctx *Context) Serializable {

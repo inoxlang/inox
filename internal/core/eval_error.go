@@ -29,6 +29,7 @@ var (
 
 	ErrCannotSetValOfIndexKeyProp = errors.New("cannot set value of index key property")
 	ErrCannotPopFromEmptyList     = errors.New("cannot pop from an empty list")
+	ErrCannotDequeueFromEmptyList = errors.New("cannot dequeue from an empty list")
 
 	//integer
 	ErrIntOverflow          = errors.New("integer overflow")

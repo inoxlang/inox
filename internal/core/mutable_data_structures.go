@@ -830,6 +830,8 @@ func (l *List) Prop(ctx *Context, name string) Value {
 	switch name {
 	case "append":
 		return WrapGoMethod(l.append)
+	case "dequeue":
+		return WrapGoMethod(l.Dequeue)
 	case "pop":
 		return WrapGoMethod(l.Pop)
 	case "sorted":
@@ -965,13 +967,22 @@ func (l *List) removePosition(ctx *Context, i Int) {
 	l.mutationCallbacks.CallMicrotasks(ctx, mutation)
 }
 
+func (l *List) Dequeue(ctx *Context) Serializable {
+	if l.Len() == 0 {
+		panic(ErrCannotDequeueFromEmptyList)
+	}
+	elem := l.At(ctx, 0)
+	l.removePosition(ctx, 0)
+	return elem.(Serializable)
+}
+
 func (l *List) Pop(ctx *Context) Serializable {
 	lastIndex := l.Len() - 1
 	if lastIndex < 0 {
 		panic(ErrCannotPopFromEmptyList)
 	}
 	elem := l.At(ctx, lastIndex)
-	l.underlyingList.removePosition(ctx, Int(lastIndex))
+	l.removePosition(ctx, Int(lastIndex))
 	return elem.(Serializable)
 }
 

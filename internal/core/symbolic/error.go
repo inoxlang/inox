@@ -150,7 +150,8 @@ const (
 
 	RIGHT_OPERAND_MAY_NOT_HAVE_A_URL = "right operand may not have a URL"
 
-	CANNOT_POP_FROM_EMPTY_LIST = "cannot pop() from an empty list"
+	CANNOT_POP_FROM_EMPTY_LIST     = "cannot pop() from an empty list"
+	CANNOT_DEQUEUE_FROM_EMPTY_LIST = "cannot dequeue() from an empty list"
 
 	//struct definition
 	ONLY_COMPILE_TIME_TYPES_CAN_BE_USED_AS_STRUCT_FIELD_TYPES = //
@@ -165,7 +166,6 @@ const (
 	OPTIONAL_MEMBER_EXPRS_NOT_ALLOWED_FOR_STRUCT_FIELDS = "optional member expressions are not allowed for struct fields"
 
 	POINTED_VALUE_HAS_NO_PROPERTIES = "pointed value has no properties"
-
 
 	OPERANDS_NOT_COMPARABLE_BECAUSE_DIFFERENT_TYPES = "operands are not comparable because they have different types"
 )
