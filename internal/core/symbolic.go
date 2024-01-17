@@ -562,15 +562,15 @@ func (p PathPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbo
 }
 
 func (u URL) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
-	return symbolic.ANY_URL, nil
+	return symbolic.NewUrl(u.UnderlyingString()), nil
 }
 
-func (u URLPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
-	return symbolic.ANY_URL_PATTERN, nil
+func (p URLPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
+	return symbolic.NewUrlPattern(p.UnderlyingString()), nil
 }
 
 func (p HostPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
-	return symbolic.ANY_HOST_PATTERN, nil
+	return symbolic.NewHostPattern(p.UnderlyingString()), nil
 }
 
 func (o Option) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
