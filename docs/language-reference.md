@@ -909,7 +909,7 @@ returned by functions, not file descriptors.
 Here is an example:
 
 ```
-map_iterable [{value: "a"}, {value: 1}] .value | filter $ %int
+map_iterable [{value: "a"}, {value: 1}] .value | filter_iterable $ %int
 ```
 
 - in the first call we extract the .value property of several objects using the
@@ -921,7 +921,7 @@ map_iterable [{value: "a"}, {value: 1}] .value | filter $ %int
 Pipe expressions allow you to store the final result in a variable:
 
 ```
-ints = | map_iterable [{value: "a"}, {value: 1}] .value | filter $ %int
+ints = | map_iterable [{value: "a"}, {value: 1}] .value | filter_iterable $ %int
 ```
 
 # Functions
@@ -1556,11 +1556,11 @@ pattern user = {
 
 extend user {
     # computed properties (lazy)
-    pending-todos: filter(self.todos, @(!$.done))
+    pending-todos: filter_iterable!(self.todos, @(!$.done))
 
     # extension method
     remove_done_todos: fn(){
-        self.todos = filter(self.todos, .done)
+        self.todos = filter_iterable!(self.todos, .done)
     }
 }
 

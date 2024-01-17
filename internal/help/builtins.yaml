@@ -2,7 +2,7 @@ functional:
   title: Functional Programming
   elements:
   - topic: map_iterable
-    related-topics: [filter, get_at_most, some, all, none]
+    related-topics: [filter_iterable, get_at_most, some, all, none]
     text: The map_iterable function creates a list by applying an operation on each element of an iterable
     examples:
     - code: 'map_iterable([{name: "foo"}], .name)'
@@ -25,20 +25,20 @@ functional:
       output: '[1, 2, 3]'
       standalone: true
 
-  - topic: filter
+  - topic: filter_iterable
     related-topics: [map_iterable, get_at_most, some, all, none]
-    text: The filter function creates a list by iterating over an iterable and keeping elements that pass a condition
+    text: The filter_iterable function creates a list by iterating over an iterable and keeping elements that pass a condition
     examples:
-    - code: 'filter(["a", "0", 1], %int)'
+    - code: 'filter_iterable!(["a", "0", 1], %int)'
       output: '[1]'
       standalone: true
 
-    - code: 'filter([0, 1, 2], @($ >= 1))'
+    - code: 'filter_iterable!([0, 1, 2], @($ >= 1))'
       output: '[1, 2]'
       standalone: true
 
   - topic: get_at_most
-    related-topics: [filter, map_iterable, some, all, none]
+    related-topics: [filter_iterable, map_iterable, some, all, none]
     text: The get_at_most function gets at most the specified number of elements from an iterable
     examples:
     - code: 'get_at_most(1, [])'
@@ -54,7 +54,7 @@ functional:
       standalone: true
 
   - topic: some
-    related-topics: [map_iterable, filter, all, none]
+    related-topics: [map_iterable, filter_iterable, all, none]
     text: The some function returns true if and only if at least one element of an iterable passes a condition. For an empty iterable the result is always true.
     examples:
     - code: 'some(["a", "0", 1], %int)'
@@ -66,7 +66,7 @@ functional:
       standalone: true
 
   - topic: all
-    related-topics: [map_iterable, filter, some, none]
+    related-topics: [map_iterable, filter_iterable, some, none]
     text: The all function returns true if and only if all elements of an iterable pass a condition. For an empty iterable the result is always true.
     examples:
     - code: 'all([0, 1, "a"], %int)'
@@ -78,7 +78,7 @@ functional:
       standalone: true
       
   - topic: none
-    related-topics: [map_iterable, filter, some, all]
+    related-topics: [map_iterable, filter_iterable, some, all]
     text: The none function returns true if and only if no elements of an iterable pass a condition. For an empty iterable the result is always true.
     examples:
     - code: 'none([0, 1, "a"], %int)'

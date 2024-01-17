@@ -105,15 +105,15 @@ const (
 	UUIDv4_FN = "UUIDv4"
 
 	// functional
-	IDENTITY_FN     = "idt"
-	MAP_ITERABLE_FN = "map_iterable"
-	FILTER_FN       = "filter"
-	GET_AT_MOST_FN  = "get_at_most"
-	SOME_FN         = "some"
-	ALL_FN          = "all"
-	NONE_FN         = "none"
-	REPLACE_FN      = "replace"
-	FIND_FN         = "find"
+	IDENTITY_FN        = "idt"
+	MAP_ITERABLE_FN    = "map_iterable"
+	FILTER_ITERABLE_FN = "filter_iterable"
+	GET_AT_MOST_FN     = "get_at_most"
+	SOME_FN            = "some"
+	ALL_FN             = "all"
+	NONE_FN            = "none"
+	REPLACE_FN         = "replace"
+	FIND_FN            = "find"
 
 	// concurrency & execution
 	LTHREADGROUP_FN = "LThreadGroup"

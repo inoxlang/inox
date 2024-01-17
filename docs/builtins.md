@@ -557,7 +557,7 @@ fs.get_tree_data(./)
 
 ## Functional Programming
 
-### map
+### map_iterable
 
 The map_iterable function creates a list by applying an operation on each element of an iterable.
 
@@ -588,19 +588,19 @@ map_iterable([0, 1, 2], @($ + 1))
 # output: 
 [1, 2, 3]
 ```
-### filter
+### filter_iterable
 
-The filter function creates a list by iterating over an iterable and keeping elements that pass a condition.
+The filter_iterable function creates a list by iterating over an iterable and keeping elements that pass a condition.
 
 **examples**
 
 ```inox
-filter(["a", "0", 1], %int)
+filter_iterable!(["a", "0", 1], %int)
 # output: 
 [1]
 ```
 ```inox
-filter([0, 1, 2], @($ >= 1))
+filter_iterable!([0, 1, 2], @($ >= 1))
 # output: 
 [1, 2]
 ```

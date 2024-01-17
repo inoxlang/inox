@@ -87,7 +87,7 @@ Pipe statements are analogous to pipes in Unix but they operate on the values re
 Here is an example:
 
 ```
-map_iterable [{value: "a"}, {value: 1}] .value | filter $ %int
+map_iterable [{value: "a"}, {value: 1}] .value | filter_iterable $ %int
 ```
 
 - in the first call we extract the .value property of several objects using the `map_iterable` function
@@ -98,7 +98,7 @@ map_iterable [{value: "a"}, {value: 1}] .value | filter $ %int
 
 Pipe expressions enable you to save the final result into a variable:
 ```
-ints = | map_iterable [{value: "a"}, {value: 1}] .value | filter $ %int
+ints = | map_iterable [{value: "a"}, {value: 1}] .value | filter_iterable $ %int
 ```
 
 > You can add '~' in front of **$** if you want to postpone the [type checking](#type-checker) at runtime.

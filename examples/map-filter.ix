@@ -7,6 +7,6 @@ users = [
 
 
 names = map_iterable!(users, .name)
-names = filter!(names, @($ == "Foo"))
+names = filter_iterable!(names, @($ == "Foo"))
 
 print(names)
