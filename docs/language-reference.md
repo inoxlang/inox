@@ -138,6 +138,9 @@ Here are the most commonly used literals in Inox:
 - quantity range literals `1kB..1MB 1kB..`
 - rate literals: `5B/s 10kB/s`
 - byte slice literals: `0x[0a b3]  0b[1111 0000] 0d[120 250]`
+- property name literals: `.name .age` 
+- long value-path literals: `.data.name` 
+
 
 </details>
 
@@ -2485,7 +2488,7 @@ to reference other values inside the database.
 ```
 pattern user = {
     name: str
-    friends: Set(%https://main/users/%ulid, #repr) 
+    friends: Set(%ldb://main/users/%ulid, #repr) 
 }
 
 user = ... # get a user from the database
