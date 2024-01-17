@@ -659,7 +659,7 @@ func (p *LongValuePath) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream
 	}
 
 	if noPatternOrAny(config.Pattern) {
-		writeUntypedValueJSON(LONGVALUEPATH_PATTERN.Name, func(w *jsoniter.Stream) error {
+		writeUntypedValueJSON(LONG_VALUEPATH_PATTERN.Name, func(w *jsoniter.Stream) error {
 			return write()
 		}, w)
 		return nil

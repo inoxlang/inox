@@ -7,6 +7,7 @@ const (
 	IDENT                 = "ident"
 	PROPNAME              = "propname"
 	LONG_VALUE_PATH       = "long-value-path"
+	VALUE_PATH            = "value-path"
 	RUNE                  = "rune"
 	BYTE                  = "byte"
 	PATH                  = "path"

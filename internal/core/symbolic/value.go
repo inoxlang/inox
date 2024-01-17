@@ -51,6 +51,7 @@ var (
 	ANY_IDENTIFIER      = &Identifier{}
 	ANY_PROPNAME        = &PropertyName{}
 	ANY_LONG_VALUE_PATH = &LongValuePath{}
+	ANY_VALUE_PATH      = &AnyValuePath{}
 	ANY_EMAIL_ADDR      = &EmailAddress{}
 	ANY_FILEINFO        = &FileInfo{}
 	ANY_MIMETYPE        = &Mimetype{}

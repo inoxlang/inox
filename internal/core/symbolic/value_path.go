@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	_ = []ValuePath{ANY_PROPNAME, &LongValuePath{}}
+	_ = []ValuePath{ANY_PROPNAME, &LongValuePath{}, (*AnyValuePath)(nil)}
 	_ = []ValuePathSegment{ANY_PROPNAME}
 )
 
@@ -29,6 +29,30 @@ type ValuePathSegment interface {
 	// SegmentGetFrom should return (nil, false, nil) if the value cannot be retrieved from v.
 	// SegmentGetFrom should return (nil, false, ErrNotConcretizable) if the value path is not concretizable.
 	SegmentGetFrom(v Value) (result Value, alwaysPresent bool, err error)
+}
+
+// AnyValuePath represents a ValuePath we don't know the concrete type.
+type AnyValuePath struct {
+}
+
+func (p *AnyValuePath) GetFrom(v Value) (result Value, alwaysPresent bool, err error) {
+	return nil, false, nil
+}
+
+func (p *AnyValuePath) Test(v Value, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
+	_, ok := v.(ValuePath)
+	return ok
+}
+
+func (p *AnyValuePath) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("value-path")
+}
+
+func (p *AnyValuePath) WidestOfType() Value {
+	return ANY_VALUE_PATH
 }
 
 // A PropertyName represents a symbolic PropertyName.
