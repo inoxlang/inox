@@ -427,25 +427,25 @@ func (c *strLikeMultivalue) Prop(name string) Value {
 	switch name {
 	case "replace":
 		return &GoFunction{
-			fn: func(ctx *Context, old, new *AnyStringLike) *String {
+			fn: func(ctx *Context, old, new StringLike) *String {
 				return ANY_STR
 			},
 		}
 	case "trim_space":
 		return &GoFunction{
-			fn: func(ctx *Context) *AnyStringLike {
+			fn: func(ctx *Context) StringLike {
 				return ANY_STR_LIKE
 			},
 		}
 	case "has_prefix":
 		return &GoFunction{
-			fn: func(ctx *Context, s *AnyStringLike) *Bool {
+			fn: func(ctx *Context, s StringLike) *Bool {
 				return ANY_BOOL
 			},
 		}
 	case "has_suffix":
 		return &GoFunction{
-			fn: func(ctx *Context, s *AnyStringLike) *Bool {
+			fn: func(ctx *Context, s StringLike) *Bool {
 				return ANY_BOOL
 			},
 		}
