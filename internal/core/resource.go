@@ -1570,15 +1570,14 @@ func ParseOrValidateResourceContent(ctx *Context, resourceContent []byte, ctype 
 		res = NewByteSlice(resourceContent, false, "")
 	default:
 		parser, ok := GetParser(ct)
-
-		if !ok && strings.HasPrefix(string(ct), "text/") {
-			//TODO: return error if they are not printable characters
-			res = Str(resourceContent)
-			contentType = ctype
-			return
-		}
-
 		if doParse {
+			if !ok && strings.HasPrefix(string(ct), "text/") {
+				//TODO: return error if they are not printable characters
+				res = Str(resourceContent)
+				contentType = ctype
+				return
+			}
+
 			if !ok {
 				res = nil
 				contentType = ""
