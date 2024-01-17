@@ -130,6 +130,31 @@ func TestSymbolicEval(t *testing.T) {
 		assert.Equal(t, NewOption("name", NewString("foo")), res)
 	})
 
+	t.Run("property name literal", func(t *testing.T) {
+		n, state := MakeTestStateAndChunk(".name")
+		res, err := symbolicEval(n, state)
+		assert.NoError(t, err)
+		assert.Empty(t, state.errors())
+		assert.Equal(t, NewPropertyName("name"), res)
+	})
+
+	t.Run("long value-path literal", func(t *testing.T) {
+		t.Run("2 segments", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(".name.len")
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, NewLongValuePath(NewPropertyName("name"), NewPropertyName("len")), res)
+		})
+		t.Run("unterminated", func(t *testing.T) {
+			n, state, _ := _makeStateAndChunk(".name.")
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, ANY_LONG_VALUE_PATH, res)
+		})
+	})
+
 	t.Run("byte slice literal", func(t *testing.T) {
 		n, state := MakeTestStateAndChunk("0x[01]")
 		res, err := symbolicEval(n, state)

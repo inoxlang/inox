@@ -226,6 +226,10 @@ func (p PropertyName) IsMutable() bool {
 	return false
 }
 
+func (p LongValuePath) IsMutable() bool {
+	return false
+}
+
 func (str CheckedString) IsMutable() bool {
 	return false
 }

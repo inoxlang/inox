@@ -67,8 +67,9 @@ type ConcreteValueFactories struct {
 	CreateHost   func(string) any
 	CreateScheme func(string) any
 
-	CreateIdentifier   func(string) any
-	CreatePropertyName func(string) any
+	CreateIdentifier    func(string) any
+	CreatePropertyName  func(string) any
+	CreateLongValuePath func(segments ...any) any
 
 	CreateByteSlice func([]byte) any
 	CreateRuneSlice func([]rune) any

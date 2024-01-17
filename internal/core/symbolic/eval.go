@@ -337,6 +337,19 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 		return &Identifier{name: n.Name}, nil
 	case *parse.PropertyNameLiteral:
 		return &PropertyName{name: n.Name}, nil
+	case *parse.LongValuePathLiteral:
+		var segments []ValuePathSegment
+		for _, segmentNode := range n.Segments {
+			if segmentNode.Base().Err != nil {
+				return ANY_LONG_VALUE_PATH, nil
+			}
+			segment, err := symbolicEval(segmentNode, state)
+			if err != nil {
+				return nil, err
+			}
+			segments = append(segments, segment.(ValuePathSegment))
+		}
+		return NewLongValuePath(segments...), nil
 	case *parse.AbsolutePathLiteral:
 		if strings.HasSuffix(n.Value, "/...") || strings.Contains(n.Value, "*") {
 			state.addWarning(makeSymbolicEvalWarning(node, state, fmtDidYouForgetLeadingPercent(n.Value)))

@@ -43,16 +43,17 @@ var (
 	ANY_DATETIME = &DateTime{}
 	ANY_DURATION = &Duration{}
 
-	ANY_BYTECOUNT  = &ByteCount{}
-	ANY_LINECOUNT  = &LineCount{}
-	ANY_RUNECOUNT  = &RuneCount{}
-	ANY_BYTERATE   = &ByteRate{}
-	ANY_FREQUENCY  = &Frequency{}
-	ANY_IDENTIFIER = &Identifier{}
-	ANY_PROPNAME   = &PropertyName{}
-	ANY_EMAIL_ADDR = &EmailAddress{}
-	ANY_FILEINFO   = &FileInfo{}
-	ANY_MIMETYPE   = &Mimetype{}
+	ANY_BYTECOUNT       = &ByteCount{}
+	ANY_LINECOUNT       = &LineCount{}
+	ANY_RUNECOUNT       = &RuneCount{}
+	ANY_BYTERATE        = &ByteRate{}
+	ANY_FREQUENCY       = &Frequency{}
+	ANY_IDENTIFIER      = &Identifier{}
+	ANY_PROPNAME        = &PropertyName{}
+	ANY_LONG_VALUE_PATH = &LongValuePath{}
+	ANY_EMAIL_ADDR      = &EmailAddress{}
+	ANY_FILEINFO        = &FileInfo{}
+	ANY_MIMETYPE        = &Mimetype{}
 
 	FILEINFO_PROPNAMES   = []string{"name", "abs-path", "size", "mode", "mod-time", "is-dir"}
 	EMAIL_ADDR_PROPNAMES = []string{"username", "domain"}
@@ -366,63 +367,6 @@ func (i *Identifier) underlyingString() *String {
 
 func (i *Identifier) WidestOfType() Value {
 	return ANY_IDENTIFIER
-}
-
-// A PropertyName represents a symbolic PropertyName.
-type PropertyName struct {
-	name string
-	SerializableMixin
-}
-
-func NewPropertyName(name string) *PropertyName {
-	return &PropertyName{name: name}
-}
-
-func (n *PropertyName) Name() string {
-	return n.name
-}
-
-func (p *PropertyName) Test(v Value, state RecTestCallState) bool {
-	state.StartCall()
-	defer state.FinishCall()
-
-	other, ok := v.(*PropertyName)
-	if !ok {
-		return false
-	}
-	return p.name == "" || p.name == other.name
-}
-
-func (n *PropertyName) IsConcretizable() bool {
-	return n.name != ""
-}
-
-func (p *PropertyName) Concretize(ctx ConcreteContext) any {
-	if !p.IsConcretizable() {
-		panic(ErrNotConcretizable)
-	}
-	return extData.ConcreteValueFactories.CreatePropertyName(p.name)
-}
-
-func (p *PropertyName) Static() Pattern {
-	return &TypePattern{val: p.WidestOfType()}
-}
-
-func (p *PropertyName) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
-	if p.name == "" {
-		w.WriteName("property-name")
-		return
-	}
-
-	w.WriteNameF("property-name(#%s)", p.name)
-}
-
-func (s *PropertyName) underlyingString() *String {
-	return &String{}
-}
-
-func (s *PropertyName) WidestOfType() Value {
-	return ANY_PROPNAME
 }
 
 // A Mimetype represents a symbolic Mimetype.
