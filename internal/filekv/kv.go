@@ -37,7 +37,8 @@ var (
 	}
 )
 
-// thin wrapper around a Bbolt database.
+// A SingleFileKV is a key-value store that uses a Bbolt database under the hood,
+// therefore data is stored on a single on-disk file.
 type SingleFileKV struct {
 	db *bbolt.DB
 
@@ -472,7 +473,10 @@ func makeTxEndcallbackFn(dbtx *bbolt.Tx, tx *core.Transaction, kv *SingleFileKV)
 		kv.transactionMapLock.Unlock()
 
 		if success {
-			if err := dbtx.Commit(); err != nil {
+			if !dbtx.Writable() {
+				//Bbolt read-only transactions must be rolled back and not committed.
+				dbtx.Rollback()
+			} else if err := dbtx.Commit(); err != nil {
 				panic(err)
 			}
 		} else if err := dbtx.Rollback(); err != nil {
