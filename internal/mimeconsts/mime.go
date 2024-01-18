@@ -5,11 +5,18 @@ import "mime"
 //TODO: support structured syntax suffixes
 
 const (
-	ANY_CTYPE              = "*/*"
-	JSON_CTYPE             = "application/json"
-	IXON_CTYPE             = "application/ixon"
-	APP_YAML_CTYPE         = "application/yaml" //https://datatracker.ietf.org/doc/draft-ietf-httpapi-yaml-mediatypes/
-	TEXT_YAML_CTYPE        = "text/yaml"
+	ANY_CTYPE  = "*/*"
+	JSON_CTYPE = "application/json"
+	IXON_CTYPE = "application/ixon"
+
+	//https://datatracker.ietf.org/doc/draft-ietf-httpapi-yaml-mediatypes/
+	/* quote:
+	"Deprecated alias names for this type: application/x-yaml, text/yaml,
+	text/x-yaml. These names are used, but not registered."
+	*/
+	APP_YAML_CTYPE = "application/yaml"
+	//TEXT_YAML_CTYPE        = "text/yaml"
+
 	HTML_CTYPE             = "text/html"
 	CSS_CTYPE              = "text/css"
 	JS_CTYPE               = "text/javascript" //https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types#textjavascript
@@ -35,6 +42,8 @@ var (
 
 func init() {
 	mime.AddExtensionType(".txt", PLAIN_TEXT_CTYPE)
+	mime.AddExtensionType(".yaml", APP_YAML_CTYPE)
+	mime.AddExtensionType(".yml", APP_YAML_CTYPE)
 }
 
 // IsMimeTypeForExtension returns true if ext corresponds to mimetype.
