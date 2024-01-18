@@ -289,8 +289,12 @@ func init() {
 		_add_ctx_data, func(ctx *symbolic.Context, name *symbolic.Identifier, value symbolic.Value) {
 
 		},
-		_ctx_data, func(ctx *symbolic.Context, name *symbolic.Identifier) symbolic.Value {
-			return symbolic.ANY
+		_ctx_data, func(ctx *symbolic.Context, name *symbolic.Identifier, pattern *symbolic.OptionalParam[symbolic.Pattern]) symbolic.Value {
+			if pattern == nil || pattern.Value == nil {
+				return symbolic.ANY
+			}
+
+			return (*pattern.Value).SymbolicValue()
 		},
 		_get_system_graph, func(ctx *symbolic.Context) (*symbolic.SystemGraph, *symbolic.Bool) {
 			return symbolic.ANY_SYSTEM_GRAPH, symbolic.ANY_BOOL

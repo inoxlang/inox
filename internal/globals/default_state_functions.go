@@ -405,8 +405,15 @@ func _add_ctx_data(ctx *core.Context, name core.Identifier, value core.Value) {
 	ctx.PutUserData(name, value)
 }
 
-func _ctx_data(ctx *core.Context, name core.Identifier) core.Value {
-	return ctx.ResolveUserData(name)
+func _ctx_data(ctx *core.Context, name core.Identifier, pattern *core.OptionalParam[core.Pattern]) core.Value {
+	data := ctx.ResolveUserData(name)
+	if data == nil {
+		data = core.Nil
+	}
+	if pattern != nil && !pattern.Value.Test(ctx, data) {
+		panic(fmt.Errorf("the value of the user data entry %q does not match the provided pattern", name.UnderlyingString()))
+	}
+	return data
 }
 
 func _get_system_graph(ctx *core.Context) (*core.SystemGraph, core.Bool) {
