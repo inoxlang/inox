@@ -317,7 +317,7 @@ func GetMigrationOperations(ctx *Context, current, next Pattern, pseudoPath stri
 		}
 	}
 
-	if current == next || isSubType(current, next, ctx, map[uintptr]symbolic.Value{}) {
+	if current == next || (pseudoPath != "/" && isSubType(current, next, ctx, map[uintptr]symbolic.Value{})) {
 		return nil, nil
 	}
 

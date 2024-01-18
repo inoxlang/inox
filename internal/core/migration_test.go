@@ -73,7 +73,7 @@ func TestObjectPatternGetMigrationOperations(t *testing.T) {
 		}, migrations)
 	})
 
-	t.Run("property removal", func(t *testing.T) {
+	t.Run("property removal: simple value", func(t *testing.T) {
 		singleProp := NewInexactObjectPattern([]ObjectPatternEntry{{Name: "a", Pattern: INT_PATTERN}})
 		empty := NewInexactObjectPattern(nil)
 
@@ -85,6 +85,26 @@ func TestObjectPatternGetMigrationOperations(t *testing.T) {
 		assert.Equal(t, []MigrationOp{
 			RemovalMigrationOp{
 				Value:          INT_PATTERN,
+				MigrationMixin: MigrationMixin{"/a"},
+			},
+		}, migrations)
+	})
+
+	t.Run("property removal: complex value", func(t *testing.T) {
+		innerObjectPattern := NewInexactObjectPattern([]ObjectPatternEntry{{Name: "b", Pattern: INT_PATTERN}})
+		singleProp := NewInexactObjectPattern([]ObjectPatternEntry{{
+			Name: "a", Pattern: innerObjectPattern,
+		}})
+		empty := NewInexactObjectPattern(nil)
+
+		migrations, err := singleProp.GetMigrationOperations(ctx, empty, "/")
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		assert.Equal(t, []MigrationOp{
+			RemovalMigrationOp{
+				Value:          innerObjectPattern,
 				MigrationMixin: MigrationMixin{"/a"},
 			},
 		}, migrations)
@@ -1813,32 +1833,56 @@ func TestGetMigrationOperations(t *testing.T) {
 	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
-	intIntList := NewListPattern([]Pattern{SERIALIZABLE_PATTERN})
-	serializableList := NewListPatternOf(INT_PATTERN)
+	t.Run("list pattern", func(t *testing.T) {
+		intIntList := NewListPattern([]Pattern{SERIALIZABLE_PATTERN})
+		serializableList := NewListPatternOf(INT_PATTERN)
 
-	ops, err := GetMigrationOperations(ctx, intIntList, serializableList, "/users*")
-	assert.ErrorIs(t, err, ErrInvalidMigrationPseudoPath)
-	assert.Nil(t, ops)
+		ops, err := GetMigrationOperations(ctx, intIntList, serializableList, "/users*")
+		assert.ErrorIs(t, err, ErrInvalidMigrationPseudoPath)
+		assert.Nil(t, ops)
 
-	ops, err = GetMigrationOperations(ctx, intIntList, serializableList, "/users/x*")
-	assert.ErrorIs(t, err, ErrInvalidMigrationPseudoPath)
-	assert.Nil(t, ops)
+		ops, err = GetMigrationOperations(ctx, intIntList, serializableList, "/users/x*")
+		assert.ErrorIs(t, err, ErrInvalidMigrationPseudoPath)
+		assert.Nil(t, ops)
 
-	ops, err = GetMigrationOperations(ctx, intIntList, serializableList, "/users/*")
-	assert.NoError(t, err)
-	assert.NotEmpty(t, ops)
+		ops, err = GetMigrationOperations(ctx, intIntList, serializableList, "/users/*")
+		assert.NoError(t, err)
+		assert.NotEmpty(t, ops)
 
-	ops, err = GetMigrationOperations(ctx, intIntList, serializableList, "/users?")
-	assert.ErrorIs(t, err, ErrInvalidMigrationPseudoPath)
-	assert.Nil(t, ops)
+		ops, err = GetMigrationOperations(ctx, intIntList, serializableList, "/users?")
+		assert.ErrorIs(t, err, ErrInvalidMigrationPseudoPath)
+		assert.Nil(t, ops)
 
-	ops, err = GetMigrationOperations(ctx, intIntList, serializableList, "/users/x?")
-	assert.ErrorIs(t, err, ErrInvalidMigrationPseudoPath)
-	assert.Nil(t, ops)
+		ops, err = GetMigrationOperations(ctx, intIntList, serializableList, "/users/x?")
+		assert.ErrorIs(t, err, ErrInvalidMigrationPseudoPath)
+		assert.Nil(t, ops)
 
-	ops, err = GetMigrationOperations(ctx, intIntList, serializableList, "/users/?")
-	assert.ErrorIs(t, err, ErrInvalidMigrationPseudoPath)
-	assert.Nil(t, ops)
+		ops, err = GetMigrationOperations(ctx, intIntList, serializableList, "/users/?")
+		assert.ErrorIs(t, err, ErrInvalidMigrationPseudoPath)
+		assert.Nil(t, ops)
+	})
+
+	t.Run("top-level object pattern", func(t *testing.T) {
+
+		t.Run("remove top-level entity", func(t *testing.T) {
+			innerObjectPattern := NewInexactObjectPattern([]ObjectPatternEntry{{Name: "name", Pattern: STR_PATTERN}})
+			inexactSinglePropPattern := NewInexactObjectPattern([]ObjectPatternEntry{{
+				Name: "user", Pattern: innerObjectPattern,
+			}})
+			inexactNoPropPattern := NewInexactObjectPattern([]ObjectPatternEntry{})
+
+			ops, err := GetMigrationOperations(ctx, inexactSinglePropPattern, inexactNoPropPattern, "/")
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.Equal(t, []MigrationOp{
+				RemovalMigrationOp{
+					Value:          innerObjectPattern,
+					MigrationMixin: MigrationMixin{"/user"},
+				},
+			}, ops)
+		})
+	})
 
 }
 
