@@ -64,6 +64,8 @@ func registerHelp() {
 		globalnames.RINGBUFFER_FN: core.NewRingBuffer,
 
 		//others
-		globalnames.ERROR_FN: _Error,
+		globalnames.ERROR_FN:        _Error,
+		globalnames.ADD_CTX_DATA_FN: _add_ctx_data,
+		globalnames.CTX_DATA_FN:     _ctx_data,
 	})
 }
