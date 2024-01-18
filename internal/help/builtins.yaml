@@ -1,9 +1,40 @@
+context-data:
+  title: Context data
+  elements:
+  - topic: add_ctx_data
+    related-topics: [ctx_data]
+    text: >
+      The `add_ctx_data` function creates a new user data entry in the context. The passed value should
+      fall in one of the following categories: sharable, immutable, clonable. Adding an entry with an 
+      existing entry's name is not allowed.
+    examples:
+    - code: |
+        user = {name: "foo"}
+
+        # `user` will be shared.
+        add_ctx_data(#user, user)
+    - code: |
+        list = [1, 2, 3]
+
+        # `list` will be cloned.
+        add_ctx_data(#list, user)
+  - topic: ctx_data
+    related-topics: [add_ctx_data]
+    text: >
+      The `ctx_data` function retrieves the value of a user data entry. `nil` is returned if the entry does not
+      exist. A pattern is accepted as a second
+    examples:
+    - code: |
+        user = ctx_data(#user)
+    - code: |
+        # ctx_data panics if the value does not match %user.
+        user = ctx_data(#user, %user)
 functional:
   title: Functional Programming
   elements:
   - topic: map_iterable
     related-topics: [filter_iterable, get_at_most, some, all, none]
-    text: The map_iterable function creates a list by applying an operation on each element of an iterable
+    text: The `map_iterable` function creates a list by applying an operation on each element of an iterable
     examples:
     - code: 'map_iterable([{name: "foo"}], .name)'
       output: '["foo"]'
@@ -27,7 +58,7 @@ functional:
 
   - topic: filter_iterable
     related-topics: [map_iterable, get_at_most, some, all, none]
-    text: The filter_iterable function creates a list by iterating over an iterable and keeping elements that pass a condition
+    text: The `filter_iterable` function creates a list by iterating over an iterable and keeping elements that pass a condition
     examples:
     - code: 'filter_iterable!(["a", "0", 1], %int)'
       output: '[1]'
@@ -39,7 +70,7 @@ functional:
 
   - topic: get_at_most
     related-topics: [filter_iterable, map_iterable, some, all, none]
-    text: The get_at_most function gets at most the specified number of elements from an iterable
+    text: The `get_at_most` function gets at most the specified number of elements from an iterable
     examples:
     - code: 'get_at_most(1, [])'
       output: '[]'
@@ -55,7 +86,7 @@ functional:
 
   - topic: some
     related-topics: [map_iterable, filter_iterable, all, none]
-    text: The some function returns true if and only if at least one element of an iterable passes a condition. For an empty iterable the result is always true.
+    text: The `some` function returns true if and only if at least one element of an iterable passes a condition. For an empty iterable the result is always true.
     examples:
     - code: 'some(["a", "0", 1], %int)'
       output: 'true'
@@ -67,7 +98,7 @@ functional:
 
   - topic: all
     related-topics: [map_iterable, filter_iterable, some, none]
-    text: The all function returns true if and only if all elements of an iterable pass a condition. For an empty iterable the result is always true.
+    text: The `all` function returns true if and only if all elements of an iterable pass a condition. For an empty iterable the result is always true.
     examples:
     - code: 'all([0, 1, "a"], %int)'
       output: 'false'
@@ -79,7 +110,7 @@ functional:
       
   - topic: none
     related-topics: [map_iterable, filter_iterable, some, all]
-    text: The none function returns true if and only if no elements of an iterable pass a condition. For an empty iterable the result is always true.
+    text: The `none` function returns true if and only if no elements of an iterable pass a condition. For an empty iterable the result is always true.
     examples:
     - code: 'none([0, 1, "a"], %int)'
       output: 'false'
@@ -91,7 +122,7 @@ functional:
 
   # - topic: sort
   #   text: >
-  #     The sort function creates a new list by sorting a list of strings or integers, the second argument is an identifier describing
+  #     The `sort` function creates a new list by sorting a list of strings or integers, the second argument is an identifier describing
   #     the order. For strings the available orderings are `#lex` (lexicographic) and `#revlex` (same but reversed). For integers the available
   #     orderings are `#asc` (ascending) and `#desc` (descending).
   #   examples:
@@ -104,7 +135,7 @@ functional:
   #     standalone: true
 
   - topic: find
-    text: The find function searches for items matching a pattern at a given location (a string, an iterable, a directory)
+    text: The `find` function searches for items matching a pattern at a given location (a string, an iterable, a directory)
     examples:
     - code: 'find %`a+` "a-aa-aaa"'
       output: '["a", "aa", "aaa"]'
@@ -125,7 +156,7 @@ rand:
   - topic: rand
     related-topics: [pseudo_rand]
     text: >
-      The rand function generates/picks a random value in a cryptographically secure way.
+      The `rand` function generates/picks a random value in a cryptographically secure way.
       If the argument is a pattern a matching value is returned, if the argument is an indexable an element is picked.
     examples:
     - code: 'rand(%int(0..10))'
@@ -145,7 +176,7 @@ crypto:
   elements:
   - topic: hash_password
     text: >
-      The hash_password function hashes a password string using the Argon2id algorithm, it returns a string
+      The `hash_password` function hashes a password string using the Argon2id algorithm, it returns a string
       containing: the hash, a random salt and parameters. You can find the implementation in this file: https://github.com/inoxlang/inox/blob/main/internal/globals/crypto.go 
     examples:
     - code: 'hash_password("password")'
@@ -161,21 +192,21 @@ crypto:
       standalone: true
 
   - topic: sha256
-    text: The sha256 function hashes a string or a byte sequence with the SHA-256 algorithm
+    text: The `sha256` function hashes a string or a byte sequence with the SHA-256 algorithm
     examples:
     - code: sha256("string")
       output: '0x[473287f8298dba7163a897908958f7c0eae733e25d2e027992ea2edc9bed2fa8]'
       standalone: true
 
   - topic: sha384
-    text: The sha384 function hashes a string or a byte sequence with the SHA-384 algorithm
+    text: The `sha384` function hashes a string or a byte sequence with the SHA-384 algorithm
     examples:
     - code: sha384("string")
       output: '0x[36396a7e4de3fa1c2156ad291350adf507d11a8f8be8b124a028c5db40785803ca35a7fc97a6748d85b253babab7953e]'
       standalone: true
 
   - topic: sha512
-    text: The sha512 function hashes a string or a byte sequence with the SHA-512 algorithm
+    text: The `sha512` function hashes a string or a byte sequence with the SHA-512 algorithm
     examples:
     - code: sha512("string")
       output: '0x[2757cb3cafc39af451abb2697be79b4ab61d63d74d85b0418629de8c26811b529f3f3780d0150063ff55a2beee74c4ec102a2a2731a1f1f7f10d473ad18a6a87]'
@@ -206,64 +237,64 @@ encoding:
   title: Encodings
   elements:
   - topic: b64
-    text: The b64 function encodes a string or byte sequence to Base64.
+    text: The `b64` function encodes a string or byte sequence to Base64.
 
   - topic: db64
-    text: The db64 function decodes a byte sequence from Base64.
+    text: The `db64` function decodes a byte sequence from Base64.
 
   - topic: hex
-    text: The hex function encodes a string or byte sequence to hexadecimal.
+    text: The `hex` function encodes a string or byte sequence to hexadecimal.
 
   - topic: unhex
-    text: The unhex function decodes a byte sequence from hexadecimal.
+    text: The `unhex` function decodes a byte sequence from hexadecimal.
 
 conversion:
   title: Conversion
   elements:
   - topic: tostr
     text: > 
-      The tostr function converts its argument to a string. Only the following types
+      The `tostr` function converts its argument to a string. Only the following types
       are supported: bool, int, str, byte-slice, rune-slice, path, host, url.
 
   - topic: torune
-    text: The torune function converts an integral value to a rune.
+    text: The `torune` function converts an integral value to a rune.
 
   - topic: tobyte
-    text: The tobyte function converts an integer to a byte.
+    text: The `tobyte` function converts an integer to a byte.
 
   - topic: tofloat
-    text: The tofloat function converts an integer to a float.
+    text: The `tofloat` function converts an integer to a float.
 
   - topic: toint
-    text: The toint function converts a float or byte to an integer. An error is thrown if precision has been lost.
+    text: The `toint` function converts a float or byte to an integer. An error is thrown if precision has been lost.
 
   - topic: tobytecount
-    text: The tobytecount function converts an integer to a byte count. An error is thrown if the provided value is negative.
+    text: The `tobytecount` function converts an integer to a byte count. An error is thrown if the provided value is negative.
 
   - topic: torstream
     text: >
-      The torstream function creates a readable stream from a value. If the value is readable (string, byte-slice, ...)
+      The `torstream` function creates a readable stream from a value. If the value is readable (string, byte-slice, ...)
       a byte stream is returned. If the value is indexable a stream containing the elements is returned.
       
   - topic: tojson
-    text: The tojson function converts a value to JSON (string).
+    text: The `tojson` function converts a value to JSON (string).
 
   - topic: topjson
-    text: The topjson function converts a value to formatted JSON (string).
+    text: The `topjson` function converts a value to formatted JSON (string).
 
   - topic: torepr
-    text: The torepr function converts a value to its IXON representation (Inox Object Notation).
+    text: The `torepr` function converts a value to its IXON representation (Inox Object Notation).
 
   - topic: parse_repr
-    text: The parse_repr function parses an IXON string and returns the unmarshalled value.
+    text: The `parse_repr` function parses an IXON string and returns the unmarshalled value.
 
   - topic: parse
-    text: The parse function parses a string based on the specified pattern.
+    text: The `parse` function parses a string based on the specified pattern.
     examples:
     - code: 'parse!("1", %int)'
 
   - topic: split
-    text: The split function slices a string into all substrings separated by sep. If a pattern is 
+    text: The `split` function slices a string into all substrings separated by sep. If a pattern is 
       given as a second argument each substring is parsed based on it.
     examples:
     - code: 'split!("a,b", ",")'
@@ -278,19 +309,19 @@ time:
   title: Time
   elements:
   - topic: ago
-    text: The ago function returns the current datetime minus the provided duration.
+    text: The `ago` function returns the current datetime minus the provided duration.
     examples:
     - code: 'ago(1h)'
       standalone: true
 
   - topic: now
-    text: The now function returns the current datetime.
+    text: The `now` function returns the current datetime.
 
   - topic: time_since
-    text: The time_since function returns the time elapsed (duration) since the provided datetime. 
+    text: The `time_since` function returns the time elapsed (duration) since the provided datetime. 
 
   - topic: sleep
-    text: The sleep function pauses the execution for the given duration.
+    text: The `sleep` function pauses the execution for the given duration.
     examples:
     - code: 'sleep(1s)'
       standalone: true
@@ -299,10 +330,10 @@ printing:
   title: Printing
   elements:
   - topic: print
-    text: "The print function prints its arguments with a space ' ' separation. A `\\n` character is added at the end."
+    text: "The `print` function prints its arguments with a space ' ' separation. A `\\n` character is added at the end."
 
   - topic: fprint
-    text: "The fprint function writes to the provided writer its arguments with a space ' ' separation. A '\\n' character is added at the end."
+    text: "The `fprint` function writes to the provided writer its arguments with a space ' ' separation. A '\\n' character is added at the end."
 
 log:
   namespace: true
@@ -342,32 +373,32 @@ bytes-runes:
   title: Bytes and Runes
   elements:
   - topic: mkbytes
-    text: The mkbytes function allocates a byte-slice of the provided size.
+    text: The `mkbytes` function allocates a byte-slice of the provided size.
     examples:
     - code: 'mkbytes(1kB)'
       standalone: true
 
   - topic: Bytes
-    text: The Bytes function reads a readable (string, byte-slice, ...) and returns a byte-slice.
+    text: The `Bytes` function reads a readable (string, byte-slice, ...) and returns a byte-slice.
     examples:
     - code: 'bytes = Bytes("abc")'
       standalone: true
 
   - topic: Runes
     text: >
-      The Runes function reads a readable (string, byte-slice, ...) and returns a rune-slice. A rune is a Unicode code point (character).
+      The `Runes` function reads a readable (string, byte-slice, ...) and returns a rune-slice. A rune is a Unicode code point (character).
       See https://go.dev/blog/strings for more details.
     examples:
     - code: 'runes = Runes("abc")'
 
   - topic: is_space
-    text: The is_space function returns whether a given rune is a space character (Unicode's White Space property).
+    text: The `is_space` function returns whether a given rune is a space character (Unicode's White Space property).
     examples:
     - code: "is_space(' ') # true"
       standalone: true
 
   - topic: Reader
-    text: The Reader function creates a reader from a readable (string, byte-slice, ...).
+    text: The `Reader` function creates a reader from a readable (string, byte-slice, ...).
     examples:
     - code: |
         reader = Reader("abc")
@@ -378,7 +409,7 @@ bytes-runes:
       standalone: true
 
   - topic: RingBuffer
-    text: The RingBuffer function creates a ring-buffer with a given capacity.
+    text: The `RingBuffer` function creates a ring-buffer with a given capacity.
     examples: 
     - code: |
         buffer = RingBuffer(100B)
@@ -452,7 +483,7 @@ chrome:
 
   - topic: chrome.Handle
     text: |
-      The Handle function creates a new Chrome handle that provides methods to interact with a web browser instance.
+      The `Handle` function creates a new Chrome handle that provides methods to interact with a web browser instance.
       You should call its .close() method when you are finished using it. 
       
       The project server downloads a Chromium browser
@@ -509,18 +540,18 @@ containers:
   elements:
   - topic: Graph
     related-topics: [Tree]
-    text: The Graph function creates a directed Graph
+    text: The `Graph` function creates a directed Graph
 
   - topic: Tree
     related-topics: [Graph]
-    text: The Tree function creates a tree from a treedata value
+    text: The `Tree` function creates a tree from a treedata value
     examples:
     - code: 'Tree(treedata "root")'
       explanation: creates a Tree with a single node
       standalone: true
 
   - topic: Queue
-    text: The Queue function creates a queue from an iterable
+    text: The `Queue` function creates a queue from an iterable
     examples:
     - code: 'Queue([])'
       explanation: creates an empty queue
@@ -532,7 +563,7 @@ containers:
 
   - topic: Set
     text: >
-      The Set function creates a set from an iterable, by default only representable (serializable) values are allowed.
+      The `Set` function creates a set from an iterable, by default only representable (serializable) values are allowed.
       A configuration is accepted as a second argument.
 
     examples:
@@ -553,7 +584,7 @@ containers:
       standalone: true
 
   - topic: Map
-    text: The Map function creates a map from a flat list of entries
+    text: The `Map` function creates a map from a flat list of entries
     examples:
     - code: 'Map(["key1", 10, "key2", 20])'
       explanation: creates a Map with the entries "key1" -> 10, "key2" -> 20`
@@ -561,7 +592,7 @@ containers:
 
   - topic: Ranking
     text: >
-      The Ranking function creates a ranking from a flat list of entries.
+      The `Ranking` function creates a ranking from a flat list of entries.
       An entry is composed of a value and a floating-point score. 
       The value with the highest score has the first rank (0), values with the same score have the same rank.
     examples:
@@ -574,7 +605,7 @@ containers:
       standalone: true
       
   - topic: Thread
-    text: The Thread function creates a thread from an iterable.
+    text: The `Thread` function creates a thread from an iterable.
     examples:
     - code: 'Thread([{message: "hello", author-id: "5958"}])'
       standalone: true
@@ -697,13 +728,13 @@ fs:
 
   - topic: fs.read
     text: > 
-      The fs.read function behaves exactly like the read function but only works on files & directories.
+      The fs.read function behaves exactly like the `read` function but only works on files & directories.
       The content of files is parsed by default, to disable parsing use --raw after the path: a byte slice will be returned instead. 
       The type of content is determined by looking at the extension.
 
   - topic: fs.read_file
     text: >
-      The fs.read function behaves exactly like the read function but only works on files.
+      The fs.read function behaves exactly like the `read` function but only works on files.
       The content is parsed by default, to disable parsing use --raw after the path: a
       byte slice will be returned instead. The type of content is determined by
       looking at the extension.
@@ -786,7 +817,7 @@ http:
 
   - topic: http.read
     text: >
-      The http.read function behaves exactly like the read function but only works on HTTP resources.
+      The http.read function behaves exactly like the `read` function but only works on HTTP resources.
       By default the type of content is determined by looking at the Content-Type header. You can specify a content type
       by adding a mimetype value such as mime"json".
     examples:
@@ -915,7 +946,7 @@ Errors:
   namespace: false
   elements:
   - topic: Error
-    text: The Error function creates an error from the provided string and an optional immutable data argument.
+    text: The `Error` function creates an error from the provided string and an optional immutable data argument.
     examples:
     - code: 'Error("failed to create user")'
       standalone: true

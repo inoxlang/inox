@@ -89,7 +89,7 @@ help_data = read!(DATA_FILE)
 assert (help_data match [object])
 
 groups = help_data[0]
-group_names = sort(propnames(groups), #lex)
+group_names = propnames(groups).sorted(#lex)
 
 var builtin str = ""
 

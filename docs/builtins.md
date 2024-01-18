@@ -11,6 +11,7 @@
  - [Bytes and Runes](#bytes-and-runes)
  - [Browser Automation](#browser-automation)
  - [Data Containers](#data-containers)
+ - [Context data](#context-data)
  - [Conversion](#conversion)
  - [Cryptography](#cryptography)
  - [DNS](#dns)
@@ -29,7 +30,7 @@
 
 ### Error
 
-The Error function creates an error from the provided string and an optional immutable data argument.
+The `Error` function creates an error from the provided string and an optional immutable data argument.
 
 **examples**
 
@@ -44,7 +45,7 @@ Error("failed to create user", #{user_id: 100})
 
 ### mkbytes
 
-The mkbytes function allocates a byte-slice of the provided size.
+The `mkbytes` function allocates a byte-slice of the provided size.
 
 **examples**
 
@@ -53,7 +54,7 @@ mkbytes(1kB)
 ```
 ### Bytes
 
-The Bytes function reads a readable (string, byte-slice, ...) and returns a byte-slice.
+The `Bytes` function reads a readable (string, byte-slice, ...) and returns a byte-slice.
 
 **examples**
 
@@ -62,7 +63,7 @@ bytes = Bytes("abc")
 ```
 ### Runes
 
-The Runes function reads a readable (string, byte-slice, ...) and returns a rune-slice. A rune is a Unicode code point (character). See https://go.dev/blog/strings for more details.
+The `Runes` function reads a readable (string, byte-slice, ...) and returns a rune-slice. A rune is a Unicode code point (character). See https://go.dev/blog/strings for more details.
 
 **examples**
 
@@ -71,7 +72,7 @@ runes = Runes("abc")
 ```
 ### is_space
 
-The is_space function returns whether a given rune is a space character (Unicode's White Space property).
+The `is_space` function returns whether a given rune is a space character (Unicode's White Space property).
 
 **examples**
 
@@ -80,7 +81,7 @@ is_space(' ') # true
 ```
 ### Reader
 
-The Reader function creates a reader from a readable (string, byte-slice, ...).
+The `Reader` function creates a reader from a readable (string, byte-slice, ...).
 
 **examples**
 
@@ -93,7 +94,7 @@ print(tostr(bytes))
 ```
 ### RingBuffer
 
-The RingBuffer function creates a ring-buffer with a given capacity.
+The `RingBuffer` function creates a ring-buffer with a given capacity.
 
 **examples**
 
@@ -119,7 +120,7 @@ s = tostr(slice)
 chrome namespace.
 ### chrome.Handle
 
-The Handle function creates a new Chrome handle that provides methods to interact with a web browser instance.
+The `Handle` function creates a new Chrome handle that provides methods to interact with a web browser instance.
 You should call its .close() method when you are finished using it. 
 
 The project server downloads a Chromium browser
@@ -196,20 +197,19 @@ this method should be called when you are finished using the Chrome handle.
 
 ### Graph
 
-The Graph function creates a directed Graph.
+The `Graph` function creates a directed Graph.
 ### Tree
 
-The Tree function creates a tree from a treedata value.
+The `Tree` function creates a tree from a treedata value.
 
 **examples**
 
 ```inox
 Tree(treedata "root")
 ```
-
 ### Queue
 
-The Queue function creates a queue from an iterable.
+The `Queue` function creates a queue from an iterable.
 
 **examples**
 
@@ -221,7 +221,7 @@ Queue([1])
 ```
 ### Set
 
-The Set function creates a set from an iterable, by default only representable (serializable) values are allowed. A configuration is accepted as a second argument.
+The `Set` function creates a set from an iterable, by default only representable (serializable) values are allowed. A configuration is accepted as a second argument.
 
 **examples**
 
@@ -239,7 +239,7 @@ Set([{name: "A"}, {name: "B"}], {uniqueness: .name})
 ```
 ### Map
 
-The Map function creates a map from a flat list of entries.
+The `Map` function creates a map from a flat list of entries.
 
 **examples**
 
@@ -248,7 +248,7 @@ Map(["key1", 10, "key2", 20])
 ```
 ### Ranking
 
-The Ranking function creates a ranking from a flat list of entries. An entry is composed of a value and a floating-point score.  The value with the highest score has the first rank (0), values with the same score have the same rank.
+The `Ranking` function creates a ranking from a flat list of entries. An entry is composed of a value and a floating-point score.  The value with the highest score has the first rank (0), values with the same score have the same rank.
 
 **examples**
 
@@ -260,7 +260,7 @@ Ranking(["best player", 10.0, "other player", 10.0])
 ```
 ### Thread
 
-The Thread function creates a thread from an iterable.
+The `Thread` function creates a thread from an iterable.
 
 **examples**
 
@@ -268,44 +268,78 @@ The Thread function creates a thread from an iterable.
 Thread([{message: "hello", author-id: "5958"}])
 ```
 
+## Context data
+
+### add_ctx_data
+
+The `add_ctx_data` function creates a new user data entry in the context. The passed value should fall in one of the following categories: sharable, immutable, clonable. Adding an entry with an  existing entry's name is not allowed.
+
+**examples**
+
+```inox
+user = {name: "foo"}
+
+# `user` will be shared.
+add_ctx_data(#user, user)
+```
+```inox
+list = [1, 2, 3]
+
+# `list` will be cloned.
+add_ctx_data(#list, user)
+```
+### ctx_data
+
+The `ctx_data` function retrieves the value of a user data entry. `nil` is returned if the entry does not exist. A pattern is accepted as a second.
+
+**examples**
+
+```inox
+user = ctx_data(#user)
+```
+```inox
+# ctx_data panics if the value does not match %user.
+user = ctx_data(#user, %user)
+```
+
 ## Conversion
 
 ### tostr
 
-The tostr function converts its argument to a string. Only the following types are supported: bool, int, str, byte-slice, rune-slice, path, host, url.
+The `tostr` function converts its argument to a string. Only the following types are supported: bool, int, str, byte-slice, rune-slice, path, host, url.
 ### torune
 
-The torune function converts an integral value to a rune.
+The `torune` function converts an integral value to a rune.
 ### tobyte
 
-The tobyte function converts an integer to a byte.
+The `tobyte` function converts an integer to a byte.
 ### tofloat
 
-The tofloat function converts an integer to a float.
+The `tofloat` function converts an integer to a float.
 ### toint
 
-The toint function converts a float or byte to an integer. An error is thrown if precision has been lost.
+The `toint` function converts a float or byte to an integer. An error is thrown if precision has been lost.
 ### tobytecount
 
-The tobytecount function converts an integer to a byte count. An error is thrown if the provided value is negative.
+The `tobytecount` function converts an integer to a byte count. An error is thrown if the provided value is negative.
 ### torstream
 
-The torstream function creates a readable stream from a value. If the value is readable (string, byte-slice, ...) a byte stream is returned. If the value is indexable a stream containing the elements is returned.
+The `torstream` function creates a readable stream from a value. If the value is readable (string, byte-slice, ...) a byte stream is returned. If the value is indexable a stream containing the elements is returned.
 ### tojson
 
-The tojson function converts a value to JSON (string).
+The `tojson` function converts a value to JSON (string).
 ### topjson
 
-The topjson function converts a value to formatted JSON (string).
+The `topjson` function converts a value to formatted JSON (string).
 ### torepr
 
-The torepr function converts a value to its IXON representation (Inox Object Notation).
+The `torepr` function converts a value to its IXON representation (Inox Object Notation).
 ### parse_repr
 
-The parse_repr function parses an IXON string and returns the unmarshalled value.
+The `parse_repr` function parses an IXON string and returns the unmarshalled value.
 ### parse
 
-The parse function parses a string based on the specified pattern.
+The `parse` function parses a string based on the specified pattern.
 
 **examples**
 
@@ -314,7 +348,7 @@ parse!("1", %int)
 ```
 ### split
 
-The split function slices a string into all substrings separated by sep. If a pattern is given as a second argument each substring is parsed based on it.
+The `split` function slices a string into all substrings separated by sep. If a pattern is given as a second argument each substring is parsed based on it.
 
 **examples**
 
@@ -332,7 +366,7 @@ split!("first line\nsecond line", "\n")
 
 ### hash_password
 
-The hash_password function hashes a password string using the Argon2id algorithm, it returns a string containing: the hash, a random salt and parameters. You can find the implementation in this file: https://github.com/inoxlang/inox/blob/main/internal/globals/crypto.go.
+The `hash_password` function hashes a password string using the Argon2id algorithm, it returns a string containing: the hash, a random salt and parameters. You can find the implementation in this file: https://github.com/inoxlang/inox/blob/main/internal/globals/crypto.go.
 
 **examples**
 
@@ -354,7 +388,7 @@ true
 ```
 ### sha256
 
-The sha256 function hashes a string or a byte sequence with the SHA-256 algorithm.
+The `sha256` function hashes a string or a byte sequence with the SHA-256 algorithm.
 
 **examples**
 
@@ -365,7 +399,7 @@ sha256("string")
 ```
 ### sha384
 
-The sha384 function hashes a string or a byte sequence with the SHA-384 algorithm.
+The `sha384` function hashes a string or a byte sequence with the SHA-384 algorithm.
 
 **examples**
 
@@ -376,7 +410,7 @@ sha384("string")
 ```
 ### sha512
 
-The sha512 function hashes a string or a byte sequence with the SHA-512 algorithm.
+The `sha512` function hashes a string or a byte sequence with the SHA-512 algorithm.
 
 **examples**
 
@@ -434,16 +468,16 @@ dns.resolve!("github.com" "A")
 
 ### b64
 
-The b64 function encodes a string or byte sequence to Base64.
+The `b64` function encodes a string or byte sequence to Base64.
 ### db64
 
-The db64 function decodes a byte sequence from Base64.
+The `db64` function decodes a byte sequence from Base64.
 ### hex
 
-The hex function encodes a string or byte sequence to hexadecimal.
+The `hex` function encodes a string or byte sequence to hexadecimal.
 ### unhex
 
-The unhex function decodes a byte sequence from hexadecimal.
+The `unhex` function decodes a byte sequence from hexadecimal.
 
 ## Filesystem
 
@@ -484,10 +518,10 @@ fs.mkdir ./dir_b/ $dir_content
 ```
 ### fs.read
 
-The fs.read function behaves exactly like the read function but only works on files & directories. The content of files is parsed by default, to disable parsing use --raw after the path: a byte slice will be returned instead.  The type of content is determined by looking at the extension.
+The fs.read function behaves exactly like the `read` function but only works on files & directories. The content of files is parsed by default, to disable parsing use --raw after the path: a byte slice will be returned instead.  The type of content is determined by looking at the extension.
 ### fs.read_file
 
-The fs.read function behaves exactly like the read function but only works on files. The content is parsed by default, to disable parsing use --raw after the path: a byte slice will be returned instead. The type of content is determined by looking at the extension.
+The fs.read function behaves exactly like the `read` function but only works on files. The content is parsed by default, to disable parsing use --raw after the path: a byte slice will be returned instead. The type of content is determined by looking at the extension.
 ### fs.ls
 
 The fs.ls function takes a directory path or a path pattern as first argument and returns a list of entries, if no argument is provided the ./ directory is used.
@@ -559,7 +593,7 @@ fs.get_tree_data(./)
 
 ### map_iterable
 
-The map_iterable function creates a list by applying an operation on each element of an iterable.
+The `map_iterable` function creates a list by applying an operation on each element of an iterable.
 
 **examples**
 
@@ -590,7 +624,7 @@ map_iterable([0, 1, 2], @($ + 1))
 ```
 ### filter_iterable
 
-The filter_iterable function creates a list by iterating over an iterable and keeping elements that pass a condition.
+The `filter_iterable` function creates a list by iterating over an iterable and keeping elements that pass a condition.
 
 **examples**
 
@@ -606,7 +640,7 @@ filter_iterable!([0, 1, 2], @($ >= 1))
 ```
 ### get_at_most
 
-The get_at_most function gets at most the specified number of elements from an iterable.
+The `get_at_most` function gets at most the specified number of elements from an iterable.
 
 **examples**
 
@@ -627,7 +661,7 @@ get_at_most(2, ["a", "b", "c"])
 ```
 ### some
 
-The some function returns true if and only if at least one element of an iterable passes a condition. For an empty iterable the result is always true.
+The `some` function returns true if and only if at least one element of an iterable passes a condition. For an empty iterable the result is always true.
 
 **examples**
 
@@ -643,7 +677,7 @@ false
 ```
 ### all
 
-The all function returns true if and only if all elements of an iterable pass a condition. For an empty iterable the result is always true.
+The `all` function returns true if and only if all elements of an iterable pass a condition. For an empty iterable the result is always true.
 
 **examples**
 
@@ -659,7 +693,7 @@ true
 ```
 ### none
 
-The none function returns true if and only if no elements of an iterable pass a condition. For an empty iterable the result is always true.
+The `none` function returns true if and only if no elements of an iterable pass a condition. For an empty iterable the result is always true.
 
 **examples**
 
@@ -673,7 +707,27 @@ none([0, 1, 2], @($ < 0))
 # output: 
 true
 ```
+### find
 
+The `find` function searches for items matching a pattern at a given location (a string, an iterable, a directory).
+
+**examples**
+
+```inox
+find %`a+` "a-aa-aaa"
+# output: 
+["a", "aa", "aaa"]
+```
+```inox
+find %./**/*.json ./
+# output: 
+[./file.json, ./dir/file.json, ./dir/dir/.file.json]
+```
+```inox
+find %int ['1', 2, "3"]
+# output: 
+[2]
+```
 ### idt
 
 The idt (identity) function takes a single argument and returns it.
@@ -751,7 +805,7 @@ http.get https://example.com/
 ```
 ### http.read
 
-The http.read function behaves exactly like the read function but only works on HTTP resources. By default the type of content is determined by looking at the Content-Type header. You can specify a content type by adding a mimetype value such as mime"json".
+The http.read function behaves exactly like the `read` function but only works on HTTP resources. By default the type of content is determined by looking at the Content-Type header. You can specify a content type by adding a mimetype value such as mime"json".
 
 **examples**
 
@@ -808,7 +862,7 @@ http.Client{
 ```
 ### http.Server
 
-The http.Server function creates a listening HTTP server with a given with a given address & handler. The address should be a HTTPS host such as `https://localhost:8080` or `https://0.0.0.0:8080`. The handler can be an function or a Mapping that routes requests. When you send a request to a server listening to https://localhost add the --insecure flag  to ignore certificate errors. When using filesystem routing modules are reloaded each time files are changed in /routes/. Also for each page render a nonce is added to the `script-src-elem` CSP directive and to all `<script>` elements in the page's HTML.
+The http.Server function creates a listening HTTP server with a given with a given address & handler. The address should be a HTTPS host such as `https://localhost:8080` or `https://0.0.0.0:8080`. The handler can be an function or a Mapping that routes requests.  When you send a request to a server listening on localhost add the --insecure flag to ignore certificate errors. When using filesystem routing modules are reloaded each time files are changed in /routes/. Also for each page render a nonce is added to the `script-src-elem` CSP directive and to all `<script>` elements in the page's HTML.
 
 **examples**
 
@@ -909,16 +963,16 @@ log.add #{"user", id, "created", id: 100}
 
 ### print
 
-The print function prints its arguments with a space ' ' separation. A `\n` character is added at the end.
+The `print` function prints its arguments with a space ' ' separation. A `\n` character is added at the end.
 ### fprint
 
-The fprint function writes to the provided writer its arguments with a space ' ' separation. A '\n' character is added at the end.
+The `fprint` function writes to the provided writer its arguments with a space ' ' separation. A '\n' character is added at the end.
 
 ## rand
 
 ### rand
 
-The rand function generates/picks a random value in a cryptographically secure way. If the argument is a pattern a matching value is returned, if the argument is an indexable an element is picked.
+The `rand` function generates/picks a random value in a cryptographically secure way. If the argument is a pattern a matching value is returned, if the argument is an indexable an element is picked.
 
 **examples**
 
@@ -1046,7 +1100,7 @@ conn.close()
 
 ### ago
 
-The ago function returns the current datetime minus the provided duration.
+The `ago` function returns the current datetime minus the provided duration.
 
 **examples**
 
@@ -1055,13 +1109,13 @@ ago(1h)
 ```
 ### now
 
-The now function returns the current datetime.
+The `now` function returns the current datetime.
 ### time_since
 
-The time_since function returns the time elapsed (duration) since the provided datetime.
+The `time_since` function returns the time elapsed (duration) since the provided datetime.
 ### sleep
 
-The sleep function pauses the execution for the given duration.
+The `sleep` function pauses the execution for the given duration.
 
 **examples**
 
