@@ -402,7 +402,7 @@ func _Color(ctx *core.Context, firstArg core.Value, other ...core.Value) core.Co
 }
 
 func _add_ctx_data(ctx *core.Context, name core.Identifier, value core.Value) {
-	ctx.AddUserData(name, value)
+	ctx.PutUserData(name, value)
 }
 
 func _ctx_data(ctx *core.Context, name core.Identifier) core.Value {

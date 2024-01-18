@@ -1016,3 +1016,70 @@ func TestContextDone(t *testing.T) {
 		assert.Contains(t, buf.String(), "hello")
 	})
 }
+
+func TestContextPutResolveUserData(t *testing.T) {
+	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	defer ctx.CancelGracefully()
+
+	t.Run("base case", func(t *testing.T) {
+		ctx.PutUserData("a", Int(1))
+		val := ctx.ResolveUserData("a")
+		assert.Equal(t, Int(1), val)
+	})
+
+	t.Run("redefinition is forbidden", func(t *testing.T) {
+		ctx.PutUserData("b", Int(1))
+
+		func() {
+			defer func() {
+				e := recover()
+				if !assert.NotNil(t, e) {
+					return
+				}
+				assert.ErrorIs(t, e.(error), ErrDoubleUserDataDefinition)
+			}()
+			ctx.PutUserData("b", Int(2))
+		}()
+	})
+
+	t.Run("clonable values are allowed and should be cloned", func(t *testing.T) {
+		clonable := NewWrappedValueList(Int(1))
+		ctx.PutUserData("clonable", clonable)
+		val := ctx.ResolveUserData("clonable")
+
+		assert.Equal(t, clonable, val)
+		assert.NotSame(t, clonable, val)
+	})
+
+	t.Run("immutable values are allowed", func(t *testing.T) {
+		immutable := NewTuple([]Serializable{Int(1)})
+		ctx.PutUserData("immutable", immutable)
+		val := ctx.ResolveUserData("immutable")
+
+		assert.Same(t, immutable, val)
+	})
+
+	t.Run("sharable values are allowed and should be shared", func(t *testing.T) {
+		sharable := NewObject()
+		ctx.PutUserData("sharable", sharable)
+		val := ctx.ResolveUserData("sharable")
+
+		assert.Same(t, sharable, val)
+		assert.True(t, sharable.IsShared())
+	})
+
+	t.Run("values that are not sharable nor clonable are not allowed", func(t *testing.T) {
+		nonSharable := Struct(0)
+
+		func() {
+			defer func() {
+				e := recover()
+				if !assert.NotNil(t, e) {
+					return
+				}
+				assert.ErrorIs(t, e.(error), ErrNotSharableNorClonableUserDataValue)
+			}()
+			ctx.PutUserData("non-sharable", &nonSharable)
+		}()
+	})
+}

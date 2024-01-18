@@ -43,7 +43,7 @@ var (
 	ErrCannotProvideLimitTokensForChildContext = errors.New("limit tokens cannot be set in new context's config if it is a child")
 	ErrNoAssociatedState                       = errors.New("context has no associated state")
 	ErrAlreadyAssociatedState                  = errors.New("context already has an associated state")
-	ErrNotSharableUserDataValue                = errors.New("attempt to set a user data entry with a non sharable value ")
+	ErrNotSharableNorClonableUserDataValue     = errors.New("attempt to set a user data entry with a value that is not sharable nor clonable")
 	ErrDoubleUserDataDefinition                = errors.New("cannot define a user data entry more than once")
 	ErrTypeExtensionAlreadyRegistered          = errors.New("type extension is already registered")
 
@@ -1313,8 +1313,9 @@ func (ctx *Context) ResolveUserData(name Identifier) Value {
 	return data
 }
 
-// AddUserData associates a data with the passed name, if the data is already defined the function will panic.
-func (ctx *Context) AddUserData(name Identifier, value Value) {
+// PutUserData associates $value with the passed name, if the entry is already defined the function will panic.
+// $value must be sharable or clonable.
+func (ctx *Context) PutUserData(name Identifier, value Value) {
 	ctx.lock.Lock()
 	defer ctx.lock.Unlock()
 	ctx.assertNotDone()
@@ -1324,10 +1325,15 @@ func (ctx *Context) AddUserData(name Identifier, value Value) {
 		panic(fmt.Errorf("%w: %s", ErrDoubleUserDataDefinition, name))
 	}
 
-	if ok, expl := IsSharable(value, ctx.getClosestStateNoLock()); !ok {
-		panic(fmt.Errorf("%w: %s", ErrNotSharableUserDataValue, expl))
+	shared, err := ShareOrClone(value, ctx.getClosestStateNoLock())
+	if err != nil {
+		if errors.Is(err, ErrValueNotSharableNorClonable) {
+			panic(ErrNotSharableNorClonableUserDataValue)
+		} else {
+			panic(err)
+		}
 	}
-	ctx.userData[name] = value
+	ctx.userData[name] = shared
 }
 
 func (ctx *Context) GetTypeExtension(id string) *TypeExtension {

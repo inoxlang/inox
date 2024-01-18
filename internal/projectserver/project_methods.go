@@ -118,7 +118,7 @@ func registerProjectMethodHandlers(server *lsp.Server, opts LSPServerConfigurati
 				}
 			}
 
-			sessionCtx.AddUserData(CURRENT_PROJECT_CTX_KEY, project)
+			sessionCtx.PutUserData(CURRENT_PROJECT_CTX_KEY, project)
 
 			tokens, err := project.TempProjectTokens(sessionCtx)
 			if err != nil {
