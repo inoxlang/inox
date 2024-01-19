@@ -174,6 +174,8 @@ func (l *limiter) SetStateOnce(id StateId) {
 }
 
 func (l *limiter) SetContextIfNotChild(ctx *Context) {
+	//The context is only set if the limiter is not a child because the bucket is shared between the parent and children.
+	//In other words if $l is a child limiter the context of its bucket should already be set.
 	if l.parentLimiter == nil {
 		l.bucket.SetContext(ctx)
 	}

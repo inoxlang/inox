@@ -264,9 +264,13 @@ func startTokenBucketManagerGoroutine() {
 		return
 	}
 
-	updateTokenCount := func(tb *tokenBucket) {
+	updateBucketState := func(tb *tokenBucket) {
 		tb.lock.Lock()
 		defer tb.lock.Unlock()
+
+		if tb.context != nil && tb.context.IsDone() {
+			tb.shouldBeDestroyed = true
+		}
 
 		if tb.decrementFn == nil {
 			if tb.available < tb.capacity {
@@ -278,7 +282,7 @@ func startTokenBucketManagerGoroutine() {
 		}
 
 		if tb.available < 0 && tb.cancelContextOnNegativeCount && tb.context != nil {
-			tb.context.CancelGracefully() // add reason
+			tb.context.CancelGracefully() // TODO: add reason
 			return
 		}
 
@@ -356,7 +360,7 @@ func startTokenBucketManagerGoroutine() {
 				defer tokenBucketsLock.Unlock()
 
 				for bucket := range tokenBuckets {
-					updateTokenCount(bucket)
+					updateBucketState(bucket)
 				}
 			}()
 		}
