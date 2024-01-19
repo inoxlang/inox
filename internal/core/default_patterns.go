@@ -842,13 +842,33 @@ var (
 	UUIDv4_STRING_PATTERN      = NewParserBasePattern(&uuidv4Parser{})
 	NAMED_SEGMENT_PATH_PATTERN = &TypePattern{
 		Type:          NAMED_SEGMENT_PATH_PATTERN_TYPE,
-		Name:          "named-segment-path-pattern",
+		Name:          patternnames.NAMED_SEGMENT_PATH_PATTERN,
 		SymbolicValue: symbolic.ANY_NAMED_SEGMENT_PATH_PATTERN,
 	}
 	TYPE_PATTERN_PATTERN = &TypePattern{
 		Type:          TYPE_PATTERN_TYPE,
-		Name:          "type-pattern",
+		Name:          patternnames.TYPE_PATTERN,
 		SymbolicValue: symbolic.ANY_TYPE_PATTERN,
+	}
+	OBJECT_PATTERN_PATTERN = &TypePattern{
+		Type:          OBJECT_PATTERN_TYPE,
+		Name:          patternnames.OBJECT_PATTERN,
+		SymbolicValue: symbolic.ANY_OBJECT_PATTERN,
+	}
+	LIST_PATTERN_PATTERN = &TypePattern{
+		Type:          LIST_PATTERN_TYPE,
+		Name:          patternnames.LIST_PATTERN,
+		SymbolicValue: symbolic.ANY_LIST_PATTERN,
+	}
+	RECORD_PATTERN_PATTERN = &TypePattern{
+		Type:          RECORD_PATTERN_TYPE,
+		Name:          patternnames.RECORD_PATTERN,
+		SymbolicValue: symbolic.ANY_RECORD_PATTERN,
+	}
+	TUPLE_PATTERN_PATTERN = &TypePattern{
+		Type:          TUPLE_PATTERN_TYPE,
+		Name:          patternnames.TUPLE_PATTERN,
+		SymbolicValue: symbolic.ANY_TUPLE_PATTERN,
 	}
 
 	DEFAULT_NAMED_PATTERNS = map[string]Pattern{
@@ -924,6 +944,13 @@ var (
 		VAL_PATTERN.Name:           VAL_PATTERN,
 		ULID_PATTERN.Name:          ULID_PATTERN,
 		UUIDv4_PATTERN.Name:        UUIDv4_PATTERN,
+
+		TYPE_PATTERN_PATTERN.Name:   TYPE_PATTERN_PATTERN,
+		OBJECT_PATTERN_PATTERN.Name: OBJECT_PATTERN_PATTERN,
+		LIST_PATTERN_PATTERN.Name:   LIST_PATTERN_PATTERN,
+		RECORD_PATTERN_PATTERN.Name: RECORD_PATTERN_PATTERN,
+		TUPLE_PATTERN_PATTERN.Name:  TUPLE_PATTERN_PATTERN,
+		NAMED_SEGMENT_PATH_PATTERN.Name: NAMED_SEGMENT_PATH_PATTERN,
 	}
 
 	DEFAULT_PATTERN_NAMESPACES = map[string]*PatternNamespace{
