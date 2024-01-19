@@ -30,6 +30,16 @@ const (
 	SERIALIZED_FLOAT_RANGE_START_EXCL_END_KEY = "exclusiveEnd"
 	SERIALIZED_FLOAT_RANGE_START_END_KEY      = "end"
 
+	//int range pattern serialization
+
+	SERIALIZED_INT_RANGE_PATTERN_RANGE_KEY = "range"
+	SERIALIZED_INT_RANGE_PATTERN_MULT_OF   = "multipleOf"
+
+	//float range pattern serialization
+
+	SERIALIZED_FLOAT_RANGE_PATTERN_RANGE_KEY = "range"
+	SERIALIZED_FLOAT_RANGE_PATTERN_MULT_OF   = "multipleOf"
+
 	//object pattern serialization
 
 	SERIALIZED_OBJECT_PATTERN_INEXACT_KEY           = "inexact"
@@ -1058,6 +1068,72 @@ func (r FloatRange) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, co
 }
 
 //patterns
+
+func (p IntRangePattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+	write := func(w *jsoniter.Stream) error {
+		w.WriteObjectStart()
+
+		rangeConfig := JSONSerializationConfig{ReprConfig: config.ReprConfig, Pattern: INT_RANGE_PATTERN}
+
+		w.WriteObjectField(SERIALIZED_INT_RANGE_PATTERN_RANGE_KEY)
+		err := p.intRange.WriteJSONRepresentation(ctx, w, rangeConfig, depth+1)
+		if err != nil {
+			return err
+		}
+
+		if p.multipleOfFloat != nil {
+			w.WriteMore()
+			w.WriteObjectField(SERIALIZED_INT_RANGE_PATTERN_MULT_OF)
+			w.WriteFloat64(float64(*p.multipleOfFloat))
+		} else if p.multipleOf > 0 {
+			w.WriteMore()
+			w.WriteObjectField(SERIALIZED_INT_RANGE_PATTERN_MULT_OF)
+			w.WriteInt64(int64(p.multipleOf))
+		}
+
+		w.WriteObjectEnd()
+		return nil
+	}
+
+	if noPatternOrAny(config.Pattern) {
+		return writeUntypedValueJSON(INT_RANGE_PATTERN_PATTERN.Name, func(w *jsoniter.Stream) error {
+			return write(w)
+		}, w)
+	}
+
+	return write(w)
+}
+
+func (p FloatRangePattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+	write := func(w *jsoniter.Stream) error {
+		w.WriteObjectStart()
+
+		rangeConfig := JSONSerializationConfig{ReprConfig: config.ReprConfig, Pattern: FLOAT_RANGE_PATTERN}
+
+		w.WriteObjectField(SERIALIZED_FLOAT_RANGE_PATTERN_RANGE_KEY)
+		err := p.floatRange.WriteJSONRepresentation(ctx, w, rangeConfig, depth+1)
+		if err != nil {
+			return err
+		}
+
+		if p.multipleOf > 0 {
+			w.WriteMore()
+			w.WriteObjectField(SERIALIZED_FLOAT_RANGE_PATTERN_MULT_OF)
+			w.WriteFloat64(float64(p.multipleOf))
+		}
+
+		w.WriteObjectEnd()
+		return nil
+	}
+
+	if noPatternOrAny(config.Pattern) {
+		return writeUntypedValueJSON(FLOAT_RANGE_PATTERN_PATTERN.Name, func(w *jsoniter.Stream) error {
+			return write(w)
+		}, w)
+	}
+
+	return write(w)
+}
 
 func (pattern ExactValuePattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	if depth > MAX_JSON_REPR_WRITING_DEPTH {

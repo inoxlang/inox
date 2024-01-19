@@ -1118,7 +1118,7 @@ func NewIncludedEndIntRangePattern(start, end int64, multipleOf int64) *IntRange
 	}
 }
 
-// multipleOf is ignored if not greater than zero
+// $multipleOf is ignored if not greater than zero.
 func NewIntRangePattern(intRange IntRange, multipleOf int64) *IntRangePattern {
 	if intRange.end < intRange.start {
 		panic(fmt.Errorf("failed to create int range pattern, end < start"))
@@ -1138,6 +1138,7 @@ func NewIntRangePattern(intRange IntRange, multipleOf int64) *IntRangePattern {
 	}
 }
 
+// $multipleOf is ignored if not greater than zero.
 func NewIntRangePatternFloatMultiple(intRange IntRange, multipleOf Float) *IntRangePattern {
 	if intRange.end < intRange.start {
 		panic(fmt.Errorf("failed to create int range pattern, end < start"))
@@ -1151,8 +1152,12 @@ func NewIntRangePatternFloatMultiple(intRange IntRange, multipleOf Float) *IntRa
 		},
 	}
 
-	if multipleOf <= 0 {
-		pattern.multipleOfFloat = &multipleOf
+	if multipleOf > 0 {
+		if utils.IsWholeInt64(multipleOf) {
+			pattern.multipleOf = Int(multipleOf)
+		} else {
+			pattern.multipleOfFloat = &multipleOf
+		}
 	}
 
 	return pattern

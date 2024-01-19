@@ -107,6 +107,8 @@ var (
 	TYPE_PATTERN_TYPE               = reflect.TypeOf((*TypePattern)(nil))
 	EXACT_VALUE_PATTERN_TYPE        = reflect.TypeOf((*ExactValuePattern)(nil))
 	EXACT_STRING_PATTERN_TYPE       = reflect.TypeOf((*ExactStringPattern)(nil))
+	INT_RANGE_PATTERN_TYPE          = reflect.TypeOf(&IntRangePattern{})
+	FLOAT_RANGE_PATTERN_TYPE        = reflect.TypeOf(&FloatRangePattern{})
 	INT_RANGE_STRING_PATTERN_TYPE   = reflect.TypeOf(&IntRangeStringPattern{})
 	FLOAT_RANGE_STRING_PATTERN_TYPE = reflect.TypeOf(&FloatRangeStringPattern{})
 	SECRET_PATTERN_TYPE             = reflect.TypeOf(&SecretPattern{})

@@ -300,6 +300,10 @@ func ParseNextJSONRepresentation(ctx *Context, it *jsoniter.Iterator, pattern Pa
 			return parseIntRangeJSONRepresentation(ctx, it, try)
 		case FLOAT_RANGE_PATTERN:
 			return parseFloatRangeJSONRepresentation(ctx, it, try)
+		case INT_RANGE_PATTERN_PATTERN:
+			return parseIntRangePatternJSONRepresentation(ctx, it, try)
+		case FLOAT_RANGE_PATTERN_PATTERN:
+			return parseFloatRangePatternJSONRepresentation(ctx, it, try)
 		case ANYVAL_PATTERN, SERIALIZABLE_PATTERN:
 			return ParseNextJSONRepresentation(ctx, it, nil, try)
 		default:
@@ -1686,6 +1690,134 @@ func parseFloatRangeJSONRepresentation(ctx *Context, it *jsoniter.Iterator, try 
 	}
 
 	return NewUnknownStartFloatRange(end, !hasExclusiveEnd), nil
+}
+
+func parseIntRangePatternJSONRepresentation(ctx *Context, it *jsoniter.Iterator, try bool) (_ *IntRangePattern, finalErr error) {
+	if it.WhatIsNext() != jsoniter.ObjectValue {
+		if try {
+			finalErr = ErrTriedToParseJSONRepr
+			return
+		}
+		finalErr = ErrJsonNotMatchingSchema
+		return
+	}
+
+	var (
+		intRange        IntRange
+		multipleOfInt   int64
+		multipleOfFloat float64
+	)
+
+	it.ReadObjectCB(func(it *jsoniter.Iterator, key string) bool {
+		switch key {
+		case SERIALIZED_INT_RANGE_PATTERN_RANGE_KEY:
+			if it.WhatIsNext() != jsoniter.ObjectValue {
+				finalErr = errors.New("invalid representation of range in integer range pattern")
+				return false
+			}
+			v, err := parseIntRangeJSONRepresentation(ctx, it, false)
+			if err != nil {
+				finalErr = fmt.Errorf("invalid representation of range in integer range pattern: %w", err)
+				return false
+			}
+			intRange = v
+			return true
+		case SERIALIZED_INT_RANGE_PATTERN_MULT_OF:
+			switch it.WhatIsNext() {
+			case jsoniter.NumberValue:
+				s := string(it.ReadNumber())
+				if strings.ContainsAny(s, ".e") {
+					float, err := strconv.ParseFloat(s, 64)
+					if err != nil {
+						finalErr = fmt.Errorf("invalid multipleOf for integer range pattern: %s", s)
+					}
+					multipleOfFloat = float
+				} else {
+					int, err := strconv.ParseInt(s, 10, 64)
+					if err != nil {
+						finalErr = fmt.Errorf("invalid multipleOf for integer range pattern: %s", s)
+					}
+					multipleOfInt = int
+				}
+				return true
+			case jsoniter.StringValue:
+				s := string(it.ReadString())
+				int, err := strconv.ParseInt(s, 10, 64)
+				if err != nil {
+					finalErr = fmt.Errorf("invalid multipleOf for integer range pattern: %s", s)
+				}
+				multipleOfInt = int
+				return true
+			default:
+				finalErr = errors.New("invalid multipleOf for integer range pattern")
+				return false
+			}
+		default:
+			finalErr = fmt.Errorf("unexpected property %q in integer range pattern representation", key)
+			return false
+		}
+	})
+
+	if intRange == (IntRange{}) {
+		finalErr = errors.New("missing range in integer range pattern representation")
+		return
+	}
+
+	if multipleOfInt > 0 {
+		return NewIntRangePattern(intRange, multipleOfInt), nil
+	}
+
+	return NewIntRangePatternFloatMultiple(intRange, Float(multipleOfFloat)), nil
+}
+
+func parseFloatRangePatternJSONRepresentation(ctx *Context, it *jsoniter.Iterator, try bool) (_ *FloatRangePattern, finalErr error) {
+	if it.WhatIsNext() != jsoniter.ObjectValue {
+		if try {
+			finalErr = ErrTriedToParseJSONRepr
+			return
+		}
+		finalErr = ErrJsonNotMatchingSchema
+		return
+	}
+
+	var (
+		floatRange FloatRange
+		multipleOf float64
+	)
+
+	it.ReadObjectCB(func(it *jsoniter.Iterator, key string) bool {
+		switch key {
+		case SERIALIZED_FLOAT_RANGE_PATTERN_RANGE_KEY:
+			if it.WhatIsNext() != jsoniter.ObjectValue {
+				finalErr = errors.New("invalid representation of range in float range pattern")
+				return false
+			}
+			v, err := parseFloatRangeJSONRepresentation(ctx, it, false)
+			if err != nil {
+				finalErr = fmt.Errorf("invalid representation of range in float range pattern: %w", err)
+				return false
+			}
+			floatRange = v
+			return true
+		case SERIALIZED_FLOAT_RANGE_PATTERN_MULT_OF:
+			if it.WhatIsNext() != jsoniter.NumberValue {
+				finalErr = errors.New("invalid multipleOf for float range pattern")
+				return false
+			}
+			multipleOf = it.ReadFloat64()
+			return true
+		default:
+			finalErr = fmt.Errorf("unexpected property %q in float range pattern representation", key)
+			return false
+		}
+	})
+
+	if floatRange == (FloatRange{}) {
+		finalErr = errors.New("missing range in float range pattern representation")
+		return
+	}
+
+	return NewFloatRangePattern(floatRange, multipleOf), nil
 }
 
 func parseSameTypeListJSONRepr[T any](

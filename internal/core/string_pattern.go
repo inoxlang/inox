@@ -823,8 +823,6 @@ type IntRangeStringPattern struct {
 	intRange    IntRange
 	lengthRange IntRange
 
-	CallBasedPatternReprMixin
-
 	NotCallablePatternMixin
 }
 
@@ -900,10 +898,6 @@ func NewIntRangeStringPattern(lower, upperIncluded int64, node parse.Node) *IntR
 			step:         1,
 		},
 		lengthRange: lengthRange,
-		CallBasedPatternReprMixin: CallBasedPatternReprMixin{
-			Callee: STR_PATTERN_PATTERN,
-			Params: []Serializable{NewIncludedEndIntRange(lower, upperIncluded)},
-		},
 	}
 }
 
@@ -987,8 +981,6 @@ type FloatRangeStringPattern struct {
 	floatRange  FloatRange
 	lengthRange IntRange
 
-	CallBasedPatternReprMixin
-
 	NotCallablePatternMixin
 }
 
@@ -1027,10 +1019,6 @@ func NewFloatRangeStringPattern(lower, upperIncluded float64, node parse.Node) *
 		node:        node,
 		floatRange:  floatRange,
 		lengthRange: lengthRange,
-		CallBasedPatternReprMixin: CallBasedPatternReprMixin{
-			Callee: STR_PATTERN_PATTERN,
-			Params: []Serializable{floatRange},
-		},
 	}
 }
 
