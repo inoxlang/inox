@@ -699,7 +699,7 @@ func TestSharedPersistedSetAddRemove(t *testing.T) {
 
 		set.Add(ctx1, int1)
 
-		//check that the Set is not updated from the other ctx's POV
+		//check that the Set is not updated from the other ctx2's POV
 		assert.False(t, bool(set.Has(ctx2, int1)))
 
 		//commit the transaction associated with ctx1

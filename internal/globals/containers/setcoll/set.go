@@ -248,7 +248,7 @@ func (set *Set) Get(ctx *core.Context, keyVal core.StringLike) (core.Value, core
 
 func (set *Set) Add(ctx *core.Context, elem core.Serializable) {
 	if !set.lock.IsValueShared() {
-		// no locking required
+		// no locking required.
 
 		if set.config.Element != nil && !set.config.Element.Test(ctx, elem) {
 			panic(ErrValueDoesMatchElementPattern)
@@ -257,8 +257,8 @@ func (set *Set) Add(ctx *core.Context, elem core.Serializable) {
 		set.config.Uniqueness.AddUrlIfNecessary(ctx, set, elem)
 		key := set.getUniqueKey(ctx, elem)
 
-		_, ok := set.elementByKey[key]
-		if ok {
+		_, alreadyPresent := set.elementByKey[key]
+		if alreadyPresent {
 			//no need to clone the key.
 			return
 		}

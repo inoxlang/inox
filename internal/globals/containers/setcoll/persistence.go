@@ -44,6 +44,7 @@ func loadSet(ctx *core.Context, args core.FreeEntityLoadingParams) (core.UrlHold
 				return nil, fmt.Errorf("%w: %s", core.ErrFailedToLoadNonExistingValue, path)
 			}
 		}
+		//TODO: return an error if there are duplicate keys.
 	}
 
 	if set == nil { //true if there is no initial value or if the initial value is an empty list
