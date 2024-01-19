@@ -18,6 +18,18 @@ const (
 	JS_MIN_SAFE_INTEGER         = -9007199254740991
 	JS_MAX_SAFE_INTEGER         = 9007199254740991
 
+	//int range serialization
+
+	SERIALIZED_INT_RANGE_START_KEY          = "start"
+	SERIALIZED_INT_RANGE_START_EXCL_END_KEY = "exclusiveEnd"
+	SERIALIZED_INT_RANGE_START_END_KEY      = "end"
+
+	//float range serialization
+
+	SERIALIZED_FLOAT_RANGE_START_KEY          = "start"
+	SERIALIZED_FLOAT_RANGE_START_EXCL_END_KEY = "exclusiveEnd"
+	SERIALIZED_FLOAT_RANGE_START_END_KEY      = "end"
+
 	//object pattern serialization
 
 	SERIALIZED_OBJECT_PATTERN_INEXACT_KEY           = "inexact"
@@ -990,15 +1002,15 @@ func (r IntRange) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, conf
 		w.WriteObjectStart()
 
 		if !r.unknownStart {
-			w.WriteObjectField("start")
+			w.WriteObjectField(SERIALIZED_INT_RANGE_START_KEY)
 			writeIntJsonRepr(Int(r.start), w)
 			w.WriteMore()
 		}
 
 		if !r.inclusiveEnd {
-			w.WriteObjectField("exclusiveEnd")
+			w.WriteObjectField(SERIALIZED_INT_RANGE_START_EXCL_END_KEY)
 		} else {
-			w.WriteObjectField("end")
+			w.WriteObjectField(SERIALIZED_INT_RANGE_START_END_KEY)
 		}
 		writeIntJsonRepr(Int(r.end), w)
 
@@ -1020,15 +1032,15 @@ func (r FloatRange) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, co
 		w.WriteObjectStart()
 
 		if !r.unknownStart {
-			w.WriteObjectField("start")
+			w.WriteObjectField(SERIALIZED_FLOAT_RANGE_START_KEY)
 			w.WriteFloat64(r.start)
 			w.WriteMore()
 		}
 
 		if !r.inclusiveEnd {
-			w.WriteObjectField("exclusiveEnd")
+			w.WriteObjectField(SERIALIZED_FLOAT_RANGE_START_EXCL_END_KEY)
 		} else {
-			w.WriteObjectField("end")
+			w.WriteObjectField(SERIALIZED_FLOAT_RANGE_START_END_KEY)
 		}
 		w.WriteFloat64(r.end)
 
@@ -1488,6 +1500,42 @@ func (patt *FunctionPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.S
 		return ErrMaximumJSONReprWritingDepthReached
 	}
 	return ErrNotImplementedYet
+}
+
+func (patt *IntRangeStringPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+	if depth > MAX_JSON_REPR_WRITING_DEPTH {
+		return ErrMaximumJSONReprWritingDepthReached
+	}
+
+	write := func(w *jsoniter.Stream) error {
+		valueConfig := JSONSerializationConfig{ReprConfig: config.ReprConfig}
+		return patt.intRange.WriteJSONRepresentation(ctx, w, valueConfig, depth+1)
+	}
+
+	if noPatternOrAny(config.Pattern) {
+		return writeUntypedValueJSON(TUPLE_PATTERN_PATTERN.Name, func(w *jsoniter.Stream) error {
+			return write(w)
+		}, w)
+	}
+	return write(w)
+}
+
+func (patt *FloatRangeStringPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+	if depth > MAX_JSON_REPR_WRITING_DEPTH {
+		return ErrMaximumJSONReprWritingDepthReached
+	}
+
+	write := func(w *jsoniter.Stream) error {
+		valueConfig := JSONSerializationConfig{ReprConfig: config.ReprConfig}
+		return patt.floatRange.WriteJSONRepresentation(ctx, w, valueConfig, depth+1)
+	}
+
+	if noPatternOrAny(config.Pattern) {
+		return writeUntypedValueJSON(TUPLE_PATTERN_PATTERN.Name, func(w *jsoniter.Stream) error {
+			return write(w)
+		}, w)
+	}
+	return write(w)
 }
 
 // end of pattern serialization methods.

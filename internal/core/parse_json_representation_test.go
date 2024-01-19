@@ -894,6 +894,90 @@ func TestParseJSONRepresentation(t *testing.T) {
 		}
 	})
 
+	t.Run("integer ranges", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
+		config := JSONSerializationConfig{ReprConfig: ALL_VISIBLE_REPR_CONFIG, Pattern: INT_RANGE_PATTERN}
+
+		t.Run("base case", func(t *testing.T) {
+			intRange := NewIncludedEndIntRange(0, 10)
+			serialized := MustGetJSONRepresentationWithConfig(intRange, ctx, config)
+
+			v, err := ParseJSONRepresentation(ctx, `{"int-range__value":`+serialized+`}`, nil)
+			if assert.NoError(t, err) {
+				assert.Equal(t, intRange, v)
+			}
+
+			v, err = ParseJSONRepresentation(ctx, serialized, INT_RANGE_PATTERN)
+			if assert.NoError(t, err) {
+				assert.Equal(t, intRange, v)
+			}
+		})
+
+		t.Run("unknown start", func(t *testing.T) {
+			intRange := NewUnknownStartIntRange(10, true)
+			serialized := MustGetJSONRepresentationWithConfig(intRange, ctx, config)
+
+			v, err := ParseJSONRepresentation(ctx, serialized, INT_RANGE_PATTERN)
+			if assert.NoError(t, err) {
+				assert.Equal(t, intRange, v)
+			}
+		})
+
+		t.Run("exclusive end", func(t *testing.T) {
+			intRange := NewIntRange(0, 10, false)
+			serialized := MustGetJSONRepresentationWithConfig(intRange, ctx, config)
+
+			v, err := ParseJSONRepresentation(ctx, serialized, INT_RANGE_PATTERN)
+			if assert.NoError(t, err) {
+				assert.Equal(t, intRange, v)
+			}
+		})
+	})
+
+	t.Run("float ranges", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
+		config := JSONSerializationConfig{ReprConfig: ALL_VISIBLE_REPR_CONFIG, Pattern: FLOAT_RANGE_PATTERN}
+
+		t.Run("base case", func(t *testing.T) {
+			floatRange := NewIncludedEndFloatRange(0, 10)
+			serialized := MustGetJSONRepresentationWithConfig(floatRange, ctx, config)
+
+			v, err := ParseJSONRepresentation(ctx, `{"float-range__value":`+serialized+`}`, nil)
+			if assert.NoError(t, err) {
+				assert.Equal(t, floatRange, v)
+			}
+
+			v, err = ParseJSONRepresentation(ctx, serialized, FLOAT_RANGE_PATTERN)
+			if assert.NoError(t, err) {
+				assert.Equal(t, floatRange, v)
+			}
+		})
+
+		t.Run("unknown start", func(t *testing.T) {
+			floatRange := NewUnknownStartFloatRange(10, true)
+			serialized := MustGetJSONRepresentationWithConfig(floatRange, ctx, config)
+
+			v, err := ParseJSONRepresentation(ctx, serialized, FLOAT_RANGE_PATTERN)
+			if assert.NoError(t, err) {
+				assert.Equal(t, floatRange, v)
+			}
+		})
+
+		t.Run("exclusive end", func(t *testing.T) {
+			floatRange := NewFloatRange(0, 10, false)
+			serialized := MustGetJSONRepresentationWithConfig(floatRange, ctx, config)
+
+			v, err := ParseJSONRepresentation(ctx, serialized, FLOAT_RANGE_PATTERN)
+			if assert.NoError(t, err) {
+				assert.Equal(t, floatRange, v)
+			}
+		})
+	})
+
 	t.Run("unions", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()

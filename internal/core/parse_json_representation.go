@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"strconv"
 	"strings"
 	"time"
@@ -295,6 +296,10 @@ func ParseNextJSONRepresentation(ctx *Context, it *jsoniter.Iterator, pattern Pa
 			return parseExactValuePatternJSONRepresentation(ctx, it, try)
 		case EXACT_STRING_PATTERN_PATTERN:
 			return parseExactStringPatternJSONRepresentation(ctx, it, try)
+		case INT_RANGE_PATTERN:
+			return parseIntRangeJSONRepresentation(ctx, it, try)
+		case FLOAT_RANGE_PATTERN:
+			return parseFloatRangeJSONRepresentation(ctx, it, try)
 		case ANYVAL_PATTERN, SERIALIZABLE_PATTERN:
 			return ParseNextJSONRepresentation(ctx, it, nil, try)
 		default:
@@ -1512,6 +1517,175 @@ func parseExactStringPatternJSONRepresentation(ctx *Context, it *jsoniter.Iterat
 	}
 
 	return NewExactStringPattern(Str(it.ReadString())), nil
+}
+
+func parseIntRangeJSONRepresentation(ctx *Context, it *jsoniter.Iterator, try bool) (intRange IntRange, finalErr error) {
+	if it.WhatIsNext() != jsoniter.ObjectValue {
+		if try {
+			finalErr = ErrTriedToParseJSONRepr
+			return
+		}
+		finalErr = ErrJsonNotMatchingSchema
+		return
+	}
+
+	var (
+		hasStart bool
+		start    int64
+
+		hasEnd          bool
+		hasExclusiveEnd bool
+		end             int64 = math.MaxInt64
+	)
+
+	it.ReadObjectCB(func(it *jsoniter.Iterator, s string) bool {
+		switch s {
+		case SERIALIZED_INT_RANGE_START_KEY, SERIALIZED_INT_RANGE_START_EXCL_END_KEY, SERIALIZED_INT_RANGE_START_END_KEY:
+			var n int64
+			var err error
+
+			switch it.WhatIsNext() {
+			case jsoniter.NumberValue:
+				n = it.ReadInt64()
+			case jsoniter.StringValue:
+				n, err = strconv.ParseInt(it.ReadString(), 10, 64)
+				if err == nil {
+					break
+				}
+				fallthrough
+			default:
+				finalErr = errors.New("invalid representation of lower bound (start) of integer range")
+				return false
+			}
+
+			switch s {
+			case SERIALIZED_INT_RANGE_START_KEY:
+				hasStart = true
+				start = n
+			case SERIALIZED_INT_RANGE_START_EXCL_END_KEY:
+				if hasEnd {
+					finalErr = errors.New("unexpected exclusive end (upper bound) of integer range, exclusive end is already specified")
+					return false
+				}
+				hasExclusiveEnd = true
+				end = n
+			case SERIALIZED_INT_RANGE_START_END_KEY:
+				if hasExclusiveEnd {
+					finalErr = errors.New("unexpected inclusive end (upper bound) of integer range, inclusive end is already specified")
+					return false
+				}
+				hasEnd = true
+				end = n
+			}
+			return true
+		default:
+			finalErr = fmt.Errorf("unexpected property %q in integer range representation", s)
+			return false
+		}
+	})
+
+	if finalErr != nil {
+		return
+	}
+
+	if it.Error != nil && it.Error != io.EOF {
+		finalErr = it.Error
+		return
+	}
+
+	if !hasEnd && !hasExclusiveEnd {
+		finalErr = errors.New("invalid representation of integer range")
+		return
+	}
+
+	if hasStart {
+		if start > end {
+			finalErr = errors.New("invalid integer range: start > end")
+			return
+		}
+		return NewIntRange(start, end, !hasExclusiveEnd), nil
+	}
+
+	return NewUnknownStartIntRange(end, !hasExclusiveEnd), nil
+}
+
+func parseFloatRangeJSONRepresentation(ctx *Context, it *jsoniter.Iterator, try bool) (floatRange FloatRange, finalErr error) {
+	if it.WhatIsNext() != jsoniter.ObjectValue {
+		if try {
+			finalErr = ErrTriedToParseJSONRepr
+			return
+		}
+		finalErr = ErrJsonNotMatchingSchema
+		return
+	}
+
+	var (
+		hasStart bool
+		start    float64
+
+		hasEnd          bool
+		hasExclusiveEnd bool
+		end             float64 = math.MaxFloat64
+	)
+
+	it.ReadObjectCB(func(it *jsoniter.Iterator, s string) bool {
+		switch s {
+		case SERIALIZED_FLOAT_RANGE_START_KEY, SERIALIZED_FLOAT_RANGE_START_EXCL_END_KEY, SERIALIZED_FLOAT_RANGE_START_END_KEY:
+			if it.WhatIsNext() != jsoniter.NumberValue {
+				finalErr = errors.New("invalid representation of lower bound (start) of float range")
+				return false
+			}
+			n := it.ReadFloat64()
+
+			switch s {
+			case SERIALIZED_FLOAT_RANGE_START_KEY:
+				hasStart = true
+				start = n
+			case SERIALIZED_FLOAT_RANGE_START_EXCL_END_KEY:
+				if hasEnd {
+					finalErr = errors.New("unexpected exclusive end (upper bound) of float range, exclusive end is already specified")
+					return false
+				}
+				hasExclusiveEnd = true
+				end = n
+			case SERIALIZED_FLOAT_RANGE_START_END_KEY:
+				if hasExclusiveEnd {
+					finalErr = errors.New("unexpected inclusive end (upper bound) of float range, inclusive end is already specified")
+					return false
+				}
+				hasEnd = true
+				end = n
+			}
+			return true
+		default:
+			finalErr = fmt.Errorf("unexpected property %q in float range representation", s)
+			return false
+		}
+	})
+
+	if finalErr != nil {
+		return
+	}
+
+	if it.Error != nil && it.Error != io.EOF {
+		finalErr = it.Error
+		return
+	}
+
+	if !hasEnd && !hasExclusiveEnd {
+		finalErr = errors.New("invalid representation of float range")
+		return
+	}
+
+	if hasStart {
+		if start > end {
+			finalErr = errors.New("invalid float range: start > end")
+			return
+		}
+		return NewFloatRange(start, end, !hasExclusiveEnd), nil
+	}
+
+	return NewUnknownStartFloatRange(end, !hasExclusiveEnd), nil
 }
 
 func parseSameTypeListJSONRepr[T any](

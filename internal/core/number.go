@@ -44,6 +44,25 @@ func NewIncludedEndFloatRange(start, end float64) FloatRange {
 	return FloatRange{inclusiveEnd: true, start: start, end: end}
 }
 
+func NewFloatRange(start, end float64, inclusiveEnd bool) FloatRange {
+	if end < start {
+		panic(fmt.Errorf("failed to create float range, end < start"))
+	}
+	return FloatRange{
+		inclusiveEnd: inclusiveEnd,
+		start:        start,
+		end:          end,
+	}
+}
+
+func NewUnknownStartFloatRange(end float64, inclusiveEnd bool) FloatRange {
+	return FloatRange{
+		unknownStart: true,
+		inclusiveEnd: inclusiveEnd,
+		end:          end,
+	}
+}
+
 func (r FloatRange) Includes(ctx *Context, n Float) bool {
 	if r.unknownStart {
 		panic(ErrUnknownStartFloatRange)
@@ -147,9 +166,35 @@ type IntRange struct {
 
 func NewIncludedEndIntRange(start, end int64) IntRange {
 	if end < start {
-		panic(fmt.Errorf("failed to create int pattern, end < start"))
+		panic(fmt.Errorf("failed to create int range, end < start"))
 	}
-	return IntRange{inclusiveEnd: true, start: start, end: end, step: 1}
+	return IntRange{
+		inclusiveEnd: true,
+		start:        start,
+		end:          end,
+		step:         1,
+	}
+}
+
+func NewIntRange(start, end int64, inclusiveEnd bool) IntRange {
+	if end < start {
+		panic(fmt.Errorf("failed to create int range, end < start"))
+	}
+	return IntRange{
+		inclusiveEnd: inclusiveEnd,
+		start:        start,
+		end:          end,
+		step:         1,
+	}
+}
+
+func NewUnknownStartIntRange(end int64, inclusiveEnd bool) IntRange {
+	return IntRange{
+		inclusiveEnd: inclusiveEnd,
+		unknownStart: true,
+		end:          end,
+		step:         1,
+	}
 }
 
 func (r IntRange) Includes(ctx *Context, i Int) bool {
