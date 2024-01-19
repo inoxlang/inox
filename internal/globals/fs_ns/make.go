@@ -53,7 +53,7 @@ func Mkdir(ctx *core.Context, dirpath core.Path, content *core.OptionalParam[*co
 			return parse.ContinueTraversal, nil
 		}
 
-		err := contentDesc.ForEachEntry(ctx, func(keyRepr string, key, v core.Serializable) error {
+		err := contentDesc.ForEachEntry(ctx, func(_ string, _, v core.Serializable) error {
 			return core.Traverse(v, visit, core.TraversalConfiguration{MaxDepth: MAX_FILE_HIERARCHY_DEPTH})
 		})
 		if err != nil {
@@ -155,10 +155,11 @@ func makeFileHierarchy(ctx *core.Context, args makeFileHieararchyParams) error {
 			return fmt.Errorf("value for file keys (key %s) should not be a dictionary, dir keys must end with '/'", key)
 		}
 		err := v.ForEachEntry(ctx, func(keyRepr string, k, v core.Serializable) error {
-			pth := fls.Join(string(key), keyRepr)
+			pth := fls.Join(string(key), k.(core.Path).UnderlyingString())
 			if k.(core.Path).IsDirPath() {
 				pth += "/"
 			}
+
 			if err := makeFileHierarchy(ctx, makeFileHieararchyParams{
 				fls:     args.fls,
 				key:     core.Path(pth),

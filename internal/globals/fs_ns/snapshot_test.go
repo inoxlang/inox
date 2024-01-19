@@ -28,7 +28,7 @@ func TestNewFilesystemSnapshot(t *testing.T) {
 
 		desc := core.NewObjectFromMapNoInit(core.ValMap{
 			FS_SNAPSHOT_SYMB_DESC_FILES_PROPNAME: core.NewDictionary(core.ValMap{
-				"./a.txt": core.Str("a"),
+				core.GetJSONRepresentation(core.Path("./a.txt"), nil, nil): core.Str("a"),
 			}),
 		})
 
@@ -66,7 +66,7 @@ func TestNewFilesystemSnapshot(t *testing.T) {
 
 		desc := core.NewObjectFromMapNoInit(core.ValMap{
 			FS_SNAPSHOT_SYMB_DESC_FILES_PROPNAME: core.NewDictionary(core.ValMap{
-				"./dir/": core.NewWrappedValueList(),
+				core.GetJSONRepresentation(core.Path("./dir/"), nil, nil): core.NewWrappedValueList(),
 			}),
 		})
 
@@ -93,7 +93,7 @@ func TestNewFilesystemSnapshot(t *testing.T) {
 
 		desc := core.NewObjectFromMapNoInit(core.ValMap{
 			FS_SNAPSHOT_SYMB_DESC_FILES_PROPNAME: core.NewDictionary(core.ValMap{
-				"./dir/": core.NewWrappedValueList(core.Path("./file.txt")),
+				core.GetJSONRepresentation(core.Path("./dir/"), nil, nil): core.NewWrappedValueList(core.Path("./file.txt")),
 			}),
 		})
 
@@ -143,8 +143,8 @@ func TestNewFilesystemSnapshot(t *testing.T) {
 
 		desc := core.NewObjectFromMapNoInit(core.ValMap{
 			FS_SNAPSHOT_SYMB_DESC_FILES_PROPNAME: core.NewDictionary(core.ValMap{
-				"./dir/":  core.NewWrappedValueList(),
-				"./a.txt": core.Str("a"),
+				core.GetJSONRepresentation(core.Path("./dir/"), nil, nil):  core.NewWrappedValueList(),
+				core.GetJSONRepresentation(core.Path("./a.txt"), nil, nil): core.Str("a"),
 			}),
 		})
 
@@ -194,8 +194,8 @@ func TestNewFilesystemSnapshot(t *testing.T) {
 
 		desc := core.NewObjectFromMapNoInit(core.ValMap{
 			FS_SNAPSHOT_SYMB_DESC_FILES_PROPNAME: core.NewDictionary(core.ValMap{
-				"./dir/": core.NewDictionary(core.ValMap{
-					"./subdir/": core.NewWrappedValueList(),
+				core.GetJSONRepresentation(core.Path("./dir/"), nil, nil): core.NewDictionary(core.ValMap{
+					core.GetJSONRepresentation(core.Path("./subdir/"), nil, nil): core.NewWrappedValueList(),
 				}),
 			}),
 		})
@@ -237,8 +237,8 @@ func TestNewFilesystemSnapshot(t *testing.T) {
 
 		desc := core.NewObjectFromMapNoInit(core.ValMap{
 			FS_SNAPSHOT_SYMB_DESC_FILES_PROPNAME: core.NewDictionary(core.ValMap{
-				"./dir/": core.NewDictionary(core.ValMap{
-					"./subdir/": core.NewWrappedValueList(core.Path("./a.txt")),
+				core.GetJSONRepresentation(core.Path("./dir/"), nil, nil): core.NewDictionary(core.ValMap{
+					core.GetJSONRepresentation(core.Path("./subdir/"), nil, nil): core.NewWrappedValueList(core.Path("./a.txt")),
 				}),
 			}),
 		})
