@@ -106,6 +106,10 @@ var (
 	NAMED_SEGMENT_PATH_PATTERN_TYPE = reflect.TypeOf((*NamedSegmentPathPattern)(nil))
 	TYPE_PATTERN_TYPE               = reflect.TypeOf((*TypePattern)(nil))
 	EXACT_VALUE_PATTERN_TYPE        = reflect.TypeOf((*ExactValuePattern)(nil))
+	EXACT_STRING_PATTERN_TYPE       = reflect.TypeOf((*ExactStringPattern)(nil))
+	INT_RANGE_STRING_PATTERN_TYPE   = reflect.TypeOf(&IntRangeStringPattern{})
+	FLOAT_RANGE_STRING_PATTERN_TYPE = reflect.TypeOf(&FloatRangeStringPattern{})
+	SECRET_PATTERN_TYPE             = reflect.TypeOf(&SecretPattern{})
 )
 
 var IMPLICITLY_REMOVED_ROUTINE_PERMS = []Permission{

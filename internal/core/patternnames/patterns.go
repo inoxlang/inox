@@ -42,6 +42,7 @@ const (
 	NAMED_SEGMENT_PATH_PATTERN = "named-segment-path-pattern"
 	TYPE_PATTERN               = "type-pattern"
 	EXACT_VALUE_PATTERN        = "exact-value-pattern"
+	EXACT_STRING_PATTERN       = "exact-string-pattern"
 	OBJECT_PATTERN             = "object-pattern"
 	LIST_PATTERN               = "list-pattern"
 	RECORD_PATTERN             = "record-pattern"
@@ -72,6 +73,9 @@ const (
 	SECRET                     = "secret"
 	SECRET_STRING              = "secret-string"
 	DIR_ENTRY                  = "dir-entry"
+	INT_RANGE_STRING_PATTERN   = "int-range-string-pattern"
+	FLOAT_RANGE_STRING_PATTERN = "float-range-string-pattern"
+	SECRET_PATTERN             = "secret-pattern"
 
 	INOX_MODULE = INOX_NS + ".module"
 	INOX_NODE   = INOX_NS + ".node"

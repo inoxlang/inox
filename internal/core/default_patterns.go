@@ -745,6 +745,21 @@ var (
 		Name:          patternnames.RUNE_RANGE,
 		SymbolicValue: symbolic.ANY_RUNE_RANGE,
 	}
+	INT_RANGE_STRING_PATTERN = &TypePattern{
+		Type:          INT_RANGE_STRING_PATTERN_TYPE,
+		Name:          patternnames.INT_RANGE_STRING_PATTERN,
+		SymbolicValue: symbolic.ANY_INT_RANGE_STRING_PATTERN,
+	}
+	FLOAT_RANGE_STRING_PATTERN = &TypePattern{
+		Type:          FLOAT_RANGE_STRING_PATTERN_TYPE,
+		Name:          patternnames.FLOAT_RANGE_STRING_PATTERN,
+		SymbolicValue: symbolic.ANY_FLOAT_RANGE_STRING_PATTERN,
+	}
+	SECRET_PATTERN_PATTERN = &TypePattern{
+		Type:          SECRET_PATTERN_TYPE,
+		Name:          patternnames.SECRET_PATTERN,
+		SymbolicValue: symbolic.ANY_SECRET_PATTERN,
+	}
 	VALUE_HISTORY_PATTERN = &TypePattern{
 		Type:          VALUE_HISTORY_TYPE,
 		Name:          patternnames.VALUE_HISTORY,
@@ -855,6 +870,11 @@ var (
 		Name:          patternnames.EXACT_VALUE_PATTERN,
 		SymbolicValue: symbolic.ANY_EXACT_VALUE_PATTERN,
 	}
+	EXACT_STRING_PATTERN_PATTERN = &TypePattern{
+		Type:          EXACT_STRING_PATTERN_TYPE,
+		Name:          patternnames.EXACT_STRING_PATTERN,
+		SymbolicValue: symbolic.ANY_EXACT_STR_PATTERN,
+	}
 	OBJECT_PATTERN_PATTERN = &TypePattern{
 		Type:          OBJECT_PATTERN_TYPE,
 		Name:          patternnames.OBJECT_PATTERN,
@@ -950,13 +970,17 @@ var (
 		ULID_PATTERN.Name:          ULID_PATTERN,
 		UUIDv4_PATTERN.Name:        UUIDv4_PATTERN,
 
-		TYPE_PATTERN_PATTERN.Name:        TYPE_PATTERN_PATTERN,
-		OBJECT_PATTERN_PATTERN.Name:      OBJECT_PATTERN_PATTERN,
-		LIST_PATTERN_PATTERN.Name:        LIST_PATTERN_PATTERN,
-		RECORD_PATTERN_PATTERN.Name:      RECORD_PATTERN_PATTERN,
-		TUPLE_PATTERN_PATTERN.Name:       TUPLE_PATTERN_PATTERN,
-		NAMED_SEGMENT_PATH_PATTERN.Name:  NAMED_SEGMENT_PATH_PATTERN,
-		EXACT_VALUE_PATTERN_PATTERN.Name: EXACT_VALUE_PATTERN_PATTERN,
+		TYPE_PATTERN_PATTERN.Name:         TYPE_PATTERN_PATTERN,
+		OBJECT_PATTERN_PATTERN.Name:       OBJECT_PATTERN_PATTERN,
+		LIST_PATTERN_PATTERN.Name:         LIST_PATTERN_PATTERN,
+		RECORD_PATTERN_PATTERN.Name:       RECORD_PATTERN_PATTERN,
+		TUPLE_PATTERN_PATTERN.Name:        TUPLE_PATTERN_PATTERN,
+		NAMED_SEGMENT_PATH_PATTERN.Name:   NAMED_SEGMENT_PATH_PATTERN,
+		EXACT_VALUE_PATTERN_PATTERN.Name:  EXACT_VALUE_PATTERN_PATTERN,
+		EXACT_STRING_PATTERN_PATTERN.Name: EXACT_STRING_PATTERN_PATTERN,
+		INT_RANGE_STRING_PATTERN.Name:     INT_RANGE_STRING_PATTERN,
+		FLOAT_RANGE_STRING_PATTERN.Name:   FLOAT_RANGE_STRING_PATTERN,
+		SECRET_PATTERN_PATTERN.Name:       SECRET_PATTERN_PATTERN,
 	}
 
 	DEFAULT_PATTERN_NAMESPACES = map[string]*PatternNamespace{
@@ -986,12 +1010,12 @@ var (
 		"any":          ANYVAL_PATTERN,
 		"serializable": SERIALIZABLE_PATTERN,
 	}
-	//used to prevent some cycles
-	getDefaultNamedPattern (func(name string) Pattern) = nil
+	//The declaration is used to prevent some cycles
+	mustGetDefaultNamedPattern (func(name string) Pattern) = nil
 )
 
 func init() {
-	getDefaultNamedPattern = func(name string) Pattern {
+	mustGetDefaultNamedPattern = func(name string) Pattern {
 		p, ok := DEFAULT_NAMED_PATTERNS[name]
 		if !ok {
 			panic(fmt.Errorf("%s is not defined", name))

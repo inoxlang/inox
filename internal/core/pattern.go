@@ -144,7 +144,7 @@ func NewExactValuePattern(value Serializable) *ExactValuePattern {
 	return &ExactValuePattern{
 		value: value,
 		CallBasedPatternReprMixin: CallBasedPatternReprMixin{
-			Callee: getDefaultNamedPattern(__VAL_PATTERN_NAME),
+			Callee: mustGetDefaultNamedPattern(__VAL_PATTERN_NAME),
 			Params: []Serializable{value},
 		},
 	}
@@ -1299,7 +1299,7 @@ func NewEventPattern(valuePattern Pattern) *EventPattern {
 	return &EventPattern{
 		ValuePattern: valuePattern,
 		CallBasedPatternReprMixin: CallBasedPatternReprMixin{
-			Callee: getDefaultNamedPattern("event"),
+			Callee: mustGetDefaultNamedPattern("event"),
 			Params: []Serializable{valuePattern},
 		},
 	}
@@ -1334,7 +1334,7 @@ func NewMutationPattern(kind MutationKind, data0Pattern Pattern) *MutationPatter
 		kind:  kind,
 		data0: data0Pattern,
 		CallBasedPatternReprMixin: CallBasedPatternReprMixin{
-			Callee: getDefaultNamedPattern("mutation"),
+			Callee: mustGetDefaultNamedPattern("mutation"),
 			Params: []Serializable{Identifier(kind.String()), data0Pattern},
 		},
 	}

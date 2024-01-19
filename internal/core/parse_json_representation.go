@@ -59,7 +59,7 @@ func ParseNextJSONRepresentation(ctx *Context, it *jsoniter.Iterator, pattern Pa
 
 				typename := strings.TrimSuffix(s, JSON_UNTYPED_VALUE_SUFFIX)
 
-				pattern := getDefaultNamedPattern(typename)
+				pattern := DEFAULT_NAMED_PATTERNS[typename]
 				if pattern == nil {
 					finalErr = fmt.Errorf("unknown typename: %s", typename)
 					return false
