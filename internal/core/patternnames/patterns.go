@@ -73,6 +73,8 @@ const (
 	SECRET                     = "secret"
 	SECRET_STRING              = "secret-string"
 	DIR_ENTRY                  = "dir-entry"
+	INT_RANGE_PATTERN          = "int-range-pattern"
+	FLOAT_RANGE_PATTERN        = "float-range-pattern"
 	INT_RANGE_STRING_PATTERN   = "int-range-string-pattern"
 	FLOAT_RANGE_STRING_PATTERN = "float-range-string-pattern"
 	SECRET_PATTERN             = "secret-pattern"
