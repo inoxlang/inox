@@ -1192,6 +1192,9 @@ func (patt *ObjectPattern) Equal(ctx *Context, other Value, alreadyCompared map[
 			return false
 		}
 	}
+
+	//TODO: compare complex property constraints
+
 	return true
 }
 

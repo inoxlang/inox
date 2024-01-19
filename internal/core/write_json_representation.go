@@ -17,6 +17,22 @@ const (
 	MAX_JSON_REPR_WRITING_DEPTH = 20
 	JS_MIN_SAFE_INTEGER         = -9007199254740991
 	JS_MAX_SAFE_INTEGER         = 9007199254740991
+
+	//object pattern serialization
+
+	SERIALIZED_OBJECT_PATTERN_INEXACT_KEY           = "inexact"
+	SERIALIZED_OBJECT_PATTERN_ENTRIES_KEY           = "entries"
+	SERIALIZED_OBJECT_PATTERN_ENTRY_PATTERN_KEY     = "pattern"
+	SERIALIZED_OBJECT_PATTERN_ENTRY_IS_OPTIONAL_KEY = "isOptional"
+	SERIALIZED_OBJECT_PATTERN_ENTRY_REQ_KEYS_KEY    = "requiredKeys"
+	SERIALIZED_OBJECT_PATTERN_ENTRY_REQ_PATTERN_KEY = "requiredPattern"
+
+	//robject pattern serialization
+
+	SERIALIZED_RECORD_PATTERN_INEXACT_KEY           = "inexact"
+	SERIALIZED_RECORD_PATTERN_ENTRIES_KEY           = "entries"
+	SERIALIZED_RECORD_PATTERN_ENTRY_PATTERN_KEY     = "pattern"
+	SERIALIZED_RECORD_PATTERN_ENTRY_IS_OPTIONAL_KEY = "isOptional"
 )
 
 var (
@@ -1178,14 +1194,144 @@ func (patt ObjectPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stre
 	if depth > MAX_JSON_REPR_WRITING_DEPTH {
 		return ErrMaximumJSONReprWritingDepthReached
 	}
-	return ErrNotImplementedYet
+
+	if len(patt.complexPropertyPatterns) > 0 {
+		return fmt.Errorf("serialization of object pattern with complex constraints is not supported yet")
+	}
+
+	write := func() error {
+		w.WriteObjectStart()
+
+		w.WriteObjectField(SERIALIZED_OBJECT_PATTERN_INEXACT_KEY)
+		w.WriteBool(patt.inexact)
+
+		//entries
+		w.WriteMore()
+		w.WriteObjectField(SERIALIZED_OBJECT_PATTERN_ENTRIES_KEY)
+		w.WriteObjectStart()
+		for i, entry := range patt.entries {
+			if i != 0 {
+				w.WriteMore()
+			}
+			// write <entry name>: {
+			w.WriteObjectField(entry.Name)
+			w.WriteObjectStart()
+
+			//write "pattern": <pattern>
+			w.WriteObjectField(SERIALIZED_OBJECT_PATTERN_ENTRY_PATTERN_KEY)
+
+			config := JSONSerializationConfig{ReprConfig: config.ReprConfig}
+
+			err := entry.Pattern.WriteJSONRepresentation(ctx, w, config, depth+1)
+			if err != nil {
+				return fmt.Errorf("failed to serialize pattern of entry %q: %w", entry.Name, err)
+			}
+
+			//if optional write "isOptional": true
+			if entry.IsOptional {
+				w.WriteMore()
+				w.WriteObjectField(SERIALIZED_OBJECT_PATTERN_ENTRY_IS_OPTIONAL_KEY)
+				w.WriteTrue()
+			}
+
+			//write required keys in an array.
+			if len(entry.Dependencies.RequiredKeys) > 0 {
+				w.WriteMore()
+				w.WriteObjectField(SERIALIZED_OBJECT_PATTERN_ENTRY_REQ_KEYS_KEY)
+				w.WriteArrayStart()
+
+				for keyIndex, key := range entry.Dependencies.RequiredKeys {
+					if keyIndex != 0 {
+						w.WriteMore()
+					}
+					w.WriteString(key)
+				}
+				w.WriteArrayEnd()
+			}
+
+			//write required pattern.
+			if entry.Dependencies.Pattern != nil {
+				w.WriteMore()
+				w.WriteObjectField(SERIALIZED_OBJECT_PATTERN_ENTRY_REQ_PATTERN_KEY)
+
+				config := JSONSerializationConfig{ReprConfig: config.ReprConfig}
+
+				err := entry.Dependencies.Pattern.WriteJSONRepresentation(ctx, w, config, depth+1)
+				if err != nil {
+					return fmt.Errorf("failed to serialize required pattern: %w", err)
+				}
+			}
+
+			w.WriteObjectEnd() //'}' after <entry name>: { ...
+		}
+		w.WriteObjectEnd() //'}' after "entries": { ...
+		w.WriteObjectEnd() //final '}'
+		return nil
+	}
+
+	if noPatternOrAny(config.Pattern) {
+		writeUntypedValueJSON(OBJECT_PATTERN_PATTERN.Name, func(w *jsoniter.Stream) error {
+			return write()
+		}, w)
+		return nil
+	}
+	return write()
 }
 
 func (patt RecordPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	if depth > MAX_JSON_REPR_WRITING_DEPTH {
 		return ErrMaximumJSONReprWritingDepthReached
 	}
-	return ErrNotImplementedYet
+
+	write := func() error {
+		w.WriteObjectStart()
+
+		w.WriteObjectField(SERIALIZED_RECORD_PATTERN_INEXACT_KEY)
+		w.WriteBool(patt.inexact)
+
+		//entries
+		w.WriteMore()
+		w.WriteObjectField(SERIALIZED_RECORD_PATTERN_ENTRIES_KEY)
+		w.WriteObjectStart()
+		for i, entry := range patt.entries {
+			if i != 0 {
+				w.WriteMore()
+			}
+			// write <entry name>: {
+			w.WriteObjectField(entry.Name)
+			w.WriteObjectStart()
+
+			//write "pattern": <pattern>
+			w.WriteObjectField(SERIALIZED_RECORD_PATTERN_ENTRY_PATTERN_KEY)
+
+			config := JSONSerializationConfig{ReprConfig: config.ReprConfig}
+
+			err := entry.Pattern.WriteJSONRepresentation(ctx, w, config, depth+1)
+			if err != nil {
+				return fmt.Errorf("failed to serialize pattern of entry %q: %w", entry.Name, err)
+			}
+
+			//if optional write "isOptional": true
+			if entry.IsOptional {
+				w.WriteMore()
+				w.WriteObjectField(SERIALIZED_RECORD_PATTERN_ENTRY_IS_OPTIONAL_KEY)
+				w.WriteTrue()
+			}
+
+			w.WriteObjectEnd() //'}' after <entry name>: { ...
+		}
+		w.WriteObjectEnd() //'}' after "entries": { ...
+		w.WriteObjectEnd() //final '}'
+		return nil
+	}
+
+	if noPatternOrAny(config.Pattern) {
+		writeUntypedValueJSON(RECORD_PATTERN_PATTERN.Name, func(w *jsoniter.Stream) error {
+			return write()
+		}, w)
+		return nil
+	}
+	return write()
 }
 
 func (patt ListPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {

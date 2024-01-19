@@ -282,6 +282,10 @@ func ParseNextJSONRepresentation(ctx *Context, it *jsoniter.Iterator, pattern Pa
 			return parseNamedSegmentPathPatternSONRepresentation(ctx, it, try)
 		case TYPE_PATTERN_PATTERN:
 			return parseTypePatternSONRepresentation(ctx, it, try)
+		case OBJECT_PATTERN_PATTERN:
+			return parseObjectPatternJSONRepresentation(ctx, it, try)
+		case RECORD_PATTERN_PATTERN:
+			return parseRecordPatternJSONRepresentation(ctx, it, try)
 		case ANYVAL_PATTERN, SERIALIZABLE_PATTERN:
 			return ParseNextJSONRepresentation(ctx, it, nil, try)
 		default:
@@ -999,6 +1003,251 @@ func parseTypePatternSONRepresentation(ctx *Context, it *jsoniter.Iterator, try 
 	}
 
 	return typePattern, nil
+}
+
+func parseObjectPatternJSONRepresentation(ctx *Context, it *jsoniter.Iterator, try bool) (_ *ObjectPattern, finalErr error) {
+	if it.WhatIsNext() != jsoniter.ObjectValue {
+		if try {
+			return nil, ErrTriedToParseJSONRepr
+		}
+		return nil, ErrJsonNotMatchingSchema
+	}
+
+	var inexact bool = true
+	var entries []ObjectPatternEntry
+
+	it.ReadObjectCB(func(i *jsoniter.Iterator, s string) bool {
+		switch s {
+		case SERIALIZED_OBJECT_PATTERN_INEXACT_KEY: //inexactness
+			if it.WhatIsNext() != jsoniter.BoolValue {
+				finalErr = errors.New("invalid representation of object pattern's inexactness")
+				return false
+			}
+			inexact = it.ReadBool()
+			return true
+		case SERIALIZED_OBJECT_PATTERN_ENTRIES_KEY: //entries
+			if it.WhatIsNext() != jsoniter.ObjectValue {
+				finalErr = errors.New("invalid representation of object pattern entries")
+				return false
+			}
+			//read entries
+			i.ReadObjectCB(func(i *jsoniter.Iterator, entryName string) bool {
+				entry, err := parseObjectPatternEntryJSONRepresentation(ctx, i, entryName)
+				if err != nil {
+					finalErr = err
+					return false
+				}
+				entries = append(entries, entry)
+				return true
+			})
+
+			if finalErr != nil {
+				return false
+			}
+
+			if it.Error == io.EOF {
+				finalErr = errors.New("unterminated object pattern representation")
+				return false
+			}
+
+			if it.Error != nil {
+				return false
+			}
+
+			return true
+		default:
+			finalErr = fmt.Errorf("unexpected property %q in object pattern representation", s)
+			return false
+		}
+	})
+
+	if finalErr != nil {
+		return nil, finalErr
+	}
+
+	if it.Error != nil && it.Error != io.EOF {
+		return nil, it.Error
+	}
+
+	return NewObjectPattern(inexact, entries), nil
+}
+
+func parseObjectPatternEntryJSONRepresentation(ctx *Context, it *jsoniter.Iterator, name string) (entry ObjectPatternEntry, finalErr error) {
+	if it.WhatIsNext() != jsoniter.ObjectValue {
+		finalErr = fmt.Errorf("invalid representation of an object pattern entry (name: %q)", name)
+		return
+	}
+
+	it.ReadObjectCB(func(i *jsoniter.Iterator, key string) bool {
+		switch key {
+		case SERIALIZED_OBJECT_PATTERN_ENTRY_PATTERN_KEY:
+			pattern, err := ParseNextJSONRepresentation(ctx, i, nil, false)
+			if err != nil {
+				finalErr = err
+				return false
+			}
+			var ok bool
+			entry.Pattern, ok = pattern.(Pattern)
+			if !ok {
+				finalErr = fmt.Errorf("invalid pattern for object pattern entry (entry name: %q)", name)
+				return false
+			}
+			return true
+		case SERIALIZED_OBJECT_PATTERN_ENTRY_IS_OPTIONAL_KEY:
+			if it.WhatIsNext() != jsoniter.BoolValue {
+				finalErr = fmt.Errorf("invalid optionality for object pattern entry (entry name: %q)", name)
+				return false
+			}
+			entry.IsOptional = it.ReadBool()
+			return true
+		case SERIALIZED_OBJECT_PATTERN_ENTRY_REQ_KEYS_KEY:
+			if it.WhatIsNext() != jsoniter.ArrayValue {
+				finalErr = fmt.Errorf("invalid required key list for object pattern entry (entry name: %q)", name)
+				return false
+			}
+			it.ReadArrayCB(func(i *jsoniter.Iterator) bool {
+				if it.WhatIsNext() != jsoniter.StringValue {
+					finalErr = fmt.Errorf("invalid required key for object pattern entry (entry name: %q)", name)
+					return false
+				}
+				entry.Dependencies.RequiredKeys = append(entry.Dependencies.RequiredKeys, it.ReadString())
+				return true
+			})
+			return true
+		case SERIALIZED_OBJECT_PATTERN_ENTRY_REQ_PATTERN_KEY:
+			pattern, err := ParseNextJSONRepresentation(ctx, i, nil, false)
+			if err != nil {
+				finalErr = err
+				return false
+			}
+			var ok bool
+			entry.Dependencies.Pattern, ok = pattern.(Pattern)
+			if !ok {
+				finalErr = fmt.Errorf("invalid required pattern for object pattern entry (entry name: %q)", name)
+				return false
+			}
+			return true
+		default:
+			finalErr = fmt.Errorf("unexpected property %q in object pattern entry representation", key)
+			return false
+		}
+	})
+
+	if finalErr != nil {
+		entry = ObjectPatternEntry{}
+		return
+	}
+
+	return
+}
+
+func parseRecordPatternJSONRepresentation(ctx *Context, it *jsoniter.Iterator, try bool) (_ *RecordPattern, finalErr error) {
+	if it.WhatIsNext() != jsoniter.ObjectValue {
+		if try {
+			return nil, ErrTriedToParseJSONRepr
+		}
+		return nil, ErrJsonNotMatchingSchema
+	}
+
+	var inexact bool = true
+	var entries []RecordPatternEntry
+
+	it.ReadObjectCB(func(i *jsoniter.Iterator, s string) bool {
+		switch s {
+		case SERIALIZED_RECORD_PATTERN_INEXACT_KEY: //inexactness
+			if it.WhatIsNext() != jsoniter.BoolValue {
+				finalErr = errors.New("invalid representation of record pattern's inexactness")
+				return false
+			}
+			inexact = it.ReadBool()
+			return true
+		case SERIALIZED_RECORD_PATTERN_ENTRIES_KEY: //entries
+			if it.WhatIsNext() != jsoniter.ObjectValue {
+				finalErr = errors.New("invalid representation of record pattern entries")
+				return false
+			}
+			//read entries
+			i.ReadObjectCB(func(i *jsoniter.Iterator, entryName string) bool {
+				entry, err := parseRecordPatternEntryJSONRepresentation(ctx, i, entryName)
+				if err != nil {
+					finalErr = err
+					return false
+				}
+				entries = append(entries, entry)
+				return true
+			})
+
+			if finalErr != nil {
+				return false
+			}
+
+			if it.Error == io.EOF {
+				finalErr = errors.New("unterminated record pattern representation")
+				return false
+			}
+
+			if it.Error != nil {
+				return false
+			}
+
+			return true
+		default:
+			finalErr = fmt.Errorf("unexpected property %q in record pattern representation", s)
+			return false
+		}
+	})
+
+	if finalErr != nil {
+		return nil, finalErr
+	}
+
+	if it.Error != nil && it.Error != io.EOF {
+		return nil, it.Error
+	}
+
+	return NewRecordPattern(inexact, entries), nil
+}
+
+func parseRecordPatternEntryJSONRepresentation(ctx *Context, it *jsoniter.Iterator, name string) (entry RecordPatternEntry, finalErr error) {
+	if it.WhatIsNext() != jsoniter.ObjectValue {
+		finalErr = fmt.Errorf("invalid representation of an record pattern entry (name: %q)", name)
+		return
+	}
+
+	it.ReadObjectCB(func(i *jsoniter.Iterator, key string) bool {
+		switch key {
+		case SERIALIZED_RECORD_PATTERN_ENTRY_PATTERN_KEY:
+			pattern, err := ParseNextJSONRepresentation(ctx, i, nil, false)
+			if err != nil {
+				finalErr = err
+				return false
+			}
+			var ok bool
+			entry.Pattern, ok = pattern.(Pattern)
+			if !ok {
+				finalErr = fmt.Errorf("invalid pattern for record pattern entry (entry name: %q)", name)
+				return false
+			}
+			return true
+		case SERIALIZED_RECORD_PATTERN_ENTRY_IS_OPTIONAL_KEY:
+			if it.WhatIsNext() != jsoniter.BoolValue {
+				finalErr = fmt.Errorf("invalid optionality for record pattern entry (entry name: %q)", name)
+				return false
+			}
+			entry.IsOptional = it.ReadBool()
+			return true
+		default:
+			finalErr = fmt.Errorf("unexpected property %q in record pattern entry representation", key)
+			return false
+		}
+	})
+
+	if finalErr != nil {
+		entry = RecordPatternEntry{}
+		return
+	}
+
+	return
 }
 
 func parseSameTypeListJSONRepr[T any](

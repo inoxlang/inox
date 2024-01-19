@@ -4,11 +4,16 @@ import (
 	"testing"
 	"time"
 
+	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestParseJSONRepresentation(t *testing.T) {
 	t.Parallel()
+
+	//TODO: check that removing one '}', or ']' or closing '"' always yields an error.
+	//The removed characters should not be inside a string and all cases should be
+	//tested, this will require analyzing the structure of the JSON.
 
 	t.Run("strings", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
@@ -1127,4 +1132,266 @@ func TestParseJSONRepresentation(t *testing.T) {
 			assert.Equal(t, Duration(time.Second/10), v)
 		}
 	})
+
+	t.Run("object patterns", func(t *testing.T) {
+		//TODO: add tests for patterns with complex constraints.
+
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
+		config := JSONSerializationConfig{ReprConfig: ALL_VISIBLE_REPR_CONFIG, Pattern: OBJECT_PATTERN_PATTERN}
+
+		t.Run("empty inexact", func(t *testing.T) {
+			pattern := NewInexactObjectPattern([]ObjectPatternEntry{})
+			serialized := utils.Must(GetJSONRepresentationWithConfig(pattern, ctx, config))
+
+			v, err := ParseJSONRepresentation(ctx, `{"object-pattern__value":`+serialized+"}", nil)
+			if assert.NoError(t, err) {
+				assertEqualInoxValues(t, pattern, v, ctx)
+			}
+
+			v, err = ParseJSONRepresentation(ctx, serialized, OBJECT_PATTERN_PATTERN)
+			if assert.NoError(t, err) {
+				assertEqualInoxValues(t, pattern, v, ctx)
+			}
+		})
+
+		t.Run("empty exact", func(t *testing.T) {
+			pattern := NewExactObjectPattern([]ObjectPatternEntry{})
+			serialized := utils.Must(GetJSONRepresentationWithConfig(pattern, ctx, config))
+
+			v, err := ParseJSONRepresentation(ctx, serialized, OBJECT_PATTERN_PATTERN)
+			if assert.NoError(t, err) {
+				assertEqualInoxValues(t, pattern, v, ctx)
+			}
+		})
+
+		t.Run("single (simple) prop", func(t *testing.T) {
+			pattern := NewInexactObjectPattern([]ObjectPatternEntry{
+				{
+					Name:    "a",
+					Pattern: INT_PATTERN,
+				},
+			})
+			serialized := utils.Must(GetJSONRepresentationWithConfig(pattern, ctx, config))
+
+			v, err := ParseJSONRepresentation(ctx, serialized, OBJECT_PATTERN_PATTERN)
+			if assert.NoError(t, err) {
+				assertEqualInoxValues(t, pattern, v, ctx)
+			}
+		})
+
+		t.Run("single (complex) prop", func(t *testing.T) {
+			pattern := NewInexactObjectPattern([]ObjectPatternEntry{
+				{
+					Name: "a",
+					Pattern: NewInexactObjectPattern([]ObjectPatternEntry{
+						{
+							Name:    "b",
+							Pattern: INT_PATTERN,
+						},
+					}),
+				},
+			})
+			serialized := utils.Must(GetJSONRepresentationWithConfig(pattern, ctx, config))
+
+			v, err := ParseJSONRepresentation(ctx, serialized, OBJECT_PATTERN_PATTERN)
+			if assert.NoError(t, err) {
+				assertEqualInoxValues(t, pattern, v, ctx)
+			}
+		})
+
+		t.Run("two props", func(t *testing.T) {
+			pattern := NewInexactObjectPattern([]ObjectPatternEntry{
+				{
+					Name:    "a",
+					Pattern: INT_PATTERN,
+				},
+				{
+					Name:    "b",
+					Pattern: INT_PATTERN,
+				},
+			})
+			serialized := utils.Must(GetJSONRepresentationWithConfig(pattern, ctx, config))
+
+			v, err := ParseJSONRepresentation(ctx, serialized, OBJECT_PATTERN_PATTERN)
+			if assert.NoError(t, err) {
+				assertEqualInoxValues(t, pattern, v, ctx)
+			}
+		})
+
+		t.Run("optional prop", func(t *testing.T) {
+			pattern := NewInexactObjectPattern([]ObjectPatternEntry{
+				{
+					Name:       "a",
+					Pattern:    INT_PATTERN,
+					IsOptional: true,
+				},
+			})
+			serialized := utils.Must(GetJSONRepresentationWithConfig(pattern, ctx, config))
+
+			v, err := ParseJSONRepresentation(ctx, serialized, OBJECT_PATTERN_PATTERN)
+			if assert.NoError(t, err) {
+				assertEqualInoxValues(t, pattern, v, ctx)
+			}
+		})
+
+		t.Run("prop with one required key", func(t *testing.T) {
+			pattern := NewInexactObjectPattern([]ObjectPatternEntry{
+				{
+					Name:    "a",
+					Pattern: INT_PATTERN,
+					Dependencies: PropertyDependencies{
+						RequiredKeys: []string{"b"},
+					},
+				},
+			})
+			serialized := utils.Must(GetJSONRepresentationWithConfig(pattern, ctx, config))
+
+			v, err := ParseJSONRepresentation(ctx, serialized, OBJECT_PATTERN_PATTERN)
+			if assert.NoError(t, err) {
+				assertEqualInoxValues(t, pattern, v, ctx)
+			}
+		})
+
+		t.Run("prop with required keys", func(t *testing.T) {
+			pattern := NewInexactObjectPattern([]ObjectPatternEntry{
+				{
+					Name:    "a",
+					Pattern: INT_PATTERN,
+					Dependencies: PropertyDependencies{
+						RequiredKeys: []string{"b", "c"},
+					},
+				},
+			})
+			serialized := utils.Must(GetJSONRepresentationWithConfig(pattern, ctx, config))
+
+			v, err := ParseJSONRepresentation(ctx, serialized, OBJECT_PATTERN_PATTERN)
+			if assert.NoError(t, err) {
+				assertEqualInoxValues(t, pattern, v, ctx)
+			}
+		})
+
+		t.Run("prop with required pattern", func(t *testing.T) {
+			pattern := NewInexactObjectPattern([]ObjectPatternEntry{
+				{
+					Name:    "a",
+					Pattern: INT_PATTERN,
+					Dependencies: PropertyDependencies{
+						Pattern: NewInexactObjectPattern([]ObjectPatternEntry{}),
+					},
+				},
+			})
+			serialized := utils.Must(GetJSONRepresentationWithConfig(pattern, ctx, config))
+
+			v, err := ParseJSONRepresentation(ctx, serialized, OBJECT_PATTERN_PATTERN)
+			if assert.NoError(t, err) {
+				assertEqualInoxValues(t, pattern, v, ctx)
+			}
+		})
+	})
+
+	t.Run("record patterns", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
+		config := JSONSerializationConfig{ReprConfig: ALL_VISIBLE_REPR_CONFIG, Pattern: RECORD_PATTERN_PATTERN}
+
+		t.Run("empty inexact", func(t *testing.T) {
+			pattern := NewInexactRecordPattern([]RecordPatternEntry{})
+			serialized := utils.Must(GetJSONRepresentationWithConfig(pattern, ctx, config))
+
+			v, err := ParseJSONRepresentation(ctx, `{"record-pattern__value":`+serialized+"}", nil)
+			if assert.NoError(t, err) {
+				assertEqualInoxValues(t, pattern, v, ctx)
+			}
+
+			v, err = ParseJSONRepresentation(ctx, serialized, RECORD_PATTERN_PATTERN)
+			if assert.NoError(t, err) {
+				assertEqualInoxValues(t, pattern, v, ctx)
+			}
+		})
+
+		t.Run("empty exact", func(t *testing.T) {
+			pattern := NewExactRecordPattern([]RecordPatternEntry{})
+			serialized := utils.Must(GetJSONRepresentationWithConfig(pattern, ctx, config))
+
+			v, err := ParseJSONRepresentation(ctx, serialized, RECORD_PATTERN_PATTERN)
+			if assert.NoError(t, err) {
+				assertEqualInoxValues(t, pattern, v, ctx)
+			}
+		})
+
+		t.Run("single (simple) prop", func(t *testing.T) {
+			pattern := NewInexactRecordPattern([]RecordPatternEntry{
+				{
+					Name:    "a",
+					Pattern: INT_PATTERN,
+				},
+			})
+			serialized := utils.Must(GetJSONRepresentationWithConfig(pattern, ctx, config))
+
+			v, err := ParseJSONRepresentation(ctx, serialized, RECORD_PATTERN_PATTERN)
+			if assert.NoError(t, err) {
+				assertEqualInoxValues(t, pattern, v, ctx)
+			}
+		})
+
+		t.Run("single (complex) prop", func(t *testing.T) {
+			pattern := NewInexactRecordPattern([]RecordPatternEntry{
+				{
+					Name: "a",
+					Pattern: NewInexactRecordPattern([]RecordPatternEntry{
+						{
+							Name:    "b",
+							Pattern: INT_PATTERN,
+						},
+					}),
+				},
+			})
+			serialized := utils.Must(GetJSONRepresentationWithConfig(pattern, ctx, config))
+
+			v, err := ParseJSONRepresentation(ctx, serialized, RECORD_PATTERN_PATTERN)
+			if assert.NoError(t, err) {
+				assertEqualInoxValues(t, pattern, v, ctx)
+			}
+		})
+
+		t.Run("two props", func(t *testing.T) {
+			pattern := NewInexactRecordPattern([]RecordPatternEntry{
+				{
+					Name:    "a",
+					Pattern: INT_PATTERN,
+				},
+				{
+					Name:    "b",
+					Pattern: INT_PATTERN,
+				},
+			})
+			serialized := utils.Must(GetJSONRepresentationWithConfig(pattern, ctx, config))
+
+			v, err := ParseJSONRepresentation(ctx, serialized, RECORD_PATTERN_PATTERN)
+			if assert.NoError(t, err) {
+				assertEqualInoxValues(t, pattern, v, ctx)
+			}
+		})
+
+		t.Run("optional prop", func(t *testing.T) {
+			pattern := NewInexactRecordPattern([]RecordPatternEntry{
+				{
+					Name:       "a",
+					Pattern:    INT_PATTERN,
+					IsOptional: true,
+				},
+			})
+			serialized := utils.Must(GetJSONRepresentationWithConfig(pattern, ctx, config))
+
+			v, err := ParseJSONRepresentation(ctx, serialized, RECORD_PATTERN_PATTERN)
+			if assert.NoError(t, err) {
+				assertEqualInoxValues(t, pattern, v, ctx)
+			}
+		})
+
+	})
+
 }
