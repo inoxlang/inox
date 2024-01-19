@@ -1084,7 +1084,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 		})
 	})
 
-	t.Run("exact values", func(t *testing.T) {
+	t.Run("exact value patterns", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
@@ -1096,6 +1096,21 @@ func TestParseJSONRepresentation(t *testing.T) {
 		v, err = ParseJSONRepresentation(ctx, `{"float__value":0.1}`, EXACT_VALUE_PATTERN_PATTERN)
 		if assert.NoError(t, err) {
 			assert.Equal(t, NewExactValuePattern(Float(0.1)), v)
+		}
+	})
+
+	t.Run("exact string patterns", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
+		v, err := ParseJSONRepresentation(ctx, `{"exact-string-pattern__value":"x"}`, nil)
+		if assert.NoError(t, err) {
+			assert.Equal(t, NewExactStringPattern(Str("x")), v)
+		}
+
+		v, err = ParseJSONRepresentation(ctx, `"x"`, EXACT_STRING_PATTERN_PATTERN)
+		if assert.NoError(t, err) {
+			assert.Equal(t, NewExactStringPattern(Str("x")), v)
 		}
 	})
 

@@ -1065,6 +1065,24 @@ func (pattern ExactValuePattern) WriteJSONRepresentation(ctx *Context, w *jsonit
 	return write(w)
 }
 
+func (pattern ExactStringPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+	if depth > MAX_JSON_REPR_WRITING_DEPTH {
+		return ErrMaximumJSONReprWritingDepthReached
+	}
+
+	write := func(w *jsoniter.Stream) error {
+		valueConfig := JSONSerializationConfig{ReprConfig: config.ReprConfig}
+		return pattern.value.WriteJSONRepresentation(ctx, w, valueConfig, depth+1)
+	}
+
+	if noPatternOrAny(config.Pattern) {
+		return writeUntypedValueJSON(EXACT_STRING_PATTERN_PATTERN.Name, func(w *jsoniter.Stream) error {
+			return write(w)
+		}, w)
+	}
+	return write(w)
+}
+
 func (pattern TypePattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	if depth > MAX_JSON_REPR_WRITING_DEPTH {
 		return ErrMaximumJSONReprWritingDepthReached
@@ -1472,7 +1490,7 @@ func (patt *FunctionPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.S
 	return ErrNotImplementedYet
 }
 
-//
+// end of pattern serialization methods.
 
 func (mt Mimetype) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	return ErrNoRepresentation

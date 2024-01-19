@@ -81,9 +81,7 @@ type ToStringConversionCapableStringPattern interface {
 type ExactStringPattern struct {
 	value  Str
 	regexp *regexp.Regexp
-
 	NotCallablePatternMixin
-	CallBasedPatternReprMixin
 }
 
 func NewExactStringPattern(value Str) *ExactStringPattern {
@@ -91,9 +89,8 @@ func NewExactStringPattern(value Str) *ExactStringPattern {
 	regexp := regexp.MustCompile(regex)
 
 	return &ExactStringPattern{
-		value:                     value,
-		regexp:                    regexp,
-		CallBasedPatternReprMixin: CallBasedPatternReprMixin{},
+		value:  value,
+		regexp: regexp,
 	}
 }
 
