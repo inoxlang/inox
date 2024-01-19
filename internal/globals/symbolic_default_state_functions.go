@@ -163,12 +163,6 @@ func init() {
 			return symbolic.ANY_STR
 		},
 
-		_repr, func(ctx *symbolic.Context, arg symbolic.Serializable) *symbolic.String {
-			return symbolic.ANY_STR
-		},
-		_parse_repr, func(ctx *symbolic.Context, arg symbolic.Readable) (symbolic.Value, *symbolic.Error) {
-			return symbolic.ANY, nil
-		},
 		_parse, func(ctx *symbolic.Context, arg symbolic.Readable, p symbolic.Pattern) (symbolic.Value, *symbolic.Error) {
 			return p.SymbolicValue(), nil
 		},

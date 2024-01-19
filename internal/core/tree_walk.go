@@ -1663,7 +1663,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 				return nil, err
 			}
 
-			keyRepr := string(GetRepresentation(k.(Serializable), state.Global.Ctx))
+			keyRepr := dict.getKeyRepr(state.Global.Ctx, k.(Serializable))
 			dict.entries[keyRepr] = v.(Serializable)
 			dict.keys[keyRepr] = k.(Serializable)
 		}

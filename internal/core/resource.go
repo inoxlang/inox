@@ -1657,3 +1657,4 @@ func appendPathSegmentToURLPattern(urlPattern, segment string) string {
 	}
 	return urlPattern[:index] + "/" + segment + urlPattern[index:]
 }
+

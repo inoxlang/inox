@@ -17,7 +17,6 @@ var (
 
 func init() {
 	RegisterParser(mimeconsts.JSON_CTYPE, &jsonParser{})
-	RegisterParser(mimeconsts.IXON_CTYPE, &inoxReprParser{})
 	RegisterParser(mimeconsts.APP_YAML_CTYPE, &yamlParser{})
 }
 
@@ -65,26 +64,6 @@ func (p *jsonParser) Parse(ctx *Context, s string) (Serializable, error) {
 	}
 	//TODO: use ParseJSONRepresentation (add tests before change)
 	return ConvertJSONValToInoxVal(jsonVal, false), nil
-}
-
-type inoxReprParser struct {
-}
-
-func (p *inoxReprParser) Validate(ctx *Context, s string) bool {
-	if len(s) > DEFAULT_MAX_TESTED_STRING_BYTE_LENGTH {
-		panic(ErrTestedStringTooLarge)
-	}
-
-	_, err := ParseRepr(ctx, utils.StringAsBytes(s))
-	return err == nil
-
-}
-func (p *inoxReprParser) Parse(ctx *Context, s string) (Serializable, error) {
-	if len(s) > DEFAULT_MAX_TESTED_STRING_BYTE_LENGTH {
-		return nil, ErrTestedStringTooLarge
-	}
-
-	return ParseRepr(ctx, utils.StringAsBytes(s))
 }
 
 type yamlParser struct {

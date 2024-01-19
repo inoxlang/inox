@@ -141,12 +141,12 @@ func TestMkdir(t *testing.T) {
 		pth := filepath.Join(tmpDir, "dir") + "/"
 
 		content := core.NewDictionary(map[string]core.Serializable{
-			`./subdir_1/`: core.NewWrappedValueList(core.Path("./file_a")),
-			`./subdir_2/`: core.NewDictionary(map[string]core.Serializable{
-				`./subdir_3/`: core.NewWrappedValueList(core.Path("./file_b")),
-				`./file_c`:    core.Str("c"),
+			core.GetJSONRepresentation(core.Path("./subdir_1/"), ctx, nil): core.NewWrappedValueList(core.Path("./file_a")),
+			core.GetJSONRepresentation(core.Path("./subdir_2/"), ctx, nil): core.NewDictionary(map[string]core.Serializable{
+				core.GetJSONRepresentation(core.Path("./subdir_3/"), ctx, nil): core.NewWrappedValueList(core.Path("./file_b")),
+				core.GetJSONRepresentation(core.Path("./file_c"), ctx, nil):    core.Str("c"),
 			}),
-			`./file_d`: core.Str("d"),
+			core.GetJSONRepresentation(core.Path("./file_d"), ctx, nil): core.Str("d"),
 		})
 
 		err := Mkdir(ctx, core.Path(pth), core.ToOptionalParam(content))

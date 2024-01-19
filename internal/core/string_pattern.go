@@ -1384,6 +1384,12 @@ type NamedSegmentPathPattern struct {
 	node *parse.NamedSegmentPathPatternLiteral
 }
 
+func NewNamedSegmentPathPattern(node *parse.NamedSegmentPathPatternLiteral) *NamedSegmentPathPattern {
+	return &NamedSegmentPathPattern{
+		node: node,
+	}
+}
+
 func (patt *NamedSegmentPathPattern) Test(ctx *Context, v Value) bool {
 	_, ok, err := patt.MatchGroups(ctx, v.(Serializable))
 	return ok && err == nil
@@ -1732,8 +1738,8 @@ func (pattern *PathStringPattern) Test(ctx *Context, v Value) bool {
 	}
 
 	if pattern.optionalPathPattern == "" {
-		parsed, _ := ParseRepr(ctx, []byte(path))
-		_, ok := parsed.(Path)
+		v, _ := ParseJSONRepresentation(ctx, path, nil)
+		_, ok := v.(Path)
 		return ok
 	}
 	return pattern.optionalPathPattern.Test(ctx, Str(path))

@@ -31,7 +31,8 @@ const (
 )
 
 var (
-	LOCAL_DB_PROPNAMES = []string{"update_schema", "close"}
+	LOCAL_DB_PROPNAMES        = []string{"update_schema", "close"}
+	JSON_SERIALIZATION_CONFIG = core.JSONSerializationConfig{ReprConfig: core.ALL_VISIBLE_REPR_CONFIG}
 
 	ErrOpenDatabase = errors.New("database is already open by the current process or another one")
 
@@ -209,7 +210,7 @@ func openLocalDatabaseWithConfig(ctx *core.Context, config LocalDatabaseConfig) 
 	}
 
 	if schemaFound {
-		schema, err := core.ParseRepr(ctx, []byte(serializedSchema))
+		schema, err := core.ParseJSONRepresentation(ctx, serializedSchema, nil)
 
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse database schema: %w", err)
@@ -279,7 +280,7 @@ func (ldb *LocalDatabase) UpdateSchema(ctx *core.Context, schema *core.ObjectPat
 
 	// store the new schema
 
-	repr := string(core.GetRepresentation(schema, ctx))
+	repr := string(core.MustGetJSONRepresentationWithConfig(schema, ctx, JSON_SERIALIZATION_CONFIG))
 
 	err := ldb.metaKV.Update(func(tx *buntdb.Tx) error {
 		_, _, err := tx.Set(SCHEMA_KEY, repr, nil)

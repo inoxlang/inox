@@ -51,9 +51,11 @@ func testKvSet(t *testing.T, UseSetSerialized bool) {
 				}
 			}
 
+			repr := core.GetJSONRepresentation(core.Int(1), ctx, nil)
+
 			//create item
 			if UseSetSerialized {
-				kv.SetSerialized(ctx, "/data", "1", kv)
+				kv.SetSerialized(ctx, "/data", repr, kv)
 			} else {
 				kv.Set(ctx, "/data", core.Int(1), kv)
 			}
@@ -76,7 +78,7 @@ func testKvSet(t *testing.T, UseSetSerialized bool) {
 				kv.db.View(func(tx *bbolt.Tx) error {
 					val := tx.Bucket(BBOLT_DATA_BUCKET).Get([]byte("/data"))
 					if val != nil {
-						assert.Equal(t, "1", string(val))
+						assert.Equal(t, repr, string(val))
 					}
 					return nil
 				})
@@ -143,7 +145,8 @@ func TestKvGetSerialized(t *testing.T) {
 		return
 	}
 
-	assert.Equal(t, "1", val)
+	repr := core.GetJSONRepresentation(core.Int(1), ctx, nil)
+	assert.Equal(t, repr, val)
 }
 
 func TestKvInsert(t *testing.T) {
@@ -176,7 +179,8 @@ func testKvInsert(t *testing.T, UseInsertSerialized bool) {
 
 		//create item
 		if UseInsertSerialized {
-			kv.InsertSerialized(ctx, "/data", "1", kv)
+			repr := core.GetJSONRepresentation(core.Int(1), ctx, nil)
+			kv.InsertSerialized(ctx, "/data", repr, kv)
 		} else {
 			kv.Insert(ctx, "/data", core.Int(1), kv)
 		}
@@ -211,7 +215,8 @@ func testKvInsert(t *testing.T, UseInsertSerialized bool) {
 
 		//first insert
 		if UseInsertSerialized {
-			kv.InsertSerialized(ctx, "/data", "1", kv)
+			repr := core.GetJSONRepresentation(core.Int(1), ctx, nil)
+			kv.InsertSerialized(ctx, "/data", repr, kv)
 		} else {
 			kv.Insert(ctx, "/data", core.Int(1), kv)
 		}
@@ -223,9 +228,10 @@ func testKvInsert(t *testing.T, UseInsertSerialized bool) {
 				assert.ErrorIs(t, e.(error), ErrKeyAlreadyPresent)
 			}()
 			if UseInsertSerialized {
-				kv.InsertSerialized(ctx, "/data", "2", kv)
+				repr := core.GetJSONRepresentation(core.Int(2), ctx, nil)
+				kv.InsertSerialized(ctx, "/data", repr, kv)
 			} else {
-				kv.Insert(ctx, "/data", core.Int(1), kv)
+				kv.Insert(ctx, "/data", core.Int(2), kv)
 			}
 		}()
 

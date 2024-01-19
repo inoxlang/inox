@@ -28,7 +28,7 @@ func (tx *KVTx) Get(ctx *core.Context, key core.Path) (result core.Value, valueF
 		return nil, found, nil
 	}
 
-	result, err = core.ParseRepr(ctx, utils.StringAsBytes(serialized))
+	result, err = core.ParseJSONRepresentation(ctx, serialized, nil)
 
 	if err != nil {
 		return nil, true, err
@@ -50,7 +50,7 @@ func (tx *KVTx) GetSerialized(ctx *core.Context, key core.Path) (result string, 
 }
 
 func (tx *KVTx) Set(ctx *core.Context, key core.Path, value core.Serializable) error {
-	repr := core.GetRepresentation(value, ctx)
+	repr := core.MustGetJSONRepresentationWithConfig(value, ctx, JSON_SERIALIZATION_CONFIG)
 	return tx.SetSerialized(ctx, key, string(repr))
 }
 
@@ -59,7 +59,7 @@ func (tx *KVTx) SetSerialized(ctx *core.Context, key core.Path, serialized strin
 }
 
 func (tx *KVTx) Insert(ctx *core.Context, key core.Path, value core.Serializable) error {
-	repr := core.GetRepresentation(value, ctx)
+	repr := core.MustGetJSONRepresentationWithConfig(value, ctx, JSON_SERIALIZATION_CONFIG)
 	return tx.InsertSerialized(ctx, key, string(repr))
 }
 

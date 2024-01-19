@@ -28,6 +28,8 @@ var (
 
 	BBOLT_DATA_BUCKET = []byte("data")
 
+	JSON_SERIALIZATION_CONFIG = core.JSONSerializationConfig{ReprConfig: core.ALL_VISIBLE_REPR_CONFIG}
+
 	_ core.DataStore = (*SerializedValueStorageAdapter)(nil)
 
 	bboltOptions = &bbolt.Options{
@@ -140,8 +142,8 @@ func (kv *SingleFileKV) Get(ctx *core.Context, key core.Path, db any) (core.Valu
 		return core.Nil, false, nil
 	}
 
-	val, err := core.ParseRepr(ctx, utils.StringAsBytes(serialized))
-	return val, found, err
+	val, err := core.ParseJSONRepresentation(ctx, serialized, nil)
+	return val, true, err
 }
 
 func (kv *SingleFileKV) GetSerialized(ctx *core.Context, key core.Path, db any) (string, core.Bool, error) {
@@ -202,7 +204,7 @@ func (kv *SingleFileKV) ForEach(ctx *core.Context, fn func(key core.Path, getVal
 		return errors.New("iteration function is nil")
 	}
 
-	handleItem := func(key, value string) (cont bool) {
+	handleItem := func(key, serialized string) (cont bool) {
 		if key == "" || key[0] != '/' {
 			return true
 		}
@@ -215,7 +217,7 @@ func (kv *SingleFileKV) ForEach(ctx *core.Context, fn func(key core.Path, getVal
 
 		path := core.PathFrom(key)
 		getVal := func() core.Value {
-			return utils.Must(core.ParseRepr(ctx, utils.StringAsBytes(value)))
+			return utils.Must(core.ParseJSONRepresentation(ctx, serialized, nil))
 		}
 
 		err := fn(path, getVal)
@@ -315,7 +317,7 @@ func (kv *SingleFileKV) Has(ctx *core.Context, key core.Path, db any) core.Bool 
 }
 
 func (kv *SingleFileKV) Insert(ctx *core.Context, key core.Path, value core.Serializable, db any) {
-	repr := core.GetRepresentation(value, ctx)
+	repr := core.MustGetJSONRepresentationWithConfig(value, ctx, JSON_SERIALIZATION_CONFIG)
 
 	kv.InsertSerialized(ctx, key, string(repr), db)
 }
@@ -360,7 +362,7 @@ func (kv *SingleFileKV) InsertSerialized(ctx *core.Context, key core.Path, seria
 }
 
 func (kv *SingleFileKV) Set(ctx *core.Context, key core.Path, value core.Serializable, db any) {
-	repr := core.GetRepresentation(value, ctx)
+	repr := core.MustGetJSONRepresentationWithConfig(value, ctx, JSON_SERIALIZATION_CONFIG)
 	kv.SetSerialized(ctx, key, string(repr), db)
 }
 

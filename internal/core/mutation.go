@@ -1,7 +1,6 @@
 package core
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"runtime"
@@ -9,6 +8,7 @@ import (
 	"strings"
 	"sync"
 
+	jsoniter "github.com/inoxlang/inox/internal/jsoniter"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
@@ -74,18 +74,21 @@ type SpecificMutationAcceptor interface {
 	ApplySpecificMutation(ctx *Context, m Mutation) error
 }
 
-func WriteSingleRepresentation(ctx *Context, v Serializable) ([]byte, [6]int32, error) {
-	buf := bytes.NewBuffer(nil)
-	config := &ReprConfig{AllVisible: true}
-	if err := WriteRepresentation(buf, v, config, ctx); err != nil {
+func WriteSingleJSONRepresentation(ctx *Context, v Serializable) ([]byte, [6]int32, error) {
+	config := JSONSerializationConfig{ReprConfig: &ReprConfig{AllVisible: true}}
+	stream := jsoniter.NewStream(jsoniter.ConfigDefault, nil, 0)
+
+	err := v.WriteJSONRepresentation(ctx, stream, config, 0)
+	if err != nil {
 		return nil, [6]int32{}, err
 	}
-	return buf.Bytes(), [6]int32{int32(buf.Len())}, nil
+	buf := stream.Buffer()
+	return buf, [6]int32{int32(len(buf))}, nil
 }
 
 func WriteConcatenatedRepresentations(ctx *Context, values ...Serializable) ([]byte, [6]int32, error) {
-	buf := bytes.NewBuffer(nil)
-	config := &ReprConfig{AllVisible: true}
+	config := JSONSerializationConfig{ReprConfig: &ReprConfig{AllVisible: true}}
+	stream := jsoniter.NewStream(jsoniter.ConfigDefault, nil, 0)
 
 	var sizes [6]int32
 
@@ -94,17 +97,19 @@ func WriteConcatenatedRepresentations(ctx *Context, values ...Serializable) ([]b
 	}
 
 	for i, val := range values {
-		prevBufSize := buf.Len()
+		prevBufSize := len(stream.Buffer())
 
-		if err := WriteRepresentation(buf, val, config, ctx); err != nil {
+		err := val.WriteJSONRepresentation(ctx, stream, config, 0)
+		if err != nil {
 			return nil, [6]int32{}, err
 		}
 
-		elemSize := buf.Len() - prevBufSize
+		elemSize := len(stream.Buffer()) - prevBufSize
 		sizes[i] = int32(elemSize)
 	}
 
-	return buf.Bytes(), sizes, nil
+	buf := stream.Buffer()
+	return buf, sizes, nil
 }
 
 func NewUnspecifiedMutation(depth WatchingDepth, path Path) Mutation {
@@ -223,7 +228,7 @@ func NewInsertSequenceAtIndexMutation(ctx *Context, index int, seq Sequence, dep
 }
 
 func NewRemovePositionMutation(ctx *Context, index int, depth WatchingDepth, path Path) Mutation {
-	data, sizes, err := WriteSingleRepresentation(ctx, Int(index))
+	data, sizes, err := WriteSingleJSONRepresentation(ctx, Int(index))
 
 	return Mutation{
 		Kind:               RemovePosition,
@@ -236,7 +241,7 @@ func NewRemovePositionMutation(ctx *Context, index int, depth WatchingDepth, pat
 }
 
 func NewRemovePositionRangeMutation(ctx *Context, intRange IntRange, depth WatchingDepth, path Path) Mutation {
-	data, sizes, err := WriteSingleRepresentation(ctx, intRange)
+	data, sizes, err := WriteSingleJSONRepresentation(ctx, intRange)
 
 	return Mutation{
 		Kind:               RemovePositionRange,
@@ -295,7 +300,7 @@ func (m Mutation) DataElem(ctx *Context, index int) Value {
 	}
 
 	b := m.Data[start : start+length]
-	v, err := ParseRepr(ctx, b)
+	v, err := ParseJSONRepresentation(ctx, string(b), nil)
 	//TODO: cache result (evict quickly)
 	if err != nil {
 		panic(err)

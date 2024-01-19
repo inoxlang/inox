@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"slices"
 
@@ -20,6 +21,8 @@ var (
 	ErrNotMatchingSchemaIntFound     = errors.New("integer was found but it does not match the schema")
 	ErrNotMatchingSchemaFloatFound   = errors.New("float was found but it does not match the schema")
 	ErrJSONImpossibleToDetermineType = errors.New("impossible to determine type")
+	ErrNonSupportedMetaProperty      = errors.New("non-supported meta property")
+	ErrInvalidRuneRepresentation     = errors.New("invalid rune representation")
 )
 
 func ParseJSONRepresentation(ctx *Context, s string, pattern Pattern) (Serializable, error) {
@@ -207,6 +210,18 @@ func ParseNextJSONRepresentation(ctx *Context, it *jsoniter.Iterator, pattern Pa
 				return nil, ErrJsonNotMatchingSchema
 			}
 			return Str(it.ReadString()), nil
+		case RUNE_PATTERN:
+			if it.WhatIsNext() != jsoniter.StringValue {
+				if try {
+					return nil, ErrTriedToParseJSONRepr
+				}
+				return nil, ErrJsonNotMatchingSchema
+			}
+			s := it.ReadString()
+			if utf8.RuneCountInString(s) != 1 {
+				return nil, ErrInvalidRuneRepresentation
+			}
+			return Rune(s[0]), nil
 		case BOOL_PATTERN:
 			if it.WhatIsNext() != jsoniter.BoolValue {
 				if try {
@@ -263,6 +278,10 @@ func ParseNextJSONRepresentation(ctx *Context, it *jsoniter.Iterator, pattern Pa
 			return parsePropNameJSONRepresentation(ctx, it, try)
 		case LONG_VALUEPATH_PATTERN:
 			return parseLongValuePathJSONRepresentation(ctx, it, try)
+		case NAMED_SEGMENT_PATH_PATTERN:
+			return parseNamedSegmentPathPatternSONRepresentation(ctx, it, try)
+		case TYPE_PATTERN_PATTERN:
+			return parseTypePatternSONRepresentation(ctx, it, try)
 		case ANYVAL_PATTERN, SERIALIZABLE_PATTERN:
 			return ParseNextJSONRepresentation(ctx, it, nil, try)
 		default:
@@ -940,6 +959,48 @@ func parseLongValuePathJSONRepresentation(ctx *Context, it *jsoniter.Iterator, t
 	return &p, nil
 }
 
+func parseNamedSegmentPathPatternSONRepresentation(ctx *Context, it *jsoniter.Iterator, try bool) (_ *NamedSegmentPathPattern, finalErr error) {
+	if it.WhatIsNext() != jsoniter.StringValue {
+		if try {
+			return nil, ErrTriedToParseJSONRepr
+		}
+		return nil, ErrJsonNotMatchingSchema
+	}
+
+	s := it.ReadString()
+	//TODO: add checks
+	//should the node spans be persisted ? The source file can change in the future ...
+
+	node, _ := parse.ParseExpression(s)
+	lit, ok := node.(*parse.NamedSegmentPathPatternLiteral)
+	if !ok {
+		return nil, errors.New("invalid JSON representation of a named segment path pattern")
+	}
+	return NewNamedSegmentPathPattern(lit), nil
+}
+
+func parseTypePatternSONRepresentation(ctx *Context, it *jsoniter.Iterator, try bool) (_ *TypePattern, finalErr error) {
+	if it.WhatIsNext() != jsoniter.StringValue {
+		if try {
+			return nil, ErrTriedToParseJSONRepr
+		}
+		return nil, ErrJsonNotMatchingSchema
+	}
+
+	s := it.ReadString()
+	pattern, ok := DEFAULT_NAMED_PATTERNS[s]
+	if !ok {
+		return nil, fmt.Errorf("%q is not a default named pattern", s)
+	}
+
+	typePattern, ok := pattern.(*TypePattern)
+	if !ok {
+		return nil, fmt.Errorf("%q is not a type pattern", s)
+	}
+
+	return typePattern, nil
+}
+
 func parseSameTypeListJSONRepr[T any](
 	ctx *Context,
 	it *jsoniter.Iterator,
@@ -1269,4 +1330,26 @@ func parseIntersectionJSONrepresentation(ctx *Context, it *jsoniter.Iterator, pa
 		}
 	}
 	return value, nil
+}
+
+func isAlpha(c byte) bool {
+	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
+}
+
+func isDigit(c byte) bool {
+	return (c >= '0' && c <= '9')
+}
+
+func countPrevBackslashes(s []byte, i int) int {
+	index := i - 1
+	count := 0
+	for ; index >= 0; index-- {
+		if s[index] == '\\' {
+			count += 1
+		} else {
+			break
+		}
+	}
+
+	return count
 }

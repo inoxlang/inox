@@ -44,11 +44,13 @@ func deduplicateConstants(b *Bytecode, tracer io.Writer) {
 		for j := i + 1; j < len(b.constants); j++ {
 			c2 := b.constants[j]
 			if c1.Equal(nil, c2, map[uintptr]uintptr{}, 0) {
+				jsonReprConfig := JSONSerializationConfig{ReprConfig: ALL_VISIBLE_REPR_CONFIG}
+
 				if tracer != nil {
-					s := fmt.Sprintf(
-						"%s (%d) is equal to %s (%d), remapping %d -> %d\n",
-						GetRepresentation(c1.(Serializable), ctx), i, GetRepresentation(c2.(Serializable), ctx), j, j, newConstantIndex,
-					)
+					c1Repr := MustGetJSONRepresentationWithConfig(c1.(Serializable), ctx, jsonReprConfig)
+					c2Repr := MustGetJSONRepresentationWithConfig(c2.(Serializable), ctx, jsonReprConfig)
+
+					s := fmt.Sprintf("%s (%d) is equal to %s (%d), remapping %d -> %d\n", c1Repr, i, c2Repr, j, j, newConstantIndex)
 					tracer.Write([]byte(s))
 				}
 				constantsMapping[j] = newConstantIndex

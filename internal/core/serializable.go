@@ -1,7 +1,6 @@
 package core
 
 import (
-	"io"
 	"time"
 
 	jsoniter "github.com/inoxlang/inox/internal/jsoniter"
@@ -43,12 +42,9 @@ var (
 	}
 )
 
-// Serializable is the interface implemented by all values serializable to JSON and/or IXON.
+// Serializable is the interface implemented by all values serializable to JSON.
 type Serializable interface {
 	Value
-
-	//IXON representation
-	WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error
 
 	//JSON representation
 	WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error

@@ -7,7 +7,6 @@ import "mime"
 const (
 	ANY_CTYPE  = "*/*"
 	JSON_CTYPE = "application/json"
-	IXON_CTYPE = "application/ixon"
 
 	//https://datatracker.ietf.org/doc/draft-ietf-httpapi-yaml-mediatypes/
 	/* quote:

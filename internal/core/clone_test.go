@@ -11,9 +11,16 @@ func TestDictionaryClone(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, NewDictionary(nil), clone)
 
-	clone, err = NewDictionary(map[string]Serializable{"/": Int(1)}).Clone(nil, &[]PotentiallySharable{}, nil, 0)
+	clone, err = NewDictionary(map[string]Serializable{
+		GetJSONRepresentation(Path("/"), nil, nil): Int(1),
+	}).Clone(nil, &[]PotentiallySharable{}, nil, 0)
+
 	assert.NoError(t, err)
-	assert.Equal(t, NewDictionary(map[string]Serializable{"/": Int(1)}), clone)
+
+	expectedDict := NewDictionary(map[string]Serializable{
+		GetJSONRepresentation(Path("/"), nil, nil): Int(1),
+	})
+	assert.Equal(t, expectedDict, clone)
 
 	// //not clonable
 	// clone, err = NewDictionary(map[string]Serializable{"/": &ValueListIterator{}}).PseudoClone(nil, &[]PotentiallySharable{}, nil, 0)

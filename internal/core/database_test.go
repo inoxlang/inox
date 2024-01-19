@@ -12,7 +12,6 @@ import (
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	jsoniter "github.com/inoxlang/inox/internal/jsoniter"
 	"github.com/inoxlang/inox/internal/parse"
-	"github.com/inoxlang/inox/internal/prettyprint"
 	pprint "github.com/inoxlang/inox/internal/prettyprint"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
@@ -85,7 +84,7 @@ func TestDatabaseIL(t *testing.T) {
 
 			dbIL.UpdateSchema(ctx, newSchema, NewObjectFromMap(ValMap{
 				symbolic.DB_MIGRATION__INCLUSIONS_PROP_NAME: NewDictionary(ValMap{
-					"%/a-": handler,
+					GetJSONRepresentation(PathPattern("/a-"), nil, nil): handler,
 				}),
 			}, ctx))
 		}()
@@ -149,7 +148,7 @@ func TestDatabaseIL(t *testing.T) {
 
 			dbIL.UpdateSchema(ctx, newSchema, NewObjectFromMap(ValMap{
 				symbolic.DB_MIGRATION__INCLUSIONS_PROP_NAME: NewDictionary(ValMap{
-					"%/a": handler,
+					GetJSONRepresentation(PathPattern("/a"), nil, nil): handler,
 				}),
 			}, ctx))
 		}()
@@ -586,7 +585,7 @@ func TestDatabaseIL(t *testing.T) {
 
 		dbIL.UpdateSchema(ctx, newSchema, NewObjectFromMap(ValMap{
 			symbolic.DB_MIGRATION__INCLUSIONS_PROP_NAME: NewDictionary(ValMap{
-				"%/a": handler,
+				GetJSONRepresentation(PathPattern("/a"), nil, nil): handler,
 			}),
 		}, ctx))
 
@@ -657,7 +656,7 @@ func TestDatabaseIL(t *testing.T) {
 		assert.PanicsWithError(t, ErrNewSchemaNotEqualToExpectedSchema.Error(), func() {
 			dbIL.UpdateSchema(ctx, newSchema, NewObjectFromMap(ValMap{
 				symbolic.DB_MIGRATION__INCLUSIONS_PROP_NAME: NewDictionary(ValMap{
-					"%/a": handler,
+					GetJSONRepresentation(PathPattern("/a"), nil, nil): handler,
 				}),
 			}, ctx))
 		})
@@ -957,7 +956,7 @@ func (*symbolicLoadableTestValue) IsMutable() bool {
 	return false
 }
 
-func (*symbolicLoadableTestValue) PrettyPrint(w prettyprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (*symbolicLoadableTestValue) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteString("symbolicLoadableTestValue")
 }
 
@@ -1004,7 +1003,7 @@ func (*symbolicLoadableTestValuePattern) IteratorElementValue() symbolic.Value {
 	return symbolic.ANY
 }
 
-func (*symbolicLoadableTestValuePattern) PrettyPrint(w prettyprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (*symbolicLoadableTestValuePattern) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteString("symbolicLoadableTestValuePattern")
 }
 

@@ -1079,7 +1079,7 @@ func TestFilesystemRouting(t *testing.T) {
 
 				db.UpdateSchema(gs.Ctx, schema, core.NewObjectFromMapNoInit(core.ValMap{
 					"inclusions": core.NewDictionary(core.ValMap{
-						"%/set": core.NewWrappedValueList(),
+						core.GetJSONRepresentation(core.PathPattern("/set"), gs.Ctx, nil): core.NewWrappedValueList(),
 					}),
 				}))
 

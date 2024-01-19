@@ -81,9 +81,6 @@ func init() {
 			}
 			return evalRate(q, divUnit)
 		},
-		ConvertKeyReprToValue: func(s string) any {
-			return convertKeyReprToValue(s)
-		},
 		// TreeWalkEvalEmptyState: func(node parse.Node) (any, error) {
 		// 	state := NewTreeWalkStateWithGlobal(&GlobalState{})
 

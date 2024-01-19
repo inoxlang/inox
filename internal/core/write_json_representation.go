@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io"
 	"time"
 
+	"github.com/inoxlang/inox/internal/commonfmt"
 	jsoniter "github.com/inoxlang/inox/internal/jsoniter"
 	"github.com/inoxlang/inox/internal/utils"
 )
@@ -21,11 +23,48 @@ var (
 	ErrMaximumJSONReprWritingDepthReached  = errors.New("maximum JSON representation writing depth reached")
 	ErrPatternDoesNotMatchValueToSerialize = errors.New("pattern does not match value to serialize")
 	ErrPatternRequiredToSerialize          = errors.New("pattern required to serialize")
+
+	ALL_VISIBLE_REPR_CONFIG = &ReprConfig{AllVisible: true}
 )
 
 // this file contains the implementation of Value.WriteJSONRepresentation for core types.
 
 //TODO: for all types, add more checks before not using JSON_UNTYPED_VALUE_SUFFIX.
+
+type ReprConfig struct {
+	AllVisible bool
+}
+
+func (r *ReprConfig) IsValueVisible(v Value) bool {
+	if _, ok := v.(*Secret); ok {
+		return false
+	}
+
+	if r == nil || r.AllVisible {
+		return true
+	}
+	if IsAtomSensitive(v) {
+		return false
+	}
+	return true
+}
+
+func (r *ReprConfig) IsPropertyVisible(name string, v Value, info *ValueVisibility, ctx *Context) bool {
+	if _, ok := v.(*Secret); ok {
+		return false
+	}
+
+	if r == nil || r.AllVisible || (info != nil && utils.SliceContains(info.publicKeys, name)) {
+		return true
+	}
+
+	if IsSensitiveProperty(ctx, name, v) || !r.IsValueVisible(v) {
+		return false
+	}
+	return true
+}
+
+var ErrNoRepresentation = errors.New("no representation")
 
 type JSONSerializationConfig struct {
 	*ReprConfig
@@ -41,6 +80,24 @@ func GetJSONRepresentation(v Serializable, ctx *Context, pattern Pattern) string
 		panic(fmt.Errorf("%s: %w", Stringify(v, ctx), err))
 	}
 	return string(stream.Buffer())
+}
+
+func MustGetJSONRepresentationWithConfig(v Serializable, ctx *Context, config JSONSerializationConfig) string {
+	repr, err := GetJSONRepresentationWithConfig(v, ctx, config)
+	if err != nil {
+		panic(fmt.Errorf("%s: %w", Stringify(v, ctx), err))
+	}
+	return repr
+}
+
+func GetJSONRepresentationWithConfig(v Serializable, ctx *Context, config JSONSerializationConfig) (string, error) {
+	stream := jsoniter.NewStream(jsoniter.ConfigDefault, nil, 0)
+
+	err := v.WriteJSONRepresentation(ctx, stream, config, 0)
+	if err != nil {
+		return "", err
+	}
+	return string(stream.Buffer()), nil
 }
 
 func writeUntypedValueJSON(typeName string, fn func(w *jsoniter.Stream) error, w *jsoniter.Stream) error {
@@ -358,9 +415,33 @@ func (list *NumberList[T]) WriteJSONRepresentation(ctx *Context, w *jsoniter.Str
 }
 
 func (list *BoolList) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
-	return list.WriteRepresentation(ctx, w, &ReprConfig{
-		AllVisible: true,
-	}, 0)
+	write := func(w *jsoniter.Stream) error {
+		w.WriteArrayStart()
+		first := true
+		length := list.elements.Len()
+
+		for i := uint(0); i < length; i++ {
+			if !first {
+				w.WriteMore()
+			}
+			first = false
+
+			if list.elements.Test(i) {
+				w.WriteTrue()
+			} else {
+				w.WriteFalse()
+			}
+		}
+		w.WriteArrayEnd()
+		return nil
+	}
+
+	if noPatternOrAny(config.Pattern) {
+		return writeUntypedValueJSON(LIST_PATTERN.Name, func(w *jsoniter.Stream) error {
+			return write(w)
+		}, w)
+	}
+	return write(w)
 }
 
 func (list *StringList) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
@@ -405,7 +486,7 @@ func (tuple *Tuple) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, co
 	}
 
 	write := func(w *jsoniter.Stream) error {
-		tuplePattern := config.Pattern.(*TuplePattern)
+		tuplePattern, _ := config.Pattern.(*TuplePattern)
 
 		w.WriteArrayStart()
 
@@ -421,10 +502,12 @@ func (tuple *Tuple) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, co
 				ReprConfig: config.ReprConfig,
 			}
 
-			if tuplePattern.generalElementPattern != nil {
-				elementConfig.Pattern = tuplePattern.generalElementPattern
-			} else {
-				elementConfig.Pattern = tuplePattern.elementPatterns[i]
+			if tuplePattern != nil {
+				if tuplePattern.generalElementPattern != nil {
+					elementConfig.Pattern = tuplePattern.generalElementPattern
+				} else {
+					elementConfig.Pattern = tuplePattern.elementPatterns[i]
+				}
 			}
 
 			err := v.WriteJSONRepresentation(ctx, w, elementConfig, depth+1)
@@ -671,6 +754,14 @@ func (str CheckedString) WriteJSONRepresentation(ctx *Context, w *jsoniter.Strea
 	return ErrNoRepresentation
 }
 
+func (count ByteCount) Write(w io.Writer, _3digitGroupCount int) (int, error) {
+	s, err := commonfmt.FmtByteCount(int64(count), _3digitGroupCount)
+	if err != nil {
+		return 0, err
+	}
+	return w.Write(utils.StringAsBytes(s))
+}
+
 func (count ByteCount) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	var buff bytes.Buffer
 	if _, err := count.Write(&buff, -1); err != nil {
@@ -686,6 +777,10 @@ func (count ByteCount) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream,
 	}
 	w.WriteString(buff.String())
 	return nil
+}
+
+func (count LineCount) write(w io.Writer) (int, error) {
+	return fmt.Fprintf(w, "%dln", count)
 }
 
 func (count LineCount) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
@@ -706,6 +801,10 @@ func (count LineCount) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream,
 	}
 	w.WriteString(buff.String())
 	return nil
+}
+
+func (count RuneCount) write(w io.Writer) (int, error) {
+	return fmt.Fprintf(w, "%drn", count)
 }
 
 func (count RuneCount) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
@@ -777,6 +876,10 @@ func (d Duration) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, conf
 	return nil
 }
 
+func (y Year) write(w io.Writer) (int, error) {
+	return w.Write(utils.StringAsBytes(commonfmt.FmtInoxYear(time.Time(y))))
+}
+
 func (y Year) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	var buff bytes.Buffer
 
@@ -795,6 +898,10 @@ func (y Year) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config J
 	return nil
 }
 
+func (d Date) write(w io.Writer) (int, error) {
+	return w.Write(utils.StringAsBytes(commonfmt.FmtInoxDate(time.Time(d))))
+}
+
 func (d Date) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	var buff bytes.Buffer
 
@@ -811,6 +918,10 @@ func (d Date) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config J
 	}
 	w.WriteString(buff.String())
 	return nil
+}
+
+func (d DateTime) write(w io.Writer) (int, error) {
+	return w.Write(utils.StringAsBytes(commonfmt.FmtInoxDateTime(time.Time(d))))
 }
 
 func (d DateTime) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
@@ -943,7 +1054,18 @@ func (pattern TypePattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Str
 	if depth > MAX_JSON_REPR_WRITING_DEPTH {
 		return ErrMaximumJSONReprWritingDepthReached
 	}
-	return ErrNotImplementedYet
+	if pattern.Name == "" {
+		return fmt.Errorf("type pattern has no name")
+	}
+	if noPatternOrAny(config.Pattern) {
+		writeUntypedValueJSON(TYPE_PATTERN_PATTERN.Name, func(w *jsoniter.Stream) error {
+			w.WriteString(pattern.Name)
+			return nil
+		}, w)
+		return nil
+	}
+	w.WriteString(pattern.Name)
+	return nil
 }
 
 func (pattern *DifferencePattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
@@ -1040,7 +1162,16 @@ func (patt *NamedSegmentPathPattern) WriteJSONRepresentation(ctx *Context, w *js
 	if depth > MAX_JSON_REPR_WRITING_DEPTH {
 		return ErrMaximumJSONReprWritingDepthReached
 	}
-	return ErrNotImplementedYet
+
+	if noPatternOrAny(config.Pattern) {
+		writeUntypedValueJSON(NAMED_SEGMENT_PATH_PATTERN.Name, func(w *jsoniter.Stream) error {
+			w.WriteString(patt.node.Raw)
+			return nil
+		}, w)
+		return nil
+	}
+	w.WriteString(patt.node.Raw)
+	return nil
 }
 
 func (patt ObjectPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {

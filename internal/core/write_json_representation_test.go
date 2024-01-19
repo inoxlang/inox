@@ -1,6 +1,7 @@
 package core
 
 import (
+	"bytes"
 	"fmt"
 	"strconv"
 	"testing"
@@ -708,7 +709,8 @@ func TestByteCountJSONRepresentation(t *testing.T) {
 	defer ctx.CancelGracefully()
 
 	negative := ByteCount(-1)
-	assert.ErrorContains(t, negative.WriteRepresentation(ctx, nil, nil, 0), "invalid byte rate")
+	_, err := negative.Write(bytes.NewBuffer(nil), 0)
+	assert.ErrorContains(t, err, "invalid byte rate")
 
 	for _, testCase := range byteCountReprTestCases {
 		t.Run(strconv.Itoa(int(testCase.value)), func(t *testing.T) {
@@ -757,7 +759,8 @@ func TestByteRateJSONRepresentation(t *testing.T) {
 	defer ctx.CancelGracefully()
 
 	negative := ByteRate(-1)
-	assert.ErrorIs(t, negative.WriteRepresentation(ctx, nil, nil, 0), ErrNoRepresentation)
+	_, err := negative.write(bytes.NewBuffer(nil))
+	assert.ErrorIs(t, err, ErrNegByteRate)
 
 	for _, testCase := range byteRateJSONReprTestCases {
 		t.Run(strconv.Itoa(int(testCase.value)), func(t *testing.T) {

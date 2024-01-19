@@ -70,8 +70,7 @@ func NewMapping(expr *parse.MappingExpression, state *GlobalState) (*Mapping, er
 			if err != nil {
 				return nil, err
 			}
-
-			repr := string(GetRepresentation(key.(Serializable), state.Ctx))
+			repr := MustGetJSONRepresentationWithConfig(key.(Serializable), state.Ctx, JSONSerializationConfig{ReprConfig: ALL_VISIBLE_REPR_CONFIG})
 			mapping.keys[repr] = key.(Serializable)
 
 			if valueLit, ok := e.Value.(parse.SimpleValueLiteral); ok && !utils.Implements[*parse.IdentifierLiteral](valueLit) {
@@ -109,7 +108,7 @@ func NewMapping(expr *parse.MappingExpression, state *GlobalState) (*Mapping, er
 				return nil, err
 			}
 
-			repr := string(GetRepresentation(key.(Serializable), state.Ctx))
+			repr := MustGetJSONRepresentationWithConfig(key.(Serializable), state.Ctx, JSONSerializationConfig{ReprConfig: ALL_VISIBLE_REPR_CONFIG})
 			mapping.keys[repr] = key.(Serializable)
 			mapping.dynamicEntries[repr] = e
 
@@ -126,7 +125,7 @@ func NewMapping(expr *parse.MappingExpression, state *GlobalState) (*Mapping, er
 }
 
 func (m *Mapping) Compute(ctx *Context, key Serializable) Value {
-	repr := string(GetRepresentation(key, ctx))
+	repr := MustGetJSONRepresentationWithConfig(key.(Serializable), ctx, JSONSerializationConfig{ReprConfig: ALL_VISIBLE_REPR_CONFIG})
 
 	if _, ok := key.(Pattern); ok {
 		panic(errors.New("mapping.compute: cannot compute value for a pattern"))

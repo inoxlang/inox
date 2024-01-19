@@ -5,7 +5,6 @@ import (
 	"strconv"
 
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/utils"
 	"golang.org/x/net/html"
 )
 
@@ -41,7 +40,7 @@ func CreateHTMLNodeFromXMLElement(ctx *core.Context, arg *core.XMLElement) *HTML
 		case core.StringLike:
 			attributes[index].Val = val.GetOrBuildString()
 		case core.Int:
-			attributes[index].Val = utils.BytesAsString(core.GetRepresentation(val, ctx))
+			attributes[index].Val = strconv.FormatInt(int64(val), 10)
 		default:
 			panic(fmt.Errorf("failed to convert value of attribute '%s' to string", attr.Name()))
 		}

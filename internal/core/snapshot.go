@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"slices"
 	"time"
+
+	jsoniter "github.com/inoxlang/inox/internal/jsoniter"
 )
 
 var (
@@ -17,7 +19,7 @@ var (
 // Snapshot holds either the serialized representation of a Value or a in-memory FROZEN value.
 type Snapshot struct {
 	date     DateTime
-	repr     ValueRepresentation
+	jsonRepr []byte
 	inMemory Serializable //value should be either an InMemorySnapshotable or an immutable
 }
 
@@ -58,16 +60,20 @@ func TakeSnapshot(ctx *Context, v Serializable, mustBeSerialized bool) (*Snapsho
 		snapshotableErr = err
 	}
 
-	repr, err := GetRepresentationWithConfig(v, &ReprConfig{AllVisible: true}, ctx)
+	stream := jsoniter.NewStream(jsoniter.ConfigDefault, nil, 0)
+
+	err := v.WriteJSONRepresentation(ctx, stream, JSONSerializationConfig{ReprConfig: &ReprConfig{AllVisible: true}}, 0)
 	if err != nil {
 		if snapshotableErr != nil {
 			err = fmt.Errorf("%w AND value was an InMemorySnapshotable that returned this error when snapshoted: %w", err, snapshotableErr)
 		}
 		return nil, fmt.Errorf("failed to take snapshot of value of type %T: %w", v, err)
 	}
+	repr := stream.Buffer()
+
 	return &Snapshot{
-		repr: repr,
-		date: now,
+		jsonRepr: repr,
+		date:     now,
 	}, nil
 }
 
@@ -83,7 +89,7 @@ func (s *Snapshot) InstantiateValue(ctx *Context) (Serializable, error) {
 		}
 		return s.inMemory, nil
 	}
-	v, err := ParseRepr(ctx, s.repr)
+	v, err := ParseJSONRepresentation(ctx, string(s.jsonRepr), nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to instantiate snapshot's value: %w", err)
 	}
@@ -114,14 +120,17 @@ func (s *Snapshot) WithChangeApplied(ctx *Context, c Change) (*Snapshot, error) 
 		}, nil
 	}
 
-	repr, err := GetRepresentationWithConfig(v, &ReprConfig{AllVisible: true}, ctx)
+	stream := jsoniter.NewStream(jsoniter.ConfigDefault, nil, 0)
+
+	err = v.WriteJSONRepresentation(ctx, stream, JSONSerializationConfig{ReprConfig: &ReprConfig{AllVisible: true}}, 0)
 	if err != nil {
 		return nil, fmt.Errorf("failed to take snapshot of value: %w", err)
 	}
+	repr := stream.Buffer()
 
 	return &Snapshot{
-		date: c.datetime,
-		repr: repr,
+		date:     c.datetime,
+		jsonRepr: repr,
 	}, nil
 }
 

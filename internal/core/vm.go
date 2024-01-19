@@ -1128,7 +1128,7 @@ func (v *VM) run() {
 
 			for i := v.sp - numElements; i < v.sp; i += 2 {
 				key := v.stack[i].(Serializable)
-				keyRepr := string(GetRepresentation(key, v.global.Ctx))
+				keyRepr := dict.getKeyRepr(v.global.Ctx, key)
 				value := v.stack[i+1]
 				dict.entries[keyRepr] = value.(Serializable)
 				dict.keys[keyRepr] = key

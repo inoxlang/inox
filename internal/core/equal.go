@@ -156,8 +156,9 @@ func (rec *Record) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]
 		return false
 	}
 
+	config := JSONSerializationConfig{ReprConfig: &ReprConfig{AllVisible: true}}
 	//TODO: cache representation
-	return GetRepresentation(rec, ctx).Equal(GetRepresentation(otherRec, ctx))
+	return MustGetJSONRepresentationWithConfig(rec, ctx, config) == MustGetJSONRepresentationWithConfig(otherRec, ctx, config)
 }
 
 func (dict *Dictionary) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {

@@ -838,8 +838,18 @@ var (
 		},
 	}
 
-	ULID_STRING_PATTERN   = NewParserBasePattern(&ulidParser{})
-	UUIDv4_STRING_PATTERN = NewParserBasePattern(&uuidv4Parser{})
+	ULID_STRING_PATTERN        = NewParserBasePattern(&ulidParser{})
+	UUIDv4_STRING_PATTERN      = NewParserBasePattern(&uuidv4Parser{})
+	NAMED_SEGMENT_PATH_PATTERN = &TypePattern{
+		Type:          NAMED_SEGMENT_PATH_PATTERN_TYPE,
+		Name:          "named-segment-path-pattern",
+		SymbolicValue: symbolic.ANY_NAMED_SEGMENT_PATH_PATTERN,
+	}
+	TYPE_PATTERN_PATTERN = &TypePattern{
+		Type:          TYPE_PATTERN_TYPE,
+		Name:          "type-pattern",
+		SymbolicValue: symbolic.ANY_TYPE_PATTERN,
+	}
 
 	DEFAULT_NAMED_PATTERNS = map[string]Pattern{
 		NEVER_PATTERN.Name:          NEVER_PATTERN,

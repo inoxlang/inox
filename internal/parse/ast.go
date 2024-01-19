@@ -698,7 +698,7 @@ func (RelativePathLiteral) Kind() NodeKind {
 type AbsolutePathPatternLiteral struct {
 	NodeBase
 	Raw   string
-	Value string
+	Value string //unprefixed path pattern (e.g. /* for a `%/*` literal)
 }
 
 func (l AbsolutePathPatternLiteral) ValueString() string {

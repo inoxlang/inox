@@ -150,26 +150,27 @@ func TestReadResource(t *testing.T) {
 func TestGetResource(t *testing.T) {
 	t.Parallel()
 
-	insecure := core.Option{Name: "insecure", Value: core.True}
+	//insecure := core.Option{Name: "insecure", Value: core.True}
 
-	t.Run("read IXON", func(t *testing.T) {
-		t.Parallel()
+	//TODO: test read JSON
+	// t.Run("read IXON", func(t *testing.T) {
+	// 	t.Parallel()
 
-		ctx, resource := setup(t, func(ctx *core.Context, rw *http_ns.HttpResponseWriter, req *http_ns.HttpRequest) {
-			rw.WriteIXON(ctx, core.NewObjectFromMap(core.ValMap{"a": core.Int(1)}, ctx))
-		})
-		defer ctx.CancelGracefully()
+	// 	ctx, resource := setup(t, func(ctx *core.Context, rw *http_ns.HttpResponseWriter, req *http_ns.HttpRequest) {
+	// 		rw.WriteIXON(ctx, core.NewObjectFromMap(core.ValMap{"a": core.Int(1)}, ctx))
+	// 	})
+	// 	defer ctx.CancelGracefully()
 
-		res, err := _getResource(ctx, resource, insecure)
+	// 	res, err := _getResource(ctx, resource, insecure)
 
-		if !assert.NoError(t, err) {
-			return
-		}
+	// 	if !assert.NoError(t, err) {
+	// 		return
+	// 	}
 
-		obj := core.NewObjectFromMap(core.ValMap{"a": core.Int(1)}, ctx)
-		obj.SetURLOnce(ctx, resource)
-		assert.Equal(t, obj, res)
-	})
+	// 	obj := core.NewObjectFromMap(core.ValMap{"a": core.Int(1)}, ctx)
+	// 	obj.SetURLOnce(ctx, resource)
+	// 	assert.Equal(t, obj, res)
+	// })
 }
 
 func setup(t *testing.T, handler func(ctx *core.Context, rw *http_ns.HttpResponseWriter, req *http_ns.HttpRequest)) (*core.Context, core.URL) {

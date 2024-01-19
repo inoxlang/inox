@@ -1,10 +1,8 @@
 package setcoll
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
-	"io"
 	"slices"
 	"strings"
 
@@ -152,30 +150,6 @@ func persistSet(ctx *core.Context, set *Set, path core.Path, storage core.DataSt
 
 	storage.SetSerialized(ctx, path, string(stream.Buffer()))
 	return nil
-}
-
-func (set *Set) WriteRepresentation(ctx *core.Context, w io.Writer, config *core.ReprConfig, depth int) error {
-	if depth > core.MAX_REPR_WRITING_DEPTH {
-		return core.ErrMaximumReprWritingDepthReached
-	}
-
-	buff := bytes.NewBufferString("[")
-
-	first := true
-	for _, e := range set.elementByKey {
-		if !first {
-			buff.WriteByte(',')
-		}
-		first = false
-
-		if err := e.WriteRepresentation(ctx, buff, config, depth+1); err != nil {
-			return err
-		}
-	}
-
-	buff.WriteByte(']')
-	_, err := w.Write(buff.Bytes())
-	return err
 }
 
 func (set *Set) WriteJSONRepresentation(ctx *core.Context, w *jsoniter.Stream, config core.JSONSerializationConfig, depth int) error {

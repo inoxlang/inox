@@ -331,12 +331,7 @@ The `tojson` function converts a value to JSON (string).
 ### topjson
 
 The `topjson` function converts a value to formatted JSON (string).
-### torepr
 
-The `torepr` function converts a value to its IXON representation (Inox Object Notation).
-### parse_repr
-
-The `parse_repr` function parses an IXON string and returns the unmarshalled value.
 ### parse
 
 The `parse` function parses a string based on the specified pattern.

@@ -42,17 +42,19 @@ var (
 		(*ObjectPattern)(nil),
 	}
 
+	ANY_TYPE_PATTERN         = &TypePattern{}
 	ANY_PATTERN              = &AnyPattern{}
 	ANY_SERIALIZABLE_PATTERN = &AnySerializablePattern{}
 	ANY_PATH_PATTERN         = &PathPattern{
 		dirConstraint: UnspecifiedDirOrFilePath,
 		absoluteness:  UnspecifiedPathAbsoluteness,
 	}
-	ANY_URL_PATTERN   = &URLPattern{}
-	ANY_HOST_PATTERN  = &HostPattern{}
-	ANY_STR_PATTERN   = &AnyStringPattern{}
-	ANY_LIST_PATTERN  = &ListPattern{generalElement: ANY_SERIALIZABLE_PATTERN}
-	ANY_TUPLE_PATTERN = &TuplePattern{generalElement: ANY_SERIALIZABLE_PATTERN}
+	ANY_NAMED_SEGMENT_PATH_PATTERN = &NamedSegmentPathPattern{}
+	ANY_URL_PATTERN                = &URLPattern{}
+	ANY_HOST_PATTERN               = &HostPattern{}
+	ANY_STR_PATTERN                = &AnyStringPattern{}
+	ANY_LIST_PATTERN               = &ListPattern{generalElement: ANY_SERIALIZABLE_PATTERN}
+	ANY_TUPLE_PATTERN              = &TuplePattern{generalElement: ANY_SERIALIZABLE_PATTERN}
 
 	ANY_OBJECT_PATTERN = &ObjectPattern{}
 	ANY_RECORD_PATTERN = &RecordPattern{}
@@ -881,7 +883,7 @@ func (p *NamedSegmentPathPattern) IteratorElementValue() Value {
 }
 
 func (p *NamedSegmentPathPattern) WidestOfType() Value {
-	return &NamedSegmentPathPattern{}
+	return ANY_NAMED_SEGMENT_PATH_PATTERN
 }
 
 // An ExactValuePattern represents a symbolic ExactValuePattern.
@@ -2854,7 +2856,7 @@ func evalPatternNode(n parse.Node, state *State) (Pattern, error) {
 }
 
 type TypePattern struct {
-	val                 Value //symbolic value that represents concrete values matching
+	val                 Value //symbolic value that represents concrete values matching, if nil any TypePattern is matched.
 	call                func(ctx *Context, values []Value) (Pattern, error)
 	stringPattern       func() (StringPattern, bool)
 	concreteTypePattern any //we play safe
@@ -2879,6 +2881,12 @@ func (p *TypePattern) Test(v Value, state RecTestCallState) bool {
 	defer state.FinishCall()
 
 	other, ok := v.(*TypePattern)
+	if !ok {
+		return false
+	}
+	if p.val == nil {
+		return true
+	}
 	return ok && p.val.Test(other.val, state)
 }
 
@@ -2895,6 +2903,10 @@ func (patt *TypePattern) Concretize(ctx ConcreteContext) any {
 }
 
 func (p *TypePattern) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	if p.val == nil {
+		w.WriteName("type-pattern")
+		return
+	}
 	w.WriteName("type-pattern(")
 	p.val.PrettyPrint(w.IncrDepth(), config)
 	w.WriteString(")")
@@ -2907,6 +2919,10 @@ func (p *TypePattern) HasUnderlyingPattern() bool {
 func (p *TypePattern) TestValue(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
+
+	if p.val == nil {
+		return true
+	}
 
 	if mv, ok := v.(IMultivalue); ok {
 		for _, val := range mv.OriginalMultivalue().getValues() {
@@ -2928,10 +2944,17 @@ func (p *TypePattern) Call(ctx *Context, values []Value) (Pattern, error) {
 }
 
 func (p *TypePattern) SymbolicValue() Value {
+	if p.val == nil {
+		return ANY
+	}
 	return p.val
 }
 
 func (p *TypePattern) MigrationInitialValue() (Serializable, bool) {
+	if p.val == nil {
+		return nil, false
+	}
+
 	if serializable, ok := p.val.(Serializable); ok && (IsSimpleSymbolicInoxVal(serializable) || serializable == ANY_STR_LIKE) {
 		return serializable, true
 	}
@@ -2939,6 +2962,10 @@ func (p *TypePattern) MigrationInitialValue() (Serializable, bool) {
 }
 
 func (p *TypePattern) StringPattern() (StringPattern, bool) {
+	if p.val == nil {
+		return nil, false
+	}
+
 	if p.stringPattern == nil {
 		return nil, false
 	}
@@ -2950,11 +2977,11 @@ func (p *TypePattern) IteratorElementKey() Value {
 }
 
 func (p *TypePattern) IteratorElementValue() Value {
-	return nil
+	return NEVER
 }
 
 func (p *TypePattern) WidestOfType() Value {
-	return &TypePattern{val: ANY}
+	return ANY_TYPE_PATTERN
 }
 
 type DifferencePattern struct {

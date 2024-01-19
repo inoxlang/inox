@@ -282,21 +282,6 @@ func (rw *HttpResponseWriter) WriteJSON(ctx *core.Context, v core.Serializable) 
 	return core.Int(n), err
 }
 
-func (rw *HttpResponseWriter) WriteIXON(ctx *core.Context, v core.Serializable) error {
-	rw.assertIsNotFinished()
-	rw.assertStatusNotSent()
-
-	if !rw.acceptHeader.Match(mimeconsts.IXON_CTYPE) {
-		return fmt.Errorf("cannot write IXON: %w", ErrNotAcceptedContentType)
-	}
-
-	rw.rw.Header().Set("Content-Type", mimeconsts.IXON_CTYPE)
-	rw.writeHeadersWithPlannedStatus()
-
-	err := v.WriteRepresentation(ctx, rw.rw, &core.ReprConfig{}, 0)
-	return err
-}
-
 // DetachBodyWriter writes the headers and the planned status if they have not been sent yet,
 // then it detachs the underlying response writer and returns it. The HttpResponseWriter should
 // not be used afterwards.

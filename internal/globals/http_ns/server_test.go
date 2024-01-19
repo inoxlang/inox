@@ -793,53 +793,6 @@ func TestHttpServerMapping(t *testing.T) {
 		)
 	})
 
-	t.Run("IXON of model with no defined visibility", func(t *testing.T) {
-
-		runServerTest(t,
-			serverTestCase{
-				input: ` $$model = {
-					a: 1
-					password: "mypassword"
-					e: EmailAddress("foo@mail.com")
-				}
-
-				return Mapping {
-					%/... => model
-				}`,
-				requests: []requestTestInfo{
-					{acceptedContentType: mimeconsts.IXON_CTYPE, result: `{"a":1}`},
-				},
-			},
-			createClient,
-		)
-	})
-
-	t.Run("IXON of model with all fields set as public", func(t *testing.T) {
-		runServerTest(t,
-			serverTestCase{
-				input: `$$model = {
-					a: 1
-					password: "mypassword"
-					e: EmailAddress("a@mail.com")
-
-					_visibility_ {
-						{
-							public: .{a, password, e}
-						}
-					}
-				}
-
-				return Mapping {
-					%/... => model
-				}`,
-				requests: []requestTestInfo{
-					{acceptedContentType: mimeconsts.IXON_CTYPE, result: `{"a":1,"e":EmailAddress"a@mail.com","password":"mypassword"}`},
-				},
-			},
-			createClient,
-		)
-	})
-
 	t.Run("large binary stream: event stream request", func(t *testing.T) {
 
 		runServerTest(t,

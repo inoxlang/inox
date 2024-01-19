@@ -95,50 +95,6 @@ func TestSecrets(t *testing.T) {
 		}
 	})
 
-	t.Run("serializing a secret to IXON should return an error", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
-		defer ctx.CancelGracefully()
-
-		const secretValue = "mysecret"
-		secret, err := SECRET_STRING_PATTERN.NewSecret(ctx, secretValue)
-		if !assert.NoError(t, err) {
-			return
-		}
-
-		{
-			buf := bytes.NewBuffer(nil)
-			stream := jsoniter.NewStream(jsoniter.ConfigDefault, buf, 10)
-			err = secret.WriteRepresentation(ctx, stream, nil, 0)
-			if !assert.ErrorIs(t, err, ErrNoRepresentation) {
-				return
-			}
-			stream.Flush()
-			assert.Empty(t, buf.String())
-		}
-
-		{
-			buf := bytes.NewBuffer(nil)
-			stream := jsoniter.NewStream(jsoniter.ConfigDefault, buf, 10)
-			err = secret.WriteRepresentation(ctx, stream, &ReprConfig{AllVisible: true}, 0)
-			if !assert.ErrorIs(t, err, ErrNoRepresentation) {
-				return
-			}
-			stream.Flush()
-			assert.Empty(t, buf.String())
-		}
-
-		{
-			buf := bytes.NewBuffer(nil)
-			stream := jsoniter.NewStream(jsoniter.ConfigDefault, buf, 10)
-			err = secret.WriteRepresentation(ctx, stream, &ReprConfig{AllVisible: false}, 0)
-			if !assert.ErrorIs(t, err, ErrNoRepresentation) {
-				return
-			}
-			stream.Flush()
-			assert.Empty(t, buf.String())
-		}
-	})
-
 	t.Run("serializing to JSON an object only containing a secret should not leak its value", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
@@ -326,129 +282,6 @@ func TestSecrets(t *testing.T) {
 		}
 	})
 
-	t.Run("serializing to IXON an object only containing a secret should not leak its value", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
-		defer ctx.CancelGracefully()
-
-		const secretValue = "mysecret"
-		secret, err := SECRET_STRING_PATTERN.NewSecret(ctx, secretValue)
-		if !assert.NoError(t, err) {
-			return
-		}
-
-		object := NewObjectFromMapNoInit(ValMap{
-			"a": secret,
-		})
-
-		{
-			buf := bytes.NewBuffer(nil)
-			stream := jsoniter.NewStream(jsoniter.ConfigDefault, buf, 10)
-			err = object.WriteRepresentation(ctx, stream, &ReprConfig{AllVisible: true}, 0)
-			if !assert.NoError(t, err) {
-				return
-			}
-			stream.Flush()
-			assert.Equal(t, `{}`, buf.String())
-		}
-
-		{
-			buf := bytes.NewBuffer(nil)
-			stream := jsoniter.NewStream(jsoniter.ConfigDefault, buf, 10)
-			err = object.WriteRepresentation(ctx, stream, &ReprConfig{AllVisible: false}, 0)
-			if !assert.NoError(t, err) {
-				return
-			}
-			stream.Flush()
-			assert.Equal(t, `{}`, buf.String())
-		}
-	})
-
-	t.Run("serializing to IXON an object containing a secret & a visible property should not leak its value", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
-		defer ctx.CancelGracefully()
-
-		const secretValue = "mysecret"
-		secret, err := SECRET_STRING_PATTERN.NewSecret(ctx, secretValue)
-		if !assert.NoError(t, err) {
-			return
-		}
-
-		object := NewObjectFromMapNoInit(ValMap{
-			"a": secret,
-			"b": Int(1),
-		})
-
-		{
-			buf := bytes.NewBuffer(nil)
-			stream := jsoniter.NewStream(jsoniter.ConfigDefault, buf, 10)
-			err = object.WriteRepresentation(ctx, stream, &ReprConfig{AllVisible: true}, 0)
-			if !assert.NoError(t, err) {
-				return
-			}
-			stream.Flush()
-			assert.Equal(t, `{"b":1}`, buf.String())
-		}
-
-		{
-			buf := bytes.NewBuffer(nil)
-			stream := jsoniter.NewStream(jsoniter.ConfigDefault, buf, 10)
-			err = object.WriteRepresentation(ctx, stream, &ReprConfig{AllVisible: true}, 0)
-			if !assert.NoError(t, err) {
-				return
-			}
-			stream.Flush()
-			assert.Equal(t, `{"b":1}`, buf.String())
-		}
-
-		{
-			buf := bytes.NewBuffer(nil)
-			stream := jsoniter.NewStream(jsoniter.ConfigDefault, buf, 10)
-			err = object.WriteRepresentation(ctx, stream, &ReprConfig{AllVisible: false}, 0)
-			if !assert.NoError(t, err) {
-				return
-			}
-			stream.Flush()
-			assert.Equal(t, `{"b":1}`, buf.String())
-		}
-	})
-
-	t.Run("serializing to IXON an object only containing a secret should not leak its value", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
-		defer ctx.CancelGracefully()
-
-		const secretValue = "mysecret"
-		secret, err := SECRET_STRING_PATTERN.NewSecret(ctx, secretValue)
-		if !assert.NoError(t, err) {
-			return
-		}
-
-		object := NewObjectFromMapNoInit(ValMap{
-			"a": secret,
-		})
-
-		{
-			buf := bytes.NewBuffer(nil)
-			stream := jsoniter.NewStream(jsoniter.ConfigDefault, buf, 10)
-			err = object.WriteRepresentation(ctx, stream, &ReprConfig{AllVisible: true}, 0)
-			if !assert.NoError(t, err) {
-				return
-			}
-			stream.Flush()
-			assert.Equal(t, `{}`, buf.String())
-		}
-
-		{
-			buf := bytes.NewBuffer(nil)
-			stream := jsoniter.NewStream(jsoniter.ConfigDefault, buf, 10)
-			err = object.WriteRepresentation(ctx, stream, &ReprConfig{AllVisible: false}, 0)
-			if !assert.NoError(t, err) {
-				return
-			}
-			stream.Flush()
-			assert.Equal(t, `{}`, buf.String())
-		}
-	})
-
 	t.Run("serializing to JSON a record only containing a secret should not leak its value", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
@@ -542,54 +375,6 @@ func TestSecrets(t *testing.T) {
 		}
 	})
 
-	t.Run("serializing to IXON a record containing a secret & a visible property should not leak its value", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
-		defer ctx.CancelGracefully()
-
-		const secretValue = "mysecret"
-		secret, err := SECRET_STRING_PATTERN.NewSecret(ctx, secretValue)
-		if !assert.NoError(t, err) {
-			return
-		}
-
-		record := NewRecordFromMap(ValMap{
-			"a": secret,
-		})
-
-		{
-			buf := bytes.NewBuffer(nil)
-			stream := jsoniter.NewStream(jsoniter.ConfigDefault, buf, 10)
-			err = record.WriteRepresentation(ctx, stream, &ReprConfig{AllVisible: true}, 0)
-			if !assert.NoError(t, err) {
-				return
-			}
-			stream.Flush()
-			assert.Equal(t, `#{}`, buf.String())
-		}
-
-		{
-			buf := bytes.NewBuffer(nil)
-			stream := jsoniter.NewStream(jsoniter.ConfigDefault, buf, 10)
-			err = record.WriteRepresentation(ctx, stream, &ReprConfig{AllVisible: true}, 0)
-			if !assert.NoError(t, err) {
-				return
-			}
-			stream.Flush()
-			assert.Equal(t, `#{}`, buf.String())
-		}
-
-		{
-			buf := bytes.NewBuffer(nil)
-			stream := jsoniter.NewStream(jsoniter.ConfigDefault, buf, 10)
-			err = record.WriteRepresentation(ctx, stream, &ReprConfig{AllVisible: false}, 0)
-			if !assert.NoError(t, err) {
-				return
-			}
-			stream.Flush()
-			assert.Equal(t, `#{}`, buf.String())
-		}
-	})
-
 	t.Run("serializing to JSON a list containing a secret should return an error", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
@@ -673,41 +458,6 @@ func TestSecrets(t *testing.T) {
 				ReprConfig: &ReprConfig{AllVisible: false},
 				Pattern:    LIST_PATTERN,
 			}, 0)
-			if !assert.ErrorIs(t, err, ErrNoRepresentation) {
-				return
-			}
-			stream.Flush()
-			assert.Empty(t, buf.String())
-		}
-	})
-
-	t.Run("serializing to IXON a list containing a secret should return an error", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
-		defer ctx.CancelGracefully()
-
-		const secretValue = "mysecret"
-		secret, err := SECRET_STRING_PATTERN.NewSecret(ctx, secretValue)
-		if !assert.NoError(t, err) {
-			return
-		}
-
-		list := NewWrappedValueList(secret)
-
-		{
-			buf := bytes.NewBuffer(nil)
-			stream := jsoniter.NewStream(jsoniter.ConfigDefault, buf, 10)
-			err = list.WriteRepresentation(ctx, stream, &ReprConfig{}, 0)
-			if !assert.ErrorIs(t, err, ErrNoRepresentation) {
-				return
-			}
-			stream.Flush()
-			assert.Empty(t, buf.String())
-		}
-
-		{
-			buf := bytes.NewBuffer(nil)
-			stream := jsoniter.NewStream(jsoniter.ConfigDefault, buf, 10)
-			err = list.WriteRepresentation(ctx, stream, &ReprConfig{AllVisible: true}, 0)
 			if !assert.ErrorIs(t, err, ErrNoRepresentation) {
 				return
 			}
@@ -807,38 +557,4 @@ func TestSecrets(t *testing.T) {
 		}
 	})
 
-	t.Run("serializing to IXON a tuple containing a secret should return an error", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
-		defer ctx.CancelGracefully()
-
-		const secretValue = "mysecret"
-		secret, err := SECRET_STRING_PATTERN.NewSecret(ctx, secretValue)
-		if !assert.NoError(t, err) {
-			return
-		}
-
-		tuple := NewTuple([]Serializable{secret})
-
-		{
-			buf := bytes.NewBuffer(nil)
-			stream := jsoniter.NewStream(jsoniter.ConfigDefault, buf, 10)
-			err = tuple.WriteRepresentation(ctx, stream, &ReprConfig{}, 0)
-			if !assert.ErrorIs(t, err, ErrNoRepresentation) {
-				return
-			}
-			stream.Flush()
-			assert.Empty(t, buf.String())
-		}
-
-		{
-			buf := bytes.NewBuffer(nil)
-			stream := jsoniter.NewStream(jsoniter.ConfigDefault, buf, 10)
-			err = tuple.WriteRepresentation(ctx, stream, &ReprConfig{AllVisible: true}, 0)
-			if !assert.ErrorIs(t, err, ErrNoRepresentation) {
-				return
-			}
-			stream.Flush()
-			assert.Empty(t, buf.String())
-		}
-	})
 }

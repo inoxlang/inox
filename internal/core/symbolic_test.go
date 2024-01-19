@@ -355,7 +355,11 @@ func TestBidirectionalSymbolicConversion(t *testing.T) {
 			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 			defer ctx.CancelGracefully()
 
-			dict := NewDictionary(map[string]Serializable{`"name"`: Str("foo")})
+			stringJSONRepr := GetJSONRepresentation(Str("name"), nil, nil)
+
+			dict := NewDictionary(map[string]Serializable{
+				stringJSONRepr: Str("foo"),
+			})
 			v, err := ToSymbolicValue(nil, dict, false)
 			assert.NoError(t, err)
 
@@ -378,7 +382,13 @@ func TestBidirectionalSymbolicConversion(t *testing.T) {
 			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 			defer ctx.CancelGracefully()
 
-			dict := NewDictionary(map[string]Serializable{`"name"`: Str("foo"), `./file`: True})
+			stringRepr := GetJSONRepresentation(Str("name"), nil, nil)
+			pathRepr := GetJSONRepresentation(Path("./file"), nil, nil)
+
+			dict := NewDictionary(map[string]Serializable{
+				stringRepr: Str("foo"),
+				pathRepr:   True,
+			})
 			v, err := ToSymbolicValue(nil, dict, false)
 			assert.NoError(t, err)
 
@@ -386,8 +396,14 @@ func TestBidirectionalSymbolicConversion(t *testing.T) {
 			symbolicDict := v.(*symbolic.Dictionary)
 			assert.Len(t, symbolicDict.Entries(), len(dict.entries))
 
-			assert.Equal(t, map[string]symbolic.Serializable{`"name"`: symbolic.NewString("foo"), `./file`: symbolic.TRUE}, symbolicDict.Entries())
-			assert.Equal(t, map[string]symbolic.Serializable{`"name"`: symbolic.NewString("name"), `./file`: symbolic.NewPath("./file")}, symbolicDict.Keys())
+			assert.Equal(t, map[string]symbolic.Serializable{
+				stringRepr: symbolic.NewString("foo"),
+				pathRepr:   symbolic.TRUE,
+			}, symbolicDict.Entries())
+			assert.Equal(t, map[string]symbolic.Serializable{
+				stringRepr: symbolic.NewString("name"),
+				pathRepr:   symbolic.NewPath("./file"),
+			}, symbolicDict.Keys())
 
 			concreteValue, err := symbolic.Concretize(v, ctx)
 			if !assert.NoError(t, err) {

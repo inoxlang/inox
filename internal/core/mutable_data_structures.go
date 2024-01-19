@@ -12,7 +12,6 @@ import (
 	"github.com/inoxlang/inox/internal/commonfmt"
 	"github.com/inoxlang/inox/internal/core/permkind"
 	"github.com/inoxlang/inox/internal/core/symbolic"
-	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
@@ -639,19 +638,6 @@ type Dictionary struct {
 	entryMutationCallbacks map[string]CallbackHandle
 }
 
-func convertKeyReprToValue(repr string) Serializable {
-	keyNode, ok := parse.ParseExpression(repr)
-	if !ok {
-		panic(fmt.Errorf("invalid key representation: %s", repr))
-	}
-	//TODO: refactor
-	key, err := TreeWalkEval(keyNode, NewTreeWalkStateWithGlobal(&GlobalState{}))
-	if err != nil {
-		panic(err)
-	}
-	return key.(Serializable)
-}
-
 func NewDictionary(entries ValMap) *Dictionary {
 	dict := &Dictionary{
 		entries: map[string]Serializable{},
@@ -659,7 +645,11 @@ func NewDictionary(entries ValMap) *Dictionary {
 	}
 	for keyRepresentation, v := range entries {
 		dict.entries[keyRepresentation] = v
-		dict.keys[keyRepresentation] = convertKeyReprToValue(keyRepresentation)
+		key, err := ParseJSONRepresentation(nil, keyRepresentation, nil)
+		if err != nil {
+			panic(fmt.Errorf("invalid key representation for dictionary: %q", keyRepresentation))
+		}
+		dict.keys[keyRepresentation] = key
 	}
 
 	return dict
@@ -676,9 +666,9 @@ func NewDictionaryFromKeyValueLists(keys []Serializable, values []Serializable, 
 	}
 
 	for i, key := range keys {
-		repr := string(utils.Must(GetRepresentationWithConfig(key, &ReprConfig{AllVisible: true}, ctx)))
-		dict.entries[repr] = values[i]
-		dict.keys[repr] = key
+		keyRepr := dict.getKeyRepr(ctx, key)
+		dict.entries[keyRepr] = values[i]
+		dict.keys[keyRepr] = key
 	}
 
 	return dict
@@ -694,13 +684,17 @@ func (d *Dictionary) ForEachEntry(ctx *Context, fn func(keyRepr string, key Seri
 	return nil
 }
 
+func (d *Dictionary) getKeyRepr(ctx *Context, key Serializable) string {
+	return MustGetJSONRepresentationWithConfig(key, ctx, JSONSerializationConfig{ReprConfig: ALL_VISIBLE_REPR_CONFIG})
+}
+
 func (d *Dictionary) Value(ctx *Context, key Serializable) (Value, Bool) {
-	v, ok := d.entries[string(GetRepresentation(key, ctx))]
+	v, ok := d.entries[d.getKeyRepr(ctx, key)]
 	return v, Bool(ok)
 }
 
 func (d *Dictionary) SetValue(ctx *Context, key, value Serializable) {
-	keyRepr := string(GetRepresentation(key, ctx))
+	keyRepr := d.getKeyRepr(ctx, key)
 
 	prevValue, alreadyPresent := d.entries[keyRepr]
 	d.entries[keyRepr] = value

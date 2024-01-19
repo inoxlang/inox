@@ -2292,11 +2292,12 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			code := `:{"name": "foo", ./path: "bar"}`
 			state := NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
+
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.EqualValues(t, NewDictionary(map[string]Serializable{
-				`"name"`: Str(`foo`),
-				`./path`: Str(`bar`),
+				`"name"`:                   Str(`foo`),
+				`{"path__value":"./path"}`: Str(`bar`),
 			}), res)
 		})
 
@@ -2311,8 +2312,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.EqualValues(t, NewDictionary(map[string]Serializable{
-				`"name"`: Str(`foo`),
-				`1`:      Str(`bar`),
+				`"name"`:           Str(`foo`),
+				`{"int__value":1}`: Str(`bar`),
 			}), res)
 		})
 
@@ -6626,18 +6627,18 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			assert.NoError(t, err)
 			assert.Equal(t, &Mapping{
 				keys: map[string]Serializable{
-					"0": Int(0),
-					"1": Int(1),
-					"2": Int(2),
+					`{"int__value":0}`: Int(0),
+					`{"int__value":1}`: Int(1),
+					`{"int__value":2}`: Int(2),
 				},
 				preComputedStaticEntryValues: map[string]Serializable{
-					"0": Int(1),
+					`{"int__value":0}`: Int(1),
 				},
 				staticEntries: map[string]*parse.StaticMappingEntry{
-					"1": parse.FindNode(mod, &parse.StaticMappingEntry{}, nil),
+					`{"int__value":1}`: parse.FindNode(mod, &parse.StaticMappingEntry{}, nil),
 				},
 				dynamicEntries: map[string]*parse.DynamicMappingEntry{
-					"2": parse.FindNode(mod, &parse.DynamicMappingEntry{}, nil),
+					`{"int__value":2}`: parse.FindNode(mod, &parse.DynamicMappingEntry{}, nil),
 				},
 				patterns: []struct {
 					string
@@ -6657,24 +6658,27 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			res, err := Eval(code, state, false)
 			mod := parse.MustParseChunk(code)
 
+			strTypePatternRepr := GetJSONRepresentation(STR_PATTERN, state.Ctx, nil)
+			intTypePatternRepr := GetJSONRepresentation(INT_PATTERN, state.Ctx, nil)
+
 			assert.NoError(t, err)
 			assert.Equal(t, &Mapping{
 				keys: map[string]Serializable{
-					"%str": STR_PATTERN,
-					"%int": INT_PATTERN,
+					strTypePatternRepr: STR_PATTERN,
+					intTypePatternRepr: INT_PATTERN,
 				},
 				preComputedStaticEntryValues: map[string]Serializable{
-					"%str": Int(1),
+					strTypePatternRepr: Int(1),
 				},
 				dynamicEntries: map[string]*parse.DynamicMappingEntry{
-					"%int": parse.FindNode(mod, &parse.DynamicMappingEntry{}, nil),
+					intTypePatternRepr: parse.FindNode(mod, &parse.DynamicMappingEntry{}, nil),
 				},
 				patterns: []struct {
 					string
 					Pattern
 				}{
-					{"%str", STR_PATTERN},
-					{"%int", INT_PATTERN},
+					{strTypePatternRepr, STR_PATTERN},
+					{intTypePatternRepr, INT_PATTERN},
 				},
 			}, res)
 		})

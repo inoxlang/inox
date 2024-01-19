@@ -213,25 +213,10 @@ func respondWithMappingResult(h handlingArguments) {
 		}
 	}
 
-	//if JSON/IXON is accepted we serialize if possible.
+	//if JSON is accepted we serialize if possible.
 	switch {
 	case req.AcceptAny():
 		break
-	case req.ParsedAcceptHeader.Match(mimeconsts.IXON_CTYPE):
-		config := &core.ReprConfig{}
-
-		serializable, ok := value.(core.Serializable)
-		if !ok {
-			rw.writeHeaders(http.StatusNotAcceptable)
-			return
-		}
-
-		//finalize and send headers
-		rw.SetContentType(mimeconsts.IXON_CTYPE)
-		rw.writeHeaders(statusIfAccepted)
-
-		serializable.WriteRepresentation(state.Ctx, rw.DetachBodyWriter(), config, 0)
-		return
 	case req.ParsedAcceptHeader.Match(mimeconsts.JSON_CTYPE):
 		config := core.JSONSerializationConfig{
 			ReprConfig: &core.ReprConfig{},

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"math"
 	"reflect"
 	"slices"
@@ -12,6 +13,7 @@ import (
 	"time"
 
 	"github.com/inoxlang/inox/internal/core/symbolic"
+	jsoniter "github.com/inoxlang/inox/internal/jsoniter"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
 )
@@ -89,6 +91,30 @@ type GroupPattern interface {
 type DefaultValuePattern interface {
 	Pattern
 	DefaultValue(ctx *Context) (Value, error)
+}
+
+type CallBasedPatternReprMixin struct {
+	Callee Pattern
+	Params []Serializable
+}
+
+func (m CallBasedPatternReprMixin) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+	return ErrNotImplementedYet
+}
+
+type NamespaceMemberPatternReprMixin struct {
+	NamespaceName string
+	MemberName    string
+}
+
+func (m NamespaceMemberPatternReprMixin) WriteRepresentation(ctx *Context, w io.Writer, config *ReprConfig, depth int) error {
+	repr := "%" + m.NamespaceName + "." + m.MemberName
+	_, err := w.Write(utils.StringAsBytes(repr))
+	return err
+}
+
+func (m NamespaceMemberPatternReprMixin) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+	return ErrNotImplementedYet
 }
 
 // A PatternNamespace represents a group of related Inox patterns, PatternNamespace implements Value.

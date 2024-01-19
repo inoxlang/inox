@@ -144,18 +144,6 @@ func _torstream(ctx *core.Context, v core.Value) core.ReadableStream {
 	return core.ToReadableStream(ctx, v, core.ANYVAL_PATTERN)
 }
 
-func _repr(ctx *core.Context, v core.Serializable) core.Str {
-	return core.Str(core.GetRepresentation(v, ctx))
-}
-
-func _parse_repr(ctx *core.Context, r core.Readable) (core.Value, error) {
-	bytes, err := r.Reader().ReadAll()
-	if err != nil {
-		return nil, err
-	}
-	return core.ParseRepr(ctx, bytes.UnderlyingBytes())
-}
-
 func _parse(ctx *core.Context, r core.Readable, p core.Pattern) (core.Value, error) {
 	bytes, err := r.Reader().ReadAll()
 	if err != nil {
