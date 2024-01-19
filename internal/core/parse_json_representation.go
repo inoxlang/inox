@@ -27,6 +27,7 @@ var (
 
 func ParseJSONRepresentation(ctx *Context, s string, pattern Pattern) (Serializable, error) {
 	//TODO: add checks
+	//TODO: return an error if there are duplicate keys.
 
 	it := jsoniter.ParseString(jsoniter.ConfigDefault, s)
 	return ParseNextJSONRepresentation(ctx, it, pattern, false)
@@ -51,7 +52,7 @@ func ParseNextJSONRepresentation(ctx *Context, it *jsoniter.Iterator, pattern Pa
 			tempIterator := jsoniter.NewIterator(jsoniter.ConfigDefault)
 			tempIterator.ResetBytes(slices.Clone(p))
 
-			tempIterator.ReadObjectCB(func(i *jsoniter.Iterator, s string) bool {
+			tempIterator.ReadObjectCB(func(it *jsoniter.Iterator, s string) bool {
 				if value != nil || !strings.HasSuffix(s, JSON_UNTYPED_VALUE_SUFFIX) {
 					return false
 				}
@@ -286,6 +287,10 @@ func ParseNextJSONRepresentation(ctx *Context, it *jsoniter.Iterator, pattern Pa
 			return parseObjectPatternJSONRepresentation(ctx, it, try)
 		case RECORD_PATTERN_PATTERN:
 			return parseRecordPatternJSONRepresentation(ctx, it, try)
+		case LIST_PATTERN_PATTERN:
+			return parseListPatternJSONRepresentation(ctx, it, try)
+		case TUPLE_PATTERN_PATTERN:
+			return parseTuplePatternJSONRepresentation(ctx, it, try)
 		case ANYVAL_PATTERN, SERIALIZABLE_PATTERN:
 			return ParseNextJSONRepresentation(ctx, it, nil, try)
 		default:
@@ -334,7 +339,7 @@ func parseObjectJSONrepresentation(ctx *Context, it *jsoniter.Iterator, pattern 
 		tempIt.ResetBytes(objectBytes)
 
 		//first iteration to know the keys
-		tempIt.ReadObjectCB(func(i *jsoniter.Iterator, key string) bool {
+		tempIt.ReadObjectCB(func(it *jsoniter.Iterator, key string) bool {
 			if parse.IsMetadataKey(key) && key != URL_METADATA_KEY {
 				finalErr = fmt.Errorf("%w: %s", ErrNonSupportedMetaProperty, key)
 				return false
@@ -388,7 +393,7 @@ func parseObjectJSONrepresentation(ctx *Context, it *jsoniter.Iterator, pattern 
 		currentIt = tempIt
 	}
 
-	currentIt.ReadObjectCB(func(i *jsoniter.Iterator, key string) bool {
+	currentIt.ReadObjectCB(func(it *jsoniter.Iterator, key string) bool {
 		if parse.IsMetadataKey(key) && key != URL_METADATA_KEY {
 			finalErr = fmt.Errorf("%w: %s", ErrNonSupportedMetaProperty, key)
 			return false
@@ -521,7 +526,7 @@ func parseRecordJSONrepresentation(ctx *Context, it *jsoniter.Iterator, pattern 
 		return nil, ErrJsonNotMatchingSchema
 	}
 
-	it.ReadObjectCB(func(i *jsoniter.Iterator, key string) bool {
+	it.ReadObjectCB(func(it *jsoniter.Iterator, key string) bool {
 		if parse.IsMetadataKey(key) {
 			finalErr = fmt.Errorf("%w: %s", ErrNonSupportedMetaProperty, key)
 			return false
@@ -930,7 +935,7 @@ func parseLongValuePathJSONRepresentation(ctx *Context, it *jsoniter.Iterator, t
 	var segments []ValuePathSegment
 	index := -1
 
-	it.ReadArrayCB(func(i *jsoniter.Iterator) bool {
+	it.ReadArrayCB(func(it *jsoniter.Iterator) bool {
 		index++
 
 		val, err := ParseNextJSONRepresentation(ctx, it, nil, try)
@@ -1016,7 +1021,7 @@ func parseObjectPatternJSONRepresentation(ctx *Context, it *jsoniter.Iterator, t
 	var inexact bool = true
 	var entries []ObjectPatternEntry
 
-	it.ReadObjectCB(func(i *jsoniter.Iterator, s string) bool {
+	it.ReadObjectCB(func(it *jsoniter.Iterator, s string) bool {
 		switch s {
 		case SERIALIZED_OBJECT_PATTERN_INEXACT_KEY: //inexactness
 			if it.WhatIsNext() != jsoniter.BoolValue {
@@ -1031,8 +1036,8 @@ func parseObjectPatternJSONRepresentation(ctx *Context, it *jsoniter.Iterator, t
 				return false
 			}
 			//read entries
-			i.ReadObjectCB(func(i *jsoniter.Iterator, entryName string) bool {
-				entry, err := parseObjectPatternEntryJSONRepresentation(ctx, i, entryName)
+			it.ReadObjectCB(func(it *jsoniter.Iterator, entryName string) bool {
+				entry, err := parseObjectPatternEntryJSONRepresentation(ctx, it, entryName)
 				if err != nil {
 					finalErr = err
 					return false
@@ -1078,10 +1083,10 @@ func parseObjectPatternEntryJSONRepresentation(ctx *Context, it *jsoniter.Iterat
 		return
 	}
 
-	it.ReadObjectCB(func(i *jsoniter.Iterator, key string) bool {
+	it.ReadObjectCB(func(it *jsoniter.Iterator, key string) bool {
 		switch key {
 		case SERIALIZED_OBJECT_PATTERN_ENTRY_PATTERN_KEY:
-			pattern, err := ParseNextJSONRepresentation(ctx, i, nil, false)
+			pattern, err := ParseNextJSONRepresentation(ctx, it, nil, false)
 			if err != nil {
 				finalErr = err
 				return false
@@ -1105,7 +1110,7 @@ func parseObjectPatternEntryJSONRepresentation(ctx *Context, it *jsoniter.Iterat
 				finalErr = fmt.Errorf("invalid required key list for object pattern entry (entry name: %q)", name)
 				return false
 			}
-			it.ReadArrayCB(func(i *jsoniter.Iterator) bool {
+			it.ReadArrayCB(func(it *jsoniter.Iterator) bool {
 				if it.WhatIsNext() != jsoniter.StringValue {
 					finalErr = fmt.Errorf("invalid required key for object pattern entry (entry name: %q)", name)
 					return false
@@ -1115,7 +1120,7 @@ func parseObjectPatternEntryJSONRepresentation(ctx *Context, it *jsoniter.Iterat
 			})
 			return true
 		case SERIALIZED_OBJECT_PATTERN_ENTRY_REQ_PATTERN_KEY:
-			pattern, err := ParseNextJSONRepresentation(ctx, i, nil, false)
+			pattern, err := ParseNextJSONRepresentation(ctx, it, nil, false)
 			if err != nil {
 				finalErr = err
 				return false
@@ -1152,7 +1157,7 @@ func parseRecordPatternJSONRepresentation(ctx *Context, it *jsoniter.Iterator, t
 	var inexact bool = true
 	var entries []RecordPatternEntry
 
-	it.ReadObjectCB(func(i *jsoniter.Iterator, s string) bool {
+	it.ReadObjectCB(func(it *jsoniter.Iterator, s string) bool {
 		switch s {
 		case SERIALIZED_RECORD_PATTERN_INEXACT_KEY: //inexactness
 			if it.WhatIsNext() != jsoniter.BoolValue {
@@ -1167,8 +1172,8 @@ func parseRecordPatternJSONRepresentation(ctx *Context, it *jsoniter.Iterator, t
 				return false
 			}
 			//read entries
-			i.ReadObjectCB(func(i *jsoniter.Iterator, entryName string) bool {
-				entry, err := parseRecordPatternEntryJSONRepresentation(ctx, i, entryName)
+			it.ReadObjectCB(func(it *jsoniter.Iterator, entryName string) bool {
+				entry, err := parseRecordPatternEntryJSONRepresentation(ctx, it, entryName)
 				if err != nil {
 					finalErr = err
 					return false
@@ -1214,10 +1219,10 @@ func parseRecordPatternEntryJSONRepresentation(ctx *Context, it *jsoniter.Iterat
 		return
 	}
 
-	it.ReadObjectCB(func(i *jsoniter.Iterator, key string) bool {
+	it.ReadObjectCB(func(it *jsoniter.Iterator, key string) bool {
 		switch key {
 		case SERIALIZED_RECORD_PATTERN_ENTRY_PATTERN_KEY:
-			pattern, err := ParseNextJSONRepresentation(ctx, i, nil, false)
+			pattern, err := ParseNextJSONRepresentation(ctx, it, nil, false)
 			if err != nil {
 				finalErr = err
 				return false
@@ -1250,6 +1255,242 @@ func parseRecordPatternEntryJSONRepresentation(ctx *Context, it *jsoniter.Iterat
 	return
 }
 
+func parseListPatternJSONRepresentation(ctx *Context, it *jsoniter.Iterator, try bool) (_ *ListPattern, finalErr error) {
+	if it.WhatIsNext() != jsoniter.ObjectValue {
+		if try {
+			return nil, ErrTriedToParseJSONRepr
+		}
+		return nil, ErrJsonNotMatchingSchema
+	}
+
+	var (
+		generalElement Pattern
+
+		hasElements bool
+		elements    []Pattern
+
+		hasMinCount bool
+		minCount    int
+
+		hasMaxCount bool
+		maxCount    int
+	)
+
+	it.ReadObjectCB(func(it *jsoniter.Iterator, s string) bool {
+		switch s {
+		case SERIALIZED_LIST_PATTERN_MIN_COUNT_KEY: //min count
+			if hasElements {
+				finalErr = errors.New("list pattern's minimal element count should not be present since elements are specified")
+				return false
+			}
+
+			if it.WhatIsNext() != jsoniter.NumberValue {
+				finalErr = errors.New("invalid representation of list pattern's minimum element count")
+				return false
+			}
+			hasMinCount = true
+			minCount = int(it.ReadInt32())
+			return it.Error == nil
+		case SERIALIZED_LIST_PATTERN_MAX_COUNT_KEY: //max count
+			if hasElements {
+				finalErr = errors.New("list pattern's maximum element count should not be present since elements are specified")
+				return false
+			}
+
+			if it.WhatIsNext() != jsoniter.NumberValue {
+				finalErr = errors.New("invalid representation of list pattern's maximum element count")
+				return false
+			}
+			hasMaxCount = true
+			maxCount = int(it.ReadInt32())
+			return it.Error == nil
+		case SERIALIZED_LIST_PATTERN_ELEMENTS_KEY: //known length
+
+			if generalElement != nil {
+				finalErr = errors.New("list pattern's elements should not be present since a general element is specified")
+				return false
+			}
+
+			if hasMinCount {
+				finalErr = errors.New("list pattern's elements should not be present since a minimal element count is specified")
+				return false
+			}
+
+			if hasMaxCount {
+				finalErr = errors.New("list pattern's elements should not be present since a maximal element count is specified")
+				return false
+			}
+
+			if it.WhatIsNext() != jsoniter.ArrayValue {
+				finalErr = errors.New("invalid representation of list pattern's elements")
+				return false
+			}
+			hasElements = true
+
+			index := -1
+			it.ReadArrayCB(func(i *jsoniter.Iterator) bool {
+				index++
+				pattern, err := ParseNextJSONRepresentation(ctx, it, nil, false)
+				if err != nil {
+					finalErr = fmt.Errorf("invalid pattern for list pattern's element at index %d: %w", index, err)
+					return false
+				}
+
+				element, ok := pattern.(Pattern)
+				if !ok {
+					finalErr = fmt.Errorf("invalid pattern for list pattern's element at index %d", index)
+					return false
+				}
+
+				elements = append(elements, element)
+				return true
+			})
+
+			return true
+		case SERIALIZED_LIST_PATTERN_ELEMENT_KEY: //general element
+			if hasElements {
+				finalErr = errors.New("list pattern's general element should not be present since elements are specified")
+				return false
+			}
+
+			if it.WhatIsNext() != jsoniter.ObjectValue {
+				finalErr = errors.New("invalid representation of list pattern's general element")
+				return false
+			}
+
+			pattern, err := ParseNextJSONRepresentation(ctx, it, nil, false)
+			if err != nil {
+				finalErr = err
+				return false
+			}
+
+			var ok bool
+			generalElement, ok = pattern.(Pattern)
+			if !ok {
+				finalErr = errors.New("invalid pattern for list pattern's general element")
+			}
+			return true
+		default:
+			finalErr = fmt.Errorf("unexpected property %q in list pattern representation", s)
+			return false
+		}
+	})
+
+	if finalErr != nil {
+		return nil, finalErr
+	}
+
+	if it.Error != nil && it.Error != io.EOF {
+		return nil, it.Error
+	}
+
+	if hasElements {
+		return NewListPattern(elements), nil
+	}
+	patt := NewListPatternOf(generalElement)
+
+	if hasMaxCount {
+		patt = patt.WithMinMaxElements(minCount, maxCount)
+	} else if hasMinCount {
+		patt = patt.WithMinElements(minCount)
+	}
+	return patt, nil
+}
+
+func parseTuplePatternJSONRepresentation(ctx *Context, it *jsoniter.Iterator, try bool) (_ *TuplePattern, finalErr error) {
+	if it.WhatIsNext() != jsoniter.ObjectValue {
+		if try {
+			return nil, ErrTriedToParseJSONRepr
+		}
+		return nil, ErrJsonNotMatchingSchema
+	}
+
+	var (
+		generalElement Pattern
+
+		hasElements bool
+		elements    []Pattern
+	)
+
+	it.ReadObjectCB(func(it *jsoniter.Iterator, s string) bool {
+		switch s {
+		case SERIALIZED_TUPLE_PATTERN_ELEMENTS_KEY: //known length
+
+			if generalElement != nil {
+				finalErr = errors.New("tuple pattern's elements should not be present since a general element is specified")
+				return false
+			}
+
+			if it.WhatIsNext() != jsoniter.ArrayValue {
+				finalErr = errors.New("invalid representation of tuple pattern's elements")
+				return false
+			}
+			hasElements = true
+
+			index := -1
+			it.ReadArrayCB(func(i *jsoniter.Iterator) bool {
+				index++
+				pattern, err := ParseNextJSONRepresentation(ctx, it, nil, false)
+				if err != nil {
+					finalErr = fmt.Errorf("invalid pattern for tuple pattern's element at index %d: %w", index, err)
+					return false
+				}
+
+				element, ok := pattern.(Pattern)
+				if !ok {
+					finalErr = fmt.Errorf("invalid pattern for tuple pattern's element at index %d", index)
+					return false
+				}
+
+				elements = append(elements, element)
+				return true
+			})
+
+			return true
+		case SERIALIZED_TUPLE_PATTERN_ELEMENT_KEY: //general element
+			if hasElements {
+				finalErr = errors.New("tuple pattern's general element should not be present since elements are specified")
+				return false
+			}
+
+			if it.WhatIsNext() != jsoniter.ObjectValue {
+				finalErr = errors.New("invalid representation of tuple pattern's general element")
+				return false
+			}
+
+			pattern, err := ParseNextJSONRepresentation(ctx, it, nil, false)
+			if err != nil {
+				finalErr = err
+				return false
+			}
+
+			var ok bool
+			generalElement, ok = pattern.(Pattern)
+			if !ok {
+				finalErr = errors.New("invalid pattern for tuple pattern's general element")
+			}
+			return true
+		default:
+			finalErr = fmt.Errorf("unexpected property %q in tuple pattern representation", s)
+			return false
+		}
+	})
+
+	if finalErr != nil {
+		return nil, finalErr
+	}
+
+	if it.Error != nil && it.Error != io.EOF {
+		return nil, it.Error
+	}
+
+	if hasElements {
+		return NewTuplePattern(elements), nil
+	}
+
+	return NewTuplePatternOf(generalElement), nil
+}
+
 func parseSameTypeListJSONRepr[T any](
 	ctx *Context,
 	it *jsoniter.Iterator,
@@ -1260,7 +1501,7 @@ func parseSameTypeListJSONRepr[T any](
 	index := 0
 	containedElementFound := listPattern.containedElement == nil
 
-	it.ReadArrayCB(func(i *jsoniter.Iterator) bool {
+	it.ReadArrayCB(func(it *jsoniter.Iterator) bool {
 		val, err := ParseNextJSONRepresentation(ctx, it, listPattern.generalElementPattern, try)
 		if err != nil {
 			if try {
@@ -1323,7 +1564,7 @@ func parseListJSONrepresentation(ctx *Context, it *jsoniter.Iterator, pattern *L
 	if pattern == nil {
 		var elements []Serializable
 
-		it.ReadArrayCB(func(i *jsoniter.Iterator) bool {
+		it.ReadArrayCB(func(it *jsoniter.Iterator) bool {
 			val, err := ParseNextJSONRepresentation(ctx, it, nil, try)
 			if err != nil {
 				if try {
@@ -1349,7 +1590,7 @@ func parseListJSONrepresentation(ctx *Context, it *jsoniter.Iterator, pattern *L
 		containedElementFound := pattern.containedElement == nil
 		var elements []Serializable
 
-		it.ReadArrayCB(func(i *jsoniter.Iterator) bool {
+		it.ReadArrayCB(func(it *jsoniter.Iterator) bool {
 			if index >= len(pattern.elementPatterns) {
 				elements = append(elements, nil)
 				index++
@@ -1462,7 +1703,7 @@ func parseTupleJSONrepresentation(ctx *Context, it *jsoniter.Iterator, pattern *
 
 	var elements []Serializable
 	index := 0
-	it.ReadArrayCB(func(i *jsoniter.Iterator) bool {
+	it.ReadArrayCB(func(it *jsoniter.Iterator) bool {
 		if pattern.elementPatterns != nil && index >= len(pattern.elementPatterns) {
 			elements = append(elements, nil)
 			index++

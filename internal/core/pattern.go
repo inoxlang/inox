@@ -23,7 +23,7 @@ const (
 	OBJECT_CONSTRAINTS_VERIFICATION_TIMEOUT = 10 * time.Millisecond
 
 	//Default max element count if the number of elements is not exact.
-	DEFAULT_LIST_PATTERN_MAX_ELEM_COUNT = math.MaxInt64
+	DEFAULT_LIST_PATTERN_MAX_ELEM_COUNT = math.MaxInt32
 )
 
 var (
@@ -757,7 +757,7 @@ func (patt *ListPattern) WithMinElements(minCount int) *ListPattern {
 	newPattern := *patt
 	newPattern.minElemCountPlusOne = minCount + 1
 	if patt.minElemCountPlusOne == 0 {
-		newPattern.maxElemCount = math.MaxInt64
+		newPattern.maxElemCount = DEFAULT_LIST_PATTERN_MAX_ELEM_COUNT
 	}
 
 	return &newPattern

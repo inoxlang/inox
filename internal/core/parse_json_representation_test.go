@@ -1394,4 +1394,182 @@ func TestParseJSONRepresentation(t *testing.T) {
 
 	})
 
+	t.Run("list patterns", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
+		config := JSONSerializationConfig{ReprConfig: ALL_VISIBLE_REPR_CONFIG, Pattern: LIST_PATTERN_PATTERN}
+
+		t.Run("empty", func(t *testing.T) {
+			pattern := NewListPattern([]Pattern{})
+			serialized := utils.Must(GetJSONRepresentationWithConfig(pattern, ctx, config))
+
+			v, err := ParseJSONRepresentation(ctx, `{"list-pattern__value":`+serialized+"}", nil)
+			if assert.NoError(t, err) {
+				assertEqualInoxValues(t, pattern, v, ctx)
+			}
+
+			v, err = ParseJSONRepresentation(ctx, serialized, LIST_PATTERN_PATTERN)
+			if assert.NoError(t, err) {
+				assertEqualInoxValues(t, pattern, v, ctx)
+			}
+		})
+
+		t.Run("single (simple) element", func(t *testing.T) {
+			pattern := NewListPattern([]Pattern{INT_PATTERN})
+			serialized := utils.Must(GetJSONRepresentationWithConfig(pattern, ctx, config))
+
+			v, err := ParseJSONRepresentation(ctx, serialized, LIST_PATTERN_PATTERN)
+			if assert.NoError(t, err) {
+				assertEqualInoxValues(t, pattern, v, ctx)
+			}
+		})
+
+		t.Run("single (complex) element", func(t *testing.T) {
+			pattern := NewListPattern([]Pattern{
+				NewListPattern([]Pattern{INT_PATTERN}),
+			})
+			serialized := utils.Must(GetJSONRepresentationWithConfig(pattern, ctx, config))
+
+			v, err := ParseJSONRepresentation(ctx, serialized, LIST_PATTERN_PATTERN)
+			if assert.NoError(t, err) {
+				assertEqualInoxValues(t, pattern, v, ctx)
+			}
+		})
+
+		t.Run("two elements", func(t *testing.T) {
+			pattern := NewListPattern([]Pattern{INT_PATTERN, STR_PATTERN})
+			serialized := utils.Must(GetJSONRepresentationWithConfig(pattern, ctx, config))
+
+			v, err := ParseJSONRepresentation(ctx, serialized, LIST_PATTERN_PATTERN)
+			if assert.NoError(t, err) {
+				assertEqualInoxValues(t, pattern, v, ctx)
+			}
+		})
+
+		t.Run("general (simple) element", func(t *testing.T) {
+			pattern := NewListPatternOf(INT_PATTERN)
+			serialized := utils.Must(GetJSONRepresentationWithConfig(pattern, ctx, config))
+
+			v, err := ParseJSONRepresentation(ctx, serialized, LIST_PATTERN_PATTERN)
+			if assert.NoError(t, err) {
+				assertEqualInoxValues(t, pattern, v, ctx)
+			}
+		})
+
+		t.Run("general (complex) element", func(t *testing.T) {
+			pattern := NewListPatternOf(NewListPatternOf(INT_PATTERN))
+			serialized := utils.Must(GetJSONRepresentationWithConfig(pattern, ctx, config))
+
+			v, err := ParseJSONRepresentation(ctx, serialized, LIST_PATTERN_PATTERN)
+			if assert.NoError(t, err) {
+				assertEqualInoxValues(t, pattern, v, ctx)
+			}
+		})
+
+		t.Run("specific minimal element count", func(t *testing.T) {
+			pattern := NewListPatternOf(NewListPatternOf(INT_PATTERN)).WithMinElements(10)
+			serialized := utils.Must(GetJSONRepresentationWithConfig(pattern, ctx, config))
+
+			v, err := ParseJSONRepresentation(ctx, serialized, LIST_PATTERN_PATTERN)
+			if assert.NoError(t, err) {
+				assertEqualInoxValues(t, pattern, v, ctx)
+			}
+		})
+
+		t.Run("specific maximal element count", func(t *testing.T) {
+			pattern := NewListPatternOf(NewListPatternOf(INT_PATTERN)).WithMinMaxElements(0, 10)
+			serialized := utils.Must(GetJSONRepresentationWithConfig(pattern, ctx, config))
+
+			v, err := ParseJSONRepresentation(ctx, serialized, LIST_PATTERN_PATTERN)
+			if assert.NoError(t, err) {
+				assertEqualInoxValues(t, pattern, v, ctx)
+			}
+		})
+
+		t.Run("specific minimal and maximal element counts", func(t *testing.T) {
+			pattern := NewListPatternOf(NewListPatternOf(INT_PATTERN)).WithMinMaxElements(5, 10)
+			serialized := utils.Must(GetJSONRepresentationWithConfig(pattern, ctx, config))
+
+			v, err := ParseJSONRepresentation(ctx, serialized, LIST_PATTERN_PATTERN)
+			if assert.NoError(t, err) {
+				assertEqualInoxValues(t, pattern, v, ctx)
+			}
+		})
+	})
+
+	t.Run("list patterns", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
+		config := JSONSerializationConfig{ReprConfig: ALL_VISIBLE_REPR_CONFIG, Pattern: TUPLE_PATTERN_PATTERN}
+
+		t.Run("empty", func(t *testing.T) {
+			pattern := NewTuplePattern([]Pattern{})
+			serialized := utils.Must(GetJSONRepresentationWithConfig(pattern, ctx, config))
+
+			v, err := ParseJSONRepresentation(ctx, `{"tuple-pattern__value":`+serialized+"}", nil)
+			if assert.NoError(t, err) {
+				assertEqualInoxValues(t, pattern, v, ctx)
+			}
+
+			v, err = ParseJSONRepresentation(ctx, serialized, TUPLE_PATTERN_PATTERN)
+			if assert.NoError(t, err) {
+				assertEqualInoxValues(t, pattern, v, ctx)
+			}
+		})
+
+		t.Run("single (simple) element", func(t *testing.T) {
+			pattern := NewTuplePattern([]Pattern{INT_PATTERN})
+			serialized := utils.Must(GetJSONRepresentationWithConfig(pattern, ctx, config))
+
+			v, err := ParseJSONRepresentation(ctx, serialized, TUPLE_PATTERN_PATTERN)
+			if assert.NoError(t, err) {
+				assertEqualInoxValues(t, pattern, v, ctx)
+			}
+		})
+
+		t.Run("single (complex) element", func(t *testing.T) {
+			pattern := NewTuplePattern([]Pattern{
+				NewTuplePattern([]Pattern{INT_PATTERN}),
+			})
+			serialized := utils.Must(GetJSONRepresentationWithConfig(pattern, ctx, config))
+
+			v, err := ParseJSONRepresentation(ctx, serialized, TUPLE_PATTERN_PATTERN)
+			if assert.NoError(t, err) {
+				assertEqualInoxValues(t, pattern, v, ctx)
+			}
+		})
+
+		t.Run("two elements", func(t *testing.T) {
+			pattern := NewTuplePattern([]Pattern{INT_PATTERN, STR_PATTERN})
+			serialized := utils.Must(GetJSONRepresentationWithConfig(pattern, ctx, config))
+
+			v, err := ParseJSONRepresentation(ctx, serialized, TUPLE_PATTERN_PATTERN)
+			if assert.NoError(t, err) {
+				assertEqualInoxValues(t, pattern, v, ctx)
+			}
+		})
+
+		t.Run("general (simple) element", func(t *testing.T) {
+			pattern := NewTuplePatternOf(INT_PATTERN)
+			serialized := utils.Must(GetJSONRepresentationWithConfig(pattern, ctx, config))
+
+			v, err := ParseJSONRepresentation(ctx, serialized, TUPLE_PATTERN_PATTERN)
+			if assert.NoError(t, err) {
+				assertEqualInoxValues(t, pattern, v, ctx)
+			}
+		})
+
+		t.Run("general (complex) element", func(t *testing.T) {
+			pattern := NewTuplePatternOf(NewTuplePatternOf(INT_PATTERN))
+			serialized := utils.Must(GetJSONRepresentationWithConfig(pattern, ctx, config))
+
+			v, err := ParseJSONRepresentation(ctx, serialized, TUPLE_PATTERN_PATTERN)
+			if assert.NoError(t, err) {
+				assertEqualInoxValues(t, pattern, v, ctx)
+			}
+		})
+	})
+
 }

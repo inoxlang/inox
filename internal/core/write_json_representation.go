@@ -27,12 +27,24 @@ const (
 	SERIALIZED_OBJECT_PATTERN_ENTRY_REQ_KEYS_KEY    = "requiredKeys"
 	SERIALIZED_OBJECT_PATTERN_ENTRY_REQ_PATTERN_KEY = "requiredPattern"
 
-	//robject pattern serialization
+	//record pattern serialization
 
 	SERIALIZED_RECORD_PATTERN_INEXACT_KEY           = "inexact"
 	SERIALIZED_RECORD_PATTERN_ENTRIES_KEY           = "entries"
 	SERIALIZED_RECORD_PATTERN_ENTRY_PATTERN_KEY     = "pattern"
 	SERIALIZED_RECORD_PATTERN_ENTRY_IS_OPTIONAL_KEY = "isOptional"
+
+	//list pattern serialization
+
+	SERIALIZED_LIST_PATTERN_ELEMENTS_KEY  = "elements"
+	SERIALIZED_LIST_PATTERN_ELEMENT_KEY   = "element"
+	SERIALIZED_LIST_PATTERN_MIN_COUNT_KEY = "minCount"
+	SERIALIZED_LIST_PATTERN_MAX_COUNT_KEY = "maxCount"
+
+	//tuple pattern serialization
+
+	SERIALIZED_TUPLE_PATTERN_ELEMENTS_KEY = "elements"
+	SERIALIZED_TUPLE_PATTERN_ELEMENT_KEY  = "element"
 )
 
 var (
@@ -1338,14 +1350,124 @@ func (patt ListPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream
 	if depth > MAX_JSON_REPR_WRITING_DEPTH {
 		return ErrMaximumJSONReprWritingDepthReached
 	}
-	return ErrNotImplementedYet
+
+	write := func() error {
+		w.WriteObjectStart()
+
+		if patt.generalElementPattern == nil { //known length
+			w.WriteObjectField(SERIALIZED_LIST_PATTERN_ELEMENTS_KEY)
+			w.WriteArrayStart()
+
+			elementConfig := JSONSerializationConfig{
+				ReprConfig: config.ReprConfig,
+			}
+
+			for elemIndex, elem := range patt.elementPatterns {
+				if elemIndex != 0 {
+					w.WriteMore()
+				}
+				err := elem.WriteJSONRepresentation(ctx, w, elementConfig, depth+1)
+				if err != nil {
+					return fmt.Errorf("failed to serialize pattern of the list pattern's element at index %d: %w", elemIndex, err)
+				}
+			}
+			w.WriteArrayEnd()
+		} else { //general element
+			w.WriteObjectField(SERIALIZED_LIST_PATTERN_ELEMENT_KEY)
+			elementConfig := JSONSerializationConfig{
+				ReprConfig: config.ReprConfig,
+			}
+			err := patt.generalElementPattern.WriteJSONRepresentation(ctx, w, elementConfig, depth+1)
+			if err != nil {
+				return fmt.Errorf("failed to serialize pattern of the list pattern's general element: %w", err)
+			}
+
+			if patt.containedElement != nil {
+				w.WriteMore()
+				elementConfig := JSONSerializationConfig{
+					ReprConfig: config.ReprConfig,
+				}
+				err := patt.generalElementPattern.WriteJSONRepresentation(ctx, w, elementConfig, depth+1)
+				if err != nil {
+					return fmt.Errorf("failed to serialize pattern of the list pattern's contained element: %w", err)
+				}
+			}
+
+			//write minimum element count.
+			w.WriteMore()
+			w.WriteObjectField(SERIALIZED_LIST_PATTERN_MIN_COUNT_KEY)
+			w.WriteInt(patt.MinElementCount())
+
+			max := patt.MaxElementCount()
+			if max != DEFAULT_LIST_PATTERN_MAX_ELEM_COUNT {
+				//write maximum element count.
+				w.WriteMore()
+				w.WriteObjectField(SERIALIZED_LIST_PATTERN_MAX_COUNT_KEY)
+				w.WriteInt(max)
+			}
+		}
+
+		w.WriteObjectEnd() //final '}'
+		return nil
+	}
+
+	if noPatternOrAny(config.Pattern) {
+		writeUntypedValueJSON(LIST_PATTERN_PATTERN.Name, func(w *jsoniter.Stream) error {
+			return write()
+		}, w)
+		return nil
+	}
+	return write()
 }
 
 func (patt TuplePattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	if depth > MAX_JSON_REPR_WRITING_DEPTH {
 		return ErrMaximumJSONReprWritingDepthReached
 	}
-	return ErrNotImplementedYet
+
+	write := func() error {
+		w.WriteObjectStart()
+
+		if patt.generalElementPattern == nil { //known length
+			w.WriteObjectField(SERIALIZED_TUPLE_PATTERN_ELEMENTS_KEY)
+			w.WriteArrayStart()
+
+			elementConfig := JSONSerializationConfig{
+				ReprConfig: config.ReprConfig,
+			}
+
+			for elemIndex, elem := range patt.elementPatterns {
+				if elemIndex != 0 {
+					w.WriteMore()
+				}
+				err := elem.WriteJSONRepresentation(ctx, w, elementConfig, depth+1)
+				if err != nil {
+					return fmt.Errorf("failed to serialize pattern of the tuple pattern's element at index %d: %w", elemIndex, err)
+				}
+			}
+			w.WriteArrayEnd()
+		} else { //general element
+			w.WriteObjectField(SERIALIZED_TUPLE_PATTERN_ELEMENT_KEY)
+			elementConfig := JSONSerializationConfig{
+				ReprConfig: config.ReprConfig,
+			}
+			err := patt.generalElementPattern.WriteJSONRepresentation(ctx, w, elementConfig, depth+1)
+			if err != nil {
+				return fmt.Errorf("failed to serialize pattern of the tuple pattern's general element: %w", err)
+			}
+		}
+
+		w.WriteObjectEnd() //final '}'
+		return nil
+	}
+
+	if noPatternOrAny(config.Pattern) {
+		writeUntypedValueJSON(TUPLE_PATTERN_PATTERN.Name, func(w *jsoniter.Stream) error {
+			return write()
+		}, w)
+		return nil
+	}
+	return write()
 }
 
 func (patt OptionPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
