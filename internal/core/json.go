@@ -23,6 +23,9 @@ func ToJSONWithConfig(ctx *Context, v Serializable, config JSONSerializationConf
 	if err := v.WriteJSONRepresentation(ctx, stream, config, 0); err != nil {
 		panic(err)
 	}
+	if stream.Error != nil {
+		panic(stream.Error)
+	}
 	return Str(stream.Buffer())
 }
 

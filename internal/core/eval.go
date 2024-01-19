@@ -105,6 +105,7 @@ var (
 	ORDERED_PAIR_TYPE               = reflect.TypeOf((*OrderedPair)(nil))
 	NAMED_SEGMENT_PATH_PATTERN_TYPE = reflect.TypeOf((*NamedSegmentPathPattern)(nil))
 	TYPE_PATTERN_TYPE               = reflect.TypeOf((*TypePattern)(nil))
+	EXACT_VALUE_PATTERN_TYPE        = reflect.TypeOf((*ExactValuePattern)(nil))
 )
 
 var IMPLICITLY_REMOVED_ROUTINE_PERMS = []Permission{

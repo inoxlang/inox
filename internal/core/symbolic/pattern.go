@@ -43,6 +43,7 @@ var (
 	}
 
 	ANY_TYPE_PATTERN         = &TypePattern{}
+	ANY_EXACT_VALUE_PATTERN  = &ExactValuePattern{value: ANY_SERIALIZABLE}
 	ANY_PATTERN              = &AnyPattern{}
 	ANY_SERIALIZABLE_PATTERN = &AnySerializablePattern{}
 	ANY_PATH_PATTERN         = &PathPattern{
@@ -998,7 +999,7 @@ func (p *ExactValuePattern) IteratorElementValue() Value {
 }
 
 func (p *ExactValuePattern) WidestOfType() Value {
-	return &ExactValuePattern{value: ANY_SERIALIZABLE}
+	return ANY_EXACT_VALUE_PATTERN
 }
 
 // A RegexPattern represents a symbolic RegexPattern.

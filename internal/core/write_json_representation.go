@@ -154,11 +154,10 @@ func (b Bool) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config J
 
 func (r Rune) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	if noPatternOrAny(config.Pattern) {
-		writeUntypedValueJSON(RUNE_PATTERN.Name, func(w *jsoniter.Stream) error {
+		return writeUntypedValueJSON(RUNE_PATTERN.Name, func(w *jsoniter.Stream) error {
 			w.WriteString(string(r))
 			return nil
 		}, w)
-		return nil
 	}
 
 	w.WriteString(string(r))
@@ -179,7 +178,7 @@ func writeIntJsonRepr(n Int, w *jsoniter.Stream) {
 
 func (i Int) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	if noPatternOrAny(config.Pattern) {
-		writeUntypedValueJSON(INT_PATTERN.Name, func(w *jsoniter.Stream) error {
+		return writeUntypedValueJSON(INT_PATTERN.Name, func(w *jsoniter.Stream) error {
 			writeIntJsonRepr(i, w)
 			return nil
 		}, w)
@@ -660,11 +659,10 @@ func (patt PathPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream
 
 func (u URL) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	if noPatternOrAny(config.Pattern) {
-		writeUntypedValueJSON(URL_PATTERN.Name, func(w *jsoniter.Stream) error {
+		return writeUntypedValueJSON(URL_PATTERN.Name, func(w *jsoniter.Stream) error {
 			w.WriteString(string(u))
 			return nil
 		}, w)
-		return nil
 	}
 	w.WriteString(string(u))
 	return nil
@@ -684,11 +682,10 @@ func (host Host) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, confi
 
 func (scheme Scheme) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	if noPatternOrAny(config.Pattern) {
-		writeUntypedValueJSON(SCHEME_PATTERN.Name, func(w *jsoniter.Stream) error {
+		return writeUntypedValueJSON(SCHEME_PATTERN.Name, func(w *jsoniter.Stream) error {
 			w.WriteString(string(scheme))
 			return nil
 		}, w)
-		return nil
 	}
 	w.WriteString(string(scheme))
 	return nil
@@ -708,11 +705,10 @@ func (patt HostPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream
 
 func (addr EmailAddress) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	if noPatternOrAny(config.Pattern) {
-		writeUntypedValueJSON(EMAIL_ADDR_PATTERN.Name, func(w *jsoniter.Stream) error {
+		return writeUntypedValueJSON(EMAIL_ADDR_PATTERN.Name, func(w *jsoniter.Stream) error {
 			w.WriteString(string(addr))
 			return nil
 		}, w)
-		return nil
 	}
 	w.WriteString(string(addr))
 	return nil
@@ -720,22 +716,20 @@ func (addr EmailAddress) WriteJSONRepresentation(ctx *Context, w *jsoniter.Strea
 
 func (patt URLPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	if noPatternOrAny(config.Pattern) {
-		writeUntypedValueJSON(URLPATTERN_PATTERN.Name, func(w *jsoniter.Stream) error {
+		return writeUntypedValueJSON(URLPATTERN_PATTERN.Name, func(w *jsoniter.Stream) error {
 			w.WriteString(string(patt))
 			return nil
 		}, w)
-		return nil
 	}
 	w.WriteString(string(patt))
 	return nil
 }
 func (i Identifier) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	if noPatternOrAny(config.Pattern) {
-		writeUntypedValueJSON(IDENT_PATTERN.Name, func(w *jsoniter.Stream) error {
+		return writeUntypedValueJSON(IDENT_PATTERN.Name, func(w *jsoniter.Stream) error {
 			w.WriteString(string(i))
 			return nil
 		}, w)
-		return nil
 	}
 	w.WriteString(string(i))
 	return nil
@@ -743,11 +737,10 @@ func (i Identifier) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, co
 
 func (p PropertyName) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	if noPatternOrAny(config.Pattern) {
-		writeUntypedValueJSON(PROPNAME_PATTERN.Name, func(w *jsoniter.Stream) error {
+		return writeUntypedValueJSON(PROPNAME_PATTERN.Name, func(w *jsoniter.Stream) error {
 			w.WriteString(string(p))
 			return nil
 		}, w)
-		return nil
 	}
 	w.WriteString(string(p))
 	return nil
@@ -770,10 +763,9 @@ func (p *LongValuePath) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream
 	}
 
 	if noPatternOrAny(config.Pattern) {
-		writeUntypedValueJSON(LONG_VALUEPATH_PATTERN.Name, func(w *jsoniter.Stream) error {
+		return writeUntypedValueJSON(LONG_VALUEPATH_PATTERN.Name, func(w *jsoniter.Stream) error {
 			return write()
 		}, w)
-		return nil
 	}
 	return write()
 }
@@ -797,11 +789,10 @@ func (count ByteCount) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream,
 	}
 
 	if noPatternOrAny(config.Pattern) {
-		writeUntypedValueJSON(BYTECOUNT_PATTERN.Name, func(w *jsoniter.Stream) error {
+		return writeUntypedValueJSON(BYTECOUNT_PATTERN.Name, func(w *jsoniter.Stream) error {
 			w.WriteString(buff.String())
 			return nil
 		}, w)
-		return nil
 	}
 	w.WriteString(buff.String())
 	return nil
@@ -821,11 +812,10 @@ func (count LineCount) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream,
 	}
 
 	if noPatternOrAny(config.Pattern) {
-		writeUntypedValueJSON(LINECOUNT_PATTERN.Name, func(w *jsoniter.Stream) error {
+		return writeUntypedValueJSON(LINECOUNT_PATTERN.Name, func(w *jsoniter.Stream) error {
 			w.WriteString(buff.String())
 			return nil
 		}, w)
-		return nil
 	}
 	w.WriteString(buff.String())
 	return nil
@@ -845,11 +835,10 @@ func (count RuneCount) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream,
 	}
 
 	if noPatternOrAny(config.Pattern) {
-		writeUntypedValueJSON(RUNECOUNT_PATTERN.Name, func(w *jsoniter.Stream) error {
+		return writeUntypedValueJSON(RUNECOUNT_PATTERN.Name, func(w *jsoniter.Stream) error {
 			w.WriteString(buff.String())
 			return nil
 		}, w)
-		return nil
 	}
 	w.WriteString(buff.String())
 	return nil
@@ -861,11 +850,10 @@ func (rate ByteRate) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, c
 	}
 
 	if noPatternOrAny(config.Pattern) {
-		writeUntypedValueJSON(BYTERATE_PATTERN.Name, func(w *jsoniter.Stream) error {
+		return writeUntypedValueJSON(BYTERATE_PATTERN.Name, func(w *jsoniter.Stream) error {
 			w.WriteInt64(int64(rate))
 			return nil
 		}, w)
-		return nil
 	}
 	w.WriteInt64(int64(rate))
 	return nil
@@ -876,11 +864,10 @@ func (f Frequency) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, con
 		return ErrNoRepresentation
 	}
 	if noPatternOrAny(config.Pattern) {
-		writeUntypedValueJSON(FREQUENCY_PATTERN.Name, func(w *jsoniter.Stream) error {
+		return writeUntypedValueJSON(FREQUENCY_PATTERN.Name, func(w *jsoniter.Stream) error {
 			w.WriteFloat64(float64(f))
 			return nil
 		}, w)
-		return nil
 	}
 	w.WriteFloat64(float64(f))
 	return nil
@@ -894,11 +881,10 @@ func (d Duration) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, conf
 	float := float64(d) / float64(time.Second)
 
 	if noPatternOrAny(config.Pattern) {
-		writeUntypedValueJSON(DURATION_PATTERN.Name, func(w *jsoniter.Stream) error {
+		return writeUntypedValueJSON(DURATION_PATTERN.Name, func(w *jsoniter.Stream) error {
 			w.WriteFloat64(float)
 			return nil
 		}, w)
-		return nil
 	}
 	w.WriteFloat64(float)
 	return nil
@@ -916,11 +902,10 @@ func (y Year) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config J
 	}
 
 	if noPatternOrAny(config.Pattern) {
-		writeUntypedValueJSON(YEAR_PATTERN.Name, func(w *jsoniter.Stream) error {
+		return writeUntypedValueJSON(YEAR_PATTERN.Name, func(w *jsoniter.Stream) error {
 			w.WriteString(buff.String())
 			return nil
 		}, w)
-		return nil
 	}
 	w.WriteString(buff.String())
 	return nil
@@ -938,11 +923,10 @@ func (d Date) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config J
 	}
 
 	if noPatternOrAny(config.Pattern) {
-		writeUntypedValueJSON(DATE_PATTERN.Name, func(w *jsoniter.Stream) error {
+		return writeUntypedValueJSON(DATE_PATTERN.Name, func(w *jsoniter.Stream) error {
 			w.WriteString(buff.String())
 			return nil
 		}, w)
-		return nil
 	}
 	w.WriteString(buff.String())
 	return nil
@@ -960,11 +944,10 @@ func (d DateTime) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, conf
 	}
 
 	if noPatternOrAny(config.Pattern) {
-		writeUntypedValueJSON(DATETIME_PATTERN.Name, func(w *jsoniter.Stream) error {
+		return writeUntypedValueJSON(DATETIME_PATTERN.Name, func(w *jsoniter.Stream) error {
 			w.WriteString(buff.String())
 			return nil
 		}, w)
-		return nil
 	}
 	w.WriteString(buff.String())
 	return nil
@@ -990,15 +973,12 @@ func (r RuneRange) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, con
 	}
 
 	if noPatternOrAny(config.Pattern) {
-		writeUntypedValueJSON(RUNE_RANGE_PATTERN.Name, func(w *jsoniter.Stream) error {
-			write(w)
-			return nil
+		return writeUntypedValueJSON(RUNE_RANGE_PATTERN.Name, func(w *jsoniter.Stream) error {
+			return write(w)
 		}, w)
-		return nil
 	}
 
-	write(w)
-	return nil
+	return write(w)
 }
 
 func (r QuantityRange) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
@@ -1027,14 +1007,12 @@ func (r IntRange) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, conf
 	}
 
 	if noPatternOrAny(config.Pattern) {
-		writeUntypedValueJSON(INT_RANGE_PATTERN.Name, func(w *jsoniter.Stream) error {
+		return writeUntypedValueJSON(INT_RANGE_PATTERN.Name, func(w *jsoniter.Stream) error {
 			return write(w)
 		}, w)
-		return nil
 	}
 
-	write(w)
-	return nil
+	return write(w)
 }
 
 func (r FloatRange) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
@@ -1059,14 +1037,12 @@ func (r FloatRange) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, co
 	}
 
 	if noPatternOrAny(config.Pattern) {
-		writeUntypedValueJSON(FLOAT_RANGE_PATTERN.Name, func(w *jsoniter.Stream) error {
+		return writeUntypedValueJSON(FLOAT_RANGE_PATTERN.Name, func(w *jsoniter.Stream) error {
 			return write(w)
 		}, w)
-		return nil
 	}
 
-	write(w)
-	return nil
+	return write(w)
 }
 
 //patterns
@@ -1075,7 +1051,18 @@ func (pattern ExactValuePattern) WriteJSONRepresentation(ctx *Context, w *jsonit
 	if depth > MAX_JSON_REPR_WRITING_DEPTH {
 		return ErrMaximumJSONReprWritingDepthReached
 	}
-	return ErrNotImplementedYet
+
+	write := func(w *jsoniter.Stream) error {
+		valueConfig := JSONSerializationConfig{ReprConfig: config.ReprConfig}
+		return pattern.value.WriteJSONRepresentation(ctx, w, valueConfig, depth+1)
+	}
+
+	if noPatternOrAny(config.Pattern) {
+		return writeUntypedValueJSON(EXACT_VALUE_PATTERN_PATTERN.Name, func(w *jsoniter.Stream) error {
+			return write(w)
+		}, w)
+	}
+	return write(w)
 }
 
 func (pattern TypePattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
@@ -1086,11 +1073,10 @@ func (pattern TypePattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Str
 		return fmt.Errorf("type pattern has no name")
 	}
 	if noPatternOrAny(config.Pattern) {
-		writeUntypedValueJSON(TYPE_PATTERN_PATTERN.Name, func(w *jsoniter.Stream) error {
+		return writeUntypedValueJSON(TYPE_PATTERN_PATTERN.Name, func(w *jsoniter.Stream) error {
 			w.WriteString(pattern.Name)
 			return nil
 		}, w)
-		return nil
 	}
 	w.WriteString(pattern.Name)
 	return nil
@@ -1192,11 +1178,10 @@ func (patt *NamedSegmentPathPattern) WriteJSONRepresentation(ctx *Context, w *js
 	}
 
 	if noPatternOrAny(config.Pattern) {
-		writeUntypedValueJSON(NAMED_SEGMENT_PATH_PATTERN.Name, func(w *jsoniter.Stream) error {
+		return writeUntypedValueJSON(NAMED_SEGMENT_PATH_PATTERN.Name, func(w *jsoniter.Stream) error {
 			w.WriteString(patt.node.Raw)
 			return nil
 		}, w)
-		return nil
 	}
 	w.WriteString(patt.node.Raw)
 	return nil
@@ -1282,10 +1267,9 @@ func (patt ObjectPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stre
 	}
 
 	if noPatternOrAny(config.Pattern) {
-		writeUntypedValueJSON(OBJECT_PATTERN_PATTERN.Name, func(w *jsoniter.Stream) error {
+		return writeUntypedValueJSON(OBJECT_PATTERN_PATTERN.Name, func(w *jsoniter.Stream) error {
 			return write()
 		}, w)
-		return nil
 	}
 	return write()
 }
@@ -1338,10 +1322,9 @@ func (patt RecordPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stre
 	}
 
 	if noPatternOrAny(config.Pattern) {
-		writeUntypedValueJSON(RECORD_PATTERN_PATTERN.Name, func(w *jsoniter.Stream) error {
+		return writeUntypedValueJSON(RECORD_PATTERN_PATTERN.Name, func(w *jsoniter.Stream) error {
 			return write()
 		}, w)
-		return nil
 	}
 	return write()
 }
@@ -1412,10 +1395,9 @@ func (patt ListPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream
 	}
 
 	if noPatternOrAny(config.Pattern) {
-		writeUntypedValueJSON(LIST_PATTERN_PATTERN.Name, func(w *jsoniter.Stream) error {
+		return writeUntypedValueJSON(LIST_PATTERN_PATTERN.Name, func(w *jsoniter.Stream) error {
 			return write()
 		}, w)
-		return nil
 	}
 	return write()
 }
@@ -1462,10 +1444,9 @@ func (patt TuplePattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Strea
 	}
 
 	if noPatternOrAny(config.Pattern) {
-		writeUntypedValueJSON(TUPLE_PATTERN_PATTERN.Name, func(w *jsoniter.Stream) error {
+		return writeUntypedValueJSON(TUPLE_PATTERN_PATTERN.Name, func(w *jsoniter.Stream) error {
 			return write()
 		}, w)
-		return nil
 	}
 	return write()
 }

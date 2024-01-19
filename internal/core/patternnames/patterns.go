@@ -41,6 +41,7 @@ const (
 	PATH_PATTERN               = "path-pattern"
 	NAMED_SEGMENT_PATH_PATTERN = "named-segment-path-pattern"
 	TYPE_PATTERN               = "type-pattern"
+	EXACT_VALUE_PATTERN        = "exact-value-pattern"
 	OBJECT_PATTERN             = "object-pattern"
 	LIST_PATTERN               = "list-pattern"
 	RECORD_PATTERN             = "record-pattern"

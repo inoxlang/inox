@@ -291,6 +291,8 @@ func ParseNextJSONRepresentation(ctx *Context, it *jsoniter.Iterator, pattern Pa
 			return parseListPatternJSONRepresentation(ctx, it, try)
 		case TUPLE_PATTERN_PATTERN:
 			return parseTuplePatternJSONRepresentation(ctx, it, try)
+		case EXACT_VALUE_PATTERN_PATTERN:
+			return parseExactValuePatternJSONRepresentation(ctx, it, try)
 		case ANYVAL_PATTERN, SERIALIZABLE_PATTERN:
 			return ParseNextJSONRepresentation(ctx, it, nil, try)
 		default:
@@ -1489,6 +1491,14 @@ func parseTuplePatternJSONRepresentation(ctx *Context, it *jsoniter.Iterator, tr
 	}
 
 	return NewTuplePatternOf(generalElement), nil
+}
+
+func parseExactValuePatternJSONRepresentation(ctx *Context, it *jsoniter.Iterator, try bool) (_ *ExactValuePattern, finalErr error) {
+	val, err := ParseNextJSONRepresentation(ctx, it, nil, try)
+	if err != nil {
+		return nil, err
+	}
+	return NewExactValuePattern(val), nil
 }
 
 func parseSameTypeListJSONRepr[T any](
