@@ -200,6 +200,21 @@ func (c UniquenessConstraint) AddUrlIfNecessary(ctx *core.Context, container cor
 	}
 }
 
+func (c UniquenessConstraint) WriteJSONRepresentation(w *jsoniter.Stream) {
+	switch c.Type {
+	case UniqueRepr:
+		w.WriteString(REPR_UNIQUENESS_IDENT.UnderlyingString())
+	case UniqueURL:
+		w.WriteString(URL_UNIQUENESS_IDENT.UnderlyingString())
+	case UniquePropertyValue:
+		w.WriteString("." + c.PropertyName.UnderlyingString())
+	case UniqueTransientID:
+		w.WriteString(TRANSIENT_ID_UNIQUENESS_IDENT.UnderlyingString())
+	default:
+		panic(core.ErrUnreachable)
+	}
+}
+
 type UniquenessConstraintType int
 
 const (

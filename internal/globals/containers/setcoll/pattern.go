@@ -10,6 +10,12 @@ import (
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/globals/containers/common"
 	coll_symbolic "github.com/inoxlang/inox/internal/globals/containers/symbolic"
+	"github.com/inoxlang/inox/internal/jsoniter"
+)
+
+const (
+	SERIALIZED_SET_PATTERN_ELEM_KEY       = "element"
+	SERIALIZED_SET_PATTERN_UNIQUENESS_KEY = "uniqueness"
 )
 
 var (
@@ -72,8 +78,6 @@ var (
 type SetPattern struct {
 	config SetConfig
 
-	core.CallBasedPatternReprMixin
-
 	core.NotCallablePatternMixin
 }
 
@@ -82,8 +86,7 @@ func NewSetPattern(config SetConfig, callData core.CallBasedPatternReprMixin) *S
 		config.Element = core.SERIALIZABLE_PATTERN
 	}
 	return &SetPattern{
-		config:                    config,
-		CallBasedPatternReprMixin: callData,
+		config: config,
 	}
 }
 
@@ -131,4 +134,26 @@ func (p *SetPattern) GetMigrationOperations(ctx *core.Context, next core.Pattern
 	}
 
 	return core.GetMigrationOperations(ctx, p.config.Element, nextSet.config.Element, filepath.Join(pseudoPath, "*"))
+}
+
+func (p *SetPattern) WriteJSONRepresentation(ctx *core.Context, w *jsoniter.Stream, config core.JSONSerializationConfig, depth int) error {
+	if depth > core.MAX_JSON_REPR_WRITING_DEPTH {
+		return core.ErrMaximumJSONReprWritingDepthReached
+	}
+
+	w.WriteObjectStart()
+	w.WriteObjectField(SERIALIZED_SET_PATTERN_ELEM_KEY)
+
+	elemConfig := core.JSONSerializationConfig{ReprConfig: config.ReprConfig}
+	err := p.config.Element.WriteJSONRepresentation(ctx, w, elemConfig, depth+1)
+	if err != nil {
+		return err
+	}
+
+	w.WriteMore()
+	w.WriteObjectField(SERIALIZED_SET_PATTERN_UNIQUENESS_KEY)
+	p.config.Uniqueness.WriteJSONRepresentation(w)
+
+	w.WriteObjectEnd()
+	return nil
 }
