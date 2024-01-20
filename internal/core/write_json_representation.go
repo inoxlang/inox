@@ -48,6 +48,11 @@ const (
 
 	SERIALIZED_FLOAT_RANGE_STRING_PATTERN_RANGE_KEY = "range"
 
+	//secret pattern serialization
+
+	SERIALIZED_SECRET_PATTERN_VAL_PATTERN_KEY     = "valuePattern"
+	SERIALIZED_SECRET_PATTERN_VAL_PEM_ENCODED_KEY = "isPemEncoded"
+
 	//object pattern serialization
 
 	SERIALIZED_OBJECT_PATTERN_INEXACT_KEY           = "inexact"
@@ -1213,7 +1218,14 @@ func (patt RegexPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Strea
 	if depth > MAX_JSON_REPR_WRITING_DEPTH {
 		return ErrMaximumJSONReprWritingDepthReached
 	}
-	return ErrNotImplementedYet
+	if noPatternOrAny(config.Pattern) {
+		return writeUntypedValueJSON(REGEX_PATTERN_PATTERN.Name, func(w *jsoniter.Stream) error {
+			w.WriteString(patt.Regex())
+			return nil
+		}, w)
+	}
+	w.WriteString(patt.Regex())
+	return nil
 }
 
 func (patt UnionPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
@@ -1634,6 +1646,37 @@ func (patt *FloatRangeStringPattern) WriteJSONRepresentation(ctx *Context, w *js
 
 	if noPatternOrAny(config.Pattern) {
 		return writeUntypedValueJSON(FLOAT_RANGE_STRING_PATTERN_PATTERN.Name, func(w *jsoniter.Stream) error {
+			return write(w)
+		}, w)
+	}
+	return write(w)
+}
+
+func (patt *SecretPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+	if depth > MAX_JSON_REPR_WRITING_DEPTH {
+		return ErrMaximumJSONReprWritingDepthReached
+	}
+
+	write := func(w *jsoniter.Stream) error {
+		w.WriteObjectStart()
+		w.WriteObjectField(SERIALIZED_SECRET_PATTERN_VAL_PATTERN_KEY)
+
+		valPatternConfig := JSONSerializationConfig{ReprConfig: config.ReprConfig}
+		err := patt.stringPattern.WriteJSONRepresentation(ctx, w, valPatternConfig, depth+1)
+		if err != nil {
+			return err
+		}
+
+		w.WriteMore()
+		w.WriteObjectField(SERIALIZED_SECRET_PATTERN_VAL_PEM_ENCODED_KEY)
+		w.WriteBool(patt.pemEncoded)
+
+		w.WriteObjectEnd()
+		return nil
+	}
+
+	if noPatternOrAny(config.Pattern) {
+		return writeUntypedValueJSON(SECRET_PATTERN_PATTERN.Name, func(w *jsoniter.Stream) error {
 			return write(w)
 		}, w)
 	}

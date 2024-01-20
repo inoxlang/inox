@@ -61,7 +61,6 @@ func (s *Secret) AssertIsPattern(secret *SecretPattern) {
 type SecretPattern struct {
 	stringPattern StringPattern
 	pemEncoded    bool
-	CallBasedPatternReprMixin
 
 	NotCallablePatternMixin
 }

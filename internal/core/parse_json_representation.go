@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -308,6 +309,10 @@ func ParseNextJSONRepresentation(ctx *Context, it *jsoniter.Iterator, pattern Pa
 			return parseIntRangeStringPatternJSONRepresentation(ctx, it, try)
 		case FLOAT_RANGE_STRING_PATTERN_PATTERN:
 			return parseFloatRangeStringPatternJSONRepresentation(ctx, it, try)
+		case SECRET_PATTERN_PATTERN:
+			return parseSecretPatternJSONRepresentation(ctx, it, try)
+		case REGEX_PATTERN_PATTERN:
+			return parseRegexPatternJSONRepresentation(ctx, it, try)
 		case ANYVAL_PATTERN, SERIALIZABLE_PATTERN:
 			return ParseNextJSONRepresentation(ctx, it, nil, try)
 		default:
@@ -1942,6 +1947,87 @@ func parseFloatRangeStringPatternJSONRepresentation(ctx *Context, it *jsoniter.I
 	}
 
 	return NewFloatRangeStringPattern(floatRange.KnownStart(), floatRange.InclusiveEnd(), nil), nil
+}
+
+func parseSecretPatternJSONRepresentation(ctx *Context, it *jsoniter.Iterator, try bool) (_ *SecretPattern, finalErr error) {
+	if it.WhatIsNext() != jsoniter.ObjectValue {
+		if try {
+			finalErr = ErrTriedToParseJSONRepr
+			return
+		}
+		finalErr = ErrJsonNotMatchingSchema
+		return
+	}
+
+	var (
+		stringPattern StringPattern
+		isPemEncoded  bool
+	)
+
+	it.ReadObjectCB(func(it *jsoniter.Iterator, key string) bool {
+		switch key {
+		case SERIALIZED_SECRET_PATTERN_VAL_PATTERN_KEY:
+			v, err := ParseNextJSONRepresentation(ctx, it, nil, try)
+			if err != nil {
+				finalErr = fmt.Errorf("invalid representation of value pattern in representation of secret pattern: %w", err)
+				return false
+			}
+			patt, ok := v.(StringPattern)
+			if !ok {
+				finalErr = errors.New("unexpected non-string pattern as value pattern in representation of value pattern")
+				return false
+			}
+
+			stringPattern = patt
+			return true
+		case SERIALIZED_SECRET_PATTERN_VAL_PEM_ENCODED_KEY:
+			if it.WhatIsNext() != jsoniter.BoolValue {
+				finalErr = fmt.Errorf("invalid representation of %s in representation of secret pattern", key)
+				return false
+			}
+			isPemEncoded = it.ReadBool()
+			return true
+		default:
+			finalErr = fmt.Errorf("unexpected property %q in float range pattern representation", key)
+			return false
+		}
+	})
+
+	if finalErr != nil {
+		return
+	}
+
+	if it.Error != nil && it.Error != io.EOF {
+		finalErr = it.Error
+		return
+	}
+
+	if stringPattern == nil {
+		finalErr = errors.New("missing value pattern in representation of secret pattern")
+		return
+	}
+
+	return NewSecretPattern(stringPattern, isPemEncoded), nil
+}
+
+func parseRegexPatternJSONRepresentation(ctx *Context, it *jsoniter.Iterator, try bool) (_ *RegexPattern, finalErr error) {
+	if it.WhatIsNext() != jsoniter.StringValue {
+		if try {
+			finalErr = ErrTriedToParseJSONRepr
+			return
+		}
+		finalErr = ErrJsonNotMatchingSchema
+		return
+	}
+
+	regex := it.ReadString()
+
+	regexp, err := regexp.Compile(regex) //compiles with syntax.Perl flag
+	if err != nil {
+		return nil, fmt.Errorf("invalid regex pattern `%s`: %w", regex, err)
+	}
+
+	return NewRegexPatternFromPERLCompiled(regexp), nil
 }
 
 func parseSameTypeListJSONRepr[T any](

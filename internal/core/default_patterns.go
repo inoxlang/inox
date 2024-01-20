@@ -810,10 +810,6 @@ var (
 
 			return &SecretPattern{
 				stringPattern: stringPattern,
-				CallBasedPatternReprMixin: CallBasedPatternReprMixin{
-					Callee: typePattern,
-					Params: []Serializable{stringPattern},
-				},
 			}, nil
 		},
 		SymbolicCallImpl: func(ctx *symbolic.Context, values []symbolic.Value) (symbolic.Pattern, error) {

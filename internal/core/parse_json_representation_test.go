@@ -1149,6 +1149,62 @@ func TestParseJSONRepresentation(t *testing.T) {
 
 	})
 
+	t.Run("secret patterns", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
+		config := JSONSerializationConfig{ReprConfig: ALL_VISIBLE_REPR_CONFIG, Pattern: SECRET_PATTERN_PATTERN}
+
+		t.Run("base case", func(t *testing.T) {
+			pattern := NewSecretPattern(NewRegexPattern(".*"), false)
+			serialized := MustGetJSONRepresentationWithConfig(pattern, ctx, config)
+
+			v, err := ParseJSONRepresentation(ctx, `{"secret-pattern__value":`+serialized+`}`, nil)
+			if assert.NoError(t, err) {
+				assert.Equal(t, pattern, v)
+			}
+
+			v, err = ParseJSONRepresentation(ctx, serialized, SECRET_PATTERN_PATTERN)
+			if assert.NoError(t, err) {
+				assert.Equal(t, pattern, v)
+			}
+		})
+
+		t.Run("PEM encoded", func(t *testing.T) {
+			pattern := NewSecretPattern(NewRegexPattern(".*"), true)
+			serialized := MustGetJSONRepresentationWithConfig(pattern, ctx, config)
+
+			v, err := ParseJSONRepresentation(ctx, serialized, SECRET_PATTERN_PATTERN)
+			if assert.NoError(t, err) {
+				assert.Equal(t, pattern, v)
+			}
+		})
+
+	})
+
+	t.Run("regex patterns", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
+		config := JSONSerializationConfig{ReprConfig: ALL_VISIBLE_REPR_CONFIG, Pattern: REGEX_PATTERN_PATTERN}
+
+		t.Run("base case", func(t *testing.T) {
+			pattern := NewRegexPattern(".*")
+			serialized := MustGetJSONRepresentationWithConfig(pattern, ctx, config)
+
+			v, err := ParseJSONRepresentation(ctx, `{"regex-pattern__value":`+serialized+`}`, nil)
+			if assert.NoError(t, err) {
+				assert.Equal(t, pattern, v)
+			}
+
+			v, err = ParseJSONRepresentation(ctx, serialized, REGEX_PATTERN_PATTERN)
+			if assert.NoError(t, err) {
+				assert.Equal(t, pattern, v)
+			}
+		})
+
+	})
+
 	t.Run("unions", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()

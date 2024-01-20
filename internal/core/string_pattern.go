@@ -1465,7 +1465,12 @@ type RegexPattern struct {
 // NewRegexPattern creates a RegexPattern from the given string, the unicode flag is enabled.
 func NewRegexPattern(s string) *RegexPattern {
 	regexp := regexp.MustCompile(s) //compiles with syntax.Perl flag
-	syntaxRegexp := utils.Must(syntax.Parse(s, symbolic.REGEX_SYNTAX))
+	return NewRegexPatternFromPERLCompiled(regexp)
+}
+
+// NewRegexPatternFromPERLCompiled creates a RegexPattern from the given regexp.
+func NewRegexPatternFromPERLCompiled(regexp *regexp.Regexp) *RegexPattern {
+	syntaxRegexp := utils.Must(syntax.Parse(regexp.String(), symbolic.REGEX_SYNTAX))
 	syntaxRegexp = regexutils.TurnCapturingGroupsIntoNonCapturing(syntaxRegexp)
 
 	return &RegexPattern{
