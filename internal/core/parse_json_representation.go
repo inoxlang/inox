@@ -1174,6 +1174,7 @@ func parseObjectPatternEntryJSONRepresentation(ctx *Context, it *jsoniter.Iterat
 		return
 	}
 
+	entry.Name = name
 	return
 }
 
@@ -1283,6 +1284,7 @@ func parseRecordPatternEntryJSONRepresentation(ctx *Context, it *jsoniter.Iterat
 		return
 	}
 
+	entry.Name = name
 	return
 }
 
