@@ -37,7 +37,7 @@ func TestPersistLoadSet(t *testing.T) {
 			Uniqueness: common.UniquenessConstraint{
 				Type: common.UniqueRepr,
 			},
-		}, core.CallBasedPatternReprMixin{})
+		})
 		set := NewSetWithConfig(ctx, nil, pattern.config)
 
 		//persist
@@ -74,7 +74,7 @@ func TestPersistLoadSet(t *testing.T) {
 			Uniqueness: common.UniquenessConstraint{
 				Type: common.UniqueRepr,
 			},
-		}, core.CallBasedPatternReprMixin{})
+		})
 		set := NewSetWithConfig(ctx, nil, pattern.config)
 
 		int1 := core.Int(1)
@@ -126,7 +126,7 @@ func TestPersistLoadSet(t *testing.T) {
 				Type: common.UniqueRepr,
 			},
 			Element: core.SERIALIZABLE_PATTERN,
-		}, core.CallBasedPatternReprMixin{})
+		})
 		set := NewSetWithConfig(ctx, nil, pattern.config)
 
 		int1 := core.Int(1)
@@ -190,7 +190,7 @@ func TestPersistLoadSet(t *testing.T) {
 			Uniqueness: common.UniquenessConstraint{
 				Type: common.UniqueRepr,
 			},
-		}, core.CallBasedPatternReprMixin{})
+		})
 
 		//a mutable object is not considered to have a unique representation.
 
@@ -214,7 +214,7 @@ func TestPersistLoadSet(t *testing.T) {
 				Type:         common.UniquePropertyValue,
 				PropertyName: "id",
 			},
-		}, core.CallBasedPatternReprMixin{})
+		})
 
 		storage.SetSerialized(ctx, "/set", `[{"object__value":{}}]`)
 		set, err := loadSet(ctx, core.FreeEntityLoadingParams{
@@ -236,7 +236,7 @@ func TestPersistLoadSet(t *testing.T) {
 				Type:         common.UniquePropertyValue,
 				PropertyName: "id",
 			},
-		}, core.CallBasedPatternReprMixin{})
+		})
 		set := NewSetWithConfig(ctx, nil, pattern.config)
 
 		set.Add(ctx, core.NewObjectFromMap(core.ValMap{"id": core.Str("a")}, ctx))
@@ -276,7 +276,7 @@ func TestPersistLoadSet(t *testing.T) {
 				Type:         common.UniquePropertyValue,
 				PropertyName: "id",
 			},
-		}, core.CallBasedPatternReprMixin{})
+		})
 		set := NewSetWithConfig(ctx, nil, pattern.config)
 
 		set.Add(ctx, core.NewObjectFromMap(core.ValMap{"id": core.Str("a")}, ctx))
@@ -321,7 +321,7 @@ func TestPersistLoadSet(t *testing.T) {
 				Type:         common.UniquePropertyValue,
 				PropertyName: "id",
 			},
-		}, core.CallBasedPatternReprMixin{})
+		})
 
 		storage.SetSerialized(ctx, "/set", `[{"object__value":{"id": "a"}}, {"object__value":{"id": "a"}}]`)
 		set, err := loadSet(ctx, core.FreeEntityLoadingParams{
@@ -344,7 +344,7 @@ func TestPersistLoadSet(t *testing.T) {
 			Uniqueness: common.UniquenessConstraint{
 				Type: common.UniqueRepr,
 			},
-		}, core.CallBasedPatternReprMixin{})
+		})
 
 		val, err := loadSet(ctx, core.FreeEntityLoadingParams{
 			Key:          "/x",
@@ -377,7 +377,7 @@ func TestPersistLoadSet(t *testing.T) {
 			Uniqueness: common.UniquenessConstraint{
 				Type: common.UniqueRepr,
 			},
-		}, core.CallBasedPatternReprMixin{})
+		})
 		nextPattern := core.NewInexactObjectPattern([]core.ObjectPatternEntry{
 			{Name: "a", Pattern: core.INT_PATTERN},
 		})
@@ -578,7 +578,7 @@ func TestSharedPersistedSetAddRemove(t *testing.T) {
 			Uniqueness: common.UniquenessConstraint{
 				Type: common.UniqueRepr,
 			},
-		}, core.CallBasedPatternReprMixin{})
+		})
 
 		storage.SetSerialized(ctx, "/set", `[]`)
 		set, err := loadSet(ctx, core.FreeEntityLoadingParams{
@@ -626,7 +626,7 @@ func TestSharedPersistedSetAddRemove(t *testing.T) {
 			Uniqueness: common.UniquenessConstraint{
 				Type: common.UniqueRepr,
 			},
-		}, core.CallBasedPatternReprMixin{})
+		})
 
 		storage.SetSerialized(ctx, "/set", `[]`)
 		set, err := loadSet(ctx, core.FreeEntityLoadingParams{
@@ -683,7 +683,7 @@ func TestSharedPersistedSetAddRemove(t *testing.T) {
 			Uniqueness: common.UniquenessConstraint{
 				Type: common.UniqueRepr,
 			},
-		}, core.CallBasedPatternReprMixin{})
+		})
 
 		storage.SetSerialized(ctx1, "/set", `[]`)
 		val, err := loadSet(ctx1, core.FreeEntityLoadingParams{
@@ -717,7 +717,7 @@ func TestSharedPersistedSetAddRemove(t *testing.T) {
 			Uniqueness: common.UniquenessConstraint{
 				Type: common.UniqueRepr,
 			},
-		}, core.CallBasedPatternReprMixin{})
+		})
 
 		storage.SetSerialized(ctx, "/set", `[{"int__value":"1"}]`)
 		val, err := loadSet(ctx, core.FreeEntityLoadingParams{
@@ -760,7 +760,7 @@ func TestSharedPersistedSetAddRemove(t *testing.T) {
 			Uniqueness: common.UniquenessConstraint{
 				Type: common.UniqueRepr,
 			},
-		}, core.CallBasedPatternReprMixin{})
+		})
 
 		storage.SetSerialized(ctx, "/set", `[{"int__value":"1"}]`)
 		val, err := loadSet(ctx, core.FreeEntityLoadingParams{
@@ -812,7 +812,7 @@ func TestSharedPersistedSetAddRemove(t *testing.T) {
 			Uniqueness: common.UniquenessConstraint{
 				Type: common.UniqueURL,
 			},
-		}, core.CallBasedPatternReprMixin{})
+		})
 
 		storage.SetSerialized(ctx, "/set", `[]`)
 		val, err := loadSet(ctx, core.FreeEntityLoadingParams{
@@ -867,7 +867,7 @@ func TestInteractWithElementsOfLoadedSet(t *testing.T) {
 			Uniqueness: common.UniquenessConstraint{
 				Type: common.UniqueURL,
 			},
-		}, core.CallBasedPatternReprMixin{})
+		})
 
 		storage.SetSerialized(ctx, "/set", `[]`)
 		set, err := loadSet(ctx, core.FreeEntityLoadingParams{
@@ -1086,7 +1086,7 @@ func TestSetMigrate(t *testing.T) {
 		replacement := core.NewWrappedValueList()
 
 		val, err := set.Migrate(ctx, "/", &core.FreeEntityMigrationArgs{
-			NextPattern: NewSetPattern(config, core.CallBasedPatternReprMixin{}),
+			NextPattern: NewSetPattern(config),
 			MigrationHandlers: core.MigrationOpHandlers{
 				Replacements: map[core.PathPattern]*core.MigrationOpHandler{
 					"/": {InitialValue: replacement},

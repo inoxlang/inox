@@ -113,6 +113,8 @@ var (
 	FLOAT_RANGE_STRING_PATTERN_TYPE = reflect.TypeOf(&FloatRangeStringPattern{})
 	SECRET_PATTERN_TYPE             = reflect.TypeOf(&SecretPattern{})
 	REGEX_PATTERN_TYPE              = reflect.TypeOf(&RegexPattern{})
+	EVENT_PATTERN_TYPE              = reflect.TypeOf((*EventPattern)(nil))
+	MUTATION_PATTERN_TYPE           = reflect.TypeOf((*MutationPattern)(nil))
 )
 
 var IMPLICITLY_REMOVED_ROUTINE_PERMS = []Permission{

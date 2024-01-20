@@ -1637,11 +1637,11 @@ func (it *EventSourceIterator) PropertyNames(ctx *Context) []string {
 }
 
 func (patt *EventPattern) Iterator(ctx *Context, config IteratorConfiguration) Iterator {
-	if patt.ValuePattern == nil {
+	if patt.valuePattern == nil {
 		return NewEmptyPatternIterator()
 	}
 
-	it := patt.ValuePattern.Iterator(ctx, IteratorConfiguration{})
+	it := patt.valuePattern.Iterator(ctx, IteratorConfiguration{})
 
 	return config.CreateIterator(&PatternIterator{
 		hasNext: func(pi *PatternIterator, ctx *Context) bool {

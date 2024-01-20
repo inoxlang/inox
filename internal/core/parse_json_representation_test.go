@@ -1205,6 +1205,29 @@ func TestParseJSONRepresentation(t *testing.T) {
 
 	})
 
+	t.Run("event patterns", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
+		config := JSONSerializationConfig{ReprConfig: ALL_VISIBLE_REPR_CONFIG, Pattern: EVENT_PATTERN_PATTERN}
+
+		t.Run("base case", func(t *testing.T) {
+			pattern := NewEventPattern(INT_PATTERN)
+			serialized := MustGetJSONRepresentationWithConfig(pattern, ctx, config)
+
+			v, err := ParseJSONRepresentation(ctx, `{"event-pattern__value":`+serialized+`}`, nil)
+			if assert.NoError(t, err) {
+				assert.Equal(t, pattern, v)
+			}
+
+			v, err = ParseJSONRepresentation(ctx, serialized, EVENT_PATTERN_PATTERN)
+			if assert.NoError(t, err) {
+				assert.Equal(t, pattern, v)
+			}
+		})
+
+	})
+
 	t.Run("unions", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()

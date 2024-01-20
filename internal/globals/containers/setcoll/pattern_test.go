@@ -26,9 +26,6 @@ func TestSetPattern(t *testing.T) {
 			expectedPattern := NewSetPattern(SetConfig{
 				Element:    core.INT_PATTERN,
 				Uniqueness: uniqueness,
-			}, core.CallBasedPatternReprMixin{
-				Callee: SET_PATTERN,
-				Params: []core.Serializable{core.INT_PATTERN, uniqueness.ToValue()},
 			})
 
 			assert.Equal(t, expectedPattern, patt)
@@ -52,9 +49,6 @@ func TestSetPattern(t *testing.T) {
 			expectedPattern := NewSetPattern(SetConfig{
 				Element:    objectPattern,
 				Uniqueness: uniqueness,
-			}, core.CallBasedPatternReprMixin{
-				Callee: SET_PATTERN,
-				Params: []core.Serializable{objectPattern, uniqueness.ToValue()},
 			})
 
 			assert.Equal(t, expectedPattern, patt)
@@ -72,9 +66,6 @@ func TestSetPattern(t *testing.T) {
 			expectedPattern := NewSetPattern(SetConfig{
 				Element:    objectPattern,
 				Uniqueness: uniqueness,
-			}, core.CallBasedPatternReprMixin{
-				Callee: SET_PATTERN,
-				Params: []core.Serializable{objectPattern, uniqueness.ToValue()},
 			})
 
 			assert.Equal(t, expectedPattern, patt)

@@ -1109,7 +1109,7 @@ func (p *EventPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]sym
 	if r, ok := encountered[ptr]; ok {
 		return r, nil
 	}
-	symValuePattern, err := p.ValuePattern.ToSymbolicValue(ctx, encountered)
+	symValuePattern, err := p.valuePattern.ToSymbolicValue(ctx, encountered)
 	if err != nil {
 		return nil, err
 	}

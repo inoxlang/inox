@@ -1335,14 +1335,14 @@ func (patt *EventPattern) Equal(ctx *Context, other Value, alreadyCompared map[u
 	alreadyCompared[addr] = otherAddr
 	alreadyCompared[otherAddr] = addr
 
-	if (patt.ValuePattern == nil) != (otherPatt.ValuePattern == nil) {
+	if (patt.valuePattern == nil) != (otherPatt.valuePattern == nil) {
 		return false
 	}
-	if patt.ValuePattern == nil {
+	if patt.valuePattern == nil {
 		return true
 	}
 
-	return patt.ValuePattern.Equal(ctx, otherPatt.ValuePattern, alreadyCompared, depth+1)
+	return patt.valuePattern.Equal(ctx, otherPatt.valuePattern, alreadyCompared, depth+1)
 }
 
 func (patt *MutationPattern) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {

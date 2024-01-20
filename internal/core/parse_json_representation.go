@@ -329,6 +329,8 @@ func ParseNextJSONRepresentation(ctx *Context, it *jsoniter.Iterator, pattern Pa
 			return parseSecretPatternJSONRepresentation(ctx, it, try)
 		case REGEX_PATTERN_PATTERN:
 			return parseRegexPatternJSONRepresentation(ctx, it, try)
+		case EVENT_PATTERN_PATTERN:
+			return parseEventPatternJSONRepresentation(ctx, it, try)
 		case ANYVAL_PATTERN, SERIALIZABLE_PATTERN:
 			return ParseNextJSONRepresentation(ctx, it, nil, try)
 		default:
@@ -1997,7 +1999,7 @@ func parseSecretPatternJSONRepresentation(ctx *Context, it *jsoniter.Iterator, t
 			}
 			patt, ok := v.(StringPattern)
 			if !ok {
-				finalErr = errors.New("unexpected non-string pattern as value pattern in representation of value pattern")
+				finalErr = errors.New("unexpected non-string pattern as value pattern in representation of secret pattern")
 				return false
 			}
 
@@ -2011,7 +2013,7 @@ func parseSecretPatternJSONRepresentation(ctx *Context, it *jsoniter.Iterator, t
 			isPemEncoded = it.ReadBool()
 			return true
 		default:
-			finalErr = fmt.Errorf("unexpected property %q in float range pattern representation", key)
+			finalErr = fmt.Errorf("unexpected property %q in representation of secret pattern", key)
 			return false
 		}
 	})
@@ -2051,6 +2053,57 @@ func parseRegexPatternJSONRepresentation(ctx *Context, it *jsoniter.Iterator, tr
 	}
 
 	return NewRegexPatternFromPERLCompiled(regexp), nil
+}
+
+func parseEventPatternJSONRepresentation(ctx *Context, it *jsoniter.Iterator, try bool) (_ *EventPattern, finalErr error) {
+	if it.WhatIsNext() != jsoniter.ObjectValue {
+		if try {
+			finalErr = ErrTriedToParseJSONRepr
+			return
+		}
+		finalErr = ErrJsonNotMatchingSchema
+		return
+	}
+
+	var valuePattern Pattern
+
+	it.ReadObjectCB(func(it *jsoniter.Iterator, key string) bool {
+		switch key {
+		case SERIALIZED_EVENT_PATTERN_VAL_PATTERN_KEY:
+			v, err := ParseNextJSONRepresentation(ctx, it, nil, try)
+			if err != nil {
+				finalErr = fmt.Errorf("invalid representation of value pattern in representation of event pattern: %w", err)
+				return false
+			}
+			patt, ok := v.(Pattern)
+			if !ok {
+				finalErr = errors.New("unexpected non-pattern as value pattern in representation of event pattern")
+				return false
+			}
+
+			valuePattern = patt
+			return true
+		default:
+			finalErr = fmt.Errorf("unexpected property %q in representation of event pattern", key)
+			return false
+		}
+	})
+
+	if finalErr != nil {
+		return
+	}
+
+	if it.Error != nil && it.Error != io.EOF {
+		finalErr = it.Error
+		return
+	}
+
+	if valuePattern == nil {
+		finalErr = errors.New("missing value pattern in representation of event pattern")
+		return
+	}
+
+	return NewEventPattern(valuePattern), nil
 }
 
 func parseSameTypeListJSONRepr[T any](

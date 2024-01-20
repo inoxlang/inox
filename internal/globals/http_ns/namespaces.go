@@ -65,8 +65,9 @@ func init() {
 				Type:          reflect.TypeOf((*HttpResponseWriter)(nil)),
 				SymbolicValue: http_symbolic.ANY_HTTP_RESP_WRITER,
 			},
-			"req":    CALLABLE_HTTP_REQUEST_PATTERN,
-			"method": spec.METHOD_PATTERN,
+			"req":         CALLABLE_HTTP_REQUEST_PATTERN,
+			"req-pattern": HTTP_REQUEST_PATTERN_PATTERN,
+			"method":      spec.METHOD_PATTERN,
 			"status-code": &core.TypePattern{
 				Name:          "http.status-code",
 				Type:          reflect.TypeOf(StatusCode(100)),
@@ -74,6 +75,8 @@ func init() {
 			},
 		},
 	})
+
+	core.RegisterPatternDeserializer(HTTP_REQUEST_PATTERN_PATTERN, DeserializeHttpRequestPattern)
 
 	stringOrStringList := symbolic.AsSerializableChecked(symbolic.NewMultivalue(
 		symbolic.NewListOf(symbolic.ANY_STR_LIKE),

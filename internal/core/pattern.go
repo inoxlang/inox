@@ -93,15 +93,6 @@ type DefaultValuePattern interface {
 	DefaultValue(ctx *Context) (Value, error)
 }
 
-type CallBasedPatternReprMixin struct {
-	Callee Pattern
-	Params []Serializable
-}
-
-func (m CallBasedPatternReprMixin) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
-	return ErrNotImplementedYet
-}
-
 type NamespaceMemberPatternReprMixin struct {
 	NamespaceName string
 	MemberName    string
@@ -132,7 +123,6 @@ func (NotCallablePatternMixin) Call(values []Serializable) (Pattern, error) {
 // ExactValuePattern matches values equal to .value: .value.Equal(...) returns true.
 type ExactValuePattern struct {
 	value Serializable //immutable in most cases
-	CallBasedPatternReprMixin
 
 	NotCallablePatternMixin
 }
@@ -143,10 +133,6 @@ func NewExactValuePattern(value Serializable) *ExactValuePattern {
 	}
 	return &ExactValuePattern{
 		value: value,
-		CallBasedPatternReprMixin: CallBasedPatternReprMixin{
-			Callee: mustGetDefaultNamedPattern(__VAL_PATTERN_NAME),
-			Params: []Serializable{value},
-		},
 	}
 }
 
@@ -1093,7 +1079,6 @@ type IntRangePattern struct {
 	multipleOf      Int    //ignored if <= 0
 	multipleOfFloat *Float //can be nil
 
-	CallBasedPatternReprMixin
 	NotCallablePatternMixin
 }
 
@@ -1111,10 +1096,6 @@ func NewIncludedEndIntRangePattern(start, end int64, multipleOf int64) *IntRange
 	return &IntRangePattern{
 		intRange:   range_,
 		multipleOf: Int(multipleOf),
-		CallBasedPatternReprMixin: CallBasedPatternReprMixin{
-			Callee: INT_PATTERN,
-			Params: []Serializable{range_},
-		},
 	}
 }
 
@@ -1131,10 +1112,6 @@ func NewIntRangePattern(intRange IntRange, multipleOf int64) *IntRangePattern {
 	return &IntRangePattern{
 		intRange:   intRange,
 		multipleOf: Int(multipleOf),
-		CallBasedPatternReprMixin: CallBasedPatternReprMixin{
-			Callee: INT_PATTERN,
-			Params: []Serializable{intRange},
-		},
 	}
 }
 
@@ -1146,10 +1123,6 @@ func NewIntRangePatternFloatMultiple(intRange IntRange, multipleOf Float) *IntRa
 
 	pattern := &IntRangePattern{
 		intRange: intRange,
-		CallBasedPatternReprMixin: CallBasedPatternReprMixin{
-			Callee: INT_PATTERN,
-			Params: []Serializable{intRange},
-		},
 	}
 
 	if multipleOf > 0 {
@@ -1167,10 +1140,6 @@ func NewSingleElementIntRangePattern(n int64) *IntRangePattern {
 	range_ := IntRange{inclusiveEnd: true, start: n, end: n, step: 1}
 	return &IntRangePattern{
 		intRange: range_,
-		CallBasedPatternReprMixin: CallBasedPatternReprMixin{
-			Callee: INT_PATTERN,
-			Params: []Serializable{range_},
-		},
 	}
 }
 
@@ -1218,7 +1187,6 @@ type FloatRangePattern struct {
 	floatRange FloatRange
 	multipleOf Float
 
-	CallBasedPatternReprMixin
 	NotCallablePatternMixin
 }
 
@@ -1235,10 +1203,6 @@ func NewFloatRangePattern(floatRange FloatRange, multipleOf float64) *FloatRange
 	return &FloatRangePattern{
 		floatRange: floatRange,
 		multipleOf: Float(multipleOf),
-		CallBasedPatternReprMixin: CallBasedPatternReprMixin{
-			Callee: FLOAT_PATTERN,
-			Params: []Serializable{floatRange},
-		},
 	}
 }
 
@@ -1246,10 +1210,6 @@ func NewSingleElementFloatRangePattern(n float64) *FloatRangePattern {
 	range_ := FloatRange{inclusiveEnd: true, start: n, end: n}
 	return &FloatRangePattern{
 		floatRange: range_,
-		CallBasedPatternReprMixin: CallBasedPatternReprMixin{
-			Callee: FLOAT_PATTERN,
-			Params: []Serializable{range_},
-		},
 	}
 }
 
@@ -1294,19 +1254,14 @@ func (patt *FloatRangePattern) Range() FloatRange {
 }
 
 type EventPattern struct {
-	ValuePattern Pattern
-	CallBasedPatternReprMixin
+	valuePattern Pattern
 
 	NotCallablePatternMixin
 }
 
 func NewEventPattern(valuePattern Pattern) *EventPattern {
 	return &EventPattern{
-		ValuePattern: valuePattern,
-		CallBasedPatternReprMixin: CallBasedPatternReprMixin{
-			Callee: mustGetDefaultNamedPattern("event"),
-			Params: []Serializable{valuePattern},
-		},
+		valuePattern: valuePattern,
 	}
 }
 
@@ -1316,10 +1271,10 @@ func (patt *EventPattern) Test(ctx *Context, v Value) bool {
 		return false
 	}
 
-	if patt.ValuePattern == nil {
+	if patt.valuePattern == nil {
 		return true
 	}
-	return patt.ValuePattern.Test(ctx, e.value)
+	return patt.valuePattern.Test(ctx, e.value)
 }
 
 func (patt *EventPattern) StringPattern() (StringPattern, bool) {
@@ -1329,7 +1284,6 @@ func (patt *EventPattern) StringPattern() (StringPattern, bool) {
 type MutationPattern struct {
 	kind  MutationKind
 	data0 Pattern
-	CallBasedPatternReprMixin
 
 	NotCallablePatternMixin
 }
@@ -1338,10 +1292,6 @@ func NewMutationPattern(kind MutationKind, data0Pattern Pattern) *MutationPatter
 	return &MutationPattern{
 		kind:  kind,
 		data0: data0Pattern,
-		CallBasedPatternReprMixin: CallBasedPatternReprMixin{
-			Callee: mustGetDefaultNamedPattern("mutation"),
-			Params: []Serializable{Identifier(kind.String()), data0Pattern},
-		},
 	}
 }
 

@@ -370,10 +370,6 @@ var (
 
 			return &IntRangePattern{
 				intRange: intRange,
-				CallBasedPatternReprMixin: CallBasedPatternReprMixin{
-					Callee: typePattern,
-					Params: []Serializable{intRange},
-				},
 			}, nil
 		},
 		SymbolicCallImpl: func(ctx *symbolic.Context, values []symbolic.Value) (symbolic.Pattern, error) {
@@ -428,10 +424,6 @@ var (
 
 			return &FloatRangePattern{
 				floatRange: floatRange,
-				CallBasedPatternReprMixin: CallBasedPatternReprMixin{
-					Callee: typePattern,
-					Params: []Serializable{floatRange},
-				},
 			}, nil
 		},
 		SymbolicCallImpl: func(ctx *symbolic.Context, values []symbolic.Value) (symbolic.Pattern, error) {
@@ -843,6 +835,16 @@ var (
 		Name:          patternnames.REGEX_PATTERN,
 		SymbolicValue: symbolic.ANY_REGEX_PATTERN,
 	}
+	EVENT_PATTERN_PATTERN = &TypePattern{
+		Type:          EVENT_PATTERN_TYPE,
+		Name:          patternnames.EVENT_PATTERN,
+		SymbolicValue: symbolic.ANY_EVENT_PATTERN,
+	}
+	MUTATION_PATTERN_PATTERN = &TypePattern{
+		Type:          MUTATION_PATTERN_TYPE,
+		Name:          patternnames.MUTATION_PATTERN,
+		SymbolicValue: symbolic.ANY_MUTATION_PATTERN,
+	}
 
 	ULID_PATTERN = &TypePattern{
 		Type:          ULID_TYPE,
@@ -996,6 +998,8 @@ var (
 		FLOAT_RANGE_STRING_PATTERN_PATTERN.Name: FLOAT_RANGE_STRING_PATTERN_PATTERN,
 		SECRET_PATTERN_PATTERN.Name:             SECRET_PATTERN_PATTERN,
 		REGEX_PATTERN_PATTERN.Name:              REGEX_PATTERN_PATTERN,
+		EVENT_PATTERN_PATTERN.Name:              EVENT_PATTERN_PATTERN,
+		MUTATION_PATTERN_PATTERN.Name:           MUTATION_PATTERN_PATTERN,
 	}
 
 	DEFAULT_PATTERN_NAMESPACES = map[string]*PatternNamespace{

@@ -53,6 +53,10 @@ const (
 	SERIALIZED_SECRET_PATTERN_VAL_PATTERN_KEY     = "valuePattern"
 	SERIALIZED_SECRET_PATTERN_VAL_PEM_ENCODED_KEY = "isPemEncoded"
 
+	//event pattern serialization
+
+	SERIALIZED_EVENT_PATTERN_VAL_PATTERN_KEY = "value"
+
 	//object pattern serialization
 
 	SERIALIZED_OBJECT_PATTERN_INEXACT_KEY           = "inexact"
@@ -1681,6 +1685,41 @@ func (patt *SecretPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Str
 		}, w)
 	}
 	return write(w)
+}
+
+func (patt *EventPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+	if depth > MAX_JSON_REPR_WRITING_DEPTH {
+		return ErrMaximumJSONReprWritingDepthReached
+	}
+
+	write := func(w *jsoniter.Stream) error {
+		w.WriteObjectStart()
+		w.WriteObjectField(SERIALIZED_EVENT_PATTERN_VAL_PATTERN_KEY)
+
+		valPatternConfig := JSONSerializationConfig{ReprConfig: config.ReprConfig}
+		err := patt.valuePattern.WriteJSONRepresentation(ctx, w, valPatternConfig, depth+1)
+		if err != nil {
+			return err
+		}
+
+		w.WriteObjectEnd()
+		return nil
+	}
+
+	if NoPatternOrAny(config.Pattern) {
+		return WriteUntypedValueJSON(EVENT_PATTERN_PATTERN.Name, func(w *jsoniter.Stream) error {
+			return write(w)
+		}, w)
+	}
+	return write(w)
+}
+
+func (patt *MutationPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+	if depth > MAX_JSON_REPR_WRITING_DEPTH {
+		return ErrMaximumJSONReprWritingDepthReached
+	}
+
+	return ErrNotImplementedYet
 }
 
 // end of pattern serialization methods.

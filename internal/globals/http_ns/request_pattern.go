@@ -9,6 +9,7 @@ import (
 	"github.com/inoxlang/inox/internal/commonfmt"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
+	jsoniter "github.com/inoxlang/inox/internal/jsoniter"
 
 	"github.com/inoxlang/inox/internal/globals/http_ns/spec"
 	http_symbolic "github.com/inoxlang/inox/internal/globals/http_ns/symbolic"
@@ -61,10 +62,6 @@ var (
 			return &HttpRequestPattern{
 				methods: methods,
 				headers: core.NewInexactRecordPattern(nil),
-				CallBasedPatternReprMixin: core.CallBasedPatternReprMixin{
-					Callee: callee,
-					Params: values,
-				},
 			}, nil
 		},
 		SymbolicCallImpl: func(ctx *symbolic.Context, values []symbolic.Value) (symbolic.Pattern, error) {
@@ -116,13 +113,18 @@ var (
 			return &http_symbolic.HttpRequestPattern{}, nil
 		},
 	}
+
+	HTTP_REQUEST_PATTERN_PATTERN = &core.TypePattern{
+		Name:          "http.req-pattern",
+		Type:          reflect.TypeOf(&HttpRequestPattern{}),
+		SymbolicValue: http_symbolic.ANY_REQUEST_PATTERN,
+	}
 )
 
 type HttpRequestPattern struct {
 	methods []string //if nil any method is accepted
 	headers *core.RecordPattern
 
-	core.CallBasedPatternReprMixin
 	core.NotCallablePatternMixin
 }
 
@@ -150,4 +152,16 @@ func (*HttpRequestPattern) Random(ctx *core.Context, options ...core.Option) cor
 
 func (*HttpRequestPattern) StringPattern() (core.StringPattern, bool) {
 	return nil, false
+}
+
+func (p *HttpRequestPattern) WriteJSONRepresentation(ctx *core.Context, w *jsoniter.Stream, config core.JSONSerializationConfig, depth int) error {
+	if depth > core.MAX_JSON_REPR_WRITING_DEPTH {
+		return core.ErrMaximumJSONReprWritingDepthReached
+	}
+
+	return core.ErrNotImplementedYet
+}
+
+func DeserializeHttpRequestPattern(ctx *core.Context, it *jsoniter.Iterator, pattern core.Pattern, try bool) (_ core.Pattern, finalErr error) {
+	panic(core.ErrNotImplementedYet)
 }

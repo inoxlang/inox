@@ -101,6 +101,8 @@ var (
 	ANY_REGEX_PATTERN       = &RegexPattern{}
 	ANY_INT_RANGE_PATTERN   = NewIntRangePattern(ANY_INT_RANGE)
 	ANY_FLOAT_RANGE_PATTERN = NewFloatRangePattern(ANY_FLOAT_RANGE)
+	ANY_EVENT_PATTERN       = &EventPattern{ValuePattern: ANY_PATTERN}
+	ANY_MUTATION_PATTERN    = &MutationPattern{}
 
 	ANY_FUNCTION_PATTERN = &FunctionPattern{}
 
@@ -3430,12 +3432,13 @@ func (p *EventPattern) IteratorElementValue() Value {
 }
 
 func (p *EventPattern) WidestOfType() Value {
-	return &EventPattern{ValuePattern: ANY_PATTERN}
+	return ANY_EVENT_PATTERN
 }
 
-// An Event
+// A MutationPattern represents a symbolic MutationPattern.
+// (work in progress)
 type MutationPattern struct {
-	kind         *Int
+	kind         *Int //if nil any mutation pattern is matched.
 	data0Pattern Pattern
 
 	NotCallablePatternMixin
@@ -3449,16 +3452,30 @@ func NewMutationPattern(kind *Int, data0Pattern Pattern) *MutationPattern {
 	}
 }
 
+func (p *MutationPattern) matchAnyMutationPattern() bool {
+	return p.kind == nil
+}
+
 func (p *MutationPattern) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
 	other, ok := v.(*MutationPattern)
+	if !ok {
+		return false
+	}
+	if p.matchAnyMutationPattern() {
+		return true
+	}
 	return ok && p.kind.Test(other.kind, state) && p.data0Pattern.Test(other.data0Pattern, state)
 }
 
 func (p *MutationPattern) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
-	w.WriteName("mutation(?, ")
+	if p.matchAnyMutationPattern() {
+		w.WriteName("mutation-pattern")
+		return
+	}
+	w.WriteName("mutation-pattern(?, ")
 	p.data0Pattern.PrettyPrint(w.ZeroIndent(), config)
 	w.WriteByte(')')
 }
@@ -3475,6 +3492,10 @@ func (p *MutationPattern) TestValue(v Value, state RecTestCallState) bool {
 	if !ok {
 		return false
 	}
+	if p.matchAnyMutationPattern() {
+		return true
+	}
+	//TODO: check kind
 	return p.data0Pattern.TestValue(event, state)
 }
 
@@ -3497,7 +3518,7 @@ func (p *MutationPattern) IteratorElementValue() Value {
 }
 
 func (p *MutationPattern) WidestOfType() Value {
-	return &MutationPattern{}
+	return ANY_MUTATION_PATTERN
 }
 
 // A PatternNamespace represents a symbolic PatternNamespace.

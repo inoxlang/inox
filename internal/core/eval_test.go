@@ -1841,10 +1841,6 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			assert.IsType(t, &UnionPattern{}, patt.base)
 			assert.Equal(t, &ExactValuePattern{
 				value: Int(1),
-				CallBasedPatternReprMixin: CallBasedPatternReprMixin{
-					Callee: VAL_PATTERN,
-					Params: []Serializable{Int(1)},
-				},
 			}, patt.removed)
 		})
 	})
@@ -7297,10 +7293,6 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					Patterns: map[string]Pattern{
 						"one": &ExactValuePattern{
 							value: Int(1),
-							CallBasedPatternReprMixin: CallBasedPatternReprMixin{
-								Callee: VAL_PATTERN,
-								Params: []Serializable{Int(1)},
-							},
 						},
 						"empty_obj": &ObjectPattern{
 							entries: nil,
@@ -7324,10 +7316,6 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		assert.NoError(t, err)
 		assert.Equal(t, &ExactValuePattern{
 			value: Int(1),
-			CallBasedPatternReprMixin: CallBasedPatternReprMixin{
-				Callee: VAL_PATTERN,
-				Params: []Serializable{Int(1)},
-			},
 		}, res)
 	})
 
@@ -7363,10 +7351,6 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 						Name: "count",
 						Pattern: &ExactValuePattern{
 							value: Int(2),
-							CallBasedPatternReprMixin: CallBasedPatternReprMixin{
-								Callee: VAL_PATTERN,
-								Params: []Serializable{Int(2)},
-							},
 						},
 					},
 					{
@@ -7467,10 +7451,6 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 							Name: "age",
 							Pattern: &ExactValuePattern{
 								value: Int(30),
-								CallBasedPatternReprMixin: CallBasedPatternReprMixin{
-									Callee: VAL_PATTERN,
-									Params: []Serializable{Int(30)},
-								},
 							},
 						},
 						{
@@ -7562,14 +7542,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				inexact: true,
 				entries: []RecordPatternEntry{
 					{
-						Name: "count",
-						Pattern: &ExactValuePattern{
-							value: Int(2),
-							CallBasedPatternReprMixin: CallBasedPatternReprMixin{
-								Callee: VAL_PATTERN,
-								Params: []Serializable{Int(2)},
-							},
-						},
+						Name:    "count",
+						Pattern: &ExactValuePattern{value: Int(2)},
 					},
 					{
 						Name:    "name",
@@ -7671,10 +7645,6 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 							Name: "age",
 							Pattern: &ExactValuePattern{
 								value: Int(30),
-								CallBasedPatternReprMixin: CallBasedPatternReprMixin{
-									Callee: VAL_PATTERN,
-									Params: []Serializable{Int(30)},
-								},
 							},
 						},
 						{
@@ -7765,13 +7735,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			assert.NoError(t, err)
 			assert.Equal(t, &ListPattern{
 				elementPatterns: []Pattern{
-					&ExactValuePattern{
-						value: Int(2),
-						CallBasedPatternReprMixin: CallBasedPatternReprMixin{
-							Callee: VAL_PATTERN,
-							Params: []Serializable{Int(2)},
-						},
-					},
+					&ExactValuePattern{value: Int(2)},
 				},
 			}, res)
 		})
@@ -7902,10 +7866,6 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				elementPatterns: []Pattern{
 					&ExactValuePattern{
 						value: Int(2),
-						CallBasedPatternReprMixin: CallBasedPatternReprMixin{
-							Callee: VAL_PATTERN,
-							Params: []Serializable{Int(2)},
-						},
 					},
 				},
 			}, res)
@@ -8018,20 +7978,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		assert.NoError(t, err)
 		assert.Equal(t, []Pattern{
-			&ExactValuePattern{
-				value: Int(1),
-				CallBasedPatternReprMixin: CallBasedPatternReprMixin{
-					Callee: VAL_PATTERN,
-					Params: []Serializable{Int(1)},
-				},
-			},
-			&ExactValuePattern{
-				value: Int(2),
-				CallBasedPatternReprMixin: CallBasedPatternReprMixin{
-					Callee: VAL_PATTERN,
-					Params: []Serializable{Int(2)},
-				},
-			},
+			&ExactValuePattern{value: Int(1)},
+			&ExactValuePattern{value: Int(2)},
 		}, res.(*UnionPattern).cases)
 	})
 

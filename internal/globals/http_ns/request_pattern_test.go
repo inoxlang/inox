@@ -44,10 +44,6 @@ func TestHttpRequestPattern(t *testing.T) {
 			assert.Equal(t, &HttpRequestPattern{
 				methods: nil,
 				headers: core.NewInexactRecordPattern(nil),
-				CallBasedPatternReprMixin: core.CallBasedPatternReprMixin{
-					Callee: CALLABLE_HTTP_REQUEST_PATTERN,
-					Params: []core.Serializable{core.NewInexactObjectPattern(nil)},
-				},
 			}, pattern)
 		})
 
@@ -66,10 +62,6 @@ func TestHttpRequestPattern(t *testing.T) {
 			assert.Equal(t, &HttpRequestPattern{
 				methods: []string{"GET"},
 				headers: core.NewInexactRecordPattern(nil),
-				CallBasedPatternReprMixin: core.CallBasedPatternReprMixin{
-					Callee: CALLABLE_HTTP_REQUEST_PATTERN,
-					Params: []core.Serializable{description},
-				},
 			}, pattern)
 		})
 
