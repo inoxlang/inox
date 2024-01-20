@@ -1,9 +1,11 @@
 package setcoll
 
 import (
+	"errors"
+	"fmt"
+	"io"
 	"path/filepath"
 	"reflect"
-	"slices"
 
 	"github.com/inoxlang/inox/internal/commonfmt"
 	"github.com/inoxlang/inox/internal/core"
@@ -44,9 +46,6 @@ var (
 			return NewSetPattern(SetConfig{
 				Element:    elementPattern,
 				Uniqueness: uniqueness,
-			}, core.CallBasedPatternReprMixin{
-				Callee: typePattern,
-				Params: slices.Clone(values),
 			}), nil
 		},
 		SymbolicCallImpl: func(ctx *symbolic.Context, values []symbolic.Value) (symbolic.Pattern, error) {
@@ -81,7 +80,7 @@ type SetPattern struct {
 	core.NotCallablePatternMixin
 }
 
-func NewSetPattern(config SetConfig, callData core.CallBasedPatternReprMixin) *SetPattern {
+func NewSetPattern(config SetConfig) *SetPattern {
 	if config.Element == nil {
 		config.Element = core.SERIALIZABLE_PATTERN
 	}
@@ -141,19 +140,105 @@ func (p *SetPattern) WriteJSONRepresentation(ctx *core.Context, w *jsoniter.Stre
 		return core.ErrMaximumJSONReprWritingDepthReached
 	}
 
-	w.WriteObjectStart()
-	w.WriteObjectField(SERIALIZED_SET_PATTERN_ELEM_KEY)
+	write := func(w *jsoniter.Stream) error {
+		w.WriteObjectStart()
+		w.WriteObjectField(SERIALIZED_SET_PATTERN_ELEM_KEY)
 
-	elemConfig := core.JSONSerializationConfig{ReprConfig: config.ReprConfig}
-	err := p.config.Element.WriteJSONRepresentation(ctx, w, elemConfig, depth+1)
-	if err != nil {
-		return err
+		elemConfig := core.JSONSerializationConfig{ReprConfig: config.ReprConfig}
+		err := p.config.Element.WriteJSONRepresentation(ctx, w, elemConfig, depth+1)
+		if err != nil {
+			return err
+		}
+
+		w.WriteMore()
+		w.WriteObjectField(SERIALIZED_SET_PATTERN_UNIQUENESS_KEY)
+		p.config.Uniqueness.WriteJSONRepresentation(w)
+
+		w.WriteObjectEnd()
+		return nil
 	}
 
-	w.WriteMore()
-	w.WriteObjectField(SERIALIZED_SET_PATTERN_UNIQUENESS_KEY)
-	p.config.Uniqueness.WriteJSONRepresentation(w)
+	if core.NoPatternOrAny(config.Pattern) {
+		return core.WriteUntypedValueJSON(SET_PATTERN.Name, func(w *jsoniter.Stream) error {
+			return write(w)
+		}, w)
+	}
+	return write(w)
+}
 
-	w.WriteObjectEnd()
-	return nil
+func DeserializeSetPattern(ctx *core.Context, it *jsoniter.Iterator, pattern core.Pattern, try bool) (_ core.Pattern, finalErr error) {
+	if it.WhatIsNext() != jsoniter.ObjectValue {
+		if try {
+			finalErr = core.ErrTriedToParseJSONRepr
+			return
+		}
+		finalErr = core.ErrJsonNotMatchingSchema
+		return
+	}
+
+	var (
+		elementPattern core.Pattern
+		uniqueness     common.UniquenessConstraint
+	)
+
+	it.ReadObjectCB(func(it *jsoniter.Iterator, key string) bool {
+		switch key {
+		case SERIALIZED_SET_PATTERN_ELEM_KEY:
+			if it.WhatIsNext() != jsoniter.ObjectValue {
+				finalErr = errors.New("invalid representation of element pattern in representation of set pattern")
+				return false
+			}
+			v, err := core.ParseNextJSONRepresentation(ctx, it, nil, false)
+			if err != nil {
+				finalErr = fmt.Errorf("invalid representation of element pattern in representation of set pattern: %w", err)
+				return false
+			}
+			pattern, ok := v.(core.Pattern)
+			if !ok {
+				finalErr = errors.New("unexpected non-pattern as element pattern in representation of set pattern")
+				return false
+			}
+			elementPattern = pattern
+			return true
+		case SERIALIZED_SET_PATTERN_UNIQUENESS_KEY:
+			if it.WhatIsNext() != jsoniter.StringValue {
+				finalErr = errors.New("invalid uniqueness in representation of set pattern")
+				return false
+			}
+			var err error
+			uniqueness, err = common.DeserializeNextUniquenessConstraintFromJSON(it)
+			if err != nil {
+				finalErr = err
+				return false
+			}
+			return true
+		default:
+			finalErr = fmt.Errorf("unexpected property %q in float range pattern representation", key)
+			return false
+		}
+	})
+
+	if finalErr != nil {
+		return
+	}
+
+	if it.Error != nil && it.Error != io.EOF {
+		finalErr = it.Error
+		return
+	}
+
+	if elementPattern == nil {
+		finalErr = errors.New("missing element pattern in representation of set pattern")
+		return
+	}
+
+	if uniqueness == (common.UniquenessConstraint{}) {
+		finalErr = errors.New("missing uniqueneess in representation of set pattern")
+		return
+	}
+
+	return NewSetPattern(SetConfig{
+		Element:    elementPattern,
+		Uniqueness: uniqueness,
+	}), nil
 }

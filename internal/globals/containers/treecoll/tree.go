@@ -20,7 +20,7 @@ func init() {
 		Type:          reflect.TypeOf(&Tree{}),
 		Name:          "tree",
 		SymbolicValue: &coll_symbolic.Tree{},
-	})
+	}, nil)
 
 	core.RegisterDefaultPatternNamespace("tree", &core.PatternNamespace{
 		Patterns: map[string]core.Pattern{

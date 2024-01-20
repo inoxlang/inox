@@ -18,7 +18,7 @@ import (
 var ()
 
 func init() {
-	core.RegisterDefaultPattern("Set", setcoll.SET_PATTERN)
+	core.RegisterDefaultPattern(setcoll.SET_PATTERN.Name, setcoll.SET_PATTERN, setcoll.DeserializeSetPattern)
 
 	core.RegisterSymbolicGoFunctions([]any{
 		setcoll.NewSet, coll_symbolic.NewSet,

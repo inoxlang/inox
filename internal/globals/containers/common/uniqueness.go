@@ -14,9 +14,13 @@ import (
 )
 
 const (
-	URL_UNIQUENESS_IDENT          = core.Identifier("url")
-	REPR_UNIQUENESS_IDENT         = core.Identifier("repr")
-	TRANSIENT_ID_UNIQUENESS_IDENT = core.Identifier("transient-id")
+	URL_UNIQUENESS_NAME          string = "url"
+	REPR_UNIQUENESS_NAME         string = "repr"
+	TRANSIENT_ID_UNIQUENESS_NAME string = "transient-id"
+
+	URL_UNIQUENESS_IDENT          = core.Identifier(URL_UNIQUENESS_NAME)
+	REPR_UNIQUENESS_IDENT         = core.Identifier(REPR_UNIQUENESS_NAME)
+	TRANSIENT_ID_UNIQUENESS_IDENT = core.Identifier(TRANSIENT_ID_UNIQUENESS_NAME)
 )
 
 var (
@@ -87,6 +91,27 @@ func UniquenessConstraintFromValue(val core.Value) (UniquenessConstraint, bool) 
 	}
 
 	return uniqueness, true
+}
+
+func DeserializeNextUniquenessConstraintFromJSON(it *jsoniter.Iterator) (UniquenessConstraint, error) {
+	if it.WhatIsNext() != jsoniter.StringValue {
+		return UniquenessConstraint{}, errors.New("invalid representation of uniqueness type")
+	}
+	s := it.ReadString()
+	switch s {
+	case URL_UNIQUENESS_NAME:
+		return UniquenessConstraint{Type: UniqueURL}, nil
+	case REPR_UNIQUENESS_NAME:
+		return UniquenessConstraint{Type: UniqueRepr}, nil
+	case TRANSIENT_ID_UNIQUENESS_NAME:
+		return UniquenessConstraint{Type: UniqueTransientID}, nil
+	default:
+		if len(s) > 1 && s[0] == '.' && core.PropertyName(s[1:]).Validate() == nil {
+			propName := core.PropertyName(s[1:])
+			return UniquenessConstraint{Type: UniquePropertyValue, PropertyName: propName}, nil
+		}
+		return UniquenessConstraint{}, errors.New("invalid representation of uniqueness type")
+	}
 }
 
 func UniquenessConstraintFromSymbolicValue(val symbolic.Value, elementPattern symbolic.Pattern) (UniquenessConstraint, error) {

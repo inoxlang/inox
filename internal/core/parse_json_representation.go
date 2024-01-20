@@ -27,6 +27,10 @@ var (
 	ErrInvalidRuneRepresentation     = errors.New("invalid rune representation")
 )
 
+type PatternDeserializer = func(ctx *Context, it *jsoniter.Iterator, pattern Pattern, try bool) (Pattern, error)
+
+var patternDeserializerRegistry = map[ /*pattern name*/ string]PatternDeserializer{}
+
 func ParseJSONRepresentation(ctx *Context, s string, pattern Pattern) (Serializable, error) {
 	//TODO: add checks
 	//TODO: return an error if there are duplicate keys.
@@ -316,7 +320,12 @@ func ParseNextJSONRepresentation(ctx *Context, it *jsoniter.Iterator, pattern Pa
 		case ANYVAL_PATTERN, SERIALIZABLE_PATTERN:
 			return ParseNextJSONRepresentation(ctx, it, nil, try)
 		default:
-			return nil, fmt.Errorf("%q type pattern is not a core pattern", p.Name)
+			deserializer, ok := patternDeserializerRegistry[p.Name]
+			if ok {
+				return deserializer(ctx, it, nil, try)
+			}
+
+			return nil, fmt.Errorf("%q type pattern is not a default pattern", p.Name)
 		}
 	}
 
