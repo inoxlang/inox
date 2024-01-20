@@ -37,13 +37,12 @@ type Object struct {
 
 	url URL //can be empty
 
-	watchers               *ValueWatchers
-	mutationCallbacks      *MutationCallbacks
-	messageHandlers        *SynchronousMessageHandlers
-	watchingDepth          WatchingDepth
-	propMutationCallbacks  []CallbackHandle
-	currentTransaction     *Transaction
-	currentTransactionLock sync.Mutex
+	watchers              *ValueWatchers
+	mutationCallbacks     *MutationCallbacks
+	messageHandlers       *SynchronousMessageHandlers
+	watchingDepth         WatchingDepth
+	propMutationCallbacks []CallbackHandle
+	txIsolator            TransactionIsolator
 
 	jobs *ValueLifetimeJobs
 
@@ -236,48 +235,6 @@ func (obj *Object) jobInstances() []*LifetimeJobInstance {
 	return obj.jobs.Instances()
 }
 
-func (obj *Object) waitIfOtherTransaction(ctx *Context, requireRunningTransaction bool) error {
-	obj.currentTransactionLock.Lock()
-	unlock := true
-	defer func() {
-		if unlock {
-			obj.currentTransactionLock.Unlock()
-		}
-	}()
-
-	tx := ctx.GetTx()
-
-	if requireRunningTransaction && (tx == nil || tx.IsFinished()) {
-		panic(ErrRunningTransactionExpected)
-	}
-
-	if obj.currentTransaction != nil && obj.currentTransaction.IsFinished() {
-		obj.currentTransaction = nil
-	}
-
-	if obj.currentTransaction == nil {
-		if tx != nil && !tx.IsFinished() {
-			obj.currentTransaction = tx
-		}
-		return nil
-	}
-
-	if tx != obj.currentTransaction {
-		select {
-		case <-obj.currentTransaction.WaitFinished():
-		case <-ctx.Done():
-			return ctx.Err()
-		}
-
-		obj.currentTransaction = nil
-		unlock = false
-		obj.currentTransactionLock.Unlock()
-		return obj.waitIfOtherTransaction(ctx, requireRunningTransaction)
-	}
-
-	return nil
-}
-
 func (obj *Object) Prop(ctx *Context, name string) Value {
 	return obj.prop(ctx, name, true)
 }
@@ -287,7 +244,7 @@ func (obj *Object) PropNotStored(ctx *Context, name string) Value {
 }
 
 func (obj *Object) prop(ctx *Context, name string, stored bool) Value {
-	if err := obj.waitIfOtherTransaction(ctx, !stored); err != nil {
+	if err := obj.txIsolator.WaitIfOtherTransaction(ctx, !stored); err != nil {
 		panic(err)
 	}
 
@@ -328,7 +285,7 @@ func (obj *Object) SetProp(ctx *Context, name string, value Value) error {
 		return fmt.Errorf("value is not serializable")
 	}
 
-	if err := obj.waitIfOtherTransaction(ctx, false); err != nil {
+	if err := obj.txIsolator.WaitIfOtherTransaction(ctx, false); err != nil {
 		return err
 	}
 
@@ -449,7 +406,7 @@ func (obj *Object) SetProp(ctx *Context, name string, value Value) error {
 }
 
 func (obj *Object) PropertyNames(ctx *Context) []string {
-	if err := obj.waitIfOtherTransaction(ctx, false); err != nil {
+	if err := obj.txIsolator.WaitIfOtherTransaction(ctx, false); err != nil {
 		panic(err)
 	}
 
@@ -460,7 +417,7 @@ func (obj *Object) PropertyNames(ctx *Context) []string {
 }
 
 func (obj *Object) HasProp(ctx *Context, name string) bool {
-	if err := obj.waitIfOtherTransaction(ctx, false); err != nil {
+	if err := obj.txIsolator.WaitIfOtherTransaction(ctx, false); err != nil {
 		panic(err)
 	}
 
@@ -476,7 +433,7 @@ func (obj *Object) HasProp(ctx *Context, name string) bool {
 }
 
 func (obj *Object) HasPropValue(ctx *Context, value Value) bool {
-	if err := obj.waitIfOtherTransaction(ctx, false); err != nil {
+	if err := obj.txIsolator.WaitIfOtherTransaction(ctx, false); err != nil {
 		panic(err)
 	}
 
@@ -497,7 +454,7 @@ func (obj *Object) EntryMap(ctx *Context) map[string]Serializable {
 	}
 
 	if ctx != nil {
-		if err := obj.waitIfOtherTransaction(ctx, false); err != nil {
+		if err := obj.txIsolator.WaitIfOtherTransaction(ctx, false); err != nil {
 			panic(err)
 		}
 
@@ -527,7 +484,7 @@ func (obj *Object) ValueEntryMap(ctx *Context) map[string]Value {
 	}
 
 	if ctx != nil {
-		if err := obj.waitIfOtherTransaction(ctx, false); err != nil {
+		if err := obj.txIsolator.WaitIfOtherTransaction(ctx, false); err != nil {
 			panic(err)
 		}
 
@@ -615,7 +572,7 @@ func (obj *Object) At(ctx *Context, i int) Value {
 }
 
 func (obj *Object) Keys(ctx *Context) []string {
-	if err := obj.waitIfOtherTransaction(ctx, false); err != nil {
+	if err := obj.txIsolator.WaitIfOtherTransaction(ctx, false); err != nil {
 		panic(err)
 	}
 

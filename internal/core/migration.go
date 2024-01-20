@@ -339,7 +339,7 @@ func (o *Object) Migrate(ctx *Context, key Path, migration *FreeEntityMigrationA
 		panic(ErrUnreachable)
 	}
 
-	if o.currentTransaction != nil {
+	if o.txIsolator.currentTransaction != nil {
 		panic(ErrUnreachable)
 	}
 
