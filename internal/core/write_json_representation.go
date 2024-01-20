@@ -40,6 +40,14 @@ const (
 	SERIALIZED_FLOAT_RANGE_PATTERN_RANGE_KEY = "range"
 	SERIALIZED_FLOAT_RANGE_PATTERN_MULT_OF   = "multipleOf"
 
+	//int range string pattern serialization
+
+	SERIALIZED_INT_RANGE_STRING_PATTERN_RANGE_KEY = "range"
+
+	//float range string pattern serialization
+
+	SERIALIZED_FLOAT_RANGE_STRING_PATTERN_RANGE_KEY = "range"
+
 	//object pattern serialization
 
 	SERIALIZED_OBJECT_PATTERN_INEXACT_KEY           = "inexact"
@@ -1584,12 +1592,21 @@ func (patt *IntRangeStringPattern) WriteJSONRepresentation(ctx *Context, w *json
 	}
 
 	write := func(w *jsoniter.Stream) error {
-		valueConfig := JSONSerializationConfig{ReprConfig: config.ReprConfig}
-		return patt.intRange.WriteJSONRepresentation(ctx, w, valueConfig, depth+1)
+		w.WriteObjectStart()
+		w.WriteObjectField(SERIALIZED_INT_RANGE_STRING_PATTERN_RANGE_KEY)
+
+		rangeConfig := JSONSerializationConfig{ReprConfig: config.ReprConfig, Pattern: INT_RANGE_PATTERN}
+		err := patt.intRange.WriteJSONRepresentation(ctx, w, rangeConfig, depth+1)
+		if err != nil {
+			return err
+		}
+
+		w.WriteObjectEnd()
+		return nil
 	}
 
 	if noPatternOrAny(config.Pattern) {
-		return writeUntypedValueJSON(TUPLE_PATTERN_PATTERN.Name, func(w *jsoniter.Stream) error {
+		return writeUntypedValueJSON(INT_RANGE_STRING_PATTERN_PATTERN.Name, func(w *jsoniter.Stream) error {
 			return write(w)
 		}, w)
 	}
@@ -1602,12 +1619,21 @@ func (patt *FloatRangeStringPattern) WriteJSONRepresentation(ctx *Context, w *js
 	}
 
 	write := func(w *jsoniter.Stream) error {
-		valueConfig := JSONSerializationConfig{ReprConfig: config.ReprConfig}
-		return patt.floatRange.WriteJSONRepresentation(ctx, w, valueConfig, depth+1)
+		w.WriteObjectStart()
+		w.WriteObjectField(SERIALIZED_FLOAT_RANGE_STRING_PATTERN_RANGE_KEY)
+
+		rangeConfig := JSONSerializationConfig{ReprConfig: config.ReprConfig, Pattern: FLOAT_RANGE_PATTERN}
+		err := patt.floatRange.WriteJSONRepresentation(ctx, w, rangeConfig, depth+1)
+		if err != nil {
+			return err
+		}
+
+		w.WriteObjectEnd()
+		return nil
 	}
 
 	if noPatternOrAny(config.Pattern) {
-		return writeUntypedValueJSON(TUPLE_PATTERN_PATTERN.Name, func(w *jsoniter.Stream) error {
+		return writeUntypedValueJSON(FLOAT_RANGE_STRING_PATTERN_PATTERN.Name, func(w *jsoniter.Stream) error {
 			return write(w)
 		}, w)
 	}

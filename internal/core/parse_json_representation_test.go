@@ -1,6 +1,7 @@
 package core
 
 import (
+	"math"
 	"testing"
 	"time"
 
@@ -1100,6 +1101,52 @@ func TestParseJSONRepresentation(t *testing.T) {
 				assert.Equal(t, pattern, v)
 			}
 		})
+	})
+
+	t.Run("integer range string patterns", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
+		config := JSONSerializationConfig{ReprConfig: ALL_VISIBLE_REPR_CONFIG, Pattern: INT_RANGE_STRING_PATTERN_PATTERN}
+
+		t.Run("base case", func(t *testing.T) {
+			pattern := NewIntRangeStringPattern(1, 10, nil)
+			serialized := MustGetJSONRepresentationWithConfig(pattern, ctx, config)
+
+			v, err := ParseJSONRepresentation(ctx, `{"int-range-string-pattern__value":`+serialized+`}`, nil)
+			if assert.NoError(t, err) {
+				assert.Equal(t, pattern, v)
+			}
+
+			v, err = ParseJSONRepresentation(ctx, serialized, INT_RANGE_STRING_PATTERN_PATTERN)
+			if assert.NoError(t, err) {
+				assert.Equal(t, pattern, v)
+			}
+		})
+
+	})
+
+	t.Run("float range string patterns", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
+		config := JSONSerializationConfig{ReprConfig: ALL_VISIBLE_REPR_CONFIG, Pattern: FLOAT_RANGE_STRING_PATTERN_PATTERN}
+
+		t.Run("base case", func(t *testing.T) {
+			pattern := NewFloatRangeStringPattern(0, math.MaxFloat64, nil)
+			serialized := MustGetJSONRepresentationWithConfig(pattern, ctx, config)
+
+			v, err := ParseJSONRepresentation(ctx, `{"float-range-string-pattern__value":`+serialized+`}`, nil)
+			if assert.NoError(t, err) {
+				assert.Equal(t, pattern, v)
+			}
+
+			v, err = ParseJSONRepresentation(ctx, serialized, FLOAT_RANGE_STRING_PATTERN_PATTERN)
+			if assert.NoError(t, err) {
+				assert.Equal(t, pattern, v)
+			}
+		})
+
 	})
 
 	t.Run("unions", func(t *testing.T) {

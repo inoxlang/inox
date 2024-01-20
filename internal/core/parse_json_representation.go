@@ -304,6 +304,10 @@ func ParseNextJSONRepresentation(ctx *Context, it *jsoniter.Iterator, pattern Pa
 			return parseIntRangePatternJSONRepresentation(ctx, it, try)
 		case FLOAT_RANGE_PATTERN_PATTERN:
 			return parseFloatRangePatternJSONRepresentation(ctx, it, try)
+		case INT_RANGE_STRING_PATTERN_PATTERN:
+			return parseIntRangeStringPatternJSONRepresentation(ctx, it, try)
+		case FLOAT_RANGE_STRING_PATTERN_PATTERN:
+			return parseFloatRangeStringPatternJSONRepresentation(ctx, it, try)
 		case ANYVAL_PATTERN, SERIALIZABLE_PATTERN:
 			return ParseNextJSONRepresentation(ctx, it, nil, try)
 		default:
@@ -1758,6 +1762,15 @@ func parseIntRangePatternJSONRepresentation(ctx *Context, it *jsoniter.Iterator,
 		}
 	})
 
+	if finalErr != nil {
+		return
+	}
+
+	if it.Error != nil && it.Error != io.EOF {
+		finalErr = it.Error
+		return
+	}
+
 	if intRange == (IntRange{}) {
 		finalErr = errors.New("missing range in integer range pattern representation")
 		return
@@ -1812,12 +1825,123 @@ func parseFloatRangePatternJSONRepresentation(ctx *Context, it *jsoniter.Iterato
 		}
 	})
 
+	if finalErr != nil {
+		return
+	}
+
+	if it.Error != nil && it.Error != io.EOF {
+		finalErr = it.Error
+		return
+	}
+
 	if floatRange == (FloatRange{}) {
 		finalErr = errors.New("missing range in float range pattern representation")
 		return
 	}
 
 	return NewFloatRangePattern(floatRange, multipleOf), nil
+}
+
+func parseIntRangeStringPatternJSONRepresentation(ctx *Context, it *jsoniter.Iterator, try bool) (_ *IntRangeStringPattern, finalErr error) {
+	if it.WhatIsNext() != jsoniter.ObjectValue {
+		if try {
+			finalErr = ErrTriedToParseJSONRepr
+			return
+		}
+		finalErr = ErrJsonNotMatchingSchema
+		return
+	}
+
+	var (
+		intRange IntRange
+	)
+
+	it.ReadObjectCB(func(it *jsoniter.Iterator, key string) bool {
+		switch key {
+		case SERIALIZED_INT_RANGE_STRING_PATTERN_RANGE_KEY:
+			if it.WhatIsNext() != jsoniter.ObjectValue {
+				finalErr = errors.New("invalid representation of range in integer range string pattern")
+				return false
+			}
+			v, err := parseIntRangeJSONRepresentation(ctx, it, false)
+			if err != nil {
+				finalErr = fmt.Errorf("invalid representation of range in integer range string pattern: %w", err)
+				return false
+			}
+			intRange = v
+			return true
+		default:
+			finalErr = fmt.Errorf("unexpected property %q in integer range pattern representation", key)
+			return false
+		}
+	})
+
+	if finalErr != nil {
+		return
+	}
+
+	if it.Error != nil && it.Error != io.EOF {
+		finalErr = it.Error
+		return
+	}
+
+	if intRange == (IntRange{}) {
+		finalErr = errors.New("missing range in integer range pattern representation")
+		return
+	}
+
+	return NewIntRangeStringPattern(intRange.KnownStart(), intRange.InclusiveEnd(), nil), nil
+}
+
+func parseFloatRangeStringPatternJSONRepresentation(ctx *Context, it *jsoniter.Iterator, try bool) (_ *FloatRangeStringPattern, finalErr error) {
+	if it.WhatIsNext() != jsoniter.ObjectValue {
+		if try {
+			finalErr = ErrTriedToParseJSONRepr
+			return
+		}
+		finalErr = ErrJsonNotMatchingSchema
+		return
+	}
+
+	var (
+		floatRange FloatRange
+	)
+
+	it.ReadObjectCB(func(it *jsoniter.Iterator, key string) bool {
+		switch key {
+		case SERIALIZED_INT_RANGE_STRING_PATTERN_RANGE_KEY:
+			if it.WhatIsNext() != jsoniter.ObjectValue {
+				finalErr = errors.New("invalid representation of range in float range string pattern")
+				return false
+			}
+			v, err := parseFloatRangeJSONRepresentation(ctx, it, false)
+			if err != nil {
+				finalErr = fmt.Errorf("invalid representation of range in float range string pattern: %w", err)
+				return false
+			}
+			floatRange = v
+			return true
+		default:
+			finalErr = fmt.Errorf("unexpected property %q in float range pattern representation", key)
+			return false
+		}
+	})
+
+	if finalErr != nil {
+		return
+	}
+
+	if it.Error != nil && it.Error != io.EOF {
+		finalErr = it.Error
+		return
+	}
+
+	if floatRange == (FloatRange{}) {
+		finalErr = errors.New("missing range in float range pattern representation")
+		return
+	}
+
+	return NewFloatRangeStringPattern(floatRange.KnownStart(), floatRange.InclusiveEnd(), nil), nil
 }
 
 func parseSameTypeListJSONRepr[T any](
