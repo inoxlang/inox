@@ -354,6 +354,33 @@ func (pth Path) JoinEntry(name string, fls afs.Filesystem) Path {
 	return pth + Path(name)
 }
 
+// IsDirOfEntry returns true if $absPath is the path of a potentiel entry in $pth.
+// The function panics if $pth is not a dirpath or if one of the two paths is
+// not absolute.
+func (pth Path) CanBeDirOfEntry(absPath Path) bool {
+	if !pth.IsDirPath() {
+		panic(errors.New("path is not a directory"))
+	}
+
+	if !pth.IsAbsolute() || !absPath.IsAbsolute() {
+		panic(errors.New("both path should be absolute"))
+	}
+
+	dirSegments := pathutils.GetPathSegments(pth)
+	otherPathSegments := pathutils.GetPathSegments(absPath)
+
+	if len(otherPathSegments) != len(dirSegments)+1 {
+		return false
+	}
+
+	for i, segment := range dirSegments {
+		if otherPathSegments[i] != segment {
+			return false
+		}
+	}
+	return true
+}
+
 // Join joins the current path to a relative path:
 // /a , ./b -> /a/b
 // /a , ./b/ -> /a/b/
@@ -1657,4 +1684,3 @@ func appendPathSegmentToURLPattern(urlPattern, segment string) string {
 	}
 	return urlPattern[:index] + "/" + segment + urlPattern[index:]
 }
-

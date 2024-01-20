@@ -32,6 +32,7 @@ var (
 	ErrTransientIDBasedUniquenessRequireValuesToHaveTransientID = errors.New("transient id-based uniqueness requires values to have a transient id")
 	ErrUrlBasedUniquenessRequireValuesToBeUrlHolders            = errors.New("URL-based uniqueness requires values to be URL holders")
 	ErrContainerShouldHaveURL                                   = errors.New("container should have a URL")
+	ErrCannotAddURLToElemOfOtherContainer                       = errors.New("cannot add a URL to the element of an other container")
 
 	UniqueKeyReprConfig = &core.ReprConfig{AllVisible: true}
 
@@ -210,17 +211,25 @@ func (c UniquenessConstraint) AddUrlIfNecessary(ctx *core.Context, container cor
 			panic(errors.New("elements should be URL holders"))
 		}
 
-		_, ok = holder.URL()
-		if ok { //element already has a URL
-
-			return
-		}
 		containerURL, ok := container.URL()
 		if !ok {
 			panic(ErrContainerShouldHaveURL)
 		}
 
-		url := containerURL.ToDirURL().AppendAbsolutePath(core.Path("/" + ulid.Make().String()))
+		containerDirURL := containerURL.ToDirURL()
+
+		u, ok := holder.URL()
+		if ok { //Element already has a URL.
+			//Check that the URL is a suffix of the container's URL.
+			path := u.Path()
+			containerDirPath := containerDirURL.Path()
+			if containerDirPath.CanBeDirOfEntry(path) { //ok
+				return
+			}
+			panic(ErrCannotAddURLToElemOfOtherContainer)
+		}
+
+		url := containerDirURL.AppendAbsolutePath(core.Path("/" + ulid.Make().String()))
 		utils.PanicIfErr(holder.SetURLOnce(ctx, url))
 	}
 }

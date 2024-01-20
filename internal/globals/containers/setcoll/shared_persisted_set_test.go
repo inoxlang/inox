@@ -52,6 +52,57 @@ func TestSharedPersistedSetAdd(t *testing.T) {
 		assert.Regexp(t, "ldb://main/.*", string(url))
 	})
 
+	t.Run("adding an element of another URL-based container is not allowed", func(t *testing.T) {
+		ctx, storage := sharedSetTestSetup(t)
+		defer ctx.CancelGracefully()
+
+		pattern := NewSetPattern(SetConfig{
+			Uniqueness: common.UniquenessConstraint{
+				Type: common.UniqueURL,
+			},
+		})
+
+		storage.SetSerialized(ctx, "/set1", `[]`)
+		storage.SetSerialized(ctx, "/set2", `[]`)
+
+		val1, err := loadSet(ctx, core.FreeEntityLoadingParams{
+			Key: "/set1", Storage: storage, Pattern: pattern,
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		val2, err := loadSet(ctx, core.FreeEntityLoadingParams{
+			Key: "/set2", Storage: storage, Pattern: pattern,
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		set1 := val1.(*Set)
+		set1.Share(ctx.GetClosestState())
+
+		set2 := val2.(*Set)
+		set2.Share(ctx.GetClosestState())
+
+		obj := core.NewObjectFromMap(core.ValMap{}, ctx)
+		set1.Add(ctx, obj)
+
+		func() {
+			defer func() {
+				e := recover()
+				if !assert.NotNil(t, e) {
+					return
+				}
+				assert.ErrorIs(t, e.(error), common.ErrCannotAddURLToElemOfOtherContainer)
+			}()
+
+			set2.Add(ctx, obj)
+		}()
+	})
+
 	t.Run("add different elements during separate transactions", func(t *testing.T) {
 		ctx1 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx1.CancelGracefully()

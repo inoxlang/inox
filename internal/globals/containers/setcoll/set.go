@@ -333,27 +333,27 @@ func (set *Set) addToSharedSetNoPersist(ctx *core.Context, elem core.Serializabl
 		}
 		set.elementByKey[key] = elem
 	} else {
+		//Check that a value (than can be different) with the same key is not already being added by the same tx.
 		pendingInclusions := set.pendingInclusions[tx]
 		_, added := pendingInclusions[key]
 		if added {
 			panic(ErrValueWithSameKeyAlreadyPresent)
 		}
 
+		//Check that another value with the same key has not already been added.
 		curr, ok := set.elementByKey[key]
 		if ok && elem != curr {
 			panic(ErrValueWithSameKeyAlreadyPresent)
 		}
 
+		//Remove the key from the pending removals of the tx.
 		pendingRemovals := set.pendingRemovals[tx]
 		_, removed := pendingRemovals[key]
 		if removed {
 			delete(pendingRemovals, key)
-		} else if _, ok := set.elementByKey[key]; ok {
-			panic(ErrValueWithSameKeyAlreadyPresent)
 		}
 
-		//add the element
-
+		//Add the key and value to the pending inclusions of the tx.
 		if pendingInclusions == nil {
 			pendingInclusions = make(map[string]core.Serializable)
 			set.pendingInclusions[tx] = pendingInclusions
@@ -388,6 +388,7 @@ func (set *Set) Remove(ctx *core.Context, elem core.Serializable) {
 	} else {
 		key = strings.Clone(key)
 
+		//Add the key in the pending removals of the tx.
 		pendingRemovals, ok := set.pendingRemovals[tx]
 		if !ok {
 			pendingRemovals = make(map[string]struct{})
@@ -396,6 +397,7 @@ func (set *Set) Remove(ctx *core.Context, elem core.Serializable) {
 
 		pendingRemovals[key] = struct{}{}
 
+		//Register a transaction end handler if none is present.
 		if _, ok := set.transactionsWithSetEndCallback[tx]; !ok {
 			tx.OnEnd(set, set.makeTransactionEndCallback(ctx, closestState))
 			set.transactionsWithSetEndCallback[tx] = struct{}{}
