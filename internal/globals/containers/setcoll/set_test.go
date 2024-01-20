@@ -63,39 +63,6 @@ func TestNewSet(t *testing.T) {
 		}()
 	})
 
-	t.Run("url uniqueness", func(t *testing.T) {
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, io.Discard)
-
-		config := core.NewObjectFromMap(core.ValMap{
-			coll_symbolic.SET_CONFIG_UNIQUE_PROP_KEY: core.Identifier("url"),
-		}, ctx)
-
-		set := NewSet(ctx, core.NewWrappedValueList(), core.ToOptionalParam(config))
-
-		assert.Equal(t, SetConfig{
-			Uniqueness: common.UniquenessConstraint{
-				Type: common.UniqueURL,
-			},
-			Element: core.SERIALIZABLE_PATTERN,
-		}, set.config)
-	})
-
-	t.Run("url uniqueness: element has no URL & Set has no URL", func(t *testing.T) {
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, io.Discard)
-
-		config := core.NewObjectFromMap(core.ValMap{
-			coll_symbolic.SET_CONFIG_UNIQUE_PROP_KEY: core.Identifier("url"),
-		}, ctx)
-
-		func() {
-			defer func() {
-				assert.ErrorContains(t, recover().(error), common.ErrContainerShouldHaveURL.Error())
-			}()
-			NewSet(ctx, core.NewWrappedValueList(core.NewObjectFromMap(nil, ctx)), core.ToOptionalParam(config))
-		}()
-
-	})
-
 	t.Run("uniqueness of property's value", func(t *testing.T) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, io.Discard)
 
@@ -239,6 +206,21 @@ func TestUnsharedSetAddRemove(t *testing.T) {
 		//invalid element
 		assert.PanicsWithError(t, ErrValueDoesMatchElementPattern.Error(), func() {
 			set.Add(ctx, core.True)
+		})
+	})
+
+	t.Run("adding an element to an unshared URL-based uniqueness Set should cause a panic", func(t *testing.T) {
+		set := NewSetWithConfig(ctx, nil, SetConfig{
+			Element: core.RECORD_PATTERN,
+			Uniqueness: common.UniquenessConstraint{
+				PropertyName: "x",
+			},
+		})
+
+		obj := core.NewObjectFromMapNoInit(core.ValMap{"x": core.Int(1)})
+
+		assert.Panics(t, func() {
+			set.Add(ctx, obj)
 		})
 	})
 }

@@ -19,9 +19,10 @@ const (
 )
 
 var (
-	ErrSetCanOnlyContainRepresentableValues = errors.New("a Set can only contain representable values")
-	ErrValueDoesMatchElementPattern         = errors.New("provided value does not match the element pattern")
-	ErrValueWithSameKeyAlreadyPresent       = errors.New("provided value has the same key as an already present element")
+	ErrSetCanOnlyContainRepresentableValues           = errors.New("a Set can only contain representable values")
+	ErrValueDoesMatchElementPattern                   = errors.New("provided value does not match the element pattern")
+	ErrValueWithSameKeyAlreadyPresent                 = errors.New("provided value has the same key as an already present element")
+	ErrURLUniquenessOnlySupportedIfPersistedSharedSet = errors.New("URL uniqueness is only supported if the Set is persisted and shared")
 
 	_ core.Collection           = (*Set)(nil)
 	_ core.PotentiallySharable  = (*Set)(nil)
@@ -189,6 +190,8 @@ func (set *Set) Contains(ctx *core.Context, value core.Serializable) bool {
 }
 
 func (set *Set) Has(ctx *core.Context, elem core.Serializable) core.Bool {
+	set.assertPersistedAndSharedIfURLUniqueness()
+
 	closestState := ctx.GetClosestState()
 	set.lock.Lock(closestState, set)
 	defer set.lock.Unlock(closestState, set)
@@ -225,6 +228,8 @@ func (set *Set) hasNoLock(ctx *core.Context, elem core.Serializable) core.Bool {
 }
 
 func (set *Set) Get(ctx *core.Context, keyVal core.StringLike) (core.Value, core.Bool) {
+	set.assertPersistedAndSharedIfURLUniqueness()
+
 	key := keyVal.GetOrBuildString()
 
 	tx := ctx.GetTx()
@@ -252,6 +257,8 @@ func (set *Set) Get(ctx *core.Context, keyVal core.StringLike) (core.Value, core
 }
 
 func (set *Set) Add(ctx *core.Context, elem core.Serializable) {
+	set.assertPersistedAndSharedIfURLUniqueness()
+
 	if !set.lock.IsValueShared() {
 		// no locking required.
 
@@ -358,6 +365,8 @@ func (set *Set) addToSharedSetNoPersist(ctx *core.Context, elem core.Serializabl
 }
 
 func (set *Set) Remove(ctx *core.Context, elem core.Serializable) {
+	set.assertPersistedAndSharedIfURLUniqueness()
+
 	key := set.getUniqueKey(ctx, elem)
 	closestState := ctx.GetClosestState()
 
@@ -473,5 +482,11 @@ func (set *Set) makePersistOnMutationCallback(elem core.Serializable) core.Mutat
 		utils.PanicIfErr(persistSet(ctx, set, set.path, set.storage))
 
 		return
+	}
+}
+
+func (set *Set) assertPersistedAndSharedIfURLUniqueness() {
+	if set.config.Uniqueness.Type == common.UniqueURL && (!set.lock.IsValueShared() || set.storage == nil) {
+		panic(ErrURLUniquenessOnlySupportedIfPersistedSharedSet)
 	}
 }
