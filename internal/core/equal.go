@@ -1188,7 +1188,8 @@ func (patt *ObjectPattern) Equal(ctx *Context, other Value, alreadyCompared map[
 	alreadyCompared[otherAddr] = addr
 
 	for i, entry := range patt.entries {
-		if !entry.Pattern.Equal(ctx, otherPatt.entries[i].Pattern, alreadyCompared, depth+1) {
+		otherEntry := otherPatt.entries[i]
+		if otherEntry.Name != entry.Name || !entry.Pattern.Equal(ctx, otherEntry.Pattern, alreadyCompared, depth+1) {
 			return false
 		}
 	}
@@ -1220,7 +1221,8 @@ func (patt *RecordPattern) Equal(ctx *Context, other Value, alreadyCompared map[
 	alreadyCompared[otherAddr] = addr
 
 	for i, entry := range patt.entries {
-		if !entry.Pattern.Equal(ctx, otherPatt.entries[i].Pattern, alreadyCompared, depth+1) {
+		otherEntry := otherPatt.entries[i]
+		if otherEntry.Name != entry.Name || !entry.Pattern.Equal(ctx, otherEntry.Pattern, alreadyCompared, depth+1) {
 			return false
 		}
 	}

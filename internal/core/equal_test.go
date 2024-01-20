@@ -11,6 +11,7 @@ import (
 func TestEqualityCompareObjects(t *testing.T) {
 	ctx := NewContext(ContextConfig{})
 	NewGlobalState(ctx)
+	defer ctx.CancelGracefully()
 
 	t.Run("same object", func(t *testing.T) {
 		obj := &Object{}
@@ -68,6 +69,7 @@ func TestEqualityCompareObjects(t *testing.T) {
 func TestEqualityCompareDictionaries(t *testing.T) {
 	ctx := NewContext(ContextConfig{})
 	NewGlobalState(ctx)
+	defer ctx.CancelGracefully()
 
 	t.Run("same dictionary", func(t *testing.T) {
 		dict := &Dictionary{}
@@ -303,6 +305,122 @@ func TestEqualityCompareUUIDs(t *testing.T) {
 
 	assertNotEqualInoxValues(t, firstUUID, secondUUID, nil)
 	assertNotEqualInoxValues(t, secondUUID, firstUUID, nil)
+}
+
+func TestEqualityCompareObjectPatterns(t *testing.T) {
+	ctx := NewContext(ContextConfig{})
+	NewGlobalState(ctx)
+	defer ctx.CancelGracefully()
+
+	t.Run("empty inexact", func(t *testing.T) {
+		emptyInexact := NewInexactObjectPattern([]ObjectPatternEntry{})
+		emptyExact := NewExactObjectPattern([]ObjectPatternEntry{})
+		notEmptyInexact := NewInexactObjectPattern([]ObjectPatternEntry{{Name: "x", Pattern: INT_PATTERN}})
+		notEmptyExact := NewExactObjectPattern([]ObjectPatternEntry{{Name: "x", Pattern: INT_PATTERN}})
+
+		assertEqualInoxValues(t, emptyInexact, emptyInexact, ctx)
+		assertNotEqualInoxValues(t, emptyInexact, emptyExact, ctx)
+		assertNotEqualInoxValues(t, emptyInexact, notEmptyInexact, ctx)
+		assertNotEqualInoxValues(t, emptyInexact, notEmptyExact, ctx)
+	})
+
+	t.Run("empty exact", func(t *testing.T) {
+		emptyExact := NewExactObjectPattern([]ObjectPatternEntry{})
+		emptyInexact := NewInexactObjectPattern([]ObjectPatternEntry{})
+		notEmptyExact := NewExactObjectPattern([]ObjectPatternEntry{{Name: "x", Pattern: INT_PATTERN}})
+		notEmptyInexact := NewInexactObjectPattern([]ObjectPatternEntry{{Name: "x", Pattern: INT_PATTERN}})
+
+		assertEqualInoxValues(t, emptyExact, emptyExact, ctx)
+		assertNotEqualInoxValues(t, emptyExact, emptyInexact, ctx)
+		assertNotEqualInoxValues(t, emptyExact, notEmptyExact, ctx)
+		assertNotEqualInoxValues(t, emptyExact, notEmptyInexact, ctx)
+	})
+
+	t.Run("single prop inexact", func(t *testing.T) {
+		singlePropAInexact := NewInexactObjectPattern([]ObjectPatternEntry{{Name: "a", Pattern: INT_PATTERN}})
+		singlePropAExact := NewExactObjectPattern([]ObjectPatternEntry{{Name: "a", Pattern: INT_PATTERN}})
+		singlePropBInexact := NewInexactObjectPattern([]ObjectPatternEntry{{Name: "b", Pattern: INT_PATTERN}})
+		emptyInexact := NewInexactObjectPattern([]ObjectPatternEntry{})
+		emptyExact := NewExactObjectPattern([]ObjectPatternEntry{})
+
+		assertEqualInoxValues(t, singlePropAInexact, singlePropAInexact, ctx)
+		assertNotEqualInoxValues(t, singlePropAInexact, singlePropBInexact, ctx)
+		assertNotEqualInoxValues(t, singlePropAInexact, singlePropAExact, ctx)
+		assertNotEqualInoxValues(t, singlePropAInexact, emptyInexact, ctx)
+		assertNotEqualInoxValues(t, singlePropAInexact, emptyExact, ctx)
+	})
+
+	t.Run("single prop exact", func(t *testing.T) {
+		singlePropAExact := NewExactObjectPattern([]ObjectPatternEntry{{Name: "a", Pattern: INT_PATTERN}})
+		singlePropBExact := NewExactObjectPattern([]ObjectPatternEntry{{Name: "b", Pattern: INT_PATTERN}})
+		singlePropAInexact := NewInexactObjectPattern([]ObjectPatternEntry{{Name: "a", Pattern: INT_PATTERN}})
+		emptyInexact := NewInexactObjectPattern([]ObjectPatternEntry{})
+		emptyExact := NewExactObjectPattern([]ObjectPatternEntry{})
+
+		assertEqualInoxValues(t, singlePropAExact, singlePropAExact, ctx)
+		assertNotEqualInoxValues(t, singlePropAExact, singlePropBExact, ctx)
+		assertNotEqualInoxValues(t, singlePropAExact, singlePropAInexact, ctx)
+		assertNotEqualInoxValues(t, singlePropAExact, emptyInexact, ctx)
+		assertNotEqualInoxValues(t, singlePropAExact, emptyExact, ctx)
+	})
+}
+
+func TestEqualityCompareRecordPatterns(t *testing.T) {
+	ctx := NewContext(ContextConfig{})
+	NewGlobalState(ctx)
+	defer ctx.CancelGracefully()
+
+	t.Run("empty inexact", func(t *testing.T) {
+		emptyInexact := NewInexactRecordPattern([]RecordPatternEntry{})
+		emptyExact := NewExactRecordPattern([]RecordPatternEntry{})
+		notEmptyInexact := NewInexactRecordPattern([]RecordPatternEntry{{Name: "x", Pattern: INT_PATTERN}})
+		notEmptyExact := NewExactRecordPattern([]RecordPatternEntry{{Name: "x", Pattern: INT_PATTERN}})
+
+		assertEqualInoxValues(t, emptyInexact, emptyInexact, ctx)
+		assertNotEqualInoxValues(t, emptyInexact, emptyExact, ctx)
+		assertNotEqualInoxValues(t, emptyInexact, notEmptyInexact, ctx)
+		assertNotEqualInoxValues(t, emptyInexact, notEmptyExact, ctx)
+	})
+
+	t.Run("empty exact", func(t *testing.T) {
+		emptyExact := NewExactRecordPattern([]RecordPatternEntry{})
+		emptyInexact := NewInexactRecordPattern([]RecordPatternEntry{})
+		notEmptyExact := NewExactRecordPattern([]RecordPatternEntry{{Name: "x", Pattern: INT_PATTERN}})
+		notEmptyInexact := NewInexactRecordPattern([]RecordPatternEntry{{Name: "x", Pattern: INT_PATTERN}})
+
+		assertEqualInoxValues(t, emptyExact, emptyExact, ctx)
+		assertNotEqualInoxValues(t, emptyExact, emptyInexact, ctx)
+		assertNotEqualInoxValues(t, emptyExact, notEmptyExact, ctx)
+		assertNotEqualInoxValues(t, emptyExact, notEmptyInexact, ctx)
+	})
+
+	t.Run("single prop inexact", func(t *testing.T) {
+		singlePropAInexact := NewInexactObjectPattern([]ObjectPatternEntry{{Name: "a", Pattern: INT_PATTERN}})
+		singlePropAExact := NewExactObjectPattern([]ObjectPatternEntry{{Name: "a", Pattern: INT_PATTERN}})
+		singlePropBInexact := NewInexactObjectPattern([]ObjectPatternEntry{{Name: "b", Pattern: INT_PATTERN}})
+		emptyInexact := NewInexactObjectPattern([]ObjectPatternEntry{})
+		emptyExact := NewExactObjectPattern([]ObjectPatternEntry{})
+
+		assertEqualInoxValues(t, singlePropAInexact, singlePropAInexact, ctx)
+		assertNotEqualInoxValues(t, singlePropAInexact, singlePropBInexact, ctx)
+		assertNotEqualInoxValues(t, singlePropAInexact, singlePropAExact, ctx)
+		assertNotEqualInoxValues(t, singlePropAInexact, emptyInexact, ctx)
+		assertNotEqualInoxValues(t, singlePropAInexact, emptyExact, ctx)
+	})
+
+	t.Run("single prop exact", func(t *testing.T) {
+		singlePropAExact := NewExactObjectPattern([]ObjectPatternEntry{{Name: "a", Pattern: INT_PATTERN}})
+		singlePropBExact := NewExactObjectPattern([]ObjectPatternEntry{{Name: "b", Pattern: INT_PATTERN}})
+		singlePropAInexact := NewInexactObjectPattern([]ObjectPatternEntry{{Name: "a", Pattern: INT_PATTERN}})
+		emptyInexact := NewInexactObjectPattern([]ObjectPatternEntry{})
+		emptyExact := NewExactObjectPattern([]ObjectPatternEntry{})
+
+		assertEqualInoxValues(t, singlePropAExact, singlePropAExact, ctx)
+		assertNotEqualInoxValues(t, singlePropAExact, singlePropBExact, ctx)
+		assertNotEqualInoxValues(t, singlePropAExact, singlePropAInexact, ctx)
+		assertNotEqualInoxValues(t, singlePropAExact, emptyInexact, ctx)
+		assertNotEqualInoxValues(t, singlePropAExact, emptyExact, ctx)
+	})
 }
 
 func assertEqualInoxValues(t *testing.T, a, b Value, ctx *Context) {
