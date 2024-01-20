@@ -15,8 +15,11 @@ var (
 	_ = []symbolic.Iterable{(*Tree)(nil), (*TreeNode)(nil)}
 	_ = []symbolic.PotentiallySharable{(*Tree)(nil), (*TreeNode)(nil)}
 
-	ANY_TREE      = NewTree(false)
-	ANY_TREE_NODE = NewTreeNode(ANY_TREE)
+	ANY_TREE              = NewTree(false)
+	ANY_TREE_NODE         = NewTreeNode(ANY_TREE)
+	ANY_TREE_NODE_PATTERN = &TreeNodePattern{
+		valuePattern: symbolic.ANY_PATTERN,
+	}
 )
 
 type Tree struct {
@@ -241,9 +244,7 @@ func (p *TreeNodePattern) PrettyPrint(w prettyprint.PrettyPrintWriter, config *p
 }
 
 func (p *TreeNodePattern) WidestOfType() symbolic.Value {
-	return &TreeNodePattern{
-		valuePattern: symbolic.ANY_PATTERN,
-	}
+	return ANY_TREE_NODE_PATTERN
 }
 
 func (n *TreeNode) IsSharable() (bool, string) {

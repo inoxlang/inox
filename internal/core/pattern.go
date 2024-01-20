@@ -36,12 +36,11 @@ var (
 	_ = []DefaultValuePattern{(*ListPattern)(nil), (*TuplePattern)(nil)}
 )
 
-func RegisterDefaultPattern(s string, m Pattern, deserializer PatternDeserializer) {
+func RegisterDefaultPattern(s string, m Pattern) {
 	if _, ok := DEFAULT_NAMED_PATTERNS[s]; ok {
 		panic(fmt.Errorf("pattern '%s' is already registered", s))
 	}
 	DEFAULT_NAMED_PATTERNS[s] = m
-	patternDeserializerRegistry[s] = deserializer
 }
 
 func RegisterDefaultPatternNamespace(s string, ns *PatternNamespace) {

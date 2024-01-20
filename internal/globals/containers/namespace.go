@@ -18,8 +18,6 @@ import (
 var ()
 
 func init() {
-	core.RegisterDefaultPattern(setcoll.SET_PATTERN.Name, setcoll.SET_PATTERN, setcoll.DeserializeSetPattern)
-
 	core.RegisterSymbolicGoFunctions([]any{
 		setcoll.NewSet, coll_symbolic.NewSet,
 		queuecoll.NewQueue, func(ctx *symbolic.Context, elements symbolic.Iterable) *coll_symbolic.Queue {

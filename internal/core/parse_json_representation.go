@@ -31,6 +31,18 @@ type PatternDeserializer = func(ctx *Context, it *jsoniter.Iterator, pattern Pat
 
 var patternDeserializerRegistry = map[ /*pattern name*/ string]PatternDeserializer{}
 
+func RegisterPatternDeserializer(patternTypePattern *TypePattern, deserializer PatternDeserializer) {
+
+	if !patternTypePattern.Type.Implements(PATTERN_INTERFACE_TYPE) {
+		panic(fmt.Errorf("provided type pattern does not match a pattern type"))
+	}
+
+	if _, ok := patternDeserializerRegistry[patternTypePattern.Name]; ok {
+		panic(fmt.Errorf("a deserializer is already registered for the '%s' pattern", patternTypePattern.Name))
+	}
+	patternDeserializerRegistry[patternTypePattern.Name] = deserializer
+}
+
 func ParseJSONRepresentation(ctx *Context, s string, pattern Pattern) (Serializable, error) {
 	//TODO: add checks
 	//TODO: return an error if there are duplicate keys.

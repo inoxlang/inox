@@ -13,55 +13,62 @@ import (
 
 var (
 	_ = []core.PotentiallySharable{(*Tree)(nil)}
-)
 
-func init() {
-	core.RegisterDefaultPattern("tree", &core.TypePattern{
+	TREE_PATTERN = &core.TypePattern{
 		Type:          reflect.TypeOf(&Tree{}),
 		Name:          "tree",
 		SymbolicValue: &coll_symbolic.Tree{},
-	}, nil)
+	}
+	TREE_NODE_PATTERN = &core.TypePattern{
+		Type:          reflect.TypeOf(TreeNode{}),
+		Name:          "tree.node",
+		SymbolicValue: &coll_symbolic.TreeNode{},
+		CallImpl: func(typePattern *core.TypePattern, values []core.Serializable) (core.Pattern, error) {
+			var valuePattern core.Pattern
+
+			for _, val := range values {
+				switch v := val.(type) {
+				case core.Pattern:
+					if valuePattern != nil {
+						return nil, commonfmt.FmtErrArgumentProvidedAtLeastTwice("value pattern")
+					}
+
+					valuePattern = v
+				default:
+					if valuePattern == nil {
+						valuePattern = core.NewExactValuePattern(v)
+						continue
+					}
+					return nil, core.FmtErrInvalidArgument(v)
+				}
+			}
+
+			return &TreeNodePattern{
+				valuePattern: valuePattern,
+			}, nil
+		},
+		SymbolicCallImpl: func(ctx *symbolic.Context, values []symbolic.Value) (symbolic.Pattern, error) {
+			return coll_symbolic.NewTreeNodePattern(symbolic.ANY_PATTERN)
+		},
+	}
+	TREE_NODE_PATTERN_PATTERN = &core.TypePattern{
+		Type:          reflect.TypeOf(&TreeNodePattern{}),
+		Name:          "tree.node-pattern",
+		SymbolicValue: coll_symbolic.ANY_TREE_NODE_PATTERN,
+	}
+)
+
+func init() {
+	core.RegisterDefaultPattern("tree", TREE_PATTERN)
 
 	core.RegisterDefaultPatternNamespace("tree", &core.PatternNamespace{
 		Patterns: map[string]core.Pattern{
-			"node": &core.TypePattern{
-				Type:          reflect.TypeOf(TreeNode{}),
-				Name:          "tree.node",
-				SymbolicValue: &coll_symbolic.TreeNode{},
-				CallImpl: func(typePattern *core.TypePattern, values []core.Serializable) (core.Pattern, error) {
-					var valuePattern core.Pattern
-
-					for _, val := range values {
-						switch v := val.(type) {
-						case core.Pattern:
-							if valuePattern != nil {
-								return nil, commonfmt.FmtErrArgumentProvidedAtLeastTwice("value pattern")
-							}
-
-							valuePattern = v
-						default:
-							if valuePattern == nil {
-								valuePattern = core.NewExactValuePattern(v)
-								continue
-							}
-							return nil, core.FmtErrInvalidArgument(v)
-						}
-					}
-
-					return &TreeNodePattern{
-						valuePattern: valuePattern,
-						CallBasedPatternReprMixin: core.CallBasedPatternReprMixin{
-							Callee: typePattern,
-							Params: []core.Serializable{valuePattern},
-						},
-					}, nil
-				},
-				SymbolicCallImpl: func(ctx *symbolic.Context, values []symbolic.Value) (symbolic.Pattern, error) {
-					return coll_symbolic.NewTreeNodePattern(symbolic.ANY_PATTERN)
-				},
-			},
+			"node":         TREE_NODE_PATTERN,
+			"node-pattern": TREE_NODE_PATTERN_PATTERN,
 		},
 	})
+
+	core.RegisterPatternDeserializer(TREE_NODE_PATTERN_PATTERN, DeserializeTreeNodePattern)
 }
 
 type Tree struct {

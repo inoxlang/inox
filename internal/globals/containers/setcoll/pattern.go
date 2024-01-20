@@ -70,6 +70,12 @@ var (
 		},
 	}
 
+	SET_PATTERN_PATTERN = &core.TypePattern{
+		Name:          "set-pattern",
+		Type:          reflect.TypeOf((*SetPattern)(nil)),
+		SymbolicValue: coll_symbolic.ANY_SET_PATTERN,
+	}
+
 	_ core.DefaultValuePattern   = (*SetPattern)(nil)
 	_ core.MigrationAwarePattern = (*SetPattern)(nil)
 )
@@ -159,7 +165,7 @@ func (p *SetPattern) WriteJSONRepresentation(ctx *core.Context, w *jsoniter.Stre
 	}
 
 	if core.NoPatternOrAny(config.Pattern) {
-		return core.WriteUntypedValueJSON(SET_PATTERN.Name, func(w *jsoniter.Stream) error {
+		return core.WriteUntypedValueJSON(SET_PATTERN_PATTERN.Name, func(w *jsoniter.Stream) error {
 			return write(w)
 		}, w)
 	}
