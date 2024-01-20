@@ -2522,6 +2522,13 @@ func (p *parser) parsePatternCall(callee Node) *PatternCallExpression {
 		parsingErr *ParsingError
 	)
 
+	inPatternSave := p.inPattern
+	defer func() {
+		p.inPattern = inPatternSave
+	}()
+
+	p.inPattern = true
+
 	switch p.s[p.i] {
 	case '(':
 		p.tokens = append(p.tokens, Token{Type: OPENING_PARENTHESIS, Span: NodeSpan{p.i, p.i + 1}})
@@ -2557,11 +2564,6 @@ func (p *parser) parsePatternCall(callee Node) *PatternCallExpression {
 			p.i++
 		}
 	case '{':
-		prev := p.inPattern
-		p.inPattern = true
-		defer func() {
-			p.inPattern = prev
-		}()
 		args = append(args, utils.Ret0(p.parseExpression()))
 	default:
 		panic(ErrUnreachable)

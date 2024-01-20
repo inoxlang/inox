@@ -24110,6 +24110,40 @@ func testParse(
 			}, n)
 		})
 
+		t.Run("pattern identifier as argument", func(t *testing.T) {
+			n := mustparseChunk(t, `%text(i)`)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 8}, nil, false},
+				Statements: []Node{
+					&PatternCallExpression{
+						NodeBase: NodeBase{
+							Span:            NodeSpan{0, 8},
+							IsParenthesized: false,
+							/*[]Token{
+								{Type: OPENING_PARENTHESIS, Span: NodeSpan{5, 6}},
+								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{7, 8}},
+							},*/
+						},
+						Callee: &PatternIdentifierLiteral{
+							NodeBase: NodeBase{
+								Span: NodeSpan{0, 5},
+							},
+							Name: "text",
+						},
+						Arguments: []Node{
+							&PatternIdentifierLiteral{
+								NodeBase: NodeBase{
+									Span: NodeSpan{6, 7},
+								},
+								Unprefixed: true,
+								Name:       "i",
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
 		t.Run("unexpected char in arguments", func(t *testing.T) {
 			n, err := parseChunk(t, `%text(:)`, "")
 			assert.Error(t, err)
@@ -24145,7 +24179,7 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("shorthand syntax for object pattern argument", func(t *testing.T) {
+		t.Run("shorthand syntax for object pattern argument: empty", func(t *testing.T) {
 			n := mustparseChunk(t, `%text{}`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 7}, nil, false},
@@ -24165,6 +24199,44 @@ func testParse(
 										{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{5, 6}},
 										{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{6, 7}},
 									},*/
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("shorthand syntax for object pattern argument: one property", func(t *testing.T) {
+			n := mustparseChunk(t, `%text{a: int}`)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 13}, nil, false},
+				Statements: []Node{
+					&PatternCallExpression{
+						NodeBase: NodeBase{Span: NodeSpan{0, 13}},
+						Callee: &PatternIdentifierLiteral{
+							NodeBase: NodeBase{Span: NodeSpan{0, 5}},
+							Name:     "text",
+						},
+						Arguments: []Node{
+							&ObjectPatternLiteral{
+								NodeBase: NodeBase{
+									Span:            NodeSpan{5, 13},
+									IsParenthesized: false,
+								},
+								Properties: []*ObjectPatternProperty{
+									{
+										NodeBase: NodeBase{Span: NodeSpan{6, 12}},
+										Key: &IdentifierLiteral{
+											NodeBase: NodeBase{Span: NodeSpan{6, 7}},
+											Name:     "a",
+										},
+										Value: &PatternIdentifierLiteral{
+											NodeBase:   NodeBase{Span: NodeSpan{9, 12}},
+											Unprefixed: true,
+											Name:       "int",
+										},
+									},
 								},
 							},
 						},
