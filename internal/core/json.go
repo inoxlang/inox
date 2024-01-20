@@ -2,6 +2,7 @@ package core
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"strings"
@@ -32,11 +33,14 @@ func ToJSONWithConfig(ctx *Context, v Serializable, config JSONSerializationConf
 func ToPrettyJSON(ctx *Context, v Serializable) Str {
 	s := ToJSON(ctx, v)
 	var unmarshalled interface{}
-	json.Unmarshal([]byte(s), &unmarshalled)
+	err := json.Unmarshal([]byte(s), &unmarshalled)
+	if err != nil {
+		panic(errors.New("failed to serialize value to JSON"))
+	}
 	b, err := utils.MarshalIndentJsonNoHTMLEspace(unmarshalled, "", " ")
 
 	if err != nil {
-		log.Panicln("tojson:", err)
+		panic(err)
 	}
 	return Str(b)
 }
