@@ -78,6 +78,7 @@ const (
 	INT_RANGE_STRING_PATTERN   = "int-range-string-pattern"
 	FLOAT_RANGE_STRING_PATTERN = "float-range-string-pattern"
 	SECRET_PATTERN             = "secret-pattern"
+	REGEX_PATTERN              = "regex-pattern"
 
 	INOX_MODULE = INOX_NS + ".module"
 	INOX_NODE   = INOX_NS + ".node"

@@ -842,6 +842,11 @@ var (
 	}
 	SECRET_STRING_PATTERN     = NewSecretPattern(NewRegexPattern(".*"), false)
 	SECRET_PEM_STRING_PATTERN = NewSecretPattern(NewPEMRegexPattern(".*"), true)
+	REGEX_PATTERN_PATTERN     = &TypePattern{
+		Type:          REGEX_PATTERN_TYPE,
+		Name:          patternnames.REGEX_PATTERN,
+		SymbolicValue: symbolic.ANY_REGEX_PATTERN,
+	}
 
 	ULID_PATTERN = &TypePattern{
 		Type:          ULID_TYPE,
@@ -994,6 +999,7 @@ var (
 		INT_RANGE_STRING_PATTERN_PATTERN.Name:   INT_RANGE_STRING_PATTERN_PATTERN,
 		FLOAT_RANGE_STRING_PATTERN_PATTERN.Name: FLOAT_RANGE_STRING_PATTERN_PATTERN,
 		SECRET_PATTERN_PATTERN.Name:             SECRET_PATTERN_PATTERN,
+		REGEX_PATTERN_PATTERN.Name:              REGEX_PATTERN_PATTERN,
 	}
 
 	DEFAULT_PATTERN_NAMESPACES = map[string]*PatternNamespace{
