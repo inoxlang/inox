@@ -58,6 +58,38 @@ func TestSharedUnpersistedSetAdd(t *testing.T) {
 			set.Add(ctx, obj)
 		})
 	})
+
+	t.Run("adding an element with the same property value as another element is not allowed", func(t *testing.T) {
+		ctx, _ := sharedSetTestSetup(t)
+		defer ctx.CancelGracefully()
+
+		pattern := NewSetPattern(SetConfig{
+			Uniqueness: common.UniquenessConstraint{
+				Type:         common.UniquePropertyValue,
+				PropertyName: "name",
+			},
+		})
+
+		set := NewSetWithConfig(ctx, nil, pattern.config)
+		set.Share(ctx.GetClosestState())
+
+		obj1 := core.NewObjectFromMap(core.ValMap{"name": core.Str("a")}, ctx)
+		obj2 := core.NewObjectFromMap(core.ValMap{"name": core.Str("a")}, ctx)
+		set.Add(ctx, obj1)
+
+		func() {
+			defer func() {
+				e := recover()
+				if !assert.NotNil(t, e) {
+					return
+				}
+				assert.ErrorIs(t, e.(error), ErrCannotAddDifferentElemWithSamePropertyValue)
+			}()
+
+			set.Add(ctx, obj2)
+		}()
+	})
+
 }
 
 func TestSharedUnpersistedSetHas(t *testing.T) {
@@ -79,6 +111,28 @@ func TestSharedUnpersistedSetHas(t *testing.T) {
 			set.Has(ctx, obj)
 		})
 	})
+
+	t.Run("an element with the same property value as another element is not considered to be in the set", func(t *testing.T) {
+		ctx, _ := sharedSetTestSetup(t)
+		defer ctx.CancelGracefully()
+
+		pattern := NewSetPattern(SetConfig{
+			Uniqueness: common.UniquenessConstraint{
+				Type:         common.UniquePropertyValue,
+				PropertyName: "name",
+			},
+		})
+
+		set := NewSetWithConfig(ctx, nil, pattern.config)
+		set.Share(ctx.GetClosestState())
+
+		obj1 := core.NewObjectFromMap(core.ValMap{"name": core.Str("a")}, ctx)
+		obj2 := core.NewObjectFromMap(core.ValMap{"name": core.Str("a")}, ctx)
+		set.Add(ctx, obj1)
+
+		assert.True(t, bool(set.Has(ctx, obj1)))
+		assert.False(t, bool(set.Has(ctx, obj2)))
+	})
 }
 
 func TestSharedUnpersistedSetRemove(t *testing.T) {
@@ -99,5 +153,29 @@ func TestSharedUnpersistedSetRemove(t *testing.T) {
 		assert.PanicsWithValue(t, ErrURLUniquenessOnlySupportedIfPersistedSharedSet, func() {
 			set.Remove(ctx, obj)
 		})
+	})
+
+	t.Run("calling Remove with an element having the same property value as another element should have no impact", func(t *testing.T) {
+		ctx, _ := sharedSetTestSetup(t)
+		defer ctx.CancelGracefully()
+
+		pattern := NewSetPattern(SetConfig{
+			Uniqueness: common.UniquenessConstraint{
+				Type:         common.UniquePropertyValue,
+				PropertyName: "name",
+			},
+		})
+
+		set := NewSetWithConfig(ctx, nil, pattern.config)
+		set.Share(ctx.GetClosestState())
+
+		obj1 := core.NewObjectFromMap(core.ValMap{"name": core.Str("a")}, ctx)
+		obj2 := core.NewObjectFromMap(core.ValMap{"name": core.Str("a")}, ctx)
+
+		set.Add(ctx, obj1)
+		set.Remove(ctx, obj2)
+
+		assert.True(t, bool(set.Has(ctx, obj1)))
+		assert.False(t, bool(set.Has(ctx, obj2)))
 	})
 }

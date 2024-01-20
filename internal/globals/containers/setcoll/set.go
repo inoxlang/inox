@@ -23,6 +23,7 @@ var (
 	ErrValueDoesMatchElementPattern                   = errors.New("provided value does not match the element pattern")
 	ErrValueWithSameKeyAlreadyPresent                 = errors.New("provided value has the same key as an already present element")
 	ErrURLUniquenessOnlySupportedIfPersistedSharedSet = errors.New("URL uniqueness is only supported if the Set is persisted and shared")
+	ErrCannotAddDifferentElemWithSamePropertyValue    = errors.New("cannot add different element with same property value")
 
 	_ core.Collection           = (*Set)(nil)
 	_ core.PotentiallySharable  = (*Set)(nil)
@@ -223,7 +224,11 @@ func (set *Set) hasNoLock(ctx *core.Context, elem core.Serializable) core.Bool {
 		}
 	}
 
-	_, ok := set.elementByKey[key]
+	presentElem, ok := set.elementByKey[key]
+
+	if ok && set.config.Uniqueness.Type != common.UniqueRepr && !core.Same(presentElem, elem) {
+		return false
+	}
 	return core.Bool(ok)
 }
 
@@ -269,8 +274,12 @@ func (set *Set) Add(ctx *core.Context, elem core.Serializable) {
 		set.config.Uniqueness.AddUrlIfNecessary(ctx, set, elem)
 		key := set.getUniqueKey(ctx, elem)
 
-		_, alreadyPresent := set.elementByKey[key]
+		presentElem, alreadyPresent := set.elementByKey[key]
 		if alreadyPresent {
+			if set.config.Uniqueness.Type == common.UniquePropertyValue && !core.Same(elem, presentElem) {
+				panic(ErrCannotAddDifferentElemWithSamePropertyValue)
+			}
+
 			//no need to clone the key.
 			return
 		}
@@ -328,6 +337,11 @@ func (set *Set) addToSharedSetNoPersist(ctx *core.Context, elem core.Serializabl
 	tx := ctx.GetTx()
 
 	if tx == nil {
+		presentElem, alreadyPresent := set.elementByKey[key]
+		if alreadyPresent && set.config.Uniqueness.Type == common.UniquePropertyValue && !core.Same(elem, presentElem) {
+			panic(ErrCannotAddDifferentElemWithSamePropertyValue)
+		}
+
 		if _, ok := set.elementByKey[key]; ok {
 			panic(ErrValueWithSameKeyAlreadyPresent)
 		}
@@ -376,8 +390,13 @@ func (set *Set) Remove(ctx *core.Context, elem core.Serializable) {
 	tx := ctx.GetTx()
 
 	if tx == nil {
-		_, ok := set.elementByKey[key]
+		presentElem, ok := set.elementByKey[key]
 		if !ok {
+			return
+		}
+
+		if set.config.Uniqueness.Type != common.UniqueRepr &&
+			!core.Same(presentElem, elem) {
 			return
 		}
 

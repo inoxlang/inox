@@ -103,6 +103,47 @@ func TestSharedPersistedSetAdd(t *testing.T) {
 		}()
 	})
 
+	t.Run("adding an element with the same property value as another element is not allowed", func(t *testing.T) {
+		ctx, storage := sharedSetTestSetup(t)
+		defer ctx.CancelGracefully()
+
+		pattern := NewSetPattern(SetConfig{
+			Uniqueness: common.UniquenessConstraint{
+				Type:         common.UniquePropertyValue,
+				PropertyName: "name",
+			},
+		})
+
+		storage.SetSerialized(ctx, "/set1", `[]`)
+
+		val1, err := loadSet(ctx, core.FreeEntityLoadingParams{
+			Key: "/set1", Storage: storage, Pattern: pattern,
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		set := val1.(*Set)
+		set.Share(ctx.GetClosestState())
+
+		obj1 := core.NewObjectFromMap(core.ValMap{"name": core.Str("a")}, ctx)
+		obj2 := core.NewObjectFromMap(core.ValMap{"name": core.Str("a")}, ctx)
+		set.Add(ctx, obj1)
+
+		func() {
+			defer func() {
+				e := recover()
+				if !assert.NotNil(t, e) {
+					return
+				}
+				assert.ErrorIs(t, e.(error), ErrCannotAddDifferentElemWithSamePropertyValue)
+			}()
+
+			set.Add(ctx, obj2)
+		}()
+	})
+
 	t.Run("add different elements during separate transactions", func(t *testing.T) {
 		ctx1 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx1.CancelGracefully()
@@ -309,6 +350,40 @@ func TestSharedPersistedSetRemove(t *testing.T) {
 		assert.False(t, bool(found))
 	})
 
+	t.Run("calling Remove with an element having the same property value as another element should have no impact", func(t *testing.T) {
+		ctx, storage := sharedSetTestSetup(t)
+		defer ctx.CancelGracefully()
+
+		pattern := NewSetPattern(SetConfig{
+			Uniqueness: common.UniquenessConstraint{
+				Type:         common.UniquePropertyValue,
+				PropertyName: "name",
+			},
+		})
+
+		storage.SetSerialized(ctx, "/set1", `[]`)
+
+		val1, err := loadSet(ctx, core.FreeEntityLoadingParams{
+			Key: "/set1", Storage: storage, Pattern: pattern,
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		set := val1.(*Set)
+		set.Share(ctx.GetClosestState())
+
+		obj1 := core.NewObjectFromMap(core.ValMap{"name": core.Str("a")}, ctx)
+		obj2 := core.NewObjectFromMap(core.ValMap{"name": core.Str("a")}, ctx)
+
+		set.Add(ctx, obj1)
+		set.Remove(ctx, obj2)
+
+		assert.True(t, bool(set.Has(ctx, obj1)))
+		assert.False(t, bool(set.Has(ctx, obj2)))
+	})
+
 	t.Run("remove different elements during separate transactions", func(t *testing.T) {
 		ctx0 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx0.CancelGracefully()
@@ -441,6 +516,41 @@ func TestSharedPersistedSetRemove(t *testing.T) {
 		assert.False(t, bool(persisted.(*Set).Has(ctx, core.Int(1))))
 	})
 
+}
+
+func TestSharedPersistedSetHas(t *testing.T) {
+
+	t.Run("an element with the same property value as another element is not considered to be in the set", func(t *testing.T) {
+		ctx, storage := sharedSetTestSetup(t)
+		defer ctx.CancelGracefully()
+
+		pattern := NewSetPattern(SetConfig{
+			Uniqueness: common.UniquenessConstraint{
+				Type:         common.UniquePropertyValue,
+				PropertyName: "name",
+			},
+		})
+
+		storage.SetSerialized(ctx, "/set1", `[]`)
+
+		val1, err := loadSet(ctx, core.FreeEntityLoadingParams{
+			Key: "/set1", Storage: storage, Pattern: pattern,
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		set := val1.(*Set)
+		set.Share(ctx.GetClosestState())
+
+		obj1 := core.NewObjectFromMap(core.ValMap{"name": core.Str("a")}, ctx)
+		obj2 := core.NewObjectFromMap(core.ValMap{"name": core.Str("a")}, ctx)
+		set.Add(ctx, obj1)
+
+		assert.True(t, bool(set.Has(ctx, obj1)))
+		assert.False(t, bool(set.Has(ctx, obj2)))
+	})
 }
 
 func TestInteractWithElementsOfLoadedSet(t *testing.T) {
