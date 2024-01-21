@@ -26,7 +26,14 @@ var (
 	ErrAlreadySetTransactionEndCallback        = errors.New("transaction end callback is already set")
 	ErrRunningTransactionExpected              = errors.New("running transaction expected")
 	ErrEffectsNotAllowedInReadonlyTransaction  = errors.New("effects are not allowed in a readonly transaction")
+
+	// closedchan is a reusable closed channel.
+	closedchan = make(chan struct{})
 )
+
+func init() {
+	close(closedchan)
+}
 
 // A Transaction is analogous to a database transaction but behaves a little bit differently.
 // A Transaction can be started, commited and rolled back. Effects (reversible or not) such as FS changes are added to it.
@@ -41,7 +48,8 @@ type Transaction struct {
 	effects        []Effect
 	values         map[any]any
 	endCallbackFns map[any]TransactionEndCallbackFn
-	finished       atomic.Bool
+	finished       atomic.Value //chan
+	finishing      atomic.Bool
 	timeout        Duration
 	isReadonly     bool
 }
@@ -84,8 +92,33 @@ func StartNewReadonlyTransaction(ctx *Context, options ...Option) *Transaction {
 	return tx
 }
 
+// Finished returns an unbuffered channel that closes when tx is finished.
+func (tx *Transaction) Finished() DoneChan {
+	d := tx.finished.Load()
+	if d != nil {
+		return d.(chan struct{})
+	}
+	tx.lock.Lock()
+	defer tx.lock.Unlock()
+	d = tx.finished.Load()
+	if d == nil {
+		d = make(chan struct{})
+		tx.finished.Store(d)
+	}
+	return d.(chan struct{})
+}
+
 func (tx *Transaction) IsFinished() bool {
-	return tx.finished.Load()
+	select {
+	case <-tx.Finished():
+		return true
+	default:
+		return false
+	}
+}
+
+func (tx *Transaction) IsReadonly() bool {
+	return tx.isReadonly
 }
 
 // Start attaches tx to the passed context and creates a goroutine that will roll it back on timeout or context cancellation.
@@ -171,7 +204,11 @@ func (tx *Transaction) AddEffect(ctx *Context, effect Effect) error {
 }
 
 func (tx *Transaction) Commit(ctx *Context) error {
-	if !tx.finished.CompareAndSwap(false, true) {
+	if !tx.finishing.CompareAndSwap(false, true) {
+		return ErrFinishedTransaction
+	}
+
+	if tx.IsFinished() {
 		return ErrFinishedTransaction
 	}
 
@@ -179,6 +216,15 @@ func (tx *Transaction) Commit(ctx *Context) error {
 	defer func() {
 		tx.lock.Unlock()
 		tx.ctx.setTx(nil)
+
+		d, _ := tx.finished.Load().(chan struct{})
+		if d == nil {
+			tx.finished.Store(closedchan)
+		} else {
+			close(d)
+		}
+
+		tx.finishing.Store(true)
 	}()
 
 	tx.endTime = time.Now()
@@ -213,7 +259,11 @@ func (tx *Transaction) Commit(ctx *Context) error {
 }
 
 func (tx *Transaction) Rollback(ctx *Context) error {
-	if !tx.finished.CompareAndSwap(false, true) {
+	if !tx.finishing.CompareAndSwap(false, true) {
+		return ErrFinishedTransaction
+	}
+
+	if tx.IsFinished() {
 		return ErrFinishedTransaction
 	}
 
@@ -221,6 +271,15 @@ func (tx *Transaction) Rollback(ctx *Context) error {
 	defer func() {
 		tx.lock.Unlock()
 		tx.ctx.setTx(nil)
+
+		d, _ := tx.finished.Load().(chan struct{})
+		if d == nil {
+			tx.finished.Store(closedchan)
+		} else {
+			close(d)
+		}
+
+		tx.finishing.Store(true)
 	}()
 
 	tx.endTime = time.Now()
@@ -250,18 +309,6 @@ func (tx *Transaction) Rollback(ctx *Context) error {
 	return utils.CombineErrorsWithPrefixMessage("callback errors", callbackErrors...)
 }
 
-func (tx *Transaction) WaitFinished() <-chan struct{} {
-	if tx.IsFinished() {
-		return nil
-	}
-	finishedChan := make(chan struct{})
-
-	tx.OnEnd(finishedChan, func(tx *Transaction, success bool) {
-		finishedChan <- struct{}{}
-	})
-	return finishedChan
-}
-
 func (tx *Transaction) Prop(ctx *Context, name string) Value {
 	method, ok := tx.GetGoMethod(name)
 	if !ok {
@@ -288,4 +335,19 @@ func (tx *Transaction) GetGoMethod(name string) (*GoFunction, bool) {
 		return WrapGoMethod(tx.Rollback), true
 	}
 	return nil, false
+}
+
+type DoneChan <-chan struct{}
+
+func (c DoneChan) IsDone() bool {
+	select {
+	case <-c:
+		return true
+	default:
+		return false
+	}
+}
+
+func (c DoneChan) IsNotDone() bool {
+	return !c.IsDone()
 }

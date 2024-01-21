@@ -220,4 +220,78 @@ func TestTransaction(t *testing.T) {
 
 		assert.ErrorContains(t, err, "123")
 	})
+
+	t.Run("once transaction is finished the IsFinished should return true and Finished() should be closed", func(t *testing.T) {
+
+		t.Run("after Commit", func(t *testing.T) {
+			ctx := NewContext(ContextConfig{})
+			defer ctx.CancelGracefully()
+
+			tx := newTransaction(ctx, false)
+			tx.Start(ctx)
+
+			select {
+			case <-tx.Finished():
+				assert.Fail(t, "tx should not considered finished")
+				return
+			default:
+			}
+
+			if tx.IsFinished() {
+				assert.Fail(t, "tx should not considered finished")
+				return
+			}
+
+			assert.NoError(t, tx.Commit(ctx))
+
+			select {
+			case <-tx.Finished():
+			default:
+				assert.FailNow(t, "tx should be considered finished")
+				return
+			}
+
+			if !tx.IsFinished() {
+				assert.FailNow(t, "tx should be considered finished")
+				return
+			}
+
+		})
+
+		t.Run("after Rollback", func(t *testing.T) {
+			ctx := NewContext(ContextConfig{})
+			defer ctx.CancelGracefully()
+
+			tx := newTransaction(ctx, false)
+			tx.Start(ctx)
+
+			select {
+			case <-tx.Finished():
+				assert.Fail(t, "tx should not considered finished")
+				return
+			default:
+			}
+
+			if tx.IsFinished() {
+				assert.Fail(t, "tx should not considered finished")
+				return
+			}
+
+			assert.NoError(t, tx.Rollback(ctx))
+
+			select {
+			case <-tx.Finished():
+			default:
+				assert.FailNow(t, "tx should be considered finished")
+				return
+			}
+
+			if !tx.IsFinished() {
+				assert.FailNow(t, "tx should be considered finished")
+				return
+			}
+
+		})
+
+	})
 }
