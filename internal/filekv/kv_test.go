@@ -17,6 +17,7 @@ func TestKvSet(t *testing.T) {
 
 	t.Run("SetSerialized", func(t *testing.T) {
 		testKvSet(t, true)
+
 	})
 
 	t.Run("Set", func(t *testing.T) {
@@ -25,9 +26,10 @@ func TestKvSet(t *testing.T) {
 }
 
 func testKvSet(t *testing.T, UseSetSerialized bool) {
+	//base case
 	for _, txCase := range []string{"no_tx", "tx", "finished_tx"} {
 		txCase := txCase
-		t.Run(txCase, func(t *testing.T) {
+		t.Run(txCase+" base case", func(t *testing.T) {
 			t.Parallel()
 
 			kv, err := OpenSingleFileKV(KvStoreConfig{
@@ -38,9 +40,9 @@ func testKvSet(t *testing.T, UseSetSerialized bool) {
 				return
 			}
 
-			ctx := core.NewContext(core.ContextConfig{
+			ctx := core.NewContexWithEmptyState(core.ContextConfig{
 				Permissions: []core.Permission{core.CreateFsReadPerm(core.PathPattern("/..."))},
-			})
+			}, nil)
 			defer ctx.CancelGracefully()
 
 			var tx *core.Transaction
@@ -113,6 +115,66 @@ func testKvSet(t *testing.T, UseSetSerialized bool) {
 			}
 		})
 	}
+
+	t.Run("calling during a tx's commit phase should not cause a deadlock", func(t *testing.T) {
+		kv, err := OpenSingleFileKV(KvStoreConfig{
+			Path: core.PathFrom(filepath.Join(t.TempDir(), "data.kv")),
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		ctx := core.NewContexWithEmptyState(core.ContextConfig{
+			Permissions: []core.Permission{core.CreateFsReadPerm(core.PathPattern("/..."))},
+		}, nil)
+		defer ctx.CancelGracefully()
+
+		tx := core.StartNewTransaction(ctx)
+
+		err = tx.OnEnd(0, func(tx *core.Transaction, success bool) {
+			if UseSetSerialized {
+				kv.SetSerialized(ctx, "/data", "1", kv)
+			} else {
+				kv.Set(ctx, "/data", core.Int(1), kv)
+			}
+
+			assert.True(t, bool(kv.Has(ctx, "/data", kv)))
+		})
+
+		assert.NoError(t, err)
+		assert.NoError(t, tx.Commit(ctx))
+	})
+
+	t.Run("calling during a tx's rollback phase should not cause a deadlock", func(t *testing.T) {
+		kv, err := OpenSingleFileKV(KvStoreConfig{
+			Path: core.PathFrom(filepath.Join(t.TempDir(), "data.kv")),
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		ctx := core.NewContexWithEmptyState(core.ContextConfig{
+			Permissions: []core.Permission{core.CreateFsReadPerm(core.PathPattern("/..."))},
+		}, nil)
+		defer ctx.CancelGracefully()
+
+		tx := core.StartNewTransaction(ctx)
+
+		err = tx.OnEnd(0, func(tx *core.Transaction, success bool) {
+			if UseSetSerialized {
+				kv.SetSerialized(ctx, "/data", "1", kv)
+			} else {
+				kv.Set(ctx, "/data", core.Int(1), kv)
+			}
+
+			assert.True(t, bool(kv.Has(ctx, "/data", kv)))
+		})
+
+		assert.NoError(t, err)
+		assert.NoError(t, tx.Rollback(ctx))
+	})
 }
 
 func TestKvGetSerialized(t *testing.T) {

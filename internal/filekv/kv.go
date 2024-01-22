@@ -429,8 +429,9 @@ func (kv *SingleFileKV) Delete(ctx *core.Context, key core.Path, db any) {
 	}
 }
 
-// getCreateDatabaseTxn gets or creates a DatabaseTx associated with tx, if tx is nil or is already finished
-// and no DatabaseTx is associated with it nil is returned.
+// getCreateDatabaseTxn gets or creates a DatabaseTx associated with tx at certain conditions. If a DatabaseTx is already
+// associated with $tx, it is returned. If $tx is terminated or terminating, nil is returned. Otherwise a DatabaseTx is
+// associated with $tx and a termination callback is registered on $tx.
 func (kv *SingleFileKV) getCreateDatabaseTxn(db any, tx *core.Transaction) *KVTx {
 	if tx == nil {
 		return nil
@@ -444,21 +445,27 @@ func (kv *SingleFileKV) getCreateDatabaseTxn(db any, tx *core.Transaction) *KVTx
 		return NewDatabaseTxIL(dbTx)
 	}
 
+	if tx.IsFinished() {
+		dbTx.Rollback()
+		return nil
+	}
+
+	if tx.IsFinishing() {
+		//If the tx is terminating registering a termination callback will not work.
+		return nil
+	}
+
 	//begin a new database transaction & add it to the core.Transaction.
 	dbTx, err := kv.db.Begin(true)
 	if err != nil {
 		panic(err)
 	}
 
-	if tx.IsFinished() {
-		dbTx.Rollback()
-		return nil
-	}
-
 	//add core.Transaction to KV.
 	kv.transactions[tx] = dbTx
 
-	if err = tx.OnEnd(kv, makeTxEndcallbackFn(dbTx, tx, kv)); err != nil && err != core.ErrFinishedTransaction {
+	err = tx.OnEnd(kv, makeTxEndcallbackFn(dbTx, tx, kv))
+	if err != nil && !errors.Is(err, core.ErrFinishedTransaction) && !errors.Is(err, core.ErrFinishingTransaction) {
 		panic(err)
 	}
 
