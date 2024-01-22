@@ -13,6 +13,10 @@ func init() {
 		CreateConcreteSetPattern: func(uniqueness common.UniquenessConstraint, elementPattern any) any {
 			return utils.Must(SET_PATTERN.Call([]core.Serializable{elementPattern.(core.Pattern), uniqueness.ToValue()}))
 		},
+		CreateConcreteMapPattern: func(keyPattern, valuePattern any) any {
+			panic(core.ErrNotImplementedYet)
+			//return utils.Must(SET_PATTERN.Call([]core.Serializable{elementPattern.(core.Pattern), uniqueness.ToValue()}))
+		},
 	})
 }
 

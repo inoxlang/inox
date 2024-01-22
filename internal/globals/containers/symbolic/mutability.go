@@ -20,6 +20,10 @@ func (m *Map) IsMutable() bool {
 	return true
 }
 
+func (p *MapPattern) IsMutable() bool {
+	return false
+}
+
 func (g *Graph) IsMutable() bool {
 	return true
 }

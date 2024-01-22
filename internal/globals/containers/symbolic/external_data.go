@@ -8,6 +8,7 @@ var (
 
 type ExternalData struct {
 	CreateConcreteSetPattern func(uniqueness common.UniquenessConstraint, elementPattern any) any
+	CreateConcreteMapPattern func(keyPattern any, valuePattern any) any
 }
 
 func SetExternalData(data ExternalData) {
