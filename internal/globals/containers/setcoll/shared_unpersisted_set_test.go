@@ -23,14 +23,16 @@ func TestSharedUnpersistedSetAdd(t *testing.T) {
 		})
 
 		set := NewSetWithConfig(ctx, nil, pattern.config)
-		set.Add(ctx, core.Int(1))
+		set.Share(ctx.GetClosestState())
+
+		set.Add(ctx, INT_1)
 
 		assert.NoError(t, tx.Commit(ctx))
 
 		otherCtx, _ := sharedSetTestSetup(t)
 		defer ctx.CancelGracefully()
 
-		assert.True(t, bool(set.Has(otherCtx, core.Int(1))))
+		assert.True(t, bool(set.Has(otherCtx, INT_1)))
 	})
 
 	t.Run("adding an element to a URL-based uniqueness shared Set with no storage should cause a panic", func(t *testing.T) {
@@ -70,17 +72,17 @@ func TestSharedUnpersistedSetAdd(t *testing.T) {
 		})
 		set.Share(ctx1.GetClosestState())
 
-		set.Add(ctx1, core.Int(1))
-		assert.True(t, bool(set.Has(ctx1, core.Int(1))))
+		set.Add(ctx1, INT_1)
+		assert.True(t, bool(set.Has(ctx1, INT_1)))
 
 		tx2Done := make(chan struct{})
 		go func() { //second transaction
-			set.Add(ctx2, core.Int(2))
+			set.Add(ctx2, INT_2)
 
 			//since the first transaction should be finished,
 			//the other element should have been added.
-			assert.True(t, bool(set.Has(ctx2, core.Int(1))))
-			assert.True(t, bool(set.Has(ctx2, core.Int(2))))
+			assert.True(t, bool(set.Has(ctx2, INT_1)))
+			assert.True(t, bool(set.Has(ctx2, INT_2)))
 			tx2Done <- struct{}{}
 		}()
 
@@ -107,6 +109,7 @@ func TestSharedUnpersistedSetAdd(t *testing.T) {
 				Type: common.UniqueRepr,
 			},
 		})
+		set.Share(ctx1.GetClosestState())
 
 		//First transaction.
 
