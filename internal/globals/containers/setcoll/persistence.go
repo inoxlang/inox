@@ -142,12 +142,16 @@ func loadSet(ctx *core.Context, args core.FreeEntityLoadingParams) (core.UrlHold
 
 func persistSet(ctx *core.Context, set *Set, path core.Path, storage core.DataStore) error {
 	stream := jsoniter.NewStream(jsoniter.ConfigDefault, nil, 0)
-	set.WriteJSONRepresentation(ctx, stream, core.JSONSerializationConfig{
+	err := set.WriteJSONRepresentation(ctx, stream, core.JSONSerializationConfig{
 		ReprConfig: &core.ReprConfig{
 			AllVisible: true,
 		},
 		Pattern: set.pattern,
 	}, 9)
+
+	if err != nil {
+		return err
+	}
 
 	storage.SetSerialized(ctx, path, string(stream.Buffer()))
 	return nil
