@@ -162,7 +162,7 @@ You can learn Inox directly in VSCode by creating a file with a `.tut.ix` extens
 📖 [Language reference](docs/language-reference.md)\
 🧰 [Builtins](docs/builtins.md)\
 📚 [Collections](docs/collections.md)\
-🌐 [Frontend dev](./docs/frontend-development.md)\
+🌐 [Frontend dev](./docs/frontend-development.md)
 
 <details>
 <summary>Scripting</summary>
