@@ -58,3 +58,31 @@ func (m *Map) PrettyPrint(w *bufio.Writer, config *core.PrettyPrintConfig, depth
 func (m *Map) ToSymbolicValue(ctx *core.Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return &coll_symbolic.Map{}, nil
 }
+
+func (m *Map) IsSharable(originState *core.GlobalState) (bool, string) {
+	return true, ""
+}
+
+func (m *Map) Share(originState *core.GlobalState) {
+	m.lock.Share(originState, func() {})
+}
+
+func (m *Map) IsShared() bool {
+	return m.lock.IsValueShared()
+}
+
+func (m *Map) Lock(state *core.GlobalState) {
+	m.lock.Lock(state, m)
+}
+
+func (m *Map) Unlock(state *core.GlobalState) {
+	m.lock.Unlock(state, m)
+}
+
+func (m *Map) ForceLock() {
+	m.lock.ForceLock()
+}
+
+func (m *Map) ForceUnlock() {
+	m.lock.ForceUnlock()
+}

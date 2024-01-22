@@ -20,15 +20,13 @@ var ()
 func init() {
 	core.RegisterSymbolicGoFunctions([]any{
 		setcoll.NewSet, coll_symbolic.NewSet,
+		mapcoll.NewMap, coll_symbolic.NewMap,
 		queuecoll.NewQueue, func(ctx *symbolic.Context, elements symbolic.Iterable) *coll_symbolic.Queue {
 			ctx.AddSymbolicGoFunctionError("NOT AVAILABLE YET (WIP)")
 			return &coll_symbolic.Queue{}
 		},
 		threadcoll.NewThread, func(ctx *symbolic.Context, elements symbolic.Iterable) *coll_symbolic.Thread {
 			return &coll_symbolic.Thread{}
-		},
-		mapcoll.NewMap, func(ctx *symbolic.Context, entries *symbolic.List) *coll_symbolic.Map {
-			return &coll_symbolic.Map{}
 		},
 		graphcoll.NewGraph, func(ctx *symbolic.Context, nodes, edges *symbolic.List) *coll_symbolic.Graph {
 			return &coll_symbolic.Graph{}

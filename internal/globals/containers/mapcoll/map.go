@@ -3,21 +3,73 @@ package mapcoll
 import (
 	"errors"
 	"fmt"
+	"slices"
+	"strings"
 
+	"github.com/inoxlang/inox/internal/commonfmt"
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/globals/containers/common"
+	coll_symbolic "github.com/inoxlang/inox/internal/globals/containers/symbolic"
+
+	"github.com/inoxlang/inox/internal/jsoniter"
+	"github.com/inoxlang/inox/internal/utils"
+)
+
+const (
+	INITIAL_MAP_KEY_BUF = 2000
 )
 
 var (
-	ErrMapEntryListShouldHaveEvenLength = errors.New(`flat map entry list should have an even length: ["k1", 1,  "k2", 2]`)
-	ErrMapCanOnlyContainKeysWithFastId  = errors.New("a Map can only contain keys having a fast id")
+	ErrMapEntryListShouldHaveEvenLength     = errors.New(`flat map entry list should have an even length: ["k1", 1,  "k2", 2]`)
+	ErrMapCanOnlyContainKeysWithFastId      = errors.New("a Map can only contain keys having a fast id")
+	ErrSetCanOnlyContainRepresentableValues = errors.New("a Map can only contain representable values")
+	ErrKeyDoesMatchKeyPattern               = errors.New("provided key does not match the key pattern")
+	ErrValueDoesMatchValuePattern           = errors.New("provided value does not match the value pattern")
+	ErrEntryAlreadyExists                   = errors.New("entry already exists")
+	ErrValueWithSameKeyAlreadyPresent       = errors.New("provided value has the same key as an already present element")
+
+	_ core.Collection           = (*Map)(nil)
+	_ core.PotentiallySharable  = (*Map)(nil)
+	_ core.SerializableIterable = (*Map)(nil)
+	_ core.MigrationCapable     = (*Map)(nil)
 )
 
 func init() {
+
 	//TODO: core.RegisterLoadFreeEntityFn(reflect.TypeOf((*MapPatterern)(nil)), loadSet)
 
 	core.RegisterDefaultPattern(MAP_PATTERN.Name, MAP_PATTERN)
 	core.RegisterDefaultPattern(MAP_PATTERN_PATTERN.Name, MAP_PATTERN_PATTERN)
 	core.RegisterPatternDeserializer(MAP_PATTERN_PATTERN, DeserializeMapPattern)
+}
+
+type Map struct {
+	config             MapConfig
+	pattern            *MapPattern //set for persisted maps.
+	keyReprUniquenesss common.UniquenessConstraint
+
+	//elements and keys
+
+	entryByKey             map[string]entry
+	keyBuf                 *jsoniter.Stream //used to write JSON representation of elements or key fields
+	keySerializationConfig core.JSONSerializationConfig
+	pathKeyToKey           map[core.ElementKey]string //nil on start, will be initialized during the first GetElementByKey call.
+
+	//transactions and locking
+
+	lock                           core.SmartLock
+	txIsolator                     core.TransactionIsolator
+	transactionsWithSetEndCallback map[*core.Transaction]struct{}
+	pendingInclusions              []inclusion
+	pendingRemovals                []string
+
+	//persistence
+	storage core.DataStore //nillable
+	url     core.URL       //set if .storage set
+	path    core.Path
+
+	//note: do not use nested map for pending inclusions when optimizations specific to URL-uniqueness
+	//will be implemented.
 }
 
 type MapConfig struct {
@@ -28,77 +80,431 @@ func (c MapConfig) Equal(ctx *core.Context, otherConfig MapConfig, alreadyCompar
 	return (c.Key == nil || c.Key.Equal(ctx, otherConfig.Key, alreadyCompared, depth+1)) && (c.Value == nil || c.Value.Equal(ctx, otherConfig.Value, alreadyCompared, depth+1))
 }
 
-func NewMap(ctx *core.Context, flatEntries *core.List) *Map {
+func NewMap(ctx *core.Context, flatEntries *core.List, configParam *core.OptionalParam[*core.Object]) *Map {
+	config := MapConfig{
+		Key:   core.SERIALIZABLE_PATTERN,
+		Value: core.SERIALIZABLE_PATTERN,
+	}
 
+	if configParam != nil {
+		//iterate over the properties of the provided object
+
+		obj := configParam.Value
+		obj.ForEachEntry(func(k string, v core.Serializable) error {
+			switch k {
+			case coll_symbolic.MAP_CONFIG_KEY_PATTERN_KEY:
+				pattern, ok := v.(core.Pattern)
+				if !ok {
+					panic(commonfmt.FmtInvalidValueForPropXOfArgY(k, "configuration", "a pattern is expected"))
+				}
+				config.Key = pattern
+			case coll_symbolic.MAP_CONFIG_VALUE_PATTERN_KEY:
+				pattern, ok := v.(core.Pattern)
+				if !ok {
+					panic(commonfmt.FmtInvalidValueForPropXOfArgY(k, "configuration", "a pattern is expected"))
+				}
+				config.Value = pattern
+			default:
+				panic(commonfmt.FmtUnexpectedPropInArgX(k, "configuration"))
+			}
+			return nil
+		})
+	}
+
+	m := NewMapWithConfig(ctx, flatEntries, config)
+	m.pattern = utils.Must(MAP_PATTERN.Call([]core.Serializable{
+		m.config.Key,
+		m.config.Value,
+	})).(*MapPattern)
+
+	return m
+}
+
+func NewMapWithConfig(ctx *core.Context, flatEntries *core.List, config MapConfig) *Map {
 	map_ := &Map{
-		values: make(map[core.TransientID]core.Value),
-		keys:   make(map[core.TransientID]core.Value),
+		entryByKey: make(map[string]entry),
+
+		keyBuf:                         jsoniter.NewStream(jsoniter.ConfigDefault, nil, INITIAL_MAP_KEY_BUF),
+		keySerializationConfig:         core.JSONSerializationConfig{Pattern: config.Key, ReprConfig: &core.ReprConfig{AllVisible: true}},
+		transactionsWithSetEndCallback: make(map[*core.Transaction]struct{}, 0),
+
+		config:             config,
+		keyReprUniquenesss: *common.NewReprUniqueness(),
 	}
 
-	if flatEntries.Len()%2 != 0 {
-		panic(ErrMapEntryListShouldHaveEvenLength)
-	}
-
-	halfEntryCount := flatEntries.Len()
-	for i := 0; i < halfEntryCount; i += 2 {
-
-		key := flatEntries.At(ctx, i)
-		value := flatEntries.At(ctx, i+1)
-
-		id, ok := core.TransientIdOf(key)
-		if !ok {
-			panic(ErrMapCanOnlyContainKeysWithFastId)
+	if flatEntries != nil {
+		if flatEntries.Len()%2 != 0 {
+			panic(ErrMapEntryListShouldHaveEvenLength)
 		}
-		map_.values[id] = value
-		map_.keys[id] = key
+
+		for i := 0; i < flatEntries.Len(); i += 2 {
+			key := flatEntries.At(ctx, i).(core.Serializable)
+			value := flatEntries.At(ctx, i+1).(core.Serializable)
+
+			map_.Insert(ctx, key, value)
+		}
 	}
 
 	return map_
 }
 
-type Map struct {
-	values map[core.TransientID]core.Value
-	keys   map[core.TransientID]core.Value
+func (m *Map) URL() (core.URL, bool) {
+	if m.storage != nil {
+		return m.url, true
+	}
+	return "", false
 }
 
-func (m *Map) Insert(ctx *core.Context, k, v core.Value) {
-	id, ok := core.TransientIdOf(k)
-	if !ok {
-		panic(ErrMapCanOnlyContainKeysWithFastId)
-	}
-	if _, ok := m.values[id]; ok {
-		panic(fmt.Errorf("cannot insert entry with key %s, it already exists", core.Stringify(k, ctx)))
-	}
-	m.values[id] = v
+func (m *Map) getElementPathKeyFromKey(key string) core.ElementKey {
+	return common.GetElementPathKeyFromKey(key, m.keyReprUniquenesss.Type)
 }
 
-func (m *Map) Set(ctx *core.Context, k, v core.Value) {
-	id, ok := core.TransientIdOf(k)
-	if !ok {
-		panic(ErrMapCanOnlyContainKeysWithFastId)
-	}
-	if _, ok := m.values[id]; !ok {
-		panic(fmt.Errorf("cannot update entry with key %s, it does not exist", core.Stringify(k, ctx)))
-	}
-	m.values[id] = v
+func (m *Map) SetURLOnce(ctx *core.Context, url core.URL) error {
+	return core.ErrValueDoesNotAcceptURL
 }
 
-func (m *Map) Remove(ctx *core.Context, k core.Value) {
-	id, ok := core.TransientIdOf(k)
-	if !ok {
-		panic(ErrMapCanOnlyContainKeysWithFastId)
+func (m *Map) GetElementByKey(ctx *core.Context, pathKey core.ElementKey) (core.Serializable, error) {
+	if m.lock.IsValueShared() {
+		if err := m.txIsolator.WaitIfOtherTransaction(ctx, false); err != nil {
+			panic(err)
+		}
 	}
-	delete(m.values, id)
+
+	m.initPathKeyMap()
+	key := m.pathKeyToKey[pathKey]
+
+	entry, ok := m.entryByKey[key]
+	if !ok {
+		return nil, core.ErrCollectionElemNotFound
+	}
+
+	//TODO
+	_ = entry
+	return nil, errors.New("entry type not implemented yet")
 }
 
-func (m *Map) Get(ctx *core.Context, k core.Value) (core.Value, core.Bool) {
-	id, ok := core.TransientIdOf(k)
-	if !ok {
-		panic(ErrMapCanOnlyContainKeysWithFastId)
+func (m *Map) Contains(ctx *core.Context, value core.Serializable) bool {
+	return bool(m.Has(ctx, value))
+}
+
+func (m *Map) Has(ctx *core.Context, keyVal core.Serializable) core.Bool {
+	if m.lock.IsValueShared() {
+		if err := m.txIsolator.WaitIfOtherTransaction(ctx, false); err != nil {
+			panic(err)
+		}
 	}
-	v, ok := m.values[id]
-	if !ok {
-		return core.Nil, core.False
+
+	closestState := ctx.GetClosestState()
+	m.lock.Lock(closestState, m)
+	defer m.lock.Unlock(closestState, m)
+
+	return m.hasNoLock(ctx, keyVal)
+}
+
+func (m *Map) hasNoLock(ctx *core.Context, key core.Serializable) core.Bool {
+	if m.config.Key != nil && !m.config.Key.Test(ctx, key) {
+		panic(ErrKeyDoesMatchKeyPattern)
 	}
-	return v, core.True
+
+	serializedKey := m.getUniqueKey(ctx, key)
+	//we don't clone the key because it will not be stored.
+
+	_, ok := m.entryByKey[serializedKey]
+
+	return core.Bool(ok)
+}
+
+func (m *Map) Get(ctx *core.Context, keyVal core.StringLike) (core.Value, core.Bool) {
+	if m.lock.IsValueShared() {
+		if err := m.txIsolator.WaitIfOtherTransaction(ctx, false); err != nil {
+			panic(err)
+		}
+	}
+
+	key := keyVal.GetOrBuildString()
+
+	entry, ok := m.entryByKey[key]
+	if !ok {
+		return nil, false
+	}
+
+	return entry.value, true
+}
+
+func (m *Map) Insert(ctx *core.Context, key, value core.Serializable) {
+	m.set(ctx, entry{key, value}, true)
+}
+
+func (m *Map) Set(ctx *core.Context, key, value core.Serializable) {
+	m.set(ctx, entry{key, value}, false)
+}
+
+func (m *Map) set(ctx *core.Context, entry entry, insert bool) error {
+
+	if entry.key.IsMutable() {
+		panic(fmt.Errorf("invalid key: %w", core.ErrReprOfMutableValueCanChange))
+	}
+
+	if !m.lock.IsValueShared() {
+		// No locking required.
+		// Transactions are ignored.
+
+		if m.config.Key != nil && !m.config.Key.Test(ctx, entry.key) {
+			panic(ErrKeyDoesMatchKeyPattern)
+		}
+
+		if m.config.Value != nil && !m.config.Value.Test(ctx, entry.value) {
+			panic(ErrValueDoesMatchValuePattern)
+		}
+
+		serializedKey := m.getUniqueKey(ctx, entry.key)
+
+		_, alreadyPresent := m.entryByKey[serializedKey]
+		if alreadyPresent {
+			if insert {
+				panic(ErrEntryAlreadyExists)
+			}
+			//no need to clone the key.
+			return nil
+		}
+
+		serializedKey = strings.Clone(serializedKey)
+		m.entryByKey[serializedKey] = entry
+
+		if m.pathKeyToKey != nil {
+			m.pathKeyToKey[m.getElementPathKeyFromKey(serializedKey)] = serializedKey
+		}
+		return nil
+	}
+
+	/* ====== SHARED MAP ====== */
+
+	if err := m.txIsolator.WaitIfOtherTransaction(ctx, false); err != nil {
+		panic(err)
+	}
+
+	tx := ctx.GetTx()
+
+	if tx != nil && tx.IsReadonly() {
+		panic(core.ErrEffectsNotAllowedInReadonlyTransaction)
+	}
+
+	m.putEntryInSharedMap(ctx, entry)
+
+	//determine when to persist the Map and make the changes visible to other transactions
+
+	if tx == nil {
+		if m.storage != nil {
+			utils.PanicIfErr(persistMap(ctx, m, m.path, m.storage))
+		}
+	} else if _, ok := m.transactionsWithSetEndCallback[tx]; !ok {
+		closestState := ctx.GetClosestState()
+		m.lock.Lock(closestState, m)
+		defer m.lock.Unlock(closestState, m)
+
+		tx.OnEnd(m, m.makeTransactionEndCallback(ctx, closestState))
+		m.transactionsWithSetEndCallback[tx] = struct{}{}
+	}
+
+	return nil
+}
+
+func (m *Map) putEntryInSharedMap(ctx *core.Context, entry entry) {
+	if m.config.Key != nil && !m.config.Key.Test(ctx, entry.key) {
+		panic(ErrKeyDoesMatchKeyPattern)
+	}
+
+	if m.config.Value != nil && !m.config.Value.Test(ctx, entry.value) {
+		panic(ErrValueDoesMatchValuePattern)
+	}
+
+	closestState := ctx.GetClosestState()
+	entry.value = utils.Must(core.ShareOrClone(entry.value, closestState)).(core.Serializable)
+
+	serializedKey := strings.Clone(m.getUniqueKey(ctx, entry.key))
+
+	m.lock.Lock(closestState, m)
+	defer m.lock.Unlock(closestState, m)
+
+	if m.pathKeyToKey != nil {
+		m.pathKeyToKey[m.getElementPathKeyFromKey(serializedKey)] = serializedKey
+	}
+
+	//TODO: from time to time .pathKeyToKey should be (safely !) cleaned up
+
+	tx := ctx.GetTx()
+
+	if tx == nil {
+		if _, ok := m.entryByKey[serializedKey]; ok {
+			panic(ErrValueWithSameKeyAlreadyPresent)
+		}
+		m.entryByKey[serializedKey] = entry
+	} else {
+		//Check that another value with the same key has not already been added.
+		curr, ok := m.entryByKey[serializedKey]
+		if ok && entry.value != curr.value {
+			panic(ErrValueWithSameKeyAlreadyPresent)
+		}
+
+		//Remove the key from the pending removals of the tx.
+		if index := slices.Index(m.pendingRemovals, serializedKey); index >= 0 {
+			m.pendingRemovals = slices.Delete(m.pendingRemovals, index, index+1)
+		}
+
+		//Add the key and value to the pending inclusions.
+		if index := slices.IndexFunc(m.pendingInclusions, func(i inclusion) bool { return i.serializedKey == serializedKey }); index < 0 {
+			m.pendingInclusions = append(m.pendingInclusions, inclusion{
+				serializedKey: serializedKey,
+				entry:         entry,
+			})
+		}
+
+		//Add/update the entry.
+		m.entryByKey[serializedKey] = entry
+	}
+
+}
+
+func (m *Map) Remove(ctx *core.Context, keyVal core.Serializable) {
+
+	if !m.lock.IsValueShared() {
+		// No locking required.
+		// Transactions are ignored.
+
+		key := m.getUniqueKey(ctx, keyVal)
+
+		delete(m.entryByKey, key)
+		//TODO: remove path key (ElementKey) efficiently
+		return
+	}
+
+	/* ====== SHARED MAP ====== */
+
+	tx := ctx.GetTx()
+
+	if tx != nil && tx.IsReadonly() {
+		panic(core.ErrEffectsNotAllowedInReadonlyTransaction)
+	}
+
+	if err := m.txIsolator.WaitIfOtherTransaction(ctx, false); err != nil {
+		panic(err)
+	}
+
+	key := m.getUniqueKey(ctx, keyVal)
+	closestState := ctx.GetClosestState()
+
+	m.lock.Lock(closestState, m)
+	defer m.lock.Unlock(closestState, m)
+
+	if tx == nil {
+		delete(m.entryByKey, key)
+		if m.storage != nil {
+			utils.PanicIfErr(persistMap(ctx, m, m.path, m.storage))
+		}
+	} else {
+		key = strings.Clone(key)
+
+		//Add the key in the pending removals.
+		if index := slices.Index(m.pendingRemovals, key); index < 0 {
+			m.pendingRemovals = append(m.pendingRemovals, key)
+		}
+
+		//Register a transaction end handler if none is present.
+		if _, ok := m.transactionsWithSetEndCallback[tx]; !ok {
+			tx.OnEnd(m, m.makeTransactionEndCallback(ctx, closestState))
+			m.transactionsWithSetEndCallback[tx] = struct{}{}
+		}
+	}
+}
+
+func (m *Map) initPathKeyMap() {
+	if m.pathKeyToKey != nil {
+		//already initialized
+		return
+	}
+	m.pathKeyToKey = make(map[core.ElementKey]string, len(m.entryByKey))
+	for elemKey := range m.entryByKey {
+		m.pathKeyToKey[m.getElementPathKeyFromKey(elemKey)] = elemKey
+	}
+}
+
+// getUniqueKey returns a key that should be cloned if it is stored.
+func (m *Map) getUniqueKey(ctx *core.Context, v core.Serializable) string {
+	key := common.GetUniqueKey(ctx, common.KeyRetrievalParams{
+		Value:                   v,
+		Config:                  m.keyReprUniquenesss,
+		Container:               m,
+		JSONSerializationConfig: m.keySerializationConfig,
+		Stream:                  m.keyBuf,
+	})
+	return key
+}
+
+func (m *Map) makeTransactionEndCallback(ctx *core.Context, closestState *core.GlobalState) core.TransactionEndCallbackFn {
+	return func(tx *core.Transaction, success bool) {
+
+		//note: closestState is passed instead of being retrieved from ctx because ctx.GetClosestState()
+		//will panic if the context is done.
+
+		m.lock.AssertValueShared()
+
+		m.lock.Lock(closestState, m)
+		defer m.lock.Unlock(closestState, m)
+
+		defer func() {
+			m.pendingInclusions = m.pendingInclusions[:0]
+			m.pendingRemovals = m.pendingRemovals[:0]
+		}()
+
+		if !success {
+			return
+		}
+
+		for _, inclusion := range m.pendingInclusions {
+			m.entryByKey[inclusion.serializedKey] = inclusion.entry
+		}
+
+		for _, key := range m.pendingRemovals {
+			delete(m.entryByKey, key)
+		}
+
+		if m.storage != nil {
+			utils.PanicIfErr(persistMap(ctx, m, m.path, m.storage))
+		}
+	}
+}
+
+func (m *Map) makePersistOnMutationCallback(elem core.Serializable) core.MutationCallbackMicrotask {
+	return func(ctx *core.Context, mutation core.Mutation) (registerAgain bool) {
+		registerAgain = true
+
+		tx := ctx.GetTx()
+		if tx != nil {
+			//if there is a transaction the set will be persisted when the transaction is finished.
+			return
+		}
+
+		closestState := ctx.GetClosestState()
+		m.lock.Lock(closestState, m)
+		defer m.lock.Unlock(closestState, m)
+
+		if !m.hasNoLock(ctx, elem) {
+			registerAgain = false
+			return
+		}
+
+		utils.PanicIfErr(persistMap(ctx, m, m.path, m.storage))
+
+		return
+	}
+}
+
+type inclusion struct {
+	entry         entry
+	serializedKey string
+}
+
+type entry struct {
+	key   core.Serializable
+	value core.Serializable
 }

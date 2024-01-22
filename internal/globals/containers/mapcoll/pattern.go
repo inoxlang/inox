@@ -113,15 +113,13 @@ func (p *MapPattern) Equal(ctx *core.Context, other core.Value, alreadyCompared 
 }
 
 func (patt *MapPattern) Test(ctx *core.Context, v core.Value) bool {
-	_, ok := v.(*Map)
+	m, ok := v.(*Map)
 	if !ok {
 		return false
 	}
-
-	return true
-	//TODO:
-	//return patt.config.Equal(ctx, map_.config, map[uintptr]uintptr{}, 0)
+	return patt.config.Equal(ctx, m.config, map[uintptr]uintptr{}, 0)
 }
+
 func (p *MapPattern) Iterator(ctx *core.Context, config core.IteratorConfiguration) core.Iterator {
 	return core.NewEmptyPatternIterator()
 }
@@ -135,8 +133,7 @@ func (p *MapPattern) StringPattern() (core.StringPattern, bool) {
 }
 
 func (p *MapPattern) DefaultValue(ctx *core.Context) (core.Value, error) {
-	return NewMap(ctx, nil), nil
-	//return NewMap(ctx, nil, p.config), nil
+	return NewMapWithConfig(ctx, nil, p.config), nil
 }
 
 func (p *MapPattern) ToSymbolicValue(ctx *core.Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
