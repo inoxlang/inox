@@ -10,7 +10,7 @@ import (
 	"github.com/inoxlang/inox/internal/utils"
 )
 
-// GoValue impl for Queue
+// GoValue impl for Map.
 
 func (m *Map) GetGoMethod(name string) (*core.GoFunction, bool) {
 	switch name {

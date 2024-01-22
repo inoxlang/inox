@@ -38,7 +38,6 @@ func init() {
 	core.RegisterDefaultPattern(SET_PATTERN.Name, SET_PATTERN)
 	core.RegisterDefaultPattern(SET_PATTERN_PATTERN.Name, SET_PATTERN_PATTERN)
 	core.RegisterPatternDeserializer(SET_PATTERN_PATTERN, DeserializeSetPattern)
-
 }
 
 type Set struct {

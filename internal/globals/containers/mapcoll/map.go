@@ -12,6 +12,22 @@ var (
 	ErrMapCanOnlyContainKeysWithFastId  = errors.New("a Map can only contain keys having a fast id")
 )
 
+func init() {
+	//TODO: core.RegisterLoadFreeEntityFn(reflect.TypeOf((*MapPatterern)(nil)), loadSet)
+
+	core.RegisterDefaultPattern(MAP_PATTERN.Name, MAP_PATTERN)
+	core.RegisterDefaultPattern(MAP_PATTERN_PATTERN.Name, MAP_PATTERN_PATTERN)
+	core.RegisterPatternDeserializer(MAP_PATTERN_PATTERN, DeserializeMapPattern)
+}
+
+type MapConfig struct {
+	Key, Value core.Pattern
+}
+
+func (c MapConfig) Equal(ctx *core.Context, otherConfig MapConfig, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	return (c.Key == nil || c.Key.Equal(ctx, otherConfig.Key, alreadyCompared, depth+1)) && (c.Value == nil || c.Value.Equal(ctx, otherConfig.Value, alreadyCompared, depth+1))
+}
+
 func NewMap(ctx *core.Context, flatEntries *core.List) *Map {
 
 	map_ := &Map{
@@ -75,14 +91,14 @@ func (m *Map) Remove(ctx *core.Context, k core.Value) {
 	delete(m.values, id)
 }
 
-func (m *Map) Get(ctx *core.Context, k core.Value) core.Value {
+func (m *Map) Get(ctx *core.Context, k core.Value) (core.Value, core.Bool) {
 	id, ok := core.TransientIdOf(k)
 	if !ok {
 		panic(ErrMapCanOnlyContainKeysWithFastId)
 	}
 	v, ok := m.values[id]
 	if !ok {
-		return core.Nil
+		return core.Nil, core.False
 	}
-	return v
+	return v, core.True
 }
