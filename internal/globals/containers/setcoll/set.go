@@ -3,6 +3,7 @@ package setcoll
 import (
 	"errors"
 	"reflect"
+	"slices"
 	"strings"
 
 	"github.com/inoxlang/inox/internal/commonfmt"
@@ -51,17 +52,22 @@ type Set struct {
 	serializationConfig core.JSONSerializationConfig
 	pathKeyToKey        map[core.ElementKey]string //nil on start, will be initialized during the first GetElementByKey call.
 
-	//transactions
+	//transactions and locking
 
-	pendingInclusions              map[*core.Transaction]map[string]core.Serializable
-	pendingRemovals                map[*core.Transaction]map[string]struct{}
-	transactionsWithSetEndCallback map[*core.Transaction]struct{}
 	lock                           core.SmartLock
+	txIsolator                     core.TransactionIsolator
+	transactionsWithSetEndCallback map[*core.Transaction]struct{}
+	pendingInclusions              []inclusion
+	pendingRemovals                []string
+	// /	hasPendingRemovals             atomic.Bool //only used if URL-uniqueness
 
 	//persistence
 	storage core.DataStore //nillable
 	url     core.URL       //set if .storage set
 	path    core.Path
+
+	//note: do not use nested map for pending inclusions when optimizations specific to URL-uniqueness
+	//will be implemented.
 }
 
 func NewSet(ctx *core.Context, elements core.Iterable, configParam *core.OptionalParam[*core.Object]) *Set {
@@ -124,13 +130,11 @@ func NewSetWithConfig(ctx *core.Context, elements core.Iterable, config SetConfi
 	set := &Set{
 		elementByKey: make(map[string]core.Serializable),
 
-		keyBuf:              jsoniter.NewStream(jsoniter.ConfigDefault, nil, INITIAL_SET_KEY_BUF),
-		serializationConfig: core.JSONSerializationConfig{Pattern: config.Element, ReprConfig: &core.ReprConfig{AllVisible: true}},
-
-		pendingInclusions:              make(map[*core.Transaction]map[string]core.Serializable, 0),
-		pendingRemovals:                make(map[*core.Transaction]map[string]struct{}, 0),
+		keyBuf:                         jsoniter.NewStream(jsoniter.ConfigDefault, nil, INITIAL_SET_KEY_BUF),
+		serializationConfig:            core.JSONSerializationConfig{Pattern: config.Element, ReprConfig: &core.ReprConfig{AllVisible: true}},
 		transactionsWithSetEndCallback: make(map[*core.Transaction]struct{}, 0),
-		config:                         config,
+
+		config: config,
 	}
 
 	if elements != nil {
@@ -160,24 +164,14 @@ func (set *Set) SetURLOnce(ctx *core.Context, url core.URL) error {
 }
 
 func (set *Set) GetElementByKey(ctx *core.Context, pathKey core.ElementKey) (core.Serializable, error) {
-	set.initPathKeyMap()
-	key := set.pathKeyToKey[pathKey]
-
-	tx := ctx.GetTx()
-
-	if tx != nil {
-		pendingRemovals := set.pendingRemovals[tx]
-		_, removed := pendingRemovals[key]
-		if removed {
-			return nil, core.ErrCollectionElemNotFound
-		}
-
-		pendingInclusions := set.pendingInclusions[tx]
-		elem, added := pendingInclusions[key]
-		if added {
-			return elem, nil
+	if set.lock.IsValueShared() {
+		if err := set.txIsolator.WaitIfOtherTransaction(ctx, false); err != nil {
+			panic(err)
 		}
 	}
+
+	set.initPathKeyMap()
+	key := set.pathKeyToKey[pathKey]
 
 	elem, ok := set.elementByKey[key]
 	if !ok {
@@ -192,6 +186,11 @@ func (set *Set) Contains(ctx *core.Context, value core.Serializable) bool {
 
 func (set *Set) Has(ctx *core.Context, elem core.Serializable) core.Bool {
 	set.assertPersistedAndSharedIfURLUniqueness()
+	if set.lock.IsValueShared() {
+		if err := set.txIsolator.WaitIfOtherTransaction(ctx, false); err != nil {
+			panic(err)
+		}
+	}
 
 	closestState := ctx.GetClosestState()
 	set.lock.Lock(closestState, set)
@@ -208,22 +207,6 @@ func (set *Set) hasNoLock(ctx *core.Context, elem core.Serializable) core.Bool {
 	key := set.getUniqueKey(ctx, elem)
 	//we don't clone the key because it will not be stored.
 
-	tx := ctx.GetTx()
-
-	if tx != nil {
-		pendingRemovals := set.pendingRemovals[tx]
-		_, removed := pendingRemovals[key]
-		if removed {
-			return false
-		}
-
-		pendingInclusions := set.pendingInclusions[tx]
-		_, added := pendingInclusions[key]
-		if added {
-			return true
-		}
-	}
-
 	presentElem, ok := set.elementByKey[key]
 
 	if ok && set.config.Uniqueness.Type != common.UniqueRepr && !core.Same(presentElem, elem) {
@@ -235,23 +218,13 @@ func (set *Set) hasNoLock(ctx *core.Context, elem core.Serializable) core.Bool {
 func (set *Set) Get(ctx *core.Context, keyVal core.StringLike) (core.Value, core.Bool) {
 	set.assertPersistedAndSharedIfURLUniqueness()
 
-	key := keyVal.GetOrBuildString()
-
-	tx := ctx.GetTx()
-
-	if tx != nil {
-		pendingRemovals := set.pendingRemovals[tx]
-		_, removed := pendingRemovals[key]
-		if removed {
-			return nil, false
-		}
-
-		pendingInclusions := set.pendingInclusions[tx]
-		elem, added := pendingInclusions[key]
-		if added {
-			return elem, true
+	if set.lock.IsValueShared() {
+		if err := set.txIsolator.WaitIfOtherTransaction(ctx, false); err != nil {
+			panic(err)
 		}
 	}
+
+	key := keyVal.GetOrBuildString()
 
 	elem, ok := set.elementByKey[key]
 	if !ok {
@@ -265,7 +238,8 @@ func (set *Set) Add(ctx *core.Context, elem core.Serializable) {
 	set.assertPersistedAndSharedIfURLUniqueness()
 
 	if !set.lock.IsValueShared() {
-		// no locking required.
+		// No locking required.
+		// Transactions are ignored.
 
 		if set.config.Element != nil && !set.config.Element.Test(ctx, elem) {
 			panic(ErrValueDoesMatchElementPattern)
@@ -293,11 +267,21 @@ func (set *Set) Add(ctx *core.Context, elem core.Serializable) {
 		return
 	}
 
+	/* ====== SHARED SET ====== */
+
+	if err := set.txIsolator.WaitIfOtherTransaction(ctx, false); err != nil {
+		panic(err)
+	}
+
+	tx := ctx.GetTx()
+
+	if tx != nil && tx.IsReadonly() {
+		panic(core.ErrEffectsNotAllowedInReadonlyTransaction)
+	}
+
 	set.addToSharedSetNoPersist(ctx, elem)
 
 	//determine when to persist the Set and make the changes visible to other transactions
-
-	tx := ctx.GetTx()
 
 	if tx == nil {
 		if set.storage != nil {
@@ -314,7 +298,6 @@ func (set *Set) Add(ctx *core.Context, elem core.Serializable) {
 }
 
 func (set *Set) addToSharedSetNoPersist(ctx *core.Context, elem core.Serializable) {
-
 	if set.config.Element != nil && !set.config.Element.Test(ctx, elem) {
 		panic(ErrValueDoesMatchElementPattern)
 	}
@@ -347,13 +330,6 @@ func (set *Set) addToSharedSetNoPersist(ctx *core.Context, elem core.Serializabl
 		}
 		set.elementByKey[key] = elem
 	} else {
-		//Check that a value (than can be different) with the same key is not already being added by the same tx.
-		pendingInclusions := set.pendingInclusions[tx]
-		_, added := pendingInclusions[key]
-		if added {
-			panic(ErrValueWithSameKeyAlreadyPresent)
-		}
-
 		//Check that another value with the same key has not already been added.
 		curr, ok := set.elementByKey[key]
 		if ok && elem != curr {
@@ -361,19 +337,20 @@ func (set *Set) addToSharedSetNoPersist(ctx *core.Context, elem core.Serializabl
 		}
 
 		//Remove the key from the pending removals of the tx.
-		pendingRemovals := set.pendingRemovals[tx]
-		_, removed := pendingRemovals[key]
-		if removed {
-			delete(pendingRemovals, key)
+		if index := slices.Index(set.pendingRemovals, key); index >= 0 {
+			set.pendingRemovals = slices.Delete(set.pendingRemovals, index, index+1)
 		}
 
-		//Add the key and value to the pending inclusions of the tx.
-		if pendingInclusions == nil {
-			pendingInclusions = make(map[string]core.Serializable)
-			set.pendingInclusions[tx] = pendingInclusions
+		//Add the key and value to the pending inclusions.
+		if index := slices.IndexFunc(set.pendingInclusions, func(i inclusion) bool { return i.key == key }); index < 0 {
+			set.pendingInclusions = append(set.pendingInclusions, inclusion{
+				key:   key,
+				value: elem,
+			})
 		}
 
-		pendingInclusions[key] = elem
+		//Add the element.
+		set.elementByKey[key] = elem
 	}
 
 }
@@ -381,13 +358,46 @@ func (set *Set) addToSharedSetNoPersist(ctx *core.Context, elem core.Serializabl
 func (set *Set) Remove(ctx *core.Context, elem core.Serializable) {
 	set.assertPersistedAndSharedIfURLUniqueness()
 
+	if !set.lock.IsValueShared() {
+		// No locking required.
+		// Transactions are ignored.
+
+		key := set.getUniqueKey(ctx, elem)
+
+		presentElem, ok := set.elementByKey[key]
+		if !ok {
+			return
+		}
+
+		if set.config.Uniqueness.Type == common.UniquePropertyValue && !core.Same(elem, presentElem) {
+			//present element is not elem.
+			return
+		}
+
+		delete(set.elementByKey, key)
+		//TODO: remove path key (ElementKey) efficiently
+		return
+	}
+
+	/* ====== SHARED SET ====== */
+
+	tx := ctx.GetTx()
+
+	if tx != nil && tx.IsReadonly() {
+		panic(core.ErrEffectsNotAllowedInReadonlyTransaction)
+	}
+
+	if err := set.txIsolator.WaitIfOtherTransaction(ctx, false); err != nil {
+		panic(err)
+	}
+
+	//set.hasPendingRemovals.Store(true)
+
 	key := set.getUniqueKey(ctx, elem)
 	closestState := ctx.GetClosestState()
 
 	set.lock.Lock(closestState, set)
 	defer set.lock.Unlock(closestState, set)
-
-	tx := ctx.GetTx()
 
 	if tx == nil {
 		presentElem, ok := set.elementByKey[key]
@@ -407,14 +417,10 @@ func (set *Set) Remove(ctx *core.Context, elem core.Serializable) {
 	} else {
 		key = strings.Clone(key)
 
-		//Add the key in the pending removals of the tx.
-		pendingRemovals, ok := set.pendingRemovals[tx]
-		if !ok {
-			pendingRemovals = make(map[string]struct{})
-			set.pendingRemovals[tx] = pendingRemovals
+		//Add the key in the pending removals.
+		if index := slices.Index(set.pendingRemovals, key); index < 0 {
+			set.pendingRemovals = append(set.pendingRemovals, key)
 		}
-
-		pendingRemovals[key] = struct{}{}
 
 		//Register a transaction end handler if none is present.
 		if _, ok := set.transactionsWithSetEndCallback[tx]; !ok {
@@ -459,19 +465,20 @@ func (set *Set) makeTransactionEndCallback(ctx *core.Context, closestState *core
 		defer set.lock.Unlock(closestState, set)
 
 		defer func() {
-			delete(set.pendingInclusions, tx)
-			delete(set.pendingRemovals, tx)
+			set.pendingInclusions = set.pendingInclusions[:0]
+			set.pendingRemovals = set.pendingRemovals[:0]
+			//set.hasPendingRemovals.Store(true)
 		}()
 
 		if !success {
 			return
 		}
 
-		for key, value := range set.pendingInclusions[tx] {
-			set.elementByKey[key] = value
+		for _, inclusion := range set.pendingInclusions {
+			set.elementByKey[inclusion.key] = inclusion.value
 		}
 
-		for key := range set.pendingRemovals[tx] {
+		for _, key := range set.pendingRemovals {
 			delete(set.elementByKey, key)
 		}
 
@@ -506,8 +513,17 @@ func (set *Set) makePersistOnMutationCallback(elem core.Serializable) core.Mutat
 	}
 }
 
+func (set *Set) hasURLUniqueness() bool {
+	return set.config.Uniqueness.Type == common.UniqueURL
+}
+
 func (set *Set) assertPersistedAndSharedIfURLUniqueness() {
-	if set.config.Uniqueness.Type == common.UniqueURL && (!set.lock.IsValueShared() || set.storage == nil) {
+	if set.hasURLUniqueness() && (!set.lock.IsValueShared() || set.storage == nil) {
 		panic(ErrURLUniquenessOnlySupportedIfPersistedSharedSet)
 	}
+}
+
+type inclusion struct {
+	key   string
+	value core.Serializable
 }

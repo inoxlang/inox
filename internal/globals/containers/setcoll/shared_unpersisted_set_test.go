@@ -4,41 +4,34 @@ import (
 	"testing"
 
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/inoxlang/inox/internal/globals/containers/common"
 )
 
 func TestSharedUnpersistedSetAdd(t *testing.T) {
-	t.Run("transient Set should be updated if .Add was called transactionnaly", func(t *testing.T) {
-		int1 := core.Int(1)
+	t.Run("Set should be updated at end of transaction if .Add was called transactionnaly", func(t *testing.T) {
+		ctx, _ := sharedSetTestSetup(t)
+		defer ctx.CancelGracefully()
 
-		ctx1, _ := sharedSetTestSetup(t)
-		tx1 := core.StartNewTransaction(ctx1)
-		defer ctx1.CancelGracefully()
-
-		ctx2 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
-		core.StartNewTransaction(ctx2)
-		defer ctx2.CancelGracefully()
+		tx := core.StartNewTransaction(ctx)
 
 		pattern := NewSetPattern(SetConfig{
-			Uniqueness: common.UniquenessConstraint{Type: common.UniqueRepr},
+			Uniqueness: common.UniquenessConstraint{
+				Type: common.UniqueRepr,
+			},
 		})
 
-		set := NewSetWithConfig(ctx1, nil, pattern.config)
-		set.Share(ctx1.GetClosestState())
+		set := NewSetWithConfig(ctx, nil, pattern.config)
+		set.Add(ctx, core.Int(1))
 
-		set.Add(ctx1, int1)
+		assert.NoError(t, tx.Commit(ctx))
 
-		//check that the Set is not updated from the other ctx2's POV
-		assert.False(t, bool(set.Has(ctx2, int1)))
+		otherCtx, _ := sharedSetTestSetup(t)
+		defer ctx.CancelGracefully()
 
-		//commit the transaction associated with ctx1
-		utils.PanicIfErr(tx1.Commit(ctx1))
+		assert.True(t, bool(set.Has(otherCtx, core.Int(1))))
 
-		//check that the Set is updated from the other ctx's POV
-		assert.True(t, bool(set.Has(ctx2, int1)))
 	})
 
 	t.Run("adding an element to a URL-based uniqueness shared Set with no storage should cause a panic", func(t *testing.T) {
@@ -57,6 +50,44 @@ func TestSharedUnpersistedSetAdd(t *testing.T) {
 		assert.PanicsWithValue(t, ErrURLUniquenessOnlySupportedIfPersistedSharedSet, func() {
 			set.Add(ctx, obj)
 		})
+	})
+
+	//Tests with several transactions.
+
+	t.Run("transactions should wait for the previous transaction to finish", func(t *testing.T) {
+		ctx1 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		defer ctx1.CancelGracefully()
+		tx1 := core.StartNewTransaction(ctx1)
+
+		ctx2 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		defer ctx2.CancelGracefully()
+		core.StartNewTransaction(ctx2)
+
+		set := NewSetWithConfig(ctx1, nil, SetConfig{
+			Element: core.INT_PATTERN,
+			Uniqueness: common.UniquenessConstraint{
+				Type: common.UniqueRepr,
+			},
+		})
+		set.Share(ctx1.GetClosestState())
+
+		set.Add(ctx1, core.Int(1))
+		assert.True(t, bool(set.Has(ctx1, core.Int(1))))
+
+		tx2Done := make(chan struct{})
+		go func() { //second transaction
+			set.Add(ctx2, core.Int(2))
+
+			//since the first transaction should be finished,
+			//the other element should have been added.
+			assert.True(t, bool(set.Has(ctx2, core.Int(1))))
+			assert.True(t, bool(set.Has(ctx2, core.Int(2))))
+			tx2Done <- struct{}{}
+		}()
+
+		assert.NoError(t, tx1.Commit(ctx1))
+
+		<-tx2Done
 	})
 
 	t.Run("adding an element with the same property value as another element is not allowed", func(t *testing.T) {
@@ -132,6 +163,35 @@ func TestSharedUnpersistedSetHas(t *testing.T) {
 
 		assert.True(t, bool(set.Has(ctx, obj1)))
 		assert.False(t, bool(set.Has(ctx, obj2)))
+	})
+
+	//Tests with several transactions.
+
+	t.Run("readonly transactions can read the Set in parallel", func(t *testing.T) {
+		ctx1, ctx2, _ := sharedSetTestSetup2(t)
+		defer ctx1.CancelGracefully()
+		defer ctx2.CancelGracefully()
+
+		readTx1 := core.StartNewReadonlyTransaction(ctx1)
+		core.StartNewReadonlyTransaction(ctx2)
+
+		pattern := NewSetPattern(SetConfig{
+			Uniqueness: common.UniquenessConstraint{
+				Type: common.UniqueRepr,
+			},
+		})
+
+		set := NewSetWithConfig(ctx1, core.NewWrappedValueList(INT_1, INT_2), pattern.config)
+		set.Share(ctx1.GetClosestState())
+
+		assert.True(t, bool(set.Has(ctx1, INT_1)))
+		assert.True(t, bool(set.Has(ctx2, INT_1)))
+
+		assert.True(t, bool(set.Has(ctx1, INT_1)))
+		assert.True(t, bool(set.Has(ctx2, INT_1)))
+
+		assert.NoError(t, readTx1.Commit(ctx1))
+		assert.True(t, bool(set.Has(ctx2, INT_1)))
 	})
 }
 

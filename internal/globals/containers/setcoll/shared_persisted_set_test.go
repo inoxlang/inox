@@ -15,6 +15,8 @@ import (
 
 const (
 	MAX_MEM_FS_SIZE = 10_000
+	INT_1           = core.Int(1)
+	INT_2           = core.Int(2)
 )
 
 func TestSharedPersistedSetAdd(t *testing.T) {
@@ -144,38 +146,6 @@ func TestSharedPersistedSetAdd(t *testing.T) {
 		}()
 	})
 
-	t.Run("add different elements during separate transactions", func(t *testing.T) {
-		ctx1 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
-		defer ctx1.CancelGracefully()
-		core.StartNewTransaction(ctx1)
-
-		ctx2 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
-		defer ctx2.CancelGracefully()
-		core.StartNewTransaction(ctx2)
-
-		set := NewSetWithConfig(ctx1, nil, SetConfig{
-			Element: core.INT_PATTERN,
-			Uniqueness: common.UniquenessConstraint{
-				Type: common.UniqueRepr,
-			},
-		})
-		set.Share(ctx1.GetClosestState())
-
-		set.Add(ctx1, core.Int(1))
-		//check that 2 is only added from ctx1's POV
-		assert.True(t, bool(set.Has(ctx1, core.Int(1))))
-		assert.False(t, bool(set.Has(ctx2, core.Int(1))))
-
-		set.Add(ctx2, core.Int(2))
-		//check that 2 is only added from ctx2's POV
-		assert.True(t, bool(set.Has(ctx2, core.Int(2))))
-		assert.False(t, bool(set.Has(ctx1, core.Int(2))))
-
-		//check that 1 is still only added from ctx1's POV
-		assert.True(t, bool(set.Has(ctx1, core.Int(1))))
-		assert.False(t, bool(set.Has(ctx2, core.Int(1))))
-	})
-
 	t.Run("Set should be persisted during call to .Add", func(t *testing.T) {
 		ctx, storage := sharedSetTestSetup(t)
 		defer ctx.CancelGracefully()
@@ -199,7 +169,7 @@ func TestSharedPersistedSetAdd(t *testing.T) {
 			return
 		}
 
-		set.(*Set).Add(ctx, core.Int(1))
+		set.(*Set).Add(ctx, INT_1)
 
 		//check that the Set is persisted
 
@@ -220,10 +190,10 @@ func TestSharedPersistedSetAdd(t *testing.T) {
 
 		val := vals[0]
 
-		assert.Equal(t, core.Int(1), val)
+		assert.Equal(t, INT_1, val)
 	})
 
-	t.Run("Set should be persisted at end of transaction if .Add was called transactionnaly", func(t *testing.T) {
+	t.Run("Set should be persisted at end of successful transaction if .Add was called transactionnaly", func(t *testing.T) {
 
 		ctx, storage := sharedSetTestSetup(t)
 		defer ctx.CancelGracefully()
@@ -247,7 +217,7 @@ func TestSharedPersistedSetAdd(t *testing.T) {
 			return
 		}
 
-		set.(*Set).Add(ctx, core.Int(1))
+		set.(*Set).Add(ctx, INT_1)
 
 		//check that the Set is not persised
 
@@ -260,7 +230,7 @@ func TestSharedPersistedSetAdd(t *testing.T) {
 		}
 
 		assert.NotSame(t, persisted, set) //future-proofing the test
-		assert.False(t, bool(persisted.(*Set).Has(ctx, core.Int(1))))
+		assert.False(t, bool(persisted.(*Set).Has(ctx, INT_1)))
 
 		assert.NoError(t, tx.Commit(ctx))
 
@@ -275,80 +245,168 @@ func TestSharedPersistedSetAdd(t *testing.T) {
 		}
 
 		assert.NotSame(t, persisted, set) //future-proofing the test
-		assert.True(t, bool(persisted.(*Set).Has(ctx, core.Int(1))))
+		assert.True(t, bool(persisted.(*Set).Has(ctx, INT_1)))
 	})
 
-}
+	t.Run("Set should not be persisted at end of failed transaction if .Add was called transactionnaly", func(t *testing.T) {
+		ctx, storage := sharedSetTestSetup(t)
+		defer ctx.CancelGracefully()
 
-func TestSharedPersistedSetRemove(t *testing.T) {
-
-	t.Run("add then remove different elements during separate transactions", func(t *testing.T) {
-		ctx1 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
-		defer ctx1.CancelGracefully()
-		core.StartNewTransaction(ctx1)
-
-		ctx2 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
-		defer ctx2.CancelGracefully()
-		core.StartNewTransaction(ctx2)
-
-		set := NewSetWithConfig(ctx1, nil, SetConfig{
-			Element: core.INT_PATTERN,
+		pattern := NewSetPattern(SetConfig{
 			Uniqueness: common.UniquenessConstraint{
 				Type: common.UniqueRepr,
 			},
 		})
 
+		storage.SetSerialized(ctx, "/set", `[]`)
+		set, err := loadSet(ctx, core.FreeEntityLoadingParams{
+			Key: "/set", Storage: storage, Pattern: pattern,
+		})
+
+		set.(*Set).Share(ctx.GetClosestState())
+
+		//The tx is started after the KV write in order
+		//for the write to be already commited.
+		tx := core.StartNewTransaction(ctx)
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		set.(*Set).Add(ctx, INT_1)
+
+		//check that the Set is not persised
+
+		persisted, err := loadSet(ctx, core.FreeEntityLoadingParams{
+			Key: "/set", Storage: storage, Pattern: pattern,
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		assert.NotSame(t, persisted, set) //future-proofing the test
+		assert.False(t, bool(persisted.(*Set).Has(ctx, INT_1)))
+
+		//roll back
+
+		assert.NoError(t, tx.Rollback(ctx))
+
+		//check that the Set is not persised
+
+		persisted, err = loadSet(ctx, core.FreeEntityLoadingParams{
+			Key: "/set", Storage: storage, Pattern: pattern,
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		assert.NotSame(t, persisted, set) //future-proofing the test
+		assert.False(t, bool(persisted.(*Set).Has(ctx, INT_1)))
+	})
+
+	//Tests with several transactions.
+
+	t.Run("a write transaction should wait for the previous write transaction to finish", func(t *testing.T) {
+		ctx1, ctx2, storage := sharedSetTestSetup2(t)
+		defer ctx1.CancelGracefully()
+		defer ctx2.CancelGracefully()
+
+		tx1 := core.StartNewTransaction(ctx1)
+		core.StartNewTransaction(ctx2)
+
+		pattern := NewSetPattern(SetConfig{
+			Uniqueness: common.UniquenessConstraint{
+				Type: common.UniqueRepr,
+			},
+		})
+
+		storage.SetSerialized(ctx1, "/set", `[]`)
+		val, err := loadSet(ctx1, core.FreeEntityLoadingParams{
+			Key: "/set", Storage: storage, Pattern: pattern,
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		set := val.(*Set)
 		set.Share(ctx1.GetClosestState())
 
-		set.Add(ctx1, core.Int(1))
-		//check that 2 is only added from ctx1's POV
-		assert.True(t, bool(set.Has(ctx1, core.Int(1))))
-		_, found := set.Get(ctx1, core.Str("1"))
-		assert.True(t, bool(found))
-		assert.False(t, bool(set.Has(ctx2, core.Int(1))))
-		_, found = set.Get(ctx2, core.Str("1"))
-		assert.False(t, bool(found))
+		set.Add(ctx1, INT_1)
+		assert.True(t, bool(set.Has(ctx1, INT_1)))
 
-		set.Add(ctx2, core.Int(2))
-		//check that 2 is only added from ctx2's POV
-		assert.True(t, bool(set.Has(ctx2, core.Int(2))))
-		_, found = set.Get(ctx2, core.Str("2"))
-		assert.True(t, bool(found))
-		assert.False(t, bool(set.Has(ctx1, core.Int(2))))
-		_, found = set.Get(ctx1, core.Str("2"))
-		assert.False(t, bool(found))
+		tx2Done := make(chan struct{})
+		go func() { //second transaction
+			set.Add(ctx2, INT_2)
 
-		//check that 1 is still only added from ctx1's POV
-		assert.True(t, bool(set.Has(ctx1, core.Int(1))))
-		_, found = set.Get(ctx1, core.Str("1"))
-		assert.True(t, bool(found))
-		assert.False(t, bool(set.Has(ctx2, core.Int(1))))
-		_, found = set.Get(ctx2, core.Str("1"))
-		assert.False(t, bool(found))
+			//since the first transaction should be finished,
+			//the other element should have been added.
+			assert.True(t, bool(set.Has(ctx2, INT_1)))
+			assert.True(t, bool(set.Has(ctx2, INT_2)))
+			tx2Done <- struct{}{}
+		}()
 
-		set.Remove(ctx1, core.Int(1))
-		assert.False(t, bool(set.Has(ctx1, core.Int(1))))
-		_, found = set.Get(ctx1, core.Str("1"))
-		assert.False(t, bool(found))
-		assert.False(t, bool(set.Has(ctx2, core.Int(1))))
-		_, found = set.Get(ctx2, core.Str("1"))
-		assert.False(t, bool(found))
+		assert.NoError(t, tx1.Commit(ctx1))
 
-		set.Remove(ctx2, core.Int(2))
-		assert.False(t, bool(set.Has(ctx2, core.Int(2))))
-		_, found = set.Get(ctx2, core.Str("2"))
-		assert.False(t, bool(found))
-		assert.False(t, bool(set.Has(ctx1, core.Int(2))))
-		_, found = set.Get(ctx1, core.Str("2"))
-		assert.False(t, bool(found))
-
-		assert.False(t, bool(set.Has(ctx1, core.Int(1))))
-		_, found = set.Get(ctx1, core.Str("1"))
-		assert.False(t, bool(found))
-		assert.False(t, bool(set.Has(ctx2, core.Int(1))))
-		_, found = set.Get(ctx2, core.Str("1"))
-		assert.False(t, bool(found))
+		<-tx2Done
 	})
+
+	// t.Run("if uniqueness is URL-based transactions should not wait for the previous transaction to finish", func(t *testing.T) {
+	// 	ctx1, ctx2, storage := sharedSetTestSetup2(t)
+	// 	defer ctx1.CancelGracefully()
+	// 	defer ctx2.CancelGracefully()
+
+	// 	tx1 := core.StartNewTransaction(ctx1)
+	// 	core.StartNewTransaction(ctx2)
+
+	// 	pattern := NewSetPattern(SetConfig{
+	// 		Element: core.OBJECT_PATTERN,
+	// 		Uniqueness: common.UniquenessConstraint{
+	// 			Type: common.UniqueURL,
+	// 		},
+	// 	})
+
+	// 	storage.SetSerialized(ctx1, "/set", `[]`)
+	// 	val, err := loadSet(ctx1, core.FreeEntityLoadingParams{
+	// 		Key: "/set", Storage: storage, Pattern: pattern,
+	// 	})
+
+	// 	if !assert.NoError(t, err) {
+	// 		return
+	// 	}
+
+	// 	set := val.(*Set)
+	// 	set.Share(ctx1.GetClosestState())
+
+	// 	var (
+	// 		OBJ_1 = core.NewObjectFromMapNoInit(core.ValMap{})
+	// 		OBJ_2 = core.NewObjectFromMapNoInit(core.ValMap{})
+	// 	)
+
+	// 	set.Add(ctx1, OBJ_1)
+	// 	//Check that 1 is added from all POVs (it's okay).
+	// 	assert.True(t, bool(set.Has(ctx1, OBJ_1)))
+	// 	assert.True(t, bool(set.Has(ctx2, OBJ_1)))
+
+	// 	set.Add(ctx2, OBJ_2)
+	// 	//Check that 2 is added from all POVs (it's okay).
+	// 	assert.True(t, bool(set.Has(ctx2, OBJ_2)))
+	// 	assert.True(t, bool(set.Has(ctx1, OBJ_2)))
+
+	// 	assert.NoError(t, tx1.Commit(ctx1))
+
+	// 	//Check that 1 is added from ctx2's POV.
+	// 	assert.True(t, bool(set.Has(ctx2, OBJ_1)))
+
+	// 	//Check that 2 is still added from ctx2's POV.
+	// 	assert.True(t, bool(set.Has(ctx2, OBJ_2)))
+	// })
+
+}
+
+func TestSharedPersistedSetRemove(t *testing.T) {
 
 	t.Run("calling Remove with an element having the same property value as another element should have no impact", func(t *testing.T) {
 		ctx, storage := sharedSetTestSetup(t)
@@ -384,42 +442,6 @@ func TestSharedPersistedSetRemove(t *testing.T) {
 		assert.False(t, bool(set.Has(ctx, obj2)))
 	})
 
-	t.Run("remove different elements during separate transactions", func(t *testing.T) {
-		ctx0 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
-		defer ctx0.CancelGracefully()
-
-		ctx1 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
-		defer ctx1.CancelGracefully()
-		core.StartNewTransaction(ctx1)
-
-		ctx2 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
-		defer ctx2.CancelGracefully()
-		core.StartNewTransaction(ctx2)
-
-		set := NewSetWithConfig(ctx0, core.NewWrappedValueList(core.Int(1), core.Int(2)), SetConfig{
-			Element: core.INT_PATTERN,
-			Uniqueness: common.UniquenessConstraint{
-				Type: common.UniqueRepr,
-			},
-		})
-
-		set.Share(ctx1.GetClosestState())
-
-		set.Remove(ctx1, core.Int(1))
-		//check that 2 is only removed from ctx1's POV
-		assert.False(t, bool(set.Has(ctx1, core.Int(1))))
-		assert.True(t, bool(set.Has(ctx2, core.Int(1))))
-
-		set.Remove(ctx2, core.Int(2))
-		//check that 2 is only removed from ctx2's POV
-		assert.False(t, bool(set.Has(ctx2, core.Int(2))))
-		assert.True(t, bool(set.Has(ctx1, core.Int(2))))
-
-		//check that 1 is still removed added from ctx1's POV
-		assert.False(t, bool(set.Has(ctx1, core.Int(1))))
-		assert.True(t, bool(set.Has(ctx2, core.Int(1))))
-	})
-
 	t.Run("Set should be persisted during call to .Remove", func(t *testing.T) {
 		ctx, storage := sharedSetTestSetup(t)
 		defer ctx.CancelGracefully()
@@ -442,7 +464,7 @@ func TestSharedPersistedSetRemove(t *testing.T) {
 		set := val.(*Set)
 		set.Share(ctx.GetClosestState())
 
-		set.Remove(ctx, core.Int(1))
+		set.Remove(ctx, INT_1)
 
 		//check that the Set is persised
 
@@ -460,7 +482,7 @@ func TestSharedPersistedSetRemove(t *testing.T) {
 		assert.Len(t, vals, 0)
 	})
 
-	t.Run("Set should be persisted at end of transaction if .Remove was called transactionnaly", func(t *testing.T) {
+	t.Run("Set should be persisted at end of successful transaction if .Remove was called transactionnaly", func(t *testing.T) {
 
 		ctx, storage := sharedSetTestSetup(t)
 		defer ctx.CancelGracefully()
@@ -485,7 +507,7 @@ func TestSharedPersistedSetRemove(t *testing.T) {
 		set := val.(*Set)
 		set.Share(ctx.GetClosestState())
 
-		set.Remove(ctx, core.Int(1))
+		set.Remove(ctx, INT_1)
 
 		//check that the Set is not persised
 
@@ -498,7 +520,7 @@ func TestSharedPersistedSetRemove(t *testing.T) {
 		}
 
 		assert.NotSame(t, persisted, set) //future-proofing the test
-		assert.True(t, bool(persisted.(*Set).Has(ctx, core.Int(1))))
+		assert.True(t, bool(persisted.(*Set).Has(ctx, INT_1)))
 
 		assert.NoError(t, tx.Commit(ctx))
 
@@ -513,7 +535,116 @@ func TestSharedPersistedSetRemove(t *testing.T) {
 		}
 
 		assert.NotSame(t, persisted, set) //future-proofing the test
-		assert.False(t, bool(persisted.(*Set).Has(ctx, core.Int(1))))
+		assert.False(t, bool(persisted.(*Set).Has(ctx, INT_1)))
+	})
+
+	t.Run("Set should not be persisted at end of failed transaction if .Remove was called transactionnaly", func(t *testing.T) {
+		ctx, storage := sharedSetTestSetup(t)
+		defer ctx.CancelGracefully()
+
+		pattern := NewSetPattern(SetConfig{
+			Uniqueness: common.UniquenessConstraint{
+				Type: common.UniqueRepr,
+			},
+		})
+
+		storage.SetSerialized(ctx, "/set", `[{"int__value":1}]`)
+		val, err := loadSet(ctx, core.FreeEntityLoadingParams{
+			Key: "/set", Storage: storage, Pattern: pattern,
+		})
+
+		set := val.(*Set)
+		set.Share(ctx.GetClosestState())
+
+		//The tx is started after the KV write in order
+		//for the write to be already commited.
+		tx := core.StartNewTransaction(ctx)
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		if !assert.True(t, bool(set.Has(ctx, INT_1))) {
+			return
+		}
+
+		set.Remove(ctx, INT_1)
+
+		//check that the Set is not persised
+
+		persisted, err := loadSet(ctx, core.FreeEntityLoadingParams{
+			Key: "/set", Storage: storage, Pattern: pattern,
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		assert.NotSame(t, persisted, set) //future-proofing the test
+		assert.True(t, bool(persisted.(*Set).Has(ctx, INT_1)))
+
+		//roll back
+
+		assert.NoError(t, tx.Rollback(ctx))
+
+		//check that the Set is not persised
+
+		persisted, err = loadSet(ctx, core.FreeEntityLoadingParams{
+			Key: "/set", Storage: storage, Pattern: pattern,
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		assert.NotSame(t, persisted, set) //future-proofing the test
+		assert.True(t, bool(persisted.(*Set).Has(ctx, INT_1)))
+	})
+
+	//Testswith several transactions.
+
+	t.Run("if uniqueness is not URL-based, write transactions should wait for the previous transaction to finish", func(t *testing.T) {
+		ctx1, ctx2, storage := sharedSetTestSetup2(t)
+		defer ctx1.CancelGracefully()
+		defer ctx2.CancelGracefully()
+
+		tx1 := core.StartNewTransaction(ctx1)
+		core.StartNewTransaction(ctx2)
+
+		pattern := NewSetPattern(SetConfig{
+			Uniqueness: common.UniquenessConstraint{
+				Type: common.UniqueRepr,
+			},
+		})
+
+		storage.SetSerialized(ctx1, "/set", `[1, 2]`)
+		val, err := loadSet(ctx1, core.FreeEntityLoadingParams{
+			Key: "/set", Storage: storage, Pattern: pattern,
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		set := val.(*Set)
+		set.Share(ctx1.GetClosestState())
+
+		set.Remove(ctx1, INT_1)
+		assert.False(t, bool(set.Has(ctx1, INT_1)))
+
+		tx2Done := make(chan struct{})
+		go func() { //second transaction
+			set.Remove(ctx2, INT_2)
+
+			//since the first transaction should be finished,
+			//the other element should have been removed.
+			assert.False(t, bool(set.Has(ctx2, INT_1)))
+			assert.False(t, bool(set.Has(ctx2, INT_2)))
+			tx2Done <- struct{}{}
+		}()
+
+		assert.NoError(t, tx1.Commit(ctx1))
+		<-tx2Done
 	})
 
 }
@@ -550,6 +681,44 @@ func TestSharedPersistedSetHas(t *testing.T) {
 
 		assert.True(t, bool(set.Has(ctx, obj1)))
 		assert.False(t, bool(set.Has(ctx, obj2)))
+	})
+
+	//Tests with several transactions.
+
+	t.Run("readonly transactions can read the Set in parallel", func(t *testing.T) {
+		ctx1, ctx2, storage := sharedSetTestSetup2(t)
+		defer ctx1.CancelGracefully()
+		defer ctx2.CancelGracefully()
+
+		readTx1 := core.StartNewReadonlyTransaction(ctx1)
+		core.StartNewReadonlyTransaction(ctx2)
+
+		pattern := NewSetPattern(SetConfig{
+			Uniqueness: common.UniquenessConstraint{
+				Type: common.UniqueRepr,
+			},
+		})
+
+		storage.SetSerialized(ctx1, "/set", `[{"int__value":1}]`)
+		val, err := loadSet(ctx1, core.FreeEntityLoadingParams{
+			Key: "/set", Storage: storage, Pattern: pattern,
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		set := val.(*Set)
+		set.Share(ctx1.GetClosestState())
+
+		assert.True(t, bool(set.Has(ctx1, INT_1)))
+		assert.True(t, bool(set.Has(ctx2, INT_1)))
+
+		assert.True(t, bool(set.Has(ctx1, INT_1)))
+		assert.True(t, bool(set.Has(ctx2, INT_1)))
+
+		assert.NoError(t, readTx1.Commit(ctx1))
+		assert.True(t, bool(set.Has(ctx2, INT_1)))
 	})
 }
 
@@ -593,7 +762,7 @@ func TestInteractWithElementsOfLoadedSet(t *testing.T) {
 
 		elem, _ := loadedSet.(*Set).Get(ctx, core.Str(url.GetLastPathSegment()))
 		obj := elem.(*core.Object)
-		if !assert.NoError(t, obj.SetProp(ctx, "prop", core.Int(1))) {
+		if !assert.NoError(t, obj.SetProp(ctx, "prop", INT_1)) {
 			return
 		}
 
@@ -613,7 +782,7 @@ func TestInteractWithElementsOfLoadedSet(t *testing.T) {
 			return
 		}
 
-		assert.Equal(t, core.Int(1), loadedObj.Prop(ctx, "prop"))
+		assert.Equal(t, INT_1, loadedObj.Prop(ctx, "prop"))
 	})
 }
 
@@ -635,4 +804,28 @@ func sharedSetTestSetup(t *testing.T) (*core.Context, core.DataStore) {
 	}))
 	storage := filekv.NewSerializedValueStorage(kv, "ldb://main/")
 	return ctx, storage
+}
+
+func sharedSetTestSetup2(t *testing.T) (*core.Context, *core.Context, core.DataStore) {
+	config := core.ContextConfig{
+		Permissions: []core.Permission{
+			core.DatabasePermission{
+				Kind_:  permkind.Read,
+				Entity: core.Host("ldb://main"),
+			},
+			core.DatabasePermission{
+				Kind_:  permkind.Write,
+				Entity: core.Host("ldb://main"),
+			},
+		},
+	}
+
+	ctx1 := core.NewContexWithEmptyState(config, nil)
+	ctx2 := core.NewContexWithEmptyState(config, nil)
+
+	kv := utils.Must(filekv.OpenSingleFileKV(filekv.KvStoreConfig{
+		Path: core.PathFrom(filepath.Join(t.TempDir(), "kv")),
+	}))
+	storage := filekv.NewSerializedValueStorage(kv, "ldb://main/")
+	return ctx1, ctx2, storage
 }
