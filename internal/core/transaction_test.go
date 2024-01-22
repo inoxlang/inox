@@ -129,6 +129,46 @@ func TestTransaction(t *testing.T) {
 
 	})
 
+	t.Run("during the commit phase calling one of a transaction's methods is invalid", func(t *testing.T) {
+		ctx := NewContext(ContextConfig{})
+		defer ctx.CancelGracefully()
+
+		tx := newTransaction(ctx, false)
+		tx.Start(ctx)
+
+		tx.OnEnd(1, func(tx *Transaction, success bool) {
+			assert.ErrorIs(t, tx.OnEnd(ctx, func(tx *Transaction, success bool) {}), ErrFinishingTransaction)
+			assert.ErrorIs(t, tx.AddEffect(ctx, nil), ErrFinishingTransaction)
+			assert.ErrorIs(t, tx.Commit(ctx), ErrFinishingTransaction)
+			assert.ErrorIs(t, tx.Rollback(ctx), ErrFinishingTransaction)
+			assert.ErrorIs(t, tx.Start(ctx), ErrFinishingTransaction)
+
+			assert.False(t, tx.IsFinished())
+			assert.True(t, tx.IsFinishing())
+		})
+		assert.NoError(t, tx.Commit(ctx))
+	})
+
+	t.Run("during the rollback phase calling one of a transaction's methods is invalid", func(t *testing.T) {
+		ctx := NewContext(ContextConfig{})
+		defer ctx.CancelGracefully()
+
+		tx := newTransaction(ctx, false)
+		tx.Start(ctx)
+
+		tx.OnEnd(1, func(tx *Transaction, success bool) {
+			assert.ErrorIs(t, tx.OnEnd(ctx, func(tx *Transaction, success bool) {}), ErrFinishingTransaction)
+			assert.ErrorIs(t, tx.AddEffect(ctx, nil), ErrFinishingTransaction)
+			assert.ErrorIs(t, tx.Commit(ctx), ErrFinishingTransaction)
+			assert.ErrorIs(t, tx.Rollback(ctx), ErrFinishingTransaction)
+			assert.ErrorIs(t, tx.Start(ctx), ErrFinishingTransaction)
+
+			assert.False(t, tx.IsFinished())
+			assert.True(t, tx.IsFinishing())
+		})
+		assert.NoError(t, tx.Rollback(ctx))
+	})
+
 	t.Run("transaction timeout", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		defer ctx.CancelGracefully()

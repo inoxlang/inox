@@ -23,6 +23,7 @@ var (
 	ErrCannotAddIrreversibleEffect             = errors.New("cannot add irreversible effect to transaction")
 	ErrCtxAlreadyHasTransaction                = errors.New("context already has a transaction")
 	ErrFinishedTransaction                     = errors.New("transaction is finished")
+	ErrFinishingTransaction                    = errors.New("transaction is finishing")
 	ErrAlreadySetTransactionEndCallback        = errors.New("transaction end callback is already set")
 	ErrRunningTransactionExpected              = errors.New("running transaction expected")
 	ErrEffectsNotAllowedInReadonlyTransaction  = errors.New("effects are not allowed in a readonly transaction")
@@ -117,6 +118,10 @@ func (tx *Transaction) IsFinished() bool {
 	}
 }
 
+func (tx *Transaction) IsFinishing() bool {
+	return tx.finishing.Load()
+}
+
 func (tx *Transaction) IsReadonly() bool {
 	return tx.isReadonly
 }
@@ -127,6 +132,10 @@ func (tx *Transaction) IsReadonly() bool {
 func (tx *Transaction) Start(ctx *Context) error {
 	if tx.IsFinished() {
 		return ErrFinishedTransaction
+	}
+
+	if tx.IsFinishing() {
+		return ErrFinishingTransaction
 	}
 
 	if ctx != tx.ctx {
@@ -171,6 +180,10 @@ func (tx *Transaction) OnEnd(k any, fn TransactionEndCallbackFn) error {
 		return ErrFinishedTransaction
 	}
 
+	if tx.IsFinishing() {
+		return ErrFinishingTransaction
+	}
+
 	tx.lock.Lock()
 	defer tx.lock.Unlock()
 
@@ -186,6 +199,10 @@ func (tx *Transaction) OnEnd(k any, fn TransactionEndCallbackFn) error {
 func (tx *Transaction) AddEffect(ctx *Context, effect Effect) error {
 	if tx.IsFinished() {
 		return ErrFinishedTransaction
+	}
+
+	if tx.IsFinishing() {
+		return ErrFinishingTransaction
 	}
 
 	if tx.isReadonly {
@@ -204,12 +221,13 @@ func (tx *Transaction) AddEffect(ctx *Context, effect Effect) error {
 }
 
 func (tx *Transaction) Commit(ctx *Context) error {
-	if !tx.finishing.CompareAndSwap(false, true) {
-		return ErrFinishedTransaction
-	}
 
 	if tx.IsFinished() {
 		return ErrFinishedTransaction
+	}
+
+	if !tx.finishing.CompareAndSwap(false, true) {
+		return ErrFinishingTransaction
 	}
 
 	tx.lock.Lock()
@@ -263,12 +281,12 @@ func (tx *Transaction) Commit(ctx *Context) error {
 }
 
 func (tx *Transaction) Rollback(ctx *Context) error {
-	if !tx.finishing.CompareAndSwap(false, true) {
+	if tx.IsFinished() {
 		return ErrFinishedTransaction
 	}
 
-	if tx.IsFinished() {
-		return ErrFinishedTransaction
+	if !tx.finishing.CompareAndSwap(false, true) {
+		return ErrFinishingTransaction
 	}
 
 	tx.lock.Lock()
