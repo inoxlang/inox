@@ -168,6 +168,9 @@ const (
 	POINTED_VALUE_HAS_NO_PROPERTIES = "pointed value has no properties"
 
 	OPERANDS_NOT_COMPARABLE_BECAUSE_DIFFERENT_TYPES = "operands are not comparable because they have different types"
+
+	CALL_MAY_RETURN_ERROR_NOT_HANDLED_EITHER_HANDLE_IT_OR_TURN_THE_CALL_IN_A_MUST_CALL = //
+	"call may return an error that is not handled, handle it or turn the call in a 'must' call (e.g. `callee()` -> `callee!()`)"
 )
 
 var (

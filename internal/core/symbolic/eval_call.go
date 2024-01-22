@@ -733,3 +733,56 @@ outer:
 	state.addError(makeSymbolicEvalError(callNode.Callee, state, INVALID_RETURN_TYPE_MSG))
 	return ret
 }
+
+func isReturnValueWithPossibleError(ret Value) bool {
+	switch r := ret.(type) {
+	case *Array:
+		array := r
+		if !array.HasKnownLen() || array.KnownLen() == 0 {
+			return false
+		}
+
+		lastElem := array.elements[len(array.elements)-1]
+
+		switch lastElem := lastElem.(type) {
+		case *Error:
+			return true
+		case IMultivalue:
+			mv := lastElem.OriginalMultivalue()
+			onlyErrorsAndNil := mv.AllValues(func(v Value) bool {
+				return utils.Implements[*Error](v) || utils.Implements[*NilT](v)
+			})
+			onlyNil := mv.AllValues(func(v Value) bool {
+				return utils.Implements[*NilT](v)
+			})
+			return onlyErrorsAndNil && !onlyNil
+		case *NilT:
+			return false
+		}
+	case IMultivalue:
+		mv := r.OriginalMultivalue()
+		if len(mv.getValues()) == 2 {
+			onlyErrorsAndNil := mv.AllValues(func(v Value) bool {
+				return utils.Implements[*Error](v) || utils.Implements[*NilT](v)
+			})
+			onlyNil := mv.AllValues(func(v Value) bool {
+				return utils.Implements[*NilT](v)
+			})
+			return onlyErrorsAndNil && !onlyNil
+		}
+	case *Error:
+		return true
+	}
+
+	return false
+}
+
+func checkCallExprWithUnhandledError(node parse.Node, ret Value, state *State) {
+	if !utils.Implements[*parse.CallExpression](node) {
+		return
+	}
+
+	if isReturnValueWithPossibleError(ret) {
+		state.addWarning(makeSymbolicEvalWarning(node, state, CALL_MAY_RETURN_ERROR_NOT_HANDLED_EITHER_HANDLE_IT_OR_TURN_THE_CALL_IN_A_MUST_CALL))
+	}
+}

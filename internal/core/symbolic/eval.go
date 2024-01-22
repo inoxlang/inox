@@ -539,10 +539,11 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 		return &AstNode{Node: n.ToChunk()}, nil
 	case *parse.Block:
 		for _, stmt := range n.Statements {
-			_, err := symbolicEval(stmt, state)
+			res, err := symbolicEval(stmt, state)
 			if err != nil {
 				return nil, err
 			}
+			checkCallExprWithUnhandledError(stmt, res, state)
 		}
 		return nil, nil
 	case *parse.SynchronizedBlockStatement:
@@ -1167,6 +1168,7 @@ func evalChunk(n *parse.Chunk, state *State) (_ Value, finalErr error) {
 		if err != nil {
 			return nil, err
 		}
+		checkCallExprWithUnhandledError(n.Statements[0], res, state)
 		if state.returnValue != nil && !state.conditionalReturn {
 			return state.returnValue, nil
 		}
@@ -1179,11 +1181,14 @@ func evalChunk(n *parse.Chunk, state *State) (_ Value, finalErr error) {
 
 	var returnValue Value
 	for _, stmt := range n.Statements {
-		_, err := symbolicEval(stmt, state)
+		res, err := symbolicEval(stmt, state)
 
 		if err != nil {
 			return nil, err
 		}
+
+		checkCallExprWithUnhandledError(stmt, res, state)
+
 		if state.returnValue != nil {
 			if state.conditionalReturn {
 				returnValue = state.returnValue
