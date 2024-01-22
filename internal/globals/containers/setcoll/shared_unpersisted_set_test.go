@@ -31,7 +31,6 @@ func TestSharedUnpersistedSetAdd(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		assert.True(t, bool(set.Has(otherCtx, core.Int(1))))
-
 	})
 
 	t.Run("adding an element to a URL-based uniqueness shared Set with no storage should cause a panic", func(t *testing.T) {
@@ -88,6 +87,46 @@ func TestSharedUnpersistedSetAdd(t *testing.T) {
 		assert.NoError(t, tx1.Commit(ctx1))
 
 		<-tx2Done
+	})
+
+	t.Run("writes in subsequent transactions", func(t *testing.T) {
+		ctx1 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		defer ctx1.CancelGracefully()
+		tx1 := core.StartNewTransaction(ctx1)
+
+		ctx2 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		defer ctx2.CancelGracefully()
+		tx2 := core.StartNewTransaction(ctx2)
+
+		ctx3 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		defer ctx3.CancelGracefully()
+		core.StartNewTransaction(ctx3)
+
+		set := NewSetWithConfig(ctx1, nil, SetConfig{
+			Uniqueness: common.UniquenessConstraint{
+				Type: common.UniqueRepr,
+			},
+		})
+
+		//First transaction.
+
+		set.Add(ctx1, INT_1)
+		if !assert.NoError(t, tx1.Commit(ctx1)) {
+			return
+		}
+
+		//Second transaction.
+
+		assert.True(t, bool(set.Has(ctx2, INT_1)))
+
+		set.Add(ctx2, INT_2)
+		if !assert.NoError(t, tx2.Commit(ctx2)) {
+			return
+		}
+
+		//Third transaction.
+		assert.True(t, bool(set.Has(ctx3, INT_1)))
+		assert.True(t, bool(set.Has(ctx3, INT_2)))
 	})
 
 	t.Run("adding an element with the same property value as another element is not allowed", func(t *testing.T) {

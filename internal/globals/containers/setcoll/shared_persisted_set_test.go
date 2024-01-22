@@ -353,6 +353,63 @@ func TestSharedPersistedSetAdd(t *testing.T) {
 		<-tx2Done
 	})
 
+	t.Run("writes in two subsequent transactions", func(t *testing.T) {
+
+		ctx1, ctx2, storage := sharedSetTestSetup2(t)
+		defer ctx1.CancelGracefully()
+		defer ctx2.CancelGracefully()
+
+		tx1 := core.StartNewTransaction(ctx1)
+		tx2 := core.StartNewTransaction(ctx2)
+
+		pattern := NewSetPattern(SetConfig{
+			Uniqueness: common.UniquenessConstraint{
+				Type: common.UniqueRepr,
+			},
+		})
+
+		storage.SetSerialized(ctx1, "/set", `[]`)
+		val, err := loadSet(ctx1, core.FreeEntityLoadingParams{
+			Key: "/set", Storage: storage, Pattern: pattern,
+		})
+
+		set := val.(*Set)
+
+		//First transaction.
+
+		set.Share(ctx1.GetClosestState())
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		set.Add(ctx1, INT_1)
+		if !assert.NoError(t, tx1.Commit(ctx1)) {
+			return
+		}
+
+		//Second transaction.
+
+		assert.True(t, bool(set.Has(ctx2, INT_1)))
+
+		set.Add(ctx2, INT_2)
+		assert.NoError(t, tx2.Commit(ctx2))
+
+		//check that the Set is persised
+
+		persisted, err := loadSet(ctx2, core.FreeEntityLoadingParams{
+			Key: "/set", Storage: storage, Pattern: pattern,
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		assert.NotSame(t, persisted, set) //future-proofing the test
+		assert.True(t, bool(persisted.(*Set).Has(ctx2, INT_1)))
+		assert.True(t, bool(persisted.(*Set).Has(ctx2, INT_2)))
+	})
+
 	// t.Run("if uniqueness is URL-based transactions should not wait for the previous transaction to finish", func(t *testing.T) {
 	// 	ctx1, ctx2, storage := sharedSetTestSetup2(t)
 	// 	defer ctx1.CancelGracefully()
