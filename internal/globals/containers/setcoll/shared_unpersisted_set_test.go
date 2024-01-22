@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/inoxlang/inox/internal/globals/containers/common"
@@ -26,6 +27,7 @@ func TestSharedUnpersistedSetAdd(t *testing.T) {
 		set.Share(ctx.GetClosestState())
 
 		set.Add(ctx, INT_1)
+		assert.True(t, bool(set.Has(ctx, INT_1)))
 
 		assert.NoError(t, tx.Commit(ctx))
 
@@ -73,7 +75,12 @@ func TestSharedUnpersistedSetAdd(t *testing.T) {
 		set.Share(ctx1.GetClosestState())
 
 		set.Add(ctx1, INT_1)
+
+		//Check that the element is added from tx1's POV.
 		assert.True(t, bool(set.Has(ctx1, INT_1)))
+		assert.True(t, bool(utils.Ret1(set.Get(ctx1, core.Str(INT_1_UNTYPED_REPR)))))
+		values := core.IterateAllValuesOnly(ctx1, set.Iterator(ctx1, core.IteratorConfiguration{}))
+		assert.ElementsMatch(t, []any{INT_1}, values)
 
 		tx2Done := make(chan struct{})
 		go func() { //second transaction
@@ -82,7 +89,14 @@ func TestSharedUnpersistedSetAdd(t *testing.T) {
 			//since the first transaction should be finished,
 			//the other element should have been added.
 			assert.True(t, bool(set.Has(ctx2, INT_1)))
+			assert.True(t, bool(utils.Ret1(set.Get(ctx2, core.Str(INT_1_UNTYPED_REPR)))))
+
 			assert.True(t, bool(set.Has(ctx2, INT_2)))
+			assert.True(t, bool(utils.Ret1(set.Get(ctx2, core.Str(INT_2_UNTYPED_REPR)))))
+
+			values := core.IterateAllValuesOnly(ctx2, set.Iterator(ctx2, core.IteratorConfiguration{}))
+			assert.ElementsMatch(t, []any{INT_1, INT_2}, values)
+
 			tx2Done <- struct{}{}
 		}()
 
@@ -279,5 +293,8 @@ func TestSharedUnpersistedSetRemove(t *testing.T) {
 
 		assert.True(t, bool(set.Has(ctx, obj1)))
 		assert.False(t, bool(set.Has(ctx, obj2)))
+
+		values := core.IterateAllValuesOnly(ctx, set.Iterator(ctx, core.IteratorConfiguration{}))
+		assert.ElementsMatch(t, []any{obj1}, values)
 	})
 }

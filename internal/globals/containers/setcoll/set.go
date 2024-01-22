@@ -172,7 +172,7 @@ func (set *Set) GetElementByKey(ctx *core.Context, pathKey core.ElementKey) (cor
 	set.initPathKeyMap()
 	key := set.pathKeyToKey[pathKey]
 
-	elem, ok := set.elementByKey[key]
+	elem, ok := set.getElem(key)
 	if !ok {
 		return nil, core.ErrCollectionElemNotFound
 	}
@@ -206,12 +206,35 @@ func (set *Set) hasNoLock(ctx *core.Context, elem core.Serializable) core.Bool {
 	key := set.getUniqueKey(ctx, elem)
 	//we don't clone the key because it will not be stored.
 
-	presentElem, ok := set.elementByKey[key]
+	presentElem, ok := set.getElem(key)
 
 	if ok && set.config.Uniqueness.Type != common.UniqueRepr && !core.Same(presentElem, elem) {
 		return false
 	}
 	return core.Bool(ok)
+}
+
+func (set *Set) getElem(key string) (core.Serializable, bool) {
+	for _, removedKey := range set.pendingRemovals {
+		if removedKey == key {
+			return nil, false
+		}
+	}
+
+	presentElem, ok := set.elementByKey[key]
+
+	if ok {
+
+		return presentElem, true
+	}
+
+	for _, inclusion := range set.pendingInclusions {
+		if inclusion.key == key {
+			return inclusion.value, true
+		}
+	}
+
+	return nil, false
 }
 
 func (set *Set) Get(ctx *core.Context, keyVal core.StringLike) (core.Value, core.Bool) {
@@ -225,7 +248,7 @@ func (set *Set) Get(ctx *core.Context, keyVal core.StringLike) (core.Value, core
 
 	key := keyVal.GetOrBuildString()
 
-	elem, ok := set.elementByKey[key]
+	elem, ok := set.getElem(key)
 	if !ok {
 		return nil, false
 	}
@@ -278,7 +301,7 @@ func (set *Set) Add(ctx *core.Context, elem core.Serializable) {
 		panic(core.ErrEffectsNotAllowedInReadonlyTransaction)
 	}
 
-	set.addToSharedSetNoPersist(ctx, elem)
+	set.addToSharedSetNoPersist(ctx, elem, false)
 
 	//determine when to persist the Set and make the changes visible to other transactions
 
@@ -296,7 +319,7 @@ func (set *Set) Add(ctx *core.Context, elem core.Serializable) {
 	}
 }
 
-func (set *Set) addToSharedSetNoPersist(ctx *core.Context, elem core.Serializable) {
+func (set *Set) addToSharedSetNoPersist(ctx *core.Context, elem core.Serializable, ignoreTx bool) {
 	if set.config.Element != nil && !set.config.Element.Test(ctx, elem) {
 		panic(ErrValueDoesMatchElementPattern)
 	}
@@ -318,7 +341,7 @@ func (set *Set) addToSharedSetNoPersist(ctx *core.Context, elem core.Serializabl
 
 	tx := ctx.GetTx()
 
-	if tx == nil {
+	if tx == nil || ignoreTx {
 		presentElem, alreadyPresent := set.elementByKey[key]
 		if alreadyPresent && set.config.Uniqueness.Type == common.UniquePropertyValue && !core.Same(elem, presentElem) {
 			panic(ErrCannotAddDifferentElemWithSamePropertyValue)
@@ -347,9 +370,6 @@ func (set *Set) addToSharedSetNoPersist(ctx *core.Context, elem core.Serializabl
 				value: elem,
 			})
 		}
-
-		//Add the element.
-		set.elementByKey[key] = elem
 	}
 
 }

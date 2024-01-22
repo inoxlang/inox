@@ -16,8 +16,16 @@ func (s *Set) Iterator(ctx *core.Context, config core.IteratorConfiguration) cor
 
 	elements := maps.Clone(s.elementByKey)
 
+	for _, removedKey := range s.pendingRemovals {
+		delete(elements, removedKey)
+	}
+
+	for _, inclusion := range s.pendingInclusions {
+		elements[inclusion.key] = inclusion.value
+	}
+
 	var keys []string
-	for k := range s.elementByKey {
+	for k := range elements {
 		keys = append(keys, k)
 	}
 

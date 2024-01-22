@@ -81,7 +81,7 @@ func loadSet(ctx *core.Context, args core.FreeEntityLoadingParams) (core.UrlHold
 					finalErr = fmt.Errorf("%#v", e)
 				}
 			}()
-			set.addToSharedSetNoPersist(ctx, val)
+			set.addToSharedSetNoPersist(ctx, val, true)
 			if val.IsMutable() {
 				_, ok := val.(core.Watchable)
 				if !ok {
