@@ -42,7 +42,7 @@ func init() {
 
 type Set struct {
 	config  SetConfig
-	pattern *SetPattern
+	pattern *SetPattern //set for persisted sets.
 
 	//elements and keys
 

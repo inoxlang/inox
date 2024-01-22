@@ -321,7 +321,7 @@ func TestPersistLoadSet(t *testing.T) {
 		set, err := loadSet(ctx, core.FreeEntityLoadingParams{
 			Key: "/set", Storage: storage, Pattern: pattern,
 		})
-		if !assert.ErrorIs(t, err, ErrValueWithSameKeyAlreadyPresent) {
+		if !assert.ErrorIs(t, err, ErrCannotAddDifferentElemWithSamePropertyValue) {
 			return
 		}
 
