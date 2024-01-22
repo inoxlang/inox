@@ -214,7 +214,6 @@ func (tx *Transaction) Commit(ctx *Context) error {
 
 	tx.lock.Lock()
 	defer func() {
-		tx.lock.Unlock()
 		tx.ctx.setTx(nil)
 
 		d, _ := tx.finished.Load().(chan struct{})
@@ -225,6 +224,11 @@ func (tx *Transaction) Commit(ctx *Context) error {
 		}
 
 		tx.finishing.Store(true)
+		tx.lock.Unlock()
+
+		//The lock should not be released before updating tx.finished
+		//because another goroutine calling Finished() could obtain
+		//a different channel.
 	}()
 
 	tx.endTime = time.Now()
@@ -269,7 +273,6 @@ func (tx *Transaction) Rollback(ctx *Context) error {
 
 	tx.lock.Lock()
 	defer func() {
-		tx.lock.Unlock()
 		tx.ctx.setTx(nil)
 
 		d, _ := tx.finished.Load().(chan struct{})
@@ -280,6 +283,11 @@ func (tx *Transaction) Rollback(ctx *Context) error {
 		}
 
 		tx.finishing.Store(true)
+		tx.lock.Unlock()
+
+		//The lock should not be released before updating tx.finished
+		//because another goroutine calling Finished() could obtain
+		//a different channel.
 	}()
 
 	tx.endTime = time.Now()
