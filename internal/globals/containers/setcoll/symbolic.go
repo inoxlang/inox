@@ -3,22 +3,8 @@ package setcoll
 import (
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
-	"github.com/inoxlang/inox/internal/globals/containers/common"
 	coll_symbolic "github.com/inoxlang/inox/internal/globals/containers/symbolic"
-	"github.com/inoxlang/inox/internal/utils"
 )
-
-func init() {
-	coll_symbolic.SetExternalData(coll_symbolic.ExternalData{
-		CreateConcreteSetPattern: func(uniqueness common.UniquenessConstraint, elementPattern any) any {
-			return utils.Must(SET_PATTERN.Call([]core.Serializable{elementPattern.(core.Pattern), uniqueness.ToValue()}))
-		},
-		CreateConcreteMapPattern: func(keyPattern, valuePattern any) any {
-			panic(core.ErrNotImplementedYet)
-			//return utils.Must(SET_PATTERN.Call([]core.Serializable{elementPattern.(core.Pattern), uniqueness.ToValue()}))
-		},
-	})
-}
 
 func (s *Set) ToSymbolicValue(ctx *core.Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	p, err := s.config.Element.ToSymbolicValue(ctx, encountered)

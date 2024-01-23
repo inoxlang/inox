@@ -8,8 +8,19 @@ import (
 func (s *Map) Iterator(ctx *core.Context, config core.IteratorConfiguration) core.Iterator {
 	i := -1
 	var entries []entry
-	for _, entry := range s.entryByKey {
+
+add_entries:
+	for serializedKey, entry := range s.entryByKey {
+		for _, removedKey := range s.pendingRemovals {
+			if serializedKey == removedKey {
+				continue add_entries
+			}
+		}
 		entries = append(entries, entry)
+	}
+
+	for _, inclusion := range s.pendingInclusions {
+		entries = append(entries, inclusion.entry)
 	}
 
 	return config.CreateIterator(&common.CollectionIterator{

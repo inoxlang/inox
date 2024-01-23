@@ -212,7 +212,7 @@ func (m *Map) Remove(ctx *symbolic.Context, k symbolic.Value) {
 	ctx.SetSymbolicGoFunctionParameters(&[]symbolic.Value{m.key}, MAP_REMOVE_METHOD_PARAM_NAMES)
 }
 
-func (m *Map) Get(ctx *symbolic.Context, k symbolic.Value) (symbolic.Value, *symbolic.Bool) {
+func (m *Map) Get(ctx *symbolic.Context, k symbolic.Serializable) (symbolic.Value, *symbolic.Bool) {
 	ctx.SetSymbolicGoFunctionParameters(&[]symbolic.Value{m.key}, MAP_GET_METHOD_PARAM_NAMES)
 	return m.value, symbolic.ANY_BOOL
 }

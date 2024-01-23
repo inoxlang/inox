@@ -7,6 +7,7 @@ import (
 	"github.com/inoxlang/inox/internal/core"
 	coll_symbolic "github.com/inoxlang/inox/internal/globals/containers/symbolic"
 	"github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -140,7 +141,9 @@ func TestUnsharedSetAddRemove(t *testing.T) {
 		record := core.NewRecordFromMap(core.ValMap{"password": core.Str("x"), "email-address": core.EmailAddress("a@mail.com")})
 		m.Insert(ctx, record, STRING_A)
 
-		val, ok := m.Get(ctx, core.Str(`{"email-address":{"emailaddr__value":"a@mail.com"},"password":"x"}`))
+		recordClone := utils.Must(core.RepresentationBasedClone(ctx, record))
+
+		val, ok := m.Get(ctx, recordClone)
 
 		if !assert.True(t, bool(ok)) {
 			return

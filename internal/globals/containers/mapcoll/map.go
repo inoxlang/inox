@@ -3,6 +3,7 @@ package mapcoll
 import (
 	"errors"
 	"fmt"
+	"reflect"
 	"slices"
 	"strings"
 
@@ -23,6 +24,7 @@ var (
 	ErrMapEntryListShouldHaveEvenLength     = errors.New(`flat map entry list should have an even length: ["k1", 1,  "k2", 2]`)
 	ErrMapCanOnlyContainKeysWithFastId      = errors.New("a Map can only contain keys having a fast id")
 	ErrSetCanOnlyContainRepresentableValues = errors.New("a Map can only contain representable values")
+	ErrKeysShouldBeImmutable                = errors.New("keys should be immutable")
 	ErrKeyDoesMatchKeyPattern               = errors.New("provided key does not match the key pattern")
 	ErrValueDoesMatchValuePattern           = errors.New("provided value does not match the value pattern")
 	ErrEntryAlreadyExists                   = errors.New("entry already exists")
@@ -35,8 +37,7 @@ var (
 )
 
 func init() {
-
-	//TODO: core.RegisterLoadFreeEntityFn(reflect.TypeOf((*MapPatterern)(nil)), loadSet)
+	core.RegisterLoadFreeEntityFn(reflect.TypeOf((*MapPattern)(nil)), loadMap)
 
 	core.RegisterDefaultPattern(MAP_PATTERN.Name, MAP_PATTERN)
 	core.RegisterDefaultPattern(MAP_PATTERN_PATTERN.Name, MAP_PATTERN_PATTERN)
@@ -184,7 +185,29 @@ func (m *Map) GetElementByKey(ctx *core.Context, pathKey core.ElementKey) (core.
 }
 
 func (m *Map) Contains(ctx *core.Context, value core.Serializable) bool {
-	return bool(m.Has(ctx, value))
+	alreadyCompared := map[uintptr]uintptr{}
+
+	for serializedKey, entry := range m.entryByKey {
+		for _, removedKey := range m.pendingRemovals {
+			if serializedKey == removedKey {
+				goto ignore_entry
+			}
+		}
+
+		if value.Equal(ctx, entry.value, alreadyCompared, 0) {
+			return true
+		}
+
+	ignore_entry:
+	}
+
+	for _, inclusion := range m.pendingInclusions {
+		if value.Equal(ctx, inclusion.entry.value, alreadyCompared, 0) {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (m *Map) Has(ctx *core.Context, keyVal core.Serializable) core.Bool {
@@ -209,21 +232,43 @@ func (m *Map) hasNoLock(ctx *core.Context, key core.Serializable) core.Bool {
 	serializedKey := m.getUniqueKey(ctx, key)
 	//we don't clone the key because it will not be stored.
 
-	_, ok := m.entryByKey[serializedKey]
+	_, ok := m.getEntry(serializedKey)
 
 	return core.Bool(ok)
 }
 
-func (m *Map) Get(ctx *core.Context, keyVal core.StringLike) (core.Value, core.Bool) {
+func (m *Map) getEntry(key string) (entry, bool) {
+	for _, removedKey := range m.pendingRemovals {
+		if removedKey == key {
+			return entry{}, false
+		}
+	}
+
+	presentEntry, ok := m.entryByKey[key]
+
+	if ok {
+		return presentEntry, true
+	}
+
+	for _, inclusion := range m.pendingInclusions {
+		if inclusion.serializedKey == key {
+			return inclusion.entry, true
+		}
+	}
+
+	return entry{}, false
+}
+
+func (m *Map) Get(ctx *core.Context, keyVal core.Serializable) (core.Value, core.Bool) {
 	if m.lock.IsValueShared() {
 		if err := m.txIsolator.WaitIfOtherTransaction(ctx, false); err != nil {
 			panic(err)
 		}
 	}
 
-	key := keyVal.GetOrBuildString()
+	serialiedKey := m.getUniqueKey(ctx, keyVal)
 
-	entry, ok := m.entryByKey[key]
+	entry, ok := m.getEntry(serialiedKey)
 	if !ok {
 		return nil, false
 	}
@@ -231,8 +276,8 @@ func (m *Map) Get(ctx *core.Context, keyVal core.StringLike) (core.Value, core.B
 	return entry.value, true
 }
 
-func (m *Map) Insert(ctx *core.Context, key, value core.Serializable) {
-	m.set(ctx, entry{key, value}, true)
+func (m *Map) Insert(ctx *core.Context, key, value core.Serializable) error {
+	return m.set(ctx, entry{key, value}, true)
 }
 
 func (m *Map) Set(ctx *core.Context, key, value core.Serializable) {
@@ -289,7 +334,7 @@ func (m *Map) set(ctx *core.Context, entry entry, insert bool) error {
 		panic(core.ErrEffectsNotAllowedInReadonlyTransaction)
 	}
 
-	m.putEntryInSharedMap(ctx, entry)
+	m.putEntryInSharedMap(ctx, entry, false)
 
 	//determine when to persist the Map and make the changes visible to other transactions
 
@@ -309,7 +354,7 @@ func (m *Map) set(ctx *core.Context, entry entry, insert bool) error {
 	return nil
 }
 
-func (m *Map) putEntryInSharedMap(ctx *core.Context, entry entry) {
+func (m *Map) putEntryInSharedMap(ctx *core.Context, entry entry, ignoreTx bool) {
 	if m.config.Key != nil && !m.config.Key.Test(ctx, entry.key) {
 		panic(ErrKeyDoesMatchKeyPattern)
 	}
@@ -334,7 +379,7 @@ func (m *Map) putEntryInSharedMap(ctx *core.Context, entry entry) {
 
 	tx := ctx.GetTx()
 
-	if tx == nil {
+	if tx == nil || ignoreTx {
 		if _, ok := m.entryByKey[serializedKey]; ok {
 			panic(ErrValueWithSameKeyAlreadyPresent)
 		}
@@ -351,29 +396,26 @@ func (m *Map) putEntryInSharedMap(ctx *core.Context, entry entry) {
 			m.pendingRemovals = slices.Delete(m.pendingRemovals, index, index+1)
 		}
 
-		//Add the key and value to the pending inclusions.
+		//Add the entry to the pending inclusions.
 		if index := slices.IndexFunc(m.pendingInclusions, func(i inclusion) bool { return i.serializedKey == serializedKey }); index < 0 {
 			m.pendingInclusions = append(m.pendingInclusions, inclusion{
 				serializedKey: serializedKey,
 				entry:         entry,
 			})
 		}
-
-		//Add/update the entry.
-		m.entryByKey[serializedKey] = entry
 	}
 
 }
 
-func (m *Map) Remove(ctx *core.Context, keyVal core.Serializable) {
+func (m *Map) Remove(ctx *core.Context, key core.Serializable) {
 
 	if !m.lock.IsValueShared() {
 		// No locking required.
 		// Transactions are ignored.
 
-		key := m.getUniqueKey(ctx, keyVal)
+		serializedKey := m.getUniqueKey(ctx, key)
 
-		delete(m.entryByKey, key)
+		delete(m.entryByKey, serializedKey)
 		//TODO: remove path key (ElementKey) efficiently
 		return
 	}
@@ -390,23 +432,23 @@ func (m *Map) Remove(ctx *core.Context, keyVal core.Serializable) {
 		panic(err)
 	}
 
-	key := m.getUniqueKey(ctx, keyVal)
+	serializedKey := m.getUniqueKey(ctx, key)
 	closestState := ctx.GetClosestState()
 
 	m.lock.Lock(closestState, m)
 	defer m.lock.Unlock(closestState, m)
 
 	if tx == nil {
-		delete(m.entryByKey, key)
+		delete(m.entryByKey, serializedKey)
 		if m.storage != nil {
 			utils.PanicIfErr(persistMap(ctx, m, m.path, m.storage))
 		}
 	} else {
-		key = strings.Clone(key)
+		serializedKey = strings.Clone(serializedKey)
 
 		//Add the key in the pending removals.
-		if index := slices.Index(m.pendingRemovals, key); index < 0 {
-			m.pendingRemovals = append(m.pendingRemovals, key)
+		if index := slices.Index(m.pendingRemovals, serializedKey); index < 0 {
+			m.pendingRemovals = append(m.pendingRemovals, serializedKey)
 		}
 
 		//Register a transaction end handler if none is present.

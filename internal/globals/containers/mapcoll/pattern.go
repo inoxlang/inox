@@ -145,7 +145,7 @@ func (p *MapPattern) ToSymbolicValue(ctx *core.Context, encountered map[uintptr]
 	if err != nil {
 		return nil, err
 	}
-	return coll_symbolic.NewMapWithPatterns(keyPatt.(symbolic.Pattern), valuePatt.(symbolic.Pattern)), nil
+	return coll_symbolic.NewMapPattern(keyPatt.(symbolic.Pattern), valuePatt.(symbolic.Pattern)), nil
 }
 
 func (p *MapPattern) PrettyPrint(w *bufio.Writer, config *core.PrettyPrintConfig, depth int, parentIndentCount int) {
