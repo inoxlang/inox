@@ -2327,12 +2327,14 @@ func (p *parser) parsePatternUnion(start int32, isPercentPrefixed bool, preceded
 	}
 }
 
-func (p *parser) parseComplexStringPatternUnion(start int32) *PatternUnion {
+func (p *parser) parseComplexStringPatternUnion(start int32, isShorthandUnion bool) *PatternUnion {
 	p.panicIfContextDone()
 
 	var cases []Node
 
-	p.tokens = append(p.tokens, Token{Type: OPENING_PARENTHESIS, Span: NodeSpan{start, start + 1}})
+	if !isShorthandUnion {
+		p.tokens = append(p.tokens, Token{Type: OPENING_PARENTHESIS, Span: NodeSpan{start, start + 1}})
+	}
 
 	for p.i < p.len && p.s[p.i] != ')' {
 		p.eatSpaceNewlineComment()
@@ -2363,6 +2365,13 @@ func (p *parser) parseComplexStringPatternUnion(start int32) *PatternUnion {
 
 		case_ := p.parseComplexStringPatternElement()
 		cases = append(cases, case_)
+	}
+
+	if isShorthandUnion {
+		return &PatternUnion{
+			NodeBase: NodeBase{Span: NodeSpan{start, p.i}},
+			Cases:    cases,
+		}
 	}
 
 	var parsingErr *ParsingError
@@ -2400,8 +2409,18 @@ func (p *parser) parseComplexStringPatternPiece(start int32, ident *PatternIdent
 	var elements []*PatternPieceElement
 
 	for p.i < p.len && p.s[p.i] != ')' {
-		p.eatSpaceNewline()
+		p.eatSpaceNewlineComment()
 		if p.i >= p.len || p.s[p.i] == ')' {
+			break
+		}
+
+		if p.s[p.i] == '|' {
+			union := p.parseComplexStringPatternUnion(p.i, true)
+			elements = append(elements, &PatternPieceElement{
+				NodeBase:  union.NodeBase,
+				Ocurrence: ExactlyOneOcurrence,
+				Expr:      union,
+			})
 			break
 		}
 
@@ -5023,7 +5042,7 @@ func (p *parser) parseComplexStringPatternElement() Node {
 		}
 
 		if p.s[p.i] == '|' { //parenthesized union
-			element := p.parseComplexStringPatternUnion(elemStart)
+			element := p.parseComplexStringPatternUnion(elemStart, false)
 
 			return element
 		}

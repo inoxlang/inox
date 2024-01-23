@@ -1322,6 +1322,9 @@ expressions.
 
 # matches any string that starts with a 'a' followed by zero or more 'b's and 'c's.
 %str('a' (|'b' | 'c')*)
+
+# shorthand syntax for string patterns only containing a union.
+%str(| 'b' | 'c')
 ```
 
 String patterns can be composed thanks to named patterns:

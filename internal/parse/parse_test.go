@@ -24003,32 +24003,18 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("pattern union with newline after each pipe", func(t *testing.T) {
+		t.Run("pattern union with newline after each pipe symbol", func(t *testing.T) {
 			n := mustparseChunk(t, "%str( (|\n\"a\" |\n\"b\" ) )")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 22}, nil, false},
 				Statements: []Node{
 					&ComplexStringPatternPiece{
-						NodeBase: NodeBase{
-							NodeSpan{0, 22},
-							nil,
-							false,
-						},
+						NodeBase: NodeBase{Span: NodeSpan{0, 22}},
 						Elements: []*PatternPieceElement{
 							{
 								NodeBase: NodeBase{NodeSpan{6, 20}, nil, false},
 								Expr: &PatternUnion{
-									NodeBase: NodeBase{
-										NodeSpan{6, 20},
-										nil,
-										false,
-										/*[]Token{
-											{Type: OPENING_PARENTHESIS, Span: NodeSpan{6, 7}},
-											{Type: PATTERN_UNION_PIPE, Span: NodeSpan{7, 8}},
-											{Type: PATTERN_UNION_PIPE, Span: NodeSpan{13, 14}},
-											{Type: CLOSING_PARENTHESIS, Span: NodeSpan{19, 20}},
-										},*/
-									},
+									NodeBase: NodeBase{Span: NodeSpan{6, 20}},
 									Cases: []Node{
 										&QuotedStringLiteral{
 											NodeBase: NodeBase{NodeSpan{9, 12}, nil, false},
@@ -24049,6 +24035,101 @@ func testParse(
 			}, n)
 		})
 
+		t.Run("shorthand pattern union", func(t *testing.T) {
+			n := mustparseChunk(t, `%str(| "a" | "b")`)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 17}, nil, false},
+				Statements: []Node{
+					&ComplexStringPatternPiece{
+						NodeBase: NodeBase{Span: NodeSpan{0, 17}},
+						Elements: []*PatternPieceElement{
+							{
+								NodeBase: NodeBase{NodeSpan{5, 16}, nil, false},
+								Expr: &PatternUnion{
+									NodeBase: NodeBase{Span: NodeSpan{5, 16}},
+									Cases: []Node{
+										&QuotedStringLiteral{
+											NodeBase: NodeBase{NodeSpan{7, 10}, nil, false},
+											Raw:      `"a"`,
+											Value:    "a",
+										},
+										&QuotedStringLiteral{
+											NodeBase: NodeBase{NodeSpan{13, 16}, nil, false},
+											Raw:      `"b"`,
+											Value:    "b",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("shorthand pattern union with newline before first pipe", func(t *testing.T) {
+			n := mustparseChunk(t, "%str(\n| \"a\" | \"b\")")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 18}, nil, false},
+				Statements: []Node{
+					&ComplexStringPatternPiece{
+						NodeBase: NodeBase{Span: NodeSpan{0, 18}},
+						Elements: []*PatternPieceElement{
+							{
+								NodeBase: NodeBase{NodeSpan{6, 17}, nil, false},
+								Expr: &PatternUnion{
+									NodeBase: NodeBase{Span: NodeSpan{6, 17}},
+									Cases: []Node{
+										&QuotedStringLiteral{
+											NodeBase: NodeBase{NodeSpan{8, 11}, nil, false},
+											Raw:      `"a"`,
+											Value:    "a",
+										},
+										&QuotedStringLiteral{
+											NodeBase: NodeBase{NodeSpan{14, 17}, nil, false},
+											Raw:      `"b"`,
+											Value:    "b",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("shorthand pattern union with newline after each pipe symbol", func(t *testing.T) {
+			n := mustparseChunk(t, "%str(|\n\"a\" | \"b\")")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 17}, nil, false},
+				Statements: []Node{
+					&ComplexStringPatternPiece{
+						NodeBase: NodeBase{Span: NodeSpan{0, 17}},
+						Elements: []*PatternPieceElement{
+							{
+								NodeBase: NodeBase{NodeSpan{5, 16}, nil, false},
+								Expr: &PatternUnion{
+									NodeBase: NodeBase{Span: NodeSpan{5, 16}},
+									Cases: []Node{
+										&QuotedStringLiteral{
+											NodeBase: NodeBase{NodeSpan{7, 10}, nil, false},
+											Raw:      `"a"`,
+											Value:    "a",
+										},
+										&QuotedStringLiteral{
+											NodeBase: NodeBase{NodeSpan{13, 16}, nil, false},
+											Raw:      `"b"`,
+											Value:    "b",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
 	})
 
 	t.Run("pattern call", func(t *testing.T) {
