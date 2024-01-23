@@ -24002,6 +24002,53 @@ func testParse(
 				},
 			}, n)
 		})
+
+		t.Run("pattern union with newline after each pipe", func(t *testing.T) {
+			n := mustparseChunk(t, "%str( (|\n\"a\" |\n\"b\" ) )")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 22}, nil, false},
+				Statements: []Node{
+					&ComplexStringPatternPiece{
+						NodeBase: NodeBase{
+							NodeSpan{0, 22},
+							nil,
+							false,
+						},
+						Elements: []*PatternPieceElement{
+							{
+								NodeBase: NodeBase{NodeSpan{6, 20}, nil, false},
+								Expr: &PatternUnion{
+									NodeBase: NodeBase{
+										NodeSpan{6, 20},
+										nil,
+										false,
+										/*[]Token{
+											{Type: OPENING_PARENTHESIS, Span: NodeSpan{6, 7}},
+											{Type: PATTERN_UNION_PIPE, Span: NodeSpan{7, 8}},
+											{Type: PATTERN_UNION_PIPE, Span: NodeSpan{13, 14}},
+											{Type: CLOSING_PARENTHESIS, Span: NodeSpan{19, 20}},
+										},*/
+									},
+									Cases: []Node{
+										&QuotedStringLiteral{
+											NodeBase: NodeBase{NodeSpan{9, 12}, nil, false},
+											Raw:      `"a"`,
+											Value:    "a",
+										},
+										&QuotedStringLiteral{
+											NodeBase: NodeBase{NodeSpan{15, 18}, nil, false},
+											Raw:      `"b"`,
+											Value:    "b",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
 	})
 
 	t.Run("pattern call", func(t *testing.T) {

@@ -2335,7 +2335,7 @@ func (p *parser) parseComplexStringPatternUnion(start int32) *PatternUnion {
 	p.tokens = append(p.tokens, Token{Type: OPENING_PARENTHESIS, Span: NodeSpan{start, start + 1}})
 
 	for p.i < p.len && p.s[p.i] != ')' {
-		p.eatSpace()
+		p.eatSpaceNewlineComment()
 
 		if p.i >= p.len || p.s[p.i] == ')' {
 			break
@@ -2359,7 +2359,7 @@ func (p *parser) parseComplexStringPatternUnion(start int32) *PatternUnion {
 		p.tokens = append(p.tokens, Token{Type: PIPE, SubType: STRING_PATTERN_UNION_PIPE, Span: NodeSpan{p.i, p.i + 1}})
 		p.i++
 
-		p.eatSpace()
+		p.eatSpaceNewlineComment()
 
 		case_ := p.parseComplexStringPatternElement()
 		cases = append(cases, case_)
