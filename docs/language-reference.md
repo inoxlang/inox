@@ -1311,7 +1311,10 @@ Inox allows you to describe string patterns that are easier to read than regex
 expressions.
 
 ```
-# matches any string containing only 'a's
+# matches empty strings and strings containing only the 'a' character.
+%str('a'+)
+
+# matches any string containing only 'a's.
 %str('a'+)
 
 # matches any string that starts with a 'a' followed by zero or more 'b's.
@@ -1325,7 +1328,26 @@ String patterns can be composed thanks to named patterns:
 
 ```
 pattern domain = "@mail.com"
-pattern email-address = (("user1" | "user2") %domain)
+pattern email-address = (("user1" | "user2") domain)
+```
+
+### Recursive String Patterns
+
+Recursive string patterns are defined by putting a `@` symbol in front of the pattern.
+⚠️ **Recursive string patterns are pretty limited and slow: don't use them to check/parse complex strings, use real parsers instead.**
+
+```
+pattern json-list = @ %str( 
+    '[' 
+        (| atomic-json-val
+         | json-val 
+         | ((json-val ",")* json-val) 
+        )? 
+    ']'
+)
+
+pattern json-val = @ %str( (| json-list | atomic-json-val ) )
+pattern atomic-json-val = "1"
 ```
 
 ## Union Patterns
