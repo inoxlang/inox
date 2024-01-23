@@ -126,44 +126,45 @@ func TestSharedPersistedMapSet(t *testing.T) {
 	})
 
 	t.Run("Set should not be persisted at end of failed transaction if .Add was called transactionnaly", func(t *testing.T) {
-		ctx, storage := sharedSetTestSetup(t)
-		defer ctx.CancelGracefully()
+		ctx1, ctx2, storage := sharedSetTestSetup2(t)
+		defer ctx1.CancelGracefully()
+		defer ctx2.CancelGracefully()
 
 		pattern := NewMapPattern(MapConfig{})
 
-		storage.SetSerialized(ctx, "/map", `[]`)
-		val, err := loadMap(ctx, core.FreeEntityLoadingParams{
+		storage.SetSerialized(ctx1, "/map", `[]`)
+		val, err := loadMap(ctx1, core.FreeEntityLoadingParams{
 			Key: "/map", Storage: storage, Pattern: pattern,
 		})
 
 		m := val.(*Map)
 
-		m.Share(ctx.GetClosestState())
+		m.Share(ctx1.GetClosestState())
 
 		//The tx is started after the KV write in order
 		//for the write to be already commited.
-		tx := core.StartNewTransaction(ctx)
+		tx := core.StartNewTransaction(ctx1)
 
 		if !assert.NoError(t, err) {
 			return
 		}
 
-		m.Set(ctx, INT_1, STRING_A)
+		m.Set(ctx1, INT_1, STRING_A)
 
 		//Check that entry is added.
 
-		assert.True(t, bool(m.Has(ctx, INT_1)))
-		entryValue, ok := m.Get(ctx, INT_1)
+		assert.True(t, bool(m.Has(ctx1, INT_1)))
+		entryValue, ok := m.Get(ctx1, INT_1)
 		if assert.True(t, bool(ok)) {
 			assert.Equal(t, STRING_A, entryValue)
 		}
 
-		values := core.IterateAllValuesOnly(ctx, m.Iterator(ctx, core.IteratorConfiguration{}))
+		values := core.IterateAllValuesOnly(ctx1, m.Iterator(ctx1, core.IteratorConfiguration{}))
 		assert.ElementsMatch(t, []any{STRING_A}, values)
 
 		//Check that the Map is not persised.
 
-		persisted, err := loadMap(ctx, core.FreeEntityLoadingParams{
+		persisted, err := loadMap(ctx1, core.FreeEntityLoadingParams{
 			Key: "/map", Storage: storage, Pattern: pattern,
 		})
 
@@ -172,16 +173,22 @@ func TestSharedPersistedMapSet(t *testing.T) {
 		}
 
 		assert.NotSame(t, persisted, m) //future-proofing the test
-		assert.False(t, bool(persisted.(*Map).Has(ctx, INT_1)))
-		assert.False(t, bool(persisted.(*Map).Contains(ctx, STRING_A)))
+		assert.False(t, bool(persisted.(*Map).Has(ctx1, INT_1)))
+		assert.False(t, bool(persisted.(*Map).Contains(ctx1, STRING_A)))
 
 		//roll back
 
-		assert.NoError(t, tx.Rollback(ctx))
+		assert.NoError(t, tx.Rollback(ctx1))
+
+		//Check that the Map has not been updated from another transaction's POV.
+
+		core.StartNewTransaction(ctx2)
+		assert.False(t, bool(m.Has(ctx2, INT_1)))
+		assert.False(t, bool(m.Contains(ctx2, INT_1)))
 
 		//Check that the Map is not persised.
 
-		persisted, err = loadMap(ctx, core.FreeEntityLoadingParams{
+		persisted, err = loadMap(ctx1, core.FreeEntityLoadingParams{
 			Key: "/map", Storage: storage, Pattern: pattern,
 		})
 
@@ -190,8 +197,8 @@ func TestSharedPersistedMapSet(t *testing.T) {
 		}
 
 		assert.NotSame(t, persisted, m) //future-proofing the test
-		assert.False(t, bool(persisted.(*Map).Has(ctx, INT_1)))
-		assert.False(t, bool(persisted.(*Map).Contains(ctx, STRING_A)))
+		assert.False(t, bool(persisted.(*Map).Has(ctx1, INT_1)))
+		assert.False(t, bool(persisted.(*Map).Contains(ctx1, STRING_A)))
 	})
 
 	//Tests with several transactions.
@@ -488,46 +495,46 @@ func TestSharedPersistedMapRemove(t *testing.T) {
 	})
 
 	t.Run("Set should not be persisted at end of failed transaction if .Remove was called transactionnaly", func(t *testing.T) {
-		ctx, storage := sharedSetTestSetup(t)
-		defer ctx.CancelGracefully()
+		ctx1, ctx2, storage := sharedSetTestSetup2(t)
+		defer ctx2.CancelGracefully()
 
 		pattern := NewMapPattern(MapConfig{})
 
-		storage.SetSerialized(ctx, "/map", `[{"int__value":1},"a"]`)
-		val, err := loadMap(ctx, core.FreeEntityLoadingParams{
+		storage.SetSerialized(ctx1, "/map", `[{"int__value":1},"a"]`)
+		val, err := loadMap(ctx1, core.FreeEntityLoadingParams{
 			Key: "/map", Storage: storage, Pattern: pattern,
 		})
 
 		m := val.(*Map)
-		m.Share(ctx.GetClosestState())
+		m.Share(ctx1.GetClosestState())
 
 		//The tx is started after the KV write in order
 		//for the write to be already commited.
-		tx := core.StartNewTransaction(ctx)
+		tx := core.StartNewTransaction(ctx1)
 
 		if !assert.NoError(t, err) {
 			return
 		}
 
-		if !assert.True(t, bool(m.Has(ctx, INT_1))) {
+		if !assert.True(t, bool(m.Has(ctx1, INT_1))) {
 			return
 		}
-		assert.True(t, bool(m.Contains(ctx, STRING_A)))
+		assert.True(t, bool(m.Contains(ctx1, STRING_A)))
 
-		m.Remove(ctx, INT_1)
+		m.Remove(ctx1, INT_1)
 
 		//Check that entry is removed from the tx's POV.
 
-		assert.False(t, bool(m.Has(ctx, INT_1)))
-		_, ok := m.Get(ctx, INT_1)
+		assert.False(t, bool(m.Has(ctx1, INT_1)))
+		_, ok := m.Get(ctx1, INT_1)
 		assert.False(t, bool(ok))
 
-		values := core.IterateAllValuesOnly(ctx, m.Iterator(ctx, core.IteratorConfiguration{}))
+		values := core.IterateAllValuesOnly(ctx1, m.Iterator(ctx1, core.IteratorConfiguration{}))
 		assert.Empty(t, values)
 
 		//Check that the Map is not persised
 
-		persisted, err := loadMap(ctx, core.FreeEntityLoadingParams{
+		persisted, err := loadMap(ctx1, core.FreeEntityLoadingParams{
 			Key: "/map", Storage: storage, Pattern: pattern,
 		})
 
@@ -536,16 +543,22 @@ func TestSharedPersistedMapRemove(t *testing.T) {
 		}
 
 		assert.NotSame(t, persisted, m) //future-proofing the test
-		assert.True(t, bool(persisted.(*Map).Has(ctx, INT_1)))
-		assert.True(t, bool(persisted.(*Map).Contains(ctx, STRING_A)))
+		assert.True(t, bool(persisted.(*Map).Has(ctx1, INT_1)))
+		assert.True(t, bool(persisted.(*Map).Contains(ctx1, STRING_A)))
 
 		//roll back
 
-		assert.NoError(t, tx.Rollback(ctx))
+		assert.NoError(t, tx.Rollback(ctx1))
+
+		//Check that the Map has not been updated from another transaction's POV.
+
+		core.StartNewTransaction(ctx2)
+		assert.True(t, bool(m.Has(ctx2, INT_1)))
+		assert.True(t, bool(m.Contains(ctx2, STRING_A)))
 
 		//Check that the Map is not persised
 
-		persisted, err = loadMap(ctx, core.FreeEntityLoadingParams{
+		persisted, err = loadMap(ctx1, core.FreeEntityLoadingParams{
 			Key: "/map", Storage: storage, Pattern: pattern,
 		})
 
@@ -554,8 +567,8 @@ func TestSharedPersistedMapRemove(t *testing.T) {
 		}
 
 		assert.NotSame(t, persisted, m) //future-proofing the test
-		assert.True(t, bool(persisted.(*Map).Has(ctx, INT_1)))
-		assert.True(t, bool(persisted.(*Map).Contains(ctx, STRING_A)))
+		assert.True(t, bool(persisted.(*Map).Has(ctx1, INT_1)))
+		assert.True(t, bool(persisted.(*Map).Contains(ctx1, STRING_A)))
 	})
 
 	//Tests with several transactions.
