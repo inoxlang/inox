@@ -635,6 +635,7 @@ func TestSharedPersistedSetRemove(t *testing.T) {
 	t.Run("Set should not be persisted at end of failed transaction if .Remove was called transactionnaly", func(t *testing.T) {
 		ctx1, ctx2, storage := sharedSetTestSetup2(t)
 		defer ctx1.CancelGracefully()
+		defer ctx2.CancelGracefully()
 
 		pattern := NewSetPattern(SetConfig{
 			Uniqueness: common.UniquenessConstraint{
