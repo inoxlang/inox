@@ -2,9 +2,9 @@ manifest {}
 
 pattern email-username = %str( (|'a'..'z' | 'A'..'Z' | '0'..'9' | '.' | '-')+ )
 pattern domain-w = %str( (| 'a'..'z' | 'A'..'Z' | '0'..'9' | '-') )
-pattern domain = %str( %domain-w+ ('.' %domain-w+)+ )
+pattern domain = %str( domain-w+ ('.' domain-w+)+ )
 
-pattern email-address = %str( %email-username '@' %domain )
+pattern email-address = %str( email-username '@' domain )
 
 print ("a@mail.com" match email-address)
 print ("a@" match email-address)

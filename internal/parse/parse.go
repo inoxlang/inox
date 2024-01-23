@@ -2413,24 +2413,32 @@ func (p *parser) parseComplexStringPatternPiece(start int32, ident *PatternIdent
 		var elemParsingErr *ParsingError
 		var element Node
 
-		if isAlpha(p.s[p.i]) { //group name
-			for p.i < p.len && (isAlpha(p.s[p.i]) || p.s[p.i] == '_') {
-				p.i++
-			}
-			groupName = &PatternGroupName{
-				NodeBase: NodeBase{
-					Span: NodeSpan{elementStart, p.i},
-				},
-				Name: string(p.s[elementStart:p.i]),
+		if isAlpha(p.s[p.i]) { //group name or pattern name
+			isGroupName := false
+			j := int32(p.i + 1)
+
+			for ; j < p.len; j++ {
+				if isAlpha(p.s[j]) || p.s[j] == '_' {
+					continue
+				}
+				if p.s[j] == ':' {
+					isGroupName = true
+				}
+				break
 			}
 
-			if p.i >= p.len || p.s[p.i] != ':' {
-				elemParsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_COMPLEX_STRING_PATT_ELEM_MISSING_COLON_AFTER_GROUP_NAME}
-				elementEnd = p.i
-				goto after_ocurrence
+			if isGroupName {
+				p.i = j
+				groupName = &PatternGroupName{
+					NodeBase: NodeBase{
+						Span: NodeSpan{elementStart, p.i},
+					},
+					Name: string(p.s[elementStart:p.i]),
+				}
+
+				p.tokens = append(p.tokens, Token{Type: COLON, Span: NodeSpan{p.i, p.i + 1}})
+				p.i++
 			}
-			p.tokens = append(p.tokens, Token{Type: COLON, Span: NodeSpan{p.i, p.i + 1}})
-			p.i++
 		}
 
 		element = p.parseComplexStringPatternElement()
@@ -5038,9 +5046,23 @@ func (p *parser) parseComplexStringPatternElement() Node {
 			}
 		}
 		return e
-	case p.s[p.i] == '%':
+	case isAlpha(p.s[p.i]):
+		patternIdent := &PatternIdentifierLiteral{
+			NodeBase:   NodeBase{Span: NodeSpan{start, start + 1}},
+			Unprefixed: true,
+		}
+
+		for p.i < p.len && IsIdentChar(p.s[p.i]) {
+			p.i++
+		}
+
+		patternIdent.NodeBase.Span.End = p.i
+		patternIdent.Name = string(p.s[start:p.i])
+		return patternIdent
+	case p.i < p.len-1 && p.s[p.i] == '%' && p.s[p.i+1] == '`': //regex literal
 		return p.parsePercentPrefixedPattern(false)
 	default:
+
 		for p.i < p.len && !IsDelim(p.s[p.i]) && p.s[p.i] != '"' && p.s[p.i] != '\'' {
 			if parsingErr == nil {
 				parsingErr = &ParsingError{UnspecifiedParsingError, INVALID_COMPLEX_PATTERN_ELEMENT}

@@ -382,7 +382,7 @@ explicitly typed:
 pattern integer = %`(0|[1-9]+[0-9]*)`
 
 pnamespace math. = {
-    expr: %str( %integer (| "+" | "-") %integer)
+    expr: %str( integer (| "+" | "-") integer)
     int: %integer
 }
 

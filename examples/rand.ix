@@ -2,7 +2,7 @@ manifest {}
 
 
 pattern hex = %str( (| '0'..'9' | 'a'..'f') )
-pattern id-example = %str(%hex=8  '-'  %hex=4)
+pattern id-example = %str(hex=8  '-'  hex=4)
 
 for (1 .. 5) {
     print rand(%id-example)

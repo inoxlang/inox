@@ -23646,33 +23646,61 @@ func testParse(
 		})
 
 		t.Run("one element: element is a pattern identifier literal with '=2' as ocurrence", func(t *testing.T) {
-			n := mustparseChunk(t, `%str(%s=2)`)
+			n := mustparseChunk(t, `%str(s=2)`)
 			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{NodeSpan{0, 10}, nil, false},
+				NodeBase: NodeBase{NodeSpan{0, 9}, nil, false},
 				Statements: []Node{
 					&ComplexStringPatternPiece{
 						NodeBase: NodeBase{
-							NodeSpan{0, 10},
+							NodeSpan{0, 9},
 							nil,
 							false,
-							/*[]Token{
-								{Type: PERCENT_STR, Span: NodeSpan{0, 4}},
-								{Type: OPENING_PARENTHESIS, Span: NodeSpan{4, 5}},
-								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{9, 10}},
-							},*/
 						},
 						Elements: []*PatternPieceElement{
 							{
 								Ocurrence:           ExactOcurrence,
 								ExactOcurrenceCount: 2,
 								NodeBase: NodeBase{
-									NodeSpan{5, 9},
+									NodeSpan{5, 8},
 									nil,
 									false,
 								},
 								Expr: &PatternIdentifierLiteral{
-									NodeBase: NodeBase{NodeSpan{5, 7}, nil, false},
-									Name:     "s",
+									NodeBase:   NodeBase{NodeSpan{5, 6}, nil, false},
+									Name:       "s",
+									Unprefixed: true,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("one element: element is a regex literal with '=2' as ocurrence", func(t *testing.T) {
+			n := mustparseChunk(t, "%str(%`e`=2)")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 12}, nil, false},
+				Statements: []Node{
+					&ComplexStringPatternPiece{
+						NodeBase: NodeBase{
+							NodeSpan{0, 12},
+							nil,
+							false,
+						},
+						Elements: []*PatternPieceElement{
+							{
+								Ocurrence:           ExactOcurrence,
+								ExactOcurrenceCount: 2,
+								NodeBase: NodeBase{
+									NodeSpan{5, 11},
+									nil,
+									false,
+								},
+								Expr: &RegularExpressionLiteral{
+									NodeBase: NodeBase{NodeSpan{5, 9}, nil, false},
+									Value:    "e",
+									Raw:      "%`e`",
 								},
 							},
 						},

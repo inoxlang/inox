@@ -7225,7 +7225,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		t.Run("pattern definition & identifiers : lazy", func(t *testing.T) {
 			code := `
-				pattern s = @ %str( %p "a" )
+				pattern s = @ %str( p "a" )
 				prev = %s
 				pattern p = "p"
 				return [$prev, %s]
