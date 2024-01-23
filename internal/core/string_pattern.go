@@ -25,6 +25,8 @@ const (
 
 	UNSIGNED_DECIMAL_FLOAT_REGEX = "[0-9]+(?:\\.?[0-9]*)(?:[Ee][-+]?[0-9]*)?"
 	UNSIGNED_ZERO_FLOAT_REGEX    = "0+(?:\\.?0*)?(?:[Ee][-+]?[0-9]*)?"
+
+	INFINITE_STRING_PATTERN_NESTING_DEPTH = 50
 )
 
 var (
@@ -35,6 +37,7 @@ var (
 	ErrFailedToConvertValueToMatchingString             = errors.New("failed to convert value to matching string")
 	ErrIntNotInPatternRange                             = errors.New("integer is not in the pattern's range")
 	ErrFloatNotInPatternRange                           = errors.New("float is not in the pattern's range")
+	ErrFailedStringPatternResolution                    = errors.New("failed to resolve string pattern")
 
 	//_ = []StringPattern{(*ParserBasedPseudoPattern)(nil)}
 
@@ -48,6 +51,16 @@ var (
 
 type StringPattern interface {
 	Pattern
+
+	//IsResolved should return true if the pattern is lazy or contains lazy sub patterns.
+	IsResolved() bool
+
+	//Resolve should replace lazy patterns with resolved patterns.
+	//Patterns that are already resolved should return themselves and patterns containing
+	//sub patterns should mutate themselves.
+	Resolve() (StringPattern, error)
+
+	PatternNestingDepth(parentDepth int) int
 
 	Regex() string
 	CompiledRegex() *regexp.Regexp
@@ -92,6 +105,21 @@ func NewExactStringPattern(value Str) *ExactStringPattern {
 		value:  value,
 		regexp: regexp,
 	}
+}
+
+func (patt *ExactStringPattern) IsResolved() bool {
+	return true
+}
+
+func (patt *ExactStringPattern) Resolve() (StringPattern, error) {
+	return patt, nil
+}
+
+func (patt *ExactStringPattern) PatternNestingDepth(parentDepth int) int {
+	if parentDepth >= INFINITE_STRING_PATTERN_NESTING_DEPTH {
+		return INFINITE_STRING_PATTERN_NESTING_DEPTH
+	}
+	return 0
 }
 
 func (pattern *ExactStringPattern) Test(ctx *Context, v Value) bool {
@@ -176,6 +204,21 @@ func NewLengthCheckingStringPattern(minLength, maxLength int64) *LengthCheckingS
 	}
 }
 
+func (pattern *LengthCheckingStringPattern) IsResolved() bool {
+	return true
+}
+
+func (patt *LengthCheckingStringPattern) Resolve() (StringPattern, error) {
+	return patt, nil
+}
+
+func (patt *LengthCheckingStringPattern) PatternNestingDepth(parentDepth int) int {
+	if parentDepth >= INFINITE_STRING_PATTERN_NESTING_DEPTH {
+		return INFINITE_STRING_PATTERN_NESTING_DEPTH
+	}
+	return 0
+}
+
 func (pattern *LengthCheckingStringPattern) Test(ctx *Context, v Value) bool {
 	str, ok := v.(StringLike)
 	return ok && checkMatchedStringLen(str, pattern)
@@ -229,11 +272,12 @@ func (patt *LengthCheckingStringPattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
 
-// SequenceStringPattern represents a string pattern with sub elements
+// SequenceStringPattern represents a string pattern with sub elements.
+// Sequence string patterns with lazy elements are mutable while they are not fully resolved.
 type SequenceStringPattern struct {
 	regexp             *regexp.Regexp
 	entireStringRegexp *regexp.Regexp
-	syntaxRegexp       *syntax.Regexp
+	fullyResolved      bool
 
 	node       *parse.ComplexStringPatternPiece //optional
 	nodeChunk  *parse.Chunk                     //should be set if node is set
@@ -252,6 +296,7 @@ func NewSequenceStringPattern(
 	groupNames KeyList,
 ) (*SequenceStringPattern, error) {
 	allElemsHaveRegex := true
+	allElemsAreResolved := true
 
 	if len(groupNames) != 0 && len(groupNames) != len(subpatterns) {
 		return nil, errors.New("sequence string pattern: number of provided group names is not equal to the number of subpatterns")
@@ -260,6 +305,10 @@ func NewSequenceStringPattern(
 	for _, patternElement := range subpatterns {
 		if repeated, ok := patternElement.(*RepeatedPatternElement); ok {
 			patternElement = repeated.element
+		}
+		if !patternElement.IsResolved() {
+			allElemsAreResolved = false
+			continue
 		}
 		if !patternElement.HasRegex() {
 			allElemsHaveRegex = false
@@ -276,62 +325,14 @@ func NewSequenceStringPattern(
 		step:         1,
 	}
 
-	if allElemsHaveRegex {
-		regexBuff := bytes.NewBufferString("")
-
-		for _, subpatt := range subpatterns {
-			subpatternRegexBuff := bytes.NewBufferString("")
-
-			//create regex for sub pattern
-			if repeatedElement, ok := subpatt.(*RepeatedPatternElement); ok {
-				subpatternRegexBuff.WriteRune('(')
-
-				elementRegex := utils.Must(syntax.Parse(repeatedElement.element.Regex(), symbolic.REGEX_SYNTAX))
-				elementRegex = regexutils.TurnCapturingGroupsIntoNonCapturing(elementRegex)
-
-				subpatternRegexBuff.WriteString("(?:")
-				subpatternRegexBuff.WriteString(elementRegex.String())
-				subpatternRegexBuff.WriteRune(')')
-
-				switch repeatedElement.ocurrenceModifier {
-				case parse.AtLeastOneOcurrence:
-					subpatternRegexBuff.WriteRune('+')
-				case parse.ZeroOrMoreOcurrence:
-					subpatternRegexBuff.WriteRune('*')
-				case parse.OptionalOcurrence:
-					subpatternRegexBuff.WriteRune('?')
-				case parse.ExactOcurrence:
-					subpatternRegexBuff.WriteRune('{')
-					subpatternRegexBuff.WriteString(strconv.Itoa(repeatedElement.exactCount))
-					subpatternRegexBuff.WriteRune('}')
-				}
-				subpatternRegexBuff.WriteRune(')')
-
-				repeatedElement.regexp = regexp.MustCompile(subpatternRegexBuff.String())
-			} else {
-				subpattRegex := utils.Must(syntax.Parse(subpatt.Regex(), symbolic.REGEX_SYNTAX))
-				subpattRegex = regexutils.TurnCapturingGroupsIntoNonCapturing(subpattRegex)
-
-				subpatternRegexBuff.WriteRune('(')
-				subpatternRegexBuff.WriteString(subpattRegex.String())
-				subpatternRegexBuff.WriteRune(')')
-			}
-
-			// append the sub pattern's regex to the sequence's regex.
-			regexBuff.WriteString(subpatternRegexBuff.String())
-
-			subPattLenRange := subpatt.LengthRange()
-			lengthRange = lengthRange.clampedAdd(subPattLenRange)
-		}
-
-		entireRegexExpr := "^" + regexBuff.String() + "$"
-		regexExpr := entireRegexExpr[1 : len(entireRegexExpr)-1]
-
-		regex = regexp.MustCompile(regexExpr)
-		entireStringRegex = regexp.MustCompile(entireRegexExpr)
+	if allElemsAreResolved && allElemsHaveRegex {
+		entireStringRegex, regex, lengthRange = constructRegexForSequenceStringPattern(subpatterns)
+	} else if allElemsHaveRegex {
+		lengthRange.end = DEFAULT_MAX_TESTED_STRING_BYTE_LENGTH
 	}
 
 	return &SequenceStringPattern{
+		fullyResolved:        allElemsAreResolved,
 		regexp:               regex,
 		entireStringRegexp:   entireStringRegex,
 		node:                 node,
@@ -342,7 +343,126 @@ func NewSequenceStringPattern(
 	}, nil
 }
 
+func constructRegexForSequenceStringPattern(subpatterns []StringPattern) (entireRegexp *regexp.Regexp, _ *regexp.Regexp, _ IntRange) {
+	lengthRange := IntRange{
+		start:        0,
+		end:          0,
+		inclusiveEnd: true,
+		step:         1,
+	}
+
+	regexBuff := bytes.NewBufferString("")
+	subpatternRegexBuff := bytes.NewBufferString("")
+
+	for _, subpatt := range subpatterns {
+		subpatternRegexBuff.Reset()
+
+		//create regex for sub pattern
+		subpattRegex := utils.Must(syntax.Parse(subpatt.Regex(), symbolic.REGEX_SYNTAX))
+		subpattRegex = regexutils.TurnCapturingGroupsIntoNonCapturing(subpattRegex)
+
+		subpatternRegexBuff.WriteRune('(')
+		subpatternRegexBuff.WriteString(subpattRegex.String())
+		subpatternRegexBuff.WriteRune(')')
+
+		// append the sub pattern's regex to the sequence's regex.
+		regexBuff.WriteString(subpatternRegexBuff.String())
+
+		subPattLenRange := subpatt.LengthRange()
+		lengthRange = lengthRange.clampedAdd(subPattLenRange)
+	}
+
+	entireRegexExpr := "^" + regexBuff.String() + "$"
+	regexExpr := entireRegexExpr[1 : len(entireRegexExpr)-1]
+
+	regex := regexp.MustCompile(regexExpr)
+	entireStringRegex := regexp.MustCompile(entireRegexExpr)
+
+	return entireStringRegex, regex, lengthRange
+}
+
+func (patt *SequenceStringPattern) IsResolved() bool {
+	if patt.fullyResolved {
+		return true
+	}
+
+	for _, patternElement := range patt.elements {
+		if !patternElement.IsResolved() {
+			return false
+		}
+	}
+
+	return true
+}
+
+func (patt *SequenceStringPattern) PatternNestingDepth(parentDepth int) int {
+	if parentDepth >= INFINITE_STRING_PATTERN_NESTING_DEPTH {
+		return INFINITE_STRING_PATTERN_NESTING_DEPTH
+	}
+
+	maxChildDepth := 0
+	for _, elem := range patt.elements {
+		maxChildDepth = max(maxChildDepth, elem.PatternNestingDepth(parentDepth+1))
+	}
+	return 1 + maxChildDepth
+}
+
+func (patt *SequenceStringPattern) Resolve() (StringPattern, error) {
+	if patt.fullyResolved {
+		return patt, nil
+	}
+
+	patt.fullyResolved = true //prevent cycling.
+	fullyResolved := false
+	defer func() {
+		patt.fullyResolved = fullyResolved
+	}()
+
+	allElemsHaveRegex := true
+
+	for i, patternElement := range patt.elements {
+		resolved, err := patternElement.Resolve()
+		if err != nil {
+			return nil, err
+		}
+
+		if resolved.PatternNestingDepth(0) >= INFINITE_STRING_PATTERN_NESTING_DEPTH || !resolved.HasRegex() {
+			allElemsHaveRegex = false
+		}
+		patt.elements[i] = resolved
+	}
+
+	if allElemsHaveRegex {
+		patt.entireStringRegexp, patt.regexp, patt.lengthRange = constructRegexForSequenceStringPattern(patt.elements)
+	} else {
+		//compute length range
+		lengthRange := IntRange{
+			start:        0,
+			end:          0,
+			inclusiveEnd: true,
+			step:         1,
+		}
+
+		for _, patternElement := range patt.elements {
+			lengthRange = lengthRange.clampedAdd(patternElement.LengthRange())
+		}
+		patt.lengthRange = lengthRange
+	}
+
+	fullyResolved = true
+	return patt, nil
+}
+
+func (patt *SequenceStringPattern) mustResolve() {
+	_, err := patt.Resolve()
+	if err != nil {
+		panic(fmt.Errorf("failed to resolve the sequence string pattern: %w", err))
+	}
+}
+
 func (patt *SequenceStringPattern) Test(ctx *Context, v Value) bool {
+	patt.mustResolve()
+
 	_str, ok := v.(StringLike)
 	if !ok || !checkMatchedStringLen(_str, patt) {
 		return false
@@ -362,6 +482,8 @@ func (patt *SequenceStringPattern) Test(ctx *Context, v Value) bool {
 }
 
 func (patt *SequenceStringPattern) validate(s string, i *int) bool {
+	patt.mustResolve()
+
 	j := *i
 	for _, el := range patt.elements {
 		if !el.validate(s, &j) {
@@ -373,6 +495,8 @@ func (patt *SequenceStringPattern) validate(s string, i *int) bool {
 }
 
 func (patt *SequenceStringPattern) Parse(ctx *Context, s string) (Serializable, error) {
+	patt.mustResolve()
+
 	if !patt.Test(ctx, Str(s)) {
 		return nil, ErrInvalidInputString
 	}
@@ -380,6 +504,8 @@ func (patt *SequenceStringPattern) Parse(ctx *Context, s string) (Serializable, 
 }
 
 func (patt *SequenceStringPattern) MatchGroups(ctx *Context, v Serializable) (map[string]Serializable, bool, error) {
+	patt.mustResolve()
+
 	if !patt.HasRegex() {
 		return nil, false, ErrStrGroupMatchingOnlySupportedForPatternWithRegex
 	}
@@ -408,6 +534,8 @@ func (patt *SequenceStringPattern) MatchGroups(ctx *Context, v Serializable) (ma
 }
 
 func (patt *SequenceStringPattern) FindGroupMatches(ctx *Context, v Serializable, config GroupMatchesFindConfig) (groups []*Object, err error) {
+	patt.mustResolve()
+
 	if !patt.HasRegex() {
 		return nil, ErrStrGroupMatchingOnlySupportedForPatternWithRegex
 	}
@@ -491,26 +619,32 @@ func (patt *SequenceStringPattern) FindMatches(ctx *Context, val Serializable, c
 }
 
 func (patt *SequenceStringPattern) Regex() string {
+	patt.mustResolve()
 	return patt.regexp.String()
 }
 
 func (patt *SequenceStringPattern) CompiledRegex() *regexp.Regexp {
+	patt.mustResolve()
 	return patt.regexp
 }
 
 func (patt *SequenceStringPattern) HasRegex() bool {
+	patt.mustResolve()
 	return patt.regexp != nil
 }
 
 func (patt *SequenceStringPattern) LengthRange() IntRange {
+	patt.mustResolve()
 	return patt.lengthRange
 }
 
 func (patt *SequenceStringPattern) EffectiveLengthRange() IntRange {
+	patt.mustResolve()
 	return patt.effectiveLengthRange
 }
 
 func (patt *SequenceStringPattern) Call(values []Serializable) (Pattern, error) {
+	patt.mustResolve()
 	lenRange, found, err := getNewEffectiveLenRange(values, patt.LengthRange())
 	if err != nil {
 		return nil, err
@@ -534,6 +668,7 @@ type UnionStringPattern struct {
 	NotCallablePatternMixin
 	regexp             *regexp.Regexp
 	entireStringRegexp *regexp.Regexp
+	fullyResolved      bool
 
 	node  parse.Node
 	cases []StringPattern
@@ -542,9 +677,16 @@ type UnionStringPattern struct {
 func NewUnionStringPattern(node parse.Node, cases []StringPattern) (*UnionStringPattern, error) {
 
 	allCasesHaveRegex := true
+	allCasesAreResolved := true
 	noCaseHaveRegex := true
 
 	for _, patternElement := range cases {
+		if !patternElement.IsResolved() {
+			allCasesAreResolved = false
+			allCasesHaveRegex = false
+			continue
+		}
+
 		if !patternElement.HasRegex() {
 			allCasesHaveRegex = false
 		} else {
@@ -552,7 +694,7 @@ func NewUnionStringPattern(node parse.Node, cases []StringPattern) (*UnionString
 		}
 	}
 
-	if noCaseHaveRegex {
+	if allCasesAreResolved && noCaseHaveRegex {
 		return nil, fmt.Errorf("failed to create a string pattern union: at least one of the case should be non-recursive")
 	}
 
@@ -560,39 +702,100 @@ func NewUnionStringPattern(node parse.Node, cases []StringPattern) (*UnionString
 	var entireStringRegex *regexp.Regexp
 
 	if allCasesHaveRegex {
-		regexBuff := bytes.NewBufferString("(")
-
-		for i, patternElement := range cases {
-
-			if i > 0 {
-				regexBuff.WriteRune('|')
-			}
-
-			if !patternElement.HasRegex() {
-				return &UnionStringPattern{
-					node:  node,
-					cases: cases,
-				}, nil
-			}
-
-			regexBuff.WriteString(patternElement.Regex())
-		}
-
-		regexBuff.WriteRune(')')
-		regex = regexp.MustCompile(regexBuff.String())
-		entireStringRegex = regexp.MustCompile("^" + regexBuff.String() + "$")
+		regex, entireStringRegex = constructRegexForUnionStringPattern(cases)
 	}
 
 	return &UnionStringPattern{
 		regexp:             regex,
 		entireStringRegexp: entireStringRegex,
+		fullyResolved:      allCasesAreResolved,
 
 		node:  node,
 		cases: cases,
 	}, nil
 }
 
+func constructRegexForUnionStringPattern(cases []StringPattern) (*regexp.Regexp, *regexp.Regexp) {
+	regexBuff := bytes.NewBufferString("(")
+
+	for i, patternElement := range cases {
+
+		if i > 0 {
+			regexBuff.WriteRune('|')
+		}
+
+		regexBuff.WriteString(patternElement.Regex())
+	}
+
+	regexBuff.WriteRune(')')
+	regex := regexp.MustCompile(regexBuff.String())
+	entireStringRegex := regexp.MustCompile("^" + regexBuff.String() + "$")
+	return regex, entireStringRegex
+}
+
+func (patt *UnionStringPattern) IsResolved() bool {
+	return patt.fullyResolved
+}
+
+func (patt *UnionStringPattern) PatternNestingDepth(parentDepth int) int {
+	if parentDepth >= INFINITE_STRING_PATTERN_NESTING_DEPTH {
+		return INFINITE_STRING_PATTERN_NESTING_DEPTH
+	}
+
+	maxChildDepth := 0
+	for _, casePattern := range patt.cases {
+		maxChildDepth = max(maxChildDepth, casePattern.PatternNestingDepth(parentDepth+1))
+	}
+	return 1 + maxChildDepth
+}
+
+func (patt *UnionStringPattern) Resolve() (StringPattern, error) {
+	if patt.fullyResolved {
+		return patt, nil
+	}
+
+	patt.fullyResolved = true //prevent cycling.
+	fullyResolved := false
+	defer func() {
+		patt.fullyResolved = fullyResolved
+	}()
+
+	allElemsHaveRegex := true
+	noCaseHaveRegex := true
+
+	for i, caseElement := range patt.cases {
+		resolved, err := caseElement.Resolve()
+		if err != nil {
+			return nil, err
+		}
+
+		if resolved.PatternNestingDepth(0) >= INFINITE_STRING_PATTERN_NESTING_DEPTH || !resolved.HasRegex() {
+			allElemsHaveRegex = false
+		} else {
+			noCaseHaveRegex = false
+		}
+		patt.cases[i] = resolved
+	}
+
+	if noCaseHaveRegex {
+		return nil, fmt.Errorf("failed to create a string pattern union: at least one of the case should be non-recursive")
+	}
+
+	if allElemsHaveRegex {
+		patt.regexp, patt.entireStringRegexp = constructRegexForUnionStringPattern(patt.cases)
+	}
+
+	fullyResolved = true
+	return patt, nil
+}
+
+func (patt *UnionStringPattern) mustResolve() StringPattern {
+	return utils.Must(patt.Resolve())
+}
+
 func (patt *UnionStringPattern) Test(ctx *Context, v Value) bool {
+	patt.mustResolve()
+
 	_str, ok := v.(StringLike)
 	if !ok {
 		return false
@@ -613,6 +816,8 @@ func (patt *UnionStringPattern) Test(ctx *Context, v Value) bool {
 }
 
 func (patt *UnionStringPattern) validate(s string, i *int) bool {
+	patt.mustResolve()
+
 	for _, case_ := range patt.cases {
 		j := *i
 		if case_.validate(s, &j) {
@@ -624,14 +829,18 @@ func (patt *UnionStringPattern) validate(s string, i *int) bool {
 }
 
 func (patt *UnionStringPattern) Parse(ctx *Context, s string) (Serializable, error) {
+	patt.mustResolve()
 	return nil, ErrCannotParse
 }
 
 func (patt *UnionStringPattern) FindMatches(ctx *Context, val Serializable, config MatchesFindConfig) (groups []Serializable, err error) {
+	patt.mustResolve()
 	return FindMatchesForStringPattern(ctx, patt, val, config)
 }
 
 func (patt *UnionStringPattern) MatchGroups(ctx *Context, v Serializable) (map[string]Serializable, bool, error) {
+	patt.mustResolve()
+
 	_, ok := v.(StringLike)
 	if !ok {
 		return nil, false, nil
@@ -656,26 +865,32 @@ func (patt *UnionStringPattern) MatchGroups(ctx *Context, v Serializable) (map[s
 }
 
 func (patt *UnionStringPattern) Regex() string {
+	patt.mustResolve()
 	return patt.regexp.String()
 }
 
 func (patt *UnionStringPattern) CompiledRegex() *regexp.Regexp {
+	patt.mustResolve()
 	return patt.regexp
 }
 
 func (patt *UnionStringPattern) HasRegex() bool {
+	patt.mustResolve()
 	return patt.regexp != nil
 }
 
 func (patt *UnionStringPattern) LengthRange() IntRange {
+	patt.mustResolve()
 	return patt.lengthRange(false)
 }
 
 func (patt *UnionStringPattern) EffectiveLengthRange() IntRange {
+	patt.mustResolve()
 	return patt.lengthRange(true)
 }
 
 func (patt *UnionStringPattern) lengthRange(effective bool) IntRange {
+	patt.mustResolve()
 	minLen := int64(math.MaxInt64)
 	maxLen := int64(0)
 
@@ -726,8 +941,23 @@ func NewRuneRangeStringPattern(lower, upper rune, node parse.Node) *RuneRangeStr
 			End:   upper,
 		},
 	}
-
 }
+
+func (patt *RuneRangeStringPattern) IsResolved() bool {
+	return true
+}
+
+func (patt *RuneRangeStringPattern) PatternNestingDepth(parentDepth int) int {
+	if parentDepth >= INFINITE_STRING_PATTERN_NESTING_DEPTH {
+		return INFINITE_STRING_PATTERN_NESTING_DEPTH
+	}
+	return 0
+}
+
+func (patt *RuneRangeStringPattern) Resolve() (StringPattern, error) {
+	return patt, nil
+}
+
 func (patt *RuneRangeStringPattern) Test(ctx *Context, v Value) bool {
 	str, ok := v.(StringLike)
 	if !ok {
@@ -901,6 +1131,21 @@ func NewIntRangeStringPattern(lower, upperIncluded int64, node parse.Node) *IntR
 	}
 }
 
+func (patt *IntRangeStringPattern) IsResolved() bool {
+	return true
+}
+
+func (patt *IntRangeStringPattern) PatternNestingDepth(parentDepth int) int {
+	if parentDepth >= INFINITE_STRING_PATTERN_NESTING_DEPTH {
+		return INFINITE_STRING_PATTERN_NESTING_DEPTH
+	}
+	return 0
+}
+
+func (patt *IntRangeStringPattern) Resolve() (StringPattern, error) {
+	return patt, nil
+}
+
 func (patt *IntRangeStringPattern) Test(ctx *Context, v Value) bool {
 	str, ok := v.(StringLike)
 	if !ok {
@@ -1022,6 +1267,21 @@ func NewFloatRangeStringPattern(lower, upperIncluded float64, node parse.Node) *
 	}
 }
 
+func (patt *FloatRangeStringPattern) IsResolved() bool {
+	return true
+}
+
+func (patt *FloatRangeStringPattern) PatternNestingDepth(parentDepth int) int {
+	if parentDepth >= INFINITE_STRING_PATTERN_NESTING_DEPTH {
+		return INFINITE_STRING_PATTERN_NESTING_DEPTH
+	}
+	return 0
+}
+
+func (patt *FloatRangeStringPattern) Resolve() (StringPattern, error) {
+	return patt, nil
+}
+
 func (patt *FloatRangeStringPattern) Test(ctx *Context, v Value) bool {
 	str, ok := v.(StringLike)
 	if !ok {
@@ -1097,20 +1357,41 @@ type DynamicStringPatternElement struct {
 	ctx  *Context
 }
 
-func (patt DynamicStringPatternElement) resolve() StringPattern {
-	return patt.ctx.ResolveNamedPattern(patt.name).(StringPattern)
+func (patt *DynamicStringPatternElement) IsResolved() bool {
+	return false
+}
+
+func (patt *DynamicStringPatternElement) PatternNestingDepth(parentDepth int) int {
+	if parentDepth >= INFINITE_STRING_PATTERN_NESTING_DEPTH {
+		return INFINITE_STRING_PATTERN_NESTING_DEPTH
+	}
+	return patt.mustResolve().PatternNestingDepth(parentDepth)
+}
+
+func (patt DynamicStringPatternElement) Resolve() (StringPattern, error) {
+	pattern := patt.ctx.ResolveNamedPattern(patt.name)
+
+	if pattern == nil {
+		return nil, fmt.Errorf("named pattern %%%s is not defined", patt.name)
+	}
+
+	return pattern.(StringPattern), nil
+}
+
+func (patt DynamicStringPatternElement) mustResolve() StringPattern {
+	return utils.Must(patt.Resolve())
 }
 
 func (patt DynamicStringPatternElement) Test(ctx *Context, v Value) bool {
-	return patt.resolve().Test(ctx, v)
+	return patt.mustResolve().Test(ctx, v)
 }
 
 func (patt DynamicStringPatternElement) validate(s string, i *int) bool {
-	return patt.resolve().validate(s, i)
+	return patt.mustResolve().validate(s, i)
 }
 
 func (patt *DynamicStringPatternElement) Parse(ctx *Context, s string) (Serializable, error) {
-	return patt.resolve().Parse(ctx, s)
+	return patt.mustResolve().Parse(ctx, s)
 }
 
 func (patt DynamicStringPatternElement) FindMatches(ctx *Context, val Serializable, config MatchesFindConfig) (groups []Serializable, err error) {
@@ -1130,7 +1411,7 @@ func (patt DynamicStringPatternElement) CompiledRegex() *regexp.Regexp {
 }
 
 func (patt DynamicStringPatternElement) Call(values []Serializable) (Pattern, error) {
-	return patt.resolve().Call(values)
+	return patt.mustResolve().Call(values)
 }
 
 func (patt *DynamicStringPatternElement) StringPattern() (StringPattern, bool) {
@@ -1142,11 +1423,11 @@ func (patt DynamicStringPatternElement) HasRegex() bool {
 }
 
 func (patt DynamicStringPatternElement) LengthRange() IntRange {
-	return patt.resolve().LengthRange()
+	return patt.mustResolve().LengthRange()
 }
 
 func (patt DynamicStringPatternElement) EffectiveLengthRange() IntRange {
-	return patt.resolve().EffectiveLengthRange()
+	return patt.mustResolve().EffectiveLengthRange()
 }
 
 type RepeatedPatternElement struct {
@@ -1155,6 +1436,85 @@ type RepeatedPatternElement struct {
 	ocurrenceModifier parse.OcurrenceCountModifier
 	exactCount        int
 	element           StringPattern
+	fullyResolved     bool
+}
+
+func newRepeatedPatternElement(modifier parse.OcurrenceCountModifier, exactOcurrenceCount int, repeated StringPattern) *RepeatedPatternElement {
+	patt := &RepeatedPatternElement{
+		//regexp:            regexp.MustCompile(subpatternRegex),
+		ocurrenceModifier: modifier,
+		exactCount:        exactOcurrenceCount,
+		element:           repeated,
+	}
+
+	if repeated.IsResolved() {
+		patt.fullyResolved = true
+		if repeated.HasRegex() {
+			patt.regexp = constructRegexForRepeatedPatternElement(modifier, exactOcurrenceCount, repeated)
+		}
+	}
+
+	return patt
+}
+
+func constructRegexForRepeatedPatternElement(
+	ocurrenceModifier parse.OcurrenceCountModifier,
+	exactCount int,
+	repeatedElement StringPattern,
+) *regexp.Regexp {
+	buf := bytes.NewBuffer(nil)
+
+	elementRegex := utils.Must(syntax.Parse(repeatedElement.Regex(), symbolic.REGEX_SYNTAX))
+	elementRegex = regexutils.TurnCapturingGroupsIntoNonCapturing(elementRegex)
+
+	buf.WriteString("(?:")
+	buf.WriteString(elementRegex.String())
+	buf.WriteRune(')')
+
+	switch ocurrenceModifier {
+	case parse.AtLeastOneOcurrence:
+		buf.WriteRune('+')
+	case parse.ZeroOrMoreOcurrence:
+		buf.WriteRune('*')
+	case parse.OptionalOcurrence:
+		buf.WriteRune('?')
+	case parse.ExactOcurrence:
+		buf.WriteRune('{')
+		buf.WriteString(strconv.Itoa(exactCount))
+		buf.WriteRune('}')
+	}
+
+	return regexp.MustCompile(buf.String())
+}
+
+func (patt *RepeatedPatternElement) IsResolved() bool {
+	return patt.fullyResolved
+}
+
+func (patt *RepeatedPatternElement) PatternNestingDepth(parentDepth int) int {
+	if parentDepth >= INFINITE_STRING_PATTERN_NESTING_DEPTH {
+		return INFINITE_STRING_PATTERN_NESTING_DEPTH
+	}
+	return 1 + patt.element.PatternNestingDepth(parentDepth+1)
+}
+
+func (patt *RepeatedPatternElement) Resolve() (StringPattern, error) {
+	if patt.fullyResolved {
+		return patt, nil
+	}
+
+	resolvedElement, err := patt.element.Resolve()
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolved repeated element: %w", err)
+	}
+
+	patt.element = resolvedElement
+	if resolvedElement.PatternNestingDepth(0) < INFINITE_STRING_PATTERN_NESTING_DEPTH && resolvedElement.HasRegex() {
+		patt.regexp = constructRegexForRepeatedPatternElement(patt.ocurrenceModifier, patt.exactCount, resolvedElement)
+	}
+
+	patt.fullyResolved = true
+	return patt, nil
 }
 
 func (patt *RepeatedPatternElement) Test(ctx *Context, v Value) bool {
@@ -1312,6 +1672,21 @@ type ParserBasedPseudoPattern struct {
 
 func NewParserBasePattern(parser StatelessParser) *ParserBasedPseudoPattern {
 	return &ParserBasedPseudoPattern{parser: parser}
+}
+
+func (patt *ParserBasedPseudoPattern) IsResolved() bool {
+	return true
+}
+
+func (patt *ParserBasedPseudoPattern) PatternNestingDepth(parentDepth int) int {
+	if parentDepth >= INFINITE_STRING_PATTERN_NESTING_DEPTH {
+		return INFINITE_STRING_PATTERN_NESTING_DEPTH
+	}
+	return 0
+}
+
+func (patt *ParserBasedPseudoPattern) Resolve() (StringPattern, error) {
+	return patt, nil
 }
 
 func (patt *ParserBasedPseudoPattern) Test(ctx *Context, v Value) bool {
@@ -1477,6 +1852,18 @@ func NewRegexPatternFromPERLCompiled(regexp *regexp.Regexp) *RegexPattern {
 		regexp:      regexp,
 		syntaxRegep: syntaxRegexp,
 	}
+}
+
+func (patt *RegexPattern) IsResolved() bool {
+	return true
+}
+
+func (patt *RegexPattern) PatternNestingDepth(parentDepth int) int {
+	return 0
+}
+
+func (patt *RegexPattern) Resolve() (StringPattern, error) {
+	return patt, nil
 }
 
 func (pattern *RegexPattern) Test(ctx *Context, v Value) bool {
@@ -1714,6 +2101,21 @@ top:
 	}
 
 	return s, nil
+}
+
+func (patt *PathStringPattern) IsResolved() bool {
+	return true
+}
+
+func (patt *PathStringPattern) PatternNestingDepth(parentDepth int) int {
+	if parentDepth >= INFINITE_STRING_PATTERN_NESTING_DEPTH {
+		return INFINITE_STRING_PATTERN_NESTING_DEPTH
+	}
+	return 0
+}
+
+func (patt *PathStringPattern) Resolve() (StringPattern, error) {
+	return patt, nil
 }
 
 func (pattern *PathStringPattern) Test(ctx *Context, v Value) bool {

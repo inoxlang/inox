@@ -3467,12 +3467,7 @@ func evalStringPatternNode(node parse.Node, state *TreeWalkState, lazy bool) (St
 			if element.Ocurrence == parse.ExactlyOneOcurrence {
 				subpatterns = append(subpatterns, patternElement)
 			} else {
-				subpatterns = append(subpatterns, &RepeatedPatternElement{
-					//regexp:            regexp.MustCompile(subpatternRegex),
-					ocurrenceModifier: element.Ocurrence,
-					exactCount:        element.ExactOcurrenceCount,
-					element:           patternElement,
-				})
+				subpatterns = append(subpatterns, newRepeatedPatternElement(element.Ocurrence, element.ExactOcurrenceCount, patternElement))
 			}
 		}
 

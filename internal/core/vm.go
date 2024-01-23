@@ -1874,12 +1874,7 @@ func (v *VM) handleOtherOpcodes(op byte) (_continue bool) {
 
 		patternElement := v.stack[v.sp-1].(StringPattern)
 
-		v.stack[v.sp-1] = &RepeatedPatternElement{
-			//regexp:            regexp.MustCompile(subpatternRegex),
-			ocurrenceModifier: occurence,
-			exactCount:        exactOccurenceCount,
-			element:           patternElement,
-		}
+		v.stack[v.sp-1] = newRepeatedPatternElement(occurence, exactOccurenceCount, patternElement)
 	case OpCreateSequenceStringPattern:
 		v.ip += 5
 		numElements := int(v.curInsts[v.ip-4])

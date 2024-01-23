@@ -261,10 +261,18 @@ func (patt *LengthCheckingStringPattern) IsMutable() bool {
 }
 
 func (patt *SequenceStringPattern) IsMutable() bool {
-	return false
+	return !patt.IsResolved()
+}
+
+func (patt *RepeatedPatternElement) IsMutable() bool {
+	return !patt.IsResolved()
 }
 
 func (patt *UnionStringPattern) IsMutable() bool {
+	return !patt.IsResolved()
+}
+
+func (patt DynamicStringPatternElement) IsMutable() bool {
 	return false
 }
 
@@ -277,14 +285,6 @@ func (patt *IntRangePattern) IsMutable() bool {
 }
 
 func (patt *FloatRangePattern) IsMutable() bool {
-	return false
-}
-
-func (patt DynamicStringPatternElement) IsMutable() bool {
-	return false
-}
-
-func (patt *RepeatedPatternElement) IsMutable() bool {
 	return false
 }
 

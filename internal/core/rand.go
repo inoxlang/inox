@@ -216,7 +216,7 @@ func (pattern TypePattern) Random(ctx *Context, options ...Option) Value {
 }
 
 func (patt DynamicStringPatternElement) Random(ctx *Context, options ...Option) Value {
-	return patt.resolve().Random(ctx)
+	return patt.mustResolve().Random(ctx)
 }
 
 func (patt *ObjectPattern) Random(ctx *Context, options ...Option) Value {

@@ -1134,7 +1134,7 @@ func (patt *FloatRangePattern) Iterator(ctx *Context, config IteratorConfigurati
 }
 
 func (patt DynamicStringPatternElement) Iterator(ctx *Context, config IteratorConfiguration) Iterator {
-	return patt.resolve().Iterator(ctx, config)
+	return patt.mustResolve().Iterator(ctx, config)
 }
 
 func (patt *RepeatedPatternElement) Iterator(ctx *Context, config IteratorConfiguration) Iterator {
