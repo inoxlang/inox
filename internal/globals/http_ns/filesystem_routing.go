@@ -156,6 +156,10 @@ func createHandleDynamic(server *HttpsServer, routingDirPath core.Path) handlerF
 	return func(req *HttpRequest, rw *HttpResponseWriter, handlerGlobalState *core.GlobalState) {
 		path := req.Path
 		method := req.Method.UnderlyingString()
+		tx := handlerGlobalState.Ctx.GetTx()
+		if tx == nil {
+			panic(core.ErrUnreachable)
+		}
 
 		//check path
 		if !path.IsAbsolute() {
@@ -282,10 +286,7 @@ func createHandleDynamic(server *HttpsServer, routingDirPath core.Path) handlerF
 				rw.writeHeaders(http.StatusInternalServerError)
 			}
 			if !handlerCtx.IsDoneSlowCheck() {
-				tx := handlerCtx.GetTx()
-				if tx != nil {
-					tx.Rollback(handlerCtx)
-				}
+				tx.Rollback(handlerCtx)
 			}
 			return
 		}
@@ -317,18 +318,17 @@ func createHandleDynamic(server *HttpsServer, routingDirPath core.Path) handlerF
 		if err != nil {
 			handlerGlobalState.Logger.Err(err).Send()
 
-			if !handlerCtx.IsDoneSlowCheck() {
+			if handlerCtx.IsDoneSlowCheck() {
+				if !rw.IsStatusSent() {
+					rw.writeHeaders(http.StatusInternalServerError)
+				}
+			} else {
 				if !rw.IsStatusSent() {
 					rw.writeHeaders(http.StatusNotFound)
 				}
-
-				tx := handlerCtx.GetTx()
-				if tx != nil {
-					tx.Rollback(handlerCtx)
-				}
-			} else if !rw.IsStatusSent() { //context is done
-				rw.writeHeaders(http.StatusInternalServerError)
 			}
+
+			tx.Rollback(handlerCtx)
 			return
 		}
 

@@ -1032,6 +1032,10 @@ func runAdvancedServerTest(
 				req.Header.Add("Accept", string(info.acceptedContentType))
 			}
 
+			if info.contentType != "" {
+				req.Header.Set("Content-Type", string(info.contentType))
+			}
+
 			for k, values := range info.header {
 				for _, val := range values {
 					req.Header.Add(k, val)
@@ -1192,6 +1196,7 @@ func runAdvancedServerTest(
 type requestTestInfo struct {
 	pause               time.Duration //like predelay but does not send current & next requests
 	preDelay            time.Duration
+	contentType         core.Mimetype
 	acceptedContentType core.Mimetype
 	path                string
 	method              string

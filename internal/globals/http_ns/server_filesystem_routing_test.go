@@ -1104,13 +1104,13 @@ func TestFilesystemRouting(t *testing.T) {
 			assert.Fail(t, "")
 		}
 
-		t.Run("GET /x text/plain", func(t *testing.T) {
+		t.Run("POST /x text/plain", func(t *testing.T) {
 			test := baseTest
 			test.makeFilesystem = func() core.SnapshotableFilesystem {
 				fls := fs_ns.NewMemFilesystem(10_000)
 				fls.MkdirAll("/routes", fs_ns.DEFAULT_DIR_FMODE)
 				fls.MkdirAll("/db", fs_ns.DEFAULT_DIR_FMODE)
-				util.WriteFile(fls, "/routes/x.ix", []byte(`
+				util.WriteFile(fls, "/routes/POST-x.ix", []byte(`
 						manifest {
 							databases: /main.ix
 							permissions: {
@@ -1131,13 +1131,17 @@ func TestFilesystemRouting(t *testing.T) {
 			}
 			test.requests = []requestTestInfo{
 				{
+					method:              "POST",
 					path:                "/x",
+					contentType:         mimeconsts.PLAIN_TEXT_CTYPE,
 					acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
 					result:              `added`,
 				},
 				{
 					pause:               10 * time.Millisecond,
+					method:              "POST",
 					path:                "/x",
+					contentType:         mimeconsts.PLAIN_TEXT_CTYPE,
 					acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
 					result:              `persisted`,
 				},
@@ -1146,13 +1150,13 @@ func TestFilesystemRouting(t *testing.T) {
 			runServerTest(t, test, createClient)
 		})
 
-		t.Run("GET /x */*", func(t *testing.T) {
+		t.Run("POST /x */*", func(t *testing.T) {
 			test := baseTest
 			test.makeFilesystem = func() core.SnapshotableFilesystem {
 				fls := fs_ns.NewMemFilesystem(10_000)
 				fls.MkdirAll("/routes", fs_ns.DEFAULT_DIR_FMODE)
 				fls.MkdirAll("/db", fs_ns.DEFAULT_DIR_FMODE)
-				util.WriteFile(fls, "/routes/x.ix", []byte(`
+				util.WriteFile(fls, "/routes/POST-x.ix", []byte(`
 						manifest {
 							databases: /main.ix
 							permissions: {
@@ -1173,13 +1177,17 @@ func TestFilesystemRouting(t *testing.T) {
 			}
 			test.requests = []requestTestInfo{
 				{
+					method:              "POST",
 					path:                "/x",
+					contentType:         mimeconsts.PLAIN_TEXT_CTYPE,
 					acceptedContentType: mimeconsts.ANY_CTYPE,
 					result:              `added`,
 				},
 				{
 					pause:               10 * time.Millisecond,
+					method:              "POST",
 					path:                "/x",
+					contentType:         mimeconsts.PLAIN_TEXT_CTYPE,
 					acceptedContentType: mimeconsts.ANY_CTYPE,
 					result:              `persisted`,
 				},
@@ -1196,7 +1204,7 @@ func TestFilesystemRouting(t *testing.T) {
 				fls := fs_ns.NewMemFilesystem(10_000)
 				fls.MkdirAll("/routes", fs_ns.DEFAULT_DIR_FMODE)
 				fls.MkdirAll("/db", fs_ns.DEFAULT_DIR_FMODE)
-				util.WriteFile(fls, "/routes/set.ix", []byte(`
+				util.WriteFile(fls, "/routes/POST-set.ix", []byte(`
 						manifest {
 							databases: /main.ix
 							permissions: {
@@ -1219,7 +1227,7 @@ func TestFilesystemRouting(t *testing.T) {
 						cancel_exec()
 					`), fs_ns.DEFAULT_FILE_FMODE)
 
-				util.WriteFile(fls, "/routes/read.ix", []byte(`
+				util.WriteFile(fls, "/routes/POST-read.ix", []byte(`
 						manifest {
 							databases: /main.ix
 							permissions: {
@@ -1233,7 +1241,7 @@ func TestFilesystemRouting(t *testing.T) {
 						}
 						return "not persisted"
 					`), fs_ns.DEFAULT_FILE_FMODE)
-				util.WriteFile(fls, "/routes/do-not-cancel.ix", []byte(`
+				util.WriteFile(fls, "/routes/POST-add-do-not-cancel.ix", []byte(`
 					manifest {
 						databases: /main.ix
 						permissions: {
@@ -1249,41 +1257,53 @@ func TestFilesystemRouting(t *testing.T) {
 			}
 			test.requests = []requestTestInfo{
 				{
+					method:              "POST",
 					path:                "/set",
-					acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
+					contentType:         mimeconsts.PLAIN_TEXT_CTYPE,
+					acceptedContentType: mimeconsts.ANY_CTYPE,
 					status:              404,
 				},
 				{
-					pause:               100 * time.Millisecond,
+					pause:               150 * time.Millisecond,
+					method:              "POST",
 					path:                "/read",
-					acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
+					contentType:         mimeconsts.PLAIN_TEXT_CTYPE,
+					acceptedContentType: mimeconsts.ANY_CTYPE,
 					status:              200,
 					result:              "not persisted",
 				},
 				{
-					pause:               100 * time.Millisecond,
-					path:                "/do-not-cancel",
-					acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
+					pause:               150 * time.Millisecond,
+					method:              "POST",
+					path:                "/add-do-not-cancel",
+					contentType:         mimeconsts.PLAIN_TEXT_CTYPE,
+					acceptedContentType: mimeconsts.ANY_CTYPE,
 					status:              200,
 				},
 				{
-					pause:               100 * time.Millisecond,
+					pause:               150 * time.Millisecond,
+					method:              "POST",
 					path:                "/read",
-					acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
+					contentType:         mimeconsts.PLAIN_TEXT_CTYPE,
+					acceptedContentType: mimeconsts.ANY_CTYPE,
 					status:              200,
 					result:              "not persisted",
 				},
 				{
-					pause:               100 * time.Millisecond,
+					pause:               150 * time.Millisecond,
+					method:              "POST",
 					path:                "/set",
-					acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
+					contentType:         mimeconsts.PLAIN_TEXT_CTYPE,
+					acceptedContentType: mimeconsts.ANY_CTYPE,
 					status:              200,
 					result:              "tx not cancelled",
 				},
 				{
-					pause:               200 * time.Millisecond,
+					pause:               150 * time.Millisecond,
+					method:              "POST",
 					path:                "/read",
-					acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
+					contentType:         mimeconsts.PLAIN_TEXT_CTYPE,
+					acceptedContentType: mimeconsts.ANY_CTYPE,
 					status:              200,
 					result:              "persisted",
 				},
