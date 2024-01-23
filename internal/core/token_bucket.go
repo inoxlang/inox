@@ -282,8 +282,13 @@ func startTokenBucketManagerGoroutine() {
 		}
 
 		if tb.available < 0 && tb.cancelContextOnNegativeCount && tb.context != nil {
-			tb.context.CancelGracefully() // TODO: add reason
-			return
+			tb.shouldBeDestroyed = true
+			if !tb.context.IsDoneSlowCheck() {
+				go func() {
+					defer utils.Recover()
+					tb.context.CancelGracefully() // TODO: add reason
+				}()
+			}
 		}
 
 		tb.available = max(0, tb.available)
