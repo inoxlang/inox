@@ -18,7 +18,20 @@ var (
 	cryptoSecureMonotonicEntropySrcForULIDs = &ulid.LockedMonotonicReader{
 		MonotonicReader: ulid.Monotonic(CryptoRandSource, math.MaxUint32),
 	}
+
+	MIN_ULID, MAX_ULID ULID
 )
+
+func init() {
+	max := (*ulid.ULID)(&MAX_ULID)
+	max.SetTime(ulid.MaxTime())
+	entropy := [10]byte{}
+
+	for i := 0; i < len(entropy); i++ {
+		entropy[i] = 255
+	}
+	max.SetEntropy(entropy[:])
+}
 
 // ULID implements Value.
 type ULID ulid.ULID
@@ -51,6 +64,16 @@ func (id ULID) GoTime() time.Time {
 
 func (id ULID) Time() DateTime {
 	return DateTime(id.GoTime())
+}
+
+func (id ULID) After(other ULID) bool {
+	result, _ := id.Compare(other)
+	return result == 1
+}
+
+func (id ULID) Before(other ULID) bool {
+	result, _ := id.Compare(other)
+	return result == -1
 }
 
 // UUIDv4 implements Value.

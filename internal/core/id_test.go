@@ -36,6 +36,22 @@ func TestULID(t *testing.T) {
 			}
 		}
 	})
+
+	t.Run("MAX_ULID", func(t *testing.T) {
+		assert.True(t, MAX_ULID.After(MIN_ULID))
+		assert.True(t, MAX_ULID.After(NewULID()))
+
+		assert.False(t, MAX_ULID.After(MAX_ULID))
+		assert.False(t, MAX_ULID.Before(MAX_ULID))
+	})
+
+	t.Run("MIN_ULID", func(t *testing.T) {
+		assert.True(t, MIN_ULID.Before(MAX_ULID))
+		assert.True(t, MIN_ULID.Before(NewULID()))
+
+		assert.False(t, MIN_ULID.After(MIN_ULID))
+		assert.False(t, MIN_ULID.Before(MIN_ULID))
+	})
 }
 
 func TestUUIDv4(t *testing.T) {
