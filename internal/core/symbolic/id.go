@@ -16,6 +16,8 @@ var (
 // An ULID represents a symbolic ULID.
 type ULID struct {
 	SerializableMixin
+	ComparableMixin
+
 	value    ulid.ULID
 	hasValue bool
 }

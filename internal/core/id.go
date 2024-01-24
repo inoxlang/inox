@@ -2,6 +2,7 @@ package core
 
 import (
 	"errors"
+	"math"
 	"time"
 
 	"github.com/google/uuid"
@@ -13,13 +14,19 @@ import (
 
 var (
 	_ = []Serializable{ULID{}, UUIDv4{}}
+
+	cryptoSecureMonotonicEntropySrcForULIDs = &ulid.LockedMonotonicReader{
+		MonotonicReader: ulid.Monotonic(CryptoRandSource, math.MaxUint32),
+	}
 )
 
 // ULID implements Value.
 type ULID ulid.ULID
 
+// NewULID generates in a cryptographically secure way an ULID with a monotonically increasing entropy.
 func NewULID() ULID {
-	return ULID(ulid.Make())
+	id := ulid.MustNew(ulid.Now(), cryptoSecureMonotonicEntropySrcForULIDs)
+	return ULID(id)
 }
 
 func ParseULID(s string) (ULID, error) {
@@ -38,8 +45,12 @@ func (id ULID) libValue() ulid.ULID {
 	return ulid.ULID(id)
 }
 
-func (id ULID) Time() time.Time {
+func (id ULID) GoTime() time.Time {
 	return time.UnixMilli(int64(id.libValue().Time()))
+}
+
+func (id ULID) Time() DateTime {
+	return DateTime(id.GoTime())
 }
 
 // UUIDv4 implements Value.

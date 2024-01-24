@@ -18,6 +18,8 @@ var (
 		Rune('a'), Str(""), Path(""), URL(""), Host(""), Identifier(""), PropertyName(""),
 		(*StringConcatenation)(nil),
 
+		(ULID{}),
+
 		(*RuneSlice)(nil), (*ByteSlice)(nil),
 
 		(*Object)(nil), (*Record)(nil), (*List)(nil), (*Tuple)(nil), (*KeyList)(nil), (*Dictionary)(nil),

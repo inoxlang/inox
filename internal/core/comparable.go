@@ -146,6 +146,17 @@ func (dt DateTime) Compare(other Value) (result int, comparable bool) {
 	return
 }
 
+func (id ULID) Compare(other Value) (result int, comparable bool) {
+	otherULID, ok := other.(ULID)
+	if !ok {
+		//not comparable
+		return
+	}
+	comparable = true
+	result = id.libValue().Compare(otherULID.libValue())
+	return
+}
+
 func intCompare[I constraints.Integer](i I, other Value) (result int, comparable bool) {
 	otherInt, ok := other.(I)
 	if !ok {
