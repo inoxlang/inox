@@ -13,8 +13,8 @@ const (
 
 func TestSharedPersistedMapSet(t *testing.T) {
 
-	t.Run("Set should be persisted during call to .Set", func(t *testing.T) {
-		ctx, storage := sharedSetTestSetup(t)
+	t.Run("Map should be persisted during call to .Set", func(t *testing.T) {
+		ctx, storage := sharedMapTestSetup(t)
 		defer ctx.CancelGracefully()
 
 		pattern := NewMapPattern(MapConfig{})
@@ -61,9 +61,9 @@ func TestSharedPersistedMapSet(t *testing.T) {
 		assert.ElementsMatch(t, []any{STRING_A}, values)
 	})
 
-	t.Run("Set should be persisted at end of successful transaction if .Add was called transactionnaly", func(t *testing.T) {
+	t.Run("Map should be persisted at end of successful transaction if .Add was called transactionnaly", func(t *testing.T) {
 
-		ctx, storage := sharedSetTestSetup(t)
+		ctx, storage := sharedMapTestSetup(t)
 		defer ctx.CancelGracefully()
 
 		tx := core.StartNewTransaction(ctx)
@@ -125,8 +125,8 @@ func TestSharedPersistedMapSet(t *testing.T) {
 		assert.True(t, bool(persisted.(*Map).Contains(ctx, STRING_A)))
 	})
 
-	t.Run("Set should not be persisted at end of failed transaction if .Add was called transactionnaly", func(t *testing.T) {
-		ctx1, ctx2, storage := sharedSetTestSetup2(t)
+	t.Run("Map should not be persisted at end of failed transaction if .Add was called transactionnaly", func(t *testing.T) {
+		ctx1, ctx2, storage := sharedMapTestSetup2(t)
 		defer ctx1.CancelGracefully()
 		defer ctx2.CancelGracefully()
 
@@ -204,7 +204,7 @@ func TestSharedPersistedMapSet(t *testing.T) {
 	//Tests with several transactions.
 
 	t.Run("a write transaction should wait for the previous write transaction to finish", func(t *testing.T) {
-		ctx1, ctx2, storage := sharedSetTestSetup2(t)
+		ctx1, ctx2, storage := sharedMapTestSetup2(t)
 		defer ctx1.CancelGracefully()
 		defer ctx2.CancelGracefully()
 
@@ -271,7 +271,7 @@ func TestSharedPersistedMapSet(t *testing.T) {
 
 	t.Run("writes in two subsequent transactions", func(t *testing.T) {
 
-		ctx1, ctx2, storage := sharedSetTestSetup2(t)
+		ctx1, ctx2, storage := sharedMapTestSetup2(t)
 		defer ctx1.CancelGracefully()
 		defer ctx2.CancelGracefully()
 
@@ -379,8 +379,8 @@ func TestSharedPersistedMapSet(t *testing.T) {
 
 func TestSharedPersistedMapRemove(t *testing.T) {
 
-	t.Run("Set should be persisted during call to .Remove", func(t *testing.T) {
-		ctx, storage := sharedSetTestSetup(t)
+	t.Run("Map should be persisted during call to .Remove", func(t *testing.T) {
+		ctx, storage := sharedMapTestSetup(t)
 		defer ctx.CancelGracefully()
 
 		pattern := NewMapPattern(MapConfig{})
@@ -425,9 +425,9 @@ func TestSharedPersistedMapRemove(t *testing.T) {
 		assert.Len(t, vals, 0)
 	})
 
-	t.Run("Set should be persisted at end of successful transaction if .Remove was called transactionnaly", func(t *testing.T) {
+	t.Run("Map should be persisted at end of successful transaction if .Remove was called transactionnaly", func(t *testing.T) {
 
-		ctx, storage := sharedSetTestSetup(t)
+		ctx, storage := sharedMapTestSetup(t)
 		defer ctx.CancelGracefully()
 
 		tx := core.StartNewTransaction(ctx)
@@ -494,8 +494,8 @@ func TestSharedPersistedMapRemove(t *testing.T) {
 		assert.False(t, bool(persistedMap.Contains(ctx, STRING_A)))
 	})
 
-	t.Run("Set should not be persisted at end of failed transaction if .Remove was called transactionnaly", func(t *testing.T) {
-		ctx1, ctx2, storage := sharedSetTestSetup2(t)
+	t.Run("Map should not be persisted at end of failed transaction if .Remove was called transactionnaly", func(t *testing.T) {
+		ctx1, ctx2, storage := sharedMapTestSetup2(t)
 		defer ctx1.CancelGracefully()
 		defer ctx2.CancelGracefully()
 
@@ -575,7 +575,7 @@ func TestSharedPersistedMapRemove(t *testing.T) {
 	//Tests with several transactions.
 
 	t.Run("write transactions should wait for the previous transaction to finish", func(t *testing.T) {
-		ctx1, ctx2, storage := sharedSetTestSetup2(t)
+		ctx1, ctx2, storage := sharedMapTestSetup2(t)
 		defer ctx1.CancelGracefully()
 		defer ctx2.CancelGracefully()
 
@@ -635,12 +635,12 @@ func TestSharedPersistedMapRemove(t *testing.T) {
 
 }
 
-func TestSharedPersistedSetHas(t *testing.T) {
+func TestSharedPersistedMapHas(t *testing.T) {
 
 	//Tests with several transactions.
 
 	t.Run("readonly transactions can read the Map in parallel", func(t *testing.T) {
-		ctx1, ctx2, storage := sharedSetTestSetup2(t)
+		ctx1, ctx2, storage := sharedMapTestSetup2(t)
 		defer ctx1.CancelGracefully()
 		defer ctx2.CancelGracefully()
 

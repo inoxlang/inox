@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNewSet(t *testing.T) {
+func TestNewMap(t *testing.T) {
 
 	t.Run("no elements", func(t *testing.T) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, io.Discard)
@@ -115,7 +115,7 @@ func TestNewSet(t *testing.T) {
 	})
 }
 
-func TestUnsharedSetAddRemove(t *testing.T) {
+func TestUnsharedMapAddRemove(t *testing.T) {
 	ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 
 	t.Run("representation uniqueness", func(t *testing.T) {

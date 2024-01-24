@@ -15,13 +15,16 @@ const (
 	INT_1 = core.Int(1)
 	INT_2 = core.Int(2)
 
+	INT_1_TYPED_REPR = `{"int__value":1}`
+	INT_2_TYPED_REPR = `{"int__value":2}`
+
 	STRING_A = core.Str("a")
 	STRING_B = core.Str("b")
 )
 
 func TestSharedUnpersistedMapSet(t *testing.T) {
 	t.Run("Map should be updated at end of transaction if .Set was called transactionnaly", func(t *testing.T) {
-		ctx, _ := sharedSetTestSetup(t)
+		ctx, _ := sharedMapTestSetup(t)
 		defer ctx.CancelGracefully()
 
 		tx := core.StartNewTransaction(ctx)
@@ -34,7 +37,7 @@ func TestSharedUnpersistedMapSet(t *testing.T) {
 
 		assert.NoError(t, tx.Commit(ctx))
 
-		otherCtx, _ := sharedSetTestSetup(t)
+		otherCtx, _ := sharedMapTestSetup(t)
 		defer ctx.CancelGracefully()
 
 		assert.True(t, bool(m.Has(otherCtx, INT_1)))
@@ -124,7 +127,7 @@ func TestSharedUnpersistedMapHas(t *testing.T) {
 	//Tests with several transactions.
 
 	t.Run("readonly transactions can read the Map in parallel", func(t *testing.T) {
-		ctx1, ctx2, _ := sharedSetTestSetup2(t)
+		ctx1, ctx2, _ := sharedMapTestSetup2(t)
 		defer ctx1.CancelGracefully()
 		defer ctx2.CancelGracefully()
 
@@ -148,13 +151,268 @@ func TestSharedUnpersistedMapHas(t *testing.T) {
 		assert.NoError(t, readTx1.Commit(ctx1))
 		assert.True(t, bool(m.Has(ctx2, INT_1)))
 	})
+
+	t.Run("Has should be thread safe", func(t *testing.T) {
+		ctx1, ctx2, _ := sharedMapTestSetup2(t)
+		defer ctx1.CancelGracefully()
+		defer ctx2.CancelGracefully()
+
+		core.StartNewReadonlyTransaction(ctx1)
+		//ctx2 has no transaction on purpose.
+
+		entries := core.NewWrappedValueList(INT_1, STRING_A, INT_2, STRING_B)
+
+		m := NewMapWithConfig(ctx1, entries, MapConfig{
+			Key:   core.SERIALIZABLE_PATTERN,
+			Value: core.SERIALIZABLE_PATTERN,
+		})
+		m.Share(ctx1.GetClosestState())
+
+		done := make(chan struct{})
+		go func() {
+			for i := 0; i < 100_000; i++ {
+				m.Set(ctx2, core.Int(i+5), STRING_B)
+			}
+			done <- struct{}{}
+		}()
+
+		for i := 0; i < 100_000; i++ {
+			m.Has(ctx1, INT_1)
+		}
+
+		<-done
+	})
+}
+
+func TestSharedUnpersistedMapContains(t *testing.T) {
+
+	//Tests with several transactions.
+
+	t.Run("readonly transactions can read the Map in parallel", func(t *testing.T) {
+		ctx1, ctx2, _ := sharedMapTestSetup2(t)
+		defer ctx1.CancelGracefully()
+		defer ctx2.CancelGracefully()
+
+		readTx1 := core.StartNewReadonlyTransaction(ctx1)
+		core.StartNewReadonlyTransaction(ctx2)
+
+		entries := core.NewWrappedValueList(INT_1, STRING_A, INT_2, STRING_B)
+
+		m := NewMapWithConfig(ctx1, entries, MapConfig{
+			Key:   core.SERIALIZABLE_PATTERN,
+			Value: core.SERIALIZABLE_PATTERN,
+		})
+		m.Share(ctx1.GetClosestState())
+
+		assert.True(t, bool(m.Contains(ctx1, STRING_A)))
+		assert.True(t, bool(m.Contains(ctx2, STRING_A)))
+
+		assert.True(t, bool(m.Contains(ctx1, STRING_B)))
+		assert.True(t, bool(m.Contains(ctx2, STRING_B)))
+
+		assert.NoError(t, readTx1.Commit(ctx1))
+		assert.True(t, bool(m.Contains(ctx2, STRING_A)))
+	})
+
+	t.Run("Contains should be thread safe", func(t *testing.T) {
+		ctx1, ctx2, _ := sharedMapTestSetup2(t)
+		defer ctx1.CancelGracefully()
+		defer ctx2.CancelGracefully()
+
+		core.StartNewReadonlyTransaction(ctx1)
+		//ctx2 has no transaction on purpose.
+
+		entries := core.NewWrappedValueList(INT_1, STRING_A, INT_2, STRING_B)
+
+		m := NewMapWithConfig(ctx1, entries, MapConfig{
+			Key:   core.SERIALIZABLE_PATTERN,
+			Value: core.SERIALIZABLE_PATTERN,
+		})
+		m.Share(ctx1.GetClosestState())
+
+		done := make(chan struct{})
+		go func() {
+			for i := 0; i < 10_000; i++ {
+				m.Set(ctx2, core.Int(i+5), STRING_B)
+			}
+			done <- struct{}{}
+		}()
+
+		for i := 0; i < 10_000; i++ {
+			m.Contains(ctx1, STRING_A)
+		}
+
+		<-done
+	})
+}
+
+func TestSharedUnpersistedMapGet(t *testing.T) {
+
+	//Tests with several transactions.
+
+	t.Run("readonly transactions can read the Map in parallel", func(t *testing.T) {
+		ctx1, ctx2, _ := sharedMapTestSetup2(t)
+		defer ctx1.CancelGracefully()
+		defer ctx2.CancelGracefully()
+
+		readTx1 := core.StartNewReadonlyTransaction(ctx1)
+		core.StartNewReadonlyTransaction(ctx2)
+
+		entries := core.NewWrappedValueList(INT_1, STRING_A, INT_2, STRING_B)
+
+		m := NewMapWithConfig(ctx1, entries, MapConfig{
+			Key:   core.SERIALIZABLE_PATTERN,
+			Value: core.SERIALIZABLE_PATTERN,
+		})
+		m.Share(ctx1.GetClosestState())
+
+		//check first entry.
+
+		entryValue, ok := m.Get(ctx1, INT_1)
+		if !assert.True(t, bool(ok)) {
+			return
+		}
+		assert.Equal(t, STRING_A, entryValue)
+
+		entryValue, ok = m.Get(ctx2, INT_1)
+		if !assert.True(t, bool(ok)) {
+			return
+		}
+		assert.Equal(t, STRING_A, entryValue)
+
+		//check second entry.
+
+		entryValue, ok = m.Get(ctx1, INT_2)
+		if !assert.True(t, bool(ok)) {
+			return
+		}
+		assert.Equal(t, STRING_B, entryValue)
+
+		entryValue, ok = m.Get(ctx2, INT_2)
+		if !assert.True(t, bool(ok)) {
+			return
+		}
+		assert.Equal(t, STRING_B, entryValue)
+
+		//Commit first transaction.
+
+		assert.NoError(t, readTx1.Commit(ctx1))
+
+		//Check first entry.
+
+		entryValue, ok = m.Get(ctx2, INT_1)
+		if !assert.True(t, bool(ok)) {
+			return
+		}
+		assert.Equal(t, STRING_A, entryValue)
+	})
+
+	t.Run("Get should be thread safe", func(t *testing.T) {
+		ctx1, ctx2, _ := sharedMapTestSetup2(t)
+		defer ctx1.CancelGracefully()
+		defer ctx2.CancelGracefully()
+
+		core.StartNewReadonlyTransaction(ctx1)
+		//ctx2 has no transaction on purpose.
+
+		entries := core.NewWrappedValueList(INT_1, STRING_A, INT_2, STRING_B)
+
+		m := NewMapWithConfig(ctx1, entries, MapConfig{
+			Key:   core.SERIALIZABLE_PATTERN,
+			Value: core.SERIALIZABLE_PATTERN,
+		})
+		m.Share(ctx1.GetClosestState())
+
+		done := make(chan struct{})
+		go func() {
+			for i := 0; i < 10_000; i++ {
+				m.Set(ctx2, core.Int(i+5), STRING_B)
+			}
+			done <- struct{}{}
+		}()
+
+		for i := 0; i < 10_000; i++ {
+			m.Get(ctx1, STRING_A)
+		}
+
+		<-done
+	})
+}
+
+func TestSharedUnpersistedMapGetElementByKey(t *testing.T) {
+
+	//Tests with several transactions.
+
+	t.Run("readonly transactions can read the Map in parallel", func(t *testing.T) {
+		ctx1, ctx2, _ := sharedMapTestSetup2(t)
+		defer ctx1.CancelGracefully()
+		defer ctx2.CancelGracefully()
+
+		readTx1 := core.StartNewReadonlyTransaction(ctx1)
+		core.StartNewReadonlyTransaction(ctx2)
+
+		entries := core.NewWrappedValueList(INT_1, STRING_A, INT_2, STRING_B)
+
+		m := NewMapWithConfig(ctx1, entries, MapConfig{
+			Key:   core.SERIALIZABLE_PATTERN,
+			Value: core.SERIALIZABLE_PATTERN,
+		})
+		m.Share(ctx1.GetClosestState())
+
+		int1ElemKey := m.getElementPathKeyFromKey(INT_1_TYPED_REPR)
+		int2ElemKey := m.getElementPathKeyFromKey(INT_2_TYPED_REPR)
+
+		//TODO: improve checks when GetElementByKey implementation is finished.
+
+		m.GetElementByKey(ctx1, int1ElemKey)
+		m.GetElementByKey(ctx2, int1ElemKey)
+
+		m.GetElementByKey(ctx1, int2ElemKey)
+		m.GetElementByKey(ctx2, int2ElemKey)
+
+		assert.NoError(t, readTx1.Commit(ctx1))
+		m.GetElementByKey(ctx2, int2ElemKey)
+	})
+
+	t.Run("GetElementByKey should be thread safe", func(t *testing.T) {
+		ctx1, ctx2, _ := sharedMapTestSetup2(t)
+		defer ctx1.CancelGracefully()
+		defer ctx2.CancelGracefully()
+
+		core.StartNewReadonlyTransaction(ctx1)
+		//ctx2 has no transaction on purpose.
+
+		entries := core.NewWrappedValueList(INT_1, STRING_A, INT_2, STRING_B)
+
+		m := NewMapWithConfig(ctx1, entries, MapConfig{
+			Key:   core.SERIALIZABLE_PATTERN,
+			Value: core.SERIALIZABLE_PATTERN,
+		})
+		m.Share(ctx1.GetClosestState())
+
+		done := make(chan struct{})
+		go func() {
+			for i := 0; i < 10_000; i++ {
+				m.Set(ctx2, core.Int(i+5), STRING_B)
+			}
+			done <- struct{}{}
+		}()
+
+		int1ElemKey := m.getElementPathKeyFromKey(INT_1_TYPED_REPR)
+
+		for i := 0; i < 10_000; i++ {
+			m.GetElementByKey(ctx1, int1ElemKey)
+		}
+
+		<-done
+	})
 }
 
 func TestSharedUnpersistedMapRemove(t *testing.T) {
 	//TODO
 }
 
-func sharedSetTestSetup(t *testing.T) (*core.Context, core.DataStore) {
+func sharedMapTestSetup(t *testing.T) (*core.Context, core.DataStore) {
 	ctx := core.NewContexWithEmptyState(core.ContextConfig{
 		Permissions: []core.Permission{
 			core.DatabasePermission{
@@ -174,7 +432,7 @@ func sharedSetTestSetup(t *testing.T) (*core.Context, core.DataStore) {
 	return ctx, storage
 }
 
-func sharedSetTestSetup2(t *testing.T) (*core.Context, *core.Context, core.DataStore) {
+func sharedMapTestSetup2(t *testing.T) (*core.Context, *core.Context, core.DataStore) {
 	config := core.ContextConfig{
 		Permissions: []core.Permission{
 			core.DatabasePermission{

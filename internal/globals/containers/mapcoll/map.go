@@ -169,6 +169,9 @@ func (m *Map) GetElementByKey(ctx *core.Context, pathKey core.ElementKey) (core.
 		if err := m.txIsolator.WaitIfOtherTransaction(ctx, false); err != nil {
 			panic(err)
 		}
+		closestState := ctx.GetClosestState()
+		m.lock.Lock(closestState, m)
+		defer m.lock.Unlock(closestState, m)
 	}
 
 	m.initPathKeyMap()
@@ -185,6 +188,15 @@ func (m *Map) GetElementByKey(ctx *core.Context, pathKey core.ElementKey) (core.
 }
 
 func (m *Map) Contains(ctx *core.Context, value core.Serializable) bool {
+	if m.lock.IsValueShared() {
+		if err := m.txIsolator.WaitIfOtherTransaction(ctx, false); err != nil {
+			panic(err)
+		}
+		closestState := ctx.GetClosestState()
+		m.lock.Lock(closestState, m)
+		defer m.lock.Unlock(closestState, m)
+	}
+
 	alreadyCompared := map[uintptr]uintptr{}
 
 	for serializedKey, entry := range m.entryByKey {
@@ -264,6 +276,9 @@ func (m *Map) Get(ctx *core.Context, keyVal core.Serializable) (core.Value, core
 		if err := m.txIsolator.WaitIfOtherTransaction(ctx, false); err != nil {
 			panic(err)
 		}
+		closestState := ctx.GetClosestState()
+		m.lock.Lock(closestState, m)
+		defer m.lock.Unlock(closestState, m)
 	}
 
 	serialiedKey := m.getUniqueKey(ctx, keyVal)
@@ -366,10 +381,10 @@ func (m *Map) putEntryInSharedMap(ctx *core.Context, entry entry, ignoreTx bool)
 	closestState := ctx.GetClosestState()
 	entry.value = utils.Must(core.ShareOrClone(entry.value, closestState)).(core.Serializable)
 
-	serializedKey := strings.Clone(m.getUniqueKey(ctx, entry.key))
-
 	m.lock.Lock(closestState, m)
 	defer m.lock.Unlock(closestState, m)
+
+	serializedKey := strings.Clone(m.getUniqueKey(ctx, entry.key))
 
 	if m.pathKeyToKey != nil {
 		m.pathKeyToKey[m.getElementPathKeyFromKey(serializedKey)] = serializedKey
