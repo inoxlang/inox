@@ -2,29 +2,44 @@ package containers
 
 import (
 	"github.com/inoxlang/inox/internal/core/symbolic"
-	"github.com/inoxlang/inox/internal/prettyprint"
 	pprint "github.com/inoxlang/inox/internal/prettyprint"
 )
 
-var _ = []symbolic.Iterable{(*Thread)(nil)}
+var (
+	THREAD_PROPNAMES            = []string{"add"}
+	THREAD_ADD_METHOD_ARG_NAMES = []string{"message"}
+
+	_ = []symbolic.Iterable{(*Thread)(nil)}
+)
 
 type Thread struct {
-	symbolic.UnassignablePropsMixin
-	_ int
+	elementPattern symbolic.Pattern
+	element        symbolic.Value
+
+	addMethodParamsCache *[]symbolic.Value
 }
 
-func (*Thread) Test(v symbolic.Value, state symbolic.RecTestCallState) bool {
+func newThread(elementPattern symbolic.Pattern) *Thread {
+	t := &Thread{
+		elementPattern: elementPattern,
+		element:        elementPattern.SymbolicValue(),
+	}
+	t.addMethodParamsCache = &[]symbolic.Value{t.element}
+	return t
+}
+
+func (t *Thread) Test(v symbolic.Value, state symbolic.RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
-	_, ok := v.(*Thread)
-	return ok
+	otherThread, ok := v.(*Thread)
+	return ok && t.elementPattern.Test(otherThread.elementPattern, symbolic.RecTestCallState{})
 }
 
 func (t *Thread) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 	switch name {
-	case "push":
-		return symbolic.WrapGoMethod(t.Push), true
+	case "add":
+		return symbolic.WrapGoMethod(t.Add), true
 	}
 	return nil, false
 }
@@ -34,14 +49,14 @@ func (t *Thread) Prop(name string) symbolic.Value {
 }
 
 func (*Thread) PropertyNames() []string {
-	return []string{"push"}
+	return THREAD_PROPNAMES
 }
 
-func (*Thread) Push(ctx *symbolic.Context, elems ...symbolic.Value) {
-
+func (t *Thread) Add(ctx *symbolic.Context, elem *symbolic.Object) {
+	ctx.SetSymbolicGoFunctionParameters(t.addMethodParamsCache, THREAD_ADD_METHOD_ARG_NAMES)
 }
 
-func (*Thread) PrettyPrint(w prettyprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (*Thread) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("thread")
 }
 

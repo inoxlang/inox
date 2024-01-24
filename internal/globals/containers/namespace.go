@@ -10,7 +10,6 @@ import (
 	"github.com/inoxlang/inox/internal/globals/containers/rankingcoll"
 	"github.com/inoxlang/inox/internal/globals/containers/setcoll"
 	coll_symbolic "github.com/inoxlang/inox/internal/globals/containers/symbolic"
-	"github.com/inoxlang/inox/internal/globals/containers/threadcoll"
 	"github.com/inoxlang/inox/internal/globals/containers/treecoll"
 	"github.com/inoxlang/inox/internal/utils"
 
@@ -26,9 +25,6 @@ func init() {
 		queuecoll.NewQueue, func(ctx *symbolic.Context, elements symbolic.Iterable) *coll_symbolic.Queue {
 			ctx.AddSymbolicGoFunctionError("NOT AVAILABLE YET (WIP)")
 			return &coll_symbolic.Queue{}
-		},
-		threadcoll.NewThread, func(ctx *symbolic.Context, elements symbolic.Iterable) *coll_symbolic.Thread {
-			return &coll_symbolic.Thread{}
 		},
 		graphcoll.NewGraph, func(ctx *symbolic.Context, nodes, edges *symbolic.List) *coll_symbolic.Graph {
 			return &coll_symbolic.Graph{}
@@ -60,7 +56,6 @@ func init() {
 		"Set":     setcoll.NewSet,
 		"Ranking": rankingcoll.NewRanking,
 		"Queue":   queuecoll.NewQueue,
-		"Thread":  threadcoll.NewThread,
 	})
 }
 
@@ -68,7 +63,6 @@ func NewContainersNamespace() map[string]core.Value {
 	return map[string]core.Value{
 		"Set":     core.ValOf(setcoll.NewSet),
 		"Queue":   core.ValOf(queuecoll.NewQueue),
-		"Thread":  core.ValOf(threadcoll.NewThread),
 		"Map":     core.ValOf(mapcoll.NewMap),
 		"Graph":   core.ValOf(graphcoll.NewGraph),
 		"Tree":    core.ValOf(treecoll.NewTree),

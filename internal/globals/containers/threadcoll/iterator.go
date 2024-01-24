@@ -20,7 +20,7 @@ func (s *Thread) Iterator(ctx *core.Context, config core.IteratorConfiguration) 
 			return core.Int(i)
 		},
 		Value_: func(ci *common.CollectionIterator, ctx *core.Context) core.Value {
-			return s.elements[i].value
+			return s.elements[i].actualElement
 		},
 	})
 }

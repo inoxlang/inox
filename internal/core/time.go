@@ -49,3 +49,7 @@ func (d Date) Validate() error {
 
 // See stdlib's time.Time, DateTime implements Value.
 type DateTime time.Time
+
+func (t DateTime) AsGoTime() time.Time {
+	return time.Time(t)
+}

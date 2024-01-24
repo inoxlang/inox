@@ -654,6 +654,10 @@ func (ctx *Context) GetTx() *Transaction {
 	return nil
 }
 
+func (ctx *Context) Now() DateTime {
+	return DateTime(time.Now())
+}
+
 // setTx is called by the associated transaction when it starts or finishes.
 func (ctx *Context) setTx(tx *Transaction) {
 	ctx.lock.Lock()

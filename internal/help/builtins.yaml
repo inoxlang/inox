@@ -598,13 +598,6 @@ containers:
       explanation: 'creates a Ranking with the following ranks: rank(0) -> "best player" & "other player"'
       standalone: true
       
-  - topic: Thread
-    text: The `Thread` function creates a thread from an iterable.
-    examples:
-    - code: 'Thread([{message: "hello", author-id: "5958"}])'
-      standalone: true
-
-
 dns:
   namespace: true
   title: DNS

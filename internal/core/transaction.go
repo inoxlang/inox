@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/inoxlang/inox/internal/utils"
-	"github.com/oklog/ulid/v2"
 )
 
 const (
@@ -41,7 +40,7 @@ func init() {
 // Actual database transactions or data containers can also register a callback with the OnEnd method, in order to execute logic
 // when the transaction commits or rolls back.
 type Transaction struct {
-	ulid           ulid.ULID
+	ulid           ULID
 	ctx            *Context
 	lock           sync.RWMutex
 	startTime      time.Time
@@ -63,7 +62,7 @@ func newTransaction(ctx *Context, readonly bool, options ...Option) *Transaction
 	tx := &Transaction{
 		ctx:            ctx,
 		isReadonly:     readonly,
-		ulid:           ulid.Make(),
+		ulid:           NewULID(),
 		values:         make(map[any]any),
 		endCallbackFns: make(map[any]TransactionEndCallbackFn),
 		timeout:        DEFAULT_TRANSACTION_TIMEOUT,
@@ -124,6 +123,10 @@ func (tx *Transaction) IsFinishing() bool {
 
 func (tx *Transaction) IsReadonly() bool {
 	return tx.isReadonly
+}
+
+func (tx *Transaction) ID() ULID {
+	return tx.ulid
 }
 
 // Start attaches tx to the passed context and creates a goroutine that will roll it back on timeout or context cancellation.

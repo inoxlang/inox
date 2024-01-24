@@ -258,15 +258,6 @@ Ranking(["best player", 10.0, "other player", 5.0])
 ```inox
 Ranking(["best player", 10.0, "other player", 10.0])
 ```
-### Thread
-
-The `Thread` function creates a thread from an iterable.
-
-**examples**
-
-```inox
-Thread([{message: "hello", author-id: "5958"}])
-```
 
 ## Context data
 

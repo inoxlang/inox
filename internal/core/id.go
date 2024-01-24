@@ -2,6 +2,7 @@ package core
 
 import (
 	"errors"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/inoxlang/inox/internal/utils"
@@ -29,8 +30,16 @@ func ParseULID(s string) (ULID, error) {
 	return ULID(id), nil
 }
 
+func (id ULID) String() string {
+	return id.libValue().String()
+}
+
 func (id ULID) libValue() ulid.ULID {
 	return ulid.ULID(id)
+}
+
+func (id ULID) Time() time.Time {
+	return time.UnixMilli(int64(id.libValue().Time()))
 }
 
 // UUIDv4 implements Value.

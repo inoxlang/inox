@@ -15,8 +15,8 @@ import (
 
 func (t *Thread) GetGoMethod(name string) (*core.GoFunction, bool) {
 	switch name {
-	case "push":
-		return core.WrapGoMethod(t.Push), true
+	case "add":
+		return core.WrapGoMethod(t.Add), true
 	}
 	return nil, false
 }
@@ -30,7 +30,7 @@ func (*Thread) SetProp(ctx *core.Context, name string, value core.Value) error {
 }
 
 func (*Thread) PropertyNames(ctx *core.Context) []string {
-	return []string{"push"}
+	return coll_symbolic.THREAD_PROPNAMES
 }
 
 func (t *Thread) IsMutable() bool {
@@ -48,4 +48,32 @@ func (t *Thread) PrettyPrint(w *bufio.Writer, config *core.PrettyPrintConfig, de
 
 func (t *Thread) ToSymbolicValue(ctx *core.Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return &coll_symbolic.Thread{}, nil
+}
+
+func (t *Thread) IsSharable(originState *core.GlobalState) (bool, string) {
+	return true, ""
+}
+
+func (t *Thread) Share(originState *core.GlobalState) {
+	t.lock.Share(originState, func() {})
+}
+
+func (t *Thread) IsShared() bool {
+	return true
+}
+
+func (t *Thread) Lock(state *core.GlobalState) {
+	t.lock.Lock(state, t)
+}
+
+func (t *Thread) Unlock(state *core.GlobalState) {
+	t.lock.Unlock(state, t)
+}
+
+func (t *Thread) ForceLock() {
+	t.lock.ForceLock()
+}
+
+func (t *Thread) ForceUnlock() {
+	t.lock.ForceUnlock()
 }
