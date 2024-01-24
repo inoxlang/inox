@@ -334,4 +334,48 @@ func TestTransaction(t *testing.T) {
 		})
 
 	})
+
+	t.Run("gracefully cancelling the context should cause the transaction to roll back", func(t *testing.T) {
+		ctx := NewContext(ContextConfig{})
+		defer ctx.CancelGracefully()
+
+		tx := newTransaction(ctx, false)
+		tx.Start(ctx)
+
+		called := make(chan struct{}, 1)
+		assert.NoError(t, tx.OnEnd(0, func(tx *Transaction, success bool) {
+			called <- struct{}{}
+			assert.False(t, success)
+		}))
+
+		go ctx.CancelGracefully()
+
+		select {
+		case <-called:
+		case <-time.After(time.Second):
+			assert.Fail(t, "timeout")
+		}
+	})
+
+	t.Run("ungracefully cancelling the context should cause the transaction to roll back", func(t *testing.T) {
+		ctx := NewContext(ContextConfig{})
+		defer ctx.CancelGracefully()
+
+		tx := newTransaction(ctx, false)
+		tx.Start(ctx)
+
+		called := make(chan struct{}, 1)
+		assert.NoError(t, tx.OnEnd(0, func(tx *Transaction, success bool) {
+			called <- struct{}{}
+			assert.False(t, success)
+		}))
+
+		go ctx.CancelUngracefully()
+
+		select {
+		case <-called:
+		case <-time.After(time.Second):
+			assert.Fail(t, "timeout")
+		}
+	})
 }

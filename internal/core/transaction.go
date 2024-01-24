@@ -284,6 +284,8 @@ func (tx *Transaction) Commit(ctx *Context) error {
 }
 
 func (tx *Transaction) Rollback(ctx *Context) error {
+	//$ctx may be done.
+
 	if tx.IsFinished() {
 		return ErrFinishedTransaction
 	}

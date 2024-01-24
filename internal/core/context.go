@@ -72,7 +72,8 @@ type Context struct {
 	fs                      afs.Filesystem
 	initialWorkingDirectory Path
 
-	currentTx *Transaction
+	currentTx     *Transaction
+	currentTxLock sync.Mutex
 
 	longLived                    atomic.Bool
 	done                         atomic.Bool
@@ -459,8 +460,12 @@ func NewContext(config ContextConfig) *Context {
 		//TODO
 
 		//rollback transaction (the rollback will be ignored if the transaction is finished)
-		if ctx.currentTx != nil {
-			ctx.currentTx.Rollback(ctx)
+		ctx.currentTxLock.Lock()
+		tx := ctx.currentTx
+		ctx.currentTxLock.Unlock()
+
+		if tx != nil {
+			tx.Rollback(ctx)
 		}
 
 		//call microtasks
@@ -633,16 +638,16 @@ func (ctx *Context) SetClosestState(state *GlobalState) {
 }
 
 func (ctx *Context) HasCurrentTx() bool {
-	ctx.lock.RLock()
-	defer ctx.lock.RUnlock()
+	ctx.currentTxLock.Lock()
+	defer ctx.currentTxLock.Unlock()
 	ctx.assertNotDone()
 
 	return ctx.currentTx != nil
 }
 
 func (ctx *Context) GetTx() *Transaction {
-	ctx.lock.RLock()
-	defer ctx.lock.RUnlock()
+	ctx.currentTxLock.Lock()
+	defer ctx.currentTxLock.Unlock()
 	ctx.assertNotDone()
 
 	if ctx.currentTx != nil {
@@ -654,16 +659,16 @@ func (ctx *Context) GetTx() *Transaction {
 	return nil
 }
 
-func (ctx *Context) Now() DateTime {
-	return DateTime(time.Now())
-}
-
 // setTx is called by the associated transaction when it starts or finishes.
 func (ctx *Context) setTx(tx *Transaction) {
-	ctx.lock.Lock()
-	defer ctx.lock.Unlock()
+	ctx.currentTxLock.Lock()
+	defer ctx.currentTxLock.Unlock()
 
 	ctx.currentTx = tx
+}
+
+func (ctx *Context) Now() DateTime {
+	return DateTime(time.Now())
 }
 
 func (ctx *Context) GetTempDir() Path {
