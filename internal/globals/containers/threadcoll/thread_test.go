@@ -11,6 +11,8 @@ func TestThreadAdd(t *testing.T) {
 	const THREAD_URL = core.URL("ldb://main/threads/59595")
 	var THREAD_DIR_URL_PATH = THREAD_URL.ToDirURL().Path()
 
+	threadPattern := NewThreadPattern(ThreadConfig{Element: core.EMPTY_INEXACT_OBJECT_PATTERN})
+
 	t.Run("elements should be visible by the tx that added them and should be visible to all txs after their tx is commited", func(t *testing.T) {
 		t.Run("one element added by tx1", func(t *testing.T) {
 			ctx1 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
@@ -19,7 +21,7 @@ func TestThreadAdd(t *testing.T) {
 			ctx2 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 			defer ctx2.CancelGracefully()
 
-			thread := newEmptyThread(ctx1, THREAD_URL, ThreadConfig{Element: core.EMPTY_INEXACT_OBJECT_PATTERN})
+			thread := newEmptyThread(ctx1, THREAD_URL, threadPattern)
 
 			tx1 := core.StartNewTransaction(ctx1)
 			core.StartNewTransaction(ctx2)
@@ -63,7 +65,7 @@ func TestThreadAdd(t *testing.T) {
 			ctx2 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 			defer ctx2.CancelGracefully()
 
-			thread := newEmptyThread(ctx1, THREAD_URL, ThreadConfig{Element: core.EMPTY_INEXACT_OBJECT_PATTERN})
+			thread := newEmptyThread(ctx1, THREAD_URL, threadPattern)
 
 			tx1 := core.StartNewTransaction(ctx1)
 			core.StartNewTransaction(ctx2)
@@ -116,7 +118,7 @@ func TestThreadAdd(t *testing.T) {
 			ctx2 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 			defer ctx2.CancelGracefully()
 
-			thread := newEmptyThread(ctx1, THREAD_URL, ThreadConfig{Element: core.EMPTY_INEXACT_OBJECT_PATTERN})
+			thread := newEmptyThread(ctx1, THREAD_URL, threadPattern)
 
 			tx1 := core.StartNewTransaction(ctx1)
 			core.StartNewTransaction(ctx2)
@@ -173,7 +175,7 @@ func TestThreadAdd(t *testing.T) {
 			ctx2 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 			defer ctx2.CancelGracefully()
 
-			thread := newEmptyThread(ctx1, THREAD_URL, ThreadConfig{Element: core.EMPTY_INEXACT_OBJECT_PATTERN})
+			thread := newEmptyThread(ctx1, THREAD_URL, threadPattern)
 
 			tx1 := core.StartNewTransaction(ctx1)
 			core.StartNewTransaction(ctx2)
@@ -217,7 +219,7 @@ func TestThreadAdd(t *testing.T) {
 			ctx2 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 			defer ctx2.CancelGracefully()
 
-			thread := newEmptyThread(ctx1, THREAD_URL, ThreadConfig{Element: core.EMPTY_INEXACT_OBJECT_PATTERN})
+			thread := newEmptyThread(ctx1, THREAD_URL, threadPattern)
 
 			tx1 := core.StartNewTransaction(ctx1)
 			core.StartNewTransaction(ctx2)
@@ -268,7 +270,7 @@ func TestThreadAdd(t *testing.T) {
 			ctx2 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 			defer ctx2.CancelGracefully()
 
-			thread := newEmptyThread(ctx1, THREAD_URL, ThreadConfig{Element: core.EMPTY_INEXACT_OBJECT_PATTERN})
+			thread := newEmptyThread(ctx1, THREAD_URL, threadPattern)
 
 			tx1 := core.StartNewTransaction(ctx1)
 			core.StartNewTransaction(ctx2)

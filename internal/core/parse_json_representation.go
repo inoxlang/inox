@@ -100,7 +100,7 @@ func ParseNextJSONRepresentation(ctx *Context, it *jsoniter.Iterator, pattern Pa
 			tempIterator.ResetBytes(p)
 			tempIterator.Error = nil
 
-			return parseObjectJSONrepresentation(ctx, tempIterator, nil, false)
+			return ParseObjectJSONrepresentation(ctx, tempIterator, nil, false)
 		}
 
 		switch it.WhatIsNext() {
@@ -126,7 +126,7 @@ func ParseNextJSONRepresentation(ctx *Context, it *jsoniter.Iterator, pattern Pa
 	case *FloatRangePattern:
 		return parseFloatJSONRepresentation(ctx, it, pattern, try)
 	case *ObjectPattern:
-		return parseObjectJSONrepresentation(ctx, it, p, try)
+		return ParseObjectJSONrepresentation(ctx, it, p, try)
 	case *RecordPattern:
 		return parseRecordJSONrepresentation(ctx, it, p, try)
 	case *ListPattern:
@@ -258,7 +258,7 @@ func ParseNextJSONRepresentation(ctx *Context, it *jsoniter.Iterator, pattern Pa
 			}
 			return Float(it.ReadFloat64()), nil
 		case OBJECT_PATTERN:
-			return parseObjectJSONrepresentation(ctx, it, EMPTY_INEXACT_OBJECT_PATTERN, try)
+			return ParseObjectJSONrepresentation(ctx, it, EMPTY_INEXACT_OBJECT_PATTERN, try)
 		case RECORD_PATTERN:
 			return parseRecordJSONrepresentation(ctx, it, EMPTY_INEXACT_RECORD_PATTERN, try)
 		case LIST_PATTERN:
@@ -346,7 +346,7 @@ func ParseNextJSONRepresentation(ctx *Context, it *jsoniter.Iterator, pattern Pa
 	return nil, ErrJSONImpossibleToDetermineType
 }
 
-func parseObjectJSONrepresentation(ctx *Context, it *jsoniter.Iterator, pattern *ObjectPattern, try bool) (_ *Object, finalErr error) {
+func ParseObjectJSONrepresentation(ctx *Context, it *jsoniter.Iterator, pattern *ObjectPattern, try bool) (_ *Object, finalErr error) {
 	obj := &Object{}
 
 	if it.WhatIsNext() != jsoniter.ObjectValue {

@@ -2,19 +2,26 @@ package threadcoll
 
 import (
 	"errors"
+	"fmt"
+	"reflect"
 	"slices"
 
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/utils"
+	"github.com/oklog/ulid/v2"
 )
 
 var (
 	ErrOnlyObjectAreSupported = errors.New("only objects are supported as elements")
 	ErrObjectAlreadyHaveURL   = errors.New("object already have a URL")
+
+	_ core.Collection           = (*MessageThread)(nil)
+	_ core.PotentiallySharable  = (*MessageThread)(nil)
+	_ core.SerializableIterable = (*MessageThread)(nil)
+	_ core.MigrationCapable     = (*MessageThread)(nil)
 )
 
 func init() {
-	//core.RegisterLoadFreeEntityFn(reflect.TypeOf((*ThreadPattern)(nil)), loadSet)
+	core.RegisterLoadFreeEntityFn(reflect.TypeOf((*ThreadPattern)(nil)), loadThread)
 
 	core.RegisterDefaultPattern(MSG_THREAD_PATTERN.Name, MSG_THREAD_PATTERN)
 	core.RegisterDefaultPattern(MSG_THREAD_PATTERN_PATTERN.Name, MSG_THREAD_PATTERN_PATTERN)
@@ -23,6 +30,7 @@ func init() {
 
 type MessageThread struct {
 	config            ThreadConfig
+	pattern           *ThreadPattern
 	lock              core.SmartLock
 	elements          []internalElement //insertion order is preserved.
 	pendingInclusions []pendingInclusions
@@ -30,7 +38,12 @@ type MessageThread struct {
 	url      core.URL
 	urlAsDir core.URL
 
+	storage core.DataStore
+	path    core.Path
+
 	//TODO: only load last elements + support search
+	//Mutation handlers should be registered on elements that are not loaded initially.
+	//Lazy loading support will impact several methods.
 }
 
 type internalElement struct {
@@ -40,17 +53,14 @@ type internalElement struct {
 	commitedTx    bool //true if the transaction is commited or if not added by a transaciton
 }
 
-func newEmptyThread(ctx *core.Context, url core.URL, config ThreadConfig) *MessageThread {
+func newEmptyThread(ctx *core.Context, url core.URL, pattern *ThreadPattern) *MessageThread {
 	if url == "" {
 		panic(errors.New("empty URL provided to initialize thread"))
 	}
 
-	if config.Element == nil {
-		panic(errors.New("missing .Element in thread configuration"))
-	}
-
 	thread := &MessageThread{
-		config:   config,
+		config:   pattern.config,
+		pattern:  pattern,
 		url:      url,
 		urlAsDir: url.ToDirURL(),
 	}
@@ -63,35 +73,91 @@ func newEmptyThread(ctx *core.Context, url core.URL, config ThreadConfig) *Messa
 func (t *MessageThread) URL() (core.URL, bool) {
 	return t.url, true
 }
-func (set *MessageThread) SetURLOnce(ctx *core.Context, url core.URL) error {
+
+func (t *MessageThread) SetURLOnce(ctx *core.Context, url core.URL) error {
 	return core.ErrValueDoesNotAcceptURL
 }
+
+func (t *MessageThread) GetElementByKey(ctx *core.Context, elemKey core.ElementKey) (core.Serializable, error) {
+	ulid, err := ulid.Parse(string(elemKey))
+	if err != nil {
+		return nil, core.ErrCollectionElemNotFound
+	}
+
+	for _, e := range t.elements {
+		if e.ulid == core.ULID(ulid) {
+			return e.actualElement, nil
+		}
+	}
+
+	return nil, core.ErrCollectionElemNotFound
+}
+
+func (t *MessageThread) Contains(ctx *core.Context, value core.Serializable) bool {
+	obj, ok := value.(*core.Object)
+	if !ok {
+		return false
+	}
+
+	tx := ctx.GetTx()
+
+	for _, e := range t.elements {
+		if e.actualElement == obj {
+			return e.commitedTx || (tx != nil && e.txID == tx.ID())
+		}
+	}
+
+	return false
+}
+
 func (t *MessageThread) Add(ctx *core.Context, elem *core.Object) {
 	closestState := ctx.GetClosestState()
 	t.lock.Lock(closestState, t)
 	defer t.lock.Unlock(closestState, t)
 
-	t.addNoLock(ctx, ctx.GetTx(), elem)
+	t.addNoLock(ctx, ctx.GetTx(), elem, false)
 }
 
-func (t *MessageThread) addNoLock(ctx *core.Context, tx *core.Transaction, e *core.Object) {
-	_, ok := e.URL()
-	if ok {
-		panic(ErrObjectAlreadyHaveURL)
+func (t *MessageThread) addNoLock(ctx *core.Context, tx *core.Transaction, e *core.Object, init bool) {
+	if init {
+		tx = nil
 	}
+	elemURL, ok := e.URL()
 
-	elemULID := core.NewULID()
-	elemURL := t.urlAsDir.AppendAbsolutePath(core.Path("/" + elemULID.String()))
-	err := e.SetURLOnce(ctx, elemURL)
-	if err != nil {
-		panic(err)
+	var elemULID core.ULID
+
+	if ok {
+		if init {
+			if yes, _ := t.urlAsDir.IsDirOf(elemURL); !yes {
+				panic(fmt.Errorf("invalid initial thread element: invalid URL: %s", elemURL))
+			}
+			id, err := getElementID(elemURL)
+			if err != nil {
+				panic(fmt.Errorf("invalid initial thread element: invalid URL: %s", elemURL))
+			}
+			elemULID = id
+		} else {
+			panic(ErrObjectAlreadyHaveURL)
+		}
+	} else {
+		elemULID = core.NewULID()
+		elemURL = t.urlAsDir.AppendAbsolutePath(core.Path("/" + elemULID.String()))
+		err := e.SetURLOnce(ctx, elemURL)
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	t.elements = append(t.elements, internalElement{
 		actualElement: e,
 		ulid:          elemULID,
 		commitedTx:    tx == nil,
-		txID:          utils.If(tx == nil, core.ULID{}, tx.ID()),
+		txID: func() core.ULID {
+			if tx == nil {
+				return core.ULID{}
+			}
+			return tx.ID()
+		}(),
 	})
 
 	//update distance in all pending changes and search for the first element added by $tx.
@@ -241,4 +307,8 @@ func (t *MessageThread) GetElementsInTimeRange(start, end core.DateTime) []core.
 type pendingInclusions struct {
 	tx                *core.Transaction
 	firstElemDistance int //distance from the last thread element (t.elements).
+}
+
+func getElementID(elemURL core.URL) (core.ULID, error) {
+	return core.ParseULID(elemURL.GetLastPathSegment())
 }
