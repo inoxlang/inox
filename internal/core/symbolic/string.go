@@ -199,11 +199,11 @@ func (s *String) KnownLen() int {
 	return -1
 }
 
-func (s *String) element() Value {
+func (s *String) Element() Value {
 	return ANY_BYTE
 }
 
-func (*String) elementAt(i int) Value {
+func (*String) ElementAt(i int) Value {
 	return ANY_BYTE
 }
 
@@ -422,11 +422,11 @@ func (s *RuneSlice) KnownLen() int {
 	return -1
 }
 
-func (s *RuneSlice) element() Value {
+func (s *RuneSlice) Element() Value {
 	return ANY_RUNE
 }
 
-func (*RuneSlice) elementAt(i int) Value {
+func (*RuneSlice) ElementAt(i int) Value {
 	return ANY_RUNE
 }
 
@@ -472,7 +472,7 @@ func (s *RuneSlice) insertSequence(ctx *Context, seq Sequence, i *Int) {
 	if seq.HasKnownLen() && seq.KnownLen() == 0 {
 		return
 	}
-	if _, ok := MergeValuesWithSameStaticTypeInMultivalue(seq.element()).(*Rune); !ok {
+	if _, ok := MergeValuesWithSameStaticTypeInMultivalue(seq.Element()).(*Rune); !ok {
 		ctx.AddSymbolicGoFunctionError(fmtHasElementsOfType(s, ANY_RUNE))
 	}
 }
@@ -481,7 +481,7 @@ func (s *RuneSlice) appendSequence(ctx *Context, seq Sequence) {
 	if seq.HasKnownLen() && seq.KnownLen() == 0 {
 		return
 	}
-	if _, ok := MergeValuesWithSameStaticTypeInMultivalue(seq.element()).(*Rune); !ok {
+	if _, ok := MergeValuesWithSameStaticTypeInMultivalue(seq.Element()).(*Rune); !ok {
 		ctx.AddSymbolicGoFunctionError(fmtHasElementsOfType(s, ANY_RUNE))
 	}
 }
@@ -561,12 +561,12 @@ func (c *StringConcatenation) KnownLen() int {
 	return -1
 }
 
-func (c *StringConcatenation) element() Value {
-	return ANY_STR.element()
+func (c *StringConcatenation) Element() Value {
+	return ANY_STR.Element()
 }
 
-func (c *StringConcatenation) elementAt(i int) Value {
-	return ANY_STR.elementAt(i)
+func (c *StringConcatenation) ElementAt(i int) Value {
+	return ANY_STR.ElementAt(i)
 }
 
 func (c *StringConcatenation) slice(start, end *Int) Sequence {
@@ -643,11 +643,11 @@ func (s *AnyStringLike) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.P
 	w.WriteName("string-like")
 }
 
-func (s *AnyStringLike) element() Value {
+func (s *AnyStringLike) Element() Value {
 	return ANY_BYTE
 }
 
-func (s *AnyStringLike) elementAt(i int) Value {
+func (s *AnyStringLike) ElementAt(i int) Value {
 	return ANY_BYTE
 }
 

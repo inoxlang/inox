@@ -1973,7 +1973,7 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 
 			var seqElementAtIndex Serializable
 			if intIndex != nil && intIndex.hasValue {
-				seqElementAtIndex = seq.elementAt(int(intIndex.value)).(Serializable)
+				seqElementAtIndex = seq.ElementAt(int(intIndex.value)).(Serializable)
 			}
 
 			if IsReadonly(seq) {
@@ -1986,7 +1986,7 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 			{
 				var expectedValue Value = seqElementAtIndex
 				if expectedValue == nil {
-					expectedValue = seq.element()
+					expectedValue = seq.Element()
 				}
 				_, deeperMismatch, err = getRHS(expectedValue)
 				if err != nil {
@@ -2021,7 +2021,7 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 					}
 					//note: the element is widened in order to support multivalues such as (1 | 2)
 				} else {
-					widenedSeqElement := MergeValuesWithSameStaticTypeInMultivalue(seq.element())
+					widenedSeqElement := MergeValuesWithSameStaticTypeInMultivalue(seq.Element())
 					if !ANY_INT.Test(widenedSeqElement, RecTestCallState{}) {
 						state.addError(makeSymbolicEvalError(lhs, state, INVALID_ASSIGN_INT_OPER_ASSIGN_LHS_NOT_INT))
 						ignoreNextAssignabilityError = true
@@ -2047,7 +2047,7 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 					if staticSeq.HasKnownLen() {
 						if intIndex != nil && intIndex.hasValue && staticSeq.KnownLen() > int(intIndex.value) {
 							//known index
-							staticSeqElement = staticSeq.elementAt(int(intIndex.value)).(Serializable)
+							staticSeqElement = staticSeq.ElementAt(int(intIndex.value)).(Serializable)
 							if staticSeqElement.Test(__rhs, RecTestCallState{}) {
 								assignable = true
 								narrowChain(lhs.Indexed, setExactValue, staticSeq, state, 0)
@@ -2055,10 +2055,10 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 						} else {
 							state.addError(makeSymbolicEvalError(node.Right, state, IMPOSSIBLE_TO_KNOW_UPDATED_ELEMENT))
 							ignoreNextAssignabilityError = true
-							staticSeqElement = staticSeq.element()
+							staticSeqElement = staticSeq.Element()
 						}
 					} else {
-						staticSeqElement = staticSeq.element()
+						staticSeqElement = staticSeq.Element()
 						if staticSeqElement.Test(MergeValuesWithSameStaticTypeInMultivalue(__rhs), RecTestCallState{}) {
 							assignable = true
 							narrowChain(lhs.Indexed, setExactValue, staticSeq, state, 0)
@@ -2071,7 +2071,7 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 					if staticSeq != nil {
 						state.addError(makeSymbolicEvalError(node.Right, state, fmtNotAssignableToElementOfValue(__rhs, staticSeqElement)))
 					} else {
-						state.addError(makeSymbolicEvalError(node.Right, state, fmtNotAssignableToElementOfValue(__rhs, seq.element())))
+						state.addError(makeSymbolicEvalError(node.Right, state, fmtNotAssignableToElementOfValue(__rhs, seq.Element())))
 					}
 				}
 			}
@@ -2179,7 +2179,7 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 
 			{
 				//evaluate right
-				var expectedValue Value = NewAnySequenceOf(staticSeq.element())
+				var expectedValue Value = NewAnySequenceOf(staticSeq.Element())
 				_, deeperMismatch, err = getRHS(expectedValue)
 				if err != nil {
 					return nil, err
@@ -2214,7 +2214,7 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 					state.addError(makeSymbolicEvalError(node.Right, state, fmtRHSSequenceShouldHaveLenOf(int(expectedLength))))
 				}
 
-				rightSeqElement = rightSeq.element()
+				rightSeqElement = rightSeq.Element()
 			}
 
 			if staticSeq.HasKnownLen() {
@@ -2226,7 +2226,7 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 					ignoreNextAssignabilityError = true
 				}
 			} else {
-				staticSeqElement := staticSeq.element()
+				staticSeqElement := staticSeq.Element()
 				if staticSeqElement.Test(MergeValuesWithSameStaticTypeInMultivalue(rightSeqElement), RecTestCallState{}) {
 					assignable = true
 					narrowChain(lhs.Indexed, setExactValue, staticSeq, state, 0)
@@ -2287,7 +2287,7 @@ func evalMultiAssignment(n *parse.MultiAssignment, state *State) (_ Value, final
 		for i, var_ := range n.Variables {
 			name := var_.(*parse.IdentifierLiteral).Name
 
-			val := seq.elementAt(i)
+			val := seq.ElementAt(i)
 			if isNillable && (!seq.HasKnownLen() || i >= seq.KnownLen() && isNillable) {
 				val = joinValues([]Value{val, Nil})
 			}
@@ -4044,7 +4044,7 @@ func evalListLiteral(n *parse.ListLiteral, state *State, options evalOptions) (V
 
 				list, isList := val.(*List)
 				if isList {
-					e = list.element()
+					e = list.Element()
 				} else {
 					state.addError(makeSymbolicEvalError(spreadElemNode.Expr, state, SPREAD_ELEMENT_SHOULD_BE_A_LIST))
 					e = generalElem
@@ -4075,12 +4075,12 @@ func evalListLiteral(n *parse.ListLiteral, state *State, options evalOptions) (V
 
 	var expectedElement Value = nil
 	if expectedList != nil {
-		expectedElement = expectedList.element()
+		expectedElement = expectedList.Element()
 	} else {
 		//we do not search for a Sequence because we could find a sequence that is not a list
 		expectedSeq, ok := findInMultivalue[*AnySequenceOf](options.expectedValue)
 		if ok {
-			expectedElement = expectedSeq.element()
+			expectedElement = expectedSeq.Element()
 		}
 	}
 
@@ -4104,7 +4104,7 @@ func evalListLiteral(n *parse.ListLiteral, state *State, options evalOptions) (V
 
 			list, isList := val.(*List)
 			if isList {
-				e = list.element()
+				e = list.Element()
 			} else {
 				state.addError(makeSymbolicEvalError(spreadElemNode.Expr, state, SPREAD_ELEMENT_SHOULD_BE_A_LIST))
 				if expectedElement != nil {
@@ -4170,7 +4170,7 @@ func evalTupleLiteral(n *parse.TupleLiteral, state *State, options evalOptions) 
 
 				tuple, isTuple := val.(*Tuple)
 				if isTuple {
-					e = tuple.element()
+					e = tuple.Element()
 				} else {
 					state.addError(makeSymbolicEvalError(spreadElemNode.Expr, state, SPREAD_ELEMENT_SHOULD_BE_A_TUPLE))
 					e = generalElem
@@ -4205,12 +4205,12 @@ func evalTupleLiteral(n *parse.TupleLiteral, state *State, options evalOptions) 
 	expectedTuple, ok := findInMultivalue[*Tuple](options.expectedValue)
 	var expectedElement Value = nil
 	if ok {
-		expectedElement = expectedTuple.element()
+		expectedElement = expectedTuple.Element()
 	} else {
 		//we do not search for a Sequence because we could find a sequence that is not a tuple
 		expectedSeq, ok := findInMultivalue[*AnySequenceOf](options.expectedValue)
 		if ok {
-			expectedElement = expectedSeq.element()
+			expectedElement = expectedSeq.Element()
 		}
 	}
 
@@ -4231,7 +4231,7 @@ func evalTupleLiteral(n *parse.TupleLiteral, state *State, options evalOptions) 
 
 			list, isList := val.(*List)
 			if isList {
-				e = list.element()
+				e = list.Element()
 			} else {
 				state.addError(makeSymbolicEvalError(spreadElemNode.Expr, state, SPREAD_ELEMENT_SHOULD_BE_A_LIST))
 				if expectedElement != nil {
@@ -4763,7 +4763,7 @@ func evalIndexExpression(n *parse.IndexExpression, state *State, options evalOpt
 		if intIndex != nil && intIndex.hasValue && indexable.HasKnownLen() && (intIndex.value < 0 || intIndex.value >= int64(indexable.KnownLen())) {
 			state.addError(makeSymbolicEvalError(n.Index, state, INDEX_IS_OUT_OF_BOUNDS))
 		}
-		return indexable.element(), nil
+		return indexable.Element(), nil
 	}
 
 	state.addError(makeSymbolicEvalError(n, state, fmtXisNotIndexable(val)))

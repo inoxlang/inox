@@ -174,13 +174,13 @@ func (db *DatabaseIL) getValueAt(pathOrPattern string) (Serializable, error) {
 						return fmt.Errorf("there is no element at %s: "+INDEX_IS_OUT_OF_RANGE, nextPath)
 					}
 
-					elem, ok := indexable.elementAt(intIndex).(Serializable)
+					elem, ok := indexable.ElementAt(intIndex).(Serializable)
 					if !ok {
 						return fmt.Errorf("element at %s is not serializable", nextPath)
 					}
 					result = elem
 				} else {
-					elem, ok := indexable.elementAt(intIndex).(Serializable)
+					elem, ok := indexable.ElementAt(intIndex).(Serializable)
 					if !ok {
 						return fmt.Errorf("elements of %s are not serializable", currentPath)
 					}

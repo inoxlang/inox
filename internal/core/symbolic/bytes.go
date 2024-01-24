@@ -78,11 +78,11 @@ func (s *ByteSlice) KnownLen() int {
 	return -1
 }
 
-func (s *ByteSlice) element() Value {
+func (s *ByteSlice) Element() Value {
 	return ANY_BYTE
 }
 
-func (*ByteSlice) elementAt(i int) Value {
+func (*ByteSlice) ElementAt(i int) Value {
 	return ANY_BYTE
 }
 
@@ -122,7 +122,7 @@ func (s *ByteSlice) insertSequence(ctx *Context, seq Sequence, i *Int) {
 	if seq.HasKnownLen() && seq.KnownLen() == 0 {
 		return
 	}
-	if _, ok := MergeValuesWithSameStaticTypeInMultivalue(seq.element()).(*Byte); !ok {
+	if _, ok := MergeValuesWithSameStaticTypeInMultivalue(seq.Element()).(*Byte); !ok {
 		ctx.AddSymbolicGoFunctionError(fmtHasElementsOfType(s, ANY_BYTE))
 	}
 }
@@ -131,7 +131,7 @@ func (s *ByteSlice) appendSequence(ctx *Context, seq Sequence) {
 	if seq.HasKnownLen() && seq.KnownLen() == 0 {
 		return
 	}
-	if _, ok := MergeValuesWithSameStaticTypeInMultivalue(seq.element()).(*Byte); !ok {
+	if _, ok := MergeValuesWithSameStaticTypeInMultivalue(seq.Element()).(*Byte); !ok {
 		ctx.AddSymbolicGoFunctionError(fmtHasElementsOfType(s, ANY_BYTE))
 	}
 }
@@ -204,11 +204,11 @@ func (b *AnyBytesLike) KnownLen() int {
 	return -1
 }
 
-func (b *AnyBytesLike) element() Value {
+func (b *AnyBytesLike) Element() Value {
 	return ANY_BYTE
 }
 
-func (b *AnyBytesLike) elementAt(i int) Value {
+func (b *AnyBytesLike) ElementAt(i int) Value {
 	return ANY_BYTE
 }
 
@@ -277,11 +277,11 @@ func (s *BytesConcatenation) KnownLen() int {
 	return -1
 }
 
-func (s *BytesConcatenation) element() Value {
+func (s *BytesConcatenation) Element() Value {
 	return ANY_BYTE
 }
 
-func (*BytesConcatenation) elementAt(i int) Value {
+func (*BytesConcatenation) ElementAt(i int) Value {
 	return ANY_BYTE
 }
 

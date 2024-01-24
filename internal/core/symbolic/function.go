@@ -587,7 +587,7 @@ func (goFunc *GoFunction) LoadSignatureData() (finalErr error) {
 	case 0:
 		goFunc.result = Nil
 	case 1:
-		goFunc.result = goFunc.resultList.elementAt(0)
+		goFunc.result = goFunc.resultList.ElementAt(0)
 		//TODO: handle shared ?
 	default:
 		goFunc.result = goFunc.resultList
@@ -927,7 +927,7 @@ func (fn *Function) VariadicParamElem() Value {
 	if !fn.variadic {
 		panic(errors.New("function is not variadic"))
 	}
-	return fn.parameters[len(fn.parameters)-1].(*Array).element()
+	return fn.parameters[len(fn.parameters)-1].(*Array).Element()
 }
 
 func (fn *Function) OriginGoFunction() (*GoFunction, bool) {

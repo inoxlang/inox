@@ -25,8 +25,10 @@ var (
 	STRLIKE_LIST = NewListOf(ANY_STR_LIKE)
 
 	_ = []Indexable{
-		(*String)(nil), (*Array)(nil), (*List)(nil), (*Tuple)(nil), (*RuneSlice)(nil), (*ByteSlice)(nil), (*Object)(nil), (*IntRange)(nil),
-		(*AnyStringLike)(nil), (*AnyIndexable)(nil), (*OrderedPair)(nil),
+		(*String)(nil), (*Array)(nil), (*List)(nil), (*Tuple)(nil), (*RuneSlice)(nil), (*ByteSlice)(nil), (*Object)(nil), (*Record)(nil),
+		(*IntRange)(nil), (*RuneRange)(nil), (*AnyStringLike)(nil), (*AnyIndexable)(nil), (*OrderedPair)(nil),
+
+		(*indexableMultivalue)(nil),
 	}
 
 	_ = []Iterable{
@@ -45,8 +47,8 @@ var (
 // An Indexable represents a symbolic Indexable.
 type Indexable interface {
 	Iterable
-	element() Value
-	elementAt(i int) Value
+	Element() Value
+	ElementAt(i int) Value
 	KnownLen() int
 	HasKnownLen() bool
 }
@@ -81,11 +83,11 @@ func (i *AnyIndexable) IteratorElementValue() Value {
 	return ANY
 }
 
-func (i *AnyIndexable) element() Value {
+func (i *AnyIndexable) Element() Value {
 	return ANY
 }
 
-func (i *AnyIndexable) elementAt(index int) Value {
+func (i *AnyIndexable) ElementAt(index int) Value {
 	return ANY
 }
 

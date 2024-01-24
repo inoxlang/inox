@@ -142,7 +142,7 @@ func (t *Tuple) KnownLen() int {
 	return len(t.elements)
 }
 
-func (t *Tuple) element() Value {
+func (t *Tuple) Element() Value {
 	if t.elements != nil {
 		if len(t.elements) == 0 {
 			return ANY_SERIALIZABLE // return "never" ?
@@ -152,7 +152,7 @@ func (t *Tuple) element() Value {
 	return t.generalElement
 }
 
-func (t *Tuple) elementAt(i int) Value {
+func (t *Tuple) ElementAt(i int) Value {
 	if t.elements != nil {
 		if len(t.elements) == 0 || i >= len(t.elements) {
 			return ANY // return "never" ?
@@ -191,7 +191,7 @@ func (t *Tuple) IteratorElementKey() Value {
 }
 
 func (t *Tuple) IteratorElementValue() Value {
-	return t.element()
+	return t.Element()
 }
 
 func (t *Tuple) WidestOfType() Value {
@@ -290,11 +290,11 @@ func (t *OrderedPair) KnownLen() int {
 	return 2
 }
 
-func (t *OrderedPair) element() Value {
+func (t *OrderedPair) Element() Value {
 	return joinValues([]Value{t.elements[0], t.elements[1]})
 }
 
-func (t *OrderedPair) elementAt(i int) Value {
+func (t *OrderedPair) ElementAt(i int) Value {
 	switch i {
 	case 0:
 		return t.elements[0]
@@ -327,7 +327,7 @@ func (t *OrderedPair) IteratorElementKey() Value {
 }
 
 func (t *OrderedPair) IteratorElementValue() Value {
-	return t.element()
+	return t.Element()
 }
 
 func (t *OrderedPair) WidestOfType() Value {
@@ -623,8 +623,12 @@ func (rec *Record) KnownLen() int {
 	return -1
 }
 
-func (rec *Record) element() Value {
+func (rec *Record) Element() Value {
 	return ANY
+}
+
+func (rec *Record) ElementAt(i int) Value {
+	return ANY_SERIALIZABLE
 }
 
 func (r *Record) Contains(value Serializable) (bool, bool) {
@@ -653,7 +657,7 @@ func (rec *Record) IteratorElementKey() Value {
 }
 
 func (rec *Record) IteratorElementValue() Value {
-	return rec.element()
+	return rec.Element()
 }
 
 func (rec *Record) Static() Pattern {

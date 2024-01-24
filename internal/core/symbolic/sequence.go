@@ -44,7 +44,7 @@ func (s *AnySequenceOf) Test(v Value, state RecTestCallState) bool {
 	defer state.FinishCall()
 
 	seq, ok := v.(Sequence)
-	return ok && s.elem.Test(MergeValuesWithSameStaticTypeInMultivalue(seq.element()), state)
+	return ok && s.elem.Test(MergeValuesWithSameStaticTypeInMultivalue(seq.Element()), state)
 }
 
 func (*AnySequenceOf) IteratorElementKey() Value {
@@ -69,11 +69,11 @@ func (s *AnySequenceOf) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.P
 	w.WriteByte(')')
 }
 
-func (s *AnySequenceOf) element() Value {
+func (s *AnySequenceOf) Element() Value {
 	return s.elem
 }
 
-func (s *AnySequenceOf) elementAt(i int) Value {
+func (s *AnySequenceOf) ElementAt(i int) Value {
 	return s.elem
 }
 

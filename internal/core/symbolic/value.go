@@ -884,14 +884,14 @@ func (r *IntRange) KnownLen() int {
 	return -1
 }
 
-func (r *IntRange) element() Value {
+func (r *IntRange) Element() Value {
 	return &Int{
 		hasValue:        false,
 		matchingPattern: &IntRangePattern{intRange: r},
 	}
 }
 
-func (*IntRange) elementAt(i int) Value {
+func (*IntRange) ElementAt(i int) Value {
 	return ANY_INT
 }
 
@@ -934,7 +934,7 @@ func (r *IntRange) IteratorElementKey() Value {
 }
 
 func (r *IntRange) IteratorElementValue() Value {
-	return r.element()
+	return r.Element()
 }
 
 func (r *IntRange) WidestOfType() Value {
@@ -1116,8 +1116,12 @@ func (r *RuneRange) KnownLen() int {
 	return -1
 }
 
-func (r *RuneRange) element() Value {
-	return &Rune{}
+func (r *RuneRange) Element() Value {
+	return ANY_RUNE
+}
+
+func (r *RuneRange) ElementAt(i int) Value {
+	return ANY_RUNE
 }
 
 func (r *RuneRange) Contains(value Serializable) (bool, bool) {

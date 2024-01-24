@@ -757,7 +757,7 @@ func TestArray(t *testing.T) {
 
 		for _, testCase := range cases {
 			t.Run(Stringify(testCase.array), func(t *testing.T) {
-				element := testCase.array.element()
+				element := testCase.array.Element()
 				if !assert.Equal(t, testCase.element, element) {
 					return
 				}

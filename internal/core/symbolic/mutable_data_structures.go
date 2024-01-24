@@ -147,7 +147,7 @@ func (a *Array) KnownLen() int {
 	return len(a.elements)
 }
 
-func (a *Array) element() Value {
+func (a *Array) Element() Value {
 	if a.elements != nil {
 		if len(a.elements) == 0 {
 			return ANY
@@ -157,7 +157,7 @@ func (a *Array) element() Value {
 	return a.generalElement
 }
 
-func (a *Array) elementAt(i int) Value {
+func (a *Array) ElementAt(i int) Value {
 	if a.elements != nil {
 		if len(a.elements) == 0 || i >= len(a.elements) {
 			return ANY // return "never" ?
@@ -176,7 +176,7 @@ func (a *Array) IteratorElementKey() Value {
 }
 
 func (a *Array) IteratorElementValue() Value {
-	return a.element()
+	return a.Element()
 }
 
 func (*Array) WidestOfType() Value {
@@ -431,7 +431,7 @@ func (l *List) KnownLen() int {
 	return len(l.elements)
 }
 
-func (l *List) element() Value {
+func (l *List) Element() Value {
 	if l.elements != nil {
 		if len(l.elements) == 0 {
 			return ANY_SERIALIZABLE
@@ -441,7 +441,7 @@ func (l *List) element() Value {
 	return l.generalElement
 }
 
-func (l *List) elementAt(i int) Value {
+func (l *List) ElementAt(i int) Value {
 	if l.elements != nil {
 		if len(l.elements) == 0 || i >= len(l.elements) {
 			return ANY // return "never" ?
@@ -488,7 +488,7 @@ func (l *List) IteratorElementKey() Value {
 }
 
 func (l *List) IteratorElementValue() Value {
-	return l.element()
+	return l.Element()
 }
 
 func (l *List) WidestOfType() Value {
@@ -530,7 +530,7 @@ func (l *List) insertSequence(ctx *Context, seq Sequence, i *Int) {
 	}
 
 	if l.HasKnownLen() && l.KnownLen() == 0 {
-		element := seq.element()
+		element := seq.Element()
 		if serializable, ok := element.(Serializable); ok {
 			//we could pass a list with a known length but we don't know how many times
 			//the mutation can ocurr (e.g. in for loops).
@@ -541,7 +541,7 @@ func (l *List) insertSequence(ctx *Context, seq Sequence, i *Int) {
 		return
 	}
 
-	element := AsSerializable(MergeValuesWithSameStaticTypeInMultivalue(joinValues([]Value{l.element(), seq.element()})))
+	element := AsSerializable(MergeValuesWithSameStaticTypeInMultivalue(joinValues([]Value{l.Element(), seq.Element()})))
 	if serializable, ok := element.(Serializable); ok {
 		ctx.SetUpdatedSelf(NewListOf(serializable))
 	} else {
@@ -560,7 +560,7 @@ func (l *List) appendSequence(ctx *Context, seq Sequence) {
 	}
 
 	if l.HasKnownLen() && l.KnownLen() == 0 {
-		element := seq.element()
+		element := seq.Element()
 		if serializable, ok := element.(Serializable); ok {
 			//we could pass a list with a known length but we don't know how many times
 			//the mutation can ocurr (e.g. in for loops).
@@ -571,7 +571,7 @@ func (l *List) appendSequence(ctx *Context, seq Sequence) {
 		return
 	}
 
-	element := AsSerializable(MergeValuesWithSameStaticTypeInMultivalue(joinValues([]Value{l.element(), seq.element()})))
+	element := AsSerializable(MergeValuesWithSameStaticTypeInMultivalue(joinValues([]Value{l.Element(), seq.Element()})))
 	if serializable, ok := element.(Serializable); ok {
 		ctx.SetUpdatedSelf(NewListOf(serializable))
 	} else {
@@ -581,7 +581,7 @@ func (l *List) appendSequence(ctx *Context, seq Sequence) {
 
 func (l *List) Append(ctx *Context, elements ...Serializable) {
 	if l.generalElement != nil {
-		ctx.SetSymbolicGoFunctionParameters(&[]Value{l.element()}, LIST_APPEND_PARAM_NAMES)
+		ctx.SetSymbolicGoFunctionParameters(&[]Value{l.Element()}, LIST_APPEND_PARAM_NAMES)
 	}
 	l.appendSequence(ctx, NewList(elements...))
 }
@@ -595,9 +595,9 @@ func (l *List) Dequeue(ctx *Context) Serializable {
 			elements := l.elements[1:len(l.elements)]
 			ctx.SetUpdatedSelf(NewList(elements...))
 		}
-		return l.elementAt(0).(Serializable)
+		return l.ElementAt(0).(Serializable)
 	}
-	return l.element().(Serializable)
+	return l.Element().(Serializable)
 }
 
 func (l *List) Pop(ctx *Context) Serializable {
@@ -609,9 +609,9 @@ func (l *List) Pop(ctx *Context) Serializable {
 			elements := l.elements[:len(l.elements)-1]
 			ctx.SetUpdatedSelf(NewList(elements...))
 		}
-		return l.elementAt(l.KnownLen() - 1).(Serializable)
+		return l.ElementAt(l.KnownLen() - 1).(Serializable)
 	}
-	return l.element().(Serializable)
+	return l.Element().(Serializable)
 }
 
 func (l *List) Sorted(ctx *Context, orderIdent *Identifier) *List {
@@ -655,7 +655,7 @@ func (l *List) Sorted(ctx *Context, orderIdent *Identifier) *List {
 	}
 
 	if l.HasKnownLen() {
-		return NewListOf(l.element().(Serializable))
+		return NewListOf(l.Element().(Serializable))
 	}
 
 	return l
@@ -677,7 +677,7 @@ func (l *List) SortBy(ctx *Context, valuePath ValuePath, orderIdent *Identifier)
 		return
 	}
 
-	elem := MergeValuesWithSameStaticTypeInMultivalue(l.element())
+	elem := MergeValuesWithSameStaticTypeInMultivalue(l.Element())
 
 	v, alwaysPresent, err := valuePath.GetFrom(elem)
 	if err != nil {
@@ -713,7 +713,7 @@ func (l *List) SortBy(ctx *Context, valuePath ValuePath, orderIdent *Identifier)
 		ctx.AddSymbolicGoFunctionError("sorting values should be only integers, only floats or only strings")
 	}
 
-	ctx.SetUpdatedSelf(NewListOf(l.element().(Serializable)))
+	ctx.SetUpdatedSelf(NewListOf(l.Element().(Serializable)))
 }
 
 func (l *List) WatcherElement() Value {
@@ -1591,11 +1591,11 @@ func (o *Object) KnownLen() int {
 	return -1
 }
 
-func (o *Object) element() Value {
+func (o *Object) Element() Value {
 	return ANY
 }
 
-func (*Object) elementAt(i int) Value {
+func (*Object) ElementAt(i int) Value {
 	return ANY
 }
 
@@ -1629,7 +1629,7 @@ func (o *Object) IteratorElementKey() Value {
 }
 
 func (o *Object) IteratorElementValue() Value {
-	return o.element()
+	return o.Element()
 }
 
 func (o *Object) WatcherElement() Value {

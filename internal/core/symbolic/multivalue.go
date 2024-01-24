@@ -248,23 +248,23 @@ type indexableMultivalue struct {
 	*Multivalue
 }
 
-func (mv *indexableMultivalue) element() Value {
+func (mv *indexableMultivalue) Element() Value {
 	elements := make([]Value, len(mv.values))
 	for i, val := range mv.values {
-		elements[i] = val.(Indexable).element()
+		elements[i] = val.(Indexable).Element()
 	}
 
 	return joinValues(elements)
 }
 
-func (mv *indexableMultivalue) elementAt(i int) Value {
+func (mv *indexableMultivalue) ElementAt(i int) Value {
 	elements := make([]Value, len(mv.values))
 	for i, val := range mv.values {
 		indexable := val.(Indexable)
 		if !indexable.HasKnownLen() || i >= indexable.KnownLen() {
 			return ANY
 		}
-		elements[i] = val.(Indexable).elementAt(i)
+		elements[i] = val.(Indexable).ElementAt(i)
 	}
 
 	return joinValues(elements)
@@ -275,7 +275,7 @@ func (mv *indexableMultivalue) IteratorElementKey() Value {
 }
 
 func (mv *indexableMultivalue) IteratorElementValue() Value {
-	return mv.element()
+	return mv.Element()
 }
 
 func (mv *indexableMultivalue) KnownLen() int {
@@ -395,12 +395,12 @@ func (c *strLikeMultivalue) KnownLen() int {
 	return -1
 }
 
-func (c *strLikeMultivalue) element() Value {
-	return ANY_STR.element()
+func (c *strLikeMultivalue) Element() Value {
+	return ANY_STR.Element()
 }
 
-func (c *strLikeMultivalue) elementAt(i int) Value {
-	return ANY_STR.elementAt(i)
+func (c *strLikeMultivalue) ElementAt(i int) Value {
+	return ANY_STR.ElementAt(i)
 }
 
 func (c *strLikeMultivalue) slice(start, end *Int) Sequence {

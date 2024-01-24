@@ -118,7 +118,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 				indexable, ok := v.(Indexable)
 				if ok && indexable.HasKnownLen() {
 					for i := 0; i < indexable.KnownLen(); i++ {
-						elements = append(elements, indexable.elementAt(i))
+						elements = append(elements, indexable.ElementAt(i))
 					}
 				} else { //add single element
 					elements = append(elements, iterable.IteratorElementValue())
@@ -456,7 +456,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 		var paramType Value
 		if checkAgainstVariadicParam {
 			variadicParamType := nonGoParameters[len(nonGoParameters)-1].(*Array)
-			paramType = variadicParamType.element()
+			paramType = variadicParamType.Element()
 		} else {
 			paramType = nonGoParameters[i]
 		}
@@ -707,7 +707,7 @@ outer:
 			case 1:
 				break outer
 			case 2:
-				return array.elementAt(0)
+				return array.ElementAt(0)
 			default:
 				return NewArray(array.elements[:len(array.elements)-1]...)
 			}
