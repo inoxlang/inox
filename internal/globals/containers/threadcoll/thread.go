@@ -53,6 +53,10 @@ type internalElement struct {
 	commitedTx    bool //true if the transaction is commited or if not added by a transaciton
 }
 
+func (e internalElement) isVisibleByTx(optTx *core.Transaction) bool {
+	return e.commitedTx || e.txID == (core.ULID{}) || (optTx != nil && e.txID == optTx.ID())
+}
+
 func newEmptyThread(ctx *core.Context, url core.URL, pattern *ThreadPattern) *MessageThread {
 	if url == "" {
 		panic(errors.New("empty URL provided to initialize thread"))
@@ -79,6 +83,10 @@ func (t *MessageThread) SetURLOnce(ctx *core.Context, url core.URL) error {
 }
 
 func (t *MessageThread) GetElementByKey(ctx *core.Context, elemKey core.ElementKey) (core.Serializable, error) {
+	closestState := ctx.GetClosestState()
+	t.lock.Lock(closestState, t)
+	defer t.lock.Unlock(closestState, t)
+
 	ulid, err := ulid.Parse(string(elemKey))
 	if err != nil {
 		return nil, core.ErrCollectionElemNotFound
@@ -94,6 +102,10 @@ func (t *MessageThread) GetElementByKey(ctx *core.Context, elemKey core.ElementK
 }
 
 func (t *MessageThread) Contains(ctx *core.Context, value core.Serializable) bool {
+	closestState := ctx.GetClosestState()
+	t.lock.Lock(closestState, t)
+	defer t.lock.Unlock(closestState, t)
+
 	obj, ok := value.(*core.Object)
 	if !ok {
 		return false
@@ -102,8 +114,8 @@ func (t *MessageThread) Contains(ctx *core.Context, value core.Serializable) boo
 	tx := ctx.GetTx()
 
 	for _, e := range t.elements {
-		if e.actualElement == obj {
-			return e.commitedTx || (tx != nil && e.txID == tx.ID())
+		if e.actualElement == obj && e.isVisibleByTx(tx) {
+			return true
 		}
 	}
 
@@ -122,6 +134,11 @@ func (t *MessageThread) addNoLock(ctx *core.Context, tx *core.Transaction, e *co
 	if init {
 		tx = nil
 	}
+
+	if tx != nil && tx.IsReadonly() {
+		panic(core.ErrEffectsNotAllowedInReadonlyTransaction)
+	}
+
 	elemURL, ok := e.URL()
 
 	var elemULID core.ULID
@@ -131,7 +148,7 @@ func (t *MessageThread) addNoLock(ctx *core.Context, tx *core.Transaction, e *co
 			if yes, _ := t.urlAsDir.IsDirOf(elemURL); !yes {
 				panic(fmt.Errorf("invalid initial thread element: invalid URL: %s", elemURL))
 			}
-			id, err := getElementID(elemURL)
+			id, err := getElementIDFromURL(elemURL)
 			if err != nil {
 				panic(fmt.Errorf("invalid initial thread element: invalid URL: %s", elemURL))
 			}
@@ -140,6 +157,7 @@ func (t *MessageThread) addNoLock(ctx *core.Context, tx *core.Transaction, e *co
 			panic(ErrObjectAlreadyHaveURL)
 		}
 	} else {
+		//set URL
 		elemULID = core.NewULID()
 		elemURL = t.urlAsDir.AppendAbsolutePath(core.Path("/" + elemULID.String()))
 		err := e.SetURLOnce(ctx, elemURL)
@@ -253,53 +271,88 @@ func (t *MessageThread) makeTransactionEndCallback(ctx *core.Context, closestSta
 	}
 }
 
-// GetElementsBefore returns a list containing up to $maxElemCount elements starting from the last message
-// prior to $exclusiveEnd. The oldest element is at the end of the returned list.
-func (t *MessageThread) GetElementsBefore(ctx *core.Context, exclusiveEnd core.DateTime, maxElemCount int) *core.List {
+// GetElementsBefore returns a slice containing up to $maxElemCount elements starting from the last message
+// prior to $exclusiveEnd. The oldest element is at the end of the returned slice.
+func (t *MessageThread) GetElementsBefore(ctx *core.Context, exclusiveEnd core.ULID, maxElemCount int) *core.List {
+	elements := t.getElementsBefore(ctx, exclusiveEnd, maxElemCount, nil)
+	return core.NewWrappedValueListFrom(elements)
+}
+
+// getElementsBefore returns a slice containing up to $maxElemCount elements starting from the last message prior to $exclusiveEnd.
+// The oldest element is at the end of the returned slice. If $destination is not nil the elements are added to it and nil is returned,
+// $destination should have a length of zero and a capacity >= $maxElemCount.
+func (t *MessageThread) getElementsBefore(
+	ctx *core.Context,
+	exclusiveEnd core.ULID,
+	maxElemCount int,
+	destination *[]internalElement,
+) []core.Serializable {
 	if maxElemCount <= 0 {
 		return nil
 	}
 
-	end := exclusiveEnd.AsGoTime()
-	tx := ctx.GetTx()
-
-	//TODO: when implempenting loading: if elements are old they should not be prepended to t.elements.
-
-	for i := len(t.elements) - 1; i >= 0; i-- {
-		if t.elements[i].ulid.Time().Before(end) {
-			lastReturnedElemIndex := i
-			oldestReturnedElemIndex := max(0, i-(maxElemCount-1))
-
-			slice := t.elements[oldestReturnedElemIndex : lastReturnedElemIndex+1]
-			elemCount := 0
-			includeElem := func(e internalElement) bool {
-				return e.commitedTx || e.txID == (core.ULID{}) || (tx != nil && e.txID == tx.ID())
-			}
-
-			for _, internalElem := range slice {
-				if includeElem(internalElem) {
-					elemCount++
-				}
-			}
-
-			elements := make([]core.Serializable, 0, elemCount)
-
-			for _, internalElem := range slice {
-				if includeElem(internalElem) {
-					elements = append(elements, internalElem.actualElement)
-				}
-			}
-
-			slices.Reverse(elements)
-
-			return core.NewWrappedValueListFrom(elements)
+	if destination != nil { //store elements in $destination
+		if cap(*destination) < maxElemCount {
+			panic(fmt.Errorf("the capacity of the provided destination slice is too small"))
+		}
+		if len(*destination) != 0 {
+			panic(fmt.Errorf("the length of the provided destination slice should be zero"))
 		}
 	}
 
-	return core.NewWrappedValueList()
+	closestState := ctx.GetClosestState()
+	t.lock.Lock(closestState, t)
+	defer t.lock.Unlock(closestState, t)
+
+	end := exclusiveEnd
+	tx := ctx.GetTx()
+
+	//TODO: When implementing loading: if elements are old they should not be prepended to t.elements.
+	//      The following logic could act on large loaded []internalElement segments instead of t.elements.
+
+	for i := len(t.elements) - 1; i >= 0; i-- {
+		if t.elements[i].ulid.Before(end) {
+			var visibleElementIndices []int32
+
+			for elemIndex := i; elemIndex >= 0; elemIndex-- {
+				if t.elements[elemIndex].isVisibleByTx(tx) {
+					visibleElementIndices = append(visibleElementIndices, int32(elemIndex))
+				}
+				if len(visibleElementIndices) == maxElemCount {
+					break
+				}
+			}
+
+			elemCount := len(visibleElementIndices)
+
+			if destination != nil { //store elements in $destination
+				*destination = (*destination)[:elemCount]
+
+				for i := 0; i < len(visibleElementIndices); i++ {
+					(*destination)[i] = t.elements[visibleElementIndices[i]]
+				}
+
+				return nil
+			}
+
+			elements := make([]core.Serializable, elemCount)
+
+			for j, elemIndex := range visibleElementIndices {
+				elements[j] = t.elements[elemIndex].actualElement
+			}
+
+			return elements
+		}
+	}
+
+	return nil
 }
 
-func (t *MessageThread) GetElementsInTimeRange(start, end core.DateTime) []core.Value {
+func (t *MessageThread) GetElementsInTimeRange(ctx *core.Context, start, end core.DateTime) []core.Value {
+	closestState := ctx.GetClosestState()
+	t.lock.Lock(closestState, t)
+	defer t.lock.Unlock(closestState, t)
+
 	//TODO
 	return nil
 }
@@ -309,6 +362,14 @@ type pendingInclusions struct {
 	firstElemDistance int //distance from the last thread element (t.elements).
 }
 
-func getElementID(elemURL core.URL) (core.ULID, error) {
+func getElementIDFromURL(elemURL core.URL) (core.ULID, error) {
 	return core.ParseULID(elemURL.GetLastPathSegment())
+}
+
+func getElementCreationTime(elem *core.Object) (core.ULID, error) {
+	url, ok := elem.URL()
+	if !ok {
+		return core.ULID{}, errors.New("element does not have a URL")
+	}
+	return getElementIDFromURL(url)
 }

@@ -14,9 +14,14 @@ type CollectionIterator struct {
 	Next_    func(*CollectionIterator, *core.Context) bool
 	Key_     func(*CollectionIterator, *core.Context) core.Value
 	Value_   func(*CollectionIterator, *core.Context) core.Value
+}
 
-	_key   core.Value
-	_value core.Value
+func NewEmptyCollectionIterator() *CollectionIterator {
+	return &CollectionIterator{
+		HasNext_: func(ci *CollectionIterator, ctx *core.Context) bool {
+			return false
+		},
+	}
 }
 
 func (it *CollectionIterator) HasNext(ctx *core.Context) bool {

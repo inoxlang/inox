@@ -71,7 +71,7 @@ func TestPersistLoadThread(t *testing.T) {
 			return
 		}
 
-		elemULID := utils.Must(getElementID(elemURL))
+		elemULID := utils.Must(getElementIDFromURL(elemURL))
 		elemKey := core.ElementKey(elemULID.String())
 
 		//persist
@@ -133,7 +133,7 @@ func TestPersistLoadThread(t *testing.T) {
 			return
 		}
 
-		elemULID1 := utils.Must(getElementID(elemURL1))
+		elemULID1 := utils.Must(getElementIDFromURL(elemURL1))
 		elemKey1 := core.ElementKey(elemULID1.String())
 
 		elemURL2, ok2 := obj2.URL()
@@ -142,7 +142,7 @@ func TestPersistLoadThread(t *testing.T) {
 		}
 
 		//Check that obj1 has now a URL.
-		elemULID2 := utils.Must(getElementID(elemURL2))
+		elemULID2 := utils.Must(getElementIDFromURL(elemURL2))
 		elemKey2 := core.ElementKey(elemULID2.String())
 
 		//persist
