@@ -8,6 +8,13 @@ import (
 	"github.com/inoxlang/inox/internal/utils"
 )
 
+var (
+	RAND_FN_PARAMS = []symbolic.Value{
+		symbolic.NewMultivalue(symbolic.ANY_PATTERN, symbolic.ANY_INDEXABLE),
+	}
+	RAND_FN_PARAM_NAMES = []string{"arg"}
+)
+
 func init() {
 
 	core.RegisterSymbolicGoFunctions([]any{
@@ -37,6 +44,13 @@ func init() {
 		},
 
 		_rand, func(ctx *symbolic.Context, arg symbolic.Value) symbolic.Value {
+			ctx.SetSymbolicGoFunctionParameters(&RAND_FN_PARAMS, RAND_FN_PARAM_NAMES)
+			if patt, ok := arg.(symbolic.Pattern); ok {
+				return patt.SymbolicValue()
+			}
+			if indexable, ok := arg.(symbolic.Indexable); ok {
+				return indexable.Element()
+			}
 			return symbolic.ANY
 		},
 
