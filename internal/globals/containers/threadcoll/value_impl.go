@@ -13,7 +13,7 @@ import (
 
 // GoValue impl for Thread
 
-func (t *Thread) GetGoMethod(name string) (*core.GoFunction, bool) {
+func (t *MessageThread) GetGoMethod(name string) (*core.GoFunction, bool) {
 	switch name {
 	case "add":
 		return core.WrapGoMethod(t.Add), true
@@ -21,59 +21,59 @@ func (t *Thread) GetGoMethod(name string) (*core.GoFunction, bool) {
 	return nil, false
 }
 
-func (t *Thread) Prop(ctx *core.Context, name string) core.Value {
+func (t *MessageThread) Prop(ctx *core.Context, name string) core.Value {
 	return core.GetGoMethodOrPanic(name, t)
 }
 
-func (*Thread) SetProp(ctx *core.Context, name string, value core.Value) error {
+func (*MessageThread) SetProp(ctx *core.Context, name string, value core.Value) error {
 	return core.ErrCannotSetProp
 }
 
-func (*Thread) PropertyNames(ctx *core.Context) []string {
+func (*MessageThread) PropertyNames(ctx *core.Context) []string {
 	return coll_symbolic.THREAD_PROPNAMES
 }
 
-func (t *Thread) IsMutable() bool {
+func (t *MessageThread) IsMutable() bool {
 	return true
 }
 
-func (t *Thread) Equal(ctx *core.Context, other core.Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
-	otherThread, ok := other.(*Thread)
+func (t *MessageThread) Equal(ctx *core.Context, other core.Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	otherThread, ok := other.(*MessageThread)
 	return ok && t == otherThread
 }
 
-func (t *Thread) PrettyPrint(w *bufio.Writer, config *core.PrettyPrintConfig, depth int, parentIndentCount int) {
+func (t *MessageThread) PrettyPrint(w *bufio.Writer, config *core.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(fmt.Fprintf(w, "%#v", t))
 }
 
-func (t *Thread) ToSymbolicValue(ctx *core.Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
-	return &coll_symbolic.Thread{}, nil
+func (t *MessageThread) ToSymbolicValue(ctx *core.Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
+	return &coll_symbolic.MessageThread{}, nil
 }
 
-func (t *Thread) IsSharable(originState *core.GlobalState) (bool, string) {
+func (t *MessageThread) IsSharable(originState *core.GlobalState) (bool, string) {
 	return true, ""
 }
 
-func (t *Thread) Share(originState *core.GlobalState) {
+func (t *MessageThread) Share(originState *core.GlobalState) {
 	t.lock.Share(originState, func() {})
 }
 
-func (t *Thread) IsShared() bool {
+func (t *MessageThread) IsShared() bool {
 	return true
 }
 
-func (t *Thread) Lock(state *core.GlobalState) {
+func (t *MessageThread) Lock(state *core.GlobalState) {
 	t.lock.Lock(state, t)
 }
 
-func (t *Thread) Unlock(state *core.GlobalState) {
+func (t *MessageThread) Unlock(state *core.GlobalState) {
 	t.lock.Unlock(state, t)
 }
 
-func (t *Thread) ForceLock() {
+func (t *MessageThread) ForceLock() {
 	t.lock.ForceLock()
 }
 
-func (t *Thread) ForceUnlock() {
+func (t *MessageThread) ForceUnlock() {
 	t.lock.ForceUnlock()
 }

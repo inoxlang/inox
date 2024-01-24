@@ -13,7 +13,16 @@ var (
 	ErrObjectAlreadyHaveURL   = errors.New("object already have a URL")
 )
 
-type Thread struct {
+func init() {
+	//core.RegisterLoadFreeEntityFn(reflect.TypeOf((*ThreadPattern)(nil)), loadSet)
+
+	core.RegisterDefaultPattern(MSG_THREAD_PATTERN.Name, MSG_THREAD_PATTERN)
+	core.RegisterDefaultPattern(MSG_THREAD_PATTERN_PATTERN.Name, MSG_THREAD_PATTERN_PATTERN)
+	core.RegisterPatternDeserializer(MSG_THREAD_PATTERN_PATTERN, DeserializeMessageThreadPattern)
+}
+
+type MessageThread struct {
+	config            ThreadConfig
 	lock              core.SmartLock
 	elements          []internalElement //insertion order is preserved.
 	pendingInclusions []pendingInclusions
@@ -31,13 +40,17 @@ type internalElement struct {
 	commitedTx    bool //true if the transaction is commited or if not added by a transaciton
 }
 
-func newEmptyThread(ctx *core.Context, url core.URL) *Thread {
-
+func newEmptyThread(ctx *core.Context, url core.URL, config ThreadConfig) *MessageThread {
 	if url == "" {
 		panic(errors.New("empty URL provided to initialize thread"))
 	}
 
-	thread := &Thread{
+	if config.Element == nil {
+		panic(errors.New("missing .Element in thread configuration"))
+	}
+
+	thread := &MessageThread{
+		config:   config,
 		url:      url,
 		urlAsDir: url.ToDirURL(),
 	}
@@ -47,13 +60,13 @@ func newEmptyThread(ctx *core.Context, url core.URL) *Thread {
 	return thread
 }
 
-func (t *Thread) URL() (core.URL, bool) {
+func (t *MessageThread) URL() (core.URL, bool) {
 	return t.url, true
 }
-func (set *Thread) SetURLOnce(ctx *core.Context, url core.URL) error {
+func (set *MessageThread) SetURLOnce(ctx *core.Context, url core.URL) error {
 	return core.ErrValueDoesNotAcceptURL
 }
-func (t *Thread) Add(ctx *core.Context, elem *core.Object) {
+func (t *MessageThread) Add(ctx *core.Context, elem *core.Object) {
 	closestState := ctx.GetClosestState()
 	t.lock.Lock(closestState, t)
 	defer t.lock.Unlock(closestState, t)
@@ -61,7 +74,7 @@ func (t *Thread) Add(ctx *core.Context, elem *core.Object) {
 	t.addNoLock(ctx, ctx.GetTx(), elem)
 }
 
-func (t *Thread) addNoLock(ctx *core.Context, tx *core.Transaction, e *core.Object) {
+func (t *MessageThread) addNoLock(ctx *core.Context, tx *core.Transaction, e *core.Object) {
 	_, ok := e.URL()
 	if ok {
 		panic(ErrObjectAlreadyHaveURL)
@@ -107,7 +120,7 @@ func (t *Thread) addNoLock(ctx *core.Context, tx *core.Transaction, e *core.Obje
 	}
 }
 
-func (t *Thread) makeTransactionEndCallback(ctx *core.Context, closestState *core.GlobalState) core.TransactionEndCallbackFn {
+func (t *MessageThread) makeTransactionEndCallback(ctx *core.Context, closestState *core.GlobalState) core.TransactionEndCallbackFn {
 	return func(tx *core.Transaction, success bool) {
 		txID := tx.ID()
 
@@ -176,7 +189,7 @@ func (t *Thread) makeTransactionEndCallback(ctx *core.Context, closestState *cor
 
 // GetElementsBefore returns a list containing up to $maxElemCount elements starting from the last message
 // prior to $exclusiveEnd. The oldest element is at the end of the returned list.
-func (t *Thread) GetElementsBefore(ctx *core.Context, exclusiveEnd core.DateTime, maxElemCount int) *core.List {
+func (t *MessageThread) GetElementsBefore(ctx *core.Context, exclusiveEnd core.DateTime, maxElemCount int) *core.List {
 	if maxElemCount <= 0 {
 		return nil
 	}
@@ -220,7 +233,7 @@ func (t *Thread) GetElementsBefore(ctx *core.Context, exclusiveEnd core.DateTime
 	return core.NewWrappedValueList()
 }
 
-func (t *Thread) GetElementsInTimeRange(start, end core.DateTime) []core.Value {
+func (t *MessageThread) GetElementsInTimeRange(start, end core.DateTime) []core.Value {
 	//TODO
 	return nil
 }

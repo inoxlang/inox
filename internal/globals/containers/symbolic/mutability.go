@@ -12,8 +12,12 @@ func (q *Queue) IsMutable() bool {
 	return true
 }
 
-func (t *Thread) IsMutable() bool {
+func (t *MessageThread) IsMutable() bool {
 	return true
+}
+
+func (p *MessageThreadPattern) IsMutable() bool {
+	return false
 }
 
 func (m *Map) IsMutable() bool {

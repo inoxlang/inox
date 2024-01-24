@@ -19,7 +19,7 @@ func TestThreadAdd(t *testing.T) {
 			ctx2 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 			defer ctx2.CancelGracefully()
 
-			thread := newEmptyThread(ctx1, THREAD_URL)
+			thread := newEmptyThread(ctx1, THREAD_URL, ThreadConfig{Element: core.EMPTY_INEXACT_OBJECT_PATTERN})
 
 			tx1 := core.StartNewTransaction(ctx1)
 			core.StartNewTransaction(ctx2)
@@ -63,7 +63,7 @@ func TestThreadAdd(t *testing.T) {
 			ctx2 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 			defer ctx2.CancelGracefully()
 
-			thread := newEmptyThread(ctx1, THREAD_URL)
+			thread := newEmptyThread(ctx1, THREAD_URL, ThreadConfig{Element: core.EMPTY_INEXACT_OBJECT_PATTERN})
 
 			tx1 := core.StartNewTransaction(ctx1)
 			core.StartNewTransaction(ctx2)
@@ -116,7 +116,7 @@ func TestThreadAdd(t *testing.T) {
 			ctx2 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 			defer ctx2.CancelGracefully()
 
-			thread := newEmptyThread(ctx1, THREAD_URL)
+			thread := newEmptyThread(ctx1, THREAD_URL, ThreadConfig{Element: core.EMPTY_INEXACT_OBJECT_PATTERN})
 
 			tx1 := core.StartNewTransaction(ctx1)
 			core.StartNewTransaction(ctx2)
@@ -173,7 +173,7 @@ func TestThreadAdd(t *testing.T) {
 			ctx2 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 			defer ctx2.CancelGracefully()
 
-			thread := newEmptyThread(ctx1, THREAD_URL)
+			thread := newEmptyThread(ctx1, THREAD_URL, ThreadConfig{Element: core.EMPTY_INEXACT_OBJECT_PATTERN})
 
 			tx1 := core.StartNewTransaction(ctx1)
 			core.StartNewTransaction(ctx2)
@@ -217,7 +217,7 @@ func TestThreadAdd(t *testing.T) {
 			ctx2 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 			defer ctx2.CancelGracefully()
 
-			thread := newEmptyThread(ctx1, THREAD_URL)
+			thread := newEmptyThread(ctx1, THREAD_URL, ThreadConfig{Element: core.EMPTY_INEXACT_OBJECT_PATTERN})
 
 			tx1 := core.StartNewTransaction(ctx1)
 			core.StartNewTransaction(ctx2)
@@ -268,7 +268,7 @@ func TestThreadAdd(t *testing.T) {
 			ctx2 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 			defer ctx2.CancelGracefully()
 
-			thread := newEmptyThread(ctx1, THREAD_URL)
+			thread := newEmptyThread(ctx1, THREAD_URL, ThreadConfig{Element: core.EMPTY_INEXACT_OBJECT_PATTERN})
 
 			tx1 := core.StartNewTransaction(ctx1)
 			core.StartNewTransaction(ctx2)

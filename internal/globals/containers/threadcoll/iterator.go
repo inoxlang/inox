@@ -5,7 +5,7 @@ import (
 	"github.com/inoxlang/inox/internal/globals/containers/common"
 )
 
-func (s *Thread) Iterator(ctx *core.Context, config core.IteratorConfiguration) core.Iterator {
+func (s *MessageThread) Iterator(ctx *core.Context, config core.IteratorConfiguration) core.Iterator {
 	i := -1
 
 	return config.CreateIterator(&common.CollectionIterator{

@@ -10,6 +10,7 @@ import (
 	"github.com/inoxlang/inox/internal/globals/containers/rankingcoll"
 	"github.com/inoxlang/inox/internal/globals/containers/setcoll"
 	coll_symbolic "github.com/inoxlang/inox/internal/globals/containers/symbolic"
+	"github.com/inoxlang/inox/internal/globals/containers/threadcoll"
 	"github.com/inoxlang/inox/internal/globals/containers/treecoll"
 	"github.com/inoxlang/inox/internal/utils"
 
@@ -46,6 +47,10 @@ func init() {
 			args := []core.Serializable{keyPattern.(core.Pattern), valuePattern.(core.Pattern)}
 			return utils.Must(mapcoll.MAP_PATTERN.Call(args))
 			//return utils.Must(SET_PATTERN.Call([]core.Serializable{elementPattern.(core.Pattern), uniqueness.ToValue()}))
+		},
+		CreateConcreteThreadPattern: func(elementPattern any) any {
+			args := []core.Serializable{elementPattern.(core.Pattern)}
+			return utils.Must(threadcoll.MSG_THREAD_PATTERN.Call(args))
 		},
 	})
 
