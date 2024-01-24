@@ -155,6 +155,122 @@ func TestURL(t *testing.T) {
 			})
 		})
 	})
+
+	t.Run("IsDir", func(t *testing.T) {
+		assert.True(t, URL("https://example.com/").IsDir())
+		assert.True(t, URL("https://example.com/a/").IsDir())
+
+		assert.False(t, URL("https://example.com/a?").IsDir())
+		assert.False(t, URL("https://example.com/a/b?").IsDir())
+
+		assert.False(t, URL("https://example.com/a#").IsDir())
+		assert.False(t, URL("https://example.com/a/b#").IsDir())
+
+		assert.False(t, URL("https://example.com/a").IsDir())
+		assert.False(t, URL("https://example.com/a/b").IsDir())
+	})
+
+	t.Run("IsDirOf", func(t *testing.T) {
+		t.Run("'root' dir", func(t *testing.T) {
+			dir1 := URL("https://example.com/")
+
+			yes, err := dir1.IsDirOf("https://example.com/a")
+			if assert.NoError(t, err) {
+				assert.True(t, yes)
+			}
+
+			yes, err = dir1.IsDirOf("https://example.com//a")
+			if assert.NoError(t, err) {
+				assert.True(t, yes)
+			}
+
+			yes, err = dir1.IsDirOf("https://example.com/a/")
+			if assert.NoError(t, err) {
+				assert.True(t, yes)
+			}
+
+			yes, err = dir1.IsDirOf("https://example.com/a//")
+			if assert.NoError(t, err) {
+				assert.True(t, yes)
+			}
+
+			yes, err = dir1.IsDirOf("https://example.com/a/b")
+			if assert.NoError(t, err) {
+				assert.False(t, yes)
+			}
+
+			yes, err = dir1.IsDirOf("https://example.com/a?")
+			if assert.Error(t, err) {
+				assert.False(t, yes)
+			}
+		})
+
+		t.Run("'root' dir with query", func(t *testing.T) {
+			dir1 := URL("https://example.com/?")
+
+			yes, err := dir1.IsDirOf("https://example.com/a")
+			if assert.Error(t, err) {
+				assert.False(t, yes)
+			}
+
+			yes, err = dir1.IsDirOf("https://example.com/a/")
+			if assert.Error(t, err) {
+				assert.False(t, yes)
+			}
+		})
+
+		t.Run("'root' dir with fragment", func(t *testing.T) {
+			dir1 := URL("https://example.com/#")
+
+			yes, err := dir1.IsDirOf("https://example.com/a")
+			if assert.Error(t, err) {
+				assert.False(t, yes)
+			}
+
+			yes, err = dir1.IsDirOf("https://example.com/a/")
+			if assert.Error(t, err) {
+				assert.False(t, yes)
+			}
+		})
+
+		t.Run("non 'root' dir", func(t *testing.T) {
+			dir1 := URL("https://example.com/a/")
+
+			yes, err := dir1.IsDirOf("https://example.com/a/b")
+			if assert.NoError(t, err) {
+				assert.True(t, yes)
+			}
+
+			yes, err = dir1.IsDirOf("https://example.com/a/b/")
+			if assert.NoError(t, err) {
+				assert.True(t, yes)
+			}
+
+			yes, err = dir1.IsDirOf("https://example.com/a/b//")
+			if assert.NoError(t, err) {
+				assert.True(t, yes)
+			}
+
+			yes, err = dir1.IsDirOf("https://example.com/a/b/c")
+			if assert.NoError(t, err) {
+				assert.False(t, yes)
+			}
+
+			yes, err = dir1.IsDirOf("https://example.com/a/b#")
+			if assert.Error(t, err) {
+				assert.False(t, yes)
+			}
+		})
+
+		t.Run("non dir", func(t *testing.T) {
+			nonDir := URL("https://example.com/a")
+
+			yes, err := nonDir.IsDirOf("https://example.com/a/b")
+			if assert.Error(t, err) {
+				assert.False(t, yes)
+			}
+		})
+	})
 }
 
 func TestAppendPathSegmentToURLPattern(t *testing.T) {

@@ -10,6 +10,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -847,6 +848,56 @@ func (u URL) GetLastPathSegment() string {
 	return pathutils.GetLastPathSegment(url.Path)
 }
 
+// IsDir returns whether the url has a trailing slash and has no query nor fragment.
+func (u URL) IsDir() bool {
+	if u.HasQueryOrFragment() {
+		return false
+	}
+	return u[len(u)-1] == '/'
+}
+
+// IsDirOf returns whether the url is a URL dir for $other, adjacent '/' characters are treated as a single '/' character.
+// Example: https://example.com/a/ is a URL dir for https://example.com/a/b
+// Example: https://example.com/a/ is a URL dir for https://example.com/a/b/
+// The function panics if the url is not a directory URL or if any of the two urls has a fragment or query.
+func (u URL) IsDirOf(other URL) (bool, error) {
+	if u.HasQueryOrFragment() {
+		return false, errors.New("'dir' url has a query or fragment")
+	}
+	if !u.IsDir() {
+		return false, errors.New("'dir' url is not a directory URL")
+	}
+	if other.HasQueryOrFragment() {
+		return false, errors.New("url argument has a query or fragment")
+	}
+
+	if u == other {
+		return false, nil
+	}
+
+	if other.IsDir() {
+		other = other[:len(other)-1]
+	}
+
+	//fast path
+	if strings.HasPrefix(string(other), string(u)) && strings.Count(string(u), "/") == strings.Count(string(other), "/") {
+		return true, nil
+	}
+
+	//slow path
+	parsed := u.mustParse()
+	otherParsed := other.mustParse()
+
+	dirSegments := pathutils.GetPathSegments(parsed.Path)
+	segments := pathutils.GetPathSegments(otherParsed.Path)
+
+	if len(segments) != len(dirSegments)+1 {
+		return false, nil
+	}
+
+	return slices.Equal(dirSegments, segments[:len(dirSegments)]), nil
+}
+
 func (u URL) RawQuery() Str {
 	url := u.mustParse()
 	return Str(url.RawQuery)
@@ -870,6 +921,16 @@ func (u URL) WithoutQuery() URL {
 	return URL(newURL)
 }
 
+func (u URL) WithoutQueryNorFragment() URL {
+	newURL, _, _ := strings.Cut(string(u), "?")
+	newURL, _, _ = strings.Cut(newURL, "#")
+	return URL(newURL)
+}
+
+func (u URL) HasQueryOrFragment() bool {
+	return u != u.WithoutQueryNorFragment()
+}
+
 // DirURL returns the URL of the parent directory, if the current path is / then ("", false) is returned.
 func (u URL) DirURL() (URL, bool) {
 	url := u.mustParse()
@@ -884,7 +945,7 @@ func (u URL) DirURL() (URL, bool) {
 }
 
 func (u URL) ToDirURL() URL {
-	if u.Path().IsDirPath() {
+	if u.IsDir() {
 		return u
 	}
 	parsed := u.mustParse()
