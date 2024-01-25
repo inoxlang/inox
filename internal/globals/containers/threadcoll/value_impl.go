@@ -47,7 +47,12 @@ func (t *MessageThread) PrettyPrint(w *bufio.Writer, config *core.PrettyPrintCon
 }
 
 func (t *MessageThread) ToSymbolicValue(ctx *core.Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
-	return &coll_symbolic.MessageThread{}, nil
+	elemPattern, err := t.config.Element.ToSymbolicValue(ctx, encountered)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get symbolic version of thread's element pattern: %w", err)
+	}
+
+	return coll_symbolic.NewThread(elemPattern.(*symbolic.ObjectPattern)), nil
 }
 
 func (t *MessageThread) IsSharable(originState *core.GlobalState) (bool, string) {

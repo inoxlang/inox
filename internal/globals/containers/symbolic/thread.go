@@ -9,13 +9,14 @@ var (
 	THREAD_PROPNAMES            = []string{"add"}
 	THREAD_ADD_METHOD_ARG_NAMES = []string{"message"}
 
-	ANY_THREAD = newThread(symbolic.ANY_OBJECT_PATTERN)
+	ANY_THREAD = NewThread(symbolic.ANY_OBJECT_PATTERN)
 
 	_ = []symbolic.Iterable{(*MessageThread)(nil)}
 	_ = []symbolic.Collection{(*MessageThread)(nil)}
 	_ = []symbolic.Serializable{(*MessageThread)(nil)}
 	_ = []symbolic.PotentiallySharable{(*MessageThread)(nil)}
 	_ = []symbolic.UrlHolder{(*MessageThread)(nil)}
+	_ = []symbolic.IProps{(*MessageThread)(nil)}
 
 	_ = []symbolic.PotentiallyConcretizable{(*MessageThreadPattern)(nil)}
 	_ = []symbolic.MigrationInitialValueCapablePattern{(*MessageThreadPattern)(nil)}
@@ -31,9 +32,10 @@ type MessageThread struct {
 
 	symbolic.CollectionMixin
 	symbolic.SerializableMixin
+	symbolic.UnassignablePropsMixin
 }
 
-func newThread(elementPattern *symbolic.ObjectPattern) *MessageThread {
+func NewThread(elementPattern *symbolic.ObjectPattern) *MessageThread {
 	t := &MessageThread{
 		elementPattern: elementPattern,
 		element:        elementPattern.SymbolicValue().(*symbolic.Object),

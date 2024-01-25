@@ -69,7 +69,7 @@ func (p *MessageThreadPattern) StringPattern() (symbolic.StringPattern, bool) {
 }
 
 func (p *MessageThreadPattern) SymbolicValue() symbolic.Value {
-	return newThread(p.elementPattern)
+	return NewThread(p.elementPattern)
 }
 
 func (p *MessageThreadPattern) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
