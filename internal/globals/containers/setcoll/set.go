@@ -2,6 +2,7 @@ package setcoll
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"slices"
 	"strings"
@@ -167,6 +168,9 @@ func (set *Set) GetElementByKey(ctx *core.Context, pathKey core.ElementKey) (cor
 		if err := set.txIsolator.WaitIfOtherTransaction(ctx, false); err != nil {
 			panic(err)
 		}
+		closestState := ctx.GetClosestState()
+		set.lock.Lock(closestState, set)
+		defer set.lock.Unlock(closestState, set)
 	}
 
 	set.initPathKeyMap()
@@ -328,10 +332,11 @@ func (set *Set) addToSharedSetNoPersist(ctx *core.Context, elem core.Serializabl
 	elem = utils.Must(core.ShareOrClone(elem, closestState)).(core.Serializable)
 
 	set.config.Uniqueness.AddUrlIfNecessary(ctx, set, elem)
-	key := strings.Clone(set.getUniqueKey(ctx, elem))
 
 	set.lock.Lock(closestState, set)
 	defer set.lock.Unlock(closestState, set)
+
+	key := strings.Clone(set.getUniqueKey(ctx, elem))
 
 	if set.pathKeyToKey != nil {
 		set.pathKeyToKey[set.getElementPathKeyFromKey(key)] = key
@@ -348,7 +353,7 @@ func (set *Set) addToSharedSetNoPersist(ctx *core.Context, elem core.Serializabl
 		}
 
 		if _, ok := set.elementByKey[key]; ok {
-			panic(ErrValueWithSameKeyAlreadyPresent)
+			panic(fmt.Errorf("%w, internal key: %s, element: %s", ErrValueWithSameKeyAlreadyPresent, key, core.Stringify(elem, ctx)))
 		}
 		set.elementByKey[key] = elem
 	} else {
@@ -462,6 +467,7 @@ func (set *Set) initPathKeyMap() {
 
 // getUniqueKey returns a key that should be cloned if it is stored.
 func (set *Set) getUniqueKey(ctx *core.Context, v core.Serializable) string {
+	set.keyBuf.SetBuffer(set.keyBuf.Buffer()[:0])
 	key := common.GetUniqueKey(ctx, common.KeyRetrievalParams{
 		Value:                   v,
 		Config:                  set.config.Uniqueness,

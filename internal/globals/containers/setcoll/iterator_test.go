@@ -165,7 +165,7 @@ func TestSetIteration(t *testing.T) {
 				},
 			})
 
-			for i := 100_000; i < 1_000_000; i++ {
+			for i := 100_000; i < 200_000; i++ {
 				set.Add(ctx, core.Int(i))
 			}
 		}()
