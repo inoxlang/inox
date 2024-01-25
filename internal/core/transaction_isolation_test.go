@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -20,10 +21,10 @@ func TestTransactionIsolator(t *testing.T) {
 
 		isolator := &TransactionIsolator{}
 
-		assert.NoError(t, isolator.WaitIfOtherTransaction(readCtx1, false))
-		assert.NoError(t, isolator.WaitIfOtherTransaction(readCtx2, false))
-		assert.NoError(t, isolator.WaitIfOtherTransaction(readCtx1, false))
-		assert.NoError(t, isolator.WaitIfOtherTransaction(readCtx2, false))
+		assert.NoError(t, utils.Ret1(isolator.WaitForOtherTxsToTerminate(readCtx1, false)))
+		assert.NoError(t, utils.Ret1(isolator.WaitForOtherTxsToTerminate(readCtx2, false)))
+		assert.NoError(t, utils.Ret1(isolator.WaitForOtherTxsToTerminate(readCtx1, false)))
+		assert.NoError(t, utils.Ret1(isolator.WaitForOtherTxsToTerminate(readCtx2, false)))
 	})
 
 	t.Run("a readonly transaction should wait for the current write transaction to finish", func(t *testing.T) {
@@ -39,11 +40,11 @@ func TestTransactionIsolator(t *testing.T) {
 
 		goRoutineStarted := make(chan struct{})
 		afterCall := make(chan struct{})
-		assert.NoError(t, isolator.WaitIfOtherTransaction(writeCtx, false))
+		assert.NoError(t, utils.Ret1(isolator.WaitForOtherTxsToTerminate(writeCtx, false)))
 
 		go func() {
 			goRoutineStarted <- struct{}{}
-			assert.NoError(t, isolator.WaitIfOtherTransaction(readCtx, false))
+			assert.NoError(t, utils.Ret1(isolator.WaitForOtherTxsToTerminate(readCtx, false)))
 			afterCall <- struct{}{}
 		}()
 
@@ -56,7 +57,7 @@ func TestTransactionIsolator(t *testing.T) {
 		default:
 		}
 
-		assert.NoError(t, isolator.WaitIfOtherTransaction(writeCtx, false))
+		assert.NoError(t, utils.Ret1(isolator.WaitForOtherTxsToTerminate(writeCtx, false)))
 		time.Sleep(time.Millisecond)
 
 		select {
@@ -91,12 +92,12 @@ func TestTransactionIsolator(t *testing.T) {
 
 		goRoutineStarted := make(chan struct{})
 		afterCall := make(chan struct{})
-		assert.NoError(t, isolator.WaitIfOtherTransaction(readCtx1, false))
-		assert.NoError(t, isolator.WaitIfOtherTransaction(readCtx2, false))
+		assert.NoError(t, utils.Ret1(isolator.WaitForOtherTxsToTerminate(readCtx1, false)))
+		assert.NoError(t, utils.Ret1(isolator.WaitForOtherTxsToTerminate(readCtx2, false)))
 
 		go func() {
 			goRoutineStarted <- struct{}{}
-			assert.NoError(t, isolator.WaitIfOtherTransaction(writeCtx, false))
+			assert.NoError(t, utils.Ret1(isolator.WaitForOtherTxsToTerminate(writeCtx, false)))
 			afterCall <- struct{}{}
 		}()
 
@@ -149,13 +150,13 @@ func TestTransactionIsolator(t *testing.T) {
 		go func() {
 			//readonly txs.
 			goRoutineStarted <- struct{}{}
-			assert.NoError(t, isolator.WaitIfOtherTransaction(readCtx1, false))
-			assert.NoError(t, isolator.WaitIfOtherTransaction(readCtx2, false))
+			assert.NoError(t, utils.Ret1(isolator.WaitForOtherTxsToTerminate(readCtx1, false)))
+			assert.NoError(t, utils.Ret1(isolator.WaitForOtherTxsToTerminate(readCtx2, false)))
 			afterCalls <- struct{}{}
 		}()
 
 		<-goRoutineStarted
 		<-afterCalls
-		assert.ErrorIs(t, isolator.WaitIfOtherTransaction(writeCtx, false), ErrWaitReadonlyTxsTimeout)
+		assert.ErrorIs(t, utils.Ret1(isolator.WaitForOtherTxsToTerminate(writeCtx, false)), ErrWaitReadonlyTxsTimeout)
 	})
 }

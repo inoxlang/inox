@@ -291,14 +291,15 @@ func (obj *Object) jobInstances() []*LifetimeJobInstance {
 	return obj.jobs.Instances()
 }
 
-func (obj *Object) waitIfOtherTransaction(ctx *Context, requiredRunningTx bool) {
+func (obj *Object) waitForOtherTxsToTerminate(ctx *Context, requiredRunningTx bool) (currentTx *Transaction) {
 	if !obj.hasAdditionalFields() {
 		return
 	}
-	err := obj.txIsolator.WaitIfOtherTransaction(ctx, requiredRunningTx)
+	tx, err := obj.txIsolator.WaitForOtherTxsToTerminate(ctx, requiredRunningTx)
 	if err != nil {
 		panic(err)
 	}
+	return tx
 }
 
 func (obj *Object) Prop(ctx *Context, name string) Value {
@@ -310,7 +311,7 @@ func (obj *Object) PropNotStored(ctx *Context, name string) Value {
 }
 
 func (obj *Object) prop(ctx *Context, name string, stored bool) Value {
-	obj.waitIfOtherTransaction(ctx, !stored)
+	obj.waitForOtherTxsToTerminate(ctx, !stored)
 
 	closestState := ctx.GetClosestState()
 	obj.Lock(closestState)
@@ -349,7 +350,7 @@ func (obj *Object) SetProp(ctx *Context, name string, value Value) error {
 		return fmt.Errorf("value is not serializable")
 	}
 
-	obj.waitIfOtherTransaction(ctx, false)
+	obj.waitForOtherTxsToTerminate(ctx, false)
 
 	closestState := ctx.GetClosestState()
 
@@ -485,7 +486,7 @@ func (obj *Object) SetProp(ctx *Context, name string, value Value) error {
 }
 
 func (obj *Object) PropertyNames(ctx *Context) []string {
-	obj.waitIfOtherTransaction(ctx, false)
+	obj.waitForOtherTxsToTerminate(ctx, false)
 
 	closestState := ctx.GetClosestState()
 	obj.Lock(closestState)
@@ -494,7 +495,7 @@ func (obj *Object) PropertyNames(ctx *Context) []string {
 }
 
 func (obj *Object) HasProp(ctx *Context, name string) bool {
-	obj.waitIfOtherTransaction(ctx, false)
+	obj.waitForOtherTxsToTerminate(ctx, false)
 
 	closestState := ctx.GetClosestState()
 	obj.Lock(closestState)
@@ -508,7 +509,7 @@ func (obj *Object) HasProp(ctx *Context, name string) bool {
 }
 
 func (obj *Object) HasPropValue(ctx *Context, value Value) bool {
-	obj.waitIfOtherTransaction(ctx, false)
+	obj.waitForOtherTxsToTerminate(ctx, false)
 
 	closestState := ctx.GetClosestState()
 	obj.Lock(closestState)
@@ -527,7 +528,7 @@ func (obj *Object) EntryMap(ctx *Context) map[string]Serializable {
 	}
 
 	if ctx != nil {
-		obj.waitIfOtherTransaction(ctx, false)
+		obj.waitForOtherTxsToTerminate(ctx, false)
 
 		closestState := ctx.GetClosestState()
 		obj.Lock(closestState)
@@ -555,7 +556,7 @@ func (obj *Object) ValueEntryMap(ctx *Context) map[string]Value {
 	}
 
 	if ctx != nil {
-		obj.waitIfOtherTransaction(ctx, false)
+		obj.waitForOtherTxsToTerminate(ctx, false)
 
 		closestState := ctx.GetClosestState()
 		obj.Lock(closestState)
@@ -652,7 +653,7 @@ func (obj *Object) At(ctx *Context, i int) Value {
 }
 
 func (obj *Object) Keys(ctx *Context) []string {
-	obj.waitIfOtherTransaction(ctx, false)
+	obj.waitForOtherTxsToTerminate(ctx, false)
 
 	closestState := ctx.GetClosestState()
 	obj.Lock(closestState)

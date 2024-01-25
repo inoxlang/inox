@@ -165,7 +165,7 @@ func (set *Set) SetURLOnce(ctx *core.Context, url core.URL) error {
 
 func (set *Set) GetElementByKey(ctx *core.Context, pathKey core.ElementKey) (core.Serializable, error) {
 	if set.lock.IsValueShared() {
-		if err := set.txIsolator.WaitIfOtherTransaction(ctx, false); err != nil {
+		if _, err := set.txIsolator.WaitForOtherTxsToTerminate(ctx, false); err != nil {
 			panic(err)
 		}
 		closestState := ctx.GetClosestState()
@@ -190,7 +190,7 @@ func (set *Set) Contains(ctx *core.Context, value core.Serializable) bool {
 func (set *Set) Has(ctx *core.Context, elem core.Serializable) core.Bool {
 	set.assertPersistedAndSharedIfURLUniqueness()
 	if set.lock.IsValueShared() {
-		if err := set.txIsolator.WaitIfOtherTransaction(ctx, false); err != nil {
+		if _, err := set.txIsolator.WaitForOtherTxsToTerminate(ctx, false); err != nil {
 			panic(err)
 		}
 	}
@@ -245,7 +245,7 @@ func (set *Set) Get(ctx *core.Context, keyVal core.StringLike) (core.Value, core
 	set.assertPersistedAndSharedIfURLUniqueness()
 
 	if set.lock.IsValueShared() {
-		if err := set.txIsolator.WaitIfOtherTransaction(ctx, false); err != nil {
+		if _, err := set.txIsolator.WaitForOtherTxsToTerminate(ctx, false); err != nil {
 			panic(err)
 		}
 	}
@@ -295,11 +295,10 @@ func (set *Set) Add(ctx *core.Context, elem core.Serializable) {
 
 	/* ====== SHARED SET ====== */
 
-	if err := set.txIsolator.WaitIfOtherTransaction(ctx, false); err != nil {
+	tx, err := set.txIsolator.WaitForOtherTxsToTerminate(ctx, false)
+	if err != nil {
 		panic(err)
 	}
-
-	tx := ctx.GetTx()
 
 	if tx != nil && tx.IsReadonly() {
 		panic(core.ErrEffectsNotAllowedInReadonlyTransaction)
@@ -411,7 +410,7 @@ func (set *Set) Remove(ctx *core.Context, elem core.Serializable) {
 		panic(core.ErrEffectsNotAllowedInReadonlyTransaction)
 	}
 
-	if err := set.txIsolator.WaitIfOtherTransaction(ctx, false); err != nil {
+	if _, err := set.txIsolator.WaitForOtherTxsToTerminate(ctx, false); err != nil {
 		panic(err)
 	}
 

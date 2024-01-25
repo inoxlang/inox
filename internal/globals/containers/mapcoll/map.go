@@ -166,7 +166,7 @@ func (m *Map) SetURLOnce(ctx *core.Context, url core.URL) error {
 
 func (m *Map) GetElementByKey(ctx *core.Context, pathKey core.ElementKey) (core.Serializable, error) {
 	if m.lock.IsValueShared() {
-		if err := m.txIsolator.WaitIfOtherTransaction(ctx, false); err != nil {
+		if _, err := m.txIsolator.WaitForOtherTxsToTerminate(ctx, false); err != nil {
 			panic(err)
 		}
 		closestState := ctx.GetClosestState()
@@ -189,7 +189,7 @@ func (m *Map) GetElementByKey(ctx *core.Context, pathKey core.ElementKey) (core.
 
 func (m *Map) Contains(ctx *core.Context, value core.Serializable) bool {
 	if m.lock.IsValueShared() {
-		if err := m.txIsolator.WaitIfOtherTransaction(ctx, false); err != nil {
+		if _, err := m.txIsolator.WaitForOtherTxsToTerminate(ctx, false); err != nil {
 			panic(err)
 		}
 		closestState := ctx.GetClosestState()
@@ -224,7 +224,7 @@ func (m *Map) Contains(ctx *core.Context, value core.Serializable) bool {
 
 func (m *Map) Has(ctx *core.Context, keyVal core.Serializable) core.Bool {
 	if m.lock.IsValueShared() {
-		if err := m.txIsolator.WaitIfOtherTransaction(ctx, false); err != nil {
+		if _, err := m.txIsolator.WaitForOtherTxsToTerminate(ctx, false); err != nil {
 			panic(err)
 		}
 	}
@@ -273,7 +273,7 @@ func (m *Map) getEntry(key string) (entry, bool) {
 
 func (m *Map) Get(ctx *core.Context, keyVal core.Serializable) (core.Value, core.Bool) {
 	if m.lock.IsValueShared() {
-		if err := m.txIsolator.WaitIfOtherTransaction(ctx, false); err != nil {
+		if _, err := m.txIsolator.WaitForOtherTxsToTerminate(ctx, false); err != nil {
 			panic(err)
 		}
 		closestState := ctx.GetClosestState()
@@ -339,11 +339,11 @@ func (m *Map) set(ctx *core.Context, entry entry, insert bool) error {
 
 	/* ====== SHARED MAP ====== */
 
-	if err := m.txIsolator.WaitIfOtherTransaction(ctx, false); err != nil {
+	tx, err := m.txIsolator.WaitForOtherTxsToTerminate(ctx, false)
+
+	if err != nil {
 		panic(err)
 	}
-
-	tx := ctx.GetTx()
 
 	if tx != nil && tx.IsReadonly() {
 		panic(core.ErrEffectsNotAllowedInReadonlyTransaction)
@@ -443,7 +443,7 @@ func (m *Map) Remove(ctx *core.Context, key core.Serializable) {
 		panic(core.ErrEffectsNotAllowedInReadonlyTransaction)
 	}
 
-	if err := m.txIsolator.WaitIfOtherTransaction(ctx, false); err != nil {
+	if _, err := m.txIsolator.WaitForOtherTxsToTerminate(ctx, false); err != nil {
 		panic(err)
 	}
 

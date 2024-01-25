@@ -42,13 +42,22 @@ func (isolator *TransactionIsolator) hasUnfinishedReadonlyTxs() bool {
 	return false
 }
 
-func (isolator *TransactionIsolator) WaitIfOtherTransaction(ctx *Context, requireRunningTransaction bool) error {
-	return isolator.waitIfOtherTransaction(ctx, requireRunningTransaction, 0)
+// WaitForOtherTxsToTerminate waits for specific transactions tracked by the isolator to terminate, it returns $ctx's transaction (can be nil).
+// If $ctx has no transaction the call will only wait if there is a read-write transaction.
+// Readonly transactions do not have to wait if only readonly transactions are tracked by the isolator.
+// Read-write transactions have to wait for all readonly transactions, or the currently tracked read-write transaction, to terminate.
+// ErrWaitReadonlyTxsTimeout is returned if too much time is spent waiting for readonly transaction to terminate.
+// TODO: add similar error for waiting too long for the current read-write tx to terminate.
+// When the currently tracked read-write transaction terminates, a random transaction among all waiting transactions resumes.
+// In other words the first transaction to start waiting is not necessarily the one to resume first.
+// ErrRunningTransactionExpected is returned if requireRunningTx is true and $ctx has no tx.
+func (isolator *TransactionIsolator) WaitForOtherTxsToTerminate(ctx *Context, requireRunningTx bool) (currentTx *Transaction, _ error) {
+	return isolator.waitForReadWriteTxToTerminate(ctx, requireRunningTx, 0)
 }
 
-func (isolator *TransactionIsolator) waitIfOtherTransaction(ctx *Context, requireRunningTransaction bool, depth int) error {
+func (isolator *TransactionIsolator) waitForReadWriteTxToTerminate(ctx *Context, requireRunningTx bool, depth int) (currentTx *Transaction, _ error) {
 	if depth >= MAX_SUBSEQUENT_WAIT_WRITE_TX_COUNT {
-		return ErrTooManyWriteTxsWaited
+		return nil, ErrTooManyWriteTxsWaited
 	}
 
 	isolator.lock.Lock()
@@ -61,7 +70,7 @@ func (isolator *TransactionIsolator) waitIfOtherTransaction(ctx *Context, requir
 
 	tx := ctx.GetTx()
 
-	if requireRunningTransaction && (tx == nil || tx.IsFinished()) {
+	if requireRunningTx && (tx == nil || tx.IsFinished()) {
 		panic(ErrRunningTransactionExpected)
 	}
 
@@ -69,7 +78,7 @@ func (isolator *TransactionIsolator) waitIfOtherTransaction(ctx *Context, requir
 
 	if isolator.currentWriteTx == nil {
 		if tx == nil || tx.IsFinished() {
-			return nil
+			return nil, nil
 		}
 
 		if tx.IsReadonly() {
@@ -82,7 +91,7 @@ func (isolator *TransactionIsolator) waitIfOtherTransaction(ctx *Context, requir
 
 			needUnlock = false
 			isolator.lock.Unlock()
-			return nil
+			return tx, nil
 		}
 		//read-write transaction.
 
@@ -107,7 +116,7 @@ func (isolator *TransactionIsolator) waitIfOtherTransaction(ctx *Context, requir
 				select {
 				case <-doneChan:
 				case <-readonlyTxsWaitTimer.C:
-					return ErrWaitReadonlyTxsTimeout
+					return nil, ErrWaitReadonlyTxsTimeout
 				}
 			}
 
@@ -127,11 +136,11 @@ func (isolator *TransactionIsolator) waitIfOtherTransaction(ctx *Context, requir
 			isolator.lock.Unlock()
 		}
 
-		return nil
+		return tx, nil
 	}
 
 	if tx == isolator.currentWriteTx {
-		return nil
+		return tx, nil
 	}
 
 	needUnlock = false
@@ -143,10 +152,10 @@ func (isolator *TransactionIsolator) waitIfOtherTransaction(ctx *Context, requir
 	select {
 	case <-currentWriteTx.Finished():
 	case <-ctx.Done():
-		return ctx.Err()
+		return nil, ctx.Err()
 	}
 
-	return isolator.waitIfOtherTransaction(ctx, requireRunningTransaction, depth+1)
+	return isolator.waitForReadWriteTxToTerminate(ctx, requireRunningTx, depth+1)
 }
 
 func (isolator *TransactionIsolator) removeFinishedTxs() {
