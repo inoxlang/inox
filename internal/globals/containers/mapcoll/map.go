@@ -59,7 +59,7 @@ type Map struct {
 	//transactions and locking
 
 	lock                           core.SmartLock
-	txIsolator                     core.TransactionIsolator
+	txIsolator                     core.StrongTransactionIsolator
 	transactionsWithSetEndCallback map[*core.Transaction]struct{}
 	pendingInclusions              []inclusion
 	pendingRemovals                []string

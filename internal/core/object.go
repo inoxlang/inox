@@ -26,8 +26,7 @@ type Object struct {
 }
 
 type additionalObjectFields struct {
-	lock SmartLock
-
+	txIsolator     StrongTransactionIsolator
 	implicitPropCount int
 
 	url        URL //can be empty

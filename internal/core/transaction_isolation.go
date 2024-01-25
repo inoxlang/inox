@@ -17,17 +17,86 @@ var (
 	ErrWaitReadonlyTxsTimeout = errors.New("waiting for readonly txs timed out")
 )
 
-type TransactionIsolator struct {
-	currentWriteTx       *Transaction
-	readonlyTxs          []DoneChan  //Transactions are not stored to avoid having references.
-	readonlyTxsWaitTimer *time.Timer //Timer used for timing out the current write tx waiting for readonly txs to finish.
+type LiteTransactionIsolator struct {
+	currentWriteTx *Transaction
 
-	//This lock only protects the fields of TransactionIsolator.
+	//This lock only protects the fields of LiteTransactionIsolator.
 	//It is not used for transaction isolation.
 	lock sync.Mutex
 }
 
-func (isolator *TransactionIsolator) hasUnfinishedReadonlyTxs() bool {
+// WaitForOtherReadWriteTxToTerminate waits for the currently tracked read-write transaction to terminate if the context's transaction
+// is read-write. The function does not wait if no read-write transaction is tracked, or if the context's transaction is readonly.
+// When the currently tracked read-write transaction terminates, a random transaction among all waiting transactions resumes.
+// In other words the first transaction to start waiting is not necessarily the one to resume first.
+func (isolator *LiteTransactionIsolator) WaitForOtherReadWriteTxToTerminate(ctx *Context, requireRunningTx bool) (currentTx *Transaction, _ error) {
+	return isolator.waitForOtherReadWriteTxToTerminate(ctx, requireRunningTx, 0)
+}
+
+func (isolator *LiteTransactionIsolator) waitForOtherReadWriteTxToTerminate(ctx *Context, requireRunningTx bool, depth int) (currentTx *Transaction, _ error) {
+	// TODO: error for waiting too long for the current read-write tx to terminate.
+	if depth >= MAX_SUBSEQUENT_WAIT_WRITE_TX_COUNT {
+		return nil, ErrTooManyWriteTxsWaited
+	}
+
+	isolator.lock.Lock()
+	needUnlock := true
+	defer func() {
+		if needUnlock {
+			isolator.lock.Unlock()
+		}
+	}()
+
+	tx := ctx.GetTx()
+
+	if requireRunningTx && (tx == nil || tx.IsFinished()) {
+		panic(ErrRunningTransactionExpected)
+	}
+
+	if isolator.currentWriteTx != nil && isolator.currentWriteTx.IsFinished() {
+		isolator.currentWriteTx = nil
+	}
+
+	if isolator.currentWriteTx == nil {
+		if tx == nil || tx.IsFinished() {
+			return nil, nil
+		}
+		if !tx.IsReadonly() {
+			isolator.currentWriteTx = tx
+		}
+		return tx, nil
+	}
+
+	if tx == isolator.currentWriteTx || tx.IsReadonly() {
+		return tx, nil
+	}
+
+	currentWriteTx := isolator.currentWriteTx
+
+	needUnlock = false
+	isolator.lock.Unlock()
+
+	//Wait for currentWriteTx to finish.
+	select {
+	case <-currentWriteTx.Finished():
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
+
+	return isolator.waitForOtherReadWriteTxToTerminate(ctx, requireRunningTx, depth+1)
+}
+
+type StrongTransactionIsolator struct {
+	currentWriteTx       *Transaction
+	readonlyTxs          []DoneChan  //Transactions are not stored to avoid having references.
+	readonlyTxsWaitTimer *time.Timer //Timer used for timing out the current write tx waiting for readonly txs to finish.
+
+	//This lock only protects the fields of StrongTransactionIsolator.
+	//It is not used for transaction isolation.
+	lock sync.Mutex
+}
+
+func (isolator *StrongTransactionIsolator) hasUnfinishedReadonlyTxs() bool {
 	isolator.lock.Lock()
 	defer isolator.lock.Unlock()
 
@@ -51,11 +120,11 @@ func (isolator *TransactionIsolator) hasUnfinishedReadonlyTxs() bool {
 // When the currently tracked read-write transaction terminates, a random transaction among all waiting transactions resumes.
 // In other words the first transaction to start waiting is not necessarily the one to resume first.
 // ErrRunningTransactionExpected is returned if requireRunningTx is true and $ctx has no tx.
-func (isolator *TransactionIsolator) WaitForOtherTxsToTerminate(ctx *Context, requireRunningTx bool) (currentTx *Transaction, _ error) {
+func (isolator *StrongTransactionIsolator) WaitForOtherTxsToTerminate(ctx *Context, requireRunningTx bool) (currentTx *Transaction, _ error) {
 	return isolator.waitForReadWriteTxToTerminate(ctx, requireRunningTx, 0)
 }
 
-func (isolator *TransactionIsolator) waitForReadWriteTxToTerminate(ctx *Context, requireRunningTx bool, depth int) (currentTx *Transaction, _ error) {
+func (isolator *StrongTransactionIsolator) waitForReadWriteTxToTerminate(ctx *Context, requireRunningTx bool, depth int) (currentTx *Transaction, _ error) {
 	if depth >= MAX_SUBSEQUENT_WAIT_WRITE_TX_COUNT {
 		return nil, ErrTooManyWriteTxsWaited
 	}
@@ -143,10 +212,9 @@ func (isolator *TransactionIsolator) waitForReadWriteTxToTerminate(ctx *Context,
 		return tx, nil
 	}
 
+	currentWriteTx := isolator.currentWriteTx
 	needUnlock = false
 	isolator.lock.Unlock()
-
-	currentWriteTx := isolator.currentWriteTx
 
 	//Wait for currentWriteTx to finish.
 	select {
@@ -158,7 +226,7 @@ func (isolator *TransactionIsolator) waitForReadWriteTxToTerminate(ctx *Context,
 	return isolator.waitForReadWriteTxToTerminate(ctx, requireRunningTx, depth+1)
 }
 
-func (isolator *TransactionIsolator) removeFinishedTxs() {
+func (isolator *StrongTransactionIsolator) removeFinishedTxs() {
 	if isolator.currentWriteTx != nil && isolator.currentWriteTx.IsFinished() {
 		isolator.currentWriteTx = nil
 	}
