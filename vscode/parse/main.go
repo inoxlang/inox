@@ -19,7 +19,7 @@ const (
 var lastParsedChunks = make([]parsedChunk, 0, CHUNK_LIST_CAPACITY)
 
 type parsedChunk struct {
-	*parse.ParsedChunk
+	*parse.ParsedChunkSource
 	id string
 }
 
@@ -112,7 +112,7 @@ func main() {
 
 			lastParsedChunks = append(lastParsedChunks, parsedChunk{
 				id: result.ChunkId,
-				ParsedChunk: parse.NewParsedChunk(chunk, parse.SourceFile{
+				ParsedChunkSource: parse.NewParsedChunkSource(chunk, parse.SourceFile{
 					NameString:             fpath,
 					UserFriendlyNameString: fpath,
 					Resource:               fpath,
