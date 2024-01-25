@@ -230,7 +230,7 @@ func TestObjectPatternGetMigrationOperations(t *testing.T) {
 		}, migrations)
 	})
 
-	t.Run("new property & all previous properties removed", func(t *testing.T) {
+	t.Run("new property & all previous properties removed: root", func(t *testing.T) {
 		singleProp := NewInexactObjectPattern([]ObjectPatternEntry{{Name: "a", Pattern: INT_PATTERN}})
 		nextSingleProp := NewInexactObjectPattern([]ObjectPatternEntry{{Name: "b", Pattern: INT_PATTERN}})
 
@@ -240,10 +240,31 @@ func TestObjectPatternGetMigrationOperations(t *testing.T) {
 		}
 
 		assert.Equal(t, []MigrationOp{
+			RemovalMigrationOp{
+				Value:          INT_PATTERN,
+				MigrationMixin: MigrationMixin{"/a"},
+			},
+			InclusionMigrationOp{
+				Value:          INT_PATTERN,
+				MigrationMixin: MigrationMixin{"/b"},
+			},
+		}, migrations)
+	})
+
+	t.Run("new property & all previous properties removed: below root", func(t *testing.T) {
+		singleProp := NewInexactObjectPattern([]ObjectPatternEntry{{Name: "a", Pattern: INT_PATTERN}})
+		nextSingleProp := NewInexactObjectPattern([]ObjectPatternEntry{{Name: "b", Pattern: INT_PATTERN}})
+
+		migrations, err := singleProp.GetMigrationOperations(ctx, nextSingleProp, "/a")
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		assert.Equal(t, []MigrationOp{
 			ReplacementMigrationOp{
 				Current:        singleProp,
 				Next:           nextSingleProp,
-				MigrationMixin: MigrationMixin{"/"},
+				MigrationMixin: MigrationMixin{"/a"},
 			},
 		}, migrations)
 	})

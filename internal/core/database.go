@@ -320,7 +320,7 @@ func (db *DatabaseIL) UpdateSchema(ctx *Context, nextSchema *ObjectPattern, migr
 		panic(err)
 	}
 
-	migrationOps, err := GetMigrationOperations(ctx, db.initialSchema, nextSchema, "/")
+	migrationOps, err := GetTopLevelEntitiesMigrationOperations(ctx, db.initialSchema, nextSchema)
 	if err != nil {
 		panic(err)
 	}

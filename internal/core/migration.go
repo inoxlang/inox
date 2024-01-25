@@ -115,6 +115,8 @@ func (op InclusionMigrationOp) ToSymbolicValue(ctx *Context, encountered map[uin
 }
 
 func (patt *ObjectPattern) GetMigrationOperations(ctx *Context, next Pattern, pseudoPath string) (migrations []MigrationOp, _ error) {
+	isDBSchema := pseudoPath == "/"
+
 	nextObject, ok := next.(*ObjectPattern)
 	if !ok {
 		return []MigrationOp{ReplacementMigrationOp{Current: patt, Next: next, MigrationMixin: MigrationMixin{PseudoPath: pseudoPath}}}, nil
@@ -133,7 +135,7 @@ func (patt *ObjectPattern) GetMigrationOperations(ctx *Context, next Pattern, ps
 		}
 	}
 
-	if removedPropertyCount == len(patt.entries) && removedPropertyCount > 0 && len(nextObject.entries) != 0 {
+	if !isDBSchema && removedPropertyCount == len(patt.entries) && removedPropertyCount > 0 && len(nextObject.entries) != 0 {
 		return []MigrationOp{ReplacementMigrationOp{Current: patt, Next: next, MigrationMixin: MigrationMixin{PseudoPath: pseudoPath}}}, nil
 	}
 
@@ -307,13 +309,15 @@ func GetTopLevelEntitiesMigrationOperations(ctx *Context, current, next *ObjectP
 }
 
 func GetMigrationOperations(ctx *Context, current, next Pattern, pseudoPath string) ([]MigrationOp, error) {
-	if pseudoPath != "/" && pseudoPath[len(pseudoPath)-1] == '/' {
-		return nil, ErrInvalidMigrationPseudoPath
-	}
-
-	for _, segment := range strings.Split(pseudoPath, "/") {
-		if strings.ContainsAny(segment, "*?[]") && segment != "*" {
+	if pseudoPath != "/" {
+		if pseudoPath[len(pseudoPath)-1] == '/' {
 			return nil, ErrInvalidMigrationPseudoPath
+		}
+
+		for _, segment := range strings.Split(pseudoPath, "/") {
+			if strings.ContainsAny(segment, "*?[]") && segment != "*" {
+				return nil, ErrInvalidMigrationPseudoPath
+			}
 		}
 	}
 
