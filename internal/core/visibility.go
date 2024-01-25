@@ -84,5 +84,7 @@ func initializeObjectVisibility(v *Object, visibility *ValueVisibility) {
 	nextVisibilityId++
 
 	visibilityMap.Set(id, visibility)
+
+	v.ensureAdditionalFields()
 	v.visibilityId = id
 }

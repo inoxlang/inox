@@ -165,7 +165,7 @@ func TestBidirectionalSymbolicConversion(t *testing.T) {
 				return
 			}
 
-			assert.Equal(t, obj, concreteValue)
+			assertEqualInoxValues(t, obj, concreteValue.(Value), ctx)
 		})
 
 		t.Run("single property", func(t *testing.T) {
@@ -187,7 +187,7 @@ func TestBidirectionalSymbolicConversion(t *testing.T) {
 				return
 			}
 
-			assert.Equal(t, obj, concreteValue)
+			assertEqualInoxValues(t, obj, concreteValue.(Value), ctx)
 		})
 
 		t.Run("two properties", func(t *testing.T) {
@@ -209,7 +209,7 @@ func TestBidirectionalSymbolicConversion(t *testing.T) {
 				return
 			}
 
-			assert.Equal(t, obj, concreteValue)
+			assertEqualInoxValues(t, obj, concreteValue.(Value), ctx)
 		})
 	})
 

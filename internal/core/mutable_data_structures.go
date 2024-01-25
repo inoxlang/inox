@@ -30,26 +30,39 @@ func init() {
 
 // Object implements Value.
 type Object struct {
-	constraintId      ConstraintId
-	visibilityId      VisibilityId
-	implicitPropCount int
-	lock              SmartLock
+	keys   []string
+	values []Serializable
 
-	url URL //can be empty
+	//TODO: Refactor to use a single []objectEntry slice if possible: this would reduce unsafe.Sizeof(Object) from 56 to 24.
+	//      This would also make sortProps faster because a single slice would be modified.
+
+	//Additional fields that are allocated if the object becomes more 'complex' or is watched.
+	//Note: additionalObjectFields should never be set back to nil.
+	*additionalObjectFields
+}
+
+type additionalObjectFields struct {
+	lock SmartLock
+
+	implicitPropCount int
+
+	url        URL //can be empty
+	txIsolator TransactionIsolator
+
+	sysgraph SystemGraphPointer
+
+	constraintId ConstraintId
+	visibilityId VisibilityId
+
+	jobs *ValueLifetimeJobs //can be nil
+
+	//Watching related fields
 
 	watchers              *ValueWatchers
 	mutationCallbacks     *MutationCallbacks
 	messageHandlers       *SynchronousMessageHandlers
 	watchingDepth         WatchingDepth
 	propMutationCallbacks []CallbackHandle
-	txIsolator            TransactionIsolator
-
-	jobs *ValueLifetimeJobs
-
-	keys   []string
-	values []Serializable
-
-	sysgraph SystemGraphPointer
 }
 
 // NewObject creates an empty object.
@@ -97,7 +110,8 @@ func objFrom(entryMap ValMap) *Object {
 		i++
 	}
 
-	obj := &Object{keys: keys, values: values, implicitPropCount: maxKeyIndex + 1}
+	obj := &Object{keys: keys, values: values}
+	obj.setImplicitPropCount(maxKeyIndex + 1)
 	obj.sortProps()
 	// NOTE: jobs not started
 	return obj
@@ -112,8 +126,26 @@ func objFromLists(keys []string, values []Serializable) *Object {
 	return obj
 }
 
+func (obj *Object) ensureAdditionalFields() {
+	if obj.additionalObjectFields == nil {
+		obj.additionalObjectFields = &additionalObjectFields{}
+	}
+}
+
+func (obj *Object) hasAdditionalFields() bool {
+	return obj.additionalObjectFields != nil
+}
+
+func (obj *Object) hasWatchersOrMutationCallbacks() bool {
+	return obj.additionalObjectFields != nil && (obj.mutationCallbacks != nil || obj.watchers != nil && len(obj.watchers.watchers) > 0)
+}
+
+func (obj *Object) hasPropMutationCallbacks() bool {
+	return obj.additionalObjectFields != nil && obj.propMutationCallbacks != nil
+}
+
 func (obj *Object) sortProps() {
-	if obj.propMutationCallbacks != nil {
+	if obj.hasPropMutationCallbacks() {
 		for len(obj.propMutationCallbacks) < len(obj.keys) {
 			obj.propMutationCallbacks = append(obj.propMutationCallbacks, FIRST_VALID_CALLBACK_HANDLE-1)
 		}
@@ -122,12 +154,27 @@ func (obj *Object) sortProps() {
 	keys, values, newIndexes := sortProps(obj.keys, obj.values)
 	obj.keys, obj.values = keys, values
 
-	if obj.propMutationCallbacks != nil {
+	if obj.hasPropMutationCallbacks() {
 		newPropMutationCallbacks := make([]CallbackHandle, len(obj.propMutationCallbacks))
 		for i, newIndex := range newIndexes {
 			newPropMutationCallbacks[newIndex] = obj.propMutationCallbacks[i]
 		}
 	}
+}
+
+func (obj *Object) setImplicitPropCount(n int) {
+	if obj.additionalObjectFields == nil && n == 0 {
+		return
+	}
+	obj.ensureAdditionalFields()
+	obj.implicitPropCount = n
+}
+
+func (obj *Object) getImplicitPropCount() int {
+	if obj.additionalObjectFields == nil {
+		return 0
+	}
+	return obj.additionalObjectFields.implicitPropCount
 }
 
 func (obj *Object) indexOfKey(k string) int {
@@ -156,6 +203,7 @@ func (obj *Object) instantiateLifetimeJobs(ctx *Context) error {
 
 	if len(jobs) != 0 {
 		obj.Share(state)
+		obj.ensureAdditionalFields()
 		jobs := NewValueLifetimeJobs(ctx, obj, jobs)
 		if err := jobs.InstantiateJobs(ctx); err != nil {
 			return err
@@ -180,18 +228,23 @@ func (obj *Object) addMessageHandlers(ctx *Context) error {
 	}
 
 	if len(handlers) != 0 {
+		obj.ensureAdditionalFields()
 		obj.messageHandlers = NewSynchronousMessageHandlers(handlers...)
 	}
 
 	return nil
 }
 
+// LifetimeJobs returns the lifetime jobs bound to the object, the returned pointer can be nil.
 func (obj *Object) LifetimeJobs() *ValueLifetimeJobs {
+	if obj.hasAdditionalFields() {
+		return nil
+	}
 	return obj.jobs
 }
 
 func (obj *Object) IsSharable(originState *GlobalState) (bool, string) {
-	if obj.lock.IsValueShared() {
+	if obj.hasAdditionalFields() && obj.lock.IsValueShared() {
 		return true, ""
 	}
 	for i, v := range obj.values {
@@ -204,35 +257,64 @@ func (obj *Object) IsSharable(originState *GlobalState) (bool, string) {
 }
 
 func (obj *Object) Share(originState *GlobalState) {
+	obj.ensureAdditionalFields()
 	obj.lock.Share(originState, func() {
 		for i, v := range obj.values {
 			obj.values[i] = utils.Must(ShareOrClone(v, originState)).(Serializable)
 		}
+		//Allocating the additional fields enables transaction isolation.
+		obj.ensureAdditionalFields()
 	})
 }
 
 func (obj *Object) IsShared() bool {
+	if !obj.hasAdditionalFields() {
+		return false
+	}
 	return obj.lock.IsValueShared()
 }
 
 func (obj *Object) Lock(state *GlobalState) {
+	if obj.additionalObjectFields == nil { //not shared.
+		return
+	}
 	obj.lock.Lock(state, obj)
 }
 
 func (obj *Object) Unlock(state *GlobalState) {
+	if obj.additionalObjectFields == nil { //not shared.
+		return
+	}
 	obj.lock.Unlock(state, obj)
 }
 
 func (obj *Object) ForceLock() {
+	obj.ensureAdditionalFields()
 	obj.lock.ForceLock()
 }
 
 func (obj *Object) ForceUnlock() {
+	if obj.additionalObjectFields == nil {
+		panic(errors.New("unexpected Object.ForceUnlock call: object is not locked because it does not have additional fields"))
+	}
 	obj.lock.ForceUnlock()
 }
 
 func (obj *Object) jobInstances() []*LifetimeJobInstance {
+	if !obj.hasAdditionalFields() {
+		return nil
+	}
 	return obj.jobs.Instances()
+}
+
+func (obj *Object) waitIfOtherTransaction(ctx *Context, requiredRunningTx bool) {
+	if !obj.hasAdditionalFields() {
+		return
+	}
+	err := obj.txIsolator.WaitIfOtherTransaction(ctx, requiredRunningTx)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (obj *Object) Prop(ctx *Context, name string) Value {
@@ -244,15 +326,13 @@ func (obj *Object) PropNotStored(ctx *Context, name string) Value {
 }
 
 func (obj *Object) prop(ctx *Context, name string, stored bool) Value {
-	if err := obj.txIsolator.WaitIfOtherTransaction(ctx, !stored); err != nil {
-		panic(err)
-	}
+	obj.waitIfOtherTransaction(ctx, !stored)
 
 	closestState := ctx.GetClosestState()
 	obj.Lock(closestState)
 	defer obj.Unlock(closestState)
 
-	if obj.url != "" {
+	if obj.hasAdditionalFields() && obj.url != "" {
 		perm := DatabasePermission{
 			Kind_:  permkind.Read,
 			Entity: obj.url.ToDirURL().AppendRelativePath("./" + Path(name)),
@@ -285,9 +365,7 @@ func (obj *Object) SetProp(ctx *Context, name string, value Value) error {
 		return fmt.Errorf("value is not serializable")
 	}
 
-	if err := obj.txIsolator.WaitIfOtherTransaction(ctx, false); err != nil {
-		return err
-	}
+	obj.waitIfOtherTransaction(ctx, false)
 
 	closestState := ctx.GetClosestState()
 
@@ -296,7 +374,7 @@ func (obj *Object) SetProp(ctx *Context, name string, value Value) error {
 		if err != nil {
 			return fmt.Errorf("failed to share/clone value when setting property %s: %w", name, err)
 		}
-		value = newVal
+		serializableVal = newVal.(Serializable)
 	}
 
 	unlock := true
@@ -308,7 +386,7 @@ func (obj *Object) SetProp(ctx *Context, name string, value Value) error {
 	}()
 
 	var constraint Pattern
-	if obj.constraintId.HasConstraint() {
+	if obj.hasAdditionalFields() && obj.constraintId.HasConstraint() {
 		constraint, _ = GetConstraint(obj.constraintId)
 	}
 
@@ -316,7 +394,7 @@ func (obj *Object) SetProp(ctx *Context, name string, value Value) error {
 		panic(ErrCannotSetValOfIndexKeyProp)
 	}
 
-	if obj.url != "" {
+	if obj.hasAdditionalFields() && obj.url != "" {
 		perm := DatabasePermission{
 			Kind_:  permkind.Write,
 			Entity: obj.url.ToDirURL().AppendRelativePath("./" + Path(name)),
@@ -343,7 +421,15 @@ func (obj *Object) SetProp(ctx *Context, name string, value Value) error {
 
 			obj.sortProps()
 
-			if obj.propMutationCallbacks != nil {
+			if !obj.hasAdditionalFields() {
+				return nil
+			}
+
+			obj.sysgraph.AddEvent(ctx, "prop updated: "+name, obj)
+
+			if obj.hasPropMutationCallbacks() {
+				//Remove the mutation callback of the previous value and a mutation callback
+				//for the new value.
 				index := obj.indexOfKey(name)
 				obj.removePropMutationCallbackNoLock(ctx, index, prevValue)
 				if err := obj.addPropMutationCallbackNoLock(ctx, index, serializableVal); err != nil {
@@ -351,18 +437,18 @@ func (obj *Object) SetProp(ctx *Context, name string, value Value) error {
 				}
 			}
 
-			mutation := NewUpdatePropMutation(ctx, name, serializableVal, ShallowWatching, Path("/"+name))
+			if obj.hasWatchersOrMutationCallbacks() {
+				//Create mutation and inform watchers about it.
+				mutation := NewUpdatePropMutation(ctx, name, serializableVal, ShallowWatching, Path("/"+name))
 
-			obj.sysgraph.AddEvent(ctx, "prop updated: "+name, obj)
+				obj.watchers.InformAboutAsync(ctx, mutation, mutation.Depth, true)
 
-			//inform watchers & microtasks about the update
-			obj.watchers.InformAboutAsync(ctx, mutation, mutation.Depth, true)
+				if obj.mutationCallbacks != nil {
+					unlock = false
+					obj.Unlock(closestState)
 
-			if obj.mutationCallbacks != nil {
-				unlock = false
-				obj.Unlock(closestState)
-
-				obj.mutationCallbacks.CallMicrotasks(ctx, mutation)
+					obj.mutationCallbacks.CallMicrotasks(ctx, mutation)
+				}
 			}
 
 			return nil
@@ -382,33 +468,40 @@ func (obj *Object) SetProp(ctx *Context, name string, value Value) error {
 
 	obj.sortProps()
 
-	if obj.propMutationCallbacks != nil {
+	if !obj.hasAdditionalFields() {
+		return nil
+	}
+
+	//---------------------------------------
+
+	if obj.hasPropMutationCallbacks() {
 		if err := obj.addPropMutationCallbackNoLock(ctx, len(obj.keys)-1, serializableVal); err != nil {
 			return fmt.Errorf("failed to add mutation callback for new object property %s: %w", name, err)
 		}
 	}
 
-	//inform watchers & microtasks about the update
-
-	mutation := NewAddPropMutation(ctx, name, serializableVal, ShallowWatching, Path("/"+name))
 	obj.sysgraph.AddEvent(ctx, "new prop: "+name, obj)
 
-	obj.watchers.InformAboutAsync(ctx, mutation, mutation.Depth, true)
+	if obj.hasWatchersOrMutationCallbacks() {
+		//Inform watchers & microtasks about the update.
+		mutation := NewAddPropMutation(ctx, name, serializableVal, ShallowWatching, Path("/"+name))
+		obj.sysgraph.AddEvent(ctx, "new prop: "+name, obj)
 
-	if obj.mutationCallbacks != nil {
-		unlock = false
-		obj.Unlock(closestState)
+		obj.watchers.InformAboutAsync(ctx, mutation, mutation.Depth, true)
 
-		obj.mutationCallbacks.CallMicrotasks(ctx, mutation)
+		if obj.mutationCallbacks != nil {
+			unlock = false
+			obj.Unlock(closestState)
+
+			obj.mutationCallbacks.CallMicrotasks(ctx, mutation)
+		}
 	}
 
 	return nil
 }
 
 func (obj *Object) PropertyNames(ctx *Context) []string {
-	if err := obj.txIsolator.WaitIfOtherTransaction(ctx, false); err != nil {
-		panic(err)
-	}
+	obj.waitIfOtherTransaction(ctx, false)
 
 	closestState := ctx.GetClosestState()
 	obj.Lock(closestState)
@@ -417,9 +510,7 @@ func (obj *Object) PropertyNames(ctx *Context) []string {
 }
 
 func (obj *Object) HasProp(ctx *Context, name string) bool {
-	if err := obj.txIsolator.WaitIfOtherTransaction(ctx, false); err != nil {
-		panic(err)
-	}
+	obj.waitIfOtherTransaction(ctx, false)
 
 	closestState := ctx.GetClosestState()
 	obj.Lock(closestState)
@@ -433,9 +524,7 @@ func (obj *Object) HasProp(ctx *Context, name string) bool {
 }
 
 func (obj *Object) HasPropValue(ctx *Context, value Value) bool {
-	if err := obj.txIsolator.WaitIfOtherTransaction(ctx, false); err != nil {
-		panic(err)
-	}
+	obj.waitIfOtherTransaction(ctx, false)
 
 	closestState := ctx.GetClosestState()
 	obj.Lock(closestState)
@@ -454,9 +543,7 @@ func (obj *Object) EntryMap(ctx *Context) map[string]Serializable {
 	}
 
 	if ctx != nil {
-		if err := obj.txIsolator.WaitIfOtherTransaction(ctx, false); err != nil {
-			panic(err)
-		}
+		obj.waitIfOtherTransaction(ctx, false)
 
 		closestState := ctx.GetClosestState()
 		obj.Lock(closestState)
@@ -484,9 +571,7 @@ func (obj *Object) ValueEntryMap(ctx *Context) map[string]Value {
 	}
 
 	if ctx != nil {
-		if err := obj.txIsolator.WaitIfOtherTransaction(ctx, false); err != nil {
-			panic(err)
-		}
+		obj.waitIfOtherTransaction(ctx, false)
 
 		closestState := ctx.GetClosestState()
 		obj.Lock(closestState)
@@ -514,10 +599,11 @@ func (obj *Object) Indexed() []Serializable {
 		panic(errors.New("Object.Indexed() can only be called on objects that are not shared"))
 	}
 
-	values := make([]Serializable, obj.implicitPropCount)
+	implicitPropCount := obj.getImplicitPropCount()
+	values := make([]Serializable, implicitPropCount)
 
 outer:
-	for i := 0; i < obj.implicitPropCount; i++ {
+	for i := 0; i < implicitPropCount; i++ {
 		searchedKey := strconv.Itoa(i)
 		for i, key := range obj.keys {
 			if key == searchedKey {
@@ -545,6 +631,9 @@ func (obj *Object) ForEachEntry(fn func(k string, v Serializable) error) error {
 }
 
 func (obj *Object) URL() (URL, bool) {
+	if !obj.hasAdditionalFields() {
+		return "", false
+	}
 	if obj.url != "" {
 		return obj.url, true
 	}
@@ -555,16 +644,23 @@ func (obj *Object) SetURLOnce(ctx *Context, u URL) error {
 	closestState := ctx.GetClosestState()
 	obj.Lock(closestState)
 	defer obj.Unlock(closestState)
+
+	obj.ensureAdditionalFields()
+
 	if obj.url != "" {
 		return ErrURLAlreadySet
 	}
+
 	obj.url = u
 	return nil
 }
 
 // len returns the number of implicit properties
 func (obj *Object) Len() int {
-	return obj.implicitPropCount
+	if obj.hasAdditionalFields() {
+		return obj.implicitPropCount
+	}
+	return 0
 }
 
 func (obj *Object) At(ctx *Context, i int) Value {
@@ -572,9 +668,7 @@ func (obj *Object) At(ctx *Context, i int) Value {
 }
 
 func (obj *Object) Keys(ctx *Context) []string {
-	if err := obj.txIsolator.WaitIfOtherTransaction(ctx, false); err != nil {
-		panic(err)
-	}
+	obj.waitIfOtherTransaction(ctx, false)
 
 	closestState := ctx.GetClosestState()
 	obj.Lock(closestState)

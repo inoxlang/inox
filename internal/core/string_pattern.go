@@ -605,7 +605,7 @@ func (patt *SequenceStringPattern) constructGroupMatchingResult(ctx *Context, su
 		}
 		result.keys = append(result.keys, "0")
 		result.values = append(result.values, Str(submatches[0]))
-		result.implicitPropCount++
+		result.setImplicitPropCount(1)
 		result.sortProps()
 		return result, true, nil
 	} else {

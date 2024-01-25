@@ -530,8 +530,10 @@ func (n *SystemGraphNode) ForceUnlock() {
 func (obj *Object) ProposeSystemGraph(ctx *Context, g *SystemGraph, proposedName string, optionalParent SystemGraphNodeValue) {
 	state := ctx.GetClosestState()
 
-	obj.lock.Lock(state, obj)
-	defer obj.lock.Unlock(state, obj)
+	obj.Lock(state)
+	defer obj.Unlock(state)
+
+	obj.ensureAdditionalFields()
 
 	ptr := g.Ptr()
 	if !obj.sysgraph.Set(ptr) {

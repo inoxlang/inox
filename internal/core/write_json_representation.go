@@ -253,13 +253,16 @@ func (obj *Object) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, con
 		obj.Lock(closestState)
 		defer obj.Unlock(closestState)
 		keys := obj.keys
-		visibility, _ := GetVisibility(obj.visibilityId)
+		var visibility *ValueVisibility
+		if obj.hasAdditionalFields() {
+			visibility, _ = GetVisibility(obj.visibilityId)
+		}
 
 		first := true
 
 		//meta properties
 
-		if obj.url != "" {
+		if obj.hasAdditionalFields() && obj.url != "" {
 			first = false
 
 			_, err = w.Write(utils.StringAsBytes(`"_url_":`))

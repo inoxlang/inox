@@ -367,6 +367,9 @@ func (obj *Object) Watcher(ctx *Context, config WatcherConfiguration) Watcher {
 
 	obj.Lock(closestState)
 	defer obj.Unlock(closestState)
+
+	obj.ensureAdditionalFields()
+
 	if obj.watchers == nil {
 		obj.watchers = NewValueWatchers()
 	}

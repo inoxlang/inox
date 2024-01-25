@@ -1527,7 +1527,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		}
 
 		if indexKey != 0 {
-			finalObj.implicitPropCount = indexKey
+			finalObj.setImplicitPropCount(indexKey)
 		}
 
 		initializeMetaproperties(finalObj, n.MetaProperties)

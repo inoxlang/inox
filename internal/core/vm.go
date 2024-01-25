@@ -1084,7 +1084,7 @@ func (v *VM) run() {
 			}
 
 			initializeMetaproperties(obj, astNode.MetaProperties)
-			obj.implicitPropCount = implicitPropCount
+			obj.setImplicitPropCount(implicitPropCount)
 
 			v.sp -= numElements
 			v.stack[v.sp] = obj

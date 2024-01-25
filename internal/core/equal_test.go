@@ -423,9 +423,9 @@ func TestEqualityCompareRecordPatterns(t *testing.T) {
 	})
 }
 
-func assertEqualInoxValues(t *testing.T, a, b Value, ctx *Context) {
+func assertEqualInoxValues(t *testing.T, a, b Value, ctx *Context) bool {
 	t.Helper()
-	assert.True(t, a.Equal(ctx, b, map[uintptr]uintptr{}, 0))
+	return assert.True(t, a.Equal(ctx, b, map[uintptr]uintptr{}, 0))
 }
 
 func assertNotEqualInoxValues(t *testing.T, a, b Value, ctx *Context) {

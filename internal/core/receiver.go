@@ -136,6 +136,10 @@ func (obj *Object) ReceiveMessage(ctx *Context, msg Message) error {
 	obj.Lock(state)
 	defer obj.Unlock(state)
 
+	if !obj.hasAdditionalFields() {
+		return nil
+	}
+
 	if err := obj.messageHandlers.CallHandlers(ctx, msg, obj); err != nil {
 		return err
 	}

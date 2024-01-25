@@ -5,6 +5,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/commonfmt"
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/exp/maps"
 )
 
 func TestObjectPatternGetMigrationOperations(t *testing.T) {
@@ -794,13 +795,16 @@ func TestObjectMigrate(t *testing.T) {
 		expectedInner := NewObjectFromMap(ValMap{}, ctx)
 		expectedInner.keys = []string{}
 		expectedInner.values = []Serializable{}
+		expectedInner.ensureAdditionalFields()
+
 		assert.Equal(t, map[string]Serializable{"a": expectedInner}, object.EntryMap(ctx))
 	})
 
 	t.Run("replace object: / key", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
-		object := NewObjectFromMap(nil, ctx)
+		defer ctx.CancelGracefully()
 
+		object := NewObjectFromMap(nil, ctx)
 		replacement := NewObjectFromMap(nil, ctx)
 
 		val, err := object.Migrate(ctx, "/", &FreeEntityMigrationArgs{
@@ -815,7 +819,8 @@ func TestObjectMigrate(t *testing.T) {
 		if !assert.NoError(t, err) {
 			return
 		}
-		if !assert.Equal(t, replacement, val) {
+
+		if !assertEqualInoxValues(t, replacement, val, ctx) {
 			return
 		}
 		assert.NotSame(t, replacement, val)
@@ -823,8 +828,9 @@ func TestObjectMigrate(t *testing.T) {
 
 	t.Run("replace object: /x key", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
-		object := NewObjectFromMap(nil, ctx)
+		defer ctx.CancelGracefully()
 
+		object := NewObjectFromMap(nil, ctx)
 		replacement := NewObjectFromMap(nil, ctx)
 
 		val, err := object.Migrate(ctx, "/x", &FreeEntityMigrationArgs{
@@ -839,7 +845,8 @@ func TestObjectMigrate(t *testing.T) {
 		if !assert.NoError(t, err) {
 			return
 		}
-		if !assert.Equal(t, replacement, val) {
+
+		if !assertEqualInoxValues(t, replacement, val, ctx) {
 			return
 		}
 		assert.NotSame(t, replacement, val)
@@ -847,10 +854,11 @@ func TestObjectMigrate(t *testing.T) {
 
 	t.Run("replace property", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
 
 		replacement := NewObjectFromMap(nil, ctx)
-
 		object := NewObjectFromMap(ValMap{"a": NewObjectFromMap(ValMap{"b": Int(0)}, ctx)}, ctx)
+
 		val, err := object.Migrate(ctx, "/", &FreeEntityMigrationArgs{
 			NextPattern: nil,
 			MigrationHandlers: MigrationOpHandlers{
@@ -866,15 +874,24 @@ func TestObjectMigrate(t *testing.T) {
 		if !assert.Same(t, object, val) {
 			return
 		}
-		if !assert.Equal(t, map[string]Serializable{"a": replacement}, object.EntryMap(ctx)) {
+
+		entries := object.EntryMap(ctx)
+
+		if !assert.Equal(t, []string{"a"}, maps.Keys(entries)) {
 			return
 		}
 
-		assert.NotSame(t, replacement, object.Prop(ctx, "a"))
+		propVal := entries["a"]
+
+		if !assertEqualInoxValues(t, replacement, propVal, ctx) {
+			return
+		}
+		assert.NotSame(t, replacement, propVal)
 	})
 
 	t.Run("replace inexisting property", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
 
 		replacement := NewObjectFromMap(nil, ctx)
 
@@ -896,6 +913,7 @@ func TestObjectMigrate(t *testing.T) {
 
 	t.Run("replace property of property", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
 
 		object := NewObjectFromMap(ValMap{"a": NewObjectFromMap(ValMap{"b": Int(0)}, ctx)}, ctx)
 		val, err := object.Migrate(ctx, "/", &FreeEntityMigrationArgs{
@@ -914,11 +932,14 @@ func TestObjectMigrate(t *testing.T) {
 			return
 		}
 		expectedInner := NewObjectFromMap(ValMap{"b": Int(1)}, ctx)
+		expectedInner.ensureAdditionalFields()
+
 		assert.Equal(t, map[string]Serializable{"a": expectedInner}, object.EntryMap(ctx))
 	})
 
 	t.Run("replace property of immutable property", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
 
 		object := NewObjectFromMap(ValMap{"a": NewRecordFromMap(ValMap{"b": Int(0)})}, ctx)
 		val, err := object.Migrate(ctx, "/", &FreeEntityMigrationArgs{
@@ -942,6 +963,7 @@ func TestObjectMigrate(t *testing.T) {
 
 	t.Run("include property", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
 
 		object := NewObjectFromMap(ValMap{}, ctx)
 		val, err := object.Migrate(ctx, "/", &FreeEntityMigrationArgs{
@@ -1350,6 +1372,8 @@ func TestListMigrate(t *testing.T) {
 		expectedInner := NewObjectFromMap(ValMap{}, ctx)
 		expectedInner.keys = []string{}
 		expectedInner.values = []Serializable{}
+		expectedInner.ensureAdditionalFields()
+
 		assert.Equal(t, []Serializable{expectedInner}, list.GetOrBuildElements(ctx))
 	})
 
@@ -1497,6 +1521,8 @@ func TestListMigrate(t *testing.T) {
 			return
 		}
 		expectedInner := NewObjectFromMap(ValMap{"b": Int(1)}, ctx)
+		expectedInner.ensureAdditionalFields()
+
 		assert.Equal(t, []Serializable{expectedInner}, list.GetOrBuildElements(ctx))
 	})
 

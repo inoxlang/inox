@@ -339,6 +339,8 @@ func (o *Object) Migrate(ctx *Context, key Path, migration *FreeEntityMigrationA
 		panic(ErrUnreachable)
 	}
 
+	o.ensureAdditionalFields()
+
 	if o.mutationCallbacks != nil {
 		panic(ErrUnreachable)
 	}

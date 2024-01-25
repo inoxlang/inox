@@ -628,6 +628,8 @@ func (obj *Object) OnMutation(ctx *Context, microtask MutationCallbackMicrotask,
 	obj.Lock(state)
 	defer obj.Unlock(state)
 
+	obj.ensureAdditionalFields()
+
 	if config.Depth == UnspecifiedWatchingDepth {
 		config.Depth = ShallowWatching
 	}
@@ -658,6 +660,8 @@ func (obj *Object) OnMutation(ctx *Context, microtask MutationCallbackMicrotask,
 }
 
 func (obj *Object) removePropMutationCallbackNoLock(ctx *Context, index int, previousValue Serializable) {
+	obj.ensureAdditionalFields()
+
 	if watchable, ok := previousValue.(Watchable); ok {
 		if previousHandle := obj.propMutationCallbacks[index]; previousHandle.Valid() {
 			watchable.RemoveMutationCallback(ctx, previousHandle)
@@ -667,6 +671,8 @@ func (obj *Object) removePropMutationCallbackNoLock(ctx *Context, index int, pre
 }
 
 func (obj *Object) addPropMutationCallbackNoLock(ctx *Context, index int, val Value) error {
+	obj.ensureAdditionalFields()
+
 	if watchable, ok := val.(Watchable); ok {
 		key := obj.keys[index]
 
@@ -710,7 +716,7 @@ func (obj *Object) RemoveMutationCallbackMicrotasks(ctx *Context) {
 	obj.Lock(state)
 	defer obj.Unlock(state)
 
-	if obj.mutationCallbacks == nil {
+	if !obj.hasAdditionalFields() || obj.mutationCallbacks == nil {
 		return
 	}
 
@@ -722,6 +728,7 @@ func (obj *Object) RemoveMutationCallback(ctx *Context, handle CallbackHandle) {
 	obj.Lock(state)
 	defer obj.Unlock(state)
 
+	obj.ensureAdditionalFields()
 	obj.mutationCallbacks.RemoveMicrotask(handle)
 }
 

@@ -69,6 +69,7 @@ func TestObject(t *testing.T) {
 			defer ctx2.CancelGracefully()
 
 			obj := NewObjectFromMap(ValMap{}, ctx1)
+			obj.Share(ctx1.GetClosestState())
 
 			signal := make(chan struct{}, 1)
 
@@ -117,6 +118,7 @@ func TestObject(t *testing.T) {
 			defer ctx1.CancelGracefully()
 
 			obj := NewObjectFromMap(ValMap{"a": Int(1)}, ctx1)
+			obj.Share(ctx1.GetClosestState())
 
 			// since context has no associated transaction a panic is expected
 			if !assert.Panics(t, func() {

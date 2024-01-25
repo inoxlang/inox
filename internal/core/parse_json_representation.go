@@ -445,6 +445,7 @@ func ParseObjectJSONrepresentation(ctx *Context, it *jsoniter.Iterator, pattern 
 		}
 
 		if key == URL_METADATA_KEY {
+			obj.ensureAdditionalFields()
 			obj.url = URL(currentIt.ReadString())
 			return true
 		}

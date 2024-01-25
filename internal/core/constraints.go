@@ -62,5 +62,6 @@ func initializeConstraintMetaproperty(v *Object, block *parse.InitializationBloc
 	}
 
 	constraintMap.Set(id, patt)
+	v.ensureAdditionalFields()
 	v.constraintId = id
 }

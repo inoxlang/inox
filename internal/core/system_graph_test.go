@@ -36,7 +36,6 @@ func TestObjectGraph(t *testing.T) {
 		object.SetProp(ctx, "a", Int(1))
 		assert.Len(t, graph.eventLog, 1)
 		assert.Contains(t, graph.eventLog[0].text, "new prop")
-
 	})
 
 	t.Run("object should add a child node for each of its subsystems", func(t *testing.T) {
