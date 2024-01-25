@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"testing"
 
 	jsoniter "github.com/inoxlang/inox/internal/jsoniter"
 	"github.com/inoxlang/inox/internal/utils"
@@ -36,7 +37,8 @@ var (
 	ErrNotSupportedSpecificMutation  = errors.New("not supported specific mutation")
 	ErrInvalidMutationPrefixSymbol   = errors.New("invalid mutation prefix symbol")
 
-	mutationCallbackPool *ArrayPool[mutationCallback]
+	mutationCallbackPool     *ArrayPool[mutationCallback]
+	mutationCallbackPoolLock sync.Mutex
 
 	_ = []Value{Mutation{}}
 )
@@ -46,6 +48,20 @@ func init() {
 }
 
 func resetMutationCallbackPool() {
+	if testing.Testing() {
+		current := mutationCallbackPool
+		if current != nil {
+			current.lock.Lock()
+			defer current.lock.Unlock()
+
+		}
+
+		mutationCallbackPoolLock.Lock()
+		defer mutationCallbackPoolLock.Unlock()
+	} else if mutationCallbackPool != nil {
+		panic(errors.New("resetMutationCallbackPool is only available for testing"))
+	}
+
 	mutationCallbackPool = utils.Must(NewArrayPool[mutationCallback](100_000, 10, func(mc *mutationCallback) {
 		*mc = mutationCallback{}
 	}))

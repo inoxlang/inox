@@ -21,7 +21,10 @@ This package contains most the code for the Inox Runtime, the type checking logi
     - [number.go](number.go)
     - [quantity.go](quantity.go)
     - [mutable_data_structures.go](mutable_data_structures.go)
-    - [immutable_data_structures.go](immutable_data_structures.go)
+    - [object.go](./object.go)
+    - [dictionary.go](./dictionary.go)
+    - [indexable.go](./indexable.go)
+    - [mapping.go](./mapping.go)
 - Core Pattern Types
     - [pattern.go](pattern.go)
     - [string_pattern.go](string_pattern.go)

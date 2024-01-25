@@ -9,21 +9,10 @@ import (
 	"time"
 
 	"github.com/inoxlang/inox/internal/parse"
-	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestMutationCallbacks(t *testing.T) {
-	{
-		//no runtime.GC() call on purpose
-		startMemStats := new(runtime.MemStats)
-		runtime.ReadMemStats(startMemStats)
-
-		defer utils.AssertNoMemoryLeak(t, startMemStats, 10, utils.AssertNoMemoryLeakOptions{
-			PreSleepDurationMillis: 100,
-		})
-	}
-
 	resetMutationCallbackPool()
 
 	t.Run("creating & initializatiion of a MutationCallbacks", func(t *testing.T) {

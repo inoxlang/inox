@@ -2,6 +2,7 @@ package core
 
 var (
 	_ = []MutableLengthSequence{(*List)(nil), (*ByteSlice)(nil), (*RuneSlice)(nil)}
+	_ Sequence = (*Array)(nil)
 )
 
 // A Sequence is a sequence of Inox values, it is not necessarily mutable.

@@ -44,15 +44,6 @@ var (
 	_ = []InexactCapable{(*Object)(nil), (*Record)(nil)}
 )
 
-// An Indexable represents a symbolic Indexable.
-type Indexable interface {
-	Iterable
-	Element() Value
-	ElementAt(i int) Value
-	KnownLen() int
-	HasKnownLen() bool
-}
-
 type InexactCapable interface {
 	Value
 

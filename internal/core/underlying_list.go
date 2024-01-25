@@ -8,6 +8,10 @@ import (
 	"golang.org/x/exp/constraints"
 )
 
+var (
+	_ = []underlyingList{(*ValueList)(nil), (*IntList)(nil), (*FloatList)(nil)}
+)
+
 const (
 	LIST_SHRINK_DIVIDER        = 2
 	MIN_SHRINKABLE_LIST_LENGTH = 10 * LIST_SHRINK_DIVIDER

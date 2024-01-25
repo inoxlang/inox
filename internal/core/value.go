@@ -13,6 +13,16 @@ import (
 	"github.com/inoxlang/inox/internal/parse"
 )
 
+var (
+	_ = []IProps{(*Object)(nil), (*Record)(nil), (*Namespace)(nil), (*Dictionary)(nil), (*List)(nil)}
+)
+
+func init() {
+	RegisterSymbolicGoFunction(NewArray, func(ctx *symbolic.Context, elements ...symbolic.Value) *symbolic.Array {
+		return symbolic.NewArray(elements...)
+	})
+}
+
 // Value is the interface implemented by all values accessible to Inox code.
 // A value should either be definitively mutable or definitively immutable.
 type Value interface {
@@ -64,6 +74,8 @@ func (m FileMode) FileMode() fs.FileMode {
 func (m FileMode) Executable() bool {
 	return m&0o111 != 0
 }
+
+type KeyList []string
 
 // ---------------------------
 
