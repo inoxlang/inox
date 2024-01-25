@@ -11,6 +11,7 @@ _From more relevant to less relevant._
 - Bytecode + tree walking interpreters
 - Code analysis
 - Runtime components (context, global state, module)
+- Default core patterns and pattern namespaces (`%int`, `%object`, `%inox.`, ...)
 
 [parse](./parse/README.md)
 - Inoxlang AST Types
@@ -86,6 +87,9 @@ _From more relevant to less relevant._
 - Generic directed graph types
 - Generic queue types (array queue)
 
+[codecompletion](./codecompletion/README.md)
+- Code completion
+
 [hack](./hack/zerolog.go)
 - Small reflection hacks to inspect and modify some zerolog types.
 
@@ -108,6 +112,11 @@ _From more relevant to less relevant._
 [afs (Abstract Filesystem)](./afs/abstract_fs.go)
 - Filesystem interface
 - File interfaces
+
+[inoxconsts](./inoxconsts/consts.go)
+- File related constants
+- Database scheme names
+- Default port constants
 
 [netaddr](./netaddr/README.md)
 - Types representing remote IP addresses

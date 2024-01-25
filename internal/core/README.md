@@ -4,7 +4,8 @@ This package contains most the code for the Inox Runtime, the type checking logi
 
 
 <details>
-<summary>Code organization</summary>
+ 
+**<summary>Code organization</summary>**
 
 - Tree Walk Interpreter
     - [tree_walk.go](tree_walk.go)
@@ -20,7 +21,7 @@ This package contains most the code for the Inox Runtime, the type checking logi
     - [value.go](value.go)
     - [number.go](number.go)
     - [quantity.go](quantity.go)
-    - [mutable_data_structures.go](mutable_data_structures.go)
+    - [immutable_data_structures.go](immutable_data_structures.go)
     - [object.go](./object.go)
     - [dictionary.go](./dictionary.go)
     - [indexable.go](./indexable.go)
