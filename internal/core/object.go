@@ -26,11 +26,8 @@ type Object struct {
 }
 
 type additionalObjectFields struct {
-	txIsolator     StrongTransactionIsolator
 	implicitPropCount int
-
-	url        URL //can be empty
-	txIsolator TransactionIsolator
+	url               URL //can be empty
 
 	sysgraph SystemGraphPointer
 
@@ -38,6 +35,12 @@ type additionalObjectFields struct {
 	visibilityId VisibilityId
 
 	jobs *ValueLifetimeJobs //can be nil
+
+	//Locking and transaction related fields
+
+	lock SmartLock
+	//pendingChanges []pendingObjectEntryChange //only visible by the current read-write tx
+	txIsolator StrongTransactionIsolator //TODO: replace with LiteTransactionIsolator
 
 	//Watching related fields
 
@@ -309,37 +312,59 @@ func (obj *Object) PropNotStored(ctx *Context, name string) Value {
 	return obj.prop(ctx, name, false)
 }
 
-func (obj *Object) prop(ctx *Context, name string, stored bool) Value {
+func (obj *Object) prop(ctx *Context, name string, stored bool) (returnedValue Value) {
 	obj.waitForOtherTxsToTerminate(ctx, !stored)
 
 	closestState := ctx.GetClosestState()
 	obj.Lock(closestState)
 	defer obj.Unlock(closestState)
 
-	if obj.hasAdditionalFields() && obj.url != "" {
-		perm := DatabasePermission{
-			Kind_:  permkind.Read,
-			Entity: obj.url.ToDirURL().AppendRelativePath("./" + Path(name)),
-		}
-
-		if err := ctx.CheckHasPermission(perm); err != nil {
-			panic(err)
-		}
-	}
-
-	for i, key := range obj.keys {
-		if key == name {
-			v := obj.values[i]
-
-			if obj.IsShared() {
-				if stored {
-					return utils.Must(CheckSharedOrClone(v, map[uintptr]Clonable{}, 0)).(Serializable)
-				}
+	if obj.hasAdditionalFields() {
+		if obj.url != "" {
+			perm := DatabasePermission{
+				Kind_:  permkind.Read,
+				Entity: obj.url.ToDirURL().AppendRelativePath("./" + Path(name)),
 			}
-			return v
+
+			if err := ctx.CheckHasPermission(perm); err != nil {
+				panic(err)
+			}
+		}
+		// //If the current transaction is read-write we look at the pending changes
+		// //before checking the actual entries.
+		// if tx != nil && !tx.IsReadonly() {
+		// 	for _, change := range obj.pendingChanges {
+		// 		if change.key != name {
+		// 			continue
+		// 		}
+		// 		if change.isDeletion {
+		// 			panic(FormatErrPropertyDoesNotExist(name, obj))
+		// 		}
+		// 		returnedValue = change.value
+		// 		break
+		// 	}
+		// }
+	}
+
+	//Iterate over entries.
+	if returnedValue == nil {
+		for i, key := range obj.keys {
+			if key == name {
+				returnedValue = obj.values[i]
+				break
+			}
 		}
 	}
-	panic(FormatErrPropertyDoesNotExist(name, obj))
+
+	if returnedValue == nil {
+		panic(FormatErrPropertyDoesNotExist(name, obj))
+	}
+
+	if obj.IsShared() && stored {
+		returnedValue = utils.Must(CheckSharedOrClone(returnedValue, map[uintptr]Clonable{}, 0)).(Serializable)
+	}
+
+	return
 }
 
 func (obj *Object) SetProp(ctx *Context, name string, value Value) error {
@@ -349,7 +374,7 @@ func (obj *Object) SetProp(ctx *Context, name string, value Value) error {
 		return fmt.Errorf("value is not serializable")
 	}
 
-	obj.waitForOtherTxsToTerminate(ctx, false)
+	tx := obj.waitForOtherTxsToTerminate(ctx, false)
 
 	closestState := ctx.GetClosestState()
 
@@ -387,6 +412,47 @@ func (obj *Object) SetProp(ctx *Context, name string, value Value) error {
 		if err := ctx.CheckHasPermission(perm); err != nil {
 			return err
 		}
+	}
+
+	//If the object is an entity and we are in a transaction we update the pending changes instead of directly mutating the entries.
+	//If there is already a change for the entry we update it, else we add a new change.
+	if tx != nil && obj.hasURL() {
+		if tx.IsReadonly() {
+			//TODO: also prevent deep mutation
+			panic(fmt.Errorf("cannot mutate object (entity): %w", ErrEffectsNotAllowedInReadonlyTransaction))
+		}
+
+		// obj.ensureAdditionalFields()
+
+		// needToAddChange := true
+
+		// for i, change := range obj.pendingChanges {
+		// 	if change.key != name {
+		// 		continue
+		// 	}
+		// 	needToAddChange = false
+		// 	if change.isDeletion {
+		// 		obj.pendingChanges[i].isDeletion = false
+		// 		obj.pendingChanges[i].value = serializableVal
+		// 	} else {
+		// 		obj.pendingChanges[i].value = serializableVal
+		// 	}
+		// 	break
+		// }
+
+		// if needToAddChange {
+		// 	obj.pendingChanges = append(obj.pendingChanges, pendingObjectEntryChange{
+		// 		key:   name,
+		// 		value: serializableVal,
+		// 	})
+		// }
+
+		//TODO: on transaction rollback: remove all pending changes.
+		//TODO: on transaction validation (if constraints): apply changes, check constraints.
+		//If fail: reverse changes
+		//If success: inform watchers and call mutation callbacks
+		//if no constraints: apply changes on commit
+		//return nil
 	}
 
 	for i, key := range obj.keys {
@@ -624,6 +690,11 @@ func (obj *Object) URL() (URL, bool) {
 	return "", false
 }
 
+func (obj *Object) hasURL() bool {
+	_, ok := obj.URL()
+	return ok
+}
+
 func (obj *Object) SetURLOnce(ctx *Context, u URL) error {
 	closestState := ctx.GetClosestState()
 	obj.Lock(closestState)
@@ -677,4 +748,12 @@ func sortProps[V Value](keys []string, values []V) ([]string, []V, []int) {
 	}
 
 	return newKeys, newValues, newIndexes
+}
+
+// A pendingObjectEntryChange represents a change for a shared object's entry,
+// it is an update or a deletion.
+type pendingObjectEntryChange struct {
+	isDeletion bool //update if false
+	key        string
+	value      Serializable //nil if deletion
 }
