@@ -357,6 +357,7 @@ func registerHandlers(server *lsp.Server, serverConfig LSPServerConfiguration, p
 			}
 		}
 
+
 		formatted := formatInoxChunk(chunk, req.Options)
 		fullRange := rangeToLspRange(chunk.GetSourcePosition(chunk.Node.Span))
 

@@ -518,7 +518,21 @@ func TestFormat(t *testing.T) {
 				"html<div a=1></div>",
 			},
 		},
+
+		//single-line xml interpolations
+		{
+			{
+				"manifest {}",
+				"html<div>{1}</div>",
+			},
+			{
+				"manifest {}",
+				"html<div>{1}</div>",
+			},
+		},
 	}
+
+	formatter := formatter{}
 
 	for _, testCase := range cases {
 		chunk := utils.Must(parse.ParseChunkSource(parse.InMemorySource{
@@ -526,7 +540,7 @@ func TestFormat(t *testing.T) {
 			CodeString: strings.Join(testCase[0], "\n"),
 		}))
 
-		formatted := formatInoxChunk(chunk, defines.FormattingOptions{})
+		formatted := formatter.formatInoxChunk(chunk, defines.FormattingOptions{})
 		assert.Equal(t, strings.Join(testCase[1], "\n"), formatted)
 	}
 }
