@@ -1126,7 +1126,7 @@ top_switch:
 
 		switch node.Source.(type) {
 		case *parse.URLLiteral, *parse.AbsolutePathLiteral, *parse.RelativePathLiteral:
-			value, err := evalSimpleValueLiteral(node.Source.(parse.SimpleValueLiteral), nil)
+			value, err := EvalSimpleValueLiteral(node.Source.(parse.SimpleValueLiteral), nil)
 			if err != nil {
 				panic(ErrUnreachable)
 			}

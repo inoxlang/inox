@@ -89,7 +89,7 @@ func ResourceNameFrom(s string) ResourceName {
 
 	switch n.(type) {
 	case *parse.HostLiteral, *parse.AbsolutePathLiteral, *parse.RelativePathLiteral, *parse.URLLiteral:
-		return utils.Must(evalSimpleValueLiteral(n.(parse.SimpleValueLiteral), nil)).(ResourceName)
+		return utils.Must(EvalSimpleValueLiteral(n.(parse.SimpleValueLiteral), nil)).(ResourceName)
 	}
 
 	panic(fmt.Errorf("%q is not a valid resource name", s))

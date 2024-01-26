@@ -258,7 +258,7 @@ func (c *compiler) Compile(node parse.Node) error {
 	case *parse.FloatLiteral:
 		c.emit(node, OpPushConstant, c.addConstant(Float(node.Value)))
 	case *parse.PortLiteral:
-		value := utils.Must(evalSimpleValueLiteral(node, nil))
+		value := utils.Must(EvalSimpleValueLiteral(node, nil))
 		c.emit(node, OpPushConstant, c.addConstant(value))
 	case *parse.BooleanLiteral:
 		if node.Value {
@@ -271,7 +271,7 @@ func (c *compiler) Compile(node parse.Node) error {
 	case *parse.PropertyNameLiteral:
 		c.emit(node, OpPushConstant, c.addConstant(PropertyName(node.Name)))
 	case *parse.LongValuePathLiteral:
-		value := utils.Must(evalSimpleValueLiteral(node, nil))
+		value := utils.Must(EvalSimpleValueLiteral(node, nil))
 		c.emit(node, OpPushConstant, c.addConstant(value))
 	case *parse.YearLiteral:
 		c.emit(node, OpPushConstant, c.addConstant(Year(node.Value)))
@@ -1086,7 +1086,7 @@ func (c *compiler) Compile(node parse.Node) error {
 		for _, entry := range node.Entries {
 
 			if lit, ok := entry.Key.(parse.SimpleValueLiteral); ok && !utils.Implements[*parse.IdentifierLiteral](lit) {
-				key := utils.Must(evalSimpleValueLiteral(lit, &GlobalState{}))
+				key := utils.Must(EvalSimpleValueLiteral(lit, &GlobalState{}))
 				c.emit(node, OpPushConstant, c.addConstant(key))
 			} else {
 				if err := c.Compile(entry.Key); err != nil {

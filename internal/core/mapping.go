@@ -61,7 +61,7 @@ func NewMapping(expr *parse.MappingExpression, state *GlobalState) (*Mapping, er
 			var err error
 
 			if valueLit, ok := e.Key.(parse.SimpleValueLiteral); ok && !utils.Implements[*parse.IdentifierLiteral](valueLit) {
-				key, err = evalSimpleValueLiteral(valueLit, state)
+				key, err = EvalSimpleValueLiteral(valueLit, state)
 			} else {
 				//TODO: check has representation
 				key, err = resolvePattern(e.Key, state)
@@ -74,7 +74,7 @@ func NewMapping(expr *parse.MappingExpression, state *GlobalState) (*Mapping, er
 			mapping.keys[repr] = key.(Serializable)
 
 			if valueLit, ok := e.Value.(parse.SimpleValueLiteral); ok && !utils.Implements[*parse.IdentifierLiteral](valueLit) {
-				v, err := evalSimpleValueLiteral(valueLit, state)
+				v, err := EvalSimpleValueLiteral(valueLit, state)
 				if err != nil {
 					return nil, err
 				}
@@ -98,7 +98,7 @@ func NewMapping(expr *parse.MappingExpression, state *GlobalState) (*Mapping, er
 			var err error
 
 			if valueLit, ok := e.Key.(parse.SimpleValueLiteral); ok {
-				key, err = evalSimpleValueLiteral(valueLit, state)
+				key, err = EvalSimpleValueLiteral(valueLit, state)
 			} else {
 				//TODO: check has representation
 				key, err = resolvePattern(e.Key, state)

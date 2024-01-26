@@ -288,7 +288,7 @@ func fetchParseImportedModules(parentMod *Module, ctx *Context, fls afs.Filesyst
 
 		switch importStmt.Source.(type) {
 		case *parse.URLLiteral, *parse.AbsolutePathLiteral, *parse.RelativePathLiteral:
-			value, err := evalSimpleValueLiteral(importStmt.Source.(parse.SimpleValueLiteral), nil)
+			value, err := EvalSimpleValueLiteral(importStmt.Source.(parse.SimpleValueLiteral), nil)
 			if err != nil {
 				panic(err)
 			} else {

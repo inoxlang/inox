@@ -280,8 +280,8 @@ func resolvePattern(n parse.Node, state *GlobalState) (Value, error) {
 	}
 }
 
-// evalSimpleValueLiteral evalutes a SimpleValueLiteral node (except IdentifierLiteral because it is ambiguous)
-func evalSimpleValueLiteral(n parse.SimpleValueLiteral, global *GlobalState) (Serializable, error) {
+// EvalSimpleValueLiteral evalutes a SimpleValueLiteral node (except IdentifierLiteral because it is ambiguous)
+func EvalSimpleValueLiteral(n parse.SimpleValueLiteral, global *GlobalState) (Serializable, error) {
 	switch node := n.(type) {
 	case *parse.UnambiguousIdentifierLiteral:
 		return Identifier(node.Name), nil
@@ -290,7 +290,7 @@ func evalSimpleValueLiteral(n parse.SimpleValueLiteral, global *GlobalState) (Se
 	case *parse.LongValuePathLiteral:
 		var segments []ValuePathSegment
 		for _, segmentNode := range node.Segments {
-			segment, err := evalSimpleValueLiteral(segmentNode, global)
+			segment, err := EvalSimpleValueLiteral(segmentNode, global)
 			if err != nil {
 				return nil, err
 			}

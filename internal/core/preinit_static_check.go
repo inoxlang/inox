@@ -191,7 +191,7 @@ func checkManifestObject(args manifestStaticCheckArguments) {
 					switch k := key.(type) {
 					case *parse.InvalidURL:
 					case *parse.HostLiteral:
-						host := utils.Must(evalSimpleValueLiteral(k, nil)).(Host)
+						host := utils.Must(EvalSimpleValueLiteral(k, nil)).(Host)
 						fn, ok := staticallyCheckHostResolutionDataFnRegistry[host.Scheme()]
 						if ok {
 							errMsg := fn(args.project, entry.Value)
@@ -557,13 +557,13 @@ func checkDatabasesObject(
 					u, _ := url.Parse(res.Value)
 					if u != nil {
 						scheme = Scheme(u.Scheme)
-						resource = utils.Must(evalSimpleValueLiteral(res, nil)).(Host)
+						resource = utils.Must(EvalSimpleValueLiteral(res, nil)).(Host)
 					}
 				case *parse.URLLiteral:
 					u, _ := url.Parse(res.Value)
 					if u != nil {
 						scheme = Scheme(u.Scheme)
-						resource = utils.Must(evalSimpleValueLiteral(res, nil)).(URL)
+						resource = utils.Must(EvalSimpleValueLiteral(res, nil)).(URL)
 					}
 				default:
 					isValidDescription = false

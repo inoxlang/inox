@@ -1058,7 +1058,7 @@ func estimatePartialPermissionNodeValue(n parse.Node) (Serializable, bool) {
 	case *parse.IdentifierLiteral:
 		return nil, false
 	case parse.SimpleValueLiteral:
-		result, err := evalSimpleValueLiteral(node, nil)
+		result, err := EvalSimpleValueLiteral(node, nil)
 		if err != nil {
 			return nil, false
 		}

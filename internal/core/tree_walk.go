@@ -2968,7 +2968,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		}
 		return Str(selector.String()), nil
 	case parse.SimpleValueLiteral:
-		return evalSimpleValueLiteral(n, state.Global)
+		return EvalSimpleValueLiteral(n, state.Global)
 	case *parse.XMLExpression:
 		xmlElem, err := TreeWalkEval(n.Element, state)
 		if err != nil {

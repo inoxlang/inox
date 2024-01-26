@@ -18,7 +18,7 @@ func TestNilPrettyPrint(t *testing.T) {
 
 	assert.Equal(t, "nil", Stringify(Nil, ctx))
 	node := assertParseExpression(t, "nil")
-	assert.Equal(t, Nil, utils.Must(evalSimpleValueLiteral(node.(parse.SimpleValueLiteral), nil)))
+	assert.Equal(t, Nil, utils.Must(EvalSimpleValueLiteral(node.(parse.SimpleValueLiteral), nil)))
 }
 
 func TestBoolPrettyPrint(t *testing.T) {
@@ -27,7 +27,7 @@ func TestBoolPrettyPrint(t *testing.T) {
 
 	assert.Equal(t, "true", Stringify(True, ctx))
 	node := assertParseExpression(t, "true")
-	assert.Equal(t, True, utils.Must(evalSimpleValueLiteral(node.(parse.SimpleValueLiteral), nil)))
+	assert.Equal(t, True, utils.Must(EvalSimpleValueLiteral(node.(parse.SimpleValueLiteral), nil)))
 }
 
 func TestRunePrettyPrint(t *testing.T) {
@@ -36,7 +36,7 @@ func TestRunePrettyPrint(t *testing.T) {
 
 	assert.Equal(t, "'a'", Stringify(Rune('a'), ctx))
 	node := assertParseExpression(t, "'a'")
-	assert.Equal(t, Rune('a'), utils.Must(evalSimpleValueLiteral(node.(parse.SimpleValueLiteral), nil)))
+	assert.Equal(t, Rune('a'), utils.Must(EvalSimpleValueLiteral(node.(parse.SimpleValueLiteral), nil)))
 }
 
 func TestIntPrettyPrint(t *testing.T) {
@@ -45,7 +45,7 @@ func TestIntPrettyPrint(t *testing.T) {
 
 	assert.Equal(t, "2", Stringify(Int(2), ctx))
 	node := assertParseExpression(t, "2")
-	assert.Equal(t, Int(2), utils.Must(evalSimpleValueLiteral(node.(parse.SimpleValueLiteral), nil)))
+	assert.Equal(t, Int(2), utils.Must(EvalSimpleValueLiteral(node.(parse.SimpleValueLiteral), nil)))
 }
 
 func TestFloatPrettyPrint(t *testing.T) {
@@ -70,7 +70,7 @@ func TestFloatPrettyPrint(t *testing.T) {
 			assert.Equal(t, testCase.representation, repr)
 
 			node := assertParseExpression(t, repr)
-			assert.Equal(t, testCase.value, utils.Must(evalSimpleValueLiteral(node.(parse.SimpleValueLiteral), nil)))
+			assert.Equal(t, testCase.value, utils.Must(EvalSimpleValueLiteral(node.(parse.SimpleValueLiteral), nil)))
 		})
 	}
 }
@@ -85,7 +85,7 @@ func TestStrPrettyPrint(t *testing.T) {
 		expectedRepr := `"a\nb"`
 		assert.Equal(t, expectedRepr, Stringify(s, ctx))
 		node := assertParseExpression(t, expectedRepr)
-		assert.Equal(t, s, utils.Must(evalSimpleValueLiteral(node.(parse.SimpleValueLiteral), nil)))
+		assert.Equal(t, s, utils.Must(EvalSimpleValueLiteral(node.(parse.SimpleValueLiteral), nil)))
 	})
 
 	t.Run("html unsafe characters", func(t *testing.T) {
@@ -94,7 +94,7 @@ func TestStrPrettyPrint(t *testing.T) {
 		expectedRepr := `"<script></script>"`
 		assert.Equal(t, expectedRepr, Stringify(s, ctx))
 		node := assertParseExpression(t, expectedRepr)
-		assert.Equal(t, s, utils.Must(evalSimpleValueLiteral(node.(parse.SimpleValueLiteral), nil)))
+		assert.Equal(t, s, utils.Must(EvalSimpleValueLiteral(node.(parse.SimpleValueLiteral), nil)))
 	})
 }
 
@@ -705,7 +705,7 @@ func TestPathPrettyPrint(t *testing.T) {
 			assert.Equal(t, testCase.representation, Stringify(pth, ctx))
 
 			node := assertParseExpression(t, testCase.representation)
-			assert.Equal(t, pth, utils.Must(evalSimpleValueLiteral(node.(parse.SimpleValueLiteral), nil)))
+			assert.Equal(t, pth, utils.Must(EvalSimpleValueLiteral(node.(parse.SimpleValueLiteral), nil)))
 		})
 	}
 
@@ -733,7 +733,7 @@ func TestPathPatternPrettyPrint(t *testing.T) {
 			assert.Equal(t, testCase.representation, Stringify(patt, ctx))
 
 			node := assertParseExpression(t, testCase.representation)
-			assert.Equal(t, patt, utils.Must(evalSimpleValueLiteral(node.(parse.SimpleValueLiteral), nil)))
+			assert.Equal(t, patt, utils.Must(EvalSimpleValueLiteral(node.(parse.SimpleValueLiteral), nil)))
 		})
 	}
 
@@ -749,7 +749,7 @@ func TestURLPrettyPrint(t *testing.T) {
 	assert.Equal(t, expectedRepr, Stringify(url, ctx))
 
 	node := assertParseExpression(t, expectedRepr)
-	assert.Equal(t, url, utils.Must(evalSimpleValueLiteral(node.(parse.SimpleValueLiteral), nil)))
+	assert.Equal(t, url, utils.Must(EvalSimpleValueLiteral(node.(parse.SimpleValueLiteral), nil)))
 	//TODO: test more complex cases
 }
 
@@ -771,7 +771,7 @@ func TestURLPatternPrettyPrint(t *testing.T) {
 			assert.Equal(t, testCase.representation, Stringify(patt, ctx))
 
 			node := assertParseExpression(t, testCase.representation)
-			assert.Equal(t, patt, utils.Must(evalSimpleValueLiteral(node.(parse.SimpleValueLiteral), nil)))
+			assert.Equal(t, patt, utils.Must(EvalSimpleValueLiteral(node.(parse.SimpleValueLiteral), nil)))
 		})
 	}
 }
@@ -786,7 +786,7 @@ func TestHostPrettyPrint(t *testing.T) {
 	assert.Equal(t, expectedRepr, Stringify(host, ctx))
 
 	node := assertParseExpression(t, expectedRepr)
-	assert.Equal(t, host, utils.Must(evalSimpleValueLiteral(node.(parse.SimpleValueLiteral), nil)))
+	assert.Equal(t, host, utils.Must(EvalSimpleValueLiteral(node.(parse.SimpleValueLiteral), nil)))
 	//TODO: test more complex cases
 }
 
@@ -808,7 +808,7 @@ func TestHostPatternPrettyPrint(t *testing.T) {
 			assert.Equal(t, testCase.representation, Stringify(patt, ctx))
 
 			node := assertParseExpression(t, testCase.representation)
-			assert.Equal(t, patt, utils.Must(evalSimpleValueLiteral(node.(parse.SimpleValueLiteral), nil)))
+			assert.Equal(t, patt, utils.Must(EvalSimpleValueLiteral(node.(parse.SimpleValueLiteral), nil)))
 		})
 	}
 }
@@ -894,7 +894,7 @@ func TestByteCountPrettyPrint(t *testing.T) {
 			assert.Equal(t, testCase.representation, Stringify(testCase.value, ctx))
 
 			node := assertParseExpression(t, testCase.representation)
-			assert.Equal(t, testCase.value, utils.Must(evalSimpleValueLiteral(node.(parse.SimpleValueLiteral), nil)))
+			assert.Equal(t, testCase.value, utils.Must(EvalSimpleValueLiteral(node.(parse.SimpleValueLiteral), nil)))
 		})
 	}
 }
@@ -909,7 +909,7 @@ func TestLineCountPrettyPrint(t *testing.T) {
 	assert.Equal(t, expectedRepr, Stringify(n, ctx))
 
 	node := assertParseExpression(t, expectedRepr)
-	assert.Equal(t, n, utils.Must(evalSimpleValueLiteral(node.(parse.SimpleValueLiteral), nil)))
+	assert.Equal(t, n, utils.Must(EvalSimpleValueLiteral(node.(parse.SimpleValueLiteral), nil)))
 	//TODO: test more complex cases
 }
 
@@ -944,7 +944,7 @@ func TestByteRatePrettyPrint(t *testing.T) {
 			assert.Equal(t, testCase.representation, Stringify(testCase.value, ctx))
 
 			node := assertParseExpression(t, testCase.representation)
-			assert.Equal(t, testCase.value, utils.Must(evalSimpleValueLiteral(node.(parse.SimpleValueLiteral), nil)))
+			assert.Equal(t, testCase.value, utils.Must(EvalSimpleValueLiteral(node.(parse.SimpleValueLiteral), nil)))
 		})
 	}
 }
@@ -981,7 +981,7 @@ func TestFrequencyPrettyPrint(t *testing.T) {
 
 			node := assertParseExpression(t, testCase.expectedRepresentation)
 
-			evalResult := utils.Must(evalSimpleValueLiteral(node.(parse.SimpleValueLiteral), nil))
+			evalResult := utils.Must(EvalSimpleValueLiteral(node.(parse.SimpleValueLiteral), nil))
 			//TODO: determine why they aren't equal.
 			assert.InDeltaf(t, float64(testCase.value), float64(evalResult.(Frequency)), 1e-6, "should be equal")
 		})
@@ -1020,7 +1020,7 @@ func TestDurationPrettyPrint(t *testing.T) {
 			assert.Equal(t, testCase.representation, Stringify(testCase.value, ctx))
 
 			node := assertParseExpression(t, testCase.representation)
-			assert.Equal(t, testCase.value, utils.Must(evalSimpleValueLiteral(node.(parse.SimpleValueLiteral), nil)))
+			assert.Equal(t, testCase.value, utils.Must(EvalSimpleValueLiteral(node.(parse.SimpleValueLiteral), nil)))
 		})
 	}
 }
