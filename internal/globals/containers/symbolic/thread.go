@@ -114,11 +114,11 @@ func (*MessageThread) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.Pre
 }
 
 func (t *MessageThread) IteratorElementKey() symbolic.Value {
-	return symbolic.ANY
+	return symbolic.ANY_ULID
 }
 
-func (*MessageThread) IteratorElementValue() symbolic.Value {
-	return symbolic.ANY
+func (t *MessageThread) IteratorElementValue() symbolic.Value {
+	return t.element
 }
 
 func (*MessageThread) WidestOfType() symbolic.Value {

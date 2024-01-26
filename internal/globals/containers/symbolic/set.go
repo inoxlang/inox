@@ -204,7 +204,7 @@ func (s *Set) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrint
 }
 
 func (*Set) IteratorElementKey() symbolic.Value {
-	return symbolic.ANY
+	return symbolic.ANY_STR_LIKE
 }
 
 func (s *Set) IteratorElementValue() symbolic.Value {
