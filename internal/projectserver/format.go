@@ -20,6 +20,7 @@ type formatter struct {
 	depth           int
 	indentationUnit string
 	replacements    []replacement
+	allTokens       []parse.Token
 	seenTokens      map[parse.NodeSpan]struct{}
 }
 
@@ -42,6 +43,7 @@ func (f *formatter) formatInoxChunk(chunk *parse.ParsedChunkSource, options defi
 	f.source = chunk
 	f.replacements = nil
 	f.depth = 0
+	f.allTokens = parse.GetTokens(f.source.Node, f.source.Node, false)
 	f.seenTokens = map[parse.NodeSpan]struct{}{}
 	f.indentationUnit = "\t"
 
@@ -73,6 +75,11 @@ func (f *formatter) formatInoxChunk(chunk *parse.ParsedChunkSource, options defi
 }
 
 func (f *formatter) preVisitNode(node, parent, scopeNode parse.Node, ancestorChain []parse.Node, after bool) (parse.TraversalAction, error) {
+
+	if _, ok := node.(*parse.XMLExpression); ok {
+		return parse.Prune, nil
+	}
+
 	if needsIndentation(node, parent, ancestorChain) {
 		f.updateIndentation(node.Base().Span)
 		return parse.ContinueTraversal, nil
@@ -96,10 +103,12 @@ func (f *formatter) preVisitNode(node, parent, scopeNode parse.Node, ancestorCha
 			}
 		}
 
-		f.replacements = append(f.replacements, replacement{
-			span:    parse.NodeSpan{Start: int32(replacementStart), End: int32(replacementEnd)},
-			newText: "",
-		})
+		if replacementStart != replacementEnd {
+			f.replacements = append(f.replacements, replacement{
+				span:    parse.NodeSpan{Start: int32(replacementStart), End: int32(replacementEnd)},
+				newText: "",
+			})
+		}
 	}
 
 	return parse.ContinueTraversal, nil
@@ -111,9 +120,29 @@ func (f *formatter) postVisitNode(node, parent, scopeNode parse.Node, ancestorCh
 		f.depth--
 	}
 
-	tokens := parse.GetTokens(node, f.source.Node, false)
-	for _, token := range tokens {
+	nodeSpan := node.Base().Span
 
+	//Search the first token in the node.
+	startTokenIndex, ok := slices.BinarySearchFunc(f.allTokens, nodeSpan.Start, func(token parse.Token, spanStart int32) int {
+		return int(token.Span.Start) - int(spanStart)
+	})
+
+	if !ok {
+		return parse.ContinueTraversal, nil
+	}
+
+	//Search the first token after the node.
+	endTokenIndex, _ := slices.BinarySearchFunc(f.allTokens, nodeSpan.End, func(token parse.Token, spanEnd int32) int {
+		return int(token.Span.Start) - int(spanEnd)
+	})
+
+	//no issue if endTokenIndex == 1 + max index
+
+	//TODO: optimize
+
+	tokens := f.allTokens[startTokenIndex:endTokenIndex]
+
+	for _, token := range tokens {
 		_, ok := f.seenTokens[token.Span]
 		if ok {
 			continue
@@ -121,7 +150,23 @@ func (f *formatter) postVisitNode(node, parent, scopeNode parse.Node, ancestorCh
 		f.seenTokens[token.Span] = struct{}{}
 
 		switch token.Type {
-		case parse.CLOSING_BRACKET, parse.CLOSING_PARENTHESIS, parse.CLOSING_CURLY_BRACKET:
+		case parse.OPENING_CURLY_BRACKET:
+			switch token.SubType {
+			case 0:
+				fallthrough
+			case parse.BLOCK_OPENING_BRACE, parse.OBJECT_LIKE_OPENING_BRACE:
+				f.updateIndentation(token.Span)
+			default:
+			}
+		case parse.CLOSING_CURLY_BRACKET:
+			switch token.SubType {
+			case 0:
+				fallthrough
+			case parse.BLOCK_CLOSING_BRACE, parse.OBJECT_LIKE_CLOSING_BRACE:
+				f.updateIndentation(token.Span)
+			default:
+			}
+		case parse.CLOSING_PARENTHESIS, parse.OPENING_BRACKET, parse.CLOSING_BRACKET:
 			f.updateIndentation(token.Span)
 		case parse.COLON:
 			switch node.(type) {
@@ -215,7 +260,7 @@ func needsIndentation(n parse.Node, parent parse.Node, ancestors []parse.Node) b
 	}
 
 	switch parent.(type) {
-	case *parse.Block, *parse.EmbeddedModule:
+	case *parse.Block, *parse.ListLiteral, *parse.TupleLiteral, *parse.EmbeddedModule:
 		return true
 	}
 

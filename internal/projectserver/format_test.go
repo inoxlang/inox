@@ -267,6 +267,22 @@ func TestFormat(t *testing.T) {
 			},
 		},
 
+		//list literal
+		{
+			{
+				"manifest {}",
+				"[",
+				"1",
+				"]",
+			},
+			{
+				"manifest {}",
+				"[",
+				"\t1",
+				"]",
+			},
+		},
+
 		//switch
 		{
 			{
@@ -530,6 +546,62 @@ func TestFormat(t *testing.T) {
 				"html<div>{1}</div>",
 			},
 		},
+
+		//multi-line xml interpolations should not be updated
+		{
+			{
+				"manifest {}",
+				"html<div>",
+				"{",
+				"1",
+				"}",
+				"</div>",
+			},
+			{
+				"manifest {}",
+				"html<div>",
+				"{",
+				"1",
+				"}",
+				"</div>",
+			},
+		},
+		{
+			{
+				"manifest {}",
+				"html<div>",
+				"\t{",
+				"\t1",
+				"\t}",
+				"</div>",
+			},
+			{
+				"manifest {}",
+				"html<div>",
+				"\t{",
+				"\t1",
+				"\t}",
+				"</div>",
+			},
+		},
+		{
+			{
+				"manifest {}",
+				"html<div>",
+				"{",
+				"\t1",
+				"}",
+				"</div>",
+			},
+			{
+				"manifest {}",
+				"html<div>",
+				"{",
+				"\t1",
+				"}",
+				"</div>",
+			},
+		},
 	}
 
 	formatter := formatter{}
@@ -541,6 +613,8 @@ func TestFormat(t *testing.T) {
 		}))
 
 		formatted := formatter.formatInoxChunk(chunk, defines.FormattingOptions{})
-		assert.Equal(t, strings.Join(testCase[1], "\n"), formatted)
+		if !assert.Equal(t, strings.Join(testCase[1], "\n"), formatted) {
+			formatter.formatInoxChunk(chunk, defines.FormattingOptions{})
+		}
 	}
 }
