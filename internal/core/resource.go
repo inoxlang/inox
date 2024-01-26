@@ -1371,12 +1371,7 @@ func (patt URLPattern) UnderlyingString() string {
 }
 
 func (patt URLPattern) Host() Host {
-	scheme, partAfterScheme, ok := strings.Cut(string(patt), "://")
-
-	if !ok || scheme == "" || partAfterScheme == "" {
-		panic(fmt.Errorf("%w: %s", ErrInvalidURLPattern, string(patt)))
-	}
-
+	_, partAfterScheme := patt.cutScheme()
 	indexOfPartAfterScheme := strings.Index(string(patt), "://") + 3
 	hostEndIndex := strings.IndexAny(partAfterScheme, "/?#")
 
@@ -1395,6 +1390,32 @@ func (patt URLPattern) Scheme() Scheme {
 		panic(fmt.Errorf("%w: %s", ErrInvalidURLPattern, string(patt)))
 	}
 	return Scheme(scheme)
+}
+
+func (patt URLPattern) cutScheme() (string, string) {
+	scheme, partAfterScheme, ok := strings.Cut(string(patt), "://")
+
+	if !ok || scheme == "" || partAfterScheme == "" {
+		panic(fmt.Errorf("%w: %s", ErrInvalidURLPattern, string(patt)))
+	}
+
+	return scheme, partAfterScheme
+}
+
+func (patt URLPattern) PseudoPath() (string, bool) {
+	_, partAfterScheme := patt.cutScheme()
+
+	pathIndex := strings.Index(partAfterScheme, "/")
+	if pathIndex < 0 {
+		return "", false
+	}
+
+	pathEndIndex := strings.IndexAny(partAfterScheme, "?#")
+	if pathEndIndex < 0 {
+		pathEndIndex = len(partAfterScheme)
+	}
+
+	return partAfterScheme[pathIndex:pathEndIndex], true
 }
 
 func (patt URLPattern) IsPrefixPattern() bool {
