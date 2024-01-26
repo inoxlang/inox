@@ -1158,6 +1158,7 @@ func (sh *shell) handleAction(action termAction) (stop bool) {
 				for _, warning := range symbolicData.Warnings() {
 					fmt.Fprint(sh.preOut, warning.LocatedMessage, "\n")
 				}
+				fmt.Fprint(sh.preOut, "The command has not been executed, warnings will be ignored if the next command is identical.\n")
 				sh.promptLen = printPrompt(sh.preOut, sh.state, sh.config)
 			} else {
 				//TODO: delete useless data in order to reduce memory usage
