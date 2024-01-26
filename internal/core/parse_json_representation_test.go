@@ -496,6 +496,17 @@ func TestParseJSONRepresentation(t *testing.T) {
 			assert.Equal(t, URL("ldb://main/users/0"), url)
 		}
 
+		//database URLs should be cleaned.
+		obj, err = ParseJSONRepresentation(ctx, `{"object__value":{"_url_":"ldb://main/users/0?x=1"}}`, nil)
+		if assert.NoError(t, err) {
+			assert.Equal(t, map[string]Value{}, obj.(*Object).ValueEntryMap(nil))
+		}
+
+		url, ok = obj.(*Object).URL()
+		if assert.True(t, ok) {
+			assert.Equal(t, URL("ldb://main/users/0"), url)
+		}
+
 		obj, err = ParseJSONRepresentation(ctx, `{"object__value":{"_x_":"0"}}`, nil)
 		if assert.ErrorIs(t, err, ErrNonSupportedMetaProperty) {
 			assert.Nil(t, obj)

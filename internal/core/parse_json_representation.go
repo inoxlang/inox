@@ -446,7 +446,16 @@ func ParseObjectJSONrepresentation(ctx *Context, it *jsoniter.Iterator, pattern 
 
 		if key == URL_METADATA_KEY {
 			obj.ensureAdditionalFields()
-			obj.url = URL(currentIt.ReadString())
+			url := URL(currentIt.ReadString())
+			if err := url.Validate(); err != nil {
+				finalErr = fmt.Errorf("invalid URL: %w", err)
+			}
+
+			if url.Scheme().IsDatabaseScheme() {
+				url = url.WithoutQueryNorFragment()
+			}
+
+			obj.url = url
 			return true
 		}
 
