@@ -1,8 +1,11 @@
 # Collections
 
-**⚠️ The current implementations are work in progress. Performance will be improved in the future.**
+**⚠️ The current implementations are work in progress. Performance will be
+improved in the future.**
 
 - [Set](#set)
+- [Map](#map)
+- [MessageThread](#message-thread)
 
 Inox collections can be either **persistable** or **transient**.
 
@@ -19,6 +22,29 @@ A **Set** is an unordered collection with no duplicate elements. Several
 - [Representation](#representation-uniqueness) (default)
 - [Property value](#property-value-uniqueness)
 - [URL](#url-uniqueness)
+
+### Methods
+
+The `add` method adds an element to the set. Adding the **exact same element**
+twice or more is allowed.
+
+```
+set = Set([])
+set.add(1)
+```
+
+The `remove` method removes an element from the set. It is safe to pass a value
+that is not part of the set (nothing will happen).
+
+```
+set.remove(1)
+```
+
+The `has` method tells whether the argument is an element of the set.
+
+```
+boolean = set.has(1)
+```
 
 ### Representation Uniqueness
 
@@ -63,10 +89,11 @@ set.add(1)
 
 #### Transaction and Locking
 
-In the representation uniqueness configuration, read-write transactions have to acquire the
-set in order to interact with it. Other read-write transactions have to **wait** for the
-previous transaction to finish before attempting to acquire the set. Readonly transactions
-can read the Set while it is not acquired by a read-write transaction.
+In the representation uniqueness configuration, read-write transactions have to
+acquire the set in order to interact with it. Other read-write transactions have
+to **wait** for the previous transaction to finish before attempting to acquire
+the set. Readonly transactions can read the Set while it is not acquired by a
+read-write transaction.
 
 ### Property Value Uniqueness
 
@@ -91,10 +118,11 @@ set.add(other_user) # runtime error
 
 #### Transaction and Locking
 
-In the property-value uniqueness configuration, read-write transactions have to acquire the
-set in order to interact with it. Other read-write transactions have to **wait** for the
-previous transaction to finish before attempting to acquire the set. Readonly transactions
-can read the Set while it is not acquired by a read-write transaction.
+In the property-value uniqueness configuration, read-write transactions have to
+acquire the set in order to interact with it. Other read-write transactions have
+to **wait** for the previous transaction to finish before attempting to acquire
+the set. Readonly transactions can read the Set while it is not acquired by a
+read-write transaction.
 
 ### URL Uniqueness
 
@@ -127,12 +155,98 @@ set.add(user2) # no error
 (temporary)
 
 In the URL uniqueness configuration, read-write transactions have to acquire the
-set in order to interact with it. Other read-write transactions have to **wait** for the
-previous transaction to finish before attempting to acquire the set. Readonly transactions
-can read the Set while it is not acquired by a read-write transaction.
+set in order to interact with it. Other read-write transactions have to **wait**
+for the previous transaction to finish before attempting to acquire the set.
+Readonly transactions can read the Set while it is not acquired by a read-write
+transaction.
 
 (future)
 
-Read-write transactions will be able to add (create) elements without having to acquire the Set.
-The set uses ULIDs as identifiers for elements, so it's virtually impossible for different transactions
-running at the same time to add the same element.
+Read-write transactions will be able to add (create) elements without having to
+acquire the Set. The set uses ULIDs as identifiers for elements, so it's
+virtually impossible for different transactions running at the same time to add
+the same element.
+
+## Map
+
+- **Persistable**
+- **Sharable**
+- **Unique keys**
+- **Serializable elements only**
+
+A **Map** is an unordered collection with key-value pairs, keys are unique and
+immutable.
+
+```
+map = Map(["A", 1, "B", 2], {key: %str, value: %int})
+
+map.set("C", 3)
+```
+
+### Methods
+
+The `insert` method creates a new entry in the map. If the entry (same key) already exists
+the function panics.
+
+```
+map = Map([])
+map.insert('a', 1)
+
+# panic
+set.insert('a', 1)
+```
+
+The `set` method creates or update an entry. 
+
+```
+map = Map([])
+map.set('a', 1)
+map.set('a', 1) # allowed
+map.set('a', 2) # allowed
+```
+
+The `remove` method removes an entry by its key. 
+
+```
+map.remove('a')
+```
+
+The `get` method returns the value of an entry.
+
+```
+map.set('a', 1)
+one = map.get('a')
+```
+
+## Message Thread
+
+- **Persistable**
+- **Sharable**
+- **Object elements only**
+
+A **Message Thread** is a thread of 'messages'. A message can have any (object) type: it can represent a regular message, an email or a notification.
+
+**Message threads can only be created in databases, there is no factory function or constructor that you can call.**
+
+### Methods
+
+The `add` method adds a message to the thread and gives it a database URL.
+
+```
+pattern message = {
+    text: string
+}
+
+pattern db-schema = {
+    thread: MessageThread(message)
+}
+
+...
+
+message = {
+    text: "hello"
+}
+
+dbs.main.thread.add(message)
+```
+
