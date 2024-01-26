@@ -267,6 +267,22 @@ func TestURLPattern(t *testing.T) {
 		assert.False(t, URLPattern("https://localhost:443/ab/...").Includes(nil, URLPattern("https://localhost:443/...")))
 		assert.True(t, URLPattern("https://localhost:443/ab/...").Includes(nil, URLPattern("https://localhost:443/ab/c/...")))
 	})
+
+	t.Run("Scheme", func(t *testing.T) {
+		assert.EqualValues(t, "https", URLPattern("https://localhost/").Scheme())
+		assert.EqualValues(t, "https", URLPattern("https://localhost:443/").Scheme())
+		assert.EqualValues(t, "https", URLPattern("https://localhost/...").Scheme())
+		assert.EqualValues(t, "https", URLPattern("https://localhost/%ulid").Scheme())
+	})
+
+	t.Run("Host", func(t *testing.T) {
+		assert.EqualValues(t, "https://localhost", URLPattern("https://localhost/").Host())
+		assert.EqualValues(t, "https://localhost", URLPattern("https://localhost/...").Host())
+		assert.EqualValues(t, "https://localhost", URLPattern("https://localhost#fragment").Host())
+		assert.EqualValues(t, "https://localhost", URLPattern("https://localhost?q=a").Host())
+		assert.EqualValues(t, "https://localhost:443", URLPattern("https://localhost:443/").Host())
+		assert.EqualValues(t, "https://localhost", URLPattern("https://localhost/%ulid").Host())
+	})
 }
 
 func TestPathPattern(t *testing.T) {

@@ -62,6 +62,8 @@ var (
 	ErrMissingURLSpecificFeature = errors.New("missing URL-specific feature in URL (path, query or fragment)")
 	ErrTestedURLTooLarge         = errors.New("tested URL is too large")
 
+	ErrInvalidURLPattern = errors.New("invalid URL pattern")
+
 	ErrTestedHostPatternTooLarge = errors.New("tested host pattern is too large")
 
 	ErrEmptyHost   = errors.New("empty host")
@@ -1368,9 +1370,31 @@ func (patt URLPattern) UnderlyingString() string {
 	return string(patt)
 }
 
+func (patt URLPattern) Host() Host {
+	scheme, partAfterScheme, ok := strings.Cut(string(patt), "://")
+
+	if !ok || scheme == "" || partAfterScheme == "" {
+		panic(fmt.Errorf("%w: %s", ErrInvalidURLPattern, string(patt)))
+	}
+
+	indexOfPartAfterScheme := strings.Index(string(patt), "://") + 3
+	hostEndIndex := strings.IndexAny(partAfterScheme, "/?#")
+
+	if hostEndIndex < 0 { //no difference with a host pattern.
+		panic(fmt.Errorf("%w: %s", ErrInvalidURLPattern, string(patt)))
+	}
+
+	hostEndIndex += indexOfPartAfterScheme
+
+	return Host(patt[:hostEndIndex])
+}
+
 func (patt URLPattern) Scheme() Scheme {
-	url, _ := url.Parse(string(patt))
-	return Scheme(url.Scheme)
+	scheme, _, ok := strings.Cut(string(patt), "://")
+	if !ok || scheme == "" {
+		panic(fmt.Errorf("%w: %s", ErrInvalidURLPattern, string(patt)))
+	}
+	return Scheme(scheme)
 }
 
 func (patt URLPattern) IsPrefixPattern() bool {
