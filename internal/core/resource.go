@@ -20,6 +20,7 @@ import (
 	emailnormalizer "github.com/dimuska139/go-email-normalizer"
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/mimeconsts"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
@@ -30,6 +31,9 @@ const (
 	ANY_HTTPS_HOST_PATTERN = HostPattern("https://**")
 	NO_SCHEME_SCHEME_NAME  = Scheme("noscheme")
 	NO_SCHEME_SCHEME       = string(NO_SCHEME_SCHEME_NAME + "://")
+
+	LDB_SCHEME = Scheme(inoxconsts.LDB_SCHEME_NAME)
+	ODB_SCHEME = Scheme(inoxconsts.ODB_SCHEME_NAME)
 
 	// PATH_MAX on linux
 	MAX_TESTED_PATH_BYTE_LENGTH = 4095
@@ -1057,6 +1061,10 @@ func (s Scheme) Validate() error {
 		return ErrUnexpectedCharsInScheme
 	}
 	return nil
+}
+
+func (s Scheme) IsDatabaseScheme() bool {
+	return s == LDB_SCHEME || s == ODB_SCHEME
 }
 
 // A Host is composed of the following parts: [<scheme>] '://' <hostname> [':' <port>].

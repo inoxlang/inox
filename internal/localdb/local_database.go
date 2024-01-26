@@ -14,7 +14,6 @@ import (
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/filekv"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
-	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/rs/zerolog"
@@ -25,7 +24,6 @@ const (
 
 	DB_KV_FILE   = "db.bbolt"
 	META_KV_FILE = "meta.buntdb"
-	LDB_SCHEME   = core.Scheme(inoxconsts.LDB_SCHEME_NAME)
 
 	OS_DB_DIR = 0700
 )
@@ -40,7 +38,7 @@ var (
 )
 
 func init() {
-	core.RegisterOpenDbFn(LDB_SCHEME, func(ctx *core.Context, config core.DbOpenConfiguration) (core.Database, error) {
+	core.RegisterOpenDbFn(core.LDB_SCHEME, func(ctx *core.Context, config core.DbOpenConfiguration) (core.Database, error) {
 		return OpenDatabase(ctx, config.Resource, !config.FullAccess)
 	})
 
@@ -52,8 +50,8 @@ func init() {
 
 		return ""
 	}
-	core.RegisterStaticallyCheckDbResolutionDataFn(LDB_SCHEME, checkResolutionData)
-	core.RegisterStaticallyCheckHostResolutionDataFn(LDB_SCHEME, func(optionalProject core.Project, node parse.Node) (errorMsg string) {
+	core.RegisterStaticallyCheckDbResolutionDataFn(core.LDB_SCHEME, checkResolutionData)
+	core.RegisterStaticallyCheckHostResolutionDataFn(core.LDB_SCHEME, func(optionalProject core.Project, node parse.Node) (errorMsg string) {
 		return checkResolutionData(node, nil)
 	})
 }
@@ -84,7 +82,7 @@ func OpenDatabase(ctx *core.Context, r core.ResourceName, restrictedAccess bool)
 	var host core.Host
 	switch resource := r.(type) {
 	case core.Host:
-		if resource.Scheme() != LDB_SCHEME {
+		if resource.Scheme() != core.LDB_SCHEME {
 			return nil, core.ErrCannotResolveDatabase
 		}
 		switch data := ctx.GetHostResolutionData(resource).(type) {
@@ -102,7 +100,7 @@ func OpenDatabase(ctx *core.Context, r core.ResourceName, restrictedAccess bool)
 		return nil, core.ErrCannotResolveDatabase
 	}
 
-	if host.Scheme() != LDB_SCHEME || host.ExplicitPort() >= 0 {
+	if host.Scheme() != core.LDB_SCHEME || host.ExplicitPort() >= 0 {
 		return nil, core.ErrInvalidDatabaseHost
 	}
 
