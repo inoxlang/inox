@@ -3,12 +3,16 @@ package codecompletion
 import (
 	"path"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/projectserver/lsp/defines"
 
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
+	"github.com/inoxlang/inox/internal/globals/globalnames"
 
 	"github.com/inoxlang/inox/internal/globals/s3_ns"
 	"github.com/inoxlang/inox/internal/utils"
@@ -58,12 +62,16 @@ func findPathCompletions(ctx *core.Context, pth string) []Completion {
 	return completions
 }
 
-func findURLCompletions(ctx *core.Context, u core.URL, parent parse.Node) []Completion {
-	var completions []Completion
+func findURLCompletions(ctx *core.Context, node *parse.URLLiteral, search completionSearch) (completions []Completion) {
 
+	res, err := core.EvalSimpleValueLiteral(node, nil)
+	if err != nil {
+		return
+	}
+	u := res.(core.URL)
 	urlString := string(u)
 
-	if call, ok := parent.(*parse.CallExpression); ok {
+	if call, ok := search.parent.(*parse.CallExpression); ok {
 
 		var S3_FNS = []string{"get", "delete", "ls"}
 
@@ -94,7 +102,108 @@ func findURLCompletions(ctx *core.Context, u core.URL, parent parse.Node) []Comp
 		}
 	}
 
+	globalState := search.state.Global
+
+	switch string(u.Scheme()) {
+	case inoxconsts.LDB_SCHEME_NAME:
+		dbHost := u.Host()
+		dbName := dbHost.Name()
+		path := string(u.Path())
+
+		data, ok := globalState.SymbolicData.GetGlobalScopeData(node, search.ancestorChain)
+		if !ok {
+			return
+		}
+
+		var db *symbolic.DatabaseIL
+
+		for _, variable := range data.Variables {
+			if variable.Name == globalnames.DATABASES {
+				ns, ok := variable.Value.(*symbolic.Namespace)
+				if !ok {
+					return
+				}
+				if !slices.Contains(ns.PropertyNames(), dbName) {
+					return
+				}
+				db = ns.Prop(dbName).(*symbolic.DatabaseIL)
+			}
+		}
+
+		if db == nil {
+			return
+		}
+
+		for _, path := range db.GetPseudoPathCompletions(path, true) {
+			urlPattern := string(dbHost) + path
+			completions = append(completions, Completion{
+				ShownString: urlPattern,
+				Value:       urlPattern,
+				Kind:        defines.CompletionItemKindText,
+			})
+		}
+	}
+
 	return completions
+}
+
+func findURLPatternCompletions(ctx *core.Context, node *parse.URLPatternLiteral, search completionSearch) (completions []Completion) {
+	globalState := search.state.Global
+
+	res, err := core.EvalSimpleValueLiteral(node, nil)
+	if err != nil {
+		return
+	}
+	p := res.(core.URLPattern)
+
+	switch string(p.Scheme()) {
+	case inoxconsts.LDB_SCHEME_NAME:
+		dbHost := p.Host()
+		dbName := dbHost.Name()
+
+		pseudoPath, ok := p.PseudoPath()
+		if !ok {
+			return
+		}
+
+		data, ok := globalState.SymbolicData.GetGlobalScopeData(node, search.ancestorChain)
+		if !ok {
+			return
+		}
+
+		var db *symbolic.DatabaseIL
+
+		for _, variable := range data.Variables {
+			if variable.Name == globalnames.DATABASES {
+				ns, ok := variable.Value.(*symbolic.Namespace)
+				if !ok {
+					return
+				}
+				if !slices.Contains(ns.PropertyNames(), dbName) {
+					return
+				}
+				db = ns.Prop(dbName).(*symbolic.DatabaseIL)
+			}
+		}
+
+		if db == nil {
+			return
+		}
+
+		//TODO: determine why vscode does not show completions ending with '/*'.
+		//TODO: determine why vscode does not show completions if the segment written by the user has more that one character.
+
+		for _, path := range db.GetPseudoPathCompletions(pseudoPath, true) {
+			urlPattern := "%" + string(dbHost) + path
+			completions = append(completions, Completion{
+				ShownString: urlPattern,
+				Value:       urlPattern,
+				Kind:        defines.CompletionItemKindText,
+			})
+		}
+	}
+
+	return
 }
 
 func findHostCompletions(ctx *core.Context, prefix string, parent parse.Node) []Completion {

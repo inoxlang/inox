@@ -160,7 +160,9 @@ func FindCompletions(args SearchArgs) []Completion {
 	case *parse.AbsolutePathLiteral:
 		completions = findPathCompletions(state.Global.Ctx, n.Raw)
 	case *parse.URLLiteral:
-		completions = findURLCompletions(state.Global.Ctx, core.URL(n.Value), _parent)
+		completions = findURLCompletions(state.Global.Ctx, n, search)
+	case *parse.URLPatternLiteral:
+		completions = findURLPatternCompletions(state.Global.Ctx, n, search)
 	case *parse.HostLiteral:
 		completions = findHostCompletions(state.Global.Ctx, n.Value, _parent)
 	case *parse.SchemeLiteral:

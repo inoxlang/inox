@@ -160,9 +160,10 @@ func (db *DatabaseIL) getValueAt(pathOrPattern string) (Serializable, error) {
 			i++
 		} else if collection, ok := result.(Collection); ok {
 			result = collection.IteratorElementValue().(Serializable)
-		} else {
+		} else { //segment is an index or a property name.
 			indexable, ok := result.(Indexable)
-			if ok && '0' <= segment[0] && segment[0] <= '9' {
+
+			if ok && '0' <= segment[0] && segment[0] <= '9' { //maybe an index.
 				index, err := strconv.ParseInt(segment, 10, 32)
 				if err != nil {
 					goto not_an_index
@@ -216,6 +217,138 @@ func (db *DatabaseIL) getValueAt(pathOrPattern string) (Serializable, error) {
 		return nil, err
 	}
 	return result, nil
+}
+
+func (db *DatabaseIL) GetPseudoPathCompletions(pseudoPath string, isPattern bool) (completions []string) {
+	if pseudoPath == "" || pseudoPath[0] != '/' {
+		return
+	}
+
+	i := 0
+	var result Serializable
+	currentPath := "/"
+
+	stop := errors.New("")
+
+	pathutils.ForEachAbsolutePathSegment(pseudoPath, func(segment string, segmentStartIndex, segmentEndIndex int) (err error) {
+		isLastSegment := len(pseudoPath) == segmentEndIndex
+		dir := pseudoPath[:segmentStartIndex]
+
+		nextPath := currentPath
+		if currentPath == "/" {
+			nextPath += segment
+		} else {
+			nextPath += "/" + segment
+		}
+
+		defer func() {
+			if err == nil {
+				currentPath = nextPath
+			}
+		}()
+
+		if i == 0 {
+			if isLastSegment {
+				for name := range db.topLevelEntities {
+					completions = append(completions, dir+name)
+				}
+			}
+
+			entity, ok := db.topLevelEntities[segment]
+			if !ok {
+				return stop
+			}
+			result = entity
+			i++
+		} else if collection, ok := result.(Collection); ok {
+			if isLastSegment && isPattern {
+				completions = append(completions, dir+"*")
+			}
+
+			var ok bool
+			result, ok = collection.IteratorElementValue().(Serializable)
+			if !ok {
+				return stop
+			}
+		} else { //segment is an index or a property name.
+			indexable, ok := result.(Indexable)
+
+			if ok && '0' <= segment[0] && segment[0] <= '9' { //maybe an index.
+				if ok && isPattern {
+					completions = append(completions, dir+"*")
+				}
+
+				index, err := strconv.ParseInt(segment, 10, 32)
+				if err != nil {
+					goto not_an_index
+				}
+				intIndex := intconv.MustI64ToI(index)
+
+				if indexable.HasKnownLen() {
+					length := indexable.KnownLen()
+					isInvalidIndex := intIndex >= length || intIndex < 0
+
+					if isInvalidIndex && !isLastSegment {
+						return stop
+					}
+
+					if isLastSegment {
+						//Suggest all indexes.
+
+						if length > 20 {
+							//Avoid sending too many completions.
+							return stop
+						}
+
+						for index := 0; index < length; index++ {
+							completions = append(completions, dir+strconv.Itoa(index))
+						}
+
+						return nil
+					}
+
+					elem, ok := indexable.ElementAt(intIndex).(Serializable)
+					if !ok {
+						return stop
+					}
+					result = elem
+				}
+				return nil
+			}
+
+		not_an_index:
+			iprops, ok := result.(IProps)
+			if !ok {
+				return stop
+			}
+			names := iprops.PropertyNames()
+
+			if isLastSegment {
+				//Suggest all property names
+
+				for _, name := range names {
+					completions = append(completions, dir+name)
+				}
+			}
+
+			if !slices.Contains(names, segment) {
+				return stop
+			}
+
+			result, ok = iprops.Prop(segment).(Serializable)
+			if !ok {
+				return stop
+			}
+			switch result.(type) {
+			case *InoxFunction:
+				return stop
+			}
+			return nil
+		}
+
+		return nil
+	})
+	return
 }
 
 func (db *DatabaseIL) UpdateSchema(ctx *Context, schema *ObjectPattern, additionalArgs ...*Object) {
