@@ -271,6 +271,62 @@ func TestURL(t *testing.T) {
 			}
 		})
 	})
+
+	t.Run("TruncatedBeforeQuery", func(t *testing.T) {
+		u := URL("https://example.com/")
+		assert.Equal(t, u, u.TruncatedBeforeQuery())
+
+		u = URL("https://example.com/a")
+		assert.Equal(t, u, u.TruncatedBeforeQuery())
+
+		u = URL("https://example.com/?")
+		assert.Equal(t, URL("https://example.com/"), u.TruncatedBeforeQuery())
+
+		//A path should be added if there is no remaining URL-specific feature.
+		u = URL("https://example.com?")
+		assert.Equal(t, URL("https://example.com/"), u.TruncatedBeforeQuery())
+
+		u = URL("https://example.com/?#")
+		assert.Equal(t, URL("https://example.com/"), u.TruncatedBeforeQuery())
+
+		u = URL("https://example.com?#")
+		assert.Equal(t, URL("https://example.com/"), u.TruncatedBeforeQuery())
+
+		u = URL("https://example.com/#")
+		assert.Equal(t, URL("https://example.com/#"), u.TruncatedBeforeQuery())
+
+		u = URL("https://example.com#")
+		assert.Equal(t, URL("https://example.com#"), u.TruncatedBeforeQuery())
+	})
+
+	t.Run("WithoutQueryNorFragment", func(t *testing.T) {
+		u := URL("https://example.com/")
+		assert.Equal(t, u, u.WithoutQueryNorFragment())
+
+		u = URL("https://example.com/a")
+		assert.Equal(t, u, u.WithoutQueryNorFragment())
+
+		u = URL("https://example.com/?")
+		assert.Equal(t, URL("https://example.com/"), u.WithoutQueryNorFragment())
+
+		//A path should be added if there is no remaining URL-specific feature.
+		u = URL("https://example.com?")
+		assert.Equal(t, URL("https://example.com/"), u.WithoutQueryNorFragment())
+
+		u = URL("https://example.com/?#")
+		assert.Equal(t, URL("https://example.com/"), u.WithoutQueryNorFragment())
+
+		//A path should be added if there is no remaining URL-specific feature.
+		u = URL("https://example.com?#")
+		assert.Equal(t, URL("https://example.com/"), u.WithoutQueryNorFragment())
+
+		u = URL("https://example.com/#")
+		assert.Equal(t, URL("https://example.com/"), u.WithoutQueryNorFragment())
+
+		//A path should be added if there is no remaining URL-specific feature.
+		u = URL("https://example.com#")
+		assert.Equal(t, URL("https://example.com/"), u.WithoutQueryNorFragment())
+	})
 }
 
 func TestAppendPathSegmentToURLPattern(t *testing.T) {

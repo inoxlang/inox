@@ -784,7 +784,7 @@ func (u URL) Validate() error {
 	if u == "" {
 		return ErrEmptyURL
 	}
-	withoutFragment := string(u.withoutFragment())
+	withoutFragment := u.withoutFragment()
 
 	parsed, err := url.ParseRequestURI(withoutFragment)
 	if err != nil {
@@ -813,14 +813,6 @@ func (u URL) Validate() error {
 		return ErrMissingURLSpecificFeature
 	}
 	return nil
-}
-
-func (u URL) withoutFragment() URL {
-	fragmentIndex := strings.Index(string(u), "#")
-	if fragmentIndex > 0 {
-		return u[:fragmentIndex]
-	}
-	return u
 }
 
 func (u URL) mustParse() *url.URL {
@@ -918,14 +910,39 @@ func (u URL) WithScheme(scheme Scheme) URL {
 	return URL(scheme + "://" + Scheme(afterScheme))
 }
 
-func (u URL) WithoutQuery() URL {
+// TruncatedBeforeQuery returns a URL with everything after (and including) '?' removed.
+// If the resulting URL has no URL specific feature a '/' is added at the end.
+func (u URL) TruncatedBeforeQuery() URL {
 	newURL, _, _ := strings.Cut(string(u), "?")
+
+	parsed := URL(newURL).mustParse()
+	if parsed.Path == "" && !strings.Contains(newURL, "#") {
+		return URL(newURL + "/")
+	}
+
 	return URL(newURL)
 }
 
+// withoutFragment returns a URL without the fragment part. The result may not be a valid Inox URL because a URL-specific
+// may be missing.
+func (u URL) withoutFragment() string {
+	fragmentIndex := strings.Index(string(u), "#")
+	if fragmentIndex > 0 {
+		return string(u[:fragmentIndex])
+	}
+	return string(u)
+}
+
+// WithoutQueryNorFragment returns a URL with everything after (and including) '?' and '#' removed.
+// If the resulting URL has no URL specific feature a '/' is added at the end.
 func (u URL) WithoutQueryNorFragment() URL {
-	newURL, _, _ := strings.Cut(string(u), "?")
-	newURL, _, _ = strings.Cut(newURL, "#")
+	newURL, _, _ := strings.Cut(string(u), "#")
+	newURL, _, _ = strings.Cut(newURL, "?")
+
+	parsed := u.mustParse()
+	if parsed.Path == "" {
+		return URL(newURL + "/")
+	}
 	return URL(newURL)
 }
 
