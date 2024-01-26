@@ -397,7 +397,11 @@ func (p *parser) parseBlock() *Block {
 
 	p.i++
 
-	p.tokens = append(p.tokens, Token{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{openingBraceIndex, openingBraceIndex + 1}})
+	p.tokens = append(p.tokens, Token{
+		Type:    OPENING_CURLY_BRACKET,
+		SubType: BLOCK_OPENING_BRACE,
+		Span:    NodeSpan{openingBraceIndex, openingBraceIndex + 1},
+	})
 
 	var (
 		parsingErr *ParsingError
@@ -452,7 +456,11 @@ func (p *parser) parseBlock() *Block {
 		parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_BLOCK_MISSING_BRACE}
 
 	} else {
-		p.tokens = append(p.tokens, Token{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{closingBraceIndex, closingBraceIndex + 1}})
+		p.tokens = append(p.tokens, Token{
+			Type:    CLOSING_CURLY_BRACKET,
+			SubType: BLOCK_CLOSING_BRACE,
+			Span:    NodeSpan{closingBraceIndex, closingBraceIndex + 1},
+		})
 		p.i++
 	}
 
@@ -2631,7 +2639,10 @@ func (p *parser) parseObjectRecordPatternLiteral(percentPrefixed, isRecordPatter
 			p.tokens = append(p.tokens, Token{Type: OPENING_RECORD_BRACKET, Span: NodeSpan{p.i, p.i + 2}})
 			p.i += 2
 		} else {
-			p.tokens = append(p.tokens, Token{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{p.i, p.i + 1}})
+			p.tokens = append(p.tokens, Token{
+				Type:    OPENING_CURLY_BRACKET,
+				SubType: OBJECT_LIKE_OPENING_BRACE, Span: NodeSpan{p.i, p.i + 1},
+			})
 			p.i++
 		}
 	}
@@ -2974,7 +2985,11 @@ object_pattern_top_loop:
 			parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_OBJ_PATTERN_MISSING_CLOSING_BRACE}
 		}
 	} else {
-		p.tokens = append(p.tokens, Token{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{p.i, p.i + 1}})
+		p.tokens = append(p.tokens, Token{
+			Type:    CLOSING_CURLY_BRACKET,
+			SubType: OBJECT_LIKE_CLOSING_BRACE,
+			Span:    NodeSpan{p.i, p.i + 1},
+		})
 		p.i++
 	}
 
@@ -3123,7 +3138,11 @@ func (p *parser) parseObjectOrRecordLiteral(isRecord bool) Node {
 		p.tokens = append(p.tokens, Token{Type: OPENING_RECORD_BRACKET, Span: NodeSpan{p.i, p.i + 2}})
 		p.i += 2
 	} else {
-		p.tokens = append(p.tokens, Token{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{p.i, p.i + 1}})
+		p.tokens = append(p.tokens, Token{
+			Type:    OPENING_CURLY_BRACKET,
+			SubType: OBJECT_LIKE_OPENING_BRACE,
+			Span:    NodeSpan{p.i, p.i + 1},
+		})
 		p.i++
 	}
 
@@ -3471,7 +3490,11 @@ object_literal_top_loop:
 	if p.i >= p.len {
 		parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_OBJ_REC_MISSING_CLOSING_BRACE}
 	} else {
-		p.tokens = append(p.tokens, Token{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{p.i, p.i + 1}})
+		p.tokens = append(p.tokens, Token{
+			Type:    CLOSING_CURLY_BRACKET,
+			SubType: OBJECT_LIKE_CLOSING_BRACE,
+			Span:    NodeSpan{p.i, p.i + 1},
+		})
 		p.i++
 	}
 
