@@ -7836,7 +7836,11 @@ func (p *parser) parseXMLChildren(singleBracketInterpolations bool) ([]Node, *Pa
 				p.i++
 				continue
 			}
-			p.tokens = append(p.tokens, Token{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{p.i, p.i + 1}})
+			p.tokens = append(p.tokens, Token{
+				Type:    OPENING_CURLY_BRACKET,
+				SubType: XML_INTERP_OPENING_BRACE,
+				Span:    NodeSpan{p.i, p.i + 1},
+			})
 
 			// add previous slice
 			raw := string(p.s[childStart:p.i])
@@ -7862,7 +7866,11 @@ func (p *parser) parseXMLChildren(singleBracketInterpolations bool) ([]Node, *Pa
 				continue
 			}
 
-			closingBracketToken := Token{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{p.i, p.i + 1}}
+			closingBracketToken := Token{
+				Type:    CLOSING_CURLY_BRACKET,
+				SubType: XML_INTERP_CLOSING_BRACE,
+				Span:    NodeSpan{p.i, p.i + 1},
+			}
 			interpolationExclEnd := p.i
 			inInterpolation = false
 			p.i++
