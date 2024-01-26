@@ -56,7 +56,15 @@ func (m *Map) PrettyPrint(w *bufio.Writer, config *core.PrettyPrintConfig, depth
 }
 
 func (m *Map) ToSymbolicValue(ctx *core.Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
-	return &coll_symbolic.Map{}, nil
+	keyPattern, err := m.config.Key.ToSymbolicValue(ctx, encountered)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get symbolic version of key pattern: %w", err)
+	}
+	valuePattern, err := m.config.Value.ToSymbolicValue(ctx, encountered)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get symbolic version of key pattern: %w", err)
+	}
+	return coll_symbolic.NewMapWithPatterns(keyPattern.(symbolic.Pattern), valuePattern.(symbolic.Pattern)), nil
 }
 
 func (m *Map) IsSharable(originState *core.GlobalState) (bool, string) {
