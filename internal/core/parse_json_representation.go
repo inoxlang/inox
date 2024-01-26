@@ -449,6 +449,7 @@ func ParseObjectJSONrepresentation(ctx *Context, it *jsoniter.Iterator, pattern 
 			url := URL(currentIt.ReadString())
 			if err := url.Validate(); err != nil {
 				finalErr = fmt.Errorf("invalid URL: %w", err)
+				return false
 			}
 
 			if url.Scheme().IsDatabaseScheme() {
