@@ -27251,25 +27251,9 @@ func testParse(
 							Name:     "h",
 						},
 						Element: &XMLElement{
-							NodeBase: NodeBase{
-								NodeSpan{1, 27},
-								nil,
-								false,
-								/*[]Token{
-									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{6, 7}},
-									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{19, 20}},
-								},*/
-							},
+							NodeBase: NodeBase{Span: NodeSpan{1, 27}},
 							Opening: &XMLOpeningElement{
-								NodeBase: NodeBase{
-									NodeSpan{1, 6},
-									nil,
-									false,
-									/*[]Token{
-										{Type: LESS_THAN, Span: NodeSpan{1, 2}},
-										{Type: GREATER_THAN, Span: NodeSpan{5, 6}},
-									},*/
-								},
+								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
 									Name:     "div",
@@ -27292,15 +27276,7 @@ func testParse(
 										Element: &XMLElement{
 											NodeBase: NodeBase{NodeSpan{8, 19}, nil, false},
 											Opening: &XMLOpeningElement{
-												NodeBase: NodeBase{
-													NodeSpan{8, 13},
-													nil,
-													false,
-													/*[]Token{
-														{Type: LESS_THAN, Span: NodeSpan{8, 9}},
-														{Type: GREATER_THAN, Span: NodeSpan{12, 13}},
-													},*/
-												},
+												NodeBase: NodeBase{Span: NodeSpan{8, 13}},
 												Name: &IdentifierLiteral{
 													NodeBase: NodeBase{NodeSpan{9, 12}, nil, false},
 													Name:     "div",
@@ -27314,15 +27290,7 @@ func testParse(
 												},
 											},
 											Closing: &XMLClosingElement{
-												NodeBase: NodeBase{
-													NodeSpan{13, 19},
-													nil,
-													false,
-													/*[]Token{
-														{Type: END_TAG_OPEN_DELIMITER, Span: NodeSpan{13, 15}},
-														{Type: GREATER_THAN, Span: NodeSpan{18, 19}},
-													},*/
-												},
+												NodeBase: NodeBase{Span: NodeSpan{13, 19}},
 												Name: &IdentifierLiteral{
 													NodeBase: NodeBase{NodeSpan{15, 18}, nil, false},
 													Name:     "div",
@@ -27338,17 +27306,61 @@ func testParse(
 								},
 							},
 							Closing: &XMLClosingElement{
-								NodeBase: NodeBase{
-									NodeSpan{21, 27},
-									nil,
-									false,
-									/*[]Token{
-										{Type: END_TAG_OPEN_DELIMITER, Span: NodeSpan{21, 23}},
-										{Type: GREATER_THAN, Span: NodeSpan{26, 27}},
-									},*/
-								},
+								NodeBase: NodeBase{Span: NodeSpan{21, 27}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{23, 26}, nil, false},
+									Name:     "div",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("opening bracket within interpolation", func(t *testing.T) {
+			n := mustparseChunk(t, "h<div>{{}}2</div>")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 17}, nil, false},
+				Statements: []Node{
+					&XMLExpression{
+						NodeBase: NodeBase{NodeSpan{0, 17}, nil, false},
+						Namespace: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
+							Name:     "h",
+						},
+
+						Element: &XMLElement{
+							NodeBase: NodeBase{Span: NodeSpan{1, 17}},
+							Opening: &XMLOpeningElement{
+								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:     "div",
+								},
+							},
+							Children: []Node{
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{6, 6}, nil, false},
+									Raw:      "",
+									Value:    "",
+								},
+								&XMLInterpolation{
+									NodeBase: NodeBase{NodeSpan{7, 9}, nil, false},
+									Expr: &ObjectLiteral{
+										NodeBase: NodeBase{NodeSpan{7, 9}, nil, false},
+									},
+								},
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{10, 11}, nil, false},
+									Raw:      "2",
+									Value:    "2",
+								},
+							},
+							Closing: &XMLClosingElement{
+								NodeBase: NodeBase{Span: NodeSpan{11, 17}},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{13, 16}, nil, false},
 									Name:     "div",
 								},
 							},
@@ -27661,6 +27673,63 @@ func testParse(
 										{Type: GREATER_THAN, Span: NodeSpan{15, 16}},
 									},*/
 								},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{12, 15}, nil, false},
+									Name:     "div",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("error within interpolation", func(t *testing.T) {
+			n, err := parseChunk(t, "h<div>{?}2</div>", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 16}, nil, false},
+				Statements: []Node{
+					&XMLExpression{
+						NodeBase: NodeBase{NodeSpan{0, 16}, nil, false},
+						Namespace: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
+							Name:     "h",
+						},
+
+						Element: &XMLElement{
+							NodeBase: NodeBase{Span: NodeSpan{1, 16}},
+							Opening: &XMLOpeningElement{
+								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:     "div",
+								},
+							},
+							Children: []Node{
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{6, 6}, nil, false},
+									Raw:      "",
+									Value:    "",
+								},
+								&XMLInterpolation{
+									NodeBase: NodeBase{NodeSpan{7, 8}, nil, false},
+									Expr: &MissingExpression{
+										NodeBase: NodeBase{
+											NodeSpan{7, 8},
+											&ParsingError{UnspecifiedParsingError, fmtExprExpectedHere([]rune("?"), 0, true)},
+											false,
+										},
+									},
+								},
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{9, 10}, nil, false},
+									Raw:      "2",
+									Value:    "2",
+								},
+							},
+							Closing: &XMLClosingElement{
+								NodeBase: NodeBase{Span: NodeSpan{10, 16}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{12, 15}, nil, false},
 									Name:     "div",

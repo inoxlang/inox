@@ -7799,6 +7799,8 @@ func (p *parser) parseXMLChildren(singleBracketInterpolations bool) ([]Node, *Pa
 	children := make([]Node, 0)
 	childStart := p.i
 
+	bracketPairDepthWithinInterpolation := 0
+
 	var parsingErr *ParsingError
 
 	for p.i < p.len && (inInterpolation || (p.s[p.i] != '<' || (p.i < p.len-1 && p.s[p.i+1] != '/'))) {
@@ -7806,6 +7808,11 @@ func (p *parser) parseXMLChildren(singleBracketInterpolations bool) ([]Node, *Pa
 		//interpolation
 		switch {
 		case p.s[p.i] == '{' && singleBracketInterpolations:
+			if inInterpolation {
+				bracketPairDepthWithinInterpolation++
+				p.i++
+				continue
+			}
 			p.tokens = append(p.tokens, Token{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{p.i, p.i + 1}})
 
 			// add previous slice
@@ -7824,7 +7831,14 @@ func (p *parser) parseXMLChildren(singleBracketInterpolations bool) ([]Node, *Pa
 			inInterpolation = true
 			p.i++
 			interpolationStart = p.i
-		case inInterpolation && p.s[p.i] == '}': //end of interpolation
+		case inInterpolation && p.s[p.i] == '}': //potential end of interpolation
+			if bracketPairDepthWithinInterpolation > 0 {
+				//still in interpolation
+				bracketPairDepthWithinInterpolation--
+				p.i++
+				continue
+			}
+
 			closingBracketToken := Token{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{p.i, p.i + 1}}
 			interpolationExclEnd := p.i
 			inInterpolation = false
@@ -7865,12 +7879,13 @@ func (p *parser) parseXMLChildren(singleBracketInterpolations bool) ([]Node, *Pa
 					inclusiveExprEnd--
 				}
 
-				e, ok := ParseExpression(string(interpolation[exprStart : inclusiveExprEnd+1]))
-				if !ok {
-					interpParsingErr = &ParsingError{UnspecifiedParsingError, INVALID_XML_INTERP}
-				} else {
+				e, _ := parseExpression(interpolation[exprStart:inclusiveExprEnd+1], false)
+
+				if e != nil {
 					expr = e
 					shiftNodeSpans(expr, interpolationStart+exprStart)
+				} else {
+					interpParsingErr = &ParsingError{UnspecifiedParsingError, INVALID_XML_INTERP}
 				}
 			}
 			p.tokens = append(p.tokens, closingBracketToken)
