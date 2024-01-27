@@ -486,130 +486,97 @@ func (p *parser) parsePathExpressionSlices(start int32, exclEnd int32) []Node {
 	inInterpolation := false
 
 	for index < exclEnd {
+		switch {
+		case inInterpolation && (p.s[index] == '}' || index == exclEnd-1): //end of interpolation
+			missingClosingBrace := false
 
-		if inInterpolation {
-			if p.s[index] == '}' || index == exclEnd-1 { //end if interpolation
-				missingClosingBrace := false
-
-				if index == exclEnd-1 && p.s[index] != '}' {
-					index++
-					missingClosingBrace = true
-				} else {
-					p.tokens = append(p.tokens, Token{
-						Type:    CLOSING_CURLY_BRACKET,
-						SubType: PATH_INTERP_CLOSING_BRACE,
-						Span:    NodeSpan{index, index + 1},
-					})
-				}
-
-				interpolation := string(p.s[sliceStart:index])
-
-				if interpolation != "" && interpolation[0] == ':' { //named segment
-					i := int32(1)
-					ok := true
-					for i < int32(len(interpolation)) {
-						if !IsIdentChar(rune(interpolation[i])) {
-							slices = append(slices, &UnknownNode{
-								NodeBase: NodeBase{
-									NodeSpan{sliceStart, exclEnd},
-									&ParsingError{UnspecifiedParsingError, INVALID_NAMED_SEGMENT_PATH_PATTERN_COLON_SHOULD_BE_FOLLOWED_BY_A_NAME},
-									false,
-								},
-							})
-							ok = false
-							break
-						}
-						i++
-					}
-
-					if ok {
-						var err *ParsingError
-						if len(interpolation) == 1 {
-							err = &ParsingError{UnspecifiedParsingError, INVALID_NAMED_SEGMENT_PATH_PATTERN_COLON_SHOULD_BE_FOLLOWED_BY_A_NAME}
-						}
-						slices = append(slices, &NamedPathSegment{
-							NodeBase: NodeBase{
-								NodeSpan{sliceStart, index},
-								err,
-								false,
-							},
-							Name: interpolation[1:],
-						})
-					}
-
-				} else {
-
-					expr, ok := ParseExpression(interpolation)
-
-					if !ok {
-						span := NodeSpan{sliceStart, index}
-						err := &ParsingError{UnspecifiedParsingError, INVALID_PATH_INTERP}
-
-						if len(interpolation) == 0 {
-							err.Message = EMPTY_PATH_INTERP
-						}
-
-						p.tokens = append(p.tokens, Token{Type: INVALID_INTERP_SLICE, Span: span, Raw: string(p.s[sliceStart:index])})
-						slices = append(slices, &UnknownNode{
-							NodeBase: NodeBase{
-								span,
-								err,
-								false,
-							},
-						})
-
-					} else {
-						shiftNodeSpans(expr, sliceStart)
-						slices = append(slices, expr)
-
-						if missingClosingBrace {
-							slices = append(slices, &PathSlice{
-								NodeBase: NodeBase{
-									NodeSpan{index, index},
-									&ParsingError{UnspecifiedParsingError, UNTERMINATED_PATH_INTERP_MISSING_CLOSING_BRACE},
-									false,
-								},
-							})
-						}
-					}
-
-				}
-				inInterpolation = false
-				sliceStart = index + 1
-			} else if !isInterpolationAllowedChar(p.s[index]) {
-				// we eat all the interpolation
-
-				j := index
-				for j < exclEnd && p.s[j] != '}' {
-					j++
-				}
-
-				p.tokens = append(p.tokens, Token{Type: INVALID_INTERP_SLICE, Span: NodeSpan{sliceStart, j}, Raw: string(p.s[sliceStart:j])})
-
-				slices = append(slices, &UnknownNode{
-					NodeBase: NodeBase{
-						NodeSpan{sliceStart, j},
-						&ParsingError{UnspecifiedParsingError, PATH_INTERP_EXPLANATION},
-						false,
-					},
+			if index == exclEnd-1 && p.s[index] != '}' {
+				index++
+				missingClosingBrace = true
+			} else {
+				p.tokens = append(p.tokens, Token{
+					Type:    CLOSING_CURLY_BRACKET,
+					SubType: PATH_INTERP_CLOSING_BRACE,
+					Span:    NodeSpan{index, index + 1},
 				})
-
-				if j < exclEnd { // '}'
-					p.tokens = append(p.tokens, Token{
-						Type:    CLOSING_CURLY_BRACKET,
-						SubType: PATH_INTERP_CLOSING_BRACE,
-						Span:    NodeSpan{j, j + 1},
-					})
-					j++
-				}
-
-				inInterpolation = false
-				sliceStart = j
-				index = j
-				continue
 			}
 
-		} else if p.s[index] == '{' { //start of a new interpolation
+			interpolation := string(p.s[sliceStart:index])
+
+			if interpolation != "" && interpolation[0] == ':' { //named segment
+				slices = append(slices, p.parseNamedPatternSegment(interpolation, sliceStart, index))
+			} else {
+
+				expr, ok := ParseExpression(interpolation)
+
+				if !ok {
+					span := NodeSpan{sliceStart, index}
+					err := &ParsingError{UnspecifiedParsingError, INVALID_PATH_INTERP}
+
+					if len(interpolation) == 0 {
+						err.Message = EMPTY_PATH_INTERP
+					}
+
+					p.tokens = append(p.tokens, Token{Type: INVALID_INTERP_SLICE, Span: span, Raw: string(p.s[sliceStart:index])})
+					slices = append(slices, &UnknownNode{
+						NodeBase: NodeBase{
+							span,
+							err,
+							false,
+						},
+					})
+
+				} else {
+					shiftNodeSpans(expr, sliceStart)
+					slices = append(slices, expr)
+
+					if missingClosingBrace {
+						slices = append(slices, &PathSlice{
+							NodeBase: NodeBase{
+								NodeSpan{index, index},
+								&ParsingError{UnspecifiedParsingError, UNTERMINATED_PATH_INTERP_MISSING_CLOSING_BRACE},
+								false,
+							},
+						})
+					}
+				}
+
+			}
+			inInterpolation = false
+			sliceStart = index + 1
+			index++
+		case inInterpolation && !isInterpolationAllowedChar(p.s[index]):
+			// we eat all the interpolation
+
+			j := index
+			for j < exclEnd && p.s[j] != '}' {
+				j++
+			}
+
+			p.tokens = append(p.tokens, Token{Type: INVALID_INTERP_SLICE, Span: NodeSpan{sliceStart, j}, Raw: string(p.s[sliceStart:j])})
+
+			slices = append(slices, &UnknownNode{
+				NodeBase: NodeBase{
+					NodeSpan{sliceStart, j},
+					&ParsingError{UnspecifiedParsingError, PATH_INTERP_EXPLANATION},
+					false,
+				},
+			})
+
+			if j < exclEnd { // '}'
+				p.tokens = append(p.tokens, Token{
+					Type:    CLOSING_CURLY_BRACKET,
+					SubType: PATH_INTERP_CLOSING_BRACE,
+					Span:    NodeSpan{j, j + 1},
+				})
+				j++
+			}
+
+			inInterpolation = false
+			sliceStart = j
+			index = j
+			continue
+		case !inInterpolation && p.s[index] == '{': //start of a new interpolation:
 			slice := string(p.s[sliceStart:index]) //previous cannot be an interpolation
 
 			p.tokens = append(p.tokens, Token{
@@ -643,8 +610,10 @@ func (p *parser) parsePathExpressionSlices(start int32, exclEnd int32) []Node {
 
 				return slices
 			}
+			index++
+		default:
+			index++
 		}
-		index++
 	}
 
 	if inInterpolation {
@@ -666,6 +635,41 @@ func (p *parser) parsePathExpressionSlices(start int32, exclEnd int32) []Node {
 		})
 	}
 	return slices
+}
+
+func (p *parser) parseNamedPatternSegment(interpolation string, startIndex, endIndex int32) Node {
+	//':' is at startIndex
+	i := int32(1)
+	onlyIdentChars := true
+
+	//Check that there are only chars allowed in identifiers after ':'.
+	for i < int32(len(interpolation)) {
+		if IsIdentChar(rune(interpolation[i])) {
+			i++
+			continue
+		}
+
+		onlyIdentChars = false
+		break
+	}
+
+	var err *ParsingError
+	if len(interpolation) == 1 || !onlyIdentChars { //empty name or invalid characters
+		err = &ParsingError{UnspecifiedParsingError, INVALID_NAMED_SEGMENT_PATH_PATTERN_COLON_SHOULD_BE_FOLLOWED_BY_A_NAME}
+	} else if interpolation[1] == '-' {
+		err = &ParsingError{UnspecifiedParsingError, INVALID_NAMED_SEGMENT_PATH_PATTERN_COLON_NAME_SHOULD_NOT_START_WITH_DASH}
+	} else if interpolation[len(interpolation)-1] == '-' {
+		err = &ParsingError{UnspecifiedParsingError, INVALID_NAMED_SEGMENT_PATH_PATTERN_COLON_NAME_SHOULD_NOT_END_WITH_DASH}
+	}
+
+	return &NamedPathSegment{
+		NodeBase: NodeBase{
+			NodeSpan{startIndex, endIndex},
+			err,
+			false,
+		},
+		Name: interpolation[1:],
+	}
 }
 
 func (p *parser) parseQueryParameterValueSlices(start int32, exclEnd int32) []Node {

@@ -299,6 +299,7 @@ func TestPrint(t *testing.T) {
 		"%/`[a-{end}]`",
 		"%/`[a-{end}]",
 		"%/{:name}",
+		"%/{:name:}",
 		"%/{",
 		"%/{\n",
 		"%/{:",

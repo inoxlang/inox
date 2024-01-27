@@ -2918,6 +2918,18 @@ func testParse(
 
 		t.Run("invalid named-segment path pattern literals", func(t *testing.T) {
 			assert.Panics(t, func() {
+				mustparseChunk(t, "%/home/e{:}")
+			})
+			assert.Panics(t, func() {
+				mustparseChunk(t, "%/home/e{:u:}")
+			})
+			assert.Panics(t, func() {
+				mustparseChunk(t, "%/home/e{:username-}")
+			})
+			assert.Panics(t, func() {
+				mustparseChunk(t, "%/home/e{:-username}")
+			})
+			assert.Panics(t, func() {
 				mustparseChunk(t, "%/home/e{:username}")
 			})
 			assert.Panics(t, func() {

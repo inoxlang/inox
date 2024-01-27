@@ -85,8 +85,10 @@ const (
 	UNTERMINATED_QUOTED_PATH_PATTERN_EXPR_MISSING_CLOSING_BACTICK = "unterminated quoted path pattern expression : missing closing backtick"
 	QUOTED_PATH_PATTERN_EXPRS_ARE_NOT_SUPPORTED_YET               = "quoted path pattern expressions are not supported yet"
 
-	INVALID_NAMED_SEGMENT_PATH_PATTERN_COLON_SHOULD_BE_FOLLOWED_BY_A_NAME = "invalid named-segment path pattern: colon should be followed by a name"
-	QUOTED_NAMED_SEGMENT_PATH_PATTERNS_ARE_NOT_SUPPORTED_YET              = "quoted named-segment path patterns are not supported yet"
+	INVALID_NAMED_SEGMENT_PATH_PATTERN_COLON_SHOULD_BE_FOLLOWED_BY_A_NAME    = "invalid named-segment path pattern: colon should be followed by a name"
+	INVALID_NAMED_SEGMENT_PATH_PATTERN_COLON_NAME_SHOULD_NOT_START_WITH_DASH = "invalid named-segment path pattern: name should not start with '-'"
+	INVALID_NAMED_SEGMENT_PATH_PATTERN_COLON_NAME_SHOULD_NOT_END_WITH_DASH   = "invalid named-segment path pattern: name should not end with '-'"
+	QUOTED_NAMED_SEGMENT_PATH_PATTERNS_ARE_NOT_SUPPORTED_YET                 = "quoted named-segment path patterns are not supported yet"
 
 	// URL query parameter
 	INVALID_QUERY                                         = "invalid query"
