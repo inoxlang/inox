@@ -33,6 +33,7 @@ func registerHelp() {
 
 		// conversion
 		globalnames.TOSTR_FN:     _tostr,
+		globalnames.TOSTRING_FN:  _tostring,
 		globalnames.TORUNE_FN:    _torune,
 		globalnames.TOBYTE_FN:    _tobyte,
 		globalnames.TOFLOAT_FN:   _tofloat,

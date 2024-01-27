@@ -297,7 +297,10 @@ user = ctx_data(#user, %user)
 
 ### tostr
 
-The `tostr` function converts its argument to a string. Only the following types are supported: bool, int, str, byte-slice, rune-slice, path, host, url.
+The `tostr` function converts its argument to a string-like value. Only the following types are supported: bool, int, byte-slice, rune-slice, path, host, url and all string-likes.
+### tostring
+
+The `tostring` function converts its argument to a string. `tostr` should always be used over `tostring`, unless you need a `string`, not a string-like value. Only the following types are supported: bool, int, byte-slice,  rune-slice, path, host, url and all string-likes.
 ### torune
 
 The `torune` function converts an integral value to a rune.
@@ -322,7 +325,6 @@ The `tojson` function converts a value to JSON (string).
 ### topjson
 
 The `topjson` function converts a value to formatted JSON (string).
-
 ### parse
 
 The `parse` function parses a string based on the specified pattern.
