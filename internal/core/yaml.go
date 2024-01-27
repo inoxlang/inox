@@ -60,10 +60,10 @@ func ConvertYamlNodeToInoxVal(ctx *Context, n yaml.Node, immutable bool) Seriali
 	case yaml.NanType:
 		return Float(math.NaN())
 	case yaml.StringType:
-		return Str(n.(*yaml.StringNode).Value)
+		return String(n.(*yaml.StringNode).Value)
 	case yaml.LiteralType:
 		//TODO: handle start token ?
-		return Str(n.(*yaml.LiteralNode).Value.Value)
+		return String(n.(*yaml.LiteralNode).Value.Value)
 	case yaml.MappingType:
 		items := n.(*yaml.MappingNode).Values
 		keys := make([]string, len(items))

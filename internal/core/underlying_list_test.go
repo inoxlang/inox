@@ -55,10 +55,10 @@ func TestStringList(t *testing.T) {
 
 	testUnderlyingList(t, underlyingTestSuiteParams[StringLike]{
 		newList: newList,
-		elemA:   Str("a"),
-		elemB:   Str("b"),
-		elemC:   Str("c"),
-		elemD:   Str("d"),
+		elemA:   String("a"),
+		elemB:   String("b"),
+		elemC:   String("c"),
+		elemD:   String("d"),
 		getCapacity: func(ul underlyingList) int {
 			return len(ul.(*StringList).elements)
 		},

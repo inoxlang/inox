@@ -90,7 +90,7 @@ func MakeREPLConfiguration(obj *core.Object) (REPLConfiguration, error) {
 				}
 
 				switch p := part.(type) {
-				case core.Str:
+				case core.String:
 				// case Identifier:
 				// 	switch part {
 				// 	case "cwd":

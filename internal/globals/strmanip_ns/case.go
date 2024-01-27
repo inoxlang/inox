@@ -7,17 +7,17 @@ import (
 	"github.com/inoxlang/inox/internal/third_party_stable/titlecase"
 )
 
-func Titlecase(s core.StringLike) core.Str {
+func Titlecase(s core.StringLike) core.String {
 	str := s.GetOrBuildString()
-	return core.Str(titlecase.Title(str))
+	return core.String(titlecase.Title(str))
 }
 
-func Lowercase(s core.StringLike) core.Str {
+func Lowercase(s core.StringLike) core.String {
 	str := s.GetOrBuildString()
-	return core.Str(strings.ToLower(str))
+	return core.String(strings.ToLower(str))
 }
 
-func TrimSpace(s core.StringLike) core.Str {
+func TrimSpace(s core.StringLike) core.String {
 	str := s.GetOrBuildString()
-	return core.Str(strings.TrimSpace(str))
+	return core.String(strings.TrimSpace(str))
 }

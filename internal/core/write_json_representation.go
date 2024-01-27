@@ -233,7 +233,7 @@ func (f Float) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config 
 	return w.Error
 }
 
-func (s Str) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+func (s String) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	w.WriteString(string(s))
 	return nil
 }
@@ -1744,7 +1744,7 @@ func (port Port) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, confi
 }
 
 func (c *StringConcatenation) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
-	return Str(c.GetOrBuildString()).WriteJSONRepresentation(ctx, w, config, depth+1)
+	return String(c.GetOrBuildString()).WriteJSONRepresentation(ctx, w, config, depth+1)
 }
 
 func (c *BytesConcatenation) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {

@@ -85,7 +85,7 @@ func (f Float) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uint
 	return equalComparable(f, other)
 }
 
-func (s Str) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+func (s String) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
 	strLike, ok := other.(StringLike)
 	if !ok {
 		return false
@@ -93,7 +93,7 @@ func (s Str) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintpt
 	if strLike == nil {
 		panic(errors.New("cannot compare string with nil StringLike"))
 	}
-	if otherStr, ok := strLike.(Str); ok {
+	if otherStr, ok := strLike.(String); ok {
 		return s == otherStr
 	}
 	return ok && strLike.Equal(ctx, s, alreadyCompared, depth)
@@ -1754,11 +1754,11 @@ func (c *StringConcatenation) Equal(ctx *Context, other Value, alreadyCompared m
 	}
 
 	switch val := strLike.(type) {
-	case Str:
+	case String:
 		i := 0
 		for _, elem := range c.elements {
 			substring := val[i : i+elem.Len()]
-			if !elem.Equal(ctx, Str(substring), alreadyCompared, depth+1) {
+			if !elem.Equal(ctx, String(substring), alreadyCompared, depth+1) {
 				return false
 			}
 			i += elem.Len()
@@ -1768,7 +1768,7 @@ func (c *StringConcatenation) Equal(ctx *Context, other Value, alreadyCompared m
 		i := 0
 		for _, elem := range c.elements {
 			substring := s[i : i+elem.Len()]
-			if !elem.Equal(ctx, Str(substring), alreadyCompared, depth+1) {
+			if !elem.Equal(ctx, String(substring), alreadyCompared, depth+1) {
 				return false
 			}
 			i += elem.Len()
@@ -1793,7 +1793,7 @@ func (c *BytesConcatenation) Equal(ctx *Context, other Value, alreadyCompared ma
 		i := 0
 		for _, elem := range c.elements {
 			subSlice := val.bytes[i : i+elem.Len()]
-			if !elem.Equal(ctx, Str(subSlice), alreadyCompared, depth+1) {
+			if !elem.Equal(ctx, String(subSlice), alreadyCompared, depth+1) {
 				return false
 			}
 			i += elem.Len()
@@ -1803,7 +1803,7 @@ func (c *BytesConcatenation) Equal(ctx *Context, other Value, alreadyCompared ma
 		i := 0
 		for _, elem := range c.elements {
 			subSlice := s.bytes[i : i+elem.Len()]
-			if !elem.Equal(ctx, Str(subSlice), alreadyCompared, depth+1) {
+			if !elem.Equal(ctx, String(subSlice), alreadyCompared, depth+1) {
 				return false
 			}
 			i += elem.Len()

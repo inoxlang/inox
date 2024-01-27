@@ -5,13 +5,13 @@ import (
 	"github.com/inoxlang/inox/internal/utils"
 )
 
-func PercentEncode(ctx *core.Context, s core.StringLike) core.Str {
+func PercentEncode(ctx *core.Context, s core.StringLike) core.String {
 	str := s.GetOrBuildString()
-	return core.Str(utils.PercentEncode(str))
+	return core.String(utils.PercentEncode(str))
 }
 
-func PercentDecode(ctx *core.Context, s core.StringLike) (core.Str, core.Error) {
+func PercentDecode(ctx *core.Context, s core.StringLike) (core.String, core.Error) {
 	str := s.GetOrBuildString()
 	decoded, err := utils.PercentDecode(str, true)
-	return core.Str(decoded), core.NewError(err, core.Nil)
+	return core.String(decoded), core.NewError(err, core.Nil)
 }

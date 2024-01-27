@@ -33,7 +33,7 @@ func (api *ApiIL) GetGoMethod(name string) (*GoFunction, bool) {
 func (api *ApiIL) Prop(ctx *Context, name string) Value {
 	switch name {
 	case "version":
-		return Str(api.inner.Version())
+		return String(api.inner.Version())
 	case "schema":
 		return api.initialSchema
 	case "data":

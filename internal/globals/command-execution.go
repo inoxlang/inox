@@ -21,7 +21,7 @@ const (
 // You can pass a duration range before the command name (example: ..10s) to specify a timeout.
 // Example: execute(ctx, Identifier("command_name"), Identifier("subcommand_name"), Str("first_positional_arg"), Int(2))
 
-func _execute(ctx *core.Context, args ...core.Value) (core.Str, error) {
+func _execute(ctx *core.Context, args ...core.Value) (core.String, error) {
 	fls := ctx.GetFileSystem()
 
 	var subcommandNameChain []string
@@ -46,7 +46,7 @@ top:
 	for len(args) != 0 {
 		switch a := args[0].(type) {
 		case core.Identifier:
-			cmdName = core.Str(a)
+			cmdName = core.String(a)
 			args = args[1:]
 			break top
 		case core.Path:
@@ -131,7 +131,7 @@ top:
 	for _, arg := range args {
 		if core.IsSimpleInoxValOrOption(arg) {
 			if r, ok := arg.(core.Rune); ok {
-				arg = core.Str(r)
+				arg = core.String(r)
 			}
 			cmdArgs = append(cmdArgs, fmt.Sprint(arg))
 		} else {
@@ -187,14 +187,14 @@ top:
 	if noTimeout {
 		select {
 		case <-doneChan:
-			return core.Str(b), err
+			return core.String(b), err
 		case err = <-limitChan:
 			return "", err
 		}
 	} else {
 		select {
 		case <-doneChan:
-			return core.Str(b), err
+			return core.String(b), err
 		case <-time.After(time.Duration(timeoutDuration)):
 			err = errors.New("ex: timeout")
 			cmd.Process.Kill()

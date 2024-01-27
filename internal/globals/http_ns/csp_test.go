@@ -26,7 +26,7 @@ func TestNewCSP(t *testing.T) {
 	t.Run("string value", func(t *testing.T) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 		csp, err := NewCSP(ctx, core.NewObjectFromMap(core.ValMap{
-			"default-src": core.Str("https://example.com"),
+			"default-src": core.String("https://example.com"),
 		}, ctx))
 
 		if !assert.NoError(t, err) {
@@ -40,7 +40,7 @@ func TestNewCSP(t *testing.T) {
 	t.Run("list value", func(t *testing.T) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 		csp, err := NewCSP(ctx, core.NewObjectFromMap(core.ValMap{
-			"default-src": core.NewWrappedValueList(core.Str("https://example.com")),
+			"default-src": core.NewWrappedValueList(core.String("https://example.com")),
 		}, ctx))
 
 		if !assert.NoError(t, err) {

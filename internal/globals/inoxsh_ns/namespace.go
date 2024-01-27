@@ -42,7 +42,7 @@ func init() {
 func NewShell(ctx *core.Context, configObj *core.Object) (*shell, error) {
 	var (
 		config = REPLConfiguration{
-			prompt: core.NewWrappedValueList(core.Str("> ")),
+			prompt: core.NewWrappedValueList(core.String("> ")),
 		}
 		globals map[string]core.Value
 		fgColor core.Color

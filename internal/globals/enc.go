@@ -10,7 +10,7 @@ import (
 )
 
 // encodeBase64 encodes to base 64 the bytes read from a readable.
-func encodeBase64(_ *core.Context, readable core.Readable) core.Str {
+func encodeBase64(_ *core.Context, readable core.Readable) core.String {
 	reader := readable.Reader()
 
 	var src []byte
@@ -24,7 +24,7 @@ func encodeBase64(_ *core.Context, readable core.Readable) core.Str {
 		src = slice.UnderlyingBytes()
 	}
 
-	return core.Str(base64.StdEncoding.EncodeToString(src))
+	return core.String(base64.StdEncoding.EncodeToString(src))
 }
 
 // decodeBase64 decodes base64 data read from a readable.
@@ -47,7 +47,7 @@ func decodeBase64(_ *core.Context, readable core.Readable) (*core.ByteSlice, err
 }
 
 // encodeHex encodes to hexadecimal the bytes read from a readable.
-func encodeHex(_ *core.Context, readable core.Readable) core.Str {
+func encodeHex(_ *core.Context, readable core.Readable) core.String {
 	reader := readable.Reader()
 
 	var src []byte
@@ -61,7 +61,7 @@ func encodeHex(_ *core.Context, readable core.Readable) core.Str {
 		src = slice.UnderlyingBytes()
 	}
 
-	return core.Str(hex.EncodeToString(src))
+	return core.String(hex.EncodeToString(src))
 }
 
 // decodeHex decodes hex data read from a readable.

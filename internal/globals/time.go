@@ -33,7 +33,7 @@ func _now(ctx *core.Context, args ...core.Value) core.Value {
 	format := ""
 	for _, arg := range args {
 		switch a := arg.(type) {
-		case core.Str:
+		case core.String:
 			if format != "" {
 				panic(commonfmt.FmtErrXProvidedAtLeastTwice("format string"))
 			}
@@ -47,7 +47,7 @@ func _now(ctx *core.Context, args ...core.Value) core.Value {
 	if format == "" {
 		return core.DateTime(now)
 	}
-	return core.Str(now.Format(format))
+	return core.String(now.Format(format))
 }
 
 func _time_since(ctx *core.Context, d core.DateTime) core.Duration {

@@ -20,7 +20,7 @@ func TestExactValuePattern(t *testing.T) {
 func TestExactStringPattern(t *testing.T) {
 
 	t.Run(".LengthRange()", func(t *testing.T) {
-		patt := NewExactStringPattern(Str("ab"))
+		patt := NewExactStringPattern(String("ab"))
 		assert.Equal(t, IntRange{
 			start:        2,
 			end:          2,
@@ -170,7 +170,7 @@ func TestObjectPattern(t *testing.T) {
 
 	assert.True(t, singleOptionalProp.Test(ctx, objFrom(ValMap{})))
 	assert.True(t, singleOptionalProp.Test(ctx, objFrom(ValMap{"a": Int(1)})))
-	assert.False(t, singleOptionalProp.Test(ctx, objFrom(ValMap{"a": Str("")})))
+	assert.False(t, singleOptionalProp.Test(ctx, objFrom(ValMap{"a": String("")})))
 	assert.False(t, singleOptionalProp.Test(ctx, objFrom(ValMap{"a": Int(1), "b": Int(2)})))
 
 	t.Run("constraint validations", func(t *testing.T) {
@@ -271,7 +271,7 @@ func TestRecordPattern(t *testing.T) {
 
 	assert.True(t, singleOptionalProp.Test(ctx, NewRecordFromMap(ValMap{})))
 	assert.True(t, singleOptionalProp.Test(ctx, NewRecordFromMap(ValMap{"a": Int(1)})))
-	assert.False(t, singleOptionalProp.Test(ctx, NewRecordFromMap(ValMap{"a": Str("")})))
+	assert.False(t, singleOptionalProp.Test(ctx, NewRecordFromMap(ValMap{"a": String("")})))
 	assert.False(t, singleOptionalProp.Test(ctx, NewRecordFromMap(ValMap{"a": Int(1), "b": Int(2)})))
 }
 
@@ -317,10 +317,10 @@ func TestIntRangePattern(t *testing.T) {
 			return
 		}
 
-		assert.True(t, stringPattern.Test(ctx, Str("0")))
-		assert.True(t, stringPattern.Test(ctx, Str("99")))
-		assert.True(t, stringPattern.Test(ctx, Str("100")))
-		assert.False(t, stringPattern.Test(ctx, Str("101")))
+		assert.True(t, stringPattern.Test(ctx, String("0")))
+		assert.True(t, stringPattern.Test(ctx, String("99")))
+		assert.True(t, stringPattern.Test(ctx, String("100")))
+		assert.False(t, stringPattern.Test(ctx, String("101")))
 	})
 
 	t.Run("0..100, multiple of 3", func(t *testing.T) {
@@ -361,11 +361,11 @@ func TestFloatRangePattern(t *testing.T) {
 			return
 		}
 
-		assert.True(t, stringPatt.Test(ctx, Str("1000.0")))
-		assert.True(t, stringPatt.Test(ctx, Str("-0.001")))
-		assert.True(t, stringPatt.Test(ctx, Str("0.0")))
-		assert.True(t, stringPatt.Test(ctx, Str("0.001")))
-		assert.True(t, stringPatt.Test(ctx, Str("1000.0")))
+		assert.True(t, stringPatt.Test(ctx, String("1000.0")))
+		assert.True(t, stringPatt.Test(ctx, String("-0.001")))
+		assert.True(t, stringPatt.Test(ctx, String("0.0")))
+		assert.True(t, stringPatt.Test(ctx, String("0.001")))
+		assert.True(t, stringPatt.Test(ctx, String("1000.0")))
 	})
 
 	t.Run("-math.MaxFloat64 .. 0", func(t *testing.T) {
@@ -380,10 +380,10 @@ func TestFloatRangePattern(t *testing.T) {
 			return
 		}
 
-		assert.True(t, stringPatt.Test(ctx, Str("-1000.0")))
-		assert.True(t, stringPatt.Test(ctx, Str("-0.001")))
-		assert.True(t, stringPatt.Test(ctx, Str("0.0")))
-		assert.False(t, stringPatt.Test(ctx, Str("0.001")))
+		assert.True(t, stringPatt.Test(ctx, String("-1000.0")))
+		assert.True(t, stringPatt.Test(ctx, String("-0.001")))
+		assert.True(t, stringPatt.Test(ctx, String("0.0")))
+		assert.False(t, stringPatt.Test(ctx, String("0.001")))
 	})
 
 	t.Run("0 .. +math.MaxFloat64", func(t *testing.T) {
@@ -398,11 +398,11 @@ func TestFloatRangePattern(t *testing.T) {
 			return
 		}
 
-		assert.True(t, stringPatt.Test(ctx, Str("0.0")))
-		assert.True(t, stringPatt.Test(ctx, Str("0.001")))
-		assert.True(t, stringPatt.Test(ctx, Str("1000.0")))
-		assert.False(t, stringPatt.Test(ctx, Str("-1000.0")))
-		assert.False(t, stringPatt.Test(ctx, Str("-0.001")))
+		assert.True(t, stringPatt.Test(ctx, String("0.0")))
+		assert.True(t, stringPatt.Test(ctx, String("0.001")))
+		assert.True(t, stringPatt.Test(ctx, String("1000.0")))
+		assert.False(t, stringPatt.Test(ctx, String("-1000.0")))
+		assert.False(t, stringPatt.Test(ctx, String("-0.001")))
 	})
 
 	t.Run("0.0..100.0", func(t *testing.T) {

@@ -404,11 +404,11 @@ func (sh *shell) applyConfiguration(prevTermState *term.State) {
 				for _, arg := range args {
 					if core.IsSimpleInoxValOrOption(arg) {
 						if r, ok := arg.(core.Rune); ok {
-							arg = core.Str(r)
+							arg = core.String(r)
 						}
 						cmdArgs = append(cmdArgs, fmt.Sprint(arg))
 					} else {
-						return core.Str(""), fmt.Errorf("ex: invalid argument %v of type %T, only simple values are allowed", arg, arg)
+						return core.String(""), fmt.Errorf("ex: invalid argument %v of type %T, only simple values are allowed", arg, arg)
 					}
 				}
 
@@ -417,7 +417,7 @@ func (sh *shell) applyConfiguration(prevTermState *term.State) {
 				var permErr error
 				for i := len(subcommandNameChain); i >= 0; i-- {
 					perm := core.CommandPermission{
-						CommandName:         core.Str(cmdName),
+						CommandName:         core.String(cmdName),
 						SubcommandNameChain: subcommandNameChain[:i],
 					}
 
@@ -428,7 +428,7 @@ func (sh *shell) applyConfiguration(prevTermState *term.State) {
 				}
 
 				if permErr != nil {
-					return core.Str(""), permErr
+					return core.String(""), permErr
 				}
 
 				passedArgs := make([]string, 0)
@@ -1313,7 +1313,7 @@ func (sh *shell) printFgTaskResult() {
 		sh.preOut.Write([]byte{'\n'})
 	case nil, core.NilT:
 		return
-	case core.Str:
+	case core.String:
 		s = utils.StripANSISequences(string(r)) + "\n"
 		fmt.Fprint(sh.preOut, s)
 	case *core.List:
@@ -1493,14 +1493,14 @@ func _pwd(ctx *core.Context) core.Path {
 	return core.Path(core.AppendTrailingSlashIfNotPresent(dir))
 }
 
-func _whoami(ctx *core.Context) core.Str {
+func _whoami(ctx *core.Context) core.String {
 	user, _ := user.Current()
-	return core.Str(user.Username)
+	return core.String(user.Username)
 }
 
-func _hostname(ctx *core.Context) core.Str {
+func _hostname(ctx *core.Context) core.String {
 	name, _ := os.Hostname()
-	return core.Str(name)
+	return core.String(name)
 }
 
 func appendCursorMoveAfterLineFeeds(out io.ReadWriter) io.ReadWriter {

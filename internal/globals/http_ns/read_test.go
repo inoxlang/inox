@@ -282,6 +282,6 @@ func TestHttpRead(t *testing.T) {
 			return
 		}
 
-		assert.Equal(t, core.Str(`{"a":  1}`), val)
+		assert.Equal(t, core.String(`{"a":  1}`), val)
 	})
 }

@@ -58,7 +58,7 @@ var tagnameToSpecificDescPropHandler = map[string]map[string]func(value core.Val
 	},
 }
 
-func NewNode(ctx *core.Context, tag core.Str, desc *core.Object) (finalNode *HTMLNode) {
+func NewNode(ctx *core.Context, tag core.String, desc *core.Object) (finalNode *HTMLNode) {
 	var class, id string
 	var children []*HTMLNode
 
@@ -79,7 +79,7 @@ func NewNode(ctx *core.Context, tag core.Str, desc *core.Object) (finalNode *HTM
 
 	//first iteration: non-index keys
 	for it.Next(ctx) {
-		k := string(it.Key(ctx).(core.Str))
+		k := string(it.Key(ctx).(core.String))
 		if core.IsIndexKey(k) {
 			continue
 		}
@@ -87,14 +87,14 @@ func NewNode(ctx *core.Context, tag core.Str, desc *core.Object) (finalNode *HTM
 		v := it.Value(ctx)
 		switch k {
 		case CLASS_KEY:
-			s, ok := v.(core.Str)
+			s, ok := v.(core.String)
 			if !ok {
 				panic(core.FmtPropOfArgXShouldBeOfTypeY(CLASS_KEY, "description", "string", v))
 			}
 			class = string(s)
 		case ID_KEY:
 			switch idVal := v.(type) {
-			case core.Str:
+			case core.String:
 				id = string(idVal)
 			case core.Int:
 				id = strconv.Itoa(int(idVal))

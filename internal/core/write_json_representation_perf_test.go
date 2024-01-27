@@ -116,7 +116,7 @@ func BenchmarkWriteObjectJSONRepresentation(b *testing.B) {
 
 		values := utils.Repeat(b.N, func(index int) *Object {
 			return NewObjectFromMapNoInit(ValMap{
-				"a": Str(strings.Repeat("x", 10)),
+				"a": String(strings.Repeat("x", 10)),
 			})
 		})
 
@@ -136,7 +136,7 @@ func BenchmarkWriteObjectJSONRepresentation(b *testing.B) {
 
 			values := utils.Repeat(b.N, func(index int) *Object {
 				return NewObjectFromMapNoInit(ValMap{
-					"a": Str(strings.Repeat("x", 100)),
+					"a": String(strings.Repeat("x", 100)),
 				})
 			})
 
@@ -154,8 +154,8 @@ func BenchmarkWriteObjectJSONRepresentation(b *testing.B) {
 
 			values := utils.Repeat(b.N, func(index int) *Object {
 				return NewObjectFromMapNoInit(ValMap{
-					"a": Str(strings.Repeat("x", 50)),
-					"b": Str(strings.Repeat("x", 50)),
+					"a": String(strings.Repeat("x", 50)),
+					"b": String(strings.Repeat("x", 50)),
 				})
 			})
 
@@ -176,7 +176,7 @@ func BenchmarkWriteObjectJSONRepresentation(b *testing.B) {
 
 			values := utils.Repeat(b.N, func(index int) *Object {
 				return NewObjectFromMapNoInit(ValMap{
-					"a": Str(strings.Repeat("x", 1000)),
+					"a": String(strings.Repeat("x", 1000)),
 				})
 			})
 
@@ -194,8 +194,8 @@ func BenchmarkWriteObjectJSONRepresentation(b *testing.B) {
 
 			values := utils.Repeat(b.N, func(index int) *Object {
 				return NewObjectFromMapNoInit(ValMap{
-					"a": Str(strings.Repeat("x", 500)),
-					"b": Str(strings.Repeat("x", 500)),
+					"a": String(strings.Repeat("x", 500)),
+					"b": String(strings.Repeat("x", 500)),
 				})
 			})
 
@@ -213,16 +213,16 @@ func BenchmarkWriteObjectJSONRepresentation(b *testing.B) {
 
 			values := utils.Repeat(b.N, func(index int) *Object {
 				return NewObjectFromMapNoInit(ValMap{
-					"a": Str(strings.Repeat("x", 100)),
-					"b": Str(strings.Repeat("x", 100)),
-					"c": Str(strings.Repeat("x", 100)),
-					"d": Str(strings.Repeat("x", 100)),
-					"e": Str(strings.Repeat("x", 100)),
-					"f": Str(strings.Repeat("x", 100)),
-					"g": Str(strings.Repeat("x", 100)),
-					"h": Str(strings.Repeat("x", 100)),
-					"i": Str(strings.Repeat("x", 100)),
-					"j": Str(strings.Repeat("x", 100)),
+					"a": String(strings.Repeat("x", 100)),
+					"b": String(strings.Repeat("x", 100)),
+					"c": String(strings.Repeat("x", 100)),
+					"d": String(strings.Repeat("x", 100)),
+					"e": String(strings.Repeat("x", 100)),
+					"f": String(strings.Repeat("x", 100)),
+					"g": String(strings.Repeat("x", 100)),
+					"h": String(strings.Repeat("x", 100)),
+					"i": String(strings.Repeat("x", 100)),
+					"j": String(strings.Repeat("x", 100)),
 				})
 			})
 
@@ -248,7 +248,7 @@ func BenchmarkWriteRecordJSONRepresentation(b *testing.B) {
 
 		values := utils.Repeat(b.N, func(index int) *Record {
 			return NewRecordFromMap(ValMap{
-				"a": Str(strings.Repeat("x", 10)),
+				"a": String(strings.Repeat("x", 10)),
 			})
 		})
 
@@ -268,7 +268,7 @@ func BenchmarkWriteRecordJSONRepresentation(b *testing.B) {
 
 			values := utils.Repeat(b.N, func(index int) *Record {
 				return NewRecordFromMap(ValMap{
-					"a": Str(strings.Repeat("x", 100)),
+					"a": String(strings.Repeat("x", 100)),
 				})
 			})
 
@@ -286,8 +286,8 @@ func BenchmarkWriteRecordJSONRepresentation(b *testing.B) {
 
 			values := utils.Repeat(b.N, func(index int) *Record {
 				return NewRecordFromMap(ValMap{
-					"a": Str(strings.Repeat("x", 50)),
-					"b": Str(strings.Repeat("x", 50)),
+					"a": String(strings.Repeat("x", 50)),
+					"b": String(strings.Repeat("x", 50)),
 				})
 			})
 
@@ -308,7 +308,7 @@ func BenchmarkWriteRecordJSONRepresentation(b *testing.B) {
 
 			values := utils.Repeat(b.N, func(index int) *Record {
 				return NewRecordFromMap(ValMap{
-					"a": Str(strings.Repeat("x", 1000)),
+					"a": String(strings.Repeat("x", 1000)),
 				})
 			})
 
@@ -326,8 +326,8 @@ func BenchmarkWriteRecordJSONRepresentation(b *testing.B) {
 
 			values := utils.Repeat(b.N, func(index int) *Record {
 				return NewRecordFromMap(ValMap{
-					"a": Str(strings.Repeat("x", 500)),
-					"b": Str(strings.Repeat("x", 500)),
+					"a": String(strings.Repeat("x", 500)),
+					"b": String(strings.Repeat("x", 500)),
 				})
 			})
 
@@ -345,16 +345,16 @@ func BenchmarkWriteRecordJSONRepresentation(b *testing.B) {
 
 			values := utils.Repeat(b.N, func(index int) *Record {
 				return NewRecordFromMap(ValMap{
-					"a": Str(strings.Repeat("x", 100)),
-					"b": Str(strings.Repeat("x", 100)),
-					"c": Str(strings.Repeat("x", 100)),
-					"d": Str(strings.Repeat("x", 100)),
-					"e": Str(strings.Repeat("x", 100)),
-					"f": Str(strings.Repeat("x", 100)),
-					"g": Str(strings.Repeat("x", 100)),
-					"h": Str(strings.Repeat("x", 100)),
-					"i": Str(strings.Repeat("x", 100)),
-					"j": Str(strings.Repeat("x", 100)),
+					"a": String(strings.Repeat("x", 100)),
+					"b": String(strings.Repeat("x", 100)),
+					"c": String(strings.Repeat("x", 100)),
+					"d": String(strings.Repeat("x", 100)),
+					"e": String(strings.Repeat("x", 100)),
+					"f": String(strings.Repeat("x", 100)),
+					"g": String(strings.Repeat("x", 100)),
+					"h": String(strings.Repeat("x", 100)),
+					"i": String(strings.Repeat("x", 100)),
+					"j": String(strings.Repeat("x", 100)),
 				})
 			})
 

@@ -18,8 +18,8 @@ const (
 	INT_1_TYPED_REPR = `{"int__value":1}`
 	INT_2_TYPED_REPR = `{"int__value":2}`
 
-	STRING_A = core.Str("a")
-	STRING_B = core.Str("b")
+	STRING_A = core.String("a")
+	STRING_B = core.String("b")
 )
 
 func TestSharedUnpersistedMapSet(t *testing.T) {

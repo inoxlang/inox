@@ -42,6 +42,6 @@ func renderToWriter(ctx *core.Context, w io.Writer, v core.Value) {
 	}
 }
 
-func RenderToString(ctx *core.Context, v core.Value) core.Str {
-	return core.Str(Render(ctx, v).UnderlyingBytes())
+func RenderToString(ctx *core.Context, v core.Value) core.String {
+	return core.String(Render(ctx, v).UnderlyingBytes())
 }

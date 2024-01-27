@@ -56,7 +56,7 @@ func (Token) PropertyNames(ctx *Context) []string {
 func (t Token) Prop(ctx *Context, name string) Value {
 	switch name {
 	case "type":
-		return Str(t.value.Type.String())
+		return String(t.value.Type.String())
 	case "rune-count":
 		return Int(utf8.RuneCountInString(t.value.Str()))
 	default:

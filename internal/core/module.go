@@ -254,7 +254,7 @@ type InMemoryModuleParsingConfig struct {
 	Context *Context //this context is used to check permissions
 }
 
-func ParseInMemoryModule(codeString Str, config InMemoryModuleParsingConfig) (*Module, error) {
+func ParseInMemoryModule(codeString String, config InMemoryModuleParsingConfig) (*Module, error) {
 	src := parse.InMemorySource{
 		NameString: config.Name,
 		CodeString: string(codeString),
@@ -290,7 +290,7 @@ func ParseInMemoryModule(codeString Str, config InMemoryModuleParsingConfig) (*M
 
 	// add error if manifest is missing
 	if code.Node.Manifest == nil {
-		err := NewError(fmt.Errorf("missing manifest in in-memory module %s: the file should start with 'manifest {}'", config.Name), Str(config.Name))
+		err := NewError(fmt.Errorf("missing manifest in in-memory module %s: the file should start with 'manifest {}'", config.Name), String(config.Name))
 		mod.ParsingErrors = append(mod.ParsingErrors, err)
 		//TODO: add position
 	}
@@ -299,7 +299,7 @@ func ParseInMemoryModule(codeString Str, config InMemoryModuleParsingConfig) (*M
 
 	// add error if there are inclusion statements
 	if len(inclusionStmts) != 0 {
-		err := NewError(fmt.Errorf("inclusion import statements found in in-memory module "+config.Name), Str(config.Name))
+		err := NewError(fmt.Errorf("inclusion import statements found in in-memory module "+config.Name), String(config.Name))
 		mod.ParsingErrors = append(mod.ParsingErrors, err)
 		//TODO: add position
 	}
@@ -748,7 +748,7 @@ func ParseLocalSecondaryChunk(config LocalSecondaryChunkParsingConfig) (*Include
 func createRecordFromSourcePosition(pos parse.SourcePositionRange) *Record {
 	rec := NewRecordFromKeyValLists(
 		SOURCE_POS_RECORD_PROPNAMES,
-		[]Serializable{Str(pos.SourceName), Int(pos.StartLine), Int(pos.StartColumn), Int(pos.Span.Start), Int(pos.Span.End)},
+		[]Serializable{String(pos.SourceName), Int(pos.StartLine), Int(pos.StartColumn), Int(pos.Span.Start), Int(pos.Span.End)},
 	)
 	return rec
 }

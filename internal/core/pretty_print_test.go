@@ -80,7 +80,7 @@ func TestStrPrettyPrint(t *testing.T) {
 	defer ctx.CancelGracefully()
 
 	t.Run("newline character", func(t *testing.T) {
-		s := Str("a\nb")
+		s := String("a\nb")
 
 		expectedRepr := `"a\nb"`
 		assert.Equal(t, expectedRepr, Stringify(s, ctx))
@@ -89,7 +89,7 @@ func TestStrPrettyPrint(t *testing.T) {
 	})
 
 	t.Run("html unsafe characters", func(t *testing.T) {
-		s := Str("<script></script>")
+		s := String("<script></script>")
 
 		expectedRepr := `"<script></script>"`
 		assert.Equal(t, expectedRepr, Stringify(s, ctx))
@@ -174,7 +174,7 @@ func TestObjectPrettyPrint(t *testing.T) {
 
 		obj := objFrom(ValMap{
 			"a":        Int(1),
-			"password": Str("mypassword"),
+			"password": String("mypassword"),
 			"e":        EmailAddress("a@mail.com"),
 		})
 
@@ -188,7 +188,7 @@ func TestObjectPrettyPrint(t *testing.T) {
 
 		obj := objFrom(ValMap{
 			"a":        Int(1),
-			"password": Str("mypassword"),
+			"password": String("mypassword"),
 			"e":        EmailAddress("a@mail.com"),
 		})
 
@@ -203,7 +203,7 @@ func TestObjectPrettyPrint(t *testing.T) {
 
 		obj := objFrom(ValMap{
 			"a":        Int(1),
-			"password": Str("mypassword"),
+			"password": String("mypassword"),
 			"e":        EmailAddress("a@mail.com"),
 		})
 
@@ -310,7 +310,7 @@ func TestRecordPrettyPrint(t *testing.T) {
 
 		rec := NewRecordFromMap(ValMap{
 			"a":        Int(1),
-			"password": Str("mypassword"),
+			"password": String("mypassword"),
 			"e":        EmailAddress("a@mail.com"),
 		})
 
@@ -340,7 +340,7 @@ func TestDictPrettyPrint(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		dict := NewDictionary(map[string]Serializable{
-			GetJSONRepresentation(Str("a\nb"), nil, nil): Int(1),
+			GetJSONRepresentation(String("a\nb"), nil, nil): Int(1),
 		})
 
 		expectedRepr := `:{"a\nb": 1}`
@@ -356,7 +356,7 @@ func TestDictPrettyPrint(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		dict := NewDictionary(map[string]Serializable{
-			GetJSONRepresentation(Str("a\nb"), nil, nil):    Int(1),
+			GetJSONRepresentation(String("a\nb"), nil, nil): Int(1),
 			GetJSONRepresentation(Path("./path"), nil, nil): Int(2),
 		})
 
@@ -376,7 +376,7 @@ func TestDictPrettyPrint(t *testing.T) {
 	t.Run("cycle", func(t *testing.T) {
 		dict := NewDictionary(nil)
 		dict.entries["self"] = dict
-		dict.keys["self"] = Str("self")
+		dict.keys["self"] = String("self")
 	})
 }
 
@@ -847,7 +847,7 @@ func TestCheckedStringPrettyPrint(t *testing.T) {
 	reprTestCtx := NewContexWithEmptyState(ContextConfig{}, nil)
 	defer reprTestCtx.CancelGracefully()
 
-	pattern := &ExactValuePattern{value: Str("foo")}
+	pattern := &ExactValuePattern{value: String("foo")}
 	str := CheckedString{str: "foo", matchingPatternName: "ident_name", matchingPattern: pattern}
 
 	expectedRepr := "%ident_name`foo`"

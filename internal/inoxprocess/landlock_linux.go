@@ -105,7 +105,7 @@ func restrictProcessAccess(grantedPerms, forbiddenPerms []core.Permission, fls *
 				} else {
 					panic(core.ErrUnreachable)
 				}
-			case core.Str:
+			case core.String:
 				path, err := exec.LookPath(cmdName.UnderlyingString())
 				if err != nil {
 					//ignore if the executable does not exist.

@@ -850,7 +850,7 @@ func TestCheck(t *testing.T) {
 
 			input := StaticCheckInput{Node: n, Chunk: src, Globals: GlobalVariablesFromMap(map[string]Value{
 				"http": NewNamespace("http", map[string]Value{
-					"read": WrapGoFunction(func(*Context, URL) Str {
+					"read": WrapGoFunction(func(*Context, URL) String {
 						return ""
 					}),
 				}),
@@ -4892,7 +4892,7 @@ func (v testMutableGoValue) GetGoMethod(name string) (*GoFunction, bool) {
 func (v testMutableGoValue) Prop(ctx *Context, name string) Value {
 	switch name {
 	case "name":
-		return Str(v.Name)
+		return String(v.Name)
 	default:
 		method, ok := v.GetGoMethod(name)
 		if !ok {
@@ -4915,12 +4915,12 @@ func (val testMutableGoValue) Equal(ctx *Context, other Value, alreadyCompared m
 	return ok && val.Name == otherVal.Name && val.secret == otherVal.secret
 }
 
-func (user testMutableGoValue) GetName(ctx *Context) Str {
-	return Str(user.Name)
+func (user testMutableGoValue) GetName(ctx *Context) String {
+	return String(user.Name)
 }
 
-func (user testMutableGoValue) GetNameNoCtx() Str {
-	return Str(user.Name)
+func (user testMutableGoValue) GetNameNoCtx() String {
+	return String(user.Name)
 }
 
 func (user testMutableGoValue) Clone(clones map[uintptr]map[int]Value, depth int) (Value, error) {

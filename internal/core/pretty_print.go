@@ -439,7 +439,7 @@ func (f Float) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int
 	}
 }
 
-func (s Str) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (s String) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 	if depth == 0 && config.PrintDecodedTopLevelStrings {
 		utils.Must(w.Write([]byte(utils.StripANSISequences(string(s)))))
 		return
@@ -2075,7 +2075,7 @@ func (e TreedataHiearchyEntry) PrettyPrint(w *bufio.Writer, config *PrettyPrintC
 func (c *StringConcatenation) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 	//TODO: improve implementation
 
-	Str(c.GetOrBuildString()).PrettyPrint(w, config, depth, parentIndentCount)
+	String(c.GetOrBuildString()).PrettyPrint(w, config, depth, parentIndentCount)
 }
 
 func (c *BytesConcatenation) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {

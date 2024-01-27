@@ -353,7 +353,7 @@ func (list *StringList) SetSlice(ctx *Context, start, end int, seq Sequence) {
 	}
 
 	for i := start; i < end; i++ {
-		list.elements[i] = seq.At(ctx, i-start).(Str)
+		list.elements[i] = seq.At(ctx, i-start).(String)
 	}
 }
 

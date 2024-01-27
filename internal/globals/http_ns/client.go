@@ -199,7 +199,7 @@ func (c *HttpClient) MakeRequest(ctx *core.Context, method string, u core.URL, b
 				for _, k := range headers.Keys(ctx) {
 					v := headers.Prop(ctx, k)
 
-					s, ok := v.(core.Str)
+					s, ok := v.(core.String)
 					if !ok {
 						return nil, errors.New("failed to finalize request: header values should be strings")
 					}

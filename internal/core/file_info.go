@@ -79,7 +79,7 @@ func (i FileInfo) GetGoMethod(name string) (*GoFunction, bool) {
 func (i FileInfo) Prop(ctx *Context, name string) Value {
 	switch name {
 	case "name":
-		return Str(i.BaseName_)
+		return String(i.BaseName_)
 	case "abs-path":
 		return i.AbsPath_
 	case "size":

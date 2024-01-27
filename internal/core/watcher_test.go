@@ -190,7 +190,7 @@ func TestDictionaryWatcher(t *testing.T) {
 
 			go func() {
 				time.Sleep(time.Microsecond)
-				dict.SetValue(ctx, Str("a"), Int(1))
+				dict.SetValue(ctx, String("a"), Int(1))
 			}()
 
 			v, err := w.WaitNext(ctx, nil, time.Second)
@@ -198,7 +198,7 @@ func TestDictionaryWatcher(t *testing.T) {
 				return
 			}
 
-			assert.Equal(t, NewAddEntryMutation(ctx, Str("a"), Int(1), ShallowWatching, `/"a"`), v)
+			assert.Equal(t, NewAddEntryMutation(ctx, String("a"), Int(1), ShallowWatching, `/"a"`), v)
 			w.Stop()
 
 			_, err = w.WaitNext(ctx, nil, time.Second)
@@ -216,7 +216,7 @@ func TestDictionaryWatcher(t *testing.T) {
 
 			go func() {
 				time.Sleep(time.Microsecond)
-				dict.SetValue(ctx, Str("a"), Int(2))
+				dict.SetValue(ctx, String("a"), Int(2))
 			}()
 
 			v, err := w.WaitNext(ctx, nil, time.Second)
@@ -224,7 +224,7 @@ func TestDictionaryWatcher(t *testing.T) {
 				return
 			}
 
-			assert.Equal(t, NewUpdateEntryMutation(ctx, Str("a"), Int(2), ShallowWatching, `/"a"`), v)
+			assert.Equal(t, NewUpdateEntryMutation(ctx, String("a"), Int(2), ShallowWatching, `/"a"`), v)
 			w.Stop()
 
 			_, err = w.WaitNext(ctx, nil, time.Second)

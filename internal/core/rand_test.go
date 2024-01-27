@@ -81,7 +81,7 @@ func TestRegexPatternRandom(t *testing.T) {
 
 		for i := 0; i < RAND_TESTS_COUNT; i++ {
 			s := r.Random(ctx)
-			assert.True(t, s.Equal(ctx, Str("a"), nil, 0) || s.Equal(ctx, Str("b"), nil, 0))
+			assert.True(t, s.Equal(ctx, String("a"), nil, 0) || s.Equal(ctx, String("b"), nil, 0))
 		}
 	})
 
@@ -93,9 +93,9 @@ func TestRegexPatternRandom(t *testing.T) {
 		for i := 0; i < RAND_TESTS_COUNT; i++ {
 			s := r.Random(ctx)
 			assert.True(t,
-				s.Equal(ctx, Str("a"), nil, 0) ||
-					s.Equal(ctx, Str("b"), nil, 0) ||
-					s.Equal(ctx, Str("c"), nil, 0),
+				s.Equal(ctx, String("a"), nil, 0) ||
+					s.Equal(ctx, String("b"), nil, 0) ||
+					s.Equal(ctx, String("c"), nil, 0),
 			)
 		}
 	})
@@ -107,7 +107,7 @@ func TestRegexPatternRandom(t *testing.T) {
 
 		for i := 0; i < RAND_TESTS_COUNT; i++ {
 			s := r.Random(ctx)
-			assert.True(t, s.Equal(ctx, Str("a1"), nil, 0) || s.Equal(ctx, Str("b2"), nil, 0))
+			assert.True(t, s.Equal(ctx, String("a1"), nil, 0) || s.Equal(ctx, String("b2"), nil, 0))
 		}
 	})
 
@@ -119,9 +119,9 @@ func TestRegexPatternRandom(t *testing.T) {
 		for i := 0; i < RAND_TESTS_COUNT; i++ {
 			s := r.Random(ctx)
 			assert.True(t,
-				s.Equal(ctx, Str("a1"), nil, 0) ||
-					s.Equal(ctx, Str("b2"), nil, 0) ||
-					s.Equal(ctx, Str("c3"), nil, 0),
+				s.Equal(ctx, String("a1"), nil, 0) ||
+					s.Equal(ctx, String("b2"), nil, 0) ||
+					s.Equal(ctx, String("c3"), nil, 0),
 			)
 		}
 	})

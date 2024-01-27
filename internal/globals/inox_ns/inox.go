@@ -77,7 +77,7 @@ func NewInoxNamespace() *core.Namespace {
 	})
 }
 
-func _parse_chunk(ctx *core.Context, s core.Str) (node core.AstNode, e error) {
+func _parse_chunk(ctx *core.Context, s core.String) (node core.AstNode, e error) {
 	defer func() {
 		err, ok := recover().(error)
 		if ok {
@@ -89,7 +89,7 @@ func _parse_chunk(ctx *core.Context, s core.Str) (node core.AstNode, e error) {
 	return core.AstNode{Node: chunk}, err
 }
 
-func _parse_expr(ctx *core.Context, s core.Str) (n core.AstNode, err error) {
+func _parse_expr(ctx *core.Context, s core.String) (n core.AstNode, err error) {
 	defer func() {
 		e, ok := recover().(error)
 		if ok {
@@ -117,7 +117,7 @@ func _parse_local_script(ctx *core.Context, src core.Path) (*core.Module, error)
 	return mod, err
 }
 
-func _parse_in_memory_module(ctx *core.Context, name core.Str, code core.Str) (*core.Module, error) {
+func _parse_in_memory_module(ctx *core.Context, name core.String, code core.String) (*core.Module, error) {
 	mod, err := core.ParseInMemoryModule(code, core.InMemoryModuleParsingConfig{
 		Name:    string(name),
 		Context: ctx,
@@ -298,11 +298,11 @@ func GetCheckData(fpath string, compilationCtx *core.Context, out io.Writer) map
 	return data
 }
 
-func _print_source(ctx *core.Context, arg core.AstNode) core.Str {
+func _print_source(ctx *core.Context, arg core.AstNode) core.String {
 	buf := bytes.Buffer{}
 	_, err := parse.Print(arg.Node, arg.Chunk().Node, &buf, parse.PrintConfig{KeepTrailingSpace: true})
 	if err != nil {
 		panic(err)
 	}
-	return core.Str(buf.String())
+	return core.String(buf.String())
 }

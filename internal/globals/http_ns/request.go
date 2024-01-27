@@ -36,9 +36,9 @@ type HttpRequest struct {
 	ULIDString   string
 
 	//accessible from inox
-	Method             core.Str  //.url.Method from the *http.Request ("GET" if empty)
-	URL                core.URL  //.url.URL from the *http.Request
-	Path               core.Path //.url.Path from the *http.Request (already escaped)
+	Method             core.String //.url.Method from the *http.Request ("GET" if empty)
+	URL                core.URL    //.url.URL from the *http.Request
+	Path               core.Path   //.url.Path from the *http.Request (already escaped)
 	Body               *core.Reader
 	Cookies            []*http.Cookie
 	ParsedAcceptHeader mimeheader.AcceptHeader
@@ -141,7 +141,7 @@ func NewServerSideRequest(r *http.Request, logger zerolog.Logger, server *HttpsS
 		ULID:       id,
 		ULIDString: id.String(),
 
-		Method:             core.Str(method),
+		Method:             core.String(method),
 		URL:                core.URL(url),
 		Path:               core.Path(r.URL.Path),
 		RemoteAddrAndPort:  addrAndPort,
@@ -239,7 +239,7 @@ func (req *HttpRequest) Prop(ctx *core.Context, name string) core.Value {
 
 			singleHeaderValues := make([]core.Serializable, len(headerValues))
 			for i, val := range headerValues {
-				singleHeaderValues[i] = core.Str(val)
+				singleHeaderValues[i] = core.String(val)
 			}
 
 			vals[i] = core.NewTuple(singleHeaderValues)

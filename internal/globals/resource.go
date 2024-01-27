@@ -195,7 +195,7 @@ func _updateResource(ctx *core.Context, resource core.ResourceName, args ...core
 
 				switch contentType.WithoutParams() {
 				case mimeconsts.JSON_CTYPE, mimeconsts.HTML_CTYPE, mimeconsts.PLAIN_TEXT_CTYPE:
-					return core.Str(b), nil
+					return core.String(b), nil
 				}
 			}
 
@@ -255,7 +255,7 @@ func _deleteResource(ctx *core.Context, resource core.ResourceName, args ...core
 				switch contentType.WithoutParams() {
 				case mimeconsts.JSON_CTYPE, mimeconsts.HTML_CTYPE, mimeconsts.PLAIN_TEXT_CTYPE:
 					//TODO: return checked strings ?
-					return core.Str(b), nil
+					return core.String(b), nil
 				}
 			}
 

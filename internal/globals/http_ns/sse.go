@@ -18,27 +18,27 @@ type ServerSentEvent struct {
 
 func (e *ServerSentEvent) ToEvent() *core.Event {
 	valMap := core.ValMap{
-		"id":      core.Str(""),
-		"data":    core.Str(""),
-		"event":   core.Str(""),
-		"retry":   core.Str(""),
-		"comment": core.Str(""),
+		"id":      core.String(""),
+		"data":    core.String(""),
+		"event":   core.String(""),
+		"retry":   core.String(""),
+		"comment": core.String(""),
 	}
 
 	if len(e.ID) != 0 {
-		valMap["id"] = core.Str(e.ID)
+		valMap["id"] = core.String(e.ID)
 	}
 	if len(e.Data) != 0 {
-		valMap["data"] = core.Str(e.Data)
+		valMap["data"] = core.String(e.Data)
 	}
 	if len(e.Event) != 0 {
-		valMap["event"] = core.Str(e.Event)
+		valMap["event"] = core.String(e.Event)
 	}
 	if len(e.Retry) != 0 {
-		valMap["retry"] = core.Str(e.Retry)
+		valMap["retry"] = core.String(e.Retry)
 	}
 	if len(e.Comment) != 0 {
-		valMap["comment"] = core.Str(e.Comment)
+		valMap["comment"] = core.String(e.Comment)
 	}
 
 	return core.NewEvent(nil, core.NewRecordFromMap(valMap), core.DateTime(e.timestamp))

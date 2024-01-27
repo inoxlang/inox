@@ -738,13 +738,13 @@ func TestDatabaseILGetOrLoad(t *testing.T) {
 
 	var INDEXABLE = NewWrappedValueList(
 		NewObjectFromMapNoInit(ValMap{
-			"a": Str("b"),
+			"a": String("b"),
 		}),
 	)
 
 	var COLLECTION = &testCollection{NewWrappedValueList(
 		NewObjectFromMapNoInit(ValMap{
-			"name":      Str("username"),
+			"name":      String("username"),
 			"my_method": &InoxFunction{},
 		}),
 	)}
@@ -808,7 +808,7 @@ func TestDatabaseILGetOrLoad(t *testing.T) {
 		if !assert.NoError(t, err) {
 			return
 		}
-		assert.Equal(t, Str("username"), firstUserName)
+		assert.Equal(t, String("username"), firstUserName)
 
 		//inexisting user's property
 		_, err = dbIL.GetOrLoad(ctx, "/users/0/inexisting")

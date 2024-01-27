@@ -191,7 +191,7 @@ func TestRawTcpPermission(t *testing.T) {
 }
 
 func TestCommandPermission(t *testing.T) {
-	permNoSub := CommandPermission{CommandName: Str("mycmd")}
+	permNoSub := CommandPermission{CommandName: String("mycmd")}
 	assert.True(t, permNoSub.Includes(permNoSub))
 
 	permNoSubPath := CommandPermission{CommandName: Path("/bin/env")}
@@ -201,16 +201,16 @@ func TestCommandPermission(t *testing.T) {
 	assert.True(t, permNoSubPathPattern.Includes(permNoSubPathPattern))
 	assert.True(t, permNoSubPathPattern.Includes(permNoSubPath))
 
-	otherPermNoSub := CommandPermission{CommandName: Str("mycmd2")}
+	otherPermNoSub := CommandPermission{CommandName: String("mycmd2")}
 	assert.False(t, otherPermNoSub.Includes(permNoSub))
 	assert.False(t, permNoSub.Includes(otherPermNoSub))
 
-	permSub1a := CommandPermission{CommandName: Str("mycmd"), SubcommandNameChain: []string{"a"}}
+	permSub1a := CommandPermission{CommandName: String("mycmd"), SubcommandNameChain: []string{"a"}}
 	assert.True(t, permSub1a.Includes(permSub1a))
 	assert.False(t, permNoSub.Includes(permSub1a))
 	assert.False(t, permSub1a.Includes(permNoSub))
 
-	permSub1b := CommandPermission{CommandName: Str("mycmd"), SubcommandNameChain: []string{"b"}}
+	permSub1b := CommandPermission{CommandName: String("mycmd"), SubcommandNameChain: []string{"b"}}
 	assert.False(t, permSub1b.Includes(permSub1a))
 	assert.False(t, permSub1a.Includes(permSub1b))
 }

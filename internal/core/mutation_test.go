@@ -350,7 +350,7 @@ func TestDictionaryOnMutation(t *testing.T) {
 		_, err := dict.OnMutation(ctx, func(ctx *Context, mutation Mutation) (registerAgain bool) {
 			called.Store(true)
 
-			assert.Equal(t, NewAddEntryMutation(ctx, Str("a"), Int(1), ShallowWatching, `/"a"`), mutation)
+			assert.Equal(t, NewAddEntryMutation(ctx, String("a"), Int(1), ShallowWatching, `/"a"`), mutation)
 			return true
 		}, MutationWatchingConfiguration{Depth: ShallowWatching})
 
@@ -358,7 +358,7 @@ func TestDictionaryOnMutation(t *testing.T) {
 			return
 		}
 
-		dict.SetValue(ctx, Str("a"), Int(1))
+		dict.SetValue(ctx, String("a"), Int(1))
 
 		assert.True(t, called.Load())
 	})
@@ -374,7 +374,7 @@ func TestDictionaryOnMutation(t *testing.T) {
 		_, err := dict.OnMutation(ctx, func(ctx *Context, mutation Mutation) (registerAgain bool) {
 			called.Store(true)
 
-			assert.Equal(t, NewUpdateEntryMutation(ctx, Str("a"), Int(2), ShallowWatching, `/"a"`), mutation)
+			assert.Equal(t, NewUpdateEntryMutation(ctx, String("a"), Int(2), ShallowWatching, `/"a"`), mutation)
 			return true
 		}, MutationWatchingConfiguration{Depth: ShallowWatching})
 
@@ -382,7 +382,7 @@ func TestDictionaryOnMutation(t *testing.T) {
 			return
 		}
 
-		dict.SetValue(ctx, Str("a"), Int(2))
+		dict.SetValue(ctx, String("a"), Int(2))
 
 		assert.True(t, called.Load())
 	})
@@ -445,7 +445,7 @@ func TestDictionaryOnMutation(t *testing.T) {
 		}
 
 		newInnerObj := NewObjectFromMap(ValMap{"a": Int(1)}, ctx)
-		dict.SetValue(ctx, Str("inner"), newInnerObj)
+		dict.SetValue(ctx, String("inner"), newInnerObj)
 
 		if !assert.NoError(t, newInnerObj.SetProp(ctx, "a", Int(2))) {
 			return
@@ -478,7 +478,7 @@ func TestDictionaryOnMutation(t *testing.T) {
 		}
 
 		newInnerObj := NewObjectFromMap(ValMap{"a": Int(1)}, ctx)
-		dict.SetValue(ctx, Str("inner"), newInnerObj)
+		dict.SetValue(ctx, String("inner"), newInnerObj)
 
 		if !assert.NoError(t, innerObj.SetProp(ctx, "a", Int(2))) {
 			return
@@ -1643,7 +1643,7 @@ func TestSystemGraphOnMutation(t *testing.T) {
 				Version: 1,
 				Kind:    SG_AddNode,
 				Depth:   ShallowWatching,
-			}, Str("a"), Str("Object"), Int(objPtr), Int(0))
+			}, String("a"), String("Object"), Int(objPtr), Int(0))
 
 			assert.Equal(t, expectedMutation, mutation)
 			return
@@ -1678,7 +1678,7 @@ func TestSystemGraphOnMutation(t *testing.T) {
 				Version: 1,
 				Kind:    SG_AddNode,
 				Depth:   ShallowWatching,
-			}, Str(".inner"), Str("Object"), Int(childPtr), Int(parentPtr), Str(DEFAULT_EDGE_TO_CHILD_TEXT), Int(EdgeChild))
+			}, String(".inner"), String("Object"), Int(childPtr), Int(parentPtr), String(DEFAULT_EDGE_TO_CHILD_TEXT), Int(EdgeChild))
 
 			assert.Equal(t, expectedMutation, mutation)
 			return
@@ -1714,9 +1714,9 @@ func TestSystemGraphOnMutation(t *testing.T) {
 				Version: 1,
 				Kind:    SG_AddNode,
 				Depth:   ShallowWatching,
-			}, Str(".inner"), Str("Object"), Int(childPtr), Int(parentPtr), NewTuple([]Serializable{
-				Str(DEFAULT_EDGE_TO_CHILD_TEXT), Int(EdgeChild), //first edge
-				Str(DEFAULT_EDGE_TO_WATCHED_CHILD_TEXT), Int(EdgeWatched), //second edge
+			}, String(".inner"), String("Object"), Int(childPtr), Int(parentPtr), NewTuple([]Serializable{
+				String(DEFAULT_EDGE_TO_CHILD_TEXT), Int(EdgeChild), //first edge
+				String(DEFAULT_EDGE_TO_WATCHED_CHILD_TEXT), Int(EdgeWatched), //second edge
 			}))
 
 			assert.Equal(t, expectedMutation, mutation)
@@ -1754,7 +1754,7 @@ func TestSystemGraphOnMutation(t *testing.T) {
 				Version: 1,
 				Kind:    SG_AddNode,
 				Depth:   ShallowWatching,
-			}, Str(""), Str("Object"), Int(watchedValPtr), Int(watchingValPtr), Str(DEFAULT_EDGE_TO_WATCHED_CHILD_TEXT), Int(EdgeWatched))
+			}, String(""), String("Object"), Int(watchedValPtr), Int(watchingValPtr), String(DEFAULT_EDGE_TO_WATCHED_CHILD_TEXT), Int(EdgeWatched))
 
 			assert.Equal(t, expectedMutation, mutation)
 			return
@@ -1787,7 +1787,7 @@ func TestSystemGraphOnMutation(t *testing.T) {
 				Version: 1,
 				Kind:    SG_AddEvent,
 				Depth:   ShallowWatching,
-			}, Int(graph.nodes.list[0].valuePtr), Str("event"))
+			}, Int(graph.nodes.list[0].valuePtr), String("event"))
 
 			assert.Equal(t, expectedMutation, mutation)
 			return

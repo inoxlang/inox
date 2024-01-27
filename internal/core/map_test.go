@@ -30,13 +30,13 @@ func TestMap(t *testing.T) {
 		// should work with any Iprops
 		mapper := PropertyName("name")
 
-		obj := NewObjectFromMap(ValMap{"name": Str("a")}, ctx)
+		obj := NewObjectFromMap(ValMap{"name": String("a")}, ctx)
 		result := MapIterable(ctx, NewWrappedValueList(obj), mapper)
-		assert.Equal(t, NewWrappedValueList(Str("a")), result)
+		assert.Equal(t, NewWrappedValueList(String("a")), result)
 
 		fileInfo := FileInfo{BaseName_: "file.txt"}
 		result = MapIterable(ctx, NewWrappedValueList(fileInfo), mapper)
-		assert.Equal(t, NewWrappedValueList(Str("file.txt")), result)
+		assert.Equal(t, NewWrappedValueList(String("file.txt")), result)
 	})
 
 	t.Run("key list mapper", func(t *testing.T) {
@@ -48,16 +48,16 @@ func TestMap(t *testing.T) {
 		// should work with any Iprops
 		mapper := KeyList{"name"}
 
-		obj := NewObjectFromMap(ValMap{"name": Str("a")}, ctx)
+		obj := NewObjectFromMap(ValMap{"name": String("a")}, ctx)
 		result := MapIterable(ctx, NewWrappedValueList(obj), mapper)
 		assert.Equal(t, NewWrappedValueList(objFrom(ValMap{
-			"name": Str("a"),
+			"name": String("a"),
 		})), result)
 
 		fileInfo := FileInfo{BaseName_: "file.txt"}
 		result = MapIterable(ctx, NewWrappedValueList(fileInfo), mapper)
 		assert.Equal(t, NewWrappedValueList(objFrom(ValMap{
-			"name": Str("file.txt"),
+			"name": String("file.txt"),
 		})), result)
 	})
 

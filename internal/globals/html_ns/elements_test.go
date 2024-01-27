@@ -37,7 +37,7 @@ func TestElementFunction(t *testing.T) {
 		"empty .class": {
 			tag: "div",
 			desc: func(ctx *core.Context) *core.Object {
-				return core.NewObjectFromMap(core.ValMap{CLASS_KEY: core.Str("")}, ctx)
+				return core.NewObjectFromMap(core.ValMap{CLASS_KEY: core.String("")}, ctx)
 			},
 			result: func(ctx *core.Context) *HTMLNode {
 				return &HTMLNode{
@@ -52,7 +52,7 @@ func TestElementFunction(t *testing.T) {
 		"non empty .class": {
 			tag: "div",
 			desc: func(ctx *core.Context) *core.Object {
-				return core.NewObjectFromMap(core.ValMap{CLASS_KEY: core.Str("x")}, ctx)
+				return core.NewObjectFromMap(core.ValMap{CLASS_KEY: core.String("x")}, ctx)
 			},
 			result: func(ctx *core.Context) *HTMLNode {
 				return &HTMLNode{
@@ -115,7 +115,7 @@ func TestElementFunction(t *testing.T) {
 			tag: "div",
 			desc: func(ctx *core.Context) *core.Object {
 				return core.NewObjectFromMap(core.ValMap{
-					CHILDREN_KEY: core.NewWrappedValueList(core.Str("text")),
+					CHILDREN_KEY: core.NewWrappedValueList(core.String("text")),
 				}, ctx)
 			},
 			result: func(ctx *core.Context) *HTMLNode {
@@ -167,7 +167,7 @@ func TestElementFunction(t *testing.T) {
 			tag: "div",
 			desc: func(ctx *core.Context) *core.Object {
 				return core.NewObjectFromMap(core.ValMap{
-					"0": core.Str("text"),
+					"0": core.String("text"),
 				}, ctx)
 			},
 			result: func(ctx *core.Context) *HTMLNode {
@@ -189,8 +189,8 @@ func TestElementFunction(t *testing.T) {
 			tag: "div",
 			desc: func(ctx *core.Context) *core.Object {
 				return core.NewObjectFromMap(core.ValMap{
-					CHILDREN_KEY: core.NewWrappedValueList(core.Str("text1")),
-					"0":          core.NewWrappedValueList(core.Str("text1")),
+					CHILDREN_KEY: core.NewWrappedValueList(core.String("text1")),
+					"0":          core.NewWrappedValueList(core.String("text1")),
 				}, ctx)
 			},
 			panics: true,
@@ -205,7 +205,7 @@ func TestElementFunction(t *testing.T) {
 
 			if testCase.panics {
 				assert.Panics(t, func() {
-					NewNode(ctx, core.Str(testCase.tag), testCase.desc(ctx))
+					NewNode(ctx, core.String(testCase.tag), testCase.desc(ctx))
 				})
 			} else {
 				expectedResult := testCase.result(ctx)
@@ -227,7 +227,7 @@ func TestElementFunction(t *testing.T) {
 					return nil
 				}, 0)
 
-				result := NewNode(ctx, core.Str(testCase.tag), testCase.desc(ctx))
+				result := NewNode(ctx, core.String(testCase.tag), testCase.desc(ctx))
 				assert.NotNil(t, result)
 				assert.Equal(t, expectedResult, result)
 			}

@@ -30,7 +30,7 @@ func TestDictionaryClone(t *testing.T) {
 	//cycle
 	dict := NewDictionary(nil)
 	dict.entries["\"self\""] = dict
-	dict.keys["\"self\""] = Str("self")
+	dict.keys["\"self\""] = String("self")
 	clone, err = dict.Clone(nil, &[]PotentiallySharable{}, nil, 0)
 	assert.ErrorIs(t, err, ErrMaximumCloningDepthReached)
 	assert.Nil(t, clone)

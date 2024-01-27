@@ -84,7 +84,7 @@ func NewEnvNamespace(ctx *core.Context, envPattern *core.ObjectPattern, allowMis
 				if patt != core.STR_PATTERN {
 					return fmt.Errorf("invalid pattern type %T for environment variable '%s'", entry.Pattern, entry.Name)
 				}
-				values = append(values, core.Str(envVal))
+				values = append(values, core.String(envVal))
 			default:
 				return fmt.Errorf("invalid pattern type %T for environment variable '%s'", entry.Pattern, entry.Name)
 			}

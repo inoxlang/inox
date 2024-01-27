@@ -60,7 +60,7 @@ func _fprint(ctx *core.Context, out core.Writable, args ...core.Value) {
 	__fprint(ctx, out.Writer(), args...)
 }
 
-func _Error(ctx *core.Context, text core.Str, args ...core.Serializable) core.Error {
+func _Error(ctx *core.Context, text core.String, args ...core.Serializable) core.Error {
 	goErr := errors.New(string(text))
 	if len(args) == 0 {
 		return core.NewError(goErr, core.Nil)
@@ -84,19 +84,19 @@ func _tostr(ctx *core.Context, arg core.Value) core.StringLike {
 	switch a := arg.(type) {
 	case core.Bool:
 		if a {
-			return core.Str("true")
+			return core.String("true")
 		}
-		return core.Str("false")
+		return core.String("false")
 	case core.Integral:
-		return core.Str(core.Stringify(a, ctx))
+		return core.String(core.Stringify(a, ctx))
 	case core.StringLike:
 		return a
 	case *core.ByteSlice:
-		return core.Str(a.UnderlyingBytes()) //TODO: panic if invalid characters ?
+		return core.String(a.UnderlyingBytes()) //TODO: panic if invalid characters ?
 	case *core.RuneSlice:
-		return core.Str(a.ElementsDoNotModify())
+		return core.String(a.ElementsDoNotModify())
 	case core.ResourceName:
-		return core.Str(a.ResourceName())
+		return core.String(a.ResourceName())
 	default:
 		panic(fmt.Errorf("cannot convert value of type %T to string", a))
 	}
@@ -157,7 +157,7 @@ func _parse(ctx *core.Context, r core.Readable, p core.Pattern) (core.Value, err
 	return strPatt.Parse(ctx, utils.BytesAsString(bytes.UnderlyingBytes()))
 }
 
-func _split(ctx *core.Context, r core.Readable, sep core.Str, p *core.OptionalParam[core.Pattern]) (core.Value, error) {
+func _split(ctx *core.Context, r core.Readable, sep core.String, p *core.OptionalParam[core.Pattern]) (core.Value, error) {
 	bytes, err := r.Reader().ReadAll()
 	if err != nil {
 		return nil, err
@@ -190,7 +190,7 @@ func _split(ctx *core.Context, r core.Readable, sep core.Str, p *core.OptionalPa
 		}
 	} else {
 		for i, substring := range substrings {
-			values[i] = core.Str(substring)
+			values[i] = core.String(substring)
 		}
 	}
 
@@ -419,7 +419,7 @@ func _get_system_graph(ctx *core.Context) (*core.SystemGraph, core.Bool) {
 
 func _propnames(ctx *core.Context, val core.Value) *core.List {
 	props := val.(core.IProps).PropertyNames(ctx)
-	values := utils.MapSlice(props, func(s string) core.Serializable { return core.Str(s) })
+	values := utils.MapSlice(props, func(s string) core.Serializable { return core.String(s) })
 	return core.NewWrappedValueListFrom(values)
 }
 

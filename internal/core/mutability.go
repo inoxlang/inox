@@ -42,7 +42,7 @@ func (f Float) IsMutable() bool {
 	return false
 }
 
-func (s Str) IsMutable() bool {
+func (s String) IsMutable() bool {
 	return false
 }
 

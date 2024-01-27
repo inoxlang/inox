@@ -78,7 +78,7 @@ func TestSharedUnpersistedSetAdd(t *testing.T) {
 
 		//Check that the element is added from tx1's POV.
 		assert.True(t, bool(set.Has(ctx1, INT_1)))
-		assert.True(t, bool(utils.Ret1(set.Get(ctx1, core.Str(INT_1_UNTYPED_REPR)))))
+		assert.True(t, bool(utils.Ret1(set.Get(ctx1, core.String(INT_1_UNTYPED_REPR)))))
 		values := core.IterateAllValuesOnly(ctx1, set.Iterator(ctx1, core.IteratorConfiguration{}))
 		assert.ElementsMatch(t, []any{INT_1}, values)
 
@@ -89,10 +89,10 @@ func TestSharedUnpersistedSetAdd(t *testing.T) {
 			//since the first transaction should be finished,
 			//the other element should have been added.
 			assert.True(t, bool(set.Has(ctx2, INT_1)))
-			assert.True(t, bool(utils.Ret1(set.Get(ctx2, core.Str(INT_1_UNTYPED_REPR)))))
+			assert.True(t, bool(utils.Ret1(set.Get(ctx2, core.String(INT_1_UNTYPED_REPR)))))
 
 			assert.True(t, bool(set.Has(ctx2, INT_2)))
-			assert.True(t, bool(utils.Ret1(set.Get(ctx2, core.Str(INT_2_UNTYPED_REPR)))))
+			assert.True(t, bool(utils.Ret1(set.Get(ctx2, core.String(INT_2_UNTYPED_REPR)))))
 
 			values := core.IterateAllValuesOnly(ctx2, set.Iterator(ctx2, core.IteratorConfiguration{}))
 			assert.ElementsMatch(t, []any{INT_1, INT_2}, values)
@@ -160,8 +160,8 @@ func TestSharedUnpersistedSetAdd(t *testing.T) {
 		set := NewSetWithConfig(ctx, nil, pattern.config)
 		set.Share(ctx.GetClosestState())
 
-		obj1 := core.NewObjectFromMap(core.ValMap{"name": core.Str("a")}, ctx)
-		obj2 := core.NewObjectFromMap(core.ValMap{"name": core.Str("a")}, ctx)
+		obj1 := core.NewObjectFromMap(core.ValMap{"name": core.String("a")}, ctx)
+		obj2 := core.NewObjectFromMap(core.ValMap{"name": core.String("a")}, ctx)
 		set.Add(ctx, obj1)
 
 		func() {
@@ -213,8 +213,8 @@ func TestSharedUnpersistedSetHas(t *testing.T) {
 		set := NewSetWithConfig(ctx, nil, pattern.config)
 		set.Share(ctx.GetClosestState())
 
-		obj1 := core.NewObjectFromMap(core.ValMap{"name": core.Str("a")}, ctx)
-		obj2 := core.NewObjectFromMap(core.ValMap{"name": core.Str("a")}, ctx)
+		obj1 := core.NewObjectFromMap(core.ValMap{"name": core.String("a")}, ctx)
+		obj2 := core.NewObjectFromMap(core.ValMap{"name": core.String("a")}, ctx)
 		set.Add(ctx, obj1)
 
 		assert.True(t, bool(set.Has(ctx, obj1)))
@@ -318,8 +318,8 @@ func TestSharedUnpersistedSetContains(t *testing.T) {
 		set := NewSetWithConfig(ctx, nil, pattern.config)
 		set.Share(ctx.GetClosestState())
 
-		obj1 := core.NewObjectFromMap(core.ValMap{"name": core.Str("a")}, ctx)
-		obj2 := core.NewObjectFromMap(core.ValMap{"name": core.Str("a")}, ctx)
+		obj1 := core.NewObjectFromMap(core.ValMap{"name": core.String("a")}, ctx)
+		obj2 := core.NewObjectFromMap(core.ValMap{"name": core.String("a")}, ctx)
 		set.Add(ctx, obj1)
 
 		assert.True(t, bool(set.Contains(ctx, obj1)))
@@ -519,8 +519,8 @@ func TestSharedUnpersistedSetRemove(t *testing.T) {
 		set := NewSetWithConfig(ctx, nil, pattern.config)
 		set.Share(ctx.GetClosestState())
 
-		obj1 := core.NewObjectFromMap(core.ValMap{"name": core.Str("a")}, ctx)
-		obj2 := core.NewObjectFromMap(core.ValMap{"name": core.Str("a")}, ctx)
+		obj1 := core.NewObjectFromMap(core.ValMap{"name": core.String("a")}, ctx)
+		obj2 := core.NewObjectFromMap(core.ValMap{"name": core.String("a")}, ctx)
 
 		set.Add(ctx, obj1)
 		set.Remove(ctx, obj2)

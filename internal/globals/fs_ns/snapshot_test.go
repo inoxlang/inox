@@ -28,7 +28,7 @@ func TestNewFilesystemSnapshot(t *testing.T) {
 
 		desc := core.NewObjectFromMapNoInit(core.ValMap{
 			FS_SNAPSHOT_SYMB_DESC_FILES_PROPNAME: core.NewDictionary(core.ValMap{
-				core.GetJSONRepresentation(core.Path("./a.txt"), nil, nil): core.Str("a"),
+				core.GetJSONRepresentation(core.Path("./a.txt"), nil, nil): core.String("a"),
 			}),
 		})
 
@@ -144,7 +144,7 @@ func TestNewFilesystemSnapshot(t *testing.T) {
 		desc := core.NewObjectFromMapNoInit(core.ValMap{
 			FS_SNAPSHOT_SYMB_DESC_FILES_PROPNAME: core.NewDictionary(core.ValMap{
 				core.GetJSONRepresentation(core.Path("./dir/"), nil, nil):  core.NewWrappedValueList(),
-				core.GetJSONRepresentation(core.Path("./a.txt"), nil, nil): core.Str("a"),
+				core.GetJSONRepresentation(core.Path("./a.txt"), nil, nil): core.String("a"),
 			}),
 		})
 

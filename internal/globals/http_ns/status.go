@@ -75,7 +75,7 @@ func (s *Status) Prop(ctx *core.Context, name string) core.Value {
 	case "code":
 		return s.code
 	case "full-text":
-		return core.Str(s.FullText())
+		return core.String(s.FullText())
 	default:
 		return core.GetGoMethodOrPanic(name, s)
 	}

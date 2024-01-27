@@ -583,7 +583,7 @@ top:
 			ModificationTime: metadata.modificationTime,
 			Mode:             core.FileMode(metadata.mode),
 			ChecksumSHA256:   checksum,
-			ChildNames: utils.FilterMapSlice(metadata.children, func(childName core.Str) (string, bool) {
+			ChildNames: utils.FilterMapSlice(metadata.children, func(childName core.String) (string, bool) {
 				childPath := normalizedPath + "/" + string(childName)
 				if normalizedPath == "/" {
 					childPath = childPath[1:]
@@ -1544,7 +1544,7 @@ type metaFsFileMetadata struct {
 	symlinkTarget *core.Path
 
 	//name of children if directory
-	children []core.Str
+	children []core.String
 }
 
 func (m *metaFsFileMetadata) ChildrenPaths() []core.Path {
@@ -1598,7 +1598,7 @@ func (m *metaFsFileMetadata) initFromJSON(serialized string, updateLastModiftime
 			m.symlinkTarget = &path
 		case METAFS_CHILDREN_PROPNAME:
 			it.ReadArrayCB(func(i *jsoniter.Iterator) bool {
-				m.children = append(m.children, core.Str(it.ReadString()))
+				m.children = append(m.children, core.String(it.ReadString()))
 				return true
 			})
 		default:

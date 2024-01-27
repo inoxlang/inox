@@ -20,7 +20,7 @@ const (
 	OPTION_DOES_NOT_EXIST_FMT = "option '%s' does not exist"
 )
 
-func dnsResolve(ctx *core.Context, domain core.Str, recordTypeName core.Str) ([]core.Str, error) {
+func dnsResolve(ctx *core.Context, domain core.String, recordTypeName core.String) ([]core.String, error) {
 	defaultConfig, _ := dns.ClientConfigFromFile("/etc/resolv.conf")
 	client := new(dns.Client)
 	//TODO: reuse client ?
@@ -58,9 +58,9 @@ func dnsResolve(ctx *core.Context, domain core.Str, recordTypeName core.Str) ([]
 		return nil, fmt.Errorf("dns: failure: response code is %d", r.Rcode)
 	}
 
-	records := []core.Str{}
+	records := []core.String{}
 	for _, rr := range r.Answer {
-		records = append(records, core.Str(rr.String()))
+		records = append(records, core.String(rr.String()))
 	}
 
 	return records, nil

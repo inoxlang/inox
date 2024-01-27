@@ -121,7 +121,7 @@ func NewPath(slices []Value, isStaticPathSliceList []bool) (Value, error) {
 		isStaticPathSlice := isStaticPathSliceList[i]
 
 		switch slice := pathSlice.(type) {
-		case Str:
+		case String:
 			str := string(slice)
 
 			if !isStaticPathSlice && !checkPathInterpolationResult(str) {
@@ -256,8 +256,8 @@ func (pth Path) Extension() string {
 	return filepath.Ext(string(pth))
 }
 
-func (pth Path) Basename() Str {
-	return Str(filepath.Base(string(pth)))
+func (pth Path) Basename() String {
+	return String(filepath.Base(string(pth)))
 }
 
 // Path of parent directory.
@@ -442,11 +442,11 @@ func (pth Path) Prop(ctx *Context, name string) Value {
 		var valueList []Serializable
 
 		for _, segment := range segments {
-			valueList = append(valueList, Str(segment))
+			valueList = append(valueList, String(segment))
 		}
 		return NewWrappedValueList(valueList...)
 	case "extension":
-		return Str(pth.Extension())
+		return String(pth.Extension())
 	case "name":
 		return pth.Basename()
 	case "dir":
@@ -456,7 +456,7 @@ func (pth Path) Prop(ctx *Context, name string) Value {
 	case "rel-equiv":
 		return pth.RelativeEquiv()
 	case "change_extension":
-		return WrapGoClosure(func(ctx *Context, newExt Str) Path {
+		return WrapGoClosure(func(ctx *Context, newExt String) Path {
 			ext := pth.Extension()
 			if ext == "" {
 				return pth + Path(newExt)
@@ -503,7 +503,7 @@ func NewPathPattern(slices []Value, isStaticPathSliceList []bool) (Value, error)
 		isStaticPathSlice := isStaticPathSliceList[i]
 
 		switch s := pathSlice.(type) {
-		case Str:
+		case String:
 			str := string(s)
 			if !isStaticPathSlice && (strings.Contains(str, "..") || strings.Contains(str, "*") || strings.Contains(str, "?") || strings.Contains(str, "[") ||
 				strings.ContainsRune(str, '/') || strings.ContainsRune(str, '\\')) {
@@ -649,7 +649,7 @@ func NewURL(host Value, pathSlices []Value, isStaticPathSliceList []bool, queryP
 		var str string
 
 		switch s := pathSlice.(type) {
-		case Str:
+		case String:
 			str = string(s)
 			pth += str
 		case Path:
@@ -739,11 +739,11 @@ func NewURL(host Value, pathSlices []Value, isStaticPathSliceList []bool, queryP
 			queryBuff.WriteRune('&')
 		}
 
-		paramName := string(queryParamNames[i].(Str))
+		paramName := string(queryParamNames[i].(String))
 		queryBuff.WriteString(paramName)
 		queryBuff.WriteRune('=')
 
-		valueString := string(paramValue.(Str))
+		valueString := string(paramValue.(String))
 		if strings.ContainsAny(valueString, "&#") {
 			return nil, errors.New(ERR_PREFIX + S_QUERY_PARAM_VALUE_LIMITATION)
 		}
@@ -896,9 +896,9 @@ func (u URL) IsDirOf(other URL) (bool, error) {
 	return slices.Equal(dirSegments, segments[:len(dirSegments)]), nil
 }
 
-func (u URL) RawQuery() Str {
+func (u URL) RawQuery() String {
 	url := u.mustParse()
-	return Str(url.RawQuery)
+	return String(url.RawQuery)
 }
 
 func (u URL) UnderlyingString() string {
@@ -1018,7 +1018,7 @@ func (u URL) PropertyNames(ctx *Context) []string {
 func (u URL) Prop(ctx *Context, name string) Value {
 	switch name {
 	case "scheme":
-		return Str(u.Scheme())
+		return String(u.Scheme())
 	case "host":
 		return u.Host()
 	case "path":
@@ -1071,7 +1071,7 @@ func (s Scheme) IsDatabaseScheme() bool {
 type Host string
 
 func NewHost(hostnamePort Value, scheme string) (Value, error) {
-	host := scheme + "://" + string(hostnamePort.(Str))
+	host := scheme + "://" + string(hostnamePort.(String))
 
 	if parse.CheckHost(host) != nil {
 		return nil, errors.New("host expression: invalid host")
@@ -1198,7 +1198,7 @@ func (host Host) PropertyNames(ctx *Context) []string {
 func (host Host) Prop(ctx *Context, name string) Value {
 	switch name {
 	case "scheme":
-		return Str(host.Scheme())
+		return String(host.Scheme())
 	case "explicit-port":
 		return Int(host.ExplicitPort())
 	case "without-port":
@@ -1225,7 +1225,7 @@ func (patt HostPattern) PropertyNames(ctx *Context) []string {
 func (patt HostPattern) Prop(ctx *Context, name string) Value {
 	switch name {
 	case "scheme":
-		return Str(patt.Scheme())
+		return String(patt.Scheme())
 	default:
 		return nil
 	}
@@ -1376,7 +1376,7 @@ func (addr EmailAddress) PropertyNames(ctx *Context) []string {
 func (addr EmailAddress) Prop(ctx *Context, name string) Value {
 	switch name {
 	case "username":
-		return Str(strings.Split(string(addr), "@")[0])
+		return String(strings.Split(string(addr), "@")[0])
 	case "domain":
 		domain := strings.Split(string(addr), "@")[1]
 		return Host("://" + domain)
@@ -1731,7 +1731,7 @@ func ParseOrValidateResourceContent(ctx *Context, resourceContent []byte, ctype 
 		if doParse {
 			if !ok && strings.HasPrefix(string(ct), "text/") {
 				//TODO: return error if they are not printable characters
-				res = Str(resourceContent)
+				res = String(resourceContent)
 				contentType = ctype
 				return
 			}

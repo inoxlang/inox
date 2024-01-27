@@ -188,8 +188,8 @@ func (perm CommandPermission) Includes(otherPerm Permission) bool {
 	}
 
 	switch cmdName := perm.CommandName.(type) {
-	case Str:
-		otherCommandName, ok := otherCmdPerm.CommandName.(Str)
+	case String:
+		otherCommandName, ok := otherCmdPerm.CommandName.(String)
 		if !ok || otherCommandName != cmdName {
 			return false
 		}

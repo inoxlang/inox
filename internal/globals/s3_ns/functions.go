@@ -212,7 +212,7 @@ func S3SetBucketPolicy(ctx *core.Context, u core.URL, policy core.Value) error {
 	var policyString string
 
 	switch p := policy.(type) {
-	case core.Str:
+	case core.String:
 		policyString = string(p)
 	case *core.Object:
 		stream := jsoniter.NewStream(jsoniter.ConfigDefault, nil, 0)

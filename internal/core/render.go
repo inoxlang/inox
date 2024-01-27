@@ -40,7 +40,7 @@ var (
 	S_TRUE  = []byte{'t', 'r', 'u', 'e'}
 	S_FALSE = []byte{'f', 'a', 'l', 's', 'e'}
 
-	_ = []Renderable{Bool(true), Int(0), Str(""), &List{}, &Object{}, &ValueHistory{}}
+	_ = []Renderable{Bool(true), Int(0), String(""), &List{}, &Object{}, &ValueHistory{}}
 )
 
 // A renderable is a Value that can be rendered to at least one MIME type.
@@ -115,11 +115,11 @@ func (b Bool) Render(ctx *Context, w io.Writer, config RenderingInput) (int, err
 		return 0, formatErrUnsupportedRenderingMime(config.Mime)
 	}
 }
-func (s Str) IsRecursivelyRenderable(ctx *Context, input RenderingInput) bool {
+func (s String) IsRecursivelyRenderable(ctx *Context, input RenderingInput) bool {
 	return true
 }
 
-func (s Str) Render(ctx *Context, w io.Writer, config RenderingInput) (int, error) {
+func (s String) Render(ctx *Context, w io.Writer, config RenderingInput) (int, error) {
 	switch config.Mime {
 	case mimeconsts.HTML_CTYPE:
 		escaped := html.EscapeString(string(s))

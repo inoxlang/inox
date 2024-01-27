@@ -75,7 +75,7 @@ func (e SystemGraphEdge) Prop(ctx *Context, name string) Value {
 	case "to":
 		return Int(e.to)
 	case "text":
-		return Str(e.text)
+		return String(e.text)
 	}
 	panic(FormatErrPropertyDoesNotExist(name, e))
 }
@@ -122,7 +122,7 @@ type SystemGraphEvent struct {
 func (e SystemGraphEvent) Prop(ctx *Context, name string) Value {
 	switch name {
 	case "text":
-		return Str(e.text)
+		return String(e.text)
 	case "value0_id":
 		return Int(e.value0Ptr)
 	}
@@ -165,7 +165,7 @@ func (g *SystemGraph) AddNode(ctx *Context, value SystemGraphNodeValue, name str
 		Version: 1,
 		Kind:    SG_AddNode,
 		Depth:   ShallowWatching,
-	}, Str(n.name), Str(n.typeName), Int(n.valuePtr), Int(0))
+	}, String(n.name), String(n.typeName), Int(n.valuePtr), Int(0))
 
 	g.mutationCallbacks.CallMicrotasks(ctx, specificMutation)
 }
@@ -210,23 +210,23 @@ func (g *SystemGraph) addNodeWithEdgesNoLock(
 	if len(additionalEdgeKinds) == 0 {
 		specificMutation =
 			NewSpecificMutation(
-				ctx, mutationMetaData, Str(childNode.name), Str(childNode.typeName),
-				Int(childNode.valuePtr), Int(parentNode.valuePtr), Str(edgeText), Int(edgeKind))
+				ctx, mutationMetaData, String(childNode.name), String(childNode.typeName),
+				Int(childNode.valuePtr), Int(parentNode.valuePtr), String(edgeText), Int(edgeKind))
 	} else {
 		tupleElements := make([]Serializable, 2+2*len(additionalEdgeKinds))
-		tupleElements[0] = Str(edgeText)
+		tupleElements[0] = String(edgeText)
 		tupleElements[1] = Int(edgeKind)
 
 		for i, additionalEdgeKind := range additionalEdgeKinds {
 			edgeText := additionalEdgeKind.DefaultText()
 			g.addEdgeNoLock(edgeText, childNode, parentNode, additionalEdgeKind)
-			tupleElements[2+i] = Str(edgeText)
+			tupleElements[2+i] = String(edgeText)
 			tupleElements[2+i+1] = Int(additionalEdgeKind)
 		}
 
 		specificMutation =
 			NewSpecificMutation(
-				ctx, mutationMetaData, Str(childNode.name), Str(childNode.typeName),
+				ctx, mutationMetaData, String(childNode.name), String(childNode.typeName),
 				Int(childNode.valuePtr), Int(parentNode.valuePtr), NewTuple(tupleElements))
 	}
 
@@ -261,7 +261,7 @@ func (g *SystemGraph) addEdgeWithMutationNoLock(ctx *Context, fromNode, toNode *
 		Version: 1,
 		Kind:    SG_AddEdge,
 		Depth:   ShallowWatching,
-	}, Int(fromNode.valuePtr), Int(toNode.valuePtr), Str(edgeText), Int(kind))
+	}, Int(fromNode.valuePtr), Int(toNode.valuePtr), String(edgeText), Int(kind))
 
 	g.mutationCallbacks.CallMicrotasks(ctx, specificMutation)
 }
@@ -359,7 +359,7 @@ func (g *SystemGraph) AddEvent(ctx *Context, text string, v SystemGraphNodeValue
 		Version: 1,
 		Kind:    SG_AddEvent,
 		Depth:   ShallowWatching,
-	}, Int(node.valuePtr), Str(text))
+	}, Int(node.valuePtr), String(text))
 
 	g.mutationCallbacks.CallMicrotasks(ctx, specificMutation)
 }
@@ -482,9 +482,9 @@ type SystemGraphNode struct {
 func (n *SystemGraphNode) Prop(ctx *Context, name string) Value {
 	switch name {
 	case "name":
-		return Str(n.name)
+		return String(n.name)
 	case "type_name":
-		return Str(n.typeName)
+		return String(n.typeName)
 	case "value_id":
 		return Int(n.valuePtr)
 	case "edges":

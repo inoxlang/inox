@@ -27,7 +27,7 @@ func TestGraphIteration(t *testing.T) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
-		graph := NewGraph(ctx, core.NewWrappedValueList(core.Str("1")), core.NewWrappedValueList())
+		graph := NewGraph(ctx, core.NewWrappedValueList(core.String("1")), core.NewWrappedValueList())
 
 		it := graph.Iterator(ctx, core.IteratorConfiguration{})
 		if !assert.True(t, it.HasNext(ctx)) {
@@ -43,7 +43,7 @@ func TestGraphIteration(t *testing.T) {
 		}
 		node := v.(*GraphNode)
 		assert.Equal(t, &GraphNode{id: 0, graph: graph}, node)
-		assert.Equal(t, core.Str("1"), node.Prop(ctx, "data"))
+		assert.Equal(t, core.String("1"), node.Prop(ctx, "data"))
 
 		assert.False(t, it.HasNext(ctx))
 		assert.False(t, it.Next(ctx))
@@ -53,7 +53,7 @@ func TestGraphIteration(t *testing.T) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
-		graph := NewGraph(ctx, core.NewWrappedValueList(core.Str("1"), core.Str("2")), core.NewWrappedValueList())
+		graph := NewGraph(ctx, core.NewWrappedValueList(core.String("1"), core.String("2")), core.NewWrappedValueList())
 
 		it := graph.Iterator(ctx, core.IteratorConfiguration{})
 		if !assert.True(t, it.HasNext(ctx)) {
@@ -70,7 +70,7 @@ func TestGraphIteration(t *testing.T) {
 		node := v.(*GraphNode)
 
 		if node.id == 0 {
-			assert.Equal(t, core.Str("1"), node.Prop(ctx, "data"))
+			assert.Equal(t, core.String("1"), node.Prop(ctx, "data"))
 
 			assert.True(t, it.Next(ctx))
 			assert.Equal(t, core.Int(1), it.Key(ctx))
@@ -81,9 +81,9 @@ func TestGraphIteration(t *testing.T) {
 			}
 			secondNode := v.(*GraphNode)
 			assert.Equal(t, &GraphNode{id: 1, graph: graph}, secondNode)
-			assert.Equal(t, core.Str("2"), secondNode.Prop(ctx, "data"))
+			assert.Equal(t, core.String("2"), secondNode.Prop(ctx, "data"))
 		} else {
-			assert.Equal(t, core.Str("2"), node.Prop(ctx, "data"))
+			assert.Equal(t, core.String("2"), node.Prop(ctx, "data"))
 
 			assert.True(t, it.Next(ctx))
 			assert.Equal(t, core.Int(1), it.Key(ctx))
@@ -94,7 +94,7 @@ func TestGraphIteration(t *testing.T) {
 			}
 			secondNode := v.(*GraphNode)
 			assert.Equal(t, &GraphNode{id: 0, graph: graph}, secondNode)
-			assert.Equal(t, core.Str("1"), secondNode.Prop(ctx, "data"))
+			assert.Equal(t, core.String("1"), secondNode.Prop(ctx, "data"))
 		}
 
 		assert.False(t, it.HasNext(ctx))

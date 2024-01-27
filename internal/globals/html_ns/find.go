@@ -5,7 +5,7 @@ import (
 	"github.com/inoxlang/inox/internal/core"
 )
 
-func _html_find(ctx *core.Context, selector core.Str, node *HTMLNode) []*HTMLNode {
+func _html_find(ctx *core.Context, selector core.String, node *HTMLNode) []*HTMLNode {
 	doc := goquery.NewDocumentFromNode(node.node)
 	nodes := doc.Find(string(selector)).Nodes
 

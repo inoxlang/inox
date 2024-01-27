@@ -49,7 +49,7 @@ func TestStringConcatenation(t *testing.T) {
 
 	t.Run("At", func(t *testing.T) {
 		concatenation := &StringConcatenation{
-			elements: []StringLike{Str("a"), Str("b")},
+			elements: []StringLike{String("a"), String("b")},
 			totalLen: 2,
 		}
 
@@ -57,7 +57,7 @@ func TestStringConcatenation(t *testing.T) {
 		assert.Equal(t, Byte('b'), concatenation.At(ctx, 1))
 
 		concatenation = &StringConcatenation{
-			elements: []StringLike{Str("ab"), Str("c")},
+			elements: []StringLike{String("ab"), String("c")},
 			totalLen: 2,
 		}
 
@@ -66,7 +66,7 @@ func TestStringConcatenation(t *testing.T) {
 		assert.Equal(t, Byte('c'), concatenation.At(ctx, 2))
 
 		concatenation = &StringConcatenation{
-			elements: []StringLike{Str("ab"), Str("cd")},
+			elements: []StringLike{String("ab"), String("cd")},
 			totalLen: 2,
 		}
 

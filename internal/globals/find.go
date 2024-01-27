@@ -16,7 +16,7 @@ func init() {
 func _find(ctx *core.Context, pattern core.Pattern, location core.Value) (*core.List, error) {
 
 	switch l := location.(type) {
-	case core.Str:
+	case core.String:
 		stringPatt, ok := pattern.(core.StringPattern)
 
 		if !ok {

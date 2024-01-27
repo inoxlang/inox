@@ -105,7 +105,7 @@ func NewDynamicMemberValue(ctx *Context, object Value, memberName string) (*Dyna
 	dyn := &DynamicValue{
 		value:             value,
 		innerDyn:          innerDyn,
-		opData0:           Str(memberName),
+		opData0:           String(memberName),
 		op:                dynMemb,
 		mutationCallbacks: NewMutationCallbacks(),
 	}
@@ -346,7 +346,7 @@ func NewDynamicCall(ctx *Context, callee Value, args ...Value) *DynamicValue {
 }
 
 func (dyn *DynamicValue) memberName() string {
-	return string(dyn.opData0.(Str))
+	return string(dyn.opData0.(String))
 }
 
 func (dyn *DynamicValue) Resolve(ctx *Context) Value {

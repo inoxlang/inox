@@ -243,7 +243,7 @@ func TestObjectIteration(t *testing.T) {
 		//next
 		assert.True(t, it.HasNext(ctx))
 		assert.True(t, it.Next(ctx))
-		assert.Equal(t, Str("a"), it.Key(ctx))
+		assert.Equal(t, String("a"), it.Key(ctx))
 		assert.Equal(t, Int(2), it.Value(ctx))
 
 		//next
@@ -263,13 +263,13 @@ func TestObjectIteration(t *testing.T) {
 		//next
 		assert.True(t, it.HasNext(ctx))
 		assert.True(t, it.Next(ctx))
-		assert.Equal(t, Str("a"), it.Key(ctx))
+		assert.Equal(t, String("a"), it.Key(ctx))
 		assert.Equal(t, Int(2), it.Value(ctx))
 
 		//next
 		assert.True(t, it.HasNext(ctx))
 		assert.True(t, it.Next(ctx))
-		assert.Equal(t, Str("b"), it.Key(ctx))
+		assert.Equal(t, String("b"), it.Key(ctx))
 		assert.Equal(t, Int(3), it.Value(ctx))
 
 		//next
@@ -304,7 +304,7 @@ func TestRecordIteration(t *testing.T) {
 		//next
 		assert.True(t, it.HasNext(ctx))
 		assert.True(t, it.Next(ctx))
-		assert.Equal(t, Str("a"), it.Key(ctx))
+		assert.Equal(t, String("a"), it.Key(ctx))
 		assert.Equal(t, Int(2), it.Value(ctx))
 
 		//next
@@ -324,13 +324,13 @@ func TestRecordIteration(t *testing.T) {
 		//next
 		assert.True(t, it.HasNext(ctx))
 		assert.True(t, it.Next(ctx))
-		assert.Equal(t, Str("a"), it.Key(ctx))
+		assert.Equal(t, String("a"), it.Key(ctx))
 		assert.Equal(t, Int(2), it.Value(ctx))
 
 		//next
 		assert.True(t, it.HasNext(ctx))
 		assert.True(t, it.Next(ctx))
-		assert.Equal(t, Str("b"), it.Key(ctx))
+		assert.Equal(t, String("b"), it.Key(ctx))
 		assert.Equal(t, Int(3), it.Value(ctx))
 
 		//next
@@ -1322,13 +1322,13 @@ func TestSequenceStringPatternIteration(t *testing.T) {
 		assert.True(t, it.HasNext(ctx))
 		assert.True(t, it.Next(ctx))
 		assert.Equal(t, Int(0), it.Key(ctx))
-		assert.Equal(t, Str("a"), it.Value(ctx))
+		assert.Equal(t, String("a"), it.Value(ctx))
 
 		//next
 		assert.True(t, it.HasNext(ctx))
 		assert.True(t, it.Next(ctx))
 		assert.Equal(t, Int(1), it.Key(ctx))
-		assert.Equal(t, Str("b"), it.Value(ctx))
+		assert.Equal(t, String("b"), it.Value(ctx))
 
 		assert.False(t, it.HasNext(ctx))
 		assert.False(t, it.Next(ctx))
@@ -1351,25 +1351,25 @@ func TestSequenceStringPatternIteration(t *testing.T) {
 		assert.True(t, it.HasNext(ctx))
 		assert.True(t, it.Next(ctx))
 		assert.Equal(t, Int(0), it.Key(ctx))
-		assert.Equal(t, Str("a0"), it.Value(ctx))
+		assert.Equal(t, String("a0"), it.Value(ctx))
 
 		//next
 		assert.True(t, it.HasNext(ctx))
 		assert.True(t, it.Next(ctx))
 		assert.Equal(t, Int(1), it.Key(ctx))
-		assert.Equal(t, Str("a1"), it.Value(ctx))
+		assert.Equal(t, String("a1"), it.Value(ctx))
 
 		//next
 		assert.True(t, it.HasNext(ctx))
 		assert.True(t, it.Next(ctx))
 		assert.Equal(t, Int(2), it.Key(ctx))
-		assert.Equal(t, Str("b0"), it.Value(ctx))
+		assert.Equal(t, String("b0"), it.Value(ctx))
 
 		//next
 		assert.True(t, it.HasNext(ctx))
 		assert.True(t, it.Next(ctx))
 		assert.Equal(t, Int(3), it.Key(ctx))
-		assert.Equal(t, Str("b1"), it.Value(ctx))
+		assert.Equal(t, String("b1"), it.Value(ctx))
 
 		assert.False(t, it.HasNext(ctx))
 		assert.False(t, it.Next(ctx))
@@ -1393,49 +1393,49 @@ func TestSequenceStringPatternIteration(t *testing.T) {
 		assert.True(t, it.HasNext(ctx))
 		assert.True(t, it.Next(ctx))
 		assert.Equal(t, Int(0), it.Key(ctx))
-		assert.Equal(t, Str("a00"), it.Value(ctx))
+		assert.Equal(t, String("a00"), it.Value(ctx))
 
 		//next
 		assert.True(t, it.HasNext(ctx))
 		assert.True(t, it.Next(ctx))
 		assert.Equal(t, Int(1), it.Key(ctx))
-		assert.Equal(t, Str("a01"), it.Value(ctx))
+		assert.Equal(t, String("a01"), it.Value(ctx))
 
 		//next
 		assert.True(t, it.HasNext(ctx))
 		assert.True(t, it.Next(ctx))
 		assert.Equal(t, Int(2), it.Key(ctx))
-		assert.Equal(t, Str("a10"), it.Value(ctx))
+		assert.Equal(t, String("a10"), it.Value(ctx))
 
 		//next
 		assert.True(t, it.HasNext(ctx))
 		assert.True(t, it.Next(ctx))
 		assert.Equal(t, Int(3), it.Key(ctx))
-		assert.Equal(t, Str("a11"), it.Value(ctx))
+		assert.Equal(t, String("a11"), it.Value(ctx))
 
 		//next
 		assert.True(t, it.HasNext(ctx))
 		assert.True(t, it.Next(ctx))
 		assert.Equal(t, Int(4), it.Key(ctx))
-		assert.Equal(t, Str("b00"), it.Value(ctx))
+		assert.Equal(t, String("b00"), it.Value(ctx))
 
 		//next
 		assert.True(t, it.HasNext(ctx))
 		assert.True(t, it.Next(ctx))
 		assert.Equal(t, Int(5), it.Key(ctx))
-		assert.Equal(t, Str("b01"), it.Value(ctx))
+		assert.Equal(t, String("b01"), it.Value(ctx))
 
 		//next
 		assert.True(t, it.HasNext(ctx))
 		assert.True(t, it.Next(ctx))
 		assert.Equal(t, Int(6), it.Key(ctx))
-		assert.Equal(t, Str("b10"), it.Value(ctx))
+		assert.Equal(t, String("b10"), it.Value(ctx))
 
 		//next
 		assert.True(t, it.HasNext(ctx))
 		assert.True(t, it.Next(ctx))
 		assert.Equal(t, Int(7), it.Key(ctx))
-		assert.Equal(t, Str("b11"), it.Value(ctx))
+		assert.Equal(t, String("b11"), it.Value(ctx))
 
 		assert.False(t, it.HasNext(ctx))
 		assert.False(t, it.Next(ctx))
@@ -1460,43 +1460,43 @@ func TestRepeatedStringPatternIteration(t *testing.T) {
 		assert.True(t, it.HasNext(ctx))
 		assert.True(t, it.Next(ctx))
 		assert.Equal(t, Int(0), it.Key(ctx))
-		assert.Equal(t, Str(""), it.Value(ctx))
+		assert.Equal(t, String(""), it.Value(ctx))
 
 		//next
 		assert.True(t, it.HasNext(ctx))
 		assert.True(t, it.Next(ctx))
 		assert.Equal(t, Int(1), it.Key(ctx))
-		assert.Equal(t, Str("a"), it.Value(ctx))
+		assert.Equal(t, String("a"), it.Value(ctx))
 
 		//next
 		assert.True(t, it.HasNext(ctx))
 		assert.True(t, it.Next(ctx))
 		assert.Equal(t, Int(2), it.Key(ctx))
-		assert.Equal(t, Str("b"), it.Value(ctx))
+		assert.Equal(t, String("b"), it.Value(ctx))
 
 		//next
 		assert.True(t, it.HasNext(ctx))
 		assert.True(t, it.Next(ctx))
 		assert.Equal(t, Int(3), it.Key(ctx))
-		assert.Equal(t, Str("aa"), it.Value(ctx))
+		assert.Equal(t, String("aa"), it.Value(ctx))
 
 		//next
 		assert.True(t, it.HasNext(ctx))
 		assert.True(t, it.Next(ctx))
 		assert.Equal(t, Int(4), it.Key(ctx))
-		assert.Equal(t, Str("ab"), it.Value(ctx))
+		assert.Equal(t, String("ab"), it.Value(ctx))
 
 		//next
 		assert.True(t, it.HasNext(ctx))
 		assert.True(t, it.Next(ctx))
 		assert.Equal(t, Int(5), it.Key(ctx))
-		assert.Equal(t, Str("ba"), it.Value(ctx))
+		assert.Equal(t, String("ba"), it.Value(ctx))
 
 		//next
 		assert.True(t, it.HasNext(ctx))
 		assert.True(t, it.Next(ctx))
 		assert.Equal(t, Int(6), it.Key(ctx))
-		assert.Equal(t, Str("bb"), it.Value(ctx))
+		assert.Equal(t, String("bb"), it.Value(ctx))
 
 		//...
 	})
@@ -1516,37 +1516,37 @@ func TestRepeatedStringPatternIteration(t *testing.T) {
 		assert.True(t, it.HasNext(ctx))
 		assert.True(t, it.Next(ctx))
 		assert.Equal(t, Int(0), it.Key(ctx))
-		assert.Equal(t, Str("a"), it.Value(ctx))
+		assert.Equal(t, String("a"), it.Value(ctx))
 
 		//next
 		assert.True(t, it.HasNext(ctx))
 		assert.True(t, it.Next(ctx))
 		assert.Equal(t, Int(1), it.Key(ctx))
-		assert.Equal(t, Str("b"), it.Value(ctx))
+		assert.Equal(t, String("b"), it.Value(ctx))
 
 		//next
 		assert.True(t, it.HasNext(ctx))
 		assert.True(t, it.Next(ctx))
 		assert.Equal(t, Int(2), it.Key(ctx))
-		assert.Equal(t, Str("aa"), it.Value(ctx))
+		assert.Equal(t, String("aa"), it.Value(ctx))
 
 		//next
 		assert.True(t, it.HasNext(ctx))
 		assert.True(t, it.Next(ctx))
 		assert.Equal(t, Int(3), it.Key(ctx))
-		assert.Equal(t, Str("ab"), it.Value(ctx))
+		assert.Equal(t, String("ab"), it.Value(ctx))
 
 		//next
 		assert.True(t, it.HasNext(ctx))
 		assert.True(t, it.Next(ctx))
 		assert.Equal(t, Int(4), it.Key(ctx))
-		assert.Equal(t, Str("ba"), it.Value(ctx))
+		assert.Equal(t, String("ba"), it.Value(ctx))
 
 		//next
 		assert.True(t, it.HasNext(ctx))
 		assert.True(t, it.Next(ctx))
 		assert.Equal(t, Int(5), it.Key(ctx))
-		assert.Equal(t, Str("bb"), it.Value(ctx))
+		assert.Equal(t, String("bb"), it.Value(ctx))
 
 		//...
 	})
@@ -1566,13 +1566,13 @@ func TestRepeatedStringPatternIteration(t *testing.T) {
 		assert.True(t, it.HasNext(ctx))
 		assert.True(t, it.Next(ctx))
 		assert.Equal(t, Int(0), it.Key(ctx))
-		assert.Equal(t, Str("a"), it.Value(ctx))
+		assert.Equal(t, String("a"), it.Value(ctx))
 
 		//next
 		assert.True(t, it.HasNext(ctx))
 		assert.True(t, it.Next(ctx))
 		assert.Equal(t, Int(1), it.Key(ctx))
-		assert.Equal(t, Str("b"), it.Value(ctx))
+		assert.Equal(t, String("b"), it.Value(ctx))
 
 		assert.False(t, it.HasNext(ctx))
 		assert.False(t, it.Next(ctx))
@@ -1594,25 +1594,25 @@ func TestRepeatedStringPatternIteration(t *testing.T) {
 		assert.True(t, it.HasNext(ctx))
 		assert.True(t, it.Next(ctx))
 		assert.Equal(t, Int(0), it.Key(ctx))
-		assert.Equal(t, Str("aa"), it.Value(ctx))
+		assert.Equal(t, String("aa"), it.Value(ctx))
 
 		//next
 		assert.True(t, it.HasNext(ctx))
 		assert.True(t, it.Next(ctx))
 		assert.Equal(t, Int(1), it.Key(ctx))
-		assert.Equal(t, Str("ab"), it.Value(ctx))
+		assert.Equal(t, String("ab"), it.Value(ctx))
 
 		//next
 		assert.True(t, it.HasNext(ctx))
 		assert.True(t, it.Next(ctx))
 		assert.Equal(t, Int(2), it.Key(ctx))
-		assert.Equal(t, Str("ba"), it.Value(ctx))
+		assert.Equal(t, String("ba"), it.Value(ctx))
 
 		//next
 		assert.True(t, it.HasNext(ctx))
 		assert.True(t, it.Next(ctx))
 		assert.Equal(t, Int(3), it.Key(ctx))
-		assert.Equal(t, Str("bb"), it.Value(ctx))
+		assert.Equal(t, String("bb"), it.Value(ctx))
 
 		assert.False(t, it.HasNext(ctx))
 		assert.False(t, it.Next(ctx))

@@ -948,7 +948,7 @@ func (f TestFilter) IsTestEnabled(absoluteFilePath string, item TestItem, parent
 
 	if f.AbsolutePath != "" {
 		if strings.HasSuffix(f.AbsolutePath, PREFIX_PATH_PATTERN_SUFFIX) {
-			if !PathPattern(f.AbsolutePath).Test(nil, Str(absoluteFilePath)) {
+			if !PathPattern(f.AbsolutePath).Test(nil, String(absoluteFilePath)) {
 				return false, fmt.Sprintf(
 					"the test is disabled because its path (%q) does not match the filter's path pattern (%q)", absoluteFilePath, f.AbsolutePath)
 			}

@@ -49,7 +49,7 @@ func TestSetIteration(t *testing.T) {
 
 		assert.True(t, it.Next(ctx))
 		assert.Equal(t, core.Int(1), it.Value(ctx))
-		assert.Equal(t, core.Str("1"), it.Key(ctx))
+		assert.Equal(t, core.String("1"), it.Key(ctx))
 
 		assert.False(t, it.HasNext(ctx))
 		assert.False(t, it.Next(ctx))
@@ -74,18 +74,18 @@ func TestSetIteration(t *testing.T) {
 		assert.True(t, it.Next(ctx))
 
 		if core.Int(1) == it.Value(ctx).(core.Int) {
-			assert.Equal(t, core.Str("1"), it.Key(ctx))
+			assert.Equal(t, core.String("1"), it.Key(ctx))
 
 			assert.True(t, it.Next(ctx))
 			assert.Equal(t, core.Int(2), it.Value(ctx))
-			assert.Equal(t, core.Str("2"), it.Key(ctx))
+			assert.Equal(t, core.String("2"), it.Key(ctx))
 		} else {
 			assert.Equal(t, core.Int(2), it.Value(ctx))
-			assert.Equal(t, core.Str("2"), it.Key(ctx))
+			assert.Equal(t, core.String("2"), it.Key(ctx))
 
 			assert.True(t, it.Next(ctx))
 			assert.Equal(t, core.Int(1), it.Value(ctx))
-			assert.Equal(t, core.Str("1"), it.Key(ctx))
+			assert.Equal(t, core.String("1"), it.Key(ctx))
 		}
 
 		assert.False(t, it.HasNext(ctx))
@@ -137,7 +137,7 @@ func TestSetIteration(t *testing.T) {
 		for it.HasNext(ctx) {
 			assert.True(t, it.Next(ctx))
 			val := it.Value(ctx).(core.Int)
-			stringifiedVal := core.Str(strconv.Itoa(int(val)))
+			stringifiedVal := core.String(strconv.Itoa(int(val)))
 
 			if !assert.Equal(t, it.Key(ctx), stringifiedVal) {
 				return
@@ -193,7 +193,7 @@ func TestSetIteration(t *testing.T) {
 				}
 
 				val := it.Value(ctx).(core.Int)
-				stringifiedVal := core.Str(strconv.Itoa(int(val)))
+				stringifiedVal := core.String(strconv.Itoa(int(val)))
 
 				if !assert.Equal(t, it.Key(ctx), stringifiedVal) {
 					return

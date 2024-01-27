@@ -140,7 +140,7 @@ func GenerateSelfSignedCertAndKey(args SelfSignedCertParams) (cert *pem.Block, k
 	return &pem.Block{Type: "CERTIFICATE", Bytes: derBytes}, keyBlock, nil
 }
 
-func generateSelfSignedCertAndKeyValues(ctx *core.Context, args SelfSignedCertParams) (core.Str, *core.Secret, error) {
+func generateSelfSignedCertAndKeyValues(ctx *core.Context, args SelfSignedCertParams) (core.String, *core.Secret, error) {
 	cert, key, err := GenerateSelfSignedCertAndKey(args)
 	if err != nil {
 		return "", nil, err
@@ -151,7 +151,7 @@ func generateSelfSignedCertAndKeyValues(ctx *core.Context, args SelfSignedCertPa
 		return "", nil, err
 	}
 
-	return core.Str(pem.EncodeToMemory(cert)), secret, nil
+	return core.String(pem.EncodeToMemory(cert)), secret, nil
 }
 
 func GetTLSConfig(ctx *core.Context, pemEncodedCert string, pemEncodedKey string) (*tls.Config, error) {

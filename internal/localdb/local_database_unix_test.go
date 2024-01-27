@@ -867,7 +867,7 @@ func TestUpdateSchema(t *testing.T) {
 			return
 		}
 		users := topLevelValues["users"].(*setcoll.Set)
-		users.Add(ctx, core.NewObjectFromMap(core.ValMap{"name": core.Str("foo")}, ctx))
+		users.Add(ctx, core.NewObjectFromMap(core.ValMap{"name": core.String("foo")}, ctx))
 
 		//make sure the updated Set has been saved
 		s, _ := ldb.GetSerialized(ctx, "/users")

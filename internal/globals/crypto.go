@@ -155,16 +155,16 @@ func _hash(readable core.Readable, algorithm HashingAlgorithm) []byte {
 	}
 }
 
-func _hashPassword(ctx *core.Context, password core.Str, args ...core.Value) core.Str {
+func _hashPassword(ctx *core.Context, password core.String, args ...core.Value) core.String {
 	if len(string(password)) > MAX_PASSWORD_BYTE_COUNT {
 		panic(ErrPasswordTooLong)
 	}
 
 	hash := utils.Must(argon2id.CreateHash(string(password), &DEFAULT_ARGON2ID_PARAMS))
-	return core.Str(hash)
+	return core.String(hash)
 }
 
-func _checkPassword(ctx *core.Context, password core.Str, hash core.Str) core.Bool {
+func _checkPassword(ctx *core.Context, password core.String, hash core.String) core.Bool {
 	if len(string(password)) > MAX_PASSWORD_BYTE_COUNT {
 		panic(ErrPasswordTooLong)
 	}
@@ -202,7 +202,7 @@ func _rsa_gen_key(ctx *core.Context) *core.Record {
 	}))
 
 	return core.NewRecordFromKeyValLists(KEY_PAIR_RECORD_PROPNAMES, []core.Serializable{
-		core.Str(pubKeyPem), utils.Must(PEM_PRIVATE_KEY_PATTERN.NewSecret(ctx, privKeyPem)),
+		core.String(pubKeyPem), utils.Must(PEM_PRIVATE_KEY_PATTERN.NewSecret(ctx, privKeyPem)),
 	})
 }
 

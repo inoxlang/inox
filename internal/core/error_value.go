@@ -39,7 +39,7 @@ func (e Error) Data() Value {
 func (e Error) Prop(ctx *Context, name string) Value {
 	switch name {
 	case "text":
-		return Str(e.goError.Error())
+		return String(e.goError.Error())
 	case "data":
 		return e.data
 	default:

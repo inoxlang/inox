@@ -378,7 +378,7 @@ func (rw *HttpResponseWriter) WriteError(ctx *core.Context, err core.Error, code
 	rw.writeHeadersWithPlannedStatus()
 }
 
-func (rw *HttpResponseWriter) AddHeader(ctx *core.Context, k, v core.Str) {
+func (rw *HttpResponseWriter) AddHeader(ctx *core.Context, k, v core.String) {
 	rw.assertIsNotFinished()
 	rw.assertStatusNotSent()
 

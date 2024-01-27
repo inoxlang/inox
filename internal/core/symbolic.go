@@ -202,7 +202,7 @@ func init() {
 			},
 
 			CreateExactStringPattern: func(value any) any {
-				return NewExactStringPattern(value.(Str))
+				return NewExactStringPattern(value.(String))
 			},
 
 			CreateNil: func() any {
@@ -253,7 +253,7 @@ func init() {
 				return Rune(r)
 			},
 			CreateString: func(s string) any {
-				return Str(s)
+				return String(s)
 			},
 			CreateStringConcatenation: func(elements []any) any {
 				return utils.Must(concatValues(nil, utils.MapSlice(elements, ToValueAsserted)))
@@ -510,7 +510,7 @@ func (r Rune) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Val
 	return symbolic.NewRune(rune(r)), nil
 }
 
-func (s Str) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
+func (s String) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return symbolic.NewString(string(s)), nil
 }
 

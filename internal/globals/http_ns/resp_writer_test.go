@@ -38,25 +38,25 @@ func TestHttpResponseWriter(t *testing.T) {
 			},
 			{
 				value: obj(core.ValMap{
-					"name": core.Str("foo"),
+					"name": core.String("foo"),
 				}, ctx),
 				outputJSON: `{"object__value":{"name":"foo"}}`,
 				ok:         true,
 			},
 			{
 				value: list(obj(core.ValMap{
-					"name": core.Str("foo"),
+					"name": core.String("foo"),
 				}, ctx)),
 				outputJSON: `{"list__value":[{"object__value":{"name":"foo"}}]}`,
 				ok:         true,
 			},
 			{
-				value:      core.Str("{}"),
+				value:      core.String("{}"),
 				outputJSON: `{}`,
 				ok:         true,
 			},
 			{
-				value: core.Str("{"),
+				value: core.String("{"),
 				ok:    false,
 			},
 			//TODO: add tests for Go values
@@ -102,24 +102,24 @@ func TestHttpResponseWriter(t *testing.T) {
 				ok:  false,
 			},
 			{
-				obj: core.NewObjectFromMapNoInit(core.ValMap{"name": core.Str("mycookie")}),
+				obj: core.NewObjectFromMapNoInit(core.ValMap{"name": core.String("mycookie")}),
 				ok:  false,
 			},
 			{
-				obj: core.NewObjectFromMapNoInit(core.ValMap{"value": core.Str("0")}),
+				obj: core.NewObjectFromMapNoInit(core.ValMap{"value": core.String("0")}),
 				ok:  false,
 			},
 			{
-				obj:    core.NewObjectFromMapNoInit(core.ValMap{"name": core.Str("mycookie"), "value": core.Str("0")}),
+				obj:    core.NewObjectFromMapNoInit(core.ValMap{"name": core.String("mycookie"), "value": core.String("0")}),
 				ok:     true,
 				cookie: &http.Cookie{Name: "mycookie", Value: "0"},
 			},
 			{
-				obj: core.NewObjectFromMapNoInit(core.ValMap{"name": core.Str("mycookie"), "value": core.Str("0"), "domain": core.Str("localhost")}),
+				obj: core.NewObjectFromMapNoInit(core.ValMap{"name": core.String("mycookie"), "value": core.String("0"), "domain": core.String("localhost")}),
 				ok:  false,
 			},
 			{
-				obj:    core.NewObjectFromMapNoInit(core.ValMap{"name": core.Str("mycookie"), "value": core.Str("0"), "domain": core.Host("://localhost")}),
+				obj:    core.NewObjectFromMapNoInit(core.ValMap{"name": core.String("mycookie"), "value": core.String("0"), "domain": core.Host("://localhost")}),
 				ok:     true,
 				cookie: &http.Cookie{Name: "mycookie", Value: "0", Domain: "localhost"},
 			},

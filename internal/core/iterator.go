@@ -290,7 +290,7 @@ func (s *RuneSlice) Iterator(ctx *Context, config IteratorConfiguration) Iterato
 	})
 }
 
-func (s Str) Iterator(ctx *Context, config IteratorConfiguration) Iterator {
+func (s String) Iterator(ctx *Context, config IteratorConfiguration) Iterator {
 	return config.CreateIterator(&indexableIterator{
 		i:   -1,
 		len: s.Len(),
@@ -565,7 +565,7 @@ func (it *IpropsIterator) Next(ctx *Context) bool {
 }
 
 func (it *IpropsIterator) Key(*Context) Value {
-	return Str(it.keys[it.i])
+	return String(it.keys[it.i])
 }
 
 func (it *IpropsIterator) Value(*Context) Value {
@@ -997,7 +997,7 @@ func createStringSequenceIterator(ctx *Context, elements []StringPattern, config
 			value: func(pi *PatternIterator, ctx *Context) Value {
 				if i == 0 {
 					//TODO: clone ?
-					return Str("")
+					return String("")
 				}
 				return nil
 			},
@@ -1050,9 +1050,9 @@ func createStringSequenceIterator(ctx *Context, elements []StringPattern, config
 		value: func(_ *PatternIterator, ctx *Context) Value {
 			var buff bytes.Buffer
 			for _, it := range iterators {
-				buff.WriteString(string(it.Value(ctx).(Str)))
+				buff.WriteString(string(it.Value(ctx).(String)))
 			}
-			return Str(buff.String())
+			return String(buff.String())
 		},
 	})
 }
@@ -1105,7 +1105,7 @@ func (patt RuneRangeStringPattern) Iterator(ctx *Context, config IteratorConfigu
 			return Int(i)
 		},
 		value: func(_ *PatternIterator, ctx *Context) Value {
-			return Str(r)
+			return String(r)
 		},
 	})
 }
@@ -1702,7 +1702,7 @@ func (patt *IntRangeStringPattern) Iterator(ctx *Context, config IteratorConfigu
 		},
 		value: func(pi *PatternIterator, ctx *Context) Value {
 			n := int64(it.Value(ctx).(Int))
-			return Str(strconv.FormatInt(n, 10))
+			return String(strconv.FormatInt(n, 10))
 		},
 	})
 }

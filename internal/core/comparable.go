@@ -86,7 +86,7 @@ func (p Port) Compare(other Value) (result int, comparable bool) {
 	return
 }
 
-func (s Str) Compare(other Value) (result int, comparable bool) {
+func (s String) Compare(other Value) (result int, comparable bool) {
 	return stringCompareNaturalSortOrder(s, other)
 }
 

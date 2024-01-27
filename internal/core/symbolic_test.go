@@ -194,7 +194,7 @@ func TestBidirectionalSymbolicConversion(t *testing.T) {
 			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 			defer ctx.CancelGracefully()
 
-			obj := NewObjectFromMapNoInit(ValMap{"a": Int(1), "b": Str("a")})
+			obj := NewObjectFromMapNoInit(ValMap{"a": Int(1), "b": String("a")})
 			v, err := ToSymbolicValue(nil, obj, false)
 			assert.NoError(t, err)
 
@@ -262,7 +262,7 @@ func TestBidirectionalSymbolicConversion(t *testing.T) {
 			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 			defer ctx.CancelGracefully()
 
-			record := NewRecordFromMap(ValMap{"a": Int(1), "b": Str("a")})
+			record := NewRecordFromMap(ValMap{"a": Int(1), "b": String("a")})
 			v, err := ToSymbolicValue(nil, record, false)
 			assert.NoError(t, err)
 
@@ -355,10 +355,10 @@ func TestBidirectionalSymbolicConversion(t *testing.T) {
 			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 			defer ctx.CancelGracefully()
 
-			stringJSONRepr := GetJSONRepresentation(Str("name"), nil, nil)
+			stringJSONRepr := GetJSONRepresentation(String("name"), nil, nil)
 
 			dict := NewDictionary(map[string]Serializable{
-				stringJSONRepr: Str("foo"),
+				stringJSONRepr: String("foo"),
 			})
 			v, err := ToSymbolicValue(nil, dict, false)
 			assert.NoError(t, err)
@@ -382,11 +382,11 @@ func TestBidirectionalSymbolicConversion(t *testing.T) {
 			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 			defer ctx.CancelGracefully()
 
-			stringRepr := GetJSONRepresentation(Str("name"), nil, nil)
+			stringRepr := GetJSONRepresentation(String("name"), nil, nil)
 			pathRepr := GetJSONRepresentation(Path("./file"), nil, nil)
 
 			dict := NewDictionary(map[string]Serializable{
-				stringRepr: Str("foo"),
+				stringRepr: String("foo"),
 				pathRepr:   True,
 			})
 			v, err := ToSymbolicValue(nil, dict, false)

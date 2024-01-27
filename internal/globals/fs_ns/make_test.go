@@ -144,9 +144,9 @@ func TestMkdir(t *testing.T) {
 			core.GetJSONRepresentation(core.Path("./subdir_1/"), ctx, nil): core.NewWrappedValueList(core.Path("./file_a")),
 			core.GetJSONRepresentation(core.Path("./subdir_2/"), ctx, nil): core.NewDictionary(map[string]core.Serializable{
 				core.GetJSONRepresentation(core.Path("./subdir_3/"), ctx, nil): core.NewWrappedValueList(core.Path("./file_b")),
-				core.GetJSONRepresentation(core.Path("./file_c"), ctx, nil):    core.Str("c"),
+				core.GetJSONRepresentation(core.Path("./file_c"), ctx, nil):    core.String("c"),
 			}),
-			core.GetJSONRepresentation(core.Path("./file_d"), ctx, nil): core.Str("d"),
+			core.GetJSONRepresentation(core.Path("./file_d"), ctx, nil): core.String("d"),
 		})
 
 		err := Mkdir(ctx, core.Path(pth), core.ToOptionalParam(content))
@@ -327,7 +327,7 @@ func TestFsMkfile(t *testing.T) {
 		pth := filepath.Join(tmpDir, "file")
 		content := "hello"
 
-		err := Mkfile(ctx, core.Path(pth), core.Str(content))
+		err := Mkfile(ctx, core.Path(pth), core.String(content))
 
 		assert.NoError(t, err)
 		assert.FileExists(t, pth)

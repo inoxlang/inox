@@ -38,7 +38,7 @@ func (s *Set) Iterator(ctx *core.Context, config core.IteratorConfiguration) cor
 			return true
 		},
 		Key_: func(ci *common.CollectionIterator, ctx *core.Context) core.Value {
-			return core.Str(keys[i])
+			return core.String(keys[i])
 		},
 		Value_: func(ci *common.CollectionIterator, ctx *core.Context) core.Value {
 			return elements[keys[i]]

@@ -23,7 +23,7 @@ func (resp *HttpResponse) Prop(ctx *core.Context, name string) core.Value {
 	case "body":
 		return core.WrapReader(resp.wrapped.Body, nil)
 	case "status":
-		return core.Str(resp.wrapped.Status)
+		return core.String(resp.wrapped.Status)
 	case "status-code":
 		//TOOD: use checked "int" ?
 		return StatusCode(resp.wrapped.StatusCode)

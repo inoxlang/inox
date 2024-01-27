@@ -283,7 +283,7 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (_ *Manifest, usedRunningState
 					if patt != STR_PATTERN {
 						panic(ErrUnreachable)
 					}
-					file.Parsed = Str(content)
+					file.Parsed = String(content)
 				default:
 					panic(ErrUnreachable)
 				}

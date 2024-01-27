@@ -11,7 +11,7 @@ import (
 	"github.com/inoxlang/inox/internal/utils"
 )
 
-func ToJSON(ctx *Context, v Serializable) Str {
+func ToJSON(ctx *Context, v Serializable) String {
 	return ToJSONWithConfig(ctx, v, JSONSerializationConfig{
 		ReprConfig: &ReprConfig{},
 		Pattern:    ANYVAL_PATTERN,
@@ -19,7 +19,7 @@ func ToJSON(ctx *Context, v Serializable) Str {
 	})
 }
 
-func ToJSONWithConfig(ctx *Context, v Serializable, config JSONSerializationConfig) Str {
+func ToJSONWithConfig(ctx *Context, v Serializable, config JSONSerializationConfig) String {
 	stream := jsoniter.NewStream(jsoniter.ConfigDefault, nil, 0)
 	if err := v.WriteJSONRepresentation(ctx, stream, config, 0); err != nil {
 		panic(err)
@@ -27,10 +27,10 @@ func ToJSONWithConfig(ctx *Context, v Serializable, config JSONSerializationConf
 	if stream.Error != nil {
 		panic(stream.Error)
 	}
-	return Str(stream.Buffer())
+	return String(stream.Buffer())
 }
 
-func ToPrettyJSON(ctx *Context, v Serializable) Str {
+func ToPrettyJSON(ctx *Context, v Serializable) String {
 	s := ToJSON(ctx, v)
 	var unmarshalled interface{}
 	err := json.Unmarshal([]byte(s), &unmarshalled)
@@ -42,7 +42,7 @@ func ToPrettyJSON(ctx *Context, v Serializable) Str {
 	if err != nil {
 		panic(err)
 	}
-	return Str(b)
+	return String(b)
 }
 
 func ToJSONVal(ctx *Context, v Serializable) interface{} {
@@ -103,7 +103,7 @@ func ConvertJSONValToInoxVal(v any, immutable bool) Serializable {
 	case bool:
 		return Bool(val)
 	case string:
-		return Str(val)
+		return String(val)
 	default:
 		panic(fmt.Errorf("cannot convert value of type %T to Inox Value", val))
 	}

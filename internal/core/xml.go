@@ -1,6 +1,6 @@
 package core
 
-const DEFAULT_XML_ATTR_VALUE = Str("")
+const DEFAULT_XML_ATTR_VALUE = String("")
 
 // A XMLElement represents the result of the evaluation of an XMLElement node in Inox code.
 type XMLElement struct {

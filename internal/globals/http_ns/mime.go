@@ -8,7 +8,7 @@ import (
 	"github.com/inoxlang/inox/internal/mimeconsts"
 )
 
-func Mime_(ctx *core.Context, arg core.Str) (core.Mimetype, error) {
+func Mime_(ctx *core.Context, arg core.String) (core.Mimetype, error) {
 	switch arg {
 	case "json":
 		arg = mimeconsts.JSON_CTYPE

@@ -1314,19 +1314,19 @@ func toStr(ctx *core.Context, arg core.Value) core.StringLike {
 	switch a := arg.(type) {
 	case core.Bool:
 		if a {
-			return core.Str("true")
+			return core.String("true")
 		}
-		return core.Str("false")
+		return core.String("false")
 	case core.Integral:
-		return core.Str(core.Stringify(a, ctx))
+		return core.String(core.Stringify(a, ctx))
 	case core.StringLike:
 		return a
 	case *core.ByteSlice:
-		return core.Str(a.UnderlyingBytes()) //TODO: panic if invalid characters ?
+		return core.String(a.UnderlyingBytes()) //TODO: panic if invalid characters ?
 	case *core.RuneSlice:
-		return core.Str(a.ElementsDoNotModify())
+		return core.String(a.ElementsDoNotModify())
 	case core.ResourceName:
-		return core.Str(a.ResourceName())
+		return core.String(a.ResourceName())
 	default:
 		panic(fmt.Errorf("cannot convert value of type %T to string", a))
 	}

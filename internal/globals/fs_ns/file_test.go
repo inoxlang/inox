@@ -33,7 +33,7 @@ func TestFile(t *testing.T) {
 		f := utils.Must(openExistingFile(ctx, pth, true))
 		defer f.close(ctx)
 
-		err := f.write(ctx, core.Str("hello"))
+		err := f.write(ctx, core.String("hello"))
 		assert.IsType(t, &core.NotAllowedError{}, err)
 		assert.Equal(t, core.FilesystemPermission{
 			Kind_:  permkind.WriteStream,

@@ -150,7 +150,7 @@ func (c *compiler) Compile(node parse.Node) error {
 			return err
 		}
 
-		c.emit(node, OpSetGlobal, c.addConstant(Str(node.Ident().Name)))
+		c.emit(node, OpSetGlobal, c.addConstant(String(node.Ident().Name)))
 	case *parse.BinaryExpression:
 		if node.Operator == parse.And || node.Operator == parse.Or {
 			return c.compileLogical(node)
@@ -302,11 +302,11 @@ func (c *compiler) Compile(node parse.Node) error {
 		c.emit(node, OpPushConstant, c.addConstant(v))
 	//strings
 	case *parse.QuotedStringLiteral:
-		c.emit(node, OpPushConstant, c.addConstant(Str(node.Value)))
+		c.emit(node, OpPushConstant, c.addConstant(String(node.Value)))
 	case *parse.UnquotedStringLiteral:
-		c.emit(node, OpPushConstant, c.addConstant(Str(node.Value)))
+		c.emit(node, OpPushConstant, c.addConstant(String(node.Value)))
 	case *parse.MultilineStringLiteral:
-		c.emit(node, OpPushConstant, c.addConstant(Str(node.Value)))
+		c.emit(node, OpPushConstant, c.addConstant(String(node.Value)))
 	case *parse.RuneLiteral:
 		c.emit(node, OpPushConstant, c.addConstant(Rune(node.Value)))
 	//paths
@@ -334,19 +334,19 @@ func (c *compiler) Compile(node parse.Node) error {
 	case *parse.NamedSegmentPathPatternLiteral:
 		c.emit(node, OpPushConstant, c.addConstant(&NamedSegmentPathPattern{node: node}))
 	case *parse.PathSlice:
-		c.emit(node, OpPushConstant, c.addConstant(Str(node.Value)))
+		c.emit(node, OpPushConstant, c.addConstant(String(node.Value)))
 	case *parse.PathPatternSlice:
-		c.emit(node, OpPushConstant, c.addConstant(Str(node.Value)))
+		c.emit(node, OpPushConstant, c.addConstant(String(node.Value)))
 	case *parse.RegularExpressionLiteral:
 		patt := NewRegexPattern(node.Value)
 		c.emit(node, OpPushConstant, c.addConstant(patt))
 	case *parse.URLQueryParameterValueSlice:
-		c.emit(node, OpPushConstant, c.addConstant(Str(node.Value)))
+		c.emit(node, OpPushConstant, c.addConstant(String(node.Value)))
 	case *parse.FlagLiteral:
 		val := Option{Name: node.Name, Value: Bool(true)}
 		c.emit(node, OpPushConstant, c.addConstant(val))
 	case *parse.AtHostLiteral:
-		c.emit(node, OpResolveHost, c.addConstant(Str(node.Value)))
+		c.emit(node, OpResolveHost, c.addConstant(String(node.Value)))
 	case *parse.ByteSliceLiteral:
 		byteSlice := NewMutableByteSlice(slices.Clone(node.Value), "")
 		c.emit(node, OpPushConstant, c.addConstant(byteSlice))
@@ -355,7 +355,7 @@ func (c *compiler) Compile(node parse.Node) error {
 			return err
 		}
 
-		c.emit(node, OpCreateOption, c.addConstant(Str(node.Name)))
+		c.emit(node, OpCreateOption, c.addConstant(String(node.Name)))
 	case *parse.AbsolutePathExpression, *parse.RelativePathExpression:
 
 		var slices []parse.Node
@@ -428,7 +428,7 @@ func (c *compiler) Compile(node parse.Node) error {
 
 		for _, p := range node.QueryParams {
 			param := p.(*parse.URLQueryParameter)
-			queryParamInfo = append(queryParamInfo, Str(param.Name), Int(len(param.Value)))
+			queryParamInfo = append(queryParamInfo, String(param.Name), Int(len(param.Value)))
 
 			for i, n := range param.Value {
 				if err := c.Compile(n); err != nil {
@@ -449,7 +449,7 @@ func (c *compiler) Compile(node parse.Node) error {
 		if err := c.Compile(node.Host); err != nil {
 			return err
 		}
-		c.emit(node, OpCreateHost, c.addConstant(Str(node.Scheme.Name)))
+		c.emit(node, OpCreateHost, c.addConstant(String(node.Scheme.Name)))
 	case *parse.UnaryExpression:
 		if err := c.Compile(node.Operand); err != nil {
 			return err
@@ -849,7 +849,7 @@ func (c *compiler) Compile(node parse.Node) error {
 			if err := c.Compile(decl.Right); err != nil {
 				return err
 			}
-			c.emit(node, OpSetGlobal, c.addConstant(Str(varname)))
+			c.emit(node, OpSetGlobal, c.addConstant(String(varname)))
 		}
 	case *parse.Assignment:
 		err := c.compileAssign(node, node.Left, node.Right)
@@ -889,11 +889,11 @@ func (c *compiler) Compile(node parse.Node) error {
 			return c.NewError(node, fmt.Sprintf("unresolved global reference '%s'", node.Name))
 		}
 
-		c.emit(node, OpGetGlobal, c.addConstant(Str(node.Name)))
+		c.emit(node, OpGetGlobal, c.addConstant(String(node.Name)))
 	case *parse.Variable:
 		_, ok := c.globalSymbols.Resolve(node.Name)
 		if ok {
-			c.emit(node, OpGetGlobal, c.addConstant(Str(node.Name)))
+			c.emit(node, OpGetGlobal, c.addConstant(String(node.Name)))
 		} else {
 			s, ok := c.currentLocalSymbols().Resolve(node.Name)
 			if !ok {
@@ -1006,7 +1006,7 @@ func (c *compiler) Compile(node parse.Node) error {
 				return fmt.Errorf("invalid key type %T", n)
 			}
 
-			c.emit(node, OpPushConstant, c.addConstant(Str(key)))
+			c.emit(node, OpPushConstant, c.addConstant(String(key)))
 
 			// value
 			if err := c.Compile(prop.Value); err != nil {
@@ -1049,7 +1049,7 @@ func (c *compiler) Compile(node parse.Node) error {
 				return fmt.Errorf("invalid key type %T", n)
 			}
 
-			c.emit(node, OpPushConstant, c.addConstant(Str(key)))
+			c.emit(node, OpPushConstant, c.addConstant(String(key)))
 
 			// value
 			if err := c.Compile(prop.Value); err != nil {
@@ -1112,7 +1112,7 @@ func (c *compiler) Compile(node parse.Node) error {
 		}
 
 		if isGlobal {
-			c.emit(node, OpGetGlobal, c.addConstant(Str(node.Left.Name)))
+			c.emit(node, OpGetGlobal, c.addConstant(String(node.Left.Name)))
 		} else {
 			c.emit(node, OpGetLocal, symbol.Index)
 		}
@@ -1135,7 +1135,7 @@ func (c *compiler) Compile(node parse.Node) error {
 				op := opCodeForFieldRetrieval(retrievalInfo.typ)
 				c.emit(node, op, structSize, retrievalInfo.offset)
 			} else {
-				c.emit(node, OpMemb, c.addConstant(Str(propName)))
+				c.emit(node, OpMemb, c.addConstant(String(propName)))
 			}
 		}
 
@@ -1164,13 +1164,13 @@ func (c *compiler) Compile(node parse.Node) error {
 			op = OpOptionalMemb
 		}
 
-		c.emit(node, op, c.addConstant(Str(node.PropertyName.Name)))
+		c.emit(node, op, c.addConstant(String(node.PropertyName.Name)))
 	case *parse.DoubleColonExpression:
 		_, ok := c.symbolicData.GetURLReferencedEntity(node)
 		if ok {
 			//load entity or value
 			c.emit(node.Left, OpLoadDBVal)
-			c.emit(node.Element, OpMemb, c.addConstant(Str(node.Element.Name)))
+			c.emit(node.Element, OpMemb, c.addConstant(String(node.Element.Name)))
 			break
 		}
 
@@ -1203,7 +1203,7 @@ func (c *compiler) Compile(node parse.Node) error {
 				return err
 			}
 
-			c.emit(node, OpObjPropNotStored, c.addConstant(Str(node.Element.Name)))
+			c.emit(node, OpObjPropNotStored, c.addConstant(String(node.Element.Name)))
 		}
 	case *parse.ComputedMemberExpression:
 		if err := c.Compile(node.Left); err != nil {
@@ -1224,7 +1224,7 @@ func (c *compiler) Compile(node parse.Node) error {
 		if err := c.Compile(node.Left); err != nil {
 			return err
 		}
-		c.emit(node, OpDynMemb, c.addConstant(Str(node.PropertyName.Name)))
+		c.emit(node, OpDynMemb, c.addConstant(String(node.PropertyName.Name)))
 	case *parse.IndexExpression:
 		if err := c.Compile(node.Indexed); err != nil {
 			return err
@@ -1256,7 +1256,7 @@ func (c *compiler) Compile(node parse.Node) error {
 		if err := c.Compile(node.Right); err != nil {
 			return err
 		}
-		c.emit(node, OpAddHostAlias, c.addConstant(Str(node.Left.Value)))
+		c.emit(node, OpAddHostAlias, c.addConstant(String(node.Left.Value)))
 	case *parse.ListPatternLiteral:
 		hasGeneralElem := 0
 
@@ -1305,7 +1305,7 @@ func (c *compiler) Compile(node parse.Node) error {
 		for _, p := range node.Properties {
 			name := p.Name()
 
-			c.emit(node, OpPushConstant, c.addConstant(Str(name)))
+			c.emit(node, OpPushConstant, c.addConstant(String(name)))
 
 			if err := c.Compile(p.Value); err != nil {
 				return err
@@ -1338,7 +1338,7 @@ func (c *compiler) Compile(node parse.Node) error {
 		for _, p := range node.Properties {
 			name := p.Name()
 
-			c.emit(node, OpPushConstant, c.addConstant(Str(name)))
+			c.emit(node, OpPushConstant, c.addConstant(String(name)))
 
 			if err := c.Compile(p.Value); err != nil {
 				return err
@@ -1367,7 +1367,7 @@ func (c *compiler) Compile(node parse.Node) error {
 		}
 		c.emit(node.Value, OpToPattern)
 
-		c.emit(node, OpCreateOptionPattern, c.addConstant(Str(node.Name)))
+		c.emit(node, OpCreateOptionPattern, c.addConstant(String(node.Name)))
 	case *parse.PatternUnion:
 		for _, e := range node.Cases {
 			if err := c.Compile(e); err != nil {
@@ -1378,7 +1378,7 @@ func (c *compiler) Compile(node parse.Node) error {
 
 		c.emit(node, OpCreateUnionPattern, len(node.Cases))
 	case *parse.PatternIdentifierLiteral:
-		c.emit(node, OpResolvePattern, c.addConstant(Str(node.Name)))
+		c.emit(node, OpResolvePattern, c.addConstant(String(node.Name)))
 	case *parse.OptionalPatternExpression:
 		if err := c.Compile(node.Pattern); err != nil {
 			return err
@@ -1399,9 +1399,9 @@ func (c *compiler) Compile(node parse.Node) error {
 		name := utils.MustGet(node.PatternName())
 
 		c.emit(node, OpToPattern)
-		c.emit(node, OpAddPattern, c.addConstant(Str(name)))
+		c.emit(node, OpAddPattern, c.addConstant(String(name)))
 	case *parse.PatternNamespaceIdentifierLiteral:
-		c.emit(node, OpResolvePatternNamespace, c.addConstant(Str(node.Name)))
+		c.emit(node, OpResolvePatternNamespace, c.addConstant(String(node.Name)))
 	case *parse.PatternNamespaceDefinition:
 		if err := c.Compile(node.Right); err != nil {
 			return err
@@ -1409,9 +1409,9 @@ func (c *compiler) Compile(node parse.Node) error {
 		name := utils.MustGet(node.NamespaceName())
 
 		c.emit(node, OpCreatePatternNamespace)
-		c.emit(node, OpAddPatternNamespace, c.addConstant(Str(name)))
+		c.emit(node, OpAddPatternNamespace, c.addConstant(String(name)))
 	case *parse.PatternNamespaceMemberExpression:
-		c.emit(node, OpPatternNamespaceMemb, c.addConstant(Str(node.Namespace.Name)), c.addConstant(Str(node.MemberName.Name)))
+		c.emit(node, OpPatternNamespaceMemb, c.addConstant(String(node.Namespace.Name)), c.addConstant(String(node.MemberName.Name)))
 	case *parse.FunctionDeclaration:
 		_, exists := c.globalSymbols.Resolve(node.Name.Name)
 
@@ -1426,7 +1426,7 @@ func (c *compiler) Compile(node parse.Node) error {
 			return err
 		}
 
-		c.emit(node, OpSetGlobal, c.addConstant(Str(node.Name.Name)))
+		c.emit(node, OpSetGlobal, c.addConstant(String(node.Name.Name)))
 	case *parse.FunctionExpression:
 		//enter local scope
 		scope := compilationScope{
@@ -1625,16 +1625,16 @@ func (c *compiler) Compile(node parse.Node) error {
 			}
 
 			if isGlobal {
-				c.emit(callee, OpGetGlobal, c.addConstant(Str(callee.Left.Name)))
+				c.emit(callee, OpGetGlobal, c.addConstant(String(callee.Left.Name)))
 			} else {
 				c.emit(callee, OpGetLocal, symbol.Index)
 			}
 
 			for _, p := range callee.PropertyNames[:len(callee.PropertyNames)-1] {
-				c.emit(callee, OpMemb, c.addConstant(Str(p.Name)))
+				c.emit(callee, OpMemb, c.addConstant(String(p.Name)))
 			}
 
-			c.emit(callee, OpMemb, c.addConstant(Str(callee.PropertyNames[len(callee.PropertyNames)-1].Name)))
+			c.emit(callee, OpMemb, c.addConstant(String(callee.PropertyNames[len(callee.PropertyNames)-1].Name)))
 			c.emit(callee, OpPushNil) //self
 			c.emit(callee, OpSwap)
 		case *parse.MemberExpression:
@@ -1642,7 +1642,7 @@ func (c *compiler) Compile(node parse.Node) error {
 				return err
 			}
 			c.emit(callee, OpCopyTop)
-			c.emit(callee, OpMemb, c.addConstant(Str(callee.PropertyName.Name)))
+			c.emit(callee, OpMemb, c.addConstant(String(callee.PropertyName.Name)))
 		case *parse.DoubleColonExpression:
 			_, ok := c.symbolicData.GetURLReferencedEntity(callee)
 			if ok {
@@ -1655,7 +1655,7 @@ func (c *compiler) Compile(node parse.Node) error {
 				if err := c.Compile(callee.Left); err != nil {
 					return err
 				}
-				c.emit(callee, OpExtensionMethod, c.addConstant(Str(symbolicExtension.Id)), c.addConstant(Str(callee.Element.Name)))
+				c.emit(callee, OpExtensionMethod, c.addConstant(String(symbolicExtension.Id)), c.addConstant(String(callee.Element.Name)))
 				c.emit(callee, OpMoveThirdTop) //move saved self at the top of the stack
 				c.emit(callee, OpSetSelf)      //restore self
 			} else {
@@ -1664,7 +1664,7 @@ func (c *compiler) Compile(node parse.Node) error {
 					return err
 				}
 				c.emit(callee, OpCopyTop)
-				c.emit(callee, OpObjPropNotStored, c.addConstant(Str(callee.Element.Name)))
+				c.emit(callee, OpObjPropNotStored, c.addConstant(String(callee.Element.Name)))
 			}
 		default:
 			c.emit(callee, OpPushNil) //no self
@@ -1784,7 +1784,7 @@ func (c *compiler) Compile(node parse.Node) error {
 			return err
 		}
 
-		c.emit(node, OpImport, c.addConstant(Str(node.Identifier.Name)))
+		c.emit(node, OpImport, c.addConstant(String(node.Identifier.Name)))
 	case *parse.SpawnExpression:
 		if node.Meta != nil {
 			objLit := node.Meta.(*parse.ObjectLiteral)
@@ -1896,7 +1896,7 @@ func (c *compiler) Compile(node parse.Node) error {
 			return err
 		}
 
-		c.emit(node, OpSpawnLThread, isSingleExpr, c.addConstant(Str(calleeName)), c.addConstant(routineMod), c.addConstant(bytecode))
+		c.emit(node, OpSpawnLThread, isSingleExpr, c.addConstant(String(calleeName)), c.addConstant(routineMod), c.addConstant(bytecode))
 	case *parse.LifetimejobExpression:
 		if err := c.Compile(node.Meta); err != nil {
 			return err
@@ -2045,13 +2045,13 @@ func (c *compiler) Compile(node parse.Node) error {
 			c.emit(node, OpCopyTop) //copy test suite ref for next OpMemb
 			c.emit(node, OpPushNil) //slot for the next call's result
 			c.emit(node, OpSwap)    //move the test suite ref at the right place
-			c.emit(node, OpMemb, c.addConstant(Str("run")))
+			c.emit(node, OpMemb, c.addConstant(String("run")))
 			c.emit(node, OpCall, 0, 0, 1) //must call
 			c.emit(node, OpCopyTop)       //copy lthread ref (result call) for next OpAddTestSuiteResult
 			c.emit(node, OpPushNil)
 			c.emit(node, OpSwap)
 			c.emit(node, OpCopyTop) //copy lthread ref for next OpMemb
-			c.emit(node, OpMemb, c.addConstant(Str("wait_result")))
+			c.emit(node, OpMemb, c.addConstant(String("wait_result")))
 			c.emit(node, OpCall, 0, 0, 1) //must call
 			c.emit(node, OpAddTestSuiteResult)
 
@@ -2093,12 +2093,12 @@ func (c *compiler) Compile(node parse.Node) error {
 			c.emit(node, OpCopyTop) //copy test case ref for next OpMemb
 			c.emit(node, OpPushNil) //slot for the next call's result
 			c.emit(node, OpSwap)    //move the test suite ref at the right place
-			c.emit(node, OpMemb, c.addConstant(Str("run")))
+			c.emit(node, OpMemb, c.addConstant(String("run")))
 			c.emit(node, OpCall, 0, 0, 1)
 			c.emit(node, OpPushNil)
 			c.emit(node, OpSwap)
 			c.emit(node, OpCopyTop) //copy lthread ref for next OpMemb
-			c.emit(node, OpMemb, c.addConstant(Str("wait_result")))
+			c.emit(node, OpMemb, c.addConstant(String("wait_result")))
 			c.emit(node, OpCall, 0, 0, 1)
 			c.emit(node, OpAddTestCaseResult)
 
@@ -2111,7 +2111,7 @@ func (c *compiler) Compile(node parse.Node) error {
 		for _, slice := range node.Slices {
 			switch s := slice.(type) {
 			case *parse.StringTemplateSlice:
-				c.emit(node, OpPushConstant, c.addConstant(Str(s.Value)))
+				c.emit(node, OpPushConstant, c.addConstant(String(s.Value)))
 			case *parse.StringTemplateInterpolation:
 				if err := c.Compile(s.Expr); err != nil {
 					return err
@@ -2148,7 +2148,7 @@ func (c *compiler) Compile(node parse.Node) error {
 		name := node.Opening.GetName()
 
 		for _, attr := range node.Opening.Attributes {
-			c.emit(node, OpPushConstant, c.addConstant(Str(attr.GetName())))
+			c.emit(node, OpPushConstant, c.addConstant(String(attr.GetName())))
 
 			if attr.Value == nil {
 				c.emit(node, OpPushConstant, c.addConstant(DEFAULT_XML_ATTR_VALUE))
@@ -2165,17 +2165,17 @@ func (c *compiler) Compile(node parse.Node) error {
 
 		var rawContent Value = Nil
 		if node.RawElementContent != "" {
-			rawContent = Str(node.RawElementContent)
+			rawContent = String(node.RawElementContent)
 		}
 
-		c.emit(node, OpCreateXMLelem, c.addConstant(Str(name)), len(node.Opening.Attributes), c.addConstant(rawContent), len(node.Children))
+		c.emit(node, OpCreateXMLelem, c.addConstant(String(name)), len(node.Opening.Attributes), c.addConstant(rawContent), len(node.Children))
 	case *parse.XMLInterpolation:
 		if err := c.Compile(node.Expr); err != nil {
 			return err
 		}
 	case *parse.XMLText:
 		//we assume factories will properly escape the string.
-		str := Str(node.Value)
+		str := String(node.Value)
 		c.emit(node, OpPushConstant, c.addConstant(str))
 	case *parse.ExtendStatement:
 		if err := c.Compile(node.ExtendedPattern); err != nil {
@@ -2312,7 +2312,7 @@ func (c *compiler) compileAssign(node *parse.Assignment, lhs, rhs parse.Node) er
 
 		if node.Operator != parse.Assign {
 			if isGlobalVar {
-				c.emit(node, OpGetGlobal, c.addConstant(Str(varname)))
+				c.emit(node, OpGetGlobal, c.addConstant(String(varname)))
 			} else {
 				c.emit(node, OpGetLocal, symbol.Index)
 			}
@@ -2323,7 +2323,7 @@ func (c *compiler) compileAssign(node *parse.Assignment, lhs, rhs parse.Node) er
 		}
 
 		if isGlobalVar {
-			c.emit(node, OpSetGlobal, c.addConstant(Str(varname)))
+			c.emit(node, OpSetGlobal, c.addConstant(String(varname)))
 		} else {
 			c.emit(node, OpSetLocal, symbol.Index)
 		}
@@ -2340,7 +2340,7 @@ func (c *compiler) compileAssign(node *parse.Assignment, lhs, rhs parse.Node) er
 		}
 
 		if isGlobal {
-			c.emit(node, OpGetGlobal, c.addConstant(Str(l.Left.Name)))
+			c.emit(node, OpGetGlobal, c.addConstant(String(l.Left.Name)))
 		} else {
 			c.emit(node, OpGetLocal, symbol.Index)
 		}
@@ -2363,7 +2363,7 @@ func (c *compiler) compileAssign(node *parse.Assignment, lhs, rhs parse.Node) er
 				op := opCodeForFieldRetrieval(retrievalInfo.typ)
 				c.emit(node, op, structSize, retrievalInfo.offset)
 			} else {
-				c.emit(node, OpMemb, c.addConstant(Str(propName)))
+				c.emit(node, OpMemb, c.addConstant(String(propName)))
 			}
 		}
 
@@ -2397,14 +2397,14 @@ func (c *compiler) compileAssign(node *parse.Assignment, lhs, rhs parse.Node) er
 		} else { //IProps
 			if node.Operator != parse.Assign {
 				c.emit(node, OpCopyTop)
-				c.emit(node, OpMemb, c.addConstant(Str(lastPropName)))
+				c.emit(node, OpMemb, c.addConstant(String(lastPropName)))
 			}
 
 			if err := c.compileAssignOperation(node, rhs); err != nil {
 				return err
 			}
 
-			c.emit(node, OpSetMember, c.addConstant(Str(lastPropName)))
+			c.emit(node, OpSetMember, c.addConstant(String(lastPropName)))
 		}
 	case *parse.MemberExpression:
 		if err := c.Compile(l.Left); err != nil {
@@ -2435,14 +2435,14 @@ func (c *compiler) compileAssign(node *parse.Assignment, lhs, rhs parse.Node) er
 
 		if node.Operator != parse.Assign {
 			c.emit(node, OpCopyTop)
-			c.emit(node, OpMemb, c.addConstant(Str(l.PropertyName.Name)))
+			c.emit(node, OpMemb, c.addConstant(String(l.PropertyName.Name)))
 		}
 
 		if err := c.compileAssignOperation(node, rhs); err != nil {
 			return err
 		}
 
-		c.emit(node, OpSetMember, c.addConstant(Str(l.PropertyName.Name)))
+		c.emit(node, OpSetMember, c.addConstant(String(l.PropertyName.Name)))
 	case *parse.IndexExpression:
 		if err := c.Compile(l.Indexed); err != nil {
 			return err
@@ -2517,7 +2517,7 @@ func (c *compiler) CompileVar(node *parse.IdentifierLiteral) error {
 	}
 
 	if isGlobal {
-		c.emit(node, OpGetGlobal, c.addConstant(Str(node.Name)))
+		c.emit(node, OpGetGlobal, c.addConstant(String(node.Name)))
 	} else {
 		c.emit(node, OpGetLocal, symbol.Index)
 	}
@@ -2549,9 +2549,9 @@ func (c *compiler) compileLogical(node *parse.BinaryExpression) error {
 func (c *compiler) CompileStringPatternNode(node parse.Node) error {
 	switch v := node.(type) {
 	case *parse.QuotedStringLiteral:
-		c.emit(node, OpPushConstant, c.addConstant(NewExactStringPattern(Str(v.Value))))
+		c.emit(node, OpPushConstant, c.addConstant(NewExactStringPattern(String(v.Value))))
 	case *parse.RuneLiteral:
-		c.emit(node, OpPushConstant, c.addConstant(NewExactStringPattern(Str(v.Value))))
+		c.emit(node, OpPushConstant, c.addConstant(NewExactStringPattern(String(v.Value))))
 	case *parse.RuneRangeExpression:
 		patt := NewRuneRangeStringPattern(v.Lower.Value, v.Upper.Value, node)
 		c.emit(node, OpPushConstant, c.addConstant(patt))
@@ -2565,7 +2565,7 @@ func (c *compiler) CompileStringPatternNode(node parse.Node) error {
 		patt = NewIntRangeStringPattern(v.LowerBound.Value, upperBound, node)
 		c.emit(node, OpPushConstant, c.addConstant(patt))
 	case *parse.PatternIdentifierLiteral:
-		c.emit(node, OpResolvePattern, c.addConstant(Str(v.Name)))
+		c.emit(node, OpResolvePattern, c.addConstant(String(v.Name)))
 	case *parse.PatternNamespaceIdentifierLiteral:
 		if err := c.Compile(node); err != nil {
 			return err

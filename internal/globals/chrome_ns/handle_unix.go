@@ -128,11 +128,11 @@ func (h *Handle) doNavigate(ctx *core.Context, u core.URL) error {
 	return nil
 }
 
-func (h *Handle) doWaitVisible(ctx *core.Context, s core.Str) error {
+func (h *Handle) doWaitVisible(ctx *core.Context, s core.String) error {
 	action := chromedp.WaitVisible(string(s))
 	return h.do(ctx, action)
 }
-func (h *Handle) doClick(ctx *core.Context, s core.Str) error {
+func (h *Handle) doClick(ctx *core.Context, s core.String) error {
 	action := chromedp.Click(string(s))
 	return h.do(ctx, action)
 }
@@ -149,7 +149,7 @@ func (h *Handle) doScreensotPage(ctx *core.Context) (*core.ByteSlice, error) {
 	return core.NewMutableByteSlice(b, ""), nil
 }
 
-func (h *Handle) doScreenshot(ctx *core.Context, sel core.Str) (*core.ByteSlice, error) {
+func (h *Handle) doScreenshot(ctx *core.Context, sel core.String) (*core.ByteSlice, error) {
 	var b []byte
 
 	action := chromedp.Screenshot(sel, &b)
@@ -160,7 +160,7 @@ func (h *Handle) doScreenshot(ctx *core.Context, sel core.Str) (*core.ByteSlice,
 	return core.NewMutableByteSlice(b, ""), nil
 }
 
-func (h *Handle) doGetHTMLNode(ctx *core.Context, sel core.Str) (*html_ns.HTMLNode, error) {
+func (h *Handle) doGetHTMLNode(ctx *core.Context, sel core.String) (*html_ns.HTMLNode, error) {
 	var htmlS string
 
 	action := chromedp.OuterHTML(sel, &htmlS)

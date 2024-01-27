@@ -326,10 +326,10 @@ func (patt *RepeatedPatternElement) Random(ctx *Context, options ...Option) Valu
 	}
 
 	for i := 0; i < count; i++ {
-		buff.WriteString(patt.element.Random(ctx, options...).(Str).UnderlyingString())
+		buff.WriteString(patt.element.Random(ctx, options...).(String).UnderlyingString())
 	}
 
-	return Str(buff.String())
+	return String(buff.String())
 }
 
 func (patt LengthCheckingStringPattern) Random(ctx *Context, options ...Option) Value {
@@ -339,10 +339,10 @@ func (patt LengthCheckingStringPattern) Random(ctx *Context, options ...Option) 
 func (patt SequenceStringPattern) Random(ctx *Context, options ...Option) Value {
 	s := bytes.NewBufferString("")
 	for _, e := range patt.elements {
-		s.WriteString(e.Random(ctx, options...).(Str).UnderlyingString())
+		s.WriteString(e.Random(ctx, options...).(String).UnderlyingString())
 	}
 
-	return Str(s.String())
+	return String(s.String())
 }
 
 func (patt *UnionPattern) Random(ctx *Context, options ...Option) Value {
@@ -393,7 +393,7 @@ func (patt UnionStringPattern) Random(ctx *Context, options ...Option) Value {
 }
 
 func (patt *RuneRangeStringPattern) Random(ctx *Context, options ...Option) Value {
-	return Str(patt.runes.Random(ctx).(rune))
+	return String(patt.runes.Random(ctx).(rune))
 }
 
 func (patt *IntRangePattern) Random(ctx *Context, options ...Option) Value {
@@ -439,7 +439,7 @@ func (pattern RegexPattern) Random(ctx *Context, options ...Option) Value {
 		panic(err)
 	}
 
-	return Str(buff.String())
+	return String(buff.String())
 }
 
 func writeRandForRegexElement(r *syntax.Regexp, buff *bytes.Buffer, source *RandomnessSource) error {
@@ -525,12 +525,12 @@ func (pattern *ParserBasedPseudoPattern) Random(ctx *Context, options ...Option)
 
 func (pattern *IntRangeStringPattern) Random(ctx *Context, options ...Option) Value {
 	n := int64(pattern.intRange.Random(ctx).(Int))
-	return Str(strconv.FormatInt(n, 10))
+	return String(strconv.FormatInt(n, 10))
 }
 
 func (pattern *FloatRangeStringPattern) Random(ctx *Context, options ...Option) Value {
 	n := float64(pattern.floatRange.Random(ctx).(Float))
-	return Str(strconv.FormatFloat(n, 'g', -1, 64))
+	return String(strconv.FormatFloat(n, 'g', -1, 64))
 }
 
 func (pattern *PathStringPattern) Random(ctx *Context, options ...Option) Value {

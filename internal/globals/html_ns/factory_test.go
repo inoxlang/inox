@@ -27,7 +27,7 @@ func TestCreateHTMLNodeFromXMLElement(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		t.Run("hx-lazy-load", func(t *testing.T) {
-			attributes := []core.XMLAttribute{core.NewXMLAttribute("hx-lazy-load", core.Str("/data"))}
+			attributes := []core.XMLAttribute{core.NewXMLAttribute("hx-lazy-load", core.String("/data"))}
 			element := CreateHTMLNodeFromXMLElement(ctx, core.NewXmlElement("div", attributes, nil))
 
 			bytes := Render(ctx, element)
@@ -37,7 +37,7 @@ func TestCreateHTMLNodeFromXMLElement(t *testing.T) {
 		})
 
 		t.Run("hx-post-json", func(t *testing.T) {
-			attributes := []core.XMLAttribute{core.NewXMLAttribute("hx-post-json", core.Str("/data"))}
+			attributes := []core.XMLAttribute{core.NewXMLAttribute("hx-post-json", core.String("/data"))}
 			element := CreateHTMLNodeFromXMLElement(ctx, core.NewXmlElement("div", attributes, nil))
 
 			bytes := Render(ctx, element)
@@ -47,7 +47,7 @@ func TestCreateHTMLNodeFromXMLElement(t *testing.T) {
 		})
 
 		t.Run("hx-patch-json", func(t *testing.T) {
-			attributes := []core.XMLAttribute{core.NewXMLAttribute("hx-patch-json", core.Str("/data"))}
+			attributes := []core.XMLAttribute{core.NewXMLAttribute("hx-patch-json", core.String("/data"))}
 			element := CreateHTMLNodeFromXMLElement(ctx, core.NewXmlElement("div", attributes, nil))
 
 			bytes := Render(ctx, element)
@@ -57,7 +57,7 @@ func TestCreateHTMLNodeFromXMLElement(t *testing.T) {
 		})
 
 		t.Run("hx-put-json", func(t *testing.T) {
-			attributes := []core.XMLAttribute{core.NewXMLAttribute("hx-put-json", core.Str("/data"))}
+			attributes := []core.XMLAttribute{core.NewXMLAttribute("hx-put-json", core.String("/data"))}
 			element := CreateHTMLNodeFromXMLElement(ctx, core.NewXmlElement("div", attributes, nil))
 
 			bytes := Render(ctx, element)

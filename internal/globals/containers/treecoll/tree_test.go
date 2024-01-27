@@ -17,11 +17,11 @@ func TestCreateTree(t *testing.T) {
 		ctx := core.NewContext(core.ContextConfig{})
 		core.NewGlobalState(ctx)
 
-		tree := NewTree(ctx, &core.Treedata{Root: core.Str("root")})
+		tree := NewTree(ctx, &core.Treedata{Root: core.String("root")})
 
 		assert.NotNil(t, tree.root)
 		root := tree.root
-		assert.Equal(t, core.Str("root"), root.data)
+		assert.Equal(t, core.String("root"), root.data)
 		assert.Empty(t, root.children)
 	})
 
@@ -30,19 +30,19 @@ func TestCreateTree(t *testing.T) {
 		core.NewGlobalState(ctx)
 
 		tree := NewTree(ctx, &core.Treedata{
-			Root: core.Str("root"),
+			Root: core.String("root"),
 			HiearchyEntries: []core.TreedataHiearchyEntry{
-				{Value: core.Str("child")},
+				{Value: core.String("child")},
 			},
 		})
 
 		assert.NotNil(t, tree.root)
 		root := tree.root
-		assert.Equal(t, core.Str("root"), root.data)
+		assert.Equal(t, core.String("root"), root.data)
 		assert.Len(t, root.children, 1)
 
 		child := root.children[0]
-		assert.Equal(t, core.Str("child"), child.data)
+		assert.Equal(t, core.String("child"), child.data)
 		assert.Empty(t, child.children)
 	})
 
@@ -51,24 +51,24 @@ func TestCreateTree(t *testing.T) {
 		core.NewGlobalState(ctx)
 
 		tree := NewTree(ctx, &core.Treedata{
-			Root: core.Str("root"),
+			Root: core.String("root"),
 			HiearchyEntries: []core.TreedataHiearchyEntry{
-				{Value: core.Str("child1")},
-				{Value: core.Str("child2")},
+				{Value: core.String("child1")},
+				{Value: core.String("child2")},
 			},
 		})
 
 		assert.NotNil(t, tree.root)
 		root := tree.root
-		assert.Equal(t, core.Str("root"), root.data)
+		assert.Equal(t, core.String("root"), root.data)
 		assert.Len(t, root.children, 2)
 
 		child1 := root.children[0]
-		assert.Equal(t, core.Str("child1"), child1.data)
+		assert.Equal(t, core.String("child1"), child1.data)
 		assert.Empty(t, child1.children)
 
 		child2 := root.children[1]
-		assert.Equal(t, core.Str("child2"), child2.data)
+		assert.Equal(t, core.String("child2"), child2.data)
 		assert.Empty(t, child2.children)
 	})
 
@@ -77,13 +77,13 @@ func TestCreateTree(t *testing.T) {
 		core.NewGlobalState(ctx)
 
 		tree := NewTree(ctx, &core.Treedata{
-			Root: core.Str("root"),
+			Root: core.String("root"),
 			HiearchyEntries: []core.TreedataHiearchyEntry{
-				{Value: core.Str("child1")},
+				{Value: core.String("child1")},
 				{
-					Value: core.Str("child2"),
+					Value: core.String("child2"),
 					Children: []core.TreedataHiearchyEntry{
-						{Value: core.Str("leaf")},
+						{Value: core.String("leaf")},
 					},
 				},
 			},
@@ -91,19 +91,19 @@ func TestCreateTree(t *testing.T) {
 
 		assert.NotNil(t, tree.root)
 		root := tree.root
-		assert.Equal(t, core.Str("root"), root.data)
+		assert.Equal(t, core.String("root"), root.data)
 		assert.Len(t, root.children, 2)
 
 		child1 := root.children[0]
-		assert.Equal(t, core.Str("child1"), child1.data)
+		assert.Equal(t, core.String("child1"), child1.data)
 		assert.Empty(t, child1.children)
 
 		child2 := root.children[1]
-		assert.Equal(t, core.Str("child2"), child2.data)
+		assert.Equal(t, core.String("child2"), child2.data)
 		assert.Len(t, child2.children, 1)
 
 		leaf := child2.children[0]
-		assert.Equal(t, core.Str("leaf"), leaf.data)
+		assert.Equal(t, core.String("leaf"), leaf.data)
 		assert.Empty(t, leaf.children)
 	})
 
@@ -112,25 +112,25 @@ func TestCreateTree(t *testing.T) {
 		core.NewGlobalState(ctx)
 
 		tree := NewTree(ctx, &core.Treedata{
-			Root: core.Str("root"),
+			Root: core.String("root"),
 			HiearchyEntries: []core.TreedataHiearchyEntry{
-				{Value: core.Str("child1")},
+				{Value: core.String("child1")},
 				{
-					Value: core.Str("child2"),
+					Value: core.String("child2"),
 					Children: []core.TreedataHiearchyEntry{
-						{Value: core.Str("leaf1")},
+						{Value: core.String("leaf1")},
 					},
 				},
 				{
-					Value: core.Str("child3"),
+					Value: core.String("child3"),
 					Children: []core.TreedataHiearchyEntry{
 						{
-							Value: core.Str("grandchild1"),
+							Value: core.String("grandchild1"),
 							Children: []core.TreedataHiearchyEntry{
-								{Value: core.Str("leaf2")},
+								{Value: core.String("leaf2")},
 							},
 						},
-						{Value: core.Str("grandchild2")},
+						{Value: core.String("grandchild2")},
 					},
 				},
 			},
@@ -138,40 +138,40 @@ func TestCreateTree(t *testing.T) {
 
 		assert.NotNil(t, tree.root)
 		root := tree.root
-		assert.Equal(t, core.Str("root"), root.data)
+		assert.Equal(t, core.String("root"), root.data)
 		assert.Len(t, root.children, 3)
 
 		child1 := root.children[0]
-		assert.Equal(t, core.Str("child1"), child1.data)
+		assert.Equal(t, core.String("child1"), child1.data)
 		assert.Empty(t, child1.children)
 
 		child2 := root.children[1]
 		{
-			assert.Equal(t, core.Str("child2"), child2.data)
+			assert.Equal(t, core.String("child2"), child2.data)
 			assert.Len(t, child2.children, 1)
 
 			leaf := child2.children[0]
-			assert.Equal(t, core.Str("leaf1"), leaf.data)
+			assert.Equal(t, core.String("leaf1"), leaf.data)
 			assert.Empty(t, leaf.children)
 		}
 
 		child3 := root.children[2]
 		{
-			assert.Equal(t, core.Str("child3"), child3.data)
+			assert.Equal(t, core.String("child3"), child3.data)
 			assert.Len(t, child3.children, 2)
 
 			grandchild1 := child3.children[0]
 			{
-				assert.Equal(t, core.Str("grandchild1"), grandchild1.data)
+				assert.Equal(t, core.String("grandchild1"), grandchild1.data)
 				assert.Len(t, grandchild1.children, 1)
 
 				leaf := grandchild1.children[0]
-				assert.Equal(t, core.Str("leaf2"), leaf.data)
+				assert.Equal(t, core.String("leaf2"), leaf.data)
 				assert.Empty(t, leaf.children)
 			}
 
 			grandchild2 := child3.children[1]
-			assert.Equal(t, core.Str("grandchild2"), grandchild2.data)
+			assert.Equal(t, core.String("grandchild2"), grandchild2.data)
 			assert.Empty(t, grandchild2.children)
 		}
 	})
@@ -181,37 +181,37 @@ func TestCreateTree(t *testing.T) {
 		core.NewGlobalState(ctx)
 
 		tree := NewTree(ctx, &core.Treedata{
-			Root: core.Str("root"),
+			Root: core.String("root"),
 			HiearchyEntries: []core.TreedataHiearchyEntry{
-				{Value: core.Str("child1")},
+				{Value: core.String("child1")},
 				{
-					Value: core.Str("child2"),
+					Value: core.String("child2"),
 					Children: []core.TreedataHiearchyEntry{
-						{Value: core.Str("leaf1")},
+						{Value: core.String("leaf1")},
 					},
 				},
 				{
-					Value: core.Str("child3"),
+					Value: core.String("child3"),
 					Children: []core.TreedataHiearchyEntry{
 						{
-							Value: core.Str("grandchild1"),
+							Value: core.String("grandchild1"),
 							Children: []core.TreedataHiearchyEntry{
-								{Value: core.Str("leaf2")},
-								{Value: core.Str("leaf3")},
+								{Value: core.String("leaf2")},
+								{Value: core.String("leaf3")},
 								{
-									Value: core.Str("greatgrandchild1"),
+									Value: core.String("greatgrandchild1"),
 									Children: []core.TreedataHiearchyEntry{
-										{Value: core.Str("leaf4")},
-										{Value: core.Str("leaf5")},
+										{Value: core.String("leaf4")},
+										{Value: core.String("leaf5")},
 									},
 								},
 							},
 						},
 						{
-							Value: core.Str("grandchild2"),
+							Value: core.String("grandchild2"),
 							Children: []core.TreedataHiearchyEntry{
-								{Value: core.Str("leaf6")},
-								{Value: core.Str("leaf7")},
+								{Value: core.String("leaf6")},
+								{Value: core.String("leaf7")},
 							},
 						},
 					},
@@ -221,67 +221,67 @@ func TestCreateTree(t *testing.T) {
 
 		assert.NotNil(t, tree.root)
 		root := tree.root
-		assert.Equal(t, core.Str("root"), root.data)
+		assert.Equal(t, core.String("root"), root.data)
 		assert.Len(t, root.children, 3)
 
 		child1 := root.children[0]
-		assert.Equal(t, core.Str("child1"), child1.data)
+		assert.Equal(t, core.String("child1"), child1.data)
 		assert.Empty(t, child1.children)
 
 		child2 := root.children[1]
 		{
-			assert.Equal(t, core.Str("child2"), child2.data)
+			assert.Equal(t, core.String("child2"), child2.data)
 			assert.Len(t, child2.children, 1)
 
 			leaf := child2.children[0]
-			assert.Equal(t, core.Str("leaf1"), leaf.data)
+			assert.Equal(t, core.String("leaf1"), leaf.data)
 			assert.Empty(t, leaf.children)
 		}
 
 		child3 := root.children[2]
 		{
-			assert.Equal(t, core.Str("child3"), child3.data)
+			assert.Equal(t, core.String("child3"), child3.data)
 			assert.Len(t, child3.children, 2)
 
 			grandchild1 := child3.children[0]
 			{
-				assert.Equal(t, core.Str("grandchild1"), grandchild1.data)
+				assert.Equal(t, core.String("grandchild1"), grandchild1.data)
 				assert.Len(t, grandchild1.children, 3)
 
 				leaf2 := grandchild1.children[0]
-				assert.Equal(t, core.Str("leaf2"), leaf2.data)
+				assert.Equal(t, core.String("leaf2"), leaf2.data)
 				assert.Empty(t, leaf2.children)
 
 				leaf3 := grandchild1.children[1]
-				assert.Equal(t, core.Str("leaf3"), leaf3.data)
+				assert.Equal(t, core.String("leaf3"), leaf3.data)
 				assert.Empty(t, leaf3.children)
 
 				greatgrandchild1 := grandchild1.children[2]
 				{
-					assert.Equal(t, core.Str("greatgrandchild1"), greatgrandchild1.data)
+					assert.Equal(t, core.String("greatgrandchild1"), greatgrandchild1.data)
 					assert.Len(t, greatgrandchild1.children, 2)
 
 					leaf4 := greatgrandchild1.children[0]
-					assert.Equal(t, core.Str("leaf4"), leaf4.data)
+					assert.Equal(t, core.String("leaf4"), leaf4.data)
 					assert.Empty(t, leaf4.children)
 
 					leaf5 := greatgrandchild1.children[1]
-					assert.Equal(t, core.Str("leaf5"), leaf5.data)
+					assert.Equal(t, core.String("leaf5"), leaf5.data)
 					assert.Empty(t, leaf5.children)
 				}
 			}
 
 			grandchild2 := child3.children[1]
 			{
-				assert.Equal(t, core.Str("grandchild2"), grandchild2.data)
+				assert.Equal(t, core.String("grandchild2"), grandchild2.data)
 				assert.Len(t, grandchild2.children, 2)
 
 				leaf6 := grandchild2.children[0]
-				assert.Equal(t, core.Str("leaf6"), leaf6.data)
+				assert.Equal(t, core.String("leaf6"), leaf6.data)
 				assert.Empty(t, leaf6.children)
 
 				leaf7 := grandchild2.children[1]
-				assert.Equal(t, core.Str("leaf7"), leaf7.data)
+				assert.Equal(t, core.String("leaf7"), leaf7.data)
 				assert.Empty(t, leaf7.children)
 			}
 		}
@@ -296,13 +296,13 @@ func TestTreeNode(t *testing.T) {
 	core.NewGlobalState(ctx)
 
 	tree := NewTree(ctx, &core.Treedata{
-		Root: core.Str("root"),
+		Root: core.String("root"),
 		HiearchyEntries: []core.TreedataHiearchyEntry{
-			{Value: core.Str("child1")},
+			{Value: core.String("child1")},
 			{
-				Value: core.Str("child2"),
+				Value: core.String("child2"),
 				Children: []core.TreedataHiearchyEntry{
-					{Value: core.Str("child3")},
+					{Value: core.String("child3")},
 				},
 			},
 		},

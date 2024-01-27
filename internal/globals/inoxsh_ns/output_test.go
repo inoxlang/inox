@@ -14,7 +14,7 @@ func TestSprintPrompt(t *testing.T) {
 	state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{
 		Permissions: core.GetDefaultGlobalVarPermissions(),
 	}))
-	state.SetGlobal("whoami", core.ValOf(func(ctx *core.Context) core.Str {
+	state.SetGlobal("whoami", core.ValOf(func(ctx *core.Context) core.String {
 		return "user"
 	}), core.GlobalConst)
 

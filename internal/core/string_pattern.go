@@ -92,12 +92,12 @@ type ToStringConversionCapableStringPattern interface {
 
 // ExactStringPattern matches values equal to .value: .value.Equal(...) returns true.
 type ExactStringPattern struct {
-	value  Str
+	value  String
 	regexp *regexp.Regexp
 	NotCallablePatternMixin
 }
 
-func NewExactStringPattern(value Str) *ExactStringPattern {
+func NewExactStringPattern(value String) *ExactStringPattern {
 	regex := regexp.QuoteMeta(string(value))
 	regexp := regexp.MustCompile(regex)
 
@@ -159,7 +159,7 @@ func (patt *ExactStringPattern) Parse(ctx *Context, s string) (Serializable, err
 		return nil, errors.New("string not equal to expected string")
 	}
 
-	return Str(s), nil
+	return String(s), nil
 }
 
 func (pattern *ExactStringPattern) FindMatches(ctx *Context, val Serializable, config MatchesFindConfig) (matches []Serializable, err error) {
@@ -241,10 +241,10 @@ func (patt *LengthCheckingStringPattern) validate(s string, i *int) bool {
 }
 
 func (patt *LengthCheckingStringPattern) Parse(ctx *Context, s string) (Serializable, error) {
-	if !patt.Test(ctx, Str(s)) {
+	if !patt.Test(ctx, String(s)) {
 		return nil, ErrInvalidInputString
 	}
-	return Str(s), nil
+	return String(s), nil
 }
 
 func (patt *LengthCheckingStringPattern) FindMatches(ctx *Context, val Serializable, config MatchesFindConfig) (groups []Serializable, err error) {
@@ -497,10 +497,10 @@ func (patt *SequenceStringPattern) validate(s string, i *int) bool {
 func (patt *SequenceStringPattern) Parse(ctx *Context, s string) (Serializable, error) {
 	patt.mustResolve()
 
-	if !patt.Test(ctx, Str(s)) {
+	if !patt.Test(ctx, String(s)) {
 		return nil, ErrInvalidInputString
 	}
-	return Str(s), nil
+	return String(s), nil
 }
 
 func (patt *SequenceStringPattern) MatchGroups(ctx *Context, v Serializable) (map[string]Serializable, bool, error) {
@@ -589,7 +589,7 @@ func (patt *SequenceStringPattern) constructGroupMatchingResult(ctx *Context, su
 			}
 
 			if groupPatt, ok := patt.elements[i].(GroupPattern); ok {
-				subresult, ok, err := groupPatt.MatchGroups(ctx, Str(submatch))
+				subresult, ok, err := groupPatt.MatchGroups(ctx, String(submatch))
 				if err != nil {
 					return nil, false, err
 				}
@@ -600,16 +600,16 @@ func (patt *SequenceStringPattern) constructGroupMatchingResult(ctx *Context, su
 				result.values = append(result.values, objFrom(subresult))
 			} else {
 				result.keys = append(result.keys, patt.groupNames[i])
-				result.values = append(result.values, Str(submatch))
+				result.values = append(result.values, String(submatch))
 			}
 		}
 		result.keys = append(result.keys, "0")
-		result.values = append(result.values, Str(submatches[0]))
+		result.values = append(result.values, String(submatches[0]))
 		result.setImplicitPropCount(1)
 		result.sortProps()
 		return result, true, nil
 	} else {
-		return objFrom(ValMap{"0": Str(submatches[0])}), true, nil
+		return objFrom(ValMap{"0": String(submatches[0])}), true, nil
 	}
 
 }
@@ -1790,12 +1790,12 @@ func (patt *NamedSegmentPathPattern) MatchGroups(ctx *Context, v Serializable) (
 				if index < len(patt.node.Slices)-1 {
 					return nil, false, nil
 				}
-				groups[n.Name] = Str(str[i:])
+				groups[n.Name] = String(str[i:])
 				return groups, true, nil
 			} else if index == len(patt.node.Slices)-1 { //if $var$ is at the end of the pattern there should not be a '/'
 				return nil, false, nil
 			} else {
-				groups[n.Name] = Str(str[i : i+segmentEnd])
+				groups[n.Name] = String(str[i : i+segmentEnd])
 				i += segmentEnd
 			}
 		}
@@ -1896,10 +1896,10 @@ func (patt *RegexPattern) validate(s string, i *int) bool {
 }
 
 func (patt *RegexPattern) Parse(ctx *Context, s string) (Serializable, error) {
-	if !patt.Test(ctx, Str(s)) {
+	if !patt.Test(ctx, String(s)) {
 		return nil, ErrInvalidInputString
 	}
-	return Str(s), nil
+	return String(s), nil
 }
 
 func (patt *RegexPattern) FindMatches(ctx *Context, val Serializable, config MatchesFindConfig) (groups []Serializable, err error) {
@@ -2134,7 +2134,7 @@ func (pattern *PathStringPattern) Test(ctx *Context, v Value) bool {
 		_, ok := v.(Path)
 		return ok
 	}
-	return pattern.optionalPathPattern.Test(ctx, Str(path))
+	return pattern.optionalPathPattern.Test(ctx, String(path))
 }
 
 func (pattern *PathStringPattern) Regex() string {
@@ -2159,7 +2159,7 @@ func (patt *PathStringPattern) Parse(ctx *Context, s string) (Serializable, erro
 		return nil, ErrInvalidInputString
 	}
 
-	if !patt.Test(ctx, Str(s)) {
+	if !patt.Test(ctx, String(s)) {
 		return nil, ErrInvalidInputString
 	}
 	return Path(path), nil
@@ -2296,13 +2296,13 @@ func FindMatchesForRegex(ctx *Context, regexp *regexp.Regexp, s string, config M
 		matches := regexp.FindAllString(string(s), -1)
 		results := make([]Serializable, len(matches))
 		for i, match := range matches {
-			results[i] = Str(match)
+			results[i] = String(match)
 		}
 		return results, nil
 	case FindFirstMatch:
 		match := regexp.FindString(string(s))
 
-		return []Serializable{Str(match)}, nil
+		return []Serializable{String(match)}, nil
 	default:
 		panic(fmt.Errorf("matching: invalid config"))
 	}

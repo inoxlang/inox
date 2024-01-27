@@ -42,7 +42,7 @@ func (n *HTMLNode) Prop(ctx *core.Context, name string) core.Value {
 	case "first-child":
 		return &HTMLNode{node: n.node.FirstChild}
 	case "data":
-		return core.Str(n.node.Data)
+		return core.String(n.node.Data)
 	default:
 		method, ok := n.GetGoMethod(name)
 		if !ok {
@@ -263,7 +263,7 @@ func (n *HTMLNode) AppendToAttribute(ctx *core.Context, newAttr html.Attribute) 
 	}
 }
 
-func (n *HTMLNode) SetId(ctx *core.Context, id core.Str) {
+func (n *HTMLNode) SetId(ctx *core.Context, id core.String) {
 	n.SetAttribute(ctx, html.Attribute{Key: "id", Val: string(id)})
 }
 

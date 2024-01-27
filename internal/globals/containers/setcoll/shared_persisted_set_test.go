@@ -134,8 +134,8 @@ func TestSharedPersistedSetAdd(t *testing.T) {
 		set := val1.(*Set)
 		set.Share(ctx.GetClosestState())
 
-		obj1 := core.NewObjectFromMap(core.ValMap{"name": core.Str("a")}, ctx)
-		obj2 := core.NewObjectFromMap(core.ValMap{"name": core.Str("a")}, ctx)
+		obj1 := core.NewObjectFromMap(core.ValMap{"name": core.String("a")}, ctx)
+		obj2 := core.NewObjectFromMap(core.ValMap{"name": core.String("a")}, ctx)
 		set.Add(ctx, obj1)
 
 		func() {
@@ -181,7 +181,7 @@ func TestSharedPersistedSetAdd(t *testing.T) {
 		//Check that the element is added from the tx's POV.
 
 		assert.True(t, bool(set.Has(ctx, INT_1)))
-		assert.True(t, bool(utils.Ret1(set.Get(ctx, core.Str(INT_1_TYPED_REPR)))))
+		assert.True(t, bool(utils.Ret1(set.Get(ctx, core.String(INT_1_TYPED_REPR)))))
 		values := core.IterateAllValuesOnly(ctx, set.Iterator(ctx, core.IteratorConfiguration{}))
 		assert.ElementsMatch(t, []any{INT_1}, values)
 
@@ -294,7 +294,7 @@ func TestSharedPersistedSetAdd(t *testing.T) {
 
 		assert.True(t, bool(set.Has(ctx1, INT_1)))
 		assert.True(t, bool(set.Contains(ctx1, INT_1)))
-		assert.True(t, bool(utils.Ret1(set.Get(ctx1, core.Str(INT_1_TYPED_REPR)))))
+		assert.True(t, bool(utils.Ret1(set.Get(ctx1, core.String(INT_1_TYPED_REPR)))))
 		values := core.IterateAllValuesOnly(ctx1, set.Iterator(ctx1, core.IteratorConfiguration{}))
 		assert.ElementsMatch(t, []any{INT_1}, values)
 
@@ -519,8 +519,8 @@ func TestSharedPersistedSetRemove(t *testing.T) {
 		set := val1.(*Set)
 		set.Share(ctx.GetClosestState())
 
-		obj1 := core.NewObjectFromMap(core.ValMap{"name": core.Str("a")}, ctx)
-		obj2 := core.NewObjectFromMap(core.ValMap{"name": core.Str("a")}, ctx)
+		obj1 := core.NewObjectFromMap(core.ValMap{"name": core.String("a")}, ctx)
+		obj2 := core.NewObjectFromMap(core.ValMap{"name": core.String("a")}, ctx)
 
 		set.Add(ctx, obj1)
 		set.Remove(ctx, obj2)
@@ -599,7 +599,7 @@ func TestSharedPersistedSetRemove(t *testing.T) {
 		//Check that the element is removed from the tx's POV.
 
 		assert.False(t, bool(set.Has(ctx, INT_1)))
-		assert.False(t, bool(utils.Ret1(set.Get(ctx, core.Str(INT_1_TYPED_REPR)))))
+		assert.False(t, bool(utils.Ret1(set.Get(ctx, core.String(INT_1_TYPED_REPR)))))
 		values := core.IterateAllValuesOnly(ctx, set.Iterator(ctx, core.IteratorConfiguration{}))
 		assert.Empty(t, values)
 
@@ -774,8 +774,8 @@ func TestSharedPersistedSetHas(t *testing.T) {
 		set := val1.(*Set)
 		set.Share(ctx.GetClosestState())
 
-		obj1 := core.NewObjectFromMap(core.ValMap{"name": core.Str("a")}, ctx)
-		obj2 := core.NewObjectFromMap(core.ValMap{"name": core.Str("a")}, ctx)
+		obj1 := core.NewObjectFromMap(core.ValMap{"name": core.String("a")}, ctx)
+		obj2 := core.NewObjectFromMap(core.ValMap{"name": core.String("a")}, ctx)
 		set.Add(ctx, obj1)
 
 		assert.True(t, bool(set.Has(ctx, obj1)))
@@ -859,7 +859,7 @@ func TestInteractWithElementsOfLoadedSet(t *testing.T) {
 
 		assert.NotSame(t, set, loadedSet) //future-proofing the test
 
-		elem, _ := loadedSet.(*Set).Get(ctx, core.Str(url.GetLastPathSegment()))
+		elem, _ := loadedSet.(*Set).Get(ctx, core.String(url.GetLastPathSegment()))
 		obj := elem.(*core.Object)
 		if !assert.NoError(t, obj.SetProp(ctx, "prop", INT_1)) {
 			return
@@ -874,7 +874,7 @@ func TestInteractWithElementsOfLoadedSet(t *testing.T) {
 			return
 		}
 
-		loadedElem, _ := loadedSet.(*Set).Get(ctx, core.Str(url.GetLastPathSegment()))
+		loadedElem, _ := loadedSet.(*Set).Get(ctx, core.String(url.GetLastPathSegment()))
 		loadedObj := loadedElem.(*core.Object)
 
 		if !assert.Equal(t, []string{"prop"}, loadedObj.PropertyNames(ctx)) {

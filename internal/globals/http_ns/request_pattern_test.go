@@ -69,7 +69,7 @@ func TestHttpRequestPattern(t *testing.T) {
 			description := core.NewInexactObjectPattern([]core.ObjectPatternEntry{
 				{
 					Name:    "method",
-					Pattern: core.NewExactValuePattern(core.Str("GET_")),
+					Pattern: core.NewExactValuePattern(core.String("GET_")),
 				},
 			})
 

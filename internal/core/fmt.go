@@ -39,7 +39,7 @@ func Fmt(ctx *Context, format Format, arg Value) (Value, error) {
 		return nil, err
 	}
 	if _, ok := format.(StringFormat); ok {
-		return Str(buf.String()), nil
+		return String(buf.String()), nil
 	}
 	panic(errors.New("only string formats are supported for now"))
 }

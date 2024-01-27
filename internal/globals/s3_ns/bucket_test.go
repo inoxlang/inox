@@ -11,15 +11,15 @@ import (
 
 var (
 	S3_HOST_RESOLUTION_DATA_WITHOUT_CREDENTIALS = core.NewObjectFromMapNoInit(core.ValMap{
-		"bucket":   core.Str("test"),
-		"provider": core.Str("cloudflare"),
+		"bucket":   core.String("test"),
+		"provider": core.String("cloudflare"),
 	})
 
 	S3_HOST_RESOLUTION_DATA_WITH_CREDENTIALS = core.NewObjectFromMapNoInit(core.ValMap{
-		"bucket":     core.Str("test"),
+		"bucket":     core.String("test"),
 		"host":       core.Host(S3_FS_TEST_ENDPOINT),
-		"provider":   core.Str("cloudflare"),
-		"access-key": core.Str(S3_FS_TEST_ACCESS_KEY),
+		"provider":   core.String("cloudflare"),
+		"access-key": core.String(S3_FS_TEST_ACCESS_KEY),
 		"secret-key": utils.Must(core.SECRET_STRING_PATTERN.NewSecret(
 			core.NewContexWithEmptyState(core.ContextConfig{}, nil),
 			S3_FS_TEST_SECRET_KEY,

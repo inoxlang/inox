@@ -103,11 +103,11 @@ func TestEqualityCompareDictionaries(t *testing.T) {
 	t.Run("equal dictionaries with a cycle", func(t *testing.T) {
 		d1 := NewDictionary(map[string]Serializable{})
 		d1.entries["\"self\""] = d1
-		d1.keys["\"self\""] = Str("self")
+		d1.keys["\"self\""] = String("self")
 
 		d2 := NewDictionary(map[string]Serializable{})
 		d2.entries["\"self\""] = d1
-		d2.keys["\"self\""] = Str("self")
+		d2.keys["\"self\""] = String("self")
 
 		assert.True(t, d1.Equal(ctx, d1, map[uintptr]uintptr{}, 0))
 		assert.True(t, d1.Equal(ctx, d2, map[uintptr]uintptr{}, 0))
@@ -117,11 +117,11 @@ func TestEqualityCompareDictionaries(t *testing.T) {
 	t.Run("non-equal dictionaries with a cycle", func(t *testing.T) {
 		d1 := NewDictionary(map[string]Serializable{"\"a\"": Int(0)})
 		d1.entries["\"self\""] = d1
-		d1.keys["\"self\""] = Str("self")
+		d1.keys["\"self\""] = String("self")
 
 		d2 := NewDictionary(map[string]Serializable{"\"a\"": Int(1)})
 		d2.entries["\"self\""] = d1
-		d2.keys["\"self\""] = Str("self")
+		d2.keys["\"self\""] = String("self")
 
 		assert.False(t, d1.Equal(ctx, d2, map[uintptr]uintptr{}, 0))
 		assert.False(t, d2.Equal(ctx, d1, map[uintptr]uintptr{}, 0))
@@ -136,22 +136,22 @@ func TestEqualityCompareValueLists(t *testing.T) {
 	defer ctx.CancelGracefully()
 
 	t.Run("same list", func(t *testing.T) {
-		s := &ValueList{elements: []Serializable{Str("a")}}
+		s := &ValueList{elements: []Serializable{String("a")}}
 
 		assert.True(t, s.Equal(ctx, s, map[uintptr]uintptr{}, 0))
 	})
 
 	t.Run("two equal lists", func(t *testing.T) {
-		s1 := &ValueList{elements: []Serializable{Str("a")}}
-		s2 := &ValueList{elements: []Serializable{Str("a")}}
+		s1 := &ValueList{elements: []Serializable{String("a")}}
+		s2 := &ValueList{elements: []Serializable{String("a")}}
 
 		assert.True(t, s1.Equal(ctx, s2, map[uintptr]uintptr{}, 0))
 		assert.True(t, s2.Equal(ctx, s1, map[uintptr]uintptr{}, 0))
 	})
 
 	t.Run("two different lists", func(t *testing.T) {
-		s1 := &ValueList{elements: []Serializable{Str("a")}}
-		s2 := &ValueList{elements: []Serializable{Str("a"), Str("b")}}
+		s1 := &ValueList{elements: []Serializable{String("a")}}
+		s2 := &ValueList{elements: []Serializable{String("a"), String("b")}}
 
 		assert.False(t, s1.Equal(ctx, s2, map[uintptr]uintptr{}, 0))
 		assert.False(t, s2.Equal(ctx, s1, map[uintptr]uintptr{}, 0))
@@ -232,16 +232,16 @@ func TestEqualityCompareStrings(t *testing.T) {
 	NewGlobalState(ctx)
 
 	s := utils.Must(concatValues(ctx, []Value{
-		Str(strings.Repeat("a", 50)),
-		Str(strings.Repeat("a", 50)),
+		String(strings.Repeat("a", 50)),
+		String(strings.Repeat("a", 50)),
 	}))
 	assert.IsType(t, &StringConcatenation{}, s)
 
 	t.Run("same string", func(t *testing.T) {
-		s1 := Str(strings.Repeat("a", 100))
+		s1 := String(strings.Repeat("a", 100))
 		s2 := utils.Must(concatValues(ctx, []Value{
-			Str(strings.Repeat("a", 50)),
-			Str(strings.Repeat("a", 50)),
+			String(strings.Repeat("a", 50)),
+			String(strings.Repeat("a", 50)),
 		}))
 
 		assert.True(t, s1.Equal(ctx, s1, map[uintptr]uintptr{}, 0))
@@ -249,10 +249,10 @@ func TestEqualityCompareStrings(t *testing.T) {
 	})
 
 	t.Run("two equal strings", func(t *testing.T) {
-		s1 := Str(strings.Repeat("a", 100))
+		s1 := String(strings.Repeat("a", 100))
 		s2 := utils.Must(concatValues(ctx, []Value{
-			Str(strings.Repeat("a", 50)),
-			Str(strings.Repeat("a", 50)),
+			String(strings.Repeat("a", 50)),
+			String(strings.Repeat("a", 50)),
 		}))
 
 		assert.True(t, s1.Equal(ctx, s2, map[uintptr]uintptr{}, 0))
@@ -260,10 +260,10 @@ func TestEqualityCompareStrings(t *testing.T) {
 	})
 
 	t.Run("two different lists", func(t *testing.T) {
-		s1 := Str(strings.Repeat("a", 100))
+		s1 := String(strings.Repeat("a", 100))
 		s2 := utils.Must(concatValues(ctx, []Value{
-			Str(strings.Repeat("a", 50)),
-			Str(strings.Repeat("a", 51)),
+			String(strings.Repeat("a", 50)),
+			String(strings.Repeat("a", 51)),
 		}))
 
 		assert.False(t, s1.Equal(ctx, s2, map[uintptr]uintptr{}, 0))

@@ -207,7 +207,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		res, err := Eval(code, state, false)
 		assert.NoError(t, err)
-		assert.Equal(t, Str("a"), res)
+		assert.Equal(t, String("a"), res)
 	})
 
 	t.Run("multiline string literal", func(t *testing.T) {
@@ -220,7 +220,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.Equal(t, Str("a"), res)
+			assert.Equal(t, String("a"), res)
 		})
 
 		t.Run("linefeed", func(t *testing.T) {
@@ -230,7 +230,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.Equal(t, Str("1\n2"), res)
+			assert.Equal(t, String("1\n2"), res)
 		})
 		t.Run("escaped n (\\n)", func(t *testing.T) {
 			code := "`1\\n2`"
@@ -239,7 +239,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.Equal(t, Str("1\n2"), res)
+			assert.Equal(t, String("1\n2"), res)
 		})
 	})
 
@@ -353,7 +353,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				defer ctx.CancelGracefully()
 
 				res, err := Eval(code, NewGlobalState(ctx, map[string]Value{
-					"username": Str("foo"),
+					"username": String("foo"),
 				}), false)
 				assert.NoError(t, err)
 				assert.Equal(t, Path("/home/foo"), res)
@@ -364,7 +364,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				ctx := NewDefaultTestContext()
 				defer ctx.CancelGracefully()
 				res, err := Eval(code, NewGlobalState(ctx, map[string]Value{
-					"username": Str("fo/o"),
+					"username": String("fo/o"),
 				}), false)
 				assert.NoError(t, err)
 				assert.Equal(t, Path("/home/fo/o"), res)
@@ -376,7 +376,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				defer ctx.CancelGracefully()
 
 				_, err := Eval(code, NewGlobalState(ctx, map[string]Value{
-					"username": Str("./a?x=1"),
+					"username": String("./a?x=1"),
 				}), false)
 				assert.Error(t, err)
 			})
@@ -415,7 +415,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				defer ctx.CancelGracefully()
 
 				res, err := Eval(code, NewGlobalState(ctx, map[string]Value{
-					"username": Str("foo"),
+					"username": String("foo"),
 				}), false)
 				assert.NoError(t, err)
 				assert.Equal(t, Path("./home/foo"), res)
@@ -427,7 +427,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				defer ctx.CancelGracefully()
 
 				res, err := Eval(code, NewGlobalState(ctx, map[string]Value{
-					"username": Str("fo/o"),
+					"username": String("fo/o"),
 				}), false)
 				assert.NoError(t, err)
 				assert.Equal(t, Path("./home/fo/o"), res)
@@ -439,7 +439,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				defer ctx.CancelGracefully()
 
 				_, err := Eval(code, NewGlobalState(ctx, map[string]Value{
-					"username": Str("./a?x=1"),
+					"username": String("./a?x=1"),
 				}), false)
 				assert.Error(t, err)
 			})
@@ -513,7 +513,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			defer ctx.CancelGracefully()
 
 			res, err := Eval(code, NewGlobalState(ctx, map[string]Value{
-				"username": Str("foo"),
+				"username": String("foo"),
 			}), false)
 			assert.NoError(t, err)
 			assert.Equal(t, PathPattern("/home/foo/..."), res)
@@ -525,7 +525,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			defer ctx.CancelGracefully()
 
 			res, err := Eval(code, NewGlobalState(ctx, map[string]Value{
-				"username": Str("*"),
+				"username": String("*"),
 			}), false)
 			assert.Error(t, err)
 			assert.Nil(t, res)
@@ -572,7 +572,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			defer ctx.CancelGracefully()
 
 			res, err := Eval(code, NewGlobalState(ctx, map[string]Value{
-				"host": Str("localhost"),
+				"host": String("localhost"),
 			}), false)
 			assert.NoError(t, err)
 			assert.Equal(t, URL("https://localhost/"), res)
@@ -584,7 +584,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			defer ctx.CancelGracefully()
 
 			res, err := Eval(code, NewGlobalState(ctx, map[string]Value{
-				"path": Str("index.html"),
+				"path": String("index.html"),
 			}), false)
 			assert.NoError(t, err)
 			assert.Equal(t, URL("https://example.com/index.html"), res)
@@ -596,7 +596,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			defer ctx.CancelGracefully()
 
 			res, err := Eval(code, NewGlobalState(ctx, map[string]Value{
-				"path": Str("/index.html"),
+				"path": String("/index.html"),
 			}), false)
 			assert.NoError(t, err)
 			assert.Equal(t, URL("https://example.com//index.html"), res)
@@ -608,7 +608,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			defer ctx.CancelGracefully()
 
 			res, err := Eval(code, NewGlobalState(ctx, map[string]Value{
-				"path": Str("index.html"),
+				"path": String("index.html"),
 			}), false)
 			assert.NoError(t, err)
 			assert.Equal(t, URL("https://example.com/index.html"), res)
@@ -620,7 +620,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			defer ctx.CancelGracefully()
 
 			res, err := Eval(code, NewGlobalState(ctx, map[string]Value{
-				"path": Str("%3F"),
+				"path": String("%3F"),
 			}), false)
 			assert.NoError(t, err)
 			assert.Equal(t, URL("https://example.com/%3F"), res)
@@ -632,7 +632,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			defer ctx.CancelGracefully()
 
 			res, err := Eval(code, NewGlobalState(ctx, map[string]Value{
-				"path": Str("%23"),
+				"path": String("%23"),
 			}), false)
 			assert.NoError(t, err)
 			assert.Equal(t, URL("https://example.com/%23"), res)
@@ -644,7 +644,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			defer ctx.CancelGracefully()
 
 			res, err := Eval(code, NewGlobalState(ctx, map[string]Value{
-				"path": Str("@domain.zip"),
+				"path": String("@domain.zip"),
 			}), false)
 			assert.NoError(t, err)
 			assert.Equal(t, URL("https://example.com/@domain.zip"), res)
@@ -1817,14 +1817,14 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("assignment : LHS is a pipeline expression", func(t *testing.T) {
 			code := `a = | get-data | split-lines $; return $a`
 			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
-				"get-data": ValOf(func(ctx *Context) Str {
+				"get-data": ValOf(func(ctx *Context) String {
 					return "aaa\nbbb"
 				}),
 				"split-lines": ValOf(splitLines),
 			})
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.Equal(t, newList(&ValueList{elements: []Serializable{Str("aaa"), Str("bbb")}}), res)
+			assert.Equal(t, newList(&ValueList{elements: []Serializable{String("aaa"), String("bbb")}}), res)
 		})
 	})
 
@@ -1935,7 +1935,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.Equal(t, Str("0"), res)
+			assert.Equal(t, String("0"), res)
 		})
 
 		t.Run("negative start", func(t *testing.T) {
@@ -1959,7 +1959,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.Equal(t, newList(&ValueList{elements: []Serializable{Str("a")}}), res)
+			assert.Equal(t, newList(&ValueList{elements: []Serializable{String("a")}}), res)
 		})
 
 		t.Run("only start specified", func(t *testing.T) {
@@ -1971,7 +1971,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.Equal(t, newList(&ValueList{elements: []Serializable{Str("a")}}), res)
+			assert.Equal(t, newList(&ValueList{elements: []Serializable{String("a")}}), res)
 		})
 
 		t.Run("only end specified", func(t *testing.T) {
@@ -1983,7 +1983,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.Equal(t, newList(&ValueList{elements: []Serializable{Str("a")}}), res)
+			assert.Equal(t, newList(&ValueList{elements: []Serializable{String("a")}}), res)
 		})
 
 		t.Run("start out ouf bounds", func(t *testing.T) {
@@ -2156,7 +2156,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.EqualValues(t, objFrom(ValMap{"name": Str("foo")}), res)
+			assert.EqualValues(t, objFrom(ValMap{"name": String("foo")}), res)
 		})
 
 		t.Run("empty lifetime job", func(t *testing.T) {
@@ -2292,8 +2292,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.EqualValues(t, NewDictionary(map[string]Serializable{
-				`"name"`:                   Str(`foo`),
-				`{"path__value":"./path"}`: Str(`bar`),
+				`"name"`:                   String(`foo`),
+				`{"path__value":"./path"}`: String(`bar`),
 			}), res)
 		})
 
@@ -2308,8 +2308,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.EqualValues(t, NewDictionary(map[string]Serializable{
-				`"name"`:           Str(`foo`),
-				`{"int__value":1}`: Str(`bar`),
+				`"name"`:           String(`foo`),
+				`{"int__value":1}`: String(`bar`),
 			}), res)
 		})
 
@@ -2733,8 +2733,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				`,
 				globals: func(ctx *Context) map[string]Value {
 					watcher := NewGenericWatcher(WatcherConfiguration{Filter: ANYVAL_PATTERN})
-					watcher.InformAboutAsync(ctx, Str("a"))
-					watcher.InformAboutAsync(ctx, Str("b"))
+					watcher.InformAboutAsync(ctx, String("a"))
+					watcher.InformAboutAsync(ctx, String("b"))
 
 					go func() {
 						time.Sleep(10 * time.Millisecond)
@@ -2744,7 +2744,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 						"streamable": StreamSource(watcher),
 					}
 				},
-				result: NewWrappedValueList(Str("a"), Str("b")),
+				result: NewWrappedValueList(String("a"), String("b")),
 			},
 			{
 				input: `
@@ -2757,8 +2757,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				`,
 				globals: func(ctx *Context) map[string]Value {
 					watcher := NewGenericWatcher(WatcherConfiguration{Filter: ANYVAL_PATTERN})
-					watcher.InformAboutAsync(ctx, Str("a"))
-					watcher.InformAboutAsync(ctx, Str("b"))
+					watcher.InformAboutAsync(ctx, String("a"))
+					watcher.InformAboutAsync(ctx, String("b"))
 
 					go func() {
 						time.Sleep(10 * time.Millisecond)
@@ -2768,7 +2768,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 						"streamable": StreamSource(watcher),
 					}
 				},
-				result: NewWrappedValueList(Str("a")),
+				result: NewWrappedValueList(String("a")),
 			},
 			{
 				input: `
@@ -2778,8 +2778,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				`,
 				globals: func(ctx *Context) map[string]Value {
 					watcher := NewGenericWatcher(WatcherConfiguration{Filter: ANYVAL_PATTERN})
-					watcher.InformAboutAsync(ctx, Str("a"))
-					watcher.InformAboutAsync(ctx, Str("b"))
+					watcher.InformAboutAsync(ctx, String("a"))
+					watcher.InformAboutAsync(ctx, String("b"))
 
 					go func() {
 						time.Sleep(10 * time.Millisecond)
@@ -2789,7 +2789,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 						"streamable": StreamSource(watcher),
 					}
 				},
-				result: NewWrappedValueList(Str("a"), Str("b")),
+				result: NewWrappedValueList(String("a"), String("b")),
 			},
 			{
 				input: `
@@ -2802,8 +2802,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				`,
 				globals: func(ctx *Context) map[string]Value {
 					watcher := NewGenericWatcher(WatcherConfiguration{Filter: ANYVAL_PATTERN})
-					watcher.InformAboutAsync(ctx, Str("a"))
-					watcher.InformAboutAsync(ctx, Str("b"))
+					watcher.InformAboutAsync(ctx, String("a"))
+					watcher.InformAboutAsync(ctx, String("b"))
 
 					go func() {
 						time.Sleep(10 * time.Millisecond)
@@ -2813,7 +2813,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 						"streamable": StreamSource(watcher),
 					}
 				},
-				result: NewWrappedValueList(Str("a"), Str("b")),
+				result: NewWrappedValueList(String("a"), String("b")),
 			},
 			{
 				input: `
@@ -2826,14 +2826,14 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				globals: func(ctx *Context) map[string]Value {
 					return map[string]Value{
 						"streamable": NewElementsStream(
-							[]Value{Str("a"), Str("b"), Str("c"), Str("d")},
+							[]Value{String("a"), String("b"), String("c"), String("d")},
 							nil,
 						),
 					}
 				},
 				result: NewWrappedValueList(
-					NewWrappedValueList(Str("a"), Str("b")),
-					NewWrappedValueList(Str("c"), Str("d")),
+					NewWrappedValueList(String("a"), String("b")),
+					NewWrappedValueList(String("c"), String("d")),
 				),
 			},
 			//TODO: add more tests with EOS error
@@ -2886,7 +2886,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					return newList(&ValueList{
 						elements: []Serializable{
 							objFrom(ValMap{
-								"name":          Str(filepath.Base(tempDir)),
+								"name":          String(filepath.Base(tempDir)),
 								"path":          tempDirPath,
 								"is-dir":        True,
 								"is-regular":    False,
@@ -2909,14 +2909,14 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					return newList(&ValueList{
 						elements: []Serializable{
 							objFrom(ValMap{
-								"name":          Str(filepath.Base(tempDir)),
+								"name":          String(filepath.Base(tempDir)),
 								"path":          tempDirPath,
 								"is-dir":        Bool(true),
 								"is-regular":    Bool(false),
 								"is-walk-start": Bool(true),
 							}),
 							objFrom(ValMap{
-								"name":          Str(regularFilename),
+								"name":          String(regularFilename),
 								"path":          Path(regularFilePath),
 								"is-dir":        Bool(false),
 								"is-regular":    Bool(true),
@@ -2943,21 +2943,21 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					return newList(&ValueList{
 						elements: []Serializable{
 							objFrom(ValMap{
-								"name":          Str(filepath.Base(tempDir)),
+								"name":          String(filepath.Base(tempDir)),
 								"path":          Path(tempDir + "/"),
 								"is-dir":        Bool(true),
 								"is-regular":    Bool(false),
 								"is-walk-start": Bool(true),
 							}),
 							objFrom(ValMap{
-								"name":          Str(regularFilename),
+								"name":          String(regularFilename),
 								"path":          Path(regularFilePath),
 								"is-dir":        Bool(false),
 								"is-regular":    Bool(true),
 								"is-walk-start": Bool(false),
 							}),
 							objFrom(ValMap{
-								"name":          Str(subdirName),
+								"name":          String(subdirName),
 								"path":          Path(subdirPath + "/"),
 								"is-dir":        Bool(true),
 								"is-regular":    Bool(false),
@@ -2991,14 +2991,14 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					return newList(&ValueList{
 						elements: []Serializable{
 							objFrom(ValMap{
-								"name":          Str(filepath.Base(tempDir)),
+								"name":          String(filepath.Base(tempDir)),
 								"path":          Path(tempDir + "/"),
 								"is-dir":        Bool(true),
 								"is-regular":    Bool(false),
 								"is-walk-start": Bool(true),
 							}),
 							objFrom(ValMap{
-								"name":          Str(regularFilename),
+								"name":          String(regularFilename),
 								"path":          Path(regularFilePath),
 								"is-dir":        Bool(false),
 								"is-regular":    Bool(true),
@@ -3037,21 +3037,21 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					return newList(&ValueList{
 						elements: []Serializable{
 							objFrom(ValMap{
-								"name":          Str(filepath.Base(tempDir)),
+								"name":          String(filepath.Base(tempDir)),
 								"path":          Path(tempDir + "/"),
 								"is-dir":        Bool(true),
 								"is-regular":    Bool(false),
 								"is-walk-start": Bool(true),
 							}),
 							objFrom(ValMap{
-								"name":          Str(subdir1Name),
+								"name":          String(subdir1Name),
 								"path":          Path(subdir1Path + "/"),
 								"is-dir":        Bool(true),
 								"is-regular":    Bool(false),
 								"is-walk-start": Bool(false),
 							}),
 							objFrom(ValMap{
-								"name":          Str(subdir2Name),
+								"name":          String(subdir2Name),
 								"path":          Path(subdir2Path + "/"),
 								"is-dir":        Bool(true),
 								"is-regular":    Bool(false),
@@ -3089,14 +3089,14 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					return newList(&ValueList{
 						elements: []Serializable{
 							objFrom(ValMap{
-								"name":          Str(filepath.Base(tempDir)),
+								"name":          String(filepath.Base(tempDir)),
 								"path":          Path(tempDir + "/"),
 								"is-dir":        Bool(true),
 								"is-regular":    Bool(false),
 								"is-walk-start": Bool(true),
 							}),
 							objFrom(ValMap{
-								"name":          Str(subdir1Name),
+								"name":          String(subdir1Name),
 								"path":          Path(subdir1Path + "/"),
 								"is-dir":        Bool(true),
 								"is-regular":    Bool(false),
@@ -3331,7 +3331,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					}; 
 					return [$a,$b]
 				`,
-				result: newList(&ValueList{elements: []Serializable{Str("user"), Int(0)}}),
+				result: newList(&ValueList{elements: []Serializable{String("user"), Int(0)}}),
 			},
 			{
 				name: "group patterns : two cases (second one matches)",
@@ -4410,11 +4410,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				name:  "[]string returned, should be converted to a list",
 				input: "return getNames()",
 				globalVariables: map[string]Value{
-					"getNames": WrapGoFunction(func(ctx *Context) []Str {
-						return []Str{"string"}
+					"getNames": WrapGoFunction(func(ctx *Context) []String {
+						return []String{"string"}
 					}),
 				},
-				result: NewWrappedValueList(Str("string")),
+				result: NewWrappedValueList(String("string")),
 			},
 			{
 				name:  "method",
@@ -4422,7 +4422,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				globalVariables: map[string]Value{
 					"user": testMutableGoValue{"Foo", ""},
 				},
-				result: Str("Foo"),
+				result: String("Foo"),
 			},
 			{
 				name: "optional parameter: no arguments",
@@ -5010,12 +5010,12 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		t.Run("pipeline statement", func(t *testing.T) {
 			code := `get-data | split-lines $`
-			var dollarVarValue Str
+			var dollarVarValue String
 			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
-				"get-data": ValOf(func(ctx *Context) Str {
+				"get-data": ValOf(func(ctx *Context) String {
 					return "aaa\nbbb"
 				}),
-				"split-lines": ValOf(func(ctx *Context, s Str) []Str {
+				"split-lines": ValOf(func(ctx *Context, s String) []String {
 					dollarVarValue = s
 					return splitLines(ctx, s)
 				}),
@@ -5026,10 +5026,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			if bytecodeEval {
 				assert.Equal(t, Nil, res)
 			} else {
-				assert.Equal(t, NewWrappedValueList(Str("aaa"), Str("bbb")), res)
+				assert.Equal(t, NewWrappedValueList(String("aaa"), String("bbb")), res)
 			}
 
-			assert.Equal(t, Str("aaa\nbbb"), dollarVarValue)
+			assert.Equal(t, String("aaa\nbbb"), dollarVarValue)
 		})
 
 		t.Run("original value of anonymous variable is restored", func(t *testing.T) {
@@ -5039,7 +5039,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return $
 			`
 			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
-				"get-data": ValOf(func(ctx *Context) Str {
+				"get-data": ValOf(func(ctx *Context) String {
 					return "aaa\nbbb"
 				}),
 				"split-lines": ValOf(splitLines),
@@ -5174,7 +5174,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					dyn := actual.(*DynamicValue)
 
 					assert.Equal(t, map[string]Serializable{"v": Int(1)}, dyn.value.(*Object).EntryMap(nil))
-					assert.Equal(t, Str("v"), dyn.opData0)
+					assert.Equal(t, String("v"), dyn.opData0)
 				},
 			},
 			{
@@ -5187,7 +5187,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					dyn := actual.(*DynamicValue)
 
 					assert.Equal(t, map[string]Serializable{"a": Int(1)}, dyn.value.(*Object).EntryMap(nil))
-					assert.Equal(t, Str("a"), dyn.opData0)
+					assert.Equal(t, String("a"), dyn.opData0)
 				},
 			},
 			{
@@ -5200,7 +5200,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					dyn := actual.(*DynamicValue)
 
 					assert.Equal(t, map[string]Serializable{"a": Int(1)}, dyn.value.(*Object).EntryMap(nil))
-					assert.Equal(t, Str("a"), dyn.opData0)
+					assert.Equal(t, String("a"), dyn.opData0)
 				},
 			},
 			{
@@ -5228,7 +5228,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					dyn := actual.(*DynamicValue)
 
 					assert.Equal(t, map[string]Serializable{"x": Int(1)}, dyn.value.(*Object).EntryMap(nil))
-					assert.Equal(t, Str("x"), dyn.opData0)
+					assert.Equal(t, String("x"), dyn.opData0)
 				},
 			},
 			{
@@ -5251,7 +5251,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					innerObj.Share(state)
 
 					assert.Equal(t, map[string]Serializable{"x": innerObj}, dyn.value.(*Object).EntryMap(nil))
-					assert.Equal(t, Str("x"), dyn.opData0)
+					assert.Equal(t, String("x"), dyn.opData0)
 				},
 			},
 		}
@@ -5815,7 +5815,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			})
 			state.OutputFieldsInitialized.Store(true)
 
-			state.Globals.Set("log", WrapGoFunction(func(ctx *Context, msg Str) {
+			state.Globals.Set("log", WrapGoFunction(func(ctx *Context, msg String) {
 				ctx.Logger().Debug().Msg(string(msg))
 			}))
 
@@ -5900,10 +5900,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			})
 			state.OutputFieldsInitialized.Store(true)
 
-			state.Globals.Set("log_debug", WrapGoFunction(func(ctx *Context, msg Str) {
+			state.Globals.Set("log_debug", WrapGoFunction(func(ctx *Context, msg String) {
 				ctx.Logger().Debug().Msg(string(msg))
 			}))
-			state.Globals.Set("log_info", WrapGoFunction(func(ctx *Context, msg Str) {
+			state.Globals.Set("log_info", WrapGoFunction(func(ctx *Context, msg String) {
 				ctx.Logger().Info().Msg(string(msg))
 			}))
 
@@ -5951,8 +5951,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			`
 			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
 				"http": NewNamespace("http", map[string]Value{
-					"read": WrapGoFunction(func(*Context, URL) Str {
-						return Str("result")
+					"read": WrapGoFunction(func(*Context, URL) String {
+						return String("result")
 					}),
 				}),
 			})
@@ -5961,7 +5961,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.Equal(t, Str("result"), res)
+			assert.Equal(t, String("result"), res)
 		})
 
 		t.Run("call expression: embedded module should inherit global start constants", func(t *testing.T) {
@@ -6461,7 +6461,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.Equal(t, NewWrappedValueList(
-				Str("final result"),
+				String("final result"),
 				NewWrappedValueList(Int(0)),
 			), res)
 		})
@@ -6806,7 +6806,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.Equal(t, Str("a"), res)
+			assert.Equal(t, String("a"), res)
 		})
 
 		t.Run("compute() with existing dynamic entry key", func(t *testing.T) {
@@ -6836,7 +6836,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				Path("/a"),
 				NewObjectFromMap(ValMap{
 					"0":    Path("/a"),
-					"name": Str("a"),
+					"name": String("a"),
 				}, state.Ctx),
 			), res)
 		})
@@ -6968,7 +6968,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, Str("a"), res)
+			assert.Equal(t, String("a"), res)
 		})
 
 		t.Run("two string-like elements", func(t *testing.T) {
@@ -6980,7 +6980,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			assert.NoError(t, err)
 			assert.Equal(t, &StringConcatenation{
-				elements: []StringLike{Str("a"), Str("b")},
+				elements: []StringLike{String("a"), String("b")},
 				totalLen: 2,
 			}, res)
 		})
@@ -7045,7 +7045,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, NewTuple([]Serializable{Int(1), Str("a")}), res)
+			assert.Equal(t, NewTuple([]Serializable{Int(1), String("a")}), res)
 		})
 
 		t.Run("string element followed by a spread element with a single item", func(t *testing.T) {
@@ -7154,7 +7154,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, NewExactStringPattern(Str("s")), res)
+			assert.Equal(t, NewExactStringPattern(String("s")), res)
 		})
 
 		t.Run("RHS is an unprefixed object pattern", func(t *testing.T) {
@@ -7201,7 +7201,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, NewExactStringPattern(Str("p")), res)
+			assert.Equal(t, NewExactStringPattern(String("p")), res)
 		})
 
 		t.Run("pattern definition & identifiers : minimal lazy", func(t *testing.T) {
@@ -7355,7 +7355,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					},
 					{
 						Name:    "name",
-						Pattern: NewExactStringPattern(Str("s")),
+						Pattern: NewExactStringPattern(String("s")),
 					},
 				},
 			}, res)
@@ -7374,7 +7374,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				entries: []ObjectPatternEntry{
 					{
 						Name:    "name",
-						Pattern: NewExactStringPattern(Str("s")),
+						Pattern: NewExactStringPattern(String("s")),
 					},
 				},
 			}, res)
@@ -7399,11 +7399,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					entries: []ObjectPatternEntry{
 						{
 							Name:    "name",
-							Pattern: NewExactStringPattern(Str("foo")),
+							Pattern: NewExactStringPattern(String("foo")),
 						},
 						{
 							Name:    "s",
-							Pattern: NewExactStringPattern(Str("s")),
+							Pattern: NewExactStringPattern(String("s")),
 						},
 					},
 				}, res)
@@ -7426,7 +7426,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					entries: []ObjectPatternEntry{
 						{
 							Name:    "name",
-							Pattern: NewExactStringPattern(Str("bar")),
+							Pattern: NewExactStringPattern(String("bar")),
 						},
 					},
 				}, res)
@@ -7455,11 +7455,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 						},
 						{
 							Name:    "name",
-							Pattern: NewExactStringPattern(Str("foo")),
+							Pattern: NewExactStringPattern(String("foo")),
 						},
 						{
 							Name:    "s",
-							Pattern: NewExactStringPattern(Str("s")),
+							Pattern: NewExactStringPattern(String("s")),
 						},
 					},
 				}, res)
@@ -7485,7 +7485,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 								entries: []ObjectPatternEntry{
 									{
 										Name:    "name",
-										Pattern: NewExactStringPattern(Str("foo")),
+										Pattern: NewExactStringPattern(String("foo")),
 									},
 								},
 								inexact: true,
@@ -7493,7 +7493,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 						},
 						{
 							Name:    "name",
-							Pattern: NewExactStringPattern(Str("foo")),
+							Pattern: NewExactStringPattern(String("foo")),
 						},
 					},
 				}, res)
@@ -7547,7 +7547,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					},
 					{
 						Name:    "name",
-						Pattern: NewExactStringPattern(Str("s")),
+						Pattern: NewExactStringPattern(String("s")),
 					},
 				},
 			}, res)
@@ -7566,7 +7566,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				entries: []RecordPatternEntry{
 					{
 						Name:    "name",
-						Pattern: NewExactStringPattern(Str("s")),
+						Pattern: NewExactStringPattern(String("s")),
 					},
 				},
 			}, res)
@@ -7592,11 +7592,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					entries: []RecordPatternEntry{
 						{
 							Name:    "name",
-							Pattern: NewExactStringPattern(Str("foo")),
+							Pattern: NewExactStringPattern(String("foo")),
 						},
 						{
 							Name:    "s",
-							Pattern: NewExactStringPattern(Str("s")),
+							Pattern: NewExactStringPattern(String("s")),
 						},
 					},
 				}, res)
@@ -7619,7 +7619,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					entries: []RecordPatternEntry{
 						{
 							Name:    "name",
-							Pattern: NewExactStringPattern(Str("bar")),
+							Pattern: NewExactStringPattern(String("bar")),
 						},
 					},
 				}, res)
@@ -7649,11 +7649,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 						},
 						{
 							Name:    "name",
-							Pattern: NewExactStringPattern(Str("foo")),
+							Pattern: NewExactStringPattern(String("foo")),
 						},
 						{
 							Name:    "s",
-							Pattern: NewExactStringPattern(Str("s")),
+							Pattern: NewExactStringPattern(String("s")),
 						},
 					},
 				}, res)
@@ -7681,7 +7681,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 								entries: []RecordPatternEntry{
 									{
 										Name:    "name",
-										Pattern: NewExactStringPattern(Str("foo")),
+										Pattern: NewExactStringPattern(String("foo")),
 									},
 								},
 								inexact: true,
@@ -7689,7 +7689,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 						},
 						{
 							Name:    "name",
-							Pattern: NewExactStringPattern(Str("foo")),
+							Pattern: NewExactStringPattern(String("foo")),
 						},
 					},
 				}, res)
@@ -8034,7 +8034,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			if !assert.IsType(t, &TestSuite{}, res) {
 				return
 			}
-			assert.Equal(t, Str("name"), res.(*TestSuite).meta)
+			assert.Equal(t, String("name"), res.(*TestSuite).meta)
 			assert.Equal(t, state.Module.MainChunk.Source, res.(*TestSuite).module.MainChunk.Source)
 		})
 
@@ -8177,7 +8177,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			if !assert.IsType(t, &TestCase{}, res) {
 				return
 			}
-			assert.Equal(t, Str("name"), res.(*TestCase).meta)
+			assert.Equal(t, String("name"), res.(*TestCase).meta)
 			assert.Equal(t, state.Module.MainChunk.Source, res.(*TestCase).module.MainChunk.Source)
 		})
 
@@ -8269,7 +8269,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			if !assert.IsType(t, &LifetimeJob{}, res) {
 				return
 			}
-			assert.Equal(t, Str("name"), res.(*LifetimeJob).meta)
+			assert.Equal(t, String("name"), res.(*LifetimeJob).meta)
 			assert.Equal(t, state.Module.MainChunk.Source, res.(*LifetimeJob).module.MainChunk.Source)
 		})
 
@@ -10590,7 +10590,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					return
 				}
 
-				assert.Equal(t, Str("foo"), user.Prop(ctx, "name"))
+				assert.Equal(t, String("foo"), user.Prop(ctx, "name"))
 
 				isProperlyInitialized.Store(true)
 			}))
@@ -10705,7 +10705,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					return
 				}
 
-				assert.Equal(t, Str("foo"), user.Prop(ctx, "name"))
+				assert.Equal(t, String("foo"), user.Prop(ctx, "name"))
 
 				isProperlyInitialized.Store(true)
 			}))
@@ -10829,7 +10829,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, Str("3"), res)
+			assert.Equal(t, String("3"), res)
 		})
 
 		t.Run("valid interpolations", func(t *testing.T) {
@@ -10924,7 +10924,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, Str("12"), res)
+			assert.Equal(t, String("12"), res)
 		})
 
 		t.Run("no pattern, trailing interpolation", func(t *testing.T) {
@@ -10938,7 +10938,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, Str("12"), res)
+			assert.Equal(t, String("12"), res)
 		})
 
 		t.Run("no pattern, interpolation & escaped n (\\n)", func(t *testing.T) {
@@ -10952,7 +10952,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, Str("1\n2"), res)
+			assert.Equal(t, String("1\n2"), res)
 		})
 
 		t.Run("no pattern, interpolation & linefeed", func(t *testing.T) {
@@ -10963,7 +10963,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, Str("1\n2"), res)
+			assert.Equal(t, String("1\n2"), res)
 		})
 	})
 
@@ -11191,7 +11191,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			assert.Equal(t, NewXmlElement("div", nil, []Value{Str("")}), val)
+			assert.Equal(t, NewXmlElement("div", nil, []Value{String("")}), val)
 		})
 
 		t.Run("self-closing element", func(t *testing.T) {
@@ -11221,7 +11221,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			assert.Equal(t, NewXmlElement("div", []XMLAttribute{{name: "a", value: Int(1)}}, []Value{Str("")}), val)
+			assert.Equal(t, NewXmlElement("div", []XMLAttribute{{name: "a", value: Int(1)}}, []Value{String("")}), val)
 		})
 
 		t.Run("string attribute", func(t *testing.T) {
@@ -11236,7 +11236,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			assert.Equal(t, NewXmlElement("div", []XMLAttribute{{name: "a", value: Str("b")}}, []Value{Str("")}), val)
+			assert.Equal(t, NewXmlElement("div", []XMLAttribute{{name: "a", value: String("b")}}, []Value{String("")}), val)
 		})
 
 		t.Run("attribute without value", func(t *testing.T) {
@@ -11251,7 +11251,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			assert.Equal(t, NewXmlElement("div", []XMLAttribute{{name: "a", value: DEFAULT_XML_ATTR_VALUE}}, []Value{Str("")}), val)
+			assert.Equal(t, NewXmlElement("div", []XMLAttribute{{name: "a", value: DEFAULT_XML_ATTR_VALUE}}, []Value{String("")}), val)
 		})
 
 		t.Run("value of attribute should be HTML escaped", func(t *testing.T) {
@@ -11266,7 +11266,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			assert.Equal(t, NewXmlElement("div", []XMLAttribute{{name: "a", value: Str("<")}}, []Value{Str("")}), val)
+			assert.Equal(t, NewXmlElement("div", []XMLAttribute{{name: "a", value: String("<")}}, []Value{String("")}), val)
 		})
 
 		t.Run("linefeed", func(t *testing.T) {
@@ -11281,7 +11281,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			assert.Equal(t, NewXmlElement("div", nil, []Value{Str("\n")}), val)
+			assert.Equal(t, NewXmlElement("div", nil, []Value{String("\n")}), val)
 		})
 
 		t.Run("raw text element", func(t *testing.T) {
@@ -11312,9 +11312,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			}
 
 			assert.Equal(t, NewXmlElement("div", nil, []Value{
-				Str(""),
-				NewXmlElement("span", nil, []Value{Str("")}),
-				Str(""),
+				String(""),
+				NewXmlElement("span", nil, []Value{String("")}),
+				String(""),
 			}), val)
 		})
 
@@ -11333,9 +11333,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			assert.Equal(t, NewXmlElement("div",
 				[]XMLAttribute{{name: "a", value: Int(1)}},
 				[]Value{
-					Str(""),
-					NewXmlElement("span", nil, []Value{Str("")}),
-					Str(""),
+					String(""),
+					NewXmlElement("span", nil, []Value{String("")}),
+					String(""),
 				}), val)
 		})
 
@@ -11357,9 +11357,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					{name: "b", value: Int(2)},
 				},
 				[]Value{
-					Str(""),
-					NewXmlElement("span", nil, []Value{Str("")}),
-					Str(""),
+					String(""),
+					NewXmlElement("span", nil, []Value{String("")}),
+					String(""),
 				}), val)
 		})
 
@@ -11376,9 +11376,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			}
 
 			assert.Equal(t, NewXmlElement("div", nil, []Value{
-				Str("\n"),
-				NewXmlElement("span", nil, []Value{Str("")}),
-				Str(""),
+				String("\n"),
+				NewXmlElement("span", nil, []Value{String("")}),
+				String(""),
 			}), val)
 		})
 
@@ -11395,9 +11395,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			}
 
 			assert.Equal(t, NewXmlElement("div", nil, []Value{
-				Str(""),
-				NewXmlElement("span", nil, []Value{Str("1")}),
-				Str(""),
+				String(""),
+				NewXmlElement("span", nil, []Value{String("1")}),
+				String(""),
 			}), val)
 		})
 
@@ -11414,11 +11414,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			}
 
 			assert.Equal(t, NewXmlElement("div", nil, []Value{
-				Str(""),
-				NewXmlElement("span", nil, []Value{Str("")}),
-				Str(""),
-				NewXmlElement("span", nil, []Value{Str("")}),
-				Str(""),
+				String(""),
+				NewXmlElement("span", nil, []Value{String("")}),
+				String(""),
+				NewXmlElement("span", nil, []Value{String("")}),
+				String(""),
 			}), val)
 		})
 
@@ -11435,13 +11435,13 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			}
 
 			assert.Equal(t, NewXmlElement("div", nil, []Value{
-				Str(""),
+				String(""),
 				NewXmlElement("span", nil, []Value{
-					Str(""),
-					NewXmlElement("span", nil, []Value{Str("")}),
-					Str(""),
+					String(""),
+					NewXmlElement("span", nil, []Value{String("")}),
+					String(""),
 				}),
-				Str(""),
+				String(""),
 			}), val)
 		})
 
@@ -11475,9 +11475,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			}
 
 			assert.Equal(t, NewXmlElement("div", nil, []Value{
-				Str(""),
-				NewXmlElement("span", nil, []Value{Str("")}),
-				Str(""),
+				String(""),
+				NewXmlElement("span", nil, []Value{String("")}),
+				String(""),
 			}), val)
 		})
 
@@ -11494,9 +11494,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			}
 
 			assert.Equal(t, NewXmlElement("div", nil, []Value{
-				Str(""),
-				Str("a"),
-				Str(""),
+				String(""),
+				String("a"),
+				String(""),
 			}), val)
 		})
 	})
@@ -12099,8 +12099,8 @@ func TestToBool(t *testing.T) {
 		{"not empty pointer", &testMutableGoValue{}, true},
 		{"empty pointer", (*testMutableGoValue)(nil), false},
 		{"unitialized struct", testMutableGoValue{}, true},
-		{"empty string", Str(""), false},
-		{"not empty string", Str("1"), true},
+		{"empty string", String(""), false},
+		{"not empty string", String("1"), true},
 		{"empty list", NewWrappedValueList(), false},
 		{"not empty list", NewWrappedValueList(Int(1)), true},
 	}
@@ -12134,9 +12134,9 @@ func NewDefaultTestContext() *Context {
 
 type evalFn = func(chunkStringOrModule any, state *GlobalState, doSymbolicCheck bool) (Value, error)
 
-func splitLines(ctx *Context, s Str) (slice []Str) {
+func splitLines(ctx *Context, s String) (slice []String) {
 	for _, e := range strings.Split(string(s), "\n") {
-		slice = append(slice, Str(e))
+		slice = append(slice, String(e))
 	}
 	return
 }

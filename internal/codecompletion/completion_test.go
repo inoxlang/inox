@@ -43,8 +43,8 @@ func TestFindCompletions(t *testing.T) {
 
 func runSingleModeTests(t *testing.T, mode Mode, wd, dir string) {
 	perms := []core.Permission{
-		core.CommandPermission{CommandName: core.Str("cmd"), SubcommandNameChain: []string{"help", "build"}},
-		core.CommandPermission{CommandName: core.Str("cmd"), SubcommandNameChain: []string{"help", "run"}},
+		core.CommandPermission{CommandName: core.String("cmd"), SubcommandNameChain: []string{"help", "build"}},
+		core.CommandPermission{CommandName: core.String("cmd"), SubcommandNameChain: []string{"help", "run"}},
 		core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern(dir)},
 		core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern(dir + "/...")},
 	}
@@ -343,7 +343,7 @@ func runSingleModeTests(t *testing.T, mode Mode, wd, dir string) {
 
 		t.Run("suggest object property: empty property name: object has single property", func(t *testing.T) {
 			state := newState()
-			obj := core.NewObjectFromMap(core.ValMap{"name": core.Str("foo")}, state.Global.Ctx)
+			obj := core.NewObjectFromMap(core.ValMap{"name": core.String("foo")}, state.Global.Ctx)
 			state.SetGlobal("obj", obj, core.GlobalConst)
 			chunk, _ := parseChunkSource("obj.", "")
 
@@ -356,7 +356,7 @@ func runSingleModeTests(t *testing.T, mode Mode, wd, dir string) {
 
 		t.Run("suggest object property: start of property name: object has single property", func(t *testing.T) {
 			state := newState()
-			obj := core.NewObjectFromMap(core.ValMap{"name": core.Str("foo")}, state.Global.Ctx)
+			obj := core.NewObjectFromMap(core.ValMap{"name": core.String("foo")}, state.Global.Ctx)
 			state.SetGlobal("obj", obj, core.GlobalConst)
 			chunk, _ := parseChunkSource("obj.n", "")
 
@@ -369,7 +369,7 @@ func runSingleModeTests(t *testing.T, mode Mode, wd, dir string) {
 
 		t.Run("suggest object property (length 2): empty property name: object has single property", func(t *testing.T) {
 			state := newState()
-			inner := core.NewObjectFromMap(core.ValMap{"name": core.Str("foo")}, state.Global.Ctx)
+			inner := core.NewObjectFromMap(core.ValMap{"name": core.String("foo")}, state.Global.Ctx)
 			obj := core.NewObjectFromMap(core.ValMap{"inner": inner}, state.Global.Ctx)
 			state.SetGlobal("obj", obj, core.GlobalConst)
 			chunk, _ := parseChunkSource("obj.inner.", "")
@@ -383,7 +383,7 @@ func runSingleModeTests(t *testing.T, mode Mode, wd, dir string) {
 
 		t.Run("suggest object property (length 2): start of property name: object has single property", func(t *testing.T) {
 			state := newState()
-			inner := core.NewObjectFromMap(core.ValMap{"name": core.Str("foo")}, state.Global.Ctx)
+			inner := core.NewObjectFromMap(core.ValMap{"name": core.String("foo")}, state.Global.Ctx)
 			obj := core.NewObjectFromMap(core.ValMap{"inner": inner}, state.Global.Ctx)
 			state.SetGlobal("obj", obj, core.GlobalConst)
 			chunk, _ := parseChunkSource("obj.inner.n", "")
@@ -422,7 +422,7 @@ func runSingleModeTests(t *testing.T, mode Mode, wd, dir string) {
 	t.Run("member expression", func(t *testing.T) {
 		t.Run("suggest object property: empty property name: object has single property", func(t *testing.T) {
 			state := newState()
-			obj := core.NewObjectFromMap(core.ValMap{"name": core.Str("foo")}, state.Global.Ctx)
+			obj := core.NewObjectFromMap(core.ValMap{"name": core.String("foo")}, state.Global.Ctx)
 			state.SetGlobal("obj", obj, core.GlobalConst)
 			chunk, _ := parseChunkSource("$$obj.", "")
 
@@ -435,7 +435,7 @@ func runSingleModeTests(t *testing.T, mode Mode, wd, dir string) {
 
 		t.Run("suggest object property: start of property name: object has single property", func(t *testing.T) {
 			state := newState()
-			obj := core.NewObjectFromMap(core.ValMap{"name": core.Str("foo")}, state.Global.Ctx)
+			obj := core.NewObjectFromMap(core.ValMap{"name": core.String("foo")}, state.Global.Ctx)
 			state.SetGlobal("obj", obj, core.GlobalConst)
 			chunk, _ := parseChunkSource("$$obj.n", "")
 
@@ -449,7 +449,7 @@ func runSingleModeTests(t *testing.T, mode Mode, wd, dir string) {
 		t.Run("suggest object property: empty property name: object has single property", func(t *testing.T) {
 			state := newState()
 			obj := core.NewObjectFromMap(core.ValMap{
-				"object": core.NewObjectFromMap(core.ValMap{"name": core.Str("foo")}, state.Global.Ctx),
+				"object": core.NewObjectFromMap(core.ValMap{"name": core.String("foo")}, state.Global.Ctx),
 			}, state.Global.Ctx)
 			state.SetGlobal("obj", obj, core.GlobalConst)
 

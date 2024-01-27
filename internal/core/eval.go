@@ -43,7 +43,7 @@ var (
 	RUNE_TYPE                  = reflect.TypeOf(Rune('a'))
 	BYTE_TYPE                  = reflect.TypeOf(Byte('a'))
 	REGULAR_STR_TYPE           = reflect.TypeOf("")
-	STRING_TYPE                = reflect.TypeOf(Str(""))
+	STRING_TYPE                = reflect.TypeOf(String(""))
 	STR_LIKE_INTERFACE_TYPE    = reflect.TypeOf((*StringLike)(nil)).Elem()
 	CHECKED_STR_TYPE           = reflect.TypeOf(CheckedString{})
 	BOOL_TYPE                  = reflect.TypeOf(Bool(true))
@@ -215,7 +215,7 @@ func CreateDirEntry(path, walkedDirPath string, addDotSlashPrefix bool, d fs.Dir
 	}
 
 	return objFrom(ValMap{
-		"name":          Str(d.Name()),
+		"name":          String(d.Name()),
 		"path":          pth,
 		"is-dir":        Bool(d.IsDir()),
 		"is-regular":    Bool(d.Type().IsRegular()),
@@ -298,11 +298,11 @@ func EvalSimpleValueLiteral(n parse.SimpleValueLiteral, global *GlobalState) (Se
 		}
 		return NewLongValuePath(segments), nil
 	case *parse.QuotedStringLiteral:
-		return Str(node.Value), nil
+		return String(node.Value), nil
 	case *parse.UnquotedStringLiteral:
-		return Str(node.Value), nil
+		return String(node.Value), nil
 	case *parse.MultilineStringLiteral:
-		return Str(node.Value), nil
+		return String(node.Value), nil
 	case *parse.BooleanLiteral:
 		return Bool(node.Value), nil
 	case *parse.AbsolutePathLiteral:
@@ -363,11 +363,11 @@ func EvalSimpleValueLiteral(n parse.SimpleValueLiteral, global *GlobalState) (Se
 	case *parse.RegularExpressionLiteral:
 		return NewRegexPattern(node.Value), nil
 	case *parse.PathSlice:
-		return Str(node.Value), nil
+		return String(node.Value), nil
 	case *parse.PathPatternSlice:
-		return Str(node.Value), nil
+		return String(node.Value), nil
 	case *parse.URLQueryParameterValueSlice:
-		return Str(node.Value), nil
+		return String(node.Value), nil
 	case *parse.FlagLiteral:
 		return Option{Name: node.Name, Value: Bool(true)}, nil
 	case *parse.ByteSliceLiteral:

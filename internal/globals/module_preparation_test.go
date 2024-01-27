@@ -558,7 +558,7 @@ func TestPrepareLocalModule(t *testing.T) {
 			Path:    "/file.txt",
 			Pattern: core.STR_PATTERN,
 			Content: []byte{},
-			Parsed:  core.Str(""),
+			Parsed:  core.String(""),
 			RequiredPermission: core.FilesystemPermission{
 				Kind_:  permkind.Read,
 				Entity: core.Path("/file.txt"),
@@ -1259,7 +1259,7 @@ func TestPrepareLocalModule(t *testing.T) {
 			ScriptContextFileSystem: fs,
 			FullAccessToDatabases:   true,
 			AdditionalGlobalsTestOnly: map[string]core.Value{
-				"access-key": core.Str(OS_DB_TEST_ACCESS_KEY),
+				"access-key": core.String(OS_DB_TEST_ACCESS_KEY),
 				"secret-key": utils.Must(core.SECRET_STRING_PATTERN.NewSecret(
 					core.NewContexWithEmptyState(core.ContextConfig{}, nil),
 					OS_DB_TEST_SECRET_KEY,
@@ -1359,7 +1359,7 @@ func TestPrepareLocalModule(t *testing.T) {
 			FullAccessToDatabases:   true,
 
 			AdditionalGlobalsTestOnly: map[string]core.Value{
-				"access-key": core.Str(OS_DB_TEST_ACCESS_KEY),
+				"access-key": core.String(OS_DB_TEST_ACCESS_KEY),
 				"secret-key": utils.Must(core.SECRET_STRING_PATTERN.NewSecret(
 					core.NewContexWithEmptyState(core.ContextConfig{}, nil),
 					OS_DB_TEST_SECRET_KEY,

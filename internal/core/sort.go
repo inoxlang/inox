@@ -60,7 +60,7 @@ func (l *List) Sorted(ctx *Context, orderIdent Identifier) *List {
 		}
 
 		return NewWrappedStringListFrom(utils.MapSlice(strings, func(s string) StringLike {
-			return Str(s)
+			return String(s)
 		}))
 	case Int:
 		ints := make([]Int, l.Len())

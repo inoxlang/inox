@@ -85,13 +85,13 @@ func createCookieFromObject(ctx *core.Context, obj *core.Object) (*http.Cookie, 
 			}
 			cookie.Domain = host.WithoutScheme()
 		case "name":
-			name, ok := v.(core.Str)
+			name, ok := v.(core.String)
 			if !ok {
 				return nil, fmt.Errorf(ERROR_PREFIX+" .name should be a string not a(n) %T", v)
 			}
 			cookie.Name = string(name)
 		case "value":
-			value, ok := v.(core.Str)
+			value, ok := v.(core.String)
 			if !ok {
 				return nil, fmt.Errorf(ERROR_PREFIX+" .value should be a string not a(n) %T", v)
 			}
@@ -118,8 +118,8 @@ func createObjectFromCookie(ctx *core.Context, cookie http.Cookie) *core.Object 
 		obj.SetProp(ctx, "domain", core.Nil)
 	}
 
-	obj.SetProp(ctx, "name", core.Str(cookie.Name))
-	obj.SetProp(ctx, "value", core.Str(cookie.Value))
+	obj.SetProp(ctx, "name", core.String(cookie.Name))
+	obj.SetProp(ctx, "value", core.String(cookie.Value))
 
 	return obj
 }

@@ -143,7 +143,7 @@ func NewMostAdaptedExactPattern(value Serializable) Pattern {
 		panic(ErrValueInExactPatternValueShouldBeImmutable)
 	}
 	if s, ok := value.(StringLike); ok {
-		return NewExactStringPattern(Str(s.GetOrBuildString()))
+		return NewExactStringPattern(String(s.GetOrBuildString()))
 	}
 	return NewExactValuePattern(value)
 }
@@ -161,7 +161,7 @@ func (pattern *ExactValuePattern) Value() Serializable {
 
 func (patt *ExactValuePattern) StringPattern() (StringPattern, bool) {
 	if str, ok := patt.value.(StringLike); ok {
-		stringPattern := NewExactStringPattern(Str(str.GetOrBuildString()))
+		stringPattern := NewExactStringPattern(String(str.GetOrBuildString()))
 		return stringPattern, true
 	}
 	return nil, false

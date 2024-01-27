@@ -34,7 +34,7 @@ func TestCompileModule(t *testing.T) {
 				MakeInstruction(OpPushConstant, 0),
 				MakeInstruction(OpSuspendVM),
 			),
-			[]Value{Str("a")},
+			[]Value{String("a")},
 		)
 
 		expectBytecode(t, `2020y-5mt-3d-0h-UTC`,
@@ -108,7 +108,7 @@ func TestCompileModule(t *testing.T) {
 				inst(OpCreateObject, 2, 0, 2),
 				inst(OpSuspendVM),
 			),
-			[]Value{Str("a"), Int(1), nil},
+			[]Value{String("a"), Int(1), nil},
 		)
 		expectBytecode(t, `{a: 1, b: 2}`,
 			0,
@@ -120,7 +120,7 @@ func TestCompileModule(t *testing.T) {
 				inst(OpCreateObject, 4, 0, 4),
 				inst(OpSuspendVM),
 			),
-			[]Value{Str("a"), Int(1), Str("b"), Int(2), nil},
+			[]Value{String("a"), Int(1), String("b"), Int(2), nil},
 		)
 		expectBytecode(t, `{1,2}`,
 			0,
@@ -133,9 +133,9 @@ func TestCompileModule(t *testing.T) {
 				inst(OpSuspendVM),
 			),
 			[]Value{
-				Str("0"),
+				String("0"),
 				Int(1),
-				Str("1"),
+				String("1"),
 				Int(2),
 				nil,
 			},
@@ -495,7 +495,7 @@ func TestCompileModule(t *testing.T) {
 				inst(OpPushNil),
 				inst(OpSuspendVM),
 			),
-			[]Value{Int(1), Str("A")},
+			[]Value{Int(1), String("A")},
 		)
 
 	})
@@ -508,7 +508,7 @@ func TestCompileModule(t *testing.T) {
 				inst(OpSetGlobal, 1),
 				inst(OpSuspendVM),
 			),
-			[]Value{Int(1), Str("A")},
+			[]Value{Int(1), String("A")},
 		)
 
 		expectBytecode(t, `a = 1`,
@@ -542,7 +542,7 @@ func TestCompileModule(t *testing.T) {
 			[]Value{
 				nil,
 				Int(1),
-				Str("b"),
+				String("b"),
 			},
 		)
 
@@ -567,7 +567,7 @@ func TestCompileModule(t *testing.T) {
 			[]Value{
 				nil,
 				Int(1),
-				Str("b"),
+				String("b"),
 			},
 		)
 
@@ -589,12 +589,12 @@ func TestCompileModule(t *testing.T) {
 				inst(OpSuspendVM),
 			),
 			[]Value{
-				Str("b"),
+				String("b"),
 				nil,
 				nil,
-				Str("b"),
+				String("b"),
 				Int(1),
-				Str("c"),
+				String("c"),
 			},
 		)
 
@@ -643,12 +643,12 @@ func TestCompileModule(t *testing.T) {
 				inst(OpSuspendVM),
 			),
 			[]Value{
-				Str("b"),
+				String("b"),
 				nil,
 				nil,
-				Str("b"),
+				String("b"),
 				Int(1),
-				Str("c"),
+				String("c"),
 			},
 		)
 
@@ -699,7 +699,7 @@ func TestCompileModule(t *testing.T) {
 						SourceNodeSpan: parse.NodeSpan{Start: 0, End: 8},
 					},
 				},
-				Str("f"),
+				String("f"),
 			},
 		)
 
@@ -722,7 +722,7 @@ func TestCompileModule(t *testing.T) {
 					),
 					SourceNodeSpan: parse.NodeSpan{Start: 0, End: 18},
 				}},
-				Str("f"),
+				String("f"),
 			},
 		)
 	})
@@ -881,7 +881,7 @@ func TestCompileModule(t *testing.T) {
 						SourceNodeSpan: parse.NodeSpan{Start: 0, End: 30},
 					},
 				},
-				Str("f"),
+				String("f"),
 			},
 		)
 	})
@@ -913,8 +913,8 @@ func TestCompileModule(t *testing.T) {
 						SourceNodeSpan: parse.NodeSpan{Start: 0, End: 8},
 					},
 				},
-				Str("f"),
-				Str("f"),
+				String("f"),
+				String("f"),
 			},
 		)
 
@@ -952,9 +952,9 @@ func TestCompileModule(t *testing.T) {
 						SourceNodeSpan: parse.NodeSpan{Start: 0, End: 22},
 					},
 				},
-				Str("f"),
-				Str("f"),
-				Str("f"),
+				String("f"),
+				String("f"),
+				String("f"),
 				nil,
 				nil,
 			},
@@ -969,7 +969,7 @@ func TestCompileModule(t *testing.T) {
 					inst(OpSuspendVM),
 				),
 				expectedConstants: []Value{
-					Str("f"),
+					String("f"),
 				},
 			},
 		)
@@ -994,7 +994,7 @@ func TestCompileModule(t *testing.T) {
 				inst(OpDropPerms),
 				inst(OpSuspendVM),
 			),
-			[]Value{Str("read"), Str("globals"), Str("*"), nil, nil},
+			[]Value{String("read"), String("globals"), String("*"), nil, nil},
 		)
 
 	})
@@ -1553,8 +1553,8 @@ func TestCompileModule(t *testing.T) {
 				inst(OpSuspendVM),
 			),
 			[]Value{
-				Str("foo"),
-				Str("/home/"),
+				String("foo"),
+				String("/home/"),
 				&List{underlyingList: &ValueList{elements: []Serializable{True, False}}},
 			},
 		)
@@ -1579,8 +1579,8 @@ func TestCompileModule(t *testing.T) {
 				inst(OpSuspendVM),
 			),
 			[]Value{
-				Str("foo"),
-				Str("/home/"),
+				String("foo"),
+				String("/home/"),
 				&List{underlyingList: &ValueList{elements: []Serializable{True, False}}},
 			},
 		)
@@ -1606,9 +1606,9 @@ func TestCompileModule(t *testing.T) {
 				inst(OpSuspendVM),
 			),
 			[]Value{
-				Str("foo"),
+				String("foo"),
 				Host("https://example.com"),
-				Str("/home/"),
+				String("/home/"),
 				NewRecordFromMap(ValMap{
 					"path-slice-count":   Int(2),
 					"query-params":       &Tuple{},
@@ -1642,14 +1642,14 @@ func TestCompileModule(t *testing.T) {
 				inst(OpSuspendVM),
 			),
 			[]Value{
-				Str("foo"),
-				Str("0"),
+				String("foo"),
+				String("0"),
 				Host("https://example.com"),
-				Str("/home/"),
-				Str(""),
+				String("/home/"),
+				String(""),
 				NewRecordFromMap(ValMap{
 					"path-slice-count":   Int(2),
-					"query-params":       &Tuple{elements: []Serializable{Str("x"), Int(2)}},
+					"query-params":       &Tuple{elements: []Serializable{String("x"), Int(2)}},
 					"static-path-slices": &Tuple{elements: []Serializable{True, False}},
 				}),
 			},
@@ -1675,13 +1675,13 @@ func TestCompileModule(t *testing.T) {
 				inst(OpSuspendVM),
 			),
 			[]Value{
-				Str("0"),
+				String("0"),
 				Host("https://example.com"),
-				Str("/home/"),
-				Str(""),
+				String("/home/"),
+				String(""),
 				NewRecordFromMap(ValMap{
 					"path-slice-count":   Int(1),
-					"query-params":       &Tuple{elements: []Serializable{Str("x"), Int(2)}},
+					"query-params":       &Tuple{elements: []Serializable{String("x"), Int(2)}},
 					"static-path-slices": &Tuple{elements: []Serializable{True}},
 				}),
 			},
@@ -1727,7 +1727,7 @@ func TestCompileModule(t *testing.T) {
 				inst(OpCreateListPattern, 0, 1),
 				inst(OpSuspendVM),
 			),
-			[]Value{Str("int")},
+			[]Value{String("int")},
 		)
 	})
 
@@ -1750,7 +1750,7 @@ func TestCompileModule(t *testing.T) {
 				inst(OpCreateObjectPattern, 3, 1),
 				inst(OpSuspendVM),
 			),
-			[]Value{Str("a"), Int(1)},
+			[]Value{String("a"), Int(1)},
 		)
 		expectBytecode(t, `%{a: 1, b: 2}`,
 			0,
@@ -1769,7 +1769,7 @@ func TestCompileModule(t *testing.T) {
 				inst(OpCreateObjectPattern, 6, 1),
 				inst(OpSuspendVM),
 			),
-			[]Value{Str("a"), Int(1), Str("b"), Int(2)},
+			[]Value{String("a"), Int(1), String("b"), Int(2)},
 		)
 		// expectBytecode(t, `%{a: 1, ...}`,
 		// 	0,
@@ -1795,7 +1795,7 @@ func TestCompileModule(t *testing.T) {
 				inst(OpSpreadObjectPattern),
 				inst(OpSuspendVM),
 			),
-			[]Value{Str("a"), Int(1)},
+			[]Value{String("a"), Int(1)},
 		)
 	})
 
@@ -1824,7 +1824,7 @@ func TestCompileModule(t *testing.T) {
 				NewExactStringPattern("a"),
 				KeyList{""},
 				nil,
-				Str("p"),
+				String("p"),
 			},
 		)
 	})

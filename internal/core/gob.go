@@ -17,7 +17,7 @@ func RegisterSimpleValueTypesInGob() {
 		return
 	}
 
-	gob.Register(Str(""))
+	gob.Register(String(""))
 	gob.Register(Rune('a'))
 	gob.Register(Byte(0))
 	gob.Register(Port{})

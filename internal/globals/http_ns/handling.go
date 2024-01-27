@@ -334,7 +334,7 @@ loop:
 			//finalize and send headers
 			if contentType == mimeconsts.HTML_CTYPE { //TODO: use matching instead of equality
 				headerValue := server.defaultCSP.HeaderValue(CSPHeaderValueParams{ScriptsNonce: h.scriptsNonce})
-				rw.AddHeader(state.Ctx, CSP_HEADER_NAME, core.Str(headerValue))
+				rw.AddHeader(state.Ctx, CSP_HEADER_NAME, core.String(headerValue))
 			}
 			rw.SetContentType(contentType)
 			rw.writeHeaders(statusIfAccepted)
@@ -402,7 +402,7 @@ loop:
 				//finalize and send headers
 				rw.SetContentType(mimeconsts.HTML_CTYPE)
 
-				cspHeaderValue := core.Str(server.defaultCSP.HeaderValue(CSPHeaderValueParams{ScriptsNonce: h.scriptsNonce}))
+				cspHeaderValue := core.String(server.defaultCSP.HeaderValue(CSPHeaderValueParams{ScriptsNonce: h.scriptsNonce}))
 				rw.AddHeader(state.Ctx, CSP_HEADER_NAME, cspHeaderValue)
 				rw.writeHeaders(statusIfAccepted)
 

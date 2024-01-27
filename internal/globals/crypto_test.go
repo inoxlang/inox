@@ -25,7 +25,7 @@ func TestRSAEncryptDecryptOAEP(t *testing.T) {
 	public := record.Prop(ctx, "public").(core.StringLike)
 	private := record.Prop(ctx, "private").(*core.Secret)
 
-	encrypted, err := _rsa_encrypt_oaep(ctx, core.Str("hello"), public)
+	encrypted, err := _rsa_encrypt_oaep(ctx, core.String("hello"), public)
 	if !assert.NoError(t, err) {
 		return
 	}

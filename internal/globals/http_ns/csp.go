@@ -47,7 +47,7 @@ func NewCSP(ctx *core.Context, desc *core.Object) (*ContentSecurityPolicy, error
 		directive := CSPDirective{name: k}
 
 		switch directiveDesc := v.(type) {
-		case core.Str:
+		case core.String:
 			directive.values = append(directive.values, CSPDirectiveValue{raw: string(directiveDesc)})
 		case core.Iterable:
 			iterable := directiveDesc
@@ -55,7 +55,7 @@ func NewCSP(ctx *core.Context, desc *core.Object) (*ContentSecurityPolicy, error
 
 			for it.Next(ctx) {
 				val := it.Value(ctx)
-				s, ok := val.(core.Str)
+				s, ok := val.(core.String)
 				if !ok {
 					return nil, commonfmt.FmtUnexpectedElementInPropIterableOfArgX(k, "description", core.Stringify(s, ctx))
 				}

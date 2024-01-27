@@ -14,7 +14,7 @@ func CreateHTMLNodeFromXMLElement(ctx *core.Context, arg *core.XMLElement) *HTML
 
 	rawContent := arg.RawContent() //content inside <script>, <style> tags.
 	if rawContent != "" {
-		childNodes = append(childNodes, CreateTextNode(core.Str(rawContent)))
+		childNodes = append(childNodes, CreateTextNode(core.String(rawContent)))
 	}
 
 	for _, child := range children {
@@ -72,7 +72,7 @@ func createChildNodesFromValue(ctx *core.Context, child core.Value, childNodes *
 	case core.StringLike:
 		*childNodes = append(*childNodes, CreateTextNode(c))
 	case core.Int:
-		*childNodes = append(*childNodes, CreateTextNode(core.Str(strconv.FormatInt(int64(c), 10))))
+		*childNodes = append(*childNodes, CreateTextNode(core.String(strconv.FormatInt(int64(c), 10))))
 	case *core.List:
 		length := c.Len()
 		for i := 0; i < length; i++ {

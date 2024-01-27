@@ -805,7 +805,7 @@ func convertConstSchemaValueToPattern(jsonValue any) (_ Pattern, err error) {
 	case bool:
 		return NewExactValuePattern(Bool(c)), nil
 	case string:
-		return NewExactValuePattern(Str(c)), nil
+		return NewExactValuePattern(String(c)), nil
 	default:
 		return nil, fmt.Errorf("cannot convert value of type %T to Inox Value", c)
 	}

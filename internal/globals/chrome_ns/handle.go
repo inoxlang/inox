@@ -66,11 +66,11 @@ func (h *Handle) Nav(ctx *core.Context, u core.URL) error {
 	return h.doNavigate(ctx, u)
 }
 
-func (h *Handle) WaitVisible(ctx *core.Context, s core.Str) error {
+func (h *Handle) WaitVisible(ctx *core.Context, s core.String) error {
 	return h.doWaitVisible(ctx, s)
 }
 
-func (h *Handle) Click(ctx *core.Context, s core.Str) error {
+func (h *Handle) Click(ctx *core.Context, s core.String) error {
 	return h.doClick(ctx, s)
 }
 
@@ -78,11 +78,11 @@ func (h *Handle) ScreenshotPage(ctx *core.Context) (*core.ByteSlice, error) {
 	return h.doScreensotPage(ctx)
 }
 
-func (h *Handle) Screenshot(ctx *core.Context, sel core.Str) (*core.ByteSlice, error) {
+func (h *Handle) Screenshot(ctx *core.Context, sel core.String) (*core.ByteSlice, error) {
 	return h.doScreenshot(ctx, sel)
 }
 
-func (h *Handle) HtmlNode(ctx *core.Context, sel core.Str) (*html_ns.HTMLNode, error) {
+func (h *Handle) HtmlNode(ctx *core.Context, sel core.String) (*html_ns.HTMLNode, error) {
 	return h.doGetHTMLNode(ctx, sel)
 }
 

@@ -21,7 +21,7 @@ func TestDateFormat(t *testing.T) {
 		return
 	}
 
-	s := string(res.(Str))
+	s := string(res.(String))
 	assert.Equal(t, time.Time(date).Format(layout), s)
 
 	//check parsing

@@ -54,7 +54,7 @@ func TransientIdOf(v Value) (result TransientID, hastFastId bool) {
 			result = TransientID{BOOL_ADDRESS_LESS_TYPE_ID, 0}
 		}
 		return
-	case Str:
+	case String:
 		hastFastId = true
 		header := (*reflect.StringHeader)(unsafe.Pointer(&val))
 		result = TransientID{header.Data, uintptr(header.Len)}

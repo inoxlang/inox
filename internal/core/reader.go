@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	_ = []Readable{Str(""), WrappedBytes(nil), (*StringConcatenation)(nil)}
+	_ = []Readable{String(""), WrappedBytes(nil), (*StringConcatenation)(nil)}
 
 	ErrCannotReadWithNoCopy = errors.New("cannot read with no copy")
 )
@@ -119,7 +119,7 @@ func (Reader) PropertyNames(ctx *Context) []string {
 
 // ------------------------------------------------------------
 
-func (s Str) Reader() *Reader {
+func (s String) Reader() *Reader {
 	return &Reader{
 		wrapped: strings.NewReader(string(s)),
 		data:    string(s),

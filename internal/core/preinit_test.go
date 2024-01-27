@@ -218,11 +218,11 @@ func TestPreInit(t *testing.T) {
 			expectedPermissions: []Permission{},
 			expectedLimits:      []Limit{minLimitA, minLimitB, threadLimit},
 			expectedResolutions: map[Host]Value{"s3://database": NewObjectFromMapNoInit(ValMap{
-				"bucket":     Str("test"),
-				"provider":   Str("cloudflare"),
+				"bucket":     String("test"),
+				"provider":   String("cloudflare"),
 				"host":       Host("https://example.com"),
-				"access-key": Str("x"),
-				"secret-key": Str("x"),
+				"access-key": String("x"),
+				"secret-key": String("x"),
 			})},
 			error: false,
 		},
@@ -431,7 +431,7 @@ func TestPreInit(t *testing.T) {
 				}`,
 			expectedPermissions: []Permission{
 				CommandPermission{
-					CommandName: Str("go"),
+					CommandName: String("go"),
 				},
 			},
 			expectedLimits: []Limit{minLimitA, minLimitB, threadLimit},
@@ -644,7 +644,7 @@ func TestPreInit(t *testing.T) {
 				{
 					Name:               "F",
 					Path:               "/file.txt",
-					Parsed:             Str("a"),
+					Parsed:             String("a"),
 					Pattern:            STR_PATTERN,
 					RequiredPermission: CreateFsReadPerm(Path("/file.txt")),
 				},

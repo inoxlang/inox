@@ -22,12 +22,12 @@ func TestParseJSONRepresentation(t *testing.T) {
 
 		v, err := ParseJSONRepresentation(ctx, `{"str__value":"a"}`, nil)
 		if assert.NoError(t, err) {
-			assert.Equal(t, Str("a"), v)
+			assert.Equal(t, String("a"), v)
 		}
 
 		v, err = ParseJSONRepresentation(ctx, `"a"`, nil)
 		if assert.NoError(t, err) {
-			assert.Equal(t, Str("a"), v)
+			assert.Equal(t, String("a"), v)
 		}
 	})
 
@@ -483,7 +483,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 
 		obj, err = ParseJSONRepresentation(ctx, `{"object__value":{"a":"1"}}`, nil)
 		if assert.NoError(t, err) {
-			assert.Equal(t, map[string]Value{"a": Str("1")}, obj.(*Object).ValueEntryMap(nil))
+			assert.Equal(t, map[string]Value{"a": String("1")}, obj.(*Object).ValueEntryMap(nil))
 		}
 
 		obj, err = ParseJSONRepresentation(ctx, `{"object__value":{"_url_":"ldb://main/users/0"}}`, nil)
@@ -520,7 +520,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 
 		obj, err = ParseJSONRepresentation(ctx, `{"a":"1"}`, OBJECT_PATTERN)
 		if assert.NoError(t, err) {
-			assert.Equal(t, map[string]Value{"a": Str("1")}, obj.(*Object).ValueEntryMap(nil))
+			assert.Equal(t, map[string]Value{"a": String("1")}, obj.(*Object).ValueEntryMap(nil))
 		}
 
 		//{a: int} pattern
@@ -538,7 +538,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 
 		obj, err = ParseJSONRepresentation(ctx, `{"a":1,"b":"c"}`, pattern)
 		if assert.NoError(t, err) {
-			assert.Equal(t, map[string]Value{"a": Int(1), "b": Str("c")}, obj.(*Object).ValueEntryMap(nil))
+			assert.Equal(t, map[string]Value{"a": Int(1), "b": String("c")}, obj.(*Object).ValueEntryMap(nil))
 		}
 
 		//{a: {b: int}} pattern
@@ -598,7 +598,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 
 		rec, err = ParseJSONRepresentation(ctx, `{"record__value":{"a":"1"}}`, nil)
 		if assert.NoError(t, err) {
-			assert.Equal(t, map[string]Value{"a": Str("1")}, rec.(*Record).ValueEntryMap())
+			assert.Equal(t, map[string]Value{"a": String("1")}, rec.(*Record).ValueEntryMap())
 		}
 
 		rec, err = ParseJSONRepresentation(ctx, `{"record__value":{"_x_":"0"}}`, nil)
@@ -614,7 +614,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 
 		rec, err = ParseJSONRepresentation(ctx, `{"a":"1"}`, RECORD_PATTERN)
 		if assert.NoError(t, err) {
-			assert.Equal(t, map[string]Value{"a": Str("1")}, rec.(*Record).ValueEntryMap())
+			assert.Equal(t, map[string]Value{"a": String("1")}, rec.(*Record).ValueEntryMap())
 		}
 
 		//#{a: int} pattern
@@ -697,7 +697,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 
 		list, err = ParseJSONRepresentation(ctx, `{"list__value":["1"]}`, nil)
 		if assert.NoError(t, err) {
-			assert.Equal(t, []Serializable{Str("1")}, list.(*List).GetOrBuildElements(ctx))
+			assert.Equal(t, []Serializable{String("1")}, list.(*List).GetOrBuildElements(ctx))
 		}
 
 		//%list patteren
@@ -708,7 +708,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 
 		list, err = ParseJSONRepresentation(ctx, `["1"]`, LIST_PATTERN)
 		if assert.NoError(t, err) {
-			assert.Equal(t, []Serializable{Str("1")}, list.(*List).GetOrBuildElements(ctx))
+			assert.Equal(t, []Serializable{String("1")}, list.(*List).GetOrBuildElements(ctx))
 		}
 
 		//[]int pattern
@@ -816,7 +816,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 
 		tuple, err = ParseJSONRepresentation(ctx, `{"tuple__value":["1"]}`, nil)
 		if assert.NoError(t, err) {
-			assert.Equal(t, []Serializable{Str("1")}, tuple.(*Tuple).GetOrBuildElements(ctx))
+			assert.Equal(t, []Serializable{String("1")}, tuple.(*Tuple).GetOrBuildElements(ctx))
 		}
 
 		//%tuple patteren
@@ -827,7 +827,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 
 		tuple, err = ParseJSONRepresentation(ctx, `["1"]`, TUPLE_PATTERN)
 		if assert.NoError(t, err) {
-			assert.Equal(t, []Serializable{Str("1")}, tuple.(*Tuple).GetOrBuildElements(ctx))
+			assert.Equal(t, []Serializable{String("1")}, tuple.(*Tuple).GetOrBuildElements(ctx))
 		}
 
 		//[]int pattern
@@ -1259,7 +1259,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 
 			val, err = ParseJSONRepresentation(ctx, `" 1"`, pattern)
 			if !assert.NoError(t, err) {
-				assert.Equal(t, Str(" 1"), val)
+				assert.Equal(t, String(" 1"), val)
 			}
 		})
 
@@ -1350,7 +1350,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 
 			val, err = ParseJSONRepresentation(ctx, `" 1"`, pattern1)
 			if !assert.NoError(t, err) {
-				assert.Equal(t, Str(" 1"), val)
+				assert.Equal(t, String(" 1"), val)
 			}
 		})
 
@@ -1450,12 +1450,12 @@ func TestParseJSONRepresentation(t *testing.T) {
 
 		v, err := ParseJSONRepresentation(ctx, `{"exact-string-pattern__value":"x"}`, nil)
 		if assert.NoError(t, err) {
-			assert.Equal(t, NewExactStringPattern(Str("x")), v)
+			assert.Equal(t, NewExactStringPattern(String("x")), v)
 		}
 
 		v, err = ParseJSONRepresentation(ctx, `"x"`, EXACT_STRING_PATTERN_PATTERN)
 		if assert.NoError(t, err) {
-			assert.Equal(t, NewExactStringPattern(Str("x")), v)
+			assert.Equal(t, NewExactStringPattern(String("x")), v)
 		}
 	})
 

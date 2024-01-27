@@ -109,7 +109,7 @@ func ParseNextJSONRepresentation(ctx *Context, it *jsoniter.Iterator, pattern Pa
 		case jsoniter.BoolValue:
 			return Bool(it.ReadBool()), nil
 		case jsoniter.StringValue:
-			return Str(it.ReadString()), nil
+			return String(it.ReadString()), nil
 		case jsoniter.NilValue:
 			return Nil, nil
 		case jsoniter.NumberValue:
@@ -140,7 +140,7 @@ func ParseNextJSONRepresentation(ctx *Context, it *jsoniter.Iterator, pattern Pa
 			}
 			return nil, ErrJsonNotMatchingSchema
 		}
-		s := Str(it.ReadString())
+		s := String(it.ReadString())
 		if !p.Test(ctx, s) {
 			if try {
 				return nil, ErrTriedToParseJSONRepr
@@ -228,7 +228,7 @@ func ParseNextJSONRepresentation(ctx *Context, it *jsoniter.Iterator, pattern Pa
 				}
 				return nil, ErrJsonNotMatchingSchema
 			}
-			return Str(it.ReadString()), nil
+			return String(it.ReadString()), nil
 		case RUNE_PATTERN:
 			if it.WhatIsNext() != jsoniter.StringValue {
 				if try {
@@ -1565,7 +1565,7 @@ func parseExactStringPatternJSONRepresentation(ctx *Context, it *jsoniter.Iterat
 		return nil, ErrJsonNotMatchingSchema
 	}
 
-	return NewExactStringPattern(Str(it.ReadString())), nil
+	return NewExactStringPattern(String(it.ReadString())), nil
 }
 
 func parseIntRangeJSONRepresentation(ctx *Context, it *jsoniter.Iterator, try bool) (intRange IntRange, finalErr error) {

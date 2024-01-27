@@ -15,7 +15,7 @@ var (
 
 		Duration(0), Year(time.Time{}), Date(time.Time{}), DateTime(time.Time{}),
 
-		Rune('a'), Str(""), Path(""), URL(""), Host(""), Identifier(""), PropertyName(""),
+		Rune('a'), String(""), Path(""), URL(""), Host(""), Identifier(""), PropertyName(""),
 		(*StringConcatenation)(nil),
 
 		(ULID{}),

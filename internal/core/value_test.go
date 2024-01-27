@@ -431,7 +431,7 @@ func TestNamedSegmentPathPatternMatchGroups(t *testing.T) {
 	}{
 		{nil, "/home"},
 		{nil, "/home/"},
-		{map[string]Serializable{"0": Path("/home/user"), "username": Str("user")}, "/home/user"},
+		{map[string]Serializable{"0": Path("/home/user"), "username": String("user")}, "/home/user"},
 		{nil, "/home/user/"},
 		{nil, "/home/user/e"},
 	} {
@@ -457,7 +457,7 @@ func TestNamedSegmentPathPatternMatchGroups(t *testing.T) {
 		{nil, "/home"},
 		{nil, "/home/"},
 		{nil, "/home/user"},
-		{map[string]Serializable{"0": Path("/home/user/"), "username": Str("user")}, "/home/user/"},
+		{map[string]Serializable{"0": Path("/home/user/"), "username": String("user")}, "/home/user/"},
 		{nil, "/home/user/e"},
 	} {
 		t.Run("pattern ends with slash, "+string(testCase.path), func(t *testing.T) {
@@ -481,11 +481,11 @@ func TestRepeatedPatternElementRandom(t *testing.T) {
 			regexp:            nil,
 			ocurrenceModifier: parse.ExactOcurrence,
 			exactCount:        2,
-			element:           NewExactStringPattern(Str("a")),
+			element:           NewExactStringPattern(String("a")),
 		}
 
 		for i := 0; i < 5; i++ {
-			assert.Equal(t, Str("aa"), patt.Random(ctx).(Str))
+			assert.Equal(t, String("aa"), patt.Random(ctx).(String))
 		}
 	})
 
@@ -495,12 +495,12 @@ func TestRepeatedPatternElementRandom(t *testing.T) {
 		patt := RepeatedPatternElement{
 			regexp:            nil,
 			ocurrenceModifier: parse.OptionalOcurrence,
-			element:           NewExactStringPattern(Str("a")),
+			element:           NewExactStringPattern(String("a")),
 		}
 
 		for i := 0; i < 5; i++ {
-			s := patt.Random(ctx).(Str)
-			assert.Equal(t, Str(strings.Repeat("a", len(s))), s)
+			s := patt.Random(ctx).(String)
+			assert.Equal(t, String(strings.Repeat("a", len(s))), s)
 		}
 	})
 
@@ -510,14 +510,14 @@ func TestRepeatedPatternElementRandom(t *testing.T) {
 		patt := RepeatedPatternElement{
 			regexp:            nil,
 			ocurrenceModifier: parse.ZeroOrMoreOcurrence,
-			element:           NewExactStringPattern(Str("a")),
+			element:           NewExactStringPattern(String("a")),
 		}
 
 		for i := 0; i < 5; i++ {
-			s := patt.Random(ctx).(Str)
+			s := patt.Random(ctx).(String)
 			length := len(s)
 
-			assert.Equal(t, Str(strings.Repeat("a", length)), s)
+			assert.Equal(t, String(strings.Repeat("a", length)), s)
 		}
 	})
 
@@ -527,14 +527,14 @@ func TestRepeatedPatternElementRandom(t *testing.T) {
 		patt := RepeatedPatternElement{
 			regexp:            nil,
 			ocurrenceModifier: parse.ZeroOrMoreOcurrence,
-			element:           NewExactStringPattern(Str("a")),
+			element:           NewExactStringPattern(String("a")),
 		}
 
 		for i := 0; i < 5; i++ {
-			s := patt.Random(ctx).(Str)
+			s := patt.Random(ctx).(String)
 			length := len(s)
 
-			assert.Equal(t, Str(strings.Repeat("a", length)), s)
+			assert.Equal(t, String(strings.Repeat("a", length)), s)
 		}
 	})
 }
@@ -546,12 +546,12 @@ func TestSequenceStringPatternRandom(t *testing.T) {
 		regexp: nil,
 		node:   nil,
 		elements: []StringPattern{
-			NewExactStringPattern(Str("a")),
-			NewExactStringPattern(Str("b")),
+			NewExactStringPattern(String("a")),
+			NewExactStringPattern(String("b")),
 		},
 	}
 
-	assert.Equal(t, Str("ab"), patt1.Random(ctx))
+	assert.Equal(t, String("ab"), patt1.Random(ctx))
 }
 
 func TestUnionStringPatternRandom(t *testing.T) {
@@ -561,13 +561,13 @@ func TestUnionStringPatternRandom(t *testing.T) {
 		regexp: nil,
 		node:   nil,
 		cases: []StringPattern{
-			NewExactStringPattern(Str("a")),
-			NewExactStringPattern(Str("b")),
+			NewExactStringPattern(String("a")),
+			NewExactStringPattern(String("b")),
 		},
 	}
 
 	for i := 0; i < 5; i++ {
-		s := patt1.Random(ctx).(Str)
+		s := patt1.Random(ctx).(String)
 		assert.True(t, s == "a" || s == "b")
 	}
 

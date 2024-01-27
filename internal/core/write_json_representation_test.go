@@ -109,7 +109,7 @@ func TestStrJSONRepresentation(t *testing.T) {
 	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
-	s := Str("a\nb")
+	s := String("a\nb")
 
 	expectedRepr := `"a\nb"`
 	assert.Equal(t, expectedRepr, getJSONRepr(t, s, ctx))
@@ -216,7 +216,7 @@ func TestObjectJSONRepresentation(t *testing.T) {
 
 		obj := objFrom(ValMap{
 			"a":        Int(1),
-			"password": Str("mypassword"),
+			"password": String("mypassword"),
 			"e":        EmailAddress("a@mail.com"),
 		})
 
@@ -232,8 +232,8 @@ func TestObjectJSONRepresentation(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		obj := objFrom(ValMap{
-			"a":        Str("1"),
-			"password": Str("mypassword"),
+			"a":        String("1"),
+			"password": String("mypassword"),
 			"e":        EmailAddress("a@mail.com"),
 		})
 
@@ -251,8 +251,8 @@ func TestObjectJSONRepresentation(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		obj := objFrom(ValMap{
-			"a":        Str("1"),
-			"password": Str("mypassword"),
+			"a":        String("1"),
+			"password": String("mypassword"),
 			"e":        EmailAddress("a@mail.com"),
 		})
 
@@ -324,7 +324,7 @@ func TestRecordJSONRepresentation(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
-		rec := NewRecordFromMap(ValMap{"a\nb": Str("1"), "c\nd": Str("2")})
+		rec := NewRecordFromMap(ValMap{"a\nb": String("1"), "c\nd": String("2")})
 
 		assert.Equal(t, `{"a\nb":"1","c\nd":"2"}`, getJSONRepr(t, rec, ctx, JSONSerializationConfig{
 			Pattern: RECORD_PATTERN,
@@ -359,8 +359,8 @@ func TestRecordJSONRepresentation(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		rec := NewRecordFromMap(ValMap{
-			"a":        Str("1"),
-			"password": Str("mypassword"),
+			"a":        String("1"),
+			"password": String("mypassword"),
 			"e":        EmailAddress("a@mail.com"),
 		})
 
@@ -486,7 +486,7 @@ func TestListJSONRepresentation(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
-		list := NewWrappedValueList(Str("2"), Str("a"))
+		list := NewWrappedValueList(String("2"), String("a"))
 
 		assert.Equal(t, `{"list__value":["2","a"]}`, getJSONRepr(t, list, ctx))
 	})

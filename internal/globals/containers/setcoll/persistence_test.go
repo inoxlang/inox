@@ -233,7 +233,7 @@ func TestPersistLoadSet(t *testing.T) {
 		})
 		set := NewSetWithConfig(ctx, nil, pattern.config)
 
-		set.Add(ctx, core.NewObjectFromMap(core.ValMap{"id": core.Str("a")}, ctx))
+		set.Add(ctx, core.NewObjectFromMap(core.ValMap{"id": core.String("a")}, ctx))
 
 		//persist
 		{
@@ -273,8 +273,8 @@ func TestPersistLoadSet(t *testing.T) {
 		})
 		set := NewSetWithConfig(ctx, nil, pattern.config)
 
-		set.Add(ctx, core.NewObjectFromMap(core.ValMap{"id": core.Str("a")}, ctx))
-		set.Add(ctx, core.NewObjectFromMap(core.ValMap{"id": core.Str("b")}, ctx))
+		set.Add(ctx, core.NewObjectFromMap(core.ValMap{"id": core.String("a")}, ctx))
+		set.Add(ctx, core.NewObjectFromMap(core.ValMap{"id": core.String("b")}, ctx))
 
 		//persist
 		{

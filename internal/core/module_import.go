@@ -86,7 +86,7 @@ func ImportWaitModule(config ImportConfig) (Value, error) {
 
 type ImportConfig struct {
 	Src                ResourceName
-	ValidationString   Str     //hash of the imported module
+	ValidationString   String  //hash of the imported module
 	ArgObj             *Object //arguments for the evaluation of the imported module
 	GrantedPermListing *Object
 	ParentState        *GlobalState  //the state of the module doing the import
@@ -108,7 +108,7 @@ func buildImportConfig(obj *Object, importSource ResourceName, parentState *Glob
 	for k, v := range obj.EntryMap(nil) {
 		switch k {
 		case IMPORT_CONFIG__VALIDATION_PROPNAME:
-			config.ValidationString = v.(Str)
+			config.ValidationString = v.(String)
 		case IMPORT_CONFIG__ARGUMENTS_PROPNAME:
 			config.ArgObj = v.(*Object)
 		case IMPORT_CONFIG__ALLOW_PROPNAME:

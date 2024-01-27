@@ -65,7 +65,7 @@ func TestHttpPost(t *testing.T) {
 		core.NewGlobalState(ctx)
 		defer ctx.CancelGracefully()
 
-		resp, err := HttpPost(ctx, core.Str(URL), core.NewObject())
+		resp, err := HttpPost(ctx, core.String(URL), core.NewObject())
 		assert.Error(t, err)
 		assert.Nil(t, resp)
 	})

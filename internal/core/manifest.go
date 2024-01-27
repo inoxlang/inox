@@ -1372,7 +1372,7 @@ func getModuleParameters(ctx *Context, v Value) (ModuleParameters, error) {
 					patt := propVal.(Pattern)
 					param.pattern = patt
 				case "description":
-					param.description = string(propVal.(Str))
+					param.description = string(propVal.(String))
 				}
 				return nil
 			})
@@ -1409,7 +1409,7 @@ func getModuleParameters(ctx *Context, v Value) (ModuleParameters, error) {
 					case "char-name":
 						param.singleLetterCliArgName = rune(propVal.(Rune))
 					case "description":
-						param.description = string(propVal.(Str))
+						param.description = string(propVal.(String))
 					}
 					return nil
 				})
@@ -1648,7 +1648,7 @@ func getGlobalVarPerms(permKind PermissionKind, desc Value, specifiedGlobalPermK
 	}
 
 	for _, gn := range globalReqNodes {
-		nameOrAny, ok := gn.(Str)
+		nameOrAny, ok := gn.(String)
 		if !ok { //TODO: + check with regex
 			return nil, errors.New("invalid manifest, 'globals' should be followed by a (or a list of) variable name(s) or a star *")
 		}
@@ -1677,7 +1677,7 @@ func getEnvVarPermissions(permKind PermissionKind, desc Value) ([]Permission, er
 	}
 
 	for _, n := range envReqNodes {
-		nameOrAny, ok := n.(Str)
+		nameOrAny, ok := n.(String)
 		if !ok { //TODO: + check with regex
 			log.Panicln("invalid manifest, 'globals' should be followed by a (or a list of) variable name(s) or a start *")
 		}
@@ -1737,7 +1737,7 @@ func getCommandPermissions(n Value) ([]Permission, error) {
 				return nil, errors.New("only prefix path patterns are allowed")
 			}
 		} else {
-			cmdName = Str(cmdNameKey)
+			cmdName = String(cmdNameKey)
 		}
 
 		cmdDesc, ok := propValue.(*Object)

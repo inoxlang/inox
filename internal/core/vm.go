@@ -535,7 +535,7 @@ func (v *VM) run() {
 		case OpStrConcat:
 			right := v.stack[v.sp-1]
 			left := v.stack[v.sp-2]
-			res := Str(left.(WrappedString).UnderlyingString() + right.(WrappedString).UnderlyingString())
+			res := String(left.(WrappedString).UnderlyingString() + right.(WrappedString).UnderlyingString())
 
 			v.stack[v.sp-2] = res
 			v.sp--
@@ -703,7 +703,7 @@ func (v *VM) run() {
 			v.stack[v.sp] = Bool(val)
 			v.sp++
 		case OpKeyOf:
-			left := v.stack[v.sp-2].(Str)
+			left := v.stack[v.sp-2].(String)
 			right := v.stack[v.sp-1].(*Object)
 			v.sp -= 2
 
@@ -758,7 +758,7 @@ func (v *VM) run() {
 			v.ip += 2
 			v.sp--
 			globalNameIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
-			globalName := v.constants[globalNameIndex].(Str)
+			globalName := v.constants[globalNameIndex].(String)
 
 			val := v.stack[v.sp]
 
@@ -782,7 +782,7 @@ func (v *VM) run() {
 		case OpGetGlobal:
 			v.ip += 2
 			globalNameIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
-			globalName := v.constants[globalNameIndex].(Str)
+			globalName := v.constants[globalNameIndex].(String)
 
 			val := v.global.Globals.Get(string(globalName))
 
@@ -797,7 +797,7 @@ func (v *VM) run() {
 			v.ip += 2
 			v.sp--
 			memberNameIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
-			memberName := v.constants[memberNameIndex].(Str)
+			memberName := v.constants[memberNameIndex].(String)
 			val := v.stack[v.sp]
 
 			iprops := v.stack[v.sp-1].(IProps)
@@ -871,7 +871,7 @@ func (v *VM) run() {
 			object := v.stack[v.sp-1]
 			v.ip += 2
 			memberNameIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
-			memberName := string(v.constants[memberNameIndex].(Str))
+			memberName := string(v.constants[memberNameIndex].(String))
 
 			iprops := object.(IProps)
 
@@ -950,7 +950,7 @@ func (v *VM) run() {
 			object := v.stack[v.sp-1]
 			v.ip += 2
 			memberNameIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
-			memberName := string(v.constants[memberNameIndex].(Str))
+			memberName := string(v.constants[memberNameIndex].(String))
 
 			memb := object.(IProps).Prop(v.global.Ctx, memberName)
 			v.stack[v.sp-1] = memb
@@ -986,7 +986,7 @@ func (v *VM) run() {
 			val := v.stack[v.sp-1]
 			v.ip += 2
 			memberNameIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
-			memberName := string(v.constants[memberNameIndex].(Str))
+			memberName := string(v.constants[memberNameIndex].(String))
 
 			object := val.(*Object)
 			memb := object.PropNotStored(v.global.Ctx, memberName)
@@ -994,10 +994,10 @@ func (v *VM) run() {
 		case OpExtensionMethod:
 			v.ip += 4
 			extensionIdIndex := int(v.curInsts[v.ip-2]) | int(v.curInsts[v.ip-3])<<8
-			extensionId := v.constants[extensionIdIndex].(Str).GetOrBuildString()
+			extensionId := v.constants[extensionIdIndex].(String).GetOrBuildString()
 
 			memberNameIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
-			memberName := string(v.constants[memberNameIndex].(Str))
+			memberName := string(v.constants[memberNameIndex].(String))
 
 			extension := v.global.Ctx.GetTypeExtension(extensionId)
 			var method *InoxFunction
@@ -1066,7 +1066,7 @@ func (v *VM) run() {
 				propIndex := 0
 				for i := v.sp - numElements; i < v.sp; i += 2 {
 					obj.values[propIndex] = v.stack[i+1].(Serializable)
-					obj.keys[propIndex] = string(v.stack[i].(Str))
+					obj.keys[propIndex] = string(v.stack[i].(String))
 					propIndex++
 				}
 				obj.sortProps()
@@ -1104,7 +1104,7 @@ func (v *VM) run() {
 				propIndex := 0
 				for i := v.sp - numElements; i < v.sp; i += 2 {
 					rec.values[propIndex] = v.stack[i+1].(Serializable)
-					rec.keys[propIndex] = string(v.stack[i].(Str))
+					rec.keys[propIndex] = string(v.stack[i].(String))
 					propIndex++
 				}
 				rec.sortProps()
@@ -1657,7 +1657,7 @@ func (v *VM) handleOtherOpcodes(op byte) (_continue bool) {
 	case OpResolvePattern:
 		v.ip += 2
 		nameIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
-		name := v.constants[nameIndex].(Str)
+		name := v.constants[nameIndex].(String)
 
 		val := v.global.Ctx.ResolveNamedPattern(string(name))
 		if val == nil {
@@ -1668,7 +1668,7 @@ func (v *VM) handleOtherOpcodes(op byte) (_continue bool) {
 	case OpAddPattern:
 		v.ip += 2
 		nameIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
-		name := v.constants[nameIndex].(Str)
+		name := v.constants[nameIndex].(String)
 
 		val := v.stack[v.sp-1].(Pattern)
 		v.global.Ctx.AddNamedPattern(string(name), val)
@@ -1676,7 +1676,7 @@ func (v *VM) handleOtherOpcodes(op byte) (_continue bool) {
 	case OpResolvePatternNamespace:
 		v.ip += 2
 		nameIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
-		name := v.constants[nameIndex].(Str)
+		name := v.constants[nameIndex].(String)
 
 		val := v.global.Ctx.ResolvePatternNamespace(string(name))
 		if val == nil {
@@ -1688,7 +1688,7 @@ func (v *VM) handleOtherOpcodes(op byte) (_continue bool) {
 	case OpAddPatternNamespace:
 		v.ip += 2
 		nameIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
-		name := v.constants[nameIndex].(Str)
+		name := v.constants[nameIndex].(String)
 
 		val := v.stack[v.sp-1].(*PatternNamespace)
 		v.global.Ctx.AddPatternNamespace(string(name), val)
@@ -1696,10 +1696,10 @@ func (v *VM) handleOtherOpcodes(op byte) (_continue bool) {
 	case OpPatternNamespaceMemb:
 		v.ip += 4
 		namespaceNameIndex := int(v.curInsts[v.ip-2]) | int(v.curInsts[v.ip-3])<<8
-		namespaceName := string(v.constants[namespaceNameIndex].(Str))
+		namespaceName := string(v.constants[namespaceNameIndex].(String))
 
 		memberNameIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
-		memberName := string(v.constants[memberNameIndex].(Str))
+		memberName := string(v.constants[memberNameIndex].(String))
 
 		namespace := v.global.Ctx.ResolvePatternNamespace(namespaceName)
 		if namespace == nil {
@@ -1777,7 +1777,7 @@ func (v *VM) handleOtherOpcodes(op byte) (_continue bool) {
 		var entries []ObjectPatternEntry
 
 		for i := v.sp - numElements; i < v.sp; i += 3 {
-			key := v.stack[i].(Str)
+			key := v.stack[i].(String)
 			value := v.stack[i+1].(Pattern)
 			isOptional := v.stack[i+2].(Bool)
 
@@ -1805,7 +1805,7 @@ func (v *VM) handleOtherOpcodes(op byte) (_continue bool) {
 		var entries []RecordPatternEntry
 
 		for i := v.sp - numElements; i < v.sp; i += 3 {
-			key := v.stack[i].(Str)
+			key := v.stack[i].(String)
 			value := v.stack[i+1].(Pattern)
 			isOptional := v.stack[i+2].(Bool)
 
@@ -1828,7 +1828,7 @@ func (v *VM) handleOtherOpcodes(op byte) (_continue bool) {
 	case OpCreateOptionPattern:
 		v.ip += 2
 		nameIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
-		name := v.constants[nameIndex].(Str)
+		name := v.constants[nameIndex].(String)
 
 		value := v.stack[v.sp-1].(Pattern)
 		v.stack[v.sp-1] = &OptionPattern{name: string(name), value: value}
@@ -2003,7 +2003,7 @@ func (v *VM) handleOtherOpcodes(op byte) (_continue bool) {
 		rawContentIndex := int(v.curInsts[v.ip-1]) | int(v.curInsts[v.ip-2])<<8
 		rawContent := v.constants[rawContentIndex]
 		childCount := int(v.curInsts[v.ip])
-		tagName := string(v.constants[tagNameIndex].(Str))
+		tagName := string(v.constants[tagNameIndex].(String))
 
 		var attributes []XMLAttribute
 		if attributeCount > 0 {
@@ -2012,7 +2012,7 @@ func (v *VM) handleOtherOpcodes(op byte) (_continue bool) {
 			attributesStart := v.sp - childCount - 2*attributeCount
 			for i := 0; i < 2*attributeCount; i += 2 {
 				attributes[i/2] = XMLAttribute{
-					name:  string(v.stack[attributesStart+i].(Str)),
+					name:  string(v.stack[attributesStart+i].(String)),
 					value: v.stack[attributesStart+i+1],
 				}
 			}
@@ -2021,7 +2021,7 @@ func (v *VM) handleOtherOpcodes(op byte) (_continue bool) {
 		var elem *XMLElement
 
 		if rawContent != Nil {
-			elem = NewRawTextXmlElement(tagName, attributes, string(rawContent.(Str)))
+			elem = NewRawTextXmlElement(tagName, attributes, string(rawContent.(String)))
 		} else {
 			childrenStart := v.sp - childCount
 			var children []Value
@@ -2118,7 +2118,7 @@ func (v *VM) handleOtherOpcodes(op byte) (_continue bool) {
 		queryParamCount := queryParamInfo.Len() / 2
 
 		for i := 0; i < queryParamCount; i++ {
-			queryParamNames = append(queryParamNames, queryParamInfo.At(v.global.Ctx, 2*i).(Str))
+			queryParamNames = append(queryParamNames, queryParamInfo.At(v.global.Ctx, 2*i).(String))
 		}
 
 		for i := v.sp - queryParamCount; i < v.sp; i++ {
@@ -2150,9 +2150,9 @@ func (v *VM) handleOtherOpcodes(op byte) (_continue bool) {
 	case OpCreateHost:
 		v.ip += 2
 		schemeIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
-		scheme := v.constants[schemeIndex].(Str)
+		scheme := v.constants[schemeIndex].(String)
 
-		hostnamePort := v.stack[v.sp-1].(Str)
+		hostnamePort := v.stack[v.sp-1].(String)
 		val, err := NewHost(hostnamePort, string(scheme))
 		if err != nil {
 			v.err = err
@@ -2349,14 +2349,14 @@ func (v *VM) handleOtherOpcodes(op byte) (_continue bool) {
 	case OpResolveHost:
 		v.ip += 2
 		aliasIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
-		aliasName := string(v.constants[aliasIndex].(Str))[1:]
+		aliasName := string(v.constants[aliasIndex].(String))[1:]
 		val := v.global.Ctx.ResolveHostAlias(aliasName)
 		v.stack[v.sp] = val
 		v.sp++
 	case OpAddHostAlias:
 		v.ip += 2
 		aliasIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
-		aliasName := string(v.constants[aliasIndex].(Str))[1:]
+		aliasName := string(v.constants[aliasIndex].(String))[1:]
 		val := v.stack[v.sp-1].(Host)
 		v.sp--
 
@@ -2365,7 +2365,7 @@ func (v *VM) handleOtherOpcodes(op byte) (_continue bool) {
 	case OpImport:
 		v.ip += 2
 		globalNameIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
-		globalName := v.constants[globalNameIndex].(Str)
+		globalName := v.constants[globalNameIndex].(String)
 
 		source := v.stack[v.sp-2]
 		configObject := v.stack[v.sp-1].(*Object)
@@ -2412,7 +2412,7 @@ func (v *VM) handleOtherOpcodes(op byte) (_continue bool) {
 		v.ip += 7
 		isSingleExpr := v.curInsts[v.ip-6]
 		calleeNameindex := int(v.curInsts[v.ip-4]) | int(v.curInsts[v.ip-5])<<8
-		caleeName := v.constants[calleeNameindex].(Str)
+		caleeName := v.constants[calleeNameindex].(String)
 
 		lthreadModConstantIndex := int(v.curInsts[v.ip-2]) | int(v.curInsts[v.ip-3])<<8
 		lthreadMod := v.constants[lthreadModConstantIndex].(*Module)
@@ -2561,7 +2561,7 @@ func (v *VM) handleOtherOpcodes(op byte) (_continue bool) {
 			v.err = err
 			return
 		}
-		v.stack[v.sp-1] = Str(val)
+		v.stack[v.sp-1] = String(val)
 	case OpCreateAddTypeExtension:
 		v.ip += 2
 		extendStmtIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
@@ -2670,7 +2670,7 @@ func (v *VM) handleOtherOpcodes(op byte) (_continue bool) {
 	case OpCreateOption:
 		v.ip += 2
 		nameIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
-		name := v.constants[nameIndex].(Str)
+		name := v.constants[nameIndex].(String)
 
 		value := v.stack[v.sp-1]
 		v.stack[v.sp-1] = Option{Name: string(name), Value: value}
@@ -2678,7 +2678,7 @@ func (v *VM) handleOtherOpcodes(op byte) (_continue bool) {
 		object := v.stack[v.sp-1]
 		v.ip += 2
 		memberNameIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
-		memberName := string(v.constants[memberNameIndex].(Str))
+		memberName := string(v.constants[memberNameIndex].(String))
 
 		val, err := NewDynamicMemberValue(v.global.Ctx, object, string(memberName))
 		if err != nil {

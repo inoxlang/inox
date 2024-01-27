@@ -110,7 +110,7 @@ func TestNewMap(t *testing.T) {
 				assert.ErrorContains(t, recover().(error), ErrValueDoesMatchValuePattern.Error())
 			}()
 
-			NewMap(ctx, core.NewWrappedValueList(core.Str("a"), core.True), core.ToOptionalParam(config))
+			NewMap(ctx, core.NewWrappedValueList(core.String("a"), core.True), core.ToOptionalParam(config))
 		}()
 	})
 }
@@ -138,7 +138,7 @@ func TestUnsharedMapAddRemove(t *testing.T) {
 			Value: core.SERIALIZABLE_PATTERN,
 		})
 
-		record := core.NewRecordFromMap(core.ValMap{"password": core.Str("x"), "email-address": core.EmailAddress("a@mail.com")})
+		record := core.NewRecordFromMap(core.ValMap{"password": core.String("x"), "email-address": core.EmailAddress("a@mail.com")})
 		m.Insert(ctx, record, STRING_A)
 
 		recordClone := utils.Must(core.RepresentationBasedClone(ctx, record))

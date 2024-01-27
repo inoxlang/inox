@@ -138,7 +138,7 @@ func NewUnspecifiedMutation(depth WatchingDepth, path Path) Mutation {
 }
 
 func NewAddPropMutation(ctx *Context, name string, value Serializable, depth WatchingDepth, path Path) Mutation {
-	data, sizes, err := WriteConcatenatedRepresentations(ctx, Str(name), value)
+	data, sizes, err := WriteConcatenatedRepresentations(ctx, String(name), value)
 
 	return Mutation{
 		Kind:               AddProp,
@@ -151,7 +151,7 @@ func NewAddPropMutation(ctx *Context, name string, value Serializable, depth Wat
 }
 
 func NewUpdatePropMutation(ctx *Context, name string, newValue Serializable, depth WatchingDepth, path Path) Mutation {
-	data, sizes, err := WriteConcatenatedRepresentations(ctx, Str(name), newValue)
+	data, sizes, err := WriteConcatenatedRepresentations(ctx, String(name), newValue)
 
 	return Mutation{
 		Kind:               UpdateProp,
@@ -327,7 +327,7 @@ func (m Mutation) DataElem(ctx *Context, index int) Value {
 func (m Mutation) AffectedProperty(ctx *Context) string {
 	switch m.Kind {
 	case AddProp, UpdateProp:
-		return string(m.DataElem(ctx, 0).(Str))
+		return string(m.DataElem(ctx, 0).(String))
 	default:
 		panic(ErrUnreachable)
 	}
@@ -1103,7 +1103,7 @@ func (g *SystemGraph) ApplySpecificMutation(ctx *Context, m Mutation) error {
 		defer g.eventLogLock.Unlock()
 
 		ptr := uintptr(m.DataElem(ctx, 0).(Int))
-		text := string(m.DataElem(ctx, 1).(Str))
+		text := string(m.DataElem(ctx, 1).(String))
 		g.addEventNoLock(ptr, text)
 
 	case SG_AddNode:
@@ -1114,8 +1114,8 @@ func (g *SystemGraph) ApplySpecificMutation(ctx *Context, m Mutation) error {
 			return ErrAttemptToMutateFrozenValue
 		}
 
-		name := m.DataElem(ctx, 0).(Str)
-		typename := m.DataElem(ctx, 1).(Str)
+		name := m.DataElem(ctx, 0).(String)
+		typename := m.DataElem(ctx, 1).(String)
 		valuePtr := m.DataElem(ctx, 2).(Int)
 		parentPtr := m.DataElem(ctx, 3).(Int)
 
@@ -1129,12 +1129,12 @@ func (g *SystemGraph) ApplySpecificMutation(ctx *Context, m Mutation) error {
 
 			edgeTextOrEdgeTuple := m.DataElem(ctx, 4)
 			switch textOrTuple := edgeTextOrEdgeTuple.(type) {
-			case Str:
+			case String:
 				edgeKind := m.DataElem(ctx, 5).(Int)
 				g.addEdgeNoLock(string(textOrTuple), childNode, parentNode, SystemGraphEdgeKind(edgeKind))
 			case *Tuple:
 				for i := 0; i < len(textOrTuple.elements); i += 2 {
-					edgeText := textOrTuple.elements[i].(Str)
+					edgeText := textOrTuple.elements[i].(String)
 					edgeKind := textOrTuple.elements[i+1].(Int)
 					g.addEdgeNoLock(string(edgeText), childNode, parentNode, SystemGraphEdgeKind(edgeKind))
 				}
@@ -1151,7 +1151,7 @@ func (g *SystemGraph) ApplySpecificMutation(ctx *Context, m Mutation) error {
 
 		edgeSourcePtr := m.DataElem(ctx, 0).(Int)
 		edgeTargetPtr := m.DataElem(ctx, 1).(Int)
-		edgeText := m.DataElem(ctx, 2).(Str)
+		edgeText := m.DataElem(ctx, 2).(String)
 		edgeKind := m.DataElem(ctx, 3).(Int)
 
 		sourceNode, ok := g.nodes.ptrToNode[uintptr(edgeSourcePtr)]

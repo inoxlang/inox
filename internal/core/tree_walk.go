@@ -402,9 +402,9 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		}
 
 		for _, p := range n.QueryParams {
-			queryValue := Str("")
+			queryValue := String("")
 			param := p.(*parse.URLQueryParameter)
-			queryParamNames = append(queryParamNames, Str(param.Name))
+			queryParamNames = append(queryParamNames, String(param.Name))
 
 			for _, slice := range param.Value {
 				val, err := TreeWalkEval(slice, state)
@@ -415,7 +415,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 				if err != nil {
 					return nil, err
 				}
-				queryValue += Str(stringified)
+				queryValue += String(stringified)
 			}
 			queryValues = append(queryValues, queryValue)
 		}
@@ -2909,7 +2909,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		for _, slice := range n.Slices {
 			switch s := slice.(type) {
 			case *parse.StringTemplateSlice:
-				sliceValues = append(sliceValues, Str(s.Value))
+				sliceValues = append(sliceValues, String(s.Value))
 			case *parse.StringTemplateInterpolation:
 				sliceValue, err := TreeWalkEval(s.Expr, state)
 				if err != nil {
@@ -2966,7 +2966,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			}
 
 		}
-		return Str(selector.String()), nil
+		return String(selector.String()), nil
 	case parse.SimpleValueLiteral:
 		return EvalSimpleValueLiteral(n, state.Global)
 	case *parse.XMLExpression:
@@ -3021,7 +3021,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		return NewXmlElement(name, attrs, children), nil
 	case *parse.XMLText:
 		//we assume factories will properly escape the string.
-		return Str(n.Value), nil
+		return String(n.Value), nil
 	case *parse.XMLInterpolation:
 		val, err := TreeWalkEval(n.Expr, state)
 		if err != nil {
@@ -3399,9 +3399,9 @@ func evalPatternNode(node parse.Node, state *TreeWalkState) (Pattern, error) {
 func evalStringPatternNode(node parse.Node, state *TreeWalkState, lazy bool) (StringPattern, error) {
 	switch v := node.(type) {
 	case *parse.QuotedStringLiteral:
-		return NewExactStringPattern(Str(v.Value)), nil
+		return NewExactStringPattern(String(v.Value)), nil
 	case *parse.RuneLiteral:
-		return NewExactStringPattern(Str(v.Value)), nil
+		return NewExactStringPattern(String(v.Value)), nil
 	case *parse.RuneRangeExpression:
 		return NewRuneRangeStringPattern(v.Lower.Value, v.Upper.Value, node), nil
 	case *parse.IntegerRangeLiteral:
@@ -3588,7 +3588,7 @@ func evalBinaryExpression(n *parse.BinaryExpression, state *TreeWalkState) (Valu
 		}
 
 	case parse.Keyof:
-		key, ok := left.(Str)
+		key, ok := left.(String)
 		if !ok {
 			return nil, fmt.Errorf("invalid binary expression: keyof: left operand is not a string, but a %T", left)
 		}

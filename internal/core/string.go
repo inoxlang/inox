@@ -20,10 +20,10 @@ var (
 	RUNE_SLICE_PROPNAMES    = []string{"insert", "remove_position", "remove_position_range"}
 
 	_ = []WrappedString{
-		Str(""), Path(""), PathPattern(""), Host(""), HostPattern(""), EmailAddress(""), Identifier(""),
+		String(""), Path(""), PathPattern(""), Host(""), HostPattern(""), EmailAddress(""), Identifier(""),
 		URL(""), URLPattern(""), CheckedString{},
 	}
-	_ = []StringLike{Str(""), (*StringConcatenation)(nil)}
+	_ = []StringLike{String(""), (*StringConcatenation)(nil)}
 )
 
 // A StringLike represents a value that wraps a Go string.
@@ -51,38 +51,38 @@ type StringLike interface {
 	//TODO: EqualStringLike(ctx *Context, s StringLike)
 }
 
-// Inox string type, Str implements Value.
-type Str string
+// Inox string type, String implements Value.
+type String string
 
-func (s Str) UnderlyingString() string {
+func (s String) UnderlyingString() string {
 	return string(s)
 }
 
-func (s Str) GetOrBuildString() string {
+func (s String) GetOrBuildString() string {
 	return string(s)
 }
 
-func (s Str) ByteLike() []byte {
+func (s String) ByteLike() []byte {
 	return []byte(s)
 }
 
-func (s Str) Len() int {
+func (s String) Len() int {
 	return len(s)
 }
 
-func (s Str) At(ctx *Context, i int) Value {
+func (s String) At(ctx *Context, i int) Value {
 	return Byte(s[i])
 }
 
-func (s Str) slice(start, end int) Sequence {
+func (s String) slice(start, end int) Sequence {
 	return s[start:end]
 }
 
-func (s Str) PropertyNames(ctx *Context) []string {
+func (s String) PropertyNames(ctx *Context) []string {
 	return STRING_LIKE_PSEUDOPROPS
 }
 
-func (s Str) Prop(ctx *Context, name string) Value {
+func (s String) Prop(ctx *Context, name string) Value {
 	switch name {
 	case "replace":
 		return ValOf(s.Replace)
@@ -97,36 +97,36 @@ func (s Str) Prop(ctx *Context, name string) Value {
 	}
 }
 
-func (Str) SetProp(ctx *Context, name string, value Value) error {
+func (String) SetProp(ctx *Context, name string, value Value) error {
 	return ErrCannotSetProp
 }
 
-func (s Str) ByteLen() int {
+func (s String) ByteLen() int {
 	return len(s)
 }
-func (s Str) RuneCount() int {
+func (s String) RuneCount() int {
 	return utf8.RuneCountInString(string(s))
 }
 
-func (s Str) Replace(ctx *Context, old, new StringLike) StringLike {
+func (s String) Replace(ctx *Context, old, new StringLike) StringLike {
 	//TODO: make the function stoppable for large strings
 
-	return Str(strings.Replace(string(s), old.GetOrBuildString(), new.GetOrBuildString(), -1))
+	return String(strings.Replace(string(s), old.GetOrBuildString(), new.GetOrBuildString(), -1))
 }
 
-func (s Str) TrimSpace(ctx *Context) StringLike {
+func (s String) TrimSpace(ctx *Context) StringLike {
 	//TODO: make the function stoppable for large strings
 
-	return Str(strings.TrimSpace(string(s)))
+	return String(strings.TrimSpace(string(s)))
 }
 
-func (s Str) HasPrefix(ctx *Context, prefix StringLike) Bool {
+func (s String) HasPrefix(ctx *Context, prefix StringLike) Bool {
 	//TODO: make the function stoppable for large strings
 
 	return Bool(strings.HasPrefix(string(s), prefix.GetOrBuildString()))
 }
 
-func (s Str) HasSuffix(ctx *Context, prefix StringLike) Bool {
+func (s String) HasSuffix(ctx *Context, prefix StringLike) Bool {
 	//TODO: make the function stoppable for large strings
 
 	return Bool(strings.HasSuffix(string(s), prefix.GetOrBuildString()))
@@ -192,18 +192,18 @@ type CheckedString struct {
 	matchingPattern     Pattern
 }
 
-func NewStringFromSlices(slices []Value, node *parse.StringTemplateLiteral, ctx *Context) (Str, error) {
+func NewStringFromSlices(slices []Value, node *parse.StringTemplateLiteral, ctx *Context) (String, error) {
 	buff := bytes.NewBufferString("")
 
 	for i, sliceValue := range slices {
 		switch node.Slices[i].(type) {
 		case *parse.StringTemplateSlice:
-			buff.WriteString(string(sliceValue.(Str)))
+			buff.WriteString(string(sliceValue.(String)))
 		case *parse.StringTemplateInterpolation:
 			switch val := sliceValue.(type) {
 			case StringLike:
 			case Int:
-				sliceValue = Str(Stringify(val, ctx))
+				sliceValue = String(Stringify(val, ctx))
 			default:
 				panic(ErrUnreachable)
 			}
@@ -215,7 +215,7 @@ func NewStringFromSlices(slices []Value, node *parse.StringTemplateLiteral, ctx 
 		}
 	}
 
-	str := Str(buff.String())
+	str := String(buff.String())
 	return str, nil
 }
 
@@ -282,7 +282,7 @@ func NewCheckedString(slices []Value, node *parse.StringTemplateLiteral, ctx *Co
 			}
 			patternName := namespaceName + "." + memberName
 
-			var str Str
+			var str String
 
 			if shouldConvert {
 				patt, ok := pattern.(ToStringConversionCapableStringPattern)
@@ -294,9 +294,9 @@ func NewCheckedString(slices []Value, node *parse.StringTemplateLiteral, ctx *Co
 				if err != nil {
 					return CheckedString{}, fmt.Errorf("pattern %s failed to convert value", patternName)
 				}
-				str = Str(s)
+				str = String(s)
 			} else {
-				str = sliceValue.(Str)
+				str = sliceValue.(String)
 			}
 
 			if !pattern.Test(ctx, str) {
@@ -309,7 +309,7 @@ func NewCheckedString(slices []Value, node *parse.StringTemplateLiteral, ctx *Co
 		}
 	}
 
-	str := Str(buff.String())
+	str := String(buff.String())
 	if !finalPattern.Test(ctx, str) {
 		return CheckedString{}, fmt.Errorf("runtime check error: final string `%s` does not match %%%s", str, matchingPatternName)
 	}
@@ -336,7 +336,7 @@ func (str CheckedString) PropertyNames(ctx *Context) []string {
 func (str CheckedString) Prop(ctx *Context, name string) Value {
 	switch name {
 	case "pattern-name":
-		return Str(str.matchingPatternName)
+		return String(str.matchingPatternName)
 	case "pattern":
 		return str.matchingPattern
 	default:
@@ -555,7 +555,6 @@ func (i Identifier) UnderlyingString() string {
 	return string(i)
 }
 
-
 // StringConcatenation is a lazy concatenation of values that can form a string, StringConcatenation implements StringLike and is
 // therefore immutable.
 type StringConcatenation struct {
@@ -600,7 +599,7 @@ func (c *StringConcatenation) At(ctx *Context, i int) Value {
 func (c *StringConcatenation) slice(start, end int) Sequence {
 	//TODO: change implementation + make the function stoppable for large strings
 
-	return Str(c.GetOrBuildString()).slice(start, end)
+	return String(c.GetOrBuildString()).slice(start, end)
 }
 
 func (c *StringConcatenation) PropertyNames(ctx *Context) []string {
@@ -645,23 +644,23 @@ func (c *StringConcatenation) RuneCount() int {
 func (c *StringConcatenation) Replace(ctx *Context, old, new StringLike) StringLike {
 	//TODO: change implementation + make the function stoppable for large strings
 
-	return Str(c.GetOrBuildString()).Replace(ctx, old, new)
+	return String(c.GetOrBuildString()).Replace(ctx, old, new)
 }
 
 func (c *StringConcatenation) TrimSpace(ctx *Context) StringLike {
 	//TODO: change implementation + make the function stoppable for large strings
 
-	return Str(c.GetOrBuildString()).TrimSpace(ctx)
+	return String(c.GetOrBuildString()).TrimSpace(ctx)
 }
 
 func (c *StringConcatenation) HasPrefix(ctx *Context, prefix StringLike) Bool {
 	//TODO: change implementation + make the function stoppable for large strings
 
-	return Str(c.GetOrBuildString()).HasPrefix(ctx, prefix)
+	return String(c.GetOrBuildString()).HasPrefix(ctx, prefix)
 }
 
 func (c *StringConcatenation) HasSuffix(ctx *Context, prefix StringLike) Bool {
 	//TODO: make the function stoppable for large strings
 
-	return Str(c.GetOrBuildString()).HasSuffix(ctx, prefix)
+	return String(c.GetOrBuildString()).HasSuffix(ctx, prefix)
 }

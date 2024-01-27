@@ -19,7 +19,7 @@ func TestWrappedWatcherStream(t *testing.T) {
 			watcher := NewGenericWatcher(WatcherConfiguration{Filter: ANYVAL_PATTERN})
 			stream := watcher.Stream(ctx, &ReadableStreamConfiguration{}).(*wrappedWatcherStream)
 
-			watcher.values <- Str("a")
+			watcher.values <- String("a")
 
 			go func() {
 				time.Sleep(10 * time.Millisecond)
@@ -30,7 +30,7 @@ func TestWrappedWatcherStream(t *testing.T) {
 			if !assert.NoError(t, err) {
 				return
 			}
-			assert.Equal(t, Str("a"), next)
+			assert.Equal(t, String("a"), next)
 
 			next, err = stream.WaitNext(ctx, nil, time.Second)
 			if !assert.ErrorIs(t, err, ErrEndOfStream) {
@@ -47,7 +47,7 @@ func TestWrappedWatcherStream(t *testing.T) {
 			watcher := NewGenericWatcher(WatcherConfiguration{Filter: ANYVAL_PATTERN})
 			stream := watcher.Stream(ctx, &ReadableStreamConfiguration{}).(*wrappedWatcherStream)
 
-			watcher.values <- Str("a")
+			watcher.values <- String("a")
 			watcher.Stop()
 
 			next, err := stream.WaitNext(ctx, nil, time.Second)
@@ -68,8 +68,8 @@ func TestWrappedWatcherStream(t *testing.T) {
 			watcher := NewGenericWatcher(WatcherConfiguration{Filter: ANYVAL_PATTERN})
 			stream := watcher.Stream(ctx, &ReadableStreamConfiguration{}).(*wrappedWatcherStream)
 
-			watcher.values <- Str("a")
-			watcher.values <- Str("b")
+			watcher.values <- String("a")
+			watcher.values <- String("b")
 
 			go func() {
 				time.Sleep(10 * time.Millisecond)
@@ -80,7 +80,7 @@ func TestWrappedWatcherStream(t *testing.T) {
 			if !assert.NoError(t, err) {
 				return
 			}
-			assert.Equal(t, NewWrappedValueList(Str("a"), Str("b")), next.data)
+			assert.Equal(t, NewWrappedValueList(String("a"), String("b")), next.data)
 
 			time.Sleep(20 * time.Millisecond)
 			next, err = stream.WaitNextChunk(ctx, nil, NewIncludedEndIntRange(2, 3), time.Second)
@@ -97,8 +97,8 @@ func TestWrappedWatcherStream(t *testing.T) {
 			watcher := NewGenericWatcher(WatcherConfiguration{Filter: ANYVAL_PATTERN})
 			stream := watcher.Stream(ctx, &ReadableStreamConfiguration{}).(*wrappedWatcherStream)
 
-			watcher.values <- Str("a")
-			watcher.values <- Str("b")
+			watcher.values <- String("a")
+			watcher.values <- String("b")
 			watcher.Stop()
 
 			next, err := stream.WaitNextChunk(ctx, nil, NewIncludedEndIntRange(2, 3), time.Second)

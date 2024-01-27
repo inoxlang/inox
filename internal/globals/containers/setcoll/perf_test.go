@@ -23,7 +23,7 @@ func BenchmarkAddElemToUnsharedSet(b *testing.B) {
 			records := make([]*core.Record, b.N)
 			for i := range records {
 				records[i] = core.NewRecordFromMap(core.ValMap{
-					"a": core.Str(strings.Repeat("x", 10)),
+					"a": core.String(strings.Repeat("x", 10)),
 					"i": core.Int(i),
 				})
 			}
@@ -45,7 +45,7 @@ func BenchmarkAddElemToUnsharedSet(b *testing.B) {
 			records := make([]*core.Record, b.N)
 			for i := range records {
 				records[i] = core.NewRecordFromMap(core.ValMap{
-					"a": core.Str(strings.Repeat("x", 1000)),
+					"a": core.String(strings.Repeat("x", 1000)),
 					"i": core.Int(i),
 				})
 			}
@@ -67,7 +67,7 @@ func BenchmarkAddElemToUnsharedSet(b *testing.B) {
 			records := make([]*core.Record, b.N)
 			for i := range records {
 				records[i] = core.NewRecordFromMap(core.ValMap{
-					"a": core.Str(strings.Repeat("x", 10_000)),
+					"a": core.String(strings.Repeat("x", 10_000)),
 					"i": core.Int(i),
 				})
 			}
