@@ -9627,6 +9627,10 @@ func (p *parser) parseAssignment(left Node) (result Node) {
 
 	// terminator
 	defer func() {
+		if result == nil { //panic
+			return
+		}
+
 		p.eatSpace()
 		if p.i >= p.len {
 			return
