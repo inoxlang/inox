@@ -11473,7 +11473,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
-			assert.Equal(t, ANY_STR_CONCAT, res)
+			assert.Equal(t, ANY_STR_LIKE, res)
 		})
 
 		t.Run("first element is a multivalue implementing string like", func(t *testing.T) {
@@ -11482,7 +11482,6 @@ func TestSymbolicEval(t *testing.T) {
 				if g {
 					elem = concat elem "b"
 				}
-				# at this point elem is a %string | %string-concatenation
 				return [elem, concat elem "x"]
 			`)
 
@@ -11492,9 +11491,9 @@ func TestSymbolicEval(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
 			assert.Equal(t, NewList(
-				//we also check that elem has the right because the test case depends on that
-				AsSerializableChecked(NewMultivalue(NewString("a"), ANY_STR_CONCAT)),
-				ANY_STR_CONCAT,
+				//we also check that elem has the right type because the test case depends on that
+				ANY_STR_LIKE,
+				ANY_STR_LIKE,
 			), res)
 		})
 
@@ -11504,7 +11503,6 @@ func TestSymbolicEval(t *testing.T) {
 				if g {
 					elem = concat elem "b"
 				}
-				# at this point elem is a %string | %string-concatenation
 				return [elem, concat "x" elem]
 			`)
 
@@ -11515,8 +11513,8 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Empty(t, state.errors())
 			assert.Equal(t, NewList(
 				//we also check that elem has the right because the test case depends on that
-				AsSerializableChecked(NewMultivalue(NewString("a"), ANY_STR_CONCAT)),
-				ANY_STR_CONCAT,
+				ANY_STR_LIKE,
+				ANY_STR_LIKE,
 			), res)
 		})
 
@@ -11535,7 +11533,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
-			assert.Equal(t, ANY_BYTES_CONCAT, res)
+			assert.Equal(t, ANY_BYTES_LIKE, res)
 		})
 
 		t.Run("two tuples with known elements", func(t *testing.T) {
@@ -11600,7 +11598,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
-			assert.Equal(t, ANY_STR_CONCAT, res)
+			assert.Equal(t, ANY_STR_LIKE, res)
 		})
 
 		t.Run("spread list with invalid values", func(t *testing.T) {
@@ -11626,7 +11624,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, []SymbolicEvaluationError{
 				makeSymbolicEvalError(spreadElem, state, CONCATENATION_SUPPORTED_TYPES_EXPLANATION),
 			}, state.errors())
-			assert.Equal(t, ANY_STR_CONCAT, res)
+			assert.Equal(t, ANY_STR_LIKE, res)
 		})
 
 		t.Run("non iterable spread element", func(t *testing.T) {
@@ -11644,7 +11642,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.NotEmpty(t, state.errors())
-			assert.Equal(t, ANY_STR_CONCAT, res)
+			assert.Equal(t, ANY_STR_LIKE, res)
 		})
 	})
 
@@ -11755,13 +11753,12 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, ANY_STRING, res)
 		})
 
-		t.Run("no pattern, multivalue interpolation implementing string like", func(t *testing.T) {
+		t.Run("no pattern, interpolation value implementing string like", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				var elem %str = "a"
 				if g {
 					elem = concat elem "b"
 				}
-				# at this point elem is a %string | %string-concatenation
 				return [elem,` + "`x${elem}`" + `]
 			`)
 
@@ -11771,8 +11768,8 @@ func TestSymbolicEval(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
 			assert.Equal(t, NewList(
-				//we also check that elem has the right because the test case depends on that
-				AsSerializableChecked(NewMultivalue(NewString("a"), ANY_STR_CONCAT)),
+				//we also check that elem has the right type because the test case depends on that
+				ANY_STR_LIKE,
 				ANY_STRING,
 			), res)
 		})

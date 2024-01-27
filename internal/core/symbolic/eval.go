@@ -4661,7 +4661,8 @@ func evalConcatenationExpression(n *parse.ConcatenationExpression, state *State,
 				state.addError(makeSymbolicEvalError(n.Elements[nodeIndexes[i]], state, fmtStringConcatInvalidElementOfType(elem)))
 			}
 		}
-		return ANY_STR_CONCAT, nil
+		//We don't know if the result will be a String or a StringConcatenation.
+		return ANY_STR_LIKE, nil
 	case BytesLike:
 		if len(values) == 1 && !atLeastOneSpread {
 			return values[0], nil
@@ -4671,7 +4672,8 @@ func evalConcatenationExpression(n *parse.ConcatenationExpression, state *State,
 				state.addError(makeSymbolicEvalError(n.Elements[nodeIndexes[i]], state, fmt.Sprintf("bytes concatenation: invalid element of type %T", elem)))
 			}
 		}
-		return ANY_BYTES_CONCAT, nil
+		//We don't know if the result will be a ByteSlice or a BytesConcatenation.
+		return ANY_BYTES_LIKE, nil
 	case *Tuple:
 		if len(values) == 1 && !atLeastOneSpread {
 			return values[0], nil
