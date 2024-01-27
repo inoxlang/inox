@@ -311,6 +311,8 @@ func createHandleDynamic(server *HttpsServer, routingDirPath core.Path) handlerF
 			ParsingCompilationContext: handlerCtx,
 			IgnoreHighRiskScore:       true,
 			Debugger:                  debugger,
+
+			DoNotCancelWhenFinished: true,
 		})
 
 		handlerCtx.ResumeCPUTimeDepletion()
