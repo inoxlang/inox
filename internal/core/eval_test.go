@@ -42,6 +42,10 @@ func init() {
 	moduleCache[RETURN_POS_ARG_A_MODULE_HASH] = "manifest {parameters: {{name: #a, pattern: %int}}}\nreturn mod-args.a"
 	moduleCache[RETURN_PATTERN_INT_TWO_MODULE_HASH] = "manifest {}\npattern two = 2; return %two"
 	moduleCache[RETURN_INT_PATTERN_MODULE_HASH] = "manifest {}; return %int"
+
+	RegisterSymbolicGoFunction(toByte, func(ctx *symbolic.Context, i *symbolic.Int) *symbolic.Byte {
+		return symbolic.ANY_BYTE
+	})
 }
 
 func TestTreeWalkEval(t *testing.T) {
@@ -6965,7 +6969,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state := NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 
-			res, err := Eval(code, state, false)
+			res, err := Eval(code, state, true)
 
 			assert.NoError(t, err)
 			assert.Equal(t, String("a"), res)
@@ -6976,7 +6980,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state := NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 
-			res, err := Eval(code, state, false)
+			res, err := Eval(code, state, true)
 
 			assert.NoError(t, err)
 			assert.Equal(t, &StringConcatenation{
@@ -6990,7 +6994,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state := NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 
-			res, err := Eval(code, state, false)
+			res, err := Eval(code, state, true)
 
 			assert.NoError(t, err)
 			assert.Equal(t, &ByteSlice{isDataMutable: false, bytes: []byte{12}}, res)
@@ -6999,7 +7003,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("two bytes-like elements", func(t *testing.T) {
 			code := `concat 0d[12] 0d[34]`
 			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{})
-			res, err := Eval(code, state, false)
+			res, err := Eval(code, state, true)
 
 			assert.NoError(t, err)
 			assert.Equal(t, &BytesConcatenation{
@@ -7011,6 +7015,62 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			}, res)
 		})
 
+		t.Run("bytes-like element followed by a spread element with a single item", func(t *testing.T) {
+			code := `concat 0d[12] ...[0d[34]]`
+			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
+
+			res, err := Eval(code, state, true)
+
+			assert.NoError(t, err)
+			assert.Equal(t, &BytesConcatenation{
+				elements: []BytesLike{
+					&ByteSlice{isDataMutable: false, bytes: []byte{12}},
+					&ByteSlice{isDataMutable: false, bytes: []byte{34}},
+				},
+				totalLen: 2,
+			}, res)
+		})
+
+		t.Run("bytes-like element followed by a spread element with two items", func(t *testing.T) {
+			code := `concat 0d[12] ...[0d[34], 0d[56]]`
+			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
+
+			res, err := Eval(code, state, true)
+
+			assert.NoError(t, err)
+			assert.Equal(t, &BytesConcatenation{
+				elements: []BytesLike{
+					&ByteSlice{isDataMutable: false, bytes: []byte{12}},
+					&ByteSlice{isDataMutable: false, bytes: []byte{34}},
+					&ByteSlice{isDataMutable: false, bytes: []byte{56}},
+				},
+				totalLen: 3,
+			}, res)
+		})
+
+		t.Run("alternation of normal & spread bytes-like elements", func(t *testing.T) {
+			code := `concat 0d[12] ...[0d[34], 0d[56]] 0d[78] ...[0d[91], 0d[23]]`
+			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
+
+			res, err := Eval(code, state, true)
+
+			assert.NoError(t, err)
+			assert.Equal(t, &BytesConcatenation{
+				elements: []BytesLike{
+					&ByteSlice{isDataMutable: false, bytes: []byte{12}},
+					&ByteSlice{isDataMutable: false, bytes: []byte{34}},
+					&ByteSlice{isDataMutable: false, bytes: []byte{56}},
+					&ByteSlice{isDataMutable: false, bytes: []byte{78}},
+					&ByteSlice{isDataMutable: false, bytes: []byte{91}},
+					&ByteSlice{isDataMutable: false, bytes: []byte{23}},
+				},
+				totalLen: 6,
+			}, res)
+		})
+
 		t.Run("modifying an element of the concatenation should not change the concatenation value", func(t *testing.T) {
 			code := `
 				bytes = 0d[12]
@@ -7019,13 +7079,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return c
 			`
 			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
-				"tobyte": WrapGoFunction(func(ctx *Context, i Int) Byte {
-					return Byte(i)
-				}),
+				"tobyte": WrapGoFunction(toByte),
 			})
 			defer state.Ctx.CancelGracefully()
 
-			res, err := Eval(code, state, false)
+			res, err := Eval(code, state, true)
 
 			assert.NoError(t, err)
 			assert.Equal(t, &BytesConcatenation{
@@ -7042,7 +7100,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{})
 			defer state.Ctx.CancelGracefully()
 
-			res, err := Eval(code, state, false)
+			res, err := Eval(code, state, true)
 
 			assert.NoError(t, err)
 			assert.Equal(t, NewTuple([]Serializable{Int(1), String("a")}), res)
@@ -7053,7 +7111,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state := NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 
-			res, err := Eval(code, state, false)
+			res, err := Eval(code, state, true)
 
 			assert.NoError(t, err)
 			assert.Equal(t, "ab", res.(*StringConcatenation).GetOrBuildString())
@@ -7064,18 +7122,18 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state := NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 
-			res, err := Eval(code, state, false)
+			res, err := Eval(code, state, true)
 
 			assert.NoError(t, err)
 			assert.Equal(t, "abc", res.(*StringConcatenation).GetOrBuildString())
 		})
 
-		t.Run("alternation of normal & spread elements", func(t *testing.T) {
+		t.Run("alternation of normal & spread string elements", func(t *testing.T) {
 			code := `concat "a" ...["b", "c"] "d" ...["e", "f"]`
 			state := NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 
-			res, err := Eval(code, state, false)
+			res, err := Eval(code, state, true)
 
 			assert.NoError(t, err)
 			assert.Equal(t, "abcdef", res.(*StringConcatenation).GetOrBuildString())
@@ -12349,4 +12407,8 @@ type testImage struct {
 
 func (img testImage) FilesystemSnapshot() FilesystemSnapshot {
 	return img.snapshot
+}
+
+func toByte(ctx *Context, i Int) Byte {
+	return Byte(i)
 }

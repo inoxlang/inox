@@ -1986,6 +1986,11 @@ func (c *compiler) Compile(node parse.Node) error {
 	case *parse.ConcatenationExpression:
 		spreadElemSet := make([]Bool, len(node.Elements))
 
+		firstElemSymbValue, ok := c.symbolicData.GetMostSpecificNodeValue(node.Elements[0])
+		if !ok {
+			return fmt.Errorf("cannot compile concatenation expression because there is no symbolic information")
+		}
+
 		for i, elemNode := range node.Elements {
 			spreadNode, isSpread := elemNode.(*parse.ElementSpreadElement)
 			spreadElemSet[i] = Bool(isSpread)
@@ -1998,10 +2003,24 @@ func (c *compiler) Compile(node parse.Node) error {
 				return err
 			}
 		}
-		if len(node.Elements) >= (1 << 8) {
+		if len(node.Elements) >= (1 << 16) {
 			return fmt.Errorf("too many elements in concatenation")
 		}
-		c.emit(node, OpConcat, len(node.Elements), c.addConstant(NewWrappedBoolList(spreadElemSet...)))
+
+		var opCode byte
+
+		switch {
+		case symbolic.ImplementsOrIsMultivalueWithAllValuesImplementing[*symbolic.ByteSlice](firstElemSymbValue):
+			opCode = OpConcatBytesLikes
+		case symbolic.ImplementsOrIsMultivalueWithAllValuesImplementing[symbolic.StringLike](firstElemSymbValue):
+			opCode = OpConcatStrLikes
+		case symbolic.ImplementsOrIsMultivalueWithAllValuesImplementing[*symbolic.Tuple](firstElemSymbValue):
+			opCode = OpConcatTuples
+		default:
+			return fmt.Errorf("cannot compile concatenation expression: unsupported type: %s", symbolic.Stringify(firstElemSymbValue))
+		}
+
+		c.emit(node, opCode, len(node.Elements), c.addConstant(NewWrappedBoolList(spreadElemSet...)))
 	case *parse.AssertionStatement:
 		if err := c.Compile(node.Expr); err != nil {
 			return err

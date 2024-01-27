@@ -170,6 +170,20 @@ func NewTupleVariadic(elements ...Serializable) *Tuple {
 	return &Tuple{elements: elements}
 }
 
+func ConcatTuples(tuples ...*Tuple) *Tuple {
+	if len(tuples) == 1 {
+		return tuples[0]
+	}
+
+	elements := make([]Serializable, 0, len(tuples))
+
+	for _, t := range tuples {
+		elements = append(elements, t.elements...)
+	}
+
+	return NewTuple(elements)
+}
+
 // the caller can modify the result
 func (tuple *Tuple) GetOrBuildElements(ctx *Context) []Serializable {
 	return slices.Clone(tuple.elements)

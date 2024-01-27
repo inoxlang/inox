@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -561,6 +562,36 @@ type StringConcatenation struct {
 	elements    []StringLike
 	totalLen    int
 	finalString string // empty by default
+}
+
+func ConcatStringLikes(stringLikes ...StringLike) (StringLike, error) {
+	if len(stringLikes) == 1 {
+		return stringLikes[0], nil
+	}
+
+	totalLen := 0
+	for _, s := range stringLikes {
+		totalLen += s.Len()
+	}
+
+	return &StringConcatenation{
+		elements: slices.Clone(stringLikes),
+		totalLen: totalLen,
+	}, nil
+}
+
+func NewStringConcatenation(elements ...StringLike) *StringConcatenation {
+	if len(elements) < 2 {
+		panic(errors.New("not enough elements"))
+	}
+
+	concatenation := &StringConcatenation{elements: elements}
+
+	for _, e := range elements {
+		concatenation.totalLen += e.Len()
+	}
+
+	return concatenation
 }
 
 func (c *StringConcatenation) GetOrBuildString() string {

@@ -2611,7 +2611,19 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			}
 		}
 
-		return concatValues(state.Global.Ctx, values)
+		switch values[0].(type) {
+		case BytesLike:
+			bytesLikes := utils.MapSlice(values, func(e Value) BytesLike { return e.(BytesLike) })
+			return ConcatBytesLikes(bytesLikes...)
+		case StringLike:
+			strLikes := utils.MapSlice(values, func(e Value) StringLike { return e.(StringLike) })
+			return ConcatStringLikes(strLikes...)
+		case *Tuple:
+			tuples := utils.MapSlice(values, func(e Value) *Tuple { return e.(*Tuple) })
+			return ConcatTuples(tuples...), nil
+		default:
+			return nil, fmt.Errorf("unsupported type")
+		}
 	case *parse.AssertionStatement:
 		data := &AssertionData{
 			assertionStatement: n,

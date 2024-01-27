@@ -539,49 +539,93 @@ func (v *VM) run() {
 
 			v.stack[v.sp-2] = res
 			v.sp--
-		case OpConcat:
-			v.ip += 3
-			numElements := int(v.curInsts[v.ip-2])
+		case OpConcatBytesLikes:
+			v.ip += 4
+			numElements := int(v.curInsts[v.ip-2]) | int(v.curInsts[v.ip-3])<<8
 			spreadElemSetConstantIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
 			spreadElemSet := v.constants[spreadElemSetConstantIndex].(*List).underlyingList.(*BoolList)
 
-			values := make([]Value, numElements)
-			copy(values, v.stack[v.sp-numElements:v.sp])
+			bytesLikes := make([]BytesLike, 0, numElements)
+			ctx := v.global.Ctx
 
-			if spreadElemSet.elements.Any() {
-				index := 0
-				valuesAfterIndex := make([]Value, numElements)
+			for i, v := range v.stack[v.sp-numElements : v.sp] {
+				if !spreadElemSet.BoolAt(i) {
+					bytesLikes = append(bytesLikes, v.(BytesLike))
+					continue
+				}
+				//spread
+				iterable := v.(Iterable)
+				it := iterable.Iterator(ctx, IteratorConfiguration{})
 
-				// TODO: if iterables are all indexable & not shared we can pre allocate a list of the right size
-
-				ctx := v.global.Ctx
-
-				for i := 0; i < numElements; i++ {
-					if !spreadElemSet.BoolAt(i) {
-						index++
-						continue
-					}
-					copiedCount := copy(valuesAfterIndex, values[index+1:]) //save values after current index
-					iterable := values[index].(Iterable)
-					values = values[:index]
-
-					it := iterable.Iterator(ctx, IteratorConfiguration{})
-					for it.Next(ctx) {
-						values = append(values, it.Value(ctx))
-					}
-
-					index = len(values)
-					values = append(values, valuesAfterIndex[:copiedCount]...)
+				for it.Next(ctx) {
+					bytesLikes = append(bytesLikes, it.Value(ctx).(BytesLike))
 				}
 			}
 
 			v.sp -= numElements
-			result, err := concatValues(v.global.Ctx, values)
+			result, err := ConcatBytesLikes(bytesLikes...)
 			if err != nil {
 				v.err = err
 				return
 			}
 			v.stack[v.sp] = result
+			v.sp++
+		case OpConcatStrLikes:
+			v.ip += 4
+			numElements := int(v.curInsts[v.ip-2]) | int(v.curInsts[v.ip-3])<<8
+			spreadElemSetConstantIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
+			spreadElemSet := v.constants[spreadElemSetConstantIndex].(*List).underlyingList.(*BoolList)
+
+			strLikes := make([]StringLike, 0, numElements)
+			ctx := v.global.Ctx
+
+			for i, v := range v.stack[v.sp-numElements : v.sp] {
+				if !spreadElemSet.BoolAt(i) {
+					strLikes = append(strLikes, v.(StringLike))
+					continue
+				}
+				//spread
+				iterable := v.(Iterable)
+				it := iterable.Iterator(ctx, IteratorConfiguration{})
+
+				for it.Next(ctx) {
+					strLikes = append(strLikes, it.Value(ctx).(StringLike))
+				}
+			}
+
+			v.sp -= numElements
+			result, err := ConcatStringLikes(strLikes...)
+			if err != nil {
+				v.err = err
+				return
+			}
+			v.stack[v.sp] = result
+			v.sp++
+		case OpConcatTuples:
+			v.ip += 4
+			numElements := int(v.curInsts[v.ip-2]) | int(v.curInsts[v.ip-3])<<8
+			spreadElemSetConstantIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
+			spreadElemSet := v.constants[spreadElemSetConstantIndex].(*List).underlyingList.(*BoolList)
+
+			tuples := make([]*Tuple, 0, numElements)
+			ctx := v.global.Ctx
+
+			for i, v := range v.stack[v.sp-numElements : v.sp] {
+				if !spreadElemSet.BoolAt(i) {
+					tuples = append(tuples, v.(*Tuple))
+					continue
+				}
+				//spread
+				iterable := v.(Iterable)
+				it := iterable.Iterator(ctx, IteratorConfiguration{})
+
+				for it.Next(ctx) {
+					tuples = append(tuples, it.Value(ctx).(*Tuple))
+				}
+			}
+
+			v.sp -= numElements
+			v.stack[v.sp] = ConcatTuples(tuples...)
 			v.sp++
 		case OpRange:
 			right := v.stack[v.sp-1]

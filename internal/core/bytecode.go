@@ -257,7 +257,9 @@ const (
 	OpGreaterEqual
 	OptStrQueryParamVal
 	OpStrConcat
-	OpConcat
+	OpConcatStrLikes
+	OpConcatBytesLikes
+	OpConcatTuples
 	OpRange
 	OpMemb
 	OpGetBoolField
@@ -409,7 +411,9 @@ var OpcodeNames = [...]string{
 	OpGreaterEqual:                 "OP_GREATER_EQUAL",
 	OpStrConcat:                    "STR_CONCAT",
 	OptStrQueryParamVal:            "STRINGIFY_QPARAM",
-	OpConcat:                       "CONCAT",
+	OpConcatStrLikes:               "CONCAT_STR_LIKES",
+	OpConcatBytesLikes:             "CONCAT_BYTES",
+	OpConcatTuples:                 "CONCAT_TUPLES",
 	OpRange:                        "RANGE",
 	OpMemb:                         "MEMB",
 	OpGetBoolField:                 "GET_BOOL_FIELD",
@@ -559,7 +563,9 @@ var OpcodeOperands = [...][]int{
 	OpGreaterEqual:                 {},
 	OpStrConcat:                    {},
 	OptStrQueryParamVal:            {},
-	OpConcat:                       {1, 2},
+	OpConcatStrLikes:               {2, 2},
+	OpConcatBytesLikes:             {2, 2},
+	OpConcatTuples:                 {2, 2},
 	OpRange:                        {1},
 	OpMemb:                         {2},
 	OpGetBoolField:                 {2, 2},
@@ -710,7 +716,9 @@ var OpcodeConstantIndexes = [...][]bool{
 	OpGreaterEqual:                 {},
 	OpStrConcat:                    {},
 	OptStrQueryParamVal:            {},
-	OpConcat:                       {false, true},
+	OpConcatStrLikes:               {false, true},
+	OpConcatBytesLikes:             {false, true},
+	OpConcatTuples:                 {false, true},
 	OpRange:                        {false},
 	OpMemb:                         {true},
 	OpGetBoolField:                 {false, false},

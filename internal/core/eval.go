@@ -1,7 +1,6 @@
 package core
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -401,82 +400,6 @@ func createBestSuitedList(ctx *Context, values []Serializable, elemType Pattern)
 	//TODO: set constraint
 
 	return WrapUnderlyingList(&ValueList{elements: values})
-}
-
-func concatValues(ctx *Context, values []Value) (Value, error) {
-	if len(values) == 0 {
-		return nil, errors.New("cannot create concatenation with no elements")
-	}
-	switch values[0].(type) {
-	case BytesLike:
-		//TODO: concatenate small sequences together
-
-		elements := make([]BytesLike, len(values))
-		totalLen := 0
-
-		for i, elem := range values {
-			if bytesLike, ok := elem.(BytesLike); !ok {
-				return nil, fmt.Errorf("bytes concatenation: invalid element of type %T", elem)
-			} else {
-				if bytesLike.Mutable() {
-					b := slices.Clone(bytesLike.GetOrBuildBytes().bytes) // TODO: use Copy On Write
-					elements[i] = NewByteSlice(b, false, "")
-				} else {
-					elements[i] = bytesLike
-				}
-				totalLen += bytesLike.Len()
-			}
-		}
-
-		if len(elements) == 1 {
-			return elements[0], nil
-		}
-
-		return &BytesConcatenation{
-			elements: elements,
-			totalLen: totalLen,
-		}, nil
-	case StringLike:
-		//TODO: concatenate small strings together
-
-		elements := make([]StringLike, len(values))
-		totalLen := 0
-
-		for i, elem := range values {
-			if strLike, ok := elem.(StringLike); !ok {
-				return nil, fmt.Errorf("string concatenation: invalid element of type %T", elem)
-			} else {
-				elements[i] = strLike
-				totalLen += strLike.Len()
-			}
-		}
-		if len(elements) == 1 {
-			return elements[0], nil
-		}
-
-		return &StringConcatenation{
-			elements: elements,
-			totalLen: totalLen,
-		}, nil
-	case *Tuple:
-		if len(values) == 1 {
-			return values[0].(*Tuple), nil
-		}
-
-		var tupleElements []Serializable
-
-		for _, elem := range values {
-			if tuple, ok := elem.(*Tuple); !ok {
-				return nil, fmt.Errorf("tuple concatenation: invalid element of type %T", elem)
-			} else {
-				tupleElements = append(tupleElements, tuple.elements...)
-			}
-		}
-
-		return NewTuple(tupleElements), nil
-	default:
-		return nil, errors.New("only string, bytes & tuple concatenations are supported for now")
-	}
 }
 
 func toPattern(val Value) Pattern {

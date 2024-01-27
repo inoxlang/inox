@@ -3,6 +3,7 @@ package core
 import (
 	"errors"
 	"fmt"
+	"slices"
 	"strconv"
 	"sync"
 
@@ -245,6 +246,29 @@ type BytesConcatenation struct {
 	elements   []BytesLike
 	totalLen   int
 	finalBytes []byte // empty by default
+}
+
+func ConcatBytesLikes(bytesLikes ...BytesLike) (BytesLike, error) {
+	//TODO: concatenate small sequences together
+
+	totalLen := 0
+
+	for i, bytesLike := range bytesLikes {
+		if bytesLike.Mutable() {
+			b := slices.Clone(bytesLike.GetOrBuildBytes().bytes) // TODO: use Copy On Write
+			bytesLikes[i] = NewByteSlice(b, false, "")
+		}
+		totalLen += bytesLike.Len()
+	}
+
+	if len(bytesLikes) == 1 {
+		return bytesLikes[0], nil
+	}
+
+	return &BytesConcatenation{
+		elements: slices.Clone(bytesLikes),
+		totalLen: totalLen,
+	}, nil
 }
 
 func (c *BytesConcatenation) GetOrBuildBytes() *ByteSlice {
