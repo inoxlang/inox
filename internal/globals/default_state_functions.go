@@ -98,7 +98,29 @@ func _tostr(ctx *core.Context, arg core.Value) core.StringLike {
 	case core.ResourceName:
 		return core.String(a.ResourceName())
 	default:
-		panic(fmt.Errorf("cannot convert value of type %T to string", a))
+		panic(fmt.Errorf("cannot convert value of type %T to a string-like value", a))
+	}
+}
+
+func _tostring(ctx *core.Context, arg core.Value) core.String {
+	switch a := arg.(type) {
+	case core.Bool:
+		if a {
+			return core.String("true")
+		}
+		return core.String("false")
+	case core.Integral:
+		return core.String(core.Stringify(a, ctx))
+	case core.StringLike:
+		return core.String(a.GetOrBuildString())
+	case *core.ByteSlice:
+		return core.String(a.UnderlyingBytes()) //TODO: panic if invalid characters ?
+	case *core.RuneSlice:
+		return core.String(a.ElementsDoNotModify())
+	case core.ResourceName:
+		return core.String(a.ResourceName())
+	default:
+		panic(fmt.Errorf("cannot convert value of type %T to a string value", a))
 	}
 }
 

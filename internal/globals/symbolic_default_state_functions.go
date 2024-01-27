@@ -137,6 +137,9 @@ func init() {
 		_tostr, func(ctx *symbolic.Context, arg symbolic.Value) symbolic.StringLike {
 			return symbolic.ANY_STR_LIKE
 		},
+		_tostring, func(ctx *symbolic.Context, arg symbolic.Value) *symbolic.String {
+			return symbolic.ANY_STR
+		},
 		_torune, func(ctx *symbolic.Context, arg symbolic.Integral) *symbolic.Rune {
 			return symbolic.ANY_RUNE
 		},

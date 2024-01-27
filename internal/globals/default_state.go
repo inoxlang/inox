@@ -247,6 +247,7 @@ func NewDefaultGlobalState(ctx *core.Context, conf core.DefaultGlobalStateConfig
 
 		// conversion
 		globalnames.TOSTR_FN:     core.ValOf(_tostr),
+		globalnames.TOSTRING_FN:  core.ValOf(_tostring),
 		globalnames.TORUNE_FN:    core.ValOf(_torune),
 		globalnames.TOBYTE_FN:    core.ValOf(_tobyte),
 		globalnames.TOFLOAT_FN:   core.ValOf(_tofloat),

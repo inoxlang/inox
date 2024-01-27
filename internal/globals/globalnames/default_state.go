@@ -65,6 +65,7 @@ const (
 
 	// conversion
 	TOSTR_FN     = "tostr"
+	TOSTRING_FN  = "tostring"
 	TORUNE_FN    = "torune"
 	TOBYTE_FN    = "tobyte"
 	TOFLOAT_FN   = "tofloat"
