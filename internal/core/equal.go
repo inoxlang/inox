@@ -1758,7 +1758,7 @@ func (c *StringConcatenation) Equal(ctx *Context, other Value, alreadyCompared m
 		i := 0
 		for _, elem := range c.elements {
 			substring := val[i : i+elem.Len()]
-			if !elem.Equal(ctx, String(substring), alreadyCompared, depth+1) {
+			if !elem.Equal(ctx, String(substring), depth+1) {
 				return false
 			}
 			i += elem.Len()
@@ -1768,7 +1768,7 @@ func (c *StringConcatenation) Equal(ctx *Context, other Value, alreadyCompared m
 		i := 0
 		for _, elem := range c.elements {
 			substring := s[i : i+elem.Len()]
-			if !elem.Equal(ctx, String(substring), alreadyCompared, depth+1) {
+			if !elem.Equal(ctx, String(substring), depth+1) {
 				return false
 			}
 			i += elem.Len()

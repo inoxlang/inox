@@ -14,6 +14,12 @@ import (
 
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/utils"
+)
+
+const (
+	MIN_LAZY_STR_CONCATENATION_SIZE                 = 50 //this constant can change in the future, it's a starting point.
+	MAX_SMALL_STRING_SIZE_IN_LAZY_STR_CONCATENATION = 30 //this constant can change in the future, it's a starting point.
 )
 
 var (
@@ -36,6 +42,7 @@ type WrappedString interface {
 }
 
 // A StringLike represents an abstract immutable string, it should behave exactly like a regular Str and have the same pseudo properties.
+// A StringLike should never perform internal mutation if IsMutable or GetOrBuildString is called.
 type StringLike interface {
 	Serializable
 	Sequence
@@ -105,6 +112,7 @@ func (String) SetProp(ctx *Context, name string, value Value) error {
 func (s String) ByteLen() int {
 	return len(s)
 }
+
 func (s String) RuneCount() int {
 	return utf8.RuneCountInString(string(s))
 }
@@ -556,12 +564,13 @@ func (i Identifier) UnderlyingString() string {
 	return string(i)
 }
 
-// StringConcatenation is a lazy concatenation of values that can form a string, StringConcatenation implements StringLike and is
-// therefore immutable.
+// StringConcatenation is a lazy concatenation of string-like values that can form a string, it implements StringLike and is therefore
+// immutable from the POV of Inox code. StringConcatenation can be considered truly immutable once the concatenation has been performed.
+// This can be forced by calling the GetOrBuildString method.
 type StringConcatenation struct {
-	elements    []StringLike
+	elements    []stringConcatElem
 	totalLen    int
-	finalString string // empty by default
+	finalString string // not set by default
 }
 
 func ConcatStringLikes(stringLikes ...StringLike) (StringLike, error) {
@@ -570,12 +579,65 @@ func ConcatStringLikes(stringLikes ...StringLike) (StringLike, error) {
 	}
 
 	totalLen := 0
+
+	var elements []stringConcatElem
+
+	//used for concatenating consecutive short strings
+	var eagerConcatenation strings.Builder
+
 	for _, s := range stringLikes {
-		totalLen += s.Len()
+		length := s.Len()
+		if length == 0 {
+			continue
+		}
+
+		totalLen += length
+
+		switch s := s.(type) {
+		case String:
+			if len(s) > MAX_SMALL_STRING_SIZE_IN_LAZY_STR_CONCATENATION {
+				elements = append(elements, stringConcatElem{string: string(s)})
+				continue
+			}
+			eagerConcatenation.WriteString(string(s))
+		case *StringConcatenation:
+			if eagerConcatenation.Len() > 0 {
+				//Add the concatenation of short consecutive strings.
+				elements = append(elements, stringConcatElem{string: eagerConcatenation.String()})
+				eagerConcatenation.Reset()
+			}
+			elements = append(elements, stringConcatElem{concatenation: s})
+		default:
+			str := s.GetOrBuildString()
+			elements = append(elements, stringConcatElem{string: str})
+			if len(str) > MAX_SMALL_STRING_SIZE_IN_LAZY_STR_CONCATENATION {
+				elements = append(elements, stringConcatElem{string: str})
+				continue
+			}
+			eagerConcatenation.WriteString(str)
+		}
+	}
+
+	if eagerConcatenation.Len() > 0 {
+		//Add the concatenation of short consecutive strings.
+		elements = append(elements, stringConcatElem{string: eagerConcatenation.String()})
+	}
+
+	//If the total length is small, concatenate now and return a String.
+	if totalLen < MIN_LAZY_STR_CONCATENATION_SIZE {
+		var builder strings.Builder
+		for _, elem := range elements {
+			if elem.concatenation != nil {
+				builder.WriteString(elem.concatenation.GetOrBuildString())
+			} else {
+				builder.WriteString(elem.string)
+			}
+		}
+		return String(builder.String()), nil
 	}
 
 	return &StringConcatenation{
-		elements: slices.Clone(stringLikes),
+		elements: slices.Clone(elements),
 		totalLen: totalLen,
 	}, nil
 }
@@ -585,7 +647,11 @@ func NewStringConcatenation(elements ...StringLike) *StringConcatenation {
 		panic(errors.New("not enough elements"))
 	}
 
-	concatenation := &StringConcatenation{elements: elements}
+	concatenation := &StringConcatenation{
+		elements: utils.MapSlice(elements, func(e StringLike) stringConcatElem {
+			return stringConcatElem{string: e.GetOrBuildString()}
+		}),
+	}
 
 	for _, e := range elements {
 		concatenation.totalLen += e.Len()
@@ -694,4 +760,51 @@ func (c *StringConcatenation) HasSuffix(ctx *Context, prefix StringLike) Bool {
 	//TODO: make the function stoppable for large strings
 
 	return String(c.GetOrBuildString()).HasSuffix(ctx, prefix)
+}
+
+type stringConcatElem struct {
+	concatenation *StringConcatenation
+	string        string //not set if .concatenation is not nil
+}
+
+func (e stringConcatElem) Len() int {
+	if e.concatenation != nil {
+		return e.concatenation.Len()
+	}
+	return len(e.string)
+}
+
+func (e stringConcatElem) GetOrBuildString() string {
+	if e.concatenation != nil {
+		return e.concatenation.GetOrBuildString()
+	}
+	return e.string
+}
+
+func (e stringConcatElem) Equal(ctx *Context, s String, depth int) bool {
+	if e.concatenation != nil {
+		return e.concatenation.Equal(ctx, s, nil, depth)
+	}
+	return e.string == string(s)
+}
+
+func (e stringConcatElem) At(ctx *Context, i int) Value {
+	if e.concatenation != nil {
+		return e.concatenation.At(ctx, i)
+	}
+	return Byte(e.string[i])
+}
+
+func (e stringConcatElem) ByteLen() int {
+	if e.concatenation != nil {
+		return e.concatenation.ByteLen()
+	}
+	return len(e.string)
+}
+
+func (e stringConcatElem) RuneCount() int {
+	if e.concatenation != nil {
+		return e.concatenation.ByteLen()
+	}
+	return String(e.string).RuneCount()
 }

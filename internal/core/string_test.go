@@ -46,29 +46,21 @@ func TestRuneSlice(t *testing.T) {
 
 func TestStringConcatenation(t *testing.T) {
 	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	defer ctx.CancelGracefully()
 
 	t.Run("At", func(t *testing.T) {
-		concatenation := &StringConcatenation{
-			elements: []StringLike{String("a"), String("b")},
-			totalLen: 2,
-		}
+		concatenation := NewStringConcatenation(String("a"), String("b"))
 
 		assert.Equal(t, Byte('a'), concatenation.At(ctx, 0))
 		assert.Equal(t, Byte('b'), concatenation.At(ctx, 1))
 
-		concatenation = &StringConcatenation{
-			elements: []StringLike{String("ab"), String("c")},
-			totalLen: 2,
-		}
+		concatenation = NewStringConcatenation(String("ab"), String("c"))
 
 		assert.Equal(t, Byte('a'), concatenation.At(ctx, 0))
 		assert.Equal(t, Byte('b'), concatenation.At(ctx, 1))
 		assert.Equal(t, Byte('c'), concatenation.At(ctx, 2))
 
-		concatenation = &StringConcatenation{
-			elements: []StringLike{String("ab"), String("cd")},
-			totalLen: 2,
-		}
+		concatenation = NewStringConcatenation(String("ab"), String("cd"))
 
 		assert.Equal(t, Byte('a'), concatenation.At(ctx, 0))
 		assert.Equal(t, Byte('b'), concatenation.At(ctx, 1))
@@ -76,4 +68,20 @@ func TestStringConcatenation(t *testing.T) {
 		assert.Equal(t, Byte('d'), concatenation.At(ctx, 3))
 	})
 
+	t.Run("Len & ByteLen", func(t *testing.T) {
+		concatenation := NewStringConcatenation(String("a"), String("b"))
+
+		assert.Equal(t, 2, concatenation.Len())
+		assert.Equal(t, 2, concatenation.ByteLen())
+
+		concatenation = NewStringConcatenation(String("ab"), String("c"))
+
+		assert.Equal(t, 3, concatenation.Len())
+		assert.Equal(t, 3, concatenation.ByteLen())
+
+		concatenation = NewStringConcatenation(String("ab"), String("cd"))
+
+		assert.Equal(t, 4, concatenation.Len())
+		assert.Equal(t, 4, concatenation.ByteLen())
+	})
 }

@@ -6975,7 +6975,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			assert.Equal(t, String("a"), res)
 		})
 
-		t.Run("two string-like elements", func(t *testing.T) {
+		t.Run("two short string-like elements", func(t *testing.T) {
 			code := `concat "a" "b"`
 			state := NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
@@ -6983,10 +6983,19 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			res, err := Eval(code, state, true)
 
 			assert.NoError(t, err)
-			assert.Equal(t, &StringConcatenation{
-				elements: []StringLike{String("a"), String("b")},
-				totalLen: 2,
-			}, res)
+			assert.Equal(t, String("ab"), res)
+		})
+
+		t.Run("two long string-like elements", func(t *testing.T) {
+			oneString := String(strings.Repeat("b", 100))
+			code := strings.ReplaceAll(`concat "b" "b"`, `b`, string(oneString))
+			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
+
+			res, err := Eval(code, state, true)
+
+			assert.NoError(t, err)
+			assert.Equal(t, NewStringConcatenation(oneString, oneString), res)
 		})
 
 		t.Run("single byteslice element", func(t *testing.T) {
@@ -7114,7 +7123,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			res, err := Eval(code, state, true)
 
 			assert.NoError(t, err)
-			assert.Equal(t, "ab", res.(*StringConcatenation).GetOrBuildString())
+			assert.Equal(t, "ab", res.(StringLike).GetOrBuildString())
 		})
 
 		t.Run("string element followed by a spread element with two items", func(t *testing.T) {
@@ -7125,7 +7134,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			res, err := Eval(code, state, true)
 
 			assert.NoError(t, err)
-			assert.Equal(t, "abc", res.(*StringConcatenation).GetOrBuildString())
+			assert.Equal(t, "abc", res.(StringLike).GetOrBuildString())
 		})
 
 		t.Run("alternation of normal & spread string elements", func(t *testing.T) {
@@ -7136,7 +7145,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			res, err := Eval(code, state, true)
 
 			assert.NoError(t, err)
-			assert.Equal(t, "abcdef", res.(*StringConcatenation).GetOrBuildString())
+			assert.Equal(t, "abcdef", res.(StringLike).GetOrBuildString())
 		})
 	})
 

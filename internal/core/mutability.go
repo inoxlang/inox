@@ -485,6 +485,9 @@ func (e TreedataHiearchyEntry) IsMutable() bool {
 }
 
 func (c *StringConcatenation) IsMutable() bool {
+	//dirty hack: perform the concatenation now so that the *StringConcatenation
+	//will never update any field in the future.
+	c.GetOrBuildString()
 	return false
 }
 
