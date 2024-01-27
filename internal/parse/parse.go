@@ -1336,51 +1336,7 @@ search_for_glob_wildcard:
 		}
 
 		if containNamedSegments { //named segment path pattern
-
-			for j := 0; j < len(slices); j++ {
-				_, isNamedSegment := slices[j].(*NamedPathSegment)
-
-				if isNamedSegment {
-
-					prev := slices[j-1].(*PathPatternSlice).Value
-					if prev[int32(len(prev))-1] != '/' {
-
-						base.Err = &ParsingError{UnspecifiedParsingError, INVALID_PATH_PATT_NAMED_SEGMENTS}
-
-						return &NamedSegmentPathPatternLiteral{
-							NodeBase: base,
-							Slices:   slices,
-						}
-					}
-					if j < len(slices)-1 {
-						next := slices[j+1].(*PathPatternSlice).Value
-
-						if next[0] != '/' {
-							if isQuoted {
-								base.Err = &ParsingError{UnspecifiedParsingError, QUOTED_NAMED_SEGMENT_PATH_PATTERNS_ARE_NOT_SUPPORTED_YET}
-							} else {
-								base.Err = &ParsingError{UnspecifiedParsingError, INVALID_PATH_PATT_NAMED_SEGMENTS}
-							}
-
-							return &NamedSegmentPathPatternLiteral{
-								NodeBase: base,
-								Slices:   slices,
-							}
-						}
-					}
-				}
-			}
-
-			if isQuoted {
-				base.Err = &ParsingError{UnspecifiedParsingError, QUOTED_NAMED_SEGMENT_PATH_PATTERNS_ARE_NOT_SUPPORTED_YET}
-			}
-
-			return &NamedSegmentPathPatternLiteral{
-				NodeBase:    base,
-				Slices:      slices,
-				Raw:         raw,
-				StringValue: "%" + value,
-			}
+			return p.newNamedSegmentPathPatternLiteral(base, isQuoted, slices, raw, value)
 		} else {
 
 			if isQuoted {
@@ -1396,7 +1352,6 @@ search_for_glob_wildcard:
 	}
 
 	for _, e := range slices {
-
 		switch e.(type) {
 		case *NamedPathSegment:
 			if base.Err == nil {
@@ -1439,6 +1394,53 @@ search_for_glob_wildcard:
 		Value:    value,
 	}
 
+}
+
+func (p *parser) newNamedSegmentPathPatternLiteral(base NodeBase, isQuoted bool, slices []Node, raw, value string) *NamedSegmentPathPatternLiteral {
+	for j := 0; j < len(slices); j++ {
+		_, isNamedSegment := slices[j].(*NamedPathSegment)
+
+		if isNamedSegment {
+
+			prev := slices[j-1].(*PathPatternSlice).Value
+			if prev[int32(len(prev))-1] != '/' {
+
+				base.Err = &ParsingError{UnspecifiedParsingError, INVALID_PATH_PATT_NAMED_SEGMENTS}
+
+				return &NamedSegmentPathPatternLiteral{
+					NodeBase: base,
+					Slices:   slices,
+				}
+			}
+			if j < len(slices)-1 {
+				next := slices[j+1].(*PathPatternSlice).Value
+
+				if next[0] != '/' {
+					if isQuoted {
+						base.Err = &ParsingError{UnspecifiedParsingError, QUOTED_NAMED_SEGMENT_PATH_PATTERNS_ARE_NOT_SUPPORTED_YET}
+					} else {
+						base.Err = &ParsingError{UnspecifiedParsingError, INVALID_PATH_PATT_NAMED_SEGMENTS}
+					}
+
+					return &NamedSegmentPathPatternLiteral{
+						NodeBase: base,
+						Slices:   slices,
+					}
+				}
+			}
+		}
+	}
+
+	if isQuoted {
+		base.Err = &ParsingError{UnspecifiedParsingError, QUOTED_NAMED_SEGMENT_PATH_PATTERNS_ARE_NOT_SUPPORTED_YET}
+	}
+
+	return &NamedSegmentPathPatternLiteral{
+		NodeBase:    base,
+		Slices:      slices,
+		Raw:         raw,
+		StringValue: "%" + value,
+	}
 }
 
 func CheckHost(u string) *ParsingError {
@@ -4197,7 +4199,7 @@ func (p *parser) parseStringTemplateLiteralOrMultilineStringLiteral(pattern Node
 
 			var interpParsingErr *ParsingError
 			var typ string //typename or typename.method followed by ':'
-			var expr Node
+			var expr Node  //expression inside the interpolation
 
 			interpolation := p.s[interpolationStart:interpolationExclEnd]
 
@@ -4209,43 +4211,13 @@ func (p *parser) parseStringTemplateLiteralOrMultilineStringLiteral(pattern Node
 			}
 
 			if interpParsingErr == nil {
-				if strings.TrimSpace(string(interpolation)) == "" {
+				switch {
+				case strings.TrimSpace(string(interpolation)) == "": //empty
 					interpParsingErr = &ParsingError{UnspecifiedParsingError, INVALID_STRING_INTERPOLATION_SHOULD_NOT_BE_EMPTY}
-				} else if pattern != nil && !IsIdentChar(interpolation[0]) {
+				case pattern != nil && !IsIdentChar(interpolation[0]): //not starting with a type name
 					interpParsingErr = &ParsingError{UnspecifiedParsingError, INVALID_STRING_INTERPOLATION_SHOULD_START_WITH_A_NAME}
-				} else {
-
-					if pattern != nil { //typed interpolation
-						i := int32(1)
-						for ; i < len32(interpolation) && (interpolation[i] == '.' || IsIdentChar(interpolation[i])); i++ {
-						}
-
-						typ = string(interpolation[:i+1])
-
-						if i >= len32(interpolation) || interpolation[i] != ':' || i >= len32(interpolation)-1 {
-							interpParsingErr = &ParsingError{UnspecifiedParsingError, NAME_IN_STR_INTERP_SHOULD_BE_FOLLOWED_BY_COLON_AND_EXPR}
-						} else {
-							i++
-
-							exprStart := i + interpolationStart
-
-							e, ok := ParseExpression(string(interpolation[i:]))
-							if !ok {
-								interpParsingErr = &ParsingError{UnspecifiedParsingError, INVALID_STR_INTERP}
-							} else {
-								expr = e
-								shiftNodeSpans(expr, exprStart)
-							}
-						}
-					} else { //untyped interpolation
-						e, ok := ParseExpression(string(interpolation))
-						if !ok {
-							interpParsingErr = &ParsingError{UnspecifiedParsingError, INVALID_STR_INTERP}
-						} else {
-							expr = e
-							shiftNodeSpans(expr, interpolationStart)
-						}
-					}
+				default:
+					typ, expr, interpParsingErr = p.getStrTemplateInterTypeAndExpr(interpolation, interpolationStart, pattern)
 				}
 			}
 
@@ -4351,6 +4323,44 @@ end:
 		},
 		Pattern: pattern,
 		Slices:  slices,
+	}
+}
+
+func (p *parser) getStrTemplateInterTypeAndExpr(interpolation []rune, interpolationStart int32, pattern Node) (typename string, expr Node, err *ParsingError) {
+	if pattern != nil { //typed interpolation
+		i := int32(1)
+		for ; i < len32(interpolation) && (interpolation[i] == '.' || IsIdentChar(interpolation[i])); i++ {
+		}
+
+		typename = string(interpolation[:i+1])
+
+		if i >= len32(interpolation) || interpolation[i] != ':' || i >= len32(interpolation)-1 {
+			err = &ParsingError{UnspecifiedParsingError, NAME_IN_STR_INTERP_SHOULD_BE_FOLLOWED_BY_COLON_AND_EXPR}
+			return
+		} else {
+			i++
+			exprStart := i + interpolationStart
+
+			e, ok := ParseExpression(string(interpolation[i:]))
+			if !ok {
+				err = &ParsingError{UnspecifiedParsingError, INVALID_STR_INTERP}
+				return
+			} else {
+				shiftNodeSpans(e, exprStart)
+				expr = e
+				return
+			}
+		}
+	} else { //untyped interpolation
+		e, ok := ParseExpression(string(interpolation))
+		if !ok {
+			err = &ParsingError{UnspecifiedParsingError, INVALID_STR_INTERP}
+			return
+		} else {
+			shiftNodeSpans(e, interpolationStart)
+			expr = e
+			return
+		}
 	}
 }
 
