@@ -32,7 +32,7 @@ func TestDatabaseIL(t *testing.T) {
 func TestGetValueAt(t *testing.T) {
 
 	t.Run("collection element retrieval", func(t *testing.T) {
-		collection := &_testCollection{List: NewList(ANY_STR)}
+		collection := &_testCollection{List: NewList(ANY_STRING)}
 		userPattern := &TypePattern{val: collection}
 
 		db := NewDatabaseIL(DatabaseILParams{
@@ -44,7 +44,7 @@ func TestGetValueAt(t *testing.T) {
 		if !assert.NoError(t, err) {
 			return
 		}
-		assert.Equal(t, ANY_STR, elem)
+		assert.Equal(t, ANY_STRING, elem)
 
 		//the segment value following the collection should always be considered as an element key
 		propName := "collection_prop"
@@ -58,7 +58,7 @@ func TestGetValueAt(t *testing.T) {
 		if !assert.NoError(t, err) {
 			return
 		}
-		assert.Equal(t, ANY_STR, elem)
+		assert.Equal(t, ANY_STRING, elem)
 	})
 
 	t.Run("indexable's element retrieval", func(t *testing.T) {
@@ -77,7 +77,7 @@ func TestGetValueAt(t *testing.T) {
 			if !assert.NoError(t, err) {
 				return
 			}
-			assert.Equal(t, ANY_STR, elem)
+			assert.Equal(t, ANY_STRING, elem)
 		})
 
 		t.Run("known length", func(t *testing.T) {
@@ -95,7 +95,7 @@ func TestGetValueAt(t *testing.T) {
 			if !assert.NoError(t, err) {
 				return
 			}
-			assert.Equal(t, ANY_STR, elem)
+			assert.Equal(t, ANY_STRING, elem)
 
 			//index out of range (negative)
 			elem, err = db.getValueAt("/user/list/-1")
@@ -118,7 +118,7 @@ func TestGetValueAt(t *testing.T) {
 
 		t.Run("base case", func(t *testing.T) {
 			userPattern := NewExactObjectPattern(map[string]Pattern{
-				"name":      &TypePattern{val: ANY_STR},
+				"name":      &TypePattern{val: ANY_STRING},
 				"my_method": &TypePattern{val: NewInoxFunction(nil, nil, ANY)},
 			}, nil)
 
@@ -131,12 +131,12 @@ func TestGetValueAt(t *testing.T) {
 			if !assert.NoError(t, err) {
 				return
 			}
-			assert.Equal(t, ANY_STR, val)
+			assert.Equal(t, ANY_STRING, val)
 		})
 
 		t.Run("retrieval of methods is not allowed", func(t *testing.T) {
 			userPattern := NewExactObjectPattern(map[string]Pattern{
-				"name":      &TypePattern{val: ANY_STR},
+				"name":      &TypePattern{val: ANY_STRING},
 				"my_method": &TypePattern{val: NewInoxFunction(nil, nil, ANY)},
 			}, nil)
 

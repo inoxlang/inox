@@ -25,7 +25,7 @@ func init() {
 			return &symbolic.Transaction{}
 		},
 		_execute, func(ctx *symbolic.Context, args ...symbolic.Value) (*symbolic.String, *symbolic.Error) {
-			return symbolic.ANY_STR, nil
+			return symbolic.ANY_STRING, nil
 		},
 		_sha1, func(ctx *symbolic.Context, arg symbolic.Readable) *symbolic.ByteSlice {
 			return &symbolic.ByteSlice{}
@@ -119,7 +119,7 @@ func init() {
 		},
 
 		encodeBase64, func(ctx *symbolic.Context, arg symbolic.Readable) *symbolic.String {
-			return symbolic.ANY_STR
+			return symbolic.ANY_STRING
 		},
 
 		decodeBase64, func(ctx *symbolic.Context, arg symbolic.Readable) (*symbolic.ByteSlice, *symbolic.Error) {
@@ -127,7 +127,7 @@ func init() {
 		},
 
 		encodeHex, func(ctx *symbolic.Context, arg symbolic.Readable) *symbolic.String {
-			return symbolic.ANY_STR
+			return symbolic.ANY_STRING
 		},
 
 		decodeHex, func(ctx *symbolic.Context, arg symbolic.Readable) (*symbolic.ByteSlice, *symbolic.Error) {
@@ -138,7 +138,7 @@ func init() {
 			return symbolic.ANY_STR_LIKE
 		},
 		_tostring, func(ctx *symbolic.Context, arg symbolic.Value) *symbolic.String {
-			return symbolic.ANY_STR
+			return symbolic.ANY_STRING
 		},
 		_torune, func(ctx *symbolic.Context, arg symbolic.Integral) *symbolic.Rune {
 			return symbolic.ANY_RUNE
@@ -174,10 +174,10 @@ func init() {
 		//
 
 		core.ToJSON, func(ctx *symbolic.Context, arg symbolic.Value) *symbolic.String {
-			return symbolic.ANY_STR
+			return symbolic.ANY_STRING
 		},
 		core.ToPrettyJSON, func(ctx *symbolic.Context, arg symbolic.Value) *symbolic.String {
-			return symbolic.ANY_STR
+			return symbolic.ANY_STRING
 		},
 
 		_parse, func(ctx *symbolic.Context, arg symbolic.Readable, p symbolic.Pattern) (symbolic.Value, *symbolic.Error) {
@@ -315,7 +315,7 @@ func init() {
 			if _, ok := v.(symbolic.IProps); !ok {
 				ctx.AddSymbolicGoFunctionError("value cannot have properties")
 			}
-			return symbolic.NewListOf(symbolic.ANY_STR)
+			return symbolic.NewListOf(symbolic.ANY_STRING)
 		},
 		_get, func(ctx *symbolic.Context, url *symbolic.URL) (symbolic.Serializable, *symbolic.Error) {
 			v, err := symbolic.GetValueAtURL(url, ctx.EvalState())

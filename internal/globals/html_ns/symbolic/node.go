@@ -39,7 +39,7 @@ func (n *HTMLNode) Prop(name string) symbolic.Value {
 	case "first-child":
 		return NewHTMLNode()
 	case "data":
-		return symbolic.ANY_STR
+		return symbolic.ANY_STRING
 	default:
 		method, ok := n.GetGoMethod(name)
 		if !ok {

@@ -36,7 +36,7 @@ func (s *Status) Prop(name string) symbolic.Value {
 	case "code":
 		return ANY_STATUS_CODE
 	case "full-text":
-		return symbolic.ANY_STR
+		return symbolic.ANY_STRING
 	default:
 		return symbolic.GetGoMethodOrPanic(name, s)
 	}

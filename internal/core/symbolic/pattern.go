@@ -457,7 +457,7 @@ func (p *PathPattern) IteratorElementValue() Value {
 }
 
 func (p *PathPattern) underlyingString() *String {
-	return ANY_STR
+	return ANY_STRING
 }
 
 func (p *PathPattern) WidestOfType() Value {
@@ -616,7 +616,7 @@ func (p *URLPattern) IteratorElementValue() Value {
 }
 
 func (p *URLPattern) underlyingString() *String {
-	return ANY_STR
+	return ANY_STRING
 }
 
 func (p *URLPattern) WidestOfType() Value {
@@ -801,7 +801,7 @@ func (p *HostPattern) IteratorElementValue() Value {
 }
 
 func (p *HostPattern) underlyingString() *String {
-	return ANY_STR
+	return ANY_STRING
 }
 
 func (p *HostPattern) WidestOfType() Value {
@@ -1079,7 +1079,7 @@ func (p *RegexPattern) IteratorElementKey() Value {
 }
 
 func (p *RegexPattern) IteratorElementValue() Value {
-	return ANY_STR
+	return ANY_STRING
 }
 
 func (p *RegexPattern) WidestOfType() Value {

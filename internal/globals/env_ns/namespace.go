@@ -23,7 +23,7 @@ func init() {
 			return symbolic.ANY_BOOL, nil
 		},
 		envGet, func(ctx *symbolic.Context, arg *symbolic.String) (*symbolic.String, *symbolic.Error) {
-			return symbolic.ANY_STR, nil
+			return symbolic.ANY_STRING, nil
 		},
 		envSet, func(ctx *symbolic.Context, name *symbolic.String, val *symbolic.String) *symbolic.Error {
 			return nil

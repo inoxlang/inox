@@ -61,7 +61,7 @@ func (p *AnyStringPattern) MatchGroups(v Value) (bool, map[string]Value) {
 }
 
 func (p *AnyStringPattern) SymbolicValue() Value {
-	return ANY_STR
+	return ANY_STRING
 }
 
 func (p *AnyStringPattern) StringPattern() (StringPattern, bool) {
@@ -257,7 +257,7 @@ func (p *LengthCheckingStringPattern) MatchGroups(v Value) (bool, map[string]Val
 
 func (p *LengthCheckingStringPattern) SymbolicValue() Value {
 	if p.minLength == -1 {
-		return ANY_STR
+		return ANY_STRING
 	}
 	return NewStringWithLengthRange(p.minLength, p.maxLength)
 }
@@ -364,7 +364,7 @@ func (p *SequenceStringPattern) IteratorElementKey() Value {
 }
 
 func (p *SequenceStringPattern) IteratorElementValue() Value {
-	return ANY_STR
+	return ANY_STRING
 }
 
 func (p *SequenceStringPattern) WidestOfType() Value {
@@ -405,7 +405,7 @@ func (p *ParserBasedPattern) TestValue(v Value, state RecTestCallState) bool {
 }
 
 func (p *ParserBasedPattern) SymbolicValue() Value {
-	return ANY_STR
+	return ANY_STRING
 }
 
 func (p *ParserBasedPattern) StringPattern() (StringPattern, bool) {
@@ -422,7 +422,7 @@ func (p *ParserBasedPattern) IteratorElementKey() Value {
 }
 
 func (p *ParserBasedPattern) IteratorElementValue() Value {
-	return ANY_STR
+	return ANY_STRING
 }
 
 func (p *ParserBasedPattern) WidestOfType() Value {

@@ -96,7 +96,7 @@ func TestSetPattern(t *testing.T) {
 			set := NewSetWithPattern(objPattern, common.NewURLUniqueness())
 			set = set.WithURL(symbolic.NewUrl("ldb://main/users")).(*Set)
 
-			elem, _ := set.Get(nil, symbolic.ANY_STR)
+			elem, _ := set.Get(nil, symbolic.ANY_STRING)
 			if !assert.NotNil(t, elem) {
 				return
 			}
@@ -116,7 +116,7 @@ func TestSetPattern(t *testing.T) {
 			set := NewSetWithPattern(elementPattern, common.NewURLUniqueness())
 			set = set.WithURL(symbolic.NewUrl("ldb://main/users")).(*Set)
 
-			elem, _ := set.Get(nil, symbolic.ANY_STR)
+			elem, _ := set.Get(nil, symbolic.ANY_STRING)
 			if !assert.NotNil(t, elem) {
 				return
 			}

@@ -370,9 +370,9 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 	case *parse.RegularExpressionLiteral:
 		return NewRegexPattern(n.Value), nil
 	case *parse.PathSlice, *parse.PathPatternSlice:
-		return ANY_STR, nil
+		return ANY_STRING, nil
 	case *parse.URLQueryParameterValueSlice:
-		return ANY_STR, nil
+		return ANY_STRING, nil
 	case *parse.FlagLiteral:
 		if _, hasVar := state.get(n.Name); hasVar {
 			state.addWarning(makeSymbolicEvalWarning(node, state, THIS_VAL_IS_AN_OPT_LIT_DID_YOU_FORGET_A_SPACE))
@@ -1029,7 +1029,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 	case *parse.StringTemplateLiteral:
 		return evalStringTemplateLiteral(n, state, options)
 	case *parse.CssSelectorExpression:
-		return ANY_STR, nil
+		return ANY_STRING, nil
 	case *parse.XMLExpression:
 		return evalXMLExpression(n, state, options)
 	case *parse.XMLElement:
@@ -1050,7 +1050,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 
 		return val, err
 	case *parse.XMLText:
-		return ANY_STR, nil
+		return ANY_STRING, nil
 	case *parse.ExtendStatement:
 		return evalExtendStatement(n, state, options)
 	case *parse.StructDefinition:
@@ -5162,7 +5162,7 @@ func evalStringTemplateLiteral(n *parse.StringTemplateLiteral, state *State, opt
 	}
 
 	if n.Pattern == nil {
-		return ANY_STR, nil
+		return ANY_STRING, nil
 	}
 
 	return &CheckedString{}, nil
@@ -5252,7 +5252,7 @@ func evalXMLElement(n *parse.XMLElement, state *State, options evalOptions) (Val
 		for _, attr := range n.Opening.Attributes {
 			name := attr.Name.(*parse.IdentifierLiteral).Name
 			if attr.Value == nil {
-				attrs[name] = ANY_STR
+				attrs[name] = ANY_STRING
 				continue
 			}
 			val, err := symbolicEval(attr.Value, state)

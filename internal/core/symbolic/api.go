@@ -63,7 +63,7 @@ func (api *ApiIL) GetGoMethod(name string) (*GoFunction, bool) {
 func (api *ApiIL) Prop(name string) Value {
 	switch name {
 	case "version":
-		return ANY_STR
+		return ANY_STRING
 	case "schema":
 		return api.schema
 	case "data":

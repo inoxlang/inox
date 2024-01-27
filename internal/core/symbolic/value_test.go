@@ -197,7 +197,7 @@ func TestSymbolicQuantityRange(t *testing.T) {
 		assertTest(t, anyQtyRange, anyQtyRange)
 		assertTest(t, anyQtyRange, &QuantityRange{element: ANY_SERIALIZABLE})
 		assertTest(t, anyQtyRange, NewQuantityRange(ANY_BYTECOUNT))
-		assertTestFalse(t, anyQtyRange, ANY_STR)
+		assertTestFalse(t, anyQtyRange, ANY_STRING)
 		assertTestFalse(t, anyQtyRange, ANY_INT)
 
 		qtyRange := NewQuantityRange(ANY_BYTECOUNT)
@@ -205,7 +205,7 @@ func TestSymbolicQuantityRange(t *testing.T) {
 		assertTest(t, qtyRange, qtyRange)
 		assertTest(t, qtyRange, NewQuantityRange(ANY_BYTECOUNT))
 		assertTestFalse(t, qtyRange, &QuantityRange{element: ANY_SERIALIZABLE})
-		assertTestFalse(t, qtyRange, ANY_STR)
+		assertTestFalse(t, qtyRange, ANY_STRING)
 		assertTestFalse(t, qtyRange, ANY_INT)
 	})
 
@@ -225,7 +225,7 @@ func TestSymbolicIntRange(t *testing.T) {
 		assertTest(t, anyIntRange, intRange1_2)
 		assertTest(t, anyIntRange, intRange1_2UnsupportedStep)
 		assertTest(t, anyIntRange, intRangeExclusiveEnd1_2)
-		assertTestFalse(t, anyIntRange, ANY_STR)
+		assertTestFalse(t, anyIntRange, ANY_STRING)
 		assertTestFalse(t, anyIntRange, ANY_INT)
 
 		//check intRange1_2
@@ -288,7 +288,7 @@ func TestSymbolicFloatRange(t *testing.T) {
 		assertTest(t, anyFloatRange, &FloatRange{})
 		assertTest(t, anyFloatRange, floatRange1_2)
 		assertTest(t, anyFloatRange, floatRangeExclusiveEnd1_2)
-		assertTestFalse(t, anyFloatRange, ANY_STR)
+		assertTestFalse(t, anyFloatRange, ANY_STRING)
 		assertTestFalse(t, anyFloatRange, ANY_FLOAT)
 
 		//check floatRange1_2

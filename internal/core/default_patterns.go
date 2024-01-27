@@ -153,7 +153,7 @@ var (
 	STRING_PATTERN = &TypePattern{
 		Type:          STRING_TYPE,
 		Name:          patternnames.STRING,
-		SymbolicValue: symbolic.ANY_STR,
+		SymbolicValue: symbolic.ANY_STRING,
 	}
 	STR_PATTERN = &TypePattern{
 		Type:          STR_LIKE_INTERFACE_TYPE,

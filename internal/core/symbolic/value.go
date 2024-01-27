@@ -539,7 +539,7 @@ func (f FileInfo) GetGoMethod(name string) (*GoFunction, bool) {
 func (f *FileInfo) Prop(name string) Value {
 	switch name {
 	case "name":
-		return ANY_STR
+		return ANY_STRING
 	case "abs-path":
 		return ANY_PATH
 	case "size":

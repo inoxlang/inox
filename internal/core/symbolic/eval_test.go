@@ -1544,14 +1544,14 @@ func TestSymbolicEval(t *testing.T) {
 
 			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(assignment, state, fmtNotAssignableToPropOfType(ANY_INT, &TypePattern{val: ANY_STR})),
+				makeSymbolicEvalError(assignment, state, fmtNotAssignableToPropOfType(ANY_INT, &TypePattern{val: ANY_STRING})),
 			}, state.errors())
 			assert.Equal(t, &Object{
 				entries: map[string]Serializable{
 					"name": NewString("foo"),
 				},
 				static: map[string]Pattern{
-					"name": ANY_STR.Static(),
+					"name": ANY_STRING.Static(),
 				},
 			}, res)
 		})
@@ -1567,14 +1567,14 @@ func TestSymbolicEval(t *testing.T) {
 
 			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(assignment, state, fmtNotAssignableToPropOfType(ANY_INT, &TypePattern{val: ANY_STR})),
+				makeSymbolicEvalError(assignment, state, fmtNotAssignableToPropOfType(ANY_INT, &TypePattern{val: ANY_STRING})),
 			}, state.errors())
 			assert.Equal(t, &Object{
 				entries: map[string]Serializable{
 					"name": NewString("foo"),
 				},
 				static: map[string]Pattern{
-					"name": ANY_STR.Static(),
+					"name": ANY_STRING.Static(),
 				},
 			}, res)
 		})
@@ -1590,14 +1590,14 @@ func TestSymbolicEval(t *testing.T) {
 
 			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(assignment, state, fmtNotAssignableToPropOfType(ANY_INT, &TypePattern{val: ANY_STR})),
+				makeSymbolicEvalError(assignment, state, fmtNotAssignableToPropOfType(ANY_INT, &TypePattern{val: ANY_STRING})),
 			}, state.errors())
 			assert.Equal(t, &Object{
 				entries: map[string]Serializable{
 					"name": NewString("foo"),
 				},
 				static: map[string]Pattern{
-					"name": ANY_STR.Static(),
+					"name": ANY_STRING.Static(),
 				},
 			}, res)
 		})
@@ -1675,7 +1675,7 @@ func TestSymbolicEval(t *testing.T) {
 					"name": NewString("foo"),
 				},
 				static: map[string]Pattern{
-					"name": ANY_STR.Static(),
+					"name": ANY_STRING.Static(),
 				},
 			}, res)
 		})
@@ -1697,7 +1697,7 @@ func TestSymbolicEval(t *testing.T) {
 					"name": NewString("foo"),
 				},
 				static: map[string]Pattern{
-					"name": ANY_STR.Static(),
+					"name": ANY_STRING.Static(),
 				},
 			}, res)
 		})
@@ -1770,7 +1770,7 @@ func TestSymbolicEval(t *testing.T) {
 					"name": NewString("foo"),
 				},
 				static: map[string]Pattern{
-					"name": ANY_STR.Static(),
+					"name": ANY_STRING.Static(),
 				},
 			}, res)
 		})
@@ -2521,11 +2521,11 @@ func TestSymbolicEval(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				return $$v[0]
 			`)
-			state.setGlobal("v", &List{generalElement: ANY_STR}, GlobalConst)
+			state.setGlobal("v", &List{generalElement: ANY_STRING}, GlobalConst)
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
-			assert.Equal(t, ANY_STR, res)
+			assert.Equal(t, ANY_STRING, res)
 		})
 
 		t.Run("rune slice", func(t *testing.T) {
@@ -2658,11 +2658,11 @@ func TestSymbolicEval(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				return $$v[0:]
 			`)
-			state.setGlobal("v", &List{generalElement: ANY_STR}, GlobalConst)
+			state.setGlobal("v", &List{generalElement: ANY_STRING}, GlobalConst)
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
-			assert.Equal(t, &List{generalElement: ANY_STR}, res)
+			assert.Equal(t, &List{generalElement: ANY_STRING}, res)
 		})
 
 		t.Run("rune slice", func(t *testing.T) {
@@ -5464,7 +5464,7 @@ func TestSymbolicEval(t *testing.T) {
 			expectedObject := NewExactObject(map[string]Serializable{
 				"a": NewString("a"),
 			}, nil, map[string]Pattern{
-				"a": &TypePattern{val: ANY_STR},
+				"a": &TypePattern{val: ANY_STRING},
 			})
 
 			assert.Equal(t, expectedObject, res)
@@ -6959,7 +6959,7 @@ func TestSymbolicEval(t *testing.T) {
 
 				assert.Equal(t, []SymbolicEvaluationError{
 					makeSymbolicEvalError(objectProp.Value, state,
-						fmtNotAssignableToPropOfType(NewInt(1), ANY_STR)),
+						fmtNotAssignableToPropOfType(NewInt(1), ANY_STRING)),
 				}, state.errors())
 			})
 
@@ -7855,7 +7855,7 @@ func TestSymbolicEval(t *testing.T) {
 
 				assert.Equal(t, []SymbolicEvaluationError{
 					makeSymbolicEvalError(objectProp.Value, state,
-						fmtNotAssignableToPropOfType(NewInt(1), ANY_STR)),
+						fmtNotAssignableToPropOfType(NewInt(1), ANY_STRING)),
 				}, state.errors())
 			})
 
@@ -8169,7 +8169,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
-			assert.Equal(t, NewMultivalue(ANY_STR, Nil), res)
+			assert.Equal(t, NewMultivalue(ANY_STRING, Nil), res)
 		})
 
 		t.Run("key & element variables should be present in local scope data", func(t *testing.T) {
@@ -8342,7 +8342,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
 
-			expectedResultFromForStmt := NewTupleOf(ANY_STR)
+			expectedResultFromForStmt := NewTupleOf(ANY_STRING)
 			assert.Equal(t, NewMultivalue(expectedResultFromForStmt, Nil), res)
 		})
 
@@ -11024,7 +11024,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			namespace := NewNamespace(map[string]Value{
 				"read": WrapGoFunction(func(*Context, *URL) *String {
-					return ANY_STR
+					return ANY_STRING
 				}),
 			})
 			state.setGlobal("http", namespace, GlobalConst)
@@ -11554,7 +11554,7 @@ func TestSymbolicEval(t *testing.T) {
 				}`,
 			)
 			state.ctx.AddNamedPattern("int_tuple", &TypePattern{val: NewTupleOf(ANY_INT)}, false)
-			state.ctx.AddNamedPattern("str_tuple", &TypePattern{val: NewTupleOf(ANY_STR)}, false)
+			state.ctx.AddNamedPattern("str_tuple", &TypePattern{val: NewTupleOf(ANY_STRING)}, false)
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
@@ -11564,9 +11564,9 @@ func TestSymbolicEval(t *testing.T) {
 			expectedFn := &InoxFunction{
 				node:           fnExpr,
 				nodeChunk:      n,
-				parameters:     []Value{NewTupleOf(ANY_INT), NewTupleOf(ANY_STR)},
+				parameters:     []Value{NewTupleOf(ANY_INT), NewTupleOf(ANY_STRING)},
 				parameterNames: []string{"a", "b"},
-				result:         NewTupleOf(AsSerializableChecked(NewMultivalue(ANY_INT, ANY_STR))),
+				result:         NewTupleOf(AsSerializableChecked(NewMultivalue(ANY_INT, ANY_STRING))),
 			}
 			assert.Equal(t, expectedFn, res)
 		})
@@ -11663,7 +11663,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
-			assert.Equal(t, ANY_CHECKED_STR, res)
+			assert.Equal(t, ANY_CHECKED_STRING, res)
 		})
 
 		t.Run("no pattern, no interpolation", func(t *testing.T) {
@@ -11691,7 +11691,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, []SymbolicEvaluationError{
 				makeSymbolicEvalError(templateLit, state, STR_TEMPL_LITS_WITH_INTERP_SHOULD_BE_PRECEDED_BY_PATTERN_WICH_NAME_HAS_PREFIX),
 			}, state.errors())
-			assert.Equal(t, ANY_CHECKED_STR, res)
+			assert.Equal(t, ANY_CHECKED_STRING, res)
 		})
 
 		t.Run("interpolation pattern does not exist", func(t *testing.T) {
@@ -11708,7 +11708,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, []SymbolicEvaluationError{
 				makeSymbolicEvalError(templateLit.Slices[1], state, fmtCannotInterpolateMemberOfPatternNamespaceDoesNotExist("int", "sql")),
 			}, state.errors())
-			assert.Equal(t, ANY_CHECKED_STR, res)
+			assert.Equal(t, ANY_CHECKED_STRING, res)
 		})
 
 		t.Run("interpolation expression is not a string", func(t *testing.T) {
@@ -11728,7 +11728,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, []SymbolicEvaluationError{
 				makeSymbolicEvalError(templateLit.Slices[1], state, fmtInterpolationIsNotStringlikeOrIntBut(&Object{entries: map[string]Serializable{}})),
 			}, state.errors())
-			assert.Equal(t, ANY_CHECKED_STR, res)
+			assert.Equal(t, ANY_CHECKED_STRING, res)
 		})
 
 		t.Run("no pattern, leading interpolation", func(t *testing.T) {
@@ -11740,7 +11740,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
-			assert.Equal(t, ANY_STR, res)
+			assert.Equal(t, ANY_STRING, res)
 		})
 
 		t.Run("no pattern, trailing interpolation", func(t *testing.T) {
@@ -11752,7 +11752,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
-			assert.Equal(t, ANY_STR, res)
+			assert.Equal(t, ANY_STRING, res)
 		})
 
 		t.Run("no pattern, multivalue interpolation implementing string like", func(t *testing.T) {
@@ -11773,7 +11773,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, NewList(
 				//we also check that elem has the right because the test case depends on that
 				AsSerializableChecked(NewMultivalue(NewString("a"), ANY_STR_CONCAT)),
-				ANY_STR,
+				ANY_STRING,
 			), res)
 		})
 	})
@@ -11903,7 +11903,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Empty(t, state.errors())
 			assert.Equal(t, &XMLElement{
 				name:     "div",
-				children: []Value{ANY_STR, ANY_INT, ANY_STR},
+				children: []Value{ANY_STRING, ANY_INT, ANY_STRING},
 			}, res)
 		})
 
@@ -11929,7 +11929,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Empty(t, state.errors())
 			assert.Equal(t, &XMLElement{
 				name:     "div",
-				children: []Value{ANY_STR, ANY_INT, ANY_STR},
+				children: []Value{ANY_STRING, ANY_INT, ANY_STRING},
 			}, res)
 		})
 
@@ -11953,7 +11953,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Equal(t, &XMLElement{
 				name:     "div",
-				children: []Value{ANY_STR, ANY_INT, ANY_STR},
+				children: []Value{ANY_STRING, ANY_INT, ANY_STRING},
 			}, res)
 
 			intIdent := parse.FindNode(n, (*parse.IdentifierLiteral)(nil), func(n *parse.IdentifierLiteral, isUnique bool) bool {
@@ -11979,7 +11979,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, &XMLElement{
 				name:       "div",
 				attributes: map[string]Value{"a": NewString("a")},
-				children:   []Value{ANY_STR},
+				children:   []Value{ANY_STRING},
 			}, res)
 		})
 
@@ -11996,8 +11996,8 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Empty(t, state.errors())
 			assert.Equal(t, &XMLElement{
 				name:       "div",
-				attributes: map[string]Value{"a": ANY_STR},
-				children:   []Value{ANY_STR},
+				attributes: map[string]Value{"a": ANY_STRING},
+				children:   []Value{ANY_STRING},
 			}, res)
 		})
 
@@ -12014,7 +12014,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Equal(t, &XMLElement{
 				name:     "div",
-				children: []Value{ANY_STR},
+				children: []Value{ANY_STRING},
 			}, res)
 
 			xmlExpr := parse.FindNode(n, (*parse.XMLExpression)(nil), nil)
@@ -13258,7 +13258,7 @@ func TestSymbolicEval(t *testing.T) {
 
 		t.Run("retrieval of the property of a URL-referenced entity", func(t *testing.T) {
 
-			userPattern := NewInexactObjectPattern(map[string]Pattern{"name": &TypePattern{val: ANY_STR}}, nil)
+			userPattern := NewInexactObjectPattern(map[string]Pattern{"name": &TypePattern{val: ANY_STRING}}, nil)
 			db := NewDatabaseIL(DatabaseILParams{
 				Schema: NewExactObjectPattern(map[string]Pattern{"user": userPattern}, nil),
 			})
@@ -13275,7 +13275,7 @@ func TestSymbolicEval(t *testing.T) {
 					return
 				}
 				assert.Empty(t, state.errors())
-				assert.Equal(t, ANY_STR, res)
+				assert.Equal(t, ANY_STRING, res)
 
 				doubleColonExpr := parse.FindNode(n, (*parse.DoubleColonExpression)(nil), nil)
 				_, ok := state.symbolicData.GetUsedTypeExtension(doubleColonExpr)
@@ -13447,7 +13447,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			listPropPattern := NewListPatternOf(&TypePattern{val: ANY_INT})
 			userPattern := NewInexactObjectPattern(map[string]Pattern{
-				"name": &TypePattern{val: ANY_STR},
+				"name": &TypePattern{val: ANY_STRING},
 				"list": listPropPattern,
 			}, nil)
 			db := NewDatabaseIL(DatabaseILParams{
@@ -13511,7 +13511,7 @@ func TestSymbolicEval(t *testing.T) {
 			t.Run("assignment of the member of an index expression", func(t *testing.T) {
 				listPropPattern := NewListPatternOf(NewInexactObjectPattern(nil, nil))
 				userPattern := NewInexactObjectPattern(map[string]Pattern{
-					"name": &TypePattern{val: ANY_STR},
+					"name": &TypePattern{val: ANY_STRING},
 					"list": listPropPattern,
 				}, nil)
 				db := NewDatabaseIL(DatabaseILParams{

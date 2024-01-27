@@ -171,7 +171,7 @@ func TestRuneSlice(t *testing.T) {
 			state := newSymbolicState(ctx, nil)
 
 			slice := NewRuneSlice()
-			slice.insertSequence(ctx, NewList(ANY_STR), NewInt(0))
+			slice.insertSequence(ctx, NewList(ANY_STRING), NewInt(0))
 
 			updatedSelf, ok := state.consumeUpdatedSelf()
 			assert.False(t, ok)
@@ -224,7 +224,7 @@ func TestRuneSlice(t *testing.T) {
 			state := newSymbolicState(ctx, nil)
 
 			slice := NewRuneSlice()
-			slice.appendSequence(ctx, NewList(ANY_STR))
+			slice.appendSequence(ctx, NewList(ANY_STRING))
 
 			updatedSelf, ok := state.consumeUpdatedSelf()
 			assert.False(t, ok)

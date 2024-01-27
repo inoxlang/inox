@@ -26,7 +26,7 @@ func (resp *ObjectInfo) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 func (resp *ObjectInfo) Prop(name string) symbolic.Value {
 	switch name {
 	case "key":
-		return symbolic.ANY_STR
+		return symbolic.ANY_STRING
 	default:
 		return symbolic.GetGoMethodOrPanic(name, resp)
 	}

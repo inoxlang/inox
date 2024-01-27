@@ -73,10 +73,10 @@ func init() {
 		return &symbolic.Path{}
 	})
 	core.RegisterSymbolicGoFunction(_whoami, func(ctx *symbolic.Context) *symbolic.String {
-		return symbolic.ANY_STR
+		return symbolic.ANY_STRING
 	})
 	core.RegisterSymbolicGoFunction(_hostname, func(ctx *symbolic.Context) *symbolic.String {
-		return symbolic.ANY_STR
+		return symbolic.ANY_STRING
 	})
 }
 

@@ -19,16 +19,16 @@ var (
 		(*strLikeMultivalue)(nil),
 	}
 
-	ANY_STR         = &String{}
-	ANY_CHECKED_STR = &CheckedString{}
-	ANY_STR_LIKE    = &AnyStringLike{}
-	ANY_STR_CONCAT  = &StringConcatenation{}
-	ANY_RUNE        = &Rune{}
-	ANY_RUNE_SLICE  = &RuneSlice{}
+	ANY_STRING         = &String{}
+	ANY_CHECKED_STRING = &CheckedString{}
+	ANY_STR_LIKE       = &AnyStringLike{}
+	ANY_STR_CONCAT     = &StringConcatenation{}
+	ANY_RUNE           = &Rune{}
+	ANY_RUNE_SLICE     = &RuneSlice{}
 
 	EMPTY_STRING = NewString("")
 
-	_ANY_STR_TYPE_PATTERN = &TypePattern{val: ANY_STR}
+	_ANY_STR_TYPE_PATTERN = &TypePattern{val: ANY_STRING}
 
 	STRING_LIKE_PSEUDOPROPS  = []string{"replace", "trim_space", "has_prefix", "has_suffix"}
 	RUNE_SLICE_PROPNAMES     = []string{"insert", "remove_position", "remove_position_range"}
@@ -216,7 +216,7 @@ func (s *String) IteratorElementValue() Value {
 }
 
 func (s *String) underlyingString() *String {
-	return ANY_STR
+	return ANY_STRING
 }
 
 func (s *String) GetOrBuildString() *String {
@@ -224,7 +224,7 @@ func (s *String) GetOrBuildString() *String {
 }
 
 func (f *String) WidestOfType() Value {
-	return ANY_STR
+	return ANY_STRING
 }
 
 func (s *String) Reader() *Reader {
@@ -267,7 +267,7 @@ func (s *String) Prop(name string) Value {
 }
 
 func (s *String) slice(start, end *Int) Sequence {
-	return ANY_STR
+	return ANY_STRING
 }
 
 // A Rune represents a symbolic Rune.
@@ -369,7 +369,7 @@ func (p *CheckedString) PropertyNames() []string {
 func (s *CheckedString) Prop(name string) Value {
 	switch name {
 	case "pattern-name":
-		return ANY_STR
+		return ANY_STRING
 	case "pattern":
 		return ANY_STR_PATTERN
 	default:
@@ -378,11 +378,11 @@ func (s *CheckedString) Prop(name string) Value {
 }
 
 func (s *CheckedString) underlyingString() *String {
-	return ANY_STR
+	return ANY_STRING
 }
 
 func (s *CheckedString) WidestOfType() Value {
-	return ANY_CHECKED_STR
+	return ANY_CHECKED_STRING
 }
 
 type RuneSlice struct {
@@ -546,11 +546,11 @@ func (c *StringConcatenation) PrettyPrint(w pprint.PrettyPrintWriter, config *pp
 }
 
 func (c *StringConcatenation) IteratorElementKey() Value {
-	return ANY_STR.IteratorElementKey()
+	return ANY_STRING.IteratorElementKey()
 }
 
 func (c *StringConcatenation) IteratorElementValue() Value {
-	return ANY_STR.IteratorElementKey()
+	return ANY_STRING.IteratorElementKey()
 }
 
 func (c *StringConcatenation) HasKnownLen() bool {
@@ -562,19 +562,19 @@ func (c *StringConcatenation) KnownLen() int {
 }
 
 func (c *StringConcatenation) Element() Value {
-	return ANY_STR.Element()
+	return ANY_STRING.Element()
 }
 
 func (c *StringConcatenation) ElementAt(i int) Value {
-	return ANY_STR.ElementAt(i)
+	return ANY_STRING.ElementAt(i)
 }
 
 func (c *StringConcatenation) slice(start, end *Int) Sequence {
-	return ANY_STR.slice(start, end)
+	return ANY_STRING.slice(start, end)
 }
 
 func (c *StringConcatenation) GetOrBuildString() *String {
-	return ANY_STR
+	return ANY_STRING
 }
 
 func (c *StringConcatenation) WidestOfType() Value {
@@ -594,7 +594,7 @@ func (c *StringConcatenation) Prop(name string) Value {
 	case "replace":
 		return &GoFunction{
 			fn: func(ctx *Context, old, new StringLike) *String {
-				return ANY_STR
+				return ANY_STRING
 			},
 		}
 	case "trim_space":
@@ -671,11 +671,11 @@ func (s *AnyStringLike) HasKnownLen() bool {
 }
 
 func (s *AnyStringLike) GetOrBuildString() *String {
-	return ANY_STR
+	return ANY_STRING
 }
 
 func (s *AnyStringLike) WidestOfType() Value {
-	return ANY_STR
+	return ANY_STRING
 }
 
 func (s *AnyStringLike) Reader() *Reader {

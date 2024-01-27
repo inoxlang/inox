@@ -380,11 +380,11 @@ type strLikeMultivalue struct {
 }
 
 func (c *strLikeMultivalue) IteratorElementKey() Value {
-	return ANY_STR.IteratorElementKey()
+	return ANY_STRING.IteratorElementKey()
 }
 
 func (c *strLikeMultivalue) IteratorElementValue() Value {
-	return ANY_STR.IteratorElementKey()
+	return ANY_STRING.IteratorElementKey()
 }
 
 func (c *strLikeMultivalue) HasKnownLen() bool {
@@ -396,19 +396,19 @@ func (c *strLikeMultivalue) KnownLen() int {
 }
 
 func (c *strLikeMultivalue) Element() Value {
-	return ANY_STR.Element()
+	return ANY_STRING.Element()
 }
 
 func (c *strLikeMultivalue) ElementAt(i int) Value {
-	return ANY_STR.ElementAt(i)
+	return ANY_STRING.ElementAt(i)
 }
 
 func (c *strLikeMultivalue) slice(start, end *Int) Sequence {
-	return ANY_STR.slice(start, end)
+	return ANY_STRING.slice(start, end)
 }
 
 func (c *strLikeMultivalue) GetOrBuildString() *String {
-	return ANY_STR
+	return ANY_STRING
 }
 
 func (c *strLikeMultivalue) WidestOfType() Value {
@@ -428,7 +428,7 @@ func (c *strLikeMultivalue) Prop(name string) Value {
 	case "replace":
 		return &GoFunction{
 			fn: func(ctx *Context, old, new StringLike) *String {
-				return ANY_STR
+				return ANY_STRING
 			},
 		}
 	case "trim_space":

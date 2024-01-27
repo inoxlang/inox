@@ -174,7 +174,7 @@ func (p *Path) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrin
 }
 
 func (p *Path) ResourceName() *String {
-	return ANY_STR
+	return ANY_STRING
 }
 
 func (p *Path) PropertyNames() []string {
@@ -184,11 +184,11 @@ func (p *Path) PropertyNames() []string {
 func (p *Path) Prop(name string) Value {
 	switch name {
 	case "segments":
-		return NewListOf(ANY_STR)
+		return NewListOf(ANY_STRING)
 	case "extension":
-		return ANY_STR
+		return ANY_STRING
 	case "name":
-		return ANY_STR
+		return ANY_STRING
 	case "dir":
 		if p.pattern != nil {
 			switch p.pattern.absoluteness {
@@ -222,7 +222,7 @@ func (p *Path) Prop(name string) Value {
 }
 
 func (p *Path) underlyingString() *String {
-	return ANY_STR
+	return ANY_STRING
 }
 
 func (p *Path) WalkerElement() Value {
@@ -350,11 +350,11 @@ func (u *URL) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrint
 }
 
 func (u *URL) underlyingString() *String {
-	return ANY_STR
+	return ANY_STRING
 }
 
 func (u *URL) ResourceName() *String {
-	return ANY_STR
+	return ANY_STRING
 }
 
 func (u *URL) PropertyNames() []string {
@@ -364,13 +364,13 @@ func (u *URL) PropertyNames() []string {
 func (u *URL) Prop(name string) Value {
 	switch name {
 	case "scheme":
-		return ANY_STR
+		return ANY_STRING
 	case "host":
 		return &Host{}
 	case "path":
 		return &Path{}
 	case "raw-query":
-		return ANY_STR
+		return ANY_STRING
 	default:
 		return nil
 	}
@@ -452,7 +452,7 @@ func (s *Scheme) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPr
 }
 
 func (s *Scheme) underlyingString() *String {
-	return ANY_STR
+	return ANY_STRING
 }
 
 func (s *Scheme) WidestOfType() Value {
@@ -560,7 +560,7 @@ func (h *Host) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrin
 }
 
 func (h *Host) ResourceName() *String {
-	return ANY_STR
+	return ANY_STRING
 }
 
 func (h *Host) PropertyNames() []string {
@@ -570,7 +570,7 @@ func (h *Host) PropertyNames() []string {
 func (*Host) Prop(name string) Value {
 	switch name {
 	case "scheme":
-		return ANY_STR
+		return ANY_STRING
 	case "explicit-port":
 		return &Int{}
 	case "without-port":
@@ -581,7 +581,7 @@ func (*Host) Prop(name string) Value {
 }
 
 func (h *Host) underlyingString() *String {
-	return ANY_STR
+	return ANY_STRING
 }
 
 func (h *Host) WidestOfType() Value {

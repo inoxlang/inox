@@ -32,7 +32,7 @@ var (
 	KEY_PAIR_RECORD_PROPNAMES = []string{"public", "private"}
 
 	SYMB_KEY_PAIR_RECORD = symbolic.NewInexactRecord(map[string]symbolic.Serializable{
-		"public":  symbolic.ANY_STR,
+		"public":  symbolic.ANY_STRING,
 		"private": symbolic.ANY_SECRET,
 	}, nil)
 
@@ -50,7 +50,7 @@ var (
 func init() {
 	core.RegisterSymbolicGoFunctions([]any{
 		_hashPassword, func(ctx *symbolic.Context, arg *symbolic.String, args ...symbolic.Value) *symbolic.String {
-			return symbolic.ANY_STR
+			return symbolic.ANY_STRING
 		},
 		_checkPassword, func(ctx *symbolic.Context, pass *symbolic.String, hash *symbolic.String) *symbolic.Bool {
 			return symbolic.ANY_BOOL

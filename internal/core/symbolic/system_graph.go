@@ -173,7 +173,7 @@ func (n *SystemGraphNode) Test(v Value, state RecTestCallState) bool {
 func (n *SystemGraphNode) Prop(memberName string) Value {
 	switch memberName {
 	case "name", "type_name":
-		return ANY_STR
+		return ANY_STRING
 	case "value_id":
 		return ANY_INT
 	case "edges":
@@ -240,7 +240,7 @@ func (n *SystemGraphEvent) Test(v Value, state RecTestCallState) bool {
 func (n *SystemGraphEvent) Prop(memberName string) Value {
 	switch memberName {
 	case "text":
-		return ANY_STR
+		return ANY_STRING
 	case "value0_id":
 		return ANY_INT
 	}
@@ -305,7 +305,7 @@ func (e *SystemGraphEdge) Test(v Value, state RecTestCallState) bool {
 func (e *SystemGraphEdge) Prop(memberName string) Value {
 	switch memberName {
 	case "text":
-		return ANY_STR
+		return ANY_STRING
 	case "to":
 		return ANY_INT
 	}

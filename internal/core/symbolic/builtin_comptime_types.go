@@ -10,7 +10,7 @@ var (
 		patternnames.BOOL:   &BoolType{baseValue: ANY_BOOL},
 		patternnames.INT:    &IntType{baseValue: ANY_INT},
 		patternnames.FLOAT:  &FloatType{baseValue: ANY_FLOAT},
-		patternnames.STRING: &StringType{baseValue: ANY_STR},
+		patternnames.STRING: &StringType{baseValue: ANY_STRING},
 	}
 )
 

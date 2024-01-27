@@ -515,7 +515,7 @@ func (s String) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.V
 }
 
 func (s CheckedString) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
-	return symbolic.ANY_CHECKED_STR, nil
+	return symbolic.ANY_CHECKED_STRING, nil
 }
 
 func (s *RuneSlice) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {

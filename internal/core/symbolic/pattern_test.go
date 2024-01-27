@@ -416,7 +416,7 @@ func TestSymbolicRegexPattern(t *testing.T) {
 	t.Run("TestValue() & SymbolicValue()", func(t *testing.T) {
 		pattern := &RegexPattern{}
 
-		assertTestValue(t, pattern, ANY_STR)
+		assertTestValue(t, pattern, ANY_STRING)
 		assertTestValueFalse(t, pattern, ANY_INT)
 		assertTestValueFalse(t, pattern, &RegexPattern{})
 
@@ -2204,19 +2204,19 @@ func TestSymbolicListPattern(t *testing.T) {
 		})
 
 		t.Run("multivalue as general element", func(t *testing.T) {
-			patt := NewListPatternOf(&TypePattern{val: NewMultivalue(ANY_INT, ANY_STR)})
+			patt := NewListPatternOf(&TypePattern{val: NewMultivalue(ANY_INT, ANY_STRING)})
 
 			val := patt.SymbolicValue()
-			serializableMv := AsSerializableChecked(NewMultivalue(ANY_INT, ANY_STR))
+			serializableMv := AsSerializableChecked(NewMultivalue(ANY_INT, ANY_STRING))
 			expected := NewListOf(serializableMv)
 			assert.Equal(t, expected, val)
 		})
 
 		t.Run("multivalue as element", func(t *testing.T) {
-			patt := NewListPattern([]Pattern{&TypePattern{val: NewMultivalue(ANY_INT, ANY_STR)}})
+			patt := NewListPattern([]Pattern{&TypePattern{val: NewMultivalue(ANY_INT, ANY_STRING)}})
 
 			val := patt.SymbolicValue()
-			serializableMv := AsSerializableChecked(NewMultivalue(ANY_INT, ANY_STR))
+			serializableMv := AsSerializableChecked(NewMultivalue(ANY_INT, ANY_STRING))
 			expected := NewList(serializableMv)
 			assert.Equal(t, expected, val)
 		})
@@ -2308,12 +2308,12 @@ func TestSymbolicListPattern(t *testing.T) {
 			},
 			{
 				&ListPattern{generalElement: &TypePattern{val: ANY_INT}},
-				&List{generalElement: ANY_STR}, //[]string
+				&List{generalElement: ANY_STRING}, //[]string
 				false,
 			},
 			{
 				&ListPattern{generalElement: &TypePattern{val: ANY_INT}},
-				&List{elements: []Serializable{ANY_INT, ANY_STR}}, //[int, string]
+				&List{elements: []Serializable{ANY_INT, ANY_STRING}}, //[int, string]
 				false,
 			},
 		}
@@ -2513,19 +2513,19 @@ func TestSymbolicTuplePattern(t *testing.T) {
 
 	t.Run("TestValue() & SymbolicValue()", func(t *testing.T) {
 		t.Run("multivalue as general element", func(t *testing.T) {
-			patt := NewTuplePatternOf(&TypePattern{val: NewMultivalue(ANY_INT, ANY_STR)})
+			patt := NewTuplePatternOf(&TypePattern{val: NewMultivalue(ANY_INT, ANY_STRING)})
 
 			val := patt.SymbolicValue()
-			serializableMv := AsSerializableChecked(NewMultivalue(ANY_INT, ANY_STR))
+			serializableMv := AsSerializableChecked(NewMultivalue(ANY_INT, ANY_STRING))
 			expected := NewTupleOf(serializableMv)
 			assert.Equal(t, expected, val)
 		})
 
 		t.Run("multivalue as element", func(t *testing.T) {
-			patt := NewTuplePattern([]Pattern{&TypePattern{val: NewMultivalue(ANY_INT, ANY_STR)}})
+			patt := NewTuplePattern([]Pattern{&TypePattern{val: NewMultivalue(ANY_INT, ANY_STRING)}})
 
 			val := patt.SymbolicValue()
-			serializableMv := AsSerializableChecked(NewMultivalue(ANY_INT, ANY_STR))
+			serializableMv := AsSerializableChecked(NewMultivalue(ANY_INT, ANY_STRING))
 			expected := NewTuple(serializableMv)
 			assert.Equal(t, expected, val)
 		})
@@ -2597,12 +2597,12 @@ func TestSymbolicTuplePattern(t *testing.T) {
 			},
 			{
 				&TuplePattern{generalElement: &TypePattern{val: ANY_INT}},
-				&Tuple{generalElement: ANY_STR}, //[]string
+				&Tuple{generalElement: ANY_STRING}, //[]string
 				false,
 			},
 			{
 				&TuplePattern{generalElement: &TypePattern{val: ANY_INT}},
-				&Tuple{elements: []Serializable{ANY_INT, ANY_STR}}, //[int, string]
+				&Tuple{elements: []Serializable{ANY_INT, ANY_STRING}}, //[int, string]
 				false,
 			},
 		}
@@ -2674,7 +2674,7 @@ func TestSymbolicTuplePattern(t *testing.T) {
 func TestSymbolicUnionPattern(t *testing.T) {
 	INT_PATTERN := ANY_INT.Static()
 	FLOAT_PATTERN := ANY_FLOAT.Static()
-	STR_PATTERN := ANY_STR.Static()
+	STR_PATTERN := ANY_STRING.Static()
 	BOOL_PATTERN := ANY_BOOL.Static()
 
 	newUnionPattern := func(cases ...Pattern) *UnionPattern {
@@ -2778,7 +2778,7 @@ func TestSymbolicUnionPattern(t *testing.T) {
 				&UnionPattern{
 					cases: []Pattern{
 						&TypePattern{val: ANY_INT},
-						&TypePattern{val: ANY_STR},
+						&TypePattern{val: ANY_STRING},
 					},
 				},
 				true,
@@ -2793,7 +2793,7 @@ func TestSymbolicUnionPattern(t *testing.T) {
 				&UnionPattern{
 					cases: []Pattern{
 						&TypePattern{val: ANY_INT},
-						&TypePattern{val: ANY_STR},
+						&TypePattern{val: ANY_STRING},
 						&TypePattern{val: ANY_BOOL},
 					},
 				},
@@ -2803,7 +2803,7 @@ func TestSymbolicUnionPattern(t *testing.T) {
 				&UnionPattern{
 					cases: []Pattern{
 						&TypePattern{val: ANY_INT},
-						&TypePattern{val: ANY_STR},
+						&TypePattern{val: ANY_STRING},
 					},
 				},
 				&UnionPattern{
@@ -2833,7 +2833,7 @@ func TestSymbolicUnionPattern(t *testing.T) {
 				&UnionPattern{
 					cases: []Pattern{
 						&TypePattern{val: ANY_INT},
-						&TypePattern{val: ANY_STR},
+						&TypePattern{val: ANY_STRING},
 					},
 				},
 				ANY_INT,
@@ -2843,47 +2843,47 @@ func TestSymbolicUnionPattern(t *testing.T) {
 				&UnionPattern{
 					cases: []Pattern{
 						&TypePattern{val: ANY_INT},
-						&TypePattern{val: ANY_STR},
+						&TypePattern{val: ANY_STRING},
 					},
 				},
-				ANY_STR,
+				ANY_STRING,
 				true,
 			},
 			{
 				&UnionPattern{
 					cases: []Pattern{
 						&TypePattern{val: ANY_INT},
-						&TypePattern{val: ANY_STR},
+						&TypePattern{val: ANY_STRING},
 					},
 				},
-				NewMultivalue(ANY_INT, ANY_STR),
+				NewMultivalue(ANY_INT, ANY_STRING),
 				true,
 			},
 			{
 				&UnionPattern{
 					cases: []Pattern{
 						&TypePattern{val: ANY_INT},
-						&TypePattern{val: ANY_STR},
+						&TypePattern{val: ANY_STRING},
 					},
 				},
-				NewMultivalue(ANY_STR, ANY_INT),
+				NewMultivalue(ANY_STRING, ANY_INT),
 				true,
 			},
 			{
 				&UnionPattern{
 					cases: []Pattern{
 						&TypePattern{val: ANY_INT},
-						&TypePattern{val: ANY_STR},
+						&TypePattern{val: ANY_STRING},
 					},
 				},
-				NewMultivalue(ANY_STR, NewInt(1)),
+				NewMultivalue(ANY_STRING, NewInt(1)),
 				true,
 			},
 			{
 				&UnionPattern{
 					cases: []Pattern{
 						&TypePattern{val: ANY_INT},
-						&TypePattern{val: ANY_STR},
+						&TypePattern{val: ANY_STRING},
 					},
 				},
 				ANY_SERIALIZABLE,
@@ -3113,13 +3113,13 @@ func TestSymbolicAnyStringPatternElement(t *testing.T) {
 
 		assertTest(t, pattern, &AnyStringPattern{})
 		assertTestFalse(t, pattern, ANY_INT)
-		assertTestFalse(t, pattern, ANY_STR)
+		assertTestFalse(t, pattern, ANY_STRING)
 	})
 
 	t.Run("TestValue()", func(t *testing.T) {
 		pattern := &AnyStringPattern{}
 
-		assertTestValue(t, pattern, ANY_STR)
+		assertTestValue(t, pattern, ANY_STRING)
 		assertTestValueFalse(t, pattern, ANY_INT)
 		assertTestValueFalse(t, pattern, &AnyStringPattern{})
 	})
@@ -3135,29 +3135,29 @@ func TestTypePattern(t *testing.T) {
 			assertTest(t, _any, _any)
 			assertTest(t, _any, &TypePattern{val: ANY_INT})
 			assertTestFalse(t, _any, ANY_INT)
-			assertTestFalse(t, _any, ANY_STR)
+			assertTestFalse(t, _any, ANY_STRING)
 		}
 
 		{
-			specific := &TypePattern{val: ANY_STR}
+			specific := &TypePattern{val: ANY_STRING}
 
 			assertTest(t, specific, specific)
-			assertTest(t, specific, &TypePattern{val: ANY_STR})
+			assertTest(t, specific, &TypePattern{val: ANY_STRING})
 			assertTestFalse(t, specific, &TypePattern{val: ANY_INT})
 			assertTestFalse(t, specific, ANY_INT)
-			assertTestFalse(t, specific, ANY_STR)
+			assertTestFalse(t, specific, ANY_STRING)
 		}
 
 	})
 
 	t.Run("TestValue()", func(t *testing.T) {
 		_any := &TypePattern{val: ANY}
-		specific := &TypePattern{val: ANY_STR}
+		specific := &TypePattern{val: ANY_STRING}
 
-		assertTestValue(t, _any, ANY_STR)
+		assertTestValue(t, _any, ANY_STRING)
 		assertTestValue(t, _any, ANY_INT)
 
-		assertTestValue(t, specific, ANY_STR)
+		assertTestValue(t, specific, ANY_STRING)
 		assertTestValueFalse(t, specific, ANY_INT)
 	})
 
@@ -3278,7 +3278,7 @@ func TestFunctionPattern(t *testing.T) {
 			assertTest(t, anyFnPatt, anyFnPatt)
 			assert.True(t, anyFnPatt.Test(&FunctionPattern{}, RecTestCallState{}))
 			assertTestFalse(t, anyFnPatt, ANY_INT)
-			assertTestFalse(t, anyFnPatt, ANY_STR)
+			assertTestFalse(t, anyFnPatt, ANY_STRING)
 		})
 
 		t.Run("TestValue()", func(t *testing.T) {
@@ -3288,7 +3288,7 @@ func TestFunctionPattern(t *testing.T) {
 			assert.True(t, anyFnPatt.TestValue(&InoxFunction{
 				node: &parse.FunctionPatternExpression{},
 			}, RecTestCallState{}))
-			assertTestValueFalse(t, anyFnPatt, ANY_STR)
+			assertTestValueFalse(t, anyFnPatt, ANY_STRING)
 			assertTestValueFalse(t, anyFnPatt, anyFnPatt)
 		})
 	})
@@ -3315,7 +3315,7 @@ func TestFunctionPattern(t *testing.T) {
 
 		state := newSymbolicState(NewSymbolicContext(nil, nil, nil), emptyChunk)
 		state.ctx.AddNamedPattern("int", &TypePattern{val: ANY_INT}, false)
-		state.ctx.AddNamedPattern("str", &TypePattern{val: ANY_STR}, false)
+		state.ctx.AddNamedPattern("str", &TypePattern{val: ANY_STRING}, false)
 		state.ctx.AddNamedPattern("obj", &TypePattern{val: NewAnyObject()}, false)
 		state.pushScope()
 		return state
@@ -3332,7 +3332,7 @@ func TestFunctionPattern(t *testing.T) {
 				assertTest(t, fnPatt, fnPatt)
 				assertTestFalse(t, fnPatt, anyFnPatt)
 				assertTestFalse(t, fnPatt, ANY_INT)
-				assertTestFalse(t, fnPatt, ANY_STR)
+				assertTestFalse(t, fnPatt, ANY_STRING)
 			})
 
 			t.Run("TestValue()", func(t *testing.T) {
@@ -3354,7 +3354,7 @@ func TestFunctionPattern(t *testing.T) {
 				}
 
 				assertTestValueFalse(t, fnPatt, fnPatt)
-				assertTestValueFalse(t, fnPatt, ANY_STR)
+				assertTestValueFalse(t, fnPatt, ANY_STRING)
 			})
 
 		})

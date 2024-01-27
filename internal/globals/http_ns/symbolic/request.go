@@ -44,7 +44,7 @@ func (req *HttpRequest) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 func (req *HttpRequest) Prop(name string) symbolic.Value {
 	switch name {
 	case "method":
-		return symbolic.ANY_STR
+		return symbolic.ANY_STRING
 	case "url":
 		return &symbolic.URL{}
 	case "path":
@@ -52,7 +52,7 @@ func (req *HttpRequest) Prop(name string) symbolic.Value {
 	case "body":
 		return &symbolic.Reader{}
 	case "headers":
-		return symbolic.NewAnyKeyRecord(symbolic.NewTupleOf(symbolic.ANY_STR))
+		return symbolic.NewAnyKeyRecord(symbolic.NewTupleOf(symbolic.ANY_STRING))
 	case "cookies":
 		//TODO
 		fallthrough

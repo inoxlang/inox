@@ -13,8 +13,8 @@ var optionalHostPattern = symbolic.NewOptionalPattern(
 
 func NewCookieObject() *symbolic.Object {
 	obj := symbolic.NewInexactObject(map[string]symbolic.Serializable{
-		"name":   symbolic.ANY_STR,
-		"value":  symbolic.ANY_STR,
+		"name":   symbolic.ANY_STRING,
+		"value":  symbolic.ANY_STRING,
 		"domain": symbolic.Nil,
 	}, nil, map[string]symbolic.Pattern{
 		"domain": optionalHostPattern,

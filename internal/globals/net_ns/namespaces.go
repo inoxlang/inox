@@ -17,7 +17,7 @@ func init() {
 			return &net_symbolic.TcpConn{}, nil
 		},
 		dnsResolve, func(ctx *symbolic.Context, domain *symbolic.String, recordTypeName *symbolic.String) (*symbolic.List, *symbolic.Error) {
-			return symbolic.NewListOf(symbolic.ANY_STR), nil
+			return symbolic.NewListOf(symbolic.ANY_STRING), nil
 		},
 	})
 
