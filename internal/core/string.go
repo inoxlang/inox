@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
-	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -580,8 +579,6 @@ func ConcatStringLikes(stringLikes ...StringLike) (StringLike, error) {
 
 	totalLen := 0
 
-	var elements []stringConcatElem
-
 	//used for concatenating consecutive short strings
 	var eagerConcatenation strings.Builder
 
@@ -590,8 +587,25 @@ func ConcatStringLikes(stringLikes ...StringLike) (StringLike, error) {
 		if length == 0 {
 			continue
 		}
-
 		totalLen += length
+	}
+
+	//If the total length is small, concatenate now and return a String.
+	if totalLen < MIN_LAZY_STR_CONCATENATION_SIZE {
+		var builder strings.Builder
+		for _, elem := range stringLikes {
+			builder.WriteString(elem.GetOrBuildString())
+		}
+		return String(builder.String()), nil
+	}
+
+	var elements []stringConcatElem
+
+	for _, s := range stringLikes {
+		length := s.Len()
+		if length == 0 {
+			continue
+		}
 
 		switch s := s.(type) {
 		case String:
@@ -623,21 +637,8 @@ func ConcatStringLikes(stringLikes ...StringLike) (StringLike, error) {
 		elements = append(elements, stringConcatElem{string: eagerConcatenation.String()})
 	}
 
-	//If the total length is small, concatenate now and return a String.
-	if totalLen < MIN_LAZY_STR_CONCATENATION_SIZE {
-		var builder strings.Builder
-		for _, elem := range elements {
-			if elem.concatenation != nil {
-				builder.WriteString(elem.concatenation.GetOrBuildString())
-			} else {
-				builder.WriteString(elem.string)
-			}
-		}
-		return String(builder.String()), nil
-	}
-
 	return &StringConcatenation{
-		elements: slices.Clone(elements),
+		elements: elements,
 		totalLen: totalLen,
 	}, nil
 }
