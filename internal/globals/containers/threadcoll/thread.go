@@ -7,6 +7,7 @@ import (
 	"slices"
 
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/utils"
 	"github.com/oklog/ulid/v2"
 )
 
@@ -267,7 +268,9 @@ func (t *MessageThread) makeTransactionEndCallback(ctx *core.Context, closestSta
 			t.elements[i].commitedTx = true
 		}
 
-		//TODO: persist
+		if t.storage != nil {
+			utils.PanicIfErr(persistThread(ctx, t, t.path, t.storage))
+		}
 	}
 }
 

@@ -1,9 +1,13 @@
 package threadcoll
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/filekv"
+	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -306,4 +310,120 @@ func TestThreadAdd(t *testing.T) {
 		})
 	})
 
+	t.Run("Set should be persisted at end of successful transaction if .Add was called transactionnaly", func(t *testing.T) {
+		ctx, storage := sharedThreadTestSetup(t)
+		defer ctx.CancelGracefully()
+
+		tx := core.StartNewTransaction(ctx)
+
+		storage.SetSerialized(ctx, THREAD_DIR_URL_PATH, `[]`)
+		val, err := loadThread(ctx, core.FreeEntityLoadingParams{
+			Key: THREAD_DIR_URL_PATH, Storage: storage, Pattern: threadPattern,
+		})
+
+		thread := val.(*MessageThread)
+		thread.Share(ctx.GetClosestState())
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		message1 := core.NewObject()
+		thread.Add(ctx, message1)
+
+		msgURL, ok := message1.URL()
+		if assert.True(t, ok) {
+			assert.True(t, THREAD_DIR_URL_PATH.CanBeDirOfEntry(msgURL.Path()))
+		}
+
+		assert.True(t, bool(thread.Contains(ctx, message1)))
+		values := core.IterateAllValuesOnly(ctx, thread.Iterator(ctx, core.IteratorConfiguration{}))
+		assert.ElementsMatch(t, []any{message1}, values)
+
+		//Check that the Set is not persised
+
+		persisted, err := loadThread(ctx, core.FreeEntityLoadingParams{
+			Key: THREAD_DIR_URL_PATH, Storage: storage, Pattern: threadPattern,
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		assert.NotSame(t, persisted, thread) //future-proofing the test
+		elems := core.IterateAllValuesOnly(ctx, persisted.(*MessageThread).Iterator(ctx, core.IteratorConfiguration{}))
+		if !assert.Empty(t, elems) {
+			return
+		}
+
+		// Commit the transaction.
+
+		assert.NoError(t, tx.Commit(ctx))
+
+		//Check that the Set is persised
+
+		persisted, err = loadThread(ctx, core.FreeEntityLoadingParams{
+			Key: THREAD_DIR_URL_PATH, Storage: storage, Pattern: threadPattern,
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		assert.NotSame(t, persisted, thread) //future-proofing the test
+		elems = core.IterateAllValuesOnly(ctx, thread.Iterator(ctx, core.IteratorConfiguration{}))
+		if !assert.Len(t, elems, 1) {
+			return
+		}
+
+		u, ok := elems[0].(*core.Object).URL()
+		if !assert.True(t, ok) {
+			return
+		}
+		assert.Equal(t, msgURL, u)
+	})
+}
+
+func sharedThreadTestSetup(t *testing.T) (*core.Context, core.DataStore) {
+	ctx := core.NewContexWithEmptyState(core.ContextConfig{
+		Permissions: []core.Permission{
+			core.DatabasePermission{
+				Kind_:  permkind.Read,
+				Entity: core.Host("ldb://main"),
+			},
+			core.DatabasePermission{
+				Kind_:  permkind.Write,
+				Entity: core.Host("ldb://main"),
+			},
+		},
+	}, nil)
+	kv := utils.Must(filekv.OpenSingleFileKV(filekv.KvStoreConfig{
+		Path: core.PathFrom(filepath.Join(t.TempDir(), "kv")),
+	}))
+	storage := filekv.NewSerializedValueStorage(kv, "ldb://main/")
+	return ctx, storage
+}
+
+func sharedThreadTestSetup2(t *testing.T) (*core.Context, *core.Context, core.DataStore) {
+	config := core.ContextConfig{
+		Permissions: []core.Permission{
+			core.DatabasePermission{
+				Kind_:  permkind.Read,
+				Entity: core.Host("ldb://main"),
+			},
+			core.DatabasePermission{
+				Kind_:  permkind.Write,
+				Entity: core.Host("ldb://main"),
+			},
+		},
+	}
+
+	ctx1 := core.NewContexWithEmptyState(config, nil)
+	ctx2 := core.NewContexWithEmptyState(config, nil)
+
+	kv := utils.Must(filekv.OpenSingleFileKV(filekv.KvStoreConfig{
+		Path: core.PathFrom(filepath.Join(t.TempDir(), "kv")),
+	}))
+	storage := filekv.NewSerializedValueStorage(kv, "ldb://main/")
+	return ctx1, ctx2, storage
 }
