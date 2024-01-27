@@ -256,7 +256,12 @@ func init() {
 				return String(s)
 			},
 			CreateStringConcatenation: func(elements []any) any {
-				return utils.Must(concatValues(nil, utils.MapSlice(elements, ToValueAsserted)))
+				var strLikes []StringLike
+				for _, e := range elements {
+					s := e.(StringLike)
+					strLikes = append(strLikes, s)
+				}
+				return NewStringConcatenation(strLikes...)
 			},
 			CreatePath: func(s string) any {
 				return Path(s)
