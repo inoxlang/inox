@@ -1,8 +1,10 @@
 package core
 
 import (
+	"strings"
 	"testing"
 
+	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -84,4 +86,21 @@ func TestStringConcatenation(t *testing.T) {
 		assert.Equal(t, 4, concatenation.Len())
 		assert.Equal(t, 4, concatenation.ByteLen())
 	})
+}
+
+func BenchmarkConcatenateStringLikes(b *testing.B) {
+	longString := String(strings.Repeat("a", 1000))
+
+	b.ResetTimer()
+	b.ReportAllocs()
+
+	for i := 0; i < b.N; i++ {
+		//c := String("a") + longString   //more than 1000 bytes allocated per operation
+		c := utils.Must(ConcatStringLikes(String("a"), longString))
+
+		if c == nil {
+			b.Fail()
+		}
+	}
+
 }

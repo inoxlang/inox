@@ -18,8 +18,8 @@ import (
 )
 
 const (
-	MIN_LAZY_STR_CONCATENATION_SIZE                 = 50 //this constant can change in the future, it's a starting point.
-	MAX_SMALL_STRING_SIZE_IN_LAZY_STR_CONCATENATION = 30 //this constant can change in the future, it's a starting point.
+	MIN_LAZY_STR_CONCATENATION_SIZE                 = 200 //this constant can change in the future, it's a starting point.
+	MAX_SMALL_STRING_SIZE_IN_LAZY_STR_CONCATENATION = 30  //this constant can change in the future, it's a starting point.
 )
 
 var (
