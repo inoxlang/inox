@@ -2906,7 +2906,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(expr.Left, state, fmtLeftOperandOfBinaryShouldBe(parse.Substrof, "string-like", "%int")),
+				makeSymbolicEvalError(expr.Left, state, fmtLeftOperandOfBinaryShouldBe(parse.Substrof, "string-like or bytes-like", "%int")),
 			}, state.errors())
 			assert.Equal(t, ANY_BOOL, res)
 		})
@@ -2921,6 +2921,42 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, []SymbolicEvaluationError{
 				makeSymbolicEvalError(expr.Right, state, fmtRightOperandOfBinaryShouldBe(parse.Substrof, "string-like", "%int")),
 			}, state.errors())
+			assert.Equal(t, ANY_BOOL, res)
+		})
+
+		t.Run("substrof: (string, string)", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`("A" substrof 0d[65])`)
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, ANY_BOOL, res)
+		})
+
+		t.Run("substrof: (byte-slice, byte-slice)", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`("A" substrof 0d[65])`)
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, ANY_BOOL, res)
+		})
+
+		t.Run("substrof: (string, byte-slice)", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`("A" substrof 0d[65])`)
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, ANY_BOOL, res)
+		})
+
+		t.Run("substrof: (byte-slice, string)", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`("A" substrof 0d[65])`)
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
 			assert.Equal(t, ANY_BOOL, res)
 		})
 

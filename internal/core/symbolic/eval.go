@@ -2871,15 +2871,15 @@ func evalBinaryExpression(n *parse.BinaryExpression, state *State, options evalO
 	case parse.Substrof:
 
 		switch left.(type) {
-		case *RuneSlice, *ByteSlice:
+		case BytesLike, StringLike:
 		default:
 			if _, ok := left.(StringLike); !ok {
-				state.addError(makeSymbolicEvalError(n.Left, state, fmtLeftOperandOfBinaryShouldBe(n.Operator, "string-like", Stringify(left))))
+				state.addError(makeSymbolicEvalError(n.Left, state, fmtLeftOperandOfBinaryShouldBe(n.Operator, "string-like or bytes-like", Stringify(left))))
 			}
 		}
 
 		switch right.(type) {
-		case *RuneSlice, *ByteSlice:
+		case BytesLike, StringLike:
 		default:
 			if _, ok := right.(StringLike); !ok {
 				state.addError(makeSymbolicEvalError(n.Right, state, fmtRightOperandOfBinaryShouldBe(n.Operator, "string-like", Stringify(right))))
