@@ -167,10 +167,20 @@ const (
 
 	POINTED_VALUE_HAS_NO_PROPERTIES = "pointed value has no properties"
 
+	LEFT_OPERAND_DOES_NOT_IMPL_COMPARABLE_          = "left operand does not implement comparable"
+	RIGHT_OPERAND_DOES_NOT_IMPL_COMPARABLE_         = "right operand does not implement comparable"
 	OPERANDS_NOT_COMPARABLE_BECAUSE_DIFFERENT_TYPES = "operands are not comparable because they have different types"
 
 	CALL_MAY_RETURN_ERROR_NOT_HANDLED_EITHER_HANDLE_IT_OR_TURN_THE_CALL_IN_A_MUST_CALL = //
 	"call may return an error that is not handled, handle it or turn the call in a 'must' call (e.g. `callee()` -> `callee!()`)"
+
+	//DURATION ARITHMETIC
+	A_DURATION_CAN_ONLY_BE_ADDED_WITH_A_DURATION_DATE_DATETIME = "a duration can only be added with a duration, date"
+	A_DURATION_CAN_BE_SUBSTRACTED_FROM_A_DATETIME              = "a duration can be substracted from a datetime, not the other way around"
+	A_DURATION_CAN_ONLY_BE_SUBSTRACTED_FROM_DURATION_DATETIME  = "a duration can only be substracted from  a duration, date"
+
+	//DATETIME ARITHMETIC
+	A_DATETIME_CAN_ONLY_BE_ADDED_WITH_A_DURATION = "a date can only be added with a duration"
 )
 
 var (
@@ -699,4 +709,28 @@ func fmtRetrievalOfMethodAtXIsNotAllowed(path string) string {
 
 func fmtCompileTimeTypeIsNotDefined(name string) string {
 	return fmt.Sprintf("compile-time type '%s' is not defined, note that patterns are not compile-time types", name)
+}
+
+func fmtRightOperandForIntArithmetic(right Value, operator parse.BinaryOperator) string {
+	return fmtRightOperandOfBinaryShouldBe(operator, "int", Stringify(right))
+}
+
+func fmtRightOperandForFloatArithmetic(right Value, operator parse.BinaryOperator) string {
+	return fmtRightOperandOfBinaryShouldBe(operator, "float", Stringify(right))
+}
+
+func fmtExpectedLeftOperandForArithmetic(left Value, operator parse.BinaryOperator) string {
+	s := "int, float or a value on which (+) is defined"
+	switch operator {
+	case parse.Add:
+	case parse.Sub:
+		s = "int, float or a value on which (+) is defined"
+	case parse.Mul:
+		s = "int, float or a value on which (*) is defined"
+	case parse.Div:
+		s = "int, float or a value on which (/) is defined"
+	default:
+		panic(ErrUnreachable)
+	}
+	return fmtLeftOperandOfBinaryShouldBe(operator, s, Stringify(left))
 }

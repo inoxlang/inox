@@ -2725,59 +2725,28 @@ func evalBinaryExpression(n *parse.BinaryExpression, state *State, options evalO
 		right = multi.WidenSimpleValues()
 	}
 
+	left = MergeValuesWithSameStaticTypeInMultivalue(left)
+	right = MergeValuesWithSameStaticTypeInMultivalue(right)
+
 	switch n.Operator {
 	case parse.GreaterThan, parse.LessThan, parse.LessOrEqual, parse.GreaterOrEqual:
+		_, ok := left.(Comparable)
+		if !ok {
+			state.addError(makeSymbolicEvalError(n, state, LEFT_OPERAND_DOES_NOT_IMPL_COMPARABLE_))
+			return ANY_BOOL, nil
+		}
+		_, ok = right.(Comparable)
+		if !ok {
+			state.addError(makeSymbolicEvalError(n, state, RIGHT_OPERAND_DOES_NOT_IMPL_COMPARABLE_))
+			return ANY_BOOL, nil
+		}
+
 		if !haveSameGoTypes(left, right) {
 			state.addError(makeSymbolicEvalError(n, state, OPERANDS_NOT_COMPARABLE_BECAUSE_DIFFERENT_TYPES))
 		}
 		return ANY_BOOL, nil
 	case parse.Add, parse.Sub, parse.Mul, parse.Div:
-
-		if _, ok := left.(*Int); ok {
-			_, ok = right.(*Int)
-			if !ok {
-				state.addError(makeSymbolicEvalError(n.Right, state, fmtRightOperandOfBinaryShouldBe(n.Operator, "int", Stringify(right))))
-			}
-
-			switch n.Operator {
-			case parse.Add, parse.Sub, parse.Mul, parse.Div:
-				return ANY_INT, nil
-			default:
-				return ANY_BOOL, nil
-			}
-		} else if _, ok := left.(*Float); ok {
-			_, ok = right.(*Float)
-			if !ok {
-				state.addError(makeSymbolicEvalError(n.Right, state, fmtRightOperandOfBinaryShouldBe(n.Operator, "float", Stringify(right))))
-			}
-			switch n.Operator {
-			case parse.Add, parse.Sub, parse.Mul, parse.Div:
-				return ANY_FLOAT, nil
-			default:
-				return ANY_BOOL, nil
-			}
-		} else {
-			state.addError(makeSymbolicEvalError(n.Left, state, fmtLeftOperandOfBinaryShouldBe(n.Operator, "int or float", Stringify(left))))
-
-			var arithmeticReturnVal Value
-			switch right.(type) {
-			case *Int:
-				arithmeticReturnVal = ANY_INT
-			case *Float:
-				arithmeticReturnVal = ANY_FLOAT
-			default:
-				state.addError(makeSymbolicEvalError(n.Left, state, fmtRightOperandOfBinaryShouldBe(n.Operator, "int or float", Stringify(right))))
-				arithmeticReturnVal = ANY
-			}
-
-			switch n.Operator {
-			case parse.Add, parse.Sub, parse.Mul, parse.Div:
-				return arithmeticReturnVal, nil
-			default:
-				return ANY_BOOL, nil
-			}
-		}
-
+		return evalArithmeticBinaryExpression(left, right, n, state)
 	case parse.AddDot, parse.SubDot, parse.MulDot, parse.DivDot, parse.GreaterThanDot, parse.GreaterOrEqualDot, parse.LessThanDot, parse.LessOrEqualDot:
 		state.addError(makeSymbolicEvalError(n, state, "operator not implemented yet"))
 		return ANY, nil
@@ -2945,6 +2914,64 @@ func evalBinaryExpression(n *parse.BinaryExpression, state *State, options evalO
 		return NewOrderedPair(leftSerializable, rightSerializable), nil
 	default:
 		return nil, fmt.Errorf(fmtInvalidBinaryOperator(n.Operator))
+	}
+}
+
+// +, -, *, /
+func evalArithmeticBinaryExpression(left, right Value, n *parse.BinaryExpression, state *State) (Value, error) {
+	if _, ok := left.(*Int); ok {
+		_, ok = right.(*Int)
+		if !ok {
+			state.addError(makeSymbolicEvalError(n.Right, state, fmtRightOperandForIntArithmetic(right, n.Operator)))
+		}
+
+		return ANY_INT, nil
+	} else if _, ok := left.(*Float); ok {
+		_, ok = right.(*Float)
+		if !ok {
+			state.addError(makeSymbolicEvalError(n.Right, state, fmtRightOperandForFloatArithmetic(right, n.Operator)))
+		}
+		return ANY_FLOAT, nil
+	}
+
+	_, isRightInt := right.(*Int)
+	_, isRightFloat := right.(*Float)
+
+	var failureResult Value = ANY
+
+	if isRightInt || isRightFloat {
+		failureResult = right.WidestOfType()
+	}
+
+	switch n.Operator {
+	case parse.Add:
+		iadd, ok := left.(IPseudoAdd)
+		if !ok {
+			err := makeSymbolicEvalError(n.Left, state, fmtExpectedLeftOperandForArithmetic(left, n.Operator))
+			state.addError(err)
+			return failureResult, nil
+		}
+
+		return iadd.Add(right, n, state)
+	case parse.Sub:
+		isub, ok := left.(IPseudoSub)
+		if !ok {
+			err := makeSymbolicEvalError(n.Left, state, fmtExpectedLeftOperandForArithmetic(left, n.Operator))
+			state.addError(err)
+			return failureResult, nil
+		}
+
+		return isub.Sub(right, n, state)
+	case parse.Mul:
+		err := makeSymbolicEvalError(n.Left, state, fmtExpectedLeftOperandForArithmetic(left, n.Operator))
+		state.addError(err)
+		return failureResult, nil
+	case parse.Div:
+		err := makeSymbolicEvalError(n.Left, state, fmtExpectedLeftOperandForArithmetic(left, n.Operator))
+		state.addError(err)
+		return failureResult, nil
+	default:
+		panic(ErrUnreachable)
 	}
 }
 

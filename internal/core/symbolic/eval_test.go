@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/go-git/go-billy/v5/memfs"
 	"github.com/go-git/go-billy/v5/util"
@@ -2737,7 +2738,62 @@ func TestSymbolicEval(t *testing.T) {
 
 			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(leftOperand, state, fmtLeftOperandOfBinaryShouldBe(parse.Add, "int or float", "\"a\"")),
+				makeSymbolicEvalError(leftOperand, state, fmtExpectedLeftOperandForArithmetic(NewString("a"), parse.Add)),
+			}, state.errors())
+			assert.Equal(t, ANY_INT, res)
+		})
+
+		t.Run("+: (duration, duration)", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`(d1 + d2)`)
+			duration := NewDuration(time.Hour)
+			state.setGlobal("d1", duration, GlobalConst)
+			state.setGlobal("d2", duration, GlobalConst)
+
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Equal(t, ANY_DURATION, res)
+		})
+
+		t.Run("+: (datetime, duration)", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`(t + d)`)
+			goTime := time.Date(2020, 1, 1, 1, 0, 0, 0, time.UTC)
+			datetime := NewDateTime(goTime)
+			duration := NewDuration(time.Hour)
+
+			state.setGlobal("t", datetime, GlobalConst)
+			state.setGlobal("d", duration, GlobalConst)
+
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Equal(t, ANY_DATETIME, res)
+		})
+
+		t.Run("+: (duration, datetime)", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`(t + d)`)
+			goTime := time.Date(2020, 1, 1, 1, 0, 0, 0, time.UTC)
+			datetime := NewDateTime(goTime)
+			duration := NewDuration(time.Hour)
+
+			state.setGlobal("t", datetime, GlobalConst)
+			state.setGlobal("d", duration, GlobalConst)
+
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Equal(t, ANY_DATETIME, res)
+		})
+
+		t.Run("+: right operand is a string", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`(int + "a")`)
+			res, err := symbolicEval(n, state)
+
+			rightOperand := n.Statements[0].(*parse.BinaryExpression).Right
+
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(rightOperand, state, fmtRightOperandOfBinaryShouldBe(parse.Add, "int", "\"a\"")),
 			}, state.errors())
 			assert.Equal(t, ANY_INT, res)
 		})
@@ -2755,20 +2811,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, ANY_BOOL, res)
 		})
 
-		t.Run("+: right operand is a string", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`(int + "a")`)
-			res, err := symbolicEval(n, state)
-
-			rightOperand := n.Statements[0].(*parse.BinaryExpression).Right
-
-			assert.NoError(t, err)
-			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(rightOperand, state, fmtRightOperandOfBinaryShouldBe(parse.Add, "int", "\"a\"")),
-			}, state.errors())
-			assert.Equal(t, ANY_INT, res)
-		})
-
-		t.Run("<: Right operand is a string", func(t *testing.T) {
+		t.Run("<: right operand is a string", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`(int < "a")`)
 			res, err := symbolicEval(n, state)
 
@@ -2777,6 +2820,32 @@ func TestSymbolicEval(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
 				makeSymbolicEvalError(binExpr, state, OPERANDS_NOT_COMPARABLE_BECAUSE_DIFFERENT_TYPES),
+			}, state.errors())
+			assert.Equal(t, ANY_BOOL, res)
+		})
+
+		t.Run("<: left operand does not implement comparable", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`({} < 1)`)
+			res, err := symbolicEval(n, state)
+
+			binExpr := n.Statements[0].(*parse.BinaryExpression)
+
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(binExpr, state, LEFT_OPERAND_DOES_NOT_IMPL_COMPARABLE_),
+			}, state.errors())
+			assert.Equal(t, ANY_BOOL, res)
+		})
+
+		t.Run("<: right operand does not implement comparable", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`(1 < {})`)
+			res, err := symbolicEval(n, state)
+
+			binExpr := n.Statements[0].(*parse.BinaryExpression)
+
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(binExpr, state, RIGHT_OPERAND_DOES_NOT_IMPL_COMPARABLE_),
 			}, state.errors())
 			assert.Equal(t, ANY_BOOL, res)
 		})

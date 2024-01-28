@@ -48,6 +48,10 @@ func (d *Year) Concretize(ctx ConcreteContext) any {
 	return extData.ConcreteValueFactories.CreateYear(d.value)
 }
 
+func (d *Year) Static() Pattern {
+	return &TypePattern{val: d.WidestOfType()}
+}
+
 func (d *Year) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if d.hasValue {
 		w.WriteString(commonfmt.FmtInoxYear(d.value))
@@ -99,6 +103,10 @@ func (d *Date) Concretize(ctx ConcreteContext) any {
 		panic(ErrNotConcretizable)
 	}
 	return extData.ConcreteValueFactories.CreateDate(d.value)
+}
+
+func (d *Date) Static() Pattern {
+	return &TypePattern{val: d.WidestOfType()}
 }
 
 func (d *Date) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
@@ -153,6 +161,10 @@ func (d *DateTime) Concretize(ctx ConcreteContext) any {
 		panic(ErrNotConcretizable)
 	}
 	return extData.ConcreteValueFactories.CreateDateTime(d.value)
+}
+
+func (d *DateTime) Static() Pattern {
+	return &TypePattern{val: d.WidestOfType()}
 }
 
 func (d *DateTime) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {

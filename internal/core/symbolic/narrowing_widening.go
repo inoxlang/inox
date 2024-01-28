@@ -13,6 +13,8 @@ var (
 	_ = []IToStatic{
 		(*Object)(nil), (*Record)(nil), (*List)(nil), (*Tuple)(nil),
 		(*Int)(nil), (*Float)(nil), (*Byte)(nil), (*Rune)(nil), (*Bool)(nil),
+
+		(*Duration)(nil), (*DateTime)(nil), (*Date)(nil), (*Year)(nil),
 	}
 )
 
