@@ -48,4 +48,3 @@
 > If you find an error in the documentation or a bug in the runtime, please
 > create an issue.
 
-[Back to top](#)

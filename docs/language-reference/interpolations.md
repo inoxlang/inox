@@ -101,4 +101,4 @@ path = /../../etc/passwd
 # error: result of a path interpolation should not contain any of the following substrings: '..', '\', '*', '?'
 ```
 
-[Back to top](#)
+[Back to top](#interpolations)

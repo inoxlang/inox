@@ -59,4 +59,4 @@ Values of different types generally cannot be compared.
 **Comparable Inox types**: int, float, byte, string, byte-count, line-count, rune-count,
 year, date, datetime, duration, frequency, byte-rate, port.
 
-[Back to top](#)
+[Back to top](#binary-operations)

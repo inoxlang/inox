@@ -452,4 +452,4 @@ URL patterns always have at least a path, a query or a fragment.
 pattern int-fn = fn(int) int
 ```
 
-[Back to top](#)
+[Back to top](#patterns)

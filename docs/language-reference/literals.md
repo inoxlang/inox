@@ -63,5 +63,5 @@ Here are the most commonly used literals in Inox:
 
 </details>
 
-[Back to top](#)
+[Back to top](#literals)
 

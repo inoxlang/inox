@@ -64,4 +64,4 @@ slice = new([:]int, 100)
 sub_slice = slice[0:10]
 ```
 
-[Back to top](#)
+[Back to top](#transient-types)

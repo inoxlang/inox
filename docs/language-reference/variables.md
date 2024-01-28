@@ -109,4 +109,4 @@ assign? first second = unknown_length_list
 If at runtime `unknown_length_list` has a single element `second` will receive a
 value of `nil`.
 
-[Back to top](#)
+[Back to top](#variables)
