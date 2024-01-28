@@ -10,6 +10,7 @@ const (
 	ONE_MINUTE      = Duration(time.Minute)
 	ONE_SECOND      = Duration(time.Second)
 	ONE_MILLISECOND = Duration(time.Millisecond)
+	MAX_DURATION    = Duration(1<<63 - 1)
 )
 
 var (

@@ -222,11 +222,11 @@ func fmtInvalidBinaryOperator(operator parse.BinaryOperator) string {
 }
 
 func fmtOperandOfBoolNegateShouldBeBool(v Value) string {
-	return fmt.Sprintf("operand of ! should should be a boolean but is a %s", Stringify(v))
+	return fmt.Sprintf("operand of ! should be a boolean but is a %s", Stringify(v))
 }
 
 func fmtOperandOfNumberNegateShouldBeIntOrFloat(v Value) string {
-	return fmt.Sprintf("operand of '-' should should be an integer or float but is a %s", Stringify(v))
+	return fmt.Sprintf("operand of '-' should be an integer or float but is a %s", Stringify(v))
 }
 
 func fmtLeftOperandOfBinaryShouldBe(operator parse.BinaryOperator, expectedType string, actual string) string {

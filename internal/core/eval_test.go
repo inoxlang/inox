@@ -1156,14 +1156,16 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			{"(a + b)", ONE_HOUR, ONE_HOUR, 2 * ONE_HOUR, nil},
 			{"(a + b)", DateTime(time.Time{}), ONE_HOUR, DateTime(time.Time{}.Add(time.Hour)), nil},
 			{"(a + b)", ONE_HOUR, DateTime(time.Time{}), DateTime(time.Time{}.Add(time.Hour)), nil},
+			{"(a + b)", MAX_DURATION, Duration(time.Nanosecond), nil, ErrQuantityOverflow},
 
 			//substraction
 			{"(a - b)", ONE_HOUR, ONE_MINUTE, ONE_HOUR - ONE_MINUTE, nil},
+			{"(a - b)", Duration(time.Nanosecond), MAX_DURATION, nil, ErrQuantityUnderflow},
 			{"(a - b)", DateTime(time.Time{}), ONE_HOUR, DateTime(time.Time{}.Add(-time.Hour)), nil},
 		}
 
 		for _, testCase := range testCases {
-			name := fmt.Sprintf("%s a:%f, b:%f", testCase.code, testCase.a, testCase.b)
+			name := fmt.Sprintf("%s a:%#v, b:%#v", testCase.code, testCase.a, testCase.b)
 			t.Run(name, func(t *testing.T) {
 				state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
 					"a": testCase.a,

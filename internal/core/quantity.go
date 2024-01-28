@@ -320,7 +320,7 @@ func nextInt64Float64(v reflect.Value) reflect.Value {
 func int64QuantityAdd[T interface {
 	Value
 	~int64
-}](l, r T) (Value, error) {
+}](l, r T, underflowIfNegative bool) (Value, error) {
 	if r > 0 {
 		if l > math.MaxInt64-r {
 			return nil, ErrQuantityOverflow
@@ -330,7 +330,11 @@ func int64QuantityAdd[T interface {
 			return nil, ErrQuantityUnderflow
 		}
 	}
-	return l + r, nil
+	res := l + r
+	if res < 0 && underflowIfNegative {
+		return nil, ErrQuantityUnderflow
+	}
+	return res, nil
 }
 
 // int64QuantitySub substracts r from l in a safe way:
@@ -339,7 +343,7 @@ func int64QuantityAdd[T interface {
 func int64QuantitySub[T interface {
 	Value
 	~int64
-}](l, r T) (Value, error) {
+}](l, r T, underflowIfNegative bool) (Value, error) {
 	if r < 0 {
 		if l > math.MaxInt64+r {
 			return nil, ErrQuantityOverflow
@@ -349,5 +353,9 @@ func int64QuantitySub[T interface {
 			return nil, ErrQuantityUnderflow
 		}
 	}
-	return l - r, nil
+	res := l - r
+	if res < 0 && underflowIfNegative {
+		return nil, ErrQuantityUnderflow
+	}
+	return res, nil
 }

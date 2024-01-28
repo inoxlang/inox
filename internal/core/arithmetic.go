@@ -31,7 +31,7 @@ func (left Duration) Add(right Value) (Value, error) {
 			return nil, err
 		}
 
-		return int64QuantityAdd(left, right)
+		return int64QuantityAdd(left, right, true)
 	case DateTime:
 		result := right.AsGoTime().Add(time.Duration(left))
 		return DateTime(result), nil
@@ -51,7 +51,7 @@ func (left Duration) Sub(right Value) (Value, error) {
 			return nil, err
 		}
 
-		return int64QuantitySub(left, right)
+		return int64QuantitySub(left, right, true)
 	case DateTime:
 		result := right.AsGoTime().Add(-time.Duration(left))
 		return DateTime(result), nil
