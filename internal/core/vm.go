@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"math"
 	"runtime/debug"
-	"strings"
 	"sync/atomic"
 	"unsafe"
 
@@ -747,7 +746,7 @@ func (v *VM) run() {
 			right := v.stack[v.sp-1]
 			v.sp -= 2
 
-			val := strings.Contains(right.(WrappedString).UnderlyingString(), left.(WrappedString).UnderlyingString())
+			val := isSubstrOf(v.global.Ctx, left, right)
 
 			v.stack[v.sp] = Bool(val)
 			v.sp++

@@ -809,3 +809,58 @@ func (e stringConcatElem) RuneCount() int {
 	}
 	return String(e.string).RuneCount()
 }
+
+func isSubstrOf(ctx *Context, a, b Value) bool {
+
+	switch a := a.(type) {
+	case StringLike:
+		byteLenA := a.ByteLen()
+		if byteLenA == 0 {
+			return true
+		}
+		switch b := b.(type) {
+		case StringLike:
+			byteLenB := b.Len()
+			if byteLenA > byteLenB {
+				return false
+			}
+			if b.HasPrefix(ctx, a) || b.HasSuffix(ctx, a) { //Avoid creating the right string.
+				return true
+			}
+			return strings.Contains(b.GetOrBuildString(), a.GetOrBuildString())
+		case BytesLike:
+			byteLenB := b.Len()
+			if byteLenA > byteLenB {
+				return false
+			}
+			stringB := utils.BytesAsString(b.GetOrBuildBytes().bytes)
+			return strings.Contains(stringB, a.GetOrBuildString())
+		}
+	case BytesLike:
+		byteLenA := a.Len()
+		if byteLenA == 0 {
+			return true
+		}
+		switch b := b.(type) {
+		case StringLike:
+			byteLenB := b.Len()
+			if byteLenA > byteLenB {
+				return false
+			}
+			stringA := utils.BytesAsString(a.GetOrBuildBytes().bytes)
+			stringB := b.GetOrBuildString()
+
+			return strings.Contains(stringB, stringA)
+		case BytesLike:
+			byteLenB := b.Len()
+			if byteLenA > byteLenB {
+				return false
+			}
+
+			stringA := utils.BytesAsString(a.GetOrBuildBytes().bytes)
+			stringB := utils.BytesAsString(b.GetOrBuildBytes().bytes)
+			return strings.Contains(stringB, stringA)
+		}
+	}
+	panic(ErrUnreachable)
+}

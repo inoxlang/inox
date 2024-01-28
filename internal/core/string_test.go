@@ -104,3 +104,47 @@ func BenchmarkConcatenateStringLikes(b *testing.B) {
 	}
 
 }
+
+func TestIsSubstrof(t *testing.T) {
+	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	defer ctx.CancelGracefully()
+
+	AB_CD_CONCATENATION := NewStringConcatenation(String("ab"), String("cd"))
+	ABCD_BYTES := NewMutableByteSlice([]byte("abcd"), "")
+	AB_BYTES := NewMutableByteSlice([]byte("ab"), "")
+	EMPTY_BYTES := NewMutableByteSlice([]byte(""), "")
+
+	//True
+	assert.True(t, isSubstrOf(ctx, String(""), String("a")))
+	assert.True(t, isSubstrOf(ctx, String(""), String("abcd")))
+	assert.True(t, isSubstrOf(ctx, String(""), ABCD_BYTES))
+	assert.True(t, isSubstrOf(ctx, String(""), AB_CD_CONCATENATION))
+
+	assert.True(t, isSubstrOf(ctx, EMPTY_BYTES, String("a")))
+	assert.True(t, isSubstrOf(ctx, EMPTY_BYTES, String("abcd")))
+	assert.True(t, isSubstrOf(ctx, EMPTY_BYTES, ABCD_BYTES))
+	assert.True(t, isSubstrOf(ctx, EMPTY_BYTES, AB_CD_CONCATENATION))
+
+	assert.True(t, isSubstrOf(ctx, String("a"), String("a")))
+	assert.True(t, isSubstrOf(ctx, String("a"), String("abcd")))
+	assert.True(t, isSubstrOf(ctx, String("a"), ABCD_BYTES))
+
+	assert.True(t, isSubstrOf(ctx, AB_CD_CONCATENATION, String("abcd")))
+	assert.True(t, isSubstrOf(ctx, AB_CD_CONCATENATION, String("abcd")))
+
+	assert.True(t, isSubstrOf(ctx, AB_BYTES, String("abcd")))
+	assert.True(t, isSubstrOf(ctx, AB_BYTES, AB_CD_CONCATENATION))
+	assert.True(t, isSubstrOf(ctx, AB_BYTES, ABCD_BYTES))
+
+	//False
+	assert.False(t, isSubstrOf(ctx, String("aa"), String("a")))
+	assert.False(t, isSubstrOf(ctx, String("aa"), String("abcd")))
+	assert.False(t, isSubstrOf(ctx, String("aa"), ABCD_BYTES))
+	assert.False(t, isSubstrOf(ctx, String("aa"), String("")))
+
+	assert.False(t, isSubstrOf(ctx, AB_CD_CONCATENATION, String("a")))
+	assert.False(t, isSubstrOf(ctx, AB_CD_CONCATENATION, AB_BYTES))
+
+	assert.False(t, isSubstrOf(ctx, ABCD_BYTES, String("a")))
+	assert.False(t, isSubstrOf(ctx, ABCD_BYTES, AB_BYTES))
+}

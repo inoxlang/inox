@@ -1253,10 +1253,26 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			{`("1" keyof {"1" : 'a'})`, True, nil},
 			{`("11" keyof {"1" : 'a'})`, False, nil},
 
-			{`("1" substrof "")`, False, nil},
-			{`("1" substrof "1")`, True, nil},
-			{`("1" substrof "11")`, True, nil},
-			{`("11" substrof "1")`, False, nil},
+			{`("A" substrof "")`, False, nil},
+			{`("" substrof "")`, True, nil},
+			{`("A" substrof "A")`, True, nil},
+			{`("" substrof "A")`, True, nil},
+			{`("A" substrof "AA")`, True, nil},
+			{`("AA" substrof "A")`, False, nil},
+
+			{`("A" substrof 0d[])`, False, nil},
+			{`("" substrof 0d[])`, True, nil},
+			{`("A" substrof 0d[65])`, True, nil},
+			{`("" substrof 0d[65])`, True, nil},
+			{`("A" substrof 0d[65 65])`, True, nil},
+			{`("AA" substrof 0d[65])`, False, nil},
+
+			{`(0d[65] substrof "")`, False, nil},
+			{`(0d[] substrof "")`, True, nil},
+			{`(0d[65] substrof "A")`, True, nil},
+			{`(0d[] substrof "A")`, True, nil},
+			{`(0d[65] substrof "AA")`, True, nil},
+			{`(0d[65 65] substrof "A")`, False, nil},
 
 			{`(%int \ 1)`, NewDifferencePattern(INT_PATTERN, NewExactValuePattern(Int(1))), nil},
 

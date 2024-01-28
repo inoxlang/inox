@@ -3619,7 +3619,7 @@ func evalBinaryExpression(n *parse.BinaryExpression, state *TreeWalkState) (Valu
 		}
 		return Bool(ok), nil
 	case parse.Substrof:
-		return Bool(strings.Contains(right.(WrappedString).UnderlyingString(), left.(WrappedString).UnderlyingString())), nil
+		return Bool(isSubstrOf(state.Global.Ctx, left, right)), nil
 	case parse.SetDifference:
 		if _, ok := right.(Pattern); !ok {
 			right = NewExactValuePattern(right.(Serializable))
