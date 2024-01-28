@@ -3,11 +3,9 @@ package regexutils
 import (
 	"math"
 	"regexp"
-	"regexp/syntax"
 	"strconv"
 	"testing"
 
-	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -224,24 +222,4 @@ func TestValueExistsInBoth(t *testing.T) {
 	assert.Equal(t, []string(nil), getSharedUnsharedElements([]string{"a"}, []string{}, true))
 	assert.Equal(t, []string{"a"}, getSharedUnsharedElements([]string{"a"}, []string{}, false))
 	assert.Equal(t, []string{"a"}, getSharedUnsharedElements([]string{"a"}, []string{"a"}, true))
-}
-
-func TestTurnCapturingGroupsIntoNonCapturing(t *testing.T) {
-	turn := func(s string) string {
-		regex := utils.Must(syntax.Parse(s, syntax.Perl))
-		return TurnCapturingGroupsIntoNonCapturing(regex).String()
-	}
-
-	assert.Equal(t, "(?:)", turn("()"))
-	assert.Equal(t, "(?:)", turn("(?:)"))
-	assert.Equal(t, "a", turn("(?:a)"))
-	assert.Equal(t, "a", turn("(a)"))
-	assert.Equal(t, "\\Aa(?-m:$)", turn("^a$")) //equivalent, fix ?
-	assert.Equal(t, "\\(\\)", turn("\\(\\)"))
-	//assert.Equal(t, "", turn("\\\\(\\\\)"))
-	assert.Equal(t, "[\\(-\\)]", turn("[()]"))
-
-	assert.Equal(t, "[a-z]", turn("([a-z])"))
-	assert.Equal(t, "(?:[a-z]0*)?c", turn("([a-z]0*)?c"))
-	assert.Equal(t, "(?:[a-z]0*(?:ab)+)?c", turn("([a-z]0*(?:ab)+)?c"))
 }
