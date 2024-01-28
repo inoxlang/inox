@@ -3532,50 +3532,7 @@ func evalBinaryExpression(n *parse.BinaryExpression, state *TreeWalkState) (Valu
 		}
 		panic(ErrUnreachable)
 	case parse.Add, parse.Sub, parse.Mul, parse.Div:
-
-		if _, ok := left.(Int); ok {
-			switch n.Operator {
-			case parse.Add:
-				return intAdd(left.(Int), right.(Int))
-			case parse.Sub:
-				return intSub(left.(Int), right.(Int))
-			case parse.Mul:
-				return intMul(left.(Int), right.(Int))
-			case parse.Div:
-				return intDiv(left.(Int), right.(Int))
-			}
-		}
-
-		leftF := left.(Float)
-		rightF := right.(Float)
-
-		if math.IsNaN(float64(leftF)) || math.IsInf(float64(leftF), 0) {
-			return nil, ErrNaNinfinityOperand
-		}
-
-		if math.IsNaN(float64(rightF)) || math.IsInf(float64(rightF), 0) {
-			return nil, ErrNaNinfinityOperand
-		}
-
-		switch n.Operator {
-		case parse.Add:
-			return leftF + rightF, nil
-		case parse.Sub:
-			return leftF - rightF, nil
-		case parse.Mul:
-			f := leftF * rightF
-			if math.IsNaN(float64(f)) || math.IsInf(float64(f), 0) {
-				return nil, ErrNaNinfinityResult
-			}
-			return f, nil
-		case parse.Div:
-			f := leftF / rightF
-			if math.IsNaN(float64(f)) || math.IsInf(float64(f), 0) {
-				return nil, ErrNaNinfinityResult
-			}
-			return f, nil
-		}
-		panic(ErrUnreachable)
+		return evalArithmeticBinaryExpression(left, right, n.Operator)
 	case parse.Equal:
 		return Bool(left.Equal(state.Global.Ctx, right, map[uintptr]uintptr{}, 0)), nil
 	case parse.NotEqual:
@@ -3677,4 +3634,61 @@ func evalBinaryExpression(n *parse.BinaryExpression, state *TreeWalkState) (Valu
 	default:
 		return nil, errors.New("invalid binary operator " + strconv.Itoa(int(n.Operator)))
 	}
+}
+
+func evalArithmeticBinaryExpression(left, right Value, operator parse.BinaryOperator) (Value, error) {
+	if _, ok := left.(Int); ok {
+		switch operator {
+		case parse.Add:
+			return intAdd(left.(Int), right.(Int))
+		case parse.Sub:
+			return intSub(left.(Int), right.(Int))
+		case parse.Mul:
+			return intMul(left.(Int), right.(Int))
+		case parse.Div:
+			return intDiv(left.(Int), right.(Int))
+		}
+	}
+
+	if leftF, ok := left.(Float); ok {
+		rightF := right.(Float)
+
+		if math.IsNaN(float64(leftF)) || math.IsInf(float64(leftF), 0) {
+			return nil, ErrNaNinfinityOperand
+		}
+
+		if math.IsNaN(float64(rightF)) || math.IsInf(float64(rightF), 0) {
+			return nil, ErrNaNinfinityOperand
+		}
+
+		switch operator {
+		case parse.Add:
+			return leftF + rightF, nil
+		case parse.Sub:
+			return leftF - rightF, nil
+		case parse.Mul:
+			f := leftF * rightF
+			if math.IsNaN(float64(f)) || math.IsInf(float64(f), 0) {
+				return nil, ErrNaNinfinityResult
+			}
+			return f, nil
+		case parse.Div:
+			f := leftF / rightF
+			if math.IsNaN(float64(f)) || math.IsInf(float64(f), 0) {
+				return nil, ErrNaNinfinityResult
+			}
+			return f, nil
+		}
+		panic(ErrUnreachable)
+	}
+
+	switch operator {
+	case parse.Add:
+		return left.(IPseudoAdd).Add(right)
+	case parse.Sub:
+		return left.(IPseudoSub).Sub(right)
+	case parse.Mul:
+	case parse.Div:
+	}
+	panic(ErrUnreachable)
 }

@@ -5,6 +5,13 @@ import (
 	"time"
 )
 
+const (
+	ONE_HOUR        = Duration(time.Hour)
+	ONE_MINUTE      = Duration(time.Minute)
+	ONE_SECOND      = Duration(time.Second)
+	ONE_MILLISECOND = Duration(time.Millisecond)
+)
+
 var (
 	ErrNegDuration = errors.New("negative duration")
 	ErrInvalidYear = errors.New("invalid year")

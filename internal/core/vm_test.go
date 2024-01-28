@@ -8,8 +8,8 @@ import (
 
 func TestVMStackOverflow(t *testing.T) {
 	expectError(t, `
-		fn f() { 
-			return (1 + f()) 
+		fn f() any { # any
+			return f()
 		}
 		f()
 	`, nil, ErrStackOverflow)

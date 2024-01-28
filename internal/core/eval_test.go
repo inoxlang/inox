@@ -1071,7 +1071,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				ctx := NewDefaultTestContext()
 				defer ctx.CancelGracefully()
 
-				res, err := Eval(testCase.code, NewGlobalState(ctx, nil), false)
+				res, err := Eval(testCase.code, NewGlobalState(ctx, nil), true)
 				if testCase.err == nil {
 					assert.NoError(t, err)
 					assert.Equal(t, testCase.result, res)
@@ -1123,14 +1123,54 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		}
 
 		for _, testCase := range testCases {
-			name := fmt.Sprintf("%s a:%f, d:%f", testCase.code, testCase.a, testCase.b)
+			name := fmt.Sprintf("%s a:%f, b:%f", testCase.code, testCase.a, testCase.b)
 			t.Run(name, func(t *testing.T) {
 				state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
 					"a": testCase.a,
 					"b": testCase.b,
 				})
 
-				res, err := Eval(testCase.code, state, false)
+				res, err := Eval(testCase.code, state, true)
+				if testCase.err == nil {
+					assert.NoError(t, err)
+					assert.Equal(t, testCase.result, res)
+				} else {
+					assert.ErrorIs(t, err, testCase.err)
+					assert.Nil(t, res)
+				}
+			})
+		}
+	})
+
+	t.Run("pseudo arithmetic", func(t *testing.T) {
+		//t.Parallel()
+
+		testCases := []struct {
+			code   string
+			a      Value
+			b      Value
+			result Value
+			err    error
+		}{
+			//addition
+			{"(a + b)", ONE_HOUR, ONE_HOUR, 2 * ONE_HOUR, nil},
+			{"(a + b)", DateTime(time.Time{}), ONE_HOUR, DateTime(time.Time{}.Add(time.Hour)), nil},
+			{"(a + b)", ONE_HOUR, DateTime(time.Time{}), DateTime(time.Time{}.Add(time.Hour)), nil},
+
+			//substraction
+			{"(a - b)", ONE_HOUR, ONE_MINUTE, ONE_HOUR - ONE_MINUTE, nil},
+			{"(a - b)", DateTime(time.Time{}), ONE_HOUR, DateTime(time.Time{}.Add(-time.Hour)), nil},
+		}
+
+		for _, testCase := range testCases {
+			name := fmt.Sprintf("%s a:%f, b:%f", testCase.code, testCase.a, testCase.b)
+			t.Run(name, func(t *testing.T) {
+				state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
+					"a": testCase.a,
+					"b": testCase.b,
+				})
+
+				res, err := Eval(testCase.code, state, true)
 				if testCase.err == nil {
 					assert.NoError(t, err)
 					assert.Equal(t, testCase.result, res)
@@ -2575,9 +2615,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Parallel()
 
 		testCases := []struct {
-			input   string
-			result  Value
-			globals func(ctx *Context) map[string]Value
+			input           string
+			result          Value
+			globals         func(ctx *Context) map[string]Value
+			doSymbolicCheck bool
 		}{
 			{
 				input: `
@@ -2587,7 +2628,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					}
 					return $c
 				`,
-				result: Int(0),
+				result:          Int(0),
+				doSymbolicCheck: true,
 			},
 			{
 				input: `
@@ -2599,7 +2641,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}
 				return [$c1, $c2]
 			`,
-				result: newList(&ValueList{elements: []Serializable{Int(0), Int(5)}}),
+				result:          newList(&ValueList{elements: []Serializable{Int(0), Int(5)}}),
+				doSymbolicCheck: true,
 			},
 			{
 				input: `
@@ -2609,7 +2652,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}
 				return $c
 			`,
-				result: Int(5),
+				result:          Int(5),
+				doSymbolicCheck: true,
 			},
 			{
 				input: `
@@ -2621,7 +2665,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}
 				return [$c1, $c2]
 			`,
-				result: newList(&ValueList{elements: []Serializable{Int(1), Int(11)}}),
+				result:          newList(&ValueList{elements: []Serializable{Int(1), Int(11)}}),
+				doSymbolicCheck: true,
 			},
 			{
 				input: `
@@ -2633,7 +2678,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}
 				return [$c1, $c2]
 			`,
-				result: newList(&ValueList{elements: []Serializable{Int(1), Int(11)}}),
+				result:          newList(&ValueList{elements: []Serializable{Int(1), Int(11)}}),
+				doSymbolicCheck: true,
 			},
 			{
 				input: `
@@ -2648,7 +2694,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				};
 				return [$c1, $c2]
 			`,
-				result: newList(&ValueList{elements: []Serializable{Int(1), Int(5)}}),
+				result:          newList(&ValueList{elements: []Serializable{Int(1), Int(5)}}),
+				doSymbolicCheck: true,
 			},
 			{
 				input: `
@@ -2663,7 +2710,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				};
 				return [$c1, $c2]
 			`,
-				result: newList(&ValueList{elements: []Serializable{Int(1), Int(6)}}),
+				result:          newList(&ValueList{elements: []Serializable{Int(1), Int(6)}}),
+				doSymbolicCheck: true,
 			},
 			{
 				input: `
@@ -2673,7 +2721,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}
 				return $c
 			`,
-				result: Int(2),
+				result:          Int(2),
+				doSymbolicCheck: true,
 			},
 			{
 				input: `
@@ -2684,7 +2733,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}
 				return $c
 			`,
-				result: Int(4),
+				result:          Int(4),
+				doSymbolicCheck: true,
 			},
 			{
 				input: `
@@ -2699,7 +2749,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}
 				return [c, indexSum]
 			`,
-				result: NewWrappedValueList(Int(3), Int(3)),
+				result:          NewWrappedValueList(Int(3), Int(3)),
+				doSymbolicCheck: true,
 			},
 
 			{
@@ -2853,7 +2904,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					}
 				}
 
-				res, err := Eval(testCase.input, state, false)
+				res, err := Eval(testCase.input, state, testCase.doSymbolicCheck)
 				assert.NoError(t, err)
 				assert.EqualValues(t, testCase.result, res)
 			})
@@ -3155,7 +3206,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				state := NewGlobalState(ctx, map[string]Value{
 					"dir": tempDirPath,
 				})
-				res, err := Eval(testCase.input, state, false)
+				res, err := Eval(testCase.input, state, true)
 				assert.NoError(t, err)
 
 				expectedResult := testCase.result(tempDir, tempDirPath)
@@ -3964,7 +4015,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			{
 				name: "recursive function",
 				input: `
-					fn factorial(i){
+					fn factorial(i int) int {
 						if (i == 0) {
 							return 1
 						}
@@ -3974,12 +4025,13 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				`,
 				isolatedCaseArguments: func() []Value { return []Value{Int(3)} },
 				result:                Int(6),
+				doSymbolicCheck:       true,
 			},
 			{
 				name: "recursive function accessing a global",
 				input: `
 					$$a = 3
-					fn rec(i %int){
+					fn rec(i %int) int {
 						if (i == 0) {
 							return 0
 						}
@@ -3988,13 +4040,14 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					result = rec(2)
 					return [result, a] # we also check that a is still accessible
 				`,
-				result: NewWrappedValueList(Int(6), Int(3)),
+				result:          NewWrappedValueList(Int(6), Int(3)),
+				doSymbolicCheck: true,
 			},
 			{
 				name: "function calling a recursive function accessing a global",
 				input: `
 					$$a = 3
-					fn rec(i %int){
+					fn rec(i %int) int {
 						if (i == 0) {
 							return 0
 						}
@@ -4008,6 +4061,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				`,
 				isolatedCaseArguments: noargs,
 				result:                NewWrappedValueList(Int(6), Int(3)),
+				doSymbolicCheck:       true,
 			},
 			{
 				name: "extension method calling a recursive function accessing a global",
@@ -4205,6 +4259,12 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				t.Run("isolated_call_"+testCase.name, func(t *testing.T) {
 					state := NewGlobalState(NewDefaultTestContext())
 					defer state.Ctx.CancelGracefully()
+
+					state.Globals.Set("Array", WrapGoFunction(NewArray))
+					state.Globals.Set("an-error", anError)
+
+					state.Ctx.AddNamedPattern("int", INT_PATTERN)
+					state.Ctx.AddNamedPattern("any", ANYVAL_PATTERN)
 
 					lastOpeningParenIndex := strings.LastIndexByte(testCase.input, '(')
 					input := testCase.input[:lastOpeningParenIndex]
@@ -5415,7 +5475,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state := NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			state.Module = mod
-			res, err := Eval(mod, state, false)
+			res, err := Eval(mod, state, true)
 			assert.NoError(t, err)
 			assert.Equal(t, Int(3), res)
 		})
@@ -11676,7 +11736,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			defer state.Ctx.CancelGracefully()
 			state.Module = mod
 
-			_, err = Eval(mod, state, false)
+			_, err = Eval(mod, state, true)
 
 			var locatedError LocatedEvalError
 			if !assert.ErrorAs(t, err, &locatedError) {
@@ -11732,7 +11792,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			defer state.Ctx.CancelGracefully()
 			state.Module = mod
 
-			_, err = Eval(mod, state, false)
+			_, err = Eval(mod, state, true)
 
 			var locatedError LocatedEvalError
 			if !assert.ErrorAs(t, err, &locatedError) {
@@ -11795,7 +11855,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			defer state.Ctx.CancelGracefully()
 			state.Module = mod
 
-			_, err = Eval(mod, state, false)
+			_, err = Eval(mod, state, true)
 
 			var locatedError LocatedEvalError
 			if !assert.ErrorAs(t, err, &locatedError) {
@@ -11870,7 +11930,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			defer state.Ctx.CancelGracefully()
 			state.Module = mod
 
-			_, err = Eval(mod, state, false)
+			_, err = Eval(mod, state, true)
 
 			var locatedError LocatedEvalError
 			if !assert.ErrorAs(t, err, &locatedError) {
@@ -11941,7 +12001,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			defer state.Ctx.CancelGracefully()
 			state.Module = mod
 
-			_, err = Eval(mod, state, false)
+			_, err = Eval(mod, state, true)
 
 			var locatedError LocatedEvalError
 			if !assert.ErrorAs(t, err, &locatedError) {
@@ -12029,7 +12089,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			defer state.Ctx.CancelGracefully()
 			state.Module = mod
 
-			_, err = Eval(mod, state, false)
+			_, err = Eval(mod, state, true)
 
 			var locatedError LocatedEvalError
 			if !assert.ErrorAs(t, err, &locatedError) {
@@ -12110,7 +12170,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			defer state.Ctx.CancelGracefully()
 			state.Module = mod
 
-			_, err = Eval(mod, state, false)
+			_, err = Eval(mod, state, true)
 
 			var locatedError LocatedEvalError
 			if !assert.ErrorAs(t, err, &locatedError) {

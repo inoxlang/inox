@@ -251,6 +251,7 @@ const (
 	OpIntBin
 	OpFloatBin
 	OpNumBin
+	OpPseudoArith
 	OpLess
 	OpLessEqual
 	OpGreater
@@ -405,6 +406,7 @@ var OpcodeNames = [...]string{
 	OpIntBin:                       "INT_BIN",
 	OpFloatBin:                     "FLOAT_BIN",
 	OpNumBin:                       "NUM_BIN",
+	OpPseudoArith:                  "PSEUDO_ARITH",
 	OpLess:                         "OP_LESS",
 	OpLessEqual:                    "OP_LESS_EQUAL",
 	OpGreater:                      "OP_GREATER",
@@ -557,6 +559,7 @@ var OpcodeOperands = [...][]int{
 	OpIntBin:                       {1},
 	OpFloatBin:                     {1},
 	OpNumBin:                       {1},
+	OpPseudoArith:                  {1},
 	OpLess:                         {},
 	OpLessEqual:                    {},
 	OpGreater:                      {},
@@ -710,6 +713,7 @@ var OpcodeConstantIndexes = [...][]bool{
 	OpIntBin:                       {false},
 	OpFloatBin:                     {false},
 	OpNumBin:                       {false},
+	OpPseudoArith:                  {false},
 	OpLess:                         {},
 	OpLessEqual:                    {},
 	OpGreater:                      {},

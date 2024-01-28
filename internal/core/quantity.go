@@ -23,6 +23,9 @@ var (
 	ErrNegFrequency         = errors.New("negative frequency")
 	ErrInfFrequency         = errors.New("infinite frequency")
 	ErrNegByteRate          = errors.New("negative byte rate")
+
+	ErrQuantityOverflow  = errors.New("quantity overflow")
+	ErrQuantityUnderflow = errors.New("quantity underflow")
 )
 
 // ByteCount implements Value.
@@ -309,4 +312,42 @@ func nextInt64Float64(v reflect.Value) reflect.Value {
 		ptr.Elem().SetInt(v.Int() + 1)
 	}
 	return ptr.Elem()
+}
+
+// int64QuantityAdd adds l an r in a safe way:
+// - if there is an overflow the returned value is nil and the error is ErrIntOverflow.
+// - if there is an underflow the returned value is nil and the error is ErrIntUnderflow.
+func int64QuantityAdd[T interface {
+	Value
+	~int64
+}](l, r T) (Value, error) {
+	if r > 0 {
+		if l > math.MaxInt64-r {
+			return nil, ErrQuantityOverflow
+		}
+	} else {
+		if l < math.MinInt64-r {
+			return nil, ErrQuantityUnderflow
+		}
+	}
+	return l + r, nil
+}
+
+// int64QuantitySub substracts r from l in a safe way:
+// - if there is an overflow the returned value is nil and the error is ErrQuantityOverflow.
+// - if there is an underflow the returned value is nil and the error is ErrQuantityUnderflow.
+func int64QuantitySub[T interface {
+	Value
+	~int64
+}](l, r T) (Value, error) {
+	if r < 0 {
+		if l > math.MaxInt64+r {
+			return nil, ErrQuantityOverflow
+		}
+	} else {
+		if l < math.MinInt64+r {
+			return nil, ErrQuantityUnderflow
+		}
+	}
+	return l - r, nil
 }

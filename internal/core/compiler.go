@@ -173,7 +173,22 @@ func (c *compiler) Compile(node parse.Node) error {
 		case parse.GreaterOrEqual:
 			c.emit(node, OpGreaterEqual)
 		case parse.Add, parse.Sub, parse.Mul, parse.Div:
-			c.emit(node, OpNumBin, int(node.Operator))
+
+			left, ok := c.symbolicData.GetMostSpecificNodeValue(node.Left)
+
+			if !ok {
+				return fmt.Errorf("cannot compile binary expression because there is no symbolic information")
+			}
+
+			switch {
+			case symbolic.ImplementsOrIsMultivalueWithAllValuesImplementing[*symbolic.Int](left):
+				c.emit(node, OpNumBin, int(node.Operator))
+			case symbolic.ImplementsOrIsMultivalueWithAllValuesImplementing[*symbolic.Float](left):
+				c.emit(node, OpNumBin, int(node.Operator))
+			default:
+				c.emit(node, OpPseudoArith, int(node.Operator))
+			}
+
 			//TODO: emit other opcodes based on the operands' type.
 		case parse.AddDot, parse.SubDot, parse.MulDot, parse.DivDot, parse.LessThanDot, parse.LessOrEqualDot, parse.GreaterThanDot, parse.GreaterOrEqualDot:
 			return errors.New("dot operators not supported yet")

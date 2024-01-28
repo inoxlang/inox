@@ -510,6 +510,8 @@ func (v *VM) run() {
 			if v.err != nil {
 				return
 			}
+		case OpPseudoArith:
+			v.doSafePseudoArithBinOp()
 		case OpMinus:
 			operand := v.stack[v.sp-1]
 			v.sp--
@@ -1656,6 +1658,36 @@ func (v *VM) doSafeFloatBinOp() {
 		return
 	}
 
+	v.stack[v.sp-2] = res
+	v.sp--
+}
+
+//go:noinline
+func (v *VM) doSafePseudoArithBinOp() {
+	right := v.stack[v.sp-1]
+	left := v.stack[v.sp-2]
+
+	v.ip++
+	operator := parse.BinaryOperator(v.curInsts[v.ip])
+
+	var res Value
+	switch operator {
+	case parse.Add:
+		res, v.err = left.(IPseudoAdd).Add(right)
+	case parse.Sub:
+		res, v.err = left.(IPseudoSub).Sub(right)
+	case parse.Mul:
+		v.err = fmt.Errorf("unsupported operator for pseudo arithmetic: *")
+	case parse.Div:
+		v.err = fmt.Errorf("unsupported operator for pseudo arithmetic: /")
+	default:
+		v.err = fmt.Errorf("invalid arithmetic operator")
+		return
+	}
+
+	if v.err != nil {
+		return
+	}
 	v.stack[v.sp-2] = res
 	v.sp--
 }

@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
@@ -847,7 +848,7 @@ func TestCompileModule(t *testing.T) {
 			},
 		)
 
-		expectBytecode(t, `fn f(){ f = fn(){ return 1 } }`,
+		expectBytecode(t, `fn f(){ g = fn(){ return 1 } }`,
 			0,
 			instrs(
 				inst(OpPushConstant, 2),
@@ -1001,64 +1002,68 @@ func TestCompileModule(t *testing.T) {
 
 	t.Run("index expression", func(t *testing.T) {
 		expectBytecode(t, `
-				l = []
+				l = [0, 1]
 				l[1]
 			`,
 			1,
 			instrs(
 				//create list
-				inst(OpCreateList, 0),
+				inst(OpPushConstant, 0),
+				inst(OpPushConstant, 1),
+				inst(OpCreateList, 2),
 				inst(OpSetLocal, 0),
 				//index
 				inst(OpGetLocal, 0),
-				inst(OpPushConstant, 0),
+				inst(OpPushConstant, 2),
 				inst(OpAt),
 				inst(OpPop),
 				inst(OpSuspendVM),
 			),
-			[]Value{Int(1)},
+			[]Value{Int(0), Int(1), Int(1)},
 		)
 	})
 
 	t.Run("slice expression", func(t *testing.T) {
 		expectBytecode(t, `
-				l = []
+				l = [0]
 				l[0:1]
 			`,
 			1,
 			instrs(
 				//create list
-				inst(OpCreateList, 0),
+				inst(OpPushConstant, 0),
+				inst(OpCreateList, 1),
 				inst(OpSetLocal, 0),
 				//index
 				inst(OpGetLocal, 0),
-				inst(OpPushConstant, 0),
 				inst(OpPushConstant, 1),
+				inst(OpPushConstant, 2),
 				inst(OpSlice),
 				inst(OpPop),
 				inst(OpSuspendVM),
 			),
-			[]Value{Int(0), Int(1)},
+			[]Value{Int(0), Int(0), Int(1)},
 		)
 
 		expectBytecode(t, `
-				l = []
+				l = [0]
 				l[0:]
 			`,
 			1,
 			instrs(
 				//create list
-				inst(OpCreateList, 0),
+				inst(OpPushConstant, 0),
+				inst(OpCreateList, 1),
 				inst(OpSetLocal, 0),
 				//index
 				inst(OpGetLocal, 0),
-				inst(OpPushConstant, 0),
+				inst(OpPushConstant, 1),
 				inst(OpPushNil),
 				inst(OpSlice),
 				inst(OpPop),
 				inst(OpSuspendVM),
 			),
-			[]Value{Int(0)},
+			[]Value{Int(0), Int(0)},
 		)
 
 		expectBytecode(t, `
@@ -1138,7 +1143,7 @@ func TestCompileModule(t *testing.T) {
 	t.Run("for-in statement", func(t *testing.T) {
 		t.Run("no nesting", func(t *testing.T) {
 			expectBytecode(t, `
-					l = []
+					l = [0]
 					a = 0
 					for e in l {
 						a = e
@@ -1146,9 +1151,10 @@ func TestCompileModule(t *testing.T) {
 				`,
 				2+3,
 				instrs(
-					inst(OpCreateList, 0),
-					inst(OpSetLocal, 0),
 					inst(OpPushConstant, 0),
+					inst(OpCreateList, 1),
+					inst(OpSetLocal, 0),
+					inst(OpPushConstant, 1),
 					inst(OpSetLocal, 1),
 					//for statement
 					//
@@ -1159,7 +1165,7 @@ func TestCompileModule(t *testing.T) {
 					inst(OpGetLocal, 2),
 					inst(OpIterNext, 3),
 					//
-					inst(OpJumpIfFalse, 36),
+					inst(OpJumpIfFalse, 39),
 					inst(OpGetLocal, 2),
 					inst(OpIterValue, 3),
 					inst(OpSetLocal, 4),
@@ -1168,10 +1174,10 @@ func TestCompileModule(t *testing.T) {
 					inst(OpGetLocal, 4),
 					inst(OpSetLocal, 1),
 					//
-					inst(OpJump, 16),
+					inst(OpJump, 19),
 					inst(OpSuspendVM),
 				),
-				[]Value{Int(0)},
+				[]Value{Int(0), Int(0)},
 			)
 
 			expectBytecode(t, `
@@ -1878,6 +1884,7 @@ func _expectBytecode(t *testing.T, actualBytecode *Bytecode, localCount int, exp
 		case *InoxFunction:
 			constant.Node = nil
 			constant.Chunk = nil
+			constant.symbolicValue = nil
 			if constant.compiledFunction != nil {
 				constant.compiledFunction.SourceMap = nil
 				constant.compiledFunction.Bytecode = nil
@@ -1950,14 +1957,40 @@ func traceCompile(
 	tr := &compileTracer{}
 
 	ctx := NewContext(ContextConfig{})
-	NewGlobalState(ctx)
+	state := NewGlobalState(ctx)
+
+	symbolicGlobals := make(map[string]symbolic.ConcreteGlobalValue)
+	state.Globals.Foreach(func(name string, v Value, isConstant bool) error {
+		symbolicGlobals[name] = symbolic.ConcreteGlobalValue{Value: v, IsConstant: isConstant}
+		return nil
+	})
+	ctx.AddNamedPattern("int", INT_PATTERN)
+	ctx.AddNamedPattern("any", ANYVAL_PATTERN)
+
+	data, err := symbolic.EvalCheck(symbolic.EvalCheckInput{
+		Node:    module.MainChunk.Node,
+		Module:  module.ToSymbolic(),
+		Globals: symbolicGlobals,
+		Context: utils.Must(ctx.ToSymbolicValue()),
+	})
+
+	state.SymbolicData.AddData(data)
+
+	if !assert.NoError(t, err) {
+		t.FailNow()
+	}
 
 	bytecode, err := Compile(CompilationInput{
-		Mod:         module,
-		Globals:     globals,
-		TraceWriter: tr,
-		Context:     ctx,
+		Mod:          module,
+		Globals:      globals,
+		TraceWriter:  tr,
+		Context:      ctx,
+		SymbolicData: data,
 	})
+
+	if !assert.NoError(t, err) {
+		t.FailNow()
+	}
 	res = bytecode
 
 	trace = append(trace, fmt.Sprintf("compiler trace:\n%s", strings.Join(tr.Out, "")))
