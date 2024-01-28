@@ -353,6 +353,105 @@ func TestEqualityCompareObjectPatterns(t *testing.T) {
 		assertNotEqualInoxValues(t, singlePropAExact, emptyInexact, ctx)
 		assertNotEqualInoxValues(t, singlePropAExact, emptyExact, ctx)
 	})
+
+	t.Run("two entry patterns are not equal if they have different optionality", func(t *testing.T) {
+		requiredEntry := NewInexactObjectPattern([]ObjectPatternEntry{{Name: "a", Pattern: INT_PATTERN}})
+		optionalEntry := NewInexactObjectPattern([]ObjectPatternEntry{{Name: "a", Pattern: INT_PATTERN, IsOptional: true}})
+
+		assertNotEqualInoxValues(t, requiredEntry, optionalEntry, ctx)
+		assertNotEqualInoxValues(t, optionalEntry, requiredEntry, ctx)
+
+		//self equality
+		assertEqualInoxValues(t, requiredEntry, requiredEntry, ctx)
+		assertEqualInoxValues(t, optionalEntry, optionalEntry, ctx)
+	})
+
+	t.Run("two entrys pattern are not equal if they have different dependencies", func(t *testing.T) {
+		noDeps := NewInexactObjectPattern([]ObjectPatternEntry{
+			{
+				Name:    "a",
+				Pattern: INT_PATTERN,
+			},
+		})
+		bRequired := NewInexactObjectPattern([]ObjectPatternEntry{
+			{
+				Name:         "a",
+				Pattern:      INT_PATTERN,
+				Dependencies: PropertyDependencies{RequiredKeys: []string{"b"}},
+			},
+		})
+		cRequired := NewInexactObjectPattern([]ObjectPatternEntry{
+			{
+				Name:         "a",
+				Pattern:      INT_PATTERN,
+				Dependencies: PropertyDependencies{RequiredKeys: []string{"c"}},
+			},
+		})
+		bcRequired := NewInexactObjectPattern([]ObjectPatternEntry{
+			{
+				Name:         "a",
+				Pattern:      INT_PATTERN,
+				Dependencies: PropertyDependencies{RequiredKeys: []string{"b", "c"}},
+			},
+		})
+		patternRequired := NewInexactObjectPattern([]ObjectPatternEntry{
+			{
+				Name:    "a",
+				Pattern: INT_PATTERN,
+				Dependencies: PropertyDependencies{
+					Pattern: NewInexactObjectPattern([]ObjectPatternEntry{{Name: "b", Pattern: INT_PATTERN}}),
+				},
+			},
+		})
+		bAndPatternRequired := NewInexactObjectPattern([]ObjectPatternEntry{
+			{
+				Name:    "a",
+				Pattern: INT_PATTERN,
+				Dependencies: PropertyDependencies{
+					RequiredKeys: []string{"b"},
+					Pattern:      NewInexactObjectPattern([]ObjectPatternEntry{{Name: "b", Pattern: INT_PATTERN}}),
+				},
+			},
+		})
+
+		assertNotEqualInoxValues(t, noDeps, bRequired, ctx)
+		assertNotEqualInoxValues(t, noDeps, cRequired, ctx)
+		assertNotEqualInoxValues(t, noDeps, bcRequired, ctx)
+		assertNotEqualInoxValues(t, noDeps, patternRequired, ctx)
+		assertNotEqualInoxValues(t, noDeps, bAndPatternRequired, ctx)
+
+		assertNotEqualInoxValues(t, bRequired, noDeps, ctx)
+		assertNotEqualInoxValues(t, bRequired, cRequired, ctx)
+		assertNotEqualInoxValues(t, bRequired, bcRequired, ctx)
+		assertNotEqualInoxValues(t, bRequired, patternRequired, ctx)
+		assertNotEqualInoxValues(t, bRequired, bAndPatternRequired, ctx)
+
+		assertNotEqualInoxValues(t, cRequired, noDeps, ctx)
+		assertNotEqualInoxValues(t, cRequired, bRequired, ctx)
+		assertNotEqualInoxValues(t, cRequired, bcRequired, ctx)
+		assertNotEqualInoxValues(t, cRequired, patternRequired, ctx)
+		assertNotEqualInoxValues(t, cRequired, bAndPatternRequired, ctx)
+
+		assertNotEqualInoxValues(t, bcRequired, noDeps, ctx)
+		assertNotEqualInoxValues(t, bcRequired, bRequired, ctx)
+		assertNotEqualInoxValues(t, bcRequired, cRequired, ctx)
+		assertNotEqualInoxValues(t, bcRequired, patternRequired, ctx)
+		assertNotEqualInoxValues(t, bcRequired, bAndPatternRequired, ctx)
+
+		assertNotEqualInoxValues(t, patternRequired, noDeps, ctx)
+		assertNotEqualInoxValues(t, patternRequired, bRequired, ctx)
+		assertNotEqualInoxValues(t, patternRequired, cRequired, ctx)
+		assertNotEqualInoxValues(t, patternRequired, bcRequired, ctx)
+		assertNotEqualInoxValues(t, patternRequired, bAndPatternRequired, ctx)
+
+		//self equality
+		assertEqualInoxValues(t, noDeps, noDeps, ctx)
+		assertEqualInoxValues(t, bRequired, bRequired, ctx)
+		assertEqualInoxValues(t, cRequired, cRequired, ctx)
+		assertEqualInoxValues(t, bcRequired, bcRequired, ctx)
+		assertEqualInoxValues(t, patternRequired, patternRequired, ctx)
+		assertEqualInoxValues(t, bAndPatternRequired, bAndPatternRequired, ctx)
+	})
 }
 
 func TestEqualityCompareRecordPatterns(t *testing.T) {
@@ -385,11 +484,11 @@ func TestEqualityCompareRecordPatterns(t *testing.T) {
 	})
 
 	t.Run("single prop inexact", func(t *testing.T) {
-		singlePropAInexact := NewInexactObjectPattern([]ObjectPatternEntry{{Name: "a", Pattern: INT_PATTERN}})
-		singlePropAExact := NewExactObjectPattern([]ObjectPatternEntry{{Name: "a", Pattern: INT_PATTERN}})
-		singlePropBInexact := NewInexactObjectPattern([]ObjectPatternEntry{{Name: "b", Pattern: INT_PATTERN}})
-		emptyInexact := NewInexactObjectPattern([]ObjectPatternEntry{})
-		emptyExact := NewExactObjectPattern([]ObjectPatternEntry{})
+		singlePropAInexact := NewInexactRecordPattern([]RecordPatternEntry{{Name: "a", Pattern: INT_PATTERN}})
+		singlePropAExact := NewExactRecordPattern([]RecordPatternEntry{{Name: "a", Pattern: INT_PATTERN}})
+		singlePropBInexact := NewInexactRecordPattern([]RecordPatternEntry{{Name: "b", Pattern: INT_PATTERN}})
+		emptyInexact := NewInexactRecordPattern([]RecordPatternEntry{})
+		emptyExact := NewExactRecordPattern([]RecordPatternEntry{})
 
 		assertEqualInoxValues(t, singlePropAInexact, singlePropAInexact, ctx)
 		assertNotEqualInoxValues(t, singlePropAInexact, singlePropBInexact, ctx)
@@ -399,17 +498,29 @@ func TestEqualityCompareRecordPatterns(t *testing.T) {
 	})
 
 	t.Run("single prop exact", func(t *testing.T) {
-		singlePropAExact := NewExactObjectPattern([]ObjectPatternEntry{{Name: "a", Pattern: INT_PATTERN}})
-		singlePropBExact := NewExactObjectPattern([]ObjectPatternEntry{{Name: "b", Pattern: INT_PATTERN}})
-		singlePropAInexact := NewInexactObjectPattern([]ObjectPatternEntry{{Name: "a", Pattern: INT_PATTERN}})
-		emptyInexact := NewInexactObjectPattern([]ObjectPatternEntry{})
-		emptyExact := NewExactObjectPattern([]ObjectPatternEntry{})
+		singlePropAExact := NewExactRecordPattern([]RecordPatternEntry{{Name: "a", Pattern: INT_PATTERN}})
+		singlePropBExact := NewExactRecordPattern([]RecordPatternEntry{{Name: "b", Pattern: INT_PATTERN}})
+		singlePropAInexact := NewInexactRecordPattern([]RecordPatternEntry{{Name: "a", Pattern: INT_PATTERN}})
+		emptyInexact := NewInexactRecordPattern([]RecordPatternEntry{})
+		emptyExact := NewExactRecordPattern([]RecordPatternEntry{})
 
 		assertEqualInoxValues(t, singlePropAExact, singlePropAExact, ctx)
 		assertNotEqualInoxValues(t, singlePropAExact, singlePropBExact, ctx)
 		assertNotEqualInoxValues(t, singlePropAExact, singlePropAInexact, ctx)
 		assertNotEqualInoxValues(t, singlePropAExact, emptyInexact, ctx)
 		assertNotEqualInoxValues(t, singlePropAExact, emptyExact, ctx)
+	})
+
+	t.Run("two entry patterns are not equal if they have different optionality", func(t *testing.T) {
+		requiredEntry := NewInexactRecordPattern([]RecordPatternEntry{{Name: "a", Pattern: INT_PATTERN}})
+		optionalEntry := NewInexactRecordPattern([]RecordPatternEntry{{Name: "a", Pattern: INT_PATTERN, IsOptional: true}})
+
+		assertNotEqualInoxValues(t, requiredEntry, optionalEntry, ctx)
+		assertNotEqualInoxValues(t, optionalEntry, requiredEntry, ctx)
+
+		//self equality
+		assertEqualInoxValues(t, requiredEntry, requiredEntry, ctx)
+		assertEqualInoxValues(t, optionalEntry, optionalEntry, ctx)
 	})
 }
 

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"reflect"
+	"slices"
 
 	"github.com/inoxlang/inox/internal/utils"
 )
@@ -1189,12 +1190,30 @@ func (patt *ObjectPattern) Equal(ctx *Context, other Value, alreadyCompared map[
 
 	for i, entry := range patt.entries {
 		otherEntry := otherPatt.entries[i]
-		if otherEntry.Name != entry.Name || !entry.Pattern.Equal(ctx, otherEntry.Pattern, alreadyCompared, depth+1) {
+		if !entry.Equal(ctx, otherEntry, alreadyCompared, depth) {
 			return false
 		}
 	}
 
 	//TODO: compare complex property constraints
+
+	return true
+}
+
+func (e ObjectPatternEntry) Equal(ctx *Context, other ObjectPatternEntry, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	ok := e.Name == other.Name &&
+		e.IsOptional == other.IsOptional &&
+		slices.Equal(e.Dependencies.RequiredKeys, other.Dependencies.RequiredKeys) &&
+		e.Pattern.Equal(ctx, other.Pattern, alreadyCompared, depth+1) &&
+		((e.Dependencies.Pattern == nil) == (other.Dependencies.Pattern == nil))
+
+	if !ok {
+		return false
+	}
+
+	if e.Dependencies.Pattern != nil {
+		return e.Dependencies.Pattern.Equal(ctx, other.Dependencies.Pattern, alreadyCompared, depth+1)
+	}
 
 	return true
 }
@@ -1343,6 +1362,12 @@ func (patt *EventPattern) Equal(ctx *Context, other Value, alreadyCompared map[u
 	}
 
 	return patt.valuePattern.Equal(ctx, otherPatt.valuePattern, alreadyCompared, depth+1)
+}
+
+func (e RecordPatternEntry) Equal(ctx *Context, other RecordPatternEntry, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	return e.Name == other.Name &&
+		e.IsOptional == other.IsOptional &&
+		e.Pattern.Equal(ctx, other.Pattern, alreadyCompared, depth+1)
 }
 
 func (patt *MutationPattern) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
