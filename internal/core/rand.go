@@ -182,11 +182,6 @@ func (r IntRange) Random(ctx *Context) Value {
 	}
 	start := r.start
 	end := r.end
-
-	if !r.inclusiveEnd {
-		end = r.end - 1
-	}
-
 	return Int(DefaultRandSource.RandInt64Range(int64(start), int64(end)))
 }
 

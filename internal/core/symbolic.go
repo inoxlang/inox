@@ -1227,7 +1227,6 @@ func (r IntRange) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic
 	return symbolic.NewIntRange(
 		symbolic.NewInt(r.start),
 		symbolic.NewInt(r.end),
-		r.inclusiveEnd,
 		r.step != 1,
 	), nil
 }

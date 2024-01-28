@@ -595,10 +595,7 @@ type IntRangeIterator struct {
 }
 
 func (it *IntRangeIterator) HasNext(*Context) bool {
-	if it.range_.inclusiveEnd {
-		return it.next <= it.range_.end
-	}
-	return it.next < it.range_.end
+	return it.next <= it.range_.end
 }
 
 func (it *IntRangeIterator) Next(ctx *Context) bool {

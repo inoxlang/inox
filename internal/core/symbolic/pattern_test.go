@@ -3166,8 +3166,8 @@ func TestTypePattern(t *testing.T) {
 func TestIntRangePattern(t *testing.T) {
 
 	t.Run("Test()", func(t *testing.T) {
-		intRangePattern1_2 := NewIntRangePattern(NewIncludedEndIntRange(INT_1, INT_2))
-		intRangePattern1_2ExcludedEnd := NewIntRangePattern(NewExcludedEndIntRange(INT_1, INT_2))
+		intRangePattern1_2 := NewIntRangePattern(NewIntRange(INT_1, INT_2, false))
+		intRangePattern1_2ExcludedEnd := NewIntRangePattern(NewIntRange(INT_1, INT_1, false))
 
 		assertTest(t, ANY_INT_RANGE_PATTERN, ANY_INT_RANGE_PATTERN)
 		assertTest(t, ANY_INT_RANGE_PATTERN, intRangePattern1_2)
@@ -3190,7 +3190,7 @@ func TestIntRangePattern(t *testing.T) {
 		assertTestFalse(t, val, INT_0)
 		assertTestFalse(t, val, INT_1)
 
-		intRangePattern1_2 := NewIntRangePattern(NewIncludedEndIntRange(INT_1, INT_2))
+		intRangePattern1_2 := NewIntRangePattern(NewIntRange(INT_1, INT_2, false))
 		assertTestValue(t, intRangePattern1_2, INT_1)
 		assertTestValue(t, intRangePattern1_2, INT_2)
 		assertTestValueFalse(t, intRangePattern1_2, INT_3)
@@ -3202,7 +3202,7 @@ func TestIntRangePattern(t *testing.T) {
 		assertTestFalse(t, val, INT_3)
 		assertTestFalse(t, val, INT_0)
 
-		intRangePattern1_2ExcludedEnd := NewIntRangePattern(NewExcludedEndIntRange(INT_1, INT_2))
+		intRangePattern1_2ExcludedEnd := NewIntRangePattern(NewIntRange(INT_1, INT_1, false))
 		assertTestValue(t, intRangePattern1_2ExcludedEnd, INT_1)
 		assertTestValueFalse(t, intRangePattern1_2ExcludedEnd, INT_2)
 		assertTestValueFalse(t, intRangePattern1_2ExcludedEnd, INT_3)

@@ -23,7 +23,7 @@ func TestRuneSlice(t *testing.T) {
 		t.Run("trailing sub slice", func(t *testing.T) {
 			ctx := NewContext(ContextConfig{})
 			slice := NewRuneSlice([]rune("abc"))
-			slice.removePositionRange(ctx, NewIncludedEndIntRange(1, 2))
+			slice.removePositionRange(ctx, NewIntRange(1, 2))
 
 			assert.Equal(t, []rune("a"), slice.elements)
 		})
@@ -31,7 +31,7 @@ func TestRuneSlice(t *testing.T) {
 		t.Run("leading sub slice", func(t *testing.T) {
 			ctx := NewContext(ContextConfig{})
 			slice := NewRuneSlice([]rune("abc"))
-			slice.removePositionRange(ctx, NewIncludedEndIntRange(0, 1))
+			slice.removePositionRange(ctx, NewIntRange(0, 1))
 
 			assert.Equal(t, []rune("c"), slice.elements)
 		})
@@ -39,7 +39,7 @@ func TestRuneSlice(t *testing.T) {
 		t.Run("sub slice in the middle", func(t *testing.T) {
 			ctx := NewContext(ContextConfig{})
 			slice := NewRuneSlice([]rune("abcd"))
-			slice.removePositionRange(ctx, NewIncludedEndIntRange(1, 2))
+			slice.removePositionRange(ctx, NewIntRange(1, 2))
 
 			assert.Equal(t, []rune("ad"), slice.elements)
 		})

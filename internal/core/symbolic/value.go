@@ -782,13 +782,12 @@ type IntRange struct {
 
 	//fields set if .hasValue is true
 
-	inclusiveEnd bool
 	start        *Int
 	end          *Int
 	isStepNotOne bool //only symbolic int ranges with a step of 1 are fully supported
 }
 
-func NewIncludedEndIntRange(start, end *Int) *IntRange {
+func NewIntRange(start, end *Int, isStepNotOne bool) *IntRange {
 	if !start.hasValue {
 		panic(errors.New("lower bound has no value"))
 	}
@@ -798,39 +797,6 @@ func NewIncludedEndIntRange(start, end *Int) *IntRange {
 
 	return &IntRange{
 		hasValue:     true,
-		inclusiveEnd: true,
-		start:        start,
-		end:          end,
-	}
-}
-
-func NewExcludedEndIntRange(start, end *Int) *IntRange {
-	if !start.hasValue {
-		panic(errors.New("lower bound has no value"))
-	}
-	if !end.hasValue {
-		panic(errors.New("lower bound has no value"))
-	}
-
-	return &IntRange{
-		hasValue:     true,
-		inclusiveEnd: false,
-		start:        start,
-		end:          end,
-	}
-}
-
-func NewIntRange(start, end *Int, inclusiveEnd, isStepNotOne bool) *IntRange {
-	if !start.hasValue {
-		panic(errors.New("lower bound has no value"))
-	}
-	if !end.hasValue {
-		panic(errors.New("lower bound has no value"))
-	}
-
-	return &IntRange{
-		hasValue:     true,
-		inclusiveEnd: inclusiveEnd,
 		isStepNotOne: isStepNotOne,
 		start:        start,
 		end:          end,
@@ -855,8 +821,7 @@ func (r *IntRange) Test(v Value, state RecTestCallState) bool {
 
 	return r.isStepNotOne == otherRange.isStepNotOne &&
 		r.start == otherRange.start &&
-		r.end == otherRange.end &&
-		r.inclusiveEnd == otherRange.inclusiveEnd
+		r.end == otherRange.end
 }
 
 func (r *IntRange) Static() Pattern {
@@ -869,11 +834,7 @@ func (r *IntRange) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.Pretty
 		return
 	}
 
-	if r.inclusiveEnd {
-		w.WriteStringF("%d..%d", r.start.value, r.end.value)
-	} else {
-		w.WriteStringF("%d..<%d", r.start.value, r.end.value)
-	}
+	w.WriteStringF("%d..%d", r.start.value, r.end.value)
 
 	if r.isStepNotOne {
 		w.WriteString("(step?)")
@@ -896,10 +857,7 @@ func (*IntRange) ElementAt(i int) Value {
 }
 
 func (r *IntRange) InclusiveEnd() int64 {
-	if r.inclusiveEnd {
-		return r.end.value
-	}
-	return r.end.value - 1
+	return r.end.value
 }
 
 func (r *IntRange) Contains(value Serializable) (yes bool, possible bool) {

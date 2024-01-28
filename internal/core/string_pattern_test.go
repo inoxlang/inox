@@ -544,10 +544,9 @@ func TestLengthCheckingStringPattern(t *testing.T) {
 		pattern := NewLengthCheckingStringPattern(0, 1)
 
 		assert.Equal(t, IntRange{
-			inclusiveEnd: true,
-			start:        0,
-			end:          1,
-			step:         1,
+			start: 0,
+			end:   1,
+			step:  1,
 		}, pattern.LengthRange())
 
 	})
@@ -590,10 +589,9 @@ func TestSequenceStringPattern(t *testing.T) {
 				return
 			}
 			assert.Equal(t, IntRange{
-				inclusiveEnd: true,
-				start:        2,
-				end:          math.MaxInt64,
-				step:         1,
+				start: 2,
+				end:   math.MaxInt64,
+				step:  1,
 			}, patt.LengthRange())
 		})
 
@@ -606,10 +604,9 @@ func TestSequenceStringPattern(t *testing.T) {
 				return
 			}
 			assert.Equal(t, IntRange{
-				inclusiveEnd: true,
-				start:        4,
-				end:          math.MaxInt64,
-				step:         1,
+				start: 4,
+				end:   math.MaxInt64,
+				step:  1,
 			}, patt.LengthRange())
 		})
 
@@ -622,10 +619,9 @@ func TestSequenceStringPattern(t *testing.T) {
 				return
 			}
 			assert.Equal(t, IntRange{
-				inclusiveEnd: true,
-				start:        4,
-				end:          math.MaxInt64,
-				step:         1,
+				start: 4,
+				end:   math.MaxInt64,
+				step:  1,
 			}, patt.LengthRange())
 		})
 
@@ -717,10 +713,9 @@ func TestRuneRangeStringPattern(t *testing.T) {
 		}
 
 		assert.Equal(t, IntRange{
-			start:        1,
-			end:          1,
-			inclusiveEnd: true,
-			step:         1,
+			start: 1,
+			end:   1,
+			step:  1,
 		}, patt.LengthRange())
 	})
 
@@ -762,7 +757,7 @@ func TestIntRangeStringPattern(t *testing.T) {
 	}
 
 	pattern := NewIntRangeStringPattern(min, 0, nil)
-	assert.Equal(t, NewIncludedEndIntRange(1, maxCharCount), pattern.LengthRange())
+	assert.Equal(t, NewIntRange(1, maxCharCount), pattern.LengthRange())
 	assertTestAndParse(t, pattern, minS)
 	assertTestAndParse(t, pattern, minPlusOneS)
 	assertTestAndParse(t, pattern, "0")
@@ -772,7 +767,7 @@ func TestIntRangeStringPattern(t *testing.T) {
 	assertDoesNotTestAndParse(t, pattern, "2")
 
 	pattern = NewIntRangeStringPattern(min+1, 0, nil)
-	assert.Equal(t, NewIncludedEndIntRange(1, maxCharCount), pattern.LengthRange())
+	assert.Equal(t, NewIntRange(1, maxCharCount), pattern.LengthRange())
 	assertTestAndParse(t, pattern, minPlusOneS)
 	assertTestAndParse(t, pattern, "0")
 	assertTestAndParse(t, pattern, "-1")
@@ -782,7 +777,7 @@ func TestIntRangeStringPattern(t *testing.T) {
 	assertDoesNotTestAndParse(t, pattern, "2")
 
 	pattern = NewIntRangeStringPattern(min, max, nil)
-	assert.Equal(t, NewIncludedEndIntRange(1, maxCharCount), pattern.LengthRange())
+	assert.Equal(t, NewIntRange(1, maxCharCount), pattern.LengthRange())
 	assertTestAndParse(t, pattern, minS)
 	assertTestAndParse(t, pattern, minPlusOneS)
 	assertTestAndParse(t, pattern, maxS)
@@ -793,7 +788,7 @@ func TestIntRangeStringPattern(t *testing.T) {
 	assertDoesNotTestAndParse(t, pattern, "-0")
 
 	pattern = NewIntRangeStringPattern(min, max-1, nil)
-	assert.Equal(t, NewIncludedEndIntRange(1, maxCharCount), pattern.LengthRange())
+	assert.Equal(t, NewIntRange(1, maxCharCount), pattern.LengthRange())
 	assertTestAndParse(t, pattern, minS)
 	assertTestAndParse(t, pattern, minPlusOneS)
 	assertTestAndParse(t, pattern, maxMinusOneS)
@@ -805,7 +800,7 @@ func TestIntRangeStringPattern(t *testing.T) {
 	assertDoesNotTestAndParse(t, pattern, "-0")
 
 	pattern = NewIntRangeStringPattern(0, 0, nil)
-	assert.Equal(t, NewIncludedEndIntRange(1, 1), pattern.LengthRange())
+	assert.Equal(t, NewIntRange(1, 1), pattern.LengthRange())
 	assertTestAndParse(t, pattern, "0")
 	assertDoesNotTestAndParse(t, pattern, "1")
 	assertDoesNotTestAndParse(t, pattern, "-0")
@@ -813,7 +808,7 @@ func TestIntRangeStringPattern(t *testing.T) {
 	assertDoesNotTestAndParse(t, pattern, "2")
 
 	pattern = NewIntRangeStringPattern(0, 1, nil)
-	assert.Equal(t, NewIncludedEndIntRange(1, 1), pattern.LengthRange())
+	assert.Equal(t, NewIntRange(1, 1), pattern.LengthRange())
 	assertTestAndParse(t, pattern, "0")
 	assertTestAndParse(t, pattern, "1")
 	assertDoesNotTestAndParse(t, pattern, "-0")
@@ -821,7 +816,7 @@ func TestIntRangeStringPattern(t *testing.T) {
 	assertDoesNotTestAndParse(t, pattern, "2")
 
 	pattern = NewIntRangeStringPattern(1, 2, nil)
-	assert.Equal(t, NewIncludedEndIntRange(1, 1), pattern.LengthRange())
+	assert.Equal(t, NewIntRange(1, 1), pattern.LengthRange())
 	assertDoesNotTestAndParse(t, pattern, "0")
 	assertTestAndParse(t, pattern, "1")
 	assertDoesNotTestAndParse(t, pattern, "-0")
@@ -829,7 +824,7 @@ func TestIntRangeStringPattern(t *testing.T) {
 	assertTestAndParse(t, pattern, "2")
 
 	pattern = NewIntRangeStringPattern(1, 9, nil)
-	assert.Equal(t, NewIncludedEndIntRange(1, 1), pattern.LengthRange())
+	assert.Equal(t, NewIntRange(1, 1), pattern.LengthRange())
 	assertDoesNotTestAndParse(t, pattern, "0")
 	assertTestAndParse(t, pattern, "1")
 	assertDoesNotTestAndParse(t, pattern, "-0")
@@ -839,7 +834,7 @@ func TestIntRangeStringPattern(t *testing.T) {
 	assertDoesNotTestAndParse(t, pattern, "10")
 
 	pattern = NewIntRangeStringPattern(1, 10, nil)
-	assert.Equal(t, NewIncludedEndIntRange(1, 2), pattern.LengthRange())
+	assert.Equal(t, NewIntRange(1, 2), pattern.LengthRange())
 	assertDoesNotTestAndParse(t, pattern, "0")
 	assertTestAndParse(t, pattern, "1")
 	assertDoesNotTestAndParse(t, pattern, "-0")
@@ -850,7 +845,7 @@ func TestIntRangeStringPattern(t *testing.T) {
 	assertDoesNotTestAndParse(t, pattern, "11")
 
 	pattern = NewIntRangeStringPattern(1, 99, nil)
-	assert.Equal(t, NewIncludedEndIntRange(1, 2), pattern.LengthRange())
+	assert.Equal(t, NewIntRange(1, 2), pattern.LengthRange())
 	assertDoesNotTestAndParse(t, pattern, "0")
 	assertTestAndParse(t, pattern, "1")
 	assertDoesNotTestAndParse(t, pattern, "-0")
@@ -863,7 +858,7 @@ func TestIntRangeStringPattern(t *testing.T) {
 	assertDoesNotTestAndParse(t, pattern, "100")
 
 	pattern = NewIntRangeStringPattern(1, 100, nil)
-	assert.Equal(t, NewIncludedEndIntRange(1, 3), pattern.LengthRange())
+	assert.Equal(t, NewIntRange(1, 3), pattern.LengthRange())
 	assertDoesNotTestAndParse(t, pattern, "0")
 	assertTestAndParse(t, pattern, "1")
 	assertDoesNotTestAndParse(t, pattern, "-0")
@@ -876,7 +871,7 @@ func TestIntRangeStringPattern(t *testing.T) {
 	assertTestAndParse(t, pattern, "100")
 
 	pattern = NewIntRangeStringPattern(1, max, nil)
-	assert.Equal(t, NewIncludedEndIntRange(1, int64(utils.CountDigits(max))), pattern.LengthRange())
+	assert.Equal(t, NewIntRange(1, int64(utils.CountDigits(max))), pattern.LengthRange())
 	assertDoesNotTestAndParse(t, pattern, "0")
 	assertTestAndParse(t, pattern, "1")
 	assertDoesNotTestAndParse(t, pattern, "-0")
@@ -890,7 +885,7 @@ func TestIntRangeStringPattern(t *testing.T) {
 	assertTestAndParse(t, pattern, strconv.FormatInt(max, 10))
 
 	// pattern = NewIntRangeStringPattern(min, -1, nil)
-	// assert.Equal(t, NewIncludedEndIntRange(2, int64(1+utils.CountDigits(min))), pattern.LengthRange())
+	// assert.Equal(t, NewIntRange(2, int64(1+utils.CountDigits(min))), pattern.LengthRange())
 	// assertDoesNotTestAndParse(t, pattern, "0")
 	// assertDoesNotTestAndParse(t, pattern, "1")
 	// assertDoesNotTestAndParse(t, pattern, "-0")
@@ -900,7 +895,7 @@ func TestIntRangeStringPattern(t *testing.T) {
 	// assertTestAndParse(t, pattern, strconv.FormatInt(min+1, 10))
 
 	pattern = NewIntRangeStringPattern(-1, 1, nil)
-	assert.Equal(t, NewIncludedEndIntRange(1, 2), pattern.LengthRange())
+	assert.Equal(t, NewIntRange(1, 2), pattern.LengthRange())
 	assertTestAndParse(t, pattern, "0")
 	assertTestAndParse(t, pattern, "1")
 	assertDoesNotTestAndParse(t, pattern, "-0")
@@ -908,7 +903,7 @@ func TestIntRangeStringPattern(t *testing.T) {
 	assertDoesNotTestAndParse(t, pattern, "2")
 
 	pattern = NewIntRangeStringPattern(-1, 9, nil)
-	assert.Equal(t, NewIncludedEndIntRange(1, 2), pattern.LengthRange())
+	assert.Equal(t, NewIntRange(1, 2), pattern.LengthRange())
 	assertTestAndParse(t, pattern, "0")
 	assertTestAndParse(t, pattern, "1")
 	assertDoesNotTestAndParse(t, pattern, "-0")
@@ -921,7 +916,7 @@ func TestIntRangeStringPattern(t *testing.T) {
 	assertDoesNotTestAndParse(t, pattern, "-10")
 
 	pattern = NewIntRangeStringPattern(-9, 9, nil)
-	assert.Equal(t, NewIncludedEndIntRange(1, 2), pattern.LengthRange())
+	assert.Equal(t, NewIntRange(1, 2), pattern.LengthRange())
 	assertTestAndParse(t, pattern, "0")
 	assertTestAndParse(t, pattern, "1")
 	assertDoesNotTestAndParse(t, pattern, "-0")
@@ -934,7 +929,7 @@ func TestIntRangeStringPattern(t *testing.T) {
 	assertDoesNotTestAndParse(t, pattern, "-10")
 
 	pattern = NewIntRangeStringPattern(-10, 9, nil)
-	assert.Equal(t, NewIncludedEndIntRange(1, 3), pattern.LengthRange())
+	assert.Equal(t, NewIntRange(1, 3), pattern.LengthRange())
 	assertTestAndParse(t, pattern, "0")
 	assertTestAndParse(t, pattern, "1")
 	assertDoesNotTestAndParse(t, pattern, "-0")
@@ -947,7 +942,7 @@ func TestIntRangeStringPattern(t *testing.T) {
 	assertTestAndParse(t, pattern, "-10")
 
 	pattern = NewIntRangeStringPattern(-10, 10, nil)
-	assert.Equal(t, NewIncludedEndIntRange(1, 3), pattern.LengthRange())
+	assert.Equal(t, NewIntRange(1, 3), pattern.LengthRange())
 	assertTestAndParse(t, pattern, "0")
 	assertTestAndParse(t, pattern, "1")
 	assertDoesNotTestAndParse(t, pattern, "-0")
@@ -960,7 +955,7 @@ func TestIntRangeStringPattern(t *testing.T) {
 	assertTestAndParse(t, pattern, "-10")
 
 	pattern = NewIntRangeStringPattern(-10, 99, nil)
-	assert.Equal(t, NewIncludedEndIntRange(1, 3), pattern.LengthRange())
+	assert.Equal(t, NewIntRange(1, 3), pattern.LengthRange())
 	assertTestAndParse(t, pattern, "0")
 	assertTestAndParse(t, pattern, "1")
 	assertDoesNotTestAndParse(t, pattern, "-0")
@@ -976,7 +971,7 @@ func TestIntRangeStringPattern(t *testing.T) {
 	assertDoesNotTestAndParse(t, pattern, "100")
 
 	pattern = NewIntRangeStringPattern(-10, 100, nil)
-	assert.Equal(t, NewIncludedEndIntRange(1, 3), pattern.LengthRange())
+	assert.Equal(t, NewIntRange(1, 3), pattern.LengthRange())
 	assertTestAndParse(t, pattern, "0")
 	assertTestAndParse(t, pattern, "1")
 	assertDoesNotTestAndParse(t, pattern, "-0")
@@ -992,7 +987,7 @@ func TestIntRangeStringPattern(t *testing.T) {
 	assertTestAndParse(t, pattern, "100")
 
 	pattern = NewIntRangeStringPattern(-100, 100, nil)
-	assert.Equal(t, NewIncludedEndIntRange(1, 4), pattern.LengthRange())
+	assert.Equal(t, NewIntRange(1, 4), pattern.LengthRange())
 	assertTestAndParse(t, pattern, "0")
 	assertTestAndParse(t, pattern, "1")
 	assertDoesNotTestAndParse(t, pattern, "-0")
@@ -1042,7 +1037,7 @@ func TestFloatRangeStringPattern(t *testing.T) {
 	}
 
 	pattern := NewFloatRangeStringPattern(min, 0, nil)
-	assert.Equal(t, NewIncludedEndIntRange(1, 1+int64(MAX_CHAR_COUNT_MAXIMUM_FLOAT_64)), pattern.LengthRange())
+	assert.Equal(t, NewIntRange(1, 1+int64(MAX_CHAR_COUNT_MAXIMUM_FLOAT_64)), pattern.LengthRange())
 	assertTestAndParse(t, pattern, minS)
 	assertTestAndParse(t, pattern, "0")
 	assertTestAndParse(t, pattern, "00")
@@ -1060,7 +1055,7 @@ func TestFloatRangeStringPattern(t *testing.T) {
 	assertDoesNotTestAndParse(t, pattern, "2.")
 
 	pattern = NewFloatRangeStringPattern(min, max, nil)
-	assert.Equal(t, NewIncludedEndIntRange(1, 1+int64(MAX_CHAR_COUNT_MAXIMUM_FLOAT_64)), pattern.LengthRange())
+	assert.Equal(t, NewIntRange(1, 1+int64(MAX_CHAR_COUNT_MAXIMUM_FLOAT_64)), pattern.LengthRange())
 	assertTestAndParse(t, pattern, minS)
 	assertTestAndParse(t, pattern, maxS)
 	assertTestAndParse(t, pattern, "0")
@@ -1075,7 +1070,7 @@ func TestFloatRangeStringPattern(t *testing.T) {
 	assertTestAndParse(t, pattern, "2.0")
 
 	pattern = NewFloatRangeStringPattern(0, max, nil)
-	assert.Equal(t, NewIncludedEndIntRange(1, int64(MAX_CHAR_COUNT_MAXIMUM_FLOAT_64)), pattern.LengthRange())
+	assert.Equal(t, NewIntRange(1, int64(MAX_CHAR_COUNT_MAXIMUM_FLOAT_64)), pattern.LengthRange())
 	assertTestAndParse(t, pattern, maxS)
 	assertTestAndParse(t, pattern, "0")
 	assertTestAndParse(t, pattern, "0.0")
@@ -1096,10 +1091,9 @@ func TestUnionStringPattern(t *testing.T) {
 			NewExactStringPattern(String("bc")),
 		}))
 		assert.Equal(t, IntRange{
-			start:        1,
-			end:          2,
-			inclusiveEnd: true,
-			step:         1,
+			start: 1,
+			end:   2,
+			step:  1,
 		}, patt.LengthRange())
 	})
 
@@ -1190,7 +1184,6 @@ func TestRegexPattern(t *testing.T) {
 		for regex, expectedRange := range testCases {
 			t.Run("`"+regex+"`", func(t *testing.T) {
 				expectedRange.step = 1
-				expectedRange.inclusiveEnd = true
 
 				patt := NewRegexPattern(regex)
 				assert.Equal(t, expectedRange, patt.LengthRange())

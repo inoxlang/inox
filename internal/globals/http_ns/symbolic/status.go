@@ -11,7 +11,7 @@ var (
 	ANY_STATUS_CODE  = &StatusCode{}
 
 	STATUS_CODE_INT_VALUE = symbolic.ANY_INT.
-				WithMatchingPattern(symbolic.NewIntRangePattern(symbolic.NewIncludedEndIntRange(symbolic.NewInt(100), symbolic.NewInt(599))))
+				WithMatchingPattern(symbolic.NewIntRangePattern(symbolic.NewIntRange(symbolic.NewInt(100), symbolic.NewInt(599), false)))
 )
 
 type Status struct {

@@ -379,10 +379,9 @@ func convertJsonSchemaToPattern(schema *jsonschema.Schema, baseSchema *jsonschem
 	} else if allowInteger {
 		hasRange := false
 		intRange := IntRange{
-			start:        math.MinInt64,
-			end:          math.MaxInt64,
-			inclusiveEnd: true,
-			step:         1,
+			start: math.MinInt64,
+			end:   math.MaxInt64,
+			step:  1,
 		}
 
 		if schema.Minimum != nil {
@@ -398,12 +397,16 @@ func convertJsonSchemaToPattern(schema *jsonschema.Schema, baseSchema *jsonschem
 
 		if schema.Maximum != nil {
 			exclusiveMax, _ := schema.Maximum.Float64()
-			intRange.inclusiveEnd = true
 			intRange.end = int64(math.Ceil(exclusiveMax))
 			hasRange = true
 		} else if schema.ExclusiveMaximum != nil {
 			max, _ := schema.Maximum.Float64()
 			intRange.end = int64(math.Ceil(max))
+
+			if intRange.end == math.MinInt64 {
+				return nil, errors.New("invalid 'exclusiveMaximum'")
+			}
+			intRange.end--
 			hasRange = true
 		}
 
@@ -444,22 +447,20 @@ func convertJsonSchemaToPattern(schema *jsonschema.Schema, baseSchema *jsonschem
 		var lengthRange = IntRange{}
 		var hasLengthRange bool
 
-		if schema.MinLength != -1 {
+		if schema.MinLength >= 0 {
 			lengthRange.start = int64(schema.MinLength)
 			hasLengthRange = true
 
-			if schema.MaxLength == -1 {
+			if schema.MaxLength < 0 {
 				lengthRange.end = math.MaxInt64
-				lengthRange.inclusiveEnd = true
 			}
 		}
 
-		if schema.MaxLength != -1 {
+		if schema.MaxLength >= 0 {
 			lengthRange.end = int64(schema.MaxLength)
-			lengthRange.inclusiveEnd = true
 			hasLengthRange = true
 
-			if schema.MinLength == -1 {
+			if schema.MinLength < 0 {
 				lengthRange.start = 0
 			}
 		}

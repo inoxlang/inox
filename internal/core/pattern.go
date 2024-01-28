@@ -1092,7 +1092,7 @@ func NewIncludedEndIntRangePattern(start, end int64, multipleOf int64) *IntRange
 		multipleOf = 0
 	}
 
-	range_ := NewIncludedEndIntRange(start, end)
+	range_ := NewIntRange(start, end)
 	return &IntRangePattern{
 		intRange:   range_,
 		multipleOf: Int(multipleOf),
@@ -1137,7 +1137,7 @@ func NewIntRangePatternFloatMultiple(intRange IntRange, multipleOf Float) *IntRa
 }
 
 func NewSingleElementIntRangePattern(n int64) *IntRangePattern {
-	range_ := IntRange{inclusiveEnd: true, start: n, end: n, step: 1}
+	range_ := NewIntRange(n, n)
 	return &IntRangePattern{
 		intRange: range_,
 	}

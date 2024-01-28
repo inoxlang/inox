@@ -61,7 +61,7 @@ func TestByteSlice(t *testing.T) {
 		t.Run("trailing sub slice", func(t *testing.T) {
 			ctx := NewContext(ContextConfig{})
 			slice := NewByteSlice([]byte("abc"), true, "")
-			slice.removePositionRange(ctx, NewIncludedEndIntRange(1, 2))
+			slice.removePositionRange(ctx, NewIntRange(1, 2))
 
 			assert.Equal(t, []byte("a"), slice.bytes)
 		})
@@ -69,7 +69,7 @@ func TestByteSlice(t *testing.T) {
 		t.Run("leading sub slice", func(t *testing.T) {
 			ctx := NewContext(ContextConfig{})
 			slice := NewByteSlice([]byte("abc"), true, "")
-			slice.removePositionRange(ctx, NewIncludedEndIntRange(0, 1))
+			slice.removePositionRange(ctx, NewIntRange(0, 1))
 
 			assert.Equal(t, []byte("c"), slice.bytes)
 		})
@@ -77,7 +77,7 @@ func TestByteSlice(t *testing.T) {
 		t.Run("sub slice in the middle", func(t *testing.T) {
 			ctx := NewContext(ContextConfig{})
 			slice := NewByteSlice([]byte("abcd"), true, "")
-			slice.removePositionRange(ctx, NewIncludedEndIntRange(1, 2))
+			slice.removePositionRange(ctx, NewIntRange(1, 2))
 
 			assert.Equal(t, []byte("ad"), slice.bytes)
 		})

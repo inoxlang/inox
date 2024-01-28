@@ -1582,14 +1582,13 @@ func parseIntRangeJSONRepresentation(ctx *Context, it *jsoniter.Iterator, try bo
 		hasStart bool
 		start    int64
 
-		hasEnd          bool
-		hasExclusiveEnd bool
-		end             int64 = math.MaxInt64
+		hasEnd bool
+		end    int64 = math.MaxInt64
 	)
 
 	it.ReadObjectCB(func(it *jsoniter.Iterator, s string) bool {
 		switch s {
-		case SERIALIZED_INT_RANGE_START_KEY, SERIALIZED_INT_RANGE_START_EXCL_END_KEY, SERIALIZED_INT_RANGE_START_END_KEY:
+		case SERIALIZED_INT_RANGE_START_KEY, SERIALIZED_INT_RANGE_START_END_KEY:
 			var n int64
 			var err error
 
@@ -1611,18 +1610,7 @@ func parseIntRangeJSONRepresentation(ctx *Context, it *jsoniter.Iterator, try bo
 			case SERIALIZED_INT_RANGE_START_KEY:
 				hasStart = true
 				start = n
-			case SERIALIZED_INT_RANGE_START_EXCL_END_KEY:
-				if hasEnd {
-					finalErr = errors.New("unexpected exclusive end (upper bound) of integer range, exclusive end is already specified")
-					return false
-				}
-				hasExclusiveEnd = true
-				end = n
 			case SERIALIZED_INT_RANGE_START_END_KEY:
-				if hasExclusiveEnd {
-					finalErr = errors.New("unexpected inclusive end (upper bound) of integer range, inclusive end is already specified")
-					return false
-				}
 				hasEnd = true
 				end = n
 			}
@@ -1642,7 +1630,7 @@ func parseIntRangeJSONRepresentation(ctx *Context, it *jsoniter.Iterator, try bo
 		return
 	}
 
-	if !hasEnd && !hasExclusiveEnd {
+	if !hasEnd {
 		finalErr = errors.New("invalid representation of integer range")
 		return
 	}
@@ -1652,10 +1640,10 @@ func parseIntRangeJSONRepresentation(ctx *Context, it *jsoniter.Iterator, try bo
 			finalErr = errors.New("invalid integer range: start > end")
 			return
 		}
-		return NewIntRange(start, end, !hasExclusiveEnd), nil
+		return NewIntRange(start, end), nil
 	}
 
-	return NewUnknownStartIntRange(end, !hasExclusiveEnd), nil
+	return NewUnknownStartIntRange(end), nil
 }
 
 func parseFloatRangeJSONRepresentation(ctx *Context, it *jsoniter.Iterator, try bool) (floatRange FloatRange, finalErr error) {

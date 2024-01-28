@@ -568,7 +568,7 @@ func TestListOnMutation(t *testing.T) {
 			}
 			called.Store(true)
 
-			assert.Equal(t, NewSetSliceAtRangeMutation(ctx, NewIncludedEndIntRange(0, 0), NewWrappedValueList(Int(2)), ShallowWatching, "/0..0"), mutation)
+			assert.Equal(t, NewSetSliceAtRangeMutation(ctx, NewIntRange(0, 0), NewWrappedValueList(Int(2)), ShallowWatching, "/0..0"), mutation)
 
 			return true
 		}, MutationWatchingConfiguration{})
@@ -937,7 +937,7 @@ func TestListOnMutation(t *testing.T) {
 
 		// we modify the list in the same goroutine since List is not sharable
 		time.Sleep(time.Microsecond)
-		list.removePositionRange(ctx, NewIncludedEndIntRange(0, 0))
+		list.removePositionRange(ctx, NewIntRange(0, 0))
 
 		obj.SetProp(ctx, "prop", Int(1))
 
@@ -971,7 +971,7 @@ func TestListOnMutation(t *testing.T) {
 		list.append(ctx, obj)
 
 		time.Sleep(time.Microsecond)
-		list.removePositionRange(ctx, NewIncludedEndIntRange(0, 0))
+		list.removePositionRange(ctx, NewIntRange(0, 0))
 
 		obj.SetProp(ctx, "prop", Int(1))
 
@@ -1062,7 +1062,7 @@ func TestRuneSliceOnMutation(t *testing.T) {
 			}
 			called.Store(true)
 
-			assert.Equal(t, NewSetSliceAtRangeMutation(ctx, NewIncludedEndIntRange(0, 1), setSlice, ShallowWatching, "/0..1"), mutation)
+			assert.Equal(t, NewSetSliceAtRangeMutation(ctx, NewIntRange(0, 1), setSlice, ShallowWatching, "/0..1"), mutation)
 
 			return true
 		}, MutationWatchingConfiguration{})
@@ -1221,7 +1221,7 @@ func TestByteSliceOnMutation(t *testing.T) {
 			}
 			called.Store(true)
 
-			assert.Equal(t, NewSetSliceAtRangeMutation(ctx, NewIncludedEndIntRange(0, 1), setSlice, ShallowWatching, "/0..1"), mutation)
+			assert.Equal(t, NewSetSliceAtRangeMutation(ctx, NewIntRange(0, 1), setSlice, ShallowWatching, "/0..1"), mutation)
 
 			return true
 		}, MutationWatchingConfiguration{})

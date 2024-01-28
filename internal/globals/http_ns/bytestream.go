@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	DEFAULT_PUSHED_BYTESTREAM_CHUNK_SIZE_RANGE = core.NewIncludedEndIntRange(100, 1000)
+	DEFAULT_PUSHED_BYTESTREAM_CHUNK_SIZE_RANGE = core.NewIntRange(100, 1000)
 	BYTESTREAM_SSE_STREAM_STOP_TIMEOUT         = 10 * time.Millisecond
 	BYTESTREAM_CHUNK_WAIT_TIMEOUT              = 2 * time.Millisecond
 )

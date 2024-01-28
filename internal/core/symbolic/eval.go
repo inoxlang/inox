@@ -636,10 +636,9 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 		}
 
 		return &IntRange{
-			hasValue:     true,
-			start:        lowerBound,
-			end:          upperBound,
-			inclusiveEnd: true,
+			hasValue: true,
+			start:    lowerBound,
+			end:      upperBound,
 		}, nil
 	case *parse.FloatRangeLiteral:
 		if n.LowerBound == nil || n.LowerBound.Err != nil {
@@ -2809,12 +2808,18 @@ func evalBinaryExpression(n *parse.BinaryExpression, state *State, options evalO
 			}
 
 			rightInt := right.(*Int)
+			inclusiveEnd := ANY_INT
+
+			if n.Operator == parse.Range {
+				inclusiveEnd = rightInt
+			} else if n.Operator == parse.ExclEndRange && rightInt.HasValue() {
+				inclusiveEnd = NewInt(rightInt.Value() - 1)
+			}
 
 			return &IntRange{
-				hasValue:     true,
-				inclusiveEnd: n.Operator == parse.Range,
-				start:        left,
-				end:          rightInt,
+				hasValue: true,
+				start:    left,
+				end:      inclusiveEnd,
 			}, nil
 		case *Float:
 			if !ANY_FLOAT.Test(right, RecTestCallState{}) {

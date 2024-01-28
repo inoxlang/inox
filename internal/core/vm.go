@@ -640,11 +640,14 @@ func (v *VM) run() {
 
 			switch left.(type) {
 			case Int:
+				end := right.(Int)
+				if exclEnd {
+					end--
+				}
 				res = IntRange{
-					inclusiveEnd: !exclEnd,
-					start:        int64(left.(Int)),
-					end:          int64(right.(Int)),
-					step:         1,
+					start: int64(left.(Int)),
+					end:   int64(end),
+					step:  1,
 				}
 			case Float:
 				res = FloatRange{
@@ -1421,7 +1424,7 @@ func (v *VM) run() {
 						break
 					}
 
-					chunkSizeRange := NewIncludedEndIntRange(DEFAULT_MIN_STREAM_CHUNK_SIZE, DEFAULT_MAX_STREAM_CHUNK_SIZE)
+					chunkSizeRange := NewIntRange(DEFAULT_MIN_STREAM_CHUNK_SIZE, DEFAULT_MAX_STREAM_CHUNK_SIZE)
 					chunk, err := stream.WaitNextChunk(v.global.Ctx, nil, chunkSizeRange, STREAM_ITERATION_WAIT_TIMEOUT)
 
 					if errors.Is(err, ErrEndOfStream) {
@@ -2246,7 +2249,6 @@ func (v *VM) handleOtherOpcodes(op byte) (_continue bool) {
 		upper := int64(v.stack[v.sp-1].(Int))
 		v.stack[v.sp-2] = IntRange{
 			unknownStart: false,
-			inclusiveEnd: true,
 			start:        lower,
 			end:          upper,
 			step:         1,
@@ -2269,7 +2271,6 @@ func (v *VM) handleOtherOpcodes(op byte) (_continue bool) {
 		case Int:
 			v.stack[v.sp-1] = IntRange{
 				unknownStart: true,
-				inclusiveEnd: true,
 				end:          int64(val),
 				step:         1,
 			}

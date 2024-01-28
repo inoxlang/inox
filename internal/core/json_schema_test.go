@@ -303,19 +303,19 @@ func TestConvertJsonSchemaToPattern(t *testing.T) {
 			if !assert.NoError(t, err) {
 				return
 			}
-			assert.Equal(t, NewIntRangePattern(NewIncludedEndIntRange(0, math.MaxInt64), 0), pattern)
+			assert.Equal(t, NewIntRangePattern(NewIntRange(0, math.MaxInt64), 0), pattern)
 
 			pattern, err = ConvertJsonSchemaToPattern(`{"type":"integer","maximum": 0}`)
 			if !assert.NoError(t, err) {
 				return
 			}
-			assert.Equal(t, NewIntRangePattern(NewIncludedEndIntRange(math.MinInt64, 0), 0), pattern)
+			assert.Equal(t, NewIntRangePattern(NewIntRange(math.MinInt64, 0), 0), pattern)
 
 			pattern, err = ConvertJsonSchemaToPattern(`{"type":"integer","minimum": 0, "maximum": 1}`)
 			if !assert.NoError(t, err) {
 				return
 			}
-			assert.Equal(t, NewIntRangePattern(NewIncludedEndIntRange(0, 1), 0), pattern)
+			assert.Equal(t, NewIntRangePattern(NewIntRange(0, 1), 0), pattern)
 
 		})
 

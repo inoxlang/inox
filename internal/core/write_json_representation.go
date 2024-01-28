@@ -20,9 +20,8 @@ const (
 
 	//int range serialization
 
-	SERIALIZED_INT_RANGE_START_KEY          = "start"
-	SERIALIZED_INT_RANGE_START_EXCL_END_KEY = "exclusiveEnd"
-	SERIALIZED_INT_RANGE_START_END_KEY      = "end"
+	SERIALIZED_INT_RANGE_START_KEY     = "start"
+	SERIALIZED_INT_RANGE_START_END_KEY = "end"
 
 	//float range serialization
 
@@ -1037,11 +1036,7 @@ func (r IntRange) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, conf
 			w.WriteMore()
 		}
 
-		if !r.inclusiveEnd {
-			w.WriteObjectField(SERIALIZED_INT_RANGE_START_EXCL_END_KEY)
-		} else {
-			w.WriteObjectField(SERIALIZED_INT_RANGE_START_END_KEY)
-		}
+		w.WriteObjectField(SERIALIZED_INT_RANGE_START_END_KEY)
 		writeIntJsonRepr(Int(r.end), w)
 
 		w.WriteObjectEnd()

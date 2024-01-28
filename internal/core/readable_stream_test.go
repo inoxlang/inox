@@ -76,14 +76,14 @@ func TestWrappedWatcherStream(t *testing.T) {
 				watcher.Stop()
 			}()
 
-			next, err := stream.WaitNextChunk(ctx, nil, NewIncludedEndIntRange(2, 3), time.Second)
+			next, err := stream.WaitNextChunk(ctx, nil, NewIntRange(2, 3), time.Second)
 			if !assert.NoError(t, err) {
 				return
 			}
 			assert.Equal(t, NewWrappedValueList(String("a"), String("b")), next.data)
 
 			time.Sleep(20 * time.Millisecond)
-			next, err = stream.WaitNextChunk(ctx, nil, NewIncludedEndIntRange(2, 3), time.Second)
+			next, err = stream.WaitNextChunk(ctx, nil, NewIntRange(2, 3), time.Second)
 			if !assert.ErrorIs(t, err, ErrEndOfStream) {
 				return
 			}
@@ -101,7 +101,7 @@ func TestWrappedWatcherStream(t *testing.T) {
 			watcher.values <- String("b")
 			watcher.Stop()
 
-			next, err := stream.WaitNextChunk(ctx, nil, NewIncludedEndIntRange(2, 3), time.Second)
+			next, err := stream.WaitNextChunk(ctx, nil, NewIntRange(2, 3), time.Second)
 			if !assert.ErrorIs(t, err, ErrEndOfStream) {
 				return
 			}
@@ -127,14 +127,14 @@ func TestElementsStream(t *testing.T) {
 				elements: []Value{Int(1)},
 			}
 
-			chunk1, err := stream.WaitNextChunk(ctx, nil, NewIncludedEndIntRange(2, 3), time.Second)
+			chunk1, err := stream.WaitNextChunk(ctx, nil, NewIntRange(2, 3), time.Second)
 			if !assert.ErrorIs(t, err, ErrEndOfStream) {
 				return
 			}
 
 			assert.Equal(t, NewWrappedValueList(Int(1)), chunk1.data)
 
-			chunk2, err := stream.WaitNextChunk(ctx, nil, NewIncludedEndIntRange(2, 3), time.Second)
+			chunk2, err := stream.WaitNextChunk(ctx, nil, NewIntRange(2, 3), time.Second)
 			if !assert.ErrorIs(t, err, ErrEndOfStream) {
 				return
 			}
@@ -150,14 +150,14 @@ func TestElementsStream(t *testing.T) {
 				elements: []Value{Int(1), Int(2)},
 			}
 
-			chunk1, err := stream.WaitNextChunk(ctx, nil, NewIncludedEndIntRange(2, 3), time.Second)
+			chunk1, err := stream.WaitNextChunk(ctx, nil, NewIntRange(2, 3), time.Second)
 			if !assert.ErrorIs(t, err, ErrEndOfStream) {
 				return
 			}
 
 			assert.Equal(t, NewWrappedValueList(Int(1), Int(2)), chunk1.data)
 
-			chunk2, err := stream.WaitNextChunk(ctx, nil, NewIncludedEndIntRange(2, 3), time.Second)
+			chunk2, err := stream.WaitNextChunk(ctx, nil, NewIntRange(2, 3), time.Second)
 			if !assert.ErrorIs(t, err, ErrEndOfStream) {
 				return
 			}
@@ -173,14 +173,14 @@ func TestElementsStream(t *testing.T) {
 				elements: []Value{Int(1), Int(2), Int(3)},
 			}
 
-			chunk1, err := stream.WaitNextChunk(ctx, nil, NewIncludedEndIntRange(2, 3), time.Second)
+			chunk1, err := stream.WaitNextChunk(ctx, nil, NewIntRange(2, 3), time.Second)
 			if !assert.NoError(t, err) {
 				return
 			}
 
 			assert.Equal(t, NewWrappedValueList(Int(1), Int(2)), chunk1.data)
 
-			chunk2, err := stream.WaitNextChunk(ctx, nil, NewIncludedEndIntRange(2, 3), time.Second)
+			chunk2, err := stream.WaitNextChunk(ctx, nil, NewIntRange(2, 3), time.Second)
 			if !assert.ErrorIs(t, err, ErrEndOfStream) {
 				return
 			}
@@ -196,14 +196,14 @@ func TestElementsStream(t *testing.T) {
 				elements: []Value{Int(1), Int(2), Int(3), Int(4)},
 			}
 
-			chunk1, err := stream.WaitNextChunk(ctx, nil, NewIncludedEndIntRange(2, 3), time.Second)
+			chunk1, err := stream.WaitNextChunk(ctx, nil, NewIntRange(2, 3), time.Second)
 			if !assert.NoError(t, err) {
 				return
 			}
 
 			assert.Equal(t, NewWrappedValueList(Int(1), Int(2)), chunk1.data)
 
-			chunk2, err := stream.WaitNextChunk(ctx, nil, NewIncludedEndIntRange(2, 3), time.Second)
+			chunk2, err := stream.WaitNextChunk(ctx, nil, NewIntRange(2, 3), time.Second)
 			if !assert.ErrorIs(t, err, ErrEndOfStream) {
 				return
 			}
@@ -280,7 +280,7 @@ func TestByteStream(t *testing.T) {
 		t.Run("WaitNextChunk", func(t *testing.T) {
 			t.Parallel()
 
-			chunkSizeRange := NewIncludedEndIntRange(5, 10)
+			chunkSizeRange := NewIntRange(5, 10)
 
 			t.Run("configured chunk size = 5..10, 4 bytes in buffer", func(t *testing.T) {
 				ctx := NewContext(ContextConfig{})
@@ -491,7 +491,7 @@ func TestConfluenceStream(t *testing.T) {
 
 		t.Run("WaitNextChunk", func(t *testing.T) {
 
-			chunkSizeRange := NewIncludedEndIntRange(5, 10)
+			chunkSizeRange := NewIntRange(5, 10)
 
 			t.Run("configured chunk size = 5..10, 4 bytes in first buffer", func(t *testing.T) {
 				ctx := NewContext(ContextConfig{})

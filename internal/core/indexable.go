@@ -138,7 +138,7 @@ func (l *List) SetSlice(ctx *Context, start, end int, seq Sequence) {
 	}
 
 	path := Path("/" + strconv.Itoa(int(start)) + ".." + strconv.Itoa(int(end-1)))
-	mutation := NewSetSliceAtRangeMutation(ctx, NewIncludedEndIntRange(int64(start), int64(end-1)), seq.(Serializable), ShallowWatching, path)
+	mutation := NewSetSliceAtRangeMutation(ctx, NewIntRange(int64(start), int64(end-1)), seq.(Serializable), ShallowWatching, path)
 
 	l.mutationCallbacks.CallMicrotasks(ctx, mutation)
 	l.watchers.InformAboutAsync(ctx, mutation, ShallowWatching, true)

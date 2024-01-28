@@ -72,7 +72,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 			assert.Equal(t, Float(1), v)
 		}
 
-		intPattern := NewIntRangePattern(IntRange{start: 0, end: 2, inclusiveEnd: true, step: 1}, -1)
+		intPattern := NewIntRangePattern(IntRange{start: 0, end: 2, step: 1}, -1)
 		v, err = ParseJSONRepresentation(ctx, `1`, intPattern)
 		if assert.NoError(t, err) {
 			assert.Equal(t, Int(1), v)
@@ -913,7 +913,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 		config := JSONSerializationConfig{ReprConfig: ALL_VISIBLE_REPR_CONFIG, Pattern: INT_RANGE_PATTERN}
 
 		t.Run("base case", func(t *testing.T) {
-			intRange := NewIncludedEndIntRange(0, 10)
+			intRange := NewIntRange(0, 10)
 			serialized := MustGetJSONRepresentationWithConfig(intRange, ctx, config)
 
 			v, err := ParseJSONRepresentation(ctx, `{"int-range__value":`+serialized+`}`, nil)
@@ -928,7 +928,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 		})
 
 		t.Run("unknown start", func(t *testing.T) {
-			intRange := NewUnknownStartIntRange(10, true)
+			intRange := NewUnknownStartIntRange(10)
 			serialized := MustGetJSONRepresentationWithConfig(intRange, ctx, config)
 
 			v, err := ParseJSONRepresentation(ctx, serialized, INT_RANGE_PATTERN)
@@ -937,15 +937,6 @@ func TestParseJSONRepresentation(t *testing.T) {
 			}
 		})
 
-		t.Run("exclusive end", func(t *testing.T) {
-			intRange := NewIntRange(0, 10, false)
-			serialized := MustGetJSONRepresentationWithConfig(intRange, ctx, config)
-
-			v, err := ParseJSONRepresentation(ctx, serialized, INT_RANGE_PATTERN)
-			if assert.NoError(t, err) {
-				assert.Equal(t, intRange, v)
-			}
-		})
 	})
 
 	t.Run("float ranges", func(t *testing.T) {
@@ -997,7 +988,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 		config := JSONSerializationConfig{ReprConfig: ALL_VISIBLE_REPR_CONFIG, Pattern: INT_RANGE_PATTERN_PATTERN}
 
 		t.Run("base case", func(t *testing.T) {
-			pattern := NewIntRangePattern(NewIncludedEndIntRange(0, 10), 0)
+			pattern := NewIntRangePattern(NewIntRange(0, 10), 0)
 			serialized := MustGetJSONRepresentationWithConfig(pattern, ctx, config)
 
 			v, err := ParseJSONRepresentation(ctx, `{"int-range-pattern__value":`+serialized+`}`, nil)
@@ -1012,17 +1003,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 		})
 
 		t.Run("unknown start", func(t *testing.T) {
-			pattern := NewIntRangePattern(NewUnknownStartIntRange(10, true), 0)
-			serialized := MustGetJSONRepresentationWithConfig(pattern, ctx, config)
-
-			v, err := ParseJSONRepresentation(ctx, serialized, INT_RANGE_PATTERN_PATTERN)
-			if assert.NoError(t, err) {
-				assert.Equal(t, pattern, v)
-			}
-		})
-
-		t.Run("exclusive end", func(t *testing.T) {
-			pattern := NewIntRangePattern(NewIntRange(0, 10, false), 0)
+			pattern := NewIntRangePattern(NewUnknownStartIntRange(10), 0)
 			serialized := MustGetJSONRepresentationWithConfig(pattern, ctx, config)
 
 			v, err := ParseJSONRepresentation(ctx, serialized, INT_RANGE_PATTERN_PATTERN)
@@ -1032,7 +1013,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 		})
 
 		t.Run("multipleOf: float64(2.5)", func(t *testing.T) {
-			pattern := NewIntRangePatternFloatMultiple(NewIntRange(0, 10, false), 2.5)
+			pattern := NewIntRangePatternFloatMultiple(NewIntRange(0, 9), 2.5)
 			serialized := MustGetJSONRepresentationWithConfig(pattern, ctx, config)
 
 			v, err := ParseJSONRepresentation(ctx, serialized, INT_RANGE_PATTERN_PATTERN)
@@ -1042,7 +1023,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 		})
 
 		t.Run("multipleOf: int64(2)", func(t *testing.T) {
-			pattern := NewIntRangePattern(NewIntRange(0, 10, false), 2)
+			pattern := NewIntRangePattern(NewIntRange(0, 9), 2)
 			serialized := MustGetJSONRepresentationWithConfig(pattern, ctx, config)
 
 			v, err := ParseJSONRepresentation(ctx, serialized, INT_RANGE_PATTERN_PATTERN)
@@ -1264,8 +1245,8 @@ func TestParseJSONRepresentation(t *testing.T) {
 		})
 
 		t.Run("integers", func(t *testing.T) {
-			range1 := IntRange{start: 0, end: 2, inclusiveEnd: true, step: 1}
-			range2 := IntRange{start: 1, end: 3, inclusiveEnd: true, step: 1}
+			range1 := IntRange{start: 0, end: 2, step: 1}
+			range2 := IntRange{start: 1, end: 3, step: 1}
 
 			pattern1 := NewUnionPattern([]Pattern{NewIntRangePattern(range1, -1), NewIntRangePattern(range2, -1)}, nil)
 
@@ -1355,8 +1336,8 @@ func TestParseJSONRepresentation(t *testing.T) {
 		})
 
 		t.Run("integers", func(t *testing.T) {
-			range1 := IntRange{start: 0, end: 2, inclusiveEnd: true, step: 1}
-			range2 := IntRange{start: 2, end: 3, inclusiveEnd: true, step: 1}
+			range1 := IntRange{start: 0, end: 2, step: 1}
+			range2 := IntRange{start: 2, end: 3, step: 1}
 
 			pattern1 := NewDisjointUnionPattern([]Pattern{NewIntRangePattern(range1, -1), NewIntRangePattern(range2, -1)}, nil)
 

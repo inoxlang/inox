@@ -158,39 +158,24 @@ func intDiv(l, r Int) (Value, error) {
 // Inox's integer range literals (e.g. `1..2`) evaluate to an IntRange.
 type IntRange struct {
 	unknownStart bool //if true .Start depends on the context (not *Context)
-	inclusiveEnd bool
 	start        int64
-	end          int64
+	end          int64 //inclusive
 	step         int64 //only 1 supported for now
 }
 
-func NewIncludedEndIntRange(start, end int64) IntRange {
-	if end < start {
+func NewIntRange(start, inclusiveEnd int64) IntRange {
+	if inclusiveEnd < start {
 		panic(fmt.Errorf("failed to create int range, end < start"))
 	}
 	return IntRange{
-		inclusiveEnd: true,
-		start:        start,
-		end:          end,
-		step:         1,
+		start: start,
+		end:   inclusiveEnd,
+		step:  1,
 	}
 }
 
-func NewIntRange(start, end int64, inclusiveEnd bool) IntRange {
-	if end < start {
-		panic(fmt.Errorf("failed to create int range, end < start"))
-	}
+func NewUnknownStartIntRange(end int64) IntRange {
 	return IntRange{
-		inclusiveEnd: inclusiveEnd,
-		start:        start,
-		end:          end,
-		step:         1,
-	}
-}
-
-func NewUnknownStartIntRange(end int64, inclusiveEnd bool) IntRange {
-	return IntRange{
-		inclusiveEnd: inclusiveEnd,
 		unknownStart: true,
 		end:          end,
 		step:         1,
@@ -234,10 +219,7 @@ func (r IntRange) KnownStart() int64 {
 }
 
 func (r IntRange) InclusiveEnd() int64 {
-	if r.inclusiveEnd {
-		return r.end
-	}
-	return r.end - 1
+	return r.end
 }
 
 func (r IntRange) len(min int64) int {
@@ -245,11 +227,7 @@ func (r IntRange) len(min int64) int {
 	if r.unknownStart {
 		start = min
 	}
-	length := r.end - start
-	if r.inclusiveEnd {
-		length++
-	}
-
+	length := r.end - start + 1
 	return int(length)
 }
 
@@ -269,16 +247,14 @@ func (r IntRange) clampedAdd(other IntRange) IntRange {
 	}
 
 	newRange := IntRange{
-		start:        r.start,
-		end:          r.end,
-		inclusiveEnd: r.inclusiveEnd,
-		step:         1,
+		start: r.start,
+		end:   r.end,
+		step:  1,
 	}
 
 	if other.start >= math.MaxInt64-r.start {
 		newRange.start = math.MaxInt64
 		newRange.end = math.MaxInt64
-		newRange.inclusiveEnd = true
 		return newRange
 	} else {
 		newRange.start = r.start + other.start
@@ -286,7 +262,6 @@ func (r IntRange) clampedAdd(other IntRange) IntRange {
 
 	if other.end >= math.MaxInt64-r.end {
 		newRange.end = math.MaxInt64
-		newRange.inclusiveEnd = true
 	} else {
 		newRange.end = r.end + other.InclusiveEnd()
 	}
@@ -336,9 +311,8 @@ func (r IntRange) times(n, m int64, clamped bool) IntRange {
 	}
 
 	return IntRange{
-		inclusiveEnd: r.inclusiveEnd,
-		start:        start,
-		end:          end,
-		step:         r.step,
+		start: start,
+		end:   end,
+		step:  r.step,
 	}
 }

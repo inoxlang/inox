@@ -178,7 +178,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
-			assert.Equal(t, NewIncludedEndIntRange(INT_1, INT_2), res)
+			assert.Equal(t, NewIntRange(INT_1, INT_2, false), res)
 		})
 
 		t.Run("no upper bound", func(t *testing.T) {
@@ -186,7 +186,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
-			assert.Equal(t, NewIncludedEndIntRange(INT_1, MAX_INT), res)
+			assert.Equal(t, NewIntRange(INT_1, MAX_INT, false), res)
 		})
 	})
 
@@ -3036,8 +3036,8 @@ func TestSymbolicEval(t *testing.T) {
 				result Value
 				err    bool
 			}{
-				{"(1 .. 2)", NewIncludedEndIntRange(INT_1, INT_2), false},
-				{"(1 ..< 2)", NewExcludedEndIntRange(INT_1, INT_2), false},
+				{"(1 .. 2)", NewIntRange(INT_1, INT_2, false), false},
+				{"(1 ..< 2)", NewIntRange(INT_1, INT_1, false), false},
 				{"(1.0 .. 2.0)", NewIncludedEndFloatRange(FLOAT_1, FLOAT_2), false},
 				{"(1.0 ..< 2.0)", NewExcludedEndFloatRange(FLOAT_1, FLOAT_2), false},
 				{"(1B .. 2B)", &QuantityRange{element: ANY_BYTECOUNT}, false},
@@ -8395,7 +8395,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
 
-			pattern := NewIntRangePattern(NewIncludedEndIntRange(INT_1, INT_3))
+			pattern := NewIntRangePattern(NewIntRange(INT_1, INT_3, false))
 
 			expectedResultFromForStmt := NewList(ANY_INT, ANY_INT.WithMatchingPattern(pattern))
 			assert.Equal(t, NewMultivalue(expectedResultFromForStmt, Nil), res)
@@ -9045,7 +9045,7 @@ func TestSymbolicEval(t *testing.T) {
 				return %{a: %int(0..1)}
 			`)
 
-			intRange := NewIncludedEndIntRange(INT_0, INT_1)
+			intRange := NewIntRange(INT_0, INT_1, false)
 			patt, _ := state.ctx.ResolveNamedPattern("int").Call(nil, []Value{intRange})
 
 			res, err := symbolicEval(n, state)
@@ -9370,7 +9370,7 @@ func TestSymbolicEval(t *testing.T) {
 				return %{x: #{a: %int(0..1)}}
 			`)
 
-			intRange := NewIncludedEndIntRange(INT_0, INT_1)
+			intRange := NewIntRange(INT_0, INT_1, false)
 			patt, _ := state.ctx.ResolveNamedPattern("int").Call(nil, []Value{intRange})
 
 			res, err := symbolicEval(n, state)

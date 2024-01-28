@@ -326,8 +326,8 @@ func TestSequenceStringPattern(t *testing.T) {
 func TestIntRangeStringPattern(t *testing.T) {
 	any := ANY_INT_RANGE_STRING_PATTERN
 	anyIntRange := NewIntRangeStringPattern(ANY_INT_RANGE_PATTERN)
-	specificIntRange1 := NewIntRangeStringPattern(NewIntRangePattern(NewIncludedEndIntRange(INT_1, INT_2)))
-	specificIntRange2 := NewIntRangeStringPattern(NewIntRangePattern(NewIncludedEndIntRange(INT_1, INT_3)))
+	specificIntRange1 := NewIntRangeStringPattern(NewIntRangePattern(NewIntRange(INT_1, INT_2, false)))
+	specificIntRange2 := NewIntRangeStringPattern(NewIntRangePattern(NewIntRange(INT_1, INT_3, false)))
 
 	t.Run("Test()", func(t *testing.T) {
 		assertTest(t, any, any)

@@ -187,14 +187,14 @@ func testUnderlyingList[E Serializable](t *testing.T, params underlyingTestSuite
 		t.Run("single element", func(t *testing.T) {
 			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 			list := newList(elemA)
-			list.removePositionRange(ctx, NewIncludedEndIntRange(0, 0))
+			list.removePositionRange(ctx, NewIntRange(0, 0))
 			assert.Equal(t, []Value{}, getAllElements(list))
 		})
 
 		t.Run("several elements", func(t *testing.T) {
 			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 			list := newList(elemA, elemB)
-			list.removePositionRange(ctx, NewIncludedEndIntRange(0, 1))
+			list.removePositionRange(ctx, NewIntRange(0, 1))
 			assert.Equal(t, []Value{}, getAllElements(list))
 		})
 
@@ -212,7 +212,7 @@ func testUnderlyingList[E Serializable](t *testing.T, params underlyingTestSuite
 				inclusiveEnd := int64(len(elems) - 2)
 				finalExpectedLength := 2
 
-				intRange := NewIncludedEndIntRange(start, inclusiveEnd)
+				intRange := NewIntRange(start, inclusiveEnd)
 				list.removePositionRange(ctx, intRange)
 
 				assert.Equal(t, finalExpectedLength, list.Len())
@@ -228,7 +228,7 @@ func testUnderlyingList[E Serializable](t *testing.T, params underlyingTestSuite
 				inclusiveEnd := int64(len(elems) - 2)
 				finalExpectedLength := 1
 
-				intRange := NewIncludedEndIntRange(start, inclusiveEnd)
+				intRange := NewIntRange(start, inclusiveEnd)
 				list.removePositionRange(ctx, intRange)
 
 				assert.Equal(t, finalExpectedLength, list.Len())
@@ -244,7 +244,7 @@ func testUnderlyingList[E Serializable](t *testing.T, params underlyingTestSuite
 				inclusiveEnd := int64(len(elems) - 1)
 				finalExpectedLength := 1
 
-				intRange := NewIncludedEndIntRange(start, inclusiveEnd)
+				intRange := NewIntRange(start, inclusiveEnd)
 				list.removePositionRange(ctx, intRange)
 
 				assert.Equal(t, finalExpectedLength, list.Len())

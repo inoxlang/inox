@@ -1824,7 +1824,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 				var streamErr error
 
 				if chunked {
-					sizeRange := NewIncludedEndIntRange(DEFAULT_MIN_STREAM_CHUNK_SIZE, DEFAULT_MAX_STREAM_CHUNK_SIZE)
+					sizeRange := NewIntRange(DEFAULT_MIN_STREAM_CHUNK_SIZE, DEFAULT_MAX_STREAM_CHUNK_SIZE)
 					next, streamErr = stream.WaitNextChunk(state.Global.Ctx, nil, sizeRange, STREAM_ITERATION_WAIT_TIMEOUT)
 				} else {
 					next, streamErr = stream.WaitNext(state.Global.Ctx, nil, STREAM_ITERATION_WAIT_TIMEOUT)
@@ -2039,7 +2039,6 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		case Int:
 			return IntRange{
 				unknownStart: true,
-				inclusiveEnd: true,
 				end:          int64(v),
 				step:         1,
 			}, nil
@@ -2065,7 +2064,6 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 
 		return IntRange{
 			unknownStart: false,
-			inclusiveEnd: true,
 			start:        n.LowerBound.Value,
 			end:          upperBound,
 			step:         1,
@@ -3588,11 +3586,14 @@ func evalBinaryExpression(n *parse.BinaryExpression, state *TreeWalkState) (Valu
 	case parse.Range, parse.ExclEndRange:
 		switch left.(type) {
 		case Int:
+			end := right.(Int)
+			if n.Operator == parse.ExclEndRange {
+				end--
+			}
 			return IntRange{
-				inclusiveEnd: n.Operator == parse.Range,
-				start:        int64(left.(Int)),
-				end:          int64(right.(Int)),
-				step:         1,
+				start: int64(left.(Int)),
+				end:   int64(end),
+				step:  1,
 			}, nil
 		case Float:
 			return FloatRange{

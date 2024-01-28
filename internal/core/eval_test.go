@@ -1357,8 +1357,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			err    error
 		}{
 			//addition
-			{"(1 .. 2)", IntRange{start: 1, end: 2, step: 1, inclusiveEnd: true}, nil},
-			{"(1 ..< 2)", IntRange{start: 1, end: 2, step: 1, inclusiveEnd: false}, nil},
+			{"(1 .. 2)", IntRange{start: 1, end: 2, step: 1}, nil},
+			{"(1 ..< 2)", IntRange{start: 1, end: 1, step: 1}, nil},
 			{"(1.0 .. 2.0)", FloatRange{start: 1, end: 2, inclusiveEnd: true}, nil},
 			{"(1.0 ..< 2.0)", FloatRange{start: 1, end: 2, inclusiveEnd: false}, nil},
 			{"(1B .. 2B)", QuantityRange{start: ByteCount(1), end: ByteCount(2), inclusiveEnd: true}, nil},
@@ -3452,7 +3452,6 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			assert.NoError(t, err)
 			assert.Equal(t, IntRange{
 				unknownStart: false,
-				inclusiveEnd: true,
 				start:        1,
 				end:          2,
 				step:         1,
@@ -3468,7 +3467,6 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			assert.NoError(t, err)
 			assert.Equal(t, IntRange{
 				unknownStart: false,
-				inclusiveEnd: true,
 				start:        1,
 				end:          math.MaxInt64,
 				step:         1,
@@ -3549,7 +3547,6 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			assert.NoError(t, err)
 			assert.Equal(t, IntRange{
 				unknownStart: true,
-				inclusiveEnd: true,
 				start:        0,
 				end:          10,
 				step:         1,
@@ -5012,10 +5009,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		expectedPattern, _ := NewRegexPattern(".*").Call([]Serializable{
 			IntRange{
-				start:        1,
-				end:          10,
-				inclusiveEnd: true,
-				step:         1,
+				start: 1,
+				end:   10,
+				step:  1,
 			},
 		})
 

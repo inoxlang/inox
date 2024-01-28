@@ -69,7 +69,7 @@ func TestSymbolicInt(t *testing.T) {
 	t.Run("Test()", func(t *testing.T) {
 		anyInt := &Int{}
 		anyIntMatchingSpecificPattern := &Int{matchingPattern: &IntRangePattern{
-			intRange: NewIncludedEndIntRange(INT_1, INT_2),
+			intRange: NewIntRange(INT_1, INT_2, false),
 		}}
 
 		assertTest(t, anyInt, anyInt)
@@ -215,39 +215,28 @@ func TestSymbolicIntRange(t *testing.T) {
 
 	t.Run("Test()", func(t *testing.T) {
 		anyIntRange := &IntRange{}
-		intRange1_2 := NewIncludedEndIntRange(INT_1, INT_2)
-		intRange1_2UnsupportedStep := NewIncludedEndIntRange(INT_1, INT_2)
+		intRange1_2 := NewIntRange(INT_1, INT_2, false)
+		intRange1_2UnsupportedStep := NewIntRange(INT_1, INT_2, false)
 		intRange1_2UnsupportedStep.isStepNotOne = true
-		intRangeExclusiveEnd1_2 := NewExcludedEndIntRange(INT_1, INT_2)
 
 		assertTest(t, anyIntRange, anyIntRange)
 		assertTest(t, anyIntRange, &IntRange{})
 		assertTest(t, anyIntRange, intRange1_2)
 		assertTest(t, anyIntRange, intRange1_2UnsupportedStep)
-		assertTest(t, anyIntRange, intRangeExclusiveEnd1_2)
 		assertTestFalse(t, anyIntRange, ANY_STRING)
 		assertTestFalse(t, anyIntRange, ANY_INT)
 
 		//check intRange1_2
 		assertTest(t, intRange1_2, intRange1_2)
 		assertTestFalse(t, intRange1_2, anyIntRange)
-		assertTestFalse(t, intRange1_2, intRangeExclusiveEnd1_2)
 		assertTestFalse(t, intRange1_2, intRange1_2UnsupportedStep)
 		assertTestFalse(t, intRange1_2, ANY_INT)
 
 		//check intRange1_2UnsupportedStep
 		assertTest(t, intRange1_2UnsupportedStep, intRange1_2UnsupportedStep)
 		assertTestFalse(t, intRange1_2UnsupportedStep, anyIntRange)
-		assertTestFalse(t, intRange1_2UnsupportedStep, intRangeExclusiveEnd1_2)
 		assertTestFalse(t, intRange1_2UnsupportedStep, intRange1_2)
 		assertTestFalse(t, intRange1_2UnsupportedStep, ANY_INT)
-
-		//check intRangeExclusiveEnd1_2
-		assertTest(t, intRangeExclusiveEnd1_2, intRangeExclusiveEnd1_2)
-		assertTestFalse(t, intRangeExclusiveEnd1_2, anyIntRange)
-		assertTestFalse(t, intRangeExclusiveEnd1_2, intRange1_2)
-		assertTestFalse(t, intRangeExclusiveEnd1_2, intRange1_2UnsupportedStep)
-		assertTestFalse(t, intRangeExclusiveEnd1_2, ANY_INT)
 	})
 
 	t.Run("Contains()", func(t *testing.T) {
@@ -255,19 +244,13 @@ func TestSymbolicIntRange(t *testing.T) {
 		assertMayContainButNotCertain(t, anyIntRange, INT_0)
 		assertMayContainButNotCertain(t, anyIntRange, INT_1)
 
-		intRange1_2 := NewIncludedEndIntRange(INT_1, INT_2)
+		intRange1_2 := NewIntRange(INT_1, INT_2, false)
 		assertContains(t, intRange1_2, INT_1)
 		assertContains(t, intRange1_2, INT_2)
 		assertCannotPossiblyContain(t, intRange1_2, INT_0)
 		assertCannotPossiblyContain(t, intRange1_2, INT_3)
 
-		intRange1_2ExcludedEnd := NewExcludedEndIntRange(INT_1, INT_2)
-		assertContains(t, intRange1_2ExcludedEnd, INT_1)
-		assertCannotPossiblyContain(t, intRange1_2ExcludedEnd, INT_0)
-		assertCannotPossiblyContain(t, intRange1_2ExcludedEnd, INT_2)
-		assertCannotPossiblyContain(t, intRange1_2ExcludedEnd, INT_3)
-
-		intRangeUnsupportedStep := NewIncludedEndIntRange(INT_1, INT_2)
+		intRangeUnsupportedStep := NewIntRange(INT_1, INT_2, false)
 		intRangeUnsupportedStep.isStepNotOne = true
 		assertMayContainButNotCertain(t, intRangeUnsupportedStep, INT_1)
 		assertMayContainButNotCertain(t, intRangeUnsupportedStep, INT_2)
