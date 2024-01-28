@@ -180,7 +180,8 @@ const (
 	A_DURATION_CAN_ONLY_BE_SUBSTRACTED_FROM_DURATION_DATETIME  = "a duration can only be substracted from  a duration, date"
 
 	//DATETIME ARITHMETIC
-	A_DATETIME_CAN_ONLY_BE_ADDED_WITH_A_DURATION = "a date can only be added with a duration"
+	A_DATETIME_CAN_ONLY_BE_ADDED_WITH_A_DURATION       = "a datetime can only be added with a duration"
+	ONLY_A_DURATION_CAN_BE_SUBSTRACTED_FROM_A_DATETIME = "only a duration can be substracted from a datetime, not the other way around"
 )
 
 var (

@@ -2785,6 +2785,39 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, ANY_DATETIME, res)
 		})
 
+		t.Run("-: (duration, datetime)", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`(d - t)`)
+			goTime := time.Date(2020, 1, 1, 1, 0, 0, 0, time.UTC)
+			datetime := NewDateTime(goTime)
+			duration := NewDuration(time.Hour)
+
+			state.setGlobal("t", datetime, GlobalConst)
+			state.setGlobal("d", duration, GlobalConst)
+
+			rightOperand := n.Statements[0].(*parse.BinaryExpression).Right
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(rightOperand, state, A_DURATION_CAN_BE_SUBSTRACTED_FROM_A_DATETIME),
+			}, state.errors())
+			assert.Equal(t, ANY_DATETIME, res)
+		})
+
+		t.Run("-: (datetime, duration)", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`(d - t)`)
+			goTime := time.Date(2020, 1, 1, 1, 0, 0, 0, time.UTC)
+			datetime := NewDateTime(goTime)
+			duration := NewDuration(time.Hour)
+
+			state.setGlobal("t", datetime, GlobalConst)
+			state.setGlobal("d", duration, GlobalConst)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, ANY_DATETIME, res)
+		})
+
 		t.Run("+: right operand is a string", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`(int + "a")`)
 			res, err := symbolicEval(n, state)
