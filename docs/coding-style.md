@@ -68,7 +68,7 @@ pattern user = {
 
 ### Struct Names
 
-[Structs](./language-reference.md#structs) are transient values. They are not intended to be persisted, contrary
+[Structs](./language-reference/language.md#structs) are transient values. They are not intended to be persisted, contrary
 to serializable types such as **Objects**. Struct names should follow the **PascalCase** style in order to distinguish
 them from serializable types.
 

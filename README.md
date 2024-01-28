@@ -159,7 +159,7 @@ You can learn Inox directly in VSCode by creating a file with a `.tut.ix` extens
 
 ![tutorial-demo](https://github.com/inoxlang/inox-vscode/raw/master/assets/docs/tutorial-demo.gif)
 
-📖 [Language reference](docs/language-reference.md)\
+📖 [Language reference](docs/language-reference/language.md)\
 🧰 [Builtins](docs/builtins.md)\
 📚 [Collections](docs/collections.md)\
 🌐 [Frontend dev](./docs/frontend-development.md)
@@ -333,7 +333,7 @@ list = [
 ```
 
 The transient counterparts of objects are
-[structs](./docs/language-reference.md#structs) (not implemented yet).
+[structs](./docs/language-reference/language.md#structs) (not implemented yet).
 
 ```
 struct Task {
@@ -346,7 +346,7 @@ task2 = Task{name: "1"}
 array = Array(task1, task2)
 ```
 
-You can learn more about serialization [here](./docs/language-reference.md#serialization).
+You can learn more about serialization [here](./docs/language-reference/language.md#serialization).
 
 </details>
 
@@ -358,7 +358,7 @@ dbs.main.users.add(new_user)
 dbs.main.users.has(new_user)
 ```
 
-You can learn more about databases [here](./docs/language-reference.md#databases).
+You can learn more about databases [here](./docs/language-reference/language.md#databases).
 
 > The database currently uses a single-file key-value store and the serialization of most container types is not yet implemented.
 > The improvement of the database engine is a main focus point. The goal is to have a DB engine that is aware of the code accessing it (HTTP request handlers) in order to smartly pre-fetch and cache data.
@@ -506,7 +506,7 @@ testsuite({
 }
 ```
 
-[Learn More About Testing](./docs/language-reference.md#testing)
+[Learn More About Testing](./docs/language-reference/language.md#testing)
 
 ### Structured Logging
 
@@ -642,7 +642,7 @@ drop-perms {
 #### **Limits (WIP)**
 
 Limits limit intensive operations, there are three kinds of limits: **byte rate**, **frequency** & **total**. They are defined in the manifest and are
-[shared](./docs/language-reference.md#limits) with the children of the module.
+[shared](./docs/language-reference/language.md#limits) with the children of the module.
 
 ```
 manifest {
@@ -659,7 +659,7 @@ manifest {
 By default strict limits are applied on HTTP request handlers in order to
 mitigate some types of DoS.
 
-[Learn More](./docs/language-reference.md#limits)
+[Learn More](./docs/language-reference/language.md#limits)
 
 ### Sensitive Data Protection
 

@@ -74,7 +74,7 @@ Module preparation is implemented in [module_preparation.go](./module_preparatio
 - Static Checks
 - Symbolic Evaluation (typechecking)
 
-*Note that module preparation is not used by [module imports](../../docs/language-reference.md#module-imports).*
+*Note that module preparation is not used by [module imports](../../docs/language-reference/language.md#module-imports).*
 
 ### Parsing
 

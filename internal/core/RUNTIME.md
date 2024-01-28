@@ -2,7 +2,7 @@
 
 ## High Level View
 
-Each Inox module is executed by a dedicated [interpreter](./docs/language-reference.md#evaluation).
+Each Inox module is executed by a dedicated [interpreter](./docs/language-reference/language.md#evaluation).
 
 ```mermaid
 graph TD

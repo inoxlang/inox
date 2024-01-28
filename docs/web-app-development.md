@@ -1,5 +1,5 @@
 [Install Inox](../README.md#installation) |
-[Language Reference](./language-reference.md) |
+[Language Reference](./language-reference/language.md) |
 [Built-in Functions](./builtins.md) | [Project](./project.md) |
 [Shell Basics](./shell-basics.md) | [Scripting Basics](./scripting-basics.md)
 
