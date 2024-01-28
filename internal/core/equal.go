@@ -961,8 +961,8 @@ func (patt *RegexPattern) Equal(ctx *Context, other Value, alreadyCompared map[u
 		return false
 	}
 
-	return patt.syntaxRegep.Equal(otherPatt.syntaxRegep)
-	//return patt.regexp.String() == otherPatt.regexp.String()
+	//Source expression equality is used in order to be consistent with the equality definitions of simple inox values such as strings and paths.
+	return patt.regexp.String() == otherPatt.regexp.String() && patt.syntaxRegep.Flags == otherPatt.syntaxRegep.Flags
 }
 
 func (patt *UnionPattern) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
