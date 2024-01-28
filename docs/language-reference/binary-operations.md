@@ -21,9 +21,13 @@ Parentheses can be omitted around operands of **or**/**and** chains:
   - [Substraction](#substraction)
   - [Multiplication](#multiplication)
   - [Division](#division)
-
+- [Logical Operations](#logical-operations)
+- [substrof](#substrof)
+- [Match](#match)
 - [Ordered Comparison](#ordered-comparison)
 - [Equality](#equality)
+- [Is](#is)
+
 
 ---
 
@@ -61,25 +65,34 @@ Parentheses can be omitted around operands of **or**/**and** chains:
 
 ---
 
-## Ordered Comparison
+## Logical Operations
 
-The `<, <=, >=, >` comparisons are supported by all **comparable** Inox types.
-Values of different types generally cannot be compared.
+`or` and `and` are binary logical operators, however parentheses can be omitted around operands of **or**/**and** chains:
 
 ```
-(1 < 2)
-(1ms < 1s)
-(ago(1h) < now())
-("a" < "b")
+(a or b or c)       # ok
+(a < b or c < d)    # ok
+
+(a or b and c)      # error: 'or' and 'and' cannot be mixed in the same chain
+(a or (b and c))    # ok
+((a or b) and c)    # ok
 ```
-
-**Comparable Inox types**: int, float, byte, string, byte-count, line-count,
-rune-count, year, date, datetime, duration, frequency, byte-rate, ulid, port.
-
-The ordering of strings is the
-[natural sort order](https://en.wikipedia.org/wiki/Natural_sort_order).
 
 ---
+
+# substrof
+
+The `substrof` operator is defined for string-like and bytes-like values, the two interfaces can be mixed.
+
+```
+("A" substrof "AB")
+(0d[65] substrof "AB")
+("A" substrof 0d[65 66])
+(0d[65] substrof 0d[65 66])
+```
+
+---
+
 
 ## Match
 
@@ -106,6 +119,26 @@ Addition
 - logical operations: `(a or b)`, `(a and b)`
 - exclusive-end range: `(0 ..< 2)`
 - inclusive-end range: `(0 .. 2)`
+
+---
+
+## Ordered Comparison
+
+The `<, <=, >=, >` comparisons are supported by all **comparable** Inox types.
+Values of different types generally cannot be compared.
+
+```
+(1 < 2)
+(1ms < 1s)
+(ago(1h) < now())
+("a" < "b")
+```
+
+**Comparable Inox types**: int, float, byte, string, byte-count, line-count,
+rune-count, year, date, datetime, duration, frequency, byte-rate, ulid, port.
+
+The ordering of strings is the
+[natural sort order](https://en.wikipedia.org/wiki/Natural_sort_order).
 
 ---
 
@@ -308,13 +341,17 @@ WIP
 
 Two regex patterns are equal if they have exactly the same source expression,
 therefore the following comparisons are false:
-```
+
+```text
 (%`aa*` == %`a+`)
-(%`(\d+)` == %`\d+`)
+(%`(d+)` == %`d+`)
 ```
 
 ## Advanced String Patterns
 
+Two advanced string patterns are equal if they have the same regex or the exact same structures and sub patterns.
+
+**This may change in the future.**
 
 
 ### Object Patterns
@@ -340,5 +377,13 @@ if they have the same optionality.
 | `%record{a: int}`  | `%record{a: int}`         | true     |
 | `%record{a?: int}` | `%record{a: int}`         | false    |
 | `%record{a: int}`  | `%record{a: int, c: int}` | false    |
+
+---
+
+### Is
+
+The `is` operator returns true if the two operands have the same identity.
+
+(work in progress)
 
 [Back to top](#binary-operations)
