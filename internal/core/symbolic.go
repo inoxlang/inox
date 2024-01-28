@@ -1584,6 +1584,9 @@ func (s *wrappedWatcherStream) ToSymbolicValue(ctx *Context, encountered map[uin
 }
 
 func (s *ElementsStream) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
+	if s.filter == nil {
+		return symbolic.READABLE_STREAM_ANY_ELEM, nil
+	}
 	element, err := s.filter.ToSymbolicValue(ctx, encountered)
 	if err != nil {
 		return nil, err

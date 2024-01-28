@@ -5,8 +5,9 @@ import (
 )
 
 var (
-	ANY_STREAM_SOURCE = &AnyStreamSource{}
-	_                 = []StreamSource{ANY_STREAM_SOURCE, &ReadableStream{}}
+	ANY_STREAM_SOURCE        = &AnyStreamSource{}
+	READABLE_STREAM_ANY_ELEM = NewReadableStream(ANY)
+	_                        = []StreamSource{ANY_STREAM_SOURCE, &ReadableStream{}}
 )
 
 // An StreamSource represents a symbolic StreamSource.
