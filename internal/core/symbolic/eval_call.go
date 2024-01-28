@@ -778,7 +778,13 @@ func isReturnValueWithPossibleError(ret Value) bool {
 }
 
 func checkCallExprWithUnhandledError(node parse.Node, ret Value, state *State) {
-	if !utils.Implements[*parse.CallExpression](node) {
+	callExpr, ok := node.(*parse.CallExpression)
+	if !ok {
+		return
+	}
+
+	//Ignore check for the Error factory function.
+	if ident, ok := callExpr.Callee.(*parse.IdentifierLiteral); ok && ident.Name == globalnames.ERROR_FN {
 		return
 	}
 
