@@ -582,6 +582,21 @@ func TestSymbolicEval(t *testing.T) {
 				assert.Equal(t, NewTupleOf(ANY_INT), res)
 			})
 		})
+
+		t.Run("without type annotation", func(t *testing.T) {
+			t.Run("spread element should be a tuple", func(t *testing.T) {
+				n, state := MakeTestStateAndChunk("#[...true]")
+				res, err := symbolicEval(n, state)
+				assert.NoError(t, err)
+				elemNode := parse.FindNode(n, (*parse.BooleanLiteral)(nil), nil)
+
+				assert.Equal(t, []SymbolicEvaluationError{
+					makeSymbolicEvalError(elemNode, state, SPREAD_ELEMENT_SHOULD_BE_A_TUPLE),
+				}, state.errors())
+				assert.Equal(t, NewTuple(), res)
+			})
+		})
+
 	})
 
 	t.Run("dictionary literal", func(t *testing.T) {

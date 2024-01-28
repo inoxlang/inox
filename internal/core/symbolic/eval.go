@@ -4256,11 +4256,11 @@ func evalTupleLiteral(n *parse.TupleLiteral, state *State, options evalOptions) 
 				return nil, err
 			}
 
-			list, isList := val.(*List)
-			if isList {
-				e = list.Element()
+			tuple, isTuple := val.(*Tuple)
+			if isTuple {
+				e = tuple.Element()
 			} else {
-				state.addError(makeSymbolicEvalError(spreadElemNode.Expr, state, SPREAD_ELEMENT_SHOULD_BE_A_LIST))
+				state.addError(makeSymbolicEvalError(spreadElemNode.Expr, state, SPREAD_ELEMENT_SHOULD_BE_A_TUPLE))
 				if expectedElement != nil {
 					e = expectedElement
 				} else {
