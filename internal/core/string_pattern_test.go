@@ -32,6 +32,36 @@ func TestEvalStringPatternNode(t *testing.T) {
 
 		assert.NoError(t, err)
 		assert.IsType(t, (*SequenceStringPattern)(nil), patt)
+		assert.Equal(t, "s", patt.Regex())
+		assert.True(t, patt.Test(nil, String("s")))
+		assert.False(t, patt.Test(nil, String("ss")))
+		assert.False(t, patt.Test(nil, String("sa")))
+		assert.False(t, patt.Test(nil, String("as")))
+	})
+
+	t.Run("single element : string literal with group name", func(t *testing.T) {
+		ctx := NewContext(ContextConfig{})
+		defer ctx.CancelGracefully()
+
+		state := NewTreeWalkState(ctx)
+		chunk := &parse.ChunkStackItem{Chunk: &parse.ParsedChunkSource{Node: &parse.Chunk{}}}
+		state.chunkStack = append(state.chunkStack, chunk)
+		state.fullChunkStack = append(state.fullChunkStack, chunk)
+
+		patt, err := evalStringPatternNode(&parse.ComplexStringPatternPiece{
+			Elements: []*parse.PatternPieceElement{
+				{
+					Ocurrence: parse.ExactlyOneOcurrence,
+					Expr:      &parse.QuotedStringLiteral{Value: "s"},
+					GroupName: &parse.PatternGroupName{
+						Name: "g",
+					},
+				},
+			},
+		}, state, false)
+
+		assert.NoError(t, err)
+		assert.IsType(t, (*SequenceStringPattern)(nil), patt)
 		assert.Equal(t, "(s)", patt.Regex())
 		assert.True(t, patt.Test(nil, String("s")))
 		assert.False(t, patt.Test(nil, String("ss")))
@@ -61,7 +91,7 @@ func TestEvalStringPatternNode(t *testing.T) {
 		}, state, false)
 
 		assert.NoError(t, err)
-		assert.Equal(t, "([a-z])", patt.Regex())
+		assert.Equal(t, "[a-z]", patt.Regex())
 		assert.True(t, patt.Test(nil, String("a")))
 		assert.False(t, patt.Test(nil, String("aa")))
 	})
@@ -85,7 +115,7 @@ func TestEvalStringPatternNode(t *testing.T) {
 		}, state, false)
 
 		assert.NoError(t, err)
-		assert.Equal(t, "(s*)", patt.Regex())
+		assert.Equal(t, "s*", patt.Regex())
 		assert.True(t, patt.Test(nil, String("s")))
 		assert.True(t, patt.Test(nil, String("ss")))
 		assert.False(t, patt.Test(nil, String("ssa")))
@@ -111,7 +141,7 @@ func TestEvalStringPatternNode(t *testing.T) {
 		}, state, false)
 
 		assert.NoError(t, err)
-		assert.Equal(t, "((?:ab)*)", patt.Regex())
+		assert.Equal(t, "(?:ab)*", patt.Regex())
 		assert.True(t, patt.Test(nil, String("ab")))
 		assert.True(t, patt.Test(nil, String("abab")))
 		assert.False(t, patt.Test(nil, String("aba")))
@@ -166,7 +196,7 @@ func TestEvalStringPatternNode(t *testing.T) {
 		}, state, false)
 
 		assert.NoError(t, err)
-		assert.Equal(t, "(s{2})", patt.Regex())
+		assert.Equal(t, "ss", patt.Regex())
 		assert.True(t, patt.Test(nil, String("ss")))
 		assert.False(t, patt.Test(nil, String("ssa")))
 		assert.False(t, patt.Test(nil, String("ass")))
@@ -192,7 +222,7 @@ func TestEvalStringPatternNode(t *testing.T) {
 		}, state, false)
 
 		assert.NoError(t, err)
-		assert.Equal(t, "((?:ab){2})", patt.Regex())
+		assert.Equal(t, "abab", patt.Regex())
 		assert.True(t, patt.Test(nil, String("abab")))
 		assert.False(t, patt.Test(nil, String("ab")))
 		assert.False(t, patt.Test(nil, String("ababab")))
@@ -222,7 +252,7 @@ func TestEvalStringPatternNode(t *testing.T) {
 		}, state, false)
 
 		assert.NoError(t, err)
-		assert.Equal(t, "(a)(c)", patt.Regex())
+		assert.Equal(t, "ac", patt.Regex())
 		assert.True(t, patt.Test(nil, String("ac")))
 		assert.False(t, patt.Test(nil, String("acb")))
 		assert.False(t, patt.Test(nil, String("bacb")))
@@ -330,7 +360,7 @@ func TestEvalStringPatternNode(t *testing.T) {
 		}, state, false)
 
 		assert.NoError(t, err)
-		assert.Equal(t, "((a)(b)|(c)(d))", patt.Regex())
+		assert.Equal(t, "(ab|cd)", patt.Regex())
 		assert.True(t, patt.Test(nil, String("ab")))
 		assert.True(t, patt.Test(nil, String("cd")))
 		assert.False(t, patt.Test(nil, String("abcd")))
@@ -584,7 +614,7 @@ func TestSequenceStringPattern(t *testing.T) {
 		t.Run("single element", func(t *testing.T) {
 			patt, err := NewSequenceStringPattern(nil, nil, []StringPattern{
 				newRepeatedPatternElement(parse.AtLeastOneOcurrence, -1, NewExactStringPattern(String("12"))),
-			}, nil)
+			}, KeyList{""})
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -599,7 +629,7 @@ func TestSequenceStringPattern(t *testing.T) {
 			patt, err := NewSequenceStringPattern(nil, nil, []StringPattern{
 				newRepeatedPatternElement(parse.AtLeastOneOcurrence, -1, NewExactStringPattern(String("12"))),
 				NewExactStringPattern(String("34")),
-			}, nil)
+			}, KeyList{"", ""})
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -614,7 +644,7 @@ func TestSequenceStringPattern(t *testing.T) {
 			patt, err := NewSequenceStringPattern(nil, nil, []StringPattern{
 				newRepeatedPatternElement(parse.AtLeastOneOcurrence, -1, NewExactStringPattern(String("12"))),
 				newRepeatedPatternElement(parse.AtLeastOneOcurrence, -1, NewExactStringPattern(String("12"))),
-			}, nil)
+			}, KeyList{"", ""})
 			if !assert.NoError(t, err) {
 				return
 			}

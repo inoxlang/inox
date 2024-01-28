@@ -322,8 +322,16 @@ func NewSequenceStringPattern(
 		step:  1,
 	}
 
+	//TODO: recursively simplify the pattern by merging consecutive string/rune/regex elements (this can cause nested changes).
+	//No groups should be delete and the original structure should be kept for pretty printing and serialization. Both versions
+	//could be pretty printed ?
+	//The simplication should be performed here or before resolution, and before the (potential) call to constructRegexForSequenceStringPattern.
+	//The main goals are improving validation/parsing performance, and correctness during comparison between sequence string patterns.
+
+	//Todo: add a global function to test if two string patterns (any types) are equivalent.
+
 	if allElemsAreResolved && allElemsHaveRegex {
-		entireStringRegex, regex, lengthRange = constructRegexForSequenceStringPattern(subpatterns)
+		entireStringRegex, regex, lengthRange = constructRegexForSequenceStringPattern(subpatterns, groupNames)
 	} else if allElemsHaveRegex {
 		lengthRange.end = DEFAULT_MAX_TESTED_STRING_BYTE_LENGTH
 	}
@@ -340,7 +348,7 @@ func NewSequenceStringPattern(
 	}, nil
 }
 
-func constructRegexForSequenceStringPattern(subpatterns []StringPattern) (entireRegexp *regexp.Regexp, _ *regexp.Regexp, _ IntRange) {
+func constructRegexForSequenceStringPattern(subpatterns []StringPattern, groupNames []string) (entireRegexp *regexp.Regexp, _ *regexp.Regexp, _ IntRange) {
 	lengthRange := IntRange{
 		start: 0,
 		end:   0,
@@ -350,16 +358,22 @@ func constructRegexForSequenceStringPattern(subpatterns []StringPattern) (entire
 	regexBuff := bytes.NewBufferString("")
 	subpatternRegexBuff := bytes.NewBufferString("")
 
-	for _, subpatt := range subpatterns {
+	for subpattIndex, subpatt := range subpatterns {
 		subpatternRegexBuff.Reset()
 
 		//create regex for sub pattern
 		subpattRegex := utils.Must(syntax.Parse(subpatt.Regex(), symbolic.REGEX_SYNTAX))
-		subpattRegex = regexutils.TurnCapturingGroupsIntoNonCapturing(subpattRegex)
+		subpattRegex = regexutils.DestructivelySimplify(subpattRegex)
 
-		subpatternRegexBuff.WriteRune('(')
-		subpatternRegexBuff.WriteString(subpattRegex.String())
-		subpatternRegexBuff.WriteRune(')')
+		groupName := groupNames[subpattIndex]
+		//If there is a group name we put the subpattern's regex in a capturing group.
+		if groupName != "" {
+			subpatternRegexBuff.WriteRune('(')
+			subpatternRegexBuff.WriteString(subpattRegex.String())
+			subpatternRegexBuff.WriteRune(')')
+		} else {
+			subpatternRegexBuff.WriteString(subpattRegex.String())
+		}
 
 		// append the sub pattern's regex to the sequence's regex.
 		regexBuff.WriteString(subpatternRegexBuff.String())
@@ -429,7 +443,7 @@ func (patt *SequenceStringPattern) Resolve() (StringPattern, error) {
 	}
 
 	if allElemsHaveRegex {
-		patt.entireStringRegexp, patt.regexp, patt.lengthRange = constructRegexForSequenceStringPattern(patt.elements)
+		patt.entireStringRegexp, patt.regexp, patt.lengthRange = constructRegexForSequenceStringPattern(patt.elements, patt.groupNames)
 	} else {
 		//compute length range
 		lengthRange := IntRange{
