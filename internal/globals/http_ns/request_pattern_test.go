@@ -6,6 +6,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/testconfig"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/rs/zerolog"
 
@@ -15,10 +16,10 @@ import (
 )
 
 func TestHttpRequestPattern(t *testing.T) {
-	t.Parallel()
+	testconfig.AllowParallelization(t)
 
 	t.Run("creation", func(t *testing.T) {
-		t.Parallel()
+		testconfig.AllowParallelization(t)
 
 		t.Run("no argument", func(t *testing.T) {
 			pattern, err := CALLABLE_HTTP_REQUEST_PATTERN.Call([]core.Serializable{})
@@ -106,7 +107,7 @@ func TestHttpRequestPattern(t *testing.T) {
 }
 
 func TestCreationOfSymbolicHttpRequestPattern(t *testing.T) {
-	t.Parallel()
+	testconfig.AllowParallelization(t)
 	ctx := &symbolic.Context{}
 
 	t.Run("no argument", func(t *testing.T) {

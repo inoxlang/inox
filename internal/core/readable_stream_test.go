@@ -4,11 +4,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/inoxlang/inox/internal/testconfig"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestWrappedWatcherStream(t *testing.T) {
-	t.Parallel()
+	testconfig.AllowParallelization(t)
 
 	t.Run("WaitNext", func(t *testing.T) {
 
@@ -114,7 +115,7 @@ func TestWrappedWatcherStream(t *testing.T) {
 }
 
 func TestElementsStream(t *testing.T) {
-	t.Parallel()
+	testconfig.AllowParallelization(t)
 
 	//TODO: add more tests
 	t.Run("WaitNextChunk", func(t *testing.T) {
@@ -215,7 +216,7 @@ func TestElementsStream(t *testing.T) {
 }
 
 func TestByteStream(t *testing.T) {
-	t.Parallel()
+	testconfig.AllowParallelization(t)
 
 	//TODO: add more tests
 	t.Run("RingBuffer source", func(t *testing.T) {
@@ -224,7 +225,7 @@ func TestByteStream(t *testing.T) {
 		bufferSize := ByteCount(20)
 
 		t.Run("WaitNext", func(t *testing.T) {
-			t.Parallel()
+			testconfig.AllowParallelization(t)
 
 			t.Run("1 byte in buffer", func(t *testing.T) {
 				ctx := NewContext(ContextConfig{})
@@ -278,7 +279,7 @@ func TestByteStream(t *testing.T) {
 		})
 
 		t.Run("WaitNextChunk", func(t *testing.T) {
-			t.Parallel()
+			testconfig.AllowParallelization(t)
 
 			chunkSizeRange := NewIntRange(5, 10)
 
@@ -375,7 +376,7 @@ func TestByteStream(t *testing.T) {
 }
 
 func TestConfluenceStream(t *testing.T) {
-	t.Parallel()
+	testconfig.AllowParallelization(t)
 
 	const TIMEOUT = time.Second / 4
 

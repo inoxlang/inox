@@ -11,16 +11,17 @@ import (
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	netaddr "github.com/inoxlang/inox/internal/netaddr"
+	"github.com/inoxlang/inox/internal/testconfig"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestGolangHttpServer(t *testing.T) {
 
-	t.Parallel()
+	testconfig.AllowParallelization(t)
 
 	t.Run("self signed certificate should be regenerated if the file's age is greater than the validation duration", func(t *testing.T) {
-		t.Parallel()
+		testconfig.AllowParallelization(t)
 
 		fls := fs_ns.NewMemFilesystem(1_000_000)
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{
@@ -95,7 +96,7 @@ func TestGolangHttpServer(t *testing.T) {
 	})
 
 	t.Run("listen on 0.0.0.0:port, allow generation of a self signed cert", func(t *testing.T) {
-		t.Parallel()
+		testconfig.AllowParallelization(t)
 
 		fls := fs_ns.NewMemFilesystem(1_000_000)
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{

@@ -11,10 +11,11 @@ import (
 
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/testconfig"
 )
 
 func TestHttpPost(t *testing.T) {
-	t.Parallel()
+	testconfig.AllowParallelization(t)
 
 	makeServer := func() (*http.Server, core.URL) {
 		var ADDR = "localhost:" + nextPort()
@@ -33,7 +34,7 @@ func TestHttpPost(t *testing.T) {
 	}
 
 	t.Run("missing URL", func(t *testing.T) {
-		t.Parallel()
+		testconfig.AllowParallelization(t)
 
 		server, URL := makeServer()
 		defer server.Close()
@@ -52,7 +53,7 @@ func TestHttpPost(t *testing.T) {
 	})
 
 	t.Run("string provided instead of URL", func(t *testing.T) {
-		t.Parallel()
+		testconfig.AllowParallelization(t)
 
 		server, URL := makeServer()
 		defer server.Close()
@@ -71,7 +72,7 @@ func TestHttpPost(t *testing.T) {
 	})
 
 	t.Run("missing body", func(t *testing.T) {
-		t.Parallel()
+		testconfig.AllowParallelization(t)
 
 		server, URL := makeServer()
 		defer server.Close()
@@ -90,7 +91,7 @@ func TestHttpPost(t *testing.T) {
 	})
 
 	t.Run("missing permission", func(t *testing.T) {
-		t.Parallel()
+		testconfig.AllowParallelization(t)
 
 		server, URL := makeServer()
 		defer server.Close()
@@ -113,7 +114,7 @@ func TestHttpPost(t *testing.T) {
 }
 
 func TestHttpDelete(t *testing.T) {
-	t.Parallel()
+	testconfig.AllowParallelization(t)
 
 	makeServer := func() (*http.Server, core.URL) {
 		var ADDR = "localhost:" + strconv.Itoa(int(port.Add(1)))
@@ -132,7 +133,7 @@ func TestHttpDelete(t *testing.T) {
 	}
 
 	t.Run("missing permission", func(t *testing.T) {
-		t.Parallel()
+		testconfig.AllowParallelization(t)
 
 		server, URL := makeServer()
 		defer server.Close()

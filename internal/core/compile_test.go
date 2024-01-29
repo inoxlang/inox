@@ -9,12 +9,13 @@ import (
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/testconfig"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestCompileModule(t *testing.T) {
-	t.Parallel()
+	testconfig.AllowParallelization(t)
 
 	joinLines := func(lines ...string) string {
 		return strings.Join(lines, "\n")

@@ -14,12 +14,13 @@ import (
 	"github.com/inoxlang/inox/internal/afs"
 	permkind "github.com/inoxlang/inox/internal/core/permkind"
 	"github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/testconfig"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestPreInit(t *testing.T) {
-	t.Parallel()
+	testconfig.AllowParallelization(t)
 
 	defaultGlobalPermissions := []Permission{
 		GlobalVarPermission{permkind.Read, "*"},

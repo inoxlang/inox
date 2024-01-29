@@ -9,12 +9,13 @@ import (
 	"github.com/inoxlang/inox/internal/core/permkind"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/help"
+	"github.com/inoxlang/inox/internal/testconfig"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestCheckHelpDataOnBuiltins(t *testing.T) {
-	t.Parallel()
+	testconfig.AllowParallelization(t)
 
 	help.ForeachTopicGroup(func(name string, group help.TopicGroup) {
 		if !group.AboutBuiltins {
@@ -22,7 +23,7 @@ func TestCheckHelpDataOnBuiltins(t *testing.T) {
 		}
 
 		t.Run(name, func(t *testing.T) {
-			t.Parallel()
+			testconfig.AllowParallelization(t)
 
 			fls := fs_ns.NewMemFilesystem(1_000)
 			ctx := core.NewContexWithEmptyState(core.ContextConfig{

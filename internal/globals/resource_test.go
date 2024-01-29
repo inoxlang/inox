@@ -13,6 +13,7 @@ import (
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/globals/http_ns"
 	"github.com/inoxlang/inox/internal/mimeconsts"
+	"github.com/inoxlang/inox/internal/testconfig"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/rs/zerolog"
 
@@ -35,16 +36,16 @@ func TestCreateResource(t *testing.T) {
 }
 
 func TestReadResource(t *testing.T) {
-	t.Parallel()
+	testconfig.AllowParallelization(t)
 
 	insecure := core.Option{Name: "insecure", Value: core.True}
 	raw := core.Option{Name: "raw", Value: core.True}
 
 	t.Run("http", func(t *testing.T) {
-		t.Parallel()
+		testconfig.AllowParallelization(t)
 
 		t.Run("resource not found", func(t *testing.T) {
-			t.Parallel()
+			testconfig.AllowParallelization(t)
 
 			ctx, resource := setup(t, func(ctx *core.Context, rw *http_ns.HttpResponseWriter, req *http_ns.HttpRequest) {
 				rw.WriteHeaders(ctx, core.ToOptionalParam(http_ns.StatusCode(http.StatusNotFound)))
@@ -59,7 +60,7 @@ func TestReadResource(t *testing.T) {
 		})
 
 		t.Run("existing resource", func(t *testing.T) {
-			t.Parallel()
+			testconfig.AllowParallelization(t)
 
 			ctx, resource := setup(t, func(ctx *core.Context, rw *http_ns.HttpResponseWriter, req *http_ns.HttpRequest) {
 				rw.WriteJSON(ctx, core.True)
@@ -76,7 +77,7 @@ func TestReadResource(t *testing.T) {
 		})
 
 		t.Run("raw", func(t *testing.T) {
-			t.Parallel()
+			testconfig.AllowParallelization(t)
 
 			ctx, resource := setup(t, func(ctx *core.Context, rw *http_ns.HttpResponseWriter, req *http_ns.HttpRequest) {
 				rw.WriteJSON(ctx, core.True)
@@ -93,7 +94,7 @@ func TestReadResource(t *testing.T) {
 		})
 
 		t.Run("content type with parameters", func(t *testing.T) {
-			t.Parallel()
+			testconfig.AllowParallelization(t)
 
 			mimeType := utils.Must(core.MimeTypeFrom("application/json; charset=utf-8"))
 			ctx, resource := setup(t, func(ctx *core.Context, rw *http_ns.HttpResponseWriter, req *http_ns.HttpRequest) {
@@ -112,7 +113,7 @@ func TestReadResource(t *testing.T) {
 		})
 
 		t.Run("an error should be returned if parsing required AND there is no parser for content type", func(t *testing.T) {
-			t.Parallel()
+			testconfig.AllowParallelization(t)
 
 			ctx, resource := setup(t, func(ctx *core.Context, rw *http_ns.HttpResponseWriter, req *http_ns.HttpRequest) {
 				rw.SetContentType("custom/type")
@@ -127,7 +128,7 @@ func TestReadResource(t *testing.T) {
 		})
 
 		t.Run("an error should bot be returned if raw data is asked AND there is no parser for content type", func(t *testing.T) {
-			t.Parallel()
+			testconfig.AllowParallelization(t)
 
 			ctx, resource := setup(t, func(ctx *core.Context, rw *http_ns.HttpResponseWriter, req *http_ns.HttpRequest) {
 				rw.SetContentType("custom/type")
@@ -148,13 +149,13 @@ func TestReadResource(t *testing.T) {
 }
 
 func TestGetResource(t *testing.T) {
-	t.Parallel()
+	testconfig.AllowParallelization(t)
 
 	//insecure := core.Option{Name: "insecure", Value: core.True}
 
 	//TODO: test read JSON
 	// t.Run("read IXON", func(t *testing.T) {
-	// 	t.Parallel()
+	// 	testconfig.SetParallelization(t)
 
 	// 	ctx, resource := setup(t, func(ctx *core.Context, rw *http_ns.HttpResponseWriter, req *http_ns.HttpRequest) {
 	// 		rw.WriteIXON(ctx, core.NewObjectFromMap(core.ValMap{"a": core.Int(1)}, ctx))

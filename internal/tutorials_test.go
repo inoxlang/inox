@@ -15,6 +15,7 @@ import (
 	"github.com/inoxlang/inox/internal/learn"
 	"github.com/inoxlang/inox/internal/mod"
 	"github.com/inoxlang/inox/internal/project"
+	"github.com/inoxlang/inox/internal/testconfig"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 
@@ -57,7 +58,7 @@ func testTutorial(t *testing.T, series learn.TutorialSeries, tut learn.Tutorial,
 			stdlibCtx, cancel = context.WithTimeout(context.Background(), 3*time.Second)
 			defer cancel()
 		} else {
-			t.Parallel()
+			testconfig.AllowParallelization(t)
 			stdlibCtx, cancel = context.WithCancel(context.Background())
 			defer cancel()
 		}

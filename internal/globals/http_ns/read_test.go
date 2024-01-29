@@ -9,11 +9,12 @@ import (
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/permkind"
 	"github.com/inoxlang/inox/internal/mimeconsts"
+	"github.com/inoxlang/inox/internal/testconfig"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestHttpGet(t *testing.T) {
-	t.Parallel()
+	testconfig.AllowParallelization(t)
 
 	makeServer := func() (*http.Server, core.URL) {
 		var ADDR = "localhost:" + strconv.Itoa(int(port.Add(1)))
@@ -32,7 +33,7 @@ func TestHttpGet(t *testing.T) {
 	}
 
 	t.Run("missing permission", func(t *testing.T) {
-		t.Parallel()
+		testconfig.AllowParallelization(t)
 
 		server, URL := makeServer()
 		defer server.Close()
@@ -53,7 +54,7 @@ func TestHttpGet(t *testing.T) {
 	})
 
 	t.Run("the request rate limit should be met", func(t *testing.T) {
-		t.Parallel()
+		testconfig.AllowParallelization(t)
 
 		server, URL := makeServer()
 		defer server.Close()
@@ -91,7 +92,7 @@ func TestHttpGet(t *testing.T) {
 }
 
 func TestHttpRead(t *testing.T) {
-	t.Parallel()
+	testconfig.AllowParallelization(t)
 
 	type contentType int
 
@@ -127,7 +128,7 @@ func TestHttpRead(t *testing.T) {
 	}
 
 	t.Run("missing permission", func(t *testing.T) {
-		t.Parallel()
+		testconfig.AllowParallelization(t)
 
 		server, URL := makeServer(json)
 		defer server.Close()
@@ -152,7 +153,7 @@ func TestHttpRead(t *testing.T) {
 	})
 
 	t.Run("the request rate limit should be met", func(t *testing.T) {
-		t.Parallel()
+		testconfig.AllowParallelization(t)
 
 		server, URL := makeServer(json)
 		defer server.Close()
@@ -189,7 +190,7 @@ func TestHttpRead(t *testing.T) {
 	})
 
 	t.Run("by default the content should be parsed based on the Content-type header", func(t *testing.T) {
-		t.Parallel()
+		testconfig.AllowParallelization(t)
 
 		server, URL := makeServer(json)
 		defer server.Close()
@@ -223,7 +224,7 @@ func TestHttpRead(t *testing.T) {
 	})
 
 	t.Run("by default the content should be parsed based on the Content-type header: with params", func(t *testing.T) {
-		t.Parallel()
+		testconfig.AllowParallelization(t)
 
 		server, URL := makeServer(jsonUtf8)
 		defer server.Close()
@@ -257,7 +258,7 @@ func TestHttpRead(t *testing.T) {
 	})
 
 	t.Run("if a mimetype argument is passed the parsing should be based it", func(t *testing.T) {
-		t.Parallel()
+		testconfig.AllowParallelization(t)
 
 		server, URL := makeServer(json)
 		defer server.Close()

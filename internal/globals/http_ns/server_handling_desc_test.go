@@ -11,6 +11,7 @@ import (
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/mimeconsts"
+	"github.com/inoxlang/inox/internal/testconfig"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/net/publicsuffix"
@@ -54,7 +55,7 @@ func TestHttpServerHandlingDescription(t *testing.T) {
 	}
 
 	t.Run("handling description", func(t *testing.T) {
-		t.Parallel()
+		testconfig.AllowParallelization(t)
 
 		t.Run("routing only", func(t *testing.T) {
 			runHandlingDescTestCase(t, serverTestCase{
@@ -138,7 +139,7 @@ func TestHttpServerHandlingDescription(t *testing.T) {
 	})
 
 	t.Run("rate limiting", func(t *testing.T) {
-		t.Parallel()
+		testconfig.AllowParallelization(t)
 
 		const HELLO = `
 			return {

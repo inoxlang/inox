@@ -14,11 +14,12 @@ import (
 
 	afs "github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/testconfig"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestParseModuleFromSource(t *testing.T) {
-	t.Parallel()
+	testconfig.AllowParallelization(t)
 
 	t.Run("no imports", func(t *testing.T) {
 		fls := newMemFilesystem()
@@ -362,7 +363,7 @@ func TestParseModuleFromSource(t *testing.T) {
 }
 
 func TestParseLocalModule(t *testing.T) {
-	t.Parallel()
+	testconfig.AllowParallelization(t)
 
 	moduleName := "mymod.ix"
 

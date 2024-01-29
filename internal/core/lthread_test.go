@@ -6,12 +6,13 @@ import (
 
 	permkind "github.com/inoxlang/inox/internal/core/permkind"
 	"github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/testconfig"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestSpawnLThread(t *testing.T) {
-	t.Parallel()
+	testconfig.AllowParallelization(t)
 
 	permissiveLthreadLimit := MustMakeNotAutoDepletingCountLimit(THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME, 100_000)
 

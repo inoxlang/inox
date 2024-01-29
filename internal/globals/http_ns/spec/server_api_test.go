@@ -11,6 +11,7 @@ import (
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/globals/html_ns"
+	"github.com/inoxlang/inox/internal/testconfig"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -78,7 +79,7 @@ func init() {
 }
 
 func TestGetFilesystemRoutingServerAPI(t *testing.T) {
-	t.Parallel()
+	testconfig.AllowParallelization(t)
 
 	//create a context and a filesystem with the passed file contents.
 	setup := func(files map[string]string) *core.Context {
@@ -108,10 +109,10 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 	}
 
 	t.Run("base cases", func(t *testing.T) {
-		t.Parallel()
+		testconfig.AllowParallelization(t)
 
 		t.Run("root index.ix", func(t *testing.T) {
-			t.Parallel()
+			testconfig.AllowParallelization(t)
 
 			ctx := setup(map[string]string{
 				"/routes/index.ix": `
@@ -144,7 +145,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 		})
 
 		t.Run("non root index.ix", func(t *testing.T) {
-			t.Parallel()
+			testconfig.AllowParallelization(t)
 
 			ctx := setup(map[string]string{
 				"/routes/users/index.ix": `
@@ -180,7 +181,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 		})
 
 		t.Run("root GET.ix", func(t *testing.T) {
-			t.Parallel()
+			testconfig.AllowParallelization(t)
 
 			ctx := setup(map[string]string{
 				"/routes/GET.ix": `
@@ -204,7 +205,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 		})
 
 		t.Run("non root GET.ix", func(t *testing.T) {
-			t.Parallel()
+			testconfig.AllowParallelization(t)
 
 			ctx := setup(map[string]string{
 				"/routes/users/GET.ix": `
@@ -228,7 +229,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 		})
 
 		t.Run("root GET-users.ix", func(t *testing.T) {
-			t.Parallel()
+			testconfig.AllowParallelization(t)
 
 			ctx := setup(map[string]string{
 				"/routes/GET-users.ix": `
@@ -252,7 +253,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 		})
 
 		t.Run("non root GET-users.ix", func(t *testing.T) {
-			t.Parallel()
+			testconfig.AllowParallelization(t)
 
 			ctx := setup(map[string]string{
 				"/routes/GET-users.ix": `
@@ -276,7 +277,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 		})
 
 		t.Run("deep GET.ix", func(t *testing.T) {
-			t.Parallel()
+			testconfig.AllowParallelization(t)
 
 			ctx := setup(map[string]string{
 				"/routes/x/users.ix": `
@@ -322,7 +323,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 		})
 
 		t.Run(".spec.ix files should be ignored", func(t *testing.T) {
-			t.Parallel()
+			testconfig.AllowParallelization(t)
 
 			ctx := setup(map[string]string{
 				"/routes/a.spec.ix": `
@@ -390,10 +391,10 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 	})
 
 	t.Run("an error is expected if at least two modules handle the same API operation", func(t *testing.T) {
-		t.Parallel()
+		testconfig.AllowParallelization(t)
 
 		t.Run("GET-users.ix + /users/index.ix", func(t *testing.T) {
-			t.Parallel()
+			testconfig.AllowParallelization(t)
 
 			ctx := setup(map[string]string{
 				"/routes/GET.ix": `
@@ -418,7 +419,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 		})
 
 		t.Run("GET-users.ix + /users/index.ix", func(t *testing.T) {
-			t.Parallel()
+			testconfig.AllowParallelization(t)
 
 			ctx := setup(map[string]string{
 				"/routes/GET-users.ix": `
@@ -443,7 +444,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 		})
 
 		t.Run("GET-users.ix + /users/GET.ix", func(t *testing.T) {
-			t.Parallel()
+			testconfig.AllowParallelization(t)
 
 			ctx := setup(map[string]string{
 				"/routes/GET-users.ix": `
@@ -468,7 +469,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 		})
 
 		t.Run("users.ix + /users/GET.ix", func(t *testing.T) {
-			t.Parallel()
+			testconfig.AllowParallelization(t)
 
 			ctx := setup(map[string]string{
 				"/routes/users.ix": `
@@ -495,10 +496,10 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 	})
 
 	t.Run("GET & OPTIONS handler should not have request body parameters", func(t *testing.T) {
-		t.Parallel()
+		testconfig.AllowParallelization(t)
 
 		t.Run("GET.ix", func(t *testing.T) {
-			t.Parallel()
+			testconfig.AllowParallelization(t)
 
 			ctx := setup(map[string]string{
 				"/routes/GET.ix": `
@@ -517,7 +518,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 		})
 
 		t.Run("GET-users.ix", func(t *testing.T) {
-			t.Parallel()
+			testconfig.AllowParallelization(t)
 
 			ctx := setup(map[string]string{
 				"/routes/GET-users.ix": `
@@ -536,7 +537,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 		})
 
 		t.Run("OPTIONS.ix", func(t *testing.T) {
-			t.Parallel()
+			testconfig.AllowParallelization(t)
 
 			ctx := setup(map[string]string{
 				"/routes/OPTIONS.ix": `
@@ -555,7 +556,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 		})
 
 		t.Run("OPTIONS-users.ix", func(t *testing.T) {
-			t.Parallel()
+			testconfig.AllowParallelization(t)
 
 			ctx := setup(map[string]string{
 				"/routes/OPTIONS-users.ix": `
@@ -575,10 +576,10 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 	})
 
 	t.Run("parameters", func(t *testing.T) {
-		t.Parallel()
+		testconfig.AllowParallelization(t)
 
 		t.Run("POST with a request body parameter", func(t *testing.T) {
-			t.Parallel()
+			testconfig.AllowParallelization(t)
 
 			ctx := setup(map[string]string{
 				"/routes/POST-users.ix": `
@@ -626,7 +627,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 		})
 
 		t.Run("POST with an injected parameter and no request body parameters", func(t *testing.T) {
-			t.Parallel()
+			testconfig.AllowParallelization(t)
 
 			ctx := setup(map[string]string{
 				"/routes/POST-users.ix": `
@@ -659,7 +660,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 		})
 
 		t.Run("POST with a request body parameter and an injected parameter", func(t *testing.T) {
-			t.Parallel()
+			testconfig.AllowParallelization(t)
 
 			ctx := setup(map[string]string{
 				"/routes/POST-users.ix": `
@@ -708,7 +709,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 		})
 
 		t.Run("POST with two request body parameters", func(t *testing.T) {
-			t.Parallel()
+			testconfig.AllowParallelization(t)
 
 			ctx := setup(map[string]string{
 				"/routes/POST-users.ix": `

@@ -4,11 +4,12 @@ import (
 	"testing"
 
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/testconfig"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestCreateHTMLNodeFromXMLElement(t *testing.T) {
-	t.Parallel()
+	testconfig.AllowParallelization(t)
 
 	t.Run("script tag", func(t *testing.T) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)

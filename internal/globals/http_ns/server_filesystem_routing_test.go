@@ -15,6 +15,7 @@ import (
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/localdb"
 	"github.com/inoxlang/inox/internal/mimeconsts"
+	"github.com/inoxlang/inox/internal/testconfig"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -1030,7 +1031,7 @@ func TestFilesystemRouting(t *testing.T) {
 
 	t.Run("request transaction should be commited or rollbacked after request", func(t *testing.T) {
 
-		t.Parallel()
+		testconfig.AllowParallelization(t)
 
 		baseTest := serverTestCase{
 			input: `

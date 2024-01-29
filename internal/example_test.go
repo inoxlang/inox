@@ -21,6 +21,7 @@ import (
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/mod"
 	"github.com/inoxlang/inox/internal/project"
+	"github.com/inoxlang/inox/internal/testconfig"
 
 	"github.com/inoxlang/inox/internal/globals/chrome_ns"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
@@ -201,7 +202,7 @@ func testExamples(args testExamplesArgs) {
 		t.Run(testName, func(t *testing.T) {
 			//parallelize all tests that don't start an HTTP server
 			if !bytes.Contains(content, []byte("http.Server")) {
-				t.Parallel()
+				testconfig.AllowParallelization(t)
 			}
 
 			fls := filesystemWithRootWD{

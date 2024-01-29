@@ -5,12 +5,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/inoxlang/inox/internal/testconfig"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestParseJSONRepresentation(t *testing.T) {
-	t.Parallel()
+	testconfig.AllowParallelization(t)
 
 	//TODO: check that removing one '}', or ']' or closing '"' always yields an error.
 	//The removed characters should not be inside a string and all cases should be

@@ -4,12 +4,13 @@ import (
 	"testing"
 
 	"github.com/inoxlang/inox/internal/commonfmt"
+	"github.com/inoxlang/inox/internal/testconfig"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/exp/maps"
 )
 
 func TestObjectPatternGetMigrationOperations(t *testing.T) {
-	t.Parallel()
+	testconfig.AllowParallelization(t)
 
 	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
@@ -272,7 +273,7 @@ func TestObjectPatternGetMigrationOperations(t *testing.T) {
 }
 
 func TestRecordPatternGetMigrationOperations(t *testing.T) {
-	t.Parallel()
+	testconfig.AllowParallelization(t)
 
 	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
@@ -497,7 +498,7 @@ func TestRecordPatternGetMigrationOperations(t *testing.T) {
 }
 
 func TestListPatternGetMigrationOperations(t *testing.T) {
-	t.Parallel()
+	testconfig.AllowParallelization(t)
 
 	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
@@ -691,7 +692,7 @@ func TestListPatternGetMigrationOperations(t *testing.T) {
 }
 
 func TestObjectMigrate(t *testing.T) {
-	t.Parallel()
+	testconfig.AllowParallelization(t)
 
 	t.Run("delete object: / key", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
@@ -984,7 +985,7 @@ func TestObjectMigrate(t *testing.T) {
 }
 
 func TestRecordMigrate(t *testing.T) {
-	t.Parallel()
+	testconfig.AllowParallelization(t)
 
 	t.Run("delete record: / key", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
@@ -1248,7 +1249,7 @@ func TestRecordMigrate(t *testing.T) {
 }
 
 func TestListMigrate(t *testing.T) {
-	t.Parallel()
+	testconfig.AllowParallelization(t)
 
 	t.Run("delete list: / key", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
@@ -1570,7 +1571,7 @@ func TestListMigrate(t *testing.T) {
 }
 
 func TestTupleMigrate(t *testing.T) {
-	t.Parallel()
+	testconfig.AllowParallelization(t)
 
 	t.Run("delete tuple: / key", func(t *testing.T) {
 		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
@@ -1875,7 +1876,7 @@ func TestTupleMigrate(t *testing.T) {
 }
 
 func TestGetMigrationOperations(t *testing.T) {
-	t.Parallel()
+	testconfig.AllowParallelization(t)
 
 	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
@@ -1934,7 +1935,7 @@ func TestGetMigrationOperations(t *testing.T) {
 }
 
 func TestMigrationOpHandlersFilterByPrefix(t *testing.T) {
-	t.Parallel()
+	testconfig.AllowParallelization(t)
 
 	t.Run("root", func(t *testing.T) {
 		handlers := MigrationOpHandlers{

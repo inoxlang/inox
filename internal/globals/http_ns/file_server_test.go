@@ -5,16 +5,17 @@ import (
 
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/testconfig"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 )
 
 func TestFileServer(t *testing.T) {
-	t.Parallel()
+	testconfig.AllowParallelization(t)
 
 	t.Run("missing http permission", func(t *testing.T) {
-		t.Parallel()
+		testconfig.AllowParallelization(t)
 
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
@@ -38,7 +39,7 @@ func TestFileServer(t *testing.T) {
 	})
 
 	t.Run("missing filesystem permission", func(t *testing.T) {
-		t.Parallel()
+		testconfig.AllowParallelization(t)
 
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{

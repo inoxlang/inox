@@ -19,6 +19,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/testconfig"
 	"github.com/tidwall/lotsa"
 )
 
@@ -31,7 +32,7 @@ const (
 //TODO: add tests with os filesystem
 
 func TestBackgroudOperations(t *testing.T) {
-	t.Parallel()
+	testconfig.AllowParallelization(t)
 
 	db := testOpen(t)
 	defer testClose(db)
@@ -79,7 +80,7 @@ func TestBackgroudOperations(t *testing.T) {
 	}
 }
 func TestSaveLoad(t *testing.T) {
-	t.Parallel()
+	testconfig.AllowParallelization(t)
 
 	var fls = newMemFilesystem()
 	db, _ := OpenBuntDBNoPermCheck(":memory:", fls)
@@ -138,7 +139,7 @@ func TestSaveLoad(t *testing.T) {
 }
 
 func TestMutatingIterator(t *testing.T) {
-	t.Parallel()
+	testconfig.AllowParallelization(t)
 
 	db := testOpen(t)
 	defer testClose(db)
@@ -180,7 +181,7 @@ func TestMutatingIterator(t *testing.T) {
 }
 
 func TestCaseInsensitiveIndex(t *testing.T) {
-	t.Parallel()
+	testconfig.AllowParallelization(t)
 
 	db := testOpen(t)
 	defer testClose(db)
@@ -227,7 +228,7 @@ func TestCaseInsensitiveIndex(t *testing.T) {
 }
 
 func TestIndexTransaction(t *testing.T) {
-	t.Parallel()
+	testconfig.AllowParallelization(t)
 
 	db := testOpen(t)
 	defer testClose(db)
@@ -390,7 +391,7 @@ func TestIndexTransaction(t *testing.T) {
 }
 
 func TestDeleteAll(t *testing.T) {
-	t.Parallel()
+	testconfig.AllowParallelization(t)
 
 	db := testOpen(t)
 	defer testClose(db)
@@ -496,7 +497,7 @@ func TestDeleteAll(t *testing.T) {
 }
 
 func TestAscendEqual(t *testing.T) {
-	t.Parallel()
+	testconfig.AllowParallelization(t)
 
 	db := testOpen(t)
 	defer testClose(db)
@@ -551,7 +552,7 @@ func TestAscendEqual(t *testing.T) {
 }
 
 func TestDescendEqual(t *testing.T) {
-	t.Parallel()
+	testconfig.AllowParallelization(t)
 
 	db := testOpen(t)
 	defer testClose(db)
@@ -606,7 +607,7 @@ func TestDescendEqual(t *testing.T) {
 }
 
 func TestVariousTx(t *testing.T) {
-	t.Parallel()
+	testconfig.AllowParallelization(t)
 
 	db := testOpen(t)
 	defer testClose(db)
@@ -1030,7 +1031,7 @@ func TestVariousTx(t *testing.T) {
 }
 
 func TestNearby(t *testing.T) {
-	t.Parallel()
+	testconfig.AllowParallelization(t)
 
 	rand.Seed(time.Now().UnixNano())
 	N := 100000
@@ -1305,7 +1306,7 @@ func TestNoExpiringItem(t *testing.T) {
 	}
 }
 func TestAutoShrink(t *testing.T) {
-	t.Parallel()
+	testconfig.AllowParallelization(t)
 
 	db := testOpen(t)
 	defer testClose(db)
@@ -1358,7 +1359,7 @@ func TestAutoShrink(t *testing.T) {
 
 // test database format loading
 func TestDatabaseFormat(t *testing.T) {
-	t.Parallel()
+	testconfig.AllowParallelization(t)
 
 	// should succeed
 	func() {
@@ -1465,7 +1466,7 @@ func TestDatabaseFormat(t *testing.T) {
 }
 
 func TestInsertsAndDeleted(t *testing.T) {
-	t.Parallel()
+	testconfig.AllowParallelization(t)
 
 	db := testOpen(t)
 	defer testClose(db)
@@ -1508,7 +1509,7 @@ func TestInsertsAndDeleted(t *testing.T) {
 }
 
 func TestInsertDoesNotMisuseIndex(t *testing.T) {
-	t.Parallel()
+	testconfig.AllowParallelization(t)
 
 	db := testOpen(t)
 	defer testClose(db)
@@ -1538,7 +1539,7 @@ func TestInsertDoesNotMisuseIndex(t *testing.T) {
 }
 
 func TestDeleteDoesNotMisuseIndex(t *testing.T) {
-	t.Parallel()
+	testconfig.AllowParallelization(t)
 
 	db := testOpen(t)
 	defer testClose(db)
@@ -1646,7 +1647,7 @@ func TestOpeningInvalidDatabaseFile(t *testing.T) {
 
 // test closing a closed database.
 func TestOpeningClosedDatabase(t *testing.T) {
-	t.Parallel()
+	testconfig.AllowParallelization(t)
 
 	var fls = newMemFilesystem()
 
@@ -1675,7 +1676,7 @@ func TestOpeningClosedDatabase(t *testing.T) {
 
 // test shrinking a database.
 func TestShrink(t *testing.T) {
-	t.Parallel()
+	testconfig.AllowParallelization(t)
 
 	db := testOpen(t)
 	defer testClose(db)
@@ -1883,7 +1884,7 @@ func test(t *testing.T, a, b bool) {
 }
 
 func TestBasic(t *testing.T) {
-	t.Parallel()
+	testconfig.AllowParallelization(t)
 
 	rand.Seed(time.Now().UnixNano())
 	db := testOpen(t)
@@ -2178,7 +2179,7 @@ func TestRectStrings(t *testing.T) {
 // TestTTLReOpen test setting a TTL and then immediately closing the database and
 // then waiting the TTL before reopening. The key should not be accessible.
 func TestTTLReOpen(t *testing.T) {
-	t.Parallel()
+	testconfig.AllowParallelization(t)
 
 	ttl := time.Second * 3
 	db := testOpen(t)
@@ -2689,7 +2690,7 @@ func TestJSONIndex(t *testing.T) {
 }
 
 func TestOnExpiredSync(t *testing.T) {
-	t.Parallel()
+	testconfig.AllowParallelization(t)
 
 	db := testOpen(t)
 	defer testClose(db)
@@ -2867,7 +2868,7 @@ func TestTransactionLeak(t *testing.T) {
 }
 
 func TestReloadNotInvalid(t *testing.T) {
-	t.Parallel()
+	testconfig.AllowParallelization(t)
 
 	rand.Seed(time.Now().UnixNano())
 	//fls.Remove(DEFAULT_FILENAME)

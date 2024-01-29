@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/testconfig"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/exp/maps"
 )
@@ -17,7 +18,7 @@ const (
 )
 
 func TestGetAPIFromOpenAPISpec(t *testing.T) {
-	t.Parallel()
+	testconfig.AllowParallelization(t)
 
 	resp, err := http.Get(OPEN_AI_API_SPEC_BASE_URL_URL)
 	if !assert.NoError(t, err) {

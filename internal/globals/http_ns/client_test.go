@@ -9,11 +9,12 @@ import (
 
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/testconfig"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestHttpClient(t *testing.T) {
-	t.Parallel()
+	testconfig.AllowParallelization(t)
 
 	permissiveHttpReqLimit := core.MustMakeNotAutoDepletingCountLimit(HTTP_REQUEST_RATE_LIMIT_NAME, 10_000)
 
@@ -35,7 +36,7 @@ func TestHttpClient(t *testing.T) {
 	}
 
 	t.Run("if cookies are disabled the cookie jar should be empty", func(t *testing.T) {
-		t.Parallel()
+		testconfig.AllowParallelization(t)
 
 		server, URL := makeServer()
 		ctx := core.NewContext(core.ContextConfig{
@@ -61,7 +62,7 @@ func TestHttpClient(t *testing.T) {
 	})
 
 	t.Run("if cookies are enabled the cookie jar should not be empty", func(t *testing.T) {
-		t.Parallel()
+		testconfig.AllowParallelization(t)
 
 		server, URL := makeServer()
 		url_, _ := url.Parse(string(URL))
@@ -89,7 +90,7 @@ func TestHttpClient(t *testing.T) {
 	})
 
 	t.Run("set cookies should be sent", func(t *testing.T) {
-		t.Parallel()
+		testconfig.AllowParallelization(t)
 
 		server, URL := makeServer()
 		url_, _ := url.Parse(string(URL))

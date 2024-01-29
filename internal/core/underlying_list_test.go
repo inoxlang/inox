@@ -3,12 +3,13 @@ package core
 import (
 	"testing"
 
+	"github.com/inoxlang/inox/internal/testconfig"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestValueList(t *testing.T) {
-	t.Parallel()
+	testconfig.AllowParallelization(t)
 
 	newList := func(elems ...Serializable) underlyingList {
 		return newValueList(elems...)
@@ -28,7 +29,7 @@ func TestValueList(t *testing.T) {
 }
 
 func TestIntList(t *testing.T) {
-	t.Parallel()
+	testconfig.AllowParallelization(t)
 
 	newList := func(elems ...Int) underlyingList {
 		return newIntList(elems...)
@@ -47,7 +48,7 @@ func TestIntList(t *testing.T) {
 }
 
 func TestStringList(t *testing.T) {
-	t.Parallel()
+	testconfig.AllowParallelization(t)
 
 	newList := func(elems ...StringLike) underlyingList {
 		return newStringList(elems...)
@@ -66,7 +67,7 @@ func TestStringList(t *testing.T) {
 }
 
 func TestBoolList(t *testing.T) {
-	t.Parallel()
+	testconfig.AllowParallelization(t)
 
 	newList := func(elems ...Bool) underlyingList {
 		return newBoolList(elems...)

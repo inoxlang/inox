@@ -30,6 +30,7 @@ import (
 	"github.com/inoxlang/inox/internal/mimeconsts"
 	netaddr "github.com/inoxlang/inox/internal/netaddr"
 	"github.com/inoxlang/inox/internal/project"
+	"github.com/inoxlang/inox/internal/testconfig"
 	"github.com/rs/zerolog"
 	"golang.org/x/net/publicsuffix"
 
@@ -143,7 +144,7 @@ func init() {
 }
 
 func TestHttpServerMissingProvidePermission(t *testing.T) {
-	t.Parallel()
+	testconfig.AllowParallelization(t)
 
 	if !core.AreDefaultRequestHandlingLimitsSet() {
 		core.SetDefaultRequestHandlingLimits([]core.Limit{})
@@ -965,7 +966,7 @@ func runAdvancedServerTest(
 ) {
 
 	if !testCase.avoidTestParallelization {
-		t.Parallel()
+		testconfig.AllowParallelization(t)
 	}
 	server, ctx, host, err := setup()
 	if !assert.NoError(t, err) {

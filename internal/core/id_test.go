@@ -3,12 +3,13 @@ package core
 import (
 	"testing"
 
+	"github.com/inoxlang/inox/internal/testconfig"
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestULID(t *testing.T) {
-	t.Parallel()
+	testconfig.AllowParallelization(t)
 	t.Run("base case", func(t *testing.T) {
 		id := NewULID()
 

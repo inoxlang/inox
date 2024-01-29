@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/testconfig"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 	"go.etcd.io/bbolt"
@@ -13,7 +14,7 @@ import (
 //TODO: add equivalent tests for transactions
 
 func TestKvSet(t *testing.T) {
-	t.Parallel()
+	testconfig.AllowParallelization(t)
 
 	t.Run("SetSerialized", func(t *testing.T) {
 		testKvSet(t, true)
@@ -30,7 +31,7 @@ func testKvSet(t *testing.T, UseSetSerialized bool) {
 	for _, txCase := range []string{"no_tx", "tx", "finished_tx"} {
 		txCase := txCase
 		t.Run(txCase+" base case", func(t *testing.T) {
-			t.Parallel()
+			testconfig.AllowParallelization(t)
 
 			kv, err := OpenSingleFileKV(KvStoreConfig{
 				Path: core.PathFrom(filepath.Join(t.TempDir(), "data.kv")),
@@ -178,7 +179,7 @@ func testKvSet(t *testing.T, UseSetSerialized bool) {
 }
 
 func TestKvGetSerialized(t *testing.T) {
-	t.Parallel()
+	testconfig.AllowParallelization(t)
 
 	kv, err := OpenSingleFileKV(KvStoreConfig{
 		Path: core.PathFrom(filepath.Join(t.TempDir(), "data.kv")),
@@ -222,7 +223,7 @@ func TestKvInsert(t *testing.T) {
 }
 
 func testKvInsert(t *testing.T, UseInsertSerialized bool) {
-	t.Parallel()
+	testconfig.AllowParallelization(t)
 
 	t.Run("simple", func(t *testing.T) {
 
@@ -313,7 +314,7 @@ func testKvInsert(t *testing.T, UseInsertSerialized bool) {
 }
 
 func TestKvForEach(t *testing.T) {
-	t.Parallel()
+	testconfig.AllowParallelization(t)
 
 	kv, err := OpenSingleFileKV(KvStoreConfig{
 		Path: core.PathFrom(filepath.Join(t.TempDir(), "data.kv")),
@@ -349,7 +350,7 @@ func TestKvForEach(t *testing.T) {
 }
 
 func TestKvDelete(t *testing.T) {
-	t.Parallel()
+	testconfig.AllowParallelization(t)
 
 	kv, err := OpenSingleFileKV(KvStoreConfig{
 		Path: core.PathFrom(filepath.Join(t.TempDir(), "data.kv")),

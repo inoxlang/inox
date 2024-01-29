@@ -9,18 +9,19 @@ import (
 	"github.com/aohorodnyk/mimeheader"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/mimeconsts"
+	"github.com/inoxlang/inox/internal/testconfig"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestHttpResponseWriter(t *testing.T) {
-	t.Parallel()
+	testconfig.AllowParallelization(t)
 
 	list := core.NewWrappedValueList
 	obj := core.NewObjectFromMap
 
 	t.Run("WriteJSON()", func(t *testing.T) {
-		t.Parallel()
+		testconfig.AllowParallelization(t)
 
 		ctx := core.NewContext(core.ContextConfig{})
 		core.NewGlobalState(ctx)
@@ -90,7 +91,7 @@ func TestHttpResponseWriter(t *testing.T) {
 	})
 
 	t.Run("SetCookie()", func(t *testing.T) {
-		t.Parallel()
+		testconfig.AllowParallelization(t)
 
 		testCases := []struct {
 			obj    *core.Object
