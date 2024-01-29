@@ -38,8 +38,10 @@ func TestInoxdConnection(t *testing.T) {
 
 	port := 6000
 
+	var earlyErr atomic.Value
+
 	go func() {
-		Run(CloudProxyArgs{
+		err := Run(CloudProxyArgs{
 			Config: CloudProxyConfig{
 				CloudDataDir:                 "/",
 				AnonymousAccountDatabasePath: "/anon-db.kv",
@@ -50,10 +52,18 @@ func TestInoxdConnection(t *testing.T) {
 			ErrW:       os.Stdout,
 			GoContext:  goCtx,
 		})
+
+		if err != nil {
+			earlyErr.Store(err)
+		}
 	}()
 
 	//wait for the cloud proxy to start
 	time.Sleep(time.Second)
+
+	if err := earlyErr.Load(); err != nil {
+		assert.FailNow(t, err.(error).Error())
+	}
 
 	dialer := *websocket.DefaultDialer
 	dialer.TLSClientConfig = &tls.Config{

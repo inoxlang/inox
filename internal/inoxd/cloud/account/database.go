@@ -6,9 +6,9 @@ import (
 	"sync/atomic"
 
 	"github.com/inoxlang/inox/internal/afs"
+	"github.com/inoxlang/inox/internal/buntdb"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/permkind"
-	"github.com/inoxlang/inox/internal/filekv"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
@@ -38,17 +38,14 @@ func OpenAnonymousAccountDatabase(ctx *core.Context, path core.Path, fls afs.Fil
 
 	//TODO: find a unique location on disk
 
-	store, err := filekv.OpenSingleFileKV(filekv.KvStoreConfig{
-		Path: path,
-		//Filesystem: fls,
-	})
+	kvStore, err := buntdb.OpenBuntDBNoPermCheck(path.UnderlyingString(), fls)
 
 	if err != nil {
 		return nil, err
 	}
 
 	db := &AnonymousAccountDatabase{
-		kv: store,
+		kv: kvStore,
 	}
 	ctx.OnGracefulTearDown(func(ctx *core.Context) error {
 		return db.Close(ctx)
@@ -58,7 +55,7 @@ func OpenAnonymousAccountDatabase(ctx *core.Context, path core.Path, fls afs.Fil
 }
 
 type AnonymousAccountDatabase struct {
-	kv     *filekv.SingleFileKV
+	kv     *buntdb.DB
 	closed atomic.Bool
 }
 
@@ -68,10 +65,15 @@ func (db *AnonymousAccountDatabase) Persist(ctx *core.Context, account *Anonymou
 		return err
 	}
 
-	path := core.Path("/" + account.TokenHash)
+	path := string("/" + account.TokenHash)
 
 	return utils.Catch(func() {
-		db.kv.SetSerialized(ctx, path, string(marshalled), db)
+		tx, err := db.kv.Begin(true)
+		if err != nil {
+			panic(err)
+		}
+		defer tx.Commit()
+		tx.Set(path, string(marshalled), nil)
 	})
 }
 
@@ -81,14 +83,21 @@ func (db *AnonymousAccountDatabase) GetAccount(ctx *core.Context, cleartextToken
 		return nil, err
 	}
 
-	path := core.Path("/" + tokenHash)
+	path := string("/" + tokenHash)
 
-	marshalled, found, err := db.kv.GetSerialized(ctx, path, db)
+	readonlyTx, err := db.kv.Begin(false)
 	if err != nil {
 		return nil, err
 	}
 
-	if !found {
+	marshalled, err := readonlyTx.Get(path)
+	notFound := errors.Is(err, buntdb.ErrNotFound)
+
+	if err != nil && !notFound {
+		return nil, err
+	}
+
+	if notFound {
 		return nil, UnknownAccountToken
 	}
 
@@ -109,5 +118,5 @@ func (db *AnonymousAccountDatabase) Close(ctx *core.Context) error {
 	if !db.closed.CompareAndSwap(false, true) {
 		return nil
 	}
-	return db.kv.Close(ctx)
+	return db.kv.Close()
 }
