@@ -73,25 +73,7 @@ func TestCheck(t *testing.T) {
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 
-		t.Run("duplicate keys (one implicit, one explicit)", func(t *testing.T) {
-			n, src := mustParseCode(`{1, "0": 1}`)
-
-			keyNode := parse.FindNode(n, (*parse.QuotedStringLiteral)(nil), nil)
-			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
-			expectedErr := utils.CombineErrors(
-				makeError(keyNode, src, fmtObjLitExplicityDeclaresPropWithImplicitKey("0")),
-			)
-			assert.Equal(t, expectedErr, err)
-
-			n, src = mustParseCode(`{"0": 1, 1}`)
-			err = staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
-			expectedErr = utils.CombineErrors(
-				makeError(n, src, fmtObjLitExplicityDeclaresPropWithImplicitKey("0")),
-			)
-			assert.Error(t, expectedErr, err)
-		})
-
-		t.Run("duplicate explicit keys (two string literals)", func(t *testing.T) {
+		t.Run("duplicate keys (two string literals)", func(t *testing.T) {
 			n, src := mustParseCode(`{"0":1, "0": 1}`)
 
 			keyNode := parse.FindNode(n, (*parse.QuotedStringLiteral)(nil), nil)
@@ -102,7 +84,7 @@ func TestCheck(t *testing.T) {
 			assert.Equal(t, expectedErr, err)
 		})
 
-		t.Run("duplicate explicit keys (one identifier & one string)", func(t *testing.T) {
+		t.Run("duplicate keys (one identifier & one string)", func(t *testing.T) {
 			n, src := mustParseCode(`{a:1, "a": 1}`)
 
 			keyNode := parse.FindNode(n, (*parse.QuotedStringLiteral)(nil), nil)
@@ -113,7 +95,7 @@ func TestCheck(t *testing.T) {
 			assert.Equal(t, expectedErr, err)
 		})
 
-		t.Run("duplicate explicit keys (one string & one identifier)", func(t *testing.T) {
+		t.Run("duplicate keys (one string & one identifier)", func(t *testing.T) {
 			n, src := mustParseCode(`{a:1, "a": 1}`)
 
 			keyNode := parse.FindNode(n, (*parse.QuotedStringLiteral)(nil), nil)
@@ -124,7 +106,7 @@ func TestCheck(t *testing.T) {
 			assert.Equal(t, expectedErr, err)
 		})
 
-		t.Run("duplicate explicit keys (two identifiers)", func(t *testing.T) {
+		t.Run("duplicate keys (two identifiers)", func(t *testing.T) {
 			n, src := mustParseCode(`{a:1, "a": 1}`)
 
 			keyNode := parse.FindNode(n, (*parse.QuotedStringLiteral)(nil), nil)
@@ -302,24 +284,6 @@ func TestCheck(t *testing.T) {
 		t.Run("explicit identifier keys", func(t *testing.T) {
 			n, src := mustParseCode(`#{keyOne:1, keyTwo:2}`)
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
-		})
-
-		t.Run("duplicate keys (one implicit, one explicit)", func(t *testing.T) {
-			n, src := mustParseCode(`#{1, "0": 1}`)
-
-			keyNode := parse.FindNode(n, (*parse.QuotedStringLiteral)(nil), nil)
-			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
-			expectedErr := utils.CombineErrors(
-				makeError(keyNode, src, fmtRecLitExplicityDeclaresPropWithImplicitKey("0")),
-			)
-			assert.Equal(t, expectedErr, err)
-
-			n, src = mustParseCode(`#{"0": 1, 1}`)
-			err = staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
-			expectedErr = utils.CombineErrors(
-				makeError(n, src, fmtRecLitExplicityDeclaresPropWithImplicitKey("0")),
-			)
-			assert.Error(t, expectedErr, err)
 		})
 
 		t.Run("duplicate explicit keys", func(t *testing.T) {

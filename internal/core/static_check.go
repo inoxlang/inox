@@ -2424,15 +2424,12 @@ func shallowCheckObjectRecordProperties(
 	spreadElements []*parse.PropertySpreadElement,
 	isObject bool,
 	addError func(n parse.Node, msg string),
-) (parse.TraversalAction, map[string]bool) {
-	indexKey := 0
-	keys := map[string]bool{}
+) (parse.TraversalAction, map[string]struct{}) {
+	keys := map[string]struct{}{}
 
 	// look for duplicate keys
 	for _, prop := range properties {
 		var k string
-
-		var isExplicit bool
 
 		if prop.Type != nil {
 			addError(prop.Type, "type annotation of properties is not allowed")
@@ -2441,13 +2438,11 @@ func shallowCheckObjectRecordProperties(
 		switch n := prop.Key.(type) {
 		case *parse.QuotedStringLiteral:
 			k = n.Value
-			isExplicit = true
 		case *parse.IdentifierLiteral:
 			k = n.Name
-			isExplicit = true
 		case nil:
-			k = strconv.Itoa(indexKey)
-			indexKey++
+			keys[IMPLICIT_PROP_NAME] = struct{}{}
+			continue
 		}
 
 		if len(k) > MAX_NAME_BYTE_LEN {
@@ -2456,19 +2451,11 @@ func shallowCheckObjectRecordProperties(
 
 		if parse.IsMetadataKey(k) {
 			addError(prop.Key, OBJ_REC_LIT_CANNOT_HAVE_METAPROP_KEYS)
-		} else if prevIsExplicit, found := keys[k]; found {
-			if isExplicit && !prevIsExplicit {
-				if isObject {
-					addError(prop, fmtObjLitExplicityDeclaresPropWithImplicitKey(k))
-				} else {
-					addError(prop, fmtRecLitExplicityDeclaresPropWithImplicitKey(k))
-				}
-			} else {
-				addError(prop, fmtDuplicateKey(k))
-			}
+		} else if _, found := keys[k]; found {
+			addError(prop, fmtDuplicateKey(k))
 		}
 
-		keys[k] = isExplicit
+		keys[k] = struct{}{}
 	}
 
 	// also look for duplicate keys
@@ -2487,7 +2474,7 @@ func shallowCheckObjectRecordProperties(
 				addError(key, fmtDuplicateKey(name))
 				return parse.ContinueTraversal, nil
 			}
-			keys[name] = true
+			keys[name] = struct{}{}
 		}
 	}
 

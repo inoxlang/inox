@@ -12,6 +12,8 @@ import (
 	"github.com/inoxlang/inox/internal/utils"
 )
 
+const IMPLICIT_PROP_NAME = ""
+
 // Object implements Value.
 type Object struct {
 	keys   []string
