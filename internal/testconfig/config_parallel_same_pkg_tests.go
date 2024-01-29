@@ -3,5 +3,5 @@
 package testconfig
 
 func init() {
-	PARELLIZE_SAME_PKG_TESTS = true
+	PARALLELIZE_SAME_PKG_TESTS = true
 }
