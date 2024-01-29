@@ -102,7 +102,7 @@ func testTutorial(t *testing.T, series learn.TutorialSeries, tut learn.Tutorial,
 
 			_, _, _, _, err := mod.RunLocalModule(mod.RunLocalModuleArgs{
 				Fpath:                     fpath,
-				PassedArgs:                core.NewEmptyStruct(),
+				PassedArgs:                core.NewEmptyModuleArgs(),
 				ParsingCompilationContext: parsingCompilationContext,
 				StdlibCtx:                 stdlibCtx,
 				PreinitFilesystem:         fls,

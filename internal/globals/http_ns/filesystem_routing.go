@@ -413,7 +413,7 @@ func getHandlerModuleArguments(req *HttpRequest, manifest *core.Manifest, handle
 			return nil, http.StatusBadRequest, errors.New("only GET & HEAD requests are supported by the handler")
 		}
 	}
-	return core.NewStructFromMap(moduleArguments), 0, nil
+	return core.NewModuleArgs(moduleArguments), 0, nil
 }
 
 func getHandlerModuleParameters(ctx *core.Context, manifest *core.Manifest, methodSpecificModule bool) (handlerModuleParameters, error) {

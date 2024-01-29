@@ -500,7 +500,7 @@ func PrepareLocalModule(args ModulePreparationArgs) (state *GlobalState, mod *Mo
 		}
 	} else { // no arguments provided
 		if args.DataExtractionMode || manifest.Parameters.NoParameters() {
-			modArgs = NewEmptyStruct()
+			modArgs = NewEmptyModuleArgs()
 		} else {
 			modArgsError = errors.New("module arguments not provided")
 		}

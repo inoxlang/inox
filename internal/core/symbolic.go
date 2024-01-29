@@ -746,7 +746,7 @@ func (args *ModuleArgs) ToSymbolicValue(ctx *Context, encountered map[uintptr]sy
 		return r, nil
 	}
 
-	moduleParamsPattern, err := args.structType.ToSymbolicValue(ctx, encountered)
+	moduleParamsPattern, err := args.pattern.ToSymbolicValue(ctx, encountered)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert type of struct to symbolic: %w", err)
 	}

@@ -119,7 +119,7 @@ type Manifest struct {
 func NewEmptyManifest() *Manifest {
 	return &Manifest{
 		Parameters: ModuleParameters{
-			paramsPattern: EMPTY_MODULE_ARGS_TYPE,
+			paramsPattern: EMPTY_MODULE_ARGS_PATTERN,
 		},
 		InitialWorkingDirectory: DEFAULT_IWD,
 	}
@@ -308,8 +308,8 @@ func (p *ModuleParameters) getArguments(ctx *Context, entries map[string]Value) 
 	}
 
 	return &ModuleArgs{
-		structType: p.paramsPattern,
-		values:     structValues,
+		pattern: p.paramsPattern,
+		values:  structValues,
 	}, nil
 }
 
@@ -397,8 +397,8 @@ outer:
 	}
 
 	return &ModuleArgs{
-		structType: p.paramsPattern,
-		values:     structValues,
+		pattern: p.paramsPattern,
+		values:  structValues,
 	}, nil
 }
 
@@ -737,7 +737,7 @@ func (m *Module) createManifest(ctx *Context, object *Object, config manifestObj
 		perms        []Permission
 		envPattern   *ObjectPattern
 		moduleParams = ModuleParameters{
-			paramsPattern: EMPTY_MODULE_ARGS_TYPE,
+			paramsPattern: EMPTY_MODULE_ARGS_PATTERN,
 		}
 		dbConfigs      DatabaseConfigs
 		autoInvocation *AutoInvocationConfig

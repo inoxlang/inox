@@ -272,12 +272,12 @@ func (s *ModuleArgs) Clone(originState *GlobalState, sharableValues *[]Potential
 		return clone, nil
 	}
 
-	structClone := &ModuleArgs{
-		structType: s.structType,
-		values:     make([]Value, len(s.values)),
+	argsClone := &ModuleArgs{
+		pattern: s.pattern,
+		values:  make([]Value, len(s.values)),
 	}
 
-	clones[ptr] = structClone
+	clones[ptr] = argsClone
 
 	for i, val := range s.values {
 		var fieldClone Value
@@ -289,12 +289,12 @@ func (s *ModuleArgs) Clone(originState *GlobalState, sharableValues *[]Potential
 			fieldClone, err = CheckSharedOrClone(val, clones, depth+1)
 		}
 		if err != nil {
-			return nil, fmt.Errorf("failed to share/clone field %s: %w", s.structType.keys[i], err)
+			return nil, fmt.Errorf("failed to share/clone field %s: %w", s.pattern.keys[i], err)
 		}
-		structClone.values[i] = fieldClone
+		argsClone.values[i] = fieldClone
 	}
 
-	return structClone, nil
+	return argsClone, nil
 }
 
 func (a *Array) Clone(originState *GlobalState, sharableValues *[]PotentiallySharable, clones map[uintptr]Clonable, depth int) (Value, error) {

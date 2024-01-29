@@ -1991,7 +1991,7 @@ func TestPrepareLocalModule(t *testing.T) {
 
 		state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
 			Fpath:                     file,
-			Args:                      core.NewStructFromMap(map[string]core.Value{}),
+			Args:                      core.NewModuleArgs(map[string]core.Value{}),
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             ctx,
 			ParentContextRequired:     true,
@@ -2037,7 +2037,7 @@ func TestPrepareLocalModule(t *testing.T) {
 
 		res, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
 			Fpath: file,
-			Args: core.NewStructFromMap(map[string]core.Value{
+			Args: core.NewModuleArgs(map[string]core.Value{
 				"0": core.Path("./a.txt"),
 			}),
 			ParsingCompilationContext: compilationCtx,
@@ -2085,7 +2085,7 @@ func TestPrepareLocalModule(t *testing.T) {
 
 		state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
 			Fpath: file,
-			Args: core.NewStructFromMap(map[string]core.Value{
+			Args: core.NewModuleArgs(map[string]core.Value{
 				"0": core.True,
 			}),
 			ParsingCompilationContext: compilationCtx,
@@ -2131,7 +2131,7 @@ func TestPrepareLocalModule(t *testing.T) {
 
 		state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
 			Fpath: file,
-			Args: core.NewStructFromMap(map[string]core.Value{
+			Args: core.NewModuleArgs(map[string]core.Value{
 				"0": core.True,
 			}),
 			ParsingCompilationContext: compilationCtx,
@@ -2180,7 +2180,7 @@ func TestPrepareLocalModule(t *testing.T) {
 
 		state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
 			Fpath: file,
-			Args: core.NewStructFromMap(map[string]core.Value{
+			Args: core.NewModuleArgs(map[string]core.Value{
 				"0":      core.Path("./a.txt"),
 				"output": core.True,
 			}),
@@ -2229,7 +2229,7 @@ func TestPrepareLocalModule(t *testing.T) {
 
 		state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
 			Fpath: file,
-			Args: core.NewStructFromMap(map[string]core.Value{
+			Args: core.NewModuleArgs(map[string]core.Value{
 				"outpu": core.True, //unknown argument
 			}),
 			ParsingCompilationContext: compilationCtx,
@@ -2275,7 +2275,7 @@ func TestPrepareLocalModule(t *testing.T) {
 
 		state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
 			Fpath: file,
-			Args: core.NewStructFromMap(map[string]core.Value{
+			Args: core.NewModuleArgs(map[string]core.Value{
 				"x": core.True, //unknown argument
 			}),
 			ParsingCompilationContext: compilationCtx,

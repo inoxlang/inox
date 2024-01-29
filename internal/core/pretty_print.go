@@ -810,7 +810,7 @@ func (s *ModuleArgs) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, dep
 	indentCount := parentIndentCount + 1
 	indent := bytes.Repeat(config.Indent, indentCount)
 
-	keys := s.structType.keys
+	keys := s.pattern.keys
 
 	for i, k := range keys {
 

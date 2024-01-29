@@ -1,7 +1,7 @@
 package core
 
 var (
-	EMPTY_MODULE_ARGS_TYPE = NewModuleParamsPattern(nil, nil)
+	EMPTY_MODULE_ARGS_PATTERN = NewModuleParamsPattern(nil, nil)
 
 	_ IProps  = (*ModuleArgs)(nil)
 	_ Pattern = (*ModuleParamsPattern)(nil)
@@ -9,15 +9,15 @@ var (
 
 // ModuleArgs contains the arguments passed to a module, ModuleArgs implements Value.
 type ModuleArgs struct {
-	structType *ModuleParamsPattern
-	values     []Value
+	pattern *ModuleParamsPattern
+	values  []Value
 }
 
-func NewEmptyStruct() *ModuleArgs {
-	return &ModuleArgs{structType: EMPTY_MODULE_ARGS_TYPE}
+func NewEmptyModuleArgs() *ModuleArgs {
+	return &ModuleArgs{pattern: EMPTY_MODULE_ARGS_PATTERN}
 }
 
-func NewStructFromMap(fields map[string]Value) *ModuleArgs {
+func NewModuleArgs(fields map[string]Value) *ModuleArgs {
 	var keys []string
 	var patterns []Pattern
 	var values []Value
@@ -28,13 +28,13 @@ func NewStructFromMap(fields map[string]Value) *ModuleArgs {
 		values = append(values, v)
 	}
 	return &ModuleArgs{
-		structType: NewModuleParamsPattern(keys, patterns),
-		values:     values,
+		pattern: NewModuleParamsPattern(keys, patterns),
+		values:  values,
 	}
 }
 
 func (s *ModuleArgs) Prop(ctx *Context, name string) Value {
-	index, ok := s.structType.indexOfField(name)
+	index, ok := s.pattern.indexOfField(name)
 	if !ok {
 		panic(FormatErrPropertyDoesNotExist(name, s))
 	}
@@ -42,11 +42,11 @@ func (s *ModuleArgs) Prop(ctx *Context, name string) Value {
 }
 
 func (s *ModuleArgs) PropertyNames(*Context) []string {
-	return s.structType.keys
+	return s.pattern.keys
 }
 
 func (s *ModuleArgs) SetProp(ctx *Context, name string, value Value) error {
-	index, ok := s.structType.indexOfField(name)
+	index, ok := s.pattern.indexOfField(name)
 	if !ok {
 		return FormatErrPropertyDoesNotExist(name, s)
 	}
@@ -58,14 +58,14 @@ func (s *ModuleArgs) SetProp(ctx *Context, name string, value Value) error {
 func (s *ModuleArgs) ValueMap() map[string]Value {
 	valueMap := map[string]Value{}
 	for index, fieldVal := range s.values {
-		valueMap[s.structType.keys[index]] = fieldVal
+		valueMap[s.pattern.keys[index]] = fieldVal
 	}
 	return valueMap
 }
 
 func (s *ModuleArgs) ForEachField(fn func(fieldName string, fieldValue Value) error) error {
 	for i, v := range s.values {
-		fieldName := s.structType.keys[i]
+		fieldName := s.pattern.keys[i]
 		if err := fn(fieldName, v); err != nil {
 			return err
 		}
@@ -93,7 +93,7 @@ func NewModuleParamsPattern(
 
 func (p *ModuleParamsPattern) Test(ctx *Context, v Value) bool {
 	_struct, ok := v.(*ModuleArgs)
-	return ok && _struct.structType == p
+	return ok && _struct.pattern == p
 }
 
 func (*ModuleParamsPattern) StringPattern() (StringPattern, bool) {

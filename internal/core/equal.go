@@ -602,7 +602,7 @@ func (s *ModuleArgs) Equal(ctx *Context, other Value, alreadyCompared map[uintpt
 	}
 
 	otherStruct, ok := other.(*ModuleArgs)
-	if !ok || s.structType != otherStruct.structType {
+	if !ok || s.pattern != otherStruct.pattern {
 		return false
 	}
 

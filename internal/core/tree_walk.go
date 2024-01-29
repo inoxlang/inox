@@ -1273,7 +1273,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 								globals.values = append(globals.values, globalVal)
 								types = append(types, ANYVAL_PATTERN)
 							}
-							globals.structType = NewModuleParamsPattern(keys, types)
+							globals.pattern = NewModuleParamsPattern(keys, types)
 							meta[propertyName] = globals
 							continue
 						}

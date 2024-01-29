@@ -1243,8 +1243,8 @@ func (v *VM) run() {
 
 			v.sp -= numElements
 			v.stack[v.sp] = &ModuleArgs{
-				structType: structType,
-				values:     values,
+				pattern: structType,
+				values:  values,
 			}
 			v.sp++
 		case OpSpreadObject:
@@ -2533,7 +2533,7 @@ func (v *VM) handleOtherOpcodes(op byte) (_continue bool) {
 		switch g := globalsDesc.(type) {
 		case *ModuleArgs:
 			for i, v := range g.values {
-				k := g.structType.keys[i]
+				k := g.pattern.keys[i]
 				actualGlobals[k] = v
 			}
 		case KeyList:
