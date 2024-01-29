@@ -96,6 +96,10 @@ const (
 	CANNOT_CHECK_MANIFEST_WITHOUT_PARENT          = "checking a Manifest node requires the parent node"
 	CANNOT_CHECK_STRUCT_METHOD_DEF_WITHOUT_PARENT = "checking the definition of a struct method requires the parent node"
 
+	//object literal
+	ELEMENTS_NOT_ALLOWED_IF_EMPTY_PROP_NAME = "elements are not allowed if the empty property name is present"
+	EMPTY_PROP_NAME_NOT_ALLOWED_IF_ELEMENTS = "the empty property name is not allowed if there are elements (values without a key)"
+
 	//object pattern literals
 	UNEXPECTED_OTHER_PROPS_EXPR_OTHERPROPS_NO_IS_PRESENT = "unexpected otherprops expression: no other properties are allowed since otherprops(no) is present"
 
@@ -125,12 +129,12 @@ const (
 	MISSING_LIFETIMEJOB_SUBJECT_PATTERN_NOT_AN_IMPLICIT_OBJ_PROP = "missing subject pattern of lifetime job: subject can only be ommitted for lifetime jobs that are implicit object properties"
 
 	//visibility
-	INVALID_VISIB_INIT_BLOCK_SHOULD_CONT_OBJ       = "invalid visibility initialization block: block should only contain an object literal"
-	INVALID_VISIB_DESC_SHOULDNT_HAVE_METAPROPS     = "invalid visibility initialization description: object should not have metaproperties"
-	INVALID_VISIB_DESC_SHOULDNT_HAVE_IMPLICIT_KEYS = "invalid visibility initialization description: object should not have implicit keys"
-	VAL_SHOULD_BE_KEYLIST_LIT                      = "value should be a key list literal"
-	VAL_SHOULD_BE_DICT_LIT                         = "value should be a dictionary literal"
-	INVALID_VISIBILITY_DESC_KEY                    = "invalid key for visibility description"
+	INVALID_VISIB_INIT_BLOCK_SHOULD_CONT_OBJ   = "invalid visibility initialization block: block should only contain an object literal"
+	INVALID_VISIB_DESC_SHOULDNT_HAVE_METAPROPS = "invalid visibility initialization description: object should not have metaproperties"
+	INVALID_VISIB_DESC_SHOULDNT_HAVE_ELEMENTS  = "invalid visibility initialization description: object should not have elements (values without a key)"
+	VAL_SHOULD_BE_KEYLIST_LIT                  = "value should be a key list literal"
+	VAL_SHOULD_BE_DICT_LIT                     = "value should be a dictionary literal"
+	INVALID_VISIBILITY_DESC_KEY                = "invalid key for visibility description"
 
 	OPTIONAL_DYN_MEMB_EXPR_NOT_SUPPORTED_YET = "optional dynamic member expression are not supported yet"
 

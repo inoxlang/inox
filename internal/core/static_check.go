@@ -11,6 +11,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/globals/globalnames"
+	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
 )
@@ -2376,7 +2377,7 @@ func checkVisibilityInitializationBlock(propInfo *propertyInfo, block *parse.Ini
 
 	for _, prop := range objLiteral.Properties {
 		if prop.HasImplicitKey() {
-			onError(objLiteral, INVALID_VISIB_DESC_SHOULDNT_HAVE_IMPLICIT_KEYS)
+			onError(objLiteral, INVALID_VISIB_DESC_SHOULDNT_HAVE_ELEMENTS)
 			return
 		}
 
@@ -2426,6 +2427,7 @@ func shallowCheckObjectRecordProperties(
 	addError func(n parse.Node, msg string),
 ) (parse.TraversalAction, map[string]struct{}) {
 	keys := map[string]struct{}{}
+	hasElements := false
 
 	// look for duplicate keys
 	for _, prop := range properties {
@@ -2441,7 +2443,19 @@ func shallowCheckObjectRecordProperties(
 		case *parse.IdentifierLiteral:
 			k = n.Name
 		case nil:
-			keys[IMPLICIT_PROP_NAME] = struct{}{}
+			if _, ok := keys[inoxconsts.IMPLICIT_PROP_NAME]; ok && !hasElements {
+				addError(prop.Value, ELEMENTS_NOT_ALLOWED_IF_EMPTY_PROP_NAME)
+				continue
+			}
+			keys[inoxconsts.IMPLICIT_PROP_NAME] = struct{}{}
+			hasElements = true
+			continue
+		default:
+			continue
+		}
+
+		if k == inoxconsts.IMPLICIT_PROP_NAME && hasElements {
+			addError(prop.Key, EMPTY_PROP_NAME_NOT_ALLOWED_IF_ELEMENTS)
 			continue
 		}
 

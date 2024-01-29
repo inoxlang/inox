@@ -63,12 +63,32 @@ func TestCheck(t *testing.T) {
 	}
 
 	t.Run("object literal", func(t *testing.T) {
-		t.Run("two implict keys", func(t *testing.T) {
+		t.Run("two elements", func(t *testing.T) {
 			n, src := mustParseCode(`{1, 2}`)
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 
-		t.Run("explicit identifier keys", func(t *testing.T) {
+		t.Run("explicit empty property name + elements", func(t *testing.T) {
+			n, src := mustParseCode(`{"": 'a', 1}`)
+			intLit := parse.FindNode(n, (*parse.IntLiteral)(nil), nil)
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(intLit, src, ELEMENTS_NOT_ALLOWED_IF_EMPTY_PROP_NAME),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("elements + explicit empty property name", func(t *testing.T) {
+			n, src := mustParseCode(`{1, "": 'a'}`)
+			strLit := parse.FindNode(n, (*parse.QuotedStringLiteral)(nil), nil)
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(strLit, src, EMPTY_PROP_NAME_NOT_ALLOWED_IF_ELEMENTS),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("identifier keys", func(t *testing.T) {
 			n, src := mustParseCode(`{keyOne:1, keyTwo:2}`)
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
@@ -221,7 +241,7 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(innerObj, src, INVALID_VISIB_DESC_SHOULDNT_HAVE_IMPLICIT_KEYS),
+				makeError(innerObj, src, INVALID_VISIB_DESC_SHOULDNT_HAVE_ELEMENTS),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -276,17 +296,18 @@ func TestCheck(t *testing.T) {
 	})
 
 	t.Run("record literal", func(t *testing.T) {
-		t.Run("two implict keys", func(t *testing.T) {
-			n, src := mustParseCode(`#{1, 2}`)
-			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
-		})
 
-		t.Run("explicit identifier keys", func(t *testing.T) {
+		t.Run("identifier keys", func(t *testing.T) {
 			n, src := mustParseCode(`#{keyOne:1, keyTwo:2}`)
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 
-		t.Run("duplicate explicit keys", func(t *testing.T) {
+		t.Run("two elements", func(t *testing.T) {
+			n, src := mustParseCode(`#{1, 2}`)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
+		t.Run("duplicate keys", func(t *testing.T) {
 			n, src := mustParseCode(`#{"0":1, "0": 1}`)
 
 			keyNode := parse.FindNode(n, (*parse.QuotedStringLiteral)(nil), nil)
@@ -297,7 +318,7 @@ func TestCheck(t *testing.T) {
 			assert.Equal(t, expectedErr, err)
 		})
 
-		t.Run("duplicate explicit keys : one of the key is in an expanded object", func(t *testing.T) {
+		t.Run("duplicate keys : one of the key is in an expanded object", func(t *testing.T) {
 			n, src := mustParseCode(`
 				e = {a: 1}
 				#{"a": 1, ... $e.{a}}
