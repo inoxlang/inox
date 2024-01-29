@@ -3729,52 +3729,51 @@ func evalTreedataPair(n *parse.TreedataPair, state *State, options evalOptions) 
 
 func evalObjectLiteral(n *parse.ObjectLiteral, state *State, options evalOptions) (Value, error) {
 	entries := map[string]Serializable{}
-	indexKey := 0
 
 	var (
-		keys                   []string
-		props                  []*parse.ObjectProperty
-		hasLifetimeJobs        bool
-		lifetimejobPropIndices []int32
-		lifetimejobKeys        []string
+		keys            []string
+		props           []*parse.ObjectProperty
+		hasLifetimeJobs = false
 	)
 
-	//get all keys
-	for i, p := range n.Properties {
+	var noKeyProps []*parse.ObjectProperty
+
+	//get all keys and properties without a key.
+	for _, p := range n.Properties {
 		var key string
+		hasKey := true
 
 		//add the key
 		switch n := p.Key.(type) {
 		case *parse.QuotedStringLiteral:
 			key = n.Value
-			_, err := strconv.ParseUint(key, 10, 32)
-			if err == nil {
-				indexKey++
-			}
 		case *parse.IdentifierLiteral:
 			key = n.Name
-		case nil:
-			key = strconv.Itoa(indexKey)
-			indexKey++
+		case nil: //no key
+			hasKey = false
 		default:
 			return nil, fmt.Errorf("invalid key type %T", n)
 		}
 
+		if hasKey && key == inoxconsts.IMPLICIT_PROP_NAME { //not allowed (static check error)
+			continue
+		}
+
 		_, ok := p.Value.(*parse.LifetimejobExpression)
+
 		if ok {
-			//if the value is a lifetimejob we move the key at the end
-			lifetimejobPropIndices = append(lifetimejobPropIndices, int32(i))
-			lifetimejobKeys = append(lifetimejobKeys, key)
-		} else {
+			if hasKey { //error
+				continue
+			}
+			hasLifetimeJobs = true
+		}
+
+		if hasKey {
 			keys = append(keys, key)
 			props = append(props, p)
+		} else {
+			noKeyProps = append(noKeyProps, p)
 		}
-	}
-
-	for i, propIndex := range lifetimejobPropIndices {
-		p := n.Properties[propIndex]
-		keys = append(keys, lifetimejobKeys[i])
-		props = append(props, p)
 	}
 
 	for _, el := range n.SpreadElements {
@@ -3808,10 +3807,6 @@ func evalObjectLiteral(n *parse.ObjectLiteral, state *State, options evalOptions
 
 			entries[name] = serializable
 		}
-	}
-
-	if indexKey != 0 {
-		// TODO: implicit prop count
 	}
 
 	expectedObj, ok := findInMultivalue[*Object](options.expectedValue)
@@ -3909,18 +3904,38 @@ func evalObjectLiteral(n *parse.ObjectLiteral, state *State, options evalOptions
 			}
 
 			//additional checks if expected object is readonly
-			if expectedObj.readonly {
-				if _, ok := propVal.(*LifetimeJob); ok {
-					state.addError(makeSymbolicEvalError(p, state, LIFETIME_JOBS_NOT_ALLOWED_IN_READONLY_OBJECTS))
-				} else if !IsReadonlyOrImmutable(propVal) {
-					state.addError(makeSymbolicEvalError(p.Key, state, PROPERTY_VALUES_OF_READONLY_OBJECTS_SHOULD_BE_READONLY_OR_IMMUTABLE))
-				}
+			if expectedObj.readonly && !IsReadonlyOrImmutable(propVal) {
+				state.addError(makeSymbolicEvalError(p.Key, state, PROPERTY_VALUES_OF_READONLY_OBJECTS_SHOULD_BE_READONLY_OR_IMMUTABLE))
 			}
 		}
 
 		obj.initNewProp(key, serializable, static)
 		state.symbolicData.SetMostSpecificNodeValue(p.Key, propVal)
 	}
+
+	//evaluate properties that don't have a key.
+	var noKeyValues []Value
+	for _, p := range noKeyProps {
+		propVal, err := symbolicEval(p.Value, state)
+		if err != nil {
+			return nil, err
+		}
+		//additional checks if expected object is readonly
+		if expectedObj.readonly {
+			if _, ok := propVal.(*LifetimeJob); ok {
+				state.addError(makeSymbolicEvalError(p, state, LIFETIME_JOBS_NOT_ALLOWED_IN_READONLY_OBJECTS))
+			} else if !IsReadonlyOrImmutable(propVal) {
+				state.addError(makeSymbolicEvalError(p.Key, state, PROPERTY_VALUES_OF_READONLY_OBJECTS_SHOULD_BE_READONLY_OR_IMMUTABLE))
+			}
+		}
+		noKeyValues = append(noKeyValues, propVal)
+	}
+
+	if len(noKeyValues) > 0 {
+		elem := AsSerializableChecked(joinValues(noKeyValues))
+		obj.initNewProp(inoxconsts.IMPLICIT_PROP_NAME, NewListOf(elem), nil)
+	}
+
 	state.unsetNextSelf()
 	if restoreNextSelf {
 		state.setNextSelf(prevNextSelf)

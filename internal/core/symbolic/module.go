@@ -3,8 +3,8 @@ package symbolic
 import (
 	"errors"
 	"reflect"
-	"strconv"
 
+	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/parse"
 	pprint "github.com/inoxlang/inox/internal/prettyprint"
 )
@@ -117,7 +117,6 @@ func getModuleParameters(manifestObject *Object, manifestObjectLiteral *parse.Ob
 	}
 
 	moduleParams := []moduleParameter{}
-	implicitKeyIndex := 0
 
 	parametersNode, _ := manifestObjectLiteral.PropValue(extData.MANIFEST_PARAMS_SECTION_NAME)
 	parametersObjectNode, ok := parametersNode.(*parse.ObjectLiteral)
@@ -126,15 +125,22 @@ func getModuleParameters(manifestObject *Object, manifestObjectLiteral *parse.Ob
 		return nil
 	}
 
+	var noKeyProperties *List
+	if obj.hasProperty(inoxconsts.IMPLICIT_PROP_NAME) {
+		noKeyProperties = obj.Prop(inoxconsts.IMPLICIT_PROP_NAME).(*List)
+	}
+
+	var noKeyPropIndex = 0
+
 	for _, prop := range parametersObjectNode.Properties {
 		if prop.HasImplicitKey() { //positional parameter
-			index := implicitKeyIndex
-			implicitKeyIndex++
+			paramDesc, ok := noKeyProperties.ElementAt(noKeyPropIndex).(*Object)
+			noKeyPropIndex++
 
-			paramDesc, ok := obj.Prop(strconv.Itoa(index)).(*Object)
 			if !ok {
 				return nil
 			}
+
 			paramNameVal, _, _ := paramDesc.GetProperty(extData.MANIFEST_POSITIONAL_PARAM_NAME_FIELD)
 			paramName, ok := paramNameVal.(*Identifier)
 			if !ok || !paramName.HasConcreteName() {

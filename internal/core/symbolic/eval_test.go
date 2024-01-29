@@ -1848,6 +1848,38 @@ func TestSymbolicEval(t *testing.T) {
 			}, res)
 		})
 
+		t.Run("one property without a key", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`{1}`)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, &Object{
+				entries: map[string]Serializable{
+					"": NewListOf(INT_1),
+				},
+				static: map[string]Pattern{
+					"": NewListPatternOf(&TypePattern{val: INT_1}),
+				},
+			}, res)
+		})
+
+		t.Run("two properties without a key", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`{1, 2}`)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, &Object{
+				entries: map[string]Serializable{
+					"": NewListOf(AsSerializableChecked(joinValues([]Value{INT_1, INT_2}))),
+				},
+				static: map[string]Pattern{
+					"": NewListPatternOf(&TypePattern{
+						val: AsSerializableChecked(joinValues([]Value{INT_1, INT_2})),
+					}),
+				},
+			}, res)
+		})
+
 		t.Run("missing value of property", func(t *testing.T) {
 			n, state, err := _makeStateAndChunk(`{v:}`, nil)
 
@@ -11418,9 +11450,12 @@ func TestSymbolicEval(t *testing.T) {
 		res, err := symbolicEval(n, state)
 		assert.NoError(t, err)
 		assert.Empty(t, state.errors())
-		assert.Equal(t, NewInexactObject(map[string]Serializable{
-			"0": ANY_SYNC_MSG_HANDLER,
-		}, nil, map[string]Pattern{"0": getStatic(ANY_SYNC_MSG_HANDLER)}), res)
+
+		static := map[string]Pattern{"": NewListPatternOf(getStatic(ANY_SYNC_MSG_HANDLER))}
+		expectedObject := NewInexactObject(map[string]Serializable{
+			"": NewListOf(ANY_SYNC_MSG_HANDLER),
+		}, nil, static)
+		assert.Equal(t, expectedObject, res)
 
 	})
 
