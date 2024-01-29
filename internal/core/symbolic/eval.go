@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"reflect"
 	"runtime/debug"
-	"strconv"
 	"strings"
 
 	"slices"
@@ -3913,7 +3912,7 @@ func evalObjectLiteral(n *parse.ObjectLiteral, state *State, options evalOptions
 		state.symbolicData.SetMostSpecificNodeValue(p.Key, propVal)
 	}
 
-	//evaluate properties that don't have a key.
+	//evaluate elements that don't have a key.
 	var noKeyValues []Serializable
 	for _, p := range noKeyProps {
 		propVal, err := symbolicEval(p.Value, state)
@@ -3964,32 +3963,39 @@ func evalRecordLiteral(n *parse.RecordLiteral, state *State, options evalOptions
 	entries := map[string]Serializable{}
 	rec := NewBoundEntriesRecord(entries)
 
-	var keys []string
+	var (
+		keys       []string
+		props      []*parse.ObjectProperty
+		noKeyProps []*parse.ObjectProperty
+	)
 
-	//get keys
-
-	indexKey := 0
+	//get all keys and properties without a key.
 	for _, p := range n.Properties {
 		var key string
+		hasKey := true
 
+		//add the key
 		switch n := p.Key.(type) {
 		case *parse.QuotedStringLiteral:
 			key = n.Value
-			_, err := strconv.ParseUint(key, 10, 32)
-			if err == nil {
-				//see Check function
-				indexKey++
-			}
 		case *parse.IdentifierLiteral:
 			key = n.Name
-		case nil:
-			key = strconv.Itoa(indexKey)
-			indexKey++
+		case nil: //no key
+			hasKey = false
 		default:
 			return nil, fmt.Errorf("invalid key type %T", n)
 		}
 
-		keys = append(keys, key)
+		if hasKey && key == inoxconsts.IMPLICIT_PROP_NAME { //not allowed (static check error)
+			continue
+		}
+
+		if hasKey {
+			keys = append(keys, key)
+			props = append(props, p)
+		} else {
+			noKeyProps = append(noKeyProps, p)
+		}
 	}
 
 	expectedRecord, ok := findInMultivalue[*Record](options.expectedValue)
@@ -4008,8 +4014,8 @@ func evalRecordLiteral(n *parse.RecordLiteral, state *State, options evalOptions
 		expectedRecord = &Record{}
 	}
 
-	//evaluate values
-	for i, p := range n.Properties {
+	//evaluate properties
+	for i, p := range props {
 		key := keys[i]
 
 		expectedPropVal := expectedRecord.entries[key]
@@ -4030,7 +4036,7 @@ func evalRecordLiteral(n *parse.RecordLiteral, state *State, options evalOptions
 				state.addError(makeSymbolicEvalError(p.Value, state, fmtNotAssignableToPropOfType(v, expectedPropVal)))
 			}
 
-			serializable, ok := v.(Serializable)
+			serializable, ok := AsSerializable(v).(Serializable)
 			if !ok {
 				state.addError(makeSymbolicEvalError(p, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_INITIAL_VALUES_OF_SERIALIZABLE))
 				entries[key] = ANY_SERIALIZABLE
@@ -4041,6 +4047,31 @@ func evalRecordLiteral(n *parse.RecordLiteral, state *State, options evalOptions
 				entries[key] = serializable
 			}
 		}
+	}
+
+	//evaluate elements.
+	var noKeyValues []Serializable
+	for _, p := range noKeyProps {
+		propVal, err := symbolicEval(p.Value, state)
+		if err != nil {
+			return nil, err
+		}
+		state.symbolicData.SetMostSpecificNodeValue(p.Key, propVal)
+
+		serializable, ok := AsSerializable(propVal).(Serializable)
+		if !ok {
+			state.addError(makeSymbolicEvalError(p, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_INITIAL_VALUES_OF_SERIALIZABLE))
+			serializable = ANY_SERIALIZABLE
+		} else if propVal.IsMutable() {
+			state.addError(makeSymbolicEvalError(p.Value, state, INVALID_ELEM_ELEMS_OF_RECORD_SHOULD_BE_IMMUTABLE))
+			serializable = ANY_SERIALIZABLE
+		}
+
+		noKeyValues = append(noKeyValues, serializable)
+	}
+
+	if len(noKeyValues) > 0 {
+		entries[inoxconsts.IMPLICIT_PROP_NAME] = NewTuple(noKeyValues...)
 	}
 
 	for _, el := range n.SpreadElements {

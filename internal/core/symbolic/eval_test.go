@@ -2090,6 +2090,30 @@ func TestSymbolicEval(t *testing.T) {
 			}, res)
 		})
 
+		t.Run("one property without a key", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`#{1}`)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, &Record{
+				entries: map[string]Serializable{
+					"": NewTuple(INT_1),
+				},
+			}, res)
+		})
+
+		t.Run("two properties without a key", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`#{1, 2}`)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, &Record{
+				entries: map[string]Serializable{
+					"": NewTuple(INT_1, INT_2),
+				},
+			}, res)
+		})
+
 		t.Run("missing value of property", func(t *testing.T) {
 			n, state, err := _makeStateAndChunk(`#{v:}`, nil)
 
@@ -2107,7 +2131,7 @@ func TestSymbolicEval(t *testing.T) {
 			}, res)
 		})
 
-		t.Run("mutable value", func(t *testing.T) {
+		t.Run("mutable property value", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`#{"a": {}}`)
 			res, err := symbolicEval(n, state)
 			valueNode := n.Statements[0].(*parse.RecordLiteral).Properties[0].Value
@@ -2119,6 +2143,22 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, &Record{
 				entries: map[string]Serializable{
 					"a": ANY_SERIALIZABLE,
+				},
+			}, res)
+		})
+
+		t.Run("mutable element value", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`#{{}}`)
+			res, err := symbolicEval(n, state)
+			valueNode := n.Statements[0].(*parse.RecordLiteral).Properties[0].Value
+
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(valueNode, state, INVALID_ELEM_ELEMS_OF_RECORD_SHOULD_BE_IMMUTABLE),
+			}, state.errors())
+			assert.Equal(t, &Record{
+				entries: map[string]Serializable{
+					"": NewTuple(ANY_SERIALIZABLE),
 				},
 			}, res)
 		})
