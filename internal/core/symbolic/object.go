@@ -615,20 +615,8 @@ func (obj *Object) AddStatic(pattern Pattern) (StaticDataHolder, error) {
 	return obj, nil
 }
 
-func (o *Object) HasKnownLen() bool {
-	return false
-}
-
-func (o *Object) KnownLen() int {
-	return -1
-}
-
 func (o *Object) Element() Value {
-	return ANY
-}
-
-func (*Object) ElementAt(i int) Value {
-	return ANY
+	return ANY_SERIALIZABLE
 }
 
 func (o *Object) Contains(value Serializable) (bool, bool) {

@@ -25,7 +25,7 @@ var (
 	STRLIKE_LIST = NewListOf(ANY_STR_LIKE)
 
 	_ = []Indexable{
-		(*String)(nil), (*Array)(nil), (*List)(nil), (*Tuple)(nil), (*RuneSlice)(nil), (*ByteSlice)(nil), (*Object)(nil), (*Record)(nil),
+		(*String)(nil), (*Array)(nil), (*List)(nil), (*Tuple)(nil), (*RuneSlice)(nil), (*ByteSlice)(nil), (*Record)(nil),
 		(*IntRange)(nil), (*RuneRange)(nil), (*AnyStringLike)(nil), (*AnyIndexable)(nil), (*OrderedPair)(nil),
 
 		(*indexableMultivalue)(nil),
