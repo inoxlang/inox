@@ -22,12 +22,16 @@ Parentheses can be omitted around operands of **or**/**and** chains:
   - [Multiplication](#multiplication)
   - [Division](#division)
 - [Logical Operations](#logical-operations)
-- [substrof](#substrof)
+- [Substrof](#substrof)
+- [Keyof](#keyof)
+- [Range Operators](#range-operators)
+- [In](#in)
+- [Nil Coalescing Operator](#nil-coaelescing-operator)
+- [Pattern Difference](#pattern-difference)
 - [Match](#match)
 - [Ordered Comparison](#ordered-comparison)
 - [Equality](#equality)
 - [Is](#is)
-
 
 ---
 
@@ -67,7 +71,8 @@ Parentheses can be omitted around operands of **or**/**and** chains:
 
 ## Logical Operations
 
-`or` and `and` are binary logical operators, however parentheses can be omitted around operands of **or**/**and** chains:
+`or` and `and` are binary logical operators, however parentheses can be omitted
+around operands of **or**/**and** chains:
 
 ```
 (a or b or c)       # ok
@@ -80,9 +85,10 @@ Parentheses can be omitted around operands of **or**/**and** chains:
 
 ---
 
-# substrof
+# Substrof
 
-The `substrof` operator is defined for string-like and bytes-like values, the two interfaces can be mixed.
+The `substrof` operator is defined for string-like and bytes-like values, the
+two interfaces can be mixed.
 
 ```
 ("A" substrof "AB")
@@ -93,6 +99,93 @@ The `substrof` operator is defined for string-like and bytes-like values, the tw
 
 ---
 
+# Keyof
+
+The `keyof` operator returns true if the left operand (string-like) is the name
+of a property in the object on the right.
+
+```
+("a" keyof {a: 1}) # true
+("0" keyof {1}) # true
+```
+
+---
+
+## Range Operators
+
+The `..` and `..<` range operators create a range. The left operand (lower
+bound) must be smaller than the right operand (upper bound).
+
+`..<` is named the **exclusive end range operator**.
+
+```
+# integer range
+(1 .. 3) # 1 to 3 int range
+(1 ..< 3) # 1 to 2 int range
+
+# float range
+(1.0 .. 3.0) # 1.0 to 3.0 float range
+(1.0 ..< 3.0) # 1.0 to 3.0 float range (exclusive end)
+
+# quantity range
+(1B .. 3B) # 1B to 3B quantity range
+```
+
+---
+
+## In
+
+The `in` operator returns true if the left operand is an element of the
+**container** on the right.
+
+The following binary operations evaluate to `true`.
+
+```
+(1 in [1, 2, 3])
+(1 in {a: 1})
+(1 in 1..2)
+```
+
+The `not-in` operator is the opposite of `in`.
+
+---
+
+## Nil Coaelescing Operator
+
+The `??` operator returns the right operand if the left operand is `nil`.
+
+```
+(nil ?? 1) # 1
+(2 ?? 1) # 2
+```
+
+---
+
+## Pattern Difference
+
+The pattern difference operator (`\`) creates a new pattern that matches all
+values matched by the left operand, except for those matched by the right
+operand.
+
+```
+pattern p = (%int \ %int(1..2))
+
+# false
+(1 match p)
+
+# true
+(0 match p)
+
+pattern p = (%int \ 1)
+
+# false
+(1 match p)
+
+# true
+(0 match p)
+```
+
+---
 
 ## Match
 
@@ -110,15 +203,7 @@ object = {a: 1}
 (object match %{a: int}) # equivalent
 ```
 
-Addition
-
-- integer comparison: `(1 < 2)`
-- floating point addition: `(1.0 + 2.5)`
-- floating point comparison: `(1.0 < 2.5)`
-- deep equality: `({a: 1} == {a: 1})`
-- logical operations: `(a or b)`, `(a and b)`
-- exclusive-end range: `(0 ..< 2)`
-- inclusive-end range: `(0 .. 2)`
+The `not-match` operator is the opposite of `match`.
 
 ---
 
@@ -169,8 +254,13 @@ The ordering of strings is the
 
 All values can be compared using the `==` operator. Equality definitions are not
 definitive but in general:
-- Simple values (integers, floats, strings, paths, URLs, ...) are equal if they have the same type and the exact same number or string value.
-- More complex Inox values such as objects and lists are compared using structural equality if they have the same type. 
+
+- Simple values (integers, floats, strings, paths, URLs, ...) are equal if they
+  have the same type and the exact same number or string value.
+- More complex Inox values such as objects and lists are compared using
+  structural equality if they have the same type.
+
+The `!=` operator is the opposite of `==`.
 
 ### Objects & Records
 
@@ -317,13 +407,15 @@ Two URLs are equal if they are exactly the same:
 
 ### Ports
 
-Two ports are equal if they have the same number, so `:8080 == :8080/http == :8080/https`.
+Two ports are equal if they have the same number, so
+`:8080 == :8080/http == :8080/https`.
 
 **This may change in the future.**
 
 ### Time Types
 
 Comparing values of different time types always returns `false`:
+
 ```
 (2020y-UTC == 2020y-1mt-1d-UTC) # year and date
 (2020y-UTC == 2020y-1mt-1d-1h-UTC) # year and datetime
@@ -331,7 +423,7 @@ Comparing values of different time types always returns `false`:
 ```
 
 Values of a given time type are equal if they represent the same time instant.
-Two times can be equal even if they are in different locations. 
+Two times can be equal even if they are in different locations.
 
 ### Errors
 
@@ -349,10 +441,10 @@ therefore the following comparisons are false:
 
 ## Advanced String Patterns
 
-Two advanced string patterns are equal if they have the same regex or the exact same structures and sub patterns.
+Two advanced string patterns are equal if they have the same regex or the exact
+same structures and sub patterns.
 
 **This may change in the future.**
-
 
 ### Object Patterns
 
@@ -383,6 +475,8 @@ if they have the same optionality.
 ### Is
 
 The `is` operator returns true if the two operands have the same identity.
+
+The `is-not` operator is the opposite of `is`.
 
 (work in progress)
 
