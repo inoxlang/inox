@@ -3914,12 +3914,14 @@ func evalObjectLiteral(n *parse.ObjectLiteral, state *State, options evalOptions
 	}
 
 	//evaluate properties that don't have a key.
-	var noKeyValues []Value
+	var noKeyValues []Serializable
 	for _, p := range noKeyProps {
 		propVal, err := symbolicEval(p.Value, state)
 		if err != nil {
 			return nil, err
 		}
+		state.symbolicData.SetMostSpecificNodeValue(p.Key, propVal)
+
 		//additional checks if expected object is readonly
 		if expectedObj.readonly {
 			if _, ok := propVal.(*LifetimeJob); ok {
@@ -3928,12 +3930,11 @@ func evalObjectLiteral(n *parse.ObjectLiteral, state *State, options evalOptions
 				state.addError(makeSymbolicEvalError(p.Key, state, PROPERTY_VALUES_OF_READONLY_OBJECTS_SHOULD_BE_READONLY_OR_IMMUTABLE))
 			}
 		}
-		noKeyValues = append(noKeyValues, propVal)
+		noKeyValues = append(noKeyValues, AsSerializableChecked(propVal))
 	}
 
 	if len(noKeyValues) > 0 {
-		elem := AsSerializableChecked(joinValues(noKeyValues))
-		obj.initNewProp(inoxconsts.IMPLICIT_PROP_NAME, NewListOf(elem), nil)
+		obj.initNewProp(inoxconsts.IMPLICIT_PROP_NAME, NewList(noKeyValues...), nil)
 	}
 
 	state.unsetNextSelf()

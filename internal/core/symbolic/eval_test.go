@@ -1855,10 +1855,10 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Empty(t, state.errors())
 			assert.Equal(t, &Object{
 				entries: map[string]Serializable{
-					"": NewListOf(INT_1),
+					"": NewList(INT_1),
 				},
 				static: map[string]Pattern{
-					"": NewListPatternOf(&TypePattern{val: INT_1}),
+					"": NewListPatternOf(&TypePattern{val: ANY_INT}),
 				},
 			}, res)
 		})
@@ -1870,12 +1870,10 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Empty(t, state.errors())
 			assert.Equal(t, &Object{
 				entries: map[string]Serializable{
-					"": NewListOf(AsSerializableChecked(joinValues([]Value{INT_1, INT_2}))),
+					"": NewList(INT_1, INT_2),
 				},
 				static: map[string]Pattern{
-					"": NewListPatternOf(&TypePattern{
-						val: AsSerializableChecked(joinValues([]Value{INT_1, INT_2})),
-					}),
+					"": NewListPatternOf(&TypePattern{val: ANY_INT}),
 				},
 			}, res)
 		})
@@ -11453,7 +11451,7 @@ func TestSymbolicEval(t *testing.T) {
 
 		static := map[string]Pattern{"": NewListPatternOf(getStatic(ANY_SYNC_MSG_HANDLER))}
 		expectedObject := NewInexactObject(map[string]Serializable{
-			"": NewListOf(ANY_SYNC_MSG_HANDLER),
+			"": NewList(ANY_SYNC_MSG_HANDLER),
 		}, nil, static)
 		assert.Equal(t, expectedObject, res)
 
