@@ -89,31 +89,18 @@ object = {
 a = object.a
 ```
 
-Implicit-key properties are properties that can be set without specifying a
-name:
+
+Values not preceded by a name are known as elements and are stored in the empty name property "" (list).
 
 ```
-object = {
-    1
-    []
-}
+object = {1, 2}
 
 print(object)
 
 output:
 {
-    "0": 1
-    "1": []
+    "": [1, 2]
 }
-```
-
-Properties with an implicit key can be accessed thanks to an index expression,
-the index should always be an integer:
-
-```
-object = {1}
-one = object[0] # 1
-1
 ```
 
 Objects are **lock-protected** (see [Data Sharing](./concurrency.md#data-sharing)).

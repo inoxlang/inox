@@ -259,18 +259,13 @@
         a = object1.a
         print("a:", a)
 
-        # Implicit-key properties are properties that can be set without specifying a name:
+        # values not preceded by a name are known as elements and are stored in the empty name property "" (list).
         object2 = {
             1
             []
         }
 
         print(object2)
-
-        # Properties with an implicit key can be accessed thanks to an index expression,
-        # the index should always be an integer.
-        object3 = {1}
-        print("object3[0]:", object3[0])
   - name: Lists
     id: lists
     program: |

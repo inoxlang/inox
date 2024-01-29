@@ -1,11 +1,11 @@
 package core
 
 import (
-	"strconv"
 	"testing"
 	"time"
 
 	permkind "github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/stretchr/testify/assert"
 )
@@ -166,13 +166,15 @@ func TestObject(t *testing.T) {
 				"a": Int(1),
 			}
 
-			for i, jobCode := range jobCodes {
+			jobList := NewWrappedValueList()
+			for _, jobCode := range jobCodes {
 				job := createTestLifetimeJob(t, state, jobCode)
 				if job == nil {
 					return nil, nil
 				}
-				valMap[strconv.Itoa(i)] = job
+				jobList.append(ctx, job)
 			}
+			valMap[inoxconsts.IMPLICIT_PROP_NAME] = jobList
 
 			obj := NewObjectFromMap(valMap, ctx)
 			assert.NoError(t, obj.instantiateLifetimeJobs(ctx))

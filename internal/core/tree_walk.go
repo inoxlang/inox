@@ -6,12 +6,14 @@ import (
 	"fmt"
 	"math"
 	"runtime/debug"
+	"slices"
 	"strconv"
 	"strings"
 	"unsafe"
 
 	permkind "github.com/inoxlang/inox/internal/core/permkind"
 	"github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
 )
@@ -1472,7 +1474,10 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 	case *parse.ObjectLiteral:
 		finalObj := &Object{}
 
-		indexKey := 0
+		//created from no key properties
+		var elements []Serializable
+		elemListIndex := 0 //index of ""
+
 		for _, p := range n.Properties {
 			v, err := TreeWalkEval(p.Value, state)
 			if err != nil {
@@ -1484,16 +1489,16 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			switch n := p.Key.(type) {
 			case *parse.QuotedStringLiteral:
 				key = n.Value
-				_, err := strconv.ParseUint(key, 10, 32)
-				if err == nil {
-					//see Check function
-					indexKey++
-				}
 			case *parse.IdentifierLiteral:
 				key = n.Name
-			case nil:
-				key = strconv.Itoa(indexKey)
-				indexKey++
+			case nil: //no key
+				elements = append(elements, v.(Serializable))
+				if !slices.Contains(finalObj.keys, inoxconsts.IMPLICIT_PROP_NAME) {
+					elemListIndex = len(finalObj.values)
+					finalObj.keys = append(finalObj.keys, inoxconsts.IMPLICIT_PROP_NAME)
+					finalObj.values = append(finalObj.values, nil)
+				}
+				continue
 			default:
 				return nil, fmt.Errorf("invalid key type %T", n)
 			}
@@ -1517,6 +1522,11 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			}
 		}
 
+		if len(elements) > 0 {
+			list := NewWrappedValueList(elements...)
+			finalObj.values[elemListIndex] = list
+		}
+
 		finalObj.sortProps()
 		// add handlers before because jobs can mutate the object
 		if err := finalObj.addMessageHandlers(state.Global.Ctx); err != nil {
@@ -1524,10 +1534,6 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		}
 		if err := finalObj.instantiateLifetimeJobs(state.Global.Ctx); err != nil {
 			return nil, err
-		}
-
-		if indexKey != 0 {
-			finalObj.setImplicitPropCount(indexKey)
 		}
 
 		initializeMetaproperties(finalObj, n.MetaProperties)

@@ -932,7 +932,7 @@ type PropertySpreadElement struct {
 
 type ObjectProperty struct {
 	NodeBase
-	Key   Node //can be nil (implicit key)
+	Key   Node //can be nil
 	Type  Node //can be nil
 	Value Node
 }

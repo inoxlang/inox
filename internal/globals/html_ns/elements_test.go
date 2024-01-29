@@ -137,14 +137,16 @@ func TestElementFunction(t *testing.T) {
 			tag: "div",
 			desc: func(ctx *core.Context) *core.Object {
 				return core.NewObjectFromMap(core.ValMap{
-					"0": &HTMLNode{
-						node: &html.Node{
-							Type:     html.ElementNode,
-							DataAtom: atom.Div,
-							Data:     "div",
-							Attr:     []html.Attribute{{Key: "child"}},
+					"": core.NewWrappedValueList(
+						&HTMLNode{
+							node: &html.Node{
+								Type:     html.ElementNode,
+								DataAtom: atom.Div,
+								Data:     "div",
+								Attr:     []html.Attribute{{Key: "child"}},
+							},
 						},
-					},
+					),
 				}, ctx)
 			},
 			result: func(ctx *core.Context) *HTMLNode {
@@ -167,7 +169,7 @@ func TestElementFunction(t *testing.T) {
 			tag: "div",
 			desc: func(ctx *core.Context) *core.Object {
 				return core.NewObjectFromMap(core.ValMap{
-					"0": core.String("text"),
+					"": core.NewWrappedValueList(core.String("text")),
 				}, ctx)
 			},
 			result: func(ctx *core.Context) *HTMLNode {
@@ -190,7 +192,7 @@ func TestElementFunction(t *testing.T) {
 			desc: func(ctx *core.Context) *core.Object {
 				return core.NewObjectFromMap(core.ValMap{
 					CHILDREN_KEY: core.NewWrappedValueList(core.String("text1")),
-					"0":          core.NewWrappedValueList(core.String("text1")),
+					"0":          core.NewWrappedValueList(core.NewWrappedValueList(core.String("text1"))),
 				}, ctx)
 			},
 			panics: true,

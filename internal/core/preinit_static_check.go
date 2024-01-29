@@ -121,7 +121,7 @@ func checkManifestObject(args manifestStaticCheckArguments) {
 
 	for _, p := range objLit.Properties {
 		if p.HasImplicitKey() {
-			onError(p, IMPLICIT_KEY_PROPS_NOT_ALLOWED_IN_MANIFEST)
+			onError(p, ELEMENTS_NOT_ALLOWED_IN_MANIFEST)
 			continue
 		}
 
@@ -331,7 +331,7 @@ func checkPermissionListingObject(objLit *parse.ObjectLiteral, onError func(n pa
 
 	for _, p := range objLit.Properties {
 		if p.HasImplicitKey() {
-			onError(p, IMPLICIT_KEY_PROPS_NOT_ALLOWED_IN_PERMS_SECTION)
+			onError(p, ELEMENTS_NOT_ALLOWED_IN_PERMS_SECTION)
 			continue
 		}
 
@@ -758,7 +758,7 @@ func checkParametersObject(objLit *parse.ObjectLiteral, onError func(n parse.Nod
 			}
 
 		} else if positionalParamsEnd {
-			onError(prop, "properties with an implicit key describe positional parameters, all implict key properties should be at the top of the 'parameters' section")
+			onError(prop, "elements (values with no key) describe positional parameters, all implict key properties should be at the top of the 'parameters' section")
 		} else { //positional parameter
 
 			obj, ok := prop.Value.(*parse.ObjectLiteral)
@@ -771,7 +771,7 @@ func checkParametersObject(objLit *parse.ObjectLiteral, onError func(n parse.Nod
 
 			for _, paramDescProp := range obj.Properties {
 				if paramDescProp.HasImplicitKey() {
-					onError(paramDescProp, "the description of a positional parameter should not contain implicit keys")
+					onError(paramDescProp, "the description of a positional parameter should not contain elements (values without a key)")
 					continue
 				}
 

@@ -16,16 +16,16 @@ const (
 	"variable 'const' is not declared, if you meant to declare constants note that a single global constant declaration section at the start of the module is supported for now"
 
 	//manifest
-	NO_SPREAD_IN_MANIFEST                      = "objects & lists in the manifest cannot contain spread elements"
-	IMPLICIT_KEY_PROPS_NOT_ALLOWED_IN_MANIFEST = "implicit key properties are not allowed in the manifest object"
+	NO_SPREAD_IN_MANIFEST            = "objects & lists in the manifest cannot contain spread elements"
+	ELEMENTS_NOT_ALLOWED_IN_MANIFEST = "elements (valus without a key) are not allowed in the manifest object"
 
 	//kind section
 	KIND_SECTION_SHOULD_BE_A_STRING_LITERAL             = "the '" + MANIFEST_KIND_SECTION_NAME + "' section of the manifest should have a string value (string literal)"
 	INVALID_KIND_SECTION_EMBEDDED_MOD_KINDS_NOT_ALLOWED = "invalid '" + MANIFEST_KIND_SECTION_NAME + "' section: embedded module kinds are not allowed"
 
 	//permissions section
-	PERMS_SECTION_SHOULD_BE_AN_OBJECT               = "the '" + MANIFEST_PERMS_SECTION_NAME + "' section of the manifest should be an object"
-	IMPLICIT_KEY_PROPS_NOT_ALLOWED_IN_PERMS_SECTION = "implicit key properties are not allowed in the 'permissions' section"
+	PERMS_SECTION_SHOULD_BE_AN_OBJECT     = "the '" + MANIFEST_PERMS_SECTION_NAME + "' section of the manifest should be an object"
+	ELEMENTS_NOT_ALLOWED_IN_PERMS_SECTION = "elements are not allowed in the 'permissions' section"
 
 	//limits section
 	LIMITS_SECTION_SHOULD_BE_AN_OBJECT = "the '" + MANIFEST_LIMITS_SECTION_NAME + "' section of the manifest should be an object"
@@ -104,7 +104,7 @@ const (
 	UNEXPECTED_OTHER_PROPS_EXPR_OTHERPROPS_NO_IS_PRESENT = "unexpected otherprops expression: no other properties are allowed since otherprops(no) is present"
 
 	MISPLACED_SENDVAL_EXPR                 = "sendval expressions are only usable within methods of object extensions, metaproperty initialization blocks and in lifetime jobs"
-	MISPLACED_RECEPTION_HANDLER_EXPRESSION = "misplaced reception handler expression is misplaced, it should be an implicit key property of an object literal"
+	MISPLACED_RECEPTION_HANDLER_EXPRESSION = "misplaced reception handler expression is misplaced, it should be an element (no key) of an object literal"
 
 	INVALID_MAPPING_ENTRY_KEY_ONLY_SIMPL_LITS_AND_PATT_IDENTS      = "invalid mapping entry key: only simple value literals and pattern identifiers are supported"
 	ONLY_GLOBALS_ARE_ACCESSIBLE_FROM_RIGHT_SIDE_OF_MAPPING_ENTRIES = "only globals are accessible from the right side of mapping entries"
@@ -229,10 +229,6 @@ func fmtFollowingNodeTypeNotAllowedInAssertions(n parse.Node) string {
 
 func fmtNonSupportedUnit(unit string) string {
 	return fmt.Sprintf("non supported unit: %s", unit)
-}
-
-func fmtObjLitExplicityDeclaresPropWithImplicitKey(k string) string {
-	return fmt.Sprintf("An object literal explictly declares a property with key '%s' but has the same implicit key", k)
 }
 
 func fmtRecLitExplicityDeclaresPropWithImplicitKey(k string) string {

@@ -5,14 +5,12 @@ import (
 	"fmt"
 	"slices"
 	"sort"
-	"strconv"
 
 	"github.com/inoxlang/inox/internal/commonfmt"
 	permkind "github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/utils"
 )
-
-const IMPLICIT_PROP_NAME = ""
 
 // Object implements Value.
 type Object struct {
@@ -28,8 +26,7 @@ type Object struct {
 }
 
 type additionalObjectFields struct {
-	implicitPropCount int
-	url               URL //can be empty
+	url URL //can be empty
 
 	sysgraph SystemGraphPointer
 
@@ -86,20 +83,14 @@ func objFrom(entryMap ValMap) *Object {
 	keys := make([]string, len(entryMap))
 	values := make([]Serializable, len(entryMap))
 
-	maxKeyIndex := -1
-
 	i := 0
 	for k, v := range entryMap {
-		if IsIndexKey(k) {
-			maxKeyIndex = max(maxKeyIndex, utils.Must(strconv.Atoi(k)))
-		}
 		keys[i] = k
 		values[i] = v
 		i++
 	}
 
 	obj := &Object{keys: keys, values: values}
-	obj.setImplicitPropCount(maxKeyIndex + 1)
 	obj.sortProps()
 	// NOTE: jobs not started
 	return obj
@@ -150,21 +141,6 @@ func (obj *Object) sortProps() {
 	}
 }
 
-func (obj *Object) setImplicitPropCount(n int) {
-	if obj.additionalObjectFields == nil && n == 0 {
-		return
-	}
-	obj.ensureAdditionalFields()
-	obj.implicitPropCount = n
-}
-
-func (obj *Object) getImplicitPropCount() int {
-	if obj.additionalObjectFields == nil {
-		return 0
-	}
-	return obj.additionalObjectFields.implicitPropCount
-}
-
 func (obj *Object) indexOfKey(k string) int {
 	for i, key := range obj.keys {
 		if key == k {
@@ -179,13 +155,17 @@ func (obj *Object) instantiateLifetimeJobs(ctx *Context) error {
 	var jobs []*LifetimeJob
 	state := ctx.GetClosestState()
 
-	for i, key := range obj.keys {
-		if !IsIndexKey(key) {
+	for keyIndex, key := range obj.keys {
+		if key != inoxconsts.IMPLICIT_PROP_NAME {
 			continue
 		}
 
-		if job, ok := obj.values[i].(*LifetimeJob); ok && job.subjectPattern == nil {
-			jobs = append(jobs, job)
+		list := obj.values[keyIndex].(*List)
+
+		for elemIndex := 0; elemIndex < list.Len(); elemIndex++ {
+			if job, ok := list.At(ctx, elemIndex).(*LifetimeJob); ok && job.subjectPattern == nil {
+				jobs = append(jobs, job)
+			}
 		}
 	}
 
@@ -205,13 +185,20 @@ func (obj *Object) instantiateLifetimeJobs(ctx *Context) error {
 func (obj *Object) addMessageHandlers(ctx *Context) error {
 	var handlers []*SynchronousMessageHandler
 
-	for i, key := range obj.keys {
-		if !IsIndexKey(key) {
+	for keyIndex, key := range obj.keys {
+		if key != inoxconsts.IMPLICIT_PROP_NAME {
 			continue
 		}
 
-		if handler, ok := obj.values[i].(*SynchronousMessageHandler); ok {
-			handlers = append(handlers, handler)
+		list, ok := obj.values[keyIndex].(*List)
+		if !ok {
+			return nil
+		}
+
+		for elemIndex := 0; elemIndex < list.Len(); elemIndex++ {
+			if handler, ok := list.At(ctx, elemIndex).(*SynchronousMessageHandler); ok {
+				handlers = append(handlers, handler)
+			}
 		}
 	}
 
@@ -399,10 +386,6 @@ func (obj *Object) SetProp(ctx *Context, name string, value Value) error {
 	var constraint Pattern
 	if obj.hasAdditionalFields() && obj.constraintId.HasConstraint() {
 		constraint, _ = GetConstraint(obj.constraintId)
-	}
-
-	if IsIndexKey(name) {
-		panic(ErrCannotSetValOfIndexKeyProp)
 	}
 
 	if obj.hasAdditionalFields() && obj.url != "" {
@@ -645,30 +628,6 @@ func (obj *Object) ValueEntryMap(ctx *Context) map[string]Value {
 	return map_
 }
 
-// Indexed returns the list of indexed properties
-func (obj *Object) Indexed() []Serializable {
-	if obj.IsShared() {
-		panic(errors.New("Object.Indexed() can only be called on objects that are not shared"))
-	}
-
-	implicitPropCount := obj.getImplicitPropCount()
-	values := make([]Serializable, implicitPropCount)
-
-outer:
-	for i := 0; i < implicitPropCount; i++ {
-		searchedKey := strconv.Itoa(i)
-		for i, key := range obj.keys {
-			if key == searchedKey {
-				values[i] = obj.values[i]
-				continue outer
-			}
-		}
-		panic(ErrUnreachable)
-	}
-
-	return values
-}
-
 func (obj *Object) ForEachEntry(fn func(k string, v Serializable) error) error {
 	if obj.IsShared() {
 		panic(errors.New("Object.ForEachEntry() can only be called on objects that are not shared"))
@@ -678,6 +637,32 @@ func (obj *Object) ForEachEntry(fn func(k string, v Serializable) error) error {
 		if err := fn(obj.keys[i], v); err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+// ForEachElement iterates over the elemennts in the empty "" property.
+func (obj *Object) ForEachElement(ctx *Context, fn func(index int, v Serializable) error) error {
+	if obj.IsShared() {
+		panic(errors.New("Object.ForEachElement() can only be called on objects that are not shared"))
+	}
+
+	for i, v := range obj.values {
+		key := obj.keys[i]
+		if key != inoxconsts.IMPLICIT_PROP_NAME {
+			continue
+		}
+
+		list, ok := v.(*List)
+		if !ok {
+			return nil
+		}
+		for elemIndex := 0; elemIndex < list.Len(); elemIndex++ {
+			if err := fn(elemIndex, list.At(ctx, elemIndex).(Serializable)); err != nil {
+				return err
+			}
+		}
+
 	}
 	return nil
 }
@@ -710,18 +695,6 @@ func (obj *Object) SetURLOnce(ctx *Context, u URL) error {
 
 	obj.url = u
 	return nil
-}
-
-// len returns the number of implicit properties
-func (obj *Object) Len() int {
-	if obj.hasAdditionalFields() {
-		return obj.implicitPropCount
-	}
-	return 0
-}
-
-func (obj *Object) At(ctx *Context, i int) Value {
-	return obj.Prop(ctx, strconv.Itoa(i))
 }
 
 func (obj *Object) Keys(ctx *Context) []string {

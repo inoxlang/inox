@@ -1202,10 +1202,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			{"(0 in [1, 2])", False, nil},
 			{"(0 not-in [1, 2])", True, nil},
 
-			{"(1 in {1, 2})", True, nil},
-			{"(1 not-in {1, 2})", False, nil},
-			{"(0 in {1, 2})", False, nil},
-			{"(0 not-in {1, 2})", True, nil},
+			{"(1 in {a: 1})", True, nil},
+			{"(1 not-in {a: 1, b: 2})", False, nil},
+			{"(0 in {a: 1, b: 2})", False, nil},
+			{"(0 not-in {a: 1, b: 2})", True, nil},
 		}
 
 		for _, testCase := range testCases {
@@ -1248,10 +1248,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			{`({a: 1} match %{a: 1})`, True, nil},
 			{`({} match %{a: 1})`, False, nil},
 
-			{`("1" keyof {})`, False, nil},
-			{`("1" keyof {'a', 'b'})`, True, nil},
-			{`("1" keyof {"1" : 'a'})`, True, nil},
-			{`("11" keyof {"1" : 'a'})`, False, nil},
+			{`("a" keyof {})`, False, nil},
+			{`("a" keyof {a: 1})`, True, nil},
+			{`("aa" keyof {"a": "aa"})`, False, nil},
 
 			{`("A" substrof "")`, False, nil},
 			{`("" substrof "")`, True, nil},
@@ -2200,13 +2199,26 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			assert.EqualValues(t, objFrom(ValMap{"a": Int(1), "b": Int(2)}), res)
 		})
 
-		t.Run("only an implicit-key property", func(t *testing.T) {
+		t.Run("one element", func(t *testing.T) {
 			code := `{1}`
 			state := NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.EqualValues(t, objFrom(ValMap{"0": Int(1)}), res)
+			assert.EqualValues(t, objFrom(ValMap{
+				"": NewWrappedValueList(Int(1)),
+			}), res)
+		})
+
+		t.Run("two elements", func(t *testing.T) {
+			code := `{1, 2}`
+			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
+			res, err := Eval(code, state, false)
+			assert.NoError(t, err)
+			assert.EqualValues(t, objFrom(ValMap{
+				"": NewWrappedValueList(Int(1), Int(2)),
+			}), res)
 		})
 
 		t.Run("spread element", func(t *testing.T) {
@@ -2233,7 +2245,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 			jobInstance := obj.jobInstances()[0]
-			assert.Equal(t, obj.Prop(state.Ctx, "0"), jobInstance.job)
+			expected := obj.Prop(state.Ctx, "").(*List).At(state.Ctx, 0)
+			assert.Equal(t, expected, jobInstance.job)
 			assert.Equal(t, bytecodeEval, jobInstance.thread.useBytecode)
 		})
 
@@ -2273,7 +2286,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			}
 
 			jobInstance := obj.jobInstances()[0]
-			assert.Equal(t, obj.Prop(state.Ctx, "0"), jobInstance.job)
+			expected := obj.Prop(state.Ctx, "").(*List).At(state.Ctx, 0)
+
+			assert.Equal(t, expected, jobInstance.job)
 			assert.Equal(t, bytecodeEval, jobInstance.thread.useBytecode)
 
 			time.Sleep(time.Millisecond)
@@ -10814,6 +10829,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				Filesystem: fls,
 				Limits:     []Limit{permissiveLthreadLimit},
 			})
+			defer ctx.CancelGracefully()
 
 			var isProperlyInitialized atomic.Bool
 

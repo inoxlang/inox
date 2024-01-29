@@ -1100,24 +1100,25 @@ func (v *VM) run() {
 			v.stack[v.sp] = arr
 			v.sp++
 		case OpCreateObject:
-			v.ip += 6
-			numElements := int(v.curInsts[v.ip-4]) | int(v.curInsts[v.ip-5])<<8
-			implicitPropCount := int(v.curInsts[v.ip-2]) | int(v.curInsts[v.ip-3])<<8
+			v.ip += 4
+			propCount := int(v.curInsts[v.ip-2]) | int(v.curInsts[v.ip-3])<<8
 			astNodeIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
 
 			astNode := v.constants[astNodeIndex].(AstNode).Node.(*parse.ObjectLiteral)
 
 			var obj *Object
-			if numElements > 0 {
-				obj = newUnitializedObjectWithPropCount(numElements / 2)
+
+			if propCount > 0 {
+				obj = newUnitializedObjectWithPropCount(propCount)
 
 				propIndex := 0
-				for i := v.sp - numElements; i < v.sp; i += 2 {
+				for i := v.sp - 2*propCount; i < v.sp; i += 2 {
 					obj.values[propIndex] = v.stack[i+1].(Serializable)
 					obj.keys[propIndex] = string(v.stack[i].(String))
 					propIndex++
 				}
 				obj.sortProps()
+
 				// add handlers before because jobs can mutate the object
 				if err := obj.addMessageHandlers(v.global.Ctx); err != nil {
 					v.err = err
@@ -1132,9 +1133,8 @@ func (v *VM) run() {
 			}
 
 			initializeMetaproperties(obj, astNode.MetaProperties)
-			obj.setImplicitPropCount(implicitPropCount)
 
-			v.sp -= numElements
+			v.sp -= 2 * propCount
 			v.stack[v.sp] = obj
 			v.sp++
 		case OpCreateRecord:

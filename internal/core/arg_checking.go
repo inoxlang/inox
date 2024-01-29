@@ -22,6 +22,6 @@ func FmtUnexpectedElementInPropIterableShowVal(element Value, propertyName strin
 	return fmt.Errorf("unexpected element in .%s: %#v", propertyName, element)
 }
 
-func FmtUnexpectedElementAtIndexKeyxofArgShowVal(element Value, keyIndex string, argName string) error {
-	return fmt.Errorf("unexpected element at index key .%s of %s argument: %#v", keyIndex, argName, element)
+func FmtUnexpectedElementAtIndexOfArgShowVal(element Value, keyIndex int, argName string) error {
+	return fmt.Errorf("unexpected element at index %d of the %s argument: %#v", keyIndex, argName, element)
 }

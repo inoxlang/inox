@@ -7,6 +7,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/commonfmt"
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/inoxconsts"
 
 	_html_symbolic "github.com/inoxlang/inox/internal/globals/html_ns/symbolic"
 	"github.com/inoxlang/inox/internal/utils"
@@ -80,7 +81,7 @@ func NewNode(ctx *core.Context, tag core.String, desc *core.Object) (finalNode *
 	//first iteration: non-index keys
 	for it.Next(ctx) {
 		k := string(it.Key(ctx).(core.String))
-		if core.IsIndexKey(k) {
+		if k == inoxconsts.IMPLICIT_PROP_NAME {
 			continue
 		}
 
@@ -148,40 +149,35 @@ func NewNode(ctx *core.Context, tag core.String, desc *core.Object) (finalNode *
 	}
 
 	childrenAlreadyProvided := len(children) != 0
-	length := desc.Len()
 
-	//second iteration: index keys
-	if length > 0 {
-		for i := 0; i < int(length); i++ {
-			k := strconv.Itoa(i)
-			v := desc.Prop(ctx, k)
+	desc.ForEachElement(ctx, func(index int, v core.Serializable) error {
 
-			if childrenAlreadyProvided {
-				panic(commonfmt.FmtUnexpectedElementAtIndeKeyXofArg(k, "description", S_CHILDREN_ALREADY_PROVIDED_WITH_CHILDREN_PROP))
-			}
-
-			strLike, ok := v.(core.StringLike)
-			if ok {
-				addChild(strLike)
-				continue
-			}
-
-			childNode, ok := v.(*HTMLNode)
-			if !ok {
-				panic(core.FmtUnexpectedElementAtIndexKeyxofArgShowVal(v, k, "description"))
-			}
-
-			if childNode.node.Parent != nil {
-				panic(commonfmt.FmtUnexpectedElementAtIndeKeyXofArg(k, "description", S_NODE_ALREADY_HAS_A_PARENT))
-			}
-
-			if childNode.node.NextSibling != nil || childNode.node.PrevSibling != nil {
-				panic(commonfmt.FmtUnexpectedElementAtIndeKeyXofArg(k, "description", S_NODE_ALREADY_HAS_SIBLINGS))
-			}
-
-			addChild(childNode)
+		if childrenAlreadyProvided {
+			panic(commonfmt.FmtUnexpectedElementAtIndexOfArgShowVal(index, "description", S_CHILDREN_ALREADY_PROVIDED_WITH_CHILDREN_PROP))
 		}
-	}
+
+		strLike, ok := v.(core.StringLike)
+		if ok {
+			addChild(strLike)
+			return nil
+		}
+
+		childNode, ok := v.(*HTMLNode)
+		if !ok {
+			panic(core.FmtUnexpectedElementAtIndexOfArgShowVal(v, index, "description"))
+		}
+
+		if childNode.node.Parent != nil {
+			panic(commonfmt.FmtUnexpectedElementAtIndexOfArgShowVal(index, "description", S_NODE_ALREADY_HAS_A_PARENT))
+		}
+
+		if childNode.node.NextSibling != nil || childNode.node.PrevSibling != nil {
+			panic(commonfmt.FmtUnexpectedElementAtIndexOfArgShowVal(index, "description", S_NODE_ALREADY_HAS_SIBLINGS))
+		}
+
+		addChild(childNode)
+		return nil
+	})
 
 	return NewNodeFromGoDescription(NodeDescription{
 		Tag:      string(tag),

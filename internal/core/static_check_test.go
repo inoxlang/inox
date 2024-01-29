@@ -235,7 +235,7 @@ func TestCheck(t *testing.T) {
 			assert.Equal(t, expectedErr, err)
 		})
 
-		t.Run("visibility metaproperty initialization: description should not have implicit keys", func(t *testing.T) {
+		t.Run("visibility metaproperty initialization: description should not have elements (values without a key)", func(t *testing.T) {
 			n, src := mustParseCode(`{ _visibility_ { {1} } }`)
 			innerObj := parse.FindNodes(n, (*parse.ObjectLiteral)(nil), nil)[1]
 
@@ -3420,7 +3420,7 @@ func TestCheck(t *testing.T) {
 			assert.Equal(t, expectedErr, err)
 		})
 
-		t.Run("implicit key property of an object literam", func(t *testing.T) {
+		t.Run("element of an object literal", func(t *testing.T) {
 			n, src := mustParseCode(`
 				{
 					on received %{} fn(){}

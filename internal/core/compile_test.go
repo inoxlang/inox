@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
@@ -96,7 +97,7 @@ func TestCompileModule(t *testing.T) {
 		expectBytecode(t, `{}`,
 			0,
 			instrs(
-				inst(OpCreateObject, 0, 0, 0),
+				inst(OpCreateObject, 0, 0),
 				inst(OpSuspendVM),
 			),
 			[]Value{nil},
@@ -106,7 +107,7 @@ func TestCompileModule(t *testing.T) {
 			instrs(
 				inst(OpPushConstant, 0),
 				inst(OpPushConstant, 1),
-				inst(OpCreateObject, 2, 0, 2),
+				inst(OpCreateObject, 1, 2),
 				inst(OpSuspendVM),
 			),
 			[]Value{String("a"), Int(1), nil},
@@ -118,7 +119,7 @@ func TestCompileModule(t *testing.T) {
 				inst(OpPushConstant, 1),
 				inst(OpPushConstant, 2),
 				inst(OpPushConstant, 3),
-				inst(OpCreateObject, 4, 0, 4),
+				inst(OpCreateObject, 2, 4),
 				inst(OpSuspendVM),
 			),
 			[]Value{String("a"), Int(1), String("b"), Int(2), nil},
@@ -129,14 +130,13 @@ func TestCompileModule(t *testing.T) {
 				inst(OpPushConstant, 0),
 				inst(OpPushConstant, 1),
 				inst(OpPushConstant, 2),
-				inst(OpPushConstant, 3),
-				inst(OpCreateObject, 4, 2, 4),
+				inst(OpCreateList, 2),
+				inst(OpCreateObject, 1, 3),
 				inst(OpSuspendVM),
 			),
 			[]Value{
-				String("0"),
+				String(inoxconsts.IMPLICIT_PROP_NAME),
 				Int(1),
-				String("1"),
 				Int(2),
 				nil,
 			},
@@ -532,7 +532,7 @@ func TestCompileModule(t *testing.T) {
 			`,
 			1,
 			instrs(
-				inst(OpCreateObject, 0, 0, 0),
+				inst(OpCreateObject, 0, 0),
 				inst(OpSetLocal, 0),
 				//
 				inst(OpGetLocal, 0),
@@ -557,7 +557,7 @@ func TestCompileModule(t *testing.T) {
 		`,
 			1,
 			instrs(
-				inst(OpCreateObject, 0, 0, 0),
+				inst(OpCreateObject, 0, 0),
 				inst(OpSetLocal, 0),
 				//
 				inst(OpGetLocal, 0),
@@ -579,8 +579,8 @@ func TestCompileModule(t *testing.T) {
 			1,
 			instrs(
 				inst(OpPushConstant, 0),
-				inst(OpCreateObject, 0, 0, 1),
-				inst(OpCreateObject, 2, 0, 2),
+				inst(OpCreateObject, 0, 1),
+				inst(OpCreateObject, 1, 2),
 				inst(OpSetLocal, 0),
 				//
 				inst(OpGetLocal, 0),
@@ -633,8 +633,8 @@ func TestCompileModule(t *testing.T) {
 			1,
 			instrs(
 				inst(OpPushConstant, 0),
-				inst(OpCreateObject, 0, 0, 1),
-				inst(OpCreateObject, 2, 0, 2),
+				inst(OpCreateObject, 0, 1),
+				inst(OpCreateObject, 1, 2),
 				inst(OpSetLocal, 0),
 				//
 				inst(OpGetLocal, 0),
@@ -990,8 +990,8 @@ func TestCompileModule(t *testing.T) {
 				inst(OpPushConstant, 0),
 				inst(OpPushConstant, 1),
 				inst(OpPushConstant, 2),
-				inst(OpCreateObject, 2, 0, 3),
-				inst(OpCreateObject, 2, 0, 4),
+				inst(OpCreateObject, 1, 3),
+				inst(OpCreateObject, 1, 4),
 				inst(OpDropPerms),
 				inst(OpSuspendVM),
 			),

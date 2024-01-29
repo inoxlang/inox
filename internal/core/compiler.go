@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
 )
@@ -1002,21 +1003,21 @@ func (c *compiler) Compile(node parse.Node) error {
 		}
 	case *parse.ObjectLiteral:
 		var key string
-		indexKey := 0
+		var elementCount int
+		var propCount int
 
+		//Compile entries.
 		for _, prop := range node.Properties {
 			switch n := prop.Key.(type) {
 			case *parse.QuotedStringLiteral:
 				key = n.Value
-				_, err := strconv.ParseUint(key, 10, 32)
-				if err == nil {
-					indexKey++
-				}
+				propCount++
 			case *parse.IdentifierLiteral:
 				key = n.Name
-			case nil:
-				key = strconv.Itoa(indexKey)
-				indexKey++
+				propCount++
+			case nil: //no key
+				elementCount++
+				continue
 			default:
 				return fmt.Errorf("invalid key type %T", n)
 			}
@@ -1029,9 +1030,23 @@ func (c *compiler) Compile(node parse.Node) error {
 			}
 		}
 
-		propCount := len(node.Properties)
+		if elementCount > 0 {
+			propCount++
+			c.emit(node, OpPushConstant, c.addConstant(String(inoxconsts.IMPLICIT_PROP_NAME)))
 
-		c.emit(node, OpCreateObject, 2*propCount, indexKey, c.addConstant(AstNode{
+			//Compile elements.
+			for _, prop := range node.Properties {
+				switch prop.Key.(type) {
+				case nil:
+					if err := c.Compile(prop.Value); err != nil {
+						return err
+					}
+				}
+			}
+			c.emit(node, OpCreateList, elementCount)
+		}
+
+		c.emit(node, OpCreateObject, propCount, c.addConstant(AstNode{
 			Node:  node,
 			chunk: c.currentChunk(),
 		}))

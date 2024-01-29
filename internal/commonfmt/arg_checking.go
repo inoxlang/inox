@@ -54,6 +54,6 @@ func FmtUnexpectedElementInPropIterableOfArgX(propertyName string, argName strin
 	return fmt.Errorf("unexpected element in .%s of %s argument: %s", propertyName, argName, s)
 }
 
-func FmtUnexpectedElementAtIndeKeyXofArg(keyIndex string, argName string, s string) error {
-	return fmt.Errorf("unexpected element at index key .%s of %s argument: %s", keyIndex, argName, s)
+func FmtUnexpectedElementAtIndexOfArgShowVal(keyIndex int, argName string, s string) error {
+	return fmt.Errorf("unexpected element at index %d of the %s argument: %s", keyIndex, argName, s)
 }

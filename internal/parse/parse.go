@@ -2659,7 +2659,7 @@ func (p *parser) parseObjectRecordPatternLiteral(percentPrefixed, isRecordPatter
 		keyName        string
 		keyOrVal       Node
 		isOptional     bool
-		implicitKey    bool
+		noKey          bool
 		type_          Node
 		v              Node
 		isMissingExpr  bool
@@ -2680,7 +2680,7 @@ object_pattern_top_loop:
 		keyName = ""
 		v = nil
 		propParsingErr = nil
-		implicitKey = false
+		noKey = false
 
 		if p.i >= p.len || p.s[p.i] == '}' {
 			break object_pattern_top_loop
@@ -2761,7 +2761,7 @@ object_pattern_top_loop:
 			propSpanStart = key.Base().Span.Start
 
 			if nextTokenIndex < len(p.tokens) && p.tokens[nextTokenIndex].Type == OPENING_PARENTHESIS {
-				implicitKey = true
+				noKey = true
 				keyName = strconv.Itoa(unamedPropCount)
 				v = key
 				propSpanEnd = v.Base().Span.End
@@ -2779,8 +2779,8 @@ object_pattern_top_loop:
 				case *QuotedStringLiteral:
 					keyName = k.Value
 				default:
-					implicitKey = true
-					propParsingErr = &ParsingError{UnspecifiedParsingError, IMPLICIT_KEY_PROPS_ARE_NOT_ALLOWED_IN_OBJECT_RECORD_PATTERNS}
+					noKey = true
+					propParsingErr = &ParsingError{UnspecifiedParsingError, A_KEY_IS_REQUIRED_FOR_EACH_VALUE_IN_OBJ_REC_PATTERNS}
 					keyName = strconv.Itoa(unamedPropCount)
 					v = key
 					propSpanEnd = v.Base().Span.End
@@ -2795,9 +2795,9 @@ object_pattern_top_loop:
 
 			switch {
 			case isValidEntryEnd(p.s, p.i):
-				implicitKey = true
+				noKey = true
 				if propParsingErr == nil {
-					propParsingErr = &ParsingError{UnspecifiedParsingError, IMPLICIT_KEY_PROPS_ARE_NOT_ALLOWED_IN_OBJECT_RECORD_PATTERNS}
+					propParsingErr = &ParsingError{UnspecifiedParsingError, A_KEY_IS_REQUIRED_FOR_EACH_VALUE_IN_OBJ_REC_PATTERNS}
 				}
 				properties = append(properties, &ObjectPatternProperty{
 					NodeBase: NodeBase{
@@ -2811,11 +2811,11 @@ object_pattern_top_loop:
 				goto at_colon
 			case p.s[p.i] == '%': // type annotation
 				switch {
-				case implicitKey: // implicit key properties cannot be annotated
+				case noKey: // no key properties cannot be annotated
 					if propParsingErr == nil {
 						propParsingErr = &ParsingError{UnspecifiedParsingError, ONLY_EXPLICIT_KEY_CAN_HAVE_A_TYPE_ANNOT}
 					}
-					implicitKey = true
+					noKey = true
 					type_ = p.parsePercentPrefixedPattern(false)
 					propSpanEnd = type_.Base().Span.End
 
@@ -2850,7 +2850,7 @@ object_pattern_top_loop:
 				propParsingErr = &ParsingError{UnspecifiedParsingError, METAPROPS_ARE_NOT_ALLOWED_IN_OBJECT_PATTERNS}
 			}
 
-			if implicitKey { // implicit key property not followed by a valid entry end
+			if noKey { // no key property not followed by a valid entry end
 				if propParsingErr == nil {
 					propParsingErr = &ParsingError{UnspecifiedParsingError, INVALID_OBJ_PATT_LIT_ENTRY_SEPARATION}
 				}
@@ -2884,9 +2884,9 @@ object_pattern_top_loop:
 
 		at_colon:
 			{
-				if implicitKey {
+				if noKey {
 					propParsingErr = &ParsingError{UnspecifiedParsingError, fmtOnlyIdentsAndStringsValidObjPatternKeysNot(key)}
-					implicitKey = false
+					noKey = false
 				}
 
 				p.tokens = append(p.tokens, Token{Type: COLON, Span: NodeSpan{p.i, p.i + 1}})
@@ -2966,13 +2966,13 @@ object_pattern_top_loop:
 			keyOrVal = nil
 			isOptional = false
 			v = nil
-			implicitKey = false
+			noKey = false
 			type_ = nil
 			p.eatSpaceNewlineCommaComment()
 		}
 	}
 
-	if !implicitKey && keyName != "" || (keyName == "" && key != nil) {
+	if !noKey && keyName != "" || (keyName == "" && key != nil) {
 
 		properties = append(properties, &ObjectPatternProperty{
 			NodeBase: NodeBase{
@@ -3158,7 +3158,7 @@ func (p *parser) parseObjectOrRecordLiteral(isRecord bool) Node {
 		key            Node
 		keyName        string
 		keyOrVal       Node
-		implicitKey    bool
+		noKey          bool
 		type_          Node
 		v              Node
 		isMissingExpr  bool
@@ -3182,7 +3182,7 @@ object_literal_top_loop:
 		type_ = nil
 		v = nil
 		propParsingErr = nil
-		implicitKey = false
+		noKey = false
 
 		if p.i >= p.len || p.s[p.i] == '}' {
 			break object_literal_top_loop
@@ -3244,7 +3244,7 @@ object_literal_top_loop:
 		propSpanStart = key.Base().Span.Start
 
 		if nextTokenIndex < len(p.tokens) && p.tokens[nextTokenIndex].Type == OPENING_PARENTHESIS {
-			implicitKey = true
+			noKey = true
 			keyName = strconv.Itoa(unamedPropCount)
 			v = key
 			propSpanEnd = v.Base().Span.End
@@ -3256,7 +3256,7 @@ object_literal_top_loop:
 			case *QuotedStringLiteral:
 				keyName = k.Value
 			default:
-				implicitKey = true
+				noKey = true
 				keyName = strconv.Itoa(unamedPropCount)
 				v = key
 				propSpanEnd = v.Base().Span.End
@@ -3271,7 +3271,7 @@ object_literal_top_loop:
 
 		switch {
 		case isValidEntryEnd(p.s, p.i):
-			implicitKey = true
+			noKey = true
 			properties = append(properties, &ObjectProperty{
 				NodeBase: NodeBase{
 					Span: NodeSpan{propSpanStart, p.i},
@@ -3284,11 +3284,11 @@ object_literal_top_loop:
 			goto at_colon
 		case p.s[p.i] == '%': // type annotation
 			switch {
-			case implicitKey: // implicit key properties cannot be annotated
+			case noKey: // no key properties cannot be annotated
 				if propParsingErr == nil {
 					propParsingErr = &ParsingError{UnspecifiedParsingError, ONLY_EXPLICIT_KEY_CAN_HAVE_A_TYPE_ANNOT}
 				}
-				implicitKey = true
+				noKey = true
 				type_ = p.parsePercentPrefixedPattern(false)
 				propSpanEnd = type_.Base().Span.End
 
@@ -3340,7 +3340,7 @@ object_literal_top_loop:
 		}
 
 		// if meta property we parse it and continue to next iteration step
-		if !implicitKey && IsMetadataKey(keyName) && !isRecord && p.i < p.len && p.s[p.i] != ':' {
+		if !noKey && IsMetadataKey(keyName) && !isRecord && p.i < p.len && p.s[p.i] != ':' {
 			block := p.parseBlock()
 			propSpanEnd = block.Span.End
 
@@ -3361,7 +3361,7 @@ object_literal_top_loop:
 			goto step_end
 		}
 
-		if implicitKey { // implicit key property not followed by a valid entry end
+		if noKey { // no key property not followed by a valid entry end
 			if propParsingErr == nil {
 				propParsingErr = &ParsingError{UnspecifiedParsingError, INVALID_OBJ_REC_LIT_ENTRY_SEPARATION}
 			}
@@ -3396,9 +3396,9 @@ object_literal_top_loop:
 
 	at_colon:
 		{
-			if implicitKey {
+			if noKey {
 				propParsingErr = &ParsingError{UnspecifiedParsingError, fmtOnlyIdentsAndStringsValidObjRecordKeysNot(key)}
-				implicitKey = false
+				noKey = false
 			}
 
 			p.tokens = append(p.tokens, Token{Type: COLON, Span: NodeSpan{p.i, p.i + 1}})
@@ -3476,12 +3476,12 @@ object_literal_top_loop:
 		key = nil
 		keyOrVal = nil
 		v = nil
-		implicitKey = false
+		noKey = false
 		type_ = nil
 		p.eatSpaceNewlineCommaComment()
 	}
 
-	if !implicitKey && keyName != "" || v != nil {
+	if !noKey && keyName != "" || v != nil {
 		properties = append(properties, &ObjectProperty{
 			NodeBase: NodeBase{
 				Span: NodeSpan{propSpanStart, propSpanEnd},

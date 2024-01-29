@@ -49,12 +49,12 @@ func TestObjectGraph(t *testing.T) {
 		graph := NewSystemGraph()
 
 		object := NewObjectFromMap(ValMap{
-			"0": createTestLifetimeJob(t, state, ""),
+			"": NewWrappedValueList(createTestLifetimeJob(t, state, "")),
 			"inner0": NewObjectFromMap(ValMap{
-				"0": createTestLifetimeJob(t, state, ""),
+				"": NewWrappedValueList(createTestLifetimeJob(t, state, "")),
 			}, ctx),
 			"inner1": NewObjectFromMap(ValMap{
-				"0": createTestLifetimeJob(t, state, ""),
+				"": NewWrappedValueList(createTestLifetimeJob(t, state, "")),
 			}, ctx),
 		}, ctx)
 		object.ProposeSystemGraph(ctx, graph, "", nil)

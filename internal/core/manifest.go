@@ -183,10 +183,15 @@ func (p *ModuleParameters) NonPositionalParameters() []ModuleParameter {
 }
 
 func (p *ModuleParameters) GetArgumentsFromObject(ctx *Context, argObj *Object) (*ModuleArgs, error) {
-	positionalArgs := argObj.Indexed()
+	var positionalArgs []Serializable
 	resultEntries := map[string]Value{}
 
 	restParam := false
+
+	argObj.ForEachElement(ctx, func(index int, v Serializable) error {
+		positionalArgs = append(positionalArgs, v)
+		return nil
+	})
 
 	for paramIndex, param := range p.positional {
 		if param.rest {
@@ -213,7 +218,7 @@ func (p *ModuleParameters) GetArgumentsFromObject(ctx *Context, argObj *Object) 
 	}
 
 	err := argObj.ForEachEntry(func(k string, arg Serializable) error {
-		if IsIndexKey(k) { //positional arguments are already processed
+		if k == inoxconsts.IMPLICIT_PROP_NAME { //positional arguments are already processed
 			return nil
 		}
 
@@ -1143,18 +1148,32 @@ func getSingleKindPermissions(
 	case *List:
 		list = v.GetOrBuildElements(nil)
 	case *Object:
-		for propKey, propVal := range v.EntryMap(nil) {
 
-			if _, err := strconv.Atoi(propKey); err == nil {
-				list = append(list, propVal)
-			} else {
-				p, err := getSingleKindNamedPermPermissions(permKind, propKey, propVal, specifiedGlobalPermKinds, handleCustomType)
-				if err != nil {
-					return nil, fmt.Errorf("invalid manifest: %w", err)
-				}
-				perms = append(perms, p...)
-			}
+		err := v.ForEachElement(nil, func(index int, v Serializable) error {
+			list = append(list, v)
+			return nil
+		})
+
+		if err != nil {
+			return nil, err
 		}
+
+		err = v.ForEachEntry(func(propKey string, propVal Serializable) error {
+			if propKey == inoxconsts.IMPLICIT_PROP_NAME {
+				return nil
+			}
+
+			p, err := getSingleKindNamedPermPermissions(permKind, propKey, propVal, specifiedGlobalPermKinds, handleCustomType)
+			if err != nil {
+				return fmt.Errorf("invalid manifest: %w", err)
+			}
+			perms = append(perms, p...)
+			return nil
+		})
+		if err != nil {
+			return nil, err
+		}
+
 	default:
 		list = []Serializable{v.(Serializable)}
 	}
@@ -1347,87 +1366,102 @@ func getModuleParameters(ctx *Context, v Value) (ModuleParameters, error) {
 	var params ModuleParameters
 	restParamFound := false
 
-	err := description.ForEachEntry(func(k string, v Serializable) error {
+	//positional parameters.
+	err := description.ForEachElement(ctx, func(index int, v Serializable) error {
 		var param ModuleParameter
 
-		if IsIndexKey(k) { //positional parameter
-			obj, ok := v.(*Object)
-			if !ok {
-				return errors.New("each positional parameter should be described with an object")
-			}
+		obj, ok := v.(*Object)
+		if !ok {
+			return errors.New("each positional parameter should be described with an object")
+		}
 
-			obj.ForEachEntry(func(propName string, propVal Serializable) error {
+		obj.ForEachEntry(func(propName string, propVal Serializable) error {
+			switch propName {
+			case "name":
+				param.name = propVal.(Identifier)
+				param.positional = true
+			case "rest":
+				rest := bool(propVal.(Bool))
+				if rest && restParamFound {
+					return errors.New("at most one positional parameter should be a rest parameter")
+				}
+				param.rest = rest
+				restParamFound = rest
+			case "pattern":
+				patt := propVal.(Pattern)
+				param.pattern = patt
+			case "description":
+				param.description = string(propVal.(String))
+			}
+			return nil
+		})
+		if param.pattern == nil {
+			return errors.New("missing .pattern in description of positional parameter")
+		}
+
+		params.positional = append(params.positional, param)
+		return nil
+	})
+
+	if err != nil {
+		return ModuleParameters{}, fmt.Errorf("invalid manifest: '%s' section: %w", MANIFEST_PARAMS_SECTION_NAME, err)
+	}
+
+	//non-positional parameters.
+	err = description.ForEachEntry(func(k string, v Serializable) error {
+		if k == inoxconsts.IMPLICIT_PROP_NAME {
+			return nil
+		}
+
+		var param ModuleParameter
+		param.name = Identifier(k)
+
+		switch val := v.(type) {
+		case *OptionPattern:
+			if len(val.name) == 1 {
+				param.singleLetterCliArgName = rune(val.name[0])
+			} else {
+				param.cliArgName = val.name
+			}
+			param.pattern = val.value
+		case Pattern:
+			param.cliArgName = string(param.name)
+			param.pattern = val
+		case *Object:
+			paramDesc := val
+			param.cliArgName = k
+
+			paramDesc.ForEachEntry(func(propName string, propVal Serializable) error {
+				if propName == inoxconsts.IMPLICIT_PROP_NAME {
+					return nil
+				}
 				switch propName {
-				case "name":
-					param.name = propVal.(Identifier)
-					param.positional = true
-				case "rest":
-					rest := bool(propVal.(Bool))
-					if rest && restParamFound {
-						return errors.New("at most one positional parameter should be a rest parameter")
-					}
-					param.rest = rest
-					restParamFound = rest
 				case "pattern":
 					patt := propVal.(Pattern)
 					param.pattern = patt
+				case "default":
+					param.defaultVal = propVal
+				case "char-name":
+					param.singleLetterCliArgName = rune(propVal.(Rune))
 				case "description":
 					param.description = string(propVal.(String))
 				}
 				return nil
 			})
-			if param.pattern == nil {
-				return errors.New("missing .pattern in description of positional parameter")
-			}
-
-			params.positional = append(params.positional, param)
-		} else { // non positional parameter
-			param.name = Identifier(k)
-
-			switch val := v.(type) {
-			case *OptionPattern:
-				if len(val.name) == 1 {
-					param.singleLetterCliArgName = rune(val.name[0])
-				} else {
-					param.cliArgName = val.name
-				}
-				param.pattern = val.value
-			case Pattern:
-				param.cliArgName = string(param.name)
-				param.pattern = val
-			case *Object:
-				paramDesc := val
-				param.cliArgName = k
-
-				paramDesc.ForEachEntry(func(propName string, propVal Serializable) error {
-					switch propName {
-					case "pattern":
-						patt := propVal.(Pattern)
-						param.pattern = patt
-					case "default":
-						param.defaultVal = propVal
-					case "char-name":
-						param.singleLetterCliArgName = rune(propVal.(Rune))
-					case "description":
-						param.description = string(propVal.(String))
-					}
-					return nil
-				})
-			default:
-				return errors.New("each non positional parameter should be described with a pattern or an object")
-			}
-
-			if param.pattern == nil {
-				return errors.New("missing .pattern in description of non positional parameter")
-			}
-			if param.Required(ctx) {
-				params.hasRequiredParams = true
-			} else {
-				params.hasOptions = true
-			}
-
-			params.others = append(params.others, param)
+		default:
+			return errors.New("each non positional parameter should be described with a pattern or an object")
 		}
+
+		if param.pattern == nil {
+			return errors.New("missing .pattern in description of non positional parameter")
+		}
+		if param.Required(ctx) {
+			params.hasRequiredParams = true
+		} else {
+			params.hasOptions = true
+		}
+
+		params.others = append(params.others, param)
 		return nil
 	})
 
@@ -1705,9 +1739,8 @@ func getCommandPermissions(n Value) ([]Permission, error) {
 	}
 
 	for name, propValue := range topObject.EntryMap(nil) {
-
-		if IsIndexKey(name) {
-			return nil, errors.New(ERR_PREFIX + "implicit/index keys are not allowed")
+		if name == inoxconsts.IMPLICIT_PROP_NAME {
+			continue
 		}
 
 		var cmdNameKey = name
@@ -1755,8 +1788,8 @@ func getCommandPermissions(n Value) ([]Permission, error) {
 
 		for subcmdName, cmdDescPropVal := range cmdDesc.EntryMap(nil) {
 
-			if _, err := strconv.Atoi(subcmdName); err == nil {
-				return nil, errors.New(ERR_PREFIX + "implicit keys are not allowed")
+			if subcmdName == inoxconsts.IMPLICIT_PROP_NAME {
+				return nil, errors.New(ERR_PREFIX + "elements (values without a key) are not allowed")
 			}
 
 			subCmdDesc, ok := cmdDescPropVal.(*Object)

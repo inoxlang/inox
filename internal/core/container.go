@@ -81,8 +81,9 @@ func (obj *Object) Contains(ctx *Context, value Serializable) bool {
 
 	if urlHolder, ok := value.(UrlHolder); ok {
 		_, ok := urlHolder.URL()
+		valueCount := len(obj.values)
 		if ok {
-			for i := 0; i < obj.Len(); i++ {
+			for i := 0; i < valueCount; i++ {
 				e := obj.values[i]
 				if Same(e, value) {
 					return true
@@ -92,7 +93,8 @@ func (obj *Object) Contains(ctx *Context, value Serializable) bool {
 		}
 	}
 
-	for i := 0; i < obj.Len(); i++ {
+	valueCount := len(obj.values)
+	for i := 0; i < valueCount; i++ {
 		e := obj.values[i]
 		if value.Equal(ctx, e, map[uintptr]uintptr{}, 0) {
 			return true

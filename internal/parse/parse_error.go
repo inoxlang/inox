@@ -108,9 +108,8 @@ const (
 	INVALID_COMPLEX_PATTERN_ELEMENT = "invalid complex pattern element"
 
 	//object pattern literal
-	UNTERMINATED_OBJ_PATT_MISSING_CLOSING_BRACE      = "unterminated object pattern literal, missing closing brace '}'"
-	IMPLICIT_KEY_PROPS_ARE_NOT_SUPPORTED_IN_OBJ_PATT = "implicit-key properties are not supported in object patterns"
-	ONLY_IDENTS_AND_STRINGS_VALID_OBJ_PATT_KEYS      = "Only identifiers and strings are valid object pattern keys"
+	UNTERMINATED_OBJ_PATT_MISSING_CLOSING_BRACE = "unterminated object pattern literal, missing closing brace '}'"
+	ONLY_IDENTS_AND_STRINGS_VALID_OBJ_PATT_KEYS = "Only identifiers and strings are valid object pattern keys"
 
 	INVALID_PATT_UNION_ELEMENT_SEPARATOR_EXPLANATION         = "invalid pattern union: elements should be separated by '|'"
 	INVALID_PATTERN_INVALID_OCCURENCE_COUNT                  = "invalid pattern: invalid exact ocurrence count"
@@ -418,12 +417,12 @@ const (
 	UNTERMINATED_OBJ_REC_MISSING_CLOSING_BRACE = "unterminated object/record literal, missing closing brace '}'"
 
 	//object pattern literals
-	INVALID_OBJ_PATT_LIT_ENTRY_SEPARATION                        = "invalid object pattern literal, each entry should be followed by '}', newline, or ','."
-	METAPROPS_ARE_NOT_ALLOWED_IN_OBJECT_PATTERNS                 = "metaproperties are not allowed in object patterns"
-	IMPLICIT_KEY_PROPS_ARE_NOT_ALLOWED_IN_OBJECT_RECORD_PATTERNS = "implicit-key properties are not allowed in object/record patterns"
-	UNTERMINATED_OBJ_PATTERN_MISSING_CLOSING_BRACE               = "unterminated object pattern literal, missing closing brace '}'"
-	UNTERMINATED_REC_PATTERN_MISSING_CLOSING_BRACE               = "unterminated record pattern literal, missing closing brace '}'"
-	SPREAD_SHOULD_BE_LOCATED_AT_THE_START                        = "spread should be located at the start"
+	INVALID_OBJ_PATT_LIT_ENTRY_SEPARATION                = "invalid object pattern literal, each entry should be followed by '}', newline, or ','."
+	METAPROPS_ARE_NOT_ALLOWED_IN_OBJECT_PATTERNS         = "metaproperties are not allowed in object patterns"
+	A_KEY_IS_REQUIRED_FOR_EACH_VALUE_IN_OBJ_REC_PATTERNS = "a key is required for each value in object/record patterns"
+	UNTERMINATED_OBJ_PATTERN_MISSING_CLOSING_BRACE       = "unterminated object pattern literal, missing closing brace '}'"
+	UNTERMINATED_REC_PATTERN_MISSING_CLOSING_BRACE       = "unterminated record pattern literal, missing closing brace '}'"
+	SPREAD_SHOULD_BE_LOCATED_AT_THE_START                = "spread should be located at the start"
 
 	INVALID_DICT_LIT_ENTRY_SEPARATION                     = "invalid dictionary literal, each entry should be followed by '}', newline, or ','."
 	UNTERMINATED_IF_STMT_MISSING_BLOCK_AFTER_ELSE         = "unterminated if statement, missing block after 'else'"
