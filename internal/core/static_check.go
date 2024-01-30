@@ -544,7 +544,6 @@ func (c *checker) checkSingleNode(n, parent, scopeNode parse.Node, ancestorChain
 
 	//actually check the node
 
-top_switch:
 	switch node := n.(type) {
 	case *parse.IntegerRangeLiteral:
 		if upperBound, ok := node.UpperBound.(*parse.IntLiteral); ok && node.LowerBound.Value > upperBound.Value {
@@ -555,110 +554,9 @@ top_switch:
 			c.addError(n, LOWER_BOUND_OF_FLOAT_RANGE_LIT_SHOULD_BE_SMALLER_THAN_UPPER_BOUND)
 		}
 	case *parse.QuantityLiteral:
-
-		var prevMultiplier string
-		var prevUnit string
-		var prevDurationUnitValue time.Duration
-
-		for partIndex := 0; partIndex < len(node.Values); partIndex++ {
-			if node.Values[partIndex] < 0 {
-				c.addError(n, ErrNegQuantityNotSupported.Error())
-				return parse.ContinueTraversal
-			}
-
-			i := 0
-			var multiplier string
-
-			switch node.Units[partIndex][0] {
-			case 'k', 'M', 'G', 'T':
-				multiplier = node.Units[partIndex]
-				i++
-			default:
-			}
-
-			prevMultiplier = multiplier
-			_ = prevMultiplier
-
-			if i > 0 && len(node.Units[partIndex]) == 1 {
-				c.addError(node, fmtNonSupportedUnit(node.Units[0]))
-				return parse.ContinueTraversal
-			}
-
-			unit := node.Units[partIndex][i:]
-
-			switch unit {
-			case "x", LINE_COUNT_UNIT, RUNE_COUNT_UNIT, BYTE_COUNT_UNIT:
-				if partIndex != 0 || prevUnit != "" {
-					c.addError(node, INVALID_QUANTITY)
-					return parse.ContinueTraversal
-				}
-				prevUnit = unit
-			case "h", "mn", "s", "ms", "us", "ns":
-				var durationUnitValue time.Duration
-
-				switch unit {
-				case "h":
-					durationUnitValue = time.Hour
-				case "mn":
-					durationUnitValue = time.Minute
-				case "s":
-					durationUnitValue = time.Second
-				case "ms":
-					durationUnitValue = time.Millisecond
-				case "us":
-					durationUnitValue = time.Microsecond
-				case "ns":
-					durationUnitValue = time.Nanosecond
-				}
-
-				if prevUnit != "" && (prevDurationUnitValue == 0 || durationUnitValue >= prevDurationUnitValue) {
-					c.addError(node, INVALID_QUANTITY)
-					return parse.ContinueTraversal
-				}
-
-				prevDurationUnitValue = durationUnitValue
-				prevUnit = unit
-			case "%":
-				if partIndex != 0 || prevUnit != "" {
-					c.addError(node, INVALID_QUANTITY)
-					return parse.ContinueTraversal
-				}
-				if i == 0 {
-					prevUnit = unit
-					break
-				}
-				fallthrough
-			default:
-				c.addError(node, fmtNonSupportedUnit(node.Units[0]))
-				return parse.ContinueTraversal
-			}
-		}
-
-		_, err := evalQuantity(node.Values, node.Units)
-		if err != nil {
-			c.addError(node, err.Error())
-		}
-
+		return c.checkQuantityLiteral(node)
 	case *parse.RateLiteral:
-
-		lastUnit1 := node.Units[len(node.Units)-1]
-		rateUnit := node.DivUnit
-
-		switch rateUnit {
-		case "s":
-			i := 0
-			switch lastUnit1[0] {
-			case 'k', 'M', 'G', 'T':
-				i++
-			default:
-			}
-			switch lastUnit1[i:] {
-			case "x", BYTE_COUNT_UNIT:
-				return parse.ContinueTraversal
-			}
-		}
-		c.addError(node, INVALID_RATE)
-		return parse.ContinueTraversal
+		return c.checkRateLiteral(node)
 	case *parse.URLLiteral:
 		if strings.HasPrefix(node.Value, "mem://") && utils.Must(url.Parse(node.Value)).Host != MEM_HOSTNAME {
 			c.addError(node, INVALID_MEM_HOST_ONLY_VALID_VALUE)
@@ -668,865 +566,56 @@ top_switch:
 			c.addError(node, INVALID_MEM_HOST_ONLY_VALID_VALUE)
 		}
 	case *parse.ObjectLiteral:
-		action, keys := shallowCheckObjectRecordProperties(node.Properties, node.SpreadElements, true, func(n parse.Node, msg string) {
-			c.addError(n, msg)
-		})
-
-		if action != parse.ContinueTraversal {
-			return action
-		}
-
-		propInfo := c.getPropertyInfo(node)
-		for k := range keys {
-			propInfo.known[k] = true
-		}
-
-		for _, metaprop := range node.MetaProperties {
-			switch metaprop.Name() {
-			case VISIBILITY_KEY:
-				checkVisibilityInitializationBlock(propInfo, metaprop.Initialization, func(n parse.Node, msg string) {
-					c.addError(n, msg)
-				})
-			}
-		}
+		return c.checkObjectLiteral(node)
 	case *parse.RecordLiteral:
-		action, _ := shallowCheckObjectRecordProperties(node.Properties, node.SpreadElements, false, func(n parse.Node, msg string) {
-			c.addError(n, msg)
-		})
-
-		if action != parse.ContinueTraversal {
-			return action
-		}
+		return c.checkRecordLiteral(node)
 	case *parse.ObjectPatternLiteral, *parse.RecordPatternLiteral:
-		indexKey := 0
-		keys := map[string]struct{}{}
-
-		var propertyNodes []*parse.ObjectPatternProperty
-		var spreadElementsNodes []*parse.PatternPropertySpreadElement
-		var otherPropsNodes []*parse.OtherPropsExpr
-		var isExact bool
-
-		switch node := node.(type) {
-		case *parse.ObjectPatternLiteral:
-			propertyNodes = node.Properties
-			spreadElementsNodes = node.SpreadElements
-			otherPropsNodes = node.OtherProperties
-			isExact = node.Exact()
-		case *parse.RecordPatternLiteral:
-			propertyNodes = node.Properties
-			spreadElementsNodes = node.SpreadElements
-			otherPropsNodes = node.OtherProperties
-			isExact = node.Exact()
-		}
-
-		// look for duplicate keys
-		for _, prop := range propertyNodes {
-			var k string
-
-			switch n := prop.Key.(type) {
-			case *parse.QuotedStringLiteral:
-				k = n.Value
-			case *parse.IdentifierLiteral:
-				k = n.Name
-			case nil:
-				k = strconv.Itoa(indexKey)
-				indexKey++
-			}
-
-			if len(k) > MAX_NAME_BYTE_LEN {
-				c.addError(prop.Key, fmtNameIsTooLong(k))
-			}
-
-			if parse.IsMetadataKey(k) {
-				c.addError(prop.Key, OBJ_REC_LIT_CANNOT_HAVE_METAPROP_KEYS)
-			} else if _, found := keys[k]; found {
-				c.addError(prop, fmtDuplicateKey(k))
-			}
-
-			keys[k] = struct{}{}
-		}
-
-		// also look for duplicate keys
-		for _, element := range spreadElementsNodes {
-			extractionExpr, ok := element.Expr.(*parse.ExtractionExpression)
-			if !ok {
-				continue
-			}
-
-			for _, key := range extractionExpr.Keys.Keys {
-				name := key.(*parse.IdentifierLiteral).Name
-
-				_, found := keys[name]
-				if found {
-					c.addError(key, fmtDuplicateKey(name))
-					return parse.ContinueTraversal
-				}
-				keys[name] = struct{}{}
-			}
-		}
-
-		//check that if the pattern is exact there are no other otherprops nodes other than otherprops(no)
-		if isExact {
-			for _, prop := range otherPropsNodes {
-				patternIdent, ok := prop.Pattern.(*parse.PatternIdentifierLiteral)
-
-				if !ok || patternIdent.Name != parse.NO_OTHERPROPS_PATTERN_NAME {
-					c.addError(prop, UNEXPECTED_OTHER_PROPS_EXPR_OTHERPROPS_NO_IS_PRESENT)
-				}
-			}
-		}
-
-		return parse.ContinueTraversal
+		return c.checkObjectRecordPatternLiteral(node)
 	case *parse.DictionaryLiteral:
-		keys := map[string]bool{}
-
-		// look for duplicate keys
-		for _, entry := range node.Entries {
-
-			keyNode, ok := entry.Key.(parse.SimpleValueLiteral)
-			if !ok {
-				//there is a parsing error
-				continue
-			}
-
-			keyRepr := keyNode.ValueString()
-
-			if keys[keyRepr] {
-				c.addError(entry.Key, fmtDuplicateDictKey(keyRepr))
-			} else {
-				keys[keyRepr] = true
-			}
-		}
-
+		return c.checkDictionaryLiteral(node)
 	case *parse.SpawnExpression:
-
-		var globals = make(map[string]globalVarInfo)
-		var globalDescNode parse.Node
-
-		//add constant globals
-		parentModuleGlobals := c.getModGlobalVars(closestModule)
-		for name, info := range parentModuleGlobals {
-			if info.isStartConstant {
-				globals[name] = info
-			}
-		}
-
-		// add globals passed by user
-		if obj, ok := node.Meta.(*parse.ObjectLiteral); ok {
-			if len(obj.SpreadElements) > 0 {
-				c.addError(node.Meta, INVALID_SPAWN_ONLY_OBJECT_LITERALS_WITH_NO_SPREAD_ELEMENTS_SUPPORTED)
-			}
-
-			for _, prop := range obj.Properties {
-				if prop.HasImplicitKey() {
-					c.addError(node.Meta, INVALID_SPAWN_ONLY_OBJECT_LITERALS_WITH_NO_SPREAD_ELEMENTS_SUPPORTED)
-				}
-			}
-
-			val, ok := obj.PropValue(symbolic.LTHREAD_META_GLOBALS_SECTION)
-			if ok {
-				globalDescNode = val
-			}
-		} else if node.Meta != nil {
-			c.addError(node.Meta, INVALID_SPAWN_ONLY_OBJECT_LITERALS_WITH_NO_SPREAD_ELEMENTS_SUPPORTED)
-		}
-
-		switch desc := globalDescNode.(type) {
-		case *parse.KeyListExpression:
-			for _, ident := range desc.Keys {
-				globVarName := ident.(*parse.IdentifierLiteral).Name
-				if !c.doGlobalVarExist(globVarName, closestModule) {
-					c.addError(globalDescNode, fmtCannotPassGlobalThatIsNotDeclaredToLThread(globVarName))
-				}
-				globals[globVarName] = globalVarInfo{isConst: true}
-			}
-		case *parse.ObjectLiteral:
-			if len(desc.SpreadElements) > 0 {
-				c.addError(desc, INVALID_SPAWN_GLOBALS_SHOULD_BE)
-			}
-
-			for _, prop := range desc.Properties {
-				if prop.HasImplicitKey() {
-					c.addError(desc, INVALID_SPAWN_GLOBALS_SHOULD_BE)
-					continue
-				}
-				globals[prop.Name()] = globalVarInfo{isConst: true}
-			}
-		case *parse.NilLiteral:
-		case nil:
-		default:
-			c.addError(node, INVALID_SPAWN_GLOBALS_SHOULD_BE)
-		}
-
-		if node.Module != nil && node.Module.SingleCallExpr {
-			calleeNode := node.Module.Statements[0].(*parse.CallExpression).Callee
-
-			switch calleeNode := calleeNode.(type) {
-			case *parse.IdentifierLiteral:
-				globals[calleeNode.Name] = globalVarInfo{isConst: true}
-			case *parse.IdentifierMemberExpression:
-				globals[calleeNode.Left.Name] = globalVarInfo{isConst: true}
-			}
-		}
-
-		embeddedModuleGlobals := c.getModGlobalVars(node.Module)
-
-		for name, info := range globals {
-			embeddedModuleGlobals[name] = info
-		}
-
-		c.defineStructs(node.Module, node.Module.Statements)
+		return c.checkSpawnExpr(node, closestModule)
 	case *parse.LifetimejobExpression:
-		lifetimeJobGlobals := c.getModGlobalVars(node.Module)
-
-		for name, info := range c.getModGlobalVars(closestModule) {
-			lifetimeJobGlobals[name] = info
-		}
-
-		lifetimeJobPatterns := c.getModPatterns(node.Module)
-
-		for name, info := range c.getModPatterns(closestModule) {
-			lifetimeJobPatterns[name] = info
-		}
-
-		lifetimeJobPatternNamespaces := c.getModPatternNamespaces(node.Module)
-
-		for name, info := range c.getModPatternNamespaces(closestModule) {
-			lifetimeJobPatternNamespaces[name] = info
-		}
-
-		if node.Subject != nil {
-			return parse.ContinueTraversal
-		}
-
-		if prop, ok := parent.(*parse.ObjectProperty); !ok || !prop.HasImplicitKey() {
-			c.addError(node, MISSING_LIFETIMEJOB_SUBJECT_PATTERN_NOT_AN_IMPLICIT_OBJ_PROP)
-		}
+		return c.checkLifetimejobExpr(node, parent, closestModule)
 	case *parse.ReceptionHandlerExpression:
 		if prop, ok := parent.(*parse.ObjectProperty); !ok || !prop.HasImplicitKey() {
 			c.addError(node, MISPLACED_RECEPTION_HANDLER_EXPRESSION)
 		}
 
 	case *parse.MappingExpression:
-
+		//
 	case *parse.StaticMappingEntry:
-		switch node.Key.(type) {
-		case *parse.PatternIdentifierLiteral, *parse.PatternNamespaceMemberExpression:
-		default:
-			if !parse.NodeIsSimpleValueLiteral(node.Key) {
-				c.addError(node.Key, INVALID_MAPPING_ENTRY_KEY_ONLY_SIMPL_LITS_AND_PATT_IDENTS)
-			}
-		}
-
+		return c.checkStaticMappingEntry(node)
 	case *parse.DynamicMappingEntry:
-		switch node.Key.(type) {
-		case *parse.PatternIdentifierLiteral, *parse.PatternNamespaceMemberExpression:
-		default:
-			if !parse.NodeIsSimpleValueLiteral(node.Key) {
-				c.addError(node.Key, INVALID_MAPPING_ENTRY_KEY_ONLY_SIMPL_LITS_AND_PATT_IDENTS)
-			}
-		}
-
-		localVars := c.getLocalVarsInScope(node)
-		varname := node.KeyVar.(*parse.IdentifierLiteral).Name
-		localVars[varname] = localVarInfo{}
-
-		if node.GroupMatchingVariable != nil {
-			varname := node.GroupMatchingVariable.(*parse.IdentifierLiteral).Name
-			localVars[varname] = localVarInfo{}
-		}
-
+		return c.checkDynamicMappingEntry(node)
 	case *parse.ComputeExpression:
-
-		if _, ok := scopeNode.(*parse.DynamicMappingEntry); !ok {
-			c.addError(node, MISPLACED_COMPUTE_EXPR_SHOULD_BE_IN_DYNAMIC_MAPPING_EXPR_ENTRY)
-		} else {
-		ancestor_loop:
-			for i := len(ancestorChain) - 1; i >= 0; i-- {
-				ancestor := ancestorChain[i]
-				if ancestor == scopeNode {
-					break
-				}
-
-				switch a := ancestor.(type) {
-				case *parse.StaticMappingEntry:
-					c.addError(node, MISPLACED_COMPUTE_EXPR_SHOULD_BE_IN_DYNAMIC_MAPPING_EXPR_ENTRY)
-					break ancestor_loop
-				case *parse.DynamicMappingEntry:
-					if a.Key == node || i < len(ancestorChain)-1 && ancestorChain[i+1] == a.Key {
-						c.addError(node, MISPLACED_COMPUTE_EXPR_SHOULD_BE_IN_DYNAMIC_MAPPING_EXPR_ENTRY)
-					}
-					break ancestor_loop
-				}
-			}
-		}
-
+		return c.checkComputeExpr(node, scopeNode, ancestorChain)
 	case *parse.InclusionImportStatement:
-		//if the import is performed by the preinit block, prune the traversal.
-		if _, ok := parent.(*parse.Block); ok && inPreinitBlock {
-			return parse.Prune
-		}
-
-		if _, ok := parent.(*parse.Chunk); !ok {
-			c.addError(node, MISPLACED_INCLUSION_IMPORT_STATEMENT_TOP_LEVEL_STMT)
-			return parse.ContinueTraversal
-		}
-		includedChunk := c.currentModule.InclusionStatementMap[node]
-
-		globals := make(map[parse.Node]map[string]globalVarInfo)
-		globals[includedChunk.Node] = map[string]globalVarInfo{}
-
-		//add globals to child checker
-		c.checkInput.Globals.Foreach(func(name string, v Value, isStartConstant bool) error {
-			globals[includedChunk.Node][name] = globalVarInfo{isConst: isStartConstant}
-			return nil
-		})
-
-		//add defined patterns & pattern namespaces to child checker
-		patterns := make(map[parse.Node]map[string]int)
-		patterns[includedChunk.Node] = map[string]int{}
-		for k := range c.checkInput.Patterns {
-			patterns[includedChunk.Node][k] = 0
-		}
-
-		patternNamespaces := make(map[parse.Node]map[string]int)
-		patternNamespaces[includedChunk.Node] = map[string]int{}
-		for k := range c.checkInput.PatternNamespaces {
-			patternNamespaces[includedChunk.Node][k] = 0
-		}
-
-		chunkChecker := &checker{
-			parentChecker:            c,
-			checkInput:               c.checkInput,
-			fnDecls:                  make(map[parse.Node]map[string]int),
-			structDefs:               make(map[parse.Node]map[string]int),
-			globalVars:               globals,
-			localVars:                make(map[parse.Node]map[string]localVarInfo),
-			properties:               make(map[*parse.ObjectLiteral]*propertyInfo),
-			patterns:                 patterns,
-			patternNamespaces:        patternNamespaces,
-			currentModule:            c.currentModule,
-			chunk:                    includedChunk.ParsedChunkSource,
-			inclusionImportStatement: node,
-			store:                    make(map[parse.Node]any),
-			data: &StaticCheckData{
-				fnData:      map[*parse.FunctionExpression]*FunctionStaticData{},
-				mappingData: map[*parse.MappingExpression]*MappingStaticData{},
-			},
-		}
-
-		err := chunkChecker.check(includedChunk.Node)
-		if err != nil {
-			panic(err)
-		}
-		if len(chunkChecker.data.errors) != 0 {
-			c.data.errors = append(c.data.errors, chunkChecker.data.errors...)
-		}
-
-		for k, v := range chunkChecker.data.fnData {
-			c.data.fnData[k] = v
-		}
-
-		for k, v := range chunkChecker.data.mappingData {
-			c.data.mappingData[k] = v
-		}
-
-		//include all global data & top level local variables
-		for k, v := range chunkChecker.fnDecls[includedChunk.Node] {
-			if c.checkInput.Globals.Has(k) {
-				continue
-			}
-
-			fnDecls := c.getModFunctionDecls(closestModule)
-			if _, ok := fnDecls[k]; ok {
-				// handled in next loop
-			} else {
-				fnDecls[k] = v
-			}
-		}
-
-		for k, v := range chunkChecker.globalVars[includedChunk.Node] {
-			if c.checkInput.Globals.Has(k) {
-				continue
-			}
-
-			globalVars := c.getModGlobalVars(closestModule)
-			if _, ok := globalVars[k]; ok {
-				c.addError(node, fmtCannotShadowGlobalVariable(k))
-			} else {
-				globalVars[k] = v
-			}
-		}
-
-		for k, v := range chunkChecker.localVars[includedChunk.Node] {
-			localVars := c.getLocalVarsInScope(closestModule)
-			if _, ok := localVars[k]; ok {
-				c.addError(node, fmtCannotShadowLocalVariable(k))
-			} else {
-				localVars[k] = v
-			}
-		}
-
-		for k, v := range chunkChecker.patterns[includedChunk.Node] {
-			if _, ok := c.checkInput.Patterns[k]; ok {
-				continue
-			}
-
-			patterns := c.getModPatterns(closestModule)
-			if _, ok := patterns[k]; ok {
-				c.addError(node, fmtPatternAlreadyDeclared(k))
-			} else {
-				patterns[k] = v
-			}
-		}
-
-		for k, v := range chunkChecker.patternNamespaces[includedChunk.Node] {
-			if _, ok := c.checkInput.PatternNamespaces[k]; ok {
-				continue
-			}
-
-			namespaces := c.getModPatternNamespaces(closestModule)
-			if _, ok := namespaces[k]; ok {
-				c.addError(node, fmtPatternNamespaceAlreadyDeclared(k))
-			} else {
-				namespaces[k] = v
-			}
-		}
-
-		if v, ok := chunkChecker.store[includedChunk.Node]; ok {
-			panic(fmt.Errorf("data stored for included chunk %#v : %#v", includedChunk.Node, v))
-		}
-
-	//ok
+		return c.checkInclusionImportStmt(node, parent, closestModule, inPreinitBlock)
 	case *parse.ImportStatement:
-		if c.inclusionImportStatement != nil {
-			c.addError(node, MODULE_IMPORTS_NOT_ALLOWED_IN_INCLUDED_CHUNK)
-			return parse.Prune
-		}
-
-		if _, ok := parent.(*parse.Chunk); !ok {
-			c.addError(node, MISPLACED_MOD_IMPORT_STATEMENT_TOP_LEVEL_STMT)
-			return parse.Prune
-		}
-
-		name := node.Identifier.Name
-		variables := c.getModGlobalVars(closestModule)
-
-		_, alreadyUsed := variables[name]
-		if alreadyUsed {
-			c.addError(node, fmtInvalidImportStmtAlreadyDeclaredGlobal(name))
-			return parse.ContinueTraversal
-		}
-		variables[name] = globalVarInfo{isConst: true}
-
-		if c.inclusionImportStatement != nil || node.Source == nil {
-			return parse.ContinueTraversal
-		}
-
-		var importedModuleSource WrappedString
-
-		switch node.Source.(type) {
-		case *parse.URLLiteral, *parse.AbsolutePathLiteral, *parse.RelativePathLiteral:
-			value, err := EvalSimpleValueLiteral(node.Source.(parse.SimpleValueLiteral), nil)
-			if err != nil {
-				panic(ErrUnreachable)
-			}
-			src, err := getSourceFromImportSource(value, c.currentModule, c.checkInput.State.Ctx)
-			if err != nil {
-				c.addError(node, fmt.Sprintf("failed to resolve location of imported module: %s", err.Error()))
-				return parse.ContinueTraversal
-			}
-			importedModuleSource = src
-		default:
-			return parse.ContinueTraversal
-		}
-
-		importedModule := c.currentModule.DirectlyImportedModules[importedModuleSource.UnderlyingString()]
-		importModuleNode := importedModule.MainChunk.Node
-
-		globals := make(map[parse.Node]map[string]globalVarInfo)
-		globals[importModuleNode] = map[string]globalVarInfo{}
-
-		//add base globals to child checker
-		for globalName := range c.checkInput.State.SymbolicBaseGlobalsForImportedModule {
-			globals[importModuleNode][globalName] = globalVarInfo{isConst: true, isStartConstant: true}
-		}
-
-		//add module arguments variable to child checker
-		globals[importModuleNode][MOD_ARGS_VARNAME] = globalVarInfo{isConst: true, isStartConstant: true}
-
-		//add base patterns & pattern namespaces to child checker
-		basePatterns, basePatternNamespaces := c.checkInput.State.GetBasePatternsForImportedModule()
-
-		patterns := make(map[parse.Node]map[string]int)
-		patterns[importModuleNode] = map[string]int{}
-		for k := range basePatterns {
-			patterns[importModuleNode][k] = 0
-		}
-
-		patternNamespaces := make(map[parse.Node]map[string]int)
-		patternNamespaces[importModuleNode] = map[string]int{}
-		for k := range basePatternNamespaces {
-			patternNamespaces[importModuleNode][k] = 0
-		}
-
-		chunkChecker := &checker{
-			parentChecker:         c,
-			checkInput:            c.checkInput,
-			fnDecls:               make(map[parse.Node]map[string]int),
-			structDefs:            make(map[parse.Node]map[string]int),
-			globalVars:            globals,
-			localVars:             make(map[parse.Node]map[string]localVarInfo),
-			properties:            make(map[*parse.ObjectLiteral]*propertyInfo),
-			patterns:              patterns,
-			patternNamespaces:     patternNamespaces,
-			currentModule:         importedModule,
-			chunk:                 importedModule.MainChunk,
-			moduleImportStatement: node,
-			store:                 make(map[parse.Node]any),
-			data: &StaticCheckData{
-				fnData:      map[*parse.FunctionExpression]*FunctionStaticData{},
-				mappingData: map[*parse.MappingExpression]*MappingStaticData{},
-			},
-		}
-
-		err := chunkChecker.check(importModuleNode)
-		if err != nil {
-			panic(err)
-		}
-
-		if len(chunkChecker.data.errors) != 0 {
-			c.data.errors = append(c.data.errors, chunkChecker.data.errors...)
-		}
-
-		if v, ok := chunkChecker.store[importModuleNode]; ok {
-			panic(fmt.Errorf("data stored for included chunk %#v : %#v", importModuleNode, v))
-		}
-
+		return c.checkImportStmt(node, parent, closestModule)
 	case *parse.GlobalConstantDeclarations:
-		globalVars := c.getModGlobalVars(closestModule)
-
-		for _, decl := range node.Declarations {
-			ident, ok := decl.Left.(*parse.IdentifierLiteral)
-			if !ok {
-				continue
-			}
-			name := ident.Name
-
-			_, alreadyUsed := globalVars[name]
-			if alreadyUsed {
-				c.addError(decl, fmtInvalidConstDeclGlobalAlreadyDeclared(name))
-				return parse.ContinueTraversal
-			}
-			globalVars[name] = globalVarInfo{isConst: true}
-		}
+		return c.checkGlobalConstDecls(node, parent, closestModule)
 	case *parse.LocalVariableDeclarations:
-		localVars := c.getLocalVarsInScope(scopeNode)
-
-		for _, decl := range node.Declarations {
-			name := decl.Left.(*parse.IdentifierLiteral).Name
-
-			globalVariables := c.getModGlobalVars(closestModule)
-
-			if _, alreadyDefined := globalVariables[name]; alreadyDefined {
-				c.addError(decl, fmtCannotShadowGlobalVariable(name))
-				return parse.ContinueTraversal
-			}
-
-			_, alreadyUsed := localVars[name]
-			if alreadyUsed {
-				c.addError(decl, fmtInvalidLocalVarDeclAlreadyDeclared(name))
-				return parse.ContinueTraversal
-			}
-			localVars[name] = localVarInfo{}
-		}
+		return c.checkLocalVarDecls(node, scopeNode, closestModule)
 	case *parse.GlobalVariableDeclarations:
-		globalVars := c.getModGlobalVars(closestModule)
-
-		for _, decl := range node.Declarations {
-			name := decl.Left.(*parse.IdentifierLiteral).Name
-
-			localVariables := c.getLocalVarsInScope(scopeNode)
-
-			if _, alreadyDefined := localVariables[name]; alreadyDefined {
-				c.addError(decl, fmtCannotShadowLocalVariable(name))
-				return parse.ContinueTraversal
-			}
-
-			_, alreadyUsed := globalVars[name]
-			if alreadyUsed {
-				c.addError(decl, fmtInvalidGlobalVarDeclAlreadyDeclared(name))
-				return parse.ContinueTraversal
-			}
-			globalVars[name] = globalVarInfo{}
-		}
+		return c.checkGlobalVarDecls(node, scopeNode, closestModule)
 	case *parse.Assignment, *parse.MultiAssignment:
-		var names []string
-
-		if assignment, ok := n.(*parse.Assignment); ok {
-
-			switch left := assignment.Left.(type) {
-
-			case *parse.GlobalVariable:
-				fns, ok := c.fnDecls[closestModule]
-				if ok {
-					_, alreadyUsed := fns[left.Name]
-					if alreadyUsed {
-						c.addError(node, fmtInvalidGlobalVarAssignmentNameIsFuncName(left.Name))
-						return parse.ContinueTraversal
-					}
-				}
-
-				localVars := c.getLocalVarsInScope(scopeNode)
-
-				if _, alreadyDefined := localVars[left.Name]; alreadyDefined {
-					c.addError(node, fmtCannotShadowLocalVariable(left.Name))
-					return parse.ContinueTraversal
-				}
-
-				variables := c.getModGlobalVars(closestModule)
-
-				varInfo, alreadyDefined := variables[left.Name]
-				if alreadyDefined {
-					if varInfo.isConst {
-						c.addError(node, fmtInvalidGlobalVarAssignmentNameIsConstant(left.Name))
-						return parse.ContinueTraversal
-					}
-				} else {
-					if assignment.Operator != parse.Assign {
-						c.addError(node, fmtInvalidGlobalVarAssignmentVarDoesNotExist(left.Name))
-					}
-					variables[left.Name] = globalVarInfo{isConst: false}
-				}
-
-			case *parse.Variable:
-				if left.Name == "" { //$
-					c.addError(node, INVALID_ASSIGNMENT_ANONYMOUS_VAR_CANNOT_BE_ASSIGNED)
-					return parse.ContinueTraversal
-				}
-
-				globalVariables := c.getModGlobalVars(closestModule)
-
-				if _, alreadyDefined := globalVariables[left.Name]; alreadyDefined {
-					c.addError(node, fmtCannotShadowGlobalVariable(left.Name))
-					return parse.ContinueTraversal
-				}
-
-				localVars := c.getLocalVarsInScope(scopeNode)
-
-				if _, alreadyDefined := localVars[left.Name]; !alreadyDefined && assignment.Operator != parse.Assign {
-					c.addError(node, fmtInvalidVariableAssignmentVarDoesNotExist(left.Name))
-				}
-
-				names = append(names, left.Name)
-			case *parse.IdentifierLiteral:
-				globalVariables := c.getModGlobalVars(closestModule)
-
-				if _, alreadyDefined := globalVariables[left.Name]; alreadyDefined {
-					c.addError(node, fmtCannotShadowGlobalVariable(left.Name))
-					return parse.ContinueTraversal
-				}
-
-				localVars := c.getLocalVarsInScope(scopeNode)
-
-				if _, alreadyDefined := localVars[left.Name]; !alreadyDefined && assignment.Operator != parse.Assign {
-					c.addError(node, fmtInvalidVariableAssignmentVarDoesNotExist(left.Name))
-				}
-
-				names = append(names, left.Name)
-			case *parse.IdentifierMemberExpression:
-
-				for _, ident := range left.PropertyNames {
-					if parse.IsMetadataKey(ident.Name) {
-						c.addError(node, fmtInvalidMemberAssignmentCannotModifyMetaProperty(ident.Name))
-					}
-				}
-			case *parse.MemberExpression:
-				curr := left
-				var ok bool
-				for {
-					if parse.IsMetadataKey(curr.PropertyName.Name) {
-						c.addError(node, fmtInvalidMemberAssignmentCannotModifyMetaProperty(curr.PropertyName.Name))
-						break
-					}
-					if curr, ok = curr.Left.(*parse.MemberExpression); !ok {
-						break
-					}
-				}
-			case *parse.SliceExpression:
-				if assignment.Operator != parse.Assign {
-					c.addError(node, INVALID_ASSIGNMENT_EQUAL_ONLY_SUPPORTED_ASSIGNMENT_OPERATOR_FOR_SLICE_EXPRS)
-				}
-			}
-		} else {
-			assignment := n.(*parse.MultiAssignment)
-
-			for _, variable := range assignment.Variables {
-				name := variable.(*parse.IdentifierLiteral).Name
-
-				globalVariables := c.getModGlobalVars(closestModule)
-
-				if _, alreadyDefined := globalVariables[name]; alreadyDefined {
-					c.addError(node, fmtCannotShadowGlobalVariable(name))
-				}
-
-				names = append(names, name)
-			}
-		}
-
-		for _, name := range names {
-			variables := c.getLocalVarsInScope(scopeNode)
-			variables[name] = localVarInfo{}
-		}
-
+		return c.checkAssignment(node, scopeNode, closestModule)
 	case *parse.ForStatement:
-		variablesBeforeStmt := c.getScopeLocalVarsCopy(scopeNode)
-		variables := c.getLocalVarsInScope(scopeNode)
-
-		c.store[node] = variablesBeforeStmt
-
-		if node.KeyIndexIdent != nil {
-			if _, alreadyDefined := variables[node.KeyIndexIdent.Name]; alreadyDefined &&
-				!c.shellLocalVars[node.KeyIndexIdent.Name] {
-				c.addError(node, fmtCannotShadowVariable(node.KeyIndexIdent.Name))
-				return parse.ContinueTraversal
-			}
-			variables[node.KeyIndexIdent.Name] = localVarInfo{}
-		}
-
-		if node.ValueElemIdent != nil {
-			if _, alreadyDefined := variables[node.ValueElemIdent.Name]; alreadyDefined &&
-				!c.shellLocalVars[node.ValueElemIdent.Name] {
-				c.addError(node, fmtCannotShadowVariable(node.ValueElemIdent.Name))
-				return parse.ContinueTraversal
-			}
-			variables[node.ValueElemIdent.Name] = localVarInfo{}
-		}
-
+		return c.checkForStmt(node, scopeNode)
 	case *parse.WalkStatement:
-		variablesBeforeStmt := c.getScopeLocalVarsCopy(scopeNode)
-		variables := c.getLocalVarsInScope(scopeNode)
-
-		c.store[node] = variablesBeforeStmt
-
-		if node.EntryIdent != nil {
-			if _, alreadyDefined := variables[node.EntryIdent.Name]; alreadyDefined &&
-				!c.shellLocalVars[node.EntryIdent.Name] {
-				c.addError(node, fmtCannotShadowVariable(node.EntryIdent.Name))
-				return parse.ContinueTraversal
-			}
-			variables[node.EntryIdent.Name] = localVarInfo{}
-		}
-
+		return c.checkWalkStmt(node, scopeNode)
 	case *parse.ReadonlyPatternExpression:
-		ok := false
-		switch p := parent.(type) {
-		case *parse.FunctionParameter:
-			ok = p.Type == n
-		default:
-		}
-
-		if !ok {
-			c.addError(node, MISPLACED_READONLY_PATTERN_EXPRESSION)
-		}
+		return c.checkReadonlyPatternExpr(node, parent)
 	case *parse.FunctionDeclaration:
-
-		switch parent.(type) {
-		case *parse.Chunk, *parse.EmbeddedModule:
-			fns := c.getModFunctionDecls(closestModule)
-			globVars := c.getModGlobalVars(closestModule)
-
-			_, alreadyDeclared := fns[node.Name.Name]
-			if alreadyDeclared {
-				c.addError(node, fmtInvalidFnDeclAlreadyDeclared(node.Name.Name))
-				return parse.ContinueTraversal
-			}
-
-			_, alreadyUsed := globVars[node.Name.Name]
-			if alreadyUsed {
-				c.addError(node, fmtInvalidFnDeclGlobVarExist(node.Name.Name))
-				return parse.ContinueTraversal
-			}
-
-			fns[node.Name.Name] = 0
-			globVars[node.Name.Name] = globalVarInfo{isConst: true, fnExpr: node.Function}
-		case *parse.StructBody:
-			//struct method
-		default:
-			c.addError(node, INVALID_FN_DECL_SHOULD_BE_TOP_LEVEL_STMT)
-			return parse.ContinueTraversal
-		}
+		return c.checkFuncDecl(node, parent, closestModule)
 	case *parse.FunctionExpression:
-		fnLocalVars := c.getLocalVarsInScope(node)
-
-		//we check that the captured variable exists & is a local
-		for _, e := range node.CaptureList {
-			name := e.(*parse.IdentifierLiteral).Name
-
-			if !c.varExists(name, ancestorChain) {
-				c.addError(node, fmtVarIsNotDeclared(name))
-			} else if c.doGlobalVarExist(name, closestModule) {
-				c.addError(node, fmtCannotPassGlobalToFunction(name))
-			}
-
-			fnLocalVars[name] = localVarInfo{}
-		}
-
-		for _, p := range node.Parameters {
-			name := p.Var.Name
-
-			globalVariables := c.getModGlobalVars(closestModule)
-
-			if _, alreadyDefined := globalVariables[name]; alreadyDefined {
-				c.addError(p, fmtParameterCannotShadowGlobalVariable(name))
-				return parse.ContinueTraversal
-			}
-
-			fnLocalVars[name] = localVarInfo{}
-		}
+		return c.checkFuncExpr(node, closestModule, ancestorChain)
 	case *parse.FunctionPatternExpression:
-		fnLocalVars := c.getLocalVarsInScope(node)
-
-		for _, p := range node.Parameters {
-			if p.Var == nil {
-				continue
-			}
-
-			name := p.Var.Name
-
-			globalVariables := c.getModGlobalVars(closestModule)
-
-			if _, alreadyDefined := globalVariables[name]; alreadyDefined {
-				c.addError(p, fmtParameterCannotShadowGlobalVariable(name))
-				return parse.ContinueTraversal
-			}
-
-			fnLocalVars[name] = localVarInfo{}
-		}
-
+		return c.checkFuncPatternExpr(node, closestModule)
 	case *parse.YieldStatement:
-		ok := c.checkInput.Module != nil && c.checkInput.Module.IsEmbedded()
-
-		for i := len(ancestorChain) - 1; i >= 0; i-- {
-			if !parse.IsScopeContainerNode(ancestorChain[i]) {
-				continue
-			}
-
-			if ok && ancestorChain[i] != c.checkInput.Node {
-				ok = false
-				break
-			}
-
-			switch ancestorChain[i].(type) {
-			case *parse.EmbeddedModule:
-				ok = true
-			}
-			break
-		}
-
-		if !ok {
-			c.addError(node, MISPLACE_YIELD_STATEMENT_ONLY_ALLOWED_IN_EMBEDDED_MODULES)
-		}
+		return c.checkYieldStmt(node, ancestorChain)
 	case *parse.BreakStatement, *parse.ContinueStatement:
 		iterativeStmtIndex := -1
 
@@ -1555,120 +644,1371 @@ top_switch:
 			}
 		}
 	case *parse.PruneStatement:
-		walkStmtIndex := -1
-		//we search for the last walk statement in the ancestor chain
-	loop1:
-		for i := len(ancestorChain) - 1; i >= 0; i-- {
-			switch ancestorChain[i].(type) {
-			case *parse.WalkStatement:
-				walkStmtIndex = i
-				break loop1
-			}
-		}
-
-		if walkStmtIndex < 0 {
-			c.addError(node, INVALID_PRUNE_STMT_SHOULD_BE_IN_WALK_STMT)
-			return parse.ContinueTraversal
-		}
-
-		for i := walkStmtIndex + 1; i < len(ancestorChain); i++ {
-			switch ancestorChain[i].(type) {
-			case *parse.IfStatement, *parse.SwitchStatement, *parse.MatchStatement, *parse.Block, *parse.ForStatement:
-			default:
-				c.addError(node, INVALID_PRUNE_STMT_SHOULD_BE_IN_WALK_STMT)
-				return parse.ContinueTraversal
-			}
-		}
+		return c.checkPruneStmt(node, ancestorChain)
 	case *parse.MatchStatement:
 		variablesBeforeStmt := c.getScopeLocalVarsCopy(scopeNode)
 		c.store[node] = variablesBeforeStmt
 	case *parse.MatchCase:
-		//define the variables named after groups if the literal is used as a case in a match statement
-
-		if node.GroupMatchingVariable == nil {
-			break
-		}
-
-		variable := node.GroupMatchingVariable.(*parse.IdentifierLiteral)
-
-		if _, alreadyDefined := c.getModGlobalVars(closestModule)[variable.Name]; alreadyDefined {
-			c.addError(variable, fmtCannotShadowGlobalVariable(variable.Name))
-			return parse.ContinueTraversal
-		}
-
-		localVars := c.getLocalVarsInScope(scopeNode)
-
-		if info, alreadyDefined := localVars[variable.Name]; alreadyDefined && info != (localVarInfo{isGroupMatchingVar: true}) {
-			c.addError(variable, fmtCannotShadowLocalVariable(variable.Name))
-			return parse.ContinueTraversal
-		}
-
-		localVars[variable.Name] = localVarInfo{isGroupMatchingVar: true}
+		return c.checkMatchCase(node, scopeNode, closestModule)
 	case *parse.Variable:
-		if len(node.Name) > MAX_NAME_BYTE_LEN {
-			c.addError(node, fmtNameIsTooLong(node.Name))
-			return parse.ContinueTraversal
-		}
-
-		if node.Name == "" {
-			break
-		}
-
-		if _, isLazyExpr := scopeNode.(*parse.LazyExpression); isLazyExpr {
-			break
-		}
-
-		if _, ok := scopeNode.(*parse.ExtendStatement); ok {
-			c.addError(node, VARS_NOT_ALLOWED_IN_PATTERN_AND_EXTENSION_OBJECT_PROPERTIES)
-			return parse.ContinueTraversal
-		}
-
-		if _, ok := scopeNode.(*parse.StructDefinition); ok {
-			c.addError(node, VARS_CANNOT_BE_USED_IN_STRUCT_FIELD_DEFS)
-			return parse.ContinueTraversal
-		}
-
-		variables := c.getLocalVarsInScope(scopeNode)
-		_, exist := variables[node.Name]
-
-		if !exist {
-			c.addError(node, fmtLocalVarIsNotDeclared(node.Name))
-			return parse.ContinueTraversal
-		}
-
+		return c.checkVariable(node, scopeNode)
 	case *parse.GlobalVariable:
-		if len(node.Name) > MAX_NAME_BYTE_LEN {
-			c.addError(node, fmtNameIsTooLong(node.Name))
+		return c.checkGlobalVar(node, parent, scopeNode, closestModule, ancestorChain)
+	case *parse.IdentifierLiteral:
+		return c.checkIdentifier(node, parent, scopeNode, closestModule, ancestorChain)
+	case *parse.SelfExpression, *parse.SendValueExpression:
+		return c.checkSelfExprAndSendValExpr(n, parent, ancestorChain)
+	case *parse.HostAliasDefinition:
+		return c.checkHostAlisDef(node, parent, closestModule, inPreinitBlock)
+	case *parse.PatternDefinition:
+		return c.checkPatternDef(node, parent, closestModule, inPreinitBlock)
+	case *parse.PatternNamespaceDefinition:
+		return c.checkPatternNamespaceDefinition(node, parent, closestModule, inPreinitBlock)
+	case *parse.PatternNamespaceIdentifierLiteral:
+		return c.checkPatternNamespaceIdentifier(node, closestModule)
+	case *parse.PatternIdentifierLiteral:
+		return c.checkPatternIdentifier(node, parent, closestModule, ancestorChain)
+	case *parse.RuntimeTypeCheckExpression:
+		return c.checkRuntimeTypeCheckExpr(node, parent)
+	case *parse.DynamicMemberExpression:
+		if node.Optional {
+			c.addError(node, OPTIONAL_DYN_MEMB_EXPR_NOT_SUPPORTED_YET)
+		}
+	case *parse.ExtendStatement:
+		if _, ok := parent.(*parse.Chunk); !ok {
+			c.addError(node, MISPLACED_EXTEND_STATEMENT_TOP_LEVEL_STMT)
+			return parse.ContinueTraversal
+		}
+	case *parse.StructDefinition:
+		if parent != closestModule {
+			c.addError(node, MISPLACED_STRUCT_DEF_TOP_LEVEL_STMT)
+			return parse.ContinueTraversal
+		}
+		//already defined.
+		return parse.ContinueTraversal
+	case *parse.NewExpression:
+		return c.checkNewExpr(node)
+	case *parse.StructInitializationLiteral:
+		return c.checkStructInitLiteral(node)
+	case *parse.PointerType:
+		return c.checkPointerType(node, parent)
+	case *parse.DereferenceExpression:
+		c.addError(node, "dereference expressions are not supported yet")
+	case *parse.TestSuiteExpression:
+		return c.checkTestSuiteExpr(node, ancestorChain)
+	case *parse.TestCaseExpression:
+		return c.checkTestCaseExpr(node, ancestorChain)
+	case *parse.EmbeddedModule:
+		return c.checkEmbeddedModule(node, parent, closestModule, ancestorChain)
+	}
+
+	return parse.ContinueTraversal
+}
+
+func (c *checker) checkQuantityLiteral(node *parse.QuantityLiteral) parse.TraversalAction {
+
+	var prevMultiplier string
+	var prevUnit string
+	var prevDurationUnitValue time.Duration
+
+	for partIndex := 0; partIndex < len(node.Values); partIndex++ {
+		if node.Values[partIndex] < 0 {
+			c.addError(node, ErrNegQuantityNotSupported.Error())
 			return parse.ContinueTraversal
 		}
 
-		if _, isAssignment := parent.(*parse.Assignment); isAssignment {
-			if fnExpr, ok := scopeNode.(*parse.FunctionExpression); ok {
-				c.data.addFnAssigningGlobal(fnExpr)
+		i := 0
+		var multiplier string
+
+		switch node.Units[partIndex][0] {
+		case 'k', 'M', 'G', 'T':
+			multiplier = node.Units[partIndex]
+			i++
+		default:
+		}
+
+		prevMultiplier = multiplier
+		_ = prevMultiplier
+
+		if i > 0 && len(node.Units[partIndex]) == 1 {
+			c.addError(node, fmtNonSupportedUnit(node.Units[0]))
+			return parse.ContinueTraversal
+		}
+
+		unit := node.Units[partIndex][i:]
+
+		switch unit {
+		case "x", LINE_COUNT_UNIT, RUNE_COUNT_UNIT, BYTE_COUNT_UNIT:
+			if partIndex != 0 || prevUnit != "" {
+				c.addError(node, INVALID_QUANTITY)
+				return parse.ContinueTraversal
 			}
-			break
+			prevUnit = unit
+		case "h", "mn", "s", "ms", "us", "ns":
+			var durationUnitValue time.Duration
+
+			switch unit {
+			case "h":
+				durationUnitValue = time.Hour
+			case "mn":
+				durationUnitValue = time.Minute
+			case "s":
+				durationUnitValue = time.Second
+			case "ms":
+				durationUnitValue = time.Millisecond
+			case "us":
+				durationUnitValue = time.Microsecond
+			case "ns":
+				durationUnitValue = time.Nanosecond
+			}
+
+			if prevUnit != "" && (prevDurationUnitValue == 0 || durationUnitValue >= prevDurationUnitValue) {
+				c.addError(node, INVALID_QUANTITY)
+				return parse.ContinueTraversal
+			}
+
+			prevDurationUnitValue = durationUnitValue
+			prevUnit = unit
+		case "%":
+			if partIndex != 0 || prevUnit != "" {
+				c.addError(node, INVALID_QUANTITY)
+				return parse.ContinueTraversal
+			}
+			if i == 0 {
+				prevUnit = unit
+				break
+			}
+			fallthrough
+		default:
+			c.addError(node, fmtNonSupportedUnit(node.Units[0]))
+			return parse.ContinueTraversal
+		}
+	}
+
+	_, err := evalQuantity(node.Values, node.Units)
+	if err != nil {
+		c.addError(node, err.Error())
+	}
+
+	return parse.ContinueTraversal
+}
+
+func (c *checker) checkRateLiteral(node *parse.RateLiteral) parse.TraversalAction {
+	lastUnit1 := node.Units[len(node.Units)-1]
+	rateUnit := node.DivUnit
+
+	switch rateUnit {
+	case "s":
+		i := 0
+		switch lastUnit1[0] {
+		case 'k', 'M', 'G', 'T':
+			i++
+		default:
+		}
+		switch lastUnit1[i:] {
+		case "x", BYTE_COUNT_UNIT:
+			return parse.ContinueTraversal
+		}
+	}
+	c.addError(node, INVALID_RATE)
+	return parse.ContinueTraversal
+}
+
+func (c *checker) checkObjectLiteral(node *parse.ObjectLiteral) parse.TraversalAction {
+	action, keys := shallowCheckObjectRecordProperties(node.Properties, node.SpreadElements, true, func(n parse.Node, msg string) {
+		c.addError(n, msg)
+	})
+
+	if action != parse.ContinueTraversal {
+		return action
+	}
+
+	propInfo := c.getPropertyInfo(node)
+	for k := range keys {
+		propInfo.known[k] = true
+	}
+
+	for _, metaprop := range node.MetaProperties {
+		switch metaprop.Name() {
+		case VISIBILITY_KEY:
+			checkVisibilityInitializationBlock(propInfo, metaprop.Initialization, func(n parse.Node, msg string) {
+				c.addError(n, msg)
+			})
+		}
+	}
+	return parse.ContinueTraversal
+}
+
+func (c *checker) checkRecordLiteral(node *parse.RecordLiteral) parse.TraversalAction {
+	action, _ := shallowCheckObjectRecordProperties(node.Properties, node.SpreadElements, false, func(n parse.Node, msg string) {
+		c.addError(n, msg)
+	})
+
+	return action
+}
+
+func (c *checker) checkObjectRecordPatternLiteral(node parse.Node) parse.TraversalAction {
+	indexKey := 0
+	keys := map[string]struct{}{}
+
+	var propertyNodes []*parse.ObjectPatternProperty
+	var spreadElementsNodes []*parse.PatternPropertySpreadElement
+	var otherPropsNodes []*parse.OtherPropsExpr
+	var isExact bool
+
+	switch node := node.(type) {
+	case *parse.ObjectPatternLiteral:
+		propertyNodes = node.Properties
+		spreadElementsNodes = node.SpreadElements
+		otherPropsNodes = node.OtherProperties
+		isExact = node.Exact()
+	case *parse.RecordPatternLiteral:
+		propertyNodes = node.Properties
+		spreadElementsNodes = node.SpreadElements
+		otherPropsNodes = node.OtherProperties
+		isExact = node.Exact()
+	}
+
+	// look for duplicate keys
+	for _, prop := range propertyNodes {
+		var k string
+
+		switch n := prop.Key.(type) {
+		case *parse.QuotedStringLiteral:
+			k = n.Value
+		case *parse.IdentifierLiteral:
+			k = n.Name
+		case nil:
+			k = strconv.Itoa(indexKey)
+			indexKey++
 		}
 
-		if _, isLazyExpr := scopeNode.(*parse.LazyExpression); isLazyExpr {
-			break
+		if len(k) > MAX_NAME_BYTE_LEN {
+			c.addError(prop.Key, fmtNameIsTooLong(k))
 		}
+
+		if parse.IsMetadataKey(k) {
+			c.addError(prop.Key, OBJ_REC_LIT_CANNOT_HAVE_METAPROP_KEYS)
+		} else if _, found := keys[k]; found {
+			c.addError(prop, fmtDuplicateKey(k))
+		}
+
+		keys[k] = struct{}{}
+	}
+
+	// also look for duplicate keys
+	for _, element := range spreadElementsNodes {
+		extractionExpr, ok := element.Expr.(*parse.ExtractionExpression)
+		if !ok {
+			continue
+		}
+
+		for _, key := range extractionExpr.Keys.Keys {
+			name := key.(*parse.IdentifierLiteral).Name
+
+			_, found := keys[name]
+			if found {
+				c.addError(key, fmtDuplicateKey(name))
+				return parse.ContinueTraversal
+			}
+			keys[name] = struct{}{}
+		}
+	}
+
+	//check that if the pattern is exact there are no other otherprops nodes other than otherprops(no)
+	if isExact {
+		for _, prop := range otherPropsNodes {
+			patternIdent, ok := prop.Pattern.(*parse.PatternIdentifierLiteral)
+
+			if !ok || patternIdent.Name != parse.NO_OTHERPROPS_PATTERN_NAME {
+				c.addError(prop, UNEXPECTED_OTHER_PROPS_EXPR_OTHERPROPS_NO_IS_PRESENT)
+			}
+		}
+	}
+
+	return parse.ContinueTraversal
+}
+
+func (c *checker) checkDictionaryLiteral(node *parse.DictionaryLiteral) parse.TraversalAction {
+	keys := map[string]bool{}
+
+	// look for duplicate keys
+	for _, entry := range node.Entries {
+
+		keyNode, ok := entry.Key.(parse.SimpleValueLiteral)
+		if !ok {
+			//there is a parsing error
+			continue
+		}
+
+		keyRepr := keyNode.ValueString()
+
+		if keys[keyRepr] {
+			c.addError(entry.Key, fmtDuplicateDictKey(keyRepr))
+		} else {
+			keys[keyRepr] = true
+		}
+	}
+
+	return parse.ContinueTraversal
+}
+
+func (c *checker) checkSpawnExpr(node *parse.SpawnExpression, closestModule parse.Node) parse.TraversalAction {
+
+	var globals = make(map[string]globalVarInfo)
+	var globalDescNode parse.Node
+
+	// add constant globals
+	parentModuleGlobals := c.getModGlobalVars(closestModule)
+	for name, info := range parentModuleGlobals {
+		if info.isStartConstant {
+			globals[name] = info
+		}
+	}
+
+	// add globals passed by user
+	if obj, ok := node.Meta.(*parse.ObjectLiteral); ok {
+		if len(obj.SpreadElements) > 0 {
+			c.addError(node.Meta, INVALID_SPAWN_ONLY_OBJECT_LITERALS_WITH_NO_SPREAD_ELEMENTS_SUPPORTED)
+		}
+
+		for _, prop := range obj.Properties {
+			if prop.HasImplicitKey() {
+				c.addError(node.Meta, INVALID_SPAWN_ONLY_OBJECT_LITERALS_WITH_NO_SPREAD_ELEMENTS_SUPPORTED)
+			}
+		}
+
+		val, ok := obj.PropValue(symbolic.LTHREAD_META_GLOBALS_SECTION)
+		if ok {
+			globalDescNode = val
+		}
+	} else if node.Meta != nil {
+		c.addError(node.Meta, INVALID_SPAWN_ONLY_OBJECT_LITERALS_WITH_NO_SPREAD_ELEMENTS_SUPPORTED)
+	}
+
+	switch desc := globalDescNode.(type) {
+	case *parse.KeyListExpression:
+		for _, ident := range desc.Keys {
+			globVarName := ident.(*parse.IdentifierLiteral).Name
+			if !c.doGlobalVarExist(globVarName, closestModule) {
+				c.addError(globalDescNode, fmtCannotPassGlobalThatIsNotDeclaredToLThread(globVarName))
+			}
+			globals[globVarName] = globalVarInfo{isConst: true}
+		}
+	case *parse.ObjectLiteral:
+		if len(desc.SpreadElements) > 0 {
+			c.addError(desc, INVALID_SPAWN_GLOBALS_SHOULD_BE)
+		}
+
+		for _, prop := range desc.Properties {
+			if prop.HasImplicitKey() {
+				c.addError(desc, INVALID_SPAWN_GLOBALS_SHOULD_BE)
+				continue
+			}
+			globals[prop.Name()] = globalVarInfo{isConst: true}
+		}
+	case *parse.NilLiteral:
+	case nil:
+	default:
+		c.addError(node, INVALID_SPAWN_GLOBALS_SHOULD_BE)
+	}
+
+	if node.Module != nil && node.Module.SingleCallExpr {
+		calleeNode := node.Module.Statements[0].(*parse.CallExpression).Callee
+
+		switch calleeNode := calleeNode.(type) {
+		case *parse.IdentifierLiteral:
+			globals[calleeNode.Name] = globalVarInfo{isConst: true}
+		case *parse.IdentifierMemberExpression:
+			globals[calleeNode.Left.Name] = globalVarInfo{isConst: true}
+		}
+	}
+
+	embeddedModuleGlobals := c.getModGlobalVars(node.Module)
+
+	for name, info := range globals {
+		embeddedModuleGlobals[name] = info
+	}
+
+	c.defineStructs(node.Module, node.Module.Statements)
+	return parse.ContinueTraversal
+}
+
+func (c *checker) checkLifetimejobExpr(node *parse.LifetimejobExpression, parent, closestModule parse.Node) parse.TraversalAction {
+
+	lifetimeJobGlobals := c.getModGlobalVars(node.Module)
+
+	for name, info := range c.getModGlobalVars(closestModule) {
+		lifetimeJobGlobals[name] = info
+	}
+
+	lifetimeJobPatterns := c.getModPatterns(node.Module)
+
+	for name, info := range c.getModPatterns(closestModule) {
+		lifetimeJobPatterns[name] = info
+	}
+
+	lifetimeJobPatternNamespaces := c.getModPatternNamespaces(node.Module)
+
+	for name, info := range c.getModPatternNamespaces(closestModule) {
+		lifetimeJobPatternNamespaces[name] = info
+	}
+
+	if node.Subject != nil {
+		return parse.ContinueTraversal
+	}
+
+	if prop, ok := parent.(*parse.ObjectProperty); !ok || !prop.HasImplicitKey() {
+		c.addError(node, MISSING_LIFETIMEJOB_SUBJECT_PATTERN_NOT_AN_IMPLICIT_OBJ_PROP)
+	}
+
+	return parse.ContinueTraversal
+}
+
+func (c *checker) checkStaticMappingEntry(node *parse.StaticMappingEntry) parse.TraversalAction {
+	switch node.Key.(type) {
+	case *parse.PatternIdentifierLiteral, *parse.PatternNamespaceMemberExpression:
+	default:
+		if !parse.NodeIsSimpleValueLiteral(node.Key) {
+			c.addError(node.Key, INVALID_MAPPING_ENTRY_KEY_ONLY_SIMPL_LITS_AND_PATT_IDENTS)
+		}
+	}
+
+	return parse.ContinueTraversal
+}
+
+func (c *checker) checkDynamicMappingEntry(node *parse.DynamicMappingEntry) parse.TraversalAction {
+	switch node.Key.(type) {
+	case *parse.PatternIdentifierLiteral, *parse.PatternNamespaceMemberExpression:
+	default:
+		if !parse.NodeIsSimpleValueLiteral(node.Key) {
+			c.addError(node.Key, INVALID_MAPPING_ENTRY_KEY_ONLY_SIMPL_LITS_AND_PATT_IDENTS)
+		}
+	}
+
+	localVars := c.getLocalVarsInScope(node)
+	varname := node.KeyVar.(*parse.IdentifierLiteral).Name
+	localVars[varname] = localVarInfo{}
+
+	if node.GroupMatchingVariable != nil {
+		varname := node.GroupMatchingVariable.(*parse.IdentifierLiteral).Name
+		localVars[varname] = localVarInfo{}
+	}
+
+	return parse.ContinueTraversal
+}
+
+func (c *checker) checkComputeExpr(node *parse.ComputeExpression, scopeNode parse.Node, ancestorChain []parse.Node) parse.TraversalAction {
+	if _, ok := scopeNode.(*parse.DynamicMappingEntry); !ok {
+		c.addError(node, MISPLACED_COMPUTE_EXPR_SHOULD_BE_IN_DYNAMIC_MAPPING_EXPR_ENTRY)
+	} else {
+	ancestor_loop:
+		for i := len(ancestorChain) - 1; i >= 0; i-- {
+			ancestor := ancestorChain[i]
+			if ancestor == scopeNode {
+				break
+			}
+
+			switch a := ancestor.(type) {
+			case *parse.StaticMappingEntry:
+				c.addError(node, MISPLACED_COMPUTE_EXPR_SHOULD_BE_IN_DYNAMIC_MAPPING_EXPR_ENTRY)
+				break ancestor_loop
+			case *parse.DynamicMappingEntry:
+				if a.Key == node || i < len(ancestorChain)-1 && ancestorChain[i+1] == a.Key {
+					c.addError(node, MISPLACED_COMPUTE_EXPR_SHOULD_BE_IN_DYNAMIC_MAPPING_EXPR_ENTRY)
+				}
+				break ancestor_loop
+			}
+		}
+	}
+	return parse.ContinueTraversal
+}
+
+func (c *checker) checkInclusionImportStmt(node *parse.InclusionImportStatement, parent, closestModule parse.Node, inPreinitBlock bool) parse.TraversalAction {
+	// if the import is performed by the preinit block, prune the traversal.
+	if _, ok := parent.(*parse.Block); ok && inPreinitBlock {
+		return parse.Prune
+	}
+
+	if _, ok := parent.(*parse.Chunk); !ok {
+		c.addError(node, MISPLACED_INCLUSION_IMPORT_STATEMENT_TOP_LEVEL_STMT)
+		return parse.ContinueTraversal
+	}
+	includedChunk := c.currentModule.InclusionStatementMap[node]
+
+	globals := make(map[parse.Node]map[string]globalVarInfo)
+	globals[includedChunk.Node] = map[string]globalVarInfo{}
+
+	// add globals to child checker
+	c.checkInput.Globals.Foreach(func(name string, v Value, isStartConstant bool) error {
+		globals[includedChunk.Node][name] = globalVarInfo{isConst: isStartConstant}
+		return nil
+	})
+
+	// add defined patterns & pattern namespaces to child checker
+	patterns := make(map[parse.Node]map[string]int)
+	patterns[includedChunk.Node] = map[string]int{}
+	for k := range c.checkInput.Patterns {
+		patterns[includedChunk.Node][k] = 0
+	}
+
+	patternNamespaces := make(map[parse.Node]map[string]int)
+	patternNamespaces[includedChunk.Node] = map[string]int{}
+	for k := range c.checkInput.PatternNamespaces {
+		patternNamespaces[includedChunk.Node][k] = 0
+	}
+
+	chunkChecker := &checker{
+		parentChecker:            c,
+		checkInput:               c.checkInput,
+		fnDecls:                  make(map[parse.Node]map[string]int),
+		structDefs:               make(map[parse.Node]map[string]int),
+		globalVars:               globals,
+		localVars:                make(map[parse.Node]map[string]localVarInfo),
+		properties:               make(map[*parse.ObjectLiteral]*propertyInfo),
+		patterns:                 patterns,
+		patternNamespaces:        patternNamespaces,
+		currentModule:            c.currentModule,
+		chunk:                    includedChunk.ParsedChunkSource,
+		inclusionImportStatement: node,
+		store:                    make(map[parse.Node]any),
+		data: &StaticCheckData{
+			fnData:      map[*parse.FunctionExpression]*FunctionStaticData{},
+			mappingData: map[*parse.MappingExpression]*MappingStaticData{},
+		},
+	}
+
+	err := chunkChecker.check(includedChunk.Node)
+	if err != nil {
+		panic(err)
+	}
+	if len(chunkChecker.data.errors) != 0 {
+		c.data.errors = append(c.data.errors, chunkChecker.data.errors...)
+	}
+
+	for k, v := range chunkChecker.data.fnData {
+		c.data.fnData[k] = v
+	}
+
+	for k, v := range chunkChecker.data.mappingData {
+		c.data.mappingData[k] = v
+	}
+
+	// include all global data & top level local variables
+	for k, v := range chunkChecker.fnDecls[includedChunk.Node] {
+		if c.checkInput.Globals.Has(k) {
+			continue
+		}
+
+		fnDecls := c.getModFunctionDecls(closestModule)
+		if _, ok := fnDecls[k]; ok {
+			// handled in next loop
+		} else {
+			fnDecls[k] = v
+		}
+	}
+
+	for k, v := range chunkChecker.globalVars[includedChunk.Node] {
+		if c.checkInput.Globals.Has(k) {
+			continue
+		}
+
 		globalVars := c.getModGlobalVars(closestModule)
-		globalVarInfo, exist := globalVars[node.Name]
+		if _, ok := globalVars[k]; ok {
+			c.addError(node, fmtCannotShadowGlobalVariable(k))
+		} else {
+			globalVars[k] = v
+		}
+	}
 
-		if _, ok := scopeNode.(*parse.ExtendStatement); ok {
-			c.addError(node, VARS_NOT_ALLOWED_IN_PATTERN_AND_EXTENSION_OBJECT_PROPERTIES)
+	for k, v := range chunkChecker.localVars[includedChunk.Node] {
+		localVars := c.getLocalVarsInScope(closestModule)
+		if _, ok := localVars[k]; ok {
+			c.addError(node, fmtCannotShadowLocalVariable(k))
+		} else {
+			localVars[k] = v
+		}
+	}
+
+	for k, v := range chunkChecker.patterns[includedChunk.Node] {
+		if _, ok := c.checkInput.Patterns[k]; ok {
+			continue
+		}
+
+		patterns := c.getModPatterns(closestModule)
+		if _, ok := patterns[k]; ok {
+			c.addError(node, fmtPatternAlreadyDeclared(k))
+		} else {
+			patterns[k] = v
+		}
+	}
+
+	for k, v := range chunkChecker.patternNamespaces[includedChunk.Node] {
+		if _, ok := c.checkInput.PatternNamespaces[k]; ok {
+			continue
+		}
+
+		namespaces := c.getModPatternNamespaces(closestModule)
+		if _, ok := namespaces[k]; ok {
+			c.addError(node, fmtPatternNamespaceAlreadyDeclared(k))
+		} else {
+			namespaces[k] = v
+		}
+	}
+
+	if v, ok := chunkChecker.store[includedChunk.Node]; ok {
+		panic(fmt.Errorf("data stored for included chunk %#v : %#v", includedChunk.Node, v))
+	}
+
+	return parse.ContinueTraversal
+}
+
+func (c *checker) checkImportStmt(node *parse.ImportStatement, parent, closestModule parse.Node) parse.TraversalAction {
+	if c.inclusionImportStatement != nil {
+		c.addError(node, MODULE_IMPORTS_NOT_ALLOWED_IN_INCLUDED_CHUNK)
+		return parse.Prune
+	}
+
+	if _, ok := parent.(*parse.Chunk); !ok {
+		c.addError(node, MISPLACED_MOD_IMPORT_STATEMENT_TOP_LEVEL_STMT)
+		return parse.Prune
+	}
+
+	name := node.Identifier.Name
+	variables := c.getModGlobalVars(closestModule)
+
+	_, alreadyUsed := variables[name]
+	if alreadyUsed {
+		c.addError(node, fmtInvalidImportStmtAlreadyDeclaredGlobal(name))
+		return parse.ContinueTraversal
+	}
+	variables[name] = globalVarInfo{isConst: true}
+
+	if c.inclusionImportStatement != nil || node.Source == nil {
+		return parse.ContinueTraversal
+	}
+
+	var importedModuleSource WrappedString
+
+	switch node.Source.(type) {
+	case *parse.URLLiteral, *parse.AbsolutePathLiteral, *parse.RelativePathLiteral:
+		value, err := EvalSimpleValueLiteral(node.Source.(parse.SimpleValueLiteral), nil)
+		if err != nil {
+			panic(ErrUnreachable)
+		}
+		src, err := getSourceFromImportSource(value, c.currentModule, c.checkInput.State.Ctx)
+		if err != nil {
+			c.addError(node, fmt.Sprintf("failed to resolve location of imported module: %s", err.Error()))
+			return parse.ContinueTraversal
+		}
+		importedModuleSource = src
+	default:
+		return parse.ContinueTraversal
+	}
+
+	importedModule := c.currentModule.DirectlyImportedModules[importedModuleSource.UnderlyingString()]
+	importModuleNode := importedModule.MainChunk.Node
+
+	globals := make(map[parse.Node]map[string]globalVarInfo)
+	globals[importModuleNode] = map[string]globalVarInfo{}
+
+	//add base globals to child checker
+	for globalName := range c.checkInput.State.SymbolicBaseGlobalsForImportedModule {
+		globals[importModuleNode][globalName] = globalVarInfo{isConst: true, isStartConstant: true}
+	}
+
+	//add module arguments variable to child checker
+	globals[importModuleNode][MOD_ARGS_VARNAME] = globalVarInfo{isConst: true, isStartConstant: true}
+
+	//add base patterns & pattern namespaces to child checker
+	basePatterns, basePatternNamespaces := c.checkInput.State.GetBasePatternsForImportedModule()
+
+	patterns := make(map[parse.Node]map[string]int)
+	patterns[importModuleNode] = map[string]int{}
+	for k := range basePatterns {
+		patterns[importModuleNode][k] = 0
+	}
+
+	patternNamespaces := make(map[parse.Node]map[string]int)
+	patternNamespaces[importModuleNode] = map[string]int{}
+	for k := range basePatternNamespaces {
+		patternNamespaces[importModuleNode][k] = 0
+	}
+
+	chunkChecker := &checker{
+		parentChecker:         c,
+		checkInput:            c.checkInput,
+		fnDecls:               make(map[parse.Node]map[string]int),
+		structDefs:            make(map[parse.Node]map[string]int),
+		globalVars:            globals,
+		localVars:             make(map[parse.Node]map[string]localVarInfo),
+		properties:            make(map[*parse.ObjectLiteral]*propertyInfo),
+		patterns:              patterns,
+		patternNamespaces:     patternNamespaces,
+		currentModule:         importedModule,
+		chunk:                 importedModule.MainChunk,
+		moduleImportStatement: node,
+		store:                 make(map[parse.Node]any),
+		data: &StaticCheckData{
+			fnData:      map[*parse.FunctionExpression]*FunctionStaticData{},
+			mappingData: map[*parse.MappingExpression]*MappingStaticData{},
+		},
+	}
+
+	err := chunkChecker.check(importModuleNode)
+	if err != nil {
+		panic(err)
+	}
+
+	if len(chunkChecker.data.errors) != 0 {
+		c.data.errors = append(c.data.errors, chunkChecker.data.errors...)
+	}
+
+	if v, ok := chunkChecker.store[importModuleNode]; ok {
+		panic(fmt.Errorf("data stored for included chunk %#v : %#v", importModuleNode, v))
+	}
+	return parse.ContinueTraversal
+}
+
+func (c *checker) checkGlobalConstDecls(node *parse.GlobalConstantDeclarations, parent, closestModule parse.Node) parse.TraversalAction {
+	globalVars := c.getModGlobalVars(closestModule)
+
+	for _, decl := range node.Declarations {
+		ident, ok := decl.Left.(*parse.IdentifierLiteral)
+		if !ok {
+			continue
+		}
+		name := ident.Name
+
+		_, alreadyUsed := globalVars[name]
+		if alreadyUsed {
+			c.addError(decl, fmtInvalidConstDeclGlobalAlreadyDeclared(name))
+			return parse.ContinueTraversal
+		}
+		globalVars[name] = globalVarInfo{isConst: true}
+	}
+	return parse.ContinueTraversal
+}
+
+func (c *checker) checkLocalVarDecls(node *parse.LocalVariableDeclarations, scopeNode, closestModule parse.Node) parse.TraversalAction {
+	localVars := c.getLocalVarsInScope(scopeNode)
+
+	for _, decl := range node.Declarations {
+		name := decl.Left.(*parse.IdentifierLiteral).Name
+
+		globalVariables := c.getModGlobalVars(closestModule)
+
+		if _, alreadyDefined := globalVariables[name]; alreadyDefined {
+			c.addError(decl, fmtCannotShadowGlobalVariable(name))
 			return parse.ContinueTraversal
 		}
 
-		if _, ok := scopeNode.(*parse.StructDefinition); ok {
-			c.addError(node, VARS_CANNOT_BE_USED_IN_STRUCT_FIELD_DEFS)
+		_, alreadyUsed := localVars[name]
+		if alreadyUsed {
+			c.addError(decl, fmtInvalidLocalVarDeclAlreadyDeclared(name))
+			return parse.ContinueTraversal
+		}
+		localVars[name] = localVarInfo{}
+	}
+	return parse.ContinueTraversal
+}
+
+func (c *checker) checkGlobalVarDecls(node *parse.GlobalVariableDeclarations, scopeNode, closestModule parse.Node) parse.TraversalAction {
+	globalVars := c.getModGlobalVars(closestModule)
+
+	for _, decl := range node.Declarations {
+		name := decl.Left.(*parse.IdentifierLiteral).Name
+
+		localVariables := c.getLocalVarsInScope(scopeNode)
+
+		if _, alreadyDefined := localVariables[name]; alreadyDefined {
+			c.addError(decl, fmtCannotShadowLocalVariable(name))
 			return parse.ContinueTraversal
 		}
 
-		if !exist {
-			c.addError(node, fmtGlobalVarIsNotDeclared(node.Name))
+		_, alreadyUsed := globalVars[name]
+		if alreadyUsed {
+			c.addError(decl, fmtInvalidGlobalVarDeclAlreadyDeclared(name))
 			return parse.ContinueTraversal
 		}
+		globalVars[name] = globalVarInfo{}
+	}
+
+	return parse.ContinueTraversal
+}
+
+func (c *checker) checkAssignment(node parse.Node, scopeNode, closestModule parse.Node) parse.TraversalAction {
+	var names []string
+
+	if assignment, ok := node.(*parse.Assignment); ok {
+
+		switch left := assignment.Left.(type) {
+
+		case *parse.GlobalVariable:
+			fns, ok := c.fnDecls[closestModule]
+			if ok {
+				_, alreadyUsed := fns[left.Name]
+				if alreadyUsed {
+					c.addError(node, fmtInvalidGlobalVarAssignmentNameIsFuncName(left.Name))
+					return parse.ContinueTraversal
+				}
+			}
+
+			localVars := c.getLocalVarsInScope(scopeNode)
+
+			if _, alreadyDefined := localVars[left.Name]; alreadyDefined {
+				c.addError(node, fmtCannotShadowLocalVariable(left.Name))
+				return parse.ContinueTraversal
+			}
+
+			variables := c.getModGlobalVars(closestModule)
+
+			varInfo, alreadyDefined := variables[left.Name]
+			if alreadyDefined {
+				if varInfo.isConst {
+					c.addError(node, fmtInvalidGlobalVarAssignmentNameIsConstant(left.Name))
+					return parse.ContinueTraversal
+				}
+			} else {
+				if assignment.Operator != parse.Assign {
+					c.addError(node, fmtInvalidGlobalVarAssignmentVarDoesNotExist(left.Name))
+				}
+				variables[left.Name] = globalVarInfo{isConst: false}
+			}
+
+		case *parse.Variable:
+			if left.Name == "" { //$
+				c.addError(node, INVALID_ASSIGNMENT_ANONYMOUS_VAR_CANNOT_BE_ASSIGNED)
+				return parse.ContinueTraversal
+			}
+
+			globalVariables := c.getModGlobalVars(closestModule)
+
+			if _, alreadyDefined := globalVariables[left.Name]; alreadyDefined {
+				c.addError(node, fmtCannotShadowGlobalVariable(left.Name))
+				return parse.ContinueTraversal
+			}
+
+			localVars := c.getLocalVarsInScope(scopeNode)
+
+			if _, alreadyDefined := localVars[left.Name]; !alreadyDefined && assignment.Operator != parse.Assign {
+				c.addError(node, fmtInvalidVariableAssignmentVarDoesNotExist(left.Name))
+			}
+
+			names = append(names, left.Name)
+		case *parse.IdentifierLiteral:
+			globalVariables := c.getModGlobalVars(closestModule)
+
+			if _, alreadyDefined := globalVariables[left.Name]; alreadyDefined {
+				c.addError(node, fmtCannotShadowGlobalVariable(left.Name))
+				return parse.ContinueTraversal
+			}
+
+			localVars := c.getLocalVarsInScope(scopeNode)
+
+			if _, alreadyDefined := localVars[left.Name]; !alreadyDefined && assignment.Operator != parse.Assign {
+				c.addError(node, fmtInvalidVariableAssignmentVarDoesNotExist(left.Name))
+			}
+
+			names = append(names, left.Name)
+		case *parse.IdentifierMemberExpression:
+
+			for _, ident := range left.PropertyNames {
+				if parse.IsMetadataKey(ident.Name) {
+					c.addError(node, fmtInvalidMemberAssignmentCannotModifyMetaProperty(ident.Name))
+				}
+			}
+		case *parse.MemberExpression:
+			curr := left
+			var ok bool
+			for {
+				if parse.IsMetadataKey(curr.PropertyName.Name) {
+					c.addError(node, fmtInvalidMemberAssignmentCannotModifyMetaProperty(curr.PropertyName.Name))
+					break
+				}
+				if curr, ok = curr.Left.(*parse.MemberExpression); !ok {
+					break
+				}
+			}
+		case *parse.SliceExpression:
+			if assignment.Operator != parse.Assign {
+				c.addError(node, INVALID_ASSIGNMENT_EQUAL_ONLY_SUPPORTED_ASSIGNMENT_OPERATOR_FOR_SLICE_EXPRS)
+			}
+		}
+	} else {
+		assignment := node.(*parse.MultiAssignment)
+
+		for _, variable := range assignment.Variables {
+			name := variable.(*parse.IdentifierLiteral).Name
+
+			globalVariables := c.getModGlobalVars(closestModule)
+
+			if _, alreadyDefined := globalVariables[name]; alreadyDefined {
+				c.addError(node, fmtCannotShadowGlobalVariable(name))
+			}
+
+			names = append(names, name)
+		}
+	}
+
+	for _, name := range names {
+		variables := c.getLocalVarsInScope(scopeNode)
+		variables[name] = localVarInfo{}
+	}
+
+	return parse.ContinueTraversal
+}
+
+func (c *checker) checkForStmt(node *parse.ForStatement, scopeNode parse.Node) parse.TraversalAction {
+	variablesBeforeStmt := c.getScopeLocalVarsCopy(scopeNode)
+	variables := c.getLocalVarsInScope(scopeNode)
+
+	c.store[node] = variablesBeforeStmt
+
+	if node.KeyIndexIdent != nil {
+		if _, alreadyDefined := variables[node.KeyIndexIdent.Name]; alreadyDefined &&
+			!c.shellLocalVars[node.KeyIndexIdent.Name] {
+			c.addError(node, fmtCannotShadowVariable(node.KeyIndexIdent.Name))
+			return parse.ContinueTraversal
+		}
+		variables[node.KeyIndexIdent.Name] = localVarInfo{}
+	}
+
+	if node.ValueElemIdent != nil {
+		if _, alreadyDefined := variables[node.ValueElemIdent.Name]; alreadyDefined &&
+			!c.shellLocalVars[node.ValueElemIdent.Name] {
+			c.addError(node, fmtCannotShadowVariable(node.ValueElemIdent.Name))
+			return parse.ContinueTraversal
+		}
+		variables[node.ValueElemIdent.Name] = localVarInfo{}
+	}
+
+	return parse.ContinueTraversal
+}
+
+func (c *checker) checkWalkStmt(node *parse.WalkStatement, scopeNode parse.Node) parse.TraversalAction {
+
+	variablesBeforeStmt := c.getScopeLocalVarsCopy(scopeNode)
+	variables := c.getLocalVarsInScope(scopeNode)
+
+	c.store[node] = variablesBeforeStmt
+
+	if node.EntryIdent != nil {
+		if _, alreadyDefined := variables[node.EntryIdent.Name]; alreadyDefined &&
+			!c.shellLocalVars[node.EntryIdent.Name] {
+			c.addError(node, fmtCannotShadowVariable(node.EntryIdent.Name))
+			return parse.ContinueTraversal
+		}
+		variables[node.EntryIdent.Name] = localVarInfo{}
+	}
+	return parse.ContinueTraversal
+}
+
+func (c *checker) checkReadonlyPatternExpr(node *parse.ReadonlyPatternExpression, parent parse.Node) parse.TraversalAction {
+	ok := false
+	switch p := parent.(type) {
+	case *parse.FunctionParameter:
+		ok = p.Type == node
+	default:
+	}
+
+	if !ok {
+		c.addError(node, MISPLACED_READONLY_PATTERN_EXPRESSION)
+	}
+
+	return parse.ContinueTraversal
+}
+
+func (c *checker) checkFuncDecl(node *parse.FunctionDeclaration, parent, closestModule parse.Node) parse.TraversalAction {
+	switch parent.(type) {
+	case *parse.Chunk, *parse.EmbeddedModule:
+		fns := c.getModFunctionDecls(closestModule)
+		globVars := c.getModGlobalVars(closestModule)
+
+		_, alreadyDeclared := fns[node.Name.Name]
+		if alreadyDeclared {
+			c.addError(node, fmtInvalidFnDeclAlreadyDeclared(node.Name.Name))
+			return parse.ContinueTraversal
+		}
+
+		_, alreadyUsed := globVars[node.Name.Name]
+		if alreadyUsed {
+			c.addError(node, fmtInvalidFnDeclGlobVarExist(node.Name.Name))
+			return parse.ContinueTraversal
+		}
+
+		fns[node.Name.Name] = 0
+		globVars[node.Name.Name] = globalVarInfo{isConst: true, fnExpr: node.Function}
+	case *parse.StructBody:
+		//struct method
+	default:
+		c.addError(node, INVALID_FN_DECL_SHOULD_BE_TOP_LEVEL_STMT)
+		return parse.ContinueTraversal
+	}
+
+	return parse.ContinueTraversal
+}
+
+func (c *checker) checkFuncExpr(node *parse.FunctionExpression, closestModule parse.Node, ancestorChain []parse.Node) parse.TraversalAction {
+	fnLocalVars := c.getLocalVarsInScope(node)
+
+	//we check that the captured variable exists & is a local
+	for _, e := range node.CaptureList {
+		name := e.(*parse.IdentifierLiteral).Name
+
+		if !c.varExists(name, ancestorChain) {
+			c.addError(node, fmtVarIsNotDeclared(name))
+		} else if c.doGlobalVarExist(name, closestModule) {
+			c.addError(node, fmtCannotPassGlobalToFunction(name))
+		}
+
+		fnLocalVars[name] = localVarInfo{}
+	}
+
+	for _, p := range node.Parameters {
+		name := p.Var.Name
+
+		globalVariables := c.getModGlobalVars(closestModule)
+
+		if _, alreadyDefined := globalVariables[name]; alreadyDefined {
+			c.addError(p, fmtParameterCannotShadowGlobalVariable(name))
+			return parse.ContinueTraversal
+		}
+
+		fnLocalVars[name] = localVarInfo{}
+	}
+	return parse.ContinueTraversal
+}
+
+func (c *checker) checkFuncPatternExpr(node *parse.FunctionPatternExpression, closestModule parse.Node) parse.TraversalAction {
+	fnLocalVars := c.getLocalVarsInScope(node)
+
+	for _, p := range node.Parameters {
+		if p.Var == nil {
+			continue
+		}
+
+		name := p.Var.Name
+
+		globalVariables := c.getModGlobalVars(closestModule)
+
+		if _, alreadyDefined := globalVariables[name]; alreadyDefined {
+			c.addError(p, fmtParameterCannotShadowGlobalVariable(name))
+			return parse.ContinueTraversal
+		}
+
+		fnLocalVars[name] = localVarInfo{}
+	}
+
+	return parse.ContinueTraversal
+}
+
+func (c *checker) checkYieldStmt(node *parse.YieldStatement, ancestorChain []parse.Node) parse.TraversalAction {
+	ok := c.checkInput.Module != nil && c.checkInput.Module.IsEmbedded()
+
+	for i := len(ancestorChain) - 1; i >= 0; i-- {
+		if !parse.IsScopeContainerNode(ancestorChain[i]) {
+			continue
+		}
+
+		if ok && ancestorChain[i] != c.checkInput.Node {
+			ok = false
+			break
+		}
+
+		switch ancestorChain[i].(type) {
+		case *parse.EmbeddedModule:
+			ok = true
+		}
+		break
+	}
+
+	if !ok {
+		c.addError(node, MISPLACE_YIELD_STATEMENT_ONLY_ALLOWED_IN_EMBEDDED_MODULES)
+	}
+	return parse.ContinueTraversal
+}
+
+func (c *checker) checkPruneStmt(node *parse.PruneStatement, ancestorChain []parse.Node) parse.TraversalAction {
+	walkStmtIndex := -1
+	//we search for the last walk statement in the ancestor chain
+loop1:
+	for i := len(ancestorChain) - 1; i >= 0; i-- {
+		switch ancestorChain[i].(type) {
+		case *parse.WalkStatement:
+			walkStmtIndex = i
+			break loop1
+		}
+	}
+
+	if walkStmtIndex < 0 {
+		c.addError(node, INVALID_PRUNE_STMT_SHOULD_BE_IN_WALK_STMT)
+		return parse.ContinueTraversal
+	}
+
+	for i := walkStmtIndex + 1; i < len(ancestorChain); i++ {
+		switch ancestorChain[i].(type) {
+		case *parse.IfStatement, *parse.SwitchStatement, *parse.MatchStatement, *parse.Block, *parse.ForStatement:
+		default:
+			c.addError(node, INVALID_PRUNE_STMT_SHOULD_BE_IN_WALK_STMT)
+			return parse.ContinueTraversal
+		}
+	}
+	return parse.ContinueTraversal
+}
+
+func (c *checker) checkMatchCase(node *parse.MatchCase, scopeNode, closestModule parse.Node) parse.TraversalAction {
+
+	//define the variables named after groups if the literal is used as a case in a match statement
+
+	if node.GroupMatchingVariable == nil {
+		return parse.ContinueTraversal
+	}
+
+	variable := node.GroupMatchingVariable.(*parse.IdentifierLiteral)
+
+	if _, alreadyDefined := c.getModGlobalVars(closestModule)[variable.Name]; alreadyDefined {
+		c.addError(variable, fmtCannotShadowGlobalVariable(variable.Name))
+		return parse.ContinueTraversal
+	}
+
+	localVars := c.getLocalVarsInScope(scopeNode)
+
+	if info, alreadyDefined := localVars[variable.Name]; alreadyDefined && info != (localVarInfo{isGroupMatchingVar: true}) {
+		c.addError(variable, fmtCannotShadowLocalVariable(variable.Name))
+		return parse.ContinueTraversal
+	}
+
+	localVars[variable.Name] = localVarInfo{isGroupMatchingVar: true}
+
+	return parse.ContinueTraversal
+}
+
+func (c *checker) checkVariable(node *parse.Variable, scopeNode parse.Node) parse.TraversalAction {
+	if len(node.Name) > MAX_NAME_BYTE_LEN {
+		c.addError(node, fmtNameIsTooLong(node.Name))
+		return parse.ContinueTraversal
+	}
+
+	if node.Name == "" {
+		return parse.ContinueTraversal
+	}
+
+	if _, isLazyExpr := scopeNode.(*parse.LazyExpression); isLazyExpr {
+		return parse.ContinueTraversal
+	}
+
+	if _, ok := scopeNode.(*parse.ExtendStatement); ok {
+		c.addError(node, VARS_NOT_ALLOWED_IN_PATTERN_AND_EXTENSION_OBJECT_PROPERTIES)
+		return parse.ContinueTraversal
+	}
+
+	if _, ok := scopeNode.(*parse.StructDefinition); ok {
+		c.addError(node, VARS_CANNOT_BE_USED_IN_STRUCT_FIELD_DEFS)
+		return parse.ContinueTraversal
+	}
+
+	variables := c.getLocalVarsInScope(scopeNode)
+	_, exist := variables[node.Name]
+
+	if !exist {
+		c.addError(node, fmtLocalVarIsNotDeclared(node.Name))
+		return parse.ContinueTraversal
+	}
+
+	return parse.ContinueTraversal
+}
+
+func (c *checker) checkGlobalVar(node *parse.GlobalVariable, parent, scopeNode, closestModule parse.Node, ancestorChain []parse.Node) parse.TraversalAction {
+
+	if len(node.Name) > MAX_NAME_BYTE_LEN {
+		c.addError(node, fmtNameIsTooLong(node.Name))
+		return parse.ContinueTraversal
+	}
+
+	if _, isAssignment := parent.(*parse.Assignment); isAssignment {
+		if fnExpr, ok := scopeNode.(*parse.FunctionExpression); ok {
+			c.data.addFnAssigningGlobal(fnExpr)
+		}
+		return parse.ContinueTraversal
+	}
+
+	if _, isLazyExpr := scopeNode.(*parse.LazyExpression); isLazyExpr {
+		return parse.ContinueTraversal
+	}
+	globalVars := c.getModGlobalVars(closestModule)
+	globalVarInfo, exist := globalVars[node.Name]
+
+	if _, ok := scopeNode.(*parse.ExtendStatement); ok {
+		c.addError(node, VARS_NOT_ALLOWED_IN_PATTERN_AND_EXTENSION_OBJECT_PROPERTIES)
+		return parse.ContinueTraversal
+	}
+
+	if _, ok := scopeNode.(*parse.StructDefinition); ok {
+		c.addError(node, VARS_CANNOT_BE_USED_IN_STRUCT_FIELD_DEFS)
+		return parse.ContinueTraversal
+	}
+
+	if !exist {
+		c.addError(node, fmtGlobalVarIsNotDeclared(node.Name))
+		return parse.ContinueTraversal
+	}
+
+	switch scope := scopeNode.(type) {
+	case *parse.FunctionExpression:
+		c.data.addFnCapturedGlobal(scope, node.Name, &globalVarInfo)
+	case *parse.EmbeddedModule:
+		embeddedModIndex := -1
+		for i, ancestor := range ancestorChain {
+			if ancestor == scope {
+				embeddedModIndex = i
+				break
+			}
+		}
+
+		if embeddedModIndex < 0 {
+			panic(ErrUnreachable)
+		}
+
+		if embeddedModIndex == 0 {
+			break
+		}
+
+		_, ok := ancestorChain[embeddedModIndex-1].(*parse.LifetimejobExpression)
+		if ok {
+			parentScopeNode := findClosestScopeContainerNode(ancestorChain[:embeddedModIndex-1])
+			if fnExpr, ok := parentScopeNode.(*parse.FunctionExpression); ok {
+				c.data.addFnCapturedGlobal(fnExpr, node.Name, &globalVarInfo)
+			}
+		}
+	case *parse.DynamicMappingEntry, *parse.StaticMappingEntry:
+		mappingExpr := findClosest[*parse.MappingExpression](ancestorChain)
+		c.data.addMappingCapturedGlobal(mappingExpr, node.Name)
+	}
+
+	return parse.ContinueTraversal
+}
+
+func (c *checker) checkIdentifier(node *parse.IdentifierLiteral, parent, scopeNode, closestModule parse.Node, ancestorChain []parse.Node) parse.TraversalAction {
+
+	if len(node.Name) > MAX_NAME_BYTE_LEN {
+		c.addError(node, fmtNameIsTooLong(node.Name))
+		return parse.ContinueTraversal
+	}
+
+	if _, ok := scopeNode.(*parse.LazyExpression); ok {
+		return parse.ContinueTraversal
+	}
+
+	//we check the parent to know if the identifier refers to a variable
+	switch p := parent.(type) {
+	case *parse.CallExpression:
+		if p.CommandLikeSyntax && !node.IncludedIn(p.Callee) {
+			return parse.ContinueTraversal
+
+		}
+	case *parse.ObjectProperty:
+		if p.Key == node {
+			return parse.ContinueTraversal
+
+		}
+	case *parse.ObjectPatternProperty:
+		if p.Key == node {
+			return parse.ContinueTraversal
+
+		}
+	case *parse.ObjectMetaProperty:
+		if p.Key == node {
+			return parse.ContinueTraversal
+
+		}
+	case *parse.StructDefinition:
+		if p.Name == node {
+			return parse.ContinueTraversal
+
+		}
+
+	case *parse.StructFieldDefinition:
+		if p.Name == node {
+			return parse.ContinueTraversal
+
+		}
+	case *parse.NewExpression:
+		if p.Type == node {
+			return parse.ContinueTraversal
+
+		}
+	case *parse.StructFieldInitialization:
+		if p.Name == node {
+			return parse.ContinueTraversal
+
+		}
+	case *parse.IdentifierMemberExpression:
+		if node != p.Left {
+			return parse.ContinueTraversal
+
+		}
+	case *parse.DynamicMemberExpression:
+		if node != p.Left {
+			return parse.ContinueTraversal
+
+		}
+	case *parse.PatternNamespaceMemberExpression:
+		return parse.ContinueTraversal
+
+	case *parse.DoubleColonExpression:
+		if node == p.Element {
+			return parse.ContinueTraversal
+
+		}
+	case *parse.DynamicMappingEntry:
+		if node == p.KeyVar || node == p.GroupMatchingVariable {
+			return parse.ContinueTraversal
+
+		}
+	case *parse.ForStatement, *parse.WalkStatement, *parse.ObjectLiteral, *parse.FunctionDeclaration, *parse.MemberExpression, *parse.QuantityLiteral, *parse.RateLiteral,
+		*parse.KeyListExpression:
+		return parse.ContinueTraversal
+
+	case *parse.XMLOpeningElement:
+		if node == p.Name {
+			return parse.ContinueTraversal
+
+		}
+	case *parse.XMLClosingElement:
+		if node == p.Name {
+			return parse.ContinueTraversal
+
+		}
+	case *parse.XMLAttribute:
+		if node == p.Name {
+			return parse.ContinueTraversal
+
+		}
+	}
+
+	if _, ok := scopeNode.(*parse.ExtendStatement); ok {
+		c.addError(node, VARS_NOT_ALLOWED_IN_PATTERN_AND_EXTENSION_OBJECT_PROPERTIES)
+		return parse.ContinueTraversal
+	}
+
+	if _, ok := scopeNode.(*parse.StructDefinition); ok {
+		c.addError(node, VARS_CANNOT_BE_USED_IN_STRUCT_FIELD_DEFS)
+		return parse.ContinueTraversal
+	}
+
+	if !c.varExists(node.Name, ancestorChain) {
+		if node.Name == "const" {
+			c.addError(node, VAR_CONST_NOT_DECLARED_IF_YOU_MEANT_TO_DECLARE_CONSTANTS_GLOBAL_CONST_DECLS_ONLY_SUPPORTED_AT_THE_START_OF_THE_MODULE)
+		} else {
+			c.addError(node, fmtVarIsNotDeclared(node.Name))
+		}
+		return parse.ContinueTraversal
+	}
+
+	// if the variable is a global in a function expression or in a mapping entry we capture it
+	if c.doGlobalVarExist(node.Name, closestModule) {
+		globalVarInfo := c.getModGlobalVars(closestModule)[node.Name]
 
 		switch scope := scopeNode.(type) {
 		case *parse.FunctionExpression:
@@ -1701,486 +2041,384 @@ top_switch:
 			mappingExpr := findClosest[*parse.MappingExpression](ancestorChain)
 			c.data.addMappingCapturedGlobal(mappingExpr, node.Name)
 		}
+	}
 
-	case *parse.IdentifierLiteral:
+	return parse.ContinueTraversal
+}
 
-		if len(node.Name) > MAX_NAME_BYTE_LEN {
-			c.addError(node, fmtNameIsTooLong(node.Name))
-			return parse.ContinueTraversal
+func (c *checker) checkSelfExprAndSendValExpr(node, parent parse.Node, ancestorChain []parse.Node) parse.TraversalAction {
+	isSelfExpr := true
+
+	var objectLiteral *parse.ObjectLiteral
+	var misplacementErr = SELF_ACCESSIBILITY_EXPLANATION
+	isInExtensionMethod := false
+	inReceptionHandler := false
+	isSelfInStructMethod := false
+
+	switch node.(type) {
+	case *parse.SendValueExpression:
+		isSelfExpr = false
+		misplacementErr = MISPLACED_SENDVAL_EXPR
+	}
+
+loop:
+	for i := len(ancestorChain) - 1; i >= 0; i-- {
+		if !parse.IsScopeContainerNode(ancestorChain[i]) {
+			continue
 		}
 
-		if _, ok := scopeNode.(*parse.LazyExpression); ok {
-			break
-		}
-
-		//we check the parent to know if the identifier refers to a variable
-		switch p := parent.(type) {
-		case *parse.CallExpression:
-			if p.CommandLikeSyntax && !node.IncludedIn(p.Callee) {
-				break top_switch
-			}
-		case *parse.ObjectProperty:
-			if p.Key == node {
-				break top_switch
-			}
-		case *parse.ObjectPatternProperty:
-			if p.Key == node {
-				break top_switch
-			}
-		case *parse.ObjectMetaProperty:
-			if p.Key == node {
-				break top_switch
-			}
-		case *parse.StructDefinition:
-			if p.Name == node {
-				break top_switch
-			}
-
-		case *parse.StructFieldDefinition:
-			if p.Name == node {
-				break top_switch
-			}
-		case *parse.NewExpression:
-			if p.Type == node {
-				break top_switch
-			}
-		case *parse.StructFieldInitialization:
-			if p.Name == node {
-				break top_switch
-			}
-		case *parse.IdentifierMemberExpression:
-			if node != p.Left {
-				break top_switch
-			}
-		case *parse.DynamicMemberExpression:
-			if node != p.Left {
-				break top_switch
-			}
-		case *parse.PatternNamespaceMemberExpression:
-			break top_switch
-		case *parse.DoubleColonExpression:
-			if node == p.Element {
-				break top_switch
-			}
-		case *parse.DynamicMappingEntry:
-			if node == p.KeyVar || node == p.GroupMatchingVariable {
-				break top_switch
-			}
-		case *parse.ForStatement, *parse.WalkStatement, *parse.ObjectLiteral, *parse.FunctionDeclaration, *parse.MemberExpression, *parse.QuantityLiteral, *parse.RateLiteral,
-			*parse.KeyListExpression:
-			break top_switch
-		case *parse.XMLOpeningElement:
-			if node == p.Name {
-				break top_switch
-			}
-		case *parse.XMLClosingElement:
-			if node == p.Name {
-				break top_switch
-			}
-		case *parse.XMLAttribute:
-			if node == p.Name {
-				break top_switch
-			}
-		}
-
-		if _, ok := scopeNode.(*parse.ExtendStatement); ok {
-			c.addError(node, VARS_NOT_ALLOWED_IN_PATTERN_AND_EXTENSION_OBJECT_PROPERTIES)
-			return parse.ContinueTraversal
-		}
-
-		if _, ok := scopeNode.(*parse.StructDefinition); ok {
-			c.addError(node, VARS_CANNOT_BE_USED_IN_STRUCT_FIELD_DEFS)
-			return parse.ContinueTraversal
-		}
-
-		if !c.varExists(node.Name, ancestorChain) {
-			if node.Name == "const" {
-				c.addError(node, VAR_CONST_NOT_DECLARED_IF_YOU_MEANT_TO_DECLARE_CONSTANTS_GLOBAL_CONST_DECLS_ONLY_SUPPORTED_AT_THE_START_OF_THE_MODULE)
-			} else {
-				c.addError(node, fmtVarIsNotDeclared(node.Name))
-			}
-			return parse.ContinueTraversal
-		}
-
-		// if the variable is a global in a function expression or in a mapping entry we capture it
-		if c.doGlobalVarExist(node.Name, closestModule) {
-			globalVarInfo := c.getModGlobalVars(closestModule)[node.Name]
-
-			switch scope := scopeNode.(type) {
-			case *parse.FunctionExpression:
-				c.data.addFnCapturedGlobal(scope, node.Name, &globalVarInfo)
-			case *parse.EmbeddedModule:
-				embeddedModIndex := -1
-				for i, ancestor := range ancestorChain {
-					if ancestor == scope {
-						embeddedModIndex = i
+		switch a := ancestorChain[i].(type) {
+		case *parse.InitializationBlock:
+			switch i {
+			case 0:
+			default:
+				switch ancestorChain[i-1].(type) {
+				case *parse.ObjectMetaProperty:
+					if i == 1 {
+						c.addError(node, CANNOT_CHECK_OBJECT_METAPROP_WITHOUT_PARENT)
 						break
 					}
 				}
 
-				if embeddedModIndex < 0 {
-					panic(ErrUnreachable)
-				}
-
-				if embeddedModIndex == 0 {
-					break
-				}
-
-				_, ok := ancestorChain[embeddedModIndex-1].(*parse.LifetimejobExpression)
-				if ok {
-					parentScopeNode := findClosestScopeContainerNode(ancestorChain[:embeddedModIndex-1])
-					if fnExpr, ok := parentScopeNode.(*parse.FunctionExpression); ok {
-						c.data.addFnCapturedGlobal(fnExpr, node.Name, &globalVarInfo)
-					}
-				}
-			case *parse.DynamicMappingEntry, *parse.StaticMappingEntry:
-				mappingExpr := findClosest[*parse.MappingExpression](ancestorChain)
-				c.data.addMappingCapturedGlobal(mappingExpr, node.Name)
-			}
-		}
-
-	case *parse.SelfExpression, *parse.SendValueExpression:
-		isSelfExpr := true
-
-		var objectLiteral *parse.ObjectLiteral
-		var misplacementErr = SELF_ACCESSIBILITY_EXPLANATION
-		isInExtensionMethod := false
-		inReceptionHandler := false
-		isSelfInStructMethod := false
-
-		switch node.(type) {
-		case *parse.SendValueExpression:
-			isSelfExpr = false
-			misplacementErr = MISPLACED_SENDVAL_EXPR
-		}
-
-	loop:
-		for i := len(ancestorChain) - 1; i >= 0; i-- {
-			if !parse.IsScopeContainerNode(ancestorChain[i]) {
-				continue
-			}
-
-			switch a := ancestorChain[i].(type) {
-			case *parse.InitializationBlock:
-				switch i {
-				case 0:
+				switch ancestor := ancestorChain[i-2].(type) {
+				case *parse.ObjectLiteral:
+					objectLiteral = ancestor
 				default:
-					switch ancestorChain[i-1].(type) {
-					case *parse.ObjectMetaProperty:
-						if i == 1 {
-							c.addError(node, CANNOT_CHECK_OBJECT_METAPROP_WITHOUT_PARENT)
-							break
-						}
-					}
-
-					switch ancestor := ancestorChain[i-2].(type) {
-					case *parse.ObjectLiteral:
-						objectLiteral = ancestor
-					default:
-					}
 				}
+			}
+			break loop
+		case *parse.FunctionExpression:
+			//Determine if the function is the method of an object, extension or struct.
+
+			j := i - 1
+
+			if j == -1 {
 				break loop
-			case *parse.FunctionExpression:
-				//Determine if the function is the method of an object, extension or struct.
+			}
 
-				j := i - 1
+			maybeInReceptionHandler := false
 
-				if j == -1 {
+			if _, ok := ancestorChain[j].(*parse.ReceptionHandlerExpression); ok {
+				j--
+				maybeInReceptionHandler = true
+			}
+
+			switch ancestorChain[j].(type) {
+			case *parse.ObjectProperty:
+				if j == 0 {
+					c.addError(node, CANNOT_CHECK_OBJECT_PROP_WITHOUT_PARENT)
 					break loop
 				}
+				j--
 
-				maybeInReceptionHandler := false
+				objLit, ok := ancestorChain[j].(*parse.ObjectLiteral)
+				if ok && j-1 >= 0 {
 
-				if _, ok := ancestorChain[j].(*parse.ReceptionHandlerExpression); ok {
-					j--
-					maybeInReceptionHandler = true
-				}
-
-				switch ancestorChain[j].(type) {
-				case *parse.ObjectProperty:
-					if j == 0 {
-						c.addError(node, CANNOT_CHECK_OBJECT_PROP_WITHOUT_PARENT)
-						break loop
+					if maybeInReceptionHandler {
+						inReceptionHandler = true
+						objectLiteral = objLit
 					}
-					j--
 
-					objLit, ok := ancestorChain[j].(*parse.ObjectLiteral)
-					if ok && j-1 >= 0 {
+					isInExtensionMethod =
+						utils.Implements[*parse.ExtendStatement](ancestorChain[j-1]) &&
+							ancestorChain[j-1].(*parse.ExtendStatement).Extension == objLit
 
-						if maybeInReceptionHandler {
-							inReceptionHandler = true
-							objectLiteral = objLit
-						}
-
-						isInExtensionMethod =
-							utils.Implements[*parse.ExtendStatement](ancestorChain[j-1]) &&
-								ancestorChain[j-1].(*parse.ExtendStatement).Extension == objLit
-
-						if isInExtensionMethod {
-							objectLiteral = objLit
-						}
+					if isInExtensionMethod {
+						objectLiteral = objLit
 					}
-				case *parse.FunctionDeclaration:
-					if j == 0 {
-						c.addError(node, CANNOT_CHECK_STRUCT_METHOD_DEF_WITHOUT_PARENT)
-						break loop
-					}
-					_, ok := ancestorChain[j-1].(*parse.StructBody)
-					isSelfInStructMethod = ok && isSelfExpr
 				}
-
-				break loop
-			case *parse.EmbeddedModule: //ok if lifetime job
-				if i == 0 || !utils.Implements[*parse.LifetimejobExpression](ancestorChain[i-1]) {
-					c.addError(node, misplacementErr)
+			case *parse.FunctionDeclaration:
+				if j == 0 {
+					c.addError(node, CANNOT_CHECK_STRUCT_METHOD_DEF_WITHOUT_PARENT)
+					break loop
 				}
-				return parse.ContinueTraversal
-			case *parse.Chunk:
-				if c.currentModule != nil && c.currentModule.ModuleKind == LifetimeJobModule { // ok
-					return parse.ContinueTraversal
-				}
-			case *parse.ExtendStatement:
-				if isSelfExpr && node.Base().IncludedIn(a.Extension) { //ok
-					return parse.ContinueTraversal
-				}
+				_, ok := ancestorChain[j-1].(*parse.StructBody)
+				isSelfInStructMethod = ok && isSelfExpr
 			}
-		}
 
-		if !isSelfInStructMethod {
-			if objectLiteral == nil {
+			break loop
+		case *parse.EmbeddedModule: //ok if lifetime job
+			if i == 0 || !utils.Implements[*parse.LifetimejobExpression](ancestorChain[i-1]) {
 				c.addError(node, misplacementErr)
+			}
+			return parse.ContinueTraversal
+		case *parse.Chunk:
+			if c.currentModule != nil && c.currentModule.ModuleKind == LifetimeJobModule { // ok
 				return parse.ContinueTraversal
 			}
-
-			_ = inReceptionHandler
-
-			propInfo := c.getPropertyInfo(objectLiteral)
-
-			switch p := parent.(type) {
-			case *parse.MemberExpression:
-				if !propInfo.known[p.PropertyName.Name] && !isInExtensionMethod {
-					c.addError(p, fmtObjectDoesNotHaveProp(p.PropertyName.Name))
-				}
+		case *parse.ExtendStatement:
+			if isSelfExpr && node.Base().IncludedIn(a.Extension) { //ok
+				return parse.ContinueTraversal
 			}
 		}
-	case *parse.HostAliasDefinition:
-		switch parent.(type) {
-		case *parse.Chunk, *parse.EmbeddedModule:
-		default:
-			if !inPreinitBlock {
-				c.addError(node, MISPLACED_HOST_ALIAS_DEF_STATEMENT_TOP_LEVEL_STMT)
-				return parse.Prune
+	}
+
+	if !isSelfInStructMethod {
+		if objectLiteral == nil {
+			c.addError(node, misplacementErr)
+			return parse.ContinueTraversal
+		}
+
+		_ = inReceptionHandler
+
+		propInfo := c.getPropertyInfo(objectLiteral)
+
+		switch p := parent.(type) {
+		case *parse.MemberExpression:
+			if !propInfo.known[p.PropertyName.Name] && !isInExtensionMethod {
+				c.addError(p, fmtObjectDoesNotHaveProp(p.PropertyName.Name))
 			}
 		}
-		aliasName := node.Left.Value[1:]
-		hostAliases := c.getModHostAliases(closestModule)
+	}
 
-		if _, alreadyDefined := hostAliases[aliasName]; alreadyDefined && !inPreinitBlock {
-			c.addError(node, fmtHostAliasAlreadyDeclared(aliasName))
+	return parse.ContinueTraversal
+}
+
+func (c *checker) checkHostAlisDef(node *parse.HostAliasDefinition, parent, closestModule parse.Node, inPreinitBlock bool) parse.TraversalAction {
+	switch parent.(type) {
+	case *parse.Chunk, *parse.EmbeddedModule:
+	default:
+		if !inPreinitBlock {
+			c.addError(node, MISPLACED_HOST_ALIAS_DEF_STATEMENT_TOP_LEVEL_STMT)
+			return parse.Prune
+		}
+	}
+	aliasName := node.Left.Value[1:]
+	hostAliases := c.getModHostAliases(closestModule)
+
+	if _, alreadyDefined := hostAliases[aliasName]; alreadyDefined && !inPreinitBlock {
+		c.addError(node, fmtHostAliasAlreadyDeclared(aliasName))
+	} else {
+		hostAliases[aliasName] = 0
+	}
+
+	return parse.ContinueTraversal
+}
+
+func (c *checker) checkPatternDef(node *parse.PatternDefinition, parent, closestModule parse.Node, inPreinitBlock bool) parse.TraversalAction {
+	switch parent.(type) {
+	case *parse.Chunk, *parse.EmbeddedModule:
+	default:
+		if !inPreinitBlock {
+			c.addError(node, MISPLACED_PATTERN_DEF_STATEMENT_TOP_LEVEL_STMT)
+			return parse.Prune
+		}
+	}
+
+	patternName, ok := node.PatternName()
+	if ok {
+		patterns := c.getModPatterns(closestModule)
+
+		if _, alreadyDefined := patterns[patternName]; alreadyDefined && !inPreinitBlock {
+			c.addError(node, fmtPatternAlreadyDeclared(patternName))
 		} else {
-			hostAliases[aliasName] = 0
+			patterns[patternName] = 0
 		}
+	}
+	return parse.ContinueTraversal
+}
 
-	case *parse.PatternDefinition:
-		switch parent.(type) {
-		case *parse.Chunk, *parse.EmbeddedModule:
-		default:
-			if !inPreinitBlock {
-				c.addError(node, MISPLACED_PATTERN_DEF_STATEMENT_TOP_LEVEL_STMT)
-				return parse.Prune
-			}
+func (c *checker) checkPatternNamespaceDefinition(node *parse.PatternNamespaceDefinition, parent, closestModule parse.Node, inPreinitBlock bool) parse.TraversalAction {
+	switch parent.(type) {
+	case *parse.Chunk, *parse.EmbeddedModule:
+	default:
+		if !inPreinitBlock {
+			c.addError(node, MISPLACED_PATTERN_NS_DEF_STATEMENT_TOP_LEVEL_STMT)
+			return parse.Prune
 		}
+	}
 
-		patternName, ok := node.PatternName()
-		if ok {
-			patterns := c.getModPatterns(closestModule)
-
-			if _, alreadyDefined := patterns[patternName]; alreadyDefined && !inPreinitBlock {
-				c.addError(node, fmtPatternAlreadyDeclared(patternName))
-			} else {
-				patterns[patternName] = 0
-			}
-		}
-	case *parse.PatternNamespaceDefinition:
-		switch parent.(type) {
-		case *parse.Chunk, *parse.EmbeddedModule:
-		default:
-			if !inPreinitBlock {
-				c.addError(node, MISPLACED_PATTERN_NS_DEF_STATEMENT_TOP_LEVEL_STMT)
-				return parse.Prune
-			}
-		}
-
-		namespaceName, ok := node.NamespaceName()
-		if ok {
-			namespaces := c.getModPatternNamespaces(closestModule)
-			if _, alreadyDefined := namespaces[namespaceName]; alreadyDefined && !inPreinitBlock {
-				c.addError(node, fmtPatternNamespaceAlreadyDeclared(namespaceName))
-			} else {
-				namespaces[namespaceName] = 0
-			}
-		}
-	case *parse.PatternNamespaceIdentifierLiteral:
-		namespaceName := node.Name
+	namespaceName, ok := node.NamespaceName()
+	if ok {
 		namespaces := c.getModPatternNamespaces(closestModule)
-
-		if _, alreadyDefined := namespaces[namespaceName]; !alreadyDefined {
-			c.addError(node, fmtPatternNamespaceIsNotDeclared(namespaceName))
+		if _, alreadyDefined := namespaces[namespaceName]; alreadyDefined && !inPreinitBlock {
+			c.addError(node, fmtPatternNamespaceAlreadyDeclared(namespaceName))
+		} else {
+			namespaces[namespaceName] = 0
 		}
-	case *parse.PatternIdentifierLiteral:
+	}
+	return parse.ContinueTraversal
+}
 
-		if _, ok := parent.(*parse.OtherPropsExpr); ok && node.Name == parse.NO_OTHERPROPS_PATTERN_NAME {
-			break top_switch
-		}
+func (c *checker) checkPatternNamespaceIdentifier(node *parse.PatternNamespaceIdentifierLiteral, closestModule parse.Node) parse.TraversalAction {
+	namespaceName := node.Name
+	namespaces := c.getModPatternNamespaces(closestModule)
 
-		if def, ok := parent.(*parse.StructDefinition); ok && def.Name == node {
-			break top_switch
-		}
+	if _, alreadyDefined := namespaces[namespaceName]; !alreadyDefined {
+		c.addError(node, fmtPatternNamespaceIsNotDeclared(namespaceName))
+	}
 
-		//Check if struct type.
-		stuctDefs := c.getModStructDefs(closestModule)
-		_, ok := stuctDefs[node.Name]
-		if ok {
-			//Check that the node is not misplaced.
-			errMsg := ""
-			switch parent := parent.(type) {
-			case *parse.PointerType, *parse.StructFieldDefinition, *parse.NewExpression:
-				//ok
-			case *parse.FunctionParameter:
-				errMsg = STRUCT_TYPES_NOT_ALLOWED_AS_PARAMETER_TYPES
-			case *parse.FunctionExpression:
-				if node == parent.ReturnType {
-					errMsg = STRUCT_TYPES_NOT_ALLOWED_AS_RETURN_TYPES
-				} else {
-					errMsg = MISPLACED_STRUCT_TYPE_NAME
-				}
-			default:
+	return parse.ContinueTraversal
+}
+
+func (c *checker) checkPatternIdentifier(node *parse.PatternIdentifierLiteral, parent, closestModule parse.Node, ancestorChain []parse.Node) parse.TraversalAction {
+
+	if _, ok := parent.(*parse.OtherPropsExpr); ok && node.Name == parse.NO_OTHERPROPS_PATTERN_NAME {
+		return parse.ContinueTraversal
+
+	}
+
+	if def, ok := parent.(*parse.StructDefinition); ok && def.Name == node {
+		return parse.ContinueTraversal
+
+	}
+
+	//Check if struct type.
+	stuctDefs := c.getModStructDefs(closestModule)
+	_, ok := stuctDefs[node.Name]
+	if ok {
+		//Check that the node is not misplaced.
+		errMsg := ""
+		switch parent := parent.(type) {
+		case *parse.PointerType, *parse.StructFieldDefinition, *parse.NewExpression:
+			//ok
+		case *parse.FunctionParameter:
+			errMsg = STRUCT_TYPES_NOT_ALLOWED_AS_PARAMETER_TYPES
+		case *parse.FunctionExpression:
+			if node == parent.ReturnType {
+				errMsg = STRUCT_TYPES_NOT_ALLOWED_AS_RETURN_TYPES
+			} else {
 				errMsg = MISPLACED_STRUCT_TYPE_NAME
 			}
-
-			if errMsg != "" {
-				c.addError(node, errMsg)
-			}
-
-			break top_switch
+		default:
+			errMsg = MISPLACED_STRUCT_TYPE_NAME
 		}
 
-		//Ignore the check if the pattern identifier refers to a pattern that is not yet defined.
-
-		for _, a := range ancestorChain {
-			if def, ok := a.(*parse.PatternDefinition); ok && def.IsLazy {
-				break top_switch
-			}
-		}
-
-		//Check that the pattern is declared.
-
-		name := node.Name
-		patterns := c.getModPatterns(closestModule)
-		if _, ok := patterns[name]; !ok {
-			errMsg := ""
-			switch parent.(type) {
-			case *parse.PointerType, *parse.NewExpression:
-				errMsg = fmtStructTypeIsNotDefined(name)
-			default:
-				errMsg = fmtPatternIsNotDeclared(name)
-			}
+		if errMsg != "" {
 			c.addError(node, errMsg)
 		}
-	case *parse.RuntimeTypeCheckExpression:
-		switch p := parent.(type) {
-		case *parse.CallExpression:
-			for _, arg := range p.Arguments {
-				if n == arg {
-					break top_switch //ok
-				}
-			}
 
-			c.addError(node, MISPLACED_RUNTIME_TYPECHECK_EXPRESSION)
-		default:
-			c.addError(node, MISPLACED_RUNTIME_TYPECHECK_EXPRESSION)
-		}
-	case *parse.DynamicMemberExpression:
-		if node.Optional {
-			c.addError(node, OPTIONAL_DYN_MEMB_EXPR_NOT_SUPPORTED_YET)
-		}
-	case *parse.ExtendStatement:
-		if _, ok := parent.(*parse.Chunk); !ok {
-			c.addError(node, MISPLACED_EXTEND_STATEMENT_TOP_LEVEL_STMT)
-			return parse.ContinueTraversal
-		}
-	case *parse.StructDefinition:
-		if parent != closestModule {
-			c.addError(node, MISPLACED_STRUCT_DEF_TOP_LEVEL_STMT)
-			return parse.ContinueTraversal
-		}
-		//already defined.
 		return parse.ContinueTraversal
-	case *parse.NewExpression:
-		typ := node.Type
-		switch typ.(type) {
-		case *parse.PatternIdentifierLiteral:
-			//ok, the identifier will be checked next
-		//TODO: support slices
-		case nil:
-			return parse.ContinueTraversal
-		default:
-			c.addError(node.Type, A_STRUCT_TYPE_NAME_IS_EXPECTED)
+
+	}
+
+	//Ignore the check if the pattern identifier refers to a pattern that is not yet defined.
+
+	for _, a := range ancestorChain {
+		if def, ok := a.(*parse.PatternDefinition); ok && def.IsLazy {
 			return parse.ContinueTraversal
 		}
-	case *parse.StructInitializationLiteral:
-		// look for duplicate field names
-		fieldNames := make([]string, 0, len(node.Fields))
+	}
 
-		for _, field := range node.Fields {
-			fieldInit, ok := field.(*parse.StructFieldInitialization)
-			if ok {
-				name := fieldInit.Name.Name
-				if slices.Contains(fieldNames, name) {
-					c.addError(fieldInit.Name, fmtDuplicateFieldName(name))
-				} else {
-					fieldNames = append(fieldNames, name)
-				}
+	//Check that the pattern is declared.
+
+	name := node.Name
+	patterns := c.getModPatterns(closestModule)
+	if _, ok := patterns[name]; !ok {
+		errMsg := ""
+		switch parent.(type) {
+		case *parse.PointerType, *parse.NewExpression:
+			errMsg = fmtStructTypeIsNotDefined(name)
+		default:
+			errMsg = fmtPatternIsNotDeclared(name)
+		}
+		c.addError(node, errMsg)
+	}
+	return parse.ContinueTraversal
+}
+
+func (c *checker) checkRuntimeTypeCheckExpr(node *parse.RuntimeTypeCheckExpression, parent parse.Node) parse.TraversalAction {
+	switch p := parent.(type) {
+	case *parse.CallExpression:
+		for _, arg := range p.Arguments {
+			if node == arg {
+				return parse.ContinueTraversal
 			}
 		}
-	case *parse.PointerType:
-		patternIdent, ok := node.ValueType.(*parse.PatternIdentifierLiteral)
-		if !ok {
-			c.addError(node.ValueType, A_STRUCT_TYPE_IS_EXPECTED_AFTER_THE_STAR)
-		} else {
-			//Check that the node is not misplaced.
-			switch parent := parent.(type) {
-			case *parse.StructFieldDefinition, *parse.FunctionParameter:
-				//ok
-			case *parse.FunctionExpression:
-				if node != parent.ReturnType {
-					c.addError(node, MISPLACED_POINTER_TYPE)
-				}
-			case *parse.LocalVariableDeclaration:
-				if node != parent.Type {
-					c.addError(node, MISPLACED_POINTER_TYPE)
-				}
-			default:
+
+		c.addError(node, MISPLACED_RUNTIME_TYPECHECK_EXPRESSION)
+	default:
+		c.addError(node, MISPLACED_RUNTIME_TYPECHECK_EXPRESSION)
+	}
+	return parse.ContinueTraversal
+}
+
+func (c *checker) checkNewExpr(node *parse.NewExpression) parse.TraversalAction {
+	typ := node.Type
+	switch typ.(type) {
+	case *parse.PatternIdentifierLiteral:
+		//ok, the identifier will be checked next
+	//TODO: support slices
+	case nil:
+		return parse.ContinueTraversal
+	default:
+		c.addError(node.Type, A_STRUCT_TYPE_NAME_IS_EXPECTED)
+		return parse.ContinueTraversal
+	}
+	return parse.ContinueTraversal
+}
+
+func (c *checker) checkStructInitLiteral(node *parse.StructInitializationLiteral) parse.TraversalAction {
+	// look for duplicate field names
+	fieldNames := make([]string, 0, len(node.Fields))
+
+	for _, field := range node.Fields {
+		fieldInit, ok := field.(*parse.StructFieldInitialization)
+		if ok {
+			name := fieldInit.Name.Name
+			if slices.Contains(fieldNames, name) {
+				c.addError(fieldInit.Name, fmtDuplicateFieldName(name))
+			} else {
+				fieldNames = append(fieldNames, name)
+			}
+		}
+	}
+	return parse.ContinueTraversal
+}
+
+func (c *checker) checkPointerType(node *parse.PointerType, parent parse.Node) parse.TraversalAction {
+	patternIdent, ok := node.ValueType.(*parse.PatternIdentifierLiteral)
+	if !ok {
+		c.addError(node.ValueType, A_STRUCT_TYPE_IS_EXPECTED_AFTER_THE_STAR)
+	} else {
+		//Check that the node is not misplaced.
+		switch parent := parent.(type) {
+		case *parse.StructFieldDefinition, *parse.FunctionParameter:
+			//ok
+		case *parse.FunctionExpression:
+			if node != parent.ReturnType {
 				c.addError(node, MISPLACED_POINTER_TYPE)
 			}
-
-			if symbolic.IsNameOfBuiltinComptimeType(patternIdent.Name) {
-				//do not check the pattern identifier.
-				return parse.Prune
+		case *parse.LocalVariableDeclaration:
+			if node != parent.Type {
+				c.addError(node, MISPLACED_POINTER_TYPE)
 			}
-
+		default:
+			c.addError(node, MISPLACED_POINTER_TYPE)
 		}
-	case *parse.DereferenceExpression:
-		c.addError(node, "dereference expressions are not supported yet")
-	case *parse.TestSuiteExpression:
-		hasSubsuiteStmt := false
-		hasTestCaseStmt := false
 
+		if symbolic.IsNameOfBuiltinComptimeType(patternIdent.Name) {
+			//do not check the pattern identifier.
+			return parse.Prune
+		}
+
+	}
+	return parse.ContinueTraversal
+}
+
+func (c *checker) checkTestSuiteExpr(node *parse.TestSuiteExpression, ancestorChain []parse.Node) parse.TraversalAction {
+	hasSubsuiteStmt := false
+	hasTestCaseStmt := false
+
+	for _, stmt := range node.Module.Statements {
+		switch stmt := stmt.(type) {
+		case *parse.TestCaseExpression:
+			if stmt.IsStatement {
+				hasTestCaseStmt = true
+			}
+		case *parse.TestSuiteExpression:
+			if stmt.IsStatement {
+				hasSubsuiteStmt = true
+			}
+		}
+	}
+
+	if hasSubsuiteStmt && hasTestCaseStmt {
 		for _, stmt := range node.Module.Statements {
 			switch stmt := stmt.(type) {
 			case *parse.TestCaseExpression:
 				if stmt.IsStatement {
-					hasTestCaseStmt = true
+					c.addError(stmt, TEST_CASES_NOT_ALLOWED_IF_SUBSUITES_ARE_PRESENT)
 				}
 			case *parse.TestSuiteExpression:
 				if stmt.IsStatement {
@@ -2188,119 +2426,110 @@ top_switch:
 				}
 			}
 		}
+	}
 
-		if hasSubsuiteStmt && hasTestCaseStmt {
-			for _, stmt := range node.Module.Statements {
-				switch stmt := stmt.(type) {
-				case *parse.TestCaseExpression:
-					if stmt.IsStatement {
-						c.addError(stmt, TEST_CASES_NOT_ALLOWED_IF_SUBSUITES_ARE_PRESENT)
-					}
-				case *parse.TestSuiteExpression:
-					if stmt.IsStatement {
-						hasSubsuiteStmt = true
-					}
-				}
-			}
-		}
+	// check the statement is not in a testcase
+	if node.IsStatement {
 
-		//check the statement is not in a testcase
-		if node.IsStatement {
-
-		search_test_case:
-			for i := len(ancestorChain) - 1; i >= 0; i-- {
-				switch ancestorChain[i].(type) {
-				case *parse.EmbeddedModule:
-					if i-1 <= 0 {
-						break search_test_case
-					}
-					testCaseExpr, ok := ancestorChain[i-1].(*parse.TestCaseExpression)
-					if ok && testCaseExpr.IsStatement {
-						c.addError(n, TEST_SUITE_STMTS_NOT_ALLOWED_INSIDE_TEST_CASE_STMTS)
-						break search_test_case
-					}
-				}
-			}
-		}
-	case *parse.TestCaseExpression:
-
-		inTestSuite := false
-
-	search_test_suite:
+	search_test_case:
 		for i := len(ancestorChain) - 1; i >= 0; i-- {
 			switch ancestorChain[i].(type) {
 			case *parse.EmbeddedModule:
 				if i-1 <= 0 {
-					break search_test_suite
+					break search_test_case
 				}
-				testSuiteExpr, ok := ancestorChain[i-1].(*parse.TestSuiteExpression)
-				if ok {
-					inTestSuite = testSuiteExpr.Module == ancestorChain[i]
-					break search_test_suite
+				testCaseExpr, ok := ancestorChain[i-1].(*parse.TestCaseExpression)
+				if ok && testCaseExpr.IsStatement {
+					c.addError(node, TEST_SUITE_STMTS_NOT_ALLOWED_INSIDE_TEST_CASE_STMTS)
+					break search_test_case
 				}
 			}
 		}
+	}
 
-		if !inTestSuite && node.IsStatement && (c.currentModule == nil || c.currentModule.ModuleKind != TestSuiteModule) {
-			c.addError(n, TEST_CASE_STMTS_NOT_ALLOWED_OUTSIDE_OF_TEST_SUITES)
+	return parse.ContinueTraversal
+}
+
+func (c *checker) checkTestCaseExpr(node *parse.TestCaseExpression, ancestorChain []parse.Node) parse.TraversalAction {
+	inTestSuite := false
+
+search_test_suite:
+	for i := len(ancestorChain) - 1; i >= 0; i-- {
+		switch ancestorChain[i].(type) {
+		case *parse.EmbeddedModule:
+			if i-1 <= 0 {
+				break search_test_suite
+			}
+			testSuiteExpr, ok := ancestorChain[i-1].(*parse.TestSuiteExpression)
+			if ok {
+				inTestSuite = testSuiteExpr.Module == ancestorChain[i]
+				break search_test_suite
+			}
 		}
-	case *parse.EmbeddedModule:
-		parentModule := findClosestModule(ancestorChain)
-		globals := c.getModGlobalVars(n)
-		patterns := c.getModPatterns(n)
-		patternNamespaces := c.getModPatternNamespaces(n)
-		hostAliases := c.getModHostAliases(n)
+	}
 
-		parentModuleGlobals := c.getModGlobalVars(parentModule)
-		parentModulePatterns := c.getModPatterns(parentModule)
-		parentModulePatternNamespaces := c.getModPatternNamespaces(parentModule)
-		parentModuleHostAliases := c.getModHostAliases(parentModule)
+	if !inTestSuite && node.IsStatement && (c.currentModule == nil || c.currentModule.ModuleKind != TestSuiteModule) {
+		c.addError(node, TEST_CASE_STMTS_NOT_ALLOWED_OUTSIDE_OF_TEST_SUITES)
+	}
 
-		switch parent.(type) {
-		case *parse.TestSuiteExpression:
-			//inherit globals
-			for name, info := range parentModuleGlobals {
-				if slices.Contains(globalnames.TEST_ITEM_NON_INHERITED_GLOBALS, name) {
-					continue
-				}
-				globals[name] = info
-			}
+	return parse.ContinueTraversal
+}
 
-			//inherit patterns
-			for name, info := range parentModulePatterns {
-				patterns[name] = info
-			}
-			for name, info := range parentModulePatternNamespaces {
-				patternNamespaces[name] = info
-			}
+func (c *checker) checkEmbeddedModule(node *parse.EmbeddedModule, parent, parentModule parse.Node, ancestorChain []parse.Node) parse.TraversalAction {
+	globals := c.getModGlobalVars(node)
+	patterns := c.getModPatterns(node)
+	patternNamespaces := c.getModPatternNamespaces(node)
+	hostAliases := c.getModHostAliases(node)
 
-			//inherit host aliases
-			for name, info := range parentModuleHostAliases {
-				hostAliases[name] = info
-			}
-		case *parse.TestCaseExpression:
-			globals[globalnames.CURRENT_TEST] = globalVarInfo{isConst: true, isStartConstant: true}
+	parentModuleGlobals := c.getModGlobalVars(parentModule)
+	parentModulePatterns := c.getModPatterns(parentModule)
+	parentModulePatternNamespaces := c.getModPatternNamespaces(parentModule)
+	parentModuleHostAliases := c.getModHostAliases(parentModule)
 
-			//inherit globals
-			for name, info := range parentModuleGlobals {
-				if slices.Contains(globalnames.TEST_ITEM_NON_INHERITED_GLOBALS, name) {
-					continue
-				}
-				globals[name] = info
+	switch parent.(type) {
+	case *parse.TestSuiteExpression:
+		//inherit globals
+		for name, info := range parentModuleGlobals {
+			if slices.Contains(globalnames.TEST_ITEM_NON_INHERITED_GLOBALS, name) {
+				continue
 			}
+			globals[name] = info
+		}
 
-			//inherit patterns
-			for name, info := range parentModulePatterns {
-				patterns[name] = info
-			}
-			for name, info := range parentModulePatternNamespaces {
-				patternNamespaces[name] = info
-			}
+		//inherit patterns
+		for name, info := range parentModulePatterns {
+			patterns[name] = info
+		}
+		for name, info := range parentModulePatternNamespaces {
+			patternNamespaces[name] = info
+		}
 
-			//inherit host aliases
-			for name, info := range parentModuleHostAliases {
-				hostAliases[name] = info
+		//inherit host aliases
+		for name, info := range parentModuleHostAliases {
+			hostAliases[name] = info
+		}
+	case *parse.TestCaseExpression:
+		globals[globalnames.CURRENT_TEST] = globalVarInfo{isConst: true, isStartConstant: true}
+
+		//inherit globals
+		for name, info := range parentModuleGlobals {
+			if slices.Contains(globalnames.TEST_ITEM_NON_INHERITED_GLOBALS, name) {
+				continue
 			}
+			globals[name] = info
+		}
+
+		//inherit patterns
+		for name, info := range parentModulePatterns {
+			patterns[name] = info
+		}
+		for name, info := range parentModulePatternNamespaces {
+			patternNamespaces[name] = info
+		}
+
+		//inherit host aliases
+		for name, info := range parentModuleHostAliases {
+			hostAliases[name] = info
 		}
 	}
 
