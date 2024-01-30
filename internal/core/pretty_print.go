@@ -1935,7 +1935,14 @@ func (it *TupleIterator) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig,
 }
 
 func (t Type) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write([]byte(t.Name())))
+	pkg := t.PkgPath()
+	if pkg != "" {
+		lastSlashIndex := strings.LastIndex(pkg, "/")
+		utils.Must(w.WriteString(pkg[lastSlashIndex+1:]))
+		utils.PanicIfErr(w.WriteByte('.'))
+	}
+
+	utils.Must(w.WriteString(t.Name()))
 }
 
 func (tx *Transaction) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
