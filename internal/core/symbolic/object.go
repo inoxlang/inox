@@ -616,6 +616,7 @@ func (obj *Object) AddStatic(pattern Pattern) (StaticDataHolder, error) {
 }
 
 func (o *Object) Element() Value {
+	//TODO: properly implement for exact objects.
 	return ANY_SERIALIZABLE
 }
 

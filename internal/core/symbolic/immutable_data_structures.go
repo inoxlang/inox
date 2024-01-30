@@ -615,22 +615,6 @@ func (rec *Record) ForEachEntry(fn func(k string, v Value) error) error {
 	return nil
 }
 
-func (rec *Record) HasKnownLen() bool {
-	return false
-}
-
-func (rec *Record) KnownLen() int {
-	return -1
-}
-
-func (rec *Record) Element() Value {
-	return ANY
-}
-
-func (rec *Record) ElementAt(i int) Value {
-	return ANY_SERIALIZABLE
-}
-
 func (r *Record) Contains(value Serializable) (bool, bool) {
 	if r.entries == nil {
 		return false, true
@@ -657,7 +641,8 @@ func (rec *Record) IteratorElementKey() Value {
 }
 
 func (rec *Record) IteratorElementValue() Value {
-	return rec.Element()
+	//TODO: properly implement for exact records.
+	return ANY_SERIALIZABLE
 }
 
 func (rec *Record) Static() Pattern {
