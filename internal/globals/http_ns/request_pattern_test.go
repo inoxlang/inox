@@ -42,7 +42,7 @@ func TestHttpRequestPattern(t *testing.T) {
 			if !assert.NoError(t, err) {
 				return
 			}
-			assert.Equal(t, &HttpRequestPattern{
+			assert.Equal(t, &RequestPattern{
 				methods: nil,
 				headers: core.NewInexactRecordPattern(nil),
 			}, pattern)
@@ -60,7 +60,7 @@ func TestHttpRequestPattern(t *testing.T) {
 			if !assert.NoError(t, err) {
 				return
 			}
-			assert.Equal(t, &HttpRequestPattern{
+			assert.Equal(t, &RequestPattern{
 				methods: []string{"GET"},
 				headers: core.NewInexactRecordPattern(nil),
 			}, pattern)

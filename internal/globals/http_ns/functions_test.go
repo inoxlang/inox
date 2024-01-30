@@ -162,8 +162,8 @@ func TestServeFile(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		recorder := httptest.NewRecorder()
-		resp := &HttpResponseWriter{rw: recorder}
-		req := &HttpRequest{}
+		resp := &ResponseWriter{rw: recorder}
+		req := &Request{}
 
 		err := ServeFile(ctx, resp, req, core.Path("/x"))
 		assert.IsType(t, &core.NotAllowedError{}, err)

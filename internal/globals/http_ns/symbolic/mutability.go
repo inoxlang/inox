@@ -1,22 +1,22 @@
 package http_ns
 
-func (serv *HttpServer) IsMutable() bool {
+func (serv *HttpsServer) IsMutable() bool {
 	return true
 }
 
-func (req HttpRequest) IsMutable() bool {
+func (req Request) IsMutable() bool {
 	return false
 }
 
-func (resp *HttpResponseWriter) IsMutable() bool {
+func (resp *ResponseWriter) IsMutable() bool {
 	return true
 }
 
-func (resp *HttpResponse) IsMutable() bool {
+func (resp *Response) IsMutable() bool {
 	return true
 }
 
-func (resp *HttpResult) IsMutable() bool {
+func (resp *Result) IsMutable() bool {
 	return true
 }
 
@@ -28,7 +28,7 @@ func (c *StatusCode) IsMutable() bool {
 	return false
 }
 
-func (c *HttpClient) IsMutable() bool {
+func (c *Client) IsMutable() bool {
 	return true
 }
 
@@ -40,6 +40,6 @@ func (*ContentSecurityPolicy) IsMutable() bool {
 	return false
 }
 
-func (*HttpRequestPattern) IsMutable() bool {
+func (*RequestPattern) IsMutable() bool {
 	return false
 }

@@ -131,7 +131,7 @@ func NewFileServer(ctx *core.Context, args ...core.Value) (*HttpsServer, error) 
 }
 
 // ServeFile is a thin wrapper around serveFileNativeRequest.
-func ServeFile(ctx *core.Context, rw *HttpResponseWriter, r *HttpRequest, pth core.Path) error {
+func ServeFile(ctx *core.Context, rw *ResponseWriter, r *Request, pth core.Path) error {
 	return serveFile(fileServingParams{
 		ctx: ctx,
 		rw:  rw.DetachRespWriter(),

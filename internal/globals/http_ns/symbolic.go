@@ -7,22 +7,22 @@ import (
 )
 
 func (serv *HttpsServer) ToSymbolicValue(ctx *core.Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
-	return &http_symbolic.HttpServer{}, nil
+	return &http_symbolic.HttpsServer{}, nil
 }
 
-func (req *HttpRequest) ToSymbolicValue(ctx *core.Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
-	return &http_symbolic.HttpRequest{}, nil
+func (req *Request) ToSymbolicValue(ctx *core.Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
+	return &http_symbolic.Request{}, nil
 }
 
-func (resp *HttpResponseWriter) ToSymbolicValue(ctx *core.Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
-	return &http_symbolic.HttpResponseWriter{}, nil
+func (resp *ResponseWriter) ToSymbolicValue(ctx *core.Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
+	return &http_symbolic.ResponseWriter{}, nil
 }
 
-func (resp *HttpResponse) ToSymbolicValue(ctx *core.Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
-	return &http_symbolic.HttpResponse{}, nil
+func (resp *Response) ToSymbolicValue(ctx *core.Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
+	return &http_symbolic.Response{}, nil
 }
 
-func (res *HttpResult) ToSymbolicValue(ctx *core.Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
+func (res *Result) ToSymbolicValue(ctx *core.Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return http_symbolic.ANY_RESULT, nil
 }
 
@@ -34,8 +34,8 @@ func (c StatusCode) ToSymbolicValue(ctx *core.Context, encountered map[uintptr]s
 	return http_symbolic.ANY_STATUS_CODE, nil
 }
 
-func (c *HttpClient) ToSymbolicValue(ctx *core.Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
-	return &http_symbolic.HttpClient{}, nil
+func (c *Client) ToSymbolicValue(ctx *core.Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
+	return &http_symbolic.Client{}, nil
 }
 
 func (evs *ServerSentEventSource) ToSymbolicValue(ctx *core.Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
@@ -46,6 +46,6 @@ func (*ContentSecurityPolicy) ToSymbolicValue(ctx *core.Context, encountered map
 	return http_symbolic.NewCSP(), nil
 }
 
-func (*HttpRequestPattern) ToSymbolicValue(ctx *core.Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
+func (*RequestPattern) ToSymbolicValue(ctx *core.Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return nil, core.ErrNotImplementedYet
 }

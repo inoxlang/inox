@@ -7,57 +7,57 @@ import (
 )
 
 var (
-	_ symbolic.Pattern = (*HttpRequestPattern)(nil)
+	_ symbolic.Pattern = (*RequestPattern)(nil)
 
-	ANY_REQUEST_PATTERN = &HttpRequestPattern{}
+	ANY_REQUEST_PATTERN = &RequestPattern{}
 )
 
-type HttpRequestPattern struct {
+type RequestPattern struct {
 	_ int
 	symbolic.UnassignablePropsMixin
 	symbolic.SerializableMixin
 	symbolic.NotCallablePatternMixin
 }
 
-func (r *HttpRequestPattern) Test(v symbolic.Value, state symbolic.RecTestCallState) bool {
+func (r *RequestPattern) Test(v symbolic.Value, state symbolic.RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
-	_, ok := v.(*HttpRequestPattern)
+	_, ok := v.(*RequestPattern)
 	return ok
 }
 
-func (r *HttpRequestPattern) TestValue(v symbolic.Value, state symbolic.RecTestCallState) bool {
+func (r *RequestPattern) TestValue(v symbolic.Value, state symbolic.RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
-	_, ok := v.(*HttpRequest)
+	_, ok := v.(*Request)
 	return ok
 }
 
-func (r *HttpRequestPattern) SymbolicValue() symbolic.Value {
+func (r *RequestPattern) SymbolicValue() symbolic.Value {
 	return ANY_HTTP_REQUEST
 }
 
-func (r *HttpRequestPattern) HasUnderlyingPattern() bool {
+func (r *RequestPattern) HasUnderlyingPattern() bool {
 	return true
 }
 
-func (r *HttpRequestPattern) IteratorElementKey() symbolic.Value {
+func (r *RequestPattern) IteratorElementKey() symbolic.Value {
 	return symbolic.ANY
 }
 
-func (r *HttpRequestPattern) IteratorElementValue() symbolic.Value {
+func (r *RequestPattern) IteratorElementValue() symbolic.Value {
 	return symbolic.ANY
 }
 
-func (r *HttpRequestPattern) PrettyPrint(w prettyprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (r *RequestPattern) PrettyPrint(w prettyprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("http.request-pattern")
 }
 
-func (r *HttpRequestPattern) WidestOfType() symbolic.Value {
+func (r *RequestPattern) WidestOfType() symbolic.Value {
 	return ANY_REQUEST_PATTERN
 }
 
-func (r *HttpRequestPattern) StringPattern() (symbolic.StringPattern, bool) {
+func (r *RequestPattern) StringPattern() (symbolic.StringPattern, bool) {
 	return nil, false
 }

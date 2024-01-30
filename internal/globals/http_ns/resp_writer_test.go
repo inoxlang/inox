@@ -71,7 +71,7 @@ func TestHttpResponseWriter(t *testing.T) {
 				defer ctx.CancelGracefully()
 
 				recorder := httptest.NewRecorder()
-				resp := HttpResponseWriter{rw: recorder, acceptHeader: mimeheader.ParseAcceptHeader(mimeconsts.JSON_CTYPE)}
+				resp := ResponseWriter{rw: recorder, acceptHeader: mimeheader.ParseAcceptHeader(mimeconsts.JSON_CTYPE)}
 
 				_, err := resp.WriteJSON(ctx, testCase.value)
 				result := recorder.Result()
@@ -134,7 +134,7 @@ func TestHttpResponseWriter(t *testing.T) {
 				defer ctx.CancelGracefully()
 
 				recorder := httptest.NewRecorder()
-				resp := HttpResponseWriter{rw: recorder}
+				resp := ResponseWriter{rw: recorder}
 
 				err := resp.SetCookie(ctx, testCase.obj)
 				cookies := recorder.Result().Cookies()

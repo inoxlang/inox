@@ -45,7 +45,7 @@ func (reqInfo IncomingRequestInfo) RemoteIpAddress() string {
 	return ip
 }
 
-func NewIncomingRequestInfo(r *HttpRequest) *IncomingRequestInfo {
+func NewIncomingRequestInfo(r *Request) *IncomingRequestInfo {
 	req := r.request
 
 	var cookieNames []string

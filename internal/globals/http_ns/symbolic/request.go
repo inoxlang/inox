@@ -8,40 +8,40 @@ import (
 
 var (
 	HTTP_REQUEST_PROPNAMES = []string{"method", "url", "path", "body" /*"cookies"*/, "headers"}
-	ANY_HTTP_REQUEST       = &HttpRequest{}
+	ANY_HTTP_REQUEST       = &Request{}
 )
 
-type HttpRequest struct {
+type Request struct {
 	symbolic.UnassignablePropsMixin
 	symbolic.SerializableMixin
 	symbolic.PotentiallySharable
 }
 
-func (r *HttpRequest) Test(v symbolic.Value, state symbolic.RecTestCallState) bool {
+func (r *Request) Test(v symbolic.Value, state symbolic.RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
-	_, ok := v.(*HttpRequest)
+	_, ok := v.(*Request)
 	return ok
 }
 
-func (req *HttpRequest) IsSharable() (bool, string) {
+func (req *Request) IsSharable() (bool, string) {
 	return true, ""
 }
 
-func (req *HttpRequest) Share(originState *symbolic.State) symbolic.PotentiallySharable {
+func (req *Request) Share(originState *symbolic.State) symbolic.PotentiallySharable {
 	return req
 }
 
-func (req *HttpRequest) IsShared() bool {
+func (req *Request) IsShared() bool {
 	return true
 }
 
-func (req *HttpRequest) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
+func (req *Request) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 	return nil, false
 }
 
-func (req *HttpRequest) Prop(name string) symbolic.Value {
+func (req *Request) Prop(name string) symbolic.Value {
 	switch name {
 	case "method":
 		return symbolic.ANY_STRING
@@ -61,14 +61,14 @@ func (req *HttpRequest) Prop(name string) symbolic.Value {
 	}
 }
 
-func (HttpRequest) PropertyNames() []string {
+func (Request) PropertyNames() []string {
 	return HTTP_REQUEST_PROPNAMES
 }
 
-func (r *HttpRequest) PrettyPrint(w prettyprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (r *Request) PrettyPrint(w prettyprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("http.req")
 }
 
-func (r *HttpRequest) WidestOfType() symbolic.Value {
-	return &HttpRequest{}
+func (r *Request) WidestOfType() symbolic.Value {
+	return &Request{}
 }

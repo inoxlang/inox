@@ -25,12 +25,12 @@ import (
 const DEFAULT_ACCEPT_HEADER = "*/*"
 
 var (
-	_ core.Serializable        = (*HttpRequest)(nil)
-	_ core.PotentiallySharable = (*HttpRequest)(nil)
+	_ core.Serializable        = (*Request)(nil)
+	_ core.PotentiallySharable = (*Request)(nil)
 )
 
-// HttpRequest is considered immutable from the viewpoint of Inox code, it should NOT be mutated.
-type HttpRequest struct {
+// Request is considered immutable from the viewpoint of Inox code, it should NOT be mutated.
+type Request struct {
 	isClientSide bool
 	ULID         ulid.ULID
 	ULIDString   string
@@ -60,21 +60,21 @@ type HttpRequest struct {
 	request           *http.Request
 }
 
-func NewClientSideRequest(r *http.Request) (*HttpRequest, error) {
+func NewClientSideRequest(r *http.Request) (*Request, error) {
 	u := r.URL.String()
 
 	if !strings.Contains(u, "://") {
 		return nil, fmt.Errorf("cannot resolve URL of client side request")
 	}
 
-	return &HttpRequest{
+	return &Request{
 		request:      r,
 		isClientSide: true,
 		URL:          core.URL(u),
 	}, nil
 }
 
-func NewServerSideRequest(r *http.Request, logger zerolog.Logger, server *HttpsServer) (*HttpRequest, error) {
+func NewServerSideRequest(r *http.Request, logger zerolog.Logger, server *HttpsServer) (*Request, error) {
 	id := ulid.Make()
 	now := time.Now()
 
@@ -137,7 +137,7 @@ func NewServerSideRequest(r *http.Request, logger zerolog.Logger, server *HttpsS
 		headerNames = append(headerNames, name)
 	}
 
-	req := &HttpRequest{
+	req := &Request{
 		ULID:       id,
 		ULIDString: id.String(),
 
@@ -173,15 +173,15 @@ func NewServerSideRequest(r *http.Request, logger zerolog.Logger, server *HttpsS
 	return req, nil
 }
 
-func (req *HttpRequest) Request() *http.Request {
+func (req *Request) Request() *http.Request {
 	return req.request
 }
 
-func (req *HttpRequest) IsGetOrHead() bool {
+func (req *Request) IsGetOrHead() bool {
 	return req.Method == "GET" || req.Method == "HEAD"
 }
 
-func (req *HttpRequest) AcceptAny() bool {
+func (req *Request) AcceptAny() bool {
 	for _, h := range req.ParsedAcceptHeader.MHeaders {
 		if h.MimeType.Type == "*" && h.MimeType.Subtype == "*" {
 			return true
@@ -190,31 +190,31 @@ func (req *HttpRequest) AcceptAny() bool {
 	return false
 }
 
-func (req *HttpRequest) IsSharable(originState *core.GlobalState) (bool, string) {
+func (req *Request) IsSharable(originState *core.GlobalState) (bool, string) {
 	return true, ""
 }
 
-func (req *HttpRequest) Share(originState *core.GlobalState) {
+func (req *Request) Share(originState *core.GlobalState) {
 	//no op
 }
 
-func (req *HttpRequest) IsShared() bool {
+func (req *Request) IsShared() bool {
 	return true
 }
 
-func (req *HttpRequest) ForceLock() {
+func (req *Request) ForceLock() {
 	//no op
 }
 
-func (req *HttpRequest) ForceUnlock() {
+func (req *Request) ForceUnlock() {
 	//no op
 }
 
-func (req *HttpRequest) GetGoMethod(name string) (*core.GoFunction, bool) {
+func (req *Request) GetGoMethod(name string) (*core.GoFunction, bool) {
 	return nil, false
 }
 
-func (req *HttpRequest) Prop(ctx *core.Context, name string) core.Value {
+func (req *Request) Prop(ctx *core.Context, name string) core.Value {
 	switch name {
 	case "method":
 		return req.Method
@@ -259,17 +259,17 @@ func (req *HttpRequest) Prop(ctx *core.Context, name string) core.Value {
 	}
 }
 
-func (*HttpRequest) SetProp(ctx *core.Context, name string, value core.Value) error {
+func (*Request) SetProp(ctx *core.Context, name string, value core.Value) error {
 	return core.ErrCannotSetProp
 }
 
-func (*HttpRequest) PropertyNames(ctx *core.Context) []string {
+func (*Request) PropertyNames(ctx *core.Context) []string {
 	return http_ns_symb.HTTP_REQUEST_PROPNAMES
 }
 
-func (r *HttpRequest) WriteRepresentation(ctx *core.Context, w io.Writer, config *core.ReprConfig, depth int) error {
+func (r *Request) WriteRepresentation(ctx *core.Context, w io.Writer, config *core.ReprConfig, depth int) error {
 	return core.ErrNotImplementedYet
 }
-func (r *HttpRequest) WriteJSONRepresentation(ctx *core.Context, w *jsoniter.Stream, config core.JSONSerializationConfig, depth int) error {
+func (r *Request) WriteJSONRepresentation(ctx *core.Context, w *jsoniter.Stream, config core.JSONSerializationConfig, depth int) error {
 	return core.ErrNotImplementedYet
 }

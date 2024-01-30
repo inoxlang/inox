@@ -42,7 +42,7 @@ func (*WebsocketServer) PropertyNames() []string {
 	return WEBSOCKET_SERVER_PROPNAMES
 }
 
-func (s *WebsocketServer) Upgrade(ctx *symbolic.Context, rw *http_symbolic.HttpResponseWriter, req *http_symbolic.HttpRequest) (*WebsocketConnection, *symbolic.Error) {
+func (s *WebsocketServer) Upgrade(ctx *symbolic.Context, rw *http_symbolic.ResponseWriter, req *http_symbolic.Request) (*WebsocketConnection, *symbolic.Error) {
 	return &WebsocketConnection{}, nil
 }
 

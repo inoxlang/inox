@@ -28,17 +28,17 @@ var (
 	NEW_RESULT_PARAMS      = &[]symbolic.Value{SYMBOLIC_RESULT_INIT_ARG}
 	NEW_RESULT_PARAM_NAMES = []string{"init"}
 
-	_ = core.Value((*HttpResult)(nil))
+	_ = core.Value((*Result)(nil))
 )
 
-type HttpResult struct {
+type Result struct {
 	value   core.Serializable
 	status  StatusCode
 	headers http.Header
 	//cookies []core.Serializable
 }
 
-func NewResult(ctx *core.Context, init *core.Object) *HttpResult {
+func NewResult(ctx *core.Context, init *core.Object) *Result {
 	status := StatusCode(http.StatusOK)
 	var value core.Serializable
 	var headers http.Header
@@ -59,14 +59,14 @@ func NewResult(ctx *core.Context, init *core.Object) *HttpResult {
 		return nil
 	})
 
-	return &HttpResult{
+	return &Result{
 		value:   value,
 		status:  status,
 		headers: headers,
 	}
 }
 
-func symbolicNewResult(ctx *symbolic.Context, init *symbolic.Object) *http_ns_symb.HttpResult {
+func symbolicNewResult(ctx *symbolic.Context, init *symbolic.Object) *http_ns_symb.Result {
 	ctx.SetSymbolicGoFunctionParameters(NEW_RESULT_PARAMS, NEW_RESULT_PARAM_NAMES)
 
 	if symbolic.HasRequiredOrOptionalProperty(init, RESULT_INIT_HEADERS_PROPNAME) {

@@ -28,8 +28,8 @@ var (
 	ErrStatusAlreadySent                        = errors.New("status already sent")
 )
 
-type HttpResponseWriter struct {
-	request      *HttpRequest
+type ResponseWriter struct {
+	request      *Request
 	acceptHeader mimeheader.AcceptHeader
 	rw           http.ResponseWriter
 
@@ -42,7 +42,7 @@ type HttpResponseWriter struct {
 	logger   zerolog.Logger
 }
 
-func NewResponseWriter(req *HttpRequest, rw http.ResponseWriter, serverLogger zerolog.Logger) *HttpResponseWriter {
+func NewResponseWriter(req *Request, rw http.ResponseWriter, serverLogger zerolog.Logger) *ResponseWriter {
 	requestLogger := serverLogger.With().Str(REQUEST_ID_LOG_FIELD_NAME, req.ULIDString).Logger()
 
 	//log request
@@ -56,7 +56,7 @@ func NewResponseWriter(req *HttpRequest, rw http.ResponseWriter, serverLogger ze
 	}
 	event.Send()
 
-	return &HttpResponseWriter{
+	return &ResponseWriter{
 		acceptHeader:  req.ParsedAcceptHeader,
 		rw:            rw,
 		request:       req,
@@ -65,7 +65,7 @@ func NewResponseWriter(req *HttpRequest, rw http.ResponseWriter, serverLogger ze
 	}
 }
 
-func (rw *HttpResponseWriter) GetGoMethod(name string) (*core.GoFunction, bool) {
+func (rw *ResponseWriter) GetGoMethod(name string) (*core.GoFunction, bool) {
 	rw.assertIsNotFinished()
 
 	switch name {
@@ -92,7 +92,7 @@ func (rw *HttpResponseWriter) GetGoMethod(name string) (*core.GoFunction, bool) 
 	}
 }
 
-func (rw *HttpResponseWriter) Prop(ctx *core.Context, name string) core.Value {
+func (rw *ResponseWriter) Prop(ctx *core.Context, name string) core.Value {
 	rw.assertIsNotFinished()
 
 	method, ok := rw.GetGoMethod(name)
@@ -102,21 +102,21 @@ func (rw *HttpResponseWriter) Prop(ctx *core.Context, name string) core.Value {
 	return method
 }
 
-func (*HttpResponseWriter) SetProp(ctx *core.Context, name string, value core.Value) error {
+func (*ResponseWriter) SetProp(ctx *core.Context, name string, value core.Value) error {
 
 	return core.ErrCannotSetProp
 }
 
-func (rw *HttpResponseWriter) PropertyNames(ctx *core.Context) []string {
+func (rw *ResponseWriter) PropertyNames(ctx *core.Context) []string {
 	rw.assertIsNotFinished()
 	return http_ns_symb.HTTP_RESP_WRITER_PROPNAMES
 }
 
-func (rw *HttpResponseWriter) headers() http.Header {
+func (rw *ResponseWriter) headers() http.Header {
 	return rw.rw.Header()
 }
 
-func (rw *HttpResponseWriter) WritePlainText(ctx *core.Context, bytes *core.ByteSlice) (core.Int, error) {
+func (rw *ResponseWriter) WritePlainText(ctx *core.Context, bytes *core.ByteSlice) (core.Int, error) {
 	rw.assertIsNotFinished()
 	rw.assertStatusNotSent()
 
@@ -130,7 +130,7 @@ func (rw *HttpResponseWriter) WritePlainText(ctx *core.Context, bytes *core.Byte
 	return core.Int(n), err
 }
 
-func (rw *HttpResponseWriter) WriteBinary(ctx *core.Context, bytes *core.ByteSlice) (core.Int, error) {
+func (rw *ResponseWriter) WriteBinary(ctx *core.Context, bytes *core.ByteSlice) (core.Int, error) {
 	rw.assertIsNotFinished()
 	rw.assertStatusNotSent()
 
@@ -144,7 +144,7 @@ func (rw *HttpResponseWriter) WriteBinary(ctx *core.Context, bytes *core.ByteSli
 	return core.Int(n), err
 }
 
-func (rw *HttpResponseWriter) WriteHTML(ctx *core.Context, v core.Value) (core.Int, error) {
+func (rw *ResponseWriter) WriteHTML(ctx *core.Context, v core.Value) (core.Int, error) {
 	rw.assertIsNotFinished()
 	rw.assertStatusNotSent()
 
@@ -177,7 +177,7 @@ func (rw *HttpResponseWriter) WriteHTML(ctx *core.Context, v core.Value) (core.I
 	return core.Int(n), err
 }
 
-func (rw *HttpResponseWriter) WriteJS(ctx *core.Context, v core.Value) (core.Int, error) {
+func (rw *ResponseWriter) WriteJS(ctx *core.Context, v core.Value) (core.Int, error) {
 	rw.assertIsNotFinished()
 	rw.assertStatusNotSent()
 
@@ -210,7 +210,7 @@ func (rw *HttpResponseWriter) WriteJS(ctx *core.Context, v core.Value) (core.Int
 	return core.Int(n), err
 }
 
-func (rw *HttpResponseWriter) WriteCSS(ctx *core.Context, v core.Value) (core.Int, error) {
+func (rw *ResponseWriter) WriteCSS(ctx *core.Context, v core.Value) (core.Int, error) {
 	rw.assertIsNotFinished()
 	rw.assertStatusNotSent()
 
@@ -243,7 +243,7 @@ func (rw *HttpResponseWriter) WriteCSS(ctx *core.Context, v core.Value) (core.In
 	return core.Int(n), err
 }
 
-func (rw *HttpResponseWriter) WriteJSON(ctx *core.Context, v core.Serializable) (core.Int, error) {
+func (rw *ResponseWriter) WriteJSON(ctx *core.Context, v core.Serializable) (core.Int, error) {
 	rw.assertIsNotFinished()
 	rw.assertStatusNotSent()
 
@@ -285,7 +285,7 @@ func (rw *HttpResponseWriter) WriteJSON(ctx *core.Context, v core.Serializable) 
 // DetachBodyWriter writes the headers and the planned status if they have not been sent yet,
 // then it detachs the underlying response writer and returns it. The HttpResponseWriter should
 // not be used afterwards.
-func (rw *HttpResponseWriter) DetachBodyWriter() io.Writer {
+func (rw *ResponseWriter) DetachBodyWriter() io.Writer {
 	rw.assertIsNotFinished()
 
 	if !rw.IsStatusSent() {
@@ -300,7 +300,7 @@ func (rw *HttpResponseWriter) DetachBodyWriter() io.Writer {
 
 // DetachBodyWriter detachs the underlying response writer and returns it.
 // The HttpResponseWriter should not be used afterwards.
-func (rw *HttpResponseWriter) DetachRespWriter() http.ResponseWriter {
+func (rw *ResponseWriter) DetachRespWriter() http.ResponseWriter {
 	rw.assertIsNotFinished()
 	rw.detached = true
 	w := rw.rw
@@ -308,11 +308,11 @@ func (rw *HttpResponseWriter) DetachRespWriter() http.ResponseWriter {
 	return w
 }
 
-func (rw *HttpResponseWriter) SetWriteDeadline(timeout time.Duration) {
+func (rw *ResponseWriter) SetWriteDeadline(timeout time.Duration) {
 	http.NewResponseController(rw.rw).SetWriteDeadline(time.Now().Add(timeout))
 }
 
-func (rw *HttpResponseWriter) SetCookie(ctx *core.Context, obj *core.Object) error {
+func (rw *ResponseWriter) SetCookie(ctx *core.Context, obj *core.Object) error {
 	rw.assertIsNotFinished()
 	rw.assertStatusNotSent()
 
@@ -327,18 +327,18 @@ func (rw *HttpResponseWriter) SetCookie(ctx *core.Context, obj *core.Object) err
 	return nil
 }
 
-func (rw *HttpResponseWriter) SetStatus(ctx *core.Context, status StatusCode) {
+func (rw *ResponseWriter) SetStatus(ctx *core.Context, status StatusCode) {
 	rw.setStatus(ctx, int(status))
 }
 
-func (rw *HttpResponseWriter) setStatus(ctx *core.Context, status int) {
+func (rw *ResponseWriter) setStatus(ctx *core.Context, status int) {
 	rw.assertIsNotFinished()
 	rw.assertStatusNotSent()
 
 	rw.plannedStatus = int(status)
 }
 
-func (rw *HttpResponseWriter) WriteHeaders(ctx *core.Context, status *core.OptionalParam[StatusCode]) {
+func (rw *ResponseWriter) WriteHeaders(ctx *core.Context, status *core.OptionalParam[StatusCode]) {
 	rw.assertIsNotFinished()
 	rw.assertStatusNotSent()
 
@@ -351,7 +351,7 @@ func (rw *HttpResponseWriter) WriteHeaders(ctx *core.Context, status *core.Optio
 	rw.writeHeaders(int(statusCode))
 }
 
-func (rw *HttpResponseWriter) writeHeaders(status int) {
+func (rw *ResponseWriter) writeHeaders(status int) {
 	rw.assertIsNotFinished()
 	rw.assertStatusNotSent()
 
@@ -360,11 +360,11 @@ func (rw *HttpResponseWriter) writeHeaders(status int) {
 	rw.rw.WriteHeader(status)
 }
 
-func (rw *HttpResponseWriter) writeHeadersWithPlannedStatus() {
+func (rw *ResponseWriter) writeHeadersWithPlannedStatus() {
 	rw.writeHeaders(rw.PlannedStatus())
 }
 
-func (rw *HttpResponseWriter) WriteError(ctx *core.Context, err core.Error, code StatusCode) {
+func (rw *ResponseWriter) WriteError(ctx *core.Context, err core.Error, code StatusCode) {
 	rw.assertIsNotFinished()
 	rw.assertStatusNotSent()
 
@@ -378,54 +378,54 @@ func (rw *HttpResponseWriter) WriteError(ctx *core.Context, err core.Error, code
 	rw.writeHeadersWithPlannedStatus()
 }
 
-func (rw *HttpResponseWriter) AddHeader(ctx *core.Context, k, v core.String) {
+func (rw *ResponseWriter) AddHeader(ctx *core.Context, k, v core.String) {
 	rw.assertIsNotFinished()
 	rw.assertStatusNotSent()
 
 	rw.rw.Header().Add(string(k), string(v))
 }
 
-func (rw *HttpResponseWriter) SetContentType(s string) {
+func (rw *ResponseWriter) SetContentType(s string) {
 	rw.assertIsNotFinished()
 	rw.assertStatusNotSent()
 
 	rw.rw.Header().Set("Content-Type", s)
 }
 
-func (rw HttpResponseWriter) PlannedStatus() int {
+func (rw ResponseWriter) PlannedStatus() int {
 	if rw.plannedStatus <= 0 {
 		return 200
 	}
 	return rw.plannedStatus
 }
 
-func (rw HttpResponseWriter) SentStatus() int {
+func (rw ResponseWriter) SentStatus() int {
 	if rw.sentStatus == 0 {
 		return 200
 	}
 	return rw.sentStatus
 }
 
-func (rw *HttpResponseWriter) Finish(ctx *core.Context) {
+func (rw *ResponseWriter) Finish(ctx *core.Context) {
 	rw.assertIsNotFinished()
 	rw.finished = true
 }
 
-func (rw *HttpResponseWriter) IsStatusSent() bool {
+func (rw *ResponseWriter) IsStatusSent() bool {
 	return rw.isStatusSent
 }
 
-func (rw *HttpResponseWriter) assertStatusNotSent() {
+func (rw *ResponseWriter) assertStatusNotSent() {
 	if rw.isStatusSent {
 		panic(ErrStatusAlreadySent)
 	}
 }
 
-func (rw *HttpResponseWriter) isPlannedStatusSet() bool {
+func (rw *ResponseWriter) isPlannedStatusSet() bool {
 	return rw.plannedStatus > 0
 }
 
-func (rw *HttpResponseWriter) assertIsNotFinished() {
+func (rw *ResponseWriter) assertIsNotFinished() {
 	if rw.finished {
 		panic(ErrCannotMutateWriterOfFinishedResponse)
 	}
@@ -434,7 +434,7 @@ func (rw *HttpResponseWriter) assertIsNotFinished() {
 	}
 }
 
-func (rw *HttpResponseWriter) FinalLog() {
+func (rw *ResponseWriter) FinalLog() {
 	req := rw.request
 
 	duration := time.Since(req.CreationTime)

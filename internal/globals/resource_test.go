@@ -47,7 +47,7 @@ func TestReadResource(t *testing.T) {
 		t.Run("resource not found", func(t *testing.T) {
 			testconfig.AllowParallelization(t)
 
-			ctx, resource := setup(t, func(ctx *core.Context, rw *http_ns.HttpResponseWriter, req *http_ns.HttpRequest) {
+			ctx, resource := setup(t, func(ctx *core.Context, rw *http_ns.ResponseWriter, req *http_ns.Request) {
 				rw.WriteHeaders(ctx, core.ToOptionalParam(http_ns.StatusCode(http.StatusNotFound)))
 			})
 			defer ctx.CancelGracefully()
@@ -62,7 +62,7 @@ func TestReadResource(t *testing.T) {
 		t.Run("existing resource", func(t *testing.T) {
 			testconfig.AllowParallelization(t)
 
-			ctx, resource := setup(t, func(ctx *core.Context, rw *http_ns.HttpResponseWriter, req *http_ns.HttpRequest) {
+			ctx, resource := setup(t, func(ctx *core.Context, rw *http_ns.ResponseWriter, req *http_ns.Request) {
 				rw.WriteJSON(ctx, core.True)
 			})
 			defer ctx.CancelGracefully()
@@ -79,7 +79,7 @@ func TestReadResource(t *testing.T) {
 		t.Run("raw", func(t *testing.T) {
 			testconfig.AllowParallelization(t)
 
-			ctx, resource := setup(t, func(ctx *core.Context, rw *http_ns.HttpResponseWriter, req *http_ns.HttpRequest) {
+			ctx, resource := setup(t, func(ctx *core.Context, rw *http_ns.ResponseWriter, req *http_ns.Request) {
 				rw.WriteJSON(ctx, core.True)
 			})
 			defer ctx.CancelGracefully()
@@ -97,7 +97,7 @@ func TestReadResource(t *testing.T) {
 			testconfig.AllowParallelization(t)
 
 			mimeType := utils.Must(core.MimeTypeFrom("application/json; charset=utf-8"))
-			ctx, resource := setup(t, func(ctx *core.Context, rw *http_ns.HttpResponseWriter, req *http_ns.HttpRequest) {
+			ctx, resource := setup(t, func(ctx *core.Context, rw *http_ns.ResponseWriter, req *http_ns.Request) {
 				rw.SetContentType(string(mimeType))
 				rw.DetachBodyWriter().Write([]byte("true"))
 			})
@@ -115,7 +115,7 @@ func TestReadResource(t *testing.T) {
 		t.Run("an error should be returned if parsing required AND there is no parser for content type", func(t *testing.T) {
 			testconfig.AllowParallelization(t)
 
-			ctx, resource := setup(t, func(ctx *core.Context, rw *http_ns.HttpResponseWriter, req *http_ns.HttpRequest) {
+			ctx, resource := setup(t, func(ctx *core.Context, rw *http_ns.ResponseWriter, req *http_ns.Request) {
 				rw.SetContentType("custom/type")
 				rw.DetachRespWriter().Write([]byte("X;X"))
 			})
@@ -130,7 +130,7 @@ func TestReadResource(t *testing.T) {
 		t.Run("an error should bot be returned if raw data is asked AND there is no parser for content type", func(t *testing.T) {
 			testconfig.AllowParallelization(t)
 
-			ctx, resource := setup(t, func(ctx *core.Context, rw *http_ns.HttpResponseWriter, req *http_ns.HttpRequest) {
+			ctx, resource := setup(t, func(ctx *core.Context, rw *http_ns.ResponseWriter, req *http_ns.Request) {
 				rw.SetContentType("custom/type")
 				rw.DetachBodyWriter().Write([]byte("X;X"))
 			})
@@ -174,7 +174,7 @@ func TestGetResource(t *testing.T) {
 	// })
 }
 
-func setup(t *testing.T, handler func(ctx *core.Context, rw *http_ns.HttpResponseWriter, req *http_ns.HttpRequest)) (*core.Context, core.URL) {
+func setup(t *testing.T, handler func(ctx *core.Context, rw *http_ns.ResponseWriter, req *http_ns.Request)) (*core.Context, core.URL) {
 	permissiveHttpReqLimit := core.MustMakeNotAutoDepletingCountLimit(http_ns.HTTP_REQUEST_RATE_LIMIT_NAME, 10_000)
 
 	host := getNextHost()

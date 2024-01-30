@@ -54,7 +54,7 @@ func addFilesystemRoutingHandler(server *HttpsServer, staticDir, dynamicDir core
 		}
 	}
 
-	handler := func(req *HttpRequest, rw *HttpResponseWriter, handlerGlobalState *core.GlobalState) {
+	handler := func(req *Request, rw *ResponseWriter, handlerGlobalState *core.GlobalState) {
 
 		if staticDir != "" {
 			staticFilePath := staticDir.JoinAbsolute(req.Path, handlerGlobalState.Ctx.GetFileSystem())
@@ -153,7 +153,7 @@ func addFilesystemRoutingHandler(server *HttpsServer, staticDir, dynamicDir core
 }
 
 func createHandleDynamic(server *HttpsServer, routingDirPath core.Path) handlerFn {
-	return func(req *HttpRequest, rw *HttpResponseWriter, handlerGlobalState *core.GlobalState) {
+	return func(req *Request, rw *ResponseWriter, handlerGlobalState *core.GlobalState) {
 		path := req.Path
 		method := req.Method.UnderlyingString()
 		tx := handlerGlobalState.Ctx.GetTx()
@@ -161,7 +161,7 @@ func createHandleDynamic(server *HttpsServer, routingDirPath core.Path) handlerF
 			panic(core.ErrUnreachable)
 		}
 
-		//check path
+		//Check the path.
 		if !path.IsAbsolute() {
 			panic(core.ErrUnreachable)
 		}
@@ -176,7 +176,8 @@ func createHandleDynamic(server *HttpsServer, routingDirPath core.Path) handlerF
 			return
 		}
 
-		// -----
+		//Determine the API Endpoint.
+
 		if strings.Contains(method, "/") {
 			rw.writeHeaders(http.StatusNotFound)
 			return
@@ -221,10 +222,12 @@ func createHandleDynamic(server *HttpsServer, routingDirPath core.Path) handlerF
 			rw.writeHeaders(http.StatusNotFound)
 			return
 		}
+
+		//Prepare the module
+		//TODO: check the file is not writable
+
 		modulePath := module.Name()
 		handlerCtx := handlerGlobalState.Ctx
-
-		//TODO: check the file is not writable
 
 		preparationStart := time.Now()
 
@@ -254,29 +257,7 @@ func createHandleDynamic(server *HttpsServer, routingDirPath core.Path) handlerF
 				return args, err
 			},
 			BeforeContextCreation: func(m *core.Manifest) ([]core.Limit, error) {
-				var defaultLimits map[string]core.Limit = maps.Clone(server.defaultLimits)
-
-				//check the manifest's limits against the server's maximum limits
-				//and remove present limits from defaultLimits.
-				for _, limit := range m.Limits {
-					maxLimit, ok := server.maxLimits[limit.Name]
-					if ok && maxLimit.MoreRestrictiveThan(limit) {
-						return nil, fmt.Errorf(
-							"limit %q of handler module %q is higher than the maximum limit allowed, "+
-								"note that you can configure the %s argument of the HTTP server",
-							limit.Name, modulePath, HANDLING_DESC_MAX_LIMITS_PROPNAME)
-					}
-
-					delete(defaultLimits, limit.Name)
-				}
-
-				//add remaining defaultLimits.
-				limits := slices.Clone(m.Limits)
-
-				for _, limit := range defaultLimits {
-					limits = append(limits, limit)
-				}
-				return limits, nil
+				return getLimitsOfHandlerModule(m, modulePath, server)
 			},
 		})
 
@@ -299,7 +280,7 @@ func createHandleDynamic(server *HttpsServer, routingDirPath core.Path) handlerF
 			debugger = parentDebugger.NewChild()
 		}
 
-		//run the handler module in the current goroutine.
+		//Run the handler module in the current goroutine.
 		//The CPU time depletion of the handler is paused because the same corresponding depletion in the module's limiter is going to start.
 
 		handlerCtx.PauseCPUTimeDepletion()
@@ -354,7 +335,33 @@ func createHandleDynamic(server *HttpsServer, routingDirPath core.Path) handlerF
 	}
 }
 
-func getHandlerModuleArguments(req *HttpRequest, manifest *core.Manifest, handlerCtx *core.Context, methodSpecificModule bool) (
+func getLimitsOfHandlerModule(m *core.Manifest, modulePath string, server *HttpsServer) ([]core.Limit, error) {
+	var defaultLimits map[string]core.Limit = maps.Clone(server.defaultLimits)
+
+	//check the manifest's limits against the server's maximum limits
+	//and remove present limits from defaultLimits.
+	for _, limit := range m.Limits {
+		maxLimit, ok := server.maxLimits[limit.Name]
+		if ok && maxLimit.MoreRestrictiveThan(limit) {
+			return nil, fmt.Errorf(
+				"limit %q of handler module %q is higher than the maximum limit allowed, "+
+					"note that you can configure the %s argument of the HTTP server",
+				limit.Name, modulePath, HANDLING_DESC_MAX_LIMITS_PROPNAME)
+		}
+
+		delete(defaultLimits, limit.Name)
+	}
+
+	//add remaining defaultLimits.
+	limits := slices.Clone(m.Limits)
+
+	for _, limit := range defaultLimits {
+		limits = append(limits, limit)
+	}
+	return limits, nil
+}
+
+func getHandlerModuleArguments(req *Request, manifest *core.Manifest, handlerCtx *core.Context, methodSpecificModule bool) (
 	_ *core.ModuleArgs,
 	errStatusCode int,
 	_ error,

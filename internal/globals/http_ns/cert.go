@@ -36,7 +36,7 @@ const (
 	CERT_MAGIG_LOG_SRC = "http/certmagic"
 )
 
-var DEFAULT_HTTP_REQUEST_OPTIONS = &HttpRequestOptions{
+var DEFAULT_HTTP_REQUEST_OPTIONS = &RequestOptions{
 	Timeout:            DEFAULT_HTTP_CLIENT_TIMEOUT,
 	InsecureSkipVerify: false,
 }

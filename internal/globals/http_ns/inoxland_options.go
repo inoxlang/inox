@@ -10,10 +10,10 @@ import (
 	"github.com/inoxlang/inox/internal/core"
 )
 
-func getClientAndOptions(ctx *core.Context, u core.URL, requestOptionArgs ...core.Value) (*HttpClient, *HttpRequestOptions, error) {
+func getClientAndOptions(ctx *core.Context, u core.URL, requestOptionArgs ...core.Value) (*Client, *RequestOptions, error) {
 	options := *DEFAULT_HTTP_REQUEST_OPTIONS
 	specifiedOptionNames := make(map[string]int, 0)
-	var client *HttpClient
+	var client *Client
 
 	for _, v := range requestOptionArgs {
 
@@ -39,7 +39,7 @@ func getClientAndOptions(ctx *core.Context, u core.URL, requestOptionArgs ...cor
 					return nil, nil, fmt.Errorf("invalid http option: --insecure should have a boolean value")
 				}
 			case "client":
-				if c, ok := optVal.Value.(*HttpClient); ok {
+				if c, ok := optVal.Value.(*Client); ok {
 					client = c
 				} else {
 					return nil, nil, fmt.Errorf("invalid http option: --client should be an http client")
@@ -63,9 +63,9 @@ func getClientAndOptions(ctx *core.Context, u core.URL, requestOptionArgs ...cor
 	if client == nil {
 		c, err := ctx.GetProtolClient(u)
 		if err == nil {
-			client = c.(*HttpClient)
+			client = c.(*Client)
 		} else {
-			client = &HttpClient{
+			client = &Client{
 				client: &http.Client{
 					Transport: &http.Transport{
 						TLSClientConfig: &tls.Config{

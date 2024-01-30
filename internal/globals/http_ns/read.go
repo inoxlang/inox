@@ -9,7 +9,7 @@ import (
 	"github.com/inoxlang/inox/internal/core"
 )
 
-func HttpGet(ctx *core.Context, u core.URL, args ...core.Value) (*HttpResponse, error) {
+func HttpGet(ctx *core.Context, u core.URL, args ...core.Value) (*Response, error) {
 	var contentType core.Mimetype
 	var requestOptionArgs []core.Value
 

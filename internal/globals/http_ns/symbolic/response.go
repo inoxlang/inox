@@ -7,29 +7,29 @@ import (
 )
 
 var (
-	ANY_RESP = &HttpResponse{}
+	ANY_RESP = &Response{}
 
 	HTTP_RESPONSE_PROPNAMES = []string{"body", "status", "status-code", "cookies"}
 )
 
-type HttpResponse struct {
+type Response struct {
 	symbolic.UnassignablePropsMixin
 	_ int
 }
 
-func (r *HttpResponse) Test(v symbolic.Value, state symbolic.RecTestCallState) bool {
+func (r *Response) Test(v symbolic.Value, state symbolic.RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
-	_, ok := v.(*HttpResponse)
+	_, ok := v.(*Response)
 	return ok
 }
 
-func (resp *HttpResponse) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
+func (resp *Response) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 	return nil, false
 }
 
-func (resp *HttpResponse) Prop(name string) symbolic.Value {
+func (resp *Response) Prop(name string) symbolic.Value {
 	switch name {
 	case "body":
 		return &symbolic.Reader{}
@@ -44,14 +44,14 @@ func (resp *HttpResponse) Prop(name string) symbolic.Value {
 	}
 }
 
-func (*HttpResponse) PropertyNames() []string {
+func (*Response) PropertyNames() []string {
 	return HTTP_RESPONSE_PROPNAMES
 }
 
-func (r *HttpResponse) PrettyPrint(w prettyprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (r *Response) PrettyPrint(w prettyprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("http-response")
 }
 
-func (r *HttpResponse) WidestOfType() symbolic.Value {
-	return &HttpResponse{}
+func (r *Response) WidestOfType() symbolic.Value {
+	return &Response{}
 }

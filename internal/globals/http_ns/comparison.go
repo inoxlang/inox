@@ -11,8 +11,8 @@ func (s *HttpsServer) Equal(ctx *core.Context, other core.Value, alreadyCompared
 	return ok && s == otherServer
 }
 
-func (r *HttpRequest) Equal(ctx *core.Context, other core.Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
-	otherReq, ok := other.(*HttpRequest)
+func (r *Request) Equal(ctx *core.Context, other core.Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	otherReq, ok := other.(*Request)
 	if !ok {
 		return false
 	}
@@ -20,18 +20,18 @@ func (r *HttpRequest) Equal(ctx *core.Context, other core.Value, alreadyCompared
 	return r.Request() == otherReq.Request()
 }
 
-func (rw *HttpResponseWriter) Equal(ctx *core.Context, other core.Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
-	otherResp, ok := other.(*HttpResponseWriter)
+func (rw *ResponseWriter) Equal(ctx *core.Context, other core.Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	otherResp, ok := other.(*ResponseWriter)
 	return ok && rw == otherResp
 }
 
-func (r *HttpResponse) Equal(ctx *core.Context, other core.Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
-	otherResp, ok := other.(*HttpResponse)
+func (r *Response) Equal(ctx *core.Context, other core.Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	otherResp, ok := other.(*Response)
 	return ok && r == otherResp
 }
 
-func (r *HttpResult) Equal(ctx *core.Context, other core.Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
-	otherResult, ok := other.(*HttpResult)
+func (r *Result) Equal(ctx *core.Context, other core.Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	otherResult, ok := other.(*Result)
 	return ok && r == otherResult
 }
 
@@ -51,8 +51,8 @@ func (c StatusCode) Equal(ctx *core.Context, other core.Value, alreadyCompared m
 	return c == otherCode
 }
 
-func (c *HttpClient) Equal(ctx *core.Context, other core.Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
-	otherClient, ok := other.(*HttpClient)
+func (c *Client) Equal(ctx *core.Context, other core.Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	otherClient, ok := other.(*Client)
 	return ok && c == otherClient
 }
 
@@ -83,8 +83,8 @@ func (c *ContentSecurityPolicy) Equal(ctx *core.Context, other core.Value, alrea
 	return true
 }
 
-func (p *HttpRequestPattern) Equal(ctx *core.Context, other core.Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
-	otherPattern, ok := other.(*HttpRequestPattern)
+func (p *RequestPattern) Equal(ctx *core.Context, other core.Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	otherPattern, ok := other.(*RequestPattern)
 	if !ok || !slices.Equal(p.methods, otherPattern.methods) {
 		return false
 	}

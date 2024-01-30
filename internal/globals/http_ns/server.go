@@ -156,7 +156,7 @@ func NewHttpsServer(ctx *core.Context, host core.Host, args ...core.Value) (*Htt
 		}
 	} else {
 		//we set a default handler that writes NO_HANDLER_PLACEHOLDER_MESSAGE
-		server.lastHandlerFn = func(r *HttpRequest, rw *HttpResponseWriter, state *core.GlobalState) {
+		server.lastHandlerFn = func(r *Request, rw *ResponseWriter, state *core.GlobalState) {
 			rw.DetachRespWriter().Write([]byte(NO_HANDLER_PLACEHOLDER_MESSAGE))
 		}
 	}
@@ -489,14 +489,14 @@ func (serv *HttpsServer) Close(ctx *core.Context) {
 	}
 }
 
-func newSymbolicHttpsServer(ctx *symbolic.Context, host *symbolic.Host, args ...symbolic.Value) (*http_ns_symb.HttpServer, *symbolic.Error) {
+func newSymbolicHttpsServer(ctx *symbolic.Context, host *symbolic.Host, args ...symbolic.Value) (*http_ns_symb.HttpsServer, *symbolic.Error) {
 	if !ctx.HasAPermissionWithKindAndType(permkind.Provide, permkind.HTTP_PERM_TYPENAME) {
 		ctx.AddSymbolicGoFunctionWarning(HTTP_PROVIDE_PERM_MIGHT_BE_MISSING)
 	}
 
 	symbolic.ANY_HOST_PATTERN.PropertyNames()
 
-	server := &http_ns_symb.HttpServer{}
+	server := &http_ns_symb.HttpsServer{}
 
 	if len(args) == 0 {
 		if !symbolic.ANY_HTTPS_HOST_PATTERN.Test(host, symbolic.RecTestCallState{}) {

@@ -72,7 +72,7 @@ func NewEventSource(ctx *core.Context, resourceNameOrPattern core.Value) (*Serve
 			},
 		}
 	} else {
-		httpClient = client.(*HttpClient).client
+		httpClient = client.(*Client).client
 	}
 
 	evs := &ServerSentEventSource{

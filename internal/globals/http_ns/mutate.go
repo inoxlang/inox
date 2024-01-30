@@ -18,15 +18,15 @@ func IsMutationMethod(method string) bool {
 	return false
 }
 
-func HttpPost(ctx *core.Context, args ...core.Value) (*HttpResponse, error) {
+func HttpPost(ctx *core.Context, args ...core.Value) (*Response, error) {
 	return _httpPostPatch(ctx, false, args...)
 }
 
-func HttpPatch(ctx *core.Context, args ...core.Value) (*HttpResponse, error) {
+func HttpPatch(ctx *core.Context, args ...core.Value) (*Response, error) {
 	return _httpPostPatch(ctx, true, args...)
 }
 
-func _httpPostPatch(ctx *core.Context, isPatch bool, args ...core.Value) (*HttpResponse, error) {
+func _httpPostPatch(ctx *core.Context, isPatch bool, args ...core.Value) (*Response, error) {
 	var contentType core.Mimetype
 	var u core.URL
 	var body io.Reader
@@ -93,7 +93,7 @@ func _httpPostPatch(ctx *core.Context, isPatch bool, args ...core.Value) (*HttpR
 	return client.DoRequest(ctx, req)
 }
 
-func HttpDelete(ctx *core.Context, args ...core.Value) (*HttpResponse, error) {
+func HttpDelete(ctx *core.Context, args ...core.Value) (*Response, error) {
 	var u core.URL
 	var requestOptionArgs []core.Value
 

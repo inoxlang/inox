@@ -130,7 +130,7 @@ func (*WebsocketServer) PropertyNames(ctx *core.Context) []string {
 	return []string{"upgrade", "close"}
 }
 
-func (s *WebsocketServer) Upgrade(rw *http_ns.HttpResponseWriter, r *http_ns.HttpRequest) (*WebsocketConnection, error) {
+func (s *WebsocketServer) Upgrade(rw *http_ns.ResponseWriter, r *http_ns.Request) (*WebsocketConnection, error) {
 	conn, err := s.UpgradeGoValues(rw.DetachRespWriter(), r.Request(), nil)
 	if err != nil {
 		return nil, err

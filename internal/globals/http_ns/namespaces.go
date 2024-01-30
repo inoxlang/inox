@@ -62,7 +62,7 @@ func init() {
 		Patterns: map[string]core.Pattern{
 			"resp-writer": &core.TypePattern{
 				Name:          "http.resp-writer",
-				Type:          reflect.TypeOf((*HttpResponseWriter)(nil)),
+				Type:          reflect.TypeOf((*ResponseWriter)(nil)),
 				SymbolicValue: http_symbolic.ANY_HTTP_RESP_WRITER,
 			},
 			"req":         CALLABLE_HTTP_REQUEST_PATTERN,
@@ -91,7 +91,7 @@ func init() {
 			}
 			return symbolic.ANY_BOOL
 		},
-		HttpGet, func(ctx *symbolic.Context, u *symbolic.URL, args ...symbolic.Value) (*http_symbolic.HttpResponse, *symbolic.Error) {
+		HttpGet, func(ctx *symbolic.Context, u *symbolic.URL, args ...symbolic.Value) (*http_symbolic.Response, *symbolic.Error) {
 			if !ctx.HasAPermissionWithKindAndType(permkind.Read, permkind.HTTP_PERM_TYPENAME) {
 				ctx.AddSymbolicGoFunctionWarning(HTTP_READ_PERM_MIGHT_BE_MISSING)
 			}
@@ -103,32 +103,32 @@ func init() {
 			}
 			return symbolic.ANY, nil
 		},
-		HttpPost, func(ctx *symbolic.Context, args ...symbolic.Value) (*http_symbolic.HttpResponse, *symbolic.Error) {
+		HttpPost, func(ctx *symbolic.Context, args ...symbolic.Value) (*http_symbolic.Response, *symbolic.Error) {
 			if !ctx.HasAPermissionWithKindAndType(permkind.Write, permkind.HTTP_PERM_TYPENAME) {
 				ctx.AddSymbolicGoFunctionWarning(HTTP_WRITE_PERM_MIGHT_BE_MISSING)
 			}
 			return http_symbolic.ANY_RESP, nil
 		},
-		HttpPatch, func(ctx *symbolic.Context, args ...symbolic.Value) (*http_symbolic.HttpResponse, *symbolic.Error) {
+		HttpPatch, func(ctx *symbolic.Context, args ...symbolic.Value) (*http_symbolic.Response, *symbolic.Error) {
 			if !ctx.HasAPermissionWithKindAndType(permkind.Write, permkind.HTTP_PERM_TYPENAME) {
 				ctx.AddSymbolicGoFunctionWarning(HTTP_WRITE_PERM_MIGHT_BE_MISSING)
 			}
 			return http_symbolic.ANY_RESP, nil
 		},
-		HttpDelete, func(ctx *symbolic.Context, args ...symbolic.Value) (*http_symbolic.HttpResponse, *symbolic.Error) {
+		HttpDelete, func(ctx *symbolic.Context, args ...symbolic.Value) (*http_symbolic.Response, *symbolic.Error) {
 			if !ctx.HasAPermissionWithKindAndType(permkind.Delete, permkind.HTTP_PERM_TYPENAME) {
 				ctx.AddSymbolicGoFunctionWarning(HTTP_DELETE_PERM_MIGHT_BE_MISSING)
 			}
 			return http_symbolic.ANY_RESP, nil
 		},
 		NewHttpsServer, newSymbolicHttpsServer,
-		NewFileServer, func(ctx *symbolic.Context, args ...symbolic.Value) (*http_symbolic.HttpServer, *symbolic.Error) {
+		NewFileServer, func(ctx *symbolic.Context, args ...symbolic.Value) (*http_symbolic.HttpsServer, *symbolic.Error) {
 			if !ctx.HasAPermissionWithKindAndType(permkind.Provide, permkind.HTTP_PERM_TYPENAME) {
 				ctx.AddSymbolicGoFunctionWarning(HTTP_PROVIDE_PERM_MIGHT_BE_MISSING)
 			}
-			return &http_symbolic.HttpServer{}, nil
+			return &http_symbolic.HttpsServer{}, nil
 		},
-		ServeFile, func(ctx *symbolic.Context, rw *http_symbolic.HttpResponseWriter, r *http_symbolic.HttpRequest, path *symbolic.Path) *symbolic.Error {
+		ServeFile, func(ctx *symbolic.Context, rw *http_symbolic.ResponseWriter, r *http_symbolic.Request, path *symbolic.Path) *symbolic.Error {
 			return nil
 		},
 		NewResult, symbolicNewResult,
@@ -138,8 +138,8 @@ func init() {
 		core.UrlOf, func(ctx *symbolic.Context, v symbolic.Value) symbolic.Value {
 			return symbolic.ANY
 		},
-		NewClient, func(ctx *symbolic.Context, config *symbolic.Object) *http_symbolic.HttpClient {
-			return &http_symbolic.HttpClient{}
+		NewClient, func(ctx *symbolic.Context, config *symbolic.Object) *http_symbolic.Client {
+			return &http_symbolic.Client{}
 		},
 		PercentEncode, func(ctx *symbolic.Context, s symbolic.StringLike) symbolic.StringLike {
 			return symbolic.ANY_STR_LIKE

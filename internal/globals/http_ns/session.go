@@ -70,7 +70,7 @@ func addNewSession(server *HttpsServer) *Session {
 	return session
 }
 
-func addSessionIdCookie(rw *HttpResponseWriter, sessionId string) {
+func addSessionIdCookie(rw *ResponseWriter, sessionId string) {
 	http.SetCookie(rw.rw, &http.Cookie{
 		Name:     DEFAULT_SESSION_ID_KEY,
 		Value:    sessionId,

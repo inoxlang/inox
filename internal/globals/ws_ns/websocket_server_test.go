@@ -361,7 +361,7 @@ func createWebsocketServer(config testWebsocketServerConfig, ctx *core.Context) 
 		}()
 
 		wsServer, _ := newWebsocketServer(ctx, config.messageTimeout)
-		handler := core.WrapGoFunction(func(ctx *core.Context, rw *http_ns.HttpResponseWriter, req *http_ns.HttpRequest) {
+		handler := core.WrapGoFunction(func(ctx *core.Context, rw *http_ns.ResponseWriter, req *http_ns.Request) {
 			conn, err := wsServer.Upgrade(rw, req)
 
 			if err != nil {

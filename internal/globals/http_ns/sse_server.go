@@ -90,8 +90,8 @@ func (s *SseServer) getStream(streamId string) *multiSubscriptionSSEStream {
 type eventPushConfig struct {
 	ctx     *core.Context
 	stream  *multiSubscriptionSSEStream
-	writer  *HttpResponseWriter
-	request *HttpRequest
+	writer  *ResponseWriter
+	request *Request
 	logger  zerolog.Logger
 }
 

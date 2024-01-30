@@ -22,22 +22,22 @@ import (
 )
 
 var (
-	DEFAULT_HTTP_PROFILE_CONFIG = HttpClientConfig{
+	DEFAULT_HTTP_PROFILE_CONFIG = ClientConfig{
 		SaveCookies: false,
 	}
-	_ = []core.ProtocolClient{(*HttpClient)(nil)}
+	_ = []core.ProtocolClient{(*Client)(nil)}
 )
 
-// A HttpClient represents a high level http client, HttpClient implements core.ProtocolClient.
-type HttpClient struct {
-	config  HttpClientConfig
-	options HttpRequestOptions
+// A Client represents a high level http client, Client implements core.ProtocolClient.
+type Client struct {
+	config  ClientConfig
+	options RequestOptions
 
 	client *http.Client
 }
 
-func NewClient(ctx *core.Context, configObject *core.Object) (*HttpClient, error) {
-	config := HttpClientConfig{}
+func NewClient(ctx *core.Context, configObject *core.Object) (*Client, error) {
+	config := ClientConfig{}
 
 	for name, value := range configObject.EntryMap(ctx) {
 		switch name {
@@ -62,9 +62,9 @@ func NewClient(ctx *core.Context, configObject *core.Object) (*HttpClient, error
 		}
 	}
 
-	client := &HttpClient{
+	client := &Client{
 		config:  config,
-		options: HttpRequestOptions{},
+		options: RequestOptions{},
 	}
 
 	if config.SaveCookies {
@@ -88,14 +88,14 @@ func NewClient(ctx *core.Context, configObject *core.Object) (*HttpClient, error
 	return client, nil
 }
 
-func NewHttpClientFromPreExistingClient(client *http.Client, insecure bool) *HttpClient {
-	return &HttpClient{
+func NewHttpClientFromPreExistingClient(client *http.Client, insecure bool) *Client {
+	return &Client{
 		client: client,
-		config: HttpClientConfig{
+		config: ClientConfig{
 			Insecure:    insecure,
 			SaveCookies: client.Jar != nil,
 		},
-		options: HttpRequestOptions{
+		options: RequestOptions{
 			Timeout:            client.Timeout,
 			InsecureSkipVerify: insecure,
 			Jar:                client.Jar,
@@ -103,7 +103,7 @@ func NewHttpClientFromPreExistingClient(client *http.Client, insecure bool) *Htt
 	}
 }
 
-func (c *HttpClient) GetGoMethod(name string) (*core.GoFunction, bool) {
+func (c *Client) GetGoMethod(name string) (*core.GoFunction, bool) {
 	switch name {
 	case "get_host_cookies":
 		return core.WrapGoMethod(c.GetHostCookieObjects), true
@@ -111,7 +111,7 @@ func (c *HttpClient) GetGoMethod(name string) (*core.GoFunction, bool) {
 	return nil, false
 }
 
-func (c *HttpClient) Prop(ctx *core.Context, name string) core.Value {
+func (c *Client) Prop(ctx *core.Context, name string) core.Value {
 	method, ok := c.GetGoMethod(name)
 	if !ok {
 		panic(core.FormatErrPropertyDoesNotExist(name, c))
@@ -120,19 +120,19 @@ func (c *HttpClient) Prop(ctx *core.Context, name string) core.Value {
 
 }
 
-func (*HttpClient) SetProp(ctx *core.Context, name string, value core.Value) error {
+func (*Client) SetProp(ctx *core.Context, name string, value core.Value) error {
 	return core.ErrCannotSetProp
 }
 
-func (*HttpClient) PropertyNames(ctx *core.Context) []string {
+func (*Client) PropertyNames(ctx *core.Context) []string {
 	return http_ns_symb.HTTP_CLIENT_PROPNAMES
 }
 
-func (c *HttpClient) Schemes() []core.Scheme {
+func (c *Client) Schemes() []core.Scheme {
 	return []core.Scheme{"http", "https"}
 }
 
-func (c *HttpClient) GetHostCookies(h core.Host) []*http.Cookie {
+func (c *Client) GetHostCookies(h core.Host) []*http.Cookie {
 	if c.client.Jar == nil {
 		return nil
 	}
@@ -140,7 +140,7 @@ func (c *HttpClient) GetHostCookies(h core.Host) []*http.Cookie {
 	return c.client.Jar.Cookies(u)
 }
 
-func (c *HttpClient) GetHostCookieObjects(ctx *core.Context, h core.Host) *core.List {
+func (c *Client) GetHostCookieObjects(ctx *core.Context, h core.Host) *core.List {
 	var objects []core.Serializable
 	for _, cookie := range c.GetHostCookies(h) {
 		objects = append(objects, createObjectFromCookie(ctx, *cookie))
@@ -149,7 +149,7 @@ func (c *HttpClient) GetHostCookieObjects(ctx *core.Context, h core.Host) *core.
 	return core.NewWrappedValueList(objects...)
 }
 
-func (c *HttpClient) MakeRequest(ctx *core.Context, method string, u core.URL, body io.Reader, contentType string, opts *HttpRequestOptions) (*HttpRequest, error) {
+func (c *Client) MakeRequest(ctx *core.Context, method string, u core.URL, body io.Reader, contentType string, opts *RequestOptions) (*Request, error) {
 	perm, err := getPermForRequest(method, u)
 	if err != nil {
 		return nil, err
@@ -216,7 +216,7 @@ func (c *HttpClient) MakeRequest(ctx *core.Context, method string, u core.URL, b
 	return wrapped, nil
 }
 
-func (c *HttpClient) DoRequest(ctx *core.Context, req *HttpRequest) (*HttpResponse, error) {
+func (c *Client) DoRequest(ctx *core.Context, req *Request) (*Response, error) {
 	ctx.PauseCPUTimeDepletion()
 	defer ctx.ResumeCPUTimeDepletion()
 
@@ -225,16 +225,16 @@ func (c *HttpClient) DoRequest(ctx *core.Context, req *HttpRequest) (*HttpRespon
 		return nil, err
 	}
 
-	return &HttpResponse{wrapped: resp}, err
+	return &Response{wrapped: resp}, err
 }
 
-type HttpRequestOptions struct {
+type RequestOptions struct {
 	Timeout            time.Duration
 	InsecureSkipVerify bool
 	Jar                http.CookieJar
 }
 
-type HttpClientConfig struct {
+type ClientConfig struct {
 	Insecure     bool
 	SaveCookies  bool
 	Finalization *core.Dictionary

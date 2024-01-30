@@ -12,23 +12,23 @@ var (
 		"add_header", "set_status",
 	}
 
-	ANY_HTTP_RESP_WRITER = &HttpResponseWriter{}
+	ANY_HTTP_RESP_WRITER = &ResponseWriter{}
 )
 
-type HttpResponseWriter struct {
+type ResponseWriter struct {
 	symbolic.UnassignablePropsMixin
 	_ int
 }
 
-func (r *HttpResponseWriter) Test(v symbolic.Value, state symbolic.RecTestCallState) bool {
+func (r *ResponseWriter) Test(v symbolic.Value, state symbolic.RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
-	_, ok := v.(*HttpResponseWriter)
+	_, ok := v.(*ResponseWriter)
 	return ok
 }
 
-func (rw *HttpResponseWriter) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
+func (rw *ResponseWriter) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 	switch name {
 	case "write_text":
 		return symbolic.WrapGoMethod(rw.WritePlainText), true
@@ -53,53 +53,53 @@ func (rw *HttpResponseWriter) GetGoMethod(name string) (*symbolic.GoFunction, bo
 	}
 }
 
-func (rw *HttpResponseWriter) Prop(name string) symbolic.Value {
+func (rw *ResponseWriter) Prop(name string) symbolic.Value {
 	return symbolic.GetGoMethodOrPanic(name, rw)
 }
 
-func (*HttpResponseWriter) PropertyNames() []string {
+func (*ResponseWriter) PropertyNames() []string {
 	return HTTP_RESP_WRITER_PROPNAMES
 }
 
-func (r *HttpResponseWriter) PrettyPrint(w prettyprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (r *ResponseWriter) PrettyPrint(w prettyprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("http-response-writer")
 }
 
-func (r *HttpResponseWriter) WidestOfType() symbolic.Value {
+func (r *ResponseWriter) WidestOfType() symbolic.Value {
 	return ANY_HTTP_RESP_WRITER
 }
 
-func (rw *HttpResponseWriter) WritePlainText(ctx *symbolic.Context, v *symbolic.ByteSlice) (*symbolic.Int, *symbolic.Error) {
+func (rw *ResponseWriter) WritePlainText(ctx *symbolic.Context, v *symbolic.ByteSlice) (*symbolic.Int, *symbolic.Error) {
 	return symbolic.ANY_INT, nil
 }
 
-func (rw *HttpResponseWriter) WriteBinary(ctx *symbolic.Context, v *symbolic.ByteSlice) (*symbolic.Int, *symbolic.Error) {
+func (rw *ResponseWriter) WriteBinary(ctx *symbolic.Context, v *symbolic.ByteSlice) (*symbolic.Int, *symbolic.Error) {
 	return symbolic.ANY_INT, nil
 }
 
-func (rw *HttpResponseWriter) WriteHTML(ctx *symbolic.Context, v symbolic.Value) (*symbolic.Int, *symbolic.Error) {
+func (rw *ResponseWriter) WriteHTML(ctx *symbolic.Context, v symbolic.Value) (*symbolic.Int, *symbolic.Error) {
 	return symbolic.ANY_INT, nil
 }
 
-func (rw *HttpResponseWriter) WriteJSON(ctx *symbolic.Context, v symbolic.Serializable) (*symbolic.Int, *symbolic.Error) {
+func (rw *ResponseWriter) WriteJSON(ctx *symbolic.Context, v symbolic.Serializable) (*symbolic.Int, *symbolic.Error) {
 	return symbolic.ANY_INT, nil
 }
 
-func (rw *HttpResponseWriter) SetCookie(ctx *symbolic.Context, obj *symbolic.Object) *symbolic.Error {
+func (rw *ResponseWriter) SetCookie(ctx *symbolic.Context, obj *symbolic.Object) *symbolic.Error {
 	return nil
 }
 
-func (rw *HttpResponseWriter) SetStatus(ctx *symbolic.Context, status *StatusCode) {
+func (rw *ResponseWriter) SetStatus(ctx *symbolic.Context, status *StatusCode) {
 }
 
-func (rw *HttpResponseWriter) WriteHeaders(ctx *symbolic.Context, status *symbolic.OptionalParam[*StatusCode]) {
+func (rw *ResponseWriter) WriteHeaders(ctx *symbolic.Context, status *symbolic.OptionalParam[*StatusCode]) {
 }
 
-func (rw *HttpResponseWriter) WriteError(ctx *symbolic.Context, err *symbolic.Error, status *StatusCode) {
+func (rw *ResponseWriter) WriteError(ctx *symbolic.Context, err *symbolic.Error, status *StatusCode) {
 }
 
-func (rw *HttpResponseWriter) AddHeader(ctx *symbolic.Context, k, v *symbolic.String) {
+func (rw *ResponseWriter) AddHeader(ctx *symbolic.Context, k, v *symbolic.String) {
 }
 
-func (rw *HttpResponseWriter) Finish(ctx *symbolic.Context) {
+func (rw *ResponseWriter) Finish(ctx *symbolic.Context) {
 }

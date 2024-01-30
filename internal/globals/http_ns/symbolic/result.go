@@ -7,26 +7,26 @@ import (
 )
 
 var (
-	ANY_RESULT = &HttpResult{}
+	ANY_RESULT = &Result{}
 )
 
-type HttpResult struct {
+type Result struct {
 	symbolic.UnassignablePropsMixin
 	_ int
 }
 
-func (r *HttpResult) Test(v symbolic.Value, state symbolic.RecTestCallState) bool {
+func (r *Result) Test(v symbolic.Value, state symbolic.RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
-	_, ok := v.(*HttpResult)
+	_, ok := v.(*Result)
 	return ok
 }
 
-func (r *HttpResult) PrettyPrint(w prettyprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (r *Result) PrettyPrint(w prettyprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("http-result")
 }
 
-func (r *HttpResult) WidestOfType() symbolic.Value {
-	return &HttpResult{}
+func (r *Result) WidestOfType() symbolic.Value {
+	return &Result{}
 }

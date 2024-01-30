@@ -48,7 +48,7 @@ func newSecurityEngine(logger zerolog.Logger) *securityEngine {
 	}
 }
 
-func (engine *securityEngine) rateLimitRequest(req *HttpRequest, rw *HttpResponseWriter) bool {
+func (engine *securityEngine) rateLimitRequest(req *Request, rw *ResponseWriter) bool {
 	window, windowReqInfo := engine.getSocketMitigationData(req)
 
 	if !window.AllowRequest(windowReqInfo, engine.debugLogger) {
@@ -59,7 +59,7 @@ func (engine *securityEngine) rateLimitRequest(req *HttpRequest, rw *HttpRespons
 	return false
 }
 
-func (engine *securityEngine) getSocketMitigationData(req *HttpRequest) (*reqratelimit.Window, reqratelimit.WindowRequestInfo) {
+func (engine *securityEngine) getSocketMitigationData(req *Request) (*reqratelimit.Window, reqratelimit.WindowRequestInfo) {
 	windowReqInfo := reqratelimit.WindowRequestInfo{
 		Id:                req.ULIDString,
 		Method:            string(req.Method),
@@ -101,7 +101,7 @@ func (engine *securityEngine) getSocketMitigationData(req *HttpRequest) (*reqrat
 	return window, windowReqInfo
 }
 
-func (engine *securityEngine) getIpLevelMitigationData(req *HttpRequest) *remoteIpData {
+func (engine *securityEngine) getIpLevelMitigationData(req *Request) *remoteIpData {
 	if _mitigationData, found := engine.ipMitigationData.Get(req.RemoteIpAddr); found {
 		return _mitigationData
 	}
@@ -131,7 +131,7 @@ func (engine *securityEngine) getIpLevelMitigationData(req *HttpRequest) *remote
 	return mitigationData
 }
 
-func (engine *securityEngine) postHandle(req *HttpRequest, rw *HttpResponseWriter) {
+func (engine *securityEngine) postHandle(req *Request, rw *ResponseWriter) {
 	mitigationData := engine.getIpLevelMitigationData(req)
 	window, _ := engine.getSocketMitigationData(req)
 

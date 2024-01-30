@@ -30,7 +30,7 @@ func isValidHandlerValue(val core.Value) bool {
 }
 
 // a handlerFn is a middleware or the final handler
-type handlerFn func(*HttpRequest, *HttpResponseWriter, *core.GlobalState)
+type handlerFn func(*Request, *ResponseWriter, *core.GlobalState)
 
 // addHandlerFunction creates a function of type handlerFn from handlerValue and updates the server.lastHandlerFn or server.middlewares.
 // addHandlerFunction also sets server.api & server.preparedModules.
@@ -39,7 +39,7 @@ func addHandlerFunction(handlerValue core.Value, isMiddleware bool, server *Http
 	//set value for handler based on provided arguments
 	switch userHandler := handlerValue.(type) {
 	case *core.InoxFunction:
-		handler := func(req *HttpRequest, rw *HttpResponseWriter, handlerGlobalState *core.GlobalState) {
+		handler := func(req *Request, rw *ResponseWriter, handlerGlobalState *core.GlobalState) {
 			//add parent context's patterns
 			serverCtx := server.state.Ctx
 			for k, v := range serverCtx.GetNamedPatterns() {
@@ -69,7 +69,7 @@ func addHandlerFunction(handlerValue core.Value, isMiddleware bool, server *Http
 			server.api = spec.NewEmptyAPI()
 		}
 	case *core.GoFunction:
-		handler := func(req *HttpRequest, rw *HttpResponseWriter, handlerGlobalState *core.GlobalState) {
+		handler := func(req *Request, rw *ResponseWriter, handlerGlobalState *core.GlobalState) {
 			//call the Golang handler
 			args := []any{rw, req}
 
@@ -103,7 +103,7 @@ func addHandlerFunction(handlerValue core.Value, isMiddleware bool, server *Http
 	case *core.Mapping:
 		routing := userHandler
 		//if a routing Mapping is provided we compute a value by passing the request's path to the Mapping.
-		handler := func(req *HttpRequest, rw *HttpResponseWriter, handlerGlobalState *core.GlobalState) {
+		handler := func(req *Request, rw *ResponseWriter, handlerGlobalState *core.GlobalState) {
 			path := req.Path
 
 			//add parent context's patterns
@@ -152,8 +152,8 @@ func addHandlerFunction(handlerValue core.Value, isMiddleware bool, server *Http
 
 type handlingArguments struct {
 	value        core.Value
-	req          *HttpRequest
-	rw           *HttpResponseWriter
+	req          *Request
+	rw           *ResponseWriter
 	state        *core.GlobalState
 	server       *HttpsServer
 	logger       zerolog.Logger
@@ -189,7 +189,7 @@ func respondWithMappingResult(h handlingArguments) {
 	case StatusCode:
 		rw.writeHeaders(int(v))
 		return
-	case *HttpResult:
+	case *Result:
 		maps.Copy(rw.headers(), v.headers)
 		statusIfAccepted = int(v.status)
 

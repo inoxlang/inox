@@ -9,23 +9,23 @@ import (
 var (
 	HTTP_CLIENT_PROPNAMES = []string{"get_host_cookies"}
 
-	_ = []symbolic.ProtocolClient{(*HttpClient)(nil)}
+	_ = []symbolic.ProtocolClient{(*Client)(nil)}
 )
 
-type HttpClient struct {
+type Client struct {
 	symbolic.UnassignablePropsMixin
 	_ int
 }
 
-func (c *HttpClient) Test(v symbolic.Value, state symbolic.RecTestCallState) bool {
+func (c *Client) Test(v symbolic.Value, state symbolic.RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
-	_, ok := v.(*HttpClient)
+	_, ok := v.(*Client)
 	return ok
 }
 
-func (c *HttpClient) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
+func (c *Client) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 	switch name {
 	case "get_host_cookies":
 		return symbolic.WrapGoMethod(c.GetHostCookies), true
@@ -33,26 +33,26 @@ func (c *HttpClient) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 	return nil, false
 }
 
-func (c *HttpClient) Prop(name string) symbolic.Value {
+func (c *Client) Prop(name string) symbolic.Value {
 	return symbolic.GetGoMethodOrPanic(name, c)
 }
 
-func (*HttpClient) PropertyNames() []string {
+func (*Client) PropertyNames() []string {
 	return HTTP_CLIENT_PROPNAMES
 }
 
-func (*HttpClient) Schemes() []string {
+func (*Client) Schemes() []string {
 	return []string{"http", "https"}
 }
 
-func (c *HttpClient) PrettyPrint(w prettyprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+func (c *Client) PrettyPrint(w prettyprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("http-client")
 }
 
-func (c *HttpClient) WidestOfType() symbolic.Value {
-	return &HttpClient{}
+func (c *Client) WidestOfType() symbolic.Value {
+	return &Client{}
 }
 
-func (c *HttpClient) GetHostCookies(h *symbolic.Host) *symbolic.List {
+func (c *Client) GetHostCookies(h *symbolic.Host) *symbolic.List {
 	return symbolic.NewListOf(NewCookieObject())
 }

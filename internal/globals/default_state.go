@@ -97,7 +97,7 @@ var (
 
 	_ = []core.GoValue{
 		(*html_ns.HTMLNode)(nil), (*core.GoFunction)(nil), (*http_ns.HttpsServer)(nil), (*net_ns.TcpConn)(nil),
-		(*ws_ns.WebsocketConnection)(nil), (*http_ns.HttpRequest)(nil), (*http_ns.HttpResponseWriter)(nil),
+		(*ws_ns.WebsocketConnection)(nil), (*http_ns.Request)(nil), (*http_ns.ResponseWriter)(nil),
 		(*fs_ns.File)(nil),
 	}
 )

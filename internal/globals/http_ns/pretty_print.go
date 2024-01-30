@@ -16,15 +16,15 @@ func (s *HttpsServer) PrettyPrint(w *bufio.Writer, config *core.PrettyPrintConfi
 	utils.Must(fmt.Fprintf(w, "%#v", s))
 }
 
-func (r *HttpRequest) PrettyPrint(w *bufio.Writer, config *core.PrettyPrintConfig, depth int, parentIndentCount int) {
+func (r *Request) PrettyPrint(w *bufio.Writer, config *core.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(fmt.Fprintf(w, "%#v", r))
 }
 
-func (rw *HttpResponseWriter) PrettyPrint(w *bufio.Writer, config *core.PrettyPrintConfig, depth int, parentIndentCount int) {
+func (rw *ResponseWriter) PrettyPrint(w *bufio.Writer, config *core.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(fmt.Fprintf(w, "%#v", rw))
 }
 
-func (r *HttpResponse) PrettyPrint(w *bufio.Writer, config *core.PrettyPrintConfig, depth int, parentIndentCount int) {
+func (r *Response) PrettyPrint(w *bufio.Writer, config *core.PrettyPrintConfig, depth int, parentIndentCount int) {
 	ctx := config.Context
 
 	//write status
@@ -70,7 +70,7 @@ func (r *HttpResponse) PrettyPrint(w *bufio.Writer, config *core.PrettyPrintConf
 	}
 }
 
-func (r *HttpResult) PrettyPrint(w *bufio.Writer, config *core.PrettyPrintConfig, depth int, parentIndentCount int) {
+func (r *Result) PrettyPrint(w *bufio.Writer, config *core.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(fmt.Fprintf(w, "HttpResult(%d)", r.status))
 }
 
@@ -96,7 +96,7 @@ func (c StatusCode) PrettyPrint(w *bufio.Writer, config *core.PrettyPrintConfig,
 	}
 }
 
-func (c *HttpClient) PrettyPrint(w *bufio.Writer, config *core.PrettyPrintConfig, depth int, parentIndentCount int) {
+func (c *Client) PrettyPrint(w *bufio.Writer, config *core.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(fmt.Fprintf(w, "%#v", c))
 }
 
@@ -108,7 +108,7 @@ func (csp *ContentSecurityPolicy) PrettyPrint(w *bufio.Writer, config *core.Pret
 	utils.Must(fmt.Fprintf(w, "ContentSecurityPolicy(%s)", csp.String()))
 }
 
-func (p *HttpRequestPattern) PrettyPrint(w *bufio.Writer, config *core.PrettyPrintConfig, depth int, parentIndentCount int) {
+func (p *RequestPattern) PrettyPrint(w *bufio.Writer, config *core.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(fmt.Fprintf(w, "%#v", p))
 }
 
