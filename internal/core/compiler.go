@@ -1060,21 +1060,21 @@ func (c *compiler) Compile(node parse.Node) error {
 		}
 	case *parse.RecordLiteral:
 		var key string
-		indexKey := 0
+		var elementCount int
+		var propCount int
 
+		//Compile entries.
 		for _, prop := range node.Properties {
 			switch n := prop.Key.(type) {
 			case *parse.QuotedStringLiteral:
 				key = n.Value
-				_, err := strconv.ParseUint(key, 10, 32)
-				if err == nil {
-					indexKey++
-				}
+				propCount++
 			case *parse.IdentifierLiteral:
 				key = n.Name
-			case nil:
-				key = strconv.Itoa(indexKey)
-				indexKey++
+				propCount++
+			case nil: //no key
+				elementCount++
+				continue
 			default:
 				return fmt.Errorf("invalid key type %T", n)
 			}
@@ -1087,8 +1087,23 @@ func (c *compiler) Compile(node parse.Node) error {
 			}
 		}
 
-		propCount := len(node.Properties)
-		c.emit(node, OpCreateRecord, indexKey, 2*propCount)
+		if elementCount > 0 {
+			propCount++
+			c.emit(node, OpPushConstant, c.addConstant(String(inoxconsts.IMPLICIT_PROP_NAME)))
+
+			//Compile elements.
+			for _, prop := range node.Properties {
+				switch prop.Key.(type) {
+				case nil:
+					if err := c.Compile(prop.Value); err != nil {
+						return err
+					}
+				}
+			}
+			c.emit(node, OpCreateTuple, elementCount)
+		}
+
+		c.emit(node, OpCreateRecord, propCount)
 
 		if len(node.SpreadElements) > 0 {
 			return errors.New("cannot compile spread elements in records: not implemented")

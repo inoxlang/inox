@@ -1138,19 +1138,19 @@ func (v *VM) run() {
 			v.stack[v.sp] = obj
 			v.sp++
 		case OpCreateRecord:
-			v.ip += 4
-			implicitPropCount := int(v.curInsts[v.ip-2]) | int(v.curInsts[v.ip-3])<<8
-			numElements := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
+			v.ip += 2
+			propCount := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
 
 			var rec *Record
-			if numElements > 0 {
+
+			if propCount > 0 {
 				rec = &Record{
-					keys:   make([]string, numElements/2),
-					values: make([]Serializable, numElements/2),
+					keys:   make([]string, propCount),
+					values: make([]Serializable, propCount),
 				}
 
 				propIndex := 0
-				for i := v.sp - numElements; i < v.sp; i += 2 {
+				for i := v.sp - 2*propCount; i < v.sp; i += 2 {
 					rec.values[propIndex] = v.stack[i+1].(Serializable)
 					rec.keys[propIndex] = string(v.stack[i].(String))
 					propIndex++
@@ -1160,10 +1160,7 @@ func (v *VM) run() {
 				rec = &Record{}
 			}
 
-			//TODO: initializeMetaproperties(obj, astNode.MetaProperties)
-			rec.implicitPropCount = implicitPropCount
-
-			v.sp -= numElements
+			v.sp -= 2 * propCount
 			v.stack[v.sp] = rec
 			v.sp++
 		case OpCreateDict:

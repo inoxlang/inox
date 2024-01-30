@@ -90,8 +90,7 @@ a = object.a
 ```
 
 
-Values not preceded by a name are known as elements and are stored in the empty name property "" (list).
-
+Values not preceded by a name are known as object elements and are stored in a list in the empty name property "".
 ```
 object = {1, 2}
 
@@ -169,6 +168,18 @@ record = #{
 
 record = #{
     a: {  } # error ! an object is mutable, it's not a valid property value for a record.
+}
+```
+
+Values not preceded by a name are known as record elements and are stored in a tuple in the empty name property "".
+```
+record = #{1, 2}
+
+print(record)
+
+output:
+#{
+    "": [1, 2]
 }
 ```
 

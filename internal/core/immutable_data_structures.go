@@ -11,10 +11,9 @@ import (
 
 // Record is the immutable counterpart of an Object, Record implements Value.
 type Record struct {
-	implicitPropCount int //TODO: rename to indexedPropCount ? forbid explicit index keys ?
-	visibilityId      VisibilityId
-	keys              []string
-	values            []Serializable
+	visibilityId VisibilityId
+	keys         []string
+	values       []Serializable
 }
 
 func NewEmptyRecord() *Record {
@@ -40,7 +39,7 @@ func NewRecordFromMap(entryMap ValMap) *Record {
 		i++
 	}
 
-	rec := &Record{keys: keys, values: values, implicitPropCount: maxKeyIndex + 1}
+	rec := &Record{keys: keys, values: values}
 	rec.sortProps()
 	return rec
 }
@@ -67,7 +66,7 @@ func NewRecordFromKeyValLists(keys []string, values []Serializable) *Record {
 		i++
 	}
 
-	rec := &Record{keys: keys, values: values, implicitPropCount: maxKeyIndex + 1}
+	rec := &Record{keys: keys, values: values}
 	rec.sortProps()
 	return rec
 }
@@ -120,15 +119,6 @@ func (rec *Record) ForEachEntry(fn func(k string, v Value) error) error {
 
 func (rec *Record) sortProps() {
 	rec.keys, rec.values, _ = sortProps(rec.keys, rec.values)
-}
-
-// len returns the number of implicit properties
-func (rec *Record) Len() int {
-	return rec.implicitPropCount
-}
-
-func (rec *Record) At(ctx *Context, i int) Value {
-	return rec.Prop(nil, strconv.Itoa(i))
 }
 
 func (rec *Record) Keys() []string {

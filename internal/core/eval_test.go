@@ -2348,15 +2348,39 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			assert.EqualValues(t, NewRecordFromMap(ValMap{"a": Int(1), "b": Int(2)}), res)
 		})
 
-		t.Run("only an implicit-key property", func(t *testing.T) {
+		t.Run("one element", func(t *testing.T) {
 			code := `#{1}`
 			state := NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.EqualValues(t, NewRecordFromMap(ValMap{"0": Int(1)}), res)
+			assert.EqualValues(t, NewRecordFromMap(ValMap{
+				"": NewTuple([]Serializable{Int(1)}),
+			}), res)
 		})
 
+		t.Run("two elements", func(t *testing.T) {
+			code := `#{1, 2}`
+			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
+			res, err := Eval(code, state, false)
+			assert.NoError(t, err)
+			assert.EqualValues(t, NewRecordFromMap(ValMap{
+				"": NewTuple([]Serializable{Int(1), Int(2)}),
+			}), res)
+		})
+
+		t.Run("one element and a property", func(t *testing.T) {
+			code := `#{1, a: 1}`
+			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
+			res, err := Eval(code, state, false)
+			assert.NoError(t, err)
+			assert.EqualValues(t, NewRecordFromMap(ValMap{
+				"":  NewTuple([]Serializable{Int(1)}),
+				"a": Int(1),
+			}), res)
+		})
 	})
 
 	t.Run("dictionary literal", func(t *testing.T) {

@@ -1496,7 +1496,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 				if !slices.Contains(finalObj.keys, inoxconsts.IMPLICIT_PROP_NAME) {
 					elemListIndex = len(finalObj.values)
 					finalObj.keys = append(finalObj.keys, inoxconsts.IMPLICIT_PROP_NAME)
-					finalObj.values = append(finalObj.values, nil)
+					finalObj.values = append(finalObj.values, nil) //reserve location
 				}
 				continue
 			default:
@@ -1541,7 +1541,10 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 	case *parse.RecordLiteral:
 		finalRecord := &Record{}
 
-		indexKey := 0
+		//created from no key properties
+		var elements []Serializable
+		elemListIndex := 0 //index of ""
+
 		for _, p := range n.Properties {
 			v, err := TreeWalkEval(p.Value, state)
 			if err != nil {
@@ -1553,16 +1556,16 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			switch n := p.Key.(type) {
 			case *parse.QuotedStringLiteral:
 				key = n.Value
-				_, err := strconv.ParseUint(key, 10, 32)
-				if err == nil {
-					//see Check function
-					indexKey++
-				}
 			case *parse.IdentifierLiteral:
 				key = n.Name
-			case nil:
-				key = strconv.Itoa(indexKey)
-				indexKey++
+			case nil: //no key
+				elements = append(elements, v.(Serializable))
+				if !slices.Contains(finalRecord.keys, inoxconsts.IMPLICIT_PROP_NAME) {
+					elemListIndex = len(finalRecord.values)
+					finalRecord.keys = append(finalRecord.keys, inoxconsts.IMPLICIT_PROP_NAME)
+					finalRecord.values = append(finalRecord.values, nil) //reserve location
+				}
+				continue
 			default:
 				return nil, fmt.Errorf("invalid key type %T", n)
 			}
@@ -1585,11 +1588,13 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 				finalRecord.values = append(finalRecord.values, object.Prop(state.Global.Ctx, name).(Serializable))
 			}
 		}
-		finalRecord.sortProps()
 
-		if indexKey != 0 {
-			finalRecord.implicitPropCount = indexKey
+		if len(elements) > 0 {
+			tuple := NewTuple(elements)
+			finalRecord.values[elemListIndex] = tuple
 		}
+
+		finalRecord.sortProps()
 
 		return finalRecord, nil
 	case *parse.ListLiteral:
