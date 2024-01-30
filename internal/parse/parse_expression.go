@@ -5,11 +5,11 @@ package parse
 func (p *parser) parseExpression(precededByOpeningParen ...bool) (expr Node, isMissingExpr bool) {
 	p.panicIfContextDone()
 
-	__start := p.i
+	exprStartIndex := p.i
 	// these variables are only used for expressions that can be on the left side of a member/slice/index/call expression,
 	// other expressions are directly returned.
 	var (
-		lhs   Node
+		left  Node
 		first Node
 	)
 
@@ -38,14 +38,14 @@ func (p *parser) parseExpression(precededByOpeningParen ...bool) (expr Node, isM
 		}
 
 		if isGlobal {
-			lhs = &GlobalVariable{
+			left = &GlobalVariable{
 				NodeBase: NodeBase{
 					Span: NodeSpan{start, p.i},
 				},
 				Name: string(p.s[start+2 : p.i]),
 			}
 		} else {
-			lhs = &Variable{
+			left = &Variable{
 				NodeBase: NodeBase{
 					Span: NodeSpan{start, p.i},
 				},
@@ -56,11 +56,11 @@ func (p *parser) parseExpression(precededByOpeningParen ...bool) (expr Node, isM
 	case '!':
 		p.i++
 		operand, _ := p.parseExpression()
-		p.tokens = append(p.tokens, Token{Type: EXCLAMATION_MARK, Span: NodeSpan{__start, __start + 1}})
+		p.tokens = append(p.tokens, Token{Type: EXCLAMATION_MARK, Span: NodeSpan{exprStartIndex, exprStartIndex + 1}})
 
 		return &UnaryExpression{
 			NodeBase: NodeBase{
-				Span: NodeSpan{__start, operand.Base().Span.End},
+				Span: NodeSpan{exprStartIndex, operand.Base().Span.End},
 			},
 			Operator: BoolNegate,
 			Operand:  operand,
@@ -68,11 +68,11 @@ func (p *parser) parseExpression(precededByOpeningParen ...bool) (expr Node, isM
 	case '~':
 		p.i++
 		expr, _ := p.parseExpression()
-		p.tokens = append(p.tokens, Token{Type: TILDE, Span: NodeSpan{__start, __start + 1}})
+		p.tokens = append(p.tokens, Token{Type: TILDE, Span: NodeSpan{exprStartIndex, exprStartIndex + 1}})
 
 		return &RuntimeTypeCheckExpression{
 			NodeBase: NodeBase{
-				Span: NodeSpan{__start, expr.Base().Span.End},
+				Span: NodeSpan{exprStartIndex, expr.Base().Span.End},
 			},
 			Expr: expr,
 		}, false
@@ -96,128 +96,11 @@ func (p *parser) parseExpression(precededByOpeningParen ...bool) (expr Node, isM
 	//TODO: refactor ?
 	case '_', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
 		'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z':
-		identStartingExpr := p.parseIdentStartingExpression(p.inPattern)
-		var name string
-
-		switch v := identStartingExpr.(type) {
-		case *IdentifierLiteral:
-			name = v.Name
-			switch name {
-			case tokenStrings[GO_KEYWORD]:
-				return p.parseSpawnExpression(identStartingExpr), false
-			case tokenStrings[FN_KEYWORD]:
-				if p.inPattern {
-					return p.parseFunctionPattern(identStartingExpr.Base().Span.Start, false), false
-				}
-				return p.parseFunction(identStartingExpr.Base().Span.Start), false
-
-			case "s":
-				if p.i < p.len && p.s[p.i] == '!' {
-					p.i++
-					return p.parseTopCssSelector(p.i - 2), false
-				}
-			case tokenStrings[MAPPING_KEYWORD]:
-				return p.parseMappingExpression(v), false
-			case tokenStrings[COMP_KEYWORD]:
-				return p.parseComputeExpression(v), false
-			case tokenStrings[TREEDATA_KEYWORD]:
-				return p.parseTreedataLiteral(v), false
-			case tokenStrings[CONCAT_KEYWORD]:
-				return p.parseConcatenationExpression(v, len(precededByOpeningParen) > 0 && precededByOpeningParen[0]), false
-			case tokenStrings[TESTSUITE_KEYWORD]:
-				return p.parseTestSuiteExpression(v), false
-			case tokenStrings[TESTCASE_KEYWORD]:
-				return p.parseTestCaseExpression(v), false
-			case tokenStrings[LIFETIMEJOB_KEYWORD]:
-				return p.parseLifetimeJobExpression(v), false
-			case tokenStrings[ON_KEYWORD]:
-				return p.parseReceptionHandlerExpression(v), false
-			case tokenStrings[SENDVAL_KEYWORD]:
-				return p.parseSendValueExpression(v), false
-			case tokenStrings[READONLY_KEYWORD]:
-				if p.inPattern {
-					return p.parseReadonlyPatternExpression(v), false
-				}
-			case NEW_KEYWORD_STRING:
-				return p.parseNewExpression(v), false
-			}
-			if isKeyword(name) {
-				return v, false
-			}
-			if p.inPattern {
-				result := &PatternIdentifierLiteral{
-					NodeBase:   v.NodeBase,
-					Unprefixed: true,
-					Name:       v.Name,
-				}
-				if p.i < p.len {
-					switch p.s[p.i] {
-					case '(', '{':
-						return p.parsePatternCall(result), false
-					case '?':
-						p.i++
-						return &OptionalPatternExpression{
-							NodeBase: NodeBase{
-								Span: NodeSpan{result.Base().Span.Start, p.i},
-							},
-							Pattern: result,
-						}, false
-					}
-				}
-				return result, false
-			}
-		case *IdentifierMemberExpression:
-			if p.inPattern && len(v.PropertyNames) == 1 {
-				base := v.Left.NodeBase
-				base.Span.End += 1 //add one for the dot
-
-				result := &PatternNamespaceMemberExpression{
-					NodeBase: v.NodeBase,
-					Namespace: &PatternNamespaceIdentifierLiteral{
-						NodeBase:   base,
-						Unprefixed: true,
-						Name:       v.Left.Name,
-					},
-					MemberName: v.PropertyNames[0],
-				}
-				if p.i < p.len {
-					switch p.s[p.i] {
-					case '(', '{':
-						return p.parsePatternCall(result), false
-					case '?':
-						p.i++
-						return &OptionalPatternExpression{
-							NodeBase: NodeBase{
-								Span: NodeSpan{result.Base().Span.Start, p.i},
-							},
-							Pattern: result,
-						}, false
-					}
-				}
-				return result, false
-			}
-
-			name = v.Left.Name
-		case *SelfExpression, *MemberExpression:
-			lhs = identStartingExpr
-		default:
-			return v, false
+		e, returnNow := p.parseUnderscoreAlphaStartingExpression(precededByOpeningParen...)
+		if returnNow {
+			return e, false
 		}
-
-		if p.i >= p.len || (isUnpairedOrIsClosingDelim(p.s[p.i]) && (p.i >= p.len-1 || p.s[p.i] != ':' || p.s[p.i+1] != ':')) {
-			return identStartingExpr, false
-		}
-
-		if p.s[p.i] == '<' && NodeIs(identStartingExpr, (*IdentifierLiteral)(nil)) {
-			return p.parseXMLExpression(identStartingExpr.(*IdentifierLiteral)), false
-		}
-
-		call := p.tryParseCall(identStartingExpr, name)
-		if call != nil {
-			identStartingExpr = call
-		}
-
-		lhs = identStartingExpr
+		left = e
 	case '0':
 		if p.i < p.len-2 && isByteSliceBase(p.s[p.i+1]) && p.s[p.i+2] == '[' {
 			return p.parseByteSlices(), false
@@ -281,16 +164,16 @@ func (p *parser) parseExpression(precededByOpeningParen ...bool) (expr Node, isM
 
 		var parsingErr *ParsingError
 
-		if p.i == __start+1 {
+		if p.i == exprStartIndex+1 {
 			parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_IDENTIFIER_LIT}
 		}
 
 		return &UnambiguousIdentifierLiteral{
 			NodeBase: NodeBase{
-				Span: NodeSpan{__start, p.i},
+				Span: NodeSpan{exprStartIndex, p.i},
 				Err:  parsingErr,
 			},
-			Name: string(p.s[__start+1 : p.i]),
+			Name: string(p.s[exprStartIndex+1 : p.i]),
 		}, false
 	case '@':
 		return p.parseLazyAndHostAliasStuff(), false
@@ -326,338 +209,29 @@ func (p *parser) parseExpression(precededByOpeningParen ...bool) (expr Node, isM
 		openingParenIndex := p.i
 		p.i++
 
-		lhs = p.parseUnaryBinaryAndParenthesizedExpression(openingParenIndex, -1)
+		left = p.parseUnaryBinaryAndParenthesizedExpression(openingParenIndex, -1)
 		if p.i >= p.len {
-			return lhs, false
+			return left, false
 		}
 	}
 
-	first = lhs
+	first = left
 
 loop:
-	for lhs != nil && p.i < p.len && (!isUnpairedOrIsClosingDelim(p.s[p.i]) || (p.i < p.len-1 && p.s[p.i] == ':' && p.s[p.i+1] == ':')) {
+	for left != nil && p.i < p.len && (!isUnpairedOrIsClosingDelim(p.s[p.i]) || (p.i < p.len-1 && p.s[p.i] == ':' && p.s[p.i+1] == ':')) {
 		isDoubleColon := p.i < p.len-1 && p.s[p.i] == ':' && p.s[p.i+1] == ':'
 
 		switch {
-		//member expressions, index/slice expressions, extraction expression & double-colon expressions
 		case p.s[p.i] == '[' || p.s[p.i] == '.' || isDoubleColon:
-			dot := p.s[p.i] == '.'
-			isBracket := p.s[p.i] == '['
-			tokenStart := p.i
-
-			if isDoubleColon {
-				p.i++
-			}
-
-			p.i++
-			start := p.i
-			isOptional := false
-
-			isDot := p.s[p.i-1] == '.'
-
-			if isDot && p.i < p.len && p.s[p.i] == '?' {
-				isOptional = true
-				p.i++
-				start = p.i
-			}
-
-			if p.i >= p.len || (isUnpairedOrIsClosingDelim(p.s[p.i]) && (dot || (p.s[p.i] != ':' && p.s[p.i] != ']'))) {
-				//unterminated member expression
-				if isDot {
-					return &MemberExpression{
-						NodeBase: NodeBase{
-							NodeSpan{first.Base().Span.Start, p.i},
-							&ParsingError{UnterminatedMemberExpr, UNTERMINATED_MEMB_OR_INDEX_EXPR},
-							false,
-						},
-						Left:     lhs,
-						Optional: isOptional,
-					}, false
-				}
-				if isDoubleColon {
-					p.tokens = append(p.tokens, Token{Type: DOUBLE_COLON, Span: NodeSpan{tokenStart, tokenStart + 2}})
-
-					return &DoubleColonExpression{
-						NodeBase: NodeBase{
-							NodeSpan{first.Base().Span.Start, p.i},
-							&ParsingError{UnterminatedDoubleColonExpr, UNTERMINATED_DOUBLE_COLON_EXPR},
-							false,
-						},
-						Left: lhs,
-					}, false
-				}
-				return &InvalidMemberLike{
-					NodeBase: NodeBase{
-						NodeSpan{first.Base().Span.Start, p.i},
-						&ParsingError{UnspecifiedParsingError, UNTERMINATED_MEMB_OR_INDEX_EXPR},
-						false,
-					},
-					Left: lhs,
-				}, false
-			}
-
-			switch {
-			case isBracket: //index/slice expression
-				p.eatSpace()
-
-				if p.i >= p.len {
-					return &InvalidMemberLike{
-						NodeBase: NodeBase{
-							NodeSpan{first.Base().Span.Start, p.i},
-							&ParsingError{UnspecifiedParsingError, UNTERMINATED_INDEX_OR_SLICE_EXPR},
-							false,
-						},
-						Left: lhs,
-					}, false
-				}
-
-				var startIndex Node
-				var endIndex Node
-				isSliceExpr := p.s[p.i] == ':'
-
-				if isSliceExpr {
-					p.i++
-				} else {
-					startIndex, _ = p.parseExpression()
-				}
-
-				p.eatSpace()
-
-				if p.i >= p.len {
-					return &InvalidMemberLike{
-						NodeBase: NodeBase{
-							NodeSpan{first.Base().Span.Start, p.i},
-							&ParsingError{UnspecifiedParsingError, UNTERMINATED_INDEX_OR_SLICE_EXPR},
-							false,
-						},
-						Left: lhs,
-					}, false
-				}
-
-				if p.s[p.i] == ':' {
-					if isSliceExpr {
-						return &SliceExpression{
-							NodeBase: NodeBase{
-								NodeSpan{first.Base().Span.Start, p.i},
-								&ParsingError{UnspecifiedParsingError, INVALID_SLICE_EXPR_SINGLE_COLON},
-								false,
-							},
-							Indexed:    lhs,
-							StartIndex: startIndex,
-							EndIndex:   endIndex,
-						}, false
-					}
-					isSliceExpr = true
-					p.i++
-				}
-
-				p.eatSpace()
-
-				if isSliceExpr && startIndex == nil && (p.i >= p.len || p.s[p.i] == ']') {
-					return &SliceExpression{
-						NodeBase: NodeBase{
-							NodeSpan{first.Base().Span.Start, p.i},
-							&ParsingError{UnspecifiedParsingError, UNTERMINATED_SLICE_EXPR_MISSING_END_INDEX},
-							false,
-						},
-						Indexed:    lhs,
-						StartIndex: startIndex,
-						EndIndex:   endIndex,
-					}, false
-				}
-
-				if p.i < p.len && p.s[p.i] != ']' && isSliceExpr {
-					endIndex, _ = p.parseExpression()
-				}
-
-				p.eatSpace()
-
-				if p.i >= p.len || p.s[p.i] != ']' {
-					return &InvalidMemberLike{
-						NodeBase: NodeBase{
-							NodeSpan{first.Base().Span.Start, p.i},
-							&ParsingError{UnspecifiedParsingError, UNTERMINATED_INDEX_OR_SLICE_EXPR_MISSING_CLOSING_BRACKET},
-							false,
-						},
-						Left: lhs,
-					}, false
-				}
-
-				p.i++
-
-				spanStart := lhs.Base().Span.Start
-				if lhs == first {
-					spanStart = __start
-				}
-
-				if isSliceExpr {
-					lhs = &SliceExpression{
-						NodeBase: NodeBase{
-							NodeSpan{spanStart, p.i},
-							nil,
-							false,
-						},
-						Indexed:    lhs,
-						StartIndex: startIndex,
-						EndIndex:   endIndex,
-					}
-					continue loop
-				}
-
-				lhs = &IndexExpression{
-					NodeBase: NodeBase{
-						NodeSpan{spanStart, p.i},
-						nil,
-						false,
-					},
-					Indexed: lhs,
-					Index:   startIndex,
-				}
-			case isDoubleColon: //double-colon expression
-				p.tokens = append(p.tokens, Token{Type: DOUBLE_COLON, Span: NodeSpan{tokenStart, tokenStart + 2}})
-
-				elementNameStart := p.i
-				var parsingErr *ParsingError
-				if !isAlpha(p.s[p.i]) && p.s[p.i] != '_' {
-					parsingErr = &ParsingError{UnspecifiedParsingError, fmtDoubleColonExpressionelementShouldStartWithAletterNot(p.s[p.i])}
-				}
-
-				for p.i < p.len && IsIdentChar(p.s[p.i]) {
-					p.i++
-				}
-
-				spanStart := lhs.Base().Span.Start
-				if lhs == first {
-					spanStart = __start
-				}
-
-				elementName := string(p.s[elementNameStart:p.i])
-				if lhs == first {
-					spanStart = __start
-				}
-
-				element := &IdentifierLiteral{
-					NodeBase: NodeBase{
-						NodeSpan{elementNameStart, p.i},
-						nil,
-						false,
-					},
-					Name: elementName,
-				}
-
-				lhs = &DoubleColonExpression{
-					NodeBase: NodeBase{
-						Span: NodeSpan{spanStart, p.i},
-						Err:  parsingErr,
-					},
-					Left:    lhs,
-					Element: element,
-				}
-			case p.s[p.i] == '{': //extraction expression (result is returned, the loop is not continued)
-				p.i--
-				keyList := p.parseKeyList()
-
-				lhs = &ExtractionExpression{
-					NodeBase: NodeBase{
-						NodeSpan{lhs.Base().Span.Start, keyList.Span.End},
-						nil,
-						false,
-					},
-					Object: lhs,
-					Keys:   keyList,
-				}
+			//member expressions, index/slice expressions, extraction expression & double-colon expressions.
+			membLike, continueLoop := p.parseMemberLike(exprStartIndex, first, left, isDoubleColon)
+			if continueLoop {
+				left = membLike
 				continue loop
-			default:
-				isDynamic := false
-				isComputed := false
-				spanStart := lhs.Base().Span.Start
-				var computedPropertyNode Node
-				var propertyNameIdent *IdentifierLiteral
-				propNameStart := start
-
-				if !isOptional && p.i < p.len {
-					switch p.s[p.i] {
-					case '<':
-						isDynamic = true
-						p.i++
-						propNameStart++
-					case '(':
-						isComputed = true
-						p.i++
-						computedPropertyNode = p.parseUnaryBinaryAndParenthesizedExpression(p.i-1, -1)
-					}
-				}
-
-				newMemberExpression := func(err *ParsingError) Node {
-					if isDynamic {
-						return &DynamicMemberExpression{
-							NodeBase: NodeBase{
-								NodeSpan{spanStart, p.i},
-								err,
-								false,
-							},
-							Left:         lhs,
-							PropertyName: propertyNameIdent,
-							Optional:     isOptional,
-						}
-					}
-					if isComputed {
-						return &ComputedMemberExpression{
-							NodeBase: NodeBase{
-								NodeSpan{spanStart, p.i},
-								err,
-								false,
-							},
-							Left:         lhs,
-							PropertyName: computedPropertyNode,
-							Optional:     isOptional,
-						}
-					}
-					return &MemberExpression{
-						NodeBase: NodeBase{
-							NodeSpan{spanStart, p.i},
-							err,
-							false,
-						},
-						Left:         lhs,
-						PropertyName: propertyNameIdent,
-						Optional:     isOptional,
-					}
-				}
-
-				if !isComputed {
-					if isDynamic && p.i >= p.len {
-						return newMemberExpression(&ParsingError{UnspecifiedParsingError, UNTERMINATED_DYN_MEMB_OR_INDEX_EXPR}), false
-					}
-
-					//member expression with invalid property name
-					if !isAlpha(p.s[p.i]) && p.s[p.i] != '_' {
-						return newMemberExpression(&ParsingError{UnspecifiedParsingError, fmtPropNameShouldStartWithAletterNot(p.s[p.i])}), false
-					}
-
-					for p.i < p.len && IsIdentChar(p.s[p.i]) {
-						p.i++
-					}
-
-					propName := string(p.s[propNameStart:p.i])
-					if lhs == first {
-						spanStart = __start
-					}
-
-					propertyNameIdent = &IdentifierLiteral{
-						NodeBase: NodeBase{
-							NodeSpan{propNameStart, p.i},
-							nil,
-							false,
-						},
-						Name: propName,
-					}
-				}
-
-				lhs = newMemberExpression(nil)
 			}
+			return membLike, false
 		case ((p.i < p.len && p.s[p.i] == '(') ||
-			(p.i < p.len-1 && p.s[p.i] == '!' && p.s[p.i+1] == '(')): //call: <lhs> '(' ...
+			(p.i < p.len-1 && p.s[p.i] == '!' && p.s[p.i+1] == '(')): //call: <left> '(' ...
 
 			must := false
 			if p.s[p.i] == '!' {
@@ -672,10 +246,10 @@ loop:
 			}
 
 			p.i++
-			spanStart := lhs.Base().Span.Start
+			spanStart := left.Base().Span.Start
 
-			if lhs == first {
-				spanStart = __start
+			if left == first {
+				spanStart = exprStartIndex
 			}
 
 			call := &CallExpression{
@@ -684,29 +258,29 @@ loop:
 					nil,
 					false,
 				},
-				Callee:    lhs,
+				Callee:    left,
 				Arguments: nil,
 				Must:      must,
 			}
 
-			lhs = p.parseParenthesizedCallArgs(call)
+			left = p.parseParenthesizedCallArgs(call)
 		case p.s[p.i] == '?':
 			p.i++
-			lhs = &BooleanConversionExpression{
+			left = &BooleanConversionExpression{
 				NodeBase: NodeBase{
-					NodeSpan{__start, p.i},
+					NodeSpan{exprStartIndex, p.i},
 					nil,
 					false,
 				},
-				Expr: lhs,
+				Expr: left,
 			}
 		default:
 			break loop
 		}
 	}
 
-	if lhs != nil {
-		return lhs, false
+	if left != nil {
+		return left, false
 	}
 
 	return &MissingExpression{
@@ -715,4 +289,493 @@ loop:
 			Err:  &ParsingError{UnspecifiedParsingError, fmtExprExpectedHere(p.s, p.i, true)},
 		},
 	}, true
+}
+
+func (p *parser) parseUnderscoreAlphaStartingExpression(precededByOpeningParen ...bool) (node Node, returnNow bool) {
+	returnNow = true
+	identStartingExpr := p.parseIdentStartingExpression(p.inPattern)
+
+	var name string
+
+	switch v := identStartingExpr.(type) {
+	case *IdentifierLiteral:
+		name = v.Name
+		switch name {
+		case tokenStrings[GO_KEYWORD]:
+			node = p.parseSpawnExpression(identStartingExpr)
+			return
+		case tokenStrings[FN_KEYWORD]:
+			if p.inPattern {
+				node = p.parseFunctionPattern(identStartingExpr.Base().Span.Start, false)
+				return
+			}
+			node = p.parseFunction(identStartingExpr.Base().Span.Start)
+			return
+		case "s":
+			if p.i < p.len && p.s[p.i] == '!' {
+				p.i++
+				node = p.parseTopCssSelector(p.i - 2)
+				return
+			}
+		case tokenStrings[MAPPING_KEYWORD]:
+			node = p.parseMappingExpression(v)
+			return
+		case tokenStrings[COMP_KEYWORD]:
+			node = p.parseComputeExpression(v)
+			return
+		case tokenStrings[TREEDATA_KEYWORD]:
+			node = p.parseTreedataLiteral(v)
+			return
+		case tokenStrings[CONCAT_KEYWORD]:
+			node = p.parseConcatenationExpression(v, len(precededByOpeningParen) > 0 && precededByOpeningParen[0])
+			return
+		case tokenStrings[TESTSUITE_KEYWORD]:
+			node = p.parseTestSuiteExpression(v)
+			return
+		case tokenStrings[TESTCASE_KEYWORD]:
+			node = p.parseTestCaseExpression(v)
+			return
+		case tokenStrings[LIFETIMEJOB_KEYWORD]:
+			node = p.parseLifetimeJobExpression(v)
+			return
+		case tokenStrings[ON_KEYWORD]:
+			node = p.parseReceptionHandlerExpression(v)
+			return
+		case tokenStrings[SENDVAL_KEYWORD]:
+			node = p.parseSendValueExpression(v)
+			return
+		case tokenStrings[READONLY_KEYWORD]:
+			if p.inPattern {
+				node = p.parseReadonlyPatternExpression(v)
+				return
+			}
+		case NEW_KEYWORD_STRING:
+			node = p.parseNewExpression(v)
+			return
+		}
+		if isKeyword(name) {
+			node = v
+			return
+		}
+		if p.inPattern {
+			result := &PatternIdentifierLiteral{
+				NodeBase:   v.NodeBase,
+				Unprefixed: true,
+				Name:       v.Name,
+			}
+			if p.i < p.len {
+				switch p.s[p.i] {
+				case '(', '{':
+					node = p.parsePatternCall(result)
+					return
+				case '?':
+					p.i++
+					node = &OptionalPatternExpression{
+						NodeBase: NodeBase{
+							Span: NodeSpan{result.Base().Span.Start, p.i},
+						},
+						Pattern: result,
+					}
+					return
+				}
+			}
+			node = result
+			return
+		}
+	case *IdentifierMemberExpression:
+		if p.inPattern && len(v.PropertyNames) == 1 {
+			base := v.Left.NodeBase
+			base.Span.End += 1 //add one for the dot
+
+			result := &PatternNamespaceMemberExpression{
+				NodeBase: v.NodeBase,
+				Namespace: &PatternNamespaceIdentifierLiteral{
+					NodeBase:   base,
+					Unprefixed: true,
+					Name:       v.Left.Name,
+				},
+				MemberName: v.PropertyNames[0],
+			}
+			if p.i < p.len {
+				switch p.s[p.i] {
+				case '(', '{':
+					node = p.parsePatternCall(result)
+					return
+				case '?':
+					p.i++
+					node = &OptionalPatternExpression{
+						NodeBase: NodeBase{
+							Span: NodeSpan{result.Base().Span.Start, p.i},
+						},
+						Pattern: result,
+					}
+					return
+				}
+			}
+			node = result
+			return
+		}
+
+		name = v.Left.Name
+	case *SelfExpression, *MemberExpression:
+		node = identStartingExpr
+		returnNow = false
+	default:
+		node = v
+		return
+	}
+
+	if p.i >= p.len || (isUnpairedOrIsClosingDelim(p.s[p.i]) && (p.i >= p.len-1 || p.s[p.i] != ':' || p.s[p.i+1] != ':')) {
+		node = identStartingExpr
+		return
+	}
+
+	if p.s[p.i] == '<' && NodeIs(identStartingExpr, (*IdentifierLiteral)(nil)) {
+		node = p.parseXMLExpression(identStartingExpr.(*IdentifierLiteral))
+		return
+	}
+
+	call := p.tryParseCall(identStartingExpr, name)
+	if call != nil {
+		identStartingExpr = call
+	}
+
+	node = identStartingExpr
+	returnNow = false
+	return
+}
+
+func (p *parser) parseMemberLike(_start int32, first, left Node, isDoubleColon bool) (result Node, continueLoop bool) {
+	dot := p.s[p.i] == '.'
+	isBracket := p.s[p.i] == '['
+	tokenStart := p.i
+
+	if isDoubleColon {
+		p.i++
+	}
+
+	p.i++
+	start := p.i
+	isOptional := false
+
+	isDot := p.s[p.i-1] == '.'
+
+	if isDot && p.i < p.len && p.s[p.i] == '?' {
+		isOptional = true
+		p.i++
+		start = p.i
+	}
+
+	if p.i >= p.len || (isUnpairedOrIsClosingDelim(p.s[p.i]) && (dot || (p.s[p.i] != ':' && p.s[p.i] != ']'))) {
+		//unterminated member expression
+		if isDot {
+			result = &MemberExpression{
+				NodeBase: NodeBase{
+					NodeSpan{first.Base().Span.Start, p.i},
+					&ParsingError{UnterminatedMemberExpr, UNTERMINATED_MEMB_OR_INDEX_EXPR},
+					false,
+				},
+				Left:     left,
+				Optional: isOptional,
+			}
+			return
+		}
+		if isDoubleColon {
+			p.tokens = append(p.tokens, Token{Type: DOUBLE_COLON, Span: NodeSpan{tokenStart, tokenStart + 2}})
+
+			result = &DoubleColonExpression{
+				NodeBase: NodeBase{
+					NodeSpan{first.Base().Span.Start, p.i},
+					&ParsingError{UnterminatedDoubleColonExpr, UNTERMINATED_DOUBLE_COLON_EXPR},
+					false,
+				},
+				Left: left,
+			}
+			return
+		}
+		result = &InvalidMemberLike{
+			NodeBase: NodeBase{
+				NodeSpan{first.Base().Span.Start, p.i},
+				&ParsingError{UnspecifiedParsingError, UNTERMINATED_MEMB_OR_INDEX_EXPR},
+				false,
+			},
+			Left: left,
+		}
+		return
+	}
+
+	switch {
+	case isBracket: //index/slice expression
+		p.eatSpace()
+
+		if p.i >= p.len {
+			result = &InvalidMemberLike{
+				NodeBase: NodeBase{
+					NodeSpan{first.Base().Span.Start, p.i},
+					&ParsingError{UnspecifiedParsingError, UNTERMINATED_INDEX_OR_SLICE_EXPR},
+					false,
+				},
+				Left: left,
+			}
+			return
+		}
+
+		var startIndex Node
+		var endIndex Node
+		isSliceExpr := p.s[p.i] == ':'
+
+		if isSliceExpr {
+			p.i++
+		} else {
+			startIndex, _ = p.parseExpression()
+		}
+
+		p.eatSpace()
+
+		if p.i >= p.len {
+			result = &InvalidMemberLike{
+				NodeBase: NodeBase{
+					NodeSpan{first.Base().Span.Start, p.i},
+					&ParsingError{UnspecifiedParsingError, UNTERMINATED_INDEX_OR_SLICE_EXPR},
+					false,
+				},
+				Left: left,
+			}
+			return
+		}
+
+		if p.s[p.i] == ':' {
+			if isSliceExpr {
+				result = &SliceExpression{
+					NodeBase: NodeBase{
+						Span: NodeSpan{first.Base().Span.Start, p.i},
+						Err:  &ParsingError{UnspecifiedParsingError, INVALID_SLICE_EXPR_SINGLE_COLON},
+					},
+					Indexed:    left,
+					StartIndex: startIndex,
+					EndIndex:   endIndex,
+				}
+				return
+			}
+			isSliceExpr = true
+			p.i++
+		}
+
+		p.eatSpace()
+
+		if isSliceExpr && startIndex == nil && (p.i >= p.len || p.s[p.i] == ']') {
+			result = &SliceExpression{
+				NodeBase: NodeBase{
+					NodeSpan{first.Base().Span.Start, p.i},
+					&ParsingError{UnspecifiedParsingError, UNTERMINATED_SLICE_EXPR_MISSING_END_INDEX},
+					false,
+				},
+				Indexed:    left,
+				StartIndex: startIndex,
+				EndIndex:   endIndex,
+			}
+			return
+		}
+
+		if p.i < p.len && p.s[p.i] != ']' && isSliceExpr {
+			endIndex, _ = p.parseExpression()
+		}
+
+		p.eatSpace()
+
+		if p.i >= p.len || p.s[p.i] != ']' {
+			result = &InvalidMemberLike{
+				NodeBase: NodeBase{
+					NodeSpan{first.Base().Span.Start, p.i},
+					&ParsingError{UnspecifiedParsingError, UNTERMINATED_INDEX_OR_SLICE_EXPR_MISSING_CLOSING_BRACKET},
+					false,
+				},
+				Left: left,
+			}
+			return
+		}
+
+		p.i++
+
+		spanStart := left.Base().Span.Start
+		if left == first {
+			spanStart = _start
+		}
+
+		if isSliceExpr {
+			result = &SliceExpression{
+				NodeBase: NodeBase{
+					NodeSpan{spanStart, p.i},
+					nil,
+					false,
+				},
+				Indexed:    left,
+				StartIndex: startIndex,
+				EndIndex:   endIndex,
+			}
+			continueLoop = true
+			return
+		}
+
+		result = &IndexExpression{
+			NodeBase: NodeBase{
+				NodeSpan{spanStart, p.i},
+				nil,
+				false,
+			},
+			Indexed: left,
+			Index:   startIndex,
+		}
+		continueLoop = true
+		return
+	case isDoubleColon: //double-colon expression
+		p.tokens = append(p.tokens, Token{Type: DOUBLE_COLON, Span: NodeSpan{tokenStart, tokenStart + 2}})
+
+		elementNameStart := p.i
+		var parsingErr *ParsingError
+		if !isAlpha(p.s[p.i]) && p.s[p.i] != '_' {
+			parsingErr = &ParsingError{UnspecifiedParsingError, fmtDoubleColonExpressionelementShouldStartWithAletterNot(p.s[p.i])}
+		}
+
+		for p.i < p.len && IsIdentChar(p.s[p.i]) {
+			p.i++
+		}
+
+		spanStart := left.Base().Span.Start
+		if left == first {
+			spanStart = _start
+		}
+
+		elementName := string(p.s[elementNameStart:p.i])
+		if left == first {
+			spanStart = _start
+		}
+
+		element := &IdentifierLiteral{
+			NodeBase: NodeBase{
+				NodeSpan{elementNameStart, p.i},
+				nil,
+				false,
+			},
+			Name: elementName,
+		}
+
+		result = &DoubleColonExpression{
+			NodeBase: NodeBase{
+				Span: NodeSpan{spanStart, p.i},
+				Err:  parsingErr,
+			},
+			Left:    left,
+			Element: element,
+		}
+		continueLoop = true
+		return
+	case p.s[p.i] == '{': //extraction expression (result is returned, the loop is not continued)
+		p.i--
+		keyList := p.parseKeyList()
+
+		result = &ExtractionExpression{
+			NodeBase: NodeBase{
+				NodeSpan{left.Base().Span.Start, keyList.Span.End},
+				nil,
+				false,
+			},
+			Object: left,
+			Keys:   keyList,
+		}
+		continueLoop = true
+		return
+	default:
+		isDynamic := false
+		isComputed := false
+		spanStart := left.Base().Span.Start
+		var computedPropertyNode Node
+		var propertyNameIdent *IdentifierLiteral
+		propNameStart := start
+
+		if !isOptional && p.i < p.len {
+			switch p.s[p.i] {
+			case '<':
+				isDynamic = true
+				p.i++
+				propNameStart++
+			case '(':
+				isComputed = true
+				p.i++
+				computedPropertyNode = p.parseUnaryBinaryAndParenthesizedExpression(p.i-1, -1)
+			}
+		}
+
+		newMemberExpression := func(err *ParsingError) Node {
+			if isDynamic {
+				return &DynamicMemberExpression{
+					NodeBase: NodeBase{
+						NodeSpan{spanStart, p.i},
+						err,
+						false,
+					},
+					Left:         left,
+					PropertyName: propertyNameIdent,
+					Optional:     isOptional,
+				}
+			}
+			if isComputed {
+				return &ComputedMemberExpression{
+					NodeBase: NodeBase{
+						NodeSpan{spanStart, p.i},
+						err,
+						false,
+					},
+					Left:         left,
+					PropertyName: computedPropertyNode,
+					Optional:     isOptional,
+				}
+			}
+			return &MemberExpression{
+				NodeBase: NodeBase{
+					NodeSpan{spanStart, p.i},
+					err,
+					false,
+				},
+				Left:         left,
+				PropertyName: propertyNameIdent,
+				Optional:     isOptional,
+			}
+		}
+
+		if !isComputed {
+			if isDynamic && p.i >= p.len {
+				result = newMemberExpression(&ParsingError{UnspecifiedParsingError, UNTERMINATED_DYN_MEMB_OR_INDEX_EXPR})
+				return
+			}
+
+			//member expression with invalid property name
+			if !isAlpha(p.s[p.i]) && p.s[p.i] != '_' {
+				result = newMemberExpression(&ParsingError{UnspecifiedParsingError, fmtPropNameShouldStartWithAletterNot(p.s[p.i])})
+				return
+			}
+
+			for p.i < p.len && IsIdentChar(p.s[p.i]) {
+				p.i++
+			}
+
+			propName := string(p.s[propNameStart:p.i])
+			if left == first {
+				spanStart = _start
+			}
+
+			propertyNameIdent = &IdentifierLiteral{
+				NodeBase: NodeBase{
+					NodeSpan{propNameStart, p.i},
+					nil,
+					false,
+				},
+				Name: propName,
+			}
+		}
+
+		result = newMemberExpression(nil)
+		continueLoop = true
+		return
+	}
 }
