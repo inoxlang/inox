@@ -7,8 +7,13 @@ This package contains most the code for the Inox Runtime, the type checking logi
  
 **<summary>Code organization</summary>**
 
-- Tree Walk Interpreter
-    - [tree_walk.go](tree_walk.go)
+The code evaluation tests are the same for the bytecode interpreter and the tree walk evaluation,
+they are located in [eval_test.go](eval_test.go).
+
+- Tree Walk Evaluation
+    - [tree_walk_state.go](tree_walk_state.go)
+    - [tree_walk_eval.go](tree_walk_eval.go)
+    - [tree_walk_eval_call.go](tree_walk_eval_call.go)
 - Bytecode Interpreter (inspired from https://github.com/d5/tengo.)
     - [compiler.go](compiler.go)
     - [vm.go](vm.go)
@@ -39,6 +44,9 @@ This package contains most the code for the Inox Runtime, the type checking logi
     - [permissions.go](permissions.go)
     - [limit.go](limit.go)
     - [token_bucket.go](token_bucket.go)
+- Transaction
+    - [transaction.go](./transaction.go)
+    - [transaction_isolation.go](./transaction_isolation.go)
 - Secrets
     - [secrets.go](secrets.go)
 - Mutation

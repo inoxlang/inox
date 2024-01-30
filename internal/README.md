@@ -59,7 +59,6 @@ _From more relevant to less relevant._
 [buntdb](./buntdb/buntdb.go)
 - BuntDB fork (https://github.com/tidwall/buntdb)
 
-
 [mod](./mod/execution.go)
 - Module execution
 
@@ -121,3 +120,12 @@ _From more relevant to less relevant._
 [netaddr](./netaddr/README.md)
 - Types representing remote IP addresses
 - Helper functions to filter interface IPs
+
+[testconfig](./testconfig/config.go)
+- Configuration of the codebase tests
+
+[utils](./utils/README.md)
+- Path utils
+- Regex transformation
+- Unix process control
+- Various small utility functions
