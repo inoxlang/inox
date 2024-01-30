@@ -1224,10 +1224,13 @@ func (p *parser) parsePathLikeExpression(isPattern bool) Node {
 		}
 	} else {
 		// limit to ascii ? limit to ascii alphanum & some chars ?
-		for p.i < p.len && p.s[p.i] != '\n' && !unicode.IsSpace(p.s[p.i]) && (!IsDelim(p.s[p.i]) || p.s[p.i] == '{') {
+	loop:
+		for p.i < p.len && p.s[p.i] != '\n' && !unicode.IsSpace(p.s[p.i]) && (!IsDelim(p.s[p.i]) || p.s[p.i] == '{' || p.s[p.i] == ':') {
 
 			//TODO: fix
-			if p.s[p.i] == '{' {
+
+			switch p.s[p.i] {
+			case '{':
 				p.i++
 				for p.i < p.len && p.s[p.i] != '\n' && p.s[p.i] != '}' { //ok since '}' is not allowed in interpolations for now
 					p.i++
@@ -1235,7 +1238,17 @@ func (p *parser) parsePathLikeExpression(isPattern bool) Node {
 				if p.i < p.len && p.s[p.i] == '}' {
 					p.i++
 				}
-			} else {
+			case ':':
+				//Break the loop if ':' is trailing.
+				if p.i == p.len-1 {
+					break loop
+				}
+				nexChar := p.s[p.i+1]
+				if unicode.IsSpace(nexChar) || (IsDelim(nexChar) && nexChar != '{') {
+					break loop
+				}
+				p.i++
+			default:
 				p.i++
 			}
 		}
@@ -1483,7 +1496,7 @@ func CheckHostPattern(u string) (parsingErr *ParsingError) {
 		if parts[0] != "**" {
 			if parts[0] == "*" {
 				parsingErr = &ParsingError{UnspecifiedParsingError, INVALID_HOST_PATT_SUGGEST_DOUBLE_STAR}
-			} else {
+			} else if _, err := url.ParseRequestURI(u); err != nil {
 				parsingErr = &ParsingError{UnspecifiedParsingError, INVALID_HOST_PATT}
 			}
 		}
@@ -1511,7 +1524,7 @@ func CheckHostPattern(u string) (parsingErr *ParsingError) {
 			}
 
 			replaced := strings.ReplaceAll(testedUrl, "*", "com")
-			if _, err := url.Parse(replaced); err != nil {
+			if _, err := url.ParseRequestURI(replaced); err != nil {
 				parsingErr = &ParsingError{UnspecifiedParsingError, INVALID_HOST_PATT}
 			}
 		}
@@ -1554,8 +1567,10 @@ func (p *parser) parseURLLike(start int32) Node {
 	afterSchemeIndex := p.i
 
 	//we eat until we encounter a space or a delimiter different from ':' and '{'
+loop:
 	for p.i < p.len && p.s[p.i] != '\n' && !unicode.IsSpace(p.s[p.i]) && (!IsDelim(p.s[p.i]) || p.s[p.i] == ':' || p.s[p.i] == '{') {
-		if p.s[p.i] == '{' {
+		switch p.s[p.i] {
+		case '{':
 			p.i++
 			for p.i < p.len && p.s[p.i] != '\n' && p.s[p.i] != '}' { //ok since '}' is not allowed in interpolations for now
 				p.i++
@@ -1563,7 +1578,17 @@ func (p *parser) parseURLLike(start int32) Node {
 			if p.i < p.len && p.s[p.i] == '}' {
 				p.i++
 			}
-		} else {
+		case ':':
+			//Break the loop if ':' is trailing.
+			if p.i == p.len-1 {
+				break loop
+			}
+			nexChar := p.s[p.i+1]
+			if unicode.IsSpace(nexChar) || (IsDelim(nexChar) && nexChar != '{') {
+				break loop
+			}
+			p.i++
+		default:
 			p.i++
 		}
 	}
@@ -1807,8 +1832,10 @@ func (p *parser) parseURLLikePattern(start int32) Node {
 	}
 
 	//we eat until we encounter a space or a delimiter different from ':' and '{'
+loop:
 	for p.i < p.len && !unicode.IsSpace(p.s[p.i]) && (!IsDelim(p.s[p.i]) || p.s[p.i] == ':' || p.s[p.i] == '{') {
-		if p.s[p.i] == '{' {
+		switch p.s[p.i] {
+		case '{':
 			p.i++
 			for p.i < p.len && p.s[p.i] != '}' { //ok since '}' is not allowed in interpolations for now
 				p.i++
@@ -1816,7 +1843,17 @@ func (p *parser) parseURLLikePattern(start int32) Node {
 			if p.i < p.len {
 				p.i++
 			}
-		} else {
+		case ':':
+			//Break the loop if ':' is trailing.
+			if p.i == p.len-1 {
+				break loop
+			}
+			nexChar := p.s[p.i+1]
+			if unicode.IsSpace(nexChar) || (IsDelim(nexChar) && nexChar != '{') {
+				break loop
+			}
+			p.i++
+		default:
 			p.i++
 		}
 	}
@@ -3675,50 +3712,53 @@ dictionary_literal_top_loop:
 		colonInLiteral := false
 
 		if key.Base().Err == nil || NodeIs(key, (*InvalidURL)(nil)) {
+			var literalVal string
 			switch k := key.(type) {
 			case *InvalidURL:
-				if strings.HasSuffix(k.Value, ":") {
-					colonInLiteral = true
-				}
-			case *URLLiteral:
-				if strings.HasSuffix(k.Value, ":") {
-					colonInLiteral = true
-				}
+				literalVal = k.Value
 			default:
-				if !NodeIsSimpleValueLiteral(key) && !NodeIs(key, &IdentifierLiteral{}) {
+				valueLit, ok := key.(SimpleValueLiteral)
+				if ok {
+					literalVal = valueLit.ValueString()
+				} else if !utils.Implements[*IdentifierLiteral](k) {
 					key.BasePtr().Err = &ParsingError{UnspecifiedParsingError, INVALID_DICT_KEY_ONLY_SIMPLE_VALUE_LITS}
 				}
 			}
 
-			if colonInLiteral {
-				key.BasePtr().Err = &ParsingError{UnspecifiedParsingError, INVALID_DICT_ENTRY_MISSING_SPACE_BETWEEN_KEY_AND_COLON}
+			if literalVal != "" {
+				if lastColonIndex := strings.LastIndex(literalVal, ":"); lastColonIndex > 0 && strings.Index(literalVal, "://") < lastColonIndex {
+					colonInLiteral = true
+				}
 			}
 		}
 
-		if !colonInLiteral {
-			p.eatSpace()
+		p.eatSpace()
 
-			if p.i >= p.len || p.s[p.i] == '}' {
-				if entry.Err == nil {
-					entry.Err = &ParsingError{UnspecifiedParsingError, INVALID_DICT_ENTRY_MISSING_COLON_AFTER_KEY}
-					entry.Span.End = p.i
+		if p.i >= p.len || p.s[p.i] == '}' {
+			if entry.Err == nil {
+				msg := INVALID_DICT_ENTRY_MISSING_COLON_AFTER_KEY
+				if colonInLiteral {
+					msg = INVALID_DICT_ENTRY_MISSING_SPACE_BETWEEN_KEY_AND_COLON
 				}
-				break
+
+				entry.Err = &ParsingError{UnspecifiedParsingError, msg}
+				entry.Span.End = p.i
 			}
+			break
+		}
 
-			if p.s[p.i] != ':' {
-				if p.s[p.i] != ',' {
-					entry.Span.End = p.i
-					entry.Err = &ParsingError{UnspecifiedParsingError, fmtUnexpectedCharInDictionary(p.s[p.i])}
-					entries = append(entries, entry)
-					p.i++
-					p.eatSpaceNewlineCommaComment()
-					continue
-				}
-			} else {
-				p.tokens = append(p.tokens, Token{Type: COLON, Span: NodeSpan{p.i, p.i + 1}})
+		if p.s[p.i] != ':' {
+			if p.s[p.i] != ',' {
+				entry.Span.End = p.i
+				entry.Err = &ParsingError{UnspecifiedParsingError, fmtUnexpectedCharInDictionary(p.s[p.i])}
+				entries = append(entries, entry)
 				p.i++
+				p.eatSpaceNewlineCommaComment()
+				continue
 			}
+		} else {
+			p.tokens = append(p.tokens, Token{Type: COLON, Span: NodeSpan{p.i, p.i + 1}})
+			p.i++
 		}
 
 		p.eatSpace()
