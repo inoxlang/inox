@@ -1,11 +1,16 @@
 # Collections
 
-**⚠️ The current implementations are work in progress. Performance will be
+**⚠️ The current implementations are work in progress. Performance and locking will be
 improved in the future.**
 
 - [Set](#set)
 - [Map](#map)
 - [MessageThread](#message-thread)
+- [Queue](#queue)
+- [Tree](#tree)
+- [Graph](#graph)
+- [Ranking](#ranking)
+
 
 Inox collections can be either **persistable** or **transient**.
 
@@ -196,7 +201,7 @@ map.insert('a', 1)
 set.insert('a', 1)
 ```
 
-The `set` method creates or update an entry. 
+The `set` method creates or updates an entry. 
 
 ```
 map = Map([])
@@ -249,4 +254,20 @@ message = {
 
 dbs.main.thread.add(message)
 ```
+
+## Queue
+
+WIP
+
+## Tree
+
+WIP
+
+## Graph
+
+WIP
+
+## Ranking
+
+WIP
 
