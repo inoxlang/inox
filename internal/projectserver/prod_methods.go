@@ -28,7 +28,7 @@ type StopAppResponse struct {
 	Error string `json:"error,omitempty"`
 }
 
-func registerProdMethodHandlers(server *lsp.Server, opts LSPServerConfiguration, projectRegistry *project.Registry) {
+func registerProdMethodHandlers(server *lsp.Server, opts LSPServerConfiguration) {
 
 	server.OnCustom(jsonrpc.MethodInfo{
 		Name: DEPLOY_PROD_APP_METHOD,

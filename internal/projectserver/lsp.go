@@ -62,7 +62,7 @@ type WebsocketServerConfiguration struct {
 }
 
 func StartLSPServer(ctx *core.Context, serverConfig LSPServerConfiguration) (finalErr error) {
-	//setup logs
+	//Setup logs.
 
 	zerologLogger := ctx.NewChildLoggerForInternalSource(LSP_LOG_SRC)
 	logger := log.New(zerologLogger, "", 0)
@@ -79,7 +79,7 @@ func StartLSPServer(ctx *core.Context, serverConfig LSPServerConfiguration) (fin
 		}
 	}()
 
-	//configure the LSP server
+	//Configure the LSP server.
 
 	options := &lsp.Config{
 		OnSession: serverConfig.OnSession,
@@ -123,7 +123,7 @@ func StartLSPServer(ctx *core.Context, serverConfig LSPServerConfiguration) (fin
 		ctx.Logger().Debug().Msgf("prod dir is %s", serverConfig.ProdDir)
 	}
 
-	//open the project registry
+	//Open the project registry.
 
 	projDir := string(serverConfig.ProjectsDir)
 	ctx.Logger().Debug().Msgf("open project registry at %s", projDir)
@@ -133,10 +133,23 @@ func StartLSPServer(ctx *core.Context, serverConfig LSPServerConfiguration) (fin
 		return err
 	}
 
-	//create and start the LSP server
+	//Create and start the LSP server.
 
 	server := lsp.NewServer(ctx, options)
-	registerHandlers(server, serverConfig, projectRegistry)
+
+	registerStandardMethodHandlers(server, serverConfig)
+
+	if serverConfig.ProjectMode {
+		//Register handlers for custom LSP methods.
+
+		registerFilesystemMethodHandlers(server)
+		registerProjectMethodHandlers(server, serverConfig, projectRegistry)
+		registerProdMethodHandlers(server, serverConfig)
+		registerSecretsMethodHandlers(server, serverConfig)
+		registerDebugMethodHandlers(server, serverConfig)
+		registerLearningMethodHandlers(server)
+		registerTestingMethodHandlers(server, serverConfig)
+	}
 
 	logs.Println("LSP server configured, start listening")
 	return server.Run()
