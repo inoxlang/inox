@@ -11,6 +11,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/permkind"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
@@ -83,121 +84,12 @@ func restrictProcessAccess(grantedPerms, forbiddenPerms []core.Permission, fls *
 			allowCerts = true
 			allowDNS = true
 		case core.CommandPermission:
-			var allowedPath *landlock.Path
-
-			switch cmdName := p.CommandName.(type) {
-			case core.Path:
-				name := string(cmdName)
-				if _, ok := executablePaths[name]; ok {
-					continue
-				}
-
-				//ignore if the executable does not exist.
-				if _, err := fls.Stat(cmdName.UnderlyingString()); errors.Is(err, fs.ErrNotExist) {
-					continue
-				}
-
-				executablePaths[name] = struct{}{}
-				allowedPath = landlock.File(name, "rx")
-			case core.PathPattern:
-				if cmdName.IsPrefixPattern() {
-					allowedPath = landlock.Dir(cmdName.Prefix(), "rx")
-				} else {
-					panic(core.ErrUnreachable)
-				}
-			case core.String:
-				path, err := exec.LookPath(cmdName.UnderlyingString())
-				if err != nil {
-					//ignore if the executable does not exist.
-					continue
-				}
-
-				if _, ok := executablePaths[path]; ok {
-					continue
-				}
-
-				executablePaths[path] = struct{}{}
-				allowedPath = landlock.File(path, "rx")
-			default:
-				panic(core.ErrUnreachable)
+			allowedPath := getLandlockPathForCommandPermission(p, executablePaths, fls)
+			if allowedPath != nil {
+				allowedPaths = append(allowedPaths, allowedPath)
 			}
-			allowedPaths = append(allowedPaths, allowedPath)
 		case core.FilesystemPermission:
-			var allowedPathString string
-
-			dir := true
-
-			switch entity := p.Entity.(type) {
-			case core.Path:
-				allowedPathString = entity.UnderlyingString()
-
-				if !entity.IsDirPath() {
-					dir = false
-				}
-
-			case core.PathPattern:
-				if entity.IsPrefixPattern() {
-					allowedPathString = entity.Prefix()
-				} else {
-					//we try to find the longest path that contains all matched paths.
-
-					segments := strings.Split(entity.UnderlyingString(), "/")
-					lastIncludedSegmentIndex := -1
-
-					//search the rightmost segment that has no special chars.
-				loop:
-					for segmentIndex, segment := range segments {
-						runes := []rune(segment)
-
-						for i, r := range runes {
-							switch r {
-							case '*', '?', '[':
-								//ignore if escaped
-								if i > 0 && utils.CountPrevBackslashes(runes, int32(i))%2 == 1 {
-									continue
-								}
-								lastIncludedSegmentIndex = segmentIndex
-								break loop
-							}
-						}
-					}
-
-					if lastIncludedSegmentIndex >= 0 {
-						dir := strings.Join(segments[:lastIncludedSegmentIndex+1], "/")
-						allowedPathString = dir
-					} else if entity.IsDirGlobbingPattern() {
-						allowedPathString = entity.UnderlyingString()
-					} else {
-						dir = false
-						allowedPathString = entity.UnderlyingString()
-					}
-				}
-			default:
-				panic(core.ErrUnreachable)
-			}
-
-			//ignore non existing paths
-			if _, err := fls.Stat(allowedPathString); errors.Is(err, fs.ErrNotExist) {
-				continue
-			}
-
-			if dir {
-				map_, ok := dirPaths[allowedPathString]
-				if !ok {
-					map_ = map[permkind.PermissionKind]struct{}{}
-					dirPaths[allowedPathString] = map_
-				}
-
-				map_[p.Kind_.Major()] = struct{}{}
-			} else {
-				map_, ok := filePaths[allowedPathString]
-				if !ok {
-					map_ = map[permkind.PermissionKind]struct{}{}
-					filePaths[allowedPathString] = map_
-				}
-
-				map_[p.Kind_.Major()] = struct{}{}
-			}
+			updateFileAndDirLandlockPaths(p, filePaths, dirPaths, fls)
 		}
 	}
 
@@ -278,4 +170,128 @@ func restrictProcessAccess(grantedPerms, forbiddenPerms []core.Permission, fls *
 			panic(err)
 		}
 	}
+}
+
+func getLandlockPathForCommandPermission(perm core.CommandPermission, executablePaths map[string]struct{}, fls afs.Filesystem) *landlock.Path {
+	switch cmdName := perm.CommandName.(type) {
+	case core.Path:
+		name := string(cmdName)
+		if _, ok := executablePaths[name]; ok {
+			return nil
+		}
+
+		//ignore if the executable does not exist.
+		if _, err := fls.Stat(cmdName.UnderlyingString()); errors.Is(err, fs.ErrNotExist) {
+			return nil
+		}
+
+		executablePaths[name] = struct{}{}
+		return landlock.File(name, "rx")
+	case core.PathPattern:
+		if cmdName.IsPrefixPattern() {
+			return landlock.Dir(cmdName.Prefix(), "rx")
+		} else {
+			panic(core.ErrUnreachable)
+		}
+	case core.String:
+		path, err := exec.LookPath(cmdName.UnderlyingString())
+		if err != nil {
+			//ignore if the executable does not exist.
+			return nil
+		}
+
+		if _, ok := executablePaths[path]; ok {
+			return nil
+		}
+
+		executablePaths[path] = struct{}{}
+
+		return landlock.File(path, "rx")
+	default:
+		panic(core.ErrUnreachable)
+	}
+
+}
+
+func updateFileAndDirLandlockPaths(
+	perm core.FilesystemPermission,
+	filePaths, dirPaths map[string]map[core.PermissionKind]struct{},
+	fls afs.Filesystem,
+) {
+	var allowedPathString string
+
+	dir := true
+
+	switch entity := perm.Entity.(type) {
+	case core.Path:
+		allowedPathString = entity.UnderlyingString()
+
+		if !entity.IsDirPath() {
+			dir = false
+		}
+
+	case core.PathPattern:
+		if entity.IsPrefixPattern() {
+			allowedPathString = entity.Prefix()
+		} else {
+			//we try to find the longest path that contains all matched paths.
+
+			segments := strings.Split(entity.UnderlyingString(), "/")
+			lastIncludedSegmentIndex := -1
+
+			//search the rightmost segment that has no special chars.
+		loop:
+			for segmentIndex, segment := range segments {
+				runes := []rune(segment)
+
+				for i, r := range runes {
+					switch r {
+					case '*', '?', '[':
+						//ignore if escaped
+						if i > 0 && utils.CountPrevBackslashes(runes, int32(i))%2 == 1 {
+							continue
+						}
+						lastIncludedSegmentIndex = segmentIndex
+						break loop
+					}
+				}
+			}
+
+			if lastIncludedSegmentIndex >= 0 {
+				dir := strings.Join(segments[:lastIncludedSegmentIndex+1], "/")
+				allowedPathString = dir
+			} else if entity.IsDirGlobbingPattern() {
+				allowedPathString = entity.UnderlyingString()
+			} else {
+				dir = false
+				allowedPathString = entity.UnderlyingString()
+			}
+		}
+	default:
+		panic(core.ErrUnreachable)
+	}
+
+	//ignore non existing paths
+	if _, err := fls.Stat(allowedPathString); errors.Is(err, fs.ErrNotExist) {
+		return
+	}
+
+	if dir {
+		opsAllowedOnDirTree, ok := dirPaths[allowedPathString]
+		if !ok {
+			opsAllowedOnDirTree = map[permkind.PermissionKind]struct{}{}
+			dirPaths[allowedPathString] = opsAllowedOnDirTree
+		}
+
+		opsAllowedOnDirTree[perm.Kind_.Major()] = struct{}{}
+	} else {
+		opsAllowedOnFile, ok := filePaths[allowedPathString]
+		if !ok {
+			opsAllowedOnFile = map[permkind.PermissionKind]struct{}{}
+			filePaths[allowedPathString] = opsAllowedOnFile
+		}
+
+		opsAllowedOnFile[perm.Kind_.Major()] = struct{}{}
+	}
+
 }
