@@ -487,96 +487,8 @@ func (p *parser) parsePathExpressionSlices(start int32, exclEnd int32) []Node {
 
 	for index < exclEnd {
 		switch {
-		case inInterpolation && (p.s[index] == '}' || index == exclEnd-1): //end of interpolation
-			missingClosingBrace := false
-
-			if index == exclEnd-1 && p.s[index] != '}' {
-				index++
-				missingClosingBrace = true
-			} else {
-				p.tokens = append(p.tokens, Token{
-					Type:    CLOSING_CURLY_BRACKET,
-					SubType: PATH_INTERP_CLOSING_BRACE,
-					Span:    NodeSpan{index, index + 1},
-				})
-			}
-
-			interpolation := string(p.s[sliceStart:index])
-
-			if interpolation != "" && interpolation[0] == ':' { //named segment
-				slices = append(slices, p.parseNamedPatternSegment(interpolation, sliceStart, index))
-			} else {
-
-				expr, ok := ParseExpression(interpolation)
-
-				if !ok {
-					span := NodeSpan{sliceStart, index}
-					err := &ParsingError{UnspecifiedParsingError, INVALID_PATH_INTERP}
-
-					if len(interpolation) == 0 {
-						err.Message = EMPTY_PATH_INTERP
-					}
-
-					p.tokens = append(p.tokens, Token{Type: INVALID_INTERP_SLICE, Span: span, Raw: string(p.s[sliceStart:index])})
-					slices = append(slices, &UnknownNode{
-						NodeBase: NodeBase{
-							span,
-							err,
-							false,
-						},
-					})
-
-				} else {
-					shiftNodeSpans(expr, sliceStart)
-					slices = append(slices, expr)
-
-					if missingClosingBrace {
-						slices = append(slices, &PathSlice{
-							NodeBase: NodeBase{
-								NodeSpan{index, index},
-								&ParsingError{UnspecifiedParsingError, UNTERMINATED_PATH_INTERP_MISSING_CLOSING_BRACE},
-								false,
-							},
-						})
-					}
-				}
-
-			}
-			inInterpolation = false
-			sliceStart = index + 1
-			index++
-		case inInterpolation && !isInterpolationAllowedChar(p.s[index]):
-			// we eat all the interpolation
-
-			j := index
-			for j < exclEnd && p.s[j] != '}' {
-				j++
-			}
-
-			p.tokens = append(p.tokens, Token{Type: INVALID_INTERP_SLICE, Span: NodeSpan{sliceStart, j}, Raw: string(p.s[sliceStart:j])})
-
-			slices = append(slices, &UnknownNode{
-				NodeBase: NodeBase{
-					NodeSpan{sliceStart, j},
-					&ParsingError{UnspecifiedParsingError, PATH_INTERP_EXPLANATION},
-					false,
-				},
-			})
-
-			if j < exclEnd { // '}'
-				p.tokens = append(p.tokens, Token{
-					Type:    CLOSING_CURLY_BRACKET,
-					SubType: PATH_INTERP_CLOSING_BRACE,
-					Span:    NodeSpan{j, j + 1},
-				})
-				j++
-			}
-
-			inInterpolation = false
-			sliceStart = j
-			index = j
-			continue
-		case !inInterpolation && p.s[index] == '{': //start of a new interpolation:
+		//start of a new interpolation:
+		case !inInterpolation && p.s[index] == '{':
 			slice := string(p.s[sliceStart:index]) //previous cannot be an interpolation
 
 			p.tokens = append(p.tokens, Token{
@@ -611,6 +523,101 @@ func (p *parser) parsePathExpressionSlices(start int32, exclEnd int32) []Node {
 				return slices
 			}
 			index++
+		//end of interpolation
+		case inInterpolation && (p.s[index] == '}' || index == exclEnd-1):
+			missingClosingBrace := false
+			inInterpolation = false
+
+			if index == exclEnd-1 && p.s[index] != '}' {
+				index++
+				missingClosingBrace = true
+			} else {
+				p.tokens = append(p.tokens, Token{
+					Type:    CLOSING_CURLY_BRACKET,
+					SubType: PATH_INTERP_CLOSING_BRACE,
+					Span:    NodeSpan{index, index + 1},
+				})
+			}
+
+			interpolation := string(p.s[sliceStart:index])
+
+			if interpolation != "" && interpolation[0] == ':' { //named segment
+				slices = append(slices, p.parseNamedPatternSegment(interpolation, sliceStart, index))
+				sliceStart = index + 1
+				index++
+				continue
+			}
+
+			//Regular interpolation
+
+			expr, ok := ParseExpression(interpolation)
+
+			if !ok {
+				span := NodeSpan{sliceStart, index}
+				err := &ParsingError{UnspecifiedParsingError, INVALID_PATH_INTERP}
+
+				if len(interpolation) == 0 {
+					err.Message = EMPTY_PATH_INTERP
+				}
+
+				p.tokens = append(p.tokens, Token{Type: INVALID_INTERP_SLICE, Span: span, Raw: string(p.s[sliceStart:index])})
+				slices = append(slices, &UnknownNode{
+					NodeBase: NodeBase{
+						span,
+						err,
+						false,
+					},
+				})
+
+			} else {
+				shiftNodeSpans(expr, sliceStart)
+				slices = append(slices, expr)
+
+				if missingClosingBrace {
+					slices = append(slices, &PathSlice{
+						NodeBase: NodeBase{
+							NodeSpan{index, index},
+							&ParsingError{UnspecifiedParsingError, UNTERMINATED_PATH_INTERP_MISSING_CLOSING_BRACE},
+							false,
+						},
+					})
+				}
+			}
+
+			sliceStart = index + 1
+			index++
+		//forbidden character
+		case inInterpolation && !isInterpolationAllowedChar(p.s[index]):
+			// we eat all the interpolation
+
+			j := index
+			for j < exclEnd && p.s[j] != '}' {
+				j++
+			}
+
+			p.tokens = append(p.tokens, Token{Type: INVALID_INTERP_SLICE, Span: NodeSpan{sliceStart, j}, Raw: string(p.s[sliceStart:j])})
+
+			slices = append(slices, &UnknownNode{
+				NodeBase: NodeBase{
+					NodeSpan{sliceStart, j},
+					&ParsingError{UnspecifiedParsingError, PATH_INTERP_EXPLANATION},
+					false,
+				},
+			})
+
+			if j < exclEnd { // '}'
+				p.tokens = append(p.tokens, Token{
+					Type:    CLOSING_CURLY_BRACKET,
+					SubType: PATH_INTERP_CLOSING_BRACE,
+					Span:    NodeSpan{j, j + 1},
+				})
+				j++
+			}
+
+			inInterpolation = false
+			sliceStart = j
+			index = j
+			continue
 		default:
 			index++
 		}
@@ -681,91 +688,9 @@ func (p *parser) parseQueryParameterValueSlices(start int32, exclEnd int32) []No
 	inInterpolation := false
 
 	for index < exclEnd {
-
-		if inInterpolation {
-			if p.s[index] == '}' || index == exclEnd-1 { //end of interpolation
-				missingClosingBrace := false
-				if index == exclEnd-1 && p.s[index] != '}' {
-					index++
-					missingClosingBrace = true
-				} else {
-					p.tokens = append(p.tokens, Token{
-						Type:    CLOSING_CURLY_BRACKET,
-						SubType: QUERY_PARAM_INTERP_CLOSING_BRACE,
-						Span:    NodeSpan{index, index + 1},
-					})
-				}
-
-				interpolation := string(p.s[sliceStart:index])
-
-				expr, ok := ParseExpression(interpolation)
-
-				if !ok {
-					span := NodeSpan{sliceStart, index}
-					err := &ParsingError{UnspecifiedParsingError, INVALID_QUERY_PARAM_INTERP}
-
-					if len(interpolation) == 0 {
-						err.Message = EMPTY_QUERY_PARAM_INTERP
-					}
-
-					p.tokens = append(p.tokens, Token{Type: INVALID_INTERP_SLICE, Span: span, Raw: string(p.s[sliceStart:index])})
-					slices = append(slices, &UnknownNode{
-						NodeBase: NodeBase{
-							span,
-							err,
-							false,
-						},
-					})
-				} else {
-					shiftNodeSpans(expr, sliceStart)
-					slices = append(slices, expr)
-
-					if missingClosingBrace {
-						slices = append(slices, &URLQueryParameterValueSlice{
-							NodeBase: NodeBase{
-								NodeSpan{index, index},
-								&ParsingError{UnspecifiedParsingError, UNTERMINATED_QUERY_PARAM_INTERP_MISSING_CLOSING_BRACE},
-								false,
-							},
-						})
-					}
-				}
-
-				inInterpolation = false
-				sliceStart = index + 1
-			} else if !isInterpolationAllowedChar(p.s[index]) {
-				// we eat all the interpolation
-
-				j := index
-				for j < exclEnd && p.s[j] != '}' {
-					j++
-				}
-
-				slices = append(slices, &URLQueryParameterValueSlice{
-					NodeBase: NodeBase{
-						NodeSpan{sliceStart, j},
-						&ParsingError{UnspecifiedParsingError, QUERY_PARAM_INTERP_EXPLANATION},
-						false,
-					},
-					Value: string(p.s[sliceStart:j]),
-				})
-
-				if j < exclEnd { // '}'
-					p.tokens = append(p.tokens, Token{
-						Type:    CLOSING_CURLY_BRACKET,
-						SubType: QUERY_PARAM_INTERP_CLOSING_BRACE,
-						Span:    NodeSpan{j, j + 1},
-					})
-					j++
-				}
-
-				inInterpolation = false
-				sliceStart = j
-				index = j
-				continue
-			}
-
-		} else if p.s[index] == '{' { //start of interpolation
+		switch {
+		//start of interpolation
+		case !inInterpolation && p.s[index] == '{':
 			p.tokens = append(p.tokens, Token{
 				Type:    OPENING_CURLY_BRACKET,
 				SubType: QUERY_PARAM_INTERP_OPENING_BRACE,
@@ -798,6 +723,89 @@ func (p *parser) parseQueryParameterValueSlices(start int32, exclEnd int32) []No
 
 				return slices
 			}
+		//end of interpolation
+		case inInterpolation && (p.s[index] == '}' || index == exclEnd-1):
+			missingClosingBrace := false
+			if index == exclEnd-1 && p.s[index] != '}' {
+				index++
+				missingClosingBrace = true
+			} else {
+				p.tokens = append(p.tokens, Token{
+					Type:    CLOSING_CURLY_BRACKET,
+					SubType: QUERY_PARAM_INTERP_CLOSING_BRACE,
+					Span:    NodeSpan{index, index + 1},
+				})
+			}
+
+			interpolation := string(p.s[sliceStart:index])
+
+			expr, ok := ParseExpression(interpolation)
+
+			if !ok {
+				span := NodeSpan{sliceStart, index}
+				err := &ParsingError{UnspecifiedParsingError, INVALID_QUERY_PARAM_INTERP}
+
+				if len(interpolation) == 0 {
+					err.Message = EMPTY_QUERY_PARAM_INTERP
+				}
+
+				p.tokens = append(p.tokens, Token{Type: INVALID_INTERP_SLICE, Span: span, Raw: string(p.s[sliceStart:index])})
+				slices = append(slices, &UnknownNode{
+					NodeBase: NodeBase{
+						span,
+						err,
+						false,
+					},
+				})
+			} else {
+				shiftNodeSpans(expr, sliceStart)
+				slices = append(slices, expr)
+
+				if missingClosingBrace {
+					badSlice := &URLQueryParameterValueSlice{
+						NodeBase: NodeBase{
+							NodeSpan{index, index},
+							&ParsingError{UnspecifiedParsingError, UNTERMINATED_QUERY_PARAM_INTERP_MISSING_CLOSING_BRACE},
+							false,
+						},
+					}
+					slices = append(slices, badSlice)
+				}
+			}
+
+			inInterpolation = false
+			sliceStart = index + 1
+		//forbidden character
+		case inInterpolation && !isInterpolationAllowedChar(p.s[index]):
+			// we eat all the interpolation
+
+			j := index
+			for j < exclEnd && p.s[j] != '}' {
+				j++
+			}
+
+			slices = append(slices, &URLQueryParameterValueSlice{
+				NodeBase: NodeBase{
+					NodeSpan{sliceStart, j},
+					&ParsingError{UnspecifiedParsingError, QUERY_PARAM_INTERP_EXPLANATION},
+					false,
+				},
+				Value: string(p.s[sliceStart:j]),
+			})
+
+			if j < exclEnd { // '}'
+				p.tokens = append(p.tokens, Token{
+					Type:    CLOSING_CURLY_BRACKET,
+					SubType: QUERY_PARAM_INTERP_CLOSING_BRACE,
+					Span:    NodeSpan{j, j + 1},
+				})
+				j++
+			}
+
+			inInterpolation = false
+			sliceStart = j
+			index = j
+			continue
 		}
 		index++
 	}
