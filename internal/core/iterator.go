@@ -1217,7 +1217,7 @@ func (patt ObjectPattern) Iterator(ctx *Context, config IteratorConfiguration) I
 
 			for i := len(iterators) - 1; i >= 0; i-- {
 				if !iterators[i].Next(ctx) {
-					//Since iterators[j] has no value we check the next iterator.
+					//Since iterators[i] has no value we check the next iterator.
 					resetNextIterators = true
 					continue
 				}
@@ -1297,7 +1297,7 @@ func (patt *RecordPattern) Iterator(ctx *Context, config IteratorConfiguration) 
 
 			for i := len(iterators) - 1; i >= 0; i-- {
 				if !iterators[i].Next(ctx) {
-					//Since iterators[j] has no value we check the next iterator.
+					//Since iterators[i] has no value we check the next iterator.
 					resetNextIterators = true
 					continue
 				}
