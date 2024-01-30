@@ -1180,23 +1180,23 @@ func (patt ObjectPattern) Iterator(ctx *Context, config IteratorConfiguration) I
 		iterators = append(iterators, entry.Pattern.Iterator(ctx, IteratorConfiguration{}))
 	}
 
-	i := -1
+	key := -1 //integer returned when calling Iterator.Key().
 	firstInit := true
 
 	return config.CreateIterator(&PatternIterator{
 		hasNext: func(_ *PatternIterator, ctx *Context) bool {
 			if firstInit {
 				//if at least one entry iterator has no value we return false
-				for j := len(iterators) - 1; j >= 0; j-- {
-					if !iterators[j].HasNext(ctx) {
+				for i := len(iterators) - 1; i >= 0; i-- {
+					if !iterators[i].HasNext(ctx) {
 						return false
 					}
 				}
 
 				return len(iterators) > 0
 			}
-			for j := len(iterators) - 1; j >= 0; j-- {
-				if iterators[j].HasNext(ctx) {
+			for i := len(iterators) - 1; i >= 0; i-- {
+				if iterators[i].HasNext(ctx) {
 					return true
 				}
 			}
@@ -1207,45 +1207,45 @@ func (patt ObjectPattern) Iterator(ctx *Context, config IteratorConfiguration) I
 
 			if firstInit {
 				//call .Next() on all iterators except the last one
-				for j := 0; j < len(iterators)-1; j++ {
-					if !iterators[j].Next(ctx) {
+				for i := 0; i < len(iterators)-1; i++ {
+					if !iterators[i].Next(ctx) {
 						return false
 					}
 				}
 				firstInit = false
 			}
 
-			for j := len(iterators) - 1; j >= 0; j-- {
-				if iterators[j].Next(ctx) {
-					i++
-					if resetNextIterators {
-						for k := j + 1; k < len(iterators); k++ {
-							iterators[k] = entries[k].Pattern.Iterator(ctx, IteratorConfiguration{})
-							if !iterators[k].Next(ctx) {
-								return false
-							}
+			for i := len(iterators) - 1; i >= 0; i-- {
+				if !iterators[i].Next(ctx) {
+					//Since iterators[j] has no value we check the next iterator.
+					resetNextIterators = true
+					continue
+				}
+				key++
+				if resetNextIterators {
+					for j := i + 1; j < len(iterators); j++ {
+						iterators[j] = entries[j].Pattern.Iterator(ctx, IteratorConfiguration{})
+						if !iterators[j].Next(ctx) {
+							return false
 						}
 					}
-					return true
 				}
-				//if the iterator has no value we check the next iterator
-				resetNextIterators = true
-				continue
+				return true
 			}
 
 			return false
 		},
 		key: func(_ *PatternIterator, ctx *Context) Value {
-			return Int(i)
+			return Int(key)
 		},
 		value: func(_ *PatternIterator, ctx *Context) Value {
 			obj := &Object{
 				keys:   make([]string, len(iterators)),
 				values: make([]Serializable, len(iterators)),
 			}
-			for j, it := range iterators {
-				obj.keys[j] = entries[j].Name
-				obj.values[j] = it.Value(ctx).(Serializable)
+			for i, it := range iterators {
+				obj.keys[i] = entries[i].Name
+				obj.values[i] = it.Value(ctx).(Serializable)
 			}
 			return obj
 		},
@@ -1260,23 +1260,23 @@ func (patt *RecordPattern) Iterator(ctx *Context, config IteratorConfiguration) 
 		iterators = append(iterators, entry.Pattern.Iterator(ctx, IteratorConfiguration{}))
 	}
 
-	i := -1
+	key := -1 //integer returned when calling Iterator.Key().
 	firstInit := true
 
 	return config.CreateIterator(&PatternIterator{
 		hasNext: func(_ *PatternIterator, ctx *Context) bool {
 			if firstInit {
 				//if at least one entry iterator has no value we return false
-				for j := len(iterators) - 1; j >= 0; j-- {
-					if !iterators[j].HasNext(ctx) {
+				for i := len(iterators) - 1; i >= 0; i-- {
+					if !iterators[i].HasNext(ctx) {
 						return false
 					}
 				}
 
 				return len(iterators) > 0
 			}
-			for j := len(iterators) - 1; j >= 0; j-- {
-				if iterators[j].HasNext(ctx) {
+			for i := len(iterators) - 1; i >= 0; i-- {
+				if iterators[i].HasNext(ctx) {
 					return true
 				}
 			}
@@ -1287,45 +1287,45 @@ func (patt *RecordPattern) Iterator(ctx *Context, config IteratorConfiguration) 
 
 			if firstInit {
 				//call .Next() on all iterators except the last one
-				for j := 0; j < len(iterators)-1; j++ {
-					if !iterators[j].Next(ctx) {
+				for i := 0; i < len(iterators)-1; i++ {
+					if !iterators[i].Next(ctx) {
 						return false
 					}
 				}
 				firstInit = false
 			}
 
-			for j := len(iterators) - 1; j >= 0; j-- {
-				if iterators[j].Next(ctx) {
-					i++
-					if resetNextIterators {
-						for k := j + 1; k < len(iterators); k++ {
-							iterators[k] = entries[k].Pattern.Iterator(ctx, IteratorConfiguration{})
-							if !iterators[k].Next(ctx) {
-								return false
-							}
+			for i := len(iterators) - 1; i >= 0; i-- {
+				if !iterators[i].Next(ctx) {
+					//Since iterators[j] has no value we check the next iterator.
+					resetNextIterators = true
+					continue
+				}
+				key++
+				if resetNextIterators {
+					for j := i + 1; j < len(iterators); j++ {
+						iterators[j] = entries[j].Pattern.Iterator(ctx, IteratorConfiguration{})
+						if !iterators[j].Next(ctx) {
+							return false
 						}
 					}
-					return true
 				}
-				//if the iterator has no value we check the next iterator
-				resetNextIterators = true
-				continue
+				return true
 			}
 
 			return false
 		},
 		key: func(_ *PatternIterator, ctx *Context) Value {
-			return Int(i)
+			return Int(key)
 		},
 		value: func(_ *PatternIterator, ctx *Context) Value {
 			obj := &Record{
 				keys:   make([]string, len(iterators)),
 				values: make([]Serializable, len(iterators)),
 			}
-			for j, it := range iterators {
-				obj.keys[j] = entries[j].Name
-				obj.values[j] = it.Value(ctx).(Serializable)
+			for i, it := range iterators {
+				obj.keys[i] = entries[i].Name
+				obj.values[i] = it.Value(ctx).(Serializable)
 			}
 			return obj
 		},
@@ -1346,23 +1346,23 @@ func newListPatternIterator(
 		iterators = append(iterators, el.Iterator(ctx, IteratorConfiguration{}))
 	}
 
-	i := -1
+	key := -1 //integer returned when calling Iterator.Key().
 	firstInit := true
 
 	return config.CreateIterator(&PatternIterator{
 		hasNext: func(_ *PatternIterator, ctx *Context) bool {
 			if firstInit {
 				//if at least one entry iterator has no value we return false
-				for j := len(iterators) - 1; j >= 0; j-- {
-					if !iterators[j].HasNext(ctx) {
+				for i := len(iterators) - 1; i >= 0; i-- {
+					if !iterators[i].HasNext(ctx) {
 						return false
 					}
 				}
 
 				return len(iterators) > 0
 			}
-			for j := len(iterators) - 1; j >= 0; j-- {
-				if iterators[j].HasNext(ctx) {
+			for i := len(iterators) - 1; i >= 0; i-- {
+				if iterators[i].HasNext(ctx) {
 					return true
 				}
 			}
@@ -1373,36 +1373,36 @@ func newListPatternIterator(
 
 			if firstInit {
 				//call .Next() on all iterators except the last one
-				for j := 0; j < len(iterators)-1; j++ {
-					if !iterators[j].Next(ctx) {
+				for i := 0; i < len(iterators)-1; i++ {
+					if !iterators[i].Next(ctx) {
 						return false
 					}
 				}
 				firstInit = false
 			}
 
-			for j := len(iterators) - 1; j >= 0; j-- {
-				if iterators[j].Next(ctx) {
-					i++
-					if resetNextIterators {
-						for k := j + 1; k < len(iterators); k++ {
-							iterators[k] = elementPatterns[k].Iterator(ctx, IteratorConfiguration{})
-							if !iterators[k].Next(ctx) {
-								return false
-							}
+			for i := len(iterators) - 1; i >= 0; i-- {
+				if !iterators[i].Next(ctx) {
+					//Since iterators[i] has no value we check the next iterator.
+					resetNextIterators = true
+					continue
+				}
+				key++
+				if resetNextIterators {
+					for j := i + 1; j < len(iterators); j++ {
+						iterators[j] = elementPatterns[j].Iterator(ctx, IteratorConfiguration{})
+						if !iterators[j].Next(ctx) {
+							return false
 						}
 					}
-					return true
 				}
-				//if the iterator has no value we check the next iterator
-				resetNextIterators = true
-				continue
+				return true
 			}
 
 			return false
 		},
 		key: func(_ *PatternIterator, ctx *Context) Value {
-			return Int(i)
+			return Int(key)
 		},
 		value: func(_ *PatternIterator, ctx *Context) Value {
 			return makeValue(iterators)
