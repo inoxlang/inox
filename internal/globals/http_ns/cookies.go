@@ -76,27 +76,32 @@ func createCookieFromObject(ctx *core.Context, obj *core.Object) (*http.Cookie, 
 		SameSite: http.SameSiteLaxMode,
 	}
 
-	for k, v := range obj.EntryMap(ctx) {
+	err := obj.ForEachEntry(func(k string, v core.Serializable) error {
 		switch k {
 		case "domain":
 			host, ok := v.(core.Host)
 			if !ok {
-				return nil, fmt.Errorf(ERROR_PREFIX+" .domain should be a HTTPHost not a(n) %T", v)
+				return fmt.Errorf(ERROR_PREFIX+" .domain should be a HTTPHost not a(n) %T", v)
 			}
 			cookie.Domain = host.WithoutScheme()
 		case "name":
 			name, ok := v.(core.String)
 			if !ok {
-				return nil, fmt.Errorf(ERROR_PREFIX+" .name should be a string not a(n) %T", v)
+				return fmt.Errorf(ERROR_PREFIX+" .name should be a string not a(n) %T", v)
 			}
 			cookie.Name = string(name)
 		case "value":
 			value, ok := v.(core.String)
 			if !ok {
-				return nil, fmt.Errorf(ERROR_PREFIX+" .value should be a string not a(n) %T", v)
+				return fmt.Errorf(ERROR_PREFIX+" .value should be a string not a(n) %T", v)
 			}
 			cookie.Value = string(value)
 		}
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
 	}
 
 	if cookie.Name == "" {

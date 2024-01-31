@@ -39,27 +39,32 @@ type Client struct {
 func NewClient(ctx *core.Context, configObject *core.Object) (*Client, error) {
 	config := ClientConfig{}
 
-	for name, value := range configObject.EntryMap(ctx) {
+	err := configObject.ForEachEntry(func(name string, value core.Serializable) error {
 		switch name {
 		case "save-cookies":
 			saveCookies, ok := value.(core.Bool)
 			if !ok {
-				return nil, core.FmtPropOfArgXShouldBeOfTypeY("save-cookies", "configuration", "boolean", value)
+				return core.FmtPropOfArgXShouldBeOfTypeY("save-cookies", "configuration", "boolean", value)
 			}
 			config.SaveCookies = bool(saveCookies)
 		case "request-finalization":
 			finalization, ok := value.(*core.Dictionary)
 			if !ok {
-				return nil, core.FmtPropOfArgXShouldBeOfTypeY("request-finalization", "configuration", "dictionary", value)
+				return core.FmtPropOfArgXShouldBeOfTypeY("request-finalization", "configuration", "dictionary", value)
 			}
 			config.Finalization = finalization
 		case "insecure":
 			insecure, ok := value.(core.Bool)
 			if !ok {
-				return nil, core.FmtPropOfArgXShouldBeOfTypeY("insecure", "configuration", "boolean", value)
+				return core.FmtPropOfArgXShouldBeOfTypeY("insecure", "configuration", "boolean", value)
 			}
 			config.Insecure = bool(insecure)
 		}
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
 	}
 
 	client := &Client{

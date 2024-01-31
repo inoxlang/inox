@@ -43,7 +43,7 @@ type ContentSecurityPolicy struct {
 func NewCSP(ctx *core.Context, desc *core.Object) (*ContentSecurityPolicy, error) {
 	var directives []CSPDirective
 
-	for k, v := range desc.EntryMap(ctx) {
+	err := desc.ForEachEntry(func(k string, v core.Serializable) error {
 		directive := CSPDirective{name: k}
 
 		switch directiveDesc := v.(type) {
@@ -57,16 +57,20 @@ func NewCSP(ctx *core.Context, desc *core.Object) (*ContentSecurityPolicy, error
 				val := it.Value(ctx)
 				s, ok := val.(core.String)
 				if !ok {
-					return nil, commonfmt.FmtUnexpectedElementInPropIterableOfArgX(k, "description", core.Stringify(s, ctx))
+					return commonfmt.FmtUnexpectedElementInPropIterableOfArgX(k, "description", core.Stringify(s, ctx))
 				}
 				directive.values = append(directive.values, CSPDirectiveValue{raw: string(s)})
 			}
 		default:
-			return nil, core.FmtPropOfArgXShouldBeOfTypeY(k, "description", "iterable or string", v)
+			return core.FmtPropOfArgXShouldBeOfTypeY(k, "description", "iterable or string", v)
 		}
 
 		directives = append(directives, directive)
+		return nil
+	})
 
+	if err != nil {
+		return nil, err
 	}
 
 	return NewCSPWithDirectives(directives)

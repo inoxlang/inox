@@ -155,9 +155,9 @@ func determineHttpServerParams(ctx *core.Context, server *HttpsServer, providedH
 	return
 }
 
-func readServerHandlingObject(ctx *core.Context, v *core.Object, server *HttpsServer, params *serverParams) error {
+func readServerHandlingObject(ctx *core.Context, handlingParams *core.Object, server *HttpsServer, params *serverParams) error {
 
-	for propKey, propVal := range v.EntryMap(ctx) {
+	err := handlingParams.ForEachEntry(func(propKey string, propVal core.Serializable) error {
 		switch propKey {
 		case HANDLING_DESC_ROUTING_PROPNAME:
 			if !isValidHandlerValue(propVal) {
@@ -250,6 +250,12 @@ func readServerHandlingObject(ctx *core.Context, v *core.Object, server *HttpsSe
 		default:
 			return commonfmt.FmtUnexpectedPropInArgX(propKey, SERVER_HANDLING_ARG_NAME)
 		}
+
+		return nil
+	})
+
+	if err != nil {
+		return err
 	}
 
 	if params.userProvidedHandler == nil {
