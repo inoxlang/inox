@@ -14,6 +14,7 @@ const (
 	RESULT_INIT_STATUS_PROPNAME  = "status"
 	RESULT_INIT_BODY_PROPNAME    = "body"
 	RESULT_INIT_HEADERS_PROPNAME = "headers"
+	RESULT_INIT_SESSION_PROPNAME = "session"
 )
 
 var (
@@ -22,8 +23,14 @@ var (
 			RESULT_INIT_STATUS_PROPNAME:  http_ns_symb.ANY_STATUS_CODE,
 			RESULT_INIT_BODY_PROPNAME:    symbolic.AsSerializableChecked(symbolic.NewMultivalue(html_ns_symb.ANY_HTML_NODE, symbolic.ANY_STR_LIKE)),
 			RESULT_INIT_HEADERS_PROPNAME: symbolic.NewInexactObject2(map[string]symbolic.Serializable{}),
+			RESULT_INIT_SESSION_PROPNAME: symbolic.NewInexactObject2(map[string]symbolic.Serializable{"id": symbolic.STRLIKE_LIST}),
 		},
-		map[string]struct{}{RESULT_INIT_STATUS_PROPNAME: {}, RESULT_INIT_BODY_PROPNAME: {}, RESULT_INIT_HEADERS_PROPNAME: {}},
+		map[string]struct{}{
+			RESULT_INIT_STATUS_PROPNAME:  {},
+			RESULT_INIT_BODY_PROPNAME:    {},
+			RESULT_INIT_HEADERS_PROPNAME: {},
+			RESULT_INIT_SESSION_PROPNAME: {},
+		},
 		nil)
 	NEW_RESULT_PARAMS      = &[]symbolic.Value{SYMBOLIC_RESULT_INIT_ARG}
 	NEW_RESULT_PARAM_NAMES = []string{"init"}
@@ -35,6 +42,7 @@ type Result struct {
 	value   core.Serializable
 	status  StatusCode
 	headers http.Header
+	session *core.Object //can be nil
 	//cookies []core.Serializable
 }
 
@@ -42,6 +50,7 @@ func NewResult(ctx *core.Context, init *core.Object) *Result {
 	status := StatusCode(http.StatusOK)
 	var value core.Serializable
 	var headers http.Header
+	var session *core.Object
 
 	init.ForEachEntry(func(k string, v core.Serializable) error {
 		switch k {
@@ -55,6 +64,11 @@ func NewResult(ctx *core.Context, init *core.Object) *Result {
 				headers.Add(headerName, headerValue.(core.StringLike).GetOrBuildString())
 				return nil
 			})
+		case RESULT_INIT_SESSION_PROPNAME:
+			session = v.(*core.Object)
+			session.Share(ctx.GetClosestState())
+
+			//TODO: panic if the object is watched or has cycles.
 		}
 		return nil
 	})
@@ -63,6 +77,7 @@ func NewResult(ctx *core.Context, init *core.Object) *Result {
 		value:   value,
 		status:  status,
 		headers: headers,
+		session: session,
 	}
 }
 
