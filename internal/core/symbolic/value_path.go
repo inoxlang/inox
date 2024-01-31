@@ -127,7 +127,8 @@ func (n *PropertyName) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.Pr
 		return
 	}
 
-	w.WriteNameF("property-name(#%s)", n.name)
+	w.WriteByte('.')
+	w.WriteString(n.name)
 }
 
 func (n *PropertyName) underlyingString() *String {
