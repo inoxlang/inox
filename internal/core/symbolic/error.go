@@ -48,8 +48,8 @@ const (
 	PROP_SPREAD_IN_REC_NOT_SUPP_YET                                              = "property spread not supported in record yet"
 	CONSTRAINTS_INIT_BLOCK_EXPLANATION                                           = "invalid statement or expression in constraints' initialization block"
 
-	NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_INITIAL_VALUES_OF_SERIALIZABLE   = "non-serializable values are not allowed as initial values for properties of serializables"
-	MUTABLE_NON_WATCHABLE_VALUES_NOT_ALLOWED_AS_INITIAL_VALUES_OF_WATCHABLE = "mutable values that are not watchable are not allowed as initial values for properties of watchables"
+	NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_INITIAL_VALUES_OF_SERIALIZABLE   = "non-serializable values are not allowed as initial values for elements or properties of serializables"
+	MUTABLE_NON_WATCHABLE_VALUES_NOT_ALLOWED_AS_INITIAL_VALUES_OF_WATCHABLE = "mutable values that are not watchable are not allowed as initial values for elements or properties of watchables"
 	NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE         = "non-serializable values are not allowed as elements of serializables"
 	MUTABLE_NON_WATCHABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_WATCHABLE       = "mutables values that are not watchable values are not allowed as elements of watchables"
 

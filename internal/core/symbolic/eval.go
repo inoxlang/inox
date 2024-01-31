@@ -3929,7 +3929,16 @@ func evalObjectLiteral(n *parse.ObjectLiteral, state *State, options evalOptions
 				state.addError(makeSymbolicEvalError(p.Key, state, PROPERTY_VALUES_OF_READONLY_OBJECTS_SHOULD_BE_READONLY_OR_IMMUTABLE))
 			}
 		}
-		noKeyValues = append(noKeyValues, AsSerializableChecked(propVal))
+
+		serializable, ok := AsSerializable(propVal).(Serializable)
+		if !ok {
+			state.addError(makeSymbolicEvalError(p, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_INITIAL_VALUES_OF_SERIALIZABLE))
+			serializable = ANY_SERIALIZABLE
+		} else if _, ok := asWatchable(propVal).(Watchable); !ok && propVal.IsMutable() {
+			state.addError(makeSymbolicEvalError(p, state, MUTABLE_NON_WATCHABLE_VALUES_NOT_ALLOWED_AS_INITIAL_VALUES_OF_WATCHABLE))
+		}
+
+		noKeyValues = append(noKeyValues, serializable)
 	}
 
 	if len(noKeyValues) > 0 {
