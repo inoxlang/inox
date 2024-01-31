@@ -156,6 +156,9 @@ func NewHttpsServer(ctx *core.Context, host core.Host, args ...core.Value) (*Htt
 	server.defaultLimits = params.defaultLimits
 	server.listeningAddr = params.effectiveListeningAddrHost
 	server.sessions = params.sessions
+	if server.sessions != nil {
+		server.sessions.Share(server.state)
+	}
 
 	//create logger and security engine
 	{
@@ -264,10 +267,10 @@ func NewHttpsServer(ctx *core.Context, host core.Host, args ...core.Value) (*Htt
 		handlerGlobalState.SystemGraph = server.state.SystemGraph
 		handlerGlobalState.OutputFieldsInitialized.Store(true)
 
-		//
-
-		if req.NewSession {
-			addSessionIdCookie(rw, req.Session.Id)
+		//Get session
+		session, err := server.getSession(handlerCtx, req)
+		if err == nil {
+			req.Session = session
 		}
 
 		defer rw.FinalLog()

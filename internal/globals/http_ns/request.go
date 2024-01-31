@@ -44,8 +44,7 @@ type Request struct {
 	ParsedAcceptHeader mimeheader.AcceptHeader
 	AcceptHeader       string
 	ContentType        mimeheader.MimeType
-	Session            *Session
-	NewSession         bool
+	Session            *core.Object //can be nil
 
 	headers     *core.Record //not set by default
 	headersLock sync.Mutex
@@ -157,17 +156,6 @@ func NewServerSideRequest(r *http.Request, logger zerolog.Logger, server *HttpsS
 		Hostname:     hostname,
 		UserAgent:    agent,
 		HeaderNames:  headerNames,
-	}
-
-	session, err := getSession(req.request)
-	if err == nil {
-		req.Session = session
-	} else if err == ErrSessionNotFound {
-		logger.Print("no session id found, create new one")
-		req.Session = addNewSession(server)
-		req.NewSession = true
-	} else {
-		return nil, err
 	}
 
 	return req, nil

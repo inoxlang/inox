@@ -1119,7 +1119,7 @@ func TestFilesystemRouting(t *testing.T) {
 
 							return Result{
 								session: {
-									id: "AAA"
+									id: "85216e5c138b662924f5831df3a55cc8"
 								}
 								body: ""
 							}
@@ -1150,7 +1150,7 @@ func TestFilesystemRouting(t *testing.T) {
 						contentType:         mimeconsts.PLAIN_TEXT_CTYPE,
 						acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
 						expectedCookieValues: map[string]string{
-							DEFAULT_SESSION_ID_KEY: "AAA;",
+							DEFAULT_SESSION_ID_KEY: "85216e5c138b662924f5831df3a55cc8",
 						},
 					},
 					{
@@ -1158,7 +1158,7 @@ func TestFilesystemRouting(t *testing.T) {
 						path:                "/sessions",
 						method:              "GET",
 						acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
-						result:              "AAA;",
+						result:              "85216e5c138b662924f5831df3a55cc8;",
 					},
 				},
 			},

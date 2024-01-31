@@ -18,7 +18,7 @@ var (
 func pushByteStream(byteStream core.ReadableStream, h handlingArguments) error {
 	h.logger.Print("publish binary stream for", h.req.Path)
 
-	streamId := string(h.req.Session.Id) + string(h.req.Path)
+	streamId := string(h.req.ULIDString) + string(h.req.Path)
 
 	sseStream, sseServer, err := h.server.getOrCreateStream(streamId)
 	if err != nil {

@@ -245,6 +245,7 @@ func (set *Set) hasNoLock(ctx *core.Context, elem core.Serializable) core.Bool {
 	return core.Bool(ok)
 }
 
+// $key is guaranteed to not be stored.
 func (set *Set) getElem(key string) (core.Serializable, bool) {
 	for _, removedKey := range set.pendingRemovals {
 		if removedKey == key {

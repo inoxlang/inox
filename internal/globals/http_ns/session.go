@@ -1,73 +1,54 @@
 package http_ns
 
 import (
-	"crypto/rand"
 	"encoding/hex"
 	"errors"
 	"net/http"
-	"sync"
 
-	cmap "github.com/orcaman/concurrent-map/v2"
+	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 const (
-	DEFAULT_SESSION_ID_BYTE_COUNT = 16
+	MIN_SESSION_ID_BYTE_COUNT     = 16
 	MAX_SESSION_ID_BYTE_COUNT     = 32
+	DEFAULT_SESSION_ID_BYTE_COUNT = MIN_SESSION_ID_BYTE_COUNT
 	DEFAULT_SESSION_ID_KEY        = "session-id"
 )
 
 var (
-	sessions           = cmap.New[*Session]()
-	MAX_SESSION_ID_LEN = hex.EncodedLen(MAX_SESSION_ID_BYTE_COUNT)
-
+	MAX_SESSION_ID_LEN  = hex.EncodedLen(MAX_SESSION_ID_BYTE_COUNT)
 	ErrSessionNotFound  = errors.New("session not found")
 	ErrSessionIdTooLong = errors.New("session id is too long")
 )
 
-type Session struct {
-	Id     string
-	lock   sync.Mutex
-	server *HttpsServer
-}
+func (server *HttpsServer) getSession(ctx *core.Context, req *Request) (*core.Object, error) {
 
-func getSession(req *http.Request) (*Session, error) {
-	for _, cookie := range req.Cookies() {
+	if server.sessions == nil {
+		return nil, ErrSessionNotFound
+	}
+
+	for _, cookie := range req.Cookies {
 		if cookie.Name == DEFAULT_SESSION_ID_KEY {
 			if len(cookie.Value) > MAX_SESSION_ID_LEN {
 				return nil, ErrSessionIdTooLong
 			}
 
-			session, ok := sessions.Get(cookie.Value)
-			if ok {
-				return session, nil
-			}
+			var array [MAX_SESSION_ID_BYTE_COUNT]byte
+			key := array[:]
+			key = append(key, '"')
+			key = append(key, cookie.Value...)
+			key = append(key, '"')
+
+			server.sessions.Get(ctx, core.String(key))
+			//session, ok := server.sessions.Get(core.String(""))
+			//_ = session
+			//_ = ok
 			return nil, ErrSessionNotFound
 		}
 	}
 
 	return nil, ErrSessionNotFound
-}
-
-// addNewSession creates a new session an saves it in a global map.
-func addNewSession(server *HttpsServer) *Session {
-	//random session ID
-	var sessionId [DEFAULT_SESSION_ID_BYTE_COUNT]byte
-	_, err := rand.Read(sessionId[:])
-
-	if err != nil {
-		panic(err)
-	}
-
-	sessionIdStr := hex.EncodeToString(sessionId[:])
-
-	//create session & saves it in the sessions map
-	session := &Session{
-		Id:     sessionIdStr,
-		server: server,
-	}
-
-	sessions.Set(sessionIdStr, session)
-	return session
 }
 
 func addSessionIdCookie(rw *ResponseWriter, sessionId string) {
@@ -79,4 +60,29 @@ func addSessionIdCookie(rw *ResponseWriter, sessionId string) {
 		SameSite: http.SameSiteLaxMode,
 		HttpOnly: true,
 	})
+}
+
+func isValidHexSessionID(s string) bool {
+	if len(s) < MIN_SESSION_ID_BYTE_COUNT || len(s) > MAX_SESSION_ID_BYTE_COUNT || (len(s)%2) != 0 {
+		return false
+	}
+
+	for i := 0; i < len(s); i++ {
+		if !utils.IsHexDigit(s[i]) {
+			return false
+		}
+	}
+
+	return true
+}
+
+func randomSessionID() string {
+	var sessionId [DEFAULT_SESSION_ID_BYTE_COUNT]byte
+	_, err := core.CryptoRandSource.Read(sessionId[:])
+
+	if err != nil {
+		panic(err)
+	}
+
+	return hex.EncodeToString(sessionId[:])
 }

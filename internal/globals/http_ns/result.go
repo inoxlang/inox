@@ -66,6 +66,16 @@ func NewResult(ctx *core.Context, init *core.Object) *Result {
 			})
 		case RESULT_INIT_SESSION_PROPNAME:
 			session = v.(*core.Object)
+
+			//If the id is not a secure hexadecimal session ID we change its value.
+			id := session.Prop(ctx, SESSION_ID_PROPNAME).(core.StringLike).GetOrBuildString()
+			if !isValidHexSessionID(id) {
+				err := session.SetProp(ctx, SESSION_ID_PROPNAME, core.String(randomSessionID()))
+				if err != nil {
+					panic(err)
+				}
+			}
+
 			session.Share(ctx.GetClosestState())
 
 			//TODO: panic if the object is watched or has cycles.
