@@ -21,6 +21,10 @@ import (
 	"github.com/rs/zerolog"
 	"golang.org/x/exp/maps"
 
+	"github.com/inoxlang/inox/internal/globals/containers/common"
+	"github.com/inoxlang/inox/internal/globals/containers/setcoll"
+	symb_containers "github.com/inoxlang/inox/internal/globals/containers/symbolic"
+
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	http_ns_symb "github.com/inoxlang/inox/internal/globals/http_ns/symbolic"
 
@@ -47,6 +51,8 @@ const (
 
 	HANDLING_DESC_DEFAULT_LIMITS_PROPNAME = "default-limits"
 	HANDLING_DESC_MAX_LIMITS_PROPNAME     = "max-limits"
+	HANDLING_DESC_SESSIONS_PROPNAME       = "sessions"
+	SESSIONS_DESC_COLLECTION_PROPNAME     = "collection"
 
 	HTTP_SERVER_SRC = "http/server"
 )
@@ -59,8 +65,13 @@ var (
 		"static":  symbolic.ANY_ABS_DIR_PATH,
 		"dynamic": symbolic.ANY_ABS_DIR_PATH,
 	}, map[string]struct{}{
-		"static": {}, "dynamic": {},
+		"static":  {},
+		"dynamic": {},
 	}, nil)
+
+	SESSIONS_CONFIG_SYMB_OBJ = symbolic.NewInexactObject2(map[string]symbolic.Serializable{
+		SESSIONS_DESC_COLLECTION_PROPNAME: symb_containers.NewSetWithPattern(symbolic.ANY_PATTERN, common.NewPropertyValueUniqueness("id")),
+	})
 
 	SYMBOLIC_HANDLING_DESC = symbolic.NewInexactObject(map[string]symbolic.Serializable{
 		HANDLING_DESC_ROUTING_PROPNAME: symbolic.AsSerializableChecked(symbolic.NewMultivalue(
@@ -73,6 +84,7 @@ var (
 		HANDLING_DESC_KEY_PROPNAME:            symbolic.ANY_SECRET,
 		HANDLING_DESC_DEFAULT_LIMITS_PROPNAME: symbolic.ANY_OBJ,
 		HANDLING_DESC_MAX_LIMITS_PROPNAME:     symbolic.ANY_OBJ,
+		HANDLING_DESC_SESSIONS_PROPNAME:       SESSIONS_CONFIG_SYMB_OBJ,
 	}, map[string]struct{}{
 		//optional entries
 		HANDLING_DESC_DEFAULT_CSP_PROPNAME:    {},
@@ -80,6 +92,7 @@ var (
 		HANDLING_DESC_KEY_PROPNAME:            {},
 		HANDLING_DESC_DEFAULT_LIMITS_PROPNAME: {},
 		HANDLING_DESC_MAX_LIMITS_PROPNAME:     {},
+		HANDLING_DESC_SESSIONS_PROPNAME:       {},
 	}, nil)
 
 	NEW_SERVER_SINGLE_PARAM_NAME = []string{"host"}
@@ -108,6 +121,8 @@ type HttpsServer struct {
 
 	api     *API //An API is immutable but this field can be re-assigned.
 	apiLock sync.Mutex
+
+	sessions *setcoll.Set //can be nil
 
 	//preparedModules *preparedModule //mostly used during invocation of handler modules
 
@@ -138,6 +153,7 @@ func NewHttpsServer(ctx *core.Context, host core.Host, args ...core.Value) (*Htt
 	server.maxLimits = params.maxLimits
 	server.defaultLimits = params.defaultLimits
 	server.listeningAddr = params.effectiveListeningAddrHost
+	server.sessions = params.sessions
 
 	//create logger and security engine
 	{

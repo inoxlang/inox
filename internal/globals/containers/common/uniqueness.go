@@ -70,6 +70,13 @@ func NewURLUniqueness() *UniquenessConstraint {
 	}
 }
 
+func NewPropertyValueUniqueness(name string) *UniquenessConstraint {
+	return &UniquenessConstraint{
+		Type:         UniquePropertyValue,
+		PropertyName: core.PropertyName(name),
+	}
+}
+
 func UniquenessConstraintFromValue(val core.Value) (UniquenessConstraint, bool) {
 	var uniqueness UniquenessConstraint
 	switch u := val.(type) {

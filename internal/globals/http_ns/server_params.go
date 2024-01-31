@@ -10,6 +10,7 @@ import (
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/permkind"
 	"github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/globals/containers/setcoll"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
@@ -32,6 +33,8 @@ type serverParams struct {
 
 	defaultLimits map[string]core.Limit
 	maxLimits     map[string]core.Limit
+
+	sessions *setcoll.Set
 }
 
 func determineHttpServerParams(ctx *core.Context, server *HttpsServer, providedHost core.Host, args ...core.Value) (params serverParams, argErr error) {
@@ -209,6 +212,13 @@ func readServerHandlingObject(ctx *core.Context, v *core.Object, server *HttpsSe
 				return core.FmtUnexpectedValueAtKeyofArgShowVal(propVal, propKey, SERVER_HANDLING_ARG_NAME)
 			}
 			params.certKey = secret
+		case HANDLING_DESC_SESSIONS_PROPNAME:
+			sessionsDesc, ok := propVal.(*core.Object)
+			if !ok {
+				return core.FmtUnexpectedValueAtKeyofArgShowVal(propVal, propKey, SERVER_HANDLING_ARG_NAME)
+			}
+			collection := sessionsDesc.Prop(ctx, SESSIONS_DESC_COLLECTION_PROPNAME).(*setcoll.Set)
+			params.sessions = collection
 		case HANDLING_DESC_DEFAULT_LIMITS_PROPNAME, HANDLING_DESC_MAX_LIMITS_PROPNAME:
 			val, ok := propVal.(*core.Object)
 			if !ok {
