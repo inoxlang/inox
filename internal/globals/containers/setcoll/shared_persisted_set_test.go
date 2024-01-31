@@ -115,6 +115,7 @@ func TestSharedPersistedSetAdd(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		pattern := NewSetPattern(SetConfig{
+			Element: core.NewInexactObjectPattern([]core.ObjectPatternEntry{{Name: "name", Pattern: core.STR_PATTERN}}),
 			Uniqueness: common.UniquenessConstraint{
 				Type:         common.UniquePropertyValue,
 				PropertyName: "name",
@@ -500,6 +501,7 @@ func TestSharedPersistedSetRemove(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		pattern := NewSetPattern(SetConfig{
+			Element: core.NewInexactObjectPattern([]core.ObjectPatternEntry{{Name: "name", Pattern: core.STR_PATTERN}}),
 			Uniqueness: common.UniquenessConstraint{
 				Type:         common.UniquePropertyValue,
 				PropertyName: "name",
@@ -755,6 +757,7 @@ func TestSharedPersistedSetHas(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		pattern := NewSetPattern(SetConfig{
+			Element: core.NewInexactObjectPattern([]core.ObjectPatternEntry{{Name: "name", Pattern: core.STR_PATTERN}}),
 			Uniqueness: common.UniquenessConstraint{
 				Type:         common.UniquePropertyValue,
 				PropertyName: "name",

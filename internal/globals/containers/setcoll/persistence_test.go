@@ -204,17 +204,18 @@ func TestPersistLoadSet(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		pattern := NewSetPattern(SetConfig{
+			Element: core.NewInexactObjectPattern([]core.ObjectPatternEntry{{Name: "id", Pattern: core.STRING_PATTERN}}),
 			Uniqueness: common.UniquenessConstraint{
 				Type:         common.UniquePropertyValue,
 				PropertyName: "id",
 			},
 		})
 
-		storage.SetSerialized(ctx, "/set", `[{"object__value":{}}]`)
+		storage.SetSerialized(ctx, "/set", `[{}]`)
 		set, err := loadSet(ctx, core.FreeEntityLoadingParams{
 			Key: "/set", Storage: storage, Pattern: pattern,
 		})
-		if !assert.ErrorIs(t, err, common.ErrFailedGetUniqueKeyPropMissing) {
+		if !assert.ErrorContains(t, err, "properties are missing") {
 			return
 		}
 
@@ -226,6 +227,7 @@ func TestPersistLoadSet(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		pattern := NewSetPattern(SetConfig{
+			Element: core.NewInexactObjectPattern([]core.ObjectPatternEntry{{Name: "id", Pattern: core.STR_PATTERN}}),
 			Uniqueness: common.UniquenessConstraint{
 				Type:         common.UniquePropertyValue,
 				PropertyName: "id",
@@ -243,7 +245,7 @@ func TestPersistLoadSet(t *testing.T) {
 			if !assert.True(t, ok) {
 				return
 			}
-			assert.Equal(t, `[{"object__value":{"id":"a"}}]`, serialized)
+			assert.Equal(t, `[{"id":"a"}]`, serialized)
 		}
 
 		loadedSet, err := loadSet(ctx, core.FreeEntityLoadingParams{
@@ -266,6 +268,7 @@ func TestPersistLoadSet(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		pattern := NewSetPattern(SetConfig{
+			Element: core.NewInexactObjectPattern([]core.ObjectPatternEntry{{Name: "id", Pattern: core.STR_PATTERN}}),
 			Uniqueness: common.UniquenessConstraint{
 				Type:         common.UniquePropertyValue,
 				PropertyName: "id",
@@ -285,9 +288,9 @@ func TestPersistLoadSet(t *testing.T) {
 				return
 			}
 			if strings.Index(serialized, `"a"`) < strings.Index(serialized, `"b"`) {
-				assert.Equal(t, `[{"object__value":{"id":"a"}},{"object__value":{"id":"b"}}]`, serialized)
+				assert.Equal(t, `[{"id":"a"},{"id":"b"}]`, serialized)
 			} else {
-				assert.Equal(t, `[{"object__value":{"id":"b"}},{"object__value":{"id":"a"}}]`, serialized)
+				assert.Equal(t, `[{"id":"b"},{"object__value":{"id":"a"}]`, serialized)
 			}
 		}
 
@@ -311,13 +314,14 @@ func TestPersistLoadSet(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		pattern := NewSetPattern(SetConfig{
+			Element: core.NewInexactObjectPattern([]core.ObjectPatternEntry{{Name: "id", Pattern: core.STR_PATTERN}}),
 			Uniqueness: common.UniquenessConstraint{
 				Type:         common.UniquePropertyValue,
 				PropertyName: "id",
 			},
 		})
 
-		storage.SetSerialized(ctx, "/set", `[{"object__value":{"id": "a"}}, {"object__value":{"id": "a"}}]`)
+		storage.SetSerialized(ctx, "/set", `[{"id": "a"}, {"id": "a"}]`)
 		set, err := loadSet(ctx, core.FreeEntityLoadingParams{
 			Key: "/set", Storage: storage, Pattern: pattern,
 		})

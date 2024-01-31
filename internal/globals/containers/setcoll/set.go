@@ -26,6 +26,7 @@ var (
 	ErrValueWithSameKeyAlreadyPresent                 = errors.New("provided value has the same key as an already present element")
 	ErrURLUniquenessOnlySupportedIfPersistedSharedSet = errors.New("URL uniqueness is only supported if the Set is persisted and shared")
 	ErrCannotAddDifferentElemWithSamePropertyValue    = errors.New("cannot add different element with same property value")
+	ErrPropertyUsedForUniquenessNoPresentInPattern    = errors.New("property used for uniqueness is not present in element pattern")
 
 	_ core.Collection           = (*Set)(nil)
 	_ core.PotentiallySharable  = (*Set)(nil)
@@ -47,10 +48,10 @@ type Set struct {
 
 	//elements and keys
 
-	elementByKey        map[string]core.Serializable
-	keyBuf              *jsoniter.Stream //used to write JSON representation of elements or key fields
-	serializationConfig core.JSONSerializationConfig
-	pathKeyToKey        map[core.ElementKey]string //nil on start, will be initialized during the first GetElementByKey call.
+	elementByKey           map[string]core.Serializable
+	keyBuf                 *jsoniter.Stream             //used to write JSON representation of elements or key fields
+	keySerializationConfig core.JSONSerializationConfig //not set if URL-uniqueness
+	pathKeyToKey           map[core.ElementKey]string   //nil on start, will be initialized during the first GetElementByKey call.
 
 	//transactions and locking
 
@@ -111,6 +112,10 @@ func NewSet(ctx *core.Context, elements core.Iterable, configParam *core.Optiona
 		})
 	}
 
+	if config.Uniqueness.Type == common.UniquePropertyValue && !utils.Implements[core.IPropsPattern](config.Element) {
+		panic(ErrPropertyUsedForUniquenessNoPresentInPattern)
+	}
+
 	set := NewSetWithConfig(ctx, elements, config)
 	set.pattern = utils.Must(SET_PATTERN.Call([]core.Serializable{set.config.Element, set.config.Uniqueness.ToValue()})).(*SetPattern)
 	return set
@@ -139,10 +144,24 @@ func NewSetWithConfig(ctx *core.Context, elements core.Iterable, config SetConfi
 		elementByKey: make(map[string]core.Serializable),
 
 		keyBuf:                         jsoniter.NewStream(jsoniter.ConfigDefault, nil, INITIAL_SET_KEY_BUF),
-		serializationConfig:            core.JSONSerializationConfig{Pattern: config.Element, ReprConfig: &core.ReprConfig{AllVisible: true}},
 		transactionsWithSetEndCallback: make(map[*core.Transaction]struct{}, 0),
 
 		config: config,
+	}
+
+	switch config.Uniqueness.Type {
+	case common.UniqueRepr:
+		set.keySerializationConfig = core.JSONSerializationConfig{Pattern: config.Element, ReprConfig: &core.ReprConfig{AllVisible: true}}
+	case common.UniquePropertyValue:
+		pattern, _, ok := config.Element.(core.IPropsPattern).ValuePropPattern(string(config.Uniqueness.PropertyName))
+		if !ok {
+			panic(ErrPropertyUsedForUniquenessNoPresentInPattern)
+		}
+		set.keySerializationConfig = core.JSONSerializationConfig{Pattern: pattern, ReprConfig: &core.ReprConfig{AllVisible: true}}
+	case common.UniqueURL:
+		//empty
+	default:
+		panic(core.ErrUnreachable)
 	}
 
 	if elements != nil {
@@ -256,6 +275,9 @@ func (set *Set) Get(ctx *core.Context, keyVal core.StringLike) (core.Value, core
 		if _, err := set.txIsolator.WaitForOtherTxsToTerminate(ctx, false); err != nil {
 			panic(err)
 		}
+		closestState := ctx.GetClosestState()
+		set.lock.Lock(closestState, set)
+		defer set.lock.Unlock(closestState, set)
 	}
 
 	key := keyVal.GetOrBuildString()
@@ -479,7 +501,7 @@ func (set *Set) getUniqueKey(ctx *core.Context, v core.Serializable) string {
 		Value:                   v,
 		Config:                  set.config.Uniqueness,
 		Container:               set,
-		JSONSerializationConfig: set.serializationConfig,
+		JSONSerializationConfig: set.keySerializationConfig,
 		Stream:                  set.keyBuf,
 	})
 	return key

@@ -66,8 +66,11 @@ func TestNewSet(t *testing.T) {
 	t.Run("uniqueness of property's value", func(t *testing.T) {
 		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, io.Discard)
 
+		elemPattern := core.NewInexactObjectPattern([]core.ObjectPatternEntry{{Name: "id", Pattern: core.STRING_PATTERN}})
+
 		config := core.NewObjectFromMap(core.ValMap{
-			coll_symbolic.SET_CONFIG_UNIQUE_PROP_KEY: core.PropertyName("id"),
+			coll_symbolic.SET_CONFIG_UNIQUE_PROP_KEY:          core.PropertyName("id"),
+			coll_symbolic.SET_CONFIG_ELEMENT_PATTERN_PROP_KEY: elemPattern,
 		}, ctx)
 
 		set := NewSet(ctx, core.NewWrappedValueList(), core.ToOptionalParam(config))
@@ -77,7 +80,7 @@ func TestNewSet(t *testing.T) {
 				Type:         common.UniquePropertyValue,
 				PropertyName: "id",
 			},
-			Element: core.SERIALIZABLE_PATTERN,
+			Element: elemPattern,
 		}, set.config)
 	})
 
@@ -90,7 +93,7 @@ func TestNewSet(t *testing.T) {
 
 		func() {
 			defer func() {
-				assert.ErrorContains(t, recover().(error), common.ErrFailedGetUniqueKeyNoProps.Error())
+				assert.ErrorContains(t, recover().(error), ErrPropertyUsedForUniquenessNoPresentInPattern.Error())
 			}()
 			NewSet(ctx, core.NewWrappedValueList(core.Int(1)), core.ToOptionalParam(config))
 		}()
@@ -186,7 +189,7 @@ func TestUnsharedSetAddRemove(t *testing.T) {
 
 	t.Run("property value uniqueness", func(t *testing.T) {
 		set := NewSetWithConfig(ctx, nil, SetConfig{
-			Element: core.RECORD_PATTERN,
+			Element: core.NewInexactRecordPattern([]core.RecordPatternEntry{{Name: "x", Pattern: core.INT_PATTERN}}),
 			Uniqueness: common.UniquenessConstraint{
 				Type:         common.UniquePropertyValue,
 				PropertyName: "x",
@@ -211,9 +214,9 @@ func TestUnsharedSetAddRemove(t *testing.T) {
 
 	t.Run("adding an element to an unshared URL-based uniqueness Set should cause a panic", func(t *testing.T) {
 		set := NewSetWithConfig(ctx, nil, SetConfig{
-			Element: core.RECORD_PATTERN,
+			Element: core.OBJECT_PATTERN,
 			Uniqueness: common.UniquenessConstraint{
-				PropertyName: "x",
+				Type: common.UniqueURL,
 			},
 		})
 

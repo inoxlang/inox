@@ -299,6 +299,11 @@ func GetUniqueKey(ctx *core.Context, args KeyRetrievalParams) string {
 
 		return utils.BytesAsString(args.Stream.Buffer()[bufLen:])
 	case UniqueURL:
+
+		if args.JSONSerializationConfig != (core.JSONSerializationConfig{}) {
+			panic(errors.New("unexpected key serialization config for URL-based uniqueness"))
+		}
+
 		url, err := core.UrlOf(ctx, v)
 		if err != nil {
 			panic(ErrFailedGetUniqueKeyNoURL)
@@ -335,6 +340,7 @@ func GetUniqueKey(ctx *core.Context, args KeyRetrievalParams) string {
 		propVal := iprops.Prop(ctx, config.PropertyName.UnderlyingString())
 
 		bufLen := len(args.Stream.Buffer())
+
 		// representation is context-dependent -> possible issues
 		err := propVal.(core.Serializable).WriteJSONRepresentation(ctx, args.Stream, args.JSONSerializationConfig, 0)
 		if err != nil {

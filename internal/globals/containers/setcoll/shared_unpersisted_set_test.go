@@ -151,6 +151,7 @@ func TestSharedUnpersistedSetAdd(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		pattern := NewSetPattern(SetConfig{
+			Element: core.NewInexactObjectPattern([]core.ObjectPatternEntry{{Name: "name", Pattern: core.STR_PATTERN}}),
 			Uniqueness: common.UniquenessConstraint{
 				Type:         common.UniquePropertyValue,
 				PropertyName: "name",
@@ -204,6 +205,7 @@ func TestSharedUnpersistedSetHas(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		pattern := NewSetPattern(SetConfig{
+			Element: core.NewInexactObjectPattern([]core.ObjectPatternEntry{{Name: "name", Pattern: core.STR_PATTERN}}),
 			Uniqueness: common.UniquenessConstraint{
 				Type:         common.UniquePropertyValue,
 				PropertyName: "name",
@@ -309,6 +311,7 @@ func TestSharedUnpersistedSetContains(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		pattern := NewSetPattern(SetConfig{
+			Element: core.NewInexactObjectPattern([]core.ObjectPatternEntry{{Name: "name", Pattern: core.STRING_PATTERN}}),
 			Uniqueness: common.UniquenessConstraint{
 				Type:         common.UniquePropertyValue,
 				PropertyName: "name",
@@ -485,6 +488,99 @@ func TestSharedUnpersistedSetGetElementByKey(t *testing.T) {
 	})
 }
 
+func TestSharedUnpersistedSetGet(t *testing.T) {
+
+	t.Run("Get should be thread safe", func(t *testing.T) {
+		ctx1, ctx2, _ := sharedSetTestSetup2(t)
+		defer ctx1.CancelGracefully()
+		defer ctx2.CancelGracefully()
+
+		core.StartNewReadonlyTransaction(ctx1)
+		//ctx2 has no transaction on purpose.
+
+		elements := core.NewWrappedValueList(INT_1, INT_2)
+
+		set := NewSetWithConfig(ctx1, elements, SetConfig{
+			Uniqueness: common.UniquenessConstraint{
+				Type: common.UniqueRepr,
+			},
+		})
+
+		set.Share(ctx1.GetClosestState())
+
+		done := make(chan struct{})
+		go func() {
+			for i := 0; i < 100_000; i++ {
+				set.Add(ctx2, core.Int(i+5))
+			}
+			done <- struct{}{}
+		}()
+
+		for i := 0; i < 100_000; i++ {
+			set.Get(ctx1, core.String(INT_1_TYPED_REPR))
+		}
+
+		<-done
+	})
+
+	//Tests with several transactions.
+
+	t.Run("readonly transactions can read the Set in parallel", func(t *testing.T) {
+		ctx1, ctx2, _ := sharedSetTestSetup2(t)
+		defer ctx1.CancelGracefully()
+		defer ctx2.CancelGracefully()
+
+		readTx1 := core.StartNewReadonlyTransaction(ctx1)
+		core.StartNewReadonlyTransaction(ctx2)
+
+		pattern := NewSetPattern(SetConfig{
+			Uniqueness: common.UniquenessConstraint{
+				Type: common.UniqueRepr,
+			},
+		})
+
+		set := NewSetWithConfig(ctx1, core.NewWrappedValueList(INT_1, INT_2), pattern.config)
+		set.Share(ctx1.GetClosestState())
+
+		//Check that INT_1 is in the Set.
+
+		elem, ok := set.Get(ctx1, core.String(INT_1_TYPED_REPR))
+		if !assert.True(t, bool(ok)) {
+			return
+		}
+		assert.Equal(t, INT_1, elem)
+
+		elem, ok = set.Get(ctx2, core.String(INT_1_TYPED_REPR))
+		if !assert.True(t, bool(ok)) {
+			return
+		}
+		assert.Equal(t, INT_1, elem)
+
+		//Check that INT_2 is in the Set.
+
+		elem, ok = set.Get(ctx1, core.String(INT_2_TYPED_REPR))
+		if !assert.True(t, bool(ok)) {
+			return
+		}
+		assert.Equal(t, INT_2, elem)
+
+		elem, ok = set.Get(ctx2, core.String(INT_2_TYPED_REPR))
+		if !assert.True(t, bool(ok)) {
+			return
+		}
+		assert.Equal(t, INT_2, elem)
+
+		//Commit the first transaction.
+		assert.NoError(t, readTx1.Commit(ctx1))
+
+		elem, ok = set.Get(ctx2, core.String(INT_1_TYPED_REPR))
+		if !assert.True(t, bool(ok)) {
+			return
+		}
+		assert.Equal(t, INT_1, elem)
+	})
+}
+
 func TestSharedUnpersistedSetRemove(t *testing.T) {
 
 	t.Run("remove an element of a URL-based uniqueness shared Set with no storage should cause a panic", func(t *testing.T) {
@@ -510,6 +606,7 @@ func TestSharedUnpersistedSetRemove(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		pattern := NewSetPattern(SetConfig{
+			Element: core.NewInexactObjectPattern([]core.ObjectPatternEntry{{Name: "name", Pattern: core.STRING_PATTERN}}),
 			Uniqueness: common.UniquenessConstraint{
 				Type:         common.UniquePropertyValue,
 				PropertyName: "name",
