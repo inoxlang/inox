@@ -29,6 +29,7 @@ type LiteTransactionIsolator struct {
 // is read-write. The function does not wait if no read-write transaction is tracked, or if the context's transaction is readonly.
 // When the currently tracked read-write transaction terminates, a random transaction among all waiting transactions resumes.
 // In other words the first transaction to start waiting is not necessarily the one to resume first.
+// TODO: AVOID STARVATION.
 func (isolator *LiteTransactionIsolator) WaitForOtherReadWriteTxToTerminate(ctx *Context, requireRunningTx bool) (currentTx *Transaction, _ error) {
 	return isolator.waitForOtherReadWriteTxToTerminate(ctx, requireRunningTx, 0)
 }
@@ -119,6 +120,7 @@ func (isolator *StrongTransactionIsolator) hasUnfinishedReadonlyTxs() bool {
 // TODO: add similar error for waiting too long for the current read-write tx to terminate.
 // When the currently tracked read-write transaction terminates, a random transaction among all waiting transactions resumes.
 // In other words the first transaction to start waiting is not necessarily the one to resume first.
+// TODO: AVOID STARVATION.
 // ErrRunningTransactionExpected is returned if requireRunningTx is true and $ctx has no tx.
 func (isolator *StrongTransactionIsolator) WaitForOtherTxsToTerminate(ctx *Context, requireRunningTx bool) (currentTx *Transaction, _ error) {
 	return isolator.waitForReadWriteTxToTerminate(ctx, requireRunningTx, 0)

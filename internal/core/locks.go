@@ -1,10 +1,7 @@
 package core
 
 import (
-	"context"
 	"errors"
-
-	"golang.org/x/sync/semaphore"
 
 	"sync"
 )
@@ -17,6 +14,15 @@ var (
 type SmartLock struct {
 	lock        sync.Mutex
 	valueShared bool
+
+	// TODO: avoid contention by supporting timing out and context cancellation to avoid contention.
+	// github.com/viney-shih/go-lock
+	// Since supporting this requires more memory than a simple sync.Mutex,
+	// allocations related to contention mitigation should be performed only on contented locks/embedders.
+	// Contention detection should use as little memory as possible: the sum of detection relateds fields
+	// should not require more than 32 bytes.
+
+	//contentionMitigation *contentionMitigation
 }
 
 func (lock *SmartLock) IsValueShared() bool {
@@ -40,7 +46,7 @@ func (lock *SmartLock) Share(originState *GlobalState, fn func()) {
 func (lock *SmartLock) Lock(state *GlobalState, embedder PotentiallySharable) {
 	//IMPORTANT:
 	//Locking/unlocking of SmartLock should be cheap because there are potentially thousands of operations per second.
-	//No channel or goroutine should be created.
+	//No channel or goroutine should be created by default.
 
 	if !lock.valueShared {
 		return
@@ -68,7 +74,7 @@ func (lock *SmartLock) Lock(state *GlobalState, embedder PotentiallySharable) {
 func (lock *SmartLock) Unlock(state *GlobalState, embedder PotentiallySharable) {
 	//IMPORTANT:
 	//Locking/unlocking of SmartLock should be cheap because there are potentially thousands of operations per second.
-	//No channel or goroutine should be created.
+	//No channel or goroutine should be created by default.
 
 	if !lock.valueShared {
 		return
@@ -99,44 +105,4 @@ func (lock *SmartLock) ForceUnlock() {
 	}
 
 	lock.lock.Unlock()
-}
-
-// CMutex implements a cancelable mutex  (in fact also a try-able mutex)
-
-type CMutex struct {
-	sema *semaphore.Weighted
-}
-
-// NewCMutex is ctor for CMutex
-
-func NewCMutex() *CMutex {
-
-	return &CMutex{sema: semaphore.NewWeighted(1)}
-
-}
-
-// Lock with context
-
-func (m *CMutex) Lock(ctx context.Context) (err error) {
-
-	err = m.sema.Acquire(ctx, 1)
-
-	return
-
-}
-
-// Unlock should only be called after a successful Lock
-
-func (m *CMutex) Unlock() {
-
-	m.sema.Release(1)
-
-}
-
-// TryLock returns true if lock acquired
-
-func (m *CMutex) TryLock() bool {
-
-	return m.sema.TryAcquire(1)
-
 }
